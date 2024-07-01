@@ -275,6 +275,7 @@ let position_of_argument ctx binders na =
   let name = Name na.CAst.v in
   try
     Context.Rel.fold_outside (fun decl n ->
+
         match Context.Rel.Declaration.(get_value decl, Name.equal (get_name decl) name) with
         | None, true -> raise (Found n)
         | Some _, true ->
@@ -341,15 +342,21 @@ let interp_fix_context ~program_mode env sigma {Vernacexpr.binders} =
 
 let interp_fix_ccl ~program_mode sigma impls env fix =
   let flags = Pretyping.{ all_no_fail_flags with program_mode } in
-  let sigma, (c, impl) = interp_type_evars_impls ~flags ~impls env sigma fix.Vernacexpr.rtype in
+  let typ = match fix.Vernacexpr.body_def with
+    | ProveBody t | DefineBody (_, _, Some t) -> t
+    | DefineBody (_, _, None) -> CAst.make (CHole None) in
+  let sigma, (c, impl) = interp_type_evars_impls ~flags ~impls env sigma typ in
   let r = Retyping.relevance_of_type env sigma c in
   sigma, (c, r, impl)
 
 let interp_fix_body ~program_mode env_rec ctx sigma impls fix ccl =
+  let body = match fix.Vernacexpr.body_def with
+    | ProveBody _ -> None
+    | DefineBody (_, c, _) -> Some c in
   Option.cata (fun body ->
     let env_rec_ctx = push_rel_context ctx env_rec in
     let sigma, body = interp_casted_constr_evars ~program_mode env_rec_ctx sigma ~impls body ccl in
-    sigma, Some (it_mkLambda_or_LetIn body ctx)) (sigma, None) fix.Vernacexpr.body_def
+    sigma, Some (it_mkLambda_or_LetIn body ctx)) (sigma, None) body
 
 let build_fix_type sigma ctx ccl (_, extradecl) =
   let ccl = it_mkProd_or_LetIn (Vars.lift (Context.Rel.length extradecl) ccl) extradecl in

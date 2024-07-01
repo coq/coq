@@ -55,9 +55,9 @@ usable outside the section as shown in this :ref:`example <section_local_declara
    In some cases, this behaviour can be tuned with locality attributes.
    See :ref:`this table<visibility-attributes-sections>`.
 
-.. cmd:: Let @ident_decl @def_body
-         Let Fixpoint @fix_definition {* with @fix_definition }
-         Let CoFixpoint @cofix_definition {* with @cofix_definition }
+.. cmd:: Let @declaration_body {* with @declaration_body }
+         Let Fixpoint @declaration_body {* with @declaration_body }
+         Let CoFixpoint @declaration_body {* with @declaration_body }
    :name: Let; Let Fixpoint; Let CoFixpoint
 
    These are similar to :cmd:`Definition`, :cmd:`Fixpoint` and :cmd:`CoFixpoint`, except that

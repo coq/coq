@@ -28,7 +28,7 @@ value. The complete documentation of canonical structures can be found
 in :ref:`canonicalstructures`; here only a simple example is given.
 
 .. cmd:: Canonical {? Structure } @reference
-         Canonical {? Structure } @ident_decl @def_body
+         Canonical {? Structure } @ident_decl {* @binder } @decl_body
    :name: Canonical Structure; _
 
    The first form of this command declares an existing :n:`@reference` as a

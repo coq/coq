@@ -56,6 +56,10 @@ type logical_kind =
   | IsDefinition of definition_object_kind
   | IsProof of theorem_kind
 
+type defined_logical_kind =
+  | IsDefinitionKind of definition_object_kind
+  | IsTheoremKind of theorem_kind
+
 (** This module manages non-kernel informations about declarations. It
     is either non-logical informations or logical informations that
     have no place to be (yet) in the kernel *)

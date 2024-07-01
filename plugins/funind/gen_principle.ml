@@ -35,13 +35,18 @@ let rec abstract_glob_constr c = function
 let interp_casted_constr_with_implicits env sigma impls c =
   Constrintern.intern_gen Pretyping.WithoutTypeConstraint env sigma ~impls c
 
+let get_fix_type = function
+  | Vernacexpr.ProveBody t | DefineBody (_, _, Some t) -> t
+  | DefineBody (_, _, None) -> CAst.make (Constrexpr.CHole None)
+
 let build_newrecursive lnameargsardef =
   let env0 = Global.env () in
   let sigma = Evd.from_env env0 in
   let rec_sign, rec_impls =
     List.fold_left
-      (fun (env, impls) {Vernacexpr.fname = {CAst.v = recname}; binders; rtype} ->
-        let arityc = Constrexpr_ops.mkCProdN binders rtype in
+      (fun (env, impls) {Vernacexpr.fname = {CAst.v = recname}; binders; body_def} ->
+        let typ = get_fix_type body_def in
+        let arityc = Constrexpr_ops.mkCProdN binders typ in
         let arity, _ctx = Constrintern.interp_type env0 sigma arityc in
         let evd = Evd.from_env env0 in
         let evd, (_, (_, impls')) =
@@ -65,10 +70,13 @@ let build_newrecursive lnameargsardef =
     (* Declare local notations *)
     let f {Vernacexpr.binders; body_def} =
       match body_def with
-      | Some body_def ->
+      | DefineBody (None, body_def, _) ->
         let def = abstract_glob_constr body_def binders in
         interp_casted_constr_with_implicits rec_sign sigma rec_impls def
-      | None ->
+      | DefineBody (Some _, body_def, _) ->
+        CErrors.user_err
+          (Pp.str "Reduction of body not supported.")
+      | ProveBody t ->
         CErrors.user_err
           (Pp.str "Body of Function must be given.")
     in
@@ -163,9 +171,12 @@ let recompute_binder_list (rec_order, fixpoint_exprl) =
   in
   let fixpoint_exprl_with_new_bl =
     List.map2
-      (fun ({Vernacexpr.binders} as fp) fix_typ ->
+      (fun ({Vernacexpr.binders; body_def} as fp) fix_typ ->
         let binders, rtype = rebuild_bl [] binders fix_typ in
-        {fp with Vernacexpr.binders; rtype})
+        let body_def = match body_def with
+          | DefineBody (red, c, _) -> Vernacexpr.DefineBody (red, c, Some rtype)
+          | ProveBody _ -> Vernacexpr.ProveBody rtype in
+        {fp with Vernacexpr.binders; body_def})
       fixpoint_exprl constr_expr_typel
   in
   fixpoint_exprl_with_new_bl
@@ -327,7 +338,7 @@ let generate_principle (evd : Evd.evar_map ref) pconstants on_error is_general
   let fun_bodies = List.map2 prepare_body fix_rec_l recdefs in
   let funs_args = List.map fst fun_bodies in
   let funs_types =
-    List.map (function {Vernacexpr.rtype} -> rtype) fix_rec_l
+    List.map (function {Vernacexpr.body_def} -> get_fix_type body_def) fix_rec_l
   in
   try
     (* We then register the Inductive graphs of the functions  *)
@@ -378,17 +389,19 @@ let generate_principle (evd : Evd.evar_map ref) pconstants on_error is_general
 let register_struct is_rec (rec_order, fixpoint_exprl) =
   let open EConstr in
   match fixpoint_exprl with
-  | [{Vernacexpr.fname; univs; binders; rtype; body_def}] when not is_rec ->
-    let body =
+  | [{Vernacexpr.fname; univs; binders; body_def}] when not is_rec ->
+    let body, rtype =
       match body_def with
-      | Some body -> body
-      | None ->
+      | DefineBody (None, body, rtype) -> body, rtype
+      | DefineBody (Some _, body_def, _) ->
+        CErrors.user_err
+          (Pp.str "Reduction of body not supported.")
+      | ProveBody _ ->
         CErrors.user_err
           Pp.(str "Body of Function must be given.")
     in
-    let pm =
-      ComDefinition.do_definition ~program_mode:false ~name:fname.CAst.v ~poly:false
-        ~kind:Decls.(IsDefinition Definition) univs binders None body (Some rtype) in
+    let pm = ComDefinition.do_definition ~program_mode:false ~name:fname.CAst.v ~poly:false
+      ~kind:Decls.(IsDefinition Definition) univs binders None body rtype in
     assert (Option.is_empty pm);
     let evd, rev_pconstants =
       List.fold_left
@@ -1748,17 +1761,23 @@ let do_generate_principle_aux pconstants on_error register_built
   let lemma, _is_struct =
     match rec_order with
     | [ Some { CAst.v = Constrexpr.CWfRec (wf_x, wf_rel) } ] ->
-      let ( {Vernacexpr.fname; univs = _; binders; rtype; body_def} as
+      let ( {Vernacexpr.fname; univs = _; binders; body_def} as
           fixpoint_expr ) =
         match recompute_binder_list fix with
         | [e] -> e
         | _ -> assert false
       in
       let fixpoint_exprl = [fixpoint_expr] in
-      let body =
+      let body, rtype =
         match body_def with
-        | Some body -> body
-        | None ->
+        | DefineBody (None, body, Some rtype) -> body, rtype
+        | DefineBody (Some _, body_def, _) ->
+          CErrors.user_err
+            (Pp.str "Reduction of body not supported.")
+        | DefineBody (_, body, None) ->
+          CErrors.user_err
+            (Pp.str "Type of Function must be given.")
+        | ProveBody _ ->
           CErrors.user_err
             (Pp.str "Body of Function must be given.")
       in
@@ -1775,7 +1794,7 @@ let do_generate_principle_aux pconstants on_error register_built
         , false )
       else (None, false)
     | [ Some { CAst.v = Constrexpr.CMeasureRec (wf_x, wf_mes, wf_rel_opt) } ] ->
-      let ( {Vernacexpr.fname; univs = _; binders; rtype; body_def} as
+      let ( {Vernacexpr.fname; univs = _; binders; body_def} as
           fixpoint_expr ) =
         match recompute_binder_list fix with
         | [e] -> e
@@ -1784,12 +1803,15 @@ let do_generate_principle_aux pconstants on_error register_built
       let fixpoint_exprl = [fixpoint_expr] in
       let recdefs, rec_impls = build_newrecursive fixpoint_exprl in
       let using_lemmas = [] in
-      let body =
+      let body, rtype =
         match body_def with
-        | Some body -> body
-        | None ->
+        | DefineBody (red, body, Some rtype) -> body, rtype (* TO DO:reduce *)
+        | DefineBody (red, body, None) ->
           CErrors.user_err
-            Pp.(str "Body of Function must be given.")
+            (Pp.str "Type of Function must be given.")
+        | ProveBody _ ->
+          CErrors.user_err
+            (Pp.str "Body of Function must be given.")
       in
       let pre_hook pconstants =
         generate_principle
@@ -2091,8 +2113,7 @@ let make_graph (f_ref : GlobRef.t) =
               { Vernacexpr.fname = id
               ; univs = None
               ; binders = nal_tas @ bl
-              ; rtype = t
-              ; body_def = Some b'
+              ; body_def = DefineBody (None, b', Some t)
               ; notations = [] })
             fixexprl
         in
@@ -2102,8 +2123,7 @@ let make_graph (f_ref : GlobRef.t) =
         [ None, { Vernacexpr.fname
           ; univs = None
           ; binders = nal_tas
-          ; rtype = t
-          ; body_def = Some b
+          ; body_def = DefineBody (None, b, Some t)
           ; notations = [] } ]
     in
     let mp = Constant.modpath c in

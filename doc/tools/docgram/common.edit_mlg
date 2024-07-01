@@ -122,11 +122,11 @@ RENAME: [
 | Pltac.ltac_expr ltac_expr5
 
 (*
-| G_vernac.def_body def_body
+| G_vernac.decl_body decl_body
 | Prim.by_notation by_notation
 | Prim.natural natural
 *)
-| Vernac.fix_definition fix_definition
+| Vernac.declaration_body declaration_body
 ]
 
 (* written in OCaml *)
@@ -559,12 +559,18 @@ variant_definition: [
 ]
 
 gallina: [
-| REPLACE thm_token ident_decl binders ":" lconstr LIST0 [ "with" ident_decl binders ":" lconstr ]
-| WITH thm_token ident_decl binders ":" type LIST0 [ "with" ident_decl binders ":" type ]
 | DELETE assumptions_token inline assum_list
 | DELETE "Symbols" assum_list
 | REPLACE "Symbol" assum_list
 | WITH [ "Symbol" | "Symbols" ] assum_list
+| REPLACE logical_token LIST1 declaration_body SEP "with"
+| WITH thm_token declaration_body LIST0 ( "with" declaration_body )
+|   ["Definition" | "Example" ] declaration_body LIST0 ( "with" declaration_body )
+|   "Let" declaration_body LIST0 ( "with" declaration_body )
+|   "Fixpoint" declaration_body LIST0 ( "with" declaration_body )
+|   "CoFixpoint" declaration_body LIST0 ( "with" declaration_body )
+|   "Let" "Fixpoint" declaration_body LIST0 ( "with" declaration_body )
+|   "Let" "CoFixpoint" declaration_body LIST0 ( "with" declaration_body )
 | REPLACE inductive_token LIST1 inductive_or_record_definition SEP "with"
 | WITH "Inductive" inductive_definition LIST0 ( "with" inductive_definition )
 |   "Inductive" record_definition LIST0 ( "with" record_definition )
@@ -575,14 +581,6 @@ gallina: [
 |   [ "Record" | "Structure" ] record_definition
 |   "Class" record_definition
 |   "Class" singleton_class_definition
-| REPLACE "Fixpoint" LIST1 fix_definition SEP "with"
-| WITH "Fixpoint" fix_definition LIST0 ( "with" fix_definition )
-| REPLACE "Let" "Fixpoint" LIST1 fix_definition SEP "with"
-| WITH "Let" "Fixpoint" fix_definition LIST0 ( "with" fix_definition )
-| REPLACE "CoFixpoint" LIST1 cofix_definition SEP "with"
-| WITH "CoFixpoint" cofix_definition LIST0 ( "with" cofix_definition )
-| REPLACE "Let" "CoFixpoint" LIST1 cofix_definition SEP "with"
-| WITH "Let" "CoFixpoint" cofix_definition LIST0 ( "with" cofix_definition )
 | REPLACE "Scheme" LIST1 scheme SEP "with"
 | WITH "Scheme" scheme LIST0 ( "with" scheme )
 | DELETE "Scheme" "Boolean" "Equality" "for" smart_global
@@ -664,12 +662,15 @@ of_type_inst: [
 | [ ":" | ":>" | "::" | "::>" ] type
 ]
 
-def_body: [
-| DELETE binders ":=" reduce lconstr
-| REPLACE binders ":" lconstr ":=" reduce lconstr
-| WITH LIST0 binder OPT (":" type) ":=" reduce lconstr
-| REPLACE binders ":" lconstr
-| WITH LIST0 binder ":" type
+declaration_body: [
+]
+
+decl_body: [
+| DELETE ":=" reduce lconstr
+| REPLACE ":" lconstr ":=" reduce lconstr
+| WITH OPT (":" type) ":=" reduce lconstr
+| REPLACE ":" lconstr
+| WITH ":" type
 ]
 
 delta_flag: [
@@ -718,12 +719,12 @@ gallina_ext: [
 | WITH "Implicit" [ "Type" | "Types" ] reserv_list
 | DELETE "Implicit" "Types" reserv_list
 
-(* Per @Zimmi48, the global (qualid) must be a simple identifier if def_body is present
+(* Per @Zimmi48, the global (qualid) must be a simple identifier if decl_body is present
    Note that smart_global is "qualid | by_notation" and that
    ident_decl is "ident OPT univ_decl"; move
  *)
-| REPLACE "Canonical" OPT "Structure" global OPT [ OPT univ_decl def_body ]
-| WITH "Canonical" OPT "Structure" ident_decl def_body
+| REPLACE "Canonical" OPT "Structure" global OPT [ OPT univ_decl binders decl_body ]
+| WITH "Canonical" OPT "Structure" ident_decl binders decl_body
 | REPLACE "Canonical" OPT "Structure" by_notation
 | WITH "Canonical" OPT "Structure" smart_global
 
@@ -733,8 +734,8 @@ gallina_ext: [
 
 (* semantically restricted per https://github.com/coq/coq/pull/12936#discussion_r492705820 *)
 (* global OPT univ_decl is just ident_decl, the first OPT is moved to the rule above *)
-| REPLACE "Coercion" global OPT [ OPT univ_decl def_body ]
-| WITH "Coercion" ident_decl def_body
+| REPLACE "Coercion" global OPT [ OPT univ_decl binders decl_body ]
+| WITH "Coercion" ident_decl binders decl_body
 
 | REPLACE "Include" "Type" module_type_inl LIST0 ext_module_type
 | WITH "Include" "Type" LIST1 module_type_inl SEP "<+"
@@ -1243,7 +1244,7 @@ command: [
 | WITH printable
 | REPLACE "Hint" hint opt_hintbases
 | WITH hint
-| "SubClass" ident_decl def_body
+| "SubClass" ident_decl decl_body
 | REPLACE "Ltac" LIST1 ltac_tacdef_body SEP "with"
 | WITH "Ltac" ltac_tacdef_body LIST0 ( "with" ltac_tacdef_body )
 | REPLACE "Function" LIST1 function_fix_definition SEP "with"      (* funind plugin *)
@@ -1505,16 +1506,6 @@ legacy_attr: [
 ]
 
 sentence: [ ]  (* productions defined below *)
-
-fix_definition: [
-| REPLACE ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notations
-| WITH ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notations
-]
-
-cofix_definition: [
-| REPLACE ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notations
-| WITH ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notations
-]
 
 type_cstr: [
 | REPLACE ":" lconstr

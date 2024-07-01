@@ -130,9 +130,6 @@ let pr_lfqid {CAst.loc;v=fqid} =
   | Some loc -> let (b,_) = Loc.unloc loc in
     pr_located pr_fqid @@ Loc.tag ~loc:(Loc.make_loc (b,b + String.length (string_of_fqid fqid))) fqid
 
-let pr_lname_decl (n, u) =
-  pr_lname n ++ pr_universe_decl u
-
 let pr_ltac_ref = Libnames.pr_qualid
 
 let pr_module = Libnames.pr_qualid
@@ -177,9 +174,15 @@ let string_of_definition_object_kind = let open Decls in function
     | CanonicalStructure -> "Canonical Structure"
     | Instance -> "Instance"
     | Let -> "Let"
+    | Fixpoint -> "Fixpoint"
+    | CoFixpoint -> "CoFixpoint"
     | LetContext -> CErrors.anomaly (Pp.str "Bound to Context.")
-    | (StructureComponent|Scheme|CoFixpoint|Fixpoint|IdentityCoercion|Method) ->
+    | (StructureComponent|Scheme|IdentityCoercion|Method) ->
       CErrors.anomaly (Pp.str "Internal definition kind.")
+
+let string_of_defined_logical_kind = let open Decls in function
+    | IsDefinitionKind kind -> string_of_definition_object_kind kind
+    | IsTheoremKind kind -> string_of_theorem_kind kind
 
 let string_of_assumption_kind = let open Decls in function
     | Definitional -> "Parameter"
@@ -406,11 +409,6 @@ let pr_module_vardecls pr_c (export,idl,(mty,inl)) =
 let pr_module_binders l pr_c =
   prlist_strict (pr_module_vardecls pr_c) l
 
-let pr_type_option pr_c = function
-  | { v = CHole (Some GNamedHole _) } as c -> brk(0,2) ++ str" :" ++ pr_c c
-  | { v = CHole _ } -> mt()
-  | _ as c -> brk(0,2) ++ str" :" ++ pr_c c
-
 let pr_binders_arg =
   pr_non_empty_arg @@ pr_binders
 
@@ -486,8 +484,6 @@ let pr_ne_params_list pr_c l =
   prlist_with_sep pr_semicolon (pr_params pr_c)
 *)
 
-let pr_thm_token k = keyword (string_of_theorem_kind k)
-
 let pr_syntax_modifier = let open Gramlib.Gramext in CAst.with_val (function
     | SetItemLevel (l,bko,n) ->
       prlist_with_sep sep_v2 str l ++ spc () ++ pr_at_level n ++
@@ -524,19 +520,28 @@ let pr_notation_declaration ntn_decl =
 let pr_where_notation decl_ntn =
   fnl () ++ keyword "where " ++ pr_notation_declaration decl_ntn
 
-let pr_rec_definition (rec_order, { fname; univs; binders; rtype; body_def; notations }) =
-  let pr_pure_lconstr c = Flags.without_option Flags.beautify pr_lconstr c in
+let pr_reduce = function
+  | None -> mt()
+  | Some r ->
+    keyword "Eval" ++ spc() ++
+    pr_red_expr r ++
+    keyword " in" ++ spc()
+
+let pr_def_body = function
+  | DefineBody (red,body,d) ->
+    let ty = match d with
+      | None -> mt()
+      | Some ty -> spc() ++ str":" ++ pr_spc_lconstr ty
+    in
+    ty ++ str " :=" ++ spc() ++ pr_reduce red ++ pr_lconstr body
+  | ProveBody t ->
+    str" :" ++ pr_spc_lconstr t
+
+let pr_rec_definition (rec_order, { fname; univs; binders; body_def; notations }) =
   let annot = pr_guard_annot pr_lconstr_expr binders rec_order in
   pr_ident_decl (fname,univs) ++ pr_binders_arg binders ++ annot
-  ++ pr_type_option (fun c -> spc() ++ pr_lconstr_expr c) rtype
-  ++ pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_pure_lconstr def) body_def
+  ++ pr_def_body body_def
   ++ prlist pr_where_notation notations
-
-let pr_statement head (idpl,(bl,c)) =
-  hov 2
-    (head ++ spc() ++ pr_ident_decl idpl ++ spc() ++
-     (match bl with [] -> mt() | _ -> pr_binders bl ++ spc()) ++
-     str":" ++ pr_spc_lconstr c)
 
 let pr_rew_rule (ubinders, lhs, rhs) =
   let binders = match ubinders with None -> mt()
@@ -831,43 +836,20 @@ let pr_synpure_vernac_expr v =
     )
 
   (* Gallina *)
-  | VernacDefinition ((discharge,kind),id,b) -> (* A verifier... *)
-    let isgoal = Name.is_anonymous (fst id).v in
-    let pr_def_token =
-      keyword (
-        if isgoal
-        then "Goal"
-        else string_of_definition_object_kind kind)
-    in
-    let pr_reduce = function
-      | None -> mt()
-      | Some r ->
-        keyword "Eval" ++ spc() ++
-        pr_red_expr r ++
-        keyword " in" ++ spc()
-    in
-    let pr_def_body = match b with
-      | DefineBody (bl,red,body,d) ->
-        let ty = match d with
-          | None -> mt()
-          | Some ty -> spc() ++ str":" ++ pr_spc_lconstr ty
-        in
-        pr_binders_arg bl  ++ ty ++ str " :=" ++ spc() ++ pr_reduce red ++ pr_lconstr body
-      | ProveBody (bl,t) ->
-        let typ u = if isgoal then (assert (bl = []); u) else (str" :" ++ u) in
-        pr_binders_arg bl ++ typ (pr_spc_lconstr t)
-    in
+  | VernacGoal t ->
     return (
-      hov 2 (
-        pr_def_token
-        ++ (if isgoal then mt() else spc() ++ pr_lname_decl id)
-        ++ pr_def_body)
+      hov 2 (keyword "Goal" ++ pr_spc_lconstr t)
     )
 
-  | VernacStartTheoremProof (ki,l) ->
+  | VernacDefinition ((discharge, kind), recs) ->
+    let local = match discharge with
+      | DoDischarge -> "Let "
+      | NoDischarge -> ""
+    in
     return (
-      hov 1 (pr_statement (pr_thm_token ki) (List.hd l) ++
-             prlist (pr_statement (spc () ++ keyword "with")) (List.tl l))
+      hov 2 (str local ++ keyword (string_of_defined_logical_kind kind) ++ spc () ++
+             prlist_with_sep (fun _ -> fnl () ++ keyword "with"
+                                       ++ spc ()) pr_rec_definition recs)
     )
 
   | VernacEndProof Admitted ->
@@ -933,32 +915,6 @@ let pr_synpure_vernac_expr v =
       (prlist (fun ind -> fnl() ++ hov 1 (pr_oneind "with" ind)) (List.tl l))
     )
 
-  | VernacFixpoint (local, (rec_order, recs)) ->
-    let local = match local with
-      | DoDischarge -> "Let "
-      | NoDischarge -> ""
-    in
-    return (
-      hov 0 (str local ++ keyword "Fixpoint" ++ spc () ++
-             prlist_with_sep (fun _ -> fnl () ++ keyword "with"
-                                       ++ spc ()) pr_rec_definition (List.combine rec_order recs))
-    )
-
-  | VernacCoFixpoint (local, corecs) ->
-    let local = match local with
-      | DoDischarge -> keyword "Let" ++ spc ()
-      | NoDischarge -> str ""
-    in
-    let pr_onecorec {fname; univs; binders; rtype; body_def; notations } =
-      pr_ident_decl (fname,univs) ++ spc() ++ pr_binders binders ++ spc() ++ str":" ++
-      spc() ++ pr_lconstr_expr rtype ++
-      pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_lconstr def) body_def ++
-      prlist pr_where_notation notations
-    in
-    return (
-      hov 0 (local ++ keyword "CoFixpoint" ++ spc() ++
-             prlist_with_sep (fun _ -> fnl() ++ keyword "with" ++ spc ()) pr_onecorec corecs)
-    )
   | VernacScheme l ->
     return (
       hov 2 (keyword "Scheme" ++ spc() ++

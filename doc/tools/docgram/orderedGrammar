@@ -461,10 +461,6 @@ pattern0: [
 | string
 ]
 
-fix_definition: [
-| ident_decl LIST0 binder OPT fixannot OPT ( ":" type ) OPT [ ":=" term ] OPT decl_notations
-]
-
 thm_token: [
 | "Theorem"
 | "Lemma"
@@ -475,9 +471,24 @@ thm_token: [
 | "Property"
 ]
 
-def_body: [
-| LIST0 binder OPT ( ":" type ) ":=" OPT reduce term
-| LIST0 binder ":" type
+logical_token: [
+| thm_token
+| "Definition"
+| "Example"
+| "Let"
+| "Fixpoint"
+| "CoFixpoint"
+| "Let" "Fixpoint"
+| "Let" "CoFixpoint"
+]
+
+declaration_body: [
+| ident_decl LIST0 binder OPT fixannot decl_body OPT decl_notations
+]
+
+decl_body: [
+| OPT ( ":" type ) ":=" OPT reduce term
+| ":" type
 ]
 
 reduce: [
@@ -568,10 +579,6 @@ import_categories: [
 
 filtered_import: [
 | qualid OPT [ "(" LIST1 ( qualid OPT [ "(" ".." ")" ] ) SEP "," ")" ]
-]
-
-cofix_definition: [
-| ident_decl LIST0 binder OPT ( ":" type ) OPT [ ":=" term ] OPT decl_notations
 ]
 
 rw_pattern: [
@@ -893,7 +900,7 @@ command: [
 | "Ltac" tacdef_body LIST0 ( "with" tacdef_body )
 | "Print" "Ltac" "Signatures"
 | "Print" "Firstorder" "Solver"
-| "Function" fix_definition LIST0 ( "with" fix_definition )
+| "Function" declaration_body LIST0 ( "with" declaration_body )
 | "Functional" "Scheme" func_scheme_def LIST0 ( "with" func_scheme_def )
 | "Functional" "Case" func_scheme_def      (* funind plugin *)
 | "Generate" "graph" "for" qualid      (* funind plugin *)
@@ -906,18 +913,12 @@ command: [
 | "Declare" "Right" "Step" one_term
 | "Number" "Notation" qualid qualid qualid OPT ( "(" LIST1 number_modifier SEP "," ")" ) ":" scope_name
 | "String" "Notation" qualid qualid qualid OPT ( "(" number_string_via ")" ) ":" scope_name
-| "SubClass" ident_decl def_body
-| thm_token ident_decl LIST0 binder ":" type LIST0 [ "with" ident_decl LIST0 binder ":" type ]
 | assumption_token OPT ( "Inline" OPT ( "(" natural ")" ) ) [ assumpt | LIST1 ( "(" assumpt ")" ) ]
-| [ "Definition" | "Example" ] ident_decl def_body
 | [ "Symbol" | "Symbols" ] [ assumpt | LIST1 ( "(" assumpt ")" ) ]
-| "Let" ident_decl def_body
+| "Variant" ident_decl LIST0 binder OPT [ "|" LIST0 binder ] OPT [ ":" type ] ":=" OPT "|" LIST1 constructor SEP "|" OPT decl_notations
 | "Inductive" inductive_definition LIST0 ( "with" inductive_definition )
+| thm_token declaration_body LIST0 ( "with" declaration_body )
 | "Inductive" record_definition LIST0 ( "with" record_definition )
-| "Fixpoint" fix_definition LIST0 ( "with" fix_definition )
-| "Let" "Fixpoint" fix_definition LIST0 ( "with" fix_definition )
-| "CoFixpoint" cofix_definition LIST0 ( "with" cofix_definition )
-| "Let" "CoFixpoint" cofix_definition LIST0 ( "with" cofix_definition )
 | "Scheme" OPT ( ident ":=" ) scheme_kind LIST0 ( "with" OPT ( ident ":=" ) scheme_kind )
 | "Scheme" OPT "Boolean" "Equality" "for" reference
 | "Combined" "Scheme" ident "from" LIST1 ident SEP ","
@@ -929,9 +930,14 @@ command: [
 | "Universes" LIST1 ident
 | "Constraint" LIST1 univ_constraint SEP ","
 | "Rewrite" [ "Rule" | "Rules" ] ident ":=" OPT "|" LIST1 rewrite_rule SEP "|"
+| [ "Definition" | "Example" ] declaration_body LIST0 ( "with" declaration_body )
+| "Let" declaration_body LIST0 ( "with" declaration_body )
+| "Fixpoint" declaration_body LIST0 ( "with" declaration_body )
+| "CoFixpoint" declaration_body LIST0 ( "with" declaration_body )
+| "Let" "Fixpoint" declaration_body LIST0 ( "with" declaration_body )
+| "Let" "CoFixpoint" declaration_body LIST0 ( "with" declaration_body )
 | "CoInductive" inductive_definition LIST0 ( "with" inductive_definition )
 | "CoInductive" record_definition LIST0 ( "with" record_definition )
-| "Variant" ident_decl LIST0 binder OPT [ "|" LIST0 binder ] OPT [ ":" type ] ":=" OPT "|" LIST1 constructor SEP "|" OPT decl_notations
 | [ "Record" | "Structure" ] record_definition
 | "Class" record_definition
 | "Class" ident_decl LIST0 binder OPT [ ":" sort ] ":=" constructor
@@ -950,9 +956,9 @@ command: [
 | "Transparent" OPT "!" LIST1 reference
 | "Opaque" OPT "!" LIST1 reference
 | "Strategy" LIST1 [ strategy_level "[" LIST1 reference "]" ]
-| "Canonical" OPT "Structure" ident_decl def_body
+| "Canonical" OPT "Structure" ident_decl LIST0 binder decl_body
 | "Canonical" OPT "Structure" reference
-| "Coercion" ident_decl def_body
+| "Coercion" ident_decl LIST0 binder decl_body
 | "Identity" "Coercion" ident ":" coercion_class ">->" coercion_class
 | "Coercion" reference OPT [ ":" coercion_class ">->" coercion_class ]
 | "Context" LIST1 binder
@@ -996,6 +1002,7 @@ command: [
 | "Print" "Ltac2" "Signatures"      (* ltac2 plugin *)
 | "Ltac2" "Check" ltac2_expr      (* ltac2 plugin *)
 | "Ltac2" "Globalize" ltac2_expr      (* ltac2 plugin *)
+| "SubClass" ident_decl decl_body
 | "Hint" "Resolve" LIST1 [ qualid | one_term ] OPT hint_info OPT ( ":" LIST1 ident )
 | "Hint" "Resolve" [ "->" | "<-" ] LIST1 qualid OPT natural OPT ( ":" LIST1 ident )
 | "Hint" "Immediate" LIST1 [ qualid | one_term ] OPT ( ":" LIST1 ident )

@@ -96,18 +96,19 @@ a type, which is the type of its :term:`body`.
 A formal presentation of constants and environments is given in
 Section :ref:`typing-rules`.
 
-.. cmd:: {| Definition | Example } @ident_decl @def_body
+.. cmd:: {| Definition | Example } @declaration_body {* with @declaration_body }
    :name: Definition; Example
 
-   .. insertprodn def_body reduce
+   .. insertprodn declaration_body reduce
 
    .. prodn::
-      def_body ::= {* @binder } {? : @type } := {? @reduce } @term
-      | {* @binder } : @type
+      declaration_body ::= @ident_decl {* @binder } {? @fixannot } @decl_body {? @decl_notations }
+      decl_body ::= {? : @type } := {? @reduce } @term
+      | : @type
       reduce ::= Eval @red_expr in
 
-   This binds :n:`@term` to the name :n:`@ident` in the global environment,
-   provided that :n:`@term` is well-typed.
+   This binds each :n:`@term` in :n:`decl_body` to the respective name :n:`@ident_decl`
+   in the global environment, provided that :n:`@term` is well-typed.
 
    If :n:`@type` is specified, the command checks that the type of :n:`@term`
    is definitionally equal to :n:`@type`.
@@ -118,9 +119,20 @@ Section :ref:`typing-rules`.
    If :n:`@reduce` is present then :n:`@ident` is bound to the result of the specified
    computation on :n:`@term`.
 
+   If :n:`@fixannot` is present, the definition is supposed to be
+   recursive and the command behaves as if a :cmd:`Fixpoint`.
+
+   If :n:`@decl_notation` is present, a notation is defined at the same time
+   (see :ref:`simultaneous-definition-and-notation`).
+
    If :n:`@term` is omitted, :n:`@type` is required and Rocq enters proof mode.
    This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
    In this case, the proof should normally be terminated with :cmd:`Defined`. See :ref:`proof-editing-mode`.
+
+   When several declaration bodies are given, the command declares a
+   recursive definition as if using :cmd:`Fixpoint` or
+   :cmd:`CoFixpoint`, trying to decide automatically if the recursion
+   is guarded inductively or coinductively.
 
    The attributes :attr:`local`, :attr:`universes(polymorphic)`,
    :attr:`program` (see :ref:`program_definition`), :attr:`canonical`,
@@ -147,7 +159,7 @@ Assertions cause Rocq to enter :term:`proof mode` (see :ref:`proofhandling`).
 Common tactics are described in the :ref:`writing-proofs` chapter.
 The basic assertion command is:
 
-.. cmd:: @thm_token @ident_decl {* @binder } : @type {* with @ident_decl {* @binder } : @type }
+.. cmd:: @thm_token @declaration_body {* with @declaration_body }
    :name: Theorem; Lemma; Fact; Remark; Corollary; Proposition; Property
 
    .. insertprodn thm_token thm_token
@@ -185,7 +197,7 @@ The basic assertion command is:
    command :cmd:`Guarded`.
 
    The attributes :attr:`local`, :attr:`universes(polymorphic)`,
-   :attr:`program` (see :ref:`program_lemma`),
+   :attr:`program` (see :ref:`program_lemma`), :attr:`canonical`,
    :attr:`bypass_check(universes)`, :attr:`bypass_check(guard)`, :attr:`deprecated`,
    :attr:`warn` and :attr:`using` are accepted.
 

@@ -43,7 +43,7 @@ module Vernac_ =
     let syntax = Entry.make "syntax_command"
     let vernac_control = Entry.make "vernac_control"
     let inductive_or_record_definition = Entry.make "inductive_or_record_definition"
-    let fix_definition = Entry.make "fix_definition"
+    let declaration_body = Entry.make "declaration_body"
     let red_expr = Entry.make "red_expr"
     let hint_info = Entry.make "hint_info"
     (* Main vernac entry *)

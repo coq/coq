@@ -457,12 +457,7 @@ This section describes the primitive form of definition by recursion over
 inductive objects. See the :cmd:`Function` command for more advanced
 constructions.
 
-.. cmd:: Fixpoint @fix_definition {* with @fix_definition }
-
-   .. insertprodn fix_definition fix_definition
-
-   .. prodn::
-      fix_definition ::= @ident_decl {* @binder } {? @fixannot } {? : @type } {? := @term } {? @decl_notations }
+.. cmd:: Fixpoint @declaration_body {* with @declaration_body }
 
    Allows defining functions by pattern matching over inductive
    objects using a fixed point construction.

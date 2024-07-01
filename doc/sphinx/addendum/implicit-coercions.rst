@@ -146,11 +146,11 @@ Coercion Classes
 ----------------
 
 .. cmd:: Coercion @reference {? : @coercion_class >-> @coercion_class }
-         Coercion @ident_decl @def_body
+         Coercion @ident_decl {* @binder } @decl_body
 
   The first form declares the construction denoted by :token:`reference` as a coercion between
   the two given classes.  The second form defines :token:`ident_decl`
-  just like :cmd:`Definition` :n:`@ident_decl @def_body`
+  just like :cmd:`Definition` :n:`@ident_decl @decl_body`
   and then declares :token:`ident_decl` as a coercion between it source and its target.
   Both forms support the :attr:`local` attribute, which makes the coercion local to the current section.
 
@@ -255,7 +255,7 @@ type of the assumption to do so.  See :n:`@of_type`.
    .. exn:: @coercion_class must be a transparent constant.
       :undocumented:
 
-   .. cmd:: SubClass @ident_decl @def_body
+   .. cmd:: SubClass @ident_decl @decl_body
 
       If :n:`@type` is a coercion class :n:`@ident'` applied to some arguments then
       :n:`@ident` is defined and an identity coercion of name

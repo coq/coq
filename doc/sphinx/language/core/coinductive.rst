@@ -149,12 +149,7 @@ corecursion. It is the local counterpart of the :cmd:`CoFixpoint` command. When
 Top-level definitions of corecursive functions
 -----------------------------------------------
 
-.. cmd:: CoFixpoint @cofix_definition {* with @cofix_definition }
-
-   .. insertprodn cofix_definition cofix_definition
-
-   .. prodn::
-      cofix_definition ::= @ident_decl {* @binder } {? : @type } {? := @term } {? @decl_notations }
+.. cmd:: CoFixpoint @declaration_body {* with @declaration_body }
 
    This command introduces a method for constructing an infinite object of a
    coinductive type. For example, the stream containing all natural numbers can

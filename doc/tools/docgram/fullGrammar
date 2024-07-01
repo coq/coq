@@ -885,19 +885,13 @@ subprf_with_selector: [
 ]
 
 gallina: [
-| thm_token ident_decl binders ":" lconstr LIST0 [ "with" ident_decl binders ":" lconstr ]
 | assumption_token inline assum_list
 | assumptions_token inline assum_list
-| def_token ident_decl def_body
 | "Symbol" assum_list
 | "Symbols" assum_list
-| "Let" ident_decl def_body
 | finite_token inductive_or_record_definition
 | inductive_token LIST1 inductive_or_record_definition SEP "with"
-| "Fixpoint" LIST1 fix_definition SEP "with"
-| "Let" "Fixpoint" LIST1 fix_definition SEP "with"
-| "CoFixpoint" LIST1 cofix_definition SEP "with"
-| "Let" "CoFixpoint" LIST1 cofix_definition SEP "with"
+| logical_token LIST1 declaration_body SEP "with"
 | "Scheme" LIST1 scheme SEP "with"
 | "Scheme" "Equality" "for" smart_global
 | "Scheme" "Boolean" "Equality" "for" smart_global
@@ -931,6 +925,16 @@ def_token: [
 | "Definition"
 | "Example"
 | "SubClass"
+]
+
+logical_token: [
+| thm_token
+| def_token
+| "Let"
+| "Fixpoint"
+| "CoFixpoint"
+| "Let" "Fixpoint"
+| "Let" "CoFixpoint"
 ]
 
 assumption_token: [
@@ -1005,10 +1009,14 @@ finite_token: [
 | "Class"
 ]
 
-def_body: [
-| binders ":=" reduce lconstr
-| binders ":" lconstr ":=" reduce lconstr
-| binders ":" lconstr
+declaration_body: [
+| ident_decl binders_fixannot decl_body decl_notations
+]
+
+decl_body: [
+| ":=" reduce lconstr
+| ":" lconstr ":=" reduce lconstr
+| ":" lconstr
 ]
 
 reduce: [
@@ -1055,14 +1063,6 @@ default_inhabitant_ident: [
 opt_coercion: [
 | ">"
 |
-]
-
-fix_definition: [
-| ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notations
-]
-
-cofix_definition: [
-| ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notations
 ]
 
 rw_pattern: [
@@ -1162,9 +1162,9 @@ gallina_ext: [
 | "Transparent" OPT "!" LIST1 smart_global
 | "Opaque" OPT "!" LIST1 smart_global
 | "Strategy" LIST1 [ strategy_level "[" LIST1 smart_global "]" ]
-| "Canonical" OPT "Structure" global OPT [ OPT univ_decl def_body ]
+| "Canonical" OPT "Structure" global OPT [ OPT univ_decl binders decl_body ]
 | "Canonical" OPT "Structure" by_notation
-| "Coercion" global OPT [ OPT univ_decl def_body ]
+| "Coercion" global OPT [ OPT univ_decl binders decl_body ]
 | "Identity" "Coercion" identref ":" coercion_class ">->" coercion_class
 | "Coercion" global ":" coercion_class ">->" coercion_class
 | "Coercion" by_notation ":" coercion_class ">->" coercion_class
@@ -2009,7 +2009,7 @@ with_names: [
 ]
 
 function_fix_definition: [
-| Vernac.fix_definition      (* funind plugin *)
+| Vernac.declaration_body      (* funind plugin *)
 ]
 
 fun_scheme_arg: [
