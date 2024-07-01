@@ -194,3 +194,5 @@ type ('q, 'u) pattern =
   | PSProp | PSSProp | PSSet | PSType of 'u | PSQSort of 'q * 'u
 
 val pattern_match : (int option, int option) pattern -> t -> ('t, Quality.t, Univ.Level.t) Partial_subst.t -> ('t, Quality.t, Univ.Level.t) Partial_subst.t option
+
+val relevance_match : int option -> relevance -> ('t, Quality.t, 'u) Partial_subst.t -> ('t, Quality.t, 'u) Partial_subst.t

@@ -1787,17 +1787,19 @@ and match_head : 'a. ('a, 'a patstate) reduction -> _ -> _ -> pat_state:(fconstr
     let tysbodyelims, states = extract_or_kill2 (function [@ocaml.warning "-4"] (PHProd (ptys, pbod), es), psubst when Array.length ptys <= na -> Some ((ptys, pbod, es), psubst) | _ -> None) patterns states in
     let na = Array.fold_left (Status.fold_left (fun a (p1, _, _) -> min a (Array.length p1))) na tysbodyelims in
     assert (na > 0);
-    let ptys, pbody, elims, states = extract_or_kill4 (fun ((ptys, pbod, elims), psubst) ->
-        let npp = Array.length ptys in
-        if npp == na then Some (ptys, pbod, elims, psubst) else
-        let fst, lst = Array.chop na ptys in
-        Some (fst, ERigid (PHProd (lst, pbod), []), elims, psubst)
-      ) tysbodyelims states
-    in
-
     let ntys, body = Term.decompose_prod_n (na-1) body in
     let ctx1 = List.map (fun (n, ty) -> Context.Rel.Declaration.LocalAssum (n, ty)) ntys |> subst_context e in
     let ctx = ctx1 @ [Context.Rel.Declaration.LocalAssum (n, term_of_fconstr ty)] in
+    let rels = Array.rev_of_list ctx |> Array.map (fun decl -> RelDecl.get_relevance decl) in
+    let ptys, pbody, elims, states = extract_or_kill4 (fun ((ptys, pbod, elims), psubst) ->
+        let npp = Array.length ptys in
+        let fst, lst = Array.chop na ptys in
+        let psubst, ptys = Array.fold_left2_map (fun psubst (io, pty) rel -> { psubst with subst = Sorts.relevance_match io rel psubst.subst }, pty) psubst fst rels in
+        if npp == na then Some (ptys, pbod, elims, psubst) else
+        Some (ptys, ERigid (PHProd (lst, pbod), []), elims, psubst)
+      ) tysbodyelims states
+    in
+
     let ntys'' = List.mapi (fun n (_, t) -> mk_clos (usubs_liftn n e) t) (List.rev ntys) in
     let tys = Array.of_list (ty :: ntys'') in
     let contexts_upto = Array.init na (fun i -> List.lastn i ctx @ context) in
@@ -1809,18 +1811,20 @@ and match_head : 'a. ('a, 'a patstate) reduction -> _ -> _ -> pat_state:(fconstr
     let tysbodyelims, states = extract_or_kill2 (function [@ocaml.warning "-4"] (PHLambda (ptys, pbod), es), psubst when Array.length ptys <= na -> Some ((ptys, pbod, es), psubst) | _ -> None) patterns states in
     let na = Array.fold_left (Status.fold_left (fun a (p1, _, _) -> min a (Array.length p1))) na tysbodyelims in
     assert (na > 0);
-    let ptys, pbody, elims, states = extract_or_kill4 (fun ((ptys, pbod, elims), psubst) ->
-      let np = Array.length ptys in
-      if np == na then Some (ptys, ERigid pbod, elims, psubst) else
-      let fst, lst = Array.chop na ptys in
-      Some (fst, ERigid (PHLambda (lst, pbod), []), elims, psubst)
-      ) tysbodyelims states
-    in
     let ntys, tys' = List.chop na ntys in
     let body = Term.compose_lam (List.rev tys') body in
     let ctx = List.rev_map (fun (n, ty) -> Context.Rel.Declaration.LocalAssum (n, ty)) ntys |> subst_context e in
     let tys = Array.of_list ntys in
+    let rels = Array.map (fun (na, _) -> na.binder_relevance) tys in
     let tys = Array.mapi (fun n (_, t) -> mk_clos (usubs_liftn n e) t) tys in
+    let ptys, pbody, elims, states = extract_or_kill4 (fun ((ptys, pbod, elims), psubst) ->
+      let np = Array.length ptys in
+      let fst, lst = Array.chop na ptys in
+      let psubst, ptys = Array.fold_left2_map (fun psubst (io, pty) rel -> { psubst with subst = Sorts.relevance_match io rel psubst.subst }, pty) psubst fst rels in
+      if np == na then Some (ptys, ERigid pbod, elims, psubst) else
+      Some (ptys, ERigid (PHLambda (lst, pbod), []), elims, psubst)
+      ) tysbodyelims states
+    in
     let contexts_upto = Array.init na (fun i -> List.lastn i ctx @ context) in
     let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
     let loc = LocArg { patterns = pbody; context = ctx @ context; arg = mk_clos (usubs_liftn na e) body; next = loc } in

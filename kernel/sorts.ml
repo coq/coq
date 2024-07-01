@@ -519,3 +519,12 @@ let pattern_match ps s qusubst =
   | PSType uio, Type u -> Some (Partial_subst.maybe_add_univ uio (extract_level u) qusubst)
   | PSQSort (qio, uio), s -> Some (qusubst |> Partial_subst.maybe_add_quality qio (quality s) |> Partial_subst.maybe_add_univ uio (extract_sort_level s))
   | (PSProp | PSSProp | PSSet | PSType _), _ -> None
+
+let quality_of_relevance =
+  let open Quality in function
+  | Relevant -> QConstant QType
+  | Irrelevant -> QConstant QSProp
+  | RelevanceVar q -> QVar q
+
+let relevance_match io r qusubst =
+  Partial_subst.maybe_add_quality io (quality_of_relevance r) qusubst

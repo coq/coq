@@ -921,6 +921,27 @@ let universes_of_constr ?(init=Sorts.QVar.Set.empty,Univ.Level.Set.empty) sigma 
   in
   aux init c
 
+let relevances_of_constr sigma c =
+  let add_relevance sigma qs r =
+    let open Sorts in
+    (* NB this normalizes above_prop to Relevant which makes it disappear *)
+    match ERelevance.kind sigma r with
+    | Irrelevant | Relevant -> qs
+    | RelevanceVar q -> QVar.Set.add q qs
+  in
+  let keep a x = a in
+  let visit = Vars.{
+    visit_sort = keep;
+    visit_instance = keep;
+    visit_relevance = add_relevance sigma }
+  in
+  let rec aux s c =
+    let kc = kind sigma c in
+    let s = Vars.visit_kind_univs visit s kc in
+    fold sigma aux s c
+  in
+  aux Sorts.QVar.Set.empty c
+
 open Context
 open Environ
 

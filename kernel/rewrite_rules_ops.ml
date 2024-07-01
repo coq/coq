@@ -1079,7 +1079,7 @@ let rec typecheck_pattern env evd = function
       evd, make_judge (mkFloat f) (Typeops.type_of_float env)
   | PString s ->
       evd, make_judge (mkString s) (Typeops.type_of_string env)
-  | PLambda (na, argty, (argq, argu), bod) ->
+  | PLambda ((na, _), argty, (argq, argu), bod) ->
       let evd = evd |> ExtraEnv.add_quality argq ~bound:false |> ExtraEnv.add_universe argu ~bound:false in
       let evd, argtyj = typecheck_arg_pattern env evd (mkSort @@ mk_sort_qvar argq argu, Relevant) argty in
       let decl = Context.Rel.Declaration.LocalAssum (Context.make_annot na (Sorts.RelevanceVar argq), j_val argtyj) in
@@ -1089,7 +1089,7 @@ let rec typecheck_pattern env evd = function
       let tm = Term.mkLambda_or_LetIn decl (j_val bodj) in
       let ty = Term.mkProd_or_LetIn decl (j_type bodj) in
       evd, make_judge tm ty
-  | PProd (na, domty, (domq, domu), codty, (codq, codu), retu) ->
+  | PProd ((na, _), domty, (domq, domu), codty, (codq, codu), retu) ->
       let evd = evd |> ExtraEnv.add_quality domq ~bound:false |> ExtraEnv.add_universe domu ~bound:false in
       let doms = mk_sort_qvar domq domu in
       let evd, domtyj = typecheck_arg_pattern env evd (mkSort doms, Relevant) domty in
@@ -1778,8 +1778,8 @@ let update_invtblu1 ~(alg:bool) lvl (curvaru, alg_vars, tbl) =
     | Some k ->
         raise (PatternTranslationError (DuplicateUVar (lvl, k, curvaru))))
 
-let update_invtblq1 qvar (curvarq, tbl) =
-  curvarq, (succ curvarq, tbl |> QVar.Map.update qvar @@ function
+let update_invtblq1 ~(rel:bool) qvar (curvarq, rel_vars, tbl) =
+  curvarq, (succ curvarq, rel :: rel_vars, tbl |> QVar.Map.update qvar @@ function
     | None -> Some curvarq
     | Some k as c when k = curvarq -> c
     | Some k ->
@@ -1789,7 +1789,7 @@ let translate_quality_pattern stateq = function
   | PQConstant _ as q -> stateq, q
   | PQVar (_, false) -> stateq, PQVar None
   | PQVar (qvar, true) ->
-      let qi, stateq = update_invtblq1 qvar stateq in
+      let qi, stateq = update_invtblq1 ~rel:false qvar stateq in
       stateq, PQVar (Some qi)
 
 let translate_instance (state, stateq, stateu) (q, u) =
@@ -1813,7 +1813,7 @@ let translate_sort_pattern (st, sq, su as state) = function
   | PSQSort ((q, patq), (lvl, patu)) ->
       let sq, bq =
         if patq then
-          let qi, sq = update_invtblq1 q sq in
+          let qi, sq = update_invtblq1 ~rel:false q sq in
           sq, Some qi
         else sq, None
       in
@@ -1824,6 +1824,13 @@ let translate_sort_pattern (st, sq, su as state) = function
         else su, None
       in
       (st, sq, su), PSQSort (bq, ba)
+
+let translate_quality_pattern (st, sq, su as state) q b =
+  if b then
+    let qi, sq = update_invtblq1 ~rel:true q sq in
+    (st, sq, su), Some qi
+  else
+    state, None
 
 
 let rec translate_pattern state = function
@@ -1843,15 +1850,17 @@ let rec translate_pattern state = function
   | PInt i -> state, (PHInt i, [])
   | PFloat f -> state, (PHFloat f, [])
   | PString s -> state, (PHString s, [])
-  | PLambda (_, arg, _, bod) ->
+  | PLambda ((_, b), arg, (q, _), bod) ->
+      let state, qi = translate_quality_pattern state q b in
       let state, arg = translate_arg_pattern state arg in
       let state, bod = translate_pattern state bod in
-      let lambda = begin match bod with PHLambda (args, bod), [] -> PHLambda (Array.append [|arg|] args, bod) | _ -> PHLambda ([|arg|], bod) end in
+      let lambda = begin match bod with PHLambda (args, bod), [] -> PHLambda (Array.append [|qi, arg|] args, bod) | _ -> PHLambda ([|qi, arg|], bod) end in
       state, (lambda, [])
-  | PProd (_, arg, _, bod, _, _) ->
+  | PProd ((_, b), arg, (q, _), bod, _, _) ->
+      let state, qi = translate_quality_pattern state q b in
       let state, arg = translate_arg_pattern state arg in
       let state, bod = translate_arg_pattern state bod in
-      let prod = begin match bod with ERigid (PHProd (args, bod), []) -> PHProd (Array.append [|arg|] args, bod) | _ -> PHProd ([|arg|], bod) end in
+      let prod = begin match bod with ERigid (PHProd (args, bod), []) -> PHProd (Array.append [|qi, arg|] args, bod) | _ -> PHProd ([|qi, arg|], bod) end in
       state, (prod, [])
   | PApp (f, arg, _, _) ->
       let state, (head, elims) = translate_pattern state f in
@@ -1905,18 +1914,20 @@ let make_usubst (qvmap, uvmap) : UVars.sort_level_subst =
   let usubst = Level.Map.map Level.var uvmap in
   qsubst, usubst
 
-let test_qvar env nvarqs q =
+let test_qvar env nvarqs rel_vars ~rel q =
   match Sorts.QVar.var_index q with
   | Some n when n < 0 || n > nvarqs -> CErrors.anomaly Pp.(str "Unknown sort variable in rewrite rule.")
-  | Some _ -> ()
+  | Some k ->
+      if not rel && rel_vars.(k) then CErrors.anomaly Pp.(str "Error: relevance qvar appears in non relevance")
   | None ->
       if not @@ Sorts.QVar.Set.mem q env.env_qualities then
         raise (PatternTranslationError (UnknownQVar q))
 
-let test_level env nvarus lvl =
+let test_level env nvarus alg_vars ~sort lvl =
   match Univ.Level.var_index lvl with
   | Some n when n < 0 || n > nvarus -> CErrors.anomaly Pp.(str "Unknown universe level variable in rewrite rule")
-  | Some _ -> ()
+  | Some k ->
+      if not sort && alg_vars.(k) then CErrors.anomaly Pp.(str "Error: algebraic universe appears in instance")
   | None ->
       match UGraph.check_declared_universes (Environ.universes env) (Univ.Level.Set.singleton lvl) with
       | Ok () -> ()
@@ -1927,16 +1938,15 @@ let test_level env nvarus lvl =
 
 
 let translate_rewrite_rule env { pattern; replacement; info=Info info } =
-  let empty_state = ((1, Evar.Map.empty), (0, QVar.Map.empty), (0, [], Level.Map.empty)) in
+  let empty_state = ((1, Evar.Map.empty), (0, [], QVar.Map.empty), (0, [], Level.Map.empty)) in
   let state, lhs_pat = translate_pattern empty_state pattern in
-  let (nvars, evmap), (nvarqs, qvmap), (nvarus, _, uvmap) = state in
+  let (nvars, evmap), (nvarqs, rel_vars, qvmap), (nvarus, alg_vars, uvmap) = state in
+  let rel_vars = Array.rev_of_list rel_vars and alg_vars = Array.rev_of_list alg_vars in
   let rhs = evar_subst evmap info.evar_map 0 replacement in
   let usubst = make_usubst (qvmap, uvmap) in
   let rhs = Vars.subst_univs_level_constr usubst rhs in
   let () =
-    let qs, us = Vars.sort_and_universes_of_constr rhs in
-    Sorts.QVar.Set.iter (test_qvar env nvarqs) qs;
-    Univ.Level.Set.iter (test_level env nvarqs) us
+    Vars.test_sort_and_universes (test_qvar env nvarqs rel_vars) (test_level env nvarus alg_vars) rhs
   in
   let symb, head_umask, elims = match lhs_pat with
     | (PHSymbol (symb, mask), elims) -> symb, mask, elims

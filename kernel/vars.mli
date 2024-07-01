@@ -218,6 +218,9 @@ val visit_kind_univs : ('acc, 'sort, 'instance, 'relevance) univ_visitor ->
   (_, _, 'sort, 'instance, 'relevance) Constr.kind_of_term ->
   'acc
 
+val test_sort_and_universes :
+  (rel:bool -> Sorts.QVar.t -> unit) -> (sort:bool -> Univ.Level.t -> unit) -> types -> unit
+
 (** {3 Low-level cached lift type} *)
 
 type substituend

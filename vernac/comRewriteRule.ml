@@ -65,6 +65,40 @@ let do_symbols ~poly ~unfold_fix l =
 
 open Declarations
 
+let rec find_qvars_pattern evd qvars pat =
+  let module QSet = Sorts.QVar.Set in
+  match pat with
+  | PRel _ | PSort _ | PSymbol _ | PInd _ | PConstr _ | PInt _ | PFloat _ | PString _ -> qvars, pat
+  | PLambda ((na, b), arg, (q, _ as tyannot), bod) ->
+      assert (not b);
+      let b = QSet.mem q qvars in
+      let qvars = if b then QSet.remove q qvars else qvars in
+      let qvars, arg = find_qvars_argpattern evd qvars arg in
+      let qvars, bod = find_qvars_pattern evd qvars bod in
+      qvars, PLambda ((na, b), arg, tyannot, bod)
+  | PProd ((na, b), arg, (q, _ as domannot), bod, codomannot, retu) ->
+      assert (not b);
+      let b = QSet.mem q qvars in
+      let qvars = if b then QSet.remove q qvars else qvars in
+      let qvars, arg = find_qvars_argpattern evd qvars arg in
+      let qvars, bod = find_qvars_argpattern evd qvars bod in
+      qvars, PProd ((na, b), arg, domannot, bod, codomannot, retu)
+  | PApp (f, arg, annot, annot') ->
+      let qvars, f = find_qvars_pattern evd qvars f in
+      let qvars, arg = find_qvars_argpattern evd qvars arg in
+      qvars, PApp (f, arg, annot, annot')
+  | PCase (c, ind, annot, ((retnas, ret), retannot), brs) ->
+      let qvars, c = find_qvars_pattern evd qvars c in
+      let qvars, ret = find_qvars_argpattern evd qvars ret in
+      let qvars, brs = Array.fold_left_map (fun qvars (nas, br) -> let qvars, br = find_qvars_argpattern evd qvars br in qvars, (nas, br)) qvars brs in
+      qvars, PCase (c, ind, annot, ((retnas, ret), retannot), brs)
+  | PProj (c, p, r) ->
+      let qvars, c = find_qvars_pattern evd qvars c in
+      qvars, PProj (c, p, r)
+and find_qvars_argpattern evd qvars pat =
+  match pat with
+  | PVar _ -> qvars, pat
+  | Pat p -> let qvars, p = find_qvars_pattern evd qvars p in qvars, (Pat p)
 
 let warn_rewrite_rules_break_SR = "rewrite-rules-break-SR"
 
@@ -133,6 +167,12 @@ let interp_rule (pattern, rhs) =
   let evd = Evd.recheck_failures ~fail checker evd in
 
   let evd = Evd.minimize_universes evd in
+
+  let rem_qvars = EConstr.relevances_of_constr evd rhs in
+  let already_matched = Sorts.QVar.Map.filter (fun _ b -> b) rr_info.qualities |> Sorts.QVar.Map.domain in
+  let rem_qvars = Sorts.QVar.Set.diff rem_qvars already_matched in
+
+  let rem_qvars, pattern = if Sorts.QVar.Set.is_empty rem_qvars then rem_qvars, pattern else find_qvars_pattern evd rem_qvars pattern in
 
   let fail pp = warn_rewrite_rules_break_SR ~loc:rhs_loc Pp.(str "universe inconsistency, missing constraints: " ++ pp) in
   let () = UState.check_uctx_impl ~fail uctx_pre (Evd.ustate evd) in

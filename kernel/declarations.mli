@@ -311,8 +311,8 @@ type pattern =
   | PInt     of Uint63.t
   | PFloat   of Float64.t
   | PString  of Pstring.t
-  | PLambda  of Name.t * arg_pattern * (Sorts.QVar.t * Univ.Level.t) * pattern
-  | PProd    of Name.t * arg_pattern * (Sorts.QVar.t * Univ.Level.t) * arg_pattern * (Sorts.QVar.t * Univ.Level.t) * Univ.Level.t
+  | PLambda  of (Name.t * bool) * arg_pattern * (Sorts.QVar.t * Univ.Level.t) * pattern
+  | PProd    of (Name.t * bool) * arg_pattern * (Sorts.QVar.t * Univ.Level.t) * arg_pattern * (Sorts.QVar.t * Univ.Level.t) * Univ.Level.t
   | PApp     of pattern * arg_pattern * (Evar.t * Sorts.QVar.t * Univ.Level.t) * (Evar.t * Sorts.QVar.t * Univ.Level.t)
   | PCase    of pattern * inductive * (Sorts.QVar.t array * Univ.Level.t array * Evar.t array) * ((Name.t array * arg_pattern) * (Sorts.QVar.t * Univ.Level.t)) * (Name.t array * arg_pattern) array
   | PProj    of pattern * Projection.Repr.t * (Sorts.QVar.t array * Univ.Level.t array * Evar.t array)
@@ -357,8 +357,8 @@ type head_pattern =
   | PHInt     of Uint63.t
   | PHFloat   of Float64.t
   | PHString  of Pstring.t
-  | PHLambda  of pattern_argument array * head_elimination
-  | PHProd    of pattern_argument array * pattern_argument
+  | PHLambda  of (int option * pattern_argument) array * head_elimination
+  | PHProd    of (int option * pattern_argument) array * pattern_argument
 
 and pattern_elimination =
   | PEApp     of pattern_argument array

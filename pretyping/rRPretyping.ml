@@ -542,7 +542,7 @@ and pretype_lambda (name, bk, c1, c2) =
 
   let evd, sigma, pb, jb = eval_pretyper_pattern env' evd sigma c2 in
   let resj = make_judge (mkLambda (binder, jty.uj_val, jb.uj_val)) (mkProd (binder, jty.uj_val, jb.uj_type)) in
-  evd, sigma, PLambda (binder.binder_name, pty, (q, u), pb), resj
+  evd, sigma, PLambda ((binder.binder_name, false), pty, (q, u), pb), resj
 
 and pretype_prod (name, bk, c1, c2) =
   fun ?loc env evd sigma ->
@@ -567,7 +567,7 @@ and pretype_prod (name, bk, c1, c2) =
   let evd, sigma, retu = new_universe env ?loc evd sigma () in
   let sigma = ExtraEnv.enforce_product_level !!env sdom scod retu sigma in
   let resj = make_judge (mkProd (binder, jdom.uj_val, jcod.uj_val)) (mkSort @@ Sorts.make (Sorts.quality scod) (Univ.Universe.make retu)) in
-  evd, sigma, PProd (binder.binder_name, pdom, (qdom, udom), pcod, (qcod, ucod), retu), resj
+  evd, sigma, PProd ((binder.binder_name, false), pdom, (qdom, udom), pcod, (qcod, ucod), retu), resj
 
 and pretype_letin (name, c1, t, c2) =
   fun ?loc env sigma ->

@@ -787,6 +787,10 @@ and cbv_match_arg_pattern_lift info env ctx n psubst p t =
   cbv_match_arg_pattern info env ctx psubst p
     (cbv_stack_term info TOP env t)
 
+and cbv_match_arg_pattern_rel_lift info env ctx n psubst (io, p) (na, t) =
+  let psubst = Sorts.relevance_match io na.Context.binder_relevance psubst in
+  cbv_match_arg_pattern_lift info env ctx n psubst p t
+
 and match_sort ps s subst =
   match Sorts.pattern_match ps s subst with
   | Some subst -> subst
@@ -830,7 +834,7 @@ and cbv_match_rigid_arg_pattern info env ctx psubst p t =
     let ctx' = apply_env_context env ctx' in
     let tys = Array.of_list ntys in
     let contexts_upto = Array.init np (fun i -> List.lastn i ctx' @ ctx) in
-    let psubst = Array.fold_left3_i (fun i psubst ctx pty (_, ty) -> cbv_match_arg_pattern_lift info env ctx i psubst pty ty) psubst contexts_upto ptys tys in
+    let psubst = Array.fold_left3_i (fun i psubst ctx iopty naty -> cbv_match_arg_pattern_rel_lift info env ctx i psubst iopty naty) psubst contexts_upto ptys tys in
     let psubst = cbv_match_arg_pattern_lift info env (ctx' @ ctx) np psubst (ERigid pbod) body in
     psubst
   | PHProd (ptys, pbod), PROD (na, ty, body, env) ->
@@ -844,7 +848,7 @@ and cbv_match_rigid_arg_pattern info env ctx psubst p t =
     let tys = Array.of_list ((na, ty) :: List.rev ntys) in
     let na = Array.length tys in
     let contexts_upto = Array.init na (fun i -> List.lastn i ctx' @ ctx) in
-    let psubst = Array.fold_left3_i (fun i psubst ctx pty (_, ty) -> cbv_match_arg_pattern_lift info env ctx i psubst pty ty) psubst contexts_upto ptys tys in
+    let psubst = Array.fold_left3_i (fun i psubst ctx iopty naty -> cbv_match_arg_pattern_rel_lift info env ctx i psubst iopty naty) psubst contexts_upto ptys tys in
     let psubst = cbv_match_arg_pattern_lift info env (ctx' @ ctx) na psubst pbod body in
     psubst
   | (PHInd _ | PHConstr _ | PHRel _ | PHInt _ | PHFloat _ | PHString _ | PHSort _ | PHSymbol _ | PHLambda _ | PHProd _), _ -> raise PatternFailure

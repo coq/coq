@@ -545,3 +545,48 @@ let sort_and_universes_of_constr ?init c =
 
 let universes_of_constr ?(init=Univ.Level.Set.empty) c =
   snd (sort_and_universes_of_constr ~init:(Sorts.QVar.Set.empty,init) c)
+
+let testing_visitor on_qvar on_uvar =
+  let test_sort_uvar u =
+    match Univ.Universe.level u with
+    | Some u -> on_uvar ~sort:true u
+    | None -> Univ.(Level.Set.iter (fun u -> on_uvar ~sort:false u) (Universe.levels u))
+  in
+
+  let test_sort () = function
+    | Sorts.Type u ->
+      test_sort_uvar u
+    | Sorts.QSort (q, u) ->
+      let () = on_qvar ~rel:false q in
+      test_sort_uvar u
+    | Sorts.(SProp | Prop | Set) -> ()
+  in
+
+  let test_relevance () =
+    let open Sorts in function
+    | Irrelevant | Relevant -> ()
+    | RelevanceVar q -> on_qvar ~rel:true q
+  in
+
+  let test_instance () u =
+    let qs, us = UVars.Instance.to_array u in
+    let () = Array.iter (fun q ->
+        let open Sorts.Quality in
+        match q with
+        | QVar q -> on_qvar ~rel:false q
+        | QConstant _ -> ())
+        qs
+    in
+    let () = Array.iter (fun u -> on_uvar ~sort:false u) us in
+    ()
+  in
+  { visit_sort=test_sort; visit_relevance=test_relevance; visit_instance=test_instance }
+
+
+let test_sort_and_universes on_qvar on_uvar c =
+  let visitor = testing_visitor on_qvar on_uvar in
+  let rec aux c =
+    let () = visit_kind_univs visitor () (kind c) in
+    Constr.iter aux c
+  in
+  aux c
