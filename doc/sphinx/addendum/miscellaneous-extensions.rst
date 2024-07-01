@@ -11,7 +11,7 @@ it provides the following command:
          Derive @open_binders SuchThat @type As @ident
 
    where :n:`@open_binders` declares a list of declarations of the form
-   :g:`@ident__i : @type__i` which can appear in :n:`@type`. This
+   :n:`@ident__i : @type__i` which can appear in :n:`@type`. This
    command opens a new proof presenting the user with a goal for
    :n:`@type` in which each name :n:`@ident__i` is bound to an
    existential variable :g:`?x__i` (formally, there are other goals
