@@ -117,6 +117,11 @@ let interp_statement ~program_mode env evd ~flags ~scope name bl typ  =
   let ids = List.map Context.Rel.Declaration.get_name ctx in
   evd, ids, EConstr.it_mkProd_or_LetIn t' ctx, imps @ imps'
 
+let opacity_of_logical_kind = function
+  | Decls.IsDefinition _ -> false
+  | IsProof p -> CErrors.user_err (str (Ppvernac.string_of_theorem_kind p) ++ str " declared with \":=\" requires a sealed/defined attribute.")
+  | _ -> assert false
+
 let do_definition ?hook ?pm ~program_mode ~name ?scope ?clearbody ~poly ?typing_flags ~kind ?using ?user_warns udecl bl red_option c ctypopt =
   let env = Global.env() in
   let env = Environ.update_typing_flags ?typing_flags env in
@@ -133,9 +138,11 @@ let do_definition ?hook ?pm ~program_mode ~name ?scope ?clearbody ~poly ?typing_
     let cinfo = Declare.CInfo.make ~name ~typ ~impargs () in
     Some (fst (Declare.Obls.add_definition ~pm ~info ~cinfo ~opaque:false ~body ~uctx ?using obls))
   | None ->
-    let cinfo = Declare.CInfo.make ~name ~impargs ~typ:types () in
+    let opaque = opacity_of_logical_kind kind in
+    let typ = match types with None when opaque -> Some (Retyping.get_type_of env evd body) | _ -> types in
+    let cinfo = Declare.CInfo.make ~name ~impargs ~typ () in
     let _ : Names.GlobRef.t =
-      Declare.declare_definition ~info ~cinfo ~opaque:false ~body ?using evd
+      Declare.declare_definition ~info ~cinfo ~opaque ~body ?using evd
     in None
 
 let do_definition_interactive ~program_mode ?hook ~name ~scope ?clearbody ~poly ~typing_flags ~kind ?using ?user_warns udecl bl t =

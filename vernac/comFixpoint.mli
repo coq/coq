@@ -50,5 +50,5 @@ val do_mutually_recursive
 
 val interp_fixpoint_short
   :  Constrexpr.fixpoint_order_expr option list
-  -> recursive_expr_gen list
+  -> definition_expr list
   -> Constr.types list * Evd.evar_map
