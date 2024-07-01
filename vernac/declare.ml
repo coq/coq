@@ -83,7 +83,7 @@ module Info = struct
     ; clearbody : bool (* always false for non Discharge scope *)
     ; hook : Hook.t option
     ; typing_flags : Declarations.typing_flags option
-    ; user_warns : UserWarn.t option
+    ; user_warns : Globnames.extended_global_reference UserWarn.with_qf option
     ; ntns : Metasyntax.notation_interpretation_decl list
     }
 
@@ -320,7 +320,7 @@ let is_local_constant c = Cset_env.mem c !local_csts
 type constant_obj = {
   cst_kind : Decls.logical_kind;
   cst_locl : Locality.import_status;
-  cst_warn : UserWarn.t option;
+  cst_warn : Globnames.extended_global_reference UserWarn.with_qf option;
 }
 
 let load_constant i ((sp,kn), obj) =

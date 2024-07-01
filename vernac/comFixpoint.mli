@@ -32,7 +32,7 @@ val do_mutually_recursive
   -> poly:bool
      (* Use universe polymorphism *)
   -> ?typing_flags:Declarations.typing_flags
-  -> ?user_warns:UserWarn.t
+  -> ?user_warns:Globnames.extended_global_reference UserWarn.with_qf
      (* Warnings and deprecations *)
   -> ?using:Vernacexpr.section_subset_expr
      (* Tell which section variables to use *)

@@ -13,6 +13,9 @@
 type t = Loc.t * Pp.t
 let make ~loc txt = loc, txt
 let pp (_,x) = x
+let pp_wloc (loc,x) =
+  let open Pp in
+  h (str "Replace " ++ Loc.pr loc ++ str " with " ++ x)
 let loc (l,_) = l
 
 let handle_stack = ref []
@@ -37,5 +40,5 @@ let print e =
   | [] -> mt ()
   | qf ->
     let open Pp in
-    let qf = prlist_with_sep cut pp qf in
+    let qf = prlist_with_sep cut pp_wloc qf in
     v 0 (prlist_with_sep cut (fun x -> x) [str "Quickfix:"; qf])

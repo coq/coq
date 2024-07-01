@@ -567,14 +567,14 @@ let pr_depr_xref xref =
 let pr_depr_ref ref = pr_depr_xref (TrueGlobal ref)
 
 let warn_deprecated_ref =
-  Deprecation.create_warning ~object_name:"Reference" ~warning_name_if_no_since:"deprecated-reference"
-    pr_depr_ref
+  Deprecation.create_warning_with_qf ~object_name:"Reference" ~warning_name_if_no_since:"deprecated-reference"
+  ~pp_qf:pr_depr_xref pr_depr_ref
 
 let pr_depr_abbrev a = pr_depr_xref (Abbrev a)
 
 let warn_deprecated_abbreviation =
-  Deprecation.create_warning ~object_name:"Notation" ~warning_name_if_no_since:"deprecated-syntactic-definition"
-    pr_depr_abbrev
+  Deprecation.create_warning_with_qf ~object_name:"Notation" ~warning_name_if_no_since:"deprecated-syntactic-definition"
+  ~pp_qf:pr_depr_xref pr_depr_abbrev
 
 let warn_deprecated_xref ?loc depr = function
   | Globnames.TrueGlobal ref -> warn_deprecated_ref ?loc (ref, depr)
@@ -583,12 +583,12 @@ let warn_deprecated_xref ?loc depr = function
 let warn_user_warn =
   UserWarn.create_warning ~warning_name_if_no_cats:"warn-reference" ()
 
-let is_warned_xref xref : UserWarn.t option = Globnames.ExtRefMap.find_opt xref !the_globwarntab
+let is_warned_xref xref : Globnames.extended_global_reference UserWarn.with_qf option = Globnames.ExtRefMap.find_opt xref !the_globwarntab
 
 let warn_user_warn_xref ?loc user_warns xref =
-  user_warns.UserWarn.depr
+  user_warns.UserWarn.depr_qf
     |> Option.iter (fun depr -> warn_deprecated_xref ?loc depr xref);
-  user_warns.UserWarn.warn |> List.iter (warn_user_warn ?loc)
+  user_warns.UserWarn.warn_qf |> List.iter (warn_user_warn ?loc)
 
 let locate_extended_nowarn qid =
   let xref = ExtRefTab.locate qid !the_ccitab in

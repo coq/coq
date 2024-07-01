@@ -15,6 +15,10 @@ type warn = private { note : string; cats : string }
 (** note and comma separated list of categories *)
 
 type t = { depr : Deprecation.t option; warn : warn list }
+type 'a with_qf = { depr_qf : 'a Deprecation.with_qf option; warn_qf : warn list }
+
+val drop_qf : 'a with_qf -> t
+val with_empty_qf : t -> 'a with_qf
 
 val empty : t
 

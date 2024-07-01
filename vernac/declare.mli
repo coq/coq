@@ -110,7 +110,7 @@ module Info : sig
     -> ?hook : Hook.t
     (** Callback to be executed after saving the constant *)
     -> ?typing_flags:Declarations.typing_flags
-    -> ?user_warns : UserWarn.t
+    -> ?user_warns : Globnames.extended_global_reference UserWarn.with_qf
     -> ?ntns : Metasyntax.notation_interpretation_decl list
     -> unit
     -> t
@@ -375,7 +375,7 @@ val declare_entry
   :  name:Id.t
   -> ?scope:Locality.definition_scope
   -> kind:Decls.logical_kind
-  -> ?user_warns:UserWarn.t
+  -> ?user_warns:Globnames.extended_global_reference UserWarn.with_qf
   -> ?hook:Hook.t
   -> impargs:Impargs.manual_implicits
   -> uctx:UState.t
@@ -433,7 +433,7 @@ val declare_constant
   -> name:Id.t
   -> kind:Decls.logical_kind
   -> ?typing_flags:Declarations.typing_flags
-  -> ?user_warns:UserWarn.t
+  -> ?user_warns:Globnames.extended_global_reference UserWarn.with_qf
   -> constant_entry
   -> Constant.t
 

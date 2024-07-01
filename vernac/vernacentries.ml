@@ -54,7 +54,7 @@ module DefAttributes = struct
     locality : bool option;
     polymorphic : bool;
     program : bool;
-    user_warns : UserWarn.t option;
+    user_warns : Globnames.extended_global_reference UserWarn.with_qf option;
     canonical_instance : bool;
     typing_flags : Declarations.typing_flags option;
     using : Vernacexpr.section_subset_expr option;
@@ -110,7 +110,7 @@ module DefAttributes = struct
     let (((((((locality, user_warns), polymorphic), program),
          canonical_instance), typing_flags), using),
          reversible), clearbody =
-      parse (locality ++ user_warns ++ polymorphic ++ program ++
+      parse (locality ++ user_warns_with_use_globref_instead ++ polymorphic ++ program ++
              canonical_instance ++ typing_flags ++ using ++
              reversible ++ clearbody)
         f
@@ -1511,7 +1511,7 @@ let vernac_hints ~atts dbnames h =
   Hints.add_hints ~locality dbnames (ComHints.interp_hints ~poly h)
 
 let vernac_abbreviation ~atts lid x only_parsing =
-  let module_local, user_warns = Attributes.(parse Notations.(module_locality ++ user_warns) atts) in
+  let module_local, user_warns = Attributes.(parse Notations.(module_locality ++ user_warns_with_use_globref_instead) atts) in
   Dumpglob.dump_definition lid false "abbrev";
   Metasyntax.add_abbreviation ~local:module_local user_warns (Global.env()) lid.v x only_parsing
 

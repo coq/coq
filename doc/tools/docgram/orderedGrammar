@@ -262,7 +262,7 @@ attribute: [
 
 attr_value: [
 | "=" string
-| "=" ident
+| "=" qualid
 | "(" LIST1 attribute SEP "," ")"
 ]
 

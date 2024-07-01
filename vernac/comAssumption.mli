@@ -43,7 +43,7 @@ val declare_axiom
   :  coe:coercion_flag
   -> local:Locality.import_status
   -> kind:Decls.assumption_object_kind
-  -> ?user_warns:UserWarn.t
+  -> ?user_warns:Globnames.extended_global_reference UserWarn.with_qf
   -> univs:UState.named_universes_entry
   -> impargs:Impargs.manual_implicits
   -> inline:Declaremods.inline
@@ -57,7 +57,7 @@ val declare_global
   -> try_assum_as_instance:bool (* true = declare a parameter of type a class as an instance *)
   -> local:Locality.import_status
   -> kind:Decls.logical_kind
-  -> ?user_warns:UserWarn.t
+  -> ?user_warns:Globnames.extended_global_reference UserWarn.with_qf
   -> univs:UState.named_universes_entry
   -> impargs:Impargs.manual_implicits
   -> inline:Declaremods.inline
@@ -72,7 +72,7 @@ val do_assumptions
   -> poly:bool
   -> scope:Locality.definition_scope
   -> kind:Decls.assumption_object_kind
-  -> ?user_warns:UserWarn.t
+  -> ?user_warns:Globnames.extended_global_reference UserWarn.with_qf
   -> inline:Declaremods.inline
   -> (ident_decl list * constr_expr) with_coercion list
   -> unit

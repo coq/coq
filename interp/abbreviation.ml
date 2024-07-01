@@ -22,7 +22,7 @@ open Notationextern
 type abbreviation =
   { abbrev_pattern : interpretation;
     abbrev_onlyparsing : bool;
-    abbrev_user_warns : UserWarn.t option;
+    abbrev_user_warns : Globnames.extended_global_reference UserWarn.with_qf option;
     abbrev_activated : bool; (* Not really necessary in practice *)
   }
 
