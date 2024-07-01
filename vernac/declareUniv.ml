@@ -212,7 +212,7 @@ let do_sort ~poly l =
   let in_section = Lib.sections_are_opened () in
   let () =
     if Lib.is_modtype ()
-    then CErrors.user_err (Pp.str "Cannot declare global sort qualities in a module type.")  ;
+    then CErrors.user_err (Pp.str "Cannot declare global sort qualities inside module types.")  ;
     if poly && not in_section then
       CErrors.user_err
         (Pp.str"Cannot declare polymorphic sorts outside sections.")
