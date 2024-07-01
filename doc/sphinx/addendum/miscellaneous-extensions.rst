@@ -10,7 +10,7 @@ it provides the following command:
 .. cmd:: Derive @open_binders in @type as @ident
          Derive @open_binders SuchThat @type As @ident
 
-   where :n:`@open_binders` declares a list of declarations of the form
+   where :n:`@open_binders` is a list of the form
    :n:`@ident__i : @type__i` which can appear in :n:`@type`. This
    command opens a new proof presenting the user with a goal for
    :n:`@type` in which each name :n:`@ident__i` is bound to an
