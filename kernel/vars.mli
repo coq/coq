@@ -207,6 +207,9 @@ val sort_and_universes_of_constr : constr -> Sorts.QVar.Set.t * Univ.Level.Set.t
 
 val universes_of_constr : constr -> Univ.Level.Set.t
 
+val test_sort_and_universes :
+  (rel:bool -> Sorts.QVar.t -> unit) -> (sort:bool -> Univ.Level.t -> unit) -> types -> unit
+
 (** {3 Low-level cached lift type} *)
 
 type substituend

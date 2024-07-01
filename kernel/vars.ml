@@ -523,3 +523,44 @@ let sort_and_universes_of_constr c =
     ()
 
 let universes_of_constr c = snd (sort_and_universes_of_constr c)
+
+let on_relevance on_qvar =
+  let open Sorts in function
+  | Irrelevant | Relevant -> ()
+  | RelevanceVar q -> on_qvar ~rel:true q
+
+let on_instance on_qvar on_uvar u =
+  let qs, us = UVars.Instance.to_array u in
+  let () = Array.iter (fun q ->
+      let open Sorts.Quality in
+      match q with
+      | QVar q -> on_qvar ~rel:false q
+      | QConstant _ -> ())
+      qs
+  in
+  let () = Array.iter (fun u -> on_uvar ~sort:false u) us in
+  ()
+
+let on_sort_uvar on_uvar u =
+  match Univ.Universe.level u with
+  | Some u -> on_uvar ~sort:true u
+  | None -> Univ.(Level.Set.iter (fun u -> on_uvar ~sort:false u) (Universe.levels u))
+
+let test_sort_and_universes on_qvar on_uvar c =
+  let rec aux c =
+    let () = fold_constr_relevance (fun () -> on_relevance on_qvar) () c in
+    match kind c with
+    | Const (_, u) | Ind (_, u) | Construct (_, u) -> on_instance on_qvar on_uvar u
+    | Sort (Sorts.Type u) ->
+      on_sort_uvar on_uvar u
+    | Sort (Sorts.QSort (q, u)) ->
+      let () = on_qvar ~rel:false q in
+      on_sort_uvar on_uvar u
+    | Array (u,_,_,_) ->
+      let () = on_instance on_qvar on_uvar u in
+      Constr.iter aux c
+    | Case (_, u, _, _, _,_ ,_) ->
+      let () = on_instance on_qvar on_uvar u in
+      Constr.iter aux c
+    | _ -> Constr.iter aux c
+  in aux c
