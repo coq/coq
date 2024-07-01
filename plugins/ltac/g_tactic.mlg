@@ -614,6 +614,8 @@ GRAMMAR EXTEND Gram
           { CAst.make ~loc @@ TacAtom (TacReduce (Cbv s, cl)) }
       | IDENT "cbn"; s = strategy_flag; cl = clause_dft_concl ->
           { CAst.make ~loc @@ TacAtom (TacReduce (Cbn s, cl)) }
+      | IDENT "kred"; s = strategy_flag; cl = clause_dft_concl ->
+          { CAst.make ~loc @@ TacAtom (TacReduce (Kred s, cl)) }
       | IDENT "lazy"; s = strategy_flag; cl = clause_dft_concl ->
           { CAst.make ~loc @@ TacAtom (TacReduce (Lazy s, cl)) }
       | IDENT "compute"; delta = delta_flag; cl = clause_dft_concl ->
