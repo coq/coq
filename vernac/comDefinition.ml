@@ -117,8 +117,7 @@ let interp_statement ~program_mode env evd ~flags ~scope name bl typ  =
   let ids = List.map Context.Rel.Declaration.get_name ctx in
   evd, ids, EConstr.it_mkProd_or_LetIn t' ctx, imps @ imps'
 
-let do_definition ?hook ~name ?scope ?clearbody ~poly ?typing_flags ~kind ?using ?user_warns udecl bl red_option c ctypopt =
-  let program_mode = false in
+let do_definition ?hook ?pm ~program_mode ~name ?scope ?clearbody ~poly ?typing_flags ~kind ?using ?user_warns udecl bl red_option c ctypopt =
   let env = Global.env() in
   let env = Environ.update_typing_flags ?typing_flags env in
   (* Explicitly bound universes and constraints *)
@@ -126,28 +125,18 @@ let do_definition ?hook ~name ?scope ?clearbody ~poly ?typing_flags ~kind ?using
   let evd, (body, types), impargs =
     interp_definition ~program_mode env evd empty_internalization_env bl red_option c ctypopt
   in
-  let kind = Decls.IsDefinition kind in
-  let cinfo = Declare.CInfo.make ~name ~impargs ~typ:types () in
-  let info = Declare.Info.make ?scope ?clearbody ~kind ?hook ~udecl ~poly ?typing_flags ?user_warns () in
-  let _ : Names.GlobRef.t =
-    Declare.declare_definition ~info ~cinfo ~opaque:false ~body ?using evd
-  in ()
-
-let do_definition_program ?hook ~pm ~name ~scope ?clearbody ~poly ?typing_flags ~kind ?using ?user_warns udecl bl red_option c ctypopt =
-  let env = Global.env() in
-  let env = Environ.update_typing_flags ?typing_flags env in
-  (* Explicitly bound universes and constraints *)
-  let evd, udecl = interp_univ_decl_opt env udecl in
-  let evd, (body, types), impargs =
-    interp_definition ~program_mode:true env evd empty_internalization_env bl red_option c ctypopt
-  in
-  let body, typ, uctx, _, obls = Declare.Obls.prepare_obligations ~name ~body ?types env evd in
-  Evd.check_univ_decl_early ~poly ~with_obls:true evd udecl [body; typ];
-  let pm, _ =
+  let info = Declare.Info.make ~udecl ?scope ?clearbody ~poly ~kind ?hook ?typing_flags ?user_warns () in
+  match pm with
+  | Some pm ->
+    let body, typ, uctx, _, obls = Declare.Obls.prepare_obligations ~name ~body ?types env evd in
+    Evd.check_univ_decl_early ~poly ~with_obls:true evd udecl [body; typ];
     let cinfo = Declare.CInfo.make ~name ~typ ~impargs () in
-    let info = Declare.Info.make ~udecl ~scope ?clearbody ~poly ~kind ?hook ?typing_flags ?user_warns () in
-    Declare.Obls.add_definition ~pm ~info ~cinfo ~opaque:false ~body ~uctx ?using obls
-  in pm
+    Some (fst (Declare.Obls.add_definition ~pm ~info ~cinfo ~opaque:false ~body ~uctx ?using obls))
+  | None ->
+    let cinfo = Declare.CInfo.make ~name ~impargs ~typ:types () in
+    let _ : Names.GlobRef.t =
+      Declare.declare_definition ~info ~cinfo ~opaque:false ~body ?using evd
+    in None
 
 let do_definition_interactive ~program_mode ?hook ~name ~scope ?clearbody ~poly ~typing_flags ~kind ?using ?user_warns udecl bl t =
   let env = Global.env () in

@@ -386,8 +386,10 @@ let register_struct is_rec (rec_order, fixpoint_exprl) =
         CErrors.user_err
           Pp.(str "Body of Function must be given.")
     in
-    ComDefinition.do_definition ~name:fname.CAst.v ~poly:false
-      ~kind:Decls.Definition univs binders None body (Some rtype);
+    let pm =
+      ComDefinition.do_definition ~program_mode:false ~name:fname.CAst.v ~poly:false
+        ~kind:Decls.(IsDefinition Definition) univs binders None body (Some rtype) in
+    assert (Option.is_empty pm);
     let evd, rev_pconstants =
       List.fold_left
         (fun (evd, l) {Vernacexpr.fname} ->
