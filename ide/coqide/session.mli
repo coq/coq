@@ -47,6 +47,7 @@ type session = {
   debugger : Wg_Debugger.debugger_view;
   tab_label : GMisc.label;
   errpage : errpage;
+  warnpage : errpage;
   jobpage : jobpage;
   sid : int;
   basename : string;
