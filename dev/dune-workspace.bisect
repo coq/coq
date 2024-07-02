@@ -1,0 +1,5 @@
+(lang dune 3.6)
+
+(context
+ (default
+  (name coverage)))

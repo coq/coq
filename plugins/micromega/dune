@@ -11,6 +11,7 @@
  ; be careful not to link the executable to the plugin!
  (modules (:standard \ micromega numCompat mutils sos_types sos_lib sos csdpcert g_zify zify))
  (flags :standard -open Micromega_core_plugin)
+ (instrumentation (backend bisect_ppx))
  (synopsis "Coq's micromega plugin")
  (libraries coq-core.plugins.ltac coq-core.plugins.micromega_core))
 
@@ -20,12 +21,14 @@
  (package coq-core)
  (modules csdpcert)
  (flags :standard -open Micromega_core_plugin)
+ (instrumentation (backend bisect_ppx))
  (libraries coq-core.plugins.micromega_core))
 
 (library
  (name zify_plugin)
  (public_name coq-core.plugins.zify)
  (modules g_zify zify)
+ (instrumentation (backend bisect_ppx))
  (synopsis "Coq's zify plugin")
  (libraries coq-core.plugins.ltac))
 
