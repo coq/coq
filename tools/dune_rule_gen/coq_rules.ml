@@ -21,43 +21,6 @@ let _debug = false
 
 module FlagUtil = struct
 
-  let read_plugin_dir () =
-    let plugins_dir = Path.make "plugins" in
-    Sys.readdir (Path.to_string plugins_dir) |> Array.to_list
-
-  (* XXX: This should go away once we fully use findlib in coqdep;
-     for that, we must depend on the META file and pass -m to coqdep.
-     Left for a future PR.
-   *)
-  let local_plugin_flags () =
-    let plugins_dir = Path.make "plugins" in
-    read_plugin_dir ()
-    |> List.map (Path.relative plugins_dir)
-    |> Util.list_concat_map (fun p -> [Arg.A "-I"; Arg.Path p])
-
-  let findlib_plugin_fixup p =
-    ["number_string_notation"; "zify"; "tauto"; "ssreflect"; "micromega_core"]
-    @ (List.filter (fun s -> not (String.equal s "syntax" || String.equal s "ssr")) p)
-
-  (* This can also go when the -I flags are gone, by passing the meta
-     file for coq-core *)
-  (* Use non-local libs for split build *)
-  let findlib_plugin_flags () =
-    let () = Findlib.init () in
-    read_plugin_dir ()
-    |> findlib_plugin_fixup
-    |> List.map (fun p -> Findlib.package_directory ("coq-core.plugins."^p))
-    |> Util.list_concat_map (fun p -> [Arg.A "-I"; Arg.Path (Path.make p)])
-
-  let findlib_plugin_flags () =
-    try findlib_plugin_flags ()
-    with
-      Fl_package_base.No_such_package (p,_) ->
-      raise (Invalid_argument ("failed to locate Coq plugins in split build mode: " ^ p))
-
-  let plugin_flags ~split () =
-    if split then findlib_plugin_flags () else local_plugin_flags ()
-
   (* Native flag *)
   let findlib_native_dir () =
     try
@@ -79,7 +42,7 @@ let path_of_dep ~vo_ext dep =
   let open Coqdeplib.Dep_info in
   let file = match dep with
     | Dep.Require dep -> dep ^ vo_ext
-    | Dep.Ml (dep, _ext)-> dep ^ ".cmxs"
+    | Dep.Ml dep-> dep ^ ".cmxs"
     | Dep.Other dep -> dep
   in
   Path.make file
@@ -108,7 +71,7 @@ let cmi_of_dep ~tname dep =
   let file = match dep with
     | Dep.Require dep ->
       Some (translate_to_native ~tname dep)
-    | Dep.Ml (_dep, _ext)-> None
+    | Dep.Ml _dep-> None
     | Dep.Other _ -> None
   in
   Option.map Path.make file
@@ -183,25 +146,17 @@ module Context = struct
   let make ~root_lvl ~theory ~user_flags ~boot ~rule ~async ~dir_info ~split =
 
     let flags =
-
-      (* both coqdep and coqc need the -I flags, coqc otherwise
-         doesn't use the legacy plugin resolution method *)
-      let plugin_flags = FlagUtil.plugin_flags ~split () in
-
       let boot_paths = match boot with
         | Boot_type.NoInit -> []
         | Stdlib -> Theory.args theory
         | Regular stdlib -> Theory.args stdlib @ Theory.args theory
       in
-      let loadpath =
-        Arg.(A "-boot") ::
-        boot_paths @ plugin_flags
-      in
+      let loadpath = Arg.(A "-boot") :: boot_paths in
       let native_common = native_common ~split () in
       let native_coqc = native_coqc ~native_common ~native:(Coq_module.Rule_type.native_coqc rule) in
       let common = Arg.[ A "-w"; A "+default"; A "-q" ] in
-
-      { Flags.user = user_flags; common; loadpath; native_common; native_coqc } in
+      { Flags.user = user_flags; common; loadpath; native_common; native_coqc }
+    in
 
     (* coqdep and dep info *)
     let coqdep_args = flags.loadpath in
@@ -211,6 +166,11 @@ module Context = struct
     { theory; flags; rule; boot; dep_info; async_deps; root_lvl }
 
 end
+
+(* Super hack, to be removed *)
+let fixup_install_locations file =
+  Str.replace_first (Str.regexp {|\(\.\./\)*../install|})
+    "%{project_root}/_build/install" file
 
 (* Return flags and deps to inject *)
 let prelude_path = "Init/Prelude.vo"
@@ -250,6 +210,7 @@ let module_rule ~(cctx : Context.t) coq_module =
   let lvl = cctx.root_lvl + (Coq_module.prefix coq_module |> List.length) in
   let flags = (* flags are relative to the root path *) Arg.List.to_string (flags @ timeflags) in
   let deps = List.map (Path.adjust ~lvl) vfile_deps |> List.map Path.to_string in
+  let deps = List.map fixup_install_locations deps in
   (* Depend on the workers if async *)
   let deps = cctx.async_deps @ deps in
   (* Build rule *)

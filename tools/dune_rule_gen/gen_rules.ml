@@ -38,11 +38,12 @@ let parse_args () =
   let tname = String.split_on_char '.' Sys.argv.(1) in
   let base_dir = Sys.argv.(2) in
   let _backtrace = [Arg.A "-d"; Arg.A "backtrace"] in
-  let default = false, false, Coq_module.Rule_type.Regular { native }, [] in
-  let split, async, rule, user_flags = if Array.length Sys.argv > 3 then
+  let default = false, false, [] in
+  let rule = Coq_module.Rule_type.Regular { native } in
+  let split, async, user_flags = if Array.length Sys.argv > 3 then
       match Sys.argv.(3) with
-      | "-async" -> false, true, Coq_module.Rule_type.Regular { native }, Arg.[A "-async-proofs"; A "on"]
-      | "-split" -> true, false, Coq_module.Rule_type.Regular { native }, []
+      | "-async" -> false, true, Arg.[A "-async-proofs"; A "on"]
+      | "-split" -> true, false, []
       (* Dune will sometimes pass this option as "" *)
       | "" -> default
       | opt -> raise (Invalid_argument ("unrecognized option: " ^ opt))
@@ -99,8 +100,14 @@ let main () =
   Format.pp_print_flush fmt ();
   ()
 
+let pr_feedback (fb : Feedback.feedback) =
+  match fb.contents with
+  | Message (_,_,msg) -> Format.eprintf "%a" Pp.pp_with msg
+  | _ -> () [@@warning "-4"]
+
 let () =
   Printexc.record_backtrace true;
+  let _ : int = Feedback.add_feeder pr_feedback in
   try main ()
   with exn ->
     let bt = Printexc.get_backtrace () in

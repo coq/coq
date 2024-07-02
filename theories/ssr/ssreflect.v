@@ -14,7 +14,7 @@
 
 Require Import Bool. (* For bool_scope delimiter 'bool'. *)
 Require Import ssrmatching.
-Declare ML Module "ssreflect_plugin:coq-core.plugins.ssreflect".
+Declare ML Module "coq-core.plugins.ssreflect".
 
 (**
  This file is the Gallina part of the ssreflect plugin implementation.
