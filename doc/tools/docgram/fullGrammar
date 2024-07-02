@@ -562,7 +562,8 @@ command: [
 | "Debug" "Off"
 | "Declare" "Reduction" IDENT; ":=" red_expr
 | "Declare" "Custom" "Entry" IDENT
-| "Derive" identref "SuchThat" constr "As" identref      (* derive plugin *)
+| "Derive" open_binders suchthat constr "As" identref      (* derive plugin *)
+| "Derive" open_binders "in" constr "as" identref      (* derive plugin *)
 | "Extraction" global      (* extraction plugin *)
 | "Recursive" "Extraction" LIST1 global      (* extraction plugin *)
 | "Extraction" string LIST1 global      (* extraction plugin *)
@@ -1968,6 +1969,10 @@ simple_tactic: [
 | "ring_lookup" tactic0 "[" LIST0 constr "]" LIST1 constr      (* ring plugin *)
 | "field_lookup" tactic "[" LIST0 constr "]" LIST1 constr      (* ring plugin *)
 | "rtauto"
+]
+
+suchthat: [
+| "SuchThat"      (* derive plugin *)
 ]
 
 mlname: [

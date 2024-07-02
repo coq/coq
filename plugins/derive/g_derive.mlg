@@ -20,9 +20,28 @@ DECLARE PLUGIN "coq-core.plugins.derive"
 
 let classify_derive_command _ = Vernacextend.(VtStartProof (Doesn'tGuaranteeOpacity,[]))
 
+(* BEGIN HACK TO DECLARE SuchThat AS KEYWORD *)
+let wit_suchthat =
+ (Genarg.create_arg "suchthat" : string Genarg.uniform_genarg_type)
+
+let suchthat = Pcoq.create_generic_entry2 "binders" (Genarg.rawwit wit_suchthat)
+
+}
+
+GRAMMAR EXTEND Gram
+  GLOBAL: suchthat;
+    suchthat:
+    [ [ x = "SuchThat" -> { x } ] ];
+END
+
+{
+(* END HACK TO DECLARE SuchThat AS KEYWORD *)
+
 }
 
 VERNAC COMMAND EXTEND Derive CLASSIFIED BY { classify_derive_command } STATE open_proof
-| [ "Derive" identref(f) "SuchThat" constr(suchthat) "As" identref(lemma) ] ->
-  { Derive.start_deriving f.CAst.v suchthat lemma.CAst.v }
+| [ "Derive" open_binders(bl) suchthat(_x) constr(suchthat) "As" identref(lemma) ] ->
+  { Derive.start_deriving bl suchthat lemma.CAst.v }
+| [ "Derive" open_binders(bl) "in" constr(suchthat) "as" identref(lemma) ] ->
+  { Derive.start_deriving bl suchthat lemma.CAst.v }
 END
