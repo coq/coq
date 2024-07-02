@@ -30,6 +30,10 @@ val of_pair : ('a -> raw_tacexpr) -> ('b -> raw_tacexpr) -> ('a * 'b) CAst.t -> 
 
 val of_tuple : ?loc:Loc.t -> raw_tacexpr list -> raw_tacexpr
 
+val of_option : ?loc:Loc.t -> ('a -> raw_tacexpr) -> 'a option -> raw_tacexpr
+
+val of_loc : Loc.t -> raw_tacexpr
+
 val of_variable : Id.t CAst.t -> raw_tacexpr
 
 val of_ident : Id.t CAst.t -> raw_tacexpr
@@ -106,3 +110,5 @@ val wit_constr : (Constrexpr.constr_expr, Glob_term.glob_constr) Arg.tag
 val wit_open_constr : (Constrexpr.constr_expr, Glob_term.glob_constr) Arg.tag
 
 val wit_preterm : (Constrexpr.constr_expr, Id.Set.t * Glob_term.glob_constr) Arg.tag
+
+val wit_loc : (Loc.t, Loc.t) Arg.tag
