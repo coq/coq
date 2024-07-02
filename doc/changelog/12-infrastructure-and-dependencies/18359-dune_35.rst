@@ -1,4 +1,0 @@
-- **Changed:**
-  Bump minimal Dune version required to build Coq to 3.6.1
-  (`#18359 <https://github.com/coq/coq/pull/18359>`_,
-  by Emilio Jesus Gallego Arias).
