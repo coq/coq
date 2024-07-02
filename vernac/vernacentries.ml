@@ -607,65 +607,6 @@ let check_name_freshness locality {CAst.loc;v=id} : unit =
   then
     user_err ?loc  (Id.print id ++ str " already exists.")
 
-let program_inference_hook env sigma ev =
-  let tac = !Declare.Obls.default_tactic in
-  let evi = Evd.find_undefined sigma ev in
-  let evi = Evarutil.nf_evar_info sigma evi in
-  let env = Evd.evar_filtered_env env evi in
-  try
-    let concl = Evd.evar_concl evi in
-    if not (Evarutil.is_ground_env sigma env &&
-            Evarutil.is_ground_term sigma concl)
-    then None
-    else
-      let c, sigma =
-        Proof.refine_by_tactic ~name:(Id.of_string "program_subproof")
-          ~poly:false env sigma concl (Tacticals.tclSOLVE [tac])
-      in
-      Some (sigma, c)
-  with
-  | Logic_monad.TacticFailure e when noncritical e ->
-    user_err Pp.(str "The statement obligations could not be resolved \
-                      automatically, write a statement definition first.")
-
-(* XXX: Interpretation of lemma command, duplication with ComFixpoint
-   / ComDefinition ? *)
-let interp_lemma ~program_mode ~flags ~scope env0 evd thms =
-  let inference_hook = if program_mode then Some program_inference_hook else None in
-  List.fold_left_map (fun evd ((id, _), (bl, t)) ->
-      let evd, (impls, ((env, ctx), imps)) =
-        Constrintern.interp_context_evars ~program_mode env0 evd bl
-      in
-      let evd, (t', imps') = Constrintern.interp_type_evars_impls ~flags ~impls env evd t in
-      let flags = Pretyping.{ all_and_fail_flags with program_mode } in
-      let evd = Pretyping.solve_remaining_evars ?hook:inference_hook flags env evd in
-      let ids = List.map Context.Rel.Declaration.get_name ctx in
-      let typ = EConstr.it_mkProd_or_LetIn t' ctx in
-      let thm = Declare.CInfo.make ~name:id.CAst.v ~typ ~args:ids ~impargs:(imps @ imps') () in
-      evd, (EConstr.to_constr evd typ, thm))
-    evd thms
-
-let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody ~kind ?user_warns ?using ?hook thms =
-  let env0 = Global.env () in
-  let env0 = Environ.update_typing_flags ?typing_flags env0 in
-  let flags = Pretyping.{ all_no_fail_flags with program_mode } in
-  let udecls = List.map (fun ((_,univs),_) -> univs) thms in
-  let evd, udecl = Constrintern.interp_mutual_univ_decl_opt env0 udecls in
-  let evd, thms = interp_lemma ~program_mode ~flags ~scope env0 evd thms in
-  let typs, thms = List.split thms in
-  let mut_analysis = RecLemmas.look_for_possibly_mutual_statements evd thms in
-  let evd = Evd.minimize_universes evd in
-  let info = Declare.Info.make ?hook ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?user_warns () in
-  Evd.check_univ_decl_early ~poly ~with_obls:false evd udecl typs;
-  let evd = if poly then evd else Evd.fix_undefined_variables evd in
-  match mut_analysis with
-  | RecLemmas.NonMutual thm ->
-    let thm = Declare.CInfo.to_constr evd thm in
-    Declare.Proof.start_definition ~info ~cinfo:thm ?using evd
-  | RecLemmas.Mutual possible_guard ->
-    let cinfo = List.map (Declare.CInfo.to_constr evd) thms in
-    Declare.Proof.start_mutual_definitions ~info ~cinfo ~possible_guard ?using evd
-
 let vernac_definition_hook ~canonical_instance ~local ~poly ~reversible = let open Decls in function
 | Coercion ->
   Some (ComCoercion.add_coercion_hook ~reversible)
@@ -696,19 +637,19 @@ let vernac_definition_name lid local =
     | Discharge -> Dumpglob.dump_definition lid true "var"
     | Global _ -> Dumpglob.dump_definition lid false "def"
   in
-  lid
+  lid.v
 
-let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
+let vernac_definition_interactive ~atts (discharge, kind) (lid, udecl) bl t =
   let open DefAttributes in
   let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody =
     atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
   let canonical_instance, reversible = atts.canonical_instance, atts.reversible in
   let hook = vernac_definition_hook ~canonical_instance ~local ~poly ~reversible kind in
   let name = vernac_definition_name lid scope in
-  start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody
-    ~kind:(Decls.IsDefinition kind) ?user_warns ?using ?hook [(name, pl), (bl, t)]
+  ComDefinition.do_definition_interactive ~typing_flags ~program_mode ~name ~poly ~scope ?clearbody:atts.clearbody
+    ~kind:(Decls.IsDefinition kind) ?user_warns ?using:atts.using ?hook udecl bl t
 
-let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_opt =
+let vernac_definition ~atts ~pm (discharge, kind) (lid, udecl) bl red_option c typ_opt =
   let open DefAttributes in
   let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody =
      atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
@@ -723,14 +664,14 @@ let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_
       Some (snd (Redexpr.interp_redexp_no_ltac env sigma r)) in
   if program_mode then
     let kind = Decls.IsDefinition kind in
-    ComDefinition.do_definition_program ~pm ~name:name.v
+    ComDefinition.do_definition_program ~pm ~name
       ?clearbody ~poly ?typing_flags ~scope ~kind
-      ?user_warns ?using pl bl red_option c typ_opt ?hook
+      ?user_warns ?using udecl bl red_option c typ_opt ?hook
   else
     let () =
-      ComDefinition.do_definition ~name:name.v
+      ComDefinition.do_definition ~name
         ?clearbody ~poly ?typing_flags ~scope ~kind
-        ?user_warns ?using pl bl red_option c typ_opt ?hook in
+        ?user_warns ?using udecl bl red_option c typ_opt ?hook in
     pm
 
 (* NB: pstate argument to use combinators easily *)
@@ -738,14 +679,23 @@ let vernac_start_proof ~atts kind l =
   let open DefAttributes in
   if Dumpglob.dump () then
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
-  let scope, poly, program_mode, user_warns, typing_flags, using =
-    atts.scope, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using in
+  let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody =
+    atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
   List.iter (fun ((id, _), _) -> check_name_freshness scope id) l;
-  start_lemma_com
-    ~typing_flags
-    ~program_mode
-    ~poly
-    ~scope ~kind:(Decls.IsProof kind) ?user_warns ?using l
+  match l with
+  | [] -> assert false
+  | [({v=name},udecl),(bl,typ)] ->
+    ComDefinition.do_definition_interactive
+      ~typing_flags ~program_mode ~name ~poly ?clearbody ~scope
+      ~kind:(Decls.IsProof kind) ?user_warns ?using udecl bl typ
+  | _ ->
+    let fix = List.map (fun ((fname, univs), (binders, rtype)) ->
+        { fname; binders; rtype; body_def = None; univs; notations = []}) l in
+    let pm, proof =
+      ComFixpoint.do_mutually_recursive ~program_mode ~use_inference_hook:true
+        ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using (CUnknownRecOrder, fix) in
+    assert (Option.is_empty pm);
+    Option.get proof
 
 let vernac_end_proof ~lemma ~pm = let open Vernacexpr in function
   | Admitted ->
@@ -1079,9 +1029,9 @@ let vernac_fixpoint_common ~atts l =
 
 let with_obligations program_mode f pm =
   if program_mode then
-    f pm
+    f pm ~program_mode:true
   else
-    let pm', proof = f None in
+    let pm', proof = f None ~program_mode:false in
     assert (Option.is_empty pm');
     pm, proof
 
