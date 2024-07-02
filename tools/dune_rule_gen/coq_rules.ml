@@ -130,7 +130,7 @@ module Theory = struct
   let args { directory; dirname; implicit; deps } =
     let barg = if implicit then "-R" else "-Q" in
     Arg.[ A barg; Path directory; A (String.concat "." dirname) ]
-    @ List.flatten (deps |> List.map (fun dep -> Arg.[A "-Q"; A ("user-contrib/"^dep); A dep]))
+    @ List.flatten (deps |> List.map (fun dep -> Arg.[A "-Q"; Path ("user-contrib/"^dep); A dep]))
 
 end
 
