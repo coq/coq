@@ -267,8 +267,8 @@ let ppqvar q = pp (QVar.raw_pr q)
 let ppesorts s = pp (Sorts.debug_print (Evd.MiniEConstr.ESorts.unsafe_to_sorts s))
 
 let prlev l = UnivNames.pr_level_with_global_universes l
-let prqvar q = Sorts.QVar.raw_pr q
-let ppqvarset l = pp (hov 1 (str "{" ++ prlist_with_sep spc QVar.raw_pr (QVar.Set.elements l) ++ str "}"))
+let prqvar q = UnivNames.pr_quality_with_global_universes q
+let ppqvarset l = pp (hov 1 (str "{" ++ prlist_with_sep spc prqvar (QVar.Set.elements l) ++ str "}"))
 let ppuniverse_set l = pp (Level.Set.pr prlev l)
 let ppuniverse_instance l = pp (Instance.pr prqvar prlev l)
 let ppuniverse_context l = pp (pr_universe_context prqvar prlev l)

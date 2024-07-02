@@ -195,6 +195,7 @@ let tag_var = tag Tag.variable
 
   let pr_univ l =
     match l with
+    | UNamed [] -> str ""
     | UNamed [x] -> pr_univ_expr x
     | UNamed l -> str"max(" ++ prlist_with_sep (fun () -> str",") pr_univ_expr l ++ str")"
     | UAnonymous {rigid=UnivRigid} -> tag_type (str "Type")
@@ -229,6 +230,7 @@ let tag_var = tag Tag.variable
     | None, UNamed [CSProp, 0] -> tag_type (str "SProp")
     | None, UNamed [CProp, 0] -> tag_type (str "Prop")
     | None, UNamed [CSet, 0] -> tag_type (str "Set")
+    | None, UNamed [] -> tag_type (str "Type")
     | None, UAnonymous {rigid=UnivRigid} -> tag_type (str "Type")
     | u -> hov 0 (tag_type (str "Type") ++ pr_univ_annot pr_quality_univ u)
 
