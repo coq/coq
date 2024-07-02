@@ -482,37 +482,12 @@ let warn_bad_relevance_binder ?loc env sigma rlv bnd =
 | CWarnings.AsError ->
   Loc.raise ?loc (PretypeError (env, sigma, TypingError (Type_errors.BadBinderRelevance (rlv, bnd))))
 
-type relevance_preunify =
-  | Trivial
-  | Impossible
-  | DummySort of ESorts.t
-
 let check_binder_relevance env sigma s decl =
-  let preunify = match ESorts.kind sigma s, ERelevance.kind sigma (get_relevance decl) with
-    | (Prop | Set | Type _), Relevant -> Trivial
-    | (Prop | Set | Type _), Irrelevant -> Impossible
-    | SProp, Irrelevant -> Trivial
-    | SProp, Relevant -> Impossible
-    | QSort (_,l), RelevanceVar q' -> DummySort (ESorts.make (Sorts.qsort q' l))
-    | (SProp | Prop | Set), RelevanceVar q ->
-      DummySort (ESorts.make (Sorts.qsort q Univ.Universe.type0))
-    | Type l, RelevanceVar q -> DummySort (ESorts.make (Sorts.qsort q l))
-    | QSort (_,l), Relevant -> DummySort (ESorts.make (Sorts.sort_of_univ l))
-    | QSort _, Irrelevant -> DummySort ESorts.sprop
-  in
-  let unify = match preunify with
-    | Trivial -> Some sigma
-    | Impossible -> None
-    | DummySort s' ->
-      match Evd.set_leq_sort env sigma s s' with
-      | sigma -> Some sigma
-      | exception UGraph.UniverseInconsistency _ -> None
-  in
-  match unify with
-  | Some sigma -> sigma, decl
-  | None ->
+  let rs = ESorts.relevance_of_sort s in
+  match Evd.set_eq_relevance sigma rs (get_relevance decl) with
+  | sigma -> sigma, decl
+  | exception UGraph.UniverseInconsistency _ ->
     (* TODO always anomaly *)
-    let rs = ESorts.relevance_of_sort s in
     let () =
       if not (UGraph.type_in_type (Evd.universes sigma))
       then warn_bad_relevance_binder env sigma rs decl

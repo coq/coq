@@ -1264,6 +1264,15 @@ let set_leq_sort env evd s1 s2 =
        add_universe_constraints evd (UnivProblem.Set.singleton (UnivProblem.ULe (u1,u2)))
      else evd
 
+let set_eq_relevance evd r1 r2 =
+  let ustate = evd.universes in
+  let r1 = UState.nf_relevance ustate r1 in
+  let r2 = UState.nf_relevance ustate r2 in
+  if not (Sorts.relevance_equal r1 r2) then
+    add_universe_constraints evd
+      (UnivProblem.enforce_eq_relevance r1 r2 UnivProblem.Set.empty)
+  else evd
+
 let check_eq evd s s' =
   let ustate = evd.universes in
   UGraph.check_eq_sort (UState.ugraph ustate) (UState.nf_sort ustate s) (UState.nf_sort ustate s')

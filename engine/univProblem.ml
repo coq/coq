@@ -139,3 +139,16 @@ let compare_cumulative_instances  cv_pb variances u u' cstrs =
        | Invariant ->
          Set.add (UEq (make u, make u')) cstrs)
     cstrs variances us us'
+
+let enforce_eq_relevance r r' cstrs =
+  let open Sorts in
+  match r, r' with
+  | Relevant, Relevant
+  | Irrelevant, Irrelevant -> cstrs
+  | Relevant, Irrelevant
+  | Irrelevant, Relevant -> Set.add (QEq (QConstant QProp, QConstant QSProp)) cstrs
+  | Irrelevant, RelevanceVar q
+  | RelevanceVar q, Irrelevant -> Set.add (QEq (QVar q, QConstant QSProp)) cstrs
+  | Relevant, RelevanceVar q
+  | RelevanceVar q, Relevant -> Set.add (QLeq (QConstant QProp, QVar q)) cstrs
+  | RelevanceVar q, RelevanceVar q' -> Set.add (QEq (QVar q, QVar q')) cstrs

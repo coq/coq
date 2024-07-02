@@ -114,6 +114,11 @@ let unify_quality ~fail c q1 q2 local = match q1, q2 with
   | Some local -> local
   | None -> fail ()
   end
+| QVar q, QConstant QType when c == Conversion.CUMUL ->
+  begin match set_above_prop q local with
+  | Some local -> local
+  | None -> fail ()
+  end
 | QVar qv1, QVar qv2 -> begin match set qv1 q2 local with
     | Some local -> local
     | None -> match set qv2 q1 local with
