@@ -766,6 +766,7 @@ command: [
 | "Print" "Visibility" OPT scope_name
 | "Print" "Implicit" reference
 | "Print" OPT "Sorted" "Universes" OPT ( "Subgraph" "(" LIST0 qualid ")" ) OPT string
+| "Print" "Sorts"
 | "Print" "Assumptions" reference
 | "Print" "Opaque" "Dependencies" reference
 | "Print" "Transparent" "Dependencies" reference

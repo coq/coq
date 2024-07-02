@@ -867,6 +867,9 @@ Similar to universes, fresh global sorts can be declared with the :cmd:`Sort`.
 .. cmd:: Sort {+ @ident }
          Sorts {+ @ident }
 
+.. cmd:: Print Sorts
+   :name: Print Sorts
+
 .. _universe-polymorphism-in-sections:
 
 Universe polymorphism and sections
