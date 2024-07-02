@@ -54,6 +54,17 @@
   (with-stdout-to %{targets}
    (run tools/dune_rule_gen/gen_rules.exe Ltac2 user-contrib/Ltac2 %{env:COQ_DUNE_EXTRA_OPT=}))))
 
+(rule
+ (targets ltac2ssr_dune)
+ (deps
+  (source_tree theories)
+  (source_tree plugins)
+  (source_tree user-contrib/Ltac2)
+  (source_tree user-contrib/Ltac2ssr))
+ (action
+  (with-stdout-to %{targets}
+   (run tools/dune_rule_gen/gen_rules.exe Ltac2ssr user-contrib/Ltac2ssr %{env:COQ_DUNE_EXTRA_OPT=}))))
+
 ; Use summary.log as the target
 (alias
  (name runtest)
