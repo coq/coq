@@ -1135,6 +1135,7 @@ let pr_synpure_vernac_expr v =
                  | `Assert -> keyword "assert"
                  | `ExtraScopes -> keyword "extra scopes"
                  | `ClearImplicits -> keyword "clear implicits"
+                 | `ClearReduction -> keyword "clear simpl"
                  | `ClearScopes -> keyword "clear scopes"
                  | `ClearBidiHint -> keyword "clear bidirectionality hint")
                mods)

@@ -676,6 +676,7 @@ implicits_alt: [
 args_modifier: [
 | "simpl" "nomatch"
 | "simpl" "never"
+| "clear" "simpl"
 | "default" "implicits"
 | "clear" "implicits"
 | "clear" "scopes"
