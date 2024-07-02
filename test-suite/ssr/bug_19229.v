@@ -1,4 +1,4 @@
-From Coq.ssr Require Import ssreflect ssrfun ssrbool.
+From Stdlib.ssr Require Import ssreflect ssrfun ssrbool.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

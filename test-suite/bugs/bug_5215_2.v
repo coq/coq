@@ -1,4 +1,4 @@
-Require Import Coq.Program.Tactics.
+Require Import Stdlib.Program.Tactics.
 Set Universe Polymorphism.
 Set Printing Universes.
 Definition typ := Type.

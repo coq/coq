@@ -393,7 +393,7 @@ let acc_inv_id = function
 let well_founded_ltof () =
   EConstr.of_constr (coq_constant "num.nat.well_founded_ltof")
 
-let ltof_ref = function () -> find_reference ["Coq"; "Arith"; "Wf_nat"] "ltof"
+let ltof_ref = function () -> find_reference ["Stdlib"; "Arith"; "Wf_nat"] "ltof"
 
 let make_eq () =
   try

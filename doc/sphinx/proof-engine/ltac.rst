@@ -1716,7 +1716,7 @@ succeeds, and results in an error otherwise.
 
       .. coqtop:: reset in
 
-         Require Import Coq.Lists.Streams.
+         Require Import Stdlib.Lists.Streams.
          Goal True.
          let c := constr:(cofix f : Stream unit := Cons tt f) in
            is_cofix c.

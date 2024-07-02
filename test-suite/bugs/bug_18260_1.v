@@ -1,4 +1,4 @@
-Require Coq.Init.Byte Coq.Strings.Byte Coq.ZArith.ZArith.
+Require Stdlib.Init.Byte Stdlib.Strings.Byte Stdlib.ZArith.ZArith.
 
 Axiom proof_admitted : False.
 Tactic Notation "admit" := abstract case proof_admitted.
@@ -65,7 +65,7 @@ Section Sep.
 
 End Sep.
 
-Import Coq.ZArith.ZArith.
+Import Stdlib.ZArith.ZArith.
 
 Section Scalars.
   Context {width : Z} {word : word width}.

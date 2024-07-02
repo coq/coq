@@ -2,7 +2,7 @@ Inductive I : let z := 0 in Set := C : I.
 Check match C with C => true end.
 (* Was failing due to prepare_predicate_from_arsign_tycon not robust to let-in *)
 
-From Coq Require Import Arith Program.
+From Stdlib Require Import Arith Program.
 
 Module Bug11586.
 

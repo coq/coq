@@ -117,7 +117,7 @@ Universe instance length is 3 but should be 1.
 File "./output/UnivBinders.v", line 103, characters 0-20:
 The command has indeed failed with message:
 Universe instance length is 0 but should be 1.
-File "./output/UnivBinders.v", line 106, characters 0-30:
+File "./output/UnivBinders.v", line 106, characters 0-33:
 The command has indeed failed with message:
 This object does not support universe names.
 File "./output/UnivBinders.v", line 110, characters 0-50:

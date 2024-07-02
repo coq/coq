@@ -1,5 +1,5 @@
-From Coq.ssr Require Import ssreflect.
-From Coq Require Import RelationClasses Relation_Definitions Setoid.
+From Stdlib.ssr Require Import ssreflect.
+From Stdlib Require Import RelationClasses Relation_Definitions Setoid.
 
 Parameter P : nat -> Prop.
 Parameter f : nat -> nat.

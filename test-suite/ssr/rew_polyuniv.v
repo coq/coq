@@ -1,4 +1,4 @@
-From Coq Require Import Utf8 Setoid ssreflect.
+From Stdlib Require Import Utf8 Setoid ssreflect.
 Set Default Proof Using "Type".
 
 Local Set Universe Polymorphism.

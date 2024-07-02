@@ -1,5 +1,5 @@
 From Ltac2 Require Import Ltac2.
-From Coq Require Import ZArith.
+From Stdlib Require Import ZArith.
 
 (** * Test eval ... in / reduction tactics *)
 

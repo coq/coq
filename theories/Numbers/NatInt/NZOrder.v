@@ -24,15 +24,15 @@ The firt part contains important basic lemmas about [le] and [lt], for instance
 - decidability lemmas like [le_gt_cases], [eq_decidable], ...
 It also adds the following tactics:
 - [le_elim H] to reason by cases on an hypothesis [(H) : n <= m]
-- the domain-agnostic [order] (see [Coq.Structures.OrdersTac]) and [order']
+- the domain-agnostic [order] (see [Stdlib.Structures.OrdersTac]) and [order']
   which knows that [0 < 1 < 2]
 
 The second part proves many induction principles involving the orders and
 defines the tactic notation [nzord_induct].
 *)
-From Coq.Numbers.NatInt Require Import NZAxioms NZBase.
-From Coq.Logic Require Import Decidable.
-From Coq.Structures Require Import OrdersTac.
+From Stdlib.Numbers.NatInt Require Import NZAxioms NZBase.
+From Stdlib.Logic Require Import Decidable.
+From Stdlib.Structures Require Import OrdersTac.
 
 Module Type NZOrderProp
  (Import NZ : NZOrdSig')(Import NZBase : NZBaseProp NZ).

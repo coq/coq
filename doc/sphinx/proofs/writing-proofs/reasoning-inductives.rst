@@ -408,7 +408,7 @@ Induction
 
    The *experimental* tactic :tacn:`dependent induction` performs
    induction-inversion on an instantiated inductive predicate. One needs to first
-   :cmd:`Require` the `Coq.Program.Equality` module to use this tactic. The tactic
+   :cmd:`Require` the `Stdlib.Program.Equality` module to use this tactic. The tactic
    is based on the BasicElim tactic by Conor McBride
    :cite:`DBLP:conf/types/McBride00` and the work of Cristina Cornes around
    inversion :cite:`DBLP:conf/types/CornesT95`. From an instantiated
@@ -442,7 +442,7 @@ Induction
 
       .. coqtop:: reset all
 
-         Require Import Coq.Program.Equality.
+         Require Import Stdlib.Program.Equality.
          Lemma lt_1_r : forall n:nat, n < 1 -> n = 0.
          intros n H ; dependent induction H.
 
@@ -923,7 +923,7 @@ This section describes some special purpose tactics to work with
 
    .. coqtop:: reset all
 
-      Require Import Coq.Logic.Eqdep_dec.
+      Require Import Stdlib.Logic.Eqdep_dec.
 
       Inductive vec A : nat -> Type :=
       | nil : vec A O
@@ -1354,7 +1354,7 @@ example, revisiting the first example of the inversion documentation:
 
 .. coqtop:: in reset
 
-   Require Import Coq.Logic.JMeq.
+   Require Import Stdlib.Logic.JMeq.
 
    Inductive Le : nat -> nat -> Set :=
         | LeO : forall n:nat, Le 0 n
@@ -1392,7 +1392,7 @@ as well in this case, e.g.:
 
 .. coqtop:: none
 
-   Require Import Coq.Program.Equality.
+   Require Import Stdlib.Program.Equality.
 
 .. coqtop:: in
 
@@ -1570,8 +1570,8 @@ back automatically. Indeed we can simply write:
 
 .. coqtop:: in
 
-   Require Import Coq.Program.Tactics.
-   Require Import Coq.Program.Equality.
+   Require Import Stdlib.Program.Tactics.
+   Require Import Stdlib.Program.Equality.
 
 .. coqtop:: in
 

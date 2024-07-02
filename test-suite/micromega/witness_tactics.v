@@ -1,6 +1,6 @@
 Require Import ZArith QArith.
-From Coq.micromega Require Import RingMicromega EnvRing Tauto.
-From Coq.micromega Require Import ZMicromega QMicromega.
+From Stdlib.micromega Require Import RingMicromega EnvRing Tauto.
+From Stdlib.micromega Require Import ZMicromega QMicromega.
 
 Declare ML Module "micromega_core_plugin:coq-core.plugins.micromega_core".
 Declare ML Module "micromega_plugin:coq-core.plugins.micromega".

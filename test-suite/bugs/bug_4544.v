@@ -2,13 +2,13 @@
 (* File reduced by coq-bug-finder from original input, then from 2553 lines to 1932 lines, then from 1946 lines to 1932 lines, then from 2467 lines to 1002 lines, then from 1016 lines to 1002 lines *)
 (* coqc version 8.5 (January 2016) compiled on Jan 23 2016 16:15:22 with OCaml 4.01.0
    coqtop version 8.5 (January 2016) *)
-Require Import Coq.Init.Ltac.
+Require Import Stdlib.Init.Ltac.
 Inductive False := .
 Axiom proof_admitted : False.
 Tactic Notation "admit" := case proof_admitted.
-Require Coq.Init.Datatypes.
+Require Stdlib.Init.Datatypes.
 
-Import Coq.Init.Notations.
+Import Stdlib.Init.Notations.
 
 Global Set Universe Polymorphism.
 
@@ -18,9 +18,9 @@ Global Set Primitive Projections.
 Inductive sum (A B : Type) : Type :=
   | inl : A -> sum A B
   | inr : B -> sum A B.
-Notation nat := Coq.Init.Datatypes.nat.
-Notation O := Coq.Init.Datatypes.O.
-Notation S := Coq.Init.Datatypes.S.
+Notation nat := Stdlib.Init.Datatypes.nat.
+Notation O := Stdlib.Init.Datatypes.O.
+Notation S := Stdlib.Init.Datatypes.S.
 Notation "x + y" := (sum x y) : type_scope.
 
 Record prod (A B : Type) := pair { fst : A ; snd : B }.

@@ -272,7 +272,7 @@ let rtauto_tac =
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
-    Coqlib.check_required_library ["Coq";"rtauto";"Rtauto"];
+    Coqlib.check_required_library ["Stdlib";"rtauto";"Rtauto"];
     let gamma={next=1;env=[]} in
     let () =
       if Retyping.get_sort_family_of env sigma concl != InProp

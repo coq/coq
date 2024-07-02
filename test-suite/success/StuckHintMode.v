@@ -1,5 +1,5 @@
 
-Require Import Coq.Setoids.Setoid Coq.Classes.Morphisms.
+Require Import Stdlib.Setoids.Setoid Stdlib.Classes.Morphisms.
 
 Class PartialOrder {A} (R : relation A) : Prop := {
   partial_order_pre :: PreOrder R;

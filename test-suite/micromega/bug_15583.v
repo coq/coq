@@ -3,8 +3,8 @@ Open Scope Z_scope.
 
 Unset Lia Cache.
 
-Require Import Coq.ZArith.ZArith. Open Scope Z_scope.
-Require Import Coq.micromega.Lia.
+Require Import Stdlib.ZArith.ZArith. Open Scope Z_scope.
+Require Import Stdlib.micromega.Lia.
 
 Goal forall
     (w0  w1  w2  q0  q : Z)

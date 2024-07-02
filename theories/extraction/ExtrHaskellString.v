@@ -2,11 +2,11 @@
  * Special handling of ascii and strings for extraction to Haskell.
  *)
 
-Require Coq.extraction.Extraction.
+Require Stdlib.extraction.Extraction.
 
 Require Import Ascii.
 Require Import String.
-Require Import Coq.Strings.Byte.
+Require Import Stdlib.Strings.Byte.
 
 Require Export ExtrHaskellBasic.
 

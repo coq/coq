@@ -1,6 +1,6 @@
 Axiom _0: Prop.
 
-From Coq Require Export Morphisms Setoid Utf8.
+From Stdlib Require Export Morphisms Setoid Utf8.
 
 Class Equiv A := equiv: relation A.
 

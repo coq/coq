@@ -1,5 +1,5 @@
-Require Coq.Strings.String.
-Require Coq.ZArith.ZArith.
+Require Stdlib.Strings.String.
+Require Stdlib.ZArith.ZArith.
 
 Axiom proof_admitted : False.
 Tactic Notation "admit" := abstract case proof_admitted.
@@ -40,8 +40,8 @@ Fixpoint hlist@{i j k} (argts : list@{j} Type@{i}) : Type@{k} :=
   end.
 
 Definition tuple A n := hlist (repeat A n).
-  Notation byte := (Coq.Init.Byte.byte: Type).
-Import Coq.ZArith.BinInt.
+  Notation byte := (Stdlib.Init.Byte.byte: Type).
+Import Stdlib.ZArith.BinInt.
 Local Open Scope Z_scope.
 
 Module Export word.
@@ -238,7 +238,7 @@ Module Export map.
   Arguments map : clear implicits.
 
   Global Coercion map.rep : map >-> Sortclass.
-Import Coq.Strings.String.
+Import Stdlib.Strings.String.
 
 Section Machine.
 

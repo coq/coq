@@ -1,6 +1,6 @@
 ; For now we use coq_dune to generate the rules here
 (coq.theory
- (name Coq)
+ (name Stdlib)
  (package coq-stdlib)
  (synopsis "Coq's Standard Library")
  ; Uncomment this to have dune compile native files in release mode

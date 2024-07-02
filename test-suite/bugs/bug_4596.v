@@ -1,4 +1,4 @@
-Require Import Coq.Setoids.Setoid Coq.Classes.Morphisms.
+Require Import Stdlib.Setoids.Setoid Stdlib.Classes.Morphisms.
 
 Definition T (x : bool) := x = true.
 

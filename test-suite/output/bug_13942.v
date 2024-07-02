@@ -156,10 +156,10 @@ Module Minimized'.
 
 End Minimized'.
 
-From Coq Require Export Morphisms RelationClasses List Bool Setoid Peano Utf8.
-From Coq Require Import Permutation.
+From Stdlib Require Export Morphisms RelationClasses List Bool Setoid Peano Utf8.
+From Stdlib Require Import Permutation.
 Export ListNotations.
-From Coq.Program Require Export Basics Syntax.
+From Stdlib.Program Require Export Basics Syntax.
 
 Module Import base.
 Global Generalizable All Variables.

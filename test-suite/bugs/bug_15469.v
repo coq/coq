@@ -1,4 +1,4 @@
-Require Import Coq.ssr.ssreflect.
+Require Import Stdlib.ssr.ssreflect.
 
 Class Dist := dist0 : Prop.
 

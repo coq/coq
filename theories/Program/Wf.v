@@ -10,8 +10,8 @@
 (** Reformulation of the Wf module using subsets where possible, providing
    the support for [Program]'s treatment of well-founded definitions. *)
 
-Require Import Coq.Init.Wf.
-Require Import Coq.Program.Utils.
+Require Import Stdlib.Init.Wf.
+Require Import Stdlib.Program.Utils.
 
 Local Open Scope program_scope.
 
@@ -71,7 +71,7 @@ Section Well_founded.
 
 End Well_founded.
 
-Require Coq.extraction.Extraction.
+Require Stdlib.extraction.Extraction.
 Extraction Inline Fix_F_sub Fix_sub.
 
 Set Implicit Arguments.

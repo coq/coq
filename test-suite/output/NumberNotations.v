@@ -320,7 +320,7 @@ Module Test16.
   Fail Check let v := 0%test16 in v : Foo.
 End Test16.
 
-Require Import Coq.Numbers.Cyclic.Int63.Uint63.
+Require Import Stdlib.Numbers.Cyclic.Int63.Uint63.
 Module Test17.
   (** Test uint63 *)
   Declare Scope test17_scope.
@@ -373,8 +373,8 @@ Module Test18.
   Compute let v := 4%Q in (num v, den v).
 End Test18.
 
-Require Import Coq.Lists.List.
-Require Import Coq.ZArith.ZArith.
+Require Import Stdlib.Lists.List.
+Require Import Stdlib.ZArith.ZArith.
 Module Test19.
   (** Test another thing related to https://github.com/coq/coq/issues/9840 *)
   Record Zlike := { summands : list Z }.

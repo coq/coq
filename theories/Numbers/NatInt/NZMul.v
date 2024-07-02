@@ -27,7 +27,7 @@ This gives the following basic lemmas:
 Notice that [NZMulProp] itself [Include]s [NZAddProp].
 *)
 
-From Coq.Numbers.NatInt Require Import NZAxioms NZBase NZAdd.
+From Stdlib.Numbers.NatInt Require Import NZAxioms NZBase NZAdd.
 
 Module Type NZMulProp (Import NZ : NZBasicFunsSig')(Import NZBase : NZBaseProp NZ).
 Include NZAddProp NZ NZBase.

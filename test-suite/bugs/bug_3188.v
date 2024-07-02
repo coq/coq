@@ -1,7 +1,7 @@
 (* File reduced by coq-bug-finder from 1656 lines to 221 lines to 26 lines to 7 lines. *)
 
 Module Long.
-  Require Import Coq.Classes.RelationClasses.
+  Require Import Stdlib.Classes.RelationClasses.
 
   #[export] Hint Extern 0 => apply reflexivity : typeclass_instances.
   #[export] Hint Extern 1 => symmetry.
@@ -12,7 +12,7 @@ Module Long.
 End Long.
 
 Module Short.
-  Require Import Coq.Classes.RelationClasses.
+  Require Import Stdlib.Classes.RelationClasses.
 
   #[export] Hint Extern 0 => apply reflexivity : typeclass_instances.
 

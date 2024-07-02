@@ -14,10 +14,10 @@
    Institution: LRI, CNRS UMR 8623 - University Paris Sud
 *)
 
-Require Import Coq.Program.Basics.
-Require Import Coq.Program.Tactics.
-Require Import Coq.Relations.Relation_Definitions.
-Require Export Coq.Classes.RelationClasses.
+Require Import Stdlib.Program.Basics.
+Require Import Stdlib.Program.Tactics.
+Require Import Stdlib.Relations.Relation_Definitions.
+Require Export Stdlib.Classes.RelationClasses.
 
 Generalizable Variables A eqA B C D R RA RB RC m f x y.
 Local Obligation Tactic := try solve [ simpl_relation ].

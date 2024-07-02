@@ -1,4 +1,4 @@
-From Coq Require Import Utf8 Bool ssreflect.
+From Stdlib Require Import Utf8 Bool ssreflect.
 
 Set Printing All.
 Set Debug Ssreflect.

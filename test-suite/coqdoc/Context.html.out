@@ -20,7 +20,7 @@
 
 <div class="code">
 <span class="id" title="keyword">Section</span> <a id="Sec" class="idref" href="#Sec"><span class="id" title="section">Sec</span></a>.<br/>
-<span class="id" title="keyword">Context</span> (<a id="Sec.foo" class="idref" href="#Sec.foo"><span class="id" title="variable">foo</span></a> : <a class="idref" href="http://coq.inria.fr/stdlib/Coq.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a>).<br/>
+<span class="id" title="keyword">Context</span> (<a id="Sec.foo" class="idref" href="#Sec.foo"><span class="id" title="variable">foo</span></a> : <a class="idref" href="http://coq.inria.fr/stdlib/Stdlib.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a>).<br/>
 <span class="id" title="keyword">Check</span> <a class="idref" href="Coqdoc.Context.html#Sec.foo"><span class="id" title="variable">foo</span></a>.<br/>
 <span class="id" title="keyword">End</span> <a class="idref" href="Coqdoc.Context.html#Sec"><span class="id" title="section">Sec</span></a>.<br/>
 </div>

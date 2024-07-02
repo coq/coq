@@ -1,8 +1,8 @@
 Require Import Program.
 
-Require Import Coq.Strings.String.
-Require Import Coq.Strings.Ascii.
-Require Import Coq.Numbers.BinNums.
+Require Import Stdlib.Strings.String.
+Require Import Stdlib.Strings.Ascii.
+Require Import Stdlib.Numbers.BinNums.
 
 Set Implicit Arguments.
 Set Strict Implicit.

@@ -5,7 +5,7 @@
 
 (* This was triggering a "Not_found" at the time of printing/showing the goal *)
 
-Require Coq.Unicode.Utf8.
+Require Stdlib.Unicode.Utf8.
 
 Notation "t $ r" := (t r)
   (at level 65, right associativity, only parsing).
@@ -35,7 +35,7 @@ Inductive val :=
   | InjRV (v : val).
 Axiom coPset : Set.
 Axiom atomic_update : forall {PROP : Type} {TA TB : tele}, coPset -> coPset -> (TA -> PROP) -> (TA -> TB -> PROP) -> (TA -> TB -> PROP) -> PROP.
-Import Coq.Unicode.Utf8.
+Import Stdlib.Unicode.Utf8.
 Notation "'AU' '<<' ∀ x1 .. xn , α '>>' @ Eo , Ei '<<' β , 'COMM' Φ '>>'" :=
   (atomic_update (TA:=TeleS (λ x1, .. (TeleS (λ xn, TeleO)) .. ))
                  (TB:=TeleO)

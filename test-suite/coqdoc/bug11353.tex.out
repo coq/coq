@@ -24,9 +24,9 @@
 \coqdocnoindent
 \coqdockw{Inductive} \coqdef{Coqdoc.bug11353.mysum}{mysum}{\coqdocinductive{mysum}} (\coqdef{Coqdoc.bug11353.A:1}{A}{\coqdocbinder{A}} \coqdef{Coqdoc.bug11353.B:2}{B}{\coqdocbinder{B}}:\coqdockw{Type}) : \coqdockw{Type} :=\coqdoceol
 \coqdocindent{1.00em}
-\ensuremath{|} \coqdef{Coqdoc.bug11353.myinl}{myinl}{\coqdocconstructor{myinl}} : \coqref{Coqdoc.bug11353.A:1}{\coqdocvariable{A}} \coqexternalref{::type scope:x '->' x}{http://coq.inria.fr/stdlib/Coq.Init.Logic}{\coqdocnotation{\ensuremath{\rightarrow}}} \coqref{Coqdoc.bug11353.mysum:3}{\coqdocinductive{mysum}} \coqref{Coqdoc.bug11353.A:1}{\coqdocvariable{A}} \coqref{Coqdoc.bug11353.B:2}{\coqdocvariable{B}}\coqdoceol
+\ensuremath{|} \coqdef{Coqdoc.bug11353.myinl}{myinl}{\coqdocconstructor{myinl}} : \coqref{Coqdoc.bug11353.A:1}{\coqdocvariable{A}} \coqexternalref{::type scope:x '->' x}{http://coq.inria.fr/stdlib/Stdlib.Init.Logic}{\coqdocnotation{\ensuremath{\rightarrow}}} \coqref{Coqdoc.bug11353.mysum:3}{\coqdocinductive{mysum}} \coqref{Coqdoc.bug11353.A:1}{\coqdocvariable{A}} \coqref{Coqdoc.bug11353.B:2}{\coqdocvariable{B}}\coqdoceol
 \coqdocindent{1.00em}
-\ensuremath{|} \coqdef{Coqdoc.bug11353.myinr}{myinr}{\coqdocconstructor{myinr}} : \coqref{Coqdoc.bug11353.B:2}{\coqdocvariable{B}} \coqexternalref{::type scope:x '->' x}{http://coq.inria.fr/stdlib/Coq.Init.Logic}{\coqdocnotation{\ensuremath{\rightarrow}}} \coqref{Coqdoc.bug11353.mysum:3}{\coqdocinductive{mysum}} \coqref{Coqdoc.bug11353.A:1}{\coqdocvariable{A}} \coqref{Coqdoc.bug11353.B:2}{\coqdocvariable{B}}.\coqdoceol
+\ensuremath{|} \coqdef{Coqdoc.bug11353.myinr}{myinr}{\coqdocconstructor{myinr}} : \coqref{Coqdoc.bug11353.B:2}{\coqdocvariable{B}} \coqexternalref{::type scope:x '->' x}{http://coq.inria.fr/stdlib/Stdlib.Init.Logic}{\coqdocnotation{\ensuremath{\rightarrow}}} \coqref{Coqdoc.bug11353.mysum:3}{\coqdocinductive{mysum}} \coqref{Coqdoc.bug11353.A:1}{\coqdocvariable{A}} \coqref{Coqdoc.bug11353.B:2}{\coqdocvariable{B}}.\coqdoceol
 \coqdocemptyline
 \coqdocnoindent
 \#[\coqdocvar{local}]\coqdockw{Definition} \coqdef{Coqdoc.bug11353.b}{b}{\coqdocdefinition{b}} := 1.\coqdoceol

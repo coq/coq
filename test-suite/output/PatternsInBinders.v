@@ -1,4 +1,4 @@
-Require Coq.Unicode.Utf8.
+Require Stdlib.Unicode.Utf8.
 
 (** The purpose of this file is to test printing of the destructive
     patterns used in binders ([fun] and [forall]). *)
@@ -39,7 +39,7 @@ End WithParameters.
 (** Some test involving unicode notations. *)
 Module WithUnicode.
 
-  Import Coq.Unicode.Utf8.
+  Import Stdlib.Unicode.Utf8.
 
   Check λ '((x,y) : A*B),  (y,x).
   Check ∀ '(x,y), swap (x,y) = (y,x).

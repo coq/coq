@@ -18,9 +18,9 @@ The reference 2 is free.
   About map2'.
 End Reduced.
 
-Require Coq.FSets.FMapInterface.
-Import Coq.Structures.Orders.
-Import Coq.FSets.FMapInterface.
+Require Stdlib.FSets.FMapInterface.
+Import Stdlib.Structures.Orders.
+Import Stdlib.FSets.FMapInterface.
 
 Definition option_value {A} (v1 : option A) (v2 : A) : A := match v1 with Some v => v | None => v2 end.
 

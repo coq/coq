@@ -2,10 +2,10 @@ Require Import Uint63.
 Require Export PrimString.
 Require Export PrimStringAxioms.
 
-Require Import Coq.micromega.Lia.
-Require Import Coq.micromega.ZifyUint63.
-Require Import Coq.micromega.Zify.
-Require Import Coq.Numbers.Cyclic.Int63.Ring63.
+Require Import Stdlib.micromega.Lia.
+Require Import Stdlib.micromega.ZifyUint63.
+Require Import Stdlib.micromega.Zify.
+Require Import Stdlib.Numbers.Cyclic.Int63.Ring63.
 Require Import ZArith.
 
 #[local] Open Scope Z_scope.

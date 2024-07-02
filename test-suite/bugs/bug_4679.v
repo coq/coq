@@ -1,4 +1,4 @@
-Require Import Coq.Setoids.Setoid.
+Require Import Stdlib.Setoids.Setoid.
 Goal forall (T : nat -> Set -> Set) (U : Set)
             (H : forall n : nat, T n (match n with
                                       | 0 => fun x => x

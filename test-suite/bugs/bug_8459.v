@@ -1,4 +1,4 @@
-Require Import Coq.Vectors.Vector.
+Require Import Stdlib.Vectors.Vector.
 
 Axiom exfalso : False.
 

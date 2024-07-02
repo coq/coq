@@ -16,7 +16,7 @@ Inductive vector {A : Type} : nat -> Type :=
 
 Arguments vector A : clear implicits.
 
-Require Import Coq.Program.Program.
+Require Import Stdlib.Program.Program.
 
 Program Definition head {A : Type} {n : nat} (v : vector A (S n)) : vector A n :=
   match v with

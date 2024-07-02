@@ -1,4 +1,4 @@
-Require Import Coq.Strings.String.
-Require Import Coq.Strings.Ascii.
+Require Import Stdlib.Strings.String.
+Require Import Stdlib.Strings.Ascii.
 
 Check String "]".

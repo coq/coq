@@ -1,13 +1,13 @@
 Axiom proof_admitted : False.
 Tactic Notation "admit" := abstract case proof_admitted.
-Require Coq.Program.Program.
-Export Coq.Program.Program.
+Require Stdlib.Program.Program.
+Export Stdlib.Program.Program.
 Set Primitive Projections.
 Set Universe Polymorphism.
 
 Close Scope nat_scope.
 Require Setoid.
-Require Export Coq.Classes.CMorphisms.
+Require Export Stdlib.Classes.CMorphisms.
 
 Notation "∀  x .. y , P" := (forall x, .. (forall y, P) ..)
   (at level 200, x binder, y binder, right associativity).

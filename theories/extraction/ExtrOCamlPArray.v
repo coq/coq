@@ -10,7 +10,7 @@
 
 (** Extraction to OCaml of persistent arrays. *)
 
-From Coq Require PArray Extraction.
+From Stdlib Require PArray Extraction.
 
 (** Primitive types and operators. *)
 Extract Constant PArray.array "'a" => "'a Parray.t".

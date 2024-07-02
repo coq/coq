@@ -1,5 +1,5 @@
-Require Import Coq.Classes.Morphisms.
-Require Import Coq.Setoids.Setoid.
+Require Import Stdlib.Classes.Morphisms.
+Require Import Stdlib.Setoids.Setoid.
 
 Definition T := nat.
 Axiom MT : Type.

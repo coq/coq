@@ -1,5 +1,5 @@
-Require Import Coq.ZArith.ZArith.
-Require Import Coq.micromega.Lia.
+Require Import Stdlib.ZArith.ZArith.
+Require Import Stdlib.micromega.Lia.
 
 Local Open Scope Z_scope.
 
