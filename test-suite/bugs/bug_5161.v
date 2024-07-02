@@ -1,7 +1,7 @@
 (* Check that the presence of binders with type annotation do not
    prevent the recursive binder part to be found *)
 
-From Coq Require Import Utf8.
+From Stdlib Require Import Utf8.
 
 Delimit Scope C_scope with C.
 Global Open Scope C_scope.

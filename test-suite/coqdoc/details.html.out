@@ -21,16 +21,16 @@
 <div class="code">
 </div>
 <details><div class="code">
-<span class="id" title="keyword">Definition</span> <a id="foo" class="idref" href="#foo"><span class="id" title="definition">foo</span></a> : <a class="idref" href="http://coq.inria.fr/stdlib/Coq.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a> := 3.<br/>
+<span class="id" title="keyword">Definition</span> <a id="foo" class="idref" href="#foo"><span class="id" title="definition">foo</span></a> : <a class="idref" href="http://coq.inria.fr/stdlib/Stdlib.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a> := 3.<br/>
 </div>
 </details><div class="code">
 
 <br/>
 </div>
 <details><summary>Foo bar </summary><div class="code">
-<span class="id" title="keyword">Fixpoint</span> <a id="idnat" class="idref" href="#idnat"><span class="id" title="definition">idnat</span></a> (<a id="x:1" class="idref" href="#x:1"><span class="id" title="binder">x</span></a> : <a class="idref" href="http://coq.inria.fr/stdlib/Coq.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a>) : <a class="idref" href="http://coq.inria.fr/stdlib/Coq.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a> :=<br/>
+<span class="id" title="keyword">Fixpoint</span> <a id="idnat" class="idref" href="#idnat"><span class="id" title="definition">idnat</span></a> (<a id="x:1" class="idref" href="#x:1"><span class="id" title="binder">x</span></a> : <a class="idref" href="http://coq.inria.fr/stdlib/Stdlib.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a>) : <a class="idref" href="http://coq.inria.fr/stdlib/Stdlib.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a> :=<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="Coqdoc.details.html#x:1"><span class="id" title="variable">x</span></a> <span class="id" title="keyword">with</span><br/>
-&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/stdlib/Coq.Init.Datatypes.html#S"><span class="id" title="constructor">S</span></a> <span class="id" title="var">x</span> ⇒ <a class="idref" href="http://coq.inria.fr/stdlib/Coq.Init.Datatypes.html#S"><span class="id" title="constructor">S</span></a> (<a class="idref" href="Coqdoc.details.html#idnat:2"><span class="id" title="definition">idnat</span></a> <a class="idref" href="Coqdoc.details.html#x:1"><span class="id" title="variable">x</span></a>)<br/>
+&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/stdlib/Stdlib.Init.Datatypes.html#S"><span class="id" title="constructor">S</span></a> <span class="id" title="var">x</span> ⇒ <a class="idref" href="http://coq.inria.fr/stdlib/Stdlib.Init.Datatypes.html#S"><span class="id" title="constructor">S</span></a> (<a class="idref" href="Coqdoc.details.html#idnat:2"><span class="id" title="definition">idnat</span></a> <a class="idref" href="Coqdoc.details.html#x:1"><span class="id" title="variable">x</span></a>)<br/>
 &nbsp;&nbsp;| 0 ⇒ 0<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
 </div>

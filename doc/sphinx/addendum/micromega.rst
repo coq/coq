@@ -441,7 +441,7 @@ obtain :math:`-1`. Thus, by Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
 
   .. coqtop:: all
 
-    From Coq.micromega Require Import RingMicromega QMicromega EnvRing Tauto.
+    From Stdlib.micromega Require Import RingMicromega QMicromega EnvRing Tauto.
 
     Print example_lra.
 

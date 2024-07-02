@@ -1,4 +1,4 @@
-Require Import Coq.derive.Derive.
+Require Import Stdlib.derive.Derive.
 
 Derive f SuchThat (f = 1 + 1) As feq.
 Proof.

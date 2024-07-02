@@ -17,7 +17,26 @@ open Libnames
 
 open Pcoq.Prim
 
-let local_make_qualid loc l id = make_qualid ~loc (DirPath.make l) id
+let warn_deprecated_dirpath_Coq =
+  CWarnings.create ~name:"deprecated-parsing-dirpath-Coq"
+    ~category:CWarnings.CoreCategories.deprecated
+    (fun (l, l', id) ->
+      Pp.(DirPath.(print (make l)) ++ str "." ++ Id.print id ++ spc ()
+          ++ str "has been replaced by" ++ spc ()
+          ++ DirPath.(print (make l')) ++ str "." ++ Id.print id ++ str "."))
+
+let deprecated_Coq loc l id = match List.rev l with
+  | [] -> []
+  | s :: p ->
+     match Id.to_string s with
+     | "Coq" ->
+        let l' = List.rev (Id.of_string "Stdlib" :: p) in
+        warn_deprecated_dirpath_Coq ~loc (l, l', id); l'
+     | _ -> l
+
+let local_make_qualid loc l id =
+  let l = deprecated_Coq loc l id in
+  make_qualid ~loc (DirPath.make l) id
 
 let my_int_of_string ?loc s =
   try

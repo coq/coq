@@ -1,4 +1,4 @@
-Require Import Coq.Program.Tactics.
+Require Import Stdlib.Program.Tactics.
 
 (* these should not result in anomalies *)
 

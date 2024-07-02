@@ -978,7 +978,7 @@ on success. It is stronger than the tactic ``fold``.
 
    .. coqtop:: all
 
-      Require Import Coq.Arith.Arith.
+      Require Import Stdlib.Arith.Arith.
       Set Printing Parentheses.
       Goal forall a b c: nat, a + b + c = 0.
       rewrite_strat innermost Nat.add_comm.

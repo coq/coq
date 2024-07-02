@@ -421,7 +421,7 @@ and ``coqtop``, unless stated otherwise:
   of command-line options.
 :-compat *version*: Load a file that sets a few options to maintain
   partial backward-compatibility with a previous version.  This is
-  equivalent to :cmd:`Require Import` `Coq.Compat.CoqXXX` with `XXX`
+  equivalent to :cmd:`Require Import` `Stdlib.Compat.StdlibXXX` with `XXX`
   one of the last three released versions (including the current
   version).  Note that the :ref:`explanations above
   <interleave-command-line>` regarding the order of command-line

@@ -1,5 +1,5 @@
 Require Import ZArith_base.
-Require Import Coq.micromega.Lia.
+Require Import Stdlib.micromega.Lia.
 
 Open Scope Z_scope.
 
@@ -20,7 +20,7 @@ Proof.
 Qed.
 
 Require Import Reals.
-Require Import Coq.micromega.Lra.
+Require Import Stdlib.micromega.Lra.
 
 Open Scope R_scope.
 

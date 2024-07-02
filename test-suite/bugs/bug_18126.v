@@ -1,4 +1,4 @@
-From Coq Require Export Morphisms Setoid Utf8.
+From Stdlib Require Export Morphisms Setoid Utf8.
 
 Class Empty A := empty : A.
 

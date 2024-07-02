@@ -101,7 +101,7 @@ let translate_boot_to_native dep =
   let dep = Path.to_string dep |> Filename.remove_extension in
   let dir = Filename.dirname dep in
   let components = String.split_on_char '/' dep |> List.filter not_dot_path_or_coqlib in
-  let name = String.concat "_" ("Coq"::components) in
+  let name = String.concat "_" ("Stdlib"::components) in
   Filename.concat dir ("N" ^ name ^ ".cmi") |> Path.make
 
 let cmi_of_dep ~tname dep =

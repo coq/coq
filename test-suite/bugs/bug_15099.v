@@ -2,7 +2,7 @@ Require Setoid.
 
 Declare Scope category_theory_scope.
 Open Scope category_theory_scope.
-Require Import Coq.Classes.CMorphisms.
+Require Import Stdlib.Classes.CMorphisms.
 Set Primitive Projections.
 Set Universe Polymorphism.
 

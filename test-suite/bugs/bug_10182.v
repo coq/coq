@@ -1,4 +1,4 @@
-Require Import Coq.Arith.PeanoNat.
+Require Import Stdlib.Arith.PeanoNat.
 
 Goal
   forall A m pf1 pf2

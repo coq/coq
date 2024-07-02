@@ -1,4 +1,4 @@
-From Coq Require Import Zify ZifyUint63 ZifySint63 Sint63 Uint63 ZArith Lia.
+From Stdlib Require Import Zify ZifyUint63 ZifySint63 Sint63 Uint63 ZArith Lia.
 
 Lemma boom : False.
 Proof.

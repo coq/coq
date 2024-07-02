@@ -1429,8 +1429,8 @@ let elim_let = iter_let_aux elim_binding
 
 let zify_tac =
   Proofview.Goal.enter (fun gl ->
-      Coqlib.check_required_library ["Coq"; "micromega"; "ZifyClasses"];
-      Coqlib.check_required_library ["Coq"; "micromega"; "ZifyInst"];
+      Coqlib.check_required_library ["Stdlib"; "micromega"; "ZifyClasses"];
+      Coqlib.check_required_library ["Stdlib"; "micromega"; "ZifyInst"];
       init_cache ();
       let evd = Tacmach.project gl in
       let env = Tacmach.pf_env gl in

@@ -240,7 +240,7 @@ let rec dest_rel sigma t =
 
 let plugin_dir = "setoid_ring"
 
-let cdir = ["Coq";plugin_dir]
+let cdir = ["Stdlib";plugin_dir]
 let plugin_modules =
   List.map (fun d -> cdir@d)
     [["Ring_theory"];["Ring_polynom"]; ["Ring_tac"];["InitialRing"];
@@ -255,7 +255,7 @@ let my_reference c =
     [@@ocaml.warning "-3"]
 
 let znew_ring_path =
-  DirPath.make (List.map Id.of_string ["InitialRing";plugin_dir;"Coq"])
+  DirPath.make (List.map Id.of_string ["InitialRing";plugin_dir;"Stdlib"])
 let zltac s =
   lazy(KerName.make (ModPath.MPfile znew_ring_path) (Label.make s))
 
@@ -694,7 +694,7 @@ let ring_lookup (f : Value.t) lH rl t =
 (***********************************************************************)
 
 let new_field_path =
-  DirPath.make (List.map Id.of_string ["Field_tac";plugin_dir;"Coq"])
+  DirPath.make (List.map Id.of_string ["Field_tac";plugin_dir;"Stdlib"])
 
 let field_ltac s =
   lazy(KerName.make (ModPath.MPfile new_field_path) (Label.make s))

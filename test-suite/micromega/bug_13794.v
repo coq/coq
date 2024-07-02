@@ -1,4 +1,4 @@
-From Coq Require Import Lia ZArith.ZArith NArith.NArith.
+From Stdlib Require Import Lia ZArith.ZArith NArith.NArith.
 Unset Nia Cache.
 
 Open Scope N_scope.

@@ -1,4 +1,4 @@
-From Coq Require Import
+From Stdlib Require Import
   Fin
   Classes.SetoidClass. (* comment out for different error message *)
 

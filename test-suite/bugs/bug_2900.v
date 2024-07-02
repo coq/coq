@@ -2,7 +2,7 @@
 Set Implicit Arguments.
 
 Require Import List.
-Require Import Coq.Program.Equality.
+Require Import Stdlib.Program.Equality.
 
 (** Reflexive-transitive closure ( R* ) *)
 

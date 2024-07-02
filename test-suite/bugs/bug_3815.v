@@ -1,7 +1,7 @@
-Require Import Setoid Coq.Program.Basics.
+Require Import Setoid Stdlib.Program.Basics.
 Global Open Scope program_scope.
 Axiom foo : forall A (f : A -> A), f ∘ f = f.
-Require Import Coq.Program.Combinators.
+Require Import Stdlib.Program.Combinators.
 #[export] Hint Rewrite foo.
 Theorem t {A B C D} (f : A -> A) (g : B -> C) (h : C -> D)
 : f ∘ f = f.

@@ -12,8 +12,8 @@ Qed.
 
 Axiom proof_admitted : False.
 Tactic Notation "admit" := case proof_admitted.
-Require Export Coq.Classes.Morphisms.
-Require Import Coq.Lists.List.
+Require Export Stdlib.Classes.Morphisms.
+Require Import Stdlib.Lists.List.
 
 Global Set Implicit Arguments.
 

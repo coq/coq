@@ -1,7 +1,7 @@
-Require Coq.Lists.List Coq.Vectors.Vector.
+Require Stdlib.Lists.List Stdlib.Vectors.Vector.
 
 Module A.
-Import Coq.Lists.List Coq.Vectors.Vector.
+Import Stdlib.Lists.List Stdlib.Vectors.Vector.
 Import ListNotations.
 Check [ ]%list : list _.
 Import VectorNotations ListNotations.

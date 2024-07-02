@@ -1,6 +1,6 @@
 Require Import TestSuite.admit.
-Require Coq.Vectors.Fin.
-Require Coq.Vectors.Vector.
+Require Stdlib.Vectors.Fin.
+Require Stdlib.Vectors.Vector.
 
 Local Generalizable All Variables.
 Set Implicit Arguments.

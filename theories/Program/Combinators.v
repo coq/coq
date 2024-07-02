@@ -14,7 +14,7 @@
    Institution: LRI, CNRS UMR 8623 - University Paris Sud
 *)
 
-Require Import Coq.Program.Basics.
+Require Import Stdlib.Program.Basics.
 Require Export FunctionalExtensionality.
 
 Open Scope program_scope.

@@ -1,5 +1,5 @@
 
-Require Import Coq.btauto.Btauto.
+Require Import Stdlib.btauto.Btauto.
 Local Open Scope bool_scope.
 
 Axiom unsigned : bool.

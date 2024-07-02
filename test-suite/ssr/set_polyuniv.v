@@ -1,4 +1,4 @@
-From Coq Require Import ssreflect.
+From Stdlib Require Import ssreflect.
 Set Default Proof Using "Type".
 
 Local Set Universe Polymorphism.

@@ -1,4 +1,4 @@
-Require Coq.Program.Tactics.
+Require Stdlib.Program.Tactics.
 
 Program Definition foo : True -> False := fun _ => _.
 

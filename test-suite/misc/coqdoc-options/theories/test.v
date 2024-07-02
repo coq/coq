@@ -45,7 +45,7 @@ Local Hint Extern 10 (_ <= _) => auto : arith.
 Global Ltac lt0 := auto.
 Local Ltac lt1 := auto.
 
-Require Coq.Program.Tactics.
+Require Stdlib.Program.Tactics.
 
 Global Program Definition x9 := 0.
 Local Program Definition x10 := 0.

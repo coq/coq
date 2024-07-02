@@ -148,7 +148,7 @@ module ModIdmap = Id.Map
 
 (** Dirpaths are lists of module identifiers.
     The actual representation is reversed to optimise sharing:
-    Coq.A.B is ["B";"A";"Coq"] *)
+    Stdlib.A.B is ["B";"A";"Stdlib"] *)
 
 let dummy_module_name = "If you see this, it's a bug"
 

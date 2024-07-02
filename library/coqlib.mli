@@ -110,10 +110,10 @@ val jmeq_module_name : string list
 val find_reference : string -> string list -> string -> GlobRef.t
 [@@ocaml.deprecated "Please use Coqlib.lib_ref"]
 
-(** This just prefixes find_reference with Coq... *)
+(** This just prefixes find_reference with Stdlib... *)
 val coq_reference  : string -> string list -> string -> GlobRef.t
 [@@ocaml.deprecated "Please use Coqlib.lib_ref"]
 
-(** Search in several modules (not prefixed by "Coq") *)
+(** Search in several modules (not prefixed by "Stdlib") *)
 val gen_reference_in_modules : string->string list list-> string -> GlobRef.t
 [@@ocaml.deprecated "Please use Coqlib.lib_ref"]

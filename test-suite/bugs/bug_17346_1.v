@@ -1,7 +1,7 @@
 Require Import Setoid.
 
-Import Coq.Classes.Morphisms.
-Import Coq.Relations.Relation_Definitions.
+Import Stdlib.Classes.Morphisms.
+Import Stdlib.Relations.Relation_Definitions.
 
 Lemma interp  (base_interp : nat -> Type)  : Type.
 Admitted.

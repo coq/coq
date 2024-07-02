@@ -1,5 +1,5 @@
-Require Import Coq.nsatz.NsatzTactic.
-Require Import Coq.ZArith.ZArith Coq.QArith.QArith.
+Require Import Stdlib.nsatz.NsatzTactic.
+Require Import Stdlib.ZArith.ZArith Stdlib.QArith.QArith.
 
 Goal forall x y : Z, (x + y = y + x)%Z.
   intros; nsatz.

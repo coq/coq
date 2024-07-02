@@ -8,11 +8,11 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Export Coq.Classes.SetoidTactics.
+Require Export Stdlib.Classes.SetoidTactics.
 
 Export Morphisms.ProperNotations.
 
-Require Coq.ssr.ssrsetoid.
+Require Stdlib.ssr.ssrsetoid.
 
 (** For backward compatibility *)
 
