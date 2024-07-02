@@ -395,8 +395,8 @@ let explain_unification_error env sigma p1 p2 = function
           p]
      | CannotSolveConstraint ((pb,env,t,u),e) ->
         let env = make_all_name_different env sigma in
-        (strbrk "cannot satisfy constraint " ++ pr_leconstr_env env sigma t ++
-        str " == " ++ pr_leconstr_env env sigma u)
+        (strbrk "cannot satisfy constraint " ++ pr_leconstr_env env sigma (Reductionops.nf_beta env sigma t) ++
+        str " == " ++ pr_leconstr_env env sigma (Reductionops.nf_beta env sigma u))
         :: aux t u e
      | ProblemBeyondCapabilities ->
         []
@@ -737,6 +737,8 @@ let explain_wrong_case_info env (ind,u) ci =
 
 let explain_cannot_unify env sigma m n e =
   let env = make_all_name_different env sigma in
+  let m = Reductionops.nf_beta env sigma m in
+  let n = Reductionops.nf_beta env sigma n in
   let pm, pn = pr_explicit env sigma m n in
   let ppreason = explain_unification_error env sigma m n e in
   let pe = pr_ne_context_of (str "In environment") env sigma in
