@@ -8,6 +8,7 @@
           with import nixpkgs { inherit system; };
           coq.override { version = ./.; };
         defaultPackage = self.packages.${system};
+        devShell = import ./shell.nix;
       }
     );
 }
