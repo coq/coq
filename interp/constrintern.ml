@@ -187,16 +187,6 @@ let compute_internalization_env env sigma ?(impls=empty_internalization_env) ?fo
        Id.Map.add id (ty, impls, scopes, uid) map)
     impls names force
 
-let set_obligation_internalization_data recname (r, impls, scopes, uid) =
-  let f =
-    function {impl_pos=(na,_,_)} as impl ->
-      if Name.equal na (Name recname)
-      then {impl with impl_force = false}
-      else impl
-  in
-  let impls = List.map (Option.map f) impls in
-  (r, impls, scopes, uid)
-
 let implicits_of_decl_in_internalization_env id (int_env:internalization_env) =
   let (_, impls, _, _) = Id.Map.find id int_env in impls
 

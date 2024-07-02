@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Names
 open Vernacexpr
 
 (** {6 Fixpoints and cofixpoints} *)
@@ -29,11 +28,6 @@ val do_mutually_recursive
 (************************************************************************)
 (** Internal API  *)
 (************************************************************************)
-
-(** names / relevance / defs / types / contexts / implicit args / struct annotations / universe decl *)
-type ('constr, 'types, 'r) recursive_preentry =
-  (Id.t list * 'r list * 'constr option list * 'types list * EConstr.rel_context list * Impargs.manual_implicits list) *
-  Decls.definition_object_kind * Pretyping.possible_guard * UState.universe_decl
 
 (** Exported for Funind *)
 
