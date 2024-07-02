@@ -105,7 +105,7 @@ let prefs = ref default
 
 (* Globals *************************************************************************)
 let page_title = ref ""
-let out_channel = ref stdout
+let out_channel = ref None
 (* End globals *********************************************************************)
 
 (* Little helpers ******************************************************************)
@@ -120,10 +120,51 @@ let coqdoc_out f =
   else
     f
 
-let open_out_file f =
-  out_channel :=
-    try open_out (coqdoc_out f)
-    with Sys_error s -> Printf.eprintf "%s\n" s; exit 1
+let buffers = ref (Buffer.create 512, Buffer.create 512, Buffer.create 1024)
 
-let close_out_file () = close_out !out_channel
+let file = ref stdout
+
+let clear () =
+  let (header, toc, main) = !buffers in
+  Buffer.output_buffer !file header;
+  Buffer.output_buffer !file toc;
+  Buffer.output_buffer !file main;
+  out_channel := None
+
+let output d =
+  let (header, toc, main) = !buffers in
+  Buffer.output_buffer d header;
+  Buffer.output_buffer d toc;
+  Buffer.output_buffer d main
+
+let set_header_output () =
+  let (header, toc, main) = !buffers in out_channel := Some header
+
+let set_toc_output () =
+  let (header, toc, main) = !buffers in out_channel := Some toc
+
+let set_main_output () =
+  let (header, toc, main) = !buffers in out_channel := Some main
+
+let open_out_file f =
+  let d =
+    try open_out (coqdoc_out f)
+    with Sys_error s -> Printf.eprintf "%s\n" s; exit 1 in
+  file := d;
+  clear ();
+  set_header_output ()
+
+let close_out_file () =
+  output !file;
+  close_out !file
+
+let set_stdout () =
+  file := stdout;
+  clear ();
+  set_header_output ()
+
+let flush_stdout () =
+  output !file
+
+
 (* End little helpers **************************************************************)
