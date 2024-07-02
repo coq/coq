@@ -224,6 +224,8 @@ val shortest_qualid_of_universe : ?loc:Loc.t -> 'u Id.Map.t -> Univ.UGlobal.t ->
 
 val pr_depr_xref : Globnames.extended_global_reference -> Pp.t
 
+val shortest_qualid_of_quality : ?loc:Loc.t -> 'u Id.Map.t -> Sorts.QGlobal.t -> qualid
+
 (** {5 Generic name handling} *)
 
 (** NOT FOR PUBLIC USE YET. Plugin writers, please do not rely on this API. *)
