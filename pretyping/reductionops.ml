@@ -87,6 +87,8 @@ module ReductionBehaviour = struct
     | UnfoldWhen x -> UnfoldWhen (more_args_when k x)
     | UnfoldWhenNoMatch x -> UnfoldWhenNoMatch (more_args_when k x)
 
+  type table = Cpred.t * t Cmap.t
+
 (* We need to have a fast way to know the set of all constants that
   have the NeverUnfold flag.  Therefore, the table has a distinct subpart
   that is this set. *)
@@ -131,18 +133,16 @@ module ReductionBehaviour = struct
   let set ~local r b =
     Lib.add_leaf (inRedBehaviour (local, (r, b)))
 
-  let get r =
-    if Cpred.mem r (fst !table) then
+  let get_from_db table r =
+    if Cpred.mem r (fst table) then
       Some NeverUnfold
     else
-      Cmap.find_opt r (snd !table)
+      Cmap.find_opt r (snd table)
 
-  let all_never_unfold () = fst !table
-
-  let print ref =
+  let print_from_db table ref =
     let open Pp in
     let pr_global c = Nametab.pr_global_env Id.Set.empty (ConstRef c) in
-    match get ref with
+    match get_from_db table ref with
     | None -> mt ()
     | Some b ->
        let pp_nomatch = spc () ++ str "but avoid exposing match constructs" in
@@ -172,6 +172,18 @@ module ReductionBehaviour = struct
          | UnfoldWhenNoMatch x -> pp_when x ++ pp_nomatch
        in
        hov 2 (str "The reduction tactics " ++ pp_behavior b)
+
+  module Db = struct
+    type t = table
+    let get () = !table
+    let empty = (Cpred.empty, Cmap.empty)
+    let print = print_from_db
+    let all_never_unfold table = fst table
+  end
+
+  let get r = get_from_db (Db.get ()) r
+
+  let print c = print_from_db (Db.get ()) c
 
 end
 
@@ -1665,7 +1677,20 @@ let whd_betaiota_deltazeta_for_iota_state ts env sigma s =
         end
       |_, ((Stack.App _|Stack.Primitive _) :: _|[]) -> s
   in
-  whrec s
+  let (t, stack) = s in
+  let (t, stack) = apply_subst [] sigma t stack in
+  match kind sigma t with
+  | Proj (p,r,c) -> whrec (c, Stack.Proj (p,r) :: stack)
+  | _ -> whrec s
+
+let whd_betaiotazeta_proj env sigma c =
+  let (c, args as s) = whd_beta_stack env sigma c in
+  let stack = Stack.(append_app_list args empty) in
+  let s =
+    match kind sigma c with
+    | Proj (p,r,c) -> (c, Stack.(Proj (p,r) :: stack))
+    | _ -> (c, stack) in
+  Stack.zip sigma (whd_betaiotazeta_state env sigma s)
 
 let find_conclusion env sigma =
   let rec decrec env c =

@@ -31,9 +31,17 @@ module ReductionBehaviour : sig
   type t = NeverUnfold | UnfoldWhen of when_flags | UnfoldWhenNoMatch of when_flags
   and when_flags = { recargs : int list ; nargs : int option }
 
+  module Db : sig
+    type t
+    val get : unit -> t
+    val empty : t
+    val print : t -> Constant.t -> Pp.t
+    val all_never_unfold : t -> Cpred.t
+  end
+
   val set : local:bool -> Constant.t -> t -> unit
+  val get_from_db : Db.t -> Constant.t -> t option
   val get : Constant.t -> t option
-  val all_never_unfold : unit -> Cpred.t
   val print : Constant.t -> Pp.t
 end
 
@@ -300,6 +308,9 @@ val whd_betaiota_deltazeta_for_iota_state :
 exception PatternFailure
 val apply_rules : (state -> state) -> env -> evar_map -> EInstance.t ->
   Declarations.rewrite_rule list -> Stack.t -> econstr * Stack.t
+
+val whd_betaiotazeta_proj :
+  reduction_function
 
 val is_head_evar : env -> evar_map -> constr -> bool
 
