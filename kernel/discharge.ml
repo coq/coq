@@ -78,7 +78,7 @@ let cook_constant _env info cb =
     const_type = typ;
     const_body_code = ();
     const_universes = univs;
-    const_relevance = cb.const_relevance;
+    const_relevance =  lift_relevance info cb.const_relevance;
     const_inline_code = cb.const_inline_code;
     const_typing_flags = cb.const_typing_flags;
   }
@@ -111,7 +111,7 @@ let cook_projection cache ~params t =
   let _, t = decompose_prod_n_decls (Context.Rel.length params + 1 + nrels) t in
   t
 
-let cook_one_ind cache ~ntypes mip =
+let cook_one_ind info cache ~ntypes mip =
   let mind_arity = match mip.mind_arity with
     | RegularArity {mind_user_arity=arity;mind_sort=sort} ->
       let arity = abstract_as_type cache arity in
@@ -140,7 +140,7 @@ let cook_one_ind cache ~ntypes mip =
     mind_consnrealargs = mip.mind_consnrealargs;
     mind_consnrealdecls = mip.mind_consnrealdecls;
     mind_recargs = mip.mind_recargs;
-    mind_relevance = mip.mind_relevance;
+    mind_relevance = lift_relevance info mip.mind_relevance;
     mind_nb_constant = mip.mind_nb_constant;
     mind_nb_args = mip.mind_nb_args;
     mind_reloc_tbl = mip.mind_reloc_tbl;
@@ -152,7 +152,7 @@ let cook_inductive info mib =
   let nnewparams = Context.Rel.nhyps (rel_context_of_cooking_cache cache) in
   let mind_params_ctxt = cook_rel_context cache mib.mind_params_ctxt in
   let ntypes = mib.mind_ntypes in
-  let mind_packets = Array.map (cook_one_ind cache ~ntypes) mib.mind_packets in
+  let mind_packets = Array.map (cook_one_ind info cache ~ntypes) mib.mind_packets in
   let mind_record = match mib.mind_record with
     | NotRecord -> NotRecord
     | FakeRecord -> FakeRecord

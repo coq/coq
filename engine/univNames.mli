@@ -28,3 +28,6 @@ type full_name_list = lname list * lname list
 
 val pr_level_with_global_universes : ?binders:universe_binders -> Level.t -> Pp.t
 val qualid_of_level : universe_binders -> Level.t -> Libnames.qualid option
+
+val pr_quality_with_global_universes : ?binders:universe_binders -> Sorts.QVar.t -> Pp.t
+val qualid_of_quality : universe_binders -> Sorts.QVar.t -> Libnames.qualid option

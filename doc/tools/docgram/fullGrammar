@@ -907,6 +907,8 @@ gallina: [
 | "Primitive" ident_decl OPT [ ":" lconstr ] ":=" register_token
 | "Universe" LIST1 identref
 | "Universes" LIST1 identref
+| "Sort" LIST1 identref
+| "Sorts" LIST1 identref
 | "Constraint" LIST1 univ_constraint SEP ","
 | "Rewrite" "Rule" identref ":=" OPT "|" LIST1 rewrite_rule SEP "|"
 | "Rewrite" "Rules" identref ":=" OPT "|" LIST1 rewrite_rule SEP "|"

@@ -920,6 +920,8 @@ command: [
 | "Primitive" ident_decl OPT [ ":" term ] ":=" "#" ident
 | "Universe" LIST1 ident
 | "Universes" LIST1 ident
+| "Sort" LIST1 ident
+| "Sorts" LIST1 ident
 | "Constraint" LIST1 univ_constraint SEP ","
 | "Rewrite" [ "Rule" | "Rules" ] ident ":=" OPT "|" LIST1 rewrite_rule SEP "|"
 | "CoInductive" inductive_definition LIST0 ( "with" inductive_definition )

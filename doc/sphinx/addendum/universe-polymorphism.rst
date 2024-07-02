@@ -859,6 +859,30 @@ However elimination to `Type` or to a polymorphic sort with `s := Prop` is allow
         : Type@{s|max(u,v)}
         := pair { pr1 : A; pr2 : B pr1 }.
 
+Explicit Sorts
+---------------
+
+Similarly to universes, fresh global sorts can be declared with the :cmd:`Sort`.
+
+.. cmd:: Sort {+ @ident }
+         Sorts {+ @ident }
+
+   In the monomorphic case, declares new global sort qualities 
+   with the given names.  Global quality names live in their own namespace.
+   Inside sections, the command respects the `Universe Polymorphism` flag,
+   either set globally or locally through the :attr:`universes(polymorphic)` attribute (or
+   the ``Polymorphic`` legacy attribute), meaning the sort
+   quantification will be discharged for each section definition
+   independently. Polymorphic sort qualities are forbidden outside sections.
+
+   .. exn:: Polymorphic sorts can only be declared inside sections, use #[universe(polymorphic=no)] Sort instead.
+      :undocumented:
+
+.. cmd:: Print Sorts
+   :name: Print Sorts
+
+   Print the list of global named sorts in the current context. Use :cmd:`Show Universes` to print sort variables local to a proof.
+
 .. _universe-polymorphism-in-sections:
 
 Universe polymorphism and sections
