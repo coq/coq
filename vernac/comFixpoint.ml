@@ -380,6 +380,7 @@ type ('constr, 'relevance) fix_data = {
   fiximps  : (Names.Name.t * bool) option CAst.t list list;
   fixntns  : Metasyntax.notation_interpretation_decl list;
   fixwfs   : (rel_declaration * EConstr.t * EConstr.t * EConstr.t) option list;
+  fixopaques : bool option list;
 }
 
 let interp_wf ~program_mode env sigma recname ctx ccl = function
@@ -456,9 +457,10 @@ let interp_mutual_definition env ~program_mode ~function_mode rec_order fixl =
   (* Instantiate evars and check all are resolved *)
   let sigma = Evarconv.solve_unif_constraints_with_heuristics env sigma in
   let sigma = Evd.minimize_universes sigma in
+  let fixopaques = List.map (fun { Vernacexpr.fix_attrs } -> Attributes.(parse opacity fix_attrs)) fixl in
 
   (* Build the fix declaration block *)
-  let fix = {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs} in
+  let fix = {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs;fixopaques} in
   (env, rec_sign, sigma), (fix, fixkind, possible_guard, decl)
 
 let check_recursive ~isfix env evd {fixnames;fixdefs;fixwfs} =
@@ -468,12 +470,12 @@ let check_recursive ~isfix env evd {fixnames;fixdefs;fixwfs} =
     check_true_recursivity env evd ~isfix (List.combine fixnames fixdefs)
   end
 
-let ground_fixpoint env evd {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs} =
+let ground_fixpoint env evd {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs;fixopaques} =
   Pretyping.check_evars_are_solved ~program_mode:false env evd;
   let fixrs = List.map (fun r -> EConstr.ERelevance.kind evd r) fixrs in
   let fixdefs = List.map (fun c -> Option.map EConstr.(to_constr evd) c) fixdefs in
   let fixtypes = List.map EConstr.(to_constr evd) fixtypes in
-  {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs}
+  {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs;fixopaques}
 
 (** For Funind *)
 
@@ -484,11 +486,11 @@ let interp_fixpoint_short rec_order fixpoint_exprl =
   let typel = (ground_fixpoint env sigma fix).fixtypes in
   typel, sigma
 
-let build_recthms {fixnames;fixtypes;fixctxs;fiximps} =
-  List.map4 (fun name typ ctx impargs ->
+let build_recthms {fixnames;fixtypes;fixctxs;fiximps;fixopaques} =
+  List.map5 (fun name typ ctx impargs opaque ->
       let args = List.map Context.Rel.Declaration.get_name ctx in
-      Declare.CInfo.make ~name ~typ ~args ~impargs ()
-    ) fixnames fixtypes fixctxs fiximps
+      Declare.CInfo.make ~name ~typ ~args ~impargs ~opaque ()
+    ) fixnames fixtypes fixctxs fiximps fixopaques
 
 let collect_evars_of_term evd c ty =
   Evar.Set.union (Evd.evars_of_term evd c) (Evd.evars_of_term evd ty)
@@ -523,15 +525,15 @@ let build_program_fixpoint env sigma rec_sign possible_guard fixnames fixrs fixd
   List.split3 (List.map3 (collect_evars env sigma rec_sign) fixnames fixdefs fixtypes)
 
 let finish_obligations env sigma rec_sign possible_guard poly udecl = function
-  | {fixnames=[recname];fixrs;fixdefs=[body];fixtypes=[ccl];fixctxs=[ctx];fiximps=[imps];fixntns;fixwfs=[Some wf]} ->
+  | {fixnames=[recname];fixrs;fixdefs=[body];fixtypes=[ccl];fixctxs=[ctx];fiximps=[imps];fixntns;fixwfs=[Some wf];fixopaques} ->
     let sigma = Evarutil.nf_evar_map sigma in (* use nf_evar_map_undefined?? *)
     let sigma, recname, body, ccl, impls, obls, hook = build_wellfounded env sigma poly udecl recname ctx (Option.get body) ccl imps wf in
     let fixrs = List.map (EConstr.ERelevance.kind sigma) fixrs in
-    sigma, {fixnames=[recname];fixrs;fixdefs=[Some body];fixtypes=[ccl];fixctxs=[ctx];fiximps=[impls];fixntns;fixwfs=[Some wf]}, [obls], hook
-  | {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs} ->
+    sigma, {fixnames=[recname];fixrs;fixdefs=[Some body];fixtypes=[ccl];fixctxs=[ctx];fiximps=[impls];fixntns;fixwfs=[Some wf];fixopaques}, [obls], hook
+  | {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs;fixopaques} ->
     let fixdefs, fixtypes, obls = build_program_fixpoint env sigma rec_sign possible_guard fixnames fixrs fixdefs fixtypes fixwfs in
     let fixrs = List.map (EConstr.ERelevance.kind sigma) fixrs in
-    sigma, {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs}, obls, None
+    sigma, {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs;fixopaques}, obls, None
 
 let finish_regular env sigma fix =
   let sigma = Pretyping.(solve_remaining_evars all_no_fail_flags env sigma) in
@@ -560,17 +562,17 @@ let do_mutually_recursive ?pm ?scope ?clearbody ~poly ?typing_flags ?user_warns 
     (match fixwfs, bodies, cinfo, obls with
     | [Some _], [body], [cinfo], [obls] ->
       (* Program Fixpoint wf/measure *)
-      let pm, _ = Declare.Obls.add_definition ~pm ~cinfo ~info ~opaque:false ~body ~uctx ?using obls in
+      let pm, _ = Declare.Obls.add_definition ~pm ~cinfo ~info ~body ~uctx ?using obls in
       Some pm, None
     | _ ->
-      Some (Declare.Obls.add_mutual_definitions ~pm ~cinfo ~info ~opaque:false ~uctx ~bodies ~possible_guard ?using obls), None)
+      Some (Declare.Obls.add_mutual_definitions ~pm ~cinfo ~info ~uctx ~bodies ~possible_guard ?using obls), None)
   | None ->
     try
       let bodies = List.map Option.get bodies in
       let uctx = Evd.evar_universe_context sigma in
       (* All bodies are defined *)
       let _ : GlobRef.t list =
-        Declare.declare_mutual_definitions ~cinfo ~info ~opaque:false ~uctx
+        Declare.declare_mutual_definitions ~cinfo ~info ~uctx
           ~possible_guard ~bodies:(bodies,fixrs) ?using ()
       in
       None, None

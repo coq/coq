@@ -60,6 +60,7 @@ module DefAttributes = struct
     using : Vernacexpr.section_subset_expr option;
     reversible : bool;
     clearbody: bool option;
+    opacity: bool option;
   }
   (* [locality] is used for [vernac_definition_hook],
      the raw Local/Global attribute is also used to generate [scope].
@@ -107,12 +108,12 @@ module DefAttributes = struct
   let parse ?(coercion=false) ?(discharge=NoDischarge,"","") f =
     let discharge, deprecated_thing, replacement = discharge in
     let clearbody = match discharge with DoDischarge -> clearbody | NoDischarge -> return None in
-    let (((((((locality, user_warns), polymorphic), program),
+    let ((((((((locality, user_warns), polymorphic), program),
          canonical_instance), typing_flags), using),
-         reversible), clearbody =
+         reversible), clearbody), opacity =
       parse (locality ++ user_warns ++ polymorphic ++ program ++
              canonical_instance ++ typing_flags ++ using ++
-             reversible ++ clearbody)
+             reversible ++ clearbody ++ opacity)
         f
     in
     let using = Option.map Proof_using.using_from_string using in
@@ -121,7 +122,7 @@ module DefAttributes = struct
       then CErrors.user_err Pp.(str "Cannot use attribute clearbody outside sections.")
     in
     let scope = scope_of_locality locality discharge deprecated_thing replacement in
-    { scope; locality; polymorphic; program; user_warns; canonical_instance; typing_flags; using; reversible; clearbody }
+    { scope; locality; polymorphic; program; user_warns; canonical_instance; typing_flags; using; reversible; clearbody; opacity }
 end
 
 let with_def_attributes ?coercion ?discharge ~atts f =
@@ -630,7 +631,7 @@ let program_inference_hook env sigma ev =
 
 (* XXX: Interpretation of lemma command, duplication with ComFixpoint
    / ComDefinition ? *)
-let interp_lemma ~program_mode ~flags ~scope env0 evd thms =
+let interp_lemma ~program_mode ~flags ~scope ~opaque env0 evd thms =
   let inference_hook = if program_mode then Some program_inference_hook else None in
   List.fold_left_map (fun evd ((id, _), (bl, t)) ->
       let evd, (impls, ((env, ctx), imps)) =
@@ -641,17 +642,17 @@ let interp_lemma ~program_mode ~flags ~scope env0 evd thms =
       let evd = Pretyping.solve_remaining_evars ?hook:inference_hook flags env evd in
       let ids = List.map Context.Rel.Declaration.get_name ctx in
       let typ = EConstr.it_mkProd_or_LetIn t' ctx in
-      let thm = Declare.CInfo.make ~name:id.CAst.v ~typ ~args:ids ~impargs:(imps @ imps') () in
+      let thm = Declare.CInfo.make ~name:id.CAst.v ~typ ~args:ids ~impargs:(imps @ imps') ~opaque () in
       evd, (EConstr.to_constr evd typ, thm))
     evd thms
 
-let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody ~kind ?user_warns ?using ?hook thms =
+let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ~opaque ?clearbody ~kind ?user_warns ?using ?hook thms =
   let env0 = Global.env () in
   let env0 = Environ.update_typing_flags ?typing_flags env0 in
   let flags = Pretyping.{ all_no_fail_flags with program_mode } in
   let udecls = List.map (fun ((_,univs),_) -> univs) thms in
   let evd, udecl = Constrintern.interp_mutual_univ_decl_opt env0 udecls in
-  let evd, thms = interp_lemma ~program_mode ~flags ~scope env0 evd thms in
+  let evd, thms = interp_lemma ~program_mode ~flags ~scope ~opaque env0 evd thms in
   let typs, thms = List.split thms in
   let mut_analysis = RecLemmas.look_for_possibly_mutual_statements evd thms in
   let evd = Evd.minimize_universes evd in
@@ -700,18 +701,18 @@ let vernac_definition_name lid local =
 
 let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
   let open DefAttributes in
-  let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody =
-    atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
+  let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody, opaque =
+    atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody, atts.opacity in
   let canonical_instance, reversible = atts.canonical_instance, atts.reversible in
   let hook = vernac_definition_hook ~canonical_instance ~local ~poly ~reversible kind in
   let name = vernac_definition_name lid scope in
-  start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody
+  start_lemma_com ~typing_flags ~program_mode ~poly ~scope ~opaque ?clearbody
     ~kind:(Decls.IsDefinition kind) ?user_warns ?using ?hook [(name, pl), (bl, t)]
 
 let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_opt =
   let open DefAttributes in
-  let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody =
-     atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
+  let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody, opaque =
+     atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody, atts.opacity in
   let canonical_instance, reversible = atts.canonical_instance, atts.reversible in
   let hook = vernac_definition_hook ~canonical_instance ~local ~poly kind ~reversible in
   let name = vernac_definition_name lid scope in
@@ -723,12 +724,12 @@ let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_
       Some (snd (Redexpr.interp_redexp_no_ltac env sigma r)) in
   if program_mode then
     let kind = Decls.IsDefinition kind in
-    ComDefinition.do_definition_program ~pm ~name:name.v
+    ComDefinition.do_definition_program ~pm ~name:name.v ~opaque
       ?clearbody ~poly ?typing_flags ~scope ~kind
       ?user_warns ?using pl bl red_option c typ_opt ?hook
   else
     let () =
-      ComDefinition.do_definition ~name:name.v
+      ComDefinition.do_definition ~name:name.v ~opaque
         ?clearbody ~poly ?typing_flags ~scope ~kind
         ?user_warns ?using pl bl red_option c typ_opt ?hook in
     pm
@@ -738,14 +739,14 @@ let vernac_start_proof ~atts kind l =
   let open DefAttributes in
   if Dumpglob.dump () then
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
-  let scope, poly, program_mode, user_warns, typing_flags, using =
-    atts.scope, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using in
+  let scope, poly, program_mode, user_warns, typing_flags, using, opaque =
+    atts.scope, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.opacity in
   List.iter (fun ((id, _), _) -> check_name_freshness scope id) l;
   start_lemma_com
     ~typing_flags
     ~program_mode
     ~poly
-    ~scope ~kind:(Decls.IsProof kind) ?user_warns ?using l
+    ~scope ~opaque ~kind:(Decls.IsProof kind) ?user_warns ?using l
 
 let vernac_end_proof ~lemma ~pm = let open Vernacexpr in function
   | Admitted ->
@@ -766,10 +767,12 @@ let vernac_exact_proof ~lemma ~pm c =
 
 let vernac_assumption ~atts kind l inline =
   let open DefAttributes in
-  let scope, poly, program_mode, using, user_warns =
-    atts.scope, atts.polymorphic, atts.program, atts.using, atts.user_warns in
+  let scope, poly, program_mode, using, user_warns, opaque =
+    atts.scope, atts.polymorphic, atts.program, atts.using, atts.user_warns, atts.opacity in
   if Option.has_some using then
     Attributes.unsupported_attributes [CAst.make ("using",VernacFlagEmpty)];
+  if Option.has_some opaque then
+    Attributes.unsupported_attributes [CAst.make ("sealed",VernacFlagEmpty); CAst.make ("unsealed",VernacFlagEmpty)];
   ComAssumption.do_assumptions ~poly ~program_mode ~scope ~kind ?user_warns ~inline l
 
 let { Goptions.get = is_polymorphic_inductive_cumulativity } =
@@ -1088,8 +1091,10 @@ let with_obligations program_mode f pm =
 let vernac_fixpoint ~atts ~pm (rec_order,fixl) =
   let open DefAttributes in
   let scope = vernac_fixpoint_common ~atts fixl in
-  let poly, typing_flags, program_mode, clearbody, using, user_warns =
-    atts.polymorphic, atts.typing_flags, atts.program, atts.clearbody, atts.using, atts.user_warns in
+  let poly, typing_flags, program_mode, clearbody, using, user_warns, opaque =
+    atts.polymorphic, atts.typing_flags, atts.program, atts.clearbody, atts.using, atts.user_warns, atts.opacity in
+  let () =
+    if Option.has_some opaque then CErrors.user_err Pp.(str"Sealedness attribute to be attached to the individual components of Fixpoint.") in
   let () =
     if program_mode then
       (* XXX: Switch to the attribute system and match on ~atts *)
@@ -1109,8 +1114,10 @@ let vernac_cofixpoint_common ~atts l =
 let vernac_cofixpoint ~pm ~atts cofixl =
   let open DefAttributes in
   let scope = vernac_cofixpoint_common ~atts cofixl in
-  let poly, typing_flags, program_mode, clearbody, using, user_warns =
-    atts.polymorphic, atts.typing_flags, atts.program, atts.clearbody, atts.using, atts.user_warns in
+  let poly, typing_flags, program_mode, clearbody, using, user_warns, opaque =
+    atts.polymorphic, atts.typing_flags, atts.program, atts.clearbody, atts.using, atts.user_warns, atts.opacity in
+  let () =
+    if Option.has_some opaque then CErrors.user_err Pp.(str"Sealedness attribute to be attached to the individual components of Fixpoint.") in
   let () =
     if program_mode then
       let opens = List.exists (fun { body_def } -> Option.is_empty body_def) cofixl in
@@ -1474,28 +1481,28 @@ let vernac_identity_coercion ~atts id qids qidt =
 
 let vernac_instance_program ~atts ~pm name bl t props info =
   Dumpglob.dump_constraint (fst name) false "inst";
-  let locality, poly =
-    Attributes.(parse (Notations.(hint_locality ++ polymorphic))) atts
+  let (locality, poly), opaque =
+    Attributes.(parse (Notations.(hint_locality ++ polymorphic ++ opacity))) atts
   in
-  let pm, _id = Classes.new_instance_program ~pm ~locality ~poly name bl t props info in
+  let pm, _id = Classes.new_instance_program ~pm ~locality ~opaque ~poly name bl t props info in
   pm
 
 let vernac_instance_interactive ~atts name bl t info props =
   Dumpglob.dump_constraint (fst name) false "inst";
-  let locality, poly =
-    Attributes.(parse (Notations.(hint_locality ++ polymorphic))) atts
+  let (locality, poly), opaque =
+    Attributes.(parse (Notations.(hint_locality ++ polymorphic ++ opacity))) atts
   in
   let _id, pstate =
-    Classes.new_instance_interactive ~locality ~poly name bl t info props in
+    Classes.new_instance_interactive ~locality ~opaque ~poly name bl t info props in
   pstate
 
 let vernac_instance ~atts name bl t props info =
   Dumpglob.dump_constraint (fst name) false "inst";
-  let locality, poly =
-    Attributes.(parse (Notations.(hint_locality ++ polymorphic))) atts
+  let (locality, poly), opaque =
+    Attributes.(parse (Notations.(hint_locality ++ polymorphic ++ opacity))) atts
   in
   let _id : Id.t =
-    Classes.new_instance ~locality ~poly name bl t props info in
+    Classes.new_instance ~locality ~opaque ~poly name bl t props info in
   ()
 
 let vernac_declare_instance ~atts id bl inst pri =

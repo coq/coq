@@ -79,6 +79,7 @@ module CInfo : sig
     -> typ:'constr
     -> ?args:Name.t list
     -> ?impargs:Impargs.manual_implicits
+    -> opaque : bool option
     -> unit
     -> 'constr t
 
@@ -125,7 +126,6 @@ end
 val declare_definition
   :  info:Info.t
   -> cinfo:EConstr.t option CInfo.t
-  -> opaque:bool
   -> body:EConstr.t
   -> ?using:Vernacexpr.section_subset_expr
   -> Evd.evar_map
@@ -134,7 +134,6 @@ val declare_definition
 val declare_mutual_definitions
   :  info:Info.t
   -> cinfo: Constr.t CInfo.t list
-  -> opaque:bool
   -> uctx:UState.t
   -> bodies:(Constr.t list * Sorts.relevance list)
   -> possible_guard:Pretyping.possible_guard
@@ -150,25 +149,6 @@ module OblState : sig
 
   type t
   val empty : t
-
-  module View : sig
-    module Obl : sig
-      type t = private
-        { name : Id.t
-        ; loc : Loc.t option
-        ; status : bool * Evar_kinds.obligation_definition_status
-        ; solved : bool
-        }
-    end
-
-    type t = private
-      { opaque : bool
-      ; remaining : int
-      ; obligations : Obl.t array
-      }
-  end
-
-  val view : t -> View.t Id.Map.t
 
 end
 
@@ -538,7 +518,6 @@ val add_definition :
      pm:OblState.t
   -> info:Info.t
   -> cinfo:Constr.types CInfo.t
-  -> opaque:bool
   -> uctx:UState.t
   -> ?body:Constr.t
   -> ?tactic:unit Proofview.tactic
@@ -556,7 +535,6 @@ val add_mutual_definitions :
      pm:OblState.t
   -> info:Info.t
   -> cinfo:Constr.types CInfo.t list
-  -> opaque:bool
   -> uctx:UState.t
   -> bodies:Constr.t list
   -> possible_guard:Pretyping.possible_guard
