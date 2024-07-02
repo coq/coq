@@ -1,4 +1,3 @@
-(* -*- coding: utf-8 -*- *)
 (************************************************************************)
 (*         *   The Coq Proof Assistant / The Coq Development Team       *)
 (*  v      *         Copyright INRIA, CNRS and contributors             *)
@@ -17,15 +16,9 @@ Table of contents:
 
 2. Classical logic and proof-irrelevance
 
-2.1. CC |- prop. ext. + A inhabited -> (A = A->A) -> A has fixpoint
+2.1. CC |- excluded-middle + dep elim on bool -> proof-irrelevance
 
-2.2. CC |- prop. ext. + dep elim on bool -> proof-irrelevance
-
-2.3. CIC |- prop. ext. -> proof-irrelevance
-
-2.4. CC |- excluded-middle + dep elim on bool -> proof-irrelevance
-
-2.5. CIC |- excluded-middle -> proof-irrelevance
+2.2. CIC |- excluded-middle -> proof-irrelevance
 
 3. Weak classical axioms
 
@@ -108,183 +101,6 @@ Lemma provable_prop_ext :
 Proof.
   exact PropExt_imp_ProvPropExt.
 Qed.
-
-(************************************************************************)
-(** * Classical logic and proof-irrelevance *)
-
-(************************************************************************)
-(** ** CC |- prop ext + A inhabited -> (A = A->A) -> A has fixpoint *)
-
-(** We successively show that:
-
-   [prop_extensionality]
-     implies equality of [A] and [A->A] for inhabited [A], which
-     implies the existence of a (trivial) retract from [A->A] to [A]
-        (just take the identity), which
-     implies the existence of a fixpoint operator in [A]
-        (e.g. take the Y combinator of lambda-calculus)
-
-*)
-
-Local Notation inhabited A := A (only parsing).
-
-Lemma prop_ext_A_eq_A_imp_A :
-  prop_extensionality -> forall A:Prop, inhabited A -> (A -> A) = A.
-Proof.
-  intros Ext A a.
-  apply (Ext (A -> A) A); split; [ exact (fun _ => a) | exact (fun _ _ => a) ].
-Qed.
-
-Record retract (A B:Prop) : Prop :=
-  {f1 : A -> B; f2 : B -> A; f1_o_f2 : forall x:B, f1 (f2 x) = x}.
-
-Lemma prop_ext_retract_A_A_imp_A :
-  prop_extensionality -> forall A:Prop, inhabited A -> retract A (A -> A).
-Proof.
-  intros Ext A a.
-  rewrite (prop_ext_A_eq_A_imp_A Ext A a).
-  exists (fun x:A => x) (fun x:A => x).
-  reflexivity.
-Qed.
-
-Record has_fixpoint (A:Prop) : Prop :=
-  {F : (A -> A) -> A; Fix : forall f:A -> A, F f = f (F f)}.
-
-Lemma ext_prop_fixpoint :
-  prop_extensionality -> forall A:Prop, inhabited A -> has_fixpoint A.
-Proof.
-  intros Ext A a.
-  case (prop_ext_retract_A_A_imp_A Ext A a); intros g1 g2 g1_o_g2.
-  exists (fun f => (fun x:A => f (g1 x x)) (g2 (fun x => f (g1 x x)))).
-  intro f.
-  pattern (g1 (g2 (fun x:A => f (g1 x x)))) at 1.
-  rewrite (g1_o_g2 (fun x:A => f (g1 x x))).
-  reflexivity.
-Qed.
-
-(** Remark: [prop_extensionality] can be replaced in lemma [ext_prop_fixpoint]
-    by the weakest property [provable_prop_extensionality].
-*)
-
-(************************************************************************)
-(** ** CC |- prop_ext /\ dep elim on bool -> proof-irrelevance  *)
-
-(** [proof_irrelevance] asserts equality of all proofs of a given formula *)
-Definition proof_irrelevance := forall (A:Prop) (a1 a2:A), a1 = a2.
-
-(** Assume that we have booleans with the property that there is at most 2
-    booleans (which is equivalent to dependent case analysis). Consider
-    the fixpoint of the negation function: it is either true or false by
-    dependent case analysis, but also the opposite by fixpoint. Hence
-    proof-irrelevance.
-
-    We then map equality of boolean proofs to proof irrelevance in all
-    propositions.
-*)
-
-Section Proof_irrelevance_gen.
-
-  Variable bool : Prop.
-  Variable true : bool.
-  Variable false : bool.
-  Hypothesis bool_elim : forall C:Prop, C -> C -> bool -> C.
-  Hypothesis
-    bool_elim_redl : forall (C:Prop) (c1 c2:C), c1 = bool_elim C c1 c2 true.
-  Hypothesis
-    bool_elim_redr : forall (C:Prop) (c1 c2:C), c2 = bool_elim C c1 c2 false.
-  Let bool_dep_induction :=
-  forall P:bool -> Prop, P true -> P false -> forall b:bool, P b.
-
-  Lemma aux : prop_extensionality -> bool_dep_induction -> true = false.
-  Proof.
-    intros Ext Ind.
-    case (ext_prop_fixpoint Ext bool true); intros G Gfix.
-    set (neg := fun b:bool => bool_elim bool false true b).
-    generalize (eq_refl (G neg)).
-    pattern (G neg) at 1.
-    apply Ind with (b := G neg); intro Heq.
-    - rewrite (bool_elim_redl bool false true).
-      change (true = neg true); rewrite Heq; apply Gfix.
-    - rewrite (bool_elim_redr bool false true).
-      change (neg false = false); rewrite Heq; symmetry ;
-        apply Gfix.
-  Qed.
-
-  Lemma ext_prop_dep_proof_irrel_gen :
-    prop_extensionality -> bool_dep_induction -> proof_irrelevance.
-  Proof.
-    intros Ext Ind A a1 a2.
-    set (f := fun b:bool => bool_elim A a1 a2 b).
-    rewrite (bool_elim_redl A a1 a2).
-    change (f true = a2).
-    rewrite (bool_elim_redr A a1 a2).
-    change (f true = f false).
-    rewrite (aux Ext Ind).
-    reflexivity.
-  Qed.
-
-End Proof_irrelevance_gen.
-
-(** In the pure Calculus of Constructions, we can define the boolean
-    proposition bool = (C:Prop)C->C->C but we cannot prove that it has at
-    most 2 elements.
-*)
-
-Section Proof_irrelevance_Prop_Ext_CC.
-
-  Definition BoolP := forall C:Prop, C -> C -> C.
-  Definition TrueP : BoolP := fun C c1 c2 => c1.
-  Definition FalseP : BoolP := fun C c1 c2 => c2.
-  Definition BoolP_elim C c1 c2 (b:BoolP) := b C c1 c2.
-  Definition BoolP_elim_redl (C:Prop) (c1 c2:C) :
-    c1 = BoolP_elim C c1 c2 TrueP := eq_refl c1.
-  Definition BoolP_elim_redr (C:Prop) (c1 c2:C) :
-    c2 = BoolP_elim C c1 c2 FalseP := eq_refl c2.
-
-  Definition BoolP_dep_induction :=
-    forall P:BoolP -> Prop, P TrueP -> P FalseP -> forall b:BoolP, P b.
-
-  Lemma ext_prop_dep_proof_irrel_cc :
-    prop_extensionality -> BoolP_dep_induction -> proof_irrelevance.
-  Proof.
-    exact (ext_prop_dep_proof_irrel_gen BoolP TrueP FalseP BoolP_elim BoolP_elim_redl
-      BoolP_elim_redr).
-  Qed.
-
-End Proof_irrelevance_Prop_Ext_CC.
-
-(** Remark: [prop_extensionality] can be replaced in lemma
-    [ext_prop_dep_proof_irrel_gen] by the weakest property
-    [provable_prop_extensionality].
-*)
-
-(************************************************************************)
-(** ** CIC |- prop. ext. -> proof-irrelevance                   *)
-
-(** In the Calculus of Inductive Constructions, inductively defined booleans
-    enjoy dependent case analysis, hence directly proof-irrelevance from
-    propositional extensionality.
-*)
-
-Section Proof_irrelevance_CIC.
-
-  Inductive boolP : Prop :=
-    | trueP : boolP
-    | falseP : boolP.
-  Definition boolP_elim_redl (C:Prop) (c1 c2:C) :
-    c1 = boolP_ind C c1 c2 trueP := eq_refl c1.
-  Definition boolP_elim_redr (C:Prop) (c1 c2:C) :
-    c2 = boolP_ind C c1 c2 falseP := eq_refl c2.
-  Scheme boolP_indd := Induction for boolP Sort Prop.
-
-  Lemma ext_prop_dep_proof_irrel_cic : prop_extensionality -> proof_irrelevance.
-  Proof.
-    exact (fun pe =>
-      ext_prop_dep_proof_irrel_gen boolP trueP falseP boolP_ind boolP_elim_redl
-      boolP_elim_redr pe boolP_indd).
-  Qed.
-
-End Proof_irrelevance_CIC.
 
 (** Can we state proof irrelevance from propositional degeneracy
   (i.e. propositional extensionality + excluded middle) without
@@ -480,7 +296,7 @@ Section Proof_irrelevance_CCI.
     (b:B) : g b = or_ind f g (or_intror A b) := eq_refl (g b).
   Scheme or_indd := Induction for or Sort Prop.
 
-  Theorem proof_irrelevance_cci : forall (B:Prop) (b1 b2:B), b1 = b2.
+  Theorem proof_irrelevance_cci : forall (P:Prop) (p1 p2:P), p1 = p2.
   Proof.
     exact (proof_irrelevance_cc or or_introl or_intror or_ind or_elim_redl
       or_elim_redr or_indd em).
@@ -633,7 +449,7 @@ Qed.
 
 Definition IndependenceOfGeneralPremises :=
   forall (A:Type) (P:A -> Prop) (Q:Prop),
-    inhabited A -> (Q -> exists x, P x) -> exists x, Q -> P x.
+    A -> (Q -> exists x, P x) -> exists x, Q -> P x.
 
 Lemma
   independence_general_premises_right_distr_implication_over_disjunction :
@@ -657,7 +473,7 @@ Qed.
 
 Definition DrinkerParadox :=
   forall (A:Type) (P:A -> Prop),
-    inhabited A -> exists x, (exists x, P x) -> P x.
+    A -> exists x, (exists x, P x) -> P x.
 
 Lemma independence_general_premises_drinker :
   IndependenceOfGeneralPremises <-> DrinkerParadox.
@@ -817,3 +633,13 @@ Proof.
   split; auto using excluded_middle_imp_representative_boolean_partition,
                     representative_boolean_partition_imp_excluded_middle.
 Qed.
+
+(** Compatibility *)
+
+Require Import LogicalPrinciples PropExtensionalityFacts.
+
+#[deprecated(since="8.20", note="Use PropExtensionalityFacts.ext_prop_dep_proof_irrel_cic")]
+Notation proof_irrelevance := ProofIrrelevance (only parsing).
+
+#[deprecated(since="8.20", note="Use PropExtensionalityFacts.ext_prop_dep_proof_irrel_cic")]
+Notation ext_prop_dep_proof_irrel_cic := ext_prop_dep_proof_irrel_cic (only parsing).
