@@ -878,6 +878,10 @@ Similarly to universes, fresh global sorts can be declared with the :cmd:`Sort`.
    .. exn:: Polymorphic sorts can only be declared inside sections, use #[universe(polymorphic=no)] Sort instead.
       :undocumented:
 
+.. cmd:: Print Sorts
+   :name: Print Sorts
+
+   Print the list of global named sorts in the current context. Use :cmd:`Show Universes` to print sort variables local to a proof.
 
 .. _universe-polymorphism-in-sections:
 
