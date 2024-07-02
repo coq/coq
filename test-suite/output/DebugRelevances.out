@@ -14,19 +14,21 @@ fun (A : (* Relevant *) SProp) (a : (* Irrelevant *) A) => a
 
 Arguments bar A%type_scope a
 baz@{s | u} =
-fun (A : (* Relevant *) Type) (a : (* s *) A) => a
-     : forall A : (* Relevant *) Type, A -> A
+fun (A : (* Relevant *) Type@{s | }) (a : (* s *) A) => a
+     : forall A : (* Relevant *) Type@{s | }, A -> A
 
 Arguments baz A%type_scope a
 boz@{s s' | u} =
-fun (A B : (* Relevant *) Type) (a : (* s *) hide) (_ : (* s' *) hide) => a
-     : forall A B : (* Relevant *) Type, hide -> hide -> hide
+fun (A : (* Relevant *) Type@{s | }) (B : (* Relevant *) Type@{s' | })
+  (a : (* s *) hide) (_ : (* s' *) hide) => a
+     : forall (A : (* Relevant *) Type@{s | })
+         (B : (* Relevant *) Type@{s' | }), hide -> hide -> hide
 
 Arguments boz (A B)%type_scope a b
 1 goal
   
-  f := fun (A : (* Relevant *) Type) (_ : (* α8 *) A) => A
-    : forall (A : (* Relevant *) Type) (_ : (* α8 *) A), Type
+  f := fun (A : (* Relevant *) Type@{α8 | }) (_ : (* α8 *) A) => A
+    : forall (A : (* Relevant *) Type@{α8 | }) (_ : (* α8 *) A), Type@{α8 | }
   ============================
   True
 1 goal
