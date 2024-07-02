@@ -176,13 +176,27 @@ let leave_sums ?time name () =
    accu. sums <- (start', next) :: rest;
     sum, dur
 
+let rec pptime fmt t = let open Format in function
+  | [] -> assert false
+  | [unit] ->
+    if t >= 1. then fprintf fmt "%03.0f%s" t unit
+    else fprintf fmt "0%s" unit
+  | unit :: nextunit :: rest ->
+    (* float t is time in [unit] *)
+    if t >= 1. then fprintf fmt "%03.0f%s %03.0f%s" t unit (Float.rem (t *. 1_000.) 1_000.) nextunit
+    else pptime fmt (t *. 1_000.) (nextunit :: rest)
+
+let pptime fmt t = pptime fmt t ["s";"ms";"us";"ns"]
+
 let leave ?time name ?(args=[]) ?last () =
   let time = gettimeopt time in
   let sum, dur = leave_sums ~time name () in
+  let sum = CString.Map.bindings sum in
+  let sum = List.sort (fun (_,(t1,_)) (_,(t2,_)) -> Float.compare t2 t1) sum in
   let sum = List.map (fun (name, (t, cnt)) ->
       name, `String
-        (Format.sprintf "%.3G us, %d %s" (t *. 1E6) cnt (CString.plural cnt "call")))
-      (CString.Map.bindings sum)
+        (Format.asprintf "%a, %d %s" pptime t cnt (CString.plural cnt "call")))
+      sum
   in
   let args = ("subtimes", `Assoc sum) :: args in
   duration ~time name "E" ~args ?last ()
@@ -253,5 +267,5 @@ let finish () = match !accu with
   | Some { ch } ->
     let args = Counters.(make_diffs ~start:global_start ~stop:(get())) in
     leave "process" ~last:"" ~args ();
-    Format.fprintf ch "],\n\"displayTimeUnit\": \"us\" }";
+    Format.fprintf ch "],\n\"displayTimeUnit\": \"us\" }@.";
     accu := None
