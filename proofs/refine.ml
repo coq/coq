@@ -10,39 +10,6 @@
 
 open Util
 open Proofview.Notations
-open Context.Named.Declaration
-
-module NamedDecl = Context.Named.Declaration
-
-let extract_prefix env info =
-  let ctx1 = List.rev (EConstr.named_context env) in
-  let ctx2 = List.rev (Evd.evar_context info) in
-  let rec share l1 l2 accu = match l1, l2 with
-  | d1 :: l1, d2 :: l2 ->
-    if d1 == d2 then share l1 l2 (d1 :: accu)
-    else (accu, d2 :: l2)
-  | _ -> (accu, l2)
-  in
-  share ctx1 ctx2 []
-
-let typecheck_evar ev env sigma =
-  let info = Evd.find_undefined sigma ev in
-  (* Typecheck the hypotheses. *)
-  let type_hyp (sigma, env) decl =
-    let t = NamedDecl.get_type decl in
-    let sigma, _ = Typing.sort_of env sigma t in
-    let sigma = match decl with
-    | LocalAssum _ -> sigma
-    | LocalDef (_,body,_) -> Typing.check env sigma body t
-    in
-    (sigma, EConstr.push_named decl env)
-  in
-  let (common, changed) = extract_prefix env info in
-  let env = Environ.reset_with_named_context (EConstr.val_of_named_context common) env in
-  let (sigma, env) = List.fold_left type_hyp (sigma, env) changed in
-  (* Typecheck the conclusion *)
-  let sigma, _ = Typing.sort_of env sigma (Evd.evar_concl info) in
-  sigma
 
 let generic_refine ~typecheck f gl =
   let sigma = Proofview.Goal.sigma gl in
@@ -55,14 +22,11 @@ let generic_refine ~typecheck f gl =
   (* Create the refinement term *)
   Proofview.Unsafe.tclEVARS sigma >>= fun () ->
   f >>= fun (v, c, principal) ->
-  Proofview.tclEVARMAP >>= fun sigma' ->
+  Proofview.tclEVARMAP >>= fun sigma ->
   Proofview.wrap_exceptions begin fun () ->
   (* Redo the effects in sigma in the monad's env *)
-  let privates_csts = Evd.eval_side_effects sigma' in
+  let privates_csts = Evd.eval_side_effects sigma in
   let env = Safe_typing.push_private_constants env privates_csts.Evd.seff_private in
-  (* Check that the introduced evars are well-typed *)
-  let fold accu ev = typecheck_evar ev env accu in
-  let sigma = if typecheck then Evd.fold_future_goals fold sigma' else sigma' in
   (* Check that the refined term is typesafe *)
   let sigma = if typecheck then Typing.check env sigma c concl else sigma in
   (* Check that the goal itself does not appear in the refined term *)
