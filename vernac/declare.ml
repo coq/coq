@@ -2181,10 +2181,10 @@ let compute_proof_using_for_admitted proof typ iproof =
       | pproof :: _ ->
         let env = Global.env () in
         let sigma = (Proof.data iproof).Proof.sigma in
-        let ids_typ = Termops.global_vars_set env sigma typ in
+        let ids_typ = Termops.global_vars_set_no_evar env sigma typ in
         (* [pproof] is evar-normalized by [partial_proof]. We don't
            count variables appearing only in the type of evars. *)
-        let ids_def = Termops.global_vars_set env sigma pproof in
+        let ids_def = Termops.global_vars_set_no_evar env sigma pproof in
         Some (Environ.really_needed env (Id.Set.union ids_typ ids_def))
       | [] -> None
 
@@ -2341,8 +2341,7 @@ let save_lemma_admitted_delayed ~pm ~proof =
     | UState.Monomorphic_entry _ -> false
     | UState.Polymorphic_entry _ -> true in
   let univs = UState.univ_entry ~poly uctx in
-  let sec_vars = if get_keep_admitted_vars () then proof_entry_secctx else None in
-  finish_admitted ~pm ~uctx ~pinfo ~sec_vars ~univs
+  finish_admitted ~pm ~uctx ~pinfo ~sec_vars:proof_entry_secctx ~univs
 
 let save_lemma_proved_delayed ~pm ~proof ~idopt =
   (* vio2vo used to call this with invalid [pinfo], now it should work fine. *)

@@ -274,6 +274,7 @@ Section Riscv.
 
   Context {M: Type -> Type}.
   Context {MM: Monad M}.
+#[using="mword MW M MM"]
 Definition run1(iset: InstructionSet):
     M unit.
 Admitted.
