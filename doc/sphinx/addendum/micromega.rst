@@ -54,6 +54,11 @@ or only for reals by ``Require Import Lra``.
 
    This :term:`flag` (set by default) instructs :tacn:`nra` to cache its results in the file `.nra.cache`
 
+.. flag:: Psatz Conversion
+
+   When set, use :term:`definitional equality` (:term:`convertibility <convertible>`) instead of
+   syntactic equality to detect equal terms in the :tacn:`lia`, :tacn:`nia`, :tacn:`lra`,
+   :tacn:`nra` and :tacn:`psatz` tactics during parsing of the goal.  The default is unset.
 
 The tactics solve propositional formulas parameterized by atomic
 arithmetic expressions interpreted over a domain :math:`D \in \{\mathbb{Z},\mathbb{Q},\mathbb{R}\}`.
