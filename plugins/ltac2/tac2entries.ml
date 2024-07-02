@@ -670,6 +670,7 @@ let deprecated_ltac2_notation =
   Deprecation.create_warning
     ~object_name:"Ltac2 notation"
     ~warning_name_if_no_since:"deprecated-ltac2-notation"
+    ~pr_depr_xref
     (fun (toks : sexpr list) -> pr_sequence ParseToken.print_token toks)
 
 (* This is a hack to preserve the level 4 entry which is initially empty. The

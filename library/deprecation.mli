@@ -8,12 +8,12 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type t = { since : string option ; note : string option }
+type t = { since : string option ; note : string option ; use_instead : Globnames.extended_global_reference option }
 
-val make : ?since:string -> ?note:string -> unit -> t
+val make : ?since:string -> ?note:string -> ?use_instead:Globnames.extended_global_reference -> unit -> t
 
 val create_warning : ?default:CWarnings.status -> object_name:string -> warning_name_if_no_since:string ->
-  ('b -> Pp.t) -> ?loc:Loc.t -> 'b * t -> unit
+  pr_depr_xref:(Globnames.extended_global_reference -> Pp.t) -> ('b -> Pp.t) -> ?loc:Loc.t -> 'b * t -> unit
 
 module Version : sig
   val v8_3 : CWarnings.category

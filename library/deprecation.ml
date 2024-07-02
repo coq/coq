@@ -8,9 +8,9 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type t = { since : string option ; note : string option }
+type t = { since : string option ; note : string option ; use_instead : Globnames.extended_global_reference option }
 
-let make ?since ?note () = { since ; note }
+let make ?since ?note ?use_instead () = { since ; note ; use_instead }
 
 type since_name = NoSince | Since of string
 
@@ -37,13 +37,18 @@ let printer ~object_name pp (x,{since;note}) =
   pr_opt (fun since -> str "since " ++ str since) since ++
   str "." ++ pr_opt (fun note -> str note) note
 
-let create_warning ?default ~object_name ~warning_name_if_no_since pp =
+let create_warning ?default ~object_name ~warning_name_if_no_since ~pr_depr_xref pp =
   let pp = printer ~object_name pp in
   let main_cat, main_w = CWarnings.create_hybrid ?default ~name:warning_name_if_no_since ~from:[depr_cat] () in
   let main_w = CWarnings.create_in main_w pp in
   let warnings = ref CString.Map.empty in
-  fun ?loc (v, ({since} as info)) ->
+  fun ?loc (v, ({since; use_instead} as info)) ->
     let since = since_name since in
+    let quickfix =
+      match use_instead with
+      | None -> None
+      | Some replacement ->
+          Option.cata (fun loc -> Some [Quickfix.make ~loc (pr_depr_xref replacement)]) None loc in
     let w = match since with
       | NoSince -> main_w
       | Since since ->
@@ -58,7 +63,7 @@ let create_warning ?default ~object_name ~warning_name_if_no_since pp =
           warnings := CString.Map.add since w !warnings;
           w
     in
-    w ?loc (v,info)
+    w ?loc ?quickfix (v,info)
 
 module Version = struct
 

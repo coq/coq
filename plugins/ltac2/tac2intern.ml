@@ -284,15 +284,19 @@ let is_user_name qid = match qid with
 | RelId _ -> true
 
 let deprecated_ltac2_alias =
+  let open Nametab in
   Deprecation.create_warning
     ~object_name:"Ltac2 alias"
     ~warning_name_if_no_since:"deprecated-ltac2-alias"
+    ~pr_depr_xref
     (fun kn -> pr_qualid (Tac2env.shortest_qualid_of_ltac Id.Set.empty (TacAlias kn)))
 
 let deprecated_ltac2_def =
+  let open Nametab in
   Deprecation.create_warning
     ~object_name:"Ltac2 definition"
     ~warning_name_if_no_since:"deprecated-ltac2-definition"
+    ~pr_depr_xref
     (fun kn -> pr_qualid (Tac2env.shortest_qualid_of_ltac Id.Set.empty (TacConstant kn)))
 
 let check_deprecated_ltac2 ?loc qid def =

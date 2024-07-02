@@ -1526,8 +1526,9 @@ let interp_prim_token_cases_pattern_expr ?loc check_allowed p =
   interp_prim_token_gen ?loc check_allowed p
 
 let warn_deprecated_notation =
+  let open Nametab in
   Deprecation.create_warning ~object_name:"Notation" ~warning_name_if_no_since:"deprecated-notation"
-    pr_notation
+    ~pr_depr_xref pr_notation
 
 let interp_notation ?loc ntn local_scopes =
   let scopes = make_current_scopes local_scopes in

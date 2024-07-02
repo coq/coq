@@ -256,7 +256,9 @@ with Not_found ->
 open Libobject
 
 let warn_deprecated_option =
+  let open Nametab in
   Deprecation.create_warning ~object_name:"Option" ~warning_name_if_no_since:"deprecated-option"
+    ~pr_depr_xref
     (fun key -> Pp.str (nickname key))
 
 let declare_option cast uncast append ?(preprocess = fun x -> x)

@@ -26,7 +26,7 @@ type notation_interpretation_decl
 val add_notation_syntax :
   local:bool ->
   infix:bool ->
-  UserWarn.t option ->
+    UserWarn.t option ->
   notation_declaration ->
   notation_interpretation_decl
 (** Add syntax rules for a (constr) notation in the environment *)

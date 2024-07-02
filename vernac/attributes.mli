@@ -10,7 +10,7 @@
 
 (** The type of parsing attribute data *)
 type vernac_flag_type =
-  | FlagIdent of string
+  | FlagPath of Libnames.full_path
   | FlagString of string
 
 type vernac_flags = vernac_flag list

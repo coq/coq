@@ -10,7 +10,7 @@
 
 (** The type of parsing attribute data *)
 type vernac_flag_type =
-  | FlagIdent of string
+  | FlagPath of Libnames.full_path
   | FlagString of string
 
 type vernac_flags = vernac_flag list
@@ -21,8 +21,8 @@ and vernac_flag_value =
   | VernacFlagList of vernac_flags
 
 let pr_vernac_flag_leaf = function
-  | FlagIdent b -> Pp.str b
   | FlagString s -> Pp.(quote (str s))
+  | FlagPath p -> Libnames.pr_path p
 
 let rec pr_vernac_flag_value = let open Pp in function
   | VernacFlagEmpty -> mt ()
@@ -136,7 +136,8 @@ let key_value_attribute ~key ~default ~(values : (string * 'a) list) : 'a option
       CErrors.user_err ?loc Pp.(str "key '" ++ str key ++ str "' has been already set.")
     | None ->
       begin function
-        | VernacFlagLeaf (FlagIdent b) ->
+        | VernacFlagLeaf (FlagPath q) when Libnames.full_path_is_ident q ->
+          let b = Names.Id.to_string @@ Libnames.basename q in
           begin match CList.assoc_f String.equal b values with
             | exception Not_found ->
               CErrors.user_err ?loc
@@ -159,12 +160,16 @@ let bool_attribute ~name : bool option attribute =
   key_value_attribute ~key:name ~default:true ~values
 
 (* Variant of the [bool] attribute with only two values (bool has three). *)
+let full_path_is_this_ident fp id =
+  Libnames.full_path_is_ident fp &&
+  Names.Id.to_string @@ Libnames.basename fp = id
+
 let get_bool_value ?loc ~key ~default =
   function
   | VernacFlagEmpty -> default
-  | VernacFlagLeaf (FlagIdent "yes") ->
+  | VernacFlagLeaf (FlagPath q) when full_path_is_this_ident q "yes" ->
     true
-  | VernacFlagLeaf (FlagIdent "no") ->
+  | VernacFlagLeaf (FlagPath q) when full_path_is_this_ident q "no" ->
     false
   | _ ->
     CErrors.user_err ?loc
@@ -283,18 +288,36 @@ let template =
 let unfold_fix =
   enable_attribute ~key:"unfold_fix" ~default:(fun () -> false)
 
+let rec flags2map m = function
+  | { CAst.v = (n,VernacFlagLeaf l); loc } :: xs ->
+      if CString.Map.mem n m then
+        CErrors.user_err ?loc Pp.(str "Duplicate attribute " ++ str n);
+      flags2map (CString.Map.add n l m) xs
+  | { CAst.v = n,_; loc } :: _ ->
+      CErrors.user_err ?loc Pp.(str "Attribute " ++ str n ++ str " must be a leaf.")
+  | [] -> m
+
+let find_string_opt m s =
+  match CString.Map.find s m with
+  | FlagString s -> Some s
+  | FlagPath _ -> CErrors.user_err Pp.(str "Attribute " ++ str s ++ str " should be a string")
+  | exception Not_found -> None
+
+let find_path_opt m s =
+  match CString.Map.find s m with
+  | FlagString _ -> CErrors.user_err Pp.(str "Attribute " ++ str s ++ str " should be a (qualified) identifier")
+  | FlagPath p -> Some p
+  | exception Not_found -> None
+
 let deprecation_parser : Deprecation.t key_parser = fun ?loc orig args ->
   assert_once ?loc ~name:"deprecation" orig;
   match args with
-  | VernacFlagList [ {CAst.v="since", VernacFlagLeaf (FlagString since)};
-                     {CAst.v="note", VernacFlagLeaf (FlagString note)} ]
-  | VernacFlagList [ {CAst.v="note", VernacFlagLeaf (FlagString note)};
-                     {CAst.v="since", VernacFlagLeaf (FlagString since)} ] ->
-    Deprecation.make ~since ~note ()
-  | VernacFlagList [ {CAst.v="since", VernacFlagLeaf (FlagString since)} ] ->
-    Deprecation.make ~since ()
-  | VernacFlagList [ {CAst.v="note", VernacFlagLeaf (FlagString note)} ] ->
-    Deprecation.make ~note ()
+  | VernacFlagList l ->
+      let m = flags2map CString.Map.empty l in
+      let note = find_string_opt m "note" in
+      let since = find_string_opt m "since" in
+      let use_instead = find_path_opt m "use" |> Option.map (fun x -> Globnames.TrueGlobal (Smartlocate.smart_global (CAst.make ?loc @@ Constrexpr.AN (Libnames.qualid_of_path x)))) in
+      Deprecation.make ?since ?note ?use_instead ()
   |  _ -> CErrors.user_err ?loc (Pp.str "Ill formed “deprecated” attribute.")
 
 let deprecation = attribute_of_list ["deprecated",deprecation_parser]
@@ -329,7 +352,7 @@ let only_polymorphism atts = parse polymorphic atts
 let vernac_polymorphic_flag loc =
   CAst.make ?loc (ukey, VernacFlagList [CAst.make ?loc ("polymorphic", VernacFlagEmpty)])
 let vernac_monomorphic_flag loc =
-  CAst.make ?loc (ukey, VernacFlagList [CAst.make ?loc ("polymorphic", VernacFlagLeaf (FlagIdent "no"))])
+  CAst.make ?loc (ukey, VernacFlagList [CAst.make ?loc ("polymorphic", VernacFlagLeaf (FlagPath (Libnames.path_of_string "no")))])
 
 let reversible = bool_attribute ~name:"reversible"
 
@@ -370,9 +393,10 @@ let process_typing_att ?loc ~typing_flags att disable =
     CErrors.user_err ?loc Pp.(str "Unknown “typing” attribute: " ++ str att)
 
 let process_typing_disable ?loc ~key = function
-  | VernacFlagEmpty | VernacFlagLeaf (FlagIdent "yes") ->
+  | VernacFlagEmpty -> true
+  | VernacFlagLeaf (FlagPath q) when full_path_is_this_ident q "yes" ->
     true
-  | VernacFlagLeaf (FlagIdent "no") ->
+  | VernacFlagLeaf (FlagPath q) when full_path_is_this_ident q "no" ->
     false
   | _ ->
     CErrors.user_err ?loc Pp.(str "Ill-formed attribute value, must be " ++ str key ++ str "={yes, no}")
