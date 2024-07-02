@@ -280,7 +280,7 @@ project equations "https://github.com/mattam82/Coq-Equations" "main"
 ########################################################################
 # Elpi + Hierarchy Builder
 ########################################################################
-project elpi "https://github.com/LPCIC/coq-elpi" "coq-master"
+project elpi "https://github.com/LPCIC/coq-elpi" "master"
 # Contact @gares on github
 
 project hierarchy_builder "https://github.com/math-comp/hierarchy-builder" "master"
