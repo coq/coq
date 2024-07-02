@@ -12,6 +12,8 @@ simpl (0 + _).
 Show.
 Abort.
 
+(* Simpl never *)
+
 Require Import String.
 Open Scope string_scope.
 Module NonRecursiveDefinition.
