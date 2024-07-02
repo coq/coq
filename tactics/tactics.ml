@@ -2212,8 +2212,8 @@ let keep hyps =
       let decl = EConstr.of_named_decl decl in
       let hyp = NamedDecl.get_id decl in
       if Id.List.mem hyp hyps
-        || List.exists (occur_var_in_decl env sigma hyp) keep
-        || occur_var env sigma hyp ccl
+        || List.exists (occur_var_in_decl env sigma ~skip_evar:true hyp) keep
+        || occur_var env sigma ~skip_evar:true hyp ccl
       then (clear,decl::keep)
       else (hyp::clear,keep))
       ~init:([],[]) (Proofview.Goal.env gl)
