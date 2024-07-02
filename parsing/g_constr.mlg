@@ -147,7 +147,8 @@ GRAMMAR EXTEND Gram
     [ [ "Set"  -> { Sorts.InSet }
       | "Prop" -> { Sorts.InProp }
       | "SProp" -> { Sorts.InSProp }
-      | "Type" -> { Sorts.InType } ] ]
+      | "Type" -> { Sorts.InType }
+      | IDENT "Poly" -> { Sorts.InQSort } ] ]
   ;
   universe_increment:
     [ [ "+"; n = natural -> { n }

@@ -223,7 +223,12 @@ let declare_one_induction_scheme ?loc ind =
   let kind = Indrec.pseudo_sort_family_for_elim ind mip in
   let from_prop = kind == InProp in
   let depelim = Inductiveops.has_dependent_elim specif in
-  let kelim = Inductiveops.sorts_below (Inductiveops.elim_sort (mib,mip)) in
+  let kelim =
+    let s = Inductiveops.elim_sort (mib,mip) in
+    match s with
+    | InQSort -> [InQSort]
+    | _ -> Inductiveops.sorts_below s
+  in
   let kelim = if Global.sprop_allowed () then kelim
     else List.filter (fun s -> s <> InSProp) kelim
   in
@@ -231,7 +236,8 @@ let declare_one_induction_scheme ?loc ind =
     List.filter (fun (sort,_) -> List.mem_f Sorts.family_equal sort kelim)
       (* NB: the order is important, it makes it so that _rec is
          defined using _rect but _ind is not. *)
-      [(InType, "rect");
+      [(InQSort, "elim");
+       (InType, "rect");
        (InProp, "ind");
        (InSet, "rec");
        (InSProp, "sind")]
@@ -379,20 +385,32 @@ let name_and_process_scheme env = function
     (newref, sch_isdep sch_type, ind, sch_sort)
 
 let do_mutual_induction_scheme ?(force_mutual=false) env ?(isrec=true) l =
-  let sigma, inst =
+  let sigma, inst, indsort =
+    let open EConstr in
     let _,_,ind,_ = match l with | x::_ -> x | [] -> assert false in
     let _, ctx = Typeops.type_of_global_in_context env (Names.GlobRef.IndRef ind) in
     let u, ctx = UnivGen.fresh_instance_from ctx None in
-    let u = EConstr.EInstance.make u in
+    let u = EInstance.make u in
     let sigma = Evd.from_ctx (UState.of_context_set ctx) in
-    sigma, u
+    let _, s = destArity sigma (Retyping.get_type_of env sigma (mkIndU (ind, u))) in
+    sigma, u, s
   in
   let sigma, lrecspec =
     List.fold_left_map (fun sigma (_,dep,ind,sort) ->
-        let sigma, sort = Evd.fresh_sort_in_family ~rigid:UnivRigid sigma sort in
-        (sigma, ((ind,inst),dep,sort)))
-      sigma
-      l
+      let sigma, sort =
+        match sort with
+        | InQSort ->
+          let open EConstr in
+          (match ESorts.kind sigma indsort with
+          | Sorts.QSort (q, l) ->
+            let sigma, l' = Evd.new_univ_variable UnivRigid sigma in
+            sigma, ESorts.make (Sorts.qsort q l')
+          | _ -> sigma, indsort)
+        | _ -> Evd.fresh_sort_in_family ~rigid:UnivRigid sigma sort
+      in
+      (sigma, ((ind,inst),dep,sort)))
+    sigma
+    l
   in
   let sigma, listdecl =
     if isrec then Indrec.build_mutual_induction_scheme env sigma ~force_mutual lrecspec
@@ -420,7 +438,8 @@ let do_mutual_induction_scheme ?(force_mutual=false) env ?(isrec=true) l =
       else match sort with
         | InType -> Some (if dep then case_dep else case_nodep)
         | InProp -> Some (if dep then casep_dep else casep_nodep)
-        | InSProp | InSet | InQSort ->
+        | InQSort -> Some (if dep then case_poly_dep else case_poly_nodep)
+        | InSProp | InSet ->
           (* currently we don't have standard scheme kinds for this *)
           None
     in
