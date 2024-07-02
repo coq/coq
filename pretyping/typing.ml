@@ -49,19 +49,6 @@ let make_param_univs env sigma indu spec jl =
       | Sorts.Type u | Sorts.QSort (_, u) -> TemplateUniv u)
     jl
 
-let inductive_type_knowing_parameters env sigma (ind,u as indu) jl =
-  let u = Unsafe.to_instance u in
-  let mspec = lookup_mind_specif env ind in
-  let paramstyp = make_param_univs env sigma indu mspec jl in
-  Inductive.type_of_inductive_knowing_parameters (mspec,u) paramstyp
-
-let constructor_type_knowing_parameters env sigma (cstr, u) jl =
-  let u0 = Unsafe.to_instance u in
-  let (ind, _) = cstr in
-  let mspec = lookup_mind_specif env ind in
-  let paramstyp = make_param_univs env sigma (ind, u) mspec jl in
-  Inductive.type_of_constructor_knowing_parameters (cstr, u0) mspec paramstyp
-
 let type_judgment env sigma j =
   match EConstr.kind sigma (whd_all env sigma j.uj_type) with
     | Sort s -> sigma, {utj_val = j.uj_val; utj_type = s }
@@ -77,7 +64,7 @@ let assumption_of_judgment env sigma j =
   with Type_errors.TypeError _ | PretypeError _ ->
     error_assumption env sigma j
 
-let judge_of_apply env sigma funj argjv =
+let judge_of_apply_core env sigma funj argjv =
   let rec apply_rec sigma n subs typ = function
   | [] ->
     let typ = Vars.esubst Vars.lift_substituend subs typ in
@@ -110,32 +97,52 @@ let judge_of_apply env sigma funj argjv =
   in
   apply_rec sigma 1 (Esubst.subs_id 0) funj.uj_type (Array.to_list argjv)
 
+let judge_of_applied ~check env sigma funj argjv =
+  let sigma =
+    if check then
+      let (sigma, _) = judge_of_apply_core env sigma funj argjv in
+      sigma
+    else sigma
+  in
+  let typ = hnf_prod_appvect env sigma (j_type funj) (Array.map j_val argjv) in
+  sigma, { uj_val = (mkApp (j_val funj, Array.map j_val argjv)); uj_type = typ }
+
+let judge_of_applied_inductive_knowing_parameters ~check env sigma (ind, u) argjv =
+  let (mib,_ as specif) = Inductive.lookup_mind_specif env ind in
+  let () = if check then Reductionops.check_hyps_inclusion env sigma (GR.IndRef ind) mib.mind_hyps in
+  let paramstyp = make_param_univs env sigma (ind, u) specif argjv in
+  let u0 = EInstance.kind sigma u in
+  let ty, csts = Inductive.type_of_inductive_knowing_parameters (specif, u0) paramstyp in
+  let sigma = Evd.add_constraints sigma csts in
+  let funj = { uj_val = mkIndU (ind, u); uj_type = EConstr.of_constr (rename_type ty (GR.IndRef ind)) } in
+  judge_of_applied ~check env sigma funj argjv
+
+let judge_of_applied_constructor_knowing_parameters ~check env sigma ((ind, _ as cstr), u) argjv =
+  let (mib,_ as specif) = Inductive.lookup_mind_specif env ind in
+  let () = if check then Reductionops.check_hyps_inclusion env sigma (GR.IndRef ind) mib.mind_hyps in
+  let paramstyp = make_param_univs env sigma (ind, u) specif argjv in
+  let u0 = EInstance.kind sigma u in
+  let ty, csts = Inductive.type_of_constructor_knowing_parameters (cstr, u0) specif paramstyp in
+  let sigma = Evd.add_constraints sigma csts in
+  let funj = { uj_val = mkConstructU (cstr, u); uj_type = (EConstr.of_constr (rename_type ty (GR.ConstructRef cstr))) } in
+  judge_of_applied ~check env sigma funj argjv
+
+let judge_of_apply env sigma fj args =
+  match EConstr.kind sigma fj.uj_val with
+  | Ind (ind, u) when EInstance.is_empty u && Environ.template_polymorphic_ind ind env ->
+    judge_of_applied_inductive_knowing_parameters ~check:true env sigma (ind, u) args
+  | Construct (cstr, u) when EInstance.is_empty u && Environ.template_polymorphic_ind (fst cstr) env ->
+    judge_of_applied_constructor_knowing_parameters ~check:true env sigma (cstr, u) args
+  | _ ->
+    (* No template polymorphism *)
+    judge_of_apply_core env sigma fj args
+
 let checked_appvect env sigma f args =
   let mk c = Retyping.get_judgment_of env sigma c in
   let sigma, j = judge_of_apply env sigma (mk f) (Array.map mk args) in
   sigma, j.uj_val
 
 let checked_applist env sigma f args = checked_appvect env sigma f (Array.of_list args)
-
-let judge_of_applied_inductive_knowing_parameters_nocheck env sigma funj ind argjv =
-  let ar, csts = inductive_type_knowing_parameters env sigma ind argjv in
-  let sigma = Evd.add_constraints sigma csts in
-  let typ = hnf_prod_appvect env sigma (EConstr.of_constr ar) (Array.map j_val argjv) in
-  sigma, { uj_val = (mkApp (j_val funj, Array.map j_val argjv)); uj_type = typ }
-
-let judge_of_applied_inductive_knowing_parameters env sigma funj ind argjv =
-  let (sigma, j) = judge_of_apply env sigma funj argjv in
-  judge_of_applied_inductive_knowing_parameters_nocheck env sigma funj ind argjv
-
-let judge_of_applied_constructor_knowing_parameters_nocheck env sigma funj cstr argjv =
-  let ar, csts = constructor_type_knowing_parameters env sigma cstr argjv in
-  let sigma = Evd.add_constraints sigma csts in
-  let typ = hnf_prod_appvect env sigma (EConstr.of_constr ar) (Array.map j_val argjv) in
-  sigma, { uj_val = (mkApp (j_val funj, Array.map j_val argjv)); uj_type = typ }
-
-let judge_of_applied_constructor_knowing_parameters env sigma funj ind argjv =
-  let (sigma, j) = judge_of_apply env sigma funj argjv in
-  judge_of_applied_constructor_knowing_parameters_nocheck env sigma funj ind argjv
 
 let check_branch_types env sigma (ind,u) cj (lfj,explft) =
   if not (Int.equal (Array.length lfj) (Array.length explft)) then
@@ -556,18 +563,9 @@ let rec execute env sigma cstr =
       sigma, judge_of_projection env sigma p cj
 
     | App (f,args) ->
+        let sigma, fj = execute env sigma f in
         let sigma, jl = execute_array env sigma args in
-        (match EConstr.kind sigma f with
-            | Ind (ind, u) when EInstance.is_empty u && Environ.template_polymorphic_ind ind env ->
-               let sigma, fj = execute env sigma f in
-               judge_of_applied_inductive_knowing_parameters env sigma fj (ind, u) jl
-            | Construct (cstr, u) when EInstance.is_empty u && Environ.template_polymorphic_ind (fst cstr) env ->
-               let sigma, fj = execute env sigma f in
-               judge_of_applied_constructor_knowing_parameters env sigma fj (cstr, u) jl
-            | _ ->
-               (* No template polymorphism *)
-               let sigma, fj = execute env sigma f in
-               judge_of_apply env sigma fj jl)
+        judge_of_apply env sigma fj jl
 
     | Lambda (name,c1,c2) ->
         let sigma, j = execute env sigma c1 in
@@ -801,9 +799,9 @@ let rec recheck_against env sigma good c =
         let sigma, jl = execute_array env sigma args in
         (match EConstr.kind sigma f with
          | Ind (ind, u) when EInstance.is_empty u && Environ.template_polymorphic_ind ind env ->
-           maybe_changed (judge_of_applied_inductive_knowing_parameters env sigma fj (ind, u) jl)
+           maybe_changed (judge_of_applied_inductive_knowing_parameters ~check:true env sigma (ind, u) jl)
          | Construct (cstr, u) when EInstance.is_empty u && Environ.template_polymorphic_ind (fst cstr) env ->
-           maybe_changed (judge_of_applied_constructor_knowing_parameters env sigma fj (cstr, u) jl)
+           maybe_changed (judge_of_applied_constructor_knowing_parameters ~check:true env sigma (cstr, u) jl)
          | _ ->
            (* No template polymorphism *)
            maybe_changed (judge_of_apply env sigma fj jl))
@@ -818,11 +816,16 @@ let rec recheck_against env sigma good c =
         if unchanged changedargs && bodyonly changedf
         then assume_unchanged_type sigma
         else
+          (* FIXME: the template poly cases are generating useless constraints *)
           (match EConstr.kind sigma f with
            | Ind (ind, u) when EInstance.is_empty u && Environ.template_polymorphic_ind ind env ->
              let sigma, _ = judge_of_apply_against env sigma changedf fj jl in
              let jl = Array.map snd jl in
-             maybe_changed (judge_of_applied_inductive_knowing_parameters_nocheck env sigma fj (ind, u) jl)
+             maybe_changed (judge_of_applied_inductive_knowing_parameters ~check:false env sigma (ind, u) jl)
+           | Construct (cstr, u) when EInstance.is_empty u && Environ.template_polymorphic_ind (fst cstr) env ->
+             let sigma, _ = judge_of_apply_against env sigma changedf fj jl in
+             let jl = Array.map snd jl in
+             maybe_changed (judge_of_applied_constructor_knowing_parameters ~check:false env sigma (cstr, u) jl)
            | _ ->
              (* No template polymorphism *)
              maybe_changed (judge_of_apply_against env sigma changedf fj jl))

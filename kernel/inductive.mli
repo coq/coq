@@ -52,6 +52,11 @@ type template_univ =
 
 type param_univs = (expected:Univ.Level.t -> template_univ) list
 
+val instantiate_template_constraints
+  : template_univ Univ.Level.Map.t
+  -> Declarations.template_universes
+  -> Univ.Constraints.t
+
 val instantiate_template_universes : mind_specif -> param_univs ->
   Constraints.t * rel_context * template_univ Univ.Level.Map.t
 
