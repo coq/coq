@@ -1892,13 +1892,31 @@ let find_scope_class_opt map cl =
 (**********************************************************************)
 (* Special scopes associated to arguments of a global reference *)
 
-let rec compute_arguments_classes env sigma t =
-  match EConstr.kind sigma (Reductionops.whd_betaiotazeta env sigma t) with
-    | Prod (na, t, u) ->
-        let cl = try Some (compute_scope_class env sigma t) with Not_found -> None in
-        let env = EConstr.push_rel (Context.Rel.Declaration.LocalAssum (na, t)) env in
-        cl :: compute_arguments_classes env sigma u
-    | _ -> []
+let compute_telescope env sigma typ =
+  let open CClosure in
+  let infos = Evarutil.create_clos_infos env sigma RedFlags.betaiotazeta in
+  let tab = create_tab () in
+  let rec apply_rec typ accu =
+    let typ, stk = whd_stack infos tab typ [] in
+    match fterm_of typ with
+    | FProd (na, c1, c2, e) ->
+      let c1 = EConstr.of_constr @@ term_of_fconstr c1 in
+      let c2 = mk_clos (CClosure.usubs_lift e) c2 in
+      apply_rec c2 ((EConstr.of_binder_annot na, c1) :: accu)
+    | _ -> List.rev accu
+    in
+    apply_rec (CClosure.inject (EConstr.Unsafe.to_constr typ)) []
+
+let compute_arguments_classes env sigma t =
+  let telescope = compute_telescope env sigma t in
+  let rec aux env = function
+  | (na, t) :: decls ->
+    let cl = try Some (compute_scope_class env sigma t) with Not_found -> None in
+    let env = EConstr.push_rel (Context.Rel.Declaration.LocalAssum (na, t)) env in
+    cl :: aux env decls
+  | [] -> []
+  in
+  aux env telescope
 
 let compute_arguments_scope_full env sigma map t =
   let cls = compute_arguments_classes env sigma t in
