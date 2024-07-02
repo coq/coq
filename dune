@@ -63,7 +63,7 @@
   (source_tree user-contrib/Ltac2ssr))
  (action
   (with-stdout-to %{targets}
-   (run tools/dune_rule_gen/gen_rules.exe Ltac2ssr user-contrib/Ltac2ssr %{env:COQ_DUNE_EXTRA_OPT=}))))
+   (run tools/dune_rule_gen/gen_rules.exe Ltac2ssr user-contrib/Ltac2ssr -dep Ltac2 %{env:COQ_DUNE_EXTRA_OPT=}))))
 
 ; Use summary.log as the target
 (alias

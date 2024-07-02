@@ -27,6 +27,7 @@ let legacy_to_findlib = [
   ("rtauto_plugin",                 ["plugins";"rtauto"]) ;
   ("ssrmatching_plugin",            ["plugins";"ssrmatching"]) ;
   ("ssreflect_plugin",              ["plugins";"ssreflect"]) ;
+  ("ltac2ssr_plugin",               ["plugins";"ltac2ssr"]) ;
   ("number_string_notation_plugin", ["plugins";"number_string_notation"]) ;
   ("zify_plugin",                   ["plugins";"zify"]) ;
   ("tauto_plugin",                  ["plugins";"tauto"]) ;

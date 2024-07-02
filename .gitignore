@@ -156,4 +156,5 @@ bin
 .dune-stamp
 theories/dune
 user-contrib/Ltac2/dune
+user-contrib/Ltac2ssr/dune
 /test-suite/test_suite_config.inc

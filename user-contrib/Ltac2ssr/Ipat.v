@@ -1,4 +1,5 @@
-Require Import Ltac2.Ltac2.
+From Ltac2 Require Import Ltac2.
+From Ltac2ssr Require Import Init.
 
 Ltac2 Type ipat.
 

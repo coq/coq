@@ -1,5 +1,6 @@
 open Names
 open Ltac2_plugin
+open Ssreflect_plugin
 open Tac2expr
 
 

@@ -1,0 +1,6 @@
+(library
+ (name ltac2ssr_plugin)
+ (public_name coq-core.plugins.ltac2ssr)
+ (synopsis "Ltac2 bindings for ssreflect")
+ (flags :standard -open Gramlib)
+ (libraries coq-core.plugins.ssrmatching coq-core.plugins.ssreflect coq-core.plugins.ltac2 ))
