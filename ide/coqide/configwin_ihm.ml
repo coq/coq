@@ -679,8 +679,8 @@ let edit ?(with_apply=true)
   let rec iter rep =
     try
       match dialog#run () with
-        | `APPLY  -> config_box#apply; iter Return_apply
-        | `OK -> config_box#apply; destroy (); Return_ok
+        | `APPLY  -> config_box#apply; apply (); iter Return_apply
+        | `OK -> config_box#apply; apply (); destroy (); Return_ok
         | _ -> destroy (); rep
     with
         Failure s ->
