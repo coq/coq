@@ -19,7 +19,7 @@ Module Backtracking.
     Unshelve. all:cycle 1.
     typeclasses eauto.
     Fail reflexivity. 
-    Undo 2.
+    Undo 1.
     (* Without multiple successes it fails *)
     Set Typeclasses Debug Verbosity 2.
     Fail all:((once (typeclasses eauto with typeclass_instances))
@@ -43,7 +43,7 @@ Module Backtracking.
     Unshelve. all:cycle 1.
     typeclasses eauto.
     Fail reflexivity.
-    Undo 2.
+    Undo 1.
     
     (* Does backtrack between individual goals *)
     Set Typeclasses Debug.
