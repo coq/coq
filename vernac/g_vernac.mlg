@@ -1178,6 +1178,7 @@ GRAMMAR EXTEND Gram
           IDENT "Constraint"; IDENT "Sources" -> { b } ];
         fopt = OPT ne_string ->
         { PrintUniverses {sort=b; subgraph=g; with_sources; file=fopt;} }
+      | IDENT "Sorts" -> { PrintSorts }
       | IDENT "Assumptions"; qid = smart_global -> { PrintAssumptions (false, false, qid) }
       | IDENT "Opaque"; IDENT "Dependencies"; qid = smart_global -> { PrintAssumptions (true, false, qid) }
       | IDENT "Transparent"; IDENT "Dependencies"; qid = smart_global -> { PrintAssumptions (false, true, qid) }

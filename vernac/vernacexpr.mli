@@ -62,6 +62,7 @@ type printable =
   | PrintCoercionPaths of coercion_class * coercion_class
   | PrintCanonicalConversions of qualid or_by_notation list
   | PrintUniverses of print_universes
+  | PrintSorts
   | PrintHint of qualid or_by_notation
   | PrintHintGoal
   | PrintHintDbName of string
