@@ -118,6 +118,12 @@ val delayed_force : 'a delayed -> 'a
    Credit X.Leroy, D.Remy. *)
 val try_finally: ('a -> 'b) -> 'a -> ('c -> unit) -> 'c -> 'b
 
+val protect_ref : scope:(unit -> 'a) -> 'b ref -> 'a
+
+val protect_state : freeze:(unit -> 'st) -> unfreeze:('st ->unit) -> scope:(unit -> 'a) -> 'a
+
+val atomify : ('a -> 'b) -> 'a -> 'b
+
 (** {6 Enriched exceptions} *)
 
 type iexn = Exninfo.iexn
