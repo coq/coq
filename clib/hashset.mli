@@ -48,6 +48,8 @@ module type S = sig
       [constr] is stored in [set] and will be used as the canonical
       representation of this value in the future. *)
 
+  val lookup : (elt -> elt -> bool) -> int -> elt -> t -> elt option
+
   val stats : t -> statistics
   (** Recover statistics on the table. *)
 end

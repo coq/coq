@@ -565,7 +565,6 @@ module KerPair = struct
   module Self_Hashcons =
     struct
       type t = kernel_pair
-      type u = KerName.t -> KerName.t
       let hashcons hkn = function
         | Same kn -> Same (hkn kn)
         | Dual (knu,knc) -> make (hkn knu) (hkn knc)
@@ -579,15 +578,19 @@ module KerPair = struct
           the same canonical part is a logical invariant of the system, it
           is not necessarily an invariant in memory, so we treat kernel
           names as they are syntactically for hash-consing) *)
-      let hash = function
-      | Same kn -> KerName.hash kn
-      | Dual (knu, knc) ->
-        Hashset.Combine.combine (KerName.hash knu) (KerName.hash knc)
     end
 
-  module HashKP = Hashcons.Make(Self_Hashcons)
+  module Tbl = Hashset.Make(Self_Hashcons)
 
-  let hcons = Hashcons.simple_hcons HashKP.generate HashKP.hcons KerName.hcons
+  let tab = Tbl.create 97
+
+  let hcons c =
+    let h = SyntacticOrd.hash c in
+    match Tbl.lookup SyntacticOrd.equal h c tab with
+    | Some v -> v
+    | None ->
+      let v = Self_Hashcons.hashcons KerName.hcons c in
+      Tbl.repr h v tab
 
 end
 
