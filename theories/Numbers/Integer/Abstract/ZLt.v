@@ -47,11 +47,6 @@ Proof.
 intro n; rewrite <- (succ_pred n) at 2; apply lt_succ_diag_r.
 Qed.
 
-Theorem le_pred_l : forall n, P n <= n.
-Proof.
-intro; apply lt_le_incl; apply lt_pred_l.
-Qed.
-
 Theorem lt_le_pred : forall n m, n < m <-> n <= P m.
 Proof.
 intros n m; rewrite <- (succ_pred m); rewrite pred_succ. apply lt_succ_r.

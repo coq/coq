@@ -16,42 +16,16 @@ Module Type NSubProp (Import N : NAxiomsMiniSig').
 Include NMulOrderProp N.
 
 Theorem sub_0_l : forall n, 0 - n == 0.
-Proof.
-intro n; induct n.
-- apply sub_0_r.
-- intros n IH; rewrite sub_succ_r; rewrite IH. now apply pred_0.
-Qed.
-
-Theorem sub_succ : forall n m, S n - S m == n - m.
-Proof.
-intros n m; induct m.
-- rewrite sub_succ_r. do 2 rewrite sub_0_r. now rewrite pred_succ.
-- intros m IH. rewrite sub_succ_r. rewrite IH. now rewrite sub_succ_r.
-Qed.
-
-Theorem sub_diag : forall n, n - n == 0.
-Proof.
-  intro n; induct n.
-  - apply sub_0_r.
-  - intros n IH; rewrite sub_succ; now rewrite IH.
-Qed.
+Proof. exact (Private_nat_sub_0_l pred_0). Qed.
 
 Theorem sub_gt : forall n m, n > m -> n - m ~= 0.
-Proof.
-intros n m H; elim H using lt_ind_rel; clear n m H.
-- solve_proper.
-- intro; rewrite sub_0_r; apply neq_succ_0.
-- intros; now rewrite sub_succ.
-Qed.
+Proof. intros n m H%lt_0_sub%lt_neq; apply neq_sym; exact H. Qed.
 
 Theorem add_sub_assoc : forall n m p, p <= m -> n + (m - p) == (n + m) - p.
 Proof.
-intros n m p; induct p.
-- intro; now do 2 rewrite sub_0_r.
-- intros p IH H. do 2 rewrite sub_succ_r.
-  rewrite <- IH by (apply lt_le_incl; now apply le_succ_l).
-  rewrite add_pred_r by (apply sub_gt; now apply le_succ_l).
-  reflexivity.
+  intros n m p I; apply (add_cancel_r _ _ p); rewrite <-add_assoc.
+  rewrite 2!Private_sub_add; [reflexivity | | exact I].
+  rewrite <-(add_0_l p); apply add_le_mono; [exact (le_0_l _) | exact I].
 Qed.
 
 Theorem sub_succ_l : forall n m, n <= m -> S m - n == S (m - n).
@@ -60,29 +34,8 @@ intros n m H. rewrite <- (add_1_l m). rewrite <- (add_1_l (m - n)).
 symmetry; now apply add_sub_assoc.
 Qed.
 
-Theorem add_sub : forall n m, (n + m) - m == n.
-Proof.
-intros n m. rewrite <- add_sub_assoc by (apply le_refl).
-rewrite sub_diag; now rewrite add_0_r.
-Qed.
-
 Theorem sub_add : forall n m, n <= m -> (m - n) + n == m.
-Proof.
-intros n m H. rewrite add_comm. rewrite add_sub_assoc by assumption.
-rewrite add_comm. apply add_sub.
-Qed.
-
-Theorem add_sub_eq_l : forall n m p, m + p == n -> n - m == p.
-Proof.
-intros n m p H. symmetry.
-assert (H1 : m + p - m == n - m) by now rewrite H.
-rewrite add_comm in H1. now rewrite add_sub in H1.
-Qed.
-
-Theorem add_sub_eq_r : forall n m p, m + p == n -> n - p == m.
-Proof.
-intros n m p H; rewrite add_comm in H; now apply add_sub_eq_l.
-Qed.
+Proof. exact Private_sub_add. Qed.
 
 (* This could be proved by adding m to both sides. Then the proof would
 use add_sub_assoc and sub_0_le, which is proven below. *)
@@ -94,13 +47,6 @@ intros n m p H; double_induct n m.
 - intro n; rewrite sub_0_r; now rewrite add_0_l.
 - intros n m IH H1. rewrite sub_succ in H1. apply IH in H1.
   rewrite add_succ_l; now rewrite H1.
-Qed.
-
-Theorem sub_add_distr : forall n m p, n - (m + p) == (n - m) - p.
-Proof.
-intros n m p; induct p.
-- rewrite add_0_r; now rewrite sub_0_r.
-- intros p IH. rewrite add_succ_r; do 2 rewrite sub_succ_r. now rewrite IH.
 Qed.
 
 Theorem add_sub_swap : forall n m p, p <= n -> n + m - p == n - p + m.
@@ -122,13 +68,7 @@ intros n m; induct m.
 Qed.
 
 Theorem sub_0_le : forall n m, n - m == 0 <-> n <= m.
-Proof.
-intros n m; double_induct n m.
-- intro m; split; intro; [apply le_0_l | apply sub_0_l].
-- intro m; rewrite sub_0_r; split; intro H;
-    [false_hyp H neq_succ_0 | false_hyp H nle_succ_0].
-- intros n m H. rewrite <- succ_le_mono. now rewrite sub_succ.
-Qed.
+Proof. exact (Private_nat_sub_0_le pred_0). Qed.
 
 Theorem sub_pred_l : forall n m, P n - m == P (n - m).
 Proof.
@@ -148,30 +88,7 @@ apply sub_gt, le_succ_l; exact H'.
 Qed.
 
 Theorem sub_add_le : forall n m, n <= n - m + m.
-Proof.
-intros n m.
-destruct (le_ge_cases n m) as [LE|GE].
-- rewrite <- sub_0_le in LE. rewrite LE; nzsimpl.
-  now rewrite <- sub_0_le.
-- rewrite sub_add by assumption. apply le_refl.
-Qed.
-
-Theorem le_sub_le_add_r : forall n m p,
- n - p <= m <-> n <= m + p.
-Proof.
-intros n m p.
-split; intros LE.
-- rewrite (add_le_mono_r _ _ p) in LE.
-  apply le_trans with (n-p+p); auto using sub_add_le.
-- destruct (le_ge_cases n p) as [LE'|GE].
-  + rewrite <- sub_0_le in LE'. rewrite LE'. apply le_0_l.
-  + rewrite (add_le_mono_r _ _ p). now rewrite sub_add.
-Qed.
-
-Theorem le_sub_le_add_l : forall n m p, n - m <= p <-> n <= m + p.
-Proof.
-intros n m p. rewrite add_comm; apply le_sub_le_add_r.
-Qed.
+Proof. exact Private_sub_add_le. Qed.
 
 Theorem lt_sub_lt_add_r : forall n m p,
  n - p < m -> n < m + p.
@@ -205,26 +122,6 @@ Qed.
 Theorem le_add_le_sub_l : forall n m p, n + p <= m -> p <= m - n.
 Proof.
 intros n m p. rewrite add_comm; apply le_add_le_sub_r.
-Qed.
-
-Theorem lt_add_lt_sub_r : forall n m p, n + p < m <-> n < m - p.
-Proof.
-intros n m p.
-destruct (le_ge_cases p m) as [LE|GE].
-- rewrite <- (sub_add p m) at 1 by assumption.
-  now rewrite <- add_lt_mono_r.
-- assert (GE' := GE). rewrite <- sub_0_le in GE'; rewrite GE'.
-  split; intros LT.
-  + elim (lt_irrefl m). apply le_lt_trans with (n+p); trivial.
-    rewrite <- (add_0_l m). apply add_le_mono.
-    * apply le_0_l.
-    * assumption.
-  + now elim (nlt_0_r n).
-Qed.
-
-Theorem lt_add_lt_sub_l : forall n m p, n + p < m <-> p < m - n.
-Proof.
-intros n m p. rewrite add_comm; apply lt_add_lt_sub_r.
 Qed.
 
 Theorem sub_lt : forall n m, m <= n -> 0 < m -> n - m < n.
@@ -267,38 +164,7 @@ Proof.
       exact (le_succ_diag_r _).
 Qed.
 
-(** Sub and mul *)
-
-Theorem mul_pred_r : forall n m, n * (P m) == n * m - n.
-Proof.
-intros n m; cases m.
-- now rewrite pred_0, mul_0_r, sub_0_l.
-- intro m; rewrite pred_succ, mul_succ_r, <- add_sub_assoc.
-  + now rewrite sub_diag, add_0_r.
-  + now apply eq_le_incl.
-Qed.
-
-Theorem mul_sub_distr_r : forall n m p, (n - m) * p == n * p - m * p.
-Proof.
-intros n m p; induct n.
-- now rewrite sub_0_l, mul_0_l, sub_0_l.
-- intros n IH. destruct (le_gt_cases m n) as [H | H].
-  + rewrite sub_succ_l by assumption. do 2 rewrite mul_succ_l.
-    rewrite (add_comm ((n - m) * p) p), (add_comm (n * p) p).
-    rewrite <- (add_sub_assoc p (n * p) (m * p)) by now apply mul_le_mono_r.
-    now apply add_cancel_l.
-  + assert (H1 : S n <= m) by now apply le_succ_l.
-    setoid_replace (S n - m) with 0 by now apply sub_0_le.
-    setoid_replace ((S n * p) - m * p) with 0 by (apply sub_0_le; now apply mul_le_mono_r).
-    apply mul_0_l.
-Qed.
-
-Theorem mul_sub_distr_l : forall n m p, p * (n - m) == p * n - p * m.
-Proof.
-intros n m p; rewrite (mul_comm p (n - m)), (mul_comm p n), (mul_comm p m).
-apply mul_sub_distr_r.
-Qed.
-
+(* TODO: deprecate this part in 8.20 and remove it in 8.22 *)
 (** Alternative definitions of [<=] and [<] based on [+] *)
 
 Definition le_alt n m := exists p, p + n == m.

@@ -26,7 +26,7 @@ setoid_replace lt with (fun n m => 0 <= n < m).
   + now intros [_ H].
 Defined.
 
-(* "le_0_l : forall n : N, 0 <= n" was proved in NBase.v *)
+(** Note that [le_0_l : forall n, 0 <= n] is already proved in [NBase]. *)
 
 Theorem nlt_0_r : forall n, ~ n < 0.
 Proof.
@@ -162,12 +162,7 @@ intros n H; apply succ_pred; intro H1; rewrite H1 in H.
 false_hyp H lt_irrefl.
 Qed.
 
-Theorem le_pred_l : forall n, P n <= n.
-Proof.
-intro n; cases n.
-- rewrite pred_0; now apply eq_le_incl.
-- intros; rewrite pred_succ;  apply le_succ_diag_r.
-Qed.
+(** The lemma [le_pred_l] is proved in NBase. *)
 
 Theorem lt_pred_l : forall n, n ~= 0 -> P n < n.
 Proof.
