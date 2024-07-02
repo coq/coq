@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name lib)
  (synopsis "Coq's Utility Library [coq-specific]")
  (public_name coq-core.lib)

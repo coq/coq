@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name ssreflect_plugin)
  (public_name coq-core.plugins.ssreflect)
  (synopsis "Coq's ssreflect plugin")

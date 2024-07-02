@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name ssrmatching_plugin)
  (public_name coq-core.plugins.ssrmatching)
  (synopsis "Coq ssrmatching plugin")

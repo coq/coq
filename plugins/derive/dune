@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name derive_plugin)
  (public_name coq-core.plugins.derive)
  (synopsis "Coq's derive plugin")

@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name table)
  (modules table)
  (libraries clib))
@@ -13,7 +13,7 @@
  (modules render_line_results)
  (libraries unix table str clib))
 
-(library
+(library (lint (pps coqlint))
  (name benchlib)
  (modules benchUtil sourcehandler timelogparser htmloutput)
  (libraries unix str clib zarith))

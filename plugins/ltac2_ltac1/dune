@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name ltac2_ltac1_plugin)
  (public_name coq-core.plugins.ltac2_ltac1)
  (synopsis "Ltac2 and Ltac1 interoperability plugin")

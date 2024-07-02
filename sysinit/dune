@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name sysinit)
  (public_name coq-core.sysinit)
  (synopsis "Coq's initialization")

@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name rtauto_plugin)
  (public_name coq-core.plugins.rtauto)
  (synopsis "Coq's rtauto plugin")

@@ -88,7 +88,10 @@ module Internal = struct
 
   let protect f x =
     try f x
-    with e -> str "EXCEPTION: " ++ str (Printexc.to_string e)
+    with e when
+        (* maybe should be just "not is_interrupted"? *)
+        CErrors.noncritical e || !Flags.in_debugger ->
+      str "EXCEPTION: " ++ str (Printexc.to_string e)
 
   let print_kconstr env sigma a =
     protect (fun c -> print_constr_env env sigma c) a

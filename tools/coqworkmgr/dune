@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name coqworkmgrlib)
  (public_name coq-core.coqworkmgrapi)
  (modules coqworkmgrApi)

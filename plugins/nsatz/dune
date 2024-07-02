@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name nsatz_plugin)
  (public_name coq-core.plugins.nsatz)
  (synopsis "Coq's nsatz solver plugin")

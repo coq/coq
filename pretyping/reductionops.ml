@@ -1229,7 +1229,7 @@ let is_fconv ?(reds=TransparentState.full) pb env sigma t1 t2 =
       | Result.Error (Some e) -> Empty.abort e
       end
     with
-    | e ->
+    | e [@coqlint.allow_catchall "report_anomaly"] ->
       let e = Exninfo.capture e in
       report_anomaly e
 
@@ -1337,7 +1337,7 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Conversion.CUMUL)
             | Result.Error (Some e) -> raise (UGraph.UniverseInconsistency e)
   with
   | UGraph.UniverseInconsistency _ when catch_incon -> None
-  | e ->
+  | e [@coqlint.allow_catchall "report_anomaly"] ->
     let e = Exninfo.capture e in
     report_anomaly e
 
@@ -1368,7 +1368,7 @@ let infer_conv_ustate ?(catch_incon=true) ?(pb=Conversion.CUMUL)
         | Result.Error (Some e) -> raise (UGraph.UniverseInconsistency e)
   with
   | UGraph.UniverseInconsistency _ when catch_incon -> None
-  | e ->
+  | e [@coqlint.allow_catchall "report_anomaly"] ->
     let e = Exninfo.capture e in
     report_anomaly e
 
