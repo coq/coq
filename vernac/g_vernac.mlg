@@ -1204,7 +1204,7 @@ GRAMMAR EXTEND Gram
       | s  = STRING   -> { Goptions.StringRefValue s } ] ]
   ;
   setting_name:
-    [ [ fl = LIST1 [ x = IDENT -> { x } ] -> { fl } ]]
+    [ [ fl = LIST1 [ x = IDENT -> { x } | "Prop" -> { "Prop" } ] -> { fl } ]]
   ;
   ne_in_or_out_modules:
     [ [ IDENT "inside"; l = LIST1 global -> { SearchInside l }

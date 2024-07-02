@@ -719,6 +719,11 @@ is_module_type: [
 | WITH ":=" LIST1 module_type_inl SEP "<+"
 ]
 
+setting_name: [
+| REPLACE LIST1 [ IDENT | "Prop" ]
+| WITH LIST1 IDENT
+]
+
 gallina_ext: [
 | REPLACE "Arguments" smart_global LIST0 arg_specs OPT [ "," LIST1 [ LIST0 implicits_alt ] SEP "," ] OPT [ ":" LIST1 args_modifier SEP "," ]
 | WITH "Arguments" smart_global LIST0 arg_specs    LIST0 [  "," LIST0 implicits_alt ]                OPT [ ":" LIST1 args_modifier SEP "," ]

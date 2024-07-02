@@ -1469,7 +1469,7 @@ table_value: [
 ]
 
 setting_name: [
-| LIST1 IDENT
+| LIST1 [ IDENT | "Prop" ]
 ]
 
 ne_in_or_out_modules: [
