@@ -412,7 +412,7 @@ Section Logic_lemmas.
   Qed.
 
   Section equality.
-    Variables A B : Type.
+    Variables A B : Type@{eq.u0}.
     Variable f : A -> B.
     Variables x y z : A.
 
@@ -450,25 +450,25 @@ Section Logic_lemmas.
   End equality.
 
   Definition eq_sind_r :
-    forall (A:Type) (x:A) (P:A -> SProp), P x -> forall y:A, y = x -> P y.
+    forall (A:Type@{eq.u0}) (x:A) (P:A -> SProp), P x -> forall y:A, y = x -> P y.
   Proof.
     intros A x P H y H0. elim eq_sym with (1 := H0); assumption.
   Defined.
 
   Definition eq_ind_r :
-    forall (A:Type) (x:A) (P:A -> Prop), P x -> forall y:A, y = x -> P y.
+    forall (A:Type@{eq.u0}) (x:A) (P:A -> Prop), P x -> forall y:A, y = x -> P y.
     intros A x P H y H0. elim eq_sym with (1 := H0); assumption.
   Defined.
 
   Register eq_ind_r as core.eq.ind_r.
 
   Definition eq_rec_r :
-    forall (A:Type) (x:A) (P:A -> Set), P x -> forall y:A, y = x -> P y.
+    forall (A:Type@{eq.u0}) (x:A) (P:A -> Set), P x -> forall y:A, y = x -> P y.
     intros A x P H y H0; elim eq_sym with (1 := H0); assumption.
   Defined.
 
   Definition eq_rect_r :
-    forall (A:Type) (x:A) (P:A -> Type), P x -> forall y:A, y = x -> P y.
+    forall (A:Type@{eq.u0}) (x:A) (P:A -> Type), P x -> forall y:A, y = x -> P y.
     intros A x P H y H0; elim eq_sym with (1 := H0); assumption.
   Defined.
 End Logic_lemmas.
@@ -548,8 +548,9 @@ End EqNotations.
 Import EqNotations.
 
 Section equality_dep.
-  Variable A : Type.
-  Variable B : A -> Type.
+  Universes f_equal_dep_u0 f_equal_dep_u1.
+  Variable A : Type@{f_equal_dep_u0}.
+  Variable B : A -> Type@{f_equal_dep_u1}.
   Variable f : forall x, B x.
   Variables x y : A.
 

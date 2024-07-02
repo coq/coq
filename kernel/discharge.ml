@@ -37,7 +37,7 @@ let lift_univs info univ_hyps = function
 (* Discharging opaque proof terms *)
 
 let lift_private_univs info = function
-  | Opaqueproof.PrivateMonomorphic () as priv ->
+  | Opaqueproof.PrivateMonomorphic _ as priv ->
     let () = lift_private_mono_univs info () in
     priv
   | Opaqueproof.PrivatePolymorphic ctx ->
