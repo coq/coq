@@ -13,7 +13,8 @@
     [f:=?x]. When the proof ends, [f] is defined as the value of [?x]
     and [lemma] as the proof. *)
 val start_deriving
-  :  Names.Id.t
+  :  atts:Vernacentries.DefAttributes.t
+  -> Names.Id.t CAst.t
   -> Constrexpr.constr_expr
   -> Names.Id.t
   -> Declare.Proof.t

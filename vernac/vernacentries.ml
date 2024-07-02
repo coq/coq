@@ -104,24 +104,27 @@ module DefAttributes = struct
   let clearbody = bool_attribute ~name:"clearbody"
 
   (* [XXX] EJGA: coercion is unused here *)
-  let parse ?(coercion=false) ?(discharge=NoDischarge,"","") f =
+  let def_attributes_gen ?(coercion=false) ?(discharge=NoDischarge,"","") () =
     let discharge, deprecated_thing, replacement = discharge in
     let clearbody = match discharge with DoDischarge -> clearbody | NoDischarge -> return None in
-    let (((((((locality, user_warns), polymorphic), program),
-         canonical_instance), typing_flags), using),
-         reversible), clearbody =
-      parse (locality ++ user_warns ++ polymorphic ++ program ++
-             canonical_instance ++ typing_flags ++ using ++
-             reversible ++ clearbody)
-        f
-    in
-    let using = Option.map Proof_using.using_from_string using in
-    let reversible = Option.default false reversible in
-    let () = if Option.has_some clearbody && not (Lib.sections_are_opened())
-      then CErrors.user_err Pp.(str "Cannot use attribute clearbody outside sections.")
-    in
-    let scope = scope_of_locality locality discharge deprecated_thing replacement in
-    { scope; locality; polymorphic; program; user_warns; canonical_instance; typing_flags; using; reversible; clearbody }
+    (locality ++ user_warns ++ polymorphic ++ program ++
+               canonical_instance ++ typing_flags ++ using ++
+               reversible ++ clearbody) >>= fun ((((((((locality, user_warns), polymorphic), program),
+           canonical_instance), typing_flags), using),
+           reversible), clearbody) ->
+      let using = Option.map Proof_using.using_from_string using in
+      let reversible = Option.default false reversible in
+      let () = if Option.has_some clearbody && not (Lib.sections_are_opened())
+        then CErrors.user_err Pp.(str "Cannot use attribute clearbody outside sections.")
+      in
+      let scope = scope_of_locality locality discharge deprecated_thing replacement in
+      return { scope; locality; polymorphic; program; user_warns; canonical_instance; typing_flags; using; reversible; clearbody }
+
+  let parse ?coercion ?discharge f =
+    Attributes.parse (def_attributes_gen ?coercion ?discharge ()) f
+
+  let def_attributes = def_attributes_gen ()
+
 end
 
 let with_def_attributes ?coercion ?discharge ~atts f =
@@ -637,12 +640,13 @@ let interp_lemma ~program_mode ~flags ~scope env0 evd thms =
         Constrintern.interp_context_evars ~program_mode env0 evd bl
       in
       let evd, (t', imps') = Constrintern.interp_type_evars_impls ~flags ~impls env evd t in
+      let rs = Retyping.relevance_of_type env evd t' in
       let flags = Pretyping.{ all_and_fail_flags with program_mode } in
       let evd = Pretyping.solve_remaining_evars ?hook:inference_hook flags env evd in
       let ids = List.map Context.Rel.Declaration.get_name ctx in
       let typ = EConstr.it_mkProd_or_LetIn t' ctx in
       let thm = Declare.CInfo.make ~name:id.CAst.v ~typ ~args:ids ~impargs:(imps @ imps') () in
-      evd, (EConstr.to_constr evd typ, thm))
+      evd, ((None, rs), EConstr.to_constr evd typ, thm))
     evd thms
 
 let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody ~kind ?user_warns ?using ?hook thms =
@@ -652,7 +656,7 @@ let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody ~kind ?u
   let udecls = List.map (fun ((_,univs),_) -> univs) thms in
   let evd, udecl = Constrintern.interp_mutual_univ_decl_opt env0 udecls in
   let evd, thms = interp_lemma ~program_mode ~flags ~scope env0 evd thms in
-  let typs, thms = List.split thms in
+  let bodies, typs, thms = List.split3 thms in
   let mut_analysis = RecLemmas.look_for_possibly_mutual_statements evd thms in
   let evd = Evd.minimize_universes evd in
   let info = Declare.Info.make ?hook ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?user_warns () in
@@ -664,7 +668,9 @@ let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody ~kind ?u
     Declare.Proof.start_definition ~info ~cinfo:thm ?using evd
   | RecLemmas.Mutual possible_guard ->
     let cinfo = List.map (Declare.CInfo.to_constr evd) thms in
-    Declare.Proof.start_mutual_definitions ~info ~cinfo ~possible_guard ?using evd
+    let bodies, relevances = List.split (List.map (on_snd (EConstr.ERelevance.kind evd)) bodies) in
+    let possible_guard = (possible_guard, relevances) in
+    Declare.Proof.start_mutual_definitions ~info ~cinfo ~bodies ~possible_guard ?using evd
 
 let vernac_definition_hook ~canonical_instance ~local ~poly ~reversible = let open Decls in function
 | Coercion ->

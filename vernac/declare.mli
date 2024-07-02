@@ -136,8 +136,8 @@ val declare_mutual_definitions
   -> cinfo: Constr.t CInfo.t list
   -> opaque:bool
   -> uctx:UState.t
-  -> bodies:(Constr.t list * Sorts.relevance list)
-  -> possible_guard:Pretyping.possible_guard
+  -> bodies:Constr.t list
+  -> possible_guard:Pretyping.possible_guard * Sorts.relevance list
   -> ?using:Vernacexpr.section_subset_expr
   -> unit
   -> Names.GlobRef.t list
@@ -193,7 +193,7 @@ module Proof : sig
      both of them. Please, get in touch with the developers if you
      would like to experiment with multi-goal dependent proofs so we
      can use your input on the design of the new API. *)
-  val start_derive : f:Id.t -> name:Id.t -> info:Info.t -> Proofview.telescope -> t
+  val start_derive : f:Id.t -> name:Id.t -> info:Info.t -> cinfo:unit CInfo.t list -> Proofview.telescope -> t
 
   val start_equations :
        name:Id.t
@@ -216,8 +216,8 @@ module Proof : sig
   val start_mutual_definitions
     :  info:Info.t
     -> cinfo:Constr.t CInfo.t list
-    -> ?bodies:Constr.t option list
-    -> possible_guard:Pretyping.possible_guard
+    -> bodies:Constr.t option list
+    -> possible_guard:(Pretyping.possible_guard * Sorts.relevance list)
     -> ?using:Vernacexpr.section_subset_expr
     -> Evd.evar_map
     -> t
@@ -559,7 +559,7 @@ val add_mutual_definitions :
   -> opaque:bool
   -> uctx:UState.t
   -> bodies:Constr.t list
-  -> possible_guard:Pretyping.possible_guard
+  -> possible_guard:(Pretyping.possible_guard * Sorts.relevance list)
   -> ?tactic:unit Proofview.tactic
   -> ?reduce:(Constr.t -> Constr.t)
   -> ?using:Vernacexpr.section_subset_expr
