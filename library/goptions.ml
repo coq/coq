@@ -26,7 +26,7 @@ type table_value =
 
 (** Summary of an option status *)
 type option_state = {
-  opt_depr  : string list Deprecation.t option;
+  opt_depr  : Deprecation.t option;
   opt_value : option_value;
 }
 
@@ -220,7 +220,7 @@ let iter_table env f key lv =
 
 type 'a option_sig = {
   optstage : Summary.Stage.t;
-  optdepr  : string list Deprecation.t option;
+  optdepr  : Deprecation.t option;
   optkey   : option_name;
   optread  : unit -> 'a;
   optwrite : 'a -> unit }
@@ -256,8 +256,9 @@ with Not_found ->
 open Libobject
 
 let warn_deprecated_option =
+  let open Nametab in
   Deprecation.create_warning ~object_name:"Option" ~warning_name_if_no_since:"deprecated-option"
-    (fun key -> Pp.str (nickname key))
+    ~pr_depr_xref
     (fun key -> Pp.str (nickname key))
 
 let declare_option cast uncast append ?(preprocess = fun x -> x)
@@ -335,7 +336,7 @@ let declare_stringopt_option =
 
 type 'a getter = { get : unit -> 'a }
 
-type 'a opt_decl = ?stage:Summary.Stage.t -> ?depr:string list Deprecation.t -> key:option_name -> value:'a -> unit -> 'a getter
+type 'a opt_decl = ?stage:Summary.Stage.t -> ?depr:Deprecation.t -> key:option_name -> value:'a -> unit -> 'a getter
 
 let declare_int_option_and_ref ?(stage=Interp) ?depr ~key ~(value:int) () =
   let r_opt = ref value in

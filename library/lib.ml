@@ -132,7 +132,7 @@ let dummy = {
 let synterp_state = ref dummy
 let interp_state = ref ([] : Summary.Interp.frozen library_segment)
 
-let library_info = ref @@ UserWarn.empty ()
+let library_info = ref UserWarn.empty
 
 let contents () = !interp_state
 

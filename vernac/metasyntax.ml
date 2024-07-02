@@ -1076,7 +1076,7 @@ let check_useless_entry_types recvars mainvars etyps =
 type notation_main_data = {
   onlyparsing  : bool;
   onlyprinting : bool;
-  user_warns   : Globnames.extended_global_reference UserWarn.t option;
+  user_warns   : UserWarn.t option;
   entry        : notation_entry;
   format       : unparsing Loc.located list option;
   itemscopes  : (Id.t * scope_name) list;
@@ -1579,7 +1579,7 @@ type notation_obj = {
   notobj_interp : interpretation;
   notobj_coercion : entry_coercion_kind option;
   notobj_use : notation_use option;
-  notobj_user_warns : Globnames.extended_global_reference UserWarn.t option;
+  notobj_user_warns : UserWarn.t option;
   notobj_notation : notation * notation_location;
   notobj_specific_pp_rules : notation_printing_rules option;
 }

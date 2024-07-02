@@ -309,7 +309,7 @@ let find_path_opt m s =
   | FlagPath p -> Some p
   | exception Not_found -> None
 
-let deprecation_parser : Globnames.extended_global_reference Deprecation.t key_parser = fun ?loc orig args ->
+let deprecation_parser : Deprecation.t key_parser = fun ?loc orig args ->
   assert_once ?loc ~name:"deprecation" orig;
   match args with
   | VernacFlagList l ->

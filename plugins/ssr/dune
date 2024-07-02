@@ -4,6 +4,6 @@
  (synopsis "Coq's ssreflect plugin")
  (modules_without_implementation ssrast)
  (flags :standard -open Gramlib)
- (libraries coq-core.plugins.ssrmatching))
+ (libraries coq-core.plugins.ssrmatching coq-core.plugins.ltac2))
 
 (coq.pp (modules ssrvernac ssrparser ssrtacs))

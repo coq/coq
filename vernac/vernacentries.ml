@@ -54,7 +54,7 @@ module DefAttributes = struct
     locality : bool option;
     polymorphic : bool;
     program : bool;
-    user_warns : Globnames.extended_global_reference UserWarn.t option;
+    user_warns : UserWarn.t option;
     canonical_instance : bool;
     typing_flags : Declarations.typing_flags option;
     using : Vernacexpr.section_subset_expr option;
@@ -2177,8 +2177,8 @@ let vernac_register qid r =
 let vernac_library_attributes atts =
   if Global.is_curmod_library () && not (Lib.sections_are_opened ()) then
     let user_warns = Attributes.parse user_warns atts in
-    let user_warns = Option.default UserWarn.(empty ()) user_warns in
-    Lib.Synterp.declare_info (Obj.magic user_warns)
+    let user_warns = Option.default UserWarn.empty user_warns in
+    Lib.Synterp.declare_info user_warns
   else
     user_err (Pp.str "A library attribute should be at toplevel of the library.")
 

@@ -15,7 +15,7 @@ open Tacexpr
 
 (** {5 Tactic Definitions} *)
 
-val register_ltac : locality_flag -> ?deprecation:Globnames.extended_global_reference Deprecation.t ->
+val register_ltac : locality_flag -> ?deprecation:Deprecation.t ->
   Tacexpr.tacdef_body list -> unit
 (** Adds new Ltac definitions to the environment. *)
 
@@ -37,14 +37,14 @@ type argument = Genarg.ArgT.any Extend.user_symbol
     leaves. *)
 
 val add_tactic_notation :
-  ?deprecation:Globnames.extended_global_reference Deprecation.t -> tactic_grammar_obj ->
+  ?deprecation:Deprecation.t -> tactic_grammar_obj ->
   raw_tactic_expr -> unit
 (** [add_tactic_notation local level prods expr] adds a tactic notation in the
     environment at level [level] with locality [local] made of the grammar
     productions [prods] and returning the body [expr] *)
 
 val add_tactic_notation_syntax :
-  locality_flag -> int -> ?deprecation:Globnames.extended_global_reference Deprecation.t -> raw_argument
+  locality_flag -> int -> ?deprecation:Deprecation.t -> raw_argument
   grammar_tactic_prod_item_expr list ->
   tactic_grammar_obj
 
@@ -55,7 +55,7 @@ val register_tactic_notation_entry : string -> ('a, 'b, 'c) Genarg.genarg_type -
     to finding an argument by name (as in {!Genarg}) if there is none
     matching. *)
 
-val add_ml_tactic_notation : ml_tactic_name -> level:int -> ?deprecation:Globnames.extended_global_reference Deprecation.t ->
+val add_ml_tactic_notation : ml_tactic_name -> level:int -> ?deprecation:Deprecation.t ->
   argument grammar_tactic_prod_item_expr list list -> unit
 (** A low-level variant of {!add_tactic_notation} used by the TACTIC EXTEND
     ML-side macro. *)
@@ -86,7 +86,7 @@ type (_, 'a) ml_ty_sig =
 | MLTyArg : ('r, 'a) ml_ty_sig -> (Geninterp.Val.t -> 'r, 'a) ml_ty_sig
 
 val ml_tactic_extend : plugin:string -> name:string -> local:locality_flag ->
-  ?deprecation:Globnames.extended_global_reference Deprecation.t -> ('r, unit Proofview.tactic) ml_ty_sig -> 'r -> unit
+  ?deprecation:Deprecation.t -> ('r, unit Proofview.tactic) ml_ty_sig -> 'r -> unit
 (** Helper function to define directly an Ltac function in OCaml without any
     associated parsing rule nor further shenanigans. The Ltac function will be
     defined as [name] in the Coq file that loads the ML plugin where this
@@ -94,7 +94,7 @@ val ml_tactic_extend : plugin:string -> name:string -> local:locality_flag ->
     argument. *)
 
 val ml_val_tactic_extend : plugin:string -> name:string -> local:locality_flag ->
-  ?deprecation:Globnames.extended_global_reference Deprecation.t -> ('r, Geninterp.Val.t Ftactic.t) ml_ty_sig -> 'r -> unit
+  ?deprecation:Deprecation.t -> ('r, Geninterp.Val.t Ftactic.t) ml_ty_sig -> 'r -> unit
 (** Same as {!ml_tactic_extend} but the function can return an argument
     instead. *)
 
@@ -108,7 +108,7 @@ type _ ty_sig =
 type ty_ml = TyML : 'r ty_sig * 'r -> ty_ml
 
 val tactic_extend : string -> string -> level:Int.t ->
-  ?deprecation:Globnames.extended_global_reference Deprecation.t -> ty_ml list -> unit
+  ?deprecation:Deprecation.t -> ty_ml list -> unit
 
 val eval_of_ty_ml :
   ty_ml ->

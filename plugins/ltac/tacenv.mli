@@ -32,7 +32,7 @@ type alias = KerName.t
 type alias_tactic =
   { alias_args: Id.t list;
     alias_body: glob_tactic_expr;
-    alias_deprecation: Globnames.extended_global_reference Deprecation.t option;
+    alias_deprecation: Deprecation.t option;
   }
 (** Contents of a tactic notation *)
 
@@ -47,7 +47,7 @@ val check_alias : alias -> bool
 
 (** {5 Coq tactic definitions} *)
 
-val register_ltac : bool -> bool -> ?deprecation:Globnames.extended_global_reference Deprecation.t -> Id.t ->
+val register_ltac : bool -> bool -> ?deprecation:Deprecation.t -> Id.t ->
   glob_tactic_expr -> unit
 (** Register a new Ltac with the given name and body.
 
@@ -56,7 +56,7 @@ val register_ltac : bool -> bool -> ?deprecation:Globnames.extended_global_refer
     definition. It also puts the Ltac name in the nametab, so that it can be
     used unqualified. *)
 
-val redefine_ltac : bool -> ?deprecation:Globnames.extended_global_reference Deprecation.t -> KerName.t ->
+val redefine_ltac : bool -> ?deprecation:Deprecation.t -> KerName.t ->
   glob_tactic_expr -> unit
 (** Replace a Ltac with the given name and body. If the boolean flag is set
     to true, then this is a local redefinition. *)
@@ -67,7 +67,7 @@ val interp_ltac : KerName.t -> glob_tactic_expr
 val is_ltac_for_ml_tactic : KerName.t -> bool
 (** Whether the tactic is defined from ML-side *)
 
-val tac_deprecation : KerName.t -> Globnames.extended_global_reference Deprecation.t option
+val tac_deprecation : KerName.t -> Deprecation.t option
 (** The tactic deprecation notice, if any *)
 
 type ltac_entry = {
@@ -77,7 +77,7 @@ type ltac_entry = {
   (** The current body of the tactic *)
   tac_redef : ModPath.t list;
   (** List of modules redefining the tactic in reverse chronological order *)
-  tac_deprecation : Globnames.extended_global_reference Deprecation.t option;
+  tac_deprecation : Deprecation.t option;
   (** Deprecation notice to be printed when the tactic is used *)
 }
 

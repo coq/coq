@@ -20,7 +20,7 @@ val do_mutually_recursive
   -> ?clearbody:bool
   -> poly:bool
   -> ?typing_flags:Declarations.typing_flags
-  -> ?user_warns:Globnames.extended_global_reference UserWarn.t
+  -> ?user_warns:UserWarn.t
   -> ?using:Vernacexpr.section_subset_expr
   -> recursives_expr
   -> Declare.Proof.t option
