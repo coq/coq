@@ -175,6 +175,10 @@ let add_mono_univ_uctx_for_derived ctx' = function
   | UState.Monomorphic_entry ctx, ubinders -> UState.Monomorphic_entry (Univ.ContextSet.union ctx ctx'), ubinders
   | UState.Polymorphic_entry ctx, ubinders -> CErrors.anomaly (Pp.str "Derive does not support polymorphism yet.")
 
+let add_mono_uctx uctx = function
+  | UState.Monomorphic_entry ctx, ubinders -> UState.Monomorphic_entry (Univ.ContextSet.union (UState.context_set uctx) ctx), ubinders
+  | UState.Polymorphic_entry _, _ as x -> assert (Univ.ContextSet.is_empty (UState.context_set uctx)); x
+
 let make_ubinders uctx (univs, ubinders as u) = match univs with
   | UState.Monomorphic_entry _ -> (UState.Monomorphic_entry uctx, ubinders)
   | UState.Polymorphic_entry _ -> u
@@ -848,12 +852,12 @@ let declare_parameter ~name ~scope ~hook ~impargs ~uctx pe =
   in
   let kind = Decls.(IsAssumption Conjectural) in
   let decl = ParameterEntry pe in
-  let kn = declare_constant ~name ~local ~kind ~typing_flags:None decl in
-  let dref = Names.GlobRef.ConstRef kn in
+  let cst = declare_constant ~name ~local ~kind ~typing_flags:None decl in
+  let dref = Names.GlobRef.ConstRef cst in
   let () = Impargs.maybe_declare_manual_implicits false dref impargs in
   let () = assumption_message name in
   let () = Hook.(call ?hook { S.uctx; obls = []; scope; dref}) in
-  dref
+  cst
 
 (* Preparing proof entries *)
 let error_unresolved_evars env sigma t evars =
@@ -1494,7 +1498,7 @@ let obligation_terminator ~pm ~entry ~uctx ~oinfo:{name; num; auto; check_final}
 
    FIXME: There is duplication of this code with obligation_terminator
    and Obligations.admit_obligations *)
-let obligation_admitted_terminator ~pm typ {name; num; auto; check_final} declare_fun uctx =
+let obligation_admitted_terminator ~pm typ {name; num; auto; check_final} declare_fun sec_vars uctx =
   let prg = Option.get (State.find pm name) in
   let {obls; remaining = rem} = prg.prg_obligations in
   let obl = obls.(num) in
@@ -1503,10 +1507,8 @@ let obligation_admitted_terminator ~pm typ {name; num; auto; check_final} declar
     | true, Evar_kinds.Expand | true, Evar_kinds.Define true -> err_not_transp ()
     | _ -> ()
   in
-  let uctx' = current_obligation_uctx prg uctx (Vars.universes_of_constr typ) in
-  let sec_vars = None in (* Not using "using" for obligations *)
-  let univs = UState.univ_entry ~poly:prg.prg_info.Info.poly uctx' in
-  let cst = declare_fun ~uctx ~sec_vars ~univs in
+  let mono_uctx_extra = if prg.prg_info.Info.poly then UState.empty else prg.prg_uctx in
+  let cst, univs = declare_fun ~uctx ~mono_uctx_extra typ in
   let inst = instance_of_univs univs in
   let obl = {obl with obl_body = Some (DefinedObl (cst, inst))} in
   let prg = update_global_obligation_uctx prg uctx in
@@ -1574,7 +1576,6 @@ type t =
 
 let get ps = ps.proof
 let get_name ps = (Proof.data ps.proof).Proof.name
-let get_initial_euctx ps = ps.initial_euctx
 
 let fold ~f p = f p.proof
 let map ~f p = { p with proof = f p.proof }
@@ -1719,7 +1720,6 @@ let start_mutual_definitions ~info ~cinfo ?bodies ~possible_guard ?using sigma =
     lemma
 
 let get_used_variables pf = pf.using
-let get_universe_decl pf = pf.pinfo.Proof_info.info.Info.udecl
 
 let definition_scope ps = ps.pinfo.info.scope
 
@@ -2094,9 +2094,10 @@ module MutualEntry : sig
   val declare_possibly_mutual_parameters
     : pinfo:Proof_info.t
     -> uctx:UState.t
+    -> ?mono_uctx_extra:UState.t
     -> sec_vars:Id.Set.t option
-    -> univs:UState.named_universes_entry
-    -> Names.GlobRef.t list
+    -> Constr.t list
+    -> (Constant.t * UState.named_universes_entry) list
 
   val declare_possibly_mutual_definitions
     (* Common to all recthms *)
@@ -2146,18 +2147,26 @@ end = struct
     in
     refs
 
-  let declare_possibly_mutual_parameters ~pinfo ~uctx ~sec_vars ~univs =
-    let { Info.scope; hook } = pinfo.Proof_info.info in
-    List.map_i (
-      fun i { CInfo.name; typ; impargs } ->
+  let declare_possibly_mutual_parameters ~pinfo ~uctx ?(mono_uctx_extra=UState.empty) ~sec_vars typs =
+    (* Note, if an initial uctx, minimize and restrict have not been done *)
+    (* if the uctx of an abandonned proof, minimize is redundant (see close_proof) *)
+    let { Info.scope; poly; hook; udecl } = pinfo.Proof_info.info in
+    pi3 (List.fold_left2 (
+      fun (i, subst, csts) { CInfo.name; impargs } typ ->
+        let uctx' = UState.restrict uctx (Vars.universes_of_constr typ) in
+        let univs = UState.check_univ_decl ~poly uctx' udecl in
+        let univs = if i = 0 then add_mono_uctx mono_uctx_extra univs else univs in
+        let typ = Vars.replace_vars subst typ in
         let pe = {
             parameter_entry_secctx = sec_vars;
             parameter_entry_type = Evarutil.nf_evars_universes (Evd.from_ctx uctx) typ;
             parameter_entry_universes = univs;
             parameter_entry_inline_code = None;
           } in
-        declare_parameter ~name ~scope ~hook ~impargs ~uctx pe
-    ) 0 pinfo.Proof_info.cinfo
+        let cst = declare_parameter ~name ~scope ~hook ~impargs ~uctx pe in
+        let inst = instance_of_univs univs in
+        (i+1, (name, Constr.mkConstU (cst,inst))::subst, (cst, univs)::csts)
+    ) (0, [], []) pinfo.Proof_info.cinfo typs)
 
 end
 
@@ -2172,48 +2181,53 @@ let { Goptions.get = get_keep_admitted_vars } =
     ~value:true
     ()
 
-let compute_proof_using_for_admitted proof typ iproof =
+let compute_proof_using_for_admitted proof typs iproof =
   if not (get_keep_admitted_vars ()) || not (Lib.sections_are_opened()) then None
   else match get_used_variables proof with
     | Some _ as x -> x
     | None ->
-      match Proof.partial_proof iproof with
-      | pproof :: _ ->
+        let pproofs = Proof.partial_proof iproof in
         let env = Global.env () in
         let sigma = (Proof.data iproof).Proof.sigma in
-        let ids_typ = Termops.global_vars_set env sigma typ in
+        let ids_def = Id.Set.List.union (List.map (Termops.global_vars_set env sigma) pproofs) in
+        let ids_typ = Id.Set.List.union (List.map (Termops.global_vars_set env sigma) typs) in
         (* [pproof] is evar-normalized by [partial_proof]. We don't
            count variables appearing only in the type of evars. *)
-        let ids_def = Termops.global_vars_set env sigma pproof in
-        Some (Environ.really_needed env (Id.Set.union ids_typ ids_def))
-      | [] -> None
+        let vars = Id.Set.union ids_def ids_typ in
+        Some (Environ.really_needed env vars)
 
-let finish_admitted ~pm ~pinfo ~uctx ~sec_vars ~univs =
+let check_type_evars_solved env sigma typ =
+  let evars = Evar.Set.elements (Evarutil.undefined_evars_of_term sigma typ) in
+  match evars with
+  | [] -> ()
+  | evk::_ -> CErrors.user_err (str "Cannot admit: the statement has still unresolved existential variables.")
+
+let finish_admitted ~pm ~pinfo ~uctx ~sec_vars typs =
   (* If the constant was an obligation we need to update the program map *)
   match CEphemeron.default pinfo.Proof_info.proof_ending Proof_ending.Regular with
   | Proof_ending.End_obligation oinfo ->
-    let declare_fun ~uctx ~sec_vars ~univs =
-      match MutualEntry.declare_possibly_mutual_parameters ~pinfo ~uctx ~sec_vars ~univs with
-      | [GlobRef.ConstRef cst] -> cst
-      | _ -> assert false in
+    let declare_fun ~uctx ~mono_uctx_extra typ =
+      List.hd (MutualEntry.declare_possibly_mutual_parameters ~pinfo ~uctx ~sec_vars ~mono_uctx_extra [typ]) in
     let typ = Evarutil.nf_evars_universes (Evd.from_ctx uctx) (List.hd pinfo.Proof_info.cinfo).CInfo.typ in
-    Obls_.obligation_admitted_terminator ~pm typ oinfo declare_fun uctx
+    Obls_.obligation_admitted_terminator ~pm typ oinfo declare_fun sec_vars uctx
   | _ ->
-    let _cst = MutualEntry.declare_possibly_mutual_parameters ~pinfo ~uctx ~sec_vars ~univs in
+    let (_ : 'a list) = MutualEntry.declare_possibly_mutual_parameters ~pinfo ~uctx ~sec_vars typs in
     pm
 
 let save_admitted ~pm ~proof =
-  let udecl = get_universe_decl proof in
-  let Proof.{ poly; entry } = Proof.data (get proof) in
-  let typ = match Proofview.initial_goals entry with
-    | [_, _, typ] -> typ
-    | _ -> CErrors.anomaly ~label:"Lemmas.save_lemma_admitted" (Pp.str "more than one statement.")
-  in
+  let Proof.{ entry; sigma } = Proof.data (get proof) in
+  let typs = List.map pi3 (Proofview.initial_goals entry) in
   let iproof = get proof in
-  let sec_vars = compute_proof_using_for_admitted proof typ iproof in
-  let uctx = get_initial_euctx proof in
-  let univs = UState.check_univ_decl ~poly uctx udecl in
-  finish_admitted ~pm ~pinfo:proof.pinfo ~uctx ~sec_vars ~univs
+  List.iter (check_type_evars_solved (Global.env()) sigma) typs;
+  let sec_vars = compute_proof_using_for_admitted proof typs iproof in
+  (* We have the choice of taking CInfo.typ and initial_euctx or or
+     the typs and uctx from the type. By uniformity we would like to
+     do the same as in save_lemma_admitted_delayed, but we would need
+     for that that fixpoints are represented with multi-statements; so
+     we take the initial types *)
+  let typs = List.map (fun CInfo.{typ} -> typ) proof.pinfo.cinfo in
+  let uctx = proof.initial_euctx in
+  finish_admitted ~pm ~pinfo:proof.pinfo ~uctx ~sec_vars typs
 
 (************************************************************************)
 (* Saving a lemma-like constant                                         *)
@@ -2334,15 +2348,14 @@ let save_regular ~(proof : t) ~opaque ~idopt =
 (***********************************************************************)
 let save_lemma_admitted_delayed ~pm ~proof =
   let { entries; uctx; pinfo } = proof in
-  if List.length entries <> 1 then
-    CErrors.user_err Pp.(str "Admitted does not support multiple statements");
-  let { proof_entry_secctx; proof_entry_type; proof_entry_universes } = List.hd entries in
-  let poly = match fst (proof_entry_universes) with
-    | UState.Monomorphic_entry _ -> false
-    | UState.Polymorphic_entry _ -> true in
-  let univs = UState.univ_entry ~poly uctx in
-  let sec_vars = if get_keep_admitted_vars () then proof_entry_secctx else None in
-  finish_admitted ~pm ~uctx ~pinfo ~sec_vars ~univs
+  let typs = List.map (function { proof_entry_type } -> Option.get proof_entry_type) entries in
+  (* Note: an alternative would be to compute sec_vars of the partial
+     proof as a Future computation, as in compute_proof_using_for_admitted *)
+  let sec_vars = if get_keep_admitted_vars () then (List.hd entries).proof_entry_secctx else None in
+  (* If the proof is partial, do we want to take the (restriction on
+     visible uvars of) uctx so far or (as done below) the initial ones
+     that refers to only the types *)
+  finish_admitted ~pm ~uctx ~pinfo ~sec_vars typs
 
 let save_lemma_proved_delayed ~pm ~proof ~idopt =
   (* vio2vo used to call this with invalid [pinfo], now it should work fine. *)
