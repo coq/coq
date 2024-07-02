@@ -214,7 +214,8 @@ let infer_parameter ~sec_univs env entry =
 
 let infer_definition ~sec_univs env entry =
   let env, usubst, _, univs = process_universes env entry.definition_entry_universes in
-  let j = Typeops.infer env entry.definition_entry_body in
+  let hbody = HConstr.of_constr env entry.definition_entry_body in
+  let j = Typeops.infer_hconstr env hbody in
   let typ = match entry.definition_entry_type with
     | None ->
       Vars.subst_univs_level_constr usubst j.uj_type
@@ -224,9 +225,10 @@ let infer_definition ~sec_univs env entry =
       Vars.subst_univs_level_constr usubst tj.utj_val
   in
   let body = Vars.subst_univs_level_constr usubst j.uj_val in
+  let hbody = if body == j.uj_val then Some hbody else None in
   let def = Def body in
   let hyps = used_section_variables env entry.definition_entry_secctx (Some body) typ in
-  {
+  hbody, {
     const_hyps = hyps;
     const_univ_hyps = make_univ_hyps sec_univs;
     const_body = def;
@@ -275,7 +277,8 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
   in
   (* Note: non-trivial trusted side-effects only in monomorphic case *)
   let body,env,ectx = skip_trusted_seff valid_signatures body env in
-  let j = Typeops.infer env body in
+  let hbody = HConstr.of_constr env body in
+  let j = Typeops.infer_hconstr env hbody in
   let j = unzip ectx j in
   let _ = Typeops.judge_of_cast env j DEFAULTcast tyj in
   let declared =
@@ -285,7 +288,8 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
   let () = assert (Id.Set.equal declared declared') in
   (* Note: non-trivial usubst only in polymorphic case *)
   let def = Vars.subst_univs_level_constr usubst j.uj_val in
-  def, univs
+  let hbody = if def == j.uj_val && List.is_empty ectx then Some hbody else None in
+  hbody, def, univs
 
 (*s Global and local constant declaration. *)
 

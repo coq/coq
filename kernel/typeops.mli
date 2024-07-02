@@ -25,6 +25,7 @@ open Environ
    Do not discard the result. *)
 
 val infer      : env -> constr       -> unsafe_judgment
+val infer_hconstr : env -> HConstr.t -> unsafe_judgment
 val infer_type : env -> types        -> unsafe_type_judgment
 
 val check_context :

@@ -628,13 +628,25 @@ let check_let_annot env s x c t =
   then ()
   else error_bad_binder_relevance env r' (RelDecl.LocalDef (x, c, t))
 
+let push_rec_types (lna,typarray,_) env =
+  let ctxt = Array.map2_i (fun i na t -> RelDecl.LocalAssum (na, lift i t)) lna typarray in
+  Array.fold_left (fun e assum -> push_rel assum e) env ctxt
+
 (* The typing machine. *)
-    (* ATTENTION : faudra faire le typage du contexte des Const,
-    Ind et Constructsi un jour cela devient des constructions
-    arbitraires et non plus des variables *)
-let rec execute env cstr =
+let rec execute tbl env cstr =
+  if Int.equal (HConstr.refcount cstr) 1 then execute_aux tbl env cstr
+  else begin match HConstr.Tbl.find_opt tbl cstr with
+    | Some v -> v
+    | None ->
+      let v = execute_aux tbl env cstr in
+      HConstr.Tbl.add tbl cstr v;
+      v
+  end
+
+and execute_aux tbl env cstr =
   let open Context.Rel.Declaration in
-  match kind cstr with
+  let self = HConstr.self in
+  match HConstr.kind cstr with
     (* Atomic terms *)
     | Sort s ->
       let () = match s with
@@ -653,54 +665,57 @@ let rec execute env cstr =
       type_of_constant env c
 
     | Proj (p, r, c) ->
-      let ct = execute env c in
-      let r', ty = type_of_projection env p c ct in
+      let ct = execute tbl env c in
+      let r', ty = type_of_projection env p (self c) ct in
       assert (Sorts.relevance_equal r r');
       ty
 
     (* Lambda calculus operators *)
     | App (f,args) ->
-      let argst = execute_array env args in
+      let argst = execute_array tbl env args in
+      let args = snd @@ destApp (self cstr) in
         let ft =
-          match kind f with
+          match HConstr.kind f with
           | Ind ind when Environ.template_polymorphic_pind ind env ->
             type_of_inductive_knowing_parameters env ind args argst
           | Construct ((ind, _), _ as cstr) when Environ.template_polymorphic_ind ind env ->
             type_of_constructor_knowing_parameters env cstr args argst
           | _ ->
             (* No template polymorphism *)
-            execute env f
+            execute tbl env f
         in
-        type_of_apply env f ft args argst
+        type_of_apply env (self f) ft args argst
 
     | Lambda (name,c1,c2) ->
-      let s = execute_is_type env c1 in
-      let () = check_assum_annot env s name c1 in
-      let env1 = push_rel (LocalAssum (name,c1)) env in
-      let c2t = execute env1 c2 in
-      type_of_abstraction env name c1 c2t
+      let s = execute_is_type tbl env c1 in
+      let () = check_assum_annot env s name (self c1) in
+      let env1 = push_rel (LocalAssum (name,self c1)) env in
+      let c2t = execute tbl env1 c2 in
+      type_of_abstraction env name (self c1) c2t
 
     | Prod (name,c1,c2) ->
-      let vars = execute_is_type env c1 in
-      let () = check_assum_annot env vars name c1 in
-      let env1 = push_rel (LocalAssum (name,c1)) env in
-      let vars' = execute_is_type env1 c2 in
+      let vars = execute_is_type tbl env c1 in
+      let () = check_assum_annot env vars name (self c1) in
+      let env1 = push_rel (LocalAssum (name,self c1)) env in
+      let vars' = execute_is_type tbl env1 c2 in
       type_of_product env name vars vars'
 
     | LetIn (name,c1,c2,c3) ->
-      let c1t = execute env c1 in
-      let c2s = execute_is_type env c2 in
+      let c1t = execute tbl env c1 in
+      let c2s = execute_is_type tbl env c2 in
+      let c1 = self c1 in
+      let c2 = self c2 in
       let () = check_let_annot env c2s name c1 c2 in
       let () = check_cast env c1 c1t DEFAULTcast c2 in
       let env1 = push_rel (LocalDef (name,c1,c2)) env in
-      let c3t = execute env1 c3 in
+      let c3t = execute tbl env1 c3 in
       subst1 c1 c3t
 
     | Cast (c,k,t) ->
-      let ct = execute env c in
-      let _ts : Sorts.t = execute_is_type env t in
-      let () = check_cast env c ct k t in
-      t
+      let ct = execute tbl env c in
+      let _ts : Sorts.t = execute_is_type tbl env t in
+      let () = check_cast env (self c) ct k (self t) in
+      self t
 
     (* Inductive types *)
     | Ind ind ->
@@ -709,21 +724,25 @@ let rec execute env cstr =
     | Construct c ->
       type_of_constructor env c
 
-    | Case (ci, u, pms, (p,rp), iv, c, lf) ->
-        let ct = execute env c in
+    | Case (ci, u, pms, (p,_), iv, c, lf) ->
+        let ct = execute tbl env c in
         let () = match iv with
           | NoInvert -> ()
           | CaseInvert {indices} ->
             let args = Array.append pms indices in
-            let ct' = mkApp (mkIndU (ci.ci_ind,u), args) in
-            let _ : Sorts.t = execute_is_type env ct' in
-            match conv_leq env ct ct' with
+            let ct' =
+              let mk = HConstr.of_kind_nohashcons in
+              mk @@ App (mk @@ Ind (ci.ci_ind,u), args)
+            in
+            let _ : Sorts.t = execute_is_type tbl env ct' in
+            match conv_leq env ct (self ct') with
             | Result.Ok () -> ()
             | Result.Error () -> error_bad_invert env (* TODO: more informative message *)
 
         in
         let mib, mip = Inductive.lookup_mind_specif env ci.ci_ind in
-        let pmst = execute_array env pms in
+        let pmst = execute_array tbl env pms in
+        let pms = Array.map self pms in
         let cst, params = match mib.mind_template with
         | None ->
           let cst = Inductive.instantiate_inductive_constraints mib u in
@@ -736,7 +755,7 @@ let rec execute env cstr =
         let () = check_constraints cst env in
         let paramsubst =
           try type_of_parameters env params u pms pmst
-          with ArgumentsMismatch -> error_elim_arity env (ci.ci_ind, u) c None
+          with ArgumentsMismatch -> error_elim_arity env (ci.ci_ind, u) (self c) None
         in
         let (pctx, pt) =
           let (nas, p) = p in
@@ -749,16 +768,16 @@ let rec execute env cstr =
           let realdecls = LocalAssum (Context.make_annot Anonymous mip.mind_relevance, self) :: realdecls in
           let realdecls =
             try instantiate_context u paramsubst nas realdecls
-            with ArgumentsMismatch -> error_elim_arity env (ci.ci_ind, u) c None
+            with ArgumentsMismatch -> error_elim_arity env (ci.ci_ind, u) (HConstr.self c) None
           in
           let p_env = Environ.push_rel_context realdecls env in
-          let pt = execute p_env p in
+          let pt = execute tbl p_env p in
           (realdecls, pt)
         in
         let () =
           let nbranches = Array.length mip.mind_nf_lc in
           if not (Int.equal (Array.length lf) nbranches) then
-            error_number_branches env (make_judge c ct) nbranches
+            error_number_branches env (make_judge (self c) ct) nbranches
         in
         let build_one_branch i (nas, br) =
           let (ctx, cty) = mip.mind_nf_lc.(i) in
@@ -767,24 +786,26 @@ let rec execute env cstr =
             try instantiate_context u paramsubst nas ctx
             with ArgumentsMismatch ->
               (* Despite the name, the toplevel message is reasonable *)
-              error_elim_arity env (ci.ci_ind, u) c None
+              error_elim_arity env (ci.ci_ind, u) (self c) None
           in
           let br_env = Environ.push_rel_context ctx env in
-          let brt = execute br_env br in
+          let brt = execute tbl br_env br in
           let cty = esubst u (Esubst.subs_liftn mip.mind_consnrealdecls.(i) paramsubst) cty in
           (ctx, brt, cty)
         in
         let lft = Array.mapi build_one_branch lf in
+        (* easier than mapping self over various shapes of arrays *)
+        let (ci, u, pms, (p,rp), iv, c, lf) = destCase (self cstr) in
         type_of_case env (mib, mip) ci u pms (pctx, fst p, snd p, rp, pt) iv c ct lf lft
 
-    | Fix ((_,i),recdef as fix) ->
-      let fix_ty = execute_recdef env recdef i in
-      check_fix env fix;
+    | Fix ((_,i),recdef) ->
+      let fix_ty = execute_recdef tbl env recdef i in
+      check_fix env (destFix @@ self cstr);
       fix_ty
 
-    | CoFix (i,recdef as cofix) ->
-      let fix_ty = execute_recdef env recdef i in
-      check_cofix env cofix;
+    | CoFix (i,recdef) ->
+      let fix_ty = execute_recdef tbl env recdef i in
+      check_cofix env (destCoFix @@ self cstr);
       fix_ty
 
     (* Primitive types *)
@@ -797,14 +818,15 @@ let rec execute env cstr =
         | [||], [|u|] -> u
         | _ -> assert false
       in
-      let tyty = execute env ty in
+      let tyty = execute tbl env ty in
+      let ty = self ty in
       check_cast env ty tyty DEFAULTcast (mkType (Universe.make ulev));
-      let def_ty = execute env def in
-      check_cast env def def_ty DEFAULTcast ty;
+      let def_ty = execute tbl env def in
+      check_cast env (self def) def_ty DEFAULTcast ty;
       let ta = type_of_array env u in
       let () = Array.iter (fun x ->
-          let xt = execute env x in
-          check_cast env x xt DEFAULTcast ty)
+          let xt = execute tbl env x in
+          check_cast env (self x) xt DEFAULTcast ty)
           t
       in
       mkApp(ta, [|ty|])
@@ -816,23 +838,25 @@ let rec execute env cstr =
     | Evar _ ->
         anomaly (Pp.str "the kernel does not support existential variables.")
 
-and execute_is_type env constr =
-  let t = execute env constr in
-  check_type env constr t
+and execute_is_type tbl env constr =
+  let t = execute tbl env constr in
+  check_type env (HConstr.self constr) t
 
-and execute_recdef env (names,lar,vdef) i =
-  let lart = execute_array env lar in
+and execute_recdef tbl env (names,lar,vdef) i =
+  let lart = execute_array tbl env lar in
+  let lar = Array.map HConstr.self lar in
   let () = Array.iteri (fun i na -> check_assumption env na lar.(i) lart.(i)) names in
   let env1 = push_rec_types (names,lar,vdef) env in (* vdef is ignored *)
-  let vdeft = execute_array env1 vdef in
+  let vdeft = execute_array tbl env1 vdef in
+  let vdef = Array.map HConstr.self vdef in
   let () = check_fixpoint env1 names lar vdef vdeft in
   lar.(i)
 
-and execute_array env cs =
-  Array.map (fun c -> execute env c) cs
+and execute_array tbl env cs =
+  Array.map (fun c -> execute tbl env c) cs
 
 let execute env c =
-  NewProfile.profile "Typeops.infer" (fun () -> execute env c) ()
+  NewProfile.profile "Typeops.execute" (fun () -> execute (HConstr.Tbl.create 57) env c) ()
 
 (* Derived functions *)
 
@@ -852,10 +876,15 @@ let check_wellformed_universes env c =
 let check_wellformed_universes env c =
   NewProfile.profile "check-wf-univs" (fun () -> check_wellformed_universes env c) ()
 
-let infer env constr =
+let infer_hconstr env hconstr =
+  let constr = HConstr.self hconstr in
   let () = check_wellformed_universes env constr in
-  let t = execute env constr in
+  let t = execute env hconstr in
   make_judge constr t
+
+let infer env c =
+  let c = HConstr.of_constr env c in
+  infer_hconstr env c
 
 let assumption_of_judgment env {uj_val=c; uj_type=t} =
   infer_assumption env c t
@@ -866,7 +895,9 @@ let type_judgment env {uj_val=c; uj_type=t} =
 
 let infer_type env constr =
   let () = check_wellformed_universes env constr in
-  let t = execute env constr in
+  let hconstr = HConstr.of_constr env constr in
+  let constr = HConstr.self hconstr in
+  let t = execute env hconstr in
   let s = check_type env constr t in
   {utj_val = constr; utj_type = s}
 

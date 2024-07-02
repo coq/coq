@@ -87,7 +87,6 @@ let rec check_with_def (cst, ustate) env struc (idl, wth) mp reso =
           let cst = match cb.const_body with
             | Undef _ | OpaqueDef _ ->
               let j = Typeops.infer env' wth.w_def in
-              assert (j.uj_val == wth.w_def); (* relevances should already be correct here *)
               let typ = cb.const_type in
               let cst = infer_gen_conv_leq (cst, ustate) env' j.uj_type typ in
               cst
@@ -111,7 +110,6 @@ let rec check_with_def (cst, ustate) env struc (idl, wth) mp reso =
           let () = match cb.const_body with
             | Undef _ | OpaqueDef _ ->
               let j = Typeops.infer env' wth.w_def in
-              assert (j.uj_val == wth.w_def); (* relevances should already be correct here *)
               let typ = cb.const_type in
               begin match Conversion.conv_leq env' j.uj_type typ with
               | Result.Ok () -> ()
