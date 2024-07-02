@@ -241,6 +241,18 @@ CoFixpoint g' : Stream.
 exact (Cons g).
 Defined.
 
+#[using="e"]
+Lemma g1 (n:nat) : nat with g2 (n:nat) : m = m.
+exact (match n with 0 => 0 | S n => match g2 n with eq_refl => n end end).
+exact (match n with 0 => eq_refl | S n => match g1 n with 0 => eq_refl | S _ => eq_refl end end).
+Defined.
+
+#[using="Type"]
+Lemma g1' (n:nat) : nat with g2' (n:nat) : m = m.
+exact (match n with 0 => 0 | S n => match g2' n with eq_refl => n end end).
+exact (match n with 0 => eq_refl | S n => match g1' n with 0 => eq_refl | S _ => eq_refl end end).
+Defined.
+
 End S.
 
 Check eq_refl : a 0 (eq_refl 0) = 0.
@@ -251,5 +263,7 @@ Check eq_refl : f1 10 2 = 1.
 Check eq_refl : f1' 10 2 = 1.
 Check g 0 eq_refl : Stream.
 Check g' 0 eq_refl : Stream.
+Check eq_refl : g1 10 (eq_refl 10) 2 = 1.
+Check eq_refl : g1' 10 2 = 1.
 
 End InteractiveUsing.

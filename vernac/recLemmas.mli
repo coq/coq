@@ -8,11 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type mutual_info =
-  | NonMutual of EConstr.t Declare.CInfo.t
-  | Mutual of Pretyping.possible_guard
-
-val look_for_possibly_mutual_statements
+val find_mutually_recursive_statements
   :  Evd.evar_map
-  -> EConstr.t Declare.CInfo.t list
-  -> mutual_info
+  -> EConstr.rel_context list
+  -> EConstr.t list
+  -> Pretyping.possible_guard

@@ -27,26 +27,10 @@ val interp_definition
 
 val do_definition
   :  ?hook:Declare.Hook.t
+  -> ?pm:Declare.OblState.t
+  -> program_mode:bool
   -> name:Id.t
   -> ?scope:Locality.definition_scope
-  -> ?clearbody:bool
-  -> poly:bool
-  -> ?typing_flags:Declarations.typing_flags
-  -> kind:Decls.definition_object_kind
-  -> ?using:Vernacexpr.section_subset_expr
-  -> ?user_warns:UserWarn.t
-  -> universe_decl_expr option
-  -> local_binder_expr list
-  -> red_expr option
-  -> constr_expr
-  -> constr_expr option
-  -> unit
-
-val do_definition_program
-  :  ?hook:Declare.Hook.t
-  -> pm:Declare.OblState.t
-  -> name:Id.t
-  -> scope:Locality.definition_scope
   -> ?clearbody:bool
   -> poly:bool
   -> ?typing_flags:Declarations.typing_flags
@@ -58,4 +42,20 @@ val do_definition_program
   -> red_expr option
   -> constr_expr
   -> constr_expr option
-  -> Declare.OblState.t
+  -> Declare.OblState.t option
+
+val do_definition_interactive
+  :  program_mode:bool
+  -> ?hook:Declare.Hook.t
+  -> name:Id.t
+  -> scope:Locality.definition_scope
+  -> ?clearbody:bool
+  -> poly:bool
+  -> typing_flags:Declarations.typing_flags option
+  -> kind:Decls.logical_kind
+  -> ?using:Vernacexpr.section_subset_expr
+  -> ?user_warns:UserWarn.t
+  -> universe_decl_expr option
+  -> local_binder_expr list
+  -> constr_expr
+  -> Declare.Proof.t
