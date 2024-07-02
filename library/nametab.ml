@@ -558,6 +558,10 @@ let shortest_qualid_of_universe ?loc ctx kn =
   let sp = UnivIdMap.find kn !the_univrevtab in
   UnivTab.shortest_qualid_gen ?loc (fun id -> Id.Map.mem id ctx) sp !the_univtab
 
+let shortest_qualid_of_quality ?loc ctx kn =
+  let sp = QualityIdMap.find kn !the_qualityrevtab in
+  QualityTab.shortest_qualid_gen ?loc (fun id -> Id.Map.mem id ctx) sp !the_qualitytab
+
 let pr_global_env env ref =
   try pr_qualid (shortest_qualid_of_global env ref)
   with Not_found as exn ->

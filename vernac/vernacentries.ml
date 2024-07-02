@@ -505,6 +505,11 @@ let print_universes ?loc ~sort ~subgraph dst =
     | Some s -> dump_universes_gen (fun u -> Pp.string_of_ppcmds (prl u)) univ s
   end
 
+let print_sorts () =
+  let qualities = Sorts.QVar.Set.elements (Global.qualities ()) in
+  let prq = UnivNames.pr_quality_with_global_universes in
+  Pp.prlist_with_sep Pp.spc prq qualities
+
 (*********************)
 (* "Locate" commands *)
 
@@ -2067,6 +2072,7 @@ let vernac_print =
     Prettyp.print_canonical_projections env sigma grefs
   | PrintUniverses (sort, subgraph, dst) -> no_state @@ fun ()->
     print_universes ~sort ~subgraph dst
+  | PrintSorts -> no_state print_sorts
   | PrintHint r -> with_proof_env @@ fun env sigma ->
     Hints.pr_hint_ref env sigma (smart_global r)
   | PrintHintGoal -> with_pstate @@ fun ~pstate ->

@@ -1171,6 +1171,7 @@ GRAMMAR EXTEND Gram
       | b = [ IDENT "Sorted" -> { true } | -> { false } ]; IDENT "Universes";
         g = OPT printunivs_subgraph; fopt = OPT ne_string ->
         { PrintUniverses (b, g, fopt) }
+      | IDENT "Sorts" -> { PrintSorts }
       | IDENT "Assumptions"; qid = smart_global -> { PrintAssumptions (false, false, qid) }
       | IDENT "Opaque"; IDENT "Dependencies"; qid = smart_global -> { PrintAssumptions (true, false, qid) }
       | IDENT "Transparent"; IDENT "Dependencies"; qid = smart_global -> { PrintAssumptions (false, true, qid) }
