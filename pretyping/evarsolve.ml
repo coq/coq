@@ -1684,7 +1684,7 @@ let rec invert_definition unify flags choose imitate_defs
           evdref := evd;
           evar in
 
-  let rec imitate (env',k as envk) t =
+  let rec imitate (env',k as envk) pbty t =
     match EConstr.kind !evdref t with
     | Rel i when i>k ->
         let open Context.Rel.Declaration in
@@ -1693,16 +1693,16 @@ let rec invert_definition unify flags choose imitate_defs
         | LocalDef (_,b,_) ->
           try project_variable (RelAlias (i-k))
           with NotInvertibleUsingOurAlgorithm _ when imitate_defs ->
-            imitate envk (lift i (EConstr.of_constr b)))
+            imitate envk pbty (lift i (EConstr.of_constr b)))
     | Var id ->
         (match Environ.lookup_named id env' with
         | LocalAssum _ -> project_variable (VarAlias id)
         | LocalDef (_,b,_) ->
           try project_variable (VarAlias id)
           with NotInvertibleUsingOurAlgorithm _ when imitate_defs ->
-            imitate envk (EConstr.of_constr b))
+            imitate envk pbty (EConstr.of_constr b))
     | LetIn (na,b,u,c) ->
-        imitate envk (subst1 b c)
+        imitate envk pbty (subst1 b c)
     | Evar (evk',args' as ev') ->
         if Evar.equal evk evk' then raise (OccurCheckIn (evd,rhs));
         (* At this point, we imitated a context say, C[ ], and virtually
@@ -1722,7 +1722,7 @@ let rec invert_definition unify flags choose imitate_defs
           evdref := evd;
           body
         with
-        | EvarSolvedOnTheFly (evd,t) -> evdref:=evd; imitate envk t
+        | EvarSolvedOnTheFly (evd,t) -> evdref:=evd; imitate envk pbty t
         | CannotProject (evd,ev') ->
           if not !progress then
             raise (NotEnoughInformationEvarEvar t);
@@ -1748,6 +1748,20 @@ let rec invert_definition unify flags choose imitate_defs
               add_conv_oriented_pb (None,env',mkEvar ev'',mkEvar ev') evd in
           evdref := evd;
           evar'')
+    | Sort s ->
+      let () = progress := true in
+      if ESorts.is_small evd s then t (* eager *)
+      else begin match pbty with
+      | None -> t
+      | Some l2r ->
+        let evd, s' = new_sort_variable univ_rigid evd in
+        let evd =
+          if l2r then set_leq_sort env' evd s' s
+          else set_leq_sort env' evd s s'
+        in
+        let () = evdref := evd in
+        mkSort s'
+      end
     | _ ->
         progress := true;
         match
@@ -1769,7 +1783,7 @@ let rec invert_definition unify flags choose imitate_defs
               try
                 let t =
                   map_constr_with_full_binders env' !evdref (fun d (env,k) -> push_rel d env, k+1)
-                    imitate envk t in
+                    (fun envk c -> imitate envk None (* FIXME ?*) c) envk t in
                 (* Less dependent solutions come last *)
                 l@[t]
               with e when CErrors.noncritical e -> l in
@@ -1783,10 +1797,10 @@ let rec invert_definition unify flags choose imitate_defs
         | None ->
            (* Evar/Rigid problem (or assimilated if not normal): we "imitate" *)
           map_constr_with_full_binders env' !evdref (fun d (env,k) -> push_rel d env, k+1)
-                                        imitate envk t
+                                        (fun envk c -> imitate envk None c) envk t
   in
 
-  let t' = imitate (env, 0) rhs in
+  let t' = imitate (env, 0) pbty rhs in
   let body = if !progress then (recheck_applications unify flags (evar_env env evi) evdref t'; t') else t' in
   (!evdref,body)
 

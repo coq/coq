@@ -18,7 +18,7 @@ Fail #[universes(template)]
 Inductive foo (A:Type) := bar X : foo X -> foo A | nonempty.
 Arguments nonempty {_}.
 
-Fail Check foo nat : Type@{foo.u0}.
+Check foo nat : Type@{foo.u0}.
 (* template poly didn't activate *)
 
 Definition U := Type.
