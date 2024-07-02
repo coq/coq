@@ -5,7 +5,7 @@ Section test.
 
   (* all 3 should fail or succeed together *)
 
-  Fail Check Type@{u} : Type@{Set+1}.
-  Fail Definition a := Type@{u} : Type@{Set+1}.
-  Fail Check (fun A  : Type@{Set+1} =>  A) Type@{u}.
+  Check Type@{u} : Type@{Set+1}.
+  Definition a := Type@{u} : Type@{Set+1}.
+  Check (fun A  : Type@{Set+1} =>  A) Type@{u}.
 End test.

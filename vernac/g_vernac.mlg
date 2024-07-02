@@ -60,6 +60,7 @@ let scope_delimiter = Entry.make "scope_delimiter"
 let syntax_modifiers = Entry.make "syntax_modifiers"
 let goal_selector = Entry.make "goal_selector"
 let toplevel_selector = Entry.make "toplevel_selector"
+let univ_constraint = Entry.make "univ_constraint"
 
 let make_bullet s =
   let open Proof_bullet in
@@ -227,12 +228,12 @@ let test_variance_ident =
 
 let test_univ_decl =
   let open Pcoq.Lookahead in
-  to_entry "test_univ_decl" (lk_ident_list >> lk_kw "|" >> lk_ident_list >> (lk_kw "+" <+> lk_empty) >> (lk_kw "|" <+> lk_kw "|}"))
+  to_entry "test_univ_decl" (lk_ident_list >> lk_kw "|" >> lk_ident_list >> (lk_kw "?" <+> lk_empty) >> (lk_kw "|" <+> lk_kw "|}"))
 
 let test_cumul_univ_decl =
   let open Pcoq.Lookahead in
   let lk_list_variance_ident = lk_list (lk_kw "+" <+> lk_kw "*" <+> lk_kw "=" <+> lk_ident) in
-  to_entry "test_cumul_univ_decl" (lk_ident_list >> lk_kw "|" >> lk_list_variance_ident >> (lk_kw "+" <+> lk_empty) >> (lk_kw "|" <+> lk_kw "|}"))
+  to_entry "test_cumul_univ_decl" (lk_ident_list >> lk_kw "|" >> lk_list_variance_ident >> (lk_kw "?" <+> lk_empty) >> (lk_kw "|" <+> lk_kw "|}"))
 
 
 }
@@ -240,7 +241,8 @@ let test_cumul_univ_decl =
 (* Gallina declarations *)
 GRAMMAR EXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_token assumption_token def_body of_type of_type_inst
-    record_field notation_declaration decl_notations fix_definition ident_decl univ_decl inductive_or_record_definition;
+    record_field notation_declaration decl_notations fix_definition ident_decl univ_decl
+    univ_constraint inductive_or_record_definition;
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
@@ -339,16 +341,16 @@ GRAMMAR EXTEND Gram
       | -> { NoInline } ] ]
   ;
   univ_constraint:
-    [ [ l = universe_name; ord = [ "<" -> { Univ.Lt } | "=" -> { Univ.Eq } | "<=" -> { Univ.Le } ];
-        r = universe_name -> { (l, ord, r) } ] ]
+    [ [ l = universe; ord = [ "<" -> { (Univ.Le, true) } | "=" -> { (Univ.Eq, false) } | "<=" -> { (Univ.Le, false) } ];
+        r = universe -> { (l, ord, r) } ] ]
   ;
   univ_decl_constraints:
     [ [ "|"; l' = LIST0 univ_constraint SEP ",";
-        ext = [ "+" -> { true } | -> { false } ]; "}" -> { (l',ext) }
+        ext = [ "?" -> { true } | -> { false } ]; "}" -> { (l',ext) }
       | ext = [ "}" -> { true } | bar_cbrace -> { false } ] -> { ([], ext) } ] ]
   ;
   univ_decl:
-    [ [ "@{" ; test_univ_decl; l0 = LIST0 identref; "|";  l = LIST0 identref; ext = [ "+" -> { true } | -> { false } ];
+    [ [ "@{" ; test_univ_decl; l0 = LIST0 identref; "|";  l = LIST0 identref; ext = [ "?" -> { true } | -> { false } ];
          cs = univ_decl_constraints
          ->
          { let open UState in
@@ -358,7 +360,7 @@ GRAMMAR EXTEND Gram
            univdecl_extensible_instance = ext;
            univdecl_constraints = fst cs;
            univdecl_extensible_constraints = snd cs } }
-    | "@{" ; l = LIST0 identref; ext = [ "+" -> { true } | -> { false } ];
+    | "@{" ; l = LIST0 identref; ext = [ "?" -> { true } | -> { false } ];
          cs = univ_decl_constraints
          ->
          { let open UState in
@@ -385,7 +387,7 @@ GRAMMAR EXTEND Gram
   ;
   cumul_univ_decl:
     [ [ "@{" ; test_cumul_univ_decl; l0 = LIST0 identref; "|";
-        l = LIST0 variance_identref; ext = [ "+" -> { true } | -> { false } ];
+        l = LIST0 variance_identref; ext = [ "?" -> { true } | -> { false } ];
          cs = univ_decl_constraints
          ->
          { let open UState in
@@ -396,7 +398,7 @@ GRAMMAR EXTEND Gram
            univdecl_constraints = fst cs;
            univdecl_extensible_constraints = snd cs } }
 
-       | "@{" ; l = LIST0 variance_identref; ext = [ "+" -> { true } | -> { false } ];
+       | "@{" ; l = LIST0 variance_identref; ext = [ "?" -> { true } | -> { false } ];
          cs = univ_decl_constraints
          ->
          { let open UState in
@@ -1110,6 +1112,8 @@ GRAMMAR EXTEND Gram
           { fun g -> VernacCheckMayEval (Some r, g, c) }
       | IDENT "Compute"; c = lconstr; "." ->
           { fun g -> VernacCheckMayEval (Some (Genredexpr.CbvVm None), g, c) }
+      | IDENT "Check"; IDENT "Constraint"; l = LIST1 univ_constraint SEP ","; "." ->
+          { fun g -> VernacCheckConstraint (l, g) }
       | IDENT "Check"; c = lconstr; "." ->
          { fun g -> VernacCheckMayEval (None, g, c) }
       (* Searching the environment *)

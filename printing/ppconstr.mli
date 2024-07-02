@@ -31,7 +31,6 @@ val pr_qualid : qualid -> Pp.t
 val pr_patvar : Pattern.patvar -> Pp.t
 
 val pr_sort_name_expr : sort_name_expr -> Pp.t
-val pr_univ_level_expr : univ_level_expr -> Pp.t
 val pr_sort_expr : sort_expr -> Pp.t
 val pr_guard_annot
   :  (constr_expr -> Pp.t)

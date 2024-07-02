@@ -41,5 +41,5 @@ Type@{Top.34} -> Type@{Top.37}
                                   Top.36 < Top.34
                                   Top.37 < Top.36
                                    *) *)
-Check @qux@{Type Type}.
+Check @qux@{Type}.
 (* used to have 4 universes *)

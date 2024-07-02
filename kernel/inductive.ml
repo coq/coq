@@ -244,19 +244,12 @@ let instantiate_template_constraints subst templ =
   let _, cstrs = templ.template_context in
   let fold (u, cst, v) accu =
     (* v is not a local universe by the unbounded from below property *)
-    let u = subst_univs_sort subst (Sorts.sort_of_univ (Universe.make u)) in
+    let u = subst_univs_sort subst (Sorts.sort_of_univ u) in
     match u with
     | Sorts.QSort _ | Sorts.SProp -> assert false
     | Sorts.Prop -> accu
-    | Sorts.Set -> Constraints.add (Univ.Level.set, cst, v) accu
-    | Sorts.Type u ->
-      let fold accu (u, n) = match n, cst with
-      | 0, _ -> Constraints.add (u, cst, v) accu
-      | 1, Le -> Constraints.add (u, Lt, v) accu
-      | 1, (Eq | Lt) -> assert false (* FIXME? *)
-      | _ -> assert false
-      in
-      List.fold_left fold accu (Univ.Universe.repr u)
+    | Sorts.Set -> Constraints.add (Universe.type0, cst, v) accu
+    | Sorts.Type u -> Constraints.add (u, cst, v) accu
   in
   Constraints.fold fold cstrs Constraints.empty
 

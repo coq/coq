@@ -107,7 +107,7 @@ let process_universes env = function
     let env = Environ.push_context ~strict:false uctx env in
     let inst, auctx = UVars.abstract_universes uctx in
     let usubst = UVars.make_instance_subst inst in
-    env, usubst, inst, Polymorphic auctx
+    env, usubst, UVars.Instance.of_level_instance inst, Polymorphic auctx
 
 let check_primitive_type env op_t u t =
   let inft = Typeops.type_of_prim_or_type env u op_t in
@@ -137,7 +137,7 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
   let univs, typ =
     match utyp with
     | None ->
-      let u = UContext.instance (AbstractContext.repr auctx) in
+      let u = Instance.of_level_instance (UContext.instance (AbstractContext.repr auctx)) in
       let typ = Typeops.type_of_prim_or_type env u p in
       let univs = if AbstractContext.is_empty auctx then Monomorphic
         else Polymorphic auctx
@@ -161,7 +161,7 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
   assert (List.is_empty (named_context env));
   {
     const_hyps = [];
-    const_univ_hyps = Instance.empty;
+    const_univ_hyps = LevelInstance.empty;
     const_body = body;
     const_type = typ;
     const_body_code = ();
@@ -178,7 +178,7 @@ let infer_symbol env { symb_entry_universes; symb_entry_unfold_fix; symb_entry_t
   let t = Vars.subst_univs_level_constr usubst j.uj_val in
   {
     const_hyps = [];
-    const_univ_hyps = Instance.empty;
+    const_univ_hyps = LevelInstance.empty;
     const_body = Symbol symb_entry_unfold_fix;
     const_type = t;
     const_body_code = ();
@@ -190,7 +190,7 @@ let infer_symbol env { symb_entry_universes; symb_entry_unfold_fix; symb_entry_t
 
 
 let make_univ_hyps = function
-  | None -> Instance.empty
+  | None -> LevelInstance.empty
   | Some us -> us
 
 let infer_parameter ~sec_univs env entry =
