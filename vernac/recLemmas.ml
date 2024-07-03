@@ -14,10 +14,10 @@ open Declarations
 
 module RelDecl = Context.Rel.Declaration
 
-let find_mutually_recursive_statements sigma thms =
-    let inds = List.map (fun x ->
-      let typ = Declare.CInfo.get_typ x in
-      let (hyps,ccl) = EConstr.decompose_prod_decls sigma typ in
+let find_mutually_recursive_statements sigma ctxs ccls =
+    let inds = List.map2 (fun ctx ccl ->
+      let (hyps,ccl) = EConstr.decompose_prod_decls sigma ccl in
+      let hyps = hyps @ ctx in
       let whnf_hyp_hds = EConstr.map_rel_context_in_env
         (fun env c -> fst (Reductionops.whd_all_stack env sigma c))
         (Global.env()) hyps in
@@ -28,7 +28,7 @@ let find_mutually_recursive_statements sigma thms =
           | Ind ((kn,_ as ind),u) when
                 let mind = Global.lookup_mind kn in
                 mind.mind_finite <> Declarations.CoFinite ->
-              [ind,x,i]
+              [ind,i]
           | _ ->
               []) 0 (List.rev (List.filter Context.Rel.Declaration.is_local_assum whnf_hyp_hds))) in
       let ind_ccl =
@@ -36,12 +36,12 @@ let find_mutually_recursive_statements sigma thms =
         let whnf_ccl,_ = Reductionops.whd_all_stack cclenv sigma ccl in
         match EConstr.kind sigma whnf_ccl with
         | Ind ((kn,_ as ind),u) when (Global.lookup_mind kn).mind_finite == Declarations.CoFinite ->
-            [ind,x,0]
+            [ind,0]
         | _ ->
             [] in
-      ind_hyps,ind_ccl) thms in
+      ind_hyps,ind_ccl) ctxs ccls in
     let inds_hyps,ind_ccls = List.split inds in
-    let of_same_mutind ((kn,_),_,_) = function ((kn',_),_,_) -> Environ.QMutInd.equal (Global.env ()) kn kn' in
+    let of_same_mutind ((kn,_),_) = function ((kn',_),_) -> Environ.QMutInd.equal (Global.env ()) kn kn' in
     (* Check if all conclusions are coinductive in the same type *)
     (* (degenerated cartesian product since there is at most one coind ccl) *)
     let same_indccl =
@@ -58,23 +58,9 @@ let find_mutually_recursive_statements sigma thms =
       | [] -> []
       | _::_ ->
         (* assume the largest indices as possible *)
-        List.map (List.map pi3) inds_hyps in
+        List.map (List.map snd) inds_hyps in
     if not possibly_cofix && List.is_empty possible_fix_indices then
       CErrors.user_err Pp.(str
          ("Cannot find common (mutual) inductive premises or coinductive" ^
           " conclusions in the statements."));
     Pretyping.{possibly_cofix; possible_fix_indices}
-
-type mutual_info =
-  | NonMutual of EConstr.t Declare.CInfo.t
-  | Mutual of Pretyping.possible_guard
-
-let look_for_possibly_mutual_statements sigma thms : mutual_info =
-  match thms with
-  | [thm] ->
-      (* One non recursively proved theorem *)
-    NonMutual thm
-  | _::_ as thms ->
-    (* More than one statement and/or an explicit decreasing mark: *)
-    Mutual (find_mutually_recursive_statements sigma thms)
-  | [] -> CErrors.anomaly (Pp.str "Empty list of theorems.")

@@ -404,7 +404,7 @@ let register_struct is_rec (rec_order, fixpoint_exprl) =
     in
     (None, evd, List.rev rev_pconstants)
   | _ ->
-    let pm, p = ComFixpoint.do_mutually_recursive ~poly:false (CFixRecOrder rec_order, fixpoint_exprl) in
+    let pm, p = ComFixpoint.do_mutually_recursive ~program_mode:false ~poly:false (CFixRecOrder rec_order, fixpoint_exprl) in
     assert (Option.is_empty pm && Option.is_empty p);
     let evd, rev_pconstants =
       List.fold_left
