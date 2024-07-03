@@ -129,7 +129,7 @@ Proof.
   - simpl. induction p.
     + rewrite Pos2Nat.inj_xI. simpl. now rewrite Nat.add_0_r, Rdef_pow_add, IHp.
     + rewrite Pos2Nat.inj_xO. simpl. now rewrite Nat.add_0_r, Rdef_pow_add, IHp.
-    + simpl. rewrite Rmult_comm;apply Rmult_1_l.
+    + unfold Pos.to_nat. simpl. rewrite Rmult_comm;apply Rmult_1_l.
 Qed.
 
 Ltac Rpow_tac t :=
