@@ -18,6 +18,7 @@ let legacy_to_findlib = [
   ("ring_plugin",                   ["plugins";"ring"]) ;
   ("ssr_plugin",                    ["plugins";"ssr"]) ;
   ("syntax_plugin",                 ["plugins";"syntax"]) ;
+  ("cc_core_plugin",                ["plugins";"cc_core"]) ;
   ("cc_plugin",                     ["plugins";"cc"]) ;
   ("extraction_plugin",             ["plugins";"extraction"]) ;
   ("funind_plugin",                 ["plugins";"funind"]) ;

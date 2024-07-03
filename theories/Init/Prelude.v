@@ -26,6 +26,7 @@ Require Export Coq.Init.Tauto.
    - ltac_plugin (in Ltac)
    - tauto_plugin (in Tauto).
 *)
+Declare ML Module "cc_core_plugin:coq-core.plugins.cc_core".
 Declare ML Module "cc_plugin:coq-core.plugins.cc".
 Declare ML Module "firstorder_plugin:coq-core.plugins.firstorder".
 

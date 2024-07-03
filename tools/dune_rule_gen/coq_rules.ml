@@ -36,7 +36,8 @@ module FlagUtil = struct
     |> Util.list_concat_map (fun p -> [Arg.A "-I"; Arg.Path p])
 
   let findlib_plugin_fixup p =
-    ["number_string_notation"; "zify"; "tauto"; "ssreflect"; "micromega_core"]
+    ["number_string_notation"; "zify"; "tauto"; "ssreflect";
+      "cc_core"; "micromega_core"]
     @ (List.filter (fun s -> not (String.equal s "syntax" || String.equal s "ssr")) p)
 
   (* This can also go when the -I flags are gone, by passing the meta
