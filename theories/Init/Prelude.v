@@ -28,6 +28,7 @@ Require Export Coq.Init.Tauto.
 *)
 Declare ML Module "cc_core_plugin:coq-core.plugins.cc_core".
 Declare ML Module "cc_plugin:coq-core.plugins.cc".
+Declare ML Module "firstorder_core_plugin:coq-core.plugins.firstorder_core".
 Declare ML Module "firstorder_plugin:coq-core.plugins.firstorder".
 
 (* Parsing / printing of hexadecimal numbers *)

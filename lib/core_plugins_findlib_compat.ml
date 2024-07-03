@@ -11,6 +11,7 @@
 let legacy_to_findlib = [
   ("btauto_plugin",                 ["plugins";"btauto"]) ;
   ("derive_plugin",                 ["plugins";"derive"]) ;
+  ("firstorder_core_plugin",        ["plugins";"firstorder_core"]) ;
   ("firstorder_plugin",             ["plugins";"firstorder"]) ;
   ("ltac_plugin",                   ["plugins";"ltac"]) ;
   ("micromega_core_plugin",         ["plugins";"micromega_core";]) ;

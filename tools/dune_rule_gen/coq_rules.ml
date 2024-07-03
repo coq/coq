@@ -37,7 +37,7 @@ module FlagUtil = struct
 
   let findlib_plugin_fixup p =
     ["number_string_notation"; "zify"; "tauto"; "ssreflect";
-      "cc_core"; "micromega_core"]
+      "cc_core"; "firstorder_core"; "micromega_core"]
     @ (List.filter (fun s -> not (String.equal s "syntax" || String.equal s "ssr")) p)
 
   (* This can also go when the -I flags are gone, by passing the meta
