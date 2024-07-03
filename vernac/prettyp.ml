@@ -410,9 +410,9 @@ let print_arguments env ref =
     | ConstRef ref ->
       begin match Reductionops.ReductionBehaviour.get ref with
       | None -> [], [], None
-      | Some NeverUnfold -> [`ReductionNeverUnfold], [], None
+      | Some NeverUnfold -> [`SimplNeverUnfold], [], None
       | Some (UnfoldWhen { nargs; recargs }) -> [], recargs, nargs
-      | Some (UnfoldWhenNoMatch { nargs; recargs }) -> [`ReductionDontExposeCase], recargs, nargs
+      | Some (UnfoldWhenNoMatch { nargs; recargs }) -> [`SimplDontExposeCase], recargs, nargs
       end
     | _ -> [], [], None
   in

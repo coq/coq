@@ -331,8 +331,8 @@ type arguments_modifier =
   | `ClearScopes
   | `DefaultImplicits
   | `ExtraScopes
-  | `ReductionDontExposeCase
-  | `ReductionNeverUnfold
+  | `SimplDontExposeCase  (* simpl nomatch *)
+  | `SimplNeverUnfold  (* simpl never *)
   | `Rename ]
 
 type extend_name = {

@@ -79,8 +79,8 @@ let vernac_arguments ~section_local reference args more_implicits flags =
   let extra_scopes_flag = List.mem `ExtraScopes flags in
   let clear_implicits_flag = List.mem `ClearImplicits flags in
   let default_implicits_flag = List.mem `DefaultImplicits flags in
-  let never_unfold_flag = List.mem `ReductionNeverUnfold flags in
-  let nomatch_flag = List.mem `ReductionDontExposeCase flags in
+  let never_unfold_flag = List.mem `SimplNeverUnfold flags in
+  let nomatch_flag = List.mem `SimplDontExposeCase flags in
   let clear_bidi_hint = List.mem `ClearBidiHint flags in
 
   let err_incompat x y =

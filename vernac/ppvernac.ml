@@ -1128,8 +1128,8 @@ let pr_synpure_vernac_expr v =
         else (mt ()) ++
              (if not (List.is_empty mods) then str" : " else str"") ++
              prlist_with_sep (fun () -> str", " ++ spc()) (function
-                 | `ReductionDontExposeCase -> keyword "simpl nomatch"
-                 | `ReductionNeverUnfold -> keyword "simpl never"
+                 | `SimplDontExposeCase -> keyword "simpl nomatch"
+                 | `SimplNeverUnfold -> keyword "simpl never"
                  | `DefaultImplicits -> keyword "default implicits"
                  | `Rename -> keyword "rename"
                  | `Assert -> keyword "assert"
