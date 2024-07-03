@@ -38,8 +38,7 @@ module Make (Point:Point) : sig
      they can be mentioned in the others. NB: use a large [rank] to
      keep the node canonical *)
 
-  exception Undeclared of Point.t
-  val check_declared : t -> Point.Set.t -> unit
+  val check_declared : t -> Point.Set.t -> (unit, Point.Set.t) result
   (** @raise Undeclared if one of the points is not present in the graph. *)
 
   type 'a check_function = t -> 'a -> 'a -> bool

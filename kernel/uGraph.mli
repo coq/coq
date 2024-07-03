@@ -79,11 +79,8 @@ end
 
 val add_universe : Level.t -> lbound:Bound.t -> strict:bool -> t -> t
 
-(** Check that the universe levels are declared. Otherwise
-    @raise UndeclaredLevel l for the first undeclared level found. *)
-exception UndeclaredLevel of Univ.Level.t
-
-val check_declared_universes : t -> Univ.Level.Set.t -> unit
+(** Check that the universe levels are declared. *)
+val check_declared_universes : t -> Univ.Level.Set.t -> (unit, Univ.Level.Set.t) result
 
 (** The empty graph of universes *)
 val empty_universes : t

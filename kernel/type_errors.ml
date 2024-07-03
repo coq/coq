@@ -73,7 +73,7 @@ type ('constr, 'types, 'r) ptype_error =
   | UnsatisfiedQConstraints of Sorts.QConstraints.t
   | UnsatisfiedConstraints of Constraints.t
   | UndeclaredQualities of Sorts.QVar.Set.t
-  | UndeclaredUniverse of Level.t
+  | UndeclaredUniverses of Level.Set.t
   | DisallowedSProp
   | BadBinderRelevance of 'r * ('constr, 'types, 'r) Context.Rel.Declaration.pt
   | BadCaseRelevance of 'r * 'constr
@@ -160,8 +160,8 @@ let error_unsatisfied_constraints env c =
 let error_undeclared_qualities env l =
   raise (TypeError (env, UndeclaredQualities l))
 
-let error_undeclared_universe env l =
-  raise (TypeError (env, UndeclaredUniverse l))
+let error_undeclared_universes env l =
+  raise (TypeError (env, UndeclaredUniverses l))
 
 let error_disallowed_sprop env =
   raise (TypeError (env, DisallowedSProp))
@@ -207,7 +207,7 @@ let map_pguard_error f = function
 
 let map_ptype_error fr f = function
 | UnboundRel _ | UnboundVar _ | CaseOnPrivateInd _ | IllFormedCaseParams
-| UndeclaredQualities _ | UndeclaredUniverse _ | DisallowedSProp
+| UndeclaredQualities _ | UndeclaredUniverses _ | DisallowedSProp
 | UnsatisfiedQConstraints _ | UnsatisfiedConstraints _
 | ReferenceVariables _ | BadInvert | BadVariance _ | UndeclaredUsedVariables _ as e -> e
 | NotAType j -> NotAType (on_judgment f j)

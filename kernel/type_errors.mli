@@ -75,7 +75,7 @@ type ('constr, 'types, 'r) ptype_error =
   | UnsatisfiedQConstraints of Sorts.QConstraints.t
   | UnsatisfiedConstraints of Constraints.t
   | UndeclaredQualities of Sorts.QVar.Set.t
-  | UndeclaredUniverse of Level.t
+  | UndeclaredUniverses of Level.Set.t
   | DisallowedSProp
   | BadBinderRelevance of 'r * ('constr, 'types, 'r) Context.Rel.Declaration.pt
   | BadCaseRelevance of 'r * 'constr
@@ -153,7 +153,7 @@ val error_unsatisfied_constraints : env -> Constraints.t -> 'a
 
 val error_undeclared_qualities : env -> Sorts.QVar.Set.t -> 'a
 
-val error_undeclared_universe : env -> Level.t -> 'a
+val error_undeclared_universes : env -> Level.Set.t -> 'a
 
 val error_disallowed_sprop : env -> 'a
 

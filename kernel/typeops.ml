@@ -869,9 +869,10 @@ let check_declared_qualities env qualities =
 let check_wellformed_universes env c =
   let qualities, univs = sort_and_universes_of_constr c in
   check_declared_qualities env qualities;
-  try UGraph.check_declared_universes (universes env) univs
-  with UGraph.UndeclaredLevel u ->
-    error_undeclared_universe env u
+  match UGraph.check_declared_universes (universes env) univs
+  with
+  | Ok () -> ()
+  | Error u -> error_undeclared_universes env u
 
 let check_wellformed_universes env c =
   NewProfile.profile "check-wf-univs" (fun () -> check_wellformed_universes env c) ()
