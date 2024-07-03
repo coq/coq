@@ -1044,7 +1044,7 @@ let check_evars_are_solved env sigma t =
   let evars = Evarutil.undefined_evars_of_term sigma t in
   if not (Evar.Set.is_empty evars) then error_unresolved_evars env sigma t evars
 
-let declare_definition_core ~info ~cinfo ~opaque ~obls ~body ?using sigma =
+let declare_definition ~info ~cinfo ~opaque ~obls ~body ?using sigma =
   let { CInfo.name; typ; _ } = cinfo in
   let env = Global.env () in
   Option.iter (check_evars_are_solved env sigma) typ;
@@ -1057,13 +1057,6 @@ let declare_definition_core ~info ~cinfo ~opaque ~obls ~body ?using sigma =
   let obj = DefaultProof { proof = ([((body,Evd.empty_side_effects),typ)], uctx); opaque; using; keep_body_ucst_separate = None } in
   let gref = List.hd (declare_possibly_mutual_definitions ~info ~cinfo:[cinfo] ~obls obj) in
   gref, uctx
-
-let declare_definition ~info ~cinfo ~opaque ~body ?using sigma =
-  declare_definition_core ~obls:[] ~info ~cinfo ~opaque ~body ?using sigma |> fst
-
-let declare_definition_full ~info ~cinfo ~opaque ~body ?using sigma =
-  let c, uctx = declare_definition_core ~obls:[] ~info ~cinfo ~opaque ~body ?using sigma in
-  c, if info.poly then Univ.ContextSet.empty else UState.context_set uctx
 
 let prepare_obligations ~name ?types ~body env sigma =
   let env = Global.env () in
@@ -1498,7 +1491,7 @@ let declare_definition ~pm prg =
   let name, info, opaque, using = prg.prg_cinfo.CInfo.name, prg.prg_info, prg.prg_opaque, prg.prg_using in
   let obls = List.map (fun (id, (_, c)) -> (id, c)) varsubst in
   (* XXX: This is doing normalization twice *)
-  let kn, uctx = declare_definition_core ~cinfo ~info ~obls ~body ~opaque ?using sigma in
+  let kn, uctx = declare_definition ~cinfo ~info ~obls ~body ~opaque ?using sigma in
   (* XXX: We call the obligation hook here, by consistency with the
      previous imperative behaviour, however I'm not sure this is right *)
   let pm = State.call_prg_hook prg
@@ -2819,3 +2812,10 @@ let declare_constant ?local ~name ~kind ?typing_flags =
 
 let declare_entry ~name ?scope ~kind ?user_warns ?hook ~impargs ~uctx entry =
   declare_entry ~name ?scope ~kind ~typing_flags:None ?clearbody:None ~user_warns ?hook ~impargs ~uctx entry
+
+let declare_definition_full ~info ~cinfo ~opaque ~body ?using sigma =
+  let c, uctx = declare_definition ~obls:[] ~info ~cinfo ~opaque ~body ?using sigma in
+  c, if info.poly then Univ.ContextSet.empty else UState.context_set uctx
+
+let declare_definition ~info ~cinfo ~opaque ~body ?using sigma =
+  declare_definition ~obls:[] ~info ~cinfo ~opaque ~body ?using sigma |> fst
