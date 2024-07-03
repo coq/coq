@@ -579,7 +579,7 @@ rw_pattern: [
 ]
 
 rewrite_rule: [
-| OPT [ univ_decl "|-" ] rw_pattern ">->" term
+| OPT [ univ_decl "|-" ] rw_pattern "=>" term
 ]
 
 scheme_kind: [
