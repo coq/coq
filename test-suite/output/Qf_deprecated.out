@@ -1,13 +1,15 @@
 File "./output/Qf_deprecated.v", line 10, characters 17-18:
-Warning: Reference x is deprecated. [deprecated-reference,deprecated,default]
+Warning: Reference x is deprecated. Use M.y instead.
+[deprecated-reference,deprecated,default]
 Quickfix:
 Replace File "./output/Qf_deprecated.v", line 10, characters 17-18 with M.y
 File "./output/Qf_deprecated.v", line 13, characters 14-15:
-Warning: Reference x is deprecated. [deprecated-reference,deprecated,default]
+Warning: Reference x is deprecated. Use M.y instead.
+[deprecated-reference,deprecated,default]
 Quickfix:
 Replace File "./output/Qf_deprecated.v", line 13, characters 14-15 with M.y
 File "./output/Qf_deprecated.v", line 25, characters 17-18:
-Warning: Notation v is deprecated.
+Warning: Notation v is deprecated. Use M1.w instead.
 [deprecated-syntactic-definition,deprecated,default]
 Quickfix:
 Replace File "./output/Qf_deprecated.v", line 25, characters 17-18 with M1.w

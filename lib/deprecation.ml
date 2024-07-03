@@ -35,19 +35,24 @@ let get_generic_cat since =
     since_cats := CString.Map.add since c !since_cats;
     c
 
-let printer ~object_name pp (x,{since;note}) =
+let printer ~object_name ~pp_qf pp (x,{depr={since;note};use_instead}) =
   let open Pp in
+  let note =
+    match note, use_instead with
+    | None, None -> None
+    | Some x, _ -> Some (str x)
+    | None, Some x -> Some (str"Use " ++ pp_qf x ++ str" instead.") in
   str object_name ++ spc () ++ pp x ++
   strbrk " is deprecated" ++
   pr_opt (fun since -> str "since " ++ str since) since ++
-  str "." ++ pr_opt (fun note -> str note) note
+  str "." ++ pr_opt (fun x -> x) note
 
 let create_warning_with_qf ?default ~object_name ~warning_name_if_no_since ~pp_qf pp =
-  let pp = printer ~object_name pp in
+  let pp = printer ~object_name ~pp_qf pp in
   let main_cat, main_w = CWarnings.create_hybrid ?default ~name:warning_name_if_no_since ~from:[depr_cat] () in
   let main_w = CWarnings.create_in main_w pp in
   let warnings = ref CString.Map.empty in
-  fun ?loc (v, ({depr = {since} as info; use_instead })) ->
+  fun ?loc (v, ({depr = {since}; use_instead } as info)) ->
     let since = since_name since in
     let quickfix =
       match use_instead with
