@@ -282,8 +282,6 @@ Module Prim.
   (* Time Eval compute in @add 200  10 (build_fn 10). (* 0.005s *) *)
   (* Time Eval compute in @add 2000 10 (build_fn 10). (* 0.050s *) *)
 
-  (* Set Debug "kred". *)
-  (* Set Printing All. *)
   Time Eval kred     in @add 2    10 (build_fn 10). (* 0.s *)
   Time Eval kred     in @add 4    10 (build_fn 10). (* 0.001s *)
   Time Eval kred     in @add 8    10 (build_fn 10). (* 0.003s *)
