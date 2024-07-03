@@ -172,7 +172,7 @@ let is_executable f =
 (** Equivalent of rm -f *)
 
 let safe_remove f =
-  try Unix.chmod f 0o644; Sys.remove f with _ -> ()
+  try Unix.chmod f 0o644; Sys.remove f with Unix.Unix_error _ | Sys_error _ -> ()
 
 (** The PATH list for searching programs *)
 
@@ -233,4 +233,7 @@ let write_config_file ~file ?(bin=false) action =
     action o;
     close_out o;
     Unix.chmod file 0o444
-  with _ -> close_out o; safe_remove file
+  with exn ->
+    close_out o;
+    safe_remove file;
+    raise exn

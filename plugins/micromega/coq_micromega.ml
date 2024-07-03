@@ -1972,11 +1972,7 @@ Tacticals.tclTHEN
                   ( EConstr.mkVar goal_name
                   , arith_args @ List.map EConstr.mkVar ids )))
       with
-      | CsdpNotFound -> fail_csdp_not_found ()
-      | x ->
-        if debug then
-          Tacticals.tclFAIL (Pp.str (Printexc.get_backtrace ()))
-        else raise x)
+      | CsdpNotFound -> fail_csdp_not_found ())
 
 let micromega_wit_gen pre_process cnf spec prover wit_id ff =
   Proofview.Goal.enter (fun gl ->
@@ -1998,12 +1994,7 @@ let micromega_wit_gen pre_process cnf spec prover wit_id ff =
           let tres' = EConstr.mkApp (Lazy.force coq_list, [|spec.proof_typ|]) in
           Tactics.letin_tac
             None (Names.Name wit_id) res' (Some tres') Locusops.nowhere
-      with
-      | CsdpNotFound -> fail_csdp_not_found ()
-      | x ->
-        if debug then
-          Tacticals.tclFAIL (Pp.str (Printexc.get_backtrace ()))
-        else raise x)
+      with CsdpNotFound -> fail_csdp_not_found ())
 
 let micromega_order_changer cert env ff =
   (*let ids = Util.List.map_i (fun i _ -> (Names.Id.of_string ("__v"^(string_of_int i)))) 0 env in *)
@@ -2127,8 +2118,7 @@ let micromega_genr prover tac =
                 [ Generalize.generalize (List.map EConstr.mkVar ids)
                 ; Tactics.exact_check
                     (EConstr.applist (EConstr.mkVar goal_name, arith_args)) ] ]
-      with
-      | CsdpNotFound -> fail_csdp_not_found ())
+      with CsdpNotFound -> fail_csdp_not_found ())
 
 let lift_ratproof prover l =
   match prover l with
