@@ -517,7 +517,7 @@ GRAMMAR EXTEND Gram
     [ [ p = lconstr -> { p } ] ];
   rewrite_rule:
     [ [ u = OPT [ u = univ_decl; "|-" -> { u }];
-        lhs = rw_pattern; ">->" ; rhs = lconstr ->
+        lhs = rw_pattern; "=>" ; rhs = lconstr ->
         { (u, lhs, rhs)
         } ] ]
   ;
