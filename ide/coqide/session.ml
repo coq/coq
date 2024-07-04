@@ -49,6 +49,7 @@ type session = {
   debugger : Wg_Debugger.debugger_view;
   tab_label : GMisc.label;
   errpage : errpage;
+  warnpage : errpage;
   jobpage : jobpage;
   sid : int;
   basename : string;
@@ -324,10 +325,10 @@ let make_table_widget ?sort cd cb =
   let () = match sort with None -> () | Some (i, t) -> store#set_sort_column_id i t in
   frame, (fun f -> f columns store)
 
-let create_errpage (script : Wg_ScriptView.script_view) : errpage =
+let create_errpage ~kind (script : Wg_ScriptView.script_view) : errpage =
   let table, access =
     make_table_widget ~sort:(0, `ASCENDING)
-      [`Int,"Line",true; `String,"Error/Warning",true]
+      [`Int,"Line",true; `String, kind, true]
       (fun columns store tp vc ->
         let row = store#get_iter tp in
         let lno = store#get ~row ~column:(find_int_col "Line" columns) in
@@ -336,7 +337,7 @@ let create_errpage (script : Wg_ScriptView.script_view) : errpage =
         script#misc#grab_focus ();
         ignore (script#scroll_to_iter
                   ~use_align:false ~yalign:0.75 ~within_margin:0.25 where)) in
-  let tip = GMisc.label ~text:"Double click to jump to error line" () in
+  let tip = GMisc.label ~text:"Double click to jump to line" () in
   let box = GPack.vbox ~homogeneous:false () in
   let () = box#pack ~expand:true table#coerce in
   let () = box#pack ~expand:false ~padding:2 tip#coerce in
@@ -353,7 +354,7 @@ let create_errpage (script : Wg_ScriptView.script_view) : errpage =
         List.iter (fun (lno, msg) -> access (fun columns store ->
           let line = store#append () in
           store#set ~row:line ~column:(find_int_col "Line" columns) lno;
-          store#set ~row:line ~column:(find_string_col "Error/Warning" columns) msg))
+          store#set ~row:line ~column:(find_string_col kind columns) msg))
           errs
       end
     method on_update ~callback:cb = callback := cb
@@ -443,7 +444,8 @@ let create file coqtop_args =
   let cops =
     new CoqOps.coqops script proof messages segment coqtop (fun () -> fops#filename) in
   let command = new Wg_Command.command_window basename coqtop cops messages sid in
-  let errpage = create_errpage script in
+  let errpage = create_errpage ~kind:"Error" script in
+  let warnpage = create_errpage ~kind:"Warning" script in
   let jobpage = create_jobpage coqtop cops in
   let _ = set_buffer_handlers (buffer :> GText.buffer) script cops coqtop in
   let _ = Coq.set_reset_handler coqtop cops#handle_reset_initial in
@@ -474,7 +476,8 @@ let create file coqtop_args =
     finder=finder;
     debugger=debugger;
     tab_label= tab_label;
-    errpage=errpage;
+    errpage;
+    warnpage;
     jobpage=jobpage;
     sid=sid;
     basename = basename;
@@ -606,8 +609,9 @@ let build_layout (sn:session) =
   script_scroll#add sn.script#coerce;
   proof_scroll#add sn.proof#coerce;
   let detach, _ = add_msg_page 0 sn.tab_label#text "Messages" sn.messages#default_route#coerce in
-  let _, label = add_msg_page 1 sn.tab_label#text "Errors" sn.errpage#coerce in
-  let _, _ = add_msg_page 2 sn.tab_label#text "Jobs" sn.jobpage#coerce in
+  let _, errlabel = add_msg_page 1 sn.tab_label#text "Errors" sn.errpage#coerce in
+  let _, warnlabel = add_msg_page 2 sn.tab_label#text "Warnings" sn.warnpage#coerce in
+  let _, _ = add_msg_page 3 sn.tab_label#text "Jobs" sn.jobpage#coerce in
   (* When a message is received, focus on the message pane *)
   let _ =
     sn.messages#default_route#connect#pushed ~callback:(fun _ _ ->
@@ -615,12 +619,17 @@ let build_layout (sn:session) =
       if 0 <= num then message_frame#goto_page num
     )
   in
+  let set_label_color_on_update color page label =
+    let txt = label#text in
+    let red s = Printf.sprintf "<span foreground=\"%s\">%s</span>" color s in
+    page#on_update ~callback:(fun l ->
+      if l = [] then (label#set_use_markup false; label#set_text txt)
+      else (label#set_text (red txt);label#set_use_markup true));
+  in
   (* When an error occurs, paint the error label in red *)
-  let txt = label#text in
-  let red s = "<span foreground=\"#FF0000\">" ^ s ^ "</span>" in
-  sn.errpage#on_update ~callback:(fun l ->
-    if l = [] then (label#set_use_markup false; label#set_text txt)
-    else (label#set_text (red txt);label#set_use_markup true));
+  let () = set_label_color_on_update "#FF0000" sn.errpage errlabel in
+  (* When a warning occurs, paint the warning label in orange *)
+  let () = set_label_color_on_update "#FFA500" sn.warnpage warnlabel in
   session_tab#pack sn.tab_label#coerce;
   img#set_stock `YES;
   let control =
