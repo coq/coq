@@ -31,6 +31,11 @@ module NamedDecl = Context.Named.Declaration
 let check_section_variables env declared_vars body typ =
   let env_ids = ids_of_named_context_val (named_context_val env) in
   Id.Set.iter (fun id -> if not (Id.Set.mem id env_ids) then Type_errors.error_unbound_var env id) declared_vars;
+  if List.is_empty (named_context env) then begin
+    assert (Id.Set.is_empty declared_vars);
+    declared_vars
+  end
+  else
   let tyvars = global_vars_set env typ in
   let declared_vars = Environ.really_needed env (Id.Set.union declared_vars tyvars) in
   let () = match body with
@@ -282,7 +287,8 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
   let j = unzip ectx j in
   let _ = Typeops.judge_of_cast env j DEFAULTcast tyj in
   let declared =
-    Environ.really_needed env (Id.Set.union declared (global_vars_set env tyj.utj_val))
+    if List.is_empty (named_context env) then declared
+    else Environ.really_needed env (Id.Set.union declared (global_vars_set env tyj.utj_val))
   in
   let declared' = check_section_variables env declared (Some body) tyj.utj_val in
   let () = assert (Id.Set.equal declared declared') in
