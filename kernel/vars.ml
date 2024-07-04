@@ -392,20 +392,12 @@ let subst_univs_level_constr subst c =
         else
           (changed := true; mkSort s')
 
-      | Case (ci, u, pms, p, CaseInvert {indices}, c, br) ->
+      | Case (ci, u, pms, p, iv, c, br) ->
         if UVars.Instance.is_empty u then Constr.map aux t
         else
           let u' = f u in
           if u' == u then Constr.map aux t
-          else (changed:=true; Constr.map aux (mkCase (ci,u',pms,p,CaseInvert {indices},c,br)))
-
-      | Case (ci, u, pms, p, NoInvert, c, br) ->
-        if UVars.Instance.is_empty u then Constr.map aux t
-        else
-          let u' = f u in
-          if u' == u then Constr.map aux t
-          else
-            (changed := true; Constr.map aux (mkCase (ci, u', pms, p, NoInvert, c, br)))
+          else (changed:=true; Constr.map aux (mkCase (ci,u',pms,p,iv,c,br)))
 
       | Array (u,elems,def,ty) ->
         let u' = f u in
