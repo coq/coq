@@ -107,7 +107,14 @@ let findlib_resolve ~meta_files ~file ~package ~plugin_name =
     in
     List.fold_right add path file
   in
-  let meta_file = normalize_path (to_relative_path meta_file) in
+  let meta_file =
+    (* relativize the path if inside the current dune workspace
+       if we relativize paths outside the dune workspace it fails so make sure to avoid it *)
+    match Sys.getenv_opt "DUNE_SOURCEROOT" with
+    | Some dune when CString.is_prefix dune meta_file ->
+      normalize_path (to_relative_path meta_file)
+    | _ -> meta_file
+  in
   let cmxs_file =
     let meta_dir = Filename.dirname meta_file in
     normalize_path (Filename.concat meta_dir cmxs_file)
