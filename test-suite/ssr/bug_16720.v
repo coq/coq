@@ -18,6 +18,8 @@ Proof.
   match goal with P_iff : (forall n, n = 0 <-> 0 = n) |- True => admit end.
 Abort.
 
+From Stdlib Require Import Bool.
+
 Goal forall (x y : bool), Decidable (eq x y).
 Proof.
   Succeed apply _.

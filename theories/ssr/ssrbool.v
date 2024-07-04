@@ -12,7 +12,6 @@
 
 (** #<style> .doc { font-family: monospace; white-space: pre; } </style># **)
 
-Require Bool.
 Require Import ssreflect ssrfun.
 
 (**
@@ -300,9 +299,9 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-Notation reflect := Bool.reflect.
-Notation ReflectT := Bool.ReflectT.
-Notation ReflectF := Bool.ReflectF.
+Notation reflect := Datatypes.reflect.
+Notation ReflectT := Datatypes.ReflectT.
+Notation ReflectF := Datatypes.ReflectF.
 
 Reserved Notation "~~ b" (at level 35, right associativity).
 Reserved Notation "b ==> c" (at level 55, right associativity).
