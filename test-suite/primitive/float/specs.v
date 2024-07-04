@@ -9,7 +9,7 @@
        Again on each float/int from the lists, each operator
        is evaluated in multiple evaluation mechanisms to check
        that their results agree with the one given by vm_compute. *)
-From Stdlib Require Import ListDef ZArith PrimInt63 Uint63Axioms.
+From Stdlib Require Import ListDef BinNums PrimInt63 Uint63Axioms.
 From Stdlib Require Import SpecFloat PrimFloat FloatOps FloatAxioms.
 From Ltac2 Require Import Ltac2 Printf.
 
@@ -49,17 +49,17 @@ Definition tricky_floats : list float
           (* constants from [add.v] *)
           ; 3
           (* ; Z.ldexp one 1023%Z *) (* same as largest finite (emax-prec) above *)
-          ; Z.ldexp one (-1023)%Z; -Z.ldexp one (-1023)%Z
+          ; Z.ldexp one (Zneg (xI (xI (xI (xI (xI (xI (xI (xI (xI xH)))))))))); -Z.ldexp one (Zneg (xI (xI (xI (xI (xI (xI (xI (xI (xI xH))))))))))
           (* constants from [classify.v] *)
-          ; Z.ldexp one (-1024)%Z; -Z.ldexp one (-1024)%Z
+          ; Z.ldexp one (Zneg (xO (xO (xO (xO (xO (xO (xO (xO (xO (xO xH))))))))))); -Z.ldexp one (Zneg (xO (xO (xO (xO (xO (xO (xO (xO (xO (xO xH)))))))))))
           (* constants from [div.v] *)
           ; 6
           (* constants from [double_rounding.v] *)
-          ; Z.ldexp one 53; Z.ldexp one (-52)
-          ; 1 + Z.ldexp 1 (-52)%Z
+          ; Z.ldexp one (Zpos (xI (xO (xI (xO (xI xH)))))); Z.ldexp one (Zpos (xO (xO (xI (xO (xI xH))))))
+          ; 1 + Z.ldexp 1 (Zneg (xO (xO (xI (xO (xI xH))))))
           (* constants from [next_up_down.v] *)
           ; 42; -42
-          ; Z.ldexp one (-1022); -Z.ldexp one (-1022)
+          ; Z.ldexp one (Zneg (xO (xI (xI (xI (xI (xI (xI (xI (xI xH)))))))))); -Z.ldexp one (Zneg (xO (xI (xI (xI (xI (xI (xI (xI (xI xH))))))))))
           ; -0x1.ffffffffffffap+1023
           ; -0x1.fffffffffffff
           ; -0x0.fffffffffffffp-1022
@@ -74,7 +74,7 @@ Definition tricky_floats : list float
           ; 9
       ].
 Definition tricky_spec_floats :=
-  Eval cbv in List.map Prim2SF tricky_floats.
+  Eval cbv in ListDef.map Prim2SF tricky_floats.
 (** ** List of ints to instantiate spec and operator args *)
 Definition tricky_ints : list int
   := Eval cbv in
@@ -130,12 +130,35 @@ Inductive SPEC :=
     propositional spec for pretty-printing of results. *)
 Definition ANNOTATED_BARE_SPEC : Type := BARE_SPEC * {P : Prop | P}.
 
+(* missing list functions *)
+Section FlatMap.
+Variables (A : Type) (B : Type).
+Variable f : A -> list B.
+Definition flat_map :=
+  fix flat_map (l:list A) : list B :=
+    match l with
+    | nil => nil
+    | cons x t => (f x)++(flat_map t)
+    end.
+End FlatMap.
+Arguments flat_map [_ _].
+
+Section ListPairs.
+Variables (A : Type) (B : Type).
+Fixpoint combine (l : list A) (l' : list B) : list (A*B) :=
+  match l,l' with
+  | x::tl, y::tl' => (x,y)::(combine tl tl')
+  | _, _ => nil
+  end.
+End ListPairs.
+Arguments combine [_ _].
+
 (** ** Machinery for instantiating specifications with all examples *)
 Fixpoint instantiate1_all_ways (s : SPEC) : list ANNOTATED_BARE_SPEC
   := match s with
      | @BARE U spec s => cons (s, exist _ U spec) nil
      | @FORALL T s
-       => List.flat_map
+       => flat_map
             (fun v => instantiate1_all_ways (s v))
             match T with
             | INT => tricky_ints
@@ -145,7 +168,7 @@ Fixpoint instantiate1_all_ways (s : SPEC) : list ANNOTATED_BARE_SPEC
      end.
 
 Definition instantiate_all_ways_nored (ls : list SPEC) : list ANNOTATED_BARE_SPEC
-  := List.flat_map instantiate1_all_ways ls.
+  := flat_map instantiate1_all_ways ls.
 
 Definition instantiate_all_ways (ls : list SPEC) : list ANNOTATED_BARE_SPEC
   := Eval cbv in instantiate_all_ways_nored ls.
@@ -376,9 +399,9 @@ Definition op_spec_list : list SPEC :=
 (** We unfold standard library constants early to guarantee that we
     won't run afoul of constants that show up in the specs themselves *)
 Definition map_fst : list ANNOTATED_BARE_SPEC -> list BARE_SPEC
-  := Eval cbv in List.map (@fst _ _).
+  := Eval cbv in ListDef.map (@fst _ _).
 Definition combine_annotations (orig : list ANNOTATED_BARE_SPEC) (result : list BARE_SPEC) : list ANNOTATED_BARE_SPEC
-  := Eval cbv in List.map (fun '((_, anno), v) => (v, anno)) (List.combine orig result).
+  := Eval cbv in ListDef.map (fun '((_, anno), v) => (v, anno)) (combine orig result).
 (** The native compiler is much slower if we feed it the precomputed
     instantiations of specs, whereas we want to make sure that [simpl]
     and [cbn] have as few places to take the wrong path as possible.
