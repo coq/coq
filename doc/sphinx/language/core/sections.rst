@@ -131,6 +131,78 @@ usable outside the section as shown in this :ref:`example <section_local_declara
    Notice the difference between the value of :g:`x'` and :g:`x''` inside section
    :g:`s1` and outside.
 
+.. _visibility-attributes-sections:
+
+Summary of locality attributes in a section
+-------------------------------------------
+
+The following table sums up the locality of vernacular commands in modules, when
+outside the module.
+A similar table for :cmd:`Module` can be found
+:ref:`here <visibility-attributes-modules>`.
+
+.. list-table::
+  :header-rows: 1
+
+  * - ``Command``
+    - without attribute
+    - :attr:`local`
+    - :attr:`export`
+    - :attr:`global`
+
+  * - :cmd:`Definition`, :cmd:`Lemma`, :cmd:`Axiom`, ...
+    - available
+    - available
+    - attribute not supported
+    - attribute not supported
+
+  * - :cmd:`Notation`
+    - not available outside
+    - not available outside
+    - attribute not supported
+    - attribute not supported
+
+  * - :cmd:`Notation (abbreviation)`
+    - not available outside
+    - not available outside
+    - attribute not supported
+    - attribute not supported
+
+  * - ``Hints`` (and :cmd:`Instance`)
+    - not available outside
+    - not available outside
+    - attribute not supported
+    - attribute not supported
+
+  * - :cmd:`Set` or :cmd:`Unset` a flag
+    - not available outside
+    - not available outside
+    - available outside
+    - available outside
+
+  * - :cmd:`Canonical Structure`
+    - available outside
+    - not available outside
+    - attribute not supported
+    - available outside
+
+  * - :cmd:`Ltac`
+    - not available outside
+    - not available outside
+    - attribute not supported
+    - attribute not supported
+
+  * - :cmd:`Coercion`
+    - available outside
+    - not available outside
+    - attribute not supported
+    - available outside
+
+  * - :cmd:`Tactic Notation`
+    - not available outside
+    - not available outside
+    - attribute not supported
+    - attribute not supported
 
 .. _Admissible-rules-for-global-environments:
 

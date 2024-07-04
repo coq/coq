@@ -1064,16 +1064,22 @@ while noting a few exceptional commands for which :attr:`local` and
       the user little control. We recommend using the :attr:`export`
       locality attribute where it is supported.
 
+.. _visibility-attributes-modules:
+
 The following table sums up the locality of vernacular commands in modules, when
 outside the module.
+A similar table for :cmd:`Section` can be found
+:ref:`here<visibility-attributes-sections>`.
 
 .. list-table::
   :header-rows: 1
 
   * - ``Command``
     - without attribute,
+
       not imported
     - without attribute,
+
       imported
     - :attr:`local`
     - :attr:`export`
