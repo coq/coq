@@ -1,9 +1,9 @@
-From Stdlib Require Import Utf8 Bool ssreflect.
+From Stdlib Require Import ssreflect.
 
 Set Printing All.
 Set Debug Ssreflect.
 
-Class Class sort := { op : sort → bool }.
+Class Class sort := { op : sort -> bool }.
 Arguments op {_ _}.
 #[export] Hint Mode Class !.
 
