@@ -19,8 +19,7 @@
   (deps (source_tree %{project_root}/plugins))
   (action (with-stdout-to %{targets} (chdir %{project_root} (run config/list_plugins.exe)))))
 
-; Dune doesn't use configure's output, but it is still necessary for
-; some Coq files to work; will be fixed in the future.
+; add "-native-compiler yes" to the arguments of configure to enable native
 (rule
  (targets coq_config.ml coq_byte_config.ml coq_config.py dune.c_flags)
  (mode fallback)
