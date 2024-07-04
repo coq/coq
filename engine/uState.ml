@@ -1059,6 +1059,15 @@ let demote_global_univs env uctx =
   let new_constraints = Constraints.filter filter_constraints local_constraints in
   { uctx with local = (new_univs, new_constraints) }
 
+let demote_global_univs_sound (lvl_set,csts_set) uctx =
+  let filter_univs u = not(Level.Set.mem u lvl_set) in
+  let (local_univs, local_constraints) = uctx.local in
+  let local_univs = Level.Set.filter filter_univs local_univs in
+  let univ_variables = Level.Set.fold UnivFlex.remove lvl_set uctx.univ_variables in
+  let initial_universes = UGraph.merge_constraints csts_set uctx.initial_universes in
+  let universes = UGraph.merge_constraints csts_set uctx.universes in
+  { uctx with local = (local_univs, local_constraints); univ_variables; universes; initial_universes }
+   
 let merge_seff uctx uctx' =
   let levels = ContextSet.levels uctx' in
   let declare g =

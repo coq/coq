@@ -55,6 +55,8 @@ let add l ~algebraic {subst; algs} =
   let algs = if algebraic then Level.Set.add l algs else algs in
   { subst; algs }
 
+let remove l { subst; algs } = { subst = Level.Map.remove l subst; algs = Level.Set.remove l algs } 
+
 let add_levels levels ~algebraic subst =
   Level.Set.fold (fun l subst -> add l ~algebraic subst) levels subst
 
