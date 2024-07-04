@@ -73,15 +73,21 @@ type table_key = Constant.t UVars.puniverses tableKey
 
 type evar_repack = Evar.t * constr list -> constr
 
+(* Global (Co)Fixpoints *)
 type gfix = Constr.t option
+type gcofix = Constr.t option
 
-type gfix_info = {
+type 'a gfix_info_aux = {
   gfix_nargs : int;
   gfix_tys : (Name.t binder_annot * constr) list;
   gfix_univs : UVars.Instance.t;
-  gfix_body : fixpoint;
+  gfix_body : 'a;
   gfix_refold : Constr.t;
 }
+
+type gfix_info =
+  | GFix of fixpoint gfix_info_aux
+  | GCoFix of cofixpoint gfix_info_aux
 
 type fconstr = {
   mutable mark : red_state;
@@ -97,7 +103,7 @@ and fterm =
   | FApp of fconstr * fconstr array
   | FProj of Projection.t * Sorts.relevance * fconstr
   | FFix of fixpoint * usubs * gfix
-  | FCoFix of cofixpoint * usubs
+  | FCoFix of cofixpoint * usubs * gcofix
   | FCaseT of case_info * UVars.Instance.t * constr array * case_return * fconstr * case_branch array * usubs (* predicate and branches are closures *)
   | FCaseInvert of case_info * UVars.Instance.t * constr array * case_return * finvert * fconstr * case_branch array * usubs
   | FLambda of int * (Name.t binder_annot * constr) list * constr * usubs
@@ -276,8 +282,8 @@ let rec lft_fconstr n ft =
     | FLambda(k,tys,f,e) -> {mark=Cstr; term=FLambda(k,tys,f,usubs_shft(n,e))}
     | FFix(fx,e,gfix) ->
       {mark=Cstr; term=FFix(fx,usubs_shft(n,e),gfix)}
-    | FCoFix(cfx,e) ->
-      {mark=Cstr; term=FCoFix(cfx,usubs_shft(n,e))}
+    | FCoFix(cfx,e,gcofix) ->
+      {mark=Cstr; term=FCoFix(cfx,usubs_shft(n,e),gcofix)}
     | FLIFT(k,m) -> lft_fconstr (n+k) m
     | FFlex (RelKey _) | FAtom _ | FApp _ | FProj _ | FCaseT _ | FCaseInvert _ | FProd _
       | FLetIn _ | FEvar _ | FCLOS _ | FArray _ -> {mark=ft.mark; term=FLIFT(n,ft)}
@@ -397,20 +403,32 @@ end = struct
   | Conversion -> None
   | Reduction ->
     let ctx, body = Term.decompose_lambda c in
-    match destFix body with
-    | fix ->
+    match [@ocaml.warning "-4"] kind body with
+    | Fix fix ->
       let nargs = List.length ctx in
       let args = Array.init nargs (fun i -> mkRel (nargs - i)) in
       let inst = UVars.Instance.abstract_instance @@ UVars.Instance.length @@ snd cst in
       let refold = mkApp (mkConstU (fst cst, inst), args) in
-      Some {
+      Some (GFix {
         gfix_nargs = nargs;
         gfix_tys = List.rev ctx;
         gfix_univs = snd cst;
         gfix_body = fix;
         gfix_refold = refold;
-      }
-    | exception DestKO -> None
+      })
+    | CoFix cofix ->
+      let nargs = List.length ctx in
+      let args = Array.init nargs (fun i -> mkRel (nargs - i)) in
+      let inst = UVars.Instance.abstract_instance @@ UVars.Instance.length @@ snd cst in
+      let refold = mkApp (mkConstU (fst cst, inst), args) in
+      Some (GCoFix {
+        gfix_nargs = nargs;
+        gfix_tys = List.rev ctx;
+        gfix_univs = snd cst;
+        gfix_body = cofix;
+        gfix_refold = refold;
+      })
+    | _ -> None
 
   let value_of info ref =
     try
@@ -546,7 +564,7 @@ let rec to_constr (lfts, usubst as ulfts) v =
         let tys = Array.Fun1.map subst_constr subs_ty tys in
         let bds = Array.Fun1.map subst_constr subs_bd bds in
         mkFix (op, (lna, tys, bds))
-    | FCoFix ((op,(lna,tys,bds)) as cfx, e) ->
+    | FCoFix ((op,(lna,tys,bds)) as cfx, e, _) ->
       if is_subs_id (fst e) && is_lift_id lfts then
         subst_instance_constr (usubst_instance ulfts (snd e)) (mkCoFix cfx)
       else
@@ -721,8 +739,8 @@ module Dbg = struct
        | FConstruct (cstr, _univ) -> str "FConstruct(" ++ int (snd (fst cstr)) ++ str "," ++ int (snd cstr)  ++ str ")"
        | FApp (h, args) -> str "FApp(" ++ pp_fconstr env h ++ str "," ++ pp_fconstr_arr env args ++ str ")"
        | FProj (_, _, _) -> str "<FProj>"
-       | FFix (_, _, _) -> str "<FFix>"
-       | FCoFix (_, _) -> str "<FCoFix>"
+       | FFix(_) -> str "<FFix>"
+       | FCoFix(_) -> str "<FCoFix>"
        | FCaseT (_, _, _, _, _, _, _) -> str "<FCaseT>"
        | FCaseInvert (_, _, _, _, _, _, _, _) -> str "<FCaseInvert>"
        | FLambda (_, _, _, _) -> str "<FLambda>"
@@ -1003,10 +1021,17 @@ let contract_fix_vect fix =
             else { mark = Cstr;
                        term = FFix (((reci,j),rdcl),env, None) }),
            env, Array.length bds)
-      | FCoFix ((i,(_,_,bds as rdcl)),env) ->
+      | FCoFix ((i,(_,_,bds as rdcl)),env, None) ->
           (bds.(i),
            (fun j -> { mark = Cstr;
-                       term = FCoFix ((j,rdcl),env) }),
+                       term = FCoFix ((j,rdcl),env,None) }),
+           env, Array.length bds)
+      | FCoFix ((i,(_,_,bds as rdcl)),env, Some refold) ->
+          (bds.(i),
+           (fun j -> if Int.equal i j then
+              { mark = Cstr; term = FCLOS (refold, env) }
+            else { mark = Cstr;
+                       term = FCoFix ((j,rdcl),env, None) }),
            env, Array.length bds)
       | _ -> assert false
   in
@@ -1459,7 +1484,7 @@ and knht info e t stk =
       end
     | (Ind _|Const _|Construct _|Var _|Meta _ | Sort _ | Int _|Float _|String _) -> (mk_clos e t, stk)
     | CoFix cfx ->
-      { mark = Cstr; term = FCoFix (cfx,e) }, stk
+      { mark = Cstr; term = FCoFix (cfx,e, None) }, stk
     | Lambda _ -> { mark = Cstr ; term = mk_lambda e t }, stk
     | Prod (n, t, c) ->
       { mark = Ntrl; term = FProd (usubst_binder e n, mk_clos e t, c, e) }, stk
@@ -1988,7 +2013,7 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
       knr_ret info tab ~pat_state (mk_irrelevant, skip_irrelevant_stack info stk)
      else
       knr_ret info tab ~pat_state (m, stk)
-  | FCoFix ((i, (lna, _, _)), e) ->
+  | FCoFix ((i, (lna, _, _)), e, _) ->
     if is_irrelevant info (usubst_relevance e (lna.(i)).binder_relevance) then
       knr_ret info tab ~pat_state (mk_irrelevant, skip_irrelevant_stack info stk)
     else if red_set info.i_flags fCOFIX then
@@ -2143,7 +2168,7 @@ and unfold : 'a. _ -> _ -> pat_state: 'a depth  -> (fconstr * Undo.t list) -> _ 
   let stk = List.rev_append rev_params stk in
   match ogfix with
   | None -> maybe_undo info tab ~pat_state undos body stk
-  | Some gfix ->
+  | Some (GFix gfix) ->
     if Int.equal gfix.gfix_nargs 0 then
       let refold = Some gfix.gfix_refold in
       maybe_undo info tab ~pat_state undos { mark = Cstr; term = FFix (gfix.gfix_body, (subs_id 0, gfix.gfix_univs), refold) } stk
@@ -2152,6 +2177,17 @@ and unfold : 'a. _ -> _ -> pat_state: 'a depth  -> (fconstr * Undo.t list) -> _ 
       | Inl e, stk ->
         let refold = Some gfix.gfix_refold in
         maybe_undo info tab ~pat_state undos { mark = Cstr; term = FFix (gfix.gfix_body, e, refold) } stk
+      | Inr lam, stk -> knr_ret info tab ~pat_state (lam, stk)
+    else maybe_undo info tab ~pat_state undos body stk
+  | Some (GCoFix gcofix) ->
+    if Int.equal gcofix.gfix_nargs 0 then
+      let refold = Some gcofix.gfix_refold in
+      maybe_undo info tab ~pat_state undos { mark = Cstr; term = FCoFix (gcofix.gfix_body, (subs_id 0, gcofix.gfix_univs), refold) } stk
+    else if red_set info.i_flags fBETA then
+      match get_args gcofix.gfix_nargs gcofix.gfix_tys (mkCoFix gcofix.gfix_body) (subs_id 0, gcofix.gfix_univs) stk with
+      | Inl e, stk ->
+        let refold = Some gcofix.gfix_refold in
+        maybe_undo info tab ~pat_state undos { mark = Cstr; term = FCoFix (gcofix.gfix_body, e, refold) } stk
       | Inr lam, stk -> knr_ret info tab ~pat_state (lam, stk)
     else maybe_undo info tab ~pat_state undos body stk
 
@@ -2345,7 +2381,7 @@ and norm_head kl klt info tab m =
         let na = usubst_binder e na in
         let rng = klt (push_relevance info na) tab (usubs_lift e) rng in
           mkProd(na, kl info tab dom, rng)
-      | FCoFix((n,(na,tys,bds)),e) ->
+      | FCoFix((n,(na,tys,bds)),e, _) ->
           let na = Array.Smart.map (usubst_binder e) na in
           let infobd = push_relevances info na in
           let ftys = Array.map (fun ty -> klt info tab e ty) tys in
