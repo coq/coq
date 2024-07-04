@@ -196,6 +196,7 @@ let convert_inductives_gen cmp_instances cmp_cumul cv_pb (mind,ind) nargs u1 u2 
 
 type 'e conv_tab = {
   cnv_inf : clos_infos;
+  cnv_typ : bool; (* true if the input terms were well-typed *)
   lft_tab : clos_tab;
   rgt_tab : clos_tab;
   err_ret : 'e -> payload;
@@ -439,13 +440,10 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
          let nargs = same_args_size v1 v2 in
          let cuniv = conv_table_key infos ~nargs fl1 fl2 cuniv in
          let () = if irr_flex infos.cnv_inf fl1 then raise NotConvertible (* trigger the fallback *) in
-         (* Reuse the VM mask to assess whether some arguments are runtime
-            irrelevant. This is sound because the VM conversion is untyped,
-            hence if an argument is erased by the VM, it is only used in type
-            annotations and thus not necessary for conversion. *)
-         let mask = match fl1 with
+         let mask = if infos.cnv_typ then match fl1 with
          | ConstKey _ -> get_ref_mask infos.cnv_inf infos.lft_tab fl1
          | RelKey _ | VarKey _ -> [||]
+         else [||]
          in
          convert_stacks ~mask l2r infos lft1 lft2 v1 v2 cuniv
        with NotConvertible | NotConvertibleTrace _ ->
@@ -913,7 +911,7 @@ and convert_list l2r infos lft1 lft2 v1 v2 cuniv = match v1, v2 with
   convert_list l2r infos lft1 lft2 v1 v2 cuniv
 | _, _ -> raise NotConvertible
 
-let clos_gen_conv (type err) trans cv_pb l2r evars env graph univs t1 t2 =
+let clos_gen_conv (type err) ~typed trans cv_pb l2r evars env graph univs t1 t2 =
   NewProfile.profile "Conversion" begin fun () ->
       let reds = RedFlags.red_add_transparent RedFlags.betaiotazeta trans in
       let infos = create_conv_infos ~univs:graph ~evars reds env in
@@ -921,6 +919,7 @@ let clos_gen_conv (type err) trans cv_pb l2r evars env graph univs t1 t2 =
       let box e = Error.Error e in
       let infos = {
         cnv_inf = infos;
+        cnv_typ = typed;
         lft_tab = create_tab ();
         rgt_tab = create_tab ();
         err_ret = box;
@@ -963,7 +962,7 @@ let () =
     try
       let box = Empty.abort in
       let univs = info_univs infos in
-      let infos = { cnv_inf = infos; lft_tab = tab; rgt_tab = tab; err_ret = box } in
+      let infos = { cnv_inf = infos; cnv_typ = true; lft_tab = tab; rgt_tab = tab; err_ret = box } in
       let univs', _ = ccnv CONV false infos el_id el_id a b
           (univs, checked_universes)
       in
@@ -975,28 +974,28 @@ let () =
   in
   CClosure.set_conv conv
 
-let gen_conv cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=default_evar_handler env) t1 t2 =
+let gen_conv ~typed cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=default_evar_handler env) t1 t2 =
   let univs = Environ.universes env in
   let b =
     if cv_pb = CUMUL then leq_constr_univs univs t1 t2
     else eq_constr_univs univs t1 t2
   in
     if b then Result.Ok ()
-    else match clos_gen_conv reds cv_pb l2r evars env univs (univs, checked_universes) t1 t2 with
+    else match clos_gen_conv ~typed reds cv_pb l2r evars env univs (univs, checked_universes) t1 t2 with
     | Result.Ok (_ : UGraph.t * (UGraph.t, Empty.t) universe_compare)-> Result.Ok ()
     | Result.Error None -> Result.Error ()
     | Result.Error (Some e) -> Empty.abort e
 
-let conv = gen_conv CONV
-let conv_leq = gen_conv CUMUL
+let conv = gen_conv ~typed:false CONV
+let conv_leq = gen_conv ~typed:false CUMUL
 
 let generic_conv cv_pb ~l2r reds env ?(evars=default_evar_handler env) univs t1 t2 =
   let graph = Environ.universes env in
-  match clos_gen_conv reds cv_pb l2r evars env graph univs t1 t2 with
+  match clos_gen_conv ~typed:false reds cv_pb l2r evars env graph univs t1 t2 with
   | Result.Ok (s, _) -> Result.Ok s
   | Result.Error e -> Result.Error e
 
 let default_conv cv_pb env t1 t2 =
-    gen_conv cv_pb env t1 t2
+    gen_conv ~typed:true cv_pb env t1 t2
 
 let default_conv_leq = default_conv CUMUL
