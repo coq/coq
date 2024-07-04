@@ -839,20 +839,24 @@ let usubs_consv v s =
 
 (* Beta reduction: look for an applied argument in the stack.
    Since the encountered update marks are removed, h must be a whnf *)
-let rec get_args n tys f e = function
-    | Zshift k :: s ->
-        get_args n tys f (usubs_shft (k,e)) s
-    | Zapp l :: s ->
-        let na = Array.length l in
-        if n == na then (Inl (usubs_consn l 0 na e), s)
-        else if n < na then (* more arguments *)
-          let eargs = Array.sub l n (na-n) in
-          (Inl (usubs_consn l 0 n e), Zapp eargs :: s)
-        else (* more lambdas *)
-          let etys = List.skipn na tys in
-          get_args (n-na) etys f (usubs_consn l 0 na e) s
-    | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunfold _ | Zundo _) :: _ | []) as stk ->
-      (Inr {mark=Cstr; term=FLambda(n,tys,f,e)}, stk)
+let get_args =
+  let rec get_args rev_args n tys f e = function
+      | Zshift k as z :: s ->
+          get_args (z :: rev_args) n tys f (usubs_shft (k,e)) s
+      | Zapp l as z :: s ->
+          let na = Array.length l in
+          if n == na then (Inl (z :: rev_args, usubs_consn l 0 na e), s)
+          else if n < na then (* more arguments *)
+            let eargs = Array.sub l n (na-n) in
+            let rev_args = Zapp (Array.sub l 0 n) :: rev_args in
+            (Inl (rev_args, usubs_consn l 0 n e), Zapp eargs :: s)
+          else (* more lambdas *)
+            let etys = List.skipn na tys in
+            get_args (z :: rev_args) (n-na) etys f (usubs_consn l 0 na e) s
+      | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunfold _ | Zundo _) :: _ | []) as stk ->
+        (Inr {mark=Cstr; term=FLambda(n,tys,f,e)}, stk)
+  in
+  get_args []
 
 (* Get the arguments of a native operator *)
 let rec skip_native_args rargs nargs =
@@ -1925,13 +1929,19 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
   match m.term with
   | FLambda(n,tys,f,e) when red_set info.i_flags fBETA ->
       (match get_args n tys f e stk with
-          Inl e', s -> knit info tab ~pat_state e' f s
+          Inl (_, e'), s -> knit info tab ~pat_state e' f s
         | Inr lam, s -> knr_ret info tab ~pat_state (lam,s))
   | FFlex fl when red_set info.i_flags fDELTA ->
       (match Table.lookup info tab fl with
         | Def (v, ogfix) ->
-          let cst = match[@ocaml.warning "-4"] fl with | Names.ConstKey (cst, _) -> cst | _ -> assert false in
-          start_unfold info tab ~pat_state m cst v ogfix stk
+          begin
+            match [@ocaml.warning "-4"] fl with
+            | Names.ConstKey (cst, _) ->
+              start_unfold info tab ~pat_state m cst v ogfix stk
+            | _ ->
+              let m = { m with mark = Cstr } in
+              maybe_undo info tab ~pat_state ((m, [Undo.OnNoProgress]), []) v stk
+          end
         | Primitive op ->
           if check_native_args op stk then
             let c = match fl with ConstKey c -> c | RelKey _ | VarKey _ -> assert false in
@@ -1993,7 +2003,6 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
           | (Zundo (Undo.OnNoProgress, prog, orig, rev_params) :: stk) ->
             let args = List.rev_append new_cargs args in
             if prog then go args undo stk else
-            let () = assert (undo = None) in
             let undo = Some (Undo.OnNoProgress, prog, orig, rev_params) in
             go args undo stk
           | _ as s ->
@@ -2167,44 +2176,45 @@ and unfold : 'a. _ -> _ -> pat_state: 'a depth  -> (fconstr * Undo.t list) -> _ 
   = fun info tab ~pat_state undos body ogfix rev_params stk ->
   let stk = List.rev_append rev_params stk in
   match ogfix with
-  | None -> maybe_undo info tab ~pat_state undos body stk
+  | None -> maybe_undo info tab ~pat_state (undos, []) body stk
   | Some (GFix gfix) ->
     if Int.equal gfix.gfix_nargs 0 then
       let refold = Some gfix.gfix_refold in
-      maybe_undo info tab ~pat_state undos { mark = Cstr; term = FFix (gfix.gfix_body, (subs_id 0, gfix.gfix_univs), refold) } stk
+      maybe_undo info tab ~pat_state (undos, []) { mark = Cstr; term = FFix (gfix.gfix_body, (subs_id 0, gfix.gfix_univs), refold) } stk
     else if red_set info.i_flags fBETA then
       match get_args gfix.gfix_nargs gfix.gfix_tys (mkFix gfix.gfix_body) (subs_id 0, gfix.gfix_univs) stk with
-      | Inl e, stk ->
+      | Inl (rev_extra_args, e), stk ->
         let refold = Some gfix.gfix_refold in
-        maybe_undo info tab ~pat_state undos { mark = Cstr; term = FFix (gfix.gfix_body, e, refold) } stk
+        maybe_undo info tab ~pat_state (undos, rev_extra_args) { mark = Cstr; term = FFix (gfix.gfix_body, e, refold) } stk
       | Inr lam, stk -> knr_ret info tab ~pat_state (lam, stk)
-    else maybe_undo info tab ~pat_state undos body stk
+    else maybe_undo info tab ~pat_state (undos, []) body stk
   | Some (GCoFix gcofix) ->
     if Int.equal gcofix.gfix_nargs 0 then
       let refold = Some gcofix.gfix_refold in
-      maybe_undo info tab ~pat_state undos { mark = Cstr; term = FCoFix (gcofix.gfix_body, (subs_id 0, gcofix.gfix_univs), refold) } stk
+      maybe_undo info tab ~pat_state (undos, []) { mark = Cstr; term = FCoFix (gcofix.gfix_body, (subs_id 0, gcofix.gfix_univs), refold) } stk
     else if red_set info.i_flags fBETA then
       match get_args gcofix.gfix_nargs gcofix.gfix_tys (mkCoFix gcofix.gfix_body) (subs_id 0, gcofix.gfix_univs) stk with
-      | Inl e, stk ->
+      | Inl (rev_extra_args, e), stk ->
         let refold = Some gcofix.gfix_refold in
-        maybe_undo info tab ~pat_state undos { mark = Cstr; term = FCoFix (gcofix.gfix_body, e, refold) } stk
+        maybe_undo info tab ~pat_state (undos, rev_extra_args) { mark = Cstr; term = FCoFix (gcofix.gfix_body, e, refold) } stk
       | Inr lam, stk -> knr_ret info tab ~pat_state (lam, stk)
-    else maybe_undo info tab ~pat_state undos body stk
+    else maybe_undo info tab ~pat_state (undos, []) body stk
 
-and maybe_undo : 'a. _ -> _ -> pat_state: 'a depth -> (fconstr * Undo.t list) -> _ -> _ -> 'a
+and maybe_undo : 'a. _ -> _ -> pat_state: 'a depth -> (fconstr * Undo.t list) * stack -> _ -> _ -> 'a
   = fun info tab ~pat_state undos m stk ->
     match undos with
-    | (_, []) -> kni info tab ~pat_state m stk
-    | (orig, undos) ->
+    | ((_, []), rev_extra_args) ->
+      assert (rev_extra_args = []);
+      kni info tab ~pat_state m stk
+    | ((orig, undos), rev_extra_args) ->
       let (_, cargs, stk) = strip_update_shift_app orig stk in
-      let rev_cargs = List.rev cargs in
       let rec go undos =
         match undos with
         | undo :: undos ->
         (* TODO: do we need to know anything about the number of arguments in
           [cargs] versus the number of expected arguments according to the
           [Arguments] annotation? *)
-          push_undo (undo, false, orig, rev_cargs) (go undos)
+          push_undo (undo, false, orig, List.rev_append cargs rev_extra_args) (go undos)
         | [] -> stk
       in
       let stk = cargs @ go undos in
