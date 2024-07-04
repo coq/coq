@@ -1063,3 +1063,81 @@ while noting a few exceptional commands for which :attr:`local` and
       attribute because the transitive nature of file loading gives
       the user little control. We recommend using the :attr:`export`
       locality attribute where it is supported.
+
+The following table sums up the locality of vernacular commands in modules, when
+outside the module.
+
+.. list-table::
+  :header-rows: 1
+
+  * - ``Command``
+    - without attribute,
+      not imported
+    - without attribute,
+      imported
+    - :attr:`local`
+    - :attr:`export`
+    - :attr:`global`
+
+  * - :cmd:`Definition`, :cmd:`Lemma`, :cmd:`Axiom`, ...
+    - available with qualified name
+    - available with short name
+    - available with qualified name
+    - attribute not supported
+    - same as without attribute
+
+  * - :cmd:`Notation`
+    - not available outside
+    - available outside
+    - not available outside
+    - attribute not supported
+    - same as without attribute
+
+  * - :cmd:`Notation (abbreviation)`
+    - available with qualified name
+    - available with short name
+    - not available outside
+    - attribute not supported
+    - same as without attribute
+
+  * - ``Hints`` (and :cmd:`Instance`)
+    - not available outside
+    - available outside
+    - not available outside
+    - available outside if imported
+    - always available outside
+
+  * - :cmd:`Set` or :cmd:`Unset` a flag
+    - not available outside
+    - not available outside
+    - not available outside
+    - available outside if imported
+    - always available outside
+
+  * - :cmd:`Canonical Structure`
+    - not available outside
+    - available outside
+    - same as without attribute
+    - attribute not supported
+    - same as without attribute
+
+  * - :cmd:`Ltac`
+    - available with qualified name
+    - available with short name
+    - not available outside
+    - attribute not supported
+    - same as without attribute
+
+  * - :cmd:`Coercion`
+    - not available outside
+    - available outside
+    - not available outside
+    - attribute not supported
+    - same as without attribute
+
+  * - :cmd:`Tactic Notation`
+    - not available outside
+    - available outside
+    - not available outside
+    - attribute not supported
+    - same as without attribute
