@@ -637,10 +637,15 @@ let process_universe_constraints uctx cstrs =
           if UGraph.check_leq_sort univs l r then local
           else sort_inconsistency Le l r
         | ULevel l' ->
-          if is_uset r' && is_local l' then
-            (* Unbounded universe constrained from above, we equalize it *)
-            let () = instantiate_variable l' Universe.type0 vars in
-            add_local (l', Eq, Level.set) local
+          if is_uset r' then
+            if Level.is_set l' then
+              local
+            else if is_local l' then
+              (* Unbounded universe constrained from above, we equalize it *)
+              let () = instantiate_variable l' Universe.type0 vars in
+              add_local (l', Eq, Level.set) local
+            else
+              sort_inconsistency Le l r
           else
             sort_inconsistency Le l r
         | UMax (_, levels) ->

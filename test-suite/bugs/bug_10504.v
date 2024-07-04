@@ -9,6 +9,6 @@ Notation "[]" := (@nil Type).
 Notation "hd :: tl" := (cons hd tl).
 
 Definition xs := true :: 2137 :: false :: 0 :: [].
-Definition ys := xs :: xs.
+Fail Definition ys := 0 :: xs :: xs.
 
 (* Goal ys = ys. produced an anomaly "Unable to handle arbitrary u+k <= v constraints" *)

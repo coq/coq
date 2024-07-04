@@ -1633,7 +1633,30 @@ let rec invert_definition unify flags choose imitate_defs
       Id.Set.subset (collect_vars evd rhs) !names
   in
 
-  if fast then (evd, nf_evar evd rhs) (* FIXME? *)
+  if fast then
+    let evdref = ref evd in
+    let rec imitate_univs c =
+      match EConstr.kind !evdref c with
+      | Sort s ->
+        if ESorts.is_small !evdref s then c (* eager *)
+        else begin match pbty with
+        | None -> c
+        | Some l2r ->
+          let evd, s' = new_sort_variable univ_flexible !evdref in
+          let evd =
+            if l2r then set_leq_sort env evd s' s
+            else set_leq_sort env evd s s'
+          in
+          let () = evdref := evd in
+          mkSort s'
+        end
+      | Prod (na, c1, c2) ->
+        let c2 = imitate_univs c2 in
+        mkProd (na, nf_evar !evdref c1, c2)
+      | _ -> nf_evar !evdref c
+    in
+    let c = imitate_univs rhs in
+    !evdref, c (* FIXME? *)
   else
 
   let evdref = ref evd in
@@ -1754,7 +1777,7 @@ let rec invert_definition unify flags choose imitate_defs
       else begin match pbty with
       | None -> t
       | Some l2r ->
-        let evd, s' = new_sort_variable univ_rigid evd in
+        let evd, s' = new_sort_variable univ_flexible evd in
         let evd =
           if l2r then set_leq_sort env' evd s' s
           else set_leq_sort env' evd s s'
