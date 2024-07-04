@@ -163,6 +163,16 @@ module Undo = struct
     match u with
     | OnMatchFix -> str "OnMatchFix"
     | OnNoProgress -> str "OnNoProgress"
+
+  let remove_OnNoProgress us =
+    try
+      List.remove_first (fun u -> u = OnNoProgress) us
+    with Not_found -> us
+
+  (* let remove_OnMatchFix us = *)
+  (*   try *)
+  (*     List.remove_first (fun u -> u = OnMatchFix) us *)
+  (*   with Not_found -> us *)
 end
 
 module UnfoldDef = struct
@@ -199,8 +209,8 @@ type stack_member =
   | Zprimitive of CPrimitives.t * pconstant * fconstr list * fconstr next_native_args
        (* operator, constr def, arguments already seen (in rev order), next arguments *)
   | Zshift of int
-  | Zunfold of (Undo.t * fconstr * stack) option * UnfoldDef.t * stack (* stack argument is reversed; undo is for the focused argument; the stack there is reversed as well *)
-  | Zundo of Undo.t * bool * fconstr * stack                           (* the stack argument is reversed *)
+  | Zunfold of (Undo.t list * fconstr * stack) option * UnfoldDef.t * stack (* stack argument is reversed; undo is for the focused argument; the stack there is reversed as well *)
+  | ZundoOrRefold of Undo.t list * bool * fconstr * stack (* the stack argument is reversed *)
 
 and stack = stack_member list
 
@@ -213,25 +223,17 @@ let rec push_progress (s : stack) =
   | (Zproj (_, _, _))::_ -> s
   | (Zfix (_, _))::_ -> s
   | (Zprimitive (_, _, _, _))::_ -> s
-  | (Zunfold ((None | Some (Undo.OnMatchFix, _, _)), _, _))::_ -> s
-  | (Zunfold ((Some (Undo.OnNoProgress, _, _)), unf, rev_params))::s ->
-    (* TODO: is None always correct? *)
-    Zunfold(None, unf, rev_params) :: s
-  | Zundo (undo, _, orig, rev_params) :: s' ->
-    match undo with
-    | Undo.OnNoProgress -> push_progress s'
-    | Undo.OnMatchFix -> Zundo (undo, true, orig, rev_params) :: s'
+  | (Zunfold (Some (undos, orig, rev_params'), unf, rev_params)) :: s ->
+    let undo = Some (Undo.remove_OnNoProgress undos, orig, rev_params') in
+    Zunfold (undo, unf, rev_params) :: s
+  | (Zunfold _ :: _) -> s
+  | ZundoOrRefold (undos, _, orig, rev_params) :: s' ->
+    ZundoOrRefold (undos, true, orig, rev_params) :: s'
 
 
-let push_undo (undo, progress, orig, rev_params) (s : stack) =
-  match undo with
-  | Undo.OnMatchFix ->
-    (* [OnMatchFix] does not interact with argument forcing since it only
-       undoes the computation on non-constructor terms. *)
-    Zundo (undo, progress, orig, rev_params) :: s
-  | Undo.OnNoProgress ->
-    (* If the stack contains an argument forcing node [Zunfold] we should not
-       undo when there was no progress. *)
+let push_undo (undos, progress, orig, rev_params) (s : stack) =
+  let has_OnNoProgress = List.mem Undo.OnNoProgress undos in
+  if has_OnNoProgress then
     if progress then s else
     let rec go rev_params (s : stack) =
       match s with
@@ -239,23 +241,25 @@ let push_undo (undo, progress, orig, rev_params) (s : stack) =
       | (Zproj (_, _, _))::_
       | (Zfix (_, _))::_
       | (Zprimitive (_, _, _, _))::_
-      | (Zundo(_)::_)
-      | [] -> Zundo (undo, progress, orig, rev_params) :: s
+      | (ZundoOrRefold(_)::_)
+      | [] -> ZundoOrRefold (undos, progress, orig, rev_params) :: s
       | Zapp _ as z :: s -> z :: go (z :: rev_params) s
       | Zshift _ as z ::s -> z :: go rev_params s (* TODO: can this be correct? *)
       | Zunfold (undo', unf, rev_params') :: s' ->
         if undo' = None then
-          Zunfold(Some(undo,orig,rev_params), unf, rev_params') :: s'
+          Zunfold(Some(undos,orig,rev_params), unf, rev_params') :: s'
         else
           s (* TODO: is it correct to keep oldest undo info?? *)
     in
     go rev_params s
+  else
+    ZundoOrRefold (undos, progress, orig, rev_params) :: s
 
 let append_stack v s =
   if Int.equal (Array.length v) 0 then s else
   match s with
   | Zapp l :: s -> Zapp (Array.append v l) :: s
-  | (ZcaseT _ | Zproj _ | Zfix _ | Zshift _ | Zprimitive _ | Zunfold _ | Zundo _) :: _ | [] ->
+  | (ZcaseT _ | Zproj _ | Zfix _ | Zshift _ | Zprimitive _ | Zunfold _ | ZundoOrRefold _) :: _ | [] ->
     Zapp v :: s
 
 (* Collapse the shifts in the stack *)
@@ -263,12 +267,12 @@ let zshift n s =
   match (n,s) with
       (0,_) -> s
     | (_,Zshift(k)::s) -> Zshift(n+k)::s
-    | (_,(ZcaseT _ | Zproj _ | Zfix _ | Zapp _ | Zprimitive _ | Zunfold _ | Zundo _) :: _) | _,[] -> Zshift(n)::s
+    | (_,(ZcaseT _ | Zproj _ | Zfix _ | Zapp _ | Zprimitive _ | Zunfold _ | ZundoOrRefold _) :: _) | _,[] -> Zshift(n)::s
 
 let rec stack_args_size = function
   | Zapp v :: s -> Array.length v + stack_args_size s
   | Zshift(_)::s -> stack_args_size s
-  | (ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunfold _ | Zundo _) :: _ | [] -> 0
+  | (ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunfold _ | ZundoOrRefold _) :: _ | [] -> 0
 
 let usubs_shft (n,(e,u)) = subs_shft (n, e), u
 
@@ -709,7 +713,7 @@ let zip ?(dbg=false) m stk =
         let args = List.rev_append rargs (m::List.map snd kargs) in
         let f = {mark = Red; term = FFlex (ConstKey c)} in
         zip {mark=(neutr m.mark); term = FApp (f, Array.of_list args)} s
-      | Zundo _ :: stk -> assert dbg; zip m stk
+      | ZundoOrRefold _ :: stk -> assert dbg; zip m stk
       | Zunfold (_, unf, rev_params) :: stk ->
         assert dbg;
         let open UnfoldDef in
@@ -778,8 +782,8 @@ module Dbg = struct
     | Zfix (_, _) -> str "Zfix(_)"
     | Zprimitive (_, _, _, _) -> str "Zprim(_)"
     | Zshift _ -> str "Zshift(_)"
-    | Zunfold (undo, unf, _) -> str "Zunfold(" ++ pr_opt_default (fun () -> str "None") (fun (u, _,_) -> Undo.pp u) (undo) ++ str "," ++ UnfoldDef.pp unf ++ str ",_)"
-    | Zundo (undo, prog, orig, _) -> str "Zundo(" ++ Undo.pp undo ++ str "," ++ bool prog ++ str "," ++ pp_fconstr env orig ++ str ",_" ++ str ")"
+    | Zunfold (undo, unf, _) -> str "Zunfold(" ++ pr_opt_default (fun () -> str "None") (fun (u, _,_) -> prlist_with_sep (fun () -> str ",") Undo.pp u) (undo) ++ str "," ++ UnfoldDef.pp unf ++ str ",_)"
+    | ZundoOrRefold (undo, prog, orig, _) -> str "ZundoOrRefold(" ++ prlist_with_sep (fun () -> str ",") Undo.pp undo ++ str "," ++ bool prog ++ str "," ++ pp_fconstr env orig ++ str ",_" ++ str ")"
 
   let dbg = CDebug.create ~name:"kred" ()
 end
@@ -800,7 +804,7 @@ let strip_update_shift_app_red head stk =
         strip_rec (e::rstk) (lift_fconstr k h) (depth+k) s
     | (Zapp args :: s) ->
         strip_rec (Zapp args :: rstk) {mark=h.mark;term=FApp(h,args)} depth s
-    | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunfold _ | Zundo _) :: _ | []) as stk ->
+    | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunfold _ | ZundoOrRefold _) :: _ | []) as stk ->
       (depth,List.rev rstk, stk)
   in
   strip_rec [] head 0 stk
@@ -825,7 +829,7 @@ let get_nth_arg head n stk =
           let stk' =
             List.rev (if Int.equal n 0 then rstk else (Zapp bef :: rstk)) in
           (Some (stk', args.(n)), append_stack aft s')
-    | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunfold _ | Zundo _) :: _ | []) as s -> (None, List.rev rstk @ s) in
+    | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunfold _ | ZundoOrRefold _) :: _ | []) as s -> (None, List.rev rstk @ s) in
   strip_rec [] head n stk
 
 let rec subs_consn v i n s =
@@ -853,7 +857,7 @@ let get_args =
           else (* more lambdas *)
             let etys = List.skipn na tys in
             get_args (z :: rev_args) (n-na) etys f (usubs_consn l 0 na e) s
-      | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunfold _ | Zundo _) :: _ | []) as stk ->
+      | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunfold _ | ZundoOrRefold _) :: _ | []) as stk ->
         (Inr {mark=Cstr; term=FLambda(n,tys,f,e)}, stk)
   in
   get_args []
@@ -886,7 +890,7 @@ let get_native_args op c stk =
         | rnargs, kargs, _ ->
           strip_rec rnargs {mark = h.mark;term=FApp(h, args)} depth kargs s'
       end
-    | (Zprimitive _ | ZcaseT _ | Zproj _ | Zfix _ | Zunfold _ | Zundo _) :: _ | [] -> assert false
+    | (Zprimitive _ | ZcaseT _ | Zproj _ | Zfix _ | Zunfold _ | ZundoOrRefold _) :: _ | [] -> assert false
   in strip_rec [] {mark = Red; term = FFlex(ConstKey c)} 0 kargs stk
 
 let get_native_args1 op c stk =
@@ -908,7 +912,7 @@ let rec reloc_rargs_rec depth = function
   | Zapp args :: s ->
     Zapp (lift_fconstr_vect depth args) :: reloc_rargs_rec depth s
   | Zshift(k)::s -> if Int.equal k depth then s else reloc_rargs_rec (depth-k) s
-  | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunfold _ | Zundo _) :: _ | []) as stk -> stk
+  | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunfold _ | ZundoOrRefold _) :: _ | []) as stk -> stk
 
 let reloc_rargs depth stk =
   if Int.equal depth 0 then stk else reloc_rargs_rec depth stk
@@ -925,7 +929,7 @@ let rec try_drop_parameters depth n = function
     | [] ->
         if Int.equal n 0 then []
         else raise Not_found
-    | (ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunfold _ | Zundo _) :: _ -> assert false
+    | (ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunfold _ | ZundoOrRefold _) :: _ -> assert false
         (* strip_update_shift_app only produces Zapp and Zshift items *)
 
 let drop_parameters depth n argstk =
@@ -957,7 +961,7 @@ let get_branch infos depth ci pms ((ind, c), u) br e args =
     let rec push e stk = match stk with
     | [] -> e
     | Zapp v :: stk -> push (usubs_consv v e) stk
-    | (Zshift _ | ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunfold _ | Zundo _) :: _ ->
+    | (Zshift _ | ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunfold _ | ZundoOrRefold _) :: _ ->
       assert false
     in
     let e = push e args in
@@ -972,7 +976,7 @@ let get_branch infos depth ci pms ((ind, c), u) br e args =
     let ctx, _ = List.chop mip.mind_consnrealdecls.(i) ctx in
     let map = function
     | Zapp args -> args
-    | Zshift _ | ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunfold _ | Zundo _ ->
+    | Zshift _ | ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunfold _ | ZundoOrRefold _ ->
       assert false
     in
     let ind_subst = inductive_subst mib u (Array.map (mk_clos e) pms) in
@@ -998,7 +1002,7 @@ let rec project_nth_arg n = function
       let q = Array.length args in
         if n >= q then project_nth_arg (n - q) s
         else (* n < q *) args.(n)
-  | (ZcaseT _ | Zproj _ | Zfix _ | Zshift _ | Zprimitive _ | Zunfold _ | Zundo _) :: _ | [] -> assert false
+  | (ZcaseT _ | Zproj _ | Zfix _ | Zshift _ | Zprimitive _ | Zunfold _ | ZundoOrRefold _) :: _ | [] -> assert false
       (* After drop_parameters we have a purely applicative stack *)
 
 (* Iota reduction: expansion of a fixpoint.
@@ -1407,7 +1411,7 @@ let rec skip_irrelevant_stack info stk = match stk with
   if is_irrelevant info r then skip_irrelevant_stack info s
   else stk
 | Zprimitive _ :: _ -> assert false (* no irrelevant primitives so far *)
-| (Zunfold _ | Zundo _) :: s -> skip_irrelevant_stack info s (* irrelevant terms are not matches or fixes *)
+| (Zunfold _ | ZundoOrRefold _) :: s -> skip_irrelevant_stack info s (* irrelevant terms are not matches or fixes *)
 
 let is_irrelevant_constructor infos ((ind,_),u) =
   match Indmap_env.find_opt ind (info_env infos).Environ.irr_inds with
@@ -1739,7 +1743,7 @@ and match_elim : 'a. ('a, 'a patstate) reduction -> _ -> _ -> pat_state:(fconstr
       let states = extract_or_kill (fun _ -> None) elims states in
       ignore (zip head stk);
       match_endstack red info tab ~pat_state states next
-  | (Zunfold _ | Zundo _) :: __ -> assert false (* TODO *)
+  | (Zunfold _ | ZundoOrRefold _) :: __ -> assert false (* TODO *)
   | [] ->
       let states = extract_or_kill (function [], subst -> Some subst | _ -> None) elims states in
       match_endstack red info tab ~pat_state states next
@@ -1962,10 +1966,10 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
      let use_match = red_set info.i_flags fMATCH in
      let use_fix = red_set info.i_flags fFIX in
      if use_match || use_fix then
-       let rec go args undo stk =
-         let (depth, new_cargs, s) = strip_update_shift_app m stk in
-         let cargs () = List.rev_append args new_cargs in
-         match [@ocaml.warning "-4"] s with
+        let rec go args rev_undo stk =
+          let (depth, new_cargs, s) = strip_update_shift_app m stk in
+          let cargs () = List.rev_append args new_cargs in
+          match [@ocaml.warning "-4"] s with
           | (ZcaseT(ci,_,pms,_,br,e)::s) when use_match ->
               assert (ci.ci_npar>=0);
               (* instance on the case and instance on the constructor are compatible by typing *)
@@ -1981,43 +1985,34 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
               let rargs = drop_parameters depth (Projection.Repr.npars p) (cargs()) in
               let rarg = project_nth_arg (Projection.Repr.arg p) rargs in
               let s = push_progress s in
-              let s =
-                let rec go undos =
-                match undos with
-                | undo :: undos -> push_undo (undo, true, unf.orig, []) (go undos)
-                | [] -> s
-                in go unf.undo
-              in
+              let s = push_undo (unf.undo, true, unf.orig, []) s in
               kni info tab ~pat_state rarg s
           | (Zunfold (_, unf, rev_params) :: stk) ->
             Dbg.(dbg Pp.(fun () -> str "knr; Zunfold"));
             let m = zip m (cargs()) in
             let rev_params = Zapp [|m|] :: rev_params in
             consume_arg info tab ~pat_state unf rev_params stk
-          | (Zundo (Undo.OnMatchFix, prog, _, _) :: stk) ->
-            (* We are not looking at a match or (co)fix so we can safely drop [Zundo] *)
+          | (ZundoOrRefold (undos, prog, orig, rev_params) :: stk) ->
             let args = List.rev_append new_cargs args in
-            let stk = if prog then push_progress stk else stk in
-            let undo = Option.map(fun (u,p,o,rp) -> (u,p,o,List.rev_append new_cargs rp)) undo in
-            go args undo stk
-          | (Zundo (Undo.OnNoProgress, prog, orig, rev_params) :: stk) ->
-            let args = List.rev_append new_cargs args in
-            if prog then go args undo stk else
-            let undo = Some (Undo.OnNoProgress, prog, orig, rev_params) in
-            go args undo stk
-          | _ as s ->
-            match undo with
-            | None ->
-              if is_irrelevant_constructor info c then
-                knr_ret info tab ~pat_state (mk_irrelevant, skip_irrelevant_stack info stk)
-              else
-                knr_ret info tab ~pat_state (m,cargs()@s)
-            | Some (u, prog, orig, rev_params) ->
-              assert (u = Undo.OnNoProgress);
-              assert (prog = false);
-              knr_ret info tab ~pat_state (orig, List.rev_append rev_params s)
+            let undo = (undos,prog,orig,rev_params) in
+            let rev_undo = List.map (fun (u,p,o,rp) -> (u,p,o,List.rev_append new_cargs rp)) rev_undo in
+            go args (undo :: rev_undo) stk
+          | (_ as s) ->
+            let undos = List.rev rev_undo in
+            let rec go undos m s =
+              match undos with
+              | [] -> knr_ret info tab ~pat_state (m,cargs()@s)
+              | (undo,prog,orig,rev_params) :: undos ->
+                if (not prog && List.mem Undo.OnNoProgress undo)
+                then
+                  knr_ret info tab ~pat_state (orig, List.rev_append rev_params s)
+                else
+                  (* TODO: refold [m] according to [orig] *)
+                  go undos m (if prog then push_progress s else s)
+            in
+            go undos m s
        in
-       go [] None stk
+       go [] [] stk
      else if is_irrelevant_constructor info c then
       knr_ret info tab ~pat_state (mk_irrelevant, skip_irrelevant_stack info stk)
      else
@@ -2026,63 +2021,53 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
     if is_irrelevant info (usubst_relevance e (lna.(i)).binder_relevance) then
       knr_ret info tab ~pat_state (mk_irrelevant, skip_irrelevant_stack info stk)
     else if red_set info.i_flags fCOFIX then
-      let rec go args undo stk =
+      let rec go args rev_undo stk =
         let (_, new_cargs, stk') = strip_update_shift_app m stk in
         let cargs () = List.rev_append args new_cargs in
-        match stk' with
-        | (ZcaseT _::_) as stk' ->
+        match [@ocaml.warning "-4"] stk' with
+        | ((ZcaseT _::_) as stk') ->
             let (fxe,fxbd) = contract_fix_vect m.term in
             let stk' = push_progress stk' in
             knit info tab ~pat_state fxe fxbd (cargs()@stk')
-        | (Zproj (unf,_,_)::_) as stk' ->
+        | ((Zproj (unf,_,_)::_) as stk') ->
             let open UnfoldProj in
             let (fxe,fxbd) = contract_fix_vect m.term in
             let stk' = push_progress stk' in
-            let stk' =
-              let rec go undos =
-              match undos with
-              | undo::undos -> push_undo (undo, true, unf.orig, []) (go undos)
-              | [] -> stk'
-              in go unf.undo
-            in
+            let stk' = push_undo (unf.undo, true, unf.orig, []) stk' in
             knit info tab ~pat_state fxe fxbd (cargs()@stk')
-        | Zundo (Undo.OnNoProgress, prog, orig, rev_params) :: stk ->
+        | (ZundoOrRefold (undos, prog, orig, rev_params) :: stk) ->
           let args = List.rev_append new_cargs args in
-          if prog then go args undo stk else
-          let () = assert (undo = None) in
-          let undo = Some (Undo.OnNoProgress, prog, orig, rev_params) in
-          go args undo stk
-        | Zundo (Undo.OnMatchFix, _, orig, rev_params) :: s ->
-          Dbg.(dbg Pp.(fun () -> str "knr: FCoFix|Zundo"));
-          knr_ret info tab ~pat_state (orig, List.rev_append rev_params s)
-        | ((Zapp _ | Zfix _ | Zshift _ | Zprimitive _ | Zunfold _) :: _ | []) as s ->
-          match undo with
-          | None -> knr_ret info tab ~pat_state (m,cargs()@s)
-          | Some (u, prog, orig, rev_params) ->
-            assert (u = Undo.OnNoProgress);
-            assert (prog = false);
-            knr_ret info tab ~pat_state (orig, List.rev_append rev_params s)
-      in go [] None stk
+          let undo = (undos,prog,orig,rev_params) in
+          let rev_undo = List.map (fun (u,p,o,rp) -> (u,p,o,List.rev_append new_cargs rp)) rev_undo in
+          go args (undo :: rev_undo) stk
+        | (_ as s) ->
+          let undos = List.rev rev_undo in
+          let rec go undos m s =
+            match undos with
+            | [] -> knr_ret info tab ~pat_state (m,cargs()@s)
+            | (undo,prog,orig,rev_params) :: undos ->
+              if (not prog && List.mem Undo.OnNoProgress undo) || List.mem Undo.OnMatchFix undo
+              then
+                knr_ret info tab ~pat_state (orig, List.rev_append rev_params s)
+              else
+                (* TODO: refold [m] according to [orig] *)
+                go undos m (if prog then push_progress s else s)
+          in
+          go undos m s
+      in go [] [] stk
     else knr_ret info tab ~pat_state (m, stk)
   | FLetIn (_,v,_,bd,e) when red_set info.i_flags fZETA ->
       knit info tab ~pat_state (on_fst (subs_cons v) e) bd (push_progress stk)
   | FInt _ | FFloat _ | FString _ | FArray _ ->
-    let rec go args undo stk =
+    let rec go args rev_undo stk =
       let (_, new_cargs, s) = strip_update_shift_app m stk in
       let cargs () = List.rev_append args new_cargs in
       match [@ocaml.warning "-4"] s with
-      | (Zundo (Undo.OnNoProgress, prog, orig, rev_params) :: stk) ->
-        assert (not prog);
+      | (ZundoOrRefold (undos, prog, orig, rev_params) :: stk) ->
         let args = List.rev_append new_cargs args in
-        let () = assert (undo = None) in
-        let undo = Some (Undo.OnNoProgress, prog, orig, rev_params) in
-        go args undo stk
-      | (Zundo (Undo.OnMatchFix, prog, _, _) :: stk) ->
-        (* We are not looking at a match or (co)fix so we can safely drop [Zundo] *)
-        let args = List.rev_append new_cargs args in
-        let stk = if prog then push_progress stk else stk in
-        let undo = Option.map(fun (u,p,o,rp) -> (u,p,o,List.rev_append new_cargs rp)) undo in
-        go args undo stk
+        let undo = (undos,prog,orig,rev_params) in
+        let rev_undo = List.map (fun (u,p,o,rp) -> (u,p,o,List.rev_append new_cargs rp)) rev_undo in
+        go args (undo :: rev_undo) stk
       | (Zprimitive(op,(_,u as c),rargs,nargs)::s) ->
         let (rargs, nargs) = skip_native_args (m::rargs) nargs in
         begin match nargs with
@@ -2096,15 +2081,22 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
           assert (kd = CPrimitives.Kwhnf);
           kni info tab ~pat_state a (Zprimitive(op,c,rargs,nargs)::s)
         end
-      | _ as s ->
-        match undo with
-        | None -> knr_ret info tab ~pat_state (m,cargs()@s)
-        | Some (u, prog, orig, rev_params) ->
-          assert (u = Undo.OnNoProgress);
-          assert (prog = false);
-          knr_ret info tab ~pat_state (orig, List.rev_append rev_params s)
+      | (_ as s) ->
+        let undos = List.rev rev_undo in
+        let rec go undos m s =
+          match undos with
+          | [] -> knr_ret info tab ~pat_state (m,cargs()@s)
+          | (undo,prog,orig,rev_params) :: undos ->
+            if (not prog && List.mem Undo.OnNoProgress undo)
+            then
+              knr_ret info tab ~pat_state (orig, List.rev_append rev_params s)
+            else
+              (* TODO: refold [m] according to [orig] *)
+              go undos m (if prog then push_progress s else s)
+        in
+        go undos m s
     in
-    go [] None stk
+    go [] [] stk
   | FCaseInvert (ci, u, pms, _p,iv,_c,v,env) when red_set info.i_flags fMATCH ->
     let pms = mk_clos_vect env pms in
     let u = usubst_instance env u in
@@ -2208,16 +2200,7 @@ and maybe_undo : 'a. _ -> _ -> pat_state: 'a depth -> (fconstr * Undo.t list) * 
       kni info tab ~pat_state m stk
     | ((orig, undos), rev_extra_args) ->
       let (_, cargs, stk) = strip_update_shift_app orig stk in
-      let rec go undos =
-        match undos with
-        | undo :: undos ->
-        (* TODO: do we need to know anything about the number of arguments in
-          [cargs] versus the number of expected arguments according to the
-          [Arguments] annotation? *)
-          push_undo (undo, false, orig, List.rev_append cargs rev_extra_args) (go undos)
-        | [] -> stk
-      in
-      let stk = cargs @ go undos in
+      let stk = cargs @ push_undo (undos, false, orig, List.rev_append cargs rev_extra_args) stk in
       kni info tab ~pat_state m stk
 
 and consume_arg : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> _ -> 'a
@@ -2349,24 +2332,23 @@ let rec zip_term kl klt info tab m stk =
   let orig = zip_term kl klt info tab (norm_head kl klt info tab unf.orig) (List.rev rev_params) in
   let orig = mkApp (orig, [|m|]) in
   zip_term kl klt info tab orig s
-| Zundo (Undo.OnNoProgress, prog, orig, rev_params) :: stk ->
-  assert (not prog);            (* Zundo should have been cleared if prog=true *)
-  zip_term kl klt info tab (norm_head kl klt info tab orig) (List.rev_append rev_params stk)
-| Zundo (Undo.OnMatchFix, _, orig, rev_params) :: stk ->
-  begin
-    Dbg.(dbg Pp.(fun () -> str "zip_term|Zundo?"));
+| ZundoOrRefold (undos, prog, orig, rev_params) :: stk ->
+  if not prog && List.mem Undo.OnNoProgress undos then
+    zip_term kl klt info tab (norm_head kl klt info tab orig) (List.rev_append rev_params stk)
+  else if List.mem Undo.OnMatchFix undos then
     match [@ocaml.warning "-4"] kind m with
     (* TODO: FCaseInvert? *)
     | Proj (p,_,_) when Names.Projection.unfolded p ->
-      Dbg.(dbg Pp.(fun () -> str "finish|Zundo; yes (Proj)!"));
+      Dbg.(dbg Pp.(fun () -> str "finish|ZundoOrRefold; yes (Proj)!"));
       zip_term kl klt info tab (norm_head kl klt info tab orig) (List.rev_append rev_params stk)
     | Case _ ->
-      Dbg.(dbg Pp.(fun () -> str "finish|Zundo; yes (Fix/CoFix/Case)!"));
+      Dbg.(dbg Pp.(fun () -> str "finish|ZundoOrRefold; yes (Fix/CoFix/Case)!"));
       zip_term kl klt info tab (norm_head kl klt info tab orig) (List.rev_append rev_params stk)
     | _ ->
-      Dbg.(dbg Pp.(fun () -> str "finish|Zundo? no!"));
+      Dbg.(dbg Pp.(fun () -> str "finish|ZundoOrRefold? no!"));
       zip_term kl klt info tab m stk
-  end
+  else
+    zip_term kl klt info tab m stk
 
 (* no redex: go up for atoms and already normalized terms, go down
    otherwise. *)
