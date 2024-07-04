@@ -78,7 +78,7 @@ check_variable () {
 : "${old_coq_version:=dev}"
 : "${num_of_iterations:=1}"
 : "${timeout:=3h}"
-: "${coq_opam_packages:=coq-test-suite coq-bignums coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-coquelicot coq-iris-examples coq-fourcolor}"
+: "${coq_opam_packages:=coq-elpi.dev coq-bignums coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-coquelicot coq-iris-examples coq-fourcolor}"
 : "${coq_native:=}"
 
 : "${new_coq_commit:=$(git rev-parse HEAD^2)}"
