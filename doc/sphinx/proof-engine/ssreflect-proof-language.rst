@@ -2155,13 +2155,11 @@ with a ``by``, like in:
         trivial; hnf; intros; solve
          [ do ![solve [trivial | apply: sym_equal; trivial]
                | discriminate | contradiction | split]
-         | case not_locked_false_eq_true; assumption
          | match goal with H : ~ _ |- _ => solve [case H; trivial] end ].
 
-   The lemma :g:`not_locked_false_eq_true` is needed to discriminate
-   *locked* boolean predicates (see Section :ref:`locking_ssr`). The iterator
-   tactical ``do`` is presented in Section :ref:`iteration_ssr`. This tactic can be
-   customized by the user, for instance to include an :tacn:`auto` tactic.
+   The iterator tactical ``do`` is presented in Section
+   :ref:`iteration_ssr`. This tactic can be customized by the user,
+   for instance to include an :tacn:`auto` tactic.
 
 A natural and common way of closing a goal is to apply a lemma that
 is the exact one needed for the goal to be solved. The defective form
