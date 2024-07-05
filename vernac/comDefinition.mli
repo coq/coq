@@ -59,3 +59,19 @@ val do_definition_program
   -> constr_expr
   -> constr_expr option
   -> Declare.OblState.t
+
+val do_definition_interactive
+  :  program_mode:bool
+  -> ?hook:Declare.Hook.t
+  -> name:Id.t
+  -> scope:Locality.definition_scope
+  -> ?clearbody:bool
+  -> poly:bool
+  -> typing_flags:Declarations.typing_flags option
+  -> kind:Decls.logical_kind
+  -> ?using:Vernacexpr.section_subset_expr
+  -> ?user_warns:UserWarn.t
+  -> universe_decl_expr option
+  -> local_binder_expr list
+  -> constr_expr
+  -> Declare.Proof.t
