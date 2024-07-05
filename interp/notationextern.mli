@@ -57,7 +57,11 @@ type notation_applicative_status =
   | AppUnboundedNotation
   | NotAppNotation
 
-type notation_rule = interp_rule * interpretation * notation_applicative_status
+type notation_rule = {
+  not_rule : interp_rule;
+  not_patt : interpretation;
+  not_status : notation_applicative_status;
+}
 
 (** Return the possible notations for a given term *)
 val uninterp_notations : 'a glob_constr_g -> notation_rule list

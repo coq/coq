@@ -497,7 +497,7 @@ and apply_notation_to_pattern ?loc gr ((terms,termlists,binders),(no_implicit,nb
 
 and extern_notation_pattern allscopes vars t = function
   | [] -> raise No_match
-  | (keyrule,pat,n as _rule)::rules ->
+  | { not_rule = keyrule; not_patt = pat; not_status = n } :: rules ->
     try
       if is_printing_inactive_rule keyrule pat then raise No_match;
       let loc = t.loc in
@@ -514,7 +514,7 @@ and extern_notation_pattern allscopes vars t = function
 
 let rec extern_notation_ind_pattern allscopes vars ind args = function
   | [] -> raise No_match
-  | (keyrule,pat,n as _rule)::rules ->
+  | { not_rule = keyrule; not_patt = pat; not_status = n } :: rules ->
     try
       if is_printing_inactive_rule keyrule pat then raise No_match;
       apply_notation_to_pattern (GlobRef.IndRef ind)
@@ -813,8 +813,8 @@ let filter_enough_applied nargs l =
   match nargs with
   | None -> l
   | Some nargs ->
-  List.filter (fun (keyrule,pat,n as _rule) ->
-      match n with
+  List.filter (fun rule ->
+      match rule.not_status with
       | AppBoundedNotation n -> n >= nargs
       | AppUnboundedNotation | NotAppNotation -> false) l
 
@@ -1261,7 +1261,7 @@ and extern_notations inctx scopes vars nargs t =
 and extern_notation inctx ((custom,(lev_after: int option)),scopes as allscopes) vars t rules =
   match rules with
   | [] -> raise No_match
-  | (keyrule,pat,n as _rule)::rules ->
+  | { not_rule = keyrule; not_patt = pat; not_status = n } :: rules ->
       let loc = Glob_ops.loc_of_glob_constr t in
       try
         if is_printing_inactive_rule keyrule pat then raise No_match;

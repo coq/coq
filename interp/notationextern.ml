@@ -116,13 +116,17 @@ type notation_applicative_status =
   | AppUnboundedNotation
   | NotAppNotation
 
-type notation_rule = interp_rule * interpretation * notation_applicative_status
+type notation_rule = {
+  not_rule : interp_rule;
+  not_patt : interpretation;
+  not_status : notation_applicative_status;
+}
 
-let notation_rule_eq (rule1,pat1,s1 as x1) (rule2,pat2,s2 as x2) =
-  x1 == x2 || (rule1 = rule2 && interpretation_eq pat1 pat2 && s1 = s2)
+let notation_rule_eq x1 x2 =
+  x1 == x2 || (x1.not_rule = x2.not_rule && interpretation_eq x1.not_patt x2.not_patt && x1.not_status = x2.not_status)
 
-let strictly_finer_interpretation_than (_,interp1,_) (_,interp2,_) =
-  Notation_ops.strictly_finer_interpretation_than interp1 interp2
+let strictly_finer_interpretation_than r1 r2 =
+  Notation_ops.strictly_finer_interpretation_than r1.not_patt r2.not_patt
 
 let keymap_add key interp map =
   let old = try KeyMap.find key map with Not_found -> [] in
@@ -186,11 +190,11 @@ let uninterp_ind_pattern_notations ind =
 
 let remove_uninterpretation rule (metas,c as pat) =
   let (key,n) = notation_constr_key c in
-  notations_key_table := keymap_remove key ((rule,pat,n)) !notations_key_table
+  notations_key_table := keymap_remove key { not_rule = rule; not_patt = pat; not_status = n } !notations_key_table
 
 let declare_uninterpretation rule (metas,c as pat) =
   let (key,n) = notation_constr_key c in
-  notations_key_table := keymap_add key (rule,pat,n) !notations_key_table
+  notations_key_table := keymap_add key { not_rule = rule; not_patt = pat; not_status = n } !notations_key_table
 
 let freeze () =
   !notations_key_table
