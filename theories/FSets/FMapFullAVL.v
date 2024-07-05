@@ -209,7 +209,7 @@ Proof.
  - inv avl; simpl in *; split; auto.
    avl_nns; omega_max.
  - inversion_clear H.
-   rewrite e0 in IHp;simpl in IHp;destruct (IHp _x); auto.
+   rewrite H0 in IHp;simpl in IHp;destruct (IHp _x); auto.
    split; simpl in *.
    + apply bal_avl; auto; omega_max.
    + omega_bal.
@@ -233,7 +233,7 @@ Proof.
  - simpl; split; auto; avl_nns; omega_max.
  - simpl; split; auto; avl_nns; omega_max.
  - generalize (remove_min_avl_1 H0).
-   rewrite e1; destruct 1.
+   rewrite H1; destruct 1.
    split.
    + apply bal_avl; auto.
      omega_max.
@@ -345,7 +345,7 @@ Lemma concat_avl : forall m1 m2, avl m1 -> avl m2 -> avl (concat m1 m2).
 Proof.
  intros m1 m2; induction elt, m1, m2, (concat m1 m2) using concat_ind; clearf; auto.
  intros; apply join_avl; auto.
- generalize (remove_min_avl H0); rewrite e1; simpl; auto.
+ generalize (remove_min_avl H0); rewrite H1; simpl; auto.
 Qed.
 #[local]
 Hint Resolve concat_avl : core.
@@ -356,9 +356,9 @@ Lemma split_avl : forall m x, avl m ->
   avl (split x m)#l /\ avl (split x m)#r.
 Proof.
  intros m x; induction elt, x, m, (split x m) using split_ind; clearf; simpl; auto.
- - rewrite e1 in IHt;simpl in IHt;inversion_clear 1; intuition.
+ - rewrite H1 in IHt;simpl in IHt;inversion_clear 1; intuition.
  - simpl; inversion_clear 1; auto.
- - rewrite e1 in IHt;simpl in IHt;inversion_clear 1; intuition.
+ - rewrite H1 in IHt;simpl in IHt;inversion_clear 1; intuition.
 Qed.
 
 End Elt.
@@ -426,7 +426,7 @@ Lemma map2_opt_avl : forall m1 m2, avl m1 -> avl m2 ->
 Proof.
 intros m1 m2; induction elt, elt', elt'', f, mapl, mapr, m1, m2, (map2_opt m1 m2) using map2_opt_ind; clearf; auto;
 factornode _x0 _x1 _x2 _x3 _x4 as r2; intros;
-destruct (split_avl x1 H0); rewrite e1 in *; simpl in *; inv avl;
+destruct (split_avl x1 H0); rewrite H1 in *; simpl in *; inv avl;
 auto using join_avl, concat_avl.
 Qed.
 
