@@ -42,6 +42,7 @@ let fmt_vars1 : varmap list -> int -> DebuggerTypes.db_vars_rty = fun varmaps fr
   let open Names in
   List.map (fun b ->
       let (id, v) = b in
+      (* todo: print more detail with Taccoerce.pr_value as in TacInterp.interp_app? (need env/sigma) *)
       (Id.to_string id, Pptactic.pr_value Constrexpr.LevelSome v)
     ) (Id.Map.bindings varmap)
 
@@ -165,16 +166,16 @@ let get_chunk varmap trace =
                 stack_f = (fmt_stack1 stack);
                 vars_f = (fmt_vars1 (varmap :: varmaps)) }
 
-let save_history tac varmap trace =
+let save_history loc varmap trace =
   let trace =  match trace with
   | Some trace -> trace
   | None -> { locs=[]; stack=[]; varmaps=[]; prev_chunks=[]}
   in
   let chunk = get_chunk varmap trace in
-  DebugCommon.save_in_history chunk trace.prev_chunks CAst.(tac.loc)
+  DebugCommon.save_in_history chunk trace.prev_chunks loc
 
 (* Prints the goal and the tactic to be executed *)
-let goal_tac tac =
+let pr_goal_tac tac =
   DebugCommon.pr_goals ();
   (if Comm.isTerminal () then
     Proofview.tclLIFT (Comm.output (str "Going to execute:" ++ fnl () ++ prtac tac))
@@ -316,9 +317,10 @@ let debug_prompt lev tac f varmap trace =
   let open Proofview.NonLogical in
   let (>=) = Proofview.tclBIND in
   (* What to print and to do next *)
+  let loc = CAst.(tac.loc) in
   let newlevel =
     Proofview.tclLIFT !skip >= fun s ->
-      save_history tac varmap trace;
+      save_history loc varmap trace;
       let stop_here () =
 (*
   let locs, stack, varmaps = match trace with
@@ -327,9 +329,8 @@ let debug_prompt lev tac f varmap trace =
 *)
 (*        dump_stack "at debug_prompt" stack;*)
 (*        dump_varmaps "at debug_prompt" varmaps;*)
-        Proofview.tclTHEN (goal_tac tac) (Proofview.tclLIFT (read_loop lev))
+        Proofview.tclTHEN (pr_goal_tac tac) (Proofview.tclLIFT (read_loop lev))
       in
-      let loc = CAst.(tac.loc) in
       if DebugCommon.stop_in_debugger loc then
         stop_here ()
       else if s = 1 then begin
@@ -353,7 +354,7 @@ let debug_prompt lev tac f varmap trace =
             return (DebugOn (lev+1)))
   in
 
-  Proofview.tclTHEN (DebugCommon.save_goals CAst.(tac.loc) (fun () -> ()) ()) newlevel >=
+  Proofview.tclTHEN (DebugCommon.save_goals loc (fun () -> ()) ()) newlevel >=
   fun level ->
     (* What to execute *)
     Proofview.tclOR (* not tclORELSE? why create a backtracking point here? *)

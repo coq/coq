@@ -1071,6 +1071,12 @@ let type_uconstr ?(flags = (constr_flags ()))
     Pretyping.understand_uconstr ~flags ~expected_type env sigma c
   end
 
+(* avoid extra stop in "tac1; tac2" and for ltac2:()/ltac2val:() *)
+let can_stop = function
+| TacThen _ -> false
+| TacArg (TacGeneric (Some n,_)) when List.mem n ["ltac2"; "ltac2val"] -> false
+| _ -> true
+
 (* Interprets an l-tac expression into a value *)
 let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftactic.t =
   (* The name [appl] of applied top-level Ltac names is ignored in
@@ -1093,15 +1099,10 @@ let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftacti
     (* Delayed evaluation *)
     Ftactic.return (of_tacvalue (VFun (UnnamedAppl, extract_trace ist, extract_loc ist, ist.lfun, [], tac)))
   in
-  (* avoid extra stop in "tac1; tac2" *)
-  let can_stop = match tac2 with
-  | TacThen _ -> false
-  | _ -> true
-  in
-  let open Ftactic in
   Control.check_for_interrupt ();
+  let open Ftactic in
   match curr_debug ist with
-  | DebugOn lev when can_stop ->
+  | DebugOn lev when can_stop tac2 ->
     let eval v =
       let ist = { ist with extra = TacStore.set ist.extra f_debug v } in
       value_interp ist >>= fun v -> return (name_vfun appl v)
@@ -1110,9 +1111,9 @@ let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftacti
   | _ -> value_interp ist >>= fun v -> return (name_vfun appl v)
 
 
-and eval_tactic_ist ist tac : unit Proofview.tactic =
+and eval_tactic_ist ?(db=false) ist tac : unit Proofview.tactic =
   let (loc, tac2) = CAst.(tac.loc, tac.v) in
-  match tac2 with
+  let eval = match tac2 with
   | TacAtom t ->
       let call = LtacAtomCall t in
       let trace = push_trace(loc,call) ist in
@@ -1236,6 +1237,14 @@ and eval_tactic_ist ist tac : unit Proofview.tactic =
         Proofview.Trace.name_tactic name (catch_error_tac_loc loc trace (tac args ist))
       in
       Ftactic.run args tac
+  in
+  Control.check_for_interrupt ();
+  match curr_debug ist with
+  | DebugOn lev when db && (can_stop tac2) ->
+    let eval v = eval
+    in
+    Tactic_debug.debug_prompt lev tac eval ist.lfun (TacStore.get ist.extra f_trace)
+  | _ -> eval
 
 and force_vrec ist v : Val.t Ftactic.t =
   if has_type v (topwit wit_tacvalue) then
@@ -1965,14 +1974,14 @@ let eval_tactic t =
     (* todo: when debug is on, this is executed for every top level tactic.  Not efficient *)
     Proofview.tclUNIT () >>= fun () -> (* delay for [default_ist] *)
     Proofview.tclLIFT (db_initialize true) <*>
-    eval_tactic_ist (default_ist ()) t
+    eval_tactic_ist ~db:true (default_ist ()) t
   else
     Proofview.tclUNIT () >>= fun () -> (* delay for [default_ist] *)
     eval_tactic_ist (default_ist ()) t
 
 let eval_tactic_ist ist t =
   Proofview.tclLIFT (db_initialize false) <*>   (* todo: does a little debug code *)
-  eval_tactic_ist ist t
+  eval_tactic_ist ~db:true ist t
 
 (** FFI *)
 

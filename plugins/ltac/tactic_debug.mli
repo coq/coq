@@ -60,3 +60,7 @@ val fmt_stack1 : ltac_stack -> unit -> string list
 val fmt_vars1 : varmap list -> int -> DebuggerTypes.db_vars_rty
 
 val get_chunk : Geninterp.Val.t Id.Map.t -> Tacexpr.ltac_trace -> DebugCommon.chunk
+
+val save_history : Loc.t option -> varmap -> Tacexpr.ltac_trace option -> unit
+
+val tac_loc : 'a gen_tactic_expr -> string * Loc.t option

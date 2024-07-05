@@ -281,8 +281,7 @@ let breakpoint_stop loc =
 
 let save_in_history top_chunk prev_chunks cur_loc =
   if !debug && cur_loc <> None then begin
-    append_history { prev_chunks; top_chunk; cur_loc;
-        goals=(!cur_goals) }
+    append_history { prev_chunks; top_chunk; cur_loc; goals=(!cur_goals) }
   end
 
 

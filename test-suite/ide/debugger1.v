@@ -34,3 +34,23 @@ Ltac xx := (* 6 *) my_split; (* 7 *) idtac.
 intro; xx; (* 8 *)idtac.
 Abort.
 End Diffs.
+
+Module LetWithTactic.
+(* Several problems when the rhs of a let
+   is a tactic:
+   - extra stop at call of z
+   - stops in defn of m for the let
+   - doesn't stop in m when executing w
+     (adding a parm to m and using the call "m ()"
+      does stop in m)
+*)
+
+Ltac m := idtac "m".
+
+Goal True.
+Ltac z := let w := m in
+  w.
+
+z.
+Abort.
+End LetWithTactic.

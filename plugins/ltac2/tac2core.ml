@@ -1814,13 +1814,6 @@ let () =
     let ty = List.fold_left fold (gtypref t_unit) ids in
     GlbVal (ids, tac), ty
   in
-  let is_debugger_atomic tac =
-    let open Ltac_plugin in
-    let open Tacexpr in
-    match tac with
-      | TacAtom _ | TacId _  | TacFail _ -> true (* TacML? TacAlias? *)
-      | _ -> false
-  in
   let interp ist2 (ids, tac) =
     let clos args =
       let add lfun id v =
@@ -1832,23 +1825,8 @@ let () =
       let lfun = Tac2interp.set_env ist lfun in
       let ist = call_from_ltac2_to_1 ist2 in
       let ist = { ist with Geninterp.lfun = lfun } in
-      let CAst.{v; loc} = tac in
-      let tac2 =
-       Proofview.tclTHEN
-        (DebugCommon.save_goals loc (
-          fun () ->
-            if is_debugger_atomic v then begin
-              DebugCommon.save_in_history (Tac2debug.get_chunk ist2) ist2.prev_chunks loc;
-              if DebugCommon.stop_in_debugger loc then begin
-                DebugCommon.pr_goals ();
-                Tac2debug.read_loop ()
-              end;
-            end;
-          ) ())
-          (Ltac_plugin.Tacinterp.eval_tactic_ist ist tac : unit Proofview.tactic)
-      in
-      tac2 >>= fun () ->
-      return v_unit
+      (Ltac_plugin.Tacinterp.eval_tactic_ist ist tac : unit Proofview.tactic) >>=
+      fun () -> return v_unit
     in
     let len = List.length ids in
     if Int.equal len 0 then

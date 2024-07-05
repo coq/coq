@@ -4,6 +4,16 @@ From Ltac2 Require Import Message.
 Set Ltac Debug.
 Set Ltac Debug History 100.
 
+(* future test cases
+   Shows reasonable data for multi file case
+   open_constr?
+   History mechanism
+        Step back works like step fwd
+        Goals match the state
+        ?Apply history limits, cleared after exit
+          ?Can set limit
+*)
+
 Ltac2 m s := Message.print (Message.of_string s).
 (*
 The "(* bp *)" marks selected stopping points (by breakpoint or single step) - verify!
@@ -195,19 +205,6 @@ Ltac2 z () := Ltac1.run (ltac1val:(x |- y)
 z ().
 Abort.
 End Ltac1val.
-
-
-(*
-        Shows reasonable data for multi file case
-        open_constr?
-History mechanism
-        Step back works like step fwd
-        Goals match the state
-        ?Apply history limits, cleared after exit
-          ?Can set limit
-
-        ltac2_demo_*.v
-*)
 
 
 (* user can select which subgoal to display:
