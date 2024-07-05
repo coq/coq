@@ -38,25 +38,23 @@ Close Scope nat_scope.
 Check 2.
 Close Scope uint63_scope.
 
-Require Import Uint63.
-
-Check (2 + 2)%uint63.
+Check add 2 2.
 Open Scope uint63_scope.
-Check (2+2).
-Eval vm_compute in 2+2.
-Eval vm_compute in 65675757 * 565675998.
+Check (add 2 2).
+Eval vm_compute in add 2 2.
+Eval vm_compute in mul 65675757 565675998.
 
-Eval simpl in 2+2.
-Eval hnf in 2+2.
-Eval cbn in 2+2.
+Eval simpl in add 2 2.
+Eval hnf in add 2 2.
+Eval cbn in add 2 2.
 Eval hnf in PrimInt63.add.
 
-Eval simpl in (2 * 3) + (2 * 3).
-Eval hnf in (2 * 3) + (2 * 3).
-Eval cbn in (2 * 3) + (2 * 3).
+Eval simpl in add (mul 2 3) (mul 2 3).
+Eval hnf in add (mul 2 3) (mul 2 3).
+Eval cbn in add (mul 2 3) (mul 2 3).
 
 Section TestNoSimpl.
 Variable x : int.
-Eval simpl in 1 + 2 + x.
-Eval hnf in 1 + 2 + x.
+Eval simpl in add (add 1 2) x.
+Eval hnf in add (add 1 2) x.
 End TestNoSimpl.
