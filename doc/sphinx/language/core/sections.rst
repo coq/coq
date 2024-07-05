@@ -136,8 +136,13 @@ usable outside the section as shown in this :ref:`example <section_local_declara
 Summary of locality attributes in a section
 -------------------------------------------
 
-The following table sums up the locality of vernacular commands in sections, when
-outside the section it was entered.
+This table sums up the effect of locality attributes on the scope of vernacular
+commands in a section, when outside the section where they were entered. A cross
+(❌) marks an unsupported attribute, which will provoke a compilation error. In
+this table, "not available", means that the command has no effect outside the
+section it was entered, while "available" means that the effects of the command
+persists outside the section.
+
 A similar table for :cmd:`Module` can be found
 :ref:`here <visibility-attributes-modules>`.
 
@@ -145,76 +150,76 @@ A similar table for :cmd:`Module` can be found
   :header-rows: 1
 
   * - ``Command``
-    - without attribute
+    - no attribute
     - :attr:`local`
     - :attr:`export`
     - :attr:`global`
 
   * - :cmd:`Definition`, :cmd:`Lemma`, :cmd:`Axiom`, ...
-    - same as :attr:`local`
+    - :attr:`local`
     - available
-    - attribute not supported
-    - attribute not supported
+    - ❌
+    - ❌
 
   * - :cmd:`Notation`
-    - same as :`local`
+    - :attr:`local`
     - not available
-    - attribute not supported
-    - attribute not supported
+    - ❌
+    - ❌
 
   * - :cmd:`Notation (abbreviation)`
-    - same as :attr:`local`
+    - :attr:`local`
     - not available
-    - attribute not supported
-    - attribute not supported
+    - ❌
+    - ❌
 
   * - ``Hints`` (and :cmd:`Instance`)
-    - same as :attr:`local`
+    - :attr:`local`
     - not available
-    - attribute not supported
-    - attribute not supported
+    - ❌
+    - ❌
 
   * - :cmd:`Set` or :cmd:`Unset` a flag
-    - same as :attr:`local`
-    - no effect
-    - in effect
-    - in effect
+    - :attr:`local`
+    - not available
+    - available
+    - available
 
   * - :cmd:`Canonical Structure`
-    - same as :attr:`global`
+    - :attr:`global`
     - not available
-    - attribute not supported
+    - ❌
     - available
 
   * - :cmd:`Coercion`
-    - same as :attr:`global`
+    - :attr:`global`
     - not available
-    - attribute not supported
+    - ❌
     - available
 
   * - :cmd:`Ltac`
-    - same as :attr:`local`
-    - not available outside
-    - attribute not supported
-    - attribute not supported
+    - :attr:`local`
+    - not available
+    - ❌
+    - ❌
 
   * - :cmd:`Ltac2`
-    - same as :attr:`local`
-    - not available outside
-    - attribute not supported
-    - attribute not supported
+    - :attr:`local`
+    - not available
+    - ❌
+    - ❌
 
   * - :cmd:`Tactic Notation`
-    - same as :attr:`local`
+    - :attr:`local`
     - not available
-    - attribute not supported
-    - attribute not supported
+    - ❌
+    - ❌
 
   * - :cmd:`Ltac2 Notation`
-    - same as :attr:`local`
+    - :attr:`local`
     - not available
-    - attribute not supported
-    - attribute not supported
+    - ❌
+    - ❌
 
 .. _Admissible-rules-for-global-environments:
 
