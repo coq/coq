@@ -497,7 +497,57 @@ end = struct
     | Symbol _ -> assert false
     (*  Should already be dealt with *)
 
-  let expand_global_fixpoint _info cst c =
+  let replace_name_by_id env cst name =
+    if not (Names.Name.is_name name) then Result.Error () else
+    let id =
+      match name with
+      | Names.Name.Name n -> n
+      | Names.Name.Anonymous -> assert false
+    in
+    (* we take the constant from the one entry that is definitely known *)
+    let cst = Constant.change_label cst (Names.Label.of_id id) in
+    if Environ.mem_constant cst env then Result.Ok cst else
+    Result.error ()
+
+  let rec maybe_expand_mutual_fixpoints
+      (info : clos_infos)
+      (tab : t)
+      (cst, univ)
+      (inst : UVars.Instance.t)
+      ((rdcl,_),(names,types,bodies) : fixpoint)
+      nargs args j =
+    let name = names.(j).Context.binder_name in
+    Result.bind (replace_name_by_id (info_env info) cst name) @@ fun cst ->
+    let info = { info with i_flags = (RedFlags.red_add_transparent info.i_flags TransparentState.full) } in
+    match [@ocaml.warning "-4"] lookup info tab (ConstKey (cst, univ)) with
+    | Def (v, _) ->
+      begin
+        match [@ocaml.warning "-4"] v.term with
+        | FCLOS(c, env) ->
+          if not (Esubst.is_subs_id (fst env)) then Result.Error () else
+          let ctx, body = Term.decompose_lambda c in
+          if List.length ctx <> nargs then Result.Error () else
+          begin
+            match Constr.destFix body with
+            | ((rdcl', j'), (names', types', bodies')) ->
+               if
+                j' = j &&
+                rdcl' = rdcl &&
+                names' = names &&
+                (Array.equal Constr.equal types' types) &&
+                (Array.equal Constr.equal bodies' bodies)
+               then
+                 Result.Ok (mkApp (mkConstU (cst, inst), args))
+               else
+                 Result.Error ()
+            | exception Constr.DestKO -> Result.Error ()
+          end
+        | _ -> Result.Error ()
+      end
+    | _ -> Result.Error ()
+
+
+  and expand_global_fixpoint info tab cst c =
     let ctx, body = Term.decompose_lambda c in
     match [@ocaml.warning "-4"] kind body with
     | Fix (((rd,i),_) as fix) ->
@@ -508,7 +558,7 @@ end = struct
           if i = j then
             lazy (Result.Ok (mkApp (mkConstU (fst cst, inst), args)))
           else
-            Lazy.from_val (Result.Error ())
+            lazy (maybe_expand_mutual_fixpoints info tab cst inst fix nargs args j)
         )
       in
       Some (GFix {
@@ -538,7 +588,7 @@ end = struct
       })
     | _ -> None
 
-  let value_of info ref =
+  and value_of info tab ref =
     try
       let env = info.i_cache.i_env in
       match ref with
@@ -571,7 +621,7 @@ end = struct
         if TransparentState.is_transparent_constant ts cst then match cb.const_body with
         | Undef _ | Def _ | OpaqueDef _ | Primitive _ ->
           let body = constant_value_in u cb.const_body in
-          let gfix = expand_global_fixpoint info (cst, u) body in
+          let gfix = expand_global_fixpoint info tab (cst, u) body in
           Def (injectu body u, gfix)
         | Symbol b ->
           let r = Cmap_env.get cst env.symb_pats in
@@ -585,9 +635,9 @@ end = struct
     | Not_found (* List.assoc *)
     | NotEvaluableConst _ (* Const *) -> Undef None
 
-  let lookup info tab ref =
+  and lookup info tab ref =
     try Table.find tab ref with Not_found ->
-    let v = value_of info ref in
+    let v = value_of info tab ref in
     Table.add tab ref v; v
 end
 
@@ -1124,7 +1174,7 @@ let contract_fix_vect fix =
       | FFix (((reci,i),(_,_,bds as rdcl)),env, (Some refold as rf)) ->
           (bds.(i),
            (fun j ->
-              let lazy r = refold.(i) in
+              let lazy r = refold.(j) in
               match r with
               | Result.Ok t ->
                 { mark = Cstr; term = FCLOS (t, env) }
@@ -1141,7 +1191,7 @@ let contract_fix_vect fix =
       | FCoFix ((i,(_,_,bds as rdcl)),env, (Some refold as rf)) ->
           (bds.(i),
            (fun j ->
-              let lazy r = refold.(i) in
+              let lazy r = refold.(j) in
               match r with
               | Result.Ok t ->
                 { mark = Cstr; term = FCLOS (t, env) }
