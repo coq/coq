@@ -1071,7 +1071,7 @@ while noting a few exceptional commands for which :attr:`local` and
 .. _visibility-attributes-modules:
 
 The following table sums up the locality of vernacular commands in modules, when
-outside the module.
+outside the module where they were entered.
 A similar table for :cmd:`Section` can be found
 :ref:`here<visibility-attributes-sections>`.
 
@@ -1079,75 +1079,75 @@ A similar table for :cmd:`Section` can be found
   :header-rows: 1
 
   * - ``Command``
-    - without attribute,
-
-      not imported
-    - without attribute,
-
-      imported
+    - without attribute
     - :attr:`local`
     - :attr:`export`
     - :attr:`global`
 
   * - :cmd:`Definition`, :cmd:`Lemma`, :cmd:`Axiom`, ...
-    - available with qualified name
-    - available with short name
+    - same as :attr:`global`
     - available with qualified name
     - attribute not supported
-    - same as without attribute
+    - available with short name if imported, with qualified name if not
 
   * - :cmd:`Notation`
-    - not available outside
-    - available outside
-    - not available outside
+    - same as :attr:`global`
+    - not available
     - attribute not supported
-    - same as without attribute
+    - available when imported
 
   * - :cmd:`Notation (abbreviation)`
-    - available with qualified name
-    - available with short name
-    - not available outside
+    - same as :attr:`global`
+    - not available
     - attribute not supported
-    - same as without attribute
+    - available with short name if imported, with qualified name if not
 
   * - ``Hints`` (and :cmd:`Instance`)
-    - not available outside
-    - available outside
-    - not available outside
-    - available outside if imported
+    - same as :attr:`export`
+    - not available
+    - available when imported
     - always available outside
 
   * - :cmd:`Set` or :cmd:`Unset` a flag
-    - not available outside
-    - not available outside
-    - not available outside
-    - available outside if imported
-    - always available outside
+    - same as :attr:`local`
+    - no effect
+    - in effect when imported
+    - in effect outside
 
   * - :cmd:`Canonical Structure`
-    - not available outside
-    - available outside
-    - same as without attribute
-    - attribute not supported
-    - same as without attribute
+    - same as :attr:`local`
 
-  * - :cmd:`Ltac`
-    - available with qualified name
-    - available with short name
-    - not available outside
+      or :attr:`global`
+    - available when imported
     - attribute not supported
-    - same as without attribute
+    - available when imported
 
   * - :cmd:`Coercion`
-    - not available outside
-    - available outside
-    - not available outside
+    - same as :attr:`global`
+    - not available
     - attribute not supported
-    - same as without attribute
+    - available when imported
+
+  * - :cmd:`Ltac`
+    - same as :attr:`global`
+    - not available
+    - attribute not supported
+    - available with short name if imported, with qualified name if not
+
+  * - :cmd:`Ltac2`
+    - same as :attr:`global`
+    - not available
+    - attribute not supported
+    - available with short name if imported, with qualified name if not
 
   * - :cmd:`Tactic Notation`
-    - not available outside
-    - available outside
-    - not available outside
+    - same as :attr:`global`
+    - not available
     - attribute not supported
-    - same as without attribute
+    - available when imported
+
+  * - :cmd:`Ltac2 Notation`
+    - same as :attr:`global`
+    - not available
+    - attribute not supported
+    - available when imported
