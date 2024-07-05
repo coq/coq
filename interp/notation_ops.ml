@@ -1118,7 +1118,7 @@ let unify_term renaming v v' =
   match DAst.get v, DAst.get v' with
   | GHole _, _ -> v'
   | _, GHole _ -> v
-  | _, _ -> if glob_constr_eq (alpha_rename renaming v) v' then v else raise No_match
+  | _, _ -> let v = alpha_rename renaming v in if glob_constr_eq v v' then v else raise No_match
 
 let unify_opt_term alp v v' =
   match v, v' with
