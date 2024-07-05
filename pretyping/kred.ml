@@ -186,8 +186,8 @@ type ('a,'r) gfix_info_aux = {
 }
 
 type gfix_info =
-  | GFix of (fixpoint, gfix) gfix_info_aux
-  | GCoFix of (cofixpoint, gcofix) gfix_info_aux
+  | GFixInfo of (fixpoint, gfix) gfix_info_aux
+  | GCoFixInfo of (cofixpoint, gcofix) gfix_info_aux
 
 type fconstr = {
   mutable mark : red_state;
@@ -509,38 +509,58 @@ end = struct
     if Environ.mem_constant cst env then Result.Ok cst else
     Result.error ()
 
+  type fix_or_cofix =
+  | FOCFix of fixpoint
+  | FOCCoFix of cofixpoint
+
+  let foc_names = function
+  | FOCFix ((_, _), (names,_,_)) -> names
+  | FOCCoFix (_, (names, _,_ )) -> names
+
   let rec maybe_expand_mutual_fixpoints
       (info : clos_infos)
       (tab : t)
       (cst, univ)
       (inst : UVars.Instance.t)
-      ((rdcl,_),(names,types,bodies) : fixpoint)
+      (foc : fix_or_cofix)
       nargs args j =
-    let name = names.(j).Context.binder_name in
+    let name = (foc_names foc).(j).Context.binder_name in
     Result.bind (replace_name_by_id (info_env info) cst name) @@ fun cst ->
     let info = { info with i_flags = (RedFlags.red_add_transparent info.i_flags TransparentState.full) } in
     match [@ocaml.warning "-4"] lookup info tab (ConstKey (cst, univ)) with
-    | Def (v, _) ->
+    | Def (m, _) ->
       begin
-        match [@ocaml.warning "-4"] v.term with
-        | FCLOS(c, env) ->
+        match [@ocaml.warning "-4"] m.term with
+        | FCLOS (c, env) ->
           if not (Esubst.is_subs_id (fst env)) then Result.Error () else
           let ctx, body = Term.decompose_lambda c in
           if List.length ctx <> nargs then Result.Error () else
-          begin
-            match Constr.destFix body with
-            | ((rdcl', j'), (names', types', bodies')) ->
-               if
-                j' = j &&
-                rdcl' = rdcl &&
-                names' = names &&
-                (Array.equal Constr.equal types' types) &&
-                (Array.equal Constr.equal bodies' bodies)
-               then
-                 Result.Ok (mkApp (mkConstU (cst, inst), args))
-               else
-                 Result.Error ()
-            | exception Constr.DestKO -> Result.Error ()
+            begin
+            match foc, Constr.kind body with
+            | FOCFix ((rdcl,_),(names,types,bodies)),
+              Fix ((rdcl', j'), (names',types',bodies')) ->
+                if
+                  j' = j &&
+                  rdcl' = rdcl &&
+                  names' = names &&
+                  (Array.equal Constr.equal types' types) &&
+                  (Array.equal Constr.equal bodies' bodies)
+                then
+                  Result.Ok (mkApp (mkConstU (cst, inst), args))
+                else
+                  Result.Error ()
+            | FOCCoFix (_, (names,types,bodies)),
+              CoFix (j', (names',types',bodies')) ->
+                if
+                  j' = j &&
+                  names' = names &&
+                  (Array.equal Constr.equal types' types) &&
+                  (Array.equal Constr.equal bodies' bodies)
+                then
+                  Result.Ok (mkApp (mkConstU (cst, inst), args))
+                else
+                  Result.Error ()
+            | _, _ -> Result.Error ()
           end
         | _ -> Result.Error ()
       end
@@ -558,28 +578,28 @@ end = struct
           if i = j then
             lazy (Result.Ok (mkApp (mkConstU (fst cst, inst), args)))
           else
-            lazy (maybe_expand_mutual_fixpoints info tab cst inst fix nargs args j)
+            lazy (maybe_expand_mutual_fixpoints info tab cst inst (FOCFix fix) nargs args j)
         )
       in
-      Some (GFix {
+      Some (GFixInfo {
         gfix_nargs = nargs;
         gfix_tys = List.rev ctx;
         gfix_univs = snd cst;
         gfix_body = fix;
         gfix_refold = refold;
       })
-    | CoFix ((i, (rd, _, _)) as cofix) ->
+    | CoFix ((i, (names, _, _)) as cofix) ->
       let nargs = List.length ctx in
       let args = Array.init nargs (fun i -> mkRel (nargs - i)) in
       let inst = UVars.Instance.abstract_instance @@ UVars.Instance.length @@ snd cst in
-      let refold = Array.init (Array.length rd) (fun j ->
+      let refold = Array.init (Array.length names) (fun j ->
           if i = j then
             lazy (Result.Ok (mkApp (mkConstU (fst cst, inst), args)))
           else
-            Lazy.from_val (Result.Error ())
+            lazy (maybe_expand_mutual_fixpoints info tab cst inst (FOCCoFix cofix) nargs args j)
         )
       in
-      Some (GCoFix {
+      Some (GCoFixInfo {
         gfix_nargs = nargs;
         gfix_tys = List.rev ctx;
         gfix_univs = snd cst;
@@ -2365,7 +2385,7 @@ and unfold : 'a. _ -> _ -> pat_state: 'a depth  -> (fconstr * Undo.t list) -> _ 
   let stk = List.rev_append rev_params stk in
   match ogfix with
   | None -> maybe_undo info tab ~pat_state (undos, []) body stk
-  | Some (GFix gfix) ->
+  | Some (GFixInfo gfix) ->
     if Int.equal gfix.gfix_nargs 0 then
       let refold = Some gfix.gfix_refold in
       maybe_undo info tab ~pat_state (undos, []) { mark = Cstr; term = FFix (gfix.gfix_body, (subs_id 0, gfix.gfix_univs), refold) } stk
@@ -2376,7 +2396,7 @@ and unfold : 'a. _ -> _ -> pat_state: 'a depth  -> (fconstr * Undo.t list) -> _ 
         maybe_undo info tab ~pat_state (undos, rev_extra_args) { mark = Cstr; term = FFix (gfix.gfix_body, e, refold) } stk
       | Inr lam, stk -> knr_ret info tab ~pat_state (lam, stk)
     else maybe_undo info tab ~pat_state (undos, []) body stk
-  | Some (GCoFix gcofix) ->
+  | Some (GCoFixInfo gcofix) ->
     if Int.equal gcofix.gfix_nargs 0 then
       let refold = Some gcofix.gfix_refold in
       maybe_undo info tab ~pat_state (undos, []) { mark = Cstr; term = FCoFix (gcofix.gfix_body, (subs_id 0, gcofix.gfix_univs), refold) } stk
