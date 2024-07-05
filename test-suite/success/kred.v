@@ -13,50 +13,52 @@ Ltac assert_norm_eq :=
 Ltac assert_head_eq :=
   idtac; assert_eq ltac:(fun l => let l := eval kred head in l in l).
 
-Goal 1 + 1 = S (0 + 1).
-Proof.
-  assert_head_eq.
-Qed.
+Module Test1.
+  Goal 1 + 1 = S (0 + 1).
+  Proof.
+    assert_head_eq.
+  Qed.
 
-Arguments Nat.add _ !_.
+  #[local] Arguments Nat.add _ !_.
 
-Goal 1 + (1 + 1) = S (0 + S (0 + 1)).
-Proof.
-  assert_head_eq.
-Qed.
+  Goal 1 + (1 + 1) = S (0 + S (0 + 1)).
+  Proof.
+    assert_head_eq.
+  Qed.
 
-Axiom x : nat.
+  Axiom x : nat.
 
-Goal x + 1 = x + 1.
-Proof.
-  assert_head_eq.
-Qed.
+  Goal x + 1 = x + 1.
+  Proof.
+    assert_head_eq.
+  Qed.
 
-Goal x + 1 = x + 1.
-Proof.
-  assert_head_eq.
-Qed.
-Goal 1 + x = 1 + x.
-Proof.
-  assert_head_eq.
-Qed.
-Goal 1 + (x + 1) = 1 + (x + 1).
-Proof.
-  assert_head_eq.
-Qed.
+  Goal x + 1 = x + 1.
+  Proof.
+    assert_head_eq.
+  Qed.
+  Goal 1 + x = 1 + x.
+  Proof.
+    assert_head_eq.
+  Qed.
+  Goal 1 + (x + 1) = 1 + (x + 1).
+  Proof.
+    assert_head_eq.
+  Qed.
 
-Arguments Nat.add !_ _.
-Goal 1 + (x + 1) = S (0 + (x + 1)).
-Proof.
-  assert_head_eq.
-Qed.
+  #[local] Arguments Nat.add !_ _.
+  Goal 1 + (x + 1) = S (0 + (x + 1)).
+  Proof.
+    assert_head_eq.
+  Qed.
 
-Arguments Nat.add _ _ /.
+  #[local] Arguments Nat.add _ _ /.
 
-Goal 1 + (x + 1) = S (x + 1).
-Proof.
-  assert_norm_eq.
-Qed.
+  Goal 1 + (x + 1) = S (x + 1).
+  Proof.
+    assert_norm_eq.
+  Qed.
+End Test1.
 
 
 (* motivating example *)
@@ -344,3 +346,78 @@ Module NonPrim.
   (* Time Eval simpl   in @add 200  10 (build_fn 10). (* 0.15s  *) *)
   (* Time Eval simpl   in @add 2000 10 (build_fn 10). (* 2.75s  *) *)
 End NonPrim.
+
+
+(* Copied from success/cbn.v on July 5th 2024 *)
+
+Fixpoint foo (n : nat) :=
+  match n with
+  | 0 => true
+  | S n => g n
+  end
+with g (n : nat) : bool :=
+  match n with
+  | 0 => true
+  | S n => foo n
+  end.
+Goal forall n, foo (S n) = g n.
+  intros. kred.
+  match goal with
+    |- g _ = g _ => reflexivity
+  end.
+Qed.
+
+(* simpl nomatch *)
+
+Definition thing n := match n with  0 => True | S n => False end.
+
+Arguments thing _ / : simpl nomatch.
+
+Goal forall x, thing x.
+  intros. kred.
+  match goal with |- thing _ => idtac end.
+Abort.
+
+Definition thing' n := n + n.
+
+Arguments thing' !_ / : simpl nomatch.
+Lemma bar n : thing' n = 0.
+Proof.
+  kred.
+  match goal with |- thing' _ = _ => idtac end.
+  Arguments thing' _ / : simpl nomatch.
+  kred.
+  match goal with |- _ + _ = _ => idtac end.
+Abort.
+
+Module MutualFixCoFixInSection.
+
+Section S.
+Variable p:nat.
+Fixpoint f n := match n with 0 => p | S n => f n + g n end
+with g n := match n with 0 => p | S n => f n + g n end.
+End S.
+
+Goal forall n, f n (S n) = g 0 (S n).
+intros. kred.
+match goal with [ |- f n n + g n n = f 0 n + g 0 n ] => idtac end.
+Abort.
+
+CoInductive stream {A:Type} : Type :=
+  | scons: A->stream->stream.
+Definition stream_unfold {A} (s: @ stream A) := match s with
+| scons a s' => (a, scons a s')
+end.
+
+Section C.
+Variable (x:nat).
+CoFixpoint mut_stream1 (n:nat) := scons n (mut_stream2 (n+x))
+with mut_stream2 (n:nat) :=  scons n (mut_stream1  (n+x)).
+End C.
+
+Goal (forall x n, stream_unfold (mut_stream1 x n) = stream_unfold (mut_stream2 x n)).
+intros. kred.
+match goal with [ |- (n, scons n (mut_stream2 x (n + x))) = (n, scons n (mut_stream1 x (n + x))) ] => idtac end.
+Abort.
+
+End MutualFixCoFixInSection.
