@@ -638,10 +638,10 @@ $(addsuffix .log,$(wildcard ideal-features/*.v)): %.v.log: %.v $(PREREQUISITELOG
 	$(HIDE)$(call REPORT_TIMER,$@)
 
 # Additional dependencies for module tests
-COMMON_MODULE_DEPENDENCIES := modules/plik.v modules/Nat.v
-# We exclude Nat.v.log and plik.v.log because these log files do not
-# depend on having the corresponding .vo files built first, and we end
-# up with pseudo-cyclic build rules if we don't exclude them (See
+COMMON_MODULE_DEPENDENCIES := modules/plik.v
+# We exclude plik.v.log because this log file does not
+# depend on having the corresponding .vo file built first, and we end
+# up with pseudo-cyclic build rules if we don't exclude it (See
 # COQBUG(https://github.com/coq/coq/issues/12582)).
 $(addsuffix .log,$(filter-out $(COMMON_MODULE_DEPENDENCIES),$(wildcard modules/*.v))): %.v.log: $(COMMON_MODULE_DEPENDENCIES:.v=.v.log)
 
