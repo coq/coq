@@ -59,3 +59,5 @@ module Tbl : sig
 end
 
 val hcons : t -> Constr.t
+
+val subst_univs : UVars.sort_level_subst -> t -> t

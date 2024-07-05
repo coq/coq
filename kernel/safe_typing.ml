@@ -872,11 +872,11 @@ let export_side_effects senv eff =
         let univs = Univ.ContextSet.union uctx univs in
         let env, cb =
           let ce = constant_entry_of_side_effect eff in
-          let _hbody, cb = match ce with
+          let cb = match ce with
             | DefinitionEff ce ->
-              Constant_typing.infer_definition ~sec_univs env ce
+              snd @@ Constant_typing.infer_definition ~sec_univs env ce
             | OpaqueEff ce ->
-              None, infer_direct_opaque ~sec_univs env ce
+              infer_direct_opaque ~sec_univs env ce
           in
           let cb = compile_bytecode env cb in
           let eff = { eff with seff_body = cb } in
@@ -918,7 +918,7 @@ let export_private_constants eff senv =
 
 let add_constant l decl senv =
   let kn = Constant.make2 senv.modpath l in
-  let senv, (hbody, cb) =
+  let senv, hbody, cb =
     let sec_univs = Option.map Section.all_poly_univs senv.sections in
       match decl with
       | Entries.OpaqueEntry ce ->
@@ -929,20 +929,21 @@ let add_constant l decl senv =
         let nonce = Nonce.create () in
         let future_cst = HandleMap.add i (ctx, senv, nonce) senv.future_cst in
         let senv = { senv with future_cst } in
-        senv, (None, { cb with const_body = OpaqueDef o })
+        senv, None, { cb with const_body = OpaqueDef o }
       | Entries.DefinitionEntry entry ->
-        senv, Constant_typing.infer_definition ~sec_univs senv.env entry
+        let hbody, cb = Constant_typing.infer_definition ~sec_univs senv.env entry in
+        senv, Some hbody, cb
       | Entries.ParameterEntry entry ->
-        senv, (None, Constant_typing.infer_parameter ~sec_univs senv.env entry)
+        senv, None, Constant_typing.infer_parameter ~sec_univs senv.env entry
       | Entries.PrimitiveEntry entry ->
         let senv = match entry with
         | { Entries.prim_entry_content = CPrimitives.OT_type t; _ } ->
           if sections_are_opened senv then CErrors.anomaly (Pp.str "Primitive type not allowed in sections");
           add_retroknowledge (Retroknowledge.Register_type(t,kn)) senv
         | _ -> senv in
-        senv, (None, Constant_typing.infer_primitive senv.env entry)
+        senv, None, Constant_typing.infer_primitive senv.env entry
       | Entries.SymbolEntry entry ->
-        senv, (None, Constant_typing.infer_symbol senv.env entry)
+        senv, None, Constant_typing.infer_symbol senv.env entry
   in
   let cb = compile_bytecode senv.env cb in
   let senv = add_constant_aux senv ?hbody (kn, cb) in
@@ -1026,7 +1027,8 @@ let add_private_constant l uctx decl senv : (Constant.t * private_constants) * s
         None, infer_direct_opaque ~sec_univs senv.env ce
       | DefinitionEff ce ->
         let () = assert (check_constraints uctx ce.Entries.definition_entry_universes) in
-        Constant_typing.infer_definition ~sec_univs senv.env ce
+        let hbody, cb = Constant_typing.infer_definition ~sec_univs senv.env ce in
+        Some hbody, cb
     in
   let cb = compile_bytecode senv.env cb in
   let dcb = match cb.const_body with

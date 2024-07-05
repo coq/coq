@@ -229,8 +229,8 @@ let infer_definition ~sec_univs env entry =
       let _ = Typeops.judge_of_cast env j DEFAULTcast tj in
       Vars.subst_univs_level_constr usubst tj.utj_val
   in
-  let body = Vars.subst_univs_level_constr usubst j.uj_val in
-  let hbody = if body == j.uj_val then Some hbody else None in
+  let hbody = HConstr.subst_univs usubst hbody in
+  let body = HConstr.self hbody in
   let def = Def body in
   let hyps = used_section_variables env entry.definition_entry_secctx (Some body) typ in
   hbody, {

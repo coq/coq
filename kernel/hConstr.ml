@@ -419,3 +419,144 @@ let hcons x =
       end
     end) in
   HCons.hcons x
+
+(** mapping (may get combined with vars.ml code)  *)
+
+let map_annot_relevance f na =
+  let open Context in
+  let r = na.binder_relevance in
+  let r' = f r in
+  if r' == r then na else { na with binder_relevance = r' }
+
+let map_case_under_context frel frec (nas,x as v) =
+  let nas' = CArray.Smart.map (map_annot_relevance frel) nas in
+  let x' = frec x in
+  if nas' == nas && x' == x then v else (nas',x')
+
+let map_rec_declaration frel frec (i,(nas,x,y) as v) =
+  let nas' = CArray.Smart.map (map_annot_relevance frel) nas in
+  let x' = Array.Smart.map frec x in
+  let y' = Array.Smart.map frec y in
+  if nas' == nas && x' == x && y' == y then v else (i,(nas',x',y'))
+
+let map_kind frel fu fs frec k =
+  match k with
+  | Rel _ | Var _ | Meta _ | Int _ | Float _ | String _ -> k
+  | Evar _ -> assert false
+
+  | Sort s ->
+    let s' = fs s in
+    if s == s' then k else Sort s'
+
+  | Cast (c1,kc,c2) ->
+    let c1' = frec c1 in
+    let c2' = frec c2 in
+    if c1 == c1' && c2 == c2' then k else Cast (c1',kc,c2')
+
+  | App (h,args) ->
+    let h' = frec h in
+    let args' = Array.Smart.map frec args in
+    if h == h' && args == args' then k else App (h',args')
+
+  | Const (c,u) ->
+    let u' = fu u in
+    if u == u' then k else Const (c,u')
+
+  | Ind (c,u) ->
+    let u' = fu u in
+    if u == u' then k else Ind (c,u')
+
+  | Construct (c,u) ->
+    let u' = fu u in
+    if u == u' then k else Construct (c,u')
+
+  | Array (u,elems,def,ty) ->
+    let u' = fu u in
+    let elems' = Array.Smart.map frec elems in
+    let def' = frec def in
+    let ty' = frec ty in
+    if u == u' && elems == elems' && def == def' && ty == ty' then k
+    else Array (u',elems',def',ty')
+
+  | Prod (na,x,y) ->
+    let na' = map_annot_relevance frel na in
+    let x' = frec x in
+    let y' = frec y in
+    if na' == na && x == x' && y == y' then k else Prod (na',x',y')
+
+  | Lambda (na,x,y) ->
+    let na' = map_annot_relevance frel na in
+    let x' = frec x in
+    let y' = frec y in
+    if na' == na && x == x' && y == y' then k else Lambda (na',x',y')
+
+  | LetIn (na,x,y,z) ->
+    let na' = map_annot_relevance frel na in
+    let x' = frec x in
+    let y' = frec y in
+    let z' = frec z in
+    if na' == na && x == x' && y == y' && z == z' then k else LetIn (na',x',y',z')
+
+  | Case (ci,u,params,(ret,r),iv,v,brs) ->
+    let u' = fu u in
+    let params' = Array.Smart.map frec params in
+    let ret' = map_case_under_context frel frec ret in
+    let r' = frel r in
+    let iv' = map_invert frec iv in
+    let v' = frec v in
+    let brs' = CArray.Smart.map (map_case_under_context frel frec) brs in
+    if u' == u && params' == params && ret' == ret && r' == r
+       && iv' == iv && v' == v && brs' == brs
+    then k
+    else Case (ci,u',params',(ret',r'),iv',v',brs')
+
+  | Fix data ->
+    let data' = map_rec_declaration frel frec data in
+    if data' == data then k else Fix data'
+
+  | CoFix data ->
+    let data' = map_rec_declaration frel frec data in
+    if data' == data then k else CoFix data'
+
+  | Proj (p, r, v) ->
+    let r' = frel r in
+    let v' = frec v in
+    if r' == r && v' == v then k else Proj (p, r', v')
+
+let rec subst_univs tbl subst c =
+  if refcount c = 1 then subst_univs_aux tbl subst c
+  else match Tbl.find_opt tbl c with
+    | Some v -> v
+    | None ->
+      let v = subst_univs_aux tbl subst c in
+      Tbl.add tbl c v;
+      v
+
+and subst_univs_aux tbl subst c =
+  let k = kind c in
+  let k' = map_kind
+      (UVars.subst_sort_level_relevance subst)
+      (UVars.subst_sort_level_instance subst)
+      (UVars.subst_sort_level_sort subst)
+      (subst_univs tbl subst)
+      k
+  in
+  if k == k' then c
+  else begin
+    (* can't be a Rel as they don't have universes *)
+    let () = match k' with
+      | Rel _ -> assert false
+      | _ -> ()
+    in
+    {
+      self = kind_to_constr k';
+      kind = k';
+      isRel = 0;
+      hash = hash_kind k';
+      refcount = c.refcount;
+    }
+  end
+
+let subst_univs subst c =
+  if UVars.is_empty_sort_subst subst then c
+  else subst_univs (Tbl.create 47) subst c
