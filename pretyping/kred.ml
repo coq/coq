@@ -2411,8 +2411,7 @@ and unfold : 'a. _ -> _ -> pat_state: 'a depth  -> (fconstr * Undo.t list) -> _ 
 and maybe_undo : 'a. _ -> _ -> pat_state: 'a depth -> (fconstr * Undo.t list) * stack -> _ -> _ -> 'a
   = fun info tab ~pat_state undos m stk ->
     match undos with
-    | ((_, []), rev_extra_args) ->
-      assert (rev_extra_args = []);
+    | ((_, []), _rev_extra_args) ->
       kni info tab ~pat_state m stk
     | ((orig, undos), rev_extra_args) ->
       let (_, cargs, stk) = strip_update_shift_app orig stk in
