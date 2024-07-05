@@ -8,5 +8,8 @@ ci_dir="$(dirname "$0")"
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 ( cd "${CI_BUILD_DIR}/elpi"
-  make test-core examples test-apps
+  export DUNE_build_FLAGS="--root ."
+  make test-core
+  make examples
+  make test-apps
 )
