@@ -2515,18 +2515,8 @@ let rec zip_term kl klt info tab m stk =
     let t = mkProj (Projection.make p true, r, m) in
     zip_term kl klt info tab t s
 | Zfix(fx,par)::s ->
-    begin
-      match [@ocaml.warning "-4"] fx.term with
-      | FFix (((_,i),_), env, Some gfix) when Result.is_ok (Lazy.force (gfix.(i))) ->
-        let m = inject m in
-        let gfix = Result.get_ok (Lazy.force (gfix.(i))) in
-        let fx = { mark = Cstr; term = FCLOS (gfix, env) } in
-        let s = par @ Zapp [|m|] :: s in
-        zip_term kl klt info tab (norm_head kl klt info tab fx) s
-      | _ ->
-        let h = mkApp(zip_term kl klt info tab (kl info tab fx) par,[|m|]) in
-        zip_term kl klt info tab h s
-    end
+  let h = mkApp(zip_term kl klt info tab (kl info tab fx) par,[|m|]) in
+  zip_term kl klt info tab h s
 | Zshift(n)::s ->
     zip_term kl klt info tab (lift n m) s
 | Zprimitive(_,c,rargs, kargs)::s ->
