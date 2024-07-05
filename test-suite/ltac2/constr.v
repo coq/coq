@@ -11,7 +11,7 @@ Ltac2 Eval match (kind '(forall x : something, bool)) with
            | Prod a c => a
            | _ => throw Match_failure end.
 
-From Stdlib Require Import Uint63 PArray.
+From Stdlib Require Import PrimInt63 PrimArray.
 Open Scope array_scope.
 Ltac2 Eval match (kind '([|true|true|])) with
   | Array _ _ _ ty => ty
