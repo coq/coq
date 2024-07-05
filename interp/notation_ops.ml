@@ -1134,24 +1134,24 @@ let unify_binder_upto alp b b' =
   let loc, loc' = CAst.(b.loc, b'.loc) in
   match DAst.get b, DAst.get b' with
   | GLocalAssum (na,r,bk,t), GLocalAssum (na',r',bk',t') ->
-     let alp, na = unify_name_upto alp na na' in
-     alp, DAst.make ?loc @@
+     let alp', na = unify_name_upto alp na na' in
+     alp', DAst.make ?loc @@
      GLocalAssum
        (na,
         unify_relevance_info r r',
         unify_binding_kind bk bk',
         unify_term alp.renaming t t')
   | GLocalDef (na,r,c,t), GLocalDef (na',r',c',t') ->
-     let alp, na = unify_name_upto alp na na' in
-     alp, DAst.make ?loc @@
+     let alp', na = unify_name_upto alp na na' in
+     alp', DAst.make ?loc @@
      GLocalDef
        (na,
         unify_relevance_info r r',
         unify_term alp.renaming c c',
         unify_opt_term alp.renaming t t')
   | GLocalPattern ((disjpat,ids),id,bk,t), GLocalPattern ((disjpat',_),_,bk',t') when List.length disjpat = List.length disjpat' ->
-     let alp, p = List.fold_left2_map unify_pat_upto alp disjpat disjpat' in
-     alp, DAst.make ?loc @@ GLocalPattern ((p,ids), id, unify_binding_kind bk bk', unify_term alp.renaming t t')
+     let alp', p = List.fold_left2_map unify_pat_upto alp disjpat disjpat' in
+     alp', DAst.make ?loc @@ GLocalPattern ((p,ids), id, unify_binding_kind bk bk', unify_term alp.renaming t t')
   | _ -> raise No_match
 
 let rec unify_terms alp vl vl' =
