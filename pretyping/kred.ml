@@ -37,15 +37,115 @@ open RedFlags
 
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
+[@@@ocaml.warning "-60"]
+module EqWithHoles = struct
+  [@@@ocaml.warning "-32"]
+  let eq_under_context eq ~under (nas1, p1) (nas2, p2) =
+    Int.equal (Array.length nas1) (Array.length nas2) &&
+    eq ~under:(under + Array.length nas1) p1 p2
+  let eq_invert eq iv1 iv2 =
+    match iv1, iv2 with
+    | NoInvert, NoInvert -> true
+    | NoInvert, CaseInvert _ | CaseInvert _, NoInvert -> false
+    | CaseInvert {indices}, CaseInvert iv2 ->
+      Array.equal eq indices iv2.indices
+  (* Copied and generalized *)
+  let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq_evars eq leq ~nargs ~under t1 t2 =
+    match kind_nocast_gen kind1 t1, kind_nocast_gen kind2 t2 with
+    | Cast _, _ | _, Cast _ -> assert false (* kind_nocast *)
+    | Rel n1, Rel n2 -> Int.equal n1 n2
+    | Meta m1, Meta m2 -> Int.equal m1 m2
+    | Var id1, Var id2 -> Id.equal id1 id2
+    | Int i1, Int i2 -> Uint63.equal i1 i2
+    | Float f1, Float f2 -> Float64.equal f1 f2
+    | String s1, String s2 -> Pstring.equal s1 s2
+    | Sort s1, Sort s2 -> leq_sorts s1 s2
+    | Prod (_,t1,c1), Prod (_,t2,c2) -> eq ~nargs:0 ~under t1 t2 && leq ~nargs:0 ~under:(under+1) c1 c2
+    | Lambda (_,t1,c1), Lambda (_,t2,c2) -> eq ~nargs:0 ~under t1 t2 && eq ~nargs:0 ~under:(under+1) c1 c2
+    | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) -> eq ~nargs:0 ~under b1 b2 && eq ~nargs:0 ~under t1 t2 && leq ~nargs ~under:(under+1) c1 c2
+    | App (c1, l1), App (c2, l2) ->
+      let len = Array.length l1 in
+      Int.equal len (Array.length l2) &&
+      leq ~nargs:(nargs+len) ~under c1 c2 && Array.equal_norefl (eq ~nargs:0 ~under) l1 l2
+    | Proj (p1,_,c1), Proj (p2,_,c2) ->
+      Projection.CanOrd.equal p1 p2 && eq ~nargs:0 ~under c1 c2
+    | Evar (e1,l1), Evar (e2,l2) -> eq_evars ~nargs ~under (e1, l1) (e2, l2)
+    | Const (c1,u1), Const (c2,u2) ->
+      (* The args length currently isn't used but may as well pass it. *)
+      Constant.CanOrd.equal c1 c2 && leq_universes (Some (GlobRef.ConstRef c1, nargs)) u1 u2
+    | Ind (c1,u1), Ind (c2,u2) -> Ind.CanOrd.equal c1 c2 && leq_universes (Some (GlobRef.IndRef c1, nargs)) u1 u2
+    | Construct (c1,u1), Construct (c2,u2) ->
+      Construct.CanOrd.equal c1 c2 && leq_universes (Some (GlobRef.ConstructRef c1, nargs)) u1 u2
+    | Case (ci1,u1,pms1,(p1,_r1),iv1,c1,bl1), Case (ci2,u2,pms2,(p2,_r2),iv2,c2,bl2) ->
+      (* Ignore _r1/_r2: implied by comparing p1/p2 *)
+      (* FIXME: what are we doing with u1 = u2 ? *)
+      Ind.CanOrd.equal ci1.ci_ind ci2.ci_ind && leq_universes (Some (GlobRef.IndRef ci1.ci_ind, 0)) u1 u2 &&
+      Array.equal (eq ~nargs:0 ~under) pms1 pms2 && eq_under_context (eq ~nargs:0) ~under p1 p2 &&
+      eq_invert (eq ~nargs:0 ~under) iv1 iv2 &&
+      eq ~nargs:0 ~under c1 c2 && Array.equal (eq_under_context (eq ~nargs:0) ~under) bl1 bl2
+    | Fix ((ln1, i1),(_,tl1,bl1)), Fix ((ln2, i2),(_,tl2,bl2)) ->
+      Int.equal i1 i2 && Array.equal Int.equal ln1 ln2
+      && Array.equal_norefl (eq ~nargs:0 ~under) tl1 tl2 && Array.equal_norefl (eq ~nargs:0 ~under) bl1 bl2
+    | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
+      Int.equal ln1 ln2 && Array.equal_norefl (eq ~nargs:0 ~under) tl1 tl2 && Array.equal_norefl (eq ~nargs:0 ~under) bl1 bl2
+    | Array(u1,t1,def1,ty1), Array(u2,t2,def2,ty2) ->
+      leq_universes None u1 u2 &&
+      Array.equal_norefl (eq ~nargs:0 ~under) t1 t2 &&
+      eq ~nargs:0 ~under def1 def2 && eq ~nargs:0 ~under ty1 ty2
+    | (Rel _ | Meta _ | Var _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _
+      | Proj _ | Evar _ | Const _ | Ind _ | Construct _ | Case _ | Fix _
+      | CoFix _ | Int _ | Float _ | String _ | Array _), _ -> false
 
-type mode = Conversion | Reduction
-(* In conversion mode we can introduce FIrrelevant terms.
-   Invariants of the conversion mode:
-   - the only irrelevant terms as returned by [knr] are either [FIrrelevant],
-     [FLambda], [FFlex] or [FRel].
-   - the stack never contains irrelevant-producing nodes i.e. [Zproj], [ZFix]
-     and [ZcaseT] are all relevant
-*)
+  let matches_with_holes env (evs : CClosure.evar_handler) num_holes (term : Constr.t) (pattern : Constr.t) : Constr.t option array option =
+    let map : Constr.t option array = Array.make num_holes None in
+    let eq_existential eq ~nargs ~under (evk1, args1) (evk2, args2) =
+      ignore nargs; ignore under;
+      if Evar.equal evk1 evk2 then
+        let open CClosure in
+        let args1 = evs.evar_expand (evk1, args1) in
+        let args2 = evs.evar_expand (evk2, args2) in
+        match [@ocaml.warning "-4"] args1, args2 with
+        | EvarDefined t1, EvarDefined t2 -> eq ~nargs ~under t1 t2
+        | EvarUndefined (ev1, args1), EvarUndefined (ev2, args2) ->
+          Evar.equal ev1 ev2 &&
+          List.equal (eq ~nargs ~under) args1 args2
+        | _, _ -> false
+      else false
+    in
+    let eq_inst _ i1 i2 = UVars.Instance.equal i1 i2 in
+    let eq_sorts s1 s2 = Sorts.equal s1 s2 in
+    let rec eq ~nargs ~under l r =
+      let f = compare_head_gen_leq_with Constr.kind Constr.kind eq_inst eq_sorts (eq_existential eq) eq eq ~nargs ~under in
+      (l == r) ||
+      match [@ocaml.warning "-4"] Constr.kind l, Constr.kind r with
+      | _, Constr.Meta i when i < 0 ->
+        begin
+          if not (Vars.closedn under l) then false else
+          let j = i * -1 + 1 in
+          match map.(j) with
+          | None ->
+            if Vars.closedn under l then
+              let r = Vars.lift (under * -1) l in
+              Array.set map j (Some r);
+              true
+            else
+              false
+          | Some r ->
+            f l (Vars.lift under r)
+        end
+      | _, _ -> f l r
+    in
+    let info = CClosure.create_clos_infos ~evars:evs RedFlags.beta env in
+    let tab = CClosure.create_tab () in
+    let args = Array.init num_holes (fun i -> CClosure.inject (Constr.mkMeta (i * -1 -1))) in
+    let stack = CClosure.append_stack args CClosure.empty_stack in
+    let (h,s) = CClosure.whd_stack info tab (CClosure.inject pattern) stack in
+    let pattern = CClosure.term_of_process h s in
+    if eq ~nargs:0 ~under:0 term pattern then
+      Some map
+    else
+      None
+end
 
 (**********************************************************************)
 (* Lazy reduction: the one used in kernel operations                  *)
@@ -130,7 +230,6 @@ type infos_cache = {
   i_sigma : CClosure.evar_handler;
   i_share : bool;
   i_univs : UGraph.t;
-  i_mode : mode;
 }
 
 type clos_infos = {
@@ -359,12 +458,7 @@ let inject c = injectu c UVars.Instance.empty
 
 let mk_irrelevant = { mark = Cstr; term = FIrrelevant }
 
-let is_irrelevant info r = match info.i_cache.i_mode with
-| Reduction -> false
-| Conversion -> match r with
-  | Sorts.Irrelevant -> true
-  | Sorts.RelevanceVar q -> info.i_cache.i_sigma.qvar_irrelevant q
-  | Sorts.Relevant -> false
+let is_irrelevant _info _r = false
 
 (************************************************************************)
 
@@ -403,9 +497,7 @@ end = struct
     | Symbol _ -> assert false
     (*  Should already be dealt with *)
 
-  let expand_global_fixpoint info cst c = match info.i_cache.i_mode with
-  | Conversion -> None
-  | Reduction ->
+  let expand_global_fixpoint _info cst c =
     let ctx, body = Term.decompose_lambda c in
     match [@ocaml.warning "-4"] kind body with
     | Fix fix ->
@@ -1419,6 +1511,23 @@ let is_irrelevant_constructor infos ((ind,_),u) =
   | Some r ->
     is_irrelevant infos @@ UVars.subst_instance_relevance u r
 
+
+module Refold = struct
+  let maybe_refold :
+    clos_infos ->
+    fconstr * stack_member list * stack_member list ->
+    fconstr * stack_member list -> fconstr * stack_member list
+    = fun _ (m, args_acc, args) _ -> (m, args_acc @ args)
+    (* = fun info (m, args_acc, args) (orig, rev_params) -> *)
+    (* let num_holes = stack_args_size rev_params in *)
+    (* let term = term_of_fconstr (zip (zip m args_acc) args) in *)
+    (* let pattern = term_of_fconstr orig in *)
+    (* match [@ocaml.warning "-4"] EqWithHoles.matches_with_holes info.i_cache.i_env info.i_cache.i_sigma num_holes term pattern with *)
+    (* | Some oargs when Array.for_all Option.has_some oargs -> *)
+    (*   (orig, [Zapp (Array.map (fun t -> inject (Option.get t)) oargs)]) *)
+    (* | _ -> (m, args_acc @ args) *)
+end
+
 (*********************************************************************)
 (* A machine that inspects the head of a term until it finds an
    atom or a subterm that may produce a redex (abstraction,
@@ -1929,6 +2038,7 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
   Dbg.(dbg Pp.(fun () -> str "knr; m head: " ++ Pp.fnl () ++ pp_fconstr info.i_cache.i_env m));
   Dbg.(dbg Pp.(fun () -> str "knr; m stk : " ++ Pp.fnl () ++ pp_stack info.i_cache.i_env stk));
   Dbg.(dbg Pp.(fun () -> str "knr; m full: " ++ Pp.fnl () ++ pp_fconstr info.i_cache.i_env (zip ~dbg:true m stk)));
+  Dbg.(dbg Pp.(fun () -> str "knr; m constr: " ++ Pp.fnl () ++ Constr.debug_print (term_of_fconstr (zip ~dbg:true m stk))));
   Dbg.(dbg Pp.(fun () -> str "=============================================="));
   match m.term with
   | FLambda(n,tys,f,e) when red_set info.i_flags fBETA ->
@@ -1966,9 +2076,11 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
      let use_match = red_set info.i_flags fMATCH in
      let use_fix = red_set info.i_flags fFIX in
      if use_match || use_fix then
-        let rec go args rev_undo stk =
+        let rec go rev_undo stk =
           let (depth, new_cargs, s) = strip_update_shift_app m stk in
-          let cargs () = List.rev_append args new_cargs in
+          let cargs () =
+            List.rev_append (List.concat_map (fun (args,_) -> args) rev_undo) new_cargs
+          in
           match [@ocaml.warning "-4"] s with
           | (ZcaseT(ci,_,pms,_,br,e)::s) when use_match ->
               assert (ci.ci_npar>=0);
@@ -1993,26 +2105,29 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
             let rev_params = Zapp [|m|] :: rev_params in
             consume_arg info tab ~pat_state unf rev_params stk
           | (ZundoOrRefold (undos, prog, orig, rev_params) :: stk) ->
-            let args = List.rev_append new_cargs args in
             let undo = (undos,prog,orig,rev_params) in
-            let rev_undo = List.map (fun (u,p,o,rp) -> (u,p,o,List.rev_append new_cargs rp)) rev_undo in
-            go args (undo :: rev_undo) stk
+            go ((new_cargs, undo) :: rev_undo) stk
           | (_ as s) ->
             let undos = List.rev rev_undo in
-            let rec go undos m s =
+            let rec go undos prog_acc args_acc m s =
               match undos with
-              | [] -> knr_ret info tab ~pat_state (m,cargs()@s)
-              | (undo,prog,orig,rev_params) :: undos ->
-                if (not prog && List.mem Undo.OnNoProgress undo)
+              | [] ->
+                let s = if prog_acc then push_progress s else s in
+                knr_ret info tab ~pat_state (m,args_acc @ new_cargs @ s)
+              | (args, (undo,prog,orig,rev_params)) :: undos ->
+                let prog_acc = prog_acc || prog in
+                if (not prog_acc && List.mem Undo.OnNoProgress undo)
                 then
+                  let s = (List.map_append (fun (args,(u,p,o,rp)) -> args@[ZundoOrRefold (u,p,o,rp)]) undos) @ s in
+                  let s = if prog_acc then push_progress s else s in
                   knr_ret info tab ~pat_state (orig, List.rev_append rev_params s)
                 else
-                  (* TODO: refold [m] according to [orig] *)
-                  go undos m (if prog then push_progress s else s)
+                  let (m, args_acc) = Refold.maybe_refold info (m, args_acc, args) (orig, rev_params) in
+                  go undos prog_acc args_acc m s
             in
-            go undos m s
+            go undos false [] m s
        in
-       go [] [] stk
+       go [] stk
      else if is_irrelevant_constructor info c then
       knr_ret info tab ~pat_state (mk_irrelevant, skip_irrelevant_stack info stk)
      else
@@ -2021,9 +2136,11 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
     if is_irrelevant info (usubst_relevance e (lna.(i)).binder_relevance) then
       knr_ret info tab ~pat_state (mk_irrelevant, skip_irrelevant_stack info stk)
     else if red_set info.i_flags fCOFIX then
-      let rec go args rev_undo stk =
+      let rec go rev_undo stk =
         let (_, new_cargs, stk') = strip_update_shift_app m stk in
-        let cargs () = List.rev_append args new_cargs in
+        let cargs () =
+          List.rev_append (List.concat_map (fun (args,_) -> args) rev_undo) new_cargs
+        in
         match [@ocaml.warning "-4"] stk' with
         | ((ZcaseT _::_) as stk') ->
             let (fxe,fxbd) = contract_fix_vect m.term in
@@ -2036,39 +2153,42 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
             let stk' = push_undo (unf.undo, true, unf.orig, []) stk' in
             knit info tab ~pat_state fxe fxbd (cargs()@stk')
         | (ZundoOrRefold (undos, prog, orig, rev_params) :: stk) ->
-          let args = List.rev_append new_cargs args in
-          let undo = (undos,prog,orig,rev_params) in
-          let rev_undo = List.map (fun (u,p,o,rp) -> (u,p,o,List.rev_append new_cargs rp)) rev_undo in
-          go args (undo :: rev_undo) stk
+            let undo = (undos,prog,orig,rev_params) in
+            go ((new_cargs, undo) :: rev_undo) stk
         | (_ as s) ->
           let undos = List.rev rev_undo in
-          let rec go undos m s =
+          let rec go undos prog_acc args_acc m s =
             match undos with
-            | [] -> knr_ret info tab ~pat_state (m,cargs()@s)
-            | (undo,prog,orig,rev_params) :: undos ->
-              if (not prog && List.mem Undo.OnNoProgress undo) || List.mem Undo.OnMatchFix undo
+            | [] ->
+              knr_ret info tab ~pat_state (m,args_acc @ new_cargs @ s)
+            | (args,(undo,prog,orig,rev_params)) :: undos ->
+              let prog_acc = prog_acc || prog in
+              if (not prog_acc && List.mem Undo.OnNoProgress undo) || List.mem Undo.OnMatchFix undo
               then
+                let s = (List.map_append (fun (args,(u,p,o,rp)) -> args@[ZundoOrRefold (u,p,o,rp)]) undos) @ s in
+                let s = if prog_acc then push_progress s else s in
                 knr_ret info tab ~pat_state (orig, List.rev_append rev_params s)
               else
-                (* TODO: refold [m] according to [orig] *)
-                go undos m (if prog then push_progress s else s)
+                let (m, args_acc) = Refold.maybe_refold info (m, args_acc, args) (orig, rev_params) in
+                go undos prog_acc args_acc m s
           in
-          go undos m s
-      in go [] [] stk
+          go undos false [] m s
+      in go [] stk
     else knr_ret info tab ~pat_state (m, stk)
   | FLetIn (_,v,_,bd,e) when red_set info.i_flags fZETA ->
       knit info tab ~pat_state (on_fst (subs_cons v) e) bd (push_progress stk)
   | FInt _ | FFloat _ | FString _ | FArray _ ->
-    let rec go args rev_undo stk =
+    let rec go rev_undo stk =
       let (_, new_cargs, s) = strip_update_shift_app m stk in
-      let cargs () = List.rev_append args new_cargs in
+      let cargs () =
+        List.rev_append (List.concat_map (fun (args,_) -> args) rev_undo) new_cargs
+      in
       match [@ocaml.warning "-4"] s with
       | (ZundoOrRefold (undos, prog, orig, rev_params) :: stk) ->
-        let args = List.rev_append new_cargs args in
         let undo = (undos,prog,orig,rev_params) in
-        let rev_undo = List.map (fun (u,p,o,rp) -> (u,p,o,List.rev_append new_cargs rp)) rev_undo in
-        go args (undo :: rev_undo) stk
+        go ((new_cargs,undo) :: rev_undo) stk
       | (Zprimitive(op,(_,u as c),rargs,nargs)::s) ->
+        let s = cargs()@s in
         let (rargs, nargs) = skip_native_args (m::rargs) nargs in
         begin match nargs with
         | [] ->
@@ -2083,20 +2203,24 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
         end
       | (_ as s) ->
         let undos = List.rev rev_undo in
-        let rec go undos m s =
+        let rec go undos prog_acc args_acc m s =
           match undos with
-          | [] -> knr_ret info tab ~pat_state (m,cargs()@s)
-          | (undo,prog,orig,rev_params) :: undos ->
-            if (not prog && List.mem Undo.OnNoProgress undo)
+          | [] ->
+            knr_ret info tab ~pat_state (m,args_acc @ new_cargs @ s)
+          | (args,(undo,prog,orig,rev_params)) :: undos ->
+            let prog_acc = prog_acc || prog in
+            if (not prog_acc && List.mem Undo.OnNoProgress undo)
             then
+              let s = (List.map_append (fun (args,(u,p,o,rp)) -> args@[ZundoOrRefold (u,p,o,rp)]) undos) @ s in
+              let s = if prog_acc then push_progress s else s in
               knr_ret info tab ~pat_state (orig, List.rev_append rev_params s)
             else
-              (* TODO: refold [m] according to [orig] *)
-              go undos m (if prog then push_progress s else s)
+              let (m, args_acc) = Refold.maybe_refold info (m, args_acc, args) (orig, rev_params) in
+              go undos prog_acc args_acc m s
         in
-        go undos m s
+        go undos false [] m s
     in
-    go [] [] stk
+    go [] stk
   | FCaseInvert (ci, u, pms, _p,iv,_c,v,env) when red_set info.i_flags fMATCH ->
     let pms = mk_clos_vect env pms in
     let u = usubst_instance env u in
@@ -2236,7 +2360,7 @@ and knit : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> _ -> 'a =
   let (ht,s) = knht info e t stk in
   knr info tab ~pat_state ht s
 
-and case_inversion info tab ci u params indices v = match v with
+and case_inversion info _tab ci u params indices v = match v with
 | [||] -> None (* empty type *)
 | [| [||], v |] ->
   (* No binders / lets at all in the unique branch *)
@@ -2251,8 +2375,7 @@ and case_inversion info tab ci u params indices v = match v with
     (* indtyping enforces 1 ctor with no letins in the context *)
     let _, expect = mip.mind_nf_lc.(0) in
     let _ind, expect_args = destApp expect in
-    let tab = if info.i_cache.i_mode == Conversion then tab else Table.create () in
-    let info = {info with i_cache = { info.i_cache with i_mode = Conversion}; i_flags=all} in
+    let tab = Table.create () in
     let check_index i index =
       let expected = expect_args.(ci.ci_npar + i) in
       let expected = mk_clos (psubst,u) expected in
@@ -2459,14 +2582,14 @@ let whd_val info tab v = kh info tab v []
 (* strong reduction *)
 let norm_term info tab e t = klt info tab e t
 
-let create_infos i_mode ?univs ?evars i_flags i_env =
+let create_infos ?univs ?evars i_flags i_env =
   let evars = Option.default (CClosure.default_evar_handler i_env) evars in
   let i_univs = Option.default (Environ.universes i_env) univs in
   let i_share = (Environ.typing_flags i_env).Declarations.share_reduction in
-  let i_cache = {i_env; i_sigma = evars; i_share; i_univs; i_mode} in
+  let i_cache = {i_env; i_sigma = evars; i_share; i_univs} in
   {i_flags; i_relevances = Range.empty; i_cache}
 
-let create_clos_infos = create_infos Reduction
+let create_clos_infos = create_infos
 
 
 (* adapt to restricted interface *)
