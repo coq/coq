@@ -1,4 +1,4 @@
-Require Import Program.
+Require Import Program.Basics Program.Tactics.
 Set Universe Polymorphism.
 
 Inductive paths@{i} (A : Type@{i}) (a : A) : A -> Type@{i} :=
