@@ -713,28 +713,15 @@ let detype_case computable detype detype_eqns avoid env sigma (ci, univs, params
   in
   match tag, aliastyp with
   | LetStyle, None ->
-    if Coqlib.check_ref "core.detyping.unknown_inductive" (GlobRef.IndRef ci.ci_ind) then
-      (* This is a hack used by coq-elpi to implement destructuring let-bindings
-         on an unknown inductive type. *)
-      let () = assert (Int.equal (Array.length bl) 1) in
-      let _, b = bl.(0) in
-      let b' = detype b in
-      let rec decompose accu c = match DAst.get c with
-      | GLambda (na, _, _, _, c) -> decompose (na :: accu) c
-      | _ -> List.rev accu, c
-      in
-      let (nal, d) = decompose [] b' in
-      GLetTuple (nal,(alias,pred),tomatch,d)
-    else
-      let map i br =
-        let (ctx, body) = RobustExpand.branch (snd env) sigma (ci.ci_ind, i + 1) univs params br in
-        EConstr.it_mkLambda_or_LetIn body ctx
-      in
-      let constagsl = get_cstr_tags (snd env) ci.ci_ind bl in
-      let bl = Array.mapi map bl in
-      let bl' = Array.map detype bl in
-      let (nal,d) = it_destRLambda_or_LetIn_names constagsl.(0) bl'.(0) in
-      GLetTuple (nal,(alias,pred),tomatch,d)
+    let map i br =
+      let (ctx, body) = RobustExpand.branch (snd env) sigma (ci.ci_ind, i + 1) univs params br in
+      EConstr.it_mkLambda_or_LetIn body ctx
+    in
+    let constagsl = get_cstr_tags (snd env) ci.ci_ind bl in
+    let bl = Array.mapi map bl in
+    let bl' = Array.map detype bl in
+    let (nal,d) = it_destRLambda_or_LetIn_names constagsl.(0) bl'.(0) in
+    GLetTuple (nal,(alias,pred),tomatch,d)
   | IfStyle, None ->
       if Array.for_all (fun br -> is_nondep_branch sigma br) bl then
         let map i br =
