@@ -76,3 +76,4 @@ Fail Print find_secret.
 (* Availability of the tactic notation *)
 Lemma plop_ni : 2 + 2 = 4.
 Proof. Fail rfl. Admitted.
+End InSectionGlobal.

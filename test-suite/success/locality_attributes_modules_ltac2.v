@@ -113,3 +113,4 @@ Print Bar.find_secret.
 (* Availability of the tactic notation *)
 Lemma plop_i : 2 + 2 = 4.
 Proof. rfl. Qed.
+End InModuleGlobal.

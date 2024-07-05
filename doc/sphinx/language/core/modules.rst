@@ -1066,8 +1066,18 @@ while noting a few exceptional commands for which :attr:`local` and
 
 .. _visibility-attributes-modules:
 
-The following table sums up the locality of vernacular commands in modules, when
-outside the module where they were entered.
+Summary of locality attributes in a module
+------------------------------------------
+
+This table sums up the effect of locality attributes on the scope of vernacular
+commands in a module, when outside the module where they were entered. A cross
+(❌) marks an unsupported attribute, which will provoke a compilation error. In
+this table, "not available", means that the command has no effect outside the
+module it was entered and "short name when imported" means that the command
+always has effects outside the module but if the module (or the command, via
+selective importation, when available) is not imported, the corresponding
+identifier must be qualified in order to be used.
+
 A similar table for :cmd:`Section` can be found
 :ref:`here<visibility-attributes-sections>`.
 
@@ -1075,75 +1085,75 @@ A similar table for :cmd:`Section` can be found
   :header-rows: 1
 
   * - ``Command``
-    - without attribute
+    - no attribute
     - :attr:`local`
     - :attr:`export`
     - :attr:`global`
 
   * - :cmd:`Definition`, :cmd:`Lemma`, :cmd:`Axiom`, ...
-    - same as :attr:`global`
-    - available with qualified name
-    - attribute not supported
-    - available with short name if imported, with qualified name if not
+    - :attr:`global`
+    - qualified name
+    - ❌
+    - short name when imported
 
   * - :cmd:`Notation`
-    - same as :attr:`global`
+    - :attr:`global`
     - not available
-    - attribute not supported
-    - available when imported
+    - ❌
+    - when imported
 
   * - :cmd:`Notation (abbreviation)`
-    - same as :attr:`global`
+    - :attr:`global`
     - not available
-    - attribute not supported
-    - available with short name if imported, with qualified name if not
+    - ❌
+    - short name when imported
 
   * - ``Hints`` (and :cmd:`Instance`)
-    - same as :attr:`export`
+    - :attr:`export`
     - not available
-    - available when imported
-    - always available outside
+    - when imported
+    - always
 
   * - :cmd:`Set` or :cmd:`Unset` a flag
-    - same as :attr:`local`
-    - no effect
-    - in effect when imported
-    - in effect outside
+    - :attr:`local`
+    - not available
+    - when imported
+    - always
 
   * - :cmd:`Canonical Structure`
-    - same as :attr:`local`
+    - :attr:`local`
 
       or :attr:`global`
-    - available when imported
-    - attribute not supported
-    - available when imported
+    - when imported
+    - ❌
+    - when imported
 
   * - :cmd:`Coercion`
-    - same as :attr:`global`
+    - :attr:`global`
     - not available
-    - attribute not supported
-    - available when imported
+    - ❌
+    - when imported
 
   * - :cmd:`Ltac`
-    - same as :attr:`global`
+    - :attr:`global`
     - not available
-    - attribute not supported
-    - available with short name if imported, with qualified name if not
+    - ❌
+    - short name when imported
 
   * - :cmd:`Ltac2`
-    - same as :attr:`global`
+    - :attr:`global`
     - not available
-    - attribute not supported
-    - available with short name if imported, with qualified name if not
+    - ❌
+    - short name when imported
 
   * - :cmd:`Tactic Notation`
-    - same as :attr:`global`
+    - :attr:`global`
     - not available
-    - attribute not supported
-    - available when imported
+    - ❌
+    - when imported
 
   * - :cmd:`Ltac2 Notation`
-    - same as :attr:`global`
+    - :attr:`global`
     - not available
-    - attribute not supported
-    - available when imported
+    - ❌
+    - when imported
