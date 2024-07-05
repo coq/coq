@@ -174,20 +174,20 @@ type table_key = Constant.t UVars.puniverses tableKey
 type evar_repack = Evar.t * constr list -> constr
 
 (* Global (Co)Fixpoints *)
-type gfix = Constr.t option
-type gcofix = Constr.t option
+type gfix = (Constr.t,unit) Result.t Lazy.t array
+type gcofix = (Constr.t,unit) Result.t Lazy.t array
 
-type 'a gfix_info_aux = {
+type ('a,'r) gfix_info_aux = {
   gfix_nargs : int;
   gfix_tys : (Name.t binder_annot * constr) list;
   gfix_univs : UVars.Instance.t;
   gfix_body : 'a;
-  gfix_refold : Constr.t;
+  gfix_refold : 'r;
 }
 
 type gfix_info =
-  | GFix of fixpoint gfix_info_aux
-  | GCoFix of cofixpoint gfix_info_aux
+  | GFix of (fixpoint, gfix) gfix_info_aux
+  | GCoFix of (cofixpoint, gcofix) gfix_info_aux
 
 type fconstr = {
   mutable mark : red_state;
@@ -202,8 +202,8 @@ and fterm =
   | FConstruct of pconstructor
   | FApp of fconstr * fconstr array
   | FProj of Projection.t * Sorts.relevance * fconstr
-  | FFix of fixpoint * usubs * gfix
-  | FCoFix of cofixpoint * usubs * gcofix
+  | FFix of fixpoint * usubs * gfix option
+  | FCoFix of cofixpoint * usubs * gcofix option
   | FCaseT of case_info * UVars.Instance.t * constr array * case_return * fconstr * case_branch array * usubs (* predicate and branches are closures *)
   | FCaseInvert of case_info * UVars.Instance.t * constr array * case_return * finvert * fconstr * case_branch array * usubs
   | FLambda of int * (Name.t binder_annot * constr) list * constr * usubs
@@ -500,11 +500,17 @@ end = struct
   let expand_global_fixpoint _info cst c =
     let ctx, body = Term.decompose_lambda c in
     match [@ocaml.warning "-4"] kind body with
-    | Fix fix ->
+    | Fix (((rd,i),_) as fix) ->
       let nargs = List.length ctx in
       let args = Array.init nargs (fun i -> mkRel (nargs - i)) in
       let inst = UVars.Instance.abstract_instance @@ UVars.Instance.length @@ snd cst in
-      let refold = mkApp (mkConstU (fst cst, inst), args) in
+      let refold = Array.init (Array.length rd) (fun j ->
+          if i = j then
+            lazy (Result.Ok (mkApp (mkConstU (fst cst, inst), args)))
+          else
+            Lazy.from_val (Result.Error ())
+        )
+      in
       Some (GFix {
         gfix_nargs = nargs;
         gfix_tys = List.rev ctx;
@@ -512,11 +518,17 @@ end = struct
         gfix_body = fix;
         gfix_refold = refold;
       })
-    | CoFix cofix ->
+    | CoFix ((i, (rd, _, _)) as cofix) ->
       let nargs = List.length ctx in
       let args = Array.init nargs (fun i -> mkRel (nargs - i)) in
       let inst = UVars.Instance.abstract_instance @@ UVars.Instance.length @@ snd cst in
-      let refold = mkApp (mkConstU (fst cst, inst), args) in
+      let refold = Array.init (Array.length rd) (fun j ->
+          if i = j then
+            lazy (Result.Ok (mkApp (mkConstU (fst cst, inst), args)))
+          else
+            Lazy.from_val (Result.Error ())
+        )
+      in
       Some (GCoFix {
         gfix_nargs = nargs;
         gfix_tys = List.rev ctx;
@@ -1109,30 +1121,40 @@ let rec project_nth_arg n = function
 let contract_fix_vect fix =
   let (thisbody, make_body, env, nfix) =
     match [@ocaml.warning "-4"] fix with
+      | FFix (((reci,i),(_,_,bds as rdcl)),env, (Some refold as rf)) ->
+          (bds.(i),
+           (fun j ->
+              let lazy r = refold.(i) in
+              match r with
+              | Result.Ok t ->
+                { mark = Cstr; term = FCLOS (t, env) }
+              | Result.Error () ->
+                  { mark = Cstr;
+                       term = FFix (((reci,j),rdcl),env, rf) }),
+           env, Array.length bds)
       | FFix (((reci,i),(_,_,bds as rdcl)),env, None) ->
           (bds.(i),
            (fun j -> { mark = Cstr;
                        term = FFix (((reci,j),rdcl),env, None) }),
            env, Array.length bds)
-      | FFix (((reci,i),(_,_,bds as rdcl)),env, Some refold) -> (* FIXME *)
+
+      | FCoFix ((i,(_,_,bds as rdcl)),env, (Some refold as rf)) ->
           (bds.(i),
-           (fun j -> if Int.equal i j then
-              { mark = Cstr; term = FCLOS (refold, env) }
-            else { mark = Cstr;
-                       term = FFix (((reci,j),rdcl),env, None) }),
+           (fun j ->
+              let lazy r = refold.(i) in
+              match r with
+              | Result.Ok t ->
+                { mark = Cstr; term = FCLOS (t, env) }
+              | Result.Error () ->
+                { mark = Cstr;
+                  term = FCoFix ((j,rdcl),env, rf) }),
            env, Array.length bds)
       | FCoFix ((i,(_,_,bds as rdcl)),env, None) ->
           (bds.(i),
            (fun j -> { mark = Cstr;
                        term = FCoFix ((j,rdcl),env,None) }),
            env, Array.length bds)
-      | FCoFix ((i,(_,_,bds as rdcl)),env, Some refold) ->
-          (bds.(i),
-           (fun j -> if Int.equal i j then
-              { mark = Cstr; term = FCLOS (refold, env) }
-            else { mark = Cstr;
-                       term = FCoFix ((j,rdcl),env, None) }),
-           env, Array.length bds)
+
       | _ -> assert false
   in
   let rec mk_subs env i =
@@ -2425,8 +2447,9 @@ let rec zip_term kl klt info tab m stk =
 | Zfix(fx,par)::s ->
     begin
       match [@ocaml.warning "-4"] fx.term with
-      | FFix (_, env, Some gfix) ->
+      | FFix (((_,i),_), env, Some gfix) when Result.is_ok (Lazy.force (gfix.(i))) ->
         let m = inject m in
+        let gfix = Result.get_ok (Lazy.force (gfix.(i))) in
         let fx = { mark = Cstr; term = FCLOS (gfix, env) } in
         let s = par @ Zapp [|m|] :: s in
         zip_term kl klt info tab (norm_head kl klt info tab fx) s
