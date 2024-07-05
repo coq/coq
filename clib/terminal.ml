@@ -312,7 +312,7 @@ let parse s =
         let attrs = List.map int_of_string attrs in
         let attrs = parse_style (make ()) attrs in
         (name, attrs) :: accu
-      with _ -> accu
+      with Failure _ | Invalid_argument _ -> accu
     in
     accu
   | _ -> accu

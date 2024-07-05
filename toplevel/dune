@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name toplevel)
  (public_name coq-core.toplevel)
  (synopsis "Coq's Interactive Shell [terminal-based]")

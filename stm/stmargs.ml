@@ -133,7 +133,7 @@ let parse_args ~init arglist : Stm.AsyncOpts.stm_opt * string list =
   in
   try
     parse init
-  with any -> fatal_error any
+  with any [@coqlint.allow_catchall "fatal"] -> fatal_error any
 
 let usage = "\
 \n  -stm-debug             STM debug mode (will trace every transaction)\

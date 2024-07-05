@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name extraction_plugin)
  (public_name coq-core.plugins.extraction)
  (synopsis "Coq's extraction plugin")

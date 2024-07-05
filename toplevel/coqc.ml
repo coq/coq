@@ -53,7 +53,7 @@ let coqc_run copts ~opts injections =
   try
     coqc_main ~opts copts injections;
     exit 0
-  with exn ->
+  with exn [@coqlint.allow_catchall "fatal"] ->
     flush_all();
     Topfmt.print_err_exn exn;
     flush_all();

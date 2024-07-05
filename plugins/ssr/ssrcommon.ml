@@ -795,8 +795,7 @@ let saturate ?(beta=false) ?(bi_types=false) env sigma c ?(ty=Retyping.get_type_
    loop ty [] sigma m
 
 let dependent_apply_error =
-  try CErrors.user_err (Pp.str "Could not fill dependent hole in \"apply\"")
-  with err -> err
+  CErrors.UserError (Pp.str "Could not fill dependent hole in \"apply\"")
 
 (* TASSI: Sometimes Coq's apply fails. According to my experience it may be
  * related to goals that are products and with beta redexes. In that case it

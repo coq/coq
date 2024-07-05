@@ -131,7 +131,7 @@ end = struct (* {{{ *)
                       str" solves the goal and leaves no unresolved existential variables. The following" ++
                       str" existentials remain unsolved: " ++ prlist (Termops.pr_existential_key (Global.env ()) sigma) (Evar.Set.elements evars))
        )
-    with e ->
+    with e [@coqlint.allow_catchall "grandfathered"] ->
       let noncrit = CErrors.noncritical e in
       RespError (noncrit, CErrors.print e ++ spc() ++ str "(for goal "++int r_goalno ++ str ")")
 

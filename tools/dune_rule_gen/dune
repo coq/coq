@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name coq_dune)
  (modules :standard \ gen_rules)
  (flags :standard -w +a-40-42)

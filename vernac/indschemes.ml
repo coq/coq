@@ -119,7 +119,7 @@ let alarm what internal msg =
 
 let try_declare_scheme ?locmap what f internal names kn =
   try f ?locmap names kn
-  with e ->
+  with e when CErrors.noncritical e ->
   let e = Exninfo.capture e in
   let rec extract_exn = function Logic_monad.TacticFailure e -> extract_exn e | e -> e in
   let msg = match extract_exn (fst e) with
@@ -168,10 +168,9 @@ let try_declare_scheme ?locmap what f internal names kn =
     | InternalDependencies ->
          alarm what internal
            (strbrk "Inductive types with internal dependencies in constructors not supported.")
-    | e when CErrors.noncritical e ->
+    | e ->
         alarm what internal
           (str "Unexpected error during scheme creation: " ++ CErrors.print e)
-    | _ -> Exninfo.iraise e
   in
   match msg with
   | None -> ()

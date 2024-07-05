@@ -1,7 +1,7 @@
 (ocamllex coqpp_lex)
 (ocamlyacc coqpp_parse)
 
-(library
+(library (lint (pps coqlint))
  (name coqpp)
  (wrapped false)
  (modules coqpp_ast coqpp_lex coqpp_parse coqpp_parser)

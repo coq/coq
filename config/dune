@@ -1,11 +1,11 @@
-(library
+(library (lint (pps coqlint))
  (name config)
  (synopsis "Coq Configuration Variables")
  (public_name coq-core.config)
  (modules coq_config)
  (wrapped false))
 
-(library
+(library (lint (pps coqlint))
  (name byte_config)
  (synopsis "Coq Configuration Variables (for bytecode only)")
  (public_name coq-core.config.byte)

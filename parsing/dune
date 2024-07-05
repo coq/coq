@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name parsing)
  (public_name coq-core.parsing)
  (wrapped false)

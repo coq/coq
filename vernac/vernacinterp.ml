@@ -28,7 +28,7 @@ let with_fail f : (Loc.t option * Pp.t, unit) result =
     Error ()
   with
   (* Fail Timeout is a common pattern so we need to support it. *)
-  | e ->
+  | e [@coqlint.allow_catchall "critical should count as anomaly and be reraised"] ->
     (* The error has to be printed in the failing state *)
     let _, info as exn = Exninfo.capture e in
     if CErrors.is_anomaly e && e != CErrors.Timeout then Exninfo.iraise exn;

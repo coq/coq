@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name gramlib)
  (public_name coq-core.gramlib)
  (modules_without_implementation plexing)

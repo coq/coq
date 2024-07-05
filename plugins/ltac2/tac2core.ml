@@ -217,7 +217,8 @@ let catchable_exception = function
 *)
 let wrap_exceptions ?(passthrough=false) f =
   try f ()
-  with e ->
+  with e [@coqlint.allow_catchall "will be reraised if critical"] ->
+    (* not sure if it's fully correct to do a tclBIND when we got a critical exn *)
     let e, info = Exninfo.capture e in
     set_bt info >>= fun info ->
     if not passthrough && catchable_exception e

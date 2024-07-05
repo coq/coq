@@ -120,7 +120,7 @@ let print_memory_stat () =
     let oc = open_out fn in
     Gc.print_stat oc;
     close_out oc
-  with _ -> ()
+  with exn when CErrors.noncritical exn -> ()
 
 let init_load_paths opts =
   let open Coqargs in

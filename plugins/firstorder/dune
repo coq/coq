@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name firstorder_plugin)
  (public_name coq-core.plugins.firstorder)
  (synopsis "Coq's first order logic solver plugin")

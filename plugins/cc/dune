@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name cc_plugin)
  (public_name coq-core.plugins.cc)
  (synopsis "Coq's congruence closure plugin")

@@ -1,4 +1,4 @@
-(library
+(library (lint (pps coqlint))
  (name interp)
  (synopsis "Coq's Syntactic Interpretation for AST [notations, implicits]")
  (public_name coq-core.interp)
