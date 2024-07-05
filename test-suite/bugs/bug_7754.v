@@ -13,9 +13,9 @@ End OK.
 Module Bad.
 
   Fail Inductive one :=
-    with two@{i +} : Type@{i} := .
+    with two@{i ?} : Type@{i} := .
 
-  Fail Inductive one@{i +} :=
-    with two@{i +} := .
+  Fail Inductive one@{i ?} :=
+    with two@{i ?} := .
 
 End Bad.

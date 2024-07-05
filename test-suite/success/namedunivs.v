@@ -95,8 +95,8 @@ Proof.
   intros. destruct X. exact (idpath _).
 Defined.
 
-Definition funext_downward_closed (F : Funext@{i' j' k'}) :
-  Funext@{i j k}. 
+Definition funext_downward_closed (F : Funext@{i' j'}) :
+  Funext@{i j}.
 Proof.
   intros A B f g H. red in F.
   pose (F A B f g (fun x => paths_lift _ _ _ (H x))).

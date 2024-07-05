@@ -375,7 +375,7 @@ Qed.
 
 #[global]
 Instance CRealLt_morph
-  : CMorphisms.Proper
+  : CMorphisms.Proper@{Set+1 Set}
       (CMorphisms.respectful CRealEq (CMorphisms.respectful CRealEq CRelationClasses.iffT)) CRealLt.
 Proof.
   intros x y Hxeqy x0 y0 Hx0eqy0.
@@ -400,7 +400,7 @@ Qed.
 
 #[global]
 Instance CRealGt_morph
-  : CMorphisms.Proper
+  : CMorphisms.Proper@{Set+1 Set}
       (CMorphisms.respectful CRealEq (CMorphisms.respectful CRealEq CRelationClasses.iffT)) CRealGt.
 Proof.
   intros x y Hxeqy x0 y0 Hx0eqy0. apply CRealLt_morph; assumption.
@@ -408,14 +408,15 @@ Qed.
 
 #[global]
 Instance CReal_appart_morph
-  : CMorphisms.Proper
+  : CMorphisms.Proper@{Set+1 Set}
       (CMorphisms.respectful CRealEq (CMorphisms.respectful CRealEq CRelationClasses.iffT)) CReal_appart.
 Proof.
   intros x y Hxeqy x0 y0 Hx0eqy0.
   split.
   - intros Hapart. destruct Hapart as [Hxltx0|Hx0ltx].
     + left. rewrite <- Hx0eqy0, <- Hxeqy. exact Hxltx0.
-    + right. rewrite <- Hx0eqy0, <- Hxeqy. exact Hx0ltx.
+    + right. rewrite <- Hx0eqy0.
+      rewrite <- Hxeqy. exact Hx0ltx.
   - intros Hapart. destruct Hapart as [Hylty0|Hy0lty].
     + left. rewrite Hx0eqy0, Hxeqy. exact Hylty0.
     + right. rewrite Hx0eqy0, Hxeqy. exact Hy0lty.
@@ -567,7 +568,7 @@ Qed.
 
 #[global]
 Instance inject_Q_morph_T
-  : CMorphisms.Proper
+  : CMorphisms.Proper@{Set Set}
       (CMorphisms.respectful Qeq CRealEq) inject_Q.
 Proof.
   intros x y Heq; split.
@@ -859,7 +860,7 @@ Qed.
 
 #[global]
 Instance CReal_plus_morph_T
-  : CMorphisms.Proper
+  : CMorphisms.Proper@{Set Set}
       (CMorphisms.respectful CRealEq (CMorphisms.respectful CRealEq CRealEq)) CReal_plus.
 Proof.
   intros x y H z t H0. apply (CRealEq_trans _ (CReal_plus x t)).
@@ -902,8 +903,10 @@ Lemma CReal_opp_gt_lt_contravar : forall r1 r2, r1 > r2 -> - r1 < - r2.
 Proof.
   unfold CRealGt; intros.
   apply (CReal_plus_lt_reg_l (r2 + r1)).
-  rewrite CReal_plus_assoc, CReal_plus_opp_r, CReal_plus_0_r.
-  rewrite CReal_plus_comm, <- CReal_plus_assoc, CReal_plus_opp_l.
+  rewrite CReal_plus_assoc.
+  rewrite CReal_plus_opp_r, CReal_plus_0_r.
+  rewrite CReal_plus_comm.
+  rewrite <- CReal_plus_assoc, CReal_plus_opp_l.
   rewrite CReal_plus_0_l. exact H.
 Qed.
 

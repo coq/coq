@@ -74,9 +74,10 @@ Module Type SF. Parameter DF : nat. End SF.
 Module MF : SF. Definition DF := bool. Fail End MF.
 Reset Initial.
 
-(* Needs a type constraint in module type *)
+(* Unifies the universes with the implementation *)
 Module Type SG. Definition DG := Type. End SG.
-Module MG : SG. Definition DG := Type : Type. Fail End MG.
+Module MG : SG. Definition DG := Type : Type.
+End MG.
 Reset Initial.
 
 (* Should work *)

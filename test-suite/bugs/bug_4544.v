@@ -179,6 +179,8 @@ Notation IsHProp := (IsTrunc -1).
 Monomorphic Axiom dummy_funext_type : Type0.
 Monomorphic Class Funext := { dummy_funext_value : dummy_funext_type }.
 
+Unset Universe Minimization ToSet.
+
 Inductive Unit : Type1 :=
     tt : Unit.
 
@@ -452,7 +454,7 @@ Section Extensions.
     := match n with
          | O => Unit@{l}
          | S n => (forall (g : forall a, C (f a)),
-                     ExtensionAlong@{i j k l l} f C g) *
+                     ExtensionAlong@{i j k} f C g) *
                   forall (h k : forall b, C b),
                     ExtendableAlong n f (fun b => h b = k b)
        end.
@@ -532,7 +534,7 @@ Module ReflectiveSubuniverses_Restriction
        (Res : ReflectiveSubuniverses_Restriction_Data Os)
 <: ReflectiveSubuniverses.
 
-  Definition ReflectiveSubuniverse := Res.New_ReflectiveSubuniverse.
+  Definition ReflectiveSubuniverse@{u a} := Res.New_ReflectiveSubuniverse@{u a}.
 
   Definition O_reflector@{u a i} (O : ReflectiveSubuniverse@{u a})
     := Os.O_reflector@{u a i} (Res.ReflectiveSubuniverses_restriction O).
@@ -556,7 +558,7 @@ Module ReflectiveSubuniverses_FamUnion
 <: ReflectiveSubuniverses.
 
   Definition ReflectiveSubuniverse@{u a} : Type2@{u a}
-    := Os1.ReflectiveSubuniverse@{u a} + Os2.ReflectiveSubuniverse@{u a}.
+    := (Os1.ReflectiveSubuniverse@{u a} + Os2.ReflectiveSubuniverse@{u a})%type.
 
   Definition O_reflector@{u a i} : forall (O : ReflectiveSubuniverse@{u a}),
                              Type2le@{i a} -> Type2le@{i a}.
@@ -652,7 +654,7 @@ Module Modalities_to_ReflectiveSubuniverses
 admit.
 Defined.
 
-  Definition ReflectiveSubuniverse := Modality.
+  Definition ReflectiveSubuniverse@{u a} := Modality@{u a}.
 
   Definition O_reflector@{u a i} := O_reflector@{u a i}.
 
@@ -702,7 +704,7 @@ Module EasyModalities_to_Modalities (Os : EasyModalities)
 
   Import Os.
 
-  Definition Modality := Modality.
+  Definition Modality@{u a} := Modality@{ u a}.
 
   Definition O_reflector@{u a i} := O_reflector@{u a i}.
   Definition to@{u a i} := to@{u a i}.

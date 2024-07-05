@@ -12,6 +12,7 @@ Fail Module M' : T with Definition foo := Type.
 
 (* Without the binder expression we have to do trickery to get the
    universes in the right order. *)
-Module M' : T with Definition foo := let t := Type in t.
-Definition foo := let t := Type in t.
+Module M' : T with Definition foo@{u v} := Type@{u} : Type@{v}.
+Definition foo@{u v} := let t := Type@{u} in t.
+
 End M'.
