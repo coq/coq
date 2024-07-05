@@ -3,9 +3,9 @@
    coqtop version 8.5 (February 2016) *)
 Axiom proof_admitted : False.
 Tactic Notation "admit" := case proof_admitted.
-Require Stdlib.Lists.List.
-Import Stdlib.Lists.List.
-Import Stdlib.Classes.Morphisms.
+Require Stdlib.Lists.ListDef.
+Import Stdlib.Lists.ListDef.
+Require Import Stdlib.Classes.Morphisms.
 
 Definition list_caset A (P : list A -> Type) (N : P nil) (C : forall x xs, P (x::xs))
            ls

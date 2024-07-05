@@ -1,5 +1,4 @@
-
-Require Import Setoid Program.
+Require Import Setoid Program.Basics.
 
 Axiom t : Set.
 Axiom In : nat -> t -> Prop.

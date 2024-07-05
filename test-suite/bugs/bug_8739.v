@@ -1,8 +1,8 @@
-Require Stdlib.Program.Program.
+Require Program.Basics Program.Tactics.
 Require Stdlib.Classes.CMorphisms.
 Require Setoid.
 
-Export Stdlib.Program.Program.
+Export Program.Basics Program.Tactics.
 Delimit Scope category_theory_scope with category_theory.
 Open Scope category_theory_scope.
 Export Stdlib.Classes.CMorphisms.
