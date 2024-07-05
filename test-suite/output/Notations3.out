@@ -158,6 +158,8 @@ binder, constr have incompatible prefixes. One of them will likely not work.
 [notation-incompatible-prefix,parsing,default]
 ! a b : nat # True #
      : Prop * (Prop * Prop)
+{{forall x : nat, x = 0, nat}}
+     : Prop * Set
 !!!! a b : nat # True #
      : Prop * Prop * (Prop * Prop * Prop)
 @@ a b : nat # a = b # b = a #

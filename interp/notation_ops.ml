@@ -1241,6 +1241,20 @@ let bind_term_as_binding_env alp (terms,termlists,binders,binderlists as sigma) 
     (* TODO: look at the consequences for alp *)
     alp, add_env alp sigma var (DAst.make @@ GVar id)
 
+let bind_singleton_bindinglist_as_term_env alp (terms,termlists,binders,binderlists as sigma) var c =
+  try
+    (* If already bound to a binder, unify the term and the binder *)
+    let vars,patl' = Id.List.assoc var binderlists in
+    let patl'' = unify_terms_binders alp.renaming [c] patl' in
+    if patl' == patl'' then sigma
+    else
+      let sigma = (terms,termlists,binders,Id.List.remove_assoc var binderlists) in
+      let alp' = {alp with actualvars = Id.Set.union vars alp.actualvars} in
+      add_bindinglist_env alp' sigma var patl''
+  with Not_found ->
+    (* A term-as-binder occurs in the scope of a binder which is already bound *)
+    anomaly (Pp.str "Unbound term as binder.")
+
 let bind_binding_as_term_env alp (terms,termlists,binders,binderlists as sigma) var c =
   let env = Global.env () in
   let pat = try cases_pattern_of_glob_constr env Anonymous c with Not_found -> raise No_match in
@@ -1471,7 +1485,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
   | r1, NVar id2 when is_onlybinding_pattern_like_meta false id2 metas -> bind_binding_as_term_env alp sigma id2 a1
   | r1, NVar id2 when is_var_term r1 && is_onlybinding_strict_meta id2 metas -> raise No_match
   | r1, NVar id2 when is_var_term r1 && is_onlybinding_meta id2 metas -> bind_binding_as_term_env alp sigma id2 a1
-  | r1, NVar id2 when is_bindinglist_meta id2 metas -> bind_term_env alp sigma id2 a1
+  | r1, NVar id2 when is_bindinglist_meta id2 metas -> bind_singleton_bindinglist_as_term_env alp sigma id2 a1
 
   (* Matching recursive notations for terms *)
   | r1, NList (x,y,iter,termin,revert) ->
