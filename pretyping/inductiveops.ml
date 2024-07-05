@@ -323,6 +323,28 @@ let is_allowed_elimination sigma ((mib,_),_ as specifu) s =
       end
     | Some (SquashToQuality indq) -> quality_leq (EConstr.ESorts.quality sigma s) indq
 
+let make_allowed_elimination env sigma ((mib,_),_ as specifu) s =
+  let open Sorts in
+  match mib.mind_record with
+  | PrimRecord _ -> Some sigma
+  | NotRecord | FakeRecord ->
+    match is_squashed sigma specifu with
+    | None -> Some sigma
+    | Some SquashToSet ->
+      begin match EConstr.ESorts.kind sigma s with
+      | SProp|Prop|Set -> Some sigma
+      | QSort _ | Type _ ->
+        try Some (Evd.set_leq_sort env sigma s ESorts.set)
+        with UGraph.UniverseInconsistency _ -> None
+      end
+    | Some (SquashToQuality indq) ->
+      let sq = EConstr.ESorts.quality sigma s in
+      if quality_leq sq indq then Some sigma
+      else
+        let mk q = ESorts.make @@ Sorts.make q Univ.Universe.type0 in
+        try Some (Evd.set_leq_sort env sigma (mk sq) (mk indq))
+        with UGraph.UniverseInconsistency _ -> None
+
 (* XXX questionable for sort poly inductives *)
 let elim_sort (_,mip) =
   if Option.is_empty mip.mind_squashed then Sorts.InType

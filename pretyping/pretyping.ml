@@ -1241,10 +1241,10 @@ struct
             let lp = lift cs.cs_nargs p in
             let fty = hnf_lam_applist !!env sigma lp inst in
             let sigma, fj = pretype (mk_tycon fty) env_f sigma d in
-            let v =
+            let sigma, v =
               let ind,_ = dest_ind_family indf in
-                let rci = Typing.check_allowed_sort !!env sigma ind cj.uj_val p in
-                obj indty rci p cj.uj_val fj.uj_val
+                let sigma, rci = Typing.check_allowed_sort !!env sigma ind cj.uj_val p in
+                sigma, obj indty rci p cj.uj_val fj.uj_val
             in
             sigma, { uj_val = v; uj_type = (substl (realargs@[cj.uj_val]) ccl) }
 
@@ -1260,10 +1260,10 @@ struct
                   cj.uj_val in
                  (* let ccl = refresh_universes ccl in *)
             let p = it_mkLambda_or_LetIn (lift (nar+1) ccl) psign' in
-            let v =
+            let sigma, v =
               let ind,_ = dest_ind_family indf in
-                let rci = Typing.check_allowed_sort !!env sigma ind cj.uj_val p in
-                obj indty rci p cj.uj_val fj.uj_val
+                let sigma, rci = Typing.check_allowed_sort !!env sigma ind cj.uj_val p in
+                sigma, obj indty rci p cj.uj_val fj.uj_val
             in sigma, { uj_val = v; uj_type = ccl })
 
   let pretype_cases self (sty, po, tml, eqns)  =
@@ -1327,12 +1327,12 @@ struct
         sigma, it_mkLambda_or_LetIn bj.uj_val cs_args in
       let sigma, b1 = f sigma cstrs.(0) b1 in
       let sigma, b2 = f sigma cstrs.(1) b2 in
-      let v =
+      let sigma, v =
         let ind,_ = dest_ind_family indf in
         let pred = nf_evar sigma pred in
-        let rci = Typing.check_allowed_sort !!env sigma ind cj.uj_val pred in
+        let sigma, rci = Typing.check_allowed_sort !!env sigma ind cj.uj_val pred in
         let ci = make_case_info !!env (fst ind) IfStyle in
-        mkCase (EConstr.contract_case !!env sigma
+        sigma, mkCase (EConstr.contract_case !!env sigma
                   (ci, (pred,rci),
                    make_case_invert !!env sigma indty ~case_relevance:rci ci, cj.uj_val,
                    [|b1;b2|]))

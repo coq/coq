@@ -1471,7 +1471,7 @@ let compile ~program_mode sigma pb =
               find_predicate pb.caseloc pb.env sigma
                 pred current indt (names,dep) tomatch
             in
-            let rci = Typing.check_allowed_sort !!(pb.env) sigma mind current pred in
+            let sigma, rci = Typing.check_allowed_sort !!(pb.env) sigma mind current pred in
             let ci = make_case_info !!(pb.env) (fst mind) pb.casestyle in
             let pred = nf_betaiota !!(pb.env) sigma pred in
             let case = make_case_or_project !!(pb.env) sigma indt ci (pred,rci) current brvals in
