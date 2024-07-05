@@ -292,12 +292,16 @@ module ProofEntry = struct
         let c = Term.mkLambda_or_LetIn p c in
         let t = Term.mkProd_or_LetIn p t in
         let accu = if Context.Rel.Declaration.is_local_assum p
-          then mkVar (NamedDecl.get_id decl) :: accu
+          then EConstr.mkVar (NamedDecl.get_id decl) :: accu
           else accu
         in
         shrink ctx sign c t accu
     | _ -> assert false
 
+  (* If [sign] is [x1:T1..xn:Tn], [c] is [fun x1:T1..xn:Tn => c']
+     and [t] is [forall x1:T1..xn:Tn, t'], returns a new [c'] and [t'],
+     where all non-dependent [xi] are removed, as well as a
+     restriction [args] of [x1..xn] such that [c' args] = [c x1..xn] *)
   let shrink_entry sign body typ =
     let typ = match typ with
       | None -> assert false
@@ -2062,7 +2066,6 @@ let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma c
   in
   let cst, eff = Impargs.with_implicit_protection cst () in
   let inst = instance_of_univs const.proof_entry_universes in
-  let args = List.map EConstr.of_constr args in
   let lem = EConstr.of_constr (Constr.mkConstU (cst, inst)) in
   let effs = Evd.concat_side_effects eff effs in
   effs, sigma, lem, args, safe
@@ -2286,7 +2289,7 @@ let finish_proved_equations ~pm ~kind ~hook i proof_obj types sigma0 =
         let entry = { entry with proof_entry_body = Default { body = (body, eff); opaque }; proof_entry_type = typ } in
         let cst = declare_constant ~name:id ~kind ~typing_flags:None (DefinitionEntry entry) in
         let sigma, app = Evd.fresh_global (Global.env ()) sigma (GlobRef.ConstRef cst) in
-        let sigma = Evd.define ev (EConstr.applist (app, List.map EConstr.of_constr args)) sigma in
+        let sigma = Evd.define ev (EConstr.applist (app, args)) sigma in
         sigma, cst) sigma0
       types proof_obj.entries
   in
