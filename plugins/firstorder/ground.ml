@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Ltac_plugin
 open Formula
 open Sequent
 open Rules
@@ -31,11 +30,6 @@ let ground_tac ~flags solver startseq =
   Proofview.Goal.enter begin fun gl ->
   let rec toptac skipped seq =
     Proofview.Goal.enter begin fun gl ->
-    let () =
-      if Tacinterp.get_debug()=Tactic_debug.DebugOn 0
-      then
-        Feedback.msg_debug (Printer.Debug.pr_goal gl)
-    in
     tclORELSE (axiom_tac seq)
       begin
         try

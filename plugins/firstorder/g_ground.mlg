@@ -80,6 +80,11 @@ let gen_ground_tac flag taco ids bases =
         tclTHEN (Proofview.Unsafe.tclEVARS sigma) (k seq)
         end
       in
+      let () =
+        if Tacinterp.get_debug()=Tactic_debug.DebugOn 0
+        then
+          Feedback.msg_debug (Printer.Debug.pr_goal gl)
+      in
       let result=ground_tac ~flags solver startseq in
       result
   end
