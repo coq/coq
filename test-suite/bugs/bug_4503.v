@@ -1,3 +1,4 @@
+Require RelationClasses.
 Require TestSuite.relationclasses.
 
 Class PreOrder (A : Type) (r : A -> A -> Type) : Type :=
