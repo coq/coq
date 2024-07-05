@@ -171,7 +171,6 @@ let add_universe u ~lbound ~strict g = match lbound with
   (* Do not actually add any constraint. This is a hack for template. *)
   { g with graph = G.add u g.graph }
 
-exception UndeclaredLevel = G.Undeclared
 let check_declared_universes g l =
   G.check_declared g.graph l
 

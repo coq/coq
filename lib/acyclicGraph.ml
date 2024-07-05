@@ -516,10 +516,11 @@ module Make (Point:Point) = struct
       let entries = PMap.add v (Canonical node) g.entries in
       { entries; index = g.index - 1; n_nodes = g.n_nodes + 1; n_edges = g.n_edges; table }
 
-  exception Undeclared of Point.t
   let check_declared g us =
-    let check l = if not (Index.mem l g.table) then raise (Undeclared l) in
-    Point.Set.iter check us
+    let check l = not (Index.mem l g.table) in
+    let undeclared = Point.Set.filter check us in
+    if Point.Set.is_empty undeclared then Ok ()
+    else Error undeclared
 
   exception Found_explanation of (constraint_type * Point.t) list
 

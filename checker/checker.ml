@@ -295,7 +295,7 @@ let explain_exn = function
       | BadCaseRelevance _ -> str"BadCaseRelevance"
       | BadInvert -> str"BadInvert"
       | UndeclaredQualities _ -> str"UndeclaredQualities"
-      | UndeclaredUniverse _ -> str"UndeclaredUniverse"
+      | UndeclaredUniverses _ -> str"UndeclaredUniverse"
       | BadVariance _ -> str "BadVariance"
       | UndeclaredUsedVariables _ -> str "UndeclaredUsedVariables"
       ))

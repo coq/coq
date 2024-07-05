@@ -1044,8 +1044,8 @@ let demote_seff_univs univs uctx =
 let demote_global_univs env uctx =
   let env_ugraph = Environ.universes env in
   let mem_univ u ugraph = match UGraph.check_declared_universes ugraph (Level.Set.singleton u) with
-  | () -> true
-  | exception (UGraph.UndeclaredLevel _) -> false
+  | Ok () -> true
+  | Error _ -> false
   in
   let mem_constraints (u, _, v as cst) ugraph =
     mem_univ u ugraph && mem_univ v ugraph && UGraph.check_constraint ugraph cst

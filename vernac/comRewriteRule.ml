@@ -518,10 +518,14 @@ let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) 
     | Some n when n < 0 || n > nvarus' -> CErrors.anomaly Pp.(str "Unknown universe level variable in rewrite rule")
     | Some _ -> ()
     | None ->
-        try UGraph.check_declared_universes (Environ.universes env) (Univ.Level.Set.singleton lvl)
-        with UGraph.UndeclaredLevel lvl ->
-          CErrors.user_err ?loc:rhs_loc
-            Pp.(str "Universe level " ++ Termops.pr_evd_level evd lvl ++ str " appears in the replacement but does not appear in the pattern.")
+      match UGraph.check_declared_universes (Environ.universes env) (Univ.Level.Set.singleton lvl) with
+      | Ok () -> ()
+      | Error l ->
+        let l = Univ.Level.Set.elements l in
+        CErrors.user_err ?loc:rhs_loc
+          Pp.(str "Universe level " ++
+              prlist_with_sep spc (Termops.pr_evd_level evd) l ++
+              str " appears in the replacement but does not appear in the pattern.")
   in
 
   let () =
