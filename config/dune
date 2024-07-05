@@ -1,6 +1,7 @@
 (library
  (name config)
  (synopsis "Coq Configuration Variables")
+ (instrumentation (backend bisect_ppx))
  (public_name coq-core.config)
  (modules coq_config)
  (wrapped false))

@@ -3,6 +3,7 @@
  (synopsis "Coq's Loadable Libraries (vo) Support")
  (public_name coq-core.library)
  (wrapped false)
+ (instrumentation (backend bisect_ppx))
  (libraries kernel))
 
 (documentation

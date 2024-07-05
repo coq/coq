@@ -4,4 +4,5 @@
  (public_name coq-core.proofs)
  (wrapped false)
  (modules_without_implementation tactypes)
+ (instrumentation (backend bisect_ppx))
  (libraries pretyping))

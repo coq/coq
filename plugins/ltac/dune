@@ -4,6 +4,7 @@
  (synopsis "Coq's LTAC tactic language")
  (modules :standard \ tauto)
  (modules_without_implementation tacexpr)
+ (instrumentation (backend bisect_ppx))
  (libraries coq-core.vernac))
 
 (library
@@ -11,6 +12,7 @@
  (public_name coq-core.plugins.tauto)
  (synopsis "Coq's tauto tactic")
  (modules tauto)
+ (instrumentation (backend bisect_ppx))
  (libraries coq-core.plugins.ltac))
 
 (coq.pp (modules extratactics g_tactic  g_rewrite g_eqdecide g_auto g_obligations g_ltac profile_ltac_tactics coretactics g_class extraargs))

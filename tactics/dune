@@ -6,4 +6,5 @@
  (modules_without_implementation genredexpr)
  ; until ocaml/dune#4892 fixed
  ; (private_modules btermdn dn)
+ (instrumentation (backend bisect_ppx))
  (libraries printing))
