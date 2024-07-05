@@ -99,6 +99,8 @@ fun n : nat => foo4 n (fun _ y : nat => ETA z : nat, (fun _ : nat => y = 0))
      : nat -> Prop
 tele (t : Type) '(y, z) (x : t) := tt
      : forall t : Type, nat * nat -> t -> fpack
+tele (t : Type) (y := nat) (x : t) (z : y) := (y, z)
+     : forall t : Type, t -> nat -> fpack
 [fun x : nat => x + 0;; fun x : nat => x + 1;; fun x : nat => x + 2]
      : (nat -> nat) *
        ((nat -> nat) *
@@ -116,7 +118,7 @@ where
      : nat * (nat * nat)
 {{0, 1, 2, 3}}
      : nat * (nat * (nat * nat))
-File "./output/Notations3.v", line 178, characters 0-174:
+File "./output/Notations3.v", line 179, characters 0-174:
 Warning: Closed notations (i.e. starting and ending with a terminal symbol)
 should usually be at level 0 (default).
 [closed-notation-not-level-0,parsing,default]
@@ -149,7 +151,7 @@ exists_true (x : nat) (A : Type) (R : A -> A -> Prop)
      : Prop * Prop * Prop
 {{D 1, 2}}
      : nat * nat * (nat * nat * (nat * nat))
-File "./output/Notations3.v", line 235, characters 0-104:
+File "./output/Notations3.v", line 236, characters 0-104:
 Warning: Notations "! _ .. _ , _" defined at level 200 with arguments binder,
 constr at next level and "! _ .. _ # _ #" defined at level 200 with arguments
 binder, constr have incompatible prefixes. One of them will likely not work.

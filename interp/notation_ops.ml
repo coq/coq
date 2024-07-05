@@ -1191,10 +1191,10 @@ let unify_term_binder renaming c = DAst.(map (fun b' ->
 let rec unify_terms_binders renaming cl bl' =
   match cl, bl' with
   | [], [] -> []
-  | c :: cl, b' :: bl' ->
+  | c :: cl', b' :: bl' ->
      begin match DAst.get b' with
-     | GLocalDef (_, _, _, t) -> unify_terms_binders renaming cl bl'
-     | _ -> unify_term_binder renaming c b' :: unify_terms_binders renaming cl bl'
+     | GLocalDef (_, _, _, t) -> b' :: unify_terms_binders renaming cl bl'
+     | _ -> unify_term_binder renaming c b' :: unify_terms_binders renaming cl' bl'
      end
   | _ -> raise No_match
 

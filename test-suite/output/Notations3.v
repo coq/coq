@@ -144,6 +144,7 @@ Notation "'tele' x .. z := b" :=
   (at level 85, x binder, z binder).
 
 Check tele (t:Type) '((y,z):nat*nat) (x:t) := tt.
+Check tele (t:Type) (y:=nat) (x:t) (z:y) := (y,z).
 
 (* Checking that "fun" in a notation does not mixed up with the
    detection of a recursive binder *)
