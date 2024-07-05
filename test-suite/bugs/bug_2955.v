@@ -1,5 +1,3 @@
-Require Import Stdlib.Arith.Arith.
-
 Module A.
 
   Fixpoint foo (n:nat) :=
