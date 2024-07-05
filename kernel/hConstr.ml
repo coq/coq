@@ -523,6 +523,14 @@ let map_kind frel fu fs frec k =
     let v' = frec v in
     if r' == r && v' == v then k else Proj (p, r', v')
 
+let subst_instance subst u =
+  let u' = UVars.subst_sort_level_instance subst u in
+  UVars.Instance.hcons u'
+
+let subst_sort subst s =
+  let s' = UVars.subst_sort_level_sort subst s in
+  Sorts.hcons s'
+
 let rec subst_univs tbl subst c =
   if refcount c = 1 then subst_univs_aux tbl subst c
   else match Tbl.find_opt tbl c with
@@ -536,8 +544,8 @@ and subst_univs_aux tbl subst c =
   let k = kind c in
   let k' = map_kind
       (UVars.subst_sort_level_relevance subst)
-      (UVars.subst_sort_level_instance subst)
-      (UVars.subst_sort_level_sort subst)
+      (subst_instance subst)
+      (subst_sort subst)
       (subst_univs tbl subst)
       k
   in
