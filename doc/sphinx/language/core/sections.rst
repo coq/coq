@@ -136,8 +136,8 @@ usable outside the section as shown in this :ref:`example <section_local_declara
 Summary of locality attributes in a section
 -------------------------------------------
 
-The following table sums up the locality of vernacular commands in modules, when
-outside the module.
+The following table sums up the locality of vernacular commands in sections, when
+outside the section it was entered.
 A similar table for :cmd:`Module` can be found
 :ref:`here <visibility-attributes-modules>`.
 
@@ -151,56 +151,68 @@ A similar table for :cmd:`Module` can be found
     - :attr:`global`
 
   * - :cmd:`Definition`, :cmd:`Lemma`, :cmd:`Axiom`, ...
-    - available
+    - same as :attr:`local`
     - available
     - attribute not supported
     - attribute not supported
 
   * - :cmd:`Notation`
-    - not available outside
-    - not available outside
+    - same as :`local`
+    - not available
     - attribute not supported
     - attribute not supported
 
   * - :cmd:`Notation (abbreviation)`
-    - not available outside
-    - not available outside
+    - same as :attr:`local`
+    - not available
     - attribute not supported
     - attribute not supported
 
   * - ``Hints`` (and :cmd:`Instance`)
-    - not available outside
-    - not available outside
+    - same as :attr:`local`
+    - not available
     - attribute not supported
     - attribute not supported
 
   * - :cmd:`Set` or :cmd:`Unset` a flag
-    - not available outside
-    - not available outside
-    - available outside
-    - available outside
+    - same as :attr:`local`
+    - no effect
+    - in effect
+    - in effect
 
   * - :cmd:`Canonical Structure`
-    - available outside
-    - not available outside
+    - same as :attr:`global`
+    - not available
     - attribute not supported
-    - available outside
-
-  * - :cmd:`Ltac`
-    - not available outside
-    - not available outside
-    - attribute not supported
-    - attribute not supported
+    - available
 
   * - :cmd:`Coercion`
-    - available outside
+    - same as :attr:`global`
+    - not available
+    - attribute not supported
+    - available
+
+  * - :cmd:`Ltac`
+    - same as :attr:`local`
     - not available outside
     - attribute not supported
-    - available outside
+    - attribute not supported
+
+  * - :cmd:`Ltac2`
+    - same as :attr:`local`
+    - not available outside
+    - attribute not supported
+    - attribute not supported
 
   * - :cmd:`Tactic Notation`
-    - not available outside
-    - not available outside
+    - same as :attr:`local`
+    - not available
+    - attribute not supported
+    - attribute not supported
+
+  * - :cmd:`Ltac2 Notation`
+    - same as :attr:`local`
+    - not available
     - attribute not supported
     - attribute not supported
 
