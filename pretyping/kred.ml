@@ -2579,10 +2579,10 @@ let rec zip_term kl klt info tab ?(progress=false) ~rstks m stk =
     let u = usubst_instance e u in
     let t = mkCase(ci, u, Array.map (fun c -> klt info tab ~rstks e c) pms, (zip_ctx p, r),
       NoInvert, m, Array.map zip_ctx br) in
-    zip_term kl klt info tab ~progress ~rstks t s
+    zip_term kl klt info tab ~progress:false ~rstks t s
 | Zproj (_,p,r)::s ->
     let t = mkProj (Projection.make p true, r, m) in
-    zip_term kl klt info tab ~progress ~rstks t s
+    zip_term kl klt info tab ~progress:false ~rstks t s
 | Zfix(fx,par)::s ->
   let (keep_unfolded,i,env,gfix) =
     match[@ocaml.warning "-4"] fx.term with
@@ -2605,7 +2605,7 @@ let rec zip_term kl klt info tab ?(progress=false) ~rstks m stk =
     let args =
       List.fold_left (fun args a -> kl info tab ~rstks a ::args) (m::kargs) rargs in
     let h = mkApp (mkConstU c, Array.of_list args) in
-    zip_term kl klt info tab ~progress ~rstks h s
+    zip_term kl klt info tab ~progress:false ~rstks h s
 | Zunfold (undo, unf, rev_params) :: s ->
   Dbg.(dbg Pp.(fun () -> str "zip_term; Zunfold"));
   let open UnfoldDef in
@@ -2618,7 +2618,7 @@ let rec zip_term kl klt info tab ?(progress=false) ~rstks m stk =
   in
   let orig = zip_term kl klt info tab ~progress ~rstks (norm_head kl klt info tab ~rstks (unf.orig.Original.term)) (List.rev rev_params) in
   let orig = mkApp (orig, [|m|]) in
-  zip_term kl klt info tab ~progress ~rstks orig s
+  zip_term kl klt info tab ~progress:false ~rstks orig s
 | ZundoOrRefold (undos, prog, orig, rev_params) :: stk ->
   let orig = orig.Original.term in
   let progress = progress || prog in
