@@ -60,6 +60,43 @@ Module Test1.
   Qed.
 End Test1.
 
+Module TransitiveRefolding.
+  Inductive list :=
+  | nil : list
+  | cons : nat -> list -> list.
+  Axiom f : nat -> nat.
+  Fixpoint map f l :=
+    match l with
+    | nil => nil
+    | cons x l => cons (f x) (map f l)
+    end.
+
+  Definition bar := map f.
+
+  Goal bar nil = nil.
+  Proof. assert_norm_eq. Qed.
+
+  Goal bar (cons 0 nil) = cons (f 0) nil.
+  Proof. assert_norm_eq. Qed.
+
+  Axiom xs : list.
+
+  Goal bar (cons 0 xs) = cons (f 0) (bar xs).
+  Proof. assert_norm_eq. Qed.
+
+  Definition foo xs := cons (f 0) (map f xs).
+
+  Goal foo (cons 0 xs) = foo (cons 0 xs).
+  Proof. assert_norm_eq. Qed.
+
+  Arguments foo !_.
+
+  Goal foo (cons 0 xs) = foo (cons 0 xs).
+  Proof. assert_norm_eq. Qed.
+
+  Goal foo (cons 0 (cons 0 xs)) = foo (cons 0 (cons 0 xs)).
+  Proof. assert_norm_eq. Qed.
+End TransitiveRefolding.
 
 (* motivating example *)
 Inductive type : Set :=
