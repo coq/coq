@@ -58,6 +58,13 @@ Module Test1.
   Proof.
     assert_norm_eq.
   Qed.
+
+  Inductive box := | Box : Prop -> box.
+  Definition unbox b := match b with Box x => x end.
+  Definition foo := Box( ~ ~ False).
+  Definition bar := unbox foo.
+  Goal bar = ~~ False.
+  Proof. assert_norm_eq. Qed.
 End Test1.
 
 Module TransitiveRefolding.
@@ -75,6 +82,9 @@ Module TransitiveRefolding.
 
   Goal bar nil = nil.
   Proof. assert_norm_eq. Qed.
+
+  Goal (forall ls, bar (cons 0 ls) = nil) = (forall ls, cons (f 0) (bar ls) = nil).
+  Proof. kred. assert_norm_eq. Qed.
 
   Goal bar (cons 0 nil) = cons (f 0) nil.
   Proof. assert_norm_eq. Qed.
@@ -96,6 +106,62 @@ Module TransitiveRefolding.
 
   Goal foo (cons 0 (cons 0 xs)) = foo (cons 0 (cons 0 xs)).
   Proof. assert_norm_eq. Qed.
+
+  Module VectorTest.
+    #[universes(template)]
+    Inductive t A : nat -> Type :=
+      |nil : t A 0
+      |cons : forall (h:A) (n:nat), t A n -> t A (S n).
+
+    Local Notation "[ ]" := (nil _) (format "[ ]").
+    Local Notation "h :: t" := (cons _ h _ t) (at level 60, right associativity).
+
+    Definition case0 {A} (P:t A 0 -> Type) (H:P (nil A)) v:P v :=
+    match v with
+      |[] => H
+      |_ => fun devil => False_ind (@IDProp) devil (* subterm !!! *)
+    end.
+
+    (** A vector of length [S _] is [cons] *)
+    Definition caseS {A} (P : forall {n}, t A (S n) -> Type)
+      (H : forall h {n} t, @P n (h :: t)) {n} (v: t A (S n)) : P v :=
+    match v with
+      |h :: t => H h t
+      |_ => fun devil => False_ind (@IDProp) devil (* subterm !!! *)
+    end.
+
+    Definition caseS' {A} {n : nat} (v : t A (S n)) : forall (P : t A (S n) -> Type)
+      (H : forall h t, P (h :: t)), P v :=
+      match v with
+      | h :: t => fun P H => H h t
+      | _ => fun devil => False_rect (@IDProp) devil
+      end.
+
+    Definition rect2 {A B} (P:forall {n}, t A n -> t B n -> Type)
+      (bas : P [] []) (rect : forall {n v1 v2}, P v1 v2 ->
+        forall a b, P (a :: v1) (b :: v2)) :=
+      fix rect2_fix {n} (v1 : t A n) : forall v2 : t B n, P v1 v2 :=
+      match v1 with
+      | [] => fun v2 => case0 _ bas v2
+      | @cons _ h1 n' t1 => fun v2 =>
+        caseS' v2 (fun v2' => P (h1::t1) v2') (fun h2 t2 => rect (rect2_fix t1 t2) h1 h2)
+      end.
+
+    (** map2 g [x1 .. xn] [y1 .. yn] = [(g x1 y1) .. (g xn yn)] *)
+    Definition map2 {A B C} (g:A -> B -> C) :
+      forall (n : nat), t A n -> t B n -> t C n :=
+    @rect2 _ _ (fun n _ _ => t C n) (nil C) (fun _ _ _ H a b => (g a b) :: H).
+
+    Axiom a b : nat.
+    Axiom lsA lsB : t nat 0.
+    Goal map2 Nat.add _ (1 :: lsA) (2 :: lsB) = 3 :: map2 Nat.add _ lsA lsB.
+    Proof. assert_norm_eq. Qed.
+
+    Goal (forall a b lsA lsB, map2 Nat.add _ lsA lsB = [] -> forall c, map2 Nat.add _ (a :: lsA) (b :: lsB) = c :: [] ) =
+         (forall a b lsA lsB, map2 Nat.add _ lsA lsB = [] -> forall c, (a+b) :: map2 Nat.add _ (lsA) (lsB) = c :: [] ).
+    Proof. assert_norm_eq. Qed.
+  End VectorTest.
+
 End TransitiveRefolding.
 
 (* motivating example *)
@@ -325,7 +391,8 @@ Module Prim.
   Time Eval kred     in @add 4    10 (build_fn 10). (* 0.001s *)
   Time Eval kred     in @add 8    10 (build_fn 10). (* 0.003s *)
   Time Eval kred     in @add 10   10 (build_fn 10). (* 0.008s    *)
-  Time Eval kred     in @add 4000 10 (build_fn 10). (* 0.26s    *)
+  Time Eval kred     in @add 200  10 (build_fn 10). (* 0.9s    *)
+  (* Time Eval kred     in @add 4000 10 (build_fn 10). (* 0.26s    *) *)
 
   (* Time Eval cbn     in @add 2    10 (build_fn 10). (* 0.004s *) *)
   (* Time Eval cbn     in @add 4    10 (build_fn 10). (* 0.040s *) *)
@@ -359,9 +426,9 @@ Module NonPrim.
   Time Eval kred     in @add 8    10 (build_fn 10). (* 0.003s *)
   Time Eval kred     in @add 10   10 (build_fn 10). (* 0.004s *)
   Time Eval kred     in @add 20   10 (build_fn 10). (* 0.013s *)
-  Time Eval kred     in @add 200  10 (build_fn 10). (* 0.04s  *)
-  Time Eval kred     in @add 2000 10 (build_fn 10). (* 0.13s  *)
-  Time Eval kred     in @add 4000 10 (build_fn 10). (* 0.26s  *)
+  Time Eval kred     in @add 200  10 (build_fn 10). (* 0.09s  *)
+  (* Time Eval kred     in @add 2000 10 (build_fn 10). (* 0.13s  *) *)
+  (* Time Eval kred     in @add 4000 10 (build_fn 10). (* 0.26s  *) *)
 
   (* Time Eval compute in @add 20   10 (build_fn 10). (* 0.000s *) *)
   (* Time Eval compute in @add 200  10 (build_fn 10). (* 0.005s *) *)
