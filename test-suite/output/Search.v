@@ -44,3 +44,11 @@ Search A. (* Test search in hypotheses *)
 Abort.
 End S.
 End M.
+
+(* Reproduce the example of the doc *)
+
+Search "_assoc".
+Search "+".
+Search hyp:bool -headhyp:bool.
+Search concl:bool -headconcl:bool.
+Search [ is:Definition headconcl:nat | is:Lemma (_ + _) ].
