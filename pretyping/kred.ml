@@ -121,7 +121,7 @@ module EqWithHoles = struct
       | _, Constr.Meta i when i < 0 ->
         begin
           if not (Vars.closedn under l) then false else
-          let j = i * -1 + 1 in
+          let j = i * -1 - 1 in
           match map.(j) with
           | None ->
             if Vars.closedn under l then
