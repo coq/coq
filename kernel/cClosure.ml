@@ -1391,9 +1391,9 @@ and knht info e t stk =
       { mark = Cstr; term = FCoFix (cfx,e) }, stk
     | Lambda _ -> { mark = Cstr ; term = mk_lambda e t }, stk
     | Prod (n, t, c) ->
-      { mark = Ntrl; term = FProd (usubst_binder e n, mk_clos e t, c, e) }, stk
+      { mark = Ntrl; term = FProd (n, mk_clos e t, c, e) }, stk
     | LetIn (n,b,t,c) ->
-      { mark = Red; term = FLetIn (usubst_binder e n, mk_clos e b, mk_clos e t, c, e) }, stk
+      { mark = Red; term = FLetIn (n, mk_clos e b, mk_clos e t, c, e) }, stk
     | Evar ev ->
       begin match info.i_cache.i_sigma.evar_expand ev with
       | EvarDefined c -> knht info e c stk
