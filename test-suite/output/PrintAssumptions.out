@@ -9,20 +9,6 @@ bli : Type
 Axioms:
 seq relies on definitional UIP.
 Axioms:
-extensionality :
-  forall (P Q : Type) (f g : P -> Q), (forall x : P, f x = g x) -> f = g
-Axioms:
-extensionality :
-  forall (P Q : Type) (f g : P -> Q), (forall x : P, f x = g x) -> f = g
-Axioms:
-extensionality :
-  forall (P Q : Type) (f g : P -> Q), (forall x : P, f x = g x) -> f = g
-Axioms:
-extensionality :
-  forall (P Q : Type) (f g : P -> Q), (forall x : P, f x = g x) -> f = g
-Closed under the global context
-Closed under the global context
-Axioms:
 M.foo : False
 Closed under the global context
 Closed under the global context
