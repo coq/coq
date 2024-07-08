@@ -520,12 +520,13 @@ let pr_notation_declaration ntn_decl =
   ++ Flags.without_option Flags.beautify pr_constr c
   ++ pr_syntax_modifiers modifiers
   ++ pr_opt (fun sc -> spc () ++ str ":" ++ spc () ++ str sc) scopt
+ [@ocaml.warning "-3"]
 
 let pr_where_notation decl_ntn =
   fnl () ++ keyword "where " ++ pr_notation_declaration decl_ntn
 
 let pr_rec_definition (rec_order, { fname; univs; binders; rtype; body_def; notations }) =
-  let pr_pure_lconstr c = Flags.without_option Flags.beautify pr_lconstr c in
+  let pr_pure_lconstr c = Flags.without_option Flags.beautify pr_lconstr c [@ocaml.warning "-3"] in
   let annot = pr_guard_annot pr_lconstr_expr binders rec_order in
   pr_ident_decl (fname,univs) ++ pr_binders_arg binders ++ annot
   ++ pr_type_option (fun c -> spc() ++ pr_lconstr_expr c) rtype
@@ -543,7 +544,7 @@ let pr_rew_rule (ubinders, lhs, rhs) =
   | _ ->
     pr_universe_decl ubinders ++ spc() ++ str"|-"
   in
-  let pr_pure_lconstr c = Flags.without_option Flags.beautify pr_lconstr c in
+  let pr_pure_lconstr c = Flags.without_option Flags.beautify pr_lconstr c [@ocaml.warning "-3"] in
   binders ++ pr_pure_lconstr lhs ++ str"==>" ++ pr_pure_lconstr rhs
 
 (**************************************)
@@ -894,7 +895,7 @@ let pr_synpure_vernac_expr v =
   | VernacInductive (f,l) ->
     let pr_constructor ((attr,coe,ins),(id,c)) =
       hov 2 (pr_vernac_attributes attr ++ pr_lident id ++ pr_oc coe ins ++
-             Flags.without_option Flags.beautify pr_spc_lconstr c)
+             Flags.without_option Flags.beautify pr_spc_lconstr c [@ocaml.warning "-3"])
     in
     let pr_constructor_list l = match l with
       | Constructors [] -> mt()

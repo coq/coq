@@ -479,4 +479,4 @@ and synterp_control ~intern CAst.{ loc; v = cmd } =
   CAst.make ?loc { expr; control; attrs = cmd.attrs }
 
 let synterp_control ~intern cmd =
-  Flags.with_option Flags.in_synterp_phase (synterp_control ~intern) cmd
+  Flags.with_option Flags.in_synterp_phase (synterp_control ~intern) cmd [@ocaml.warning "-3"]

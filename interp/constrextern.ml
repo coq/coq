@@ -94,9 +94,9 @@ let print_projections = ref false
 
 let print_meta_as_hole = ref false
 
-let with_universes f = Flags.with_option print_universes f
-let with_meta_as_hole f = Flags.with_option print_meta_as_hole f
-let without_symbols f = Flags.with_option print_no_symbol f
+let with_universes f = Flags.with_option print_universes f [@ocaml.warning "-3"]
+let with_meta_as_hole f = Flags.with_option print_meta_as_hole f [@ocaml.warning "-3"]
+let without_symbols f = Flags.with_option print_no_symbol f [@ocaml.warning "-3"]
 
 (**********************************************************************)
 (* Control printing of records *)

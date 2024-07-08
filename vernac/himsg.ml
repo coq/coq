@@ -129,8 +129,8 @@ let display_eq ~flags env sigma t1 t2 =
   let open Constrextern in
   let t1 = canonize_constr sigma t1 in
   let t2 = canonize_constr sigma t2 in
-  let ct1 = Flags.with_options flags (fun () -> extern_constr env sigma t1) () in
-  let ct2 = Flags.with_options flags (fun () -> extern_constr env sigma t2) () in
+  let ct1 = Flags.with_options flags (fun () -> extern_constr env sigma t1) () [@ocaml.warning "-3"] in
+  let ct2 = Flags.with_options flags (fun () -> extern_constr env sigma t2) () [@ocaml.warning "-3"] in
   display_expr_eq ct1 ct2
 
 (** This function adds some explicit printing flags if the two arguments are
@@ -146,9 +146,9 @@ let rec pr_explicit_aux env sigma t1 t2 = function
     pr_explicit_aux env sigma t1 t2 rem
   else
     let open Constrextern in
-    let ct1 = Flags.with_options flags (fun () -> extern_constr env sigma t1) ()
+    let ct1 = Flags.with_options flags (fun () -> extern_constr env sigma t1) () [@ocaml.warning "-3"]
     in
-    let ct2 = Flags.with_options flags (fun () -> extern_constr env sigma t2) ()
+    let ct2 = Flags.with_options flags (fun () -> extern_constr env sigma t2) () [@ocaml.warning "-3"]
     in
     Ppconstr.pr_lconstr_expr env sigma ct1, Ppconstr.pr_lconstr_expr env sigma ct2
 
@@ -222,7 +222,7 @@ let explain_elim_arity env sigma ind c okinds =
     | None | Some AlwaysSquashed -> pp ()
     | Some (SometimesSquashed _) ->
       (* universe instance matters, so print it regardless of Printing Universes *)
-      Flags.with_option Constrextern.print_universes pp ()
+      Flags.with_option Constrextern.print_universes pp () [@ocaml.warning "-3"]
   in
   let pc = Option.map (pr_leconstr_env env sigma) c in
   let msg = match okinds with
@@ -230,7 +230,7 @@ let explain_elim_arity env sigma ind c okinds =
     | Some sp ->
       let ppt ?(ppunivs=false) () =
         let pp () = pr_leconstr_env env sigma (mkSort (ESorts.make sp)) in
-        if ppunivs then Flags.with_option Constrextern.print_universes pp ()
+        if ppunivs then Flags.with_option Constrextern.print_universes pp () [@ocaml.warning "-3"]
         else pp ()
       in
       let squash = Option.get (Inductive.is_squashed (specif, snd ind)) in

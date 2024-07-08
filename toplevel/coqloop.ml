@@ -445,6 +445,7 @@ let init_ocaml_path () =
 let init_and_run_ml_toploop () =
   init_ocaml_path ();
   Flags.with_option Flags.in_ml_toplevel (Mltop.ocaml_toploop ~init_file:"ml_toplevel/include") ()
+  [@ocaml.warning "-3"]
 
 (* We return whether the execution should continue and a new state *)
 let process_toplevel_command ~state stm =
@@ -549,6 +550,7 @@ let loop ~state =
         new_state in
     aux state
   ) ()
+ [@ocaml.warning "-3"]
 
 let run ~opts ~state =
   let open Coqargs in

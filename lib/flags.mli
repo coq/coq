@@ -67,27 +67,27 @@ val warn : bool ref
 val make_warn : bool -> unit
 val if_warn : ('a -> unit) -> 'a -> unit
 
-(** [with_modified_ref r nf f x] Temporarily modify a reference in the
-    call to [f x] . Be very careful with these functions, it is very
-    easy to fall in the typical problem with effects:
-
-    with_modified_ref r nf f x y != with_modified_ref r nf (f x) y
-
-*)
-val with_modified_ref : 'c ref -> ('c -> 'c) -> ('a -> 'b) -> 'a -> 'b
-
 (** Temporarily activate an option (to activate option [o] on [f x y z],
    use [with_option o (f x y) z]) *)
 val with_option : bool ref -> ('a -> 'b) -> 'a -> 'b
+[@@ocaml.deprecated "using scoped global state to control command \
+                     options is deprecated and will stop to be \
+                     supported in the future; please favor a \
+                     functional parameter passing style instead"]
 
 (** As [with_option], but on several flags. *)
 val with_options : bool ref list -> ('a -> 'b) -> 'a -> 'b
+[@@ocaml.deprecated "using scoped global state to control command \
+                     options is deprecated and will stop to be \
+                     supported in the future; please favor a \
+                     functional parameter passing style instead"]
 
 (** Temporarily deactivate an option *)
 val without_option : bool ref -> ('a -> 'b) -> 'a -> 'b
-
-(** Temporarily extends the reference to a list *)
-val with_extra_values : 'c list ref -> 'c list -> ('a -> 'b) -> 'a -> 'b
+[@@ocaml.deprecated "using scoped global state to control command \
+                     options is deprecated and will stop to be \
+                     supported in the future; please favor a \
+                     functional parameter passing style instead"]
 
 (** Level of inlining during a functor application *)
 val set_inline_level : int -> unit
@@ -100,7 +100,6 @@ val profile_ltac_cutoff : float ref
 
 (** Default output directory *)
 val output_directory : CUnix.physical_path option ref
-
 
 (** Flag set when the test-suite is called. Its only effect to display
     verbose information for [Fail] *)
