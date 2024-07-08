@@ -6,9 +6,6 @@ module Masking : sig
   val with_resource :
     acquire:('a -> 'b) -> 'a -> scope:('b -> 'c) -> release:('b -> unit) -> 'c
 
-  val is_blocked : unit -> bool
-
-  val assert_blocked : unit -> unit
 end
 
 module Thread_map : sig
