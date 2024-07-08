@@ -457,3 +457,7 @@ let inversion knd arg pat ids =
 let contradiction c =
   let c = Option.map mk_with_bindings c in
   Contradiction.contradiction c
+
+let congruence n l = Cc_core_plugin.Cctac.congruence_tac n (Option.default [] l)
+
+let simple_congruence n l = Cc_core_plugin.Cctac.simple_congruence_tac n (Option.default [] l)

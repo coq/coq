@@ -270,3 +270,8 @@ Ltac2 @ external resolve_tc : constr -> unit := "coq-core.plugins.ltac2" "tac_re
     Does not focus. *)
 
 Ltac2 @ external unify : constr -> constr -> unit := "coq-core.plugins.ltac2" "tac_unify".
+
+Ltac2 @ external congruence : int option -> constr list option -> unit :=
+  "coq-core.plugins.ltac2" "congruence".
+Ltac2 @ external simple_congruence : int option -> constr list option -> unit :=
+  "coq-core.plugins.ltac2" "simple_congruence".
