@@ -2610,6 +2610,10 @@ let norm_head kl klt info tab ~rstks (m : fconstr) =
       | FFloat _ | FString _ -> term_of_fconstr m
       | FIrrelevant -> assert false (* only introduced when converting *)
 
+
+let id_kl info _ ~rstks m = Refold.maybe_refold info (term_of_fconstr m) rstks
+let id_klt info tab ~rstks e t = id_kl info tab ~rstks (mk_clos e t)
+
 (* Refolding stacks: just a list of stacks that hopefully contain
    interesting refolding information *)
 
@@ -2662,13 +2666,18 @@ let rec zip_term kl klt info tab ?(progress=false) ~rstks m stk =
   let m =
     match undo with
     | Some (undo, rev_params) ->
-      (* TODO: we've already tried to reduce this. We are just going to waste our time here. *)
-      zip_term kl klt info tab ~progress ~rstks (norm_head kl klt info tab ~rstks (undo.Undo.orig.Original.term)) (List.rev rev_params)
+      (* TODO: use [id_kl] and [id_klt] for parameters that have already been reduced. *)
+      zip_term kl klt info tab ~progress:false ~rstks
+        (* [id_kl] and [id_klt] to perform only zipping and refolding in the head of the application *)
+        (norm_head id_kl id_klt info tab ~rstks (undo.Undo.orig.Original.term))
+        (List.rev rev_params)
     | None -> m
   in
   let orig =
-    zip_term kl klt info tab ~progress ~rstks
-      (norm_head kl klt info tab ~rstks (unf.undo.Undo.orig.Original.term))
+    (* TODO: use [id_kl] and [id_klt] for parameters that have already been reduced. *)
+    zip_term kl klt info tab ~progress:false ~rstks
+      (* [id_kl] and [id_klt] to perform only zipping and refolding in the head of the application *)
+      (norm_head id_kl id_klt info tab ~rstks (unf.undo.Undo.orig.Original.term))
       (List.rev rev_params)
   in
   let orig = mkApp (orig, [|m|]) in
@@ -2678,16 +2687,27 @@ let rec zip_term kl klt info tab ?(progress=false) ~rstks m stk =
   let orig = undo.orig.Original.term in
   let progress = progress || undo.progress in
   if not progress && List.mem Undo.OnNoProgress undo.undos then
-    zip_term kl klt info tab ~progress:false ~rstks (norm_head kl klt info tab ~rstks orig) (List.rev_append rev_params stk)
+    zip_term kl klt info tab ~progress:false ~rstks
+      (* [id_kl] and [id_klt] to perform only zipping and refolding in the head of the application *)
+      (norm_head id_kl id_klt info tab ~rstks orig)
+      (List.rev_append rev_params stk)
   else if List.mem Undo.OnMatchFix undo.undos then
     match [@ocaml.warning "-4"] kind m with
     (* TODO: FCaseInvert? *)
     | Proj (p,_,_) when Names.Projection.unfolded p ->
       Dbg.(dbg Pp.(fun () -> str "finish|ZundoOrRefold; yes (Proj)!"));
-      zip_term kl klt info tab ~progress:false ~rstks (norm_head kl klt info tab ~rstks orig) (List.rev_append rev_params stk)
+      (* TODO: use [id_kl] and [id_klt] for parameters that have already been reduced. *)
+      zip_term kl klt info tab ~progress:false ~rstks
+        (* [id_kl] and [id_klt] to perform only zipping and refolding in the projection  *)
+        (norm_head id_kl id_klt info tab ~rstks orig)
+        (List.rev_append rev_params stk)
     | Case _ ->
-      Dbg.(dbg Pp.(fun () -> str "finish|ZundoOrRefold; yes (Fix/CoFix/Case)!"));
-      zip_term kl klt info tab ~progress:false ~rstks (norm_head kl klt info tab ~rstks orig) (List.rev_append rev_params stk)
+      Dbg.(dbg Pp.(fun () -> str "finish|ZundoOrRefold; yes (Proj/Case)!"));
+      (* TODO: use [id_kl] and [id_klt] for parameters that have already been reduced. *)
+      zip_term kl klt info tab ~progress:false ~rstks
+        (* [id_kl] and [id_klt] to perform only zipping and refolding in the projection  *)
+        (norm_head id_kl id_klt info tab ~rstks orig)
+        (List.rev_append rev_params stk)
     | _ ->
       Dbg.(dbg Pp.(fun () -> str "finish|ZundoOrRefold? no!"));
       zip_term kl klt info tab ~progress ~rstks m stk
@@ -2750,9 +2770,7 @@ and klt info tab ~rstks e t = match kind t with
 (* weak reduction *)
 let kh info tab ~rstks v stk =
   let v, stk = kni info tab v stk in
-  let kl _ _ ~rstks m = Refold.maybe_refold info (term_of_fconstr m) rstks in
-  let klt info tab ~rstks e t = kl info tab ~rstks (mk_clos e t) in
-  zip_term kl klt info tab ~rstks (term_of_fconstr v) stk
+  zip_term id_kl id_klt info tab ~rstks (term_of_fconstr v) stk
 let whd_val info tab v = kh info tab ~rstks:(Refold.empty ()) v []
 
 (* strong reduction *)
