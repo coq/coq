@@ -2387,7 +2387,7 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
       end
     else knr_ret info tab ~pat_state (m, stk)
   | FLetIn (_,v,_,bd,e) when red_set info.i_flags fZETA ->
-      knit info tab ~pat_state (on_fst (subs_cons v) e) bd (push_progress stk)
+      knit info tab ~pat_state (on_fst (subs_cons v) e) bd stk
   | FInt _ | FFloat _ | FString _ | FArray _ ->
     begin
       strip_shift_app_undo ~is_matchfix:false m stk
