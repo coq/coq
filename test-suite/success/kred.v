@@ -13,6 +13,85 @@ Ltac assert_norm_eq :=
 Ltac assert_head_eq :=
   idtac; assert_eq ltac:(fun l => let l := eval kred head in l in l).
 
+Module KnownIssues.
+  Inductive positive : Set :=  xI : forall _ : positive, positive | xO : forall _ : positive, positive | xH : positive.
+  Definition iter :=
+  fun {A : Type} (f : A -> A) =>
+  fix iter_fix (x : A) (n : positive) {struct n} : A :=
+    match n return A with
+    | xI n' => f (iter_fix (iter_fix x n') n')
+    | xO n' => iter_fix (iter_fix x n') n'
+    | xH => f x
+    end.
+  Definition succ :=
+  fix succ (x : positive) : positive := match x return positive with
+                                        | xI p => xO (succ p)
+                                        | xO p => xI p
+                                        | xH => xO xH
+                                        end.
+
+
+  Definition add :=
+  fix add (x y : positive) {struct x} : positive :=
+    match x return positive with
+    | xI p => match y return positive with
+              | xI q => xO (add_carry p q)
+              | xO q => xI (add p q)
+              | xH => xO (succ p)
+              end
+    | xO p => match y return positive with
+              | xI q => xI (add p q)
+              | xO q => xO (add p q)
+              | xH => xI p
+              end
+    | xH => match y return positive with
+            | xI q => xO (succ q)
+            | xO q => xI q
+            | xH => xO xH
+            end
+    end
+  with add_carry (x y : positive) {struct x} : positive :=
+    match x return positive with
+    | xI p => match y return positive with
+              | xI q => xI (add_carry p q)
+              | xO q => xO (add_carry p q)
+              | xH => xI (succ p)
+              end
+    | xO p => match y return positive with
+              | xI q => xO (add_carry p q)
+              | xO q => xI (add p q)
+              | xH => xO (succ p)
+              end
+    | xH => match y return positive with
+            | xI q => xI (succ q)
+            | xO q => xO (succ q)
+            | xH => xI xH
+            end
+    end
+  for
+  add.
+
+
+  Definition mul :=
+  fix mul (x y : positive) {struct x} : positive :=
+    match x return positive with
+    | xI p => add y (xO (mul p y))
+    | xO p => xO (mul p y)
+    | xH => y
+    end.
+
+  Definition pow := fun x : positive => iter (mul x) xH.
+
+  (* [cbn] refolds a quasi-recursive occurrence of [pow]. *)
+  Goal forall p : positive,
+      (pow xH (xI p)) =
+      (@iter positive (fun y : positive => y) (pow xH p) p).
+  Proof.
+    intros.
+    Fail assert_norm_eq.
+  Abort.
+End KnownIssues.
+
 Module Test1.
   Goal 1 + 1 = S (0 + 1).
   Proof.
@@ -53,7 +132,6 @@ Module Test1.
   Qed.
 
   #[local] Arguments Nat.add _ _ /.
-
   Goal 1 + (x + 1) = S (ltac:(let t := eval lazy in Nat.add in exact t) x 1).
   Proof.
     assert_norm_eq.
@@ -426,7 +504,7 @@ Module NonPrim.
   Time Eval kred     in @add 8    10 (build_fn 10). (* 0.003s *)
   Time Eval kred     in @add 10   10 (build_fn 10). (* 0.004s *)
   Time Eval kred     in @add 20   10 (build_fn 10). (* 0.013s *)
-  Time Eval kred     in @add 200  10 (build_fn 10). (* 0.09s  *)
+  Time Eval kred     in @add 200  10 (build_fn 10). (* 0.15s  *)
   (* Time Eval kred     in @add 2000 10 (build_fn 10). (* 0.13s  *) *)
   (* Time Eval kred     in @add 4000 10 (build_fn 10). (* 0.26s  *) *)
 
