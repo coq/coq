@@ -533,12 +533,6 @@ project stalmarck "https://github.com/coq-community/stalmarck" "master"
 # Contact @palmskog on github
 
 ########################################################################
-# coq-library-undecidability
-########################################################################
-project coq_library_undecidability "https://github.com/uds-psl/coq-library-undecidability" "master"
-# Contact @mrhaandi, @yforster on github
-
-########################################################################
 # Tactician
 ########################################################################
 project tactician "https://github.com/coq-tactician/coq-tactician" "coqdev"
