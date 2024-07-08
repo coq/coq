@@ -30,7 +30,6 @@ CI_TARGETS= \
     ci-coqutil \
     ci-corn \
     ci-cross_crypto \
-    ci-coq_library_undecidability \
     ci-coq_lsp \
     ci-coq_performance_tests \
     ci-coq_tools \
@@ -128,8 +127,6 @@ ci-deriving: ci-mathcomp
 ci-math_classes: ci-bignums
 
 ci-corn: ci-math_classes
-
-ci-coq_library_undecidability: ci-metacoq
 
 ci-mtac2: ci-unicoq
 

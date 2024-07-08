@@ -872,14 +872,6 @@ library:ci-jasmin:
   - library:ci-mathcomp_word
   stage: build-3+
 
-library:ci-coq_library_undecidability:
-  extends: .ci-template
-  needs:
-  - build:base
-  - plugin:ci-equations
-  - plugin:ci-metacoq
-  stage: build-3+
-
 library:ci-http:
   extends: .ci-template-flambda
   needs:
