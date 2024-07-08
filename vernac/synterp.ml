@@ -583,4 +583,4 @@ let synterp_control ~intern cmd =
       cmd)
 
 let synterp_control ~intern cmd =
-  Flags.with_option Flags.in_synterp_phase (synterp_control ~intern) cmd
+  Flags.with_option Flags.in_synterp_phase (synterp_control ~intern) cmd [@ocaml.warning "-3"]

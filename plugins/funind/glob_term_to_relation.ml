@@ -1523,7 +1523,7 @@ let do_build_inductive evd (funconstants : pconstant list)
          (Flags.without_option ComInductive.Internal.do_auto_prop_lowering
             (ComInductive.do_mutual_inductive ~template:(Some false) None rel_inds
                ~cumulative:false ~poly:false ~private_ind:false
-               ~uniform:ComInductive.NonUniformParameters)))
+               ~uniform:ComInductive.NonUniformParameters)) [@ocaml.warning "-3"])
       Declarations.Finite
   with
   | UserError msg as e ->
