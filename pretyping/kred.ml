@@ -50,7 +50,10 @@ module EqWithHoles = struct
     | CaseInvert {indices}, CaseInvert iv2 ->
       Array.equal eq indices iv2.indices
   (* Copied and generalized *)
-  let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq_evars eq leq ~nargs ~base ~under t1 t2 =
+  let compare_head_gen_leq_with
+      (kind1 : Constr.t -> (Constr.t, Constr.types, Sorts.t, UVars.Instance.t, Sorts.relevance) Constr.kind_of_term)
+      (kind2 : Constr.t -> (Constr.t, Constr.types, Sorts.t, UVars.Instance.t, Sorts.relevance) Constr.kind_of_term)
+      leq_universes leq_sorts eq_evars eq leq ~nargs ~base ~under t1 t2 =
     match kind_nocast_gen kind1 t1, kind_nocast_gen kind2 t2 with
     | Cast _, _ | _, Cast _ -> assert false (* kind_nocast *)
     | Rel n1, Rel n2 -> Int.equal n1 n2
@@ -97,11 +100,11 @@ module EqWithHoles = struct
       | CoFix _ | Int _ | Float _ | String _ | Array _), _ -> false
 
   let noccur_outside n m term =
-    let rec occur_rec n c = match [@ocaml.warning "-4"] Constr.kind c with
-      | Constr.Rel p -> if n>p || p>n+m then raise_notrace Not_found
-      | _        -> Constr.iter_with_binders succ occur_rec n c
+    let rec occur_rec (floor,n) c = match [@ocaml.warning "-4"] Constr.kind c with
+      | Constr.Rel p -> if (p >= floor) && (n>p || p>n+m) then raise_notrace Not_found
+      | _        -> Constr.iter_with_binders (fun (f,n) -> (f+1,n+1)) occur_rec (floor,n) c
     in
-    try occur_rec n term; true with Not_found -> false
+    try occur_rec (1,n) term; true with Not_found -> false
 
   let eq_existential eq ~evs ~nargs ~base ~under (evk1, args1) (evk2, args2) =
     ignore nargs; ignore under;
@@ -1737,13 +1740,7 @@ module Refold = struct
     let rec go stk =
       match [@ocaml.warning "-4"] stk with
       | [] -> ()
-      (* We make sure to collect refolding candidates only when they have been
-         completely "undone". Otherwise large stacks full of undos yet to be
-         processed will kill performance of the refolding.
-         TODO: this is suspect and needs to be addressed elsewhere.
-      *)
-      | ZundoOrRefold (Undo.{orig;may_refold;undos}, rev_params) :: stk
-        when may_refold && undos = [] ->
+      | ZundoOrRefold (Undo.{orig;may_refold;_}, rev_params) :: stk when may_refold ->
         let num_holes = stack_args_size rev_params in
         add info orig num_holes v;
         go stk
@@ -1762,7 +1759,7 @@ module Refold = struct
         go stk
       | _ :: stk -> go stk
     in
-    go stk
+    go (List.rev stk)
 
 
   let maybe_refold_cand :
@@ -2677,7 +2674,7 @@ let rec zip_term kl klt info tab ?(progress=false) ~rstks m stk =
 | Zfix(fx,par)::s ->
   let (may_refold,i,env,gfix) =
     match[@ocaml.warning "-4"] fx.term with
-      FFix (((_,i),_),env,may_refold,gfix) -> (may_refold || gfix = None,i,env,gfix)
+      FFix (((_,i),_),env,may_refold,gfix) -> (may_refold && gfix = None,i,env,gfix)
     | _ -> assert false
   in
   if may_refold && Result.is_ok (Lazy.force ((Option.get gfix).(i))) then
@@ -2805,10 +2802,12 @@ and klt info tab ~rstks e t = match kind t with
 (* Initialization and then normalization *)
 
 (* weak reduction *)
-let kh info tab ~rstks v stk =
+let kh info tab v stk =
   let v, stk = kni info tab v stk in
+  let rstks = Refold.empty () in
+  Refold.add_stack info stk (Refold.empty ());
   zip_term id_kl id_klt info tab ~rstks (term_of_fconstr v) stk
-let whd_val info tab v = kh info tab ~rstks:(Refold.empty ()) v []
+let whd_val info tab v = kh info tab v []
 
 (* strong reduction *)
 let norm_term info tab e t = klt info tab ~rstks:(Refold.empty ()) e t
