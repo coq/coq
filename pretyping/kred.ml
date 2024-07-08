@@ -685,19 +685,22 @@ module Stack = struct
       | (_ as s) ->
         let cont () =
           let undos = List.rev rev_undo in
+          (* TODO: [args_acc] needs to be maintained more efficiently. *)
           let rec go_undo undos prog_acc args_acc m s =
             match undos with
             | [] ->
               let cargs () = args_acc @ new_cargs in
-              f ~cont:(fun () -> abort (m,cargs()@s)) ~depth ~cargs s
+              abort (m,cargs()@s)
             | (args,(undo,rev_params)) :: undos ->
               let prog_acc = prog_acc || undo.Undo.progress in
               if (not prog_acc && List.mem Undo.OnNoProgress undo.Undo.undos)
               || (is_matchfix && List.mem Undo.OnMatchFix undo.Undo.undos)
               then
-                let s = (List.map_append (fun (args,(u,rp)) -> args@[ZundoOrRefold (u,rp)]) undos) @ s in
+                (* perform [undo] *)
                 let s = if prog_acc then push_progress s else s in
-                abort (undo.Undo.orig.Original.term, List.rev_append rev_params s)
+                let m = undo.Undo.orig.Original.term in
+                let s = List.rev_append rev_params s in
+                go_undo undos prog_acc args_acc m s
               else
                 (* We keep [ZundoOrRefold] around to allow refolding later on *)
                 let undo = Undo.{ undo with undos = remove_OnMatchFix undo.undos } in
@@ -1700,7 +1703,13 @@ module Refold = struct
     let rec go stk =
       match [@ocaml.warning "-4"] stk with
       | [] -> ()
-      | ZundoOrRefold (Undo.{orig;may_refold;_}, rev_params) :: stk when may_refold ->
+      (* We make sure to collect refolding candidates only when they have been
+         completely "undone". Otherwise large stacks full of undos yet to be
+         processed will kill performance of the refolding.
+         TODO: this is suspect and needs to be addressed elsewhere.
+      *)
+      | ZundoOrRefold (Undo.{orig;may_refold;undos}, rev_params) :: stk
+        when may_refold && undos = [] ->
         let num_holes = stack_args_size rev_params in
         add info orig num_holes v;
         go stk
@@ -2390,7 +2399,8 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
 
 and knr_ret : type a. _ -> _ -> pat_state: a depth -> ?failed: _ -> _ -> a =
   fun info tab ~pat_state ?failed (m, stk) ->
-  Dbg.(dbg Pp.(fun () -> str "kret"));
+  Dbg.(dbg Pp.(fun () -> str "knr; m head: " ++ Pp.fnl () ++ pp_fconstr info.i_cache.i_env m));
+  Dbg.(dbg Pp.(fun () -> str "knr_ret; stk : " ++ Pp.fnl () ++ pp_stack info.i_cache.i_env stk));
   match pat_state with
   | RedPattern.Cons (patt, pat_state) ->
       let red = {
