@@ -437,6 +437,17 @@ val declare_constant
   -> constant_entry
   -> Constant.t
 
+(** Like [declare_definition] but also returns the universes and universe constraints added to the
+    global environment *)
+val declare_definition_full
+  :  info:Info.t
+  -> cinfo:EConstr.t option CInfo.t
+  -> opaque:bool
+  -> body:EConstr.t
+  -> ?using:Vernacexpr.section_subset_expr
+  -> Evd.evar_map
+  -> GlobRef.t * Univ.ContextSet.t
+
 (** Declaration messages, for internal use *)
 
 (** XXX: Scheduled for removal from public API, do not use *)
