@@ -702,8 +702,7 @@ module Stack = struct
                 (* perform [undo] *)
                 let s = if prog_acc then push_progress s else s in
                 let m = undo.Undo.orig.Original.term in
-                let s = List.rev_append rev_params s in
-                go_undo undos prog_acc args_acc m s
+                go_undo undos prog_acc (List.rev rev_params) m s
               else
                 (* We keep [ZundoOrRefold] around to allow refolding later on *)
                 let undo = Undo.{ undo with undos = remove_OnMatchFix undo.undos } in
