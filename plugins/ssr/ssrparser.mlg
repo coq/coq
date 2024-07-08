@@ -895,7 +895,7 @@ END
 
 ARGUMENT EXTEND ssripats_ne TYPED AS ssripat PRINTED BY { pr_ssripats }
   | [ ssripat(i) ssripats(tl) ] -> { i @ tl }
-                                     END
+END
 
 (* subsets of patterns *)
 
@@ -1767,6 +1767,11 @@ module Internal = struct
   let mkFwdHint = mkFwdHint
   let bind_fwd = bind_fwd
   let pr_wgen = pr_wgen
+end
+
+module Ltac2 = struct
+let ssripats = ssripats_ne
+
 end
 
 }

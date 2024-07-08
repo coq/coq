@@ -283,3 +283,7 @@ val wit_ssrstruct : Names.Id.t option Genarg.uniform_genarg_type
 
 val wit_ssrtac3arg :
     (Tacexpr.raw_tactic_expr, Tacexpr.glob_tactic_expr, Geninterp.Val.t) Genarg.genarg_type
+
+module Ltac2 : sig
+  val ssripats : ssripats Pcoq.Entry.t
+end
