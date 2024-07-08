@@ -713,6 +713,40 @@ module Stack = struct
         f ~cont ~depth ~cargs s
     in
     go 0 [] stk
+
+  (* This is an attempt to perform as many undos as possible before we hand the
+     term over to [zip_term].
+
+     NOTE: We __must not__ perform any actual zipping here. That also means we
+     cannot meaningfully change the head term unless we also throw away all
+     accumulated stack items. *)
+  let perform_progress_undos (m : fconstr) (stk : stack) =
+    (* rev_args is a reversed list of unreversed stacks. *)
+    let rec go ?(progress_acc=false) depth rev_args m stk =
+      let (new_depth, new_args, stk) = strip_update_shift_app m stk in
+      let depth = depth + new_depth in
+      match [@ocaml.warning "-4"] stk with
+      | ZundoOrRefold (undo, rev_params) as z :: stk ->
+        let progress_acc = undo.Undo.progress || progress_acc in
+        if not progress_acc && List.mem Undo.OnNoProgress undo.undos then
+          (* discard [progress_acc] *)
+          go 0 [List.rev rev_params] (undo.Undo.orig.Original.term) stk
+        else
+          (* Keep progress *)
+          go ~progress_acc depth ([z] :: new_args :: rev_args) m stk
+      | Zunfold (Some (undo_arg, rev_params_arg), unf, rev_params) as z :: stk ->
+        let progress_acc = undo_arg.Undo.progress || progress_acc in
+        if not progress_acc && List.mem Undo.OnNoProgress undo_arg.Undo.undos then
+          let z = Zunfold (None, unf, rev_params) in
+          (* discard [progress_acc] *)
+          go 0 [[z]; List.rev rev_params_arg] (undo_arg.Undo.orig.Original.term) stk
+        else
+          go depth ([z] :: new_args :: rev_args) m stk
+      | z :: stk ->
+          go depth ([z] :: new_args :: rev_args) m stk
+      | [] -> (m, List.fold_left (fun acc x -> x @ acc) [] (new_args :: rev_args))
+      in
+      go 0 [] m stk
 end
 
 open Stack
@@ -2411,7 +2445,10 @@ and knr_ret : type a. _ -> _ -> pat_state: a depth -> ?failed: _ -> _ -> a =
       RedPattern.match_head red info tab ~pat_state patt m stk
   | RedPattern.Nil b ->
     ignore failed;
-    match b with No -> (m, stk)
+    match b with No ->
+      (* [m] cannot reduce further *)
+      let m = { m with mark = Ntrl } in
+      perform_progress_undos m stk
 
 and start_unfold : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> _ -> _ -> _ -> 'a
   = fun info tab ~pat_state m cst body ogfix stk ->
