@@ -1680,8 +1680,8 @@ module Refold = struct
   let add info (orig : Original.t) (cand_num : int) (v : t) : unit =
     let t = term_of_fconstr (orig.Original.term) in
     match CMap.find_opt t v.by_globref with
-    | Some _ -> ()
-    | None ->
+    | Some s when Int.Set.mem cand_num s -> ()
+    | Some _ | None ->
       match Constr.destRef t with
       | exception Constr.DestKO -> assert false (* ?? *)
       | cand_glob ->
