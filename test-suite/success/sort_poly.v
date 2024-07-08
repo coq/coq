@@ -278,4 +278,13 @@ Module Inductives.
   (* we can eliminate to Prop *)
   Check sexists_ind.
 
+  Inductive sigma3@{s s' s''|u v| } (A:Type@{s|u}) (P:A -> Type@{s'|v}) :
+    Type@{s''|max(u,v)} :=
+    exist3 : forall x:A, P x -> sigma3 A P.
+
+  Arguments exist3 {_ _}.
+
+  Definition π1@{s s'|u v|} {A:Type@{s|u}} {P:A -> Type@{s'|v}} (p : sigma3@{_ _ Type|_ _} A P) : A :=
+    match p return A with exist3 a _ => a end.
+
 End Inductives.
