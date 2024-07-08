@@ -17,6 +17,8 @@ module Theory : sig
     (** Coq's logical path *)
     ; implicit : bool
     (** Use -R or -Q *)
+    ; deps : string list
+    (** Adds as -Q user-contrib/X X *)
     }
 end
 

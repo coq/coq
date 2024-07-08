@@ -34,34 +34,45 @@ let native = match Coq_config.native_compiler with
   | Coq_config.NativeOn _ -> native_mode
 
 (** arguments are [gen_rules theory_name dir flags] *)
-let parse_args () =
-  let tname = String.split_on_char '.' Sys.argv.(1) in
-  let base_dir = Sys.argv.(2) in
-  let _backtrace = [Arg.A "-d"; Arg.A "backtrace"] in
-  let default = false, false, Coq_module.Rule_type.Regular { native }, [] in
-  let split, async, rule, user_flags = if Array.length Sys.argv > 3 then
-      match Sys.argv.(3) with
-      | "-async" -> false, true, Coq_module.Rule_type.Regular { native }, Arg.[A "-async-proofs"; A "on"]
-      | "-split" -> true, false, Coq_module.Rule_type.Regular { native }, []
+type args = {
+  tname : string list;
+  base_dir : string;
+  async : bool;
+  rule : Coq_module.Rule_type.t;
+  split : bool;
+  user_flags : Arg.t list;
+  dependencies : string list;
+}
+
+let parse_args () : args =
+  match Array.to_list Sys.argv with
+  | _ :: tname :: base_dir :: args ->
+    let tname = String.split_on_char '.' tname in
+    let _backtrace = [Arg.A "-d"; Arg.A "backtrace"] in
+    let default = { base_dir; tname; async = false; split = false; rule = Coq_module.Rule_type.Regular { native }; user_flags = []; dependencies = [] } in
+    let rec parse a = function
+      | [] -> a
+      | "-async" :: rest -> parse { a with async = true; user_flags = Arg.[A "-async-proofs"; A "on"] } rest
+      | "-split" :: rest -> parse { a with split = true } rest
+      | "-dep" :: d :: rest -> parse { a with dependencies = d :: a.dependencies } rest
       (* Dune will sometimes pass this option as "" *)
-      | "" -> default
-      | opt -> raise (Invalid_argument ("unrecognized option: " ^ opt))
-    else
-      default
-  in
-  tname, base_dir, async, rule, user_flags, split
+      | "" :: rest -> parse a rest
+      | unknown :: _ -> raise (Invalid_argument unknown)
+    in
+      parse default args
+  | _ -> raise (Invalid_argument "usage: gen_rules theory_name directory")
 
 let ppr fmt = List.iter (Dune_file.Rule.pp fmt)
 let ppi fmt = List.iter (Dune_file.Install.pp fmt)
 
 let main () =
 
-  let tname, base_dir, async, rule, user_flags, split = parse_args () in
+  let { tname; base_dir; async; rule; user_flags; split; dependencies } = parse_args () in
   let root_lvl = List.length (String.split_on_char '/' base_dir) in
 
   let stdlib =
     let directory = Path.make "theories" in
-    Coq_rules.Theory.{ directory; dirname = ["Coq"]; implicit = true }
+    Coq_rules.Theory.{ directory; dirname = ["Coq"]; implicit = true; deps = [] }
   in
 
   (* usually the else case here is Ltac2, but other libraries could be
@@ -74,7 +85,7 @@ let main () =
   (* Rule generation *)
   let dir_info = Dir_info.scan ~prefix:[] base_dir in
   let directory = Path.make base_dir in
-  let theory = Coq_rules.Theory.{ directory; dirname = tname; implicit } in
+  let theory = Coq_rules.Theory.{ directory; dirname = tname; implicit; deps = dependencies } in
   let cctx = Coq_rules.Context.make ~root_lvl ~theory ~user_flags ~rule ~boot ~dir_info ~async ~split in
   let vo_rules = Coq_rules.vo_rules ~dir_info ~cctx in
   let install_rules = Coq_rules.install_rules ~dir_info ~cctx in

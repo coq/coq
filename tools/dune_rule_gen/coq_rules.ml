@@ -124,11 +124,15 @@ module Theory = struct
     (** Coq's logical path *)
     ; implicit : bool
     (** Use -R or -Q *)
+    ; deps : string list;
+    (** Adds as -Q user-contrib/X X *)
     }
 
-  let args { directory; dirname; implicit } =
+  let args { directory; dirname; implicit; deps } =
     let barg = if implicit then "-R" else "-Q" in
     Arg.[ A barg; Path directory; A (String.concat "." dirname) ]
+    @ List.flatten (deps |> List.map (fun dep ->
+        Arg.[A "-Q"; Path (Path.make @@ "user-contrib"^Filename.dir_sep^dep); A dep]))
 
 end
 
