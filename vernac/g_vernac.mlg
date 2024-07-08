@@ -97,7 +97,7 @@ let warn_chdir_pwd = CWarnings.create ~name:"change-dir-pwd-deprecated" ~categor
 }
 
 GRAMMAR EXTEND Gram
-  GLOBAL: vernac_control quoted_attributes attribute_list gallina_ext noedit_mode subprf subprf_with_selector;
+  GLOBAL: vernac_control quoted_attributes attribute_list gallina_ext noedit_mode subprf subprf_with_selector qualid;
   vernac_control: FIRST
     [ [ IDENT "Time"; c = vernac_control ->
         { add_control_flag ~loc ~flag:ControlTime c }
@@ -135,7 +135,7 @@ GRAMMAR EXTEND Gram
   ;
   attr_value:
     [ [ "=" ; v = string -> { VernacFlagLeaf (FlagString v) }
-      | "=" ; v = IDENT -> { VernacFlagLeaf (FlagIdent v) }
+      | "=" ; v = qualid -> { VernacFlagLeaf (FlagQualid v) }
       | "(" ; a = attribute_list ; ")" -> { VernacFlagList a }
       | -> { VernacFlagEmpty } ]
     ]
@@ -152,7 +152,7 @@ GRAMMAR EXTEND Gram
       | IDENT "Cumulative" ->
         { CAst.make ~loc ("universes", VernacFlagList [CAst.make ~loc ("cumulative", VernacFlagEmpty)]) }
       | IDENT "NonCumulative" ->
-        { CAst.make ~loc ("universes", VernacFlagList [CAst.make ~loc ("cumulative", VernacFlagLeaf (FlagIdent "no"))]) }
+        { CAst.make ~loc ("universes", VernacFlagList [CAst.make ~loc ("cumulative", VernacFlagLeaf (FlagQualid (Libnames.qualid_of_string "no")))]) }
       | IDENT "Private" ->
         { CAst.make ~loc ("private", VernacFlagList [CAst.make ~loc ("matching", VernacFlagEmpty)]) }
       | IDENT "Program" ->

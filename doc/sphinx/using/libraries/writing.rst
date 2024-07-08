@@ -14,7 +14,7 @@ tactic, definition, axiom, theorem or file.  When renaming a definition or theor
 deprecated compatibility alias using :cmd:`Notation (abbreviation)`
 (see :ref:`the example below <compatibility-alias>`).
 
-.. attr:: deprecated ( {? since = @string , } {? note = @string } )
+.. attr:: deprecated ( {? since = @string , } {? note = @string , } {? use = @qualid } )
    :name: deprecated
 
    At least one of :n:`since` or :n:`note` must be present.  If both
@@ -29,16 +29,21 @@ deprecated compatibility alias using :cmd:`Notation (abbreviation)`
    :cmd:`Theorem`, and similar commands. To attach it to a
    compiled library file, use :cmd:`Attributes`.
 
+   The :n:`use` attribute can be used for commands such as :cmd:`Definition`,
+   :cmd:`Theorem`, and ``Notation @ident``. Its value must refer to an
+   existing constant of abbreviation and is printed as part of the warning
+   message as well as used by LSP based user interfaces as a quick fix.
+
    It can trigger the following warnings:
 
-   .. warn:: Library File @qualid is deprecated since @string__since. @string__note
-             Library File (transitively required) @qualid is deprecated since @string__since. @string__note
-             Ltac2 alias @qualid is deprecated since @string__since. @string__note
-             Ltac2 definition @qualid is deprecated since @string__since. @string__note
-             Ltac2 notation {+ @ltac2_scope } is deprecated since @string__since. @string__note
-             Notation @string is deprecated since @string__since. @string__note
-             Tactic @qualid is deprecated since @string__since. @string__note
-             Tactic Notation @qualid is deprecated since @string__since. @string__note
+   .. warn:: Library File @qualid is deprecated since @string__since. @string__note. Use @qualid__use instead.
+             Library File (transitively required) @qualid is deprecated since @string__since. @string__note. Use @qualid__use instead.
+             Ltac2 alias @qualid is deprecated since @string__since. @string__note. Use @qualid__use instead.
+             Ltac2 definition @qualid is deprecated since @string__since. @string__note. Use @qualid__use instead.
+             Ltac2 notation {+ @ltac2_scope } is deprecated since @string__since. @string__note. Use @qualid__use instead.
+             Notation @string is deprecated since @string__since. @string__note. Use @qualid__use instead.
+             Tactic @qualid is deprecated since @string__since. @string__note. Use @qualid__use instead.
+             Tactic Notation @qualid is deprecated since @string__since. @string__note. Use @qualid__use instead.
 
       :n:`@qualid` or :n:`@string` is the notation,
       :n:`@string__since` is the version number, :n:`@string__note` is

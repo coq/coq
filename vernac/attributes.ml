@@ -10,7 +10,7 @@
 
 (** The type of parsing attribute data *)
 type vernac_flag_type =
-  | FlagIdent of string
+  | FlagQualid of Libnames.qualid
   | FlagString of string
 
 type vernac_flags = vernac_flag list
@@ -21,8 +21,8 @@ and vernac_flag_value =
   | VernacFlagList of vernac_flags
 
 let pr_vernac_flag_leaf = function
-  | FlagIdent b -> Pp.str b
   | FlagString s -> Pp.(quote (str s))
+  | FlagQualid p -> Libnames.pr_qualid p
 
 let rec pr_vernac_flag_value = let open Pp in function
   | VernacFlagEmpty -> mt ()
@@ -136,7 +136,8 @@ let key_value_attribute ~key ~default ~(values : (string * 'a) list) : 'a option
       CErrors.user_err ?loc Pp.(str "key '" ++ str key ++ str "' has been already set.")
     | None ->
       begin function
-        | VernacFlagLeaf (FlagIdent b) ->
+        | VernacFlagLeaf (FlagQualid q) when Libnames.qualid_is_ident q ->
+          let b = Names.Id.to_string @@ Libnames.qualid_basename q in
           begin match CList.assoc_f String.equal b values with
             | exception Not_found ->
               CErrors.user_err ?loc
@@ -159,12 +160,16 @@ let bool_attribute ~name : bool option attribute =
   key_value_attribute ~key:name ~default:true ~values
 
 (* Variant of the [bool] attribute with only two values (bool has three). *)
+let qualid_is_this_ident fp id =
+  Libnames.qualid_is_ident fp &&
+  Names.Id.to_string @@ Libnames.qualid_basename fp = id
+
 let get_bool_value ?loc ~key ~default =
   function
   | VernacFlagEmpty -> default
-  | VernacFlagLeaf (FlagIdent "yes") ->
+  | VernacFlagLeaf (FlagQualid q) when qualid_is_this_ident q "yes" ->
     true
-  | VernacFlagLeaf (FlagIdent "no") ->
+  | VernacFlagLeaf (FlagQualid q) when qualid_is_this_ident q "no" ->
     false
   | _ ->
     CErrors.user_err ?loc
@@ -283,21 +288,45 @@ let template =
 let unfold_fix =
   enable_attribute ~key:"unfold_fix" ~default:(fun () -> false)
 
-let deprecation_parser : Deprecation.t key_parser = fun ?loc orig args ->
+let rec flags2map m = function
+  | { CAst.v = (n,VernacFlagLeaf l); loc } :: xs ->
+      if CString.Map.mem n m then
+        CErrors.user_err ?loc Pp.(str "Duplicate attribute " ++ str n);
+      flags2map (CString.Map.add n l m) xs
+  | { CAst.v = n,_; loc } :: _ ->
+      CErrors.user_err ?loc Pp.(str "Attribute " ++ str n ++ str " must be a leaf.")
+  | [] -> m
+
+let find_string_opt m s =
+  match CString.Map.find s m with
+  | FlagString s -> Some s
+  | FlagQualid _ -> CErrors.user_err Pp.(str "Attribute " ++ str s ++ str " should be a string")
+  | exception Not_found -> None
+
+let deprecation_parser parse_use : _ key_parser = fun ?loc orig args ->
   assert_once ?loc ~name:"deprecation" orig;
   match args with
-  | VernacFlagList [ {CAst.v="since", VernacFlagLeaf (FlagString since)};
-                     {CAst.v="note", VernacFlagLeaf (FlagString note)} ]
-  | VernacFlagList [ {CAst.v="note", VernacFlagLeaf (FlagString note)};
-                     {CAst.v="since", VernacFlagLeaf (FlagString since)} ] ->
-    Deprecation.make ~since ~note ()
-  | VernacFlagList [ {CAst.v="since", VernacFlagLeaf (FlagString since)} ] ->
-    Deprecation.make ~since ()
-  | VernacFlagList [ {CAst.v="note", VernacFlagLeaf (FlagString note)} ] ->
-    Deprecation.make ~note ()
+  | VernacFlagList l ->
+      let m = flags2map CString.Map.empty l in
+      let note = find_string_opt m "note" in
+      let since = find_string_opt m "since" in
+      CString.Map.find_opt "use" m |> parse_use ?since ?note
   |  _ -> CErrors.user_err ?loc (Pp.str "Ill formed “deprecated” attribute.")
 
-let deprecation = attribute_of_list ["deprecated",deprecation_parser]
+let no_use_allowed ?since ?note = function
+  | None -> Deprecation.make ?since ?note ()
+  | Some _ -> CErrors.user_err Pp.(str "Attribute use not allowed")
+
+let extended_globref_allowed ?since ?note = function
+  | None -> Deprecation.make_with_qf ?since ?note ()
+  | Some (FlagQualid p) ->
+      let use_instead = Nametab.locate_extended p in
+      Deprecation.make_with_qf ?since ?note ~use_instead ()
+  | Some _ -> CErrors.user_err Pp.(str "Attribute \"use\" should be a (qualified) identifier")
+
+
+let deprecation = attribute_of_list ["deprecated",deprecation_parser no_use_allowed]
+let deprecation_with_use_globref_instead = attribute_of_list ["deprecated",deprecation_parser extended_globref_allowed]
 
 let user_warn_parser : UserWarn.warn list key_parser = fun ?loc orig args ->
   let orig = Option.default [] orig in
@@ -321,7 +350,12 @@ let user_warns =
   | None, [] -> return None
   | depr, warn -> return (Some UserWarn.{ depr; warn })
 
-let only_locality atts = parse locality atts
+  let user_warns_with_use_globref_instead =
+    (deprecation_with_use_globref_instead ++ user_warn_warn) >>= function
+    | None, [] -> return None
+    | depr_qf, warn_qf -> return (Some UserWarn.{ depr_qf; warn_qf })
+
+  let only_locality atts = parse locality atts
 
 let only_polymorphism atts = parse polymorphic atts
 
@@ -329,7 +363,7 @@ let only_polymorphism atts = parse polymorphic atts
 let vernac_polymorphic_flag loc =
   CAst.make ?loc (ukey, VernacFlagList [CAst.make ?loc ("polymorphic", VernacFlagEmpty)])
 let vernac_monomorphic_flag loc =
-  CAst.make ?loc (ukey, VernacFlagList [CAst.make ?loc ("polymorphic", VernacFlagLeaf (FlagIdent "no"))])
+  CAst.make ?loc (ukey, VernacFlagList [CAst.make ?loc ("polymorphic", VernacFlagLeaf (FlagQualid (Libnames.qualid_of_string "no")))])
 
 let reversible = bool_attribute ~name:"reversible"
 
@@ -370,9 +404,10 @@ let process_typing_att ?loc ~typing_flags att disable =
     CErrors.user_err ?loc Pp.(str "Unknown “typing” attribute: " ++ str att)
 
 let process_typing_disable ?loc ~key = function
-  | VernacFlagEmpty | VernacFlagLeaf (FlagIdent "yes") ->
+  | VernacFlagEmpty -> true
+  | VernacFlagLeaf (FlagQualid q) when qualid_is_this_ident q "yes" ->
     true
-  | VernacFlagLeaf (FlagIdent "no") ->
+  | VernacFlagLeaf (FlagQualid q) when qualid_is_this_ident q "no" ->
     false
   | _ ->
     CErrors.user_err ?loc Pp.(str "Ill-formed attribute value, must be " ++ str key ++ str "={yes, no}")

@@ -9,8 +9,13 @@
 (************************************************************************)
 
 type t = { since : string option ; note : string option }
+type 'a with_qf = { depr : t; use_instead : 'a option }
+
+let drop_qf { depr } = depr
+let with_empty_qf depr = { depr; use_instead = None }
 
 let make ?since ?note () = { since ; note }
+let make_with_qf ?since ?note ?use_instead () = { depr = make ?since ?note (); use_instead }
 
 type since_name = NoSince | Since of string
 
@@ -30,20 +35,30 @@ let get_generic_cat since =
     since_cats := CString.Map.add since c !since_cats;
     c
 
-let printer ~object_name pp (x,{since;note}) =
+let printer ~object_name ~pp_qf pp (x,{depr={since;note};use_instead}) =
   let open Pp in
+  let note =
+    match note, use_instead with
+    | None, None -> None
+    | Some x, _ -> Some (str x)
+    | None, Some x -> Some (str"Use " ++ pp_qf x ++ str" instead.") in
   str object_name ++ spc () ++ pp x ++
   strbrk " is deprecated" ++
   pr_opt (fun since -> str "since " ++ str since) since ++
-  str "." ++ pr_opt (fun note -> str note) note
+  str "." ++ pr_opt (fun x -> x) note
 
-let create_warning ?default ~object_name ~warning_name_if_no_since pp =
-  let pp = printer ~object_name pp in
+let create_warning_with_qf ?default ~object_name ~warning_name_if_no_since ~pp_qf pp =
+  let pp = printer ~object_name ~pp_qf pp in
   let main_cat, main_w = CWarnings.create_hybrid ?default ~name:warning_name_if_no_since ~from:[depr_cat] () in
   let main_w = CWarnings.create_in main_w pp in
   let warnings = ref CString.Map.empty in
-  fun ?loc (v, ({since} as info)) ->
+  fun ?loc (v, ({depr = {since}; use_instead } as info)) ->
     let since = since_name since in
+    let quickfix =
+      match use_instead with
+      | None -> None
+      | Some replacement ->
+          Option.cata (fun loc -> Some [Quickfix.make ~loc (pp_qf replacement)]) None loc in
     let w = match since with
       | NoSince -> main_w
       | Since since ->
@@ -58,7 +73,11 @@ let create_warning ?default ~object_name ~warning_name_if_no_since pp =
           warnings := CString.Map.add since w !warnings;
           w
     in
-    w ?loc (v,info)
+    w ?loc ?quickfix (v,info)
+
+let create_warning ?default ~object_name ~warning_name_if_no_since pp =
+  let f = create_warning_with_qf ?default ~object_name ~warning_name_if_no_since ~pp_qf:(fun _ -> assert false) pp in
+  fun ?loc (v, depr) -> f ?loc (v, {depr; use_instead = None})
 
 module Version = struct
 

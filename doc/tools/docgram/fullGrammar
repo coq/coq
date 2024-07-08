@@ -841,7 +841,7 @@ attribute: [
 
 attr_value: [
 | "=" string
-| "=" IDENT
+| "=" qualid
 | "(" attribute_list ")"
 |
 ]

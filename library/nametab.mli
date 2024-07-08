@@ -104,19 +104,19 @@ type visibility = Until of int | Exactly of int
 
 val map_visibility : (int -> int) -> visibility -> visibility
 
-val push : ?user_warns:UserWarn.t -> visibility -> full_path -> GlobRef.t -> unit
+val push : ?user_warns:Globnames.extended_global_reference UserWarn.with_qf -> visibility -> full_path -> GlobRef.t -> unit
 val push_modtype : visibility -> full_path -> ModPath.t -> unit
 val push_module : visibility -> DirPath.t -> ModPath.t -> unit
 val push_dir : visibility -> DirPath.t -> GlobDirRef.t -> unit
-val push_abbreviation : ?user_warns:UserWarn.t -> visibility -> full_path -> Globnames.abbreviation -> unit
+val push_abbreviation : ?user_warns:Globnames.extended_global_reference UserWarn.with_qf -> visibility -> full_path -> Globnames.abbreviation -> unit
 
 val push_universe : visibility -> full_path -> Univ.UGlobal.t -> unit
 
 (** Deprecation and user warn info *)
 
-val is_warned_xref : Globnames.extended_global_reference -> UserWarn.t option
+val is_warned_xref : Globnames.extended_global_reference -> Globnames.extended_global_reference UserWarn.with_qf option
 
-val warn_user_warn_xref : ?loc:Loc.t -> UserWarn.t -> Globnames.extended_global_reference -> unit
+val warn_user_warn_xref : ?loc:Loc.t -> Globnames.extended_global_reference UserWarn.with_qf -> Globnames.extended_global_reference -> unit
 
 (** {6 The following functions perform globalization of qualified names } *)
 
@@ -218,6 +218,8 @@ val shortest_qualid_of_module : ?loc:Loc.t -> ModPath.t -> qualid
 
 (** In general we have a [UnivNames.universe_binders] around rather than a [Id.Set.t] *)
 val shortest_qualid_of_universe : ?loc:Loc.t -> 'u Id.Map.t -> Univ.UGlobal.t -> qualid
+
+val pr_depr_xref : Globnames.extended_global_reference -> Pp.t
 
 (** {5 Generic name handling} *)
 

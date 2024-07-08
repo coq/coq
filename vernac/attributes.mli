@@ -10,7 +10,7 @@
 
 (** The type of parsing attribute data *)
 type vernac_flag_type =
-  | FlagIdent of string
+  | FlagQualid of Libnames.qualid
   | FlagString of string
 
 type vernac_flags = vernac_flag list
@@ -58,8 +58,10 @@ val unfold_fix : bool attribute
 val locality : bool option attribute
 val option_locality : Goptions.option_locality attribute
 val deprecation : Deprecation.t option attribute
+val deprecation_with_use_globref_instead : Globnames.extended_global_reference Deprecation.with_qf option attribute
 val user_warn_warn : UserWarn.warn list attribute
 val user_warns : UserWarn.t option attribute
+val user_warns_with_use_globref_instead : Globnames.extended_global_reference UserWarn.with_qf option attribute
 val reversible : bool option attribute
 val canonical_field : bool attribute
 val canonical_instance : bool attribute

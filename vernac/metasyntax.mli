@@ -63,7 +63,7 @@ val add_reserved_notation :
 
 (** Add a syntactic definition (as in "Notation f := ...") *)
 
-val add_abbreviation : local:bool -> UserWarn.t option -> env ->
+val add_abbreviation : local:bool -> Globnames.extended_global_reference UserWarn.with_qf option -> env ->
   Id.t -> Id.t list * constr_expr -> syntax_modifier CAst.t list -> unit
 
 (** Print the Camlp5 state of a grammar *)

@@ -15,7 +15,10 @@ type warn = { note : string; cats : string }
 (** note and comma separated list of categories *)
 
 type t = { depr : Deprecation.t option; warn : warn list }
+type 'a with_qf = { depr_qf : 'a Deprecation.with_qf option; warn_qf : warn list }
 
+let drop_qf { depr_qf; warn_qf } = { depr = Option.map Deprecation.drop_qf depr_qf; warn = warn_qf }
+let with_empty_qf { depr; warn } = { depr_qf = Option.map Deprecation.with_empty_qf depr; warn_qf = warn}
 let empty = { depr = None; warn = [] }
 
 let make_warn ~note ?cats () =

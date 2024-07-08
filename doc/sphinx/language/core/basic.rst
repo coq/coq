@@ -416,7 +416,7 @@ assign attributes to a whole document.
    attributes ::= {* #[ {*, @attribute } ] } {* @legacy_attr }
    attribute ::= @ident {? @attr_value }
    attr_value ::= = @string
-   | = @ident
+   | = @qualid
    | ( {+, @attribute } )
    legacy_attr ::= {| Local | Global }
    | {| Polymorphic | Monomorphic }
