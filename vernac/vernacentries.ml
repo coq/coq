@@ -1006,17 +1006,22 @@ let dump_inductive indl_for_glob decl =
     | Inductive _ -> ()
   end
 
+
+let { Goptions.get = do_auto_prop_lowering } =
+  Goptions.declare_bool_option_and_ref ~key:["Automatic";"Proposition";"Inductives"] ~value:true ()
+
 let vernac_inductive ~atts kind indl =
   let open Preprocessed_Mind_decl in
   let indl_for_glob, decl = preprocess_inductive_decl ~atts kind indl in
   dump_inductive indl_for_glob decl;
+  let do_auto_prop_lowering = do_auto_prop_lowering () in
   match decl with
   | Record { flags = { template; udecl; cumulative; poly; finite; }; kind; primitive_proj; records } ->
     let _ : _ list =
-      Record.definition_structure ~template udecl kind ~cumulative ~poly ~primitive_proj finite records in
+      Record.definition_structure ~do_auto_prop_lowering ~template udecl kind ~cumulative ~poly ~primitive_proj finite records in
     ()
   | Inductive { flags = { template; udecl; cumulative; poly; finite; }; typing_flags; private_ind; uniform; inductives } ->
-    ComInductive.do_mutual_inductive ~template udecl inductives ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite
+    ComInductive.do_mutual_inductive ~do_auto_prop_lowering ~template udecl inductives ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite
 
 let preprocess_inductive_decl ~atts kind indl =
   snd @@ preprocess_inductive_decl ~atts kind indl

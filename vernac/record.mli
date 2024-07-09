@@ -26,7 +26,8 @@ module Ast : sig
 end
 
 val definition_structure
-  :  cumul_univ_decl_expr option
+  : do_auto_prop_lowering:bool
+  -> cumul_univ_decl_expr option
   -> inductive_kind
   -> template:bool option
   -> cumulative:bool
@@ -77,7 +78,8 @@ end
 
 (** Ast.t list at the constr level *)
 val interp_structure
-  :  cumul_univ_decl_expr option
+  : do_auto_prop_lowering:bool
+  -> cumul_univ_decl_expr option
   -> inductive_kind
   -> template:bool option
   -> cumulative:bool

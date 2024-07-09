@@ -20,7 +20,8 @@ type uniform_inductive_flag =
   | NonUniformParameters
 
 val do_mutual_inductive
-  :  template:bool option
+  : do_auto_prop_lowering:bool
+  -> template:bool option
   -> cumul_univ_decl_expr option
   -> (one_inductive_expr * notation_declaration list) list
   -> cumulative:bool
@@ -61,6 +62,7 @@ end
 (** elaborates an inductive declaration (the first half of do_mutual_inductive) *)
 val interp_mutual_inductive
   :  env:Environ.env
+  -> do_auto_prop_lowering:bool
   -> template:bool option
   -> cumul_univ_decl_expr option
   -> (one_inductive_expr * notation_declaration list) list
@@ -77,7 +79,8 @@ type syntax_allows_template_poly = SyntaxAllowsTemplatePoly | SyntaxNoTemplatePo
 (** the post-elaboration part of interp_mutual_inductive, mainly dealing with
     universe levels *)
 val interp_mutual_inductive_constr
-  : sigma:Evd.evar_map
+  : do_auto_prop_lowering:bool
+  -> sigma:Evd.evar_map
   -> template:bool option
   -> udecl:UState.universe_decl
   -> variances:Entries.variance_entry
@@ -130,7 +133,8 @@ sig
   (** Returns the modified arities (the result sort may be replaced by Prop).
       Should be called with minimized universes. *)
   val inductive_levels
-    : Environ.env
+    : do_auto_prop_lowering:bool
+    -> Environ.env
     -> Evd.evar_map
     -> poly:bool
     -> indnames:Names.Id.t list
@@ -147,8 +151,5 @@ sig
     -> (Names.lident * Vernacexpr.inductive_params_expr)
     -> (Names.lident * Vernacexpr.inductive_params_expr)
     -> 'a
-
-
-  val do_auto_prop_lowering : bool ref
 
 end
