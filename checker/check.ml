@@ -312,7 +312,7 @@ let marshal_in_segment (type a) ~validate ~value ~(segment : a ObjFile.segment) 
         let digest = Digest.input ch in
         let () = if not (String.equal digest segment.ObjFile.hash) then raise_notrace Exit in
         v
-      with _ ->
+      with exn when CErrors.noncritical exn ->
         CErrors.user_err (str "Corrupted file " ++ quote (str f))
     in
     let () = Validate.validate value v in

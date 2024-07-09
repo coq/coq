@@ -55,7 +55,7 @@ let get_version () =
     let rev = input_line ch in
     let () = close_in ch in
     Printf.sprintf "%s (%s)" ver rev
-  with _ -> Coq_config.version
+  with Sys_error _ | End_of_file -> Coq_config.version
 
 let print_header () =
   Printf.printf "Welcome to Chicken %s\n%!" (get_version ())

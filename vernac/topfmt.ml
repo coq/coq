@@ -270,7 +270,7 @@ let make_style_stack () =
     | Format.String_tag tag ->
       let (tpfx, _) = split_tag tag in
       if tpfx = start_pfx then "" else begin
-        if tpfx = end_pfx then diff_tag_stack := (try List.tl !diff_tag_stack with tl -> []);
+        if tpfx = end_pfx then diff_tag_stack := (match !diff_tag_stack with _ :: tl -> tl | [] -> []);
         match !style_stack with
         | []       -> (* Something went wrong, we fallback *)
           Terminal.eval default_style
