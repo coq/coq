@@ -278,9 +278,9 @@ let check_allowed_sort env sigma ind c p =
     | Sort s -> s
     | _ -> error_elim_arity env sigma ind c None
   in
-  if Inductiveops.is_allowed_elimination sigma (specif, (snd ind)) sort then
-    ESorts.relevance_of_sort sort
-  else
+  match Inductiveops.make_allowed_elimination env sigma (specif, (snd ind)) sort with
+  | Some sigma -> sigma, ESorts.relevance_of_sort sort
+  | None ->
     error_elim_arity env sigma ind c (Some sort)
 
 let check_actual_type env sigma cj t =

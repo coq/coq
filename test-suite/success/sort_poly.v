@@ -135,12 +135,18 @@ Module Inductives.
   Inductive foo6@{s| |} : Type@{s|Set} := Foo6.
   Fail Check foo6_sind.
 
-  Fail Definition foo6_rect (P:foo6 -> Type)
+  Fail Definition foo6_rect@{s|+|+} (P:foo6@{s|} -> Type)
     (H : P Foo6)
     (f : foo6)
     : P f
     := match f with Foo6 => H end.
-  (* XXX error message is pretty bad *)
+
+  (* implicit quality is set to Type *)
+  Definition foo6_rect (P:foo6 -> Type)
+    (H : P Foo6)
+    (f : foo6)
+    : P f
+    := match f with Foo6 => H end.
 
   Definition foo6_prop_rect (P:foo6 -> Type)
     (H : P Foo6)

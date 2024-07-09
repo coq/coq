@@ -140,6 +140,9 @@ val squash_elim_sort : env -> evar_map -> squash -> ESorts.t -> evar_map
 
 val is_allowed_elimination : evar_map -> (mind_specif * EInstance.t) -> EConstr.ESorts.t -> bool
 
+val make_allowed_elimination : env -> evar_map -> (mind_specif * EInstance.t) -> EConstr.ESorts.t -> evar_map option
+(** Returns [Some sigma'] if the elimination can be allowed, possibly adding constraints in [sigma'] *)
+
 val elim_sort : mind_specif -> Sorts.family
 
 val top_allowed_sort : env -> inductive -> Sorts.family
