@@ -27,7 +27,8 @@
 
 *)
 
-Require Import FunInd Recdef FMapInterface FMapList ZArith Int FMapAVL Lia.
+Require Program.
+Require Import FMapInterface FMapList ZArith Int FMapAVL Lia.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -687,8 +688,8 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
 
   Local Unset Keyed Unification.
 
-  Function compare_aux (ee:Raw.enumeration D.t * Raw.enumeration D.t)
-   { measure cardinal_e_2 ee } : comparison :=
+  Program Fixpoint compare_aux (ee:Raw.enumeration D.t * Raw.enumeration D.t)
+   { measure (cardinal_e_2 ee) } : comparison :=
   match ee with
   | (Raw.End _, Raw.End _) => Eq
   | (Raw.End _, Raw.More _ _ _ _) => Lt
@@ -704,7 +705,7 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
       | GT _ => Gt
       end
   end.
-  Proof.
+  Next Obligation.
   intros; unfold cardinal_e_2; simpl;
   abstract (do 2 rewrite cons_cardinal_e; lia ).
   Defined.
@@ -725,12 +726,28 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
   #[global]
   Hint Resolve cons_Cmp : core.
 
+  #[local] Ltac caseq :=
+  match goal with [ |- context [match ?t with _ => _ end] ] =>
+    let cmp := fresh in
+    let H := fresh in
+    remember t as cmp eqn:H; symmetry in H; destruct cmp
+  end.
+
   Lemma compare_aux_Cmp : forall e,
    Cmp (compare_aux e) (flatten_e (fst e)) (flatten_e (snd e)).
   Proof.
-  intros e; induction e, (compare_aux e) using compare_aux_ind; clearf; simpl in *;
-   auto; intros; try clear e0; try clear e3; try MX.elim_comp; auto.
-  rewrite 2 cons_1 in IHc; auto.
+  intros e; unfold compare_aux.
+  match goal with [ |- context[Wf.Fix_sub _ _ _ _ ?f] ] => set (rec := f) end.
+  apply Wf.Fix_sub_rect.
+  + intros [[] []] g h Heq; simpl; try reflexivity.
+    repeat caseq; try reflexivity.
+    now apply Heq.
+  + intros [] IH wf; simpl.
+    repeat caseq; simpl; try MX.elim_comp; auto.
+    apply cons_Cmp; eauto.
+    rewrite <- !cons_1; apply IH.
+    unfold Wf.MR, cardinal_e_2; cbn.
+    rewrite !cons_cardinal_e; lia.
   Qed.
 
   Lemma compare_Cmp : forall m1 m2,
