@@ -695,11 +695,15 @@ A similar table for :cmd:`Section` can be found
     - :attr:`export`
     - :attr:`global`
 
-  * - :cmd:`Definition`, :cmd:`Lemma`, :cmd:`Axiom`, ...
+  * - :cmd:`Definition`, :cmd:`Lemma`,
+
+      :cmd:`Axiom`, ...
     - :attr:`global`
     - qualified name
     - ❌
-    - short name when imported
+    - short name
+
+      when imported
 
   * - :cmd:`Notation`
     - :attr:`global`
@@ -711,7 +715,9 @@ A similar table for :cmd:`Section` can be found
     - :attr:`global`
     - not available
     - ❌
-    - short name when imported
+    - short name
+
+      when imported
 
   * - ``Hints`` (and :cmd:`Instance`)
     - :attr:`export`
@@ -743,13 +749,17 @@ A similar table for :cmd:`Section` can be found
     - :attr:`global`
     - not available
     - ❌
-    - short name when imported
+    - short name
+
+      when imported
 
   * - :cmd:`Ltac2`
     - :attr:`global`
     - not available
     - ❌
-    - short name when imported
+    - short name
+
+      when imported
 
   * - :cmd:`Tactic Notation`
     - :attr:`global`
