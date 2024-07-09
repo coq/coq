@@ -26,14 +26,10 @@ module Ast : sig
 end
 
 val definition_structure
-  : do_auto_prop_lowering:bool
+  : flags:ComInductive.flags
   -> cumul_univ_decl_expr option
   -> inductive_kind
-  -> template:bool option
-  -> cumulative:bool
-  -> poly:bool
   -> primitive_proj:bool
-  -> Declarations.recursivity_kind
   -> Ast.t list
   -> GlobRef.t list
 
@@ -78,14 +74,10 @@ end
 
 (** Ast.t list at the constr level *)
 val interp_structure
-  : do_auto_prop_lowering:bool
+  : flags:ComInductive.flags
   -> cumul_univ_decl_expr option
   -> inductive_kind
-  -> template:bool option
-  -> cumulative:bool
-  -> poly:bool
   -> primitive_proj:bool
-  -> Declarations.recursivity_kind
   -> Ast.t list
   -> Record_decl.t
 

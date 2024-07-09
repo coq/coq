@@ -836,22 +836,21 @@ let primitive_proj =
   | Some t -> return t
   | None -> return (primitive_flag ())
 
+let { Goptions.get = do_auto_prop_lowering } =
+  Goptions.declare_bool_option_and_ref ~key:["Automatic";"Proposition";"Inductives"] ~value:true ()
+
 module Preprocessed_Mind_decl = struct
-  type flags = {
-    template : bool option;
-    udecl : Constrexpr.cumul_univ_decl_expr option;
-    cumulative : bool;
-    poly : bool;
-    finite : Declarations.recursivity_kind;
-  }
+  type flags = ComInductive.flags
   type record = {
     flags : flags;
+    udecl : Constrexpr.cumul_univ_decl_expr option;
     primitive_proj : bool;
     kind : Vernacexpr.inductive_kind;
     records : Record.Ast.t list;
   }
   type inductive = {
     flags : flags;
+    udecl : Constrexpr.cumul_univ_decl_expr option;
     typing_flags : Declarations.typing_flags option;
     private_ind : bool;
     uniform : ComInductive.uniform_inductive_flag;
@@ -891,6 +890,8 @@ let preprocess_inductive_decl ~atts kind indl =
           ++ private_ind ++ typing_flags ++ prim_proj_attr)
         atts)
   in
+  let auto_prop_lowering = do_auto_prop_lowering () in
+  let flags = { ComInductive.template; cumulative; poly; finite; auto_prop_lowering; } in
   if Option.has_some is_defclass then
     (* Definitional class case *)
     let (id, bl, c, l) = Option.get is_defclass in
@@ -910,7 +911,7 @@ let preprocess_inductive_decl ~atts kind indl =
     let recordl = [id, bl, c, None, [f], None] in
     let kind = Class true in
     let records = vernac_record ~template udecl ~cumulative kind ~poly ?typing_flags ~primitive_proj finite recordl in
-    indl, Preprocessed_Mind_decl.(Record { flags = { template; udecl; cumulative; poly; finite; }; primitive_proj; kind; records })
+    indl, Preprocessed_Mind_decl.(Record { flags; udecl; primitive_proj; kind; records })
   else if List.for_all is_record indl then
     (* Mutual record case *)
     let () = match kind with
@@ -954,7 +955,7 @@ let preprocess_inductive_decl ~atts kind indl =
     let kind = match kind with Class _ -> Class false | _ -> kind in
     let recordl = List.map unpack indl in
     let records = vernac_record ~template udecl ~cumulative kind ~poly ?typing_flags ~primitive_proj finite recordl in
-    indl, Preprocessed_Mind_decl.(Record { flags = { template; udecl; cumulative; poly; finite; }; primitive_proj; kind; records })
+    indl, Preprocessed_Mind_decl.(Record { flags; udecl; primitive_proj; kind; records })
   else if List.for_all is_constructor indl then
     (* Mutual inductive case *)
     let () = match kind with
@@ -978,7 +979,7 @@ let preprocess_inductive_decl ~atts kind indl =
     in
     let inductives = List.map unpack indl in
     let uniform = should_treat_as_uniform () in
-    indl, Preprocessed_Mind_decl.(Inductive { flags = { template; udecl; cumulative; poly; finite }; typing_flags; private_ind; uniform; inductives })
+    indl, Preprocessed_Mind_decl.(Inductive { flags; udecl; typing_flags; private_ind; uniform; inductives })
   else
     user_err (str "Mixed record-inductive definitions are not allowed.")
 
@@ -994,8 +995,7 @@ let dump_inductive indl_for_glob decl =
         | _ -> ())
       indl_for_glob;
     match decl with
-    (* [XXX] EJGA: only [records] used here *)
-    | Record { flags = { template; udecl; cumulative; poly; finite; }; kind; primitive_proj; records } ->
+    | Record { records } ->
       let dump_glob_proj (x, _) = match x with
         | Vernacexpr.(AssumExpr ({loc;v=Name id}, _, _) | DefExpr ({loc;v=Name id}, _, _, _)) ->
           Dumpglob.dump_definition (make ?loc id) false "proj"
@@ -1006,22 +1006,17 @@ let dump_inductive indl_for_glob decl =
     | Inductive _ -> ()
   end
 
-
-let { Goptions.get = do_auto_prop_lowering } =
-  Goptions.declare_bool_option_and_ref ~key:["Automatic";"Proposition";"Inductives"] ~value:true ()
-
 let vernac_inductive ~atts kind indl =
   let open Preprocessed_Mind_decl in
   let indl_for_glob, decl = preprocess_inductive_decl ~atts kind indl in
   dump_inductive indl_for_glob decl;
-  let do_auto_prop_lowering = do_auto_prop_lowering () in
   match decl with
-  | Record { flags = { template; udecl; cumulative; poly; finite; }; kind; primitive_proj; records } ->
+  | Record { flags; kind; udecl; primitive_proj; records } ->
     let _ : _ list =
-      Record.definition_structure ~do_auto_prop_lowering ~template udecl kind ~cumulative ~poly ~primitive_proj finite records in
+      Record.definition_structure ~flags udecl kind ~primitive_proj records in
     ()
-  | Inductive { flags = { template; udecl; cumulative; poly; finite; }; typing_flags; private_ind; uniform; inductives } ->
-    ComInductive.do_mutual_inductive ~do_auto_prop_lowering ~template udecl inductives ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite
+  | Inductive { flags; udecl; typing_flags; private_ind; uniform; inductives } ->
+    ComInductive.do_mutual_inductive ~flags udecl inductives ?typing_flags ~private_ind ~uniform
 
 let preprocess_inductive_decl ~atts kind indl =
   snd @@ preprocess_inductive_decl ~atts kind indl

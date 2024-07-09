@@ -13,6 +13,14 @@ open Constrexpr
 
 (** {6 Inductive and coinductive types} *)
 
+type flags = {
+  poly : bool;
+  cumulative : bool;
+  template : bool option;
+  auto_prop_lowering : bool;
+  finite : Declarations.recursivity_kind;
+}
+
 (** Entry points for the vernacular commands Inductive and CoInductive *)
 
 type uniform_inductive_flag =
@@ -20,16 +28,12 @@ type uniform_inductive_flag =
   | NonUniformParameters
 
 val do_mutual_inductive
-  : do_auto_prop_lowering:bool
-  -> template:bool option
+  : flags:flags
+  -> ?typing_flags:Declarations.typing_flags
   -> cumul_univ_decl_expr option
   -> (one_inductive_expr * notation_declaration list) list
-  -> cumulative:bool
-  -> poly:bool
-  -> ?typing_flags:Declarations.typing_flags
   -> private_ind:bool
   -> uniform:uniform_inductive_flag
-  -> Declarations.recursivity_kind
   -> unit
 
 (** User-interface API *)
@@ -62,16 +66,12 @@ end
 (** elaborates an inductive declaration (the first half of do_mutual_inductive) *)
 val interp_mutual_inductive
   :  env:Environ.env
-  -> do_auto_prop_lowering:bool
-  -> template:bool option
+  -> flags:flags
+  -> ?typing_flags:Declarations.typing_flags
   -> cumul_univ_decl_expr option
   -> (one_inductive_expr * notation_declaration list) list
-  -> cumulative:bool
-  -> poly:bool
-  -> ?typing_flags:Declarations.typing_flags
   -> private_ind:bool
   -> uniform:uniform_inductive_flag
-  -> Declarations.recursivity_kind
   -> Mind_decl.t
 
 type syntax_allows_template_poly = SyntaxAllowsTemplatePoly | SyntaxNoTemplatePoly
@@ -79,9 +79,8 @@ type syntax_allows_template_poly = SyntaxAllowsTemplatePoly | SyntaxNoTemplatePo
 (** the post-elaboration part of interp_mutual_inductive, mainly dealing with
     universe levels *)
 val interp_mutual_inductive_constr
-  : do_auto_prop_lowering:bool
-  -> sigma:Evd.evar_map
-  -> template:bool option
+  :  sigma:Evd.evar_map
+  -> flags:flags
   -> udecl:UState.universe_decl
   -> variances:Entries.variance_entry
   -> ctx_params:EConstr.rel_context
@@ -92,10 +91,7 @@ val interp_mutual_inductive_constr
   -> constructors:(Names.Id.t list * EConstr.constr list) list
   -> env_ar_params:Environ.env
   (** Environment with the inductives and parameters in the rel_context *)
-  -> cumulative:bool
-  -> poly:bool
   -> private_ind:bool
-  -> finite:Declarations.recursivity_kind
   -> DeclareInd.default_dep_elim list * Entries.mutual_inductive_entry * UnivNames.universe_binders * Univ.ContextSet.t
 
 (************************************************************************)
@@ -133,7 +129,7 @@ sig
   (** Returns the modified arities (the result sort may be replaced by Prop).
       Should be called with minimized universes. *)
   val inductive_levels
-    : do_auto_prop_lowering:bool
+    : auto_prop_lowering:bool
     -> Environ.env
     -> Evd.evar_map
     -> poly:bool

@@ -1518,13 +1518,22 @@ let do_build_inductive evd (funconstants : pconstant list)
   (*     ) *)
   (*   in *)
   try
+    let flags = {
+      ComInductive.poly = false;
+      cumulative = false;
+      template = Some false;
+      auto_prop_lowering = false;
+      finite = Finite;
+    }
+    in
     with_full_print
       (Flags.silently
-         (ComInductive.do_mutual_inductive ~do_auto_prop_lowering:false
-            ~template:(Some false) None rel_inds
-            ~cumulative:false ~poly:false ~private_ind:false
-            ~uniform:ComInductive.NonUniformParameters))
-      Declarations.Finite
+         (fun () ->
+            ComInductive.do_mutual_inductive ~flags
+              None rel_inds
+              ~private_ind:false
+              ~uniform:ComInductive.NonUniformParameters))
+      ()
   with
   | UserError msg as e ->
     let repacked_rel_inds =
