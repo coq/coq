@@ -618,3 +618,13 @@ let () =
   define "evarconv_unify"
     (transparent_state @-> constr @-> constr @-> tac unit)
     Tac2tactics.evarconv_unify
+
+let () =
+  define "congruence"
+  (option int @-> option (list constr) @-> tac unit)
+  Tac2tactics.congruence
+
+let () =
+  define "simple_congruence"
+  (option int @-> option (list constr) @-> tac unit)
+  Tac2tactics.simple_congruence

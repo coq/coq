@@ -132,3 +132,7 @@ val evarconv_unify : TransparentState.t -> constr -> constr -> unit tactic
 (** Internal *)
 
 val mk_intro_pattern : intro_pattern -> Tactypes.intro_pattern
+
+val congruence : int option -> constr list option -> unit Proofview.tactic
+
+val simple_congruence : int option -> constr list option -> unit Proofview.tactic
