@@ -1,5 +1,5 @@
-Require Import Stdlib.nsatz.NsatzTactic.
-Require Import Stdlib.ZArith.ZArith Stdlib.QArith.QArith.
+From Stdlib Require Import NsatzTactic.
+From Stdlib Require Import ZArith QArith.
 
 Goal forall x y : Z, (x + y = y + x)%Z.
   intros; nsatz.

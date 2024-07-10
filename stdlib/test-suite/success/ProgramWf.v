@@ -4,8 +4,8 @@ Fail Program Definition f n (e:n=n): {n|n=0} := match n,e with 0, refl => 0 | _,
 
 (* Then we test Program properly speaking *)
 
-Require Import Arith Program.
-Require Import ZArith Zwf.
+From Stdlib Require Import Arith Program.
+From Stdlib Require Import ZArith Zwf.
 
 Set Implicit Arguments.
 (* Set Printing All. *)
@@ -69,7 +69,7 @@ Qed.
 
 Print merge.
 
-Require Import Arith.
+From Stdlib Require Import Arith.
 Unset Implicit Arguments.
 
 Time Program Fixpoint check_n  (n : nat) (P : { i | i < n } -> bool) (p : nat)
@@ -85,7 +85,7 @@ Time Program Fixpoint check_n  (n : nat) (P : { i | i < n } -> bool) (p : nat)
         error
   end.
 
-Require Import Lia Setoid.
+From Stdlib Require Import Lia Setoid.
 
 Next Obligation.
   intros ; simpl in *. apply H.

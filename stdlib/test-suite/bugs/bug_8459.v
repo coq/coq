@@ -1,4 +1,4 @@
-Require Import Stdlib.Vectors.Vector.
+From Stdlib Require Import Vector.
 
 Axiom exfalso : False.
 

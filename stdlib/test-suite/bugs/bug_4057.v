@@ -1,4 +1,4 @@
-Require Stdlib.Strings.String.
+From Stdlib Require String.
 
 Set Implicit Arguments.
 

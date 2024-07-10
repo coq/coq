@@ -1,4 +1,4 @@
-Require Import Stdlib.Program.Program Stdlib.Program.Equality.
+From Stdlib Require Import Program Equality.
 
 Goal forall (H: forall n m : nat, n = m -> n = 0) x, x = tt.
 intros.
@@ -17,7 +17,7 @@ Proof.
   assumption.
 Qed.
 
-Require Import ProofIrrelevance.
+From Stdlib Require Import ProofIrrelevance.
 
 Goal forall n, forall v : vector (S n), exists v' : vector n, exists a : A, v = vcons a v'.
 Proof.

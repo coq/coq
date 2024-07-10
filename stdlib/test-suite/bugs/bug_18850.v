@@ -1,6 +1,6 @@
 From Stdlib Require Import
   Fin
-  Classes.SetoidClass. (* comment out for different error message *)
+  SetoidClass. (* comment out for different error message *)
 
 Notation fin := t.
 

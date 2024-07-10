@@ -1,4 +1,4 @@
-Require Import Btauto.
+From Stdlib Require Import Btauto.
 
 Open Scope bool_scope.
 

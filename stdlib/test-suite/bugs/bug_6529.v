@@ -1,4 +1,4 @@
-Require Import Vector Program.
+From Stdlib Require Import Vector Program.
 
 Program Definition append_nil_def :=
   forall A n (ls: t A n), append ls (nil A) = ls. (* Works *)

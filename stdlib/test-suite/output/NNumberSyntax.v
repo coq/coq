@@ -1,4 +1,4 @@
-Require Import NArith.
+From Stdlib Require Import NArith.
 Check 32%N.
 Check (eq_refl : 0x2a%N = 42%N).
 Check (fun f : nat -> N => (f 0%nat + 0)%N).
@@ -46,5 +46,5 @@ Check 0xff.
 Check 0xFF.
 Close Scope hex_N_scope.
 
-Require Import Arith.
+From Stdlib Require Import Arith.
 Check (0 + N.of_nat 11)%N.

@@ -1,5 +1,5 @@
-Require Import ZArith.
-Require Import Lia.
+From Stdlib Require Import ZArith.
+From Stdlib Require Import Lia.
 Import Z.
 Unset Lia Cache.
 

@@ -1,5 +1,5 @@
-Require Import Arith List.
-Require Import OrderedTypeEx.
+From Stdlib Require Import Arith List.
+From Stdlib Require Import OrderedTypeEx.
 
 Module Adr.
  Include Nat_as_OT.

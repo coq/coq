@@ -1,5 +1,5 @@
-Require Import FSetWeakList.
-Require Import FSetDecide.
+From Stdlib Require Import FSetWeakList.
+From Stdlib Require Import FSetDecide.
 
 Parameter Name : Set.
 Axiom eq_Name_dec : forall (n : Name) (o : Name), {n = o} + {n <> o}.

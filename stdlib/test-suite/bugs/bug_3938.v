@@ -1,7 +1,7 @@
 Require Import TestSuite.admit.
-Require Import Stdlib.Arith.PeanoNat.
+From Stdlib Require Import PeanoNat.
 #[export] Hint Extern 1 => admit : typeclass_instances.
-Require Import Setoid.
+From Stdlib Require Import Setoid.
 Goal forall a b (f : nat -> Set) (R : nat -> nat -> Prop),
        Equivalence R -> R a b -> f a = f b.
   intros a b f H.

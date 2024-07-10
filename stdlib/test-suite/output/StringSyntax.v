@@ -1,5 +1,5 @@
-Require Import Stdlib.Lists.List.
-Require Import Stdlib.Strings.String Stdlib.Strings.Byte Stdlib.Strings.Ascii.
+From Stdlib Require Import List.
+From Stdlib.Strings Require Import String Byte Ascii.
 Import ListNotations.
 
 Set Printing Depth 100000.

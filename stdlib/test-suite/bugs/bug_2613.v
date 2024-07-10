@@ -1,8 +1,8 @@
 Require Import TestSuite.admit.
 (* Check that eq_sym is still pointing to Logic.eq_sym after use of Function *)
 
-Require Import ZArith.
-Require Recdef.
+From Stdlib Require Import ZArith.
+From Stdlib Require Recdef.
 
 Axiom nat_eq_dec: forall x y : nat, {x=y}+{x<>y}.
 

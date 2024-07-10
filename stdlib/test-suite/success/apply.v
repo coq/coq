@@ -6,7 +6,7 @@ apply H in H0.
 assumption.
 Qed.
 
-Require Import ZArith.
+From Stdlib Require Import ZArith.
 Goal (forall x y z, ~ z <= 0 -> x * z < y * z -> x <= y)%Z.
 intros; apply Znot_le_gt, Z.gt_lt in H.
 apply Zmult_lt_reg_r, Z.lt_le_incl in H0; auto.
@@ -108,7 +108,7 @@ End Test.
 (* Two examples that show that hnf_constr is used when unifying types
    of bindings (a simplification of a script from Field_Theory) *)
 
-Require Import List.
+From Stdlib Require Import List.
 Open Scope list_scope.
 Fixpoint P (l : list nat) : Prop :=
   match l with
@@ -142,7 +142,7 @@ Qed.
    before trying a subterm that matches the left-hand-side of the equality
    (a simplication of an example taken from Nijmegen/QArith) *)
 
-Require Import ZArith.
+From Stdlib Require Import ZArith.
 Coercion Zpos : positive >-> Z.
 Parameter f : Z -> Z -> Z.
 Parameter g : forall q1 q2 p : Z, f (f q1 p) (f q2 p) = Z0.

@@ -1,8 +1,8 @@
 (* Test parsing/interpretation/pretyping on a large example *)
 (* Expected time < 2.00s *)
 
-Require Import Reals.
-Require Import Ring_tac.
+From Stdlib Require Import Reals.
+From Stdlib Require Import Ring_tac.
 
 Open Scope R_scope.
 

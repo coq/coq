@@ -1,5 +1,5 @@
-Require Import Lia.
-Require Import NArith.
+From Stdlib Require Import Lia.
+From Stdlib Require Import NArith.
 Open Scope N_scope.
 
 Goal forall (a b c: N),

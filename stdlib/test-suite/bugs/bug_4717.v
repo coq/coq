@@ -1,6 +1,6 @@
 (* Omega being smarter on recognizing nat and Z *)
 
-Require Import Lia ZArith.
+From Stdlib Require Import Lia ZArith.
 
 Definition nat' := nat.
 

@@ -1,6 +1,6 @@
 Require Import TestSuite.admit.
 
-Require Import Relations Program Setoid Morphisms.
+From Stdlib Require Import Relations Program Setoid Morphisms.
 
 Section S1.
   Variable R: nat -> relation bool.

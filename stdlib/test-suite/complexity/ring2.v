@@ -1,7 +1,7 @@
 (* This example checks the efficiency of the abstract machine used by ring *)
 (* Expected time < 1.00s *)
 
-Require Import BinInt Zbool.
+From Stdlib Require Import BinInt Zbool.
 
 Definition Zadd x y :=
 match x with
@@ -31,7 +31,7 @@ match x with
 end.
 
 
-Require Import Ring.
+From Stdlib Require Import Ring.
 
 Lemma Zth : ring_theory Z0 (Zpos xH) Zadd Z.mul Z.sub Z.opp (@eq Z).
 Admitted.

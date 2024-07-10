@@ -1,4 +1,4 @@
-Require Import Lia ZArith.
+From Stdlib Require Import Lia ZArith.
 
 (* Submitted by Xavier Urbain 18 Jan 2002 *)
 
@@ -59,7 +59,7 @@ intros.
 Qed.
 
 (* Adapted from an example in Nijmegen/FTA/ftc/RefSeparating (Oct 2002) *)
-Require Import Lia.
+From Stdlib Require Import Lia.
 Section C.
 Parameter g : forall m : nat, m <> 0 -> Prop.
 Parameter f : forall (m : nat) (H : m <> 0), g m H.
@@ -72,13 +72,13 @@ Qed.
 End C.
 
 (* Problem of dependencies *)
-Require Import Lia.
+From Stdlib Require Import Lia.
 Lemma lem8 : forall H : 0 = 0 -> 0 = 0, H = H -> 0 = 0.
 intros;  lia.
 Qed.
 
 (* Bug that what caused by the use of intro_using in Omega *)
-Require Import Lia.
+From Stdlib Require Import Lia.
 Lemma lem9 :
  forall p q : nat, ~ (p <= q /\ p < q \/ q <= p /\ p < q) -> p < p \/ p <= p.
 intros;  lia.

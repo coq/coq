@@ -1,10 +1,10 @@
-Require Import ZArith Lia.
+From Stdlib Require Import ZArith Lia.
 Open Scope Z_scope.
 
 Unset Lia Cache.
 
-Require Import Stdlib.ZArith.ZArith. Open Scope Z_scope.
-Require Import Stdlib.micromega.Lia.
+From Stdlib Require Import ZArith. Open Scope Z_scope.
+From Stdlib Require Import Lia.
 
 Goal forall
     (w0  w1  w2  q0  q : Z)

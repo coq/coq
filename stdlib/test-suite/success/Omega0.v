@@ -1,4 +1,4 @@
-Require Import ZArith Lia.
+From Stdlib Require Import ZArith Lia.
 Open Scope Z_scope.
 
 (* Pierre L: examples gathered while debugging romega. *)

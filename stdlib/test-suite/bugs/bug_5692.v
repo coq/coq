@@ -1,5 +1,5 @@
 Set Primitive Projections.
-Require Import ZArith ssreflect.
+From Stdlib Require Import ZArith ssreflect.
 
 Module Test1.
 

@@ -1,5 +1,5 @@
 
-Require Import ZArith Lia.
+From Stdlib Require Import ZArith Lia.
 Open Scope Z_scope.
 
 (** bug 4132: omega was using "simpl" either on whole equations, or on

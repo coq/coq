@@ -6,8 +6,8 @@
 (*                                                                      *)
 (************************************************************************)
 
-Require Import ZArith.
-Require Import Psatz.
+From Stdlib Require Import ZArith.
+From Stdlib Require Import Psatz.
 
 Open Scope Z_scope.
 

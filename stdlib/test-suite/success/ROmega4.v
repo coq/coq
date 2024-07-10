@@ -3,7 +3,7 @@
     See also #148 for the corresponding improvement in Omega.
 *)
 
-Require Import ZArith Lia.
+From Stdlib Require Import ZArith Lia.
 Open Scope Z.
 
 Goal let x := 3 in x = 3.

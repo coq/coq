@@ -6,7 +6,7 @@
 (*                                                                      *)
 (************************************************************************)
 
-Require Import ZArith Zwf Psatz QArith.
+From Stdlib Require Import ZArith Zwf Psatz QArith.
 Open Scope Z_scope.
 
 Lemma Zabs_square : forall x,  (Z.abs  x)^2 = x^2.
