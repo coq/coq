@@ -23,7 +23,6 @@ open Term
 open Constr
 open Context
 open Environ
-module CVars = Vars
 open EConstr
 open Vars
 open Reductionops
@@ -406,8 +405,8 @@ let rec reapply_coercions sigma trace c = match trace with
 
 let instance_of_global_constr sigma c =
   match kind sigma c with
-  | Const (_,u) | Ind (_,u) | Construct (_,u) -> EInstance.kind sigma u
-  | _ -> UVars.Instance.empty
+  | Const (_,u) | Ind (_,u) | Construct (_,u) -> u
+  | _ -> EInstance.empty
 
 (* Apply coercion path from p to h of type hty; raise NoCoercion if not applicable *)
 let apply_coercion env sigma p h hty =
@@ -419,10 +418,10 @@ let apply_coercion env sigma p h hty =
          let sigma, c = Evd.fresh_global env sigma i.coe_value in
          let u = instance_of_global_constr sigma c in
          let isproj = Option.map (fun p ->
-             p, ERelevance.make @@ Relevanceops.relevance_of_projection_repr env (p,u))
+             p, Retyping.relevance_of_projection_repr env (p,u))
              isproj
          in
-         let typ = EConstr.of_constr (CVars.subst_instance_constr u i.coe_typ) in
+         let typ = Coercionops.coercion_type env sigma (i,u) in
          let sigma, j', args, jty =
            apply_coercion_args env sigma isproj c typ j jty i.coe_param in
          let trace =

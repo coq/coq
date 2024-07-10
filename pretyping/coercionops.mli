@@ -37,7 +37,6 @@ type coe_typ = GlobRef.t
 (** This is the type of infos for declared coercions *)
 type coe_info_typ = {
   coe_value : GlobRef.t;
-  coe_typ : Constr.t;
   coe_local : bool;
   coe_reversible : bool;
   coe_is_identity : bool;
@@ -77,6 +76,8 @@ val declare_coercion : env -> evar_map -> ?update:bool -> coe_info_typ -> unit
 val coercion_exists : coe_typ -> bool
 
 val coercion_info : coe_typ -> coe_info_typ
+
+val coercion_type : Environ.env -> Evd.evar_map -> coe_info_typ EConstr.puniverses -> EConstr.t
 
 (** {6 Lookup functions for coercion paths } *)
 

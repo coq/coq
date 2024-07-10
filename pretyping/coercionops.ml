@@ -64,7 +64,6 @@ module CoeTypMap = GlobRef.Map_env
 
 type coe_info_typ = {
   coe_value : GlobRef.t;
-  coe_typ : Constr.t;
   coe_local : bool;
   coe_reversible : bool;
   coe_is_identity : bool;
@@ -151,6 +150,9 @@ let class_nparams cl = (class_info cl).cl_param
 let class_exists cl = ClTypMap.mem cl !class_tab
 
 let coercion_info coe = CoeTypMap.find coe !coercion_tab
+
+let coercion_type env sigma (coe,u) =
+  Retyping.get_type_of env sigma (EConstr.mkRef (coe.coe_value,u))
 
 let coercion_exists coe = CoeTypMap.mem coe !coercion_tab
 
@@ -415,14 +417,13 @@ let add_coercion_in_graph env sigma ?(update=false) ic =
 let subst_coercion subst c =
   let env = Global.env () in
   let coe = subst_coe_typ subst c.coe_value in
-  let typ = subst_mps subst c.coe_typ in
   let cls = subst_cl_typ env subst c.coe_source in
   let clt = subst_cl_typ env subst c.coe_target in
   let clp = Option.Smart.map (subst_proj_repr subst) c.coe_is_projection in
   if c.coe_value == coe && c.coe_source == cls && c.coe_target == clt &&
      c.coe_is_projection == clp
   then c
-  else { c with coe_value = coe; coe_typ = typ; coe_source = cls; coe_target = clt;
+  else { c with coe_value = coe; coe_source = cls; coe_target = clt;
                 coe_is_projection = clp; }
 
 (* Computation of the class arity *)
