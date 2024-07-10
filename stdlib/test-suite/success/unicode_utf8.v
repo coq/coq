@@ -20,7 +20,7 @@ Notation "C 'ᵒᵖ'" := C (at level 30).
 
 (** UNICODE IN STRINGS *)
 
-Require Import List Ascii String.
+From Stdlib Require Import List Ascii String.
 Open Scope string_scope.
 
 Definition test_string := "azertyαβ∀ééé".
@@ -42,7 +42,7 @@ Close Scope string_scope.
 
 (** INTERFACE TESTS *)
 
-Require Import Utf8.
+From Stdlib Require Import Utf8.
 
 (** Printing of unicode notation, in *goals* *)
 Lemma test : forall A:Prop, A -> A.
@@ -74,7 +74,7 @@ Notation "x ≤ y" := (x<=y) (at level 70, no associativity).
 
 (** First Issue : ≤ is attached to "le" of nat, not to notation <= *)
 
-Require Import ZArith.
+From Stdlib Require Import ZArith.
 Open Scope Z_scope.
 Locate "≤". (* still le, not Z.le *)
 Notation "x ≤ y" := (x<=y) (at level 70, no associativity).

@@ -1,4 +1,4 @@
-Require Import ZArith.
+From Stdlib Require Import ZArith.
 Check 32%Z.
 Check (eq_refl : 0x2a%Z = 42%Z).
 Check (fun f : nat -> Z => (f 0%nat + 0)%Z).
@@ -78,5 +78,5 @@ Check (-0xFF)%xZ.
 Close Scope hex_Z_scope.
 
 (* Submitted by Pierre Casteran *)
-Require Import Arith.
+From Stdlib Require Import Arith.
 Check (0 + Z.of_nat 11)%Z.

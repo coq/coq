@@ -1,7 +1,7 @@
-Require Import Relations.
-Require Import Setoid.
-Require Import Ring_theory.
-Require Import Ring_base.
+From Stdlib Require Import Relations.
+From Stdlib Require Import Setoid.
+From Stdlib Require Import Ring_theory.
+From Stdlib Require Import Ring_base.
 
 
 Parameter R : Type.

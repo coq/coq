@@ -6,7 +6,7 @@ Definition A_size (a: A) : nat :=
     | A1 n => 0
   end.
 
-Require Import Recdef.
+From Stdlib Require Import Recdef.
 
 Function n3 (P: A -> Prop) (f: forall n, P (A1 n)) (a: A) {struct a} : P a :=
   match a  return (P a) with

@@ -1,4 +1,4 @@
-Require Import Setoid SetoidClass Program.
+From Stdlib Require Import Setoid SetoidClass Program.
 
 Goal forall `(Setoid nat) x y, x == y -> S x == S y.
   intros.

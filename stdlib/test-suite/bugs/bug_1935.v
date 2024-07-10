@@ -11,7 +11,7 @@ Proof.
  intros. reflexivity.
 Qed.
 
-Require Import ZArith.
+From Stdlib Require Import ZArith.
 
 Definition f'' (a:bool) := if a then eq (A:= Z) else Z.lt.
 

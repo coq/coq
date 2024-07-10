@@ -1,4 +1,4 @@
-Require Import FSets.
+From Stdlib Require Import FSets.
 
 Module SomeSetoids (Import M:FSetInterface.S).
 

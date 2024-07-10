@@ -1,4 +1,5 @@
-Require Import Stdlib.Arith.Arith Stdlib.Init.Wf.
+From Stdlib Require Import Arith.
+From Stdlib.Init Require Import Wf.
 Axiom proof_admitted : False.
 Goal exists x y z : nat, Fix
                            Wf_nat.lt_wf

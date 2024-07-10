@@ -1,7 +1,7 @@
 (* Test robustness of Groebner tactic in presence of disequalities *)
 
-Require Export Reals.
-Require Export Nsatz.
+From Stdlib Require Export Reals.
+From Stdlib Require Export Nsatz.
 
 Open Scope R_scope.
 

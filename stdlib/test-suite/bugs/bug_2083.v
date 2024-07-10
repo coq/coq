@@ -1,4 +1,4 @@
-Require Import Program Arith.
+From Stdlib Require Import Program Arith.
 
 Program Fixpoint check_n  (n : nat) (P : { i | i < n } -> bool) (p : nat)
   (H : forall (i : { i | i < n }), i < p -> P i = true)
@@ -13,7 +13,7 @@ Program Fixpoint check_n  (n : nat) (P : { i | i < n } -> bool) (p : nat)
         error
   end.
 
-Require Import Lia.
+From Stdlib Require Import Lia.
 
 Solve Obligations with program_simpl ; auto with *; lia.
 

@@ -1,14 +1,14 @@
 (* bug 13242 *)
 
-Require Import Lia.
+From Stdlib Require Import Lia.
 Fail Add Zify InjTyp id.
 
 (* bug 14054 *)
 
-Require Import Stdlib.ZArith.ZArith. Open Scope Z_scope.
-Require Stdlib.Init.Byte .
-Require Stdlib.Strings.Byte .
-Require Import Stdlib.micromega.ZifyClasses Stdlib.micromega.Lia.
+From Stdlib Require Import ZArith. Open Scope Z_scope.
+From Stdlib.Init Require Byte.
+From Stdlib.Strings Require Byte.
+From Stdlib Require Import ZifyClasses Lia.
 
 Notation byte := Stdlib.Init.Byte.byte.
 

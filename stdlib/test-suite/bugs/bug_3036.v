@@ -1,9 +1,9 @@
 (* Checking use of retyping in w_unify0 in the presence of unification
 problems of the form \x:Meta.Meta = \x:ind.match x with ... end *)
 
-Require Import List.
-Require Import QArith.
-Require Import Qcanon.
+From Stdlib Require Import List.
+From Stdlib Require Import QArith.
+From Stdlib Require Import Qcanon.
 
 Set Implicit Arguments.
 

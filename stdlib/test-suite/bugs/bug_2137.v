@@ -13,7 +13,7 @@ Ian
 
 *)
 
-Require Import Arith FSets FSetWeakList.
+From Stdlib Require Import Arith FSets FSetWeakList.
 
 Module DecidableNat.
 Definition t := nat.

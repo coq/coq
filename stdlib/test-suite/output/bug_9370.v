@@ -1,4 +1,4 @@
-Require Import Reals.
+From Stdlib Require Import Reals.
 Open Scope R_scope.
 Goal 1/1=1.
 Proof.

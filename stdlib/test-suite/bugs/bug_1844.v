@@ -1,4 +1,4 @@
-Require Import ZArith.
+From Stdlib Require Import ZArith.
 
 Definition zeq := Z.eq_dec.
 

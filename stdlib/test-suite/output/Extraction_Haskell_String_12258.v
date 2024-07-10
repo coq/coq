@@ -1,5 +1,5 @@
-Require Import Stdlib.extraction.Extraction.
-Require Import Stdlib.extraction.ExtrHaskellString.
+From Stdlib Require Import Extraction.
+From Stdlib Require Import ExtrHaskellString.
 Extraction Language Haskell.
 Set Extraction File Comment "IMPORTANT: If you change this file, make sure that running [cp Extraction_Haskell_String_12258.out Extraction_Haskell_String_12258.hs && ghc -o test Extraction_Haskell_String_12258.hs] succeeds".
 Inductive output_type_code :=

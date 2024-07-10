@@ -1,4 +1,4 @@
-Require Import Stdlib.FSets.FSetAVL.
+From Stdlib Require Import FSetAVL.
 Declare Module NatKey : OrderedType.OrderedType
     with Definition t := nat
     with Definition eq := @ eq nat.

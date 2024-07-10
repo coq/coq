@@ -36,7 +36,7 @@ Abort.
 
 (* Then the original report *)
 
-Require Import Equality.
+From Stdlib Require Import Equality.
 
 Parameter NameSet : Set.
 Parameter SignedName : Set.

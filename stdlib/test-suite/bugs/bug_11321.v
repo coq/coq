@@ -1,4 +1,4 @@
-Require Import Cyclic63.
+From Stdlib Require Import Cyclic63.
 
 Goal False.
 Proof.

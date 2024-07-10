@@ -1,7 +1,7 @@
-Require Import Stdlib.Lists.List.
-Require Import Stdlib.Strings.String Stdlib.Strings.Byte Stdlib.Strings.Ascii.
-Require Stdlib.Array.PArray Stdlib.Floats.PrimFloat.
-Require Import Stdlib.Numbers.BinNums Stdlib.Numbers.Cyclic.Int63.Uint63.
+From Stdlib Require Import List.
+From Stdlib.Strings Require Import String Byte Ascii.
+From Stdlib Require PArray PrimFloat.
+From Stdlib Require Import BinNums Uint63.
 
 Set Printing Depth 100000.
 Set Printing Width 1000.

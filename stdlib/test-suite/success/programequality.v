@@ -1,4 +1,4 @@
-Require Import Program.
+From Stdlib Require Import Program.
 
 Axiom t : nat -> Set.
 

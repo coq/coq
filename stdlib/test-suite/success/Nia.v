@@ -1,11 +1,11 @@
 (* -*- coqchk-prog-args: ("-bytecode-compiler" "yes") -*- *)
-Require Import Stdlib.ZArith.ZArith.
-Require Import Stdlib.micromega.Lia.
+From Stdlib Require Import ZArith.
+From Stdlib Require Import Lia.
 Open Scope Z_scope.
 
 (** Add [Z.to_euclidean_division_equations] to the end of [zify], just for this
     file. *)
-Require Zify.
+From Stdlib Require Zify.
 Ltac Zify.zify_post_hook ::= Z.to_euclidean_division_equations.
 
 Lemma Z_zerop_or x : x = 0 \/ x <> 0. Proof. apply Z.eq_decidable. Qed.

@@ -1,4 +1,4 @@
-Require Import Stdlib.Unicode.Utf8.
+From Stdlib Require Import Utf8.
 
 Section test.
 Context (very_very_long_type_name1 : Type) (very_very_long_type_name2 : Type).

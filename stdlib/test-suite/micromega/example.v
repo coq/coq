@@ -6,11 +6,11 @@
 (*                                                                      *)
 (************************************************************************)
 
-Require Import ZArith.
-Require Import Psatz.
+From Stdlib Require Import ZArith.
+From Stdlib Require Import Psatz.
 Open Scope Z_scope.
-Require Import ZMicromega.
-Require Import VarMap.
+From Stdlib Require Import ZMicromega.
+From Stdlib Require Import VarMap.
 
 Lemma power_pos : forall x y, 0 <= x \/ False -> x^ y >= 0.
 Proof.

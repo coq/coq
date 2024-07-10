@@ -1,4 +1,4 @@
-Require Import BinNums BinInt BinNat ZifyInst Zify.
+From Stdlib Require Import BinNums BinInt BinNat ZifyInst Zify.
 
 Definition pos := positive.
 
@@ -134,7 +134,7 @@ Proof.
   intros; zify_op; reflexivity.
 Qed.
 
-Require Import Lia.
+From Stdlib Require Import Lia.
 
 Goal forall n n3,
 S n + n3 >= 0 + n.
@@ -206,8 +206,8 @@ Record Bla : Type :=
 
 Definition znat := mk nat 0%nat.
 
-Require Import ZifyClasses.
-Require Import ZifyInst.
+From Stdlib Require Import ZifyClasses.
+From Stdlib Require Import ZifyInst.
 
 #[export] Instance Zero : CstOp (@zero znat : nat) := Op_O.
 Add Zify CstOp Zero.
@@ -234,7 +234,7 @@ Proof.
   apply Z.add_comm.
 Qed.
 
-Require Import Bool.
+From Stdlib Require Import Bool.
 
 Goal true && false = false.
 Proof.
@@ -264,7 +264,7 @@ Proof.
   lia.
 Qed.
 
-Require Import ZifyBool.
+From Stdlib Require Import ZifyBool.
 
 #[export] Instance Op_bool_inj : UnOp (inj : bool -> bool) :=
   { TUOp := id; TUOpInj := fun _ => eq_refl }.

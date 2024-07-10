@@ -1,8 +1,8 @@
 (* Nijmegen expects redefinition of sorts *)
 Definition CProp := Prop.
 Record test : CProp :=  {n : nat ; m : bool ; _ : n <> 0 }.
-Require Import Program.
-Require Import List.
+From Stdlib Require Import Program.
+From Stdlib Require Import List.
 Import ListNotations.
 
 Record vector {A : Type} {n : nat} := { vec_list : list A ; vec_len : length vec_list = n }.
@@ -64,14 +64,14 @@ Definition bli''' := {| Bazar := Some {| Bazar := None |} |}.
 
 (** Correctly use scoping information *)
 
-Require Import ZArith.
+From Stdlib Require Import ZArith.
 
 Record Foo := { bar : Z }.
 Definition foo := {| bar := 0 |}.
 
 (** Notations inside records *)
 
-Require Import Relation_Definitions.
+From Stdlib Require Import Relation_Definitions.
 
 Record DecidableOrder : Type :=
 { A : Type

@@ -1,4 +1,5 @@
-Require Import ZArith Stdlib.Program.Wf Stdlib.Program.Utils.
+From Stdlib Require Import ZArith.
+From Stdlib.Program Require Import Wf Utils.
 
 Parameter data:Set.
 

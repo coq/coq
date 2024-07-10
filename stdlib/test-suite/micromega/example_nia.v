@@ -6,10 +6,10 @@
 (*                                                                      *)
 (************************************************************************)
 
-Require Import ZArith.
+From Stdlib Require Import ZArith.
 Open Scope Z_scope.
-Require Import ZMicromega Lia.
-Require Import VarMap.
+From Stdlib Require Import ZMicromega Lia.
+From Stdlib Require Import VarMap.
 Unset Nia Cache.
 
 Goal forall (x y: Z), 0 < (1+y^2)^(x^2).

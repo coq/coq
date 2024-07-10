@@ -1,4 +1,4 @@
-Require Import Ring_base.
+From Stdlib Require Import Ring_base.
 Record word : Type := Build_word
   { rep : Type;
     zero : rep; one: rep;

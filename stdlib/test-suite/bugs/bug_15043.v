@@ -13,11 +13,11 @@ Module OriginalReport.
 
 Axiom proof_admitted : False.
 Tactic Notation "admit" := abstract case proof_admitted.
-Require Stdlib.micromega.Psatz.
-Require Stdlib.Unicode.Utf8.
+From Stdlib Require Psatz.
+From Stdlib Require Utf8.
 
-Import Stdlib.Arith.Arith.
-Import Stdlib.micromega.Psatz.
+Import Arith.
+Import Psatz.
 Import Stdlib.Unicode.Utf8.
 
 Fixpoint log3_iter down_counter log_up_counter up_counter dist_next :=

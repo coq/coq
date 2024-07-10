@@ -11,7 +11,7 @@ Fail Reserved Notation "1".
 
 Notation """tt""" := tt (at level 2).
 Check "tt".
-Require Import String.
+From Stdlib Require Import String.
 Check "tt"%string.
 Fail Reserved Notation """tt""".
 

@@ -1,5 +1,5 @@
 (* coq-prog-args: ("-top" "bug_5096") *)
-Require Import Stdlib.FSets.FMapPositive Stdlib.PArith.BinPos Stdlib.Lists.List.
+From Stdlib Require Import FMapPositive BinPos List.
 
 Set Asymmetric Patterns.
 

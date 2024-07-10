@@ -1,5 +1,5 @@
-Require Import Structures.OrderedType.
-Require Import Structures.OrderedTypeEx.
+From Stdlib Require Import OrderedType.
+From Stdlib Require Import OrderedTypeEx.
 
 Module Type M. Parameter X : Type.
 

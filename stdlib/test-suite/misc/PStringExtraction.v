@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Uint63 PrimString ExtrOCamlPString.
+From Stdlib Require Import Uint63 PrimString ExtrOCamlPString.
 
 Local Open Scope uint63.
 Local Open Scope pstring.

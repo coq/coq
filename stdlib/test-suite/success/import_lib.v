@@ -3,7 +3,7 @@ Definition le_trans := 0.
 
 Module Test_Read.
   Module M.
-    Require PeanoNat.        (* Reading without importing *)
+From Stdlib Require PeanoNat.        (* Reading without importing *)
 
     Check PeanoNat.Nat.le_trans.
 
@@ -35,7 +35,7 @@ Definition lt_wf := 0.      (* from Arith/Wf_nat *)
 Module Test_Require.
 
   Module M.
-    Require Import Compare.              (* Imports Compare_dec as well *)
+From Stdlib Require Import Compare.              (* Imports Compare_dec as well *)
 
     Lemma th1 n : le_decide n = le_decide n.
       reflexivity.
@@ -165,7 +165,7 @@ Module Test_Require_Export.
   Definition lt_wf := 0.        (* from Arith/Wf_nat *)
 
   Module M.
-    Require Export Compare.       (* Exports Wf_nat as well *)
+From Stdlib Require Export Compare.       (* Exports Wf_nat as well *)
 
     Lemma th1 n : le_decide n = le_decide n.
       reflexivity.

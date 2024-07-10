@@ -8,7 +8,7 @@ This is a regression relative to FSet,
 I have v8.3 (13702).
 *)
 
-Require Import Stdlib.MSets.MSets.
+From Stdlib Require Import MSets.
 
 Parameter Name : Set.
 Parameter Name_compare : Name -> Name -> comparison.

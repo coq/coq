@@ -12,7 +12,7 @@ simpl (0 + _).
 Show.
 Abort.
 
-Require Import String.
+From Stdlib Require Import String.
 Open Scope string_scope.
 Module NonRecursiveDefinition.
 Check "** NonRecursiveDefinition".

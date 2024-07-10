@@ -1,7 +1,7 @@
 Set Universe Polymorphism.
 
-Require Import Stdlib.Arith.PeanoNat.
-Require Import Stdlib.Logic.JMeq.
+From Stdlib Require Import PeanoNat.
+From Stdlib Require Import JMeq.
 
 Inductive narray {X : Type} : nat -> Type :=
     | Elt : X -> narray 0

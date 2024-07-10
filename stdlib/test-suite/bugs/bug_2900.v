@@ -1,8 +1,8 @@
 (* Was raising stack overflow in 8.4 and assertion failed in future 8.5 *)
 Set Implicit Arguments.
 
-Require Import List.
-Require Import Stdlib.Program.Equality.
+From Stdlib Require Import List.
+From Stdlib Require Import Equality.
 
 (** Reflexive-transitive closure ( R* ) *)
 

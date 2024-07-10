@@ -2,8 +2,8 @@
    used to fail in 8.1 because of wrong environment in conversion
    problems (see revision 9664) *)
 
-Require Import List.
-Require Import Arith.
+From Stdlib Require Import List.
+From Stdlib Require Import Arith.
 
 Parameter predicate : Set.
 Parameter function : Set.

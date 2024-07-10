@@ -1,5 +1,5 @@
 (* Coq 8.2beta4 *)
-Require Import Classical_Prop.
+From Stdlib Require Import Classical_Prop.
 
 Unset Structural Injection.
 

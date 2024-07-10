@@ -1,5 +1,5 @@
-Require Export ZArith.
-Require Export ZArithRing.
+From Stdlib Require Export ZArith.
+From Stdlib Require Export ZArithRing.
 
 (* Cette tactique a pour objectif de remplacer toute instance
    de (POS (xI e)) ou de (POS (xO e)) par

@@ -1,4 +1,4 @@
-Require Import ZArith Lia ZifyNat.
+From Stdlib Require Import ZArith Lia ZifyNat.
 
 (* regression observed in PR 14037 *)
 Goal forall (n:nat), n mod 2 < 2 -> n mod 2 = 0 \/ n mod 2 = 1.

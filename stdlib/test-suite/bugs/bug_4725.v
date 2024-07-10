@@ -1,5 +1,5 @@
-Require Import EquivDec Equivalence List Program.
-Require Import Relation_Definitions.
+From Stdlib Require Import EquivDec Equivalence List Program.
+From Stdlib Require Import Relation_Definitions.
 Import ListNotations.
 Generalizable All Variables.
 
@@ -18,7 +18,7 @@ Lemma remove_le {V:Type}{eqV:relation V}{equivV:@Equivalence V eqV}{eqDecV :
 (* Function version *)
 Set Printing Universes.
 
-Require Import Recdef.
+From Stdlib Require Import Recdef.
 
 Function nubV {V:Type}{eqV:relation V}{equivV:@Equivalence V eqV}{eqDecV :
 @EqDec V eqV equivV} (l : list V) { measure length l} :=

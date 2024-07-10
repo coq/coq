@@ -1,4 +1,4 @@
-Require Import Stdlib.ZArith.ZArith.
+From Stdlib Require Import ZArith.
 Ltac profile_constr tac :=
   let dummy := match goal with _ => reset ltac profile; start ltac profiling end in
   let ret := match goal with _ => tac () end in

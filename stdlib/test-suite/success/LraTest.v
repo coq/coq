@@ -1,5 +1,5 @@
-Require Import Reals.
-Require Import Lra.
+From Stdlib Require Import Reals.
+From Stdlib Require Import Lra.
 
 Open Scope R_scope.
 

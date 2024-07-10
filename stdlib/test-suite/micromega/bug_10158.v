@@ -1,5 +1,5 @@
-Require Import ZArith_base.
-Require Import Stdlib.micromega.Lia.
+From Stdlib Require Import ZArith_base.
+From Stdlib Require Import Lia.
 
 Open Scope Z_scope.
 
@@ -19,8 +19,8 @@ Proof.
   lia.
 Qed.
 
-Require Import Reals.
-Require Import Stdlib.micromega.Lra.
+From Stdlib Require Import Reals.
+From Stdlib Require Import Lra.
 
 Open Scope R_scope.
 

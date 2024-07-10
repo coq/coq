@@ -1,4 +1,4 @@
-Require Vector.
+From Stdlib Require Vector.
 
 Inductive container : Type :=
   | container_v : Vector.t container 2 -> container

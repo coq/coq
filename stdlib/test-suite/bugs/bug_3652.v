@@ -1,7 +1,7 @@
-Require Setoid.
-Require ZArith.
+From Stdlib Require Setoid.
+From Stdlib Require ZArith.
 Import ZArith.
-Require Import Lia.
+From Stdlib Require Import Lia.
 
 Inductive Erasable(A : Set) : Prop :=
   erasable: A -> Erasable A.

@@ -1,4 +1,4 @@
-Require Import PArith.
+From Stdlib Require Import PArith.
 Check 32%positive.
 Check (eq_refl : 0x2a%positive = 42%positive).
 Check (fun f : nat -> positive => (f 0%nat + 1)%positive).
@@ -46,5 +46,5 @@ Check 0xff%xpositive.
 Check 0xFF%xpositive.
 Close Scope hex_positive_scope.
 
-Require Import Arith.
+From Stdlib Require Import Arith.
 Check (1 + Pos.of_nat 11)%positive.

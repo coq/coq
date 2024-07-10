@@ -6,8 +6,8 @@
 (*                                                                      *)
 (************************************************************************)
 
-Require Import Lra.
-Require Import Reals.
+From Stdlib Require Import Lra.
+From Stdlib Require Import Reals.
 
 Open Scope R_scope.
 

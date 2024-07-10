@@ -8,9 +8,9 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Stdlib.extraction.Extraction.
-Require Import Arith.
-Require Import List.
+From Stdlib Require Extraction.
+From Stdlib Require Import Arith.
+From Stdlib Require Import List.
 
 (**** A few tests for the extraction mechanism ****)
 
@@ -634,11 +634,11 @@ Recursive Extraction Everything.
 
 (*** Finally, a test more focused on everyday's life situations ***)
 
-Require Import ZArith.
+From Stdlib Require Import ZArith.
 
 Extraction Language OCaml.
 
-Require Import String.
+From Stdlib Require Import String.
 
 Definition string_test1 := string_dec "foo" "bar".
 
@@ -661,17 +661,17 @@ Definition string_test :=
 Extraction TestCompile string_test.
 
 (* Extraction to char list *)
-Require Import ExtrOcamlString.
+From Stdlib Require Import ExtrOcamlString.
 Extraction TestCompile string_test.
 
 (* Extraction to native strings *)
-Require Import ExtrOcamlNativeString.
+From Stdlib Require Import ExtrOcamlNativeString.
 Extraction TestCompile string_test compare.
 
 Recursive Extraction Z_modulo_2 Zdiv_eucl_exist.
 Extraction TestCompile Z_modulo_2 Zdiv_eucl_exist.
 
-Require Import ExtrOcamlZBigInt.
+From Stdlib Require Import ExtrOcamlZBigInt.
 Recursive Extraction   N.pred N.sub N.div N.modulo N.compare
            Z.add Z.mul Z.compare Z.of_N Z.abs_N Z.div Z.modulo
            Pos.add Pos.pred Pos.sub Pos.mul Pos.compare.
@@ -679,7 +679,7 @@ Extraction TestCompile N.pred N.sub N.div N.modulo N.compare
            Z.add Z.mul Z.compare Z.of_N Z.abs_N Z.div Z.modulo
            Pos.add Pos.pred Pos.sub Pos.mul Pos.compare.
 
-Require Import Euclid ExtrOcamlNatBigInt.
+From Stdlib Require Import Euclid ExtrOcamlNatBigInt.
 Definition test n m (H:m>0) :=
   let (q,r,_,_) := eucl_dev m H n in
   Nat.compare n (q*m+r).

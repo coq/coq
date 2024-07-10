@@ -1,6 +1,6 @@
-Require Stdlib.extraction.Extraction.
-Require Import FSetList.
-Require Import OrderedTypeEx.
+From Stdlib Require Extraction.
+From Stdlib Require Import FSetList.
+From Stdlib Require Import OrderedTypeEx.
 
 Module NatSet := FSetList.Make (Nat_as_OT).
 Recursive Extraction NatSet.fold.

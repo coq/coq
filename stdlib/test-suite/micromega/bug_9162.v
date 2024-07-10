@@ -1,4 +1,4 @@
-Require Import ZArith Lia.
+From Stdlib Require Import ZArith Lia.
 Local Open Scope Z_scope.
 
 Goal Z.of_N (Z.to_N 0) = 0.

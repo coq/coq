@@ -1,4 +1,4 @@
-Require Import Reals.Rdefinitions.
+From Stdlib Require Import Reals.Rdefinitions.
 Check 32%R.
 Check (-31)%R.
 
@@ -51,13 +51,13 @@ Check 0x2ap-3.
 
 Close Scope hex_R_scope.
 
-Require Import Reals.
+From Stdlib Require Import Reals.
 
 Goal 254e3 = 2540 * 10 ^ 2.
 ring.
 Qed.
 
-Require Import Psatz.
+From Stdlib Require Import Psatz.
 
 Goal 254e3 = 2540 * 10 ^ 2.
 lra.

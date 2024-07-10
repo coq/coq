@@ -1,8 +1,8 @@
-Require Import Program.
+From Stdlib Require Import Program.
 
-Require Import Stdlib.Strings.String.
-Require Import Stdlib.Strings.Ascii.
-Require Import Stdlib.Numbers.BinNums.
+From Stdlib Require Import String.
+From Stdlib Require Import Ascii.
+From Stdlib Require Import BinNums.
 
 Set Implicit Arguments.
 Set Strict Implicit.

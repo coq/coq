@@ -1,5 +1,5 @@
-Require Import ZArith.
-Require Import Lia Psatz.
+From Stdlib Require Import ZArith.
+From Stdlib Require Import Lia Psatz.
 Open Scope Z_scope.
 
 

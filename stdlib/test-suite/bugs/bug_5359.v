@@ -1,4 +1,4 @@
-Require Import Stdlib.nsatz.Nsatz.
+From Stdlib Require Import Nsatz.
 Goal False.
 
   (* the first (succeeding) goal was reached by clearing one hypothesis in the second goal which overflows 6GB of stack space *)

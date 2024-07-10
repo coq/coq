@@ -1,5 +1,5 @@
 Set Universe Polymorphism.
-Require Import Stdlib.ZArith.BinInt.
+From Stdlib Require Import BinInt.
 Class word_interface (width : Z) : Type := Build_word
   { rep : Type;
     unsigned : rep -> Z;

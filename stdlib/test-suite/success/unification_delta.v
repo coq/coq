@@ -1,8 +1,8 @@
-Require Import Stdlib.Classes.Equivalence.
-Require Import Stdlib.Program.Program.
+From Stdlib Require Import Equivalence.
+From Stdlib Require Import Program.
 Import Relation_Definitions.
 Import Morphisms.
-Require Setoid.
+From Stdlib Require Setoid.
 
 Obligation Tactic := program_simpl ; simpl_relation.
 Generalizable Variables A eqA.

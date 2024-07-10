@@ -1,4 +1,4 @@
-Require Import Program.
+From Stdlib Require Import Program.
 
 Inductive exp_raw : nat -> Set :=
 | exp_raw_bvar : forall n i, i < n -> exp_raw n

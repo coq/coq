@@ -1,4 +1,4 @@
-Require Import Stdlib.ZArith.BinInt Stdlib.micromega.Lia.
+From Stdlib Require Import BinInt Lia.
 
 Set Primitive Projections.
 Record params := { width : Z }.

@@ -1,4 +1,4 @@
-Require Import Setoid Ring Ring_theory.
+From Stdlib Require Import Setoid Ring Ring_theory.
 
 Module abs_ring.
 

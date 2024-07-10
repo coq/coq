@@ -1,5 +1,5 @@
 (* Before 31a69c4d0fd7b8325187e8da697a9c283594047d, [case] would stack overflow *)
-Require Import Arith.
+From Stdlib Require Import Arith.
 
 Section Acc_generator.
   Variable A : Type.

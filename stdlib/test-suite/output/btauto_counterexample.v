@@ -1,5 +1,5 @@
 
-Require Import Stdlib.btauto.Btauto.
+From Stdlib Require Import Btauto.
 Local Open Scope bool_scope.
 
 Axiom unsigned : bool.

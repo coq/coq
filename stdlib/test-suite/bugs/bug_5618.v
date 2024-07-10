@@ -1,4 +1,4 @@
-Require Import FunInd.
+From Stdlib Require Import FunInd.
 
 Function test {T} (v : T) (x : nat) : nat :=
   match x with

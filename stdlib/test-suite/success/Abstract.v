@@ -1,6 +1,6 @@
 (* Cf BZ#546 *)
 
-Require Import Lia.
+From Stdlib Require Import Lia.
 
 Section S.
 

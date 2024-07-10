@@ -1,5 +1,5 @@
-Require Import Lia.
-Require Import ZArith.
+From Stdlib Require Import Lia.
+From Stdlib Require Import ZArith.
 Import ZifyClasses.
 
 Module Test1.

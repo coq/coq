@@ -1,8 +1,8 @@
 (** BZ 4852 : unsatisfactory Extraction Implicit for a fixpoint defined via wf *)
 
-Require Import Stdlib.Lists.List.
+From Stdlib Require Import List.
 Import ListNotations.
-Require Import Lia.
+From Stdlib Require Import Lia.
 
 Definition wfi_lt := well_founded_induction_type Wf_nat.lt_wf.
 
@@ -43,7 +43,7 @@ Proof.
     exists (a :: rls1 ++ rls2). solve_nat.
 Defined.
 
-Require Import ExtrOcamlNatInt.
+From Stdlib Require Import ExtrOcamlNatInt.
 Extract Inlined Constant length => "List.length".
 Extract Inlined Constant app => "List.append".
 

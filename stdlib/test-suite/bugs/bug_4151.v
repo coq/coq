@@ -8,7 +8,7 @@ Qed.
    coqtop version cagnode15:/afs/csail.mit.edu/u/j/jgross/coq-8.5,v8.5 (1b3759e78f227eb85a128c58b8ce8c11509dd8c3) *)
 Axiom proof_admitted : False.
 Tactic Notation "admit" := case proof_admitted.
-Require Import Stdlib.Lists.SetoidList.
+From Stdlib Require Import SetoidList.
 Import ListNotations.
 
 Global Set Implicit Arguments.
@@ -91,7 +91,7 @@ Record StringWithSplitState {CharType} (String : string_like CharType) (split_st
     state_val : split_stateT string_val }.
 
 Module Export ContextFreeGrammar.
-  Require Import Stdlib.Strings.String.
+From Stdlib Require Import String.
 
   Section cfg.
     Variable CharType : Type.

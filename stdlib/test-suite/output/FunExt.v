@@ -1,5 +1,5 @@
 (* -*- coq-prog-args: ("-async-proofs" "no") -*- *)
-Require Import FunctionalExtensionality.
+From Stdlib Require Import FunctionalExtensionality.
 
 (* Basic example *)
 Goal (forall x y z, x+y+z = z+y+x) -> (fun x y z => z+y+x) = (fun x y z => x+y+z).

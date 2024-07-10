@@ -1,9 +1,9 @@
 (* Taken from bedrock2 *)
 
 (* Note: not an utf8 file *)
-
-Require Import Stdlib.ZArith.BinInt Stdlib.Lists.List.
-Require Stdlib.Init.Byte Stdlib.Strings.Byte Stdlib.Strings.String.
+From Stdlib Require Import BinInt List.
+From Stdlib.Init Require Byte.
+From Stdlib.Strings Require Byte String.
 
 Definition allBytes: list Byte.byte :=
   map (fun nn => match Byte.of_N (BinNat.N.of_nat nn) with

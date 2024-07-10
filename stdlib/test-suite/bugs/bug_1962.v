@@ -10,7 +10,7 @@ test en revanche pose probleme:
 
 *)
 
-Require Export FSets.
+From Stdlib Require Export FSets.
 
 (** This module takes a decidable type and
 build finite sets of this type, tactics and defs *)

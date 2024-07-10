@@ -1,4 +1,4 @@
-Require Import Recdef.
+From Stdlib Require Import Recdef.
 
 Function dumb_works (a:nat) {struct a} :=
   match (fun x => x) a with O => O | S n' => dumb_works n' end.
