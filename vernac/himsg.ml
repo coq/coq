@@ -586,6 +586,51 @@ let explain_ill_formed_rec_body env sigma err names i fixenv vdefj =
         str"Recursive definition is:" ++ spc () ++ pvd ++ str "."
     with e when CErrors.noncritical e -> mt ())
 
+let explain_not_guarded env sigma cofix_err fix_errs (names, typs, defs as recdef) =
+  let nfix = Array.length names in
+  let lnames = Array.map_to_list binder_name names in
+  let prt_names =
+    hov 0 (str "Recursive definition of " ++ pr_enum Name.print lnames)
+  in
+  let st =
+    (match cofix_err with
+     | None -> mt ()
+     | Some (env, i, err) ->
+       (if nfix > 1 then str "As a mutual co-fixpoint:" else str "As a co-fixpoint:")
+       ++ fnl() ++ explain_ill_formed_cofix_body env sigma err)
+  in
+  let stl =
+    if List.exists (fun (env, i, nv, err) -> match err with RecursionOnIllegalTerm _ -> true | _ -> false) fix_errs then
+      List.map (fun (env, i, nv, err) ->
+          hov 0 ((if nfix > 1 then str "As a mutual fixpoint" else str "As a fixpoint")
+                 ++ str " decreasing on the " ++ pr_enum (fun (n,na) -> pr_nth (n+1) ++ str " argument of " ++ Name.print na) (List.combine nv lnames) ++ str ":") ++
+          fnl() ++ explain_ill_formed_fix_body env sigma names i err ++ str "." ++ fnl ())
+        fix_errs
+    else
+      match fix_errs with
+      | [] -> []
+      | (env, i, nv, err) :: _ ->
+        [hov 0 ((if nfix > 1 then str "As a mutual fixpoint" else str "As a fixpoint") ++ str ":") ++
+          fnl() ++ explain_ill_formed_fix_body env sigma names i err ++ str "." ++ fnl ()]
+
+      (* A common error independently on the decreasing argument *)
+  in
+  let fixenv = EConstr.push_rec_types recdef env in
+  let st = prlist (fun x -> x) (st::stl) in
+  prt_names ++ str " is ill-formed." ++ fnl () ++
+  pr_ne_context_of (str "In environment") env sigma ++
+  st ++
+  prvecti_with_sep fnl (fun i v ->
+      try (* May fail with unresolved globals. *)
+        let fixenv = make_all_name_different fixenv sigma in
+        let pvd = pr_leconstr_env fixenv sigma v in
+        if nfix = 1 then
+          str "Recursive definition is:" ++ spc () ++ pvd ++ str "."
+        else
+          str "The " ++ pr_nth (i+1) ++ str " recursive definition is:" ++ spc () ++ pvd ++ str "."
+      with e when CErrors.noncritical e -> mt ())
+    defs
+
 let explain_ill_typed_rec_body env sigma i names vdefj vargs =
   let env = make_all_name_different env sigma in
   let pvd = pr_leconstr_env env sigma vdefj.(i).uj_val in

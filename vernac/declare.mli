@@ -327,6 +327,14 @@ module Proof : sig
     -> idopt:Names.lident option
     -> OblState.t
 
+  exception NotGuarded of
+      Environ.env * Evd.evar_map *
+      (Environ.env * int * EConstr.t Type_errors.pcofix_guard_error) option *
+      (Environ.env * int * int list * EConstr.t Type_errors.pfix_guard_error) list *
+      EConstr.rec_declaration
+
+  val control_only_guard : t -> unit
+
 end
 
 (** {2 low-level, internal API, avoid using unless you have special needs } *)

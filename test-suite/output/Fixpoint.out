@@ -35,3 +35,62 @@ File "./output/Fixpoint.v", line 75, characters 0-48:
 Warning: Not a fully mutually defined cofixpoint
 (a2 and a1 are not mutually dependent).
  [non-full-mutual,fixpoints,default]
+File "./output/Fixpoint.v", line 91, characters 2-15:
+The command has indeed failed with message:
+Recursive definition of foo and bar is ill-formed.
+As a mutual fixpoint:
+Not enough abstractions in the definition.
+The 1st recursive definition is: "?Goal".
+The 2nd recursive definition is: "?Goal0".
+The condition holds up to here.
+File "./output/Fixpoint.v", line 96, characters 6-19:
+The command has indeed failed with message:
+Recursive definition of foo and bar is ill-formed.
+As a mutual fixpoint decreasing on the 1st argument of foo and
+1st argument of bar:
+Recursive call to bar has principal argument equal to 
+"0" instead of
+a subterm of "n".
+As a mutual fixpoint decreasing on the 1st argument of foo and
+2nd argument of bar:
+Recursive call to bar has principal argument equal to 
+"0" instead of
+a subterm of "n".
+As a mutual fixpoint decreasing on the 2nd argument of foo and
+1st argument of bar:
+Recursive call to bar has principal argument equal to 
+"0" instead of
+a subterm of "m".
+As a mutual fixpoint decreasing on the 2nd argument of foo and
+2nd argument of bar:
+Recursive call to bar has principal argument equal to 
+"0" instead of a subterm of "m".
+The 1st recursive definition is:
+"fun n m : nat =>
+ match n with
+ | 0 => bar 0 0
+ | S n0 => (fun n1 : nat => ?Goal0@{n:=n1}) n0
+ end".
+The 2nd recursive definition is: "fun n m : nat => ?Goal".
+The condition holds up to here.
+The condition holds up to here.
+The condition holds up to here.
+The condition holds up to here.
+File "./output/Fixpoint.v", line 123, characters 6-19:
+The command has indeed failed with message:
+Recursive definition of foo' and bar' is ill-formed.
+As a mutual fixpoint decreasing on the 1st argument of foo' and
+1st argument of bar':
+Fixpoints on proof irrelevant inductive types should produce proof irrelevant
+values.
+As a mutual fixpoint decreasing on the 1st argument of foo' and
+2nd argument of bar':
+Recursive call to bar' has principal argument equal to 
+"0" instead of a subterm of "n".
+The 1st recursive definition is:
+"fun (n : nat) (m : Prop) =>
+ match n with
+ | 0 => bar' SI 0
+ | S n0 => (fun n1 : nat => ?Goal0@{n:=n1}) n0
+ end".
+The 2nd recursive definition is: "fun (n : STrue) (m : nat) => ?Goal".

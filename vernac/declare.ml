@@ -800,6 +800,12 @@ let prepare_recursive_declaration cinfo fixtypes fixrs fixdefs =
   let defs = List.map (Vars.subst_vars (List.rev fixnames)) fixdefs in
   (Array.of_list names, Array.of_list fixtypes, Array.of_list defs)
 
+let prepare_recursive_edeclaration sigma cinfo fixtypes fixrs fixdefs =
+  let fixnames = List.map (fun CInfo.{name} -> name) cinfo in
+  let names = List.map2 (fun name r -> Context.make_annot (Name name) (EConstr.ERelevance.make r)) fixnames fixrs in
+  let defs = List.map (EConstr.Vars.subst_vars sigma (List.rev fixnames)) fixdefs in
+  (Array.of_list names, Array.of_list fixtypes, Array.of_list defs)
+
 let declare_mutual_definitions ~info ~cinfo ~opaque ~uctx ~bodies ~possible_guard ?using () =
   let { Info.poly; udecl; scope; clearbody; kind; typing_flags; user_warns; ntns; _ } = info in
   let env = Global.env() in
@@ -1863,6 +1869,53 @@ let prepare_proof ?(warn_incomplete=true) { proof; pinfo } =
     end
   in
   proofs, Evd.evar_universe_context evd
+
+exception NotGuarded of
+    Environ.env * Evd.evar_map *
+    (Environ.env * int * EConstr.t Type_errors.pcofix_guard_error) option *
+    (Environ.env * int * int list * EConstr.t Type_errors.pfix_guard_error) list *
+    EConstr.rec_declaration
+
+let () = CErrors.register_handler (function
+    | NotGuarded (env, sigma, cofix_err, fix_errs, rec_declaration) ->
+      Some (Himsg.explain_not_guarded env sigma cofix_err fix_errs rec_declaration)
+    | _ -> None)
+
+let control_only_guard { proof; pinfo } =
+  let { Proof.entry; Proof.sigma; } = Proof.data proof in
+  let initial_goals = Proofview.initial_goals entry in
+  let proofs = List.map (fun (_, body, typ) -> Evarutil.(nf_evar sigma body, nf_evar sigma typ)) initial_goals in
+  let eff = Evd.eval_side_effects sigma in
+  let env = Safe_typing.push_private_constants (Global.env()) eff.Evd.seff_private in
+  let open Proof_info in
+  match pinfo.possible_guard with
+  | None ->
+    List.iter (fun (body, _) -> Inductiveops.control_only_guard env sigma body) proofs
+  | Some (possible_guard, fixrelevances) ->
+    let fixbodies, fixtypes = List.split proofs in
+    let rec_declaration = prepare_recursive_edeclaration sigma pinfo.cinfo fixtypes fixrelevances fixbodies in
+    try
+      let cofix_error =
+        if possible_guard.possibly_cofix then
+          try
+            Inductiveops.control_only_guard env sigma (EConstr.mkCoFix (0,rec_declaration));
+            raise Exit
+          with Pretype_errors.PretypeError (env, sigma, TypingError (IllFormedRecBody (CoFixGuardError why,lna,i,fixenv,vdefj))) ->
+            Some (env,i,why)
+        else None
+      in
+      let combinations = List.combinations possible_guard.possible_fix_indices in
+      let fix_errors =
+        List.map (fun lv ->
+            try
+              Inductiveops.control_only_guard env sigma (EConstr.mkFix ((Array.of_list lv,0),rec_declaration));
+              raise Exit
+            with Pretype_errors.PretypeError (env, sigma, TypingError (IllFormedRecBody (FixGuardError why,lna,i,fixenv,vdefj))) ->
+              (env,i,lv,why))
+          combinations
+      in
+      raise (NotGuarded (env, sigma, cofix_error, fix_errors, rec_declaration))
+    with Exit -> ()
 
 let make_univs_deferred ~poly ~initial_euctx ~uctx ~udecl
     (used_univs_typ, typ) (used_univs_body, body) eff =

@@ -2210,12 +2210,7 @@ let vernac_show ~pstate =
     end
 
 let vernac_check_guard ~pstate =
-  let pts = Declare.Proof.get pstate in
-  let pfterm = List.hd (Proof.partial_proof pts) in
-  let { Proof.entry; Proof.sigma } = Proof.data pts in
-  let hyps, _, _ = List.hd (Proofview.initial_goals entry) in
-  let env = Environ.reset_with_named_context hyps (Global.env ()) in
-  Inductiveops.control_only_guard env sigma pfterm;
+  Declare.Proof.control_only_guard pstate;
   str "The condition holds up to here."
 
 let vernac_validate_proof ~pstate =
