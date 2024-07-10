@@ -237,12 +237,6 @@ let discharge_class cl =
   with Not_found -> (* not defined in the current section *)
     cl
 
-let rebuild_class cl =
-  try
-    let cst = Tacred.evaluable_of_global_reference (Global.env ()) cl.cl_impl in
-      set_typeclass_transparency ~locality:Hints.Local [cst] false; cl
-  with e when CErrors.noncritical e -> cl
-
 let class_input : typeclass -> obj =
   declare_object
     { (default_object "type classes state") with
@@ -250,8 +244,8 @@ let class_input : typeclass -> obj =
       load_function = (fun _ -> cache_class);
       classify_function = (fun x -> Substitute);
       discharge_function = (fun a -> Some (discharge_class a));
-      rebuild_function = rebuild_class;
-      subst_function = subst_class }
+      subst_function = subst_class;
+    }
 
 let add_class cl =
   Lib.add_leaf (class_input cl);
