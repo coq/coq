@@ -783,10 +783,10 @@ let end_module_core id (m_info : current_module_syntax_info) objects fs =
   let {Lib.Synterp.substobjs = substitute; keepobjs = keep; anticipateobjs = special; } = objects in
 
   (* For sealed modules, we use the substitutive objects of their signatures *)
-  let sobjs0, keep, special = match m_info.cur_typ with
-    | None -> ([], Objs substitute), keep, special
+  let sobjs0, keep = match m_info.cur_typ with
+    | None -> ([], Objs substitute), keep
     | Some (mty, inline) ->
-      SynterpVisitor.get_module_sobjs false () inline mty, [], special
+      SynterpVisitor.get_module_sobjs false () inline mty, []
   in
   Summary.Synterp.unfreeze_summaries fs;
   let sobjs = let (ms,objs) = sobjs0 in (m_info.cur_mbids@ms,objs) in
