@@ -10,7 +10,7 @@
 
 (**** Tests of Field with real numbers ****)
 
-Require Import Reals RealField.
+From Stdlib Require Import Reals RealField.
 Open Scope R_scope.
 
 (* Example 1 *)

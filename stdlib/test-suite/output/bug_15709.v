@@ -1,4 +1,4 @@
-Require Import Stdlib.Strings.String.
-Require Import Stdlib.Strings.Ascii.
+From Stdlib Require Import String.
+From Stdlib Require Import Ascii.
 
 Check String "]".

@@ -1,4 +1,4 @@
-Require Import Nsatz.
+From Stdlib Require Import Nsatz.
 Goal True.
 try nsatz_compute
  (PEc 0%Z :: PEc (-1)%Z

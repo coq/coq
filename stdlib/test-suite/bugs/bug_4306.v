@@ -1,7 +1,7 @@
-Require Import List.
-Require Import Arith.
-Require Import Recdef.
-Require Import Lia.
+From Stdlib Require Import List.
+From Stdlib Require Import Arith.
+From Stdlib Require Import Recdef.
+From Stdlib Require Import Lia.
 
 Function foo (xys : (list nat * list nat)) {measure (fun xys => length (fst xys) + length (snd xys))} : list nat :=
   match xys with

@@ -1,4 +1,4 @@
-Require Stdlib.Lists.List Stdlib.Vectors.Vector.
+From Stdlib Require List Vector.
 
 Module A.
 Import Stdlib.Lists.List Stdlib.Vectors.Vector.

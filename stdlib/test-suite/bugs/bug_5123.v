@@ -9,7 +9,7 @@ Inductive vect A : nat -> Type :=
 
 Class Eqdec A := eqdec : forall a b : A, {a=b}+{a<>b}.
 
-Require Bool.
+From Stdlib Require Bool.
 
 #[export] Instance Bool_eqdec : Eqdec bool := Bool.bool_dec.
 

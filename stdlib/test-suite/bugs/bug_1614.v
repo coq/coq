@@ -1,5 +1,5 @@
-Require Import Ring.
-Require Import ArithRing.
+From Stdlib Require Import Ring.
+From Stdlib Require Import ArithRing.
 
 Fixpoint eq_nat_bool (x y : nat) {struct x} : bool :=
 match x, y with

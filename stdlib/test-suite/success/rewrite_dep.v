@@ -1,7 +1,7 @@
 Require Import TestSuite.admit.
-Require Import Setoid.
-Require Import Morphisms.
-Require Vector.
+From Stdlib Require Import Setoid.
+From Stdlib Require Import Morphisms.
+From Stdlib Require Vector.
 Notation vector := Vector.t.
 Notation Vcons n t := (@Vector.cons _ n _ t).
 

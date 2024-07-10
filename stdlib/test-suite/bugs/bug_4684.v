@@ -1,6 +1,6 @@
 (*Suppose a user wants to declare a new list-like notation with support for singletons in both 8.4 and 8.5.  If they use*)
-Require Import Stdlib.Lists.List.
-Require Import Stdlib.Vectors.Vector.
+From Stdlib Require Import List.
+From Stdlib Require Import Vector.
 Import ListNotations.
 Import VectorNotations.
 Set Implicit Arguments.

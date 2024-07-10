@@ -1,4 +1,4 @@
-Require Import ArithRing.
+From Stdlib Require Import ArithRing.
 
 Lemma l1 : 2 = 1 + 1.
 ring.

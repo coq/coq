@@ -1,7 +1,7 @@
 
 (* compile en user    3m39.915s sur cachalot *)
-Require Import Nsatz.
-Require List.
+From Stdlib Require Import Nsatz.
+From Stdlib Require List.
 Import List.ListNotations.
 
 (* Example with a generic domain *)
@@ -41,7 +41,7 @@ Goal forall x y:Z,  x = y -> (x+0)%Z = (y*1+0)%Z.
 nsatz.
 Qed.
 
-Require Import Rbase.
+From Stdlib Require Import Rbase.
 
 Goal forall x y:R,  x = y -> (x+0)%R = (y*1+0)%R.
 nsatz.
@@ -60,8 +60,8 @@ Section Geometry.
    https://docs.google.com/fileview?id=0ByhB3nPmbnjTYzFiZmIyNGMtYTkwNC00NWFiLWJiNzEtODM4NmVkYTc2NTVk&hl=fr
 *)
 
-Require Import Rbase.
-Require Import List.
+From Stdlib Require Import Rbase.
+From Stdlib Require Import List.
 
 Record point:Type:={
  X:R;

@@ -1,4 +1,4 @@
-Require Import Stdlib.ZArith.BinInt.
+From Stdlib Require Import BinInt.
 
 Class decoder (n : Z) W :=
   { decode : W -> Z }.

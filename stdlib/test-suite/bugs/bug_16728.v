@@ -1,4 +1,4 @@
-Require Import Ring.
+From Stdlib Require Import Ring.
 Lemma Rlt_n_Sn : exists P:Prop, True -> P.
 Proof.
 eexists.

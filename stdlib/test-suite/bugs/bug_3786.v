@@ -1,6 +1,6 @@
 Require Import TestSuite.admit.
-Require Stdlib.Lists.List.
-Require Stdlib.Sets.Ensembles.
+From Stdlib Require List.
+From Stdlib Require Ensembles.
 Import Stdlib.Sets.Ensembles.
 Global Set Implicit Arguments.
 Delimit Scope comp_scope with comp.

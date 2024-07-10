@@ -1,4 +1,4 @@
-Require Import ZArith Lia.
+From Stdlib Require Import ZArith Lia.
 
 (* Submitted by Yegor Bryukhov (BZ#922) *)
 

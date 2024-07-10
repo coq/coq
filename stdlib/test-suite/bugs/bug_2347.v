@@ -1,4 +1,4 @@
-Require Import EquivDec List.
+From Stdlib Require Import EquivDec List.
 Generalizable All Variables.
 
 Program Definition list_eqdec `(eqa : EqDec A eq) : EqDec (list A) eq :=

@@ -1,4 +1,4 @@
-Require Export Reals.
+From Stdlib Require Export Reals.
 
 Parameter toto : nat -> nat -> nat.
 

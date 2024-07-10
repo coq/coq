@@ -1,7 +1,7 @@
 (** Omega is now aware of the bodies of context variables
     (of type Z or nat). *)
 
-Require Import ZArith Lia.
+From Stdlib Require Import ZArith Lia.
 Open Scope Z.
 
 Goal let x := 3 in x = 3.

@@ -1,5 +1,5 @@
-Require Import Ring.
-Require Import ArithRing.
+From Stdlib Require Import Ring.
+From Stdlib Require Import ArithRing.
 
 Ltac ring_simplify_neq :=
   match goal with

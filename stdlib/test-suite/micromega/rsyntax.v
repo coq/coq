@@ -1,6 +1,6 @@
-Require Import ZArith.
-Require Import Lra.
-Require Import Reals.
+From Stdlib Require Import ZArith.
+From Stdlib Require Import Lra.
+From Stdlib Require Import Reals.
 
 Goal (1 / (1 - 1) = 0)%R.
   Fail lra. (* division by zero *)
@@ -24,7 +24,7 @@ Proof.
   Fail lra.
 Abort.
 
-Require Import DeclConstant.
+From Stdlib Require Import DeclConstant.
 
 #[export] Instance Dsqrt : DeclaredConstant Z.sqrt := {}.
 
@@ -33,8 +33,8 @@ Proof.
   lra.
 Qed.
 
-Require Import QArith.
-Require Import Qreals.
+From Stdlib Require Import QArith.
+From Stdlib Require Import Qreals.
 
 Goal (Q2R (1 # 2) = 1/2)%R.
 Proof.
@@ -53,7 +53,7 @@ Proof.
   lra.
 Qed.
 
-Require Import Lia.
+From Stdlib Require Import Lia.
 
 Goal ( 1 ^ (2 + 2) = 1)%Z.
 Proof.

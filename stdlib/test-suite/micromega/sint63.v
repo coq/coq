@@ -1,6 +1,6 @@
-Require Import ZArith Lia.
-Require Import Sint63.
-Require ZifySint63.
+From Stdlib Require Import ZArith Lia.
+From Stdlib Require Import Sint63.
+From Stdlib Require ZifySint63.
 
 Open Scope sint63_scope.
 

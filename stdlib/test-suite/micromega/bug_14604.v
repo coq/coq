@@ -1,4 +1,4 @@
-Require Import ZArith Lia.
+From Stdlib Require Import ZArith Lia.
 
 (* mul z n = Z.of_nat n * z *)
 Fixpoint mul (x:Z) (n : nat) : Z :=

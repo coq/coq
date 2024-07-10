@@ -8,14 +8,14 @@ Axiom proof_admitted : False.
 
 Tactic Notation "admit" := case proof_admitted.
 
-Require Stdlib.Program.Program.
-Require Stdlib.Strings.String.
-Require Stdlib.micromega.Lia.
+From Stdlib Require Program.
+From Stdlib Require String.
+From Stdlib Require Lia.
 Module Export Fiat_DOT_Common.
 Module Export Fiat.
 Module Common.
 Import Stdlib.Lists.List.
-Export Stdlib.Program.Program.
+Export Program.
 
 Global Set Implicit Arguments.
 
@@ -157,7 +157,7 @@ Module Export Fiat_DOT_Parsers_DOT_BaseTypes.
 Module Export Fiat.
 Module Export Parsers.
 Module Export BaseTypes.
-Import Stdlib.Arith.Wf_nat.
+Import Wf_nat.
 
 Local Coercion is_true : bool >-> Sortclass.
 
@@ -489,8 +489,8 @@ Defined.
   End app.
 
 Import Stdlib.Lists.List.
-Import Stdlib.Arith.Arith.
-Import Stdlib.micromega.Lia.
+Import Arith.
+Import Lia.
 Import Fiat_DOT_Common.Fiat.Common.
 Import Fiat.Parsers.ContextFreeGrammar.Valid.
 Local Open Scope string_like_scope.

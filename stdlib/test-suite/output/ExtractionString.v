@@ -1,4 +1,4 @@
-Require Import String Extraction.
+From Stdlib Require Import String Extraction.
 
 Definition str := "This is a string"%string.
 
@@ -11,15 +11,15 @@ Extraction Language Haskell.
 Extraction str.
 
 (* Extraction to char list, in OCaml *)
-Require Import ExtrOcamlString.
+From Stdlib Require Import ExtrOcamlString.
 Extraction Language OCaml.
 Extraction str.
 
 (* Extraction to native strings, in OCaml *)
-Require Import ExtrOcamlNativeString.
+From Stdlib Require Import ExtrOcamlNativeString.
 Extraction str.
 
 (* Extraction to native strings, in Haskell *)
-Require Import ExtrHaskellString.
+From Stdlib Require Import ExtrHaskellString.
 Extraction Language Haskell.
 Extraction str.

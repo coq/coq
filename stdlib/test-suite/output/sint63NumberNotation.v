@@ -1,5 +1,4 @@
-From Stdlib
-Require Import Uint63.
+From Stdlib Require Import Uint63.
 Import ZArith.
 
 Declare Scope uint_scope.

@@ -1,4 +1,4 @@
-Require FunInd.
+From Stdlib Require FunInd.
 Set Universe Polymorphism.
 Inductive ARG := phy | inf.
 Function Phy (x:ARG): ARG := match x with inf => inf | _ => phy end

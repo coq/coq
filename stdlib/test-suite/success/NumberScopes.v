@@ -4,7 +4,7 @@
 
 Close Scope nat_scope.
 
-Require Import PArith.
+From Stdlib Require Import PArith.
 Check (Pos.add 1 2).
 Check (Pos.add_comm 1 2).
 Check (Pos.min_comm 1 2).
@@ -13,7 +13,7 @@ Definition f_pos' (x:Pos.t) := x.
 Check (f_pos 1).
 Check (f_pos' 1).
 
-Require Import ZArith.
+From Stdlib Require Import ZArith.
 Check (Z.add 1 2).
 Check (Z.add_comm 1 2).
 Check (Z.min_comm 1 2).
@@ -22,7 +22,7 @@ Definition f_Z' (x:Z.t) := x.
 Check (f_Z 1).
 Check (f_Z' 1).
 
-Require Import NArith.
+From Stdlib Require Import NArith.
 Check (N.add 1 2).
 Check (N.add_comm 1 2).
 Check (N.min_comm 1 2).
@@ -31,7 +31,7 @@ Definition f_N' (x:N.t) := x.
 Check (f_N 1).
 Check (f_N' 1).
 
-Require Import Arith.
+From Stdlib Require Import Arith.
 Check (Nat.add 1 2).
 Check (Nat.add_comm 1 2).
 Check (Nat.min_comm 1 2).

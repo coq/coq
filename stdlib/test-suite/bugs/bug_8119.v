@@ -1,4 +1,4 @@
-Require Import Stdlib.Strings.String.
+From Stdlib Require Import String.
 
 Section T.
   Eval vm_compute in let x := tt in _.

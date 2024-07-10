@@ -1,4 +1,4 @@
-Require Import Setoid Morphisms Vector.
+From Stdlib Require Import Setoid Morphisms Vector.
 
 Class Equiv A := equiv : A -> A -> Prop.
 Class Setoid A `{Equiv A} := setoid_equiv :: Equivalence (equiv).

@@ -1,5 +1,5 @@
-Require Stdlib.Strings.String.
-Require Stdlib.ZArith.ZArith.
+From Stdlib Require String.
+From Stdlib Require ZArith.
 
 Axiom proof_admitted : False.
 Tactic Notation "admit" := abstract case proof_admitted.
@@ -41,7 +41,7 @@ Fixpoint hlist@{i j k} (argts : list@{j} Type@{i}) : Type@{k} :=
 
 Definition tuple A n := hlist (repeat A n).
   Notation byte := (Stdlib.Init.Byte.byte: Type).
-Import Stdlib.ZArith.BinInt.
+Import BinInt.
 Local Open Scope Z_scope.
 
 Module Export word.

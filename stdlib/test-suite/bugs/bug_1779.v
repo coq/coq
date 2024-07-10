@@ -1,4 +1,4 @@
-Require Import PeanoNat.
+From Stdlib Require Import PeanoNat.
 
 Lemma double_div2: forall n, Nat.div2 (Nat.double n) = n.
 exact (fun n =>  let _subcase :=

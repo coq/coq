@@ -1,4 +1,4 @@
-Require Import Stdlib.Strings.String.
+From Stdlib Require Import String.
 
 Section T.
   Eval native_compute in let x := tt in _.

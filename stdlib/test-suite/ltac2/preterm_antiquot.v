@@ -1,7 +1,7 @@
-Require Import ZArith.
+From Stdlib Require Import ZArith.
 Open Scope Z_scope.
 
-Require Import Ltac2.Ltac2.
+From Stdlib Require Import Ltac2.Ltac2.
 
 Ltac2 rec z2nat_preterm x :=
   let b := eval cbv in (Z.leb $x 0) in
