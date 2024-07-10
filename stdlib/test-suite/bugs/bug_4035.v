@@ -5,7 +5,7 @@
    have less constraints on ident at interpretation time, as
    otherwise more ad hoc entries would be necessary (as e.g. a special
    "quantified_hypothesis" entry for dependent destruction). *)
-Require Import Program.
+From Stdlib Require Import Program.
 Goal nat -> Type.
   intro x.
   lazymatch goal with

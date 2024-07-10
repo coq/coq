@@ -1,5 +1,5 @@
 Require Import TestSuite.admit.
-Require Import Stdlib.Classes.Morphisms Stdlib.Classes.RelationClasses Stdlib.Program.Program Stdlib.Setoids.Setoid.
+From Stdlib Require Import Morphisms RelationClasses Program Setoid.
 
 Global Set Implicit Arguments.
 

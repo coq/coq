@@ -1,4 +1,4 @@
-Require Import Vector Program.
+From Stdlib Require Import Vector Program.
 
 Module T.
 

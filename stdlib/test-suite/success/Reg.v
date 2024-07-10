@@ -1,4 +1,4 @@
-Require Import Reals.
+From Stdlib Require Import Reals.
 
 Axiom y : R -> R.
 Axiom d_y : derivable y.

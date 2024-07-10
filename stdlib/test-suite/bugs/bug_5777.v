@@ -1,5 +1,5 @@
-Require Import Stdlib.Program.Tactics.
-Require Import Stdlib.Program.Utils JMeq Lia.
+From Stdlib.Program Require Import Tactics Utils.
+From Stdlib Require Import JMeq Lia.
 
 #[local]
 Open Scope program_scope.

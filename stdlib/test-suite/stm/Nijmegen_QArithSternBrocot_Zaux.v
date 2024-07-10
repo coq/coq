@@ -19,9 +19,9 @@
 (** This file includes random facts about Integers (and natural numbers) which are not found in the standard library. Some of the lemma here are not used in the QArith development but are rather useful.
 *)
 
-Require Export ZArith.
-Require Export ZArithRing.
-Require Import Lia.
+From Stdlib Require Export ZArith.
+From Stdlib Require Export ZArithRing.
+From Stdlib Require Import Lia.
 
 Tactic Notation "ElimCompare" constr(c) constr(d) := elim_compare c d.
 

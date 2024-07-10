@@ -1,4 +1,4 @@
-Require Import ZArith QArith.
+From Stdlib Require Import ZArith QArith.
 From Stdlib.micromega Require Import RingMicromega EnvRing Tauto.
 From Stdlib.micromega Require Import ZMicromega QMicromega.
 

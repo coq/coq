@@ -1,4 +1,4 @@
-Require Import FunInd List.
+From Stdlib Require Import FunInd List.
 
 (* Explanations: This kind of pattern matching displays a legitimate
    unused variable warning in v8.13.

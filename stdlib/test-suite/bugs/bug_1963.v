@@ -1,6 +1,6 @@
 (* Check that "dependent inversion" behaves correctly w.r.t to universes *)
 
-Require Import Eqdep.
+From Stdlib Require Import Eqdep.
 
 Set Implicit Arguments.
 

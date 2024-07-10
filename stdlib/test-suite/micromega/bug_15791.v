@@ -1,4 +1,4 @@
-Require Import Stdlib.micromega.Lia.
+From Stdlib Require Import Lia.
 Unset Lia Cache.
 Set Primitive Projections.
 

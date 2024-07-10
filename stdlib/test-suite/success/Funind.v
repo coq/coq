@@ -1,5 +1,4 @@
-
-Require Import Stdlib.funind.FunInd.
+From Stdlib Require Import FunInd.
 
 Definition iszero (n : nat) : bool :=
   match n with
@@ -44,7 +43,7 @@ functional inversion 1 ftest;auto.
 Qed.
 
 
-Require Import Arith.
+From Stdlib Require Import Arith.
 Lemma test11 : forall m : nat, ftest 0 m <= 2.
 intros m.
  functional induction ftest 0 m.
@@ -71,7 +70,7 @@ Defined.
 
 
 (* polymorphic function *)
-Require Import List.
+From Stdlib Require Import List.
 
 Functional Scheme app_ind := Induction for app Sort Prop.
 
@@ -85,7 +84,7 @@ Qed.
 
 
 
-Require Export Arith.
+From Stdlib Require Export Arith.
 
 
 Function trivfun (n : nat) : nat :=
@@ -152,7 +151,7 @@ Function nat_equal_bool (n m : nat) {struct n} : bool :=
   end.
 
 
-Require Import Nat.
+From Stdlib Require Import Nat.
 Functional Scheme div2_ind := Induction for Nat.div2 Sort Prop.
 Lemma div2_inf : forall n : nat, Nat.div2 n <= n.
 intros n.
@@ -505,8 +504,8 @@ Qed.
 
 (* An example with projections *)
 
-Require Import FunInd.
-Require Import List.
+From Stdlib Require Import FunInd.
+From Stdlib Require Import List.
 
 Record foo (X:Type):= {a:nat; b:X}.
 

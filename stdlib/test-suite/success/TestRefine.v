@@ -188,8 +188,8 @@ Qed.
 
 (* Quelques essais de recurrence bien fondée *)
 
-Require Import Init.Wf.
-Require Import Wf_nat.
+From Stdlib Require Import Init.Wf.
+From Stdlib Require Import Wf_nat.
 
 Lemma essai_wf : nat -> nat.
 
@@ -203,7 +203,7 @@ exact lt_wf.
 Abort.
 
 
-Require Import Arith_base.
+From Stdlib Require Import Arith_base.
 
 Lemma fibo : nat -> nat.
  refine

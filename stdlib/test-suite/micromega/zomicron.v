@@ -1,5 +1,5 @@
-Require Import ZArith.
-Require Import Lia.
+From Stdlib Require Import ZArith.
+From Stdlib Require Import Lia.
 
 Section S.
   Variables H1 H2 H3 H4 : True.

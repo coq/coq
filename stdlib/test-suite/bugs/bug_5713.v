@@ -1,6 +1,6 @@
 (* Checking that classical_right/classical_left work in an empty context *)
 
-Require Import Classical.
+From Stdlib Require Import Classical.
 
 Parameter A:Prop.
 

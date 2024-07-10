@@ -8,9 +8,9 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Floats ExtrOCamlFloats.
+From Stdlib Require Import Floats ExtrOCamlFloats.
 
-Require Import List. Import ListNotations.
+From Stdlib Require Import List. Import ListNotations.
 
 (* from Require Import ExtrOcamlBasic. *)
 Extract Inductive list => list [ "[]" "( :: )" ].

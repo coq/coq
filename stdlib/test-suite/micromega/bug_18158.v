@@ -1,5 +1,5 @@
-Require Import ZArith.
-Import Stdlib.micromega.Lia.
+From Stdlib Require Import ZArith.
+Import Lia.
 Open Scope Z_scope.
 
 Lemma shiftr_lbound a n:

@@ -1,4 +1,4 @@
-Require Import QArith.
+From Stdlib Require Import QArith.
 Open Scope Q_scope.
 Check (eq_refl : 1.02 = 102 # 100).
 Check 1.02e1.

@@ -5,8 +5,8 @@
 Set Asymmetric Patterns.
 Axiom proof_admitted : False.
 Tactic Notation "admit" := case proof_admitted.
-Require Import Stdlib.Lists.List.
-Require Import Stdlib.Setoids.Setoid.
+From Stdlib Require Import List.
+From Stdlib Require Import Setoid.
 Global Set Implicit Arguments.
 Global Generalizable All Variables.
 Coercion is_true : bool >-> Sortclass.
@@ -186,8 +186,8 @@ End ADTSynthesis_DOT_Parsers_DOT_StringLike_DOT_Core.
 Module Export ADTSynthesis.
 Module Export Parsers.
 Module Export ContextFreeGrammar.
-Require Import Stdlib.Strings.String.
-Require Import Stdlib.Lists.List.
+From Stdlib Require Import String.
+From Stdlib Require Import List.
 Export ADTSynthesis.Parsers.StringLike.Core.
 Import ADTSynthesis.Common.
 
@@ -377,9 +377,9 @@ Section general.
 End general.
 
 Module Export BooleanRecognizer.
-Import Stdlib.Arith.PeanoNat.
-Import Stdlib.Arith.Compare_dec.
-Import Stdlib.Arith.Wf_nat.
+Import PeanoNat.
+Import Compare_dec.
+Import Wf_nat.
 
 Section recursive_descent_parser.
   Context {Char} {HSL : StringLike Char} {HSLP : StringLikeProperties Char} {G : grammar Char}.

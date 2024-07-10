@@ -1,6 +1,6 @@
-Require Import List.
-Require Import ZArith.
-Require String. Open Scope string_scope.
+From Stdlib Require Import List.
+From Stdlib Require Import ZArith.
+From Stdlib Require String. Open Scope string_scope.
 Ltac Case s := let c := fresh "case" in set (c := s).
 
 Set Implicit Arguments.
@@ -52,7 +52,7 @@ with slist_in : list sv -> list sv -> Prop :=
 
 #[export] Hint Constructors sin slt slist_in.
 
-Require Import Program.
+From Stdlib Require Import Program.
 
 Program Fixpoint lt_dec (x y:sv) { struct x } : {slt x y}+{~slt x y} :=
   match x with

@@ -1,5 +1,5 @@
-Require Import Reals.
-Require Import DiscrR.
+From Stdlib Require Import Reals.
+From Stdlib Require Import DiscrR.
 
 Lemma ex0 : 1%R <> 0%R.
 Proof.

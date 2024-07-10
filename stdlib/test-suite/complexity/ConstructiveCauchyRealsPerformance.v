@@ -2,10 +2,10 @@
    to measure the computation speed. *)
 (* Expected time < 5.00s *)
 
-Require Import QArith Qabs Qpower.
-Require Import ConstructiveCauchyRealsMult.
-Require Import Lqa.
-Require Import Lia.
+From Stdlib Require Import QArith Qabs Qpower.
+From Stdlib Require Import ConstructiveCauchyRealsMult.
+From Stdlib Require Import Lqa.
+From Stdlib Require Import Lia.
 
 Local Open Scope CReal_scope.
 

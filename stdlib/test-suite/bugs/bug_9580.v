@@ -1,5 +1,5 @@
-Require Import List.
-Require Import Decidable PeanoNat.
+From Stdlib Require Import List.
+From Stdlib Require Import Decidable PeanoNat.
 
 Theorem count_occ_cons: forall l1 l2 (p1 p2:nat) n, count_occ Nat.eq_dec l1 p1 + n =
     count_occ Nat.eq_dec l2 p1 ->

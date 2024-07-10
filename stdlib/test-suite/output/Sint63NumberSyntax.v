@@ -1,4 +1,4 @@
-Require Import Sint63.
+From Stdlib Require Import Sint63.
 
 Check 2%sint63.
 Open Scope sint63_scope.

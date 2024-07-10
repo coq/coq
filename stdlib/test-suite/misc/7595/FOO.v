@@ -1,4 +1,4 @@
-Require Import Test.base.
+From Stdlib Require Import Test.base.
 
 Lemma dec_stable `{Decision P} : ¬¬P → P.
 Proof. firstorder. Qed.

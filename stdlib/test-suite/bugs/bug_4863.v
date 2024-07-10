@@ -1,4 +1,4 @@
-Require Import Classes.DecidableClass.
+From Stdlib Require Import DecidableClass.
 
 Inductive Foo : Set :=
 | foo1 | foo2.

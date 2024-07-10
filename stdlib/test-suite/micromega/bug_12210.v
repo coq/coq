@@ -1,4 +1,4 @@
-Require Import PeanoNat Lia.
+From Stdlib Require Import PeanoNat Lia.
 
 Goal forall x, Nat.le x x.
 Proof.

@@ -1,4 +1,4 @@
-Require Import Lia.
+From Stdlib Require Import Lia.
 
 Definition t := nat.
 

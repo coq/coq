@@ -1,6 +1,6 @@
-Require Import ZArith  Lia.
-Require Import Uint63.
-Require ZifyUint63.
+From Stdlib Require Import ZArith  Lia.
+From Stdlib Require Import Uint63.
+From Stdlib Require ZifyUint63.
 
 Open Scope uint63_scope.
 

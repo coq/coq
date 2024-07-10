@@ -1,4 +1,4 @@
-Require Import Stdlib.Reals.Reals Stdlib.nsatz.Nsatz.
+From Stdlib Require Import Reals Nsatz.
 Local Open Scope R.
 
 Goal forall x y : R,

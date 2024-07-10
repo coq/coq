@@ -1,4 +1,4 @@
-Require Import ZArith Nnat Lia.
+From Stdlib Require Import ZArith Nnat Lia.
 Open Scope Z_scope.
 
 (** Test of the zify preprocessor for (R)Omega *)

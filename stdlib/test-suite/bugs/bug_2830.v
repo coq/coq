@@ -41,7 +41,7 @@ End A.
 
 Module B.
 
-Require Import Program Relations.
+From Stdlib Require Import Program Relations.
 
 Record ageable_facts (A:Type) (level: A -> nat) (age1:A -> option A)  :=
 { af_unage : forall x x' y', level x' = level y' -> age1 x = Some x' -> exists y, age1 y = Some y'
@@ -116,8 +116,8 @@ End B.
 
 (* This was submitted by Anthony Cowley *)
 
-Require Import Stdlib.Classes.Morphisms.
-Require Import Setoid.
+From Stdlib Require Import Morphisms.
+From Stdlib Require Import Setoid.
 
 Module C.
 
@@ -208,7 +208,7 @@ Defined.
 
 (* The [list] type constructor is a Functor. *)
 
-Require Import List.
+From Stdlib Require Import List.
 
 Definition setList (A:set_cat) := list A.
 #[export] Instance list_functor : Functor set_cat set_cat setList.

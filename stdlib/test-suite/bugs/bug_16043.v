@@ -1,4 +1,4 @@
-Require Program.Tactics.
+From Stdlib Require Program.Tactics.
 
 Module Reduced.
   Axiom t : Type -> Type.
@@ -18,8 +18,8 @@ The reference 2 is free.
   About map2'.
 End Reduced.
 
-Require Stdlib.FSets.FMapInterface.
-Import Stdlib.Structures.Orders.
+From Stdlib Require FMapInterface.
+Import Orders.
 Import Stdlib.FSets.FMapInterface.
 
 Definition option_value {A} (v1 : option A) (v2 : A) : A := match v1 with Some v => v | None => v2 end.

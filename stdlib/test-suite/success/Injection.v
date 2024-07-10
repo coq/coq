@@ -1,4 +1,4 @@
-Require Eqdep_dec.
+From Stdlib Require Eqdep_dec.
 
 (* Check the behaviour of Injection *)
 

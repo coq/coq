@@ -1,7 +1,7 @@
 (* This file used to test the `romega` tactics.
    In Coq 8.9 (end of 2018), these tactics are deprecated.
    The tests in this file remain but now call the `lia` tactic. *)
-Require Import ZArith Lia.
+From Stdlib Require Import ZArith Lia.
 
 (* Submitted by Xavier Urbain 18 Jan 2002 *)
 

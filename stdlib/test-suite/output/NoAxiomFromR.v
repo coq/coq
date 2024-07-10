@@ -1,4 +1,4 @@
-Require Import Psatz.
+From Stdlib Require Import Psatz.
 
 Inductive TT : Set :=
 | C : nat -> TT.

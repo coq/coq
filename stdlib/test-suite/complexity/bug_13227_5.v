@@ -1,4 +1,4 @@
-Require Import Lia ZArith.
+From Stdlib Require Import Lia ZArith.
 Open Scope Z_scope.
 
 Unset Lia Cache.

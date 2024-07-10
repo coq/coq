@@ -39,7 +39,7 @@ Proof.
 Qed.
 
 
-Require Import List.
+From Stdlib Require Import List.
 
 Print list.
 
@@ -56,7 +56,7 @@ Check (cons 3 (cons 2 nil)).
 
 
 
-Require Import Bvector.
+From Stdlib Require Import Bvector.
 
 Print Vector.t.
 
@@ -130,8 +130,8 @@ Print sumbool.
 
 Print ex.
 
-Require Import ZArith.
-Require Import Compare_dec.
+From Stdlib Require Import ZArith.
+From Stdlib Require Import Compare_dec.
 
 Check le_lt_dec.
 
@@ -147,7 +147,7 @@ Proof.
  intros; absurd (p < p); eauto with arith.
 Qed.
 
-Require Stdlib.extraction.Extraction.
+From Stdlib Require Extraction.
 Extraction max.
 
 
@@ -262,7 +262,7 @@ Lemma Rw :  forall x y: nat, y = y * x -> y * x * x = y.
 Qed.
 
 
-Require Import Arith.
+From Stdlib Require Import Arith.
 
 Check Nat.mul_1_l.
 (*
@@ -369,7 +369,7 @@ Section Paradox.
 End Paradox.
 
 
-Require Import ZArith.
+From Stdlib Require Import ZArith.
 
 
 
@@ -457,7 +457,7 @@ Lemma t1_le'_t2 :  itree_le' t1 t2.
 Qed.
 
 
-Require Import List.
+From Stdlib Require Import List.
 
 Inductive ltree  (A:Set) : Set :=
           lnode   : A -> list (ltree A) -> ltree A.
@@ -937,7 +937,7 @@ div_aux =
      : forall x : nat, nat -> Acc lt x -> nat
 *)
 
-Require Import Wf_nat.
+From Stdlib Require Import Wf_nat.
 Definition div x y := div_aux x y (lt_wf x).
 
 Extraction div.
@@ -974,7 +974,7 @@ v : Vector.t A n
 The term "[]" has type "Vector.t A 0" while it is expected to have type
  "Vector.t A n"
 *)
- Require Import JMeq.
+From Stdlib Require Import JMeq.
 
 Lemma vector0_is_vnil_aux : forall (A:Set)(n:nat)(v:Vector.t A n),
                                   n= 0 -> JMeq v (Vector.nil A).
@@ -1049,7 +1049,7 @@ Definition vector_double_rect :
  apply X0; auto.
 Defined.
 
-Require Import Bool.
+From Stdlib Require Import Bool.
 
 Definition bitwise_or n v1 v2 : Vector.t bool n :=
    vector_double_rect bool  (fun n v1 v2 => Vector.t bool n)

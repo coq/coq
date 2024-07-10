@@ -1,4 +1,4 @@
-Require Import Stdlib.setoid_ring.Ring.
+From Stdlib Require Import Ring.
 
 Set Universe Polymorphism.
 Inductive word : Type -> Type :=.

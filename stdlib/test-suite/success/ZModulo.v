@@ -19,13 +19,13 @@ Local Set Warnings "-deprecated".
 
 Set Implicit Arguments.
 
-Require Import Bool.
-Require Import ZArith.
-Require Import Znumtheory.
-Require Import Zpow_facts.
-Require Import DoubleType.
-Require Import CyclicAxioms.
-Require Import Lia.
+From Stdlib Require Import Bool.
+From Stdlib Require Import ZArith.
+From Stdlib Require Import Znumtheory.
+From Stdlib Require Import Zpow_facts.
+From Stdlib Require Import DoubleType.
+From Stdlib Require Import CyclicAxioms.
+From Stdlib Require Import Lia.
 
 Local Open Scope Z_scope.
 

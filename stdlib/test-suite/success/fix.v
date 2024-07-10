@@ -1,7 +1,7 @@
 (* Ancien bug signale par Laurent Thery sur la condition de garde *)
 
-Require Import Bool.
-Require Import ZArith.
+From Stdlib Require Import Bool.
+From Stdlib Require Import ZArith.
 
 Definition rNat := positive.
 
@@ -46,7 +46,7 @@ Fixpoint maxVar (e : rExpr) : rNat :=
 
 (* Check bug #1491 *)
 
-Require Import Streams.
+From Stdlib Require Import Streams.
 
 Definition decomp (s:Stream nat) : Stream nat :=
   match s with Cons _ s => s end.
@@ -61,7 +61,7 @@ Qed.
 
 (* Check mutually inductive statements *)
 
-Require Import ZArith_base Lia.
+From Stdlib Require Import ZArith_base Lia.
 Open Scope Z_scope.
 
 Inductive even: Z -> Prop :=
@@ -97,7 +97,7 @@ apply bcons.
 assumption.
 Qed.
 
-Require Import List.
+From Stdlib Require Import List.
 
 (** Extracted from coq_performance_tests *)
 

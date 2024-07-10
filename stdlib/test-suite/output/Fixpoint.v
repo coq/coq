@@ -1,4 +1,4 @@
-Require Import List.
+From Stdlib Require Import List.
 
 Check
   (fix F (A B : Set) (f : A -> B) (l : list A) {struct l} :
@@ -16,7 +16,7 @@ Check
     end
   in f 0.
 
-Require Import ZArith_base Lia.
+From Stdlib Require Import ZArith_base Lia.
 Open Scope Z_scope.
 
 Inductive even: Z -> Prop :=
