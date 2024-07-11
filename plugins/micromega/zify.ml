@@ -612,8 +612,16 @@ end
 
 let constr_of_term_kind = function Application c -> c | OtherTerm c -> c
 
+let zify_register_locality =
+  let open Attributes.Notations in
+  Attributes.explicit_hint_locality >>= function
+  | Some v ->
+    let () = Locality.check_locality_nodischarge v in
+    return v
+  | None -> return (if Lib.sections_are_opened () then Hints.Local else Hints.SuperGlobal)
+
 module type S = sig
-  val register : Libnames.qualid -> unit
+  val register : Hints.hint_locality -> Libnames.qualid -> unit
   val print : unit -> unit
 end
 
@@ -662,7 +670,7 @@ module MakeTable (E : Elt) : S = struct
              ++ Printer.pr_global (Lazy.force E.gref)
              ++ str " X1 ... Xn"))
 
-  let register_obj : Constr.constr -> Libobject.obj =
+  let register_obj : Libobject.locality * Constr.constr -> Libobject.obj =
     let cache_constr c =
       let env = Global.env () in
       let evd = Evd.from_env env in
@@ -670,19 +678,20 @@ module MakeTable (E : Elt) : S = struct
     in
     let subst_constr (subst, c) = Mod_subst.subst_mps subst c in
     Libobject.declare_object
-    @@ Libobject.superglobal_object_nodischarge
+    @@ Libobject.object_with_locality
          ("register-zify-" ^ E.name)
          ~cache:cache_constr ~subst:(Some subst_constr)
+         ~discharge:(fun _ -> assert false)
 
   (** [register c] is called from the VERNACULAR ADD [name] reference(t).
        The term [c] is interpreted and
        registered as a [superglobal_object_nodischarge].
        TODO: pre-compute [get_type_of] - [cache_constr] is using another environment.
      *)
-  let register c =
+  let register local c =
     try
       let c = UnivGen.constr_of_monomorphic_global (Global.env ()) (Nametab.locate c) in
-      let _ = Lib.add_leaf (register_obj c) in
+      let _ = Lib.add_leaf (register_obj (local,c)) in
       ()
     with Not_found ->
       raise

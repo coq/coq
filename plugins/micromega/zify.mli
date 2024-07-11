@@ -8,8 +8,10 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+val zify_register_locality : Hints.hint_locality Attributes.attribute
+
 module type S = sig
-  val register : Libnames.qualid -> unit
+  val register : Hints.hint_locality -> Libnames.qualid -> unit
   val print : unit -> unit
 end
 
