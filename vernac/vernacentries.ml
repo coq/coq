@@ -1315,7 +1315,7 @@ let vernac_begin_section ~poly {v=id} =
   set_bool_option_value_gen ~locality:OptLocal ["Universe"; "Polymorphism"] poly
 
 let vernac_end_section {CAst.loc; v} =
-  Lib.Interp.close_section ()
+  Declaremods.Interp.close_section ()
 
 let vernac_name_sec_hyp {v=id} set = Proof_using.name_set id set
 

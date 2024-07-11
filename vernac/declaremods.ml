@@ -216,6 +216,8 @@ module type StagedModS = sig
 
   module ModObjs : sig val all : unit -> module_objects MPmap.t end
 
+  val close_section : unit -> unit
+
 end
 
 (** Some utilities about substitutive objects :
@@ -663,6 +665,14 @@ let debug_print_modtab () =
   in
   let modules = MPmap.fold pr_modinfo (ModObjs.all ()) (mt ()) in
   hov 0 modules
+
+let add_discharged_item : Lib.discharged_item -> unit = function
+  | DischargedExport { mpl } -> import_modules ~export:Export mpl
+  | DischargedLeaf o -> Lib.add_discharged_leaf o
+
+let close_section () =
+  let objs = Actions.Lib.close_section () in
+  List.iter add_discharged_item objs
 
 end
 
@@ -1465,6 +1475,8 @@ let import_modules = SynterpVisitor.import_modules
 let import_module f ~export mp =
   import_modules ~export [f,mp]
 
+let close_section = SynterpVisitor.close_section
+
 end
 
 module Interp = struct
@@ -1549,6 +1561,8 @@ let import_modules = InterpVisitor.import_modules
 
 let import_module f ~export mp =
   import_modules ~export [f,mp]
+
+let close_section = InterpVisitor.close_section
 
 end
 

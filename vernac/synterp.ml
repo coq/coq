@@ -241,7 +241,7 @@ let synterp_end_module export {loc;v=id} =
 let synterp_end_section {CAst.loc; v} =
   Dumpglob.dump_reference ?loc
     (DirPath.to_string (Lib.current_dirpath true)) "<>" "sec";
-  Lib.Synterp.close_section ()
+  Declaremods.Synterp.close_section ()
 
 let synterp_end_segment ({v=id;loc} as lid) =
   let ss = Lib.Synterp.find_opening_node ?loc id in
