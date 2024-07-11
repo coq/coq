@@ -2077,15 +2077,17 @@ let vernac_locate ~pstate query =
 let warn_unknown_scheme_kind = CWarnings.create ~name:"unknown-scheme-kind"
     Pp.(fun sk -> str "Unknown scheme kind " ++ Libnames.pr_qualid sk ++ str ".")
 
-let vernac_register qid r =
+let vernac_register ~atts qid r =
   let gr = Smartlocate.global_with_alias qid in
   match r with
   | RegisterInline ->
+    unsupported_attributes atts;
     begin match gr with
     | GlobRef.ConstRef c -> Global.register_inline c
     | _ -> CErrors.user_err ?loc:qid.loc (Pp.str "Register Inline: expecting a constant.")
     end
   | RegisterCoqlib n ->
+    unsupported_attributes atts;
     let ns, id = Libnames.repr_qualid n in
     if DirPath.equal (dirpath_of_string "kernel") ns then begin
       if Lib.sections_are_opened () then
@@ -2105,6 +2107,7 @@ let vernac_register qid r =
     end
     else Coqlib.register_ref (Libnames.string_of_qualid n) gr
   | RegisterScheme { inductive; scheme_kind } ->
+    let local = Attributes.parse hint_locality_default_superglobal atts in
     let gr = match gr with
       | ConstRef c -> c
       | _ -> CErrors.user_err ?loc:qid.loc Pp.(str "Register Scheme: expecing a constant.")
@@ -2115,7 +2118,7 @@ let vernac_register qid r =
     in
     let ind = Smartlocate.global_inductive_with_alias inductive in
     Dumpglob.add_glob ?loc:inductive.loc (IndRef ind);
-    DeclareScheme.declare_scheme scheme_kind_s (ind,gr)
+    DeclareScheme.declare_scheme local scheme_kind_s (ind,gr)
 
 let vernac_library_attributes atts =
   if Global.is_curmod_library () && not (Lib.sections_are_opened ()) then
@@ -2585,8 +2588,7 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
 
   | VernacRegister (qid, r) ->
     vtnoproof(fun () ->
-        unsupported_attributes atts;
-        vernac_register qid r)
+        vernac_register ~atts qid r)
 
   | VernacPrimitive ((id, udecl), prim, typopt) ->
     vtdefault(fun () ->

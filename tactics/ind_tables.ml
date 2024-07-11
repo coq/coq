@@ -104,7 +104,7 @@ let redeclare_schemes eff =
       String.Map.add kind ((ind, c) :: old) accu
   in
   let schemes = Cmap.fold fold eff.Evd.seff_roles String.Map.empty in
-  let iter kind defs = List.iter (DeclareScheme.declare_scheme kind) defs in
+  let iter kind defs = List.iter (DeclareScheme.declare_scheme SuperGlobal kind) defs in
   String.Map.iter iter schemes
 
 let local_lookup_scheme eff kind ind = match lookup_scheme kind ind with

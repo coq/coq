@@ -28,18 +28,15 @@ let subst_one_scheme subst (ind,const) =
 let subst_scheme (subst,(kind,l)) =
   (kind, subst_one_scheme subst l)
 
-let discharge_scheme (kind,l) =
-  Some (kind, l)
-
-let inScheme : string * (inductive * Constant.t) -> Libobject.obj =
+let inScheme : Libobject.locality * (string * (inductive * Constant.t)) -> Libobject.obj =
   let open Libobject in
-  declare_object @@ superglobal_object "SCHEME"
+  declare_object @@ object_with_locality "SCHEME"
     ~cache:cache_scheme
     ~subst:(Some subst_scheme)
-    ~discharge:discharge_scheme
+    ~discharge:(fun x -> x)
 
-let declare_scheme kind indcl =
-  Lib.add_leaf (inScheme (kind,indcl))
+let declare_scheme local kind indcl =
+  Lib.add_leaf (inScheme (local,(kind,indcl)))
 
 let lookup_scheme kind ind = CString.Map.find kind (Indmap.find ind !scheme_map)
 

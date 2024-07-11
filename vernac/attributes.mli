@@ -75,6 +75,9 @@ val bind_scope_where : Notation.add_scope_where option attribute
 *)
 val hint_locality : Hints.hint_locality attribute
 
+(** Like [hint_locality] but the default in and out of sections is [SuperGlobal]. *)
+val hint_locality_default_superglobal : Hints.hint_locality attribute
+
 (** Enable/Disable universe checking *)
 val typing_flags : Declarations.typing_flags option attribute
 

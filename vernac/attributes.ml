@@ -253,6 +253,10 @@ let hint_locality = explicit_hint_locality >>= function
   | Some v -> return v
   | None -> return (default_hint_locality())
 
+let hint_locality_default_superglobal = explicit_hint_locality >>= function
+  | Some v -> return v
+  | None -> return Hints.SuperGlobal
+
 (* locality is supposed to be true when local, false when global *)
 let locality =
   let name = "Locality" in

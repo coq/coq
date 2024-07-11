@@ -427,7 +427,8 @@ let do_mutual_induction_scheme ?(force_mutual=false) env ?(isrec=true) l =
     match kind with
     | None -> ()
     | Some kind ->
-      DeclareScheme.declare_scheme (Ind_tables.scheme_kind_name kind) (ind,cst)
+      (* TODO locality *)
+      DeclareScheme.declare_scheme SuperGlobal (Ind_tables.scheme_kind_name kind) (ind,cst)
   in
   let () = List.iter2 declare listdecl l in
   let lrecnames = List.map (fun ({CAst.v},_,_,_) -> v) l in
