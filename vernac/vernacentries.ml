@@ -2087,9 +2087,9 @@ let vernac_register ~atts qid r =
     | _ -> CErrors.user_err ?loc:qid.loc (Pp.str "Register Inline: expecting a constant.")
     end
   | RegisterCoqlib n ->
-    unsupported_attributes atts;
     let ns, id = Libnames.repr_qualid n in
     if DirPath.equal (dirpath_of_string "kernel") ns then begin
+      unsupported_attributes atts;
       if Lib.sections_are_opened () then
         user_err Pp.(str "Registering a kernel type is not allowed in sections.");
       let CPrimitives.PIE pind = match Id.to_string id with
@@ -2105,7 +2105,9 @@ let vernac_register ~atts qid r =
       | GlobRef.IndRef ind -> Global.register_inductive ind pind
       | _ -> CErrors.user_err ?loc:qid.loc (Pp.str "Register in kernel: expecting an inductive type.")
     end
-    else Coqlib.register_ref (Libnames.string_of_qualid n) gr
+    else
+      let local = Attributes.parse hint_locality_default_superglobal atts in
+      Coqlib.register_ref local (Libnames.string_of_qualid n) gr
   | RegisterScheme { inductive; scheme_kind } ->
     let local = Attributes.parse hint_locality_default_superglobal atts in
     let gr = match gr with

@@ -62,18 +62,16 @@ let add_ref s c =
 let cache_ref (s,c) =
   add_ref s c
 
-let (inCoqlibRef : string * GlobRef.t -> Libobject.obj) =
+let (inCoqlibRef : Libobject.locality * (string * GlobRef.t) -> Libobject.obj) =
   let open Libobject in
-  declare_object { (default_object "COQLIBREF") with
-    cache_function = cache_ref;
-    load_function = (fun _ x -> cache_ref x);
-    classify_function = (fun _ -> Substitute);
-    subst_function = ident_subst_function;
-    discharge_function = (fun sc -> Some sc); }
+  declare_object @@ object_with_locality "COQLIBREF"
+    ~cache:cache_ref
+    ~subst:(Some ident_subst_function)
+    ~discharge:(fun x -> x)
 
 (** Replaces a binding ! *)
-let register_ref s c =
-  Lib.add_leaf @@ inCoqlibRef (s,c)
+let register_ref local s c =
+  Lib.add_leaf @@ inCoqlibRef (local,(s,c))
 
 (************************************************************************)
 (* Generic functions to find Coq objects *)
