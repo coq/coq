@@ -119,6 +119,10 @@ type obj = Dyn.t (* persistent dynamic objects *)
       a earlier module + substitution).
 *)
 
+module ExportObj = struct
+  type t = { mpl : (open_filter * Names.ModPath.t) list } [@@unboxed]
+end
+
 type algebraic_objects =
   | Objs of t list
   | Ref of Names.ModPath.t * Mod_subst.substitution
@@ -128,7 +132,7 @@ and t =
   | ModuleTypeObject of Names.Id.t * substitutive_objects
   | IncludeObject of algebraic_objects
   | KeepObject of Names.Id.t * t list
-  | ExportObject of { mpl : (open_filter * Names.ModPath.t) list }
+  | ExportObject of ExportObj.t
   | AtomicObject of obj
 
 and substitutive_objects = Names.MBId.t list * algebraic_objects
