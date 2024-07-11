@@ -54,10 +54,11 @@ let cache_reduction_effect (con,funkey) =
 let subst_reduction_effect (subst,(con,funkey)) =
   (subst_constant subst con,funkey)
 
-let inReductionEffect : Constant.t * string -> obj =
-  declare_object @@ global_object_nodischarge "REDUCTION-EFFECT"
+let inReductionEffect : Libobject.locality * (Constant.t * string) -> obj =
+  declare_object @@ object_with_locality "REDUCTION-EFFECT"
     ~cache:cache_reduction_effect
     ~subst:(Some subst_reduction_effect)
+    ~discharge:(fun x -> x)
 
 let declare_reduction_effect funkey f =
   if String.Map.mem funkey !effect_table then
@@ -65,8 +66,8 @@ let declare_reduction_effect funkey f =
   effect_table := String.Map.add funkey f !effect_table
 
 (** A function to set the value of the print function *)
-let set_reduction_effect x funkey =
-  Lib.add_leaf (inReductionEffect (x,funkey))
+let set_reduction_effect local x funkey =
+  Lib.add_leaf (inReductionEffect (local,(x,funkey)))
 
 
 (** Machinery to custom the behavior of the reduction *)
