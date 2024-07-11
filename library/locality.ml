@@ -56,3 +56,12 @@ let make_module_locality = function
 
 let enforce_module_locality locality_flag =
   make_module_locality locality_flag
+
+let check_locality_nodischarge : Libobject.locality -> unit = function
+  | Local -> ()
+  | Export ->
+    if Lib.sections_are_opened () then
+      CErrors.user_err Pp.(str "This command does not support the export attribute in sections.")
+  | SuperGlobal ->
+    if Lib.sections_are_opened () then
+      CErrors.user_err Pp.(str "This command does not support the global attribute in sections.")
