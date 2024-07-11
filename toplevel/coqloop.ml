@@ -54,7 +54,7 @@ let emacs_prompt_endstring   () = if !print_emacs then "</prompt>" else ""
 
 (* Read a char in an input channel, displaying a prompt at every
    beginning of line. *)
-let prompt_char doc ic ibuf count =
+let prompt_char doc ic ibuf () =
   let bol = match ibuf.bols with
     | ll::_ -> Int.equal ibuf.len ll
     | [] -> Int.equal ibuf.len 0
@@ -140,7 +140,7 @@ let print_highlight_location ib loc =
   highlight_lines
 
 let valid_buffer_loc ib loc =
-  let (b,e) = Loc.unloc loc in b-ib.start >= 0 && e-ib.start < ib.len && b<=e
+  let (b,e) = Loc.unloc loc in b-ib.start >= 0 && e-ib.start <= ib.len && b<=e
 
 (* Toplevel error explanation. *)
 let error_info_for_buffer ?loc buf =
