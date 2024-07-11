@@ -696,11 +696,3 @@ let init () =
   Interp.init ();
   Summary.Synterp.init_summaries ();
   Summary.Interp.init_summaries ()
-
-let open_section id =
-  Synterp.open_section id;
-  Interp.open_section id
-
-let close_section () =
-  Synterp.close_section ();
-  Interp.close_section ()

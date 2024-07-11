@@ -179,7 +179,5 @@ val discharge_proj_repr : Projection.Repr.t -> Projection.Repr.t
 
 (** Compatibility layer *)
 
+(** This also does init_summaries *)
 val init : unit -> unit
-
-val open_section : Id.t -> unit
-val close_section : unit -> unit
