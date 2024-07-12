@@ -627,6 +627,7 @@ through the <tt>Require Import</tt> command.</p>
   <dd>
     theories/Program/Basics.v
     theories/Program/Wf.v
+    theories/Program/WfExtensionality.v
     theories/Program/Subset.v
     theories/Program/Equality.v
     theories/Program/Tactics.v

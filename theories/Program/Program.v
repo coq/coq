@@ -14,3 +14,4 @@ Require Export Stdlib.Program.Subset.
 Require Export Stdlib.Program.Basics.
 Require Export Stdlib.Program.Combinators.
 Require Export Stdlib.Program.Syntax.
+Require Export Stdlib.Program.WfExtensionality.
