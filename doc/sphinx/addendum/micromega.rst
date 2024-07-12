@@ -393,6 +393,9 @@ obtain :math:`-1`. Thus, by Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
    the non-implicit argument (here, :g:`Z.mul` or :g:`(@eq Z)`)
    is either a :n:`@reference` (here, :g:`Z.mul`) or the application of a :n:`@reference` (here, :g:`@eq`) to a sequence of :n:`@one_term`.
 
+   This command supports attributes :attr:`local`, :attr:`export` and :attr:`global`.
+   In sections only :attr:`local` is supported, outside sections the default is :attr:`global`.
+
 .. cmd:: Show Zify @show_zify
 
    .. insertprodn show_zify show_zify
