@@ -69,8 +69,9 @@ let add_compile ?echo copts s =
 
 let add_compile ?echo copts v_file =
   match copts.compile_file with
-  | Some _ ->
-    arg_error Pp.(str "More than one file to compile: " ++ str v_file)
+  | Some (first,_) ->
+    arg_error Pp.(str "More than one file to compile: " ++ str first ++ spc() ++
+                  str "and " ++ str v_file)
   | None ->
     add_compile ?echo copts v_file
 
