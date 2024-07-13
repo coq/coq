@@ -48,13 +48,6 @@ let get_var ist id =
   try Id.Map.find id ist.env_ist with Not_found ->
     anomaly (str "Unbound variable " ++ Id.print id)
 
-let get_ref ist kn =
-  try
-    let data = Tac2env.interp_global kn in
-    data.Tac2env.gdata_expr
-  with Not_found ->
-    anomaly (str "Unbound reference" ++ KerName.print kn)
-
 let return = Proofview.tclUNIT
 
 exception NoMatch
@@ -107,13 +100,7 @@ let rec interp (ist : environment) = function
 | GTacAtm (AtmInt n) -> return (Tac2ffi.of_int n)
 | GTacAtm (AtmStr s) -> return (Tac2ffi.of_string s)
 | GTacVar id -> return (get_var ist id)
-| GTacRef kn ->
-  begin match Tac2env.get_compiled_global kn with
-  | Some (_info,v) -> return v
-  | None ->
-    let data = get_ref ist kn in
-    return (eval_pure Id.Map.empty (Some kn) data)
-  end
+| GTacRef kn -> return (eval_global kn)
 | GTacFun (ids, e) ->
   let cls = { clos_ref = None; clos_env = ist.env_ist; clos_var = ids; clos_exp = e } in
   let f = interp_closure cls in
@@ -225,19 +212,17 @@ and interp_set ist e p r =
   let () = Valexpr.set_field e p r in
   return (Valexpr.make_int 0)
 
+and eval_global kn =
+  match Tac2env.get_compiled_global kn with
+  | Some (_info,v) -> v
+  | None -> match Tac2env.interp_global kn with
+    | exception Not_found -> anomaly (str "Unbound reference" ++ KerName.print kn)
+    | { gdata_expr = e } -> eval_pure Id.Map.empty (Some kn) e
+
 and eval_pure bnd kn = function
 | GTacVar id -> Id.Map.get id bnd
 | GTacAtm (AtmInt n) -> Valexpr.make_int n
-| GTacRef kn ->
-  begin match Tac2env.get_compiled_global kn with
-  | Some (_info,v) -> v
-  | None ->
-    let { Tac2env.gdata_expr = e } =
-      try Tac2env.interp_global kn
-      with Not_found -> assert false
-    in
-    eval_pure bnd (Some kn) e
-  end
+| GTacRef kn -> eval_global kn
 | GTacFun (na, e) ->
   let cls = { clos_ref = kn; clos_env = bnd; clos_var = na; clos_exp = e } in
   interp_closure cls
@@ -276,8 +261,6 @@ and eval_pure_args bnd args =
 
 let interp_value ist tac =
   eval_pure ist.env_ist None tac
-
-let eval_global kn = eval_pure Id.Map.empty (Some kn) (Tac2env.interp_global kn).gdata_expr
 
 (** Cross-boundary hacks. *)
 
