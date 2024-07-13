@@ -137,7 +137,7 @@ module DynMap = Dyn.Map (struct type 'a t = ('a, Nametab.object_prefix * 'a) obj
 
 let cache_tab = ref DynMap.empty
 
-let declare_object_full odecl =
+let declare_object_gen odecl =
   let na = odecl.object_name in
   let tag = Dyn.create na in
   let () = cache_tab := DynMap.add tag odecl !cache_tab in
@@ -160,7 +160,7 @@ let declare_named_object_full odecl =
       rebuild_function = Util.on_snd odecl.rebuild_function;
     }
   in
-  declare_object_full odecl
+  declare_object_gen odecl
 
 let declare_named_object odecl =
   let tag = declare_named_object_full odecl in
@@ -168,11 +168,11 @@ let declare_named_object odecl =
   infun
 
 let declare_named_object_gen odecl =
-  let tag = declare_object_full odecl in
+  let tag = declare_object_gen odecl in
   let infun v = Dyn.Dyn (tag, v) in
   infun
 
-let declare_object odecl =
+let declare_object_full odecl =
   let odecl =
     { odecl with
       cache_function = (fun (_,o) -> odecl.cache_function o);
@@ -180,6 +180,9 @@ let declare_object odecl =
       open_function = (fun f i (_,o) -> odecl.open_function f i o);
     }
   in
+  declare_object_gen odecl
+
+let declare_object odecl =
   let tag = declare_object_full odecl in
   let infun v = Dyn.Dyn (tag, v) in
   infun
