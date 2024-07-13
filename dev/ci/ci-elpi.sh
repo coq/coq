@@ -10,6 +10,6 @@ git_download elpi
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 ( cd "${CI_BUILD_DIR}/elpi"
-  make build DUNE_build_FLAGS="--root ."
+  make build
   make install DUNE_install_FLAGS=--prefix="$CI_INSTALL_DIR"
 )
