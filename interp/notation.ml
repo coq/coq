@@ -2021,11 +2021,12 @@ let discharge_arguments_scope (req,r,scs,_cls,available_scopes) =
 let classify_arguments_scope (req,_,_,_,_) =
   if req == ArgsScopeNoDischarge then Dispose else Substitute
 
-let rebuild_arguments_scope sigma (req,r,scs,n_as_cls,available_scopes) =
+let rebuild_arguments_scope (req,r,scs,n_as_cls,available_scopes) =
   match req with
     | ArgsScopeNoDischarge -> assert false
     | ArgsScopeAuto ->
-      let env = Global.env () in (*FIXME?*)
+      let env = Global.env () in
+      let sigma = Evd.from_env env in
       let typ = EConstr.of_constr @@ fst (Typeops.type_of_global_in_context env r) in
       let scs,cls = compute_arguments_scope_full env sigma available_scopes typ in
       (* Note: cls is fixed, but scs can be recomputed in find_arguments_scope *)
@@ -2034,7 +2035,8 @@ let rebuild_arguments_scope sigma (req,r,scs,n_as_cls,available_scopes) =
       (* Add to the manually given scopes the one found automatically
          for the extra parameters of the section. Discard the classes
          of the manually given scopes to avoid further re-computations. *)
-      let env = Global.env () in (*FIXME?*)
+      let env = Global.env () in
+      let sigma = Evd.from_env env in
       let n = List.length n_as_cls in
       let typ = EConstr.of_constr @@ fst (Typeops.type_of_global_in_context env r) in
       let scs',cls = compute_arguments_scope_full env sigma available_scopes typ in
@@ -2056,8 +2058,7 @@ let inArgumentsScope : arguments_scope_obj -> obj =
       subst_function = subst_arguments_scope;
       classify_function = classify_arguments_scope;
       discharge_function = discharge_arguments_scope;
-      (* XXX: Should we pass the sigma here or not, see @herbelin's comment in 6511 *)
-      rebuild_function = rebuild_arguments_scope Evd.empty }
+      rebuild_function = rebuild_arguments_scope }
 
 let is_local local ref = local || isVarRef ref && Lib.is_in_section ref
 

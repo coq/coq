@@ -329,6 +329,9 @@ let expand_projection env sigma pr c args =
     mkApp (mkConstU (Projection.constant pr,u),
            Array.of_list (ind_args @ (c :: args)))
 
+let relevance_of_projection_repr env (p, u) =
+  ERelevance.make @@ Relevanceops.relevance_of_projection_repr env (p, EConstr.Unsafe.to_instance u)
+
 let relevance_of_term env sigma c =
   if Environ.sprop_allowed env then
     let rec aux rels c =
