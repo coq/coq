@@ -379,6 +379,7 @@ let quality_leq q q' =
       -> true
     | (QProp|QType), _ -> false
     end
+  | QVar _, QConstant QType -> true
   | (QVar _|QConstant _), _ -> false
 
 type squash = SquashToSet | SquashToQuality of Sorts.Quality.t

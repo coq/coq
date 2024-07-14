@@ -19,10 +19,6 @@ Inductive sBox@{s s'|u|} (A:Type@{s|u}) : Type@{s'|u} := sbox (_:A).
 Fail Definition elim@{s s'|u|} (A:Type@{s|u}) (x:sBox@{s s'|u} A) : A :=
   match x with sbox _ v => v end.
 
-Fail Definition elim@{s|u|} (A:Type@{s|u}) (x:sBox@{s Type|u} A) : A :=
-  match x with sbox _ v => v end.
-
-
 Inductive sP : SProp := sC.
 
 Fail Check match sC with sC => I end.

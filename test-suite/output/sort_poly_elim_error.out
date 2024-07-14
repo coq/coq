@@ -13,14 +13,7 @@ the return type has sort "Type@{s | u}"
 while it should be in sort quality s'.
 Elimination of a sort polymorphic inductive object instantiated to a variable sort quality
 is only allowed on a predicate in the same sort quality.
-File "./output/sort_poly_elim_error.v", line 22, characters 0-105:
-The command has indeed failed with message:
-Incorrect elimination of "x" in the inductive type "sBox@{s Type | u}":
-the return type has sort "Type@{s | u}"
-while it may not be of a variable sort quality.
-Elimination of a sort polymorphic inductive object instantiated to sort Type
-is not allowed on a predicate in a variable sort quality.
-File "./output/sort_poly_elim_error.v", line 28, characters 0-37:
+File "./output/sort_poly_elim_error.v", line 24, characters 0-37:
 The command has indeed failed with message:
 Incorrect elimination of "sC" in the inductive type "sP":
 the return type has sort "Prop" while it should be SProp.
