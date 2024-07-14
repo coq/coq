@@ -66,7 +66,7 @@ let filter_or f1 f2 = match f1, f2 with
   | Unfiltered, f | f, Unfiltered -> Unfiltered
   | Filtered f1, Filtered f2 -> Filtered (CString.Pred.union f1 f2)
 
-type ('a,'b) object_declaration = {
+type ('a,'b,'discharged) object_declaration = {
   object_name : string;
   object_stage : Summary.Stage.t;
   cache_function : 'b -> unit;
@@ -74,8 +74,8 @@ type ('a,'b) object_declaration = {
   open_function : open_filter -> int -> 'b -> unit;
   classify_function : 'a -> substitutivity;
   subst_function :  Mod_subst.substitution * 'a -> 'a;
-  discharge_function : 'a -> 'a option;
-  rebuild_function : 'a -> 'a;
+  discharge_function : 'a -> 'discharged option;
+  rebuild_function : 'discharged -> 'a;
 }
 
 let default_object ?(stage=Summary.Stage.Interp) s = {
@@ -133,14 +133,16 @@ and t =
 
 and substitutive_objects = Names.MBId.t list * algebraic_objects
 
-module DynMap = Dyn.Map (struct type 'a t = ('a, Nametab.object_prefix * 'a) object_declaration end)
+type 'a stored_decl = O : ('a, Nametab.object_prefix * 'a, 'd) object_declaration -> 'a stored_decl
+
+module DynMap = Dyn.Map (struct type 'a t = 'a stored_decl end)
 
 let cache_tab = ref DynMap.empty
 
 let declare_object_gen odecl =
   let na = odecl.object_name in
   let tag = Dyn.create na in
-  let () = cache_tab := DynMap.add tag odecl !cache_tab in
+  let () = cache_tab := DynMap.add tag (O odecl) !cache_tab in
   tag
 
 let make_oname Nametab.{ obj_dir; obj_mp } id =
@@ -188,41 +190,42 @@ let declare_object odecl =
   infun
 
 let cache_object (sp, Dyn.Dyn (tag, v)) =
-  let decl = DynMap.find tag !cache_tab in
+  let O decl = DynMap.find tag !cache_tab in
   decl.cache_function (sp, v)
 
 let load_object i (sp, Dyn.Dyn (tag, v)) =
-  let decl = DynMap.find tag !cache_tab in
+  let O decl = DynMap.find tag !cache_tab in
   decl.load_function i (sp, v)
 
 let open_object f i (sp, Dyn.Dyn (tag, v)) =
-  let decl = DynMap.find tag !cache_tab in
+  let O decl = DynMap.find tag !cache_tab in
   decl.open_function f i (sp, v)
 
 let subst_object (subs, Dyn.Dyn (tag, v)) =
-  let decl = DynMap.find tag !cache_tab in
+  let O decl = DynMap.find tag !cache_tab in
   Dyn.Dyn (tag, decl.subst_function (subs, v))
 
 let classify_object (Dyn.Dyn (tag, v)) =
-  let decl = DynMap.find tag !cache_tab in
+  let O decl = DynMap.find tag !cache_tab in
   match decl.classify_function v with
   | Dispose -> Dispose
   | Substitute -> Substitute
   | Keep -> Keep
   | Anticipate -> Anticipate
 
+type discharged_obj = Discharged : 'a Dyn.tag * 'd * ('d -> 'a) -> discharged_obj
+
 let discharge_object (Dyn.Dyn (tag, v)) =
-  let decl = DynMap.find tag !cache_tab in
+  let O decl = DynMap.find tag !cache_tab in
   match decl.discharge_function v with
   | None -> None
-  | Some v -> Some (Dyn.Dyn (tag, v))
+  | Some v -> Some (Discharged (tag, v, decl.rebuild_function))
 
-let rebuild_object (Dyn.Dyn (tag, v)) =
-  let decl = DynMap.find tag !cache_tab in
-  Dyn.Dyn (tag, decl.rebuild_function v)
+let rebuild_object (Discharged (tag, v, rebuild)) =
+  Dyn.Dyn (tag, rebuild v)
 
 let object_stage (Dyn.Dyn (tag, v)) =
-  let decl = DynMap.find tag !cache_tab in
+  let O decl = DynMap.find tag !cache_tab in
   decl.object_stage
 
 let dump = Dyn.dump

@@ -74,7 +74,7 @@ type object_name = Libnames.full_path * KerName.t
 
 type open_filter
 
-type ('a,'b) object_declaration = {
+type ('a,'b,'discharged) object_declaration = {
   object_name : string;
   object_stage : Summary.Stage.t;
   cache_function : 'b -> unit;
@@ -82,8 +82,8 @@ type ('a,'b) object_declaration = {
   open_function : open_filter -> int -> 'b -> unit;
   classify_function : 'a -> substitutivity;
   subst_function :  substitution * 'a -> 'a;
-  discharge_function : 'a -> 'a option;
-  rebuild_function : 'a -> 'a;
+  discharge_function : 'a -> 'discharged option;
+  rebuild_function : 'discharged -> 'a;
 }
 
 val unfiltered : open_filter
@@ -125,7 +125,7 @@ val filter_or :  open_filter -> open_filter -> open_filter
 
 *)
 
-val default_object : ?stage:Summary.Stage.t -> string -> ('a,'b) object_declaration
+val default_object : ?stage:Summary.Stage.t -> string -> ('a,'b,'a) object_declaration
 
 (** the identity substitution function *)
 val ident_subst_function : substitution * 'a -> 'a
@@ -167,28 +167,31 @@ and substitutive_objects = MBId.t list * algebraic_objects
     - [declare_object] and [declare_object_full] ignore the prefix for you. *)
 
 val declare_object :
-  ('a,'a) object_declaration -> ('a -> obj)
+  ('a, 'a, _) object_declaration -> ('a -> obj)
 
 val declare_object_full :
-  ('a,'a) object_declaration -> 'a Dyn.tag
+  ('a, 'a, _) object_declaration -> 'a Dyn.tag
 
 val declare_named_object_full :
-  ('a,object_name * 'a) object_declaration -> (Id.t * 'a) Dyn.tag
+  ('a, object_name * 'a, _) object_declaration -> (Id.t * 'a) Dyn.tag
 
 val declare_named_object :
-  ('a,object_name * 'a) object_declaration -> (Id.t -> 'a -> obj)
+  ('a, object_name * 'a, _) object_declaration -> (Id.t -> 'a -> obj)
 
 val declare_named_object_gen :
-  ('a,object_prefix * 'a) object_declaration -> ('a -> obj)
+  ('a, object_prefix * 'a, _) object_declaration -> ('a -> obj)
 
 val cache_object : object_prefix * obj -> unit
 val load_object : int -> object_prefix * obj -> unit
 val open_object : open_filter -> int -> object_prefix * obj -> unit
 val subst_object : substitution * obj -> obj
 val classify_object : obj -> substitutivity
-val discharge_object : obj -> obj option
-val rebuild_object : obj -> obj
 val object_stage : obj -> Summary.Stage.t
+
+type discharged_obj
+
+val discharge_object : obj -> discharged_obj option
+val rebuild_object : discharged_obj -> obj
 
 (** Higher-level API for objects with fixed scope.
 
@@ -207,33 +210,33 @@ variants.
 val local_object : ?stage:Summary.Stage.t -> string ->
   cache:('a -> unit) ->
   discharge:('a -> 'a option) ->
-  ('a,'a) object_declaration
+  ('a,'a,'a) object_declaration
 
 val local_object_nodischarge : ?stage:Summary.Stage.t -> string ->
   cache:('a -> unit) ->
-  ('a,'a) object_declaration
+  ('a,'a,'a) object_declaration
 
 val global_object : ?cat:category -> ?stage:Summary.Stage.t -> string ->
   cache:('a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
   discharge:('a -> 'a option) ->
-  ('a,'a) object_declaration
+  ('a,'a,'a) object_declaration
 
 val global_object_nodischarge : ?cat:category -> ?stage:Summary.Stage.t -> string ->
   cache:('a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
-  ('a,'a) object_declaration
+  ('a,'a,'a) object_declaration
 
 val superglobal_object : ?stage:Summary.Stage.t -> string ->
   cache:('a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
   discharge:('a -> 'a option) ->
-  ('a,'a) object_declaration
+  ('a,'a,'a) object_declaration
 
 val superglobal_object_nodischarge : ?stage:Summary.Stage.t -> string ->
   cache:('a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
-  ('a,'a) object_declaration
+  ('a,'a,'a) object_declaration
 
 (** {6 Debug} *)
 
