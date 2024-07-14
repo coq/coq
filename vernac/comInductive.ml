@@ -29,6 +29,14 @@ open EConstr
 
 module RelDecl = Context.Rel.Declaration
 
+type flags = {
+  poly : bool;
+  cumulative : bool;
+  template : bool option;
+  auto_prop_lowering : bool;
+  finite : Declarations.recursivity_kind;
+}
+
 (* 3b| Mutual inductive definitions *)
 
 let warn_auto_template =
@@ -204,16 +212,6 @@ let compute_constructor_levels env evd sign =
           (s :: lev, EConstr.push_rel d env))
     sign ([],env))
 
-let do_auto_prop_lowering = ref true
-let () =
-  Goptions.declare_bool_option {
-    optstage = Interp;
-    optdepr = None;
-    optkey = ["Automatic";"Proposition";"Inductives"];
-    optread = (fun () -> !do_auto_prop_lowering);
-    optwrite = (fun b -> do_auto_prop_lowering := b);
-  }
-
 let warn_auto_prop_lowering =
   CWarnings.create ~name:"automatic-prop-lowering" ~category:Deprecation.Version.v8_20
     Pp.(fun na ->
@@ -231,7 +229,7 @@ let is_flexible_sort evd s = match ESorts.kind evd s with
   | Some l -> Evd.is_flexible_level evd l
   | None -> false
 
-let prop_lowering_candidates evd ~arities_explicit inds =
+let prop_lowering_candidates ~auto_prop_lowering evd ~arities_explicit inds =
   let less_than_2 = function [] | [_] -> true | _ :: _ :: _ -> false in
 
   (* handle automatic lowering to Prop
@@ -245,7 +243,7 @@ let prop_lowering_candidates evd ~arities_explicit inds =
     && not (Evd.check_leq evd ESorts.set s)
   in
   let candidates = List.filter_map (fun (explicit,(_,(_,s),_,_ as ind)) ->
-      if (!do_auto_prop_lowering || not explicit) && is_prop_candidate_arity ind
+      if (auto_prop_lowering || not explicit) && is_prop_candidate_arity ind
       then Some s else None)
       (List.combine arities_explicit inds)
   in
@@ -304,7 +302,7 @@ let include_constructor_argument env evd ~poly ~ctor_sort ~inductive_sort =
 
 type default_dep_elim = DeclareInd.default_dep_elim = DefaultElim | PropButDepElim
 
-let inductive_levels env evd ~poly ~indnames ~arities_explicit arities ctors =
+let inductive_levels ~auto_prop_lowering env evd ~poly ~indnames ~arities_explicit arities ctors =
   let inds = List.map2 (fun x ctors ->
       let ctx, s = Reductionops.dest_arity env evd x in
       x, (ctx, s), List.map (compute_constructor_levels env evd) ctors)
@@ -333,7 +331,7 @@ let inductive_levels env evd ~poly ~indnames ~arities_explicit arities ctors =
       inds
   in
 
-  let candidates = prop_lowering_candidates evd ~arities_explicit inds in
+  let candidates = prop_lowering_candidates ~auto_prop_lowering evd ~arities_explicit inds in
   (* Do the lowering. We forget about the generated universe for the
      lowered inductive and rely on universe restriction to get rid of
      it.
@@ -532,7 +530,14 @@ let variance_of_entry ~cumulative ~variances uctx =
       assert (lvs <= lus);
       Some (Array.append variances (Array.make (lus - lvs) None))
 
-let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_params ~indnames ~arities_explicit ~arities ~template_syntax ~constructors ~env_ar_params ~cumulative ~poly ~private_ind ~finite =
+let interp_mutual_inductive_constr ~sigma ~flags ~udecl ~variances ~ctx_params ~indnames ~arities_explicit ~arities ~template_syntax ~constructors ~env_ar_params ~private_ind =
+  let {
+    poly;
+    cumulative;
+    template;
+    auto_prop_lowering;
+    finite;
+  } = flags in
   (* Compute renewed arities *)
   let ctor_args =  List.map (fun (_,tys) ->
       List.map (fun ty ->
@@ -541,7 +546,7 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
         tys)
       constructors
   in
-  let sigma, (default_dep_elim, arities) = inductive_levels env_ar_params sigma ~poly ~indnames ~arities_explicit arities ctor_args in
+  let sigma, (default_dep_elim, arities) = inductive_levels ~auto_prop_lowering env_ar_params sigma ~poly ~indnames ~arities_explicit arities ctor_args in
   let lbound = if poly then UGraph.Bound.Set else UGraph.Bound.Prop in
   let sigma = Evd.minimize_universes ~lbound sigma in
   let arities = List.map EConstr.(to_constr sigma) arities in
@@ -624,7 +629,7 @@ let maybe_unify_params_in env_ar_par sigma ~ninds ~nparams ~binders:k c =
   in
   aux (env_ar_par,k) sigma c
 
-let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) notations ~cumulative ~poly ~private_ind finite =
+let interp_mutual_inductive_gen env0 ~flags udecl (uparamsl,paramsl,indl) notations ~private_ind =
   check_all_names_different indl;
   List.iter check_param paramsl;
   if not (List.is_empty uparamsl) && not (List.is_empty notations)
@@ -634,7 +639,7 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   let ninds = List.length indl in
 
   (* In case of template polymorphism, we need to compute more constraints *)
-  let unconstrained_sorts = not poly in
+  let unconstrained_sorts = not flags.poly in
 
   let sigma, env_params, (ctx_params, env_uparams, ctx_uparams, userimpls, useruimpls, impls, udecl, variances) =
     interp_params ~unconstrained_sorts env0 udecl uparamsl paramsl
@@ -715,7 +720,7 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
       indimpls cimpls
   in
   let arities_explicit = List.map (fun ar -> ar.ind_arity_explicit) indl in
-  let default_dep_elim, mie, binders, ctx = interp_mutual_inductive_constr ~template ~sigma ~ctx_params ~udecl ~variances ~arities_explicit ~arities ~template_syntax ~constructors ~env_ar_params ~poly ~finite ~cumulative ~private_ind ~indnames in
+  let default_dep_elim, mie, binders, ctx = interp_mutual_inductive_constr ~flags ~sigma ~ctx_params ~udecl ~variances ~arities_explicit ~arities ~template_syntax ~constructors ~env_ar_params ~private_ind ~indnames in
   (default_dep_elim, mie, binders, impls, ctx)
 
 
@@ -812,7 +817,7 @@ let rec count_binder_expr = function
   | CLocalPattern {CAst.loc} :: _ ->
     Loc.raise ?loc (Gramlib.Grammar.Error "pattern with quote not allowed here")
 
-let interp_mutual_inductive ~env ~template udecl indl ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite =
+let interp_mutual_inductive ~env ~flags ?typing_flags udecl indl ~private_ind ~uniform =
   let indlocs = List.map (fun ((n,_,_,_),_) -> n.CAst.loc) indl in
   let (params,indl),coercions,ntns = extract_mutual_inductive_declaration_components indl in
   let where_notations = List.map Metasyntax.prepare_where_notation ntns in
@@ -824,15 +829,15 @@ let interp_mutual_inductive ~env ~template udecl indl ~cumulative ~poly ?typing_
       | NonUniformParameters -> ([], params, indl), None
   in
   let env = Environ.update_typing_flags ?typing_flags env in
-  let default_dep_elim, mie, univ_binders, implicits, uctx = interp_mutual_inductive_gen env ~template udecl indl where_notations ~cumulative ~poly ~private_ind finite in
+  let default_dep_elim, mie, univ_binders, implicits, uctx = interp_mutual_inductive_gen ~flags env udecl indl where_notations ~private_ind in
   let open Mind_decl in
   { mie; default_dep_elim; nuparams; univ_binders; implicits; uctx; where_notations; coercions; indlocs }
 
-let do_mutual_inductive ~template udecl indl ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite =
+let do_mutual_inductive ~flags ?typing_flags udecl indl ~private_ind ~uniform =
   let open Mind_decl in
   let env = Global.env () in
   let { mie; default_dep_elim; univ_binders; implicits; uctx; where_notations; coercions; indlocs} =
-    interp_mutual_inductive ~env ~template udecl indl ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite in
+    interp_mutual_inductive ~flags ~env udecl indl ?typing_flags ~private_ind ~uniform in
   (* Slightly hackish global universe declaration due to template types. *)
   let binders = match mie.mind_entry_universes with
   | Monomorphic_ind_entry -> (UState.Monomorphic_entry uctx, univ_binders)
@@ -892,7 +897,6 @@ module Internal =
 struct
 
 let inductive_levels = inductive_levels
-let do_auto_prop_lowering = do_auto_prop_lowering
 
 let error_differing_params = error_differing_params
 

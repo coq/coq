@@ -45,21 +45,17 @@ val allow_sprop_opt_name : string list
 
 (** pre-processing and validation of VernacInductive *)
 module Preprocessed_Mind_decl : sig
-  type flags = {
-    template : bool option;
-    udecl : Constrexpr.cumul_univ_decl_expr option;
-    cumulative : bool;
-    poly : bool;
-    finite : Declarations.recursivity_kind;
-  }
+  type flags = ComInductive.flags
   type record = {
     flags : flags;
+    udecl : Constrexpr.cumul_univ_decl_expr option;
     primitive_proj : bool;
     kind : Vernacexpr.inductive_kind;
     records : Record.Ast.t list;
   }
   type inductive = {
     flags : flags;
+    udecl : Constrexpr.cumul_univ_decl_expr option;
     typing_flags : Declarations.typing_flags option;
     private_ind : bool;
     uniform : ComInductive.uniform_inductive_flag;
