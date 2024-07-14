@@ -1,4 +1,4 @@
-Require Import Hurkens.
+Require Import TestSuite.hurkens.
 
 Polymorphic Record box (X : Type) (T := Type) : Type := wrap { unwrap : T }.
 

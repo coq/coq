@@ -11,7 +11,7 @@ Proof. destruct n;reflexivity. Qed.
 Definition bar_foo (n : Set) : bar (foo n) = n.
 Proof. reflexivity. Qed.
 
-Require Import Hurkens.
+Require Import TestSuite.hurkens.
 
 Inductive box (A : Set) : Prop := Box : A -> box A.
 

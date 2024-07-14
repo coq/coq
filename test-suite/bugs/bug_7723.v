@@ -58,7 +58,7 @@ Module QVar.
 
 End QVar.
 
-Require Import Hurkens.
+Require Import TestSuite.hurkens.
 Polymorphic Inductive unit := tt.
 
 Polymorphic Definition foo :=

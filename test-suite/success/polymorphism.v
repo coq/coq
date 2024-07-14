@@ -201,7 +201,6 @@ End binders.
 #[universes(polymorphic)]
 Section cats.
   Local Set Universe Polymorphism.
-  Require Import Utf8.
   Definition fibration (A : Type) := A -> Type.
   Definition Hom (A : Type) := A -> A -> Type.
 
@@ -209,13 +208,13 @@ Section cats.
     { proj1 : A; proj2 : P proj1} .
 
   Class Identity {A} (M : Hom A) :=
-    identity : ∀ x, M x x.
+    identity : forall x, M x x.
   
   Class Inverse {A} (M : Hom A) :=
-    inverse : ∀ x y:A, M x y -> M y x.
+    inverse : forall x y:A, M x y -> M y x.
   
   Class Composition {A} (M : Hom A) :=
-    composition : ∀ {x y z:A}, M x y -> M y z -> M x z.
+    composition : forall {x y z:A}, M x y -> M y z -> M x z.
   
   Notation  "g ° f" := (composition f g) (at level 50). 
   
@@ -239,7 +238,7 @@ Section cats.
 
   Notation "[ T ]" := (proj1 T).
 
-  Require Import Program.
+  From Stdlib.Program Require Import Basics Tactics Wf.
 
   Program Definition small_cat : cat Empty_set :=
     {| cat_hom x y := unit |}.
@@ -356,7 +355,7 @@ Qed.
 End eta.
 
 Module Hurkens'.
-  Require Import Hurkens.
+  Require Import TestSuite.hurkens.
 
 Polymorphic Record box (X : Type) (T := Type) : Type := wrap { unwrap : T }.
 
