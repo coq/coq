@@ -1,4 +1,4 @@
-Require Import JMeq.
+Require Import TestSuite.jmeq.
 
 Axiom test : forall n m : nat, JMeq n m.
 
