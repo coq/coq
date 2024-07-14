@@ -1,5 +1,5 @@
-Require Import FunInd.
-Require  Vector.
+Require Import TestSuite.funind.
+Require Import TestSuite.vector.
 Generalizable All Variables.
 
 Definition f `{n:nat , u:Vector.t A n} := n.
