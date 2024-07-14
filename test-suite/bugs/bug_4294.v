@@ -1,4 +1,4 @@
-Require Import Hurkens.
+Require Import TestSuite.hurkens.
 
 Module NonPoly.
 Module Type Foo.
