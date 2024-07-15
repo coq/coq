@@ -39,9 +39,7 @@ type cast_kind = VMcast | NATIVEcast | DEFAULTcast
 (* This defines Cases annotations *)
 type case_style = LetStyle | IfStyle | LetPatternStyle | MatchStyle | RegularStyle
 type case_printing =
-  { ind_tags : bool list; (** tell whether letin or lambda in the arity of the inductive type *)
-    cstr_tags : bool list array; (* whether each pattern var of each constructor is a let-in (true) or not (false) *)
-    style     : case_style }
+  { style     : case_style }
 
 (* INVARIANT:
  * - Array.length ci_cstr_ndecls = Array.length ci_cstr_nargs
@@ -69,12 +67,12 @@ type case_info =
 (* [constr array] is an instance matching definitional [named_context] in
    the same order (i.e. last argument first) *)
 type 'constr pexistential = existential_key * 'constr SList.t
-type ('constr, 'types) prec_declaration =
-    Name.t binder_annot array * 'types array * 'constr array
-type ('constr, 'types) pfixpoint =
-    (int array * int) * ('constr, 'types) prec_declaration
-type ('constr, 'types) pcofixpoint =
-    int * ('constr, 'types) prec_declaration
+type ('constr, 'types, 'r) prec_declaration =
+    (Name.t,'r) pbinder_annot array * 'types array * 'constr array
+type ('constr, 'types, 'r) pfixpoint =
+    (int array * int) * ('constr, 'types, 'r) prec_declaration
+type ('constr, 'types, 'r) pcofixpoint =
+    int * ('constr, 'types, 'r) prec_declaration
 type 'a puniverses = 'a UVars.puniverses
 type pconstant = Constant.t puniverses
 type pinductive = inductive puniverses
@@ -84,50 +82,52 @@ type 'constr pcase_invert =
   | NoInvert
   | CaseInvert of { indices : 'constr array }
 
-type 'constr pcase_branch = Name.t Context.binder_annot array * 'constr
-type 'types pcase_return = (Name.t Context.binder_annot array * 'types) * Sorts.relevance
+type ('constr,'r) pcase_branch = (Name.t,'r) Context.pbinder_annot array * 'constr
+type ('types,'r) pcase_return = ((Name.t,'r) Context.pbinder_annot array * 'types) * 'r
 
-type ('constr, 'types, 'univs) pcase =
-  case_info * 'univs * 'constr array * 'types pcase_return * 'constr pcase_invert * 'constr * 'constr pcase_branch array
+type ('constr, 'types, 'univs, 'r) pcase =
+  case_info * 'univs * 'constr array * ('types,'r) pcase_return * 'constr pcase_invert * 'constr * ('constr, 'r) pcase_branch array
 
 (* [Var] is used for named variables and [Rel] for variables as
    de Bruijn indices. *)
-type ('constr, 'types, 'sort, 'univs) kind_of_term =
+type ('constr, 'types, 'sort, 'univs, 'r) kind_of_term =
   | Rel       of int
   | Var       of Id.t
   | Meta      of metavariable
   | Evar      of 'constr pexistential
   | Sort      of 'sort
   | Cast      of 'constr * cast_kind * 'types
-  | Prod      of Name.t binder_annot * 'types * 'types
-  | Lambda    of Name.t binder_annot * 'types * 'constr
-  | LetIn     of Name.t binder_annot * 'constr * 'types * 'constr
+  | Prod      of (Name.t,'r) pbinder_annot * 'types * 'types
+  | Lambda    of (Name.t,'r) pbinder_annot * 'types * 'constr
+  | LetIn     of (Name.t,'r) pbinder_annot * 'constr * 'types * 'constr
   | App       of 'constr * 'constr array
   | Const     of (Constant.t * 'univs)
   | Ind       of (inductive * 'univs)
   | Construct of (constructor * 'univs)
-  | Case      of case_info * 'univs * 'constr array * 'types pcase_return * 'constr pcase_invert * 'constr * 'constr pcase_branch array
-  | Fix       of ('constr, 'types) pfixpoint
-  | CoFix     of ('constr, 'types) pcofixpoint
-  | Proj      of Projection.t * Sorts.relevance * 'constr
+  | Case      of case_info * 'univs * 'constr array * ('types,'r) pcase_return * 'constr pcase_invert * 'constr * ('constr,'r) pcase_branch array
+  | Fix       of ('constr, 'types, 'r) pfixpoint
+  | CoFix     of ('constr, 'types, 'r) pcofixpoint
+  | Proj      of Projection.t * 'r * 'constr
   | Int       of Uint63.t
   | Float     of Float64.t
+  | String    of Pstring.t
   | Array     of 'univs * 'constr array * 'constr * 'types
 
 (* constr is the fixpoint of the previous type. *)
-type t = T of (t, t, Sorts.t, Instance.t) kind_of_term [@@unboxed]
+type t = T of (t, t, Sorts.t, Instance.t, Sorts.relevance) kind_of_term [@@unboxed]
 type constr = t
 type types = constr
 
 type existential = existential_key * constr SList.t
 
 type case_invert = constr pcase_invert
-type case_return = types pcase_return
-type case_branch = constr pcase_branch
-type case = (constr, types, Instance.t) pcase
-type rec_declaration = (constr, types) prec_declaration
-type fixpoint = (constr, types) pfixpoint
-type cofixpoint = (constr, types) pcofixpoint
+type case_return = (types,Sorts.relevance) pcase_return
+type case_branch = (constr,Sorts.relevance) pcase_branch
+type case = (constr, types, Instance.t, Sorts.relevance) pcase
+type rec_declaration = (constr, types, Sorts.relevance) prec_declaration
+type fixpoint = (constr, types, Sorts.relevance) pfixpoint
+type cofixpoint = (constr, types, Sorts.relevance) pcofixpoint
+type 'a binder_annot = ('a,Sorts.relevance) Context.pbinder_annot
 
 (************************************************************************)
 (*    kind_of_term = constructions as seen by the user                 *)
@@ -283,6 +283,9 @@ let mkArray (u,t,def,ty) = of_kind @@ Array (u,t,def,ty)
 
 (* Constructs a primitive float number *)
 let mkFloat f = of_kind @@ Float f
+
+(* Constructs a primitive string. *)
+let mkString s = of_kind @@ String s
 
 module UnsafeMonomorphic = struct
   let mkConst = mkConst
@@ -457,6 +460,10 @@ let destRef c = let open GlobRef in match kind c with
   | Construct (c,u) -> ConstructRef c, u
   | _ -> raise DestKO
 
+let destArray c = match kind c with
+  | Array (u,ar,def,ty) -> u,ar,def,ty
+  | _ -> raise DestKO
+
 (******************************************************************)
 (* Flattening and unflattening of embedded applications and casts *)
 (******************************************************************)
@@ -486,7 +493,7 @@ let fold_invert f acc = function
 
 let fold f acc c = match kind c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _ | Int _ | Float _) -> acc
+    | Construct _ | Int _ | Float _ | String _) -> acc
   | Cast (c,_,t) -> f (f acc c) t
   | Prod (_,t,c) -> f (f acc t) c
   | Lambda (_,t,c) -> f (f acc t) c
@@ -514,7 +521,7 @@ let iter_invert f = function
 
 let iter f c = match kind c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _ | Int _ | Float _) -> ()
+    | Construct _ | Int _ | Float _ | String _) -> ()
   | Cast (c,_,t) -> f c; f t
   | Prod (_,t,c) -> f t; f c
   | Lambda (_,t,c) -> f t; f c
@@ -536,7 +543,7 @@ let iter f c = match kind c with
 
 let iter_with_binders g f n c = match kind c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _ | Int _ | Float _) -> ()
+    | Construct _ | Int _ | Float _ | String _) -> ()
   | Cast (c,_,t) -> f n c; f n t
   | Prod (_,t,c) -> f n t; f (g n) c
   | Lambda (_,t,c) -> f n t; f (g n) c
@@ -569,7 +576,7 @@ let iter_with_binders g f n c = match kind c with
 let fold_constr_with_binders g f n acc c =
   match kind c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _ | Int _ | Float _) -> acc
+    | Construct _ | Int _ | Float _ | String _) -> acc
   | Cast (c,_, t) -> f n (f n acc c) t
   | Prod (_na,t,c) -> f (g  n) (f n acc t) c
   | Lambda (_na,t,c) -> f (g  n) (f n acc t) c
@@ -633,7 +640,7 @@ let map_invert f = function
 
 let map f c = match kind c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _ | Int _ | Float _) -> c
+    | Construct _ | Int _ | Float _ | String _) -> c
   | Cast (b,k,t) ->
       let b' = f b in
       let t' = f t in
@@ -718,7 +725,7 @@ let fold_map_return_predicate f accu (p,r as v) =
 
 let fold_map f accu c = match kind c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _ | Int _ | Float _) -> accu, c
+    | Construct _ | Int _ | Float _ | String _) -> accu, c
   | Cast (b,k,t) ->
       let accu, b' = f accu b in
       let accu, t' = f accu t in
@@ -786,7 +793,7 @@ let fold_map f accu c = match kind c with
 
 let map_with_binders g f l c0 = match kind c0 with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _ | Int _ | Float _) -> c0
+    | Construct _ | Int _ | Float _ | String _) -> c0
   | Cast (c, k, t) ->
     let c' = f l c in
     let t' = f l t in
@@ -904,6 +911,7 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq_evars eq le
   | Var id1, Var id2 -> Id.equal id1 id2
   | Int i1, Int i2 -> Uint63.equal i1 i2
   | Float f1, Float f2 -> Float64.equal f1 f2
+  | String s1, String s2 -> Pstring.equal s1 s2
   | Sort s1, Sort s2 -> leq_sorts s1 s2
   | Prod (_,t1,c1), Prod (_,t2,c2) -> eq 0 t1 t2 && leq 0 c1 c2
   | Lambda (_,t1,c1), Lambda (_,t2,c2) -> eq 0 t1 t2 && eq 0 c1 c2
@@ -912,8 +920,8 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq_evars eq le
     let len = Array.length l1 in
     Int.equal len (Array.length l2) &&
     leq (nargs+len) c1 c2 && Array.equal_norefl (eq 0) l1 l2
-  | Proj (p1,r1,c1), Proj (p2,r2,c2) ->
-    Projection.CanOrd.equal p1 p2 && Sorts.relevance_equal r1 r2 && eq 0 c1 c2
+  | Proj (p1,_,c1), Proj (p2,_,c2) ->
+    Projection.CanOrd.equal p1 p2 && eq 0 c1 c2
   | Evar (e1,l1), Evar (e2,l2) -> eq_evars (e1, l1) (e2, l2)
   | Const (c1,u1), Const (c2,u2) ->
     (* The args length currently isn't used but may as well pass it. *)
@@ -939,7 +947,7 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq_evars eq le
     eq 0 def1 def2 && eq 0 ty1 ty2
   | (Rel _ | Meta _ | Var _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _
     | Proj _ | Evar _ | Const _ | Ind _ | Construct _ | Case _ | Fix _
-    | CoFix _ | Int _ | Float _| Array _), _ -> false
+    | CoFix _ | Int _ | Float _ | String _ | Array _), _ -> false
 
 (* [compare_head_gen_leq u s eq leq c1 c2] compare [c1] and [c2] using [eq] to compare
    the immediate subterms of [c1] of [c2] for conversion if needed, [leq] for cumulativity,
@@ -1074,9 +1082,12 @@ let constr_ord_int f t1 t2 =
     | Int i1, Int i2 -> Uint63.compare i1 i2
     | Int _, _ -> -1 | _, Int _ -> 1
     | Float f1, Float f2 -> Float64.total_compare f1 f2
+    | Float _, _ -> -1 | _, Float _ -> 1
+    | String s1, String s2 -> Pstring.compare s1 s2
+    | String _, _ -> -1 | _, String _ -> 1
     | Array(_u1,t1,def1,ty1), Array(_u2,t2,def2,ty2) ->
       compare [(Array.compare f, t1, t2); (f, def1, def2); (f, ty1, ty2)]
-    | Array _, _ -> -1 | _, Array _ -> 1
+    (*| Array _, _ -> -1 | _, Array _ -> 1*)
 
 let rec compare m n=
   constr_ord_int compare m n
@@ -1140,8 +1151,8 @@ let invert_eqeq iv1 iv2 =
 let hasheq_ctx (nas1, c1) (nas2, c2) =
   array_eqeq nas1 nas2 && c1 == c2
 
-let hasheq t1 t2 =
-  match kind t1, kind t2 with
+let hasheq_kind t1 t2 =
+  match t1, t2 with
     | Rel n1, Rel n2 -> n1 == n2
     | Meta m1, Meta m2 -> m1 == m2
     | Var id1, Var id2 -> id1 == id2
@@ -1175,11 +1186,14 @@ let hasheq t1 t2 =
       && array_eqeq bl1 bl2
     | Int i1, Int i2 -> i1 == i2
     | Float f1, Float f2 -> Float64.equal f1 f2
+    | String s1, String s2 -> Pstring.equal s1 s2
     | Array(u1,t1,def1,ty1), Array(u2,t2,def2,ty2) ->
       u1 == u2 && def1 == def2 && ty1 == ty2 && array_eqeq t1 t2
     | (Rel _ | Meta _ | Var _ | Sort _ | Cast _ | Prod _ | Lambda _ | LetIn _
       | App _ | Proj _ | Evar _ | Const _ | Ind _ | Construct _ | Case _
-      | Fix _ | CoFix _ | Int _ | Float _ | Array _), _ -> false
+      | Fix _ | CoFix _ | Int _ | Float _ | String _ | Array _), _ -> false
+
+let hasheq t1 t2 = hasheq_kind (kind t1) (kind t2)
 
 (** Note that the following Make has the side effect of creating
     once and for all the table we'll use for hash-consing all constr *)
@@ -1204,8 +1218,7 @@ let hash_cast_kind = function
 | DEFAULTcast -> 2
 
 (* Exported hashing fonction on constr, used mainly in plugins.
-   Slight differences from [snd (hash_term t)] above: it ignores binders
-   and doesn't do [land  0x3FFFFFFF]. *)
+   Slight differences from [snd (hash_term t)] above: it ignores binders. *)
 
 let rec hash t =
   match kind t with
@@ -1244,8 +1257,9 @@ let rec hash t =
       combinesmall 17 (combine3 (Projection.CanOrd.hash p) (Sorts.relevance_hash r) (hash c))
     | Int i -> combinesmall 18 (Uint63.hash i)
     | Float f -> combinesmall 19 (Float64.hash f)
+    | String s -> combinesmall 20 (Pstring.hash s)
     | Array(u,t,def,ty) ->
-      combinesmall 20 (combine4 (Instance.hash u) (hash_term_array t) (hash def) (hash ty))
+      combinesmall 21 (combine4 (Instance.hash u) (hash_term_array t) (hash def) (hash ty))
 
 and hash_invert = function
   | NoInvert -> 0
@@ -1269,8 +1283,6 @@ struct
   type u = inductive -> inductive
   let hashcons hind ci = { ci with ci_ind = hind ci.ci_ind }
   let pp_info_equal info1 info2 =
-    List.equal (==) info1.ind_tags info2.ind_tags &&
-    Array.equal (List.equal (==)) info1.cstr_tags info2.cstr_tags &&
     info1.style == info2.style
   let eq ci ci' =
     ci.ci_ind == ci'.ci_ind &&
@@ -1279,8 +1291,6 @@ struct
     Array.equal Int.equal ci.ci_cstr_nargs ci'.ci_cstr_nargs && (* we use [Array.equal] on purpose *)
     pp_info_equal ci.ci_pp_info ci'.ci_pp_info  (* we use (=) on purpose *)
   open Hashset.Combine
-  let hash_bool b = if b then 0 else 1
-  let hash_bool_list = List.fold_left (fun n b -> combine n (hash_bool b))
   let hash_pp_info info =
     let h1 = match info.style with
     | LetStyle -> 0
@@ -1288,9 +1298,7 @@ struct
     | LetPatternStyle -> 2
     | MatchStyle -> 3
     | RegularStyle -> 4 in
-    let h2 = hash_bool_list 0 info.ind_tags in
-    let h3 = Array.fold_left hash_bool_list 0 info.cstr_tags in
-    combine3 h1 h2 h3
+    h1
   let hash ci =
     let h1 = Ind.CanOrd.hash ci.ci_ind in
     let h2 = Int.hash ci.ci_npar in
@@ -1310,13 +1318,32 @@ module Hannotinfo = struct
     type t = Name.t binder_annot
     type u = Name.t -> Name.t
     let hash = hash_annot Name.hash
-    let eq = eq_annot (fun na1 na2 -> na1 == na2)
+    let eq = eq_annot (fun na1 na2 -> na1 == na2) Sorts.relevance_equal
     let hashcons h {binder_name=na;binder_relevance} =
       {binder_name=h na;binder_relevance}
   end
 module Hannot = Hashcons.Make(Hannotinfo)
 
 let hcons_annot = Hashcons.simple_hcons Hannot.generate Hannot.hcons Name.hcons
+
+let dbg = CDebug.create ~name:"hcons" ()
+
+module GenHCons(C:sig
+    type t
+    val kind : t -> (t, t, Sorts.t, Instance.t, Sorts.relevance) kind_of_term
+    val self : t -> constr
+    val refcount : t -> int
+
+    val via_hconstr : bool
+
+    module Tbl : sig
+      val find_opt : t -> (constr * int) option
+      val add : t -> constr * int -> unit
+    end
+  end) = struct
+open C
+
+let steps = ref 0
 
 let rec hash_term (t : t) =
   match kind t with
@@ -1342,12 +1369,11 @@ let rec hash_term (t : t) =
     let c, hc = sh_rec c in
     (LetIn (hcons_annot na, b, t, c), combinesmall 6 (combine4 (hash_annot Name.hash na) hb ht hc))
   | App (c,l) ->
+    let _, cl = destApp (self t) in
     let c, hc = sh_rec c in
-    let l, hl = hash_term_array l in
+    let l, hl = hash_term_array cl l in
     (App (c,l), combinesmall 7 (combine hl hc))
-  | Evar (e,l) ->
-    let l, hl = hash_list_array l in
-    (Evar (e,l), combinesmall 8 (combine (Evar.hash e) hl))
+  | Evar _ -> assert false
   | Const (c,u) ->
     let c' = hcons_con c in
     let u', hu = Instance.share u in
@@ -1370,9 +1396,10 @@ let rec hash_term (t : t) =
       (lna, c), combine hna hc
     in
     let u, hu = Instance.share u in
-    let pms,hpms = hash_term_array pms in
+    let _,_,cpms,_,civ,_,_ = destCase (self t) in
+    let pms,hpms = hash_term_array cpms pms in
     let p, hp = hcons_ctx p in
-    let iv, hiv = sh_invert iv in
+    let iv, hiv = sh_invert civ iv in
     let c, hc = sh_rec c in
     let fold accu c =
       let c, h = hcons_ctx c in
@@ -1382,16 +1409,18 @@ let rec hash_term (t : t) =
     let hbl = combine (combine hc (combine hiv (combine hpms (combine hu hp)))) hbl in
     (Case (hcons_caseinfo ci, u, pms, (p,r), iv, c, bl), combinesmall 12 hbl)
   | Fix (ln,(lna,tl,bl)) ->
-    let bl,hbl = hash_term_array bl in
-    let tl,htl = hash_term_array tl in
+    let _, (_,ctl,cbl) = destFix (self t) in
+    let bl,hbl = hash_term_array cbl bl in
+    let tl,htl = hash_term_array ctl tl in
     let () = Array.iteri (fun i x -> Array.unsafe_set lna i (hcons_annot x)) lna in
     let fold accu na = combine (hash_annot Name.hash na) accu in
     let hna = Array.fold_left fold 0 lna in
     let h = combine3 hna hbl htl in
     (Fix (ln,(lna,tl,bl)), combinesmall 13 h)
   | CoFix(ln,(lna,tl,bl)) ->
-    let bl,hbl = hash_term_array bl in
-    let tl,htl = hash_term_array tl in
+    let _, (_,ctl,cbl) = destCoFix (self t) in
+    let bl,hbl = hash_term_array cbl bl in
+    let tl,htl = hash_term_array ctl tl in
     let () = Array.iteri (fun i x -> Array.unsafe_set lna i (hcons_annot x)) lna in
     let fold accu na = combine (hash_annot Name.hash na) accu in
     let hna = Array.fold_left fold 0 lna in
@@ -1409,58 +1438,94 @@ let rec hash_term (t : t) =
     let (h,l) = Uint63.to_int2 i in
     (t, combinesmall 18 (combine h l))
   | Float f as t -> (t, combinesmall 19 (Float64.hash f))
-  | Array (u,t,def,ty) ->
+  | String s as t -> (t, combinesmall 20 (Pstring.hash s))
+  | Array (u,ar,def,ty) ->
+    let _,car,_,_ = destArray (self t) in
     let u, hu = Instance.share u in
-    let t, ht = hash_term_array t in
+    let t, ht = hash_term_array car ar in
     let def, hdef = sh_rec def in
     let ty, hty = sh_rec ty in
     let h = combine4 hu ht hdef hty in
-    (Array(u,t,def,ty), combinesmall 20 h)
+    (Array(u,t,def,ty), combinesmall 21 h)
 
-and sh_invert = function
-  | NoInvert -> NoInvert, 0
-  | CaseInvert {indices;} ->
-    let indices, ha = hash_term_array indices in
+and sh_invert civ iv = match civ, iv with
+  | NoInvert, NoInvert -> NoInvert, 0
+  | CaseInvert {indices=cindices}, CaseInvert {indices;} ->
+    let indices, ha = hash_term_array cindices indices in
     CaseInvert {indices;}, combinesmall 1 ha
+  | (NoInvert | CaseInvert _), _ -> assert false
+
+and sh_rec_main t =
+  let (y, h) = hash_term t in
+  (HashsetTerm.repr h (T y) term_table, h)
 
 and sh_rec t =
-  let (y, h) = hash_term t in
-  (* [h] must be positive. *)
-  let h = h land 0x3FFFFFFF in
-  (HashsetTerm.repr h (T y) term_table, h)
+  incr steps;
+  if refcount t = 1 then sh_rec_main t
+  else match Tbl.find_opt t with
+    | Some res -> res
+    | None ->
+      let res = sh_rec_main t in
+      Tbl.add t res;
+      res
 
 (* Note : During hash-cons of arrays, we modify them *in place* *)
 
-and hash_term_array t =
+and hash_term_array ct t =
   let accu = ref 0 in
   for i = 0 to Array.length t - 1 do
     let x, h = sh_rec (Array.unsafe_get t i) in
     accu := combine !accu h;
-    Array.unsafe_set t i x
+    Array.unsafe_set ct i x
   done;
-  (* [h] must be positive. *)
-  let h = !accu land 0x3FFFFFFF in
-  (HashsetTermArray.repr h t term_array_table, h)
+  let h = !accu in
+  (HashsetTermArray.repr h ct term_array_table, h)
 
-and hash_list_array l =
-  let fold accu c =
-    let c, h = sh_rec c in
-    (combine accu h, c)
-  in
-  let h, l = SList.Smart.fold_left_map fold 0 l in
-  (l, h land 0x3FFFFFFF)
+let hcons t = NewProfile.profile "Constr.hcons" (fun () -> fst (sh_rec t)) ()
+
+let hcons t =
+  steps := 0;
+  let t = hcons t in
+  dbg Pp.(fun () ->
+      let open Hashset in
+      let stats = HashsetTerm.stats term_table in
+      v 0 (
+        str "via hconstr = " ++ bool via_hconstr ++ spc() ++
+        str "steps = " ++ int !steps ++ spc() ++
+        str "num_bindings = " ++ int stats.num_bindings ++ spc() ++
+        str "num_buckets = " ++ int stats.num_buckets ++ spc() ++
+        str "max_bucket_length = " ++ int stats.max_bucket_length
+      )
+    );
+  t
+
+end
+
+module HCons = GenHCons(struct
+    type t = constr
+    let kind = kind
+    let self x = x
+    let refcount _ = 1
+
+    let via_hconstr = false
+
+    module Tbl = struct
+      let find_opt _ = None
+      let add _ _ : unit = assert false
+    end
+  end)
 
   (* Make sure our statically allocated Rels (1 to 16) are considered
      as canonical, and hence hash-consed to themselves *)
-let () = ignore (hash_term_array rels)
+let () = ignore (HCons.hash_term_array rels rels)
 
-let hcons t = fst (sh_rec t)
+let hcons = HCons.hcons
 
 (* let hcons_types = hcons_constr *)
 
-type rel_declaration = (constr, types) Context.Rel.Declaration.pt
-type named_declaration = (constr, types) Context.Named.Declaration.pt
-type compacted_declaration = (constr, types) Context.Compacted.Declaration.pt
+type rel_declaration = (constr, types, Sorts.relevance) Context.Rel.Declaration.pt
+type named_declaration = (constr, types, Sorts.relevance) Context.Named.Declaration.pt
+type compacted_declaration = (constr, types, Sorts.relevance) Context.Compacted.Declaration.pt
 type rel_context = rel_declaration list
 type named_context = named_declaration list
 type compacted_context = compacted_declaration list
@@ -1517,8 +1582,7 @@ let rec debug_print c =
   | Construct (((sp,i),j),u) ->
       str"Constr(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i ++ str"," ++ int j) u ++ str")"
   | Proj (p,_r,c) ->
-    str"Proj(" ++ Constant.debug_print (Projection.constant p) ++ str"," ++
-    bool (Projection.unfolded p) ++ str"," ++ debug_print c ++ str")"
+    str"Proj(" ++ Projection.debug_print p ++ str"," ++ debug_print c ++ str")"
   | Case (_ci,_u,pms,(p,_),iv,c,bl) ->
     let pr_ctx (nas, c) =
       hov 2 (hov 0 (prvect (fun na -> Name.print na.binder_name ++ spc ()) nas ++ str "|-") ++ spc () ++
@@ -1540,6 +1604,7 @@ let rec debug_print c =
          str"}")
   | Int i -> str"Int("++str (Uint63.to_string i) ++ str")"
   | Float i -> str"Float("++str (Float64.to_string i) ++ str")"
+  | String s -> str"String("++str (Printf.sprintf "%S" (Pstring.to_string s)) ++ str")"
   | Array(u,t,def,ty) -> str"Array(" ++ prlist_with_sep pr_comma debug_print (Array.to_list t) ++ str" | "
       ++ debug_print def ++ str " : " ++ debug_print ty
       ++ str")@{" ++ UVars.Instance.pr Sorts.QVar.raw_pr Univ.Level.raw_pr u ++ str"}"

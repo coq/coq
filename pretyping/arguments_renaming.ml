@@ -50,15 +50,12 @@ let discharge_rename_args = function
      with Not_found -> Some req)
   | _ -> None
 
-let rebuild_rename_args x = x
-
 let inRenameArgs = declare_object { (default_object "RENAME-ARGUMENTS" ) with
   load_function = load_rename_args;
   cache_function = cache_rename_args;
   classify_function = classify_rename_args;
   subst_function = subst_rename_args;
   discharge_function = discharge_rename_args;
-  rebuild_function = rebuild_rename_args;
 }
 
 let rename_arguments local r names =

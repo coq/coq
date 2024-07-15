@@ -103,7 +103,7 @@ module type StagedLibS = sig
   val classify_segment : Libobject.t list -> classified_objects
 
   (** Returns the opening node of a given name *)
-  val find_opening_node : Id.t -> summary node
+  val find_opening_node : ?loc:Loc.t -> Id.t -> summary node
 
   val add_entry : summary node -> unit
   val add_leaf_entry : Libobject.t -> unit
@@ -139,7 +139,7 @@ module type StagedLibS = sig
   (** Keep only the libobject structure, not the objects themselves *)
   val drop_objects : frozen -> frozen
 
-  val declare_info : Library_info.t list -> unit
+  val declare_info : Library_info.t -> unit
 
 end
 
@@ -155,7 +155,7 @@ val start_compilation : DirPath.t -> ModPath.t -> unit
 
 (** Finalize the compilation of a library and return respectively the library
     prefix, the regular objects, and the syntax-related objects. *)
-val end_compilation : DirPath.t -> Nametab.object_prefix * Library_info.t list * Interp.classified_objects * Synterp.classified_objects
+val end_compilation : DirPath.t -> Nametab.object_prefix * Library_info.t * Interp.classified_objects * Synterp.classified_objects
 
 (** The function [library_dp] returns the [DirPath.t] of the current
    compiling library (or [default_library]) *)

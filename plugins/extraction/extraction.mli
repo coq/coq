@@ -16,9 +16,9 @@ open Environ
 open Evd
 open Miniml
 
-val extract_constant : env -> Constant.t -> constant_body -> ml_decl
+val extract_constant : Global.indirect_accessor -> env -> Constant.t -> constant_body -> ml_decl
 
-val extract_constant_spec : env -> Constant.t -> 'a pconstant_body -> ml_spec
+val extract_constant_spec : env -> Constant.t -> ('a, 'b) pconstant_body -> ml_spec
 
 (** For extracting "module ... with ..." declaration *)
 
@@ -26,8 +26,7 @@ val extract_with_type :
   env -> evar_map -> EConstr.t -> ( Id.t list * ml_type ) option
 
 val extract_fixpoint :
-  env -> evar_map -> Constant.t array ->
-    (EConstr.t, EConstr.types) Constr.prec_declaration -> ml_decl
+  env -> evar_map -> Constant.t array -> EConstr.rec_declaration -> ml_decl
 
 val extract_inductive : env -> MutInd.t -> ml_ind
 

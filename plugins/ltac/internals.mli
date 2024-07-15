@@ -29,7 +29,7 @@ val mytclWithHoles : (Tactics.evars_flag ->
 
 val with_delayed_uconstr : Tacinterp.interp_sign ->
   closed_glob_constr -> (EConstr.constr -> unit tactic) -> unit tactic
-val replace_in_clause_maybe_by : Tacinterp.interp_sign ->
+val replace_in_clause_maybe_by : Tacinterp.interp_sign -> bool option ->
   closed_glob_constr -> EConstr.constr ->
   Locus.clause -> Tacinterp.Value.t option -> unit tactic
 val replace_term : Geninterp.interp_sign -> bool option -> closed_glob_constr ->

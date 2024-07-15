@@ -53,7 +53,7 @@ let rec head_bound sigma t = match EConstr.kind sigma t with
 | Proj (p, _, _) -> GlobRef.ConstRef (Projection.constant p)
 | Cast (c, _, _) -> head_bound sigma c
 | Evar _ | Rel _ | Meta _ | Sort _ | Fix _ | Lambda _
-| CoFix _ | Int _ | Float _ | Array _ -> raise Bound
+| CoFix _ | Int _ | Float _ | String _ | Array _ -> raise Bound
 
 let head_constr sigma c =
   try head_bound sigma c
@@ -104,7 +104,7 @@ type 'a hint_ast =
   | ERes_pf    of 'a (* Hint EApply *)
   | Give_exact of 'a
   | Res_pf_THEN_trivial_fail of 'a (* Hint Immediate *)
-  | Unfold_nth of evaluable_global_reference       (* Hint Unfold *)
+  | Unfold_nth of Evaluable.t (* Hint Unfold *)
   | Extern     of Pattern.constr_pattern option * Genarg.glob_generic_argument (* Hint Extern *)
 
 
@@ -153,6 +153,7 @@ type hint = {
 type hint_pattern =
 | DefaultPattern
 | ConstrPattern of constr_pattern
+| SyntacticPattern of constr_pattern
 
 type 'a with_metadata =
   { pri     : int
@@ -182,6 +183,7 @@ type hint_mode =
 type 'a hints_transparency_target =
   | HintsVariables
   | HintsConstants
+  | HintsProjections
   | HintsReferences of 'a list
 
 type import_level = HintLax | HintWarn | HintStrict
@@ -285,6 +287,7 @@ struct
   let add0 env sigma st p v dn =
     let p = match p with
     | ConstrPattern p -> Bnet.pattern env st p
+    | SyntacticPattern p -> Bnet.pattern_syntactic env p
     | DefaultPattern ->
       let c = get_default_pattern (snd v).code.obj in
       Bnet.constr_pattern env sigma st c
@@ -454,6 +457,8 @@ let rec matches_epsilon = function
   | PathEmpty -> false
   | PathEpsilon -> true
 
+let path_matches_epsilon = matches_epsilon
+
 let rec is_empty = function
   | PathAtom _ -> false
   | PathStar _ -> false
@@ -517,7 +522,12 @@ let rec normalize_path h =
      | q' -> PathSeq (p', q'))
   | _ -> h
 
-let path_derivate hp hint = normalize_path (path_derivate hp hint)
+let path_derivate hp hint =
+  let hint = match hint with
+  | None -> PathAny
+  | Some gr -> PathHints [gr]
+  in
+  normalize_path (path_derivate hp hint)
 
 let pp_hints_path_atom prg a =
   match a with
@@ -609,7 +619,7 @@ val set_transparent_state : t -> TransparentState.t -> t
 val add_cut : hints_path -> t -> t
 val add_mode : GlobRef.t -> hint_mode array -> t -> t
 val cut : t -> hints_path
-val unfolds : t -> Id.Set.t * Cset.t
+val unfolds : t -> Id.Set.t * Cset.t * PRset.t
 val add_modes : hint_mode array list GlobRef.Map.t -> t -> t
 val modes : t -> hint_mode array list GlobRef.Map.t
 val fold : (GlobRef.t option -> hint_mode array list -> full_hint list -> 'a -> 'a) ->
@@ -620,7 +630,7 @@ struct
   type t = {
     hintdb_state : TransparentState.t;
     hintdb_cut : hints_path;
-    hintdb_unfolds : Id.Set.t * Cset.t;
+    hintdb_unfolds : Id.Set.t * Cset.t * PRset.t;
     hintdb_max_id : int;
     use_dn : bool;
     hintdb_map : search_entry GlobRef.Map.t;
@@ -635,7 +645,7 @@ struct
 
   let empty ?name st use_dn = { hintdb_state = st;
                           hintdb_cut = PathEmpty;
-                          hintdb_unfolds = (Id.Set.empty, Cset.empty);
+                          hintdb_unfolds = (Id.Set.empty, Cset.empty, PRset.empty);
                           hintdb_max_id = 0;
                           use_dn = use_dn;
                           hintdb_map = GlobRef.Map.empty;
@@ -654,21 +664,19 @@ struct
       (* Warn about no longer typable hint? *)
       None
 
-  let head_evar sigma c =
+  let has_no_head_evar sigma c =
     let rec hrec c = match EConstr.kind sigma c with
-      | Evar (evk,_)   -> evk
+      | Evar (evk,_)   -> false
       | App (c,_)      -> hrec c
       | Cast (c,_,_)   -> hrec c
-      | _              -> raise Evarutil.NoHeadEvar
+      | _              -> true
     in
     hrec c
 
   let match_mode sigma m arg =
     match m with
     | ModeInput -> not (occur_existential sigma arg)
-    | ModeNoHeadEvar ->
-       (try ignore(head_evar sigma arg); false
-                 with Evarutil.NoHeadEvar -> true)
+    | ModeNoHeadEvar -> has_no_head_evar sigma arg
     | ModeOutput -> true
 
   let matches_mode sigma args mode =
@@ -742,13 +750,15 @@ struct
     let st',db,rebuild =
       match v.code.obj with
       | Unfold_nth egr ->
-          let addunf ts (ids, csts) =
+          let addunf ts (ids, csts, prjs) =
             let open TransparentState in
             match egr with
-            | EvalVarRef id ->
-              { ts with tr_var = Id.Pred.add id ts.tr_var }, (Id.Set.add id ids, csts)
-            | EvalConstRef cst ->
-              { ts with tr_cst = Cpred.add cst ts.tr_cst }, (ids, Cset.add cst csts)
+            | Evaluable.EvalVarRef id ->
+              { ts with tr_var = Id.Pred.add id ts.tr_var }, (Id.Set.add id ids, csts, prjs)
+            | Evaluable.EvalConstRef cst ->
+              { ts with tr_cst = Cpred.add cst ts.tr_cst }, (ids, Cset.add cst csts, prjs)
+            | Evaluable.EvalProjectionRef p ->
+              { ts with tr_prj = PRpred.add p ts.tr_prj }, (ids, csts, PRset.add p prjs)
           in
           let state, unfs = addunf db.hintdb_state db.hintdb_unfolds in
             state, { db with hintdb_unfolds = unfs }, true
@@ -845,10 +855,6 @@ let error_no_such_hint_database x =
 (*             Auxiliary functions to prepare AUTOHINT objects            *)
 (**************************************************************************)
 
-let rec nb_hyp sigma c = match EConstr.kind sigma c with
-  | Prod(_,_,c2) -> if noccurn sigma 1 c2 then 1+(nb_hyp sigma c2) else nb_hyp sigma c2
-  | _ -> 0
-
 (* adding and removing tactics in the search table *)
 
 let with_uid c = { obj = c; uid = fresh_key () }
@@ -901,10 +907,9 @@ let make_apply_entry env sigma hnf info ?name (c, cty, ctx) =
     let hd =
       try head_bound (Clenv.clenv_evd ce) c'
       with Bound -> failwith "make_apply_entry" in
-    let miss = Clenv.clenv_missing ce in
+    let miss, hyps = Clenv.clenv_missing ce in
     let nmiss = List.length miss in
     let secvars = secvars_of_constr env sigma c in
-    let hyps = nb_hyp sigma' cty in
     let pri = match info.hint_priority with None -> hyps + nmiss | Some p -> p in
     let pat = match info.hint_pattern with
     | Some p -> ConstrPattern (snd p)
@@ -993,7 +998,7 @@ let make_extern pri pat tacast =
   in
   (hdconstr,
    { pri = pri;
-     pat = Option.map (fun p -> ConstrPattern p) pat;
+     pat = Option.map (fun p -> SyntacticPattern p) pat;
      name = None;
      db = None;
      secvars = Id.Pred.empty; (* Approximation *)
@@ -1062,11 +1067,13 @@ let add_transparency dbname target b =
     match target with
     | HintsVariables -> { st with tr_var = (if b then Id.Pred.full else Id.Pred.empty) }
     | HintsConstants -> { st with tr_cst = (if b then Cpred.full else Cpred.empty) }
+    | HintsProjections -> { st with tr_prj = (if b then PRpred.full else PRpred.empty) }
     | HintsReferences grs ->
       List.fold_left (fun st gr ->
         match gr with
-        | EvalConstRef c -> { st with tr_cst = (if b then Cpred.add else Cpred.remove) c st.tr_cst }
-        | EvalVarRef v -> { st with tr_var = (if b then Id.Pred.add else Id.Pred.remove) v st.tr_var })
+        | Evaluable.EvalConstRef c -> { st with tr_cst = (if b then Cpred.add else Cpred.remove) c st.tr_cst }
+        | Evaluable.EvalVarRef v -> { st with tr_var = (if b then Id.Pred.add else Id.Pred.remove) v st.tr_var }
+        | Evaluable.EvalProjectionRef p -> { st with tr_prj = (if b then PRpred.add else PRpred.remove) p st.tr_prj } )
         st grs
   in searchtable_add (dbname, Hint_db.set_transparent_state db st')
 
@@ -1113,7 +1120,7 @@ let create_hint_db l n ts b =
 
 type hint_action =
   | AddTransparency of {
-      grefs : evaluable_global_reference hints_transparency_target;
+      grefs : Evaluable.t hints_transparency_target;
       state : bool;
     }
   | AddHints of hint_entry list
@@ -1132,7 +1139,7 @@ type hint_obj = {
 let is_trivial_action = function
 | AddTransparency { grefs } ->
   begin match grefs with
-  | HintsVariables | HintsConstants -> false
+  | HintsVariables | HintsConstants | HintsProjections -> false
   | HintsReferences l -> List.is_empty l
   end
 | AddHints l -> List.is_empty l
@@ -1215,6 +1222,9 @@ let subst_autohint (subst, obj) =
     | ConstrPattern p as p0 ->
       let p' = subst_pattern env sigma subst p in
       if p' == p then p0 else ConstrPattern p'
+    | SyntacticPattern p as p0 ->
+      let p' = subst_pattern env sigma subst p in
+      if p' == p then p0 else SyntacticPattern p'
     in
     let pat' = Option.Smart.map subst_hint_pattern data.pat in
     let code' = match data.code.obj with
@@ -1253,6 +1263,7 @@ let subst_autohint (subst, obj) =
         match target with
         | HintsVariables -> target
         | HintsConstants -> target
+        | HintsProjections -> target
         | HintsReferences grs ->
           let grs' = List.Smart.map (subst_evaluable_reference subst) grs in
           if grs == grs' then target
@@ -1286,13 +1297,17 @@ let discharge_autohint obj =
     let action = match obj.hint_action with
     | AddTransparency { grefs; state } ->
       let grefs = match grefs with
-      | HintsVariables | HintsConstants -> grefs
+      | HintsVariables | HintsConstants | HintsProjections -> grefs
       | HintsReferences grs ->
-        let filter = function
-        | EvalConstRef c -> true
-        | EvalVarRef id -> not @@ Lib.is_in_section (GlobRef.VarRef id)
+        let filter e = match e with
+        | Evaluable.EvalConstRef c -> Some e
+        | Evaluable.EvalProjectionRef p ->
+          let p = Lib.discharge_proj_repr p in
+          Some (Evaluable.EvalProjectionRef p)
+        | Evaluable.EvalVarRef id ->
+          if Lib.is_in_section (GlobRef.VarRef id) then None else Some e
         in
-        let grs = List.filter filter grs in
+        let grs = List.filter_map filter grs in
         HintsReferences grs
       in
       AddTransparency { grefs; state }
@@ -1346,9 +1361,6 @@ let make_hint ~locality name action =
   hint_action = action;
 }
 
-let default_hint_locality () =
-  if Lib.sections_are_opened () then Local else Export
-
 let remove_hints ~locality dbnames grs =
   let () = check_locality locality in
   let dbnames = if List.is_empty dbnames then ["core"] else dbnames in
@@ -1373,7 +1385,7 @@ let add_resolves env sigma clist ~locality dbnames =
       | ERes_pf { rhint_term = c; rhint_type = cty; rhint_uctx = ctx } ->
         let sigma' = merge_context_set_opt sigma ctx in
         let ce = Clenv.mk_clenv_from env sigma' (c,cty) in
-        let miss = Clenv.clenv_missing ce in
+        let miss, _ = Clenv.clenv_missing ce in
         let nmiss = List.length miss in
         let variables = str (CString.plural nmiss "variable") in
         Feedback.msg_info (
@@ -1382,7 +1394,7 @@ let add_resolves env sigma clist ~locality dbnames =
           strbrk " will only be used by eauto, because applying " ++
           pr_leconstr_env env sigma' c ++
           strbrk " would leave " ++ variables ++ Pp.spc () ++
-          Pp.prlist_with_sep Pp.pr_comma Name.print (List.map (Evd.meta_name (Clenv.clenv_evd ce)) miss) ++
+          Pp.prlist_with_sep Pp.pr_comma Name.print miss ++
           strbrk " as unresolved existential " ++ variables ++ str "."
         )
       | _ -> ()
@@ -1449,8 +1461,8 @@ type hints_entry =
   | HintsResolveEntry of (hint_info * hnf * hint_term) list
   | HintsImmediateEntry of hint_term list
   | HintsCutEntry of hints_path
-  | HintsUnfoldEntry of evaluable_global_reference list
-  | HintsTransparencyEntry of evaluable_global_reference hints_transparency_target * bool
+  | HintsUnfoldEntry of Evaluable.t list
+  | HintsTransparencyEntry of Evaluable.t hints_transparency_target * bool
   | HintsModeEntry of GlobRef.t * hint_mode list
   | HintsExternEntry of hint_info * Genarg.glob_generic_argument
 
@@ -1485,7 +1497,7 @@ let prepare_hint env init (sigma,c) =
       let id = next_ident_away_from default_prepare_hint_ident (fun id -> Id.Set.mem id !vars) in
       vars := Id.Set.add id !vars;
       subst := (evar,mkVar id)::!subst;
-      mkNamedLambda sigma (make_annot id Sorts.Relevant) t (iter (replace_term sigma evar (mkVar id) c)) in
+      mkNamedLambda sigma (make_annot id ERelevance.relevant) t (iter (replace_term sigma evar (mkVar id) c)) in
   let c' = iter c in
     let diff = UnivGen.diff_sort_context (Evd.sort_context_set sigma) (Evd.sort_context_set init) in
     (c', diff)
@@ -1502,7 +1514,7 @@ let add_hints ~locality dbnames h =
   let () = match h with
   | HintsResolveEntry _ | HintsImmediateEntry _ | HintsUnfoldEntry _ | HintsExternEntry _ ->
     check_locality locality
-  | HintsTransparencyEntry ((HintsVariables | HintsConstants), _) -> ()
+  | HintsTransparencyEntry ((HintsVariables | HintsConstants | HintsProjections), _) -> ()
   | HintsTransparencyEntry (HintsReferences grs, _) ->
     let iter gr =
       let gr = global_of_evaluable_reference gr in
@@ -1534,13 +1546,23 @@ let hint_globref gr = IsGlobRef gr
 
 let hint_constr (c, diff) = IsConstr (c, diff)
 
+let warn_non_reference_hint_using =
+  CWarnings.create ~name:"non-reference-hint-using" ~category:CWarnings.CoreCategories.deprecated
+    Pp.(fun (env, sigma, c) -> str "Use of the non-reference term " ++ pr_leconstr_env env sigma c ++ str " in \"using\" clauses is deprecated")
+
 let expand_constructor_hints env sigma lems =
-  List.map_append (fun (evd,lem) ->
-    match EConstr.kind sigma lem with
+  List.map_append (fun lem ->
+    let evd, lem = lem env sigma in
+    let lem0 = drop_extra_implicit_args evd lem in
+    match EConstr.kind evd lem0 with
     | Ind (ind,u) ->
         List.init (nconstructors env ind)
                   (fun i -> IsGlobRef (GlobRef.ConstructRef ((ind,i+1))))
+    | Const (cst, _) -> [IsGlobRef (GlobRef.ConstRef cst)]
+    | Var id -> [IsGlobRef (GlobRef.VarRef id)]
+    | Construct (cstr, _) -> [IsGlobRef (GlobRef.ConstructRef cstr)]
     | _ ->
+      let () = warn_non_reference_hint_using (env, evd, lem) in
       let (c, ctx) = prepare_hint env sigma (evd,lem) in
       let ctx = if UnivGen.is_empty_sort_context ctx then None else Some ctx in
       [IsConstr (c, ctx)]) lems
@@ -1553,8 +1575,6 @@ let constructor_hints env sigma eapply lems =
       make_resolves env sigma (eapply, true) empty_hint_info ~check:true lem) lems
 
 let make_local_hint_db env sigma ts eapply lems =
-  let map c = c env sigma in
-  let lems = List.map map lems in
   let sign = EConstr.named_context env in
   let ts = match ts with
     | None -> Hint_db.transparent_state (searchtable_map "core")
@@ -1605,7 +1625,7 @@ let pr_hint env sigma h = match h.obj with
 let pr_id_hint env sigma (id, v) =
   let pr_pat p = match p.pat with
   | None -> mt ()
-  | Some (ConstrPattern p) -> str", pattern " ++ pr_lconstr_pattern_env env sigma p
+  | Some (ConstrPattern p | SyntacticPattern p) -> str", pattern " ++ pr_lconstr_pattern_env env sigma p
   | Some DefaultPattern -> str", pattern " ++ pr_leconstr_env env sigma (get_default_pattern v.code.obj)
   in
   (pr_hint env sigma v.code ++ str"(level " ++ int v.pri ++ pr_pat v
@@ -1695,12 +1715,15 @@ let pr_hint_db_env env sigma db =
     in
     Hint_db.fold fold db (mt ())
   in
-  let { TransparentState.tr_var = ids; tr_cst = csts } = Hint_db.transparent_state db in
+  let { TransparentState.tr_var = ids; tr_cst = csts; tr_prj = ps } =
+    Hint_db.transparent_state db
+  in
   hov 0
     ((if Hint_db.use_dn db then str"Discriminated database"
       else str"Non-discriminated database")) ++ fnl () ++
   hov 2 (str"Unfoldable variable definitions: " ++ pr_idpred ids) ++ fnl () ++
   hov 2 (str"Unfoldable constant definitions: " ++ pr_cpred csts) ++ fnl () ++
+  hov 2 (str"Unfoldable projection definitions: " ++ pr_prpred ps) ++ fnl () ++
   hov 2 (str"Cut: " ++ pp_hints_path (Hint_db.cut db)) ++ fnl () ++
   content
 
@@ -1726,7 +1749,7 @@ let print_mp mp =
 
 let is_imported h = try KNmap.find h.uid !statustable with Not_found -> true
 
-let hint_trace = Evd.Store.field ()
+let hint_trace = Evd.Store.field "hint_trace"
 
 let log_hint h =
   let open Proofview.Notations in
@@ -1809,7 +1832,7 @@ struct
   let database (h : t) = h.db
   let pattern (h : t) = match h.pat with
   | None -> None
-  | Some (ConstrPattern p) -> Some p
+  | Some (ConstrPattern p | SyntacticPattern p) -> Some p
   | Some DefaultPattern -> None
   let run (h : t) k = run_hint h.code k
   let print env sigma (h : t) = pr_hint env sigma h.code

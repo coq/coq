@@ -416,7 +416,7 @@ assign attributes to a whole document.
    attributes ::= {* #[ {*, @attribute } ] } {* @legacy_attr }
    attribute ::= @ident {? @attr_value }
    attr_value ::= = @string
-   | = @ident
+   | = @qualid
    | ( {+, @attribute } )
    legacy_attr ::= {| Local | Global }
    | {| Polymorphic | Monomorphic }
@@ -512,7 +512,8 @@ Document-level attributes
    document. When compiled with ``coqc`` (see Section
    :ref:`thecoqcommands`), the attributes are associated with the
    compiled file and may have an effect when the file is loaded with
-   :cmd:`Require`. Supported attributes include :attr:`deprecated`.
+   :cmd:`Require`. Supported attributes include :attr:`deprecated`
+   and :attr:`warn`.
 
 .. _flags-options-tables:
 

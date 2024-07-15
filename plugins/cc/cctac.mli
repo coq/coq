@@ -10,8 +10,8 @@
 
 open EConstr
 
-val congruence_tac : int -> constr list -> unit Proofview.tactic
+val congruence_tac : int option -> constr list -> unit Proofview.tactic
 
-val simple_congruence_tac : int -> constr list -> unit Proofview.tactic
+val simple_congruence_tac : int option -> constr list -> unit Proofview.tactic
 
 val f_equal : unit Proofview.tactic

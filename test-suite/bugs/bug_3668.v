@@ -4,14 +4,14 @@ Require Import TestSuite.admit.
    coqtop version cagnode16:/afs/csail.mit.edu/u/j/jgross/coq-trunk,trunk (bec7e0914f4a7144cd4efa8ffaccc9f72dbdb790) *)
 
 Notation "( x ; y )" := (existT _ x y).
-Notation "x .1" := (projT1 x) (at level 3, format "x '.1'").
+Notation "x .1" := (projT1 x).
 Class IsEquiv {A B : Type} (f : A -> B) := { equiv_inv : B -> A }.
 Record Equiv A B := { equiv_fun :> A -> B ; equiv_isequiv :> IsEquiv equiv_fun }.
 Notation "A <~> B" := (Equiv A B) (at level 85).
 Axiom IsHProp : Type -> Type.
 Inductive Bool := true | false.
 Definition negb (b : Bool) := if b then false else true.
-Hypothesis LEM : forall A : Type, IsHProp A -> A + (A -> False).
+Axiom LEM : forall A : Type, IsHProp A -> A + (A -> False).
 Axiom cheat : forall {A},A.
 Module NonPrim.
   Class Contr (A : Type) := { center : A ; contr : (forall y : A, center = y) }.

@@ -339,17 +339,19 @@ let get_compact_context,set_compact_context =
 let pr_compacted_decl env sigma decl =
   let ids, pbody, typ = match decl with
     | CompactedDecl.LocalAssum (ids, typ) ->
-       ids, mt (), typ
+       ids, None, typ
     | CompactedDecl.LocalDef (ids,c,typ) ->
        (* Force evaluation *)
        let pb = pr_lconstr_env ~inctx:true env sigma c in
        let pb = if isCast c then surround pb else pb in
-       ids, (str" := " ++ pb ++ cut ()), typ
-  in
-  let pids = prlist_with_sep pr_comma (fun id -> pr_id id.binder_name) ids in
+       ids, Some pb, typ in
+  let pids =
+    hov 0 (prlist_with_sep pr_comma (fun id -> pr_id id.binder_name) ids) in
   let pt = pr_ltype_env env sigma typ in
-  let ptyp = (str" : " ++ pt) in
-  hov 0 (pids ++ pbody ++ ptyp)
+  match pbody with
+  | None -> hov 2 (pids ++ str" :" ++ spc () ++ pt)
+  | Some pbody ->
+     hov 2 (pids ++ str" :=" ++ spc () ++ pbody ++ spc () ++ str": " ++ pt)
 
 let pr_ecompacted_decl env sigma (decl:EConstr.compacted_declaration) =
   let Refl = EConstr.Unsafe.eq in
@@ -374,8 +376,8 @@ let pr_rel_decl env sigma decl =
         (str":=" ++ spc () ++ pb ++ spc ()) in
   let ptyp = pr_ltype_env env sigma typ in
   match na with
-  | Anonymous -> hov 0 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
-  | Name id -> hov 0 (pr_id id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
+  | Anonymous -> hov 2 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
+  | Name id -> hov 2 (pr_id id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
 
 let pr_erel_decl env sigma (decl:EConstr.rel_declaration) =
   let Refl = EConstr.Unsafe.eq in
@@ -402,7 +404,7 @@ let pr_named_context env sigma ne_context =
           ne_context ~init:(mt ()))
 
 let pr_rel_context env sigma rel_context =
-  let rel_context = List.map (fun d -> Termops.map_rel_decl EConstr.of_constr d) rel_context in
+  let rel_context = EConstr.of_rel_context rel_context in
   pr_binders env sigma (extern_rel_context None env sigma rel_context)
 
 let pr_rel_context_of env sigma =
@@ -508,15 +510,18 @@ let pr_predicate pr_elt (b, elts) =
 let pr_cpred p =
   let safe_pr_constant env kn =
     try pr_constant env kn
-    with Not_found when !Flags.in_debugger || !Flags.in_toplevel ->
+    with Not_found when !Flags.in_debugger || !Flags.in_ml_toplevel ->
       Names.Constant.print kn in
   pr_predicate (safe_pr_constant (Global.env())) (Cpred.elements p)
 
 let pr_idpred p = pr_predicate Id.print (Id.Pred.elements p)
 
+let pr_prpred p = pr_predicate Projection.Repr.print (PRpred.elements p)
+
 let pr_transparent_state ts =
   hv 0 (str"VARIABLES: " ++ pr_idpred ts.TransparentState.tr_var ++ fnl () ++
-        str"CONSTANTS: " ++ pr_cpred ts.TransparentState.tr_cst ++ fnl ())
+        str"CONSTANTS: " ++ pr_cpred ts.TransparentState.tr_cst ++ fnl () ++
+        str"PROJECTIONS: " ++ pr_prpred ts.TransparentState.tr_prj ++ fnl ())
 
 let goal_repr sigma g =
   let EvarInfo evi = Evd.find sigma g in
@@ -610,7 +615,7 @@ let pr_evgl_sign env sigma (evi : undefined evar_info) =
 let pr_evar sigma (evk, evi) =
   let env = Global.env () in
   let pegl = pr_evgl_sign env sigma evi in
-  hov 0 (pr_existential_key env sigma evk ++ str " : " ++ pegl)
+  hov 2 (pr_existential_key env sigma evk ++ str " :" ++ spc () ++ pegl)
 
 (* Print an enumerated list of existential variables *)
 let rec pr_evars_int_hd pr sigma i = function
@@ -670,8 +675,8 @@ let print_evar_constraints gl sigma =
     | Some g ->
        let env, _ = goal_repr sigma g in fun e' ->
        begin
-         if Context.Named.equal Constr.equal (named_context env) (named_context e') then
-           if Context.Rel.equal Constr.equal (rel_context env) (rel_context e') then mt ()
+         if Context.Named.equal Sorts.relevance_equal Constr.equal (named_context env) (named_context e') then
+           if Context.Rel.equal Sorts.relevance_equal Constr.equal (rel_context env) (rel_context e') then mt ()
            else pr_rel_context_of e' sigma ++ str " |-" ++ spc ()
          else pr_context_of e' sigma ++ str " |-" ++ spc ()
        end
@@ -739,7 +744,9 @@ let process_dependent_evar q acc evm is_dependent e =
   let () = match Evd.evar_body evi with
   | Evar_empty ->
     queue_term q true (Evd.evar_concl evi)
-  | Evar_defined b -> ()
+  | Evar_defined b ->
+    let env = Evd.evar_filtered_env (Global.env ()) evi in
+    queue_term q true (Retyping.get_type_of env evm b)
   in
   List.iter begin fun decl ->
     let open NamedDecl in
@@ -1069,6 +1076,7 @@ module ContextObjectMap = Map.Make (OrderedContextObject)
 
 let pr_assumptionset env sigma s =
   if ContextObjectMap.is_empty s &&
+       not (rewrite_rules_allowed env) &&
        not (is_impredicative_set env) then
     str "Closed under the global context"
   else
@@ -1092,7 +1100,7 @@ let pr_assumptionset env sigma s =
         MutInd.print kn
     in
     let safe_pr_ltype env sigma typ =
-      try str " : " ++ pr_ltype_env env sigma typ
+      try str " :" ++ spc () ++ pr_ltype_env env sigma typ
       with e when CErrors.noncritical e -> mt ()
     in
     let safe_pr_ltype_relctx (rctx, typ) =
@@ -1103,7 +1111,7 @@ let pr_assumptionset env sigma s =
     let pr_axiom env ax typ =
       match ax with
       | Constant kn ->
-          hov 1 (safe_pr_constant env kn ++ cut() ++ safe_pr_ltype env sigma typ)
+          hov 2 (safe_pr_constant env kn ++ safe_pr_ltype env sigma typ)
       | Positive m ->
           hov 2 (safe_pr_inductive env m ++ spc () ++ strbrk"is assumed to be positive.")
       | Guarded gr ->
@@ -1144,6 +1152,11 @@ let pr_assumptionset env sigma s =
       if is_impredicative_set env then
         [str "Set is impredicative"]
       else []
+    in
+    let theory =
+      if rewrite_rules_allowed env then
+        str "Rewrite rules are allowed (subject reduction might be broken)" :: theory
+      else theory
     in
     let theory =
       if type_in_type env then

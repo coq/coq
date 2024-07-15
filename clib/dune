@@ -4,4 +4,33 @@
  (public_name coq-core.clib)
  (wrapped false)
  (modules_without_implementation cSig)
- (libraries str unix threads))
+ (modules :standard \ unicodetable_gen)
+ (libraries
+  (select memprof_coq.ml from
+   (!memprof-limits -> memprof_coq.std.ml)
+   (memprof-limits -> memprof_coq.memprof.ml))
+   str unix threads))
+
+(executable
+ (name unicodetable_gen)
+ (modules unicodetable_gen))
+
+(rule
+ (targets unicodetable.ml)
+ (deps (:gen ./unicodetable_gen.exe))
+ (action (run %{gen} %{targets})))
+
+(rule
+ (target mutex_aux.ml)
+ (action (copy mutex_aux_4.x.ml %{target}))
+ (enabled_if (< %{ocaml_version} 5.0)))
+
+(rule
+ (target mutex_aux.ml)
+ (action (copy mutex_aux_5.0.ml %{target}))
+ (enabled_if (and (>= %{ocaml_version} 5.0) (< %{ocaml_version} 5.1))))
+
+(rule
+ (target mutex_aux.ml)
+ (action (copy mutex_aux_5.x.ml %{target}))
+ (enabled_if (>= %{ocaml_version} 5.1)))

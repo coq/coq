@@ -21,7 +21,6 @@ val safe_env : unit -> Safe_typing.safe_environment
 val env : unit -> Environ.env
 
 val universes : unit -> UGraph.t
-val universes_lbound : unit -> UGraph.Bound.t
 val named_context_val : unit -> Environ.named_context_val
 val named_context : unit -> Constr.named_context
 
@@ -38,6 +37,8 @@ val set_check_universes : bool -> unit
 val typing_flags : unit -> typing_flags
 val set_allow_sprop : bool -> unit
 val sprop_allowed : unit -> bool
+val set_rewrite_rules_allowed : bool -> unit
+val rewrite_rules_allowed : unit -> bool
 
 (** Variables, Local definitions, constants, inductive types *)
 
@@ -51,10 +52,11 @@ val export_private_constants :
 
 val add_constant :
   ?typing_flags:typing_flags ->
-  Id.t -> Safe_typing.global_declaration -> Constant.t
+  Id.t -> Entries.constant_entry -> Constant.t
 val fill_opaque : Safe_typing.opaque_certificate -> unit
 val add_private_constant :
   Id.t -> Univ.ContextSet.t -> Safe_typing.side_effect_declaration -> Constant.t * Safe_typing.private_constants
+val add_rewrite_rules : Id.t -> rewrite_rules_body -> unit
 val add_mind :
   ?typing_flags:typing_flags ->
   Id.t -> Entries.mutual_inductive_entry -> MutInd.t
@@ -118,10 +120,10 @@ val constant_of_delta_kn : KerName.t -> Constant.t
 val mind_of_delta_kn : KerName.t -> MutInd.t
 
 type indirect_accessor = {
-  access_proof : Opaqueproof.opaque -> (Constr.t * unit Opaqueproof.delayed_universes) option;
+  access_proof : Opaqueproof.opaque -> Opaqueproof.opaque_proofterm option;
 }
 
-val force_proof : indirect_accessor -> Opaqueproof.opaque -> Constr.t * unit Opaqueproof.delayed_universes
+val force_proof : indirect_accessor -> Opaqueproof.opaque -> Opaqueproof.opaque_proofterm
 
 val body_of_constant : indirect_accessor -> Constant.t ->
   (Constr.constr * unit Opaqueproof.delayed_universes * UVars.AbstractContext.t) option
@@ -139,9 +141,9 @@ val body_of_constant_body : indirect_accessor ->
 
 val start_library : DirPath.t -> ModPath.t
 val export : output_native_objects:bool -> DirPath.t ->
-  ModPath.t * Safe_typing.compiled_library * Nativelib.native_library
+  ModPath.t * Safe_typing.compiled_library * Vmlibrary.compiled_library * Nativelib.native_library
 val import :
-  Safe_typing.compiled_library -> Univ.ContextSet.t -> Safe_typing.vodigest ->
+  Safe_typing.compiled_library -> Vmlibrary.on_disk -> Safe_typing.vodigest ->
   ModPath.t
 
 (** {6 Misc } *)
@@ -156,7 +158,6 @@ val is_curmod_library : unit -> bool
 
 val is_polymorphic : GlobRef.t -> bool
 val is_template_polymorphic : GlobRef.t -> bool
-val get_template_polymorphic_variables : GlobRef.t -> Univ.Level.t list
 val is_type_in_type : GlobRef.t -> bool
 
 (** {6 Retroknowledge } *)
@@ -166,7 +167,7 @@ val register_inductive : inductive -> 'a CPrimitives.prim_ind -> unit
 
 (** {6 Oracle } *)
 
-val set_strategy : Constant.t Names.tableKey -> Conv_oracle.level -> unit
+val set_strategy : Conv_oracle.evaluable -> Conv_oracle.level -> unit
 
 (** {6 Conversion settings } *)
 

@@ -50,6 +50,7 @@ val list_tags : unit -> tag preference Util.String.Map.t
 val get_unicode_bindings_local_file : unit -> string option
 val get_unicode_bindings_default_file : unit -> string option
 
+val printopts_item_names : string list ref
 
 val cmd_coqtop : string option preference
 val cmd_coqc : string preference
@@ -58,8 +59,8 @@ val cmd_coqmakefile : string preference
 val cmd_coqdoc : string preference
 val source_language : string preference
 val source_style : string preference
-val global_auto_revert : bool preference
-val global_auto_revert_delay : int preference
+val global_auto_reload : bool preference
+val global_auto_reload_delay : int preference
 val auto_save : bool preference
 val auto_save_delay : int preference
 val auto_save_name : (string * string) preference

@@ -1,6 +1,6 @@
 
 bench:
-  stage: build
+  stage: build-0
   needs: []
   when: manual
   before_script:

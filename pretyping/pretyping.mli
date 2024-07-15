@@ -30,10 +30,34 @@ val get_bidirectionality_hint : GlobRef.t -> int option
 
 val clear_bidirectionality_hint : GlobRef.t -> unit
 
-(** An auxiliary function for searching for fixpoint guard indexes *)
+(** An auxiliary function for searching for fixpoint guard indices *)
+
+(* Tells the possible indices liable to guard a fixpoint *)
+type possible_fix_indices = int list list
+
+(* Tells if possibly a cofixpoint or a fixpoint over the given list of possible indices *)
+type possible_guard = {
+  possibly_cofix : bool;
+  possible_fix_indices : possible_fix_indices;
+} (* Note: if no fix indices are given, it has to be a cofix *)
 
 val search_guard :
-  ?loc:Loc.t -> env -> int list list -> Constr.rec_declaration -> int array
+  ?loc:Loc.t -> ?evars:CClosure.evar_handler -> env ->
+  possible_guard -> Constr.rec_declaration -> int array option
+
+val search_fix_guard : (* For Fixpoints only *)
+  ?loc:Loc.t -> ?evars:CClosure.evar_handler -> env ->
+  possible_fix_indices -> Constr.rec_declaration -> int array
+
+val esearch_guard :
+  ?loc:Loc.t -> env -> evar_map -> possible_guard ->
+  EConstr.rec_declaration -> int array option
+
+val esearch_fix_guard : (* For Fixpoints only *)
+  ?loc:Loc.t -> env -> evar_map -> possible_fix_indices ->
+  EConstr.rec_declaration -> int array
+
+val esearch_cofix_guard : ?loc:Loc.t -> env -> evar_map -> EConstr.rec_declaration -> unit
 
 type typing_constraint =
   | IsType (** Necessarily a type *)
@@ -57,6 +81,9 @@ type inference_flags = {
   expand_evars : bool;
   program_mode : bool;
   polymorphic : bool;
+  undeclared_evars_patvars : bool;
+  patvars_abstract : bool;
+  unconstrained_sorts : bool;
 }
 
 val default_inference_flags : bool -> inference_flags
@@ -153,6 +180,9 @@ type pretype_flags = {
   resolve_tc : bool;
   program_mode : bool;
   use_coercions : bool;
+  undeclared_evars_patvars : bool;
+  patvars_abstract : bool;
+  unconstrained_sorts : bool;
 }
 
 type 'a pretype_fun = ?loc:Loc.t -> flags:pretype_flags -> Evardefine.type_constraint -> GlobEnv.t -> evar_map -> evar_map * 'a
@@ -177,6 +207,7 @@ type pretyper = {
   pretype_cast : pretyper -> glob_constr * Constr.cast_kind option * glob_constr -> unsafe_judgment pretype_fun;
   pretype_int : pretyper -> Uint63.t -> unsafe_judgment pretype_fun;
   pretype_float : pretyper -> Float64.t -> unsafe_judgment pretype_fun;
+  pretype_string : pretyper -> Pstring.t -> unsafe_judgment pretype_fun;
   pretype_array : pretyper -> glob_instance option * glob_constr array * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
   pretype_type : pretyper -> glob_constr -> unsafe_type_judgment pretype_fun;
 }

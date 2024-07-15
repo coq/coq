@@ -12,11 +12,11 @@
 
 Require Export Decidable.
 Require Export NAxioms.
-Require Import NZProperties.
+Require Import NZMulOrder.
 
 Module NBaseProp (Import N : NAxiomsMiniSig').
 (** First, we import all known facts about both natural numbers and integers. *)
-Include NZProp N.
+Include NZMulOrderProp N.
 
 (** From [pred_0] and order facts, we can prove that 0 isn't a successor. *)
 

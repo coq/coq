@@ -22,8 +22,8 @@ type 'v lambda =
 | Lvar          of Id.t
 | Levar         of Evar.t * 'v lambda array (* arguments *)
 | Lprod         of 'v lambda * 'v lambda
-| Llam          of Name.t Context.binder_annot array * 'v lambda
-| Llet          of Name.t Context.binder_annot * 'v lambda * 'v lambda
+| Llam          of Name.t binder_annot array * 'v lambda
+| Llet          of Name.t binder_annot * 'v lambda * 'v lambda
 | Lapp          of 'v lambda * 'v lambda array
 | Lconst        of pconstant
 | Lproj         of Projection.Repr.t * 'v lambda
@@ -38,60 +38,43 @@ type 'v lambda =
   (* inductive name, constructor tag, arguments *)
 | Luint         of Uint63.t
 | Lfloat        of Float64.t
+| Lstring       of Pstring.t
 | Lval          of 'v
 | Lsort         of Sorts.t
 | Lind          of pinductive
-| Lforce
 
 and 'v lam_branches =
   { constant_branches : 'v lambda array;
-    nonconstant_branches : (Name.t Context.binder_annot array * 'v lambda) array }
+    nonconstant_branches : (Name.t binder_annot array * 'v lambda) array }
 
-and 'v fix_decl = Name.t Context.binder_annot array * 'v lambda array * 'v lambda array
+and 'v fix_decl = Name.t binder_annot array * 'v lambda array * 'v lambda array
 
 type evars =
-  { evars_val : constr CClosure.evar_handler }
+  { evars_val : CClosure.evar_handler }
 
 val empty_evars : Environ.env -> evars
 
 (** {5 Manipulation functions} *)
 
 val mkLapp : 'v lambda -> 'v lambda array -> 'v lambda
-val mkLlam : Name.t Context.binder_annot array -> 'v lambda -> 'v lambda
-val decompose_Llam : 'v lambda -> Name.t Context.binder_annot array * 'v lambda
-val decompose_Llam_Llet : 'v lambda -> (Name.t Context.binder_annot * 'v lambda option) array * 'v lambda
+val mkLlam : Name.t binder_annot array -> 'v lambda -> 'v lambda
+val decompose_Llam : 'v lambda -> Name.t binder_annot array * 'v lambda
+val decompose_Llam_Llet : 'v lambda -> (Name.t binder_annot * 'v lambda option) array * 'v lambda
 
-val map_lam_with_binders : (int -> 'a -> 'a) -> ('a -> 'v lambda -> 'v lambda) ->
-  'a -> 'v lambda -> 'v lambda
-
-(* {5 Lift and substitution} *)
-
-val lam_exlift : Esubst.lift -> 'v lambda -> 'v lambda
-val lam_lift : int -> 'v lambda -> 'v lambda
-val lam_subst_rel : 'v lambda -> Name.t -> int -> 'v lambda Esubst.subs -> 'v lambda
-val lam_exsubst : 'v lambda Esubst.subs -> 'v lambda -> 'v lambda
-val lam_subst_args : 'v lambda Esubst.subs -> 'v lambda array -> 'v lambda array
+val free_rels : 'v lambda -> Int.Set.t
 
 (* {5 Simplification} *)
 
-val simplify : ('v lambda -> bool) -> 'v lambda Esubst.subs -> 'v lambda -> 'v lambda
-
-val remove_let : 'v lambda Esubst.subs -> 'v lambda -> 'v lambda
+val optimize : 'v lambda -> 'v lambda
 
 (** {5 Translation functions} *)
 
-val get_alias : Environ.env -> Constant.t -> Constant.t
-val make_args : int -> int -> 'v lambda array
-val makeblock : (int -> 'v lambda array -> 'v option) ->
-  inductive -> int -> int -> int -> 'v lambda array -> 'v lambda
-
-val lambda_of_prim : Environ.env -> pconstant -> CPrimitives.t -> 'v lambda array -> 'v lambda
+val get_alias : Environ.env -> Constant.t -> Constant.t * bool array
 
 module type S =
 sig
   type value
   val as_value : int -> value lambda array -> value option
-  val get_constant : pconstant -> Declarations.constant_body -> value lambda
   val check_inductive : inductive -> Declarations.mutual_inductive_body -> unit
 end
 

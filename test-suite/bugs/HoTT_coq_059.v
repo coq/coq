@@ -5,7 +5,7 @@ Inductive eq {A} (x : A) : A -> Type := eq_refl : eq x x.
 Notation "a = b" := (eq a b) : type_scope.
 
 Section foo.
-  Class Funext := { path_forall :> forall A P (f g : forall x : A, P x), (forall x, f x = g x) -> f = g }.
+  Class Funext := { path_forall :: forall A P (f g : forall x : A, P x), (forall x, f x = g x) -> f = g }.
   Context `{Funext, Funext}.
 
   Set Printing Universes.

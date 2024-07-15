@@ -1,5 +1,7 @@
 Local Set Warnings "-masking-absolute-name".
 
+Require Export Ltac2.Compat.Coq819.
+
 Require Ltac2.Array.
 
 Module Export Ltac2.

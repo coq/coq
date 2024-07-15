@@ -66,7 +66,7 @@ module type S = sig
     val is_empty : 'a t -> bool with_estate
 
     type any_t = Any : 'a t -> any_t
-    val accumulate_in : 'a t -> any_t list CString.Map.t with_estate
+    val accumulate_in : any_t list -> any_t list CString.Map.t with_estate
   end
 
   module rec Symbol : sig
@@ -122,7 +122,7 @@ module type S = sig
   | Fresh of Gramext.position * 'a single_extend_statement list
     (** Create a level at the given position. *)
 
-  val generalize_symbol : ('a, 'tr, 'c) Symbol.t -> ('a, norec, 'c) Symbol.t option
+  val generalize_symbol : ('a, 'tr, 'c) Symbol.t -> ('b, norec, 'c) Symbol.t option
 
   (* Used in custom entries, should tweak? *)
   val level_of_nonterm : ('a, norec, 'c) Symbol.t -> string option

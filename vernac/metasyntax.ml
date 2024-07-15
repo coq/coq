@@ -88,7 +88,14 @@ let is_known = let open Pcoq.Entry in function
     | [] -> None
     | entries -> Some entries
 
-let full_grammar () = Pcoq.Entry.accumulate_in Pvernac.Vernac_.vernac_control
+let full_grammar () =
+  let open Pvernac.Vernac_ in
+  let open Pcoq.Entry in
+  let proof_modes = List.map (fun (_,e) -> Any e)
+      (CString.Map.bindings (Pvernac.list_proof_modes()))
+  in
+  let entries = (Any vernac_control) :: (Any noedit_mode) :: proof_modes in
+  Pcoq.Entry.accumulate_in entries
 
 let same_entry (Pcoq.Entry.Any e) (Pcoq.Entry.Any e') = (Obj.magic e) == (Obj.magic e')
 
@@ -805,8 +812,10 @@ let pr_arg_level from (lev,typ) =
 
 let pr_level ntn ({notation_entry = from; notation_level = fromlevel}, args) typs =
   (match from with InConstrEntry -> mt () | InCustomEntry s -> str "in " ++ str s ++ spc()) ++
-  str "at level " ++ int fromlevel ++ spc () ++ str "with arguments" ++ spc() ++
-  prlist_with_sep pr_comma (pr_arg_level fromlevel) (List.combine args typs)
+  str "at level " ++ int fromlevel ++
+  (match args with | [] -> mt () | _ :: _ ->
+     spc () ++ str "with arguments" ++ spc()
+     ++ prlist_with_sep pr_comma (pr_arg_level fromlevel) (List.combine args typs))
 
 let error_incompatible_level ntn oldprec oldtyps prec typs =
   user_err
@@ -887,6 +896,35 @@ let check_and_extend_constr_grammar ntn rule =
   with Not_found ->
     Egramcoq.extend_constr_grammar rule
 
+let warn_prefix_incompatible_level =
+  CWarnings.create ~name:"notation-incompatible-prefix"
+    ~category:CWarnings.CoreCategories.parsing
+    (fun (pref, ntn, pref_prec, pref_nottyps, prec, nottyps) ->
+      str "Notations " ++ pr_notation pref
+      ++ spc () ++ str "defined " ++ pr_level pref pref_prec pref_nottyps
+      ++ spc () ++ str "and " ++ pr_notation ntn
+      ++ spc () ++ str "defined " ++ pr_level ntn prec nottyps
+      ++ spc () ++ str "have incompatible prefixes."
+      ++ spc () ++ str "One of them will likely not work.")
+
+let level_firstn k (lvl, lvls) =
+  lvl, try CList.firstn k lvls with Failure _ -> []
+
+let check_prefix_incompatible_level ntn prec nottyps =
+  match Notgram_ops.longest_common_prefix ntn with
+  | None -> ()
+  | Some (pref, k) ->
+     try
+       let pref_prec = Notation.level_of_notation pref in
+       let pref_prec = level_firstn k pref_prec in
+       let prec = level_firstn k prec in
+       let pref_nottyps = Notgram_ops.non_terminals_of_notation pref in
+       let pref_nottyps = CList.firstn k pref_nottyps in
+       let nottyps = CList.firstn k nottyps in
+       if not (level_eq prec pref_prec && List.for_all2 Extend.constr_entry_key_eq nottyps pref_nottyps) then
+         warn_prefix_incompatible_level (pref, ntn, pref_prec, pref_nottyps, prec, nottyps);
+     with Not_found | Failure _ -> ()
+
 let cache_one_syntax_extension (ntn,synext) =
   let prec = synext.synext_level in
   (* Check and ensure that the level and the precomputed parsing rule is declared *)
@@ -904,6 +942,7 @@ let cache_one_syntax_extension (ntn,synext) =
         error_incompatible_level ntn oldprec oldtyps prec synext.synext_nottyps;
       oldparsing
     with Not_found ->
+      check_prefix_incompatible_level ntn prec synext.synext_nottyps;
       (* Declare the level and the precomputed parsing rule *)
       let () = Notation.declare_notation_level ntn prec in
       let () = Notgram_ops.declare_notation_non_terminals ntn synext.synext_nottyps in
@@ -1037,7 +1076,7 @@ let check_useless_entry_types recvars mainvars etyps =
 type notation_main_data = {
   onlyparsing  : bool;
   onlyprinting : bool;
-  deprecation  : Deprecation.t option;
+  user_warns   : Globnames.extended_global_reference UserWarn.with_qf option;
   entry        : notation_entry;
   format       : unparsing Loc.located list option;
   itemscopes  : (Id.t * scope_name) list;
@@ -1089,7 +1128,7 @@ let set_item_scope ?loc main_data ids sc =
   | (id,_)::_ -> user_err ?loc (str "Notation scope for argument " ++ Id.print id ++ str " can be specified only once.")
   | [] -> { main_data with itemscopes }
 
-let interp_non_syntax_modifiers ~reserved ~infix ~abbrev deprecation mods =
+let interp_non_syntax_modifiers ~reserved ~infix ~abbrev user_warns mods =
   let set (main_data,rest) = CAst.with_loc_val (fun ?loc -> function
     | SetOnlyParsing ->
        if not (Option.is_empty main_data.format) then
@@ -1107,7 +1146,7 @@ let interp_non_syntax_modifiers ~reserved ~infix ~abbrev deprecation mods =
   in
   let main_data =
     {
-      onlyparsing = false; onlyprinting = false; deprecation;
+      onlyparsing = false; onlyprinting = false; user_warns;
       entry = InConstrEntry; format = None; itemscopes = []
     }
   in
@@ -1230,10 +1269,18 @@ let warn_notation_bound_to_variable =
 
 let warn_non_reversible_notation =
   CWarnings.create ~name:"non-reversible-notation" ~category:CWarnings.CoreCategories.parsing
-         (function
+         (function[@warning "+9"]
           | APrioriReversible -> assert false
-          | HasLtac ->
-             strbrk "This notation contains Ltac expressions: it will not be used for printing."
+          | Forgetful {
+              forget_ltac=ltac;
+              forget_volatile_cast=cast;
+            } ->
+            let what = (if ltac then ["Ltac expressions"] else [])
+                       @ (if cast then ["volatile casts"] else [])
+            in
+            strbrk "This notation contains " ++
+            prlist_with_sep (fun () -> strbrk " and ") str what ++ str ":" ++ spc() ++
+            str "it will not be used for printing."
           | NonInjective ids ->
              let n = List.length ids in
              strbrk (String.plural n "Variable") ++ spc () ++ pr_enum Id.print ids ++ spc () ++
@@ -1271,6 +1318,18 @@ let printability level typs vars onlyparsing reversibility = function
      (warn_non_reversible_notation reversibility; true)
     else onlyparsing),None
 
+let warn_closed_notation_not_level_0 =
+  CWarnings.create ~name:"closed-notation-not-level-0" ~category:CWarnings.CoreCategories.parsing
+    (fun () -> strbrk "Closed notations (i.e. starting and ending with a \
+                       terminal symbol) should usually be at level 0 \
+                       (default).")
+
+let warn_postfix_notation_not_level_1 =
+  CWarnings.create ~name:"postfix-notation-not-level-1" ~category:CWarnings.CoreCategories.parsing
+    (fun () -> strbrk "Postfix notations (i.e. starting with a \
+                       nonterminal symbol and ending with a terminal \
+                       symbol) should usually be at level 1 (default).")
+
 let find_precedence custom lev etyps symbols onlyprint =
   let first_symbol =
     let rec aux = function
@@ -1288,11 +1347,16 @@ let find_precedence custom lev etyps symbols onlyprint =
   match first_symbol with
   | None -> [],0
   | Some (NonTerminal x) ->
+      let msgs, lev = match last_is_terminal (), lev with
+        | false, _ -> [], lev
+        | true, None -> [fun () -> Flags.if_verbose (Feedback.msg_info ?loc:None) (strbrk "Setting postfix notation at level 1.")], Some 1
+        | true, Some 1 -> [], Some 1
+        | true, Some n -> [fun () -> warn_postfix_notation_not_level_1 ()], Some n in
       let test () =
         if onlyprint then
           if Option.is_empty lev then
             user_err Pp.(str "Explicit level needed in only-printing mode when the level of the leftmost non-terminal is given.")
-          else [],Option.get lev
+          else msgs,Option.get lev
         else
           user_err Pp.(str "The level of the leftmost non-terminal cannot be changed.") in
       (try match List.assoc x etyps, custom with
@@ -1302,7 +1366,7 @@ let find_precedence custom lev etyps symbols onlyprint =
             | None ->
               ([fun () -> Flags.if_verbose (Feedback.msg_info ?loc:None) (strbrk "Setting notation at level 0.")],0)
             | Some 0 ->
-              ([],0)
+              (msgs,0)
             | _ ->
               user_err Pp.(str "A notation starting with an atomic expression must be at level 0.")
             end
@@ -1313,15 +1377,17 @@ let find_precedence custom lev etyps symbols onlyprint =
             (* Give a default ? *)
             if Option.is_empty lev then
               user_err Pp.(str "Need an explicit level.")
-            else [],Option.get lev
+            else msgs,Option.get lev
       with Not_found ->
         if Option.is_empty lev then
           user_err Pp.(str "A left-recursive notation must have an explicit level.")
-        else [],Option.get lev)
+        else msgs,Option.get lev)
   | Some (Terminal _) when last_is_terminal () ->
-      if Option.is_empty lev then
-        ([fun () -> Flags.if_verbose (Feedback.msg_info ?loc:None) (strbrk "Setting notation at level 0.")], 0)
-      else [],Option.get lev
+      begin match lev with
+      | None -> [fun () -> Flags.if_verbose (Feedback.msg_info ?loc:None) (strbrk "Setting notation at level 0.")], 0
+      | Some 0 -> [], 0
+      | Some n -> [fun () -> warn_closed_notation_not_level_0 ()], n
+      end
   | Some _ ->
       if Option.is_empty lev then user_err Pp.(str "Cannot determine the level.");
       [],Option.get lev
@@ -1409,6 +1475,54 @@ let check_locality_compatibility local custom i_typs =
                     strbrk " which is local."))
       (List.uniquize allcustoms)
 
+let longest_common_prefix_level ntn =
+  Notgram_ops.longest_common_prefix ntn
+  |> Option.map (fun (ntn, sz) ->
+         let level, levels = level_firstn sz (Notation.level_of_notation ntn) in
+         ntn, level.notation_level, levels)
+
+let default_prefix_level ntn_prefix =
+  let with_prefix prefix level =
+    Flags.if_verbose Feedback.msg_info
+      (strbrk "Setting notation at level " ++ int level ++ spc ()
+       ++ str "to match previous notation with longest common prefix:"
+       ++ spc () ++ str "\"" ++ str (snd prefix) ++ str "\".");
+    level in
+  function Some n -> Some n | None ->
+    Option.map (fun (prefix, level, _) -> with_prefix prefix level) ntn_prefix
+
+let default_prefix_level_subentries ntn ntn_prefix symbols etyps =
+  let with_prefix prefix from_level levels =
+    let default_entry etyps (x, l) =
+      let l' = match l with
+        | LevelLt n when Int.equal n from_level -> NextLevel
+        | LevelLe n | LevelLt n -> NumLevel n
+        | LevelSome -> DefaultLevel in
+      let e = List.assoc_opt x etyps
+        |> Option.default (ETConstr (fst ntn, None, DefaultLevel)) in
+      match l', e with
+      | (NumLevel _ | NextLevel), ETConstr (n, b, DefaultLevel) ->
+         Flags.if_verbose Feedback.msg_info
+           (strbrk "Setting " ++ Id.print x ++ str " "
+            ++ pr_arg_level from_level (l, e) ++ spc ()
+            ++ str "to match previous notation with longest common prefix:"
+            ++ spc () ++ str "\"" ++ str (snd prefix) ++ str "\".");
+         (x, ETConstr (n, b, l')) :: List.remove_assoc x etyps
+      | _ -> etyps in
+    let levels =
+      let rec aux levs symbs = match levs, symbs with
+        | [], _ | _, [] | _, SProdList _ :: _ -> []
+        (* not handling recursive notations *)
+        | _, (Terminal _ | Break _) :: symbs -> aux levs symbs
+        | l :: levs, NonTerminal x :: symbs -> (x, l) :: aux levs symbs in
+      match levels, symbols with
+      (* don't mess up with level of left border terminal *)
+      | _ :: levs, NonTerminal _ :: symbs | levs, symbs -> aux levs symbs in
+    List.fold_left default_entry etyps levels in
+  match ntn_prefix with
+  | None -> etyps
+  | Some (prefix, from_level, levels) -> with_prefix prefix from_level levels
+
 let compute_syntax_data ~local main_data notation_symbols ntn mods =
   let open SynData in
   let open NotationMods in
@@ -1418,14 +1532,17 @@ let compute_syntax_data ~local main_data notation_symbols ntn mods =
   let _ = check_useless_entry_types recvars mainvars mods.etyps in
 
   (* Notations for interp and grammar  *)
-  let msgs,n = find_precedence main_data.entry mods.level mods.etyps symbols main_data.onlyprinting in
+  let ntn_prefix = longest_common_prefix_level ntn in
+  let level = default_prefix_level ntn_prefix mods.level in
+  let msgs,n = find_precedence main_data.entry level mods.etyps symbols main_data.onlyprinting in
   let symbols_for_grammar =
     if main_data.entry = InConstrEntry then remove_curly_brackets symbols else symbols in
   let need_squash = not (List.equal Notation.symbol_eq symbols symbols_for_grammar) in
   let ntn_for_grammar = if need_squash then make_notation_key main_data.entry symbols_for_grammar else ntn in
   if main_data.entry = InConstrEntry && not main_data.onlyprinting then check_rule_productivity symbols_for_grammar;
   (* To globalize... *)
-  let etyps = join_auxiliary_recursive_types recvars mods.etyps in
+  let etyps = default_prefix_level_subentries ntn ntn_prefix symbols mods.etyps in
+  let etyps = join_auxiliary_recursive_types recvars etyps in
   let sy_typs, prec =
     find_subentry_types main_data.entry n assoc etyps symbols in
   let sy_typs_for_grammar, prec_for_grammar =
@@ -1462,7 +1579,7 @@ type notation_obj = {
   notobj_interp : interpretation;
   notobj_coercion : entry_coercion_kind option;
   notobj_use : notation_use option;
-  notobj_deprecation : Deprecation.t option;
+  notobj_user_warns : UserWarn.t option;
   notobj_notation : notation * notation_location;
   notobj_specific_pp_rules : notation_printing_rules option;
 }
@@ -1485,11 +1602,11 @@ let open_notation i nobj =
     let scope = nobj.notobj_scope in
     let (ntn, df) = nobj.notobj_notation in
     let pat = nobj.notobj_interp in
-    let deprecation = nobj.notobj_deprecation in
+    let user_warns = nobj.notobj_user_warns in
     let scope = match scope with None -> LastLonelyNotation | Some sc -> NotationInScope sc in
     (* Declare the notation *)
     (match nobj.notobj_use with
-    | Some use -> Notation.declare_notation (scope,ntn) pat df ~use nobj.notobj_coercion deprecation
+    | Some use -> Notation.declare_notation (scope,ntn) pat df ~use nobj.notobj_coercion user_warns
     | None -> ());
     (* Declare specific format if any *)
     (match nobj.notobj_specific_pp_rules with
@@ -1646,9 +1763,13 @@ let make_generic_printing_rules reserved main_data ntn sd =
       (* No intent to define a format, we reuse the existing generic rules *)
       Some rules
     | _ ->
-      let rules' = make_rule (make_pp_rule level sd.pp_syntax_data main_data.format) in
-      check_reserved_format ntn rules rules'.notation_printing_rules;
-      Some rules'
+      if not reserved && main_data.onlyprinting then
+        (* No intent to define a generic format *)
+        Some rules
+      else
+        let rules' = make_rule (make_pp_rule level sd.pp_syntax_data main_data.format) in
+        let () = check_reserved_format ntn rules rules'.notation_printing_rules in
+        Some rules'
   with Not_found ->
     Some (make_rule (make_pp_rule level sd.pp_syntax_data main_data.format))
 
@@ -1734,7 +1855,7 @@ let make_notation_interpretation ~local main_data notation_symbols ntn syntax_ru
     notobj_use = use;
     notobj_interp = (vars, ac);
     notobj_coercion = coe;
-    notobj_deprecation = main_data.deprecation;
+    notobj_user_warns = main_data.user_warns |> Option.map UserWarn.drop_qf;
     notobj_notation = df';
     notobj_specific_pp_rules = sy_pp_rules;
   }
@@ -1792,10 +1913,11 @@ let set_notation_for_interpretation env impls (ntn_decl, main_data, notation_sym
   Lib.add_leaf (inNotation notation);
   Option.iter (fun sc -> Lib.add_leaf (inScope (false,true,sc))) sc
 
-let build_notation_syntax ~local ~infix deprecation ntn_decl =
+let build_notation_syntax ~local ~infix user_warns ntn_decl =
   let { ntn_decl_string = {CAst.loc;v=df}; ntn_decl_modifiers = modifiers; ntn_decl_interp = c } = ntn_decl in
   (* Extract the modifiers not affecting the parsing rule *)
-  let (main_data,syntax_modifiers) = interp_non_syntax_modifiers ~reserved:false ~infix ~abbrev:false deprecation modifiers in
+  let user_warns = Option.map UserWarn.with_empty_qf user_warns in
+  let (main_data,syntax_modifiers) = interp_non_syntax_modifiers ~reserved:false ~infix ~abbrev:false user_warns modifiers in
   (* Extract the modifiers not affecting the parsing rule *)
   let notation_symbols, is_prim_token = analyze_notation_tokens ~onlyprinting:main_data.onlyprinting ~infix main_data.entry df in
   (* Add variables on both sides if an infix notation *)
@@ -1819,9 +1941,9 @@ let build_notation_syntax ~local ~infix deprecation ntn_decl =
   in
   main_data, notation_symbols, ntn, syntax_rules, c, df
 
-let add_notation_syntax ~local ~infix deprecation ntn_decl =
+let add_notation_syntax ~local ~infix user_warns ntn_decl =
   (* Build or rebuild the syntax rules *)
-  let main_data, notation_symbols, ntn, syntax_rules, c, df = build_notation_syntax ~local ~infix deprecation ntn_decl in
+  let main_data, notation_symbols, ntn, syntax_rules, c, df = build_notation_syntax ~local ~infix user_warns ntn_decl in
   (* Declare syntax *)
   syntax_rules_iter (fun sy -> Lib.add_leaf (inSyntaxExtension (local,(ntn,sy)))) syntax_rules;
   let ntn_decl_string = CAst.make ?loc:ntn_decl.ntn_decl_string.CAst.loc df in
@@ -1899,15 +2021,15 @@ let remove_delimiters local scope =
 let add_class_scope local scope where cl =
   Lib.add_leaf (inScopeCommand(local,scope,ScopeClasses (where, cl)))
 
-let interp_abbreviation_modifiers deprecation modl =
-  let mods, skipped = interp_non_syntax_modifiers ~reserved:false ~infix:false ~abbrev:true deprecation modl in
+let interp_abbreviation_modifiers user_warns modl =
+  let mods, skipped = interp_non_syntax_modifiers ~reserved:false ~infix:false ~abbrev:true user_warns modl in
   if skipped <> [] then
     (let modifier = List.hd skipped in
     user_err ?loc:modifier.CAst.loc (str "Abbreviations don't support " ++ Ppvernac.pr_syntax_modifier modifier));
   (mods.onlyparsing, mods.itemscopes)
 
-let add_abbreviation ~local deprecation env ident (vars,c) modl =
-  let (only_parsing, scopes) = interp_abbreviation_modifiers deprecation modl in
+let add_abbreviation ~local user_warns env ident (vars,c) modl =
+  let (only_parsing, scopes) = interp_abbreviation_modifiers user_warns modl in
   let vars = List.map (fun v -> v, List.assoc_opt v scopes) vars in
   let acvars,pat,reversibility =
     match vars, intern_name_alias c with
@@ -1930,7 +2052,7 @@ let add_abbreviation ~local deprecation env ident (vars,c) modl =
   let interp = make_interpretation_vars ~default_if_binding:AsAnyPattern [] acvars level (List.map in_pat vars) in
   let vars = List.map (fun (x,_) -> (x, Id.Map.find x interp)) vars in
   let onlyparsing = only_parsing || fst (printability None [] vars false reversibility pat) in
-  Abbreviation.declare_abbreviation ~local deprecation ident ~onlyparsing (vars,pat)
+  Abbreviation.declare_abbreviation ~local user_warns ident ~onlyparsing (vars,pat)
 
 (**********************************************************************)
 (* Activating/deactivating notations                                  *)
@@ -1940,7 +2062,7 @@ let load_notation_toggle _ _ = ()
 let open_notation_toggle _ (local,(on,all,pat)) =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  toggle_notations ~on ~all (Constrextern.without_symbols (Printer.pr_glob_constr_env env sigma)) pat
+  toggle_notations ~on ~all ~verbose:(not !Flags.quiet) (Constrextern.without_symbols (Printer.pr_glob_constr_env env sigma)) pat
 
 let cache_notation_toggle o =
   load_notation_toggle 1 o;

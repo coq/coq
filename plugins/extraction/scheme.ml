@@ -128,11 +128,13 @@ let rec pp_expr env args =
         str "__" (* An [MLdummy] may be applied, but I don't really care. *)
     | MLmagic a ->
         pp_expr env args a
-    | MLaxiom -> paren (str "error \"AXIOM TO BE REALIZED\"")
+    | MLaxiom s -> paren (str "error \"AXIOM TO BE REALIZED (" ++ str s ++ str ")\"")
     | MLuint _ ->
       paren (str "Prelude.error \"EXTRACTION OF UINT NOT IMPLEMENTED\"")
     | MLfloat _ ->
       paren (str "Prelude.error \"EXTRACTION OF FLOAT NOT IMPLEMENTED\"")
+    | MLstring _ ->
+      paren (str "Prelude.error \"EXTRACTION OF STRING NOT IMPLEMENTED\"")
     | MLparray _ ->
             paren (str "Prelude.error \"EXTRACTION OF PARRAY NOT IMPLEMENTED\"")
 

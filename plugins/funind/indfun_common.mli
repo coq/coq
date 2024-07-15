@@ -95,7 +95,7 @@ val acc_rel : EConstr.constr Util.delayed
 val well_founded : EConstr.constr Util.delayed
 
 val evaluable_of_global_reference :
-  GlobRef.t -> Tacred.evaluable_global_reference
+  GlobRef.t -> Evaluable.t
 
 val list_rewrite : bool -> (EConstr.constr * bool) list -> unit Proofview.tactic
 
@@ -103,13 +103,13 @@ val decompose_lambda_n :
      Evd.evar_map
   -> int
   -> EConstr.t
-  -> (Names.Name.t Context.binder_annot * EConstr.t) list * EConstr.t
+  -> (Names.Name.t EConstr.binder_annot * EConstr.t) list * EConstr.t
 
 val compose_lam :
-  (Names.Name.t Context.binder_annot * EConstr.t) list -> EConstr.t -> EConstr.t
+  (Names.Name.t EConstr.binder_annot * EConstr.t) list -> EConstr.t -> EConstr.t
 
 val compose_prod :
-  (Names.Name.t Context.binder_annot * EConstr.t) list -> EConstr.t -> EConstr.t
+  (Names.Name.t EConstr.binder_annot * EConstr.t) list -> EConstr.t -> EConstr.t
 
 type tcc_lemma_value = Undefined | Value of Constr.t | Not_needed
 

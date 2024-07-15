@@ -48,9 +48,9 @@ New coercion path [ab; ba] : A >-> A is not definitionally an identity function.
 [B_A] : B >-> A
 [C_A] : C >-> A
 [D_A] : D >-> A
-[D_B] : D >-> B (reversible)
-[D_C] : D >-> C (reversible)
-[A'_A] : A' >-> A (reversible)
+[D_B] : D >-> B
+[D_C] : D >-> C
+[A'_A] : A' >-> A
 [reverse_coercion] : ReverseCoercionSource >-> ReverseCoercionTarget
 [B_A'; A'_A] : B >-> A
 [B_A'] : B >-> A'
@@ -58,8 +58,8 @@ New coercion path [ab; ba] : A >-> A is not definitionally an identity function.
 [C_A'] : C >-> A'
 [D_A] : D >-> A
 [D_B; B_A'] : D >-> A'
-[D_B] : D >-> B (reversible)
-[D_C] : D >-> C (reversible)
+[D_B] : D >-> B
+[D_C] : D >-> C
 File "./output/relaxed_ambiguous_paths.v", line 147, characters 0-86:
 Warning:
 New coercion path [D_C; C_A'] : D >-> A' is ambiguous with existing 
@@ -72,17 +72,17 @@ New coercion path [D_C; C_A'] : D >-> A' is ambiguous with existing
 [C_A'] : C >-> A'
 [D_A] : D >-> A
 [D_B; B_A'] : D >-> A'
-[D_B] : D >-> B (reversible)
-[D_C] : D >-> C (reversible)
+[D_B] : D >-> B
+[D_C] : D >-> C
 File "./output/relaxed_ambiguous_paths.v", line 156, characters 0-47:
 Warning:
-New coercion path [unwrap_nat; wrap_nat] : NAT >-> NAT (reversible) is not definitionally an identity function.
+New coercion path [unwrap_nat; wrap_nat] : NAT >-> NAT is not definitionally an identity function.
 [ambiguous-paths,coercions,default]
 File "./output/relaxed_ambiguous_paths.v", line 157, characters 0-64:
 Warning:
-New coercion path [unwrap_list; wrap_list] : LIST >-> LIST (reversible) is not definitionally an identity function.
+New coercion path [unwrap_list; wrap_list] : LIST >-> LIST is not definitionally an identity function.
 [ambiguous-paths,coercions,default]
 File "./output/relaxed_ambiguous_paths.v", line 158, characters 0-51:
 Warning:
-New coercion path [unwrap_Type; wrap_Type] : TYPE >-> TYPE (reversible) is not definitionally an identity function.
+New coercion path [unwrap_Type; wrap_Type] : TYPE >-> TYPE is not definitionally an identity function.
 [ambiguous-paths,coercions,default]

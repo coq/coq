@@ -13,33 +13,31 @@ open Names
 type t = {
   tr_var : Id.Pred.t;
   tr_cst : Cpred.t;
+  tr_prj : PRpred.t;
 }
 
 let empty = {
   tr_var = Id.Pred.empty;
   tr_cst = Cpred.empty;
+  tr_prj = PRpred.empty;
 }
 
 let full = {
   tr_var = Id.Pred.full;
   tr_cst = Cpred.full;
-}
-
-let var_full = {
-  tr_var = Id.Pred.full;
-  tr_cst = Cpred.empty;
-}
-
-let cst_full = {
-  tr_var = Id.Pred.empty;
-  tr_cst = Cpred.full;
+  tr_prj = PRpred.full;
 }
 
 let is_empty ts =
-  Id.Pred.is_empty ts.tr_var && Cpred.is_empty ts.tr_cst
+  Id.Pred.is_empty ts.tr_var &&
+  Cpred.is_empty ts.tr_cst &&
+  PRpred.is_empty ts.tr_prj
 
 let is_transparent_variable ts id =
   Id.Pred.mem id ts.tr_var
 
 let is_transparent_constant ts cst =
   Cpred.mem cst ts.tr_cst
+
+let is_transparent_projection ts p =
+  PRpred.mem p ts.tr_prj

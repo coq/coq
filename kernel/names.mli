@@ -62,7 +62,7 @@ sig
   val print : t -> Pp.t
   (** Pretty-printer. *)
 
-  module Set : Set.S with type elt = t
+  module Set : Set.ExtS with type elt = t
   (** Finite sets of identifiers. *)
 
   module Map : Map.ExtS with type key = t and module Set := Set
@@ -120,7 +120,7 @@ type name = Name.t = Anonymous | Name of Id.t
 type variable = Id.t
 type module_ident = Id.t
 
-module ModIdset : Set.S with type elt = module_ident
+module ModIdset : Set.ExtS with type elt = module_ident
 module ModIdmap : Map.ExtS with type key = module_ident and module Set := ModIdset
 
 (** {6 Directory paths = section names paths } *)
@@ -164,7 +164,7 @@ sig
   val print : t -> Pp.t
 end
 
-module DPset : Set.S with type elt = DirPath.t
+module DPset : Set.ExtS with type elt = DirPath.t
 module DPmap : Map.ExtS with type key = DirPath.t and module Set := DPset
 
 (** {6 Names of structure elements } *)
@@ -198,7 +198,7 @@ sig
   val print : t -> Pp.t
   (** Pretty-printer. *)
 
-  module Set : Set.S with type elt = t
+  module Set : Set.ExtS with type elt = t
   module Map : Map.ExtS with type key = t and module Set := Set
 
   val hcons : t -> t
@@ -240,7 +240,7 @@ sig
 
 end
 
-module MBIset : Set.S with type elt = MBId.t
+module MBIset : Set.ExtS with type elt = MBId.t
 module MBImap : Map.ExtS with type key = MBId.t and module Set := MBIset
 
 (** {6 The module part of the kernel name } *)
@@ -274,7 +274,7 @@ sig
 
 end
 
-module MPset : Set.S with type elt = ModPath.t
+module MPset : Set.ExtS with type elt = ModPath.t
 module MPmap : Map.ExtS with type key = ModPath.t and module Set := MPset
 
 (** {6 The absolute names of objects seen by kernel } *)
@@ -309,9 +309,9 @@ sig
   val hash : t -> int
 end
 
-module KNset  : CSig.SetS with type elt = KerName.t
+module KNset  : CSig.USetS with type elt = KerName.t
 module KNpred : Predicate.S with type elt = KerName.t
-module KNmap  : Map.ExtS with type key = KerName.t and module Set := KNset
+module KNmap  : Map.UExtS with type key = KerName.t and module Set := KNset
 
 (** {6 Signature for quotiented names} *)
 
@@ -365,6 +365,9 @@ sig
 
   module SyntacticOrd : EqType with type t = t
   (** Equality functions using both names, for low-level uses. *)
+
+  val canonize : t -> t
+  (** Returns the canonical version of the name *)
 end
 
 (** {6 Constant Names } *)
@@ -382,7 +385,7 @@ sig
   (** Special case of [make] where the user name is canonical.  *)
 
   val make2 : ModPath.t -> Label.t -> t
-  (** Shortcut for [(make1 (KerName.make2 ...))] *)
+  (** Shortcut for [(make1 (KerName.make ...))] *)
 
   (** Projections *)
 
@@ -427,14 +430,14 @@ end
 (** The [*_env] modules consider an order on user part of names
    the others consider an order on canonical part of names*)
 module Cpred : Predicate.S with type elt = Constant.t
-module Cset : CSig.SetS with type elt = Constant.t
-module Cset_env  : CSig.SetS with type elt = Constant.t
+module Cset : CSig.USetS with type elt = Constant.t
+module Cset_env  : CSig.USetS with type elt = Constant.t
 
-module Cmap : Map.ExtS with type key = Constant.t and module Set := Cset
+module Cmap : Map.UExtS with type key = Constant.t and module Set := Cset
 (** A map whose keys are constants (values of the {!Constant.t} type).
     Keys are ordered wrt. "canonical form" of the constant. *)
 
-module Cmap_env : Map.ExtS with type key = Constant.t and module Set := Cset_env
+module Cmap_env : Map.UExtS with type key = Constant.t and module Set := Cset_env
 (** A map whose keys are constants (values of the {!Constant.t} type).
     Keys are ordered wrt. "user form" of the constant. *)
 
@@ -453,7 +456,7 @@ sig
   (** Special case of [make] where the user name is canonical.  *)
 
   val make2 : ModPath.t -> Label.t -> t
-  (** Shortcut for [(make1 (KerName.make2 ...))] *)
+  (** Shortcut for [(make1 (KerName.make ...))] *)
 
   (** Projections *)
 
@@ -491,9 +494,9 @@ sig
 
 end
 
-module Mindset : CSig.SetS with type elt = MutInd.t
-module Mindmap : Map.ExtS with type key = MutInd.t and module Set := Mindset
-module Mindmap_env : CMap.ExtS with type key = MutInd.t
+module Mindset : CSig.USetS with type elt = MutInd.t
+module Mindmap : Map.UExtS with type key = MutInd.t and module Set := Mindset
+module Mindmap_env : CMap.UExtS with type key = MutInd.t
 
 module Ind :
 sig
@@ -525,10 +528,10 @@ end
 
 type constructor = Construct.t
 
-module Indset : CSet.S with type elt = inductive
-module Constrset : CSet.S with type elt = constructor
-module Indset_env : CSet.S with type elt = inductive
-module Constrset_env : CSet.S with type elt = constructor
+module Indset : CSet.ExtS with type elt = inductive
+module Constrset : CSet.ExtS with type elt = constructor
+module Indset_env : CSet.ExtS with type elt = inductive
+module Constrset_env : CSet.ExtS with type elt = constructor
 module Indmap : CMap.ExtS with type key = inductive and module Set := Indset
 module Constrmap : CMap.ExtS with type key = constructor and module Set := Constrset
 module Indmap_env : CMap.ExtS with type key = inductive and module Set := Indset_env
@@ -643,7 +646,19 @@ module Projection : sig
   val print : t -> Pp.t
   (** Print internal representation (not to be used for user-facing messages). *)
 
+  val debug_to_string : t -> string
+  (** Same as [to_string], but outputs extra information related to debug. *)
+
+  val debug_print : t -> Pp.t
+  (** Same as [print], but outputs extra information related to debug. *)
+
 end
+
+module PRset : CSig.USetS with type elt = Projection.Repr.t
+module PRmap : Map.UExtS with type key = Projection.Repr.t and module Set := PRset
+
+(** Predicate on projection representation (ignoring unfolding state) *)
+module PRpred : Predicate.S with type elt = Projection.Repr.t
 
 (** {6 Global reference is a kernel side type for all references together } *)
 
@@ -662,12 +677,12 @@ module GlobRef : sig
 
   include QNameS with type t := t
 
-  module Set_env : CSig.SetS with type elt = t
-  module Map_env : Map.ExtS
+  module Set_env : CSig.USetS with type elt = t
+  module Map_env : Map.UExtS
     with type key = t and module Set := Set_env
 
-  module Set : CSig.SetS with type elt = t
-  module Map : Map.ExtS
+  module Set : CSig.USetS with type elt = t
+  module Map : Map.UExtS
     with type key = t and module Set := Set
 
   val print : t -> Pp.t

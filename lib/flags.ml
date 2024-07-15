@@ -49,7 +49,7 @@ let load_vos_libraries = ref false
 let xml_debug = ref false
 
 let in_debugger = ref false
-let in_toplevel = ref false
+let in_ml_toplevel = ref false
 
 let raw_print = ref false
 
@@ -58,6 +58,7 @@ let in_synterp_phase = ref false
 (* Translate *)
 let beautify = ref false
 let beautify_file = ref false
+let record_comments = ref false
 
 (* Silent / Verbose *)
 let quiet = ref false
@@ -80,3 +81,9 @@ let get_inline_level () = !inline_level
 
 let profile_ltac = ref false
 let profile_ltac_cutoff = ref 2.0
+
+(* Default output directory *)
+
+let output_directory = ref None
+
+let test_mode = ref false

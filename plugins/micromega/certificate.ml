@@ -159,6 +159,13 @@ let cstr_of_poly (p, o) =
   let c, l = Vect.decomp_cst p in
   {coeffs = l; op = o; cst = Q.neg c}
 
+let make_cstr_system sys =
+  let map wp =
+    let ((p, o), prf) = WithProof.repr wp in
+    (cstr_of_poly (p, o), prf)
+  in
+  List.map map sys
+
 let variables_of_cstr c = Vect.variables c.coeffs
 
 (* If the certificate includes at least one strict inequality,
@@ -336,7 +343,7 @@ let apply_and_normalise check f psys =
     [] psys
 
 let is_linear_for v pc =
-  LinPoly.is_linear (fst (fst pc)) || LinPoly.is_linear_for v (fst (fst pc))
+  LinPoly.is_linear (WithProof.polynomial pc) || LinPoly.is_linear_for v (WithProof.polynomial pc)
 
 (*let non_linear_pivot sys pc v pc' =
   if LinPoly.is_linear (fst (fst pc'))
@@ -344,7 +351,8 @@ let is_linear_for v pc =
   else WithProof.linear_pivot sys pc v pc'
  *)
 
-let is_linear_substitution sys ((p, o), prf) =
+let is_linear_substitution sys wp =
+  let (p, o), _ = WithProof.repr wp in
   let pred v = v =/ Q.one || v =/ Q.minus_one in
   match o with
   | Eq -> (
@@ -382,7 +390,8 @@ let elim_redundant sys =
   let module VectMap = Map.Make (Vect) in
   let elim_eq sys =
     List.fold_left
-      (fun acc (((v, o), prf) as wp) ->
+      (fun acc wp ->
+        let (_, o), _ = WithProof.repr wp in
         match o with
         | Gt -> assert false
         | Ge -> wp :: acc
@@ -391,7 +400,8 @@ let elim_redundant sys =
   in
   let of_list l =
     List.fold_left
-      (fun m (((v, o), prf) as wp) ->
+      (fun m wp ->
+        let (v, o), _ = WithProof.repr wp in
         let q, v' = Vect.decomp_cst v in
         try
           let q', wp' = VectMap.find v' m in
@@ -415,7 +425,7 @@ let bound_monomials (sys : WithProof.t list) =
       (i,(v,m,b))) all_bounds in
 
   let vars = List.fold_left
-      (fun acc ((p, o), _) -> ISet.union (LinPoly.monomials p) acc)
+      (fun acc wp -> ISet.union (LinPoly.monomials (WithProof.polynomial wp)) acc)
       ISet.empty sys in
 
   let rec build_constraints l =
@@ -484,13 +494,12 @@ let develop_constraints prfdepth n_spec sys =
   LinPoly.MonT.clear ();
   max_nb_cstr := compute_max_nb_cstr sys prfdepth;
   let sys = List.map (develop_constraint n_spec) sys in
-  List.mapi
-    (fun i (p, o) -> ((LinPoly.linpol_of_pol p, o), ProofFormat.Hyp i))
-    sys
+  let sys = List.mapi (fun i (p, o) -> WithProof.mkhyp (LinPoly.linpol_of_pol p) o i) sys in
+  ProofFormat.Env.make (List.length sys), sys
 
 let square_of_var i =
   let x = LinPoly.var i in
-  ((LinPoly.product x x, Ge), ProofFormat.Square x)
+  WithProof.square (LinPoly.product x x) x
 
 (** [nlinear_preprocess  sys]  augments the system [sys] by performing some limited non-linear reasoning.
     For instance, it asserts that the x² ≥0 but also that if c₁ ≥ 0 ∈ sys and c₂ ≥ 0 ∈ sys then c₁ × c₂ ≥ 0.
@@ -498,13 +507,13 @@ let square_of_var i =
  *)
 
 let nlinear_preprocess (sys : WithProof.t list) =
-  let is_linear = List.for_all (fun ((p, _), _) -> LinPoly.is_linear p) sys in
+  let is_linear = List.for_all (fun wp -> LinPoly.is_linear @@ WithProof.polynomial wp) sys in
   if is_linear then sys
   else
     let collect_square =
       List.fold_left
-        (fun acc ((p, _), _) ->
-          MonMap.union (fun k e1 e2 -> Some e1) acc (LinPoly.collect_square p))
+        (fun acc wp ->
+          MonMap.union (fun k e1 e2 -> Some e1) acc (LinPoly.collect_square @@ WithProof.polynomial wp))
         MonMap.empty sys
     in
     let sys =
@@ -512,12 +521,12 @@ let nlinear_preprocess (sys : WithProof.t list) =
         (fun s m acc ->
           let s = LinPoly.of_monomial s in
           let m = LinPoly.of_monomial m in
-          ((m, Ge), ProofFormat.Square s) :: acc)
+          (WithProof.square m s) :: acc)
         collect_square sys
     in
     let collect_vars =
       List.fold_left
-        (fun acc p -> ISet.union acc (LinPoly.variables (fst (fst p))))
+        (fun acc p -> ISet.union acc (LinPoly.variables (WithProof.polynomial p)))
         ISet.empty sys
     in
     let sys =
@@ -529,31 +538,25 @@ let nlinear_preprocess (sys : WithProof.t list) =
 let nlinear_preprocess = tr_sys "nlinear_preprocess" nlinear_preprocess
 
 let nlinear_prover prfdepth sys =
-  let sys = develop_constraints prfdepth q_spec sys in
+  let env, sys = develop_constraints prfdepth q_spec sys in
   let sys1 = elim_simple_linear_equality sys in
   let sys2 = saturate_by_linear_equalities sys1 in
   let sys = nlinear_preprocess sys1 @ sys2 in
-  let sys = List.map (fun ((p, o), prf) -> (cstr_of_poly (p, o), prf)) sys in
-  let id =
-    List.fold_left
-      (fun acc (_, r) -> max acc (ProofFormat.pr_rule_max_hyp r))
-      0 sys
-  in
-  let env = ProofFormat.Env.make (id + 1) in
+  let sys = make_cstr_system sys in
   match linear_prover_cstr sys with
   | None -> Unknown
   | Some cert -> Prf (ProofFormat.cmpl_prf_rule Mc.normQ CamlToCoq.q env cert)
 
 let linear_prover_with_cert prfdepth sys =
-  let sys = develop_constraints prfdepth q_spec sys in
+  let env, sys = develop_constraints prfdepth q_spec sys in
   (*  let sys = nlinear_preprocess  sys in *)
-  let sys = List.map (fun (c, p) -> (cstr_of_poly c, p)) sys in
+  let sys = make_cstr_system sys in
   match linear_prover_cstr sys with
   | None -> Unknown
   | Some cert ->
     Prf
       (ProofFormat.cmpl_prf_rule Mc.normQ CamlToCoq.q
-         (ProofFormat.Env.make (List.length sys))
+         env
          cert)
 
 (* The prover is (probably) incomplete --
@@ -708,10 +711,11 @@ open Polynomial
 let pivot v (a, c1, p1) (c2, p2) =
   let {coeffs = v1; op = op1; cst = n1} = c1
   and {coeffs = v2; op = op2; cst = n2} = c2 in
+  let () = assert (op1 == Eq) in
   (* Could factorise gcd... *)
   let xpivot cv1 cv2 =
     ( { coeffs = Vect.add (Vect.mul cv1 v1) (Vect.mul cv2 v2)
-      ; op = opAdd op1 op2
+      ; op = opAdd Eq op2
       ; cst = (n1 */ cv1) +/ (n2 */ cv2) }
     , ProofFormat.add_proof
         (ProofFormat.mul_cst_proof cv1 p1)
@@ -722,13 +726,9 @@ let pivot v (a, c1, p1) (c2, p2) =
   else if Int.equal (Q.sign a * Q.sign b) (-1) then
     let cv1 = Q.abs b and cv2 = Q.abs a in
     Some (xpivot cv1 cv2)
-  else if op1 == Eq then
+  else
     let cv1 = Q.neg (b */ Q.of_int (Q.sign a)) and cv2 = Q.abs a in
     Some (xpivot cv1 cv2)
-  else if op2 == Eq then
-    let cv1 = Q.abs b and cv2 = Q.neg (a */ Q.of_int (Q.sign b)) in
-    Some (xpivot cv1 cv2)
-  else None
 
 let pivot v c1 c2 =
   let res = pivot v c1 c2 in
@@ -752,25 +752,29 @@ let rec ext_gcd a b =
     (t, Z_.sub s (Z_.mul q t))
 
 let extract_coprime (c1, p1) (c2, p2) =
-  if c1.op == Eq && c2.op == Eq then
+  let () = assert (c1.op == Eq) in
+  if c2.op == Eq then
     Vect.exists2
       (fun n1 n2 ->
         Int.equal (Z_.compare (Z_.gcd (Q.num n1) (Q.num n2)) Z_.one) 0)
       c1.coeffs c2.coeffs
   else None
 
-let extract2 pred l =
+let extract_coprime_equation psys =
   let rec xextract2 rl l =
     match l with
     | [] -> (None, rl) (* Did not find *)
-    | e :: l -> (
-      match extract (pred e) l with
-      | None, _ -> xextract2 (e :: rl) l
-      | Some (r, e'), l' -> (Some (r, e, e'), List.rev_append rl l') )
+    | e :: l ->
+      match (fst e).op with
+      | Eq ->
+        begin match extract (extract_coprime e) l with
+        | None, _ -> xextract2 (e :: rl) l
+        | Some (r, e'), l' -> (Some (r, e, e'), List.rev_append rl l')
+        end
+      | Gt | Ge -> xextract2 (e :: rl) l
   in
-  xextract2 [] l
+  xextract2 [] psys
 
-let extract_coprime_equation psys = extract2 extract_coprime psys
 let pivot_sys v (cstr, prf) psys =
   let a = Vect.get v cstr.coeffs in
   if a =/ Q.zero then List.rev psys
@@ -809,7 +813,9 @@ let reduce_unary psys =
   let oeq, sys = extract is_unary_equation psys in
   match oeq with
   | None -> None (* Nothing to do *)
-  | Some (v, pc) -> Some (pivot_sys v pc sys)
+  | Some (v, (cstr, prf)) ->
+    let () = assert (cstr.op == Eq) in
+    Some (pivot_sys v (cstr, prf) sys)
 
 let reduce_var_change psys =
   let rec rel_prime vect =
@@ -859,22 +865,17 @@ let reduction_equations = tr_cstr_sys "reduction_equations" reduction_equations
 
 open ProofFormat
 
-let xlia env red sys =
-  let compile_prf sys prf =
-    let id =
-      1
-      + List.fold_left
-          (fun acc (_, r) -> max acc (ProofFormat.pr_rule_max_hyp r))
-          0 sys
-    in
-    Prf (compile_proof (Env.make id) prf)
-  in
-  try
-    let sys = red sys in
-    match Simplex.integer_solver sys with
+let xlia env sys =
+  let sys = make_cstr_system sys in
+  match reduction_equations sys with
+  | sys ->
+    let sys = List.map WithProof.of_cstr sys in
+    begin match Simplex.integer_solver sys with
     | None -> Unknown
-    | Some prf -> compile_prf sys prf
-  with FoundProof prf -> compile_prf sys (Step (0, prf, Done))
+    | Some prf -> Prf (compile_proof env prf)
+    end
+  | exception FoundProof prf ->
+    Prf (compile_proof env (Step (0, prf, Done)))
 
 
 let gen_bench (tac, prover)  prfdepth sys =
@@ -883,9 +884,9 @@ let gen_bench (tac, prover)  prfdepth sys =
   | None -> ()
   | Some file ->
     let o = open_out (Filename.temp_file ~temp_dir:(Sys.getcwd ()) file ".v") in
-    let sys = develop_constraints prfdepth z_spec sys in
+    let _, sys = develop_constraints prfdepth z_spec sys in
     Printf.fprintf o "Require Import ZArith Lia. Open Scope Z_scope.\n";
-    Printf.fprintf o "Goal %a.\n" (LinPoly.pp_goal "Z") (List.map fst sys);
+    Printf.fprintf o "Goal %a.\n" (LinPoly.pp_goal "Z") (List.map (fun wp -> fst @@ WithProof.repr wp) sys);
     begin
       match res with
       | Unknown | Model _ ->
@@ -969,35 +970,31 @@ let pre_process sys =
   sys
 
 let lia (prfdepth : int) sys =
-  let sys = develop_constraints prfdepth z_spec sys in
+  let env, sys = develop_constraints prfdepth z_spec sys in
   if debug then begin
     Printf.fprintf stdout "Input problem\n";
     List.iter (fun s -> Printf.fprintf stdout "%a\n" WithProof.output s) sys;
     Printf.fprintf stdout "Input problem\n";
     let string_of_op = function Eq -> "=" | Ge -> ">=" | Gt -> ">" in
     List.iter
-      (fun ((p, op), _) ->
+      (fun wp ->
+        let ((p, op), _) = WithProof.repr wp in
         Printf.fprintf stdout "(assert (%s %a))\n" (string_of_op op) Vect.pp_smt
           p)
       sys
   end;
   let sys = pre_process sys in
-  let sys' = List.map (fun ((p, o), prf) -> (cstr_of_poly (p, o), prf)) sys in
-  xlia (List.map fst sys)  reduction_equations sys'
-
-let make_cstr_system sys =
-  List.map (fun ((p, o), prf) -> (cstr_of_poly (p, o), prf)) sys
+  xlia env sys
 
 let nlia prfdepth sys =
-  let sys = develop_constraints prfdepth z_spec sys in
-  let is_linear = List.for_all (fun ((p, _), _) -> LinPoly.is_linear p) sys in
+  let env, sys = develop_constraints prfdepth z_spec sys in
+  let is_linear = List.for_all (fun wp -> LinPoly.is_linear @@ WithProof.polynomial wp) sys in
   if debug then begin
     Printf.fprintf stdout "Input problem\n";
     List.iter (fun s -> Printf.fprintf stdout "%a\n" WithProof.output s) sys
   end;
   if is_linear then
-    xlia (List.map fst sys) reduction_equations
-      (make_cstr_system (pre_process sys))
+    xlia env (pre_process sys)
   else
     (*
       let sys1 = elim_every_substitution sys in
@@ -1011,9 +1008,7 @@ let nlia prfdepth sys =
     let bnd1 = bound_monomials sys1 in
     let sys2 = saturate_by_linear_equalities sys1 in
     let sys3 = nlinear_preprocess (rev_concat [bnd1; sys1; sys2]) in
-    let sys4 = make_cstr_system (*sys2@*) sys3 in
-    (* [reduction_equations] is too brutal - there should be some non-linear reasoning  *)
-    xlia (List.map fst sys)  reduction_equations sys4
+    xlia env sys3
 
 (* For regression testing, if bench = true generate a Coq goal *)
 

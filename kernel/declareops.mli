@@ -30,17 +30,17 @@ val subst_const_body : substitution -> constant_body -> constant_body
 
 (** Is there a actual body in const_body ? *)
 
-val constant_has_body : 'a pconstant_body -> bool
+val constant_has_body : ('a, 'b) pconstant_body -> bool
 
-val constant_polymorphic_context : 'a pconstant_body -> AbstractContext.t
+val constant_polymorphic_context : ('a, 'b) pconstant_body -> AbstractContext.t
 
 (** Is the constant polymorphic? *)
-val constant_is_polymorphic : 'a pconstant_body -> bool
+val constant_is_polymorphic : ('a, 'b) pconstant_body -> bool
 
 (** Return the universe context, in case the definition is polymorphic, otherwise
     the context is empty. *)
 
-val is_opaque : 'a pconstant_body -> bool
+val is_opaque : ('a, 'b) pconstant_body -> bool
 
 (** {6 Inductive types} *)
 
@@ -60,6 +60,8 @@ val recarg_length : wf_paths -> int -> int
 val subst_wf_paths : substitution -> wf_paths -> wf_paths
 
 val subst_mind_body : substitution -> mutual_inductive_body -> mutual_inductive_body
+
+val subst_rewrite_rules : substitution -> rewrite_rules_body -> rewrite_rules_body
 
 val inductive_polymorphic_context : mutual_inductive_body -> AbstractContext.t
 
@@ -86,7 +88,8 @@ val safe_flags : Conv_oracle.oracle -> typing_flags
     of the structure, but simply hash-cons all inner constr
     and other known elements *)
 
-val hcons_const_body : 'a pconstant_body -> 'a pconstant_body
+val hcons_const_body : ?hbody:(Constr.t -> Constr.t) ->
+  ('a, 'b) pconstant_body -> ('a, 'b) pconstant_body
 val hcons_mind : mutual_inductive_body -> mutual_inductive_body
 val hcons_module_body : module_body -> module_body
 val hcons_module_type : module_type_body -> module_type_body

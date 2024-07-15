@@ -8,9 +8,5 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-let drop_setup () = Mltop.remove ()
-
-(* Main coqtop initialization *)
-let () =
-  drop_setup ();
-  Coqtop.(start_coq coqtop_toplevel)
+(* Main coqtop entry point *)
+let () = Coqtop.(start_coq coqtop_toplevel)

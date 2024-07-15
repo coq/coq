@@ -24,3 +24,14 @@ Inductive must_unfold@{+u *v} : Prop := cmust (_ : @id Type@{v} Type@{u}).
 Inductive actually_default_unfold@{u v} : Prop := cnodef (_ : @id Type@{v} Type@{u}).
 Inductive actually_default_unfold_check@{+u *v} : Prop
   := cnodef_check (_ : actually_default_unfold@{u v}).
+
+
+Inductive irrelevant@{*u} : Prop := .
+
+(* weak constraints help minimization *)
+Definition irrelevant_with_weak@{u} : irrelevant@{u} -> irrelevant := fun x => x.
+
+Unset Cumulativity Weak Constraints.
+Fail Definition irrelevant_without_weak@{u} : irrelevant@{u} -> irrelevant := fun x => x.
+Definition irrelevant_without_weak@{u+} : irrelevant@{u} -> irrelevant := fun x => x.
+Check irrelevant_without_weak@{_ _}.

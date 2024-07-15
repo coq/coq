@@ -1,73 +1,32 @@
-The following notations have been disabled:
-Notation "x + y" := (Nat.add x y) : nat_scope
 File "./output/activation.v", line 5, characters 0-47:
 The command has indeed failed with message:
 More than one interpretation bound to this notation, confirm with the "all"
 modifier.
-The following notations have been disabled:
-Notation "x * y" := (Nat.mul x y) : nat_scope
-Notation "x * y" := (Nat.mul x y) (in custom foo)
-The following notations have been enabled:
-Notation "x * y" := (Nat.mul x y) : nat_scope
-The following notations have been disabled:
-Notation "'exists2' x : A , p & q" := (ex2 (fun x => p) (fun x => q))
-  : type_scope
-Notation "'exists2' x , p & q" := (ex2 (fun x => p) (fun x => q))
-  : type_scope
-Notation "'exists2' ' x : A , p & q" := (ex2 (fun x => p) (fun x => q))
-  : type_scope
-Notation "'exists2' ' x , p & q" := (ex2 (fun x => p) (fun x => q))
-  : type_scope
-The following notations have been disabled:
-Notation "x <= y <= z" := (and (le x y) (le y z)) : nat_scope
-Notation "x <= y < z" := (and (le x y) (lt y z)) : nat_scope
-Notation "n <= m" := (le n m) : nat_scope
-Notation "x < y <= z" := (and (lt x y) (le y z)) : nat_scope
-The following notations have been disabled:
-Notation "x >= y" := (ge x y) : nat_scope
-Notation "x > y" := (gt x y) : nat_scope
-Notation "x < y < z" := (and (lt x y) (lt y z)) : nat_scope
-Notation "x < y" := (lt x y) : nat_scope
-Notation "x - y" := (Nat.sub x y) : nat_scope
-Notation "x * y" := (Nat.mul x y) : nat_scope
 File "./output/activation.v", line 12, characters 0-22:
 The command has indeed failed with message:
 No notation provided.
-File "./output/activation.v", line 15, characters 0-24:
+File "./output/activation.v", line 16, characters 0-24:
 The command has indeed failed with message:
 Found no matching notation to enable or disable.
-The following notations have been disabled:
-Notation activation.Abbrev.f w := (S w)
-The following notations have been enabled:
-Notation activation.Abbrev.f w := (S w)
-The following notations have been disabled:
-Notation activation.Abbrev.A.a := Prop
+[no-notation-to-enable-or-disable,syntax,default]
 a
      : Type
-The following notations have been disabled:
-Notation activation.Abbrev.a := Prop
-File "./output/activation.v", line 24, characters 11-12:
+File "./output/activation.v", line 26, characters 11-12:
 The command has indeed failed with message:
 The reference a was not found in the current environment.
 Prop
      : Type
-The following notations have been enabled:
-Notation activation.Abbrev.a := Prop
-Notation activation.Abbrev.A.a := Prop
 a
      : Type
 a
      : Type
 0
      : nat
-The following notations have been disabled:
-Notation activation.Abbrev.x := 0
 x
      : bool
-The following notations have been enabled:
-Notation activation.Abbrev.x := 0
 0
      : nat
-File "./output/activation.v", line 44, characters 0-49:
+File "./output/activation.v", line 47, characters 0-49:
 The command has indeed failed with message:
 Found no matching notation to enable or disable.
+[no-notation-to-enable-or-disable,syntax,default]

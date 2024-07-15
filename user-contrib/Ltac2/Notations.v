@@ -96,6 +96,8 @@ Ltac2 Notation do := do0.
 
 Ltac2 Notation once := Control.once.
 
+Ltac2 Notation unshelve := Control.unshelve.
+
 Ltac2 progress0 tac := Control.enter (fun _ => Control.progress tac).
 
 Ltac2 Notation progress := progress0.
@@ -244,7 +246,7 @@ match cl with
 end.
 
 Ltac2 pose0 ev p :=
-  enter_h ev (fun ev (na, p) => Std.pose na p) p.
+  enter_h ev (fun _ (na, p) => Std.pose na p) p.
 
 Ltac2 Notation "pose" p(thunk(pose)) :=
   pose0 false p.
@@ -477,11 +479,11 @@ Ltac2 exact1 ev c :=
   Control.enter (fun () =>
     let c :=
       Constr.Pretype.pretype
-        (if ev then Constr.Pretype.Flags.open_constr_flags else Constr.Pretype.Flags.constr_flags)
+        (if ev then Constr.Pretype.Flags.open_constr_flags_with_tc else Constr.Pretype.Flags.constr_flags)
         (Constr.Pretype.expected_oftype (Control.goal()))
         c
     in
-    Control.refine (fun _ => c)).
+    Std.exact_no_check c).
 
 Ltac2 Notation "exact" c(preterm) := exact1 false c.
 
@@ -570,7 +572,7 @@ Ltac2 trivial0 use dbs :=
   Std.trivial Std.Off use dbs.
 
 Ltac2 Notation "trivial"
-  use(opt(seq("using", list1(thunk(constr), ","))))
+  use(opt(seq("using", list1(reference, ","))))
   dbs(opt(seq("with", hintdb))) := trivial0 use dbs.
 
 Ltac2 Notation trivial := trivial.
@@ -581,7 +583,7 @@ Ltac2 auto0 n use dbs :=
   Std.auto Std.Off n use dbs.
 
 Ltac2 Notation "auto" n(opt(tactic(0)))
-  use(opt(seq("using", list1(thunk(constr), ","))))
+  use(opt(seq("using", list1(reference, ","))))
   dbs(opt(seq("with", hintdb))) := auto0 n use dbs.
 
 Ltac2 Notation auto := auto.
@@ -592,7 +594,7 @@ Ltac2 eauto0 n use dbs :=
   Std.eauto Std.Off n use dbs.
 
 Ltac2 Notation "eauto" n(opt(tactic(0)))
-  use(opt(seq("using", list1(thunk(constr), ","))))
+  use(opt(seq("using", list1(reference, ","))))
   dbs(opt(seq("with", hintdb))) := eauto0 n use dbs.
 
 Ltac2 Notation eauto := eauto.
@@ -608,6 +610,10 @@ Ltac2 Notation typeclasses_eauto := typeclasses_eauto.
 Ltac2 Notation "unify" x(constr) y(constr) := Std.unify x y.
 
 (** Congruence *)
+
+Ltac2 Notation "congruence" n(opt(tactic(0))) l(opt(seq("with", list1(constr)))) := Std.congruence n l.
+
+Ltac2 Notation "simple" "congruence" n(opt(tactic(0))) l(opt(seq("with", list1(constr)))) := Std.simple_congruence n l.
 
 Ltac2 f_equal0 () := ltac1:(f_equal).
 Ltac2 Notation f_equal := f_equal0 ().

@@ -71,7 +71,7 @@ val coerce_to_uconstr : Value.t -> Ltac_pretype.closed_glob_constr
 val coerce_to_closed_constr : Environ.env -> Value.t -> constr
 
 val coerce_to_evaluable_ref :
-  Environ.env -> Evd.evar_map -> Value.t -> Tacred.evaluable_global_reference
+  Environ.env -> Evd.evar_map -> Value.t -> Evaluable.t
 
 val coerce_to_constr_list : Environ.env -> Value.t -> constr list
 
@@ -88,7 +88,7 @@ val coerce_to_quantified_hypothesis : Evd.evar_map -> Value.t -> quantified_hypo
 
 val coerce_to_decl_or_quant_hyp : Evd.evar_map -> Value.t -> quantified_hypothesis
 
-val coerce_to_int_or_var_list : Value.t -> int Locus.or_var list
+val coerce_to_int_list : Value.t -> int list
 
 (** {5 Missing generic arguments} *)
 

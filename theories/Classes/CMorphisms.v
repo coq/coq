@@ -21,6 +21,8 @@ Require Export Coq.Classes.CRelationClasses.
 Generalizable Variables A eqA B C D R RA RB RC m f x y.
 Local Obligation Tactic := try solve [ simpl_crelation ].
 
+Local Arguments transitivity {A R Transitive x} y {z}.
+
 Set Universe Polymorphism.
 
 (** * Morphisms.
@@ -281,8 +283,8 @@ Section GenericInstances.
   Proof with auto.
     intros A R H B R' H0 x y z X X0 x0 y0 X1.
     assert(R x0 x0).
-    - transitivity y0... symmetry...
-    - transitivity (y x0)...
+    - eapply transitivity with y0... now apply symmetry.
+    - eapply transitivity with (y x0)...
   Qed.
 
   Unset Strict Universe Declaration.
@@ -311,8 +313,8 @@ Section GenericInstances.
   Next Obligation.
   Proof with auto.
     intros A R H x y X x0 y0 X0 X1.
-    transitivity x...
-    transitivity x0...
+    apply transitivity with x...
+    apply transitivity with x0...
   Qed.
 
   (** Proper declarations for partial applications. *)
@@ -324,7 +326,7 @@ Section GenericInstances.
   Next Obligation.
   Proof with auto.
     intros A R H x x0 y X X0.
-    transitivity y...
+    apply transitivity with y...
   Qed.
 
   Global Program 
@@ -334,7 +336,7 @@ Section GenericInstances.
   Next Obligation.
   Proof with auto.
     intros A R H x x0 y X X0.
-    transitivity x0...
+    apply transitivity with x0...
   Qed.
 
   Global Program 
@@ -344,7 +346,7 @@ Section GenericInstances.
   Next Obligation.
   Proof with auto.
     intros A R H x x0 y X X0.
-    transitivity y... symmetry...
+    apply transitivity with y... apply symmetry...
   Qed.
 
   Global Program Instance trans_sym_contra_arrow_morphism
@@ -353,7 +355,7 @@ Section GenericInstances.
   Next Obligation.
   Proof with auto.
     intros A R H x x0 y X X0.
-    transitivity x0... symmetry...
+    apply transitivity with x0... apply symmetry...
   Qed.
 
   Global Program Instance per_partial_app_type_morphism
@@ -363,10 +365,10 @@ Section GenericInstances.
   Proof with auto.
     intros A R H x x0 y X.
     split.
-    - intros ; transitivity x0...
+    - intros ; apply transitivity with x0...
     - intros.
-      transitivity y...
-      symmetry...
+      apply transitivity with y...
+      apply symmetry...
   Qed.
 
   (** Every Transitive crelation induces a morphism by "pushing" an [R x y] on the left of an [R x z] proof to get an [R y z] goal. *)
@@ -378,7 +380,7 @@ Section GenericInstances.
   Next Obligation.
   Proof with auto.
     intros A R H x y X y0 y1 e X0; destruct e.
-    transitivity y...
+    apply transitivity with y...
   Qed.
 
   (** Every Symmetric and Transitive crelation gives rise to an equivariant morphism. *)
@@ -390,9 +392,11 @@ Section GenericInstances.
   Proof with auto.
     intros A R H x y X x0 y0 X0.
     split ; intros.
-    - transitivity x0... transitivity x... symmetry...
+    - apply transitivity with x0...
+      apply transitivity with x... apply symmetry...
 
-    - transitivity y... transitivity y0... symmetry...
+    - apply transitivity with y... apply transitivity with y0...
+      apply symmetry...
   Qed.
 
   Lemma symmetric_equiv_flip `(Symmetric A R) : relation_equivalence R (flip R).
@@ -585,7 +589,8 @@ Lemma flip_arrow `(NA : Normalizes A R (flip R'''), NB : Normalizes B R' (flip R
   Normalizes (A -> B) (R ==> R') (flip (R''' ==> R'')%signatureT).
 Proof. 
   unfold Normalizes in *. intros.
-  rewrite NA, NB. firstorder. 
+  eapply transitivity; [|eapply symmetry, flip_respectful].
+  now apply respectful_morphism.
 Qed.
 
 Ltac normalizes :=
@@ -667,11 +672,11 @@ Instance PartialOrder_proper_type `(PartialOrder A eqA R) :
   Proper (eqA==>eqA==>iffT) R.
 Proof.
 intros.
-apply proper_sym_arrow_iffT_2. 1-2: auto with crelations.
+apply proper_sym_arrow_iffT_2. 1-2: typeclasses eauto.
 intros x x' Hx y y' Hy Hr.
-transitivity x.
+apply transitivity with x.
 - generalize (partial_order_equivalence x x'); compute; intuition.
-- transitivity y; auto.
+- apply transitivity with y; auto.
   generalize (partial_order_equivalence y y'); compute; intuition.
 Qed.
 
@@ -689,7 +694,8 @@ split; compute.
   + intro Hxz.
     apply Hxy'.
     apply partial_order_antisym; auto.
-    rewrite Hxz. auto.
+    apply transitivity with z; [assumption|].
+    now apply H.
 Qed.
 
 (** From a [StrictOrder] to the corresponding [PartialOrder]:
@@ -701,12 +707,13 @@ Lemma StrictOrder_PreOrder
  PreOrder (relation_disjunction R eqA).
 Proof.
 split.
-- intros x. right. reflexivity.
+- intros x. right. apply reflexivity.
 - intros x y z [Hxy|Hxy] [Hyz|Hyz].
-  + left. transitivity y; auto.
-  + left. rewrite <- Hyz; auto.
-  + left. rewrite Hxy; auto.
-  + right. transitivity y; auto.
+  + left. apply transitivity with y; auto.
+  + left. eapply H1; try eassumption. apply reflexivity.
+    now apply symmetry.
+  + left. eapply H1; [eassumption|apply reflexivity|eassumption].
+  + right. apply transitivity with y; auto.
 Qed.
 
 #[global]
@@ -717,9 +724,11 @@ Lemma StrictOrder_PartialOrder
   `(Equivalence A eqA, StrictOrder A R, Proper _ (eqA==>eqA==>iffT) R) :
   PartialOrder eqA (relation_disjunction R eqA).
 Proof.
-intros. intros x y. compute. intuition auto with crelations.
-elim (StrictOrder_Irreflexive x).
-transitivity y; auto.
+intros. intros x y. compute. intuition auto.
+- right; now apply symmetry.
+- elim (StrictOrder_Irreflexive x).
+  eapply transitivity with y; eauto.
+- now apply symmetry.
 Qed.
 
 #[global]
@@ -729,3 +738,14 @@ Hint Extern 4 (StrictOrder (relation_conjunction _ _)) =>
 #[global]
 Hint Extern 4 (PartialOrder _ (relation_disjunction _ _)) => 
   class_apply StrictOrder_PartialOrder : typeclass_instances.
+
+(* Register bindings for the generalized rewriting tactic *)
+
+Register forall_relation as rewrite.type.forall_relation.
+Register pointwise_relation as rewrite.type.pointwise_relation.
+Register respectful as rewrite.type.respectful.
+Register forall_def as rewrite.type.forall_def.
+Register do_subrelation as rewrite.type.do_subrelation.
+Register apply_subrelation as rewrite.type.apply_subrelation.
+Register Proper as rewrite.type.Proper.
+Register ProperProxy as rewrite.type.ProperProxy.

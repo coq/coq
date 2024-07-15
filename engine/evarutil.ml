@@ -18,6 +18,8 @@ open Evd
 open Termops
 open Namegen
 
+module ERelevance = EConstr.ERelevance
+
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
@@ -34,12 +36,13 @@ let create_clos_infos env sigma flags =
 let finalize ?abort_on_undefined_evars sigma f =
   let sigma = minimize_universes sigma in
   let uvars = ref Univ.Level.Set.empty in
-  let v = f (fun c ->
-      let _, varsc = EConstr.universes_of_constr sigma c in
-      let c = EConstr.to_constr ?abort_on_undefined_evars sigma c in
-      uvars := Univ.Level.Set.union !uvars varsc;
-      c)
+  let nf_constr c =
+    let _, varsc = EConstr.universes_of_constr sigma c in
+    let c = EConstr.to_constr ?abort_on_undefined_evars sigma c in
+    uvars := Univ.Level.Set.union !uvars varsc;
+    c
   in
+  let v = f nf_constr in
   let sigma = restrict_universe_context sigma !uvars in
   sigma, v
 
@@ -64,12 +67,7 @@ let kind_of_term_upto = EConstr.kind_upto
 let nf_evars_universes sigma t = EConstr.to_constr ~abort_on_undefined_evars:false sigma (EConstr.of_constr t)
 let whd_evar = EConstr.whd_evar
 
-let nf_evar sigma c =
-  let lsubst = Evd.universe_subst sigma in
-  let evar_value ev = Evd.existential_opt_value0 sigma ev in
-  let univ_value l = UnivFlex.normalize_univ_variable lsubst l in
-  let qvar_value q = UState.nf_qvar (Evd.evar_universe_context sigma) q in
-  EConstr.of_constr @@ UnivSubst.nf_evars_and_universes_opt_subst evar_value qvar_value univ_value (EConstr.Unsafe.to_constr c)
+let nf_evar = Evd.MiniEConstr.nf_evar
 
 let j_nf_evar sigma j =
   { uj_val = nf_evar sigma j.uj_val;
@@ -83,10 +81,11 @@ let nf_relevance sigma r =
   UState.nf_relevance (Evd.evar_universe_context sigma) r
 
 let nf_named_context_evar sigma ctx =
-  Context.Named.map (nf_evars_universes sigma) ctx
+  Context.Named.map_with_relevance (nf_relevance sigma) (nf_evars_universes sigma) ctx
 
 let nf_rel_context_evar sigma ctx =
-  Context.Rel.map (nf_evar sigma) ctx
+  let nf_relevance r = ERelevance.make (ERelevance.kind sigma r) in
+  Context.Rel.map_with_relevance nf_relevance (nf_evar sigma) ctx
 
 let nf_env_evar sigma env =
   let nc' = nf_named_context_evar sigma (Environ.named_context env) in
@@ -125,23 +124,6 @@ let is_ground_env evd env =
     | _ -> true in
   List.for_all is_ground_rel_decl (rel_context env) &&
   List.for_all is_ground_named_decl (named_context env)
-
-(* Return the head evar if any *)
-
-exception NoHeadEvar
-
-let head_evar sigma c =
-  (* FIXME: this breaks if using evar-insensitive code *)
-  let c = EConstr.Unsafe.to_constr c in
-  let rec hrec c = match kind c with
-    | Evar (evk,_)   -> evk
-    | Case (_, _, _, _, _, c, _) -> hrec c
-    | App (c,_)      -> hrec c
-    | Cast (c,_,_)   -> hrec c
-    | Proj (_, _, c)    -> hrec c
-    | _              -> raise NoHeadEvar
-  in
-  hrec c
 
 (* Expand head evar if any (currently consider only applications but I
    guess it should consider Case too) *)
@@ -411,14 +393,13 @@ let next_evar_name sigma naming = match naming with
 | IntroAnonymous -> None
 | IntroIdentifier id -> Some id
 | IntroFresh id ->
-  let has_name id = try let _ = Evd.evar_key id sigma in true with Not_found -> false in
-  let id = Namegen.next_ident_away_from id has_name in
+  let id = Nameops.Fresh.next id (Evd.evar_names sigma) in
   Some id
 
 (* [new_evar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
 let new_evar ?src ?filter ?relevance ?abstract_arguments ?candidates ?(naming = IntroAnonymous) ?typeclass_candidate
-    ?principal ?hypnaming env evd typ =
+    ?hypnaming env evd typ =
   let name = next_evar_name evd naming in
   let hypnaming = match hypnaming with
   | Some n -> n
@@ -433,16 +414,16 @@ let new_evar ?src ?filter ?relevance ?abstract_arguments ?candidates ?(naming = 
     | Some filter -> Filter.filter_slist filter instance in
   let relevance = match relevance with
   | Some r -> r
-  | None -> Sorts.Relevant (* FIXME: relevant_of_type not defined yet *)
+  | None -> ERelevance.relevant (* FIXME: relevant_of_type not defined yet *)
   in
   let (evd, evk) = new_pure_evar sign evd typ' ?src ?filter ~relevance ?abstract_arguments ?candidates ?name
-    ?typeclass_candidate ?principal in
+    ?typeclass_candidate in
   (evd, EConstr.mkEvar (evk, instance))
 
-let new_type_evar ?src ?filter ?naming ?principal ?hypnaming env evd rigid =
+let new_type_evar ?src ?filter ?naming ?hypnaming env evd rigid =
   let (evd', s) = new_sort_variable rigid evd in
-  let relevance = EConstr.ESorts.relevance_of_sort evd s in
-  let (evd', e) = new_evar env evd' ?src ?filter ~relevance ?naming ~typeclass_candidate:false ?principal ?hypnaming (EConstr.mkSort s) in
+  let relevance = EConstr.ESorts.relevance_of_sort s in
+  let (evd', e) = new_evar env evd' ?src ?filter ~relevance ?naming ~typeclass_candidate:false ?hypnaming (EConstr.mkSort s) in
   evd', (e, s)
 
 let new_Type ?(rigid=Evd.univ_flexible) evd =
@@ -704,7 +685,7 @@ let cached_evar_of_hyp cache sigma decl accu = match cache with
   in
   let (decl', evs) = !r in
   let evs =
-    if NamedDecl.equal (==) decl decl' then snd !r
+    if NamedDecl.equal (==) (==) decl decl' then snd !r
     else
       let fold c acc =
         let evs = undefined_evars_of_term sigma c in

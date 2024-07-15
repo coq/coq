@@ -55,7 +55,7 @@ Section machine.
 End machine.
 Notation "'ExX' : A , P" := (ExistsX (A := A) P) (at level 89) : PropX_scope.
 Bind Scope PropX_scope with PropX propX.
-Variables pc state : Type.
+Parameters pc state : Type.
 
 Inductive subs : list Type -> Type :=
 | SNil : subs nil
@@ -72,7 +72,7 @@ Fixpoint Substs G (s : subs G) : propX pc state G -> PropX pc state :=
     | SNil => fun p => p
     | SCons _ _ f s' => fun p => Substs s' (subst p f)
   end.
-Variable specs : codeSpec pc state.
+Parameter specs : codeSpec pc state.
 
 Lemma simplify_fwd_ExistsX : forall G A s (p : propX pc state (A :: G)),
                                interp specs (Substs s (ExX  : A, p))

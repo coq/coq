@@ -1,2 +1,2 @@
-Set Warnings "+local-declaration".
+Set Warnings "+declaration-outside-section".
 Fail Let foo : True.

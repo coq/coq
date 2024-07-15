@@ -29,26 +29,35 @@ let interp_search_restriction = function
   | SearchOutside l -> SearchOutside (List.map global_module l)
   | SearchInside l -> SearchInside (List.map global_module l)
 
-let kind_searcher = Decls.(function
+let kind_searcher env = Decls.(function
   (* Kinds referring to the keyword introducing the object *)
   | IsAssumption _
-  | IsDefinition (Definition | Example | Fixpoint | CoFixpoint | Method | StructureComponent | Let)
+  | IsDefinition (Definition | Example | Fixpoint | CoFixpoint | Method | StructureComponent | Let | LetContext)
   | IsProof _
-  | IsPrimitive as k -> Inl k
+  | IsPrimitive
+  | IsSymbol as k -> Inl k
   (* Kinds referring to the status of the object *)
   | IsDefinition (Coercion | SubClass | IdentityCoercion as k') ->
     let coercions = Coercionops.coercions () in
-    Inr (fun gr -> List.exists (fun c -> GlobRef.CanOrd.equal c.Coercionops.coe_value gr &&
+    Inr (fun gr -> List.exists (fun c -> Environ.QGlobRef.equal env c.Coercionops.coe_value gr &&
                                       (k' <> SubClass && k' <> IdentityCoercion || c.Coercionops.coe_is_identity)) coercions)
   | IsDefinition CanonicalStructure ->
     let canonproj = Structures.CSTable.entries () in
-    Inr (fun gr -> List.exists (fun c -> GlobRef.CanOrd.equal c.Structures.CSTable.solution gr) canonproj)
+    Inr (fun gr -> List.exists (fun c -> Environ.QGlobRef.equal env c.Structures.CSTable.solution gr) canonproj)
   | IsDefinition Scheme ->
     let schemes = DeclareScheme.all_schemes () in
-    Inr (fun gr -> Indset.exists (fun c -> GlobRef.CanOrd.equal (GlobRef.IndRef c) gr) schemes)
+    let schemes = lazy begin
+      Indmap.fold (fun _ schemes acc ->
+          CString.Map.fold (fun _ c acc -> Cset.add c acc) schemes acc)
+        schemes Cset.empty
+    end
+    in
+    Inr (function
+        | ConstRef c -> Cset.mem c (Lazy.force schemes)
+        | _ -> false)
   | IsDefinition Instance ->
     let instances = Typeclasses.all_instances () in
-    Inr (fun gr -> List.exists (fun c -> GlobRef.CanOrd.equal c.Typeclasses.is_impl gr) instances))
+    Inr (fun gr -> List.exists (fun c -> Environ.QGlobRef.equal env c.Typeclasses.is_impl gr) instances))
 
 let interp_constr_pattern env sigma ?(expected_type=Pretyping.WithoutTypeConstraint) c =
   let c = Constrintern.intern_gen expected_type ~pattern_mode:true env sigma c in
@@ -82,7 +91,7 @@ let interp_search_item env sigma =
           ~head:false (fun _ -> true) s sc in
       GlobSearchSubPattern (where,head,Pattern.PRef ref)
   | SearchKind k ->
-     match kind_searcher k with
+     match kind_searcher env k with
      | Inl k -> GlobSearchKind k
      | Inr f -> GlobSearchFilter f
 
@@ -126,7 +135,7 @@ let interp_search env sigma s r =
         let impargs = List.map binding_kind_of_status impargs in
         if List.length impls > 1 ||
            List.exists Glob_term.(function Explicit -> false | MaxImplicit | NonMaxImplicit -> true)
-             (List.skipn_at_least (Termops.nb_prod_modulo_zeta sigma (EConstr.of_constr c)) impargs)
+             (List.skipn_at_best (Termops.nb_prod_modulo_zeta sigma (EConstr.of_constr c)) impargs)
           then warnlist := pr :: !warnlist;
         let pc = pr_ltype_env env sigma ~impargs c in
         hov 2 (pr ++ str":" ++ spc () ++ pc)

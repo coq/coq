@@ -55,15 +55,15 @@ type internalization_env = var_internalization_data Id.Map.t
 
 val empty_internalization_env : internalization_env
 
-val compute_internalization_data : env -> evar_map -> Id.t -> var_internalization_type ->
+val compute_internalization_data : env -> evar_map -> ?silent:bool -> Id.t -> var_internalization_type ->
   types -> Impargs.manual_implicits -> var_internalization_data
 
-val compute_internalization_env : env -> evar_map -> ?impls:internalization_env -> var_internalization_type ->
+val compute_internalization_env : env -> evar_map -> ?impls:internalization_env -> ?force:Id.Set.t list -> var_internalization_type ->
   Id.t list -> types list -> Impargs.manual_implicits list ->
   internalization_env
 
-val extend_internalization_data :
-  var_internalization_data -> Impargs.implicit_status -> scope_name list -> var_internalization_data
+val implicits_of_decl_in_internalization_env :
+  Id.t -> internalization_env -> Impargs.implicit_status list
 
 type ltac_sign = {
   ltac_vars : Id.Set.t;
@@ -166,17 +166,17 @@ val interp_binder  : env -> evar_map -> Name.t -> constr_expr ->
 
 val interp_binder_evars : env -> evar_map -> Name.t -> constr_expr -> evar_map * types
 
-(** Interpret contexts: returns extended env and context *)
+(** Interpret contexts: returns extended env and context. *)
 
 val interp_context_evars :
-  ?program_mode:bool -> ?impl_env:internalization_env ->
+  ?program_mode:bool -> ?unconstrained_sorts:bool -> ?impl_env:internalization_env ->
   env -> evar_map -> local_binder_expr list ->
   evar_map * (internalization_env * ((env * rel_context) * Impargs.manual_implicits))
 
-(** Interpret named contexts: returns context *)
+(** Interpret named contexts *)
 
 val interp_named_context_evars :
-  ?program_mode:bool -> ?impl_env:internalization_env ->
+  ?program_mode:bool -> ?unconstrained_sorts:bool -> ?impl_env:internalization_env -> ?autoimp_enable:bool ->
   env -> evar_map -> local_binder_expr list ->
   evar_map * (internalization_env * ((env * named_context) * Impargs.manual_implicits))
 
@@ -225,3 +225,8 @@ val interp_cumul_univ_decl_opt : Environ.env -> cumul_univ_decl_expr option ->
   Evd.evar_map * UState.universe_decl * Entries.variance_entry
 (** BEWARE the variance entry needs to be adjusted by
    [ComInductive.variance_of_entry] if the instance is extensible. *)
+
+val interp_mutual_univ_decl_opt : Environ.env -> universe_decl_expr option list ->
+  Evd.evar_map * UState.universe_decl
+(** Check that all defined udecls of a list of udecls associated to a mutual definition
+    are the same and interpret this common udecl *)

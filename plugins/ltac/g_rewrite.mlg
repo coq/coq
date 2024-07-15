@@ -66,35 +66,27 @@ END
 
 {
 
-type raw_strategy = (constr_expr, Genredexpr.raw_red_expr) strategy_ast
-type glob_strategy = (glob_constr_and_expr, Genredexpr.glob_red_expr) strategy_ast
-
-let interp_strategy ist env sigma s =
-  let interp_redexpr r = fun env sigma -> Tacinterp.interp_red_expr ist env sigma r in
-  let interp_constr c = (fst c, fun env sigma -> Tacinterp.interp_open_constr ist env sigma c) in
-  let s = map_strategy interp_constr interp_redexpr s in
-  strategy_of_ast s
-
-let glob_strategy ist s = map_strategy (Tacintern.intern_constr ist) (Tacintern.intern_red_expr ist) s
-let subst_strategy s str = str
+let subst_strategy sub = map_strategy
+    (Tacsubst.subst_glob_constr_and_expr sub)
+    (Tacsubst.subst_glob_red_expr sub)
+    (fun x -> x)
 
 let pr_strategy _ _ _ (s : strategy) = Pp.str "<strategy>"
-let pr_raw_strategy env sigma prc prlc _ (s : raw_strategy) =
-  let prr = Pptactic.pr_red_expr env sigma (prc, prlc, Pputils.pr_or_by_notation Libnames.pr_qualid, prc) in
-  Rewrite.pr_strategy (prc env sigma) prr s
-let pr_glob_strategy env sigma prc prlc _ (s : glob_strategy) =
-  let prpat env sigma (_,c,_) = prc env sigma c in
+let pr_raw_strategy env sigma prc prlc _ (s : Tacexpr.raw_strategy) =
+  let prr = Pptactic.pr_red_expr env sigma (prc, prlc, Pputils.pr_or_by_notation Libnames.pr_qualid, prc,Pputils.pr_or_var Pp.int) in
+  Rewrite.pr_strategy (prc env sigma) prr Pputils.pr_lident s
+let pr_glob_strategy env sigma prc prlc _ (s : Tacexpr.glob_strategy) =
   let prcst = Pputils.pr_or_var Pptactic.(pr_and_short_name (pr_evaluable_reference_env env)) in
-  let prr = Pptactic.pr_red_expr env sigma (prc, prlc, prcst, prpat) in
-  Rewrite.pr_strategy (prc env sigma) prr s
+  let prr = Pptactic.pr_red_expr env sigma (prc, prlc, prcst, prc, Pputils.pr_or_var Pp.int) in
+  Rewrite.pr_strategy (prc env sigma) prr Id.print s
 
 }
 
 ARGUMENT EXTEND rewstrategy
     PRINTED BY { pr_strategy }
 
-    INTERPRETED BY { interp_strategy }
-    GLOBALIZED BY { glob_strategy }
+    INTERPRETED BY { Tacinterp.interp_strategy }
+    GLOBALIZED BY { Tacintern.intern_strategy }
     SUBSTITUTED BY { subst_strategy }
 
     RAW_PRINTED BY { pr_raw_strategy env sigma }
@@ -104,6 +96,11 @@ END
 GRAMMAR EXTEND Gram
   GLOBAL: rewstrategy;
   rewstrategy:
+    [ NONA
+      [ IDENT "fix"; id = identref; ":="; s = rewstrategy1 -> { StratFix (id, s) }
+      | h = ne_rewstrategy1_list_sep_semicolon -> { h } ] ]
+  ;
+  ne_rewstrategy1_list_sep_semicolon:
     [ LEFTA
       [ h = SELF; ";"; h' = rewstrategy1 -> { StratBinary (Compose, h, h') }
       | h = rewstrategy1 -> { h } ] ]

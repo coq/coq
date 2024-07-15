@@ -22,6 +22,11 @@ if [ -n "${GITLAB_CI}" ];
 then
     # Gitlab build, Coq installed into `_install_ci`
     export COQBIN="$PWD/_install_ci/bin"
+
+    # Where we install external binaries and ocaml libraries
+    # also generally used for dune install --prefix so needs to match coq's expected user-contrib path
+    CI_INSTALL_DIR="$PWD/_install_ci"
+
     export CI_BRANCH="$CI_COMMIT_REF_NAME"
     if [[ ${CI_BRANCH#pr-} =~ ^[0-9]*$ ]]
     then
@@ -34,6 +39,9 @@ then
     export COQBIN="$PWD/_build/install/default/bin"
     export COQLIB="$PWD/_build/install/default/lib/coq"
     export COQCORELIB="$PWD/_build/install/default/lib/coq-core"
+
+    CI_INSTALL_DIR="$PWD/_build/install/default/"
+
     CI_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
     export CI_BRANCH
 fi
@@ -47,9 +55,6 @@ ls -l "$COQBIN"
 
 # Where we download and build external developments
 CI_BUILD_DIR="$PWD/_build_ci"
-
-# Where we install external binaries and ocaml libraries
-CI_INSTALL_DIR="$PWD/_install_ci"
 
 ls -l "$CI_BUILD_DIR" || true
 
@@ -89,32 +94,66 @@ for overlay in "${ci_dir}"/user-overlays/*.sh; do
 done
 set -x
 
-# [git_download project] will download [project] and unpack it
-# in [$CI_BUILD_DIR/project] if the folder does not exist already;
-# if it does, it will do nothing except print a warning (this can be
-# useful when building locally).
-# Note: when there is an overlay, $WITH_SUBMODULES is set to 1 or $CI is unset or empty
-# (local build), it uses git clone to perform the download.
-# If $CI is nonempty it then removes the .git (to reduce artifact size)
+# [git_download <project> [<destination>]] will download <project> and
+# unpack it in <destination> (if given; default:
+# $CI_BUILD_DIR/<project>) if the folder does not exist already; if it
+# does, it will do nothing except print a warning (this can be useful
+# when building locally).
+# Note: when there is an overlay, $WITH_SUBMODULES is set to 1 or $CI
+# is unset or empty (local build), it uses git clone to perform the
+# download.
 git_download()
 {
   local project=$1
-  local dest="$CI_BUILD_DIR/$project"
+  local dest="${2:-$CI_BUILD_DIR/$project}"
 
   local giturl_var="${project}_CI_GITURL"
   local giturl="${!giturl_var}"
   local ref_var="${project}_CI_REF"
   local ref="${!ref_var}"
+  local parent_project_var="${project}_CI_PARENT_PROJECT"
+  local parent_project="${!parent_project_var}"
+  local submodule_folder_var="${project}_CI_SUBMODULE_FOLDER"
+  local submodule_folder="${!submodule_folder_var}"
 
   local ov_url=${overlays[${project}_URL]}
   local ov_ref=${overlays[${project}_REF]}
 
+  local dest_prefix="$(dirname "$dest")/"
+  if [ "${CI}${USE_CI_DIRECTORY_STRUCTURE}" = "" ]; then
+    # we can reuse the parent project download when not on CI
+    local parent_project_dest="$CI_BUILD_DIR/$parent_project"
+    # we use relative symlinks so they are relocatable
+    local parent_project_relative_dest="${parent_project_dest#$dest_prefix}"
+  else
+    # on CI, we need to ensure that there's no overlap in directory tree
+    # between sibling jobs, since otherwise they will scribble over
+    # each others .v timestamps and result in duplicated builds
+    local parent_project_dest="${dest}-PARENT-${parent_project}"
+    # we use relative symlinks so they are relocatable
+    local parent_project_relative_dest="${parent_project_dest#$dest_prefix}"
+  fi
+
   if [ -d "$dest" ]; then
     echo "Warning: download and unpacking of $project skipped because $dest already exists."
-  elif [[ $ov_url ]] || [ "$WITH_SUBMODULES" = "1" ] || [ "$CI" = "" ]; then
-    git clone "$giturl" "$dest"
-    pushd "$dest"
-    git checkout "$ref"
+  elif [[ $ov_url ]] || [ "$WITH_SUBMODULES" = "1" ] || [ "$CI" = "" ] || [ -n "${parent_project}" ]; then
+    if [ -n "${parent_project}" ]; then
+      # if there is a parent project, we first download the parent
+      # project then symlink the submodule_folder to dest; this allows
+      # project CI scripts to be transparent w.r.t. whether or not the
+      # project is cloned from a submodule / submodule_folder.
+      if [ ! -d "${parent_project_dest}" ]; then
+        WITH_SUBMODULES=1 git_download "${parent_project}" "${parent_project_dest}"
+      fi
+      # now we can create the symlinks
+      ln -s "${parent_project_relative_dest}/${submodule_folder}" "$dest"
+      pushd "$dest"
+      ref="$(git rev-parse HEAD)"
+    else
+      git clone "$giturl" "$dest"
+      pushd "$dest"
+      git checkout "$ref"
+    fi
     git log -n 1
     if [[ $ov_url ]]; then
         # In CI we merge into the upstream branch to stay synchronized
@@ -135,9 +174,6 @@ git_download()
     fi
     if [ "$WITH_SUBMODULES" = 1 ]; then
         git submodule update --init --recursive
-    fi
-    if [ "$CI" ]; then
-        rm -rf .git
     fi
     popd
   else # When possible, we download tarballs to reduce bandwidth and latency

@@ -163,7 +163,7 @@ let rec apply_stack a stk v =
 let apply_whd k whd =
   let v = val_of_rel k in
   match whd with
-  | Vprod _ | Vconst _ | Vblock _ | Vint64 _ | Vfloat64 _ | Varray _ ->
+  | Vprod _ | Vconst _ | Vblock _ | Vint64 _ | Vfloat64 _ | Vstring _ | Varray _ ->
      assert false
   | Vfun f -> reduce_fun k f
   | Vfix(f, None) ->

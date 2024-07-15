@@ -3,43 +3,6 @@
 Ltac2
 =====
 
-The |Ltac| tactic language is probably one of the ingredients of the success of
-Coq, yet it is at the same time its Achilles' heel. Indeed, |Ltac|:
-
-- has often unclear semantics
-- is very non-uniform due to organic growth
-- lacks expressivity (data structures, combinators, types, ...)
-- is slow
-- is error-prone and fragile
-- has an intricate implementation
-
-Following the need of users who are developing huge projects relying
-critically on Ltac, we believe that we should offer a proper modern language
-that features at least the following:
-
-- at least informal, predictable semantics
-- a type system
-- standard programming facilities (e.g., datatypes)
-
-This new language, called Ltac2, is described in this chapter. It is still
-experimental but we nonetheless encourage users to start testing it,
-especially wherever an advanced tactic language is needed. The previous
-implementation of Ltac, described in the previous chapter, will be referred to
-as Ltac1.
-
-Current limitations include:
-
-- There are a number of tactics that are not yet supported in Ltac2 because
-  the interface OCaml and/or Ltac2 notations haven't been written.  See
-  :ref:`defining_tactics`.
-
-- Missing usability features such as:
-
-  - Printing functions are limited and awkward to use.  Only a few data types are
-    printable.
-
-- Error messages may be cryptic.
-
 .. _ltac2_design:
 
 General design
@@ -47,8 +10,8 @@ General design
 
 There are various alternatives to Ltac1, such as Mtac or Rtac for instance.
 While those alternatives can be quite different from Ltac1, we designed
-Ltac2 to be as close as reasonably possible to Ltac1, while fixing the
-aforementioned defects.
+Ltac2 to be as close as reasonably possible to Ltac1, while fixing its
+:ref:`defects <ltac_defects>`.
 
 In particular, Ltac2 is:
 
@@ -192,6 +155,28 @@ One can define new types with the following commands.
    Records are product types with named fields and eliminated by projection.
    Likewise they can be recursive if the `rec` flag is set.
 
+.. attr:: abstract
+   :name: abstract
+
+   Types declared with this attribute are made abstract at the end of
+   the current module. This makes it possible to enforce invariants.
+
+   .. example::
+
+      .. coqtop:: in
+
+         Module PositiveInt.
+           #[abstract] Ltac2 Type t := int.
+
+           Ltac2 make (x:int) : t := if Int.le 0 x then x else Control.throw (Invalid_argument None).
+           Ltac2 get (x:t) : int := x.
+         End PositiveInt.
+
+      .. coqtop:: all
+
+         Ltac2 Eval PositiveInt.get (PositiveInt.make 3).
+         Fail Ltac2 Eval PositiveInt.get (PositiveInt.make -1).
+
 .. cmd:: Ltac2 @ external @ident : @ltac2_type := @string__plugin @string__function
    :name: Ltac2 external
 
@@ -230,7 +215,7 @@ user to bind a variable and match on it at the same time, in the usual ML style.
 
 There is dedicated syntax for list and array literals.
 
-.. insertprodn ltac2_expr ltac2_tactic_atom
+.. insertprodn ltac2_expr ltac2_atom
 
 .. prodn::
    ltac2_expr ::= @ltac2_expr5 ; @ltac2_expr
@@ -254,12 +239,12 @@ There is dedicated syntax for list and array literals.
    | [ {*; @ltac2_expr5 } ]
    | %{ @ltac2_expr0 with {? {+; @tac2rec_fieldexpr } {? ; } } %}
    | %{ {? {+; @tac2rec_fieldexpr } {? ; } } %}
-   | @ltac2_tactic_atom
+   | @ltac2_atom
    tac2rec_fieldpats ::= @tac2rec_fieldpat ; {? @tac2rec_fieldpats }
    | @tac2rec_fieldpat ;
    | @tac2rec_fieldpat
    tac2rec_fieldpat ::= @qualid {? := @tac2pat1 }
-   ltac2_tactic_atom ::= @integer
+   ltac2_atom ::= @integer
    | @string
    | @qualid
    | @ @ident
@@ -318,6 +303,12 @@ Ltac2 Definitions
    value for this entry is chosen. This is useful for global flags and the like.
    The previous value of the binding can be optionally accessed using the `as`
    binding syntax.
+
+   The effect of this command is limited to the current section or module.
+   When not in a section, importing the module containing this command
+   applies the redefinition again.
+   In other words it acts according to :attr:`local` in sections and
+   :attr:`export` otherwise (but explicit locality is not supported).
 
    .. example:: Dynamic nature of mutable cells
 
@@ -1220,10 +1211,21 @@ Notations
    side (before the `:=`) defines the syntax to recognize and gives formal parameter
    names for the syntactic values.  :n:`@integer` is the level of the notation.
    When the notation is used, the values are substituted
-   into the right-hand side.  The right-hand side is typechecked when the notation is used,
-   not when it is defined.  In the following example, `x` is the formal parameter name and
+   into the right-hand side.  In the following example, `x` is the formal parameter name and
    `constr` is its :ref:`syntactic class<syntactic_classes>`.  `print` and `of_constr` are
    functions provided by Coq through `Message.v`.
+
+   .. flag:: Ltac2 Typed Notations
+
+      By default Ltac2 notations are typechecked at declaration time.
+      This assigns an expected type to notation arguments.
+
+      When a notation is declared with this flag unset, it is not
+      typechecked at declaration time and its expansion is typechecked
+      when it is used. This may allow slightly more flexible use of
+      the notation arguments at the cost of worse error messages when
+      incorrectly using the notation. It is not believed to be useful
+      in practice, please report any real use cases you find.
 
    .. todo "print" doesn't seem to pay attention to "Set Printing All"
 
@@ -1590,10 +1592,11 @@ Here is the syntax for the :n:`q_*` nonterminals:
 .. insertprodn ltac2_simple_intropattern ltac2_equality_intropattern
 
 .. prodn::
-   ltac2_simple_intropattern ::= @ltac2_naming_intropattern
-   | _
-   | @ltac2_or_and_intropattern
+   ltac2_simple_intropattern ::= @ltac2_simple_intropattern_closed {* % @term0 }
+   ltac2_simple_intropattern_closed ::= @ltac2_or_and_intropattern
    | @ltac2_equality_intropattern
+   | _
+   | @ltac2_naming_intropattern
    ltac2_naming_intropattern ::= ?@ident
    | ?$ @ident
    | ?

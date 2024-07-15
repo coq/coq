@@ -29,6 +29,14 @@ open EConstr
 
 module RelDecl = Context.Rel.Declaration
 
+type flags = {
+  poly : bool;
+  cumulative : bool;
+  template : bool option;
+  auto_prop_lowering : bool;
+  finite : Declarations.recursivity_kind;
+}
+
 (* 3b| Mutual inductive definitions *)
 
 let warn_auto_template =
@@ -59,6 +67,7 @@ let push_types env idl rl tl =
 
 type structured_one_inductive_expr = {
   ind_name : Id.t;
+  ind_arity_explicit : bool;
   ind_arity : constr_expr;
   ind_lc : (Id.t * constr_expr) list
 }
@@ -95,10 +104,15 @@ let check_all_names_different indl =
 let rec check_type_conclusion ind =
   let open Glob_term in
   match DAst.get ind with
-  | GSort (UAnonymous {rigid=UnivRigid}) ->
-    (* should have been made flexible *)
-    assert false
-  | GSort (UNamed _) -> true
+  | GSort s ->
+    (* not sure what this check is expected to be exactly *)
+    begin match s with
+      | (None, UAnonymous {rigid=UnivRigid}) ->
+        (* should have been made flexible *)
+        assert false
+      | (None, UAnonymous {rigid=UnivFlexible _}) -> false
+      | _ -> true
+    end
   | GProd (_, _, _, _, e)
   | GLetIn (_, _, _, _, e) ->
     check_type_conclusion e
@@ -107,9 +121,9 @@ let rec check_type_conclusion ind =
 let rec make_anonymous_conclusion_flexible ind =
   let open Glob_term in
   match DAst.get ind with
-  | GSort (UAnonymous {rigid=UnivRigid}) ->
-    Some (DAst.make ?loc:ind.loc (GSort (UAnonymous {rigid=UnivFlexible true})))
-  | GSort (UNamed _) -> None
+  | GSort (None, UAnonymous {rigid=UnivRigid}) ->
+    Some (DAst.make ?loc:ind.loc (GSort (None, UAnonymous {rigid=UnivFlexible true})))
+  | GSort _ -> None
   | GProd (a, b, c, d, e) -> begin match make_anonymous_conclusion_flexible e with
       | None -> None
       | Some e -> Some (DAst.make ?loc:ind.loc (GProd (a, b, c, d, e)))
@@ -120,6 +134,8 @@ let rec make_anonymous_conclusion_flexible ind =
     end
   | _ -> None
 
+type syntax_allows_template_poly = SyntaxAllowsTemplatePoly | SyntaxNoTemplatePoly
+
 let intern_ind_arity env sigma ind =
   let c = intern_gen IsType env sigma ind.ind_arity in
   let impls = Implicit_quantifiers.implicits_of_glob_constr ~with_products:true c in
@@ -127,16 +143,17 @@ let intern_ind_arity env sigma ind =
     | None -> check_type_conclusion c, c
     | Some c -> true, c
   in
-  (constr_loc ind.ind_arity, c, impls, pseudo_poly)
+  let template_syntax = if pseudo_poly then SyntaxAllowsTemplatePoly else SyntaxNoTemplatePoly in
+  (constr_loc ind.ind_arity, c, impls, template_syntax)
 
-let pretype_ind_arity env sigma (loc, c, impls, pseudo_poly) =
-  let sigma,t = understand_tcc env sigma ~expected_type:IsType c in
+let pretype_ind_arity ~unconstrained_sorts env sigma (loc, c, impls, template_syntax) =
+  let flags = { Pretyping.all_no_fail_flags with unconstrained_sorts } in
+  let sigma,t = understand_tcc ~flags env sigma ~expected_type:IsType c in
   match Reductionops.sort_of_arity env sigma t with
   | exception Reduction.NotArity ->
     user_err ?loc (str "Not an arity")
   | s ->
-    let concl = if pseudo_poly then Some s else None in
-    sigma, (t, Retyping.relevance_of_sort sigma s, concl, impls)
+    sigma, (t, Retyping.relevance_of_sort s, template_syntax, impls)
 
 (* ind_rel is the Rel for this inductive in the context without params.
    n is how many arguments there are in the constructor. *)
@@ -195,6 +212,16 @@ let compute_constructor_levels env evd sign =
           (s :: lev, EConstr.push_rel d env))
     sign ([],env))
 
+let warn_auto_prop_lowering =
+  CWarnings.create ~name:"automatic-prop-lowering" ~category:Deprecation.Version.v8_20
+    Pp.(fun na ->
+        strbrk "Automatically putting " ++ Id.print na ++ strbrk " in Prop" ++ spc() ++
+        strbrk "even though it was declared with Type." ++ fnl() ++
+        strbrk "Unset Automatic Proposition Inductives to prevent this" ++ spc() ++
+        strbrk "(it will become the default in a future version)." ++ fnl() ++
+        strbrk "If you instead put " ++ Id.print na ++ strbrk " explicitly in Prop," ++ spc() ++
+        strbrk "set Dependent Proposition Eliminators around the declaration for full backwards compatibility.")
+
 let is_flexible_sort evd s = match ESorts.kind evd s with
 | Set | Prop | SProp -> false
 | Type u | QSort (_, u) ->
@@ -202,25 +229,80 @@ let is_flexible_sort evd s = match ESorts.kind evd s with
   | Some l -> Evd.is_flexible_level evd l
   | None -> false
 
-let include_constructor_argument env evd ~ctor_sort ~inductive_sort =
-  (* We ignore the quality when comparing the sorts: it has an impact
-     on squashing in the kernel but cannot cause a universe error. *)
-  let univ_of_sort s =
-    match ESorts.kind evd s with
-    | SProp | Prop -> None
-    | Set -> Some Univ.Universe.type0
-    | Type u | QSort (_,u) -> Some u
-  in
-  match univ_of_sort ctor_sort, univ_of_sort inductive_sort with
-  | _, None ->
-    (* This function is only called when [s] is not impredicative *)
-    assert false
-  | None, Some _ -> evd
-  | Some uctor, Some uind ->
-    let mk u = ESorts.make (Sorts.sort_of_univ u) in
-    Evd.set_leq_sort env evd (mk uctor) (mk uind)
+let prop_lowering_candidates ~auto_prop_lowering evd ~arities_explicit inds =
+  let less_than_2 = function [] | [_] -> true | _ :: _ :: _ -> false in
 
-let inductive_levels env evd arities ctors =
+  (* handle automatic lowering to Prop
+     We repeatedly add information about which inductives should not be Prop
+     until no more progress can be made
+  *)
+  let is_prop_candidate_arity (raw_arity,(_,s),indices,ctors) =
+    less_than_2 ctors
+    && EConstr.isArity evd raw_arity
+    && is_flexible_sort evd s
+    && not (Evd.check_leq evd ESorts.set s)
+  in
+  let candidates = List.filter_map (fun (explicit,(_,(_,s),_,_ as ind)) ->
+      if (auto_prop_lowering || not explicit) && is_prop_candidate_arity ind
+      then Some s else None)
+      (List.combine arities_explicit inds)
+  in
+
+  let in_candidates s candidates = List.mem_f (ESorts.equal evd) s candidates in
+  let is_prop_candidate_size candidates (_,_,indices,ctors) =
+    List.for_all
+      (List.for_all (fun s -> match ESorts.kind evd s with
+           | SProp | Prop -> true
+           | Set -> false
+           | Type _ | QSort _ ->
+             not (Evd.check_leq evd ESorts.set s)
+             && in_candidates s candidates))
+      (Option.List.cons indices ctors)
+  in
+  let rec spread_nonprop candidates =
+    let (changed, candidates) = List.fold_left
+        (fun (changed, candidates as acc) (raw_arity,(_,s),indices,ctors as ind) ->
+           if is_prop_candidate_size candidates ind
+           then acc (* still a Prop candidate *)
+           else if in_candidates s candidates
+           then (true, List.remove (ESorts.equal evd) s candidates)
+           else acc)
+        (false,candidates)
+        inds
+    in
+    if changed then spread_nonprop candidates
+    else candidates
+  in
+  let candidates = spread_nonprop candidates in
+  candidates
+
+let include_constructor_argument env evd ~poly ~ctor_sort ~inductive_sort =
+  if poly then
+    (* We ignore the quality when comparing the sorts: it has an impact
+       on squashing in the kernel but cannot cause a universe error. *)
+    let univ_of_sort s =
+      match ESorts.kind evd s with
+      | SProp | Prop -> None
+      | Set -> Some Univ.Universe.type0
+      | Type u | QSort (_,u) -> Some u
+    in
+    match univ_of_sort ctor_sort, univ_of_sort inductive_sort with
+    | _, None ->
+      (* This function is only called when [s] is not impredicative *)
+      assert false
+    | None, Some _ -> evd
+    | Some uctor, Some uind ->
+      let mk u = ESorts.make (Sorts.sort_of_univ u) in
+      Evd.set_leq_sort env evd (mk uctor) (mk uind)
+  else
+    match ESorts.kind evd ctor_sort with
+    | SProp | Prop -> evd
+    | Set | Type _ | QSort _ ->
+      Evd.set_leq_sort env evd ctor_sort inductive_sort
+
+type default_dep_elim = DeclareInd.default_dep_elim = DefaultElim | PropButDepElim
+
+let inductive_levels ~auto_prop_lowering env evd ~poly ~indnames ~arities_explicit arities ctors =
   let inds = List.map2 (fun x ctors ->
       let ctx, s = Reductionops.dest_arity env evd x in
       x, (ctx, s), List.map (compute_constructor_levels env evd) ctors)
@@ -234,7 +316,7 @@ let inductive_levels env evd arities ctors =
   let evd = List.fold_left (fun evd (raw_arity,(_,s),ctors) ->
       if less_than_2 ctors || is_impredicative_sort evd s then evd
       else (* >=2 constructors is like having a bool argument *)
-        include_constructor_argument env evd ~ctor_sort:ESorts.set ~inductive_sort:s)
+        include_constructor_argument env evd ~poly ~ctor_sort:ESorts.set ~inductive_sort:s)
       evd inds
   in
   (* If indices_matter, the index telescope acts like an extra
@@ -248,41 +330,8 @@ let inductive_levels env evd arities ctors =
         (raw_arity,arity,indices,ctors))
       inds
   in
-  (* handle automatic lowering to Prop
-     We repeatedly add information about which inductives should not be Prop
-     until no more progress can be made
-  *)
-  let in_candidates evd s candidates = List.mem_f (ESorts.equal evd) s candidates in
-  let is_prop_candidate evd candidates (raw_arity,(_,s),indices,ctors) =
-    less_than_2 ctors
-    && EConstr.isArity evd raw_arity
-    && is_flexible_sort evd s
-    && not (Evd.check_leq evd ESorts.set s)
-    && List.for_all
-      (List.for_all (fun s -> match ESorts.kind evd s with
-           | SProp | Prop -> true
-           | Set -> false
-           | Type _ | QSort _ ->
-             not (Evd.check_leq evd ESorts.set s)
-             && in_candidates evd s candidates))
-      (Option.List.cons indices ctors)
-  in
-  let rec spread_nonprop evd candidates =
-    let (changed, candidates) = List.fold_left
-        (fun (changed, candidates as acc) (raw_arity,(_,s),indices,ctors as ind) ->
-           if is_prop_candidate evd candidates ind
-           then acc (* still a Prop candidate *)
-           else if in_candidates evd s candidates
-           then (true, List.remove (ESorts.equal evd) s candidates)
-           else acc)
-        (false,candidates)
-        inds
-    in
-    if changed then spread_nonprop evd candidates
-    else evd, candidates
-  in
-  let candidates = List.map (fun (_,(_,s),_,_) -> s) inds in
-  let evd, candidates = spread_nonprop evd candidates in
+
+  let candidates = prop_lowering_candidates ~auto_prop_lowering evd ~arities_explicit inds in
   (* Do the lowering. We forget about the generated universe for the
      lowered inductive and rely on universe restriction to get rid of
      it.
@@ -294,27 +343,33 @@ let inductive_levels env evd arities ctors =
      as "Type" doesn't produce a qvar.
 
      Perhaps someday we can stop lowering these explicit ": Type". *)
-  let inds = List.map (fun (raw_arity,(ctx,s),indices,ctors as ind) ->
-      if in_candidates evd s candidates then
-        (mkArity (ctx, ESorts.prop),(ctx,ESorts.prop),indices,ctors)
-      else ind)
+  let inds = List.map3 (fun na explicit (raw_arity,(ctx,s),indices,ctors) ->
+      if List.mem_f (ESorts.equal evd) s candidates then
+        (* NB: is_prop_candidate requires is_flexible_sort
+           so in this branch we know s <> Prop *)
+        let () = if explicit then warn_auto_prop_lowering na in
+        ((PropButDepElim, mkArity (ctx, ESorts.prop)),ESorts.prop,indices,ctors)
+      else ((DefaultElim, raw_arity), s, indices, ctors))
+      indnames
+      arities_explicit
       inds
   in
+
   (* Add constraints from constructor arguments and indices.
      We must do this after Prop lowering as otherwise we risk unifying sorts
      eg on "Box (A:Type)" we risk unifying the parameter sort and the output sort
      then ESorts.equal would make us believe that the constructor argument is a lowering candidate.
   *)
-  let evd = List.fold_left (fun evd (_,(_,s),indices,ctors) ->
+  let evd = List.fold_left (fun evd (_,s,indices,ctors) ->
       if is_impredicative_sort evd s then evd
       else List.fold_left
           (List.fold_left (fun evd ctor_sort ->
-               include_constructor_argument env evd ~ctor_sort ~inductive_sort:s))
+               include_constructor_argument env evd ~poly ~ctor_sort ~inductive_sort:s))
           evd (Option.List.cons indices ctors))
       evd inds
   in
   let arities = List.map (fun (arity,_,_,_) -> arity) inds in
-  evd, arities
+  evd, List.split arities
 
 (** Template poly ***)
 
@@ -323,6 +378,16 @@ let check_named {CAst.loc;v=na} = match na with
 | Anonymous ->
   let msg = str "Parameters must be named." in
   user_err ?loc  msg
+
+let get_arity c =
+  let decls, c = Term.decompose_prod_decls c in
+  match Constr.kind c with
+  | Sort (Type u) ->
+    begin match Univ.Universe.level u with
+    | Some l -> Some (decls, l)
+    | None -> None
+    end
+  | _ -> None
 
 (* Returns the list [x_1, ..., x_n] of levels contributing to template
    polymorphism. The elements x_k is None if the k-th parameter
@@ -334,53 +399,60 @@ let template_polymorphic_univs ~ctor_levels uctx paramsctxt u =
     let open Univ in
     Univ.Constraints.for_all (fun (l, d, r) ->
         match d with
-        | Eq -> not (Univ.Level.equal l u) && not (Univ.Level.equal r u)
-        | Lt | Le -> not (Univ.Level.equal r u))
+        | Eq | Lt -> not (Univ.Level.equal l u) && not (Univ.Level.equal r u)
+        | Le -> not (Univ.Level.equal r u))
       cstrs
   in
   let fold_params accu decl = match decl with
   | LocalAssum (_, p) ->
     let c = Term.strip_prod_decls p in
-    begin match Constr.kind c with
-    | Constr.Sort (Type u) ->
-      begin match Univ.Universe.level u with
-      | Some l -> Univ.Level.Set.add l accu
-      | None -> accu
-      end
-    | _ -> accu
+    let update = function None -> Some 0 | Some n -> Some (n + 1) in
+    begin match get_arity c with
+    | Some (_, l) -> Univ.Level.Map.update l update accu
+    | None -> accu
     end
   | LocalDef _ -> accu
   in
-  let paramslevels = List.fold_left fold_params Univ.Level.Set.empty paramsctxt in
-  let check_level l =
+  let paramslevels = List.fold_left fold_params Univ.Level.Map.empty paramsctxt in
+  let is_linear l = match Univ.Level.Map.find_opt l paramslevels with
+  | None -> false
+  | Some n -> Int.equal n 0
+  in
+  let check_level (l, n) =
+    Int.equal n 0 &&
     Univ.Level.Set.mem l (Univ.ContextSet.levels uctx) &&
-    Univ.Level.Set.mem l paramslevels &&
+    is_linear l &&
     (let () = assert (not @@ Univ.Level.is_set l) in true) &&
     unbounded_from_below l (Univ.ContextSet.constraints uctx) &&
     not (Univ.Level.Set.mem l ctor_levels)
   in
-  let univs = Univ.Universe.levels u in
-  let univs = Univ.Level.Set.filter (fun l -> check_level l) univs in
-  univs
+  let univs = Univ.Universe.repr u in
+  let univs = List.filter check_level univs in
+  List.fold_left (fun accu (l, _) -> Univ.Level.Set.add l accu) Univ.Level.Set.empty univs
 
-let template_polymorphism_candidate uctx params entry concl = match concl with
-| None -> Univ.Level.Set.empty
-| Some (Set | SProp | Prop) -> Univ.Level.Set.empty
-| Some (Type u) ->
-  let ctor_levels =
-    let add_levels c levels = Univ.Level.Set.union levels (CVars.universes_of_constr c) in
-    let param_levels =
-      List.fold_left (fun levels d -> match d with
-          | LocalAssum _ -> levels
-          | LocalDef (_,b,t) -> add_levels b (add_levels t levels))
-        Univ.Level.Set.empty params
+let template_polymorphism_candidate uctx params entry template_syntax = match template_syntax with
+| SyntaxNoTemplatePoly -> Univ.Level.Set.empty
+| SyntaxAllowsTemplatePoly ->
+  let _, concl = Term.destArity entry.mind_entry_arity in
+  match concl with
+  | Set | SProp | Prop -> Univ.Level.Set.empty
+  | Type u ->
+    let ctor_levels =
+      let add_levels c levels = Univ.Level.Set.union levels (CVars.universes_of_constr c) in
+      let fold_params levels = function
+      | LocalDef (_, b, t) -> add_levels b (add_levels t levels)
+      | LocalAssum (_, t) ->
+        match get_arity t with
+        | None -> add_levels t levels
+        | Some (decls, _) -> add_levels (Term.it_mkProd_or_LetIn Constr.mkProp decls) levels
+      in
+      let param_levels = List.fold_left fold_params Univ.Level.Set.empty params in
+      List.fold_left (fun levels c -> add_levels c levels)
+        param_levels entry.mind_entry_lc
     in
-    List.fold_left (fun levels c -> add_levels c levels)
-      param_levels entry.mind_entry_lc
-  in
-  let univs = template_polymorphic_univs ~ctor_levels uctx params u in
-  univs
-| Some (QSort _) -> assert false
+    let univs = template_polymorphic_univs ~ctor_levels uctx params u in
+    univs
+  | QSort _ -> assert false
 
 let split_universe_context subset (univs, csts) =
   let subfilter (l, _, r) =
@@ -399,14 +471,14 @@ let warn_no_template_universe =
   CWarnings.create ~name:"no-template-universe"
     (fun () -> Pp.str "This inductive type has no template universes.")
 
-let compute_template_inductive ~user_template ~env_ar_params ~ctx_params ~univ_entry entry concl =
+let compute_template_inductive ~user_template ~ctx_params ~univ_entry entry template_syntax =
 match user_template, univ_entry with
 | Some false, UState.Monomorphic_entry uctx ->
   Monomorphic_ind_entry, uctx
 | Some false, UState.Polymorphic_entry uctx ->
   Polymorphic_ind_entry uctx, Univ.ContextSet.empty
 | Some true, UState.Monomorphic_entry uctx ->
-  let template_universes = template_polymorphism_candidate uctx ctx_params entry concl in
+  let template_universes = template_polymorphism_candidate uctx ctx_params entry template_syntax in
   let template, global = split_universe_context template_universes uctx in
   let () = if Univ.Level.Set.is_empty (fst template) then warn_no_template_universe () in
   Template_ind_entry template, global
@@ -415,31 +487,13 @@ match user_template, univ_entry with
 | None, UState.Polymorphic_entry uctx ->
   Polymorphic_ind_entry uctx, Univ.ContextSet.empty
 | None, UState.Monomorphic_entry uctx ->
-  (* Heuristic: the user has not written Prop explicitly in the return
-      arity, but inference has decided to lower it to Prop. *)
-  let templatearity =
-    if Term.isArity entry.mind_entry_arity then
-      let (_, s) = Reduction.dest_arity env_ar_params entry.mind_entry_arity in
-      if Sorts.is_prop s then match concl with
-      | None | Some (Type _ | Set)-> true
-      | Some Prop -> false
-      | Some SProp | Some (QSort _) -> assert false
-      else false
-    else false
-  in
-  if templatearity then
-    let template = should_auto_template entry.mind_entry_typename true in
-    (* Dummy template inductive. Matters for the shape of the induction principle *)
-    if template then Template_ind_entry Univ.ContextSet.empty, uctx
-    else Monomorphic_ind_entry, uctx
-  else
-    let template_candidate = template_polymorphism_candidate uctx ctx_params entry concl in
-    let has_template = not @@ Univ.Level.Set.is_empty template_candidate in
-    let template = should_auto_template entry.mind_entry_typename has_template in
-    if template then
-      let template, global = split_universe_context template_candidate uctx in
-      Template_ind_entry template, global
-    else Monomorphic_ind_entry, uctx
+  let template_candidate = template_polymorphism_candidate uctx ctx_params entry template_syntax in
+  let has_template = not @@ Univ.Level.Set.is_empty template_candidate in
+  let template = should_auto_template entry.mind_entry_typename has_template in
+  if template then
+    let template, global = split_universe_context template_candidate uctx in
+    Template_ind_entry template, global
+  else Monomorphic_ind_entry, uctx
 
 let check_param = function
 | CLocalDef (na, _, _, _) -> check_named na
@@ -448,14 +502,14 @@ let check_param = function
 | CLocalPattern {CAst.loc} ->
   Loc.raise ?loc (Gramlib.Grammar.Error "pattern with quote not allowed here")
 
-let restrict_inductive_universes sigma ctx_params arities constructors =
+let restrict_inductive_universes ~lbound sigma ctx_params arities constructors =
   let merge_universes_of_constr c =
     Univ.Level.Set.union (snd (EConstr.universes_of_constr sigma (EConstr.of_constr c))) in
   let uvars = Univ.Level.Set.empty in
   let uvars = Context.Rel.(fold_outside (Declaration.fold_constr merge_universes_of_constr) ctx_params ~init:uvars) in
   let uvars = List.fold_right merge_universes_of_constr arities uvars in
   let uvars = List.fold_right (fun (_,ctypes) -> List.fold_right merge_universes_of_constr ctypes) constructors uvars in
-  Evd.restrict_universe_context sigma uvars
+  Evd.restrict_universe_context ~lbound sigma uvars
 
 let check_trivial_variances variances =
   Array.iter (function
@@ -476,7 +530,14 @@ let variance_of_entry ~cumulative ~variances uctx =
       assert (lvs <= lus);
       Some (Array.append variances (Array.make (lus - lvs) None))
 
-let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_params ~indnames ~arities ~arityconcl ~constructors ~env_ar_params ~cumulative ~poly ~private_ind ~finite =
+let interp_mutual_inductive_constr ~sigma ~flags ~udecl ~variances ~ctx_params ~indnames ~arities_explicit ~arities ~template_syntax ~constructors ~env_ar_params ~private_ind =
+  let {
+    poly;
+    cumulative;
+    template;
+    auto_prop_lowering;
+    finite;
+  } = flags in
   (* Compute renewed arities *)
   let ctor_args =  List.map (fun (_,tys) ->
       List.map (fun ty ->
@@ -485,13 +546,13 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
         tys)
       constructors
   in
-  let sigma, arities = inductive_levels env_ar_params sigma arities ctor_args in
-  let sigma = Evd.minimize_universes sigma in
+  let sigma, (default_dep_elim, arities) = inductive_levels ~auto_prop_lowering env_ar_params sigma ~poly ~indnames ~arities_explicit arities ctor_args in
+  let lbound = if poly then UGraph.Bound.Set else UGraph.Bound.Prop in
+  let sigma = Evd.minimize_universes ~lbound sigma in
   let arities = List.map EConstr.(to_constr sigma) arities in
   let constructors = List.map (on_snd (List.map (EConstr.to_constr sigma))) constructors in
   let ctx_params = List.map (fun d -> EConstr.to_rel_decl sigma d) ctx_params in
-  let arityconcl = List.map (Option.map (fun s -> ESorts.kind sigma s)) arityconcl in
-  let sigma = restrict_inductive_universes sigma ctx_params arities constructors in
+  let sigma = restrict_inductive_universes ~lbound sigma ctx_params arities constructors in
   let univ_entry, binders = Evd.check_univ_decl ~poly sigma udecl in
 
   (* Build the inductive entries *)
@@ -503,9 +564,9 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
       })
       indnames arities constructors
   in
-  let univ_entry, ctx = match entries, arityconcl with
-  | [entry], [concl] ->
-    compute_template_inductive ~user_template:template ~env_ar_params ~ctx_params ~univ_entry entry concl
+  let univ_entry, ctx = match entries, template_syntax with
+  | [entry], [template_syntax] ->
+    compute_template_inductive ~user_template:template ~ctx_params ~univ_entry entry template_syntax
   | _ ->
     let () = match template with
     | Some true -> user_err Pp.(str "Template-polymorphism not allowed with mutual inductives.")
@@ -527,14 +588,14 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
       mind_entry_variance = variance;
     }
   in
-  mind_ent, binders, ctx
+  default_dep_elim, mind_ent, binders, ctx
 
-let interp_params env udecl uparamsl paramsl =
+let interp_params ~unconstrained_sorts env udecl uparamsl paramsl =
   let sigma, udecl, variances = interp_cumul_univ_decl_opt env udecl in
   let sigma, (uimpls, ((env_uparams, ctx_uparams), useruimpls)) =
-    interp_context_evars ~program_mode:false env sigma uparamsl in
+    interp_context_evars ~program_mode:false ~unconstrained_sorts env sigma uparamsl in
   let sigma, (impls, ((env_params, ctx_params), userimpls)) =
-    interp_context_evars ~program_mode:false ~impl_env:uimpls env_uparams sigma paramsl
+    interp_context_evars ~program_mode:false ~unconstrained_sorts ~impl_env:uimpls env_uparams sigma paramsl
   in
   (* Names of parameters as arguments of the inductive type (defs removed) *)
   sigma, env_params, (ctx_params, env_uparams, ctx_uparams,
@@ -568,7 +629,7 @@ let maybe_unify_params_in env_ar_par sigma ~ninds ~nparams ~binders:k c =
   in
   aux (env_ar_par,k) sigma c
 
-let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) notations ~cumulative ~poly ~private_ind finite =
+let interp_mutual_inductive_gen env0 ~flags udecl (uparamsl,paramsl,indl) notations ~private_ind =
   check_all_names_different indl;
   List.iter check_param paramsl;
   if not (List.is_empty uparamsl) && not (List.is_empty notations)
@@ -577,17 +638,18 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   let indnames = List.map (fun ind -> ind.ind_name) indl in
   let ninds = List.length indl in
 
+  (* In case of template polymorphism, we need to compute more constraints *)
+  let unconstrained_sorts = not flags.poly in
+
   let sigma, env_params, (ctx_params, env_uparams, ctx_uparams, userimpls, useruimpls, impls, udecl, variances) =
-    (* In case of template polymorphism, we need to compute more constraints *)
-    let env0 = if poly then env0 else Environ.set_universes_lbound env0 UGraph.Bound.Prop in
-    interp_params env0 udecl uparamsl paramsl
+    interp_params ~unconstrained_sorts env0 udecl uparamsl paramsl
   in
 
   (* Interpret the arities *)
   let arities = List.map (intern_ind_arity env_params sigma) indl in
 
-  let sigma, arities = List.fold_left_map (pretype_ind_arity env_params) sigma arities in
-  let arities, relevances, arityconcl, indimpls = List.split4 arities in
+  let sigma, arities = List.fold_left_map (pretype_ind_arity ~unconstrained_sorts env_params) sigma arities in
+  let arities, relevances, template_syntax, indimpls = List.split4 arities in
 
   let lift_ctx n ctx =
     let t = EConstr.it_mkProd_or_LetIn EConstr.mkProp ctx in
@@ -657,8 +719,9 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
             userimpls @ impls) cimpls)
       indimpls cimpls
   in
-  let mie, binders, ctx = interp_mutual_inductive_constr ~template ~sigma ~ctx_params ~udecl ~variances ~arities ~arityconcl ~constructors ~env_ar_params ~poly ~finite ~cumulative ~private_ind ~indnames in
-  (mie, binders, impls, ctx)
+  let arities_explicit = List.map (fun ar -> ar.ind_arity_explicit) indl in
+  let default_dep_elim, mie, binders, ctx = interp_mutual_inductive_constr ~flags ~sigma ~ctx_params ~udecl ~variances ~arities_explicit ~arities ~template_syntax ~constructors ~env_ar_params ~private_ind ~indnames in
+  (default_dep_elim, mie, binders, impls, ctx)
 
 
 (* Very syntactical equality *)
@@ -677,19 +740,46 @@ let extract_coercions indl =
   let extract lc = List.filter (fun (coe,_) -> iscoe coe) lc in
   List.map mkqid (List.flatten(List.map (fun (_,_,_,lc) -> extract lc) indl))
 
+exception DifferingParams of
+    string (* inductive or record *)
+    * (Id.t * Vernacexpr.inductive_params_expr)
+    * (Id.t * Vernacexpr.inductive_params_expr)
+
+let explain_differing_params kind (ind,p) (ind',p') =
+  let pr_params = function
+    | ([],None) -> str "no parameters"
+    | (up,p) ->
+      let env = Global.env() in
+      let sigma = Evd.from_env env in
+      let pr_binders = Ppconstr.pr_binders env sigma in
+      str "parameters" ++ spc() ++ hov 1 (quote (pr_binders up ++ pr_opt (fun p -> str "|" ++ spc() ++ pr_binders p) p))
+  in
+  v 0
+    (str "Parameters should be syntactically the same for each " ++ str kind ++ str " type." ++ spc() ++
+     hov 0 (str "Type " ++ quote (Id.print ind) ++ str " has " ++ pr_params p) ++ spc() ++
+     hov 0 (str "but type " ++ quote (Id.print ind') ++ str " has " ++ pr_params p') ++ str ".")
+
+let () = CErrors.register_handler (function
+    | DifferingParams (kind, a, b) -> Some (explain_differing_params kind a b)
+    | _ -> None)
+
+let error_differing_params ~kind (ind,p) (ind',p') =
+  Loc.raise ?loc:ind'.CAst.loc (DifferingParams (kind, (ind.CAst.v,p), (ind'.CAst.v,p')))
+
 let extract_params indl =
-  let paramsl = List.map (fun (_,params,_,_) -> params) indl in
-  match paramsl with
+  match indl with
   | [] -> anomaly (Pp.str "empty list of inductive types.")
-  | params::paramsl ->
-      if not (List.for_all (eq_params params) paramsl) then user_err Pp.(str
-        "Parameters should be syntactically the same for each inductive type.");
-      params
+  | (ind,params,_,_)::rest ->
+    match List.find_opt (fun (_,p',_,_) -> not @@ eq_params params p') rest with
+    | None -> params
+    | Some (ind',p',_,_) ->
+      error_differing_params ~kind:"inductive" (ind,params) (ind',p')
 
 let extract_inductive indl =
   List.map (fun ({CAst.v=indname},_,ar,lc) -> {
     ind_name = indname;
-    ind_arity = Option.default (CAst.make @@ CSort (Glob_term.UAnonymous {rigid=UnivRigid})) ar;
+    ind_arity_explicit = Option.has_some ar;
+    ind_arity = Option.default (CAst.make @@ CSort Constrexpr_ops.expr_Type_sort) ar;
     ind_lc = List.map (fun (_,({CAst.v=id},t)) -> (id,t)) lc
   }) indl
 
@@ -708,6 +798,7 @@ module Mind_decl = struct
 
 type t = {
   mie : Entries.mutual_inductive_entry;
+  default_dep_elim : default_dep_elim list;
   nuparams : int option;
   univ_binders : UnivNames.universe_binders;
   implicits : DeclareInd.one_inductive_impls list;
@@ -726,7 +817,7 @@ let rec count_binder_expr = function
   | CLocalPattern {CAst.loc} :: _ ->
     Loc.raise ?loc (Gramlib.Grammar.Error "pattern with quote not allowed here")
 
-let interp_mutual_inductive ~env ~template udecl indl ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite =
+let interp_mutual_inductive ~env ~flags ?typing_flags udecl indl ~private_ind ~uniform =
   let indlocs = List.map (fun ((n,_,_,_),_) -> n.CAst.loc) indl in
   let (params,indl),coercions,ntns = extract_mutual_inductive_declaration_components indl in
   let where_notations = List.map Metasyntax.prepare_where_notation ntns in
@@ -738,15 +829,15 @@ let interp_mutual_inductive ~env ~template udecl indl ~cumulative ~poly ?typing_
       | NonUniformParameters -> ([], params, indl), None
   in
   let env = Environ.update_typing_flags ?typing_flags env in
-  let mie, univ_binders, implicits, uctx = interp_mutual_inductive_gen env ~template udecl indl where_notations ~cumulative ~poly ~private_ind finite in
+  let default_dep_elim, mie, univ_binders, implicits, uctx = interp_mutual_inductive_gen ~flags env udecl indl where_notations ~private_ind in
   let open Mind_decl in
-  { mie; nuparams; univ_binders; implicits; uctx; where_notations; coercions; indlocs }
+  { mie; default_dep_elim; nuparams; univ_binders; implicits; uctx; where_notations; coercions; indlocs }
 
-let do_mutual_inductive ~template udecl indl ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite =
+let do_mutual_inductive ~flags ?typing_flags udecl indl ~private_ind ~uniform =
   let open Mind_decl in
   let env = Global.env () in
-  let { mie; univ_binders; implicits; uctx; where_notations; coercions; indlocs} =
-    interp_mutual_inductive ~env ~template udecl indl ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite in
+  let { mie; default_dep_elim; univ_binders; implicits; uctx; where_notations; coercions; indlocs} =
+    interp_mutual_inductive ~flags ~env udecl indl ?typing_flags ~private_ind ~uniform in
   (* Slightly hackish global universe declaration due to template types. *)
   let binders = match mie.mind_entry_universes with
   | Monomorphic_ind_entry -> (UState.Monomorphic_entry uctx, univ_binders)
@@ -756,7 +847,7 @@ let do_mutual_inductive ~template udecl indl ~cumulative ~poly ?typing_flags ~pr
   (* Declare the global universes *)
   Global.push_context_set ~strict:true uctx;
   (* Declare the mutual inductive block with its associated schemes *)
-  ignore (DeclareInd.declare_mutual_inductive_with_eliminations ?typing_flags ~indlocs mie binders implicits);
+  ignore (DeclareInd.declare_mutual_inductive_with_eliminations ~default_dep_elim ?typing_flags ~indlocs mie binders implicits);
   (* Declare the possible notations of inductive types *)
   List.iter (Metasyntax.add_notation_interpretation ~local:false (Global.env ())) where_notations;
   (* Declare the coercions *)
@@ -806,5 +897,7 @@ module Internal =
 struct
 
 let inductive_levels = inductive_levels
+
+let error_differing_params = error_differing_params
 
 end

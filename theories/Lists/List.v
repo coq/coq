@@ -222,14 +222,14 @@ Section Facts.
 
   (** Compatibility with other operations *)
 
-  Lemma app_length : forall l l' : list A, length (l++l') = length l + length l'.
+  Lemma length_app : forall l l' : list A, length (l++l') = length l + length l'.
   Proof.
     intro l; induction l; simpl; auto.
   Qed.
 
   Lemma last_length : forall (l : list A) a, length (l ++ a :: nil) = S (length l).
   Proof.
-    intros ; rewrite app_length ; simpl.
+    intros ; rewrite length_app ; simpl.
     rewrite Nat.add_succ_r, Nat.add_0_r; reflexivity.
   Qed.
 
@@ -559,6 +559,9 @@ Section Elts.
       + now exists (S n).
   Qed.
 
+  Lemma In_iff_nth_error l x : In x l <-> exists n, nth_error l n = Some x.
+  Proof. firstorder eauto using In_nth_error, nth_error_In. Qed.
+
   Lemma nth_error_None l n : nth_error l n = None <-> length l <= n.
   Proof.
     revert n. induction l as [|? ? IHl]; intro n; destruct n; simpl.
@@ -603,6 +606,16 @@ Section Elts.
     cbn. now apply IHn, Nat.succ_le_mono.
   Qed.
 
+  Lemma nth_error_app l l' n : nth_error (l ++ l') n =
+    if Nat.ltb n (length l)
+    then nth_error l n
+    else nth_error l' (n - length l).
+  Proof.
+    case (Nat.ltb_spec n (length l)) as [].
+    - rewrite nth_error_app1; trivial.
+    - rewrite nth_error_app2; trivial.
+  Qed.
+
   Lemma nth_error_ext l l':
     (forall n, nth_error l n = nth_error l' n) -> l = l'.
   Proof.
@@ -643,6 +656,13 @@ Section Elts.
     : nth_error l (S n) = nth_error (tl l) n.
   Proof. destruct l; rewrite ?nth_error_nil; reflexivity. Qed.
 
+  Lemma nth_error_cons_0 x l : nth_error (cons x l) 0 = Some x.
+  Proof. trivial. Qed.
+
+  Lemma nth_error_cons_succ x l n :
+    nth_error (cons x l) (S n) = nth_error l n.
+  Proof. trivial. Qed.
+
   (** Results directly relating [nth] and [nth_error] *)
 
   Lemma nth_error_nth : forall (l : list A) (n : nat) (x d : A),
@@ -661,6 +681,12 @@ Section Elts.
     apply (nth_split _ d) in H. destruct H as [l1 [l2 [H H']]].
     subst. rewrite H. rewrite nth_error_app2; [|auto].
     rewrite app_nth2; [| auto]. repeat (rewrite Nat.sub_diag). reflexivity.
+  Qed.
+
+  Lemma nth_error_nth_None (l : list A) (n : nat) (d : A) :
+    nth_error l n = None -> nth n l d = d.
+  Proof.
+    intros H%nth_error_None. apply nth_overflow. assumption.
   Qed.
 
   (******************************)
@@ -999,21 +1025,31 @@ Section ListOps.
     intros. cbn. rewrite in_app_iff, IHl. cbn. tauto.
   Qed.
 
-  Lemma rev_length : forall l, length (rev l) = length l.
+  Lemma length_rev : forall l, length (rev l) = length l.
   Proof.
     intro l; induction l as [|? l IHl];simpl; auto.
-    now rewrite app_length, IHl, Nat.add_comm.
+    now rewrite length_app, IHl, Nat.add_comm.
   Qed.
 
   Lemma rev_nth : forall l d n, n < length l ->
     nth n (rev l) d = nth (length l - S n) l d.
   Proof.
     intros l d; induction l as [|a l IHl] using rev_ind; [easy|].
-    rewrite rev_app_distr, app_length, Nat.add_comm. cbn. intros [|n].
+    rewrite rev_app_distr, length_app, Nat.add_comm. cbn. intros [|n].
     - now rewrite Nat.sub_0_r, nth_middle.
     - intros Hn %Nat.succ_lt_mono.
       rewrite (IHl _ Hn), app_nth1; [reflexivity|].
       apply Nat.sub_lt; [assumption|apply Nat.lt_0_succ].
+  Qed.
+
+  Lemma nth_error_rev n l : nth_error (rev l) n =
+    if Nat.ltb n (length l) then nth_error l (length l - S n) else None.
+  Proof.
+    case (Nat.ltb_spec n (length l)) as []; cycle 1.
+    { apply nth_error_None; rewrite ?length_rev; trivial. }
+    destruct l as [|x l']; [inversion H|]; set (x::l') as l in *.
+    rewrite 2 nth_error_nth' with (d:=x), rev_nth;
+      rewrite ?length_rev; auto using Nat.lt_0_succ, Nat.sub_lt.
   Qed.
 
 
@@ -1136,7 +1172,7 @@ Section Map.
     intro l; induction l; firstorder (subst; auto).
   Qed.
 
-  Lemma map_length : forall l, length (map l) = length l.
+  Lemma length_map : forall l, length (map l) = length l.
   Proof.
     intro l; induction l; simpl; auto.
   Qed.
@@ -1338,7 +1374,7 @@ Proof.
   intros l n d ln dn Hlen.
   rewrite <- (map_nth (fun m => nth m l d)).
   destruct Hlen.
-  - apply nth_indep. now rewrite map_length.
+  - apply nth_indep. now rewrite length_map.
   - now rewrite (nth_overflow l).
 Qed.
 
@@ -1365,11 +1401,11 @@ Section Fold_Left_Recursor.
 
 End Fold_Left_Recursor.
 
-Lemma fold_left_length :
+Lemma fold_left_S_O :
   forall (A:Type)(l:list A), fold_left (fun x _ => S x) l 0 = length l.
 Proof.
   intros A l. induction l as [|? ? IH] using rev_ind; [reflexivity|].
-  now rewrite fold_left_app, app_length, IH, Nat.add_comm.
+  now rewrite fold_left_app, length_app, IH, Nat.add_comm.
 Qed.
 
 (************************************)
@@ -1779,14 +1815,14 @@ End Fold_Right_Recursor.
         + destruct a; destruct (split l); simpl in *; auto.
     Qed.
 
-    Lemma split_length_l : forall (l:list (A*B)),
+    Lemma length_fst_split : forall (l:list (A*B)),
       length (fst (split l)) = length l.
     Proof.
       intro l; induction l as [|a l IHl]; simpl; auto.
       destruct a; destruct (split l); simpl; auto.
     Qed.
 
-    Lemma split_length_r : forall (l:list (A*B)),
+    Lemma length_snd_split : forall (l:list (A*B)),
       length (snd (split l)) = length l.
     Proof.
       intro l; induction l as [|a l IHl]; simpl; auto.
@@ -1845,7 +1881,7 @@ End Fold_Right_Recursor.
         + right; apply IHl with x; auto.
     Qed.
 
-    Lemma combine_length : forall (l:list A)(l':list B),
+    Lemma length_combine : forall (l:list A)(l':list B),
       length (combine l l') = min (length l) (length l').
     Proof.
       intro l; induction l.
@@ -1902,11 +1938,11 @@ End Fold_Right_Recursor.
       intros [[? [[= -> ->] ?]] %in_map_iff|] %in_app_or; tauto.
     Qed.
 
-    Lemma prod_length : forall (l:list A)(l':list B),
+    Lemma length_prod : forall (l:list A)(l':list B),
       length (list_prod l l') = (length l) * (length l').
     Proof.
       intro l; induction l as [|? ? IHl]; simpl; [easy|].
-      intros. now rewrite app_length, map_length, IHl.
+      intros. now rewrite length_app, length_map, IHl.
     Qed.
 
   End ListPairs.
@@ -2120,6 +2156,20 @@ Section Cutting.
   Lemma firstn_cons n a l: firstn (S n) (a::l) = a :: (firstn n l).
   Proof. now simpl. Qed.
 
+  Lemma nth_error_firstn n l i
+    : nth_error (firstn n l) i = if Nat.ltb i n then nth_error l i else None.
+  Proof.
+    revert l i; induction n, l, i; cbn [firstn nth_error]; trivial.
+    case Nat.ltb; trivial.
+  Qed.
+
+  Lemma nth_firstn (n : nat) (l : list A) (i : nat) (d : A) :
+    nth i (firstn n l) d = if i <? n then nth i l d else d.
+  Proof.
+    revert l i; induction n, l, i; cbn [firstn nth]; trivial.
+    case Nat.ltb; trivial.
+  Qed.
+
   Lemma firstn_all l: firstn (length l) l = l.
   Proof. induction l as [| ? ? H]; simpl; [reflexivity | now rewrite H]. Qed.
 
@@ -2195,6 +2245,21 @@ Section Cutting.
                end
     end.
 
+  Lemma nth_error_skipn n l i : nth_error (skipn n l) i = nth_error l (n + i).
+  Proof.
+    revert l; induction n, l; cbn [nth_error skipn];
+      rewrite ?nth_error_nil; trivial.
+  Qed.
+
+  Lemma nth_skipn n l i d : nth i (skipn n l) d = nth (n + i) l d.
+  Proof.
+    revert l; induction n, l; cbn [nth skipn];
+      rewrite ?nth_error_nil; destruct i; trivial.
+  Qed.
+
+  Lemma hd_error_skipn n l : hd_error (skipn n l) = nth_error l n.
+  Proof. rewrite <-nth_error_O, nth_error_skipn, Nat.add_0_r; trivial. Qed.
+
   Lemma firstn_skipn_comm : forall m n l,
   firstn m (skipn n l) = skipn n (firstn (n + m) l).
   Proof. now intros m n; induction n; intros []; simpl; destruct m. Qed.
@@ -2221,6 +2286,16 @@ Section Cutting.
     now rewrite skipn_firstn_comm, L.
   Qed.
 
+  Lemma skipn_all_iff n l : length l <= n <-> skipn n l = nil.
+  Proof.
+    split; [apply skipn_all2|].
+    revert l; induction n as [|n IH]; intros l.
+    - destruct l; simpl; [reflexivity|discriminate].
+    - destruct l; simpl.
+      + intros _. apply Nat.le_0_l.
+      + intros H%IH. apply le_n_S. exact H.
+  Qed.
+
   Lemma skipn_skipn : forall x y l, skipn x (skipn y l) = skipn (x + y) l.
   Proof.
     intros x y. rewrite Nat.add_comm. induction y as [|y IHy].
@@ -2238,12 +2313,23 @@ Section Cutting.
       f_equal; auto.
   Qed.
 
-  Lemma firstn_length : forall n l, length (firstn n l) = min n (length l).
+  Lemma firstn_skipn_middle n l x :
+    nth_error l n = Some x ->
+    firstn n l ++ x :: skipn (S n) l = l.
+  Proof.
+    revert l x; induction n as [|n IH]; intros [|y l] x.
+    - discriminate.
+    - injection 1. intros ->. reflexivity.
+    - discriminate.
+    - simpl. intros H. f_equal. apply IH. exact H.
+  Qed.
+
+  Lemma length_firstn : forall n l, length (firstn n l) = min n (length l).
   Proof.
     intro n; induction n; intro l; destruct l; simpl; auto.
   Qed.
 
-  Lemma skipn_length n :
+  Lemma length_skipn n :
     forall l, length (skipn n l) = length l - n.
   Proof.
     induction n.
@@ -2259,22 +2345,22 @@ Section Cutting.
       firstn x l = rev (skipn (length l - x) (rev l)).
   Proof.
     intros x l; rewrite <-(firstn_skipn x l) at 3.
-    rewrite rev_app_distr, skipn_app, rev_app_distr, rev_length,
-            skipn_length, Nat.sub_diag; simpl; rewrite rev_involutive.
+    rewrite rev_app_distr, skipn_app, rev_app_distr, length_rev,
+            length_skipn, Nat.sub_diag; simpl; rewrite rev_involutive.
     rewrite <-app_nil_r at 1; f_equal; symmetry; apply length_zero_iff_nil.
-    repeat rewrite rev_length, skipn_length; apply Nat.sub_diag.
+    repeat rewrite length_rev, length_skipn; apply Nat.sub_diag.
   Qed.
 
   Lemma firstn_rev: forall x l,
     firstn x (rev l) = rev (skipn (length l - x) l).
   Proof.
-    now intros x l; rewrite firstn_skipn_rev, rev_involutive, rev_length.
+    now intros x l; rewrite firstn_skipn_rev, rev_involutive, length_rev.
   Qed.
 
   Lemma skipn_rev: forall x l,
       skipn x (rev l) = rev (firstn (length l - x) l).
   Proof.
-    intros x l; rewrite firstn_skipn_rev, rev_involutive, <-rev_length.
+    intros x l; rewrite firstn_skipn_rev, rev_involutive, <-length_rev.
     destruct (Nat.le_ge_cases (length (rev l)) x) as [L | L].
     - rewrite skipn_all2; [apply Nat.sub_0_le in L | trivial].
       now rewrite L, Nat.sub_0_r, skipn_all.
@@ -2337,7 +2423,7 @@ Section Combining.
     Proof.
       intros l.
       apply length_zero_iff_nil.
-      rewrite combine_length. simpl. rewrite Nat.min_0_r.
+      rewrite length_combine. simpl. rewrite Nat.min_0_r.
       reflexivity.
     Qed.
 
@@ -2477,6 +2563,20 @@ Section ReDun.
     split.
     + inversion_clear 1. now split.
     + now constructor.
+  Qed.
+
+  Lemma NoDup_app (l1 l2 : list A):
+    NoDup l1 -> NoDup l2 -> (forall a, In a l1 -> ~ In a l2) ->
+    NoDup (l1 ++ l2).
+  Proof.
+    intros H1 H2 H. induction l1 as [|a l1 IHl1]; [assumption|].
+    apply NoDup_cons_iff in H1 as [].
+    cbn. constructor.
+    - intros H3%in_app_or. destruct H3.
+      + contradiction.
+      + apply (H a); [apply in_eq|assumption].
+    - apply IHl1; [assumption|].
+      intros. apply H, in_cons. assumption.
   Qed.
 
   Lemma NoDup_app_remove_l l l' : NoDup (l++l') -> NoDup l'.
@@ -2664,8 +2764,8 @@ Section ReDun.
       inversion_clear Hnd as [|? ? Hnin Hnd'].
       apply (NoDup_Add (Add_app a l1' l2')); split.
       + apply IHl; auto.
-        * rewrite app_length.
-          rewrite app_length in Hlen; simpl in Hlen; rewrite Nat.add_succ_r in Hlen.
+        * rewrite length_app.
+          rewrite length_app in Hlen; simpl in Hlen; rewrite Nat.add_succ_r in Hlen.
           now apply Nat.succ_le_mono.
         * apply (incl_Add_inv (u:= l1' ++ l2')) in Hincl; auto.
           apply Add_app.
@@ -2676,7 +2776,7 @@ Section ReDun.
           apply in_app_or in Hin as [Hin|[->|Hin]]; intuition. }
         apply NoDup_incl_length in Hincl''; [ | now constructor ].
         apply (Nat.nle_succ_diag_l (length l1' + length l2')).
-        rewrite_all app_length.
+        rewrite_all length_app.
         simpl in Hlen; rewrite Nat.add_succ_r in Hlen.
         now transitivity (S (length l)).
   Qed.
@@ -2714,7 +2814,7 @@ Section NatSeq.
     reflexivity.
   Qed.
 
-  Lemma seq_length : forall len start, length (seq start len) = len.
+  Lemma length_seq : forall len start, length (seq start len) = len.
   Proof.
     intro len; induction len; simpl; auto.
   Qed.
@@ -2777,7 +2877,215 @@ Section NatSeq.
    rewrite Nat.add_succ_r, Nat.add_0_r; reflexivity.
   Qed.
 
+  Lemma nth_error_seq start len n :
+    nth_error (seq start len) n =
+    if Nat.ltb n len then Some (start + n) else None.
+  Proof.
+    revert len; revert start; induction n, len;
+      cbn [nth_error seq]; rewrite ?Nat.add_0_r; trivial.
+    rewrite <-seq_shift, nth_error_map, IHn.
+    cbn [Nat.ltb Nat.leb]; case len, Nat.leb; trivial.
+    cbn [option_map]; rewrite ?plus_n_Sm; trivial.
+  Qed.
+
 End NatSeq.
+
+(***********************)
+(** ** List comparison *)
+(***********************)
+
+Section Compare.
+
+  Variable A : Type.
+  Variable cmp : A -> A -> comparison.
+
+  Fixpoint list_compare (xs ys : list A) : comparison :=
+    match xs, ys with
+    | nil   , nil    => Eq
+    | nil   , _      => Lt
+    | _     , nil    => Gt
+    | x :: xs, y :: ys =>
+        match cmp x y with
+        | Eq => list_compare xs ys
+        | c  => c
+        end
+    end%list.
+
+  Section Lemmas.
+
+    Variable Hcmp : forall x y, cmp x y = Eq <-> x = y.
+
+    Lemma list_compare_cons (x : A) (xs ys : list A) :
+      list_compare (x :: xs) (x :: ys) = list_compare xs ys.
+    Proof.
+      simpl. rewrite (proj2 (Hcmp x x) eq_refl). reflexivity.
+    Qed.
+
+    Lemma list_compare_app (xs ys zs : list A) :
+      list_compare (xs ++ ys) (xs ++ zs) = list_compare ys zs.
+    Proof.
+      induction xs as [|x xs IH]; [reflexivity|].
+      rewrite <-!app_comm_cons, list_compare_cons. exact IH.
+    Qed.
+
+    Lemma prefix_eq {prefix1 prefix2 xs1 xs2 ys1 ys2 : list A} {x1 x2 y1 y2 : A} :
+      prefix1 ++ x1 :: xs1 = prefix2 ++ x2 :: xs2 ->
+      prefix1 ++ y1 :: ys1 = prefix2 ++ y2 :: ys2 ->
+      x1 <> y1 ->
+      x2 <> y2 ->
+      prefix1 = prefix2.
+    Proof.
+      clear Hcmp cmp.
+      intros Heq1 Heq2 Hne1 Hne2.
+      revert prefix2 xs1 xs2 ys1 ys2 Heq1 Heq2.
+      induction prefix1 as [|z prefix1 IH]; intros prefix2 xs1 xs2 ys1 ys2.
+      - destruct prefix2; [reflexivity|]. simpl. intros H1 H2.
+        injection H1; clear H1; intros ??; subst.
+        injection H2; clear H2; intros ??; subst.
+        exfalso. apply Hne1. reflexivity.
+      - destruct prefix2.
+        + simpl. intros H1 H2.
+          injection H1; clear H1; intros ??; subst.
+          injection H2; clear H2; intros ??; subst.
+          exfalso. apply Hne2. reflexivity.
+        + simpl. intros H1 H2.
+          injection H1; clear H1; intros ??; subst.
+          injection H2; clear H2; intros ?; subst.
+          intros. f_equal. eapply IH; eassumption.
+    Qed.
+
+    #[local] Ltac list_auto :=
+      repeat lazymatch goal with
+      | |- ?x = ?x =>
+          reflexivity
+      | H : ?xs = ?xs ++ _ |- _ =>
+          rewrite <-(app_nil_r xs) in H at 1
+      | H : ?xs ++ _ = ?xs |- _ =>
+          symmetry in H
+      | H : ?xs ++ _ = ?xs ++ _ |- _ =>
+          apply app_inv_head in H
+      | H : _ :: _ = _ :: _ |- _ =>
+          injection H; intros; clear H; subst
+      | H : [] = _ :: _ |- _ =>
+          inversion H
+      | H : cmp ?x ?x = Lt |- _ =>
+          rewrite (proj2 (Hcmp _ _) eq_refl) in H; discriminate
+      | H : cmp ?x ?x = Gt |- _ =>
+          rewrite (proj2 (Hcmp _ _) eq_refl) in H; discriminate
+      | H1 : ?p1 ++ _ :: _ = ?p2 ++ _ :: _,
+        H2 : ?p2 ++ _ :: _ = ?p1 ++ _ :: _ |- _ =>
+          symmetry in H2
+      | H1 : ?p1 ++ ?x1 :: ?xs1 = ?p2 ++ ?x2 :: ?xs2,
+        H2 : ?p1 ++ ?y1 :: ?ys1 = ?p2 ++ ?y2 :: ?ys2 |- _ =>
+          assert (p1 = p2) as Hp;
+          [ eapply (prefix_eq H1 H2); intros Heq; subst
+          | subst; apply app_inv_head in H1, H2 ]
+      | H : cmp ?x ?x = _ |- _ =>
+          rewrite (proj2 (Hcmp _ _) eq_refl) in H; try discriminate H
+      | H1 : cmp ?x1 ?x2 = _,
+        H2 : cmp ?x1 ?x2 = _ |- _ =>
+          rewrite H1 in H2; discriminate H2
+      | Htrans : forall (x y z : A) (c : comparison), cmp x y = c -> cmp y z = c -> cmp x z = c,
+        H1 : cmp ?x1 ?x2 = ?c,
+        H2 : cmp ?x2 ?x3 = ?c |- _ =>
+          pose proof (Htrans x1 x2 x3 c H1 H2); clear H1 H2
+      | Hcmp_opp : (forall x y, cmp y x = CompOpp (cmp x y)),
+        H1 : cmp ?x1 ?x2 = ?c, H2 : cmp ?x2 ?x1 = ?c |- _ =>
+          rewrite Hcmp_opp, H2 in H1; simpl in H1; discriminate H1
+      end.
+
+    Inductive ListCompareSpec (xs ys : list A) : forall (c : comparison), Prop :=
+      | ListCompareEq :
+          xs = ys ->
+          ListCompareSpec xs ys Eq
+      | ListCompareShorter y ys' :
+          ys = xs ++ y :: ys' ->
+          ListCompareSpec xs ys Lt
+      | ListCompareLonger x xs' :
+          xs = ys ++ x :: xs' ->
+          ListCompareSpec xs ys Gt
+      | ListCompareLt prefix x xs' y ys' :
+          xs = prefix ++ x :: xs' ->
+          ys = prefix ++ y :: ys' ->
+          cmp x y = Lt ->
+          ListCompareSpec xs ys Lt
+      | ListCompareGt prefix x xs' y ys' :
+          xs = prefix ++ x :: xs' ->
+          ys = prefix ++ y :: ys' ->
+          cmp x y = Gt ->
+          ListCompareSpec xs ys Gt.
+
+    Lemma list_compareP (xs ys : list A) :
+      ListCompareSpec xs ys (list_compare xs ys).
+    Proof.
+      assert (xs = nil ++ xs) as Hxs by reflexivity.
+      assert (ys = nil ++ ys) as Hys by reflexivity.
+      revert Hxs Hys.
+      generalize (@nil A) as prefix.
+      generalize ys at 2 4.
+      generalize xs at 2 4.
+      intros xs'; induction xs' as [|x xs' IH]; intros ys' prefix -> ->.
+      - destruct ys' as [|y ys']; rewrite app_nil_r; simpl.
+        + apply ListCompareEq. reflexivity.
+        + eapply ListCompareShorter; reflexivity.
+      - destruct ys' as [|y ys']; rewrite ?app_nil_r; simpl.
+        + eapply ListCompareLonger; reflexivity.
+        + destruct (cmp x y) eqn:Hxy.
+          * apply Hcmp in Hxy; subst y.
+            apply (IH ys' (prefix ++ [x])); rewrite <-app_assoc; reflexivity.
+          * eapply ListCompareLt; [reflexivity|reflexivity|exact Hxy].
+          * eapply ListCompareGt; [reflexivity|reflexivity|exact Hxy].
+    Qed.
+
+    Lemma list_compare_refl (xs ys : list A) :
+      list_compare xs ys = Eq <-> xs = ys.
+    Proof.
+      destruct (list_compareP xs ys); subst; split; intros.
+      all: first [discriminate | list_auto].
+    Qed.
+
+    Lemma list_compare_antisym (xs ys : list A) :
+      (forall x y, cmp y x = CompOpp (cmp x y)) ->
+      list_compare ys xs = CompOpp (list_compare xs ys).
+    Proof.
+      intros Hcmp_opp.
+      destruct (list_compareP xs ys), (list_compareP ys xs); subst.
+      all: repeat rewrite <-app_assoc in *; simpl in *; list_auto.
+    Qed.
+
+    Lemma list_compare_trans (xs ys zs : list A) (c : comparison) :
+      (forall x y z c, cmp x y = c -> cmp y z = c -> cmp x z = c) ->
+      (forall x y, cmp y x = CompOpp (cmp x y)) ->
+      list_compare xs ys = c -> list_compare ys zs = c -> list_compare xs zs = c.
+    Proof.
+      intros Hcmp_trans Hcmp_opp.
+      destruct
+        (list_compareP xs ys) as [?|???|???|p1 x1 xs1 y1 ys1 Hxy1 Hxy2 Hlt1|p1 x1 xs1 y1 ys1 Hxy1 Hxy2 Hgt1],
+        (list_compareP ys zs) as [?|???|???|p2 y2 ys2 z2 zs2 Hyz1 Hyz2 Hlt2|p2 y2 ys2 z2 zs2 Hyz1 Hyz2 Hgt2],
+        (list_compareP xs zs) as [?|???|???|p3 x3 xs3 z3 zs3 Hxz1 Hxz2 Hlt3|p3 x3 xs3 z3 zs3 Hxz1 Hxz2 Hgt3].
+      all: intros <-; try discriminate; intros _; try reflexivity; exfalso.
+      all: try (subst; rewrite <-?app_assoc in *; simpl in *; list_auto; fail).
+      all: rewrite Hxy1 in Hxz1; rewrite Hxy2 in Hyz1; rewrite Hyz2 in Hxz2; clear Hxy1 Hxy2 Hyz2.
+      all: revert p2 p3 xs1 ys1 ys2 zs2 xs3 zs3 Hyz1 Hxz1 Hxz2.
+      all: induction p1 as [|h1 p1 IH]; intros; destruct p2 as [|h2 p2]; destruct p3 as [|h3 p3].
+      all: simpl in *; list_auto.
+      all: eapply IH; eassumption.
+    Qed.
+
+    Lemma list_compare_spec_complete (xs ys : list A) (c : comparison) :
+      ListCompareSpec xs ys c -> list_compare xs ys = c.
+    Proof.
+      intros [->|??->|??->|?????->->Heq|?????->->Heq].
+      - apply list_compare_refl. reflexivity.
+      - rewrite <-(app_nil_r xs) at 1. apply list_compare_app.
+      - rewrite <-(app_nil_r ys) at 2. apply list_compare_app.
+      - rewrite list_compare_app. simpl. rewrite Heq. reflexivity.
+      - rewrite list_compare_app. simpl. rewrite Heq. reflexivity.
+    Qed.
+
+  End Lemmas.
+
+End Compare.
 
 Section Exists_Forall.
 
@@ -3310,6 +3618,49 @@ Section ForallPairs.
   Qed.
 End ForallPairs.
 
+Lemma NoDup_iff_ForallOrdPairs [A] (l: list A):
+  NoDup l <-> ForallOrdPairs (fun a b => a <> b) l.
+Proof.
+  split; intro H.
+  - induction H; constructor.
+    + apply Forall_forall.
+      intros y Hy ->. contradiction.
+    + assumption.
+  - induction H as [|a l H1 H2]; constructor.
+    + rewrite Forall_forall in H1. intro E.
+      contradiction (H1 a E). reflexivity.
+    + assumption.
+Qed.
+
+Lemma NoDup_map_NoDup_ForallPairs [A B] (f: A->B) (l: list A) :
+  ForallPairs (fun x y => f x = f y -> x = y) l -> NoDup l -> NoDup (map f l).
+Proof.
+  intros Hinj Hl.
+  induction Hl as [|x ?? _ IH]; cbn; constructor.
+  - intros [y [??]]%in_map_iff.
+    destruct (Hinj y x); cbn; auto.
+  - apply IH.
+    intros x' y' Hx' Hy'.
+    now apply Hinj; right.
+Qed.
+
+Lemma NoDup_concat [A] (L: list (list A)):
+  Forall (@NoDup A) L ->
+  ForallOrdPairs (fun l1 l2 => forall a, In a l1 -> ~ In a l2) L ->
+  NoDup (concat L).
+Proof.
+  intros H1 H2. induction L as [|l1 L IHL]; [constructor|].
+  cbn. apply NoDup_app.
+  - apply Forall_inv in H1. assumption.
+  - apply IHL.
+    + apply Forall_inv_tail in H1. assumption.
+    + inversion H2. assumption.
+  - intros a aInl1 ainL%in_concat. destruct ainL as [l2 [l2inL ainL2]].
+    inversion H2 as [|l L' H3].
+    rewrite Forall_forall in H3.
+    apply (H3 _ l2inL _ aInl1). assumption.
+Qed.
+
 Section Repeat.
 
   Variable A : Type.
@@ -3433,6 +3784,16 @@ Section Repeat.
     - intros [|n]; [reflexivity|exact (IHm n)].
   Qed.
 
+  Lemma nth_repeat_lt a m n d :
+    n < m ->
+    nth n (repeat a m) d = a.
+  Proof.
+    revert n. induction m as [|m IHm].
+    - now intros [|n].
+    - intros [|n]; [reflexivity|].
+      intros Hlt%Nat.succ_lt_mono. apply (IHm _ Hlt).
+  Qed.
+
   Lemma nth_error_repeat a m n :
     n < m -> nth_error (repeat a m) n = Some a.
   Proof.
@@ -3479,36 +3840,36 @@ simpl; rewrite IHl1.
 apply Nat.add_assoc.
 Qed.
 
-Lemma concat_length A l:
+Lemma length_concat A l:
   length (concat l) = list_sum (map (@length A) l).
 Proof.
   induction l; [reflexivity|].
-  simpl. rewrite app_length.
+  simpl. rewrite length_app.
   f_equal. assumption.
 Qed.
 
-Lemma flat_map_length A B (f: A -> list B) l:
+Lemma length_flat_map A B (f: A -> list B) l:
   length (flat_map f l) = list_sum (map (fun x => length (f x)) l).
 Proof.
-  rewrite flat_map_concat_map, concat_length, map_map. reflexivity.
+  rewrite flat_map_concat_map, length_concat, map_map. reflexivity.
 Qed.
 
 Corollary flat_map_constant_length A B c (f: A -> list B) l:
   (forall x, In x l -> length (f x) = c) -> length (flat_map f l) = (length l) * c.
 Proof.
-  intro H. rewrite flat_map_length.
+  intro H. rewrite length_flat_map.
   induction l as [ | a l IHl ]; [reflexivity|].
   simpl. rewrite IHl, H; [reflexivity | left; reflexivity | ].
   intros x Hx. apply H. right. assumption.
 Qed.
 
-Lemma list_power_length (A B:Type)(l:list A) (l':list B):
+Lemma length_list_power (A B:Type)(l:list A) (l':list B):
     length (list_power l l') = (length l')^(length l).
 Proof.
   induction l as [ | a m IH ]; [reflexivity|].
   cbn. rewrite flat_map_constant_length with (c := length l').
   - rewrite IH. apply Nat.mul_comm.
-  - intros x H. apply map_length.
+  - intros x H. apply length_map.
 Qed.
 
 (** Max of elements of a list of [nat]: [list_max] *)
@@ -3577,10 +3938,10 @@ Global Hint Rewrite
   rev_involutive (* rev (rev l) = l *)
   rev_unit (* rev (l ++ a :: nil) = a :: rev l *)
   map_nth (* nth n (map f l) (f d) = f (nth n l d) *)
-  map_length (* length (map f l) = length l *)
-  seq_length (* length (seq start len) = len *)
-  app_length (* length (l ++ l') = length l + length l' *)
-  rev_length (* length (rev l) = length l *)
+  length_map (* length (map f l) = length l *)
+  length_seq (* length (seq start len) = len *)
+  length_app (* length (l ++ l') = length l + length l' *)
+  length_rev (* length (rev l) = length l *)
   app_nil_r (* l ++ nil = l *)
   : list.
 
@@ -3618,9 +3979,40 @@ Notation AllS := Forall (only parsing). (* was formerly in TheoryList *)
 Notation app_nil_end := app_nil_end_deprecated (only parsing).
 #[deprecated(since = "8.18", note = "Use app_assoc instead.")]
 Notation app_assoc_reverse := app_assoc_reverse_deprecated (only parsing).
+#[deprecated(since = "8.20", note = "Use nth_error_cons_succ instead.")]
+Notation nth_error_cons_S := nth_error_cons_succ.
 
 #[global]
 Hint Resolve app_nil_end_deprecated : datatypes.
+
+#[deprecated(since = "8.20", note = "Use length_app instead.")]
+Notation app_length := length_app (only parsing).
+#[deprecated(since = "8.20", note = "Use length_rev instead.")]
+Notation rev_length := length_rev (only parsing).
+#[deprecated(since = "8.20", note = "Use length_map instead.")]
+Notation map_length := length_map (only parsing).
+#[deprecated(since = "8.20", note = "Use fold_left_S_O instead.")]
+Notation fold_left_length := fold_left_S_O (only parsing).
+#[deprecated(since = "8.20", note = "Use length_fst_split instead.")]
+Notation split_length_l := length_fst_split (only parsing).
+#[deprecated(since = "8.20", note = "Use length_snd_split instead.")]
+Notation split_length_r := length_snd_split (only parsing).
+#[deprecated(since = "8.20", note = "Use length_combine instead.")]
+Notation combine_length := length_combine (only parsing).
+#[deprecated(since = "8.20", note = "Use length_prod instead.")]
+Notation prod_length := length_prod (only parsing).
+#[deprecated(since = "8.20", note = "Use length_firstn instead.")]
+Notation firstn_length := length_firstn (only parsing).
+#[deprecated(since = "8.20", note = "Use length_skipn instead.")]
+Notation skipn_length := length_skipn (only parsing).
+#[deprecated(since = "8.20", note = "Use length_seq instead.")]
+Notation seq_length := length_seq (only parsing).
+#[deprecated(since = "8.20", note = "Use length_concat instead.")]
+Notation concat_length := length_concat (only parsing).
+#[deprecated(since = "8.20", note = "Use length_flat_map instead.")]
+Notation flat_map_length := length_flat_map (only parsing).
+#[deprecated(since = "8.20", note = "Use length_list_power instead.")]
+Notation list_power_length := length_list_power (only parsing).
 (* end hide *)
 
 

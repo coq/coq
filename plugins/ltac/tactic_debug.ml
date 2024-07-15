@@ -15,7 +15,7 @@ open Names
 open Pp
 open Tacexpr
 
-let (ltac_trace_info : ltac_stack Exninfo.t) = Exninfo.make ()
+let (ltac_trace_info : ltac_stack Exninfo.t) = Exninfo.make "ltac_trace"
 
 let prtac x =
   let env = Global.env () in
@@ -69,7 +69,7 @@ let update_bpt fname offset opt =
           (try
             let p = Loadpath.find_load_path (CUnix.physical_path_of_string dirname) in
             DirPath.repr (Loadpath.logical p)
-          with _ -> []))
+          with exn when CErrors.noncritical exn -> []))
     end
   in
   let dirpath = DirPath.to_string dp in
@@ -170,14 +170,14 @@ let cvt_loc loc =
              let knlen = String.length text in
              let lastdot = String.rindex text '.' in
              String.sub text (lastdot+1) (knlen - (lastdot + 1))
-           with _ -> text
+           with exn when CErrors.noncritical exn -> text
          in
          Printf.sprintf "%s:%d, %s  (%s)" routine line_nb file module_name;
        | Some { fname=ToplevelInput; line_nb } ->
          let items = String.split_on_char '.' text in
          Printf.sprintf "%s:%d, %s" (List.nth items 1) line_nb (List.hd items);
        | _ -> text
-   with _ -> text
+   with exn when CErrors.noncritical exn -> text
 
 let format_stack s =
   List.map (fun (tac, loc) ->
@@ -316,9 +316,10 @@ let defer_output = Comm.defer_output
 
 let db_pr_goal gl =
   let env = Proofview.Goal.env gl in
+  let sigma = Tacmach.project gl in
   let concl = Proofview.Goal.concl gl in
-  let penv = Termops.Internal.print_named_context env in
-  let pc = Printer.pr_econstr_env env (Tacmach.project gl) concl in
+  let penv = Termops.Internal.print_named_context env sigma in
+  let pc = Printer.pr_econstr_env env sigma concl in
     str"  " ++ hv 0 (penv ++ fnl () ++
                    str "============================" ++ fnl ()  ++
                    str" "  ++ pc) ++ fnl () ++ fnl ()

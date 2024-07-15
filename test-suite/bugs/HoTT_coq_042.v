@@ -12,7 +12,7 @@ Record Foo := { foo : forall A (f : Morphism SetCat A A), True }.
 Local Notation PartialBuild_Foo pf := (@Build_Foo (fun A f => pf A f)).
 
 Set Printing Universes.
-Let SetCatFoo' : Foo.
+#[local] Definition SetCatFoo' : Foo.
   let pf := fresh in
   let pfT := fresh in
   evar (pfT : Prop);

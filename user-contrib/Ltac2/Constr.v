@@ -9,7 +9,7 @@
 (************************************************************************)
 
 Require Import Ltac2.Init.
-Require Ltac2.Ind.
+Require Ltac2.Ind Ltac2.Array.
 
 Ltac2 @ external type : constr -> constr := "coq-core.plugins.ltac2" "constr_type".
 (** Return the type of a term *)
@@ -34,6 +34,9 @@ Ltac2 @ external name : binder -> ident option := "coq-core.plugins.ltac2" "cons
 
 Ltac2 @ external type : binder -> constr := "coq-core.plugins.ltac2" "constr_binder_type".
 (** Retrieve the type of a binder. *)
+
+Ltac2 @ external relevance : binder -> relevance := "coq-core.plugins.ltac2" "constr_binder_relevance".
+(** Retrieve the relevance of a binder. *)
 
 End Binder.
 
@@ -68,10 +71,17 @@ Ltac2 Type kind := [
 | Proj (projection, Binder.relevance, constr)
 | Uint63 (uint63)
 | Float (float)
+| String (pstring)
 | Array (instance, constr array, constr, constr)
 ].
 
 Ltac2 @ external kind : constr -> kind := "coq-core.plugins.ltac2" "constr_kind".
+
+Ltac2 rec kind_nocast c :=
+  match kind c with
+  | Cast c _ _ => kind_nocast c
+  | k => k
+  end.
 
 Ltac2 @ external make : kind -> constr := "coq-core.plugins.ltac2" "constr_make".
 
@@ -123,6 +133,142 @@ Module Case.
 
 End Case.
 
+(** Open recursion combinators *)
+
+Local Ltac2 iter_invert (f : constr -> unit) (ci : case_invert) : unit :=
+  match ci with
+  | NoInvert => ()
+  | CaseInvert indices => Array.iter f indices
+  end.
+
+(** [iter f c] iters [f] on the immediate subterms of [c]; it is
+   not recursive and the order with which subterms are processed is
+   not specified *)
+Ltac2 iter (f : constr -> unit) (c : constr) : unit :=
+  match kind c with
+  | Rel _ | Meta _ | Var _ | Sort _ | Constant _ _ | Ind _ _
+  | Constructor _ _ | Uint63 _ | Float _ | String _ => ()
+  | Cast c _ t => f c; f t
+  | Prod b c => f (Binder.type b); f c
+  | Lambda b c => f (Binder.type b); f c
+  | LetIn b t c => f (Binder.type b); f t; f c
+  | App c l => f c; Array.iter f l
+  | Evar _ l => Array.iter f l
+  | Case _ x iv y bl =>
+      match x with (x,_) => f x end;
+      iter_invert f iv;
+      f y;
+      Array.iter f bl
+  | Proj _p _ c => f c
+  | Fix _ _ tl bl =>
+      Array.iter (fun b => f (Binder.type b)) tl;
+      Array.iter f bl
+  | CoFix _ tl bl =>
+      Array.iter (fun b => f (Binder.type b)) tl;
+      Array.iter f bl
+  | Array _u t def ty =>
+      f ty; Array.iter f t; f def
+  end.
+
+(** [iter_with_binders g f n c] iters [f n] on the immediate
+   subterms of [c]; it carries an extra data [n] (typically a lift
+   index) which is processed by [g] (which typically add 1 to [n]) at
+   each binder traversal; it is not recursive and the order with which
+   subterms are processed is not specified *)
+Ltac2 iter_with_binders (g : 'a -> binder -> 'a) (f : 'a -> constr -> unit) (n : 'a) (c : constr) : unit :=
+  match kind c with
+  | Rel _ | Meta _ | Var _ | Sort _ | Constant _ _ | Ind _ _
+  | Constructor _ _ | Uint63 _ | Float _ | String _ => ()
+  | Cast c _ t => f n c; f n t
+  | Prod b c => f n (Binder.type b); f (g n b) c
+  | Lambda b c => f n (Binder.type b); f (g n b) c
+  | LetIn b t c => f n (Binder.type b); f n t; f (g n b) c
+  | App c l => f n c; Array.iter (f n) l
+  | Evar _ l => Array.iter (f n) l
+  | Case _ x iv y bl =>
+      match x with (x,_) => f n x end;
+      iter_invert (f n) iv;
+      f n y;
+      Array.iter (f n) bl
+  | Proj _p _ c => f n c
+  | Fix _ _ tl bl =>
+      Array.iter (fun b => f n (Binder.type b)) tl;
+      let n := Array.fold_left g n tl in
+      Array.iter (f n) bl
+  | CoFix _ tl bl =>
+      Array.iter (fun b => f n (Binder.type b)) tl;
+      let n := Array.fold_left g n tl in
+      Array.iter (f n) bl
+  | Array _u t def ty =>
+      f n ty;
+      Array.iter (f n) t;
+      f n def
+  end.
+
+Local Ltac2 binder_map (f : constr -> constr) (b : binder) : binder :=
+  Binder.unsafe_make (Binder.name b) (Binder.relevance b) (f (Binder.type b)).
+
+Local Ltac2 map_invert (f : constr -> constr) (iv : case_invert) : case_invert :=
+  match iv with
+  | NoInvert => NoInvert
+  | CaseInvert indices => CaseInvert (Array.map f indices)
+  end.
+
+(** [map f c] maps [f] on the immediate subterms of [c]; it is
+   not recursive and the order with which subterms are processed is
+   not specified *)
+Ltac2 map (f : constr -> constr) (c : constr) : constr :=
+  match kind c with
+  | Rel _ | Meta _ | Var _ | Sort _ | Constant _ _ | Ind _ _
+  | Constructor _ _ | Uint63 _ | Float _ | String _ => c
+  | Cast c k t =>
+      let c := f c
+      with t := f t in
+      make (Cast c k t)
+  | Prod b c =>
+      let b := binder_map f b
+      with c := f c in
+      make (Prod b c)
+  | Lambda b c =>
+      let b := binder_map f b
+      with c := f c in
+      make (Lambda b c)
+  | LetIn b t c =>
+      let b := binder_map f b
+      with t := f t
+      with c := f c in
+      make (LetIn b t c)
+  | App c l =>
+      let c := f c
+      with l := Array.map f l in
+      make (App c l)
+  | Evar e l =>
+      let l := Array.map f l in
+      make (Evar e l)
+  | Case info x iv y bl =>
+      let x := match x with (x,x') => (f x, x') end
+      with iv := map_invert f iv
+      with y := f y
+      with bl := Array.map f bl in
+      make (Case info x iv y bl)
+  | Proj p r c =>
+      let c := f c in
+      make (Proj p r c)
+  | Fix structs which tl bl =>
+      let tl := Array.map (binder_map f) tl
+      with bl := Array.map f bl in
+      make (Fix structs which tl bl)
+  | CoFix which tl bl =>
+      let tl := Array.map (binder_map f) tl
+      with bl := Array.map f bl in
+      make (CoFix which tl bl)
+  | Array u t def ty =>
+      let ty := f ty
+      with t := Array.map f t
+      with def := f def in
+      make (Array u t def ty)
+  end.
+
 End Unsafe.
 
 Module Cast.
@@ -145,10 +291,41 @@ Module Pretype.
     Ltac2 Type t.
 
     Ltac2 @ external constr_flags : t := "coq-core.plugins.ltac2" "constr_flags".
-    (** Does not allow new unsolved evars. *)
+    (** The flags used by constr:(). *)
 
-    Ltac2 @ external open_constr_flags : t := "coq-core.plugins.ltac2" "open_constr_flags".
-    (** Allows new unsolved evars. *)
+    Ltac2 @external set_use_coercions : bool -> t -> t
+      := "coq-core.plugins.ltac2" "pretype_flags_set_use_coercions".
+    (** Use coercions during pretyping. [true] in [constr_flags]. *)
+
+    Ltac2 @external set_use_typeclasses : bool -> t -> t
+      := "coq-core.plugins.ltac2" "pretype_flags_set_use_typeclasses".
+    (** Run typeclass inference at the end of pretyping and when
+        needed according to flag "Typeclass Resolution For Conversion".
+        [true] in [constr_flags]. *)
+
+    Ltac2 @external set_allow_evars : bool -> t -> t
+      := "coq-core.plugins.ltac2" "pretype_flags_set_allow_evars".
+    (** Allow pretyping to produce new unresolved evars.
+        [false] in [constr_flags]. *)
+
+    Ltac2 @external set_nf_evars : bool -> t -> t
+      := "coq-core.plugins.ltac2" "pretype_flags_set_nf_evars".
+    (** Evar-normalize the result of pretyping. This should not impact
+        anything other than performance.
+        [true] in [constr_flags]. *)
+
+    Ltac2 Notation open_constr_flags_with_tc :=
+      set_nf_evars false (set_allow_evars true constr_flags).
+
+    Local Ltac2 open_constr_flags_with_tc_kn () := open_constr_flags_with_tc.
+    (** Code generation uses this as using the notation is not convenient. *)
+
+    Ltac2 Notation open_constr_flags_no_tc :=
+      set_use_typeclasses false open_constr_flags_with_tc.
+    (** The flags used by open_constr:() and its alias [']. *)
+
+    #[deprecated(since="8.20", note="use open_constr_flags_with_tc (or no_tc as desired)")]
+    Ltac2 Notation open_constr_flags := open_constr_flags_with_tc.
   End Flags.
 
   Ltac2 Type expected_type.

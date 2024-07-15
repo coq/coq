@@ -43,7 +43,7 @@ let () = at_exit (fun () ->
         let d = Lazy.force my_temp_dir in
         Array.iter (fun f -> Sys.remove (Filename.concat d f)) (Sys.readdir d);
         Unix.rmdir d
-      with e ->
+      with (Unix.Unix_error _ | Sys_error _) as e ->
         Feedback.msg_warning
           Pp.(str "Native compile: failed to cleanup: " ++
               str(Printexc.to_string e) ++ fnl()))
@@ -168,8 +168,8 @@ let compile_library (code, symb) fn =
   let header = mk_library_header symb in
   let fn = fn ^ source_ext in
   let basename = Filename.basename fn in
-  let dirname = Filename.dirname fn in
-  let dirname = dirname / !output_dir in
+  let dirname =
+    if Filename.is_relative !output_dir then Filename.dirname fn / !output_dir else !output_dir in
   let () =
     try Unix.mkdir dirname 0o755
     with Unix.Unix_error (Unix.EEXIST, _, _) -> ()

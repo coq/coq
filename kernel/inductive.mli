@@ -14,6 +14,7 @@ open Univ
 open UVars
 open Declarations
 open Environ
+open CClosure
 
 (** {6 Extracting an inductive type from a construction } *)
 
@@ -23,9 +24,9 @@ open Environ
    only a coinductive type.
    They raise [Not_found] if not convertible to a recursive type. *)
 
-val find_rectype     : env -> types -> pinductive * constr list
-val find_inductive   : env -> types -> pinductive * constr list
-val find_coinductive : env -> types -> pinductive * constr list
+val find_rectype     : ?evars:evar_handler -> env -> types -> pinductive * constr list
+val find_inductive   : ?evars:evar_handler -> env -> types -> pinductive * constr list
+val find_coinductive : ?evars:evar_handler -> env -> types -> pinductive * constr list
 
 (** {6 ... } *)
 (** Fetching information in the environment about an inductive type.
@@ -51,9 +52,10 @@ type template_univ =
 
 type param_univs = (expected:Univ.Level.t -> template_univ) list
 
+val instantiate_template_universes : mind_specif -> param_univs ->
+  Constraints.t * rel_context * template_univ Univ.Level.Map.t
+
 val constrained_type_of_inductive : mind_specif puniverses -> types constrained
-val constrained_type_of_inductive_knowing_parameters :
-  mind_specif puniverses -> param_univs -> types constrained
 
 val relevance_of_ind_body : one_inductive_body -> UVars.Instance.t -> Sorts.relevance
 
@@ -62,10 +64,14 @@ val relevance_of_inductive : env -> pinductive -> Sorts.relevance
 val type_of_inductive : mind_specif puniverses -> types
 
 val type_of_inductive_knowing_parameters :
-  ?polyprop:bool -> mind_specif puniverses -> param_univs -> types
+  ?polyprop:bool -> mind_specif puniverses -> param_univs -> types constrained
 
 val quality_leq : Sorts.Quality.t -> Sorts.Quality.t -> bool
 (** For squashing. *)
+
+type squash = SquashToSet | SquashToQuality of Sorts.Quality.t
+
+val is_squashed : mind_specif puniverses -> squash option
 
 val is_allowed_elimination : mind_specif puniverses -> Sorts.t -> bool
 
@@ -76,6 +82,7 @@ val is_primitive_record : mind_specif -> bool
 
 val constrained_type_of_constructor : pconstructor -> mind_specif -> types constrained
 val type_of_constructor : pconstructor -> mind_specif -> types
+val type_of_constructor_knowing_parameters : pconstructor -> mind_specif -> param_univs -> types constrained
 
 (** Return constructor types in normal form *)
 val arities_of_constructors : pinductive -> mind_specif -> types array
@@ -98,12 +105,19 @@ val inductive_params : mind_specif -> int
     array is only used to set the names of the context variables, we use the
     less general type to make it easy to use this function on Case nodes. *)
 val expand_arity : mind_specif -> pinductive -> constr array ->
-  Name.t Context.binder_annot array -> rel_context
+  Name.t binder_annot array -> rel_context
 
-type ('constr,'types) pexpanded_case =
-  (case_info * ('constr * Sorts.relevance) * 'constr pcase_invert * 'constr * 'constr array)
+(** Given an inductive type and its parameters, builds the context of the return
+    clause, including the inductive being eliminated. The additional binder
+    array is only used to set the names of the context variables, we use the
+    less general type to make it easy to use this function on Case nodes. *)
+val expand_branch_contexts : mind_specif -> UVars.Instance.t -> constr array ->
+  (Name.t binder_annot array * 'a) array -> rel_context array
 
-type expanded_case = (constr,types) pexpanded_case
+type ('constr,'types,'r) pexpanded_case =
+  (case_info * ('constr * 'r) * 'constr pcase_invert * 'constr * 'constr array)
+
+type expanded_case = (constr,types,Sorts.relevance) pexpanded_case
 
 (** Given a pattern-matching represented compactly, expands it so as to produce
     lambda and let abstractions in front of the return clause and the pattern
@@ -119,15 +133,12 @@ val contract_case : env -> expanded_case -> case
 (** [instantiate_context u subst nas ctx] applies both [u] and [subst]
     to [ctx] while replacing names using [nas] (order reversed). In particular,
     assumes that [ctx] and [nas] have the same length. *)
-val instantiate_context : Instance.t -> Vars.substl -> Name.t Context.binder_annot array ->
+val instantiate_context : Instance.t -> Vars.substl -> Name.t binder_annot array ->
   rel_context -> rel_context
 
 val build_branches_type :
   pinductive -> mutual_inductive_body * one_inductive_body ->
     constr list -> constr -> types array
-
-(** Return the arity of an inductive type *)
-val inductive_sort_family : one_inductive_body -> Sorts.family
 
 (** Check a [case_info] actually correspond to a Case expression on the
    given inductive type. *)
@@ -144,8 +155,8 @@ val is_primitive_positive_container : env -> Constant.t -> bool
 
 (** When [chk] is false, the guard condition is not actually
     checked. *)
-val check_fix : env -> fixpoint -> unit
-val check_cofix : env -> cofixpoint -> unit
+val check_fix : ?evars:evar_handler -> env -> fixpoint -> unit
+val check_cofix : ?evars:evar_handler -> env -> cofixpoint -> unit
 
 (** {6 Support for sort-polymorphic inductive types } *)
 

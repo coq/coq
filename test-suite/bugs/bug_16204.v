@@ -6,7 +6,7 @@ Class IsProp (A : Type) : Prop :=
   irrel (x y : A) : x = y.
 
 Class IsProofIrrel : Prop :=
-  proof_irrel (A : Prop) :> IsProp A.
+  proof_irrel (A : Prop) :: IsProp A.
 
 Class IsPropExt : Prop :=
   prop_ext (A B : Prop) (a : A <-> B) : A = B.

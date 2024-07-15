@@ -12,7 +12,7 @@ open Names
 
 (** This module provides the functions to declare new
    variables, parameters, constants and inductive types in the global
-   environment. It also updates some accesory tables such as [Nametab]
+   environment. It also updates some accessory tables such as [Nametab]
    (name resolution), [Impargs], and [Notations]. *)
 
 (** We provide three main entry points:
@@ -79,7 +79,6 @@ module CInfo : sig
     -> typ:'constr
     -> ?args:Name.t list
     -> ?impargs:Impargs.manual_implicits
-    -> ?using:Proof_using.t
     -> unit
     -> 'constr t
 
@@ -111,7 +110,8 @@ module Info : sig
     -> ?hook : Hook.t
     (** Callback to be executed after saving the constant *)
     -> ?typing_flags:Declarations.typing_flags
-    -> ?deprecation : Deprecation.t
+    -> ?user_warns : Globnames.extended_global_reference UserWarn.with_qf
+    -> ?ntns : Metasyntax.notation_interpretation_decl list
     -> unit
     -> t
 
@@ -127,19 +127,19 @@ val declare_definition
   -> cinfo:EConstr.t option CInfo.t
   -> opaque:bool
   -> body:EConstr.t
+  -> ?using:Vernacexpr.section_subset_expr
   -> Evd.evar_map
   -> GlobRef.t
 
-type lemma_possible_guards = int list list
-
-val declare_mutually_recursive
-  : info:Info.t
+val declare_mutual_definitions
+  :  info:Info.t
   -> cinfo: Constr.t CInfo.t list
   -> opaque:bool
-  -> ntns:Metasyntax.notation_interpretation_decl list
   -> uctx:UState.t
-  -> rec_declaration:Constr.rec_declaration
-  -> possible_indexes:lemma_possible_guards option
+  -> bodies:(Constr.t list * Sorts.relevance list)
+  -> possible_guard:Pretyping.possible_guard
+  -> ?using:Vernacexpr.section_subset_expr
+  -> unit
   -> Names.GlobRef.t list
 
 (** {2 Declaration of interactive constants }  *)
@@ -183,6 +183,7 @@ module Proof : sig
   val start
     :  info:Info.t
     -> cinfo:EConstr.t CInfo.t
+    -> ?using:Id.Set.t
     -> Evd.evar_map
     -> t
 
@@ -204,21 +205,21 @@ module Proof : sig
     -> t
 
   (** Pretty much internal, used by the Lemma vernaculars *)
-  val start_with_initialization
+  val start_definition
     :  info:Info.t
     -> cinfo:Constr.t CInfo.t
+    -> ?using:Vernacexpr.section_subset_expr
     -> Evd.evar_map
     -> t
 
-  type mutual_info = (bool * lemma_possible_guards * Constr.t option list option)
-
   (** Pretty much internal, used by mutual Lemma / Fixpoint vernaculars *)
-  val start_mutual_with_initialization
+  val start_mutual_definitions
     :  info:Info.t
     -> cinfo:Constr.t CInfo.t list
-    -> mutual_info:mutual_info
+    -> ?bodies:Constr.t option list
+    -> possible_guard:Pretyping.possible_guard
+    -> ?using:Vernacexpr.section_subset_expr
     -> Evd.evar_map
-    -> int list option
     -> t
 
   (** Qed a proof  *)
@@ -260,7 +261,7 @@ module Proof : sig
 
   (** Sets the section variables assumed by the proof, returns its closure
    * (w.r.t. type dependencies and let-ins covered by it) *)
-  val set_used_variables : t -> using:Proof_using.t -> Constr.named_context * t
+  val set_proof_using : t -> Vernacexpr.section_subset_expr -> Constr.named_context * t
 
   (** Gets the set of variables declared to be used by the proof. None means
       no "Proof using" or #[using] was given *)
@@ -276,9 +277,6 @@ module Proof : sig
   val update_sigma_univs : UGraph.t -> t -> t
 
   val get_open_goals : t -> int
-
-  (** Gets the set of mutual theorem names being currently built, if any *)
-  val get_recnames : t -> Id.t list
 
   (** Helpers to obtain proof state when in an interactive proof *)
 
@@ -308,10 +306,6 @@ module Proof : sig
   (** Requires a complete proof. *)
   val return_proof : t -> closed_proof_output
 
-  (** An incomplete proof is allowed (no error), and a warn is given if
-      the proof is complete. *)
-  val return_partial_proof : t -> closed_proof_output
-
   (** XXX: This is an internal, low-level API and could become scheduled
       for removal from the public API, use higher-level declare APIs
       instead *)
@@ -331,10 +325,7 @@ module Proof : sig
     : pm:OblState.t
     -> proof:proof_object
     -> idopt:Names.lident option
-    -> OblState.t * GlobRef.t list
-
-  (** Used by the STM only to store info, should go away *)
-  val get_po_name : proof_object -> Id.t
+    -> OblState.t
 
 end
 
@@ -349,6 +340,7 @@ end
 type proof_entry
 type parameter_entry
 type primitive_entry
+type symbol_entry
 
 val definition_entry
   :  ?opaque:bool
@@ -370,6 +362,12 @@ val primitive_entry
   -> CPrimitives.op_or_type
   -> primitive_entry
 
+val symbol_entry
+  :  ?univs:UState.named_universes_entry
+  -> unfold_fix:bool
+  -> Constr.types
+  -> symbol_entry
+
 (** XXX: This is an internal, low-level API and could become scheduled
     for removal from the public API, use higher-level declare APIs
     instead *)
@@ -377,21 +375,31 @@ val declare_entry
   :  name:Id.t
   -> ?scope:Locality.definition_scope
   -> kind:Decls.logical_kind
-  -> ?deprecation:Deprecation.t
+  -> ?user_warns:Globnames.extended_global_reference UserWarn.with_qf
   -> ?hook:Hook.t
   -> impargs:Impargs.manual_implicits
   -> uctx:UState.t
   -> proof_entry
   -> GlobRef.t
 
+(** Declaration of section variables and local definitions *)
+type variable_declaration =
+  | SectionLocalDef of {
+      clearbody : bool;
+      entry : proof_entry;
+    }
+  | SectionLocalAssum of {
+      typ : Constr.types;
+      impl : Glob_term.binding_kind;
+      univs : UState.named_universes_entry;
+    }
+
 (** Declaration of local constructions (Variable/Hypothesis/Local) *)
 val declare_variable
   :  name:variable
   -> kind:Decls.logical_kind
   -> typing_flags:Declarations.typing_flags option
-  -> typ:Constr.types
-  -> impl:Glob_term.binding_kind
-  -> univs:UState.named_universes_entry
+  -> variable_declaration
   -> unit
 
 (** Declaration of global constructions
@@ -404,6 +412,7 @@ type constant_entry =
   | DefinitionEntry of proof_entry
   | ParameterEntry of parameter_entry
   | PrimitiveEntry of primitive_entry
+  | SymbolEntry of symbol_entry
 
 val prepare_parameter
   : poly:bool
@@ -424,7 +433,7 @@ val declare_constant
   -> name:Id.t
   -> kind:Decls.logical_kind
   -> ?typing_flags:Declarations.typing_flags
-  -> ?deprecation: Deprecation.t
+  -> ?user_warns:Globnames.extended_global_reference UserWarn.with_qf
   -> constant_entry
   -> Constant.t
 
@@ -444,7 +453,7 @@ val build_by_tactic
   -> poly:bool
   -> typ:EConstr.types
   -> unit Proofview.tactic
-  -> Constr.constr * Constr.types option * (UState.named_universes_entry) * bool * UState.t
+  -> Constr.constr * Constr.types option * UState.named_universes_entry * bool * UState.t
 
 (** {2 Program mode API} *)
 
@@ -512,12 +521,13 @@ type progress =
   | Defined of GlobRef.t  (** Defined as id *)
 
 (** Prepare API, to be removed once we provide the corresponding 1-step API *)
-val prepare_obligation
+val prepare_obligations
   :  name:Id.t
-  -> types:EConstr.t option
+  -> ?types:EConstr.t
   -> body:EConstr.t
+  -> Environ.env
   -> Evd.evar_map
-  -> Constr.constr * Constr.types * UState.t * RetrieveObl.obligation_info
+  -> Constr.constr * Constr.types * UState.t * RetrieveObl.obligation_name_lifter * RetrieveObl.obligation_info
 
 (** Start a [Program Definition c] proof. [uctx] [udecl] [impargs]
    [kind] [scope] [poly] etc... come from the interpretation of the
@@ -526,14 +536,15 @@ val prepare_obligation
    also register [c] with the kernel. *)
 val add_definition :
      pm:OblState.t
-  -> cinfo:Constr.types CInfo.t
   -> info:Info.t
-  -> ?obl_hook: OblState.t Hook.g
-  -> ?term:Constr.t
+  -> cinfo:Constr.types CInfo.t
+  -> opaque:bool
   -> uctx:UState.t
+  -> ?body:Constr.t
   -> ?tactic:unit Proofview.tactic
   -> ?reduce:(Constr.t -> Constr.t)
-  -> ?opaque:bool
+  -> ?using:Vernacexpr.section_subset_expr
+  -> ?obl_hook: OblState.t Hook.g
   -> RetrieveObl.obligation_info
   -> OblState.t * progress
 
@@ -542,43 +553,52 @@ val add_definition :
 (** Start a [Program Fixpoint] declaration, similar to the above,
    except it takes a list now. *)
 val add_mutual_definitions :
-     (Constr.t CInfo.t * Constr.t * RetrieveObl.obligation_info) list
-  -> pm:OblState.t
+     pm:OblState.t
   -> info:Info.t
-  -> ?obl_hook: OblState.t Hook.g
+  -> cinfo:Constr.types CInfo.t list
+  -> opaque:bool
   -> uctx:UState.t
+  -> bodies:Constr.t list
+  -> possible_guard:Pretyping.possible_guard
   -> ?tactic:unit Proofview.tactic
   -> ?reduce:(Constr.t -> Constr.t)
-  -> ?opaque:bool
-  -> ntns:Metasyntax.notation_interpretation_decl list
-  -> fixpoint_kind
+  -> ?using:Vernacexpr.section_subset_expr
+  -> ?obl_hook: OblState.t Hook.g
+  -> RetrieveObl.obligation_info list
   -> OblState.t
 
-(** Implementation of the [Obligation] command *)
+(** Implementation of the [Obligation n of id : typ with tac] command *)
 val obligation :
      int * Names.Id.t option * Constrexpr.constr_expr option
   -> pm:OblState.t
   -> Genarg.glob_generic_argument option
   -> Proof.t
 
-(** Implementation of the [Next Obligation] and [Final Obligation] commands *)
+(** Implementation of the [Next Obligation of id with tac] and [Final Obligation of id with tac] commands *)
 val next_obligation :
   pm:OblState.t -> ?final:bool -> Names.Id.t option -> Genarg.glob_generic_argument option -> Proof.t
 
-(** Implementation of the [Solve Obligation] command *)
+(** Implementation of the [Solve Obligations of id with tac] command *)
 val solve_obligations :
   pm:OblState.t -> Names.Id.t option -> unit Proofview.tactic option -> OblState.t * progress
-
-val solve_all_obligations : pm:OblState.t -> unit Proofview.tactic option -> OblState.t
-
 val try_solve_obligations :
   pm:OblState.t -> Names.Id.t option -> unit Proofview.tactic option -> OblState.t
 
+(** Implementation of the [Solve All Obligations with tac] command *)
+val solve_all_obligations : pm:OblState.t -> unit Proofview.tactic option -> OblState.t
+
+(** Implementation of the [Obligations of id] command *)
 val show_obligations : pm:OblState.t -> ?msg:bool -> Names.Id.t option -> unit
+
+(** Implementation of the [Preterm of id] command *)
 val show_term : pm:OblState.t -> Names.Id.t option -> Pp.t
+
+(** Implementation of the [Admit Obligations of id] command *)
 val admit_obligations : pm:OblState.t -> Names.Id.t option -> OblState.t
 
 val check_program_libraries : unit -> unit
+
+val program_inference_hook : Environ.env -> Evd.evar_map -> Evar.t -> (Evd.evar_map * EConstr.t) option
 
 end
 
@@ -588,7 +608,7 @@ val is_local_constant : Constant.t -> bool
 
 module Internal : sig
 
-  (* Liboject exports *)
+  (* Libobject exports *)
   module Constant : sig
     type t
     val tag : (Id.t * t) Libobject.Dyn.tag

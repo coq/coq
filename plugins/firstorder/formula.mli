@@ -32,9 +32,17 @@ val construct_nhyps : Environ.env -> pinductive -> int array
 val ind_hyps : Environ.env -> Evd.evar_map -> int -> pinductive ->
   constr list -> EConstr.rel_context array
 
+module Env :
+sig
+  type t
+  val empty : t
+end
+
 type atom
 
-val repr_atom : atom -> EConstr.t
+val hole_atom : atom
+val repr_atom : Env.t -> atom -> EConstr.t
+val compare_atom : atom -> atom -> int
 
 type atoms = { positive:atom list; negative:atom list }
 
@@ -65,11 +73,14 @@ type left_pattern=
   | Lor of pinductive
   | Lforall of metavariable*constr*bool
   | Lexists of pinductive
-  | LA of constr*left_arrow_pattern
+  | LA of atom*left_arrow_pattern
 
-type _ identifier =
+type _ identifier = private
 | GoalId : [ `Goal ] identifier
 | FormulaId : GlobRef.t -> [ `Hyp ] identifier
+
+val goal_id : [ `Goal ] identifier
+val formula_id : Environ.env -> GlobRef.t -> [ `Hyp ] identifier
 
 type _ pattern =
 | LeftPattern : left_pattern -> [ `Hyp ] pattern
@@ -77,11 +88,11 @@ type _ pattern =
 
 type 'a t = private {
         id: 'a identifier;
-        constr: constr;
+        constr: atom;
         pat: 'a pattern;
         atoms: atoms}
 
 type any_formula = AnyFormula : 'a t -> any_formula
 
-val build_formula : flags:flags -> Environ.env -> Evd.evar_map -> 'a side -> 'a identifier -> types ->
-  counter -> ('a t, atom) sum
+val build_formula : flags:flags -> Env.t -> Environ.env -> Evd.evar_map -> 'a side -> 'a identifier -> types ->
+  counter -> Env.t * ('a t, atom) sum

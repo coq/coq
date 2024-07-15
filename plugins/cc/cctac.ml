@@ -64,14 +64,11 @@ let rec decompose_term env sigma t =
         ATerm.mkAppli (ATerm.mkAppli (ATerm.mkProduct (sort_a,sort_b),
                     decompose_term env sigma a),
               decompose_term env sigma b)
-    | Construct c ->
-        let (((mind,i_ind),i_con),u)= c in
+    | Construct ((ind, _ as cstr), u) ->
         let u = EInstance.kind sigma u in
-        let canon_mind = MutInd.make1 (MutInd.canonical mind) in
-        let canon_ind = canon_mind,i_ind in
-        let (oib,_)=Global.lookup_inductive (canon_ind) in
-        let nargs=constructor_nallargs env (canon_ind,i_con) in
-          ATerm.mkConstructor {ci_constr= ((canon_ind,i_con),u);
+        let oib = Environ.lookup_mind (fst ind) env in
+        let nargs = constructor_nallargs env cstr in
+        ATerm.mkConstructor env {ci_constr = (cstr, u);
                        ci_arity=nargs;
                        ci_nhyps=nargs-oib.mind_nparams}
     | Ind c ->
@@ -255,9 +252,9 @@ let fresh_id env id =
 
 let build_projection env sigma intype (cstr : pconstructor) special default =
   let ci = (snd (fst cstr)) in
-  let body=Equality.build_selector env sigma ci (mkRel 1) intype special default in
+  let body = Combinators.make_selector env sigma ~pos:ci ~special ~default (mkRel 1) intype in
   let id = fresh_id env (Id.of_string "t") in
-  sigma, mkLambda (make_annot (Name id) Sorts.Relevant, intype, body)
+  sigma, mkLambda (make_annot (Name id) ERelevance.relevant, intype, body)
 
 (* generate an adhoc tactic following the proof tree  *)
 
@@ -329,7 +326,7 @@ let rec proof_term env sigma (typ, lhs, rhs) p = match p.p_rule with
   let sigma, funty = type_and_refresh_ env sigma f in
   let sigma, argty = type_and_refresh_ env sigma t in
   let id = fresh_id env (Id.of_string "f") in
-  let appf = mkLambda (make_annot (Name id) Sorts.Relevant, funty, mkApp (mkRel 1, [|t|])) in
+  let appf = mkLambda (make_annot (Name id) ERelevance.relevant, funty, mkApp (mkRel 1, [|t|])) in
   let sigma, p1 = proof_term env sigma (funty, f, g) p1 in
   let sigma, p2 = proof_term env sigma (argty, t, u) p2 in
   (* lemma1 : ⊢ f t = g t : B{t} *)
@@ -393,7 +390,7 @@ let convert_to_goal_tac c t1 t2 p =
     let neweq= app_global _eq [|sort;tt1;tt2|] in
     let e = Tacmach.pf_get_new_id (Id.of_string "e") gl in
     let x = Tacmach.pf_get_new_id (Id.of_string "X") gl in
-    let identity=mkLambda (make_annot (Name x) Sorts.Relevant,sort,mkRel 1) in
+    let identity=mkLambda (make_annot (Name x) ERelevance.relevant,sort,mkRel 1) in
     let endt = app_global _eq_rect [|sort; tt1; identity; mkVar c; tt2; mkVar e|] in
     Tacticals.tclTHENS (neweq (assert_before (Name e)))
                            [proof_tac (sort, tt1, tt2) p; endt refine_exact_check]
@@ -493,7 +490,7 @@ let cc_tactic depth additional_terms b =
       end
   end
 
-let id t = mkLambda (make_annot Anonymous Sorts.Relevant, t, mkRel 1)
+let id t = mkLambda (make_annot Anonymous ERelevance.relevant, t, mkRel 1)
 
 (* convertible to (not False) -> P -> not P *)
 let mk_neg_ty ff t nt =
@@ -501,8 +498,8 @@ let mk_neg_ty ff t nt =
 
 (* proof of ((not False) -> P -> not P) -> not P *)
 let mk_neg_tm ff t nt =
-  mkLambda (make_annot Anonymous Sorts.Relevant, mk_neg_ty ff t nt,
-    mkLambda (make_annot Anonymous Sorts.Relevant, t,
+  mkLambda (make_annot Anonymous ERelevance.relevant, mk_neg_ty ff t nt,
+    mkLambda (make_annot Anonymous ERelevance.relevant, t,
       mkApp (mkRel 2,[|id ff; mkRel 1; mkRel 1|])))
 
 (* for [simple congruence] process conclusion (not P) *)
@@ -523,12 +520,14 @@ let negative_concl_introf =
   end
 
 let congruence_tac depth l =
+  let depth = Option.default 1000 depth in
   Tacticals.tclTHEN
     (Tacticals.tclREPEAT (Tacticals.tclFIRST [intro; Tacticals.tclTHEN whd_in_concl intro]))
     (cc_tactic depth l false)
 
 
 let simple_congruence_tac depth l =
+  let depth = Option.default 1000 depth in
   Tacticals.tclTHENLIST [
     Tacticals.tclREPEAT intro;
     negative_concl_introf;
@@ -572,7 +571,7 @@ let f_equal =
           begin match EConstr.kind sigma t, EConstr.kind sigma t' with
           | App (f,v), App (f',v') when Int.equal (Array.length v) (Array.length v') ->
               let rec cuts i =
-                if i < 0 then Tacticals.tclTRY (congruence_tac 1000 [])
+                if i < 0 then Tacticals.tclTRY (congruence_tac None [])
                 else Tacticals.tclTHENFIRST (cut_eq v.(i) v'.(i)) (cuts (i-1))
               in cuts (Array.length v - 1)
           | _ -> Proofview.tclUNIT ()

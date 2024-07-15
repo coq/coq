@@ -700,7 +700,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   Lemma cardinal_fold : forall s, cardinal s = fold (fun _ => S) s 0.
   Proof.
   intros; rewrite cardinal_1; rewrite M.fold_1.
-  symmetry; apply fold_left_length; auto.
+  symmetry; apply fold_left_S_O; auto.
   Qed.
 
   (** ** Old specifications for [cardinal]. *)

@@ -4,7 +4,7 @@ Set Universe Polymorphism.
 Notation idmap := (fun x => x).
 Notation "( x ; y )" := (existT _ x y) : fibration_scope.
 Open Scope fibration_scope.
-Notation "x .1" := (projT1 x) (at level 3) : fibration_scope.
+Notation "x .1" := (projT1 x) : fibration_scope.
 Inductive paths {A : Type} (a : A) : A -> Type :=
   idpath : paths a a.
 Arguments idpath {A a} , [A] a.
@@ -30,7 +30,7 @@ Local Open Scope equiv_scope.
 
 Notation "f ^-1" := (@equiv_inv _ _ f _) (at level 3) : equiv_scope.
 
-Class Funext := { isequiv_apD10 :> forall (A : Type) (P : A -> Type) f g, IsEquiv (@apD10 A P f g) }.
+Class Funext := { isequiv_apD10 :: forall (A : Type) (P : A -> Type) f g, IsEquiv (@apD10 A P f g) }.
 
 Definition path_forall `{Funext} {A : Type} {P : A -> Type} (f g : forall x : A, P x) :
   (forall x, f x = g x) -> f = g

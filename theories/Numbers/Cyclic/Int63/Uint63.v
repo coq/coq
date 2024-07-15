@@ -186,6 +186,9 @@ Definition of_Z z :=
 
 Definition wB := (2 ^ (Z.of_nat size))%Z.
 
+Notation to_nat i := (Z.to_nat (to_Z i)).
+Notation of_nat n := (of_Z (Z.of_nat n)).
+
 Module Import Uint63NotationsInternalD.
 Notation "n ?= m" := (compare n m) (at level 70, no associativity) : uint63_scope.
 Notation "'φ' x" := (to_Z x) (at level 0) : uint63_scope.
@@ -1910,6 +1913,52 @@ Proof.
   replace (- wB) with (-1 * wB) by easy.
   rewrite Z_mod_plus by easy.
   now rewrite Z.mod_small by apply to_Z_bounded.
+Qed.
+
+(** Minimum / maximum *)
+
+Definition min (i1 i2 : int) :=
+  if (i1 <=? i2)%uint63 then i1 else i2.
+
+Definition max (i1 i2 : int) :=
+  if (i1 <=? i2)%uint63 then i2 else i1.
+
+Lemma min_spec (x y : int) :
+  φ (min x y) = Z.min (φ x) (φ y).
+Proof.
+  unfold min. destruct (lebP x y).
+  - rewrite Z.min_l; [reflexivity | assumption].
+  - rewrite Z.min_r; [reflexivity | lia].
+Qed.
+
+Lemma max_spec (x y : int) :
+  φ (max x y) = Z.max (φ x) (φ y).
+Proof.
+  unfold max. destruct (lebP x y).
+  - rewrite Z.max_r; [reflexivity | assumption].
+  - rewrite Z.max_l; [reflexivity | lia].
+Qed.
+
+Lemma min_add_min_n_same (m i1 i2 : int) :
+  to_Z i1 + to_Z i2 < wB ->
+  Uint63.min m (Uint63.min m i1 + i2) = Uint63.min m (i1 + i2).
+Proof.
+  intros H. apply to_Z_inj.
+  pose proof (to_Z_bounded m) as Hm.
+  pose proof (to_Z_bounded i1) as Hi1.
+  pose proof (to_Z_bounded i2) as Hi2.
+  rewrite !min_spec, !add_spec, !min_spec, !Z.mod_small; lia.
+Qed.
+
+Lemma min_add_n_min_same (m i1 i2 : int) :
+  to_Z i1 + to_Z i2 < wB ->
+  Uint63.min m (i1 + Uint63.min m i2) = Uint63.min m (i1 + i2).
+Proof.
+  intros H. apply to_Z_inj.
+  pose proof (to_Z_bounded m) as Hm.
+  pose proof (to_Z_bounded i1) as Hi1.
+  pose proof (to_Z_bounded i2) as Hi2.
+  rewrite !min_spec, !add_spec, !min_spec, !Z.mod_small; lia.
 Qed.
 
 Module Export Uint63Notations.

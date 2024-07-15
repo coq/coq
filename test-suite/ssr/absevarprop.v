@@ -24,9 +24,9 @@ Definition R := fun (x : nat) (p : P x) m (q : P (x+1)) => m > 0.
 
 Inductive myEx : Type := ExI : forall n (pn : P n) pn', Q n pn -> R n pn n pn' -> myEx.
 
-Variable P1 : P 1.
-Variable P11 : P (1 + 1).
-Variable Q1 : forall P1, Q 1 P1.
+Parameter P1 : P 1.
+Parameter P11 : P (1 + 1).
+Parameter Q1 : forall P1, Q 1 P1.
 
 Lemma testmE1 : myEx.
 Proof.
@@ -85,7 +85,7 @@ Definition R1 := fun (x : nat) (p : P x) m (q : P (x+1)) (r : Q x p) => m > 0.
 Inductive myEx1 : Type :=
   ExI1 : forall n (pn : P n) pn' (q : Q n pn), R1 n pn n pn' q -> myEx1.
 
-#[export] Hint Resolve (Q1 P1) : SSR.
+#[export] Hint Extern 0 (Q 1 P1) => apply (Q1 P1) : SSR.
 
 (* tests that goals in prop are solved in the right order, propagating instantiations,
    thus the goal Q 1 ?p1 is faced by trivial after ?p1, and is thus evar free *)

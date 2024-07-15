@@ -190,7 +190,7 @@ Proof.
 Qed.
 
 Lemma nb_digits_rev d : nb_digits (rev d) = nb_digits d.
-Proof. now rewrite !nb_digits_spec, rev_spec, List.rev_length. Qed.
+Proof. now rewrite !nb_digits_spec, rev_spec, List.length_rev. Qed.
 
 Lemma nb_digits_del_head_sub d n :
   n <= nb_digits d ->
@@ -198,7 +198,7 @@ Lemma nb_digits_del_head_sub d n :
 Proof.
   rewrite !nb_digits_spec; intro Hn.
   rewrite del_head_spec_small; [|now apply Nat.le_sub_l].
-  rewrite List.skipn_length, <-(Nat2Z.id (_ - _)).
+  rewrite List.length_skipn, <-(Nat2Z.id (_ - _)).
   rewrite Nat2Z.inj_sub; [|now apply Nat.le_sub_l].
   rewrite (Nat2Z.inj_sub _ _ Hn).
   rewrite Z.sub_sub_distr, Z.sub_diag; apply Nat2Z.id.
@@ -262,7 +262,7 @@ Proof.
   rewrite !nb_digits_spec, !nzhead_spec, app_spec.
   induction (to_list d) as [|h t IHl]; [now simpl|].
   rewrite <-List.app_comm_cons.
-  now case h; [| simpl; rewrite List.app_length; intro Hl; exfalso; revert Hl;
+  now case h; [| simpl; rewrite List.length_app; intro Hl; exfalso; revert Hl;
     apply Nat.le_ngt, Nat.le_add_l..].
 Qed.
 
@@ -279,7 +279,7 @@ Proof.
   induction (to_list d) as [|h t IHl]; [now simpl|].
   now case h; [now simpl|..];
     simpl;intro H; exfalso; revert H; apply Nat.le_ngt;
-    rewrite List.app_length; apply Nat.le_add_l.
+    rewrite List.length_app; apply Nat.le_add_l.
 Qed.
 
 Lemma nzhead_app_nil_l d d' : nzhead (app d d') = Nil -> nzhead d = Nil.
@@ -319,7 +319,7 @@ Proof.
     now revert Hd'; case d'; [|intros d'' _; apply le_n_S, Peano.le_0_n..]. }
   intro Ha; rewrite (unorm_nzhead _ Ha).
   intro Hn; generalize Hn; rewrite (nzhead_app_l _ _ Hn).
-  rewrite !nb_digits_spec, app_spec, List.app_length.
+  rewrite !nb_digits_spec, app_spec, List.length_app.
   case (uint_eq_dec (nzhead d) Nil).
   { intros->; simpl; intro H; exfalso; revert H; apply Nat.lt_irrefl. }
   now intro H; rewrite (unorm_nzhead _ H).
@@ -380,7 +380,7 @@ Proof.
   rewrite nb_digits_spec; intro Hn.
   apply to_list_inj.
   rewrite del_head_spec_small.
-  2:{ now rewrite app_spec, List.app_length, <- Nat.le_add_r. }
+  2:{ now rewrite app_spec, List.length_app, <- Nat.le_add_r. }
   rewrite !app_spec, (del_head_spec_small _ _ Hn).
   rewrite List.skipn_app.
   now rewrite (proj2 (Nat.sub_0_le _ _) Hn).
@@ -393,7 +393,7 @@ Proof.
   unfold del_tail.
   rewrite <-(of_list_to_list (rev (app d d'))), rev_spec, app_spec.
   rewrite List.rev_app_distr, <-!rev_spec, <-app_spec, of_list_to_list.
-  rewrite del_head_app; [|now rewrite nb_digits_spec, rev_spec, List.rev_length].
+  rewrite del_head_app; [|now rewrite nb_digits_spec, rev_spec, List.length_rev].
   apply to_list_inj.
   rewrite rev_spec, !app_spec, !rev_spec.
   now rewrite List.rev_app_distr, List.rev_involutive.
@@ -408,7 +408,7 @@ Lemma app_del_tail_head n (d:uint) :
 Proof.
   rewrite nb_digits_spec; intro Hn; unfold del_tail.
   rewrite <-(of_list_to_list (app _ _)), app_spec, rev_spec.
-  rewrite del_head_spec_small; [|now rewrite rev_spec, List.rev_length].
+  rewrite del_head_spec_small; [|now rewrite rev_spec, List.length_rev].
   rewrite del_head_spec_small; [|now apply Nat.le_sub_l].
   rewrite rev_spec.
   set (n' := _ - n).
@@ -430,7 +430,7 @@ Proof.
   simpl; intro Hnb; generalize Hnb; rewrite (unorm_app_l _ _ Hnb); clear Hnb.
   replace (_ - _) with (nb_digits (unorm (abs i))).
   - now rewrite del_head_app; [rewrite del_head_nb_digits|].
-  - rewrite !nb_digits_spec, app_spec, List.app_length.
+  - rewrite !nb_digits_spec, app_spec, List.length_app.
     symmetry; apply Nat.add_sub.
 Qed.
 
@@ -611,7 +611,7 @@ Lemma nzhead_del_tail_nzhead_eq n u :
   n < nb_digits u ->
   nzhead (del_tail n u) = del_tail n u.
 Proof.
-  rewrite nb_digits_spec, <-List.rev_length.
+  rewrite nb_digits_spec, <-List.length_rev.
   intros Hu Hn.
   apply to_list_inj; unfold del_tail.
   rewrite nzhead_spec, rev_spec.
@@ -621,7 +621,7 @@ Proof.
   generalize (f_equal to_list Hu) Hn; rewrite nzhead_spec; intro Hu'.
   case (to_list u) as [|h t].
   { simpl; intro H; exfalso; revert H; apply Nat.le_ngt, Nat.le_0_l. }
-  intro Hn'; generalize (Nat.sub_gt _ _ Hn'); rewrite List.rev_length.
+  intro Hn'; generalize (Nat.sub_gt _ _ Hn'); rewrite List.length_rev.
   case (_ - _); [now simpl|]; intros n' _.
   rewrite List.firstn_cons, lnzhead_head_nd0; [now simpl|].
   intro Hh; revert Hu'; rewrite Hh; apply lnzhead_neq_d0_head.

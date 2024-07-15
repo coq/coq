@@ -20,7 +20,7 @@ val fun_ind_using :
 val wit_with_names :
   (Constrexpr.constr_expr Tactypes.intro_pattern_expr CAst.t option,
    Genintern.glob_constr_and_expr Tactypes.intro_pattern_expr CAst.t option,
-   Ltac_plugin.Tacexpr.intro_pattern option)
+   Tactypes.intro_pattern option)
   Genarg.genarg_type
 
 val with_names :
@@ -48,8 +48,7 @@ val function_fix_definition :
   Vernacexpr.fixpoint_expr Loc.located Pcoq.Entry.t
 
 val wit_fun_scheme_arg :
-  (Names.Id.t * Libnames.qualid * Sorts.family, unit, unit)
-  Genarg.genarg_type
+  (Names.Id.t * Libnames.qualid * Sorts.family) Genarg.vernac_genarg_type
 
 val fun_scheme_arg :
   (Names.Id.t * Libnames.qualid * Sorts.family) Pcoq.Entry.t

@@ -118,7 +118,7 @@ let classify_vernac e =
       let ids = List.map (fun (({v=i}, _), _) -> i) l in
       let guarantee = if polymorphic then Doesn'tGuaranteeOpacity else GuaranteesOpacity in
       VtStartProof (guarantee,ids)
-    | VernacFixpoint (discharge,l) ->
+    | VernacFixpoint (discharge,(_,l)) ->
       let polymorphic = Attributes.(parse_drop_extra polymorphic atts) in
        let guarantee =
          if discharge = DoDischarge || polymorphic then Doesn'tGuaranteeOpacity
@@ -144,6 +144,9 @@ let classify_vernac e =
         else VtSideff (ids, VtLater)
     (* Sideff: apply to all open branches. usually run on master only *)
     | VernacAssumption (_,_,l) ->
+        let ids = List.flatten (List.map (fun (_,(l,_)) -> List.map (fun (id, _) -> id.v) l) l) in
+        VtSideff (ids, VtLater)
+    | VernacSymbol l ->
         let ids = List.flatten (List.map (fun (_,(l,_)) -> List.map (fun (id, _) -> id.v) l) l) in
         VtSideff (ids, VtLater)
     | VernacPrimitive ((id,_),_,_) ->
@@ -178,6 +181,7 @@ let classify_vernac e =
     | VernacComments _
     | VernacAttributes _
     | VernacSchemeEquality _
+    | VernacAddRewRule _
     | VernacDeclareInstance _ -> VtSideff ([], VtLater)
     (* Who knows *)
     | VernacOpenCloseScope _ | VernacDeclareScope _

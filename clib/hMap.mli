@@ -25,7 +25,6 @@ end
 
     CAVEAT: order-related functions like [fold] or [iter] do not respect the
     provided order anymore! It's your duty to do something sensible to prevent
-    this if you need it. In particular, [min_binding] and [max_binding] are now
-    made meaningless.
+    this if you need it.
 *)
-module Make(M : HashedType) : CMap.ExtS with type key = M.t
+module Make(M : HashedType) : CMap.UExtS with type key = M.t

@@ -13,9 +13,14 @@
  (modules render_line_results)
  (libraries unix table str clib))
 
+(library
+ (name benchlib)
+ (modules benchUtil sourcehandler timelogparser htmloutput)
+ (libraries unix str clib zarith))
+
 (executable
  (name timelog2html)
  (public_name coqtimelog2html)
  (package coq-core)
  (modules timelog2html)
- (libraries unix str clib zarith))
+ (libraries benchlib))

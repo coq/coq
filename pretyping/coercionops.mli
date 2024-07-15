@@ -37,7 +37,6 @@ type coe_typ = GlobRef.t
 (** This is the type of infos for declared coercions *)
 type coe_info_typ = {
   coe_value : GlobRef.t;
-  coe_typ : Constr.t;
   coe_local : bool;
   coe_reversible : bool;
   coe_is_identity : bool;
@@ -78,6 +77,8 @@ val coercion_exists : coe_typ -> bool
 
 val coercion_info : coe_typ -> coe_info_typ
 
+val coercion_type : Environ.env -> Evd.evar_map -> coe_info_typ EConstr.puniverses -> EConstr.t
+
 (** {6 Lookup functions for coercion paths } *)
 
 (** @raise Not_found in the following functions when no path exists *)
@@ -114,6 +115,6 @@ val coercions : unit -> coe_info_typ list
    be hidden, [None] otherwise; it raises [Not_found] if not a coercion *)
 val hide_coercion : coe_typ -> int option
 
-module ClTypSet : Set.S with type elt = cl_typ
+module ClTypSet : CSet.ExtS with type elt = cl_typ
 
 val reachable_from : cl_typ -> ClTypSet.t

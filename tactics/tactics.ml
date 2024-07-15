@@ -97,7 +97,6 @@ exception OneIntroPatternExpected
 exception KeepAndClearModifierOnlyForHypotheses
 exception FixpointOnNonInductiveType
 exception NotEnoughProducts
-exception FixpointSameMutualInductiveType
 exception AllMethodsInCoinductiveType
 exception ReplacementIllTyped of exn
 exception NotEnoughPremises
@@ -238,8 +237,6 @@ let tactic_interp_error_handler = function
       str "Cannot do a fixpoint on a non inductive type."
   | NotEnoughProducts ->
       str "Not enough products."
-  | FixpointSameMutualInductiveType ->
-      str "Fixpoints should be on the same mutual inductive declaration."
   | AllMethodsInCoinductiveType ->
       str "All methods must construct elements in coinductive types."
   | ReplacementIllTyped e ->
@@ -269,14 +266,15 @@ let error_replacing_dependency env sigma id err inglobal =
 (** This tactic creates a partial proof realizing the introduction rule, but
     does not check anything. *)
 let unsafe_intro env decl b =
-  Refine.refine ~typecheck:false begin fun sigma ->
+  Refine.refine_with_principal ~typecheck:false begin fun sigma ->
     let ctx = named_context_val env in
     let nctx = push_named_context_val decl ctx in
     let inst = EConstr.identity_subst_val (named_context_val env) in
     let ninst = SList.cons (mkRel 1) inst in
     let nb = subst1 (mkVar (NamedDecl.get_id decl)) b in
-    let (sigma, ev) = new_pure_evar nctx sigma nb ~principal:true in
-    (sigma, mkLambda_or_LetIn (NamedDecl.to_rel_decl decl) (mkEvar (ev, ninst)))
+    let (sigma, ev) = new_pure_evar nctx sigma nb in
+    (sigma, mkLambda_or_LetIn (NamedDecl.to_rel_decl decl) (mkEvar (ev, ninst)),
+     Some ev)
   end
 
 let introduction id =
@@ -300,7 +298,7 @@ let convert_concl ~cast ~check ty k =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let conclty = Proofview.Goal.concl gl in
-    Refine.refine ~typecheck:false begin fun sigma ->
+    Refine.refine_with_principal ~typecheck:false begin fun sigma ->
       let sigma =
         if check then begin
           let sigma, _ = Typing.type_of env sigma ty in
@@ -309,9 +307,9 @@ let convert_concl ~cast ~check ty k =
           | Some sigma -> sigma
         end else sigma
       in
-      let (sigma, x) = Evarutil.new_evar env sigma ~principal:true ty in
+      let (sigma, x) = Evarutil.new_evar env sigma ty in
       let ans = if not cast then x else mkCast(x,k,conclty) in
-      (sigma, ans)
+      (sigma, ans, Some (fst @@ destEvar sigma x))
     end
   end
 
@@ -322,8 +320,9 @@ let convert_hyp ~check ~reorder d =
     let ty = Proofview.Goal.concl gl in
     let sign = convert_hyp ~check ~reorder env sigma d in
     let env = reset_with_named_context sign env in
-    Refine.refine ~typecheck:false begin fun sigma ->
-      Evarutil.new_evar env sigma ~principal:true ty
+    Refine.refine_with_principal ~typecheck:false begin fun sigma ->
+      let sigma, ev = Evarutil.new_evar env sigma ty in
+      sigma, ev, Some (fst @@ destEvar sigma ev)
     end
   end
 
@@ -361,8 +360,9 @@ let clear_gen fail = function
     in
     let env = reset_with_named_context hyps env in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-    (Refine.refine ~typecheck:false begin fun sigma ->
-      Evarutil.new_evar env sigma ~principal:true concl
+    (Refine.refine_with_principal ~typecheck:false begin fun sigma ->
+      let sigma, ev = Evarutil.new_evar env sigma concl in
+      sigma, ev, Some (fst @@ destEvar sigma ev)
     end)
   end
 
@@ -392,8 +392,9 @@ let move_hyp id dest =
     let sign = named_context_val env in
     let sign' = move_hyp_in_named_context env sigma id dest sign in
     let env = reset_with_named_context sign' env in
-    Refine.refine ~typecheck:false begin fun sigma ->
-      Evarutil.new_evar env sigma ~principal:true ty
+    Refine.refine_with_principal ~typecheck:false begin fun sigma ->
+      let sigma, ev = Evarutil.new_evar env sigma ty in
+      sigma, ev, Some (fst @@ destEvar sigma ev)
     end
   end
 
@@ -452,9 +453,9 @@ let rename_hyp repl =
           SList.cons (mkVar @@ NamedDecl.get_id odecl) accu
       in
       let instance = List.fold_right2 fold ohyps nhyps SList.empty in
-      Refine.refine ~typecheck:false begin fun sigma ->
-        let sigma, ev = Evarutil.new_pure_evar nctx sigma nconcl ~principal:true in
-        sigma, mkEvar (ev, instance)
+      Refine.refine_with_principal ~typecheck:false begin fun sigma ->
+        let sigma, ev = Evarutil.new_pure_evar nctx sigma nconcl in
+        sigma, mkEvar (ev, instance), Some ev
       end
     end
 
@@ -567,11 +568,11 @@ let internal_cut ?(check=true) replace id t =
     let nf_t = nf_betaiota env sigma t in
     Proofview.tclTHEN
       (Proofview.Unsafe.tclEVARS sigma)
-      (Refine.refine ~typecheck:false begin fun sigma ->
+      (Refine.refine_with_principal ~typecheck:false begin fun sigma ->
         let (sigma, ev) = Evarutil.new_evar env sigma nf_t in
-        let (sigma, ev') = Evarutil.new_evar ~principal:true env' sigma concl in
+        let (sigma, ev') = Evarutil.new_evar env' sigma concl in
         let term = mkLetIn (make_annot (Name id) r, ev, t, EConstr.Vars.subst_var sigma id ev') in
-        (sigma, term)
+        (sigma, term, Some (fst @@ destEvar sigma ev'))
       end)
   end
 
@@ -625,9 +626,7 @@ let rec mk_holes env sigma = function
 let rec check_mutind env sigma k cl = match EConstr.kind sigma (strip_outer_cast sigma cl) with
 | Prod (na, c1, b) ->
   if Int.equal k 1 then
-    try
-      let ((sp, _), u), _ = find_inductive env sigma c1 in
-      (sp, u)
+    try ignore (find_inductive env sigma c1)
     with Not_found -> error FixpointOnNonInductiveType
   else
     let open Context.Rel.Declaration in
@@ -642,7 +641,7 @@ let mutual_fix f n rest j = Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.project gl in
   let concl = Proofview.Goal.concl gl in
-  let (sp, u) = check_mutind env sigma n concl in
+  let () = check_mutind env sigma n concl in
   let firsts, lasts = List.chop j rest in
   let all = firsts @ (f, n, concl) :: lasts in
   let all = List.map (fun (f, n, ar) ->
@@ -654,9 +653,7 @@ let mutual_fix f n rest j = Proofview.Goal.enter begin fun gl ->
   | [] -> sign
   | (f, r, n, ar) :: oth ->
     let open Context.Named.Declaration in
-    let (sp', u')  = check_mutind env sigma n ar in
-    if not (QMutInd.equal env sp sp') then
-      error FixpointSameMutualInductiveType;
+    let ()  = check_mutind env sigma n ar in
     if mem_named_context_val f sign then
       error (IntroAlreadyDeclared f);
     mk_sign (push_named_context_val (LocalAssum (make_annot f r, ar)) sign) oth
@@ -828,8 +825,9 @@ let e_change_in_hyps ~check ~reorder f args = match args with
     let ty = Proofview.Goal.concl gl in
     Proofview.Unsafe.tclEVARS sigma
     <*>
-    Refine.refine ~typecheck:false begin fun sigma ->
-      Evarutil.new_evar env sigma ~principal:true ty
+    Refine.refine_with_principal ~typecheck:false begin fun sigma ->
+      let sigma, ev = Evarutil.new_evar env sigma ty in
+      sigma, ev, Some (fst @@ destEvar sigma ev)
     end
   end
 
@@ -980,22 +978,24 @@ let is_local_flag env flags =
   if flags.rDelta then false
   else
     let check = function
-    | EvalVarRef _ -> false
-    | EvalConstRef c -> Id.Set.is_empty (Environ.vars_of_global env (GlobRef.ConstRef c))
+    | Evaluable.EvalVarRef _ -> false
+    | Evaluable.EvalConstRef c -> Id.Set.is_empty (Environ.vars_of_global env (GlobRef.ConstRef c))
+    | Evaluable.EvalProjectionRef c -> false (* FIXME *)
     in
     List.for_all check flags.rConst
 
 let is_local_unfold env flags =
   let check (_, c) = match c with
-  | EvalVarRef _ -> false
-  | EvalConstRef c -> Id.Set.is_empty (Environ.vars_of_global env (GlobRef.ConstRef c))
+  | Evaluable.EvalVarRef _ -> false
+  | Evaluable.EvalConstRef c -> Id.Set.is_empty (Environ.vars_of_global env (GlobRef.ConstRef c))
+  | Evaluable.EvalProjectionRef c -> false (* FIXME *)
   in
   List.for_all check flags
 
 let reduce redexp cl =
   let trace env sigma =
     let open Printer in
-    let pr = ((fun e -> pr_econstr_env e), (fun e -> pr_leconstr_env e), pr_evaluable_reference, pr_constr_pattern_env) in
+    let pr = ((fun e -> pr_econstr_env e), (fun e -> pr_leconstr_env e), pr_evaluable_reference, pr_constr_pattern_env, int) in
     Pp.(hov 2 (Ppred.pr_red_expr_env env sigma pr str redexp))
   in
   Proofview.Goal.enter begin fun gl ->
@@ -1018,11 +1018,13 @@ let reduce redexp cl =
   begin match cl.concl_occs with
   | NoOccurrences -> Proofview.tclUNIT ()
   | occs ->
+    let occs = Redexpr.out_occurrences occs in
     let redfun = Redexpr.reduction_of_red_expr_val ~occs:(occs, nbcl) redexp in
     e_change_in_concl ~cast:true ~check redfun
   end
   <*>
   let f (id, occs, where) =
+    let occs = Redexpr.out_occurrences occs in
     let (redfun, _) = Redexpr.reduction_of_red_expr_val ~occs:(occs, nbcl) redexp in
     let redfun _ env sigma c = redfun env sigma c in
     let redfun env sigma d = e_pf_change_decl redfun where env sigma d in
@@ -1077,7 +1079,8 @@ let rec intro_then_gen name_flag move_flag ~force ~dep tac =
         let name = find_name false (LocalDef (name,b,t)) name_flag gl in
         build_intro_tac name move_flag tac
     | Evar ev when force ->
-        let sigma, t = Evardefine.define_evar_as_product env sigma ev in
+        let name = find_name false (LocalAssum (anonR,concl)) name_flag gl in
+        let sigma, t = Evardefine.define_evar_as_product env sigma ~name ev in
         Tacticals.tclTHEN
           (Proofview.Unsafe.tclEVARS sigma)
           (intro_then_gen name_flag move_flag ~force ~dep tac)
@@ -1172,14 +1175,15 @@ let intro_forthcoming_last_then_gen avoid dep_flag bound n tac =
     let (ndecls, decls, nconcl) = decompose env avoid n concl (Esubst.subs_id 0) [] [] in
     let ids = List.map NamedDecl.get_id ndecls in
     if List.is_empty ids then tac []
-    else Refine.refine ~typecheck:false begin fun sigma ->
+    else Refine.refine_with_principal ~typecheck:false begin fun sigma ->
       let ctx = named_context_val env in
       let nctx = List.fold_right push_named_context_val ndecls ctx in
       let inst = SList.defaultn (List.length @@ Environ.named_context env) SList.empty in
       let rels = List.init (List.length decls) (fun i -> mkRel (i + 1)) in
       let ninst = List.fold_right (fun c accu -> SList.cons c accu) rels inst in
-      let (sigma, ev) = new_pure_evar nctx sigma nconcl ~principal:true in
-      (sigma, it_mkLambda_or_LetIn (mkEvar (ev, ninst)) decls)
+      let (sigma, ev) = new_pure_evar nctx sigma nconcl in
+      (sigma, it_mkLambda_or_LetIn (mkEvar (ev, ninst)) decls,
+       Some ev)
     end <*> tac ids
   end
 
@@ -1345,6 +1349,9 @@ let tactic_infer_flags with_evar = Pretyping.{
   expand_evars = true;
   program_mode = false;
   polymorphic = false;
+  undeclared_evars_patvars = false;
+  patvars_abstract = false;
+  unconstrained_sorts = false;
 }
 
 type evars_flag = bool     (* true = pose evars       false = fail on evars *)
@@ -1408,14 +1415,15 @@ let cut c =
       let _, info = Exninfo.capture e in
       Tacticals.tclZEROMSG ~info (str "Not a proposition or a type.")
     | sigma, s ->
-      let r = ESorts.relevance_of_sort sigma s in
+      let r = ESorts.relevance_of_sort s in
       let id = next_name_away_with_default "H" Anonymous (Tacmach.pf_ids_set_of_hyps gl) in
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-        (Refine.refine ~typecheck:false begin fun h ->
-            let (h, f) = Evarutil.new_evar ~principal:true env h (mkArrow c r concl) in
+        (Refine.refine_with_principal ~typecheck:false begin fun h ->
+            let (h, f) = Evarutil.new_evar env h (mkArrow c r concl) in
+            let ev = fst @@ destEvar h f in
             let (h, x) = Evarutil.new_evar env h c in
             let f = mkLetIn (make_annot (Name id) r, x, c, mkApp (f, [|mkRel 1|])) in
-            (h, f)
+            (h, f, Some ev)
           end)
   end
 
@@ -1695,7 +1703,7 @@ let make_projection env sigma params cstr sign elim i n c (ind, u) =
   let elim = match elim with
   | NotADefinedRecordUseScheme ->
       (* bugs: goes from right to left when i increases! *)
-      let cs_args = List.map (fun d -> map_rel_decl EConstr.of_constr d) cstr.cs_args in
+      let cs_args = cstr.cs_args in
       let decl = List.nth cs_args i in
       let t = RelDecl.get_type decl in
       let b = match decl with LocalAssum _ -> mkRel (i+1) | LocalDef (_,b,_) -> b in
@@ -1716,7 +1724,10 @@ let make_projection env sigma params cstr sign elim i n c (ind, u) =
           let ci = Inductiveops.make_case_info env ind RegularStyle in
           let br = [| mknas cs_args, b |] in
           let args = Context.Rel.instance mkRel 0 sign in
-          let pnas = Array.append (mknas arity) [|make_annot Anonymous (Inductive.relevance_of_ind_body mip (EConstr.Unsafe.to_instance u))|] in
+          let indr = ERelevance.make @@
+            Inductive.relevance_of_ind_body mip (EConstr.Unsafe.to_instance u)
+          in
+          let pnas = Array.append (mknas (EConstr.of_rel_context arity)) [|make_annot Anonymous indr|] in
           let p = (pnas, lift (Array.length pnas) t) in
           let c = mkCase (ci, u, Array.of_list params, (p, get_relevance decl), NoInvert, mkApp (c, args), br) in
           Some (it_mkLambda_or_LetIn c sign, it_mkProd_or_LetIn t sign)
@@ -1757,7 +1768,6 @@ let descend_in_conjunctions avoid tac (err, info) c =
         let n = (constructors_nrealargs env ind).(0) in
         let IndType (indf,_) = find_rectype env sigma ccl in
         let (_,inst), params = dest_ind_family indf in
-        let params = List.map EConstr.of_constr params in
         let cstr = (get_constructors env indf).(0) in
         let elim =
           try DefinedRecord (Structures.Structure.find_projections ind)
@@ -1871,13 +1881,10 @@ let rec apply_with_bindings_gen ?with_classes b e = function
         (apply_with_bindings_gen ?with_classes b e cbl)
 
 let apply_with_delayed_bindings_gen b e l =
-  let one k {CAst.loc;v=f} =
-    Proofview.Goal.enter begin fun gl ->
-      let sigma = Tacmach.project gl in
-      let env = Proofview.Goal.env gl in
-      let (sigma, cb) = f env sigma in
-        Tacticals.tclWITHHOLES e
-          (general_apply ~respect_opaque:(not b) b b e k CAst.(make ?loc cb)) sigma
+  let one k {CAst.loc;v=cb} =
+    Proofview.Goal.enter begin fun _ ->
+      Tacticals.tclRUNWITHHOLES e cb
+        (fun cb -> general_apply ~respect_opaque:(not b) b b e k CAst.(make ?loc cb))
     end
   in
   let rec aux = function
@@ -1985,14 +1992,10 @@ let apply_in_once ?(respect_opaque = false) with_delta
 
 let apply_in_delayed_once ?(respect_opaque = false) with_delta
     with_destruct with_evars naming id (clear_flag,{CAst.loc;v=f}) tac =
-  Proofview.Goal.enter begin fun gl ->
-    let env = Proofview.Goal.env gl in
-    let sigma = Tacmach.project gl in
-    let (sigma, c) = f env sigma in
-    Tacticals.tclWITHHOLES with_evars
-      (apply_in_once ~respect_opaque with_delta with_destruct with_evars
-         naming id (clear_flag,CAst.(make ?loc c)) tac)
-      sigma
+  Proofview.Goal.enter begin fun _ ->
+    Tacticals.tclRUNWITHHOLES with_evars f
+      (fun c -> apply_in_once ~respect_opaque with_delta with_destruct with_evars
+          naming id (clear_flag,CAst.(make ?loc c)) tac)
   end
 
 (* A useful resolution tactic which, if c:A->B, transforms |- C into
@@ -2022,7 +2025,7 @@ let cut_and_apply c =
     | Prod (_,c1,c2) when Vars.noccurn sigma 1 c2 ->
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
         (Refine.refine ~typecheck:false begin fun sigma ->
-            let typ = mkProd (make_annot Anonymous Sorts.Relevant, c2, concl) in
+            let typ = mkProd (make_annot Anonymous ERelevance.relevant, c2, concl) in
             let (sigma, f) = Evarutil.new_evar env sigma typ in
             let (sigma, x) = Evarutil.new_evar env sigma c1 in
             (sigma, mkApp (f, [|mkApp (c, [|x|])|]))
@@ -2172,9 +2175,10 @@ let clear_body idl =
         else sigma
       in
       Proofview.Unsafe.tclEVARS sigma <*>
-      Refine.refine ~typecheck:false begin fun sigma ->
-        Evarutil.new_evar env sigma ~principal:true concl
-        end
+    Refine.refine_with_principal ~typecheck:false begin fun sigma ->
+      let sigma, ev = Evarutil.new_evar env sigma concl in
+      sigma, ev, Some (fst @@ destEvar sigma ev)
+    end
     with DependsOnBody _ as exn ->
       let _, info = Exninfo.capture exn in
       Proofview.tclZERO ~info exn
@@ -2205,7 +2209,7 @@ let keep hyps =
   let sigma = Tacmach.project gl in
   let cl,_ =
     fold_named_context_reverse (fun (clear,keep) decl ->
-      let decl = map_named_decl EConstr.of_constr decl in
+      let decl = EConstr.of_named_decl decl in
       let hyp = NamedDecl.get_id decl in
       if Id.List.mem hyp hyps
         || List.exists (occur_var_in_decl env sigma hyp) keep
@@ -2228,11 +2232,10 @@ let keep hyps =
 let apply_type ~typecheck newcl args =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
-    Refine.refine ~typecheck begin fun sigma ->
+    Refine.refine_with_principal ~typecheck begin fun sigma ->
       let newcl = nf_betaiota env sigma newcl (* As in former Logic.refine *) in
-      let (sigma, ev) =
-        Evarutil.new_evar env sigma ~principal:true newcl in
-      (sigma, applist (ev, args))
+      let (sigma, ev) = Evarutil.new_evar env sigma newcl in
+      (sigma, applist (ev, args), Some (fst @@ destEvar sigma ev))
     end
   end
 
@@ -2556,7 +2559,10 @@ and intro_pattern_action ?loc with_evars pat thin destopt tac id =
   | IntroApplyOn ({CAst.loc=loc';v=f},{CAst.loc;v=pat}) ->
       let naming = NamingMustBe (CAst.make ?loc id) in
       let tac_ipat = prepare_action ?loc with_evars destopt pat in
-      let f env sigma = let (sigma, c) = f env sigma in (sigma,(c, NoBindings)) in
+      let f =
+        tactic_of_delayed f >>= fun c ->
+        Proofview.tclUNIT (c, NoBindings)
+      in
       apply_in_delayed_once true true with_evars naming id (None,CAst.make ?loc:loc' f)
         (fun id -> Tacticals.tclTHENLIST [tac_ipat id; tac thin None []])
 
@@ -2655,7 +2661,7 @@ let general_apply_in ?(respect_opaque=false) with_delta
 *)
 
 let apply_in simple with_evars id lemmas ipat =
-  let lemmas = List.map (fun (k,{CAst.loc;v=l}) -> k, CAst.make ?loc (fun _ sigma -> (sigma,l))) lemmas in
+  let lemmas = List.map (fun (k,{CAst.loc;v=l}) -> k, CAst.make ?loc (Proofview.tclUNIT l)) lemmas in
   general_apply_in simple simple with_evars id lemmas ipat Tacticals.tclIDTAC
 
 let apply_delayed_in simple with_evars id lemmas ipat then_tac =
@@ -2700,10 +2706,12 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
           let (sigma, eq) = Evd.fresh_global env sigma eqdata.eq in
           let (sigma, refl) = Evd.fresh_global env sigma eqdata.refl in
           let sigma, eq = Typing.checked_applist env sigma eq [t] in
+          let sigma, refl = Typing.checked_applist env sigma refl [t] in
           let eq = applist (eq, args) in
-          let refl = applist (refl, [t;mkVar id]) in
+          let refl = applist (refl, [mkVar id]) in
+          let r = Retyping.relevance_of_term env sigma refl in
           let term = mkNamedLetIn sigma (make_annot id rel) c t
-              (mkLetIn (make_annot (Name heq) Sorts.Relevant, refl, eq, ccl)) in
+              (mkLetIn (make_annot (Name heq) r, refl, eq, ccl)) in
           let ans = term,
             Tacticals.tclTHENLIST
               [
@@ -2775,7 +2783,7 @@ let letin_pat_tac with_evars with_eq id c occs =
     let env = Proofview.Goal.env gl in
     let ccl = Proofview.Goal.concl gl in
     let check t = true in
-    let abs = AbstractPattern (false,check,id,c,occs,false) in
+    let abs = AbstractPattern (false,check,id,c,occs) in
     let (id,_,depdecls,lastlhyp,ccl,res) = make_abstraction env sigma ccl abs in
     let (sigma, c) = match res with
     | None -> finish_evar_resolution ~flags:(tactic_infer_flags with_evars) env sigma c
@@ -3440,15 +3448,20 @@ let rec tclWRAPFINALLY before tac finally =
 let with_set_strategy lvl_ql k =
   let glob_key r =
     match r with
-    | GlobRef.ConstRef sp -> ConstKey sp
-    | GlobRef.VarRef id -> VarKey id
+    | GlobRef.ConstRef sp ->
+        begin
+          match Structures.PrimitiveProjections.find_opt sp with
+          | None -> Evaluable.EvalConstRef sp
+          | Some p -> Evaluable.EvalProjectionRef p
+        end
+    | GlobRef.VarRef id -> Evaluable.EvalVarRef id
     | _ -> user_err Pp.(str
                           "cannot set an inductive type or a constructor as transparent") in
   let kl = List.concat (List.map (fun (lvl, ql) -> List.map (fun q -> (lvl, glob_key q)) ql) lvl_ql) in
   tclWRAPFINALLY
     (Proofview.tclENV >>= fun env ->
      let orig_kl = List.map (fun (_lvl, k) ->
-         (Conv_oracle.get_strategy (Environ.oracle env) k, k))
+         (Conv_oracle.get_strategy (Environ.oracle env) (Evaluable.to_kevaluable k), k))
          kl in
      (* Because the global env might be desynchronized from the
         proof-local env, we need to update the global env to have this
@@ -3456,27 +3469,27 @@ let with_set_strategy lvl_ql k =
         TODO: When abstract no longer depends on Global, delete this
         let orig_kl_global = ... in *)
      let orig_kl_global = List.map (fun (_lvl, k) ->
-         (Conv_oracle.get_strategy (Environ.oracle (Global.env ())) k, k))
+         (Conv_oracle.get_strategy (Environ.oracle (Global.env ())) (Evaluable.to_kevaluable k), k))
          kl in
      let env = List.fold_left (fun env (lvl, k) ->
          Environ.set_oracle env
-           (Conv_oracle.set_strategy (Environ.oracle env) k lvl)) env kl in
+           (Conv_oracle.set_strategy (Environ.oracle env) (Evaluable.to_kevaluable k) lvl)) env kl in
      Proofview.Unsafe.tclSETENV env <*>
      (* TODO: When abstract no longer depends on Global, remove this
         [Proofview.tclLIFT] block *)
      Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
-         List.iter (fun (lvl, k) -> Global.set_strategy k lvl) kl)) <*>
+         List.iter (fun (lvl, k) -> Global.set_strategy (Evaluable.to_kevaluable k) lvl) kl)) <*>
      Proofview.tclUNIT (orig_kl, orig_kl_global))
     k
     (fun (orig_kl, orig_kl_global) ->
        (* TODO: When abstract no longer depends on Global, remove this
           [Proofview.tclLIFT] block *)
        Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
-           List.iter (fun (lvl, k) -> Global.set_strategy k lvl) orig_kl_global)) <*>
+           List.iter (fun (lvl, k) -> Global.set_strategy (Evaluable.to_kevaluable k) lvl) orig_kl_global)) <*>
        Proofview.tclENV >>= fun env ->
        let env = List.fold_left (fun env (lvl, k) ->
            Environ.set_oracle env
-             (Conv_oracle.set_strategy (Environ.oracle env) k lvl)) env orig_kl in
+             (Conv_oracle.set_strategy (Environ.oracle env) (Evaluable.to_kevaluable k) lvl)) env orig_kl in
        Proofview.Unsafe.tclSETENV env)
 
 module Simple = struct

@@ -1,0 +1,14 @@
+- **Changed:**
+  * Refactor the Coq toplevel loop and related functions to be able to return from the main loop back to the OCaml toplevel that was activated by `Drop.`. This allows to exit from `Drop.` by a simple `Ctrl + D`, without leaving the OCaml toplevel on the stack. The old method of launching another instance of the main loop recursively still remains as it is required to support `#trace`. All that allows the user to issue commands `Drop.` and `#go;;` and then go back on the stack by `Ctrl + D`, which makes a more intuitive user interface
+  * Fix double printing after `#go` by making sure that the feeder is added in a separate function that is only executed once
+  * Make the "include" file run automatically, without asking users to do it manually or adding anything to `~/.ocamlinit`
+  * Clean up the include files, move them to a separate directory `dev/ml_toplevel`. Fix all the errors and warnings in them
+  * Fix the Dune files as to copy the include files into the `_build` directory
+  * Add a custom OCaml toplevel directory `#go` which does the same action as `go ()`, but with a more native syntax
+  * Make the include files not modify the global flags permenantly
+  * Rename `Flags.in_toplevel` to `Flags.in_ml_toplevel` to highlight the fact that it is about the OCaml toplevel and not the Coq one
+  * Rename `dev/shim/coqbyte` to `dev/shim/coqtop.byte` to match the standard installation convention and make it easier to find
+  * Update the debugging documentation, fix formatting there
+  * Add a new `coq_config_bin.ml` file, and also unify how coqtop and coqc are built
+  (`#18771 <https://github.com/coq/coq/pull/18771>`_,
+  by Anton Danilkin).

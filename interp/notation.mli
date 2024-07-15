@@ -22,9 +22,9 @@ val notation_cat : Libobject.category
 val pr_notation : notation -> Pp.t
 (** Printing *)
 
-module NotationSet : Set.S with type elt = notation
+module NotationSet : CSet.ExtS with type elt = notation
 module NotationMap : CMap.ExtS with type key = notation and module Set := NotationSet
-module SpecificNotationSet : Set.S with type elt = specific_notation
+module SpecificNotationSet : CSet.ExtS with type elt = specific_notation
 module SpecificNotationMap : CMap.ExtS with type key = specific_notation and module Set := SpecificNotationSet
 
 (** {6 Scopes } *)
@@ -59,6 +59,8 @@ val empty_scope_stack : scopes
 val push_scope : scope_name -> scopes -> scopes
 
 val find_scope : scope_name -> scope
+
+val scope_delimiters : scope -> delimiters option
 
 (** Declare delimiters for printing *)
 
@@ -152,6 +154,7 @@ type target_kind =
 type string_target_kind =
   | ListByte
   | Byte
+  | PString
 
 type option_kind = Option | Direct
 type 'target conversion_kind = 'target * option_kind
@@ -207,20 +210,6 @@ type prim_token_infos = {
 
 val enable_prim_token_interpretation : prim_token_infos -> unit
 
-(** Compatibility.
-    Avoid the next two functions, they will now store unnecessary
-    objects in the library segment. Instead, combine
-    [register_*_interpretation] and [enable_prim_token_interpretation]
-    (the latter inside a [Mltop.declare_cache_obj]).
-*)
-
-val declare_numeral_interpreter : ?local:bool -> scope_name -> required_module ->
-  Z.t prim_token_interpreter ->
-  glob_constr list * Z.t prim_token_uninterpreter * bool -> unit
-val declare_string_interpreter : ?local:bool -> scope_name -> required_module ->
-  string prim_token_interpreter ->
-  glob_constr list * string prim_token_uninterpreter * bool -> unit
-
 (** Return the [term]/[cases_pattern] bound to a primitive token in a
    given scope context*)
 
@@ -243,6 +232,8 @@ val availability_of_prim_token :
 
 (** {6 Declare and interpret back and forth a notation } *)
 
+val warning_overridden_name : string
+
 type entry_coercion_kind =
   | IsEntryCoercion of notation_entry_level * notation_entry_relative_level
   | IsEntryGlobal of string * int
@@ -251,7 +242,7 @@ type entry_coercion_kind =
 val declare_notation : notation_with_optional_scope * notation ->
   interpretation -> notation_location -> use:notation_use ->
   entry_coercion_kind option ->
-  Deprecation.t option -> unit
+  UserWarn.t option -> unit
 
 
 (** Return the interpretation bound to a notation *)
@@ -276,7 +267,7 @@ type 'a notation_query_pattern_gen = {
 
 type notation_query_pattern = qualid notation_query_pattern_gen
 
-val toggle_notations : on:bool -> all:bool -> (glob_constr -> Pp.t) -> notation_query_pattern -> unit
+val toggle_notations : on:bool -> all:bool -> ?verbose:bool -> (glob_constr -> Pp.t) -> notation_query_pattern -> unit
 
 (** {6 Miscellaneous} *)
 
@@ -293,6 +284,11 @@ exception NotationAsReferenceError of notation_as_reference_error
     Raise NotationAsReferenceError if not resolvable as a global reference *)
 val interp_notation_as_global_reference : ?loc:Loc.t -> head:bool ->
       (GlobRef.t -> bool) -> notation_key -> delimiters option -> GlobRef.t
+
+(** Same together with the full notation *)
+val interp_notation_as_global_reference_expanded : ?loc:Loc.t -> head:bool ->
+      (GlobRef.t -> bool) -> notation_key -> delimiters option ->
+  (notation_entry * notation_key) * notation_key * notation_with_optional_scope * interpretation * GlobRef.t
 
 (** Declares and looks for scopes associated to arguments of a global ref *)
 val declare_arguments_scope :
@@ -370,7 +366,7 @@ val declare_entry_coercion : specific_notation -> notation_entry_level -> notati
   (** Add a coercion from some-entry to some-relative-entry *)
 
 type entry_coercion = (notation_with_optional_scope * notation) list
-val availability_of_entry_coercion : ?non_empty:bool -> notation_entry_relative_level -> notation_entry_level -> entry_coercion option
+val availability_of_entry_coercion : ?non_included:bool -> notation_entry_relative_level -> notation_entry_level -> entry_coercion option
   (** Return a coercion path from some-relative-entry to some-entry if there is one *)
 
 (** Special properties of entries *)

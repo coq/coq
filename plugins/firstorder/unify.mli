@@ -25,6 +25,6 @@ type instance=
     Real of Item.t * int (* terme * valeur heuristique *)
   | Phantom of constr        (* domaine de quantification *)
 
-val unif_atoms : Environ.env -> Evd.evar_map -> metavariable -> constr -> Formula.atom -> Formula.atom -> instance option
+val unif_atoms : Formula.Env.t -> Environ.env -> Evd.evar_map -> metavariable -> constr -> Formula.atom -> Formula.atom -> instance option
 
 val more_general : Environ.env -> Evd.evar_map -> Item.t -> Item.t -> bool

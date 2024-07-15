@@ -4,7 +4,7 @@ fun x => x : 'a -> 'a
 () ()
 (1, 2) 3
 let x := () in x ()
-File "./output/ltac2_check_globalize.v", line 20, characters 32-33:
+File "./output/ltac2_check_globalize.v", line 22, characters 32-33:
 The command has indeed failed with message:
 This expression has type unit. It is not a function and cannot be applied.
 let x := fun x => x in let _ := x 1 in let _ := x "" in ()
@@ -13,11 +13,11 @@ let accu := { contents := []} in
 (let x := fun x => accu.(contents) := (x :: accu.(contents)) in
  let _ := x 1 in let _ := x "" in ());
 accu.(contents)
-File "./output/ltac2_check_globalize.v", line 36, characters 0-144:
+File "./output/ltac2_check_globalize.v", line 38, characters 0-144:
 The command has indeed failed with message:
 This expression has type string but an expression was expected of type 
 int
-let m :=
+let (m : '__α Pattern.goal_matching) :=
   [(([(None, (Pattern.MatchPattern, pat:(_)))],
      (Pattern.MatchPattern, pat:(_))),
     (fun h =>
@@ -27,4 +27,5 @@ let m :=
      (fun _ => fun _ => fun _ => fun _ => fun _ => ()))] : _
     Pattern.goal_matching in
 Pattern.lazy_goal_match0 false m
+:'__α
 constr:(ltac2:(()))

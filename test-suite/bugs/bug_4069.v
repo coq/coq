@@ -53,8 +53,8 @@ Proof. intros. f_equal.
 (* 8.5: one goal, n = m - n *)
 Abort.
 
-Variable F : nat -> Set.
-Variable X : forall n, F (n + 1).
+Parameter F : nat -> Set.
+Parameter X : forall n, F (n + 1).
 
 Definition sequator{X Y: Set}{eq:X=Y}(x:X) : Y := eq_rec _ _ x _ eq.
 Definition tequator{X Y}{eq:X=Y}(x:X) : Y := eq_rect _ _ x _ eq.
@@ -99,7 +99,7 @@ Goal @eq Type nat nat.
 congruence.
 Qed.
 
-Variable T : Type.
+Parameter T : Type.
 
 Goal @eq Type T T.
 congruence.

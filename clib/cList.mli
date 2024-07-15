@@ -47,7 +47,7 @@ val same_length : 'a list -> 'b list -> bool
 
 val interval : int -> int -> int list
 (** [interval i j] creates the list [[i; i + 1; ...; j]], or [[]] when
-    [j <= i]. *)
+    [j < i]. *)
 
 val make : int -> 'a -> 'a list
 (** [make n x] returns a list made of [n] times [x]. Raise
@@ -112,6 +112,10 @@ val map2 : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
 val map_left : ('a -> 'b) -> 'a list -> 'b list
 (** As [map] but ensures the left-to-right order of evaluation. *)
 
+val concat_map : ('a -> 'b list) -> 'a list -> 'b list
+(** Like OCaml [List.concat_map] but tail-recursive. Alternatively,
+    the composition of [concat] and [map] *)
+
 val map_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b list
 (** Like OCaml [List.mapi] but tail-recursive. Alternatively, like
     [map] but with an index *)
@@ -127,6 +131,11 @@ val map3 :
 val map4 : ('a -> 'b -> 'c -> 'd -> 'e) -> 'a list -> 'b list -> 'c list ->
   'd list -> 'e list
 (** Like [map] but for 4 lists. *)
+
+val map_until : ('a -> 'b option) -> 'a list -> 'b list * 'a list
+(** [map_until f l] applies f to the elements of l until one returns None,
+    then returns the list of elements where f was applied
+    and the tail where f was not applied *)
 
 val map_of_array : ('a -> 'b) -> 'a array -> 'b list
 (** [map_of_array f a] behaves as [List.map f (Array.to_list a)] *)
@@ -150,8 +159,8 @@ val count : ('a -> bool) -> 'a list -> int
 val index : 'a eq -> 'a -> 'a list -> int
 (** [index] returns the 1st index of an element in a list (counting from 1). *)
 
-val safe_index : 'a eq -> 'a -> 'a list -> int option
-(** [safe_index] returns the 1st index of an element in a list (counting from 1)
+val index_opt : 'a eq -> 'a -> 'a list -> int option
+(** [index_opt] returns the 1st index of an element in a list (counting from 1)
     and None otherwise. *)
 
 val index0 : 'a eq -> 'a -> 'a list -> int
@@ -175,6 +184,10 @@ val fold_right_and_left : ('b -> 'a -> 'a list -> 'b) -> 'a list -> 'b -> 'b
 
 val fold_left3 : ('a -> 'b -> 'c -> 'd -> 'a) -> 'a -> 'b list -> 'c list -> 'd list -> 'a
 (** Like [List.fold_left] but for 3 lists; raise [Invalid_argument _] if
+    not all lists of the same size *)
+
+val fold_left4 : ('a -> 'b -> 'c -> 'd -> 'e -> 'a) -> 'a -> 'b list -> 'c list -> 'd list -> 'e list -> 'a
+(** Like [List.fold_left] but for 4 lists; raise [Invalid_argument _] if
     not all lists of the same size *)
 
 val fold_left2_set : exn -> ('a -> 'b -> 'c -> 'b list -> 'c list -> 'a) -> 'a -> 'b list -> 'c list -> 'a
@@ -202,6 +215,9 @@ val fold_left3_map : ('a -> 'b -> 'c -> 'd -> 'a * 'e) -> 'a -> 'b list -> 'c li
 
 val fold_left4_map : ('a -> 'b -> 'c -> 'd -> 'e -> 'a * 'r) -> 'a -> 'b list -> 'c list -> 'd list -> 'e list -> 'a * 'r list
 (** Same with four lists, folding on the left *)
+
+val fold_left5_map : ('a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'a * 'r) -> 'a -> 'b list -> 'c list -> 'd list -> 'e list -> 'f list -> 'a * 'r list
+(** Same with five lists, folding on the left *)
 
 (** {6 Splitting} *)
 
@@ -273,7 +289,7 @@ val skipn : int -> 'a list -> 'a list
     [Failure _] if [n] is less than 0 or larger than the length of [l].
     This is the second part of [chop]. *)
 
-val skipn_at_least : int -> 'a list -> 'a list
+val skipn_at_best : int -> 'a list -> 'a list
 (** Same as [skipn] but returns [] if [n] is larger than the length of
     the list. *)
 

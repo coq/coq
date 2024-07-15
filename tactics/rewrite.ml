@@ -27,7 +27,6 @@ open Elimschemes
 open Environ
 open Termops
 open EConstr
-open Libnames
 open Proofview.Notations
 open Context.Named.Declaration
 
@@ -37,29 +36,14 @@ module TC = Typeclasses
 
 (** Constants used by the tactic. *)
 
-let classes_dirpath =
-  Names.DirPath.make (List.map Id.of_string ["Classes";"Coq"])
-
-let init_relation_classes () =
-  if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
-  else Coqlib.check_required_library ["Coq";"Classes";"RelationClasses"]
-
-let init_setoid () =
-  if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
-  else Coqlib.check_required_library ["Coq";"Setoids";"Setoid"]
-
-let find_reference dir s =
-  Coqlib.find_reference "generalized rewriting" dir s
-[@@warning "-3"]
-
-let lazy_find_reference dir s =
-  let gr = lazy (find_reference dir s) in
+let bind_global_ref lib s =
+  let gr = lazy (Coqlib.lib_ref (lib ^ "." ^ s)) in
   fun () -> Lazy.force gr
 
 type evars = evar_map * Evar.Set.t (* goal evars, constraint evars *)
 
-let find_global dir s =
-  let gr = lazy (find_reference dir s) in
+let bind_global lib s =
+  let gr = lazy (Coqlib.lib_ref (lib ^ "." ^ s)) in
     fun env (evd,cstrs) ->
       let (evd, c) = Evd.fresh_global env evd (Lazy.force gr) in
         (evd, cstrs), c
@@ -69,10 +53,12 @@ let find_global dir s =
 (** Global constants. *)
 
 let coq_eq_ref  () = Coqlib.lib_ref    "core.eq.type"
-let coq_eq      = find_global    ["Coq"; "Init"; "Logic"] "eq"
-let coq_f_equal = find_global    ["Coq"; "Init"; "Logic"] "f_equal"
-let coq_all     = find_global    ["Coq"; "Init"; "Logic"] "all"
-let impl        = find_global    ["Coq"; "Program"; "Basics"] "impl"
+let coq_eq      = bind_global "core.eq" "type"
+let coq_f_equal = bind_global "core.eq" "congr"
+let coq_all     = bind_global "core" "all"
+let impl        = bind_global "core" "impl"
+
+let default_relation = bind_global "rewrite" "DefaultRelation"
 
 (** Bookkeeping which evars are constraints so that we can
     remove them at the end of the tactic. *)
@@ -215,49 +201,50 @@ let decompose_applied_relation env sigma (c,l) =
 (** Utility functions *)
 
 module GlobalBindings (M : sig
-  val relation_classes : string list
-  val morphisms : string list
-  val relation : string list * string
+  val prefix : string
   val app_poly : env -> evars -> (env -> evars -> evars * constr) -> constr array -> evars * constr
   val arrow : env -> evars -> evars * constr
 end) = struct
   open M
   open Context.Rel.Declaration
-  let relation : env -> evars -> evars * constr = find_global (fst relation) (snd relation)
 
-  let reflexive_type = find_global relation_classes "Reflexive"
-  let reflexive_proof = find_global relation_classes "reflexivity"
+  let bind_rewrite s = bind_global prefix s
+  let bind_rewrite_ref s = bind_global_ref prefix s
 
-  let symmetric_type = find_global relation_classes "Symmetric"
-  let symmetric_proof = find_global relation_classes "symmetry"
+  let relation : env -> evars -> evars * constr =
+    bind_rewrite "relation"
 
-  let transitive_type = find_global relation_classes "Transitive"
-  let transitive_proof = find_global relation_classes "transitivity"
+  let reflexive_type = bind_rewrite "Reflexive"
+  let reflexive_proof = bind_rewrite "reflexivity"
 
-  let forall_relation = find_global morphisms "forall_relation"
-  let pointwise_relation = find_global morphisms "pointwise_relation"
+  let symmetric_type = bind_rewrite "Symmetric"
+  let symmetric_proof = bind_rewrite "symmetry"
 
-  let forall_relation_ref = lazy_find_reference morphisms "forall_relation"
-  let pointwise_relation_ref = lazy_find_reference morphisms "pointwise_relation"
+  let transitive_type = bind_rewrite "Transitive"
+  let transitive_proof = bind_rewrite "transitivity"
 
-  let respectful = find_global morphisms "respectful"
+  let forall_relation = bind_rewrite "forall_relation"
+  let pointwise_relation = bind_rewrite "pointwise_relation"
 
-  let default_relation = find_global ["Coq"; "Classes"; "SetoidTactics"] "DefaultRelation"
+  let forall_relation_ref = bind_global_ref prefix "forall_relation"
+  let pointwise_relation_ref = bind_global_ref prefix "pointwise_relation"
 
-  let coq_forall = find_global morphisms "forall_def"
+  let respectful = bind_rewrite "respectful"
 
-  let subrelation = find_global relation_classes "subrelation"
-  let do_subrelation = find_global morphisms "do_subrelation"
-  let apply_subrelation = find_global morphisms "apply_subrelation"
+  let coq_forall = bind_rewrite "forall_def"
 
-  let rewrite_relation_class = find_global relation_classes "RewriteRelation"
+  let subrelation = bind_rewrite "subrelation"
+  let do_subrelation = bind_rewrite "do_subrelation"
+  let apply_subrelation = bind_rewrite "apply_subrelation"
+
+  let rewrite_relation_class = bind_rewrite "RewriteRelation"
 
   let proper_class =
-    let r = lazy (find_reference morphisms "Proper") in
+    let r = lazy (bind_rewrite_ref "Proper" ()) in
     fun () -> Option.get (TC.class_info (Lazy.force r))
 
   let proper_proxy_class =
-    let r = lazy (find_reference morphisms "ProperProxy") in
+    let r = lazy (bind_rewrite_ref "ProperProxy" ()) in
     fun () -> Option.get (TC.class_info (Lazy.force r))
 
   let proper_proj () =
@@ -339,7 +326,7 @@ end) = struct
   let unfold_impl n sigma t =
     match EConstr.kind sigma t with
     | App (arrow, [| a; b |])(*  when eq_constr arrow (Lazy.force impl) *) ->
-      mkProd (make_annot n Sorts.Relevant, a, lift 1 b)
+      mkProd (make_annot n ERelevance.relevant, a, lift 1 b)
     | _ -> assert false
 
   let unfold_all sigma t =
@@ -365,7 +352,7 @@ end) = struct
         (app_poly env evd arrow [| a; b |]), unfold_impl n
         (* (evd, mkProd (Anonymous, a, b)), (fun x -> x) *)
       else if bp then (* Dummy forall *)
-        (app_poly env evd coq_all [| a; mkLambda (make_annot n Sorts.Relevant, a, lift 1 b) |]), unfold_forall
+        (app_poly env evd coq_all [| a; mkLambda (make_annot n ERelevance.relevant, a, lift 1 b) |]), unfold_forall
       else (* None in Prop, use arrow *)
         (app_poly env evd arrow [| a; b |]), unfold_impl n
 
@@ -404,8 +391,8 @@ end) = struct
       app_poly env evars pointwise_relation [| t; lift (-1) car; lift (-1) rel |]
     else
       app_poly env evars forall_relation
-        [| t; mkLambda (make_annot n Sorts.Relevant, t, car);
-           mkLambda (make_annot n Sorts.Relevant, t, rel) |]
+        [| t; mkLambda (make_annot n ERelevance.relevant, t, car);
+           mkLambda (make_annot n ERelevance.relevant, t, rel) |]
 
   let lift_cstr env evars (args : constr list) c ty cstr =
     let start evars env car =
@@ -481,12 +468,10 @@ let type_app_poly env env evd f args =
 module PropGlobal = struct
   module Consts =
   struct
-    let relation_classes = ["Coq"; "Classes"; "RelationClasses"]
-    let morphisms = ["Coq"; "Classes"; "Morphisms"]
-    let relation = ["Coq"; "Relations";"Relation_Definitions"], "relation"
+    let prefix = "rewrite.prop"
     let app_poly = app_poly_nocheck
-    let arrow = find_global ["Coq"; "Program"; "Basics"] "arrow"
-    let coq_inverse = find_global ["Coq"; "Program"; "Basics"] "flip"
+    let arrow = bind_global "core" "arrow"
+    let coq_inverse = bind_global "core" "flip"
   end
 
   module G = GlobalBindings(Consts)
@@ -502,12 +487,10 @@ end
 module TypeGlobal = struct
   module Consts =
     struct
-      let relation_classes = ["Coq"; "Classes"; "CRelationClasses"]
-      let morphisms = ["Coq"; "Classes"; "CMorphisms"]
-      let relation = relation_classes, "crelation"
+      let prefix = "rewrite.type"
       let app_poly = app_poly_check
-      let arrow = find_global ["Coq"; "Classes"; "CRelationClasses"] "arrow"
-      let coq_inverse = find_global ["Coq"; "Classes"; "CRelationClasses"] "flip"
+      let arrow = bind_global prefix "arrow"
+      let coq_inverse = bind_global prefix "flip"
     end
 
   module G = GlobalBindings(Consts)
@@ -521,6 +504,17 @@ module TypeGlobal = struct
       app_poly_check env (evd,cstrs) coq_inverse [| car ; car; sort; rel |]
 
 end
+
+(* Check that relation constants have been registered *)
+let init_relation_classes () =
+  if Coqlib.has_ref "rewrite.prop.relation" || Coqlib.has_ref "rewrite.type.relation" then ()
+  else CErrors.user_err
+    (Pp.str "No bindings have been registered for relation classes in Prop or Type, maybe you need to require Coq.Classes.(C)RelationClasses.")
+
+let init_rewrite () =
+  if Coqlib.has_ref "rewrite.prop.Proper" || Coqlib.has_ref "rewrite.type.Proper" then ()
+  else CErrors.user_err
+    (Pp.str "No bindings have been registered for morphisms in Prop or Type, maybe you need to require Coq.Classes.(C)Morphisms.")
 
 let get_type_of_refresh env evars t =
   let evars', tty = Evarsolve.get_type_of_refresh env (fst evars) t in
@@ -543,7 +537,9 @@ let get_symmetric_proof b =
 
 let rewrite_db = "rewrite"
 
-let conv_transparent_state = TransparentState.cst_full
+let conv_transparent_state =
+  let open TransparentState in
+  { tr_var = Id.Pred.empty; tr_cst = Cpred.full; tr_prj = PRpred.full }
 
 let rewrite_transparent_state () =
   Hints.Hint_db.transparent_state (Hints.searchtable_map rewrite_db)
@@ -651,7 +647,7 @@ let solve_remaining_by env sigma holes by =
         let ty = Evd.evar_concl evi in
         let name, poly = Id.of_string "rewrite", false in
         let c, sigma = Proof.refine_by_tactic ~name ~poly env sigma ty solve_tac in
-        Evd.define evk (EConstr.of_constr c) sigma
+        Evd.define evk c sigma
     in
     List.fold_left solve sigma indep
 
@@ -825,7 +821,7 @@ let resolve_morphism env m args args' (b,cstr) evars =
     let _, dosub = app_poly_sort b env evars dosub [||] in
     let _, appsub = app_poly_nocheck env evars appsub [||] in
     let dosub_id = Id.of_string "do_subrelation" in
-    let env' = EConstr.push_named (LocalDef (make_annot dosub_id Sorts.Relevant, dosub, appsub)) env in
+    let env' = EConstr.push_named (LocalDef (make_annot dosub_id ERelevance.relevant, dosub, appsub)) env in
     let evars, morph = new_cstr_evar evars env' app in
     (* Replace the free [dosub_id] in the evar by the global reference *)
     let morph = Vars.replace_vars (fst evars) [dosub_id , dosub] morph in
@@ -921,7 +917,7 @@ let make_leibniz_proof env c ty r =
         let prf =
           e_app_poly env evars coq_f_equal
                 [| r.rew_car; ty;
-                   mkLambda (make_annot Anonymous Sorts.Relevant, r.rew_car, c);
+                   mkLambda (make_annot Anonymous ERelevance.relevant, r.rew_car, c);
                    r.rew_from; r.rew_to; prf |]
         in RewPrf (rel, prf)
     | RewCast k -> r.rew_prf
@@ -946,18 +942,19 @@ let fold_match ?(force=false) env sigma c =
         it_mkProd_or_LetIn (subst1 mkProp body) (List.tl ctx)
     in
     let sk =
+      (* not sure how correct this is *)
       if sortp == Sorts.InProp then
         if sortc == Sorts.InProp then
-          if dep then case_dep_scheme_kind_from_prop
-          else case_scheme_kind_from_prop
+          if dep then case_dep
+          else case_nodep
         else (
           if dep
-          then case_dep_scheme_kind_from_type_in_prop
-          else case_scheme_kind_from_type)
+          then casep_dep
+          else case_nodep (* should this be casep_nodep? *))
       else ((* sortc <> InProp by typing *)
         if dep
-        then case_dep_scheme_kind_from_type
-        else case_scheme_kind_from_type)
+        then case_dep
+        else case_nodep)
     in
     match Ind_tables.lookup_scheme sk ci.ci_ind with
     | Some cst ->
@@ -1514,7 +1511,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
           match abs with
           | None -> p
           | Some (t, ty) ->
-            mkApp (mkLambda (make_annot (Name (Id.of_string "lemma")) Sorts.Relevant, ty, p), [| t |])
+            mkApp (mkLambda (make_annot (Name (Id.of_string "lemma")) ERelevance.relevant, ty, p), [| t |])
         in
         let proof = match is_hyp with
           | None -> term
@@ -1561,7 +1558,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
             tclTHENFIRST (assert_replacing id newt tac) (beta_hyp id)
         | Some id, None ->
             Proofview.Unsafe.tclEVARS undef <*>
-            convert_hyp ~check:false ~reorder:false (LocalAssum (make_annot id Sorts.Relevant, newt)) <*>
+            convert_hyp ~check:false ~reorder:false (LocalAssum (make_annot id ERelevance.relevant, newt)) <*>
             beta_hyp id
         | None, Some p ->
             Proofview.Unsafe.tclEVARS undef <*>
@@ -1608,14 +1605,14 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
       raise (RewriteFailure (env, evd, e))
   end
 
-let tactic_init_setoid () =
-  try init_setoid (); Proofview.tclUNIT ()
+let tactic_init_rewrite () =
+  try init_rewrite (); Proofview.tclUNIT ()
   with e when CErrors.noncritical e ->
     let _, info = Exninfo.capture e in
     Tacticals.tclFAIL ~info (str"Setoid library not loaded")
 
 let cl_rewrite_clause_strat progress strat clause =
-  tactic_init_setoid () <*>
+  tactic_init_rewrite () <*>
   (if progress then Proofview.tclPROGRESS else fun x -> x)
    (Proofview.tclOR
       (cl_rewrite_clause_newtac ~progress strat clause)
@@ -1660,28 +1657,32 @@ type binary_strategy =
 
 type nary_strategy = Choice
 
-type ('constr,'redexpr) strategy_ast =
+type ('constr,'redexpr,'id) strategy_ast =
   | StratId | StratFail | StratRefl
-  | StratUnary of unary_strategy * ('constr,'redexpr) strategy_ast
+  | StratUnary of unary_strategy * ('constr,'redexpr,'id) strategy_ast
   | StratBinary of
-      binary_strategy * ('constr,'redexpr) strategy_ast * ('constr,'redexpr) strategy_ast
-  | StratNAry of nary_strategy * ('constr,'redexpr) strategy_ast list
+      binary_strategy * ('constr,'redexpr,'id) strategy_ast * ('constr,'redexpr,'id) strategy_ast
+  | StratNAry of nary_strategy * ('constr,'redexpr,'id) strategy_ast list
   | StratConstr of 'constr * bool
   | StratTerms of 'constr list
   | StratHints of bool * string
   | StratEval of 'redexpr
   | StratFold of 'constr
+  | StratVar of 'id
+  | StratFix of 'id * ('constr,'redexpr,'id) strategy_ast
 
-let rec map_strategy (f : 'a -> 'a2) (g : 'b -> 'b2) : ('a,'b) strategy_ast -> ('a2,'b2) strategy_ast = function
+let rec map_strategy f g h = function
   | StratId | StratFail | StratRefl as s -> s
-  | StratUnary (s, str) -> StratUnary (s, map_strategy f g str)
-  | StratBinary (s, str, str') -> StratBinary (s, map_strategy f g str, map_strategy f g str')
-  | StratNAry (s, strs) -> StratNAry (s, List.map (map_strategy f g) strs)
+  | StratUnary (s, str) -> StratUnary (s, map_strategy f g h str)
+  | StratBinary (s, str, str') -> StratBinary (s, map_strategy f g h str, map_strategy f g h str')
+  | StratNAry (s, strs) -> StratNAry (s, List.map (map_strategy f g h) strs)
   | StratConstr (c, b) -> StratConstr (f c, b)
   | StratTerms l -> StratTerms (List.map f l)
   | StratHints (b, id) -> StratHints (b, id)
   | StratEval r -> StratEval (g r)
   | StratFold c -> StratFold (f c)
+  | StratVar id -> StratVar (h id)
+  | StratFix (id, s) -> StratFix (h id, map_strategy f g h s)
 
 let pr_ustrategy = function
 | Subterms -> str "subterms"
@@ -1697,38 +1698,43 @@ let pr_ustrategy = function
 
 let paren p = str "(" ++ p ++ str ")"
 
-let rec pr_strategy0 prc prr = function
+let rec pr_strategy0 prc prr prid = function
 | StratId -> str "id"
 | StratFail -> str "fail"
 | StratRefl -> str "refl"
-| str -> paren (pr_strategy prc prr str)
+| str -> paren (pr_strategy prc prr prid str)
 
-and pr_strategy1 prc prr = function
+and pr_strategy1 prc prr prid = function
 | StratUnary (s, str) ->
-  pr_ustrategy s ++ spc () ++ pr_strategy1 prc prr str
+  pr_ustrategy s ++ spc () ++ pr_strategy1 prc prr prid str
 | StratNAry (Choice, strs) ->
-  str "choice" ++ brk (1,2) ++ prlist_with_sep spc (fun str -> hov 0 (pr_strategy0 prc prr str)) strs
+  str "choice" ++ brk (1,2) ++ prlist_with_sep spc (fun str -> hov 0 (pr_strategy0 prc prr prid str)) strs
 | StratConstr (c, true) -> prc c
 | StratConstr (c, false) -> str "<-" ++ spc () ++ prc c
+| StratVar id -> prid id
 | StratTerms cl -> str "terms" ++ spc () ++ pr_sequence prc cl
 | StratHints (old, id) ->
   let cmd = if old then "old_hints" else "hints" in
   str cmd ++ spc () ++ str id
 | StratEval r -> str "eval" ++ spc () ++ prr r
 | StratFold c -> str "fold" ++ spc () ++ prc c
-| str -> pr_strategy0 prc prr str
+| str -> pr_strategy0 prc prr prid str
 
-and pr_strategy prc prr = function
+and pr_strategy2 prc prr prid = function
 | StratBinary (Compose, str1, str2) ->
-  pr_strategy prc prr str1 ++ str ";" ++ spc () ++ hov 0 (pr_strategy1 prc prr str2)
-| str -> hov 0 (pr_strategy1 prc prr str)
+  pr_strategy2 prc prr prid str1 ++ str ";" ++ spc () ++ hov 0 (pr_strategy1 prc prr prid str2)
+| str -> hov 0 (pr_strategy1 prc prr prid str)
 
-let rec strategy_of_ast = function
+and pr_strategy prc prr prid = function
+| StratFix (id,s) -> str "fix" ++ spc() ++ prid id ++ spc() ++ str ":=" ++ spc() ++ hov 0 (pr_strategy1 prc prr prid s)
+| str -> pr_strategy2 prc prr prid str
+
+let rec strategy_of_ast bindings = function
   | StratId -> Strategies.id
   | StratFail -> Strategies.fail
   | StratRefl -> Strategies.refl
   | StratUnary (f, s) ->
-    let s' = strategy_of_ast s in
+    let s' = strategy_of_ast bindings s in
     let f' = match f with
       | Subterms -> all_subterms
       | Subterm -> one_subterm
@@ -1742,13 +1748,13 @@ let rec strategy_of_ast = function
       | Repeat -> Strategies.repeat
     in f' s'
   | StratBinary (f, s, t) ->
-    let s' = strategy_of_ast s in
-    let t' = strategy_of_ast t in
+    let s' = strategy_of_ast bindings s in
+    let t' = strategy_of_ast bindings t in
     let f' = match f with
       | Compose -> Strategies.seq
     in f' s' t'
   | StratNAry (Choice, strs) ->
-    let strs = List.map (strategy_of_ast) strs in
+    let strs = List.map (strategy_of_ast bindings) strs in
     begin match strs with
       | [] -> assert false
       | s::strs -> List.fold_left Strategies.choice s strs
@@ -1766,6 +1772,12 @@ let rec strategy_of_ast = function
      (Strategies.reduce r_interp).strategy { input with
                                              evars = (sigma,cstrevars evars) }) }
   | StratFold c -> Strategies.fold_glob (fst c)
+
+  | StratVar id -> Id.Map.get id bindings
+
+  | StratFix (id, s) -> Strategies.fix (fun self -> strategy_of_ast (Id.Map.add id self bindings) s)
+
+let strategy_of_ast s = strategy_of_ast Id.Map.empty s
 
 let proper_projection sigma r ty =
   let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i)) in
@@ -1794,7 +1806,7 @@ let build_morphism_signature env sigma m =
   let _ = List.iter
     (fun (ty, rel) ->
       Option.iter (fun rel ->
-        let default = e_app_poly env evd PropGlobal.default_relation [| ty; rel |] in
+        let default = e_app_poly env evd default_relation [| ty; rel |] in
         let evd', t = new_cstr_evar !evd env default in
         evd := evd')
         rel)
@@ -1872,7 +1884,7 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals =
               }
   in
   let origsigma = Tacmach.project gl in
-  tactic_init_setoid () <*>
+  tactic_init_rewrite () <*>
     Proofview.tclOR
       (tclPROGRESS
         (tclTHEN

@@ -3459,7 +3459,7 @@ to (universally) quantify over the parameters of a subset of rules (as
 there is special code that will omit unnecessary quantifiers for rules
 that can be syntactically extracted). It is also possible to reverse
 the direction of a rule subset, using a special dedicated syntax: the
-tactic rewrite ``(=~ multi1)`` is equivalent to ``rewrite multi1_rev``.
+tactic rewrite ``(=^~ multi1)`` is equivalent to ``rewrite multi1_rev``.
 
 .. example::
 
@@ -4511,7 +4511,7 @@ Views and reflection
 
 The bookkeeping facilities presented in Section :ref:`basic_tactics_ssr` are
 crafted to ease simultaneous introductions and generalizations of facts and
-operations of casing, naming, etc. It also a common practice to make a stack
+operations of casing, naming, etc. It is also a common practice to make a stack
 operation immediately followed by an *interpretation* of the fact
 being pushed, that is, to apply a lemma to this fact before passing it
 to a tactic for decomposition, application and so on.

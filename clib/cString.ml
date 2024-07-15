@@ -20,15 +20,17 @@ sig
   val drop_simple_quotes : string -> string
   val quote_coq_string : string -> string
   val unquote_coq_string : string -> string option
+  val html_escape : string -> string
   val string_index_from : string -> int -> string -> int
   val string_contains : where:string -> what:string -> bool
   val plural : int -> string -> string
+  val lplural : _ list -> string -> string
   val conjugate_verb_to_be : int -> string
   val ordinal : int -> string
   val is_sub : string -> string -> int -> bool
   val is_prefix : string -> string -> bool
   val is_suffix : string -> string -> bool
-  module Set : Set.S with type elt = t
+  module Set : CSet.ExtS with type elt = t
   module Map : CMap.ExtS with type key = t and module Set := Set
   module Pred : Predicate.S with type elt = t
   module List : CList.MonoS with type elt = t
@@ -90,6 +92,16 @@ let unquote_coq_string s =
       Some (Buffer.contents b)
     with Exit -> None
 
+let html_escape msg =
+  let buf = Buffer.create (String.length msg) in
+  String.iter (fun c ->
+      if String.contains "\"&'<>" c then
+        Buffer.add_string buf (Printf.sprintf "&#%d;" (Char.code c))
+      else
+        Buffer.add_char buf c)
+    msg;
+  Buffer.contents buf
+
 (* substring searching... *)
 
 (* gdzie = where, co = what *)
@@ -140,6 +152,11 @@ let is_suffix p s =
 
 let plural n s = if n<>1 then s^"s" else s
 
+let lplural l s =
+  match l with
+  | [_] -> s
+  | _ -> s^"s"
+
 let conjugate_verb_to_be n = if n<>1 then "are" else "is"
 
 let ordinal n =
@@ -161,7 +178,7 @@ struct
   let compare = compare
 end
 
-module Set = Set.Make(Self)
+module Set = CSet.Make(Self)
 module Map = CMap.Make(Self)
 module Pred = Predicate.Make(Self)
 

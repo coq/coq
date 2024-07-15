@@ -9,7 +9,7 @@
 (************************************************************************)
 
 open Tac2expr
-open Tac2ffi
+open Tac2val
 open Names
 
 val pr_tacref : Id.Set.t -> ltac_constant -> Pp.t

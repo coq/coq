@@ -60,7 +60,7 @@ let rec find_and_remove_assoc (i : int) = function
 type backtrace = Printexc.raw_backtrace
 let backtrace_to_string = Printexc.raw_backtrace_to_string
 
-let backtrace_info : backtrace t = make ()
+let backtrace_info : backtrace t = make "exninfo_backtrace"
 
 let is_recording = ref false
 

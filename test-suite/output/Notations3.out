@@ -116,6 +116,10 @@ where
      : nat * (nat * nat)
 {{0, 1, 2, 3}}
      : nat * (nat * (nat * nat))
+File "./output/Notations3.v", line 178, characters 0-174:
+Warning: Closed notations (i.e. starting and ending with a terminal symbol)
+should usually be at level 0 (default).
+[closed-notation-not-level-0,parsing,default]
 letpair x [1] = {0};
 return (1, 2, 3, 4)
      : nat * nat * nat * nat
@@ -145,6 +149,11 @@ exists_true (x : nat) (A : Type) (R : A -> A -> Prop)
      : Prop * Prop * Prop
 {{D 1, 2}}
      : nat * nat * (nat * nat * (nat * nat))
+File "./output/Notations3.v", line 235, characters 0-104:
+Warning: Notations "! _ .. _ , _" defined at level 200 with arguments binder,
+constr at next level and "! _ .. _ # _ #" defined at level 200 with arguments
+binder, constr have incompatible prefixes. One of them will likely not work.
+[notation-incompatible-prefix,parsing,default]
 ! a b : nat # True #
      : Prop * (Prop * Prop)
 !!!! a b : nat # True #

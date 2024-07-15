@@ -23,10 +23,12 @@ hint: [
 | WITH "Resolve" [ "->" | "<-" ] LIST1 global OPT natural
 | DELETE "Resolve" "<-" LIST1 global OPT natural
 | REPLACE "Variables" "Transparent"
-| WITH [ "Constants" | "Variables" ] [ "Transparent" | "Opaque" ]
+| WITH [ "Constants" | "Projections" | "Variables" ] [ "Transparent" | "Opaque" ]
 | DELETE "Variables" "Opaque"
 | DELETE "Constants" "Transparent"
 | DELETE "Constants" "Opaque"
+| DELETE "Projections" "Transparent"
+| DELETE "Projections" "Opaque"
 | REPLACE "Transparent" LIST1 global
 | WITH [ "Transparent" | "Opaque" ] LIST1 global
 | DELETE "Opaque" LIST1 global
@@ -67,7 +69,6 @@ RENAME: [
 | G_LTAC2_binder ltac2_binder
 | G_LTAC2_branches ltac2_branches
 | G_LTAC2_let_clause ltac2_let_clause
-| G_LTAC2_tactic_atom ltac2_tactic_atom
 | G_LTAC2_rewriter ltac2_rewriter
 | G_LTAC2_constr_with_bindings ltac2_constr_with_bindings
 | G_LTAC2_match_rule ltac2_match_rule
@@ -106,10 +107,10 @@ RENAME: [
 RENAME: [
   (* map missing names for rhs *)
 | Constr.constr term
+| Constr.term0 term0
 | Constr.global global
 | Constr.lconstr lconstr
 | Constr.cpattern cpattern
-| G_vernac.query_command query_command
 | G_vernac.section_subset_expr section_var_expr
 | Prim.ident ident
 | Prim.reference reference
@@ -569,6 +570,9 @@ gallina: [
 | REPLACE thm_token ident_decl binders ":" lconstr LIST0 [ "with" ident_decl binders ":" lconstr ]
 | WITH thm_token ident_decl binders ":" type LIST0 [ "with" ident_decl binders ":" type ]
 | DELETE assumptions_token inline assum_list
+| DELETE "Symbols" assum_list
+| REPLACE "Symbol" assum_list
+| WITH [ "Symbol" | "Symbols" ] assum_list
 | REPLACE inductive_token LIST1 inductive_or_record_definition SEP "with"
 | WITH "Inductive" inductive_definition LIST0 ( "with" inductive_definition )
 |   "Inductive" record_definition LIST0 ( "with" record_definition )
@@ -592,6 +596,9 @@ gallina: [
 | DELETE "Scheme" "Boolean" "Equality" "for" smart_global
 | DELETE "Scheme" "Equality" "for" smart_global
 | "Scheme" OPT "Boolean" "Equality" "for" smart_global
+| DELETE "Rewrite" "Rules" identref ":=" OPT "|" LIST1 rewrite_rule SEP "|"
+| REPLACE "Rewrite" "Rule" identref ":=" OPT "|" LIST1 rewrite_rule SEP "|"
+| WITH "Rewrite" [ "Rule" | "Rules" ]  identref ":=" OPT "|" LIST1 rewrite_rule SEP "|"
 ]
 
 SPLICE: [
@@ -926,7 +933,7 @@ match_rule: [
 | DELETE "_" "=>" ltac_expr5
 ]
 
-selector: [
+goal_selector: [
 | REPLACE range_selector_or_nth  (* depends on whether range_selector_or_nth is deleted first *)
 | WITH LIST1 range_selector SEP ","
 ]
@@ -1077,6 +1084,10 @@ simple_tactic: [
 | DELETE "replace" "<-" uconstr clause
 | DELETE "replace" uconstr clause
 | "replace" orient uconstr clause
+| REPLACE "replace" uconstr "with" constr clause by_arg_tac
+| WITH "replace" orient constr "with" constr clause OPT ( "by" ltac_expr3 )
+| DELETE "replace" "->" uconstr "with" constr clause by_arg_tac
+| DELETE "replace" "<-" uconstr "with" constr clause by_arg_tac
 | REPLACE "rewrite" "*" orient uconstr "in" hyp "at" occurrences by_arg_tac
 | WITH "rewrite" "*" orient uconstr OPT ( "in" hyp ) OPT ( "at" occurrences ) by_arg_tac
 | DELETE "rewrite" "*" orient uconstr "in" hyp by_arg_tac
@@ -1096,9 +1107,6 @@ simple_tactic: [
 | DELETE "unify" constr constr
 | REPLACE "unify" constr constr "with" preident
 | WITH "unify" constr constr OPT ( "with" preident )
-| DELETE "cutrewrite" orient constr
-| REPLACE "cutrewrite" orient constr "in" hyp
-| WITH "cutrewrite" orient one_type OPT ( "in" hyp )
 | DELETE "destauto"
 | REPLACE "destauto" "in" hyp
 | WITH "destauto" OPT ( "in" hyp )
@@ -1446,6 +1454,11 @@ field_body: [
 | WITH binders of_type_inst ":=" lconstr
 ]
 
+assum_list: [
+| DELETE LIST1 assum_coe
+| LIST1 assum_coe
+]
+
 assumpt: [
 | REPLACE LIST1 ident_decl of_type lconstr
 | WITH LIST1 ident_decl of_type
@@ -1725,22 +1738,33 @@ let_clause: [
 | WITH name  ":=" ltac_expr5
 ]
 
+subprf_with_selector: [
+| DELETE query_command
+]
+
+SPLICE: [
+| subprf_with_selector
+]
+
 tactic_mode: [
 (* todo: make sure to document this production! *)
 (* deleting to allow splicing query_command into command *)
-| DELETE OPT toplevel_selector query_command
 | DELETE OPT ltac_selector OPT ltac_info tactic ltac_use_default
 | DELETE "par" ":" OPT ltac_info tactic ltac_use_default
 (* Ignore attributes (none apply) and "...". *)
 | ltac_info tactic
 | MOVETO command ltac_info tactic
-| DELETE command
+| MOVETO simple_tactic subprf
 | REPLACE OPT toplevel_selector "{"
 (* semantically restricted *)
 | WITH OPT ( [ natural | "[" ident "]" ] ":" ) "{"
 | MOVETO simple_tactic OPT ( [ natural | "[" ident "]" ] ":" ) "{"
-| DELETE simple_tactic
+| DELETE command
 | DELETENT
+]
+
+SPLICE: [
+| subprf
 ]
 
 ltac2_scope: [
@@ -1766,7 +1790,7 @@ RENAME: [
 ]
 
 toplevel_selector: [
-| selector
+| goal_selector
 | "all"
 | "!"
 (* par is accepted even though it's not in the .mlg *)
@@ -1774,7 +1798,7 @@ toplevel_selector: [
 ]
 
 toplevel_selector_temp: [
-| DELETE selector ":"
+| DELETE goal_selector ":"
 | DELETE "all" ":"
 | DELETE "!" ":"
 | toplevel_selector ":"
@@ -1794,7 +1818,6 @@ vernac_aux: [
 | DELETE gallina_ext "."
 | DELETE syntax "."
 | DELETE command_entry
-| DELETE subprf
 | DELETENT
 ]
 
@@ -1944,16 +1967,19 @@ logical_kind: [
 | DELETE "Example"
 | DELETE "Context"
 | DELETE "Primitive"
+| DELETE "Symbol"
 (* SubClass was deleted from def_token *)
-| [ "Definition" | "Example" | "Context" | "Primitive" ]
+| [ "Definition" | "Example" | "Context" | "Primitive" | "Symbol" ]
 | DELETE "Coercion"
 | DELETE "Instance"
 | DELETE "Scheme"
 | DELETE "Canonical"
 | [  "Coercion" | "Instance" | "Scheme" | "Canonical" | "SubClass" ]
+| DELETE "Fixpoint"
+| DELETE "CoFixpoint"
 | DELETE "Field"
 | DELETE "Method"
-| [ "Field" | "Method" ]
+| [  "Fixpoint" | "CoFixpoint" | "Field" | "Method" ]
 ]
 
 (* ltac2 *)
@@ -2027,7 +2053,7 @@ ltac2_entry: [
 | WITH "Ltac2" tac2def_val
 | REPLACE tac2def_ext     (* Ltac2 plugin *)
 | WITH "Ltac2" tac2def_ext
-| "Ltac2" "Notation" [ string | lident ] ":=" ltac2_expr6 TAG Ltac2  (* variant *)
+| "Ltac2" "Notation" [ string | ident ] ":=" ltac2_expr6 TAG Ltac2  (* variant *)
 | MOVEALLBUT command
 (* todo: MOVEALLBUT should ignore tag on "but" prodns *)
 ]
@@ -2057,7 +2083,6 @@ SPLICE: [
 | ltac2def_syn
 | tac2def_mut
 | rec_flag
-| locident
 | tac2alg_constructors
 | ltac2_binder
 | branch
@@ -2082,11 +2107,11 @@ ltac2_quotations: [
 
 ]
 
-ltac2_tactic_atom: [
+ltac2_atom: [
 | MOVETO ltac2_quotations "constr" ":" "(" lconstr ")"      (* Ltac2 plugin *)
 | MOVETO ltac2_quotations "open_constr" ":" "(" lconstr ")"      (* Ltac2 plugin *)
 | MOVETO ltac2_quotations "preterm" ":" "(" lconstr ")"      (* Ltac2 plugin *)
-| MOVETO ltac2_quotations "ident" ":" "(" lident ")"      (* Ltac2 plugin *)
+| MOVETO ltac2_quotations "ident" ":" "(" identref ")"      (* Ltac2 plugin *)
 | MOVETO ltac2_quotations "pat" ":" "(" cpattern ")"      (* Ltac2 plugin *)
 | MOVETO ltac2_quotations "reference" ":" "(" globref ")"      (* Ltac2 plugin *)
 | MOVETO ltac2_quotations "ltac1" ":" "(" ltac1_expr_in_env ")"      (* Ltac2 plugin *)
@@ -2138,16 +2163,6 @@ simple_binding: [
 | DELETE "(" natural ":=" lconstr ")"
 ]
 
-
-subprf: [
-| MOVEALLBUT simple_tactic
-| "{" (* should be removed.  See https://github.com/coq/coq/issues/12004 *)
-]
-
-subprf: [
-| DELETENT
-]
-
 ltac2_expr: [
 | DELETE _ltac2_expr
 ]
@@ -2171,10 +2186,6 @@ cofixdecl: [
 
 
 OPTINREF: [ ]
-
-constr_with_bindings_arg: [
-| DELETE ">" constr_with_bindings
-]
 
 destruction_arg: [
 | DELETE constr_with_bindings
@@ -2244,13 +2255,14 @@ as_or_and_ipat: [
 | "as" or_and_intropattern
 ]
 
-rewstrategy: [
+ne_rewstrategy1_list_sep_semicolon: [
 | DELETE rewstrategy1
-| DELETE rewstrategy ";" rewstrategy1
-| LIST1 rewstrategy1 SEP ";"
+| REPLACE ne_rewstrategy1_list_sep_semicolon ";" rewstrategy1
+| WITH LIST1 rewstrategy1 SEP ";"
 ]
 
 SPLICE: [
+| ne_rewstrategy1_list_sep_semicolon
 | clause
 | noedit_mode
 | match_list
@@ -2367,7 +2379,6 @@ SPLICE: [
 | constr_body
 | reference_or_constr
 | opt_hintbases
-| hints_path_atom
 | opthints
 | scheme
 | fresh_id
@@ -2398,7 +2409,6 @@ SPLICE: [
 | syntax_modifiers
 | array_elems
 | G_LTAC2_input_fun
-| ltac2_simple_intropattern_closed
 | ltac2_with_bindings
 | int_or_id
 | fun_ind_using
@@ -2439,7 +2449,6 @@ SPLICE: [
 | enable_notation_interpretation
 | enable_notation_flags
 | opt_scope
-| lident
 ] (* end SPLICE *)
 
 RENAME: [
@@ -2523,7 +2532,6 @@ REACHABLE: [
 NOTINRSTS: [
 | command
 | control_command
-| query_command
 | simple_tactic
 | hints_regexp (* manually inserted *)
 | REACHABLE

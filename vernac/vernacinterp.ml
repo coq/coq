@@ -13,27 +13,6 @@ open Synterp
 
 let vernac_pperr_endline = CDebug.create ~name:"vernacinterp" ()
 
-let interp_typed_vernac (Vernactypes.TypedVernac { inprog; outprog; inproof; outproof; run })
-    ~pm ~stack =
-  let open Vernactypes in
-  let module LStack = Vernacstate.LemmaStack in
-  let proof = Option.map LStack.get_top stack in
-  let pm', proof' = run
-      ~pm:(InProg.cast (NeList.head pm) inprog)
-      ~proof:(InProof.cast proof inproof)
-  in
-  let pm = OutProg.cast pm' outprog pm in
-  let stack = let open OutProof in
-    match stack, outproof with
-    | stack, No -> stack
-    | None, Close -> assert false
-    | Some stack, Close -> snd (LStack.pop stack)
-    | None, Update -> assert false
-    | Some stack, Update -> Some (LStack.map_top ~f:(fun _ -> proof') stack)
-    | stack, New -> Some (LStack.push stack proof')
-  in
-  stack, pm
-
 (* Timeout *)
 let vernac_timeout ~timeout (f : 'a -> 'b) (x : 'a) : 'b =
   match Control.timeout timeout f x with
@@ -68,8 +47,8 @@ let with_fail ~loc ~st f =
   | Error () ->
     CErrors.user_err (Pp.str "The command has not failed!")
   | Ok (eloc, msg) ->
-    let loc = if !Synterp.test_mode then real_error_loc ~cmdloc:loc ~eloc else None in
-    if not !Flags.quiet || !Synterp.test_mode
+    let loc = if !Flags.test_mode then real_error_loc ~cmdloc:loc ~eloc else None in
+    if not !Flags.quiet || !Flags.test_mode
     then Feedback.msg_notice ?loc Pp.(str "The command has indeed failed with message:" ++ fnl () ++ msg)
 
 let with_succeed ~st f =
@@ -138,7 +117,13 @@ let rec interp_expr ?loc ~atts ~st c =
     let fv = Vernacentries.translate_vernac ?loc ~atts v in
     let stack = st.Vernacstate.interp.lemmas in
     let program = st.Vernacstate.interp.program in
-    interp_typed_vernac ~pm:program ~stack fv
+    let {Vernactypes.prog; proof; opaque_access=(); }, () = Vernactypes.run fv {
+        prog=program;
+        proof=stack;
+        opaque_access=();
+      }
+    in
+    proof, prog
 
 and vernac_load ~verbosely entries =
   (* Note that no proof should be open here, so the state here is just token for now *)
@@ -191,7 +176,7 @@ let interp_qed_delayed ~proof ~st pe =
       | Admitted ->
         Declare.Proof.save_lemma_admitted_delayed ~pm ~proof
       | Proved (_,idopt) ->
-        let pm, _ = Declare.Proof.save_lemma_proved_delayed ~pm ~proof ~idopt in
+        let pm = Declare.Proof.save_lemma_proved_delayed ~pm ~proof ~idopt in
         pm)
       pm
   in
@@ -219,10 +204,10 @@ let interp_gen ~verbosely ~st ~interp_fn cmd =
     Exninfo.iraise exn
 
 (* Regular interp *)
-let interp ?(verbosely=true) ~st cmd =
+let interp ~intern ?(verbosely=true) ~st cmd =
   Vernacstate.unfreeze_full_state st;
   vernac_pperr_endline Pp.(fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr cmd.CAst.v.expr);
-  let entry = NewProfile.profile "synterp" (fun () -> Synterp.synterp_control cmd) () in
+  let entry = NewProfile.profile "synterp" (fun () -> Synterp.synterp_control ~intern cmd) () in
   let interp = NewProfile.profile "interp" (fun () -> interp_gen ~verbosely ~st ~interp_fn:interp_control entry) () in
   Vernacstate.{ synterp = Vernacstate.Synterp.freeze (); interp }
 
@@ -230,10 +215,26 @@ let interp_entry ?(verbosely=true) ~st entry =
   Vernacstate.unfreeze_full_state st;
   interp_gen ~verbosely ~st ~interp_fn:interp_control entry
 
+module Intern = struct
+
+  let fs_intern dp =
+    match Loadpath.locate_absolute_library dp with
+    | Ok file ->
+      Feedback.feedback @@ Feedback.FileDependency (Some file, Names.DirPath.to_string dp);
+      let res, provenance = Library.intern_from_file file in
+      Result.iter (fun _ ->
+          Feedback.feedback @@ Feedback.FileLoaded (Names.DirPath.to_string dp, file)) res;
+      res, provenance
+    | Error e ->
+      Loadpath.Error.raise dp e
+end
+
+let fs_intern = Intern.fs_intern
+
 let interp_qed_delayed_proof ~proof ~st ~control (CAst.{loc; v = pe } as e) : Vernacstate.Interp.t =
-  let cmd = CAst.make ?loc { control; expr = VernacSynPure (VernacEndProof pe); attrs = [] } in
-  let CAst.{ loc; v = entry } = Synterp.synterp_control cmd in
-  let control = entry.control in
+  (* Synterp duplication of control handling bites us here... *)
+  let control = Synterp.add_default_timeout control in
+  let control = List.map Synterp.synpure_control control in
   NewProfile.profile "interp-delayed-qed" (fun () ->
       interp_gen ~verbosely:false ~st
         ~interp_fn:(interp_qed_delayed_control ~proof ~control) e)

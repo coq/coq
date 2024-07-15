@@ -95,10 +95,13 @@ let set_check_universes c = globalize0 (Safe_typing.set_check_universes c)
 let typing_flags () = Environ.typing_flags (env ())
 let set_allow_sprop b = globalize0 (Safe_typing.set_allow_sprop b)
 let sprop_allowed () = Environ.sprop_allowed (env())
+let set_rewrite_rules_allowed b = globalize0 (Safe_typing.set_rewrite_rules_allowed b)
+let rewrite_rules_allowed () = Environ.rewrite_rules_allowed (env())
 let export_private_constants cd = globalize (Safe_typing.export_private_constants cd)
 let add_constant ?typing_flags id d = globalize (Safe_typing.add_constant ?typing_flags (i2l id) d)
 let add_private_constant id u d = globalize (Safe_typing.add_private_constant (i2l id) u d)
 let fill_opaque c = globalize0 (Safe_typing.fill_opaque c)
+let add_rewrite_rules id c = globalize0 (Safe_typing.add_rewrite_rules (i2l id) c)
 let add_mind ?typing_flags id mie = globalize (Safe_typing.add_mind ?typing_flags (i2l id) mie)
 let add_modtype id me inl = globalize (Safe_typing.add_modtype (i2l id) me inl)
 let add_module id me inl = globalize (Safe_typing.add_module (i2l id) me inl)
@@ -123,7 +126,6 @@ let add_module_parameter mbid mte inl =
 (** Queries on the global environment *)
 
 let universes () = Environ.universes (env())
-let universes_lbound () = Environ.universes_lbound (env())
 let named_context () = Environ.named_context (env())
 let named_context_val () = Environ.named_context_val (env())
 
@@ -139,17 +141,17 @@ let lookup_modtype kn = Environ.lookup_modtype kn (env())
 let exists_objlabel id = Safe_typing.exists_objlabel id (safe_env ())
 
 type indirect_accessor = {
-  access_proof : Opaqueproof.opaque -> (Constr.t * unit Opaqueproof.delayed_universes) option;
+  access_proof : Opaqueproof.opaque -> Opaqueproof.opaque_proofterm option;
 }
 
 let force_proof access o = match access.access_proof o with
 | None -> CErrors.user_err Pp.(str "Cannot access opaque delayed proof")
 | Some (c, u) -> (c, u)
 
-let body_of_constant_body access env cb =
+let body_of_constant_body access cb =
   let open Declarations in
   match cb.const_body with
-  | Undef _ | Primitive _ ->
+  | Undef _ | Primitive _ | Symbol _ ->
      None
   | Def c ->
     let u = match cb.const_universes with
@@ -160,8 +162,6 @@ let body_of_constant_body access env cb =
   | OpaqueDef o ->
     let c, u = force_proof access o in
     Some (c, u, Declareops.constant_polymorphic_context cb)
-
-let body_of_constant_body access ce = body_of_constant_body access (env ()) ce
 
 let body_of_constant access cst = body_of_constant_body access (lookup_constant cst)
 
@@ -178,8 +178,7 @@ let mind_of_delta_kn kn =
 let start_library dir = globalize (Safe_typing.start_library dir)
 let export ~output_native_objects s =
   Safe_typing.export ~output_native_objects (safe_env ()) s
-let import c u d = globalize (Safe_typing.import c u d)
-
+let import c t d = globalize (Safe_typing.import c t d)
 
 (** Function to get an environment from the constants part of the global
     environment and a given context. *)
@@ -192,9 +191,6 @@ let is_polymorphic r =
 
 let is_template_polymorphic r =
   Environ.is_template_polymorphic (env ()) r
-
-let get_template_polymorphic_variables r =
-  Environ.get_template_polymorphic_variables (env ()) r
 
 let is_type_in_type r =
   Environ.is_type_in_type (env ()) r

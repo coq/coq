@@ -119,7 +119,7 @@ let alarm what internal msg =
 
 let try_declare_scheme ?locmap what f internal names kn =
   try f ?locmap names kn
-  with e ->
+  with e when CErrors.noncritical e ->
   let e = Exninfo.capture e in
   let rec extract_exn = function Logic_monad.TacticFailure e -> extract_exn e | e -> e in
   let msg = match extract_exn (fst e) with
@@ -168,10 +168,9 @@ let try_declare_scheme ?locmap what f internal names kn =
     | InternalDependencies ->
          alarm what internal
            (strbrk "Inductive types with internal dependencies in constructors not supported.")
-    | e when CErrors.noncritical e ->
+    | e ->
         alarm what internal
           (str "Unexpected error during scheme creation: " ++ CErrors.print e)
-    | _ -> Exninfo.iraise e
   in
   match msg with
   | None -> ()
@@ -198,42 +197,30 @@ let declare_beq_scheme ?locmap mi = declare_beq_scheme_with ?locmap [] mi
 (* Case analysis schemes *)
 let declare_one_case_analysis_scheme ?loc ind =
   let (mib, mip) as specif = Global.lookup_inductive ind in
-  let kind = Inductive.inductive_sort_family mip in
-  let dep =
-    if kind == InProp then case_scheme_kind_from_prop
+  let kind = Indrec.pseudo_sort_family_for_elim ind mip in
+  let dep, suff =
+    if kind == InProp then case_nodep, Some "case"
     else if not (Inductiveops.has_dependent_elim specif) then
-      case_scheme_kind_from_type
-    else case_dep_scheme_kind_from_type in
+      case_nodep, None
+    else case_dep, Some "case" in
+  let id = match suff with
+    | None -> None
+    | Some suff ->
+      (* the auto generated eliminator may be called "case" instead of eg "case_nodep" *)
+      Some Names.(Id.of_string (Id.to_string mip.mind_typename ^ "_" ^ suff))
+  in
   let kelim = Inductiveops.elim_sort (mib,mip) in
     (* in case the inductive has a type elimination, generates only one
        induction scheme, the other ones share the same code with the
        appropriate type *)
   if Sorts.family_leq InType kelim then
-    define_individual_scheme ?loc dep None ind
+    define_individual_scheme ?loc dep id ind
 
 (* Induction/recursion schemes *)
 
-let kinds_from_prop =
-  [InType,rect_scheme_kind_from_prop;
-   InProp,ind_scheme_kind_from_prop;
-   InSet,rec_scheme_kind_from_prop;
-   InSProp,sind_scheme_kind_from_prop]
-
-let kinds_from_type =
-  [InType,rect_dep_scheme_kind_from_type;
-   InProp,ind_dep_scheme_kind_from_type;
-   InSet,rec_dep_scheme_kind_from_type;
-   InSProp,sind_dep_scheme_kind_from_type]
-
-let nondep_kinds_from_type =
-  [InType,rect_scheme_kind_from_type;
-   InProp,ind_scheme_kind_from_type;
-   InSet,rec_scheme_kind_from_type;
-   InSProp,sind_scheme_kind_from_type]
-
 let declare_one_induction_scheme ?loc ind =
   let (mib,mip) as specif = Global.lookup_inductive ind in
-  let kind = Inductive.inductive_sort_family mip in
+  let kind = Indrec.pseudo_sort_family_for_elim ind mip in
   let from_prop = kind == InProp in
   let depelim = Inductiveops.has_dependent_elim specif in
   let kelim = Inductiveops.sorts_below (Inductiveops.elim_sort (mib,mip)) in
@@ -241,13 +228,28 @@ let declare_one_induction_scheme ?loc ind =
     else List.filter (fun s -> s <> InSProp) kelim
   in
   let elims =
-    List.map_filter (fun (sort,kind) ->
-        if List.mem_f Sorts.family_equal sort kelim then Some kind else None)
-      (if from_prop then kinds_from_prop
-       else if depelim then kinds_from_type
-       else nondep_kinds_from_type)
+    List.filter (fun (sort,_) -> List.mem_f Sorts.family_equal sort kelim)
+      (* NB: the order is important, it makes it so that _rec is
+         defined using _rect but _ind is not. *)
+      [(InType, "rect");
+       (InProp, "ind");
+       (InSet, "rec");
+       (InSProp, "sind")]
   in
-  List.iter (fun kind -> define_individual_scheme ?loc kind None ind)
+  let elims = List.map (fun (to_kind,dflt_suff) ->
+      if from_prop then elim_scheme ~dep:false ~to_kind, Some dflt_suff
+      else if depelim then elim_scheme ~dep:true ~to_kind, Some dflt_suff
+      else elim_scheme ~dep:false ~to_kind, None)
+      elims
+  in
+  List.iter (fun (kind, suff) ->
+      let id = match suff with
+        | None -> None
+        | Some suff ->
+          (* the auto generated eliminator may be called "rect" instead of eg "rect_dep" *)
+          Some Names.(Id.of_string (Id.to_string mip.mind_typename ^ "_" ^ suff))
+      in
+      define_individual_scheme ?loc kind id ind)
     elims
 
 let declare_induction_schemes ?(locmap=Locmap.default None) kn =
@@ -327,14 +329,14 @@ let sch_isdep = function
 | SchemeInduction  | SchemeElimination -> true
 | SchemeMinimality | SchemeCase        -> false
 
+let sch_isrec = function
+| SchemeInduction | SchemeMinimality -> true
+| SchemeElimination | SchemeCase -> false
+
 (* Generate suffix for scheme given a target sort *)
 let scheme_suffix_gen {sch_type; sch_sort} sort =
-  (* We check if we are working with recursion vs case schemes *)
-  let sch_isrec = match sch_type with
-    | SchemeInduction   | SchemeMinimality  -> true
-    | SchemeElimination | SchemeCase        -> false in
   (* The _ind/_rec_/case suffix *)
-  let ind_suffix = match sch_isrec , sch_sort with
+  let ind_suffix = match sch_isrec sch_type, sch_sort with
     | true  , InSProp
     | true  , InProp  -> "_ind"
     | true  , _       -> "_rec"
@@ -358,61 +360,89 @@ let smart_ind qid =
   if Dumpglob.dump() then Dumpglob.add_glob ?loc:qid.loc (IndRef ind);
   ind
 
-(* Resolve the names of a list of schemes using an enviornment and extract some
-important data such as the inductive type involved, whether it is a dependent
-eliminator and its sort. *)
-let rec name_and_process_schemes env l =
- match l with
-  | [] -> []
-  | (Some id, {sch_type; sch_qualid; sch_sort}) :: q
-  -> ((id, sch_isdep sch_type, smart_ind sch_qualid, sch_sort)
-    :: name_and_process_schemes env q)
-(* If no name has been provided, we build one from the types of the ind requested *)
-  | (None, ({sch_type; sch_qualid; sch_sort} as sch)) :: q
-   -> let ind = smart_ind sch_qualid in
-      let sort_of_ind = Inductive.inductive_sort_family (snd (Inductive.lookup_mind_specif env ind)) in
-      let suffix = scheme_suffix_gen sch sort_of_ind in
-      let newid = Nameops.add_suffix (Nametab.basename_of_global (Names.GlobRef.IndRef ind)) suffix in
-      let newref = CAst.make newid in
-      (newref, sch_isdep sch_type, ind, sch_sort) :: name_and_process_schemes env q
+(* Resolve the name of a scheme using an environment and extract some
+   important data such as the inductive type involved, whether it is a dependent
+   eliminator and its sort. *)
+let name_and_process_scheme env = function
+  | (Some id, {sch_type; sch_qualid; sch_sort}) ->
+    (id, sch_isdep sch_type, smart_ind sch_qualid, sch_sort)
+  | (None, ({sch_type; sch_qualid; sch_sort} as sch)) ->
+    (* If no name has been provided, we build one from the types of the ind requested *)
+    let ind = smart_ind sch_qualid in
+    let sort_of_ind =
+      Indrec.pseudo_sort_family_for_elim ind
+        (snd (Inductive.lookup_mind_specif env ind))
+    in
+    let suffix = scheme_suffix_gen sch sort_of_ind in
+    let newid = Nameops.add_suffix (Nametab.basename_of_global (Names.GlobRef.IndRef ind)) suffix in
+    let newref = CAst.make newid in
+    (newref, sch_isdep sch_type, ind, sch_sort)
 
-let do_mutual_induction_scheme ?(force_mutual=false) env l =
-  let lrecnames = List.map (fun ({CAst.v},_,_,_) -> v) l in
-
-  let sigma, lrecspec, _ =
-    List.fold_right
-      (fun (_,dep,ind,sort) (evd, l, inst) ->
-       let evd, indu, inst =
-         match inst with
-         | None ->
-            let _, ctx = Typeops.type_of_global_in_context env (Names.GlobRef.IndRef ind) in
-            let u, ctx = UnivGen.fresh_instance_from ctx None in
-            let evd = Evd.from_ctx (UState.of_context_set ctx) in
-              evd, (ind,u), Some u
-         | Some ui -> evd, (ind, ui), inst
-       in
-          (evd, (indu,dep,sort) :: l, inst))
-    l (Evd.from_env env,[],None)
+let do_mutual_induction_scheme ?(force_mutual=false) env ?(isrec=true) l =
+  let sigma, inst =
+    let _,_,ind,_ = match l with | x::_ -> x | [] -> assert false in
+    let _, ctx = Typeops.type_of_global_in_context env (Names.GlobRef.IndRef ind) in
+    let u, ctx = UnivGen.fresh_instance_from ctx None in
+    let u = EConstr.EInstance.make u in
+    let sigma = Evd.from_ctx (UState.of_context_set ctx) in
+    sigma, u
   in
-  let sigma, listdecl = Indrec.build_mutual_induction_scheme env sigma ~force_mutual lrecspec in
+  let sigma, lrecspec =
+    List.fold_left_map (fun sigma (_,dep,ind,sort) ->
+        let sigma, sort = Evd.fresh_sort_in_family ~rigid:UnivRigid sigma sort in
+        (sigma, ((ind,inst),dep,sort)))
+      sigma
+      l
+  in
+  let sigma, listdecl =
+    if isrec then Indrec.build_mutual_induction_scheme env sigma ~force_mutual lrecspec
+    else
+      List.fold_left_map (fun sigma (ind,dep,sort) ->
+          let sigma, c = Indrec.build_case_analysis_scheme env sigma ind dep sort in
+          let c, _ = Indrec.eval_case_analysis c in
+          sigma, c)
+        sigma lrecspec
+  in
   let poly =
     (* NB: build_mutual_induction_scheme forces nonempty list of mutual inductives
        (force_mutual is about the generated schemes) *)
     let _,_,ind,_ = List.hd l in
     Global.is_polymorphic (Names.GlobRef.IndRef ind)
   in
-  let declare decl fi lrecref =
-    let decltype = Retyping.get_type_of env sigma (EConstr.of_constr decl) in
+  let declare decl ({CAst.v=fi},dep,ind,sort) =
+    let decltype = Retyping.get_type_of env sigma decl in
     let decltype = EConstr.to_constr sigma decltype in
+    let decl = EConstr.to_constr sigma decl in
     let cst = define ~poly fi sigma decl (Some decltype) in
-    Names.GlobRef.ConstRef cst :: lrecref
+    let kind =
+      let open Elimschemes in
+      if isrec then Some (elim_scheme ~dep ~to_kind:sort)
+      else match sort with
+        | InType -> Some (if dep then case_dep else case_nodep)
+        | InProp -> Some (if dep then casep_dep else casep_nodep)
+        | InSProp | InSet | InQSort ->
+          (* currently we don't have standard scheme kinds for this *)
+          None
+    in
+    match kind with
+    | None -> ()
+    | Some kind ->
+      DeclareScheme.declare_scheme (Ind_tables.scheme_kind_name kind) (ind,cst)
   in
-  let _ = List.fold_right2 declare listdecl lrecnames [] in
+  let () = List.iter2 declare listdecl l in
+  let lrecnames = List.map (fun ({CAst.v},_,_,_) -> v) l in
   Declare.fixpoint_message None lrecnames
 
 let do_scheme env l =
-  let lnamedepindsort = name_and_process_schemes env l in
-  do_mutual_induction_scheme env lnamedepindsort
+  let isrec = match l with
+    | [_, sch] -> sch_isrec sch.sch_type
+    | _ ->
+      if List.for_all (fun (_,sch) -> sch_isrec sch.sch_type) l
+      then true
+      else CErrors.user_err Pp.(str "Mutually defined schemes should be recursive.")
+  in
+  let lnamedepindsort = List.map (name_and_process_scheme env) l in
+  do_mutual_induction_scheme env ~isrec lnamedepindsort
 
 let do_scheme_equality ?locmap sch id =
   let mind,_ = smart_ind id in

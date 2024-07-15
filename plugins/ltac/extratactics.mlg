@@ -15,7 +15,6 @@ open Genarg
 open Stdarg
 open Tacarg
 open Extraargs
-open Pltac
 open Mod_subst
 open Names
 open CErrors
@@ -25,6 +24,7 @@ open Tactypes
 open Proofview.Notations
 open Attributes
 open Vernacextend
+open G_redexpr
 
 }
 
@@ -36,8 +36,8 @@ TACTIC EXTEND assert_succeeds
 END
 
 TACTIC EXTEND replace
-| ["replace" uconstr(c1) "with" constr(c2) clause(cl) by_arg_tac(tac) ]
--> { Internals.replace_in_clause_maybe_by ist c1 c2 cl tac }
+| [ "replace" uconstr(c1) "with" constr(c2) clause(cl) by_arg_tac(tac) ]
+  -> { Internals.replace_in_clause_maybe_by ist None c1 c2 cl tac }
 END
 
 TACTIC EXTEND replace_term_left
@@ -45,9 +45,19 @@ TACTIC EXTEND replace_term_left
   -> { Internals.replace_term ist (Some true) c cl }
 END
 
+TACTIC EXTEND replace_left
+| ["replace" "->" uconstr(c1) "with" constr(c2) clause(cl) by_arg_tac(tac) ]
+  -> { Internals.replace_in_clause_maybe_by ist (Some true) c1 c2 cl tac }
+END
+
 TACTIC EXTEND replace_term_right
 | [ "replace"  "<-" uconstr(c) clause(cl) ]
   -> { Internals.replace_term ist (Some false) c cl }
+END
+
+TACTIC EXTEND replace_right
+| [ "replace" "<-" uconstr(c1) "with" constr(c2) clause(cl) by_arg_tac(tac) ]
+  -> { Internals.replace_in_clause_maybe_by ist (Some false) c1 c2 cl tac }
 END
 
 TACTIC EXTEND replace_term
@@ -125,12 +135,6 @@ TACTIC EXTEND dependent_rewrite
 | [ "dependent" "rewrite" orient(b) constr(c) ] -> { rewriteInConcl b c }
 | [ "dependent" "rewrite" orient(b) constr(c) "in" hyp(id) ]
     -> { rewriteInHyp b c id }
-END
-
-TACTIC EXTEND cut_rewrite
-| [ "cutrewrite" orient(b) constr(eqn) ] -> { cutRewriteInConcl b eqn }
-| [ "cutrewrite" orient(b) constr(eqn) "in" hyp(id) ]
-    -> { cutRewriteInHyp b eqn id }
 END
 
 (**********************************************************************)
@@ -238,19 +242,17 @@ let add_rewrite_hint ~locality ~poly bases ort t lcsr =
 
 let classify_hint _ = VtSideff ([], VtLater)
 
-let hint_rewrite_locality = Attributes.hint_locality ~default:default_hint_rewrite_locality
-
 }
 
 VERNAC COMMAND EXTEND HintRewrite CLASSIFIED BY { classify_hint }
-| #[ polymorphic; locality = hint_rewrite_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ":" preident_list(bl) ] ->
+| #[ polymorphic; locality = hint_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ":" preident_list(bl) ] ->
   { add_rewrite_hint ~locality ~poly:polymorphic bl o None l }
-| #[ polymorphic; locality = hint_rewrite_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t)
+| #[ polymorphic; locality = hint_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t)
     ":" preident_list(bl) ] ->
   { add_rewrite_hint ~locality ~poly:polymorphic bl o (Some t) l }
-| #[ polymorphic; locality = hint_rewrite_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ] ->
+| #[ polymorphic; locality = hint_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ] ->
   { add_rewrite_hint ~locality ~poly:polymorphic ["core"] o None l }
-| #[ polymorphic; locality = hint_rewrite_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t) ] ->
+| #[ polymorphic; locality = hint_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t) ] ->
   { add_rewrite_hint ~locality ~poly:polymorphic ["core"] o (Some t) l }
 END
 
@@ -480,7 +482,7 @@ TACTIC EXTEND specialize_eqs
 | [ "specialize_eqs" hyp(id) ] -> { specialize_eqs id }
 END
 
-TACTIC EXTEND destauto
+TACTIC EXTEND destauto DEPRECATED { Deprecation.make ~since:"8.20" () }
 | [ "destauto" ] -> { Internals.destauto }
 | [ "destauto" "in" hyp(id) ] -> { Internals.destauto_in id }
 END

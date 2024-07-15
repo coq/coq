@@ -1,28 +1,24 @@
 open Pp
-open Context
-
-let find_reference = Coqlib.find_reference [@ocaml.warning "-3"]
+open EConstr
 
 let example_sort sigma =
 (* creating a new sort requires that universes should be recorded
   in the evd datastructure, so this datastructure also needs to be
   passed around. *)
   let sigma, s = Evd.new_sort_variable Evd.univ_rigid sigma in
-  let new_type = EConstr.mkSort s in
+  let new_type = mkSort s in
   sigma, new_type
 
 let c_one env sigma =
 (* In the general case, global references may refer to universe polymorphic
    objects, and their universe has to be made afresh when creating an instance. *)
-  let gr_S =
-    find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "S" in
-(* the long name of "S" was found with the command "About S." *)
-  let gr_O =
-    find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "O" in
+  let gr_S = Coqlib.lib_ref "num.nat.S" in
+  (* the long name of "S" was found with the command "Print Registered." *)
+  let gr_O = Coqlib.lib_ref "num.nat.O" in
   let sigma, c_O = Evd.fresh_global env sigma gr_O in
   let sigma, c_S = Evd.fresh_global env sigma gr_S in
 (* Here is the construction of a new term by applying functions to argument. *)
-  sigma, EConstr.mkApp (c_S, [| c_O |])
+  sigma, mkApp (c_S, [| c_O |])
 
 let dangling_identity env sigma =
 (* I call this a dangling identity, because it is not polymorph, but
@@ -33,16 +29,16 @@ let dangling_identity env sigma =
   let sigma, arg_type = Evarutil.new_evar env sigma type_type in
 (* Notice the use of a De Bruijn index for the inner occurrence of the
   bound variable. *)
-  sigma, EConstr.mkLambda(nameR (Names.Id.of_string "x"), arg_type,
-          EConstr.mkRel 1)
+  sigma, mkLambda(nameR (Names.Id.of_string "x"), arg_type,
+          mkRel 1)
 
 let dangling_identity2 env sigma =
 (* This example uses directly a function that produces an evar that
   is meant to be a type. *)
   let sigma, (arg_type, type_type) =
     Evarutil.new_type_evar env sigma Evd.univ_rigid in
-  sigma, EConstr.mkLambda(nameR (Names.Id.of_string "x"), arg_type,
-          EConstr.mkRel 1)
+  sigma, mkLambda(nameR (Names.Id.of_string "x"), arg_type,
+          mkRel 1)
 
 let example_sort_app_lambda () =
     let env = Global.env () in
@@ -50,7 +46,7 @@ let example_sort_app_lambda () =
     let sigma, c_v = c_one env sigma in
 (* dangling_identity and dangling_identity2 can be used interchangeably here *)
     let sigma, c_f = dangling_identity2 env sigma in
-    let c_1 = EConstr.mkApp (c_f, [| c_v |]) in
+    let c_1 = mkApp (c_f, [| c_v |]) in
     let _ = Feedback.msg_notice
        (Printer.pr_econstr_env env sigma c_1) in
     (* type verification happens here.  Type verification will update
@@ -66,43 +62,43 @@ let example_sort_app_lambda () =
 
 
 let c_S env sigma =
-  let gr = find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "S" in
+  let gr = Coqlib.lib_ref "num.nat.S" in
   Evd.fresh_global env sigma gr
 
 let c_O env sigma =
-  let gr = find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "O" in
+  let gr = Coqlib.lib_ref "num.nat.O" in
   Evd.fresh_global env sigma gr
 
 let c_E env sigma =
-  let gr = find_reference "Tuto3" ["Tuto3"; "Data"] "EvenNat" in
+  let gr = Coqlib.lib_ref "Tuto3.EvenNat" in
   Evd.fresh_global env sigma gr
 
 let c_D env sigma =
-  let gr = find_reference "Tuto3" ["Tuto3"; "Data"] "tuto_div2" in
+  let gr = Coqlib.lib_ref "Tuto3.tuto_div2" in
   Evd.fresh_global env sigma gr
 
 let c_Q env sigma =
-  let gr = find_reference "Tuto3" ["Coq"; "Init"; "Logic"] "eq" in
+  let gr = Coqlib.lib_ref "core.eq.type" in
   Evd.fresh_global env sigma gr
 
 let c_R env sigma =
-  let gr = find_reference "Tuto3" ["Coq"; "Init"; "Logic"] "eq_refl" in
+  let gr = Coqlib.lib_ref "core.eq.eq_refl" in
   Evd.fresh_global env sigma gr
 
 let c_N env sigma =
-  let gr = find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "nat" in
+  let gr = Coqlib.lib_ref "num.nat.type" in
   Evd.fresh_global env sigma gr
 
 let c_C env sigma =
-  let gr = find_reference "Tuto3" ["Tuto3"; "Data"] "C" in
+  let gr = Coqlib.lib_ref "Tuto3.C" in
   Evd.fresh_global env sigma gr
 
 let c_F env sigma =
-  let gr = find_reference "Tuto3" ["Tuto3"; "Data"] "S_ev" in
+  let gr = Coqlib.lib_ref "Tuto3.S_ev" in
   Evd.fresh_global env sigma gr
 
 let c_P env sigma =
-  let gr = find_reference "Tuto3" ["Tuto3"; "Data"] "s_half_proof" in
+  let gr = Coqlib.lib_ref "Tuto3.s_half_proof" in
   Evd.fresh_global env sigma gr
 
 (* If c_S was universe polymorphic, we should have created a new constant
@@ -112,7 +108,7 @@ let mk_nat env sigma n =
   let sigma, c_O = c_O env sigma in
   let rec buildup = function
     | 0 -> c_O
-    | n -> EConstr.mkApp (c_S, [| buildup (n - 1) |]) in
+    | n -> mkApp (c_S, [| buildup (n - 1) |]) in
   if n <= 0 then sigma, c_O else sigma, buildup n
 
 let example_classes n =
@@ -125,16 +121,16 @@ let example_classes n =
   let sigma, c_even = c_E env sigma in
   let sigma, c_Q = c_Q env sigma in
   let sigma, c_R = c_R env sigma in
-  let arg_type = EConstr.mkApp (c_even, [| c_n |]) in
+  let arg_type = mkApp (c_even, [| c_n |]) in
   let sigma0 = sigma in
   let sigma, instance = Evarutil.new_evar env sigma arg_type in
-  let c_half = EConstr.mkApp (c_div, [|c_n; instance|]) in
+  let c_half = mkApp (c_div, [|c_n; instance|]) in
   let _ = Feedback.msg_notice (Printer.pr_econstr_env env sigma c_half) in
   let sigma, the_type = Typing.type_of env sigma c_half in
   let _ = Feedback.msg_notice (Printer.pr_econstr_env env sigma c_half) in
   let proved_equality =
-    EConstr.mkCast(EConstr.mkApp (c_R, [| c_N; c_half |]), Constr.DEFAULTcast,
-      EConstr.mkApp (c_Q, [| c_N; c_half; n_half|])) in
+    mkCast(mkApp (c_R, [| c_N; c_half |]), Constr.DEFAULTcast,
+      mkApp (c_Q, [| c_N; c_half; n_half|])) in
 (* This is where we force the system to compute with type classes. *)
 (* Question to coq developers: why do we pass two evd arguments to
    solve_remaining_evars? Is the choice of sigma0 relevant here? *)
@@ -162,25 +158,25 @@ let example_canonical n =
   let sigma, c_C = c_C env sigma in
   let sigma, c_P = c_P env sigma in
 (* the last argument of C *)
-  let refl_term = EConstr.mkApp (c_R, [|c_N; c_n |]) in
+  let refl_term = mkApp (c_R, [|c_N; c_n |]) in
 (* Now we build two existential variables, for the value of the half and for
    the "S_ev" structure that triggers the proof search. *)
   let sigma, ev1 = Evarutil.new_evar env sigma c_N in
 (* This is the type for the second existential variable *)
-  let csev = EConstr.mkApp (c_F, [| ev1 |]) in
+  let csev = mkApp (c_F, [| ev1 |]) in
   let sigma, ev2 = Evarutil.new_evar env sigma csev in
 (* Now we build the C structure. *)
-  let test_term = EConstr.mkApp (c_C, [| c_n; ev1; ev2; refl_term |]) in
+  let test_term = mkApp (c_C, [| c_n; ev1; ev2; refl_term |]) in
 (* Type-checking this term will compute values for the existential variables *)
   let sigma, final_type = Typing.type_of env sigma test_term in
 (* The computed type has two parameters, the second one is the proof. *)
-  let value = match EConstr.kind sigma final_type with
+  let value = match kind sigma final_type with
       | Constr.App(_, [| _; the_half |]) -> the_half
       | _ -> failwith "expecting the whole type to be \"cmp _ the_half\"" in
   let _ = Feedback.msg_notice (Printer.pr_econstr_env env sigma value) in
 (* I wish for a nicer way to get the value of ev2 in the evar_map *)
-  let prf_struct = EConstr.of_constr (EConstr.to_constr sigma ev2) in
-  let the_prf = EConstr.mkApp (c_P, [| ev1; prf_struct |]) in
+  let prf_struct = of_constr (to_constr sigma ev2) in
+  let the_prf = mkApp (c_P, [| ev1; prf_struct |]) in
   let sigma, the_statement = Typing.type_of env sigma the_prf in
   Feedback.msg_notice
     (Printer.pr_econstr_env env sigma the_prf ++ str " has type " ++

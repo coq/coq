@@ -12,6 +12,7 @@ open Util
 open Glob_termops
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
+module ERelevance = EConstr.ERelevance
 
 let observe strm = if do_observe () then Feedback.msg_debug strm else ()
 
@@ -306,7 +307,7 @@ let raw_push_named (na, raw_value, raw_typ) env =
       Pretyping.understand env (Evd.from_env env)
         ~expected_type:Pretyping.IsType raw_typ
     in
-    let na = make_annot id Sorts.Relevant in
+    let na = make_annot id ERelevance.relevant in
     (* TODO relevance *)
     match raw_value with
     | None -> EConstr.push_named (NamedDecl.LocalAssum (na, typ)) env
@@ -319,14 +320,14 @@ let add_pat_variables sigma pat typ env : Environ.env =
       (str "new rel env := " ++ Printer.pr_rel_context_of env (Evd.from_env env));
     match DAst.get pat with
     | PatVar na ->
-      Environ.push_rel
-        (RelDecl.LocalAssum (make_annot na Sorts.Relevant, typ))
+      EConstr.push_rel
+        (RelDecl.LocalAssum (make_annot na ERelevance.relevant, typ))
         env
     | PatCstr (c, patl, na) ->
       let (Inductiveops.IndType (indf, indargs)) =
         try
           Inductiveops.find_rectype env (Evd.from_env env)
-            (EConstr.of_constr typ)
+            typ
         with Not_found -> assert false
       in
       let constructors = Inductiveops.get_constructors env indf in
@@ -335,7 +336,7 @@ let add_pat_variables sigma pat typ env : Environ.env =
           (fun cs -> Environ.QConstruct.equal env c (fst cs.Inductiveops.cs_cstr))
           (Array.to_list constructors)
       in
-      let cs_args_types : types list =
+      let cs_args_types : EConstr.types list =
         List.map RelDecl.get_type constructor.Inductiveops.cs_args
       in
       List.fold_left2 add_pat_variables env patl (List.rev cs_args_types)
@@ -396,7 +397,7 @@ let rec pattern_to_term_and_type env typ =
       let (Inductiveops.IndType (indf, indargs)) =
         try
           Inductiveops.find_rectype env (Evd.from_env env)
-            (EConstr.of_constr typ)
+            typ
         with Not_found -> assert false
       in
       let constructors = Inductiveops.get_constructors env indf in
@@ -406,7 +407,7 @@ let rec pattern_to_term_and_type env typ =
             Environ.QConstruct.equal env (fst cs.Inductiveops.cs_cstr) constr)
           (Array.to_list constructors)
       in
-      let cs_args_types : types list =
+      let cs_args_types : EConstr.types list =
         List.map RelDecl.get_type constructor.Inductiveops.cs_args
       in
       let _, cstl = Inductiveops.dest_ind_family indf in
@@ -418,7 +419,7 @@ let rec pattern_to_term_and_type env typ =
              (fun i ->
                Detyping.detype Detyping.Now Id.Set.empty env
                  (Evd.from_env env)
-                 (EConstr.of_constr csta.(i))))
+                 csta.(i)))
       in
       let patl_as_term =
         List.map2
@@ -466,7 +467,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
   let open CAst in
   match DAst.get rt with
   | GRef _ | GVar _ | GEvar _ | GPatVar _ | GSort _ | GHole _ | GGenarg _ | GInt _
-   |GFloat _ ->
+   |GFloat _ | GString _ ->
     (* do nothing (except changing type of course) *)
     mk_result [] rt avoid
   | GApp (_, _) -> (
@@ -571,6 +572,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
     | GProd _ -> user_err Pp.(str "Cannot apply a type")
     | GInt _ -> user_err Pp.(str "Cannot apply an integer")
     | GFloat _ -> user_err Pp.(str "Cannot apply a float")
+    | GString _ -> user_err Pp.(str "Cannot apply a string")
     | GArray _ -> user_err Pp.(str "Cannot apply an array")
     (* end of the application treatement *) )
   | GProj (f, params, c) ->
@@ -631,7 +633,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
     let v_res = build_entry_lc env sigma funnames avoid v in
     let v_as_constr, ctx = Pretyping.understand env (Evd.from_env env) v in
     let v_type = Retyping.get_type_of env (Evd.from_env env) v_as_constr in
-    let v_r = Sorts.Relevant in
+    let v_r = ERelevance.relevant in
     (* TODO relevance *)
     let new_env =
       match n with
@@ -719,8 +721,7 @@ and build_entry_lc_from_case env sigma funname make_discr (el : tomatch_tuples)
           let case_arg_as_constr, ctx =
             Pretyping.understand env (Evd.from_env env) case_arg
           in
-          EConstr.Unsafe.to_constr
-            (Retyping.get_type_of env (Evd.from_env env) case_arg_as_constr))
+          Retyping.get_type_of env (Evd.from_env env) case_arg_as_constr)
         el
     in
     (****** The next works only if the match is not dependent ****)
@@ -799,7 +800,6 @@ and build_entry_lc_from_case_term env sigma types funname make_discr
         (List.map3
            (fun pat e typ_as_constr ->
              let this_pat_ids = ids_of_pat pat in
-             let typ_as_constr = EConstr.of_constr typ_as_constr in
              let typ =
                Detyping.detype Detyping.Now Id.Set.empty new_env
                  (Evd.from_env env) typ_as_constr
@@ -922,7 +922,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
           mkGApp (mkGVar (mk_rel_id this_relname), List.tl args' @ [res_rt])
         in
         let t', ctx = Pretyping.understand env (Evd.from_env env) new_t in
-        let r = Sorts.Relevant in
+        let r = ERelevance.relevant in
         (* TODO relevance *)
         let new_env = EConstr.push_rel (LocalAssum (make_annot n r, t')) env in
         let new_b, id_to_exclude =
@@ -955,7 +955,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
         in
         let new_args = List.map (replace_var_by_term id rt) args in
         let subst_b = if is_in_b then b else replace_var_by_term id rt b in
-        let r = Sorts.Relevant in
+        let r = ERelevance.relevant in
         (* TODO relevance *)
         let new_env = EConstr.push_rel (LocalAssum (make_annot n r, t')) env in
         let new_b, id_to_exclude =
@@ -979,7 +979,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
                , List.map
                    (fun p ->
                      Detyping.detype Detyping.Now Id.Set.empty env
-                       (Evd.from_env env) (EConstr.of_constr p))
+                       (Evd.from_env env) p)
                    params
                  @ Array.to_list
                      (Array.make (List.length args' - nparam) (mkGHole ())) )
@@ -1004,10 +1004,10 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
             let ty' = snd (Util.List.chop nparam ty) in
             List.fold_left2
               (fun acc var_as_constr arg ->
-                if isRel var_as_constr then
+                if EConstr.isRel sigma var_as_constr then
                   let na =
                     RelDecl.get_name
-                      (Environ.lookup_rel (destRel var_as_constr) env)
+                      (Environ.lookup_rel (EConstr.destRel sigma var_as_constr) env)
                   in
                   match na with
                   | Anonymous -> acc
@@ -1016,8 +1016,8 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
                     , Detyping.detype Detyping.Now Id.Set.empty env
                         (Evd.from_env env) arg )
                     :: acc
-                else if isVar var_as_constr then
-                  ( destVar var_as_constr
+                else if EConstr.isVar sigma var_as_constr then
+                  (EConstr.destVar sigma var_as_constr
                   , Detyping.detype Detyping.Now Id.Set.empty env
                       (Evd.from_env env) arg )
                   :: acc
@@ -1039,7 +1039,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
         let subst_b = if is_in_b then b else replace_var_by_term id rt b in
         let new_env =
           let t', ctx = Pretyping.understand env (Evd.from_env env) eq' in
-          let r = Sorts.Relevant in
+          let r = ERelevance.relevant in
           (* TODO relevance *)
           EConstr.push_rel (LocalAssum (make_annot n r, t')) env
         in
@@ -1076,7 +1076,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
         observe
           (str "computing new type for prod : " ++ pr_glob_constr_env env rt);
         let t', ctx = Pretyping.understand env (Evd.from_env env) t in
-        let r = Sorts.Relevant in
+        let r = ERelevance.relevant in
         (* TODO relevance *)
         let new_env = EConstr.push_rel (LocalAssum (make_annot n r, t')) env in
         let new_b, id_to_exclude =
@@ -1091,7 +1091,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
     | _ -> (
       observe (str "computing new type for prod : " ++ pr_glob_constr_env env rt);
       let t', ctx = Pretyping.understand env (Evd.from_env env) t in
-      let r = Sorts.Relevant in
+      let r = ERelevance.relevant in
       (* TODO relevance *)
       let new_env = EConstr.push_rel (LocalAssum (make_annot n r, t')) env in
       let new_b, id_to_exclude =
@@ -1110,7 +1110,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
     let t', ctx = Pretyping.understand env (Evd.from_env env) t in
     match n with
     | Name id ->
-      let r = Sorts.Relevant in
+      let r = ERelevance.relevant in
       (* TODO relevance *)
       let new_env = EConstr.push_rel (LocalAssum (make_annot n r, t')) env in
       let new_b, id_to_exclude =
@@ -1137,10 +1137,8 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
     let t', ctx = Pretyping.understand env evd t in
     let evd = Evd.from_ctx ctx in
     let type_t' = Retyping.get_type_of env evd t' in
-    let t' = EConstr.Unsafe.to_constr t' in
-    let type_t' = EConstr.Unsafe.to_constr type_t' in
     let new_env =
-      Environ.push_rel (LocalDef (make_annot n Sorts.Relevant, t', type_t')) env
+      EConstr.push_rel (LocalDef (make_annot n ERelevance.relevant, t', type_t')) env
     in
     let new_b, id_to_exclude =
       rebuild_cons new_env nb_args relname args (t :: crossed_types) (depth + 1)
@@ -1160,7 +1158,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
       rebuild_cons env nb_args relname args crossed_types depth t
     in
     let t', ctx = Pretyping.understand env (Evd.from_env env) new_t in
-    let r = Sorts.Relevant in
+    let r = ERelevance.relevant in
     (* TODO relevance *)
     let new_env = EConstr.push_rel (LocalAssum (make_annot na r, t')) env in
     let new_b, id_to_exclude =
@@ -1193,7 +1191,8 @@ let rebuild_cons env nb_args relname args crossed_types rt =
 let rec compute_cst_params relnames params gt =
   DAst.with_val
     (function
-      | GRef _ | GVar _ | GEvar _ | GPatVar _ | GInt _ | GFloat _ -> params
+      | GRef _ | GVar _ | GEvar _ | GPatVar _
+      | GInt _ | GFloat _ | GString _ -> params
       | GApp (f, args) -> (
         match DAst.get f with
         | GVar relname' when Id.Set.mem relname' relnames ->
@@ -1272,7 +1271,7 @@ let rec rebuild_return_type rt =
     @@ Constrexpr.CProdN
          ( [ Constrexpr.CLocalAssum
                ([CAst.make Anonymous], None, Constrexpr.Default Explicit, rt) ]
-         , CAst.make @@ Constrexpr.CSort (UAnonymous {rigid=UnivRigid}) )
+         , CAst.make @@ Constrexpr.CSort Constrexpr_ops.expr_Type_sort )
 
 let do_build_inductive evd (funconstants : pconstant list)
     (funsargs : (Name.t * glob_constr * glob_constr option) list list)
@@ -1302,9 +1301,8 @@ let do_build_inductive evd (funconstants : pconstant list)
       (fun id (c, u) (evd, env) ->
         let u = EConstr.EInstance.make u in
         let evd, t = Typing.type_of env evd (EConstr.mkConstU (c, u)) in
-        let t = EConstr.Unsafe.to_constr t in
         ( evd
-        , Environ.push_named (LocalAssum (make_annot id Sorts.Relevant, t)) env
+        , EConstr.push_named (LocalAssum (make_annot id ERelevance.relevant, t)) env
         ))
       funnames
       (Array.of_list funconstants)
@@ -1369,10 +1367,9 @@ let do_build_inductive evd (funconstants : pconstant list)
         let rex =
           fst (with_full_print (Constrintern.interp_constr env evd) rel_ar)
         in
-        let rex = EConstr.Unsafe.to_constr rex in
-        let r = Sorts.Relevant in
+        let r = ERelevance.relevant in
         (* TODO relevance *)
-        Environ.push_named (LocalAssum (make_annot rel_name r, rex)) env)
+        EConstr.push_named (LocalAssum (make_annot rel_name r, rex)) env)
       env relnames rel_arities
   in
   (* and of the real constructors*)
@@ -1521,12 +1518,22 @@ let do_build_inductive evd (funconstants : pconstant list)
   (*     ) *)
   (*   in *)
   try
+    let flags = {
+      ComInductive.poly = false;
+      cumulative = false;
+      template = Some false;
+      auto_prop_lowering = false;
+      finite = Finite;
+    }
+    in
     with_full_print
       (Flags.silently
-         (ComInductive.do_mutual_inductive ~template:(Some false) None rel_inds
-            ~cumulative:false ~poly:false ~private_ind:false
-            ~uniform:ComInductive.NonUniformParameters))
-      Declarations.Finite
+         (fun () ->
+            ComInductive.do_mutual_inductive ~flags
+              None rel_inds
+              ~private_ind:false
+              ~uniform:ComInductive.NonUniformParameters))
+      ()
   with
   | UserError msg as e ->
     let repacked_rel_inds =

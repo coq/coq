@@ -176,49 +176,49 @@ let locate_file fname =
 (************************************************************************)
 (*s Locate absolute or partially qualified library names in the path *)
 
-type locate_error = LibUnmappedDir | LibNotFound
-type 'a locate_result = ('a, locate_error) result
+module Error = struct
+  type t = LibUnmappedDir | LibNotFound
 
-let warn_several_object_files =
-  CWarnings.create ~name:"several-object-files" ~category:CWarnings.CoreCategories.filesystem
-    Pp.(fun (vi, vo) ->
-        seq [ str "Loading"; spc (); str vi
-            ; strbrk " instead of "; str vo
-            ; strbrk " because it is more recent."
-            ])
+  let unmapped_dir qid =
+    let prefix, _ = Libnames.repr_qualid qid in
+    CErrors.user_err
+      Pp.(seq [ str "Cannot load "; Libnames.pr_qualid qid; str ":"; spc ()
+              ; str "no physical path bound to"; spc ()
+              ; Names.DirPath.print prefix; fnl ()
+              ])
 
+  let lib_not_found dir =
+    let vos = !Flags.load_vos_libraries in
+    let vos_msg = if vos then [Pp.str " (while searching for a .vos file)"] else [] in
+    CErrors.user_err
+      Pp.(seq ([ str "Cannot find library "; Names.DirPath.print dir; str" in loadpath"]@vos_msg))
+
+  let raise dp = function
+    | LibUnmappedDir ->
+      unmapped_dir (Libnames.qualid_of_dirpath dp)
+    | LibNotFound ->
+      lib_not_found dp
+end
+
+(* If [!Flags.load_vos_libraries]
+      and the .vos file exists
+      and this file is not empty
+   Then load this library
+   Else load the .vo file or raise error if both are missing *)
 let select_vo_file ~find base =
   let find ext =
     try
       let name = Names.Id.to_string base ^ ext in
       let lpath, file = find name in
-      Some (lpath, file)
-    with Not_found -> None in
-  (* If [!Flags.load_vos_libraries]
-        and the .vos file exists
-        and this file is not empty
-     Then load this library
-     Else load the most recent between the .vo file and the .vio file,
-          or if there is only of the two files, take this one,
-          or raise an error if both are missing. *)
-  let load_most_recent_of_vo_and_vio () =
-    match find ".vo", find ".vio" with
-    | None, None ->
-      Error LibNotFound
-    | Some res, None | None, Some res ->
-      Ok res
-    | Some (_, vo), Some (_, vi as resvi)
-      when Unix.((stat vo).st_mtime < (stat vi).st_mtime) ->
-      warn_several_object_files (vi, vo);
-      Ok resvi
-    | Some resvo, Some _ ->
-      Ok resvo
-    in
-  if !Flags.load_vos_libraries then begin
+      Ok (lpath, file)
+    with Not_found -> Error Error.LibNotFound in
+  if !Flags.load_vos_libraries
+  then begin
     match find ".vos" with
-    | Some (_, vos as resvos) when (Unix.stat vos).Unix.st_size > 0 -> Ok resvos
-    | _ -> load_most_recent_of_vo_and_vio()
-  end else load_most_recent_of_vo_and_vio()
+    | Ok (_, vos as resvos) when (Unix.stat vos).Unix.st_size > 0 -> Ok resvos
+    | _ -> find ".vo"
+  end
+  else find ".vo"
 
 let find_first loadpath base =
   match System.all_in_path loadpath base with
@@ -233,7 +233,7 @@ let find_unique fullqid loadpath base =
     CErrors.user_err Pp.(str "Required library " ++ Libnames.pr_qualid fullqid ++
       strbrk " matches several files in path (found " ++ pr_enum str (List.map snd l) ++ str ").")
 
-let locate_absolute_library dir : CUnix.physical_path locate_result =
+let locate_absolute_library dir : (CUnix.physical_path, Error.t) Result.t =
   (* Search in loadpath *)
   let pref, base = Libnames.split_dirpath dir in
   let loadpath = filter_path (fun dir -> DP.equal dir pref) in
@@ -245,7 +245,7 @@ let locate_absolute_library dir : CUnix.physical_path locate_result =
     | Error fail -> Error fail
 
 let locate_qualified_library ?root qid :
-  (DP.t * CUnix.physical_path) locate_result =
+  (DP.t * CUnix.physical_path, Error.t) Result.t =
   (* Search library in loadpath *)
   let dir, base = Libnames.repr_qualid qid in
   match expand_path ?root dir with
@@ -258,7 +258,7 @@ let locate_qualified_library ?root qid :
       | Error _ ->
          (* Looking otherwise in -R/-Q blocks of partial matches *)
         let rec aux = function
-          | [] -> Error LibUnmappedDir
+          | [] -> Error Error.LibUnmappedDir
           | block :: rest ->
             match select_vo_file ~find:(find_unique qid block) base with
             | Ok _ as x -> x
@@ -271,28 +271,6 @@ let locate_qualified_library ?root qid :
       let library = Libnames.add_dirpath_suffix dir base in
       Ok (library, file)
     | Error _ as e -> e
-
-let error_unmapped_dir qid =
-  let prefix, _ = Libnames.repr_qualid qid in
-  CErrors.user_err
-    Pp.(seq [ str "Cannot load "; Libnames.pr_qualid qid; str ":"; spc ()
-            ; str "no physical path bound to"; spc ()
-            ; DP.print prefix; fnl ()
-            ])
-
-let error_lib_not_found qid =
-  let vos = !Flags.load_vos_libraries in
-  let vos_msg = if vos then [Pp.str " (while searching for a .vos file)"] else [] in
-  CErrors.user_err
-    Pp.(seq ([ str "Cannot find library "; Libnames.pr_qualid qid; str" in loadpath"]@vos_msg))
-
-let try_locate_absolute_library dir =
-  match locate_absolute_library dir with
-  | Ok res -> res
-  | Error LibUnmappedDir ->
-    error_unmapped_dir (Libnames.qualid_of_dirpath dir)
-  | Error LibNotFound ->
-    error_lib_not_found (Libnames.qualid_of_dirpath dir)
 
 (** { 5 Extending the load path } *)
 

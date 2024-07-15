@@ -15,7 +15,6 @@ Require Import BinPos.
 Require Import BinNat.
 Require Import Pnat.
 Require Import Nnat.
-Require Import Ndigits.
 
 Local Open Scope N_scope.
 

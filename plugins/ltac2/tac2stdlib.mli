@@ -9,3 +9,5 @@
 (************************************************************************)
 
 (** Standard tactics sharing their implementation with Ltac1 *)
+
+val intro_pattern : Tac2types.intro_pattern Tac2ffi.repr

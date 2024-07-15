@@ -57,6 +57,9 @@ let eval_uconstrs ist cs =
     expand_evars = true;
     program_mode = false;
     polymorphic = false;
+    undeclared_evars_patvars = false;
+    patvars_abstract = false;
+    unconstrained_sorts = false;
   } in
   let map c env sigma = c env sigma in
   List.map (fun c -> map (Tacinterp.type_uconstr ~flags ist c)) cs
@@ -82,32 +85,32 @@ END
 
 TACTIC EXTEND trivial
 | [ "trivial" auto_using(lems) hintbases(db) ] ->
-    { Auto.h_trivial (eval_uconstrs ist lems) db }
+    { Auto.gen_trivial (eval_uconstrs ist lems) db }
 END
 
 TACTIC EXTEND info_trivial
 | [ "info_trivial" auto_using(lems) hintbases(db) ] ->
-    { Auto.h_trivial ~debug:Info (eval_uconstrs ist lems) db }
+    { Auto.gen_trivial ~debug:Info (eval_uconstrs ist lems) db }
 END
 
 TACTIC EXTEND debug_trivial
 | [ "debug" "trivial" auto_using(lems) hintbases(db) ] ->
-    { Auto.h_trivial ~debug:Debug (eval_uconstrs ist lems) db }
+    { Auto.gen_trivial ~debug:Debug (eval_uconstrs ist lems) db }
 END
 
 TACTIC EXTEND auto
 | [ "auto" nat_or_var_opt(n) auto_using(lems) hintbases(db) ] ->
-    { Auto.h_auto n (eval_uconstrs ist lems) db }
+    { Auto.gen_auto n (eval_uconstrs ist lems) db }
 END
 
 TACTIC EXTEND info_auto
 | [ "info_auto" nat_or_var_opt(n) auto_using(lems) hintbases(db) ] ->
-    { Auto.h_auto ~debug:Info n (eval_uconstrs ist lems) db }
+    { Auto.gen_auto ~debug:Info n (eval_uconstrs ist lems) db }
 END
 
 TACTIC EXTEND debug_auto
 | [ "debug" "auto" nat_or_var_opt(n) auto_using(lems) hintbases(db) ] ->
-    { Auto.h_auto ~debug:Debug n (eval_uconstrs ist lems) db }
+    { Auto.gen_auto ~debug:Debug n (eval_uconstrs ist lems) db }
 END
 
 (** Eauto *)
@@ -163,44 +166,20 @@ END
 
 {
 
-let pr_pre_hints_path_atom _ _ _ = Hints.pp_hints_path_atom Libnames.pr_qualid
-let pr_hints_path_atom _ _ _ = Hints.pp_hints_path_atom Printer.pr_global
-let glob_hints_path_atom ist = Hints.glob_hints_path_atom
+let pr_pre_hints_path c = Hints.pp_hints_path_gen Libnames.pr_qualid c
 
 }
 
-ARGUMENT EXTEND hints_path_atom
-  PRINTED BY { pr_hints_path_atom }
-
-  GLOBALIZED BY { glob_hints_path_atom }
-
-  RAW_PRINTED BY { pr_pre_hints_path_atom }
-  GLOB_PRINTED BY { pr_hints_path_atom }
-| [ ne_global_list(g) ] -> { Hints.PathHints g }
-| [ "_" ] -> { Hints.PathAny }
-END
-
-{
-
-let pr_hints_path prc prx pry c = Hints.pp_hints_path c
-let pr_pre_hints_path prc prx pry c = Hints.pp_hints_path_gen Libnames.pr_qualid c
-let glob_hints_path ist = Hints.glob_hints_path
-
-}
-
-ARGUMENT EXTEND hints_path
-PRINTED BY { pr_hints_path }
-
-GLOBALIZED BY { glob_hints_path }
-RAW_PRINTED BY { pr_pre_hints_path }
-GLOB_PRINTED BY { pr_hints_path }
+VERNAC ARGUMENT EXTEND hints_path
+PRINTED BY { pr_pre_hints_path }
 
 | [ "(" hints_path(p) ")"  ] -> { p }
 | [ hints_path(p) "*" ] -> { Hints.PathStar p }
 | [ "emp" ] -> { Hints.PathEmpty }
 | [ "eps" ] -> { Hints.PathEpsilon }
 | [ hints_path(p) "|" hints_path(q) ] -> { Hints.PathOr (p, q) }
-| [ hints_path_atom(a) ] -> { Hints.PathAtom a }
+| [ ne_global_list(g) ] -> { Hints.PathAtom (Hints.PathHints g) }
+| [ "_" ] -> { Hints.PathAtom Hints.PathAny }
 | [ hints_path(p) hints_path(q) ] -> { Hints.PathSeq (p, q) }
 END
 
@@ -212,7 +191,7 @@ ARGUMENT EXTEND opthints
 END
 
 VERNAC COMMAND EXTEND HintCut CLASSIFIED AS SIDEFF
-| #[ locality = Attributes.really_hint_locality; ] [ "Hint" "Cut" "[" hints_path(p) "]" opthints(dbnames) ] -> {
+| #[ locality = Attributes.hint_locality; ] [ "Hint" "Cut" "[" hints_path(p) "]" opthints(dbnames) ] -> {
   let entry = Hints.HintsCutEntry (Hints.glob_hints_path p) in
   Hints.add_hints ~locality
     (match dbnames with None -> ["core"] | Some l -> l) entry;

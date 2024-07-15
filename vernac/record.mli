@@ -26,13 +26,10 @@ module Ast : sig
 end
 
 val definition_structure
-  :  cumul_univ_decl_expr option
+  : flags:ComInductive.flags
+  -> cumul_univ_decl_expr option
   -> inductive_kind
-  -> template:bool option
-  -> cumulative:bool
-  -> poly:bool
   -> primitive_proj:bool
-  -> Declarations.recursivity_kind
   -> Ast.t list
   -> GlobRef.t list
 
@@ -60,6 +57,7 @@ val definition_structure
   module Record_decl : sig
     type t = {
       mie : Entries.mutual_inductive_entry;
+      default_dep_elim : DeclareInd.default_dep_elim list;
       records : Data.t list;
       (* TODO: this part could be factored in mie *)
       primitive_proj : bool;
@@ -76,18 +74,17 @@ end
 
 (** Ast.t list at the constr level *)
 val interp_structure
-  :  cumul_univ_decl_expr option
+  : flags:ComInductive.flags
+  -> cumul_univ_decl_expr option
   -> inductive_kind
-  -> template:bool option
-  -> cumulative:bool
-  -> poly:bool
   -> primitive_proj:bool
-  -> Declarations.recursivity_kind
   -> Ast.t list
   -> Record_decl.t
 
 
 val declare_existing_class : GlobRef.t -> unit
+
+val canonical_inhabitant_id : isclass:bool -> Id.t -> Id.t
 
 (* Implementation internals, consult Coq developers before using;
    current user Elpi, see https://github.com/LPCIC/coq-elpi/pull/151 *)

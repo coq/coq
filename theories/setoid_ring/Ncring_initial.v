@@ -112,34 +112,40 @@ Ltac rsimpl := simpl.
  Lemma ARgen_phiPOS_Psucc : forall x,
    gen_phiPOS1 (Pos.succ x) == 1 + (gen_phiPOS1 x).
  Proof.
-  induction x;rsimpl;norm.
- rewrite IHx. gen_rewrite. add_push 1. reflexivity.
+  induction x; simpl.
+  - now rewrite IHx, ring_distr_r, ring_mul_1_r, ring_add_assoc.
+  - reflexivity.
+  - now rewrite ring_mul_1_r.
  Qed.
 
  Lemma ARgen_phiPOS_add : forall x y,
    gen_phiPOS1 (x + y) == (gen_phiPOS1 x) + (gen_phiPOS1 y).
  Proof.
-  induction x;destruct y;simpl;norm.
-  - rewrite Pos.add_carry_spec.
-    rewrite ARgen_phiPOS_Psucc.
-    rewrite IHx;norm.
-    add_push (gen_phiPOS1 y);add_push 1;reflexivity.
-  - rewrite IHx;norm;add_push (gen_phiPOS1 y);reflexivity.
-  - rewrite ARgen_phiPOS_Psucc;norm;add_push 1;reflexivity.
-  - rewrite IHx;norm;add_push(gen_phiPOS1 y); add_push 1;reflexivity.
-  - rewrite IHx;norm;add_push(gen_phiPOS1 y);reflexivity.
-  - add_push 1;reflexivity.
-  - rewrite ARgen_phiPOS_Psucc;norm;add_push 1;reflexivity.
+  induction x;destruct y;simpl.
+  - rewrite Pos.add_carry_spec, ARgen_phiPOS_Psucc, IHx.
+    rewrite !ring_distr_r, !ring_mul_1_r, !ring_add_assoc.
+    now add_push 1.
+  - now rewrite IHx, !ring_distr_r, !ring_add_assoc.
+  - rewrite ARgen_phiPOS_Psucc, !ring_distr_r, !ring_mul_1_r.
+    now add_push 1.
+  - rewrite IHx, !ring_distr_r, !ring_add_assoc.
+    now add_push 1.
+  - now rewrite IHx, !ring_distr_r.
+  - now rewrite ring_add_comm.
+  - now rewrite ARgen_phiPOS_Psucc, !ring_distr_r, !ring_mul_1_r, !ring_add_assoc.
+  - reflexivity.
+  - now rewrite ring_mul_1_r.
  Qed.
 
  Lemma ARgen_phiPOS_mult :
    forall x y, gen_phiPOS1 (x * y) == gen_phiPOS1 x * gen_phiPOS1 y.
  Proof.
-  induction x;intros;simpl;norm.
-  - rewrite ARgen_phiPOS_add;simpl;rewrite IHx;norm.
-  - rewrite IHx;reflexivity.
+  induction x; intros; simpl.
+  - rewrite ARgen_phiPOS_add. simpl.
+    now rewrite IHx, !ring_distr_l, !ring_mul_1_l.
+  - now rewrite IHx, ring_mul_assoc.
+  - now rewrite ring_mul_1_l.
  Qed.
-
 
 (*morphisms are extensionally equal*)
  Lemma same_genZ : forall x, [x] == gen_phiZ1 x.
@@ -163,10 +169,10 @@ Ltac rsimpl := simpl.
   generalize (Z.pos_sub_discr x y).
   destruct (Z.pos_sub x y) as [|p|p]; intros; subst.
   - now rewrite ring_opp_def.
-  - rewrite ARgen_phiPOS_add;simpl;norm.
-    add_push (gen_phiPOS1 p). rewrite ring_opp_def;norm.
-  - rewrite ARgen_phiPOS_add;simpl;norm.
-    rewrite ring_opp_def;norm.
+  - rewrite ARgen_phiPOS_add; simpl.
+    add_push (gen_phiPOS1 p). now rewrite ring_opp_def, ring_add_0_l.
+  - rewrite ARgen_phiPOS_add; simpl.
+    now rewrite ring_opp_add, ring_add_assoc, ring_opp_def, ring_add_0_l.
  Qed.
 
  Lemma match_compOpp : forall x (B:Type) (be bl bg:B),
@@ -195,9 +201,13 @@ Lemma gen_phiZ_opp : forall x, [- x] == - [x].
  Lemma gen_phiZ_mul : forall x y, [x * y] == [x] * [y].
  Proof.
   intros x y;repeat rewrite same_genZ.
-  destruct x;destruct y;simpl;norm;
-  rewrite  ARgen_phiPOS_mult;try (norm;fail).
-  rewrite ring_opp_opp ;reflexivity.
+  destruct x; simpl; [now rewrite ring_mul_0_l|destruct y..]; simpl.
+  - now rewrite ring_mul_0_r.
+  - now rewrite ARgen_phiPOS_mult.
+  - now rewrite ARgen_phiPOS_mult, ring_opp_mul_r.
+  - now rewrite ring_mul_0_r.
+  - now rewrite ARgen_phiPOS_mult, ring_opp_mul_l.
+  - now rewrite ARgen_phiPOS_mult, <- ring_opp_mul_l, <- ring_opp_mul_r, ring_opp_opp.
  Qed.
 
  Lemma gen_phiZ_ext : forall x y : Z, x = y -> [x] == [y].

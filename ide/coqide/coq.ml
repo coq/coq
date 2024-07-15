@@ -110,7 +110,7 @@ let rec filter_coq_opts args =
 
 and asks_for_coqtop args =
   let pb_mes = GWindow.message_dialog
-    ~message:"Failed to load coqidetop. Reset the preference to default ?"
+    ~message:"Failed to load coqidetop. Reset the preference to default?"
     ~message_type:`QUESTION ~buttons:GWindow.Buttons.yes_no () in
   match pb_mes#run () with
     | `YES ->
@@ -180,8 +180,6 @@ let breaker = ref (fun pid -> Unix.kill pid Sys.sigusr1)
 
 (** * The structure describing a coqtop sub-process *)
 
-let gio_channel_of_descr_socket = ref Glib.Io.channel_of_descr
-
 module GlibMainLoop = struct
   type async_chan = Glib.Io.channel
   type watch_id = Glib.Io.id
@@ -190,8 +188,7 @@ module GlibMainLoop = struct
     Glib.Io.add_watch ~cond:[`ERR; `HUP; `IN; `NVAL; `PRI] ~callback chan
   let remove_watch x = try Glib.Io.remove x with Glib.GError _ -> ()
   let read_all = Ideutils.io_read_all
-  let async_chan_of_file fd = Glib.Io.channel_of_descr fd
-  let async_chan_of_socket s = !gio_channel_of_descr_socket s
+  let async_chan_of_file_or_socket fd = Glib.Io.channel_of_descr fd
 end
 
 module CoqTop = Spawn.Async(GlibMainLoop)
@@ -672,7 +669,7 @@ struct
     { opts = [universes]; init = false; label = "Display _universe levels" };
     { opts = [all_basic;existential;universes]; init = false;
       label = "Display all _low-level contents" };
-    { opts = [unfocused]; init = false; label = "Display _unfocused goals" };
+    { opts = [unfocused]; init = false; label = "Display un_focused goals" };
     { opts = [goal_names]; init = false; label = "Display _goal names" };
     { opts = [record]; init = true; label = "Use _record syntax" };
     { opts = [synth]; init = true; label = "Hide _synthesizable types" }

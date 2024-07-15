@@ -87,6 +87,7 @@ module type FrozenStage = sig
   val make_marshallable : frozen -> frozen
   val unfreeze_summaries : ?partial:bool -> frozen -> unit
   val init_summaries : unit -> unit
+  val project_from_summary : frozen -> 'a Dyn.tag -> 'a
 
 end
 
@@ -153,6 +154,10 @@ module Synterp = struct
 
   let init_summaries () =
     init_summaries !sum_map_synterp
+
+  (** Summary projection *)
+  let project_from_summary { summaries; _ } tag =
+    Frozen.find tag summaries
 
 end
 

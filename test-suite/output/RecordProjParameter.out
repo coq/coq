@@ -1,36 +1,42 @@
 t1 : Atype -> forall a : Type, a
 
 t1 is not universe polymorphic
+t1 is a projection of Atype
 Arguments t1 a0 a%type_scope
 t1 is transparent
 Expands to: Constant RecordProjParameter.t1
 t3 : forall a0 : Atype, t2 a0
 
 t3 is not universe polymorphic
+t3 is a projection of Atype
 Arguments t3 a0
 t3 is transparent
 Expands to: Constant RecordProjParameter.t3
 u1 : Btype -> forall b b0 : Type, b * b0
 
 u1 is not universe polymorphic
+u1 is a projection of Btype
 Arguments u1 b1 (b b0)%type_scope
 u1 is transparent
 Expands to: Constant RecordProjParameter.u1
 u3 : forall b1 : Btype, u2 b1
 
 u3 is not universe polymorphic
+u3 is a projection of Btype
 Arguments u3 b1
 u3 is transparent
 Expands to: Constant RecordProjParameter.u3
 v1 : Ctype -> forall c0 : Type, c0
 
 v1 is not universe polymorphic
+v1 is a projection of Ctype
 Arguments v1 c c0%type_scope
 v1 is transparent
 Expands to: Constant RecordProjParameter.v1
 v3 : forall c : Ctype, v2 c
 
 v3 is not universe polymorphic
+v3 is a projection of Ctype
 Arguments v3 c
 v3 is transparent
 Expands to: Constant RecordProjParameter.v3

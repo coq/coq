@@ -203,10 +203,8 @@ module type StagedModS = sig
 
   val get_module_sobjs : bool -> env -> Entries.inline -> typexpr module_alg_expr -> substitutive_objects
 
-  val do_module : (int -> Nametab.object_prefix -> Libobject.t list -> unit) -> int -> DirPath.t -> ModPath.t -> substitutive_objects -> Libobject.t list -> unit
-  val load_objects : int -> Nametab.object_prefix -> Libobject.t list -> unit
-  val open_object : open_filter -> int -> Nametab.object_prefix * Libobject.t -> unit
-  val collect_modules : (open_filter * ModPath.t) list -> open_filter MPmap.t * (open_filter * (Nametab.object_prefix * Libobject.t)) list -> open_filter MPmap.t * (open_filter * (Nametab.object_prefix * Libobject.t)) list
+  val load_module : int -> DirPath.t -> ModPath.t -> substitutive_objects -> Libobject.t list -> unit
+  val import_modules : export:Lib.export_flag -> (open_filter * ModPath.t) list -> unit
 
   val add_leaf : Libobject.t -> unit
   val add_leaves : Libobject.t list -> unit
@@ -356,29 +354,6 @@ module ModObjs :
 
 (** {6 Declaration of module substitutive objects} *)
 
-(** Iterate some function [iter_objects] on all components of a module *)
-
-let do_module iter_objects i obj_dir obj_mp sobjs kobjs =
-  let prefix = Nametab.{ obj_dir ; obj_mp; } in
-  Actions.enter_module obj_mp obj_dir i;
-  ModSubstObjs.set obj_mp sobjs;
-  (* If we're not a functor, let's iter on the internal components *)
-  if sobjs_no_functor sobjs then begin
-    let objs = expand_sobjs sobjs in
-    let module_objects =
-      { module_prefix = prefix;
-        module_substituted_objects = objs;
-        module_keep_objects = kobjs;
-      }
-    in
-    ModObjs.set obj_mp module_objects;
-    iter_objects (i+1) prefix objs;
-    iter_objects (i+1) prefix kobjs
-  end
-
-let do_module' iter_objects i ((sp,kn),sobjs) =
-  do_module iter_objects i (dir_of_sp sp) (mp_of_kn kn) sobjs []
-
 (** Nota: Interactive modules and module types cannot be recached!
     This used to be checked here via a flag along the substobjs. *)
 
@@ -397,8 +372,8 @@ let rec load_object i (prefix, obj) =
   match obj with
   | AtomicObject o -> Libobject.load_object i (prefix, o)
   | ModuleObject (id,sobjs) ->
-    let name = Lib.make_oname prefix id in
-    do_module' load_objects i (name, sobjs)
+    let sp, kn as name = Lib.make_oname prefix id in
+    load_module i (dir_of_sp sp) (mp_of_kn kn) sobjs []
   | ModuleTypeObject (id,sobjs) ->
     let name = Lib.make_oname prefix id in
     let (sp,kn) = name in
@@ -430,15 +405,30 @@ and load_keep i ((sp,kn),kobjs) =
   ModObjs.set obj_mp { modobjs with module_keep_objects = kobjs };
   load_objects i prefix kobjs
 
+and load_module i obj_dir obj_mp sobjs kobjs =
+  let prefix = Nametab.{ obj_dir ; obj_mp; } in
+  Actions.enter_module obj_mp obj_dir i;
+  ModSubstObjs.set obj_mp sobjs;
+  (* If we're not a functor, let's iter on the internal components *)
+  if sobjs_no_functor sobjs then begin
+    let objs = expand_sobjs sobjs in
+    let module_objects =
+      { module_prefix = prefix;
+        module_substituted_objects = objs;
+        module_keep_objects = kobjs;
+      }
+    in
+    ModObjs.set obj_mp module_objects;
+    load_objects (i+1) prefix objs;
+    load_objects (i+1) prefix kobjs
+  end
+
 (** {6 Implementation of Import and Export commands} *)
 
 let mark_object f obj (exports,acc) =
   (exports, (f,obj)::acc)
 
-let rec collect_modules mpl acc =
-  List.fold_left (fun acc fmp -> collect_module fmp acc) acc (List.rev mpl)
-
-and collect_module (f,mp) acc =
+let rec collect_module (f,mp) acc =
   try
     (* May raise Not_found for unknown module and for functors *)
     let modobjs = ModObjs.get mp in
@@ -465,15 +455,12 @@ and collect_export f (f',mp) (exports,objs as acc) =
   | Some f ->
     let exports' = MPmap.update mp (function
         | None -> Some f
-        | Some f0 -> Some (filter_or f f0))
+        | Some f0 ->
+          let f' = filter_or f f0 in
+          if filter_eq f' f0 then Some f0 else Some f')
         exports
     in
-    (* If the map doesn't change there is nothing new to export.
-
-       It's possible that [filter_and] or [filter_or] mangled precise
-       filters such that we repeat uselessly, but the important
-       [Unfiltered] case is handled correctly.
-    *)
+    (* If the map doesn't change there is nothing new to export. *)
     if exports == exports' then acc
     else
       collect_module (f,mp) (exports', objs)
@@ -483,6 +470,9 @@ and collect_exports f i mpl acc =
   if Int.equal i 1 then
     List.fold_left (fun acc fmp -> collect_export f fmp acc) acc (List.rev mpl)
   else acc
+
+let collect_modules mpl =
+  List.fold_left (fun acc fmp -> collect_module fmp acc)  (MPmap.empty, []) (List.rev mpl)
 
 let open_modtype i ((sp,kn),_) =
   let mp = mp_of_kn kn in
@@ -541,43 +531,41 @@ let cache_include (prefix, aobjs) =
   load_objects 1 prefix o;
   open_objects unfiltered 1 prefix o
 
-and cache_keep ((sp,kn),kobjs) =
-  anomaly (Pp.str "This module should not be cached!")
-
 let cache_object (prefix, obj) =
   match obj with
   | AtomicObject o -> Libobject.cache_object (prefix, o)
-  | ModuleObject (id,sobjs) ->
-    let name = Lib.make_oname prefix id in
-    do_module' load_objects 1 (name, sobjs)
-  | ModuleTypeObject (id,sobjs) ->
-    let name = Lib.make_oname prefix id in
-    let (sp,kn) = name in
-    load_modtype 0 sp (mp_of_kn kn) sobjs
-  | IncludeObject aobjs ->
-    cache_include (prefix, aobjs)
+  | ModuleObject _ -> load_object 1 (prefix,obj)
+  | ModuleTypeObject _ -> load_object 0 (prefix,obj)
+  | IncludeObject aobjs -> cache_include (prefix, aobjs)
   | ExportObject { mpl } -> anomaly Pp.(str "Export should not be cached")
-  | KeepObject (id,objs) ->
-    let name = Lib.make_oname prefix id in
-    cache_keep (name, objs)
+  | KeepObject _ -> anomaly (Pp.str "This module should not be cached!")
 
 (* Adding operations with containers *)
 
+let add_leaf_entry =
+  match Actions.stage with
+  | Summary.Stage.Synterp -> Lib.Synterp.add_leaf_entry
+  | Summary.Stage.Interp -> Lib.Interp.add_leaf_entry
+
 let add_leaf obj =
   cache_object (Lib.prefix (),obj);
-  match Actions.stage with
-  | Summary.Stage.Synterp -> Lib.Synterp.add_leaf_entry obj
-  | Summary.Stage.Interp -> Lib.Interp.add_leaf_entry obj
+  add_leaf_entry obj
 
 let add_leaves objs =
   let add_obj obj =
-    begin match Actions.stage with
-    | Summary.Stage.Synterp -> Lib.Synterp.add_leaf_entry obj
-    | Summary.Stage.Interp -> Lib.Interp.add_leaf_entry obj
-    end;
+    add_leaf_entry obj;
     load_object 1 (Lib.prefix (),obj)
   in
   List.iter add_obj objs
+
+let import_modules ~export mpl =
+  let _,objs = collect_modules mpl in
+  List.iter (fun (f,o) -> open_object f 1 o) objs;
+  match export with
+  | Lib.Import -> ()
+  | Lib.Export ->
+    let entry = ExportObject { mpl } in
+    add_leaf_entry entry
 
 (** {6 Handler for missing entries in ModSubstObjs} *)
 
@@ -729,6 +717,11 @@ let openmod_syntax_info () = match !openmod_syntax_info with
   | None -> anomaly Pp.(str "missing init of openmod_syntax_info")
   | Some v -> v
 
+let vm_state =
+  (* VM bytecode is not needed here *)
+  let vm_handler _ _ _ () = (), None in
+  ((), { Mod_typing.vm_handler })
+
 module RawModOps = struct
 
 module Synterp = struct
@@ -753,7 +746,7 @@ let intern_arg (idl,(typ,ann)) =
     let mp = MPbound mbid in
     (* We can use an empty delta resolver because we load only syntax objects *)
     let sobjs = subst_sobjs (map_mp mp0 mp empty_delta_resolver) sobjs in
-    SynterpVisitor.do_module SynterpVisitor.load_objects 1 dir mp sobjs [];
+    SynterpVisitor.load_module 1 dir mp sobjs [];
     mbid
   in
   List.map map idl, (mty, base, kind, inl)
@@ -776,6 +769,9 @@ let start_module_core id args res =
   mp, res_entry_o, mbids, sign, args
 
 let start_module export id args res =
+  let () = if Option.has_some export && not (CList.is_empty args)
+    then user_err Pp.(str "Cannot import functors.")
+  in
   let fs = Summary.Synterp.freeze_summaries () in
   let mp, res_entry_o, mbids, sign, args = start_module_core id args res in
   set_openmod_syntax_info { cur_mp = mp; cur_typ = res_entry_o; cur_mbids = mbids };
@@ -922,7 +918,7 @@ let build_subtypes env mp args mtys =
        let env = Environ.push_context_set ~strict:true ctx' env in
        let ctx = Univ.ContextSet.union ctx ctx' in
        let state = ((Environ.universes env, Univ.Constraints.empty), Reductionops.inferred_universes) in
-       let mtb, (_, cst) = Mod_typing.translate_modtype state env mp inl (args,mte) in
+       let mtb, (_, cst), _ = Mod_typing.translate_modtype state vm_state env mp inl (args,mte) in
        let ctx = Univ.ContextSet.add_constraints cst ctx in
        ctx, mtb)
     Univ.ContextSet.empty mtys
@@ -941,7 +937,7 @@ let intern_arg (acc, cst) (mbidl,(mty, base, kind, inl)) =
   let () = Global.push_context_set ~strict:true cst' in
   let () =
     let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
-    let _, (_, cst) = Mod_typing.translate_modtype state (Global.env ()) base inl ([], mty) in
+    let _, (_, cst), _ = Mod_typing.translate_modtype state vm_state (Global.env ()) base inl ([], mty) in
     Global.add_constraints cst
   in
   let env = Global.env () in
@@ -953,7 +949,7 @@ let intern_arg (acc, cst) (mbidl,(mty, base, kind, inl)) =
     let mp = MPbound mbid in
     let resolver = Global.add_module_parameter mbid mty inl in
     let sobjs = subst_sobjs (map_mp mp0 mp resolver) sobjs in
-    InterpVisitor.do_module InterpVisitor.load_objects 1 dir mp sobjs [];
+    InterpVisitor.load_module 1 dir mp sobjs [];
     (mbid,mty,inl)::acc
   in
   let acc = List.fold_left fold acc mbidl in
@@ -986,7 +982,7 @@ let start_module_core id args res =
         let env = Environ.push_context_set ~strict:true ctx env in
         (* We check immediately that mte is well-formed *)
         let state = ((Environ.universes env, Univ.Constraints.empty), Reductionops.inferred_universes) in
-        let _, (_, cst) = Mod_typing.translate_modtype state env mp inl ([], mte) in
+        let _, (_, cst), _ = Mod_typing.translate_modtype state vm_state env mp inl ([], mte) in
         let ctx = Univ.ContextSet.add_constraints cst ctx in
         Some (mte, inl), [], ctx
     | Check resl ->
@@ -1016,8 +1012,8 @@ let end_module_core id m_info objects fs =
   let struc = current_struct () in
   let restype' = Option.map (fun (ty,inl) -> (([],ty),inl)) m_info.cur_typ in
   let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
-  let _, (_, cst) =
-    Mod_typing.finalize_module state (Global.env ()) (Global.current_modpath ())
+  let _, (_, cst), _ =
+    Mod_typing.finalize_module state vm_state (Global.env ()) (Global.current_modpath ())
       (struc, current_modresolver ()) restype'
   in
   let () = Global.add_constraints cst in
@@ -1095,7 +1091,7 @@ let declare_module id args res mexpr_o =
   in
   let () = Global.push_context_set ~strict:true ctx in
   let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
-  let _, (_, cst) = Mod_typing.translate_module state (Global.env ()) mp inl entry in
+  let _, (_, cst), _ = Mod_typing.translate_module state vm_state (Global.env ()) mp inl entry in
   let () = Global.add_constraints cst in
   let mp_env,resolver = Global.add_module id entry inl in
 
@@ -1219,7 +1215,7 @@ let declare_modtype id args mtys (mte,base,kind,inl) =
   let env = Global.env () in
   (* We check immediately that mte is well-formed *)
   let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
-  let _, (_, mte_cst) = Mod_typing.translate_modtype state env mp inl ([], mte) in
+  let _, (_, mte_cst), _ = Mod_typing.translate_modtype state vm_state env mp inl ([], mte) in
   let () = Global.push_context_set ~strict:true (Univ.Level.Set.empty,mte_cst) in
   let entry = params, mte in
   let env = Global.env () in
@@ -1338,8 +1334,8 @@ let declare_one_include_core (me,base,kind,inl) =
   let base_mp = get_module_path me in
 
   let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
-  let sign, (), resolver, (_, cst) =
-    Mod_typing.translate_mse_include is_mod state (Global.env ()) (Global.current_modpath ()) inl me
+  let sign, (), resolver, (_, cst), _ =
+    Mod_typing.translate_mse_include is_mod state vm_state (Global.env ()) (Global.current_modpath ()) inl me
   in
   let () = Global.add_constraints cst in
   let () = assert (ModPath.equal cur_mp (Global.current_modpath ())) in
@@ -1462,16 +1458,9 @@ let declare_include = RawIncludeOps.Synterp.declare_include
 let register_library dir (objs:library_objects) =
   let mp = MPfile dir in
   let sobjs,keepobjs = objs in
-  SynterpVisitor.do_module SynterpVisitor.load_objects 1 dir mp ([],Objs sobjs) keepobjs
+  SynterpVisitor.load_module 1 dir mp ([],Objs sobjs) keepobjs
 
-let import_modules ~export mpl =
-  let _,objs = SynterpVisitor.collect_modules mpl (MPmap.empty, []) in
-  List.iter (fun (f,o) -> SynterpVisitor.open_object f 1 o) objs;
-  match export with
-  | Lib.Import -> ()
-  | Lib.Export ->
-    let entry = ExportObject { mpl } in
-    Lib.Synterp.add_leaf_entry entry
+let import_modules = SynterpVisitor.import_modules
 
 let import_module f ~export mp =
   import_modules ~export [f,mp]
@@ -1539,7 +1528,7 @@ let declare_include me_asts =
   RawIncludeOps.Interp.declare_include me_asts
 
 (** For the native compiler, we cache the library values *)
-let register_library dir cenv (objs:library_objects) digest univ =
+let register_library dir cenv (objs:library_objects) digest vmtab =
   let mp = MPfile dir in
   let () =
     try
@@ -1548,22 +1537,15 @@ let register_library dir cenv (objs:library_objects) digest univ =
     with Not_found ->
       begin
       (* If not, let's do it now ... *)
-      let mp' = Global.import cenv univ digest in
+      let mp' = Global.import cenv vmtab digest in
       if not (ModPath.equal mp mp') then
         anomaly (Pp.str "Unexpected disk module name.")
       end
   in
   let sobjs,keepobjs = objs in
-  InterpVisitor.do_module InterpVisitor.load_objects 1 dir mp ([],Objs sobjs) keepobjs
+  InterpVisitor.load_module 1 dir mp ([],Objs sobjs) keepobjs
 
-let import_modules ~export mpl =
-  let _,objs = InterpVisitor.collect_modules mpl (MPmap.empty, []) in
-  List.iter (fun (f,o) -> InterpVisitor.open_object f 1 o) objs;
-  match export with
-  | Lib.Import -> ()
-  | Lib.Export ->
-    let entry = ExportObject { mpl } in
-    Lib.Interp.add_leaf_entry entry
+let import_modules = InterpVisitor.import_modules
 
 let import_module f ~export mp =
   import_modules ~export [f,mp]
@@ -1580,11 +1562,11 @@ let end_library_hook () =
 let end_library ~output_native_objects dir =
   end_library_hook();
   let prefix, info, lib_stack, lib_stack_syntax = Lib.end_compilation dir in
-  let mp,cenv,ast = Global.export ~output_native_objects dir in
+  let mp,cenv,vmlib,ast = Global.export ~output_native_objects dir in
   assert (ModPath.equal mp (MPfile dir));
   let {Lib.Interp.substobjs = substitute; keepobjs = keep; anticipateobjs = _; } = lib_stack in
   let {Lib.Synterp.substobjs = substitute_syntax; keepobjs = keep_syntax; anticipateobjs = _; } = lib_stack_syntax in
-  cenv,(substitute,keep),(substitute_syntax,keep_syntax),ast,info
+  cenv,(substitute,keep),(substitute_syntax,keep_syntax),vmlib,ast,info
 
 (** {6 Iterators} *)
 
@@ -1600,7 +1582,7 @@ let iter_all_interp_segments f =
     List.iter (apply_obj prefix) modobjs.module_substituted_objects;
     List.iter (apply_obj prefix) modobjs.module_keep_objects
   in
-  let apply_nodes (node, os) = List.iter (fun o -> f (Lib.node_prefix node) o) os in
+  let apply_nodes (node, os) = List.iter (fun o -> apply_obj (Lib.node_prefix node) o) os in
   MPmap.iter apply_mod_obj (InterpVisitor.ModObjs.all ());
   List.iter apply_nodes (Lib.contents ())
 
@@ -1625,8 +1607,8 @@ let process_module_binding mbid me =
   let sobjs = InterpVisitor.get_module_sobjs false (Global.env()) (default_inline ()) me in
   let subst = map_mp (get_module_path me) mp empty_delta_resolver in
   let sobjs = subst_sobjs subst sobjs in
-  SynterpVisitor.do_module SynterpVisitor.load_objects 1 dir mp sobjs [];
-  InterpVisitor.do_module InterpVisitor.load_objects 1 dir mp sobjs []
+  SynterpVisitor.load_module 1 dir mp sobjs [];
+  InterpVisitor.load_module 1 dir mp sobjs []
 
 (** Compatibility layer *)
 let import_module f ~export mp =
@@ -1660,3 +1642,5 @@ let end_modtype () =
 let declare_include me_asts =
   let l = Synterp.declare_include me_asts in
   Interp.declare_include l
+
+let () = append_end_library_hook Profile_tactic.do_print_results_at_close

@@ -8,6 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val wit_int_or_id: (Table.int_or_id, Table.int_or_id, Table.int_or_id) Genarg.genarg_type
-val wit_language: (Table.lang, unit, unit) Genarg.genarg_type
-val wit_mlname: (string, string, string) Genarg.genarg_type
+val wit_int_or_id: Table.int_or_id Genarg.vernac_genarg_type
+val wit_language: Table.lang Genarg.vernac_genarg_type
+val wit_mlname: string Genarg.vernac_genarg_type

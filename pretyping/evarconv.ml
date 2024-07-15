@@ -57,11 +57,11 @@ let debug_ho_unification = CDebug.create ~name:"ho-unification" ()
 
 (* In case the constants id/ID are not defined *)
 let unit_judge_fallback =
-  let na1 = make_annot (Name (Id.of_string "A")) Sorts.Relevant in
-  let na2 = make_annot (Name (Id.of_string "H")) Sorts.Relevant in
+  let na1 = make_annot (Name (Id.of_string "A")) ERelevance.relevant in
+  let na2 = make_annot (Name (Id.of_string "H")) ERelevance.relevant in
   make_judge
     (mkLambda (na1,mkProp,mkLambda(na2,mkRel 1,mkRel 1)))
-    (mkProd (na1,mkProp,mkArrow (mkRel 1) Sorts.Relevant (mkRel 2)))
+    (mkProd (na1,mkProp,mkArrow (mkRel 1) ERelevance.relevant (mkRel 2)))
 
 let coq_unit_judge env sigma =
   match Coqlib.lib_ref_opt "core.IDProp.idProp" with
@@ -72,38 +72,76 @@ let coq_unit_judge env sigma =
   | None -> sigma, unit_judge_fallback
 
 let unfold_projection env evd ts p r c =
-  let cst = Projection.constant p in
-    if TransparentState.is_transparent_constant ts cst then
-      Some (mkProj (Projection.unfold p, r, c))
-    else None
+  if TransparentState.is_transparent_projection ts (Projection.repr p) then
+    Some (mkProj (Projection.unfold p, r, c))
+  else None
 
-let eval_flexible_term ts env evd c =
+(* [unfold_projection_under_eta env evd ts n c] checks if [c] is the eta
+   expanded, folded primitive projection of name [n] and unfolds the primitive
+   projection. It respects projection transparency of [ts]. *)
+let unfold_projection_under_eta env evd ts n c =
+  let rec go c lams =
+    match EConstr.kind evd c with
+    | Lambda (b, t, c) -> go c ((b,t)::lams)
+    | Proj (p, r, c) when QConstant.equal env n (Projection.constant p) ->
+      let c = unfold_projection env evd ts p r c in
+      begin
+        match c with
+        | None -> None
+        | Some c ->
+          let f c (b,t) = mkLambda (b,t,c) in
+          Some (List.fold_left f c lams)
+      end
+      | _ -> None
+  in
+  go c []
+
+let eval_flexible_term ts env evd c sk =
   match EConstr.kind evd c with
   | Const (c, u) ->
-      if TransparentState.is_transparent_constant ts c
-      then Option.map EConstr.of_constr (constant_opt_value_in env (c, EInstance.kind evd u))
-      else None
+      if Structures.PrimitiveProjections.is_transparent_constant ts c then begin
+        let cb = lookup_constant c env in
+        match cb.const_body with
+        | Def l_body ->
+            let def = subst_instance_constr u (EConstr.of_constr l_body) in
+            (* If we are unfolding a compatibility constant we want to return the
+               unfolded primitive projection directly since we would like to pretend
+               that the compatibility constant itself does not count as an unfolding
+               (delta) step. *)
+            let unf = unfold_projection_under_eta env evd ts c def in
+            Some (Option.default def unf, sk)
+        | OpaqueDef _ | Undef _ | Primitive _ -> None
+        | Symbol b ->
+            try
+            let r = match Cmap_env.find_opt c env.symb_pats with Some r -> r | None -> assert false in
+            let rhs_stack = Reductionops.apply_rules
+              (whd_betaiota_deltazeta_for_iota_state ts env evd) env evd u r sk
+            in
+            Some rhs_stack
+          with PatternFailure -> None
+          (* TODO: try unfold fix *)
+      end else None
   | Rel n ->
       (try match lookup_rel n env with
            | RelDecl.LocalAssum _ -> None
-           | RelDecl.LocalDef (_,v,_) -> Some (lift n v)
+           | RelDecl.LocalDef (_,v,_) -> Some (lift n v, sk)
        with Not_found -> None)
   | Var id ->
       (try
          if TransparentState.is_transparent_variable ts id then
-           env |> lookup_named id |> NamedDecl.get_value
+           env |> lookup_named id |> NamedDecl.get_value |> Option.map (fun c -> (c, sk))
          else None
        with Not_found -> None)
-  | LetIn (_,b,_,c) -> Some (subst1 b c)
-  | Lambda _ -> Some c
+  | LetIn (_,b,_,c) -> Some (subst1 b c, sk)
+  | Lambda _ -> Some (c, sk)
   | Proj (p, r, c) ->
     if Projection.unfolded p then assert false
-    else unfold_projection env evd ts p r c
+    else unfold_projection env evd ts p r c |> Option.map (fun c -> (c, sk))
   | _ -> assert false
 
 type flex_kind_of_term =
   | Rigid
-  | MaybeFlexible of EConstr.t (* reducible but not necessarily reduced *)
+  | MaybeFlexible of (EConstr.t * Stack.t) (* reducible but not necessarily reduced *)
   | Flexible of EConstr.existential
 
 let has_arg s = Option.has_some (Stack.strip_n_app 0 s)
@@ -111,13 +149,13 @@ let has_arg s = Option.has_some (Stack.strip_n_app 0 s)
 let flex_kind_of_term flags env evd c sk =
   match EConstr.kind evd c with
     | LetIn _ | Rel _ | Const _ | Var _ | Proj _ ->
-      Option.cata (fun x -> MaybeFlexible x) Rigid (eval_flexible_term flags.open_ts env evd c)
+      Option.cata (fun x -> MaybeFlexible x) Rigid (eval_flexible_term flags.open_ts env evd c sk)
     | Lambda _ when has_arg sk ->
-       if flags.modulo_betaiota then MaybeFlexible c
+       if flags.modulo_betaiota then MaybeFlexible (c, sk)
        else Rigid
     | Evar ev ->
        if is_evar_allowed flags (fst ev) then Flexible ev else Rigid
-    | Lambda _ | Prod _ | Sort _ | Ind _ | Int _ | Float _ | Array _ -> Rigid
+    | Lambda _ | Prod _ | Sort _ | Ind _ | Int _ | Float _ | String _ | Array _ -> Rigid
     | Construct _ | CoFix _ (* Incorrect: should check only app in sk *) -> Rigid
     | Meta _ -> Rigid
     | Fix _ -> Rigid (* happens when the fixpoint is partially applied (should check it?) *)
@@ -170,9 +208,11 @@ let occur_rigidly flags env evd (evk,_) t =
     | Construct _ -> Normal false
     | Ind _ | Sort _ -> Rigid false
     | Proj (p, _, c) ->
-      let cst = Projection.constant p in
-      let rigid = not (TransparentState.is_transparent_constant flags.open_ts cst) in
-        if rigid then aux c
+       let rigid =
+         let p = Projection.repr p in
+         not (TransparentState.is_transparent_projection flags.open_ts p)
+       in
+       if rigid then aux c
         else (* if the evar appears rigidly in c then this elimination
                 cannot reduce and we have a rigid occurrence, otherwise
                 we don't know. *)
@@ -189,7 +229,7 @@ let occur_rigidly flags env evd (evk,_) t =
     | Lambda (na, t, b) -> aux b
     | LetIn (na, _, _, b) -> aux b
     | Const (c,_) ->
-      if TransparentState.is_transparent_constant flags.open_ts c then Reducible
+      if Structures.PrimitiveProjections.is_transparent_constant flags.open_ts c then Reducible
       else Rigid false
     | Prod (_, b, t) ->
       let b' = aux b and t' = aux t in
@@ -200,12 +240,37 @@ let occur_rigidly flags env evd (evk,_) t =
       (match aux c with
       | Rigid b -> Rigid b
       | _ -> Reducible)
-    | Meta _ | Fix _ | CoFix _ | Int _ | Float _ | Array _ -> Reducible
+    | Meta _ | Fix _ | CoFix _ | Int _ | Float _ | String _ | Array _ -> Reducible
   in
     match aux t with
     | Rigid b -> b
     | Normal b -> b
     | Reducible -> false
+
+type hook = Environ.env -> Evd.evar_map -> ((Names.Constant.t * EConstr.EInstance.t) * EConstr.t list * EConstr.t) -> (EConstr.t * EConstr.t list) -> (Evd.evar_map * Structures.CanonicalSolution.t) option
+
+let all_hooks = ref (CString.Map.empty : hook CString.Map.t)
+
+let register_hook ~name ?(override=false) h =
+  if not override && CString.Map.mem name !all_hooks then
+    CErrors.anomaly ~label:"CanonicalSolution.register_hook"
+      Pp.(str "Hook already registered: \"" ++ str name ++ str "\".");
+  all_hooks := CString.Map.add name h !all_hooks
+
+let active_hooks = Summary.ref ~name:"canonical_solution_hooks_hacked" ([] : string list)
+
+let deactivate_hook ~name =
+  active_hooks := List.filter (fun s -> not (String.equal s name)) !active_hooks
+
+let activate_hook ~name =
+  assert (CString.Map.mem name !all_hooks);
+  deactivate_hook ~name;
+  active_hooks := name :: !active_hooks
+
+let apply_hooks env sigma proj pat =
+  List.find_map (fun name ->
+    try CString.Map.get name !all_hooks env sigma proj pat
+    with e when CErrors.noncritical e -> anomaly Pp.(str "CS hook " ++ str name ++ str " exploded")) !active_hooks
 
 (* [check_conv_record env sigma (t1,stack1) (t2,stack2)] tries to decompose
    the problem (t1 stack1) = (t2 stack2) into a problem
@@ -228,61 +293,63 @@ let occur_rigidly flags env evd (evk,_) t =
    projection would have been reduced) *)
 
 let check_conv_record env sigma (t1,sk1) (t2,sk2) =
-  let open ValuePattern in
-  let (proji, u), arg = Termops.global_app_of_constr sigma t1 in
-  let t2, sk2' = decompose_app sigma (shrink_eta sigma t2) in
-  let sk2 = Stack.append_app sk2' sk2 in
-  let (sigma, solution), sk2_effective =
-    let t2 =
-      let rec remove_lambda t2 =
-        match EConstr.kind sigma t2 with
-        | Lambda (_,_,t2) -> remove_lambda t2
-        | Cast (t2,_,_) -> remove_lambda t2
-        | App (t2,_) -> t2
-        | _ -> t2 in
-      if Stack.is_empty sk2 then remove_lambda t2 else t2 in
-    try
-      match EConstr.kind sigma t2 with
-        Prod (_,_,_) -> (* assert (l2=[]); *)
-            CanonicalSolution.find env sigma (proji, Prod_cs),
-            (Stack.append_app [|t2|] Stack.empty)
-      | Sort s ->
-        let s = ESorts.kind sigma s in
-        CanonicalSolution.find env sigma
-          (proji, Sort_cs (Sorts.family s)),[]
-      | Proj (p, _, c) ->
-        CanonicalSolution.find env sigma(proji, Proj_cs (Names.Projection.repr p)), Stack.append_app [|c|] sk2
-      | _ ->
-        let (c2, _) = try destRef sigma t2 with DestKO -> raise Not_found in
-          CanonicalSolution.find env sigma (proji, Const_cs c2),sk2
-    with Not_found ->
-      CanonicalSolution.find env sigma (proji,Default_cs), []
-  in
-  let open CanonicalSolution in
+   (* I only recognize ConstRef projections since these are the only ones for which
+      I know how to obtain the number of parameters. *)
+  let (proji, u), arg =
+    match Termops.global_app_of_constr sigma t1 with
+    | (Names.GlobRef.ConstRef proji, u), arg -> (proji, u), arg
+    | _ -> raise Not_found in
+  (* Given a ConstRef projection, I obtain the structure it is a projection from. *)
+  let structure = Structures.Structure.find_from_projection proji in
+  (* Knowing the structure and hence its number of arguments, I can cut sk1 into pieces. *)
   let params1, c1, extra_args1 =
     match arg with
     | Some c -> (* A primitive projection applied to c *)
-      let ty = Retyping.get_type_of ~lax:true env sigma c in
-      let (i,u), ind_args =
+      let ty =
+        try Retyping.get_type_of ~lax:true env sigma c with
+        | Retyping.RetypeError _ -> raise Not_found
+      in let (i, u), ind_args =
         (* Are we sure that ty is not an evar? *)
         Inductiveops.find_mrectype env sigma ty
       in ind_args, c, sk1
     | None ->
-      match Stack.strip_n_app solution.nparams sk1 with
-      | Some (params1, c1, extra_args1) -> (Option.get @@ Stack.list_of_app_stack params1), c1, extra_args1
+      match Reductionops.Stack.strip_n_app structure.nparams sk1 with
+      | Some (params1, c1, extra_args1) -> (Option.get @@ Reductionops.Stack.list_of_app_stack params1), c1, extra_args1
       | _ -> raise Not_found in
-  let us2,extra_args2 =
-    let l_us = List.length solution.cvalue_arguments in
-      if Int.equal l_us 0 then [], sk2_effective
-      else match (Stack.strip_n_app (l_us-1) sk2_effective) with
+  let h2, sk2' = decompose_app sigma (shrink_eta sigma t2) in
+  let sk2 = Stack.append_app sk2' sk2 in
+  let k = Reductionops.Stack.args_size sk2 - Reductionops.Stack.args_size extra_args1 in
+  (* Knowing the shape of extra_args1, I can cut sk2 into pieces, extracting extra_args2 from it. *)
+  let args2, extra_args2 =
+    if k = 0 then [], sk2
+    else if k < 0 then raise Not_found
+    else match Reductionops.Stack.strip_n_app (k-1) sk2 with
+    | None -> raise Not_found
+    | Some (l',el,s') -> ((Option.get @@ Reductionops.Stack.list_of_app_stack l') @ [el], s') in
+  let (pat, _, args2') = try ValuePattern.of_constr sigma h2 with | DestKO -> (Default_cs, None, []) in
+  let (sigma, solution), sk2_effective =
+     (* N.B. In the `Proj` case, the subject needs to be added in args2. *)
+    try begin
+      try
+         let () = if pat = Default_cs then raise Not_found else () in
+         let (sigma, solution) = CanonicalSolution.find env sigma (Names.GlobRef.ConstRef proji, pat) in
+         if List.length solution.cvalue_arguments = k + (List.length args2') then (sigma, solution), args2' @ args2 else raise Not_found
+       with | Not_found ->
+         let (sigma, solution) = CanonicalSolution.find env sigma (Names.GlobRef.ConstRef proji, Default_cs) in
+         (* We have to drop the arguments args2 because the default solution does not have them. *)
+         if List.length solution.cvalue_arguments = 0 then (sigma, solution), [] else raise Not_found
+      end
+    with | Not_found -> (* If we find no solution, we ask the hook if it has any. *)
+      match (apply_hooks env sigma ((proji, u), params1, c1) (t2, args2)) with
+      | Some r -> r, args2' @ args2
       | None -> raise Not_found
-      | Some (l',el,s') -> ((Option.get @@ Stack.list_of_app_stack l') @ [el],s') in
+  in
+  let t2 = Stack.zip sigma (h2, (Stack.append_app_list args2 Stack.empty)) in
   let h, _ = decompose_app sigma solution.body in
-  let t2 = Stack.zip sigma (t2,sk2) in
-  let h2, _ = decompose_app sigma t2 in
     sigma,(h, h2),solution.constant,solution.abstractions_ty,(solution.params,params1),
-    (solution.cvalue_arguments,us2),(extra_args1,extra_args2),c1,
+    (solution.cvalue_arguments, sk2_effective),(extra_args1,extra_args2),c1,
     (solution.cvalue_abstraction, t2)
+
 
 (* Precondition: one of the terms of the pb is an uninstantiated evar,
  * possibly applied to arguments. *)
@@ -558,7 +625,7 @@ let infer_conv_noticing_evars ~pb ~ts env sigma t1 t2 =
     v
   in
   let evar_handler = { (Evd.evar_handler sigma) with evar_expand } in
-  let conv pb ~l2r sigma = Conversion.generic_conv pb ~l2r ~evars:evar_handler in
+  let conv = { genconv = fun pb ~l2r sigma -> Conversion.generic_conv pb ~l2r ~evars:evar_handler } in
   match infer_conv_gen conv ~catch_incon:false ~pb ~ts env sigma t1 t2 with
   | Some sigma -> Some (Success sigma)
   | None ->
@@ -593,8 +660,8 @@ let rec evar_conv_x flags env evd pbty term1 term2 =
             (whd_nored_state env evd (term2,Stack.empty))
         with
         | UnifFailure _ as x ->
-           if Retyping.relevance_of_term env evd term1 == Sorts.Irrelevant ||
-              Retyping.relevance_of_term env evd term2 == Sorts.Irrelevant
+           if Retyping.is_term_irrelevant env evd term1 ||
+              Retyping.is_term_irrelevant env evd term2
            then Success evd
            else x
         | Success _ as x -> x
@@ -693,7 +760,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
             else quick_fail i)
             ev lF tM i
   in
-  let flex_maybeflex l2r ev (termF,skF as apprF) (termM, skM as apprM) vM =
+  let flex_maybeflex l2r ev (termF,skF as apprF) (termM, skM as apprM) vskM =
     (* Problem: E[?n[inst]] = E'[redex]
        Strategy, as far as I understand:
        1.  if E[]=[]u1..un and ?n[inst] u1..un = E'[redex] is a Miller pattern: solve it now
@@ -704,7 +771,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
     let switch f a b = if l2r then f a b else f b a in
     let delta i =
       switch (evar_eqappr_x flags env i pbty) apprF
-        (whd_betaiota_deltazeta_for_iota_state flags.open_ts env i (vM,skM))
+        (whd_betaiota_deltazeta_for_iota_state flags.open_ts env i vskM)
     in
     let default i = ise_try i [miller l2r ev apprF apprM;
                                consume l2r apprF apprM;
@@ -896,10 +963,10 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
     | Flexible ev1, MaybeFlexible v2 ->
       flex_maybeflex true ev1 appr1 appr2 v2
 
-    | MaybeFlexible v1, Flexible ev2 ->
-      flex_maybeflex false ev2 appr2 appr1 v1
+    | MaybeFlexible vsk1, Flexible ev2 ->
+      flex_maybeflex false ev2 appr2 appr1 vsk1
 
-    | MaybeFlexible v1, MaybeFlexible v2 -> begin
+    | MaybeFlexible (v1', sk1' as vsk1'), MaybeFlexible (v2', sk2' as vsk2') -> begin
         match EConstr.kind evd term1, EConstr.kind evd term2 with
         | LetIn (na1,b1,t1,c'1), LetIn (na2,b2,t2,c'2) ->
         let f1 i = (* FO *)
@@ -915,8 +982,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
                evar_conv_x flags (push_rel (RelDecl.LocalDef (na,b,t)) env) i pbty c'1 c'2);
              (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2)]
         and f2 i =
-          let out1 = whd_betaiota_deltazeta_for_iota_state flags.open_ts env i (v1,sk1)
-          and out2 = whd_betaiota_deltazeta_for_iota_state flags.open_ts env i (v2,sk2)
+          let out1 = whd_betaiota_deltazeta_for_iota_state flags.open_ts env i vsk1'
+          and out2 = whd_betaiota_deltazeta_for_iota_state flags.open_ts env i vsk2'
           in evar_eqappr_x flags env i pbty out1 out2
         in
         ise_try evd [f1; f2]
@@ -927,8 +994,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
             [(fun i -> evar_conv_x flags env i CONV c c');
              (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2)]
           and f2 i =
-            let out1 = whd_betaiota_deltazeta_for_iota_state flags.open_ts env i (v1,sk1)
-            and out2 = whd_betaiota_deltazeta_for_iota_state flags.open_ts env i (v2,sk2)
+            let out1 = whd_betaiota_deltazeta_for_iota_state flags.open_ts env i vsk1'
+            and out2 = whd_betaiota_deltazeta_for_iota_state flags.open_ts env i vsk2'
             in evar_eqappr_x flags env i pbty out1 out2
           in
             ise_try evd [f1; f2]
@@ -985,7 +1052,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
              only if necessary) or the second argument is potentially
              usable as a canonical projection or canonical value *)
           let rec is_unnamed (hd, args) = match EConstr.kind i hd with
-            | (Var _|Construct _|Ind _|Const _|Prod _|Sort _|Int _ |Float _|Array _) ->
+            | (Var _|Construct _|Ind _|Const _|Prod _|Sort _|Int _ |Float _|String _|Array _) ->
               Stack.not_purely_applicative args
             | (CoFix _|Meta _|Rel _)-> true
             | Evar _ -> Stack.not_purely_applicative args
@@ -998,23 +1065,23 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
             | Proj (p, _, _) -> Projection.unfolded p || Stack.not_purely_applicative args
             | Case _ | App _| Cast _ -> assert false in
           let rhs_is_stuck_and_unnamed () =
-            let applicative_stack = fst (Stack.strip_app sk2) in
+            let applicative_stack = fst (Stack.strip_app sk2') in
             is_unnamed
               (whd_betaiota_deltazeta_for_iota_state
-                      flags.open_ts env i (v2, applicative_stack)) in
+                      flags.open_ts env i (v2', applicative_stack)) in
           let rhs_is_already_stuck =
             rhs_is_already_stuck || rhs_is_stuck_and_unnamed () in
 
           if (EConstr.isLambda i term1 || rhs_is_already_stuck)
-            && (not (Stack.not_purely_applicative sk1)) then
+            && (not (Stack.not_purely_applicative sk1')) then
             evar_eqappr_x ~rhs_is_already_stuck flags env i pbty
               (whd_betaiota_deltazeta_for_iota_state
-                 flags.open_ts env i(v1,sk1))
+                 flags.open_ts env i vsk1')
               appr2
           else
             evar_eqappr_x flags env i pbty appr1
               (whd_betaiota_deltazeta_for_iota_state
-                 flags.open_ts env i (v2,sk2))
+                 flags.open_ts env i vsk2')
         in
         ise_try evd [f1; f2; f3]
     end
@@ -1034,7 +1101,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
     | Flexible ev1, Rigid -> flex_rigid true ev1 appr1 appr2
     | Rigid, Flexible ev2 -> flex_rigid false ev2 appr2 appr1
 
-    | MaybeFlexible v1, Rigid ->
+    | MaybeFlexible vsk1', Rigid ->
         let f3 i =
           (try
              if not flags.with_cs then raise Not_found
@@ -1043,12 +1110,12 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
         and f4 i =
           evar_eqappr_x flags env i pbty
             (whd_betaiota_deltazeta_for_iota_state
-               flags.open_ts env i (v1,sk1))
+               flags.open_ts env i vsk1')
             appr2
         in
           ise_try evd [f3; f4]
 
-    | Rigid, MaybeFlexible v2 ->
+    | Rigid, MaybeFlexible vsk2' ->
         let f3 i =
           (try
              if not flags.with_cs then raise Not_found
@@ -1057,7 +1124,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
         and f4 i =
           evar_eqappr_x flags env i pbty appr1
             (whd_betaiota_deltazeta_for_iota_state
-               flags.open_ts env i (v2,sk2))
+               flags.open_ts env i vsk2')
         in
           ise_try evd [f3; f4]
 
@@ -1105,6 +1172,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
         | Construct _, Construct _
         | Int _, Int _
         | Float _, Float _
+        | String _, String _
         | Array _, Array _ ->
           rigids env evd sk1 term1 sk2 term2
 
@@ -1182,7 +1250,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
           | None -> UnifFailure (evd,NotSameHead)
           end
 
-        | (Ind _ | Sort _ | Prod _ | CoFix _ | Fix _ | Rel _ | Var _ | Const _ | Int _ | Float _ | Array _ | Evar _ | Lambda _), _ ->
+        | (Ind _ | Sort _ | Prod _ | CoFix _ | Fix _ | Rel _ | Var _ | Const _ | Int _ | Float _ | String _ | Array _ | Evar _ | Lambda _), _ ->
           UnifFailure (evd,NotSameHead)
         | _, (Ind _ | Sort _ | Prod _ | CoFix _ | Fix _ | Rel _ | Var _ | Const _ | Int _ | Array _ | Evar _ | Lambda _) ->
           UnifFailure (evd,NotSameHead)
@@ -1263,7 +1331,7 @@ and eta_constructor flags env evd ((ind, i), u) sk1 (term2,sk2) =
            let l2' =
              let term = Stack.zip evd (term2,sk2) in
              List.map (fun (p,r) ->
-                 let r = UVars.subst_instance_relevance (Unsafe.to_instance u) r in
+                 let r = EConstr.Vars.subst_instance_relevance u (ERelevance.make r) in
                  EConstr.mkProj (Projection.make p false, r, term))
                (Array.to_list projs)
            in
@@ -1387,7 +1455,7 @@ let apply_on_subterm env evd fixed f test c t =
   let t' = applyrec (env,(0,c)) t in
   !evdref, !fixedref, t'
 
-let filter_possible_projections evd c ty ctxt args =
+let filter_possible_projections evd i0 c ty ctxt args =
   (* Since args in the types will be replaced by holes, we count the
      fv of args to have a well-typed filter; don't know how necessary
     it is however to have a well-typed filter here *)
@@ -1402,7 +1470,7 @@ let filter_possible_projections evd c ty ctxt args =
     (match decl with
      | NamedDecl.LocalAssum _ -> false
      | NamedDecl.LocalDef (_,c,_) -> not (isRel evd c || isVar evd c)) ||
-    a == c ||
+    Int.equal i0 i (* check whether [c] is [args.(i)] *) ||
     (* Here we make an approximation, for instance, we could also be *)
     (* interested in finding a term u convertible to c such that a occurs *)
     (* in u *)
@@ -1487,8 +1555,8 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
   let sign = named_context_val env_evar in
   let ctxt = evar_filtered_context evi in
   debug_ho_unification (fun () ->
-     Pp.(str"env rhs: " ++ Termops.Internal.print_env env_rhs ++ fnl () ++
-         str"env evars: " ++ Termops.Internal.print_env env_evar));
+     Pp.(str"rhs env: " ++ Termops.Internal.print_env env_rhs evd ++ fnl () ++
+         str"evar env: " ++ Termops.Internal.print_env env_evar evd));
   let args = Evd.expand_existential evd (evk, args) in
   let args = List.map (nf_evar evd) args in
   let argsubst = List.map2 (fun decl c -> (NamedDecl.get_id decl, c)) ctxt args in
@@ -1498,13 +1566,13 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
       the solution we are trying to build here by adding the problem as a constraint. *)
   let evd = Evarutil.add_unification_pb (CONV,env_rhs,mkLEvar evd (evk, args),rhs) evd in
   let prc env evd c = Termops.Internal.print_constr_env env evd c in
-  let rec make_subst = function
+  let rec make_subst i = function
     | decl'::ctxt', c::l, occs::occsl when isVarId evd (NamedDecl.get_id decl') c ->
       begin match occs with
         | AtOccurrences loc when not (Locusops.is_all_occurrences loc) ->
           user_err Pp.(str "Cannot force abstraction on identity instance.")
         | _ ->
-          make_subst (ctxt',l,occsl)
+          make_subst (i + 1) (ctxt',l,occsl)
       end
     | decl'::ctxt', c::l, occs::occsl ->
       let id = NamedDecl.get_annot decl' in
@@ -1513,8 +1581,8 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
       let c = nf_evar evd c in
       (* ty is in env_rhs now *)
       let ty = replace_vars evd argsubst t in
-      let filter' = filter_possible_projections evd c (nf_evar evd ty) ctxt args in
-      (id,t,c,ty,evs,Filter.make filter',occs) :: make_subst (ctxt',l,occsl)
+      let filter' = filter_possible_projections evd i c (nf_evar evd ty) ctxt args in
+      (id,t,c,ty,evs,Filter.make filter',occs) :: make_subst (i + 1) (ctxt',l,occsl)
     | _, _, [] -> []
     | _ -> anomaly (Pp.str "Signature or instance are shorter than the occurrences list.")
   in
@@ -1567,7 +1635,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
      set_holes env_rhs' evd fixed rhs' subst
   | [] -> evd, fixed, rhs in
 
-  let subst = make_subst (ctxt,args,argoccs) in
+  let subst = make_subst 0 (ctxt,args,argoccs) in
 
   let evd, _, rhs' = set_holes env_rhs evd Evar.Set.empty rhs subst in
   let rhs' = nf_evar evd rhs' in
@@ -1784,8 +1852,8 @@ let error_cannot_unify env evd pb ?reason t1 t2 =
     ?loc:(loc_of_conv_pb evd pb) env
     evd ?reason (t1, t2)
 
-let check_problems_are_solved env evd =
-  match snd (extract_all_conv_pbs evd) with
+let check_problems_are_solved ?evars env evd =
+  match snd (extract_changed_conv_pbs_from evd evars) with
   | (pbty,env,t1,t2) as pb::_ -> error_cannot_unify env evd pb t1 t2
   | _ -> ()
 

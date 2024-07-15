@@ -117,26 +117,159 @@ let iter f s =
 
 end
 
+module NonSubstReloc =
+struct
+
+(** Relocations that are left untouched by module substitution. To reduce the
+    memory footprint, this data is kept on the VM segment. *)
+type t =
+| SReloc_Const_sort of Sorts.t
+| SReloc_Const_evar of Evar.t
+| SReloc_Const_b0 of tag
+| SReloc_Const_univ_instance of UVars.Instance.t
+| SReloc_Const_val of structured_values
+| SReloc_Const_uint of Uint63.t
+| SReloc_Const_float of Float64.t
+| SReloc_Const_string of Pstring.t
+| SReloc_annot of annot_switch
+| SReloc_caml_prim of caml_prim
+
+let to_reloc = function
+| SReloc_Const_sort s -> Reloc_const (Const_sort s)
+| SReloc_Const_evar e -> Reloc_const (Const_evar e)
+| SReloc_Const_b0 tag -> Reloc_const (Const_b0 tag)
+| SReloc_Const_univ_instance u -> Reloc_const (Const_univ_instance u)
+| SReloc_Const_val v -> Reloc_const (Const_val v)
+| SReloc_Const_uint i -> Reloc_const (Const_uint i)
+| SReloc_Const_float f -> Reloc_const (Const_float f)
+| SReloc_Const_string s -> Reloc_const (Const_string s)
+| SReloc_annot annot -> Reloc_annot annot
+| SReloc_caml_prim prm -> Reloc_caml_prim prm
+
+end
+
+module Reloc =
+struct
+
+type t =
+| SReloc_Const_ind of inductive
+| SReloc_getglobal of Names.Constant.t
+| SReloc_indirect of int (* index in the non-subst table *)
+
+let to_reloc table = function
+| SReloc_Const_ind ind -> Reloc_const (Const_ind ind)
+| SReloc_getglobal cst -> Reloc_getglobal cst
+| SReloc_indirect i -> NonSubstReloc.to_reloc table.(i)
+
+let subst s reloc = match reloc with
+| SReloc_Const_ind ind ->
+  let ind' = Mod_subst.subst_ind s ind in
+  if ind' == ind then reloc else SReloc_Const_ind ind'
+| SReloc_getglobal cst ->
+  let cst' = Mod_subst.subst_constant s cst in
+  if cst' == cst then reloc else SReloc_getglobal cst'
+| SReloc_indirect _ -> reloc
+
+end
+
+(* Most of the words of the bytecode are comprised of a byte followed by three
+   nul bytes. It is compressed as follows. In the common case, only the byte is
+   output. In the other cases (or when the byte is too large), 255 is output
+   followed by the four original bytes, or 254 is output followed by the first
+   three original bytes (assuming the fourth is nul), or 253 or 252. *)
+
+let compress_code src sz =
+  let buf = Buffer.create (sz * 3 / 8) in
+  for i = 0 to sz / 4 - 1 do
+    let c01 = Bytes.get_uint16_le src (i * 4) in
+    let c23 = Bytes.get_uint16_le src (i * 4 + 2) in
+    if c23 = 0 then
+      if c01 < 252 then
+        Buffer.add_uint8 buf c01
+      else
+        begin
+          Buffer.add_uint8 buf 253;
+          Buffer.add_uint16_le buf c01;
+        end
+    else if c23 = 0xffff && c01 >= 0xff00 then
+      begin
+        Buffer.add_uint8 buf 252;
+        Buffer.add_uint8 buf c01;
+      end
+    else if c23 <= 0xff then
+      begin
+        Buffer.add_uint8 buf 254;
+        Buffer.add_uint16_le buf c01;
+        Buffer.add_uint8 buf c23;
+      end
+    else
+      begin
+        Buffer.add_uint8 buf 255;
+        Buffer.add_uint16_le buf c01;
+        Buffer.add_uint16_le buf c23;
+      end
+  done;
+  Buffer.contents buf
+
+let decompress_code src =
+  let sz = String.length src in
+  let buf = Buffer.create (sz * 4) in
+  (* TODO: remove the following two lines once the minimal version of OCaml is 4.13 *)
+  let module String = Bytes in
+  let src = String.unsafe_of_string src in
+  let i = ref 0 in
+  while !i < sz do
+    let c01, c23 =
+      match String.get src !i with
+      | '\000' .. '\251' as c ->
+          i := !i + 1;
+          (Char.code c, 0)
+      | '\252' ->
+          i := !i + 2;
+          (String.get_uint8 src (!i - 1) + 0xff00, 0xffff)
+      | '\253' ->
+          i := !i + 3;
+          (String.get_uint16_le src (!i - 2), 0)
+      | '\254' ->
+          i := !i + 4;
+          (String.get_uint16_le src (!i - 3), String.get_uint8 src (!i - 1))
+      | '\255' ->
+          i := !i + 5;
+          (String.get_uint16_le src (!i - 4), String.get_int16_le src (!i - 2))
+    in
+    Buffer.add_uint16_le buf c01;
+    Buffer.add_uint16_le buf c23;
+  done;
+  Buffer.to_bytes buf
+
 (** This data type is stored in vo files. *)
+
 type patches = {
-  reloc_infos : reloc_info array;
-  reloc_positions : Positions.t;
+  reloc_infos : Reloc.t array;
 }
 
-let patch_int buff reloc positions =
-  let buff = Bytes.of_string buff in
+type to_patch = {
+  tp_code : emitcodes;
+  tp_fv : fv;
+  tp_pos : Positions.t;
+  tp_reloc : NonSubstReloc.t array;
+}
+
+let patch_int tp reloc =
+  let buff = decompress_code tp.tp_code in
   let iter pos =
     let id = Bytes.get_int32_le buff pos in
     let reloc = reloc.(Int32.to_int id) in
     Bytes.set_int32_le buff pos (Int32.of_int reloc)
   in
-  let () = Positions.iter iter positions in
+  let () = Positions.iter iter tp.tp_pos in
   buff
 
-let patch (buff, pl) f =
+let patch (tp, pl) f =
+  let f r = f (Reloc.to_reloc tp.tp_reloc r) in
   let reloc = CArray.map_left f pl.reloc_infos in
-  let buff = patch_int buff reloc pl.reloc_positions in
-  tcode_of_code buff
+  let buff = patch_int tp reloc in
+  tcode_of_code buff, tp.tp_fv
 
 (* Buffering of bytecode *)
 
@@ -302,14 +435,20 @@ let check_prim_op = function
   | Float64ldshiftexp -> opCHECKLDSHIFTEXP
   | Float64next_up    -> opCHECKNEXTUPFLOAT
   | Float64next_down  -> opCHECKNEXTDOWNFLOAT
-  | Arraymake | Arrayget | Arrayset | Arraydefault | Arraycopy | Arraylength ->
-    assert false
+  | Arraymake | Arrayget | Arrayset | Arraydefault | Arraycopy | Arraylength
+  | Stringmake | Stringlength | Stringget | Stringsub | Stringcat | Stringcompare
+    -> assert false
 
 let check_caml_prim_op = function
 | CAML_Arraymake -> opCHECKCAMLCALL2_1
 | CAML_Arrayget -> opCHECKCAMLCALL2
 | CAML_Arrayset -> opCHECKCAMLCALL3_1
 | CAML_Arraydefault | CAML_Arraycopy | CAML_Arraylength -> opCHECKCAMLCALL1
+| CAML_Stringmake -> opCHECKCAMLCALL2
+| CAML_Stringlength -> opCHECKCAMLCALL1
+| CAML_Stringget -> opCHECKCAMLCALL2
+| CAML_Stringsub -> opCHECKCAMLCALL3
+| CAML_Stringcat | CAML_Stringcompare -> opCHECKCAMLCALL2
 
 let inplace_prim_op = function
   | Float64next_up | Float64next_down -> true
@@ -374,6 +513,8 @@ let emit_instr env = function
       Array.iter (out_label_with_orig env org) lbl_bodies
   | Kgetglobal q ->
       out env opGETGLOBAL; slot_for_getglobal env q
+  | Ksubstinstance u ->
+      out env opSUBSTINSTANCE; slot_for_const env (Const_univ_instance u)
   | Kconst (Const_b0 i) when is_immed i ->
       if i >= 0 && i <= 3
           then out env (opCONST0 + i)
@@ -392,7 +533,7 @@ let emit_instr env = function
       let lenc = Array.length tbl_const in
       assert (lenb < 0x100 && lenc < 0x1000000);
       out env opSWITCH;
-      out_word env lenc (lenc asr 8) (lenc asr 16) (lenb);
+      out_word env lenb lenc (lenc asr 8) (lenc asr 16);
 (*      out_int env (Array.length tbl_const + (Array.length tbl_block lsl 23)); *)
       let org = env.out_position in
       Array.iter (out_label_with_orig env org) tbl_const;
@@ -428,15 +569,35 @@ let rec emit env insns remaining = match insns with
      | (first::rest) -> emit env first rest)
   (* Peephole optimizations *)
   | Kpush :: Kacc n :: c ->
-      if n = 0 then out env opPUSH
-      else if n < 8 then out env (opPUSHACC1 + n - 1)
-      else (out env opPUSHACC; out_int env n);
-      emit env c remaining
+      let rec aux n c nb =
+        match c with
+        | Kpush :: Kacc j :: c when j = n -> aux n c (nb + 1)
+        | _ -> (nb, c) in
+      let (nb, c') = aux n c 1 in
+      if nb >= 3 || (nb >= 2 && n > 7)
+      then (
+        out env opPUSHACCMANY; out_int env n; out_int env nb;
+        emit env c' remaining)
+      else (
+        if n = 0 then out env opPUSH
+        else if n < 8 then out env (opPUSHACC1 + n - 1)
+        else (out env opPUSHACC; out_int env n);
+        emit env c remaining)
   | Kpush :: Kenvacc n :: c ->
-      if n >= 0 && n <= 3
-      then out env(opPUSHENVACC0 + n)
-      else (out env opPUSHENVACC; out_int env n);
-      emit env c remaining
+      let rec aux n c nb =
+        match c with
+        | Kpush :: Kenvacc j :: c when j = n - nb -> aux n c (nb + 1)
+        | _ -> (nb, c) in
+      let (nb, c') = aux n c 1 in
+      if nb >= 3 || (nb >= 2 && n > 3)
+      then (
+        out env opPUSHENVACCMANY; out_int env (n - nb + 1); out_int env nb;
+        emit env c' remaining)
+      else (
+        if n >= 0 && n <= 3
+        then out env (opPUSHENVACC0 + n)
+        else (out env opPUSHENVACC; out_int env n);
+        emit env c remaining)
   | Kpush :: Koffsetclosure ofs :: c ->
       if Int.equal ofs 0 || Int.equal ofs 1
       then out env(opPUSHOFFSETCLOSURE0 + ofs)
@@ -469,44 +630,25 @@ let rec emit env insns remaining = match insns with
   | instr :: c ->
       emit_instr env instr; emit env c remaining
 
-(* Initialization *)
-
-type to_patch = emitcodes * patches
-
 (* Substitution *)
-let subst_strcst s sc =
-  match sc with
-  | Const_sort _ | Const_b0 _ | Const_quality _ | Const_univ_level _ | Const_univ_instance _
-  | Const_val _ | Const_uint _ | Const_float _ | Const_evar _ -> sc
-  | Const_ind ind -> let kn,i = ind in Const_ind (subst_mind s kn, i)
-
-let subst_annot _ (a : annot_switch) = a
-
-let subst_reloc s ri =
-  match ri with
-  | Reloc_annot a -> Reloc_annot (subst_annot s a)
-  | Reloc_const sc -> Reloc_const (subst_strcst s sc)
-  | Reloc_getglobal kn -> Reloc_getglobal (subst_constant s kn)
-  | Reloc_caml_prim _ -> ri
 
 let subst_patches subst p =
-  let infos = CArray.Smart.map (fun r -> subst_reloc subst r) p.reloc_infos in
-  { reloc_infos = infos; reloc_positions = p.reloc_positions }
+  let infos = CArray.Smart.map (fun r -> Reloc.subst subst r) p.reloc_infos in
+  { reloc_infos = infos }
 
-let subst_to_patch s (code, pl) =
-  (code, subst_patches s pl)
-
-type body_code =
-  | BCdefined of to_patch * fv
+type 'a pbody_code =
+  | BCdefined of bool array * 'a * patches
   | BCalias of Names.Constant.t
   | BCconstant
 
+type body_code = to_patch pbody_code
+
 let subst_body_code s = function
-| BCdefined (tp, fv) -> BCdefined (subst_to_patch s tp, fv)
+| BCdefined (m, x, tp) -> BCdefined (m, x, subst_patches s tp)
 | BCalias cu -> BCalias (subst_constant s cu)
 | BCconstant -> BCconstant
 
-let to_memory code =
+let to_memory fv code =
   let env = {
     out_buffer = Bytes.create 1024;
     out_position = 0;
@@ -516,18 +658,47 @@ let to_memory code =
     reloc_info = RelocTable.create 91;
   } in
   emit env code [];
-  (** Later uses of this string are all purely functional *)
-  let code = Bytes.sub_string env.out_buffer 0 env.out_position in
+  let code = compress_code env.out_buffer env.out_position in
   let code = CString.hcons code in
   let fold reloc id accu = (id, reloc) :: accu in
   let reloc = RelocTable.fold fold env.reloc_info [] in
   let reloc = List.sort (fun (id1, _) (id2, _) -> Int.compare id1 id2) reloc in
-  let reloc_infos = CArray.map_of_list snd reloc in
-  let reloc_positions = Positions.of_list (List.rev env.reloc_pos) in
-  let reloc = { reloc_infos; reloc_positions } in
+  let uid = ref 0 in
+  let table = ref [] in
+  let push r =
+    let id = !uid in
+    let () = table := r :: !table in
+    let () = incr uid in
+    Reloc.SReloc_indirect id
+  in
+  let map (_, r) =
+    let open NonSubstReloc in
+    match r with
+    | Reloc_getglobal cst -> Reloc.SReloc_getglobal cst
+    | Reloc_const (Const_ind ind) -> Reloc.SReloc_Const_ind ind
+    | Reloc_annot annot -> push (SReloc_annot annot)
+    | Reloc_caml_prim prm -> push (SReloc_caml_prim prm)
+    | Reloc_const (Const_sort s) -> push (SReloc_Const_sort s)
+    | Reloc_const (Const_evar e) -> push (SReloc_Const_evar e)
+    | Reloc_const (Const_b0 tag) -> push (SReloc_Const_b0 tag)
+    | Reloc_const (Const_univ_instance u) -> push (SReloc_Const_univ_instance u)
+    | Reloc_const (Const_val v) -> push (SReloc_Const_val v)
+    | Reloc_const (Const_uint i) -> push (SReloc_Const_uint i)
+    | Reloc_const (Const_float f) -> push (SReloc_Const_float f)
+    | Reloc_const (Const_string s) -> push (SReloc_Const_string s)
+  in
+  let reloc_infos = CArray.map_of_list map reloc in
+  let positions = Positions.of_list (List.rev env.reloc_pos) in
+  let reloc = { reloc_infos } in
+  let to_patch = {
+    tp_code = code;
+    tp_fv = fv;
+    tp_pos = positions;
+    tp_reloc = CArray.rev_of_list !table;
+  } in
   Array.iter (fun lbl ->
     (match lbl with
       Label_defined _ -> assert true
     | Label_undefined patchlist ->
         assert (patchlist = []))) env.label_table;
-  (code, reloc)
+  (to_patch, reloc)

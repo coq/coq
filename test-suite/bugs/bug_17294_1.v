@@ -20,7 +20,7 @@ Section ORecursion.
 
 End ORecursion.
 
-Context (A : Type).
+Parameter (A : Type).
 
 Definition O_prod_unit  : prod A -> prod (Or A).
   exact (fun (z : prod A) => pair (to A (fst z))).

@@ -85,6 +85,7 @@ type vstate = {
 include Ssrcommon.MakeState(struct
   type state = vstate option
   let init = None
+  let name = "ssrview"
 end)
 
 let vsINIT ~view ~subject_name ~to_clear =

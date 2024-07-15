@@ -156,7 +156,7 @@ let rec json_expr env = function
       ("what", json_str "expr:coerce");
       ("value", json_expr env a)
     ]
-  | MLaxiom -> json_dict [("what", json_str "expr:axiom")]
+  | MLaxiom _ -> json_dict [("what", json_str "expr:axiom")]
   | MLuint i -> json_dict [
       ("what", json_str "expr:int");
       ("int", json_str (Uint63.to_string i))
@@ -164,6 +164,10 @@ let rec json_expr env = function
   | MLfloat f -> json_dict [
       ("what", json_str "expr:float");
       ("float", json_str (Float64.to_string f))
+    ]
+  | MLstring s -> json_dict [
+      ("what", json_str "expr:string");
+      ("string", json_str (Pstring.to_string s))
     ]
   | MLparray(t,def) -> json_dict [
       ("what", json_str "expr:array");

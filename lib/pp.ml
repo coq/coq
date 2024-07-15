@@ -155,6 +155,10 @@ let rec pr_com ft s =
       Some s2 -> Format.pp_force_newline ft (); pr_com ft s2
     | None -> ()
 
+let pr_com ft s =
+  pr_com ft s;
+  Format.pp_print_break ft 0 0
+
 let start_pfx = "start."
 let end_pfx = "end."
 

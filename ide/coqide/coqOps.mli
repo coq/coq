@@ -41,6 +41,7 @@ object
 
   method get_n_errors : int
   method get_errors : (int * string) list
+  method get_warnings : (int * string) list
   method get_slaves_status : int * int * string CString.Map.t
   method backtrack_to_begin : unit -> unit task
   method handle_failure : handle_exn_rty -> unit task

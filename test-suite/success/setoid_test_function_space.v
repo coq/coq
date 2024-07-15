@@ -23,8 +23,8 @@ End feq.
 Infix "=f":= feq  (at level 80, right associativity).
 #[export] Hint Unfold feq. #[export] Hint Resolve feq_refl feq_sym feq_trans.
 
-Variable K:(nat -> nat)->Prop.
-Variable K_ext:forall a b, (K a)->(a =f b)->(K b).
+Parameter K:(nat -> nat)->Prop.
+Parameter K_ext:forall a b, (K a)->(a =f b)->(K b).
 
 Add Parametric Relation (A B : Type) : (A -> B) (@feq A B)
  reflexivity proved by (@feq_refl A B)

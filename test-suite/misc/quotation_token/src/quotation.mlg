@@ -9,6 +9,6 @@ GRAMMAR EXTEND Gram
   term: LEVEL "0"
     [ [ s = QUOTATION "foobar:" ->
         {
-          CAst.make ~loc Constrexpr.(CSort Glob_term.(UNamed (None, [CProp, 0]))) } ] ]
+          CAst.make ~loc Constrexpr.(CSort Constrexpr_ops.expr_Prop_sort) } ] ]
   ;
 END

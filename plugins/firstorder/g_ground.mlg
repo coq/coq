@@ -36,7 +36,7 @@ let { Goptions.get = ground_depth } =
     ()
 
 let default_intuition_tac =
-  let tac _ _ = Auto.h_auto None [] (Some []) in
+  let tac _ _ = Auto.gen_auto None [] (Some []) in
   let name = { Tacexpr.mltac_plugin = "coq-core.plugins.firstorder"; mltac_tactic = "auto_with"; } in
   let entry = { Tacexpr.mltac_name = name; mltac_index = 0 } in
   Tacenv.register_ml_tactic name [| tac |];
@@ -79,6 +79,11 @@ let gen_ground_tac flag taco ids bases =
         let seq, sigma = extend_with_auto_hints ~flags (pf_env gl) sigma bases seq in
         tclTHEN (Proofview.Unsafe.tclEVARS sigma) (k seq)
         end
+      in
+      let () =
+        if Tacinterp.get_debug()=Tactic_debug.DebugOn 0
+        then
+          Feedback.msg_debug (Printer.Debug.pr_goal gl)
       in
       let result=ground_tac ~flags solver startseq in
       result
@@ -129,7 +134,7 @@ TACTIC EXTEND firstorder
       { gen_ground_tac true (Option.map (tactic_of_value ist) t) l l' }
 END
 
-TACTIC EXTEND gintuition
+TACTIC EXTEND gintuition DEPRECATED { Deprecation.make ~since:"8.20" () }
 | [ "gintuition" tactic_opt(t) ] ->
      { gen_ground_tac false (Option.map (tactic_of_value ist) t) [] [] }
 END

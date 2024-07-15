@@ -189,6 +189,14 @@ module Quality = struct
   module Set = CSet.Make(Self)
   module Map = CMap.Make(Self)
 
+  type pattern =
+    | PQVar of int option | PQConstant of constant
+
+  let pattern_match ps s qusubst =
+    match ps, s with
+    | PQConstant qc, QConstant qc' -> if Constants.equal qc qc' then Some qusubst else None
+    | PQVar qio, q -> Some (Partial_subst.maybe_add_quality qio q qusubst)
+    | PQConstant _, QVar _ -> None
 end
 
 module QConstraint = struct
@@ -270,6 +278,14 @@ let qsort q u = QSort (q, u)
 
 let sort_of_univ u =
   if Universe.is_type0 u then set else Type u
+
+let make q u =
+  let open Quality in
+  match q with
+  | QVar q -> qsort q u
+  | QConstant QSProp -> sprop
+  | QConstant QProp -> prop
+  | QConstant QType -> sort_of_univ u
 
 let compare s1 s2 =
   if s1 == s2 then 0 else
@@ -460,3 +476,26 @@ let pr_sort_family = function
   | InSet -> Pp.(str "Set")
   | InType -> Pp.(str "Type")
   | InQSort -> Pp.(str "Type") (* FIXME? *)
+
+type pattern =
+  | PSProp | PSSProp | PSSet | PSType of int option | PSQSort of int option * int option
+
+let extract_level u =
+  match Universe.level u with
+  | Some l -> l
+  | None -> CErrors.anomaly Pp.(str "Tried to extract level of an algebraic universe")
+
+let extract_sort_level = function
+  | Type u
+  | QSort (_, u) -> extract_level u
+  | Prop | SProp | Set -> Univ.Level.set
+
+let pattern_match ps s qusubst =
+  match ps, s with
+  | PSProp, Prop -> Some qusubst
+  | PSSProp, SProp -> Some qusubst
+  | PSSet, Set -> Some qusubst
+  | PSType uio, Set -> Some (Partial_subst.maybe_add_univ uio Univ.Level.set qusubst)
+  | PSType uio, Type u -> Some (Partial_subst.maybe_add_univ uio (extract_level u) qusubst)
+  | PSQSort (qio, uio), s -> Some (qusubst |> Partial_subst.maybe_add_quality qio (quality s) |> Partial_subst.maybe_add_univ uio (extract_sort_level s))
+  | (PSProp | PSSProp | PSSet | PSType _), _ -> None

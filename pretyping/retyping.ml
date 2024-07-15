@@ -180,14 +180,14 @@ let retype ?(polyprop=true) sigma =
         strip_outer_cast sigma
           (subst_type env sigma (type_of env f) (Array.to_list args))
     | Proj (p,_,c) ->
-       let ty = type_of env c in
-       EConstr.of_constr (try
-           Inductiveops.type_of_projection_knowing_arg env sigma p c ty
-         with Invalid_argument _ -> retype_error BadRecursiveType)
+      let ty = type_of env c in
+      (try Inductiveops.type_of_projection_knowing_arg env sigma p c ty
+        with Invalid_argument _ -> retype_error BadRecursiveType)
     | Cast (c,_, t) -> t
     | Sort _ | Prod _ -> mkSort (sort_of env cstr)
     | Int _ -> EConstr.of_constr (Typeops.type_of_int env)
     | Float _ -> EConstr.of_constr (Typeops.type_of_float env)
+    | String _ -> EConstr.of_constr (Typeops.type_of_string env)
     | Array(u, _, _, ty) ->
       let arr = EConstr.of_constr @@ Typeops.type_of_array env (EInstance.kind sigma u) in
       mkApp(arr, [|ty|])
@@ -217,12 +217,15 @@ let retype ?(polyprop=true) sigma =
       let u = EInstance.kind sigma u in
       let mip = lookup_mind_specif env ind in
       let paramtyps = make_param_univs env sigma (ind,u) args in
-      EConstr.of_constr
-        (Inductive.type_of_inductive_knowing_parameters
-           ~polyprop (mip, u) paramtyps)
+      let (ty, _) = Inductive.type_of_inductive_knowing_parameters ~polyprop (mip, u) paramtyps in
+      EConstr.of_constr ty
     | Construct (cstr, u) ->
       let u = EInstance.kind sigma u in
-      EConstr.of_constr (type_of_constructor env (cstr, u))
+      let (ind, _) = cstr in
+      let mip = lookup_mind_specif env ind in
+      let paramtyps = make_param_univs env sigma (ind, u) args in
+      let (ty, _) = Inductive.type_of_constructor_knowing_parameters (cstr, u) mip paramtyps in
+      EConstr.of_constr ty
     | _ -> assert false
 
   and make_param_univs env sigma indu args =
@@ -267,12 +270,12 @@ let type_of_global_reference_knowing_conclusion env sigma c conclty =
   match EConstr.kind sigma c with
     | Ind (ind,u) ->
         let spec = Inductive.lookup_mind_specif env ind in
-          type_of_inductive_knowing_conclusion env sigma (spec, EInstance.kind sigma u) conclty
+          type_of_inductive_knowing_conclusion env sigma (spec, u) conclty
     | Const (cst, u) ->
         let t = constant_type_in env (cst, EInstance.kind sigma u) in
           sigma, EConstr.of_constr t
     | Var id -> sigma, type_of_var env id
-    | Construct (cstr, u) -> sigma, EConstr.of_constr (type_of_constructor env (cstr, EInstance.kind sigma u))
+    | Construct (cstr, u) -> sigma, type_of_constructor env (cstr, u)
     | _ -> assert false
 
 let get_type_of ?(polyprop=true) ?(lax=false) env sigma c =
@@ -326,6 +329,9 @@ let expand_projection env sigma pr c args =
     mkApp (mkConstU (Projection.constant pr,u),
            Array.of_list (ind_args @ (c :: args)))
 
+let relevance_of_projection_repr env (p, u) =
+  ERelevance.make @@ Relevanceops.relevance_of_projection_repr env (p, EConstr.Unsafe.to_instance u)
+
 let relevance_of_term env sigma c =
   if Environ.sprop_allowed env then
     let rec aux rels c =
@@ -333,38 +339,44 @@ let relevance_of_term env sigma c =
       | Rel n ->
         let len = Range.length rels in
         if n <= len then Range.get rels (n - 1)
-        else Relevanceops.relevance_of_rel env (n - len)
-      | Var x -> Relevanceops.relevance_of_var env x
-      | Sort _ -> Sorts.Relevant
+        else ERelevance.make @@ Relevanceops.relevance_of_rel env (n - len)
+      | Var x -> ERelevance.make @@ Relevanceops.relevance_of_var env x
+      | Sort _ -> ERelevance.relevant
       | Cast (c, _, _) -> aux rels c
-      | Prod _ -> Sorts.Relevant
+      | Prod _ -> ERelevance.relevant
       | Lambda ({binder_relevance=r}, _, bdy) ->
         aux (Range.cons r rels) bdy
       | LetIn ({binder_relevance=r}, _, _, bdy) ->
         aux (Range.cons r rels) bdy
       | App (c, _) -> aux rels c
       | Const (c,u) ->
-        let u = EInstance.kind sigma u in
-        Relevanceops.relevance_of_constant env (c,u)
-      | Ind _ -> Sorts.Relevant
+        let u = Unsafe.to_instance u in
+        ERelevance.make @@ Relevanceops.relevance_of_constant env (c,u)
+      | Ind _ -> ERelevance.relevant
       | Construct (c,u) ->
         let u = Unsafe.to_instance u in
-        Relevanceops.relevance_of_constructor env (c,u)
+        ERelevance.make @@ Relevanceops.relevance_of_constructor env (c,u)
       | Case (_, _, _, (_, r), _, _, _) -> r
       | Fix ((_,i),(lna,_,_)) -> (lna.(i)).binder_relevance
       | CoFix (i,(lna,_,_)) -> (lna.(i)).binder_relevance
       | Proj (p, r, _) -> r
-      | Int _ | Float _ | Array _ -> Sorts.Relevant
-      | Meta _ | Evar _ -> Sorts.Relevant
-
+      | Evar (evk, _) ->
+          let evi = Evd.find_undefined sigma evk in
+          Evd.evar_relevance evi
+      | Int _ | Float _ | String _ | Array _ -> ERelevance.relevant
+      | Meta _ -> ERelevance.relevant
     in
     aux Range.empty c
-  else Sorts.Relevant
+  else ERelevance.relevant
+
+let is_term_irrelevant env sigma c =
+  let r = relevance_of_term env sigma c in
+  Evd.is_relevance_irrelevant sigma r
 
 let relevance_of_type env sigma t =
   let s = get_sort_of env sigma t in
-  ESorts.relevance_of_sort sigma s
+  ESorts.relevance_of_sort s
 
 let relevance_of_sort = ESorts.relevance_of_sort
 
-let relevance_of_sort_family sigma f = Evarutil.nf_relevance sigma (Sorts.relevance_of_sort_family f)
+let relevance_of_sort_family sigma f = ERelevance.make (Sorts.relevance_of_sort_family f)

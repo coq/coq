@@ -153,7 +153,7 @@ let get_inductive_deps ~noprop env kn =
         | None -> accu)
       | Rel _ | Var _ | Sort _ | Prod _ | Lambda _ | LetIn _ | Proj _
       | Construct _ | Case _ | CoFix _ | Fix _ | Meta _ | Evar _ | Int _
-      | Float _ | Array _ -> Termops.fold_constr_with_full_binders env sigma EConstr.push_rel aux env (List.fold_left (aux env) accu a) c
+      | Float _ | String _ | Array _ -> Termops.fold_constr_with_full_binders env sigma EConstr.push_rel aux env (List.fold_left (aux env) accu a) c
     in
     let fold i accu (constr_ctx,_) =
       let constr_ctx, _ = List.chop mip.mind_consnrealdecls.(i) constr_ctx in
@@ -468,7 +468,7 @@ let build_beq_scheme env handle kn =
     | Fix _ -> None
 
     (* Not building a type *)
-    | Proj _ | CoFix _ | Int _ | Float _ -> None
+    | Proj _ | CoFix _ | Int _ | Float _ | String _ -> None
 
     | Meta _ | Evar _ -> assert false (* kernel terms *)
     in
@@ -601,7 +601,7 @@ let build_beq_scheme env handle kn =
     | Prod _ -> raise InductiveWithProduct (* loss of decidable if uncountable domain *)
 
     | Meta _ | Evar _ -> None (* assert false! *)
-    | Int _ | Float _ | Array _ -> None
+    | Int _ | Float _ | String _ | Array _ -> None
     in
     Option.map (fun c -> Term.it_mkLambda_or_LetIn c ctx) c
 
@@ -673,7 +673,7 @@ let build_beq_scheme env handle kn =
   let nb_ind = Array.length mib.mind_packets in
   let truly_recursive =
     let open Declarations in
-    let is_rec ra = match Declareops.dest_recarg ra with Mrec _ | Nested _ -> true | Norec -> false in
+    let is_rec ra = match Declareops.dest_recarg ra with Mrec _ -> true | Norec -> false in
     Array.exists
       (fun mip -> Array.exists (List.exists is_rec) (Declareops.dest_subterms mip.mind_recargs))
       mib.mind_packets in
@@ -735,11 +735,11 @@ let build_beq_scheme env handle kn =
     (* do the [| C1 ... =>  match Y with ... end
                ...
                Cn => match Y with ... end |]  part *)
-    let rci = Sorts.Relevant in (* returning a boolean, hence relevant *)
+    let rci = EConstr.ERelevance.relevant in (* returning a boolean, hence relevant *)
     let open Inductiveops in
     let constrs =
-      let params = Context.Rel.instance_list mkRel 0 params_ctx in
-      get_constructors env (make_ind_family (indu, params))
+      let params = Context.Rel.instance_list EConstr.mkRel 0 params_ctx in
+      get_constructors env (make_ind_family (on_snd EConstr.EInstance.make indu, params))
     in
     let make_andb_list = function
       | [] -> tt ()
@@ -751,6 +751,7 @@ let build_beq_scheme env handle kn =
         (* A primitive record *)
         let nb_cstr_args = List.length constrs.(0).cs_args in
         let _,_,eqs = List.fold_right (fun decl (ndx,env_lift,l) ->
+          let decl = EConstr.Unsafe.to_rel_decl decl in
           let env_lift' = push_env_lift decl env_lift in
           match decl with
           | RelDecl.LocalDef (na,b,t) -> (ndx-1,env_lift',l)
@@ -784,6 +785,7 @@ let build_beq_scheme env handle kn =
             let cc =
               if Int.equal i j then
                 let _,_,eqs = List.fold_right (fun decl (ndx,env_lift,l) ->
+                   let decl = EConstr.Unsafe.to_rel_decl decl in
                    let env_lift' = push_env_lift decl env_lift in
                    match decl with
                    | RelDecl.LocalDef (na,b,t) -> (ndx-1,env_lift',l)
@@ -804,7 +806,7 @@ let build_beq_scheme env handle kn =
               else
                 ff ()
             in
-            let cs_argsj = translate_context env_lift_recparams_fix_nonrecparams_tomatch_csargsi constrs.(j).cs_args in
+            let cs_argsj = translate_context env_lift_recparams_fix_nonrecparams_tomatch_csargsi (EConstr.Unsafe.to_rel_context constrs.(j).cs_args) in
             Term.it_mkLambda_or_LetIn cc cs_argsj)
           in
           let predj = EConstr.of_constr (translate_term env_lift_recparams_fix_nonrecparams_tomatch_csargsi pred) in
@@ -813,7 +815,7 @@ let build_beq_scheme env handle kn =
               ci (predj,rci) NoInvert (EConstr.mkRel (nb_cstr_args + 1))
               (EConstr.of_constr_array ar2)
           in
-          let cs_argsi = translate_context env_lift_recparams_fix_nonrecparams_tomatch constrs.(i).cs_args in
+          let cs_argsi = translate_context env_lift_recparams_fix_nonrecparams_tomatch (EConstr.Unsafe.to_rel_context constrs.(i).cs_args) in
           Term.it_mkLambda_or_LetIn (EConstr.Unsafe.to_constr case) cs_argsi)
         in
         let predi = EConstr.of_constr (translate_term env_lift_recparams_fix_nonrecparams_tomatch pred) in
@@ -852,7 +854,7 @@ let build_beq_scheme env handle kn =
   res, uctx
 
 let beq_scheme_kind =
-  Ind_tables.declare_mutual_scheme_object "_beq"
+  Ind_tables.declare_mutual_scheme_object "beq"
   ~deps:build_beq_scheme_deps
   build_beq_scheme
 
@@ -965,7 +967,7 @@ let do_replace_bl handle (ind,u as indu) aavoid narg lft rgt =
           let (ind',u as indu),v = try destruct_ind env sigma tt1
           (* trick so that the good sequence is returned*)
                 with e when CErrors.noncritical e -> indu,[||]
-          in if Ind.CanOrd.equal ind' ind
+          in if Environ.QInd.equal env ind' ind
              then Tacticals.tclTHENLIST [Equality.replace t1 t2; Auto.default_auto ; aux q1 q2 ]
              else (
                let c = get_scheme handle (!bl_scheme_kind_aux ()) ind' in
@@ -1125,13 +1127,14 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
  replace bi with ai; auto || replace bi with ai by  apply typeofbi_prod ; auto
                *)
               Proofview.Goal.enter begin fun gl ->
+                let env = Proofview.Goal.env gl in
                 let concl = Proofview.Goal.concl gl in
                 let sigma = Tacmach.project gl in
                 match EConstr.kind sigma concl with
                 | App (c,ca) -> (
                   match EConstr.kind sigma c with
                   | Ind (indeq, u) ->
-                     if GlobRef.CanOrd.equal (GlobRef.IndRef indeq) Coqlib.(lib_ref "core.eq.type")
+                     if Environ.QGlobRef.equal env (GlobRef.IndRef indeq) Coqlib.(lib_ref "core.eq.type")
                      then
                        Tacticals.tclTHEN
                          (do_replace_bl handle ind
@@ -1181,7 +1184,7 @@ let make_bl_scheme_deps env ind =
   Ind_tables.SchemeMutualDep (ind, beq_scheme_kind) :: List.map map inds
 
 let bl_scheme_kind =
-  Ind_tables.declare_mutual_scheme_object "_dec_bl"
+  Ind_tables.declare_mutual_scheme_object "dec_bl"
   ~deps:make_bl_scheme_deps
   make_bl_scheme
 
@@ -1312,7 +1315,7 @@ let make_lb_scheme_deps env ind =
   Ind_tables.SchemeMutualDep (ind, beq_scheme_kind) :: List.map map inds
 
 let lb_scheme_kind =
-  Ind_tables.declare_mutual_scheme_object "_dec_lb"
+  Ind_tables.declare_mutual_scheme_object "dec_lb"
   ~deps:make_lb_scheme_deps
   make_lb_scheme
 
@@ -1421,7 +1424,14 @@ let compute_dec_tact handle (ind,u) lnamesparrec nparrec =
           let blI = mkConstU (c,u) in
           let c = get_scheme handle lb_scheme_kind ind in
           let lbI = mkConstU (c,u) in
+          (* univ polymorphic schemes may have extra constraints
+             from using univ monomorphic f_equal and the like *)
+          let env, sigma = Proofview.Goal.(env gl, sigma gl) in
+          let sigma, _ = Typing.type_of env sigma (EConstr.of_constr blI) in
+          let sigma, _ = Typing.type_of env sigma (EConstr.of_constr lbI) in
           Tacticals.tclTHENLIST [
+              Proofview.Unsafe.tclEVARS sigma;
+
               (*we do this so we don't have to prove the same goal twice *)
               assert_by (Name freshH) (EConstr.of_constr (
                                            mkApp(sumbool(),[|eqtrue eqbnm; eqfalse eqbnm|])
@@ -1493,7 +1503,7 @@ let make_eq_decidability env handle mind =
   ([|ans|], ctx)
 
 let eq_dec_scheme_kind =
-  Ind_tables.declare_mutual_scheme_object "_eq_dec"
+  Ind_tables.declare_mutual_scheme_object "eq_dec"
   ~deps:(fun _ ind -> [SchemeMutualDep (ind, bl_scheme_kind); SchemeMutualDep (ind, lb_scheme_kind)])
   make_eq_decidability
 

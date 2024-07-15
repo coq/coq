@@ -46,7 +46,7 @@ Class IsTrunc (n : trunc_index) (A : Type) : Type :=
 Notation IsHSet := (IsTrunc minus_two).
 
 Class Funext :=
-  { isequiv_apD10 :> forall (A : Type) (P : A -> Type) f g, IsEquiv (@apD10 A P f g) }.
+  { isequiv_apD10 :: forall (A : Type) (P : A -> Type) f g, IsEquiv (@apD10 A P f g) }.
 
 Local Open Scope equiv_scope.
 

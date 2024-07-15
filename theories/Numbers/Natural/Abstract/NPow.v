@@ -122,6 +122,12 @@ Lemma pow_le_mono_r_iff : forall a b c, 1<a ->
   (b<=c <-> a^b <= a^c).
 Proof. wrap pow_le_mono_r_iff. Qed.
 
+Lemma pow_lower_bound : forall a b, a~= 0 -> 1 <= a ^ b.
+Proof.
+  intros a b; rewrite <-(pow_0_r a); intros H.
+  exact (pow_le_mono_r _ _ _ H (le_0_l _)).
+Qed.
+
 (** For any a>1, the a^x function is above the identity function *)
 
 Lemma pow_gt_lin_r : forall a b, 1<a -> b < a^b.

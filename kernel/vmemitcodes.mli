@@ -18,15 +18,17 @@ type reloc_info =
   | Reloc_caml_prim of caml_prim
 
 type to_patch
+type patches
 
-val patch : to_patch -> (reloc_info -> int) -> Vmvalues.tcode
+val patch : (to_patch * patches) -> (reloc_info -> int) -> Vmvalues.tcode * fv
 
-type body_code =
-  | BCdefined of to_patch * fv
+type 'a pbody_code =
+  | BCdefined of bool array * 'a * patches
   | BCalias of Constant.t
   | BCconstant
 
+type body_code = to_patch pbody_code
 
-val subst_body_code : Mod_subst.substitution -> body_code -> body_code
+val subst_body_code : Mod_subst.substitution -> 'a pbody_code -> 'a pbody_code
 
-val to_memory : bytecodes -> to_patch
+val to_memory : fv -> bytecodes -> to_patch * patches

@@ -10,6 +10,7 @@
 
 open Proofview
 open Tac2ffi
+open Tac2val
 
 (** Interface for defining external tactics via a high-level spec. *)
 

@@ -217,6 +217,12 @@ let eval_caml_prim = function
 | CAML_Arrayset -> 3, Vmvalues.parray_set
 | CAML_Arraycopy -> 4, Vmvalues.parray_copy
 | CAML_Arraylength -> 5, Vmvalues.parray_length
+| CAML_Stringmake -> 6, Vmvalues.pstring_make
+| CAML_Stringlength -> 7, Vmvalues.pstring_length
+| CAML_Stringget -> 8, Vmvalues.pstring_get
+| CAML_Stringsub -> 9, Vmvalues.pstring_sub
+| CAML_Stringcat -> 10, Vmvalues.pstring_cat
+| CAML_Stringcompare -> 11, Vmvalues.pstring_compare
 
 let make_static_prim table =
   let fold table prim =
@@ -232,6 +238,12 @@ let make_static_prim table =
     CAML_Arrayset;
     CAML_Arraycopy;
     CAML_Arraylength;
+    CAML_Stringmake;
+    CAML_Stringlength;
+    CAML_Stringget;
+    CAML_Stringsub;
+    CAML_Stringcat;
+    CAML_Stringcompare;
   ] in
   let table, prims = CList.fold_left_map fold table prims in
   table, Array.of_list prims
@@ -263,8 +275,10 @@ let rec slot_for_getglobal env sigma kn envcache table =
       | None -> set_global (val_of_constant kn) table
       | Some code ->
         match code with
-        | BCdefined (code, fv) ->
-           let v = eval_to_patch env sigma (code, fv) envcache table in
+        | BCdefined (_, index, patches) ->
+           let code = Environ.lookup_vm_code index env in
+           let code = (code, patches) in
+           let v = eval_to_patch env sigma code envcache table in
            set_global v table
         | BCalias kn' -> slot_for_getglobal env sigma kn' envcache table
         | BCconstant -> set_global (val_of_constant kn) table
@@ -299,14 +313,14 @@ and slot_for_fv env sigma fv envcache table =
       | Some v -> v
       end
 
-and eval_to_patch env sigma (code, fv) envcache table =
+and eval_to_patch env sigma code envcache table =
   let slots = function
     | Reloc_annot a -> slot_for_annot a table
     | Reloc_const sc -> slot_for_str_cst sc table
     | Reloc_getglobal kn -> slot_for_getglobal env sigma kn envcache table
     | Reloc_caml_prim op -> slot_for_caml_prim op table
   in
-  let tc = patch code slots in
+  let tc, fv = patch code slots in
   let vm_env =
     (* Environment should look like a closure, so free variables start at slot 2. *)
     let a = Array.make (Array.length fv + 2) crazy_val in
@@ -324,7 +338,7 @@ and eval_to_patch env sigma (code, fv) envcache table =
 
 and val_of_constr env sigma c envcache table =
   match compile ~fail_on_error:true env sigma c with
-  | Some v -> eval_to_patch env sigma v envcache table
+  | Some (_, code, patch) -> eval_to_patch env sigma (code, patch) envcache table
   | None -> assert false
 
 let global_table =

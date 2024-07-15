@@ -12,7 +12,6 @@ open Names
 
 type vodigest =
   | Dvo_or_vi of Digest.t        (* The digest of the seg_lib part *)
-  | Dvivo of Digest.t * Digest.t (* The digest of the seg_lib + seg_univ part *)
 
 val digest_match : actual:vodigest -> required:vodigest -> bool
 
@@ -58,6 +57,7 @@ val concat_private : private_constants -> private_constants -> private_constants
 
 val inline_private_constants :
   Environ.env -> private_constants Entries.proof_output -> Constr.constr Univ.in_universe_context_set
+(** Abstract the private constants of a proof over the proof output *)
 
 val push_private_constants : Environ.env -> private_constants -> Environ.env
 (** Push the constants in the environment if not already there. *)
@@ -70,10 +70,6 @@ val is_joined_environment : safe_environment -> bool
 (** {6 Enriching a safe environment } *)
 
 (** Insertion of global axioms or definitions *)
-
-type global_declaration =
-| ConstantEntry : Entries.constant_entry -> global_declaration
-| OpaqueEntry : unit Entries.opaque_entry -> global_declaration
 
 type side_effect_declaration =
 | DefinitionEff : Entries.definition_entry -> side_effect_declaration
@@ -91,7 +87,7 @@ val export_private_constants :
 (** returns the main constant *)
 val add_constant :
   ?typing_flags:Declarations.typing_flags ->
-  Label.t -> global_declaration -> Constant.t safe_transformer
+  Label.t -> Entries.constant_entry -> Constant.t safe_transformer
 
 (** Similar to add_constant but also returns a certificate *)
 val add_private_constant :
@@ -125,6 +121,11 @@ val is_filled_opaque : Opaqueproof.opaque_handle -> safe_environment -> bool
 val repr_certificate : opaque_certificate ->
   Constr.t * Univ.ContextSet.t Opaqueproof.delayed_universes
 
+(** {5 Rewrite rules} *)
+
+(** Add a rewrite rule corresponding to the equality witnessed by the constant. *)
+val add_rewrite_rules : Label.t -> Declarations.rewrite_rules_body -> safe_environment -> safe_environment
+
 (** {5 Inductive blocks} *)
 
 (** Adding an inductive type *)
@@ -155,6 +156,7 @@ val add_constraints :
 (* val next_universe : int safe_transformer *)
 
 (** Setting the type theory flavor *)
+val set_rewrite_rules_allowed : bool -> safe_transformer0
 val set_impredicative_set : bool -> safe_transformer0
 val set_indices_matter : bool -> safe_transformer0
 val set_typing_flags : Declarations.typing_flags -> safe_transformer0
@@ -229,16 +231,16 @@ type compiled_library
 
 val module_of_library : compiled_library -> Declarations.module_body
 val univs_of_library : compiled_library -> Univ.ContextSet.t
+val check_flags_for_library : compiled_library -> safe_transformer0
 
 val start_library : DirPath.t -> ModPath.t safe_transformer
 
 val export :
   output_native_objects:bool ->
   safe_environment -> DirPath.t ->
-    ModPath.t * compiled_library * Nativelib.native_library
+    ModPath.t * compiled_library * Vmlibrary.compiled_library * Nativelib.native_library
 
-(* Constraints are non empty iff the file is a vi2vo *)
-val import : compiled_library -> Univ.ContextSet.t -> vodigest ->
+val import : compiled_library -> Vmlibrary.on_disk -> vodigest ->
   ModPath.t safe_transformer
 
 (** {6 Safe typing judgments } *)
@@ -267,5 +269,4 @@ val mind_of_delta_kn_senv : safe_environment -> KerName.t -> MutInd.t
 val register_inline : Constant.t -> safe_transformer0
 val register_inductive : inductive -> 'a CPrimitives.prim_ind -> safe_transformer0
 
-val set_strategy :
-  Names.Constant.t Names.tableKey -> Conv_oracle.level -> safe_transformer0
+val set_strategy : Conv_oracle.evaluable -> Conv_oracle.level -> safe_transformer0

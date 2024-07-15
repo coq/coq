@@ -52,6 +52,12 @@ val push : 'a document -> 'a -> unit
     @raise Empty *)
 val pop : 'a document -> 'a
 
+(** preserve the last error(s) (tooltip fix) *)
+val set_errors : 'a document -> string list -> unit
+
+(** get the last error(s) (tooltip fix) *)
+val get_errors : 'a document -> string list
+
 (** Assign the state_id of the tip.
     @raise Empty *)
 val assign_tip_id : 'a document -> id -> unit

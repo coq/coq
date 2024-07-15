@@ -13,7 +13,7 @@ open Names
 open Libnames
 open Nametab
 open Tac2expr
-open Tac2ffi
+open Tac2val
 
 (** Ltac2 global environment *)
 
@@ -95,8 +95,18 @@ val interp_alias : ltac_constant -> alias_data
 
 (** {5 Toplevel definition of notations} *)
 
-val define_notation : ltac_notation -> raw_tacexpr -> unit
-val interp_notation : ltac_notation -> raw_tacexpr
+(* no deprecation info: deprecation warning is emitted by the parser *)
+type notation_data =
+  | UntypedNota of raw_tacexpr
+  | TypedNota of {
+      nota_prms : int;
+      nota_argtys : int glb_typexpr Id.Map.t;
+      nota_ty : int glb_typexpr;
+      nota_body : glb_tacexpr;
+    }
+
+val define_notation : ltac_notation -> notation_data -> unit
+val interp_notation : ltac_notation -> notation_data
 
 (** {5 Name management} *)
 

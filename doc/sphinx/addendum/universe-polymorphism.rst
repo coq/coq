@@ -608,6 +608,10 @@ Printing universes
    If :n:`@string` ends in ``.dot`` or ``.gv``, the constraints are printed in the DOT
    language, and can be processed by Graphviz tools. The format is
    unspecified if `string` doesn’t end in ``.dot`` or ``.gv``.
+   If :n:`@string` is a relative filename, it refers to the directory
+   specified by the command line option `-output-directory`, if set
+   (see :ref:`command-line-options`) and otherwise, the current
+   directory. Use :cmd:`Pwd` to display the current directory.
 
 Polymorphic definitions
 ~~~~~~~~~~~~~~~~~~~~~~~

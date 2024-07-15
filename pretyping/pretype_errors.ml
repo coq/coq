@@ -32,9 +32,11 @@ type position = (Id.t * Locus.hyp_location_flag) option
 
 type position_reporting = (position * int) * constr
 
-type subterm_unification_error = bool * position_reporting * position_reporting * (constr * constr * unification_error) option
+type subterm_unification_error = bool * position_reporting * position_reporting
 
-type type_error = (constr, types) ptype_error
+type type_error = (constr, types, ERelevance.t) ptype_error
+
+let of_type_error = map_ptype_error ERelevance.make EConstr.of_constr
 
 type pretype_error =
   (* Old Case *)
@@ -120,7 +122,8 @@ let error_ill_typed_rec_body ?loc env sigma i na jl tys =
 
 let error_elim_arity ?loc env sigma pi c a =
   (* XXX type_errors should have a 'sort type parameter *)
-  let a = Option.map (fun (x,s) -> x, EConstr.Unsafe.to_sorts s) a in
+  let a = Option.map EConstr.Unsafe.to_sorts a in
+  let pi = Util.on_snd EConstr.Unsafe.to_instance pi in
   raise_type_error ?loc
     (env, sigma, ElimArity (pi, c, a))
 

@@ -13,6 +13,7 @@ open Names
 type retroknowledge = {
     retro_int63 : Constant.t option;
     retro_float64 : Constant.t option;
+    retro_string : Constant.t option;
     retro_array : Constant.t option;
     retro_bool : (constructor * constructor) option; (* true, false *)
     retro_carry : (constructor * constructor) option; (* C0, C1 *)

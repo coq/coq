@@ -122,8 +122,8 @@ let mkRApp f args = if args = [] then f else DAst.make @@ GApp (f, args)
 let mkRVar id = DAst.make @@ GRef (GlobRef.VarRef id,None)
 let mkRltacVar id = DAst.make @@ GVar (id)
 let mkRCast rc rt =  DAst.make @@ GCast (rc, Some DEFAULTcast, rt)
-let mkRType =  DAst.make @@ GSort (UAnonymous {rigid=UnivRigid})
-let mkRProp =  DAst.make @@ GSort (UNamed (None, [GProp, 0]))
+let mkRType =  DAst.make @@ GSort Glob_ops.glob_Type_sort
+let mkRProp =  DAst.make @@ GSort Glob_ops.glob_Prop_sort
 let mkRArrow rt1 rt2 = DAst.make @@ GProd (Anonymous, None, Explicit, rt1, rt2)
 let mkRConstruct c = DAst.make @@ GRef (GlobRef.ConstructRef c,None)
 let mkRInd mind = DAst.make @@ GRef (GlobRef.IndRef mind,None)
@@ -175,6 +175,9 @@ let interp_refine env sigma ist ~concl rc =
     expand_evars = true;
     program_mode = false;
     polymorphic = false;
+    undeclared_evars_patvars = false;
+    patvars_abstract = false;
+    unconstrained_sorts = false;
   }
   in
   let sigma, c = Pretyping.understand_ltac flags env sigma vars kind rc in
@@ -431,7 +434,7 @@ let abs_evars env sigma0 ?(rigid = []) (sigma, c0) =
     | _ -> EConstr.map_with_binders sigma ((+) 1) get i c in
     let rec loop c i = function
     | (_, (n, t)) :: evl ->
-      loop (mkLambda (make_annot (mk_evar_name n) Sorts.Relevant, get (i - 1) t, c)) (i - 1) evl
+      loop (mkLambda (make_annot (mk_evar_name n) ERelevance.relevant, get (i - 1) t, c)) (i - 1) evl
     | [] -> c in
     loop (get 1 c0) 1 evlist, List.map fst evlist, ucst
 
@@ -524,7 +527,7 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
   | (_, (n, t, _)) :: evl ->
     let t = get evlist (i - 1) t in
     let n = Name (Id.of_string (ssr_anon_hyp ^ string_of_int n)) in
-    loopP evlist (RelDecl.LocalAssum (make_annot n Sorts.Relevant, t) :: accu) (i - 1) evl
+    loopP evlist (RelDecl.LocalAssum (make_annot n ERelevance.relevant, t) :: accu) (i - 1) evl
   in
   let rec loop c i = function
   | (_, (n, t, _)) :: evl ->
@@ -535,7 +538,7 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
     let t = get evlist (i - 1) t in
     let extra_args = List.rev_map (fun (k,_) -> mkRel (fst (lookup k i evlist))) t_evplist in
     let c = if extra_args = [] then c else app extra_args 1 c in
-    loop (mkLambda (make_annot (mk_evar_name n) Sorts.Relevant, t, c)) (i - 1) evl
+    loop (mkLambda (make_annot (mk_evar_name n) ERelevance.relevant, t, c)) (i - 1) evl
   | [] -> c in
   let res = loop (get evlist 1 c0) 1 evlist in
   List.length evlist, res
@@ -710,8 +713,8 @@ open Constrexpr
 open Util
 
 (** Constructors for constr_expr *)
-let mkCProp loc = CAst.make ?loc @@ CSort (UNamed (None, [CProp, 0]))
-let mkCType loc = CAst.make ?loc @@ CSort (UAnonymous {rigid=UnivRigid})
+let mkCProp loc = CAst.make ?loc @@ CSort Constrexpr_ops.expr_Prop_sort
+let mkCType loc = CAst.make ?loc @@ CSort Constrexpr_ops.expr_Type_sort
 let mkCVar ?loc id = CAst.make ?loc @@ CRef (qualid_of_ident ?loc id, None)
 let rec mkCHoles ?loc n =
   if n <= 0 then [] else (CAst.make ?loc @@ CHole (None)) :: mkCHoles ?loc (n - 1)
@@ -792,8 +795,7 @@ let saturate ?(beta=false) ?(bi_types=false) env sigma c ?(ty=Retyping.get_type_
    loop ty [] sigma m
 
 let dependent_apply_error =
-  try CErrors.user_err (Pp.str "Could not fill dependent hole in \"apply\"")
-  with err -> err
+  CErrors.UserError (Pp.str "Could not fill dependent hole in \"apply\"")
 
 (* TASSI: Sometimes Coq's apply fails. According to my experience it may be
  * related to goals that are products and with beta redexes. In that case it
@@ -1162,14 +1164,14 @@ let tacTYPEOF c = Goal.enter_one ~__LOC__ (fun g ->
     does not check anything. *)
 let unsafe_intro env decl b =
   let open Context.Named.Declaration in
-  Refine.refine ~typecheck:false begin fun sigma ->
+  Refine.refine_with_principal ~typecheck:false begin fun sigma ->
     let ctx = Environ.named_context_val env in
     let nctx = EConstr.push_named_context_val decl ctx in
     let inst = EConstr.identity_subst_val (Environ.named_context_val env) in
     let ninst = SList.cons (EConstr.mkRel 1) inst in
     let nb = EConstr.Vars.subst1 (EConstr.mkVar (get_id decl)) b in
-    let sigma, ev = Evarutil.new_pure_evar ~principal:true nctx sigma nb in
-    sigma, EConstr.mkNamedLambda_or_LetIn sigma decl (EConstr.mkEvar (ev, ninst))
+    let sigma, ev = Evarutil.new_pure_evar nctx sigma nb in
+    sigma, EConstr.mkNamedLambda_or_LetIn sigma decl (EConstr.mkEvar (ev, ninst)), Some ev
   end
 
 let set_decl_id id = let open Context in function
@@ -1306,7 +1308,7 @@ let tclOPTION o d =
 let tacIS_INJECTION_CASE ?ty t = begin
   tclOPTION ty (tacTYPEOF t) >>= fun ty ->
   tacEVAL_TO_QUANTIFIED_IND ty >>= fun (mind,_) ->
-  tclUNIT (Coqlib.check_ind_ref "core.eq.type" mind)
+  tclUNIT (Coqlib.check_ref "core.eq.type" (GlobRef.IndRef mind))
 end
 
 let tclWITHTOP tac = Goal.enter begin fun gl ->
@@ -1350,12 +1352,13 @@ let unprotecttac =
 module type StateType = sig
   type state
   val init : state
+  val name : string
 end
 
 module MakeState(S : StateType) = struct
 
 let state_field : S.state Proofview_monad.StateStore.field =
-  Proofview_monad.StateStore.field ()
+  Proofview_monad.StateStore.field S.name
 
 (* FIXME: should not inject fresh_state, but initialize it at the beginning *)
 let lift_upd_state upd s =

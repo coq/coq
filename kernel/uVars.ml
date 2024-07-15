@@ -90,6 +90,10 @@ module Instance : sig
 
     val pr : (Sorts.QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
     val levels : t -> Quality.Set.t * Level.Set.t
+
+    type mask = Quality.pattern array * int option array
+
+    val pattern_match : mask -> t -> ('term, Quality.t, Level.t) Partial_subst.t -> ('term, Quality.t, Level.t) Partial_subst.t option
 end =
 struct
   type t = Quality.t array * Level.t array
@@ -193,6 +197,13 @@ struct
     CArray.equal Quality.equal xq yq
     && CArray.equal Level.equal xu yu
 
+  type mask = Quality.pattern array * int option array
+
+  let pattern_match (qmask, umask) (qs, us) tqus =
+    let tqus = Array.fold_left2 (fun tqus mask u -> Partial_subst.maybe_add_univ mask u tqus) tqus umask us in
+    match Array.fold_left2 (fun tqus mask q -> Quality.pattern_match mask q tqus |> function Some tqs -> tqs | None -> raise_notrace Exit) tqus qmask qs with
+    | tqs -> Some tqs
+    | exception Exit -> None
 end
 
 let eq_sizes (a,b) (a',b') = Int.equal a a' && Int.equal b b'
@@ -295,21 +306,21 @@ struct
 
   (** Universe contexts (variables as a list) *)
   let empty = (([||], [||]), (Instance.empty, Constraints.empty))
-  let is_empty (_, (univs, cst)) = Instance.is_empty univs && Constraints.is_empty cst
+  let is_empty (_, (univs, csts)) = Instance.is_empty univs && Constraints.is_empty csts
 
-  let pr prq prl ?variance (_, (univs, cst) as ctx) =
-    if is_empty ctx then mt() else
-      h (Instance.pr prq prl ?variance univs ++ str " |= ") ++ h (v 0 (Constraints.pr prl cst))
+  let pr prq prl ?variance (_, (univs, csts) as uctx) =
+    if is_empty uctx then mt() else
+      h (Instance.pr prq prl ?variance univs ++ str " |= ") ++ h (v 0 (Constraints.pr prl csts))
 
-  let hcons ((qnames, unames), (univs, cst)) =
-    ((Array.map Names.Name.hcons qnames, Array.map Names.Name.hcons unames), (Instance.hcons univs, hcons_constraints cst))
+  let hcons ((qnames, unames), (univs, csts)) =
+    ((Array.map Names.Name.hcons qnames, Array.map Names.Name.hcons unames), (Instance.hcons univs, hcons_constraints csts))
 
   let names ((names, _) : t) = names
-  let instance (_, (univs, _cst)) = univs
-  let constraints (_, (_univs, cst)) = cst
+  let instance (_, (univs, _csts)) = univs
+  let constraints (_, (_univs, csts)) = csts
 
-  let union ((qna, una), (univs, cst)) ((qna', una'), (univs', cst')) =
-    (Array.append qna qna', Array.append una una'), (Instance.append univs univs', Constraints.union cst cst')
+  let union ((qna, una), (univs, csts)) ((qna', una'), (univs', csts')) =
+    (Array.append qna qna', Array.append una una'), (Instance.append univs univs', Constraints.union csts csts')
 
   let size (_,(x,_)) = Instance.length x
 
@@ -323,18 +334,18 @@ struct
   let sort_qualities a =
     Array.sort Quality.compare a; a
 
-  let of_context_set f qctx (uctx, cst) =
+  let of_context_set f qctx (levels, csts) =
     let qctx = sort_qualities
         (Array.map_of_list (fun q -> Quality.QVar q)
            (Sorts.QVar.Set.elements qctx))
     in
-    let uctx = sort_levels (Array.of_list (Level.Set.elements uctx)) in
-    let inst = Instance.of_array (qctx, uctx) in
-    (f inst, (inst, cst))
+    let levels = sort_levels (Array.of_list (Level.Set.elements levels)) in
+    let inst = Instance.of_array (qctx, levels) in
+    (f inst, (inst, csts))
 
-  let to_context_set (_, (ctx, cst)) =
-    let qctx, uctx = Instance.levels ctx in
-    qctx, (uctx, cst)
+  let to_context_set (_, (inst, csts)) =
+    let qctx, levels = Instance.levels inst in
+    qctx, (levels, csts)
 
 end
 
@@ -408,6 +419,12 @@ let subst_sort_level_instance (qsubst,usubst) i =
   let i' = Instance.subst_fn (Quality.subst_fn qsubst, subst_univs_level_level usubst) i in
   if i == i' then i
   else i'
+
+let subst_instance_sort_level_subst s (i : sort_level_subst) =
+  let qs, us = i in
+  let qs' = Sorts.QVar.Map.map (fun l -> subst_instance_quality s l) qs in
+  let us' = Level.Map.map (fun l -> subst_instance_level s l) us in
+  if qs' == qs && us' == us then i else (qs', us')
 
 let subst_univs_level_abstract_universe_context subst (inst, csts) =
   inst, subst_univs_level_constraints subst csts

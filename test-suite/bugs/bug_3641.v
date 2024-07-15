@@ -9,7 +9,7 @@ Notation "( x , y , .. , z )" := (pair .. (pair x y) .. z) : core_scope.
 Class UnitSubuniverse := { O : Type -> Type ; O_unit : forall T, T -> O T }.
 Class ReflectiveSubuniverse := { rsubu_usubu : UnitSubuniverse ; O_rectnd : forall {P Q : Type} (f : P -> Q), O P -> Q }.
 Global Existing Instance rsubu_usubu.
-Context {subU : ReflectiveSubuniverse}.
+#[warning="context-outside-section"] Context {subU : ReflectiveSubuniverse}.
 Goal forall (A B : Type) (x : O A * O B) (x0 : B),
        { g : _ & O_rectnd (fun z : A * B => (O_unit (fst z), O_unit (snd z)))
                           (O_rectnd (fun a : A => O_unit (a, x0)) (fst x)) =

@@ -14,7 +14,7 @@ open CErrors
 open Names
 open Proofview.Notations
 open Tac2expr
-open Tac2ffi
+open Tac2val
 open Tac2bt
 
 exception LtacError = Tac2ffi.LtacError
@@ -47,13 +47,6 @@ let push_name ist id v = match id with
 let get_var ist id =
   try Id.Map.find id ist.env_ist with Not_found ->
     anomaly (str "Unbound variable " ++ Id.print id)
-
-let get_ref ist kn =
-  try
-    let data = Tac2env.interp_global kn in
-    data.Tac2env.gdata_expr
-  with Not_found ->
-    anomaly (str "Unbound reference" ++ KerName.print kn)
 
 let return = Proofview.tclUNIT
 
@@ -107,13 +100,7 @@ let rec interp (ist : environment) = function
 | GTacAtm (AtmInt n) -> return (Tac2ffi.of_int n)
 | GTacAtm (AtmStr s) -> return (Tac2ffi.of_string s)
 | GTacVar id -> return (get_var ist id)
-| GTacRef kn ->
-  begin match Tac2env.get_compiled_global kn with
-  | Some (_info,v) -> return v
-  | None ->
-    let data = get_ref ist kn in
-    return (eval_pure Id.Map.empty (Some kn) data)
-  end
+| GTacRef kn -> return (eval_global kn)
 | GTacFun (ids, e) ->
   let cls = { clos_ref = None; clos_env = ist.env_ist; clos_var = ids; clos_exp = e } in
   let f = interp_closure cls in
@@ -121,7 +108,7 @@ let rec interp (ist : environment) = function
 | GTacApp (f, args) ->
   interp ist f >>= fun f ->
   Proofview.Monad.List.map (fun e -> interp ist e) args >>= fun args ->
-  Tac2ffi.apply (Tac2ffi.to_closure f) args
+  Tac2val.apply_val f args
 | GTacLet (false, el, e) ->
   let fold accu (na, e) =
     interp ist e >>= fun e ->
@@ -130,23 +117,8 @@ let rec interp (ist : environment) = function
   Proofview.Monad.List.fold_left fold ist el >>= fun ist ->
   interp ist e
 | GTacLet (true, el, e) ->
-  let map (na, e) = match e with
-  | GTacFun (ids, e) ->
-    let cls = { clos_ref = None; clos_env = ist.env_ist; clos_var = ids; clos_exp = e } in
-    let f = interp_closure cls in
-    na, cls, f
-  | _ -> anomaly (str "Ill-formed recursive function")
-  in
-  let fixs = List.map map el in
-  let fold accu (na, _, cls) = match na with
-  | Anonymous -> accu
-  | Name id -> { env_ist = Id.Map.add id cls accu.env_ist }
-  in
-  let ist = List.fold_left fold ist fixs in
-  (* Hack to make a cycle imperatively in the environment *)
-  let iter (_, e, _) = e.clos_env <- ist.env_ist in
-  let () = List.iter iter fixs in
-  interp ist e
+  let ist = push_let_rec ist.env_ist el in
+  interp { env_ist = ist } e
 | GTacCst (_, n, []) -> return (Valexpr.make_int n)
 | GTacCst (_, n, el) ->
   Proofview.Monad.List.map (fun e -> interp ist e) el >>= fun el ->
@@ -169,6 +141,25 @@ let rec interp (ist : environment) = function
 | GTacPrm ml ->
   return (Tac2env.interp_primitive ml)
 | GTacExt (tag, e) -> eval_glb_ext ist (Glb (tag,e))
+
+and push_let_rec ist el =
+  let map (na, e) = match e with
+  | GTacFun (ids, e) ->
+    let cls = { clos_ref = None; clos_env = ist; clos_var = ids; clos_exp = e } in
+    let f = interp_closure cls in
+    na, cls, f
+  | _ -> anomaly (str "Ill-formed recursive function")
+  in
+  let fixs = List.map map el in
+  let fold accu (na, _, cls) =match na with
+    | Anonymous -> accu
+    | Name id -> Id.Map.add id cls accu
+  in
+  let ist = List.fold_left fold ist fixs in
+  (* Hack to make a cycle imperatively in the environment *)
+  let iter (_, e, _) = e.clos_env <- ist in
+  let () = List.iter iter fixs in
+  ist
 
 and interp_closure f =
   let ans = fun args ->
@@ -221,27 +212,24 @@ and interp_set ist e p r =
   let () = Valexpr.set_field e p r in
   return (Valexpr.make_int 0)
 
+and eval_global kn =
+  match Tac2env.get_compiled_global kn with
+  | Some (_info,v) -> v
+  | None -> match Tac2env.interp_global kn with
+    | exception Not_found -> anomaly (str "Unbound reference" ++ KerName.print kn)
+    | { gdata_expr = e } -> eval_pure Id.Map.empty (Some kn) e
+
 and eval_pure bnd kn = function
 | GTacVar id -> Id.Map.get id bnd
 | GTacAtm (AtmInt n) -> Valexpr.make_int n
-| GTacRef kn ->
-  begin match Tac2env.get_compiled_global kn with
-  | Some (_info,v) -> v
-  | None ->
-    let { Tac2env.gdata_expr = e } =
-      try Tac2env.interp_global kn
-      with Not_found -> assert false
-    in
-    eval_pure bnd (Some kn) e
-  end
+| GTacRef kn -> eval_global kn
 | GTacFun (na, e) ->
   let cls = { clos_ref = kn; clos_env = bnd; clos_var = na; clos_exp = e } in
   interp_closure cls
 | GTacCst (_, n, []) -> Valexpr.make_int n
 | GTacCst (_, n, el) -> Valexpr.make_block n (eval_pure_args bnd el)
 | GTacOpn (kn, el) -> Tac2ffi.of_open (kn, eval_pure_args bnd el)
-| GTacLet (isrec, vals, body) ->
-  let () = assert (not isrec) in
+| GTacLet (false, vals, body) ->
   let fold accu (na, e) = match na with
   | Anonymous ->
     (* No need to evaluate, we know this is a value *)
@@ -252,11 +240,17 @@ and eval_pure bnd kn = function
   in
   let bnd = List.fold_left fold bnd vals in
   eval_pure bnd kn body
+| GTacLet (true, el, body) ->
+  let bnd = push_let_rec bnd el in
+  eval_pure bnd kn body
+| GTacPrj (_,e,i) ->
+  let v = eval_pure bnd kn e in
+  Valexpr.field v i
 
 | GTacPrm ml -> Tac2env.interp_primitive ml
 
 | GTacAtm (AtmStr _) | GTacSet _
-| GTacApp _ | GTacCse _ | GTacPrj _
+| GTacApp _ | GTacCse _
 | GTacExt _ | GTacWth _
 | GTacFullMatch _ ->
   anomaly (Pp.str "Term is not a syntactical value")
@@ -267,8 +261,6 @@ and eval_pure_args bnd args =
 
 let interp_value ist tac =
   eval_pure ist.env_ist None tac
-
-let eval_global kn = eval_pure Id.Map.empty (Some kn) (Tac2env.interp_global kn).gdata_expr
 
 (** Cross-boundary hacks. *)
 

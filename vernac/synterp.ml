@@ -243,8 +243,8 @@ let synterp_end_section {CAst.loc; v} =
     (DirPath.to_string (Lib.current_dirpath true)) "<>" "sec";
   Lib.Synterp.close_section ()
 
-let synterp_end_segment ({v=id} as lid) =
-  let ss = Lib.Synterp.find_opening_node id in
+let synterp_end_segment ({v=id;loc} as lid) =
+  let ss = Lib.Synterp.find_opening_node ?loc id in
   match ss with
   | Lib.OpenedModule (false,export,_,_) -> ignore (synterp_end_module export lid)
   | Lib.OpenedModule (true,_,_,_) -> ignore (Declaremods.Synterp.end_modtype ())
@@ -282,7 +282,7 @@ let _ = CErrors.register_handler begin function
   | _ -> None
 end
 
-let synterp_require from export qidl =
+let synterp_require ~intern from export qidl =
   let root = match from with
   | None -> None
   | Some from ->
@@ -292,20 +292,19 @@ let synterp_require from export qidl =
   let locate (qid,_) =
     let open Loadpath in
     match locate_qualified_library ?root qid with
-    | Ok (dir,_) -> dir
-    | Error LibUnmappedDir -> raise (UnmappedLibrary (root, qid))
-    | Error LibNotFound -> raise (NotFoundLibrary (root, qid))
+    | Ok (dir,_) -> (qid.loc, dir)
+    | Error LibUnmappedDir -> Loc.raise ?loc:qid.loc (UnmappedLibrary (root, qid))
+    | Error LibNotFound -> Loc.raise ?loc:qid.loc (NotFoundLibrary (root, qid))
   in
   let modrefl = List.map locate qidl in
-  let lib_resolver = Loadpath.try_locate_absolute_library in
-  let filenames = Library.require_library_syntax_from_dirpath ~lib_resolver modrefl in
+  let filenames = Library.require_library_syntax_from_dirpath ~intern modrefl in
   Option.iter (fun (export,cats) ->
       let cats = synterp_import_cats cats in
-      List.iter2 (fun m (_,f) ->
+      List.iter2 (fun (_, m) (_, f) ->
           import_module_syntax_with_filter ~export cats (MPfile m) f)
         modrefl qidl)
     export;
-    filenames, modrefl
+    filenames, List.map snd modrefl
 
 (*****************************)
 (* Auxiliary file management *)
@@ -318,9 +317,15 @@ let synterp_declare_ml_module ~local l =
   let l = List.map expand l in
   Mltop.declare_ml_modules local l
 
+let warn_chdir = CWarnings.create ~name:"change-dir-deprecated" ~category:Deprecation.Version.v8_20
+    (fun () -> strbrk "Command \"Cd\" is deprecated." ++ spc () ++
+               strbrk "Use command-line \"-output-directory dir\" instead, or, alternatively, " ++
+               strbrk "for extraction, \"Set Extraction Output Directory\".")
+
 let synterp_chdir = function
   | None -> Feedback.msg_notice (str (Sys.getcwd()))
   | Some path ->
+      warn_chdir ();
       begin
         try Sys.chdir (expand path)
         with Sys_error err ->
@@ -364,8 +369,6 @@ let with_timeout ~timeout:n (f : 'a -> 'b) (x : 'a) : 'b =
     else ControlTimeout { remaining } :: ctrl, v
   end
 
-let test_mode = ref false
-
 (* Restoring the state is the caller's responsibility *)
 let with_fail f : (Loc.t option * Pp.t, 'a) result =
   try
@@ -392,8 +395,8 @@ let with_fail ~loc f =
   | Error (ctrl, v) ->
     ControlFail { st = transient_st } :: ctrl, v
   | Ok (eloc, msg) ->
-    let loc = if !test_mode then real_error_loc ~cmdloc:loc ~eloc else None in
-    if not !Flags.quiet || !test_mode
+    let loc = if !Flags.test_mode then real_error_loc ~cmdloc:loc ~eloc else None in
+    if not !Flags.quiet || !Flags.test_mode
     then Feedback.msg_notice ?loc Pp.(str "The command has indeed failed with message:" ++ fnl () ++ msg);
     [], VernacSynterp EVernacNoop
 
@@ -404,9 +407,19 @@ let with_succeed f =
   Vernacstate.Synterp.unfreeze st;
   ControlSucceed { st = transient_st } :: ctrl, v
 
+let synpure_control : control_flag -> control_entry =
+  let freeze = Vernacstate.Synterp.freeze in function
+  | ControlTime -> ControlTime { synterp_duration = System.empty_duration }
+  | ControlInstructions -> ControlInstructions { synterp_instructions = Ok 0L }
+  | ControlRedirect s -> ControlRedirect s
+  | ControlTimeout timeout ->
+    check_timeout timeout;
+    ControlTimeout { remaining = float_of_int timeout }
+  | ControlFail -> ControlFail { st = freeze() }
+  | ControlSucceed -> ControlSucceed { st = freeze() }
+
 (* We restore the state always *)
-let rec synterp_control_flag ~loc (f : control_flag list)
-    (fn : vernac_expr -> vernac_entry) expr =
+let rec synterp_control_flag ~loc (f : control_flag list) fn expr =
   match f with
   | [] -> [], fn expr
   | ControlFail :: l ->
@@ -435,7 +448,7 @@ let rec synterp_control_flag ~loc (f : control_flag list)
     let (ctrl, v) = Topfmt.with_output_to_file s (synterp_control_flag ~loc l fn) expr in
     (ControlRedirect s :: ctrl, v)
 
-let rec synterp ?loc ~atts v =
+let rec synterp ~intern ?loc ~atts v =
   match v with
   | VernacSynterp v0 ->
     let e = begin match v0 with
@@ -443,8 +456,8 @@ let rec synterp ?loc ~atts v =
       with_module_locality ~atts synterp_reserved_notation ~infix sl;
       EVernacNoop
     | VernacNotation (infix,ntn_decl) ->
-      let local, deprecation = Attributes.(parse Notations.(module_locality ++ deprecation) atts) in
-      let decl = Metasyntax.add_notation_syntax ~local ~infix deprecation ntn_decl in
+      let local, user_warns = Attributes.(parse Notations.(module_locality ++ user_warns) atts) in
+      let decl = Metasyntax.add_notation_syntax ~local ~infix user_warns ntn_decl in
       EVernacNotation { local; decl }
     | VernacDeclareCustomEntry s ->
       with_module_locality ~atts synterp_custom_entry s;
@@ -469,7 +482,7 @@ let rec synterp ?loc ~atts v =
       synterp_end_segment lid;
       EVernacEndSegment lid
     | VernacRequire (from, export, qidl) ->
-      let needed, modrefl = synterp_require from export qidl in
+      let needed, modrefl = synterp_require ~intern from export qidl in
       EVernacRequire (needed, modrefl, export, qidl)
     | VernacImport (export,qidl) ->
       let export, mpl = synterp_import export qidl in
@@ -501,7 +514,7 @@ let rec synterp ?loc ~atts v =
       EVernacNoop
     | VernacLoad (verbosely, fname) ->
       unsupported_attributes atts;
-      synterp_load verbosely fname
+      synterp_load ~intern verbosely fname
     | VernacExtend (opn,args) ->
       let f = Vernacextend.type_vernac ?loc ~atts opn args () in
       EVernacExtend(f)
@@ -509,7 +522,7 @@ let rec synterp ?loc ~atts v =
     VernacSynterp e
   | VernacSynPure x -> VernacSynPure x
 
-and synterp_load verbosely fname =
+and synterp_load ~intern verbosely fname =
   let fname =
     Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (Pp.str x)) fname in
   let fname = CUnix.make_suffix fname ".v" in
@@ -528,17 +541,17 @@ and synterp_load verbosely fname =
     match parse_sentence proof_mode input with
     | None -> entries
     | Some cmd ->
-      let entry = v_mod synterp_control cmd in
+      let entry = v_mod (synterp_control ~intern) cmd in
       let st = Vernacstate.Synterp.freeze () in
       (load_loop [@ocaml.tailcall]) ((entry,st)::entries)
   in
   let entries = List.rev @@ load_loop [] in
   EVernacLoad(verbosely, entries)
 
-and synterp_control CAst.{ loc; v = cmd } =
+and synterp_control ~intern CAst.{ loc; v = cmd } =
   let fn expr =
     with_generic_atts ~check:true cmd.attrs (fun ~atts ->
-        synterp ?loc ~atts cmd.expr)
+        synterp ~intern ?loc ~atts cmd.expr)
   in
   let control, expr = synterp_control_flag ~loc cmd.control fn cmd.expr in
   CAst.make ?loc { expr; control; attrs = cmd.attrs }
@@ -557,15 +570,17 @@ let has_timeout ctrl = ctrl |> List.exists (function
     | Vernacexpr.ControlTimeout _ -> true
     | _ -> false)
 
-let synterp_control CAst.{ loc; v = cmd } =
-  let control = cmd.control in
-  let control = match !default_timeout with
-    | None -> control
-    | Some n ->
-      if has_timeout control then control
-      else Vernacexpr.ControlTimeout n :: control
-  in
-  synterp_control @@ CAst.make ?loc { cmd with control }
+let add_default_timeout control =
+  match !default_timeout with
+  | None -> control
+  | Some n ->
+    if has_timeout control then control
+    else Vernacexpr.ControlTimeout n :: control
 
-let synterp_control cmd =
-  Flags.with_option Flags.in_synterp_phase synterp_control cmd
+let synterp_control ~intern cmd =
+  synterp_control ~intern (CAst.map (fun cmd ->
+      { cmd with control = add_default_timeout cmd.control })
+      cmd)
+
+let synterp_control ~intern cmd =
+  Flags.with_option Flags.in_synterp_phase (synterp_control ~intern) cmd

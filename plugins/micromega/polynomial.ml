@@ -478,6 +478,8 @@ module LinPoly = struct
 
   let search_linear p l = min_list (search_all_linear p l)
 
+  let mul_cst c p = Vect.mul c p
+
   let product p1 p2 =
     linpol_of_pol (Poly.product (pol_of_linpol p1) (pol_of_linpol p2))
 
@@ -1017,6 +1019,12 @@ end
 module WithProof = struct
   type t = (LinPoly.t * op) * ProofFormat.prf_rule
 
+  let repr p = p
+
+  let proof p = snd p
+
+  let polynomial ((p, _), _) = p
+
   (* The comparison ignores proofs on purpose *)
   let compare : t -> t -> int =
    fun ((lp1, o1), _) ((lp2, o2), _) ->
@@ -1052,6 +1060,15 @@ module WithProof = struct
       ((Vect.mul Q.minus_one p1, o1), ProofFormat.mul_cst_proof Q.minus_one prf1)
     | _ -> failwith "neg: invalid proof"
 
+  let mul_cst c ((p1, o1), prf1) =
+    let () = match o1 with
+    | Eq -> ()
+    | Gt | Ge -> assert (c >/ Q.zero)
+    in
+    let p = LinPoly.mul_cst c p1 in
+    let prf = ProofFormat.mul_cst_proof c prf1 in
+    ((p, o1), prf)
+
   let mult p ((p1, o1), prf1) =
     match o1 with
     | Eq -> ((LinPoly.product p p1, o1), ProofFormat.sMulC p prf1)
@@ -1064,6 +1081,12 @@ module WithProof = struct
           Printf.printf "mult_error %a [*] %a\n" LinPoly.pp p output
             ((p1, o1), prf1);
         raise InvalidProof )
+
+  let def p op i = ((p, op), ProofFormat.Def i)
+
+  let mkhyp p op i = ((p, op), ProofFormat.Hyp i)
+
+  let square p q = ((p, Ge), ProofFormat.Square q)
 
   let cutting_plane ((p, o), prf) =
     let c, p' = Vect.decomp_cst p in

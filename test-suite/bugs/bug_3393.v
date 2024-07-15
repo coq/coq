@@ -13,7 +13,7 @@ Class IsEquiv {A B : Type} (f : A -> B) := BuildIsEquiv { equiv_inv : B -> A }.
 Delimit Scope equiv_scope with equiv.
 Local Open Scope equiv_scope.
 Notation "f ^-1" := (@equiv_inv _ _ f _) (at level 3) : equiv_scope.
-Class Funext := { isequiv_apD10 :> forall (A : Type) (P : A -> Type) f g, IsEquiv (@apD10 A P f g) }.
+Class Funext := { isequiv_apD10 :: forall (A : Type) (P : A -> Type) f g, IsEquiv (@apD10 A P f g) }.
 Definition path_forall `{Funext} {A : Type} {P : A -> Type} (f g : forall x : A, P x) : (forall x, f x = g x) -> f = g := (@apD10 A P f g)^-1.
 Record PreCategory :=
   { object :> Type;
@@ -33,8 +33,8 @@ Notation "F '_1' m" := (@morphism_of _ _ F _ _ m) (at level 10, no associativity
 Class IsIsomorphism {C : PreCategory} {s d} (m : morphism C s d) := { morphism_inverse : morphism C d s }.
 Local Notation "m ^-1" := (morphism_inverse (m := m)) : morphism_scope.
 Class Isomorphic {C : PreCategory} s d :=
-  { morphism_isomorphic :> morphism C s d;
-    isisomorphism_isomorphic :> IsIsomorphism morphism_isomorphic }.
+  { morphism_isomorphic :: morphism C s d;
+    isisomorphism_isomorphic :: IsIsomorphism morphism_isomorphic }.
 Coercion morphism_isomorphic : Isomorphic >-> morphism.
 Definition isisomorphism_inverse `(@IsIsomorphism C x y m) : IsIsomorphism m^-1 := {| morphism_inverse := m |}.
 

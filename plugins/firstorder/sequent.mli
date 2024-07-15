@@ -24,7 +24,7 @@ val iter_redexes : (Formula.any_formula -> unit) -> t -> unit
 
 val deepen: t -> t
 
-val record: h_item -> t -> t
+val record: Environ.env -> h_item -> t -> t
 
 val lookup: Environ.env -> Evd.evar_map -> h_item -> t -> bool
 
@@ -34,11 +34,11 @@ val add_formula : flags:flags -> hint:bool -> Environ.env -> Evd.evar_map -> Glo
 
 val re_add_formula_list : Evd.evar_map -> Formula.any_formula list -> t -> t
 
-val find_left : Evd.evar_map -> constr -> t -> GlobRef.t
+val find_left : Evd.evar_map -> atom -> t -> GlobRef.t
 
 val find_goal : Evd.evar_map -> t -> GlobRef.t
 
-val take_formula : Evd.evar_map -> t -> Formula.any_formula * t
+val take_formula : Environ.env -> Evd.evar_map -> t -> Formula.any_formula * t
 
 val empty_seq : int -> t
 
@@ -47,3 +47,5 @@ val extend_with_ref_list : flags:flags -> Environ.env -> Evd.evar_map -> GlobRef
 
 val extend_with_auto_hints : flags:flags -> Environ.env -> Evd.evar_map -> Hints.hint_db_name list ->
   t -> t * Evd.evar_map
+
+val state : t -> Env.t

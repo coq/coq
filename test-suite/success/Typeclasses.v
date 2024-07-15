@@ -8,7 +8,7 @@ Module applydestruct.
   Class C (A : Type).
   #[export] Hint Mode C + : typeclass_instances.
 
-  Variable fool : forall {A} {F : Foo A} (x : A), C A -> bar 0 = x.
+  Parameter fool : forall {A} {F : Foo A} (x : A), C A -> bar 0 = x.
   (* apply leaves non-dependent subgoals of typeclass type
      alone *)
   Goal forall {A} {F : Foo A} (x : A), bar 0 = x.
@@ -19,7 +19,7 @@ Module applydestruct.
     end.
   Abort.
 
-  Variable fooli : forall {A} {F : Foo A} {c : C A} (x : A), bar 0 = x.
+  Parameter fooli : forall {A} {F : Foo A} {c : C A} (x : A), bar 0 = x.
   (* apply tries to resolve implicit argument typeclass
      constraints. *)
   Goal forall {A} {F : Foo A} (x : A), bar 0 = x.
@@ -40,7 +40,7 @@ Module applydestruct.
   Inductive bazdestr {A} (F : Foo A) : nat -> Prop :=
     | isbas : bazdestr F 1.
 
-  Variable fooinv : forall {A} {F : Foo A} (x : A),
+  Parameter fooinv : forall {A} {F : Foo A} (x : A),
       bazdestr F (baz x).
 
   (* Destruct applies resolution early, before finding
@@ -63,8 +63,8 @@ End applydestruct.
 Module onlyclasses.
 
 (* In 8.6 we still allow non-class subgoals *)
-  Variable Foo : Type.
-  Variable foo : Foo.
+  Parameter Foo : Type.
+  Parameter foo : Foo.
   #[export] Hint Extern 0 Foo => exact foo : typeclass_instances.
   Goal Foo * Foo.
     split. shelve.
@@ -88,8 +88,8 @@ Module onlyclasses.
 End onlyclasses.
 
 Module shelve_non_class_subgoals.
-  Variable Foo : Type.
-  Variable foo : Foo.
+  Parameter Foo : Type.
+  Parameter foo : Foo.
   #[export] Hint Extern 0 Foo => exact foo : typeclass_instances.
   Class Bar := {}.
   #[export] Instance bar1 (f:Foo) : Bar := {}.
@@ -158,7 +158,7 @@ Record Refl (A : Type) (R : A -> A -> Prop).
 Axiom equ_refl : forall A R (e : Equ A R), Refl _ (@equiv A R e).
 #[export] Hint Extern 0 (Refl _ _) => unshelve class_apply @equ_refl; [shelve|] : foo.
 
-Variable R : nat -> nat -> Prop.
+Parameter R : nat -> nat -> Prop.
 Lemma bas : Equ nat R.
 Admitted.
 #[export] Hint Resolve bas : foo.
@@ -193,7 +193,7 @@ Notation "'return' t" := (unit t).
 (* Test correct handling of existentials and defined fields. *)
 
 Class A `(e: T) := { a := True }.
-Class B `(e_: T) := { e := e_; sg_ass :> A e }.
+Class B `(e_: T) := { e := e_; sg_ass :: A e }.
 
 (* Set Typeclasses Debug. *)
 (* Set Typeclasses Debug Verbosity 2. *)
@@ -206,7 +206,7 @@ Goal forall `{B T}, Prop.
   intros. refine (@a _ _ _).
 Defined.
 
-Class B' `(e_: T) := { e' := e_; sg_ass' :> A e_ }.
+Class B' `(e_: T) := { e' := e_; sg_ass' :: A e_ }.
 
 Goal forall `{B' T}, a.
   intros. exact I.

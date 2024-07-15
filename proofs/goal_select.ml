@@ -26,15 +26,12 @@ let pr_range_selector (i, j) =
   if i = j then Pp.int i
   else Pp.(int i ++ str "-" ++ int j)
 
-let pr_goal_selector = function
-  | SelectAlreadyFocused -> Pp.str "!"
-  | SelectAll -> Pp.str "all"
-  | SelectNth i -> Pp.int i
-  | SelectList l ->
-    Pp.(str "["
-     ++ prlist_with_sep pr_comma pr_range_selector l
-     ++ str "]")
-  | SelectId id -> Names.Id.print id
+let pr_goal_selector = let open Pp in function
+  | SelectAlreadyFocused -> str "!"
+  | SelectAll -> str "all"
+  | SelectNth i -> int i
+  | SelectList l -> prlist_with_sep pr_comma pr_range_selector l
+  | SelectId id -> str "[" ++ Id.print id ++ str "]"
 
 let parse_goal_selector = function
   | "!" -> SelectAlreadyFocused

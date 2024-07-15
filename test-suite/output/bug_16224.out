@@ -1,12 +1,3 @@
-File "./output/bug_16224.v", line 9, characters 0-24:
-Warning: A coercion will be introduced instead of an instance in future
-versions when using ':>' in 'Class' declarations. Replace ':>' with '::' (or
-use '#[global] Existing Instance field.' for compatibility with Coq < 8.18).
-Beware that the default locality for '::' is #[export], as opposed to
-#[global] for ':>' currently. Add an explicit #[global] attribute to the
-field if you need to keep the current behavior. For example: "Class foo := {
-#[global] field :: bar }."
-[future-coercion-class-field,deprecated-since-8.17,deprecated,default]
 [reverse_coercion] : ReverseCoercionSource >-> ReverseCoercionTarget
 [rc] : Rc >-> A (reversible)
 [ric] : Ric >-> A (reversible)
@@ -14,4 +5,3 @@ ric : Ric -> A
 cic : Cic -> A
 ri : Ri -> A
 ci : Ci -> A
-cc : Cc -> A

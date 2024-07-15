@@ -283,7 +283,7 @@ let coerce_to_closed_constr env v =
   c
 
 let coerce_to_evaluable_ref env sigma v =
-  let open Tacred in
+  let open Evaluable in
   let fail () = raise (CannotCoerceTo "an evaluable reference") in
   let ev =
   match is_intro_pattern v with
@@ -387,12 +387,11 @@ let coerce_to_decl_or_quant_hyp sigma v =
     with CannotCoerceTo _ ->
       raise (CannotCoerceTo "a declared or quantified hypothesis")
 
-let coerce_to_int_or_var_list v =
+let coerce_to_int_list v =
   match Value.to_list v with
   | None -> raise (CannotCoerceTo "an int list")
   | Some l ->
-    let map n = Locus.ArgArg (coerce_to_int n) in
-    List.map map l
+    List.map coerce_to_int l
 
 (** Abstract application, to print ltac functions *)
 type appl =

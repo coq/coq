@@ -41,7 +41,7 @@ fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
   | 0 => m
   | S n' => S (myplus T t n' m)
   end
-     : forall T : Type, T -> nat -> nat -> nat
+     : forall {T : Type}, T -> nat -> nat -> nat
 
 Arguments myplus {Z}%type_scope !t (!n m)%nat_scope
   (where some original arguments have been renamed)
@@ -76,7 +76,7 @@ fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
   | 0 => m
   | S n' => S (myplus T t n' m)
   end
-     : forall T : Type, T -> nat -> nat -> nat
+     : forall {T : Type}, T -> nat -> nat -> nat
 
 Arguments myplus {Z}%type_scope !t (!n m)%nat_scope
   (where some original arguments have been renamed)

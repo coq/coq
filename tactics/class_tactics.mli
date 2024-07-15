@@ -57,6 +57,30 @@ val autoapply : constr -> Hints.hint_db_name -> unit Proofview.tactic
 
 val resolve_tc : constr -> unit Proofview.tactic
 
+type solver = { solver :
+  Environ.env ->
+  Evd.evar_map ->
+  depth:int option ->
+  unique:bool ->
+  best_effort:bool ->
+  goals:Evar.t list ->
+  (bool * Evd.evar_map)
+}
+
+
+type condition = (Environ.env -> Evd.evar_map -> Evar.Set.t -> bool)
+
+
+(**
+  A tc_solver is made of a solver and a condition telling when the
+  the solver should be executed instead of coq's one
+*)
+type tc_solver = solver * condition
+
+val register_solver : name:CString.Map.key -> ?override:bool -> tc_solver -> unit
+val activate_solver : name:CString.Map.key -> unit
+val deactivate_solver : name:CString.Map.key -> unit
+
 module Search : sig
   val eauto_tac :
     Hints.hint_mode array list GlobRef.Map.t * TransparentState.t
@@ -69,7 +93,7 @@ module Search : sig
     (** If true, when considering a proof search problem where some
         constraints obey mode declarations, we allow in some situations
         to perform proof search on the rest of the goals and report these
-        remaining goals (if they remaing unsolved) at the end.
+        remaining goals (if they remain unsolved) at the end.
         The remaining goals are constraints that either do not match the mode declared
         for their head (i.e. a class), so we cannot even try to solve them,
         or that match it but have no solution (for a single run of the resolution).

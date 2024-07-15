@@ -61,6 +61,7 @@ install_printer Top_printers.ppexistentialset
 install_printer Top_printers.ppexistentialfilter
 install_printer Top_printers.ppclenv
 install_printer Top_printers.ppgoal
+install_printer Top_printers.ppgoal_with_state
 install_printer Top_printers.pphintdb
 install_printer Top_printers.ppproofview
 install_printer Top_printers.ppopenconstr
@@ -84,6 +85,8 @@ install_printer Top_printers.ppconstraints
 install_printer Top_printers.ppuniverseconstraints
 install_printer Top_printers.ppuniverse_context_future
 install_printer Top_printers.ppuniverses
+install_printer Top_printers.pp_partialfsubst
+install_printer Top_printers.pp_partialsubst
 install_printer Top_printers.ppnamedcontextval
 install_printer Top_printers.ppenv
 install_printer Top_printers.ppglobenv

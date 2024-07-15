@@ -15,6 +15,7 @@ CI_TARGETS= \
     ci-async_test \
     ci-atbr \
     ci-autosubst \
+    ci-autosubst_ocaml \
     ci-bbv \
     ci-bedrock2 \
     ci-bignums \
@@ -26,9 +27,9 @@ CI_TARGETS= \
     ci-coq_dpdgraph \
     ci-coqtail \
     ci-coquelicot \
+    ci-coqutil \
     ci-corn \
     ci-cross_crypto \
-    ci-coq_library_undecidability \
     ci-coq_lsp \
     ci-coq_performance_tests \
     ci-coq_tools \
@@ -57,6 +58,7 @@ CI_TARGETS= \
     ci-itree_io \
     ci-jasmin \
     ci-json \
+    ci-kami \
     ci-lean_importer \
     ci-ltac2_compiler \
     ci-math_classes \
@@ -82,15 +84,19 @@ CI_TARGETS= \
     ci-reduction_effects \
     ci-relation_algebra \
     ci-rewriter \
+    ci-riscv_coq \
+    ci-rupicola \
     ci-serapi \
     ci-serapi_test \
     ci-sf \
     ci-simple_io \
     ci-smtcoq \
+    ci-smtcoq_trakt \
     ci-stalmarck \
     ci-stdlib2 \
     ci-tactician \
     ci-tlc \
+    ci-trakt \
     ci-unimath \
     ci-unicoq \
     ci-verdi_raft \
@@ -122,11 +128,12 @@ ci-math_classes: ci-bignums
 
 ci-corn: ci-math_classes
 
-ci-coq_library_undecidability: ci-metacoq
-
 ci-mtac2: ci-unicoq
 
-ci-fiat_crypto: ci-coqprime ci-rewriter ci-bedrock2
+ci-riscv_coq: ci-coqutil
+ci-bedrock2: ci-coqutil ci-riscv_coq ci-kami
+ci-rupicola: ci-bedrock2 ci-coqutil
+ci-fiat_crypto: ci-coqprime ci-rewriter ci-bedrock2 ci-coqutil ci-rupicola
 ci-fiat_crypto_ocaml: ci-fiat_crypto
 
 ci-fourcolor: ci-mathcomp
@@ -135,14 +142,16 @@ ci-fcsl_pcm: ci-mathcomp_1
 ci-mczify: ci-mathcomp
 ci-mathcomp_test: ci-mathcomp
 ci-mathcomp_word: ci-mathcomp_1
-ci-finmap: ci-mathcomp_1
-ci-bigenough: ci-mathcomp_1
+ci-finmap: ci-mathcomp
+ci-bigenough: ci-mathcomp
 ci-analysis: ci-elpi_hb ci-finmap ci-bigenough
 
 ci-hb: ci-elpi
 
 ci-elpi_test: ci-elpi_hb
 ci-hb_test: ci-elpi_hb
+
+ci-trakt: ci-elpi
 
 ci-jasmin: ci-mathcomp_word
 
@@ -169,9 +178,9 @@ ci-compcert: ci-menhir ci-flocq
 
 ci-relation_algebra: ci-aac_tactics ci-mathcomp
 
-ci-serapi_test: ci-mathcomp_1 ci-serapi
+ci-serapi: ci-coq_lsp
 
-ci-coq_lsp: ci-serapi
+ci-smtcoq_trakt: ci-trakt
 
 # Virtual targets used by the CI to group compilation of rules in a single job
 

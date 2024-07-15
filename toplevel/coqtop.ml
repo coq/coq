@@ -26,7 +26,7 @@ let get_version ~boot =
     let rev = input_line ch in
     let () = close_in ch in
     Printf.sprintf "%s (%s)" ver rev
-  with _ -> Coq_config.version
+  with Sys_error _ | End_of_file -> Coq_config.version
 
 let print_header ~boot () =
   Feedback.msg_info (str "Welcome to Coq " ++ str (get_version ~boot));
@@ -173,7 +173,7 @@ let get_native_name s =
 
 let coqtop_run ({ run_mode; color_mode },_) ~opts state =
   match run_mode with
-  | Interactive -> Coqloop.loop ~opts ~state;
+  | Interactive -> Coqloop.run ~opts ~state;
   | Query PrintTags -> Colors.print_style_tags color_mode; exit 0
   | Query (PrintModUid sl) ->
       let s = String.concat " " (List.map get_native_name sl) in

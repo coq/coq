@@ -162,9 +162,9 @@ let ll_ind_tac ~flags (ind,u as indu) largs backtrack id continue seq =
 let ll_arrow_tac ~flags a b c backtrack id continue seq=
   let open EConstr in
   let open Vars in
-  let cc=mkProd(Context.make_annot Anonymous Sorts.Relevant,a,(lift 1 b)) in
-  let d idc = mkLambda (Context.make_annot Anonymous Sorts.Relevant,b,
-                  mkApp (idc, [|mkLambda (Context.make_annot Anonymous Sorts.Relevant,(lift 1 a),(mkRel 2))|])) in
+  let cc=mkProd(Context.make_annot Anonymous ERelevance.relevant,a,(lift 1 b)) in
+  let d idc = mkLambda (Context.make_annot Anonymous ERelevance.relevant,b,
+                  mkApp (idc, [|mkLambda (Context.make_annot Anonymous ERelevance.relevant,(lift 1 a),(mkRel 2))|])) in
     tclORELSE
       (tclTHENS (cut c)
          [tclTHENLIST

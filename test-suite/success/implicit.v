@@ -165,7 +165,7 @@ Set Warnings "syntax".
 
 
 Axiom eq0le0 : forall (n : nat) (x : n = 0), n <= 0.
-Variable eq0le0' : forall (n : nat) {x : n = 0}, n <= 0.
+Parameter eq0le0' : forall (n : nat) {x : n = 0}, n <= 0.
 Axiom eq0le0'' : forall (n : nat) {x : n = 0}, n <= 0.
 Definition eq0le0''' : forall (n : nat) {x : n = 0}, n <= 0. Admitted.
 Fail Axiom eq0le0'''' : forall [n : nat] {x : n = 0}, n <= 0.
@@ -187,3 +187,12 @@ Arguments bar {A} {x} _ {B} {y}.
 Check bar (1:=true) 0 (3:=false).
 
 End TestUnnamedImplicit.
+
+Module NotationAppliedConstantMultipleImplicit.
+
+Axiom f : nat -> nat -> nat -> nat.
+Arguments f {_} _ _, {_ _} _.
+Notation "#" := (@f 0).
+Check # 0 : nat.
+
+End NotationAppliedConstantMultipleImplicit.

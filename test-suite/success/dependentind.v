@@ -6,7 +6,7 @@ dependent destruction x.
 reflexivity.
 Qed.
 
-Variable A : Set.
+Parameter A : Set.
 
 Inductive vector : nat -> Type := vnil : vector 0 | vcons : A -> forall {n}, vector n -> vector (S n).
 

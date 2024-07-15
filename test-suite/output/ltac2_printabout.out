@@ -1,3 +1,5 @@
+fst : 'a * 'b -> 'a
+snd : 'b * 'a -> 'a
 type : constr -> constr
 Ltac2 type : constr -> constr
       type := @external "coq-core.plugins.ltac2" "constr_type"

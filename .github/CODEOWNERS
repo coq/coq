@@ -31,6 +31,7 @@
 
 /dev/ci/nix          @coq/nix-maintainers
 *.nix                @coq/nix-maintainers
+/flake.lock          @coq/nix-maintainers
 
 /dev/ci/user-overlays/*.sh
 # Trick to avoid getting review requests
@@ -60,10 +61,10 @@
 /dev/doc/release-process.md   @coq/contributing-process-maintainers
 /dev/doc/shield-icon.png      @coq/contributing-process-maintainers
 /dev/doc/SProp.md             @coq/universes-maintainers
-/dev/doc/style.txt            @coq/contributing-process-maintainers
+/dev/doc/style.md             @coq/contributing-process-maintainers
 /dev/doc/unification.txt      @coq/pretyper-maintainers
 /dev/doc/universes.md         @coq/universes-maintainers
-/dev/doc/xml-protocol         @coq/stm-maintainers
+/dev/doc/xml-protocol.md      @coq/stm-maintainers
 
 /man/                  @coq/doc-maintainers
 
@@ -105,7 +106,7 @@
 /kernel/native*   @coq/vm-native-maintainers
 /kernel/vm*       @coq/vm-native-maintainers
 /kernel/vconv.*   @coq/vm-native-maintainers
-/kernel/genOpcodefiles.* @coq/vm-native-maintainers
+/kernel/genOpcodeFiles.* @coq/vm-native-maintainers
 
 /kernel/sorts.*   @coq/universes-maintainers
 /kernel/uGraph.*  @coq/universes-maintainers

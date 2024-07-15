@@ -86,6 +86,10 @@ module Quality : sig
 
   module Map : CMap.ExtS with type key = t and module Set := Set
 
+  type pattern =
+    PQVar of int option | PQConstant of constant
+
+  val pattern_match : pattern -> t -> ('t, t, 'u) Partial_subst.t -> ('t, t, 'u) Partial_subst.t option
 end
 
 module QConstraint : sig
@@ -138,6 +142,7 @@ val set  : t
 val prop : t
 val type1  : t
 val qsort : QVar.t -> Univ.Universe.t -> t
+val make : Quality.t -> Univ.Universe.t -> t
 
 val equal : t -> t -> bool
 val compare : t -> t -> int
@@ -181,3 +186,8 @@ val relevance_of_sort_family : family -> relevance
 val debug_print : t -> Pp.t
 
 val pr_sort_family : family -> Pp.t
+
+type pattern =
+  | PSProp | PSSProp | PSSet | PSType of int option | PSQSort of int option * int option
+
+val pattern_match : pattern -> t -> ('t, Quality.t, Univ.Level.t) Partial_subst.t -> ('t, Quality.t, Univ.Level.t) Partial_subst.t option

@@ -26,6 +26,7 @@ class type proof_view =
     inherit GObj.widget
     method source_buffer : GSourceView3.source_buffer
     method buffer : GText.buffer
+    method select_all : unit -> unit
     method refresh : force:bool -> unit
     method clear : unit -> unit
     method set_goals : goals -> unit
@@ -218,6 +219,10 @@ let proof_view () =
     method source_buffer = buffer
 
     method buffer = text_buffer
+
+    method select_all () =
+      if self#is_focus then
+        self#buffer#select_range self#buffer#start_iter self#buffer#end_iter;
 
     method clear () = buffer#set_text ""
 

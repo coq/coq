@@ -1,21 +1,16 @@
-(install
- (section bin)
- (package coq-core)
- (files (coqtop_bin.exe as coqtop)))
-
 (executable
  (name coqtop_bin)
- (public_name coqtop.opt)
+ (public_name coqtop)
  (package coq-core)
  (modules coqtop_bin)
- (libraries coq-core.toplevel findlib.dynload))
+ (libraries coq-core.toplevel))
 
 (executable
  (name coqtop_byte_bin)
  (public_name coqtop.byte)
  (package coq-core)
  (modules coqtop_byte_bin)
- (libraries compiler-libs.toplevel coq-core.toplevel findlib.top)
+ (libraries compiler-libs.toplevel coq-core.config.byte coq-core.toplevel coq-core.dev findlib.top)
  (modes byte))
 
 (executable
@@ -23,15 +18,17 @@
  (public_name coqc)
  (package coq-core)
  (modules coqc_bin)
- (libraries coq-core.toplevel findlib.dynload)
- (modes exe byte))
+ (libraries coq-core.toplevel))
  ; Adding -ccopt -flto to links options could be interesting, however,
  ; it doesn't work on Windows
 
-(install
- (section bin)
+(executable
+ (name coqc_byte_bin)
+ (public_name coqc.byte)
  (package coq-core)
- (files (coqc_bin.bc as coqc.byte)))
+ (modules coqc_byte_bin)
+ (libraries coq-core.toplevel)
+ (modes byte))
 
 (executable
  (name coqnative_bin)
@@ -48,4 +45,4 @@
  (public_name coqworker.opt)
  (package coq-core)
  (modules coqworker_bin)
- (libraries coq-core.toplevel findlib.dynload))
+ (libraries coq-core.toplevel))

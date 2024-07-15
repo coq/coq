@@ -1,4 +1,4 @@
-Variables P Q : Prop.
+Parameters P Q : Prop.
 Axiom pqrw : P <-> Q.
 
 Require Setoid.

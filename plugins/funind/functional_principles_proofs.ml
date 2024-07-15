@@ -222,7 +222,7 @@ let change_eq env sigma hyp_id (context : rel_context) x t end_of_type =
   let old_context_length = List.length context + 1 in
   let witness_fun =
     mkLetIn
-      ( make_annot Anonymous Sorts.Relevant
+      ( make_annot Anonymous ERelevance.relevant
       , make_refl_eq constructor t1_typ (fst t1)
       , t
       , mkApp
@@ -530,7 +530,7 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
                          tclTYPEOFTHEN term (fun sigma termtyp ->
                              let fun_body =
                                mkLambda
-                                 ( make_annot Anonymous Sorts.Relevant
+                                 ( make_annot Anonymous ERelevance.relevant
                                  , termtyp
                                  , Termops.replace_term sigma term (mkRel 1)
                                      dyn_infos.info )
@@ -663,13 +663,14 @@ let build_proof (interactive_proof : bool) (fnames : Constant.t list) ptes_infos
           | _ -> do_finalize dyn_infos )
         | Cast (t, _, _) -> build_proof do_finalize {dyn_infos with info = t}
         | Const _ | Var _ | Meta _ | Evar _ | Sort _ | Construct _ | Ind _
-         |Int _ | Float _ ->
+         |Int _ | Float _ | String _ ->
           do_finalize dyn_infos
         | App (_, _) -> (
           let f, args = decompose_app_list sigma dyn_infos.info in
           match EConstr.kind sigma f with
           | Int _ -> user_err Pp.(str "integer cannot be applied")
           | Float _ -> user_err Pp.(str "float cannot be applied")
+          | String _ -> user_err Pp.(str "string cannot be applied")
           | Array _ -> user_err Pp.(str "array cannot be applied")
           | App _ ->
             assert false (* we have collected all the app in decompose_app *)
@@ -793,7 +794,7 @@ let generalize_non_dep hyp =
         let open Context.Named.Declaration in
         Environ.fold_named_context_reverse
           (fun (clear, keep) decl ->
-            let decl = map_named_decl EConstr.of_constr decl in
+            let decl = EConstr.of_named_decl decl in
             let hyp = get_id decl in
             if
               Id.List.mem hyp hyps
@@ -832,7 +833,7 @@ let generate_equation_lemma env evd fnames f fun_num nb_params nb_args rec_args_
   in
   let f_body = match f_def.const_body with
   | Def d -> d
-  | OpaqueDef _ | Primitive _ | Undef _ ->
+  | OpaqueDef _ | Primitive _ | Symbol _ | Undef _ ->
     CErrors.user_err (Pp.str "Definition without a body")
   in
   let f_body = EConstr.of_constr f_body in
@@ -1002,7 +1003,7 @@ let prove_princ_for_struct (evd : Evd.evar_map ref) interactive_proof fun_num
           Tacred.cbv_norm_flags ~strong:true
             (RedFlags.mkflags [RedFlags.fZETA])
             env sigma (EConstr.of_constr body)
-        | Undef _ | Primitive _ | OpaqueDef _ -> user_err Pp.(str "Cannot define a principle over an axiom ")
+        | Undef _ | Primitive _ | Symbol _ | OpaqueDef _ -> user_err Pp.(str "Cannot define a principle over an axiom ")
       in
       let fbody = get_body fnames.(fun_num) in
       let f_ctxt, f_body = decompose_lambda sigma fbody in
@@ -1268,7 +1269,7 @@ let prove_princ_for_struct (evd : Evd.evar_map ref) interactive_proof fun_num
                       tclTHENLIST
                         [ unfold_in_concl
                             [ ( Locus.AllOccurrences
-                              , Tacred.EvalConstRef (fst fname) ) ]
+                              , Evaluable.EvalConstRef (fst fname) ) ]
                         ; (let do_prove =
                              build_proof interactive_proof
                                (Array.to_list fnames)

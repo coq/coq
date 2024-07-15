@@ -7,11 +7,14 @@ Record PWrap@{uu} (A : Type@{uu}) : Type@{uu} := pwrap
 PWrap has primitive projections with eta conversion.
 Arguments PWrap A%type_scope
 Arguments pwrap A%type_scope punwrap
-punwrap@{uu} =
-fun (A : Type@{uu}) (p : PWrap@{uu} A) => punwrap _ p
-     : forall A : Type@{uu}, PWrap@{uu} A -> A
+Arguments punwrap A%type_scope p
+Record PWrap@{uu} (A : Type@{uu}) : Type@{uu} := pwrap
+  { punwrap : A }.
 (* uu |=  *)
 
+PWrap has primitive projections with eta conversion.
+Arguments PWrap A%type_scope
+Arguments pwrap A%type_scope punwrap
 Arguments punwrap A%type_scope p
 Record RWrap@{uu} (A : Type@{uu}) : Type@{uu} := rwrap
   { runwrap : A }.
@@ -19,11 +22,13 @@ Record RWrap@{uu} (A : Type@{uu}) : Type@{uu} := rwrap
 
 Arguments RWrap A%type_scope
 Arguments rwrap A%type_scope runwrap
+Arguments runwrap A%type_scope r
 runwrap@{uu} =
 fun (A : Type@{uu}) (r : RWrap@{uu} A) => let (runwrap) := r in runwrap
      : forall A : Type@{uu}, RWrap@{uu} A -> A
 (* uu |=  *)
 
+runwrap is a projection of RWrap
 Arguments runwrap A%type_scope r
 Wrap@{uu} = fun A : Type@{uu} => A
      : Type@{uu} -> Type@{uu}
@@ -32,7 +37,7 @@ Wrap@{uu} = fun A : Type@{uu} => A
 Arguments Wrap A%type_scope
 wrap@{uu} =
 fun (A : Type@{uu}) (Wrap : Wrap@{uu} A) => Wrap
-     : forall A : Type@{uu}, Wrap@{uu} A -> A
+     : forall {A : Type@{uu}}, Wrap@{uu} A -> A
 (* uu |=  *)
 
 Arguments wrap {A}%type_scope {Wrap}
@@ -97,10 +102,12 @@ Record PWrap@{E} (A : Type@{E}) : Type@{E} := pwrap
 PWrap has primitive projections with eta conversion.
 Arguments PWrap A%type_scope
 Arguments pwrap A%type_scope punwrap
+Arguments punwrap A%type_scope p
 punwrap@{K} : forall A : Type@{K}, PWrap@{K} A -> A
 (* K |=  *)
 
 punwrap is universe polymorphic
+punwrap is a primitive projection of PWrap
 Arguments punwrap A%type_scope p
 punwrap is transparent
 Expands to: Constant UnivBinders.punwrap
@@ -113,7 +120,7 @@ Universe instance length is 0 but should be 1.
 File "./output/UnivBinders.v", line 106, characters 0-30:
 The command has indeed failed with message:
 This object does not support universe names.
-File "./output/UnivBinders.v", line 110, characters 0-49:
+File "./output/UnivBinders.v", line 110, characters 0-50:
 The command has indeed failed with message:
 Cannot enforce v < u because u < gU < gV < v
 insec@{v} = Type@{uu} -> Type@{v}
@@ -165,21 +172,36 @@ axfoo' : Type@{axfoo'.u0} -> Type@{axfoo'.i}
 axfoo' is not universe polymorphic
 Arguments axfoo' _%type_scope
 Expands to: Constant UnivBinders.axfoo'
-axbar' : Type@{axfoo'.u0} -> Type@{axfoo'.i}
+axbar' : Type@{axfoo'.u1} -> Type@{axfoo'.i}
 
 axbar' is not universe polymorphic
 Arguments axbar' _%type_scope
 Expands to: Constant UnivBinders.axbar'
-File "./output/UnivBinders.v", line 155, characters 19-26:
+*** [ axfoo@{i u u0} : Type@{u} -> Type@{i} ]
+(* i u u0 |=  *)
+
+Arguments axfoo _%type_scope
+*** [ axbar@{i u u0} : Type@{u0} -> Type@{i} ]
+(* i u u0 |=  *)
+
+Arguments axbar _%type_scope
+*** [ axfoo' : Type@{axfoo'.u0} -> Type@{axfoo'.i} ]
+
+Arguments axfoo' _%type_scope
+*** [ axbar' : Type@{axfoo'.u1} -> Type@{axfoo'.i} ]
+
+Arguments axbar' _%type_scope
+File "./output/UnivBinders.v", line 156, characters 19-26:
 The command has indeed failed with message:
-When declaring multiple axioms in one command, only the first is allowed a
-universe binder (which will be shared by the whole block).
+When declaring multiple assumptions in one command, only the first name is
+allowed to mention a universe binder (which will be shared by the whole
+block).
 foo@{i} = Type@{M.i} -> Type@{i}
      : Type@{max(M.i+1,i+1)}
 (* i |=  *)
-Type@{u0} -> Type@{UnivBinders.64}
-     : Type@{max(u0+1,UnivBinders.64+1)}
-(* {UnivBinders.64} |=  *)
+Type@{u0} -> Type@{UnivBinders.65}
+     : Type@{max(u0+1,UnivBinders.65+1)}
+(* {UnivBinders.65} |=  *)
 bind_univs.mono = Type@{bind_univs.mono.u}
      : Type@{bind_univs.mono.u+1}
 bind_univs.poly@{u} = Type@{u}
@@ -193,8 +215,10 @@ Inductive MutualR1@{u} (A : Type@{u}) : Prop :=
 
 Arguments MutualR1 A%type_scope
 Arguments Build_MutualR1 A%type_scope p1
+Arguments p1 A%type_scope m
 Arguments MutualR2 A%type_scope
 Arguments Build_MutualR2 A%type_scope p2
+Arguments p2 A%type_scope m
 Inductive MutualI1@{u u0} (A : Type@{u}) : Type@{u0} :=
     C1 : MutualI2@{u u0} A -> MutualI1@{u u0} A
   with MutualI2@{u u0} (A : Type@{u}) : Type@{u0} :=
@@ -213,8 +237,10 @@ CoInductive MutualR1'@{u} (A : Type@{u}) : Prop :=
 
 Arguments MutualR1' A%type_scope
 Arguments Build_MutualR1' A%type_scope p1'
+Arguments p1' A%type_scope m
 Arguments MutualR2' A%type_scope
 Arguments Build_MutualR2' A%type_scope p2'
+Arguments p2' A%type_scope m
 CoInductive MutualI1'@{u u0} (A : Type@{u}) : Type@{u0} :=
     C1' : MutualI2'@{u u0} A -> MutualI1'@{u u0} A
   with MutualI2'@{u u0} (A : Type@{u}) : Type@{u0} :=
@@ -225,3 +251,6 @@ Arguments MutualI1' A%type_scope
 Arguments C1' A%type_scope p1
 Arguments MutualI2' A%type_scope
 Arguments C2' A%type_scope p2
+File "./output/UnivBinders.v", line 207, characters 0-33:
+The command has indeed failed with message:
+Universe inconsistency. Cannot enforce a < a because a = a.

@@ -16,7 +16,7 @@ open EConstr
 
 (** {5 Functions on patterns} *)
 
-val constr_pattern_eq : constr_pattern -> constr_pattern -> bool
+val constr_pattern_eq : Environ.env -> constr_pattern -> constr_pattern -> bool
 
 val subst_pattern : Environ.env -> Evd.evar_map -> substitution -> 'i constr_pattern_r -> 'i constr_pattern_r
 
@@ -49,9 +49,9 @@ val legacy_bad_pattern_of_constr : Environ.env -> Evd.evar_map -> EConstr.constr
    a pattern; variables bound in [l] are replaced by the pattern to which they
     are bound *)
 
-val pattern_of_glob_constr : glob_constr -> Id.Set.t * constr_pattern
+val pattern_of_glob_constr : Environ.env -> glob_constr -> Id.Set.t * constr_pattern
 
-val uninstantiated_pattern_of_glob_constr : glob_constr -> Id.Set.t * [`uninstantiated] constr_pattern_r
+val uninstantiated_pattern_of_glob_constr : Environ.env -> glob_constr -> Id.Set.t * [`uninstantiated] constr_pattern_r
 
 val map_pattern_with_binders : (Name.t -> 'a -> 'a) ->
   ('a -> 'i constr_pattern_r -> 'i constr_pattern_r) -> 'a -> 'i constr_pattern_r -> 'i constr_pattern_r

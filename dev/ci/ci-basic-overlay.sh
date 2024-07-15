@@ -39,6 +39,29 @@ function project {
 
 }
 
+# subproject <name> <parent project> <submodulefolder> <submodule giturl> <submodule branch>
+# In the case of nested submodules, each subproject should be declared
+# a subproject of its immediate parent, to ensure overlays are applied
+# in the right order
+function subproject {
+  local var_parent_project=${1}_CI_PARENT_PROJECT
+  local var_submodule_folder=${1}_CI_SUBMODULE_FOLDER
+  local var_submodule_giturl=${1}_CI_SUBMODULE_GITURL
+  local var_submodule_branch=${1}_CI_SUBMODULE_BRANCH
+  local parent_project=$2
+  local submodule_folder=$3
+  local submodule_giturl=$4
+  local submodule_branch=$5
+
+  # register the project in the list of projects
+  projects[${#projects[*]}]=$1
+
+  : "${!var_parent_project:=$parent_project}"
+  : "${!var_submodule_folder:=$submodule_folder}"
+  : "${!var_submodule_giturl:=$submodule_giturl}"
+  : "${!var_submodule_branch:=$submodule_branch}"
+}
+
 ########################################################################
 # MathComp
 ########################################################################
@@ -57,9 +80,7 @@ project oddorder "https://github.com/math-comp/odd-order" "master"
 project mczify "https://github.com/math-comp/mczify" "master"
 # Contact @pi8027 on github
 
-project finmap "https://github.com/math-comp/finmap" "cea9f088c9cddea1173bc2f7c4c7ebda35081b60"
-# put back master when Analysis master moves to MathComp 2
-# project finmap "https://github.com/math-comp/finmap" "master"
+project finmap "https://github.com/math-comp/finmap" "master"
 # Contact @CohenCyril on github
 
 project bigenough "https://github.com/math-comp/bigenough" "master"
@@ -87,10 +108,10 @@ project mtac2 "https://github.com/Mtac2/Mtac2" "master"
 # Mathclasses + Corn
 ########################################################################
 project math_classes "https://github.com/coq-community/math-classes" "master"
-# Contact @spitters on github
+# Contact @Lysxia and @spitters on github
 
 project corn "https://github.com/coq-community/corn" "master"
-# Contact @spitters on github
+# Contact @Lysxia and @spitters on github
 
 ########################################################################
 # Iris
@@ -180,16 +201,27 @@ project fiat_parsers "https://github.com/mit-plv/fiat" "master"
 # Contact @JasonGross on github
 
 ########################################################################
+# fiat_crypto_legacy
+########################################################################
+project fiat_crypto_legacy "https://github.com/mit-plv/fiat-crypto" "sp2019latest"
+# Contact @JasonGross on github
+
+########################################################################
 # fiat_crypto
 ########################################################################
 project fiat_crypto "https://github.com/mit-plv/fiat-crypto" "master"
 # Contact @andres-erbsen, @JasonGross on github
 
-########################################################################
-# fiat_crypto_legacy
-########################################################################
-project fiat_crypto_legacy "https://github.com/mit-plv/fiat-crypto" "sp2019latest"
-# Contact @JasonGross on github
+# bedrock2, coqutil, rupicola, kami, riscv_coq
+# fiat-crypto is not guaranteed to build with the latest version of
+# bedrock2, so we use the pinned version of bedrock2 for fiat-crypto
+# overlays do not have to follow suite
+subproject rupicola fiat_crypto "rupicola" "https://github.com/mit-plv/rupicola" "master"
+subproject bedrock2 rupicola "bedrock2" "https://github.com/mit-plv/bedrock2" "master"
+subproject coqutil bedrock2 "deps/coqutil" "https://github.com/mit-plv/coqutil" "master"
+subproject kami bedrock2 "deps/kami" "https://github.com/mit-plv/kami" "rv32i"
+subproject riscv_coq bedrock2 "deps/riscv-coq" "https://github.com/mit-plv/riscv-coq" "master"
+# Contact @samuelgruetter, @andres-erbsen on github
 
 ########################################################################
 # coq_dpdgraph
@@ -228,12 +260,6 @@ project bbv "https://github.com/mit-plv/bbv" "master"
 # Contact @JasonGross, @samuelgruetter on github
 
 ########################################################################
-# bedrock2
-########################################################################
-project bedrock2 "https://github.com/mit-plv/bedrock2" "tested"
-# Contact @samuelgruetter, @andres-erbsen on github
-
-########################################################################
 # Coinduction
 ########################################################################
 project coinduction "https://github.com/damien-pous/coinduction" "master"
@@ -254,7 +280,7 @@ project equations "https://github.com/mattam82/Coq-Equations" "main"
 ########################################################################
 # Elpi + Hierarchy Builder
 ########################################################################
-project elpi "https://github.com/LPCIC/coq-elpi" "coq-master"
+project elpi "https://github.com/LPCIC/coq-elpi" "master"
 # Contact @gares on github
 
 project hierarchy_builder "https://github.com/math-comp/hierarchy-builder" "master"
@@ -436,7 +462,7 @@ project sf "https://github.com/DeepSpec/sf" "master"
 ########################################################################
 # Coqtail
 ########################################################################
-project coqtail "https://github.com/whonore/Coqtail" "master"
+project coqtail "https://github.com/whonore/Coqtail" "main"
 # Contact @whonore on github
 
 ########################################################################
@@ -448,7 +474,7 @@ project deriving "https://github.com/arthuraa/deriving" "master"
 ########################################################################
 # VsCoq
 ########################################################################
-project vscoq "https://github.com/coq-community/vscoq" "coq-master"
+project vscoq "https://github.com/coq-community/vscoq" "main"
 # Contact @rtetley, @gares on github
 
 ########################################################################
@@ -474,7 +500,7 @@ project mathcomp_word "https://github.com/jasmin-lang/coqword" "v2.2"
 ########################################################################
 # Jasmin
 ########################################################################
-project jasmin "https://github.com/jasmin-lang/jasmin" "504d05f25c561f117b3ee2a2b664f8b692130d6c"
+project jasmin "https://github.com/jasmin-lang/jasmin" "e8380c779b5c284c6d4c654d4ea86c56521a6d4c"
 # Contact @vbgl, @bgregoir on github
 # go back to "main" and change dependency to MC 2 when
 # https://github.com/jasmin-lang/jasmin/pull/560 is merged
@@ -497,17 +523,14 @@ project serapi "https://github.com/ejgallego/coq-serapi" "main"
 project smtcoq "https://github.com/smtcoq/smtcoq" "coq-master"
 # Contact @ckeller on github
 
+project smtcoq_trakt "https://github.com/smtcoq/smtcoq" "with-trakt-coq-master"
+# Contact @ckeller on github
+
 ########################################################################
 # Stalmarck
 ########################################################################
 project stalmarck "https://github.com/coq-community/stalmarck" "master"
 # Contact @palmskog on github
-
-########################################################################
-# coq-library-undecidability
-########################################################################
-project coq_library_undecidability "https://github.com/uds-psl/coq-library-undecidability" "master"
-# Contact @mrhaandi, @yforster on github
 
 ########################################################################
 # Tactician
@@ -526,3 +549,15 @@ project ltac2_compiler "https://github.com/SkySkimmer/coq-ltac2-compiler" "main"
 ########################################################################
 project waterproof "https://github.com/impermeable/coq-waterproof" "coq-master"
 # Contact @jellooo038, @jim-portegies on github
+
+########################################################################
+# Autosubst (2) OCaml
+########################################################################
+project autosubst_ocaml "https://github.com/uds-psl/autosubst-ocaml" "master"
+# Contact @yforster on github
+
+########################################################################
+# Trakt
+########################################################################
+project trakt "https://github.com/ecranceMERCE/trakt" "coq-master"
+# Contact @ckeller, @louiseddp on github

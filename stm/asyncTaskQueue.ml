@@ -117,7 +117,7 @@ module Make(T : Task) () = struct
         | ("-emacs" | "--xml_format=Ppcmds" | "-batch" | "-vok" | "-vos") :: tl  ->
           set_slave_opt tl
         (* Options to discard: 1 argument *)
-        | ( "-async-proofs" | "-vio2vo" | "-o"
+        | ( "-async-proofs" | "-o"
           | "-load-vernac-source" | "-l" | "-load-vernac-source-verbose" | "-lv"
           | "-require-import" | "-require-export" | "-ri" | "-re"
           | "-load-vernac-object"
@@ -308,8 +308,8 @@ module Make(T : Task) () = struct
   let pp_pid pp = Pp.(str (Spawned.process_id () ^ " ") ++ pp)
 
   let debug_with_pid = Feedback.(function
-    | { contents = Message(Debug, loc, pp) } as fb ->
-       { fb with contents = Message(Debug,loc, pp_pid pp) }
+    | { contents = Message(Debug, loc, qf, pp) } as fb ->
+       { fb with contents = Message(Debug,loc, qf, pp_pid pp) }
     | x -> x)
 
   let main_loop () =

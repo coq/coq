@@ -124,10 +124,11 @@ and ml_ast =
   | MLfix    of int * Id.t array * ml_ast array
   | MLexn    of string
   | MLdummy  of kill_reason
-  | MLaxiom
+  | MLaxiom  of string
   | MLmagic  of ml_ast
   | MLuint   of Uint63.t
   | MLfloat  of Float64.t
+  | MLstring of Pstring.t
   | MLparray of ml_ast array * ml_ast
 
 and ml_pattern =

@@ -14,7 +14,7 @@
 .PHONY: refman-html refman-pdf stdlib-html apidoc     # Documentation targets
 .PHONY: test-suite dev-targets
 .PHONY: fmt ocheck obuild ireport clean               # Maintenance targets
-.PHONY: dunestrap vio release install                 # Miscellaneous
+.PHONY: dunestrap release install                 # Miscellaneous
 
 # We don't allow parallel build here, this is just a placehoder for
 # dune commands for the most part
@@ -45,14 +45,12 @@ help:
 	@echo "  - test-suite: run Coq's test suite [env NJOBS=N to set job parallelism]"
 	@echo "  - dunestrap: Generate the dune rules for vo files"
 	@echo ""
-	@echo "  use 'COQ_DUNE_EXTRA_OPT=\"-vio\" make target' to do a vio build"
-	@echo ""
 	@echo "  Note: running ./configure is not recommended for developers,"
 	@echo "        see dev/doc/build-system.dune.md for more info"
 	@echo "  Note: these targets produce a developer build, not suitable"
 	@echo "        for distribution to end-users or install"
 	@echo ""
-	@echo " To run an \$$app \\in {coqc,coqtop,coqbyte,coqide}:"
+	@echo " To run an \$$app \\in {coqc,coqtop,coqtop.byte,coqide}:"
 	@echo ""
 	@echo "  - use 'dune exec -- dev/shim/\$$app args'"
 	@echo "    Example: 'dune exec -- dev/shim/coqc file.v'"
@@ -151,10 +149,6 @@ NONDOC_INSTALL_TARGETS:=coq-core.install coq-stdlib.install coqide-server.instal
 
 world: dunestrap
 	dune build $(DUNEOPT) $(NONDOC_INSTALL_TARGETS)
-
-# only useful for CI
-vio: dunestrap
-	dune build $(DUNEOPT) @vio
 
 watch:
 	dune build $(DUNEOPT) $(NONDOC_INSTALL_TARGETS) -w

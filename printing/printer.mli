@@ -152,7 +152,7 @@ val pr_existential_key     : env -> evar_map -> Evar.t -> Pp.t
 val pr_existential         : env -> evar_map -> existential -> Pp.t
 val pr_constructor         : env -> constructor -> Pp.t
 val pr_inductive           : env -> inductive -> Pp.t
-val pr_evaluable_reference : Tacred.evaluable_global_reference -> Pp.t
+val pr_evaluable_reference : Evaluable.t -> Pp.t
 
 val pr_pconstant : env -> evar_map -> pconstant -> Pp.t
 val pr_pinductive : env -> evar_map -> pinductive -> Pp.t
@@ -189,6 +189,7 @@ val pr_context_of          : env -> evar_map -> Pp.t
 val pr_predicate           : ('a -> Pp.t) -> (bool * 'a list) -> Pp.t
 val pr_cpred               : Cpred.t -> Pp.t
 val pr_idpred              : Id.Pred.t -> Pp.t
+val pr_prpred              : PRpred.t -> Pp.t
 val pr_transparent_state   : TransparentState.t -> Pp.t
 
 (** Proofs, these functions obey [Hyps Limit] and [Compact contexts]. *)
@@ -219,7 +220,7 @@ type context_object =
   | Opaque of Constant.t     (* An opaque constant. *)
   | Transparent of Constant.t
 
-module ContextObjectSet : Set.S with type elt = context_object
+module ContextObjectSet : CSet.ExtS with type elt = context_object
 module ContextObjectMap : CMap.ExtS
   with type key = context_object and module Set := ContextObjectSet
 

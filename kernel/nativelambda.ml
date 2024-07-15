@@ -9,8 +9,6 @@
 (************************************************************************)
 
 open Util
-open Esubst
-open Constr
 open Genlambda
 
 (** This file defines the lambda code generation phase of the native compiler *)
@@ -20,15 +18,6 @@ type lambda = Nativevalues.t Genlambda.lambda
 (*s Constructors *)
 
 (** Simplification of lambda expression *)
-
-(* TODO: make the VM and native agree *)
-let can_subst lam =
-  match lam with
-  | Lrel _ | Lvar _ | Lconst _ | Lval _ | Lsort _ | Lind _ | Llam _
-  | Levar _ -> true
-  | _ -> false
-
-let simplify subst lam = simplify can_subst subst lam
 
 let is_value lc =
   match lc with
@@ -54,24 +43,15 @@ let as_value tag args =
     Some (Nativevalues.mk_block tag args)
   else None
 
-let is_lazy t =
-  match Constr.kind t with
-  | App _ | LetIn _ | Case _ | Proj _ -> true
-  | _ -> false
-
 module Val =
 struct
-  open Declarations
   type value = Nativevalues.t
   let as_value = as_value
   let check_inductive _ _ = ()
-  let get_constant knu cb = match cb.const_body with
-  | Def body -> if is_lazy body then mkLapp Lforce [|Lconst knu|] else Lconst knu
-  | Undef _ | OpaqueDef _ | Primitive _ -> assert false
 end
 
 module Lambda = Genlambda.Make(Val)
 
 let lambda_of_constr env sigma c =
   let lam = Lambda.lambda_of_constr env sigma c in
-  simplify (subs_id 0) lam
+  optimize lam

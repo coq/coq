@@ -117,7 +117,7 @@ let rec pp_type par vl t =
        with Failure _ -> (str "a" ++ int i))
     | Tglob (r,[]) -> pp_global Type r
     | Tglob (gr,l)
-        when not (keep_singleton ()) && GlobRef.CanOrd.equal gr (sig_type_ref ()) ->
+        when not (keep_singleton ()) && Coqlib.check_ref sig_type_name gr ->
           pp_type true vl (List.hd l)
     | Tglob (r,l) ->
           pp_par par
@@ -220,11 +220,13 @@ let rec pp_expr par env args =
          | s -> str "__" ++ spc () ++ pp_bracket_comment (str s))
     | MLmagic a ->
         pp_apply (str "unsafeCoerce") par (pp_expr true env [] a :: args)
-    | MLaxiom -> pp_par par (str "Prelude.error \"AXIOM TO BE REALIZED\"")
+    | MLaxiom s -> pp_par par (str "Prelude.error \"AXIOM TO BE REALIZED (" ++ str s ++ str ")\"")
     | MLuint _ ->
       pp_par par (str "Prelude.error \"EXTRACTION OF UINT NOT IMPLEMENTED\"")
     | MLfloat _ ->
       pp_par par (str "Prelude.error \"EXTRACTION OF FLOAT NOT IMPLEMENTED\"")
+    | MLstring _ ->
+      pp_par par (str "Prelude.error \"EXTRACTION OF STRING NOT IMPLEMENTED\"")
     | MLparray _ ->
       pp_par par (str "Prelude.error \"EXTRACTION OF ARRAY NOT IMPLEMENTED\"")
 

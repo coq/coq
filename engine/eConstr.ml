@@ -16,6 +16,17 @@ open Context
 
 module NamedDecl = Context.Named.Declaration
 
+module ERelevance = struct
+  include Evd.MiniEConstr.ERelevance
+
+  let equal sigma r1 r2 = Sorts.relevance_equal (kind sigma r1) (kind sigma r2)
+
+  let is_irrelevant = Evd.is_relevance_irrelevant
+
+  let relevant = make Relevant
+  let irrelevant = make Irrelevant
+end
+
 module ESorts = struct
   include Evd.MiniEConstr.ESorts
 
@@ -35,9 +46,9 @@ module ESorts = struct
   let super sigma s =
     make (Sorts.super (kind sigma s))
 
-  let relevance_of_sort sigma s =
+  let relevance_of_sort s =
     let r = Sorts.relevance_of_sort (unsafe_to_sorts s) in
-    UState.nf_relevance (Evd.evar_universe_context sigma) r
+    ERelevance.make r
 
   let family sigma s = Sorts.family (kind sigma s)
 
@@ -53,26 +64,33 @@ module EInstance = struct
 end
 
 include (Evd.MiniEConstr : module type of Evd.MiniEConstr
-         with module ESorts := ESorts
+         with module ERelevance := ERelevance
+          and module ESorts := ESorts
           and module EInstance := EInstance)
 
 type types = t
 type constr = t
 type existential = t pexistential
-type case_return = t pcase_return
-type case_branch = t pcase_branch
+type case_return = (t, ERelevance.t) pcase_return
+type case_branch = (t, ERelevance.t) pcase_branch
 type case_invert = t pcase_invert
-type case = (t, t, EInstance.t) pcase
-type fixpoint = (t, t) pfixpoint
-type cofixpoint = (t, t) pcofixpoint
+type case = (t, t, EInstance.t, ERelevance.t) pcase
+type rec_declaration = (t, t, ERelevance.t) prec_declaration
+type fixpoint = (t, t, ERelevance.t) pfixpoint
+type cofixpoint = (t, t, ERelevance.t) pcofixpoint
 type unsafe_judgment = (constr, types) Environ.punsafe_judgment
 type unsafe_type_judgment = (types, ESorts.t) Environ.punsafe_type_judgment
-type named_declaration = (constr, types) Context.Named.Declaration.pt
-type rel_declaration = (constr, types) Context.Rel.Declaration.pt
-type compacted_declaration = (constr, types) Context.Compacted.Declaration.pt
-type named_context = (constr, types) Context.Named.pt
+type named_declaration = (constr, types, ERelevance.t) Context.Named.Declaration.pt
+type rel_declaration = (constr, types, ERelevance.t) Context.Rel.Declaration.pt
+type compacted_declaration = (constr, types, ERelevance.t) Context.Compacted.Declaration.pt
+type named_context = (constr, types, ERelevance.t) Context.Named.pt
 type compacted_context = compacted_declaration list
-type rel_context = (constr, types) Context.Rel.pt
+type rel_context = (constr, types, ERelevance.t) Context.Rel.pt
+type 'a binder_annot = ('a, ERelevance.t) Context.pbinder_annot
+
+let annotR x = Context.make_annot x ERelevance.relevant
+let nameR x = annotR (Name x)
+let anonR = annotR Anonymous
 
 type 'a puniverses = 'a * EInstance.t
 
@@ -101,9 +119,10 @@ let mkFix f = of_kind (Fix f)
 let mkCoFix f = of_kind (CoFix f)
 let mkProj (p, r, c) = of_kind (Proj (p, r, c))
 let mkArrow t1 r t2 = of_kind (Prod (make_annot Anonymous r, t1, t2))
-let mkArrowR t1 t2 = mkArrow t1 Sorts.Relevant t2
+let mkArrowR t1 t2 = mkArrow t1 ERelevance.relevant t2
 let mkInt i = of_kind (Int i)
 let mkFloat f = of_kind (Float f)
+let mkString s = of_kind (String s)
 let mkArray (u,t,def,ty) = of_kind (Array (u,t,def,ty))
 
 let mkRef (gr,u) = let open GlobRef in match gr with
@@ -271,6 +290,20 @@ let decompose_lambda_decls sigma c =
   in
   lamdec_rec Context.Rel.empty c
 
+let decompose_lambda_n sigma n =
+  if n < 0 then
+    anomaly Pp.(str "decompose_lambda_n: integer parameter must be positive");
+  let rec lamdec_rec l n c =
+    if Int.equal n 0 then (l, c)
+    else
+      match kind sigma c with
+      | Lambda (x, t, c) -> lamdec_rec ((x, t) :: l) (n - 1) c
+      | Cast (c, _, _) -> lamdec_rec l n c
+      | _ ->
+        anomaly Pp.(str "decompose_lambda_n: not enough abstractions")
+  in
+  lamdec_rec [] n
+
 let decompose_lambda_n_assum sigma n c =
   let open Rel.Declaration in
   if n < 0 then
@@ -318,6 +351,20 @@ let decompose_prod sigma c =
   in
   proddec_rec [] c
 
+let decompose_prod_n sigma n =
+  if n < 0 then
+    anomaly Pp.(str "decompose_prod_n: integer parameter must be positive");
+  let rec proddec_rec l n c =
+    if Int.equal n 0 then (l, c)
+    else
+      match kind sigma c with
+      | Prod (x, t, c) -> proddec_rec ((x, t) :: l) (n - 1) c
+      | Cast (c, _, _) -> proddec_rec l n c
+      | _ ->
+        anomaly Pp.(str "decompose_prod_n: not enough products")
+  in
+  proddec_rec [] n
+
 let decompose_prod_decls sigma c =
   let open Rel.Declaration in
   let rec proddec_rec l c =
@@ -351,20 +398,36 @@ let existential_type = Evd.existential_type
 let lift n c = of_constr (Vars.lift n (unsafe_to_constr c))
 
 let of_branches : Constr.case_branch array -> case_branch array =
-  match Evd.MiniEConstr.unsafe_eq with
-  | Refl -> fun x -> x
+  match Evd.MiniEConstr.(unsafe_eq, unsafe_relevance_eq) with
+  | Refl, Refl -> fun x -> x
 
 let unsafe_to_branches : case_branch array -> Constr.case_branch array =
-  match Evd.MiniEConstr.unsafe_eq with
-  | Refl -> fun x -> x
+  match Evd.MiniEConstr.(unsafe_eq, unsafe_relevance_eq) with
+  | Refl, Refl -> fun x -> x
 
 let of_return : Constr.case_return -> case_return =
-  match Evd.MiniEConstr.unsafe_eq with
-  | Refl -> fun x -> x
+  match Evd.MiniEConstr.(unsafe_eq, unsafe_relevance_eq) with
+  | Refl, Refl -> fun x -> x
 
 let unsafe_to_return : case_return -> Constr.case_return =
-  match Evd.MiniEConstr.unsafe_eq with
+  match Evd.MiniEConstr.(unsafe_eq, unsafe_relevance_eq) with
+  | Refl, Refl -> fun x -> x
+
+let of_binder_annot : 'a Constr.binder_annot -> 'a binder_annot =
+  match Evd.MiniEConstr.unsafe_relevance_eq with
   | Refl -> fun x -> x
+
+let to_binder_annot sigma x = Context.map_annot_relevance (ERelevance.kind sigma) x
+
+let to_rel_decl sigma d =
+  Context.Rel.Declaration.map_constr_het (ERelevance.kind sigma) (to_constr sigma) d
+
+let to_rel_context sigma ctx = List.map (to_rel_decl sigma) ctx
+
+let to_named_decl sigma d =
+  Context.Named.Declaration.map_constr_het (ERelevance.kind sigma) (to_constr sigma) d
+
+let to_named_context sigma ctx = List.map (to_named_decl sigma) ctx
 
 let map_branches f br =
   let f c = unsafe_to_constr (f (of_constr c)) in
@@ -439,6 +502,7 @@ let expand_case env _sigma (ci, u, pms, p, iv, c, bl) =
   let bl = unsafe_to_branches bl in
   let (ci, (p,r), iv, c, bl) = Inductive.expand_case env (ci, u, pms, p, iv, c, bl) in
   let p = of_constr p in
+  let r = ERelevance.make r in
   let c = of_constr c in
   let iv = of_case_invert iv in
   let bl = of_constr_array bl in
@@ -465,12 +529,23 @@ let expand_branch env _sigma u pms (ind, i) (nas, _br) =
   let paramsubst = Vars.subst_of_rel_context_instance paramdecl pms in
   let (ctx, _) = mip.mind_nf_lc.(i - 1) in
   let (ctx, _) = List.chop mip.mind_consnrealdecls.(i - 1) ctx in
+  let nas =
+    let gen : type a b. (a,b) eq -> (_,a) Context.pbinder_annot array ->
+      (_,b) Context.pbinder_annot array =
+      fun Refl x -> x
+    in
+    gen unsafe_relevance_eq nas
+  in
   let ans = Inductive.instantiate_context u paramsubst nas ctx in
-  let ans : rel_context = match Evd.MiniEConstr.unsafe_eq with Refl -> ans in
+  let ans : rel_context =
+    match Evd.MiniEConstr.(unsafe_eq, unsafe_relevance_eq) with
+    | Refl, Refl -> ans
+  in
   ans
 
 let contract_case env _sigma (ci, (p,r), iv, c, bl) =
   let p = unsafe_to_constr p in
+  let r = ERelevance.unsafe_to_relevance r in
   let iv = unsafe_to_case_invert iv in
   let c = unsafe_to_constr c in
   let bl = unsafe_to_constr_array bl in
@@ -487,7 +562,7 @@ let iter_with_full_binders env sigma g f n c =
   let open Context.Rel.Declaration in
   match kind sigma c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _ | Int _ | Float _) -> ()
+    | Construct _ | Int _ | Float _ | String _) -> ()
   | Cast (c,_,t) -> f n c; f n t
   | Prod (na,t,c) -> f n t; f (g (LocalAssum (na, t)) n) c
   | Lambda (na,t,c) -> f n t; f (g (LocalAssum (na, t)) n) c
@@ -726,7 +801,7 @@ let fold_constr_relevance sigma f acc c =
   | Rel _ | Var _ | Meta _ | Evar _
   |  Sort _ | Cast _ | App _
   | Const _ | Ind _ | Construct _ | Proj _
-  | Int _ | Float _ | Array _ -> acc
+  | Int _ | Float _ | String _ | Array _ -> acc
 
   | Prod (na,_,_) | Lambda (na,_,_) | LetIn (na,_,_,_) ->
     fold_annot_relevance f acc na
@@ -744,7 +819,7 @@ let fold_constr_relevance sigma f acc c =
 let add_relevance sigma (qs,us as v) r =
   let open Sorts in
   (* NB this normalizes above_prop to Relevant which makes it disappear *)
-  match UState.nf_relevance (Evd.evar_universe_context sigma) r with
+  match ERelevance.kind sigma r with
   | Irrelevant | Relevant -> v
   | RelevanceVar q -> QVar.Set.add q qs, us
 
@@ -784,24 +859,24 @@ let cast_vect : type a b. (a,b) eq -> a array -> b array =
   fun Refl x -> x
 
 let cast_rel_decl :
-  type a b. (a,b) eq -> (a, a) Rel.Declaration.pt -> (b, b) Rel.Declaration.pt =
-  fun Refl x -> x
+  type a b c d. (a,b) eq -> (c,d) eq -> (a, a, c) Rel.Declaration.pt -> (b, b, d) Rel.Declaration.pt =
+  fun Refl Refl x -> x
 
 let cast_rel_context :
-  type a b. (a,b) eq -> (a, a) Rel.pt -> (b, b) Rel.pt =
-  fun Refl x -> x
+  type a b c d. (a,b) eq -> (c,d) eq -> (a, a, c) Rel.pt -> (b, b, d) Rel.pt =
+  fun Refl Refl x -> x
 
 let cast_rec_decl :
-  type a b. (a,b) eq -> (a, a) Constr.prec_declaration -> (b, b) Constr.prec_declaration =
-  fun Refl x -> x
+  type a b c d. (a,b) eq -> (c,d) eq -> (a, a, c) Constr.prec_declaration -> (b, b, d) Constr.prec_declaration =
+  fun Refl Refl x -> x
 
 let cast_named_decl :
-  type a b. (a,b) eq -> (a, a) Named.Declaration.pt -> (b, b) Named.Declaration.pt =
-  fun Refl x -> x
+  type a b c d. (a,b) eq -> (c,d) eq -> (a, a, c) Named.Declaration.pt -> (b, b, d) Named.Declaration.pt =
+  fun Refl Refl x -> x
 
 let cast_named_context :
-  type a b. (a,b) eq -> (a, a) Named.pt -> (b, b) Named.pt =
-  fun Refl x -> x
+  type a b c d. (a,b) eq -> (c,d) eq -> (a, a, c) Named.pt -> (b, b, d) Named.pt =
+  fun Refl Refl x -> x
 
 
 module Vars =
@@ -847,10 +922,18 @@ let subst_univs_level_constr subst c =
   of_constr (Vars.subst_univs_level_constr subst (to_constr c))
 
 let subst_instance_context subst ctx =
-  cast_rel_context (sym unsafe_eq) (Vars.subst_instance_context subst (cast_rel_context unsafe_eq ctx))
+  let subst = EInstance.unsafe_to_instance subst in
+  cast_rel_context (sym unsafe_eq) (sym unsafe_relevance_eq) (Vars.subst_instance_context subst (cast_rel_context unsafe_eq unsafe_relevance_eq ctx))
 
 let subst_instance_constr subst c =
+  let subst = EInstance.unsafe_to_instance subst in
   of_constr (Vars.subst_instance_constr subst (to_constr c))
+
+let subst_instance_relevance subst r =
+  let subst = EInstance.unsafe_to_instance subst in
+  let r = ERelevance.unsafe_to_relevance r in
+  let r = UVars.subst_instance_relevance subst r in
+  ERelevance.make r
 
 (** Operations that dot NOT commute with evar-normalization *)
 let noccurn sigma n term =
@@ -881,30 +964,30 @@ let closed0 sigma c = closedn sigma 0 c
 
 let subst_of_rel_context_instance ctx subst =
   cast_list (sym unsafe_eq)
-    (Vars.subst_of_rel_context_instance (cast_rel_context unsafe_eq ctx) (cast_vect unsafe_eq subst))
+    (Vars.subst_of_rel_context_instance (cast_rel_context unsafe_eq unsafe_relevance_eq ctx) (cast_vect unsafe_eq subst))
 let subst_of_rel_context_instance_list ctx subst =
   cast_list (sym unsafe_eq)
-    (Vars.subst_of_rel_context_instance_list (cast_rel_context unsafe_eq ctx) (cast_list unsafe_eq subst))
+    (Vars.subst_of_rel_context_instance_list (cast_rel_context unsafe_eq unsafe_relevance_eq ctx) (cast_list unsafe_eq subst))
 
 let liftn_rel_context n k ctx =
-  cast_rel_context (sym unsafe_eq)
-    (Vars.liftn_rel_context n k (cast_rel_context unsafe_eq ctx))
+  cast_rel_context (sym unsafe_eq) (sym unsafe_relevance_eq)
+    (Vars.liftn_rel_context n k (cast_rel_context unsafe_eq unsafe_relevance_eq ctx))
 
 let lift_rel_context n ctx =
-  cast_rel_context (sym unsafe_eq)
-    (Vars.lift_rel_context n (cast_rel_context unsafe_eq ctx))
+  cast_rel_context (sym unsafe_eq) (sym unsafe_relevance_eq)
+    (Vars.lift_rel_context n (cast_rel_context unsafe_eq unsafe_relevance_eq ctx))
 
 let substnl_rel_context subst n ctx =
-  cast_rel_context (sym unsafe_eq)
-    (Vars.substnl_rel_context (cast_list unsafe_eq subst) n (cast_rel_context unsafe_eq ctx))
+  cast_rel_context (sym unsafe_eq) (sym unsafe_relevance_eq)
+    (Vars.substnl_rel_context (cast_list unsafe_eq subst) n (cast_rel_context unsafe_eq unsafe_relevance_eq ctx))
 
 let substl_rel_context subst ctx =
-  cast_rel_context (sym unsafe_eq)
-    (Vars.substl_rel_context (cast_list unsafe_eq subst) (cast_rel_context unsafe_eq ctx))
+  cast_rel_context (sym unsafe_eq) (sym unsafe_relevance_eq)
+    (Vars.substl_rel_context (cast_list unsafe_eq subst) (cast_rel_context unsafe_eq unsafe_relevance_eq ctx))
 
 let smash_rel_context ctx =
-  cast_rel_context (sym unsafe_eq)
-      (Vars.smash_rel_context (cast_rel_context unsafe_eq ctx))
+  cast_rel_context (sym unsafe_eq) (sym unsafe_relevance_eq)
+      (Vars.smash_rel_context (cast_rel_context unsafe_eq unsafe_relevance_eq ctx))
 
 let esubst : (int -> 'a -> t) -> 'a Esubst.subs -> t -> t =
 match unsafe_eq with
@@ -979,7 +1062,7 @@ let it_mkNamedProd_wo_LetIn sigma t ctx = List.fold_left (fun c d -> mkNamedProd
 let rec isArity sigma c =
   match kind sigma c with
   | Prod (_,_,c)    -> isArity sigma c
-  | LetIn (_,b,_,c) -> isArity sigma (Vars.subst1 b c)
+  | LetIn (_,_,_,c) -> isArity sigma c
   | Cast (c,_,_)      -> isArity sigma c
   | Sort _          -> true
   | _               -> false
@@ -1000,26 +1083,26 @@ let destArity sigma =
   in
   prodec_rec []
 
-let push_rel d e = push_rel (cast_rel_decl unsafe_eq d) e
-let push_rel_context d e = push_rel_context (cast_rel_context unsafe_eq d) e
-let push_rec_types d e = push_rec_types (cast_rec_decl unsafe_eq d) e
-let push_named d e = push_named (cast_named_decl unsafe_eq d) e
-let push_named_context d e = push_named_context (cast_named_context unsafe_eq d) e
-let push_named_context_val d e = push_named_context_val (cast_named_decl unsafe_eq d) e
+let push_rel d e = push_rel (cast_rel_decl unsafe_eq unsafe_relevance_eq d) e
+let push_rel_context d e = push_rel_context (cast_rel_context unsafe_eq unsafe_relevance_eq d) e
+let push_rec_types d e = push_rec_types (cast_rec_decl unsafe_eq unsafe_relevance_eq d) e
+let push_named d e = push_named (cast_named_decl unsafe_eq unsafe_relevance_eq d) e
+let push_named_context d e = push_named_context (cast_named_context unsafe_eq unsafe_relevance_eq d) e
+let push_named_context_val d e = push_named_context_val (cast_named_decl unsafe_eq unsafe_relevance_eq d) e
 
-let rel_context e = cast_rel_context (sym unsafe_eq) (rel_context e)
-let named_context e = cast_named_context (sym unsafe_eq) (named_context e)
+let rel_context e = cast_rel_context (sym unsafe_eq) (sym unsafe_relevance_eq) (rel_context e)
+let named_context e = cast_named_context (sym unsafe_eq) (sym unsafe_relevance_eq) (named_context e)
 
-let val_of_named_context e = val_of_named_context (cast_named_context unsafe_eq e)
-let named_context_of_val e = cast_named_context (sym unsafe_eq) (named_context_of_val e)
+let val_of_named_context e = val_of_named_context (cast_named_context unsafe_eq unsafe_relevance_eq e)
+let named_context_of_val e = cast_named_context (sym unsafe_eq) (sym unsafe_relevance_eq) (named_context_of_val e)
 
 let of_existential : Constr.existential -> existential =
   let gen : type a b. (a,b) eq -> 'c * b SList.t -> 'c * a SList.t = fun Refl x -> x in
   gen unsafe_eq
 
-let lookup_rel i e = cast_rel_decl (sym unsafe_eq) (lookup_rel i e)
-let lookup_named n e = cast_named_decl (sym unsafe_eq) (lookup_named n e)
-let lookup_named_val n e = cast_named_decl (sym unsafe_eq) (lookup_named_ctxt n e)
+let lookup_rel i e = cast_rel_decl (sym unsafe_eq) (sym unsafe_relevance_eq) (lookup_rel i e)
+let lookup_named n e = cast_named_decl (sym unsafe_eq) (sym unsafe_relevance_eq) (lookup_named n e)
+let lookup_named_val n e = cast_named_decl (sym unsafe_eq) (sym unsafe_relevance_eq) (lookup_named_ctxt n e)
 
 let map_rel_context_in_env f env sign =
   let rec aux env acc = function
@@ -1032,8 +1115,8 @@ let map_rel_context_in_env f env sign =
 
 let match_named_context_val :
   named_context_val -> (named_declaration * named_context_val) option =
-  match unsafe_eq with
-  | Refl -> match_named_context_val
+  match unsafe_eq, unsafe_relevance_eq with
+  | Refl, Refl -> match_named_context_val
 
 let identity_subst_val : named_context_val -> t SList.t = fun ctx ->
   SList.defaultn (List.length ctx.Environ.env_named_ctx) SList.empty
@@ -1049,8 +1132,8 @@ let is_global = isRefX
 type kind_of_type =
   | SortType   of ESorts.t
   | CastType   of types * t
-  | ProdType   of Name.t Context.binder_annot * t * t
-  | LetInType  of Name.t Context.binder_annot * t * t * t
+  | ProdType   of Name.t binder_annot * t * t
+  | LetInType  of Name.t binder_annot * t * t * t
   | AtomicType of t * t array
 
 let kind_of_type sigma t = match kind sigma t with
@@ -1062,29 +1145,34 @@ let kind_of_type sigma t = match kind sigma t with
   | (Rel _ | Meta _ | Var _ | Evar _ | Const _
   | Proj _ | Case _ | Fix _ | CoFix _ | Ind _)
     -> AtomicType (t,[||])
-  | (Lambda _ | Construct _ | Int _ | Float _ | Array _) -> failwith "Not a type"
+  | (Lambda _ | Construct _ | Int _ | Float _ | String _ | Array _) -> failwith "Not a type"
 
 module Unsafe =
 struct
+let to_relevance = ERelevance.unsafe_to_relevance
 let to_sorts = ESorts.unsafe_to_sorts
 let to_instance = EInstance.unsafe_to_instance
 let to_constr = unsafe_to_constr
 let to_constr_array = unsafe_to_constr_array
+let to_binder_annot : 'a binder_annot -> 'a Constr.binder_annot =
+  match unsafe_relevance_eq with Refl -> fun x -> x
 let to_rel_decl = unsafe_to_rel_decl
 let to_named_decl = unsafe_to_named_decl
 let to_named_context =
-  let gen : type a b. (a, b) eq -> (a,a) Context.Named.pt -> (b,b) Context.Named.pt
-    = fun Refl x -> x
+  let gen : type a b c d. (a, b) eq -> (c,d) eq -> (a,a,c) Context.Named.pt -> (b,b,d) Context.Named.pt
+    = fun Refl Refl x -> x
   in
-  gen unsafe_eq
+  gen unsafe_eq unsafe_relevance_eq
 let to_rel_context =
-  let gen : type a b. (a, b) eq -> (a,a) Context.Rel.pt -> (b,b) Context.Rel.pt
-    = fun Refl x -> x
+  let gen : type a b c d. (a, b) eq -> (c,d) eq -> (a,a,c) Context.Rel.pt -> (b,b,d) Context.Rel.pt
+    = fun Refl Refl x -> x
   in
-  gen unsafe_eq
+  gen unsafe_eq unsafe_relevance_eq
 let to_case_invert = unsafe_to_case_invert
 
 let eq = unsafe_eq
+
+let relevance_eq = unsafe_relevance_eq
 end
 
 module UnsafeMonomorphic = struct

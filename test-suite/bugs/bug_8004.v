@@ -9,7 +9,7 @@ Infix "∧" := prod (at level 80, right associativity) : category_theory_scope.
 
 Class Setoid A := {
   equiv : crelation A;
-  setoid_equiv :> Equivalence equiv
+  setoid_equiv :: Equivalence equiv
 }.
 
 Notation "f ≈ g" := (equiv f g) (at level 79) : category_theory_scope.

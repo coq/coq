@@ -25,6 +25,8 @@ depends: [
   "coq-stdlib" {= version}
   "coqide-server" {= version}
   "ounit2" {with-test}
+  "conf-python-3" {with-test}
+  "conf-time" {with-test}
   "odoc" {with-doc}
 ]
 dev-repo: "git+https://github.com/coq/coq.git"

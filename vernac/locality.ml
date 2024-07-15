@@ -15,10 +15,6 @@ type definition_scope = Discharge | Global of import_status
 
 let default_scope = Global ImportDefaultBehavior
 
-let importability_of_bool = function
-  | true -> ImportNeedQualified
-  | false -> ImportDefaultBehavior
-
 (** Positioning locality for commands supporting discharging and export
      outside of modules *)
 
@@ -29,27 +25,6 @@ let importability_of_bool = function
 let make_non_locality = function Some false -> false | _ -> true
 
 let make_locality = function Some true -> true | _ -> false
-
-let warn_local_declaration =
-  CWarnings.create ~name:"local-declaration" ~category:CWarnings.CoreCategories.vernacular
-    Pp.(fun () ->
-        Pp.strbrk "Interpreting this declaration as if " ++
-        strbrk "a global declaration prefixed by \"Local\", " ++
-        strbrk "i.e. as a global declaration which shall not be " ++
-        strbrk "available without qualification when imported.")
-
-let enforce_locality_exp locality_flag discharge =
-  let open Vernacexpr in
-  match locality_flag, discharge with
-  | Some b, NoDischarge -> Global (importability_of_bool b)
-  | None, NoDischarge -> Global ImportDefaultBehavior
-  | None, DoDischarge when not (Lib.sections_are_opened ()) ->
-     (* If a Let/Variable is defined outside a section, then we consider it as a local definition *)
-     warn_local_declaration ();
-     Global ImportNeedQualified
-  | None, DoDischarge -> Discharge
-  | Some true, DoDischarge -> CErrors.user_err Pp.(str "Local not allowed in this case")
-  | Some false, DoDischarge -> CErrors.user_err Pp.(str "Global not allowed in this case")
 
 let enforce_locality locality_flag =
    make_locality locality_flag

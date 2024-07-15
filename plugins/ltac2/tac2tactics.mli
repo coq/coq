@@ -107,13 +107,13 @@ val injection : evars_flag -> intro_pattern list option -> destruction_arg optio
 
 val autorewrite : all:bool -> unit thunk option -> Id.t list -> clause -> unit tactic
 
-val trivial : Hints.debug -> constr thunk list -> Id.t list option ->
+val trivial : Hints.debug -> GlobRef.t list -> Id.t list option ->
   unit Proofview.tactic
 
-val auto : Hints.debug -> int option -> constr thunk list ->
+val auto : Hints.debug -> int option -> GlobRef.t list ->
   Id.t list option -> unit Proofview.tactic
 
-val eauto : Hints.debug -> int option -> constr thunk list ->
+val eauto : Hints.debug -> int option -> GlobRef.t list ->
   Id.t list option -> unit Proofview.tactic
 
 val typeclasses_eauto : Class_tactics.search_strategy option -> int option ->
@@ -128,3 +128,11 @@ val contradiction : constr_with_bindings option -> unit tactic
 val current_transparent_state : unit -> TransparentState.t tactic
 
 val evarconv_unify : TransparentState.t -> constr -> constr -> unit tactic
+
+(** Internal *)
+
+val mk_intro_pattern : intro_pattern -> Tactypes.intro_pattern
+
+val congruence : int option -> constr list option -> unit Proofview.tactic
+
+val simple_congruence : int option -> constr list option -> unit Proofview.tactic

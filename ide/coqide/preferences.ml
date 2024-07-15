@@ -273,11 +273,11 @@ let source_language =
 let source_style =
   new preference ~name:["source_style"] ~init:"coq_style" ~repr:Repr.(string)
 
-let global_auto_revert =
-  new preference ~name:["global_auto_revert"] ~init:false ~repr:Repr.(bool)
+let global_auto_reload =
+  new preference ~name:["global_auto_reload"] ~init:false ~repr:Repr.(bool)
 
-let global_auto_revert_delay =
-  new preference ~name:["global_auto_revert_delay"] ~init:10000 ~repr:Repr.(int)
+let global_auto_reload_delay =
+  new preference ~name:["global_auto_reload_delay"] ~init:10000 ~repr:Repr.(int)
 
 let auto_save =
   new preference ~name:["auto_save"] ~init:true ~repr:Repr.(bool)
@@ -310,43 +310,49 @@ let automatic_tactics =
 let cmd_print =
   new preference ~name:["cmd_print"] ~init:"lpr" ~repr:Repr.(string)
 
-let attach_modifiers (pref : string preference) prefix =
+let attach_modifiers (pref : string preference) ?(filter = Fun.const true) prefix =
   let cb mds =
     let mds = str_to_mod_list mds in
     let change ~path ~key ~modi ~changed =
-      if CString.is_sub prefix path 0 then
+      if CString.is_prefix prefix path && filter path then
         ignore (GtkData.AccelMap.change_entry ~key ~modi:mds ~replace:true path)
     in
     GtkData.AccelMap.foreach change
   in
   pref#connect#changed ~callback:cb
 
+let select_arch m m_mac =
+  (* Gtk's <Primary> maps to <Meta> (i.e. "Command") on Darwin (i.e. Mac),
+    <Control> on other architectures; but sometimes, we want more distinction *)
+  if Coq_config.arch = "Darwin" then m_mac else m
+
 let modifier_for_navigation =
   new preference ~name:["modifier_for_navigation"]
-    (* Note: on Darwin, this will give "<Control><Meta>", i.e. Ctrl and Command; on other
-    architectures, "<Primary>" binds to "<Control>" so it will give "<Control>" alone *)
-    ~init:"<Control><Primary>" ~repr:Repr.(string)
+    ~init:(select_arch "<Alt>" "<Control><Primary>") ~repr:Repr.(string)
 
 let modifier_for_templates =
   new preference ~name:["modifier_for_templates"] ~init:"<Control><Shift>" ~repr:Repr.(string)
 
-let select_arch m m_osx =
-  if Coq_config.arch = "Darwin" then m_osx else m
-
 let modifier_for_display =
   new preference ~name:["modifier_for_display"]
-   (* Note: <Primary> (i.e. <Meta>, i.e. "Command") on Darwin, i.e. MacOS X, but <Alt> elsewhere *)
     ~init:(select_arch "<Alt><Shift>" "<Primary><Shift>")~repr:Repr.(string)
 
 let modifier_for_queries =
   new preference ~name:["modifier_for_queries"] ~init:"<Control><Shift>" ~repr:Repr.(string)
 
+let printopts_item_names = ref []
+
 let attach_modifiers_callback () =
   (* Tell to propagate changes done in preference menu to accel map *)
   (* To be done after the preferences are loaded *)
+  let printopts_filter path =
+    let after_last_slash_pos = (String.rindex path '/') + 1 in
+    let item_name = String.sub path after_last_slash_pos (String.length path - after_last_slash_pos) in
+    List.mem item_name !printopts_item_names
+  in
+  let _ = attach_modifiers modifier_for_display "<Actions>/View/" ~filter:printopts_filter in
   let _ = attach_modifiers modifier_for_navigation "<Actions>/Navigation/" in
   let _ = attach_modifiers modifier_for_templates "<Actions>/Templates/" in
-  let _ = attach_modifiers modifier_for_display "<Actions>/View/" in
   let _ = attach_modifiers modifier_for_queries "<Actions>/Queries/" in
   ()
 
@@ -558,7 +564,7 @@ let show_line_number =
   new preference ~name:["show_line_number"] ~init:false ~repr:Repr.(bool)
 
 let auto_indent =
-  new preference ~name:["auto_indent"] ~init:false ~repr:Repr.(bool)
+  new preference ~name:["auto_indent"] ~init:true ~repr:Repr.(bool)
 
 let show_spaces =
   new preference ~name:["show_spaces"] ~init:true ~repr:Repr.(bool)
@@ -576,7 +582,7 @@ let tab_length =
   new preference ~name:["tab_length"] ~init:2 ~repr:Repr.(int)
 
 let highlight_current_line =
-  new preference ~name:["highlight_current_line"] ~init:false ~repr:Repr.(bool)
+  new preference ~name:["highlight_current_line"] ~init:true ~repr:Repr.(bool)
 
 let microPG =
   (* Legacy name in preference is "nanoPG" *)
@@ -965,13 +971,13 @@ let configure ?(apply=(fun () -> ())) parent =
       (string_of_int window_width#get)
   in
 
-  let global_auto_revert = pbool "Enable global auto revert" global_auto_revert in
-  let global_auto_revert_delay =
+  let global_auto_reload = pbool "Check for modified files" global_auto_reload in
+  let global_auto_reload_delay =
     string
-    ~f:(fun s -> global_auto_revert_delay#set
+    ~f:(fun s -> global_auto_reload_delay#set
           (try int_of_string s with _ -> 10000))
-      "Global auto revert delay (ms)"
-      (string_of_int global_auto_revert_delay#get)
+      "Modified file check interval (ms)"
+      (string_of_int global_auto_reload_delay#get)
   in
 
   let auto_save = pbool "Enable auto save" auto_save in
@@ -1128,7 +1134,7 @@ let configure ?(apply=(fun () -> ())) parent =
              [config_tags]);
      Section("Editor", Some `EDIT, [config_editor]);
      Section("Files", Some `DIRECTORY,
-             [global_auto_revert;global_auto_revert_delay;
+             [global_auto_reload;global_auto_reload_delay;
               auto_save; auto_save_delay; (* auto_save_name*)
               encodings; line_ending;
              ]);

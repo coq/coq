@@ -1,38 +1,45 @@
 File "./output/ltac.v", line 8, characters 13-31:
 The command has indeed failed with message:
 Ltac variable y depends on pattern variable name z which is not bound in current context.
+
 Ltac f x y z :=
   symmetry in x, y; auto with z; auto; intros; clearbody x; generalize
    dependent z
 File "./output/ltac.v", line 38, characters 5-9:
 The command has indeed failed with message:
-In nested Ltac calls to "g1" and "refine (uconstr)", last call failed.
 The term "I" has type "True" while it is expected to have type "False".
+In nested Ltac calls to "g1" and "refine (uconstr)", last call failed.
+
 File "./output/ltac.v", line 39, characters 5-9:
 The command has indeed failed with message:
+The term "I" has type "True" while it is expected to have type "False".
 In nested Ltac calls to "f1 (constr)" and "refine (uconstr)", last call
 failed.
-The term "I" has type "True" while it is expected to have type "False".
+
 File "./output/ltac.v", line 40, characters 5-9:
 The command has indeed failed with message:
+The term "I" has type "True" while it is expected to have type "False".
 In nested Ltac calls to "g2 (constr)", "g1" and "refine (uconstr)", last call
 failed.
-The term "I" has type "True" while it is expected to have type "False".
+
 File "./output/ltac.v", line 41, characters 5-9:
 The command has indeed failed with message:
+The term "I" has type "True" while it is expected to have type "False".
 In nested Ltac calls to "f2", "f1 (constr)" and "refine (uconstr)", last call
 failed.
-The term "I" has type "True" while it is expected to have type "False".
+
 File "./output/ltac.v", line 46, characters 5-8:
 The command has indeed failed with message:
+No primitive equality found.
 In nested Ltac calls to "h" and "injection (destruction_arg)", last call
 failed.
-No primitive equality found.
+
 File "./output/ltac.v", line 48, characters 5-8:
 The command has indeed failed with message:
+No primitive equality found.
 In nested Ltac calls to "h" and "injection (destruction_arg)", last call
 failed.
-No primitive equality found.
+
 Hx
 nat
 nat

@@ -71,11 +71,12 @@ let idx = Namegen.default_dependent_ident
 
 (* Refining an evar to a product *)
 
-let define_pure_evar_as_product env evd evk =
+let define_pure_evar_as_product env evd na evk =
   let open Context.Named.Declaration in
   let evi = Evd.find_undefined evd evk in
   let evenv = evar_env env evi in
-  let id = next_ident_away idx (Environ.ids_of_named_context_val (Evd.evar_hyps evi)) in
+  let id = match na with Some id -> id | None -> idx in
+  let id = next_ident_away id (Environ.ids_of_named_context_val (Evd.evar_hyps evi)) in
   let concl = Reductionops.whd_all evenv evd (Evd.evar_concl evi) in
   let s = destSort evd concl in
   let evksrc = evar_source evi in
@@ -83,7 +84,7 @@ let define_pure_evar_as_product env evd evk =
   let evd1,(dom,u1) =
     new_type_evar evenv evd univ_flexible_alg ~src ~filter:(evar_filter evi)
   in
-  let rdom = Sorts.relevance_of_sort (ESorts.kind evd1 u1) in
+  let rdom = ESorts.relevance_of_sort u1 in
   let evd2,rng =
     let newenv = push_named (LocalAssum (make_annot id rdom, dom)) evenv in
     let src = subterm_source evk ~where:Codomain evksrc in
@@ -106,8 +107,8 @@ let define_pure_evar_as_product env evd evk =
 
 (* Refine an applied evar to a product and returns its instantiation *)
 
-let define_evar_as_product env evd (evk,args) =
-  let evd,prod = define_pure_evar_as_product env evd evk in
+let define_evar_as_product env evd ?name (evk,args) =
+  let evd,prod = define_pure_evar_as_product env evd name evk in
   (* Quick way to compute the instantiation of evk with args *)
   let na,dom,rng = destProd evd prod in
   let evdom = mkEvar (fst (destEvar evd dom), args) in
@@ -124,14 +125,14 @@ let define_evar_as_product env evd (evk,args) =
    - x1..xq,y:A |- ?e':B
 *)
 
-let define_pure_evar_as_lambda env evd evk =
+let define_pure_evar_as_lambda env evd name evk =
   let open Context.Named.Declaration in
   let evi = Evd.find_undefined evd evk in
   let evenv = evar_env env evi in
   let typ = Reductionops.whd_all evenv evd (evar_concl evi) in
   let evd1,(na,dom,rng) = match EConstr.kind evd typ with
   | Prod (na,dom,rng) -> (evd,(na,dom,rng))
-  | Evar ev' -> let evd,typ = define_evar_as_product env evd ev' in evd,destProd evd typ
+  | Evar ev' -> let evd,typ = define_evar_as_product env evd ?name ev' in evd,destProd evd typ
   | _ -> error_not_product env evd typ in
   let avoid = Environ.ids_of_named_context_val (Evd.evar_hyps evi) in
   let id =
@@ -146,8 +147,8 @@ let define_pure_evar_as_lambda env evd evk =
   let lam = mkLambda (map_annot Name.mk_name id, dom, subst_var evd2 id.binder_name body) in
   Evd.define evk lam evd2, lam
 
-let define_evar_as_lambda env evd (evk,args) =
-  let evd,lam = define_pure_evar_as_lambda env evd evk in
+let define_evar_as_lambda env evd ?name (evk,args) =
+  let evd,lam = define_pure_evar_as_lambda env evd name evk in
   (* Quick way to compute the instantiation of evk with args *)
   let na,dom,body = destLambda evd lam in
   let evbodyargs = SList.cons (mkRel 1) (SList.Skip.map (lift 1) args) in
@@ -158,7 +159,7 @@ let rec evar_absorb_arguments env evd (evk,args as ev) = function
   | [] -> evd,ev
   | a::l ->
       (* TODO: optimize and avoid introducing intermediate evars *)
-      let evd,lam = define_pure_evar_as_lambda env evd evk in
+      let evd,lam = define_pure_evar_as_lambda env evd None evk in
       let _,_,body = destLambda evd lam in
       let evk = fst (destEvar evd body) in
       evar_absorb_arguments env evd (evk, SList.cons a args) l

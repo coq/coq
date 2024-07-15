@@ -1,0 +1,19 @@
+#directory "+compiler-libs";;
+
+#directory "_build/default/lib/.lib.objs/byte/";;
+#directory "_build/default/clib/.clib.objs/byte/";;
+#directory "_build/default/kernel/.kernel.objs/byte/";;
+#directory "_build/default/library/.library.objs/byte/";;
+#directory "_build/default/engine/.engine.objs/byte/";;
+#directory "_build/default/pretyping/.pretyping.objs/byte/";;
+#directory "_build/default/interp/.interp.objs/byte/";;
+#directory "_build/default/parsing/.parsing.objs/byte/";;
+#directory "_build/default/gramlib/.gramlib.objs/byte/";;
+#directory "_build/default/proofs/.proofs.objs/byte/";;
+#directory "_build/default/tactics/.tactics.objs/byte/";;
+#directory "_build/default/printing/.printing.objs/byte/";;
+#directory "_build/default/vernac/.vernac.objs/byte/";;
+#directory "_build/default/stm/.stm.objs/byte/";;
+#directory "_build/default/toplevel/.toplevel.objs/byte/";;
+#directory "_build/default/plugins/ltac/.ltac_plugin.objs/byte/";;
+#directory "_build/default/dev/.dev.objs/byte/";;

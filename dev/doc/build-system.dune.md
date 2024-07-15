@@ -84,20 +84,9 @@ currently `coqnative` incurs a 33% build time overhead on a powerful
 16-core machine.
 
 There are several modes for the rule generation script to work,
-depending on the parameter passed. As of today, it support `-async`
-and `-vio`.
+depending on the parameter passed. As of today, it support `-async`.
 
 `-async` will pass `-async-proofs on` to `coqc`.
-
-`-vio` will have the script setup compilation such that `.vo` files
-are generated first going thru `.vio` files.
-
-In particular, `-vio` mode has several pitfalls, for example, no
-`.glob` files are generated (this is inherited from Coq
-itself). Moreover, it is not possible to do a full parallel build
-doing `.v -> .vio` and `.vio -> .vo`, as it'd be racy, so a barrier
-must be used (the first process must be completed) before running the
-`.vio -> .vo` step.
 
 ## Per-User Custom Settings
 
@@ -130,6 +119,19 @@ compiler.
 If you built the full standard library with the `world` target,
 then you can run the commands in the
 `_build/install/default/bin` directories (including `coq_makefile`).
+
+## Building custom toplevels
+
+You can build custom toplevels by tweaking the `toplevel/dune` files,
+for example, to add plugins to be linked statically using the
+`(libraries ...)` field.
+
+Note that Coq relies on a hidden Dune hack, which will add `-linkall`
+to binaries if they depend on the `findlib.dynload` library. As of
+today, `coq-core.vernac` uses `findlib.dynload`, so if your toplevel
+hooks at the `coq-core.vernac` or above level, you should be OK,
+otherwise add `-linkall` to Dune's `(link_flags ...)` field for your
+binary.
 
 ## Targets
 
@@ -225,10 +227,8 @@ For running in emacs, use `coqdev-ocamldebug` from `coqdev.el`.
 
 The following commands should work:
 ```
-dune exec -- dev/shim/coqbyte
+dune exec -- dev/shim/coqtop.byte
 > Drop.
-# #directory "dev";;
-# #use "include";;
 ```
 
 ## Compositionality, developer and release modes.

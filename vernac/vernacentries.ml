@@ -25,9 +25,6 @@ open Synterp
 
 module NamedDecl = Context.Named.Declaration
 
-(** TODO: make this function independent of Ltac *)
-let (f_interp_redexp, interp_redexp_hook) = Hook.make ()
-
 (* Utility functions, at some point they should all disappear and
    instead enviroment/state selection should be done at the Vernac DSL
    level. *)
@@ -53,44 +50,78 @@ let scope_class_of_qualid qid =
 (** Standard attributes for definition-like commands. *)
 module DefAttributes = struct
   type t = {
+    scope : definition_scope;
     locality : bool option;
     polymorphic : bool;
     program : bool;
-    deprecated : Deprecation.t option;
+    user_warns : Globnames.extended_global_reference UserWarn.with_qf option;
     canonical_instance : bool;
     typing_flags : Declarations.typing_flags option;
     using : Vernacexpr.section_subset_expr option;
     reversible : bool;
     clearbody: bool option;
   }
+  (* [locality] is used for [vernac_definition_hook],
+     the raw Local/Global attribute is also used to generate [scope].
+     [locality] can't be computed back from [scope]
+     because [Let Coercion] outside section generates [locality = None]
+     but [scope = Global ImportNeedQualified]
+     (which is otherwise associated with [locality = Some true]).
+
+     Since [Let] (ie discharge = DoDischarge) does not allow explicit locality
+     we could alternatively decide to change the default locality
+     of the coercion from out-of-section [Let Coercion].
+  *)
+
+  let importability_of_bool = function
+    | true -> ImportNeedQualified
+    | false -> ImportDefaultBehavior
+
+  let warn_declaration_outside_section =
+    CWarnings.create ~name:"declaration-outside-section"
+      ~category:CWarnings.CoreCategories.vernacular
+      ~default:CWarnings.AsError
+      Pp.(fun (unexpected_thing, replacement) ->
+          strbrk "Use of " ++ str unexpected_thing
+          ++ strbrk " outside sections behaves as " ++ str replacement ++ str ".")
+
+  let scope_of_locality locality_flag discharge deprecated_thing replacement : definition_scope =
+    let open Vernacexpr in
+    match locality_flag, discharge with
+    | Some b, NoDischarge -> Global (importability_of_bool b)
+    | None, NoDischarge -> Global ImportDefaultBehavior
+    | None, DoDischarge when not (Lib.sections_are_opened ()) ->
+      (* If a Let/Variable is defined outside a section, then we consider it as a local definition *)
+      warn_declaration_outside_section (deprecated_thing, replacement);
+      Global ImportNeedQualified
+    | None, DoDischarge -> Discharge
+    | Some true, DoDischarge -> CErrors.user_err Pp.(str "Local not allowed in this case")
+    | Some false, DoDischarge -> CErrors.user_err Pp.(str "Global not allowed in this case")
 
   open Attributes
   open Attributes.Notations
 
   let clearbody = bool_attribute ~name:"clearbody"
 
-  let make_information deprecated =
-    let open Library_info in
-    match deprecated with
-    | Some depr -> [Deprecation depr]
-    | None -> []
-
-  let parse ?(coercion=false) ?(discharge=NoDischarge) f =
+  (* [XXX] EJGA: coercion is unused here *)
+  let parse ?(coercion=false) ?(discharge=NoDischarge,"","") f =
+    let discharge, deprecated_thing, replacement = discharge in
     let clearbody = match discharge with DoDischarge -> clearbody | NoDischarge -> return None in
-    let (((((((locality, deprecated), polymorphic), program),
+    let (((((((locality, user_warns), polymorphic), program),
          canonical_instance), typing_flags), using),
          reversible), clearbody =
-      parse (locality ++ deprecation ++ polymorphic ++ program ++
+      parse (locality ++ user_warns_with_use_globref_instead ++ polymorphic ++ program ++
              canonical_instance ++ typing_flags ++ using ++
              reversible ++ clearbody)
         f
     in
     let using = Option.map Proof_using.using_from_string using in
-    let reversible = Option.default true reversible in
+    let reversible = Option.default false reversible in
     let () = if Option.has_some clearbody && not (Lib.sections_are_opened())
       then CErrors.user_err Pp.(str "Cannot use attribute clearbody outside sections.")
     in
-    { polymorphic; program; locality; deprecated; canonical_instance; typing_flags; using; reversible; clearbody }
+    let scope = scope_of_locality locality discharge deprecated_thing replacement in
+    { scope; locality; polymorphic; program; user_warns; canonical_instance; typing_flags; using; reversible; clearbody }
 end
 
 let with_def_attributes ?coercion ?discharge ~atts f =
@@ -137,7 +168,8 @@ let show_universes ~proof =
   let Proof.{goals;sigma} = Proof.data proof in
   let ctx = Evd.universe_context_set (Evd.minimize_universes sigma) in
   Termops.pr_evar_universe_context (Evd.evar_universe_context sigma) ++ fnl () ++
-  str "Normalized constraints:" ++ brk(1,1) ++ Univ.pr_universe_context_set (Termops.pr_evd_level sigma) ctx
+  v 1 (str "Normalized constraints:" ++ cut() ++
+       Univ.pr_universe_context_set (Termops.pr_evd_level sigma) ctx)
 
 (* Simulate the Intro(s) tactic *)
 let show_intro ~proof all =
@@ -284,12 +316,12 @@ let print_strategy r =
   let oracle = Environ.oracle (Global.env ()) in
   match r with
   | None ->
-    let fold key lvl (vacc, cacc) = match key with
-    | VarKey id -> ((GlobRef.VarRef id, lvl) :: vacc, cacc)
-    | ConstKey cst -> (vacc, (GlobRef.ConstRef cst, lvl) :: cacc)
-    | RelKey _ -> (vacc, cacc)
+    let fold key lvl (vacc, cacc, pacc) = match key with
+    | Conv_oracle.EvalVarRef id -> ((GlobRef.VarRef id, lvl) :: vacc, cacc, pacc)
+    | Conv_oracle.EvalConstRef cst -> (vacc, (GlobRef.ConstRef cst, lvl) :: cacc, pacc)
+    | Conv_oracle.EvalProjectionRef p -> (vacc, cacc, (GlobRef.ConstRef (Projection.Repr.constant p), lvl) :: pacc)
     in
-    let var_lvl, cst_lvl = fold_strategy fold oracle ([], []) in
+    let var_lvl, cst_lvl, prj_lvl = fold_strategy fold oracle ([], [], []) in
     let var_msg =
       if List.is_empty var_lvl then mt ()
       else str "Variable strategies" ++ fnl () ++
@@ -300,15 +332,20 @@ let print_strategy r =
       else str "Constant strategies" ++ fnl () ++
         hov 0 (prlist_with_sep fnl pr_strategy cst_lvl)
     in
-    var_msg ++ cst_msg
+    let prj_msg =
+      if List.is_empty prj_lvl then mt ()
+      else str "Projection strategies" ++ fnl () ++
+        hov 0 (prlist_with_sep fnl pr_strategy prj_lvl)
+    in
+    var_msg ++ cst_msg ++ prj_msg
   | Some r ->
     let r = Smartlocate.smart_global r in
     let key = let open GlobRef in match r with
-    | VarRef id -> VarKey id
-    | ConstRef cst -> ConstKey cst
+    | VarRef id -> Evaluable.EvalVarRef id
+    | ConstRef cst -> Evaluable.EvalConstRef cst
     | IndRef _ | ConstructRef _ -> user_err Pp.(str "The reference is not unfoldable.")
     in
-    let lvl = get_strategy oracle key in
+    let lvl = get_strategy oracle (Evaluable.to_kevaluable key) in
     pr_strategy (r, lvl)
 
 let print_registered () =
@@ -316,6 +353,16 @@ let print_registered () =
     pr_global r ++ str " registered as " ++ str s
   in
   hov 0 (prlist_with_sep fnl pr_lib_ref @@ Coqlib.get_lib_refs ())
+
+let print_registered_schemes () =
+  let schemes = DeclareScheme.all_schemes() in
+  let pr_one_scheme ind (kind, c) =
+    pr_global (ConstRef c) ++ str " registered as " ++ str kind ++ str " for " ++ pr_global (IndRef ind)
+  in
+  let pr_schemes_of_ind (ind, schemes) =
+    prlist_with_sep fnl (pr_one_scheme ind) (CString.Map.bindings schemes)
+  in
+  hov 0 (prlist_with_sep fnl pr_schemes_of_ind (Indmap.bindings schemes))
 
 let dump_universes output g =
   let open Univ in
@@ -330,7 +377,9 @@ let dump_universes output g =
   Univ.Level.Map.iter dump_arc g
 
 let dump_universes_gen prl g s =
-  let output = open_out s in
+  let fulls = System.get_output_path s in
+  System.mkdir (Filename.dirname fulls);
+  let output = open_out fulls in
   let output_constraint, close =
     if Filename.check_suffix s ".dot" || Filename.check_suffix s ".gv" then begin
       (* the lazy unit is to handle errors while printing the first line *)
@@ -369,6 +418,7 @@ let dump_universes_gen prl g s =
     close ();
     Exninfo.iraise reraise
 
+(* [XXX] EGJA: loc unused here *)
 let universe_subgraph ?loc kept univ =
   let open Univ in
   let parse q =
@@ -551,98 +601,11 @@ let vernac_enable_notation ~module_local on rule interp flags scope =
 
 let check_name_freshness locality {CAst.loc;v=id} : unit =
   (* We check existence here: it's a bit late at Qed time *)
-  if Nametab.exists_cci (Lib.make_path id) || Termops.is_section_variable (Global.env ()) id ||
-     locality <> Locality.Discharge && Nametab.exists_cci (Lib.make_path_except_section id)
+  if Termops.is_section_variable (Global.env ()) id ||
+     locality <> Discharge && Nametab.exists_cci (Lib.make_path id) ||
+     locality <> Discharge && Nametab.exists_cci (Lib.make_path_except_section id)
   then
     user_err ?loc  (Id.print id ++ str " already exists.")
-
-let program_inference_hook env sigma ev =
-  let tac = !Declare.Obls.default_tactic in
-  let evi = Evd.find_undefined sigma ev in
-  let evi = Evarutil.nf_evar_info sigma evi in
-  let env = Evd.evar_filtered_env env evi in
-  try
-    let concl = Evd.evar_concl evi in
-    if not (Evarutil.is_ground_env sigma env &&
-            Evarutil.is_ground_term sigma concl)
-    then None
-    else
-      let c, _, _, _, ctx =
-        Declare.build_by_tactic ~poly:false env ~uctx:(Evd.evar_universe_context sigma) ~typ:concl tac
-      in
-      Some (Evd.set_universe_context sigma ctx, EConstr.of_constr c)
-  with
-  | Logic_monad.TacticFailure e when noncritical e ->
-    user_err Pp.(str "The statement obligations could not be resolved \
-                      automatically, write a statement definition first.")
-
-let vernac_set_used_variables pstate using : Declare.Proof.t =
-  let env = Global.env () in
-  let sigma, _ = Declare.Proof.get_current_context pstate in
-  let fixnames = Declare.Proof.get_recnames pstate in
-  let initial_goals pf = Proofview.initial_goals Proof.((data pf).entry) in
-  let terms = List.map pi3 (initial_goals (Declare.Proof.get pstate)) in
-  let using = Proof_using.definition_using env sigma ~fixnames ~using ~terms in
-  let _, pstate = Declare.Proof.set_used_variables pstate ~using in
-  pstate
-
-let vernac_set_used_variables_opt ?using pstate =
-  match using with
-  | None -> pstate
-  | Some expr -> vernac_set_used_variables pstate expr
-
-(* XXX: Interpretation of lemma command, duplication with ComFixpoint
-   / ComDefinition ? *)
-let interp_lemma ~program_mode ~flags ~scope env0 evd thms =
-  let inference_hook = if program_mode then Some program_inference_hook else None in
-  List.fold_left_map (fun evd ((id, _), (bl, t)) ->
-      let evd, (impls, ((env, ctx), imps)) =
-        Constrintern.interp_context_evars ~program_mode env0 evd bl
-      in
-      let evd, (t', imps') = Constrintern.interp_type_evars_impls ~flags ~impls env evd t in
-      let flags = Pretyping.{ all_and_fail_flags with program_mode } in
-      let evd = Pretyping.solve_remaining_evars ?hook:inference_hook flags env evd in
-      let ids = List.map Context.Rel.Declaration.get_name ctx in
-      check_name_freshness scope id;
-      let thm = Declare.CInfo.make ~name:id.CAst.v ~typ:(EConstr.it_mkProd_or_LetIn t' ctx)
-          ~args:ids ~impargs:(imps @ imps') () in
-      evd, thm)
-    evd thms
-
-(* Checks done in start_lemma_com *)
-let post_check_evd ~udecl ~poly evd =
-  let () =
-    if not UState.(udecl.univdecl_extensible_instance &&
-                   udecl.univdecl_extensible_constraints) then
-      ignore (Evd.check_univ_decl ~poly evd udecl)
-  in
-  if poly then evd
-  else (* We fix the variables to ensure they won't be lowered to Set *)
-    Evd.fix_undefined_variables evd
-
-let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ?clearbody ~kind ~deprecation ?using ?hook thms =
-  let env0 = Global.env () in
-  let env0 = Environ.update_typing_flags ?typing_flags env0 in
-  let flags = Pretyping.{ all_no_fail_flags with program_mode } in
-  let decl = fst (List.hd thms) in
-  let evd, udecl = Constrintern.interp_univ_decl_opt env0 (snd decl) in
-  let evd, thms = interp_lemma ~program_mode ~flags ~scope env0 evd thms in
-  let mut_analysis = RecLemmas.look_for_possibly_mutual_statements evd thms in
-  let evd = Evd.minimize_universes evd in
-  let info = Declare.Info.make ?hook ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?deprecation () in
-  begin
-    match mut_analysis with
-    | RecLemmas.NonMutual thm ->
-      let thm = Declare.CInfo.to_constr evd thm in
-      let evd = post_check_evd ~udecl ~poly evd in
-      Declare.Proof.start_with_initialization ~info ~cinfo:thm evd
-    | RecLemmas.Mutual { mutual_info; cinfo ; possible_guards } ->
-      let cinfo = List.map (Declare.CInfo.to_constr evd) cinfo in
-      let evd = post_check_evd ~udecl ~poly evd in
-      Declare.Proof.start_mutual_with_initialization ~info ~cinfo evd ~mutual_info (Some possible_guards)
-  end
-  (* XXX: This should be handled in start_with_initialization, see duplicate using in declare.ml *)
-  |> vernac_set_used_variables_opt ?using
 
 let vernac_definition_hook ~canonical_instance ~local ~poly ~reversible = let open Decls in function
 | Coercion ->
@@ -668,61 +631,72 @@ let vernac_definition_name lid local =
     | { v = Name.Anonymous; loc } ->
          CAst.make ?loc (fresh_name_for_anonymous_theorem ())
     | { v = Name.Name n; loc } -> CAst.make ?loc n in
+  check_name_freshness local lid;
   let () =
+    if Dumpglob.dump () then
     match local with
     | Discharge -> Dumpglob.dump_definition lid true "var"
     | Global _ -> Dumpglob.dump_definition lid false "def"
   in
-  lid
+  lid.v
 
-let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
+let vernac_definition_interactive ~atts (discharge, kind) (lid, udecl) bl t =
   let open DefAttributes in
-  let local = enforce_locality_exp atts.locality discharge in
-  let hook = vernac_definition_hook ~canonical_instance:atts.canonical_instance ~local:atts.locality ~poly:atts.polymorphic ~reversible:atts.reversible kind in
-  let program_mode = atts.program in
-  let poly = atts.polymorphic in
-  let typing_flags = atts.typing_flags in
-  let deprecation = atts.deprecated in
-  let name = vernac_definition_name lid local in
-  start_lemma_com ~typing_flags ~program_mode ~poly ~scope:local ?clearbody:atts.clearbody
-    ~kind:(Decls.IsDefinition kind) ~deprecation ?using:atts.using ?hook [(name, pl), (bl, t)]
+  let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody =
+    atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
+  let canonical_instance, reversible = atts.canonical_instance, atts.reversible in
+  let hook = vernac_definition_hook ~canonical_instance ~local ~poly ~reversible kind in
+  let name = vernac_definition_name lid scope in
+  ComDefinition.do_definition_interactive ~typing_flags ~program_mode ~name ~poly ~scope ?clearbody:atts.clearbody
+    ~kind:(Decls.IsDefinition kind) ?user_warns ?using:atts.using ?hook udecl bl t
 
-let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_opt =
+let vernac_definition ~atts ~pm (discharge, kind) (lid, udecl) bl red_option c typ_opt =
   let open DefAttributes in
-  let scope = enforce_locality_exp atts.locality discharge in
-  let hook = vernac_definition_hook ~canonical_instance:atts.canonical_instance ~local:atts.locality ~poly:atts.polymorphic kind ~reversible:atts.reversible in
-  let program_mode = atts.program in
-  let typing_flags = atts.typing_flags in
+  let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody =
+     atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
+  let canonical_instance, reversible = atts.canonical_instance, atts.reversible in
+  let hook = vernac_definition_hook ~canonical_instance ~local ~poly kind ~reversible in
   let name = vernac_definition_name lid scope in
   let red_option = match red_option with
     | None -> None
     | Some r ->
       let env = Global.env () in
       let sigma = Evd.from_env env in
-      Some (snd (Hook.get f_interp_redexp env sigma r)) in
+      Some (snd (Redexpr.interp_redexp_no_ltac env sigma r)) in
   if program_mode then
     let kind = Decls.IsDefinition kind in
-    ComDefinition.do_definition_program ~pm ~name:name.v
-      ?clearbody:atts.clearbody ~poly:atts.polymorphic ?typing_flags ~scope ~kind
-      ?deprecation:atts.deprecated pl bl red_option c typ_opt ?hook
+    ComDefinition.do_definition_program ~pm ~name
+      ?clearbody ~poly ?typing_flags ~scope ~kind
+      ?user_warns ?using udecl bl red_option c typ_opt ?hook
   else
     let () =
-      ComDefinition.do_definition ~name:name.v
-        ?clearbody:atts.clearbody ~poly:atts.polymorphic ?typing_flags ~scope ~kind ?using:atts.using
-        ?deprecation:atts.deprecated pl bl red_option c typ_opt ?hook in
+      ComDefinition.do_definition ~name
+        ?clearbody ~poly ?typing_flags ~scope ~kind
+        ?user_warns ?using udecl bl red_option c typ_opt ?hook in
     pm
 
 (* NB: pstate argument to use combinators easily *)
 let vernac_start_proof ~atts kind l =
   let open DefAttributes in
-  let scope = enforce_locality_exp atts.locality NoDischarge in
   if Dumpglob.dump () then
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
-  start_lemma_com
-    ~typing_flags:atts.typing_flags
-    ~program_mode:atts.program
-    ~poly:atts.polymorphic
-    ~scope ~kind:(Decls.IsProof kind) ~deprecation:atts.deprecated ?using:atts.using l
+  let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody =
+    atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
+  List.iter (fun ((id, _), _) -> check_name_freshness scope id) l;
+  match l with
+  | [] -> assert false
+  | [({v=name},udecl),(bl,typ)] ->
+    ComDefinition.do_definition_interactive
+      ~typing_flags ~program_mode ~name ~poly ?clearbody ~scope
+      ~kind:(Decls.IsProof kind) ?user_warns ?using udecl bl typ
+  | _ ->
+    let fix = List.map (fun ((fname, univs), (binders, rtype)) ->
+        { fname; binders; rtype; body_def = None; univs; notations = []}) l in
+    let pm, proof =
+      ComFixpoint.do_mutually_recursive ~program_mode ~use_inference_hook:program_mode
+        ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using (CUnknownRecOrder, fix) in
+    assert (Option.is_empty pm);
+    Option.get proof
 
 let vernac_end_proof ~lemma ~pm = let open Vernacexpr in function
   | Admitted ->
@@ -741,18 +715,13 @@ let vernac_exact_proof ~lemma ~pm c =
   if not status then Feedback.feedback Feedback.AddedAxiom;
   pm
 
-let vernac_assumption ~atts discharge kind l nl =
+let vernac_assumption ~atts kind l inline =
   let open DefAttributes in
-  let scope = enforce_locality_exp atts.locality discharge in
-  List.iter (fun (is_coe,(idl,c)) ->
-    if Dumpglob.dump () then
-      List.iter (fun (lid, _) ->
-          match scope with
-            | Global _ -> Dumpglob.dump_definition lid false "ax"
-            | Discharge -> Dumpglob.dump_definition lid true "var") idl) l;
-  if Option.has_some atts.using then
+  let scope, poly, program_mode, using, user_warns =
+    atts.scope, atts.polymorphic, atts.program, atts.using, atts.user_warns in
+  if Option.has_some using then
     Attributes.unsupported_attributes [CAst.make ("using",VernacFlagEmpty)];
-  ComAssumption.do_assumptions ~poly:atts.polymorphic ~program_mode:atts.program ~scope ~kind ?deprecation:atts.deprecated nl l
+  ComAssumption.do_assumptions ~poly ~program_mode ~scope ~kind ?user_warns ~inline l
 
 let { Goptions.get = is_polymorphic_inductive_cumulativity } =
   declare_bool_option_and_ref
@@ -807,6 +776,7 @@ let should_treat_as_uniform () =
   then ComInductive.UniformParameters
   else ComInductive.NonUniformParameters
 
+(* [XXX] EGJA: several arguments not used here *)
 let vernac_record ~template udecl ~cumulative k ~poly ?typing_flags ~primitive_proj finite records =
   let map ((is_coercion, name), binders, sort, nameopt, cfs, ido) =
     let idbuild = match nameopt with
@@ -866,22 +836,21 @@ let primitive_proj =
   | Some t -> return t
   | None -> return (primitive_flag ())
 
+let { Goptions.get = do_auto_prop_lowering } =
+  Goptions.declare_bool_option_and_ref ~key:["Automatic";"Proposition";"Inductives"] ~value:true ()
+
 module Preprocessed_Mind_decl = struct
-  type flags = {
-    template : bool option;
-    udecl : Constrexpr.cumul_univ_decl_expr option;
-    cumulative : bool;
-    poly : bool;
-    finite : Declarations.recursivity_kind;
-  }
+  type flags = ComInductive.flags
   type record = {
     flags : flags;
+    udecl : Constrexpr.cumul_univ_decl_expr option;
     primitive_proj : bool;
     kind : Vernacexpr.inductive_kind;
     records : Record.Ast.t list;
   }
   type inductive = {
     flags : flags;
+    udecl : Constrexpr.cumul_univ_decl_expr option;
     typing_flags : Declarations.typing_flags option;
     private_ind : bool;
     uniform : ComInductive.uniform_inductive_flag;
@@ -921,6 +890,8 @@ let preprocess_inductive_decl ~atts kind indl =
           ++ private_ind ++ typing_flags ++ prim_proj_attr)
         atts)
   in
+  let auto_prop_lowering = do_auto_prop_lowering () in
+  let flags = { ComInductive.template; cumulative; poly; finite; auto_prop_lowering; } in
   if Option.has_some is_defclass then
     (* Definitional class case *)
     let (id, bl, c, l) = Option.get is_defclass in
@@ -940,7 +911,7 @@ let preprocess_inductive_decl ~atts kind indl =
     let recordl = [id, bl, c, None, [f], None] in
     let kind = Class true in
     let records = vernac_record ~template udecl ~cumulative kind ~poly ?typing_flags ~primitive_proj finite recordl in
-    indl, Preprocessed_Mind_decl.(Record { flags = { template; udecl; cumulative; poly; finite; }; primitive_proj; kind; records })
+    indl, Preprocessed_Mind_decl.(Record { flags; udecl; primitive_proj; kind; records })
   else if List.for_all is_record indl then
     (* Mutual record case *)
     let () = match kind with
@@ -984,7 +955,7 @@ let preprocess_inductive_decl ~atts kind indl =
     let kind = match kind with Class _ -> Class false | _ -> kind in
     let recordl = List.map unpack indl in
     let records = vernac_record ~template udecl ~cumulative kind ~poly ?typing_flags ~primitive_proj finite recordl in
-    indl, Preprocessed_Mind_decl.(Record { flags = { template; udecl; cumulative; poly; finite; }; primitive_proj; kind; records })
+    indl, Preprocessed_Mind_decl.(Record { flags; udecl; primitive_proj; kind; records })
   else if List.for_all is_constructor indl then
     (* Mutual inductive case *)
     let () = match kind with
@@ -1008,7 +979,7 @@ let preprocess_inductive_decl ~atts kind indl =
     in
     let inductives = List.map unpack indl in
     let uniform = should_treat_as_uniform () in
-    indl, Preprocessed_Mind_decl.(Inductive { flags = { template; udecl; cumulative; poly; finite }; typing_flags; private_ind; uniform; inductives })
+    indl, Preprocessed_Mind_decl.(Inductive { flags; udecl; typing_flags; private_ind; uniform; inductives })
   else
     user_err (str "Mixed record-inductive definitions are not allowed.")
 
@@ -1024,7 +995,7 @@ let dump_inductive indl_for_glob decl =
         | _ -> ())
       indl_for_glob;
     match decl with
-    | Record { flags = { template; udecl; cumulative; poly; finite; }; kind; primitive_proj; records } ->
+    | Record { records } ->
       let dump_glob_proj (x, _) = match x with
         | Vernacexpr.(AssumExpr ({loc;v=Name id}, _, _) | DefExpr ({loc;v=Name id}, _, _, _)) ->
           Dumpglob.dump_definition (make ?loc id) false "proj"
@@ -1040,63 +1011,64 @@ let vernac_inductive ~atts kind indl =
   let indl_for_glob, decl = preprocess_inductive_decl ~atts kind indl in
   dump_inductive indl_for_glob decl;
   match decl with
-  | Record { flags = { template; udecl; cumulative; poly; finite; }; kind; primitive_proj; records } ->
+  | Record { flags; kind; udecl; primitive_proj; records } ->
     let _ : _ list =
-      Record.definition_structure ~template udecl kind ~cumulative ~poly ~primitive_proj finite records in
+      Record.definition_structure ~flags udecl kind ~primitive_proj records in
     ()
-  | Inductive { flags = { template; udecl; cumulative; poly; finite; }; typing_flags; private_ind; uniform; inductives } ->
-    ComInductive.do_mutual_inductive ~template udecl inductives ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite
+  | Inductive { flags; udecl; typing_flags; private_ind; uniform; inductives } ->
+    ComInductive.do_mutual_inductive ~flags udecl inductives ?typing_flags ~private_ind ~uniform
 
 let preprocess_inductive_decl ~atts kind indl =
   snd @@ preprocess_inductive_decl ~atts kind indl
 
-let vernac_fixpoint_common ~atts discharge l =
+let vernac_fixpoint_common ~atts l =
   if Dumpglob.dump () then
     List.iter (fun { fname } -> Dumpglob.dump_definition fname false "def") l;
-  enforce_locality_exp atts.DefAttributes.locality discharge
+  let scope = atts.DefAttributes.scope in
+  List.iter (fun { fname } -> check_name_freshness scope fname) l;
+  scope
 
-let vernac_fixpoint_interactive ~atts discharge l =
-  let open DefAttributes in
-  let scope = vernac_fixpoint_common ~atts discharge l in
-  if atts.program then
-    CErrors.user_err Pp.(str"Program Fixpoint requires a body.");
-  let typing_flags = atts.typing_flags in
-  ComFixpoint.do_fixpoint_interactive ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic ?typing_flags ?deprecation:atts.deprecated l
-  |> vernac_set_used_variables_opt ?using:atts.using
-
-let vernac_fixpoint ~atts ~pm discharge l =
-  let open DefAttributes in
-  let scope = vernac_fixpoint_common ~atts discharge l in
-  let typing_flags = atts.typing_flags in
-  if atts.program then
-    (* XXX: Switch to the attribute system and match on ~atts *)
-    ComProgramFixpoint.do_fixpoint ~pm ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
-      ?typing_flags ?deprecation:atts.deprecated ?using:atts.using l
+let with_obligations program_mode f pm =
+  if program_mode then
+    f pm ~program_mode:true
   else
-    let () = ComFixpoint.do_fixpoint ~scope ?clearbody:atts.clearbody ~poly:atts.polymorphic
-      ?typing_flags ?deprecation:atts.deprecated ?using:atts.using l in
+    let pm', proof = f None ~program_mode:false in
+    assert (Option.is_empty pm');
+    pm, proof
+
+let vernac_fixpoint ~atts ~pm (rec_order,fixl) =
+  let open DefAttributes in
+  let scope = vernac_fixpoint_common ~atts fixl in
+  let poly, typing_flags, program_mode, clearbody, using, user_warns =
+    atts.polymorphic, atts.typing_flags, atts.program, atts.clearbody, atts.using, atts.user_warns in
+  let () =
+    if program_mode then
+      (* XXX: Switch to the attribute system and match on ~atts *)
+      let opens = List.exists (fun { body_def } -> Option.is_empty body_def) fixl in
+      if opens then CErrors.user_err Pp.(str"Program Fixpoint requires a body.") in
+  with_obligations program_mode
+    (fun pm -> ComFixpoint.do_mutually_recursive ?pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using (CFixRecOrder rec_order, fixl))
     pm
 
-let vernac_cofixpoint_common ~atts discharge l =
+let vernac_cofixpoint_common ~atts l =
   if Dumpglob.dump () then
     List.iter (fun { fname } -> Dumpglob.dump_definition fname false "def") l;
-  enforce_locality_exp atts.DefAttributes.locality discharge
+  let scope = atts.DefAttributes.scope in
+  List.iter (fun { fname } -> check_name_freshness scope fname) l;
+  scope
 
-let vernac_cofixpoint_interactive ~atts discharge l =
+let vernac_cofixpoint ~pm ~atts cofixl =
   let open DefAttributes in
-  let scope = vernac_cofixpoint_common ~atts discharge l in
-  if atts.program then
-    CErrors.user_err Pp.(str"Program CoFixpoint requires a body.");
-  vernac_set_used_variables_opt ?using:atts.using
-    (ComFixpoint.do_cofixpoint_interactive ~scope ~poly:atts.polymorphic l)
-
-let vernac_cofixpoint ~atts ~pm discharge l =
-  let open DefAttributes in
-  let scope = vernac_cofixpoint_common ~atts discharge l in
-  if atts.program then
-    ComProgramFixpoint.do_cofixpoint ~pm ~scope ~poly:atts.polymorphic ?using:atts.using l
-  else
-    let () = ComFixpoint.do_cofixpoint ~scope ~poly:atts.polymorphic ?using:atts.using l in
+  let scope = vernac_cofixpoint_common ~atts cofixl in
+  let poly, typing_flags, program_mode, clearbody, using, user_warns =
+    atts.polymorphic, atts.typing_flags, atts.program, atts.clearbody, atts.using, atts.user_warns in
+  let () =
+    if program_mode then
+      let opens = List.exists (fun { body_def } -> Option.is_empty body_def) cofixl in
+      if opens then
+        CErrors.user_err Pp.(str"Program CoFixpoint requires a body.") in
+  with_obligations program_mode
+    (fun pm -> ComFixpoint.do_mutually_recursive ?pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using (CCoFixRecOrder, cofixl))
     pm
 
 let vernac_scheme l =
@@ -1108,6 +1080,7 @@ let vernac_scheme l =
 let vernac_scheme_equality ?locmap sch id =
   Indschemes.do_scheme_equality ?locmap sch id
 
+(* [XXX] locmap unused here *)
 let vernac_combined_scheme lid l ~locmap =
   (* XXX why does this take idents and not qualids *)
   let l = List.map (fun id -> match qualid_global (qualid_of_ident ?loc:id.loc id.v) with
@@ -1149,6 +1122,7 @@ let importable_extended_global_of_path ?loc path =
     else Some ref
   | ref -> Some ref
 
+(* [XXX] n unused here *)
 let add_subnames_of ?loc len n ns full_n ref =
   let open GlobRef in
   let add1 r ns = (len, Globnames.TrueGlobal r) :: ns in
@@ -1356,8 +1330,8 @@ let msg_of_subsection ss id =
   in
   Pp.str kind ++ spc () ++ Id.print id
 
-let vernac_end_segment ~pm ~proof ({v=id} as lid) =
-  let ss = Lib.Interp.find_opening_node id in
+let vernac_end_segment ~pm ~proof ({v=id; loc} as lid) =
+  let ss = Lib.Interp.find_opening_node ?loc id in
   let what_for = msg_of_subsection ss lid.v in
   if Option.has_some proof then
     CErrors.user_err (Pp.str "Command not supported (Open proofs remain)");
@@ -1369,22 +1343,20 @@ let vernac_end_segment ~pm ~proof ({v=id} as lid) =
   | _ -> assert false
 
 let vernac_end_segment lid =
-  Vernactypes.TypedVernac {
-    inprog = Use; outprog = Pop; inproof = UseOpt; outproof = No;
-    run = (fun ~pm ~proof ->
-        let () = vernac_end_segment ~pm ~proof lid in
-        (), ())
-  }
+  let open Vernactypes in
+  typed_vernac { ignore_state with prog=Pop; proof=ReadOpt; }
+    (fun {proof; prog} ->
+       let () = vernac_end_segment ~pm:prog ~proof lid in
+       no_state)
 
 let vernac_begin_segment ~interactive f =
-  let inproof = Vernactypes.InProof.(if interactive then Reject else Ignore) in
-  let outprog = Vernactypes.OutProg.(if interactive then Push else No) in
-  Vernactypes.TypedVernac {
-    inprog = Ignore; outprog; inproof; outproof = No;
-    run = (fun ~pm ~proof ->
-        let () = f () in
-        (), ())
-  }
+  let open Vernactypes in
+  let proof = Proof.(if interactive then Reject else Ignore) in
+  let prog = Prog.(if interactive then Push else Ignore) in
+  typed_vernac { ignore_state with prog; proof; }
+    (fun (_:no_state) ->
+       let () = f () in
+       no_state)
 
 (* Libraries *)
 
@@ -1415,8 +1387,8 @@ let vernac_require_interp needed modrefl export qidl =
         modrefl qidl)
     export
 
-let vernac_require from export qidl =
-  let needed, modrefl = Synterp.synterp_require from export qidl in
+let vernac_require ~intern from export qidl =
+  let needed, modrefl = Synterp.synterp_require ~intern from export qidl in
   vernac_require_interp needed modrefl export qidl
 
 (* Coercions and canonical structures *)
@@ -1454,7 +1426,7 @@ let vernac_identity_coercion ~atts id qids qidt =
 let vernac_instance_program ~atts ~pm name bl t props info =
   Dumpglob.dump_constraint (fst name) false "inst";
   let locality, poly =
-    Attributes.(parse (Notations.(Classes.instance_locality ++ polymorphic))) atts
+    Attributes.(parse (Notations.(hint_locality ++ polymorphic))) atts
   in
   let pm, _id = Classes.new_instance_program ~pm ~locality ~poly name bl t props info in
   pm
@@ -1462,7 +1434,7 @@ let vernac_instance_program ~atts ~pm name bl t props info =
 let vernac_instance_interactive ~atts name bl t info props =
   Dumpglob.dump_constraint (fst name) false "inst";
   let locality, poly =
-    Attributes.(parse (Notations.(Classes.instance_locality ++ polymorphic))) atts
+    Attributes.(parse (Notations.(hint_locality ++ polymorphic))) atts
   in
   let _id, pstate =
     Classes.new_instance_interactive ~locality ~poly name bl t info props in
@@ -1471,7 +1443,7 @@ let vernac_instance_interactive ~atts name bl t info props =
 let vernac_instance ~atts name bl t props info =
   Dumpglob.dump_constraint (fst name) false "inst";
   let locality, poly =
-    Attributes.(parse (Notations.(Classes.instance_locality ++ polymorphic))) atts
+    Attributes.(parse (Notations.(hint_locality ++ polymorphic))) atts
   in
   let _id : Id.t =
     Classes.new_instance ~locality ~poly name bl t props info in
@@ -1480,12 +1452,16 @@ let vernac_instance ~atts name bl t props info =
 let vernac_declare_instance ~atts id bl inst pri =
   Dumpglob.dump_definition (fst id) false "inst";
   let (program, locality), poly =
-    Attributes.(parse (Notations.(program ++ Classes.instance_locality ++ polymorphic))) atts
+    Attributes.(parse (Notations.(program ++ hint_locality ++ polymorphic))) atts
   in
   Classes.declare_new_instance ~program_mode:program ~locality ~poly id bl inst pri
 
+let vernac_context ~atts ctx =
+  let program_mode, poly = Attributes.(parse (Notations.(program ++ polymorphic))) atts in
+  ComAssumption.do_context ~program_mode ~poly ctx
+
 let vernac_existing_instance ~atts insts =
-  let locality = Attributes.parse Classes.instance_locality atts in
+  let locality = Attributes.parse hint_locality atts in
   List.iter (fun (id, info) ->
       let g = qualid_global id in
       Classes.existing_instance ?loc:id.loc locality g (Some info)) insts
@@ -1496,7 +1472,7 @@ let vernac_existing_class id =
 (***********)
 (* Solving *)
 
-let command_focus = Proof.new_focus_kind ()
+let command_focus = Proof.new_focus_kind "command_focus"
 let focus_command_cond = Proof.no_cond command_focus
 
 let vernac_set_end_tac pstate tac =
@@ -1517,7 +1493,7 @@ let warn_implicit_core_hint_db =
              ++ strbrk"Please specify a hint database.")
 
 let vernac_remove_hints ~atts dbnames ids =
-  let locality = Attributes.(parse really_hint_locality atts) in
+  let locality = Attributes.(parse hint_locality atts) in
   let dbnames =
     if List.is_empty dbnames then
       (warn_implicit_core_hint_db (); ["core"])
@@ -1531,13 +1507,13 @@ let vernac_hints ~atts dbnames h =
       (warn_implicit_core_hint_db (); ["core"])
     else dbnames
   in
-  let locality, poly = Attributes.(parse Notations.(really_hint_locality ++ polymorphic) atts) in
+  let locality, poly = Attributes.(parse Notations.(hint_locality ++ polymorphic) atts) in
   Hints.add_hints ~locality dbnames (ComHints.interp_hints ~poly h)
 
 let vernac_abbreviation ~atts lid x only_parsing =
-  let module_local, deprecation = Attributes.(parse Notations.(module_locality ++ deprecation) atts) in
+  let module_local, user_warns = Attributes.(parse Notations.(module_locality ++ user_warns_with_use_globref_instead) atts) in
   Dumpglob.dump_definition lid false "abbrev";
-  Metasyntax.add_abbreviation ~local:module_local deprecation (Global.env()) lid.v x only_parsing
+  Metasyntax.add_abbreviation ~local:module_local user_warns (Global.env()) lid.v x only_parsing
 
 let default_env () = {
   Notation_term.ninterp_var_type = Id.Map.empty;
@@ -1820,24 +1796,35 @@ let () =
     }
 
 let vernac_set_strategy ~local l =
-  let open Tacred in
   let local = Option.default false local in
   let glob_ref r =
     match smart_global r with
-      | GlobRef.ConstRef sp -> EvalConstRef sp
-      | GlobRef.VarRef id -> EvalVarRef id
+      | GlobRef.ConstRef sp ->
+          begin
+            match Structures.PrimitiveProjections.find_opt sp with
+            | None -> Evaluable.EvalConstRef sp
+            | Some p -> Evaluable.EvalProjectionRef p
+          end
+      | GlobRef.VarRef id -> Evaluable.EvalVarRef id
       | _ -> user_err Pp.(str
           "Cannot set an inductive type or a constructor as transparent.") in
   let l = List.map (fun (lev,ql) -> (lev,List.map glob_ref ql)) l in
   Redexpr.set_strategy local l
 
-let vernac_set_opacity ~local (v,l) =
-  let open Tacred in
+let vernac_set_opacity ~on_proj_constant ~local (v,l) =
   let local = Option.default true local in
   let glob_ref r =
     match smart_global r with
-      | GlobRef.ConstRef sp -> EvalConstRef sp
-      | GlobRef.VarRef id -> EvalVarRef id
+      | GlobRef.ConstRef sp ->
+          begin
+            match Structures.PrimitiveProjections.find_opt sp with
+            | None when on_proj_constant -> user_err Pp.(str
+                "Only compatibility constant opacity can be set this way.")
+            | None -> Evaluable.EvalConstRef sp
+            | Some _ when on_proj_constant -> Evaluable.EvalConstRef sp
+            | Some p -> Evaluable.EvalProjectionRef p
+          end
+      | GlobRef.VarRef id -> Evaluable.EvalVarRef id
       | _ -> user_err Pp.(str
           "Cannot set an inductive type or a constructor as transparent.") in
   let l = List.map glob_ref l in
@@ -1880,7 +1867,7 @@ let check_may_eval env sigma redexp rc =
   let sigma, c = match redexp with
     | None -> sigma, c
     | Some r ->
-      let sigma, r = Hook.get f_interp_redexp env sigma r in
+      let sigma, r = Redexpr.interp_redexp_no_ltac env sigma r in
       let r, _ = Redexpr.reduction_of_red_expr env r in
       let sigma, c = r env sigma c in
       sigma, c
@@ -1904,7 +1891,7 @@ let vernac_declare_reduction ~local s r =
   let local = Option.default false local in
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  Redexpr.declare_red_expr local s (snd (Hook.get f_interp_redexp env sigma r))
+  Redexpr.declare_red_expr local s (snd (Redexpr.interp_redexp_no_ltac env sigma r))
 
   (* The same but avoiding the current goal context if any *)
 let vernac_global_check c =
@@ -1964,69 +1951,98 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
     let sigma, env = get_current_or_global_context ~pstate in
     Prettyp.print_about env sigma ref_or_by_not udecl
 
-let vernac_print ~pstate =
-  let sigma, env = get_current_or_global_context ~pstate in
+let vernac_print =
+  let no_state f =
+    Vernactypes.(typed_vernac_gen ignore_state (fun _ -> no_state, f ()))
+  in
+  let with_pstate f =
+    let f {Vernactypes.proof} =
+      Vernactypes.no_state, f ~pstate:proof
+    in
+    Vernactypes.(typed_vernac_gen { ignore_state with proof = ReadOpt } f)
+  in
+  let with_proof_env f = with_pstate (fun ~pstate ->
+      let sigma, env = get_current_or_global_context ~pstate in
+      f env sigma)
+  in
+  let with_proof_env_and_opaques f =
+    let open Vernactypes in
+    let f {proof; opaque_access} =
+      let sigma, env = get_current_or_global_context ~pstate:proof in
+      no_state, f ~opaque_access env sigma
+    in
+    typed_vernac_gen { ignore_state with proof = ReadOpt; opaque_access = Access } f
+  in
   function
-  | PrintTypingFlags -> pr_typing_flags (Environ.typing_flags (Global.env ()))
-  | PrintTables -> print_tables ()
-  | PrintFullContext-> Prettyp.print_full_context_typ env sigma
-  | PrintSectionContext qid -> Prettyp.print_sec_context_typ env sigma qid
-  | PrintInspect n -> Prettyp.inspect env sigma n
-  | PrintGrammar ent -> Metasyntax.pr_grammar ent
-  | PrintCustomGrammar ent -> Metasyntax.pr_custom_grammar ent
-  | PrintKeywords -> Metasyntax.pr_keywords ()
-  | PrintLoadPath dir -> (* For compatibility ? *) print_loadpath dir
-  | PrintLibraries -> print_libraries ()
-  | PrintModule qid -> print_module qid
-  | PrintModuleType qid -> print_modtype qid
-  | PrintNamespace ns -> print_namespace ~pstate ns
-  | PrintMLLoadPath -> Mltop.print_ml_path ()
-  | PrintMLModules -> Mltop.print_ml_modules ()
-  | PrintDebugGC -> Mltop.print_gc ()
-  | PrintName (qid,udecl) -> Prettyp.print_name env sigma qid udecl
-  | PrintGraph -> Prettyp.print_graph ()
-  | PrintClasses -> Prettyp.print_classes ()
-  | PrintTypeclasses -> Prettyp.print_typeclasses ()
-  | PrintInstances c -> Prettyp.print_instances (smart_global c)
-  | PrintCoercions -> Prettyp.print_coercions ()
-  | PrintNotation (entry, ntnstr) -> Prettyp.print_notation env sigma entry ntnstr
-  | PrintCoercionPaths (cls,clt) ->
-    Prettyp.print_path_between (cl_of_qualid cls) (cl_of_qualid clt)
-  | PrintCanonicalConversions qids ->
+  | PrintTypingFlags -> with_proof_env @@ fun env _sigma -> pr_typing_flags (Environ.typing_flags env)
+  | PrintTables -> no_state print_tables
+  | PrintFullContext -> with_proof_env Prettyp.print_full_context_typ
+  | PrintSectionContext qid -> with_proof_env @@ fun env sigma ->
+    Prettyp.print_sec_context_typ env sigma qid
+  | PrintInspect n -> with_proof_env @@ fun env sigma ->
+    Prettyp.inspect env sigma n
+  | PrintGrammar ent -> no_state @@ fun () -> Metasyntax.pr_grammar ent
+  | PrintCustomGrammar ent -> no_state @@ fun () -> Metasyntax.pr_custom_grammar ent
+  | PrintKeywords -> no_state Metasyntax.pr_keywords
+  | PrintLoadPath dir -> (* For compatibility ? *) no_state @@ fun () -> print_loadpath dir
+  | PrintLibraries -> no_state print_libraries
+  | PrintModule qid -> no_state @@ fun () -> print_module qid
+  | PrintModuleType qid -> no_state @@ fun () -> print_modtype qid
+  | PrintNamespace ns -> with_pstate @@ print_namespace ns
+  | PrintMLLoadPath -> no_state Mltop.print_ml_path
+  | PrintMLModules -> no_state Mltop.print_ml_modules
+  | PrintDebugGC -> no_state Mltop.print_gc
+  | PrintName (qid,udecl) -> with_proof_env_and_opaques @@ fun ~opaque_access env sigma ->
+    Prettyp.print_name opaque_access env sigma qid udecl
+  | PrintGraph -> no_state Prettyp.print_graph
+  | PrintClasses -> no_state Prettyp.print_classes
+  | PrintTypeclasses -> no_state Prettyp.print_typeclasses
+  | PrintInstances c -> no_state @@ fun () -> Prettyp.print_instances (smart_global c)
+  | PrintCoercions -> no_state Prettyp.print_coercions
+  | PrintNotation (entry, ntnstr) -> with_proof_env @@ fun env sigma ->
+    Prettyp.print_notation env sigma entry ntnstr
+  | PrintCoercionPaths (cls,clt) -> no_state @@ fun () ->
+    Prettyp.print_coercion_paths (cl_of_qualid cls) (cl_of_qualid clt)
+  | PrintCanonicalConversions qids -> with_proof_env @@ fun env sigma ->
     let grefs = List.map Smartlocate.smart_global qids in
     Prettyp.print_canonical_projections env sigma grefs
-  | PrintUniverses (sort, subgraph, dst) -> print_universes ~sort ~subgraph dst
-  | PrintHint r -> Hints.pr_hint_ref env sigma (smart_global r)
-  | PrintHintGoal ->
-     begin match pstate with
-     | Some pstate ->
-       let pf = Declare.Proof.get pstate in
-       Hints.pr_applicable_hint pf
-     | None ->
-       str "No proof in progress"
-     end
-  | PrintHintDbName s -> Hints.pr_hint_db_by_name env sigma s
-  | PrintHintDb -> Hints.pr_searchtable env sigma
-  | PrintScopes ->
+  | PrintUniverses (sort, subgraph, dst) -> no_state @@ fun ()->
+    print_universes ~sort ~subgraph dst
+  | PrintHint r -> with_proof_env @@ fun env sigma ->
+    Hints.pr_hint_ref env sigma (smart_global r)
+  | PrintHintGoal -> with_pstate @@ fun ~pstate ->
+    begin match pstate with
+    | Some pstate ->
+      let pf = Declare.Proof.get pstate in
+      Hints.pr_applicable_hint pf
+    | None ->
+      str "No proof in progress"
+    end
+  | PrintHintDbName s -> with_proof_env @@ fun env sigma ->
+    Hints.pr_hint_db_by_name env sigma s
+  | PrintHintDb -> with_proof_env @@ fun env sigma ->
+    Hints.pr_searchtable env sigma
+  | PrintScopes -> with_proof_env @@ fun env sigma ->
     Notation.pr_scopes (Constrextern.without_symbols (pr_glob_constr_env env sigma))
-  | PrintScope s ->
+  | PrintScope s -> with_proof_env @@ fun env sigma ->
     Notation.pr_scope (Constrextern.without_symbols (pr_glob_constr_env env sigma)) s
-  | PrintVisibility s ->
+  | PrintVisibility s -> with_proof_env @@ fun env sigma ->
     Notation.pr_visibility (Constrextern.without_symbols (pr_glob_constr_env env sigma)) s
-  | PrintAbout (ref_or_by_not,udecl,glnumopt) ->
-    print_about_hyp_globs ~pstate ref_or_by_not udecl glnumopt
-  | PrintImplicit qid -> Prettyp.print_impargs (smart_global qid)
-  | PrintAssumptions (o,t,r) ->
+  | PrintAbout (ref_or_by_not,udecl,glnumopt) -> with_pstate @@
+    print_about_hyp_globs ref_or_by_not udecl glnumopt
+  | PrintImplicit qid -> with_proof_env @@ fun env _sigma ->
+    Prettyp.print_impargs env (smart_global qid)
+  | PrintAssumptions (o,t,r) -> with_proof_env_and_opaques @@ fun ~opaque_access env sigma ->
     (* Prints all the axioms and section variables used by a term *)
-      let env = Global.env () in
-      let gr = smart_global r in
-      let cstr, _ = UnivGen.fresh_global_instance env gr in
-      let st = Conv_oracle.get_transp_state (Environ.oracle env) in
-      let nassums =
-        Assumptions.assumptions st ~add_opaque:o ~add_transparent:t gr cstr in
-      Printer.pr_assumptionset env sigma nassums
-  | PrintStrategy r -> print_strategy r
-  | PrintRegistered -> print_registered ()
+    let gr = smart_global r in
+    let cstr, _ = UnivGen.fresh_global_instance env gr in
+    let st = Conv_oracle.get_transp_state (Environ.oracle env) in
+    let nassums =
+      Assumptions.assumptions opaque_access st ~add_opaque:o ~add_transparent:t gr cstr in
+    Printer.pr_assumptionset env sigma nassums
+  | PrintStrategy r -> no_state @@ fun () -> print_strategy r
+  | PrintRegistered -> no_state print_registered
+  | PrintRegisteredSchemes -> no_state print_registered_schemes
 
 let vernac_search ~pstate ~atts s gopt r =
   let open ComSearch in
@@ -2043,18 +2059,23 @@ let vernac_search ~pstate ~atts s gopt r =
   in
   interp_search env sigma s r
 
-let vernac_locate ~pstate = let open Constrexpr in function
-  | LocateAny {v=AN qid}  -> Prettyp.print_located_qualid qid
-  | LocateTerm {v=AN qid} -> Prettyp.print_located_term qid
+let vernac_locate ~pstate query =
+  let open Constrexpr in
+  let sigma, env = get_current_or_global_context ~pstate in
+  match query with
+  | LocateAny {v=AN qid}  -> Prettyp.print_located_qualid env qid
+  | LocateTerm {v=AN qid} -> Prettyp.print_located_term env qid
   | LocateAny {v=ByNotation (ntn, sc)} (* TODO : handle Ltac notations *)
   | LocateTerm {v=ByNotation (ntn, sc)} ->
-    let sigma, env = get_current_or_global_context ~pstate in
     Notation.locate_notation
       (Constrextern.without_symbols (pr_glob_constr_env env sigma)) ntn sc
   | LocateLibrary qid -> print_located_library qid
-  | LocateModule qid -> Prettyp.print_located_module qid
-  | LocateOther (s, qid) -> Prettyp.print_located_other s qid
+  | LocateModule qid -> Prettyp.print_located_module env qid
+  | LocateOther (s, qid) -> Prettyp.print_located_other env s qid
   | LocateFile f -> locate_file f
+
+let warn_unknown_scheme_kind = CWarnings.create ~name:"unknown-scheme-kind"
+    Pp.(fun sk -> str "Unknown scheme kind " ++ Libnames.pr_qualid sk ++ str ".")
 
 let vernac_register qid r =
   let gr = Smartlocate.global_with_alias qid in
@@ -2062,7 +2083,7 @@ let vernac_register qid r =
   | RegisterInline ->
     begin match gr with
     | GlobRef.ConstRef c -> Global.register_inline c
-    | _ -> CErrors.user_err (Pp.str "Register Inline: expecting a constant.")
+    | _ -> CErrors.user_err ?loc:qid.loc (Pp.str "Register Inline: expecting a constant.")
     end
   | RegisterCoqlib n ->
     let ns, id = Libnames.repr_qualid n in
@@ -2076,18 +2097,31 @@ let vernac_register qid r =
         | "ind_cmp" -> CPrimitives.(PIE PIT_cmp)
         | "ind_f_cmp" -> CPrimitives.(PIE PIT_f_cmp)
         | "ind_f_class" -> CPrimitives.(PIE PIT_f_class)
-        | k -> CErrors.user_err Pp.(str "Register: unknown identifier “" ++ str k ++ str "” in the \"kernel\" namespace.")
+        | k -> CErrors.user_err ?loc:n.loc Pp.(str "Register: unknown identifier “" ++ str k ++ str "” in the \"kernel\" namespace.")
       in
       match gr with
       | GlobRef.IndRef ind -> Global.register_inductive ind pind
-      | _ -> CErrors.user_err (Pp.str "Register in kernel: expecting an inductive type.")
+      | _ -> CErrors.user_err ?loc:qid.loc (Pp.str "Register in kernel: expecting an inductive type.")
     end
     else Coqlib.register_ref (Libnames.string_of_qualid n) gr
+  | RegisterScheme { inductive; scheme_kind } ->
+    let gr = match gr with
+      | ConstRef c -> c
+      | _ -> CErrors.user_err ?loc:qid.loc Pp.(str "Register Scheme: expecing a constant.")
+    in
+    let scheme_kind_s = Libnames.string_of_qualid scheme_kind in
+    let () = if not (Ind_tables.is_declared_scheme_object scheme_kind_s) then
+        warn_unknown_scheme_kind ?loc:scheme_kind.loc scheme_kind
+    in
+    let ind = Smartlocate.global_inductive_with_alias inductive in
+    Dumpglob.add_glob ?loc:inductive.loc (IndRef ind);
+    DeclareScheme.declare_scheme scheme_kind_s (ind,gr)
 
 let vernac_library_attributes atts =
   if Global.is_curmod_library () && not (Lib.sections_are_opened ()) then
-    let deprecated = Attributes.parse deprecation atts in
-    Lib.Synterp.declare_info (DefAttributes.make_information deprecated)
+    let user_warns = Attributes.parse user_warns atts in
+    let user_warns = Option.default UserWarn.empty user_warns in
+    Lib.Synterp.declare_info user_warns
   else
     user_err (Pp.str "A library attribute should be at toplevel of the library.")
 
@@ -2121,7 +2155,7 @@ let vernac_unfocused ~pstate =
 (* "{" focuses on the first goal, "n: {" focuses on the n-th goal
     "}" unfocuses, provided that the proof of the goal has been completed.
 *)
-let subproof_kind = Proof.new_focus_kind ()
+let subproof_kind = Proof.new_focus_kind "subproof"
 let subproof_cond = Proof.done_cond subproof_kind
 
 let vernac_subproof gln ~pstate =
@@ -2239,7 +2273,8 @@ let vernac_proof pstate tac using =
   let usings = if Option.is_empty using then "using:no" else "using:yes" in
   Aux_file.record_in_aux_at "VernacProof" (tacs^" "^usings);
   let pstate = Option.fold_left vernac_set_end_tac pstate tac in
-  let pstate = Option.fold_left vernac_set_used_variables pstate using in
+  let set_proof_using ps using = Declare.Proof.set_proof_using ps using |> snd in
+  let pstate = Option.fold_left set_proof_using pstate using in
   pstate
 
 let translate_vernac_synterp ?loc ~atts v = let open Vernactypes in match v with
@@ -2329,12 +2364,12 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
   | VernacDefinition ((discharge,kind as dkind),lid,DefineBody (bl,red_option,c,typ)) ->
     let coercion = match kind with Decls.Coercion -> true | _ -> false in
     vtmodifyprogram (fun ~pm ->
-      with_def_attributes ~coercion ~discharge ~atts
+      with_def_attributes ~coercion ~discharge:(discharge, "\"Let\"", "\"#[local] Definition\"") ~atts
        vernac_definition ~pm dkind lid bl red_option c typ)
   | VernacDefinition ((discharge,kind as dkind),lid,ProveBody(bl,typ)) ->
     let coercion = match kind with Decls.Coercion -> true | _ -> false in
     vtopenproof(fun () ->
-      with_def_attributes ~coercion ~discharge ~atts
+      with_def_attributes ~coercion ~discharge:(discharge, "\"Let\"", "\"#[local] Definition\"") ~atts
        vernac_definition_interactive dkind lid bl typ)
 
   | VernacStartTheoremProof (k,l) ->
@@ -2345,26 +2380,50 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
         vernac_exact_proof ~lemma c)
 
   | VernacAssumption ((discharge,kind),nl,l) ->
-    vtdefault(fun () -> with_def_attributes ~atts vernac_assumption discharge kind l nl)
+    vtdefault(fun () ->
+        with_def_attributes ~atts
+          ~discharge:(discharge,
+                      "\"Variable\" or \"Hypothesis\"",
+                      "\"#[local] Parameter\" or \"#[local] Axiom\"")
+          vernac_assumption kind l nl)
+
+  | VernacSymbol l ->
+    vtdefault (fun () ->
+      let unfold_fix, poly =
+        Attributes.(parse Notations.(unfold_fix ++ polymorphic)) atts
+      in
+        ComRewriteRule.do_symbols ~poly ~unfold_fix l)
 
   | VernacInductive (finite, l) ->
     vtdefault(fun () -> vernac_inductive ~atts finite l)
 
   | VernacFixpoint (discharge, l) ->
-    let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
+    let opens = List.exists (fun { body_def } -> Option.is_empty body_def) (snd l) in
+    let discharge = discharge, "\"Let Fixpoint\"", "\"#[local] Fixpoint\"" in
     (if opens then
       vtopenproof (fun () ->
-        with_def_attributes ~discharge ~atts vernac_fixpoint_interactive discharge l)
+        let pm, proof = with_def_attributes ~discharge ~atts (vernac_fixpoint ~pm:None) l in
+        assert (Option.is_empty pm);
+        Option.get proof)
     else
       vtmodifyprogram (fun ~pm ->
-        with_def_attributes ~discharge ~atts (vernac_fixpoint ~pm) discharge l))
+        let pm, proof = with_def_attributes ~discharge ~atts (vernac_fixpoint ~pm:(Some pm)) l in
+        assert (Option.is_empty proof);
+        Option.get pm))
 
   | VernacCoFixpoint (discharge, l) ->
     let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
+    let discharge = discharge,  "\"Let CoFixpoint\"", "\"#[local] CoFixpoint\"" in
     (if opens then
-      vtopenproof(fun () -> with_def_attributes ~discharge ~atts vernac_cofixpoint_interactive discharge l)
+      vtopenproof (fun () ->
+        let pm, proof = with_def_attributes ~discharge ~atts (vernac_cofixpoint ~pm:None) l in
+        assert (Option.is_empty pm);
+        Option.get proof)
     else
-      vtmodifyprogram(fun ~pm -> with_def_attributes ~discharge ~atts (vernac_cofixpoint ~pm) discharge l))
+      vtmodifyprogram (fun ~pm ->
+        let pm, proof = with_def_attributes ~discharge ~atts (vernac_cofixpoint ~pm:(Some pm)) l in
+        assert (Option.is_empty proof);
+        Option.get pm))
 
   | VernacScheme l ->
     vtdefault(fun () ->
@@ -2383,6 +2442,11 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
 
   | VernacConstraint l ->
     vtdefault(fun () -> vernac_constraint ~poly:(only_polymorphism atts) l)
+
+  | VernacAddRewRule (id, c) ->
+    vtdefault (fun () ->
+        unsupported_attributes atts;
+        ComRewriteRule.do_rules id.v c)
 
   (* Gallina extensions *)
 
@@ -2423,8 +2487,7 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
   | VernacDeclareInstance (id, bl, inst, info) ->
     vtdefault(fun () -> vernac_declare_instance ~atts id bl inst info)
   | VernacContext sup ->
-    vtdefault(fun () -> ComAssumption.do_context ~poly:(only_polymorphism atts) sup)
-
+    vtdefault(fun () -> vernac_context ~atts sup)
   | VernacExistingInstance insts ->
     vtdefault(fun () -> vernac_existing_instance ~atts insts)
 
@@ -2462,8 +2525,9 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
   | VernacGeneralizable gen ->
     vtdefault(fun () -> with_locality ~atts vernac_generalizable gen)
 
-  | VernacSetOpacity qidl ->
-    vtdefault(fun () -> with_locality ~atts vernac_set_opacity qidl)
+  | VernacSetOpacity (qidl, on_proj_constant) ->
+    vtdefault(fun () ->
+        with_locality ~atts (vernac_set_opacity ~on_proj_constant) qidl)
 
   | VernacSetStrategy l ->
     vtdefault(fun () -> with_locality ~atts vernac_set_strategy l)
@@ -2504,9 +2568,10 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
         Feedback.msg_notice @@ vernac_global_check c)
 
   | VernacPrint p ->
-    vtreadproofopt(fun ~pstate ->
-        unsupported_attributes atts;
-        Feedback.msg_notice @@ vernac_print ~pstate p)
+    unsupported_attributes atts;
+    Vernactypes.map_typed_vernac
+      Feedback.msg_notice
+      (vernac_print p)
 
   | VernacSearch (s,g,r) ->
     vtreadproofopt(

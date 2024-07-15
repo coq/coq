@@ -91,7 +91,7 @@ let map f (l,x) = (l, f x)
 
 (** Exceptions *)
 
-let location : t Exninfo.t = Exninfo.make ()
+let location : t Exninfo.t = Exninfo.make "location"
 
 let add_loc e loc = Exninfo.add e location loc
 let get_loc e = Exninfo.get e location

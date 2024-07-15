@@ -158,7 +158,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       let revargs,ownsign =
         fold_named_context
           (fun env d (revargs,hyps) ->
-            let d = map_named_decl EConstr.of_constr d in
+            let d = EConstr.of_named_decl d in
              let id = NamedDecl.get_id d in
              if Id.Set.mem id ivars then
                ((mkVar id)::revargs, Context.Named.add d hyps)
@@ -167,11 +167,11 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
           env ~init:([],[])
       in
       let pty = it_mkNamedProd_or_LetIn sigma (mkSort sort) ownsign in
-      let goal = mkArrow i Sorts.Relevant (applist(mkVar p, List.rev revargs)) in
+      let goal = mkArrow i ERelevance.relevant (applist(mkVar p, List.rev revargs)) in
       (pty,goal)
   in
   let npty = nf_all env sigma pty in
-  let extenv = push_named (LocalAssum (make_annot p Sorts.Relevant,npty)) env in
+  let extenv = push_named (LocalAssum (make_annot p ERelevance.relevant,npty)) env in
   extenv, goal
 
 (* [inversion_scheme sign I]
@@ -206,7 +206,7 @@ let inversion_scheme ~name ~poly env sigma t sort dep_option inv_op =
   let ownSign = ref begin
     fold_named_context
       (fun env d sign ->
-        let d = map_named_decl EConstr.of_constr d in
+        let d = EConstr.of_named_decl d in
          if mem_named_context_val (NamedDecl.get_id d) global_named_context then sign
          else Context.Named.add d sign)
       invEnv ~init:Context.Named.empty
@@ -220,7 +220,7 @@ let inversion_scheme ~name ~poly env sigma t sort dep_option inv_op =
         let h = next_ident_away (Id.of_string "H") !avoid in
         let ty,inst = Evarutil.generalize_evar_over_rels sigma (e,args) in
         avoid := Id.Set.add h !avoid;
-        ownSign := Context.Named.add (LocalAssum (make_annot h Sorts.Relevant,ty)) !ownSign;
+        ownSign := Context.Named.add (LocalAssum (make_annot h ERelevance.relevant,ty)) !ownSign;
         applist (mkVar h, inst)
     | _ -> EConstr.map sigma fill_holes c
   in

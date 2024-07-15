@@ -34,6 +34,12 @@ type caml_prim =
 | CAML_Arrayset
 | CAML_Arraycopy
 | CAML_Arraylength
+| CAML_Stringmake
+| CAML_Stringlength
+| CAML_Stringget
+| CAML_Stringsub
+| CAML_Stringcat
+| CAML_Stringcompare
 
 type instruction =
   | Klabel of Label.t
@@ -56,6 +62,7 @@ type instruction =
   | Kclosurecofix of int * int * Label.t array * Label.t array
                    (* nb fv, init, lbl types, lbl bodies *)
   | Kgetglobal of Constant.t
+  | Ksubstinstance of UVars.Instance.t
   | Kconst of structured_constant
   | Kmakeblock of int * tag
   | Kmakeswitchblock of Label.t * Label.t * annot_switch * int
@@ -90,6 +97,12 @@ let caml_prim_to_prim = function
 | CAML_Arrayset -> CPrimitives.Arrayset
 | CAML_Arraycopy -> CPrimitives.Arraycopy
 | CAML_Arraylength -> CPrimitives.Arraylength
+| CAML_Stringmake -> CPrimitives.Stringmake
+| CAML_Stringlength -> CPrimitives.Stringlength
+| CAML_Stringget -> CPrimitives.Stringget
+| CAML_Stringsub -> CPrimitives.Stringsub
+| CAML_Stringcat -> CPrimitives.Stringcat
+| CAML_Stringcompare -> CPrimitives.Stringcompare
 
 let pp_lbl lbl = str "L" ++ int lbl
 
@@ -132,6 +145,9 @@ let rec pp_instr i =
              str " bodies = " ++
              prlist_with_sep spc pp_lbl (Array.to_list lblb))
   | Kgetglobal idu -> str "getglobal " ++ Constant.print idu
+  | Ksubstinstance u ->
+    str "subst_instance " ++
+    UVars.Instance.pr Sorts.QVar.raw_pr Univ.Level.raw_pr u
   | Kconst sc ->
       str "const " ++ pp_struct_const sc
   | Kmakeblock(n, m) ->

@@ -9,10 +9,8 @@
 (************************************************************************)
 
 open Util
-open Pp
 open CErrors
 open Names
-open EConstr
 open Formula
 open Unify
 
@@ -58,43 +56,70 @@ end
 
 type h_item = GlobRef.t * Unify.Item.t option
 
+let h_canonize env (hr, item) =
+  (Environ.QGlobRef.canonize env hr, item)
+
 module Hitem=
 struct
   type t = h_item
   let compare (id1,co1) (id2,co2)=
-    let c = GlobRef.CanOrd.compare id1 id2 in
+    let c = GlobRef.UserOrd.compare id1 id2 in
     if c = 0 then Option.compare Unify.Item.compare co1 co2
     else c
 end
 
-module CM=Map.Make(Constr)
-
 module History=Set.Make(Hitem)
 
-let cm_add sigma typ nam cm=
-  let typ = EConstr.to_constr ~abort_on_undefined_evars:false sigma typ in
+module Context :
+sig
+  type t
+  val empty : t
+  val find : Evd.evar_map -> atom -> t -> GlobRef.t
+  val add : Evd.evar_map -> atom -> GlobRef.t -> t -> t
+  val remove : Environ.env -> Evd.evar_map -> atom -> GlobRef.t -> t -> t
+end =
+struct
+
+module Atom =
+struct
+  type t = atom
+  let compare = compare_atom
+end
+
+module CM = Map.Make(Atom)
+
+type t = GlobRef.t list CM.t
+
+let empty = CM.empty
+
+let find sigma t cm =
+  List.hd (CM.find t cm)
+
+let add sigma typ nam cm =
   try
     let l=CM.find typ cm in CM.add typ (nam::l) cm
   with
       Not_found->CM.add typ [nam] cm
 
-let cm_remove sigma typ nam cm=
-  let typ = EConstr.to_constr ~abort_on_undefined_evars:false sigma typ in
+let remove env sigma typ nam cm =
   try
     let l=CM.find typ cm in
-    let l0=List.filter (fun id-> not (GlobRef.CanOrd.equal id nam)) l in
+    let l0=List.filter (fun id-> not (Environ.QGlobRef.equal env id nam)) l in
       match l0 with
           []->CM.remove typ cm
         | _ ->CM.add typ l0 cm
       with Not_found ->cm
 
+end
+
 module HP=Heap.Functional(OrderedFormula)
 
-type seqgoal = GoalTerm of EConstr.t | GoalAtom of atom
+type seqgoal = GoalTerm of atom | GoalAtom of atom
 
 type t=
     {redexes:HP.t;
-     context:(GlobRef.t list) CM.t;
+     context:Context.t;
+     state : Env.t;
      latoms:atom list;
      gl: seqgoal;
      cnt:counter;
@@ -107,10 +132,10 @@ let iter_redexes f seq = HP.iter f seq.redexes
 
 let deepen seq={seq with depth=seq.depth-1}
 
-let record item seq={seq with history=History.add item seq.history}
+let record env item seq={seq with history=History.add (h_canonize env item) seq.history}
 
 let lookup env sigma item seq=
-  History.mem item seq.history ||
+  History.mem (h_canonize env item) seq.history ||
   match item with
       (_,None)->false
     | (id,Some i1)->
@@ -121,40 +146,42 @@ let lookup env sigma item seq=
           History.exists p seq.history
 
 let add_concl ~flags env sigma t seq =
-  match build_formula ~flags env sigma Concl GoalId t seq.cnt with
-  | Left f ->
-    {seq with redexes=HP.add (AnyFormula f) seq.redexes; gl = GoalTerm f.constr }
-  | Right t ->
-    {seq with gl = GoalAtom t}
+  match build_formula ~flags seq.state env sigma Concl goal_id t seq.cnt with
+  | state, Left f ->
+    {seq with redexes=HP.add (AnyFormula f) seq.redexes; gl = GoalTerm f.constr; state }
+  | state, Right t ->
+    {seq with gl = GoalAtom t; state}
 
 let add_formula ~flags ~hint env sigma id t seq =
   let side = Hyp hint in
-  match build_formula ~flags env sigma side (FormulaId id) t seq.cnt with
-  | Left f ->
+  match build_formula ~flags seq.state env sigma side (formula_id env id) t seq.cnt with
+  | state, Left f ->
     {seq with
       redexes=HP.add (AnyFormula f) seq.redexes;
-      context=cm_add sigma f.constr id seq.context}
-  | Right t ->
+      context=Context.add sigma f.constr id seq.context;
+      state}
+  | state, Right t ->
     {seq with
-      context=cm_add sigma (repr_atom t) id seq.context;
-      latoms=t::seq.latoms}
+      context=Context.add sigma t id seq.context;
+      latoms=t::seq.latoms;
+      state}
 
 let re_add_formula_list sigma lf seq=
   let do_one (AnyFormula f) cm = match f.id with
   | GoalId -> cm
-  | FormulaId id -> cm_add sigma f.constr id cm
+  | FormulaId id -> Context.add sigma f.constr id cm
   in
   {seq with
      redexes=List.fold_right HP.add lf seq.redexes;
      context=List.fold_right do_one lf seq.context}
 
-let find_left sigma t seq=List.hd (CM.find (EConstr.to_constr ~abort_on_undefined_evars:false sigma t) seq.context)
+let find_left sigma t seq = Context.find sigma t seq.context
 
 let find_goal sigma seq =
-  let t = match seq.gl with GoalAtom a -> repr_atom a | GoalTerm t -> t in
+  let t = match seq.gl with GoalAtom a -> a | GoalTerm t -> t in
   find_left sigma t seq
 
-let rec take_formula sigma seq=
+let rec take_formula env sigma seq=
   let hd = HP.maximum seq.redexes in
   let hp = HP.remove seq.redexes in
   let AnyFormula hd0 = hd in
@@ -163,21 +190,22 @@ let rec take_formula sigma seq=
     let nseq={seq with redexes=hp} in
     begin match seq.gl with
     | GoalTerm t when t == hd0.constr -> hd, nseq
-    | GoalAtom _ | GoalTerm _ -> take_formula sigma nseq (* discarding deprecated goal *)
+    | GoalAtom _ | GoalTerm _ -> take_formula env sigma nseq (* discarding deprecated goal *)
     end
   | FormulaId id ->
       hd,{seq with
             redexes=hp;
-            context=cm_remove sigma hd0.constr id seq.context}
+            context=Context.remove env sigma hd0.constr id seq.context}
 
 let empty_seq depth=
   {redexes=HP.empty;
-   context=CM.empty;
+   context=Context.empty;
    latoms=[];
-   gl= GoalTerm (mkMeta 1);
+   gl= GoalTerm hole_atom;
    cnt=newcnt ();
    history=History.empty;
-   depth=depth}
+   depth=depth;
+   state=Env.empty}
 
 let make_simple_atoms seq =
   let ratoms=
@@ -228,19 +256,4 @@ let extend_with_auto_hints ~flags env sigma l seq =
   in
   List.fold_left h (seq,sigma) l
 
-(* For debug *)
-let _print_cmap map=
-  let print_entry c l s=
-    let env = Global.env () in
-    let sigma = Evd.from_env env in
-      str "| " ++
-      prlist Printer.pr_global l ++
-      str " : " ++
-      Printer.pr_constr_env env sigma c ++
-      cut () ++
-      s in
-    (v 0
-             (str "-----" ++
-              cut () ++
-              CM.fold print_entry map (mt ()) ++
-              str "-----"))
+let state seq = seq.state

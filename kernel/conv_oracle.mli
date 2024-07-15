@@ -10,6 +10,12 @@
 
 open Names
 
+(** Evaluable references (whose transparency can be controlled). *)
+type evaluable =
+  | EvalVarRef of Id.t
+  | EvalConstRef of Constant.t
+  | EvalProjectionRef of Projection.Repr.t
+
 type oracle
 
 val empty : oracle
@@ -18,8 +24,8 @@ val empty : oracle
    If [oracle_order kn1 kn2] is true, then unfold kn1 first.
    Note: the oracle does not introduce incompleteness, it only
    tries to postpone unfolding of "opaque" constants. *)
-val oracle_order : ('a -> Constant.t) -> oracle -> bool ->
-  'a tableKey -> 'a tableKey -> bool
+val oracle_order :
+  oracle -> bool -> evaluable option -> evaluable option -> bool
 
 (** Priority for the expansion of constant in the conversion test.
  * Higher levels means that the expansion is less prioritary.
@@ -33,13 +39,13 @@ val transparent : level
 (** Check whether a level is transparent *)
 val is_transparent : level -> bool
 
-val get_strategy : oracle -> Constant.t tableKey -> level
+val get_strategy : oracle -> evaluable -> level
 
 (** Sets the level of a constant.
  * Level of RelKey constant cannot be set. *)
-val set_strategy : oracle -> Constant.t tableKey -> level -> oracle
+val set_strategy : oracle -> evaluable -> level -> oracle
 
 (** Fold over the non-transparent levels of the oracle. Order unspecified. *)
-val fold_strategy : (Constant.t tableKey -> level -> 'a -> 'a) -> oracle -> 'a -> 'a
+val fold_strategy : (evaluable -> level -> 'a -> 'a) -> oracle -> 'a -> 'a
 
 val get_transp_state : oracle -> TransparentState.t

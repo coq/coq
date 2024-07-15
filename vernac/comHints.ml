@@ -41,8 +41,8 @@ let project_hint ~poly pri l2r r =
     it_mkLambda_or_LetIn
       (mkApp
          ( p
-         , [| mkArrow a Sorts.Relevant (Vars.lift 1 b)
-            ; mkArrow b Sorts.Relevant (Vars.lift 1 a)
+         , [| mkArrow a ERelevance.relevant (Vars.lift 1 b)
+            ; mkArrow b ERelevance.relevant (Vars.lift 1 a)
             ; c |] ))
       sign
   in
@@ -64,23 +64,29 @@ let project_hint ~poly pri l2r r =
   let info = {Typeclasses.hint_priority = pri; hint_pattern = None} in
   (info, true, Hints.hint_globref (GlobRef.ConstRef c))
 
+let warning_deprecated_hint_constr =
+  CWarnings.create_warning ~from:[CWarnings.CoreCategories.automation; Deprecation.Version.v8_20] ~name:"fragile-hint-constr" ~default:AsError ()
+
 let warn_deprecated_hint_constr =
-  CWarnings.create ~name:"fragile-hint-constr" ~category:CWarnings.CoreCategories.automation
+  CWarnings.create_in warning_deprecated_hint_constr
     (fun () ->
       Pp.strbrk
-        "Declaring arbitrary terms as hints is fragile; it is recommended to \
-         declare a toplevel constant instead")
+        "Declaring arbitrary terms as hints is fragile and deprecated; it is \
+         recommended to declare a toplevel constant instead")
 
 (* Only error when we have to (axioms may be instantiated if from functors)
    XXX maybe error if not from a functor argument?
  *)
-let soft_evaluable =
-  let open GlobRef in
-  let open Tacred in
-  function
-  | ConstRef c -> EvalConstRef c
-  | VarRef id -> EvalVarRef id
-  | (IndRef _ | ConstructRef _) as r -> Tacred.error_not_evaluable r
+let soft_evaluable = Tacred.soft_evaluable_of_global_reference
+
+(* Slightly more lenient global hint syntax for backwards compatibility *)
+let rectify_hint_constr h = match h with
+| Vernacexpr.HintsReference _ -> h
+| Vernacexpr.HintsConstr c ->
+  let open Constrexpr in
+  match c.CAst.v with
+  | CAppExpl ((qid, None), []) -> Vernacexpr.HintsReference qid
+  | _ -> Vernacexpr.HintsConstr c
 
 let interp_hints ~poly h =
   let env = Global.env () in
@@ -90,11 +96,11 @@ let interp_hints ~poly h =
     Dumpglob.add_glob ?loc:r.CAst.loc gr;
     gr
   in
-  let fr r = soft_evaluable (fref r) in
+  let fr r = soft_evaluable ?loc:r.CAst.loc (fref r) in
   let fi c =
     let open Hints in
     let open Vernacexpr in
-    match c with
+    match rectify_hint_constr c with
     | HintsReference c ->
       let gr = Smartlocate.global_with_alias c in
       (hint_globref gr)
@@ -128,6 +134,7 @@ let interp_hints ~poly h =
   let ft = function
     | HintsVariables -> HintsVariables
     | HintsConstants -> HintsConstants
+    | HintsProjections -> HintsProjections
     | HintsReferences lhints -> HintsReferences (List.map fr lhints)
   in
   let fp = Constrintern.intern_constr_pattern (Global.env ()) in

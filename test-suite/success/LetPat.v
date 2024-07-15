@@ -1,5 +1,5 @@
 (* Simple let-patterns *)
-Variable A B : Type.
+Parameter A B : Type.
 
 Definition l1 (t : A * B * B) : A := let '(x, y, z) := t in x.
 Print l1.

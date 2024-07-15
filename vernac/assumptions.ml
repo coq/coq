@@ -173,7 +173,7 @@ let fold_with_full_binders g f n acc c =
   let open Context.Rel.Declaration in
   let open Constr in
   match kind c with
-  | Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _ | Construct _  | Int _ | Float _ -> acc
+  | Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _ | Construct _  | Int _ | Float _ | String _ -> acc
   | Cast (c,_, t) -> f n (f n acc c) t
   | Prod (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
   | Lambda (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
@@ -195,31 +195,30 @@ let fold_with_full_binders g f n acc c =
       Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
   | Array(_u,t,def,ty) -> f n (f n (Array.fold_left (f n) acc t) def) ty
 
-let get_constant_body kn =
+let get_constant_body access kn =
   let cb = lookup_constant kn in
-  let access = Library.indirect_accessor in
   match cb.const_body with
-  | Undef _ | Primitive _ -> None
+  | Undef _ | Primitive _ | Symbol _ -> None
   | Def c -> Some c
   | OpaqueDef o ->
     match Global.force_proof access o with
     | c, _ -> Some c
     | exception e when CErrors.noncritical e -> None (* missing delayed body, e.g. in vok mode *)
 
-let rec traverse current ctx accu t =
+let rec traverse access current ctx accu t =
   let open GlobRef in
   let open Constr in
   match Constr.kind t with
 | Var id ->
   let body () = id |> Global.lookup_named |> NamedDecl.get_value in
-  traverse_object accu body (VarRef id)
+  traverse_object access accu body (VarRef id)
 | Const (kn, _) ->
-  let body () = get_constant_body kn in
-  traverse_object accu body (ConstRef kn)
+  let body () = get_constant_body access kn in
+  traverse_object access accu body (ConstRef kn)
 | Ind ((mind, _) as ind, _) ->
-  traverse_inductive accu mind (IndRef ind)
+  traverse_inductive access accu mind (IndRef ind)
 | Construct (((mind, _), _) as cst, _) ->
-  traverse_inductive accu mind (ConstructRef cst)
+  traverse_inductive access accu mind (ConstructRef cst)
 | Meta _ | Evar _ -> assert false
 | Case (_, _, _, (([|_|], oty),_), _, c, [||]) when Vars.noccurn 1 oty ->
     (* non dependent match on an inductive with no constructors *)
@@ -236,12 +235,12 @@ let rec traverse current ctx accu t =
       (GlobRef.Set_env.add obj curr, data, ax2ty)
     | _ ->
         fold_with_full_binders
-          Context.Rel.add (traverse current) ctx accu t
+          Context.Rel.add (traverse access current) ctx accu t
     end
 | _ -> fold_with_full_binders
-          Context.Rel.add (traverse current) ctx accu t
+          Context.Rel.add (traverse access current) ctx accu t
 
-and traverse_object (curr, data, ax2ty) body obj =
+and traverse_object access (curr, data, ax2ty) body obj =
   let data, ax2ty =
     let already_in = GlobRef.Map_env.mem obj data in
     if already_in then data, ax2ty
@@ -250,7 +249,7 @@ and traverse_object (curr, data, ax2ty) body obj =
       GlobRef.Map_env.add obj None data, ax2ty
     | Some body ->
       let contents,data,ax2ty =
-        traverse (label_of obj) Context.Rel.empty
+        traverse access (label_of obj) Context.Rel.empty
                  (GlobRef.Set_env.empty,data,ax2ty) body in
       GlobRef.Map_env.add obj (Some contents) data, ax2ty
   in
@@ -260,7 +259,7 @@ and traverse_object (curr, data, ax2ty) body obj =
     definitions. All the constructors and names of a mutual inductive
     definition share exactly the same dependencies. Also, there is no explicit
     dependency between mutually defined inductives and constructors. *)
-and traverse_inductive (curr, data, ax2ty) mind obj =
+and traverse_inductive access (curr, data, ax2ty) mind obj =
   let firstind_ref = (GlobRef.IndRef (mind, 0)) in
   let label = label_of obj in
   let data, ax2ty =
@@ -279,7 +278,7 @@ and traverse_inductive (curr, data, ax2ty) mind obj =
      (* Collects references of parameters *)
      let param_ctx = mib.mind_params_ctxt in
      let nparam = List.length param_ctx in
-     let accu = traverse_context label Context.Rel.empty accu param_ctx in
+     let accu = traverse_context access label Context.Rel.empty accu param_ctx in
      (* For each inductive, collects references in their arity and in the type
         of constructors*)
      let (contents, data, ax2ty) = Array.fold_left (fun accu oib ->
@@ -288,11 +287,11 @@ and traverse_inductive (curr, data, ax2ty) mind obj =
          in
          let accu =
            traverse_context
-             label param_ctx accu arity_wo_param
+             access label param_ctx accu arity_wo_param
          in
          Array.fold_left (fun accu cst_typ ->
             let param_ctx, cst_typ_wo_param = Term.decompose_prod_n_decls nparam cst_typ in
-            traverse label param_ctx accu cst_typ_wo_param)
+            traverse access label param_ctx accu cst_typ_wo_param)
           accu oib.mind_user_lc)
        accu mib.mind_packets
      in
@@ -311,21 +310,21 @@ and traverse_inductive (curr, data, ax2ty) mind obj =
   (GlobRef.Set_env.add obj curr, data, ax2ty)
 
 (** Collects references in a rel_context. *)
-and traverse_context current ctx accu ctxt =
+and traverse_context access current ctx accu ctxt =
   snd (Context.Rel.fold_outside (fun decl (ctx, accu) ->
     match decl with
      | Context.Rel.Declaration.LocalDef (_,c,t) ->
-          let accu = traverse current ctx (traverse current ctx accu t) c in
+          let accu = traverse access current ctx (traverse access current ctx accu t) c in
           let ctx = Context.Rel.add decl ctx in
           ctx, accu
      | Context.Rel.Declaration.LocalAssum (_,t) ->
-          let accu = traverse current ctx accu t in
+          let accu = traverse access current ctx accu t in
           let ctx = Context.Rel.add decl ctx in
            ctx, accu) ctxt ~init:(ctx, accu))
 
-let traverse current t =
+let traverse access current t =
   let () = modcache := MPmap.empty in
-  traverse current Context.Rel.empty (GlobRef.Set_env.empty, GlobRef.Map_env.empty, GlobRef.Map_env.empty) t
+  traverse access current Context.Rel.empty (GlobRef.Set_env.empty, GlobRef.Map_env.empty, GlobRef.Map_env.empty) t
 
 (** Hopefully bullet-proof function to recover the type of a constant. It just
     ignores all the universe stuff. There are many issues that can arise when
@@ -340,10 +339,10 @@ let uses_uip mib =
       && List.length (fst mip.mind_nf_lc.(0)) = List.length mib.mind_params_ctxt)
     mib.mind_packets
 
-let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
+let assumptions ?(add_opaque=false) ?(add_transparent=false) access st gr t =
   let open Printer in
   (* Only keep the transitive dependencies *)
-  let (_, graph, ax2ty) = traverse (label_of gr) t in
+  let (_, graph, ax2ty) = traverse access (label_of gr) t in
   let open GlobRef in
   let fold obj contents accu = match obj with
   | VarRef id ->
@@ -370,7 +369,7 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
       let t = type_of_constant cb in
       let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
       ContextObjectMap.add (Axiom (Constant kn,l)) t accu
-    else if add_opaque && (Declareops.is_opaque cb || not (TransparentState.is_transparent_constant st kn)) then
+    else if add_opaque && (Declareops.is_opaque cb || not (Structures.PrimitiveProjections.is_transparent_constant st kn)) then
       let t = type_of_constant cb in
       ContextObjectMap.add (Opaque kn) t accu
     else if add_transparent then

@@ -78,6 +78,10 @@ sig
     : (QVar.t -> Quality.t) * (Level.t -> Level.t)
     -> t -> t
 
+  type mask = Quality.pattern array * int option array
+
+  val pattern_match : mask -> t -> ('term, Quality.t, Level.t) Partial_subst.t -> ('term, Quality.t, Level.t) Partial_subst.t option
+  (** Pattern matching, as used by the rewrite rules mechanism *)
 end
 
 val eq_sizes : int * int -> int * int -> bool
@@ -218,6 +222,7 @@ val subst_instance_universe : Instance.t -> Universe.t -> Universe.t
 val subst_instance_quality : Instance.t -> Sorts.Quality.t -> Sorts.Quality.t
 val subst_instance_sort : Instance.t -> Sorts.t -> Sorts.t
 val subst_instance_relevance : Instance.t -> Sorts.relevance -> Sorts.relevance
+val subst_instance_sort_level_subst : Instance.t -> sort_level_subst -> sort_level_subst
 
 val make_instance_subst : Instance.t -> sort_level_subst
 (** Creates [u(0) ↦ 0; ...; u(n-1) ↦ n - 1] out of [u(0); ...; u(n - 1)] *)

@@ -148,7 +148,7 @@ Module Export BaseTypes.
         ntl_wf : well_founded nonterminals_listT_R }.
 
     Class parser_computational_types_dataT :=
-      { predata :> parser_computational_predataT;
+      { predata :: parser_computational_predataT;
         split_stateT : String -> nonterminals_listT -> any_grammar CharType -> String -> Type }.
 
     Class parser_computational_dataT' `{parser_computational_types_dataT} :=
@@ -242,9 +242,9 @@ Section general.
   Context {CharType} {String : string_like CharType} {G : grammar CharType}.
 
   Class boolean_parser_dataT :=
-    { predata :> parser_computational_predataT;
+    { predata :: parser_computational_predataT;
       split_stateT : String -> Type;
-      data' :> _ := {| BaseTypes.predata := predata ; BaseTypes.split_stateT := fun _ _ _ => split_stateT |};
+      data' :: _ := {| BaseTypes.predata := predata ; BaseTypes.split_stateT := fun _ _ _ => split_stateT |};
       split_string_for_production
       : forall it its,
           StringWithSplitState String split_stateT
@@ -254,7 +254,7 @@ Section general.
           let P f := List.Forall f (split_string_for_production it its str) in
           P (fun s1s2 =>
                (fst s1s2 ++ snd s1s2 =s str) = true);
-      premethods :> parser_computational_dataT'
+      premethods :: parser_computational_dataT'
       := @Build_parser_computational_dataT'
            _ String data'
            (fun _ _ => split_string_for_production)

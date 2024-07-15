@@ -20,6 +20,7 @@ open Libnames
 open Nameops
 open Term
 open Constr
+open EConstr
 open Context
 open Vars
 open Namegen
@@ -42,7 +43,7 @@ type recursion_scheme_error =
 exception RecursionSchemeError of env * recursion_scheme_error
 
 let ident_hd env ids t na =
-  let na = named_hd env (Evd.from_env env) (EConstr.of_constr t) na in
+  let na = named_hd env (Evd.from_env env) t na in
   next_name_away na ids
 let named_hd env t na = Name (ident_hd env Id.Set.empty t na)
 let name_assumption env = function
@@ -67,11 +68,11 @@ struct
   | Name id -> Id.Set.add id avoid
 
   let push_rel decl env =
-    { env = Environ.push_rel decl env.env; avoid = avoid_decl env.avoid decl }
+    { env = EConstr.push_rel decl env.env; avoid = avoid_decl env.avoid decl }
 
   let push_rel_context ctx env =
     let avoid = List.fold_left avoid_decl env.avoid ctx in
-    { env = Environ.push_rel_context ctx env.env; avoid }
+    { env = EConstr.push_rel_context ctx env.env; avoid }
 
 end
 
@@ -107,7 +108,7 @@ let check_privacy_block specif =
 
 type case_analysis = {
   case_params : EConstr.rel_context;
-  case_pred : Name.t Context.binder_annot * EConstr.types;
+  case_pred : Name.t EConstr.binder_annot * EConstr.types;
   case_branches : EConstr.rel_context;
   case_arity : EConstr.rel_context;
   case_body : EConstr.t;
@@ -130,33 +131,40 @@ let eval_case_analysis case =
 
 (* [p] is the predicate and [cs] a constructor summary *)
 let build_branch_type env sigma dep p cs =
-  let base = appvect (lift cs.cs_nargs p, cs.cs_concl_realargs) in
+  let open EConstr in
+  let open EConstr.Vars in
+  let base = mkApp (lift cs.cs_nargs p, cs.cs_concl_realargs) in
   if dep then
-    EConstr.Unsafe.to_constr (Namegen.it_mkProd_or_LetIn_name env sigma
-      (EConstr.of_constr (applist (base,[build_dependent_constructor cs])))
-      (List.map (fun d -> Termops.map_rel_decl EConstr.of_constr d) cs.cs_args))
+    Namegen.it_mkProd_or_LetIn_name env sigma
+      (applist (base,[build_dependent_constructor cs]))
+      cs.cs_args
   else
-    Term.it_mkProd_or_LetIn base cs.cs_args
+    it_mkProd_or_LetIn base cs.cs_args
 
-let check_valid_elimination env (ind, u as pind) ~dep kind =
+let check_valid_elimination env sigma (ind, u as pind) ~dep s =
   let specif = Inductive.lookup_mind_specif env ind in
   let () =
     if dep && not (Inductiveops.has_dependent_elim specif) then
       raise (RecursionSchemeError (env, NotAllowedDependentAnalysis (false, ind)))
   in
   let () = check_privacy_block specif in
-  if not (Sorts.family_leq kind (elim_sort specif)) && not (kind == InQSort) then
+  match Inductiveops.make_allowed_elimination env sigma (specif,u) s with
+  | Some sigma -> sigma
+  | None ->
+    let s = EConstr.ESorts.kind sigma s in
+    let pind = on_snd EConstr.Unsafe.to_instance pind in
     raise
       (RecursionSchemeError
-          (env, NotAllowedCaseAnalysis (false, fst (UnivGen.fresh_sort_in_family kind), pind)))
+         (env, NotAllowedCaseAnalysis (false, s, pind)))
 
-let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) kind =
-  let () = check_valid_elimination env pind ~dep kind in
-  let lnamespar = Vars.subst_instance_context u mib.mind_params_ctxt in
+let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) s =
+  let open EConstr in
+  let sigma = check_valid_elimination env sigma pind ~dep s in
+  let lnamespar = Vars.subst_instance_context u (of_rel_context mib.mind_params_ctxt) in
   let indf = make_ind_family(pind, Context.Rel.instance_list mkRel 0 lnamespar) in
   let constrs = get_constructors env indf in
   let projs = get_projections env ind in
-  let relevance = Sorts.relevance_of_sort_family kind in
+  let relevance = Retyping.relevance_of_sort s in
   let ndepar = mip.mind_nrealdecls + 1 in
 
   (* Pas génant car env ne sert pas à typer mais juste à renommer les Anonym *)
@@ -164,10 +172,8 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) kind =
   let env = RelEnv.make env in
   let env' = RelEnv.push_rel_context lnamespar env in
 
-  let (sigma, s) = Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg sigma kind in
   let typP = make_arity !!env' sigma dep indf s in
-  let typP = EConstr.Unsafe.to_constr typP in
-  let nameP = make_name env' "P" Sorts.Relevant in
+  let nameP = make_name env' "P" ERelevance.relevant in
 
   let rec get_branches env k accu =
     if Int.equal k (Array.length mip.mind_consnames) then accu
@@ -182,7 +188,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) kind =
   let env' = RelEnv.push_rel (LocalAssum (nameP,typP)) env' in
   let branches = get_branches env' 0 [] in
 
-  let sigma, arity, body, bodyT =
+  let arity, body, bodyT =
     let env = RelEnv.push_rel_context branches env' in
     let nbprod = Array.length mip.mind_consnames + 1 in
 
@@ -190,11 +196,11 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) kind =
     let arsign = get_arity !!env indf' in
     let r = Inductiveops.relevance_of_inductive_family !!env indf' in
     let depind = build_dependent_inductive !!env indf' in
-    let deparsign = LocalAssum (make_annot Anonymous r,depind)::arsign in
+    let deparsign = LocalAssum (make_annot Anonymous r,depind) :: arsign in
 
     let ci = make_case_info !!env (fst pind) RegularStyle in
     let pbody =
-      appvect
+      mkApp
         (mkRel (ndepar + nbprod),
           if dep then Context.Rel.instance mkRel 0 deparsign
           else Context.Rel.instance mkRel 1 arsign) in
@@ -203,12 +209,12 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) kind =
       if dep then deparsign
       else LocalAssum (make_annot Anonymous r, depind) :: List.tl deparsign
     in
-    let sigma, obj, objT =
+    let obj, objT =
       match projs with
       | None ->
         let pms = Context.Rel.instance mkRel (ndepar + nbprod) lnamespar in
         let iv =
-          if Typeops.should_invert_case !!env relevance ci then
+          if Typeops.should_invert_case !!env (ERelevance.kind sigma relevance) ci then
             CaseInvert { indices = Context.Rel.instance mkRel 1 arsign }
           else NoInvert
         in
@@ -216,7 +222,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) kind =
         let mk_branch i =
           (* we need that to get the generated names for the branch *)
           let ft = get_type (lookup_rel (ncons - i) !!env) in
-          let (ctx, _) = decompose_prod_decls ft in
+          let (ctx, _) = EConstr.decompose_prod_decls sigma ft in
           let brnas = Array.of_list (List.rev_map get_annot ctx) in
           let n = mkRel (List.length ctx + ndepar + ncons - i) in
           let args = Context.Rel.instance mkRel 0 ctx in
@@ -225,31 +231,32 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) kind =
         let br = Array.init ncons mk_branch in
         let pnas = Array.of_list (List.rev_map get_annot pctx) in
         let obj = mkCase (ci, u, pms, ((pnas, liftn ndepar (ndepar + 1) pbody), relevance), iv, mkRel 1, br) in
-        sigma, obj, pbody
+        obj, pbody
       | Some ps ->
         let term =
           mkApp (mkRel 2,
                   Array.map
                     (fun (p,r) ->
-                       let r = UVars.subst_instance_relevance u r in
-                       mkProj (Projection.make p true, r, mkRel 1)) ps)
+                       let r = EConstr.Vars.subst_instance_relevance u (ERelevance.make r) in
+                       mkProj (Projection.make p true, r, mkRel 1))
+                    ps)
         in
         if dep then
           let ty = mkApp (mkRel 3, [| mkRel 1 |]) in
-          sigma, mkCast (term, DEFAULTcast, ty), ty
+          mkCast (term, DEFAULTcast, ty), ty
         else
-          sigma, term, mkRel 3
+          term, mkRel 3
     in
-    (sigma, deparsign, obj, objT)
+    (deparsign, obj, objT)
   in
   let params = set_names env lnamespar in
   let case = {
-    case_params = EConstr.of_rel_context params;
-    case_pred = (nameP, EConstr.of_constr typP);
-    case_branches = EConstr.of_rel_context branches;
-    case_arity = EConstr.of_rel_context arity;
-    case_body = EConstr.of_constr body;
-    case_type = EConstr.of_constr bodyT;
+    case_params = params;
+    case_pred = (nameP, typP);
+    case_branches = branches;
+    case_arity = arity;
+    case_body = body;
+    case_type = bodyT;
   } in
   (sigma, case)
 
@@ -270,15 +277,14 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) kind =
  * on it with which predicate and which recursive function.
  *)
 
-let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
+let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) (mind,tyi) cs recargs =
+  let open EConstr in
   let make_prod = make_prod_dep dep in
   let nparams = List.length vargs in
   let process_pos env depK pk =
     let rec prec env i sign p =
-      let p',largs = whd_allnolet_stack env sigma (EConstr.of_constr p) in
-      let p' = EConstr.Unsafe.to_constr p' in
-      let largs = List.map EConstr.Unsafe.to_constr largs in
-      match kind p' with
+      let p',largs = whd_allnolet_stack env sigma p in
+      match kind sigma p' with
         | Prod (n,t,c) ->
             let d = LocalAssum (n,t) in
             make_prod env (n,t,prec (push_rel d env) (i+1) (d::sign) c)
@@ -289,29 +295,27 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
             let realargs = List.skipn nparams largs in
             let base = applist (lift i pk,realargs) in
             if depK then
-              Reduction.beta_appvect
-                base [|applist (mkRel (i+1), Context.Rel.instance_list mkRel 0 sign)|]
+              Reductionops.beta_applist sigma
+                (base, [applist (mkRel (i+1), Context.Rel.instance_list mkRel 0 sign)])
             else
               base
         | _ ->
-           let t' = whd_all env sigma (EConstr.of_constr p) in
-           let t' = EConstr.Unsafe.to_constr t' in
-           if Constr.equal p' t' then assert false
+           let t' = whd_all env sigma p in
+           if EConstr.eq_constr sigma p' t' then assert false
            else prec env i sign t'
     in
     prec env 0 []
   in
   let rec process_constr env i c recargs nhyps li =
-    if nhyps > 0 then match kind c with
+    if nhyps > 0 then match EConstr.kind sigma c with
       | Prod (n,t,c_0) ->
           let (optionpos,rest) =
             match recargs with
               | [] -> None,[]
               | ra::rest ->
                   (match dest_recarg ra with
-                    | Mrec (_,j) when is_rec -> (depPvect.(j),rest)
-                    | Nested _  -> (None,rest)
-                    | _ -> (None, rest))
+                    | Mrec (RecArgInd (mind',j)) -> ((if is_rec && QMutInd.equal env mind mind' then depPvect.(j) else None),rest)
+                    | Norec | Mrec (RecArgPrim _) -> (None,rest))
           in
           (match optionpos with
              | None ->
@@ -323,7 +327,7 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
                  let nP = lift (i+1+decP) p in
                  let env' = push_rel (LocalAssum (n,t)) env in
                  let t_0 = process_pos env' dep' nP (lift 1 t) in
-                 let r_0 = Retyping.relevance_of_type env' sigma (EConstr.of_constr t_0) in
+                 let r_0 = Retyping.relevance_of_type env' sigma t_0 in
                  make_prod_dep (dep || dep') env
                    (n,t,
                     mkArrow t_0 r_0
@@ -341,24 +345,23 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
         let realargs = List.rev_map (fun k -> mkRel (i-k)) li in
         let params = List.map (lift i) vargs in
         let co = applist (mkConstructU cs.cs_cstr,params@realargs) in
-        Reduction.beta_appvect c [|co|]
+        Reductionops.beta_applist sigma (c, [co])
       else c
   in
   let nhyps = List.length cs.cs_args in
   let nP = match depPvect.(tyi) with
     | Some(_,p) -> lift (nhyps+decP) p
     | _ -> assert false in
-  let base = appvect (nP,cs.cs_concl_realargs) in
+  let base = mkApp (nP,cs.cs_concl_realargs) in
   let c = it_mkProd_or_LetIn base cs.cs_args in
   process_constr env 0 c recargs nhyps []
 
-let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
+let make_rec_branch_arg env sigma (nparrec,fvect,decF) mind f cstr recargs =
+  let open EConstr in
   let process_pos env fk  =
     let rec prec env i hyps p =
-      let p',largs = whd_allnolet_stack env sigma (EConstr.of_constr p) in
-      let p' = EConstr.Unsafe.to_constr p' in
-      let largs = List.map EConstr.Unsafe.to_constr largs in
-      match kind p' with
+      let p',largs = whd_allnolet_stack env sigma p in
+      match kind sigma p' with
         | Prod (n,t,c) ->
             let d = LocalAssum (n,t) in
             mkLambda_name env (n,t,prec (push_rel d env) (i+1) (d::hyps) c)
@@ -367,13 +370,12 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
             mkLetIn (n,b,t,prec (push_rel d env) (i+1) (d::hyps) c)
         | Ind _ ->
             let realargs = List.skipn nparrec largs
-            and arg = appvect (mkRel (i+1), Context.Rel.instance mkRel 0 hyps) in
+            and arg = mkApp (mkRel (i+1), Context.Rel.instance mkRel 0 hyps) in
             applist(lift i fk,realargs@[arg])
         | _ ->
-           let t' = whd_all env sigma (EConstr.of_constr p) in
-           let t' = EConstr.Unsafe.to_constr t' in
-             if Constr.equal t' p' then assert false
-             else prec env i hyps t'
+          let t' = whd_all env sigma p in
+          if EConstr.eq_constr sigma t' p' then assert false
+          else prec env i hyps t'
     in
     prec env 0 []
   in
@@ -382,16 +384,15 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
     | (LocalAssum (n,t) as d)::cprest, recarg::rest ->
         let optionpos =
           match dest_recarg recarg with
-            | Norec   -> None
-            | Nested _  -> None
-            | Mrec (_,i)  -> fvect.(i)
+            | Norec | Mrec (RecArgPrim _) -> None
+            | Mrec (RecArgInd (mind',i)) -> if QMutInd.equal env mind mind' then fvect.(i) else None
         in
         (match optionpos with
            | None ->
                let env' = push_rel d env in
                mkLambda_name env
                  (n,t,process_constr env' (i+1)
-                    (EConstr.Unsafe.to_constr (whd_beta env' Evd.empty (EConstr.of_constr (applist (lift 1 f, [(mkRel 1)])))))
+                    (whd_beta env' Evd.empty (applist (lift 1 f, [(mkRel 1)])))
                     (cprest,rest))
            | Some(_,f_0) ->
                let nF = lift (i+1+decF) f_0 in
@@ -399,7 +400,7 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
                let arg = process_pos env' nF (lift 1 t) in
                mkLambda_name env
                  (n,t,process_constr env' (i+1)
-                    (EConstr.Unsafe.to_constr (whd_beta env' Evd.empty (EConstr.of_constr (applist (lift 1 f, [(mkRel 1); arg])))))
+                    (whd_beta env' Evd.empty (applist (lift 1 f, [(mkRel 1); arg])))
                     (cprest,rest)))
     | (LocalDef (n,c,t) as d)::cprest, rest ->
         mkLetIn
@@ -414,11 +415,13 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
 
 (* Main function *)
 let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
+  let u = EConstr.Unsafe.to_instance u in
   let env = RelEnv.make env in
   let nparams = mib.mind_nparams in
   let nparrec = mib.mind_nparams_rec in
   let evdref = ref sigma in
   let lnonparrec,lnamesparrec = Inductive.inductive_nonrec_rec_paramdecls (mib,u) in
+  let lnamesparrec = EConstr.of_rel_context lnamesparrec in
   let nrec = List.length listdepkind in
   let depPvec =
     Array.make mib.mind_ntypes (None : (bool * constr) option) in
@@ -470,17 +473,17 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
               let constrs = get_constructors !!env indf' in
               let fi = Termops.rel_vect (dect-i-nctyi) nctyi in
               let vecfi = Array.map
-                (fun f -> appvect (f, Context.Rel.instance mkRel ndepar lnonparrec))
+                (fun f -> mkApp (EConstr.of_constr f, Context.Rel.instance mkRel ndepar lnonparrec))
                 fi
               in
                 Array.map3
                   (make_rec_branch_arg !!env !evdref
-                      (nparrec,depPvec,larsign))
+                      (nparrec,depPvec,larsign) (fst indi))
                   vecfi constrs (dest_subterms recargsvec.(tyi))
             in
 
             let j = (match depPvec.(tyi) with
-              | Some (_,c) when isRel c -> destRel c
+              | Some (_,c) when isRel !evdref c -> destRel !evdref c
               | _ -> assert false)
             in
 
@@ -500,7 +503,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
             in
 
             (* body of i-th component of the mutual fixpoint *)
-            let target_relevance = Sorts.relevance_of_sort_family target_sort in
+            let target_relevance = Retyping.relevance_of_sort target_sort in
             let deftyi =
               let ci = make_case_info !!env indi RegularStyle in
               let concl = applist (mkRel (dect+j+ndepar),pargs) in
@@ -511,12 +514,11 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
                   arsign'
               in
               let obj =
-                let indty = find_rectype !!env sigma (EConstr.of_constr depind) in
+                let indty = find_rectype !!env sigma depind in
                 Inductiveops.make_case_or_project !!env !evdref indty ci
-                  (EConstr.of_constr pred, target_relevance)
-                  (EConstr.mkRel 1) (Array.map EConstr.of_constr branches)
+                  (pred, target_relevance)
+                  (EConstr.mkRel 1) branches
               in
-              let obj = EConstr.to_constr !evdref obj in
                 it_mkLambda_or_LetIn_name env obj
                   (lift_rel_context nrec deparsign)
             in
@@ -527,7 +529,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
               let concl =
                 let pargs = if dep then Context.Rel.instance mkRel 0 deparsign
                   else Context.Rel.instance mkRel 1 arsign
-                in appvect (mkRel (nbconstruct+ndepar+nonrecpar+j),pargs)
+                in mkApp (mkRel (nbconstruct+ndepar+nonrecpar+j),pargs)
               in it_mkProd_or_LetIn_name env
                 concl
                 deparsign
@@ -558,9 +560,9 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
               let cs = get_constructor ((indi,u),mibi,mipi,vargs) (j+1) in
               let p_0 =
                 type_rec_branch
-                  true dep !!env !evdref (vargs,depPvec,i+j) tyi cs recarg
+                  true dep !!env !evdref (vargs,depPvec,i+j) indi cs recarg
               in
-              let r_0 = Sorts.relevance_of_sort_family sfam in
+              let r_0 = Retyping.relevance_of_sort sfam in
               let namef = make_name env "f" r_0 in
                 mkLambda (namef, p_0,
                   (onerec (RelEnv.push_rel (LocalAssum (namef,p_0)) env)) (j+1))
@@ -569,15 +571,10 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
           makefix i listdepkind
     in
     let rec put_arity env i = function
-      | ((indi,u),_,_,dep,kinds)::rest ->
+      | ((indi,u),_,_,dep,s)::rest ->
           let indf = make_ind_family ((indi,u), Context.Rel.instance_list mkRel i lnamesparrec) in
-          let s =
-            let sigma, res = Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg !evdref kinds in
-            evdref := sigma; res
-          in
           let typP = make_arity !!env !evdref dep indf s in
-          let typP = EConstr.Unsafe.to_constr typP in
-          let nameP = make_name env "P" Sorts.Relevant in
+          let nameP = make_name env "P" ERelevance.relevant in
             mkLambda (nameP,typP,
               (put_arity (RelEnv.push_rel (LocalAssum (nameP,typP)) env)) (i+1) rest)
       | [] ->
@@ -588,7 +585,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
     let ((indi,u),mibi,mipi,dep,kind) = List.nth listdepkind p in
 
       if force_mutual || (mis_is_recursive_subset
-        (List.map (fun ((indi,u),_,_,_,_) -> snd indi) listdepkind)
+        (List.map (fun ((indi,u),_,_,_,_) -> indi) listdepkind)
         mipi.mind_recargs)
       then
         let env' = RelEnv.push_rel_context lnamesparrec env in
@@ -598,7 +595,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
         let evd = !evdref in
         let (evd, c) = mis_make_case_com dep !!env evd (indi,u) (mibi,mipi) kind in
         let (c, _) = eval_case_analysis c in
-          evdref := evd; EConstr.Unsafe.to_constr c
+          evdref := evd; c
   in
     (* Body of mis_make_indrec *)
     !evdref, List.init nrec make_one_rec
@@ -610,70 +607,56 @@ let build_case_analysis_scheme env sigma pity dep kind =
   let specif = lookup_mind_specif env (fst pity) in
   mis_make_case_com dep env sigma pity specif kind
 
+let prop_but_default_dependent_elim =
+  Summary.ref ~name:"prop_but_default_dependent_elim" Indset_env.empty
+
+let inPropButDefaultDepElim : inductive -> Libobject.obj =
+  Libobject.declare_object @@
+  Libobject.superglobal_object "prop_but_default_dependent_elim"
+    ~cache:(fun i ->
+        prop_but_default_dependent_elim := Indset_env.add i !prop_but_default_dependent_elim)
+    ~subst:(Some (fun (subst,i) -> Mod_subst.subst_ind subst i))
+    ~discharge:(fun i -> Some i)
+
+let declare_prop_but_default_dependent_elim i =
+  Lib.add_leaf (inPropButDefaultDepElim i)
+
+let is_prop_but_default_dependent_elim i = Indset_env.mem i !prop_but_default_dependent_elim
+
+let pseudo_sort_family_for_elim ind mip =
+  match mip.mind_arity with
+  | RegularArity s when Sorts.is_prop s.mind_sort && is_prop_but_default_dependent_elim ind -> InType
+  | RegularArity s -> Sorts.family s.mind_sort
+  | TemplateArity _ -> InType
+
 let is_in_prop mip =
-  match inductive_sort_family mip with
-  | InProp -> true
-  | _ -> false
+  match mip.mind_arity with
+  | RegularArity s -> Sorts.is_prop s.mind_sort
+  | TemplateArity _ -> false
 
 let default_case_analysis_dependence env ind =
   let _, mip as specif = lookup_mind_specif env ind in
-  not (is_in_prop mip || not (Inductiveops.has_dependent_elim specif))
+  Inductiveops.has_dependent_elim specif
+  && (not (is_in_prop mip) || is_prop_but_default_dependent_elim ind)
 
 let build_case_analysis_scheme_default env sigma pity kind =
   let dep = default_case_analysis_dependence env (fst pity) in
   build_case_analysis_scheme env sigma pity dep kind
 
 (**********************************************************************)
-(* [modify_sort_scheme s rec] replaces the sort of the scheme
-   [rec] by [s] *)
-
-let change_sort_arity sort =
-  let rec drec a = match kind a with
-    | Cast (c,_,_) -> drec c
-    | Prod (n,t,c) -> let s, c' = drec c in s, mkProd (n, t, c')
-    | LetIn (n,b,t,c) -> let s, c' = drec c in s, mkLetIn (n,b,t,c')
-    | Sort s -> s, mkSort sort
-    | _ -> assert false
-  in
-    drec
-
-(* Change the sort in the type of an inductive definition, builds the
-   corresponding eta-expanded term *)
-let weaken_sort_scheme env evd set sort npars term ty =
-  let evdref = ref evd in
-  let rec drec ctx np elim =
-    match kind elim with
-      | Prod (n,t,c) ->
-          let ctx = LocalAssum (n, t) :: ctx in
-          if Int.equal np 0 then
-            let osort, t' = change_sort_arity (EConstr.ESorts.kind !evdref sort) t in
-              evdref := (if set then Evd.set_eq_sort else Evd.set_leq_sort) env !evdref sort (EConstr.ESorts.make osort);
-              mkProd (n, t', c),
-              mkLambda (n, t', mkApp(term, Context.Rel.instance mkRel 0 ctx))
-          else
-            let c',term' = drec ctx (np-1) c in
-            mkProd (n, t, c'), mkLambda (n, t, term')
-      | LetIn (n,b,t,c) ->
-        let ctx = LocalDef (n, b, t) :: ctx in
-        let c',term' = drec ctx np c in
-        mkLetIn (n,b,t,c'), mkLetIn (n,b,t,term')
-      | _ -> anomaly ~label:"weaken_sort_scheme" (Pp.str "wrong elimination type.")
-  in
-  let ty, term = drec [] npars ty in
-    !evdref, ty, term
-
-(**********************************************************************)
 (* Interface to build complex Scheme *)
 (* Check inductive types only occurs once
 (otherwise we obtain a meaning less scheme) *)
 
-let check_arities env listdepkind =
+let check_arities env sigma listdepkind =
   let _ = List.fold_left
-    (fun ln (((_,ni as mind),u),mibi,mipi,dep,kind) ->
-       let kelim = elim_sort (mibi,mipi) in
-       if not (Sorts.family_leq kind kelim) then raise
+     (fun ln (((_,ni as mind),u),mibi,mipi,dep,s) ->
+       if not @@ Inductiveops.is_allowed_elimination sigma ((mibi,mipi),u) s then
+        let s = ESorts.kind sigma s in
+        let u = EInstance.kind sigma u in
+        raise
          (RecursionSchemeError
-          (env, NotAllowedCaseAnalysis (true, fst (UnivGen.fresh_sort_in_family kind),(mind,u))))
+          (env, NotAllowedCaseAnalysis (true, s,(mind,u))))
        else if Int.List.mem ni ln then raise
          (RecursionSchemeError (env, NotMutualInScheme (mind,mind)))
        else ni::ln)
@@ -698,7 +681,7 @@ let build_mutual_induction_scheme env sigma ?(force_mutual=false) = function
                 raise (RecursionSchemeError (env, NotMutualInScheme (mind,mind'))))
            lrecspec)
       in
-      let _ = check_arities env listdepkind in
+      let _ = check_arities env sigma listdepkind in
       mis_make_indrec env sigma ~force_mutual listdepkind mib u
   | _ -> anomaly (Pp.str "build_induction_scheme expects a non empty list of inductive types.")
 

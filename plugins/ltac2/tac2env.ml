@@ -12,7 +12,7 @@ open Util
 open Names
 open Libnames
 open Tac2expr
-open Tac2ffi
+open Tac2val
 
 type global_data = {
   gdata_expr : glb_tacexpr;
@@ -65,7 +65,16 @@ let ltac_state = Summary.ref empty_state ~name:"ltac2-state"
 
 let compiled_tacs = Summary.ref ~local:true ~name:"ltac2-compiled-state" KNmap.empty
 
-let ltac_notations = Summary.ref KNmap.empty ~stage:Summary.Stage.Synterp ~name:"ltac2-notations"
+type notation_data =
+  | UntypedNota of raw_tacexpr
+  | TypedNota of {
+      nota_prms : int;
+      nota_argtys : int glb_typexpr Id.Map.t;
+      nota_ty : int glb_typexpr;
+      nota_body : glb_tacexpr;
+    }
+
+let ltac_notations = Summary.ref KNmap.empty ~name:"ltac2-notations"
 
 let define_global kn e =
   let state = !ltac_state in

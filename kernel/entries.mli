@@ -67,12 +67,12 @@ type mutual_inductive_entry = {
 (** {6 Constants (Definition/Axiom) } *)
 
 type definition_entry = {
-  const_entry_body : constr;
+  definition_entry_body : constr;
   (* List of section variables *)
-  const_entry_secctx : Id.Set.t option;
-  const_entry_type : types option;
-  const_entry_universes : universes_entry;
-  const_entry_inline_code : bool;
+  definition_entry_secctx : Id.Set.t option;
+  definition_entry_type : types option;
+  definition_entry_universes : universes_entry;
+  definition_entry_inline_code : bool;
 }
 
 type section_def_entry = {
@@ -102,12 +102,20 @@ type primitive_entry = {
   prim_entry_content : CPrimitives.op_or_type;
 }
 
+type symbol_entry = {
+  symb_entry_type : types;
+  symb_entry_unfold_fix: bool;
+  symb_entry_universes : universes_entry;
+}
+
 type 'a proof_output = constr Univ.in_universe_context_set * 'a
 
 type constant_entry =
   | DefinitionEntry : definition_entry -> constant_entry
+  | OpaqueEntry : unit opaque_entry -> constant_entry
   | ParameterEntry : parameter_entry -> constant_entry
   | PrimitiveEntry : primitive_entry -> constant_entry
+  | SymbolEntry : symbol_entry -> constant_entry
 
 (** {6 Modules } *)
 

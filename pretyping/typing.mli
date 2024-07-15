@@ -38,13 +38,13 @@ val solve_evars : env -> evar_map -> constr -> evar_map * constr
 
 (** Raise an error message if incorrect elimination for this inductive
     (first constr is term to match, second is return predicate) *)
-val check_allowed_sort : env -> evar_map -> pinductive -> constr -> constr ->
-  Sorts.relevance
+val check_allowed_sort : env -> evar_map -> inductive puniverses -> constr -> constr ->
+  evar_map * ERelevance.t
 
 (** Raise an error message if bodies have types not unifiable with the
     expected ones *)
 val check_type_fixpoint : ?loc:Loc.t -> env -> evar_map ->
-  Names.Name.t Context.binder_annot array -> types array -> unsafe_judgment array -> evar_map
+  Names.Name.t EConstr.binder_annot array -> types array -> unsafe_judgment array -> evar_map
 
 (** Variant of {!check} that assumes that the argument term is well-typed. *)
 val check_actual_type : env -> evar_map -> unsafe_judgment -> types -> evar_map
@@ -64,6 +64,7 @@ val judge_of_product : Environ.env -> evar_map -> Name.t ->
 val judge_of_projection : env -> evar_map -> Projection.t -> unsafe_judgment -> unsafe_judgment
 val judge_of_int : Environ.env -> Uint63.t -> unsafe_judgment
 val judge_of_float : Environ.env -> Float64.t -> unsafe_judgment
+val judge_of_string : Environ.env -> Pstring.t -> unsafe_judgment
 
 val checked_appvect : env -> evar_map -> constr -> constr array -> evar_map * constr
 val checked_applist : env -> evar_map -> constr -> constr list -> evar_map * constr
@@ -71,4 +72,8 @@ val checked_applist : env -> evar_map -> constr -> constr list -> evar_map * con
 (** hack *)
 val recheck_against : Environ.env -> evar_map -> constr -> constr -> evar_map * types
 
-val bad_relevance_msg : (Environ.env * evar_map * (constr, types) Typeops.bad_relevance) CWarnings.msg
+type ('constr,'types,'r) bad_relevance =
+| BadRelevanceBinder of 'r * ('constr,'types,'r) Context.Rel.Declaration.pt
+| BadRelevanceCase of 'r * 'constr
+
+val bad_relevance_msg : (Environ.env * evar_map * (constr, types, ERelevance.t) bad_relevance) CWarnings.msg

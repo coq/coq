@@ -1,0 +1,9 @@
+<{ SS (? I) }>
+     : nat
+<{ SS [[{{?}} I]] }>
+     : nat
+fun x : I => match x with
+             | <{ DD [[{{?}} y]] }> => y
+             | _ => 0
+             end
+     : I -> nat

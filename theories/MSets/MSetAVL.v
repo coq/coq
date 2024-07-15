@@ -381,7 +381,7 @@ Qed.
 Lemma bal_spec : forall l x r y,
  InT y (bal l x r) <-> X.eq y x \/ InT y l \/ InT y r.
 Proof.
- intros l x r; functional induction bal l x r; intros; try clear e0;
+ intros l x r; induction l, x, r, (bal l x r) using bal_ind; subst; intros; try clear e0;
  rewrite !create_spec; intuition_in.
 Qed.
 
@@ -389,7 +389,7 @@ Qed.
 Instance bal_ok l x r `(Ok l, Ok r, lt_tree x l, gt_tree x r) :
  Ok (bal l x r).
 Proof.
- functional induction bal l x r; intros;
+ induction l, x, r, (bal l x r) using bal_ind; subst; intros;
  inv; repeat apply create_ok; auto; unfold create;
  (apply lt_tree_node || apply gt_tree_node); auto;
  (eapply lt_tree_trans || eapply gt_tree_trans); eauto.
@@ -469,7 +469,7 @@ Lemma remove_min_spec : forall l x r y h,
  InT y (Node h l x r) <->
   X.eq y (remove_min l x r)#2 \/ InT y (remove_min l x r)#1.
 Proof.
- intros l x r; functional induction (remove_min l x r); simpl in *; intros.
+ intros l x r; induction l, x, r, (remove_min l x r) using remove_min_ind; subst; simpl in *; intros.
  - intuition_in.
  - rewrite bal_spec, In_node_iff, IHp, e0; simpl; intuition.
 Qed.
@@ -478,7 +478,7 @@ Qed.
 Instance remove_min_ok l x r : forall h `(Ok (Node h l x r)),
  Ok (remove_min l x r)#1.
 Proof.
- functional induction (remove_min l x r); simpl; intros.
+ induction l, x, r, (remove_min l x r) using remove_min_ind; subst; simpl; intros.
  - inv; auto.
  - assert (O : Ok (Node _x ll lx lr)) by (inv; auto).
    assert (L : lt_tree x (Node _x ll lx lr)) by (inv; auto).
@@ -493,7 +493,7 @@ Qed.
 Lemma remove_min_gt_tree : forall l x r h `{Ok (Node h l x r)},
  gt_tree (remove_min l x r)#2 (remove_min l x r)#1.
 Proof.
- intros l x r; functional induction (remove_min l x r); simpl; intros.
+ intros l x r; induction l, x, r, (remove_min l x r) using remove_min_ind; subst; simpl; intros.
  - inv; auto.
  - assert (O : Ok (Node _x ll lx lr)) by (inv; auto).
    assert (L : lt_tree x (Node _x ll lx lr)) by (inv; auto).
@@ -510,7 +510,7 @@ Local Hint Resolve remove_min_gt_tree : core.
 Lemma merge_spec : forall s1 s2 y,
  InT y (merge s1 s2) <-> InT y s1 \/ InT y s2.
 Proof.
- intros s1 s2; functional induction (merge s1 s2); intros;
+ intros s1 s2; induction s1, s2, (merge s1 s2) using merge_ind; subst; intros;
   try factornode s1.
  - intuition_in.
  - intuition_in.
@@ -522,7 +522,7 @@ Instance merge_ok s1 s2 : forall `(Ok s1, Ok s2)
  `(forall y1 y2 : elt, InT y1 s1 -> InT y2 s2 -> X.lt y1 y2),
  Ok (merge s1 s2).
 Proof.
- functional induction (merge s1 s2); intros; auto;
+ induction s1, s2, (merge s1 s2) using merge_ind; subst; intros; auto;
   try factornode s1.
  apply bal_ok; auto.
  - change s2' with ((s2',m)#1); rewrite <-e1; eauto with *.
@@ -568,7 +568,7 @@ Qed.
 Lemma concat_spec : forall s1 s2 y,
  InT y (concat s1 s2) <-> InT y s1 \/ InT y s2.
 Proof.
- intros s1 s2; functional induction (concat s1 s2); intros;
+ intros s1 s2; induction s1, s2, (concat s1 s2) using concat_ind; subst; intros;
   try factornode s1.
  - intuition_in.
  - intuition_in.
@@ -580,7 +580,7 @@ Instance concat_ok s1 s2 : forall `(Ok s1, Ok s2)
  `(forall y1 y2 : elt, InT y1 s1 -> InT y2 s2 -> X.lt y1 y2),
  Ok (concat s1 s2).
 Proof.
- functional induction (concat s1 s2); intros; auto;
+  induction s1, s2, (concat s1 s2) using concat_ind; subst; intros; auto;
   try factornode s1.
  apply join_ok; auto.
  - change (Ok (s2',m)#1); rewrite <-e1; eauto with *.
@@ -665,7 +665,7 @@ Ltac destruct_split := match goal with
 Lemma inter_spec_ok : forall s1 s2 `{Ok s1, Ok s2},
  Ok (inter s1 s2) /\ (forall y, InT y (inter s1 s2) <-> InT y s1 /\ InT y s2).
 Proof.
- intros s1 s2; functional induction inter s1 s2; intros B1 B2;
+ intros s1 s2; induction s1, s2, (inter s1 s2) using inter_ind; subst; intros B1 B2;
  [intuition_in|intuition_in | | ]; factornode s2;
  destruct_split; inv;
  destruct IHt0 as (IHo1,IHi1), IHt1 as (IHo2,IHi2); auto with *;
@@ -700,7 +700,7 @@ Proof. intros; destruct (@inter_spec_ok s1 s2); auto. Qed.
 Lemma diff_spec_ok : forall s1 s2 `{Ok s1, Ok s2},
  Ok (diff s1 s2) /\ (forall y, InT y (diff s1 s2) <-> InT y s1 /\ ~InT y s2).
 Proof.
- intros s1 s2; functional induction diff s1 s2; intros B1 B2;
+ intros s1 s2; induction s1, s2, (diff s1 s2) using diff_ind; subst; intros B1 B2;
  [intuition_in|intuition_in | | ]; factornode s2;
  destruct_split; inv;
  destruct IHt0 as (IHb1,IHi1), IHt1 as (IHb2,IHi2); auto with *;
@@ -736,7 +736,7 @@ Proof. intros; destruct (@diff_spec_ok s1 s2); auto. Qed.
 Lemma union_spec : forall s1 s2 y `{Ok s1, Ok s2},
  (InT y (union s1 s2) <-> InT y s1 \/ InT y s2).
 Proof.
- intros s1 s2; functional induction union s1 s2; intros y B1 B2.
+ intros s1 s2; induction s1, s2, (union s1 s2) using union_ind; subst; intros y B1 B2.
  - intuition_in.
  - intuition_in.
  - factornode s2; destruct_split; inv.
@@ -747,7 +747,7 @@ Qed.
 #[global]
 Instance union_ok s1 s2 : forall `(Ok s1, Ok s2), Ok (union s1 s2).
 Proof.
- functional induction union s1 s2; intros B1 B2; auto.
+ induction s1, s2, (union s1 s2) using union_ind; subst; intros B1 B2; auto.
  factornode s2; destruct_split; inv.
  apply join_ok; auto with *.
  - intro y; rewrite union_spec, split_spec1; intuition_in; exact _.

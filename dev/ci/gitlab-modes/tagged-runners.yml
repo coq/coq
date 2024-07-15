@@ -1,3 +1,11 @@
 .auto-use-tags:
   tags:
     - $TAGGED_RUNNERS
+
+# making this configurable is too annoying if we want to support > 1 tag
+# and not sure small is enough
+# so just hardcode ci.inria.fr && medium
+.auto-use-docker-tags:
+  tags:
+    - ci.inria.fr
+    - medium

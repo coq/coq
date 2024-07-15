@@ -26,8 +26,8 @@ val allocc : ssrocc
 
 val hyp_id : ssrhyp -> Id.t
 val hyps_ids : ssrhyps -> Id.t list
-val check_hyp_exists : ('a, 'b) Context.Named.pt -> ssrhyp -> unit
-val test_hyp_exists : ('a, 'b) Context.Named.pt -> ssrhyp -> bool
+val check_hyp_exists : ('a, 'b, 'r) Context.Named.pt -> ssrhyp -> unit
+val test_hyp_exists : ('a, 'b, 'r) Context.Named.pt -> ssrhyp -> bool
 val check_hyps_uniq : Id.t list -> ssrhyps -> unit
 val not_section_id : Id.t -> bool
 val hyp_err : ?loc:Loc.t -> string -> Id.t -> 'a
@@ -108,7 +108,7 @@ val interp_open_constr :
 val splay_open_constr :
            Environ.env ->
            evar_map * EConstr.t ->
-           (Names.Name.t Context.binder_annot * EConstr.t) list * EConstr.t
+           (Names.Name.t EConstr.binder_annot * EConstr.t) list * EConstr.t
 val isAppInd : Environ.env -> Evd.evar_map -> EConstr.types -> bool
 
 val mk_term : ssrtermkind -> constr_expr -> ssrterm
@@ -348,6 +348,7 @@ val tacMK_SSR_CONST : string -> EConstr.t Proofview.tactic
 module type StateType = sig
   type state
   val init : state
+  val name : string
 end
 
 module MakeState(S : StateType) : sig

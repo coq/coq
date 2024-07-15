@@ -37,6 +37,7 @@ let opcodes =
     "PUSHACC6", 0;
     "PUSHACC7", 0;
     "PUSHACC", 1;
+    "PUSHACCMANY", 2;
     "POP", 1;
     "ENVACC0", 0;
     "ENVACC1", 0;
@@ -48,6 +49,7 @@ let opcodes =
     "PUSHENVACC2", 0;
     "PUSHENVACC3", 0;
     "PUSHENVACC", 1;
+    "PUSHENVACCMANY", 2;
     "PUSH_RETADDR", 1;
     "APPLY", 1;
     "APPLY1", 0;
@@ -99,6 +101,7 @@ let opcodes =
     "ACCUMULATE", 0;
     "MAKESWITCHBLOCK", 4;
     "MAKEACCU", 1;
+    "SUBSTINSTANCE", 1;
     "BRANCH", 1;
     "CHECKADDINT63", 1;
     "CHECKADDCINT63", 1;
@@ -155,6 +158,7 @@ let opcodes =
     "CHECKCAMLCALL2_1", 2;
     "CHECKCAMLCALL1", 2;
     "CHECKCAMLCALL2", 2;
+    "CHECKCAMLCALL3", 2;
     "CHECKCAMLCALL3_1", 2;
     "STOP", 0
   |]

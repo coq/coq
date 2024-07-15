@@ -50,7 +50,8 @@ type explanation =
   | Path of path_explanation
   | Other of Pp.t
 
-type univ_inconsistency = constraint_type * Sorts.t * Sorts.t * explanation option
+type univ_variable_printers = (Sorts.QVar.t -> Pp.t) * (Level.t -> Pp.t)
+type univ_inconsistency = univ_variable_printers option * (constraint_type * Sorts.t * Sorts.t * explanation option)
 
 exception UniverseInconsistency of univ_inconsistency
 
@@ -78,11 +79,8 @@ end
 
 val add_universe : Level.t -> lbound:Bound.t -> strict:bool -> t -> t
 
-(** Check that the universe levels are declared. Otherwise
-    @raise UndeclaredLevel l for the first undeclared level found. *)
-exception UndeclaredLevel of Univ.Level.t
-
-val check_declared_universes : t -> Univ.Level.Set.t -> unit
+(** Check that the universe levels are declared. *)
+val check_declared_universes : t -> Univ.Level.Set.t -> (unit, Univ.Level.Set.t) result
 
 (** The empty graph of universes *)
 val empty_universes : t

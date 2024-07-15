@@ -96,9 +96,9 @@ Reserved Notation "w ||- A" (at level 70).
 
 Definition context := list formula.
 
-Variable fresh : variable -> context -> Prop.
+Parameter fresh : variable -> context -> Prop.
 
-Variable fresh_out : context -> variable.
+Parameter fresh_out : context -> variable.
 
 Axiom fresh_out_spec : forall Gamma, fresh (fresh_out Gamma) Gamma.
 

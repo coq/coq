@@ -158,6 +158,15 @@ At times, it's helpful to know exactly what these notations represent.
   | or_intror (_:B).
   Definition iff (P Q:Prop) := (P -> Q) /\ (Q -> P).
 
+We also have the `Type` level negation:
+
+.. index::
+  single: notT (term)
+
+.. coqtop:: in
+
+  Definition notT (A:Type) := A -> False.
+
 Quantifiers
 +++++++++++
 
@@ -318,14 +327,8 @@ Programming
   Inductive bool : Set := true | false.
   Inductive nat : Set := O | S (n:nat).
   Inductive option (A:Set) : Set := Some (_:A) | None.
-  Inductive identity (A:Type) (a:A) : A -> Type :=
-    refl_identity : identity A a a.
 
 Note that zero is the letter ``O``, and *not* the numeral ``0``.
-
-The predicate ``identity`` is logically
-equivalent to equality but it lives in sort ``Type``.
-It is mainly maintained for compatibility.
 
 We then define the disjoint sum of ``A+B`` of two sets ``A`` and
 ``B``, and their product ``A*B``.
@@ -699,33 +702,6 @@ fixpoint equation can be proved.
   Lemma Fix_eq : forall x:A, Fix x = F x (fun (y:A) (p:R y x) => Fix y).
   End FixPoint.
   End Well_founded.
-
-Accessing the Type level
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-The standard library includes ``Type`` level definitions of counterparts of some
-logic concepts and basic lemmas about them.
-
-The module ``Datatypes`` defines ``identity``, which is the ``Type`` level counterpart
-of equality:
-
-.. index::
-   single: identity (term)
-
-.. coqtop:: in
-
-   Inductive identity (A:Type) (a:A) : A -> Type :=
-     identity_refl : identity A a a.
-
-Some properties of ``identity`` are proved in the module ``Logic_Type``, which also
-provides the definition of ``Type`` level negation:
-
-.. index::
-  single: notT (term)
-
-.. coqtop:: in
-
-  Definition notT (A:Type) := A -> False.
 
 Tactics
 ~~~~~~~
@@ -1101,6 +1077,34 @@ counterpart, using the variant type ``spec_float``, and the injection
 
 For more details on the available definitions and lemmas, see the
 online documentation of the ``Floats`` library.
+
+.. _pstring_library:
+
+Primitive strings library
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The standard library provides a ``PrimString`` module declaring a primitive
+string type ``PrimString.string`` (corresponding to the OCaml ``string`` type),
+together with a small set of primitive functions:
+
+* ``max_length`` : gives the maximum length of a string
+* ``make`` : builds a string of the given length conly containing the given byte
+* ``length`` : gives the lenght of the given string
+* ``get`` : gives the byte at a given index in the given string
+* ``sub`` : extracts the sub-string from the given string that starts at the given offset and with the given length
+* ``cat`` : concatenates the two given strings
+* ``compare`` : compares the two strings and returns a ``comparison``
+
+Bytes are represented using the ``PrimString.char63``, which is defined as ``Uint63.int``,
+but primitive strings only store values fitting on 8 bits (i.e., values between 0 and 255).
+
+Axiomatic specifications of these primitive string functions are provided in the
+``PrimStringAxioms`` module. Additional properties, and relations to equivalent
+primitives defined in Gallina are provided in module ``PString`` (which exports
+``PrimString`` and ``PrimStringAxioms``.
+
+A custom string notation is provided for the ``string`` and ``char63`` types,
+in respective scopes ``pstring`` and ``char63``.
 
 .. _userscontributions:
 

@@ -12,10 +12,10 @@
 
 Require Export Decidable.
 Require Export ZAxioms.
-Require Import NZProperties.
+Require Import NZMulOrder.
 
 Module ZBaseProp (Import Z : ZAxiomsMiniSig').
-Include NZProp Z.
+Include NZMulOrderProp Z.
 
 (* Theorems that are true for integers but not for natural numbers *)
 

@@ -278,7 +278,7 @@ let iter_constr_LR sigma f c = match EConstr.kind sigma c with
   | Proj(_,_,a) -> f a
   | Array(_u,t,def,ty) -> Array.iter f t; f def; f ty
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _ | Construct _
-     | Int _ | Float _) -> ()
+     | Int _ | Float _ | String _) -> ()
 
 (* The comparison used to determine which subterms matches is KEYED        *)
 (* CONVERSION. This looks for convertible terms that either have the same  *)
@@ -333,7 +333,7 @@ let proj_nparams c =
 
 let isRigid sigma c = match EConstr.kind sigma c with
   | (Prod _ | Sort _ | Lambda _ | Case _ | Fix _ | CoFix _| Int _
-    | Float _ | Array _) -> true
+    | Float _ | String _ | Array _) -> true
   | (Rel _ | Var _ | Meta _ | Evar (_, _) | Cast (_, _, _) | LetIn (_, _, _, _)
     | App (_, _) | Const (_, _) | Ind ((_, _), _) | Construct (((_, _), _), _)
     | Proj _) -> false
@@ -443,6 +443,7 @@ let nb_cs_proj_args env ise pc f u =
   | Sort s -> na (Sort_cs (Sorts.family (ESorts.kind ise s)))
   | Const (c',_) when Environ.QConstant.equal env c' pc -> nargs_of_proj u.up_f
   | Proj (c',_,_) when Environ.QConstant.equal env (Names.Projection.constant c') pc -> nargs_of_proj u.up_f
+  | Proj (c',_,_) -> let _ = na (Proj_cs (Names.Projection.repr c')) in 0
   | Var _ | Ind _ | Construct _ | Const _ -> na (Const_cs (fst @@ destRef ise f))
   | _ -> -1
   with Not_found -> -1
@@ -542,7 +543,7 @@ let match_upats_FO upats env sigma0 ise orig_c =
          if skip || not (EConstr.Vars.closed0 ise c') then () else try
            let () = match u.up_k with
            | KpatFlex ->
-             let kludge v = mkLambda (make_annot Anonymous Sorts.Relevant, mkProp, v) in
+             let kludge v = mkLambda (make_annot Anonymous ERelevance.relevant, mkProp, v) in
              let (metas, p_FO) = u.up_FO in
              unif_FO env ise metas (kludge p_FO) (kludge c')
            | KpatLet ->
@@ -606,7 +607,17 @@ let match_upats_HO ~on_instance upats env sigma0 ise c =
             (EConstr.push_rel (Context.Rel.Declaration.LocalAssum(x, t)) env)
             ise' pb b
         | KpatFlex | KpatProj _ ->
-          unif_HO env ise u.up_f (mkSubApp f (i - Array.length u.up_a) a)
+          let fa = mkSubApp f (i - Array.length u.up_a) a in
+          let ise =
+            match EConstr.kind ise f, EConstr.kind ise u.up_f with
+            | Proj _, _ | _, Proj _ ->
+               (* with primitive projections we "lose" parameters so we unify
+                * the type of the arguments to retrieve that information *)
+               let tuf = Retyping.get_type_of ~lax:true env ise u.up_f in
+               let tfa = Retyping.get_type_of ~lax:true env ise fa in
+               unif_HO env ise tuf tfa
+            | _ -> ise in
+          unif_HO env ise u.up_f fa
         | _ -> unif_HO env ise u.up_f f in
         let ise'' = unif_HO_args env ise' u.up_a (i - Array.length u.up_a) a in
         let lhs = mkSubApp f i a in
@@ -1363,7 +1374,7 @@ let ssrpatterntac _ist arg =
     fill_occ_pattern env sigma0 concl0 pat noindex 1 in
   let sigma = Evd.set_universe_context sigma0 uc in
   let sigma, tty = Typing.type_of env sigma t in
-  let concl = EConstr.mkLetIn (make_annot (Name (Id.of_string "selected")) Sorts.Relevant, t, tty, concl_x) in
+  let concl = EConstr.mkLetIn (make_annot (Name (Id.of_string "selected")) EConstr.ERelevance.relevant, t, tty, concl_x) in
   Proofview.Unsafe.tclEVARS sigma <*>
   convert_concl ~cast:false ~check:true concl DEFAULTcast
   end

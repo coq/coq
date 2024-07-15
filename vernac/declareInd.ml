@@ -145,7 +145,12 @@ type one_inductive_impls =
   Impargs.manual_implicits (* for inds *) *
   Impargs.manual_implicits list (* for constrs *)
 
-let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typing_flags ?(indlocs=[]) mie ubinders impls =
+let { Goptions.get = default_prop_dep_elim } =
+  Goptions.declare_bool_option_and_ref ~key:["Dependent";"Proposition";"Eliminators"] ~value:false ()
+
+type default_dep_elim = DefaultElim | PropButDepElim
+
+let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typing_flags ?(indlocs=[]) ?default_dep_elim mie ubinders impls =
   (* spiwack: raises an error if the structure is supposed to be non-recursive,
         but isn't *)
   begin match mie.mind_entry_finite with
@@ -176,6 +181,24 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typi
              (GlobRef.ConstructRef (ind, succ j)) impls)
         constrimpls)
     impls;
+  let () = match default_dep_elim with
+    | None -> ()
+    | Some defaults ->
+      List.iteri (fun i default ->
+          let ind = (mind, i) in
+          let prop_but_default_dep_elim = match default with
+            | PropButDepElim -> true
+            | DefaultElim ->
+              default_prop_dep_elim () &&
+              let _, mip = Global.lookup_inductive ind in
+              match mip.mind_arity with
+              | RegularArity ar -> Sorts.is_prop ar.mind_sort
+              | TemplateArity _ -> false
+          in
+          if prop_but_default_dep_elim then
+            Indrec.declare_prop_but_default_dependent_elim ind)
+        defaults
+  in
   Flags.if_verbose Feedback.msg_info (minductive_message names);
   let locmap = Ind_tables.Locmap.make mind indlocs in
   if mie.mind_entry_private == None

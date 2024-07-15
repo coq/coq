@@ -9,7 +9,8 @@ echo "wrap[$package.$runner.$iteration|$OPAM_PACKAGE_NAME]" "$@" >> "$log_dir/wr
 echo >> "$log_dir/wraplog.txt"
 
 # we could be running commands for a dependency
-if [ "$package" ] && [ "$OPAM_PACKAGE_NAME" = "$package" ] ; then
+# NB $package may contain the version
+if [ "$package" ] && [ "$OPAM_PACKAGE_NAME" = "${package%%.*}" ] ; then
     prefix=$log_dir/$package.$runner.$iteration
     if [ -e "$prefix.ncoms" ]; then
         ncoms=$(cat "$prefix.ncoms")

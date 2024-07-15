@@ -938,9 +938,8 @@ Corollary fun_reification_descr_computational_excluded_middle_in_prop_context :
   (forall P:Prop, P \/ ~ P) ->
   forall C:Prop, ((forall P:Prop, {P} + {~ P}) -> C) -> C.
 Proof.
-  intros FunReify EM C H. intuition auto using
-    constructive_definite_descr_excluded_middle,
-    (relative_non_contradiction_of_definite_descr (C:=C)).
+  intros FunReify EM C H. pose proof relative_non_contradiction_of_definite_descr (C:=C); intuition auto using
+    constructive_definite_descr_excluded_middle.
 Qed.
 
 (**********************************************************************)

@@ -34,6 +34,7 @@ type definition_object_kind =
   | Instance
   | Method
   | Let
+  | LetContext
 
 type assumption_object_kind = Definitional | Logical | Conjectural | Context
 
@@ -50,6 +51,7 @@ type assumption_object_kind = Definitional | Logical | Conjectural | Context
 
 type logical_kind =
   | IsPrimitive
+  | IsSymbol
   | IsAssumption of assumption_object_kind
   | IsDefinition of definition_object_kind
   | IsProof of theorem_kind

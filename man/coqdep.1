@@ -1,8 +1,8 @@
-.TH COQ 1
-
+.TH COQDEP 1
+.
 .SH NAME
-coqdep \- Compute inter-module dependencies for Coq programs
-
+coqdep \- compute inter-module dependencies for Coq programs
+.
 .SH SYNOPSIS
 .B coqdep
 [
@@ -12,66 +12,79 @@ coqdep \- Compute inter-module dependencies for Coq programs
 .BI \-coqlib \ directory
 ]
 [
-.BI \-i
+.B \-i
 ]
 [
-.BI \-slash
+.B \-slash
 ]
-.I filename ...
-.I directory ...
-
+.I filename .\|.\|.\&
+.I directory .\|.\|.
+.
 .SH DESCRIPTION
-
+.
 .B coqdep
 computes inter-module dependencies for Coq programs,
 and prints the dependencies on the standard output in a format
-readable by make.
+readable by
+.BR make .
 When a directory is given as argument, it is recursively looked at.
-
+.PP
 Dependencies of Coq modules are computed by looking at
-.IR Require \&
+.I Require
 commands (Require, Require Export, Require Import, possibly restricted by a From clause),
-.IR Declare \&
-.IR ML \&
-.IR Module \&
+.I Declare
+.I ML
+.I Module
 commands,
-.IR Add \&
-.IR LoadPath \&
+.I Add
+.I LoadPath
 commands and
-.IR Load \&
-commands. Dependencies relative to modules from the Coq library are not
+.I Load
+commands.
+Dependencies relative to modules from the Coq library are not
 printed except if
-.BR \-boot \&
+.B \-boot
 is given.
-
+.
 .SH OPTIONS
-
+.
 .TP
 .BI \-f \ file
-Read filenames and options -I, -R and -Q from a _CoqProject FILE.
+Read filenames and options
+.BR \-I ,
+.B \-R
+and
+.B \-Q
+from a _CoqProject
+.I file.
 .TP
-.BI \-I/\-Q/\-R \ options
+.BI \-I\fR/\fB\-Q\fR/\fB\-R \ options
 Have the same effects on load path and modules names as for other
-Coq commands (coqtop, coqc).
+Coq commands (\c
+.BR coqtop ,
+.BR coqc ).
 .TP
 .BI \-coqlib \ directory
-Indicates where is the Coq library. The default value has been
-determined at installation time, and therefore this option should not
-be used under normal circumstances.
+Indicates where is the Coq library.
+The default value has been determined at installation time, and
+therefore this option should not be used under normal circumstances.
 .TP
 .BI \-exclude-dir \ dir
 Skips subdirectory
-.IR dir \ during
-.BR -R/-Q \ search.
+.I dir
+during
+.BR \-R / \-Q
+search.
 .TP
 .B \-sort
 Output the given file name ordered by dependencies.
 .TP
 .B \-vos
-Output dependencies for .vos files (this is not the default as it breaks dune's Coq mode)
+Output dependencies for .vos files (this is not the default as it breaks
+dune's Coq mode).
 .TP
 .B \-boot
-For coq developers, prints dependencies over coq library files
+For Coq developers, prints dependencies over Coq library files
 (omitted by default).
 .TP
 .B \-noinit
@@ -80,83 +93,78 @@ Currently no effect.
 .B \-vos
 Includes dependencies about .vos files.
 .TP
-.B \-dyndep (opt|byte|both|no|var)
+.BR \-dyndep \ ( opt | byte | both | no | var )
 Set how dependencies over ML modules are printed.
 .TP
-.B \-m META
-Resolve plugin names using the META file.
+.BI \-m \ meta
+Resolve plugin names using the
+.I meta
+file.
 .TP
-.B \-w w1,...,wn
-Configure display of warnings as for coqc.
-
+.BI \-w \ w1,\|.\|.\|.\|,\|wn
+Configure display of warnings as for
+.BR coqc .
+.
 .SH EXIT STATUS
-.IP "1"
+.IP 1
 A file given on the command line cannot be found, or some file
-cannot be opened, or there is a syntax error in one of the commands recognized by coqdep.
-.IP "0"
-In all other cases. In particular, when a dependency cannot be
-found or an invalid option is encountered,
+cannot be opened, or there is a syntax error in one of the commands
+recognized by
+.BR coqdep .
+.IP 0
+In all other cases.
+In particular, when a dependency cannot be found or an invalid option is
+encountered,
 .B coqdep
-prints a warning and exits with status
-.B 0\fR.
-
-
+prints a warning and exits with status 0.
+.
+.
 .SH SEE ALSO
-
+.
 .BR ocamlc (1),
 .BR coqc (1),
-.BR make (1).
-.br
-
+.BR make (1)
+.
 .SH NOTES
-
+.
 Lexers (for Coq and OCaml) correctly handle nested comments
 and strings.
-
+.PP
 The treatment of symbolic links is primitive.
-
+.PP
 If two files have the same name, in two different directories,
 a warning is printed on standard error.
-
+.PP
 There is no way to limit the scope of the recursive search for
 directories.
-
+.
 .SH EXAMPLES
-
-.LP
+.
 Consider the files (in the same directory):
-
-	a.mllib X.v Y.v and Z.v
-
-where
-.TP
-.BI \+
-a.mllib contains the module names `B' and `C';
-.TP
-.BI \+
-Y.v contains the command `Require Foo.X' ;
-.TP
-.BI \+
-Z.v contains the commands `From Foo Require X' and `Declare ML Module "a"'.
-.LP
-To get the dependencies of the Coq files:
-.IP
-.B
-example% coqdep \-I . -Q . Foo *.v
 .RS
-.sp .5
+a.mllib, X.v, Y.v, and Z.v
+.RE
+where
+.IP \(bu 3
+a.mllib contains the module names `B' and `C';
+.IP \(bu
+Y.v contains the command `Require Foo.X';
+.IP \(bu
+Z.v contains the commands `From Foo Require X' and `Declare ML Module "a"'.
+.PP
+To get the dependencies of the Coq files:
+.PP
+.RS
 .nf
-.B X.vo X.glob X.v.beautified X.required_vo: X.v 
-.B X.vio: X.v 
-.B Y.vo Y.glob Y.v.beautified Y.required_vo: Y.v X.vo
-.B Y.vio: Y.v X.vio
-.B Z.vo Z.glob Z.v.beautified Z.required_vo: Z.v X.vo ./a.cma ./a.cmxs
-.B Z.vio: Z.v X.vio ./a.cma ./a.cmxs
+example% coqdep \-I . \-Q . Foo *.v
+
+X.vo X.glob X.v.beautified X.required_vo: X.v
+Y.vo Y.glob Y.v.beautified Y.required_vo: Y.v X.vo
+Z.vo Z.glob Z.v.beautified Z.required_vo: Z.v X.vo ./a.cma ./a.cmxs
 .fi
 .RE
-.br
-
+.
 .SH BUGS
-
+.
 Please report any bug to
-.B https://github.com/coq/coq/issues
+.BR https://github.com/coq/coq/issues .

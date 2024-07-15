@@ -1,4 +1,4 @@
-Let test_stack_unification_interaction_with_delta A
+#[local] Definition test_stack_unification_interaction_with_delta A
   : (if negb _ then true else false) = if orb false (negb A) then true else false
   := eq_refl.
 

@@ -18,15 +18,15 @@ Module NonPrim.
   Open Scope fibration_scope.
   Notation pr1 := projT1.
   Notation pr2 := projT2.
-  Notation "x .1" := (pr1 x) (at level 3, format "x '.1'") : fibration_scope.
-  Notation "x .2" := (pr2 x) (at level 3, format "x '.2'") : fibration_scope.
+  Notation "x .1" := (pr1 x) : fibration_scope.
+  Notation "x .2" := (pr2 x) : fibration_scope.
   Definition hfiber {A B : Type} (f : A -> B) (y : B) := { x : A & f x = y }.
-  Class IsConnected (n : trunc_index) (A : Type) := isconnected_contr_trunc :> Contr (Trunc n A).
+  Class IsConnected (n : trunc_index) (A : Type) := isconnected_contr_trunc :: Contr (Trunc n A).
   Axiom isconnected_elim : forall {n} {A} `{IsConnected n A}
                                   (C : Type) `{IsTrunc n C} (f : A -> C),
                              { c:C & forall a:A, f a = c }.
   Class IsConnMap (n : trunc_index) {A B : Type} (f : A -> B)
-    := isconnected_hfiber_conn_map :> forall b:B, IsConnected n (hfiber f b).
+    := isconnected_hfiber_conn_map :: forall b:B, IsConnected n (hfiber f b).
   Definition conn_map_elim {n : trunc_index}
              {A B : Type} (f : A -> B) `{IsConnMap n _ _ f}
              (P : B -> Type) {HP : forall b:B, IsTrunc n (P b)}
@@ -93,15 +93,15 @@ Module Prim.
   Open Scope fibration_scope.
   Notation pr1 := projT1.
   Notation pr2 := projT2.
-  Notation "x .1" := (pr1 x) (at level 3, format "x '.1'") : fibration_scope.
-  Notation "x .2" := (pr2 x) (at level 3, format "x '.2'") : fibration_scope.
+  Notation "x .1" := (pr1 x) : fibration_scope.
+  Notation "x .2" := (pr2 x) : fibration_scope.
   Definition hfiber {A B : Type} (f : A -> B) (y : B) := { x : A & f x = y }.
-  Class IsConnected (n : trunc_index) (A : Type) := isconnected_contr_trunc :> Contr (Trunc n A).
+  Class IsConnected (n : trunc_index) (A : Type) := isconnected_contr_trunc :: Contr (Trunc n A).
   Axiom isconnected_elim : forall {n} {A} `{IsConnected n A}
                                   (C : Type) `{IsTrunc n C} (f : A -> C),
                              { c:C & forall a:A, f a = c }.
   Class IsConnMap (n : trunc_index) {A B : Type} (f : A -> B)
-    := isconnected_hfiber_conn_map :> forall b:B, IsConnected n (hfiber f b).
+    := isconnected_hfiber_conn_map :: forall b:B, IsConnected n (hfiber f b).
   Definition conn_map_elim {n : trunc_index}
              {A B : Type} (f : A -> B) `{IsConnMap n _ _ f}
              (P : B -> Type) {HP : forall b:B, IsTrunc n (P b)}

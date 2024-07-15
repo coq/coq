@@ -259,36 +259,86 @@ let check_record data =
 let unbounded_from_below u cstrs =
   Univ.Constraints.for_all (fun (l, d, r) ->
       match d with
-      | Eq -> not (Univ.Level.equal l u) && not (Univ.Level.equal r u)
-      | Lt | Le -> not (Univ.Level.equal r u))
+      | Eq | Lt -> not (Univ.Level.equal l u) && not (Univ.Level.equal r u)
+      | Le -> not (Univ.Level.equal r u))
     cstrs
 
-let get_template univs ~env_params ~env_ar_par ~params entries =
+let get_arity c =
+  let decls, c = Term.decompose_prod_decls c in
+  match kind c with
+  | Sort (Type u) ->
+    begin match Universe.level u with
+    | Some l -> Some (decls, l)
+    | None -> None
+    end
+  | _ -> None
+
+let get_template univs ~env_params ~env_ar_par ~params entries data =
   match univs with
   | Polymorphic_ind_entry _ | Monomorphic_ind_entry -> None
   | Template_ind_entry ctx ->
-    let entry = match entries with
-      | [entry] -> entry
+    let entry, sort = match entries, data with
+      | [entry], [(_, _, info)] -> entry, info.ind_univ
       | _ -> CErrors.user_err Pp.(str "Template-polymorphism not allowed with mutual inductives.")
     in
     (* Compute potential template parameters *)
     let map decl = match decl with
-    | LocalAssum (_, p) ->
-      let c = Term.strip_prod_decls p in
-      let s = match kind c with
-      | Sort (Type u) ->
-        begin match Universe.level u with
-        | Some l -> if Level.Set.mem l (fst ctx) then Some l else None
-        | None -> None
-        end
-      | _ -> None
+    | LocalAssum (_, t) ->
+      let s = match get_arity t with
+      | Some (_, l) -> if Level.Set.mem l (fst ctx) then Some l else None
+      | None -> None
       in
       Some s
     | LocalDef _ -> None
     in
-    let params = List.map_filter map params in
-    let fold accu u = match u with None -> accu | Some u -> Level.Set.add u accu in
-    let plevels = List.fold_left fold Level.Set.empty params in
+    let template_params = List.map_filter map params in
+    let fold accu u = match u with
+    | None -> accu
+    | Some u ->
+      if Level.Set.mem u accu then
+        CErrors.user_err Pp.(str "Non-linear template level " ++ Level.raw_pr u)
+      else Level.Set.add u accu
+    in
+    let plevels = List.fold_left fold Level.Set.empty template_params in
+    (* We must ensure that template levels can be substituted by an arbitrary
+       algebraic universe. A reasonable approximation is to restrict their
+       appearance to the sort of arities from parameters.
+
+       Furthermore, to prevent the generation of algebraic levels with increments
+       strictly larger than 1, we must also forbid the return sort to contain
+       a positive increment on a template level, see #19230.
+
+       TODO: when algebraic universes land, remove this check. *)
+    let plevels =
+      let fold plevels c = Level.Set.diff plevels (Vars.universes_of_constr c) in
+      let fold_params plevels = function
+      | LocalDef (_, b, t) -> fold (fold plevels t) b
+      | LocalAssum (_, t) ->
+        match get_arity t with
+        | None -> fold plevels t
+        | Some (decls, _) -> fold plevels (it_mkProd_or_LetIn mkProp decls)
+      in
+      let plevels = List.fold_left fold_params plevels params in
+      let plevels =
+        let (decls, s) = Term.decompose_prod_decls entry.mind_entry_arity in
+        let () = assert (isSort s) in
+        fold plevels (it_mkProd_or_LetIn mkProp decls)
+      in
+      let plevels = List.fold_left fold plevels entry.mind_entry_lc in
+      plevels
+    in
+    let plevels = match sort with
+    | Type u ->
+      let fold accu (l, n) = if Int.equal n 0 then accu else Level.Set.remove l accu in
+      List.fold_left fold plevels (Universe.repr u)
+    | Prop | SProp | Set -> plevels
+    | QSort _ -> assert false
+    in
+    let map = function
+    | None -> None
+    | Some l -> if Level.Set.mem l plevels then Some l else None
+    in
+    let params = List.map map template_params in
     let unbound = Level.Set.diff (fst ctx) plevels in
     let plevels =
       if not (Level.Set.is_empty unbound) then
@@ -307,8 +357,8 @@ let get_template univs ~env_params ~env_ar_par ~params entries =
         ~arities:[entry.mind_entry_arity]
         ~ctors:[entry.mind_entry_lc]
     in
-    let params = List.rev params in
-    Some { template_param_levels = params; template_context = ctx }
+    let params = List.rev_map Option.has_some params in
+    Some { template_param_arguments = params; template_context = ctx }
 
 let abstract_packets usubst ((arity,lc),(indices,splayed_lc),univ_info) =
   if not (List.is_empty univ_info.missing)
@@ -360,8 +410,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
     | Template_ind_entry ctx ->
         (* For that particular case, we typecheck the inductive in an environment
            where the universes introduced by the definition are only [>= Prop] *)
-        let env = set_universes_lbound env UGraph.Bound.Prop in
-        push_context_set ~strict:false ctx env
+        Environ.push_floating_context_set ctx env
     | Monomorphic_ind_entry -> env
     | Polymorphic_ind_entry ctx -> push_context ctx env
   in
@@ -430,7 +479,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
         Some variances
   in
 
-  let template = get_template mie.mind_entry_universes ~env_params ~env_ar_par ~params mie.mind_entry_inds in
+  let template = get_template mie.mind_entry_universes ~env_params ~env_ar_par ~params mie.mind_entry_inds data in
 
   (* Abstract universes *)
   let usubst, univs = match mie.mind_entry_universes with

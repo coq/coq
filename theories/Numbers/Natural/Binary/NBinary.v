@@ -10,6 +10,8 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
+Attributes deprecated(since="8.20", note="Use Coq.NArith.BinNat instead.").
+
 Require Import BinPos.
 Require Export BinNat.
 Require Import NAxioms NProperties.

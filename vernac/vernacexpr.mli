@@ -63,6 +63,7 @@ type printable =
   | PrintAssumptions of bool * bool * qualid or_by_notation
   | PrintStrategy of qualid or_by_notation option
   | PrintRegistered
+  | PrintRegisteredSchemes
   | PrintNotation of Constrexpr.notation_entry * string
 
 type glob_search_where = InHyp | InConcl | Anywhere
@@ -171,18 +172,24 @@ type notation_declaration =
   ; ntn_decl_modifiers : syntax_modifier CAst.t list
   }
 
-type 'a fix_expr_gen =
+type recursion_order_expr =
+  | CFixRecOrder of fixpoint_order_expr option list
+  | CCoFixRecOrder
+  | CUnknownRecOrder
+
+type recursive_expr_gen =
   { fname : lident
   ; univs : universe_decl_expr option
-  ; rec_order : 'a
   ; binders : local_binder_expr list
   ; rtype : constr_expr
   ; body_def : constr_expr option
   ; notations : notation_declaration list
   }
 
-type fixpoint_expr = recursion_order_expr option fix_expr_gen
-type cofixpoint_expr = unit fix_expr_gen
+type fixpoint_expr = fixpoint_order_expr option * recursive_expr_gen
+type fixpoints_expr = fixpoint_order_expr option list * recursive_expr_gen list
+type cofixpoints_expr = recursive_expr_gen list
+type recursives_expr = recursion_order_expr * recursive_expr_gen list
 
 type local_decl_expr =
   | AssumExpr of lname * local_binder_expr list * constr_expr
@@ -297,6 +304,7 @@ type section_subset_expr =
 type register_kind =
   | RegisterInline
   | RegisterCoqlib of qualid
+  | RegisterScheme of { inductive : qualid; scheme_kind : qualid }
 
 (** {6 Types concerning the module layer} *)
 
@@ -408,14 +416,16 @@ type nonrec synpure_vernac_expr =
   | VernacExactProof of constr_expr
   | VernacAssumption of (discharge * Decls.assumption_object_kind) *
       Declaremods.inline * (ident_decl list * constr_expr) with_coercion list
+  | VernacSymbol of (ident_decl list * constr_expr) with_coercion list
   | VernacInductive of inductive_kind * (inductive_expr * notation_declaration list) list
-  | VernacFixpoint of discharge * fixpoint_expr list
-  | VernacCoFixpoint of discharge * cofixpoint_expr list
+  | VernacFixpoint of discharge * fixpoints_expr
+  | VernacCoFixpoint of discharge * cofixpoints_expr
   | VernacScheme of (lident option * scheme) list
   | VernacSchemeEquality of equality_scheme_type * Libnames.qualid Constrexpr.or_by_notation
   | VernacCombinedScheme of lident * lident list
   | VernacUniverse of lident list
   | VernacConstraint of univ_constraint_expr list
+  | VernacAddRewRule of lident * (universe_decl_expr option * constr_expr * constr_expr) list
 
   (* Gallina extensions *)
   | VernacCanonical of qualid or_by_notation
@@ -463,7 +473,7 @@ type nonrec synpure_vernac_expr =
       arguments_modifier list
   | VernacReserve of simple_binder list
   | VernacGeneralizable of (lident list) option
-  | VernacSetOpacity of (Conv_oracle.level * qualid or_by_notation list)
+  | VernacSetOpacity of (Conv_oracle.level * qualid or_by_notation list) * bool
   | VernacSetStrategy of
       (Conv_oracle.level * qualid or_by_notation list) list
   | VernacMemOption of Goptions.option_name * Goptions.table_value list

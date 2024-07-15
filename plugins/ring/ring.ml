@@ -37,7 +37,7 @@ let error msg = CErrors.user_err Pp.(str msg)
 
 type protect_flag = Eval|Prot|Rec
 
-type protection = Evd.evar_map -> EConstr.t -> GlobRef.t -> (Int.t -> protect_flag) option
+type protection = Environ.env -> Evd.evar_map -> EConstr.t -> GlobRef.t -> (Int.t -> protect_flag) option
 
 let global_head_of_constr sigma c =
   let f, args = decompose_app sigma c in
@@ -64,8 +64,9 @@ and tag_arg sigma f_map n tag c = match tag with
 | Prot -> mk_atom c
 | Rec -> mk_clos_but sigma f_map n c
 
-let interp_map l t =
-  try Some(List.assoc_f GlobRef.CanOrd.equal t l) with Not_found -> None
+let interp_map env l t =
+  let eq g1 g2 = QGlobRef.equal env g1 g2 in
+  try Some (List.assoc_f eq t l) with Not_found -> None
 
 let protect_maps : protection String.Map.t ref = ref String.Map.empty
 let add_map s m = protect_maps := String.Map.add s m !protect_maps
@@ -77,10 +78,10 @@ let lookup_map map =
 let protect_red map env sigma c =
   let tab = create_tab () in
   let infos = Evarutil.create_clos_infos env sigma RedFlags.all in
-  let map = lookup_map map sigma c in
+  let map = lookup_map map env sigma c in
   let rec eval n c = match EConstr.kind sigma c with
   | Prod (na, t, u) -> EConstr.mkProd (na, eval n t, eval (n + 1) u)
-  | _ -> EConstr.of_constr @@ kl infos tab (mk_clos_but sigma map n c)
+  | _ -> EConstr.of_constr @@ norm_val infos tab (mk_clos_but sigma map n c)
   in
   eval 0 c
 
@@ -145,7 +146,7 @@ let ic_unsafe env sigma c = (*FIXME remove *)
 let decl_constant name univs c =
   let open Constr in
   let vars = CVars.universes_of_constr c in
-  let univs = UState.restrict_universe_context ~lbound:(Global.universes_lbound ()) univs vars in
+  let univs = UState.restrict_universe_context univs vars in
   let () = Global.push_context_set ~strict:true univs in
   let types = (Typeops.infer (Global.env ()) c).uj_type in
   let univs = UState.Monomorphic_entry Univ.ContextSet.empty, UnivNames.empty_binders in
@@ -291,14 +292,14 @@ let coq_mkhypo = my_reference "mkhypo"
 let coq_hypo = my_reference "hypo"
 
 (* Equality: do not evaluate but make recursive call on both sides *)
-let map_with_eq arg_map sigma c =
+let map_with_eq arg_map env sigma c =
   let (req,_,_) = dest_rel sigma c in
-  interp_map
+  interp_map env
     ((global_head_of_constr sigma req,(function -1->Prot|_->Rec))::
     List.map (fun (c,map) -> (Lazy.force c,map)) arg_map)
 
-let map_without_eq arg_map _ _ =
-  interp_map (List.map (fun (c,map) -> (Lazy.force c,map)) arg_map)
+let map_without_eq arg_map env _ _ =
+  interp_map env (List.map (fun (c,map) -> (Lazy.force c,map)) arg_map)
 
 let _ = add_map "ring"
   (map_with_eq

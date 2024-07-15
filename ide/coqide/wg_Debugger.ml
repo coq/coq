@@ -23,6 +23,7 @@ class type debugger_view =
     method set_forward_db_vars : (int -> unit) -> unit
     method set_forward_paned_pos : (int -> unit) -> unit
     method set_forward_get_basename : (unit -> string) -> unit
+    method select_all : unit -> unit
   end
 
 let forward_keystroke = ref ((fun x -> failwith "forward_keystroke (db)")
@@ -350,6 +351,10 @@ let debugger title sid =
     method set_forward_db_vars f = forward_db_vars := f
     method set_forward_paned_pos f = forward_set_paned_pos := f
     method set_forward_get_basename f = forward_get_basename := f
+
+    method select_all () =
+      if stack_view#is_focus then
+        stack_buffer#select_range stack_buffer#start_iter stack_buffer#end_iter
   end
   in
   debugger

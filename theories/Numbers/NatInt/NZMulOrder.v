@@ -10,6 +10,21 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
+(**
+* Properties of orders and multiplication for modules implementing [NZOrdAxiomsSig']
+
+This file defines the [NZMulOrderProp] functor type, meant to be [Include]d
+in a module implementing [NZOrdAxiomsSig'] (see [Coq.Numbers.NatInt.NZAxioms]).
+
+This gives important basic compatibility lemmas between [mul] and [lt], [le].
+It also gives cancellation lemmas between [mul] and [eq].
+
+Since it applies both to natural numbers and integers, some of these lemmas
+have nonnegativity conditions which could disappear when used with natural
+numbers.
+
+Notice that [NZMulOrderProp] [Include]s [NZAddOrderProp].
+*)
 Require Import NZAxioms.
 Require Import NZAddOrder.
 
@@ -268,11 +283,11 @@ intros n m H1 H2; apply eq_mul_0 in H1. destruct H1 as [H1 | H1].
 - false_hyp H1 H2. - assumption.
 Qed.
 
-(** Some alternative names: *)
+(* Some alternative names: *)
 
-Definition mul_eq_0 := eq_mul_0.
-Definition mul_eq_0_l := eq_mul_0_l.
-Definition mul_eq_0_r := eq_mul_0_r.
+Notation mul_eq_0 := eq_mul_0.
+Notation mul_eq_0_l := eq_mul_0_l.
+Notation mul_eq_0_r := eq_mul_0_r.
 
 Theorem lt_0_mul n m : 0 < n * m <-> (0 < n /\ 0 < m) \/ (m < 0 /\ n < 0).
 Proof.

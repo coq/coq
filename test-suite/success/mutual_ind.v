@@ -23,7 +23,7 @@ Require Export List.
     fsym_beq_eq : forall f1 f2 : fsym, true = fsym_beq f1 f2 -> f1 = f2}.
 
 
- Variable F : signature.
+ Parameter F : signature.
 
   Definition vsym := (sort F * nat)%type.
 

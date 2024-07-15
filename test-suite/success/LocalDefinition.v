@@ -4,7 +4,7 @@
 
 Module TestAdmittedVisibility.
   Module A.
-    Let a1 : nat. Admitted. (* Suppose to behave like a "Local Definition" *)
+    #[warning="declaration-outside-section"] Let a1 : nat. Admitted. (* Suppose to behave like a "Local Definition" *)
     Local Definition b1 : nat. Admitted. (* Told to be a "Local Definition" *)
     Local Definition c1 := 0.
     Local Parameter d1 : nat.
@@ -32,6 +32,6 @@ Module TestVariableAsInstances.
   Fail Definition testU := _ : U. (* _ unresolved *)
 
   Class T.
-  Variable a : T.  (* warned to be the same as "Local Parameter" thus should not be an instance *)
+  #[warning="declaration-outside-section"] Variable a : T.  (* warned to be the same as "Local Parameter" thus should not be an instance *)
   Fail Definition testT := _ : T. (* used to succeed *)
 End TestVariableAsInstances.

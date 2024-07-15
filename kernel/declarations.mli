@@ -30,7 +30,7 @@ type template_arity = {
 }
 
 type template_universes = {
-  template_param_levels : Univ.Level.t option list;
+  template_param_arguments : bool list;
   template_context : Univ.ContextSet.t;
 }
 
@@ -47,11 +47,12 @@ type inline = int option
     transparent body, or an opaque one *)
 
 (* Global declarations (i.e. constants) can be either: *)
-type ('a, 'opaque) constant_def =
+type ('a, 'opaque, 'rules) constant_def =
   | Undef of inline                       (** a global assumption *)
   | Def of 'a                             (** or a transparent global definition *)
   | OpaqueDef of 'opaque                  (** or an opaque global definition *)
   | Primitive of CPrimitives.t (** or a primitive operation *)
+  | Symbol of 'rules                      (** or a symbol *)
 
 type universes =
   | Monomorphic
@@ -103,13 +104,14 @@ type typing_flags = {
 
 (* some contraints are in constant_constraints, some other may be in
  * the OpaqueDef *)
-type 'opaque pconstant_body = {
+type ('opaque, 'bytecode) pconstant_body = {
     const_hyps : Constr.named_context; (** younger hyp at top *)
     const_univ_hyps : UVars.Instance.t;
-    const_body : (Constr.t, 'opaque) constant_def;
+    const_body : (Constr.t, 'opaque, bool) constant_def;
+                    (** [bool] is for [unfold_fix] in symbols *)
     const_type : types;
     const_relevance : Sorts.relevance;
-    const_body_code : Vmemitcodes.body_code option;
+    const_body_code : 'bytecode;
     const_universes : universes;
     const_inline_code : bool;
     const_typing_flags : typing_flags; (** The typing options which
@@ -117,17 +119,17 @@ type 'opaque pconstant_body = {
                                            type-checking. *)
 }
 
-type constant_body = Opaqueproof.opaque pconstant_body
+type constant_body = (Opaqueproof.opaque, Vmlibrary.indirect_code option) pconstant_body
 
 (** {6 Representation of mutual inductive types in the kernel } *)
-type nested_type =
-| NestedInd of inductive
-| NestedPrimitive of Constant.t
+
+type recarg_type =
+| RecArgInd of inductive
+| RecArgPrim of Constant.t
 
 type recarg =
 | Norec
-| Mrec of inductive
-| Nested of nested_type
+| Mrec of recarg_type
 
 type wf_paths = recarg Rtree.t
 
@@ -287,6 +289,57 @@ type mutual_inductive_body = {
 
 type mind_specif = mutual_inductive_body * one_inductive_body
 
+(** {6 Rewrite rules } *)
+
+type quality_pattern = Sorts.Quality.pattern =
+  | PQVar of int option | PQConstant of Sorts.Quality.constant
+
+type instance_mask = UVars.Instance.mask
+
+type sort_pattern = Sorts.pattern =
+  | PSProp | PSSProp | PSSet | PSType of int option | PSQSort of int option * int option
+
+(** Patterns are internally represented as pairs of a head-pattern and a list of eliminations
+    Eliminations correspond to elements of the stack in a reduction machine,
+    they represent a pattern with a hole, to be filled with the head-pattern
+*)
+type 'arg head_pattern =
+  | PHRel     of int
+  | PHSort    of sort_pattern
+  | PHSymbol  of Constant.t * instance_mask
+  | PHInd     of inductive * instance_mask
+  | PHConstr  of constructor * instance_mask
+  | PHInt     of Uint63.t
+  | PHFloat   of Float64.t
+  | PHString  of Pstring.t
+  | PHLambda  of 'arg array * 'arg
+  | PHProd    of 'arg array * 'arg
+
+type pattern_elimination =
+  | PEApp     of pattern_argument array
+  | PECase    of inductive * instance_mask * pattern_argument * pattern_argument array
+  | PEProj    of Projection.t
+
+and head_elimination = pattern_argument head_pattern * pattern_elimination list
+
+and pattern_argument =
+  | EHole of int
+  | EHoleIgnored
+  | ERigid of head_elimination
+
+type rewrite_rule = {
+  nvars : int * int * int;
+  lhs_pat : instance_mask * pattern_elimination list;
+  rhs : constr;
+}
+
+(** {6 Representation of rewrite rules in the kernel } *)
+
+(** [(c, { lhs_pat = (u, elims); rhs })] in this list stands for [(PHSymbol (c,u), elims) ==> rhs] *)
+type rewrite_rules_body = {
+  rewrules_rules : (Constant.t * rewrite_rule) list;
+}
+
 (** {6 Module declarations } *)
 
 (** Functor expressions are forced to be on top of other expressions *)
@@ -323,6 +376,7 @@ type module_expression = (constr * UVars.AbstractContext.t option) functor_alg_e
 type structure_field_body =
   | SFBconst of constant_body
   | SFBmind of mutual_inductive_body
+  | SFBrules of rewrite_rules_body
   | SFBmodule of module_body
   | SFBmodtype of module_type_body
 

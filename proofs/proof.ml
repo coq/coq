@@ -44,11 +44,7 @@ type 'a focus_condition =
   | CondDone     of bool * 'a focus_kind
   | CondEndStack of        'a focus_kind (* loose_end is false here *)
 
-let next_kind = ref 0
-let new_focus_kind () =
-  let r = !next_kind in
-  incr next_kind;
-  FocusKind.anonymous r
+let new_focus_kind = FocusKind.create
 
 (* To be authorized to unfocus one must meet the condition prescribed by
     the action which focused.*)
@@ -149,11 +145,6 @@ let is_done p =
   Proofview.finished p.proofview &&
   Proofview.finished (unroll_focus p.proofview p.focus_stack)
 
-(* spiwack: for compatibility with <= 8.2 proof engine *)
-let has_given_up_goals p =
-  let (_goals,sigma) = Proofview.proofview p.proofview in
-  Evd.has_given_up sigma
-
 (* Returns the list of partial proofs to initial goals *)
 let partial_proof p = Proofview.partial_proof p.entry p.proofview
 
@@ -206,7 +197,7 @@ let focus_id cond inf id pr =
   let (focused_goals, evar_map) = Proofview.proofview pr.proofview in
   begin match try Some (Evd.evar_key id evar_map) with Not_found -> None with
   | Some ev ->
-     begin match CList.safe_index Evar.equal ev focused_goals with
+     begin match CList.index_opt Evar.equal ev focused_goals with
      | Some i ->
         (* goal is already under focus *)
         _focus cond inf i i pr
@@ -273,10 +264,12 @@ let rec maximal_unfocus k p =
 (*** Proof Creation/Termination ***)
 
 (* [end_of_stack] is unfocused by return to close every loose focus. *)
-let end_of_stack_kind = new_focus_kind ()
+let end_of_stack_kind = new_focus_kind "end_of_stack"
 let end_of_stack = CondEndStack end_of_stack_kind
 
 let unfocused = is_last_focus end_of_stack_kind
+
+let unfocus_all p = unfocus end_of_stack_kind p ()
 
 let start ~name ~poly ?typing_flags sigma goals =
   let entry, proofview = Proofview.init sigma goals in
@@ -303,36 +296,6 @@ let dependent_start ~name ~poly ?typing_flags goals =
   let number_of_goals = List.length (Proofview.initial_goals pr.entry) in
   _focus end_of_stack () 1 number_of_goals pr
 
-type open_error_reason =
-  | UnfinishedProof
-  | HasGivenUpGoals
-
-let print_open_error_reason er = let open Pp in match er with
-  | UnfinishedProof ->
-    str "Attempt to save an incomplete proof"
-  | HasGivenUpGoals ->
-    strbrk "Attempt to save a proof with given up goals. If this is really what you want to do, use Admitted in place of Qed."
-
-exception OpenProof of Names.Id.t option * open_error_reason
-
-let _ = CErrors.register_handler begin function
-    | OpenProof (pid, reason) ->
-      let open Pp in
-      Some (Option.cata (fun pid ->
-          str " (in proof " ++ Names.Id.print pid ++ str "): ") (mt()) pid ++ print_open_error_reason reason)
-    | _ -> None
-  end
-
-let return ?pid (p : t) =
-  if not (is_done p) then
-    raise (OpenProof(pid, UnfinishedProof))
-  else if has_given_up_goals p then
-    raise (OpenProof(pid, HasGivenUpGoals))
-  else begin
-    let p = unfocus end_of_stack_kind p () in
-    Proofview.return p.proofview
-  end
-
 let compact p =
   let entry, proofview = Proofview.compact p.entry p.proofview in
   { p with proofview; entry }
@@ -347,31 +310,21 @@ let update_sigma_univs ugraph p =
 
 let run_tactic env tac pr =
   let open Proofview.Notations in
-  let undef sigma l = List.filter (fun g -> Evd.is_undefined sigma g) l in
   let tac =
-    Proofview.tclEVARMAP >>= fun sigma ->
-    Proofview.Unsafe.tclEVARS (Evd.push_shelf sigma) >>= fun () ->
-    tac >>= fun result ->
-    Proofview.tclEVARMAP >>= fun sigma ->
-    (* Already solved goals are not to be counted as shelved. Nor are
-      they to be marked as unresolvable. *)
-    let retrieved, sigma = Evd.pop_future_goals sigma in
-    let retrieved = Evd.FutureGoals.filter (Evd.is_undefined sigma) retrieved in
-    let retrieved = List.rev (Evd.FutureGoals.comb retrieved) in
-    let sigma = Proofview.Unsafe.mark_as_goals sigma retrieved in
-    let to_shelve, sigma = Evd.pop_shelf sigma in
-    Proofview.Unsafe.tclEVARS sigma >>= fun () ->
-    Proofview.Unsafe.tclNEWSHELVED (retrieved@to_shelve) <*>
-    Proofview.tclUNIT (result,retrieved,to_shelve)
+    (* include the future goals in the shelf *)
+    Proofview.with_shelf tac >>= fun (shelf, v) ->
+    Proofview.Unsafe.tclNEWSHELVED shelf <*>
+    Proofview.tclUNIT v
   in
   let { name; poly; proofview } = pr in
-  let proofview = Proofview.Unsafe.push_future_goals proofview in
-  let ((result,retrieved,to_shelve),proofview,status,info_trace) =
+  let (result,proofview,status,info_trace) =
     Proofview.apply ~name ~poly env tac proofview
   in
   let sigma = Proofview.return proofview in
-  let to_shelve = undef sigma to_shelve in
-  let proofview = Proofview.Unsafe.mark_as_unresolvables proofview to_shelve in
+  (* cleanup any shelved goals that got defined
+     (this is only useful for goals that were already in the shelf,
+     tclNEWSHELVED filters out defined goals instead of adding them)
+     XXX should we be doing something advance-aware like tclNEWSHELVED? *)
   let proofview = Proofview.filter_shelf (Evd.is_undefined sigma) proofview in
   { pr with proofview },(status,info_trace),result
 
@@ -546,7 +499,7 @@ let refine_by_tactic ~name ~poly env sigma ty tac =
      this hack will work in most cases. *)
   let neff = neff.Evd.seff_private in
   let (ans, _) = Safe_typing.inline_private_constants env ((ans, Univ.ContextSet.empty), neff) in
-  ans, sigma
+  EConstr.of_constr ans, sigma
 
 let get_goal_context_gen pf i =
   let { sigma; goals } = data pf in

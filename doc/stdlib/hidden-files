@@ -19,6 +19,7 @@ theories/extraction/ExtrOcamlIntConv.v
 theories/extraction/ExtrOcamlNatBigInt.v
 theories/extraction/ExtrOcamlNatInt.v
 theories/extraction/ExtrOcamlString.v
+theories/extraction/ExtrOCamlPString.v
 theories/extraction/ExtrOcamlNativeString.v
 theories/extraction/ExtrOcamlZBigInt.v
 theories/extraction/ExtrOcamlZInt.v
@@ -96,3 +97,13 @@ theories/ssr/ssrsetoid.v
 theories/Reals/Cauchy/ConstructiveExtra.v
 theories/Reals/Cauchy/PosExtra.v
 theories/Reals/Cauchy/QExtra.v
+theories/Numbers/Natural/Binary/NBinary.v
+theories/Numbers/Integer/Binary/ZBinary.v
+theories/Numbers/Integer/NatPairs/ZNatPairs.v
+theories/Numbers/NatInt/NZProperties.v
+theories/Numbers/NatInt/NZDomain.v
+theories/Numbers/Integer/Abstract/ZDivEucl.v
+theories/ZArith/Zeuclid.v
+theories/Arith/Bool_nat.v
+theories/Numbers/Natural/Abstract/NDefOps.v
+theories/Numbers/Natural/Abstract/NIso.v

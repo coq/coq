@@ -16,7 +16,7 @@ Class myClass (A: Type) :=
 
 Class myClassP (A : Type)  :=
   {
-    super :> myClass A;
+    super :: myClass A;
     barP : forall (a : A), bar a
   }.
 

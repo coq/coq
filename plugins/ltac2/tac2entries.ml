@@ -66,8 +66,7 @@ type tacdef = {
   tacdef_deprecation : Deprecation.t option;
 }
 
-let perform_tacdef visibility ((sp, kn), def) =
-  let () = if not def.tacdef_local then Tac2env.push_ltac visibility sp (TacConstant kn) in
+let define_tacdef ((_,kn), def) =
   let data = {
     Tac2env.gdata_expr = def.tacdef_expr;
     gdata_type = def.tacdef_type;
@@ -76,18 +75,21 @@ let perform_tacdef visibility ((sp, kn), def) =
   } in
   Tac2env.define_global kn data
 
-let load_tacdef i obj = perform_tacdef (Until i) obj
-let open_tacdef i obj = perform_tacdef (Exactly i) obj
+let push_tacdef visibility ((sp, kn), def) =
+  if not def.tacdef_local then Tac2env.push_ltac visibility sp (TacConstant kn)
 
-let cache_tacdef ((sp, kn), def) =
-  let () = Tac2env.push_ltac (Until 1) sp (TacConstant kn) in
-  let data = {
-    Tac2env.gdata_expr = def.tacdef_expr;
-    gdata_type = def.tacdef_type;
-    gdata_mutable = def.tacdef_mutable;
-    gdata_deprecation = def.tacdef_deprecation;
-  } in
-  Tac2env.define_global kn data
+let load_tacdef i obj =
+  push_tacdef (Until i) obj;
+  define_tacdef obj
+
+let open_tacdef i obj = push_tacdef (Exactly i) obj
+
+(* Not sure if it's correct that we don't "open", do Until 1 and
+   Exactly 1 have the same effect? *)
+let cache_tacdef ((sp, kn), def as obj) =
+  (* unconditional unlike push_tacdef *)
+  Tac2env.push_ltac (Until 1) sp (TacConstant kn);
+  define_tacdef obj
 
 let subst_tacdef (subst, def) =
   let expr' = subst_expr subst def.tacdef_expr in
@@ -109,6 +111,7 @@ let inTacDef : Id.t -> tacdef -> obj =
 
 type typdef = {
   typdef_local : bool;
+  typdef_abstract : bool;
   typdef_expr : glb_quant_typedef;
 }
 
@@ -188,8 +191,10 @@ let define_typedef kn (params, def as qdef) = match def with
   Tac2env.define_type kn qdef
 
 let perform_typdef vs ((sp, kn), def) =
-  let () = if not def.typdef_local then push_typedef vs sp kn def.typdef_expr in
-  define_typedef kn def.typdef_expr
+  let expr = def.typdef_expr in
+  let expr = if def.typdef_abstract then fst expr, GTydDef None else expr in
+  let () = if not def.typdef_local then push_typedef vs sp kn expr in
+  define_typedef kn expr
 
 let load_typdef i obj = perform_typdef (Until i) obj
 let open_typdef i obj = perform_typdef (Exactly i) obj
@@ -381,7 +386,7 @@ let qualid_to_ident qid =
   if qualid_is_ident qid then CAst.make ?loc:qid.CAst.loc @@ qualid_basename qid
   else user_err ?loc:qid.CAst.loc (str "Identifier expected")
 
-let register_typedef ?(local = false) isrec types =
+let register_typedef ?(local = false) ?(abstract=false) isrec types =
   let same_name ({v=id1}, _) ({v=id2}, _) = Id.equal id1 id2 in
   let () = match List.duplicates same_name types with
   | [] -> ()
@@ -445,7 +450,13 @@ let register_typedef ?(local = false) isrec types =
     | CTydOpn ->
       if isrec then
         user_err ?loc (str "The open type declaration " ++ Id.print id ++
-          str " cannot be recursive")
+                       str " cannot be recursive");
+      if abstract then
+        (* Naive implementation allows to use and match on already
+           existing constructors but not declare new ones outside the
+           type's origin module. Not sure that's what we want so
+           forbid it for now. *)
+        user_err ?loc (str "Open types currently do not support #[abstract].")
   in
   let () = List.iter check types in
   let self =
@@ -459,6 +470,7 @@ let register_typedef ?(local = false) isrec types =
   let map ({v=id}, def) =
     let typdef = {
       typdef_local = local;
+      typdef_abstract = abstract;
       typdef_expr = intern_typedef self def;
     } in
     (id, typdef)
@@ -543,9 +555,12 @@ let register_open ?(local = false) qid (params, def) =
   | CTydRec _ | CTydDef _ ->
     user_err ?loc:qid.CAst.loc (str "Extensions only accept inductive constructors")
 
-let register_type ?local isrec types = match types with
+let register_type ?local ?abstract isrec types = match types with
 | [qid, true, def] ->
-  let () = if isrec then user_err ?loc:qid.CAst.loc (str "Extensions cannot be recursive") in
+  let () = if isrec then user_err ?loc:qid.CAst.loc (str "Extensions cannot be recursive.") in
+  let () = if Option.default false abstract
+    then user_err ?loc:qid.loc (str "Extensions cannot be abstract.")
+  in
   register_open ?local qid def
 | _ ->
   let map (qid, redef, def) =
@@ -555,7 +570,7 @@ let register_type ?local isrec types = match types with
     (qualid_to_ident qid, def)
   in
   let types = List.map map types in
-  register_typedef ?local isrec types
+  register_typedef ?local ?abstract isrec types
 
 (** Parsing *)
 
@@ -674,7 +689,7 @@ let perform_notation syn st =
     | Some depr -> deprecated_ltac2_notation ~loc (syn.synext_tok, depr)
     in
     let map (na, e) =
-      ((CAst.make ?loc:e.loc @@ CPatVar na), e)
+      ((CAst.make ?loc:e.loc na), e)
     in
     let bnd = List.map map args in
     CAst.make ~loc @@ CTacSyn (bnd, syn.synext_kn)
@@ -721,8 +736,19 @@ let cache_synext_interp (local,kn,tac) =
 let open_synext_interp i o =
   if Int.equal i 1 then cache_synext_interp o
 
+let subst_notation_data subst = function
+  | Tac2env.UntypedNota body as n ->
+    let body' = Tac2intern.subst_rawexpr subst body in
+    if body' == body then n else UntypedNota body'
+  | TypedNota { nota_prms=prms; nota_argtys=argtys; nota_ty=ty; nota_body=body } as n ->
+    let body' = Tac2intern.subst_expr subst body in
+    let argtys' = Id.Map.Smart.map (subst_type subst) argtys in
+    let ty' = subst_type subst ty in
+    if body' == body && argtys' == argtys && ty' == ty then n
+    else TypedNota {nota_body=body'; nota_argtys=argtys'; nota_ty=ty'; nota_prms=prms}
+
 let subst_synext_interp (subst, (local,kn,tac as o)) =
-  let tac' = Tac2intern.subst_rawexpr subst tac in
+  let tac' = subst_notation_data subst tac in
   let kn' = Mod_subst.subst_kn subst kn in
   if kn' == kn && tac' == tac then o else
   (local, kn', tac')
@@ -730,7 +756,7 @@ let subst_synext_interp (subst, (local,kn,tac as o)) =
 let classify_synext_interp (local,_,_) =
   if local then Dispose else Substitute
 
-let inTac2NotationInterp : (bool*KerName.t*raw_tacexpr) -> obj =
+let inTac2NotationInterp : (bool*KerName.t*Tac2env.notation_data) -> obj =
   declare_object {(default_object "TAC2-NOTATION-INTERP") with
      cache_function  = cache_synext_interp;
      open_function   = simple_open ~cat:ltac2_notation_cat open_synext_interp;
@@ -837,8 +863,8 @@ let register_notation_interpretation = function
     let abbr = { abbr_body = body; abbr_depr = deprecation } in
     Lib.add_leaf (inTac2Abbreviation id abbr)
   | Synext (local,kn,ids,body) ->
-    let body = Tac2intern.globalize ids body in
-    Lib.add_leaf (inTac2NotationInterp (local,kn,body))
+    let data = intern_notation_data ids body in
+    Lib.add_leaf (inTac2NotationInterp (local,kn,data))
 
 type redefinition = {
   redef_kn : ltac_constant;
@@ -946,6 +972,8 @@ let check_modtype what =
   if Lib.is_modtype ()
   then warn_modtype what
 
+let abstract_att = Attributes.bool_attribute ~name:"abstract"
+
 let register_struct atts str = match str with
 | StrVal (mut, isrec, e) ->
   check_modtype "definitions";
@@ -953,8 +981,8 @@ let register_struct atts str = match str with
   register_ltac ?deprecation ?local ~mut isrec e
 | StrTyp (isrec, t) ->
   check_modtype "types";
-  let local = Attributes.(parse locality) atts in
-  register_type ?local isrec t
+  let local, abstract = Attributes.(parse Notations.(locality ++ abstract_att)) atts in
+  register_type ?local ?abstract isrec t
 | StrPrm (id, t, ml) ->
   check_modtype "externals";
   let deprecation, local = Attributes.(parse Notations.(deprecation ++ locality)) atts in
@@ -991,14 +1019,14 @@ end
 let () = CErrors.register_additional_error_info begin fun info ->
   if !Tac2bt.print_ltac2_backtrace then
     let bt = Exninfo.get info Tac2bt.backtrace in
-    let bt = match bt with
-    | Some bt -> List.rev bt
-    | None -> []
-    in
-    let bt =
-      str "Backtrace:" ++ fnl () ++ prlist_with_sep fnl pr_frame bt ++ fnl ()
-    in
-    Some bt
+    match bt with
+    | None -> None
+    | Some bt ->
+      let bt = List.rev bt in
+      let bt =
+        str "Backtrace:" ++ fnl () ++ prlist_with_sep fnl pr_frame bt ++ fnl ()
+      in
+      Some bt
   else None
 end
 
@@ -1143,7 +1171,7 @@ let () =
   }
 
 let print_located_tactic qid =
-  Feedback.msg_notice (Prettyp.print_located_other locatable_ltac2 qid)
+  Feedback.msg_notice (Prettyp.print_located_other (Global.env ()) locatable_ltac2 qid)
 
 let print_ltac2 qid =
   if Tac2env.is_constructor qid then
@@ -1232,13 +1260,14 @@ let register_prim_alg name params def =
     galg_nnonconst = nnonconst;
   } in
   let def = (params, GTydAlg alg) in
-  let def = { typdef_local = false; typdef_expr = def } in
+  let def = { typdef_local = false; typdef_abstract = false; typdef_expr = def } in
   Lib.add_leaf (inTypDef id def)
 
 let coq_def n = KerName.make Tac2env.coq_prefix (Label.make n)
 
 let def_unit = {
   typdef_local = false;
+  typdef_abstract = false;
   typdef_expr = 0, GTydDef (Some (GTypRef (Tuple 0, [])));
 }
 

@@ -1,4 +1,4 @@
-
+Require Coq.Strings.String.
 Require Coq.ZArith.ZArith.
 
 Axiom proof_admitted : False.

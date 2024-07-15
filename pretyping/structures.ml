@@ -97,6 +97,11 @@ let projection_nparams cst = (Cmap.find cst !projection_table).nparams
 
 let is_projection cst = Cmap.mem cst !projection_table
 
+let projection_number env cst =
+  let s = find_from_projection cst in
+  CList.index0 (Option.equal (Environ.QConstant.equal env)) (Some cst)
+    (List.map (fun x -> x.proj_body) s.projections)
+
 end
 
 (************************************************************************)
@@ -163,17 +168,17 @@ let compare p1 p2 = match p1, p2 with
   | Default_cs, Default_cs -> 0
   | _ -> Stdlib.compare p1 p2
 
-let rec of_constr env t =
-  match kind t with
+let rec of_constr sigma t =
+  match EConstr.kind sigma t with
   | App (f,vargs) ->
-    let patt, n, args = of_constr env f in
+    let patt, n, args = of_constr sigma f in
     patt, n, args @ Array.to_list vargs
   | Rel n -> Default_cs, Some n, []
-  | Lambda (_, _, b) -> let patt, _, _ = of_constr env b in patt, None, []
+  | Lambda (_, _, b) -> let patt, _, _ = of_constr sigma b in patt, None, []
   | Prod (_,_,_) -> Prod_cs, None, [t]
   | Proj (p, _, c) -> Proj_cs (Names.Projection.repr p), None, [c]
-  | Sort s -> Sort_cs (Sorts.family s), None, []
-  | _ -> Const_cs (fst @@ destRef t) , None, []
+  | Sort s -> Sort_cs (EConstr.ESorts.family sigma s), None, []
+  | _ -> Const_cs (fst @@ EConstr.destRef sigma t) , None, []
 
 let print = function
     Const_cs c -> Nametab.pr_global_env Id.Set.empty c
@@ -206,7 +211,7 @@ let warn_projection_no_head_constant =
           ++ con_pp ++ str " of " ++ proji_sp_pp ++ strbrk ", ignoring it.")
 
 (* Intended to always succeed *)
-let compute_canonical_projections env ~warn (gref,ind) =
+let compute_canonical_projections env sigma ~warn (gref,ind) =
   let o_CTX = Environ.universes_of_global env gref in
   let o_DEF, c =
     match gref with
@@ -225,16 +230,15 @@ let compute_canonical_projections env ~warn (gref,ind) =
   let o_TPARAMS, projs = List.chop p args in
   let o_NPARAMS = List.length o_TPARAMS in
   let lpj = keep_true_projections lpj in
-  let nenv = Environ.push_rel_context sign env in
   List.fold_left2 (fun acc (spopt, canonical) t ->
-      let t = EConstr.Unsafe.to_constr (shrink_eta (Evd.from_env env) (EConstr.of_constr t)) in
+      let t = EConstr.Unsafe.to_constr (shrink_eta sigma (EConstr.of_constr t)) in
       if canonical
       then
         Option.cata (fun proji_sp ->
-            match ValuePattern.of_constr nenv t with
+            match ValuePattern.of_constr sigma (EConstr.of_constr t) with
             | patt, o_INJ, o_TCOMPS ->
               ((GlobRef.ConstRef proji_sp, (patt, t)),
-               { o_ORIGIN = gref ; o_DEF ; o_CTX ; o_INJ ; o_TABS ; o_TPARAMS ; o_NPARAMS ; o_TCOMPS })
+               { o_ORIGIN = gref ; o_DEF ; o_CTX ; o_INJ ; o_TABS ; o_TPARAMS ; o_NPARAMS ; o_TCOMPS = List.map EConstr.Unsafe.to_constr o_TCOMPS })
               :: acc
             | exception DestKO ->
               if warn then warn_projection_no_head_constant (sign, env, t, gref, proji_sp);
@@ -309,7 +313,7 @@ let make env sigma ref =
   (ref,indsp)
 
 let register ~warn env sigma o =
-    compute_canonical_projections env ~warn o |>
+    compute_canonical_projections env sigma ~warn o |>
     List.iter (fun ((proj, (cs_pat, t)), s) ->
       let l = try GlobRef.Map.find proj !object_table with Not_found -> PatMap.empty in
       match PatMap.find cs_pat l with
@@ -353,6 +357,7 @@ let find env sigma (proj,pat) =
   let us = List.map EConstr.of_constr us in
   let params = List.map EConstr.of_constr params in
   let u, ctx' = UnivGen.fresh_instance_from ctx None in
+  let u = EConstr.EInstance.make u in
   let c = EConstr.of_constr c in
   let c' = EConstr.Vars.subst_instance_constr u c in
   let t' = EConstr.of_constr t' in
@@ -396,6 +401,18 @@ let is_open_canonical_projection env sigma c =
       not (isConstruct sigma hd)
     with Failure _ -> false
   with Not_found -> false
+
+let print env sigma s =
+  let pr_econstr = Termops.Internal.debug_print_constr sigma in
+  let pr_econstr_list l = Pp.(str "[ " ++ prlist_with_sep (fun () -> str "; ") pr_econstr l ++ str " ]") in
+  Pp.(str "{ constant = " ++ pr_econstr s.constant ++ cut () ++
+     str "abstractions_ty = " ++ pr_econstr_list s.abstractions_ty ++ cut () ++
+     str "body = " ++ pr_econstr s.body ++ cut () ++
+     str "nparams = " ++ int s.nparams ++ cut () ++
+     str "params = " ++ pr_econstr_list s.params ++ cut () ++
+     str "cvalue_abstractions = " ++ pr_opt int s.cvalue_abstraction ++ cut () ++
+     str "cvalue_arguments = " ++ pr_econstr_list s.cvalue_arguments ++ cut () ++
+     str "}")
 
 end
 
@@ -441,6 +458,11 @@ let find_opt_with_relevance (c,u) =
   find_opt c |>
   Option.map (fun p ->
       let u = EConstr.Unsafe.to_instance u in
-      p, Relevanceops.relevance_of_projection_repr (Global.env()) (p,u))
+      p, EConstr.ERelevance.make @@ Relevanceops.relevance_of_projection_repr (Global.env()) (p,u))
+
+let is_transparent_constant ts c =
+  match find_opt c with
+  | None -> TransparentState.is_transparent_constant ts c
+  | Some p -> TransparentState.is_transparent_projection ts p
 
 end

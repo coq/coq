@@ -42,6 +42,10 @@ sig
       (i.e. removing surrounding double quotes and undoubling double
       quotes); returns [None] if not a quoted string *)
 
+  val html_escape : string -> string
+  (** replace HTML reserved characters with escape sequences,
+      e.g. `&` -> "&#38;" *)
+
   val string_index_from : string -> int -> string -> int
   (** As [index_from], but takes a string instead of a char as pattern argument *)
 
@@ -50,6 +54,9 @@ sig
 
   val plural : int -> string -> string
   (** [plural n s] adds a optional 's' to the [s] when [2 <= n]. *)
+
+  val lplural : _ list -> string -> string
+  (** [lplural l s] is [plural (List.length l) s]. *)
 
   val conjugate_verb_to_be : int -> string
   (** [conjugate_verb_to_be] returns "is" when [n=1] and "are" otherwise *)
@@ -68,7 +75,7 @@ sig
 
   (** {6 Generic operations} **)
 
-  module Set : Set.S with type elt = t
+  module Set : CSet.ExtS with type elt = t
   (** Finite sets on [string] *)
 
   module Map : CMap.ExtS with type key = t and module Set := Set

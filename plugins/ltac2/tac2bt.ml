@@ -11,9 +11,9 @@
 open Tac2expr
 open Proofview.Notations
 
-let backtrace_evd : backtrace Evd.Store.field = Evd.Store.field ()
+let backtrace_evd : backtrace Evd.Store.field = Evd.Store.field "ltac2_trace"
 
-let backtrace : backtrace Exninfo.t = Exninfo.make ()
+let backtrace : backtrace Exninfo.t = Exninfo.make "ltac2_trace"
 
 let print_ltac2_backtrace = ref false
 
@@ -68,5 +68,5 @@ let with_frame frame tac =
   in
   if !ltac2_in_ltac1_profiling then
     let pr_frame f = Some (Hook.get pr_frame f) in
-    Ltac_plugin.Profile_ltac.do_profile_gen pr_frame frame ~count_call:true tac
+    Profile_tactic.do_profile_gen pr_frame frame ~count_call:true tac
   else tac

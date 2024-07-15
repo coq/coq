@@ -74,7 +74,7 @@ Module Backtracking.
 End Backtracking.
 
 
-#[export] Hint Resolve 100 eq_sym eq_trans : core.
+#[export] Hint Resolve eq_sym eq_trans | 100 : core.
 #[export] Hint Cut [(_)* eq_sym eq_sym] : core.
 #[export] Hint Cut [_* eq_trans eq_trans] : core.
 #[export] Hint Cut [_* eq_trans eq_sym eq_trans] : core.
@@ -88,7 +88,7 @@ Qed.
 
 Module Hierarchies.
   Class A := mkA { data : nat }.
-  Class B := mkB { aofb :> A }.
+  Class B := mkB { aofb :: A }.
 
   #[export] Existing Instance mkB.
 

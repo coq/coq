@@ -5,7 +5,7 @@ Record Pred@{A} :=
   ; P : car -> Prop
   }.
 
-Class All@{A} (A : Pred@{A}) : Type :=
+Class All@{A} (A : Pred@{A}) :=
   { proof : forall (a : A), P A a
   }.
 
@@ -18,5 +18,6 @@ Global Instance Pred_All_instance (A : Pred_All) : All A := P'_All A.
 
 Definition Pred_All_proof {A : Pred_All} (a : A) : P A a.
 Proof.
-solve[auto using proof].
+Fail solve[auto using proof]. (* Do not implicitly rely on TC resolution *)
+solve[auto using proof, Pred_All_instance].
 Abort.

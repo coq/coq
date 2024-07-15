@@ -66,12 +66,10 @@ let glob_sort_name_eq g1 g2 = match g1, g2 with
 
 exception ComplexSort
 
-let glob_sort_family = let open Sorts in function
-  | UAnonymous {rigid=UnivRigid} -> InType
-  | UNamed (None, [GSProp, 0]) -> InSProp
-  | UNamed (None, [GProp, 0]) -> InProp
-  | UNamed (None, [GSet, 0]) -> InSet
-  | _ -> raise ComplexSort
+let glob_Type_sort = None, UAnonymous {rigid=UnivRigid}
+let glob_SProp_sort = None, UNamed [GSProp, 0]
+let glob_Prop_sort = None, UNamed [GProp, 0]
+let glob_Set_sort = None, UNamed [GSet, 0]
 
 let map_glob_sort_gen f = function
   | UNamed l -> UNamed (f l)
@@ -83,12 +81,25 @@ let glob_sort_gen_eq f u1 u2 =
   | UNamed l1, UNamed l2 -> f l1 l2
   | (UNamed _ | UAnonymous _), _ -> false
 
-let glob_sort_eq u1 u2 =
-  let eq (q1, l1) (q2, l2) =
-    Option.equal glob_qvar_eq q1 q2 &&
-    List.equal (fun (x,m) (y,n) -> glob_sort_name_eq x y && Int.equal m n) l1 l2
-  in
-  glob_sort_gen_eq eq u1 u2
+let glob_sort_eq (q1, l1) (q2, l2) =
+  Option.equal glob_qvar_eq q1 q2 &&
+  glob_sort_gen_eq
+    (List.equal (fun (x,m) (y,n) ->
+         glob_sort_name_eq x y
+         && Int.equal m n))
+    l1 l2
+
+let glob_sort_family s =
+  let open Sorts in
+  if glob_sort_eq s glob_Type_sort then InType
+  else match s with
+    | None, UNamed [s, 0] -> begin match s with
+        | GSProp -> InSProp
+        | GProp -> InProp
+        | GSet -> InSet
+        | GUniv _ | GLocalUniv _ | GRawUniv _ -> raise ComplexSort
+      end
+    | _ -> raise ComplexSort
 
 let glob_level_eq u1 u2 =
   glob_sort_gen_eq glob_sort_name_eq u1 u2
@@ -206,12 +217,13 @@ let mk_glob_constr_eq f g c1 c2 = match DAst.get c1, DAst.get c2 with
     List.equal f args1 args2 && f c1 c2
   | GInt i1, GInt i2 -> Uint63.equal i1 i2
   | GFloat f1, GFloat f2 -> Float64.equal f1 f2
+  | GString s1, GString s2 -> Pstring.equal s1 s2
   | GArray (u1, t1, def1, ty1), GArray (u2, t2, def2, ty2) ->
     Array.equal f t1 t2 && f def1 def2 && f ty1 ty2 &&
     Option.equal instance_eq u1 u2
   | (GRef _ | GVar _ | GEvar _ | GPatVar _ | GApp _ | GLambda _ | GProd _ | GLetIn _ |
      GCases _ | GLetTuple _ | GIf _ | GRec _ | GSort _ | GHole _ | GGenarg _ | GCast _ | GProj _ |
-     GInt _ | GFloat _ | GArray _), _ -> false
+     GInt _ | GFloat _ | GString _ | GArray _), _ -> false
 
 let rec glob_constr_eq c = mk_glob_constr_eq glob_constr_eq (fun na1 na2 _ _ -> Name.equal na1 na2) c
 
@@ -283,7 +295,7 @@ let map_glob_constr_left_to_right_with_names f g = DAst.map (function
       let comp2 = f def in
       let comp3 = f ty in
       GArray (u,comp1,comp2,comp3)
-  | (GVar _ | GSort _ | GHole _ | GGenarg _ | GRef _ | GEvar _ | GPatVar _ | GInt _ | GFloat _) as x -> x
+  | (GVar _ | GSort _ | GHole _ | GGenarg _ | GRef _ | GEvar _ | GPatVar _ | GInt _ | GFloat _ | GString _) as x -> x
   )
 
 let map_glob_constr_left_to_right f = map_glob_constr_left_to_right_with_names f (fun na -> na)
@@ -319,7 +331,7 @@ let fold_glob_constr f acc = DAst.with_val (function
   | GProj (p,args,c) ->
     f (List.fold_left f acc args) c
   | GArray (_u,t,def,ty) -> f (f (Array.fold_left f acc t) def) ty
-  | (GSort _ | GHole _ | GGenarg _ | GRef _ | GEvar _ | GPatVar _ | GInt _ | GFloat _) -> acc
+  | (GSort _ | GHole _ | GGenarg _ | GRef _ | GEvar _ | GPatVar _ | GInt _ | GFloat _ | GString _) -> acc
   )
 let fold_return_type_with_binders f g v acc (na,tyopt) =
   (* eta expansion is important if g has effects, eg bound_glob_vars below, see #11959 *)
@@ -364,7 +376,7 @@ let fold_glob_constr_with_binders g f v acc = DAst.(with_val (function
   | GProj (p,args,c) ->
     f v (List.fold_left (f v) acc args) c
   | GArray (_u, t, def, ty) -> f v (f v (Array.fold_left (f v) acc t) def) ty
-  | (GSort _ | GHole _ | GGenarg _ | GRef _ | GEvar _ | GPatVar _ | GInt _ | GFloat _) -> acc))
+  | (GSort _ | GHole _ | GGenarg _ | GRef _ | GEvar _ | GPatVar _ | GInt _ | GFloat _ | GString _) -> acc))
 
 let iter_glob_constr f = fold_glob_constr (fun () -> f) ()
 

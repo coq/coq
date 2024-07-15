@@ -135,12 +135,18 @@ Module Inductives.
   Inductive foo6@{s| |} : Type@{s|Set} := Foo6.
   Fail Check foo6_sind.
 
-  Fail Definition foo6_rect (P:foo6 -> Type)
+  Fail Definition foo6_rect@{s|+|+} (P:foo6@{s|} -> Type)
     (H : P Foo6)
     (f : foo6)
     : P f
     := match f with Foo6 => H end.
-  (* XXX error message is pretty bad *)
+
+  (* implicit quality is set to Type *)
+  Definition foo6_rect (P:foo6 -> Type)
+    (H : P Foo6)
+    (f : foo6)
+    : P f
+    := match f with Foo6 => H end.
 
   Definition foo6_prop_rect (P:foo6 -> Type)
     (H : P Foo6)
@@ -271,5 +277,14 @@ Module Inductives.
 
   (* we can eliminate to Prop *)
   Check sexists_ind.
+
+  Inductive sigma3@{s s' s''|u v| } (A:Type@{s|u}) (P:A -> Type@{s'|v}) :
+    Type@{s''|max(u,v)} :=
+    exist3 : forall x:A, P x -> sigma3 A P.
+
+  Arguments exist3 {_ _}.
+
+  Definition π1@{s s'|u v|} {A:Type@{s|u}} {P:A -> Type@{s'|v}} (p : sigma3@{_ _ Type|_ _} A P) : A :=
+    match p return A with exist3 a _ => a end.
 
 End Inductives.

@@ -11,7 +11,7 @@
 module Dep : sig
   type t =
   | Require of string
-  (** module basename, to which we later append .vo or .vio or .vos *)
+  (** module basename, to which we later append .vo or .vos *)
   | Ml of string * string
   (** plugin basename and byte extension, resolved from Declare Ml Module *)
   | Other of string

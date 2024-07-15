@@ -1,9 +1,9 @@
 Module Type T.
   Module Type U.
     Module Type V.
-      Variable b : nat.
+      #[local] Parameter b : nat.
     End V.
-    Variable a : nat.
+    #[local] Parameter a : nat.
   End U.
   Declare Module u : U.
   Declare Module v : u.V.
@@ -15,9 +15,9 @@ End F.
 Module M:T.
   Module Type U.
     Module Type V.
-      Variable b : nat.
+      #[local] Parameter b : nat.
     End V.
-    Variable a : nat.
+     #[local] Parameter a : nat.
   End U.
   Declare Module u : U.
   Declare Module v : u.V.

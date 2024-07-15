@@ -161,8 +161,8 @@ open SentenceId
 (* Given a Coq loc, convert it to a pair of iterators start / end in
    the buffer. *)
 let coq_loc_to_gtk_offset ?(line_drift=0) (buffer : GText.buffer) loc =
-  buffer#get_iter_at_byte ~line:(loc.Loc.line_nb - 1 + line_drift) (loc.bp - loc.bol_pos),
-  buffer#get_iter_at_byte ~line:(loc.Loc.line_nb_last - 1 + line_drift) (loc.ep - loc.bol_pos_last)
+  Ideutils.get_iter_at_byte buffer ~line:(loc.Loc.line_nb - 1 + line_drift) (loc.bp - loc.bol_pos),
+  Ideutils.get_iter_at_byte buffer ~line:(loc.Loc.line_nb_last - 1 + line_drift) (loc.ep - loc.bol_pos_last)
 
 (** increase [uni_off] by the number of bytes until [s_uni] This can
     be used to convert a character offset to byte offset if we know a
@@ -238,6 +238,7 @@ object
   method stop_worker : string -> unit task
 
   method get_n_errors : int
+  method get_warnings : (int * string) list
   method get_errors : (int * string) list
   method get_slaves_status : int * int * string CString.Map.t
   method backtrack_to_begin : unit -> unit task
@@ -402,7 +403,8 @@ object(self)
          compare and compensate for the shift. *)
       let offset, _line_shift = offset_compensation script#buffer s in
       let ss = find_all_tooltips s (iter#offset - offset) in
-      let msg = String.concat "\n" (CList.uniquize ss) in
+      let ss = if ss = [] then Doc.get_errors document else ss in
+      let msg = CString.html_escape (String.concat "\n" (CList.uniquize ss)) in
       GtkBase.Tooltip.set_icon_from_stock tooltip `INFO `BUTTON;
       script#misc#set_tooltip_markup ("<tt>" ^ msg ^ "</tt>")
     end else begin
@@ -642,28 +644,28 @@ object(self)
           self#attach_tooltip ~loc sentence
             (Printf.sprintf "%s %s %s" filepath ident ty)
       | GlobRef (_, _, _, _, _), None -> msg_wo_sent "GlobRef"
-      | Message(Error, loc, msg), Some (id,sentence) ->
+      | Message(Error, loc, _, msg), Some (id,sentence) ->
           log_pp ?id Pp.(str "ErrorMsg " ++ msg);
           remove_flag sentence `PROCESSING;
           let rmsg = Pp.string_of_ppcmds msg in
           add_flag sentence (`ERROR (loc, rmsg));
           self#mark_as_needed sentence;
           self#attach_tooltip ?loc sentence rmsg;
-          self#position_tag_at_sentence ?loc Tags.Script.error sentence
-      | Message(Warning, loc, message), Some (id,sentence) ->
+          self#apply_tag_in_sentence ?loc Tags.Script.error sentence
+      | Message(Warning, loc, _, message), Some (id,sentence) ->
           log_pp ?id Pp.(str "WarningMsg " ++ message);
           let rmsg = Pp.string_of_ppcmds message in
           add_flag sentence (`WARNING (loc, rmsg));
           self#attach_tooltip ?loc sentence rmsg;
-          self#position_tag_at_sentence ?loc Tags.Script.warning sentence;
+          self#apply_tag_in_sentence ?loc Tags.Script.warning sentence;
           (messages#route msg.route)#push Warning message
-      | Message(lvl, loc, message), Some (id,sentence) ->
+      | Message(lvl, loc, _, message), Some (id,sentence) ->
           log_pp ?id Pp.(str "Msg " ++ message);
           (messages#route msg.route)#push lvl message
       (* We do nothing here as for BZ#5583 *)
-      | Message(Error, loc, msg), None ->
+      | Message(Error, loc, _, msg), None ->
           log_pp Pp.(str "Error Msg without a sentence" ++ msg)
-      | Message(lvl, loc, message), None ->
+      | Message(lvl, loc, _, message), None ->
           log_pp Pp.(str "Msg without a sentence " ++ message);
           (messages#route msg.route)#push lvl message
       | InProgress n, _ ->
@@ -707,9 +709,6 @@ object(self)
       let start, stop = coq_loc_to_gtk_offset ~line_drift buffer loc in
       buffer#apply_tag tag ~start ~stop
 
-  method private position_tag_at_sentence ?loc tag sentence =
-    self#apply_tag_in_sentence ?loc tag sentence
-
   method private process_interp_error ?loc queue sentence msg tip id =
     Coq.bind (Coq.return ()) (function () ->
     let start, stop = start_stop_iters buffer sentence in
@@ -717,6 +716,7 @@ object(self)
     self#discard_command_queue queue;
     Ideutils.pop_info ();
     if Stateid.equal id tip || Stateid.equal id Stateid.dummy then begin
+      self#attach_tooltip ?loc sentence (Pp.string_of_ppcmds msg);
       self#apply_tag_in_sentence ?loc Tags.Script.error sentence;
       buffer#place_cursor ~where:stop;
       messages#default_route#clear;
@@ -817,6 +817,7 @@ object(self)
             let bp, line_nb, bol_pos, new_cached = coq_loc_from_gtk_offset cached_offset buffer sentence in
             last_offsets <- new_cached;
             let coq_query = Coq.add ((((phrase,edit_id),(tip,verbose)),bp),(line_nb,bol_pos)) in
+            Doc.set_errors document [];
             let handle_answer = function
               | Good (id, Util.Inl (* NewTip *) ()) ->
                   Doc.assign_tip_id document id;
@@ -831,8 +832,8 @@ object(self)
                   if Queue.is_empty queue then loop tip []
                   else loop tip (List.rev topstack)
               | Fail (id, loc, msg) ->
-                  let loc = Option.map Loc.make_loc loc in
                   let sentence = Doc.pop document in
+                  Doc.set_errors document [Pp.string_of_ppcmds msg];
                   self#process_interp_error ?loc queue sentence msg tip id in
             Coq.bind coq_query handle_answer
       in
@@ -860,19 +861,34 @@ object(self)
   method get_n_errors =
     Doc.fold_all document 0 (fun n _ _ s -> if has_flag s `ERROR then n+1 else n)
 
+  method private get_flagged (f : flag -> (Loc.t option * string) option) =
+    let extract s =
+      let map item = match f item with
+      | None -> None
+      | Some (loc, msg) ->
+        let iter = match loc with
+        | None -> buffer#get_iter_at_mark s.start
+        | Some loc -> fst (coq_loc_to_gtk_offset buffer loc)
+        in
+        Some (iter#line + 1, msg)
+      in
+      List.map_filter map s.flags
+    in
+    List.rev (Doc.fold_all document [] (fun acc _ _ s -> extract s @ acc))
+
+  method get_warnings =
+    let f (item : flag) = match item with
+    | `WARNING (loc, msg) -> Some (loc, msg)
+    | _ -> None
+    in
+    self#get_flagged f
+
   method get_errors =
-    let extract_error s =
-      match List.find (function `ERROR _ -> true | _ -> false) s.flags with
-      | `ERROR (loc, msg) ->
-         let iter = begin match loc with
-           | None      -> buffer#get_iter_at_mark s.start
-           | Some loc ->
-             fst (coq_loc_to_gtk_offset buffer loc)
-         end in iter#line + 1, msg
-      | _ -> assert false in
-    List.rev
-      (Doc.fold_all document [] (fun acc _ _ s ->
-        if has_flag s `ERROR then extract_error s :: acc else acc))
+    let f (item : flag) = match item with
+    | `ERROR (loc, msg) -> Some (loc, msg)
+    | _ -> None
+    in
+    self#get_flagged f
 
   method process_next_phrase =
     let until n _ _ = n >= 1 in
@@ -990,7 +1006,7 @@ object(self)
     self#backtrack_until ?move_insert until
 
   method private handle_failure_aux
-    ?(move_insert=false) (safe_id, (loc : (int * int) option), msg)
+    ?(move_insert=false) (safe_id, (loc : Interface.location), msg)
   =
     messages#default_route#push Feedback.Error msg;
     if Stateid.equal safe_id Stateid.dummy then Coq.lift (fun () -> ())

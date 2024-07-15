@@ -34,7 +34,7 @@ let absurd c =
     let j = Retyping.get_judgment_of env sigma c in
     let sigma, j = Coercion.inh_coerce_to_sort env sigma j in
     let t = nf_betaiota env sigma j.Environ.utj_val in
-    let r = ESorts.relevance_of_sort sigma j.Environ.utj_type in
+    let r = ESorts.relevance_of_sort j.Environ.utj_type in
     Proofview.Unsafe.tclEVARS sigma <*>
     Tactics.exfalso <*> mk_absurd_proof env r t
   end

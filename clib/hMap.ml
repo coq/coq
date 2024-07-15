@@ -205,15 +205,9 @@ struct
     let fold _ m accu = Set.fold (fun x accu -> x :: accu) m accu in
     Int.Map.fold fold s []
 
-  let min_elt _ = assert false (** Cannot be implemented efficiently *)
-
-  let max_elt _ = assert false (** Cannot be implemented efficiently *)
-
   let choose s =
     let (_, m) = Int.Map.choose s in
     Set.choose m
-
-  let split s x = assert false (** Cannot be implemented efficiently *)
 
 end
 
@@ -341,14 +335,6 @@ struct
     let fold _ m accu = Map.fold (fun k x accu -> (k, x) :: accu) m accu in
     Int.Map.fold fold s []
 
-  let min_binding _ = assert false (** Cannot be implemented efficiently *)
-
-  let max_binding _ = assert false (** Cannot be implemented efficiently *)
-
-  let fold_left _ _ _ = assert false (** Cannot be implemented efficiently *)
-
-  let fold_right _ _ _ = assert false (** Cannot be implemented efficiently *)
-
   let choose s =
     let (_, m) = Int.Map.choose s in
     Map.choose m
@@ -376,8 +362,6 @@ struct
     let h = M.hash k in
     let m = Int.Map.get h s in
     Map.get k m
-
-  let split k s = assert false (** Cannot be implemented efficiently *)
 
   let map f s =
     let fs m = Map.map f m in
@@ -454,9 +438,6 @@ struct
     let fold f s accu =
       let ff _ m accu = ExtM.fold f m accu in
       IntM.fold ff s accu
-
-    let fold_left _ _ _ = assert false
-    let fold_right _ _ _ = assert false
 
     let mapi f s =
       IntM.mapi (fun _ m -> ExtM.mapi f m) s

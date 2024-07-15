@@ -33,10 +33,6 @@ let vernac_echo ?loc in_chan = let open Loc in
       Feedback.msg_notice @@ str @@ really_input_string in_chan len
     ) loc
 
-(* Re-enable when we get back to feedback printing *)
-(* let is_end_of_input any = match any with *)
-(*     Stm.End_of_input -> true *)
-(*   | _ -> false *)
 
 type time_output =
   | ToFeedback
@@ -44,7 +40,15 @@ type time_output =
 
 let make_time_output = function
   | Coqargs.ToFeedback -> ToFeedback
-  | ToFile f -> ToChannel (Format.formatter_of_out_channel (open_out f))
+  | ToFile f ->
+    let ch = open_out f in
+    let fch = Format.formatter_of_out_channel ch in
+    let close () =
+      Format.pp_print_flush fch ();
+      close_out ch
+    in
+    at_exit close;
+    ToChannel fch
 
 module State = struct
 
@@ -187,9 +191,10 @@ let set_formatter_translator ch =
   ft
 
 let pr_new_syntax ?loc ft_beautify ocom =
+  let loc = Option.append loc (Option.bind ocom (fun x -> x.CAst.loc)) in
   let loc = Option.cata Loc.unloc (0,0) loc in
   let before = comment (Pputils.extract_comments (fst loc)) in
-  let com = Option.cata Ppvernac.pr_vernac (mt ()) ocom in
+  let com = Option.cata (fun com -> Ppvernac.pr_vernac com ++ fnl()) (mt ()) ocom in
   let after = comment (Pputils.extract_comments (snd loc)) in
   if !Flags.beautify_file then
     (Pp.pp_with ft_beautify (hov 0 (before ++ com ++ after));

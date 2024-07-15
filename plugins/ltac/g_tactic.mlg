@@ -26,6 +26,7 @@ open Tactypes
 open Tactics
 open Inv
 open Locus
+open G_redexpr
 
 open Pcoq
 
@@ -198,30 +199,15 @@ let deprecated_conversion_at_with =
     ~name:"conversion_at_with" ~category:Deprecation.Version.v8_14
     (fun () -> Pp.str "The syntax [at ... with ...] is deprecated. Use [with ... at ...] instead.")
 
-let deprecated_clear_modifier =
-  CWarnings.create
-    ~name:"deprecated-clear-modifier" ~category:Deprecation.Version.v8_17
-    (fun () -> Pp.strbrk "The undocumented clear modifier \">\" is deprecated. Open an issue at https://github.com/coq/coq/issues/new if you actually depend on this feature in your work.")
-
 (* Auxiliary grammar rules *)
-
-open Pvernac.Vernac_
 
 }
 
 GRAMMAR EXTEND Gram
   GLOBAL: simple_tactic constr_with_bindings quantified_hypothesis
-  bindings red_expr int_or_var nat_or_var open_constr uconstr
+  bindings open_constr uconstr
   simple_intropattern in_clause clause_dft_concl hypident destruction_arg;
 
-  int_or_var:
-    [ [ n = integer  -> { ArgArg n }
-      | id = identref -> { ArgVar id } ] ]
-  ;
-  nat_or_var:
-    [ [ n = natural  -> { ArgArg n }
-      | id = identref -> { ArgVar id } ] ]
-  ;
   (* An identifier or a quotation meta-variable *)
   id_or_meta:
     [ [ id = identref -> { id } ] ]
@@ -240,10 +226,7 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   constr_with_bindings_arg:
-    [ [ ">"; c = constr_with_bindings ->
-      { deprecated_clear_modifier (); (* 8.17 *)
-        (Some true,c) }
-      | c = constr_with_bindings -> { (None,c) } ] ]
+    [ [ c = constr_with_bindings -> { (None,c) } ] ]
   ;
   quantified_hypothesis:
     [ [ id = ident -> { NamedHyp (CAst.make ~loc id) }
@@ -255,25 +238,6 @@ GRAMMAR EXTEND Gram
       | c1 = constr; "at"; occs = occs_nums; "with"; c2 = constr ->
           { deprecated_conversion_at_with ();  (* 8.14 *)
           (Some (occs,c1), c2) } ] ]
-  ;
-  occs_nums:
-    [ [ nl = LIST1 nat_or_var -> { OnlyOccurrences nl }
-      | "-"; nl = LIST1 nat_or_var -> { AllOccurrencesBut nl } ] ]
-  ;
-  occs:
-    [ [ "at"; occs = occs_nums -> { occs } | -> { AllOccurrences } ] ]
-  ;
-  pattern_occ:
-    [ [ c = constr; nl = occs -> { (nl,c) } ] ]
-  ;
-  ref_or_pattern_occ:
-    (* If a string, it is interpreted as a ref
-       (anyway a Coq string does not reduce) *)
-    [ [ c = smart_global; nl = occs -> { nl,Inl c }
-      | c = constr; nl = occs -> { nl,Inr c } ] ]
-  ;
-  unfold_occ:
-    [ [ c = smart_global; nl = occs -> { (nl,c) } ] ]
   ;
   intropatterns:
     [ [ l = LIST0 intropattern -> { l } ] ]
@@ -341,44 +305,6 @@ GRAMMAR EXTEND Gram
   ;
   with_bindings:
     [ [ "with"; bl = bindings -> { bl } | -> { NoBindings } ] ]
-  ;
-  red_flag:
-    [ [ IDENT "beta" -> { [FBeta] }
-      | IDENT "iota" -> { [FMatch;FFix;FCofix] }
-      | IDENT "match" -> { [FMatch] }
-      | IDENT "fix" -> { [FFix] }
-      | IDENT "cofix" -> { [FCofix] }
-      | IDENT "zeta" -> { [FZeta] }
-      | IDENT "delta"; d = delta_flag -> { [d] }
-      | IDENT "head" -> { [FHead] }
-    ] ]
-  ;
-  delta_flag:
-    [ [ "-"; "["; idl = LIST1 smart_global; "]" -> { FDeltaBut idl }
-      | "["; idl = LIST1 smart_global; "]" -> { FConst idl }
-      | -> { FDeltaBut [] }
-    ] ]
-  ;
-  strategy_flag:
-    [ [ s = LIST1 red_flag -> { Redops.make_red_flag (List.flatten s) }
-      | h = OPT [ IDENT "head" -> { () } ]; d = delta_flag -> { all_with ~head:(Option.has_some h) d }
-    ] ]
-  ;
-  red_expr:
-    [ [ IDENT "red" -> { Red }
-      | IDENT "hnf" -> { Hnf }
-      | IDENT "simpl"; h = OPT [ IDENT "head" -> { () } ];
-        d = delta_flag; po = OPT ref_or_pattern_occ -> { Simpl (all_with ~head:(Option.has_some h) d,po) }
-      | IDENT "cbv"; s = strategy_flag -> { Cbv s }
-      | IDENT "cbn"; s = strategy_flag -> { Cbn s }
-      | IDENT "lazy"; s = strategy_flag -> { Lazy s }
-      | IDENT "compute"; delta = delta_flag -> { Cbv (all_with ~head:false delta) }
-      | IDENT "vm_compute"; po = OPT ref_or_pattern_occ -> { CbvVm po }
-      | IDENT "native_compute"; po = OPT ref_or_pattern_occ -> { CbvNative po }
-      | IDENT "unfold"; ul = LIST1 unfold_occ SEP "," -> { Unfold ul }
-      | IDENT "fold"; cl = LIST1 constr -> { Fold cl }
-      | IDENT "pattern"; pl = LIST1 pattern_occ SEP"," -> { Pattern pl }
-      | s = IDENT -> { ExtraRedExpr s } ] ]
   ;
   hypident:
     [ [ id = id_or_meta ->

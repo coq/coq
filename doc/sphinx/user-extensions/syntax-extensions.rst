@@ -91,7 +91,7 @@ In this case, no spaces are allowed in the symbol.  Also, if the
 symbol starts with a double quote, it must be surrounded with single
 quotes to prevent confusion with the beginning of a string symbol.
 
-A notation binds a syntactic expression to a term. Unless the parser
+A notation binds a syntactic expression to a term, called its :gdef:`interpretation`. Unless the parser
 and pretty-printer of Coq already know how to deal with the syntactic
 expression (such as through :cmd:`Reserved Notation` or for notations
 that contain only literals), explicit precedences and
@@ -100,7 +100,7 @@ associativity rules have to be given.
 .. note::
 
    The right-hand side of a notation is interpreted at the time the notation is
-   given. In particular, disambiguation of constants, :ref:`implicit arguments
+   given. Disambiguation of constants, :ref:`implicit arguments
    <ImplicitArguments>` and other notations are resolved at the
    time of the declaration of the notation. The right-hand side is
    currently typed only at use time but this may change in the future.
@@ -215,35 +215,59 @@ definition is the following:
 More generally, it is required that notations are explicitly factorized on the
 left. See the next section for more about factorization.
 
+.. _NotationFactorization:
+
 Simple factorization rules
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Coq extensible parsing is performed by *Camlp5* which is essentially a LL1
 parser: it decides which notation to parse by looking at tokens from left to right.
 Hence, some care has to be taken not to hide already existing rules by new
-rules. Some simple left factorization work has to be done. Here is an example.
+rules. Indeed notations with a common prefix but different levels can
+interfere with one another, making some of them unusable. For instance, a notation ``x << y`` with ``x``
+and ``y`` at level 69 would be broken by another rule that puts
+``y`` at another level, like ``x << y << z`` with ``x`` at level 69 and ``y``
+at level 200. To avoid such issues, you should left factorize rules, that is ensure
+that common prefixes use the samel levels.
 
 .. coqtop:: all
 
-   Notation "x < y" := (lt x y) (at level 70).
-   Fail Notation "x < y < z" := (x < y /\ y < z) (at level 70).
+   Reserved Notation "x << y" (at level 70).
+   Fail Reserved Notation "x << y << z" (at level 70, y at level 200).
 
 In order to factorize the left part of the rules, the subexpression
 referred to by ``y`` has to be at the same level in both rules. However the
 default behavior puts ``y`` at the next level below 70 in the first rule
-(``no associativity`` is the default), and at level 200 in the second
-rule (``level 200`` is the default for inner expressions). To fix this, we
+(``no associativity`` is the default). To fix this, we
 need to force the parsing level of ``y``, as follows.
 
-.. coqtop:: in
+.. coqtop:: reset all
 
-   Notation "x < y" := (lt x y) (at level 70).
-   Notation "x < y < z" := (x < y /\ y < z) (at level 70, y at next level).
+   Reserved Notation "x << y" (at level 70).
+   Reserved Notation "x << y << z" (at level 70, y at next level).
+
+Or better yet, simply let the defaults ensure the best factorization.
+
+.. coqtop:: reset all
+
+   Reserved Notation "x << y" (at level 70).
+   Reserved Notation "x << y << z".
+   Print Notation "_ << _ << _".
 
 For the sake of factorization with Coq predefined rules, simple rules
 have to be observed for notations starting with a symbol, e.g., rules
 starting with “\ ``{``\ ” or “\ ``(``\ ” should be put at level 0. The list
 of Coq predefined notations can be found in the chapter on :ref:`thecoqlibrary`.
+
+.. warn:: Closed notations (i.e. starting and ending with a terminal symbol) should usually be at level 0 (default).
+   :name: closed-notation-not-level-0
+
+   It is usually better to put closed notations, that is the ones starting and ending with a terminal symbol, at level 0.
+
+.. warn:: Postfix notations (i.e. starting with a nonterminal symbol and ending with a terminal symbol) should usually be at level 1 (default).")
+   :name: postfix-notation-not-level-1
+
+   It is usually better to put postfix notations, that is the ones ending with a terminal symbol, at level 1.
 
 .. _UseOfNotationsForPrinting:
 
@@ -304,7 +328,8 @@ The second, more powerful control on printing is by using :n:`@syntax_modifier`\
        (IF_then_else True False True)
        (IF_then_else True False True)).
 
-A *format* is an extension of the string denoting the notation with
+A *format* tells how to control the indentation and line breaks when printing
+a notation. It is a string extending the notation with
 the possible following elements delimited by single quotes:
 
 - tokens of the form ``'/ '`` are translated into breaking points.  If
@@ -352,13 +377,11 @@ at the time of use of the notation.
    If a given notation string occurs only in ``only printing`` rules,
    the parser is not modified at all.
 
-   To a given notation string and scope can be attached at most one
-   notation with both parsing and printing or with only
-   parsing. Contrastingly, an arbitrary number of ``only printing``
-   notations differing in their right-hand sides but only a unique
-   right-hand side can be attached to a given string and
-   scope. Obviously, expressions printed by means of such extra
-   printing rules will not be reparsed to the same form.
+   Notations used for parsing, that is notations not restricted with
+   the ``only printing`` modifier, can have only a single
+   interpretation per scope. On the other side, notations marked with
+   ``only printing`` can have multiple associated interpretations,
+   even in the same scope.
 
 .. note::
 
@@ -436,6 +459,14 @@ Reserving notations
    :token:`syntax_modifier`), it is used by
    default by all subsequent interpretations of the corresponding
    notation. Individual interpretations can override the format.
+
+   .. warn:: Notations "a b" defined at level x and "a c" defined at level y have incompatible prefixes. One of them will likely not work.
+      :name: notation-incompatible-prefix
+
+      The two notations have a common prefix but different levels.
+      The levels of one of the notations should be adjusted to match
+      the other. See :ref:`factorization <NotationFactorization>` for
+      details.
 
 Simultaneous definition of terms and notations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -557,7 +588,8 @@ Enabling and disabling notations
       Cannot enable or disable for parsing a notation that was
       originally defined as only printing.
 
-   .. exn:: Found no matching notation to enable or disable.
+   .. warn:: Found no matching notation to enable or disable.
+      :name: Found no matching notation to enable or disable
 
       No previously defined notation satisfies the given constraints.
 
@@ -642,9 +674,9 @@ Displaying information about notations
          Print Notation "_ mod _".
          Print Notation "x 'mod' y".
 
-         Reserved Notation "/ x /" (at level 0, format "/ x /").
-         Fail Print Notation "/x/".
-         Print Notation "/ x /".
+         Reserved Notation "# x #" (at level 0, format "# x #").
+         Fail Print Notation "#x#".
+         Print Notation "# x #".
 
          Reserved Notation "( x , y , .. , z )" (at level 0).
          Print Notation "( _ , _ , .. , _ )".
@@ -1210,7 +1242,7 @@ Custom entries
    For instance, we may want to define an ad hoc
    parser for arithmetical operations and proceed as follows:
 
-   .. coqtop:: all
+   .. coqtop:: reset all
 
       Inductive Expr :=
       | One : Expr
@@ -1485,8 +1517,10 @@ Most commands use :token:`scope_name`; :token:`scope_key`\s are used within :tok
 
    Declares a new notation scope. Note that the initial
    state of Coq declares the following notation scopes:
-   ``core_scope``, ``type_scope``, ``function_scope``, ``nat_scope``,
-   ``bool_scope``, ``list_scope``, ``dec_int_scope``, ``dec_uint_scope``.
+
+   ``bool_scope``, ``byte_scope``, ``core_scope``, ``dec_int_scope``,
+   ``dec_uint_scope``, ``function_scope``, ``hex_int_scope``, ``hex_nat_scope``,
+   ``hex_uint_scope``, ``list_scope``, ``nat_scope``, ``type_scope``.
 
    Use commands such as :cmd:`Notation` to add notations to the scope.
 
@@ -1509,6 +1543,10 @@ Scopes are removed by name (e.g. by :cmd:`Close Scope`) wherever they are in the
 stack, rather than through "pop" operations.
 
 Use the :cmd:`Print Visibility` command to display the current notation scope stack.
+
+The initial state of Coq has the following scopes opened: ``core_scope``,
+``function_scope``, ``type_scope`` and ``nat_scope``, ``nat_scope`` being the
+top of the scopes stack.
 
 .. cmd:: Open Scope @scope
 
@@ -2181,6 +2219,8 @@ String notations
             * :n:`Byte.byte -> option @qualid__type`
             * :n:`list Byte.byte -> @qualid__type`
             * :n:`list Byte.byte -> option @qualid__type`
+            * :n:`PrimString.string -> @qualid__type`
+            * :n:`PrimString.string -> option @qualid__type`
 
          The printing function :n:`@qualid__print` should have one of the
          following types:
@@ -2189,6 +2229,8 @@ String notations
             * :n:`@qualid__type -> option Byte.byte`
             * :n:`@qualid__type -> list Byte.byte`
             * :n:`@qualid__type -> option (list Byte.byte)`
+            * :n:`@qualid__type -> PrimString.string`
+            * :n:`@qualid__type -> option PrimString.string`
 
          When parsing, the application of the parsing function
          :n:`@qualid__parse` to the string will be fully reduced, and universes
@@ -2196,7 +2238,7 @@ String notations
 
          Note that only fully-reduced ground terms (terms containing only
          function application, constructors, inductive type families,
-         sorts, primitive integers, primitive floats, primitive arrays and type
+         sorts, primitive integers, primitive floats, primitive strings, primitive arrays and type
          constants for primitive types) will be considered for printing.
 
       :n:`via @qualid__ind mapping [ {+, @qualid__constant => @qualid__constructor } ]`
@@ -2208,12 +2250,12 @@ String notations
      the given string.  This error is given when the interpretation
      function returns :g:`None`.
 
-   .. exn:: @qualid__parse should go from Byte.byte or (list Byte.byte) to @type or (option @type).
+   .. exn:: @qualid__parse should go from Byte.byte, (list Byte.byte), or PrimString.string to @type or (option @type).
 
      The parsing function given to the :cmd:`String Notation`
      command is not of the right type.
 
-   .. exn:: @qualid__print should go from @type to Byte.byte or (option Byte.byte) or (list Byte.byte) or (option (list Byte.byte)).
+   .. exn:: @qualid__print should go from @type to T or (option T), where T is either Byte.byte, (list Byte.byte), or PrimString.string.
 
      The printing function given to the :cmd:`String Notation`
      command is not of the right type.
@@ -2221,8 +2263,8 @@ String notations
    .. exn:: Unexpected term @term while parsing a string notation.
 
      Parsing functions must always return ground terms, made up of
-     function application, constructors, inductive type families, sorts and primitive
-     integers.  Parsing functions may not return terms containing
+     function application, constructors, inductive type families, sorts, primitive
+     integers and primitive strings.  Parsing functions may not return terms containing
      axioms, bare (co)fixpoints, lambdas, etc.
 
    .. exn:: Unexpected non-option term @term while parsing a string notation.
@@ -2437,7 +2479,7 @@ The following errors apply to both string and number notations:
    The following example parses and prints natural numbers between
    :g:`0` and :g:`n-1` as terms of type :g:`Fin.t n`.
 
-   .. coqtop:: all reset
+   .. coqtop:: all reset warn
 
       Require Import Vector.
       Print Fin.t.
@@ -2568,14 +2610,7 @@ Tactic notations allow customizing the syntax of tactics.
 
    The nonterminals that can specified in the tactic notation are:
 
-     .. todo uconstr represents a type with holes.  At the moment uconstr doesn't
-        appear in the documented grammar.  Maybe worth ressurecting with a better name,
-        maybe "open_term"?
-        see https://github.com/coq/coq/pull/11718#discussion_r413721234
-
-     .. todo 'open_constr' appears to be another possible value based on the
-        the message from "Tactic Notation open_constr := idtac".
-        Also (at least) "ref", "string", "preident", "int" and "ssrpatternarg".
+     .. Some missing entries: "ref", "string", "preident", "int" and "ssrpatternarg".
         (from reading .v files).
         Looks like any string passed to "make0" in the code is valid.  But do
         we want to support all these?
@@ -2618,6 +2653,11 @@ Tactic notations allow customizing the syntax of tactics.
         - :token:`one_term`
         - a term
         - :tacn:`exact`
+
+      * - ``open_constr``
+        - :token:`one_term`
+        - a term where all `_` which are not resolved by unification become evars; typeclass resolution is not triggered
+        - tacn:`epose`, tacn:`eapply`
 
       * - ``uconstr``
         - :token:`one_term`

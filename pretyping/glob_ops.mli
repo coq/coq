@@ -13,6 +13,11 @@ open Glob_term
 
 val map_glob_sort_gen : ('a -> 'b) -> 'a glob_sort_gen -> 'b glob_sort_gen
 
+val glob_Type_sort : glob_sort
+val glob_SProp_sort : glob_sort
+val glob_Prop_sort : glob_sort
+val glob_Set_sort : glob_sort
+
 (** Equalities *)
 
 val glob_sort_gen_eq : ('a -> 'a -> bool) -> 'a glob_sort_gen -> 'a glob_sort_gen -> bool

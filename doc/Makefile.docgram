@@ -14,7 +14,7 @@ endif
 DOC_MLGS := \
 	parsing/g_constr.mlg parsing/g_prim.mlg \
 	toplevel/g_toplevel.mlg \
-	vernac/g_proofs.mlg  vernac/g_vernac.mlg \
+	vernac/g_proofs.mlg vernac/g_redexpr.mlg vernac/g_vernac.mlg \
 	plugins/btauto/g_btauto.mlg \
 	plugins/cc/g_congruence.mlg \
 	plugins/derive/g_derive.mlg \
@@ -30,7 +30,7 @@ DOC_MLGS := \
 	plugins/ring/g_ring.mlg \
 	plugins/rtauto/g_rtauto.mlg \
 	plugins/syntax/g_number_string.mlg \
-	plugins/ltac2/g_ltac2.mlg
+	plugins/ltac2/g_ltac2.mlg plugins/ltac2_ltac1/g_ltac2_ltac1.mlg
 DOC_EDIT_MLGS := $(wildcard doc/tools/docgram/*.edit_mlg)
 DOC_RSTS := $(wildcard doc/sphinx/*/*.rst) $(wildcard doc/sphinx/*/*/*.rst)
 

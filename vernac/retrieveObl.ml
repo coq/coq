@@ -139,11 +139,11 @@ let etype_of_evar evm evs hyps concl =
       | LocalDef (id, c, _) ->
         let c', s'', trans'' = subst_evar_constr evm evs n EConstr.mkVar c in
         let c' = subst_vars acc 0 c' in
-        ( Term.mkNamedProd_or_LetIn (LocalDef (id, c', t'')) rest
+        ( Term.mkNamedProd_or_LetIn (LocalDef (EConstr.Unsafe.to_binder_annot id, c', t'')) rest
         , Int.Set.union s'' s'
         , Id.Set.union trans'' trans' )
       | LocalAssum (id, _) ->
-        (Term.mkNamedProd_or_LetIn (LocalAssum (id, t'')) rest, s', trans') )
+        (Term.mkNamedProd_or_LetIn (LocalAssum (EConstr.Unsafe.to_binder_annot id, t'')) rest, s', trans') )
     | [] ->
       let t', s, trans = subst_evar_constr evm evs n EConstr.mkVar concl in
       (subst_vars acc 0 t', s, trans)
@@ -203,6 +203,9 @@ let sort_dependencies evl =
   in
   aux evl Evar.Set.empty []
 
+type obligation_name_lifter =
+  (Names.Id.t -> EConstr.t) -> EConstr.t -> Constr.t
+
 let retrieve_obligations env name evm fs ?deps ?status t ty =
   (* 'Serialize' the evars *)
   let nc = Environ.named_context env in
@@ -232,10 +235,10 @@ let retrieve_obligations env name evm fs ?deps ?status t ty =
   let evts =
     (* Remove existential variables in types and build the corresponding products *)
     List.fold_right
-      (fun (id, (n, nstr), ev) l ->
+      (fun (id, (n, nstr), ev) evs ->
         let hyps = Evd.evar_filtered_context ev in
         let hyps = trunc_named_context nc_len hyps in
-        let evtyp, deps, transp = etype_of_evar evm l hyps (Evd.evar_concl ev) in
+        let evtyp, deps, transp = etype_of_evar evm evs hyps (Evd.evar_concl ev) in
         let evtyp, hyps, chop =
           match chop_product fs evtyp with
           | Some t -> (t, trunc_named_context fs hyps, fs)
@@ -268,7 +271,7 @@ let retrieve_obligations env name evm fs ?deps ?status t ty =
           ; ev_deps = deps
           ; ev_tac = None }
         in
-        (id, info) :: l)
+        (id, info) :: evs)
       evn []
   in
   let t', _, transparent =

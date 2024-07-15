@@ -395,14 +395,15 @@ let rec eq_ml_ast t1 t2 = match t1, t2 with
   Int.equal i1 i2 && Array.equal Id.equal id1 id2 && Array.equal eq_ml_ast t1 t2
 | MLexn e1, MLexn e2 -> String.equal e1 e2
 | MLdummy k1, MLdummy k2 -> k1 == k2
-| MLaxiom, MLaxiom -> true
+| MLaxiom _, MLaxiom _ -> true (* ignore the name of the axiom *)
 | MLmagic t1, MLmagic t2 -> eq_ml_ast t1 t2
 | MLuint i1, MLuint i2 -> Uint63.equal i1 i2
 | MLfloat f1, MLfloat f2 -> Float64.equal f1 f2
+| MLstring s1, MLstring s2 -> Pstring.equal s1 s2
 | MLparray (t1,def1), MLparray (t2, def2) -> Array.equal eq_ml_ast t1 t2 && eq_ml_ast def1 def2
 | (MLrel _|MLapp _|MLlam _|MLletin _|MLglob _|MLcons _
-  |MLtuple _|MLcase _|MLfix _|MLexn _|MLdummy _|MLaxiom
-  | MLmagic _| MLuint _| MLfloat _|MLparray _), _
+  |MLtuple _|MLcase _|MLfix _|MLexn _|MLdummy _|MLaxiom _
+  | MLmagic _| MLuint _| MLfloat _| MLstring _| MLparray _), _
   -> false
 
 and eq_ml_pattern p1 p2 = match p1, p2 with
@@ -436,7 +437,8 @@ let ast_iter_rel f =
     | MLcons (_,_,l) | MLtuple l ->  List.iter (iter n) l
     | MLmagic a -> iter n a
     | MLparray (t,def) -> Array.iter (iter n) t; iter n def
-    | MLglob _ | MLexn _ | MLdummy _ | MLaxiom | MLuint _ | MLfloat _ -> ()
+    | MLglob _ | MLexn _ | MLdummy _ | MLaxiom _
+    | MLuint _ | MLfloat _ | MLstring _ -> ()
   in iter 0
 
 (*s Map over asts. *)
@@ -456,8 +458,8 @@ let ast_map f = function
   | MLtuple l -> MLtuple (List.map f l)
   | MLmagic a -> MLmagic (f a)
   | MLparray (t,def) -> MLparray (Array.map f t, f def)
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy _ | MLaxiom
-  | MLuint _ | MLfloat _ as a -> a
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy _ | MLaxiom _
+  | MLuint _ | MLfloat _ | MLstring _ as a -> a
 
 (*s Map over asts, with binding depth as parameter. *)
 
@@ -476,8 +478,8 @@ let ast_map_lift f n = function
   | MLtuple l -> MLtuple (List.map (f n) l)
   | MLmagic a -> MLmagic (f n a)
   | MLparray (t,def) -> MLparray (Array.map (f n) t, f n def)
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy _ | MLaxiom
-  | MLuint _ | MLfloat _ as a -> a
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy _ | MLaxiom _
+  | MLuint _ | MLfloat _ | MLstring _ as a -> a
 
 (*s Iter over asts. *)
 
@@ -492,8 +494,8 @@ let ast_iter f = function
   | MLcons (_,_,l) | MLtuple l -> List.iter f l
   | MLmagic a -> f a
   | MLparray (t,def) -> Array.iter f t; f def
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy _ | MLaxiom
-  | MLuint _ | MLfloat _ -> ()
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy _ | MLaxiom _
+  | MLuint _ | MLfloat _ | MLstring _ -> ()
 
 (*S Operations concerning De Bruijn indices. *)
 
@@ -530,7 +532,8 @@ let nb_occur_match =
     | MLcons (_,_,l) | MLtuple l -> List.fold_left (fun r a -> r+(nb k a)) 0 l
     | MLmagic a -> nb k a
     | MLparray (t,def) -> Array.fold_left (fun r a -> r+(nb k a)) 0 t + nb k def
-    | MLglob _ | MLexn _ | MLdummy _ | MLaxiom | MLuint _ | MLfloat _ -> 0
+    | MLglob _ | MLexn _ | MLdummy _ | MLaxiom _
+    | MLuint _ | MLfloat _ | MLstring _ -> 0
   in nb 1
 
 (* Replace unused variables by _ *)
@@ -587,7 +590,8 @@ let dump_unused_vars a =
        let def' = ren env def in
        if def' == def && t' == t then a else MLparray(t',def')
 
-    | MLglob _ | MLexn _ | MLdummy _ | MLaxiom | MLuint _ | MLfloat _ -> a
+    | MLglob _ | MLexn _ | MLdummy _ | MLaxiom _
+    | MLuint _ | MLfloat _ | MLstring _ -> a
 
     and ren_branch env ((ids,p,b) as tr) =
       let occs = List.map (fun _ -> ref false) ids in
@@ -920,7 +924,7 @@ let census_add, census_max, census_clean =
     with Not_found -> h := (k, Int.Set.singleton i) :: !h
   in
   let maxf () =
-    let len = ref 0 and lst = ref Int.Set.empty and elm = ref MLaxiom in
+    let len = ref 0 and lst = ref Int.Set.empty and elm = ref (MLaxiom "should not appear") in
     List.iter
       (fun (e, s) ->
          let n = Int.Set.cardinal s in
@@ -1420,8 +1424,8 @@ let rec ml_size = function
   | MLletin (_,_,t) -> ml_size t
   | MLmagic t -> ml_size t
   | MLparray(t,def) -> ml_size_array t + ml_size def
-  | MLglob _ | MLrel _ | MLexn _ | MLdummy _ | MLaxiom
-  | MLuint _ | MLfloat _ -> 0
+  | MLglob _ | MLrel _ | MLexn _ | MLdummy _ | MLaxiom _
+  | MLuint _ | MLfloat _ | MLstring _ -> 0
 
 and ml_size_list l = List.fold_left (fun a t -> a + ml_size t) 0 l
 

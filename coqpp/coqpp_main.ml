@@ -376,8 +376,8 @@ let print_atts_right fmt = function
   | Some atts ->
     let rec aux fmt = function
       | [] -> assert false
-      | [_,y] -> fprintf fmt "%s" y
-      | (_,y) :: rem -> fprintf fmt "(%s ++ %a)" y aux rem
+      | [_,y] -> print_code fmt y
+      | (_,y) :: rem -> fprintf fmt "(%a ++ %a)" print_code y aux rem
     in
     let nota = match atts with [_] -> "" | _ -> "Attributes.Notations." in
     fprintf fmt "(Attributes.parse %s%a atts)" nota aux atts
@@ -392,6 +392,7 @@ let understand_state = function
   | "program" -> "vtmodifyprogram", ["pm"]
   | "declare_program" -> "vtdeclareprogram", ["pm"]
   | "program_interactive" -> "vtopenproofprogram", ["pm"]
+  | "opaque_access" -> "vtopaqueaccess", ["opaque_access"]
   | s -> fatal ("unsupported state specifier: " ^ s)
 
 let rec pr_named_arguments fmt = function

@@ -10,7 +10,7 @@ Check (A.opp 3).
 (* Test extra scopes to be used in the presence of coercions *)
 
 Record B := { f :> Z -> Z }.
-Variable a:B.
+Parameter a:B.
 Arguments a _%_Z_scope : extra scopes.
 Check a 0.
 

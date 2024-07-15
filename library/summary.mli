@@ -93,6 +93,7 @@ module type FrozenStage = sig
   val make_marshallable : frozen -> frozen
   val unfreeze_summaries : ?partial:bool -> frozen -> unit
   val init_summaries : unit -> unit
+  val project_from_summary : frozen -> 'a Dyn.tag -> 'a
 
 end
 
@@ -104,7 +105,6 @@ module Interp : sig
   (** Typed projection of the summary. Experimental API, use with CARE *)
 
   val modify_summary : frozen -> 'a Dyn.tag -> 'a -> frozen
-  val project_from_summary : frozen -> 'a Dyn.tag -> 'a
   val remove_from_summary : frozen -> 'a Dyn.tag -> frozen
 
 end

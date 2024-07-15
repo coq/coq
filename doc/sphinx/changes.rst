@@ -14,7 +14,113 @@ Version 8.19
 Summary of changes
 ~~~~~~~~~~~~~~~~~~
 
-TODO
+Coq version 8.19 extends the kernel universe polymorphism to
+polymorphism over sorts (e.g. `Prop`, `SProp`) along with a few new
+features, a host of improvements to the notation system, the Ltac2
+standard library, and the removal of some standard library files after
+a long deprecation period.
+
+We highlight some of the most impactful changes here:
+
+  - :ref:`sort-polymorphism` makes it possible to share common constructs
+    over `Type` `Prop` and `SProp`.
+
+  - The notation :g:`term%_scope` to set a scope only temporarily
+    (in addition to :g:`term%scope` for opening a
+    scope applying to all subterms).
+
+  - :tacn:`lazy`, :tacn:`simpl`, :tacn:`cbn` and :tacn:`cbv` and the associated :cmd:`Eval`
+    and :tacn:`eval` reductions learned to do head reduction when given flag `head`.
+
+  - :ref:`New Ltac2 APIs <819Ltac2>`, improved Ltac2 `exact` and
+    dynamic building of Ltac2 term patterns.
+
+  - New performance evaluation facilities: :cmd:`Instructions` to
+    count CPU instructions used by a command (Linux only) and
+    :ref:`profiling` system to produce trace files.
+
+  - New command :cmd:`Attributes` to assign attributes such as
+    :attr:`deprecated` to a library file.
+
+Notable breaking changes:
+
+  - :tacn:`replace` with `by tac` does not automatically attempt to solve
+    the generated equality subgoal using the hypotheses.
+    Use `by first [assumption | symmetry;assumption | tac]`
+    if you need the previous behaviour.
+
+  - :ref:`Removed old deprecated files <819Stdlib>` from the standard library.
+
+See the `Changes in 8.19.0`_ section below for the detailed list of changes,
+including potentially breaking changes marked with **Changed**.
+Coq's `reference manual for 8.19 <https://coq.github.io/doc/v8.19/refman>`_,
+`documentation of the 8.19 standard library <https://coq.github.io/doc/v8.19/stdlib>`_
+and `developer documentation of the 8.19 ML API <https://coq.github.io/doc/v8.19/api>`_
+are also available.
+
+Maxime Dénès and Thierry Martinez with support from Erik Martin-Dorel
+and Théo Zimmermann moved the CI away from `gitlab.com <http://gitlab.com>`_
+to use Inria supported runner machines through
+`gitlab.inria.fr <https://gitlab.inria.fr>`_.
+
+Théo Zimmermann with help from Ali Caglayan and Jason Gross maintained
+`coqbot <https://github.com/coq/bot>`_ used to run Coq's CI and other
+pull request management tasks.
+
+Jason Gross maintained the `bug minimizer <https://github.com/JasonGross/coq-tools>`_
+and its `automatic use through coqbot <https://github.com/coq/coq/wiki/Coqbot-minimize-feature>`_.
+
+Jaime Arias and Erik Martin-Dorel maintained the
+`Coq Docker images <https://hub.docker.com/r/coqorg/coq>`_
+and Cyril Cohen, Vincent Laporte, Pierre Roux and Théo Zimmermann
+maintained the `Nix toolbox <https://github.com/coq-community/coq-nix-toolbox>`_
+used by many Coq projects for continuous integration.
+
+Ali Caglayan, Emilio Jesús Gallego Arias, Rudi Grinberg and
+Rodolphe Lepigre maintained the
+`Dune build system for OCaml and Coq <https://github.com/ocaml/dune/>`_
+used to build Coq itself and many Coq projects.
+
+The opam repository for Coq packages has been maintained by
+Guillaume Claret, Guillaume Melquiond, Karl Palmskog and Enrico Tassi with
+contributions from many users. A list of packages is `available on the Coq website <https://coq.inria.fr/coq-package-index>`_.
+
+Our current maintainers are Yves Bertot, Frédéric Besson, Ana Borges,
+Ali Caglayan, Tej Chajed, Cyril Cohen, Pierre Corbineau, Pierre
+Courtieu, Andres Erbsen, Jim Fehrle, Julien Forest, Emilio Jesús
+Gallego Arias, Gaëtan Gilbert, Georges Gonthier, Benjamin Grégoire,
+Jason Gross, Hugo Herbelin, Vincent Laporte, Olivier Laurent, Assia
+Mahboubi, Kenji Maillard, Guillaume Melquiond, Pierre-Marie Pédrot,
+Clément Pit-Claudel, Pierre Roux, Kazuhiko Sakaguchi, Vincent Semeria,
+Michael Soegtrop, Arnaud Spiwack, Matthieu Sozeau, Enrico Tassi,
+Laurent Théry, Anton Trunov, Li-yao Xia and Théo Zimmermann. See the
+`Coq Team face book <https://coq.inria.fr/coq-team.html>`_ page for
+more details.
+
+The 40 contributors to the 8.19 version are:
+quarkcool, Khalid Abdullah, Tanaka Akira, Isaac van Bakel,
+Frédéric Besson, Lasse Blaauwbroek, Ana Borges, Ali Caglayan, Nikolaos
+Chatzikonstantinou, Maxime Dénès, Andrej Dudenhefner, Andres Erbsen,
+Jim Fehrle, Gaëtan Gilbert, Jason Gross, Stefan Haan, Hugo Herbelin,
+Emilio Jesús Gallego Arias, Pierre Jouvelot, Ralf Jung, Jan-Oliver
+Kaiser, Robbert Krebbers, Jean-Christophe Léchenet, Rodolphe Lepigre,
+Yann Leray, Yishuai Li, Guillaume Melquiond, Guillaume
+Munch-Maccagnoni, Sotaro Okada, Karl Palmskog, Pierre-Marie Pédrot, Jim Portegies,
+Pierre Rousselin, Pierre Roux, Michael Soegtrop, David Swasey, Enrico
+Tassi, Shengyi Wang and Théo Zimmermann.
+
+The Coq community at large helped improve this new version via
+the GitHub issue and pull request system, the coq-club@inria.fr mailing list,
+the `Discourse forum <https://coq.discourse.group/>`_ and the
+`Coq Zulip chat <https://coq.zulipchat.com>`_.
+
+Version 8.19's development spanned 4 months from the release of Coq 8.18.0
+(6 months since the branch for 8.18.0).
+Gaëtan Gilbert and Matthieu Sozeau are the release managers of Coq 8.19.
+This release is the result of 285 merged PRs, closing 70 issues.
+
+| Nantes, January 2024
+| Gaëtan Gilbert for the Coq development team
 
 Changes in 8.19.0
 ~~~~~~~~~~~~~~~~~
@@ -31,6 +137,11 @@ Kernel
   over `Type` `Prop` and `SProp`
   (`#17836 <https://github.com/coq/coq/pull/17836>`_,
   `#18331 <https://github.com/coq/coq/pull/18331>`_,
+  by Gaëtan Gilbert).
+- **Fixed:**
+  Primitives being incorrectly considered convertible to anything by module subtyping
+  (`#18507 <https://github.com/coq/coq/pull/18507>`_,
+  fixes `#18503 <https://github.com/coq/coq/issues/18503>`_,
   by Gaëtan Gilbert).
 
 Specification language, type inference
@@ -187,7 +298,7 @@ Tactics
   (`#17745 <https://github.com/coq/coq/pull/17745>`_,
   by Gaëtan Gilbert).
 - **Changed:**
-  instances declared with flag:`Typeclasses Unique Instances` do not allow backtracking even when the goal contains evars
+  instances declared with :flag:`Typeclasses Unique Instances` do not allow backtracking even when the goal contains evars
   (`#17789 <https://github.com/coq/coq/pull/17789>`_,
   fixes `#6714 <https://github.com/coq/coq/issues/6714>`_,
   by Jan-Oliver Kaiser).
@@ -210,6 +321,12 @@ Tactics
   form `0 <= _ < _` for better cleanup in ``zify``
   (`#17984 <https://github.com/coq/coq/pull/17984>`_,
   by Jason Gross).
+- **Changed:**
+  :tacn:`simpl` now refolds applied constants unfolding to reducible
+  fixpoints into the original constant even when this constant
+  would become partially applied
+  (`#17991 <https://github.com/coq/coq/pull/17991>`_,
+  by Hugo Herbelin).
 - **Added:**
   Ltac2 tactic `Std.resolve_tc` to resolve typeclass evars appearing in a given term
   (`#13071 <https://github.com/coq/coq/pull/13071>`_,
@@ -282,18 +399,14 @@ Tactics
 
 Ltac language
 ^^^^^^^^^^^^^
-- **Changed:**
-  :tacn:`simpl` now refolds applied constants unfolding to reducible
-  fixpoints into the original constant even when this constant
-  would become partially applied
-  (`#17991 <https://github.com/coq/coq/pull/17991>`_,
-  by Hugo Herbelin).
 - **Fixed:**
   Fix broken "r <num>" and "r <string>" commands in the coqtop
   Ltac debugger, which also affected the Proof General Ltac debugger
   (`#18068 <https://github.com/coq/coq/pull/18068>`_,
   fixes `#18067 <https://github.com/coq/coq/issues/18067>`_,
   by Jim Fehrle).
+
+.. _819Ltac2:
 
 Ltac2 language
 ^^^^^^^^^^^^^^
@@ -442,6 +555,14 @@ Command-line tools
   Spurious `coqdep` warnings due to missing path normalization for plugins
   (`#18165 <https://github.com/coq/coq/pull/18165>`_,
   by Rodolphe Lepigre).
+- **Fixed:**
+  Regression in option :g:`--external` of `coqdoc`, whose two arguments
+  were inadvertently swapped
+  (`#18448 <https://github.com/coq/coq/pull/18448>`_,
+  fixes `#18434 <https://github.com/coq/coq/issues/18434>`_,
+  by Hugo Herbelin).
+
+.. _819Stdlib:
 
 Standard library
 ^^^^^^^^^^^^^^^^
@@ -511,6 +632,160 @@ Extraction
   fixes `#17817 <https://github.com/coq/coq/issues/17817>`_,
   by Hugo Herbelin).
 
+Changes in 8.19.1
+~~~~~~~~~~~~~~~~~
+
+.. contents::
+   :local:
+
+Kernel
+^^^^^^
+
+- **Fixed:**
+  incorrect abstraction of sort variables for opaque constants
+  leading to an inconsistency
+  (`#18596 <https://github.com/coq/coq/pull/18596>`_
+  and `#18630 <https://github.com/coq/coq/pull/18630>`_,
+  fixes `#18594 <https://github.com/coq/coq/issues/18594>`_,
+  by Gaëtan Gilbert).
+
+- **Fixed:**
+  memory corruption with :tacn:`vm_compute` (rare but more likely with OCaml 5.1)
+  (`#18599 <https://github.com/coq/coq/pull/18599>`_,
+  by Guillaume Melquiond).
+
+Notations
+^^^^^^^^^
+
+- **Changed:**
+  :warn:`Found no matching notation to enable or disable` is a warning instead of an error
+  (`#18670 <https://github.com/coq/coq/pull/18670>`_,
+  by Pierre Roux).
+
+Tactics
+^^^^^^^
+
+- **Fixed:**
+  undeclared universe with multiple uses of :tacn:`abstract`
+  (`#18640 <https://github.com/coq/coq/pull/18640>`_,
+  fixes `#18636 <https://github.com/coq/coq/issues/18636>`_,
+  by Gaëtan Gilbert).
+
+Ltac2 language
+^^^^^^^^^^^^^^
+
+- **Fixed:**
+  incorrect printing of constructor values with multiple arguments,
+  and over-parenthesizing of constructor printing
+  (`#18560 <https://github.com/coq/coq/pull/18560>`_,
+  fixes `#18556 <https://github.com/coq/coq/issues/18556>`_,
+  by Gaëtan Gilbert).
+
+- **Fixed:**
+  incorrect declared type for `Ltac2.FMap.fold`
+  (`#18649 <https://github.com/coq/coq/pull/18649>`_,
+  fixes `#18635 <https://github.com/coq/coq/issues/18635>`_,
+  by Gaëtan Gilbert).
+
+Infrastructure and dependencies
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **Fixed:**
+  missing `conf-` dependencies of the opam packages:
+  `coq-core` depends on `conf-linux-libc-dev` when compiled on linux,
+  and `coq` depends on `conf-python-3` and `conf-time` to run the test suite
+  (`#18565 <https://github.com/coq/coq/pull/18565>`_,
+  by Gaëtan Gilbert).
+
+- **Fixed:**
+  avoid comitting symlinks to git which caused build failures on some Windows setups
+  (`#18550 <https://github.com/coq/coq/pull/18550>`_,
+  fixes `#18548 <https://github.com/coq/coq/issues/18548>`_,
+  by Gaëtan Gilbert).
+
+Changes in 8.19.2
+~~~~~~~~~~~~~~~~~
+
+.. contents::
+   :local:
+
+Specification language, type inference
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **Fixed:**
+  Regression from Coq 8.18 in the presence of a defined field in
+  a primitive :n:`Record`
+  (`#19088 <https://github.com/coq/coq/pull/19088>`_,
+  fixes `#19082 <https://github.com/coq/coq/issues/19082>`_,
+  by Hugo Herbelin).
+
+Notations
+^^^^^^^^^
+
+- **Fixed:**
+  Printer sometimes failing to use a prefix or infix custom notation
+  whose right-hand side refers to a different custom entry
+  (`#18089 <https://github.com/coq/coq/pull/18089>`_,
+  fixes `#18914 <https://github.com/coq/coq/issues/18914>`_,
+  by Hugo Herbelin).
+
+Tactics
+^^^^^^^
+
+- **Fixed:**
+  :tacn:`abstract` failing in the presence of admitted goals in the surrounding proof
+  (`#18945 <https://github.com/coq/coq/pull/18944>`_,
+  fixes `#18942 <https://github.com/coq/coq/issues/18942>`_,
+  by Gaëtan Gilbert).
+
+Ltac2 language
+^^^^^^^^^^^^^^
+
+- **Fixed:**
+  anomalies when using Ltac2 in VsCoq due to incorrect state handling of Ltac2 notations
+  (`#19096 <https://github.com/coq/coq/pull/19096>`_,
+  fixes `coq-community/vscoq#772 <https://github.com/coq-community/vscoq/issues/772>`_,
+  by Gaëtan Gilbert)
+
+Commands and options
+^^^^^^^^^^^^^^^^^^^^
+
+- **Fixed:**
+  anomaly when using :cmd:`Include` on a module containing a record
+  declared with :flag:`Primitive Projections`
+  (`#18772 <https://github.com/coq/coq/pull/18772>`_,
+  fixes `#18769 <https://github.com/coq/coq/issues/18769>`_,
+  by Jan-Oliver Kaiser)
+
+- **Fixed:**
+  anomaly from :cmd:`Fixpoint` with no arguments
+  (`#18741 <https://github.com/coq/coq/pull/18741>`_,
+  by Hugo Herbelin)
+
+CoqIDE
+^^^^^^
+
+- **Fixed:**
+  Position error/warning tooltips correctly when multibyte UTF-8 characters are present
+  (`#19137 <https://github.com/coq/coq/pull/19137>`_,
+  fixes `#19136 <https://github.com/coq/coq/issues/19136>`_,
+  by Jim Fehrle).
+
+Infrastructure and dependencies
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **Fixed:**
+  compatibility with OCaml versions where `effect` is a keyword
+  (`#18863 <https://github.com/coq/coq/pull/18863>`_,
+  by Remy Seassau)
+
+- **Added:**
+  Coq is now compatible with `memprof-limits` interruption
+  methods. This means that Coq will be recompiled when the library is
+  installed / removed from an OPAM switch.
+  (`#18906 <https://github.com/coq/coq/pull/18906>`_,
+  fixes `#17760 <https://github.com/coq/coq/issues/17760>`_,
+  by Emilio Jesus Gallego Arias).
 
 Version 8.18
 ------------

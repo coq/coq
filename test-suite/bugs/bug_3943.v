@@ -35,12 +35,12 @@ Arguments morphism_inverse {C s d} m {_}.
 Local Notation "m ^-1" := (morphism_inverse m) (at level 3, format "m '^-1'") : morphism_scope.
 
 Class Isomorphic {C : PreCategory} s d := {
-    morphism_isomorphic :> morphism C s d;
-    isisomorphism_isomorphic :> IsIsomorphism morphism_isomorphic }.
+    morphism_isomorphic :: morphism C s d;
+    isisomorphism_isomorphic :: IsIsomorphism morphism_isomorphic }.
 Coercion morphism_isomorphic : Isomorphic >-> morphism.
 
-Variable C : PreCategory.
-Variables s d : C.
+Parameter C : PreCategory.
+Parameters s d : C.
 
 Definition path_isomorphic (i j : Isomorphic s d)
 : @morphism_isomorphic _ _ _ i = @morphism_isomorphic _ _ _ j -> i = j.

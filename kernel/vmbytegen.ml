@@ -524,6 +524,12 @@ let get_caml_prim = let open CPrimitives in function
   | Arrayset -> Some CAML_Arrayset
   | Arraycopy -> Some CAML_Arraycopy
   | Arraylength -> Some CAML_Arraylength
+  | Stringmake -> Some CAML_Stringmake
+  | Stringlength -> Some CAML_Stringlength
+  | Stringget -> Some CAML_Stringget
+  | Stringsub -> Some CAML_Stringsub
+  | Stringcat -> Some CAML_Stringcat
+  | Stringcompare -> Some CAML_Stringcompare
   | _ -> None
 
 (* sz is the size of the local stack *)
@@ -534,11 +540,13 @@ let rec compile_lam env cenv lam sz cont =
 
   | Lint i -> compile_structured_constant cenv (Const_b0 i) sz cont
 
-  | Lval v -> compile_structured_constant cenv (Const_val v) sz cont
+  | Lval v -> compile_structured_constant cenv (Const_val (get_lval v)) sz cont
 
   | Luint i -> compile_structured_constant cenv (Const_uint i) sz cont
 
   | Lfloat f -> compile_structured_constant cenv (Const_float f) sz cont
+
+  | Lstring s -> compile_structured_constant cenv (Const_string s) sz cont
 
   | Lproj (p,arg) ->
      compile_lam env cenv arg sz (Kproj (Projection.Repr.arg p) :: cont)
@@ -778,7 +786,17 @@ let rec compile_lam env cenv lam sz cont =
     (* Hack: brutally pierce through the abstraction of PArray *)
     let dummy = KerName.make (ModPath.MPfile DirPath.empty) (Names.Label.of_id @@ Id.of_string "dummy") in
     let dummy = (MutInd.make1 dummy, 0) in
-    let ar = Lmakeblock (dummy, 0, args) in (* build the ocaml array *)
+    let ar, cont = match Vmlambda.as_value 0 args with
+    | None ->
+      (* build the ocaml array *)
+      Lmakeblock (dummy, 0, args), cont
+    | Some v ->
+      (* dump the blob as is, but copy the resulting parray afterwards so that
+         the blob is left untouched by modifications to the resulting parray *)
+      let lbl = Label.create () in
+      (* dummy label, the array will never be an accumulator *)
+      Lval v, Klabel lbl :: Kcamlprim (CAML_Arraycopy, lbl) :: cont
+    in
     let kind = Lmakeblock (dummy, 0, [|ar; def|]) in (* Parray.Array *)
     let v = Lmakeblock (dummy, 0, [|kind|]) (* the reference *) in
     compile_lam env cenv v sz cont
@@ -809,8 +827,6 @@ let rec compile_lam env cenv lam sz cont =
       comp_args (compile_lam env) cenv args sz (Kprim(op, kn)::cont)
     end
 
-  | Lforce -> CErrors.anomaly Pp.(str "The VM should not use force")
-
 and compile_get_global env cenv (kn,u) sz cont =
   let () = set_max_stack_size cenv sz in
   if UVars.Instance.is_empty u then
@@ -828,24 +844,7 @@ and compile_instance env cenv u sz cont =
     (* Optimization: allocate closed instances globally *)
     compile_structured_constant cenv (Const_univ_instance u) sz cont
   else
-    let qs, us = UVars.Instance.to_array u in
-    let comp_qual cenv q sz cont = match Sorts.Quality.var_index q with
-    | None -> compile_structured_constant cenv (Const_quality q) sz cont
-    | Some idx -> pos_instance cenv sz :: Kfield 0 :: Kfield idx :: cont
-    in
-    let comp_univ cenv l sz cont = match Univ.Level.var_index l with
-    | None -> compile_structured_constant cenv (Const_univ_level l) sz cont
-    | Some idx -> pos_instance cenv sz :: Kfield 1 :: Kfield idx :: cont
-    in
-    let comp_array comp_val cenv vs sz cont =
-      if Array.is_empty vs then Kmakeblock (0,0) :: cont
-      else
-        let () = set_max_stack_size cenv (sz + Array.length vs - 1) in
-        comp_args comp_val cenv vs sz (Kmakeblock (Array.length vs, 0) :: cont)
-    in
-    let cont = Kmakeblock (2, 0) :: cont in
-    let cont = comp_array comp_qual cenv qs (sz+1) cont in
-    comp_array comp_univ cenv us sz (Kpush :: cont)
+    pos_instance cenv sz :: Ksubstinstance u :: cont
 
 and compile_constant env cenv kn u args sz cont =
   let () = set_max_stack_size cenv sz in
@@ -867,6 +866,11 @@ and compile_constant env cenv kn u args sz cont =
     comp_app (fun _ _ _ cont -> Kgetglobal kn :: cont)
       compile_arg cenv () all sz cont
 
+let coq_subst_instance : UVars.Instance.t -> UVars.Instance.t -> UVars.Instance.t =
+  UVars.subst_instance_instance
+
+let () = Callback.register "coq_subst_instance" coq_subst_instance
+
 let is_univ_copy (maxq,maxu) u =
   let qs,us = UVars.Instance.to_array u in
   let check_array max var_index a =
@@ -887,12 +891,30 @@ let dump_bytecodes init code fvs =
      prlist_with_sep (fun () -> str "; ") pp_fv_elem fvs ++
      fnl ())
 
+let skip_suffix l =
+  let rec aux = function
+  | [] -> None
+  | b :: l ->
+    match aux l with
+    | None -> if b then None else Some [b]
+    | Some l -> Some (b :: l)
+  in
+  match aux l with None -> [] | Some l -> l
+
 let compile ?universes:(universes=(0,0)) env sigma c =
   Label.reset_label_counter ();
+  let lam = lambda_of_constr env sigma c in
+  let params, body = decompose_Llam lam in
+  let arity = Array.length params in
+  let mask =
+    let rels = Genlambda.free_rels body in
+    let init i = Int.Set.mem (arity - i) rels in
+    let mask = List.init arity init in
+    Array.of_list @@ skip_suffix mask
+  in
   let cont = [Kstop] in
     let cenv, init_code, fun_code =
       if UVars.eq_sizes universes (0,0) then
-        let lam = lambda_of_constr ~optimize:true env sigma c in
         let cenv = empty_comp_env () in
         let env = { env; fun_code = []; uinst_len = (0,0) } in
         let cont = compile_lam env cenv lam 0 cont in
@@ -902,9 +924,6 @@ let compile ?universes:(universes=(0,0)) env sigma c =
         (* We are going to generate a lambda, but merge the universe closure
          * with the function closure if it exists.
          *)
-        let lam = lambda_of_constr ~optimize:true env sigma c in
-        let params, body = decompose_Llam lam in
-        let arity = Array.length params in
         let cenv = empty_comp_env () in
         let full_arity = arity + 1 in
         let r_fun = comp_env_fun ~univs:true arity in
@@ -926,7 +945,8 @@ let compile ?universes:(universes=(0,0)) env sigma c =
     (if !dump_bytecode then
       Feedback.msg_debug (dump_bytecodes init_code fun_code fv)) ;
     let res = init_code @ fun_code in
-    (to_memory res, Array.of_list fv)
+    let code, patch = to_memory (Array.of_list fv) res in
+    mask, code, patch
 
 let warn_compile_error =
   CWarnings.create ~name:"bytecode-compiler-failed-compilation" ~category:CWarnings.CoreCategories.bytecode_compiler
@@ -945,7 +965,7 @@ let compile ~fail_on_error ?universes env sigma c =
 
 let compile_constant_body ~fail_on_error env univs = function
   | Undef _ | OpaqueDef _ -> Some BCconstant
-  | Primitive _ -> None
+  | Primitive _ | Symbol _ -> None
   | Def body ->
       let instance_size = UVars.AbstractContext.size (Declareops.universes_context univs) in
       let alias =
@@ -963,8 +983,8 @@ let compile_constant_body ~fail_on_error env univs = function
       match alias with
       | Some kn -> Some (BCalias kn)
       | _ ->
-          let res = compile ~fail_on_error ~universes:instance_size env (empty_evars env) body in
-          Option.map (fun (code, fv) -> BCdefined (code, fv)) res
+        let res = compile ~fail_on_error ~universes:instance_size env (empty_evars env) body in
+        Option.map (fun (mask, code, patch) -> BCdefined (mask, code, patch)) res
 
 (* Shortcut of the previous function used during module strengthening *)
 

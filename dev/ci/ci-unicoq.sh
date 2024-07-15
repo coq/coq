@@ -11,6 +11,7 @@ if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 ( cd "${CI_BUILD_DIR}/unicoq"
   coq_makefile -f _CoqProject -o Makefile
+  make .merlin
   make
   make install
 )

@@ -239,9 +239,6 @@ module ProofFormat : sig
   (* x = z - t, z >= 0, t >= 0 *)
 
   val pr_size : prf_rule -> Q.t
-  val pr_rule_max_def : prf_rule -> int
-  val pr_rule_max_hyp : prf_rule -> int
-  val proof_max_def : proof -> int
   val normalise_proof : int -> proof -> int * proof
   val output_prf_rule : out_channel -> prf_rule -> unit
   val output_proof : out_channel -> proof -> unit
@@ -272,10 +269,16 @@ val output_cstr : out_channel -> cstr -> unit
 
 (** [module WithProof] constructs polynomials packed with the proof that their sign is correct. *)
 module WithProof : sig
-  type t = (LinPoly.t * op) * ProofFormat.prf_rule
+  type t
 
   (** [InvalidProof] is raised if the operation is invalid. *)
   exception InvalidProof
+
+  val repr : t -> (LinPoly.t * op) * ProofFormat.prf_rule
+
+  val proof : t -> ProofFormat.prf_rule
+
+  val polynomial : t -> LinPoly.t
 
   val compare : t -> t -> int
   val annot : string -> t -> t
@@ -306,10 +309,18 @@ module WithProof : sig
  *)
   val neg : t -> t
 
-  (** [mult p q]
-      @return the polynomial p*q with its sign and proof.
-      @raise InvalidProof if p is not a constant and p  is not an equality *)
-  val mult : LinPoly.t -> t -> t
+  (** [mul_cst c q]
+      @return the polynomial c * q with its sign and proof. *)
+  val mul_cst : Q.t -> t -> t
+
+  (** [def p op i] creates an alias with the variable index [i] *)
+  val def : LinPoly.t -> op -> int -> t
+
+  (** [square p q] is q = p^2 >= 0 *)
+  val square : LinPoly.t -> LinPoly.t -> t
+
+  (** [mkhyp p op i] binds p to hypothesis [i] *)
+  val mkhyp : LinPoly.t -> op -> int -> t
 
   (** [cutting_plane p] does integer reasoning and adjust the constant to be integral *)
   val cutting_plane : t -> t option

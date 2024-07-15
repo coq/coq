@@ -14,8 +14,8 @@ Require Import ssreflect.
 Require Import ssrbool.
 Require Import TestSuite.ssr_mini_mathcomp.
 
-Variable T : Type.
-Variables P : T -> Prop.
+Parameter T : Type.
+Parameters P : T -> Prop.
 
 Definition f := fun x y : T => x.
 

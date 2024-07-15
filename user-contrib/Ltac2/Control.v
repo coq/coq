@@ -21,15 +21,19 @@ Ltac2 @ external throw : exn -> 'a := "coq-core.plugins.ltac2" "throw".
 Ltac2 @ external zero : exn -> 'a := "coq-core.plugins.ltac2" "zero".
 Ltac2 @ external plus : (unit -> 'a) -> (exn -> 'a) -> 'a := "coq-core.plugins.ltac2" "plus".
 Ltac2 @ external once : (unit -> 'a) -> 'a := "coq-core.plugins.ltac2" "once".
-Ltac2 @ external dispatch : (unit -> unit) list -> unit := "coq-core.plugins.ltac2" "dispatch".
-Ltac2 @ external extend : (unit -> unit) list -> (unit -> unit) -> (unit -> unit) list -> unit := "coq-core.plugins.ltac2" "extend".
-Ltac2 @ external enter : (unit -> unit) -> unit := "coq-core.plugins.ltac2" "enter".
 Ltac2 @ external case : (unit -> 'a) -> ('a * (exn -> 'a)) result := "coq-core.plugins.ltac2" "case".
 
 Ltac2 once_plus (run : unit -> 'a) (handle : exn -> 'a) : 'a :=
   once (fun () => plus run handle).
 
 (** Proof state manipulation *)
+
+Ltac2 @ external numgoals : unit -> int := "coq-core.plugins.ltac2" "numgoals".
+(** Return the number of goals currently focused. *)
+
+Ltac2 @ external dispatch : (unit -> unit) list -> unit := "coq-core.plugins.ltac2" "dispatch".
+Ltac2 @ external extend : (unit -> unit) list -> (unit -> unit) -> (unit -> unit) list -> unit := "coq-core.plugins.ltac2" "extend".
+Ltac2 @ external enter : (unit -> unit) -> unit := "coq-core.plugins.ltac2" "enter".
 
 Ltac2 @ external focus : int -> int -> (unit -> 'a) -> 'a := "coq-core.plugins.ltac2" "focus".
 Ltac2 @ external shelve : unit -> unit := "coq-core.plugins.ltac2" "shelve".
@@ -39,6 +43,11 @@ Ltac2 @ external new_goal : evar -> unit := "coq-core.plugins.ltac2" "new_goal".
 (** Adds the given evar to the list of goals as the last one. If it is
     already defined in the current state, don't do anything. Panics if the
     evar is not in the current state. *)
+
+Ltac2 @ external unshelve : (unit -> 'a) -> 'a := "coq-core.plugins.ltac2" "unshelve".
+(** Runs the closure, then unshelves existential variables added to the
+    shelf by its execution, prepending them to the current goal.
+    Returns the value produced by the closure. *)
 
 Ltac2 @ external progress : (unit -> 'a) -> 'a := "coq-core.plugins.ltac2" "progress".
 

@@ -1,0 +1,8 @@
+File "./output/Qf_end.v", line 2, characters 4-5:
+Error:
+Last block to end has name A.
+Quickfix:
+Replace File "./output/Qf_end.v", line 2, characters 4-5 with A
+
+
+coqc exited with code 1

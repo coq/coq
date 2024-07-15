@@ -55,7 +55,7 @@ let pr_spc_lconstr =
 
 let pr_red_expr =
   Ppred.pr_red_expr
-    (pr_constr_expr, pr_lconstr_expr, pr_smart_global, pr_constr_expr)
+    (pr_constr_expr, pr_lconstr_expr, pr_smart_global, pr_constr_expr, pr_or_var int)
     keyword
 
 let pr_uconstraint (l, d, r) =
@@ -73,6 +73,11 @@ let pr_variance_lident (lid,v) =
   let v = Option.cata UVars.Variance.pr (mt()) v in
   v ++ pr_lident lid
 
+let pr_univdecl_qualities l extensible =
+  (* "extensible" not really supported in syntax currently *)
+  if List.is_empty l then mt()
+  else prlist_with_sep spc pr_lident l ++ strbrk " | "
+
 let pr_univdecl_instance l extensible =
   prlist_with_sep spc pr_lident l ++
   (if extensible then str"+" else mt ())
@@ -83,7 +88,7 @@ let pr_cumul_univdecl_instance l extensible =
 
 let pr_univdecl_constraints l extensible =
   if List.is_empty l && extensible then mt ()
-  else str"|" ++ spc () ++ prlist_with_sep (fun () -> strbrk" | ") pr_uconstraint l ++
+  else pr_spcbar () ++ prlist_with_sep pr_comma pr_uconstraint l ++
        (if extensible then str"+" else mt())
 
 let pr_universe_decl l =
@@ -91,16 +96,22 @@ let pr_universe_decl l =
   match l with
   | None -> mt ()
   | Some l ->
-    str"@{" ++ pr_univdecl_instance l.univdecl_instance l.univdecl_extensible_instance ++
-    pr_univdecl_constraints l.univdecl_constraints l.univdecl_extensible_constraints ++ str "}"
+    str"@{" ++
+    pr_univdecl_qualities l.univdecl_qualities l.univdecl_extensible_qualities ++
+    pr_univdecl_instance l.univdecl_instance l.univdecl_extensible_instance ++
+    pr_univdecl_constraints l.univdecl_constraints l.univdecl_extensible_constraints ++
+    str "}"
 
 let pr_cumul_univ_decl l =
   let open UState in
   match l with
   | None -> mt ()
   | Some l ->
-    str"@{" ++ pr_cumul_univdecl_instance l.univdecl_instance l.univdecl_extensible_instance ++
-    pr_univdecl_constraints l.univdecl_constraints l.univdecl_extensible_constraints ++ str "}"
+    str"@{" ++
+    pr_univdecl_qualities l.univdecl_qualities l.univdecl_extensible_qualities ++
+    pr_cumul_univdecl_instance l.univdecl_instance l.univdecl_extensible_instance ++
+    pr_univdecl_constraints l.univdecl_constraints l.univdecl_extensible_constraints ++
+    str "}"
 
 let pr_ident_decl (lid, l) =
   pr_lident lid ++ pr_universe_decl l
@@ -143,7 +154,7 @@ let pr_import_module (m,f) =
   | ImportNames ns -> surround (prlist_with_sep pr_comma pr_one_import_filter_name ns)
 
 let sep_end = function
-  | VernacSynPure (VernacBullet _ | VernacSubproof _ | VernacEndSubproof) -> str""
+  | VernacSynPure (VernacBullet _ | VernacSubproof _ | VernacEndSubproof) -> mt()
   | _ -> str"."
 
 let sep = fun _ -> spc()
@@ -166,6 +177,7 @@ let string_of_definition_object_kind = let open Decls in function
     | CanonicalStructure -> "Canonical Structure"
     | Instance -> "Instance"
     | Let -> "Let"
+    | LetContext -> CErrors.anomaly (Pp.str "Bound to Context.")
     | (StructureComponent|Scheme|CoFixpoint|Fixpoint|IdentityCoercion|Method) ->
       CErrors.anomaly (Pp.str "Internal definition kind.")
 
@@ -180,6 +192,7 @@ let string_of_logical_kind = let open Decls in function
     | IsDefinition k -> string_of_definition_object_kind k
     | IsProof k -> string_of_theorem_kind k
     | IsPrimitive -> "Primitive"
+    | IsSymbol -> "Symbol"
 
 let pr_notation_entry = function
   | InConstrEntry -> keyword "constr"
@@ -316,6 +329,7 @@ let pr_hints db h pr_c pr_pat =
       ++ (match l with
           | HintsVariables -> keyword "Variables"
           | HintsConstants -> keyword "Constants"
+          | HintsProjections -> keyword "Projections"
           | HintsReferences l -> prlist_with_sep sep pr_qualid l)
     | HintsMode (m, l) ->
       keyword "Mode"
@@ -510,7 +524,7 @@ let pr_notation_declaration ntn_decl =
 let pr_where_notation decl_ntn =
   fnl () ++ keyword "where " ++ pr_notation_declaration decl_ntn
 
-let pr_rec_definition { fname; univs; rec_order; binders; rtype; body_def; notations } =
+let pr_rec_definition (rec_order, { fname; univs; binders; rtype; body_def; notations }) =
   let pr_pure_lconstr c = Flags.without_option Flags.beautify pr_lconstr c in
   let annot = pr_guard_annot pr_lconstr_expr binders rec_order in
   pr_ident_decl (fname,univs) ++ pr_binders_arg binders ++ annot
@@ -523,6 +537,14 @@ let pr_statement head (idpl,(bl,c)) =
     (head ++ spc() ++ pr_ident_decl idpl ++ spc() ++
      (match bl with [] -> mt() | _ -> pr_binders bl ++ spc()) ++
      str":" ++ pr_spc_lconstr c)
+
+let pr_rew_rule (ubinders, lhs, rhs) =
+  let binders = match ubinders with None -> mt()
+  | _ ->
+    pr_universe_decl ubinders ++ spc() ++ str"|-"
+  in
+  let pr_pure_lconstr c = Flags.without_option Flags.beautify pr_lconstr c in
+  binders ++ pr_pure_lconstr lhs ++ str"==>" ++ pr_pure_lconstr rhs
 
 (**************************************)
 (* Pretty printer for vernac commands *)
@@ -537,7 +559,7 @@ let pr_intarg n = spc () ++ int n
 let pr_vernac_attributes =
   function
   | [] -> mt ()
-  | flags ->  str "#[" ++ prlist_with_sep pr_comma Attributes.pr_vernac_flag flags ++ str "]" ++ cut ()
+  | flags ->  str "#[" ++ prlist_with_sep pr_comma Attributes.pr_vernac_flag flags ++ str "]" ++ spc ()
 
 let pr_oc coe ins = match coe, ins with
   | NoCoercion, NoInstance -> str" :"
@@ -666,6 +688,8 @@ let pr_printable = function
     keyword "Print Strategy" ++ pr_smart_global qid
   | PrintRegistered ->
     keyword "Print Registered"
+  | PrintRegisteredSchemes ->
+    keyword "Print Registered Schemes"
   | PrintNotation (Constrexpr.InConstrEntry, ntn_key) ->
     keyword "Print Notation" ++ spc() ++ str ntn_key
   | PrintNotation (Constrexpr.InCustomEntry ent, ntn_key) ->
@@ -860,6 +884,13 @@ let pr_synpure_vernac_expr v =
     let assumptions = prlist_with_sep spc (fun p -> hov 1 (str "(" ++ pr_params p ++ str ")")) l in
     return (hov 2 (pr_assumption_token (n > 1) discharge kind ++
                    pr_non_empty_arg pr_assumption_inline t ++ spc() ++ assumptions))
+  | VernacSymbol l ->
+    let n = List.length (List.flatten (List.map fst (List.map snd l))) in
+    let pr_params (c, (xl, t)) =
+      hov 2 (prlist_with_sep sep pr_ident_decl xl ++ spc() ++
+              str(match c with AddCoercion -> ":>" | NoCoercion -> ":") ++ spc() ++ pr_lconstr_expr t) in
+    let assumptions = prlist_with_sep spc (fun p -> hov 1 (str "(" ++ pr_params p ++ str ")")) l in
+    return (hov 2 (keyword (if (n > 1) then "Symbols" else "Symbol") ++ spc() ++ assumptions))
   | VernacInductive (f,l) ->
     let pr_constructor ((attr,coe,ins),(id,c)) =
       hov 2 (pr_vernac_attributes attr ++ pr_lident id ++ pr_oc coe ins ++
@@ -896,7 +927,7 @@ let pr_synpure_vernac_expr v =
       (prlist (fun ind -> fnl() ++ hov 1 (pr_oneind "with" ind)) (List.tl l))
     )
 
-  | VernacFixpoint (local, recs) ->
+  | VernacFixpoint (local, (rec_order, recs)) ->
     let local = match local with
       | DoDischarge -> "Let "
       | NoDischarge -> ""
@@ -904,7 +935,7 @@ let pr_synpure_vernac_expr v =
     return (
       hov 0 (str local ++ keyword "Fixpoint" ++ spc () ++
              prlist_with_sep (fun _ -> fnl () ++ keyword "with"
-                                       ++ spc ()) pr_rec_definition recs)
+                                       ++ spc ()) pr_rec_definition (List.combine rec_order recs))
     )
 
   | VernacCoFixpoint (local, corecs) ->
@@ -1125,14 +1156,14 @@ let pr_synpure_vernac_expr v =
             str (if List.length idl > 1 then "s " else " ") ++
             prlist_with_sep spc pr_lident idl)
         ))
-  | VernacSetOpacity(k,l) when Conv_oracle.is_transparent k ->
+  | VernacSetOpacity((k,l),b) when Conv_oracle.is_transparent k ->
     return (
-      hov 1 (keyword "Transparent" ++
+      hov 1 (keyword (if b then "Transparent!" else "Transparent") ++
              spc() ++ prlist_with_sep sep pr_smart_global l)
     )
-  | VernacSetOpacity(Conv_oracle.Opaque,l) ->
+  | VernacSetOpacity((Conv_oracle.Opaque,l),b) ->
     return (
-      hov 1 (keyword "Opaque" ++
+      hov 1 (keyword (if b then "Opaque!" else "Opaque") ++
              spc() ++ prlist_with_sep sep pr_smart_global l)
     )
   | VernacSetOpacity _ ->
@@ -1208,6 +1239,12 @@ let pr_synpure_vernac_expr v =
         (keyword "Register" ++ spc() ++ pr_qualid qid ++ spc () ++ str "as"
          ++ spc () ++ pr_qualid name)
     )
+  | VernacRegister (qid, RegisterScheme {inductive; scheme_kind}) ->
+    return (
+      hov 2
+        (keyword "Register" ++ spc() ++ keyword "Scheme" ++ spc() ++ pr_qualid qid ++ spc () ++ str "as"
+         ++ spc () ++ pr_qualid scheme_kind ++ spc() ++ str "for" ++ spc() ++ pr_qualid inductive)
+    )
   | VernacRegister (qid, RegisterInline) ->
     return (
       hov 2
@@ -1257,6 +1294,14 @@ let pr_synpure_vernac_expr v =
     return (Goal_select.pr_goal_selector i ++ str ":" ++ spc () ++ str "{")
   | VernacEndSubproof ->
     return (str "}")
+
+  | VernacAddRewRule (id, l) ->
+    return (
+      hov 0 (keyword (if List.length l > 1 then "Rewrite Rules" else "Rewrite Rule") ++ spc () ++
+            pr_lident id ++ str ":=" ++
+            prlist_with_sep (fun _ -> fnl () ++ keyword "with"
+                                      ++ spc ()) pr_rew_rule l)
+    )
 
 let pr_synterp_vernac_expr v =
   let return = tag_vernac v in
@@ -1342,8 +1387,10 @@ let pr_synterp_vernac_expr v =
     return (
       hov 2 (keyword "Declare ML Module" ++ spc() ++ prlist_with_sep sep qs l)
     )
-  | VernacChdir s ->
-    return (keyword "Cd" ++ pr_opt qs s)
+  | VernacChdir None ->
+    return (keyword "Pwd")
+  | VernacChdir (Some s) ->
+    return (keyword "Cd " ++ qs s)
   | VernacSetOption (export, na,v) ->
     let export = if export then keyword "Export" ++ spc () else mt () in
     let set = if v == OptionUnset then "Unset" else "Set" in

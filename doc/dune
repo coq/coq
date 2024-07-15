@@ -21,7 +21,8 @@
   (env_var SPHINXWARNOPT)))
 
 (rule
- (targets refman-html)
+ (targets
+  (dir refman-html))
  (alias refman-html)
  (package coq-doc)
  ; Cannot use this deps alias because of ocaml/dune#3415
@@ -39,7 +40,8 @@
   (run env sphinx-build -q %{env:SPHINXWARNOPT=-W} -b html sphinx %{targets})))
 
 (rule
- (targets refman-pdf)
+ (targets
+  (dir refman-pdf))
  (alias refman-pdf)
  (package coq-doc)
  ; Cannot use this deps alias because of ocaml/dune#3415
@@ -57,13 +59,10 @@
    (run env sphinx-build -q %{env:SPHINXWARNOPT=-W} -b latex sphinx %{targets})
    (chdir %{targets} (run make LATEXMKOPTS=-silent)))))
 
-; Installable directories are not yet fully supported by Dune.  See
-; ocaml/dune#1868.  Yet, this makes coq-doc.install a valid target to
-; generate the whole Coq documentation.  And the result under
-; _build/install/default/doc/coq-doc looks just right!
-
 (install
- (files (refman-html as html/refman) (refman-pdf as pdf/refman))
+ (dirs
+  (refman-html as html/refman)
+  (refman-pdf as pdf/refman))
  (section doc)
  (package coq-doc))
 

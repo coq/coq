@@ -51,14 +51,13 @@ type guard_error = constr pguard_error
 type ('constr, 'types) pcant_apply_bad_type =
   (int * 'constr * 'constr) * ('constr, 'types) punsafe_judgment * ('constr, 'types) punsafe_judgment array
 
-type ('constr, 'types) ptype_error =
+type ('constr, 'types, 'r) ptype_error =
   | UnboundRel of int
   | UnboundVar of variable
   | NotAType of ('constr, 'types) punsafe_judgment
   | BadAssumption of ('constr, 'types) punsafe_judgment
   | ReferenceVariables of Id.t * GlobRef.t
-  | ElimArity of pinductive * 'constr *
-      (('constr, 'types) punsafe_judgment * Sorts.t) option
+  | ElimArity of pinductive * 'constr * Sorts.t option
   | CaseNotInductive of ('constr, 'types) punsafe_judgment
   | CaseOnPrivateInd of inductive
   | WrongCaseInfo of pinductive * case_info
@@ -70,21 +69,21 @@ type ('constr, 'types) ptype_error =
   | IncorrectPrimitive of (CPrimitives.op_or_type,'types) punsafe_judgment * 'types
   | CantApplyBadType of ('constr, 'types) pcant_apply_bad_type
   | CantApplyNonFunctional of ('constr, 'types) punsafe_judgment * ('constr, 'types) punsafe_judgment array
-  | IllFormedRecBody of 'constr pguard_error * Name.t Context.binder_annot array * int * env * ('constr, 'types) punsafe_judgment array
+  | IllFormedRecBody of 'constr pguard_error * (Name.t,'r) Context.pbinder_annot array * int * env * ('constr, 'types) punsafe_judgment array
   | IllTypedRecBody of
-      int * Name.t Context.binder_annot array * ('constr, 'types) punsafe_judgment array * 'types array
+      int * (Name.t,'r) Context.pbinder_annot array * ('constr, 'types) punsafe_judgment array * 'types array
   | UnsatisfiedQConstraints of Sorts.QConstraints.t
   | UnsatisfiedConstraints of Constraints.t
   | UndeclaredQualities of Sorts.QVar.Set.t
-  | UndeclaredUniverse of Level.t
+  | UndeclaredUniverses of Level.Set.t
   | DisallowedSProp
-  | BadBinderRelevance of Sorts.relevance * ('constr, 'types) Context.Rel.Declaration.pt
-  | BadCaseRelevance of Sorts.relevance * 'constr
+  | BadBinderRelevance of 'r * ('constr, 'types, 'r) Context.Rel.Declaration.pt
+  | BadCaseRelevance of 'r * 'constr
   | BadInvert
   | BadVariance of { lev : Level.t; expected : Variance.t; actual : Variance.t }
   | UndeclaredUsedVariables of { declared_vars : Id.Set.t; inferred_vars : Id.Set.t }
 
-type type_error = (constr, types) ptype_error
+type type_error = (constr, types, Sorts.relevance) ptype_error
 
 exception TypeError of env * type_error
 
@@ -119,8 +118,7 @@ val error_assumption : env -> unsafe_judgment -> 'a
 val error_reference_variables : env -> Id.t -> GlobRef.t -> 'a
 
 val error_elim_arity :
-  env -> pinductive -> constr ->
-    (unsafe_judgment * Sorts.t) option -> 'a
+  env -> pinductive -> constr -> Sorts.t option -> 'a
 
 val error_case_not_inductive : env -> unsafe_judgment -> 'a
 
@@ -144,10 +142,10 @@ val error_cant_apply_bad_type :
       unsafe_judgment -> unsafe_judgment array -> 'a
 
 val error_ill_formed_rec_body :
-  env -> guard_error -> Name.t Context.binder_annot array -> int -> env -> unsafe_judgment array -> 'a
+  env -> guard_error -> Name.t binder_annot array -> int -> env -> unsafe_judgment array -> 'a
 
 val error_ill_typed_rec_body  :
-  env -> int -> Name.t Context.binder_annot array -> unsafe_judgment array -> types array -> 'a
+  env -> int -> Name.t binder_annot array -> unsafe_judgment array -> types array -> 'a
 
 val error_unsatisfied_qconstraints : env -> Sorts.QConstraints.t -> 'a
 
@@ -155,7 +153,7 @@ val error_unsatisfied_constraints : env -> Constraints.t -> 'a
 
 val error_undeclared_qualities : env -> Sorts.QVar.Set.t -> 'a
 
-val error_undeclared_universe : env -> Level.t -> 'a
+val error_undeclared_universes : env -> Level.Set.t -> 'a
 
 val error_disallowed_sprop : env -> 'a
 
@@ -170,4 +168,4 @@ val error_bad_variance : env -> lev:Level.t -> expected:Variance.t -> actual:Var
 val error_undeclared_used_variables : env -> declared_vars:Id.Set.t -> inferred_vars:Id.Set.t -> 'a
 
 val map_pguard_error : ('c -> 'd) -> 'c pguard_error -> 'd pguard_error
-val map_ptype_error : ('c -> 'd) -> ('c, 'c) ptype_error -> ('d, 'd) ptype_error
+val map_ptype_error : ('r1 -> 'r2) -> ('c -> 'd) -> ('c, 'c, 'r1) ptype_error -> ('d, 'd, 'r2) ptype_error

@@ -45,11 +45,11 @@ val remove_subset : env -> evar_map -> types -> types
     resort before failing) *)
 
 val inh_conv_coerce_to : ?loc:Loc.t -> program_mode:bool -> resolve_tc:bool ->
-  ?use_coercions:bool -> env -> evar_map -> ?flags:Evarconv.unify_flags ->
+  ?use_coercions:bool -> ?patvars_abstract:bool -> env -> evar_map -> ?flags:Evarconv.unify_flags ->
   unsafe_judgment -> types -> evar_map * unsafe_judgment * coercion_trace option
 
 val inh_conv_coerce_rigid_to : ?loc:Loc.t -> program_mode:bool -> resolve_tc:bool ->
-  ?use_coercions:bool -> env -> evar_map -> ?flags:Evarconv.unify_flags ->
+  ?use_coercions:bool -> ?patvars_abstract:bool -> env -> evar_map -> ?flags:Evarconv.unify_flags ->
   unsafe_judgment -> types -> evar_map * unsafe_judgment * coercion_trace option
 
 (** [inh_pattern_coerce_to loc env isevars pat ind1 ind2] coerces the Cases
@@ -58,8 +58,10 @@ val inh_conv_coerce_rigid_to : ?loc:Loc.t -> program_mode:bool -> resolve_tc:boo
 val inh_pattern_coerce_to :
   ?loc:Loc.t -> env -> cases_pattern -> inductive -> inductive -> cases_pattern
 
+type expected = Type of types | Sort | Product
+
 type hook = env -> evar_map -> flags:Evarconv.unify_flags -> constr ->
-  inferred:types -> expected:types -> (evar_map * constr) option
+  inferred:types -> expected:expected -> (evar_map * constr * constr) option
 
 (** A plugin can override the coercion mechanism by registering a hook here.
     Note that these hooks will only be trigerred when no direct or reversible
@@ -94,4 +96,4 @@ val reapply_coercions_body : evar_map -> coercion_trace -> delayed_app_body -> d
     resolve_tc=false disables resolving type classes (as the last
     resort before failing) *)
 val inh_app_fun : program_mode:bool -> resolve_tc:bool -> ?use_coercions:bool ->
-  env -> evar_map -> delayed_app_body -> types -> evar_map * delayed_app_body * types * coercion_trace
+  env -> evar_map -> ?flags:Evarconv.unify_flags -> delayed_app_body -> types -> evar_map * delayed_app_body * types * coercion_trace

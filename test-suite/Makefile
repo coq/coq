@@ -91,7 +91,7 @@ else
 coqidetop := $(BIN)coqidetop.byte
 endif
 
-coqc_interactive := $(coqc) -test-mode -async-proofs-cache force
+coqc_interactive := $(coqc) -test-mode
 coqdep := $(BIN)coqdep
 
 # This is the convention for coq_makefile
@@ -157,6 +157,7 @@ log_failure = "==========> FAILURE <=========="
 log_intro = "==========> TESTING $(1) <=========="
 
 FAIL = >&2 echo 'FAILED    $@'
+FAIL_CHK = >&2 echo 'FAILED    $(patsubst %.v.log,%.chk.log,$@)'
 
 #######################################################################
 # Testing subsystems
@@ -171,7 +172,7 @@ VSUBSYSTEMS := prerequisite success failure bugs bugs-nocoqchk output output-coq
   coqdoc ssr $(wildcard primitive/*) ltac2 coqchk
 
 # All subsystems
-SUBSYSTEMS := $(VSUBSYSTEMS) misc ide ide vio coqchk output-coqchk coqwc coq-makefile tools $(UNIT_TESTS)
+SUBSYSTEMS := $(VSUBSYSTEMS) misc ide ide coqchk output-coqchk coqwc coq-makefile precomputed-time-tests tools $(UNIT_TESTS)
 
 # EJGA: This seems dangerous as first target...
 .csdp.cache: .csdp.cache.test-suite
@@ -215,9 +216,9 @@ run: $(SUBSYSTEMS)
 clean:
 	rm -f trace .csdp.cache .nia.cache .lia.cache output/MExtraction.out
 	rm -f misc/universes/all_stdlib.v
-	$(SHOW) 'RM        <**/*.stamp> <**/*.vo> <**/*.vio> <**/*.log> <**/*.glob> <**/*.time>'
+	$(SHOW) 'RM        <**/*.stamp> <**/*.vo> <**/*.log> <**/*.glob> <**/*.time>'
 	$(HIDE)find . \( \
-	  -name '*.stamp' -o -name '*.vo' -o -name '*.vio' -o -name '*.vos' -o -name '*.vok' -o -name '*.log' -o -name '*.glob' -o -name '*.time' \
+	  -name '*.stamp' -o -name '*.vo' -o -name '*.vos' -o -name '*.vok' -o -name '*.log' -o -name '*.glob' -o -name '*.time' \
 	  \) -exec rm -f {} +
 	$(SHOW) 'RM        <**/*.cmx> <**/*.cmi> <**/*.o> <**/*.test>'
 	$(HIDE)find unit-tests \( \
@@ -240,7 +241,8 @@ $(foreach S,$(VSUBSYSTEMS),$(eval $(call vdeps,$(S))))
 # Summary
 #######################################################################
 
-summary_dir = echo $(1); find $(2) -name '*.log' -print0 | xargs -0 -n 1 tail -n1 | sort
+# using "-L 999" because some versions of tail do not accept more than ~1k arguments
+summary_dir = echo $(1); find $(2) -name '*.log' -print0 | xargs -0 -L 999  tail -q -n1 | sort
 
 .PHONY: summary summary.log
 
@@ -263,17 +265,17 @@ summary:
 	  $(call summary_dir, "STM tests", stm); \
 	  $(call summary_dir, "SSR tests", ssr); \
 	  $(call summary_dir, "IDE tests", ide); \
-	  $(call summary_dir, "VI tests", vio); \
 	  $(call summary_dir, "Coqchk tests", coqchk); \
 	  $(call summary_dir, "Output tests with coqchk", output-coqchk); \
 	  $(call summary_dir, "Coqwc tests", coqwc); \
 	  $(call summary_dir, "Coq makefile", coq-makefile); \
+	  $(call summary_dir, "Precomputed time tests", precomputed-time-tests); \
 	  $(call summary_dir, "Coqdoc tests", coqdoc); \
 	  $(call summary_dir, "tools/ tests", tools); \
 	  $(call summary_dir, "Unit tests", unit-tests); \
 	  $(call summary_dir, "Ltac2 tests", ltac2); \
-	  nb_success=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_success) | wc -l`; \
-	  nb_failure=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_failure) | wc -l`; \
+	  nb_success=`grep -e $(log_success) -r . -l --include="*.log" --exclude-dir=logs | wc -l`; \
+	  nb_failure=`grep -e $(log_failure) -r . -l --include="*.log" --exclude-dir=logs | wc -l`; \
 	  nb_tests=`expr $$nb_success + $$nb_failure`; \
 	  percentage=`expr 100 \* $$nb_success / $$nb_tests`; \
 	  echo; \
@@ -346,8 +348,7 @@ unit-tests/%.ml.log: unit-tests/%.ml unit-tests/src/$(UNIT_LINK)
 # Other generic tests
 #######################################################################
 
-# There is a dependency between those two files
-prerequisite/library_attributes_require.v.log: prerequisite/library_attributes.v.log
+prerequisite/requires_deprecated_library.v.log: prerequisite/deprecated_library.v.log
 
 $(addsuffix .log,$(wildcard prerequisite/*.v)): %.v.log: %.v
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
@@ -391,7 +392,7 @@ $(addsuffix .log,$(wildcard bugs/*.v ssr/*.v success/*.v failure/*.v stm/*.v mic
 	  if [ $$R != 0 ]; then \
 	    echo $(log_failure); \
 	    echo "    $<...could not be checked (Error!)" ; \
-	    $(FAIL); \
+	    $(FAIL_CHK); \
 	  fi; \
 	} > "$(shell dirname $<)/$(shell basename $< .v).chk.log"; fi
 	$(HIDE)$(call REPORT_TIMER,$(patsubst %.v.log,%.chk.log,$@))
@@ -706,27 +707,6 @@ ide/fake_ide.exe : ide/fake_ide.ml
 	} > "$@"
 	$(HIDE)$(call REPORT_TIMER,$@)
 
-# vio compilation
-
-vio: $(patsubst %.v,%.vio.log,$(wildcard vio/*.v))
-
-%.vio.log:%.v
-	@echo "TEST      $<"
-	$(HIDE){ \
-	  $(call WITH_TIMER,$*.vio,$(coqc) -vio -R vio vio $* 2>&1) && \
-	  $(call WITH_TIMER,$*.vo,$(coqc) -R vio vio -vio2vo $*.vio 2>&1) && \
-	  $(call WITH_TIMER,$*.chk,$(coqchk) -R vio vio -norec $(subst /,.,$*) 2>&1); \
-	  if [ $$? = 0 ]; then \
-	    echo $(log_success); \
-	    echo "    $<...Ok"; \
-	  else \
-	    echo $(log_failure); \
-	    echo "    $<...Error!"; \
-	    $(FAIL); \
-	  fi; \
-	} > "$@"
-	$(HIDE)$(call REPORT_TIMER,$*.vio $*.vo $*.chk)
-
 # coqwc : test output
 
 coqwc : $(patsubst %.v,%.v.log,$(wildcard coqwc/*.v))
@@ -748,16 +728,17 @@ coqwc/%.v.log : coqwc/%.v
 	  rm $$tmpoutput; \
 	} > "$@"
 
-# coq_makefile
+# coq_makefile and precomputed time tests
 
 coq-makefile: $(patsubst %/run.sh,%.log,$(wildcard coq-makefile/*/run.sh))
+precomputed-time-tests: $(patsubst %/run.sh,%.log,$(wildcard precomputed-time-tests/*/run.sh))
 
-coq-makefile/%.log : coq-makefile/%/run.sh
-	@echo "TEST      coq-makefile/$*"
+$(patsubst %/run.sh,%.log,$(wildcard coq-makefile/*/run.sh precomputed-time-tests/*/run.sh)): %.log: %/run.sh
+	@echo "TEST      $*"
 	$(HIDE)(\
 	  export COQBIN=$(BIN);\
 	  export COQPREFIX=$(COQPREFIX);\
-	  cd coq-makefile/$* && \
+	  cd $* && \
 	  $(call WITH_TIMER,$@,bash run.sh 2>&1,../../$@.time); \
 	if [ $$? = 0 ]; then \
 	    echo $(log_success); \

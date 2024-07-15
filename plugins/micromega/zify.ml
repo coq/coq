@@ -14,6 +14,8 @@ open Pp
 open Lazy
 module NamedDecl = Context.Named.Declaration
 
+module ERelevance = EConstr.ERelevance
+
 let debug_zify = CDebug.create ~name:"zify" ()
 
 (* The following [constr] are necessary for constructing the proof terms *)
@@ -163,6 +165,11 @@ module EInjT = struct
       pred : EConstr.t
     ; (* T -> Prop *)
       cstr : EConstr.t option (* forall x, pred (inj x) *) }
+
+  let eq_inj evd i1 i2 =
+    i1.isid = i2.isid && EConstr.eq_constr evd i1.inj i2.inj
+
+
 end
 
 (** [classify_op] classify injected operators and detect special cases. *)
@@ -184,7 +191,7 @@ type classify_op =
  *)
 
 let name x =
-  Context.make_annot (Name.mk_name (Names.Id.of_string x)) Sorts.Relevant
+  Context.make_annot (Name.mk_name (Names.Id.of_string x)) ERelevance.relevant
 
 let mkconvert_unop i1 i2 op top =
   (* fun x => inj (op x) *)
@@ -350,6 +357,13 @@ type decl_kind =
   | Saturate of ESatT.t decl
   | UnOpSpec of ESpecT.t decl
   | BinOpSpec of ESpecT.t decl
+
+let target_inj d =
+  match d with
+  | BinOp d -> Some d.deriv.EBinOpT.inj3
+  | UnOp d  -> Some d.deriv.EUnOpT.inj2_t
+  | CstOp d -> Some d.deriv.inj
+  |  _      -> None
 
 type term_kind = Application of EConstr.constr | OtherTerm of EConstr.constr
 
@@ -995,17 +1009,11 @@ let app_binop env evd src binop arg1 prf1 arg2 prf2 =
 
 type typed_constr = {constr : EConstr.t; typ : EConstr.t; inj : EInjT.t}
 
-let get_injection env evd t =
-  try
-    match snd (ConstrMap.find evd t !table_cache) with
-    | InjTyp i -> i
-    | _ -> raise Not_found
-  with DestKO -> raise Not_found
 
 (* [arrow] is the term (fun (x:Prop) (y : Prop) => x -> y) *)
 let arrow =
   let name x =
-    Context.make_annot (Name.mk_name (Names.Id.of_string x)) Sorts.Relevant
+    Context.make_annot (Name.mk_name (Names.Id.of_string x)) ERelevance.relevant
   in
   EConstr.mkLambda
     ( name "x"
@@ -1014,7 +1022,7 @@ let arrow =
         ( name "y"
         , EConstr.mkProp
         , EConstr.mkProd
-            ( Context.make_annot Names.Anonymous Sorts.Relevant
+            ( Context.make_annot Names.Anonymous ERelevance.relevant
             , EConstr.mkRel 2
             , EConstr.mkRel 2 ) ) )
 
@@ -1089,18 +1097,29 @@ let classify_prop env evd e =
     | _ -> OTHEROP (c, a) )
   | _ -> OTHEROP (e, [||])
 
-(** [match_operator env evd hd arg (t,d)]
+
+let check_target_inj evd inj d =
+  match inj , target_inj d with
+  | None , _ -> true
+  | Some _ , None -> false
+  | Some i1 , Some i2 -> EInjT.eq_inj evd i1 i2
+
+
+(** [match_operator env evd hd arg inj (t,d)]
      - hd is head operator of t
      - If t = OtherTerm _, then t = hd
      - If t = Application _, then
        we extract the relevant number of arguments from arg
        and check for convertibility *)
-let match_operator env evd hd args (t, d) =
+let match_operator env evd hd args inj (t, d) =
   let decomp t i =
     let n = Array.length args in
     let t' = EConstr.mkApp (hd, Array.sub args 0 (n - i)) in
     if is_convertible env evd t' t then Some (d, t) else None
   in
+
+  if check_target_inj evd inj d
+  then
   match t with
   | OtherTerm t -> Some (d, t)
   | Application t -> (
@@ -1112,10 +1131,10 @@ let match_operator env evd hd args (t, d) =
     | PropOp _ -> decomp t 2
     | PropUnOp _ -> decomp t 1
     | _ -> None )
+  else None
 
 let pp_trans_expr env evd e res =
-  let {deriv = inj} = get_injection env evd e.typ in
-  debug_zify (fun () -> Pp.(str "\ntrans_expr " ++ pp_prf evd inj e.constr res));
+  debug_zify (fun () -> Pp.(str "\ntrans_expr " ++ pp_prf evd e.inj e.constr res));
   res
 
 let rec trans_expr env evd e =
@@ -1127,7 +1146,7 @@ let rec trans_expr env evd e =
     else
       let k, t =
         find_option
-          (match_operator env evd c a)
+          (match_operator env evd c a (Some inj))
           (ConstrMap.find_all evd c !table_cache)
       in
       let n = Array.length a in
@@ -1271,7 +1290,7 @@ let rec trans_prop env evd e =
     try
       let k, t =
         find_option
-          (match_operator env evd c a)
+          (match_operator env evd c a None)
           (ConstrMap.find_all evd c !table_cache)
       in
       let n = Array.length a in
@@ -1363,16 +1382,6 @@ let trans_concl prfp =
 let tclTHENOpt e tac tac' =
   match e with None -> tac' | Some e' -> Tacticals.tclTHEN (tac e') tac'
 
-let assert_inj t =
-  init_cache ();
-  Proofview.Goal.enter (fun gl ->
-      let env = Tacmach.pf_env gl in
-      let evd = Tacmach.project gl in
-      try
-        ignore (get_injection env evd t);
-        Tacticals.tclIDTAC
-      with Not_found ->
-        Tacticals.tclFAIL (Pp.str " InjTyp does not exist"))
 
 let elim_binding x t ty =
   Proofview.Goal.enter (fun gl ->
@@ -1397,7 +1406,7 @@ let do_let tac (h : Constr.named_declaration) =
             (let eq = Lazy.force eq in
              find_option
                (match_operator env evd eq
-                  [|EConstr.of_constr ty; EConstr.mkVar x; EConstr.of_constr t|])
+                  [|EConstr.of_constr ty; EConstr.mkVar x; EConstr.of_constr t|] None)
                (ConstrMap.find_all evd eq !table_cache));
           tac x (EConstr.of_constr t) (EConstr.of_constr ty)
         with Not_found -> Tacticals.tclIDTAC)

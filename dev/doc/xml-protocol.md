@@ -100,27 +100,25 @@ Adds a toplevel command (e.g. vernacular, definition, tactic) to the given state
 
 ```html
 <call val="Add">
-  <call val="Add">
+  <pair>
     <pair>
       <pair>
         <pair>
-          <pair>
-            <string>${command}</string>
-            <int>${editId}</int>
-          </pair>
-          <pair>
-            <state_id val="${stateId}"/>
-            <bool val="${verbose}"/>
-          </pair>
+          <string>${command}</string>
+          <int>${editId}</int>
         </pair>
-        <int>${bp}</int>
+        <pair>
+          <state_id val="${stateId}"/>
+          <bool val="${verbose}"/>
+        </pair>
       </pair>
-      <pair>
-        <int>${line_nb}</int>
-        <int>${bol_pos}</int>
-      </pair>
+      <int>${bp}</int>
     </pair>
-  </call>
+    <pair>
+      <int>${line_nb}</int>
+      <int>${bol_pos}</int>
+    </pair>
+  </pair>
 </call>
 ```
 
@@ -153,17 +151,21 @@ state that should become the next tip.
 * Failure:
   - Syntax error. Error offsets are byte offsets (not character offsets) with respect to the start of the sentence, starting at 0.
   ```html
-  <value val="fail"
-      loc_s="${startOffsetOfError}"
-      loc_e="${endOffsetOfError}">
+  <value val="fail">
     <state_id val="${stateId}"/>
+    <option val="none|some">${loc}</option>
     <richpp>${errorMessage}</richpp>
   </value>
   ```
   - Another kind of error, for example, Qed with a pending goal.	
   ```html
-  <value val="fail"><state_id val="${stateId}"/><richpp>${errorMessage}</richpp></value>
+  <value val="fail"><state_id val="${stateId}"/><option val="some">${loc}</option><richpp>${errorMessage}</richpp></value>
   ```
+
+  Note that IDEs may need to convert byte offsets passed in the four position fields of the
+  location to character offsets to correctly handle multi-byte characters. Also, due to
+  asynchronous evaluation, line number fields of locations may need to be adjusted
+  if the sentence has moved since it was sent to Coqtop.
 
 -------------------------------
 
@@ -196,8 +198,9 @@ Moves current tip to `${stateId}`, such that commands may be added to the new st
 ```
 * Failure: If `stateId` is in an error-state and cannot be jumped to, `errorFreeStateId` is the parent state of `stateId` that should be edited instead.
 ```html
-<value val="fail" loc_s="${startOffsetOfError}" loc_e="${endOffsetOfError}">
+<value val="fail">
   <state_id val="${errorFreeStateId}"/>
+  <option val="none|some">${loc}</option>
   ${errorMessage}
 </value>
 ```
@@ -923,7 +926,7 @@ Ex: `status = "Idle"` or `status = "proof: myLemmaName"` or `status = "Dead"`
   </feedback_content>
 </feedback>
 ```
-* <a name="location">Location</a>, a Coq location:
+* <a name="location">Location</a>, a Coq location (`Loc.t`)
 ```xml
    <loc start="${start_offset}" stop="${stop_offset}
         line_nb="${start_line}" bol_pos="${begin_of_start_line_offset}"

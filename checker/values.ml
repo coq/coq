@@ -122,11 +122,9 @@ let v_binder_annot x = v_tuple "binder_annot" [|x;v_relevance|]
 
 let v_puniverses v = v_tuple "punivs" [|v;v_instance|]
 
-let v_boollist = List v_bool
-
 let v_caseinfo =
   let v_cstyle = v_enum "case_style" 5 in
-  let v_cprint = v_tuple "case_printing" [|v_boollist;Array v_boollist;v_cstyle|] in
+  let v_cprint = v_tuple "case_printing" [|v_cstyle|] in
   v_tuple "case_info" [|v_ind;Int;Array Int;Array Int;v_cprint|]
 
 let v_cast = v_enum "cast_kind" 3
@@ -158,6 +156,7 @@ let rec v_constr =
     [|v_proj;v_relevance;v_constr|]; (* Proj *)
     [|v_uint63|]; (* Int *)
     [|Float64|]; (* Float *)
+    [|String|]; (* String *)
     [|v_instance;Array v_constr;v_constr;v_constr|] (* Array *)
   |])
 
@@ -227,22 +226,24 @@ let v_oracle =
   v_tuple "oracle" [|
     v_map v_id v_conv_level;
     v_hmap v_cst v_conv_level;
+    v_hmap v_proj_repr v_conv_level;
     v_pred v_id;
     v_pred v_cst;
+    v_pred v_proj_repr;
   |]
 
 let v_template_arity =
   v_tuple "template_arity" [|v_sort|]
 
 let v_template_universes =
-  v_tuple "template_universes" [|List(Opt v_level);v_context_set|]
+  v_tuple "template_universes" [|List v_bool;v_context_set|]
 
 let v_primitive =
-  v_enum "primitive" 55 (* Number of constructors of the CPrimitives.t type *)
+  v_enum "primitive" 63 (* Number of constructors of the CPrimitives.t type *)
 
 let v_cst_def =
   v_sum "constant_def" 0
-    [|[|Opt Int|]; [|v_constr|]; [|v_opaque|]; [|v_primitive|]|]
+    [|[|Opt Int|]; [|v_constr|]; [|v_opaque|]; [|v_primitive|]; [|v_bool|]|]
 
 let v_typing_flags =
   v_tuple "typing_flags"
@@ -252,22 +253,71 @@ let v_typing_flags =
 
 let v_univs = v_sum "universes" 1 [|[|v_abs_context|]|]
 
+let v_vm_reloc_table = Array (v_pair Int Int)
+
+let v_vm_annot_switch = v_tuple "vm_annot_switch" [|v_vm_reloc_table; v_bool; Int|]
+
+let v_vm_caml_prim = v_enum "vm_caml_prim" 6
+
+let v_non_subst_reloc = v_sum "vm_non_subst_reloc" 0 [|
+  [|v_sort|];
+  [|Fail "Evar"|];
+  [|Int|];
+  [|v_instance|];
+  [|Any|]; (* contains a Vmvalues.value *)
+  [|v_uint63|];
+  [|Float64|];
+  [|v_vm_annot_switch|];
+  [|v_vm_caml_prim|];
+|]
+
+let v_reloc = v_sum "vm_reloc" 0 [|
+    [|v_ind|];
+    [|v_cst|];
+    [|Int|];
+  |]
+
+let v_vm_patches = v_tuple "vm_patches" [|Array v_reloc|]
+
+let v_vm_pbody_code index =
+  v_sum "pbody_code" 1 [|
+    [|Array v_bool; index; v_vm_patches|];
+    [|v_cst|];
+  |]
+
+let v_vm_index = v_pair v_dp Int
+
+let v_vm_indirect_code = v_vm_pbody_code v_vm_index
+
+let v_vm_emitcodes = String
+
+let v_vm_fv_elem = v_sum "vm_fv_elem" 0 [|
+    [|v_id|];
+    [|Int|]
+  |]
+
+let v_vm_fv = Array v_vm_fv_elem
+
+let v_vm_positions = String
+
+let v_vm_to_patch = v_tuple "vm_to_patch" [|v_vm_emitcodes; v_vm_fv; v_vm_positions; Array v_non_subst_reloc|]
+
 let v_cb = v_tuple "constant_body"
   [|v_section_ctxt;
     v_instance;
     v_cst_def;
     v_constr;
     v_relevance;
-    Any;
+    Opt v_vm_indirect_code;
     v_univs;
     v_bool;
     v_typing_flags|]
 
-let v_nested = v_sum "nested" 0
-  [|[|v_ind|] (* NestedInd *);[|v_cst|] (* NestedPrimitive *)|]
+let v_recarg_type = v_sum "recarg_type" 0
+  [|[|v_ind|] (* Mrec *);[|v_cst|] (* NestedPrimitive *)|]
 
 let v_recarg = v_sum "recarg" 1 (* Norec *)
-  [|[|v_ind|] (* Mrec *);[|v_nested|] (* Nested *)|]
+  [|[|v_recarg_type|] (* Mrec *)|]
 
 let rec v_wfp = Sum ("wf_paths",0,
     [|[|Int;Int|]; (* Rtree.Param *)
@@ -299,7 +349,7 @@ let v_one_ind = v_tuple "one_inductive_body"
     v_relevance;
     Int;
     Int;
-    Any|]
+    v_vm_reloc_table|]
 
 let v_finite = v_enum "recursivity_kind" 3
 
@@ -327,7 +377,7 @@ let v_ind_pack = v_tuple "mutual_inductive_body"
 let v_prim_ind = v_enum "prim_ind" 6
 (* Number of "Register ... as kernel.ind_..." in PrimInt63.v and PrimFloat.v *)
 
-let v_prim_type = v_enum "prim_type" 3
+let v_prim_type = v_enum "prim_type" 4
 (* Number of constructors of prim_type in "kernel/cPrimitives.ml" *)
 
 let v_retro_action =
@@ -339,17 +389,66 @@ let v_retro_action =
 let v_retroknowledge =
   v_sum "module_retroknowledge" 1 [|[|List v_retro_action|]|]
 
+let v_puniv = Opt Int
+
+let v_pqvar = Opt Int
+let v_quality_pattern = v_sum "quality_pattern" 0 [|[|v_pqvar|];[|v_constant_quality|]|]
+
+let v_instance_mask = v_pair (Array v_quality_pattern) (Array v_puniv)
+
+let v_sort_pattern = Sum ("sort_pattern", 3,
+  [|[|v_puniv|];         (* PSType *)
+    [|v_pqvar; v_puniv|] (* PSQSort *)
+  |])
+
+let rec v_hpattern = Sum ("head_pattern", 0,
+  [|[|Int|];                      (* PHRel *)
+    [|v_sort_pattern|];           (* PHSort *)
+    [|v_cst; v_instance_mask|];   (* PHSymbol *)
+    [|v_ind; v_instance_mask|];   (* PHInd *)
+    [|v_cons; v_instance_mask|];  (* PHConstr *)
+    [|v_uint63|];                 (* PHInt *)
+    [|Float64|];                  (* PHFloat *)
+    [|String|];                   (* PHString *)
+    [|Array v_patarg; v_patarg|]; (* PHLambda *)
+    [|Array v_patarg; v_patarg|]; (* PHProd *)
+  |])
+
+and v_elimination = Sum ("pattern_elimination", 0,
+  [|[|Array v_patarg|];                                   (* PEApp *)
+    [|v_ind; v_instance_mask; v_patarg; Array v_patarg|]; (* PECase *)
+    [|v_proj|];                                           (* PEProj *)
+  |])
+
+and v_head_elim = Tuple ("head*elims", [|v_hpattern; List v_elimination|])
+
+and v_patarg = Sum ("pattern_argument", 1,
+  [|[|Int|];         (* EHole *)
+    [|v_head_elim|]; (* ERigid *)
+  |])
+
+let v_rewrule = v_tuple "rewrite_rule"
+  [| v_tuple "nvars" [| Int; Int; Int |]; v_pair v_instance_mask (List v_elimination); v_constr |]
+let v_rrb = v_tuple "rewrite_rules_body"
+  [| List (v_pair v_cst v_rewrule) |]
+
+let v_module_with_decl = v_sum "with_declaration" 0 [|
+    [|List v_id; v_mp|];
+    [|List v_id; v_pair v_constr (Opt v_abs_context)|];
+  |]
+
 let rec v_mae =
   Sum ("module_alg_expr",0,
   [|[|v_mp|];         (* SEBident *)
     [|v_mae;v_mp|];   (* SEBapply *)
-    [|v_mae; Any|]  (* SEBwith *)
+    [|v_mae; v_module_with_decl|]  (* SEBwith *)
   |])
 
 let rec v_sfb =
   Sum ("struct_field_body",0,
   [|[|v_cb|];       (* SFBconst *)
     [|v_ind_pack|]; (* SFBmind *)
+    [|v_rrb|];      (* SFBrules *)
     [|v_module|];   (* SFBmodule *)
     [|v_modtype|]   (* SFBmodtype *)
   |])
@@ -378,8 +477,9 @@ and v_modtype =
 
 let v_vodigest = Sum ("module_impl",0, [| [|String|]; [|String;String|] |])
 let v_deps = Array (v_tuple "dep" [|v_dp;v_vodigest|])
+let v_flags = v_tuple "flags" [|v_bool|] (* Allow Rewrite Rules *)
 let v_compiled_lib =
-  v_tuple "compiled" [|v_dp;v_module;v_context_set;v_deps|]
+  v_tuple "compiled" [|v_dp;v_module;v_context_set;v_deps; v_flags|]
 
 (** STM objects *)
 
@@ -420,3 +520,5 @@ let v_delayed_universes =
 let v_opaquetable = Array (Opt (v_pair v_constr v_delayed_universes))
 let v_univopaques =
   Opt (Tuple ("univopaques",[|v_context_set;v_bool|]))
+
+let v_vmlib = v_tuple "vmlibrary" [|v_dp; Array v_vm_to_patch|]

@@ -64,19 +64,22 @@ check_variable () {
 
 : "${coq_pr_number:=}"
 : "${coq_pr_comment_id:=}"
-: "${new_ocaml_version:=4.09.1}"
-: "${old_ocaml_version:=4.09.1}"
+: "${new_ocaml_version:=4.14.1}"
+: "${old_ocaml_version:=4.14.1}"
+: "${new_ocaml_flambda:=0}"
+: "${old_ocaml_flambda:=0}"
 : "${new_coq_repository:=$CI_REPOSITORY_URL}"
 : "${old_coq_repository:=$CI_REPOSITORY_URL}"
 : "${new_coq_opam_archive_git_uri:=https://github.com/coq/opam-coq-archive.git}"
 : "${old_coq_opam_archive_git_uri:=https://github.com/coq/opam-coq-archive.git}"
 : "${new_coq_opam_archive_git_branch:=master}"
 : "${old_coq_opam_archive_git_branch:=master}"
+: "${new_coq_version:=dev}"
+: "${old_coq_version:=dev}"
 : "${num_of_iterations:=1}"
 : "${timeout:=3h}"
-: "${coq_opam_packages:=coq-bignums coq-hott coq-performance-tests-lite coq-engine-bench-lite coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-math-classes coq-corn coq-compcert coq-equations coq-metacoq-template coq-metacoq-pcuic coq-metacoq-safechecker coq-metacoq-erasure coq-metacoq-translations coq-color coq-coqprime coq-coqutil coq-bedrock2 coq-rewriter coq-fiat-core coq-fiat-parsers coq-fiat-crypto-with-bedrock coq-unimath coq-coquelicot coq-iris-examples coq-verdi coq-verdi-raft coq-fourcolor coq-rewriter-perf-SuperFast coq-vst coq-category-theory coq-neural-net-interp-computed-lite}"
+: "${coq_opam_packages:=coq-test-suite coq-bignums coq-hott coq-performance-tests-lite coq-engine-bench-lite coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-math-classes coq-corn coq-compcert coq-equations coq-metacoq-utils coq-metacoq-common coq-metacoq-template coq-metacoq-pcuic coq-metacoq-safechecker coq-metacoq-erasure coq-metacoq-translations coq-color coq-coqprime coq-coqutil coq-bedrock2 coq-rewriter coq-fiat-core coq-fiat-parsers coq-fiat-crypto-with-bedrock coq-unimath coq-coquelicot coq-iris-examples coq-verdi coq-verdi-raft coq-fourcolor coq-rewriter-perf-SuperFast coq-vst coq-category-theory coq-neural-net-interp-computed-lite}"
 : "${coq_native:=}"
-: "${skip_coq_tests:=}"
 
 : "${new_coq_commit:=$(git rev-parse HEAD^2)}"
 : "${old_coq_commit:=$(git merge-base HEAD^1 $new_coq_commit)}"
@@ -332,8 +335,9 @@ create_opam() {
     local OPAM_DIR="$working_dir/opam.$RUNNER"
     local OCAML_VER="$2"
     local COQ_HASH="$3"
-    local OPAM_COQ_DIR="$4"
-    local USE_FLAMBDA="$5"
+    local COQ_VER="$4"
+    local OPAM_COQ_DIR="$5"
+    local USE_FLAMBDA="$6"
 
     local OPAM_COMP=ocaml-base-compiler.$OCAML_VER
 
@@ -348,7 +352,7 @@ create_opam() {
     # Rest of default switches
     opam repo add -q --set-default iris-dev "https://gitlab.mpi-sws.org/FP/opam-dev.git"
 
-    if [[ $USE_FLAMBDA ]];
+    if [[ $USE_FLAMBDA = 1 ]];
     then flambda=--packages=ocaml-variants.${OCAML_VER}+options,ocaml-option-flambda
     else flambda=
     fi
@@ -390,11 +394,8 @@ create_opam() {
         local this_nproc=$number_of_processors
         if [ "$package" = coq-stdlib ]; then this_nproc=1; fi
 
-        with_test=--with-test
-        if [ "$skip_coq_tests" ]; then with_test=; fi
-
         _RES=0
-        opam pin add -y -b -j "$this_nproc" --kind=path $with_test $package.dev . \
+        opam pin add -y -b -j "$this_nproc" --kind=path $package.$COQ_VER . \
              3>$log_dir/$package.$RUNNER.opam_install.1.stdout.log 1>&3 \
              4>$log_dir/$package.$RUNNER.opam_install.1.stderr.log 2>&4 || \
             _RES=$?
@@ -417,21 +418,31 @@ create_opam() {
 }
 
 # Create an OPAM-root to which we will install the NEW version of Coq.
-create_opam "NEW" "$new_ocaml_version" "$new_coq_commit" "$new_coq_opam_archive_dir"
+create_opam "NEW" "$new_ocaml_version" "$new_coq_commit" "$new_coq_version" \
+            "$new_coq_opam_archive_dir" "$new_ocaml_flambda"
 new_coq_commit_long="$COQ_HASH_LONG"
 
 # Create an OPAM-root to which we will install the OLD version of Coq.
-create_opam "OLD" "$old_ocaml_version" "$old_coq_commit" "$old_coq_opam_archive_dir"
+create_opam "OLD" "$old_ocaml_version" "$old_coq_commit" "$old_coq_version" \
+            "$old_coq_opam_archive_dir" "$old_ocaml_flambda"
 old_coq_commit_long="$COQ_HASH_LONG"
 
 # Packages which appear in the rendered table
-# Deliberately don't include the "coqide-server" package
-installable_coq_opam_packages="coq-core coq-stdlib coq"
+# Deliberately don't include the "coqide-server" and "coq" packages
+installable_coq_opam_packages="coq-core coq-stdlib"
 
 echo "DEBUG: $render_results $log_dir $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages"
 rendered_results="$($render_results "$log_dir" $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages)"
 echo "${rendered_results}"
 zulip_edit "Benching continues..."
+
+format_vosize() {
+  old=$(stat -c%s $2)
+  new=$(stat -c%s $3)
+  diff=$((new - old))
+  diffpercent=$(((diff * 100) / $old))
+  echo "$1 $old $new $diff $diffpercent%"
+}
 
 # HTML for stdlib
 # NB: unlike coq_makefile packages, stdlib produces foo.timing not foo.v.timing
@@ -439,7 +450,7 @@ new_base_path=$new_opam_root/ocaml-NEW/.opam-switch/build/coq-stdlib.dev/_build/
 old_base_path=$old_opam_root/ocaml-OLD/.opam-switch/build/coq-stdlib.dev/_build/default/theories/
 for vo in $(cd $new_base_path/; find . -name '*.vo'); do
     if [ -e $old_base_path/$vo ]; then
-        echo "$coq_opam_package/$vo $(stat -c%s $old_base_path/$vo) $(stat -c%s $new_base_path/$vo)" >> "$log_dir/vosize.log"
+        format_vosize "$coq_opam_package/$vo" "$old_base_path/$vo" "$new_base_path/$vo" >> "$log_dir/vosize.log"
     fi
     if [ -e $old_base_path/${vo%%.vo}.timing ] && \
            [ -e $new_base_path/${vo%%.vo}.timing ]; then
@@ -597,10 +608,10 @@ $skipped_packages"
     fi
 
     # N.B. Not all packages end in .dev, e.g., coq-lambda-rust uses .dev.timestamp.
-    # So we use a wildcard to catch such packages.  This will have to be updated if
-    # ever there is a package that uses some different naming scheme.
-    new_base_path=$new_opam_root/ocaml-NEW/.opam-switch/build/$coq_opam_package.dev*/
-    old_base_path=$old_opam_root/ocaml-OLD/.opam-switch/build/$coq_opam_package.dev*/
+    # So we use a wildcard to catch such packages.
+    coq_opam_package_nover=${coq_opam_package%%.*}
+    new_base_path=$(echo "$new_opam_root/ocaml-NEW/.opam-switch/build/$coq_opam_package_nover".*/)
+    old_base_path=$(echo "$old_opam_root/ocaml-OLD/.opam-switch/build/$coq_opam_package_nover".*/)
 
     # Generate per-file comparison
     for iteration in $(seq $num_of_iterations); do
@@ -616,7 +627,7 @@ $skipped_packages"
 
     for vo in $(cd $new_base_path/; find . -name '*.vo'); do
         if [ -e $old_base_path/$vo ]; then
-          echo "$coq_opam_package/$vo $(stat -c%s $old_base_path/$vo) $(stat -c%s $new_base_path/$vo)" >> "$log_dir/vosize.log"
+          format_vosize "$coq_opam_package/$vo" "$old_base_path/$vo" "$new_base_path/$vo" >> "$log_dir/vosize.log"
         fi
         if [ -e $old_base_path/${vo%%o}.timing ] && \
                [ -e $new_base_path/${vo%%o}.timing ]; then

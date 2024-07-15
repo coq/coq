@@ -78,6 +78,13 @@ Arguments bar {x}
 Module Coq.Init.Peano
 Notation sym_eq := eq_sym
 Expands to: Notation Coq.Init.Logic.sym_eq
+
+eq_sym : forall [A : Type] [x y : A], x = y -> y = x
+
+eq_sym is not universe polymorphic
+Arguments eq_sym [A]%type_scope [x y] _
+eq_sym is transparent
+Expands to: Constant Coq.Init.Logic.eq_sym
 Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x.
 
 Arguments eq {A}%type_scope x _
@@ -115,3 +122,17 @@ Arguments Alias.eq_ind [A]%type_scope x P%function_scope f y e
 Alias.eq_ind is transparent
 Expands to: Constant PrintInfos.Alias.eq_ind (syntactically equal to
 Coq.Init.Logic.eq_ind)
+fst : forall A B : Type, prod A B -> A
+
+fst is not universe polymorphic
+fst is a projection of prod
+Arguments fst (A B)%type_scope p
+fst is transparent
+Expands to: Constant PrintInfos.AboutProj.fst
+fst : forall A B : Type, prod A B -> A
+
+fst is not universe polymorphic
+fst is a primitive projection of prod
+Arguments fst (A B)%type_scope p
+fst is transparent
+Expands to: Constant PrintInfos.AboutPrimProj.fst

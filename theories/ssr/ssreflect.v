@@ -89,14 +89,14 @@ Module SsrSyntax.
  Arguments of application-style notations (at level 10) should be declared
  at level 8 rather than 9 or the camlp5 grammar will not factor properly.    **)
 
-Reserved Notation "(* x 'is' y 'of' z 'isn't' // /= //= *)" (at level 8).
-Reserved Notation "(* 69 *)" (at level 69).
+Reserved Notation "(* x 'is' y 'of' z 'isn't' // /= //= *)".
 
 (**  Non ambiguous keyword to check if the SsrSyntax module is imported  **)
-Reserved Notation "(* Use to test if 'SsrSyntax_is_Imported' *)" (at level 8).
+Reserved Notation "(* Use to test if 'SsrSyntax_is_Imported' *)".
 
 Reserved Notation "<hidden n >" (at level 0, n at level 0,
   format "<hidden  n >").
+#[warning="-postfix-notation-not-level-1"]
 Reserved Notation "T (* n *)" (at level 200, format "T  (* n *)").
 
 End SsrSyntax.
@@ -444,6 +444,22 @@ Proof. exact: unlock. Qed.
 
 (**  Notation to trigger Coq elaboration to fill the holes **)
 Notation "[ 'elaborate' x ]" := (ltac:(refine x)) (only parsing).
+
+(**  The internal lemmas for the have tactics.  **)
+
+Lemma ssr_have
+  (Plemma : Prop)  (Pgoal : Prop)
+  (step : Plemma) (rest : Plemma -> Pgoal) : Pgoal.
+Proof. exact: rest step. Qed.
+
+Register ssr_have as plugins.ssreflect.ssr_have.
+
+Polymorphic Lemma ssr_have_upoly@{s1 s2|u1 u2|}
+  (Plemma : Type@{s1|u1})  (Pgoal : Type@{s2|u2})
+  (step : Plemma) (rest : Plemma -> Pgoal) : Pgoal.
+Proof. exact: rest step. Qed.
+
+Register ssr_have_upoly as plugins.ssreflect.ssr_have_upoly.
 
 (**  Internal N-ary congruence lemmas for the congr tactic.  **)
 

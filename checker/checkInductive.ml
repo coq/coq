@@ -93,8 +93,8 @@ let check_arity env ar1 ar2 = match ar1, ar2 with
 
 let check_template ar1 ar2 = match ar1, ar2 with
 | None, None -> true
-| Some ar, Some {template_context; template_param_levels} ->
-  List.equal (Option.equal Univ.Level.equal) ar.template_param_levels template_param_levels &&
+| Some ar, Some {template_context; template_param_arguments} ->
+  List.equal Bool.equal ar.template_param_arguments template_param_arguments &&
   ContextSet.equal template_context ar.template_context
 | None, Some _ | Some _, None -> false
 
@@ -122,22 +122,20 @@ let check_squashed orig generated = match orig, generated with
 (* Use [eq_ind_chk] because when we rebuild the recargs we have lost
    the knowledge of who is the canonical version.
    Try with to see test-suite/coqchk/include.v *)
-let eq_nested_types ty1 ty2 = match ty1, ty2 with
-| NestedInd ind1, NestedInd ind2 -> eq_ind_chk ind1 ind2
-| NestedInd _, _ -> false
-| NestedPrimitive c1, NestedPrimitive c2 -> Names.Constant.CanOrd.equal c1 c2
-| NestedPrimitive _, _ -> false
+let eq_recarg_type ty1 ty2 = match ty1, ty2 with
+  | RecArgInd ind1, RecArgInd ind2 -> eq_ind_chk ind1 ind2
+  | RecArgPrim c1, RecArgPrim c2 -> Names.Constant.CanOrd.equal c1 c2
+  | (RecArgInd _ | RecArgPrim _), _ -> false
 
-let eq_recarg a1 a2 = match a1, a2 with
+let eq_recarg r1 r2 = match r1, r2 with
   | Norec, Norec -> true
-  | Mrec i1, Mrec i2 -> eq_ind_chk i1 i2
-  | Nested ty1, Nested ty2 -> eq_nested_types ty1 ty2
-  | (Norec | Mrec _ | Nested _), _ -> false
+  | Mrec ty1, Mrec ty2 -> eq_recarg_type ty1 ty2
+  | (Norec | Mrec _), _ -> false
 
 let eq_reloc_tbl = Array.equal (fun x y -> Int.equal (fst x) (fst y) && Int.equal (snd x) (snd y))
 
 let eq_in_context (ctx1, t1) (ctx2, t2) =
-  Context.Rel.equal Constr.equal ctx1 ctx2 && Constr.equal t1 t2
+  Context.Rel.equal Sorts.relevance_equal Constr.equal ctx1 ctx2 && Constr.equal t1 t2
 
 let check_packet env mind ind
     { mind_typename; mind_arity_ctxt; mind_arity; mind_consnames; mind_user_lc;
@@ -147,7 +145,7 @@ let check_packet env mind ind
   let check = check mind in
 
   ignore mind_typename; (* passed through *)
-  check "mind_arity_ctxt" (Context.Rel.equal Constr.equal ind.mind_arity_ctxt mind_arity_ctxt);
+  check "mind_arity_ctxt" (Context.Rel.equal Sorts.relevance_equal Constr.equal ind.mind_arity_ctxt mind_arity_ctxt);
   check "mind_arity" (check_arity env ind.mind_arity mind_arity);
   ignore mind_consnames; (* passed through *)
   check "mind_user_lc" (Array.equal Constr.equal ind.mind_user_lc mind_user_lc);
@@ -208,7 +206,7 @@ let check_inductive env mind mb =
   (* module substitution can increase the real number of recursively
      uniform parameters, so be tolerant and use [<=]. *)
 
-  check "mind_params_ctxt" (Context.Rel.equal Constr.equal mb.mind_params_ctxt mind_params_ctxt);
+  check "mind_params_ctxt" (Context.Rel.equal Sorts.relevance_equal Constr.equal mb.mind_params_ctxt mind_params_ctxt);
   ignore mind_universes; (* Indtypes did the necessary checking *)
   check "mind_template" (check_template mb.mind_template mind_template);
   check "mind_variance" (Option.equal (Array.equal UVars.Variance.equal)

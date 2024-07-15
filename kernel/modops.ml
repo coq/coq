@@ -50,6 +50,7 @@ type signature_mismatch_error =
   | IncompatiblePolymorphism of env * types * types
   | IncompatibleConstraints of { got : UVars.AbstractContext.t; expect : UVars.AbstractContext.t }
   | IncompatibleVariance
+  | NoRewriteRulesSubtyping
 
 type subtyping_trace_elt =
   | Submodule of Label.t
@@ -188,6 +189,9 @@ let rec subst_structure subst do_delta sign =
     | SFBmind mib ->
       let mib' = subst_mind_body subst mib in
       if mib==mib' then orig else (l,SFBmind mib')
+    | SFBrules rrb ->
+      let rrb' = subst_rewrite_rules subst rrb in
+      if rrb==rrb' then orig else (l,SFBrules rrb')
     | SFBmodule mb ->
       let mb' = subst_module subst do_delta mb in
       if mb==mb' then orig else (l,SFBmodule mb')
@@ -296,6 +300,7 @@ let rec add_structure mp sign resolver linkinfo env =
       Environ.add_mind_key mind (mib,ref linkinfo) env
     | SFBmodule mb -> add_module mb linkinfo env (* adds components as well *)
     | SFBmodtype mtb -> Environ.add_modtype mtb env
+    | SFBrules r -> Environ.add_rewrite_rules r.rewrules_rules env
   in
   List.fold_left add_field env sign
 
@@ -352,7 +357,7 @@ and strengthen_signature mp_from struc mp_to reso = match struc with
     let item' = l,SFBconst (strengthen_const mp_from l cb reso) in
     let reso',rest' = strengthen_signature mp_from rest mp_to reso in
     reso',item'::rest'
-  | (_,SFBmind _ as item):: rest ->
+  | (_,(SFBmind _|SFBrules _) as item):: rest ->
     let reso',rest' = strengthen_signature mp_from rest mp_to reso in
     reso',item::rest'
   | (l,SFBmodule mb) :: rest ->
@@ -425,6 +430,17 @@ and strengthen_and_subst_struct struc subst mp_from mp_to alias incl reso =
     | (l,SFBmind mib) ->
         let mib' = subst_mind_body subst mib in
         let item' = if mib' == mib then item else (l, SFBmind mib') in
+        (* Same as constant *)
+        if incl then
+          let kn_from = KerName.make mp_from l in
+          let kn_to = KerName.make mp_to l in
+          let kn_canonical = kn_of_delta reso kn_from in
+          add_kn_delta_resolver kn_to kn_canonical reso', item'
+        else
+          reso', item'
+    | (l, SFBrules rrb) ->
+        let rrb' = subst_rewrite_rules subst rrb in
+        let item' = if rrb' == rrb then item else (l, SFBrules rrb') in
         (* Same as constant *)
         if incl then
           let kn_from = KerName.make mp_from l in
@@ -580,7 +596,7 @@ let inline_delta_resolver env inl mp mbid mtb delta =
         let constant = lookup_constant con env in
         let l = make_inline delta r in
         match constant.const_body with
-        | Undef _ | OpaqueDef _ | Primitive _ -> l
+        | Undef _ | OpaqueDef _ | Primitive _ | Symbol _ -> l
         | Def constr ->
           let ctx = Declareops.constant_polymorphic_context constant in
           let constr = {UVars.univ_abstracted_value=constr; univ_abstracted_binder=ctx} in

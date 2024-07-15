@@ -238,16 +238,15 @@ Rewriting with Leibniz and setoid equality
    :name: rewrite *; _
    :undocumented:
 
-.. tacn:: replace @one_term__from with @one_term__to {? @occurrences } {? by @ltac_expr3 }
+.. tacn:: replace {? {| -> | <- } } @one_term__from with @one_term__to {? @occurrences } {? by @ltac_expr3 }
           replace {? {| -> | <- } } @one_term__from {? @occurrences }
    :name: replace; _
 
-   The first form replaces all free occurrences of :n:`@one_term__from`
-   in the current goal with :n:`@one_term__to` and generates an equality
-   :n:`@one_term__to = @one_term__from`
-   as a subgoal. (Note the generated equality is reversed with respect
-   to the order of the two terms in the tactic syntax; see
-   issue `#13480 <https://github.com/coq/coq/issues/13480>`_.)
+   The first form, when used with `<-` or no arrow, replaces all free
+   occurrences of :n:`@one_term__from` in the current goal with :n:`@one_term__to`
+   and generates an equality :n:`@one_term__to = @one_term__from` as a subgoal.
+   Note that this equality is reversed with respect to the order of the two terms.
+   When used with `->`, it generates instead an equality :n:`@one_term__from = @one_term__to`.
    When :n:`by @ltac_expr3` is not present, this equality is automatically solved
    if it occurs among the hypotheses, or if its symmetric form occurs.
 
@@ -266,14 +265,6 @@ Rewriting with Leibniz and setoid equality
 
    .. exn:: Terms do not have convertible types.
       :undocumented:
-
-   .. tacn:: cutrewrite {? {| -> | <- } } @one_type {? in @ident }
-
-      Where :n:`@one_type` is an equality.
-
-      .. deprecated:: 8.5
-
-         Use :tacn:`replace` instead.
 
 .. tacn:: substitute {? {| -> | <- } } @one_term_with_bindings
    :undocumented:
@@ -630,13 +621,31 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
 
    :tacn:`cbn` was intended to be a more principled, faster and more
    predictable replacement for :tacn:`simpl`.
-
-   The main difference between :tacn:`cbn` and :tacn:`simpl` is that
-   :tacn:`cbn` may unfold constants even when they cannot be reused in recursive calls:
-   in the previous example, :g:`succ t` is reduced to :g:`S t`.
+   The main difference is that :tacn:`cbn` may unfold constants even when they
+   cannot be reused in recursive calls: in the previous example, :g:`succ t` is
+   reduced to :g:`S t`. Modifiers such as `simpl never` are also not treated the same,
+   see :ref:`Args_effect_on_unfolding`.
 
    Setting :opt:`Debug` ``"RAKAM"`` makes :tacn:`cbn` print various debugging information.
    ``RAKAM`` is the Refolding Algebraic Krivine Abstract Machine.
+
+   .. example::
+
+      Here are typical examples comparing :tacn:`cbn` and :tacn:`simpl`:
+
+      .. coqtop:: all
+
+         Definition add1 (n:nat) := n + 1.
+         Eval simpl in add1 0.
+         Eval cbn in add1 0.
+
+         Definition pred_add n m := pred (n + m).
+         Eval simpl in pred_add 0 0.
+         Eval cbn in pred_add 0 0.
+
+         Parameter n : nat.
+         Eval simpl in pred_add 0 n.
+         Eval cbn in pred_add 0 n.
 
 .. tacn:: hnf @simple_occurrences
 
@@ -952,7 +961,7 @@ The commands to fine-tune the reduction strategies and the lazy conversion
 algorithm are described in this section.  Also see :ref:`Args_effect_on_unfolding`,
 which supports additional fine-tuning.
 
-.. cmd:: Opaque {+ @reference }
+.. cmd:: Opaque {? ! } {+ @reference }
 
    Marks the specified constants as :term:`opaque` so tactics won't :term:`unfold` them
    with :term:`delta-reduction`.
@@ -968,7 +977,13 @@ which supports additional fine-tuning.
    has to check that two distinct applied constants are convertible.
    See Section :ref:`conversion-rules`.
 
-.. cmd:: Transparent {+ @reference }
+   In the particular case where the constants refer to primitive projections,
+   a :token:`!` can be used to make the compatibility constants opaque, while
+   by default the projection themselves are made opaque and the compatibility
+   constants always remain transparent. This mechanism is only intended for
+   debugging purposes.
+
+.. cmd:: Transparent {? ! } {+ @reference }
 
    The opposite of :cmd:`Opaque`, it marks the specified constants
    as :term:`transparent`
@@ -985,6 +1000,10 @@ which supports additional fine-tuning.
    statements, not their actual proofs. This distinguishes lemmas from
    the usual defined constants, whose actual values are of course
    relevant in general.
+
+   In the particular case where the constants refer to primitive projections,
+   a :token:`!` can be used to make the compatibility constants transparent
+   (see :cmd:`Opaque` for more details).
 
    .. exn:: The reference @qualid was not found in the current environment.
 

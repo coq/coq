@@ -86,7 +86,7 @@ val is_equality_type       : testing_function
 val match_with_nottype     : (constr * constr) matching_function
 val is_nottype             : testing_function
 
-val match_with_forall_term    : (Name.t Context.binder_annot * constr * constr) matching_function
+val match_with_forall_term    : (Name.t EConstr.binder_annot * constr * constr) matching_function
 val is_forall_term            : testing_function
 
 val match_with_imp_term    : (constr * constr) matching_function
@@ -149,3 +149,6 @@ val match_eqdec : Environ.env -> evar_map -> constr -> bool * GlobRef.t * constr
 (** Match a negation *)
 val is_matching_not : Environ.env -> evar_map -> constr -> bool
 val is_matching_imp_False : Environ.env -> evar_map -> constr -> bool
+
+(** Test if a homogeneous relation (in Prop) and, if so, returns the domain *)
+val is_homogeneous_relation : ?loc:Loc.t -> Environ.env -> evar_map -> constr -> types

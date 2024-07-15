@@ -18,6 +18,7 @@ val search_queries :
     Pcoq.Entry.t
 
 val subprf : Vernacexpr.synpure_vernac_expr Pcoq.Entry.t
+val subprf_with_selector : (Goal_select.t option -> Vernacexpr.synpure_vernac_expr) Pcoq.Entry.t
 
 val quoted_attributes : Attributes.vernac_flags Pcoq.Entry.t
 
@@ -62,3 +63,7 @@ val warn_plural_command : ?loc:Loc.t -> string -> unit
 val test_variance_ident : unit Pcoq.Entry.t
 
 val test_only_starredidentrefs : unit Pcoq.Entry.t
+
+val goal_selector : Goal_select.t Pcoq.Entry.t
+
+val toplevel_selector : Goal_select.t Pcoq.Entry.t

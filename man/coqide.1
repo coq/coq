@@ -1,41 +1,43 @@
 .TH COQIDE 1
-
+.
 .SH NAME
-coqide \- The Coq Proof Assistant graphical interface
-
-
+coqide \- graphical interface for the Coq proof assistant
+.
+.
 .SH SYNOPSIS
 .B coqide
 [
-.B options
+options
 ]
-
+.
 .SH DESCRIPTION
-
+.
 .B coqide
 is a gtk graphical interface for the Coq proof assistant.
-
+.PP
 For command-line-oriented use of Coq, see
-.BR coqtop (1)
-; for batch-oriented use of Coq, see
+.BR coqtop (1);
+for batch-oriented use of Coq, see
 .BR coqc (1).
-
-
+.
+.
 .SH OPTIONS
-
+.
 .TP
 .B \-h
 Show the complete list of options accepted by
 .BR coqide .
 .TP
-.BI \-I\  dir ,\ \-include\  dir
-Add directory dir in the include path.
+.BI \-I\  dir, \ \-include\  dir
+Add directory
+.I dir
+in the include path.
 .TP
 .BI \-R\  dir\ coqdir
 Recursively map physical
 .I dir
 to logical
-.IR coqdir .
+.I coqdir.
 .TP
 .B \-src
 Add source directories in the include path.
@@ -45,35 +47,35 @@ Start with an empty state.
 .TP
 .BI \-load\-ml\-object\  f
 Load ML object file
-.IR f .
+.I f.
 .TP
 .BI \-load\-ml\-source\  f
 Load ML file
-.IR f .
+.I f.
 .TP
-.BI \-l\  f ,\ \-load\-vernac\-source\  f
+.BI \-l\  f, \ \-load\-vernac\-source\  f
 Load Coq file
 .IR f .v
 (Load
-.IR f .).
+.IR f. ).
 .TP
-.BI \-lv\  f ,\ \-load\-vernac\-source\-verbose\  f
+.BI \-lv\  f, \ \-load\-vernac\-source\-verbose\  f
 Load Coq file
 .IR f .v
 (Load Verbose
-.IR f .).
+.IR f. ).
 .TP
 .BI \-load\-vernac\-object\  path
 Load Coq library
-.IR path
+.I path
 (Require
-.IR path .).
+.IR path. ).
 .TP
 .BI \-require-import\  path
 Load Coq library
-.IR path
+.I path
 and import it (Require Import
-.IR path .).
+.IR path. ).
 .TP
 .BI \-compile\  f
 Compile Coq file
@@ -98,7 +100,7 @@ Skip loading of rcfile.
 .TP
 .BI \-init\-file\  f
 Set the rcfile to
-.IR f .
+.I f.
 .TP
 .B \-emacs
 Tells Coq it is executed under Emacs.
@@ -114,21 +116,21 @@ Set sort Set impredicative.
 .TP
 .B \-dont\-load\-proofs
 Don't load opaque proofs in memory.
-
+.
 .SH SEE ALSO
-
+.
 .BR coqc (1),
 .BR coqtop (1),
-.BR coq-tex (1),
-.BR coqdep (1).
-.br
+.BR coq\-tex (1),
+.BR coqdep (1)
+.PP
 .I
-The Coq Reference Manual,
-.I
-The Coq web site: http://coq.inria.fr,
-.I
-/usr/share/doc/coqide/FAQ.
-
+The Coq Reference Manual
+.PP
+The Coq web site: http://coq.inria.fr
+.PP
+/usr/share/doc/coqide/FAQ
+.
 .SH AUTHOR
 This manual page was written by Samuel Mimram <samuel.mimram@ens-lyon.org>,
 for the Debian project (but may be used by others).

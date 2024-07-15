@@ -18,6 +18,23 @@ open Environ
 
 (** This module implements the conversion test by compiling to OCaml code *)
 
+type 'a fail = { fail : 'r. 'a -> 'r }
+
+exception NotConvertible
+
+let fail_check state check box = match state with
+| Result.Ok state -> (state, check, box)
+| Result.Error None -> raise NotConvertible
+| Result.Error (Some err) -> box.fail err
+
+let convert_instances ~flex u1 u2 (state, check, box) =
+  let state, check = Conversion.convert_instances ~flex u1 u2 (state, check) in
+  fail_check state check box
+
+let sort_cmp_universes env pb s1 s2 (state, check, box) =
+  let state, check = Conversion.sort_cmp_universes env pb s1 s2 (state, check) in
+  fail_check state check box
+
 let rec conv_val env pb lvl v1 v2 cu =
   if v1 == v2 then cu
   else
@@ -42,6 +59,9 @@ let rec conv_val env pb lvl v1 v2 cu =
     | Vfloat64 f1, Vfloat64 f2 ->
         if Float64.(equal (of_float f1) (of_float f2)) then cu
         else raise NotConvertible
+    | Vstring s1, Vstring s2 ->
+        if Pstring.equal s1 s2 then cu
+        else raise NotConvertible
     | Varray t1, Varray t2 ->
       let len = Parray.length_int t1 in
       if not (Int.equal len (Parray.length_int t2)) then raise NotConvertible;
@@ -60,7 +80,7 @@ let rec conv_val env pb lvl v1 v2 cu =
         in
         aux lvl (n1-1) b1 b2 0 cu
     | (Vfix e | Vcofix e), _ | _, (Vfix e | Vcofix e) -> Empty.abort e
-    | (Vaccu _ | Vprod _ | Vconst _ | Vint64 _ | Vfloat64 _ | Varray _ | Vblock _), _ -> raise NotConvertible
+    | (Vaccu _ | Vprod _ | Vconst _ | Vint64 _ | Vfloat64 _ | Vstring _ | Varray _ | Vblock _), _ -> raise NotConvertible
 
 and conv_accu env pb lvl k1 k2 cu =
   let n1 = accu_nargs k1 in
@@ -89,7 +109,7 @@ and conv_atom env pb lvl a1 a2 cu =
        if Constant.CanOrd.equal c1 c2 then convert_instances ~flex:true u1 u2 cu
        else raise NotConvertible
     | Asort s1, Asort s2 ->
-        sort_cmp_universes env pb s1 s2 cu
+      sort_cmp_universes env pb s1 s2 cu
     | Avar id1, Avar id2 ->
         if Id.equal id1 id2 then cu else raise NotConvertible
     | Acase(a1,ac1,p1,bs1), Acase(a2,ac2,p2,bs2) ->
@@ -152,7 +172,7 @@ let warn_no_native_compiler =
          (fun () -> strbrk "Native compiler is disabled," ++
                       strbrk " falling back to VM conversion test.")
 
-let native_conv_gen pb sigma env univs t1 t2 =
+let native_conv_gen (type err) pb sigma env (state, check) t1 t2 =
   Nativelib.link_libraries ();
   let ml_filename, prefix = Nativelib.get_ml_filename () in
   let code, upds = mk_conv_code env sigma prefix t1 t2 in
@@ -164,7 +184,12 @@ let native_conv_gen pb sigma env univs t1 t2 =
   let time_info = Format.sprintf "Evaluation done in %.5f@." (t1 -. t0) in
   debug_native_compiler (fun () -> Pp.str time_info);
   (* TODO change 0 when we can have de Bruijn *)
-  fst (conv_val env pb 0 rt1 rt2 univs)
+  let exception Error of err in
+  let box = { fail = fun e -> raise (Error e) } in
+  try Result.Ok (pi1 (conv_val env pb 0 rt1 rt2 (state, check, box)))
+  with
+  | NotConvertible -> Result.Error None
+  | Error e -> Result.Error (Some e)
 
 let native_conv_gen pb sigma env univs t1 t2 =
   if not (typing_flags env).Declarations.enable_native_compiler then
@@ -179,8 +204,14 @@ let native_conv cv_pb sigma env t1 t2 =
     if cv_pb = CUMUL then Constr.leq_constr_univs univs t1 t2
     else Constr.eq_constr_univs univs t1 t2
   in
-  if not b then
+  if b then Result.Ok ()
+  else
     let state = (univs, checked_universes) in
     let t1 = Term.it_mkLambda_or_LetIn t1 (Environ.rel_context env) in
     let t2 = Term.it_mkLambda_or_LetIn t2 (Environ.rel_context env) in
-    let _ = native_conv_gen cv_pb sigma env state t1 t2 in ()
+    match native_conv_gen cv_pb sigma env state t1 t2 with
+    | Result.Ok (_ : UGraph.t) -> Result.Ok ()
+    | Result.Error None -> Result.Error ()
+    | Result.Error (Some _) ->
+      (* checked_universes cannot raise this *)
+      assert false

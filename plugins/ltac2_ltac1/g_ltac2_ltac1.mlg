@@ -1,0 +1,41 @@
+(************************************************************************)
+(*         *   The Coq Proof Assistant / The Coq Development Team       *)
+(*  v      *         Copyright INRIA, CNRS and contributors             *)
+(* <O___,, * (see version control and CREDITS file for authors & dates) *)
+(*   \VV/  **************************************************************)
+(*    //   *    This file is distributed under the terms of the         *)
+(*         *     GNU Lesser General Public License Version 2.1          *)
+(*         *     (see LICENSE file for the text of the license)         *)
+(************************************************************************)
+
+DECLARE PLUGIN "coq-core.plugins.ltac2_ltac1"
+
+{
+
+open Pcoq.Prim
+open Ltac2_plugin
+open Tac2expr
+open Ltac_plugin
+open Ltac2_plugin.G_ltac2
+
+let ltac_expr = Pltac.ltac_expr
+
+let inj_wit wit loc x = CAst.make ~loc @@ CTacExt (wit, x)
+
+let inj_ltac1 loc e = inj_wit Tac2quote_ltac1.wit_ltac1 loc e
+let inj_ltac1val loc e = inj_wit Tac2quote_ltac1.wit_ltac1val loc e
+
+}
+
+GRAMMAR EXTEND Gram
+  GLOBAL: ltac2_atom;
+  ltac2_atom: TOP
+  [ [ IDENT "ltac1"; ":"; "("; qid = ltac1_expr_in_env; ")" -> { inj_ltac1 loc qid }
+    | IDENT "ltac1val"; ":"; "("; qid = ltac1_expr_in_env; ")" -> { inj_ltac1val loc qid } ] ]
+  ;
+  ltac1_expr_in_env:
+    [ [ test_ltac1_env; ids = LIST0 identref; "|-"; e = ltac_expr -> { ids, e }
+      | e = ltac_expr -> { [], e }
+    ] ]
+  ;
+END

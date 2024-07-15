@@ -57,7 +57,11 @@ val reinterpret_get_type_of : src:Names.Id.t -> env -> evar_map -> constr -> typ
 
 val print_retype_error : retype_error -> Pp.t
 
-val relevance_of_term : env -> evar_map -> constr -> Sorts.relevance
-val relevance_of_type : env -> evar_map -> types -> Sorts.relevance
-val relevance_of_sort : evar_map -> ESorts.t -> Sorts.relevance
-val relevance_of_sort_family : evar_map -> Sorts.family -> Sorts.relevance
+val relevance_of_projection_repr : env -> Names.Projection.Repr.t EConstr.puniverses -> ERelevance.t
+
+val relevance_of_term : env -> evar_map -> constr -> ERelevance.t
+val relevance_of_type : env -> evar_map -> types -> ERelevance.t
+val relevance_of_sort : ESorts.t -> ERelevance.t
+val relevance_of_sort_family : evar_map -> Sorts.family -> ERelevance.t
+
+val is_term_irrelevant : env -> Evd.evar_map -> Evd.econstr -> bool

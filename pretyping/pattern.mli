@@ -43,6 +43,7 @@ type 'i constr_pattern_r =
   | PCoFix of int * (Name.t array * 'i constr_pattern_r array * 'i constr_pattern_r array)
   | PInt of Uint63.t
   | PFloat of Float64.t
+  | PString of Pstring.t
   | PArray of 'i constr_pattern_r array * 'i constr_pattern_r * 'i constr_pattern_r
   | PUninstantiated of 'i uninstantiated_pattern
 

@@ -13,35 +13,55 @@
     Not for the casual user, handle with care and expect undefined behaviours
     otherwise. **)
 
-Require Import Ltac2.Init.
+Require Import Ltac2.Init Ltac2.Std Ltac2.Control.
 
 Ltac2 Type t.
 (** Dynamically-typed Ltac1 values. *)
 
-Ltac2 @ external ref : ident list -> t := "coq-core.plugins.ltac2" "ltac1_ref".
+Ltac2 @ external ref : ident list -> t := "coq-core.plugins.ltac2_ltac1" "ltac1_ref".
 (** Returns the Ltac1 definition with the given absolute name. *)
 
-Ltac2 @ external run : t -> unit := "coq-core.plugins.ltac2" "ltac1_run".
+Ltac2 @ external run : t -> unit := "coq-core.plugins.ltac2_ltac1" "ltac1_run".
 (** Runs an Ltac1 value, assuming it is a 'tactic', i.e. not returning
     anything. *)
 
-Ltac2 @ external lambda : (t -> t) -> t := "coq-core.plugins.ltac2" "ltac1_lambda".
+Ltac2 @ external lambda : (t -> t) -> t := "coq-core.plugins.ltac2_ltac1" "ltac1_lambda".
 (** Embed an Ltac2 function into Ltac1 values. Contrarily to the ltac1:(...)
     quotation, this function allows both to capture an Ltac2 context inside the
     closure and to return an Ltac1 value. Returning values in Ltac1 is a
     intrepid endeavour prone to weird runtime semantics. *)
 
-Ltac2 @ external apply : t -> t list -> (t -> unit) -> unit := "coq-core.plugins.ltac2" "ltac1_apply".
+Ltac2 @ external apply : t -> t list -> (t -> unit) -> unit := "coq-core.plugins.ltac2_ltac1" "ltac1_apply".
 (** Applies an Ltac1 value to a list of arguments, and provides the result in
     CPS style. It does **not** run the returned value. *)
 
 (** Conversion functions *)
 
-Ltac2 @ external of_constr : constr -> t := "coq-core.plugins.ltac2" "ltac1_of_constr".
-Ltac2 @ external to_constr : t -> constr option := "coq-core.plugins.ltac2" "ltac1_to_constr".
+Ltac2 @ external of_int : int -> t := "coq-core.plugins.ltac2_ltac1" "ltac1_of_int".
+(** Converts an Ltac2 int into an Ltac1 value. *)
+Ltac2 @ external to_int : t -> int option := "coq-core.plugins.ltac2_ltac1" "ltac1_to_int".
+(** Converts an Ltac1 int into an Ltac2 value. *)
 
-Ltac2 @ external of_ident : ident -> t := "coq-core.plugins.ltac2" "ltac1_of_ident".
-Ltac2 @ external to_ident : t -> ident option := "coq-core.plugins.ltac2" "ltac1_to_ident".
+Ltac2 @ external of_constr : constr -> t := "coq-core.plugins.ltac2_ltac1" "ltac1_of_constr".
+(** Converts an Ltac2 constr into an Ltac1 value. *)
+Ltac2 @ external to_constr : t -> constr option := "coq-core.plugins.ltac2_ltac1" "ltac1_to_constr".
+(** Converts an Ltac1 constr (which includes terms created via open_constr) into an Ltac2 value. *)
 
-Ltac2 @ external of_list : t list -> t := "coq-core.plugins.ltac2" "ltac1_of_list".
-Ltac2 @ external to_list : t -> t list option := "coq-core.plugins.ltac2" "ltac1_to_list".
+(** [preterm] is called [uconstr] in Ltac1. *)
+Ltac2 @ external of_preterm : preterm -> t := "coq-core.plugins.ltac2_ltac1" "ltac1_of_preterm".
+Ltac2 @ external to_preterm : t -> preterm option := "coq-core.plugins.ltac2_ltac1" "ltac1_to_preterm".
+
+Ltac2 @ external of_ident : ident -> t := "coq-core.plugins.ltac2_ltac1" "ltac1_of_ident".
+Ltac2 @ external to_ident : t -> ident option := "coq-core.plugins.ltac2_ltac1" "ltac1_to_ident".
+
+Ltac2 @ external of_list : t list -> t := "coq-core.plugins.ltac2_ltac1" "ltac1_of_list".
+Ltac2 @ external to_list : t -> t list option := "coq-core.plugins.ltac2_ltac1" "ltac1_to_list".
+
+Ltac2 @ external of_intro_pattern : intro_pattern -> t := "coq-core.plugins.ltac2_ltac1" "ltac1_of_intro_pattern".
+Ltac2 @ external to_intro_pattern : t -> intro_pattern option := "coq-core.plugins.ltac2_ltac1" "ltac1_to_intro_pattern".
+
+(** Debug information *)
+
+Ltac2 @ external tag_name : t -> string :=  "coq-core.plugins.ltac2_ltac1" "ltac1_tag_name".
+(** Name of the ltac1 value class the argument belongs to. Should be
+    used only for error printing, typically "expected a constr but got a $tag_name". *)

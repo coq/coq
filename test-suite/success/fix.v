@@ -96,3 +96,24 @@ assumption.
 apply bcons.
 assumption.
 Qed.
+
+Require Import List.
+
+(** Extracted from coq_performance_tests *)
+
+Module InnerMatch.
+
+Fixpoint take_uniform_n' {T} (ls : list T) (len : nat) (n : nat) : list T
+  := match n, ls, List.rev ls with
+     | 0%nat, _, _ => nil
+     | _, nil, _ => nil
+     | _, _, nil => nil
+     | 1%nat, cons x _, _ => cons x nil
+     | 2%nat, cons x nil, _ => cons x nil
+     | 2%nat, cons x _, cons y _ => cons x (cons y nil)
+     | S n', cons x xs, _
+       => let skip := (Nat.div len n + 1)%nat in
+          cons x (take_uniform_n' (skipn skip xs) (len - 1 - skip) n')
+     end.
+
+End InnerMatch.

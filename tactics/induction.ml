@@ -137,6 +137,9 @@ let tactic_infer_flags with_evar = Pretyping.{
   expand_evars = true;
   program_mode = false;
   polymorphic = false;
+  undeclared_evars_patvars = false;
+  patvars_abstract = false;
+  unconstrained_sorts = false;
 }
 
 let onOpenInductionArg env sigma tac = function
@@ -216,7 +219,7 @@ let insert_before decls lasthyp env =
   | Some id ->
   Environ.fold_named_context
     (fun _ d env ->
-      let d = map_named_decl EConstr.of_constr d in
+      let d = EConstr.of_named_decl d in
       let env = if Id.equal id (NamedDecl.get_id d) then push_named_context decls env else env in
       push_named d env)
     ~init:(reset_context env) env
@@ -250,14 +253,15 @@ let mkletin_goal env sigma with_eq dep (id,lastlhyp,ccl,c) ty =
       let sigma, eq = Typing.checked_applist env sigma eq [t] in
       let eq = applist (eq,args) in
       let refl = applist (refl, [t;mkVar id]) in
-      let newenv = insert_before [LocalAssum (make_annot heq Sorts.Relevant,eq); decl] lastlhyp env in
-      let (sigma, x) = new_evar newenv sigma ~principal:true ccl in
+      let newenv = insert_before [LocalAssum (make_annot heq ERelevance.relevant,eq); decl] lastlhyp env in
+      let (sigma, x) = new_evar newenv sigma ccl in
       (sigma, mkNamedLetIn sigma (make_annot id r) c t
-         (mkNamedLetIn sigma (make_annot heq Sorts.Relevant) refl eq x))
+         (mkNamedLetIn sigma (make_annot heq ERelevance.relevant) refl eq x),
+      Some (fst @@ destEvar sigma x))
   | None ->
       let newenv = insert_before [decl] lastlhyp env in
-      let (sigma, x) = new_evar newenv sigma ~principal:true ccl in
-      (sigma, mkNamedLetIn sigma (make_annot id r) c t x)
+      let (sigma, x) = new_evar newenv sigma ccl in
+      (sigma, mkNamedLetIn sigma (make_annot id r) c t x, Some (fst @@ destEvar sigma x))
 
 let warn_cannot_remove_as_expected =
   CWarnings.create ~name:"cannot-remove-as-expected" ~category:CWarnings.CoreCategories.tactics
@@ -588,7 +592,7 @@ let cook_sign hyp0_opt inhyps indvars env sigma =
   let before = ref true in
   let maindep = ref false in
   let seek_deps env decl rhyp =
-    let decl = map_named_decl EConstr.of_constr decl in
+    let decl = EConstr.of_named_decl decl in
     let hyp = NamedDecl.get_id decl in
     if (match hyp0_opt with Some hyp0 -> Id.equal hyp hyp0 | _ -> false)
     then begin
@@ -1351,7 +1355,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
   let ccl = Proofview.Goal.concl gl in
   let check = check_enough_applied env sigma elim in
   let sigma', c, _ = use_bindings env sigma elim false (c0,lbind) t0 in
-  let abs = AbstractPattern (from_prefix,check,Name id,(pending,c),cls,false) in
+  let abs = AbstractPattern (from_prefix,check,Name id,(pending,c),cls) in
   let (id,sign,_,lastlhyp,ccl,res) = make_abstraction env sigma' ccl abs in
   match res with
   | None ->
@@ -1370,7 +1374,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
           (* and destruct has side conditions first *)
           Tacticals.tclTHENLAST)
       (Tacticals.tclTHENLIST [
-        Refine.refine ~typecheck:false begin fun sigma ->
+        Refine.refine_with_principal ~typecheck:false begin fun sigma ->
           let b = not with_evars && with_eq != None in
           let sigma, c, t = use_bindings env sigma elim b (c0,lbind) t0 in
           mkletin_goal env sigma with_eq false (id,lastlhyp,ccl,c) (Some t)
@@ -1393,7 +1397,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
       let inhyps = if List.is_empty inhyps then inhyps else Option.fold_left (fun inhyps (_,heq) -> heq::inhyps) inhyps with_eq in
       let tac =
       Tacticals.tclTHENLIST [
-        Refine.refine ~typecheck:false begin fun sigma ->
+        Refine.refine_with_principal ~typecheck:false begin fun sigma ->
           mkletin_goal env sigma with_eq true (id,lastlhyp,ccl,c) None
         end;
         (tac inhyps)

@@ -31,7 +31,7 @@ let whd_prod env sigma typ =
   | FProd (na, c1, c2, e) ->
     let c1 = EConstr.of_constr @@ term_of_fconstr c1 in
     let c2 = EConstr.of_constr @@ term_of_fconstr (mk_clos (CClosure.usubs_lift e) c2) in
-    Some (na, c1, c2)
+    Some (EConstr.of_binder_annot na, c1, c2)
   | _ -> None
 
 module NamedDecl = Context.Named.Declaration
@@ -247,7 +247,7 @@ let rec is_rigid_head sigma t = match kind sigma t with
         | Fix ((fi,i),_) -> is_rigid_head sigma (args.(fi.(i)))
         | _ -> is_rigid_head sigma f)
   | Lambda _ | LetIn _ | Construct _ | CoFix _ | Fix _
-  | Prod _ | Meta _ | Cast _ | Int _ | Float _ | Array _ -> assert false
+  | Prod _ | Meta _ | Cast _ | Int _ | Float _ | String _ | Array _ -> assert false
 
 let is_rigid env sigma t =
   let open Context.Rel.Declaration in
@@ -698,9 +698,9 @@ let declare_mib_implicits kn =
 (* Declare manual implicits *)
 type manual_implicits = (Name.t * bool) option CAst.t list
 
-let compute_implicits_with_manual env sigma typ enriching l =
+let compute_implicits_with_manual env sigma ?(silent=true) typ enriching l =
   let autoimpls = compute_auto_implicits env sigma !implicit_args enriching typ in
-  set_manual_implicits true !implicit_args enriching autoimpls l
+  set_manual_implicits silent !implicit_args enriching autoimpls l
 
 let check_inclusion l =
   (* Check strict inclusion *)
@@ -718,7 +718,7 @@ let check_rigidity isrigid =
 
 let projection_implicits env p impls =
   let npars = Projection.npars p in
-  CList.skipn_at_least npars impls
+  CList.skipn_at_best npars impls
 
 let declare_manual_implicits local ref ?enriching l =
   let flags = !implicit_args in
@@ -813,7 +813,7 @@ let rec drop_first_implicits p l =
   | DefaultImpArgs,imp::impls ->
       drop_first_implicits (p-1) (DefaultImpArgs,impls)
   | LessArgsThan n,imp::impls ->
-      let n = if is_status_implicit imp then n-1 else n in
+      let n = if is_status_implicit imp then n else n-1 in
       drop_first_implicits (p-1) (LessArgsThan n,impls)
 
 let rec chop_and_adjust n l1 l2 =

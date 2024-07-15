@@ -74,7 +74,7 @@ let apply_subdir f path name =
     | Unix.S_REG -> f (FileRegular name)
     | _ -> ()
 
-let readdir dir = try Sys.readdir dir with any -> [||]
+let readdir dir = try Sys.readdir dir with Sys_error _ -> [||]
 
 let process_directory f path =
   Array.iter (apply_subdir f path) (readdir path)
@@ -225,6 +225,21 @@ let is_in_system_path filename =
     warn_path_not_found ();
     false
 
+let warn_using_current_directory =
+  CWarnings.create ~name:"default-output-directory" ~category:CWarnings.CoreCategories.filesystem
+    Pp.(fun s ->
+           strbrk "Output directory is unset, using \"" ++ str s ++ str "\"." ++ spc () ++
+           strbrk "Use command line option \"-output-directory to set a default directory.")
+
+let get_output_path filename =
+  if not (Filename.is_relative filename) then filename
+  else match !Flags.output_directory with
+  | None ->
+    let pwd = Sys.getcwd () in
+    warn_using_current_directory pwd;
+    Filename.concat pwd filename
+  | Some dir -> Filename.concat dir filename
+
 let error_corrupted file s =
   CErrors.user_err (str file ++ str ": " ++ str s ++ str ". Try to rebuild it.")
 
@@ -248,17 +263,17 @@ type magic_number_error = {filename: string; actual: int32; expected: int32}
 exception Bad_magic_number of magic_number_error
 exception Bad_version_number of magic_number_error
 
-let with_magic_number_check f a =
+let with_magic_number_check ?loc f a =
   try f a
   with
   | Bad_magic_number {filename=fname; actual; expected} ->
-    CErrors.user_err
+    CErrors.user_err ?loc
     (str"File " ++ str fname ++ strbrk" has bad magic number " ++
     (str @@ Int32.to_string actual) ++ str" (expected " ++ (str @@ Int32.to_string expected) ++ str")." ++
     spc () ++
     strbrk "It is corrupted or was compiled with another version of Coq.")
   | Bad_version_number {filename=fname;actual=actual;expected=expected} ->
-    CErrors.user_err
+    CErrors.user_err ?loc
     (str"File " ++ str fname ++ strbrk" has bad version number " ++
     (str @@ Int32.to_string actual) ++ str" (expected " ++ (str @@ Int32.to_string expected) ++ str")." ++
     spc () ++
@@ -297,6 +312,8 @@ let output_int64 ch n =
 
 type time = {real: float; user: float; system: float; }
 type duration = time
+
+let empty_duration = { real = 0.; user = 0.; system = 0. }
 
 let get_time () =
   let t = Unix.times ()  in

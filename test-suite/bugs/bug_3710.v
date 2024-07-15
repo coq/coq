@@ -11,7 +11,7 @@ Notation "{ x : A & P }" := (sigT (fun x:A => P)) : type_scope.
 Definition relation (A : Type) := A -> A -> Type.
 Class Reflexive {A} (R : relation A) := reflexivity : forall x : A, R x x.
 Notation "( x ; y )" := (existT _ x y).
-Notation "x .1" := (projT1 x) (at level 3, format "x '.1'").
+Notation "x .1" := (projT1 x).
 Reserved Infix "o" (at level 40, left associativity).
 Delimit Scope category_scope with category.
 Record PreCategory :=
@@ -41,7 +41,7 @@ Definition functor_category (C D : PreCategory) : PreCategory.
 Defined.
 Local Notation "C -> D" := (functor_category C D) : category_scope.
 Definition NaturalIsomorphism (C D : PreCategory) F G : Type := @Isomorphic (C -> D) F G.
-Context `{P : PreCategory -> Type}.
+#[warning="context-outside-section"] Context `{P : PreCategory -> Type}.
 Local Notation cat := (@sub_pre_cat P).
 Goal forall (s d d' : cat) (m1 : morphism cat d d') (m2 : morphism cat s d),
        NaturalIsomorphism (m1 o m2) (m1 o m2)%functor.

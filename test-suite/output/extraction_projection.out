@@ -109,19 +109,9 @@ module A =
   type prim_record_two_fields = { prim_proj1_of_2 : bool;
                                   prim_proj2_of_2 : bool }
 
-  (** val prim_proj1_of_2 : prim_record_two_fields -> bool **)
-
-  let prim_proj1_of_2 p =
-    p.prim_proj1_of_2
-
   type prim_record_one_field =
     bool
     (* singleton inductive, whose constructor was Build_prim_record_one_field *)
-
-  (** val prim_proj1_of_1 : prim_record_one_field -> bool **)
-
-  let prim_proj1_of_1 p =
-    p
 
   (** val d21 : prim_record_two_fields -> bool **)
 
@@ -220,13 +210,13 @@ module M =
 
   (** val prim_proj1_of_2 : prim_record_two_fields -> bool **)
 
-  let prim_proj1_of_2 =
-    prim_proj1_of_2
+  let prim_proj1_of_2 p =
+    p.prim_proj1_of_2
 
   (** val prim_proj2_of_2 : prim_record_two_fields -> bool **)
 
-  let prim_proj2_of_2 =
-    prim_proj2_of_2
+  let prim_proj2_of_2 p =
+    p.prim_proj2_of_2
 
   type prim_record_one_field =
     bool
@@ -234,8 +224,8 @@ module M =
 
   (** val prim_proj1_of_1 : prim_record_one_field -> bool **)
 
-  let prim_proj1_of_1 =
-    prim_proj1_of_1
+  let prim_proj1_of_1 p =
+    p
 
   type prim_record_one_field_unused =
     bool
@@ -243,28 +233,28 @@ module M =
 
   (** val prim_proj1_of_1_unused : prim_record_one_field_unused -> bool **)
 
-  let prim_proj1_of_1_unused =
-    prim_proj1_of_1_unused
+  let prim_proj1_of_1_unused p =
+    p
 
   (** val d21 : prim_record_two_fields -> bool **)
 
-  let d21 =
-    prim_proj1_of_2
+  let d21 x =
+    x.prim_proj1_of_2
 
   (** val d22 : (unit0 -> prim_record_two_fields) -> bool **)
 
   let d22 x =
-    prim_proj1_of_2 (x Tt)
+    (x Tt).prim_proj1_of_2
 
   (** val e21 : prim_record_one_field -> bool **)
 
-  let e21 =
-    prim_proj1_of_1
+  let e21 x =
+    x
 
   (** val e22 : (unit0 -> prim_record_one_field) -> bool **)
 
   let e22 x =
-    prim_proj1_of_1 (x Tt)
+    x Tt
  end
 
 module N = M(Empty)

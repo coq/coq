@@ -39,12 +39,11 @@ type structured_constant =
   | Const_ind of inductive
   | Const_evar of Evar.t
   | Const_b0 of tag
-  | Const_quality of Sorts.Quality.t
-  | Const_univ_level of Univ.Level.t
   | Const_univ_instance of UVars.Instance.t
   | Const_val of structured_values
   | Const_uint of Uint63.t
   | Const_float of Float64.t
+  | Const_string of Pstring.t
 
 val pp_struct_const : structured_constant -> Pp.t
 
@@ -140,6 +139,7 @@ val val_of_atom : atom -> values
 val val_of_int : int -> structured_values
 val val_of_block : tag -> structured_values array -> structured_values
 val val_of_uint : Uint63.t -> structured_values
+val val_of_float : Float64.t -> structured_values
 
 external val_of_annot_switch : annot_switch -> values = "%identity"
 
@@ -195,3 +195,10 @@ val parray_get_default : values
 val parray_set : values
 val parray_copy : values
 val parray_length : values
+
+val pstring_make : values
+val pstring_length : values
+val pstring_get : values
+val pstring_sub : values
+val pstring_cat : values
+val pstring_compare : values

@@ -1,4 +1,4 @@
-Inductive proc : Type -> Type :=
+Inductive proc : Type -> Prop :=
 | Tick : proc unit
 .
 

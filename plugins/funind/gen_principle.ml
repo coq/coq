@@ -12,6 +12,7 @@ open Util
 open Names
 open Indfun_common
 module RelDecl = Context.Rel.Declaration
+module ERelevance = EConstr.ERelevance
 
 let observe_tac s =
   observe_tac ~header:(Pp.str "observation") (fun _ _ -> Pp.str s)
@@ -51,7 +52,7 @@ let build_newrecursive lnameargsardef =
             Constrintern.Recursive arity impls'
         in
         let open Context.Named.Declaration in
-        let r = Sorts.Relevant in
+        let r = ERelevance.relevant in
         (* TODO relevance *)
         ( EConstr.push_named
             (LocalAssum (Context.make_annot recname r, arity))
@@ -83,7 +84,8 @@ let is_rec names =
   let rec lookup names gt =
     match DAst.get gt with
     | GVar id -> check_id id names
-    | GRef _ | GEvar _ | GPatVar _ | GSort _ | GHole _ | GGenarg _ | GInt _ | GFloat _ ->
+    | GRef _ | GEvar _ | GPatVar _ | GSort _ | GHole _ | GGenarg _
+    | GInt _ | GFloat _ | GString _ ->
       false
     | GCast (b, _, _) -> lookup names b
     | GRec _ -> CErrors.user_err (Pp.str "GRec not handled")
@@ -150,24 +152,12 @@ and rebuild_nal aux bk bl' nal typ =
 
 let rebuild_bl aux bl typ = rebuild_bl aux bl typ
 
-let recompute_binder_list fixpoint_exprl =
-  let fixl =
-    List.map
-      (fun fix ->
-        Vernacexpr.
-          { fix with
-            rec_order =
-              ComFixpoint.adjust_rec_order ~structonly:false fix.binders
-                fix.rec_order })
-      fixpoint_exprl
-  in
-  let (_, _, _, typel), _, ctx, _ =
-    ComFixpoint.interp_fixpoint ~check_recursivity:false ~cofix:false fixl
-  in
+let recompute_binder_list (rec_order, fixpoint_exprl) =
+  let typel, sigma = ComFixpoint.interp_fixpoint_short rec_order fixpoint_exprl in
   let constr_expr_typel =
     with_full_print
       (List.map (fun c ->
-           Constrextern.extern_constr (Global.env ()) (Evd.from_ctx ctx)
+           Constrextern.extern_constr (Global.env ()) sigma
              (EConstr.of_constr c)))
       typel
   in
@@ -228,7 +218,7 @@ let change_property_sort evd toSort princ princName =
   let princ_info = Induction.compute_elim_sig evd princ in
   let change_sort_in_predicate decl =
     LocalAssum
-      ( get_annot decl
+      ( EConstr.Unsafe.to_binder_annot @@ get_annot decl
       , let args, ty =
           Term.decompose_prod (EConstr.Unsafe.to_constr (get_type decl))
         in
@@ -254,9 +244,7 @@ let change_property_sort evd toSort princ princName =
   , Term.it_mkLambda_or_LetIn
       (Term.it_mkLambda_or_LetIn init
          (List.map change_sort_in_predicate princ_info.Induction.predicates))
-      (List.map
-         (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d)
-         princ_info.Induction.params) )
+      (EConstr.Unsafe.to_rel_context princ_info.Induction.params) )
 
 let generate_functional_principle (evd : Evd.evar_map ref) old_princ_type sorts
     new_princ_name funs i proof_tac =
@@ -387,7 +375,7 @@ let generate_principle (evd : Evd.evar_map ref) pconstants on_error is_general
     end
   with e when CErrors.noncritical e -> on_error names e
 
-let register_struct is_rec fixpoint_exprl =
+let register_struct is_rec (rec_order, fixpoint_exprl) =
   let open EConstr in
   match fixpoint_exprl with
   | [{Vernacexpr.fname; univs; binders; rtype; body_def}] when not is_rec ->
@@ -416,7 +404,8 @@ let register_struct is_rec fixpoint_exprl =
     in
     (None, evd, List.rev rev_pconstants)
   | _ ->
-    ComFixpoint.do_fixpoint ~poly:false fixpoint_exprl;
+    let pm, p = ComFixpoint.do_mutually_recursive ~program_mode:false ~poly:false (CFixRecOrder rec_order, fixpoint_exprl) in
+    assert (Option.is_empty pm && Option.is_empty p);
     let evd, rev_pconstants =
       List.fold_left
         (fun (evd, l) {Vernacexpr.fname} ->
@@ -511,21 +500,21 @@ let generate_type evd g_to_f f graph =
     \[\forall (x_1:t_1)\ldots(x_n:t_n), let fv := f x_1\ldots x_n in, forall res,  \]
     i*)
   let pre_ctxt =
-    LocalAssum (Context.make_annot (Name res_id) Sorts.Relevant, lift 1 res_type)
+    LocalAssum (Context.make_annot (Name res_id) ERelevance.relevant, lift 1 res_type)
     :: LocalDef
-         ( Context.make_annot (Name fv_id) Sorts.Relevant
+         ( Context.make_annot (Name fv_id) ERelevance.relevant
          , mkApp (f, args_as_rels)
          , res_type )
     :: fun_ctxt
   in
   (*i and we can return the solution depending on which lemma type we are defining i*)
   if g_to_f then
-    ( LocalAssum (Context.make_annot Anonymous Sorts.Relevant, graph_applied)
+    ( LocalAssum (Context.make_annot Anonymous ERelevance.relevant, graph_applied)
       :: pre_ctxt
     , lift 1 res_eq_f_of_args
     , graph )
   else
-    ( LocalAssum (Context.make_annot Anonymous Sorts.Relevant, res_eq_f_of_args)
+    ( LocalAssum (Context.make_annot Anonymous ERelevance.relevant, res_eq_f_of_args)
       :: pre_ctxt
     , lift 1 graph_applied
     , graph )
@@ -912,13 +901,13 @@ and intros_with_rewrite_aux () : unit Proofview.tactic =
             tclTHENLIST
               [ unfold_in_concl
                   [ ( Locus.AllOccurrences
-                    , Tacred.EvalVarRef (destVar sigma args.(1)) ) ]
+                    , Evaluable.EvalVarRef (destVar sigma args.(1)) ) ]
               ; tclMAP
                   (fun id ->
                     tclTRY
                       (unfold_in_hyp
                          [ ( Locus.AllOccurrences
-                           , Tacred.EvalVarRef (destVar sigma args.(1)) ) ]
+                           , Evaluable.EvalVarRef (destVar sigma args.(1)) ) ]
                          (destVar sigma args.(1), Locus.InHyp)))
                   (pf_ids_of_hyps g)
               ; intros_with_rewrite () ]
@@ -931,13 +920,13 @@ and intros_with_rewrite_aux () : unit Proofview.tactic =
             tclTHENLIST
               [ unfold_in_concl
                   [ ( Locus.AllOccurrences
-                    , Tacred.EvalVarRef (destVar sigma args.(2)) ) ]
+                    , Evaluable.EvalVarRef (destVar sigma args.(2)) ) ]
               ; tclMAP
                   (fun id ->
                     tclTRY
                       (unfold_in_hyp
                          [ ( Locus.AllOccurrences
-                           , Tacred.EvalVarRef (destVar sigma args.(2)) ) ]
+                           , Evaluable.EvalVarRef (destVar sigma args.(2)) ) ]
                          (destVar sigma args.(2), Locus.InHyp)))
                   (pf_ids_of_hyps g)
               ; intros_with_rewrite () ]
@@ -1145,7 +1134,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i :
             else
               unfold_in_concl
                 [ ( Locus.AllOccurrences
-                  , Tacred.EvalConstRef
+                  , Evaluable.EvalConstRef
                       (fst (destConst (Proofview.Goal.sigma g) f)) ) ]
           in
           (* The proof of each branche itself *)
@@ -1231,7 +1220,7 @@ let get_funs_constant mp =
         in
         let body = EConstr.Unsafe.to_constr body in
         body
-      | Undef _ | OpaqueDef _ | Primitive _ ->
+      | Undef _ | OpaqueDef _ | Primitive _ | Symbol _ ->
         CErrors.user_err Pp.(str "Cannot define a principle over an axiom ")
     in
     let f = find_constant_body const in
@@ -1255,7 +1244,7 @@ let get_funs_constant mp =
             not
               (List.equal
                  (fun (n1, c1) (n2, c2) ->
-                   Context.eq_annot Name.equal n1 n2 && Constr.equal c1 c2)
+                   Context.eq_annot Name.equal Sorts.relevance_equal n1 n2 && Constr.equal c1 c2)
                  first_params params)
           then CErrors.user_err Pp.(str "Not a mutal recursive block"))
         l_params
@@ -1275,7 +1264,7 @@ let get_funs_constant mp =
           (* Hope this is correct *)
           let eq_infos (ia1, na1, ta1, ca1) (ia2, na2, ta2, ca2) =
             Array.equal Int.equal ia1 ia2
-            && Array.equal (Context.eq_annot Name.equal) na1 na2
+            && Array.equal (Context.eq_annot Name.equal Sorts.relevance_equal) na1 na2
             && Array.equal Constr.equal ta1 ta2
             && Array.equal Constr.equal ca1 ca2
           in
@@ -1302,7 +1291,6 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : _ list =
   let this_block_funs =
     Array.map (fun (c, _) -> (c, snd first_fun)) this_block_funs_indexes
   in
-  let prop_sort = Sorts.InProp in
   let funs_indexes =
     let this_block_funs_indexes = Array.to_list this_block_funs_indexes in
     let eq c1 c2 = Environ.QConstant.equal env c1 c2 in
@@ -1314,15 +1302,14 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : _ list =
     List.map
       (fun idx ->
         let ind = (first_fun_kn, idx) in
-        ((ind, snd first_fun), true, prop_sort))
+        ((ind, EConstr.EInstance.make @@ snd first_fun), true, EConstr.ESorts.prop))
       funs_indexes
   in
   let sigma, schemes = Indrec.build_mutual_induction_scheme env !evd ind_list in
   let _ = evd := sigma in
   let l_schemes =
     List.map
-      ( EConstr.of_constr
-      %> Retyping.get_type_of env sigma
+      (Retyping.get_type_of env sigma
       %> EConstr.Unsafe.to_constr )
       schemes
   in
@@ -1539,14 +1526,16 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
       let ((kn, _) as graph_ind), u = destInd !evd graphs_constr.(0) in
       let mib, _mip = Global.lookup_inductive graph_ind in
       let sigma, scheme =
-        Indrec.build_mutual_induction_scheme (Global.env ()) !evd
-          (Array.to_list
-             (Array.mapi
-                (fun i _ ->
-                  (((kn, i), EInstance.kind !evd u), true, Sorts.InType))
-                mib.Declarations.mind_packets))
+        let sigma, inds = CArray.fold_left_map_i (fun i sigma _ ->
+            let sigma, s = Evd.fresh_sort_in_family ~rigid:UnivRigid sigma InType in
+            sigma, (((kn, i), u), true, s))
+            !evd
+            mib.mind_packets
+        in
+        Indrec.build_mutual_induction_scheme (Global.env ()) sigma
+          (Array.to_list inds)
       in
-      let schemes = Array.of_list scheme in
+      let schemes = Array.map_of_list EConstr.Unsafe.to_constr scheme in
       let proving_tac =
         prove_fun_complete funs_constr mib.Declarations.mind_packets schemes
           lemmas_types_infos
@@ -1747,20 +1736,18 @@ let register_mes interactive_proof fname rec_impls wf_mes_expr wf_rel_expr_opt
     using_lemmas args ret_type body
 
 let do_generate_principle_aux pconstants on_error register_built
-    interactive_proof fixpoint_exprl : Declare.Proof.t option =
+    interactive_proof (rec_order, fixpoint_exprl as fix) : Declare.Proof.t option =
   List.iter
     (fun {Vernacexpr.notations} ->
       if not (List.is_empty notations) then
         CErrors.user_err (Pp.str "Function does not support notations for now"))
     fixpoint_exprl;
   let lemma, _is_struct =
-    match fixpoint_exprl with
-    | [ ( { Vernacexpr.rec_order =
-              Some {CAst.v = Constrexpr.CWfRec (wf_x, wf_rel)} } as
-        fixpoint_expr ) ] ->
+    match rec_order with
+    | [ Some { CAst.v = Constrexpr.CWfRec (wf_x, wf_rel) } ] ->
       let ( {Vernacexpr.fname; univs = _; binders; rtype; body_def} as
           fixpoint_expr ) =
-        match recompute_binder_list [fixpoint_expr] with
+        match recompute_binder_list fix with
         | [e] -> e
         | _ -> assert false
       in
@@ -1784,12 +1771,10 @@ let do_generate_principle_aux pconstants on_error register_built
             wf_x.CAst.v using_lemmas binders rtype body pre_hook
         , false )
       else (None, false)
-    | [ ( { Vernacexpr.rec_order =
-              Some {CAst.v = Constrexpr.CMeasureRec (wf_x, wf_mes, wf_rel_opt)}
-          } as fixpoint_expr ) ] ->
+    | [ Some { CAst.v = Constrexpr.CMeasureRec (wf_x, wf_mes, wf_rel_opt) } ] ->
       let ( {Vernacexpr.fname; univs = _; binders; rtype; body_def} as
           fixpoint_expr ) =
-        match recompute_binder_list [fixpoint_expr] with
+        match recompute_binder_list fix with
         | [e] -> e
         | _ -> assert false
       in
@@ -1817,16 +1802,14 @@ let do_generate_principle_aux pconstants on_error register_built
     | _ ->
       List.iter
         (function
-          | {Vernacexpr.rec_order} -> (
-            match rec_order with
-            | Some {CAst.v = Constrexpr.CMeasureRec _ | Constrexpr.CWfRec _} ->
+            | Some { CAst.v = (Constrexpr.CMeasureRec _ | Constrexpr.CWfRec _) } ->
               CErrors.user_err
                 (Pp.str
                    "Cannot use mutual definition with well-founded recursion \
                     or measure")
-            | _ -> () ))
-        fixpoint_exprl;
-      let fixpoint_exprl = recompute_binder_list fixpoint_exprl in
+            | _ -> () )
+        rec_order;
+      let fixpoint_exprl = recompute_binder_list fix in
       let fix_names =
         List.map (function {Vernacexpr.fname} -> fname.CAst.v) fixpoint_exprl
       in
@@ -1834,7 +1817,7 @@ let do_generate_principle_aux pconstants on_error register_built
       let recdefs, _rec_impls = build_newrecursive fixpoint_exprl in
       let is_rec = List.exists (is_rec fix_names) recdefs in
       let lemma, evd, pconstants =
-        if register_built then register_struct is_rec fixpoint_exprl
+        if register_built then register_struct is_rec (rec_order, fixpoint_exprl)
         else (None, Evd.from_env (Global.env ()), pconstants)
       in
       let evd = ref evd in
@@ -2060,7 +2043,7 @@ let make_graph (f_ref : GlobRef.t) =
     | _ -> CErrors.user_err Pp.(str "Not a function reference")
   in
   match c_body.Declarations.const_body with
-  | Undef _ | Primitive _ | OpaqueDef _ -> CErrors.user_err (Pp.str "Cannot build a graph over an axiom!")
+  | Undef _ | Primitive _ | Symbol _ | OpaqueDef _ -> CErrors.user_err (Pp.str "Cannot build a graph over an axiom!")
   | Def body ->
     let env = Global.env () in
     let extern_body, extern_type =
@@ -2102,9 +2085,9 @@ let make_graph (f_ref : GlobRef.t) =
                      nal_tas)
               in
               let b' = add_args id.CAst.v new_args b in
+              Some (CAst.make (CStructRec (CAst.make rec_id))),
               { Vernacexpr.fname = id
               ; univs = None
-              ; rec_order = Some (CAst.make (CStructRec (CAst.make rec_id)))
               ; binders = nal_tas @ bl
               ; rtype = t
               ; body_def = Some b'
@@ -2114,15 +2097,15 @@ let make_graph (f_ref : GlobRef.t) =
         l
       | _ ->
         let fname = CAst.make (Label.to_id (Constant.label c)) in
-        [ { Vernacexpr.fname
+        [ None, { Vernacexpr.fname
           ; univs = None
-          ; rec_order = None
           ; binders = nal_tas
           ; rtype = t
           ; body_def = Some b
           ; notations = [] } ]
     in
     let mp = Constant.modpath c in
+    let expr_list = List.split expr_list in
     let pstate =
       do_generate_principle_aux [(c, UVars.Instance.empty)] error_error false
         false expr_list
@@ -2132,7 +2115,7 @@ let make_graph (f_ref : GlobRef.t) =
     List.iter
       (fun {Vernacexpr.fname = {CAst.v = id}} ->
         add_Function false (Constant.make2 mp (Label.of_id id)))
-      expr_list
+      (snd expr_list)
 
 (* *************** statically typed entrypoints ************************* *)
 
@@ -2217,7 +2200,6 @@ let build_case_scheme fa =
   let this_block_funs =
     Array.map (fun (c, _) -> (c, u)) this_block_funs_indexes
   in
-  let prop_sort = Sorts.InProp in
   let funs_indexes =
     let this_block_funs_indexes = Array.to_list this_block_funs_indexes in
     let eq c1 c2 = Environ.QConstant.equal env c1 c2 in
@@ -2225,7 +2207,7 @@ let build_case_scheme fa =
   in
   let ind, sf =
     let ind = (first_fun_kn, funs_indexes) in
-    ((ind, UVars.Instance.empty) (*FIXME*), prop_sort)
+    ((ind, EConstr.EInstance.empty) (*FIXME*), EConstr.ESorts.prop)
   in
   let sigma, scheme =
     Indrec.build_case_analysis_scheme_default env sigma ind sf

@@ -10,7 +10,6 @@
 
 open Util
 open Constr
-open EConstr
 open Names
 open Pattern
 
@@ -22,11 +21,21 @@ let dnet_depth = ref 8
 
 type term_label =
 | GRLabel of GlobRef.t
+| ProjLabel of Projection.Repr.t * int
+ (** [ProjLabel (p, n)] represents a possibly partially applied projection [p]
+     with [n] arguments missing to be fully applied. [n] is always zero for
+     labels derived from [Proj] terms but can be greater than zero for labels
+     derived from compatibility constants. *)
 | ProdLabel
 | SortLabel
+| CaseLabel
 
 let compare_term_label t1 t2 = match t1, t2 with
-| GRLabel gr1, GRLabel gr2 -> GlobRef.CanOrd.compare gr1 gr2
+| GRLabel gr1, GRLabel gr2 -> GlobRef.UserOrd.compare gr1 gr2
+| ProjLabel (p1, n1), ProjLabel (p2, n2) ->
+  let c = Int.compare n1 n2 in
+  if c <> 0 then c else
+    (Projection.Repr.UserOrd.compare p1 p2)
 | _ -> Stdlib.compare t1 t2 (** OK *)
 
 type 'res lookup_res = 'res Dn.lookup_res = Label of 'res | Nothing | Everything
@@ -53,43 +62,31 @@ let rec eta_reduce_pat (p:constr_pattern) = match p with
   else p
 | PRef _ | PVar _ | PEvar _ | PRel _ | PApp _ | PSoApp _ | PProj _ | PProd _
 | PLetIn _ | PSort _ | PMeta _ | PIf _ | PCase _ | PFix _ | PCoFix _ | PInt _
-| PFloat _ | PArray _ -> p
+| PFloat _ | PString _ | PArray _ -> p
 | PUninstantiated _ -> .
-
-let decomp_pat p =
-  let rec decrec acc = function
-    | PApp (f,args) -> decrec (Array.to_list args @ acc) f
-    | PProj (p, c) ->
-      let hole = PMeta None in
-      let params = List.make (Projection.npars p) hole in
-      (PRef (GlobRef.ConstRef (Projection.constant p)), params @ c :: acc)
-    | c -> (c,acc)
-  in
-  decrec [] (eta_reduce_pat p)
-
-let decomp sigma t =
-  let rec decrec acc c = match EConstr.kind sigma c with
-    | App (f,l) -> decrec (Array.fold_right (fun a l -> a::l) l acc) f
-    | Proj (p, _, c) ->
-      (* Hack: fake evar to generate [Everything] in the functions below *)
-      let hole = mkEvar (Evar.unsafe_of_int (-1), SList.empty) in
-      let params = List.make (Projection.npars p) hole in
-      (* UnsafeMonomorphic: universes are ignored by the only user *)
-      (UnsafeMonomorphic.mkConst (Projection.constant p), params @ c :: acc)
-    | Cast (c1,_,_) -> decrec acc c1
-    | _ -> (c,acc)
-  in
-    decrec [] (eta_reduce sigma t)
 
 let evaluable_constant c env ts =
   (* This is a hack to work around a broken Print Module implementation, see
      bug #2668. *)
   (if Environ.mem_constant c env then Environ.evaluable_constant c env else true) &&
-  (match ts with None -> true | Some ts -> TransparentState.is_transparent_constant ts c)
+  (match ts with None -> true | Some ts -> Structures.PrimitiveProjections.is_transparent_constant ts c)
 
 let evaluable_named id env ts =
   (try Environ.evaluable_named id env with Not_found -> true) &&
   (match ts with None -> true | Some ts -> TransparentState.is_transparent_variable ts id)
+
+let evaluable_projection p _env ts =
+  (match ts with None -> true | Some ts -> TransparentState.is_transparent_projection ts (Projection.repr p))
+
+let label_of_opaque_constant c stack =
+  match Structures.PrimitiveProjections.find_opt c with
+  | None -> (GRLabel (ConstRef c), stack)
+  | Some p ->
+    let n_args_needed = Structures.Structure.projection_nparams c + 1 in (* +1 for the record value itself *)
+    let n_args_given = List.length stack in
+    let n_args_missing = max (n_args_needed - n_args_given) 0 in
+    let n_args_drop = min (n_args_needed - 1) n_args_given in (* we do not drop the record value from the stack *)
+    (ProjLabel (p, n_args_missing), List.skipn n_args_drop stack)
 
 (* The pattern view functions below try to overapproximate βι-neutral terms up
    to η-conversion. Some historical design choices are still incorrect w.r.t. to
@@ -97,54 +94,104 @@ let evaluable_named id env ts =
 
 let constr_val_discr env sigma ts t =
   (* Should we perform weak βι here? *)
-  let c, l = decomp sigma t in
   let open GlobRef in
-    match EConstr.kind sigma c with
-    | Const (c,u) ->
-      if evaluable_constant c env ts then Everything
-      else Label(GRLabel (ConstRef c),l)
-    | Ind (ind_sp,u) -> Label(GRLabel (IndRef ind_sp),l)
-    | Construct (cstr_sp,u) -> Label(GRLabel (ConstructRef cstr_sp),l)
-    | Var id ->
-      if evaluable_named id env ts then Everything
-      else Label(GRLabel (VarRef id),l)
-    | Prod (n, d, c) ->
-      Label(ProdLabel, [d; c])
-    | Lambda (n, d, c) ->
-      if Option.is_empty ts && List.is_empty l then Nothing
-      else Everything
+  let rec decomp stack t =
+    match EConstr.kind sigma t with
+    | App (f,l) -> decomp (Array.fold_right (fun a l -> a::l) l stack) f
+    | Proj (p,_,c) when evaluable_projection p env ts -> Everything
+    | Proj (p,_,c) -> Label(ProjLabel (Projection.repr p, 0), c :: stack)
+    | Cast (c,_,_) -> decomp stack c
+    | Const (c,_) when evaluable_constant c env ts -> Everything
+    | Const (c,_) ->
+      let c = Environ.QConstant.canonize env c in
+      Label (label_of_opaque_constant c stack)
+    | Ind (ind_sp,_) ->
+      let ind_sp = Environ.QInd.canonize env ind_sp in
+      Label(GRLabel (IndRef ind_sp), stack)
+    | Construct (cstr_sp,_) ->
+      let cstr_sp = Environ.QConstruct.canonize env cstr_sp in
+      Label(GRLabel (ConstructRef cstr_sp), stack)
+    | Var id when evaluable_named id env ts -> Everything
+    | Var id -> Label(GRLabel (VarRef id), stack)
+    | Prod (n,d,c) -> Label(ProdLabel, [d; c])
+    | Lambda _ when Option.is_empty ts && List.is_empty stack -> Nothing
+    | Lambda _ -> Everything
     | Sort _ -> Label(SortLabel, [])
     | Evar _ -> Everything
     | Case (_, _, _, _, _, c, _) ->
-      (* Overapproximate wildly. TODO: be less brutal. *)
-      Everything
-    | Rel _ | Meta _ | Cast _ | LetIn _ | App _ | Fix _ | CoFix _
-    | Proj _ | Int _ | Float _ | Array _ -> Nothing
+      begin
+        match decomp stack c with
+        | Label (GRLabel (ConstructRef _), _) -> Everything (* over-approximating w.r.t. [fMATCH] *)
+        | Label _  | Nothing -> Label(CaseLabel, c :: stack)
+        | Everything -> Everything
+      end
+    | Rel _ | Meta _ | LetIn _ | Fix _ | CoFix _
+    | Int _ | Float _ | String _ | Array _ -> Nothing
+  in
+  decomp [] (eta_reduce sigma t)
 
-let constr_pat_discr env ts t =
+let constr_pat_discr env ts p =
   let open GlobRef in
-  match decomp_pat t with
-  | PRef ((IndRef _) as ref), args
-  | PRef ((ConstructRef _ ) as ref), args -> Some (GRLabel ref,args)
-  | PRef ((VarRef v) as ref), args ->
-    if evaluable_named v env ts then None
-    else Some(GRLabel ref,args)
-  | PRef ((ConstRef c) as ref), args ->
-    if evaluable_constant c env ts then None
-    else Some (GRLabel ref, args)
-  | PVar v, args ->
-    if evaluable_named v env ts then None
-    else Some(GRLabel (VarRef v),args)
-  | PProd (_, d, c), [] ->
-    Some (ProdLabel, [d ; c])
-  | PLambda (_, d, c), [] -> None
-  | PSort s, [] ->
-    Some (SortLabel, [])
-  | _ -> None
+  let rec decomp stack p =
+    match p with
+    | PApp (f,args) -> decomp (Array.to_list args @ stack) f
+    | PProj (p,c) when evaluable_projection p env ts -> None
+    | PProj (p,c) -> Some (ProjLabel (Projection.repr p, 0), c :: stack)
+    | PRef ((IndRef _) as ref)
+    | PRef ((ConstructRef _ ) as ref) ->
+      let ref = Environ.QGlobRef.canonize env ref in
+      Some (GRLabel ref, stack)
+    | PRef (VarRef v) when evaluable_named v env ts -> None
+    | PRef ((VarRef _) as ref) -> Some (GRLabel ref, stack)
+    | PRef (ConstRef c) when evaluable_constant c env ts -> None
+    | PRef (ConstRef c) ->
+      let c = Environ.QConstant.canonize env c in
+      Some (label_of_opaque_constant c stack)
+    | PVar v when evaluable_named v env ts -> None
+    | PVar v -> Some (GRLabel (VarRef v), stack)
+    | PProd (_,d,c) when stack = [] -> Some (ProdLabel, [d ; c])
+    | PSort s when stack = [] -> Some (SortLabel, [])
+    | PCase(_,_,p,_) | PIf(p,_,_) ->
+      begin
+        match decomp stack p with
+        | Some (GRLabel (ConstructRef _), _) -> None (* over-approximating w.r.t. [fMATCH] *)
+        | Some _ -> Some (CaseLabel, p :: stack)
+        | None -> None
+      end
+    | _ -> None
+  in
+  decomp [] (eta_reduce_pat p)
+
+let constr_pat_discr_syntactic env p =
+  let open GlobRef in
+  let rec decomp stack p =
+    match eta_reduce_pat p with
+    | PApp (f,args) -> decomp (Array.to_list args @ stack) f
+    | PProj (p,c) -> Some (ProjLabel (Names.Projection.repr p, 0), c :: stack)
+    | PRef ((IndRef _) as ref)
+    | PRef ((ConstructRef _ ) as ref) ->
+      let ref = Environ.QGlobRef.canonize env ref in
+      Some (GRLabel ref, stack)
+    | PRef ((VarRef _) as ref) -> Some (GRLabel ref, stack)
+    | PRef ((ConstRef _) as ref) ->
+      let ref = Environ.QGlobRef.canonize env ref in
+      Some (GRLabel ref, stack)
+    | PVar v -> Some (GRLabel (VarRef v), stack)
+    | PProd (_,d,c) when stack = [] -> Some (ProdLabel, [d ; c])
+    | PSort s when stack = [] -> Some (SortLabel, [])
+    | _ -> None
+  in
+  decomp [] p
 
 let bounded_constr_pat_discr env st (t,depth) =
   if Int.equal depth 0 then None
   else match constr_pat_discr env st t with
+  | None -> None
+  | Some (c,l) -> Some(c,List.map (fun c -> (c,depth-1)) l)
+
+let bounded_constr_pat_discr_syntactic env (t,depth) =
+  if Int.equal depth 0 then None
+  else match constr_pat_discr_syntactic env t with
   | None -> None
   | Some (c,l) -> Some(c,List.map (fun c -> (c,depth-1)) l)
 
@@ -173,6 +220,9 @@ struct
 
   let pattern env st pat =
     Dn.pattern (bounded_constr_pat_discr env st) (pat, !dnet_depth)
+
+  let pattern_syntactic env pat =
+    Dn.pattern (bounded_constr_pat_discr_syntactic env) (pat, !dnet_depth)
 
   let constr_pattern env sigma st pat =
     let mk p = match bounded_constr_val_discr env st sigma p with

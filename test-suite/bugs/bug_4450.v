@@ -18,10 +18,12 @@ Admitted.
 Polymorphic Axiom funi@{i} : f unit@{i}.
 
 Goal (forall U, f U) -> (*(f unit -> False) ->  *)False /\ False.
-  eauto using (fapp unit funi). (* The two fapp's have different universes *)
+  pose (H := fapp unit funi).
+  eauto using H. (* The two fapp's have different universes *)
 Qed.
 
-#[export] Hint Resolve (fapp unit funi) : mylems.
+Definition fapp0 := fapp unit funi.
+#[export] Hint Resolve fapp0 : mylems.
 
 Goal (forall U, f U) -> (*(f unit -> False) ->  *)False /\ False.
   eauto with mylems. (* Forces the two fapps at the same level *)
@@ -38,10 +40,10 @@ Polymorphic Axiom maketype@{i} : MyType@{i}.
 
 Goal MyType@{l}.
 Proof.
-  Fail solve [ eauto using maketype@{m} ].
+  Fail solve [ pose (mk := maketype@{m}); eauto using mk ].
   eauto using maketype.
   Undo.
-  eauto using maketype@{n}.
+  pose (mk := maketype@{n}); eauto using mk.
 Qed.
 
 Axiom foo : forall (A : Type), list A.
@@ -50,7 +52,7 @@ Polymorphic Axiom foop@{i} : forall (A : Type@{i}), list A.
 Universe x y.
 Goal list Type@{x}.
 Proof.
-  eauto using (foo Type). (* Refreshes the term *)
+  pose (H := foo Type); eauto using H. (* Refreshes the term *)
   Undo.
   eauto using foo. Show Universes.
   Undo.

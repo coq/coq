@@ -37,7 +37,7 @@ let mytclWithHoles tac with_evars c =
 
 (**********************************************************************)
 (* replace, discriminate, injection, simplify_eq                      *)
-(* cutrewrite, dependent rewrite                                      *)
+(* dependent rewrite                                      *)
 
 let with_delayed_uconstr ist c tac =
   let flags = Pretyping.{
@@ -48,13 +48,16 @@ let with_delayed_uconstr ist c tac =
     expand_evars = true;
     program_mode = false;
     polymorphic = false;
+    undeclared_evars_patvars = false;
+    patvars_abstract = false;
+    unconstrained_sorts = false;
  } in
   let c = Tacinterp.type_uconstr ~flags ist c in
   Tacticals.tclDELAYEDWITHHOLES false c tac
 
-let replace_in_clause_maybe_by ist c1 c2 cl tac =
+let replace_in_clause_maybe_by ist dir_opt c1 c2 cl tac =
   with_delayed_uconstr ist c1
-  (fun c1 -> Equality.replace_in_clause_maybe_by c1 c2 cl (Option.map (Tacinterp.tactic_of_value ist) tac))
+  (fun c1 -> Equality.replace_in_clause_maybe_by dir_opt c1 c2 cl (Option.map (Tacinterp.tactic_of_value ist) tac))
 
 let replace_term ist dir_opt c cl =
   with_delayed_uconstr ist c (fun c -> Equality.replace_term dir_opt c cl)
@@ -84,6 +87,9 @@ let constr_flags () = Pretyping.{
   expand_evars = true;
   program_mode = false;
   polymorphic = false;
+  undeclared_evars_patvars = false;
+  patvars_abstract = false;
+  unconstrained_sorts = false;
 }
 
 let refine_tac ist ~simple ~with_classes c =
@@ -343,7 +349,7 @@ let declare_equivalent_keys c c' =
     let evd = Evd.from_env env in
     let (evd, c) = Constrintern.interp_open_constr env evd c in
     let kind c = EConstr.kind evd c in
-    Keys.constr_key kind c
+    Keys.constr_key env kind c
   in
   let k1 = get_key c in
   let k2 = get_key c' in

@@ -1,6 +1,11 @@
 (lang dune 3.6)
 (name coq)
-(using coq 0.3)
+
+; We use directory targets in documentation
+(using directory-targets 0.1)
+
+; We need this due to `(coq.pp )` declarations
+(using coq 0.6)
 
 (formatting
  (enabled_for ocaml))
@@ -27,8 +32,9 @@
   (dune (>= 3.6.1))
   (ocaml (>= 4.09.0))
   (ocamlfind (>= 1.8.1))
-  (zarith (>= 1.11)))
- (depopts coq-native)
+  (zarith (>= 1.11))
+  (conf-linux-libc-dev (= :os "linux")))
+ (depopts coq-native memprof-limits memtrace)
  (synopsis "The Coq Proof Assistant -- Core Binaries and Tools")
  (description "Coq is a formal proof management system. It provides
 a formal language to write mathematical definitions, executable
@@ -91,7 +97,7 @@ structured way."))
   conf-adwaita-icon-theme
   (coqide-server (= :version))
   (cairo2 (>= 0.6.4))
-  (lablgtk3-sourceview3 (>= 3.1.2)))
+  (lablgtk3-sourceview3 (and (>= 3.1.2) (or (>= 3.1.5) (<> :os "windows")))))
  (synopsis "The Coq Proof Assistant --- GTK3 IDE")
  (description "Coq is a formal proof management system. It provides
 a formal language to write mathematical definitions, executable
@@ -121,7 +127,9 @@ This package provides the Coq Reference Manual."))
   (coq-core (= :version))
   (coq-stdlib (= :version))
   (coqide-server (= :version))
-  (ounit2 :with-test))
+  (ounit2 :with-test)
+  (conf-python-3 :with-test)
+  (conf-time :with-test))
  (synopsis "The Coq Proof Assistant")
  (description "Coq is a formal proof management system. It provides
 a formal language to write mathematical definitions, executable

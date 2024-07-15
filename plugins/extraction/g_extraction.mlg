@@ -20,19 +20,17 @@ DECLARE PLUGIN "coq-core.plugins.extraction"
 
 (* ML names *)
 
-open Ltac_plugin
 open Stdarg
 open Pp
 open Names
 open Table
 open Extract_env
 
-let pr_mlname _ _ _ s = spc () ++ qs s
+let pr_mlname s = spc () ++ qs s
 
 }
 
-ARGUMENT EXTEND mlname
-  TYPED AS string
+VERNAC ARGUMENT EXTEND mlname
   PRINTED BY { pr_mlname }
 | [ preident(id) ] -> { id }
 | [ string(s) ] -> { s }
@@ -40,13 +38,13 @@ END
 
 {
 
-let pr_int_or_id _ _ _ = function
+let pr_int_or_id = function
   | ArgInt i -> int i
   | ArgId id -> Id.print id
 
 }
 
-ARGUMENT EXTEND int_or_id
+VERNAC ARGUMENT EXTEND int_or_id
   PRINTED BY { pr_int_or_id }
 | [ preident(id) ] -> { ArgId (Id.of_string id) }
 | [ integer(i) ] -> { ArgInt i }
@@ -72,7 +70,7 @@ END
 
 (* Extraction commands *)
 
-VERNAC COMMAND EXTEND Extraction CLASSIFIED AS QUERY
+VERNAC COMMAND EXTEND Extraction CLASSIFIED AS QUERY STATE opaque_access
 (* Extraction in the Coq toplevel *)
 | [ "Extraction" global(x) ] -> { simple_extraction x }
 | [ "Recursive" "Extraction" ne_global_list(l) ] -> { full_extraction None l }
@@ -86,19 +84,19 @@ VERNAC COMMAND EXTEND Extraction CLASSIFIED AS QUERY
   -> { extract_and_compile l }
 END
 
-VERNAC COMMAND EXTEND SeparateExtraction CLASSIFIED AS QUERY
+VERNAC COMMAND EXTEND SeparateExtraction CLASSIFIED AS QUERY STATE opaque_access
 (* Same, with content split in several files *)
 | [ "Separate" "Extraction" ne_global_list(l) ]
   -> { separate_extraction l }
 END
 
 (* Modular extraction (one Coq library = one ML module) *)
-VERNAC COMMAND EXTEND ExtractionLibrary CLASSIFIED AS QUERY
+VERNAC COMMAND EXTEND ExtractionLibrary CLASSIFIED AS QUERY STATE opaque_access
 | [ "Extraction" "Library" identref(m) ]
   -> { extraction_library false m }
 END
 
-VERNAC COMMAND EXTEND RecursiveExtractionLibrary CLASSIFIED AS QUERY
+VERNAC COMMAND EXTEND RecursiveExtractionLibrary CLASSIFIED AS QUERY STATE opaque_access
 | [ "Recursive" "Extraction" "Library" identref(m) ]
   -> { extraction_library true m }
 END
@@ -152,11 +150,47 @@ VERNAC COMMAND EXTEND ResetExtractionBlacklist CLASSIFIED AS SIDEFF
   -> { reset_extraction_blacklist () }
 END
 
+(* Commands for setting, printing and resetting callbacks extraction. *)
+
+(* Defining a Coq object as ML callback for FFI call target from C *)
+VERNAC COMMAND EXTEND ExtractionCallback CLASSIFIED AS SIDEFF
+| [ "Extract" "Callback" string_opt(o) global(x) ]
+  -> { extract_callback o x }
+END
+
+VERNAC COMMAND EXTEND PrintExtractionCallback CLASSIFIED AS QUERY
+| [ "Print" "Extraction" "Callback" ]
+  -> {Feedback.msg_notice (print_extraction_callback ()) }
+END
+
+VERNAC COMMAND EXTEND ResetExtractionCallback CLASSIFIED AS SIDEFF
+| [ "Reset" "Extraction" "Callback" ]
+  -> { reset_extraction_callback () }
+END
+
+(* Commands for printing and resetting foreigns extraction. *)
+VERNAC COMMAND EXTEND PrintExtractionForeign CLASSIFIED AS QUERY
+| [ "Print" "Extraction" "Foreign" ]
+  -> {Feedback.msg_notice (print_extraction_foreign ()) }
+END
+
+(*
+VERNAC COMMAND EXTEND ResetExtractionForeign CLASSIFIED AS SIDEFF
+| [ "Reset" "Extraction" "Foreign" ]
+  -> { reset_extraction_foreign () }
+END
+*)
 
 (* Overriding of a Coq object by an ML one *)
 VERNAC COMMAND EXTEND ExtractionConstant CLASSIFIED AS SIDEFF
 | [ "Extract" "Constant" global(x) string_list(idl) "=>" mlname(y) ]
   -> { extract_constant_inline false x idl y }
+END
+
+(* Overriding of a Coq object by an ML one that will be a FFI call to C *)
+VERNAC COMMAND EXTEND ExtractionForeignConstant CLASSIFIED AS SIDEFF
+| [ "Extract" "Foreign" "Constant" global(x) "=>" string(y) ]
+  -> { extract_constant_foreign x y }
 END
 
 VERNAC COMMAND EXTEND ExtractionInlinedConstant CLASSIFIED AS SIDEFF

@@ -125,6 +125,13 @@ if (sp - num_args < coq_stack_threshold) {                                     \
 #define Coq_alloc_small(result, wosize, tag) Alloc_small(result, wosize, tag)
 #endif
 
+/* Beware: Alloc_small can only invoked for allocations smaller than
+   Max_young_wosize, which is usually 256. For larger allocations,
+   caml_alloc_shr needs to be used instead, and the block needs to be filled
+   using caml_initialize. Note that these two functions never trigger a GC,
+   so calling Setup_for_gc is not needed.
+*/
+
 /* If there is an asynchronous exception, we reset the vm */
 #define Handle_potential_exception(res) \
   if (Is_exception_result(res)) {       \
@@ -267,6 +274,16 @@ extern void caml_process_pending_signals(void);
 extern double coq_next_up(double);
 extern double coq_next_down(double);
 
+value coq_subst_instance(value arg, value tosubst)
+{
+  static const value * closure_f = NULL;
+  if (closure_f == NULL) {
+     /* First time around, look up by name */
+    closure_f = caml_named_value("coq_subst_instance");
+  }
+  return caml_callback2_exn(*closure_f, arg, tosubst);
+}
+
 /* The interpreter itself */
 
 value coq_interprete
@@ -403,6 +420,18 @@ value coq_interprete
         Next;
       }
 
+      Instruct(PUSHACCMANY) {
+        int first = *pc++;
+        int size = *pc++;
+        int i;
+        print_instr("PUSHACCMANY");
+        sp -= size;
+        for (i = 1; i < size; ++i) sp[i - 1] = sp[first + i];
+        sp[size - 1] = accu;
+        accu = sp[first];
+        Next;
+      }
+
       Instruct(POP){
         print_instr("POP");
         sp += *pc++;
@@ -465,6 +494,20 @@ value coq_interprete
         accu = Field(coq_env, 2 + *pc++);
         Next;
       }
+
+      Instruct(PUSHENVACCMANY) {
+        int first = *pc++;
+        int size = *pc++;
+        int i;
+        print_instr("PUSHENVACCMANY");
+        first += 2;
+        sp -= size;
+        for (i = 1; i < size; ++i) sp[i - 1] = Field(coq_env, first + i);
+        sp[size - 1] = accu;
+        accu = Field(coq_env, first);
+        Next;
+      }
+
       /* Function application */
 
       Instruct(PUSH_RETADDR) {
@@ -573,20 +616,26 @@ value coq_interprete
       /* We also check for signals */
 #if OCAML_VERSION >= 50000
       if (Caml_check_gc_interrupt(Caml_state)) {
+        Setup_for_gc;
         value res = caml_process_pending_actions_exn();
         Handle_potential_exception(res);
+        Restore_after_gc;
       }
 #elif OCAML_VERSION >= 41000
       if (caml_something_to_do) {
+        Setup_for_gc;
         value res = caml_process_pending_actions_exn();
         Handle_potential_exception(res);
+        Restore_after_gc;
       }
 #else
       if (caml_signals_are_pending) {
         /* If there's a Ctrl-C, we reset the vm */
         intnat sigint = caml_pending_signals[SIGINT];
         if (sigint) { coq_sp = coq_stack_high; }
+        Setup_for_gc;
         caml_process_pending_signals();
+        Restore_after_gc;
         if (sigint) {
           caml_failwith("Coq VM: Fatal error: SIGINT signal detected "
                         "but no exception was raised");
@@ -761,8 +810,6 @@ value coq_interprete
               for (i = 3; i < sz; ++i)
                 Field(block, i) = *sp++;
             } else {
-              // too large for Alloc_small, so use caml_alloc_shr instead
-              // it never triggers a GC, so no need for Setup_for_gc
               block = caml_alloc_shr(sz, Closure_tag);
               caml_initialize(&Field(block, 2), accu);
               for (i = 3; i < sz; ++i)
@@ -815,7 +862,7 @@ value coq_interprete
         *--sp=accu;
         Coq_alloc_small(accu, nfuncs * 3 + nvars, Closure_tag);
         Field(accu, nfuncs * 3 + nvars - 1) = *sp++;
-        p = &Field(accu, 0);
+        p = (value *) &Field(accu, 0);
         *p++ = (value) (pc + pc[0]);
         *p++ = Val_int(nfuncs * 3 - 1);
         for (i = 1; i < nfuncs; i++) {
@@ -931,16 +978,21 @@ value coq_interprete
         print_instr("MAKEBLOCK, tag=");
         if (wosize == 0) {
           accu = Atom(tag);
-        } else {
+        } else if (wosize <= Max_young_wosize) {
           Coq_alloc_small(block, wosize, tag);
           Field(block, 0) = accu;
           for (i = 1; i < wosize; i++) Field(block, i) = *sp++;
           accu = block;
+        } else {
+          block = caml_alloc_shr(wosize, tag);
+          caml_initialize(&Field(block, 0), accu);
+          for (i = 1; i < wosize; i++) caml_initialize(&Field(block, i), *sp++);
+          accu = block;
         }
         Next;
       }
-      Instruct(MAKEBLOCK1) {
 
+      Instruct(MAKEBLOCK1) {
         tag_t tag = *pc++;
         value block;
         print_instr("MAKEBLOCK1, tag=");
@@ -997,13 +1049,12 @@ value coq_interprete
       Instruct(SWITCH) {
         uint32_t sizes = *pc++;
         print_instr("SWITCH");
-        print_int(sizes & 0xFFFFFF);
         if (Is_block(accu)) {
           long index = Tag_val(accu);
           if (index == Closure_tag) index = 0;
           print_instr("block");
           print_lint(index);
-          pc += pc[(sizes & 0xFFFFFF) + index];
+          pc += pc[(sizes >> 8) + index];
         } else {
           long index = Long_val(accu);
           print_instr("constant");
@@ -1163,8 +1214,6 @@ value coq_interprete
           for (i = size; i < sz; ++i)
             Field(accu, i) = *sp++;
         } else {
-          // too large for Alloc_small, so use caml_alloc_shr instead
-          // it never triggers a GC, so no need for Setup_for_gc
           accu = caml_alloc_shr(sz, Closure_tag);
           for (i = 0; i < size; ++i)
             caml_initialize(&Field(accu, i), Field(coq_env, i));
@@ -1231,12 +1280,19 @@ value coq_interprete
             *--sp=Field(coq_global_data, annot);
             /* We save the stack */
             if (sz == 0) accu = Atom(0);
-            else {
+            else if (sz <= Max_young_wosize) {
               Coq_alloc_small(accu, sz, Default_tag);
               if (Is_tailrec_switch(*sp)) {
                 for (i = 0; i < sz; i++) Field(accu, i) = sp[i+2];
               }else{
                 for (i = 0; i < sz; i++) Field(accu, i) = sp[i+5];
+              }
+            } else {
+              accu = caml_alloc_shr(sz, Default_tag);
+              if (Is_tailrec_switch(*sp)) {
+                for (i = 0; i < sz; i++) caml_initialize(&Field(accu, i), sp[i+2]);
+              }else{
+                for (i = 0; i < sz; i++) caml_initialize(&Field(accu, i), sp[i+5]);
               }
             }
             *--sp = accu;
@@ -1283,8 +1339,6 @@ value coq_interprete
           for (i = 3; i < sz; ++i)
             Field(accu, i) = *sp++;
         } else {
-          // too large for Alloc_small, so use caml_alloc_shr instead
-          // it never triggers a GC, so no need for Setup_for_gc
           accu = caml_alloc_shr(sz, Closure_tag);
           caml_initialize(&Field(accu, 2), Field(coq_atom_tbl, *pc));
           for (i = 3; i < sz; ++i)
@@ -1296,6 +1350,17 @@ value coq_interprete
         coq_env = sp[1];
         coq_extra_args = Long_val(sp[2]);
         sp += 3;
+        Next;
+      }
+
+      Instruct(SUBSTINSTANCE) {
+        print_instr("SUBSTINSTANCE");
+        print_int(*pc);
+
+        Setup_for_caml_call;
+        accu = coq_subst_instance(accu, Field(coq_global_data, *pc++));
+        Restore_after_caml_call;
+        Handle_potential_exception(accu);
         Next;
       }
 
@@ -1930,6 +1995,26 @@ value coq_interprete
           Restore_after_caml_call;
           Handle_potential_exception(accu);
           sp += 1;
+          pc++;
+        } else pc += *pc;
+        Next;
+      }
+
+      Instruct(CHECKCAMLCALL3) {
+        // arity-3 callback, no argument can be an accumulator
+        value arg1;
+        value arg2;
+        print_instr("CHECKCAMLCALL3");
+        if (!Is_accu(accu) && !Is_accu(sp[0]) && !Is_accu(sp[1])) {
+          pc++;
+          arg1 = sp[0];
+          arg2 = sp[1];
+          Setup_for_caml_call;
+          print_int(*pc);
+          accu = caml_callback3_exn(Field(coq_global_data, *pc), accu, arg1, arg2);
+          Restore_after_caml_call;
+          Handle_potential_exception(accu);
+          sp += 2;
           pc++;
         } else pc += *pc;
         Next;

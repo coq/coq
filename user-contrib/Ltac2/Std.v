@@ -214,8 +214,8 @@ Ltac2 @ external revert : ident list -> unit := "coq-core.plugins.ltac2" "tac_re
 
 Ltac2 @ external admit : unit -> unit := "coq-core.plugins.ltac2" "tac_admit".
 
-Ltac2 @ external fix_ : ident option -> int -> unit := "coq-core.plugins.ltac2" "tac_fix".
-Ltac2 @ external cofix_ : ident option -> unit := "coq-core.plugins.ltac2" "tac_cofix".
+Ltac2 @ external fix_ : ident -> int -> unit := "coq-core.plugins.ltac2" "tac_fix".
+Ltac2 @ external cofix_ : ident -> unit := "coq-core.plugins.ltac2" "tac_cofix".
 
 Ltac2 @ external clear : ident list -> unit := "coq-core.plugins.ltac2" "tac_clear".
 Ltac2 @ external keep : ident list -> unit := "coq-core.plugins.ltac2" "tac_keep".
@@ -255,11 +255,11 @@ Ltac2 Type debug := [ Off | Info | Debug ].
 
 Ltac2 Type strategy := [ BFS | DFS ].
 
-Ltac2 @ external trivial : debug -> (unit -> constr) list -> ident list option -> unit := "coq-core.plugins.ltac2" "tac_trivial".
+Ltac2 @ external trivial : debug -> reference list -> ident list option -> unit := "coq-core.plugins.ltac2" "tac_trivial".
 
-Ltac2 @ external auto : debug -> int option -> (unit -> constr) list -> ident list option -> unit := "coq-core.plugins.ltac2" "tac_auto".
+Ltac2 @ external auto : debug -> int option -> reference list -> ident list option -> unit := "coq-core.plugins.ltac2" "tac_auto".
 
-Ltac2 @ external eauto : debug -> int option -> (unit -> constr) list -> ident list option -> unit := "coq-core.plugins.ltac2" "tac_eauto".
+Ltac2 @ external eauto : debug -> int option -> reference list -> ident list option -> unit := "coq-core.plugins.ltac2" "tac_eauto".
 
 Ltac2 @ external typeclasses_eauto : strategy option -> int option -> ident list option -> unit := "coq-core.plugins.ltac2" "tac_typeclasses_eauto".
 
@@ -270,3 +270,8 @@ Ltac2 @ external resolve_tc : constr -> unit := "coq-core.plugins.ltac2" "tac_re
     Does not focus. *)
 
 Ltac2 @ external unify : constr -> constr -> unit := "coq-core.plugins.ltac2" "tac_unify".
+
+Ltac2 @ external congruence : int option -> constr list option -> unit :=
+  "coq-core.plugins.ltac2" "congruence".
+Ltac2 @ external simple_congruence : int option -> constr list option -> unit :=
+  "coq-core.plugins.ltac2" "simple_congruence".

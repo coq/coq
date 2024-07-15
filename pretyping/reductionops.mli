@@ -31,9 +31,17 @@ module ReductionBehaviour : sig
   type t = NeverUnfold | UnfoldWhen of when_flags | UnfoldWhenNoMatch of when_flags
   and when_flags = { recargs : int list ; nargs : int option }
 
+  module Db : sig
+    type t
+    val get : unit -> t
+    val empty : t
+    val print : t -> Constant.t -> Pp.t
+    val all_never_unfold : t -> Cpred.t
+  end
+
   val set : local:bool -> Constant.t -> t -> unit
+  val get_from_db : Db.t -> Constant.t -> t option
   val get : Constant.t -> t option
-  val all_never_unfold : unit -> Cpred.t
   val print : Constant.t -> Pp.t
 end
 
@@ -60,10 +68,12 @@ module Stack : sig
 
   type case_stk
 
+  val mkCaseStk : case_info * EInstance.t * EConstr.t array * EConstr.case_return * EConstr.t pcase_invert * EConstr.case_branch array -> case_stk
+
   type member =
   | App of app_node
   | Case of case_stk
-  | Proj of Projection.t * Sorts.relevance
+  | Proj of Projection.t * ERelevance.t
   | Fix of EConstr.fixpoint * t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * t * CPrimitives.args_red
   and t = member list
@@ -114,7 +124,7 @@ module Stack : sig
   val zip : evar_map -> constr * t -> constr
 
   val expand_case : env -> evar_map -> case_stk ->
-    case_info * EInstance.t * constr array * ((rel_context * constr) * Sorts.relevance) * (rel_context * constr) array
+    case_info * EInstance.t * constr array * ((rel_context * constr) * ERelevance.t) * (rel_context * constr) array
 end
 
 (************************************************************************)
@@ -184,11 +194,11 @@ val hnf_lam_app      : env -> evar_map -> constr -> constr -> constr
 val hnf_lam_appvect  : env -> evar_map -> constr -> constr array -> constr
 val hnf_lam_applist  : env -> evar_map -> constr -> constr list -> constr
 
-val whd_decompose_prod : env -> evar_map -> types -> (Name.t Context.binder_annot * constr) list * types
+val whd_decompose_prod : env -> evar_map -> types -> (Name.t EConstr.binder_annot * constr) list * types
 (** Decompose a type into a sequence of products and a non-product conclusion
     in head normal form, using head-reduction to expose the products *)
 
-val whd_decompose_lambda : env -> evar_map -> constr -> (Name.t Context.binder_annot * constr) list * constr
+val whd_decompose_lambda : env -> evar_map -> constr -> (Name.t EConstr.binder_annot * constr) list * constr
 (** Decompose a term into a sequence of lambdas and a non-lambda conclusion
     in head normal form, using head-reduction to expose the lambdas *)
 
@@ -196,13 +206,13 @@ val whd_decompose_prod_decls : env -> evar_map -> types -> rel_context * types
 (** Decompose a type into a context and a conclusion not starting with a product or let-in,
     using head-reduction without zeta to expose the products and let-ins *)
 
-val whd_decompose_prod_n : env -> evar_map -> int -> types -> (Name.t Context.binder_annot * constr) list * types
+val whd_decompose_prod_n : env -> evar_map -> int -> types -> (Name.t EConstr.binder_annot * constr) list * types
 (** Like [whd_decompose_prod] but limited at [n] products; raises [Invalid_argument] if not enough products *)
 
-val whd_decompose_lambda_n : env -> evar_map -> int -> constr -> (Name.t Context.binder_annot * constr) list * constr
+val whd_decompose_lambda_n : env -> evar_map -> int -> constr -> (Name.t EConstr.binder_annot * constr) list * constr
 (** Like [whd_decompose_lambda] but limited at [n] lambdas; raises [Invalid_argument] if not enough lambdas *)
 
-val splay_arity : env -> evar_map -> constr -> (Name.t Context.binder_annot * constr) list * ESorts.t
+val splay_arity : env -> evar_map -> constr -> (Name.t EConstr.binder_annot * constr) list * ESorts.t
 (** Decompose an arity reducing let-ins; Raises [Reduction.NotArity] *)
 
 val dest_arity : env -> evar_map -> constr -> rel_context * ESorts.t
@@ -225,7 +235,7 @@ val whd_decompose_lambda_n_assum : env -> evar_map -> int -> constr -> rel_conte
 
 val reducible_mind_case : evar_map -> constr -> bool
 
-val find_conclusion : env -> evar_map -> constr -> (constr, constr, ESorts.t, EInstance.t) kind_of_term
+val find_conclusion : env -> evar_map -> constr -> (constr, constr, ESorts.t, EInstance.t, ERelevance.t) kind_of_term
 val is_arity : env -> evar_map -> constr -> bool
 val is_sort : env -> evar_map -> types -> bool
 
@@ -233,7 +243,7 @@ val contract_fix : evar_map -> fixpoint -> constr
 val contract_cofix : evar_map -> cofixpoint -> constr
 
 (** {6 Querying the kernel conversion oracle: opaque/transparent constants } *)
-val is_transparent : Environ.env -> Constant.t tableKey -> bool
+val is_transparent : Environ.env -> Evaluable.t -> bool
 
 (** {6 Conversion Functions (uses closures, lazy strategy) } *)
 
@@ -267,11 +277,14 @@ val vm_infer_conv : ?pb:conv_pb -> env -> evar_map -> constr -> constr ->
 val native_infer_conv : ?pb:conv_pb -> env -> evar_map -> constr -> constr ->
   evar_map option
 
+type genconv = {
+  genconv : 'a 'err. conv_pb -> l2r:bool -> Evd.evar_map -> TransparentState.t ->
+    Environ.env -> ('a, 'err) Conversion.generic_conversion_function
+}
 
 (** [infer_conv_gen] behaves like [infer_conv] but is parametrized by a
 conversion function. Used to pretype vm and native casts. *)
-val infer_conv_gen : (conv_pb -> l2r:bool -> evar_map -> TransparentState.t ->
-    Environ.env -> evar_map Conversion.generic_conversion_function) ->
+val infer_conv_gen : genconv ->
   ?catch_incon:bool -> ?pb:conv_pb -> ?ts:TransparentState.t -> env ->
   evar_map -> constr -> constr -> evar_map option
 
@@ -292,6 +305,10 @@ val whd_nored_state : state_reduction_function
 val whd_betaiota_deltazeta_for_iota_state :
   TransparentState.t -> state_reduction_function
 
+exception PatternFailure
+val apply_rules : (state -> state) -> env -> evar_map -> EInstance.t ->
+  Declarations.rewrite_rule list -> Stack.t -> econstr * Stack.t
+
 val is_head_evar : env -> evar_map -> constr -> bool
 
 (** {6 Meta-related reduction functions } *)
@@ -300,30 +317,30 @@ val meta_instance : env -> evar_map -> constr freelisted -> constr
 exception AnomalyInConversion of exn
 
 (* inferred_universes just gathers the constraints. *)
-val inferred_universes : (UGraph.t * Univ.Constraints.t) Conversion.universe_compare
+val inferred_universes : (UGraph.t * Univ.Constraints.t, UGraph.univ_inconsistency) Conversion.universe_compare
 
 (** Deprecated *)
 
-val splay_prod : env -> evar_map -> constr -> (Name.t Context.binder_annot * constr) list * constr
+val splay_prod : env -> evar_map -> constr -> (Name.t EConstr.binder_annot * constr) list * constr
 [@@ocaml.deprecated "Use [whd_decompose_prod] instead."]
-val splay_lam : env -> evar_map -> constr -> (Name.t Context.binder_annot * constr) list * constr
+val splay_lam : env -> evar_map -> constr -> (Name.t EConstr.binder_annot * constr) list * constr
 [@@ocaml.deprecated "Use [whd_decompose_lambda] instead."]
 val splay_prod_assum : env -> evar_map -> constr -> rel_context * constr
 [@@ocaml.deprecated "Use [whd_decompose_prod_decls] instead."]
 val splay_prod_n : env -> evar_map -> int -> constr -> rel_context * constr
-[@@ocaml.deprecated "This function contracts let-ins. Replace either with whd_decompose_prod_n (if only products are expected, thenm returning only a list of assumptions), whd_decompose_prod_n_assum (if let-ins are expected to be preserved, returning a rel_context), or whd_decompose_prod_n_decls (if let-ins are expected to be preserved and counted, returning also a rel_context)"]
+[@@ocaml.deprecated "This function contracts let-ins. Replace either with whd_decompose_prod_n (if only products are expected, then returning only a list of assumptions), whd_decompose_prod_n_assum (if let-ins are expected to be preserved, returning a rel_context), or whd_decompose_prod_n_decls (if let-ins are expected to be preserved and counted, returning also a rel_context)"]
 val splay_lam_n : env -> evar_map -> int -> constr -> rel_context * constr
 [@@ocaml.deprecated "This function contracts let-ins. Replace either with whd_decompose_lambda_n (if only lambdas are expected, then returning only a list of assumptions) or whd_decompose_lambda_n_assum (if let-ins are expected to be preserved, returning a rel_context)"]
 
 (** Re-deprecated in 8.19 *)
 
-val hnf_decompose_prod : env -> evar_map -> types -> (Name.t Context.binder_annot * constr) list * types
+val hnf_decompose_prod : env -> evar_map -> types -> (Name.t EConstr.binder_annot * constr) list * types
 [@@ocaml.deprecated "Use [whd_decompose_prod] instead."]
-val hnf_decompose_lambda : env -> evar_map -> constr -> (Name.t Context.binder_annot * constr) list * constr
+val hnf_decompose_lambda : env -> evar_map -> constr -> (Name.t EConstr.binder_annot * constr) list * constr
 [@@ocaml.deprecated "Use [whd_decompose_lambda] instead."]
 val hnf_decompose_prod_decls : env -> evar_map -> types -> rel_context * types
 [@@ocaml.deprecated "Use [whd_decompose_prod_decls] instead."]
 val hnf_decompose_prod_n_decls : env -> evar_map -> int -> types -> rel_context * types
-[@@ocaml.deprecated "This function contracts let-ins. Replace either with whd_decompose_prod_n (if only products are expected, thenm returning only a list of assumptions), whd_decompose_prod_n_assum (if let-ins are expected to be preserved, returning a rel_context), or whd_decompose_prod_n_decls (if let-ins are expected to be preserved and counted, returning also a rel_context)"]
+[@@ocaml.deprecated "This function contracts let-ins. Replace either with whd_decompose_prod_n (if only products are expected, then returning only a list of assumptions), whd_decompose_prod_n_assum (if let-ins are expected to be preserved, returning a rel_context), or whd_decompose_prod_n_decls (if let-ins are expected to be preserved and counted, returning also a rel_context)"]
 val hnf_decompose_lambda_n_assum : env -> evar_map -> int -> constr -> rel_context * constr
 [@@ocaml.deprecated "This function contracts let-ins. Replace either with whd_decompose_lambda_n (if only lambdas are expected, then returning only a list of assumptions) or whd_decompose_lambda_n_assum (if let-ins are expected to be preserved, returning a rel_context)"]

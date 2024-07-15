@@ -24,8 +24,6 @@ let wit_ident = Arg.create "ident"
 let wit_constr = Arg.create "constr"
 let wit_open_constr = Arg.create "open_constr"
 let wit_preterm = Arg.create "preterm"
-let wit_ltac1 = Arg.create "ltac1"
-let wit_ltac1val = Arg.create "ltac1val"
 
 (** Syntactic quoting of expressions. *)
 
@@ -35,6 +33,7 @@ let prefix_gen n =
 let control_prefix = prefix_gen "Control"
 let pattern_prefix = prefix_gen "Pattern"
 let array_prefix = prefix_gen "Array"
+let constr_prefix = prefix_gen "Constr"
 let format_prefix = MPdot (prefix_gen "Message", Label.make "Format")
 
 let kername prefix n = KerName.make prefix (Label.of_id (Id.of_string_soft n))
@@ -42,6 +41,13 @@ let std_core n = kername Tac2env.std_prefix n
 let coq_core n = kername Tac2env.coq_prefix n
 let control_core n = kername control_prefix n
 let pattern_core n = kername pattern_prefix n
+
+let in_constr mods n =
+  let mp = List.fold_left (fun mp mod_ -> MPdot (mp, Label.of_id @@ Id.of_string mod_))
+      constr_prefix
+      mods
+  in
+  kername mp n
 
 let global_ref ?loc kn =
   CAst.make ?loc @@ CTacRef (AbsKn (TacConstant kn))
@@ -102,13 +108,12 @@ let of_anti f = function
 
 let of_ident {loc;v=id} = inj_wit ?loc wit_ident id
 
-let quote_constr ?delimiters c =
+let quote_constr ?(delimiters=[]) c =
   let loc = Constrexpr_ops.constr_loc c in
-  Option.cata
-    (List.fold_left (fun c d ->
-          CAst.make ?loc @@ Constrexpr.(CDelimiters(DelimUnboundedScope, Id.to_string d, c)))
-        c)
-    c delimiters
+  List.fold_left (fun c d ->
+      CAst.make ?loc @@ Constrexpr.(CDelimiters(DelimUnboundedScope, Id.to_string d, c)))
+    c
+    delimiters
 
 let of_constr ?delimiters c =
   let loc = Constrexpr_ops.constr_loc c in
@@ -124,6 +129,27 @@ let of_preterm ?delimiters c =
   let loc = Constrexpr_ops.constr_loc c in
   let c = quote_constr ?delimiters c in
   inj_wit ?loc wit_preterm c
+
+let of_open_constr_expected_istype ?delimiters c =
+  let {loc} as c = quote_constr ?delimiters c in
+  let mk e = CAst.make ?loc e in
+  let c =
+    let sc = Notation.current_type_scope_names () in
+    let delim = List.filter_map (fun sc -> Notation.scope_delimiters (Notation.find_scope sc)) sc in
+    (* Not sure if this puts the delimiters in the correct order, usually we have just "type" *)
+    List.fold_left (fun c delim ->
+        mk @@ Constrexpr.CDelimiters (DelimOnlyTmpScope, delim, c))
+      c
+      delim
+  in
+  let c = inj_wit ?loc wit_preterm c in
+  let gref n = global_ref ?loc n in
+  mk @@ CTacApp
+    (gref @@ in_constr ["Pretype"] "pretype",
+     [mk @@ CTacApp (gref @@ in_constr ["Pretype";"Flags"] "open_constr_flags_with_tc_kn",
+                     [of_tuple ?loc []]);
+      gref @@ in_constr ["Pretype"] "expected_istype";
+      c])
 
 let of_bool ?loc b =
   let c = if b then coq_core "true" else coq_core "false" in
@@ -178,6 +204,8 @@ and of_intro_pattern_action {loc;v=pat} = match pat with
   std_constructor ?loc "IntroOrAndPattern" [of_or_and_intro_pattern pat]
 | QIntroInjection il ->
   std_constructor ?loc "IntroInjection" [of_intro_patterns il]
+| QIntroApplyOn (c, i) ->
+  std_constructor ?loc "IntroApplyOn" [thunk @@ of_open_constr c; of_intro_pattern i]
 | QIntroRewrite b ->
   std_constructor ?loc "IntroRewrite" [of_bool ?loc b]
 
@@ -452,10 +480,7 @@ let of_constr_matching {loc;v=m} =
     of_tuple [knd; pat; e]
   in
   let e = of_list ?loc map m in
-  let tykn = pattern_core "constr_matching" in
-  let ty = CAst.make ?loc (CTypRef (AbsKn (Other tykn),[CAst.make ?loc (CTypVar Anonymous)])) in
-  CAst.make ?loc (CTacCnv (e, ty))
-
+  e
 
 (** From the patterns and the body of the branch, generate:
     - a goal pattern: (constr_match list * constr_match)
@@ -535,7 +560,7 @@ let of_pose p =
 let of_assertion {loc;v=ast} = match ast with
 | QAssertType (ipat, c, tac) ->
   let ipat = of_option of_intro_pattern ipat in
-  let c = of_constr c in
+  let c = of_open_constr_expected_istype c in
   let tac = of_option thunk tac in
   std_constructor ?loc "AssertType" [ipat; c; tac]
 | QAssertValue (id, c) ->

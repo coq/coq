@@ -10,9 +10,24 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-Require Import NZAxioms NZBase.
+(**
+* Some properties of the addition for modules implementing [NZBasicFunsSig']
 
-Module Type NZAddProp (Import NZ : NZAxiomsSig')(Import NZBase : NZBaseProp NZ).
+This file defines the [NZAddProp] functor type. This functor type is meant
+to be [Include]d in a module implementing [NZBasicFunsSig'].
+
+This gives the following lemmas:
+- [add_0_r], [add_1_l], [add_1_r]
+- [add_succ_r], [add_succ_comm], [add_comm]
+- [add_assoc]
+- [add_cancel_l], [add_cancel_r]
+- [add_shuffle0],  [add_shuffle3] to rearrange sums of 3 elements
+- [add_shuffle1],  [add_shuffle2] to rearrange sums of 4 elements
+- [sub_1_r]
+*)
+From Coq.Numbers.NatInt Require Import NZAxioms NZBase.
+
+Module Type NZAddProp (Import NZ : NZBasicFunsSig')(Import NZBase : NZBaseProp NZ).
 
 Global Hint Rewrite
  pred_succ add_0_l add_succ_l mul_0_l mul_succ_l sub_0_r sub_succ_r : nz.

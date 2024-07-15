@@ -82,6 +82,7 @@ let print_usage_common co command =
 \n  -impredicative-set     set sort Set impredicative\
 \n  -allow-sprop           allow using the proof irrelevant SProp sort\
 \n  -disallow-sprop        forbid using the proof irrelevant SProp sort\
+\n  -allow-rewrite-rules   allows declaring symbols and rewrite rules\
 \n  -indices-matter        levels of indices (and nonuniform parameters) contribute to the level of inductives\
 \n  -type-in-type          disable universe consistency checking\
 \n  -mangle-names x        mangle auto-generated names using prefix x\

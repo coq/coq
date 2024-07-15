@@ -52,22 +52,28 @@ val locate_file : string -> string
     it does not respect the visibility of paths. *)
 
 (** {6 Locate a library in the load path } *)
-type locate_error = LibUnmappedDir | LibNotFound
-type 'a locate_result = ('a, locate_error) result
+module Error : sig
+  type t = LibUnmappedDir | LibNotFound
+
+  (** Raise regular Coq errors with default informative message;
+      usually document managers that have more information about the
+      workspace than coqc will override this with a better
+      mechanism / message. *)
+  val raise : DirPath.t -> t -> 'a
+end
 
 val locate_qualified_library
   :  ?root:DirPath.t
   -> Libnames.qualid
-  -> (DirPath.t * CUnix.physical_path) locate_result
+  -> (DirPath.t * CUnix.physical_path, Error.t) Result.t
 
 (** Locates a library by implicit name.
 
-  @raise LibUnmappedDir if the library is not in the path
-  @raise LibNotFound if there is no corresponding file in the path
+  @return LibUnmappedDir if the library is not in the path
+  @return LibNotFound if there is no corresponding file in the path
 
 *)
-
-val try_locate_absolute_library : DirPath.t -> string
+val locate_absolute_library : DirPath.t -> (CUnix.physical_path, Error.t) Result.t
 
 (** {6 Extending the Load Path } *)
 

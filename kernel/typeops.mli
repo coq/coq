@@ -25,6 +25,7 @@ open Environ
    Do not discard the result. *)
 
 val infer      : env -> constr       -> unsafe_judgment
+val infer_hconstr : env -> HConstr.t -> unsafe_judgment
 val infer_type : env -> types        -> unsafe_type_judgment
 
 val check_context :
@@ -72,7 +73,7 @@ val judge_of_apply :
 
 (** {6 Type of a product. } *)
 val sort_of_product : env -> Sorts.t -> Sorts.t -> Sorts.t
-val type_of_product : env -> Name.t Context.binder_annot -> Sorts.t -> Sorts.t -> types
+val type_of_product : env -> Name.t binder_annot -> Sorts.t -> Sorts.t -> types
 (* val judge_of_product : *)
 (*   env -> Name.t -> unsafe_type_judgment -> unsafe_type_judgment *)
 (*     -> unsafe_judgment *)
@@ -104,7 +105,7 @@ val type_of_global_in_context : env -> GlobRef.t -> types * UVars.AbstractContex
 (** {6 Miscellaneous. } *)
 
 (** Check that hyps are included in env and fails with error otherwise *)
-val check_hyps_inclusion : env -> ?evars:constr CClosure.evar_handler ->
+val check_hyps_inclusion : env -> ?evars:CClosure.evar_handler ->
   GlobRef.t -> Constr.named_context -> unit
 
 (** Types for primitives *)
@@ -115,6 +116,9 @@ val judge_of_int : env -> Uint63.t -> unsafe_judgment
 val type_of_float : env -> types
 val judge_of_float : env -> Float64.t -> unsafe_judgment
 
+val type_of_string : env -> types
+val judge_of_string : env -> Pstring.t -> unsafe_judgment
+
 val type_of_array : env -> UVars.Instance.t -> types
 val judge_of_array : env -> UVars.Instance.t -> unsafe_judgment array -> unsafe_judgment -> unsafe_judgment
 
@@ -122,19 +126,6 @@ val type_of_prim_type : env -> UVars.Instance.t -> 'a CPrimitives.prim_type -> t
 val type_of_prim : env -> UVars.Instance.t -> CPrimitives.t -> types
 val type_of_prim_or_type : env -> UVars.Instance.t -> CPrimitives.op_or_type -> types
 
-val warn_bad_relevance_name : string
-(** Allow the checker to make this warning into an error. *)
-
-val bad_relevance_warning : CWarnings.warning
-(** Also used by the pretyper to define a message which uses the evar map. *)
-
-type ('constr,'types) bad_relevance =
-| BadRelevanceBinder of Sorts.relevance * ('constr,'types) Context.Rel.Declaration.pt
-| BadRelevanceCase of Sorts.relevance * 'constr
-
-val bad_relevance_msg : (env * (constr,types) bad_relevance) CWarnings.msg
-(** Used by the higher layers to register a nicer printer than the default. *)
-
 val should_invert_case : env -> Sorts.relevance -> case_info -> bool
-(** We have case inversion exactly when going from irrelevant nonempty
-   (ie 1 constructor) inductive to relevant type. *)
+(** Matches must be annotated with the indices when going from SProp to non SProp
+    (implies 1 or 0 constructors). *)

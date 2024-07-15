@@ -38,9 +38,6 @@ type tauto_flags = {
 (* Whether conjunction and disjunction are restricted to binary connectives *)
   binary_mode : bool;
 
-(* Whether compatibility for buggy detection of binary connective is on *)
-  binary_mode_bugged_detection : bool;
-
 (* Whether conjunction and disjunction are restricted to the connectives *)
 (* having the structure of "and" and "or" (up to the choice of sorts) in *)
 (* contravariant position in an hypothesis *)
@@ -52,7 +49,6 @@ type tauto_flags = {
   strict_in_hyp_and_ccl : bool;
 
 (* Whether unit type includes equality types *)
-  strict_unit : bool;
 }
 
 let tag_tauto_flags : tauto_flags Val.typ = Val.create "tauto_flags"
@@ -109,18 +105,7 @@ let is_empty _ ist =
 let is_unit_or_eq _ ist =
   Proofview.tclENV >>= fun genv ->
   Proofview.tclEVARMAP >>= fun sigma ->
-  let flags = assoc_flags ist in
-  let test = if flags.strict_unit then is_unit_type else is_unit_or_eq_type in
-  if test genv sigma (assoc_var "X1" ist) then idtac else fail
-
-let bugged_is_binary sigma t =
-  isApp sigma t &&
-  let (hdapp,args) = decompose_app sigma t in
-    match EConstr.kind sigma hdapp with
-    | Ind (ind,u)  ->
-        let (mib,mip) = Global.lookup_inductive ind in
-         Int.equal mib.Declarations.mind_nparams 2
-    | _ -> false
+  if is_unit_or_eq_type genv sigma (assoc_var "X1" ist) then idtac else fail
 
 (** Dealing with conjunction *)
 
@@ -129,8 +114,7 @@ let is_conj _ ist =
   Proofview.tclEVARMAP >>= fun sigma ->
   let flags = assoc_flags ist in
   let ind = assoc_var "X1" ist in
-    if (not flags.binary_mode_bugged_detection || bugged_is_binary sigma ind) &&
-       is_conjunction genv sigma
+    if is_conjunction genv sigma
          ~strict:flags.strict_in_hyp_and_ccl
          ~onlybinary:flags.binary_mode ind
     then idtac
@@ -148,7 +132,7 @@ let flatten_contravariant_conj _ ist =
           ~onlybinary:flags.binary_mode typ
   with
   | Some (_,args) ->
-    let newtyp = List.fold_right (fun a b -> mkArrow a Sorts.Relevant b) args c in
+    let newtyp = List.fold_right (fun a b -> mkArrow a ERelevance.relevant b) args c in
     let intros = tclMAP (fun _ -> intro) args in
     let by = tclTHENLIST [intros; apply hyp; split; assumption] in
     tclTHENLIST [assert_ ~by newtyp; clear (destVar sigma hyp)]
@@ -161,8 +145,7 @@ let is_disj _ ist =
   Proofview.tclEVARMAP >>= fun sigma ->
   let flags = assoc_flags ist in
   let t = assoc_var "X1" ist in
-  if (not flags.binary_mode_bugged_detection || bugged_is_binary sigma t) &&
-     is_disjunction genv sigma
+  if is_disjunction genv sigma
        ~strict:flags.strict_in_hyp_and_ccl
        ~onlybinary:flags.binary_mode t
   then idtac
@@ -181,7 +164,7 @@ let flatten_contravariant_disj _ ist =
           typ with
   | Some (_,args) ->
       let map i arg =
-        let typ = mkArrow arg Sorts.Relevant c in
+        let typ = mkArrow arg ERelevance.relevant c in
         let ci = Tactics.constructor_tac false None (succ i) Tactypes.NoBindings in
         let by = tclTHENLIST [intro; apply hyp; ci; assumption] in
         assert_ ~by typ
@@ -192,10 +175,9 @@ let flatten_contravariant_disj _ ist =
   | _ -> fail
 
 let evalglobref_of_globref =
-  let open Tacred in
   function
-  | GlobRef.VarRef v -> EvalVarRef v
-  | GlobRef.ConstRef c -> EvalConstRef c
+  | GlobRef.VarRef v -> Evaluable.EvalVarRef v
+  | GlobRef.ConstRef c -> Evaluable.EvalConstRef c
   | GlobRef.IndRef _ | GlobRef.ConstructRef _ -> assert false
 
 let make_unfold name =
@@ -225,28 +207,15 @@ let apply_nnpp _ ist =
    For the moment not and iff are still always unfolded. *)
 let tauto_uniform_unit_flags = {
   binary_mode = true;
-  binary_mode_bugged_detection = false;
   strict_in_contravariant_hyp = true;
   strict_in_hyp_and_ccl = true;
-  strict_unit = false
-}
-
-(* This is the compatibility mode (not used) *)
-let _tauto_legacy_flags = {
-  binary_mode = true;
-  binary_mode_bugged_detection = true;
-  strict_in_contravariant_hyp = true;
-  strict_in_hyp_and_ccl = false;
-  strict_unit = false
 }
 
 (* This is the improved mode *)
 let tauto_power_flags = {
   binary_mode = false; (* support n-ary connectives *)
-  binary_mode_bugged_detection = false;
   strict_in_contravariant_hyp = false; (* supports non-regular connectives *)
   strict_in_hyp_and_ccl = false;
-  strict_unit = false
 }
 
 let with_flags flags _ ist =

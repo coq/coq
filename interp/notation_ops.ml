@@ -263,7 +263,7 @@ let compare_notation_constr lt var_eq_hole (vars1,vars2) t1 t2 =
     aux vars renaming ty1 ty2
   | (NRef _ | NVar _ | NApp _ | NProj _ | NHole _ | NGenarg _ | NList _ | NLambda _ | NProd _
     | NBinderList _ | NLetIn _ | NCases _ | NLetTuple _ | NIf _
-    | NRec _ | NSort _ | NCast _ | NInt _ | NFloat _ | NArray _), _ -> raise_notrace Exit in
+    | NRec _ | NSort _ | NCast _ | NInt _ | NFloat _ | NString _ | NArray _), _ -> raise_notrace Exit in
   try
     let _ = aux (vars1,vars2) [] t1 t2 in
     if not lt then
@@ -468,6 +468,7 @@ let glob_constr_of_notation_constr_with_binders ?loc g f ?(h=default_binder_stat
   | NRef (x,u) -> GRef (x,u)
   | NInt i -> GInt i
   | NFloat f -> GFloat f
+  | NString s -> GString s
   | NArray (t,def,ty) -> GArray(None, Array.map (f e) t, f e def, f e ty)
 
 let glob_constr_of_notation_constr ?loc x =
@@ -643,7 +644,7 @@ let compare_recursive_parts recvars found f f' (iterator,subc) =
 
 let notation_constr_and_vars_of_glob_constr recvars a =
   let found = ref { vars = []; recursive_term_vars = []; recursive_binders_vars = [] } in
-  let has_ltac = ref false in
+  let forgetful = ref { forget_ltac = false; forget_volatile_cast = false } in
   (* Turn a glob_constr into a notation_constr by first trying to find a recursive pattern *)
   let rec aux c =
     let keepfound = !found in
@@ -697,12 +698,15 @@ let notation_constr_and_vars_of_glob_constr recvars a =
            user_err Pp.(str "Binders marked as implicit not allowed in notations.");
          add_name found na; (na,Option.map aux oc,aux b))) dll in
       NRec (fk,idl,dll,Array.map aux tl,Array.map aux bl)
-  | GCast (c,k,t) -> NCast (aux c, k, aux t)
+  | GCast (c,k,t) ->
+    if Option.is_empty k then forgetful := { !forgetful with forget_volatile_cast = true };
+    NCast (aux c, k, aux t)
   | GSort s -> NSort s
   | GInt i -> NInt i
   | GFloat f -> NFloat f
+  | GString s -> NString s
   | GHole w -> NHole w
-  | GGenarg arg -> has_ltac := true; NGenarg arg
+  | GGenarg arg -> forgetful := { !forgetful with forget_ltac = true }; NGenarg arg
   | GRef (r,u) -> NRef (r,u)
   | GArray (_u,t,def,ty) -> NArray (Array.map aux t, aux def, aux ty)
   | GEvar _ | GPatVar _ ->
@@ -714,7 +718,7 @@ let notation_constr_and_vars_of_glob_constr recvars a =
   in
   let t = aux a in
   (* Side effect *)
-  t, !found, !has_ltac
+  t, !found, !forgetful
 
 let check_variables_and_reversibility nenv
   { vars = found; recursive_term_vars = foundrec; recursive_binders_vars = foundrecbinding } =
@@ -763,11 +767,15 @@ let check_variables_and_reversibility nenv
   Id.Map.iter check_type vars;
   List.rev !injective
 
+let[@warning "+9"] is_forgetful { forget_ltac; forget_volatile_cast } =
+  forget_ltac || forget_volatile_cast
+
 let notation_constr_of_glob_constr nenv a =
   let recvars = Id.Map.bindings nenv.ninterp_rec_vars in
-  let a, found, has_ltac = notation_constr_and_vars_of_glob_constr recvars a in
+  let a, found, forgetful = notation_constr_and_vars_of_glob_constr recvars a in
   let injective = check_variables_and_reversibility nenv found in
-  let status = if has_ltac then HasLtac else match injective with
+  let status = if is_forgetful forgetful then Forgetful forgetful
+    else match injective with
   | [] -> APrioriReversible
   | l -> NonInjective l in
   a, status
@@ -903,6 +911,7 @@ let rec subst_notation_constr subst bound raw =
   | NSort _ -> raw
   | NInt _ -> raw
   | NFloat _ -> raw
+  | NString _ -> raw
 
   | NHole knd ->
     let nknd = match knd with
@@ -1560,12 +1569,13 @@ let rec match_ inner u alp metas sigma a1 a2 =
     match_in u alp metas sigma t1 t2
 
   (* Next pair of lines useful only if not coming from detyping *)
-  | GSort (UNamed (None, [(GProp|GSet),0])), NSort (UAnonymous _) -> raise No_match
-  | GSort _, NSort (UAnonymous _) when not u -> sigma
+  | GSort (None, UNamed [(GSProp|GProp|GSet),0]), NSort (None, UAnonymous _) -> raise No_match
+  | GSort _, NSort (None, UAnonymous _) when not u -> sigma
 
   | GSort s1, NSort s2 when glob_sort_eq s1 s2 -> sigma
   | GInt i1, NInt i2 when Uint63.equal i1 i2 -> sigma
   | GFloat f1, NFloat f2 when Float64.equal f1 f2 -> sigma
+  | GString s1, NString s2 when Pstring.equal s1 s2 -> sigma
   | GPatVar _, NHole _ -> (*Don't hide Metas, they bind in ltac*) raise No_match
   | a, NHole _ -> sigma
 
@@ -1600,7 +1610,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
 
   | (GRef _ | GVar _ | GEvar _ | GPatVar _ | GApp _ | GProj _ | GLambda _ | GProd _
      | GLetIn _ | GCases _ | GLetTuple _ | GIf _ | GRec _ | GSort _ | GHole _ | GGenarg _
-     | GCast _ | GInt _ | GFloat _ | GArray _), _ -> raise No_match
+     | GCast _ | GInt _ | GFloat _ | GString _ | GArray _), _ -> raise No_match
 
 and match_in_type u alp metas sigma t = function
   | None -> sigma

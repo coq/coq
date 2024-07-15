@@ -35,9 +35,11 @@ type position = (Id.t * Locus.hyp_location_flag) option
 
 type position_reporting = (position * int) * constr
 
-type subterm_unification_error = bool * position_reporting * position_reporting * (constr * constr * unification_error) option
+type subterm_unification_error = bool * position_reporting * position_reporting
 
-type type_error = (constr, types) ptype_error
+type type_error = (constr, types, ERelevance.t) ptype_error
+
+val of_type_error : Type_errors.type_error -> type_error
 
 type pretype_error =
   | CantFindCaseType of constr
@@ -111,12 +113,11 @@ val error_number_branches :
 
 val error_ill_typed_rec_body :
   ?loc:Loc.t -> env -> Evd.evar_map ->
-      int -> Name.t Context.binder_annot array -> unsafe_judgment array -> types array -> 'b
+      int -> Name.t EConstr.binder_annot array -> unsafe_judgment array -> types array -> 'b
 
 val error_elim_arity :
   ?loc:Loc.t -> env -> Evd.evar_map ->
-      pinductive -> constr ->
-      (unsafe_judgment * ESorts.t) option -> 'b
+      inductive puniverses -> constr -> ESorts.t option -> 'b
 
 val error_not_a_type :
   ?loc:Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> 'b

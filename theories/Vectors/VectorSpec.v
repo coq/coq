@@ -8,12 +8,17 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(** N.B.: Using this encoding of vectors is discouraged.
+See <https://github.com/coq/coq/blob/master/theories/Vectors/Vector.v>. *)
+Attributes warn(cats="stdlib vector", note="Using Vector.t is known to be technically difficult, see <https://github.com/coq/coq/blob/master/theories/Vectors/Vector.v>.").
+
 (** Proofs of specification for functions defined over Vector
 
-   Author: Pierre Boutillier
+   Initial Author: Pierre Boutillier
    Institution: PPS, INRIA 12/2010
 *)
 
+#[local] Set Warnings "-stdlib-vector".
 Require Fin List.
 Require Import VectorDef PeanoNat Eqdep_dec.
 Import VectorNotations EqNotations.
@@ -444,6 +449,18 @@ intros P n v. rewrite Forall_nth. split.
 - intros H p.
   rewrite <- (Fin.of_nat_to_nat_inv p).
   apply H.
+Qed.
+
+Lemma Forall2_cons_iff A B: forall P n h1 h2 (v1 : t A n) (v2 : t B n),
+  Forall2 P (h1 :: v1) (h2 :: v2) <-> P h1 h2 /\ Forall2 P v1 v2.
+Proof.
+  intros P n h1 h2 v1 v2; split.
+  2: { intros [H1 H2]; right; [exact H1 | exact H2]. }
+  intros H; inversion H as [| m x1 x2 v0 v3 ph f2p mn [x1h1 H1] [x2h2 H2]].
+  split; [exact ph |].
+  apply inj_pair2_eq_dec in H1 as ->; [| exact Nat.eq_dec].
+  apply inj_pair2_eq_dec in H2 as ->; [| exact Nat.eq_dec].
+  exact f2p.
 Qed.
 
 Lemma Forall2_nth A: forall P n (v1 v2 : t A n),

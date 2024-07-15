@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-module CVars = Vars
-
 open Pp
 open CErrors
 open Util
@@ -56,6 +54,13 @@ let inductive_type_knowing_parameters env sigma (ind,u as indu) jl =
   let mspec = lookup_mind_specif env ind in
   let paramstyp = make_param_univs env sigma indu mspec jl in
   Inductive.type_of_inductive_knowing_parameters (mspec,u) paramstyp
+
+let constructor_type_knowing_parameters env sigma (cstr, u) jl =
+  let u0 = Unsafe.to_instance u in
+  let (ind, _) = cstr in
+  let mspec = lookup_mind_specif env ind in
+  let paramstyp = make_param_univs env sigma (ind, u) mspec jl in
+  Inductive.type_of_constructor_knowing_parameters (cstr, u0) mspec paramstyp
 
 let type_judgment env sigma j =
   match EConstr.kind sigma (whd_all env sigma j.uj_type) with
@@ -113,13 +118,24 @@ let checked_appvect env sigma f args =
 let checked_applist env sigma f args = checked_appvect env sigma f (Array.of_list args)
 
 let judge_of_applied_inductive_knowing_parameters_nocheck env sigma funj ind argjv =
-  let ar = inductive_type_knowing_parameters env sigma ind argjv in
+  let ar, csts = inductive_type_knowing_parameters env sigma ind argjv in
+  let sigma = Evd.add_constraints sigma csts in
   let typ = hnf_prod_appvect env sigma (EConstr.of_constr ar) (Array.map j_val argjv) in
   sigma, { uj_val = (mkApp (j_val funj, Array.map j_val argjv)); uj_type = typ }
 
 let judge_of_applied_inductive_knowing_parameters env sigma funj ind argjv =
   let (sigma, j) = judge_of_apply env sigma funj argjv in
   judge_of_applied_inductive_knowing_parameters_nocheck env sigma funj ind argjv
+
+let judge_of_applied_constructor_knowing_parameters_nocheck env sigma funj cstr argjv =
+  let ar, csts = constructor_type_knowing_parameters env sigma cstr argjv in
+  let sigma = Evd.add_constraints sigma csts in
+  let typ = hnf_prod_appvect env sigma (EConstr.of_constr ar) (Array.map j_val argjv) in
+  sigma, { uj_val = (mkApp (j_val funj, Array.map j_val argjv)); uj_type = typ }
+
+let judge_of_applied_constructor_knowing_parameters env sigma funj ind argjv =
+  let (sigma, j) = judge_of_apply env sigma funj argjv in
+  judge_of_applied_constructor_knowing_parameters_nocheck env sigma funj ind argjv
 
 let check_branch_types env sigma (ind,u) cj (lfj,explft) =
   if not (Int.equal (Array.length lfj) (Array.length explft)) then
@@ -131,41 +147,36 @@ let check_branch_types env sigma (ind,u) cj (lfj,explft) =
         error_ill_formed_branch env sigma cj.uj_val ((ind,i+1),u) lfj.uj_type explft)
     sigma lfj explft
 
-let max_sort l =
-  if List.mem_f Sorts.family_equal InType l then InType else
-  if List.mem_f Sorts.family_equal InSet l then InSet else InProp
-
 let is_correct_arity env sigma c pj ind specif params =
   let arsign = make_arity_signature env sigma true (make_ind_family (ind,params)) in
-  let allowed_sorts = sorts_below (elim_sort specif) in
-  let error () = Pretype_errors.error_elim_arity env sigma ind c None in
+  let error rtnsort = Pretype_errors.error_elim_arity env sigma ind c rtnsort in
   let rec srec env sigma pt ar =
     let pt' = whd_all env sigma pt in
     match EConstr.kind sigma pt', ar with
     | Prod (na1,a1,t), (LocalAssum (_,a1'))::ar' ->
       begin match Evarconv.unify_leq_delay env sigma a1 a1' with
-        | exception Evarconv.UnableToUnify _ -> error ()
+        | exception Evarconv.UnableToUnify _ -> error None
         | sigma ->
           srec (push_rel (LocalAssum (na1,a1)) env) sigma t ar'
       end
     | Sort s, [] ->
-        let sigma = match ESorts.kind sigma s with
-        | QSort (_, u) ->
-          (* Arbitrarily set the return sort to Type *)
-          Evd.set_eq_sort env sigma s (ESorts.make (Sorts.sort_of_univ u))
-        | Set | Type _ | Prop | SProp -> sigma
+      begin match is_squashed sigma (specif, snd ind) with
+      | None -> sigma, s
+      | Some squash ->
+        let sigma =
+          try squash_elim_sort env sigma squash s
+          with UGraph.UniverseInconsistency _ -> error (Some s)
         in
-        if not (List.mem_f Sorts.family_equal (ESorts.family sigma s) allowed_sorts)
-        then error ()
-        else sigma, s
+        sigma, s
+      end
     | Evar (ev,_), [] ->
-        let sigma, s = Evd.fresh_sort_in_family sigma (max_sort allowed_sorts) in
+        let sigma, s = Evd.fresh_sort_in_family sigma (elim_sort specif) in
         let sigma = Evd.define ev (mkSort s) sigma in
         sigma, s
     | _, (LocalDef _ as d)::ar' ->
         srec (push_rel d env) sigma (lift 1 pt') ar'
     | _ ->
-        error ()
+        error None
   in
   srec env sigma pj.uj_type (List.rev arsign)
 
@@ -184,16 +195,17 @@ let type_case_branches env sigma (ind,largs) specif pj c =
   let nparams = inductive_params specif in
   let (params,realargs) = List.chop nparams largs in
   let p = pj.uj_val in
-  let params = List.map EConstr.Unsafe.to_constr params in
   let sigma, ps = is_correct_arity env sigma c pj ind specif params in
+  let ind = on_snd EConstr.Unsafe.to_instance ind in
+  let params = List.map EConstr.Unsafe.to_constr params in
   let lc = build_branches_type ind specif params (EConstr.to_constr ~abort_on_undefined_evars:false sigma p) in
   let lc = Array.map EConstr.of_constr lc in
   let n = (snd specif).Declarations.mind_nrealdecls in
   let ty = whd_betaiota env sigma (lambda_applist_decls sigma (n+1) p (realargs@[c])) in
-  sigma, (lc, ty, ESorts.relevance_of_sort sigma ps)
+  sigma, (lc, ty, ESorts.relevance_of_sort ps)
 
 let unify_relevance sigma r1 r2 =
-  match Evarutil.nf_relevance sigma r1, Evarutil.nf_relevance sigma r2 with
+  match ERelevance.kind sigma r1, ERelevance.kind sigma r2 with
   | Relevant, Relevant | Irrelevant, Irrelevant -> Some sigma
   | Relevant, Irrelevant | Irrelevant, Relevant -> None
   | Irrelevant, RelevanceVar q | RelevanceVar q, Irrelevant ->
@@ -211,12 +223,14 @@ let unify_relevance sigma r1 r2 =
     in
     Some sigma
   | RelevanceVar q1, RelevanceVar q2 ->
-    let sigma =
-      Evd.add_quconstraints sigma
-        (Sorts.QConstraints.singleton (QVar q1, Equal, QVar q2),
-         Univ.Constraints.empty)
-    in
-    Some sigma
+    if Sorts.QVar.equal q1 q2 then Some sigma
+    else
+      let sigma =
+        Evd.add_quconstraints sigma
+          (Sorts.QConstraints.singleton (QVar q1, Equal, QVar q2),
+           Univ.Constraints.empty)
+      in
+      Some sigma
 
 let judge_of_case env sigma case ci (pj,rp) iv cj lfj =
   let ((ind, u), spec) =
@@ -224,20 +238,20 @@ let judge_of_case env sigma case ci (pj,rp) iv cj lfj =
     with Not_found -> error_case_not_inductive env sigma cj in
   let specif = lookup_mind_specif env ind in
   let () = if Inductive.is_private specif then Type_errors.error_case_on_private_ind env ind in
-  let indspec = ((ind, EInstance.kind sigma u), spec) in
+  let indspec = ((ind, u), spec) in
   let sigma, (bty,rslty,rci) = type_case_branches env sigma indspec specif pj cj.uj_val in
   (* should we have evar map aware should_invert_case? *)
   let sigma, rp =
-    if Sorts.relevance_equal rp rci then sigma, rp
-    else match unify_relevance sigma rp rci with
+    match unify_relevance sigma rp rci with
     | None ->
       raise_type_error (env,sigma,Type_errors.BadCaseRelevance (rp, mkCase case))
     | Some sigma -> sigma, rci
   in
-  let () = check_case_info env (fst indspec) ci in
-  let sigma = check_branch_types env sigma (fst indspec) cj (lfj,bty) in
+  let ind = on_snd (EInstance.kind sigma) (fst indspec) in
+  let () = check_case_info env ind ci in
+  let sigma = check_branch_types env sigma ind cj (lfj,bty) in
   let () = if (match iv with | NoInvert -> false | CaseInvert _ -> true)
-              != should_invert_case env rp ci
+              != should_invert_case env (ERelevance.kind sigma rp) ci
     then Type_errors.error_bad_invert env
   in
   sigma, { uj_val  = mkCase case;
@@ -264,10 +278,10 @@ let check_allowed_sort env sigma ind c p =
     | Sort s -> s
     | _ -> error_elim_arity env sigma ind c None
   in
-  if Inductiveops.is_allowed_elimination sigma (specif,(snd ind)) sort then
-    ESorts.relevance_of_sort sigma sort
-  else
-    error_elim_arity env sigma ind c (Some (pj, sort))
+  match Inductiveops.make_allowed_elimination env sigma (specif, (snd ind)) sort with
+  | Some sigma -> sigma, ESorts.relevance_of_sort sort
+  | None ->
+    error_elim_arity env sigma ind c (Some sort)
 
 let check_actual_type env sigma cj t =
   try Evarconv.unify_leq_delay env sigma cj.uj_type t
@@ -282,12 +296,14 @@ let judge_of_cast env sigma cj k tj =
 let check_fix env sigma pfix =
   let inj c = EConstr.to_constr ~abort_on_undefined_evars:false sigma c in
   let (idx, (ids, cs, ts)) = pfix in
-  check_fix env (idx, (ids, Array.map inj cs, Array.map inj ts))
+  let ids = Array.map EConstr.Unsafe.to_binder_annot ids in
+  check_fix ~evars:(Evd.evar_handler sigma) env (idx, (ids, Array.map inj cs, Array.map inj ts))
 
 let check_cofix env sigma pcofix =
   let inj c = EConstr.to_constr sigma c in
   let (idx, (ids, cs, ts)) = pcofix in
-  check_cofix env (idx, (ids, Array.map inj cs, Array.map inj ts))
+  let ids = Array.map EConstr.Unsafe.to_binder_annot ids in
+  check_cofix ~evars:(Evd.evar_handler sigma) env (idx, (ids, Array.map inj cs, Array.map inj ts))
 
 (* The typing machine with universes and existential variables. *)
 
@@ -331,28 +347,27 @@ let judge_of_projection env sigma p cj =
     try find_mrectype env sigma cj.uj_type
     with Not_found -> error_case_not_inductive env sigma cj
   in
-  let u = EInstance.kind sigma u in
-  let pr = UVars.subst_instance_relevance u pr in
-  let ty = EConstr.of_constr (CVars.subst_instance_constr u pty) in
+  let pr = Vars.subst_instance_relevance u (ERelevance.make pr) in
+  let ty = Vars.subst_instance_constr u (EConstr.of_constr pty) in
   let ty = substl (cj.uj_val :: List.rev args) ty in
   {uj_val = EConstr.mkProj (p,pr,cj.uj_val);
    uj_type = ty}
 
 let judge_of_abstraction env sigma name var j =
-  let r = ESorts.relevance_of_sort sigma var.utj_type in
+  let r = ESorts.relevance_of_sort var.utj_type in
   { uj_val = mkLambda (make_annot name r, var.utj_val, j.uj_val);
     uj_type = mkProd (make_annot name r, var.utj_val, j.uj_type) }
 
 let judge_of_product env sigma name t1 t2 =
   let s1 = ESorts.kind sigma t1.utj_type in
   let s2 = ESorts.kind sigma t2.utj_type in
-  let r = Sorts.relevance_of_sort s1 in
+  let r = ERelevance.make @@ Sorts.relevance_of_sort s1 in
   let s = ESorts.make (sort_of_product env s1 s2) in
   { uj_val = mkProd (make_annot name r, t1.utj_val, t2.utj_val);
     uj_type = mkSort s }
 
 let judge_of_letin env sigma name defj typj j =
-  let r = ESorts.relevance_of_sort sigma typj.utj_type in
+  let r = ESorts.relevance_of_sort typj.utj_type in
   { uj_val = mkLetIn (make_annot name r, defj.uj_val, typj.utj_val, j.uj_val) ;
     uj_type = subst1 defj.uj_val j.uj_type }
 
@@ -389,6 +404,9 @@ let judge_of_int env v =
 let judge_of_float env v =
   Environ.on_judgment EConstr.of_constr (judge_of_float env v)
 
+let judge_of_string env v =
+  Environ.on_judgment EConstr.of_constr (judge_of_string env v)
+
 let judge_of_array env sigma u tj defj tyj =
   let ulev = match UVars.Instance.to_array u with
     | [||], [|u|] -> u
@@ -406,15 +424,22 @@ let judge_of_array env sigma u tj defj tyj =
   in
   sigma, j
 
-let bad_relevance_msg = CWarnings.create_msg Typeops.bad_relevance_warning ()
+type ('constr,'types,'r) bad_relevance =
+| BadRelevanceBinder of 'r * ('constr,'types,'r) Context.Rel.Declaration.pt
+| BadRelevanceCase of 'r * 'constr
+
+let bad_relevance_warning =
+  CWarnings.create_warning ~name:"bad-relevance" ~default:CWarnings.AsError ()
+
+let bad_relevance_msg = CWarnings.create_msg bad_relevance_warning ()
 (* no need for default printer, pretyping is always linked with himsg in practice *)
 
 let warn_bad_relevance_binder ?loc env sigma rlv bnd =
-  match CWarnings.warning_status Typeops.bad_relevance_warning with
+  match CWarnings.warning_status bad_relevance_warning with
 | CWarnings.Disabled | CWarnings.Enabled ->
-  CWarnings.warn bad_relevance_msg ?loc (env,sigma,Typeops.BadRelevanceBinder (rlv, bnd))
+  CWarnings.warn bad_relevance_msg ?loc (env,sigma,BadRelevanceBinder (rlv, bnd))
 | CWarnings.AsError ->
-  CErrors.anomaly (CErrors.print (PretypeError (env, sigma, TypingError (Type_errors.BadBinderRelevance (rlv, bnd)))))
+  Loc.raise ?loc (PretypeError (env, sigma, TypingError (Type_errors.BadBinderRelevance (rlv, bnd))))
 
 type relevance_preunify =
   | Trivial
@@ -422,7 +447,7 @@ type relevance_preunify =
   | DummySort of ESorts.t
 
 let check_binder_relevance env sigma s decl =
-  let preunify = match ESorts.kind sigma s, Evarutil.nf_relevance sigma (get_relevance decl) with
+  let preunify = match ESorts.kind sigma s, ERelevance.kind sigma (get_relevance decl) with
     | (Prop | Set | Type _), Relevant -> Trivial
     | (Prop | Set | Type _), Irrelevant -> Impossible
     | SProp, Irrelevant -> Trivial
@@ -446,7 +471,7 @@ let check_binder_relevance env sigma s decl =
   | Some sigma -> sigma, decl
   | None ->
     (* TODO always anomaly *)
-    let rs = ESorts.relevance_of_sort sigma s in
+    let rs = ESorts.relevance_of_sort s in
     let () =
       if not (UGraph.type_in_type (Evd.universes sigma))
       then warn_bad_relevance_binder env sigma rs decl
@@ -536,6 +561,9 @@ let rec execute env sigma cstr =
             | Ind (ind, u) when EInstance.is_empty u && Environ.template_polymorphic_ind ind env ->
                let sigma, fj = execute env sigma f in
                judge_of_applied_inductive_knowing_parameters env sigma fj (ind, u) jl
+            | Construct (cstr, u) when EInstance.is_empty u && Environ.template_polymorphic_ind (fst cstr) env ->
+               let sigma, fj = execute env sigma f in
+               judge_of_applied_constructor_knowing_parameters env sigma fj (cstr, u) jl
             | _ ->
                (* No template polymorphism *)
                let sigma, fj = execute env sigma f in
@@ -579,6 +607,9 @@ let rec execute env sigma cstr =
 
     | Float f ->
         sigma, judge_of_float env f
+
+    | String s ->
+        sigma, judge_of_string env s
 
     | Array(u,t,def,ty) ->
       let sigma, tyj = execute env sigma ty in
@@ -704,7 +735,7 @@ let rec recheck_against env sigma good c =
     match kind sigma good, kind sigma c with
     (* No subterms *)
     | _, (Meta _ | Rel _ | Var _ | Const _ | Ind _ | Construct _
-         | Sort _ | Int _ | Float _) ->
+         | Sort _ | Int _ | Float _ | String _) ->
       default ()
 
     (* Evar (todo deal with Evar differently??? execute recurses on its type)
@@ -771,6 +802,8 @@ let rec recheck_against env sigma good c =
         (match EConstr.kind sigma f with
          | Ind (ind, u) when EInstance.is_empty u && Environ.template_polymorphic_ind ind env ->
            maybe_changed (judge_of_applied_inductive_knowing_parameters env sigma fj (ind, u) jl)
+         | Construct (cstr, u) when EInstance.is_empty u && Environ.template_polymorphic_ind (fst cstr) env ->
+           maybe_changed (judge_of_applied_constructor_knowing_parameters env sigma fj (cstr, u) jl)
          | _ ->
            (* No template polymorphism *)
            maybe_changed (judge_of_apply env sigma fj jl))

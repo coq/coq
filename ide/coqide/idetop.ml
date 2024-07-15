@@ -76,7 +76,7 @@ let is_known_option cmd = match cmd with
   | _ -> false
 
 let ide_cmd_warns ~id { CAst.loc; v } =
-  let warn msg = Feedback.(feedback ~id (Message (Warning, loc, strbrk msg))) in
+  let warn msg = Feedback.(feedback ~id (Message (Warning, loc, [], strbrk msg))) in
   if is_known_option v.expr then
     warn "Set this option from the IDE menu instead";
   if is_navigation_vernac v.expr || is_undo v.expr then
@@ -458,15 +458,12 @@ let about () = {
 
 let handle_exn (e, info) =
   let dummy = Stateid.dummy in
-  let loc_of e = match Loc.get_loc e with
-    | Some loc -> Some (Loc.unloc loc)
-    | _        -> None in
   let mk_msg () = CErrors.iprint (e,info) in
   match e with
   | e ->
       match Stateid.get info with
-      | Some (valid, _) -> valid, loc_of info, mk_msg ()
-      | None -> dummy, loc_of info, mk_msg ()
+      | Some (valid, _) -> valid, Loc.get_loc info, mk_msg ()
+      | None -> dummy, Loc.get_loc info, mk_msg ()
 
 let init =
   let initialized = ref false in

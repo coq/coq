@@ -24,12 +24,6 @@ open Context
 open Genarg
 open Clenv
 
-let () = Flags.in_debugger := true
-let () = Goptions.set_bool_option_value ["Printing";"Existential";"Instances"] true
-let () = Detyping.print_universes := true
-let () = Goptions.set_bool_option_value ["Printing";"Matching"] false
-let () = Goptions.set_bool_option_value ["Printing";"Sort";"Qualities"] true
-
 let with_env_evm f x =
   let env = Global.env() in
   let sigma = Evd.from_env env in
@@ -50,7 +44,7 @@ let ppdir dir = pp (DirPath.print dir)
 let ppmp mp = pp(str (ModPath.debug_to_string mp))
 let ppcon con = pp(Constant.debug_print con)
 let ppprojrepr con = pp(Constant.debug_print (Projection.Repr.constant con))
-let ppproj con = pp(Constant.debug_print (Projection.constant con))
+let ppproj p = pp(Projection.debug_print p)
 let ppkn kn = pp(str (KerName.to_string kn))
 let ppmind kn = pp(MutInd.debug_print kn)
 let ppind (kn,i) = pp(MutInd.debug_print kn ++ str"," ++int i)
@@ -58,7 +52,7 @@ let ppsp sp = pp(pr_path sp)
 let ppqualid qid = pp(pr_qualid qid)
 let ppscheme k = pp (Ind_tables.pr_scheme_kind k)
 
-let pprecarg = Declareops.pr_recarg
+let pprecarg r = pp (Declareops.pr_recarg r)
 let ppwf_paths x = pp (Declareops.pr_wf_paths x)
 
 let get_current_context () =
@@ -70,7 +64,6 @@ let get_current_context () =
 
 (* term printers *)
 let envpp pp = let sigma,env = get_current_context () in pp env sigma
-let rawdebug = ref false
 let ppevar evk = pp (Evar.print evk)
 let pr_constr t =
   let sigma, env = get_current_context () in
@@ -230,6 +223,7 @@ let ppexistentialfilter filter = match Evd.Filter.repr filter with
 let pr_goal e = Pp.(str "GOAL:" ++ int (Evar.repr e))
 let ppclenv clenv = pp(pr_clenv clenv)
 let ppgoal g = pp(Printer.Debug.pr_goal g)
+let ppgoal_with_state g = ppevar (Proofview_monad.drop_state g)
 let pphintdb db = pp(envpp Hints.pr_hint_db_env db)
 let ppproofview p =
   let gls,sigma = Proofview.proofview p in
@@ -295,6 +289,11 @@ let ppaucontext auctx =
   let prlev l = prgen prlev Level.var_index unas l in
   pp (pr_universe_context prqvar prlev (AbstractContext.repr auctx))
 
+let pp_partialfsubst psubst =
+  pp (Partial_subst.pr (fun f -> pr_constr (CClosure.term_of_fconstr f)) (Quality.pr prqvar) (Universe.pr prlev) psubst)
+
+let pp_partialsubst psubst =
+  pp (Partial_subst.pr pr_econstr (Quality.pr prqvar) (Universe.pr prlev) psubst)
 
 let ppenv e = pp
   (str "[" ++ pr_named_context_of e Evd.empty ++ str "]" ++ spc() ++
@@ -348,7 +347,7 @@ let constr_display csr =
   | Construct (((sp,i),j),u) ->
       "MutConstruct(("^(MutInd.to_string sp)^","^(string_of_int i)^"),"
       ^","^(universes_display u)^(string_of_int j)^")"
-  | Proj (p, r, c) -> "Proj("^(Constant.to_string (Projection.constant p))^","^term_display c ^")"
+  | Proj (p, r, c) -> "Proj("^(Projection.to_string p)^","^term_display c ^")"
   | Case (ci,u,pms,((_,p),_),iv,c,bl) ->
       "MutCase(<abs>,"^(term_display p)^","^(term_display c)^","
       ^(array_display (Array.map snd bl))^")"
@@ -369,6 +368,8 @@ let constr_display csr =
       "Int("^(Uint63.to_string i)^")"
   | Float f ->
       "Float("^(Float64.to_string f)^")"
+  | String s ->
+      Printf.sprintf "String(%S)" (Pstring.to_string s)
   | Array (u,t,def,ty) -> "Array("^(array_display t)^","^(term_display def)^","^(term_display ty)^")@{" ^universes_display u^"\n"
 
   and array_display v =
@@ -457,7 +458,7 @@ let print_pure_constr csr =
       print_string ","; universes_display u;
       print_string ")"
   | Proj (p,_,c') -> print_string "Proj(";
-      sp_con_display (Projection.constant p);
+      sp_prj_display p;
       print_string ",";
       box_display c';
       print_string ")"
@@ -528,6 +529,8 @@ let print_pure_constr csr =
      print_string ("Int("^(Uint63.to_string i)^")")
   | Float f ->
       print_string ("Float("^(Float64.to_string f)^")")
+  | String s ->
+      print_string (Printf.sprintf "String(%S)" (Pstring.to_string s))
   | Array (u,t,def,ty) ->
       print_string "Array(";
       Array.iter (fun x -> box_display x; print_space()) t;
@@ -577,7 +580,8 @@ let print_pure_constr csr =
         | l             -> l
     in  List.iter (fun x -> print_string x; print_string ".") ls;*)
       print_string (Constant.debug_to_string sp)
-
+  and sp_prj_display sp =
+      print_string (Projection.debug_to_string sp)
   in
     try
      box_display csr; print_flush()
@@ -689,9 +693,3 @@ let short_string_of_ref ?loc _ = let open GlobRef in function
       encode_path ?loc "CSTR" None
         [Label.to_id (MutInd.label kn);Id.of_string ("_"^string_of_int i)]
         (Id.of_string ("_"^string_of_int j))
-
-(* Anticipate that printers can be used from ocamldebug and that
-   pretty-printer should not make calls to the global env since ocamldebug
-   runs in a different process and does not have the proper env at hand *)
-let () = Constrextern.set_extern_reference
-  (if !rawdebug then raw_string_of_ref else short_string_of_ref)

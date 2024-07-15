@@ -150,20 +150,20 @@ val name_level : Univ.Level.t -> Id.t -> t -> t
    the universes in [keep]. The constraints [csts] are adjusted so
    that transitive constraints between remaining universes (those in
    [keep] and those not in [univs]) are preserved. *)
-val restrict_universe_context : lbound:UGraph.Bound.t -> ContextSet.t -> Level.Set.t -> ContextSet.t
+val restrict_universe_context : ?lbound:UGraph.Bound.t -> ContextSet.t -> Level.Set.t -> ContextSet.t
 
 (** [restrict uctx ctx] restricts the local universes of [uctx] to
    [ctx] extended by local named universes and side effect universes
    (from [demote_seff_univs]). Transitive constraints between retained
    universes are preserved. *)
-val restrict : t -> Univ.Level.Set.t -> t
+val restrict : ?lbound:UGraph.Bound.t -> t -> Univ.Level.Set.t -> t
 
 
 (** [restrict_even_binders uctx ctx] restricts the local universes of [uctx] to
    [ctx] extended by side effect universes
    (from [demote_seff_univs]). Transitive constraints between retained
    universes are preserved. *)
-val restrict_even_binders : t -> Univ.Level.Set.t -> t
+val restrict_even_binders : ?lbound:UGraph.Bound.t -> t -> Univ.Level.Set.t -> t
 
 type rigid =
   | UnivRigid
@@ -214,12 +214,15 @@ val fix_undefined_variables : t -> t
 (** cf UnivFlex *)
 
 (** Universe minimization *)
-val minimize : t -> t
+val minimize : ?lbound:UGraph.Bound.t -> t -> t
+
+val collapse_above_prop_sort_variables : to_prop:bool -> t -> t
 
 val collapse_sort_variables : t -> t
 
 type ('a, 'b, 'c) gen_universe_decl = {
   univdecl_qualities : 'a;
+  univdecl_extensible_qualities : bool;
   univdecl_instance : 'b; (* Declared universes *)
   univdecl_extensible_instance : bool; (* Can new universes be added *)
   univdecl_constraints : 'c; (* Declared constraints *)
@@ -242,6 +245,8 @@ val default_univ_decl : universe_decl
    [decl.univdecl_instance] come first in the order defined by that
    list. *)
 val check_univ_decl : poly:bool -> t -> universe_decl -> named_universes_entry
+val check_univ_decl_rev : t -> universe_decl -> t * UVars.UContext.t
+val check_uctx_impl : fail:(Pp.t -> unit) -> t -> t -> unit
 
 val check_mono_univ_decl : t -> universe_decl -> Univ.ContextSet.t
 

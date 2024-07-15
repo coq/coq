@@ -68,6 +68,9 @@ type (_, _, _) genarg_type =
 type 'a uniform_genarg_type = ('a, 'a, 'a) genarg_type
 (** Alias for concision when the three types agree. *)
 
+type 'a vernac_genarg_type = ('a, Util.Empty.t, Util.Empty.t) genarg_type
+(** Produced  by VERNAC ARGUMENT EXTEND *)
+
 val make0 : string -> ('raw, 'glob, 'top) genarg_type
 (** Create a new generic type of argument: force to associate
     unique ML types at each of the three levels. *)

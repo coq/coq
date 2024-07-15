@@ -656,3 +656,22 @@ the Calculus of Inductive Constructions}},
   biburl       = {https://dblp.org/rec/phd/hal/Zimmermann19.bib},
   bibsource    = {dblp computer science bibliography, https://dblp.org}
 }
+
+@article{TotR21,
+  author = {Cockx, Jesper and Tabareau, Nicolas and Winterhalter, Th\'{e}o},
+  title = {The Taming of the Rew: A Type Theory with Computational Assumptions},
+  year = {2021},
+  issue_date = {January 2021},
+  publisher = {Association for Computing Machinery},
+  address = {New York, NY, USA},
+  volume = {5},
+  number = {POPL},
+  url = {https://doi.org/10.1145/3434341},
+  doi = {10.1145/3434341},
+  abstract = {Dependently typed programming languages and proof assistants such as Agda and Coq rely on computation to automatically simplify expressions during type checking. To overcome the lack of certain programming primitives or logical principles in those systems, it is common to appeal to axioms to postulate their existence. However, one can only postulate the bare existence of an axiom, not its computational behaviour. Instead, users are forced to postulate equality proofs and appeal to them explicitly to simplify expressions, making axioms dramatically more complicated to work with than built-in primitives. On the other hand, the equality reflection rule from extensional type theory solves these problems by collapsing computation and equality, at the cost of having no practical type checking algorithm. This paper introduces Rewriting Type Theory (RTT), a type theory where it is possible to add computational assumptions in the form of rewrite rules. Rewrite rules go beyond the computational capabilities of intensional type theory, but in contrast to extensional type theory, they are applied automatically so type checking does not require input from the user. To ensure type soundness of RTT—as well as effective type checking—we provide a framework where confluence of user-defined rewrite rules can be checked modularly and automatically, and where adding new rewrite rules is guaranteed to preserve subject reduction. The properties of RTT have been formally verified using the MetaCoq framework and an implementation of rewrite rules is already available in the Agda proof assistant.},
+  journal = {Proc. ACM Program. Lang.},
+  month = {jan},
+  articleno = {60},
+  numpages = {29},
+  keywords = {termination, dependent types, rewriting theory, confluence, type theory}
+}

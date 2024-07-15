@@ -225,8 +225,6 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 (** Parsing / printing declarations. *)
-Reserved Notation "p .1" (at level 2, left associativity, format "p .1").
-Reserved Notation "p .2" (at level 2, left associativity, format "p .2").
 Reserved Notation "f ^~ y" (at level 10, y at level 8, no associativity,
   format "f ^~  y").
 Reserved Notation "@^~ x" (at level 10, x at level 8, no associativity,
@@ -289,6 +287,7 @@ Reserved Notation "{ 'mono' f : x y /~ a }" (at level 0, f at level 99,
   x name, y name, format "{ 'mono'  f  :  x  y  /~  a }").
 
 Reserved Notation "@ 'id' T" (at level 10, T at level 8, format "@ 'id'  T").
+#[warning="-closed-notation-not-level-0"]
 Reserved Notation "@ 'sval'" (at level 10, format "@ 'sval'").
 
 (**

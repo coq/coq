@@ -15,6 +15,19 @@ then
    shift
 fi
 
+REDBOLD="\033[31m"
+YELLOW="\033[33m"
+RESET="\033[0m"
+
+function colorprint
+{
+  if [ "$COQ_CI_COLOR" ]; then
+    printf "$1%s$RESET\n" "$2"
+  else
+    printf '%s\n' "$2"
+  fi
+}
+
 CODE=0
 for f in "$@"; do
     if git ls-files --error-unmatch "$f" >/dev/null 2>&1 && \
@@ -26,13 +39,13 @@ for f in "$@"; do
             if [ -w "$f" ];
             then
                 echo >> "$f"
-                echo "Newline appended to file $f!"
+                colorprint "$YELLOW" "Newline appended to file $f!"
             else
-                echo "File $f is missing a newline and not writable!"
+                colorprint "$REDBOLD" "File $f is missing a newline and not writable!"
                 CODE=1
             fi
         else
-            echo "No newline at end of file $f!"
+            colorprint "$REDBOLD" "No newline at end of file $f!"
             CODE=1
         fi
     fi

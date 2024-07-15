@@ -88,3 +88,8 @@ Inductive Box :=
 | box : forall n, f n = n -> g 2 -> Box.
 
 Print Assumptions Box.
+
+(** CoFixpoint *)
+
+CoInductive Stream : Type :=  Cons : nat -> Stream -> Stream.
+#[bypass_check(guard)] CoFixpoint f2 : Stream := f2.

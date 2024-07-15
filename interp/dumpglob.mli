@@ -49,8 +49,9 @@
     [%kind %bc:%ec %secpath %name]
 
     where [%kind] is one of
-    [{def,coe,subclass,canonstruc,ex,scheme,proj,inst,meth,defax,prfax,thm,prim,class,var,indrec,rec,corec,ind,variant,coind,constr,not,binder,lib,mod,modtype}],
+    [{ax,def,coe,subclass,canonstruc,ex,scheme,proj,inst,meth,defax,prfax,thm,prim,class,var,indrec,rec,corec,ind,variant,coind,constr,not,binder,lib,mod,modtype}],
     meaning:
+    + [ax] Axiom, Parameter or Variable(s), Hypothes{i,e}s, Context outside any section
     + [def] Definition
     + [coe] Coertion
     + [thm] Theorem
@@ -65,7 +66,7 @@
     + [defax] Definitional assumption
     + [prfax] Logical assumption
     + [prim] Primitive
-    + [var] Variable reference
+    + [var] section Variable reference (Variable{,s}, Hypothes{i,e}s, Context)
     + [indrec] Inductive
     + [rec] Inductive  (variant)
     + [corec] Coinductive
@@ -79,7 +80,7 @@
     + [mod] Module Reference (Import, Module start / end)
     + [modtype] Module Type
 
-    [%bc] and [%ec] are respectively the start and end byte locations in the file (0-indexed)
+    [%bc] and [%ec] are respectively the start and end byte locations in the file (0-indexed), multiple entries can share the same [%bc] and [%ec]
     [%secpath] the section path (or [<>] if no section path) and [%name] the name of the
     defined object, or also [<>] in where no name applies.
 

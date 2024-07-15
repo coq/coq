@@ -82,7 +82,7 @@ open Declarations
 let type_of_logical_kind = function
   | IsDefinition def ->
       (match def with
-      | Definition | Let -> "def"
+      | Definition | Let | LetContext -> "def"
       | Coercion -> "coe"
       | SubClass -> "subclass"
       | CanonicalStructure -> "canonstruc"
@@ -110,6 +110,7 @@ let type_of_logical_kind = function
       | Proposition
       | Corollary -> "thm")
   | IsPrimitive -> "prim"
+  | IsSymbol -> "symb"
 
 
 (** Data associated to global parameters and constants *)

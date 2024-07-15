@@ -25,16 +25,21 @@ val level_subst_of : universe_subst_fn -> universe_level_subst_fn
 
 val subst_univs_constraints : universe_subst_fn -> Constraints.t -> Constraints.t
 
-val nf_binder_annot : (Sorts.relevance -> Sorts.relevance) ->
-  'a Context.binder_annot -> 'a Context.binder_annot
-
 (** Full universes substitutions into terms *)
+
+val map_universes_opt_subst_with_binders
+  : ('a -> 'a)
+  -> ('a -> constr -> constr)
+  -> quality_subst_fn
+  -> universe_subst_fn
+  -> 'a -> constr -> constr
 
 val nf_evars_and_universes_opt_subst
   : (existential -> constr option)
   -> quality_subst_fn
   -> universe_subst_fn
   -> constr -> constr
+  [@@ocaml.deprecated "Use [UnivSubst.map_universes_opt_subst_with_binders]"]
 
 val subst_univs_universe : universe_subst_fn -> Universe.t -> Universe.t
 

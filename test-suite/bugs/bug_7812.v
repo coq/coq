@@ -13,7 +13,7 @@ Module Simple_sparse_proof.
   Implicit Types G : graph.
 
   Parameter mem : forall A, A -> list A -> Prop.
-  Hypothesis mem_nil : forall x, mem node x nil = False.
+  Axiom mem_nil : forall x, mem node x nil = False.
 
   Definition notin (l: list node): node -> node -> Prop :=
     fun x y => ~ mem node x l /\ ~ mem node y l.

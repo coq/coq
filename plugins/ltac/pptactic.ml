@@ -163,14 +163,14 @@ let string_of_genarg_arg (ArgumentType arg) =
           end
         | _ -> default
 
-  let pr_with_occurrences pr c = Ppred.pr_with_occurrences pr keyword c
+  let pr_with_occurrences prvar pr c = Ppred.pr_with_occurrences prvar pr keyword c
   let pr_red_expr env sigma pr c = Ppred.pr_red_expr_env env sigma pr keyword c
 
-  let pr_may_eval env sigma test prc prlc pr2 pr3 = function
+  let pr_may_eval env sigma test prc prlc pr2 pr3 pr4 = function
     | ConstrEval (r,c) ->
       hov 0
         (keyword "eval" ++ brk (1,1) ++
-           pr_red_expr env sigma (prc,prlc,pr2,pr3) r ++ spc () ++
+           pr_red_expr env sigma (prc,prlc,pr2,pr3,pr4) r ++ spc () ++
            keyword "in" ++ spc() ++ prc env sigma c)
     | ConstrContext ({CAst.v=id},c) ->
       hov 0
@@ -191,8 +191,9 @@ let string_of_genarg_arg (ArgumentType arg) =
   let pr_and_short_name pr (c,_) = pr c
 
   let pr_evaluable_reference = function
-    | Tacred.EvalVarRef id -> pr_id id
-    | Tacred.EvalConstRef sp -> pr_global (GlobRef.ConstRef sp)
+    | Evaluable.EvalVarRef id -> pr_id id
+    | Evaluable.EvalConstRef sp -> pr_global (GlobRef.ConstRef sp)
+    | Evaluable.EvalProjectionRef p -> str "TODO projection" (* TODO *)
 
   let pr_quantified_hypothesis = function
     | AnonHyp n -> int n
@@ -381,9 +382,11 @@ let string_of_genarg_arg (ArgumentType arg) =
         str "<" ++ KerName.print kn ++ str ">"
 
   let pr_evaluable_reference_env env = function
-    | Tacred.EvalVarRef id -> pr_id id
-    | Tacred.EvalConstRef sp ->
+    | Evaluable.EvalVarRef id -> pr_id id
+    | Evaluable.EvalConstRef sp ->
       Nametab.pr_global_env (Termops.vars_of_env env) (GlobRef.ConstRef sp)
+    | Evaluable.EvalProjectionRef p ->
+      str "TODO projection" (* TODO *)
 
   let pr_as_disjunctive_ipat prc ipatl =
     keyword "as" ++ spc () ++
@@ -441,13 +444,13 @@ let string_of_genarg_arg (ArgumentType arg) =
     | None -> mt()
 
   let pr_hyp_location pr_id = function
-    | occs, InHyp -> pr_with_occurrences pr_id occs
+    | occs, InHyp -> pr_with_occurrences (pr_or_var int) pr_id occs
     | occs, InHypTypeOnly ->
-      pr_with_occurrences (fun id ->
+      pr_with_occurrences (pr_or_var int) (fun id ->
         str "(" ++ keyword "type of" ++ spc () ++ pr_id id ++ str ")"
       ) occs
     | occs, InHypValueOnly ->
-      pr_with_occurrences (fun id ->
+      pr_with_occurrences (pr_or_var int) (fun id ->
         str "(" ++ keyword "value of" ++ spc () ++ pr_id id ++ str ")"
       ) occs
 
@@ -465,28 +468,28 @@ let string_of_genarg_arg (ArgumentType arg) =
     | { onhyps=None; concl_occs=NoOccurrences } ->
       (str "* |-")
     | { onhyps=None; concl_occs=occs } ->
-      (pr_with_occurrences (fun () -> str "*") (occs,()))
+      (pr_with_occurrences (pr_or_var int) (fun () -> str "*") (occs,()))
     | { onhyps=Some l; concl_occs=NoOccurrences } ->
       prlist_with_sep (fun () -> str ", ") (pr_hyp_location pr_id) l
     | { onhyps=Some l; concl_occs=occs } ->
-      let pr_occs = pr_with_occurrences (fun () -> str" |- *") (occs,()) in
+      let pr_occs = pr_with_occurrences (pr_or_var int) (fun () -> str" |- *") (occs,()) in
       (prlist_with_sep (fun () -> str", ") (pr_hyp_location pr_id) l ++ pr_occs)
 
   (* Some true = default is concl; Some false = default is all; None = no default *)
   let pr_clauses has_default pr_id = function
     | { onhyps=Some []; concl_occs=occs }
         when (match has_default with Some true -> true | _ -> false) ->
-      pr_with_occurrences mt (occs,())
+      pr_with_occurrences (pr_or_var int) mt (occs,())
     | { onhyps=None; concl_occs=AllOccurrences }
         when (match has_default with Some false -> true | _ -> false) -> mt ()
     | { onhyps=None; concl_occs=NoOccurrences } ->
       pr_in (str " * |-")
     | { onhyps=None; concl_occs=occs } ->
-      pr_in (pr_with_occurrences (fun () -> str " *") (occs,()))
+      pr_in (pr_with_occurrences (pr_or_var int) (fun () -> str " *") (occs,()))
     | { onhyps=Some l; concl_occs=occs } ->
       let pr_occs = match occs with
         | NoOccurrences -> mt ()
-        | _ -> pr_with_occurrences (fun () -> str" |- *") (occs,())
+        | _ -> pr_with_occurrences (pr_or_var int) (fun () -> str" |- *") (occs,())
       in
       pr_in
         (prlist_with_sep (fun () -> str",")
@@ -522,19 +525,8 @@ let string_of_genarg_arg (ArgumentType arg) =
     | FullInversion -> primitive "inversion"
     | FullInversionClear -> primitive "inversion_clear"
 
-  let pr_range_selector (i, j) =
-    if Int.equal i j then int i
-    else int i ++ str "-" ++ int j
-
-let pr_goal_selector toplevel = let open Goal_select in function
-  | SelectAlreadyFocused -> str "!:"
-  | SelectNth i -> int i ++ str ":"
-  | SelectList l -> prlist_with_sep (fun () -> str ", ") pr_range_selector l ++ str ":"
-  | SelectId id -> str "[" ++ Id.print id ++ str "]:"
-  | SelectAll -> assert toplevel; str "all:"
-
 let pr_goal_selector ~toplevel s =
-  (if toplevel then mt () else str "only ") ++ pr_goal_selector toplevel s
+  (if toplevel then mt () else str "only ") ++ Goal_select.pr_goal_selector s ++ str ":"
 
   let pr_lazy = function
     | General -> keyword "multi"
@@ -660,11 +652,13 @@ let pr_goal_selector ~toplevel s =
     pr_constr    : Environ.env -> Evd.evar_map -> 'trm -> Pp.t;
     pr_lconstr   : Environ.env -> Evd.evar_map -> 'trm -> Pp.t;
     pr_dconstr   : Environ.env -> Evd.evar_map -> 'dtrm -> Pp.t;
+    pr_red_pattern   : Environ.env -> Evd.evar_map -> 'rpat -> Pp.t;
     pr_pattern   : Environ.env -> Evd.evar_map -> 'pat -> Pp.t;
     pr_lpattern  : Environ.env -> Evd.evar_map -> 'pat -> Pp.t;
     pr_constant  : 'cst -> Pp.t;
     pr_reference : 'ref -> Pp.t;
     pr_name      : 'nam -> Pp.t;
+    pr_occvar    : 'occvar -> Pp.t;
     pr_generic   : Environ.env -> Evd.evar_map -> 'lev generic_argument -> Pp.t;
     pr_extend    : int -> ml_tactic_entry -> 'a gen_tactic_arg list -> Pp.t;
     pr_alias     : int -> KerName.t -> 'a gen_tactic_arg list -> Pp.t;
@@ -674,9 +668,11 @@ let pr_goal_selector ~toplevel s =
       term      :'trm;
       dterm     :'dtrm;
       pattern   :'pat;
+      red_pattern :'rpat;
       constant  :'cst;
       reference :'ref;
       name      :'nam;
+      occvar    :'occvar;
       tacexpr   :'tacexpr;
       level     :'lev
     >
@@ -685,7 +681,7 @@ let pr_goal_selector ~toplevel s =
       let pr_with_bindings = pr_with_bindings (pr.pr_constr env sigma) (pr.pr_lconstr env sigma) in
       let pr_with_bindings_arg_full = pr_with_bindings_arg in
       let pr_with_bindings_arg = pr_with_bindings_arg (pr.pr_constr env sigma) (pr.pr_lconstr env sigma) in
-      let pr_red_expr = pr_red_expr env sigma (pr.pr_constr,pr.pr_lconstr,pr.pr_constant,pr.pr_pattern) in
+      let pr_red_expr = pr_red_expr env sigma (pr.pr_constr,pr.pr_lconstr,pr.pr_constant,pr.pr_red_pattern,pr.pr_occvar) in
 
       let _pr_constrarg c = spc () ++ pr.pr_constr env sigma c in
       let pr_lconstrarg c = spc () ++ pr.pr_lconstr env sigma c in
@@ -796,7 +792,7 @@ let pr_goal_selector ~toplevel s =
           hov 1 (
             primitive "generalize" ++ spc ()
             ++ prlist_with_sep pr_comma (fun (cl,na) ->
-              pr_with_occurrences (pr.pr_constr env sigma) cl ++ pr_as_name na)
+              pr_with_occurrences pr.pr_occvar (pr.pr_constr env sigma) cl ++ pr_as_name na)
               l
           )
         | TacLetTac (ev,na,c,cl,true,_) when Locusops.is_nowhere cl ->
@@ -836,7 +832,7 @@ let pr_goal_selector ~toplevel s =
                   None ->
                     mt ()
                 | Some p ->
-                  pr.pr_pattern env sigma p ++ spc ()
+                  pr.pr_red_pattern env sigma p ++ spc ()
                   ++ keyword "with" ++ spc ()
             ) ++ pr.pr_dconstr env sigma c ++ pr_non_empty_arg (pr_clauses (Some true) pr.pr_name) h
           )
@@ -1036,7 +1032,7 @@ let pr_goal_selector ~toplevel s =
             | TacArg (ConstrMayEval (ConstrTerm c)) ->
               keyword "constr:" ++ pr.pr_constr env sigma c, latom
             | TacArg (ConstrMayEval c) ->
-              pr_may_eval env sigma pr.pr_constr pr.pr_lconstr pr.pr_constant pr.pr_pattern c, leval
+              pr_may_eval env sigma pr.pr_constr pr.pr_lconstr pr.pr_constant pr.pr_red_pattern pr.pr_occvar c, leval
             | TacArg (TacFreshId l) ->
               primitive "fresh" ++ pr_fresh_ids l, latom
             | TacArg (TacGeneric (isquot,arg)) ->
@@ -1064,7 +1060,7 @@ let pr_goal_selector ~toplevel s =
           | Reference r ->
             pr.pr_reference r
           | ConstrMayEval c ->
-            pr_may_eval env sigma pr.pr_constr pr.pr_lconstr pr.pr_constant pr.pr_pattern c
+            pr_may_eval env sigma pr.pr_constr pr.pr_lconstr pr.pr_constant pr.pr_red_pattern pr.pr_occvar c
           | TacFreshId l ->
             keyword "fresh" ++ pr_fresh_ids l
           | TacPretype c ->
@@ -1094,11 +1090,13 @@ let pr_goal_selector ~toplevel s =
       pr_constr = pr_constr_expr;
       pr_dconstr = pr_constr_expr;
       pr_lconstr = pr_lconstr_expr;
+      pr_red_pattern = pr_constr_expr;
       pr_pattern = pr_constr_pattern_expr;
       pr_lpattern = pr_lconstr_pattern_expr;
       pr_constant = pr_or_by_notation pr_qualid;
       pr_reference = pr_qualid;
       pr_name = pr_lident;
+      pr_occvar = pr_or_var int;
       pr_generic = Pputils.pr_raw_generic;
       pr_extend = pr_raw_extend_rec @@ pr_raw_tactic_level env sigma;
       pr_alias = pr_raw_alias @@ pr_raw_tactic_level env sigma;
@@ -1124,11 +1122,13 @@ let pr_goal_selector ~toplevel s =
         pr_constr = (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env sigma));
         pr_dconstr = (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env sigma));
         pr_lconstr = (fun env sigma -> pr_and_constr_expr (pr_lglob_constr_env env sigma));
+        pr_red_pattern = (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env sigma));
         pr_pattern = (fun env sigma -> pr_pat_and_constr_expr (pr_glob_constr_env env sigma));
         pr_constant = pr_or_var (pr_and_short_name (pr_evaluable_reference_env env));
         pr_lpattern = (fun env sigma -> pr_pat_and_constr_expr (pr_lglob_constr_env env sigma));
         pr_reference = pr_ltac_or_var (pr_located pr_ltac_constant);
         pr_name = pr_lident;
+        pr_occvar = pr_or_var int;
         pr_generic = Pputils.pr_glb_generic;
         pr_extend = pr_glob_extend_rec prtac;
         pr_alias = pr_glob_alias prtac;
@@ -1159,11 +1159,13 @@ let pr_goal_selector ~toplevel s =
         pr_constr = pr_econstr_env;
         pr_dconstr = (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env sigma));
         pr_lconstr = pr_leconstr_env;
+        pr_red_pattern = pr_constr_pattern_env;
         pr_pattern = pr_constr_pattern_env;
         pr_lpattern = pr_lconstr_pattern_env;
         pr_constant = pr_evaluable_reference_env env;
         pr_reference = pr_located pr_ltac_constant;
         pr_name = pr_id;
+        pr_occvar = int;
         (* Those are not used by the atomic printer *)
         pr_generic = (fun _ -> assert false);
         pr_extend = (fun _ _ _ -> assert false);
@@ -1189,6 +1191,20 @@ let pr_goal_selector ~toplevel s =
     pr_extend_gen pr lev ml args
 
   let pr_atomic_tactic env sigma c = pr_atomic_tactic_level env sigma c
+
+let pp_ltac_call_kind = function
+  | LtacNotationCall s -> pr_alias_key s
+  | LtacNameCall cst -> pr_ltac_constant cst
+  (* todo: don't want the KerName instead? *)
+  | LtacVarCall (_, id, t) -> Names.Id.print id
+  | LtacAtomCall te ->
+    pr_glob_tactic (Global.env ())
+      (CAst.make (TacAtom te))
+  | LtacConstrInterp (env, sigma, c, _) ->
+    pr_glob_constr_env env sigma c
+  | LtacMLCall te ->
+    (pr_glob_tactic (Global.env ())
+       te)
 
 let declare_extra_genarg_pprule wit
   (f : 'a raw_extra_genarg_printer)
@@ -1258,7 +1274,8 @@ let pr_intro_pattern_env p = Genprint.TopPrinterNeedsContext (fun env sigma ->
 
 let pr_red_expr_env r = Genprint.TopPrinterNeedsContext (fun env sigma ->
   pr_red_expr env sigma ((fun e -> pr_econstr_env e), (fun e -> pr_leconstr_env e),
-                         pr_evaluable_reference_env env, pr_constr_pattern_env) r)
+                         pr_evaluable_reference_env env, pr_constr_pattern_env,
+                         int) r)
 
 let pr_bindings_env bl = Genprint.TopPrinterNeedsContext (fun env sigma ->
   let sigma, bl = bl env sigma in
@@ -1343,12 +1360,13 @@ let () =
   ;
   Genprint.register_print0
     Redexpr.wit_red_expr
-    (lift_env (fun env sigma -> pr_red_expr env sigma (pr_constr_expr, pr_lconstr_expr, pr_or_by_notation pr_qualid, pr_constr_pattern_expr)))
+    (lift_env (fun env sigma -> pr_red_expr env sigma (pr_constr_expr, pr_lconstr_expr, pr_or_by_notation pr_qualid, pr_constr_pattern_expr,pr_or_var int)))
     (lift_env (fun env sigma -> pr_red_expr env sigma
                   ((fun env sigma -> pr_and_constr_expr @@ pr_glob_constr_pptac env sigma),
                    (fun env sigma -> pr_and_constr_expr @@ pr_lglob_constr_pptac env sigma),
                    pr_or_var (pr_and_short_name pr_evaluable_reference),
-                   (fun env sigma -> pr_pat_and_constr_expr @@ pr_glob_constr_pptac env sigma))))
+                   (fun env sigma -> pr_and_constr_expr @@ pr_glob_constr_pptac env sigma),
+                   (pr_or_var int))))
     pr_red_expr_env
   ;
   register_basic_print0 wit_quant_hyp pr_quantified_hypothesis pr_quantified_hypothesis pr_quantified_hypothesis;

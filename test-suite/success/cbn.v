@@ -39,3 +39,35 @@ Proof.
   cbn.
   match goal with |- _ + _ = _ => idtac end.
 Abort.
+
+Module MutualFixCoFixInSection.
+
+Section S.
+Variable p:nat.
+Fixpoint f n := match n with 0 => p | S n => f n + g n end
+with g n := match n with 0 => p | S n => f n + g n end.
+End S.
+
+Goal forall n, f n (S n) = g 0 (S n).
+intros. cbn.
+match goal with [ |- f n n + g n n = f 0 n + g 0 n ] => idtac end.
+Abort.
+
+CoInductive stream {A:Type} : Type :=
+  | scons: A->stream->stream.
+Definition stream_unfold {A} (s: @ stream A) := match s with
+| scons a s' => (a, scons a s')
+end.
+
+Section C.
+Variable (x:nat).
+CoFixpoint mut_stream1 (n:nat) := scons n (mut_stream2 (n+x))
+with mut_stream2 (n:nat) :=  scons n (mut_stream1  (n+x)).
+End C.
+
+Goal (forall x n, stream_unfold (mut_stream1 x n) = stream_unfold (mut_stream2 x n)).
+intros. cbn.
+match goal with [ |- (n, scons n (mut_stream2 x (n + x))) = (n, scons n (mut_stream1 x (n + x))) ] => idtac end.
+Abort.
+
+End MutualFixCoFixInSection.

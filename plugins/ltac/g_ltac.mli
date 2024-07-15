@@ -25,47 +25,42 @@ val in_tac :
 
 val tactic_mode : Vernacexpr.vernac_expr Pcoq.Entry.t
 
-val toplevel_selector : Goal_select.t Pcoq.Entry.t
-
 val tacdef_body : Tacexpr.tacdef_body Pcoq.Entry.t
 
 val classic_proof_mode : Pvernac.proof_mode
 
-val test_bracket_ident : unit Pcoq.Entry.t
-
 val hint : Vernacexpr.hints_expr Pcoq.Entry.t
 
-val wit_ltac_selector : (Goal_select.t, unit, unit) Genarg.genarg_type
+val wit_ltac_selector : Goal_select.t Genarg.vernac_genarg_type
 
 val ltac_selector : Goal_select.t Pcoq.Entry.t
 
-val wit_ltac_info : (int, unit, unit) Genarg.genarg_type
+val wit_ltac_info : int Genarg.vernac_genarg_type
 
 val ltac_info : int Pcoq.Entry.t
 
-val wit_ltac_use_default : (bool, unit, unit) Genarg.genarg_type
+val wit_ltac_use_default : bool Genarg.vernac_genarg_type
 
 val ltac_use_default : bool Pcoq.Entry.t
 
-val wit_ltac_tactic_level : (int, unit, unit) Genarg.genarg_type
+val wit_ltac_tactic_level : int Genarg.vernac_genarg_type
 
 val ltac_tactic_level : int Pcoq.Entry.t
 
-val wit_ltac_production_sep : (string, unit, unit) Genarg.genarg_type
+val wit_ltac_production_sep : string Genarg.vernac_genarg_type
 
 val ltac_production_sep : string Pcoq.Entry.t
 
 val wit_ltac_production_item :
-  ((string * string option)
-   Tacentries.grammar_tactic_prod_item_expr, unit, unit)
-  Genarg.genarg_type
+  (string * string option) Tacentries.grammar_tactic_prod_item_expr
+    Genarg.vernac_genarg_type
 
 val ltac_production_item :
   (string * string option)
   Tacentries.grammar_tactic_prod_item_expr Pcoq.Entry.t
 
 val wit_ltac_tacdef_body :
-  (Tacexpr.tacdef_body, unit, unit) Genarg.genarg_type
+  Tacexpr.tacdef_body Genarg.vernac_genarg_type
 
 val ltac_tacdef_body : Tacexpr.tacdef_body Pcoq.Entry.t
 

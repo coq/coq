@@ -195,4 +195,75 @@ Qed.
 End Clear.
 *)
 
+Module InteractiveUsing.
 
+Section S.
+
+Variable m : nat.
+Variable e : m = m.
+
+#[using="e"]
+Definition a := 0.
+
+#[using="e"]
+Definition a' : nat.
+exact 0.
+Defined.
+
+#[using="e"]
+Fixpoint f (n:nat) : nat :=
+ match n with 0 => 0 | S n => f n end.
+
+#[using="e"]
+Fixpoint f' (n:nat) : nat.
+exact (match n with 0 => 0 | S n => f n end).
+Defined.
+
+#[using="Type"]
+Fixpoint f1 (n:nat) : nat :=
+  match n with 0 => 0 | S n => match f2 n with eq_refl => n end end
+with f2 (n:nat) : m = m :=
+  match n with 0 => eq_refl | S n => match f1 n with 0 => eq_refl | S _ => eq_refl end end.
+
+#[using="Type"]
+Fixpoint f1' (n:nat) : nat with f2' (n:nat) : m = m.
+exact (match n with 0 => 0 | S n => match f2' n with eq_refl => n end end).
+exact (match n with 0 => eq_refl | S n => match f1' n with 0 => eq_refl | S _ => eq_refl end end).
+Defined.
+
+CoInductive Stream : Set := Cons : Stream -> Stream.
+
+#[using="e"]
+CoFixpoint g : Stream := Cons g.
+
+#[using="e"]
+CoFixpoint g' : Stream.
+exact (Cons g).
+Defined.
+
+#[using="e"]
+Lemma g1 (n:nat) : nat with g2 (n:nat) : m = m.
+exact (match n with 0 => 0 | S n => match g2 n with eq_refl => n end end).
+exact (match n with 0 => eq_refl | S n => match g1 n with 0 => eq_refl | S _ => eq_refl end end).
+Defined.
+
+#[using="Type"]
+Lemma g1' (n:nat) : nat with g2' (n:nat) : m = m.
+exact (match n with 0 => 0 | S n => match g2' n with eq_refl => n end end).
+exact (match n with 0 => eq_refl | S n => match g1' n with 0 => eq_refl | S _ => eq_refl end end).
+Defined.
+
+End S.
+
+Check eq_refl : a 0 (eq_refl 0) = 0.
+Check eq_refl : a' 0 (eq_refl 0) = 0.
+Check eq_refl : f 10 (eq_refl 10) 2 = 0.
+Check eq_refl : f' 10 (eq_refl 10) 2 = 0.
+Check eq_refl : f1 10 2 = 1.
+Check eq_refl : f1' 10 2 = 1.
+Check g 0 eq_refl : Stream.
+Check g' 0 eq_refl : Stream.
+Check eq_refl : g1 10 (eq_refl 10) 2 = 1.
+Check eq_refl : g1' 10 2 = 1.
+
+End InteractiveUsing.

@@ -10,7 +10,7 @@
 
 (** The type of parsing attribute data *)
 type vernac_flag_type =
-  | FlagIdent of string
+  | FlagQualid of Libnames.qualid
   | FlagString of string
 
 type vernac_flags = vernac_flag list
@@ -54,18 +54,26 @@ val raw_attributes : vernac_flags attribute
 val polymorphic : bool attribute
 val program : bool attribute
 val template : bool option attribute
+val unfold_fix : bool attribute
 val locality : bool option attribute
 val option_locality : Goptions.option_locality attribute
 val deprecation : Deprecation.t option attribute
+val deprecation_with_use_globref_instead : Globnames.extended_global_reference Deprecation.with_qf option attribute
+val user_warn_warn : UserWarn.warn list attribute
+val user_warns : UserWarn.t option attribute
+val user_warns_with_use_globref_instead : Globnames.extended_global_reference UserWarn.with_qf option attribute
 val reversible : bool option attribute
 val canonical_field : bool attribute
 val canonical_instance : bool attribute
 val using : string option attribute
-val hint_locality : default:(unit -> Hints.hint_locality) -> Hints.hint_locality attribute
+val explicit_hint_locality : Hints.hint_locality option attribute
 val bind_scope_where : Notation.add_scope_where option attribute
 
-(** With the warning for Hint (and not for Instance etc) *)
-val really_hint_locality : Hints.hint_locality attribute
+(** Default: if sections are opened then Local otherwise Export.
+    Although this is named and uses the type [hint_locality]
+    it may be used as the standard 3-valued locality attribute.
+*)
+val hint_locality : Hints.hint_locality attribute
 
 (** Enable/Disable universe checking *)
 val typing_flags : Declarations.typing_flags option attribute

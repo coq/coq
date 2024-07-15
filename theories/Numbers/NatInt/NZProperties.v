@@ -10,6 +10,7 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
+Attributes deprecated(since="8.20", note="use Coq.Numbers.NatInt.NZMulOrder instead").
 Require Export NZAxioms NZMulOrder.
 
 (** This functor summarizes all known facts about NZ.

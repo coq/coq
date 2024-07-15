@@ -14,7 +14,7 @@ open Util
 
 let parse_env_line l =
   try Scanf.sscanf l "%[^=]=%S" (fun name value -> Some(name,value))
-  with _ -> None
+  with Scanf.Scan_failure _ | End_of_file -> None
 
 let with_ic file f =
   let ic = open_in file in

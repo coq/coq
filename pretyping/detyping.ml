@@ -67,9 +67,13 @@ let instantiate_context u subst nas ctx =
   instantiate (Array.length nas - 1) ctx
 
 let return_clause env sigma ind u params ((nas, p),_) =
+  let nas : Name.t EConstr.binder_annot array = nas in
   try
     let u = EConstr.Unsafe.to_instance u in
     let params = EConstr.Unsafe.to_constr_array params in
+    let nas : Name.t Constr.binder_annot array =
+      match EConstr.Unsafe.relevance_eq with Refl -> nas
+    in
     let () = if not @@ Environ.mem_mind (fst ind) env then raise_notrace Exit in
     let mib = Environ.lookup_mind (fst ind) env in
     let mip = mib.mind_packets.(snd ind) in
@@ -89,9 +93,13 @@ let return_clause env sigma ind u params ((nas, p),_) =
     List.rev (Array.map_to_list dummy nas), p
 
 let branch env sigma (ind, i) u params (nas, br) =
+  let nas : Name.t EConstr.binder_annot array = nas in
   try
     let u = EConstr.Unsafe.to_instance u in
     let params = EConstr.Unsafe.to_constr_array params in
+    let nas : Name.t Constr.binder_annot array =
+      match EConstr.Unsafe.relevance_eq with Refl -> nas
+    in
     let () = if not @@ Environ.mem_mind (fst ind) env then raise_notrace Exit in
     let mib = Environ.lookup_mind (fst ind) env in
     let mip = mib.mind_packets.(snd ind) in
@@ -370,25 +378,25 @@ let detype_quality sigma q =
   | QVar q -> GQualVar (detype_qvar sigma q)
 
 let detype_universe sigma u =
-  List.map (on_fst (detype_level_name sigma)) (Univ.Universe.repr u)
+  UNamed (List.map (on_fst (detype_level_name sigma)) (Univ.Universe.repr u))
 
 let detype_sort sigma = function
-  | SProp -> UNamed (None, [GSProp,0])
-  | Prop -> UNamed (None, [GProp,0])
-  | Set -> UNamed (None, [GSet,0])
+  | SProp -> glob_SProp_sort
+  | Prop -> glob_Prop_sort
+  | Set -> glob_Set_sort
   | Type u ->
       (if !print_universes
-       then UNamed (None, detype_universe sigma u)
-       else UAnonymous {rigid=UnivRigid})
+       then None, detype_universe sigma u
+       else glob_Type_sort)
   | QSort (q, u) ->
     if !print_universes then
       let q = if print_sort_quality () then Some (detype_qvar sigma q) else None in
-      UNamed (q, detype_universe sigma u)
-    else UAnonymous {rigid=UnivRigid}
+      q, detype_universe sigma u
+    else glob_Type_sort
 
 let detype_relevance_info sigma na =
   if not (print_relevances ()) then None
-  else match Evarutil.nf_relevance sigma na.binder_relevance with
+  else match ERelevance.kind sigma na.binder_relevance with
     | Relevant -> Some GRelevant
     | Irrelevant -> Some GIrrelevant
     | RelevanceVar q -> Some (GRelevanceVar (detype_qvar sigma q))
@@ -562,10 +570,9 @@ let rec build_tree na isgoal e sigma (ci, u, pms, cl) =
   let mkpat n rhs pl =
     let na = update_name sigma na rhs in
     na, DAst.make @@ PatCstr((ci.ci_ind,n+1),pl,na) in
-  let cnl = ci.ci_pp_info.cstr_tags in
   List.flatten
     (List.init (Array.length cl)
-      (fun i -> contract_branch isgoal e sigma (cnl.(i),mkpat i,cl.(i))))
+      (fun i -> contract_branch isgoal e sigma (mkpat i,cl.(i))))
 
 and align_tree nal isgoal (e,c as rhs) sigma = match nal with
   | [] -> [Id.Set.empty,[],rhs]
@@ -588,7 +595,7 @@ and align_tree nal isgoal (e,c as rhs) sigma = match nal with
         let mat = align_tree nal isgoal rhs sigma in
         List.map (fun (ids,hd,rest) -> Nameops.Name.fold_right Id.Set.add na ids,pat::hd,rest) mat
 
-and contract_branch isgoal e sigma (cdn,mkpat,rhs) =
+and contract_branch isgoal e sigma (mkpat,rhs) =
   let nal,rhs = decomp_branch isgoal e sigma rhs in
   let mat = align_tree nal isgoal rhs sigma in
   List.map (fun (ids,hd,rhs) ->
@@ -635,6 +642,23 @@ let it_destRLambda_or_LetIn_names l c =
               | _ -> DAst.make @@ GApp (c,[a]))
   in aux l [] c
 
+let get_ind_tag env ind p =
+  if Environ.mem_mind (fst ind) env then
+    let (mib, mip) = Inductive.lookup_mind_specif env ind in
+    Context.Rel.to_tags (List.firstn mip.mind_nrealdecls mip.mind_arity_ctxt)
+  else
+    let (nas, _), _ = p in
+    Array.map_to_list (fun _ -> false) nas
+
+let get_cstr_tags env ind bl =
+  if Environ.mem_mind (fst ind) env then
+    let (mib, mip) = Inductive.lookup_mind_specif env ind in
+    Array.map2 (fun (d, _) n -> Context.Rel.to_tags (List.firstn n d))
+      mip.mind_nf_lc mip.mind_consnrealdecls
+  else
+    let map (nas, _) = Array.map_to_list (fun _ -> false) nas in
+    Array.map map bl
+
 let detype_case computable detype detype_eqns avoid env sigma (ci, univs, params, p, iv, c, bl) =
   let synth_type = synthetize_type () in
   let tomatch = detype c in
@@ -659,10 +683,11 @@ let detype_case computable detype detype_eqns avoid env sigma (ci, univs, params
     then
       Anonymous, None, None
     else
+      let ind_tags = get_ind_tag (snd env) ci.ci_ind p in
       let (ctx, p) = RobustExpand.return_clause (snd env) sigma ci.ci_ind univs params p in
       let p = EConstr.it_mkLambda_or_LetIn p ctx in
       let p = detype p in
-      let nl,typ = it_destRLambda_or_LetIn_names ci.ci_pp_info.ind_tags p in
+      let nl,typ = it_destRLambda_or_LetIn_names ind_tags p in
       let n,typ = match DAst.get typ with
         | GLambda (x,_,_,t,c) -> x, c
         | _ -> Anonymous, typ in
@@ -686,32 +711,33 @@ let detype_case computable detype detype_eqns avoid env sigma (ci, univs, params
         st
     with Not_found -> st
   in
-  let constagsl = ci.ci_pp_info.cstr_tags in
   match tag, aliastyp with
   | LetStyle, None ->
-      let map i br =
-        let (ctx, body) = RobustExpand.branch (snd env) sigma (ci.ci_ind, i + 1) univs params br in
-        EConstr.it_mkLambda_or_LetIn body ctx
-      in
-      let bl = Array.mapi map bl in
-      let bl' = Array.map detype bl in
-      let (nal,d) = it_destRLambda_or_LetIn_names constagsl.(0) bl'.(0) in
-      GLetTuple (nal,(alias,pred),tomatch,d)
+    let map i br =
+      let (ctx, body) = RobustExpand.branch (snd env) sigma (ci.ci_ind, i + 1) univs params br in
+      EConstr.it_mkLambda_or_LetIn body ctx
+    in
+    let constagsl = get_cstr_tags (snd env) ci.ci_ind bl in
+    let bl = Array.mapi map bl in
+    let bl' = Array.map detype bl in
+    let (nal,d) = it_destRLambda_or_LetIn_names constagsl.(0) bl'.(0) in
+    GLetTuple (nal,(alias,pred),tomatch,d)
   | IfStyle, None ->
       if Array.for_all (fun br -> is_nondep_branch sigma br) bl then
         let map i br =
           let ctx, body = RobustExpand.branch (snd env) sigma (ci.ci_ind, i + 1) univs params br in
           EConstr.it_mkLambda_or_LetIn body ctx
         in
+        let constagsl = get_cstr_tags (snd env) ci.ci_ind bl in
         let bl = Array.mapi map bl in
         let bl' = Array.map detype bl in
         let nondepbrs = Array.map2 extract_nondep_branches bl' constagsl in
         GIf (tomatch,(alias,pred), nondepbrs.(0), nondepbrs.(1))
       else
-        let eqnl = detype_eqns constructs constagsl (ci, univs, params, bl) in
+        let eqnl = detype_eqns constructs (ci, univs, params, bl) in
         GCases (tag,pred,[tomatch,(alias,aliastyp)],eqnl)
   | _ ->
-      let eqnl = detype_eqns constructs constagsl (ci, univs, params, bl) in
+      let eqnl = detype_eqns constructs (ci, univs, params, bl) in
       GCases (tag,pred,[tomatch,(alias,aliastyp)],eqnl)
 
 let rec share_names detype flags n l avoid env sigma c t =
@@ -900,7 +926,7 @@ and detype_r d flags avoid env sigma t =
           GApp (DAst.make @@ GRef (GlobRef.ConstRef (Projection.constant p), None),
                 (args @ [detype d flags avoid env sigma c]))
         in
-        if !Flags.in_debugger || !Flags.in_toplevel
+        if !Flags.in_debugger || !Flags.in_ml_toplevel
            || not (print_primproj_params ())
         then noparams ()
         else begin
@@ -977,6 +1003,7 @@ and detype_r d flags avoid env sigma t =
     | CoFix (n,recdef) -> detype_cofix (detype d) flags avoid env sigma n recdef
     | Int i -> GInt i
     | Float f -> GFloat f
+    | String s -> GString s
     | Array(u,t,def,ty) ->
       let t = Array.map (detype d flags avoid env sigma) t in
       let def = detype d flags avoid env sigma def in
@@ -984,7 +1011,7 @@ and detype_r d flags avoid env sigma t =
       let u = detype_instance sigma u in
       GArray(u, t, def, ty)
 
-and detype_eqns d flags avoid env sigma computable constructs consnargsl bl =
+and detype_eqns d flags avoid env sigma computable constructs bl =
   try
     if !Flags.raw_print || not (reverse_matching ()) then raise_notrace Exit;
     let mat = build_tree Anonymous flags (avoid,env) sigma bl in
@@ -994,9 +1021,9 @@ and detype_eqns d flags avoid env sigma computable constructs consnargsl bl =
   with e when CErrors.noncritical e ->
     let (ci, u, pms, bl) = bl in
     Array.to_list
-      (Array.map3 (detype_eqn d flags avoid env sigma u pms) constructs consnargsl bl)
+      (Array.map2 (detype_eqn d flags avoid env sigma u pms) constructs bl)
 
-and detype_eqn d flags avoid env sigma u pms constr construct_nargs br =
+and detype_eqn d flags avoid env sigma u pms constr br =
   let ctx, body = RobustExpand.branch (snd env) sigma constr u pms br in
   let branch = EConstr.it_mkLambda_or_LetIn body ctx in
   let make_pat decl avoid env b ids =
@@ -1105,7 +1132,7 @@ let detype_closed_glob ?isgoal avoid env sigma t =
           (* spiwack: I'm not sure it is the right thing to do,
              but I'm computing the detyping environment like
              [Printer.pr_constr_under_binders_env] does. *)
-          let assums = List.map (fun id -> LocalAssum (make_annot (Name id) Sorts.Relevant,(* dummy *) mkProp)) b in
+          let assums = List.map (fun id -> LocalAssum (make_annot (Name id) ERelevance.relevant,(* dummy *) mkProp)) b in
           let env = push_rel_context assums env in
           DAst.get (detype Now ?isgoal avoid env sigma c)
         (* if [id] is bound to a [closed_glob_constr]. *)
@@ -1170,6 +1197,7 @@ let rec subst_glob_constr env subst = DAst.map (function
   | GEvar _
   | GInt _
   | GFloat _
+  | GString _
   | GPatVar _ as raw -> raw
 
   | GApp (r,rl) as raw ->

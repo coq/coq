@@ -1,7 +1,7 @@
 Require List.
 Import List.ListNotations.
 
-Variable Foo : nat -> nat.
+Parameter Foo : nat -> nat.
 
 Delimit Scope Foo_scope with F.
 

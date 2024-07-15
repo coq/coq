@@ -72,16 +72,22 @@ type env = private {
   env_rel_context   : rel_context_val;
   env_nb_rel        : int;
   env_universes : UGraph.t;
-  env_universes_lbound : UGraph.Bound.t;
   env_qualities : Sorts.QVar.Set.t;
   irr_constants : Sorts.relevance Cmap_env.t
 (** [irr_constants] is a cache of the relevances which are not Relevant.
     In other words, [const_relevance == Option.default Relevant (find_opt con irr_constants)]. *);
   irr_inds : Sorts.relevance Indmap_env.t
 (** [irr_inds] is a cache of the relevances which are not Relevant. cf [irr_constants]. *);
+  symb_pats : rewrite_rule list Cmap_env.t;
   env_typing_flags  : typing_flags;
+  vm_library : Vmlibrary.t;
   retroknowledge : Retroknowledge.retroknowledge;
+  rewrite_rules_allowed : bool;
+  (** Allow rewrite rules (breaks e.g. SR) *)
 }
+
+type rewrule_not_allowed = Symb | Rule
+exception RewriteRulesNotAllowed of rewrule_not_allowed
 
 val oracle : env -> Conv_oracle.oracle
 val set_oracle : env -> Conv_oracle.oracle -> env
@@ -91,8 +97,6 @@ val eq_named_context_val : named_context_val -> named_context_val -> bool
 val empty_env : env
 
 val universes     : env -> UGraph.t
-val universes_lbound : env -> UGraph.Bound.t
-val set_universes_lbound : env -> UGraph.Bound.t -> env
 val rel_context   : env -> Constr.rel_context
 val named_context : env -> Constr.named_context
 val named_context_val : env -> named_context_val
@@ -202,6 +206,8 @@ val evaluable_constant : Constant.t -> env -> bool
 
 val mem_constant : Constant.t -> env -> bool
 
+val add_rewrite_rules : (Constant.t * rewrite_rule) list -> env -> env
+
 (** New-style polymorphism *)
 val polymorphic_constant  : Constant.t -> env -> bool
 val polymorphic_pconstant : pconstant -> env -> bool
@@ -218,6 +224,7 @@ type const_evaluation_result =
   | NoBody
   | Opaque
   | IsPrimitive of Instance.t * CPrimitives.t
+  | HasRules of Instance.t * bool * rewrite_rule list
 exception NotEvaluableConst of const_evaluation_result
 
 val constant_type : env -> Constant.t puniverses -> types constrained
@@ -235,12 +242,14 @@ val constant_value_in : env -> Constant.t puniverses -> constr
 val constant_type_in : env -> Constant.t puniverses -> types
 val constant_opt_value_in : env -> Constant.t puniverses -> constr option
 
+val is_symbol : env -> Constant.t -> bool
 val is_primitive : env -> Constant.t -> bool
 val get_primitive : env -> Constant.t -> CPrimitives.t option
 
 val is_array_type : env -> Constant.t -> bool
 val is_int63_type : env -> Constant.t -> bool
 val is_float64_type : env -> Constant.t -> bool
+val is_string_type : env -> Constant.t -> bool
 val is_primitive_type : env -> Constant.t -> bool
 
 
@@ -276,8 +285,30 @@ val type_in_type_ind : inductive -> env -> bool
 
 (** Old-style polymorphism *)
 val template_polymorphic_ind : inductive -> env -> bool
-val template_polymorphic_variables : inductive -> env -> Level.t list
 val template_polymorphic_pind : pinductive -> env -> bool
+
+(** {6 Changes of representation of Case nodes} *)
+
+(** Given an inductive type and its parameters, builds the context of the return
+    clause, including the inductive being eliminated. The additional binder
+    array is only used to set the names of the context variables, we use the
+    less general type to make it easy to use this function on Case nodes. *)
+val expand_arity : Declarations.mind_specif -> pinductive -> constr array ->
+  Name.t binder_annot array -> rel_context
+
+(** Given an inductive type and its parameters, builds the context of the return
+    clause, including the inductive being eliminated. The additional binder
+    array is only used to set the names of the context variables, we use the
+    less general type to make it easy to use this function on Case nodes. *)
+val expand_branch_contexts : Declarations.mind_specif -> UVars.Instance.t -> constr array ->
+  (Name.t binder_annot array * 'a) array -> rel_context array
+
+(** [instantiate_context u subst nas ctx] applies both [u] and [subst]
+  to [ctx] while replacing names using [nas] (order reversed). In particular,
+  assumes that [ctx] and [nas] have the same length. *)
+val instantiate_context : UVars.Instance.t -> Vars.substl -> Name.t binder_annot array ->
+  rel_context -> rel_context
+
 
 (** {6 Name quotients} *)
 
@@ -287,6 +318,7 @@ sig
   val equal : env -> t -> t -> bool
   val compare : env -> t -> t -> int
   val hash : env -> t -> int
+  val canonize : env -> t -> t
 end
 
 module QConstant : QNameS with type t = Constant.t
@@ -333,6 +365,9 @@ val push_context_set : ?strict:bool -> ContextSet.t -> env -> env
     context set to the environment. It does not fail even if one of the
     universes is already declared. *)
 
+val push_floating_context_set : ContextSet.t -> env -> env
+(** Same as above but keep the universes floating for template. Do not use. *)
+
 val push_subgraph : ContextSet.t -> env -> env
 (** [push_subgraph univs env] adds the universes and constraints in
    [univs] to [env] as [push_context_set ~strict:false univs env], and
@@ -344,6 +379,8 @@ val set_impredicative_set : bool -> env -> env
 val set_type_in_type : bool -> env -> env
 val set_allow_sprop : bool -> env -> env
 val sprop_allowed : env -> bool
+val allow_rewrite_rules : env -> env
+val rewrite_rules_allowed : env -> bool
 
 val same_flags : typing_flags -> typing_flags -> bool
 
@@ -405,8 +442,14 @@ val remove_hyps : Id.Set.t -> (Constr.named_declaration -> Constr.named_declarat
 
 val is_polymorphic : env -> Names.GlobRef.t -> bool
 val is_template_polymorphic : env -> GlobRef.t -> bool
-val get_template_polymorphic_variables : env -> GlobRef.t -> Level.t list
 val is_type_in_type : env -> GlobRef.t -> bool
+
+(** {5 VM and native} *)
+
+val vm_library : env -> Vmlibrary.t
+val set_vm_library : Vmlibrary.t -> env -> env
+val link_vm_library : Vmlibrary.on_disk -> env -> env
+val lookup_vm_code : Vmlibrary.index -> env -> Vmemitcodes.to_patch
 
 (** Native compiler *)
 val no_link_info : link_info

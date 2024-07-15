@@ -33,6 +33,6 @@ Ltac zify := intros;
              zify_elim_let ;
              zify_op ;
              (zify_iter_specs) ;
+             zify_saturate;
              zify_to_euclidean_division_equations ;
-             zify_post_hook;
-             zify_saturate.
+             zify_post_hook.

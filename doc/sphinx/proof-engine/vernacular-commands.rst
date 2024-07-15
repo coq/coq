@@ -189,15 +189,15 @@ described elsewhere
 
       .. prodn::
          logical_kind ::= {| @thm_token | @assumption_token }
-         | {| Definition | Example | Context | Primitive }
+         | {| Definition | Example | Context | Primitive | Symbol }
          | {| Coercion | Instance | Scheme | Canonical | SubClass }
-         | {| Field | Method }
+         | {| Fixpoint | CoFixpoint | Field | Method }
 
       Filters objects by the keyword that was used to define them
       (`Theorem`, `Lemma`, `Axiom`, `Variable`, `Context`,
       `Primitive`...) or its status (`Coercion`, `Instance`, `Scheme`,
-      `Canonical`, `SubClass`, Field` for record fields, `Method` for class
-      fields).  Note that `Coercion`\s, `Canonical Structure`\s, Instance`\s and `Scheme`\s can be
+      `Canonical`, `SubClass`, `Field` for record fields, `Method` for class
+      fields).  Note that `Coercion`\s, `Canonical Structure`\s, `Instance`\s and `Scheme`\s can be
       defined without using those keywords.  See :ref:`this example <search-by-keyword>`.
 
    Additional clauses:
@@ -306,6 +306,13 @@ described elsewhere
 
          Search is:Instance [ Reflexive | Symmetric ].
 
+      The following search outputs operations on `nat` defined in the
+      prelude either with the `Definition` or `Fixpoint` keyword:
+
+      .. coqtop:: all reset
+
+         Search (nat -> nat -> nat) -bool [ is:Definition | is:Fixpoint ].
+
 .. cmd:: SearchPattern @one_pattern {? {| inside | in | outside } {+ @qualid } }
 
    Displays the name and type of all hypotheses of the
@@ -409,6 +416,10 @@ Requests to the environment
    been loaded, such as through a :cmd:`Require` command.  Notation definitions
    are reported only when the containing module has been imported
    (e.g. with :cmd:`Require Import` or :cmd:`Import`).
+
+   Objects defined with commands such as :cmd:`Definition`, :cmd:`Parameter`,
+   :cmd:`Record`, :cmd:`Theorem` and their numerous variants are shown
+   as `Constant` in the output.
 
    :n:`@qualid`
      refers to object names that end with :n:`@qualid`.
@@ -865,6 +876,10 @@ Quitting and debugging
    Executes :n:`@sentence`, redirecting its
    output to the file ":n:`@string`.out".
 
+   If :n:`@string` is a relative filename, it refers to the directory
+   specified by the command line option `-output-directory`, if set
+   (see :ref:`command-line-options`) and otherwise, the current
+   directory. Use :cmd:`Pwd` to display the current directory.
 
 .. cmd:: Timeout @natural @sentence
 
@@ -952,6 +967,7 @@ Controlling display
    `ssr`,
    `syntax`,
    `tactics`,
+   `user-warn`,
    `vernacular`.
 
    .. This list is from lib/cWarnings.ml
@@ -1163,7 +1179,21 @@ Exposing constants to OCaml libraries
    .. seealso:: :ref:`primitive-integers`
 
 .. cmd:: Print Registered
-   :undocumented:
+
+   List the currently registered constants.
+
+.. cmd:: Register Scheme @qualid__1 as @qualid__2 for @qualid__3
+
+   Make the constant :n:`@qualid__1` accessible to the "scheme"
+   mechanism for scheme kind :n:`@qualid__2` and inductive
+   :n:`@qualid__3`.
+
+.. cmd:: Print Registered Schemes
+
+   List the currently registered schemes.
+
+   This can be useful to find information about the (currently
+   undocumented) scheme kinds.
 
 Inlining hints for the fast reduction machines
 ``````````````````````````````````````````````

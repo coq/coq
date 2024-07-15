@@ -76,9 +76,9 @@ let init_gc () =
     if Coq_config.caml_version_nums >= [4;10;0] then set_gc_best_fit () else ()
 
 let init_ocaml () =
-  CProfile.init_profile ();
   init_gc ();
-  Sys.catch_break false (* Ctrl-C is fatal during the initialisation *)
+  (* Get error message (and backtrace if enabled) on Ctrl-C instead of just exiting the process *)
+  Sys.catch_break true
 
 let init_coqlib opts = match opts.Coqargs.config.Coqargs.coqlib with
   | None -> ()
@@ -120,7 +120,7 @@ let print_memory_stat () =
     let oc = open_out fn in
     Gc.print_stat oc;
     close_out oc
-  with _ -> ()
+  with exn when CErrors.noncritical exn -> ()
 
 let init_load_paths opts =
   let open Coqargs in
@@ -164,10 +164,14 @@ let init_runtime opts =
   Global.set_check_universes (not opts.config.logic.type_in_type);
   Global.set_VM opts.config.enable_VM;
   Global.set_native_compiler (match opts.config.native_compiler with NativeOff -> false | NativeOn _ -> true);
+  Global.set_rewrite_rules_allowed opts.config.logic.rewrite_rules;
 
   (* Native output dir *)
   Nativelib.output_dir := opts.config.native_output_dir;
   Nativelib.include_dirs := opts.config.native_include_dirs;
+
+  (* Default output dir *)
+  Flags.output_directory := opts.config.output_directory;
 
   (* Paths for loading stuff *)
   init_load_paths opts;
@@ -177,11 +181,11 @@ let init_runtime opts =
   | Coqargs.Run ->
       injection_commands opts
 
-let require_file ~prefix ~lib ~export =
+let require_file ~intern ~prefix ~lib ~export =
   let mp = Libnames.qualid_of_string lib in
   let mfrom = Option.map Libnames.qualid_of_string prefix in
   let exp = Option.map (fun e -> e, None) export in
-  Flags.silently (Vernacentries.vernac_require mfrom exp) [mp,Vernacexpr.ImportAll]
+  Flags.silently (Vernacentries.vernac_require ~intern mfrom exp) [mp,Vernacexpr.ImportAll]
 
 let warn_no_native_compiler =
   CWarnings.create_in Nativeconv.w_native_disabled
@@ -195,14 +199,14 @@ let warn_deprecated_native_compiler =
           Pp.strbrk "The native-compiler option is deprecated. To compile native \
           files ahead of time, use the coqnative binary instead.")
 
-let handle_injection = let open Coqargs in function
-  | RequireInjection {lib;prefix;export} -> require_file ~lib ~prefix ~export
+let handle_injection ~intern = let open Coqargs in function
+  | RequireInjection {lib;prefix;export} -> require_file ~intern ~lib ~prefix ~export
   | OptionInjection o -> set_option o
   | WarnNoNative s -> warn_no_native_compiler s
   | WarnNativeDeprecated -> warn_deprecated_native_compiler ()
 
-let start_library ~top injections =
+let start_library ~intern ~top injections =
   Flags.verbosely Declaremods.start_library top;
   CWarnings.override_unknown_warning[@ocaml.warning "-3"] := true;
-  List.iter handle_injection injections;
+  List.iter (handle_injection ~intern) injections;
   CWarnings.override_unknown_warning[@ocaml.warning "-3"] := false

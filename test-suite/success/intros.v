@@ -133,9 +133,9 @@ Module Evar.
 
 Goal exists (A:Prop), A.
 eexists.
-unshelve (intro x).
+unshelve (intro y).
 - exact nat.
-- exact (x=x).
+- exact (y=y).
 - auto.
 Qed.
 

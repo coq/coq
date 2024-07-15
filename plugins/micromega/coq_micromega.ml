@@ -27,6 +27,8 @@ open Context
 open Tactypes
 open McPrinter
 
+module ERelevance = EConstr.ERelevance
+
 (**
   * Debug flag
   *)
@@ -1232,7 +1234,7 @@ let prodn n env b =
   let rec prodrec = function
     | 0, env, b -> b
     | n, (v, t) :: l, b ->
-      prodrec (n - 1, l, EConstr.mkProd (make_annot v Sorts.Relevant, t, b))
+      prodrec (n - 1, l, EConstr.mkProd (make_annot v ERelevance.relevant, t, b))
     | _ -> assert false
   in
   prodrec (n, env, b)
@@ -1265,7 +1267,7 @@ let make_goal_of_formula gl dexpr form =
       (Env.elements props)
   in
   let var_name_pos =
-    List.map2 (fun (idx, _) (id, _) -> (id, idx)) vars_idx vars_n
+    List.fold_left2 (fun acc (idx, _) (id, _) -> (id, idx) :: acc) [] vars_idx vars_n
   in
   let dump_expr i e =
     let rec dump_expr = function
@@ -1314,10 +1316,10 @@ let make_goal_of_formula gl dexpr form =
       EConstr.mkApp
         (Lazy.force coq_iff, [|xdump_prop pi xi x; xdump_prop pi xi y|])
     | Mc.IMPL (_, x, _, y) ->
-      EConstr.mkArrow (xdump_prop pi xi x) Sorts.Relevant
+      EConstr.mkArrow (xdump_prop pi xi x) ERelevance.relevant
         (xdump_prop (pi + 1) (xi + 1) y)
     | Mc.NOT (_, x) ->
-      EConstr.mkArrow (xdump_prop pi xi x) Sorts.Relevant (Lazy.force coq_False)
+      EConstr.mkArrow (xdump_prop pi xi x) ERelevance.relevant (Lazy.force coq_False)
     | Mc.EQ (x, y) ->
       EConstr.mkApp
         ( Lazy.force coq_eq
@@ -1364,7 +1366,7 @@ let make_goal_of_formula gl dexpr form =
          (List.map (fun (x, y) -> (Name.Name x, y)) vars_n)
          (xdump_prop (List.length vars_n) 0 form))
   , List.rev props_n
-  , List.rev var_name_pos
+  , var_name_pos
   , form' )
 
 (**
@@ -1380,7 +1382,7 @@ let set sigma l concl =
       let name, expr, typ = e in
       xset
         (EConstr.mkNamedLetIn sigma
-           (make_annot (Names.Id.of_string name) Sorts.Relevant)
+           (make_annot (Names.Id.of_string name) ERelevance.relevant)
            expr typ acc)
         l
   in
@@ -1659,11 +1661,11 @@ let compact_proofs prover (eq_cst : 'cst -> 'cst -> bool) (cnf_ff : 'cst cnf) re
     in
     is_sublist eq (Lazy.force hyps) new_cl
   in
-  let map cl prf =
+  let map acc cl prf =
     let hyps = lazy (selecti (prover.hyps prf) cl) in
-    hyps, cl, prf
+    (hyps, cl, prf) :: acc
   in
-  let cnf_res = List.map2 map cnf_ff res in
+  let cnf_res = List.rev (List.fold_left2 map [] cnf_ff res) in
   (* we get pairs clause * proof *)
   if debug then begin
     Printf.printf "CNFRES\n";
@@ -1723,7 +1725,7 @@ let abstract_formula : TagSet.t -> 'a formula -> 'a formula =
       ; mkIMPL =
           (fun k x y ->
             match k with
-            | Mc.IsProp -> EConstr.mkArrow x Sorts.Relevant y
+            | Mc.IsProp -> EConstr.mkArrow x ERelevance.relevant y
             | Mc.IsBool -> EConstr.mkApp (Lazy.force coq_implb, [|x; y|]))
       ; mkIFF =
           (let coq_iff = Lazy.force coq_iff in
@@ -1805,10 +1807,14 @@ let formula_hyps_concl hyps concl =
   res
  *)
 
-let rec fold_trace f accu = function
-  | Micromega.Null -> accu
-  | Micromega.Merge (t1, t2) -> fold_trace f (fold_trace f accu t1) t2
-  | Micromega.Push (x, t) -> fold_trace f (f accu x) t
+let rec fold_trace f accu tr =
+  let open Micromega in
+  match tr with
+  | Null -> accu
+  | Push (x, t) -> fold_trace f (f accu x) t
+  | Merge (Null, t2) -> fold_trace f accu t2
+  | Merge (Push (x, t1), t2) -> fold_trace f (f accu x) (Merge (t1, t2))
+  | Merge (Merge (t1, t2), t3) -> fold_trace f accu (Merge (t1, Merge (t2, t3)))
 
 let micromega_tauto ?(abstract=true) pre_process cnf spec prover
     (polys1 : (Names.Id.t * 'cst formula) list) (polys2 : 'cst formula) =
@@ -1824,8 +1830,8 @@ let micromega_tauto ?(abstract=true) pre_process cnf spec prover
   | Prf res ->
     (*Printf.printf "\nList %i" (List.length `res); *)
     let deps =
-      List.fold_left
-        (fun s (cl, prf) ->
+      List.fold_left2
+        (fun s cl prf ->
           let tags =
             ISet.fold
               (fun i s ->
@@ -1837,7 +1843,7 @@ let micromega_tauto ?(abstract=true) pre_process cnf spec prover
           in
           TagSet.union s tags)
         (fold_trace (fun s (i, _) -> TagSet.add i s) TagSet.empty cnf_ff_tags)
-        (List.combine cnf_ff res)
+        cnf_ff res
     in
     let ff' = if abstract then abstract_formula deps ff else ff in
     let pre_ff' = pre_process mt ff' in
@@ -1892,8 +1898,9 @@ let clear_all_no_check =
         Environ.reset_with_named_context Environ.empty_named_context_val
           (Tacmach.pf_env gl)
       in
-      Refine.refine ~typecheck:false (fun sigma ->
-          Evarutil.new_evar env sigma ~principal:true concl))
+      Refine.refine_with_principal ~typecheck:false (fun sigma ->
+          let sigma, ev = Evarutil.new_evar env sigma concl in
+          sigma, ev, Some (fst (EConstr.destEvar sigma ev))))
 
 let micromega_gen parse_arith pre_process cnf spec dumpexpr prover tac =
   Proofview.Goal.enter (fun gl ->
@@ -1965,11 +1972,7 @@ Tacticals.tclTHEN
                   ( EConstr.mkVar goal_name
                   , arith_args @ List.map EConstr.mkVar ids )))
       with
-      | CsdpNotFound -> fail_csdp_not_found ()
-      | x ->
-        if debug then
-          Tacticals.tclFAIL (Pp.str (Printexc.get_backtrace ()))
-        else raise x)
+      | CsdpNotFound -> fail_csdp_not_found ())
 
 let micromega_wit_gen pre_process cnf spec prover wit_id ff =
   Proofview.Goal.enter (fun gl ->
@@ -1991,12 +1994,7 @@ let micromega_wit_gen pre_process cnf spec prover wit_id ff =
           let tres' = EConstr.mkApp (Lazy.force coq_list, [|spec.proof_typ|]) in
           Tactics.letin_tac
             None (Names.Name wit_id) res' (Some tres') Locusops.nowhere
-      with
-      | CsdpNotFound -> fail_csdp_not_found ()
-      | x ->
-        if debug then
-          Tacticals.tclFAIL (Pp.str (Printexc.get_backtrace ()))
-        else raise x)
+      with CsdpNotFound -> fail_csdp_not_found ())
 
 let micromega_order_changer cert env ff =
   (*let ids = Util.List.map_i (fun i _ -> (Names.Id.of_string ("__v"^(string_of_int i)))) 0 env in *)
@@ -2120,8 +2118,7 @@ let micromega_genr prover tac =
                 [ Generalize.generalize (List.map EConstr.mkVar ids)
                 ; Tactics.exact_check
                     (EConstr.applist (EConstr.mkVar goal_name, arith_args)) ] ]
-      with
-      | CsdpNotFound -> fail_csdp_not_found ())
+      with CsdpNotFound -> fail_csdp_not_found ())
 
 let lift_ratproof prover l =
   match prover l with
@@ -2194,7 +2191,7 @@ end)
   *)
 
 let require_csdp =
-  if System.is_in_system_path "csdp" then lazy () else lazy (raise CsdpNotFound)
+  lazy (if System.is_in_system_path "csdp" then () else raise CsdpNotFound)
 
 let really_call_csdpcert :
     provername -> micromega_polys -> Sos_types.positivstellensatz option =

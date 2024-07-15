@@ -105,11 +105,9 @@ val deactivate_observer : observer -> unit
 
 val set_typeclass_transparency
   :  locality:Hints.hint_locality
-  -> Tacred.evaluable_global_reference list
+  -> Evaluable.t list
   -> bool
   -> unit
-
-val tc_transparency_locality : Hints.hint_locality Attributes.attribute
 
 val set_typeclass_transparency_com
   :  locality:Hints.hint_locality
@@ -122,8 +120,6 @@ val set_typeclass_transparency_com
 val id_of_class : typeclass -> Id.t
 
 val refine_att : bool Attributes.attribute
-
-val instance_locality : Hints.hint_locality Attributes.attribute
 
 (** {6 Low level interface used by Add Morphism, do not use } *)
 module Internal :

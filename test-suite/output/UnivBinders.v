@@ -107,7 +107,7 @@ Fail Print Coq.Init.Logic@{E}.
 
 (* Nice error when constraints are impossible. *)
 Monomorphic Universes gU gV. Monomorphic Constraint gU < gV.
-Fail Lemma foo@{u v|u < gU, gV < v, v < u} : nat.
+Fail Lemma foo'@{u v|u < gU, gV < v, v < u} : nat.
 
 Section SomeSec.
   Universe uu.
@@ -145,12 +145,13 @@ Print Applied.infunct.
 
    In polymorphic mode the domain Type gets separate universes for the
    different axioms, but all axioms have to declare all universes. In
-   monomorphic mode they get the same universes, ie the type is only
-   interpd once. *)
+   monomorphic mode they also get separate universes. *)
 Axiom axfoo@{i+} axbar : Type -> Type@{i}.
 Monomorphic Axiom axfoo'@{i+} axbar' : Type -> Type@{i}.
 
 About axfoo. About axbar. About axfoo'. About axbar'.
+
+Print axfoo. Print axbar. Print axfoo'. Print axbar'.
 
 Fail Axiom failfoo failbar@{i} : Type.
 
@@ -198,3 +199,11 @@ with MutualI2' (A:Type) := C2' (p2 : MutualI1' A).
 Print MutualI2'.
 
 End MutualTypes.
+
+Module Inconsistency.
+
+Set Universe Polymorphism.
+Definition g@{a b} := Type@{a} : Type@{b}.
+Fail Definition h@{a} := g@{a a}.
+
+End Inconsistency.

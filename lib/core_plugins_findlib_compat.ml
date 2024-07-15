@@ -11,16 +11,21 @@
 let legacy_to_findlib = [
   ("btauto_plugin",                 ["plugins";"btauto"]) ;
   ("derive_plugin",                 ["plugins";"derive"]) ;
+  ("firstorder_core_plugin",        ["plugins";"firstorder_core"]) ;
   ("firstorder_plugin",             ["plugins";"firstorder"]) ;
   ("ltac_plugin",                   ["plugins";"ltac"]) ;
+  ("micromega_core_plugin",         ["plugins";"micromega_core";]) ;
   ("micromega_plugin",              ["plugins";"micromega"]) ;
   ("ring_plugin",                   ["plugins";"ring"]) ;
   ("ssr_plugin",                    ["plugins";"ssr"]) ;
   ("syntax_plugin",                 ["plugins";"syntax"]) ;
+  ("cc_core_plugin",                ["plugins";"cc_core"]) ;
   ("cc_plugin",                     ["plugins";"cc"]) ;
   ("extraction_plugin",             ["plugins";"extraction"]) ;
   ("funind_plugin",                 ["plugins";"funind"]) ;
   ("ltac2_plugin",                  ["plugins";"ltac2"]) ;
+  ("ltac2_ltac1_plugin",            ["plugins";"ltac2_ltac1"]) ;
+  ("nsatz_core_plugin",             ["plugins";"nsatz_core"]) ;
   ("nsatz_plugin",                  ["plugins";"nsatz"]) ;
   ("rtauto_plugin",                 ["plugins";"rtauto"]) ;
   ("ssrmatching_plugin",            ["plugins";"ssrmatching"]) ;

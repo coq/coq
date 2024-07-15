@@ -43,7 +43,7 @@ Notation "x ~= y" := (~ req x y).
 Notation "x <= y" := (rle x y).
 Notation "x < y" := (rlt x y).
 
-Record SOR : Type := mk_SOR_theory {
+Record SOR : Prop := mk_SOR_theory {
   SORsetoid : Setoid_Theory R req;
   SORplus_wd : forall x1 x2, x1 == x2 -> forall y1 y2, y1 == y2 -> x1 + y1 == x2 + y2;
   SORtimes_wd : forall x1 x2, x1 == x2 -> forall y1 y2, y1 == y2 -> x1 * y1 == x2 * y2;

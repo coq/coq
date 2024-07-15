@@ -1,0 +1,5 @@
+- **Added:**
+  :cmd:`CoFixpoint` supports attributes `bypass_guard`, `clearbody`,
+  `deprecated` and `warn`
+  (`#18754 <https://github.com/coq/coq/pull/18754>`_,
+  by Hugo Herbelin).

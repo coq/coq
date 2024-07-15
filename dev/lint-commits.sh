@@ -17,6 +17,18 @@ then
     exit 1
 fi
 
+REDBOLD="\033[31;1m"
+RESET="\033[0m"
+
+function redprint
+{
+  if true || [ "$COQ_CI_COLOR" ]; then
+    printf "$REDBOLD%s$RESET\n" "$1"
+  else
+    printf '%s\n' "$1"
+  fi
+}
+
 BASE_COMMIT="$1"
 HEAD_COMMIT="$2"
 
@@ -50,7 +62,7 @@ CODE=0
 
 if [ "${#bad_ws[@]}" != 0 ]
 then
-    >&2 echo "Whitespace errors!"
+    >&2 redprint "Whitespace errors!"
     >&2 echo "In commits ${bad_ws[*]}"
     >&2 echo "If you use emacs, you can prevent this kind of error from reoccurring by installing ws-butler and enabling ws-butler-convert-leading-tabs-or-spaces."
     >&2 echo
@@ -59,7 +71,7 @@ fi
 
 if [ "${#bad_compile[@]}" != 0 ]
 then
-    >&2 echo "Compilation errors!"
+    >&2 redprint "Compilation errors!"
     >&2 echo "In commits ${bad_compile[*]}"
     >&2 echo
     CODE=1

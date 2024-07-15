@@ -1,7 +1,7 @@
 (** [Set Implicit Arguments] causes Coq to run out of memory on [Qed] before c3feef4ed5dec126f1144dec91eee9c0f0522a94 *)
 Set Implicit Arguments.
 
-Variable LEM: forall P : Prop, sumbool P (P -> False).
+Parameter LEM: forall P : Prop, sumbool P (P -> False).
 
 Definition pmap := option (nat -> option nat).
 

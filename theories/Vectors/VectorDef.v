@@ -8,9 +8,13 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(** N.B.: Using this encoding of vectors is discouraged.
+See <https://github.com/coq/coq/blob/master/theories/Vectors/Vector.v>. *)
+Attributes warn(cats="stdlib vector", note="Using Vector.t is known to be technically difficult, see <https://github.com/coq/coq/blob/master/theories/Vectors/Vector.v>.").
+
 (** Definitions of Vectors and functions to use them
 
-   Author: Pierre Boutillier
+   Initial Author: Pierre Boutillier
    Institution: PPS, INRIA 12/2010
 *)
 
@@ -19,6 +23,7 @@ Names should be "caml name in list.ml" if exists and order of arguments
 have to be the same. complain if you see mistakes ... *)
 
 Require Import Arith_base.
+#[local] Set Warnings "-stdlib-vector".
 Require Vectors.Fin.
 Import EqNotations.
 Local Open Scope nat_scope.

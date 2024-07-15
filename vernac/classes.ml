@@ -30,27 +30,6 @@ let set_typeclass_transparency ~locality c b =
   Hints.add_hints ~locality [typeclasses_db]
     (Hints.HintsTransparencyEntry (Hints.HintsReferences c, b))
 
-let warn_deprecated_tc_transparency_without_locality =
-  CWarnings.create ~name:"deprecated-typeclasses-transparency-without-locality" ~category:Deprecation.Version.v8_15
-    Pp.(fun () -> strbrk
-  "The default value for Typeclasses Opaque and Typeclasses \
-   Transparent locality is currently \"local\" in a section and \
-   \"global\" otherwise, but is scheduled to change in a future \
-   release. For the time being, adding typeclass transparency hints outside of \
-   sections without specifying an explicit locality attribute is \
-   therefore deprecated. It is recommended to use \"export\" whenever \
-   possible. Use the attributes #[local], #[global] and #[export] \
-   depending on your choice. For example: \"#[export] Typeclasses Transparent foo.\". \
-   This is supported since Coq 8.15.")
-
-let default_tc_transparency_locality () =
-  if Lib.sections_are_opened () then Hints.Local
-  else
-    let () = warn_deprecated_tc_transparency_without_locality () in
-    Hints.SuperGlobal
-
-let tc_transparency_locality = Attributes.hint_locality ~default:default_tc_transparency_locality
-
 let set_typeclass_transparency_com ~locality refs b =
   let refs = List.map
       (fun x -> Tacred.evaluable_of_global_reference
@@ -86,11 +65,11 @@ let add_instance_base inst =
     (* i.e. in a section, declare the hint as local since discharge is managed
        by rebuild_instance which calls again add_instance_hint; don't ask hints
        to take discharge into account itself *)
-    if Lib.sections_are_opened () then Local
+    if Global.sections_are_opened () then Local
     else SuperGlobal
   | Export ->
     (* Same as above for export *)
-    if Lib.sections_are_opened () then Local
+    if Global.sections_are_opened () then Local
     else Export
   in
   add_instance_hint inst.instance ~locality
@@ -142,13 +121,6 @@ let instance_input : instance -> obj =
       classify_function = classify_instance;
       discharge_function = discharge_instance;
       subst_function = subst_instance }
-
-let default_locality () =
-  if Lib.sections_are_opened () then Local
-  else Export
-
-let instance_locality =
-  Attributes.hint_locality ~default:default_locality
 
 module Event = struct
   type t =
@@ -265,12 +237,6 @@ let discharge_class cl =
   with Not_found -> (* not defined in the current section *)
     cl
 
-let rebuild_class cl =
-  try
-    let cst = Tacred.evaluable_of_global_reference (Global.env ()) cl.cl_impl in
-      set_typeclass_transparency ~locality:Hints.Local [cst] false; cl
-  with e when CErrors.noncritical e -> cl
-
 let class_input : typeclass -> obj =
   declare_object
     { (default_object "type classes state") with
@@ -278,8 +244,8 @@ let class_input : typeclass -> obj =
       load_function = (fun _ -> cache_class);
       classify_function = (fun x -> Substitute);
       discharge_function = (fun a -> Some (discharge_class a));
-      rebuild_function = rebuild_class;
-      subst_function = subst_class }
+      subst_function = subst_class;
+    }
 
 let add_class cl =
   Lib.add_leaf (class_input cl);
@@ -365,14 +331,14 @@ let declare_instance_program pm env sigma ~locality ~poly name pri impargs udecl
     let sigma = Evd.from_env env in
     declare_instance env sigma (Some pri) locality (GlobRef.ConstRef cst)
   in
-  let obls, _, term, typ = RetrieveObl.retrieve_obligations env name sigma 0 term termtype in
+  let obls, _, body, typ = RetrieveObl.retrieve_obligations env name sigma 0 term termtype in
   let hook = Declare.Hook.make hook in
   let uctx = Evd.evar_universe_context sigma in
   let kind = Decls.IsDefinition Decls.Instance in
   let cinfo = Declare.CInfo.make ~name ~typ ~impargs () in
   let info = Declare.Info.make  ~udecl ~poly ~kind ~hook () in
   let pm, _ =
-    Declare.Obls.add_definition ~pm ~cinfo ~info ~term ~uctx obls
+    Declare.Obls.add_definition ~pm ~info ~cinfo ~opaque:false ~uctx ~body obls
   in pm
 
 let declare_instance_open sigma ?hook ~tac ~locality ~poly id pri impargs udecl ids term termtype =
@@ -466,7 +432,7 @@ let do_instance_type_ctx_instance props k env' ctx' sigma ~program_mode subst =
   | (n, _) :: _ ->
     unbound_method env' sigma k.cl_impl (get_id n)
   | _ ->
-    let kcl_props = List.map (Termops.map_rel_decl of_constr) k.cl_props in
+    let kcl_props = of_rel_context k.cl_props in
     let sigma, res =
       type_ctx_instance ~program_mode
         (push_rel_context ctx' env') sigma kcl_props props subst in
@@ -546,7 +512,7 @@ let interp_instance_context ~program_mode env ctx pl tclass =
   let u_s = EInstance.kind sigma u in
   let cl = Typeclasses.typeclass_univ_instance (k, u_s) in
   let args = List.map of_constr args in
-  let cl_context = List.map (Termops.map_rel_decl of_constr) cl.cl_context in
+  let cl_context = of_rel_context cl.cl_context in
   let _, args =
     List.fold_right (fun decl (args, args') ->
         match decl with

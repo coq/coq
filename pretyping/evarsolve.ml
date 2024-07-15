@@ -108,7 +108,7 @@ let get_polymorphic_positions env sigma f =
     let mib,oib = Inductive.lookup_mind_specif env ind in
       (match mib.mind_template with
       | None -> assert false
-      | Some templ -> templ.template_param_levels)
+      | Some templ -> templ.template_param_arguments)
   | _ -> assert false
 
 let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
@@ -182,11 +182,11 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
     | _ -> EConstr.map !evdref (refresh_term_evars ~onevars ~top:false) t
   and refresh_polymorphic_positions args pos =
     let rec aux i = function
-      | Some l :: ls ->
+      | true :: ls ->
         if i < Array.length args then
           ignore(refresh_term_evars ~onevars:true ~top:false args.(i));
         aux (succ i) ls
-      | None :: ls ->
+      | false :: ls ->
         if i < Array.length args then
           ignore(refresh_term_evars ~onevars:false ~top:false args.(i));
         aux (succ i) ls
@@ -1735,6 +1735,8 @@ let rec invert_definition unify flags choose imitate_defs
           let evd =
              (* Try now to invert args in terms of args' *)
             try
+              if not @@ is_evar_allowed flags evk' then
+                raise (CannotProject (evd, ev''));
               let evd,body = project_evar_on_evar false unify flags env' evd aliases 0 None ev'' ev' in
               let evi = Evd.find_undefined evd evk' in
               let evd = Evd.define evk' body evd in
@@ -1798,7 +1800,7 @@ let rec invert_definition unify flags choose imitate_defs
 
 and evar_define unify flags ?(choose=false) ?(imitate_defs=true) env evd pbty (evk,argsv as ev) rhs =
   match EConstr.kind evd rhs with
-  | Evar (evk2,argsv2 as ev2) ->
+  | Evar (evk2,argsv2 as ev2) when is_evar_allowed flags evk2 ->
       if Evar.equal evk evk2 then
         solve_refl ~can_drop:choose
           (test_success unify) flags env evd pbty evk argsv argsv2
@@ -1862,12 +1864,8 @@ and evar_define unify flags ?(choose=false) ?(imitate_defs=true) env evd pbty (e
  * ass.
  *)
 
-let status_changed evd lev (pbty,_,t1,t2) =
-  (try Evar.Set.mem (head_evar evd t1) lev with NoHeadEvar -> false) ||
-  (try Evar.Set.mem (head_evar evd t2) lev with NoHeadEvar -> false)
-
 let reconsider_unif_constraints unify flags evd =
-  let (evd,pbs) = extract_changed_conv_pbs evd (status_changed evd) in
+  let (evd,pbs) = extract_changed_conv_pbs evd in
   List.fold_left
     (fun p (pbty,env,t1,t2 as x) ->
        match p with

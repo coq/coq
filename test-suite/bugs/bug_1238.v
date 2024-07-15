@@ -1,6 +1,6 @@
 Require Import Setoid.
 
-Variable A : Set.
+Parameter A : Set.
 
 Inductive liste : Set :=
 | vide : liste

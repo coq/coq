@@ -52,6 +52,22 @@ sig
 
 end
 
+module Fresh :
+sig
+  type t
+  val empty : t
+  val add : Id.t -> t -> t
+  val remove : Id.t -> t -> t
+  val mem : Id.t -> t -> bool
+  val next : Id.t -> t -> Id.t
+  val fresh : Id.t -> t -> Id.t * t
+
+  val of_list : Id.t list -> t
+  val of_set : Id.Set.t -> t
+  val of_named_context_val : Environ.named_context_val -> t
+end
+
+
 val has_subscript       : Id.t -> bool
 
 val get_subscript : Id.t -> Id.t * Subscript.t
@@ -119,8 +135,8 @@ module Name : sig
   (** [pick na na'] returns [Anonymous] if both names are [Anonymous].
       Pick one of [na] or [na'] otherwise. *)
 
-  val pick_annot : Name.t Context.binder_annot -> Name.t Context.binder_annot ->
-    Name.t Context.binder_annot
+  val pick_annot : (Name.t,'r) Context.pbinder_annot -> (Name.t,'r) Context.pbinder_annot ->
+    (Name.t,'r) Context.pbinder_annot
 
   val cons : Name.t -> Id.t list -> Id.t list
   (** [cons na l] returns [id::l] if [na] is [Name id] and [l] otherwise. *)

@@ -1,0 +1,30 @@
+File "./output/Extraction_ffi.v", line 15, characters 0-18:
+Warning: The following axiom must be realized in the extracted code:
+ ax_fun.
+ [extraction-axiom-to-realize,extraction,default]
+(** val ax_fun : nat -> nat **)
+
+let ax_fun =
+  failwith "AXIOM TO BE REALIZED (Extraction_ffi.ax_fun)"
+(** User defined extraction *)
+(** val ax_fun : nat -> nat **)
+
+external ax_fun: nat -> nat = "my_c_fun"
+(** val exact_fun : nat -> nat **)
+
+let exact_fun a =
+  add (ax_fun a) (S O)
+(** User defined extraction *)
+(** val exact_fun : nat -> nat **)
+
+external exact_fun: nat -> nat = "my_exact_c_fun"
+(** val exact_fun2 : nat -> nat **)
+
+let exact_fun2 a =
+  add (ax_fun a) (S O)
+
+let () = Stdlib.Callback.register "call_exact_fun" exact_fun2
+(** val exact_fun2 : nat -> nat **)
+
+let exact_fun2 a =
+  add (ax_fun a) (S O)

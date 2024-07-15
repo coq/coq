@@ -19,6 +19,7 @@ val browse_keyword : (string -> unit) -> string -> unit
 val byte_offset_to_char_offset : string -> int -> int
 val byte_off_to_buffer_off : GText.buffer -> int -> int
 val buffer_off_to_byte_off : GText.buffer -> int -> int
+val get_iter_at_byte : GText.buffer -> line:int -> int -> GText.iter
 
 val ulen : int -> int
 

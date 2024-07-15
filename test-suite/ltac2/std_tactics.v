@@ -104,3 +104,39 @@ Proof.
   setoid_rewrite H with (y := y) at 1.
   reflexivity.
 Qed.
+
+
+(* view intro patterns *)
+Axiom lem : forall x:nat, bool -> x = x.
+
+Axiom lem' : 3 = 3 -> False.
+
+Goal bool -> 2 = 2.
+  Fail intros a%lem.
+  eintros a%lem.
+  revert a.
+  intros b%lem'.
+  destruct b.
+Qed.
+
+(* assert interns and typechecks the type as a type
+   (bug #15094) *)
+
+Inductive my_type :=
+| my_el : my_type.
+
+Definition my_coercion (_ : my_type) := True.
+
+Coercion my_coercion : my_type >-> Sortclass.
+
+Goal False.
+  (* expected type is sortclass -> coercion inserted *)
+  assert my_el by exact I.
+
+  (* interned as with type scope locally open *)
+  assert (H' : nat * (0 * 0 = 0)) by (split; first [exact 0 | reflexivity]).
+Abort.
+
+Goal nat.
+  Std.apply true false [fun () => Control.plus (fun () => 'I) (fun _ => '0), Std.NoBindings] None.
+Qed.

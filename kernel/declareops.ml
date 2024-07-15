@@ -52,7 +52,7 @@ let hcons_template_arity ar =
   { template_level = Sorts.hcons ar.template_level; }
 
 let hcons_template_universe ar =
-  { template_param_levels = ar.template_param_levels;
+  { template_param_arguments = ar.template_param_arguments;
     template_context = Univ.hcons_universe_context_set ar.template_context }
 
 let universes_context = function
@@ -76,7 +76,7 @@ let constant_is_polymorphic cb =
 
 
 let constant_has_body cb = match cb.const_body with
-  | Undef _ | Primitive _ -> false
+  | Undef _ | Primitive _ | Symbol _ -> false
   | Def _ | OpaqueDef _ -> true
 
 let constant_polymorphic_context cb =
@@ -84,7 +84,7 @@ let constant_polymorphic_context cb =
 
 let is_opaque cb = match cb.const_body with
   | OpaqueDef _ -> true
-  | Undef _ | Def _ | Primitive _ -> false
+  | Undef _ | Def _ | Primitive _ | Symbol _ -> false
 
 (** {7 Constant substitutions } *)
 
@@ -100,7 +100,7 @@ let subst_const_type subst arity =
 (** No need here to check for physical equality after substitution,
     at least for Def due to the delayed substitution [subst_constr_subst]. *)
 let subst_const_def subst def = match def with
-  | Undef _ | Primitive _ -> def
+  | Undef _ | Primitive _ | Symbol _ -> def
   | Def c -> Def (subst_mps subst c)
   | OpaqueDef o -> OpaqueDef (Opaqueproof.subst_opaque subst o)
 
@@ -136,11 +136,12 @@ let hcons_rel_decl =
 
 let hcons_rel_context l = List.Smart.map hcons_rel_decl l
 
-let hcons_const_def = function
+let hcons_const_def ?(hbody=Constr.hcons) = function
   | Undef inl -> Undef inl
   | Primitive p -> Primitive p
+  | Symbol r -> Symbol r
   | Def l_constr ->
-    Def (Constr.hcons l_constr)
+    Def (hbody l_constr)
   | OpaqueDef _ as x -> x (* hashconsed when turned indirect *)
 
 let hcons_universes cbu =
@@ -149,55 +150,51 @@ let hcons_universes cbu =
   | Polymorphic ctx ->
     Polymorphic (UVars.hcons_abstract_universe_context ctx)
 
-let hcons_const_body cb =
+let hcons_const_body ?hbody cb =
   { cb with
-    const_body = hcons_const_def cb.const_body;
+    const_body = hcons_const_def ?hbody cb.const_body;
     const_type = Constr.hcons cb.const_type;
     const_universes = hcons_universes cb.const_universes;
   }
 
 (** {6 Inductive types } *)
-let eq_nested_type t1 t2 = match t1, t2 with
-| NestedInd ind1, NestedInd ind2 -> Names.Ind.CanOrd.equal ind1 ind2
-| NestedInd _, _ -> false
-| NestedPrimitive c1, NestedPrimitive c2 -> Names.Constant.CanOrd.equal c1 c2
-| NestedPrimitive _, _ -> false
+
+let eq_recarg_type t1 t2 = match t1, t2 with
+| RecArgInd ind1, RecArgInd ind2 -> Names.Ind.CanOrd.equal ind1 ind2
+| RecArgPrim c1, RecArgPrim c2 -> Names.Constant.CanOrd.equal c1 c2
+| (RecArgInd _ | RecArgPrim _), _ -> false
 
 let eq_recarg r1 r2 = match r1, r2 with
 | Norec, Norec -> true
 | Norec, _ -> false
-| Mrec i1, Mrec i2 -> Names.Ind.CanOrd.equal i1 i2
+| Mrec t1, Mrec t2 -> eq_recarg_type t1 t2
 | Mrec _, _ -> false
-| Nested ty1, Nested ty2 -> eq_nested_type ty1 ty2
-| Nested _, _ -> false
+
+let pr_recarg_type = let open Pp in function
+  | RecArgInd (mind,i) ->
+     str "Mrec[" ++ Names.MutInd.print mind ++ pr_comma () ++ int i ++ str "]"
+  | RecArgPrim c ->
+     str "Prim[" ++ Names.Constant.print c ++ str "]"
 
 let pr_recarg = let open Pp in function
-  | Declarations.Norec -> Pp.str "Norec"
-  | Declarations.Mrec (mind,i) ->
-     str "Mrec[" ++ Names.MutInd.print mind ++ pr_comma () ++ int i ++ str "]"
-  | Declarations.(Nested (NestedInd (mind,i))) ->
-     str "Nested[" ++ Names.MutInd.print mind ++ pr_comma () ++ int i ++ str "]"
-  | Declarations.(Nested (NestedPrimitive c)) ->
-     str "Nested[" ++ Names.Constant.print c ++ str "]"
+  | Declarations.Norec -> str "Norec"
+  | Declarations.Mrec t -> pr_recarg_type t
 
 let pr_wf_paths x = Rtree.pr_tree pr_recarg x
 
-let subst_nested_type subst ty = match ty with
-| NestedInd (kn,i) ->
+let subst_recarg_type subst ty = match ty with
+| RecArgInd (kn,i) ->
   let kn' = subst_mind subst kn in
-  if kn==kn' then ty else NestedInd (kn',i)
-| NestedPrimitive c ->
+  if kn==kn' then ty else RecArgInd (kn',i)
+| RecArgPrim c ->
   let c',_ = subst_con subst c in
-  if c==c' then ty else NestedPrimitive c'
+  if c==c' then ty else RecArgPrim c'
 
 let subst_recarg subst r = match r with
   | Norec -> r
-  | Mrec (kn,i) ->
-    let kn' = subst_mind subst kn in
-    if kn==kn' then r else Mrec (kn',i)
-  | Nested ty ->
-    let ty' = subst_nested_type subst ty in
-    if ty==ty' then r else Nested ty'
+  | Mrec ty ->
+    let ty' = subst_recarg_type subst ty in
+    if ty==ty' then r else Mrec ty'
 
 let mk_norec = Rtree.mk_node Norec [||]
 
@@ -356,6 +353,15 @@ let hcons_mind mib =
     mind_template = Option.Smart.map hcons_template_universe mib.mind_template;
     mind_universes = hcons_universes mib.mind_universes }
 
+let subst_rewrite_rules subst ({ rewrules_rules } as rules) =
+  let body' = List.Smart.map (fun (name, ({ rhs; _ } as rule) as orig) ->
+      let rhs' = subst_mps subst rhs in
+      if rhs == rhs' then orig else name, { rule with rhs = rhs' })
+      rewrules_rules
+  in
+  if rewrules_rules == body' then rules else
+    { rewrules_rules = body' }
+
 (** Hashconsing of modules *)
 
 let hcons_functorize hty he hself f = match f with
@@ -393,6 +399,7 @@ let rec hcons_structure_field_body sb = match sb with
 | SFBmodtype mb ->
   let mb' = hcons_module_type mb in
   if mb == mb' then sb else SFBmodtype mb'
+| SFBrules _ -> sb (* TODO? *)
 
 and hcons_structure_body sb =
   (** FIXME *)

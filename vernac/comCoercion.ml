@@ -248,9 +248,6 @@ let discharge_coercion c =
     } in
     Some nc
 
-let rebuild_coercion c =
-  { c with coe_typ = fst (Typeops.type_of_global_in_context (Global.env ()) c.coe_value) }
-
 let classify_coercion obj =
   if obj.coe_local then Dispose else Substitute
 
@@ -263,9 +260,9 @@ let inCoercion : coe_info_typ -> obj =
     subst_function = (fun (subst,c) -> subst_coercion subst c);
     classify_function = classify_coercion;
     discharge_function = discharge_coercion;
-    rebuild_function = rebuild_coercion }
+  }
 
-let declare_coercion coef typ ?(local = false) ~reversible ~isid ~src:cls ~target:clt ~params:ps () =
+let declare_coercion coef ?(local = false) ~reversible ~isid ~src:cls ~target:clt ~params:ps () =
   let isproj =
     match coef with
     | GlobRef.ConstRef c -> Structures.PrimitiveProjections.find_opt c
@@ -273,7 +270,6 @@ let declare_coercion coef typ ?(local = false) ~reversible ~isid ~src:cls ~targe
   in
   let c = {
     coe_value = coef;
-    coe_typ = typ;
     coe_local = local;
     coe_reversible = reversible;
     coe_is_identity = isid;
@@ -333,7 +329,7 @@ let add_new_coercion_core coef stre ~reversible source target isid : unit =
   | `GLOBAL -> false
   in
   let params = List.length (Context.Rel.instance_list EConstr.mkRel 0 ctx) in
-  declare_coercion coef t ~local ~reversible ~isid ~src:cls ~target:clt ~params ()
+  declare_coercion coef ~local ~reversible ~isid ~src:cls ~target:clt ~params ()
 
 let try_add_new_coercion_core ref ~local c ~reversible d e =
   try add_new_coercion_core ref (loc_of_bool local) c ~reversible d e

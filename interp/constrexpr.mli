@@ -36,7 +36,7 @@ type relevance_expr =
 
 type relevance_info_expr = relevance_expr option
 
-type sort_expr = (qvar_expr option * (sort_name_expr * int) list) Glob_term.glob_sort_gen
+type sort_expr = (qvar_expr option * (sort_name_expr * int) list Glob_term.glob_sort_gen)
 
 type instance_expr = quality_expr list * univ_level_expr list
 
@@ -183,17 +183,17 @@ and branch_expr =
 
 and fix_expr =
   lident * relevance_info_expr
-  * recursion_order_expr option *
+  * fixpoint_order_expr option *
   local_binder_expr list * constr_expr * constr_expr
 
 and cofix_expr =
     lident * relevance_info_expr * local_binder_expr list * constr_expr * constr_expr
 
-and recursion_order_expr_r =
+and fixpoint_order_expr_r =
   | CStructRec of lident
   | CWfRec of lident * constr_expr
   | CMeasureRec of lident option * constr_expr * constr_expr option (** argument, measure, relation *)
-and recursion_order_expr = recursion_order_expr_r CAst.t
+and fixpoint_order_expr = fixpoint_order_expr_r CAst.t
 
 (* Anonymous defs allowed ?? *)
 and local_binder_expr =

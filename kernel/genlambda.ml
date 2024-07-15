@@ -25,8 +25,8 @@ type 'v lambda =
 | Lvar          of Id.t
 | Levar         of Evar.t * 'v lambda array (* arguments *)
 | Lprod         of 'v lambda * 'v lambda
-| Llam          of Name.t Context.binder_annot array * 'v lambda
-| Llet          of Name.t Context.binder_annot * 'v lambda * 'v lambda
+| Llam          of Name.t binder_annot array * 'v lambda
+| Llet          of Name.t binder_annot * 'v lambda * 'v lambda
 | Lapp          of 'v lambda * 'v lambda array
 | Lconst        of pconstant
 | Lproj         of Projection.Repr.t * 'v lambda
@@ -41,19 +41,19 @@ type 'v lambda =
   (* inductive name, constructor tag, arguments *)
 | Luint         of Uint63.t
 | Lfloat        of Float64.t
+| Lstring       of Pstring.t
 | Lval          of 'v
 | Lsort         of Sorts.t
 | Lind          of pinductive
-| Lforce
 
 and 'v lam_branches =
   { constant_branches : 'v lambda array;
-    nonconstant_branches : (Name.t Context.binder_annot array * 'v lambda) array }
+    nonconstant_branches : (Name.t binder_annot array * 'v lambda) array }
 
-and 'v fix_decl = Name.t Context.binder_annot array * 'v lambda array * 'v lambda array
+and 'v fix_decl = Name.t binder_annot array * 'v lambda array * 'v lambda array
 
 type evars =
-  { evars_val : constr CClosure.evar_handler }
+  { evars_val : CClosure.evar_handler }
 
 let empty_evars env =
   { evars_val = CClosure.default_evar_handler env }
@@ -162,6 +162,7 @@ let rec pp_lam lam =
        str")")
   | Luint i -> str (Uint63.to_string i)
   | Lfloat f -> str (Float64.to_string f)
+  | Lstring s -> str (Printf.sprintf "%S" (Pstring.to_string s))
   | Lval _ -> str "values"
   | Lsort s -> pp_sort s
   | Lind ((mind,i), _) -> MutInd.print mind ++ str"#" ++ int i
@@ -172,11 +173,10 @@ let rec pp_lam lam =
             str")")
   | Lproj(p,arg) ->
     hov 1
-      (str "(proj " ++ Projection.Repr.print p ++ str "(" ++ pp_lam arg
+      (str "(proj " ++ str "{" ++ Projection.Repr.print p ++ str "}" ++ spc () ++ pp_lam arg
        ++ str ")")
   | Lint i ->
     Pp.(str "(int:" ++ int i ++ str ")")
-  | Lforce -> Pp.str "force"
 
 (*s Constructors *)
 
@@ -218,7 +218,7 @@ let decompose_Llam_Llet lam =
 let map_lam_with_binders g f n lam =
   match lam with
   | Lrel _ | Lvar _  | Lconst _ | Lval _ | Lsort _ | Lind _ | Lint _ | Luint _
-  | Lfloat _ -> lam
+  | Lfloat _ | Lstring _ -> lam
   | Levar (evk, args) ->
     let args' = Array.Smart.map (f n) args in
     if args == args' then lam else Levar (evk, args')
@@ -280,7 +280,48 @@ let map_lam_with_binders g f n lam =
   | Lproj(p,arg) ->
     let arg' = f n arg in
     if arg == arg' then lam else Lproj(p,arg')
-  | Lforce -> Lforce
+
+(* Free rels *)
+
+let free_rels lam =
+  let rec aux k accu lam = match lam with
+  | Lrel (_, n) -> if n >= k then Int.Set.add (n - k + 1) accu else accu
+  | Lvar _  | Lconst _ | Lval _ | Lsort _ | Lind _ | Lint _ | Luint _
+  | Lfloat _ | Lstring _ -> accu
+  | Levar (_, args) ->
+    Array.fold_left (fun accu lam -> aux k accu lam) accu args
+  | Lprod (dom, codom) ->
+    aux k (aux k accu dom) codom
+  | Llam (ids, body) ->
+    aux (k + Array.length ids) accu body
+  | Llet (_, def, body) ->
+    aux (k + 1) (aux k accu def) body
+  | Lapp (fct, args) ->
+    let accu = aux k accu fct in
+    Array.fold_left (fun accu lam -> aux k accu lam) accu args
+  | Lcase (_, t, a, branches) ->
+    let const = branches.constant_branches in
+    let nonconst = branches.nonconstant_branches in
+    let accu = aux k accu t in
+    let accu = aux k accu a in
+    let accu = Array.fold_left (fun accu lam -> aux k accu lam) accu const in
+    let accu = Array.fold_left (fun accu (ids, lam) -> aux (k + Array.length ids) accu lam) accu nonconst in
+    accu
+  | Lfix (_, (ids, ltypes, lbodies)) | Lcofix (_, (ids, ltypes, lbodies)) ->
+    let accu = Array.fold_left (fun accu lam -> aux k accu lam) accu ltypes in
+    let accu = Array.fold_left (fun accu lam -> aux (k + Array.length ids) accu lam) accu lbodies in
+    accu
+  | Lparray (args, def) ->
+    let accu = Array.fold_left (fun accu lam -> aux k accu lam) accu args in
+    aux k accu def
+  | Lmakeblock (_, _, args) ->
+    Array.fold_left (fun accu lam -> aux k accu lam) accu args
+  | Lprim (_, _, args) ->
+    Array.fold_left (fun accu lam -> aux k accu lam) accu args
+  | Lproj (_, arg) ->
+    aux k accu arg
+  in
+  aux 1 Int.Set.empty lam
 
 (*s Operators on substitution *)
 let lift = subs_lift
@@ -317,13 +358,20 @@ let lam_subst_args subst args =
   if is_subs_id subst then args
   else Array.Smart.map (lam_exsubst subst) args
 
-(* [simplify can_subst subst lam] simplifies the expression [lam_subst subst lam] by: *)
+(* [simplify subst lam] simplifies the expression [lam_subst subst lam] by: *)
 (* - Reducing [let] is the definition can be substituted *)
 (* - Transforming beta redex into [let] expression *)
 (* - Moving arguments under [let] *)
 (* Invariant: Terms in [subst] are already simplified and can be substituted *)
 
-let simplify can_subst subst lam =
+let can_subst lam = match lam with
+| Lrel _ | Lvar _ | Lconst _ | Luint _
+| Lval _ | Lsort _ | Lind _ -> true
+| Levar _ | Lprod _ | Llam _ | Llet _ | Lapp _ | Lcase _ | Lfix _ | Lcofix _
+| Lparray _ | Lmakeblock _ | Lfloat _ | Lstring _ | Lprim _ | Lproj _ -> false
+| Lint _ -> false (* TODO: allow substitution of integers *)
+
+let simplify lam =
   let rec simplify subst lam =
     match lam with
     | Lrel(id,i) -> lam_subst_rel lam id i subst
@@ -384,7 +432,7 @@ let simplify can_subst subst lam =
       Llam(Array.of_list lids, simplify (liftn (List.length lids) substf) body)
     | [], _ -> simplify_app substf body substa (Array.of_list largs)
   in
-  simplify subst lam
+  simplify (subs_id 0) lam
 
 (* [occurrence kind k lam]:
    If [kind] is [true] return [true] if the variable [k] does not appear in
@@ -401,7 +449,7 @@ let rec occurrence k kind lam =
       if kind then false else raise Not_found
     else kind
   | Lvar _  | Lconst _  | Lval _ | Lsort _ | Lind _ | Lint _ | Luint _
-  | Lfloat _ | Lforce -> kind
+  | Lfloat _ | Lstring _ -> kind
   | Levar (_, args) ->
     occurrence_args k kind args
   | Lprod(dom, codom) ->
@@ -444,16 +492,27 @@ let occur_once lam =
 (* used at most once time in the body, and does not appear under      *)
 (* a lambda or a fix or a cofix                                       *)
 
+let is_value lam = match lam with
+| Lrel _ | Lvar _ | Lconst _ | Luint _
+| Lval _ | Lsort _ | Lind _ | Lint _ | Llam _ | Lfix _ | Lcofix _ | Lfloat _ | Lstring _ -> true
+| Levar _ | Lprod _ | Llet _ | Lapp _ | Lcase _
+| Lparray _ | Lmakeblock _ | Lprim _ | Lproj _ -> false
+
 let rec remove_let subst lam =
   match lam with
   | Lrel(id,i) -> lam_subst_rel lam id i subst
   | Llet(id,def,body) ->
     let def' = remove_let subst def in
-    if occur_once body then remove_let (cons def' subst) body
+    if occur_once body && is_value body then remove_let (cons def' subst) body
     else
       let body' = remove_let (lift subst) body in
       if def == def' && body == body' then lam else Llet(id,def',body')
   | _ -> map_lam_with_binders liftn remove_let subst lam
+
+let optimize lam =
+  let lam = simplify lam in
+  let lam = remove_let (subs_id 0) lam in
+  lam
 
 (* Compiling constants *)
 
@@ -461,11 +520,12 @@ let rec get_alias env kn =
   let cb = lookup_constant kn env in
   let tps = cb.const_body_code in
   match tps with
-  | None -> kn
+  | None -> kn, [||]
   | Some tps ->
-    (match tps with
-     | Vmemitcodes.BCalias kn' -> get_alias env kn'
-     | _ -> kn)
+    match tps with
+    | Vmemitcodes.BCalias kn' -> get_alias env kn'
+    | Vmemitcodes.BCconstant -> kn, [||]
+    | Vmemitcodes.BCdefined (mask, _, _) -> kn, mask
 
 (* Translation of constructors *)
 
@@ -520,7 +580,6 @@ module type S =
 sig
   type value
   val as_value : int -> value lambda array -> value option
-  val get_constant : pconstant -> constant_body -> value lambda
   val check_inductive : inductive -> mutual_inductive_body -> unit
 end
 
@@ -694,6 +753,8 @@ let rec lambda_of_constr cache env sigma c =
 
   | Float f -> Lfloat f
 
+  | String s -> Lstring s
+
   | Array (_u, t, def, _ty) ->
     let def = lambda_of_constr cache env sigma def in
     Lparray (lambda_of_args cache env sigma 0 t, def)
@@ -701,16 +762,22 @@ let rec lambda_of_constr cache env sigma c =
 and lambda_of_app cache env sigma f args =
   match kind f with
   | Const (kn, u as c) ->
-      let kn = get_alias env kn in
+      let kn, mask = get_alias env kn in
       let cb = lookup_constant kn env in
       begin match cb.const_body with
       | Primitive op -> lambda_of_prim env c op (lambda_of_args cache env sigma 0 args)
       | Def csubst -> (* TODO optimize if f is a proj and argument is known *)
         if cb.const_inline_code then lambda_of_app cache env sigma csubst args
         else
-          let t = Val.get_constant (kn, u) cb in
-          mkLapp t (lambda_of_args cache env sigma 0 args)
-      | OpaqueDef _ | Undef _ ->
+          (* Erase unused arguments *)
+          let mapi i arg =
+            let keep = if i < Array.length mask then mask.(i) else true in
+            if keep then lambda_of_constr cache env sigma arg
+            else Lint 0 (* dummy *)
+          in
+          let args = Array.mapi mapi args in
+          mkLapp (Lconst (kn, u)) args
+      | OpaqueDef _ | Undef _ | Symbol _ ->
           mkLapp (Lconst (kn, u)) (lambda_of_args cache env sigma 0 args)
       end
   | Construct ((ind,_ as c),_) ->

@@ -29,14 +29,14 @@ Open Scope function_scope.
 Notation pr1 := projT1.
 Notation pr2 := projT2.
 
-Notation "x .1" := (pr1 x) (at level 3, format "x '.1'") : fibration_scope.
-Notation "x .2" := (pr2 x) (at level 3, format "x '.2'") : fibration_scope.
+Notation "x .1" := (pr1 x) : fibration_scope.
+Notation "x .2" := (pr2 x) : fibration_scope.
 
 Notation compose := (fun g f x => g (f x)).
 
 Notation "g 'o' f" := (compose g%function f%function) (at level 40, left associativity) : function_scope.
 
-Inductive paths {A : Type} (a : A) : A -> Type :=
+Inductive paths {A : Type} (a : A) : A -> Prop :=
   idpath : paths a a.
 
 Arguments idpath {A a} , [A] a.
@@ -251,8 +251,8 @@ Module Export Morphisms.
 
   Class Isomorphic {C : PreCategory} s d :=
     {
-      morphism_isomorphic :> morphism C s d;
-      isisomorphism_isomorphic :> IsIsomorphism morphism_isomorphic
+      morphism_isomorphic :: morphism C s d;
+      isisomorphism_isomorphic :: IsIsomorphism morphism_isomorphic
     }.
 
   Coercion morphism_isomorphic : Isomorphic >-> morphism.
