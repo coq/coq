@@ -13,7 +13,7 @@ Qed.
 Axiom proof_admitted : False.
 Tactic Notation "admit" := case proof_admitted.
 Require Export Stdlib.Classes.Morphisms.
-Require Import Stdlib.Lists.List.
+Require Import Stdlib.Lists.ListDef.
 
 Global Set Implicit Arguments.
 

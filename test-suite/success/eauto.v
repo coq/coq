@@ -185,7 +185,7 @@ Defined.
 End NTabareauClasses.
 
 
-Require Import List.
+Require Import ListDef.
 
 Parameter in_list : list (nat * nat) -> nat -> Prop.
 Definition not_in_list (l : list (nat * nat)) (n : nat) : Prop :=

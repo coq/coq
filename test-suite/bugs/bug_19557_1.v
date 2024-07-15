@@ -1,5 +1,4 @@
-Require Import List Morphisms Setoid.
-Import ListNotations.
+Require Import ListDef Morphisms Setoid.
 
 Global Generalizable All Variables.
 
@@ -34,7 +33,7 @@ Section S.
     Proper (eqA ==> PermutationA ==> PermutationA) (@cons A).
   Admitted.
 
-  Lemma foo a l x (IHl : PermutationA (x::l) (l ++ [x])) : PermutationA (x::a::l) (a::l++[x]).
+  Lemma foo a l x (IHl : PermutationA (x::l) (l ++ (x :: nil))) : PermutationA (x::a::l) (a::l++(x :: nil)).
   Proof.
     rewrite <-IHl.
   Abort.

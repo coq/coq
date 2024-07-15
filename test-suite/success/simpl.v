@@ -41,7 +41,7 @@ Qed.
 
 (* Yet another example. *)
 
-Require Import List.
+Require Import TestSuite.list.
 
 Goal forall A B (a:A) l f (i:B), fold_right f i ((a :: l))=i.
 intros.
