@@ -1,4 +1,4 @@
-Require Import Stdlib.Logic.FunctionalExtensionality.
+Require Import TestSuite.funext.
 Require Import Stdlib.Program.Tactics.
 
 Global Set Primitive Projections.
