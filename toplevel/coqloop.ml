@@ -23,6 +23,7 @@ type input_buffer = {
   mutable str : Bytes.t; (* buffer of already read characters *)
   mutable len : int;    (* number of chars in the buffer *)
   mutable bols : int list; (* offsets in str of beginning of lines *)
+  mutable stream : (unit,char) Gramlib.Stream.t; (* stream of chars *)
   mutable tokens : Pcoq.Parsable.t; (* stream of tokens *)
   mutable start : int } (* stream count of the first char of the buffer *)
 
@@ -33,10 +34,23 @@ let resize_buffer ibuf = let open Bytes in
   blit ibuf.str 0 nstr 0 (length ibuf.str);
   ibuf.str <- nstr
 
+let peek_to_newline ibuf =
+  (* peek to see a newline following the latest command
+     cf #19355 *)
+  let rec aux n =
+    let l = Gramlib.Stream.npeek () n ibuf.stream in
+    if List.length l < n then ()
+    else match CList.last l with
+      | '\n' -> ()
+      | ' ' | '\t' -> aux (n+1)
+      | _ -> (* nonblank character: the latest command is not the last on this line *) ()
+  in
+  aux 1
+
 (* Delete all irrelevant lines of the input buffer. Keep the last line
    in the buffer (useful when there are several commands on the same line). *)
-
 let resynch_buffer ibuf =
+  let () = peek_to_newline ibuf in
   match ibuf.bols with
     | ll::_ ->
         let new_len = ibuf.len - ll in
@@ -90,7 +104,11 @@ let get_bols_of_loc ibuf (bp,ep) =
         let nafter = if ll < ep then add_line (ll,ba) after else after in
         lines_rec ll nafter fl
   in
-  let (fl,ll) = lines_rec ibuf.len ([],None) ibuf.bols in
+  let bols = match ibuf.bols with
+    | [] -> [ibuf.len+1] (* no newline at the end of the command, pretend there was one *)
+    | _ :: _ as bols -> bols
+  in
+  let (fl,ll) = lines_rec ibuf.len ([],None) bols in
   (fl,Option.get ll)
 
 let dotted_location (b,e) =
@@ -217,19 +235,23 @@ let top_buffer =
     ^ make_emacs_prompt doc
     ^ emacs_prompt_endstring()
   in
+  let stream = Gramlib.Stream.empty () in
   { prompt = pr;
     str = Bytes.empty;
     len = 0;
     bols = [];
-    tokens = Pcoq.Parsable.make (Gramlib.Stream.empty ());
+    stream;
+    tokens = Pcoq.Parsable.make stream;
     start = 0 }
 
 (* Intialize or reinitialize the char stream *)
 let reset_input_buffer ~state =
+  let stream = Gramlib.Stream.from (prompt_char state.Vernac.State.doc stdin top_buffer) in
   top_buffer.str <- Bytes.empty;
   top_buffer.len <- 0;
   top_buffer.bols <- [];
-  top_buffer.tokens <- Pcoq.Parsable.make (Gramlib.Stream.from (prompt_char state.Vernac.State.doc stdin top_buffer));
+  top_buffer.stream <- stream;
+  top_buffer.tokens <- Pcoq.Parsable.make stream;
   top_buffer.start <- 0
 
 let set_prompt prompt =

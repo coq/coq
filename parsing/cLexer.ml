@@ -723,11 +723,7 @@ let rec next_token ~diff_mode ttree loc s =
       Stream.junk () s;
       let ep = Stream.count s in
       let t,new_between_commands =
-        if !between_commands then begin
-          (* peek to force reading a following newline, cf #19355 *)
-          let _ = Stream.peek () s in
-          (KEYWORD (String.make 1 c), set_loc_pos loc bp ep), true
-        end
+        if !between_commands then (KEYWORD (String.make 1 c), set_loc_pos loc bp ep), true
         else process_chars ~diff_mode ttree loc bp [c] s, false
       in
       between_commands := new_between_commands; t

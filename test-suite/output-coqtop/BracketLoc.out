@@ -4,6 +4,11 @@ Coq < 1 goal
   ============================
   True
 
+Toplevel input, characters 11-12:
+> Goal True. }
+>            ^
+Error: The proof is not focused
+
 Unnamed_thm < Toplevel input, characters 2-3:
 >   }
 >   ^

@@ -1,4 +1,4 @@
-Goal True.
-  }
+Goal True. }
+  }  
   }
   exact 0.
