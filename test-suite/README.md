@@ -95,7 +95,3 @@ When an output test `output/foo.v` fails, the output is stored in
 automatically.
 
 Don't forget to check the updated `.out` files into git!
-
-Note that `output/MExtraction.out` is special: it is copied from
-[`micromega/micromega.ml`](../plugins/micromega/micromega.ml) in the plugin
-source directory. Automatic approval will incorrectly update the copy.

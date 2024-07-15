@@ -214,7 +214,7 @@ noop: ;
 run: $(SUBSYSTEMS)
 
 clean:
-	rm -f trace .csdp.cache .nia.cache .lia.cache output/MExtraction.out
+	rm -f trace .csdp.cache .nia.cache .lia.cache
 	rm -f misc/universes/all_stdlib.v
 	$(SHOW) 'RM        <**/*.stamp> <**/*.vo> <**/*.log> <**/*.glob> <**/*.time>'
 	$(HIDE)find . \( \
@@ -519,14 +519,6 @@ approve-coqdoc: coqdoc
 	  cat "Coqdoc.$${f%.out}" | grep -v "^%%" > "$$f"; \
 	  echo "Updated $$f!"; \
 	fi; done)
-
-# the expected output for the MExtraction test is
-# /plugins/micromega/micromega.ml except with additional newline
-output/MExtraction.out: ../plugins/micromega/micromega.ml
-	$(SHOW) GEN $@
-	$(HIDE) cp $< $@
-	$(HIDE) chmod u+w $@
-	$(HIDE) echo >> $@
 
 $(addsuffix .log,$(wildcard output-modulo-time/*.v)): %.v.log: %.v %.out
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
