@@ -40,12 +40,6 @@ Various checks for coqdoc
 \begin{coqdoccode}
 \coqdocemptyline
 \coqdocnoindent
-\coqdockw{Require} \coqdockw{Import} \coqexternalref{}{http://coq.inria.fr/stdlib/Stdlib.Strings.String}{\coqdoclibrary{String}}.\coqdoceol
-\coqdocemptyline
-\coqdocnoindent
-\coqdockw{Definition} \coqdef{Coqdoc.links.g}{g}{\coqdocdefinition{g}} := "dfjkh""sdfhj forall <> * \~{}"\%\coqdocvar{string}.\coqdoceol
-\coqdocemptyline
-\coqdocnoindent
 \coqdockw{Definition} \coqdef{Coqdoc.links.a}{a}{\coqdocdefinition{a}} (\coqdef{Coqdoc.links.b:1}{b}{\coqdocbinder{b}}: \coqexternalref{nat}{http://coq.inria.fr/stdlib/Stdlib.Init.Datatypes}{\coqdocinductive{nat}}) := \coqref{Coqdoc.links.b:1}{\coqdocvariable{b}}.\coqdoceol
 \coqdocemptyline
 \coqdocnoindent

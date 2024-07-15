@@ -48,12 +48,6 @@ Various checks for coqdoc
 <div class="code">
 
 <br/>
-<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="http://coq.inria.fr/stdlib/Stdlib.Strings.String.html#"><span class="id" title="library">String</span></a>.<br/>
-
-<br/>
-<span class="id" title="keyword">Definition</span> <a id="g" class="idref" href="#g"><span class="id" title="definition">g</span></a> := "dfjkh""sdfhj forall &lt;&gt; * ~"%<span class="id" title="var">string</span>.<br/>
-
-<br/>
 <span class="id" title="keyword">Definition</span> <a id="a" class="idref" href="#a"><span class="id" title="definition">a</span></a> (<a id="b:1" class="idref" href="#b:1"><span class="id" title="binder">b</span></a>: <a class="idref" href="http://coq.inria.fr/stdlib/Stdlib.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a>) := <a class="idref" href="Coqdoc.links.html#b:1"><span class="id" title="variable">b</span></a>.<br/>
 
 <br/>
