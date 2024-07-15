@@ -256,18 +256,23 @@ let lookup_mind kn env =
 *)
 let instantiate_context u subst nas ctx =
   let open Context.Rel.Declaration in
+  let get_binder i na =
+    Context.
+    { binder_name = nas.(i).binder_name;
+      binder_relevance = UVars.subst_instance_relevance u na.binder_relevance }
+  in
   let rec instantiate i ctx = match ctx with
   | [] -> assert (Int.equal i (-1)); []
   | LocalAssum (na, ty) :: ctx ->
     let ctx = instantiate (pred i) ctx in
     let ty = substnl subst i (subst_instance_constr u ty) in
-    let na = Context.map_annot (fun _ -> Context.binder_name nas.(i)) na in
+    let na = get_binder i na in
     LocalAssum (na, ty) :: ctx
   | LocalDef (na, ty, bdy) :: ctx ->
     let ctx = instantiate (pred i) ctx in
     let ty = substnl subst i (subst_instance_constr u ty) in
     let bdy = substnl subst i (subst_instance_constr u bdy) in
-    let na = Context.map_annot (fun _ -> Context.binder_name nas.(i)) na in
+    let na = get_binder i na in
     LocalDef (na, ty, bdy) :: ctx
   in
   instantiate (Array.length nas - 1) ctx
