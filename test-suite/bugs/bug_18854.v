@@ -2,7 +2,7 @@
 
 Symbol raise : forall A, A.
 
-Rewrite Rule raise_pi := raise (forall (x : ?A), ?B) >-> fun (x : ?A) => raise ?B.
+Rewrite Rule raise_pi := raise (forall (x : ?A), ?B) => fun (x : ?A) => raise ?B.
 
 Goal (raise (nat -> nat -> Prop) 0 0).
   hnf.

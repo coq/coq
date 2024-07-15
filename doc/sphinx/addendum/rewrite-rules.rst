@@ -49,7 +49,7 @@ Rewrite rules
   .. insertprodn rewrite_rule rewrite_rule
 
   .. prodn::
-     rewrite_rule ::= {? @univ_decl %|- } @rw_pattern >-> @term
+     rewrite_rule ::= {? @univ_decl %|- } @rw_pattern => @term
 
 Declares a named block of rewrite rules. The name is declared in the same namespace as constants and inductives.
 
@@ -64,10 +64,10 @@ and then substituted into the replacement, which is returned.
   .. coqtop:: all
 
      Rewrite Rule pplus_rewrite :=
-     | ?n ++ 0 >-> ?n
-     | ?n ++ S ?m >-> S (?n ++ ?m)
-     | 0 ++ ?n >-> ?n
-     | S ?n ++ ?m >-> S (?n ++ ?m).
+     | ?n ++ 0 => ?n
+     | ?n ++ S ?m => S (?n ++ ?m)
+     | 0 ++ ?n => ?n
+     | S ?n ++ ?m => S (?n ++ ?m).
 
 .. _Pattern syntax:
 
@@ -118,11 +118,11 @@ this explicit substitution is inferred automatically (like for existential varia
       Rewrite Rule raise_nat :=
         match raise nat as n return ?P
         with 0 => _ | S _ => _ end
-        >-> raise ?P@{n := raise nat}.
+        => raise ?P@{n := raise nat}.
 
       Symbol id : forall (A : Type), A -> A.
       Rewrite Rule id_rew :=
-        id (forall (x : ?A), ?P) ?f >-> fun (x : ?A) => id ?P (?f x).
+        id (forall (x : ?A), ?P) ?f => fun (x : ?A) => id ?P (?f x).
 
 Universe polymorphic rules
 --------------------------
@@ -143,7 +143,7 @@ so all inferred constraints from the left-hand side are used for the replacement
 
       #[universes(polymorphic)] Symbol raise@{q|u|} : forall (A : Type@{q|u}), A.
       Rewrite Rule raise_nat :=
-        @{q|u+|+} |- raise@{q|u} (forall (x : ?A), ?P) >-> fun (x : ?A) => raise@{q|u} ?P.
+        @{q|u+|+} |- raise@{q|u} (forall (x : ?A), ?P) => fun (x : ?A) => raise@{q|u} ?P.
 
 Rewrite rules, type preservation, confluence and termination
 ------------------------------------------------------------

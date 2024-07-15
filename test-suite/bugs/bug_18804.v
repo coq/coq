@@ -3,4 +3,4 @@
 Symbol t : unit.
 
 Rewrite Rule t_rew :=
-| match t with tt => @eq_refl ?A ?a end >-> @eq_refl ?A ?a.
+| match t with tt => @eq_refl ?A ?a end => @eq_refl ?A ?a.
