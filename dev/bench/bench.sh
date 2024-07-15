@@ -415,6 +415,11 @@ create_opam() {
         done
     done
 
+    # Try to install conflicting packages earlier
+    opam update
+    opam install -y -b -j "$this_nproc" coq-elpi.dev
+    opam repo list
+
 }
 
 # Create an OPAM-root to which we will install the NEW version of Coq.
