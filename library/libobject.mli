@@ -15,49 +15,59 @@ open Mod_subst
 (** [Libobject] declares persistent objects, given with methods:
 
    * a caching function specifying how to add the object in the current
-     scope;
+     scope; called when the object is added and after the end of the containing
+     sections.
      If the object wishes to register its visibility in the Nametab,
      it should do so for all possible suffixes.
 
    * a loading function, specifying what to do when the module
-     containing the object is loaded;
+     containing the object is loaded; called at Require
+     and after the end of the containing modules.
      If the object wishes to register its visibility in the Nametab,
      it should do so for all suffixes no shorter than the "int" argument
 
    * an opening function, specifying what to do when the module
-     containing the object is opened (imported);
+     containing the object is opened; called when the containing modules
+     are Imported.
+     Objects which should only have an effect when the nearest containing module
+     is imported (and not when the modules containing the nearest module are imported)
+     must check that the "int" argument is [1].
      If the object wishes to register its visibility in the Nametab,
      it should do so for the suffix of the length the "int" argument
 
    * a classification function, specifying what to do with the object,
      when the current module (containing the object) is ended;
      The possibilities are:
-     Dispose    - the object dies at the end of the module
-     Substitute - meaning the object is substitutive and
-                  the module name must be updated
-     Keep       - the object is not substitutive, but survives module
-                  closing
-     Anticipate - this is for objects that have to be explicitly
-                  managed by the [end_module] function (like Require
-                  and Read markers)
-
-     The classification function is also an occasion for a cleanup
-     (if this function returns Keep or Substitute of some object, the
-     cache method is never called for it)
+     Dispose    - the object is dropped at the end of the module.
+     Substitute - the object is kept at the end of the module.
+       When the module is cloned (Include, module aliases)
+       or when it's a module type which is getting instantiated
+       (eg if module type [T] is used for a functor argument [X : T]
+        or [Declare Module X : T]),
+       the substitution function is called on the object to update the module name.
+     Keep       - the object is kept at the end of the module.
+       When the module is cloned the object is not cloned with it.
+       This means that Keep objects in a module type or functor are dropped.
+     Anticipate - this is for objects that have to be explicitly managed
+       by the [end_module] function (currently only Require).
 
    * a substitution function, performing the substitution;
      this function should be declared for substitutive objects
-     only (see above). NB: the substitution might now be delayed
+     only (see above). NB: the substitution might be delayed
      instead of happening at module creation, so this function
      should _not_ depend on the current environment
 
-   * a discharge function, that is applied at section closing time to
+   * a discharge function, that is called at section closing time to
      collect the data necessary to rebuild the discharged form of the
-     non volatile objects
+     non volatile objects. If it returns [None] the object is dropped.
+     It is called in the state inside the section at its end, before it is reset.
+     Notably the global environment contains the section data and the non-discharged globals.
 
    * a rebuild function, that is applied after section closing to
      rebuild the non volatile content of a section from the data
      collected by the discharge function
+     It is called in the state after the end of the section with any previous objects already present.
+     Notably the global environment contains the discharged globals.
 
   Any type defined as a persistent object must be pure (e.g. no references) and
   marshallable by the OCaml Marshal module (e.g. no closures).
