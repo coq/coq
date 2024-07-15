@@ -328,11 +328,12 @@ type arguments_modifier =
   [  `Assert
   | `ClearBidiHint
   | `ClearImplicits
+  | `ClearReduction
   | `ClearScopes
   | `DefaultImplicits
   | `ExtraScopes
-  | `ReductionDontExposeCase
-  | `ReductionNeverUnfold
+  | `SimplDontExposeCase  (* simpl nomatch *)
+  | `SimplNeverUnfold  (* simpl never *)
   | `Rename ]
 
 type extend_name = {

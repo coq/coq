@@ -147,3 +147,23 @@ End S1.
 
 Arguments f : clear implicits and scopes.
 
+Module TestClearSimpl.
+
+Fail Arguments id _ x / : clear simpl.
+Fail Arguments id _ ! x : clear simpl.
+Fail Arguments id _ : simpl never, clear simpl.
+Fail Arguments id _ : simpl nomatch, clear simpl.
+
+Arguments id _ x /.
+Lemma foo : id 0 = 0.
+simpl.
+match goal with |- 0 = 0 => idtac end.
+Abort.
+
+Arguments id _ x : clear simpl.
+Lemma foo : id 0 = 0.
+simpl.
+match goal with |- id 0 = 0 => idtac end.
+Abort.
+
+End TestClearSimpl.

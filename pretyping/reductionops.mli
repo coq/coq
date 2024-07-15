@@ -39,7 +39,7 @@ module ReductionBehaviour : sig
     val all_never_unfold : t -> Cpred.t
   end
 
-  val set : local:bool -> Constant.t -> t -> unit
+  val set : local:bool -> Constant.t -> t option -> unit
   val get_from_db : Db.t -> Constant.t -> t option
   val get : Constant.t -> t option
   val print : Constant.t -> Pp.t

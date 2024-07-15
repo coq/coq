@@ -901,8 +901,9 @@ GRAMMAR EXTEND Gram
              { VernacSynPure (VernacGeneralizable gen) } ] ]
   ;
   args_modifier:
-    [ [ IDENT "simpl"; IDENT "nomatch" -> { [`ReductionDontExposeCase] }
-      | IDENT "simpl"; IDENT "never" -> { [`ReductionNeverUnfold] }
+    [ [ IDENT "simpl"; IDENT "nomatch" -> { [`SimplDontExposeCase] }
+      | IDENT "simpl"; IDENT "never" -> { [`SimplNeverUnfold] }
+      | IDENT "clear"; IDENT "simpl" -> { [`ClearReduction] }
       | IDENT "default"; IDENT "implicits" -> { [`DefaultImplicits] }
       | IDENT "clear"; IDENT "implicits" -> { [`ClearImplicits] }
       | IDENT "clear"; IDENT "scopes" -> { [`ClearScopes] }
