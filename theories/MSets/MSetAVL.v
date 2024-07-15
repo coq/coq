@@ -33,7 +33,7 @@
     code after extraction.
 *)
 
-Require Import FunInd MSetInterface MSetGenTree BinInt Int.
+Require Import MSetInterface MSetGenTree BinInt Int.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -330,13 +330,201 @@ Tactic Notation "factornode" ident(s) :=
 
 (** Inductions principles for some of the set operators *)
 
-Functional Scheme bal_ind := Induction for bal Sort Prop.
-Functional Scheme remove_min_ind := Induction for remove_min Sort Prop.
-Functional Scheme merge_ind := Induction for merge Sort Prop.
-Functional Scheme concat_ind := Induction for concat Sort Prop.
-Functional Scheme inter_ind := Induction for inter Sort Prop.
-Functional Scheme diff_ind := Induction for diff Sort Prop.
-Functional Scheme union_ind := Induction for union Sort Prop.
+#[local] Ltac caseq :=
+match goal with [ |- context [match ?t with _ => _ end] ] =>
+  let cmp := fresh in
+  let H := fresh in
+  remember t as cmp eqn:H; symmetry in H; destruct cmp
+end.
+
+Lemma bal_ind  [P : t -> X.t -> t -> tree -> Prop] :
+  (forall (l : t) (x : X.t) (r : t),
+   let hl := height l in
+   let hr := height r in (hr + 2 <? hl) = true -> l = Leaf -> P Leaf x r (assert_false l x r)) ->
+  (forall (l : t) (x : X.t) (r : t),
+   let hl := height l in
+   let hr := height r in
+   (hr + 2 <? hl) = true ->
+   forall (_x : I.t) (ll : tree) (lx : X.t) (lr : tree),
+   l = Node _x ll lx lr ->
+   (height lr <=? height ll) = true -> P (Node _x ll lx lr) x r (create ll lx (create lr x r))) ->
+  (forall (l : t) (x : X.t) (r : t),
+   let hl := height l in
+   let hr := height r in
+   (hr + 2 <? hl) = true ->
+   forall (_x : I.t) (ll : tree) (lx : X.t) (lr : tree),
+   l = Node _x ll lx lr ->
+   (height lr <=? height ll) = false ->
+   lr = Leaf -> P (Node _x ll lx Leaf) x r (assert_false l x r)) ->
+  (forall (l : t) (x : X.t) (r : t),
+   let hl := height l in
+   let hr := height r in
+   (hr + 2 <? hl) = true ->
+   forall (_x : I.t) (ll : tree) (lx : X.t) (lr : tree),
+   l = Node _x ll lx lr ->
+   (height lr <=? height ll) = false ->
+   forall (_x0 : I.t) (lrl : tree) (lrx : X.t) (lrr : tree),
+   lr = Node _x0 lrl lrx lrr ->
+   P (Node _x ll lx (Node _x0 lrl lrx lrr)) x r (create (create ll lx lrl) lrx (create lrr x r))) ->
+  (forall (l : t) (x : X.t) (r : t),
+   let hl := height l in
+   let hr := height r in
+   (hr + 2 <? hl) = false ->
+   (hl + 2 <? hr) = true -> r = Leaf -> P l x Leaf (assert_false l x r)) ->
+  (forall (l : t) (x : X.t) (r : t),
+   let hl := height l in
+   let hr := height r in
+   (hr + 2 <? hl) = false ->
+   (hl + 2 <? hr) = true ->
+   forall (_x : I.t) (rl : tree) (rx : X.t) (rr : tree),
+   r = Node _x rl rx rr ->
+   (height rl <=? height rr) = true -> P l x (Node _x rl rx rr) (create (create l x rl) rx rr)) ->
+  (forall (l : t) (x : X.t) (r : t),
+   let hl := height l in
+   let hr := height r in
+   (hr + 2 <? hl) = false ->
+   (hl + 2 <? hr) = true ->
+   forall (_x : I.t) (rl : tree) (rx : X.t) (rr : tree),
+   r = Node _x rl rx rr ->
+   (height rl <=? height rr) = false ->
+   rl = Leaf -> P l x (Node _x Leaf rx rr) (assert_false l x r)) ->
+  (forall (l : t) (x : X.t) (r : t),
+   let hl := height l in
+   let hr := height r in
+   (hr + 2 <? hl) = false ->
+   (hl + 2 <? hr) = true ->
+   forall (_x : I.t) (rl : tree) (rx : X.t) (rr : tree),
+   r = Node _x rl rx rr ->
+   (height rl <=? height rr) = false ->
+   forall (_x0 : I.t) (rll : tree) (rlx : X.t) (rlr : tree),
+   rl = Node _x0 rll rlx rlr ->
+   P l x (Node _x (Node _x0 rll rlx rlr) rx rr) (create (create l x rll) rlx (create rlr rx rr))) ->
+  (forall (l : t) (x : X.t) (r : t),
+   let hl := height l in
+   let hr := height r in
+   (hr + 2 <? hl) = false -> (hl + 2 <? hr) = false -> P l x r (create l x r)) ->
+  forall (l : t) (x : X.t) (r : t), P l x r (bal l x r).
+Proof.
+intros; unfold bal; repeat caseq; eauto.
+Qed.
+
+Lemma remove_min_ind [P : tree -> elt -> t -> t * elt -> Prop] :
+  (forall (l : tree) (x : elt) (r : t), l = Leaf -> P Leaf x r (r, x)) ->
+  (forall (l : tree) (x : elt) (r : t) (_x : I.t) (ll : tree) (lx : X.t) (lr : tree),
+   l = Node _x ll lx lr ->
+   P ll lx lr (remove_min ll lx lr) ->
+   forall (l' : t) (m : elt),
+   remove_min ll lx lr = (l', m) -> P (Node _x ll lx lr) x r (bal l' x r, m)) ->
+  forall (l : tree) (x : elt) (r : t), P l x r (remove_min l x r).
+Proof.
+induction l; cbn; repeat caseq; eauto.
+Qed.
+
+Lemma merge_ind [P : tree -> tree -> tree -> Prop] :
+  (forall s1 s2 : tree, s1 = Leaf -> P Leaf s2 s2) ->
+  (forall (s1 s2 : tree) (_x : I.t) (_x0 : tree) (_x1 : X.t) (_x2 : tree),
+   s1 = Node _x _x0 _x1 _x2 -> s2 = Leaf -> P (Node _x _x0 _x1 _x2) Leaf s1) ->
+  (forall (s1 s2 : tree) (_x : I.t) (_x0 : tree) (_x1 : X.t) (_x2 : tree),
+   s1 = Node _x _x0 _x1 _x2 ->
+   forall (_x3 : I.t) (l2 : tree) (x2 : X.t) (r2 : tree),
+   s2 = Node _x3 l2 x2 r2 ->
+   forall (s2' : t) (m : elt),
+   remove_min l2 x2 r2 = (s2', m) -> P (Node _x _x0 _x1 _x2) (Node _x3 l2 x2 r2) (bal s1 m s2')) ->
+  forall s1 s2 : tree, P s1 s2 (merge s1 s2).
+Proof.
+intros; unfold merge; repeat caseq; eauto.
+Qed.
+
+Lemma concat_ind [P : tree -> tree -> tree -> Prop] :
+  (forall s1 s2 : tree, s1 = Leaf -> P Leaf s2 s2) ->
+  (forall (s1 s2 : tree) (_x : I.t) (_x0 : tree) (_x1 : X.t) (_x2 : tree),
+   s1 = Node _x _x0 _x1 _x2 -> s2 = Leaf -> P (Node _x _x0 _x1 _x2) Leaf s1) ->
+  (forall (s1 s2 : tree) (_x : I.t) (_x0 : tree) (_x1 : X.t) (_x2 : tree),
+   s1 = Node _x _x0 _x1 _x2 ->
+   forall (_x3 : I.t) (l2 : tree) (x2 : X.t) (r2 : tree),
+   s2 = Node _x3 l2 x2 r2 ->
+   forall (s2' : t) (m : elt),
+   remove_min l2 x2 r2 = (s2', m) -> P (Node _x _x0 _x1 _x2) (Node _x3 l2 x2 r2) (join s1 m s2')) ->
+  forall s1 s2 : tree, P s1 s2 (concat s1 s2).
+Proof.
+intros; unfold concat; repeat caseq; eauto.
+Qed.
+
+Lemma inter_ind [P : tree -> tree -> tree -> Prop] :
+  (forall s1 s2 : tree, s1 = Leaf -> P Leaf s2 Leaf) ->
+  (forall (s1 s2 : tree) (_x : I.t) (l1 : tree) (x1 : X.t) (r1 : tree),
+   s1 = Node _x l1 x1 r1 -> s2 = Leaf -> P (Node _x l1 x1 r1) Leaf Leaf) ->
+  (forall (s1 s2 : tree) (_x : I.t) (l1 : tree) (x1 : X.t) (r1 : tree),
+   s1 = Node _x l1 x1 r1 ->
+   forall (_x0 : I.t) (_x1 : tree) (_x2 : X.t) (_x3 : tree),
+   s2 = Node _x0 _x1 _x2 _x3 ->
+   forall (l2' : t) (pres : bool) (r2' : t),
+   split x1 s2 = << l2', pres, r2' >> ->
+   pres = true ->
+   P l1 l2' (inter l1 l2') ->
+   P r1 r2' (inter r1 r2') ->
+   P (Node _x l1 x1 r1) (Node _x0 _x1 _x2 _x3) (join (inter l1 l2') x1 (inter r1 r2'))) ->
+  (forall (s1 s2 : tree) (_x : I.t) (l1 : tree) (x1 : X.t) (r1 : tree),
+   s1 = Node _x l1 x1 r1 ->
+   forall (_x0 : I.t) (_x1 : tree) (_x2 : X.t) (_x3 : tree),
+   s2 = Node _x0 _x1 _x2 _x3 ->
+   forall (l2' : t) (pres : bool) (r2' : t),
+   split x1 s2 = << l2', pres, r2' >> ->
+   pres = false ->
+   P l1 l2' (inter l1 l2') ->
+   P r1 r2' (inter r1 r2') ->
+   P (Node _x l1 x1 r1) (Node _x0 _x1 _x2 _x3) (concat (inter l1 l2') (inter r1 r2'))) ->
+  forall s1 s2 : tree, P s1 s2 (inter s1 s2).
+Proof.
+induction s1; cbn; intros; repeat caseq; eauto.
+Qed.
+
+Lemma diff_ind [P : tree -> tree -> tree -> Prop] :
+  (forall s1 s2 : tree, s1 = Leaf -> P Leaf s2 Leaf) ->
+  (forall (s1 s2 : tree) (_x : I.t) (l1 : tree) (x1 : X.t) (r1 : tree),
+   s1 = Node _x l1 x1 r1 -> s2 = Leaf -> P (Node _x l1 x1 r1) Leaf s1) ->
+  (forall (s1 s2 : tree) (_x : I.t) (l1 : tree) (x1 : X.t) (r1 : tree),
+   s1 = Node _x l1 x1 r1 ->
+   forall (_x0 : I.t) (_x1 : tree) (_x2 : X.t) (_x3 : tree),
+   s2 = Node _x0 _x1 _x2 _x3 ->
+   forall (l2' : t) (pres : bool) (r2' : t),
+   split x1 s2 = << l2', pres, r2' >> ->
+   pres = true ->
+   P l1 l2' (diff l1 l2') ->
+   P r1 r2' (diff r1 r2') ->
+   P (Node _x l1 x1 r1) (Node _x0 _x1 _x2 _x3) (concat (diff l1 l2') (diff r1 r2'))) ->
+  (forall (s1 s2 : tree) (_x : I.t) (l1 : tree) (x1 : X.t) (r1 : tree),
+   s1 = Node _x l1 x1 r1 ->
+   forall (_x0 : I.t) (_x1 : tree) (_x2 : X.t) (_x3 : tree),
+   s2 = Node _x0 _x1 _x2 _x3 ->
+   forall (l2' : t) (pres : bool) (r2' : t),
+   split x1 s2 = << l2', pres, r2' >> ->
+   pres = false ->
+   P l1 l2' (diff l1 l2') ->
+   P r1 r2' (diff r1 r2') ->
+   P (Node _x l1 x1 r1) (Node _x0 _x1 _x2 _x3) (join (diff l1 l2') x1 (diff r1 r2'))) ->
+  forall s1 s2 : tree, P s1 s2 (diff s1 s2).
+Proof.
+induction s1; cbn; intros; repeat caseq; eauto.
+Qed.
+
+Lemma union_ind [P : tree -> tree -> tree -> Prop] :
+  (forall s1 s2 : tree, s1 = Leaf -> P Leaf s2 s2) ->
+  (forall (s1 s2 : tree) (_x : I.t) (l1 : tree) (x1 : X.t) (r1 : tree),
+   s1 = Node _x l1 x1 r1 -> s2 = Leaf -> P (Node _x l1 x1 r1) Leaf s1) ->
+  (forall (s1 s2 : tree) (_x : I.t) (l1 : tree) (x1 : X.t) (r1 : tree),
+   s1 = Node _x l1 x1 r1 ->
+   forall (_x0 : I.t) (_x1 : tree) (_x2 : X.t) (_x3 : tree),
+   s2 = Node _x0 _x1 _x2 _x3 ->
+   forall (l2' : t) (_x4 : bool) (r2' : t),
+   split x1 s2 = << l2', _x4, r2' >> ->
+   P l1 l2' (union l1 l2') ->
+   P r1 r2' (union r1 r2') ->
+   P (Node _x l1 x1 r1) (Node _x0 _x1 _x2 _x3) (join (union l1 l2') x1 (union r1 r2'))) ->
+  forall s1 s2 : tree, P s1 s2 (union s1 s2).
+Proof.
+induction s1; cbn; intros; repeat caseq; eauto.
+Qed.
 
 (** Notations and helper lemma about pairs and triples *)
 
@@ -471,7 +659,7 @@ Lemma remove_min_spec : forall l x r y h,
 Proof.
  intros l x r; induction l, x, r, (remove_min l x r) using remove_min_ind; subst; simpl in *; intros.
  - intuition_in.
- - rewrite bal_spec, In_node_iff, IHp, e0; simpl; intuition.
+ - rewrite bal_spec, In_node_iff, IHp, H0; simpl; intuition.
 Qed.
 
 #[global]
@@ -482,11 +670,11 @@ Proof.
  - inv; auto.
  - assert (O : Ok (Node _x ll lx lr)) by (inv; auto).
    assert (L : lt_tree x (Node _x ll lx lr)) by (inv; auto).
-   specialize IHp with (1:=O); rewrite e0 in IHp; auto; simpl in *.
+   specialize IHp with (1:=O); rewrite H0 in IHp; auto; simpl in *.
    apply bal_ok; auto.
    + inv; auto.
    + intro y; specialize (L y).
-     rewrite remove_min_spec, e0 in L; simpl in L; intuition.
+     rewrite remove_min_spec, H0 in L; simpl in L; intuition.
    + inv; auto.
 Qed.
 
@@ -497,9 +685,9 @@ Proof.
  - inv; auto.
  - assert (O : Ok (Node _x ll lx lr)) by (inv; auto).
    assert (L : lt_tree x (Node _x ll lx lr)) by (inv; auto).
-   specialize IHp with (1:=O); rewrite e0 in IHp; simpl in IHp.
+   specialize IHp with (1:=O); rewrite H0 in IHp; simpl in IHp.
    intro y; rewrite bal_spec; intuition;
-     specialize (L m); rewrite remove_min_spec, e0 in L; simpl in L;
+     specialize (L m); rewrite remove_min_spec, H0 in L; simpl in L;
      [setoid_replace y with x|inv]; eauto.
 Qed.
 Local Hint Resolve remove_min_gt_tree : core.
@@ -514,7 +702,7 @@ Proof.
   try factornode s1.
  - intuition_in.
  - intuition_in.
- - rewrite bal_spec, remove_min_spec, e1; simpl; intuition.
+ - rewrite bal_spec, remove_min_spec, H1; simpl; intuition.
 Qed.
 
 #[global]
@@ -525,11 +713,11 @@ Proof.
  induction s1, s2, (merge s1 s2) using merge_ind; subst; intros; auto;
   try factornode s1.
  apply bal_ok; auto.
- - change s2' with ((s2',m)#1); rewrite <-e1; eauto with *.
+ - change s2' with ((s2',m)#1); rewrite <- H1; eauto with *.
  - intros y Hy.
-   apply H1; auto.
-   rewrite remove_min_spec, e1; simpl; auto.
- - change (gt_tree (s2',m)#2 (s2',m)#1); rewrite <-e1; eauto.
+   apply H2; auto.
+   rewrite remove_min_spec, H1; simpl; auto.
+ - change (gt_tree (s2',m)#2 (s2',m)#1); rewrite <- H1; eauto.
 Qed.
 
 
@@ -572,7 +760,7 @@ Proof.
   try factornode s1.
  - intuition_in.
  - intuition_in.
- - rewrite join_spec, remove_min_spec, e1; simpl; intuition.
+ - rewrite join_spec, remove_min_spec, H1; simpl; intuition.
 Qed.
 
 #[global]
@@ -583,11 +771,11 @@ Proof.
   induction s1, s2, (concat s1 s2) using concat_ind; subst; intros; auto;
   try factornode s1.
  apply join_ok; auto.
- - change (Ok (s2',m)#1); rewrite <-e1; eauto with *.
+ - change (Ok (s2',m)#1); rewrite <- H1; eauto with *.
  - intros y Hy.
-   apply H1; auto.
-   rewrite remove_min_spec, e1; simpl; auto.
- - change (gt_tree (s2',m)#2 (s2',m)#1); rewrite <-e1; eauto.
+   apply H2; auto.
+   rewrite remove_min_spec, H1; simpl; auto.
+ - change (gt_tree (s2',m)#2 (s2',m)#1); rewrite <- H1; eauto.
 Qed.
 
 
