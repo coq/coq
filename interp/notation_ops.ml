@@ -1118,7 +1118,7 @@ let unify_term renaming v v' =
   match DAst.get v, DAst.get v' with
   | GHole _, _ -> v'
   | _, GHole _ -> v
-  | _, _ -> if glob_constr_eq (alpha_rename renaming v) v' then v else raise No_match
+  | _, _ -> let v = alpha_rename renaming v in if glob_constr_eq v v' then v else raise No_match
 
 let unify_opt_term alp v v' =
   match v, v' with
@@ -1134,24 +1134,24 @@ let unify_binder_upto alp b b' =
   let loc, loc' = CAst.(b.loc, b'.loc) in
   match DAst.get b, DAst.get b' with
   | GLocalAssum (na,r,bk,t), GLocalAssum (na',r',bk',t') ->
-     let alp, na = unify_name_upto alp na na' in
-     alp, DAst.make ?loc @@
+     let alp', na = unify_name_upto alp na na' in
+     alp', DAst.make ?loc @@
      GLocalAssum
        (na,
         unify_relevance_info r r',
         unify_binding_kind bk bk',
         unify_term alp.renaming t t')
   | GLocalDef (na,r,c,t), GLocalDef (na',r',c',t') ->
-     let alp, na = unify_name_upto alp na na' in
-     alp, DAst.make ?loc @@
+     let alp', na = unify_name_upto alp na na' in
+     alp', DAst.make ?loc @@
      GLocalDef
        (na,
         unify_relevance_info r r',
         unify_term alp.renaming c c',
         unify_opt_term alp.renaming t t')
   | GLocalPattern ((disjpat,ids),id,bk,t), GLocalPattern ((disjpat',_),_,bk',t') when List.length disjpat = List.length disjpat' ->
-     let alp, p = List.fold_left2_map unify_pat_upto alp disjpat disjpat' in
-     alp, DAst.make ?loc @@ GLocalPattern ((p,ids), id, unify_binding_kind bk bk', unify_term alp.renaming t t')
+     let alp', p = List.fold_left2_map unify_pat_upto alp disjpat disjpat' in
+     alp', DAst.make ?loc @@ GLocalPattern ((p,ids), id, unify_binding_kind bk bk', unify_term alp.renaming t t')
   | _ -> raise No_match
 
 let rec unify_terms alp vl vl' =
@@ -1191,10 +1191,10 @@ let unify_term_binder renaming c = DAst.(map (fun b' ->
 let rec unify_terms_binders renaming cl bl' =
   match cl, bl' with
   | [], [] -> []
-  | c :: cl, b' :: bl' ->
+  | c :: cl', b' :: bl' ->
      begin match DAst.get b' with
-     | GLocalDef (_, _, _, t) -> unify_terms_binders renaming cl bl'
-     | _ -> unify_term_binder renaming c b' :: unify_terms_binders renaming cl bl'
+     | GLocalDef (_, _, _, t) -> b' :: unify_terms_binders renaming cl bl'
+     | _ -> unify_term_binder renaming c b' :: unify_terms_binders renaming cl' bl'
      end
   | _ -> raise No_match
 
@@ -1240,6 +1240,20 @@ let bind_term_as_binding_env alp (terms,termlists,binders,binderlists as sigma) 
     (* If it will be a different name, we shall unfortunately fail *)
     (* TODO: look at the consequences for alp *)
     alp, add_env alp sigma var (DAst.make @@ GVar id)
+
+let bind_singleton_bindinglist_as_term_env alp (terms,termlists,binders,binderlists as sigma) var c =
+  try
+    (* If already bound to a binder, unify the term and the binder *)
+    let vars,patl' = Id.List.assoc var binderlists in
+    let patl'' = unify_terms_binders alp.renaming [c] patl' in
+    if patl' == patl'' then sigma
+    else
+      let sigma = (terms,termlists,binders,Id.List.remove_assoc var binderlists) in
+      let alp' = {alp with actualvars = Id.Set.union vars alp.actualvars} in
+      add_bindinglist_env alp' sigma var patl''
+  with Not_found ->
+    (* A term-as-binder occurs in the scope of a binder which is already bound *)
+    anomaly (Pp.str "Unbound term as binder.")
 
 let bind_binding_as_term_env alp (terms,termlists,binders,binderlists as sigma) var c =
   let env = Global.env () in
@@ -1471,7 +1485,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
   | r1, NVar id2 when is_onlybinding_pattern_like_meta false id2 metas -> bind_binding_as_term_env alp sigma id2 a1
   | r1, NVar id2 when is_var_term r1 && is_onlybinding_strict_meta id2 metas -> raise No_match
   | r1, NVar id2 when is_var_term r1 && is_onlybinding_meta id2 metas -> bind_binding_as_term_env alp sigma id2 a1
-  | r1, NVar id2 when is_bindinglist_meta id2 metas -> bind_term_env alp sigma id2 a1
+  | r1, NVar id2 when is_bindinglist_meta id2 metas -> bind_singleton_bindinglist_as_term_env alp sigma id2 a1
 
   (* Matching recursive notations for terms *)
   | r1, NList (x,y,iter,termin,revert) ->

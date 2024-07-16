@@ -144,6 +144,7 @@ Notation "'tele' x .. z := b" :=
   (at level 85, x binder, z binder).
 
 Check tele (t:Type) '((y,z):nat*nat) (x:t) := tt.
+Check tele (t:Type) (y:=nat) (x:t) (z:y) := (y,z).
 
 (* Checking that "fun" in a notation does not mixed up with the
    detection of a recursive binder *)
@@ -236,6 +237,7 @@ Notation "! x .. y # A #" :=
   ((forall x, x=x), .. ((forall y, y=y), A) ..)
   (at level 200, x binder).
 Check ! a b : nat # True #.
+Check ((forall x, x=0), nat). (* should not use the notation *)
 
 Notation "!!!! x .. y # A #" :=
   (((forall x, x=x),(forall x, x=0)), .. (((forall y, y=y),(forall y, y=0)), A) ..)
