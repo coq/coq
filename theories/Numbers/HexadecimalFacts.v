@@ -486,7 +486,7 @@ Proof.
   revert d'.
   induction d; intros d' H; simpl in *;
   try destruct (nztail d) eqn:E;
-  (now rewrite ?nzhead_revapp_0) || (now rewrite IHd).
+  (rewrite IHd;[reflexivity|discriminate]) || (now rewrite ?nzhead_revapp_0).
 Qed.
 
 Lemma nzhead_rev d : nztail d <> Nil ->
