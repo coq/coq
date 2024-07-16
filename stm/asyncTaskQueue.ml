@@ -122,7 +122,7 @@ module Make(T : Task) () = struct
           | "-require-import" | "-require-export" | "-ri" | "-re"
           | "-load-vernac-object"
           | "-time-file"
-          | "-set" | "-unset" | "-compat" | "-mangle-names" | "-diffs"
+          | "-set" | "-unset" | "-mangle-names" | "-diffs"
           | "-async-proofs-cache" | "-async-proofs-j" | "-async-proofs-tac-j"
           | "-async-proofs-private-flags" | "-async-proofs-tactic-error-resilience"
           | "-async-proofs-command-error-resilience" | "-async-proofs-delegation-threshold"
