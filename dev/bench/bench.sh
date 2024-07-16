@@ -427,6 +427,9 @@ create_opam "NEW" "$new_ocaml_version" "$new_coq_commit" "$new_coq_version" \
             "$new_coq_opam_archive_dir" "$new_ocaml_flambda"
 new_coq_commit_long="$COQ_HASH_LONG"
 
+# Hack to test Gabriel's patch
+opam pin add -y ocaml-base-compiler https://github.com/ejgallego/ocaml.git#5.2.0_require_streamline
+
 # Create an OPAM-root to which we will install the OLD version of Coq.
 create_opam "OLD" "$old_ocaml_version" "$old_coq_commit" "$old_coq_version" \
             "$old_coq_opam_archive_dir" "$old_ocaml_flambda"
