@@ -148,8 +148,8 @@ ci-analysis: ci-elpi_hb ci-finmap ci-bigenough
 
 ci-hb: ci-elpi
 
-ci-elpi_test: ci-elpi_hb
-ci-hb_test: ci-elpi_hb
+ci-elpi_test: ci-elpi
+ci-hb_test: ci-hb
 
 ci-trakt: ci-elpi
 
