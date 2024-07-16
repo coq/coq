@@ -214,5 +214,11 @@ val db_print_pp : Format.formatter -> t -> unit
 (** Print the Pp in tree form for debugging, return as a string *)
 val db_string_of_pp : t -> string
 
+(** Returns [fmt, args] such that [fmt] is a format string which
+    applied to [args] produces the same result as [pp_with].
+
+    [with_tags] default false. *)
+val pp_as_format : ?with_tags:bool -> t -> string * string list
+
 (** Combine nested Ppcmd_glues *)
 val flatten : t -> t
