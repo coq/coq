@@ -10,7 +10,7 @@
 
 # Dune Makefile for Coq
 
-.PHONY: help help-install states world watch check    # Main developer targets
+.PHONY: help help-install states world coqide watch check    # Main developer targets
 .PHONY: refman-html refman-pdf stdlib-html apidoc     # Documentation targets
 .PHONY: test-suite dev-targets
 .PHONY: fmt ocheck obuild ireport clean               # Maintenance targets
@@ -39,8 +39,9 @@ help:
 	@echo "make help-install for installation instructions. Common developer targets are:"
 	@echo ""
 	@echo "  - states: build a minimal functional coqtop"
-	@echo "  - world:  build all public binaries and libraries in developer mode"
-	@echo "  - watch:  build all public binaries and libraries [continuous build]"
+	@echo "  - world:  build main public binaries and libraries in developer mode (no coqide)"
+	@echo "  - watch:  build main public binaries and libraries [continuous build]"
+	@echo "  - coqide: build coqide binary in developer mode"
 	@echo "  - check:  build all ML files as fast as possible"
 	@echo "  - test-suite: run Coq's test suite [env NJOBS=N to set job parallelism]"
 	@echo "  - dunestrap: Generate the dune rules for vo files"
@@ -145,13 +146,16 @@ dunestrap: $(DUNE_FILES)
 states: dunestrap
 	dune build $(DUNEOPT) dev/shim/coqtop
 
-NONDOC_INSTALL_TARGETS:=coq-core.install coq-stdlib.install coqide-server.install coqide.install coq.install
+MAIN_TARGETS:=coq-core.install coq-stdlib.install coqide-server.install coq.install
 
 world: dunestrap
-	dune build $(DUNEOPT) $(NONDOC_INSTALL_TARGETS)
+	dune build $(DUNEOPT) $(MAIN_TARGETS)
+
+coqide:
+	dune build $(DUNEOPT) coqide.install
 
 watch:
-	dune build $(DUNEOPT) $(NONDOC_INSTALL_TARGETS) -w
+	dune build $(DUNEOPT) $(MAIN_TARGETS) -w
 
 check:
 	dune build $(DUNEOPT) @check
