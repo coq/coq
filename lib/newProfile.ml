@@ -73,6 +73,7 @@ end
 type accu = {
   ch : Format.formatter;
   mutable sums : (float * (float * int) CString.Map.t) list;
+  fname : string;
 }
 
 let accu = ref None
@@ -241,12 +242,13 @@ let profile name ?args f () =
   end
 
 type settings =
-  { output : Format.formatter
+  { output : Format.formatter;
+    fname : string;
   }
 
-let init { output } =
+let init { output; fname; } =
   let () = assert (not (is_profiling())) in
-  accu := Some { ch = output; sums = [] };
+  accu := Some { ch = output; sums = []; fname; };
   f "{ \"traceEvents\": [\n";
   enter ~time:global_start_time "process" ();
   enter ~time:global_start_time "init" ();
@@ -264,8 +266,8 @@ let resume v =
 
 let finish () = match !accu with
   | None -> assert false
-  | Some { ch } ->
-    let args = Counters.(make_diffs ~start:global_start ~stop:(get())) in
+  | Some { ch; fname } ->
+    let args = ("fname", `String fname) :: Counters.(make_diffs ~start:global_start ~stop:(get())) in
     leave "process" ~last:"" ~args ();
     Format.fprintf ch "],\n\"displayTimeUnit\": \"us\" }@.";
     accu := None

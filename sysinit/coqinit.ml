@@ -145,7 +145,8 @@ let init_load_paths opts =
 
 let init_profile ~file =
   let ch = open_out file in
-  NewProfile.init { output = Format.formatter_of_out_channel ch };
+  let fname = Filename.basename file in
+  NewProfile.init { output = Format.formatter_of_out_channel ch; fname; };
   at_exit (fun () ->
       NewProfile.finish ();
       close_out ch)
