@@ -43,3 +43,6 @@ val enforce_section_locality : bool option -> bool
 
 val make_module_locality : bool option -> bool
 val enforce_module_locality : bool option -> bool
+
+(** Error if called with non-Local in sections. *)
+val check_locality_nodischarge : Libobject.locality -> unit

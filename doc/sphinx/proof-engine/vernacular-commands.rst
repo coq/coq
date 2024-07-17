@@ -1169,6 +1169,9 @@ Exposing constants to OCaml libraries
    the constant is exposed to the kernel. For instance, the `PrimInt63` module
    features the following declaration:
 
+   This command supports attributes :attr:`local`, :attr:`export` and :attr:`global`.
+   The default is :attr:`global`, even inside sections.
+
    .. coqdoc::
 
       Register bool as kernel.ind_bool.
@@ -1187,6 +1190,9 @@ Exposing constants to OCaml libraries
    Make the constant :n:`@qualid__1` accessible to the "scheme"
    mechanism for scheme kind :n:`@qualid__2` and inductive
    :n:`@qualid__3`.
+
+   This command supports attributes :attr:`local`, :attr:`export` and :attr:`global`.
+   The default is :attr:`global`, even inside sections.
 
 .. cmd:: Print Registered Schemes
 

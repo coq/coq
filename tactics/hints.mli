@@ -169,7 +169,7 @@ val searchtable_map : hint_db_name -> hint_db
 
 val searchtable_add : (hint_db_name * hint_db) -> unit
 
-type hint_locality = Local | Export | SuperGlobal
+type hint_locality = Libobject.locality = Local | Export | SuperGlobal
 
 (** [create_hint_db local name st use_dn].
    [st] is a transparency state for unification using this db

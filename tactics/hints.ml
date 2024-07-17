@@ -1128,7 +1128,7 @@ type hint_action =
   | AddCut of hints_path
   | AddMode of { gref : GlobRef.t; mode : hint_mode array }
 
-type hint_locality = Local | Export | SuperGlobal
+type hint_locality = Libobject.locality = Local | Export | SuperGlobal
 
 type hint_obj = {
   hint_local : hint_locality;

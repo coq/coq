@@ -497,17 +497,12 @@ let subst_hintrewrite (subst,(rbase,list as node)) =
       (rbase,list')
 
 (* Declaration of the Hint Rewrite library object *)
-let inGlobalHintRewrite : string * rew_rule list -> Libobject.obj =
+let inHintRewrite : Libobject.locality * (string * rew_rule list) -> Libobject.obj =
   let open Libobject in
-  declare_object @@ superglobal_object_nodischarge "HINT_REWRITE_GLOBAL"
+  declare_object @@ object_with_locality "HINT_REWRITE_GLOBAL"
     ~cache:cache_hintrewrite
     ~subst:(Some subst_hintrewrite)
-
-let inExportHintRewrite : string * rew_rule list -> Libobject.obj =
-  let open Libobject in
-  declare_object @@ global_object_nodischarge ~cat:Hints.hint_cat "HINT_REWRITE_EXPORT"
-    ~cache:cache_hintrewrite
-    ~subst:(Some subst_hintrewrite)
+    ~discharge:(fun _ -> assert false)
 
 type hypinfo = {
   hyp_ty : EConstr.types;
@@ -548,6 +543,7 @@ let find_applied_relation ?loc env sigma c left2right =
 
 (* To add rewriting rules to a base *)
 let add_rew_rules ~locality base lrul =
+  let () = Locality.check_locality_nodischarge locality in
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let ist = Genintern.empty_glob_sign ~strict:true (Global.env ()) in
@@ -562,20 +558,4 @@ let add_rew_rules ~locality base lrul =
       rew_tac = Option.map intern t }
   in
   let lrul = List.map map lrul in
-  let open Hints in
-  match locality with
-  | Local -> cache_hintrewrite (base,lrul)
-  | SuperGlobal ->
-    let () =
-      if Lib.sections_are_opened () then
-      CErrors.user_err Pp.(str
-        "This command does not support the global attribute in sections.");
-    in
-    Lib.add_leaf (inGlobalHintRewrite (base,lrul))
-  | Export ->
-    let () =
-      if Lib.sections_are_opened () then
-        CErrors.user_err Pp.(str
-          "This command does not support the export attribute in sections.");
-    in
-    Lib.add_leaf (inExportHintRewrite (base,lrul))
+  Lib.add_leaf (inHintRewrite (locality,(base,lrul)))

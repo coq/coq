@@ -29,7 +29,7 @@ open Names
 *)
 
 (** Registers a global reference under the given name. *)
-val register_ref : string -> GlobRef.t -> unit
+val register_ref : Libobject.locality -> string -> GlobRef.t -> unit
 
 exception NotFoundRef of string
 
