@@ -46,8 +46,10 @@ val fix_undefined_variables : t -> t
 (** Make all undefined flexible levels into rigid levels, ie remove them. *)
 
 val add : Level.t -> algebraic:bool -> t -> t
-(** MAkes a level flexible with no definition.
+(** Makes a level flexible with no definition.
     It must not already be flexible. *)
+
+val remove :  Level.t -> t -> t
 
 val add_levels : Level.Set.t -> algebraic:bool -> t -> t
 (** Make the levels flexible with no definitions.
