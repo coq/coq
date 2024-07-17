@@ -270,11 +270,12 @@ module PrintingInductiveMake =
     module Set = Indset
     let encode = Test.encode
     let subst subst obj = subst_ind subst obj
+    let check_local _ _ = ()
+    let discharge (i:t) = i
     let printer ind = Nametab.pr_global_env Id.Set.empty (GlobRef.IndRef ind)
     let key = ["Printing";Test.field]
     let title = Test.title
     let member_message x = Test.member_message (printer x)
-    let synchronous = true
   end
 
 module PrintingCasesIf =

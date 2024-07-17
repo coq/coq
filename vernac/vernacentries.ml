@@ -2539,13 +2539,13 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
 
   | VernacRemoveOption (key,v) ->
     vtdefault(fun () ->
-      unsupported_attributes atts;
-      Vernacoptions.vernac_remove_option key v)
+      let local = Attributes.parse Attributes.hint_locality atts in
+      Vernacoptions.vernac_remove_option local key v)
 
   | VernacAddOption (key,v) ->
     vtdefault(fun () ->
-      unsupported_attributes atts;
-      Vernacoptions.vernac_add_option key v)
+      let local = Attributes.parse Attributes.hint_locality atts in
+      Vernacoptions.vernac_add_option local key v)
 
   | VernacMemOption (key,v) ->
     vtdefault(fun () ->

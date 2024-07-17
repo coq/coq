@@ -49,8 +49,8 @@ let error_undeclared_key key =
 (* 1- Tables                                                                *)
 
 type 'a table_of_A =  {
-  add : Environ.env -> 'a -> unit;
-  remove : Environ.env -> 'a -> unit;
+  add : Environ.env -> Libobject.locality -> 'a -> unit;
+  remove : Environ.env -> Libobject.locality -> 'a -> unit;
   mem : Environ.env -> 'a -> unit;
   print : unit -> unit;
 }
@@ -66,6 +66,8 @@ module MakeTable =
           val table : (string * key table_of_A) list ref
           val encode : Environ.env -> key -> t
           val subst : Mod_subst.substitution -> t -> t
+          val check_local : Libobject.locality -> t -> unit
+          val discharge : t -> t
           val printer : t -> Pp.t
           val key : option_name
           val title : string
@@ -80,7 +82,7 @@ module MakeTable =
 
     let () =
       if String.List.mem_assoc nick !A.table then
-        CErrors.user_err
+        CErrors.anomaly
           Pp.(strbrk "Sorry, this table name (" ++ str nick
             ++ strbrk ") is already used.")
 
@@ -88,27 +90,26 @@ module MakeTable =
 
     let t = Summary.ref ~stage:Interp MySet.empty ~name:nick
 
-    let (add_option,remove_option) =
-        let cache_options (f,p) = match f with
-          | GOadd -> t := MySet.add p !t
-          | GOrmv -> t := MySet.remove p !t in
-        let load_options i o = if Int.equal i 1 then cache_options o in
-        let subst_options (subst,(f,p as obj)) =
-          let p' = A.subst subst p in
-            if p' == p then obj else
-              (f,p')
-        in
-        let inGo : option_mark * A.t -> Libobject.obj =
-          Libobject.declare_object {(Libobject.default_object nick) with
-                Libobject.object_stage = Interp;
-                Libobject.load_function = load_options;
-                Libobject.open_function = Libobject.simple_open ~cat:opts_cat load_options;
-                Libobject.cache_function = cache_options;
-                Libobject.subst_function = subst_options;
-                Libobject.classify_function = (fun x -> Substitute)}
-        in
-        ((fun c -> Lib.add_leaf (inGo (GOadd, c))),
-         (fun c -> Lib.add_leaf (inGo (GOrmv, c))))
+    let inGo : Libobject.locality * (option_mark * A.t) -> Libobject.obj =
+      let cache (f,p) = match f with
+        | GOadd -> t := MySet.add p !t
+        | GOrmv -> t := MySet.remove p !t in
+      let subst (subst,(f,p as obj)) =
+        let p' = A.subst subst p in
+        if p' == p then obj else
+          (f,p')
+      in
+      Libobject.declare_object @@
+      Libobject.object_with_locality ~cat:opts_cat nick
+        ~cache ~subst:(Some subst) ~discharge:(on_snd A.discharge)
+
+    let add_option local c =
+      A.check_local local c;
+      Lib.add_leaf (inGo (local,(GOadd, c)))
+
+    let remove_option local c =
+      A.check_local local c;
+      Lib.add_leaf (inGo (local,(GOrmv, c)))
 
     let print_table table_name printer table =
       let open Pp in
@@ -121,8 +122,8 @@ module MakeTable =
       Feedback.msg_notice pp
 
     let table_of_A = {
-       add = (fun env x -> add_option (A.encode env x));
-       remove = (fun env x -> remove_option (A.encode env x));
+       add = (fun env local x -> add_option local (A.encode env x));
+       remove = (fun env local x -> remove_option local (A.encode env x));
        mem = (fun env x ->
         let y = A.encode env x in
         let answer = MySet.mem y !t in
@@ -130,11 +131,11 @@ module MakeTable =
        print = (fun () -> print_table A.title A.printer !t);
      }
 
-    let _ = A.table := (nick, table_of_A)::!A.table
+    let () = A.table := (nick, table_of_A)::!A.table
 
     let v () = !t
     let active x = A.Set.mem x !t
-    let set x b = if b then add_option x else remove_option x
+    let set local x b = if b then add_option local x else remove_option local x
   end
 
 let string_table = ref []
@@ -156,6 +157,8 @@ struct
   let table = string_table
   let encode _env x = x
   let subst _ x = x
+  let check_local _ _ = ()
+  let discharge x = x
   let printer = Pp.str
   let key = A.key
   let title = A.title
@@ -175,6 +178,8 @@ sig
   module Set : CSig.USetS with type elt = t
   val encode : Environ.env -> Libnames.qualid -> t
   val subst : Mod_subst.substitution -> t -> t
+  val check_local : Libobject.locality -> t -> unit
+  val discharge : t -> t
   val printer : t -> Pp.t
   val key : option_name
   val title : string
@@ -189,6 +194,8 @@ struct
   let table = ref_table
   let encode = A.encode
   let subst = A.subst
+  let check_local = A.check_local
+  let discharge = A.discharge
   let printer = A.printer
   let key = A.key
   let title = A.title

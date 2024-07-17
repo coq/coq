@@ -76,15 +76,4 @@ module PrintingInductiveMake :
     val member_message : Pp.t -> bool -> Pp.t
     val field : string
     val title : string
-  end) ->
-    sig
-      type t = Names.inductive
-      module Set = Indset
-      val encode : Environ.env -> Libnames.qualid -> Names.inductive
-      val subst : substitution -> t -> t
-      val printer : t -> Pp.t
-      val key : Goptions.option_name
-      val title : string
-      val member_message : t -> bool -> Pp.t
-      val synchronous : bool
-    end
+  end) -> Goptions.RefConvertArg with type t = inductive and module Set = Indset

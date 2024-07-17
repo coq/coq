@@ -19,10 +19,10 @@ val vernac_set_option :
   option_name -> Vernacexpr.option_setting -> unit
 
 val vernac_add_option :
-  option_name -> table_value list -> unit
+  Libobject.locality -> option_name -> table_value list -> unit
 
 val vernac_remove_option :
-  option_name -> table_value list -> unit
+  Libobject.locality -> option_name -> table_value list -> unit
 
 val vernac_mem_option : option_name -> table_value list -> unit
 

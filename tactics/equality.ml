@@ -736,6 +736,8 @@ struct
   module Set = Indset_env
   let encode _env r = Nametab.global_inductive r
   let subst subst obj = Mod_subst.subst_ind subst obj
+  let check_local _ _ = ()
+  let discharge (i:t) = i
   let printer ind = Nametab.pr_global_env Id.Set.empty (GlobRef.IndRef ind)
   let key = ["Keep"; "Equalities"]
   let title = "Prop-valued inductive types for which injection keeps equality proofs"

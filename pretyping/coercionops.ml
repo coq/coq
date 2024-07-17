@@ -481,6 +481,20 @@ module CoercionPrinting =
     module Set = GlobRef.Set
     let encode _env = coercion_of_reference
     let subst = subst_coe_typ
+
+    let check_local local = let open GlobRef in function
+      | ConstRef _ | ConstructRef _ | IndRef _ -> ()
+      | VarRef x -> match local with
+        | Libobject.Local -> ()
+        | Export | SuperGlobal ->
+          let local = if local = Export then "export" else "global" in
+          CErrors.user_err
+            Pp.(Id.print x ++ str " cannot be added with locality " ++ str local ++ str ".")
+
+    let discharge = let open GlobRef in function
+      | ConstRef _ | ConstructRef _ | IndRef _ as x -> x
+      | VarRef _ as x -> assert (not (Lib.is_in_section x)); x
+
     let printer x = Nametab.pr_global_env Id.Set.empty x
     let key = ["Printing";"Coercion"]
     let title = "Explicitly printed coercions: "
