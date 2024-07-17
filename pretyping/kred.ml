@@ -500,22 +500,42 @@ module Stack = struct
 
   let get_nth_arg head n stk =
     assert (not (is_red head.mark));
-    let rec strip_rec rstk h n = function
+
+    let lift_undos z =
+      let f (u, rev_params) = (u, z :: rev_params) in
+      List.map f
+    in
+    let app_undos z =
+      let f (u, rev_params) = (u, z :: rev_params) in
+      List.map f
+    in
+    let unroll_undos rev_undos s =
+      List.rev_append (List.map (fun (u,rp) -> ZundoOrRefold (u,rp)) rev_undos) s
+    in
+
+    let rec strip_rec rev_undos rstk h n = function
       | Zshift(k) as e :: s ->
-          strip_rec (e::rstk) (lift_fconstr k h) n s
-      | Zapp args::s' ->
+          let rev_undos = lift_undos e rev_undos in
+          strip_rec rev_undos (e::rstk) (lift_fconstr k h) n s
+      | Zapp args as z ::s' ->
           let q = Array.length args in
           if n >= q
           then
-            strip_rec (Zapp args::rstk) {mark=h.mark;term=FApp(h,args)} (n-q) s'
+            let rev_undos = app_undos z rev_undos in
+            strip_rec rev_undos (Zapp args::rstk) {mark=h.mark;term=FApp(h,args)} (n-q) s'
           else
             let bef = Array.sub args 0 n in
             let aft = Array.sub args (n+1) (q-n-1) in
-            let stk' =
-              List.rev (if Int.equal n 0 then rstk else (Zapp bef :: rstk)) in
-            (Some (stk', args.(n)), append_stack aft s')
-      | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunfold _ | ZundoOrRefold _) :: _ | []) as s -> (None, List.rev rstk @ s) in
-    strip_rec [] head n stk
+            let (stk', rev_undos) =
+              if Int.equal n 0 then (rstk, rev_undos) else
+                let z' = Zapp bef in
+                (z' :: rstk, app_undos (Zapp [|args.(n)|]) (app_undos z' rev_undos))
+            in
+            (Some (List.rev stk', args.(n)), append_stack aft (unroll_undos rev_undos s'))
+      | ZundoOrRefold (undo, rev_params) :: s ->
+          strip_rec ((undo, rev_params) :: rev_undos) (rstk) h n s
+      | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunfold _) :: _ | []) as s -> (None, List.rev_append rstk (unroll_undos rev_undos s)) in
+    strip_rec [] [] head n stk
 
 
   (* Beta reduction: look for an applied argument in the stack.
