@@ -128,6 +128,16 @@ Proof.
 intros n m p. rewrite (mul_comm n p), (mul_comm m p); apply mul_cancel_l.
 Qed.
 
+Lemma mul_reg_l n m p : p ~= 0 -> p * n == p * m -> n == m.
+Proof.
+ exact (fun Hp => proj1 (mul_cancel_l n m p Hp)).
+Qed.
+
+Lemma mul_reg_r n m p : p ~= 0 -> n * p == m * p -> n == m.
+Proof.
+ exact (fun Hp => proj1 (mul_cancel_r n m p Hp)).
+Qed.
+
 Theorem mul_id_l : forall n m, m ~= 0 -> (n * m == m <-> n == 1).
 Proof.
 intros n m H.

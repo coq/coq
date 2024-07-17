@@ -1285,16 +1285,6 @@ Proof.
  exact (proj1 (add_cancel_l m p n)).
 Qed.
 
-Lemma mul_reg_l n m p : p <> 0 -> p * n = p * m -> n = m.
-Proof.
- exact (fun Hp => proj1 (mul_cancel_l n m p Hp)).
-Qed.
-
-Lemma mul_reg_r n m p : p <> 0 -> n * p = m * p -> n = m.
-Proof.
- exact (fun Hp => proj1 (mul_cancel_r n m p Hp)).
-Qed.
-
 Lemma opp_eq_mul_m1 n : - n = n * -1.
 Proof.
  rewrite mul_comm. now destruct n.
