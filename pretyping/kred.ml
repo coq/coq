@@ -521,23 +521,39 @@ module Stack = struct
   (* Beta reduction: look for an applied argument in the stack.
     Since the encountered update marks are removed, h must be a whnf *)
   let get_args =
-    let rec get_args rev_args n tys f e = function
+    let lift_undos z =
+      let f (u, rev_params) = (u, z :: rev_params) in
+      List.map f
+    in
+    let app_undos z =
+      let f (u, rev_params) = (u, z :: rev_params) in
+      List.map f
+    in
+    let unroll_undos rev_undos s =
+      List.rev_append (List.map (fun (u,rp) -> ZundoOrRefold (u,rp)) rev_undos) s
+    in
+    let rec get_args rev_undos rev_args n tys f e = function
         | Zshift k as z :: s ->
-            get_args (z :: rev_args) n tys f (usubs_shft (k,e)) s
+          let rev_undos = lift_undos z rev_undos in
+          get_args rev_undos (z :: rev_args) n tys f (usubs_shft (k,e)) s
         | Zapp l as z :: s ->
             let na = Array.length l in
-            if n == na then (Inl (z :: rev_args, usubs_consn l 0 na e), s)
+            if n == na then (Inl (z :: rev_args, usubs_consn l 0 na e), unroll_undos (app_undos z rev_undos) s)
             else if n < na then (* more arguments *)
               let eargs = Array.sub l n (na-n) in
-              let rev_args = Zapp (Array.sub l 0 n) :: rev_args in
-              (Inl (rev_args, usubs_consn l 0 n e), Zapp eargs :: s)
+              let z' = Zapp (Array.sub l 0 n) in
+              let rev_args = z' :: rev_args in
+              (Inl (rev_args, usubs_consn l 0 n e), Zapp eargs :: unroll_undos (app_undos z' rev_undos) s)
             else (* more lambdas *)
               let etys = List.skipn na tys in
-              get_args (z :: rev_args) (n-na) etys f (usubs_consn l 0 na e) s
-        | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunfold _ | ZundoOrRefold _) :: _ | []) as stk ->
-          (Inr {mark=Cstr; term=FLambda(n,tys,f,e)}, stk)
+              let rev_undos = app_undos z rev_undos in
+              get_args rev_undos (z :: rev_args) (n-na) etys f (usubs_consn l 0 na e) s
+        | ZundoOrRefold (undo, rev_params) :: stk ->
+          get_args ((undo, rev_params) :: rev_undos) rev_args n tys f e stk
+        | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunfold _ ) :: _ | []) as stk ->
+          (Inr {mark=Cstr; term=FLambda(n,tys,f,e)}, unroll_undos rev_undos stk)
     in
-    get_args []
+    get_args [] []
 
 
   let zip ?(dbg=false) m stk =

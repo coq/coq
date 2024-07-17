@@ -92,6 +92,31 @@ Module KnownIssues.
   Abort.
 End KnownIssues.
 
+
+Module GetArgs.
+  #[projections(primitive=yes)]
+  Class Lens (a b c d : Type) : Type :=
+  { view : a -> c }.
+  Arguments view {_ _ _ _} _ _.
+
+  #[projections(primitive=no)]
+  Record State : Set := MkState
+    { value : nat }.
+
+  Instance _value : Lens State State nat nat :=
+  {| view := fun r : State => match r with | {| value := value |} => value end; |}.
+
+  Axiom b : bool.
+  Axiom z : State.
+
+  Goal view _value z = match z with | {|value := value|} => value end.
+  Proof. assert_norm_eq. Qed.
+
+  Arguments view {_ _ _ _} _ _ : simpl nomatch.
+  Goal view _value z = view _value z.
+  Proof. assert_norm_eq. Qed.
+End GetArgs.
+
 Module Test1.
   Goal 1 + 1 = S (0 + 1).
   Proof.
