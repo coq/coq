@@ -1035,23 +1035,36 @@ let merge_sort_context ?loc ~sideff rigid uctx ((qvars,levels),csts) =
   let uctx = merge_sort_variables ?loc ~sideff uctx qvars in
   merge ?loc ~sideff rigid uctx (levels,csts)
 
-(* Check bug_4363 and bug_6323 when changing this code *)
 let demote_seff_univs univs uctx =
   let seff = Level.Set.union uctx.seff_univs univs in
   { uctx with seff_univs = seff }
 
 let demote_global_univs (lvl_set,csts_set) uctx =
-  let filter_univs u = not(Level.Set.mem u lvl_set) in
   let (local_univs, local_constraints) = uctx.local in
-  let local_univs = Level.Set.filter filter_univs local_univs in
+  let local_univs = Level.Set.diff local_univs lvl_set in
   let univ_variables = Level.Set.fold UnivFlex.remove lvl_set uctx.univ_variables in
-  let initial_universes = UGraph.merge_constraints csts_set uctx.initial_universes in
-  let universes = UGraph.merge_constraints csts_set uctx.universes in
+  let update_ugraph g =
+    let g = Level.Set.fold (fun u g ->
+        try UGraph.add_universe u ~lbound:Set ~strict:true g
+        with UGraph.AlreadyDeclared -> g)
+        lvl_set
+        g
+    in
+    UGraph.merge_constraints csts_set g
+  in
+  let initial_universes = update_ugraph uctx.initial_universes in
+  let universes = update_ugraph uctx.universes in
   { uctx with local = (local_univs, local_constraints); univ_variables; universes; initial_universes }
 
 let demote_global_univ_entry entry uctx = match entry with
   | Monomorphic_entry entry -> demote_global_univs entry uctx
   | Polymorphic_entry _ -> uctx
+
+(* Check bug_4363 bug_6323 bug_3539 and success/rewrite lemma l1
+   for quick feedback when changing this code *)
+let emit_side_effects eff u =
+  let uctx = Safe_typing.universes_of_private eff in
+  demote_global_univs uctx u
 
 let merge_seff uctx uctx' =
   let levels = ContextSet.levels uctx' in
@@ -1065,11 +1078,6 @@ let merge_seff uctx uctx' =
   let univs = declare uctx.universes in
   let universes = merge_constraints uctx (ContextSet.constraints uctx') univs in
   { uctx with universes; initial_universes }
-
-let emit_side_effects eff u =
-  let uctx = Safe_typing.universes_of_private eff in
-  let u = demote_seff_univs (fst uctx) u in
-  merge_seff u uctx
 
 let update_sigma_univs uctx univs =
   let eunivs =

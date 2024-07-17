@@ -177,9 +177,12 @@ val merge_sort_context : ?loc:Loc.t -> sideff:bool -> rigid -> t -> UnivGen.sort
 val emit_side_effects : Safe_typing.private_constants -> t -> t
 
 val demote_global_univs : Univ.ContextSet.t -> t -> t
-(** Removes from the uctx_local part of the UState the universes and constraints
-    that are present in the input constraint set (supposedly the
-    global ones) *)
+(** After declaring global universes, call this if you want to keep using the UState.
+
+    Removes from the uctx_local part of the UState the universes
+    that are present in the input constraint set (supposedly the global ones),
+    and adds any new universes and constraints to the UGraph part of the UState.
+*)
 
 val demote_global_univ_entry : universes_entry -> t -> t
 (** After declaring a global, call this with its universe entry
