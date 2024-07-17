@@ -75,9 +75,6 @@ val nf_universes : t -> Constr.t -> Constr.t
 val ugraph : t -> UGraph.t
 (** The current graph extended with the local constraints *)
 
-val initial_graph : t -> UGraph.t
-(** The initial graph with just the declarations of new universes. *)
-
 val is_algebraic : Level.t -> t -> bool
 (** Can this universe be instantiated with an algebraic
     universe (ie it appears in inferred types only). *)

@@ -225,7 +225,8 @@ type t =
    sort_variables : QState.t;
    (** Local quality variables. *)
    universes : UGraph.t; (** The current graph extended with the local constraints *)
-   initial_universes : UGraph.t; (** The graph at the creation of the evar_map *)
+   initial_universes : UGraph.t; (** The graph at the creation of the evar_map + local universes
+                                     (but not local constraints) *)
    minim_extra : UnivMinim.extra;
  }
 
@@ -384,8 +385,6 @@ type universe_opt_subst = UnivFlex.t
 let subst uctx = uctx.univ_variables
 
 let ugraph uctx = uctx.universes
-
-let initial_graph uctx = uctx.initial_universes
 
 let is_algebraic l uctx = UnivFlex.is_algebraic l uctx.univ_variables
 
@@ -876,7 +875,7 @@ let check_universe_context_set ~prefix levels names =
   then error_unbound_universes QVar.Set.empty left names
 
 let check_implication uctx cstrs cstrs' =
-  let gr = initial_graph uctx in
+  let gr = uctx.initial_universes in
   let grext = merge_constraints uctx cstrs gr in
   let cstrs' = Constraints.filter (fun c -> not (UGraph.check_constraint grext c)) cstrs' in
   if Constraints.is_empty cstrs' then ()
