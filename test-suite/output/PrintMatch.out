@@ -1,6 +1,7 @@
 eqT_rect@{u u0} =
 fun (A : Type@{u}) (a : A) (P : forall a0 : A, eqT@{u} a a0 -> Type@{u0})
-  (f : P a (reflT@{u} a)) (a0 : A) (e : eqT@{u} a a0) =>
+  (f : P a (reflT@{u} a)) (a0 : A) (e : eqT@{u} a a0)
+=>
 match e :> eqT@{u} a _ as e0 in (eqT _ a1) return (P a1 e0) with
 | reflT _ => f
 end
@@ -13,7 +14,8 @@ Arguments eqT_rect A%type_scope a P%function_scope f a0 e
 seq_rect =
 fun (A : Type@{seq.u0}) (a : A)
   (P : forall a0 : A, seq a a0 -> Type@{PrintMatch.10}) 
-  (f : P a (srefl a)) (a0 : A) (s : seq a a0) =>
+  (f : P a (srefl a)) (a0 : A) (s : seq a a0)
+=>
 match s :> seq a a0 as s0 in (seq _ a1) return (P a1 s0) with
 | srefl _ => f
 end

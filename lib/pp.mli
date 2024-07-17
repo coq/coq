@@ -48,6 +48,7 @@ type block_type =
   | Pp_vbox   of int
   | Pp_hvbox  of int
   | Pp_hovbox of int
+(** [Pp_hovbox] produces boxes according to [Format.open_box] not [Format.open_hovbox] *)
 
 type doc_view =
   | Ppcmd_empty
@@ -105,6 +106,7 @@ val h : t -> t
 val v : int -> t -> t
 val hv : int -> t -> t
 val hov : int -> t -> t
+(** [hov] produces boxes according to [Format.open_box] not [Format.open_hovbox] *)
 
 (** {6 Tagging} *)
 

@@ -3,7 +3,8 @@ constr:((fix add (n m : nat) {struct n} : nat :=
            match n with
            | 0 => m
            | S p => S (add p m)
-           end) (1 + 2) 3)
+           end)
+          (1 + 2) 3)
 - : constr = constr:(S (0 + 2 + 3))
 - : constr = constr:(6)
 - : constr = constr:(1 + 2 + 3)

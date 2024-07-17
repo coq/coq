@@ -15,19 +15,22 @@ nat_ind (fun n0 : nat => ((n0 * m) + n0) = (n0 * (S m)))
                 (fun n1 : nat => ((n1 + (p * m)) + p) = (n1 + ((p * m) + p)))
                 (eq_refl : ((0 + (p * m)) + p) = (0 + ((p * m) + p)))
                 ((fun (n1 : nat)
-                    (H0 : ((n1 + (p * m)) + p) = (n1 + ((p * m) + p))) =>
+                    (H0 : ((n1 + (p * m)) + p) = (n1 + ((p * m) + p)))
+                  =>
                   f_equal_nat nat S ((n1 + (p * m)) + p) 
                     (n1 + ((p * m) + p)) H0)
                  :
                  forall n1 : nat,
                  (((n1 + (p * m)) + p) = (n1 + ((p * m) + p))) ->
-                 ((((S n1) + (p * m)) + p) = ((S n1) + ((p * m) + p)))) m
+                 ((((S n1) + (p * m)) + p) = ((S n1) + ((p * m) + p))))
+                m
               :
               ((m + (p * m)) + p) = (m + ((p * m) + p))))
           ((m + (p * m)) + (S p)) (plus_n_Sm (m + (p * m)) p)
     end)
    :
-   (((S p) * m) + (S p)) = ((S p) * (S m))) n
+   (((S p) * m) + (S p)) = ((S p) * (S m)))
+  n
      : forall n m : nat, ((n * m) + n) = (n * (S m))
 
 Arguments mult_n_Sm (n m)%nat_scope
