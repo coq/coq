@@ -55,7 +55,15 @@ let add l ~algebraic {subst; algs} =
   let algs = if algebraic then Level.Set.add l algs else algs in
   { subst; algs }
 
-let remove l { subst; algs } = { subst = Level.Map.remove l subst; algs = Level.Set.remove l algs }
+let remove l { subst; algs } =
+  let subst = match Level.Map.find_opt l subst with
+    | None -> subst
+    | Some None -> Level.Map.remove l subst
+    | Some (Some _) ->
+      (* removing [l := v] is unsound as it loses a constraint *)
+      assert false
+  in
+  { subst = subst; algs = Level.Set.remove l algs }
 
 let add_levels levels ~algebraic subst =
   Level.Set.fold (fun l subst -> add l ~algebraic subst) levels subst
