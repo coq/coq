@@ -15,8 +15,7 @@ nat_ind (fun n0 : nat => ((n0 * m) + n0) = (n0 * (S m)))
                 (fun n1 : nat => ((n1 + (p * m)) + p) = (n1 + ((p * m) + p)))
                 (eq_refl : ((0 + (p * m)) + p) = (0 + ((p * m) + p)))
                 ((fun (n1 : nat)
-                    (H0 : ((n1 + (p * m)) + p) = (n1 + ((p * m) + p)))
-                  =>
+                    (H0 : ((n1 + (p * m)) + p) = (n1 + ((p * m) + p))) =>
                   f_equal_nat nat S ((n1 + (p * m)) + p) 
                     (n1 + ((p * m) + p)) H0)
                  :

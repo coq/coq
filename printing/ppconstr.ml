@@ -595,7 +595,7 @@ let tag_var = tag Tag.variable
 
   let pr_fun n = keyword "fun" ++ pr_com_at n ++ spc ()
 
-  let pr_fun_sep = spc () ++ str "=>"
+  let pr_fun_sep = str " =>"
 
   let pr_dangling_with_for sep pr lev_after inherited a =
     match a.v with
