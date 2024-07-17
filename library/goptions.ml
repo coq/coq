@@ -86,7 +86,7 @@ module MakeTable =
 
     module MySet = A.Set
 
-    let t = Summary.ref ~stage:Summary.Stage.Synterp MySet.empty ~name:nick
+    let t = Summary.ref ~stage:Interp MySet.empty ~name:nick
 
     let (add_option,remove_option) =
         let cache_options (f,p) = match f with
@@ -100,7 +100,7 @@ module MakeTable =
         in
         let inGo : option_mark * A.t -> Libobject.obj =
           Libobject.declare_object {(Libobject.default_object nick) with
-                Libobject.object_stage = Summary.Stage.Synterp;
+                Libobject.object_stage = Interp;
                 Libobject.load_function = load_options;
                 Libobject.open_function = Libobject.simple_open ~cat:opts_cat load_options;
                 Libobject.cache_function = cache_options;
