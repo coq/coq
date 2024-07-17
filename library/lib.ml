@@ -287,10 +287,16 @@ let is_in_section ref = match sections () with
 let section_instance ref =
   Cooking.instance_of_cooking_info (section_segment_of_reference ref)
 
+type discharged_item =
+  | DischargedExport of Libobject.ExportObj.t
+  | DischargedLeaf of Libobject.discharged_obj
+
 let discharge_item = Libobject.(function
-  | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ | KeepObject _
-  | ExportObject _ -> None
-  | AtomicObject obj -> discharge_object obj)
+  | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ | KeepObject _ -> assert false
+  | ExportObject o -> Some (DischargedExport o)
+  | AtomicObject obj ->
+    let obj = discharge_object obj in
+    Option.map (fun o -> DischargedLeaf o) obj)
 
 (* Misc *)
 
@@ -552,7 +558,7 @@ module type StagedLibS = sig
 
   (** {6 Sections } *)
   val open_section : Id.t -> unit
-  val close_section : unit -> unit
+  val close_section : unit -> discharged_item list
 
   (** {6 Modules and module types } *)
   val start_module :
@@ -658,9 +664,9 @@ let close_section () =
   in
   Actions.set_lib_stk before;
   Actions.pop_path_prefix ();
-  let newdecls = List.map discharge_item secdecls in
+  let newdecls = List.filter_map discharge_item secdecls in
   Actions.close_section fs;
-  List.iter (Option.iter add_discharged_leaf) newdecls
+  newdecls
 
 type frozen = Actions.frozen
 
@@ -696,11 +702,3 @@ let init () =
   Interp.init ();
   Summary.Synterp.init_summaries ();
   Summary.Interp.init_summaries ()
-
-let open_section id =
-  Synterp.open_section id;
-  Interp.open_section id
-
-let close_section () =
-  Synterp.close_section ();
-  Interp.close_section ()

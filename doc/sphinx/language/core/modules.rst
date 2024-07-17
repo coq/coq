@@ -206,6 +206,8 @@ are now available through the dot notation.
    If :token:`qualid` denotes a valid basic module (i.e. its module type is a
    signature), makes its components available by their short names.
 
+   When used inside a section, the effect is local to the section.
+
    .. example::
 
       .. coqtop:: reset in
@@ -314,6 +316,8 @@ are now available through the dot notation.
 
    Similar to :cmd:`Import`, except that when the module containing this command
    is imported, the :n:`{+ @qualid }` are imported as well.
+
+   When used in a section, the effect is not local to the section.
 
    The selective import syntax also works with Export.
 

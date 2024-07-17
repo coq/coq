@@ -82,6 +82,8 @@ val import_modules : export:Lib.export_flag -> (Libobject.open_filter * ModPath.
 
 val register_library : library_name -> library_objects -> unit
 
+val close_section : unit -> unit
+
 end
 
 module Interp : sig
@@ -148,6 +150,8 @@ val import_modules : export:Lib.export_flag -> (Libobject.open_filter * ModPath.
 (** Include  *)
 
 val declare_include : module_expr list -> unit
+
+val close_section : unit -> unit
 
 end
 

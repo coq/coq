@@ -149,6 +149,10 @@ module Dyn : Dyn.S
 
 type obj = Dyn.t
 
+module ExportObj : sig
+  type t = { mpl : (open_filter * Names.ModPath.t) list } [@@unboxed]
+end
+
 type algebraic_objects =
   | Objs of t list
   | Ref of ModPath.t * Mod_subst.substitution
@@ -158,7 +162,7 @@ and t =
   | ModuleTypeObject of Id.t * substitutive_objects
   | IncludeObject of algebraic_objects
   | KeepObject of Id.t * t list
-  | ExportObject of { mpl : (open_filter * ModPath.t) list }
+  | ExportObject of ExportObj.t
   | AtomicObject of obj
 
 and substitutive_objects = MBId.t list * algebraic_objects

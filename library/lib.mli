@@ -42,6 +42,8 @@ type 'summary library_segment = ('summary node * Libobject.t list) list
 
 val add_leaf : Libobject.obj -> unit
 
+val add_discharged_leaf : Libobject.discharged_obj -> unit
+
 (** {6 ... } *)
 
 (** The function [contents] gives access to the current entire segment *)
@@ -89,6 +91,10 @@ val is_modtype : unit -> bool
 val is_modtype_strict : unit -> bool
 val is_module : unit -> bool
 
+type discharged_item =
+  | DischargedExport of Libobject.ExportObj.t
+  | DischargedLeaf of Libobject.discharged_obj
+
 (** The [StagedLibS] abstraction describes operations and traversal for Lib at a
     given stage. *)
 module type StagedLibS = sig
@@ -110,7 +116,10 @@ module type StagedLibS = sig
 
   (** {6 Sections } *)
   val open_section : Id.t -> unit
-  val close_section : unit -> unit
+
+  (** [close_section] needs to redo Export, so the complete
+      implementation needs to involve [Declaremods]. *)
+  val close_section : unit -> discharged_item list
 
   (** {6 Modules and module types } *)
 
@@ -179,7 +188,5 @@ val discharge_proj_repr : Projection.Repr.t -> Projection.Repr.t
 
 (** Compatibility layer *)
 
+(** This also does init_summaries *)
 val init : unit -> unit
-
-val open_section : Id.t -> unit
-val close_section : unit -> unit
