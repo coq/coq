@@ -286,6 +286,9 @@ let rec find_row_ind = function
     | PatCstr(c,_,_) -> Some (p.CAst.loc,c)
 
 let inductive_template env sigma tmloc ind =
+  (* XXX if ind is template poly we should be using fresh universes
+     instead of the global default universes
+     (and in the future fresh qualities?) *)
   let sigma, indu = Evd.fresh_inductive_instance env sigma ind in
   let indu = on_snd EInstance.make indu in
   let arsign = inductive_alldecls env indu in
@@ -434,7 +437,8 @@ let adjust_tomatch_to_pattern ~program_mode sigma pb ((current,typ),deps,dep) =
               if List.is_empty deps && isEvar sigma typ then
               (* Don't insert coercions if dependent; only solve evars *)
                 match Evarconv.unify_leq_delay !!(pb.env) sigma indt typ with
-                | exception Evarconv.UnableToUnify _ -> sigma, current
+                | exception Evarconv.UnableToUnify (sigma,e) ->
+                  raise (PretypeError (!!(pb.env), sigma, CannotUnify (indt, typ, Some e)))
                 | sigma -> sigma, current
               else
                 let sigma, j, _trace = Coercion.inh_conv_coerce_to ?loc ~program_mode ~resolve_tc:true !!(pb.env) sigma (make_judge current typ) indt in
