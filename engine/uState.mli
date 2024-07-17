@@ -174,8 +174,6 @@ val merge : ?loc:Loc.t -> sideff:bool -> rigid -> t -> Univ.ContextSet.t -> t
 val merge_sort_variables : ?loc:Loc.t -> sideff:bool -> t -> QVar.Set.t -> t
 val merge_sort_context : ?loc:Loc.t -> sideff:bool -> rigid -> t -> UnivGen.sort_context_set -> t
 
-val emit_side_effects : Safe_typing.private_constants -> t -> t
-
 val demote_global_univs : Univ.ContextSet.t -> t -> t
 (** After declaring global universes, call this if you want to keep using the UState.
 
@@ -195,10 +193,8 @@ val demote_global_univ_entry : universes_entry -> t -> t
     - In the polymorphic case, do nothing.
 *)
 
-val demote_seff_univs : Univ.Level.Set.t -> t -> t
-(** Mark the universes as not local any more, because they have been
-   globally declared by some side effect. You should be using
-   emit_side_effects instead. *)
+val emit_side_effects : Safe_typing.private_constants -> t -> t
+(** Calls [demote_global_univs] for the private constant universes. *)
 
 val new_sort_variable : ?loc:Loc.t -> ?name:Id.t -> t -> t * QVar.t
 (** Declare a new local sort. *)

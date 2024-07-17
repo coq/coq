@@ -219,7 +219,6 @@ type univ_names = UnivNames.universe_binders * (uinfo QVar.Map.t * uinfo Level.M
 type t =
  { names : univ_names; (** Printing/location information *)
    local : ContextSet.t; (** The local graph of universes (variables and constraints) *)
-   seff_univs : Level.Set.t; (** Local universes used through private constants *)
    univ_variables : UnivFlex.t;
    (** The local universes that are unification variables *)
    sort_variables : QState.t;
@@ -233,7 +232,6 @@ type t =
 let empty =
   { names = UnivNames.empty_binders, (QVar.Map.empty, Level.Map.empty);
     local = ContextSet.empty;
-    seff_univs = Level.Set.empty;
     univ_variables = UnivFlex.empty;
     sort_variables = QState.empty;
     universes = UGraph.initial_universes;
@@ -309,7 +307,6 @@ let union uctx uctx' =
   else if is_empty uctx' then uctx
   else
     let local = ContextSet.union uctx.local uctx'.local in
-    let seff = Level.Set.union uctx.seff_univs uctx'.seff_univs in
     let names = names_union uctx.names uctx'.names in
     let newus = Level.Set.diff (ContextSet.levels uctx'.local)
                                (ContextSet.levels uctx.local) in
@@ -326,7 +323,6 @@ let union uctx uctx' =
     in
       { names;
         local = local;
-        seff_univs = seff;
         univ_variables =
           UnivFlex.biased_union uctx.univ_variables uctx'.univ_variables;
         sort_variables = QState.union ~fail:fail_union uctx.sort_variables uctx'.sort_variables;
@@ -947,7 +943,6 @@ let restrict_universe_context ?(lbound = UGraph.Bound.Set) (univs, csts) keep =
   (Level.Set.inter univs keep, csts)
 
 let restrict ?lbound uctx vars =
-  let vars = Level.Set.union vars uctx.seff_univs in
   let vars = Id.Map.fold (fun na l vars -> Level.Set.add l vars)
       (snd (fst uctx.names)) vars
   in
@@ -955,7 +950,6 @@ let restrict ?lbound uctx vars =
   { uctx with local = uctx' }
 
 let restrict_even_binders ?lbound uctx vars =
-  let vars = Level.Set.union vars uctx.seff_univs in
   let uctx' = restrict_universe_context ?lbound uctx.local vars in
   { uctx with local = uctx' }
 
@@ -1034,10 +1028,6 @@ let merge_sort_variables ?loc ~sideff uctx qvars =
 let merge_sort_context ?loc ~sideff rigid uctx ((qvars,levels),csts) =
   let uctx = merge_sort_variables ?loc ~sideff uctx qvars in
   merge ?loc ~sideff rigid uctx (levels,csts)
-
-let demote_seff_univs univs uctx =
-  let seff = Level.Set.union uctx.seff_univs univs in
-  { uctx with seff_univs = seff }
 
 let demote_global_univs (lvl_set,csts_set) uctx =
   let (local_univs, local_constraints) = uctx.local in
@@ -1199,7 +1189,6 @@ let minimize ?(lbound = UGraph.Bound.Set) uctx =
     let universes = UGraph.merge_constraints (snd us') uctx.initial_universes in
       { names = uctx.names;
         local = us';
-        seff_univs = uctx.seff_univs; (* not sure about this *)
         univ_variables = vars';
         sort_variables = uctx.sort_variables;
         universes = universes;
