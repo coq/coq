@@ -181,6 +181,17 @@ val demote_global_univs : Univ.ContextSet.t -> t -> t
     that are present in the input constraint set (supposedly the
     global ones) *)
 
+val demote_global_univ_entry : universes_entry -> t -> t
+(** After declaring a global, call this with its universe entry
+    if you want to keep using the ustate instead of restarting it
+    with [from_env (Global.env())] or using the slow
+    [update_sigma_univs _ (Environ.universes (Global/env()))].
+
+    Equivalently:
+    - In the monomorphic case, call [demote_global_univs] on the contextset.
+    - In the polymorphic case, do nothing.
+*)
+
 val demote_seff_univs : Univ.Level.Set.t -> t -> t
 (** Mark the universes as not local any more, because they have been
    globally declared by some side effect. You should be using

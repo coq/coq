@@ -1049,6 +1049,10 @@ let demote_global_univs (lvl_set,csts_set) uctx =
   let universes = UGraph.merge_constraints csts_set uctx.universes in
   { uctx with local = (local_univs, local_constraints); univ_variables; universes; initial_universes }
 
+let demote_global_univ_entry entry uctx = match entry with
+  | Monomorphic_entry entry -> demote_global_univs entry uctx
+  | Polymorphic_entry _ -> uctx
+
 let merge_seff uctx uctx' =
   let levels = ContextSet.levels uctx' in
   let declare g =
