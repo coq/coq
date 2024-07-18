@@ -21,6 +21,7 @@ type t = {
   self : constr;
   kind : (t,t,Sorts.t,UVars.Instance.t,Sorts.relevance) kind_of_term;
   isRel : int (* 0 -> not a rel, otherwise unique identifier of that binder *);
+  unbound_rels : int SList.t;
   hash : int;
   mutable refcount : int;
 }
@@ -238,6 +239,75 @@ let kind_to_constr = function
 
 let hcons_inplace f a = Array.iteri (fun i x -> Array.unsafe_set a i (f x)) a
 
+let rec pop_unbound_rels n l =
+  if n = 0 then l else match l with
+    | SList.Nil -> l
+    | SList.Cons (_,tl) -> pop_unbound_rels (n-1) tl
+    | SList.Default (m,tl) ->
+      if n < m then SList.defaultn (m-n) tl
+      else pop_unbound_rels (n-m) tl
+
+let rec combine_unbound_rels l1 l2 =
+  if l1 == l2 then l1 else match l1, l2 with
+  | SList.Nil, _ -> l2
+  | _, SList.Nil -> l1
+  | SList.Cons (x,tl1), SList.Cons (y,tl2) ->
+    assert (Int.equal x y);
+    let tl = combine_unbound_rels tl1 tl2 in
+    if tl == tl1 then l1 else if tl == tl2 then l2 else SList.cons x tl
+  | SList.Cons (x,tl1), SList.Default (n,tl2) ->
+    let tl = combine_unbound_rels tl1 (SList.defaultn (n-1) tl2) in
+    if tl == tl1 then l1 else SList.cons x tl
+  | SList.Default (n,tl1), SList.Cons (y,tl2) ->
+    let tl = combine_unbound_rels (SList.defaultn (n-1) tl1) tl2 in
+    if tl == tl2 then l2 else SList.cons y tl
+  | SList.Default (n,tl1), SList.Default (m,tl2) ->
+    let n, m, tl1, tl2 = if n < m then n, m, tl1, tl2 else m, n, tl2, tl1 in
+    let tl = combine_unbound_rels tl1 (SList.defaultn (m-n) tl2) in
+    SList.defaultn n tl
+
+let kind_unbound_rels = function
+  | Rel _ -> assert false
+  | Var _ | Sort _ | Const _ | Construct _ | Ind _ | Int _ | Float _ | String _ -> SList.empty
+  | Meta _ | Evar _ -> assert false
+  | Cast (c1,_,c2) -> combine_unbound_rels c1.unbound_rels c2.unbound_rels
+  | Prod (_,c1,c2) | Lambda (_,c1,c2) ->
+    combine_unbound_rels c1.unbound_rels (pop_unbound_rels 1 c2.unbound_rels)
+  | LetIn (_,c1,c2,c3) ->
+    let rels = combine_unbound_rels c1.unbound_rels c2.unbound_rels in
+    combine_unbound_rels rels (pop_unbound_rels 1 c3.unbound_rels)
+  | App (h,args) ->
+    Array.fold_left (fun rels arg -> combine_unbound_rels rels arg.unbound_rels) h.unbound_rels args
+  | Case (_,_,pms,(p,_),iv,c,bl) ->
+    let fold_ctx rels (bnd,c) =
+      combine_unbound_rels rels (pop_unbound_rels (Array.length bnd) c.unbound_rels)
+    in
+    let rels = c.unbound_rels in
+    let rels = match iv with
+      | NoInvert -> rels
+      | CaseInvert {indices} ->
+        Array.fold_left (fun rels i -> combine_unbound_rels rels i.unbound_rels) rels indices
+    in
+    let rels = Array.fold_left (fun rels pm -> combine_unbound_rels rels pm.unbound_rels) rels pms in
+    let rels = fold_ctx rels p in
+    let rels = Array.fold_left fold_ctx rels bl in
+    rels
+  | Fix (_,recdef) | CoFix (_,recdef) ->
+    let nas,tys,bdys = recdef in
+    let rels = Array.fold_left (fun rels ty ->
+        combine_unbound_rels rels ty.unbound_rels)
+        SList.empty
+        tys
+    in
+    Array.fold_left (fun rels bdy ->
+        combine_unbound_rels rels (pop_unbound_rels (Array.length nas) bdy.unbound_rels))
+      rels
+      bdys
+  | Proj (_,_,c) -> c.unbound_rels
+  | Array (_,elems,def,ty) ->
+    let rels = combine_unbound_rels def.unbound_rels ty.unbound_rels in
+    Array.fold_left (fun rels elem -> combine_unbound_rels rels elem.unbound_rels) rels elems
+
 let of_kind_nohashcons = function
   | App (c, [||]) -> c
   | kind ->
@@ -247,7 +317,8 @@ let of_kind_nohashcons = function
     | Rel _ -> assert false
     | _ -> ()
   in
-  { self; kind; hash; isRel = 0; refcount = 1 }
+  let unbound_rels = kind_unbound_rels kind in
+  { self; kind; hash; isRel = 0; unbound_rels; refcount = 1 }
 
 let eq_leaf c c' = match kind c, c'.kind with
   | Var i, Var i' -> Id.equal i i'
@@ -272,14 +343,14 @@ let rec of_constr tbl local_env c =
     let self = kind_to_constr kind in
     let self = if hasheq_kind (Constr.kind self) (Constr.kind c) then c else self in
     let hash = hash_kind kind in
-    let isRel, hash = match kind with
+    let isRel, hash, unbound_rels = match kind with
       | Rel n ->
         let uid = Range.get local_env.rels (n-1) in
         assert (uid <> 0);
-        uid, Hashset.Combine.combine uid hash
-      | _ -> 0, hash
+        uid, Hashset.Combine.combine uid hash, SList.defaultn (n-1) (SList.cons uid SList.empty)
+      | _ -> 0, hash, kind_unbound_rels kind
     in
-    { self; kind; hash; isRel; refcount = 1 }
+    { self; kind; hash; isRel; unbound_rels; refcount = 1 }
   in
   match Tbl.find_opt tbl c with
   | Some c' -> c'.refcount <- c'.refcount + 1; c'
