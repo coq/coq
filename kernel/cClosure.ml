@@ -1642,7 +1642,7 @@ and match_elim : 'a. ('a, 'a patstate) reduction -> _ -> _ -> pat_state:(fconstr
       let head = {mark; term=FProj(Projection.make proj' true, r, head)} in
       let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
       | PEProj proj :: es, subst ->
-        if not @@ Projection.Repr.CanOrd.equal (Projection.repr proj) proj' then None else
+        if not @@ Projection.Repr.CanOrd.equal proj proj' then None else
         Some (es, subst)
       | _ -> None) elims states
       in
