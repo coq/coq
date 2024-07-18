@@ -327,21 +327,51 @@ let eq_leaf c c' = match kind c, c'.kind with
   | Construct (c,u), Construct (c',u') -> Construct.SyntacticOrd.equal c c' && UVars.Instance.equal u u'
   | _ -> false
 
-let nonrel_leaf tbl c = match kind c with
-  | Rel _ -> None
+let compatible local_env v =
+  let rec aux local_env rels = match rels with
+    | SList.Nil -> true
+    | SList.Cons (x,tl) ->
+      Int.equal x (Range.hd local_env)
+      && aux (Range.tl local_env) tl
+    | SList.Default (n,tl) ->
+      aux (Range.skipn n local_env) tl
+  in
+  aux local_env.rels v.unbound_rels
+
+let quickfind (tbl,qtbl) local_env c =
+  match kind c with
   | Var _ | Const _ | Ind _ | Construct _ as k ->
     let h = hash_kind k in
-    Tbl.raw_find tbl h (fun c' -> eq_leaf c c')
-  | _ -> None
+    begin match Tbl.raw_find tbl h (fun c' -> eq_leaf c c') with
+    | Some v -> Inl v
+    | None -> Inr None
+    end
+  | _ ->
+    let qhash = Hashtbl.hash c in
+    match Int.Map.find_opt qhash !qtbl with
+    | None -> Inr (Some qhash)
+    | Some l ->
+      match List.find_map (fun (c',v) ->
+          if c == c' && compatible local_env v
+          then Some v else None) l
+      with
+      | Some v -> Inl v
+      | None -> Inr (Some qhash)
 
-let rec of_constr tbl local_env c =
-  match nonrel_leaf tbl c with
-  | Some v -> v
-  | None ->
+let qadd qtbl qhash c0 c =
+  qtbl := Int.Map.update qhash (function
+      | None -> Some [c0,c]
+      | Some l -> Some ((c0,c)::l))
+      !qtbl
+
+let rec of_constr tbl local_env c0 =
+  match quickfind tbl local_env c0 with
+  | Inl v -> v.refcount <- v.refcount + 1; v
+  | Inr qhash ->
   let c =
-    let kind = of_constr_aux tbl local_env c in
+    let kind = of_constr_aux tbl local_env c0 in
     let self = kind_to_constr kind in
-    let self = if hasheq_kind (Constr.kind self) (Constr.kind c) then c else self in
+    let self = if hasheq_kind (Constr.kind self) (Constr.kind c0) then c0 else self in
     let hash = hash_kind kind in
     let isRel, hash, unbound_rels = match kind with
       | Rel n ->
@@ -352,9 +382,11 @@ let rec of_constr tbl local_env c =
     in
     { self; kind; hash; isRel; unbound_rels; refcount = 1 }
   in
-  match Tbl.find_opt tbl c with
-  | Some c' -> c'.refcount <- c'.refcount + 1; c'
-  | None -> Tbl.add tbl c c; c
+  match Tbl.find_opt (fst tbl) c with
+  | Some c' ->
+    (* should we qadd here? seems likely to increase collisions massively *)
+    c'.refcount <- c'.refcount + 1; c'
+  | None -> Tbl.add (fst tbl) c c; Option.iter (fun qhash -> qadd (snd tbl) qhash c0 c) qhash; c
 
 and of_constr_aux tbl local_env c =
   match kind c with
@@ -459,7 +491,8 @@ let of_constr env c =
   let local_env = empty_env () in
   let local_env = iterate push_unknown_rel (Environ.nb_rel env) local_env in
   let tbl = Tbl.create 57 in
-  let c = of_constr tbl local_env c in
+  let qtbl = ref Int.Map.empty in
+  let c = of_constr (tbl,qtbl) local_env c in
   dbg Pp.(fun () ->
       let stats = Tbl.stats tbl in
       let tree_size = tree_size (self c) in
