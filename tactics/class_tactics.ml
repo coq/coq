@@ -1286,7 +1286,7 @@ let solve_inst env evd filter unique fail =
 let () =
   Typeclasses.set_solve_all_instances solve_inst
 
-let resolve_one_typeclass env ?(sigma=Evd.from_env env) concl unique =
+let resolve_one_typeclass env sigma concl =
   let (term, sigma) = Hints.wrap_hint_warning_fun env sigma begin fun sigma ->
   let hints = searchtable_map typeclasses_db in
   let st = Hint_db.transparent_state hints in
@@ -1310,9 +1310,7 @@ let resolve_one_typeclass env ?(sigma=Evd.from_env env) concl unique =
   end in
   (sigma, term)
 
-let () =
-  Typeclasses.set_solve_one_instance
-    (fun x y z w -> resolve_one_typeclass x ~sigma:y z w)
+let () = (Typeclasses.set_solve_one_instance[@warning "-3"]) resolve_one_typeclass
 
 (** Take the head of the arity of a constr.
     Used in the partial application tactic. *)
