@@ -107,6 +107,17 @@ module Tbl = struct
       !tbl
       empty_stats
 
+  let qstats qtbl =
+    Int.Map.fold (fun _ (len,_) acc ->
+        {
+          hashes = acc.hashes + 1;
+          bindings = acc.bindings + len;
+          most_collisions = max acc.most_collisions len;
+        }
+      )
+      !qtbl
+      empty_stats
+
 end
 
 type local_env = {
@@ -350,7 +361,7 @@ let quickfind (tbl,qtbl) local_env c =
     let qhash = Hashtbl.hash c in
     match Int.Map.find_opt qhash !qtbl with
     | None -> Inr (Some qhash)
-    | Some l ->
+    | Some (_,l) ->
       match List.find_map (fun (c',v) ->
           if c == c' && compatible local_env v
           then Some v else None) l
@@ -360,8 +371,8 @@ let quickfind (tbl,qtbl) local_env c =
 
 let qadd qtbl qhash c0 c =
   qtbl := Int.Map.update qhash (function
-      | None -> Some [c0,c]
-      | Some l -> Some ((c0,c)::l))
+      | None -> Some (1,[c0,c])
+      | Some (len,l as orig) -> if len < 257 then Some (len+1,(c0,c)::l) else Some orig)
       !qtbl
 
 let steps = ref 0
@@ -499,7 +510,7 @@ let of_constr env c =
   let c = of_constr (tbl,qtbl) local_env c in
   dbg Pp.(fun () ->
       let stats = Tbl.stats tbl in
-      let qstats = Tbl.stats qtbl in
+      let qstats = Tbl.qstats qtbl in
       let tree_size = tree_size (self c) in
       v 0 (
         str "steps = " ++ int !steps ++ spc() ++
