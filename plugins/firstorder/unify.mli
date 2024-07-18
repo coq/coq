@@ -11,8 +11,6 @@
 open Constr
 open EConstr
 
-exception UFAIL of constr*constr
-
 module Item :
 sig
   type t
