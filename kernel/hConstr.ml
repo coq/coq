@@ -364,10 +364,13 @@ let qadd qtbl qhash c0 c =
       | Some l -> Some ((c0,c)::l))
       !qtbl
 
+let steps = ref 0
+
 let rec of_constr tbl local_env c0 =
   match quickfind tbl local_env c0 with
   | Inl v -> v.refcount <- v.refcount + 1; v
   | Inr qhash ->
+  incr steps;
   let c =
     let kind = of_constr_aux tbl local_env c0 in
     let self = kind_to_constr kind in
@@ -492,15 +495,21 @@ let of_constr env c =
   let local_env = iterate push_unknown_rel (Environ.nb_rel env) local_env in
   let tbl = Tbl.create 57 in
   let qtbl = ref Int.Map.empty in
+  steps := 0;
   let c = of_constr (tbl,qtbl) local_env c in
   dbg Pp.(fun () ->
       let stats = Tbl.stats tbl in
+      let qstats = Tbl.stats qtbl in
       let tree_size = tree_size (self c) in
       v 0 (
+        str "steps = " ++ int !steps ++ spc() ++
         str "hashes = " ++ int stats.Tbl.hashes ++ spc() ++
         str "bindings = " ++ int stats.Tbl.bindings ++ spc() ++
+        str "qhashes = " ++ int qstats.Tbl.hashes ++ spc() ++
+        str "qbindings = " ++ int qstats.Tbl.bindings ++ spc() ++
         str "tree size = " ++ int tree_size ++ spc() ++
-        str "most_collisions = " ++ int stats.Tbl.most_collisions
+        str "most_collisions = " ++ int stats.Tbl.most_collisions ++ spc() ++
+        str "most_qcollisions = " ++ int qstats.Tbl.most_collisions
     )
     );
   c

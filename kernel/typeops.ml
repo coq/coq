@@ -632,6 +632,8 @@ let push_rec_types (lna,typarray,_) env =
   let ctxt = Array.map2_i (fun i na t -> RelDecl.LocalAssum (na, lift i t)) lna typarray in
   Array.fold_left (fun e assum -> push_rel assum e) env ctxt
 
+let steps = ref 0
+
 (* The typing machine. *)
 let rec execute tbl env cstr =
   if Int.equal (HConstr.refcount cstr) 1 then execute_aux tbl env cstr
@@ -644,6 +646,7 @@ let rec execute tbl env cstr =
   end
 
 and execute_aux tbl env cstr =
+  incr steps;
   let open Context.Rel.Declaration in
   let self = HConstr.self in
   match HConstr.kind cstr with
@@ -877,10 +880,14 @@ let check_wellformed_universes env c =
 let check_wellformed_universes env c =
   NewProfile.profile "check-wf-univs" (fun () -> check_wellformed_universes env c) ()
 
+let dbg = CDebug.create ~name:"typeops" ()
+
 let infer_hconstr env hconstr =
   let constr = HConstr.self hconstr in
   let () = check_wellformed_universes env constr in
+  steps := 0;
   let t = execute env hconstr in
+  let () = dbg Pp.(fun () -> str "steps = " ++ int !steps) in
   make_judge constr t
 
 let infer env c =
