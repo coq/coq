@@ -1119,15 +1119,7 @@ let rec intern_rec env tycon {loc;v=e} =
     let a,b = intern_rec env tycon e.alias_body in
     match a with
     | GTacApp _ -> (GTacAls (a, loc, KerName.to_string kn), b)
-    | GTacRef _ -> a,b
-    | _ ->
-      let pr_opt loc = match loc with
-        | Some loc -> Loc.pr loc
-        | None -> Pp.str "None"
-      in
-      Printf.eprintf "Tac2intern GTacAls PROBLEM %s\n%!" (Pp.string_of_ppcmds (pr_opt loc));
-      Tac2debug.dump_Gexpr a;
-      a,b
+    | _ -> a,b
   end
 | CTacCst qid ->
   let kn = get_constructor env qid in
@@ -1177,7 +1169,6 @@ let rec intern_rec env tycon {loc;v=e} =
   let app_loc = List.fold_left (fun loc arg -> Loc.merge_opt loc arg.loc) loc args in
   let (f, ft) = intern_rec env None f in
   let fold t arg =
-    let loc = arg.loc in
     let dom, codom = tycon_app ?loc env ~ft t in
     let arg = intern_rec_with_constraint env arg dom in
     (codom, arg)

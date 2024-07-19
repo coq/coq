@@ -217,7 +217,7 @@ GRAMMAR EXTEND Gram
       | e = SELF; ".("; qid = Prim.qualid; ")"; ":="; r = ltac2_expr LEVEL "5" ->
         { CAst.make ~loc @@ CTacSet (e, RelId qid, r) } ]
     | "0"
-      [ "("; a = SELF; ")" -> { CAst.make ~loc @@ a.CAst.v }
+      [ "("; a = SELF; ")" -> { a }
       | "("; a = SELF; ":"; t = ltac2_type; ")" ->
         { CAst.make ~loc @@ CTacCnv (a, t) }
       | "()" ->

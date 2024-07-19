@@ -4,6 +4,8 @@ From Ltac2 Require Import Message.
 Set Ltac Debug.
 Set Ltac Debug History 100.
 
+Ltac2 m s := Message.print (Message.of_string s).
+
 (* future test cases
    Shows reasonable data for multi file case
    open_constr?
@@ -14,7 +16,7 @@ Set Ltac Debug History 100.
           ?Can set limit
 *)
 
-Ltac2 m s := Message.print (Message.of_string s).
+
 (*
 The "(* bp *)" marks selected stopping points (by breakpoint or single step) - verify!
 Run code with "Step in" if not otherwise specified.
