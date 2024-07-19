@@ -22,6 +22,8 @@ mkdir "$BIN"
 wget https://github.com/ocaml/opam/releases/download/2.1.3/opam-2.1.3-x86_64-linux -O "$BIN"/opam
 chmod +x "$BIN"/opam
 
+export OPAMSKIPUPDATE=1 # stop opam from messing with our pin edits
+
 export NJOBS=1 # used by the test suite through dune
 
 # generate per file info in test suite and coq_makefile devs
@@ -81,6 +83,11 @@ check_variable () {
 : "${coq_opam_packages:=coq-test-suite coq-bignums coq-hott coq-performance-tests-lite coq-engine-bench-lite coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-math-classes coq-corn coq-compcert coq-equations coq-metacoq-utils coq-metacoq-common coq-metacoq-template coq-metacoq-pcuic coq-metacoq-safechecker coq-metacoq-erasure coq-metacoq-translations coq-color coq-coqprime coq-coqutil coq-bedrock2 coq-rewriter coq-fiat-core coq-fiat-parsers coq-fiat-crypto-with-bedrock coq-unimath coq-coquelicot coq-iris-examples coq-verdi coq-verdi-raft coq-fourcolor coq-rewriter-perf-SuperFast coq-vst coq-category-theory coq-neural-net-interp-computed-lite}"
 : "${coq_native:=}"
 
+# example: coq-hott.dev git+https://github.com/some-user/coq-hott#some-branch
+# (make sure to include the version for the opam package, note that just https won't work)
+: "${new_opam_override_urls:=}"
+: "${old_opam_override_urls:=}"
+
 : "${new_coq_commit:=$(git rev-parse HEAD^2)}"
 : "${old_coq_commit:=$(git merge-base HEAD^1 $new_coq_commit)}"
 
@@ -118,6 +125,8 @@ echo "DEBUG: old_coq_opam_archive_git_uri = $old_coq_opam_archive_git_uri"
 echo "DEBUG: old_coq_opam_archive_git_branch = $old_coq_opam_archive_git_branch"
 echo "DEBUG: num_of_iterations = $num_of_iterations"
 echo "DEBUG: coq_opam_packages = $coq_opam_packages"
+echo "DEBUG: new_opam_override_urls = $new_opam_override_urls"
+echo "DEBUG: old_opam_override_urls = $old_opam_override_urls"
 echo "DEBUG: coq_pr_number = $coq_pr_number"
 echo "DEBUG: coq_pr_comment_id = $coq_pr_comment_id"
 echo "DEBUG: coq_native = $coq_native"
@@ -337,7 +346,8 @@ create_opam() {
     local COQ_HASH="$3"
     local COQ_VER="$4"
     local OPAM_COQ_DIR="$5"
-    local USE_FLAMBDA="$6"
+    local OPAM_OVERRIDE_URLS="$6"
+    local USE_FLAMBDA="$7"
 
     local OPAM_COMP=ocaml-base-compiler.$OCAML_VER
 
@@ -368,8 +378,24 @@ create_opam() {
     opam repo add -q --this-switch coq-extra-dev "$OPAM_COQ_DIR/extra-dev"
     opam repo add -q --this-switch coq-released "$OPAM_COQ_DIR/released"
 
-    # Pinning for packages that are not in a repository
-    opam pin add -ynq coq-perennial.dev git+https://github.com/mit-pdos/perennial#coq/tested
+    local override_package
+    local url_or_package
+    for url_or_package in $OPAM_OVERRIDE_URLS; do
+      if [ "$override_package" ]; then
+        echo "Setting source url for $override_package to $url_or_package in $RUNNER"
+        # NB opam editor start seems to ignore -y but works with </dev/null
+        OPAMEDITOR="echo 'url { src: \"$url_or_package\" }' >> " opam pin add -nye "$override_package" - </dev/null
+        opam show "$override_package" --raw
+        override_package=
+      else
+        override_package=$url_or_package
+      fi
+    done
+    if [ "$override_package" ]; then
+      >&2 echo "malformed opam_override_urls for $RUNNER (odd length)"
+      zulip_edit "Bench failed: malformed opam_override_urls for $RUNNER (odd length)"
+      exit 1
+    fi
 
     opam install -qy -j$number_of_processors $initial_opam_packages
     if [ ! -z "$BENCH_DEBUG" ]; then opam repo list; fi
@@ -419,12 +445,12 @@ create_opam() {
 
 # Create an OPAM-root to which we will install the NEW version of Coq.
 create_opam "NEW" "$new_ocaml_version" "$new_coq_commit" "$new_coq_version" \
-            "$new_coq_opam_archive_dir" "$new_ocaml_flambda"
+            "$new_coq_opam_archive_dir" "$new_opam_override_urls" "$new_ocaml_flambda"
 new_coq_commit_long="$COQ_HASH_LONG"
 
 # Create an OPAM-root to which we will install the OLD version of Coq.
 create_opam "OLD" "$old_ocaml_version" "$old_coq_commit" "$old_coq_version" \
-            "$old_coq_opam_archive_dir" "$old_ocaml_flambda"
+            "$old_coq_opam_archive_dir" "$old_opam_override_urls" "$old_ocaml_flambda"
 old_coq_commit_long="$COQ_HASH_LONG"
 
 # Packages which appear in the rendered table
