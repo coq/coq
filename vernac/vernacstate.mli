@@ -141,4 +141,4 @@ module Declare : sig
   val unfreeze : LemmaStack.t -> unit
 
 end
-[@@ocaml.deprecated "This module is internal and should not be used, instead, thread the proof state"]
+[@@ocaml.deprecated "(8.11) This module is internal and should not be used, instead, thread the proof state"]

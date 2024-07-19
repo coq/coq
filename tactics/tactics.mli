@@ -62,13 +62,13 @@ val intro_avoiding       : Id.Set.t -> unit Proofview.tactic
 
 val intro_replacing      : Id.t -> unit Proofview.tactic
 val intro_using          : Id.t -> unit Proofview.tactic
-[@@ocaml.deprecated "Prefer [intro_using_then] to avoid renaming issues."]
+[@@ocaml.deprecated "(8.13) Prefer [intro_using_then] to avoid renaming issues."]
 val intro_using_then     : Id.t -> (Id.t -> unit Proofview.tactic) -> unit Proofview.tactic
 val intro_mustbe_force   : Id.t -> unit Proofview.tactic
 val intros_mustbe_force  : Id.t list -> unit Proofview.tactic
 val intro_then           : (Id.t -> unit Proofview.tactic) -> unit Proofview.tactic
 val intros_using         : Id.t list -> unit Proofview.tactic
-[@@ocaml.deprecated "Prefer [intros_using_then] to avoid renaming issues."]
+[@@ocaml.deprecated "(8.13) Prefer [intros_using_then] to avoid renaming issues."]
 val intros_using_then    : Id.t list -> (Id.t list -> unit Proofview.tactic) -> unit Proofview.tactic
 val intros_replacing     : Id.t list -> unit Proofview.tactic
 val intros_possibly_replacing : Id.t list -> unit Proofview.tactic

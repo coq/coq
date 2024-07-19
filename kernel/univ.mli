@@ -55,7 +55,7 @@ sig
       When possible you should use name-aware printing. *)
 
   val pr : t -> Pp.t
-  [@@deprecated "Use [UnivNames.pr_with_global_universes] instead if possible, otherwise [raw_pr]."]
+  [@@deprecated "(8.18) Use [UnivNames.pr_with_global_universes] instead if possible, otherwise [raw_pr]."]
 
   val to_string : t -> string
   (** Debug printing *)

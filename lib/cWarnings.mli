@@ -80,7 +80,7 @@ val warning_status : warning -> status
 (** Current status of the warning. *)
 
 val get_status : name:string -> status
-(* [@@ocaml.deprecated "Use [CWarnings.warning_status]"] *)
+(* [@@ocaml.deprecated "(8.18) Use [CWarnings.warning_status]"] *)
 
 val normalize_flags_string : string -> string
 (** Cleans up a user provided warnings status string, e.g. removing unknown
@@ -98,7 +98,7 @@ val check_unknown_warnings : string -> unit
     string with non-disabled status. *)
 
 val override_unknown_warning : bool ref
-[@@ocaml.deprecated "Do not use, internal."]
+[@@ocaml.deprecated "(8.18) Do not use, internal."]
 (** For command line -w, this avoids using the warning system to avoid breaking
     "-w -unknown-warning". *)
 

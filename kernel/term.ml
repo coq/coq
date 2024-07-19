@@ -16,16 +16,6 @@ open Vars
 open Constr
 open Context
 
-(* Deprecated *)
-type sorts_family = Sorts.family = InSProp | InProp | InSet | InType | InQSort
-[@@ocaml.deprecated "Alias for Sorts.family"]
-
-type sorts = Sorts.t = private
-  | SProp | Prop | Set
-  | Type of Univ.Universe.t  (** Type *)
-  | QSort of Sorts.QVar.t * Univ.Universe.t
-[@@ocaml.deprecated "Alias for Sorts.t"]
-
 (****************************************************************************)
 (*              Functions for dealing with constr terms                     *)
 (****************************************************************************)
@@ -396,3 +386,10 @@ let decompose_lam = decompose_lambda
 let decompose_lam_n = decompose_lambda_n
 let decompose_lam_n_assum = decompose_lambda_n_assum
 let decompose_lam_n_decls = decompose_lambda_n_decls
+
+type sorts_family = Sorts.family = InSProp | InProp | InSet | InType | InQSort
+
+type sorts = Sorts.t = private
+  | SProp | Prop | Set
+  | Type of Univ.Universe.t  (** Type *)
+  | QSort of Sorts.QVar.t * Univ.Universe.t

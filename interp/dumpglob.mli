@@ -126,7 +126,7 @@ val pause : unit -> unit
 
 (** Deprecated alias for [pop_output] *)
 val continue : unit -> unit
-[@@ocaml.deprecated "Use pop_output"]
+[@@ocaml.deprecated "(8.13) Use pop_output"]
 
 val with_glob_output : glob_output -> (unit -> 'a) -> unit -> 'a
 

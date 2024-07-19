@@ -167,7 +167,7 @@ val pf_constr_of_global : GlobRef.t -> constr Proofview.tactic
 val tclTYPEOFTHEN : ?refresh:bool -> constr -> (evar_map -> types -> unit Proofview.tactic) -> unit Proofview.tactic
 
 val tclSELECT : ?nosuchgoal:'a tactic -> Goal_select.t -> 'a tactic -> 'a tactic
-[@@ocaml.deprecated "Use [Goal_select.tclSELECT]"]
+[@@ocaml.deprecated "(8.14) Use [Goal_select.tclSELECT]"]
 
 (** {6 Elimination tacticals. } *)
 

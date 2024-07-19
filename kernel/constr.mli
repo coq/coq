@@ -654,13 +654,13 @@ val debug_print : constr -> Pp.t
 val debug_print_fix : ('a -> Pp.t) -> ('a, 'a, 'r) pfixpoint -> Pp.t
 
 val mkConst : Constant.t -> constr
-[@@deprecated "Use [mkConstU] or if truly needed [UnsafeMonomorphic.mkConst]"]
+[@@deprecated "(8.18) Use [mkConstU] or if truly needed [UnsafeMonomorphic.mkConst]"]
 
 val mkInd : inductive -> constr
-[@@deprecated "Use [mkIndU] or if truly needed [UnsafeMonomorphic.mkInd]"]
+[@@deprecated "(8.18) Use [mkIndU] or if truly needed [UnsafeMonomorphic.mkInd]"]
 
 val mkConstruct : constructor -> constr
-[@@deprecated "Use [mkConstructU] or if truly needed [UnsafeMonomorphic.mkConstruct]"]
+[@@deprecated "(8.18) Use [mkConstructU] or if truly needed [UnsafeMonomorphic.mkConstruct]"]
 
 val hcons_annot : Name.t binder_annot -> Name.t binder_annot
 

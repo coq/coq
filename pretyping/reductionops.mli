@@ -257,7 +257,7 @@ val is_fconv : ?reds:TransparentState.t -> conv_pb -> env -> evar_map -> constr 
     pb defaults to CUMUL and ts to a full transparent state.
  *)
 val check_conv : ?pb:conv_pb -> ?ts:TransparentState.t -> env -> evar_map -> constr -> constr -> bool
-[@@ocaml.deprecated "Use Reductionops.is_fconv instead"]
+[@@ocaml.deprecated "(8.18) Use Reductionops.is_fconv instead"]
 
 (** [infer_conv] Adds necessary universe constraints to the evar map.
     pb defaults to CUMUL and ts to a full transparent state.
@@ -322,25 +322,25 @@ val inferred_universes : (UGraph.t * Univ.Constraints.t, UGraph.univ_inconsisten
 (** Deprecated *)
 
 val splay_prod : env -> evar_map -> constr -> (Name.t EConstr.binder_annot * constr) list * constr
-[@@ocaml.deprecated "Use [whd_decompose_prod] instead."]
+[@@ocaml.deprecated "(8.18) Use [whd_decompose_prod] instead."]
 val splay_lam : env -> evar_map -> constr -> (Name.t EConstr.binder_annot * constr) list * constr
-[@@ocaml.deprecated "Use [whd_decompose_lambda] instead."]
+[@@ocaml.deprecated "(8.18) Use [whd_decompose_lambda] instead."]
 val splay_prod_assum : env -> evar_map -> constr -> rel_context * constr
-[@@ocaml.deprecated "Use [whd_decompose_prod_decls] instead."]
+[@@ocaml.deprecated "(8.18) Use [whd_decompose_prod_decls] instead."]
 val splay_prod_n : env -> evar_map -> int -> constr -> rel_context * constr
-[@@ocaml.deprecated "This function contracts let-ins. Replace either with whd_decompose_prod_n (if only products are expected, then returning only a list of assumptions), whd_decompose_prod_n_assum (if let-ins are expected to be preserved, returning a rel_context), or whd_decompose_prod_n_decls (if let-ins are expected to be preserved and counted, returning also a rel_context)"]
+[@@ocaml.deprecated "(8.18) This function contracts let-ins. Replace either with whd_decompose_prod_n (if only products are expected, then returning only a list of assumptions), whd_decompose_prod_n_assum (if let-ins are expected to be preserved, returning a rel_context), or whd_decompose_prod_n_decls (if let-ins are expected to be preserved and counted, returning also a rel_context)"]
 val splay_lam_n : env -> evar_map -> int -> constr -> rel_context * constr
-[@@ocaml.deprecated "This function contracts let-ins. Replace either with whd_decompose_lambda_n (if only lambdas are expected, then returning only a list of assumptions) or whd_decompose_lambda_n_assum (if let-ins are expected to be preserved, returning a rel_context)"]
+[@@ocaml.deprecated "(8.18) This function contracts let-ins. Replace either with whd_decompose_lambda_n (if only lambdas are expected, then returning only a list of assumptions) or whd_decompose_lambda_n_assum (if let-ins are expected to be preserved, returning a rel_context)"]
 
 (** Re-deprecated in 8.19 *)
 
 val hnf_decompose_prod : env -> evar_map -> types -> (Name.t EConstr.binder_annot * constr) list * types
-[@@ocaml.deprecated "Use [whd_decompose_prod] instead."]
+[@@ocaml.deprecated "(8.19) Use [whd_decompose_prod] instead."]
 val hnf_decompose_lambda : env -> evar_map -> constr -> (Name.t EConstr.binder_annot * constr) list * constr
-[@@ocaml.deprecated "Use [whd_decompose_lambda] instead."]
+[@@ocaml.deprecated "(8.19) Use [whd_decompose_lambda] instead."]
 val hnf_decompose_prod_decls : env -> evar_map -> types -> rel_context * types
-[@@ocaml.deprecated "Use [whd_decompose_prod_decls] instead."]
+[@@ocaml.deprecated "(8.19) Use [whd_decompose_prod_decls] instead."]
 val hnf_decompose_prod_n_decls : env -> evar_map -> int -> types -> rel_context * types
-[@@ocaml.deprecated "This function contracts let-ins. Replace either with whd_decompose_prod_n (if only products are expected, then returning only a list of assumptions), whd_decompose_prod_n_assum (if let-ins are expected to be preserved, returning a rel_context), or whd_decompose_prod_n_decls (if let-ins are expected to be preserved and counted, returning also a rel_context)"]
+[@@ocaml.deprecated "(8.19) This function contracts let-ins. Replace either with whd_decompose_prod_n (if only products are expected, then returning only a list of assumptions), whd_decompose_prod_n_assum (if let-ins are expected to be preserved, returning a rel_context), or whd_decompose_prod_n_decls (if let-ins are expected to be preserved and counted, returning also a rel_context)"]
 val hnf_decompose_lambda_n_assum : env -> evar_map -> int -> constr -> rel_context * constr
-[@@ocaml.deprecated "This function contracts let-ins. Replace either with whd_decompose_lambda_n (if only lambdas are expected, then returning only a list of assumptions) or whd_decompose_lambda_n_assum (if let-ins are expected to be preserved, returning a rel_context)"]
+[@@ocaml.deprecated "(8.19) This function contracts let-ins. Replace either with whd_decompose_lambda_n (if only lambdas are expected, then returning only a list of assumptions) or whd_decompose_lambda_n_assum (if let-ins are expected to be preserved, returning a rel_context)"]
