@@ -48,7 +48,7 @@ val has_ref : string -> bool
 val check_ref : string -> GlobRef.t -> bool
 
 (** Checks whether a name is bound to a known inductive. *)
-val check_ind_ref : string -> inductive -> bool [@@ocaml.deprecated "Use Coqlib.check_ref"]
+val check_ind_ref : string -> inductive -> bool
 
 (** List of all currently bound names. *)
 val get_lib_refs : unit -> (string * GlobRef.t) list
