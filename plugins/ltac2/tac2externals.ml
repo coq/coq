@@ -82,8 +82,11 @@ let define : type v f. _ -> (v,f) spec -> f -> unit = fun n ar v ->
     match ar with
     | S (V tr) -> tr v
     | S (F _) ->
-        let cl = Tac2val.mk_closure (arity_of ar) (interp_spec ar v) in
-        Tac2ffi.of_closure cl
+      let arity = arity_of ar in
+      let v = interp_spec ar v in
+      let v = Tac2val.purify_closure arity v in
+      let cl = Tac2val.mk_closure arity v in
+      Tac2ffi.of_closure cl
     | _ -> invalid_arg "Tac2def.define: not a pure value"
   in
   Tac2env.define_primitive n v
