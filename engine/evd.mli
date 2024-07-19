@@ -622,7 +622,7 @@ val univ_rigid : rigid
 val univ_flexible : rigid
 val univ_flexible_alg : rigid
 
-type 'a in_evar_universe_context = 'a * UState.t
+type 'a in_ustate = 'a * UState.t
 
 val restrict_universe_context : ?lbound:UGraph.Bound.t -> evar_map -> Univ.Level.Set.t -> evar_map
 
@@ -665,7 +665,9 @@ val check_constraints : evar_map -> Univ.Constraints.t -> bool
 val check_qconstraints : evar_map -> Sorts.QConstraints.t -> bool
 val check_quconstraints : evar_map -> Sorts.QUConstraints.t -> bool
 
-val evar_universe_context : evar_map -> UState.t
+val ustate : evar_map -> UState.t
+val evar_universe_context : evar_map -> UState.t [@@deprecated "(8.21) Use [Evd.ustate]"]
+
 val universe_context_set : evar_map -> Univ.ContextSet.t
 val sort_context_set : evar_map -> UnivGen.sort_context_set
 val universe_subst : evar_map -> UnivFlex.t

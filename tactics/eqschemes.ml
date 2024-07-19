@@ -694,7 +694,7 @@ let build_r2l_rew_scheme dep env ind k =
   let sigma, k = Evd.fresh_sort_in_family ~rigid:UnivRigid sigma k in
   let (sigma, c) = build_case_analysis_scheme env sigma indu dep k in
   let (c, _) = Indrec.eval_case_analysis c in
-  EConstr.Unsafe.to_constr c, Evd.evar_universe_context sigma
+  EConstr.Unsafe.to_constr c, Evd.ustate sigma
 
 (**********************************************************************)
 (* Register the rewriting schemes                                     *)

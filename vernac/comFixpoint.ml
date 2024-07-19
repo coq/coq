@@ -557,7 +557,7 @@ let do_mutually_recursive ?pm ~program_mode ?(use_inference_hook=false) ?scope ?
     let bodies = List.map Option.get bodies in
     Evd.check_univ_decl_early ~poly ~with_obls:true sigma udecl (bodies @ fixtypes);
     let sigma = if poly then sigma else Evd.fix_undefined_variables sigma in
-    let uctx = Evd.evar_universe_context sigma in
+    let uctx = Evd.ustate sigma in
     (match fixwfs, bodies, cinfo, obls with
     | [Some _], [body], [cinfo], [obls] ->
       (* Program Fixpoint wf/measure *)
@@ -569,7 +569,7 @@ let do_mutually_recursive ?pm ~program_mode ?(use_inference_hook=false) ?scope ?
   | None ->
     try
       let bodies = List.map Option.get bodies in
-      let uctx = Evd.evar_universe_context sigma in
+      let uctx = Evd.ustate sigma in
       (* All bodies are defined *)
       let possible_guard = (possible_guard, fixrs) in
       let _ : GlobRef.t list =

@@ -296,24 +296,13 @@ let has_no_evar sigma =
   try let () = Evd.fold (fun _ _ () -> raise_notrace Exit) sigma () in true
   with Exit -> false
 
-let pr_evd_level sigma = UState.pr_uctx_level (Evd.evar_universe_context sigma)
+let pr_evd_level sigma = UState.pr_uctx_level (Evd.ustate sigma)
 
-let pr_evd_qvar sigma = UState.pr_uctx_qvar (Evd.evar_universe_context sigma)
+let pr_evd_qvar sigma = UState.pr_uctx_qvar (Evd.ustate sigma)
 
-let reference_of_level sigma l = UState.qualid_of_level (Evd.evar_universe_context sigma) l
+let reference_of_level sigma l = UState.qualid_of_level (Evd.ustate sigma) l
 
-let pr_evar_universe_context ctx =
-  let open UState in
-  let prl = pr_uctx_level ctx in
-  if UState.is_empty ctx then mt ()
-  else
-    v 0 (str"UNIVERSES:"++brk(0,1)++
-       h (Univ.pr_universe_context_set prl (UState.context_set ctx)) ++ fnl () ++
-     UnivFlex.pr prl (UState.subst ctx) ++ fnl() ++
-     str"SORTS:"++brk(0,1)++
-     h (UState.pr_sort_opt_subst ctx) ++ fnl() ++
-     str "WEAK CONSTRAINTS:"++brk(0,1)++
-     h (UState.pr_weak prl ctx) ++ fnl ())
+let pr_evar_universe_context = UState.pr
 
 let print_env_short env sigma =
   let print_constr = Internal.print_kconstr in
@@ -350,10 +339,10 @@ let pr_evar_constraints sigma pbs =
   prlist_with_sep fnl pr_evconstr pbs
 
 let pr_evar_map_gen with_univs pr_evars env sigma =
-  let uvs = Evd.evar_universe_context sigma in
+  let uvs = Evd.ustate sigma in
   let (_, conv_pbs) = Evd.extract_all_conv_pbs sigma in
   let evs = if has_no_evar sigma then mt () else pr_evars sigma ++ fnl ()
-  and svs = if with_univs then pr_evar_universe_context uvs else mt ()
+  and svs = if with_univs then UState.pr uvs else mt ()
   and cstrs =
     if List.is_empty conv_pbs then mt ()
     else

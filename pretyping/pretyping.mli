@@ -136,7 +136,7 @@ val understand_ltac_ty : inference_flags ->
     ensure that conversion problems are all solved and that no
     unresolved evar remains, expanding evars. *)
 val understand : ?flags:inference_flags -> ?expected_type:typing_constraint ->
-  env -> evar_map -> glob_constr -> constr Evd.in_evar_universe_context
+  env -> evar_map -> glob_constr -> constr Evd.in_ustate
 
 val understand_uconstr :
   ?flags:inference_flags -> ?expected_type:typing_constraint ->

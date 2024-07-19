@@ -158,7 +158,7 @@ val ppuniverse_subst : UnivSubst.universe_subst -> unit
 val ppuniverse_opt_subst : UState.universe_opt_subst -> unit
 val ppqvar_subst : Sorts.Quality.t Sorts.QVar.Map.t -> unit
 val ppuniverse_level_subst : Univ.universe_level_subst -> unit
-val ppevar_universe_context : UState.t -> unit
+val ppustate : UState.t -> unit
 val ppconstraints : Univ.Constraints.t -> unit
 val ppuniverseconstraints : UnivProblem.Set.t -> unit
 val ppuniverse_context_future : UVars.UContext.t Future.computation -> unit

@@ -110,7 +110,7 @@ val fill_occ_pattern :
   ?raise_NoMatch:bool ->
   env -> evar_map -> EConstr.t ->
   pattern -> occ -> int ->
-    EConstr.t Evd.in_evar_universe_context * EConstr.t
+    EConstr.t Evd.in_ustate * EConstr.t
 
 (** Variant of the above function where we fix [h := 1] and return
     [redex_of_pattern pat] if [pat] has no occurrence. *)

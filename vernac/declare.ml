@@ -890,7 +890,7 @@ let prepare_definition ~info ~opaque ?using ~name ~body ~typ sigma =
     Option.map (interp_proof_using_gen f env sigma [name, body, typ]) using
   in
   let entry = definition_entry ~opaque ?using ~inline ?types ~univs body in
-  let uctx = Evd.evar_universe_context sigma in
+  let uctx = Evd.ustate sigma in
   entry, uctx
 
 let declare_definition_core ~info ~cinfo ~opaque ~obls ~body ?using sigma =
@@ -920,7 +920,7 @@ let prepare_obligations ~name ?types ~body env sigma =
   RetrieveObl.check_evars env sigma;
   let body, types = EConstr.(of_constr body, of_constr types) in
   let obls, (_, evmap), body, cty = RetrieveObl.retrieve_obligations env name sigma 0 body types in
-  let uctx = Evd.evar_universe_context sigma in
+  let uctx = Evd.ustate sigma in
   body, cty, uctx, evmap, obls
 
 let prepare_parameter ~poly ~udecl ~types sigma =
@@ -1621,7 +1621,7 @@ let start_proof_core ~name ~pinfo ?using sigma goals =
       let sign = match sign with None -> initialize_named_context_for_proof () | Some sign -> sign in
       (Global.env_of_context sign, typ)) goals in
   let proof = Proof.start ~name ~poly ?typing_flags sigma goals in
-  let initial_euctx = Evd.evar_universe_context Proof.((data proof).sigma) in
+  let initial_euctx = Evd.ustate Proof.((data proof).sigma) in
   { proof
   ; endline_tactic = None
   ; using
@@ -1644,7 +1644,7 @@ let start = start_core ?proof_ending:None
 let start_dependent ~info ~name ~proof_ending goals =
   let { Info.poly; typing_flags; _ } = info in
   let proof = Proof.dependent_start ~name ~poly ?typing_flags goals in
-  let initial_euctx = Evd.evar_universe_context Proof.((data proof).sigma) in
+  let initial_euctx = Evd.ustate Proof.((data proof).sigma) in
   let cinfo = [] in
   let pinfo = Proof_info.make ~info ~cinfo ~proof_ending () in
   { proof
@@ -1872,7 +1872,7 @@ let prepare_proof ?(warn_incomplete=true) { proof; pinfo } =
       else if Evd.has_undefined evd then warn_remaining_unresolved_evars ()
     end
   in
-  proofs, Evd.evar_universe_context evd
+  proofs, Evd.ustate evd
 
 exception NotGuarded of
     Environ.env * Evd.evar_map *
@@ -2067,7 +2067,7 @@ let build_by_tactic env ~uctx ~poly ~typ tac =
   let sign = Environ.(val_of_named_context (named_context env)) in
   let sigma = Evd.from_ctx uctx in
   let ce, status, sigma = build_constant_by_tactic ~name ~sigma ~sign ~poly typ tac in
-  let uctx = Evd.evar_universe_context sigma in
+  let uctx = Evd.ustate sigma in
   (* ignore side effect universes:
      we don't reset the global env in this code path so the side effects are still present
      cf #13271 and discussion in #18874
@@ -2249,7 +2249,7 @@ let save_admitted ~pm ~proof =
      we take the initial types *)
   let sigma = Evd.minimize_universes sigma in
   let typs = List.map (EConstr.to_constr sigma) typs in
-  let uctx = Evd.evar_universe_context sigma in
+  let uctx = Evd.ustate sigma in
   finish_admitted ~pm ~pinfo:proof.pinfo ~uctx ~sec_vars typs
 
 (************************************************************************)

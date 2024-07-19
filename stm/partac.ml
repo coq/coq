@@ -124,7 +124,7 @@ end = struct (* {{{ *)
               let evars = Evarutil.undefined_evars_of_term sigma t in
               if Evar.Set.is_empty evars then
                 let t = EConstr.Unsafe.to_constr t in
-                RespBuiltSubProof (t, Evd.evar_universe_context sigma)
+                RespBuiltSubProof (t, Evd.ustate sigma)
               else
                 CErrors.user_err
                   Pp.(str"The par: selector requires a tactic that makes no progress or fully" ++

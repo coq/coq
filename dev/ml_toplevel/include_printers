@@ -42,7 +42,7 @@
 #install_printer (* univ full subst *) Top_printers.ppuniverse_level_subst;;
 #install_printer Top_printers.ppqvar_subst;;
 #install_printer (* univ opt subst *) Top_printers.ppuniverse_opt_subst;;
-#install_printer (* evar univ ctx *) Top_printers.ppevar_universe_context;;
+#install_printer (* evar univ ctx *) Top_printers.ppustate;;
 #install_printer (* cclosure partial_subst *) Top_printers.pp_partialfsubst;;
 #install_printer (* reductionops partial_subst *) Top_printers.pp_partialsubst;;
 #install_printer (* inductive *) Top_printers.ppind;;

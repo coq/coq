@@ -100,7 +100,7 @@ let congrtac ((n, t), ty) ist =
   debug_ssr (fun () -> (Pp.str"===congr==="));
   debug_ssr (fun () -> Pp.(str"concl=" ++ Printer.pr_econstr_env env sigma concl));
   let nsigma, _ as it = interp_term env sigma ist t in
-  let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context nsigma) in
+  let sigma = Evd.merge_universe_context sigma (Evd.ustate nsigma) in
   let f, _, _ucst = abs_evars env sigma it in
   let ist' = {ist with lfun =
     Id.Map.add pattern_id (Tacinterp.Value.of_constr f) Id.Map.empty } in
@@ -457,7 +457,7 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
   end
 
 let pf_merge_uc_of s sigma =
-  Evd.merge_universe_context sigma (Evd.evar_universe_context s)
+  Evd.merge_universe_context sigma (Evd.ustate s)
 
 let rwcltac ?under ?map_redex cl rdx dir (sigma, r) =
   let open Proofview.Notations in
@@ -646,7 +646,7 @@ let rwrxtac ?under ?map_redex occ rdx_pat dir rule =
         try
           let ise = unify_HO env (Evd.create_evar_defs r_sigma) lhs rdx in
           if not (rw_progress rhs rdx ise) then raise NoMatch else
-          d, (ise, Evd.evar_universe_context ise, Reductionops.nf_evar ise r)
+          d, (ise, Evd.ustate ise, Reductionops.nf_evar ise r)
         with e when CErrors.noncritical e -> rwtac rs in
      rwtac rules in
   let env0 = env in
@@ -727,10 +727,10 @@ let rwargtac ?under ?map_redex ist ((dir, mult), (((oclr, occ), grx), (kind, gt)
     (* Evarmaps below are extensions of sigma, so setting the universe context is correct *)
     let sigma = match rx with
     | None -> sigma
-    | Some { pat_sigma = s } -> Evd.set_universe_context sigma (Evd.evar_universe_context s)
+    | Some { pat_sigma = s } -> Evd.set_universe_context sigma (Evd.ustate s)
     in
     let t = interp env sigma gt in
-    let sigma = Evd.set_universe_context sigma  (Evd.evar_universe_context (fst t)) in
+    let sigma = Evd.set_universe_context sigma  (Evd.ustate (fst t)) in
     Proofview.Unsafe.tclEVARS sigma <*>
     (match kind with
     | RWred sim -> simplintac occ rx sim

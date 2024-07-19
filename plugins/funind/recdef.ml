@@ -1521,7 +1521,7 @@ let com_terminate interactive_proof tcc_lemma_name tcc_lemma_ref is_mes
   in
   try
     let sigma, new_goal_type = build_new_goal_type lemma in
-    let sigma = Evd.from_ctx (Evd.evar_universe_context sigma) in
+    let sigma = Evd.from_ctx (Evd.ustate sigma) in
     open_new_goal ~lemma start_proof sigma using_lemmas tcc_lemma_ref
       (Some tcc_lemma_name) new_goal_type
   with EmptySubgoals ->

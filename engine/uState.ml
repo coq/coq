@@ -1253,6 +1253,20 @@ let pr_weak prl {minim_extra={UnivMinim.weak_constraints=weak}} =
 
 let pr_sort_opt_subst uctx = QState.pr (pr_uctx_qvar uctx) uctx.sort_variables
 
+let pr ctx =
+  let open Pp in
+  let prl = pr_uctx_level ctx in
+  if is_empty ctx then mt ()
+  else
+    v 0
+      (str"UNIVERSES:"++brk(0,1)++
+       h (Univ.pr_universe_context_set prl (context_set ctx)) ++ fnl () ++
+       UnivFlex.pr prl (subst ctx) ++ fnl() ++
+       str"SORTS:"++brk(0,1)++
+       h (pr_sort_opt_subst ctx) ++ fnl() ++
+       str "WEAK CONSTRAINTS:"++brk(0,1)++
+       h (pr_weak prl ctx) ++ fnl ())
+
 module Internal =
 struct
 
