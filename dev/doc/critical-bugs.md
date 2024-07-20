@@ -47,6 +47,7 @@ This file recollects knowledge about critical bugs found in Coq since version 8.
       - [missing pops in executing 31bit arithmetic](#missing-pops-in-executing-31bit-arithmetic)
       - [primitive integer emulation layer on 32 bits not robust to garbage collection](#primitive-integer-emulation-layer-on-32-bits-not-robust-to-garbage-collection)
       - [broken long multiplication primitive integer emulation layer on 32 bits](#broken-long-multiplication-primitive-integer-emulation-layer-on-32-bits)
+      - [broken addmuldiv operation for large shifts](#broken-addmuldiv-operation-for-large-shifts)
       - [translation of identifier from Coq to OCaml was not bijective, leading to identify True and False](#translation-of-identifier-from-coq-to-ocaml-was-not-bijective-leading-to-identify-true-and-false)
       - [stuck primitive projections computed incorrectly by native_compute](#stuck-primitive-projections-computed-incorrectly-by-native_compute)
       - [incorrect De Bruijn handling when inferring the relevance mark for a lambda](#incorrect-de-bruijn-handling-when-inferring-the-relevance-mark-for-a-lambda)
@@ -518,6 +519,17 @@ fix.
 - exploit: test-suite/bugs/bug_11321.v
 - GH issue number: coq/coq#11321
 - risk: critical, as any BigN computation on 32-bit architectures is wrong
+
+#### broken addmuldiv operation for large shifts
+
+- component: "virtual machine" (compilation to bytecode ran by a C-interpreter)
+- impacted released versions: 8.10 to 8.19
+- impacted development branches: 8.20
+- impacted coqchk versions: none (no virtual machine in coqchk)
+- fixed in: [bc0adb4](https://github.com/coq/coq/commit/bc0adb41a7c311f8d8305839c19e4812ff602720)
+- found by: Martin Karup Jensen
+- GH issue number: coq/coq#19402
+- risk: could be exploited by chance (though not in BigNums)
 
 #### translation of identifier from Coq to OCaml was not bijective, leading to identify True and False
 
