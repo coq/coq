@@ -61,17 +61,17 @@ Import ZnZ.
 Instance int_ops : ZnZ.Ops int :=
 {|
  digits      := Pdigits; (* number of digits *)
- zdigits     := Uint63.digits; (* number of digits *)
- to_Z        := Uint63.to_Z; (* conversion to Z *)
+ zdigits     := Uint63Axioms.digits; (* number of digits *)
+ to_Z        := Uint63Axioms.to_Z; (* conversion to Z *)
  of_pos      := positive_to_int; (* positive -> N*int63 :  p => N,i
                                       where p = N*2^31+phi i *)
  head0       := Uint63.head0;  (* number of head 0 *)
  tail0       := Uint63.tail0;  (* number of tail 0 *)
  zero        := 0;
  one         := 1;
- minus_one   := Uint63.max_int;
+ minus_one   := Uint63Axioms.max_int;
  compare     := Uint63.compare;
- eq0         := Uint63.is_zero;
+ eq0         := Uint63Axioms.is_zero;
  opp_c       := Uint63.oppc;
  opp         := Uint63.opp;
  opp_carry   := Uint63.oppcarry;
@@ -80,7 +80,7 @@ Instance int_ops : ZnZ.Ops int :=
  add_carry_c := Uint63.addcarryc;
  succ        := Uint63.succ;
  add         := Uint63.add;
- add_carry   := Uint63.addcarry;
+ add_carry   := Uint63Axioms.addcarry;
  pred_c      := Uint63.predc;
  sub_c       := Uint63.subc;
  sub_carry_c := Uint63.subcarryc;
@@ -100,7 +100,7 @@ Instance int_ops : ZnZ.Ops int :=
  gcd         := Uint63.gcd;
  add_mul_div := Uint63.addmuldiv;
  pos_mod     := pos_mod_int;
- is_even     := Uint63.is_even;
+ is_even     := Uint63Axioms.is_even;
  sqrt2       := Uint63.sqrt2;
  sqrt        := Uint63.sqrt;
  ZnZ.lor     := Uint63.lor;
@@ -254,14 +254,14 @@ Qed.
 Lemma pos_mod_spec w p : φ(pos_mod p w) = φ(w) mod (2 ^ φ(p)).
 Proof.
   simpl. unfold pos_mod_int.
-  assert (W:=to_Z_bounded p);assert (W':=to_Z_bounded Uint63.digits);assert (W'' := to_Z_bounded w).
+  assert (W:=to_Z_bounded p);assert (W':=to_Z_bounded Uint63Axioms.digits);assert (W'' := to_Z_bounded w).
   case lebP; intros hle.
   2: {
     symmetry; apply Zmod_small.
-    assert (2 ^ φ Uint63.digits < 2 ^ φ p); [ apply Zpower_lt_monotone; auto with zarith | ].
-    change wB with (2 ^ φ Uint63.digits) in *; auto with zarith. }
-  rewrite <- (shift_unshift_mod_3 φ Uint63.digits φ p φ w) by auto with zarith.
-  replace (φ Uint63.digits - φ p) with (φ (Uint63.digits - p)) by (rewrite sub_spec, Zmod_small; auto with zarith).
+    assert (2 ^ φ Uint63Axioms.digits < 2 ^ φ p); [ apply Zpower_lt_monotone; auto with zarith | ].
+    change wB with (2 ^ φ Uint63Axioms.digits) in *; auto with zarith. }
+  rewrite <- (shift_unshift_mod_3 φ Uint63Axioms.digits φ p φ w) by auto with zarith.
+  replace (φ Uint63Axioms.digits - φ p) with (φ (Uint63Axioms.digits - p)) by (rewrite sub_spec, Zmod_small; auto with zarith).
   rewrite lsr_spec, lsl_spec; reflexivity.
 Qed.
 

@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import ZArith FloatClass.
+From Stdlib Require Import BinNums PosDef IntDef FloatClass.
 
 (** * Specification of floating-point arithmetic
 
@@ -33,8 +33,8 @@ For instance, Binary64 is defined by [prec = 53] and [emax = 1024]. *)
 Section FloatOps.
   Variable prec emax : Z.
 
-  Definition emin := (3-emax-prec)%Z.
-  Definition fexp e := Z.max (e - prec) emin.
+  Definition emin := Z.sub (Z.sub (Zpos 3) emax) prec.
+  Definition fexp e := Z.max (Z.sub e prec) emin.
 
   Section Zdigits2.
     Fixpoint digits2_pos (n : positive) : positive :=
@@ -54,10 +54,10 @@ Section FloatOps.
 
   Section ValidBinary.
     Definition canonical_mantissa m e :=
-      Zeq_bool (fexp (Zpos (digits2_pos m) + e)) e.
+      Z.eqb (fexp (Z.add (Zpos (digits2_pos m)) e)) e.
 
     Definition bounded m e :=
-      andb (canonical_mantissa m e) (Zle_bool e (emax - prec)).
+      andb (canonical_mantissa m e) (Z.leb e (Z.sub emax prec)).
 
     Definition valid_binary x :=
       match x with
@@ -114,19 +114,19 @@ Section FloatOps.
 
     Definition shr mrs e n :=
       match n with
-      | Zpos p => (iter_pos shr_1 p mrs, (e + n)%Z)
+      | Zpos p => (iter_pos shr_1 p mrs, Z.add e n)
       | _ => (mrs, e)
       end.
 
     Definition shr_fexp m e l :=
-      shr (shr_record_of_loc m l) e (fexp (Zdigits2 m + e) - e).
+      shr (shr_record_of_loc m l) e (Z.sub (fexp (Z.add (Zdigits2 m) e)) e).
 
     Definition round_nearest_even mx lx :=
       match lx with
       | loc_Exact => mx
       | loc_Inexact Lt => mx
-      | loc_Inexact Eq => if Z.even mx then mx else (mx + 1)%Z
-      | loc_Inexact Gt => (mx + 1)%Z
+      | loc_Inexact Eq => if Z.even mx then mx else Z.add mx (Zpos 1)
+      | loc_Inexact Gt => Z.add mx (Zpos 1)
       end.
 
     Definition binary_round_aux sx mx ex lx :=
@@ -134,18 +134,18 @@ Section FloatOps.
       let '(mrs'', e'') := shr_fexp (round_nearest_even (shr_m mrs') (loc_of_shr_record mrs')) e' loc_Exact in
       match shr_m mrs'' with
       | Z0 => S754_zero sx
-      | Zpos m => if Zle_bool e'' (emax - prec) then S754_finite sx m e'' else S754_infinity sx
+      | Zpos m => if Z.leb e'' (Z.sub emax prec) then S754_finite sx m e'' else S754_infinity sx
       | _ => S754_nan
       end.
 
     Definition shl_align mx ex ex' :=
-      match (ex' - ex)%Z with
-      | Zneg d => (shift_pos d mx, ex')
+      match Z.sub ex' ex with
+      | Zneg d => (Pos.iter xO mx d, ex')
       | _ => (mx, ex)
       end.
 
     Definition binary_round sx mx ex :=
-      let '(mz, ez) := shl_align mx ex (fexp (Zpos (digits2_pos mx) + ex))in
+      let '(mz, ez) := shl_align mx ex (fexp (Z.add (Zpos (digits2_pos mx)) ex))in
       binary_round_aux sx (Zpos mz) ez loc_Exact.
 
     Definition binary_normalize m e szero :=
@@ -197,13 +197,13 @@ Section FloatOps.
         match Z.compare e1 e2 with
         | Lt => Lt
         | Gt => Gt
-        | Eq => Pcompare m1 m2 Eq
+        | Eq => Pos.compare_cont Eq m1 m2
         end
       | true, true =>
         match Z.compare e1 e2 with
         | Lt => Gt
         | Gt => Lt
-        | Eq => CompOpp (Pcompare m1 m2 Eq)
+        | Eq => CompOpp (Pos.compare_cont Eq m1 m2)
         end
       end
     end.
@@ -234,10 +234,10 @@ Section FloatOps.
     | S754_zero false => PZero
     | S754_zero true => NZero
     | S754_finite false m _ =>
-      if (digits2_pos m =? Z.to_pos prec)%positive then PNormal
+      if Z.eqb (Zpos (digits2_pos m)) prec then PNormal
       else PSubn
     | S754_finite true m _ =>
-      if (digits2_pos m =? Z.to_pos prec)%positive then NNormal
+      if Z.eqb (Zpos (digits2_pos m)) prec then NNormal
       else NSubn
     end.
 
@@ -253,7 +253,7 @@ Section FloatOps.
     | S754_zero sx, S754_finite sy _ _ => S754_zero (xorb sx sy)
     | S754_zero sx, S754_zero sy => S754_zero (xorb sx sy)
     | S754_finite sx mx ex, S754_finite sy my ey =>
-      binary_round_aux (xorb sx sy) (Zpos (mx * my)) (ex + ey) loc_Exact
+      binary_round_aux (xorb sx sy) (Zpos (Pos.mul mx my)) (Z.add ex ey) loc_Exact
     end.
 
   Definition cond_Zopp (b : bool) m := if b then Z.opp m else m.
@@ -262,17 +262,16 @@ Section FloatOps.
     match x, y with
     | S754_nan, _ | _, S754_nan => S754_nan
     | S754_infinity sx, S754_infinity sy =>
-      if Bool.eqb sx sy then x else S754_nan
+      match sx, sy with true, true | false, false => x | _, _ => S754_nan end
     | S754_infinity _, _ => x
     | _, S754_infinity _ => y
     | S754_zero sx, S754_zero sy =>
-      if Bool.eqb sx sy then x else
-      S754_zero false
+      match sx, sy with true, true | false, false => x | _, _ => S754_zero false end
     | S754_zero _, _ => y
     | _, S754_zero _ => x
     | S754_finite sx mx ex, S754_finite sy my ey =>
       let ez := Z.min ex ey in
-      binary_normalize (Zplus (cond_Zopp sx (Zpos (fst (shl_align mx ex ez)))) (cond_Zopp sy (Zpos (fst (shl_align my ey ez)))))
+      binary_normalize (Z.add (cond_Zopp sx (Zpos (fst (shl_align mx ex ez)))) (cond_Zopp sy (Zpos (fst (shl_align my ey ez)))))
         ez false
     end.
 
@@ -280,29 +279,28 @@ Section FloatOps.
     match x, y with
     | S754_nan, _ | _, S754_nan => S754_nan
     | S754_infinity sx, S754_infinity sy =>
-      if Bool.eqb sx (negb sy) then x else S754_nan
+      match sx, sy with true, false | false, true => x | _, _ => S754_nan end
     | S754_infinity _, _ => x
     | _, S754_infinity sy => S754_infinity (negb sy)
     | S754_zero sx, S754_zero sy =>
-      if Bool.eqb sx (negb sy) then x else
-      S754_zero false
+      match sx, sy with true, false | false, true => x | _, _ => S754_zero false end
     | S754_zero _, S754_finite sy my ey => S754_finite (negb sy) my ey
     | _, S754_zero _ => x
     | S754_finite sx mx ex, S754_finite sy my ey =>
       let ez := Z.min ex ey in
-      binary_normalize (Zminus (cond_Zopp sx (Zpos (fst (shl_align mx ex ez)))) (cond_Zopp sy (Zpos (fst (shl_align my ey ez)))))
+      binary_normalize (Z.sub (cond_Zopp sx (Zpos (fst (shl_align mx ex ez)))) (cond_Zopp sy (Zpos (fst (shl_align my ey ez)))))
         ez false
     end.
 
   Definition new_location_even nb_steps k :=
-    if Zeq_bool k 0 then loc_Exact
-    else loc_Inexact (Z.compare (2 * k) nb_steps).
+    if Z.eqb k Z0 then loc_Exact
+    else loc_Inexact (Z.compare (Z.mul (Zpos 2) k) nb_steps).
 
   Definition new_location_odd nb_steps k :=
-    if Zeq_bool k 0 then loc_Exact
+    if Z.eqb k Z0 then loc_Exact
     else
       loc_Inexact
-      match Z.compare (2 * k + 1) nb_steps with
+      match Z.compare (Z.add (Z.mul (Zpos 2) k) (Zpos 1)) nb_steps with
       | Lt => Lt
       | Eq => Lt
       | Gt => Gt
@@ -314,8 +312,8 @@ Section FloatOps.
   Definition SFdiv_core_binary m1 e1 m2 e2 :=
     let d1 := Zdigits2 m1 in
     let d2 := Zdigits2 m2 in
-    let e' := Z.min (fexp (d1 + e1 - (d2 + e2))) (e1 - e2) in
-    let s := (e1 - e2 - e')%Z in
+    let e' := Z.min (fexp (Z.sub (Z.add d1 e1) (Z.add d2 e2))) (Z.sub e1 e2) in
+    let s := Z.sub (Z.sub e1 e2) e' in
     let m' :=
       match s with
       | Zpos _ => Z.shiftl m1 s
@@ -343,8 +341,8 @@ Section FloatOps.
 
   Definition SFsqrt_core_binary m e :=
     let d := Zdigits2 m in
-    let e' := Z.min (fexp (Z.div2 (d + e + 1))) (Z.div2 e) in
-    let s := (e - 2 * e')%Z in
+    let e' := Z.min (fexp (Z.div2 (Z.add (Z.add d e) (Zpos 1)))) (Z.div2 e) in
+    let s := Z.sub e (Z.mul (Zpos 2) e') in
     let m' :=
       match s with
       | Zpos p => Z.shiftl m s
@@ -353,8 +351,8 @@ Section FloatOps.
       end in
     let (q, r) := Z.sqrtrem m' in
     let l :=
-      if Zeq_bool r 0 then loc_Exact
-      else loc_Inexact (if Zle_bool r q then Lt else Gt) in
+      if Z.eqb r Z0 then loc_Exact
+      else loc_Inexact (if Z.leb r q then Lt else Gt) in
     (q, e', l).
 
   Definition SFsqrt x :=
@@ -372,28 +370,28 @@ Section FloatOps.
   Definition SFnormfr_mantissa f :=
     match f with
     | S754_finite _ mx ex =>
-      if Z.eqb ex (-prec) then Npos mx else 0%N
-    | _ => 0%N
+      if Z.eqb ex (Z.opp prec) then Npos mx else N0
+    | _ => N0
     end.
 
   Definition SFldexp f e :=
     match f with
-    | S754_finite sx mx ex => binary_round sx mx (ex+e)
+    | S754_finite sx mx ex => binary_round sx mx (Z.add ex e)
     | _ => f
     end.
 
   Definition SFfrexp f :=
     match f with
     | S754_finite sx mx ex =>
-      if (Z.to_pos prec <=? digits2_pos mx)%positive then
-        (S754_finite sx mx (-prec), (ex+prec)%Z)
+      if Z.leb prec (Zpos (digits2_pos mx)) then
+        (S754_finite sx mx (Z.opp prec), Z.add ex prec)
       else
-        let d := (prec - Z.pos (digits2_pos mx))%Z in
-        (S754_finite sx (shift_pos (Z.to_pos d) mx) (-prec), (ex+prec-d)%Z)
-    | _ => (f, (-2*emax-prec)%Z)
+        let d := Z.sub prec (Zpos (digits2_pos mx)) in
+        (S754_finite sx (Pos.iter xO mx (Z.to_pos d)) (Z.opp prec), Z.sub (Z.add ex prec) d)
+    | _ => (f, Z.sub (Z.mul (Zneg 2) emax) prec)
     end.
 
-  Definition SFone := binary_round false 1 0.
+  Definition SFone := binary_round false 1 Z0.
 
   Definition SFulp x := SFldexp SFone (fexp (snd (SFfrexp x))).
 
@@ -401,8 +399,8 @@ Section FloatOps.
     match x with
     | S754_finite _ mx _ =>
       let d :=
-        if (mx~0 =? shift_pos (Z.to_pos prec) 1)%positive then
-          SFldexp SFone (fexp (snd (SFfrexp x) - 1))
+        if Pos.eqb mx~0 (Pos.iter xO xH (Z.to_pos prec)) then
+          SFldexp SFone (fexp (Z.sub (snd (SFfrexp x)) (Zpos 1)))
         else
           SFulp x in
       SFsub x d
@@ -410,7 +408,7 @@ Section FloatOps.
     end.
 
   Definition SFmax_float :=
-    S754_finite false (shift_pos (Z.to_pos prec) 1 - 1) (emax - prec).
+    S754_finite false (Pos.sub (Pos.iter xO xH (Z.to_pos prec)) 1) (Z.sub emax prec).
 
   Definition SFsucc x :=
     match x with

@@ -17,10 +17,7 @@ Require Import Zpow_facts.
 Require Import Zgcd_alt.
 Require ZArith.
 Import Znumtheory.
-Require Export PrimInt63.
-
-
-Definition size := 63%nat.
+Require Export PrimInt63 Uint63Axioms.
 
 Notation int := int (only parsing).
 Notation lsl := lsl (only parsing).
@@ -37,6 +34,46 @@ Notation mod := mod (only parsing).
 Notation eqb := eqb (only parsing).
 Notation ltb := ltb (only parsing).
 Notation leb := leb (only parsing).
+
+Notation size := Uint63Axioms.size (only parsing).
+Notation digits := Uint63Axioms.digits (only parsing).
+Notation max_int := Uint63Axioms.max_int (only parsing).
+Notation get_digit := Uint63Axioms.get_digit (only parsing).
+Notation set_digit := Uint63Axioms.set_digit (only parsing).
+Notation is_zero := Uint63Axioms.is_zero (only parsing).
+Notation is_even := Uint63Axioms.is_even (only parsing).
+Notation bit := Uint63Axioms.bit (only parsing).
+Notation addcarry := Uint63Axioms.addcarry (only parsing).
+Notation to_Z := Uint63Axioms.to_Z (only parsing).
+Notation of_pos := Uint63Axioms.of_pos (only parsing).
+Notation of_Z := Uint63Axioms.of_Z (only parsing).
+Notation wB := Uint63Axioms.wB (only parsing).
+Notation of_to_Z := Uint63Axioms.of_to_Z (only parsing).
+Notation lsl_spec := Uint63Axioms.lsl_spec (only parsing).
+Notation lsr_spec := Uint63Axioms.lsr_spec (only parsing).
+Notation land_spec := Uint63Axioms.land_spec (only parsing).
+Notation lor_spec := Uint63Axioms.lor_spec (only parsing).
+Notation lxor_spec := Uint63Axioms.lxor_spec (only parsing).
+Notation add_spec := Uint63Axioms.add_spec (only parsing).
+Notation sub_spec := Uint63Axioms.sub_spec (only parsing).
+Notation mul_spec := Uint63Axioms.mul_spec (only parsing).
+Notation mulc_spec := Uint63Axioms.mulc_spec (only parsing).
+Notation div_spec := Uint63Axioms.div_spec (only parsing).
+Notation mod_spec := Uint63Axioms.mod_spec (only parsing).
+Notation eqb_correct := Uint63Axioms.eqb_correct (only parsing).
+Notation eqb_refl := Uint63Axioms.eqb_refl (only parsing).
+Notation ltb_spec := Uint63Axioms.ltb_spec (only parsing).
+Notation leb_spec := Uint63Axioms.leb_spec (only parsing).
+Notation compare_def_spec := Uint63Axioms.compare_def_spec (only parsing).
+Notation head0_spec := Uint63Axioms.head0_spec (only parsing).
+Notation tail0_spec := Uint63Axioms.tail0_spec (only parsing).
+Notation addc_def_spec := Uint63Axioms.addc_def_spec (only parsing).
+Notation addcarryc_def_spec := Uint63Axioms.addcarryc_def_spec (only parsing).
+Notation subc_def_spec := Uint63Axioms.subc_def_spec (only parsing).
+Notation subcarryc_def_spec := Uint63Axioms.subcarryc_def_spec (only parsing).
+Notation diveucl_def_spec := Uint63Axioms.diveucl_def_spec (only parsing).
+Notation diveucl_21_spec := Uint63Axioms.diveucl_21_spec (only parsing).
+Notation addmuldiv_def_spec := Uint63Axioms.addmuldiv_def_spec (only parsing).
 
 Local Open Scope uint63_scope.
 
@@ -57,33 +94,9 @@ Infix "<=?" := leb (at level 70, no associativity) : uint63_scope.
 Infix "≤?" := leb (at level 70, no associativity) : uint63_scope.
 End Uint63NotationsInternalB.
 
-(** The number of digits as a int *)
-Definition digits := 63.
-
-(** The bigger int *)
-Definition max_int := Eval vm_compute in 0 - 1.
 Register Inline max_int.
-
-(** Access to the nth digits *)
-Definition get_digit x p := (0 <? (x land (1 << p))).
-
-Definition set_digit x p (b:bool) :=
-  if if 0 <=? p then p <? digits else false then
-    if b then x lor (1 << p)
-    else x land (max_int lxor (1 << p))
-  else x.
-
-(** Equality to 0 *)
-Definition is_zero (i:int) := i =? 0.
 Register Inline is_zero.
-
-(** Parity *)
-Definition is_even (i:int) := is_zero (i land 1).
 Register Inline is_even.
-
-(** Bit *)
-
-Definition bit i n :=  negb (is_zero ((i >> n) << (digits - 1))).
 (* Register bit as PrimInline. *)
 
 (** Extra modulo operations *)
@@ -99,7 +112,6 @@ Register Inline succ.
 Definition pred i := i - 1.
 Register Inline pred.
 
-Definition addcarry i j := i + j + 1.
 Register Inline addcarry.
 
 Definition subcarry i j := i - j - 1.
@@ -107,31 +119,12 @@ Register Inline subcarry.
 
 (** Exact arithmetic operations *)
 
-Definition addc_def x y :=
-  let r := x + y in
-  if r <? x then C1 r else C0 r.
 Notation addc := addc (only parsing).
-
-Definition addcarryc_def x y :=
-  let r := addcarry x y in
-  if r <=? x then C1 r else C0 r.
 Notation addcarryc := addcarryc (only parsing).
-
-Definition subc_def x y :=
-  if y <=? x then C0 (x - y) else C1 (x - y).
 Notation subc := subc (only parsing).
-
-Definition subcarryc_def x y :=
-  if y <? x then C0 (x - y - 1) else C1 (x - y - 1).
 Notation subcarryc := subcarryc (only parsing).
-
-Definition diveucl_def x y := (x/y, x mod y).
 Notation diveucl := diveucl (only parsing).
-
 Notation diveucl_21 := diveucl_21 (only parsing).
-
-Definition addmuldiv_def p x y :=
-  (x << p) lor (y >> (digits - p)).
 Notation addmuldiv := addmuldiv (only parsing).
 
 Module Import Uint63NotationsInternalC.
@@ -149,42 +142,9 @@ Register Inline succc.
 Definition predc i := i -c 1.
 Register Inline predc.
 
-(** Comparison *)
-Definition compare_def x y :=
-  if x <? y then Lt
-  else if (x =? y) then Eq else Gt.
-
 Notation compare := compare (only parsing).
 
 Import Bool ZArith.
-(** Translation to Z *)
-Fixpoint to_Z_rec (n:nat) (i:int) :=
-  match n with
-  | O => 0%Z
-  | S n =>
-    (if is_even i then Z.double else Zdouble_plus_one) (to_Z_rec n (i >> 1))
-  end.
-
-Definition to_Z := to_Z_rec size.
-
-Fixpoint of_pos_rec (n:nat) (p:positive) {struct p} :=
-  match n, p with
-  | O, _ => 0
-  | S n, xH => 1
-  | S n, xO p => (of_pos_rec n p) << 1
-  | S n, xI p => (of_pos_rec n p) << 1 lor 1
-  end.
-
-Definition of_pos := of_pos_rec size.
-
-Definition of_Z z :=
-  match z with
-  | Zpos p => of_pos p
-  | Z0 => 0
-  | Zneg p => - (of_pos p)
-  end.
-
-Definition wB := (2 ^ (Z.of_nat size))%Z.
 
 Notation to_nat i := (Z.to_nat (to_Z i)).
 Notation of_nat n := (of_Z (Z.of_nat n)).
@@ -259,89 +219,15 @@ Local Notation "[+| c |]" :=
 Local Notation "[-| c |]" :=
    (interp_carry (-1) wB to_Z c)  (at level 0, c at level 99) : uint63_scope.
 
-(* Bijection : uint63 <-> Bvector size *)
-
-Axiom of_to_Z : forall x, of_Z φ  x  = x.
-
 Lemma can_inj {rT aT} {f: aT -> rT} {g: rT -> aT} (K: forall a, g (f a) = a) {a a'} (e: f a = f a') : a = a'.
 Proof. generalize (K a) (K a'). congruence. Qed.
 
 Lemma to_Z_inj x y : φ x = φ y → x = y.
 Proof. exact (λ e, can_inj of_to_Z e). Qed.
 
-(** Specification of logical operations *)
-Local Open Scope Z_scope.
-Axiom lsl_spec : forall x p, φ (x << p)  = φ x  * 2 ^ φ  p  mod wB.
-
-Axiom lsr_spec : forall x p, φ (x >> p) = φ x / 2 ^ φ p.
-
-Axiom land_spec: forall x y i , bit (x land y) i = bit x i && bit y i.
-
-Axiom lor_spec: forall x y i, bit (x lor y) i = bit x i || bit y i.
-
-Axiom lxor_spec: forall  x y i, bit (x lxor y) i = xorb (bit x i) (bit y i).
-
-(** Specification of basic opetations *)
-
-(* Arithmetic modulo operations *)
-
-(* Remarque : les axiomes seraient plus simple si on utilise of_Z a la place :
-   exemple : add_spec : forall x y, of_Z (x + y) = of_Z x + of_Z y. *)
-
-Axiom add_spec : forall x y, φ (x + y) = (φ x + φ y) mod wB.
-
-Axiom sub_spec : forall x y, φ (x - y) = (φ x - φ y) mod wB.
-
-Axiom mul_spec : forall x y, φ (x * y) = φ x * φ y mod wB.
-
-Axiom mulc_spec : forall x y, φ x * φ y = φ (fst (mulc x y)) * wB + φ (snd (mulc x y)).
-
-Axiom div_spec : forall x y, φ (x / y) = φ x / φ y.
-
-Axiom mod_spec : forall x y, φ (x mod y) = φ x mod φ y.
-
-(* Comparisons *)
-Axiom eqb_correct : forall i j, (i =? j)%uint63 = true -> i = j.
-
-Axiom eqb_refl : forall x, (x =? x)%uint63 = true.
-
-Axiom ltb_spec : forall x y, (x <? y)%uint63 = true <-> φ x < φ y.
-
-Axiom leb_spec : forall x y, (x <=? y)%uint63 = true <-> φ x <= φ y.
-
-(** Exotic operations *)
-
 (** I should add the definition (like for compare) *)
 Notation head0 := head0 (only parsing).
 Notation tail0 := tail0 (only parsing).
-
-(** Axioms on operations which are just short cut *)
-
-Axiom compare_def_spec : forall x y, compare x y = compare_def x y.
-
-Axiom head0_spec  : forall x,  0 < φ x ->
-         wB/ 2 <= 2 ^ (φ (head0 x)) * φ x < wB.
-
-Axiom tail0_spec  : forall x, 0 < φ x ->
-         (exists y, 0 <= y /\ φ x = (2 * y + 1) * (2 ^ φ (tail0 x)))%Z.
-
-Axiom addc_def_spec : forall x y, (x +c y)%uint63 = addc_def x y.
-
-Axiom addcarryc_def_spec : forall x y, addcarryc x y = addcarryc_def x y.
-
-Axiom subc_def_spec : forall x y, (x -c y)%uint63 = subc_def x y.
-
-Axiom subcarryc_def_spec : forall x y, subcarryc x y = subcarryc_def x y.
-
-Axiom diveucl_def_spec : forall x y, diveucl x y = diveucl_def x y.
-
-Axiom diveucl_21_spec :  forall a1 a2 b,
-   let (q,r) := diveucl_21 a1 a2 b in
-   let (q',r') := Z.div_eucl (φ a1 * wB + φ a2) φ b in
-   φ a1 < φ b -> φ q = q' /\ φ r = r'.
-
-Axiom addmuldiv_def_spec : forall p x y,
-  addmuldiv p x y = addmuldiv_def p x y.
 
 (** Square root functions using newton iteration **)
 Local Open Scope uint63_scope.
@@ -416,7 +302,7 @@ Definition gcd := gcd_rec (2*size).
 (** equality *)
 Lemma eqb_complete : forall x y, x = y -> (x =? y) = true.
 Proof.
- intros x y H; rewrite -> H, eqb_refl;trivial.
+ now intros x y H; rewrite H, Uint63Axioms.eqb_refl.
 Qed.
 
 Lemma eqb_spec : forall x y, (x =? y) = true <-> x = y.
@@ -467,7 +353,7 @@ Lemma cast_refl : forall i, cast i i = Some (fun P H => H).
 Proof.
  unfold cast;intros i.
  generalize (eqb_correct i i).
- rewrite eqb_refl;intros e.
+ rewrite Uint63Axioms.eqb_refl;intros e.
  rewrite (Eqdep_dec.eq_proofs_unicity eq_dec (e (eq_refl true)) (eq_refl i));trivial.
 Qed.
 
@@ -487,7 +373,7 @@ Lemma eqo_refl : forall i, eqo i i = Some (eq_refl i).
 Proof.
  unfold eqo;intros i.
  generalize (eqb_correct i i).
- rewrite eqb_refl;intros e.
+ rewrite Uint63Axioms.eqb_refl;intros e.
  rewrite (Eqdep_dec.eq_proofs_unicity eq_dec (e (eq_refl true)) (eq_refl i));trivial.
 Qed.
 
@@ -503,7 +389,7 @@ Lemma eqbP x y : reflect (φ  x  = φ  y ) (x =? y).
 Proof. apply iff_reflect; rewrite eqb_spec; split; [ apply to_Z_inj | apply f_equal ]. Qed.
 
 Lemma ltbP x y : reflect (φ  x  < φ  y )%Z (x <? y).
-Proof. apply iff_reflect; symmetry; apply ltb_spec. Qed.
+Proof. apply iff_reflect; symmetry; apply Uint63Axioms.ltb_spec. Qed.
 
 Lemma lebP x y : reflect (φ  x  <= φ  y )%Z (x ≤? y).
 Proof. apply iff_reflect; symmetry; apply leb_spec. Qed.

@@ -14,10 +14,10 @@ Require Import Psatz.
 (** * Support results involving frexp and ldexp *)
 
 Lemma shift_value : shift = (2*emax + prec)%Z.
-  reflexivity.
-Qed.
+Proof. reflexivity. Qed.
 
 Theorem Z_frexp_spec : forall f, let (m,e) := Z.frexp f in (Prim2SF m, e) = SFfrexp prec emax (Prim2SF f).
+Proof.
   intro.
   unfold Z.frexp.
   case_eq (frshiftexp f).
@@ -27,6 +27,7 @@ Theorem Z_frexp_spec : forall f, let (m,e) := Z.frexp f in (Prim2SF m, e) = SFfr
 Qed.
 
 Theorem Z_ldexp_spec : forall f e, Prim2SF (Z.ldexp f e) = SFldexp prec emax (Prim2SF f) e.
+Proof.
   intros.
   unfold Z.ldexp.
   rewrite (ldshiftexp_spec f _).
@@ -54,6 +55,7 @@ Theorem Z_ldexp_spec : forall f e, Prim2SF (Z.ldexp f e) = SFldexp prec emax (Pr
   rewrite Bool.andb_true_iff.
   intro H'.
   destruct H' as (H1,H2).
+  rewrite Z.eqb_compare in H1.
   apply Zeq_bool_eq in H1.
   apply Z.max_case_strong.
   1:apply Z.min_case_strong.
@@ -69,12 +71,14 @@ Theorem Z_ldexp_spec : forall f e, Prim2SF (Z.ldexp f e) = SFldexp prec emax (Pr
       replace (Z.pos _ + _ - _ - _)%Z with (Z.pos (digits2_pos m) - prec)%Z by ring.
       remember (Zpos _ - _)%Z as z'.
       destruct z' ; [ lia | lia | ].
+      fold (shift_pos p m).
       unfold binary_round_aux.
       unfold shr_fexp.
       unfold fexp.
       unfold Zdigits2.
       unfold shr_record_of_loc, shr.
       rewrite !Z.max_l by (revert H He; unfold emax, emin, prec; lia).
+      fold (shift_pos p m).
       replace (_ - _)%Z with (Z.pos (digits2_pos (shift_pos p m)) - prec)%Z by ring.
       assert (Hs : (Z.pos (digits2_pos (shift_pos p m)) <= prec)%Z).
       {
@@ -107,6 +111,7 @@ Theorem Z_ldexp_spec : forall f e, Prim2SF (Z.ldexp f e) = SFldexp prec emax (Pr
         replace (_ - _)%Z with Z0 by lia.
         replace (_ <=? _)%Z with false by (symmetry; rewrite Z.leb_gt; lia).
         rewrite Z.max_l by (revert He; unfold emax, emin, prec; lia).
+        fold (shift_pos p m).
         replace (_ - _)%Z with Z0 by lia.
         rewrite Z.max_l by (revert He; unfold emax, emin, prec; lia).
         replace (_ - _)%Z with Z0 by lia.
@@ -117,6 +122,7 @@ Theorem Z_ldexp_spec : forall f e, Prim2SF (Z.ldexp f e) = SFldexp prec emax (Pr
         replace (_ - _)%Z with (Zneg p0) by lia.
         replace (_ <=? _)%Z with false by (symmetry; rewrite Z.leb_gt; lia).
         rewrite Z.max_l by (revert He; unfold emax, emin, prec; lia).
+        fold (shift_pos p m).
         replace (_ - _)%Z with (Zneg p0) by lia.
         rewrite Z.max_l by (revert He; unfold emax, emin, prec; lia).
         replace (_ - _)%Z with (Zneg p0) by lia.
