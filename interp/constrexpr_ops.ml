@@ -338,18 +338,17 @@ let rec cases_pattern_fold_names f h nacc pt = match CAst.(pt.v) with
       (f (qualid_basename qid) n, acc)
   | CPatPrim _ | CPatAtom _ -> nacc
   | CPatCast (p,t) ->
-      let (n, acc) = nacc in
-      cases_pattern_fold_names f h (n, h acc t) p
+      cases_pattern_fold_names f h (h nacc t) p
 
 let ids_of_pattern_list p =
   fst (List.fold_left
-    (List.fold_left (cases_pattern_fold_names Id.Set.add (fun () _ -> ())))
+    (List.fold_left (cases_pattern_fold_names Id.Set.add (fun nacc _ -> nacc)))
     (Id.Set.empty,()) p)
 
 let ids_of_cases_tomatch tms =
   List.fold_right
     (fun (_, ona, indnal) l ->
-       Option.fold_right (fun t ids -> fst (cases_pattern_fold_names Id.Set.add (fun () _ -> ()) (ids,()) t))
+       Option.fold_right (fun t ids -> fst (cases_pattern_fold_names Id.Set.add (fun nacc _ -> nacc) (ids,()) t))
          indnal
          (Option.fold_right (CAst.with_val (Name.fold_right Id.Set.add)) ona l))
     tms Id.Set.empty
@@ -366,7 +365,7 @@ let fold_local_binder k g f n acc = let open CAst in function
     let n' = Name.fold_right g na n in
     k n' (Option.fold_left (f n) (f n acc c) t)
   | CLocalPattern pat ->
-    let n, acc = cases_pattern_fold_names g (f n) (n,acc) pat in
+    let n, acc = cases_pattern_fold_names g (fun (n,acc) t -> (n,f n acc t)) (n,acc) pat in
     k n acc
 
 let rec fold_local_binders g f n acc b = function
@@ -396,8 +395,8 @@ let fold_constr_expr_with_binders g f n acc = CAst.with_val (function
       let acc = Option.fold_left (f (Id.Set.fold g ids n)) acc rtnpo in
       let acc = List.fold_left (f n) acc (List.map (fun (fst,_,_) -> fst) al) in
       List.fold_right (fun {CAst.v=(patl,rhs)} acc ->
-          let ids = ids_of_pattern_list patl in
-          f (Id.Set.fold g ids n) acc rhs) bl acc
+          let (n,acc) = List.fold_left (List.fold_left (cases_pattern_fold_names g (fun (n,acc) t -> (n,f n acc t)))) (n,acc) patl in
+          f n acc rhs) bl acc
     | CLetTuple (nal,(ona,po),b,c) ->
       let n' = List.fold_right (CAst.with_val (Name.fold_right g)) nal n in
       f (Option.fold_right (CAst.with_val (Name.fold_right g)) ona n') (f n acc b) c
@@ -417,13 +416,24 @@ let fold_constr_expr_with_binders g f n acc = CAst.with_val (function
       acc
   )
 
+let rec free_vars_of_constr_expr_gen bdvars l = function
+  | { CAst.v = CRef (qid, _) } when qualid_is_ident qid ->
+    let id = qualid_basename qid in
+    if Id.List.mem id bdvars then l else Id.Set.add id l
+  | c -> fold_constr_expr_with_binders (fun a l -> a::l) free_vars_of_constr_expr_gen bdvars l c
+
 let free_vars_of_constr_expr c =
-  let rec aux bdvars l = function
-    | { CAst.v = CRef (qid, _) } when qualid_is_ident qid ->
-      let id = qualid_basename qid in
-      if Id.List.mem id bdvars then l else Id.Set.add id l
-    | c -> fold_constr_expr_with_binders (fun a l -> a::l) aux bdvars l c
-  in aux [] Id.Set.empty c
+  free_vars_of_constr_expr_gen [] Id.Set.empty c
+
+let free_vars_of_cases_pattern_expr c =
+  snd (cases_pattern_fold_names (fun a l -> a::l)
+    (fun (bdvars,l) t -> (bdvars,free_vars_of_constr_expr_gen bdvars l t))
+    ([],Id.Set.empty) c)
+
+let free_vars_of_local_binders bl =
+  fold_local_binders (fun a l -> a::l)
+    free_vars_of_constr_expr_gen
+    [] Id.Set.empty (CAst.make @@ CHole (None)) bl
 
 let names_of_constr_expr c =
   let vars = ref Id.Set.empty in
