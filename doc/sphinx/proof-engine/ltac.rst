@@ -2371,10 +2371,10 @@ Interactive debugger
 
 .. flag:: Ltac Debug
 
-   This flag, when set, enables the step-by-step debugger in the |Ltac| interpreter.
-   The debugger is supported in `coqtop` and Proof General by printing information
-   on the console and accepting typed commands.  In addition, CoqIDE now supports a
-   :ref:`visual debugger <coqide-debugger>` with additional capabilities.
+   When set, enables step-by-step debugging of |Ltac| and Ltac2 code.
+   CoqIDE provides a :ref:`visual debugger <coqide-debugger>`.  For Ltac1
+   code only, debugging is supported in `coqtop` and Proof General by
+   printing information on the console and accepting typed commands.
 
 When the debugger is activated in `coqtop`, it stops at every step of the evaluation of
 the current |Ltac| expression and prints information on what it is doing.
@@ -2402,9 +2402,10 @@ A non-interactive mode for the debugger is available via the flag:
 
 .. flag:: Ltac Batch Debug
 
-   This flag has the effect of presenting a newline at every prompt, when
-   the debugger is on in `coqtop`.  (It has no effect when running the
-   CoqIDE debugger.)  The debug log thus created, which does not require
+   When the debugger is enabled in `coqtop`, this flag presents a newline at
+   every prompt. (Useful only for Ltac1 tactics; Ltac2 tactics and their goals
+   are not printed.  It has no effect when running the CoqIDE debugger.)
+   The debug log thus created, which does not require
    user input to generate when this flag is set, can then be run through
    external tools such as diff.
 

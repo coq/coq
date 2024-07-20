@@ -89,7 +89,10 @@ val of_ltac_debug_answer : tag:string -> Pp.t -> xml
 val to_ltac_debug_answer : xml -> string * Pp.t
 
 (** * reply for db_vars message *)
-val of_vars : (string * Pp.t) list -> xml
+val of_vars : db_vars_rty -> xml
 
 (** * reply for db_stack message *)
-val of_stack : (string * (string * int list) option) list -> xml
+val of_stack : db_stack_rty -> xml
+
+(** * reply for subgoals message *)
+val of_subgoals : goals_rty -> (string * string) list gxml

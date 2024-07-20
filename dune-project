@@ -89,7 +89,7 @@ structured way."))
   conf-adwaita-icon-theme
   (coqide-server (= :version))
   (cairo2 (>= 0.6.4))
-  (lablgtk3-sourceview3 (>= 3.1.2)))
+  (lablgtk3-sourceview3 (and (>= 3.1.2) (or (>= 3.1.5) (<> :os "windows")))))
  (synopsis "The Coq Proof Assistant --- GTK3 IDE")
  (description "Coq is a formal proof management system. It provides
 a formal language to write mathematical definitions, executable

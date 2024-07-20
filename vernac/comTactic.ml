@@ -55,8 +55,12 @@ let solve_core ~pstate n ~info t ~with_end_tac:b =
   pstate
 
 let solve ~pstate n ~info t ~with_end_tac =
+  DebugCommon.set_in_ltac true;
   let t = interp_tac t in
-  solve_core ~pstate n ~info t ~with_end_tac
+  let rv = solve_core ~pstate n ~info t ~with_end_tac in
+  (* DebugCommon.show_exn_in_debugger will clear if there's an exception *)
+  DebugCommon.set_in_ltac false;
+  rv
 
 let check_par_applicable pstate =
   Declare.Proof.fold pstate ~f:(fun p ->
