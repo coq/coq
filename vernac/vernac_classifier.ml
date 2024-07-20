@@ -94,12 +94,12 @@ let classify_vernac e =
     | VernacExactProof _ -> VtQed (VtKeep VtKeepOpaque)
     (* Query *)
     | VernacShow _ | VernacPrint _ | VernacSearch _ | VernacLocate _
+    | VernacCheckGuard | VernacValidateProof
     | VernacGlobalCheck _ | VernacCheckMayEval _ -> VtQuery
     (* ProofStep *)
     | VernacProof _
     | VernacFocus _ | VernacUnfocus
     | VernacSubproof _
-    | VernacCheckGuard | VernacValidateProof
     | VernacUnfocused
     | VernacBullet _ ->
         VtProofStep { proof_block_detection = Some "bullet" }
