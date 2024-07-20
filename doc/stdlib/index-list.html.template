@@ -216,6 +216,9 @@ through the <tt>Require Import</tt> command.</p>
     </dt>
     <dd>
     theories/Numbers/BinNums.v
+    theories/BinNums/PosDef.v
+    theories/BinNums/NatDef.v
+    theories/BinNums/IntDef.v
     theories/Numbers/NumPrelude.v
     theories/Numbers/NaryFunctions.v
     theories/Numbers/AltBinNotations.v
@@ -263,11 +266,13 @@ through the <tt>Require Import</tt> command.</p>
     <dd>
     theories/Numbers/Cyclic/Abstract/CyclicAxioms.v
     theories/Numbers/Cyclic/Abstract/NZCyclic.v
-    theories/Numbers/Cyclic/Abstract/CarryType.v
     theories/Numbers/Cyclic/Abstract/DoubleType.v
+    theories/Numbers/Cyclic/Int63/CarryType.v
     theories/Numbers/Cyclic/Int63/Cyclic63.v
     theories/Numbers/Cyclic/Int63/PrimInt63.v
+    theories/Numbers/Cyclic/Int63/Uint63Axioms.v
     theories/Numbers/Cyclic/Int63/Uint63.v
+    theories/Numbers/Cyclic/Int63/Sint63Axioms.v
     theories/Numbers/Cyclic/Int63/Sint63.v
     theories/Numbers/Cyclic/Int63/Ring63.v
     </dd>
@@ -405,6 +410,7 @@ through the <tt>Require Import</tt> command.</p>
     Polymorphic lists, Streams (infinite sequences)
   </dt>
   <dd>
+    theories/Lists/ListDef.v
     theories/Lists/List.v
     theories/Lists/ListDec.v
     theories/Lists/ListSet.v
@@ -714,6 +720,8 @@ through the <tt>Require Import</tt> command.</p>
     Persistent native arrays
   </dt>
   <dd>
+    theories/Array/PrimArray.v
+    theories/Array/ArrayAxioms.v
     theories/Array/PArray.v
   </dd>
 

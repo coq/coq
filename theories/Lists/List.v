@@ -9,6 +9,7 @@
 (************************************************************************)
 
 Require Import PeanoNat.
+Require Export ListDef.
 
 Set Implicit Arguments.
 (* Set Universe Polymorphism. *)
@@ -390,13 +391,7 @@ Section Elts.
   (** ** Nth element of a list *)
   (*****************************)
 
-  Fixpoint nth (n:nat) (l:list A) (default:A) {struct l} : A :=
-    match n, l with
-      | O, x :: l' => x
-      | O, [] => default
-      | S m, [] => default
-      | S m, x :: t => nth m t default
-    end.
+  Local Notation nth := (@nth A).
 
   Fixpoint nth_ok (n:nat) (l:list A) (default:A) {struct l} : bool :=
     match n, l with
@@ -945,6 +940,7 @@ Section Elts.
   Qed.
 
 End Elts.
+Notation nth := nth.
 
 (*******************************)
 (** * Manipulating whole lists *)
@@ -1150,11 +1146,7 @@ Section Map.
   Variables (A : Type) (B : Type).
   Variable f : A -> B.
 
-  Fixpoint map (l:list A) : list B :=
-    match l with
-      | [] => []
-      | a :: t => (f a) :: (map t)
-    end.
+  Local Notation map := (@map A B f).
 
   Lemma map_cons (x:A)(l:list A) : map (x::l) = (f x) :: (map l).
   Proof.
@@ -1263,6 +1255,7 @@ Section Map.
   Qed.
 
 End Map.
+Notation map := map.
 
 (*****************)
 (** ** Flat Map  *)
@@ -2141,14 +2134,8 @@ Section Cutting.
 
   Variable A : Type.
 
-  Fixpoint firstn (n:nat)(l:list A) : list A :=
-    match n with
-      | 0 => nil
-      | S n => match l with
-                 | nil => nil
-                 | a::l => a::(firstn n l)
-               end
-    end.
+  Local Notation firstn := (@firstn A).
+  Local Notation skipn := (@skipn A).
 
   Lemma firstn_nil n: firstn n [] = [].
   Proof. induction n; now simpl. Qed.
@@ -2235,15 +2222,6 @@ Section Cutting.
       intros [|j]; [easy|].
       cbn. f_equal. apply Hl.
   Qed.
-
-  Fixpoint skipn (n:nat)(l:list A) : list A :=
-    match n with
-      | 0 => l
-      | S n => match l with
-                 | nil => nil
-                 | a::l => skipn n l
-               end
-    end.
 
   Lemma nth_error_skipn n l i : nth_error (skipn n l) i = nth_error l (n + i).
   Proof.
@@ -2393,6 +2371,8 @@ Section Cutting.
   Qed.
 
 End Cutting.
+Notation firstn := firstn.
+Notation skipn := skipn.
 
 Section CuttingMap.
   Variables A B : Type.
@@ -2800,15 +2780,6 @@ Qed.
 
 Section NatSeq.
 
-  (** [seq] computes the sequence of [len] contiguous integers
-      that starts at [start]. For instance, [seq 2 3] is [2::3::4::nil]. *)
-
-  Fixpoint seq (start len:nat) : list nat :=
-    match len with
-      | 0 => nil
-      | S len => start :: seq (S start) len
-    end.
-
   Lemma cons_seq : forall len start, start :: seq (S start) len = seq start (S len).
   Proof.
     reflexivity.
@@ -2889,6 +2860,7 @@ Section NatSeq.
   Qed.
 
 End NatSeq.
+Notation seq := seq.
 
 (***********************)
 (** ** List comparison *)
@@ -2899,17 +2871,7 @@ Section Compare.
   Variable A : Type.
   Variable cmp : A -> A -> comparison.
 
-  Fixpoint list_compare (xs ys : list A) : comparison :=
-    match xs, ys with
-    | nil   , nil    => Eq
-    | nil   , _      => Lt
-    | _     , nil    => Gt
-    | x :: xs, y :: ys =>
-        match cmp x y with
-        | Eq => list_compare xs ys
-        | c  => c
-        end
-    end%list.
+  Local Notation list_compare := (@list_compare A cmp).
 
   Section Lemmas.
 
@@ -3086,6 +3048,7 @@ Section Compare.
   End Lemmas.
 
 End Compare.
+Notation list_compare := list_compare.
 
 Section Exists_Forall.
 
@@ -3175,12 +3138,10 @@ Section Exists_Forall.
       apply Exists_exists; exists a; intuition.
     Qed.
 
-    Inductive Forall : list A -> Prop :=
-      | Forall_nil : Forall nil
-      | Forall_cons : forall x l, P x -> Forall l -> Forall (x::l).
-
     #[local]
     Hint Constructors Forall : core.
+
+    Local Notation Forall := (@Forall A P).
 
     Lemma Forall_inv : forall (a:A) l, Forall (a :: l) -> P a.
     Proof.
@@ -3276,6 +3237,7 @@ Section Exists_Forall.
     Qed.
 
   End One_predicate.
+  Local Notation Forall := (@Forall A).
 
   Lemma map_ext_Forall B : forall (f g : A -> B) l,
     Forall (fun x => f x = g x) l -> map f l = map g l.
@@ -3373,6 +3335,9 @@ Section Exists_Forall.
   Proof. now rewrite Forall_forall; split. Qed.
 
 End Exists_Forall.
+Notation Forall := Forall.
+Notation Forall_nil := ListDef.Forall_nil (only parsing).
+Notation Forall_cons := ListDef.Forall_cons (only parsing).
 
 #[global]
 Hint Constructors Exists : core.
@@ -3664,11 +3629,8 @@ Qed.
 Section Repeat.
 
   Variable A : Type.
-  Fixpoint repeat (x : A) (n: nat ) :=
-    match n with
-      | O => []
-      | S k => x::(repeat x k)
-    end.
+
+  Local Notation repeat := (@repeat A).
 
   Theorem repeat_length x n:
     length (repeat x n) = n.
@@ -3803,6 +3765,7 @@ Section Repeat.
   Qed.
 
 End Repeat.
+Notation repeat := repeat.
 
 Lemma repeat_to_concat A n (a:A) :
   repeat a n = concat (repeat [a] n).

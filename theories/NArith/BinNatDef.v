@@ -10,6 +10,7 @@
 
 Require Export BinNums.
 Require Import BinPos.
+Require Export BinNums.NatDef.
 
 Local Open Scope N_scope.
 
@@ -23,6 +24,8 @@ Local Notation "2" := (Npos 2).
 
 Module N.
 
+Include BinNums.NatDef.N.
+
 Definition t := N.
 
 (** ** Nicer name [N.pos] for constructor [Npos] *)
@@ -34,22 +37,6 @@ Notation pos := Npos.
 Definition zero := 0.
 Definition one := 1.
 Definition two := 2.
-
-(** ** Operation [x -> 2*x+1] *)
-
-Definition succ_double x :=
-  match x with
-  | 0 => 1
-  | pos p => pos p~1
-  end.
-
-(** ** Operation [x -> 2*x] *)
-
-Definition double n :=
-  match n with
-  | 0 => 0
-  | pos p => pos p~0
-  end.
 
 (** ** Successor *)
 
@@ -67,14 +54,6 @@ Definition pred n :=
   | pos p => Pos.pred_N p
   end.
 
-(** ** The successor of a [N] can be seen as a [positive] *)
-
-Definition succ_pos (n : N) : positive :=
- match n with
-   | 0 => 1%positive
-   | pos p => Pos.succ p
- end.
-
 (** ** Addition *)
 
 Definition add n m :=
@@ -85,19 +64,6 @@ Definition add n m :=
   end.
 
 Infix "+" := add : N_scope.
-
-(** Subtraction *)
-
-Definition sub n m :=
-match n, m with
-| 0, _ => 0
-| n, 0 => n
-| pos n', pos m' =>
-  match Pos.sub_mask n' m' with
-  | IsPos p => pos p
-  | _ => 0
-  end
-end.
 
 Infix "-" := sub : N_scope.
 
@@ -112,16 +78,6 @@ Definition mul n m :=
 
 Infix "*" := mul : N_scope.
 
-(** Order *)
-
-Definition compare n m :=
-  match n, m with
-  | 0, 0 => Eq
-  | 0, pos m' => Lt
-  | pos n', 0 => Gt
-  | pos n', pos m' => (n' ?= m')%positive
-  end.
-
 Infix "?=" := compare (at level 70, no associativity) : N_scope.
 
 (** Boolean equality and comparison *)
@@ -132,9 +88,6 @@ Definition eqb n m :=
     | pos p, pos q => Pos.eqb p q
     | _, _ => false
   end.
-
-Definition leb x y :=
- match x ?= y with Gt => false | _ => true end.
 
 Definition ltb x y :=
  match x ?= y with Lt => true | _ => false end.
@@ -223,22 +176,6 @@ Definition size_nat n :=
 
 (** Euclidean division *)
 
-Fixpoint pos_div_eucl (a:positive)(b:N) : N * N :=
-  match a with
-    | xH =>
-       match b with 1 => (1,0) | _ => (0,1) end
-    | xO a' =>
-       let (q, r) := pos_div_eucl a' b in
-       let r' := double r in
-       if b <=? r' then (succ_double q, r' - b)
-        else (double q, r')
-    | xI a' =>
-       let (q, r) := pos_div_eucl a' b in
-       let r' := succ_double r in
-       if b <=? r' then (succ_double q, r' - b)
-        else  (double q, r')
-  end.
-
 Definition div_eucl (a b:N) : N * N :=
   match a, b with
    | 0,  _ => (0, 0)
@@ -290,44 +227,6 @@ Definition sqrt n :=
   | 0 => 0
   | pos p => pos (Pos.sqrt p)
  end.
-
-(** Operation over bits of a [N] number. *)
-
-(** Logical [or] *)
-
-Definition lor n m :=
- match n, m with
-   | 0, _ => m
-   | _, 0 => n
-   | pos p, pos q => pos (Pos.lor p q)
- end.
-
-(** Logical [and] *)
-
-Definition land n m :=
- match n, m with
-  | 0, _ => 0
-  | _, 0 => 0
-  | pos p, pos q => Pos.land p q
- end.
-
-(** Logical [diff] *)
-
-Definition ldiff n m :=
- match n, m with
-  | 0, _ => 0
-  | _, 0 => n
-  | pos p, pos q => Pos.ldiff p q
- end.
-
-(** [xor] *)
-
-Definition lxor n m :=
-  match n, m with
-    | 0, _ => m
-    | _, 0 => n
-    | pos p, pos q => Pos.lxor p q
-  end.
 
 (** Shifts *)
 

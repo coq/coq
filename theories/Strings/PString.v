@@ -1,12 +1,12 @@
-Require Import Uint63.
-Require Export PrimString.
-Require Export PrimStringAxioms.
+From Stdlib Require Import Uint63.
+From Stdlib Require Export PrimString.
+From Stdlib Require Export PrimStringAxioms.
 
-Require Import Stdlib.micromega.Lia.
-Require Import Stdlib.micromega.ZifyUint63.
-Require Import Stdlib.micromega.Zify.
+From Stdlib.micromega Require Import Lia.
+From Stdlib.micromega Require Import ZifyUint63.
+From Stdlib.micromega Require Import Zify.
 Require Import Stdlib.Numbers.Cyclic.Int63.Ring63.
-Require Import ZArith.
+From Stdlib Require Import ZArith.
 
 #[local] Open Scope Z_scope.
 #[local] Open Scope list_scope.
@@ -439,7 +439,7 @@ Lemma compare_lt_spec (s1 s2 : string) :
       char63_compare (get s1 i) (get s2 i) = Lt)).
 Proof.
   rewrite compare_spec.
-  setoid_rewrite Uint63.compare_def_spec; unfold compare_def.
+  setoid_rewrite Uint63Axioms.compare_def_spec; unfold compare_def.
   split.
   - intros [i (H1 & H2 & Hget & Heq)]; exists i.
     repeat split; [assumption..|].
@@ -611,7 +611,7 @@ Qed.
 
 (** * Ordered type *)
 
-Require OrderedType.
+From Stdlib Require OrderedType.
 
 Module OT <: OrderedType.OrderedType with Definition t := string.
   Definition t := string.

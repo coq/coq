@@ -58,16 +58,6 @@ Set Inline Level 30.
 Definition eq := @Logic.eq Z.
 Definition eq_equiv := @eq_equivalence Z.
 
-Definition lt x y := (x ?= y) = Lt.
-Definition gt x y := (x ?= y) = Gt.
-Definition le x y := (x ?= y) <> Gt.
-Definition ge x y := (x ?= y) <> Lt.
-
-Infix "<=" := le : Z_scope.
-Infix "<" := lt : Z_scope.
-Infix ">=" := ge : Z_scope.
-Infix ">" := gt : Z_scope.
-
 Notation "x <= y <= z" := (x <= y /\ y <= z) : Z_scope.
 Notation "x <= y < z" := (x <= y /\ y < z) : Z_scope.
 Notation "x < y < z" := (x < y /\ y < z) : Z_scope.

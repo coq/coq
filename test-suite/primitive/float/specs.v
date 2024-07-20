@@ -9,10 +9,13 @@
        Again on each float/int from the lists, each operator
        is evaluated in multiple evaluation mechanisms to check
        that their results agree with the one given by vm_compute. *)
-From Stdlib Require Import String List ZArith Sint63 Uint63 Floats.
+From Stdlib Require Import ListDef ZArith PrimInt63 Uint63Axioms.
+From Stdlib Require Import SpecFloat PrimFloat FloatOps FloatAxioms.
 From Ltac2 Require Import Ltac2 Printf.
-Import ListNotations.
-Open Scope string_scope.
+
+Notation "[ x ; y ; .. ; z ]" :=  (cons x (cons y .. (cons z nil) ..))
+  (format "[ '[' x ;  '/' y ;  '/' .. ;  '/' z ']' ]") : list_scope.
+
 Open Scope list_scope.
 Open Scope float_scope.
 
@@ -76,22 +79,22 @@ Definition tricky_spec_floats :=
 Definition tricky_ints : list int
   := Eval cbv in
       [0; 1
-       ; max_int; max_int - 1
-       ; Uint63.of_Z prec
-       ; Uint63.of_Z emax
-       ; Uint63.of_Z emin
-       ; 2; max_int / 2
-       ; max_int / 2 - 1; max_int / 2 + 1
-       ; Uint63.of_Z prec - 1; Uint63.of_Z prec + 1
-       ; Uint63.of_Z prec / 2; Uint63.of_Z prec / 2 - 1; Uint63.of_Z prec / 2 + 1
-       ; Uint63.of_Z emax - 1; Uint63.of_Z emax + 1
-       ; Uint63.of_Z emax / 2; Uint63.of_Z emax / 2 - 1; Uint63.of_Z emax / 2 + 1
-       ; Uint63.of_Z emin - 1; Uint63.of_Z emin + 1
-       ; Uint63.of_Z emin / 2; Uint63.of_Z emin / 2 - 1; Uint63.of_Z emin / 2 + 1
+       ; max_int; PrimInt63.sub max_int 1
+       ; Uint63Axioms.of_Z prec
+       ; Uint63Axioms.of_Z emax
+       ; Uint63Axioms.of_Z emin
+       ; 2; PrimInt63.div max_int 2
+       ; PrimInt63.sub (PrimInt63.div max_int 2) 1; PrimInt63.add (PrimInt63.div max_int 2) 1
+       ; PrimInt63.sub (Uint63Axioms.of_Z prec) 1; PrimInt63.add (Uint63Axioms.of_Z prec) 1
+       ; PrimInt63.div (Uint63Axioms.of_Z prec) 2; PrimInt63.sub (PrimInt63.div (Uint63Axioms.of_Z prec) 2) 1; PrimInt63.sub (PrimInt63.div (Uint63Axioms.of_Z prec) 2) 1
+       ; PrimInt63.sub (Uint63Axioms.of_Z emax) 1; PrimInt63.add (Uint63Axioms.of_Z emax) 1
+       ; PrimInt63.div (Uint63Axioms.of_Z emax) 2; PrimInt63.sub (PrimInt63.div (Uint63Axioms.of_Z emax) 2) 1; PrimInt63.add (PrimInt63.div (Uint63Axioms.of_Z emax) 2) 1
+       ; PrimInt63.sub (Uint63Axioms.of_Z emin) 1; PrimInt63.add (Uint63Axioms.of_Z emin) 1
+       ; PrimInt63.div (Uint63Axioms.of_Z emin) 2; PrimInt63.sub (PrimInt63.div (Uint63Axioms.of_Z emin) 2) 1; PrimInt63.add (PrimInt63.div (Uint63Axioms.of_Z emin) 2) 1
        (* constants from [ldexp.v] *)
        (* ; 9223372036854775807 *) (* max_int *)
-       ; (-2102)%sint63
-       ; (-3)%sint63
+       ; 0x7ffffffffffff7ca%uint63 (* (-2102)%sint63 *)
+       ; 0x7ffffffffffffffd%uint63 (* (-3)%sint63 *)
        ; 3
       ]%uint63.
 (** *************************************************************************)
@@ -130,7 +133,7 @@ Definition ANNOTATED_BARE_SPEC : Type := BARE_SPEC * {P : Prop | P}.
 (** ** Machinery for instantiating specifications with all examples *)
 Fixpoint instantiate1_all_ways (s : SPEC) : list ANNOTATED_BARE_SPEC
   := match s with
-     | @BARE U spec s => [(s, exist _ U spec)]
+     | @BARE U spec s => cons (s, exist _ U spec) nil
      | @FORALL T s
        => List.flat_map
             (fun v => instantiate1_all_ways (s v))
@@ -413,7 +416,7 @@ Section NegativeTest.
 
 Axiom wrong_spec : forall x, (- x)%float = PrimFloat.abs x.
 
-Definition wrong_spec_list : list SPEC := [ `wrong_spec ].
+Definition wrong_spec_list : list SPEC := cons ( `wrong_spec ) nil.
 
 Let wrong_specs : list ANNOTATED_BARE_SPEC
   := Eval cbv [wrong_spec_list instantiate_all_ways] in instantiate_all_ways wrong_spec_list.
@@ -460,14 +463,14 @@ Let op_bare_specs_red : list BARE_SPEC
 Inductive hlist := hnil | hcons {T} (x : T) (_ : hlist).
 Fixpoint extract_lhs (ls : list BARE_SPEC) : hlist
   := match ls with
-     | [] => hnil
+     | nil => hnil
      | x :: xs
        => let rest := extract_lhs xs in
           match x with EQ v _ | IFF v _ => hcons v rest end
      end.
 Fixpoint merge_lhs (ls : list BARE_SPEC) (result : hlist) : list BARE_SPEC
   := match ls, result with
-     | [], _ | _, hnil => []
+     | nil, _ | _, hnil => nil
      | x :: xs, hcons v vs
        => match x with
           | EQ _ x' => EQ v x'

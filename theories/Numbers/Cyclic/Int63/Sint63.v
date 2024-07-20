@@ -10,8 +10,17 @@
 
 Require Import ZArith.
 Import Znumtheory.
-Require Export Uint63.
+Require Export Uint63 Sint63Axioms.
 Require Import Lia.
+
+Notation min_int := Sint63Axioms.min_int (only parsing).
+Notation to_Z := Sint63Axioms.to_Z (only parsing).
+Notation asr_spec := Sint63Axioms.asr_spec (only parsing).
+Notation div_spec := Sint63Axioms.div_spec (only parsing).
+Notation mod_spec := Sint63Axioms.mod_spec (only parsing).
+Notation ltb_spec := Sint63Axioms.ltb_spec (only parsing).
+Notation leb_spec := Sint63Axioms.leb_spec (only parsing).
+Notation compare_spec := Sint63Axioms.compare_spec (only parsing).
 
 Declare Scope sint63_scope.
 Definition printer (x : int_wrapper) : pos_neg_int63 :=
@@ -54,15 +63,7 @@ Notation "n ?= m" := (compares n m)
   (at level 70, no associativity) : sint63_scope.
 End Sint63NotationsInternalB.
 
-Definition min_int := Eval vm_compute in (lsl 1 62).
 Definition max_int := Eval vm_compute in (min_int - 1)%sint63.
-
-(** Translation to and from Z *)
-Definition to_Z (i : int) :=
-  if (i <? min_int)%uint63 then
-    φ i%uint63
-  else
-    (- φ (- i)%uint63)%Z.
 
 Lemma to_Z_0 : to_Z 0 = 0.
 Proof. easy. Qed.
@@ -110,13 +111,13 @@ Proof.
   generalize (Uint63.to_Z_bounded x).
   case ltbP.
   - intros ltxmin [leq0x _].
-    generalize (Uint63.of_to_Z x).
+    generalize (Uint63Axioms.of_to_Z x).
     destruct (φ x%uint63).
     + now intros <-.
-    + now intros <-; unfold Uint63.of_Z.
+    + now intros <-; unfold Uint63Axioms.of_Z.
     + now intros _.
   - intros nltxmin leq0xltwB.
-    rewrite (opp_spec x).
+    fold (- x)%sint63; rewrite (opp_spec x).
     rewrite Z_mod_nz_opp_full.
     + rewrite Zmod_small by easy.
       destruct (wB - φ x%uint63) eqn: iswbmx.
@@ -125,7 +126,7 @@ Proof.
         apply to_Z_inj.
         rewrite opp_spec.
         generalize (of_Z_spec (Z.pos p)).
-        simpl Uint63.of_Z; intros ->.
+        simpl Uint63Axioms.of_Z; intros ->.
         rewrite <- iswbmx.
         rewrite <- Z.sub_0_l.
         rewrite <- (Zmod_0_l wB).
@@ -222,28 +223,12 @@ Lemma of_pos_spec (p : positive) :
   to_Z (of_pos p) = cmod (Zpos p) wB.
 Proof. rewrite <- of_Z_spec; simpl; reflexivity. Qed.
 
-(** Specification of operations that differ on signed and unsigned ints *)
-
-Axiom asr_spec : forall x p, to_Z (x >> p) = (to_Z x) / 2 ^ (to_Z p).
-
-Axiom div_spec : forall x y,
-    to_Z x <> to_Z min_int \/ to_Z y <> (-1)%Z ->
-  to_Z (x / y) = Z.quot (to_Z x) (to_Z y).
-
-Axiom mod_spec : forall x y, to_Z (x mod y) = Z.rem (to_Z x) (to_Z y).
-
-Axiom ltb_spec : forall x y, (x <? y)%sint63 = true <-> to_Z x < to_Z y.
-
-Axiom leb_spec : forall x y, (x <=? y)%sint63 = true <-> to_Z x <= to_Z y.
-
-Axiom compare_spec : forall x y, (x ?= y)%sint63 = (to_Z x ?= to_Z y).
-
 (** Specification of operations that coincide on signed and unsigned ints *)
 
 Lemma add_spec (x y : int) :
   to_Z (x + y)%sint63 = cmod (to_Z x + to_Z y) wB.
 Proof.
-  rewrite to_Z_cmodwB, Uint63.add_spec.
+  rewrite to_Z_cmodwB, Uint63Axioms.add_spec.
   rewrite <- 2!to_Z_mod_Uint63to_Z, <- Z.add_mod by easy.
   now rewrite cmod_mod.
 Qed.
@@ -251,7 +236,7 @@ Qed.
 Lemma sub_spec (x y : int) :
   to_Z (x - y)%sint63 = cmod (to_Z x - to_Z y) wB.
 Proof.
-  rewrite to_Z_cmodwB, Uint63.sub_spec.
+  rewrite to_Z_cmodwB, Uint63Axioms.sub_spec.
   rewrite <- 2!to_Z_mod_Uint63to_Z, <- Zminus_mod by easy.
   now rewrite cmod_mod.
 Qed.
@@ -259,7 +244,7 @@ Qed.
 Lemma mul_spec (x y : int) :
   to_Z (x * y)%sint63 = cmod (to_Z x * to_Z y) wB.
 Proof.
-  rewrite to_Z_cmodwB, Uint63.mul_spec.
+  rewrite to_Z_cmodwB, Uint63Axioms.mul_spec.
   rewrite <- 2!to_Z_mod_Uint63to_Z, <- Zmult_mod by easy.
   now rewrite cmod_mod.
 Qed.
