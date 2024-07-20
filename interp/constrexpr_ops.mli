@@ -127,6 +127,9 @@ val replace_vars_constr_expr :
 val free_vars_of_constr_expr : constr_expr -> Id.Set.t
 val occur_var_constr_expr : Id.t -> constr_expr -> bool
 
+val free_vars_of_cases_pattern_expr : cases_pattern_expr -> Id.Set.t
+val free_vars_of_local_binders : local_binder_expr list -> Id.Set.t
+
 (** Return all (non-qualified) names treating binders as names *)
 val names_of_constr_expr : constr_expr -> Id.Set.t
 
