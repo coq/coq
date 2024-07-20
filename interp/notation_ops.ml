@@ -13,7 +13,6 @@ open CErrors
 open Util
 open Names
 open Nameops
-open Constr
 open Globnames
 open Glob_term
 open Glob_ops
@@ -997,31 +996,25 @@ let rec push_context_binders vars = function
     | GLocalDef (na,_,_,_) -> Termops.add_vname vars na in
     push_context_binders vars bl
 
-let is_term_meta id metas =
-  try match Id.List.assoc id metas with NtnTypeVar (_, NtnTypeVarConstr _) -> true | _ -> false
-  with Not_found -> false
+let is_term_meta = function
+  | NtnTypeVar (_, NtnTypeVarConstr _) -> true
+  | _ -> false
 
-let is_onlybinding_strict_meta id metas =
-  try match Id.List.assoc id metas with NtnTypeVar (_, NtnTypeVarPattern (NtnBinderParsedAsSomeBinderKind AsStrictPattern)) -> true | _ -> false
-  with Not_found -> false
+let is_onlybinding_pattern_like_meta ~strict ~binder ~isvar = function
+  | NtnTypeVar (_, NtnTypeVarPattern (NtnBinderParsedAsConstr (AsAnyPattern | AsStrictPattern))) -> true
+  | NtnTypeVar (_, NtnTypeVarPattern (NtnBinderParsedAsSomeBinderKind AsStrictPattern)) -> strict
+  | NtnTypeVar (_, NtnTypeVarPattern (NtnBinderParsedAsBinder)) -> binder
+  | NtnTypeVar (_, NtnTypeVarPattern (NtnBinderParsedAsSomeBinderKind AsAnyPattern)) -> true
+  | NtnTypeVar (_, NtnTypeVarPattern (NtnBinderParsedAsSomeBinderKind (AsIdent | AsName))) -> isvar
+  | NtnTypeVar (_, NtnTypeVarPattern (NtnBinderParsedAsConstr (AsIdent | AsName))) -> isvar
+  | NtnTypeVar (_, (NtnTypeVarConstr _ | NtnTypeVarBinders _)) | NtnTypeVarList _ | NtnTypeVarTuple _ -> false
 
-let is_onlybinding_meta id metas =
-  try match Id.List.assoc id metas with NtnTypeVar (_, NtnTypeVarPattern _) -> true | _ -> false
-  with Not_found -> false
+let is_bindinglist_meta = function
+  | NtnTypeVar (_, NtnTypeVarBinders _) -> true
+  | _ -> false
 
-let is_onlybinding_pattern_like_meta ~strict ~isvar id metas =
-  try match Id.List.assoc id metas with
-    | NtnTypeVar (_, NtnTypeVarPattern (NtnBinderParsedAsConstr (AsAnyPattern | AsStrictPattern))) -> true
-    | NtnTypeVar (_, NtnTypeVarPattern ((NtnBinderParsedAsSomeBinderKind AsStrictPattern | NtnBinderParsedAsBinder))) -> strict
-    | NtnTypeVar (_, NtnTypeVarPattern (NtnBinderParsedAsSomeBinderKind AsAnyPattern)) -> true
-    | NtnTypeVar (_, NtnTypeVarPattern (NtnBinderParsedAsSomeBinderKind (AsIdent | AsName))) -> isvar
-    | NtnTypeVar (_, NtnTypeVarPattern (NtnBinderParsedAsConstr (AsIdent | AsName))) -> isvar
-    | NtnTypeVar (_, (NtnTypeVarConstr _ | NtnTypeVarBinders _)) | NtnTypeVarList _ | NtnTypeVarTuple _ -> false
-  with Not_found -> false
-
-let is_bindinglist_meta id metas =
-  try match Id.List.assoc id metas with NtnTypeVar (_, NtnTypeVarBinders _) -> true | _ -> false
-  with Not_found -> false
+let is_bindinglist_meta_var id metas =
+  try is_bindinglist_meta (Id.List.assoc id metas) with Not_found -> false
 
 exception No_match
 
@@ -1255,26 +1248,6 @@ let bind_termlist_env alp sigma var vl =
     add_termlist_env alp' sigma var vl
   with Not_found -> add_termlist_env alp sigma var vl
 
-let bind_ident_as_binding_env alp sigma var id =
-  try
-    (* If already bound to a term, unify the binder and the term *)
-    let vars', _alp', v' = get_term (Id.Map.find var sigma) in
-    match DAst.get v' with
-    | GVar id' | GRef (GlobRef.VarRef id',None) ->
-       let {actualvars;staticbinders;renaming} = alp in
-       let vars = Id.Set.add id' actualvars in
-       let renaming = if not (Id.equal id id') then (id,id')::renaming else renaming in
-       {actualvars = Id.Set.union vars' vars; staticbinders; renaming}, sigma
-    | t ->
-       (* The term is a non-variable pattern *)
-       raise No_match
-  with Not_found ->
-    let alp = {alp with actualvars = Id.Set.add id alp.actualvars} in
-    (* The matching against a term allowing to find the instance has not been found yet *)
-    (* If it will be a different name, we shall unfortunately fail *)
-    (* TODO: look at the consequences for alp *)
-    alp, add_env alp sigma var (DAst.make @@ GVar id)
-
 let bind_singleton_bindinglist_as_term_env alp sigma var c =
   try
     (* If already bound to a binder, unify the term and the binder *)
@@ -1366,39 +1339,62 @@ let match_opt f sigma t1 t2 = match (t1,t2) with
   | Some t1, Some t2 -> f sigma t1 t2
   | _ -> raise No_match
 
-let match_names metas (alp,sigma) na1 na2 = match (na1,na2) with
-  | (na1,Name id2) when is_onlybinding_strict_meta id2 metas (* strict pattern = not a variable *) ->
-      raise No_match
-  | (na1,Name id2) when is_onlybinding_meta id2 metas ->
-      bind_binding_env alp sigma id2 [DAst.make (PatVar na1)]
-  | (Name id1,Name id2) when is_term_meta id2 metas ->
-      (* We let the non-binding occurrence define the rhs and hence reason up to *)
-      (* alpha-conversion for the given occurrence of the name (see #4592)) *)
-      bind_ident_as_binding_env alp sigma id2 id1
-  | (Anonymous,Name id2) when is_term_meta id2 metas ->
-      (* We let the non-binding occurrence define the rhs *)
-      alp, sigma
-  | (na1,Name id2) ->
-      {alp with staticbinders = (na1,id2)::alp.staticbinders},sigma
+let is_meta_variable_name na metas =
+  match na with
+  | Name id -> (try Some (id, Id.List.assoc id metas) with Not_found -> None)
+  | Anonymous -> None
+
+let is_meta_variable_pat pat metas =
+  match pat with
+  | PatVar (Name id) -> (try Some (id, Id.List.assoc id metas) with Not_found -> None)
+  | _ -> None
+
+let is_meta_variable_term term metas =
+  match term with
+  | NVar id -> (try Some (id, Id.List.assoc id metas) with Not_found -> None)
+  | _ -> None
+
+let match_names_var (alp,sigma) na1 id2 typ =
+  if is_onlybinding_pattern_like_meta ~strict:false ~binder:true ~isvar:true typ then
+    bind_binding_env alp sigma id2 [DAst.make (PatVar na1)]
+  else
+    raise No_match
+
+let match_names_non_var (alp,sigma) na1 na2 =
+  match na1, na2 with
+  | (na1,Name id2) -> {alp with staticbinders = (na1,id2)::alp.staticbinders},sigma
   | (Anonymous,Anonymous) -> alp,sigma
   | _ -> raise No_match
+
+let match_names metas acc na1 na2 =
+  match is_meta_variable_name na2 metas with
+  | Some (id2, typ) -> match_names_var acc na1 id2 typ
+  | None -> match_names_non_var acc na1 na2
 
 let isPatVar = function PatVar _ -> true | _ -> false
 
 let rec match_cases_pattern_binders allow_catchall metas (alp,sigma as acc) pat1 pat2 =
-  match DAst.get pat1, DAst.get pat2 with
-  | pat, PatVar (Name id2) when is_onlybinding_pattern_like_meta ~strict:(not (isPatVar pat)) ~isvar:(isPatVar pat) id2 metas ->
+  let pat = DAst.get pat1 in
+  let pat2 = DAst.get pat2 in
+  match is_meta_variable_pat pat2 metas with
+  | Some (id2, typ) ->
+    if is_onlybinding_pattern_like_meta ~strict:(not (isPatVar pat)) ~binder:false ~isvar:(isPatVar pat) typ then
       bind_binding_env alp sigma id2 [pat1]
-  | PatVar id1, PatVar (Name id2) when is_bindinglist_meta id2 metas ->
-      let t1 = DAst.make @@ GHole(GBinderType id1) in
-      bind_bindinglist_env alp sigma id2 [DAst.make @@ GLocalAssum (id1,None,Explicit,t1)]
-  | _, PatVar (Name id2) when is_bindinglist_meta id2 metas ->
+    else if is_bindinglist_meta typ then
+      match pat with
+      | PatVar id1 ->
+        let t1 = DAst.make @@ GHole(GBinderType id1) in
+        bind_bindinglist_env alp sigma id2 [DAst.make @@ GLocalAssum (id1,None,Explicit,t1)]
+      | _ ->
       (* dummy data; should not be used anyway *)
       let id1 = Namegen.next_ident_away (Id.of_string "x") Id.Set.empty in
       let t1 = DAst.make @@ GHole(GBinderType (Name id1)) in
       let ids1 = [] in
       bind_bindinglist_env alp sigma id2 [DAst.make @@ GLocalPattern (([pat1],ids1),id1,Explicit,t1)]
-  | PatVar na1, PatVar na2 -> match_names metas acc na1 na2
+    else raise No_match
+  | None ->
+  match pat, pat2 with
+  | PatVar na1, PatVar na2 -> match_names_non_var acc na1 na2
   | _, PatVar Anonymous when allow_catchall -> acc
   | PatCstr (c1,patl1,na1), PatCstr (c2,patl2,na2)
       when Construct.CanOrd.equal c1 c2 && Int.equal (List.length patl1) (List.length patl2) ->
@@ -1472,7 +1468,7 @@ let match_termlist match_fun alp metas sigma rest x y iter termin revert =
       alp, acc, match_fun alp metas sigma rest termin in
   let alp,l,sigma = aux alp sigma [] rest in
   let l = if revert then l else List.rev l in
-  if is_bindinglist_meta x metas then
+  if is_bindinglist_meta_var x metas then
     (* This is a recursive pattern for both bindings and terms; it is *)
     (* registered for binders *)
     bind_bindinglist_as_termlist_env alp sigma x l
@@ -1505,12 +1501,16 @@ let is_var_term = function
 let rec match_ inner u alp metas sigma a1 a2 =
   let open CAst in
   let loc = a1.loc in
-  match DAst.get a1, a2 with
+  let r1 = DAst.get a1 in
   (* Matching notation variable *)
-  | r1, NVar id2 when is_term_meta id2 metas -> bind_term_env alp sigma id2 a1
-  | r1, NVar id2 when is_onlybinding_pattern_like_meta ~strict:true ~isvar:(is_var_term r1) id2 metas -> bind_binding_as_term_env alp sigma id2 a1
-  | r1, NVar id2 when is_bindinglist_meta id2 metas -> bind_singleton_bindinglist_as_term_env alp sigma id2 a1
-
+  match is_meta_variable_term a2 metas with
+  | Some (id2, typ) ->
+    if is_term_meta typ then bind_term_env alp sigma id2 a1 else
+    if is_onlybinding_pattern_like_meta ~strict:true ~binder:true ~isvar:(is_var_term r1) typ then bind_binding_as_term_env alp sigma id2 a1 else
+    if is_bindinglist_meta typ then bind_singleton_bindinglist_as_term_env alp sigma id2 a1 else
+      raise No_match
+  | None ->
+  match r1, a2 with
   (* Matching recursive notations for terms *)
   | r1, NList (x,y,iter,termin,revert) ->
       match_termlist (match_hd u) alp metas sigma a1 x y iter termin revert
@@ -1633,7 +1633,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
       | Some (NVar id2) -> bind_term_env alp sigma id2 t1
       | _ -> assert false in
       let (alp,sigma) =
-        if is_bindinglist_meta id metas then
+        if is_bindinglist_meta_var id metas then
           bind_bindinglist_env alp sigma id [DAst.make @@ GLocalAssum (Name id',None,Explicit,t1)]
         else
           match_names metas (alp,sigma) (Name id') na in
@@ -1664,35 +1664,40 @@ and match_binders u alp metas na1 na2 sigma b1 b2 =
   match_in u alp metas sigma b1 b2
 
 and match_extended_binders ?loc isprod u alp metas na1 na2 bk t sigma b1 b2 =
-  (* Match binders which can be substituted by a pattern *)
-  let store, get = set_temporary_memory () in
-  match na1, DAst.get b1, na2 with
-  (* Matching individual binders as part of a recursive pattern *)
-  | Name p, GCases (Constr.LetPatternStyle,None,[(e,_)],(_::_ as eqns)), Name id
-       when is_gvar p e && is_bindinglist_meta id metas && List.length (store (Detyping.factorize_eqns eqns)) = 1 ->
-    (match get () with
-     | [{CAst.v=(ids,disj_of_patl,b1)}] ->
-     let disjpat = List.map (function [pat] -> pat | _ -> assert false) disj_of_patl in
-     let disjpat = if occur_glob_constr p b1 then List.map (set_pat_alias p) disjpat else disjpat in
-     let alp,sigma = bind_bindinglist_env alp sigma id [DAst.make ?loc @@ GLocalPattern ((disjpat,ids),p,bk,t)] in
-     match_in u alp metas sigma b1 b2
-     | _ -> assert false)
-  | Name p, GCases (LetPatternStyle,None,[(e,_)],(_::_ as eqns)), Name id
-       when is_gvar p e && is_onlybinding_pattern_like_meta ~strict:true ~isvar:false id metas && List.length (store (Detyping.factorize_eqns eqns)) = 1 ->
-    (match get () with
-     | [{CAst.v=(ids,disj_of_patl,b1)}] ->
-     let disjpat = List.map (function [pat] -> pat | _ -> assert false) disj_of_patl in
-     let disjpat = if occur_glob_constr p b1 then List.map (set_pat_alias p) disjpat else disjpat in
-     let alp,sigma = bind_binding_env alp sigma id disjpat in
-     match_in u alp metas sigma b1 b2
-     | _ -> assert false)
-  | _, _, Name id when is_bindinglist_meta id metas ->
-      if (isprod && na1 = Anonymous) then raise No_match (* prefer using "A -> B" for anonymous forall *);
-      let alp,sigma = bind_bindinglist_env alp sigma id [DAst.make ?loc @@ GLocalAssum (na1,None,bk,t)] in
-      match_in u alp metas sigma b1 b2
-  | _, _, _ ->
-     let (alp,sigma) = match_names metas (alp,sigma) na1 na2 in
-     match_in u alp metas sigma b1 b2
+  (* Match binders which can be substituted by a pattern: *)
+  (* that is, try to extract a pattern part in b2 that can be bound to na2 *)
+  match is_meta_variable_name na2 metas with
+  | Some (id2, typ) ->
+    (let store, get = set_temporary_memory () in
+    (* Matching individual binders as part of a recursive pattern *)
+    match na1, DAst.get b1 with
+    | Name p, GCases (Constr.LetPatternStyle,None,[(e,_)],(_::_ as eqns))
+      when is_gvar p e && (is_bindinglist_meta typ || is_onlybinding_pattern_like_meta ~strict:true ~binder:true ~isvar:false typ)
+           && List.length (store (Detyping.factorize_eqns eqns)) = 1 ->
+      (match get () with
+       | [{CAst.v=(ids,disj_of_patl,b1)}] ->
+         let disjpat = List.map (function [pat] -> pat | _ -> assert false) disj_of_patl in
+         let disjpat = if occur_glob_constr p b1 then List.map (set_pat_alias p) disjpat else disjpat in
+         let alp,sigma =
+           if is_bindinglist_meta typ then
+             bind_bindinglist_env alp sigma id2 [DAst.make ?loc @@ GLocalPattern ((disjpat,ids),p,bk,t)]
+           else
+             (* bk, t? *)
+             bind_binding_env alp sigma id2 disjpat in
+         match_in u alp metas sigma b1 b2
+       | _ -> assert false)
+    | _ ->
+      if is_bindinglist_meta typ then
+        begin
+          if (isprod && na1 = Anonymous) then raise No_match (* prefer using "A -> B" for anonymous forall *);
+          let alp,sigma = bind_bindinglist_env alp sigma id2 [DAst.make ?loc @@ GLocalAssum (na1,None,bk,t)] in
+          match_in u alp metas sigma b1 b2
+        end
+      else
+        let (alp,sigma) = match_names_var (alp,sigma) na1 id2 typ in
+        match_in u alp metas sigma b1 b2)
+  | None ->
+    match_binders u alp metas na1 na2 sigma b1 b2
 
 and match_equations u alp metas sigma {CAst.v=(ids,patl1,rhs1)} (patl2,rhs2) rest1 rest2 =
   (* patl1 and patl2 have the same length because they respectively
