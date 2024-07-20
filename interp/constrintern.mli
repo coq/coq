@@ -239,7 +239,7 @@ val is_global : Id.t -> bool
     guaranteed to have the same domain as the input one. *)
 val interp_notation_constr : env -> ?impls:internalization_env ->
   notation_interp_env -> constr_expr ->
-  (bool * subscopes * Id.Set.t) Id.Map.t * notation_constr * reversibility_status
+  (bool * subscopes * Id.Set.t * bool) Id.Map.t * notation_constr * reversibility_status
 
 (** Typically used to internalize a term inside a tactic. *)
 val intern_core : typing_constraint -> ?pattern_mode:bool ->
