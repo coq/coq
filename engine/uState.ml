@@ -1247,9 +1247,12 @@ let check_uctx_impl ~fail uctx uctx' =
 
 
 (* XXX print above_prop too *)
-let pr_weak prl {minim_extra={UnivMinim.weak_constraints=weak}} =
+let pr_weak prl {minim_extra={UnivMinim.weak_constraints=weak; above_prop}} =
   let open Pp in
-  prlist_with_sep fnl (fun (u,v) -> prl u ++ str " ~ " ++ prl v) (UPairSet.elements weak)
+  v 0 (
+    prlist_with_sep cut (fun (u,v) -> h (prl u ++ str " ~ " ++ prl v)) (UPairSet.elements weak)
+    ++ if UPairSet.is_empty weak || Level.Set.is_empty above_prop then mt() else cut () ++
+    prlist_with_sep cut (fun u -> h (str "Prop <= " ++ prl u)) (Level.Set.elements above_prop))
 
 let pr_sort_opt_subst uctx = QState.pr (pr_uctx_qvar uctx) uctx.sort_variables
 
