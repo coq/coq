@@ -195,7 +195,10 @@ let search_other_known st ?from s =
   with Not_found -> None
 
 let is_in_coqlib st ?from s =
-  try let _ = search_table st.State.coqlib ?from s in true with Not_found -> false
+  try let _ = search_table st.State.coqlib ?from s in true
+  with Not_found -> match from with Some _ -> false | None ->
+  try let _ = search_table st.State.coqlib ~from:["Stdlib"] s in true
+  with Not_found -> false
 
 let add_paths recur root table phys_dir log_dir basename =
   let name = log_dir@[basename] in

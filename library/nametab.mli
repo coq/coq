@@ -270,6 +270,3 @@ module Modules : sig
   val unfreeze : t -> unit
   val summary_tag : t Summary.Dyn.tag
 end
-
-(** [warn_deprecated_dirpath_Coq ?loc dp id] internal. Note that [dp] is expected in reversed order *)
-val warn_deprecated_dirpath_Coq : ?loc:Loc.t -> module_ident list * Id.t -> unit
