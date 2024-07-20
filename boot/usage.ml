@@ -24,6 +24,7 @@ let print_usage_common co command =
   output_string co
  "  -I dir                 look for ML files in dir\
 \n  -include dir           (idem)\
+\n  -L dir coqdir          recursively compiles the library at physical dir and maps physical dir to logical coqdir\
 \n  -R dir coqdir          recursively map physical dir to logical coqdir\
 \n  -Q dir coqdir          map physical dir to logical coqdir\
 \n  -top coqdir            set the toplevel name to be coqdir instead of Top\

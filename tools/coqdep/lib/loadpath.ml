@@ -285,6 +285,10 @@ let add_norec_dir_import add_file phys_dir log_dir =
 let add_rec_dir_no_import add_file phys_dir log_dir =
   add_directory true (add_file false) phys_dir log_dir
 
+(** -L semantic: go in subdirs and suffixes of logical paths are known. *)
+let add_rec_dir_import_l add_file phys_dir log_dir =
+  add_directory true (add_file true) phys_dir log_dir
+
 (** -R semantic: go in subdirs and suffixes of logical paths are known. *)
 let add_rec_dir_import add_file phys_dir log_dir =
   add_directory true (add_file true) phys_dir log_dir
@@ -298,3 +302,4 @@ let split_period = Str.split (Str.regexp (Str.quote "."))
 let add_current_dir st dir = add_norec_dir_import (add_known st) dir []
 let add_q_include st path l = add_rec_dir_no_import (add_known st) path (split_period l)
 let add_r_include st path l = add_rec_dir_import (add_known st) path (split_period l)
+let add_l_include st path l = add_rec_dir_import_l (add_known st) path (split_period l)

@@ -15,7 +15,7 @@ type t =
   ; noglob : bool
   ; coqproject : string option
   ; ml_path : string list
-  ; vo_path : (bool * string * string) list
+  ; vo_path : (bool * bool * string * string) list
   ; dyndep : string
   ; meta_files : string list
   ; files : string list
@@ -49,6 +49,7 @@ let usage () =
   eprintf "  -noinit : currently no effect\n";
   eprintf "  -f file : read -I, -Q, -R and filenames from _CoqProject-formatted file.\n";
   eprintf "  -I dir : add (non recursively) dir to ocaml path\n";
+  eprintf "  -L dir logname : build and import 'dir' recursively to coq load path under logical name logname (builds with a _CoqProject file in 'dir')\"";
   eprintf "  -R dir logname : add and import dir recursively to coq load path under logical name logname\n";
   eprintf "  -Q dir logname : add (recursively) and open (non recursively) dir to coq load path under logical name logname\n";
   eprintf "  -vos : also output dependencies about .vos files\n";
@@ -70,8 +71,9 @@ let parse st args =
     | "-f" :: f :: ll -> parse { st with coqproject = Some f } ll
     | "-I" :: r :: ll -> parse { st with ml_path = r :: st.ml_path } ll
     | "-I" :: [] -> usage ()
-    | "-R" :: r :: ln :: ll -> parse { st with vo_path = (true, r, ln) :: st.vo_path } ll
-    | "-Q" :: r :: ln :: ll -> parse { st with vo_path = (false, r, ln) :: st.vo_path } ll
+    | "-L" :: r :: ln :: ll -> parse { st with vo_path = (true, false, r, ln) :: st.vo_path } ll
+    | "-R" :: r :: ln :: ll -> parse { st with vo_path = (false, true, r, ln) :: st.vo_path } ll
+    | "-Q" :: r :: ln :: ll -> parse { st with vo_path = (false, false, r, ln) :: st.vo_path } ll
     | "-R" :: ([] | [_]) -> usage ()
     | "-exclude-dir" :: r :: ll -> System.exclude_directory r; parse st ll
     | "-exclude-dir" :: [] -> usage ()

@@ -186,6 +186,8 @@ let args_options = Arg.align [
   "<url> Set URL for Coq standard library (default: " ^ Coq_config.wwwstdlib ^ ")";
   "--coqlib", Arg.String (fun d -> Boot.Env.set_coqlib d),
   "<dir> Set the path where Coq files are installed";
+  "-L", arg_path (fun p l -> { p with paths = l :: !prefs.paths }),
+  "<dir>+<coqdir> map physical dir to Coq dir";
   "-R", arg_path (fun p l -> { p with paths = l :: !prefs.paths }),
   "<dir>+<coqdir> map physical dir to Coq dir";
   "-Q", arg_path (fun p l -> { p with paths = l :: !prefs.paths }),

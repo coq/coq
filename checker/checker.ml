@@ -93,7 +93,7 @@ let add_rec_path ~unix_path ~coq_root =
   else
     Feedback.msg_warning (str "Cannot open " ++ str unix_path)
 
-(* By the option -R/-Q of the command line *)
+(* By the option -L/-R/-Q of the command line *)
 let includes = ref []
 let push_include (s, alias) = includes := (s,alias) :: !includes
 
@@ -179,6 +179,7 @@ let print_usage_channel co command =
   output_string co
 "\
 \n  -Q dir coqdir               map physical dir to logical coqdir\
+\n  -L dir coqdir               synonymous for -Q\
 \n  -R dir coqdir               synonymous for -Q\
 \n  -coqlib dir                 set coqchk's standard library location\
 \n  -boot                       don't initialize the library paths automatically\
@@ -346,8 +347,8 @@ let parse_args argv =
       set_boot ();
       parse rem
 
-    | ("-Q"|"-R") :: d :: p :: rem -> set_include d p;parse rem
-    | ("-Q"|"-R") :: ([] | [_]) -> usage 1
+    | ("-L"|"-Q"|"-R") :: d :: p :: rem -> set_include d p;parse rem
+    | ("-L"|"-Q"|"-R") :: ([] | [_]) -> usage 1
 
     | "-debug" :: rem -> CDebug.set_debug_all true; parse rem
 

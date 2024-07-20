@@ -348,11 +348,14 @@ let treat_coqproject st f =
   in
   iter_sourced (fun { path } -> Loadpath.add_caml_dir st path) project.ml_includes;
   iter_sourced (fun ({ path }, l) -> Loadpath.add_q_include st path l) project.q_includes;
+  iter_sourced (fun ({ path }, l) -> Loadpath.add_l_include st path l) project.l_includes;
   iter_sourced (fun ({ path }, l) -> Loadpath.add_r_include st path l) project.r_includes;
   iter_sourced (fun f' -> treat_file_coq_project f f') (all_files project)
 
-let add_include st (rc, r, ln) =
-  if rc then
+let add_include st (lc, rc, r, ln) =
+  if lc then
+    Loadpath.add_l_include st r ln
+  else if rc then
     Loadpath.add_r_include st r ln
   else
     Loadpath.add_q_include st r ln

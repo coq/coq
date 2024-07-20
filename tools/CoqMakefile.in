@@ -33,7 +33,7 @@ OTHERFLAGS        := $(COQMF_OTHERFLAGS)
 COQCORE_SRC_SUBDIRS := $(COQMF_COQ_SRC_SUBDIRS)
 OCAMLLIBS         := $(COQMF_OCAMLLIBS)
 SRC_SUBDIRS       := $(COQMF_SRC_SUBDIRS)
-COQLIBS           := $(COQMF_COQLIBS)
+COQLIBS           := $(COQMF_COQLIBS) $(COQMF_INDEP_COQLIBS)
 COQLIBS_NOML      := $(COQMF_COQLIBS_NOML)
 CMDLINE_COQLIBS   := $(COQMF_CMDLINE_COQLIBS)
 COQLIB            := $(COQMF_COQLIB)
@@ -410,10 +410,25 @@ endif
 
 ALLDFILES = $(addsuffix .d,$(ALLSRCFILES)) $(VDFILE)
 
+LIB_MAKEFILE_NAME = MAKELIB.coq
+
 # Compilation targets #########################################################
 
 all:
 	$(HIDE)$(MAKE) --no-print-directory -f "$(SELF)" pre-all
+ifneq ($(strip $(COQMF_INDEP_COQLIBS)),)
+	$(HIDE)IND=0; \	
+	for lib in $(COQMF_INDEP_COQLIBS); do \
+		if [ $$((IND % 3)) -eq 1 ]; then \
+      cd $$lib ; \
+			$(COQMKFILE) -f _CoqProject -o $(LIB_MAKEFILE_NAME); \
+			$(MAKE) -f $(LIB_MAKEFILE_NAME); \
+			rm -f $(LIB_MAKEFILE_NAME) $(LIB_MAKEFILE_NAME).conf .$(LIB_MAKEFILE_NAME).d; \ 
+      cd .. ; \
+		fi; \
+	  IND=$$((IND + 1)); \
+	done
+endif
 	$(HIDE)$(MAKE) --no-print-directory -f "$(SELF)" real-all
 	$(HIDE)$(MAKE) --no-print-directory -f "$(SELF)" post-all
 .PHONY: all
@@ -680,6 +695,19 @@ clean::
 	$(HIDE)rm -f $(NATIVEFILES)
 	$(HIDE)find . -name .coq-native -type d -empty -delete
 	$(HIDE)rm -f $(VOFILES)
+ifneq ($(strip $(COQMF_INDEP_COQLIBS)),)
+	$(HIDE)IND=0; \
+	for lib in $(COQMF_INDEP_COQLIBS); do \
+		if [ $$((IND % 3)) -eq 1 ]; then \
+      cd $$lib ; \
+			$(COQMKFILE) -f _CoqProject -o $(LIB_MAKEFILE_NAME); \
+			$(MAKE) -f $(LIB_MAKEFILE_NAME) clean; \
+			rm -f $(LIB_MAKEFILE_NAME) $(LIB_MAKEFILE_NAME).conf .$(LIB_MAKEFILE_NAME).d; \
+      cd .. ; \
+		fi; \
+	  IND=$$((IND + 1)); \
+	done
+endif
 	$(HIDE)rm -f $(VOFILES:.vo=.vos)
 	$(HIDE)rm -f $(VOFILES:.vo=.vok)
 	$(HIDE)rm -f $(VOFILES:.vo=.v.prof.json)

@@ -40,6 +40,7 @@ val add_caml_dir : State.t -> System.unix_path -> unit
 
 val add_current_dir : State.t -> System.unix_path -> unit
 val add_q_include : State.t -> System.unix_path -> string -> unit
+val add_l_include : State.t -> System.unix_path -> string -> unit
 val add_r_include : State.t -> System.unix_path -> string -> unit
 
 (* These should disappear in favor of add_q / add_r *)

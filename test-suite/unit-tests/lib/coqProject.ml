@@ -27,6 +27,7 @@ let t () =
       meta_file = Absent;
 
       ml_includes = [];
+      l_includes = [];
       r_includes = [];
       q_includes = [];
       extra_args = [];
@@ -55,6 +56,7 @@ let t () =
       meta_file = Absent;
 
       ml_includes = [];
+      l_includes = [];
       r_includes = [];
       q_includes = [];
       extra_args = List.map sourced_file ["-w"; "default"; "-w"; "foo"; "-set"; "Default Goal Selector=!"];
