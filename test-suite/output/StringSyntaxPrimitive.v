@@ -12,9 +12,9 @@ Close Scope string_scope.
 (* Notations for primitive integers inside polymorphic datatypes *)
 Module Test1.
   Inductive intList := mk_intList (_ : list int).
-  Definition i63_from_byte (b : byte) : int := Uint63.of_Z (BinInt.Z.of_N (Byte.to_N b)).
+  Definition i63_from_byte (b : byte) : int := Uint63Axioms.of_Z (BinInt.Z.of_N (Byte.to_N b)).
   Definition i63_to_byte (i : int) : byte :=
-      match Byte.of_N (BinInt.Z.to_N (Uint63.to_Z i)) with Some x => x | None => x00%byte end.
+      match Byte.of_N (BinInt.Z.to_N (Uint63Axioms.to_Z i)) with Some x => x | None => x00%byte end.
 
   Definition to_byte_list '(mk_intList a) := List.map i63_to_byte a.
 
@@ -41,11 +41,11 @@ Import PArray.
 Module Test2.
   Inductive intArray := mk_intArray (_ : array int).
 
-  Definition i63_from_byte (b : byte) : Uint63.int := Uint63.of_Z (BinInt.Z.of_N (Byte.to_N b)).
+  Definition i63_from_byte (b : byte) : Uint63.int := Uint63Axioms.of_Z (BinInt.Z.of_N (Byte.to_N b)).
   Definition i63_to_byte (i : Uint63.int) : byte :=
-  match Byte.of_N (BinInt.Z.to_N (Uint63.to_Z i)) with Some x => x | None => x00%byte end.
+  match Byte.of_N (BinInt.Z.to_N (Uint63Axioms.to_Z i)) with Some x => x | None => x00%byte end.
 
-  Definition i63_to_nat x := BinInt.Z.to_nat (Uint63.to_Z x).
+  Definition i63_to_nat x := BinInt.Z.to_nat (Uint63Axioms.to_Z x).
   Local Definition nat_length {X} (x : array X) :nat := i63_to_nat (length x).
 
   Local Fixpoint list_length_i63 {A} (xs : list A) :int :=

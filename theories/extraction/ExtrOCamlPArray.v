@@ -13,13 +13,13 @@
 From Stdlib Require PArray Extraction.
 
 (** Primitive types and operators. *)
-Extract Constant PArray.array "'a" => "'a Parray.t".
-Extraction Inline PArray.array.
+Extract Constant PrimArray.array "'a" => "'a Parray.t".
+Extraction Inline PrimArray.array.
 (* Otherwise, the name conflicts with the primitive OCaml type [array] *)
 
-Extract Constant PArray.make => "Parray.make".
-Extract Constant PArray.get => "Parray.get".
-Extract Constant PArray.default => "Parray.default".
-Extract Constant PArray.set => "Parray.set".
-Extract Constant PArray.length => "Parray.length".
-Extract Constant PArray.copy => "Parray.copy".
+Extract Constant PrimArray.make => "Parray.make".
+Extract Constant PrimArray.get => "Parray.get".
+Extract Constant PrimArray.default => "Parray.default".
+Extract Constant PrimArray.set => "Parray.set".
+Extract Constant PrimArray.length => "Parray.length".
+Extract Constant PrimArray.copy => "Parray.copy".

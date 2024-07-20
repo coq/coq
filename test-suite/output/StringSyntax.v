@@ -45,10 +45,10 @@ Compute List.fold_right
                      | None => ls
                      end)
         nil
-        (List.seq 0 256).
+        (ListDef.seq 0 256).
 Local Close Scope byte_scope.
 Local Open Scope char_scope.
-Compute List.map Ascii.ascii_of_nat (List.seq 0 256).
+Compute List.map Ascii.ascii_of_nat (ListDef.seq 0 256).
 Local Close Scope char_scope.
 
 (* Test numeral notations for parameterized inductives *)
