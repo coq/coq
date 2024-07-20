@@ -496,6 +496,7 @@ let match_goals ot nt =
     in
     let branch_expr ogname exp exp2 =
       let (cpe,ce), (cpe2,ce2) = exp.v,exp2.v in
+        List.iter2 (List.iter2 (cases_pattern_expr ogname)) cpe cpe2;
         constr_expr ogname ce ce2
     in
     begin
