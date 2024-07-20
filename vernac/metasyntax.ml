@@ -309,6 +309,13 @@ let error_not_same_scope x y =
   user_err
     (str "Variables " ++ Id.print x ++ str " and " ++ Id.print y ++ str " must be in the same scope.")
 
+let error_not_same_binding_ids x y ntn_binding_ids1 ntn_binding_ids2 =
+  user_err
+    (str "Variables " ++ Id.print x ++ str " and " ++ Id.print y ++
+     str " are in the scope of a different set of binders (respectively " ++
+     pr_enum Id.print (Id.Set.elements ntn_binding_ids1) ++ str " and " ++
+     pr_enum Id.print (Id.Set.elements ntn_binding_ids1) ++ str ").")
+
 (** **************************************************************** **)
 (** Build pretty-printing rules                                      **)
 
@@ -1238,13 +1245,13 @@ let make_interp_atom_type_rec used_as_binder default_if_binding scl = function
   (* Others *)
   | ETBigint | ETGlobal -> NtnTypeVarList (NtnTypeVar (scl, NtnTypeVarConstr NtnConstrForConstrAndPatternForPattern))
 
-let make_interp_atom_type used_as_binder default_if_binding scl = function
+let make_interp_atom_type used_as_binder default_if_binding scl is_only_in_constr = function
   (* Parsed as constr, but intended to denote a specific kind of binder, independently of the interpretation *)
   | ETConstr (_,Some bk,_) -> NtnTypeVar (scl, NtnTypeVarPattern (NtnBinderParsedAsConstr bk))
   (* Parsed as constr list but known to be used as binder (and maybe also as constr) in the interpretation *)
   | ETConstr (_,None,_) when used_as_binder -> NtnTypeVar (scl, NtnTypeVarPattern (NtnBinderParsedAsConstr default_if_binding))
   (* Parsed as constr, interpreted as constr *)
-  | ETConstr (_,None,_) -> NtnTypeVar (scl, NtnTypeVarConstr NtnConstrForConstrAndPatternForPattern)
+  | ETConstr (_,None,_) -> NtnTypeVar (scl, NtnTypeVarConstr (if is_only_in_constr then NtnAlwaysConstr else NtnConstrForConstrAndPatternForPattern))
   (* Different way of parsing binders, maybe interpreted also as
      constr, but conventionally internally binders *)
   | ETIdent -> NtnTypeVar (scl, NtnTypeVarPattern (NtnBinderParsedAsSomeBinderKind AsIdent))
@@ -1280,15 +1287,15 @@ let make_interpretation_vars
     maintypes (entry,_) i_varscopes sy_typs =
   let rec aux = function
     | NtnRawTypeVar x ->
-      let (used_as_binder, xscope, ntn_binding_ids) = Id.Map.find x i_varscopes in
+      let (used_as_binder, xscope, ntn_binding_ids, is_only_in_constr) = Id.Map.find x i_varscopes in
       let sy_typ = Id.List.assoc x sy_typs in
       let entry = entry_relative_level_of_constr_prod_entry entry sy_typ in
-      make_interp_atom_type used_as_binder default_if_binding ((entry, xscope), ntn_binding_ids) sy_typ
+      make_interp_atom_type used_as_binder default_if_binding ((entry, xscope), ntn_binding_ids) is_only_in_constr sy_typ
     | NtnRawTypeVarTuple typl -> NtnTypeVarTuple (List.map aux typl)
     | NtnRawTypeVarList (NtnRawTypeVar (x,y)) ->
       (* Maybe binders *)
-      let (used_as_binder_x, xscope, _ntn_binding_ids1) = Id.Map.find x i_varscopes in
-      let (used_as_binder_y, yscope, ntn_binding_ids2) = Id.Map.find y i_varscopes in
+      let (used_as_binder_x, xscope, ntn_binding_ids1, is_only_in_constr1) = Id.Map.find x i_varscopes in
+      let (used_as_binder_y, yscope, ntn_binding_ids2, is_only_in_constr2) = Id.Map.find y i_varscopes in
       let () =
         if used_as_binder_x <> used_as_binder_y then
           user_err Pp.(str "The two ends " ++ Id.print x ++ str " and " ++ Id.print y ++
@@ -1305,6 +1312,9 @@ let make_interpretation_vars
          eventually more complex notations, such as e.g.
           Notation "!! x .. y , P .. Q" := (fun x => (P, .. (fun y => (Q, True)) ..)).
          each occurrence of the recursive notation variables may have its own binders *)
+      (* So the following test is currently useless *)
+      if not (Id.Set.equal ntn_binding_ids1 ntn_binding_ids2) then
+        error_not_same_binding_ids x y ntn_binding_ids1 ntn_binding_ids2;
       let sy_typ = Id.List.assoc x sy_typs in
       let entry = entry_relative_level_of_constr_prod_entry entry sy_typ in
       make_interp_atom_type_rec used_as_binder_y default_if_binding ((entry,yscope),ntn_binding_ids2) sy_typ
