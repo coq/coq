@@ -136,8 +136,8 @@ val declare_mutual_definitions
   -> cinfo: Constr.t CInfo.t list
   -> opaque:bool
   -> uctx:UState.t
-  -> bodies:(Constr.t list * Sorts.relevance list)
-  -> possible_guard:Pretyping.possible_guard
+  -> bodies:Constr.t list
+  -> possible_guard:Pretyping.possible_guard * Sorts.relevance list
   -> ?using:Vernacexpr.section_subset_expr
   -> unit
   -> Names.GlobRef.t list
@@ -216,8 +216,8 @@ module Proof : sig
   val start_mutual_definitions
     :  info:Info.t
     -> cinfo:Constr.t CInfo.t list
-    -> ?bodies:Constr.t option list
-    -> possible_guard:Pretyping.possible_guard
+    -> bodies:Constr.t option list
+    -> possible_guard:(Pretyping.possible_guard * Sorts.relevance list)
     -> ?using:Vernacexpr.section_subset_expr
     -> Evd.evar_map
     -> t
@@ -326,6 +326,14 @@ module Proof : sig
     -> proof:proof_object
     -> idopt:Names.lident option
     -> OblState.t
+
+  exception NotGuarded of
+      Environ.env * Evd.evar_map *
+      (Environ.env * int * EConstr.t Type_errors.pcofix_guard_error) option *
+      (Environ.env * int * int list * EConstr.t Type_errors.pfix_guard_error) list *
+      EConstr.rec_declaration
+
+  val control_only_guard : t -> unit
 
 end
 
@@ -570,7 +578,7 @@ val add_mutual_definitions :
   -> opaque:bool
   -> uctx:UState.t
   -> bodies:Constr.t list
-  -> possible_guard:Pretyping.possible_guard
+  -> possible_guard:(Pretyping.possible_guard * Sorts.relevance list)
   -> ?tactic:unit Proofview.tactic
   -> ?reduce:(Constr.t -> Constr.t)
   -> ?using:Vernacexpr.section_subset_expr

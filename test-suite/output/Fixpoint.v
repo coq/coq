@@ -80,3 +80,47 @@ with b2 := b1.
 *)
 
 End Recursivity.
+
+Module Guard.
+
+Open Scope nat_scope.
+
+Lemma foo : nat -> nat -> bool
+with bar : nat -> nat -> bool.
+Proof.
+  Fail Guarded. (* not enough abstractions in the definition *)
+  all:intros n m.
+  Guarded.
+  - destruct n as [|n].
+    + exact (bar 0 0).
+      Fail Guarded. (* failure is correct here *)
+Abort.
+
+Lemma foo : nat -> nat -> bool
+with bar : nat -> nat -> bool.
+Proof.
+  all:intros n m.
+  - destruct n as [|n].
+    + exact true.
+    + Guarded.
+      exact (bar m n).
+  - Guarded.
+    destruct m as [|m].
+    + exact false.
+    + exact (foo m n).
+      Guarded.
+Defined.
+
+Inductive STrue : SProp := SI.
+
+Lemma foo' : nat -> Prop -> bool
+with bar' : STrue -> nat -> bool.
+Proof.
+  all:intros n m.
+  - destruct n as [|n].
+    Guarded.
+    + exact (bar' SI 0).
+      Fail Guarded.
+Abort.
+
+End Guard.

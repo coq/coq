@@ -16,3 +16,8 @@ val explain_type_error : Environ.env -> Evd.evar_map -> Pretype_errors.type_erro
 val explain_pretype_error : Environ.env -> Evd.evar_map -> Pretype_errors.pretype_error -> Pp.t
 
 val explain_refiner_error : Environ.env -> Evd.evar_map -> Logic.refiner_error -> Pp.t
+
+val explain_not_guarded : Environ.env -> Evd.evar_map ->
+  (Environ.env * int * EConstr.t Type_errors.pcofix_guard_error) option ->
+  (Environ.env * int * int list * EConstr.t Type_errors.pfix_guard_error) list ->
+  EConstr.rec_declaration -> Pp.t
