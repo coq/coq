@@ -1878,6 +1878,7 @@ module MiniEConstr = struct
     evc_stack : int list; (* stack of binders crossed at each evar *)
     evc_depth : int; (* length of evc_stack *)
     evc_cache : int Int.Map.t ref; (* Cache get_lift on evc_stack *)
+    evc_used_vars : int Id.Map.t ref option; (* int is (local) min lift used *)
   }
 
   let dbg = CDebug.create ~name:"to_constr" ()
@@ -1899,6 +1900,11 @@ module MiniEConstr = struct
     clos.evc_lift + ans
 
   let clos_var clos id =
+    let add_used = function
+      | None -> Some clos.evc_lift
+      | Some lft -> Some (min lft clos.evc_lift)
+    in
+    clos.evc_used_vars |> Option.iter (fun used -> used := Id.Map.update id add_used !used);
     match Id.Map.find_opt id clos.evc_map with
     | None -> None
     | Some (depth, lazy v) ->
@@ -1910,6 +1916,7 @@ module MiniEConstr = struct
     let saw_evar = ref false in
     let steps = ref 0 in
     let lsubst = universe_subst sigma in
+    let used_vars = ref EvMap.empty in
     let univ_value l =
       UnivFlex.normalize_univ_variable lsubst l
     in
@@ -1953,16 +1960,45 @@ module MiniEConstr = struct
         end
       | Some info ->
         let Evar_defined c = evar_body info in
-        let push id c map = Id.Map.add id (clos.evc_depth, lazy (make_substituend (self clos c))) map in
-        let nmap = evar_instance_array clos.evc_map push info args in
-        let nclos = {
-          evc_lift = 0;
-          evc_map = nmap;
-          evc_depth = clos.evc_depth + 1;
-          evc_stack = clos.evc_lift :: clos.evc_stack;
-          evc_cache = ref Int.Map.empty;
-        } in
-        self nclos c
+        let push id c (map,local) =
+          (Id.Map.add id (clos.evc_depth, lazy (make_substituend (self clos c))) map
+          , Id.Set.add id local)
+        in
+        let nmap, local = evar_instance_array (clos.evc_map,Id.Set.empty) push info args in
+        let nclos, here_used_vars =
+          let nclos = {
+            evc_lift = 0;
+            evc_map = nmap;
+            evc_depth = clos.evc_depth + 1;
+            evc_stack = clos.evc_lift :: clos.evc_stack;
+            evc_cache = ref Int.Map.empty;
+            evc_used_vars = None;
+          }
+          in
+          match EvMap.find_opt evk !used_vars with
+          | None -> { nclos with evc_used_vars = Some (ref Id.Map.empty) }, None
+          | Some used -> nclos, Some used
+        in
+        let c = self nclos c in
+        let here_used_vars = match here_used_vars with
+          | Some used -> used
+          | None ->
+            let used = !(Option.get nclos.evc_used_vars) in
+            let () = used_vars := EvMap.add evk used !used_vars in
+            used
+        in
+        let () =
+          let new_used = Id.Map.filter_map (fun id x ->
+              if Id.Set.mem id local then None else (Some (x + clos.evc_lift)))
+              here_used_vars
+          in
+          let merge id a b = Some (min a b) in
+          clos.evc_used_vars |> Option.iter (fun used' ->
+              used' := Id.Map.union merge
+                  !used'
+                  new_used)
+        in
+        c
       end
     | _ ->
       UnivSubst.map_universes_opt_subst_with_binders next self qvar_value univ_value clos c
@@ -1973,9 +2009,19 @@ module MiniEConstr = struct
       evc_stack = [];
       evc_map = Id.Map.empty;
       evc_cache = ref Int.Map.empty;
+      evc_used_vars = None;
     } in
     let c = self clos c in
-    dbg Pp.(fun () -> str "steps = " ++ int !steps);
+    dbg Pp.(fun () ->
+        let pr_one (id,minlift) = Id.print id ++ str " at min lift " ++ int minlift in
+        let pr_used (evk,used) =
+          hov 0 (str (string_of_existential evk) ++ str " used " ++
+             prlist_with_sep pr_comma pr_one (Id.Map.bindings used))
+        in
+        v 0 (
+          str "steps = " ++ int !steps ++ spc() ++
+          prlist_with_sep spc pr_used (EvMap.bindings !used_vars)
+        ));
     !saw_evar, c
 
   let check_evar c =
