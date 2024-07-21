@@ -1880,8 +1880,11 @@ module MiniEConstr = struct
     evc_cache : int Int.Map.t ref; (* Cache get_lift on evc_stack *)
   }
 
+  let dbg = CDebug.create ~name:"to_constr" ()
+
   let to_constr_gen ~expand ~ignore_missing sigma c =
     let saw_evar = ref false in
+    let steps = ref 0 in
     let lsubst = universe_subst sigma in
     let univ_value l =
       UnivFlex.normalize_univ_variable lsubst l
@@ -1908,7 +1911,7 @@ module MiniEConstr = struct
       let k = clos.evc_lift + ans in
       Some (lift_substituend k v)
     in
-    let rec self clos c = match Constr.kind c with
+    let rec self clos c = incr steps; match Constr.kind c with
     | Var id ->
       begin match find clos id with
       | None -> c
@@ -1968,6 +1971,7 @@ module MiniEConstr = struct
       evc_cache = ref Int.Map.empty;
     } in
     let c = self clos c in
+    dbg Pp.(fun () -> str "steps = " ++ int !steps);
     !saw_evar, c
 
   let check_evar c =
