@@ -1882,6 +1882,30 @@ module MiniEConstr = struct
 
   let dbg = CDebug.create ~name:"to_constr" ()
 
+  let get_lift clos pos =
+    let rec aux accu n lft =
+      if Int.equal n 0 then accu
+      else match lft with
+        | [] -> assert false
+        | k :: lft -> aux (accu + k) (n - 1) lft
+    in
+    let ans = match Int.Map.find_opt pos clos.evc_cache.contents with
+      | None ->
+        let ans = aux 0 pos clos.evc_stack in
+        let () = clos.evc_cache := Int.Map.add pos ans clos.evc_cache.contents in
+        ans
+      | Some ans -> ans
+    in
+    clos.evc_lift + ans
+
+  let clos_var clos id =
+    match Id.Map.find_opt id clos.evc_map with
+    | None -> None
+    | Some (depth, lazy v) ->
+      let pos = clos.evc_depth - depth - 1 in
+      let k = get_lift clos pos in
+      Some (lift_substituend k v)
+
   let to_constr_gen ~expand ~ignore_missing sigma c =
     let saw_evar = ref false in
     let steps = ref 0 in
@@ -1891,29 +1915,9 @@ module MiniEConstr = struct
     in
     let qvar_value q = UState.nf_qvar sigma.universes q in
     let next s = { s with evc_lift = s.evc_lift + 1 } in
-    let find clos id = match Id.Map.find_opt id clos.evc_map with
-    | None -> None
-    | Some (depth, lazy v) ->
-      let pos = clos.evc_depth - depth - 1 in
-      let rec get_lift accu n lft =
-        if Int.equal n 0 then accu
-        else match lft with
-        | [] -> assert false
-        | k :: lft -> get_lift (accu + k) (n - 1) lft
-      in
-      let ans = match Int.Map.find_opt pos clos.evc_cache.contents with
-      | None ->
-        let ans = get_lift 0 pos clos.evc_stack in
-        let () = clos.evc_cache := Int.Map.add pos ans clos.evc_cache.contents in
-        ans
-      | Some ans -> ans
-      in
-      let k = clos.evc_lift + ans in
-      Some (lift_substituend k v)
-    in
     let rec self clos c = incr steps; match Constr.kind c with
     | Var id ->
-      begin match find clos id with
+      begin match clos_var clos id with
       | None -> c
       | Some v -> v
       end
@@ -1934,7 +1938,7 @@ module MiniEConstr = struct
           | decl :: ctx, Some (c, args) ->
             let c = match c with
             | None ->
-              let c = find clos (NamedDecl.get_id decl) in
+              let c = clos_var clos (NamedDecl.get_id decl) in
               if expand then match c with
               | None -> Some (mkVar (NamedDecl.get_id decl))
               | Some _  -> c
