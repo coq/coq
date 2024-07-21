@@ -347,8 +347,8 @@ let treat_coqproject st f =
     | UnableToOpenProjectFile msg -> Error.cannot_open_project_file msg
   in
   iter_sourced (fun { path } -> Loadpath.add_caml_dir st path) project.ml_includes;
-  iter_sourced (fun ({ path }, l) -> Loadpath.add_q_include st path l) project.q_includes;
   iter_sourced (fun ({ path }, l) -> Loadpath.add_l_include st path l) project.l_includes;
+  iter_sourced (fun ({ path }, l) -> Loadpath.add_q_include st path l) project.q_includes;
   iter_sourced (fun ({ path }, l) -> Loadpath.add_r_include st path l) project.r_includes;
   iter_sourced (fun f' -> treat_file_coq_project f f') (all_files project)
 

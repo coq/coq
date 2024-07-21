@@ -54,6 +54,10 @@ val add_norec_dir_import :
 val add_rec_dir_no_import :
   (bool -> root -> dirname -> dirpath -> basename -> unit) -> dirname -> dirpath -> unit
 
+(** -L semantic: go in subdirs and suffixes of logical paths are known. (Same as -R) *)
+val add_rec_dir_import_l :
+  (bool -> root -> dirname -> dirpath -> basename -> unit) -> dirname -> dirpath -> unit
+
 (** -R semantic: go in subdirs and suffixes of logical paths are known. *)
 val add_rec_dir_import :
   (bool -> root -> dirname -> dirpath -> basename -> unit) -> dirname -> dirpath -> unit

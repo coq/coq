@@ -231,7 +231,7 @@ let process_cmd_line ~warning_fn orig_dir parse_extra proj args =
   | "-I" :: d :: r ->
     aux { proj with ml_includes = proj.ml_includes @ [sourced (mk_path d)] } r
   | "-L" :: d :: lp :: r ->
-    aux { proj with r_includes = proj.r_includes @ [sourced (mk_path d,lp)] } r
+    aux { proj with l_includes = proj.l_includes @ [sourced (mk_path d,lp)] } r
   | "-R" :: d :: lp :: r ->
     aux { proj with r_includes = proj.r_includes @ [sourced (mk_path d,lp)] } r
 

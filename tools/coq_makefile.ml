@@ -209,9 +209,10 @@ let generate_conf_includes oc { ml_includes; l_includes; r_includes; q_includes 
     (S.concat " " (map (fun { path } -> quote path) ml_includes));
   fprintf oc "COQMF_INDEP_COQLIBS = %s\n"
     (S.concat " " (map (fun ({ path },l) -> dash2 "L" path l) l_includes));
-  fprintf oc "COQMF_COQLIBS = %s %s %s\n"
+  fprintf oc "COQMF_COQLIBS = %s %s %s %s\n"
     (S.concat " " (map (fun { path } -> dash1 "I" path) ml_includes))
     (S.concat " " (map (fun ({ path },l) -> dash2 "Q" path l) q_includes))
+    (S.concat " " (map (fun ({ path },l) -> dash2 "L" path l) l_includes))
     (S.concat " " (map (fun ({ path },l) -> dash2 "R" path l) r_includes));
   fprintf oc "COQMF_COQLIBS_NOML = %s %s\n"
     (S.concat " " (map (fun ({ path },l) -> dash2 "Q" path l) q_includes))
@@ -356,24 +357,27 @@ let ensure_root_dir
     { project with
         ml_includes = source here_path :: ml_includes;
         r_includes = source (here_path, "Top") :: r_includes }
-(* NOTE: Not sure if the -L files need renaming here? *)
 ;;
 
-(* NOTE: Did not include l_includes here, maybe should, but in case the
-    you want a library from a possible higher directory it is not possible? *)
-let check_overlapping_include { q_includes; r_includes } =
+let check_overlapping_include { q_includes; l_includes; r_includes } =
   let pwd = Sys.getcwd () in
-  let aux = function
+  let subdir_aux = function
     | [] -> ()
     | {thing = { path; canonical_path }, _} :: l ->
         if not (is_prefix pwd canonical_path) then
           eprintf "Warning: %s (used in -R or -Q) is not a subdirectory of the current directory\n\n" path;
+  in
+  let overlap_aux = function
+    | [] -> ()
+    | {thing = { path; canonical_path }, _} :: l ->
         List.iter (fun {thing={ path = p; canonical_path = cp }, _} ->
           if is_prefix canonical_path cp  || is_prefix cp canonical_path then
-            eprintf "Warning: %s and %s overlap (used in -R or -Q)\n\n"
+            eprintf "Warning: %s and %s overlap (used in -L, -R or -Q)\n\n"
               path p) l
   in
-    aux (q_includes @ r_includes)
+    (* NOTE: Chose to allow people to load -L's from non sub-dirs *)
+    subdir_aux (q_includes @ r_includes);
+    overlap_aux (q_includes @ r_includes @ l_includes)
 ;;
 
 let check_native_compiler = function

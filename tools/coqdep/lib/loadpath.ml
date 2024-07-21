@@ -285,7 +285,7 @@ let add_norec_dir_import add_file phys_dir log_dir =
 let add_rec_dir_no_import add_file phys_dir log_dir =
   add_directory true (add_file false) phys_dir log_dir
 
-(** -L semantic: go in subdirs and suffixes of logical paths are known. *)
+(** -L semantic: go in subdirs and suffixes of logical paths are known. (Same as -R) *)
 let add_rec_dir_import_l add_file phys_dir log_dir =
   add_directory true (add_file true) phys_dir log_dir
 
