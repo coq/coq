@@ -1880,9 +1880,13 @@ module MiniEConstr = struct
     evc_cache : int Int.Map.t ref; (* Cache get_lift on evc_stack *)
   }
 
+  module CCompare = struct type t = constr let compare : t -> t -> int = Stdlib.compare end
+  module CCache = Set.Make(CCompare)
+
   let to_constr_gen ~expand ~ignore_missing sigma c =
     let saw_evar = ref false in
     let lsubst = universe_subst sigma in
+    let cache = ref EvMap.empty in
     let univ_value l =
       UnivFlex.normalize_univ_variable lsubst l
     in
@@ -1955,7 +1959,11 @@ module MiniEConstr = struct
           evc_stack = clos.evc_lift :: clos.evc_stack;
           evc_cache = ref Int.Map.empty;
         } in
-        self nclos c
+        let c = self nclos c in
+        let m = Option.default CCache.empty (EvMap.find_opt evk !cache) in
+        match CCache.find_opt c m with
+        | Some c -> c
+        | None -> let m = CCache.add c m in cache := EvMap.add evk m !cache; c
       end
     | _ ->
       UnivSubst.map_universes_opt_subst_with_binders next self qvar_value univ_value clos c
