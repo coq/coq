@@ -1066,7 +1066,13 @@ let whd_betadeltazeta = red_of_state_red whd_betadeltazeta_state
 
 let whd_betaiota_state = local_whd_state_gen RedFlags.betaiota
 let whd_betaiota_stack = stack_red_of_state_red whd_betaiota_state
-let whd_betaiota = red_of_state_red whd_betaiota_state
+let whd_betaiota env sigma c =
+  let is_whnf = match EConstr.kind sigma c with
+    | App (h,_) -> EConstr.isRef sigma h
+    | _ -> EConstr.isRef sigma c
+  in
+  if is_whnf then c
+  else red_of_state_red whd_betaiota_state env sigma c
 
 let whd_betaiotazeta_state = local_whd_state_gen RedFlags.betaiotazeta
 let whd_betaiotazeta_stack = stack_red_of_state_red whd_betaiotazeta_state
