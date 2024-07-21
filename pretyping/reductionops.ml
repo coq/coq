@@ -1043,7 +1043,13 @@ let whd_nored = red_of_state_red whd_nored_state
 
 let whd_beta_state = local_whd_state_gen RedFlags.beta
 let whd_beta_stack = stack_red_of_state_red whd_beta_state
-let whd_beta = red_of_state_red whd_beta_state
+let whd_beta env sigma c =
+  let is_whnf = match EConstr.kind sigma c with
+    | App (h,_) -> EConstr.isRef sigma h
+    | _ -> EConstr.isRef sigma c
+  in
+  if is_whnf then c
+  else red_of_state_red whd_beta_state env sigma c
 
 let whd_betalet_state = local_whd_state_gen RedFlags.betazeta
 let whd_betalet_stack = stack_red_of_state_red whd_betalet_state
