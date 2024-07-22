@@ -162,11 +162,9 @@ let mk_pkg_timings work_dir pkg_name suffix iteration =
 assert (Array.length Sys.argv > 5);
 let work_dir = Sys.argv.(1) in
 let num_of_iterations = int_of_string Sys.argv.(2) in
-let new_coq_version = Sys.argv.(3) in
-let old_coq_version = Sys.argv.(4) in
-let minimal_user_time = float_of_string Sys.argv.(5) in
-let sorting_column = Sys.argv.(6) in
-let coq_opam_packages = Sys.argv |> Array.to_list |> CList.drop 7 in
+let minimal_user_time = float_of_string Sys.argv.(3) in
+let sorting_column = Sys.argv.(4) in
+let coq_opam_packages = Sys.argv |> Array.to_list |> CList.drop 5 in
 
 (* ASSUMPTIONS:
 
@@ -265,34 +263,3 @@ coq_opam_packages
     let top = [ [ "package_name" ]; descr; descr; descr ] in
 
     printf "%s%!" (Table.raw_print headers top measurements ())
-;
-
-(* ejgallego: disable this as it is very verbose and brings up little info in the log. *)
-if false then begin
-printf "
-
-PDIFF = proportional difference between measurements done for the NEW and the OLD Coq version
-      = (NEW_measurement - OLD_measurement) / OLD_measurement * 100%%
-
-NEW = %s
-OLD = %s
-
-Columns:
-
-  1. user time [s]
-
-     Total number of CPU-seconds that the process used directly (in user mode), in seconds.
-     (In other words, \"%%U\" quantity provided by the \"/usr/bin/time\" command.)
-
-  3. CPU instructions
-
-     Total number of CPU-instructions that the process used directly (in user mode).
-     (In other words, \"instructions:u\" quantity provided by the \"/usr/bin/perf\" command.)
-
-  4. max resident mem [KB]
-
-     Maximum resident set size of the process during its lifetime, in Kilobytes.
-     (In other words, \"%%M\" quantity provided by the \"/usr/bin/time\" command.)
-
-" new_coq_version old_coq_version;
-end
