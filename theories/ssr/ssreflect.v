@@ -395,7 +395,7 @@ Lemma lock A x : x = locked x :> A. Proof. unlock; reflexivity. Qed.
 (**  The basic closing tactic "done".  **)
 Ltac done :=
   trivial; hnf; intros; solve
-   [ do ![solve [trivial | apply: (@sym_equal _ _ _ _); trivial]
+   [ do ![solve [trivial | simple refine (@sym_equal _ _ _ _); trivial]
          | discriminate | contradiction | split]
    | match goal with H : ~ _ |- _ => solve [case H; trivial] end ].
 
