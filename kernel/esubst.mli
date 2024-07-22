@@ -38,11 +38,11 @@ val subs_cons: 'a -> 'a subs -> 'a subs
 (** Assuming Γ ⊢ σ : Δ and |Ξ| = n, then Γ, Ξ ⊢ subs_shft (n, σ) : Δ *)
 val subs_shft: int * 'a subs -> 'a subs
 
-(** Unary variant of {!subst_liftn}. *)
-val subs_lift: 'a subs -> 'a subs
-
 (** Assuming Γ ⊢ σ : Δ and |Ξ| = n, then Γ, Ξ ⊢ subs_liftn n σ : Δ, Ξ *)
 val subs_liftn: int -> 'a subs -> 'a subs
+
+(** Unary variant of {!subst_liftn}. *)
+val subs_lift: 'a subs -> 'a subs
 
 (** [expand_rel k subs] expands de Bruijn [k] in the explicit substitution
     [subs]. The result is either (Inl(lams,v)) when the variable is
@@ -55,12 +55,6 @@ val expand_rel: int -> 'a subs -> (int * 'a, int * int option) Util.union
 
 (** Tests whether a substitution behaves like the identity *)
 val is_subs_id: 'a subs -> bool
-
-(** Composition of substitutions: [comp mk_clos s1 s2] computes a
-    substitution equivalent to applying s2 then s1. Argument
-    mk_clos is used when a closure has to be created, i.e. when
-    s1 is applied on an element of s2.
-*)
 
 (** {6 Compact representation } *)
 (** Compact representation of explicit relocations
@@ -82,13 +76,13 @@ type lift = private
 (** For arbitrary Γ: Γ ⊢ el_id : Γ *)
 val el_id : lift
 
-(** Assuming Γ ⊢ σ : Δ and |Ξ| = n, then Γ, Ξ ⊢ el_shft (n, σ) : Δ *)
+(** Assuming Γ ⊢ σ : Δ₁, Δ₂ and |Δ₂| = n, then Γ ⊢ el_shft n σ : Δ₁ *)
 val el_shft : int -> lift -> lift
 
 (** Assuming Γ ⊢ σ : Δ and |Ξ| = n, then Γ, Ξ ⊢ el_liftn n σ : Δ, Ξ *)
 val el_liftn : int -> lift -> lift
 
-(** Unary variant of {!subst_liftn}. *)
+(** Unary variant of {!el_liftn}. *)
 val el_lift : lift -> lift
 
 (** Assuming Γ₁, A, Γ₂ ⊢ σ : Δ₁, A, Δ₂ and Δ₁, A, Δ₂ ⊢ n : A,
