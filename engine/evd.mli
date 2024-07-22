@@ -640,7 +640,7 @@ val new_univ_level_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> e
 val new_quality_variable : ?loc:Loc.t -> ?name:Id.t -> evar_map -> evar_map * Sorts.QVar.t
 val new_sort_variable : ?loc:Loc.t -> rigid -> evar_map -> evar_map * esorts
 
-val add_global_univ : evar_map -> Univ.Level.t -> evar_map
+val add_forgotten_univ : evar_map -> Univ.Level.t -> evar_map
 
 val universe_rigidity : evar_map -> Univ.Level.t -> rigid
 

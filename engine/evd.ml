@@ -1184,8 +1184,8 @@ let new_sort_variable ?loc rigid sigma =
   let uctx, q = UState.new_sort_variable sigma.universes in
   ({ sigma with universes = uctx }, Sorts.qsort q u)
 
-let add_global_univ d u =
-  { d with universes = UState.add_global_univ d.universes u }
+let add_forgotten_univ d u =
+  { d with universes = UState.add_forgotten_univ d.universes u }
 
 let make_nonalgebraic_variable evd u =
   { evd with universes = UState.make_nonalgebraic_variable evd.universes u }

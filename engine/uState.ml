@@ -1137,7 +1137,7 @@ let new_univ_variable ?loc rigid name uctx =
   let uctx = add_universe ?loc name false uctx u in
   uctx, u
 
-let add_global_univ uctx u = add_universe None true uctx u
+let add_forgotten_univ uctx u = add_universe None true uctx u
 
 let make_with_initial_binders ~lbound univs binders =
   let uctx = make ~lbound univs in

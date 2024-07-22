@@ -205,7 +205,8 @@ val new_univ_variable : ?loc:Loc.t -> rigid -> Id.t option -> t -> t * Univ.Leve
     univ_flexible_alg for a universe existential variable allowed to
     be instantiated with an algebraic universe *)
 
-val add_global_univ : t -> Univ.Level.t -> t
+val add_forgotten_univ : t -> Univ.Level.t -> t
+(** Don't use this, it only exists for funind *)
 
 val make_nonalgebraic_variable : t -> Univ.Level.t -> t
 (** cf UnivFlex *)

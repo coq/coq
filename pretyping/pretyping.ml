@@ -181,7 +181,7 @@ let level_name sigma = function
   | GSet -> Some (sigma, Univ.Level.set)
   | GUniv u -> Some (sigma, u)
   | GRawUniv u ->
-    let sigma = try Evd.add_global_univ sigma u with UGraph.AlreadyDeclared -> sigma in
+    let sigma = try Evd.add_forgotten_univ sigma u with UGraph.AlreadyDeclared -> sigma in
     Some (sigma, u)
   | GLocalUniv l ->
     let sigma, u = universe_level_name sigma l in
