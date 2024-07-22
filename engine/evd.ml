@@ -1912,11 +1912,26 @@ module MiniEConstr = struct
       let k = get_lift clos pos in
       Some (lift_substituend k v)
 
+  module CacheKey = struct
+    type t = constr Id.Map.t
+    let compare = Id.Map.compare Stdlib.compare
+  end
+
+  module Cache = Map.Make(CacheKey)
+
+  let make_key used clos =
+    Id.Map.mapi (fun id lft ->
+        match clos_var { clos with evc_lift = lft } id with
+        | None -> mkVar id
+        | Some v -> v)
+      used
+
   let to_constr_gen ~expand ~ignore_missing sigma c =
     let saw_evar = ref false in
     let steps = ref 0 in
     let lsubst = universe_subst sigma in
     let used_vars = ref EvMap.empty in
+    let cache = ref EvMap.empty in
     let univ_value l =
       UnivFlex.normalize_univ_variable lsubst l
     in
@@ -1979,13 +1994,36 @@ module MiniEConstr = struct
           | None -> { nclos with evc_used_vars = Some (ref Id.Map.empty) }, None
           | Some used -> nclos, Some used
         in
-        let c = self nclos c in
+        let key = match here_used_vars with
+          | None -> None
+          | Some used -> Some (make_key used nclos)
+        in
+        let c, cached = match key with
+          | None -> self nclos c, false
+          | Some key ->
+            match Cache.find_opt key (Option.default Cache.empty (EvMap.find_opt evk !cache)) with
+            | None -> self nclos c, false
+            | Some v -> v, true
+        in
         let here_used_vars = match here_used_vars with
           | Some used -> used
           | None ->
+            assert (not cached);
             let used = !(Option.get nclos.evc_used_vars) in
             let () = used_vars := EvMap.add evk used !used_vars in
             used
+        in
+        let () = if not cached then begin
+            let key = match key with
+              | Some key -> key
+              | None -> make_key here_used_vars nclos
+            in
+            let update cache = Cache.add key c cache in
+            cache :=
+              EvMap.update evk (fun cache ->
+                  Some (update (Option.default Cache.empty cache)))
+                !cache
+          end
         in
         let () =
           let new_used = Id.Map.filter_map (fun id x ->
