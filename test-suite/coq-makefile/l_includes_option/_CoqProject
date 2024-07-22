@@ -1,3 +1,4 @@
+-docroot .
 -L lib1 Lib1
 -L lib2 Lib2
-theories/UseBothLibs.v
+lastLib/UseBothLibs.v

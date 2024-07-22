@@ -168,6 +168,7 @@ You can list multiple directories if you wish.
    -R . Michael.Abc
    a.v
    b.v
+
 If your project is made up of multiple sub-projects, you can specifically use the `-L`
 parameter in the top level `_CoqProject` to specify a sub-project with its own `_CoqProject` that will be built and imported as a library.
 For example, given a project then has two sub-projects `MyPackage1` and `MyPackage2`
