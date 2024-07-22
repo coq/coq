@@ -168,6 +168,23 @@ You can list multiple directories if you wish.
    -R . Michael.Abc
    a.v
    b.v
+If your project is made up of multiple sub-projects, you can specifically use the `-L`
+parameter in the top level `_CoqProject` to specify a sub-project with its own `_CoqProject` that will be built and imported as a library.
+For example, given a project then has two sub-projects `MyPackage1` and `MyPackage2`
+(in directories `package1` and `package2` respectively) and a file 
+`UseBothPackages.v` in a `theories` directory::
+
+  -L package1 MyPackage1
+  -L package2 MyPackage2
+  -R theories OverallPackage
+  theories/UseBothPackages.v
+
+This will recursively build `MyPackage1` and `MyPackage2` by looking for `_CoqProject` 
+files in the `package1` and `package2` directories, running ``coq_makefile``, and 
+building the sub-projects with the generated makefiles. 
+The sub-projects will be made available to the rest of the top level project with
+the logical names `MyPackage1` and `MyPackage2`, just as they would be with the `-R` option. Finally, the `OverallPackage` project will be built, and able to utilize
+the libraries `MyPackage1` and `MyPackage2`.
 
 We suggest choosing a logical name that's different from those used for commonly
 used packages, particularly if you plan to make your package available to others.
@@ -251,7 +268,7 @@ from the following directories and their subdirectories in the order shown.  The
 associated logical path is determined from the filesystem path, relative to the
 directory, e.g. the file `Foo/Bar/script.vo` becomes `Foo.Bar.script`:
 
-- directories specified with :ref:`-R and -Q command line options <-Q-option>`,
+- directories specified with :ref:`-R, -L, and -Q command line options <-Q-option>`,
 - the current directory where the Coq process was launched (without
   including subdirectories),
 - the directories listed in the `COQPATH` environment variable (separated with
@@ -281,7 +298,10 @@ name.
 In :cmd:`Require` commands referring to the current package (if `_CoqProject`
 uses `-R`) or Coq's standard library can be referenced with a short name without
 a `From` clause provided that the logical path is unambiguous (as if they are
-available through `-R`).  In contrast, :cmd:`Require` commands that load files from other
+available through `-R`). Additionally, :cmd:`Require` commands can refer to an
+external package `externLib` by logical name `logicLib` if the `_CoqProject` 
+has specified `-L externLib logicLib`. 
+In contrast, :cmd:`Require` commands that load files from other
 locations such as `user-contrib` must either use an exact logical path
 or include a `From` clause (as if they are available through `-Q`).  This is done
 to reduce the number of ambiguous logical paths.  We encourage using `From`
@@ -343,9 +363,10 @@ the proofs therein), you may get unexpected failures for two reasons (which
 don't apply to scripts in the standard library, which have logical paths
 beginning with `Coq`):
 
-* `_CoqProject` files often have at least one `-R` parameter, while
-  installed packages are loaded with the less-permissive `-Q` option described in
-  the :cmd:`Require` command, which may cause a :cmd:`Require` to fail.  One workaround is
+* `_CoqProject` files often have at least one `-R` parameter, sub-packages 
+  can be built and loaded with `-L` option, while installed packages are 
+  loaded with the less-permissive `-Q` option described in the :cmd:`Require` 
+  command, which may cause a :cmd:`Require` to fail.  One workaround is
   to create a `_CoqProject` file containing the line `-R . <project directory>` in
   `user-contrib/<project directory>`.  In this case, the `_CoqProject` doesn't
   need to list all the source files.
@@ -383,7 +404,7 @@ The ``coq_makefile`` tool is included with Coq and is based on generating a make
 The majority of Coq projects are very similar: a collection of ``.v``
 files and possibly some ``.ml`` ones (a Coq plugin). The main piece of
 metadata needed in order to build the project are the command line
-options to ``coqc`` (e.g. ``-R``, ``-Q``, ``-I``, see :ref:`command
+options to ``coqc`` (e.g. ``-R``, ``-L``, ``-Q``, ``-I``, see :ref:`command
 line options <command-line-options>`). Collecting the list of files
 and options is the job of the ``_CoqProject`` file.
 
@@ -391,7 +412,7 @@ A ``_CoqProject`` file may contain the following kinds of entries in any order,
 separated by whitespace:
 
 * Selected options of coqc, which are forwarded directly to it. Currently these
-  are ``-Q``, ``-I``, ``-R`` and ``-native-compiler``.
+  are ``-Q``, ``-I``, ``-L``, ``-R`` and ``-native-compiler``.
 * ``-arg`` options for other options of coqc that don’t fall in the above set.
 * Options specific to ``coq_makefile``. Currently there are two options:
   ``-generate-meta-for-package`` (see below for details), and ``-docroot``.
@@ -408,6 +429,8 @@ A simple example of a ``_CoqProject`` file follows:
     -arg "-w all"
     # include everything under "theories", e.g. foo.v and bar.v
     theories
+    -L helperTheories/ Helpers
+    # build the helperTheories library sub-project and include everything under as Helpers
     -I src/
     # include everything under "src", e.g. baz.mlg bazaux.ml and qux_plugin.mlpack
     src

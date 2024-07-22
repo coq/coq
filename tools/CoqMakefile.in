@@ -417,7 +417,7 @@ LIB_MAKEFILE_NAME = MAKELIB.coq
 all:
 	$(HIDE)$(MAKE) --no-print-directory -f "$(SELF)" pre-all
 ifneq ($(strip $(COQMF_INDEP_COQLIBS)),)
-	$(HIDE)IND=0; \
+	$(HIDE)set -e; IND=0; \
 	for lib in $(COQMF_INDEP_COQLIBS); do \
 		if [ $$((IND % 3)) -eq 1 ]; then \
       cd $$lib ; \
@@ -696,7 +696,7 @@ clean::
 	$(HIDE)find . -name .coq-native -type d -empty -delete
 	$(HIDE)rm -f $(VOFILES)
 ifneq ($(strip $(COQMF_INDEP_COQLIBS)),)
-	$(HIDE)IND=0; \
+	$(HIDE)set -e; IND=0; \
 	for lib in $(COQMF_INDEP_COQLIBS); do \
 		if [ $$((IND % 3)) -eq 1 ]; then \
       cd $$lib ; \
