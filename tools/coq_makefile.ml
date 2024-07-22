@@ -289,7 +289,7 @@ let rec logic_gcd acc = function
       then logic_gcd (acc @ [hd]) (tl :: List.map List.tl rest)
       else acc
 
-(*  NOTE: I believe l_includes are not necessary here due to them being 
+(*  NOTE: I believe l_includes are not necessary here due to them being
     recursively built *)
 let generate_conf_doc oc { docroot; q_includes; r_includes } =
   let includes = List.map (forget_source > snd) (q_includes @ r_includes) in
