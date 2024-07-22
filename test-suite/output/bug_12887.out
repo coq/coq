@@ -2,11 +2,11 @@ File "./output/bug_12887.v", line 5, characters 25-26:
 The command has indeed failed with message:
 Cannot infer this placeholder of type "Type" in
 environment:
-Functor : (Type -> Type) -> Type
+Functor : (Type -> Type) -> Type@{α3 | }
 F : Type -> Type
 fmap : forall A B : Type, (A -> B) -> F A -> F B
 File "./output/bug_12887.v", line 8, characters 0-53:
 The command has indeed failed with message:
 Cannot infer an existential variable of type "nat" in
 environment:
-R : nat -> Type
+R : nat -> Type@{α10 | }
