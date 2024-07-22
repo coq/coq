@@ -557,7 +557,7 @@ let rec to_constr (lfts, usubst as ulfts) v =
     | FEvar (ev, args, env, repack) ->
       let subs = comp_subs ulfts env in
       repack (ev, List.map (fun a -> subst_constr subs a) args)
-    | FLIFT (k,a) -> to_constr (el_shft k lfts, usubst) a
+    | FLIFT (k,a) -> to_constr (el_popn k lfts, usubst) a
 
     | FInt i ->
        Constr.mkInt i
