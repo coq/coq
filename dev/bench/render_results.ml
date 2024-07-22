@@ -24,7 +24,6 @@ let _ = Printexc.record_backtrace true
 type ('a,'b) pkg_timings = {
   user_time  : 'a;
   num_instr  : 'b;
-  num_cycles : 'b;
   num_mem    : 'b;
 }
 ;;
@@ -32,7 +31,6 @@ type ('a,'b) pkg_timings = {
 let reduce_pkg_timings (m_f : 'a list -> 'c) (m_a : 'b list -> 'd) (t : ('a,'b) pkg_timings list) : ('c,'d) pkg_timings =
   { user_time  = m_f @@ CList.map (fun x -> x.user_time)  t
   ; num_instr  = m_a @@ CList.map (fun x -> x.num_instr)  t
-  ; num_cycles = m_a @@ CList.map (fun x -> x.num_cycles) t
   ; num_mem    = m_a @@ CList.map (fun x -> x.num_mem)    t
   }
 ;;
@@ -134,7 +132,6 @@ end
 let add_timings a b =
   { user_time = a.user_time +. b.user_time;
     num_instr = a.num_instr + b.num_instr;
-    num_cycles = a.num_cycles + b.num_cycles;
     num_mem = a.num_mem + b.num_mem;
   }
 
@@ -151,10 +148,6 @@ let mk_pkg_timings work_dir pkg_name suffix iteration =
       (* Perf can indeed be not supported in some systems, so we must fail gracefully *)
       ; num_instr =
           (try command_prefix ^ ".perf | grep instructions:u | awk '{print $1}' | sed 's/,//g'" |>
-               run |> String.rchop ~n:1 |> int_of_string
-           with Failure _ -> 0)
-      ; num_cycles =
-          (try command_prefix ^ ".perf | grep cycles:u | awk '{print $1}' | sed 's/,//g'" |>
                run |> String.rchop ~n:1 |> int_of_string
            with Failure _ -> 0)
       ; num_mem = time_command_output |> nth 1 |> int_of_string
@@ -221,7 +214,6 @@ coq_opam_packages
        package_name, new_t, old_t,
        { user_time  = (new_t.user_time -. old_t.user_time) /. old_t.user_time *. 100.0
        ; num_instr  = proportional_difference_of_integers new_t.num_instr  old_t.num_instr
-       ; num_cycles = proportional_difference_of_integers new_t.num_cycles old_t.num_cycles
        ; num_mem    = proportional_difference_of_integers new_t.num_mem    old_t.num_mem
        })
 
@@ -254,7 +246,6 @@ coq_opam_packages
   [
     [ package_name ];
     [ prf new_t.user_time; prf old_t.user_time; prf perc.user_time ];
-    [ pri new_t.num_cycles; pri old_t.num_cycles; prf perc.num_cycles ];
     [ pri new_t.num_instr; pri old_t.num_instr; prf perc.num_instr ];
     [ pri new_t.num_mem; pri old_t.num_mem; prf perc.num_mem ];
   ]
@@ -266,13 +257,12 @@ coq_opam_packages
     let headers = [
       "";
       "user time [s]";
-      "CPU cycles";
       "CPU instructions";
       "max resident mem [KB]";
     ] in
 
     let descr = ["NEW"; "OLD"; "PDIFF"] in
-    let top = [ [ "package_name" ]; descr; descr; descr; descr ] in
+    let top = [ [ "package_name" ]; descr; descr; descr ] in
 
     printf "%s%!" (Table.raw_print headers top measurements ())
 ;
@@ -293,11 +283,6 @@ Columns:
 
      Total number of CPU-seconds that the process used directly (in user mode), in seconds.
      (In other words, \"%%U\" quantity provided by the \"/usr/bin/time\" command.)
-
-  2. CPU cycles
-
-     Total number of CPU-cycles that the process used directly (in user mode).
-     (In other words, \"cycles:u\" quantity provided by the \"/usr/bin/perf\" command.)
 
   3. CPU instructions
 
