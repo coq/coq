@@ -607,6 +607,7 @@ let pr_cast = let open Constr in function
     | Some DEFAULTcast -> str ":"
     | Some VMcast-> str "<:"
     | Some NATIVEcast -> str "<<:"
+    | Some ERASEcast -> str "<<<:"
     | None -> str ":>"
 
 type raw_or_glob_genarg =

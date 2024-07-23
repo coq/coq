@@ -1528,6 +1528,19 @@ struct
               error_actual_type ?loc !!env sigma cj tval
                 (ConversionFailed (!!env,cty,tval))
           end
+        | Some ERASEcast ->
+            let tval = nf_evar sigma tval in
+            let exp = EConstr.to_constr_opt sigma tval in
+            begin
+              match exp with
+              | Some exp ->
+                (match Eraseconv.erase_eval !!env exp with
+                | Result.Ok newexp -> pretype (mk_tycon (EConstr.of_constr newexp)) env sigma c, tval
+                | Result.Error () -> user_err ?loc Pp.(str"Erasure evaluation failed for type" ++ spc () ++
+                  quote (Termops.Internal.print_constr_env !!env sigma tval)))                  
+              | None -> user_err ?loc Pp.(str"Erasure casts do not support evars in the expected type:" ++
+                  quote (Termops.Internal.print_constr_env !!env sigma tval))
+            end
         | None | Some DEFAULTcast ->
           pretype (mk_tycon tval) env sigma c, tval
       in

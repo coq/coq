@@ -344,6 +344,7 @@ Module Cast.
   Ltac2 @ external default : cast := "rocq-runtime.plugins.ltac2" "constr_cast_default".
   Ltac2 @ external vm : cast := "rocq-runtime.plugins.ltac2" "constr_cast_vm".
   Ltac2 @ external native : cast := "rocq-runtime.plugins.ltac2" "constr_cast_native".
+  Ltac2 @ external erase : cast := "rocq-runtime.plugins.ltac2" "constr_cast_erase".
 
   Ltac2 @ external equal : cast -> cast -> bool := "rocq-runtime.plugins.ltac2" "constr_cast_equal".
 

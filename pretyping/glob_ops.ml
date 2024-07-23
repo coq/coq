@@ -143,7 +143,8 @@ let cast_kind_eq t1 t2 = let open Constr in match t1, t2 with
   | DEFAULTcast, DEFAULTcast
   | VMcast, VMcast
   | NATIVEcast, NATIVEcast -> true
-  | (DEFAULTcast | VMcast | NATIVEcast), _ -> false
+  | ERASEcast, ERASEcast -> true
+  | (DEFAULTcast | VMcast | NATIVEcast | ERASEcast), _ -> false
 
 let matching_var_kind_eq k1 k2 = match k1, k2 with
 | FirstOrderPatVar ido1, FirstOrderPatVar ido2 -> Id.equal ido1 ido2

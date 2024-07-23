@@ -343,6 +343,7 @@ let cast_kind_display k =
   | VMcast -> "VMcast"
   | DEFAULTcast -> "DEFAULTcast"
   | NATIVEcast -> "NATIVEcast"
+  | ERASEcast -> "ERASEcast"
 
 let constr_display csr =
   let rec term_display c = match kind c with
