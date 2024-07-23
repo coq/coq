@@ -78,4 +78,6 @@ val native_name_from_filename : string -> string
 
 (** {6 Opaque accessors} *)
 val indirect_accessor : Global.indirect_accessor
-[@@deprecated "Most commands should not be accessing opaque data."]
+[@@deprecated
+  "(8.20) Most commands should not be accessing opaque data. \
+   Use coqpp's \"opaque_access\" state specifier if you actually need it."]

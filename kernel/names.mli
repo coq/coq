@@ -115,7 +115,7 @@ end
 (** {6 Type aliases} *)
 
 type name = Name.t = Anonymous | Name of Id.t
-[@@ocaml.deprecated "Use Name.t"]
+[@@ocaml.deprecated "(8.8) Use Name.t"]
 
 type variable = Id.t
 type module_ident = Id.t
@@ -402,10 +402,10 @@ sig
 
   include QNameS with type t := t
 
-  val equal : t -> t -> bool [@@ocaml.deprecated "Use QConstant.equal"]
+  val equal : t -> t -> bool [@@ocaml.deprecated "(8.13) Use QConstant.equal"]
   (** Default comparison, alias for [CanOrd.equal] *)
 
-  val hash : t -> int [@@ocaml.deprecated "Use QConstant.hash"]
+  val hash : t -> int [@@ocaml.deprecated "(8.13) Use QConstant.hash"]
   (** Hashing function *)
 
   val change_label : t -> Label.t -> t
@@ -473,10 +473,10 @@ sig
 
   include QNameS with type t := t
 
-  val equal : t -> t -> bool [@@ocaml.deprecated "Use QMutInd.equal"]
+  val equal : t -> t -> bool [@@ocaml.deprecated "(8.13) Use QMutInd.equal"]
  (** Default comparison, alias for [CanOrd.equal] *)
 
-  val hash : t -> int [@@ocaml.deprecated "Use QMutInd.hash"]
+  val hash : t -> int [@@ocaml.deprecated "(8.13) Use QMutInd.hash"]
 
   (** Displaying *)
 
@@ -574,7 +574,7 @@ type module_path = ModPath.t =
   | MPfile of DirPath.t
   | MPbound of MBId.t
   | MPdot of ModPath.t * Label.t
-[@@ocaml.deprecated "Alias type"]
+[@@ocaml.deprecated "(8.8) Alias type"]
 
 module Projection : sig
   module Repr : sig
@@ -593,9 +593,9 @@ module Projection : sig
     val arg : t -> int
     val label : t -> Label.t
 
-    val equal : t -> t -> bool [@@ocaml.deprecated "Use QProjection.equal"]
-    val hash : t -> int [@@ocaml.deprecated "Use QProjection.hash"]
-    val compare : t -> t -> int [@@ocaml.deprecated "Use QProjection.compare"]
+    val equal : t -> t -> bool [@@ocaml.deprecated "(8.13) Use QProjection.equal"]
+    val hash : t -> int [@@ocaml.deprecated "(8.13) Use QProjection.hash"]
+    val compare : t -> t -> int [@@ocaml.deprecated "(8.13) Use QProjection.compare"]
 
     val map : (MutInd.t -> MutInd.t) -> t -> t
     val map_npars : (int -> int) -> t -> t
@@ -624,18 +624,18 @@ module Projection : sig
   val unfold : t -> t
 
   val equal : t -> t -> bool
-  [@@ocaml.deprecated "Use QProjection.equal"]
+  [@@ocaml.deprecated "(8.13) Use QProjection.equal"]
   val hash : t -> int
-  [@@ocaml.deprecated "Use QProjection.hash"]
+  [@@ocaml.deprecated "(8.13) Use QProjection.hash"]
   val hcons : t -> t
   (** Hashconsing of projections. *)
 
   val repr_equal : t -> t -> bool
-  [@@ocaml.deprecated "Use an explicit projection of Repr"]
+  [@@ocaml.deprecated "(8.13) Use an explicit projection of Repr"]
   (** Ignoring the unfolding boolean. *)
 
   val compare : t -> t -> int
-  [@@ocaml.deprecated "Use QProjection.compare"]
+  [@@ocaml.deprecated "(8.13) Use QProjection.compare"]
 
   val map : (MutInd.t -> MutInd.t) -> t -> t
   val map_npars : (int -> int) -> t -> t
@@ -671,7 +671,7 @@ module GlobRef : sig
     | ConstructRef of constructor  (** A reference to a constructor of an inductive type. *)
 
   val equal : t -> t -> bool
-  [@@ocaml.deprecated "Use QGlobRef.equal"]
+  [@@ocaml.deprecated "(8.18) Use QGlobRef.equal"]
 
   val is_bound : t -> bool
 

@@ -18,7 +18,7 @@ open Tacexpr
 (** Tactic related witnesses, could also live in tactics/ if other users *)
 (* To keep after deprecation phase but it will get a different parsing semantics in pltac.ml *)
 val wit_intropattern : (constr_expr intro_pattern_expr CAst.t, glob_constr_and_expr intro_pattern_expr CAst.t, intro_pattern) genarg_type
-[@@ocaml.deprecated "Use wit_simple_intropattern"]
+[@@ocaml.deprecated "(8.11) Use wit_simple_intropattern"]
 
 val wit_simple_intropattern : (constr_expr intro_pattern_expr CAst.t, glob_constr_and_expr intro_pattern_expr CAst.t, intro_pattern) genarg_type
 

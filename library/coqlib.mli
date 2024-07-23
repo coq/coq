@@ -48,7 +48,7 @@ val has_ref : string -> bool
 val check_ref : string -> GlobRef.t -> bool
 
 (** Checks whether a name is bound to a known inductive. *)
-val check_ind_ref : string -> inductive -> bool [@@ocaml.deprecated "Use Coqlib.check_ref"]
+val check_ind_ref : string -> inductive -> bool
 
 (** List of all currently bound names. *)
 val get_lib_refs : unit -> (string * GlobRef.t) list
@@ -108,12 +108,12 @@ val jmeq_module_name : string list
    it must be used lazily; it raises an anomaly with the given message
    if not found *)
 val find_reference : string -> string list -> string -> GlobRef.t
-[@@ocaml.deprecated "Please use Coqlib.lib_ref"]
+[@@ocaml.deprecated "(8.10) Please use Coqlib.lib_ref"]
 
 (** This just prefixes find_reference with Coq... *)
 val coq_reference  : string -> string list -> string -> GlobRef.t
-[@@ocaml.deprecated "Please use Coqlib.lib_ref"]
+[@@ocaml.deprecated "(8.10) Please use Coqlib.lib_ref"]
 
 (** Search in several modules (not prefixed by "Coq") *)
 val gen_reference_in_modules : string->string list list-> string -> GlobRef.t
-[@@ocaml.deprecated "Please use Coqlib.lib_ref"]
+[@@ocaml.deprecated "(8.10) Please use Coqlib.lib_ref"]

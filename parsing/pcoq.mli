@@ -170,7 +170,7 @@ module Prim :
     val ne_string : string Entry.t
     val ne_lstring : lstring Entry.t
     val hyp : lident Entry.t
-    val var : lident Entry.t [@@ocaml.deprecated "Use Prim.hyp"]
+    val var : lident Entry.t [@@ocaml.deprecated "(8.13) Use Prim.hyp"]
     val bar_cbrace : unit Entry.t
     val strategy_level : Conv_oracle.level Entry.t
   end

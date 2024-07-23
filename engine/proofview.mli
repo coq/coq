@@ -427,7 +427,7 @@ val tclTIME : string option -> 'a tactic -> 'a tactic
 
 (** Internal, don't use. *)
 val tclProofInfo : (Names.Id.t * bool) tactic
-[@@ocaml.deprecated "internal, don't use"]
+[@@ocaml.deprecated "(8.10) internal, don't use"]
 
 (** {7 Unsafe primitives} *)
 

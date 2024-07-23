@@ -14,7 +14,7 @@
 (** {6 Error handling} *)
 
 val push : exn -> Exninfo.iexn
-[@@ocaml.deprecated "please use [Exninfo.capture]"]
+[@@ocaml.deprecated "(8.12) please use [Exninfo.capture]"]
 
 (** {6 Generic errors.}
 

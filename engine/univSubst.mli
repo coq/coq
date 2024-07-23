@@ -39,7 +39,7 @@ val nf_evars_and_universes_opt_subst
   -> quality_subst_fn
   -> universe_subst_fn
   -> constr -> constr
-  [@@ocaml.deprecated "Use [UnivSubst.map_universes_opt_subst_with_binders]"]
+  [@@ocaml.deprecated "(8.20) Use [UnivSubst.map_universes_opt_subst_with_binders]"]
 
 val subst_univs_universe : universe_subst_fn -> Universe.t -> Universe.t
 

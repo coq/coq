@@ -121,10 +121,10 @@ val try_finally: ('a -> 'b) -> 'a -> ('c -> unit) -> 'c -> 'b
 (** {6 Enriched exceptions} *)
 
 type iexn = Exninfo.iexn
-[@@ocaml.deprecated "please use [Exninfo.iexn]"]
+[@@ocaml.deprecated "(8.12) please use [Exninfo.iexn]"]
 
 val iraise : Exninfo.iexn -> 'a
-[@@ocaml.deprecated "please use [Exninfo.iraise]"]
+[@@ocaml.deprecated "(8.12) please use [Exninfo.iraise]"]
 
 (** {6 Misc. } *)
 

@@ -44,7 +44,7 @@ val wit_identref : (lident, lident, Id.t) genarg_type
 val wit_hyp : (lident, lident, Id.t) genarg_type
 
 val wit_var : (lident, lident, Id.t) genarg_type
-[@@ocaml.deprecated "Use Stdarg.wit_hyp"]
+[@@ocaml.deprecated "(8.13) Use Stdarg.wit_hyp"]
 
 val wit_ref : (qualid, GlobRef.t located or_var, GlobRef.t) genarg_type
 

@@ -210,10 +210,10 @@ sig
   val instance_list : (int -> 'v) -> int -> ('c, 't, 'r) pt -> 'v list
 
   val to_extended_vect : (int -> 'r) -> int -> ('c, 't, 'r) pt -> 'r array
-    [@@ocaml.deprecated "Use synonymous [Context.Rel.instance]"]
+    [@@ocaml.deprecated "(8.15) Use synonymous [Context.Rel.instance]"]
 
   val to_extended_list : (int -> 'r) -> int -> ('c, 't, 'r) pt -> 'r list
-    [@@ocaml.deprecated "Use synonymous [Context.Rel.instance_list]"]
+    [@@ocaml.deprecated "(8.15) Use synonymous [Context.Rel.instance_list]"]
 end
 
 (** This module represents contexts that can capture non-anonymous variables.
@@ -355,7 +355,7 @@ sig
       definitions of [Ω] skipped. Example: for [id1:T,id2:=c,id3:U], it
       gives [Var id1, Var id3]. All [idj] are supposed distinct. *)
   val to_instance : (Id.t -> 'v) -> ('c, 't, 'r) pt -> 'v list
-    [@@ocaml.deprecated "[to_instance] was missing a [List.rev] to comply to its specification; rely on [instance] for the correct specification or use [List.rev (instance ...)] for strict compatibility"]
+    [@@ocaml.deprecated "(8.15) [to_instance] was missing a [List.rev] to comply to its specification; rely on [instance] for the correct specification or use [List.rev (instance ...)] for strict compatibility"]
 
   (** [instance Ω] builds an instance [args] such
       that [Ω ⊢ args:Ω] where [Ω] is a named-context and with the
