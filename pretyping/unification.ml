@@ -1136,8 +1136,10 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
       match subst_defined_metas_evars sigma subst cN with
       | None -> (* some undefined Metas in cN *) None
       | Some n1 ->
-         (* No subterm restriction there, too much incompatibilities *)
-         let uprob =
+        (* No subterm restriction there, too much incompatibilities
+           don't care about universes from comparing the types
+        *)
+         let _ : UnivProblem.Set.t =
            if opt.with_types then
              try (* Ensure we call conversion on terms of the same type *)
                let tyM = get_type_of curenv ~lax:true sigma m1 in
@@ -1148,8 +1150,7 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
            else UnivProblem.Set.empty
          in
         match infer_conv_ustate ~pb ~ts:convflags curenv sigma m1 n1 with
-        | Some uprob' ->
-          let uprob = UnivProblem.Set.union uprob uprob' in
+        | Some uprob ->
           begin match Evd.add_universe_constraints sigma uprob with
           | sigma -> Some (push_sigma sigma substn)
           | exception (UGraph.UniverseInconsistency _ | UniversesDiffer) -> None
