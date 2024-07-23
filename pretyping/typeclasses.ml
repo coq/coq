@@ -32,13 +32,6 @@ let { Goptions.get = get_typeclasses_unique_solutions } =
     ~value:false
     ()
 
-let solve_one_instance = ref (fun env evm t unique -> assert false)
-
-let resolve_one_typeclass ?(unique=get_typeclasses_unique_solutions ()) env evm t =
-  !solve_one_instance env evm t unique
-
-let set_solve_one_instance f = solve_one_instance := f
-
 type class_method = {
   meth_name : Name.t;
   meth_info : hint_info option;
@@ -279,3 +272,12 @@ let error_unresolvable env evd comp =
   in
   let ev = try Evar.Set.fold fold comp None with MultipleFound -> None in
   Pretype_errors.unsatisfiable_constraints env evd ev comp
+
+(** Deprecated *)
+
+let solve_one_instance = ref (fun env evm t -> assert false)
+
+let resolve_one_typeclass ?unique:_ env evm t =
+  !solve_one_instance env evm t
+
+let set_solve_one_instance f = solve_one_instance := f

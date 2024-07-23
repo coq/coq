@@ -129,7 +129,6 @@ val is_class_type : evar_map -> EConstr.types -> bool
 
 val resolve_typeclasses : ?filter:evar_filter -> ?unique:bool ->
   ?fail:bool -> env -> evar_map -> evar_map
-val resolve_one_typeclass : ?unique:bool -> env -> evar_map -> EConstr.types -> evar_map * EConstr.constr
 
 val get_filtered_typeclass_evars : evar_filter -> evar_map -> Evar.Set.t
 
@@ -139,6 +138,12 @@ val error_unresolvable : env -> evar_map -> Evar.Set.t -> 'a
     Beware this action is not registed in the summary (the Undo system) so
     it is up to the plugin to do so. *)
 val set_solve_all_instances : (env -> evar_map -> evar_filter -> bool -> bool -> evar_map) -> unit
-val set_solve_one_instance : (env -> evar_map -> EConstr.types -> bool -> evar_map * EConstr.constr) -> unit
 
 val get_typeclasses_unique_solutions : unit -> bool
+
+(* Deprecated *)
+val resolve_one_typeclass : ?unique:bool -> env -> evar_map -> EConstr.types -> evar_map * EConstr.constr
+[@@deprecated "(8.21) Use Class_tactics.resolve_one_typeclass (\"unique\" argument was ignored)"]
+
+val set_solve_one_instance : (env -> evar_map -> EConstr.types -> evar_map * EConstr.constr) -> unit
+[@@deprecated "(8.21) For internal use only"]
