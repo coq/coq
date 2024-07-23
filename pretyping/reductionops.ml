@@ -1030,67 +1030,66 @@ let stack_red_of_state_red f =
   let f env sigma x = EConstr.decompose_app_list sigma (Stack.zip sigma (f env sigma (x, Stack.empty))) in
   f
 
-let red_of_state_red f env sigma x =
-  Stack.zip sigma (f env sigma (x,Stack.empty))
+let red_of_state_red ~delta f env sigma x =
+  let rec is_whnf c = match Constr.kind c with
+    | Const _ | Var _ -> not delta
+    | Construct _ | Ind _ | Int _ | Float _ | String _
+    | Sort _ | Prod _ -> true
+    | App (h,_) -> is_whnf h
+    | _ -> false
+  in
+  (* preserve physical equality if possible
+     not sure if anything relies on reduction unfolding head evars
+     for now use Unsafe.to_constr to keep such unfolds *)
+  if is_whnf (EConstr.Unsafe.to_constr x) then x
+  else Stack.zip sigma (f env sigma (x,Stack.empty))
 
 (* 0. No Reduction Functions *)
 
 let whd_nored_state = local_whd_state_gen RedFlags.nored
 let whd_nored_stack = stack_red_of_state_red whd_nored_state
-let whd_nored = red_of_state_red whd_nored_state
+let whd_nored = red_of_state_red ~delta:false whd_nored_state
 
 (* 1. Beta Reduction Functions *)
 
 let whd_beta_state = local_whd_state_gen RedFlags.beta
 let whd_beta_stack = stack_red_of_state_red whd_beta_state
-let whd_beta env sigma c =
-  let is_whnf = match EConstr.kind sigma c with
-    | App (h,_) -> EConstr.isRef sigma h
-    | _ -> EConstr.isRef sigma c
-  in
-  if is_whnf then c
-  else red_of_state_red whd_beta_state env sigma c
+let whd_beta = red_of_state_red ~delta:false whd_beta_state
 
 let whd_betalet_state = local_whd_state_gen RedFlags.betazeta
 let whd_betalet_stack = stack_red_of_state_red whd_betalet_state
-let whd_betalet = red_of_state_red whd_betalet_state
+let whd_betalet = red_of_state_red ~delta:false whd_betalet_state
 
 (* 2. Delta Reduction Functions *)
 
 let whd_const_state c e = whd_state_gen RedFlags.(mkflags [fCONST c]) e
-let whd_const c = red_of_state_red (whd_const_state c)
+let whd_const c = red_of_state_red ~delta:true (whd_const_state c)
 
 let whd_delta_state e = whd_state_gen RedFlags.delta e
 let whd_delta_stack = stack_red_of_state_red whd_delta_state
-let whd_delta = red_of_state_red whd_delta_state
+let whd_delta = red_of_state_red ~delta:true whd_delta_state
 
 let whd_betadeltazeta_state = whd_state_gen RedFlags.betadeltazeta
 let whd_betadeltazeta_stack = stack_red_of_state_red whd_betadeltazeta_state
-let whd_betadeltazeta = red_of_state_red whd_betadeltazeta_state
+let whd_betadeltazeta = red_of_state_red ~delta:true whd_betadeltazeta_state
 
 (* 3. Iota reduction Functions *)
 
 let whd_betaiota_state = local_whd_state_gen RedFlags.betaiota
 let whd_betaiota_stack = stack_red_of_state_red whd_betaiota_state
-let whd_betaiota env sigma c =
-  let is_whnf = match EConstr.kind sigma c with
-    | App (h,_) -> EConstr.isRef sigma h
-    | _ -> EConstr.isRef sigma c
-  in
-  if is_whnf then c
-  else red_of_state_red whd_betaiota_state env sigma c
+let whd_betaiota = red_of_state_red ~delta:false whd_betaiota_state
 
 let whd_betaiotazeta_state = local_whd_state_gen RedFlags.betaiotazeta
 let whd_betaiotazeta_stack = stack_red_of_state_red whd_betaiotazeta_state
-let whd_betaiotazeta = red_of_state_red whd_betaiotazeta_state
+let whd_betaiotazeta = red_of_state_red ~delta:false whd_betaiotazeta_state
 
 let whd_all_state = whd_state_gen RedFlags.all
 let whd_all_stack = stack_red_of_state_red whd_all_state
-let whd_all = red_of_state_red whd_all_state
+let whd_all = red_of_state_red ~delta:true whd_all_state
 
 let whd_allnolet_state = whd_state_gen RedFlags.allnolet
 let whd_allnolet_stack = stack_red_of_state_red whd_allnolet_state
-let whd_allnolet = red_of_state_red whd_allnolet_state
+let whd_allnolet = red_of_state_red ~delta:true whd_allnolet_state
 
 let whd_stack_gen reds = stack_red_of_state_red (whd_state_gen reds)
 
@@ -1128,7 +1127,7 @@ let shrink_eta sigma c =
 
 let whd_zeta_state = local_whd_state_gen RedFlags.zeta
 let whd_zeta_stack = stack_red_of_state_red whd_zeta_state
-let whd_zeta = red_of_state_red whd_zeta_state
+let whd_zeta = red_of_state_red ~delta:false whd_zeta_state
 
 (****************************************************************************)
 (*                   Reduction Functions                                    *)
