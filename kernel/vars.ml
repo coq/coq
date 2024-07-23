@@ -93,6 +93,119 @@ let lift_rel_context n =
 (*   Substituting    *)
 (*********************)
 
+(* [lift_with n k c' c] is [liftn n k c]
+   assuming [c'] is [liftn n' k c] for some [n' <> 0].
+   It relies on [liftn n' k c = c -> closedn k c] which then implies [liftn n k c = c].
+   (may be [closedn (k-1) c] if I lost track of which ones are 1-based,
+   the correct one is the one that works)
+*)
+let rec lift_with n k c' c =
+  let open Constr in
+  if c' == c then c
+  else match kind c with
+    | Rel i ->
+      (* otherwise should have c0 == c *)
+      assert (k <= i);
+      mkRel (i+n)
+    | Meta _ | Var _ | Sort _ | Const _ | Ind _ | Construct _ | Int _ | Float _ | String _ ->
+      (* otherwise should have c0 == c *)
+      assert false
+    | Cast (c1,kk,c2) ->
+      let c1', _, c2' = destCast c' in
+      let c1 = lift_with n k c1' c1 in
+      let c2 = lift_with n k c2' c2 in
+      mkCast (c1, kk, c2)
+    | Prod (na,c1,c2) ->
+      let _, c1', c2' = destProd c' in
+      let c1 = lift_with n k c1' c1 in
+      let c2 = lift_with n (k+1) c2' c2 in
+      mkProd (na,c1,c2)
+    | Lambda (na,c1,c2) ->
+      let _, c1', c2' = destLambda c' in
+      let c1 = lift_with n k c1' c1 in
+      let c2 = lift_with n (k+1) c2' c2 in
+      mkLambda (na,c1,c2)
+    | LetIn (na,c1,c2,c3) ->
+      let _, c1', c2', c3' = destLetIn c' in
+      let c1 = lift_with n k c1' c1 in
+      let c2 = lift_with n k c2' c2 in
+      let c3 = lift_with n (k+1) c3' c3 in
+      mkLetIn (na,c1,c2,c3)
+    | App (h,args) ->
+      let h', args' = destApp c' in
+      let h = lift_with n k h' h in
+      let args = lift_array_with n k args' args in
+      mkApp (h,args)
+    | Proj (p,r,c) ->
+      let _,_,c' = destProj c' in
+      let c = lift_with n k c' c in
+      mkProj (p,r,c)
+    | Evar (e,args) ->
+      let _, args' = destEvar c' in
+      let args = SList.Skip.map2 (fun arg arg' ->
+          lift_with n k arg' arg)
+          args
+          args'
+      in
+      mkEvar (e,args)
+    | Case (ci,u,pms,(p,r as pr),iv,c,bl) ->
+      let _,_,pms',(p',_),iv',c',bl' = destCase c' in
+      let pms = lift_array_with n k pms' pms in
+      let pr =
+        if p' == p then pr
+        else
+          let p = lift_ctx_with n k p' p in
+          p, r
+      in
+      let iv = if iv' == iv then iv
+        else match iv with
+          | NoInvert -> assert false
+          | CaseInvert {indices=i} ->
+            let i' = match iv' with
+              | NoInvert -> assert false
+              | CaseInvert {indices=i'} -> i'
+            in
+            let i = lift_array_with n k i' i in
+            CaseInvert {indices=i}
+      in
+      let c = lift_with n k c' c in
+      let bl =
+        if bl' == bl then bl
+        else
+          Array.map2 (fun b b' ->
+              lift_ctx_with n k b' b)
+            bl bl'
+      in
+      mkCase (ci,u,pms,pr,iv,c,bl)
+    | Fix (ln, rdata) ->
+      let _, rdata' = destFix c' in
+      mkFix (ln, lift_rec_with n k rdata' rdata)
+    | CoFix (ln, rdata) ->
+      let _, rdata' = destCoFix c' in
+      mkCoFix (ln, lift_rec_with n k rdata' rdata)
+    | Array (u,elems,def,ty) ->
+      let _, elems', def', ty' = destArray c' in
+      let elems = lift_array_with n k elems' elems in
+      let def = lift_with n k def' def in
+      let ty = lift_with n k ty' ty in
+      mkArray (u,elems,def,ty)
+
+and lift_ctx_with n k (_,c') (nas,c as orig) =
+  if c' == c then orig
+  else
+    let c = lift_with n (k+Array.length nas) c' c in
+    (nas, c)
+
+and lift_array_with n k a' a =
+  if a' == a then a
+  else
+    Array.map2 (fun v v' -> lift_with n k v' v) a a'
+
+and lift_rec_with n k (_,tys',bdys') (nas,tys,bdys) =
+  let tys = lift_array_with n k tys' tys in
+  let bdys = lift_array_with n (k+Array.length tys) bdys' bdys in
+  (nas,tys,bdys)
+
 (* (subst1 M c) substitutes M for Rel(1) in c
    we generalise it to (substl [M1,...,Mn] c) which substitutes in parallel
    M1,...,Mn for respectively Rel(1),...,Rel(n) in c *)
@@ -111,7 +224,12 @@ let lift_substituend depth s =
       begin match IntTbl.find_opt cache depth with
       | Some v -> v
       | None ->
-        let v = lift depth s.sit in
+        let v' =
+          let exception Found of Constr.t in
+          try IntTbl.iter (fun _ c -> raise (Found c)) cache; assert false
+          with Found c -> c
+        in
+        let v = lift_with depth 1 v' s.sit in
         let () = IntTbl.add cache depth v in
         v
       end

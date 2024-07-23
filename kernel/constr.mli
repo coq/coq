@@ -408,6 +408,8 @@ val destFix : constr -> fixpoint
 
 val destCoFix : constr -> cofixpoint
 
+val destArray : constr -> UVars.Instance.t * constr array * constr * types
+
 val destRef : constr -> GlobRef.t UVars.puniverses
 
 (** {6 Equality} *)

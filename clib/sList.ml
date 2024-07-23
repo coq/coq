@@ -103,6 +103,14 @@ let rec exists f l = match l with
 | Cons (x, l) -> f x || exists f l
 | Default (_, l) -> exists f l
 
+let rec map2 f l1 l2 = match l1, l2 with
+  | Nil, Nil -> Nil
+  | Cons (x,l1), Cons (y,l2) -> let z = f x y in Cons (z, map2 f l1 l2)
+  | Default (n,l1), Default (m,l2) ->
+    if not (Int.equal n m) then invalid_arg "SList.map2"
+    else Default (n, map2 f l1 l2)
+  | (Nil | Cons _ | Default _), _ -> invalid_arg "SList.map2"
+
 end
 
 module Smart =

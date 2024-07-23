@@ -64,6 +64,10 @@ val fold : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
 val for_all : ('a -> bool) -> 'a t -> bool
 val exists : ('a -> bool) -> 'a t -> bool
 
+val map2 : ('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t
+(** The skip structure of the 2 maps should be identical,
+    otherwise raise [Invalid_argument] after mapping the matching prefixes. *)
+
 end
 (** These iterators ignore the default values in the list. *)
 
