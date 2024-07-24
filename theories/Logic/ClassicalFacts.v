@@ -670,18 +670,31 @@ Proof.
   auto using independence_general_premises_right_distr_implication_over_disjunction.
 Qed.
 
-(** Independence of general premises is equivalent to the drinker's paradox *)
+(** The Drinker's paradox [[Smullyan78]] and its dual (a weak form of indefinite
+    description, see e.g. in [[WarrenDienerMcKubreJordens18]])
+
+[[Smullyan78]] What is the Name of this Book? Raymond Smullyan, 1978.
+
+[[WarrenDienerMcKubreJordens18]] The Drinker Paradox and its Dual,
+Louis Warren and Hannes Diener and Maarten McKubre-Jordens, 2018, unpublished.
+*)
 
 Definition DrinkerParadox A :=
   forall (P:A -> Prop),
+    inhabited A -> exists x, P x -> forall y, P y.
+
+Definition DualDrinkerParadox A :=
+  forall (P:A -> Prop),
     inhabited A -> exists x, (exists x, P x) -> P x.
 
-Lemma independence_general_premises_drinker A :
-  IndependenceOfGeneralPremises A <-> DrinkerParadox A.
+(** Independence of general premises is equivalent to the dual drinker's paradox *)
+
+Lemma independence_general_premises_dual_drinker A :
+  IndependenceOfGeneralPremises A <-> DualDrinkerParadox A.
 Proof.
   split.
   - intros IGP P InhA; apply (IGP P (exists x, P x) InhA); intro Hx; exact Hx.
-  - intros Drinker P Q InhA H; destruct (Drinker P InhA) as (x,Hx).
+  - intros DualDrinker P Q InhA H; destruct (DualDrinker P InhA) as (x,Hx).
     exists x; intro HQ; apply (Hx (H HQ)).
 Qed.
 
@@ -695,8 +708,19 @@ the "ex falso quodlibet" property (i.e. [False -> forall A, A])
 Definition generalized_excluded_middle :=
   forall A B:Prop, A \/ (A -> B).
 
-Lemma excluded_middle_independence_general_premises A :
+Lemma excluded_middle_drinker_paradox A :
   generalized_excluded_middle -> DrinkerParadox A.
+Proof.
+  intros GEM P x0.
+  destruct (GEM (exists x, P x -> (forall y, P y)) (forall y, P y)) as [(x,Hx)|Hnot].
+  - exists x. exact Hx.
+  - exists x0.  intros _ y. destruct (GEM (P y) (forall y, P y)) as [|H].
+    + assumption.
+    + apply Hnot. exists y. exact H.
+Qed.
+
+Lemma excluded_middle_dual_drinker_paradox A :
+  generalized_excluded_middle -> DualDrinkerParadox A.
 Proof.
   intros GEM P x0.
   destruct (GEM (exists x, P x) (P x0)) as [(x,Hx)|Hnot].
@@ -729,15 +753,15 @@ Qed.
 (** Similarly, using subtypes, drinker's paradox on Boolean values
     implies excluded-middile *)
 
-Definition RelativizedDrinkerParadox A (P : A -> Prop) :=
-  DrinkerParadox {a : A & P a}.
+Definition RelativizedDualDrinkerParadox A (P : A -> Prop) :=
+  DualDrinkerParadox {a : A & P a}.
 
 Lemma
-  relativized_drinker_paradox_excluded_middle :
-  (forall P, RelativizedDrinkerParadox bool P) -> excluded_middle.
+  relativized_dual_drinker_paradox_excluded_middle :
+  (forall P, RelativizedDualDrinkerParadox bool P) -> excluded_middle.
 Proof.
   intros RDP. apply relativized_independence_general_premises_excluded_middle.
-  intro P. apply independence_general_premises_drinker, RDP.
+  intro P. apply independence_general_premises_dual_drinker, RDP.
 Qed.
 
 (** * Axioms equivalent to classical logic *)
