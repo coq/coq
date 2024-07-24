@@ -146,7 +146,7 @@ let ic_unsafe env sigma c = (*FIXME remove *)
 let decl_constant name univs c =
   let open Constr in
   let vars = CVars.universes_of_constr c in
-  let univs = UState.restrict_universe_context univs vars in
+  let univs = UGraph.restrict_universe_context univs vars in
   let () = Global.push_context_set ~strict:true univs in
   let types = (Typeops.infer (Global.env ()) c).uj_type in
   let univs = UState.Monomorphic_entry Univ.ContextSet.empty, UnivNames.empty_binders in

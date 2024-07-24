@@ -592,7 +592,7 @@ let print_constant env ~with_values with_implicit cst udecl =
         | Some access ->
           let c, priv = Global.force_proof access o in
           let priv = match priv with
-            | PrivateMonomorphic () -> None
+            | PrivateMonomorphic priv
             | PrivatePolymorphic priv -> Some priv
           in
           Some (Some c, priv)
