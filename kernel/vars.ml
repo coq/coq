@@ -336,8 +336,8 @@ let fold_case_under_context_relevance f acc (nas,_) =
 let fold_rec_declaration_relevance f acc (nas,_,_) =
   Array.fold_left (fold_annot_relevance f) acc nas
 
-let fold_constr_relevance f acc c =
-  match kind c with
+let fold_kind_relevance f acc c =
+  match c with
   | Rel _ | Var _ | Meta _ | Evar _
   |  Sort _ | Cast _ | App _
   | Const _ | Ind _ | Construct _
@@ -479,41 +479,62 @@ let subst_instance_context s ctx =
         RelDecl.map_constr (subst_instance_constr s) d)
       ctx
 
-let add_qvars_and_univs_of_instance (qs,us) u =
-  let qs', us' = UVars.Instance.to_array u in
-  let qs = Array.fold_left (fun qs q ->
-      let open Sorts.Quality in
-      match q with
-      | QVar q -> Sorts.QVar.Set.add q qs
-      | QConstant _ -> qs)
-      qs qs'
-  in
-  let us = Array.fold_left (fun acc x -> Univ.Level.Set.add x acc) us us' in
-  qs, us
+type ('a,'s,'u,'r) univ_visitor = {
+  visit_sort : 'a -> 's -> 'a;
+  visit_instance : 'a -> 'u -> 'a;
+  visit_relevance : 'a -> 'r -> 'a;
+}
 
-let add_relevance (qs,us as v) = let open Sorts in function
-  | Irrelevant | Relevant -> v
-  | RelevanceVar q -> QVar.Set.add q qs, us
-
-let sort_and_universes_of_constr ?(init=(Sorts.QVar.Set.empty,Univ.Level.Set.empty)) c =
+let univs_and_qvars_visitor =
   let open Univ in
-  let rec aux s c =
-    let s = fold_constr_relevance add_relevance s c in
-    match kind c with
-    | Const (_, u) | Ind (_, u) | Construct (_,u) -> add_qvars_and_univs_of_instance s u
-    | Sort (Sorts.Type u) ->
-      Util.on_snd (fun s -> Universe.levels ~init:s u) s
-    | Sort (Sorts.QSort (q,u)) ->
-      let qs, us = s in
+  let visit_sort (qs,us as acc) = function
+    | Sorts.Type u ->
+      qs, Universe.levels ~init:us u
+    | Sorts.QSort (q,u) ->
       Sorts.QVar.Set.add q qs, Universe.levels ~init:us u
-    | Array (u,_,_,_) ->
-      let s = add_qvars_and_univs_of_instance s u in
-      Constr.fold aux s c
-    | Case (_, u, _, _, _,_ ,_) ->
-      let s = add_qvars_and_univs_of_instance s u in
-      Constr.fold aux s c
-    | _ -> Constr.fold aux s c
-  in aux init c
+    | Sorts.(SProp | Prop | Set) -> acc
+  in
+  let visit_instance (qs,us) u =
+    let qs', us' = UVars.Instance.to_array u in
+    let qs = Array.fold_left (fun qs q ->
+        let open Sorts.Quality in
+        match q with
+        | QVar q -> Sorts.QVar.Set.add q qs
+        | QConstant _ -> qs)
+        qs qs'
+    in
+    let us = Array.fold_left (fun acc x -> Univ.Level.Set.add x acc) us us' in
+    qs, us
+  in
+  let visit_relevance (qs,us as acc) = let open Sorts in function
+      | Irrelevant | Relevant -> acc
+      | RelevanceVar q -> QVar.Set.add q qs, us
+  in
+  {
+    visit_sort = visit_sort;
+    visit_instance = visit_instance;
+    visit_relevance = visit_relevance;
+  }
+
+let visit_kind_univs visit acc c =
+  let acc = fold_kind_relevance visit.visit_relevance acc c in
+  match c with
+  | Const (_, u) | Ind (_, u) | Construct (_,u) -> visit.visit_instance acc u
+  | Sort s -> visit.visit_sort acc s
+  | Array (u,_,_,_) ->
+    let acc = visit.visit_instance acc u in
+    acc
+  | Case (_, u, _, _, _,_ ,_) ->
+    let acc = visit.visit_instance acc u in
+    acc
+  | _ -> acc
+
+let sort_and_universes_of_constr ?(init=Sorts.QVar.Set.empty,Univ.Level.Set.empty) c =
+  let rec aux s c =
+    let s = visit_kind_univs univs_and_qvars_visitor s (kind c) in
+    Constr.fold aux s c
+  in
+  aux init c
 
 let sort_and_universes_of_constr ?init c =
   NewProfile.profile "sort_and_universes_of_constr" (fun () ->
