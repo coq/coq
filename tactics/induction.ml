@@ -247,7 +247,7 @@ let mkletin_goal env sigma with_eq dep (id,lastlhyp,ccl,c) ty =
       let eqdata = build_coq_eq_data () in
       let args = if lr then [mkVar id;c] else [c;mkVar id]in
       let (sigma, eq) = Evd.fresh_global env sigma eqdata.eq in
-      let (sigma, refl) = Evd.fresh_global env sigma eqdata.refl in
+      let refl = mkRef (eqdata.refl, snd (destRef sigma eq)) in
       (* NB we are not in the right env for [id] so we only check the partial application.
          This is enough to produce the desired univ constraint between univ of eq and univ of t *)
       let sigma, eq = Typing.checked_applist env sigma eq [t] in
