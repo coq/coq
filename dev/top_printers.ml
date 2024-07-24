@@ -179,6 +179,14 @@ let ppclosedglobconstridmap x = pp (pr_closed_glob_constr_idmap x)
 
 let pP s = pp (hov 0 s)
 
+let pp_as_format s =
+  let fmt, args = pp_as_format s in
+  let pr_escaped s = str ("\"" ^ String.escaped s ^ "\"") in
+  pp
+    (hov 0
+       (str "printf" ++ spc() ++ str "\"" ++ str fmt ++ str "\"" ++
+        pr_non_empty_arg (prlist_with_sep spc pr_escaped) args))
+
 let safe_pr_global = let open GlobRef in function
   | ConstRef kn -> pp (str "CONSTREF(" ++ Constant.debug_print kn ++ str ")")
   | IndRef (kn,i) -> pp (str "INDREF(" ++ MutInd.debug_print kn ++ str "," ++

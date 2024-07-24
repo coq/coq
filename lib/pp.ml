@@ -350,6 +350,68 @@ let db_print_pp fmt pp =
 let db_string_of_pp pp =
   Format.asprintf "%a" db_print_pp pp
 
+let has_format_special s =
+  (* String.exists needs ocaml 4.13 *)
+  let rec aux i =
+    if i = String.length s then false
+    else match String.unsafe_get s i with
+      | '@' | '%' | '\\' | '"' -> true
+      | _ -> aux (i+1)
+  in
+  aux 0
+
+let pp_as_format ?(with_tags=false) pp =
+  let open Format in
+  let fmt, return =
+    let buf = Buffer.create 200 in
+    let fmt = Format.formatter_of_buffer buf in
+    fmt, (fun () -> Format.pp_print_flush fmt (); buf)
+  in
+  let args = ref [] in
+  let open_box bty =
+    fprintf fmt "%s" "@[";
+    match bty with
+    | Pp_hbox -> fprintf fmt "<h>"
+    | Pp_vbox i -> if i = 0 then fprintf fmt "<v>" else fprintf fmt "<v %d>" i
+    | Pp_hvbox i -> if i = 0 then fprintf fmt "<hv>" else fprintf fmt "<hv %d>" i
+    | Pp_hovbox i -> if i = 0 then fprintf fmt "<hov>" else fprintf fmt "<hov %d>" i
+  in
+  let close_box () = fprintf fmt "%s" "@]" in
+  let rec pprec pp =
+  match pp with
+  | Ppcmd_empty -> ()
+  | Ppcmd_string s ->
+    if has_format_special s then begin
+      fprintf fmt "%s" "%s";
+      args := s :: !args
+    end else fprintf fmt "%s" s
+  | Ppcmd_glue l -> List.iter pprec l
+  | Ppcmd_box (bty, pp) ->
+    open_box bty;
+    pprec pp;
+    close_box ()
+  | Ppcmd_tag (tag,pp) ->
+    if with_tags then begin
+      fprintf fmt "%s<%s>" "@{" tag;
+      pprec pp;
+      fprintf fmt "%s" "@}"
+    end
+    else pprec pp
+  | Ppcmd_print_break (nspaces,offset) -> begin match nspaces, offset with
+      | 0, 0 -> fprintf fmt "%s" "@,"
+      | 1, 0 -> fprintf fmt "%s" "@ "
+      | _ -> fprintf fmt "%s<%d %d>" "@;" nspaces offset
+    end
+  | Ppcmd_force_newline -> fprintf fmt "%s" "@."
+  | Ppcmd_comment [] -> ()
+  | Ppcmd_comment _ -> failwith "not implemented pp_as_format on nonempty Ppcmd_comment"
+  in
+  let () = pprec pp in
+  let buf = return () in
+  let fmt = Buffer.contents buf in
+  let args = List.rev !args in
+  fmt, args
+
 let rec flatten pp =
   match pp with
   | Ppcmd_glue l -> Ppcmd_glue (List.concat (List.map
