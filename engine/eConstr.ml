@@ -823,7 +823,7 @@ let add_relevance sigma (qs,us as v) r =
   | Irrelevant | Relevant -> v
   | RelevanceVar q -> QVar.Set.add q qs, us
 
-let universes_of_constr sigma c =
+let universes_of_constr ?(init=Sorts.QVar.Set.empty,Univ.Level.Set.empty) sigma c =
   let open Univ in
   let rec aux s c =
     let s = fold_constr_relevance sigma (add_relevance sigma) s c in
@@ -831,10 +831,10 @@ let universes_of_constr sigma c =
     | Const (_, u) | Ind (_, u) | Construct (_,u) -> add_universes_of_instance sigma s u
     | Sort u -> begin match ESorts.kind sigma u with
         | Type u ->
-          Util.on_snd (Level.Set.fold Level.Set.add (Universe.levels u)) s
+          Util.on_snd (fun s -> Universe.levels ~init:s u) s
         | QSort (q, u) ->
           let qs, us = s in
-          Sorts.QVar.Set.add q qs, Level.Set.union us (Universe.levels u)
+          Sorts.QVar.Set.add q qs, Universe.levels ~init:us u
         | SProp | Prop | Set -> s
       end
     | Evar (k, args) ->
@@ -847,7 +847,7 @@ let universes_of_constr sigma c =
       let s = add_universes_of_instance sigma s u in
       fold sigma aux s c
     | _ -> fold sigma aux s c
-  in aux (Sorts.QVar.Set.empty,Level.Set.empty) c
+  in aux init c
 
 open Context
 open Environ

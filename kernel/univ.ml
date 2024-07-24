@@ -390,12 +390,12 @@ struct
     | [l] -> Expr.level l
     | _ -> None
 
-  let levels l =
+  let levels ?(init=Level.Set.empty) l =
     let fold acc x =
       let l = Expr.get_level x in
       Level.Set.add l acc
     in
-    List.fold_left fold Level.Set.empty l
+    List.fold_left fold init l
 
   let is_small u =
     match u with

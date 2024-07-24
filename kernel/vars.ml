@@ -495,17 +495,17 @@ let add_relevance (qs,us as v) = let open Sorts in function
   | Irrelevant | Relevant -> v
   | RelevanceVar q -> QVar.Set.add q qs, us
 
-let sort_and_universes_of_constr c =
+let sort_and_universes_of_constr ?(init=(Sorts.QVar.Set.empty,Univ.Level.Set.empty)) c =
   let open Univ in
   let rec aux s c =
     let s = fold_constr_relevance add_relevance s c in
     match kind c with
     | Const (_, u) | Ind (_, u) | Construct (_,u) -> add_qvars_and_univs_of_instance s u
     | Sort (Sorts.Type u) ->
-      Util.on_snd (Level.Set.union (Universe.levels u)) s
+      Util.on_snd (fun s -> Universe.levels ~init:s u) s
     | Sort (Sorts.QSort (q,u)) ->
       let qs, us = s in
-      Sorts.QVar.Set.add q qs, Level.Set.union us (Universe.levels u)
+      Sorts.QVar.Set.add q qs, Universe.levels ~init:us u
     | Array (u,_,_,_) ->
       let s = add_qvars_and_univs_of_instance s u in
       Constr.fold aux s c
@@ -513,11 +513,12 @@ let sort_and_universes_of_constr c =
       let s = add_qvars_and_univs_of_instance s u in
       Constr.fold aux s c
     | _ -> Constr.fold aux s c
-  in aux (Sorts.QVar.Set.empty,Level.Set.empty) c
+  in aux init c
 
-let sort_and_universes_of_constr c =
+let sort_and_universes_of_constr ?init c =
   NewProfile.profile "sort_and_universes_of_constr" (fun () ->
-      sort_and_universes_of_constr c)
+      sort_and_universes_of_constr ?init c)
     ()
 
-let universes_of_constr c = snd (sort_and_universes_of_constr c)
+let universes_of_constr ?(init=Univ.Level.Set.empty) c =
+  snd (sort_and_universes_of_constr ~init:(Sorts.QVar.Set.empty,init) c)

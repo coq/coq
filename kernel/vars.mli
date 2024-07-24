@@ -203,9 +203,9 @@ val univ_instantiate_constr : Instance.t -> constr univ_abstracted -> constr
 val map_constr_relevance : (Sorts.relevance -> Sorts.relevance) -> Constr.t -> Constr.t
 (** Modifies the relevances in the head node (not in subterms) *)
 
-val sort_and_universes_of_constr : constr -> Sorts.QVar.Set.t * Univ.Level.Set.t
+val sort_and_universes_of_constr : ?init:Sorts.QVar.Set.t * Univ.Level.Set.t -> constr -> Sorts.QVar.Set.t * Univ.Level.Set.t
 
-val universes_of_constr : constr -> Univ.Level.Set.t
+val universes_of_constr : ?init:Univ.Level.Set.t -> constr -> Univ.Level.Set.t
 
 (** {3 Low-level cached lift type} *)
 
