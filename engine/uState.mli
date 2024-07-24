@@ -174,17 +174,27 @@ val merge : ?loc:Loc.t -> sideff:bool -> rigid -> t -> Univ.ContextSet.t -> t
 val merge_sort_variables : ?loc:Loc.t -> sideff:bool -> t -> QVar.Set.t -> t
 val merge_sort_context : ?loc:Loc.t -> sideff:bool -> rigid -> t -> UnivGen.sort_context_set -> t
 
-val emit_side_effects : Safe_typing.private_constants -> t -> t
-
 val demote_global_univs : Univ.ContextSet.t -> t -> t
-(** Removes from the uctx_local part of the UState the universes and constraints
-    that are present in the input constraint set (supposedly the
-    global ones) *)
+(** After declaring global universes, call this if you want to keep using the UState.
 
-val demote_seff_univs : Univ.Level.Set.t -> t -> t
-(** Mark the universes as not local any more, because they have been
-   globally declared by some side effect. You should be using
-   emit_side_effects instead. *)
+    Removes from the uctx_local part of the UState the universes
+    that are present in the input constraint set (supposedly the global ones),
+    and adds any new universes and constraints to the UGraph part of the UState.
+*)
+
+val demote_global_univ_entry : universes_entry -> t -> t
+(** After declaring a global, call this with its universe entry
+    if you want to keep using the ustate instead of restarting it
+    with [from_env (Global.env())] or using the slow
+    [update_sigma_univs _ (Environ.universes (Global/env()))].
+
+    Equivalently:
+    - In the monomorphic case, call [demote_global_univs] on the contextset.
+    - In the polymorphic case, do nothing.
+*)
+
+val emit_side_effects : Safe_typing.private_constants -> t -> t
+(** Calls [demote_global_univs] for the private constant universes. *)
 
 val new_sort_variable : ?loc:Loc.t -> ?name:Id.t -> t -> t * QVar.t
 (** Declare a new local sort. *)
@@ -195,7 +205,8 @@ val new_univ_variable : ?loc:Loc.t -> rigid -> Id.t option -> t -> t * Univ.Leve
     univ_flexible_alg for a universe existential variable allowed to
     be instantiated with an algebraic universe *)
 
-val add_global_univ : t -> Univ.Level.t -> t
+val add_forgotten_univ : t -> Univ.Level.t -> t
+(** Don't use this, it only exists for funind *)
 
 val make_nonalgebraic_variable : t -> Univ.Level.t -> t
 (** cf UnivFlex *)
