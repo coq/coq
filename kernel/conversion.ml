@@ -366,8 +366,8 @@ let rec compare_under e1 c1 e2 c2 =
 
 
 let rec fast_test lft1 term1 lft2 term2 = match fterm_of term1, fterm_of term2 with
-  | FLIFT (i, term1), (FLIFT _ | FCLOS _) -> fast_test (el_popn i lft1) term1 lft2 term2
-  | FCLOS _, FLIFT (j, term2) -> fast_test lft1 term1 (el_popn j lft2) term2
+  | FLIFT (i, term1), (FLIFT _ | FCLOS _) -> fast_test (el_shft i lft1) term1 lft2 term2
+  | FCLOS _, FLIFT (j, term2) -> fast_test lft1 term1 (el_shft j lft2) term2
   | FCLOS (c1, (e1,u1)), FCLOS (c2, (e2,u2)) ->
     eq_lift lft1 lft2 &&
     compare_under (e1, u1) c1 (e2, u2) c2

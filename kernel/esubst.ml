@@ -58,34 +58,6 @@ let el_liftn n el = if Int.equal n 0 then el else el_liftn_rec n el
 
 let el_lift el = el_liftn_rec 1 el
 
-(* el_pop_rec is the n-ary tailrec variant of a function whose typing rules would be
-   given as follows. Assume Γ ⊢ e : Δ, A, then
-   - Γ := Ξ, A, Ω for some Ξ and Ω with |Ω| := fst (el_pop_rec e)
-   - Ξ ⊢ snd (el_pop e) : Δ
-*)
-let rec el_pop_rec n i e =
-  if Int.equal n 0 then i, e
-  else match e with
-  | ELID -> i, e
-  | ELLFT (k, e) ->
-    if k <= n then el_pop_rec (n - k) i e
-    else i, ELLFT (k - n, e)
-  | ELSHFT (e, k) -> el_pop_rec n (i + k) e
-
-(* [el_popn n e] precomposes e with a relocation of magnitude n (pops its n top-most elements)
-   Assuming Γ ⊢ e : Δ, Δ' with |Δ'| = n, then Γ ⊢ el_popn n e : Δ
-*)
-let el_popn n e =
-  let k, e = el_pop_rec n 0 e in
-  el_shft (k + n) e
-
-(* [el_pop e] precomposes e with a relocation (pops its top-most element)
-   Assume Γ ⊢ e : Δ, A, then Γ ⊢ el_pop e : Δ
-*)
-let el_pop e =
-  let k, e = el_pop_rec 1 0 e in
-  el_shft (k + 1) e
-
 (* relocation of de Bruijn n in an explicit lift *)
 let rec reloc_rel n = function
   | ELID -> n
@@ -243,6 +215,19 @@ let subs_id n = Nil (0, n)
 
 let subs_shft (n, s) = write n s
 
+(* pop is the n-ary tailrec variant of a function whose typing rules would be
+   given as follows. Assume Γ ⊢ e : Δ, A, then
+   - Γ := Ξ, A, Ω for some Ξ and Ω with |Ω| := fst (pop e)
+   - Ξ ⊢ snd (pop e) : Δ
+*)
+let rec pop n i e =
+  if Int.equal n 0 then i, e
+  else match e with
+  | ELID -> i, e
+  | ELLFT (k, e) ->
+    if k <= n then pop (n - k) i e
+    else i, ELLFT (k - n, e)
+  | ELSHFT (e, k) -> pop (n + k) (i + k) e
 
 let apply mk e = function
 | Var i -> Var (reloc_rel i e)
@@ -250,10 +235,10 @@ let apply mk e = function
 
 let rec tree_map mk e = function
 | Leaf (w, x) ->
-  let (n, e) = el_pop_rec w 0 e in
+  let (n, e) = pop w 0 e in
   Leaf (w + n, apply mk e x), e
 | Node (w, x, t1, t2, _) ->
-  let (n, e) = el_pop_rec w 0 e in
+  let (n, e) = pop w 0 e in
   let x = apply mk e x in
   let t1, e = tree_map mk e t1 in
   let t2, e = tree_map mk e t2 in
@@ -268,7 +253,7 @@ let rec lift_id e n = match e with
 
 let rec lift_subst mk e s = match s with
 | Nil (w, m) ->
-  let (n, e) = el_pop_rec w 0 e in
+  let (n, e) = pop w 0 e in
   write (w + n) (lift_id e m)
 | Cons (h, t, rem) ->
   let t, e = tree_map mk e t in
