@@ -135,12 +135,14 @@ let v_proj = v_tuple "projection" [|v_proj_repr; v_bool|]
 let v_uint63 =
   if Sys.word_size == 64 then Int else Int64
 
+let v_evar = Int
+
 let rec v_constr =
   Sum ("constr",0,[|
     [|Int|]; (* Rel *)
     [|v_id|]; (* Var *)
     [|Fail "Meta"|]; (* Meta *)
-    [|Fail "Evar"|]; (* Evar *)
+    [|v_pair v_evar Any|]; (* Evar *)
     [|v_sort|]; (* Sort *)
     [|v_constr;v_cast;v_constr|]; (* Cast *)
     [|v_binder_annot v_name;v_constr;v_constr|]; (* Prod *)
