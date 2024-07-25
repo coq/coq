@@ -98,6 +98,9 @@ val map_filter : ('a -> 'b option) -> 'a list -> 'b list
 val map_filter_i : (int -> 'a -> 'b option) -> 'a list -> 'b list
 (** Like [map_filter] but with an index starting from [0] *)
 
+val fold_filter : ('acc -> 'a -> 'acc * bool) -> 'acc -> 'a list -> 'acc * 'a list
+(** Like [List.fold_left] and [List.filter] at the same time *)
+
 val partitioni : (int -> 'a -> bool) -> 'a list -> 'a list * 'a list
 (** Like [List.partition] but with an index starting from [0] *)
 

@@ -66,17 +66,81 @@ let do_symbols ~poly ~unfold_fix l =
 open Declarations
 
 
-let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) =
+let warn_rewrite_rules_break_SR = "rewrite-rules-break-SR"
+
+let rewrite_rules_break_SR_warning =
+  CWarnings.create_warning ~name:warn_rewrite_rules_break_SR ~default:CWarnings.Enabled ()
+
+let rewrite_rules_break_SR_msg = CWarnings.create_msg rewrite_rules_break_SR_warning ()
+let warn_rewrite_rules_break_SR ~loc reason =
+  CWarnings.warn rewrite_rules_break_SR_msg ?loc reason
+let () = CWarnings.register_printer rewrite_rules_break_SR_msg
+  (fun reason -> Pp.(str "This rewrite rule breaks subject reduction (" ++ reason ++ str ")."))
+
+let interp_rule (pattern, rhs) =
   let env = Global.env () in
   let evd = Evd.from_env env in
 
-  let pattern_loc = lhs.CAst.loc in
+  let pattern_loc = pattern.CAst.loc in
   let rhs_loc = rhs.CAst.loc in
 
-  let pattern = assert false in (* TODO *)
-  let rhs = assert false in     (* TODO *)
-  let info = assert false in    (* TODO *)
-  let rule = { pattern; replacement = rhs; info } in
+  let pattern = Constrintern.(intern_gen WithoutTypeConstraint env evd pattern) in
+  let evd, (Info rr_info as info), pattern, j_pat = RRPretyping.eval_pretyper_pattern env evd pattern in
+
+  let () = Rewrite_rules_ops.check_pattern_redex env pattern in
+
+  let uctx_pre =
+    (* let evd = Evd.minimize_universes evd in *)
+    (* let qvars, uvars = EConstr.universes_of_constr evd @@ EConstr.of_constr (Environ.j_val j_pat) in *)
+    (* let qvars', uvars' = EConstr.universes_of_constr evd @@ EConstr.of_constr (Environ.j_type j_pat) in *)
+    (* let qvars = Sorts.QVar.Set.union qvars qvars' in *)
+    (* let uvars = Univ.Level.Set.union uvars uvars' in *)
+    (* let evd = Evd.restrict_universe_context evd uvars in *)
+    (* let evd = Evd.restrict_sort_variables evd qvars in *)
+    Evd.ustate evd
+  in
+
+  let evd = Evd.allow_failures evd in
+  let evd = Evd.freeze_sort_variables evd in
+  let evd = Evd.fix_undefined_variables evd in
+
+  (* 3. Read right hand side *)
+  (* The udecl constraints (or, if none, the lhs constraints) must imply those of the rhs *)
+  let rhs = Constrintern.(intern_gen WithoutTypeConstraint env evd rhs) in
+  let flags = { Pretyping.no_classes_no_fail_inference_flags with rrpat_evars_abstract = true } in
+  let evd, rhs =
+    try Pretyping.understand_tcc ~flags env evd ~expected_type:(OfType (EConstr.of_constr @@ Environ.j_type j_pat)) rhs
+    with Type_errors.TypeError _ | Pretype_errors.PretypeError _ ->
+      warn_rewrite_rules_break_SR ~loc:rhs_loc (Pp.str "the replacement term doesn't have the type of the pattern");
+      Pretyping.understand_tcc ~flags env evd rhs
+  in
+
+
+  (* let qvars', uvars' = EConstr.universes_of_constr evd rhs in *)
+  (* let qvars = Sorts.QVar.Set.union qvars qvars' in *)
+  (* let uvars = Univ.Level.Set.union uvars uvars' in *)
+  (* let evd = Evd.restrict_universe_context evd uvars in *)
+  (* let evd = Evd.restrict_sort_variables evd qvars in *)
+
+  let checker = let open UnivProblem in function
+    | UEq (s1, s2) -> Rewrite_rules_ops.check_ucstr_slow env info (s1, CONV, s2)
+    | ULe (s1, s2) -> Rewrite_rules_ops.check_ucstr_slow env info (s1, CUMUL, s2)
+    | QEq _ | QLeq _ -> false (* Cannot find better results *)
+    | ULub _ | UWeak _ -> assert false
+  in
+
+  let fail pp = warn_rewrite_rules_break_SR ~loc:rhs_loc Pp.(str "universe inconsistency, missing constraints: " ++ pp) in
+  let evd = Evd.recheck_failures ~fail checker evd in
+
+  let evd = Evd.minimize_universes evd in
+
+  let fail pp = warn_rewrite_rules_break_SR ~loc:rhs_loc Pp.(str "universe inconsistency, missing constraints: " ++ pp) in
+  let () = UState.check_uctx_impl ~fail uctx_pre (Evd.ustate evd) in
+
+  let rhs = EConstr.Unsafe.to_constr (Evarutil.nf_evar evd rhs) in
+  (* Remaining evars are either substituted or caught by the [translate_pattern] function *)
+
+  let rule = { pattern; replacement = rhs; info = Info rr_info } in
 
   let _ =
     match Rewrite_rules_ops.translate_rewrite_rule env rule with
