@@ -109,21 +109,23 @@ let rec get_holes_profiles env nargs ndecls lincheck el =
 
 and get_holes_profiles_elim env nargs ndecls lincheck = function
   | PEApp args -> Array.fold_left (get_holes_profiles_parg env nargs ndecls) lincheck args
-  | PECase (ind, u, ret, brs) ->
+  | PECase (ind, ret, brs) ->
       let mib, mip = Inductive.lookup_mind_specif env ind in
-      let lincheck = check_instance_mask env mib.mind_universes u lincheck in
       let lincheck = get_holes_profiles_parg env (nargs + mip.mind_nrealargs + 1) (ndecls + mip.mind_nrealdecls + 1) lincheck ret in
       Array.fold_left3 (fun lincheck nargs_b ndecls_b -> get_holes_profiles_parg env (nargs + nargs_b) (ndecls + ndecls_b) lincheck) lincheck mip.mind_consnrealargs mip.mind_consnrealdecls brs
   | PEProj proj ->
       let () = lookup_projection (Projection.make proj false) env |> ignore in
       lincheck
 
+and get_holes_profiles_headelim env nargs ndecls lincheck (h, el) =
+  let lincheck = get_holes_profiles_head env nargs ndecls lincheck h in
+  get_holes_profiles env nargs ndecls lincheck el
+
 and get_holes_profiles_parg env nargs ndecls lincheck = function
   | EHoleIgnored -> lincheck
   | EHole i -> Partial_subst.add_term i nargs lincheck
-  | ERigid (h, el) ->
-      let lincheck = get_holes_profiles_head env nargs ndecls lincheck h in
-      get_holes_profiles env nargs ndecls lincheck el
+  | ERigid hel ->
+      get_holes_profiles_headelim env nargs ndecls lincheck hel
 
 and get_holes_profiles_head env nargs ndecls lincheck = function
   | PHRel n -> if n <= ndecls then lincheck else Type_errors.error_unbound_rel env n
@@ -144,7 +146,11 @@ and get_holes_profiles_head env nargs ndecls lincheck = function
       |> Partial_subst.maybe_add_quality qio ()
       |> Partial_subst.maybe_add_univ uio ()
   | PHSort _ -> lincheck
-  | PHLambda (tys, bod) | PHProd (tys, bod) ->
+  | PHLambda (tys, bod) ->
+      let lincheck = Array.fold_left_i (fun i -> get_holes_profiles_parg env (nargs + i) (ndecls + i)) lincheck tys in
+      let lincheck = get_holes_profiles_headelim env (nargs + Array.length tys) (ndecls + Array.length tys) lincheck bod in
+      lincheck
+  | PHProd (tys, bod) ->
       let lincheck = Array.fold_left_i (fun i -> get_holes_profiles_parg env (nargs + i) (ndecls + i)) lincheck tys in
       let lincheck = get_holes_profiles_parg env (nargs + Array.length tys) (ndecls + Array.length tys) lincheck bod in
       lincheck

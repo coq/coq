@@ -201,7 +201,6 @@ let rec safe_pattern_of_constr_aux ~loc env evd usubst depth state t = Constr.ki
   | Case (ci, u, params, (ret, _), _, c, brs) ->
       let mib, mip = Inductive.lookup_mind_specif env ci.ci_ind in
 
-      let state, mask = update_invtblu ~loc evd usubst state u in
       let state, (head, elims) = safe_pattern_of_constr_aux ~loc env evd usubst depth state c in
 
       let paramdecl = Vars.subst_instance_context u mib.mind_params_ctxt in
@@ -231,7 +230,7 @@ let rec safe_pattern_of_constr_aux ~loc env evd usubst depth state t = Constr.ki
         safe_arg_pattern_of_constr ~loc br_env evd usubst (depth + Array.length nas) state br
       in
       let state, pbrs = Array.fold_left_map_i do_one_branch state brs in
-      state, (head, elims @ [PECase (ci.ci_ind, mask, pret, pbrs)])
+      state, (head, elims @ [PECase (ci.ci_ind, pret, pbrs)])
   | Proj (p, _, c) ->
       let state, (head, elims) = safe_pattern_of_constr_aux ~loc env evd usubst depth state c in
       state, (head, elims @ [PEProj (Projection.repr p)])
@@ -275,7 +274,7 @@ and safe_head_pattern_of_constr ~loc env evd usubst depth state t = Constr.kind 
           (state, Environ.push_rel (LocalAssum (na, ty)) env), p)
         (state, env) tys
     in
-    let state, pbod = safe_arg_pattern_of_constr ~loc env evd usubst (depth + Array.length tys) state b in
+    let state, pbod = safe_pattern_of_constr ~loc env evd usubst (depth + Array.length tys) state b in
     state, PHLambda (ptys, pbod)
   | Prod _ ->
     let (ntys, b) = Term.decompose_prod t in
@@ -355,7 +354,7 @@ let rec test_pattern_redex env evd ~loc = function
   | PHLambda _, _ -> warn_redex_in_rewrite_rules ?loc (Pp.str " lambda pattern")
   | PHConstr (c, _) as head, PEApp args :: elims -> test_projection_apps env evd ~loc (fst c) args; Array.iter (test_pattern_redex_aux env evd ~loc) args; test_pattern_redex env evd ~loc (head, elims)
   | head, PEApp args :: elims -> Array.iter (test_pattern_redex_aux env evd ~loc) args; test_pattern_redex env evd ~loc (head, elims)
-  | head, PECase (_, _, ret, brs) :: elims -> test_pattern_redex_aux env evd ~loc ret; Array.iter (test_pattern_redex_aux env evd ~loc) brs; test_pattern_redex env evd ~loc (head, elims)
+  | head, PECase (_, ret, brs) :: elims -> test_pattern_redex_aux env evd ~loc ret; Array.iter (test_pattern_redex_aux env evd ~loc) brs; test_pattern_redex env evd ~loc (head, elims)
   | head, PEProj _ :: elims -> test_pattern_redex env evd ~loc (head, elims)
   | PHProd (tys, bod), [] -> Array.iter (test_pattern_redex_aux env evd ~loc) tys; test_pattern_redex_aux env evd ~loc bod
   | (PHRel _ | PHInt _ | PHFloat _ | PHString _ | PHSort _ | PHInd _ | PHConstr _ | PHSymbol _), [] -> ()
