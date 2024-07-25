@@ -1,0 +1,6 @@
+(library
+ (name coqSharingAnalyser)
+ (synopsis "Physical sharing analysis of OCaml values.")
+ (public_name coq-core.sharingAnalyser)
+ (wrapped true)
+ (foreign_stubs (language c) (names coq_sharing_analysis)))

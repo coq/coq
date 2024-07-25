@@ -5,7 +5,7 @@
  (wrapped false)
  (modules_without_implementation values declarations entries)
  (modules (:standard \ genOpcodeFiles uint63_31 uint63_63 float64_31 float64_63))
- (libraries boot lib coqrun dynlink))
+ (libraries boot lib coqSharingAnalyser coqrun dynlink))
 
 (executable
   (name genOpcodeFiles)
@@ -35,7 +35,7 @@
 ; In dev profile, we check the kernel against a more strict set of
 ; warnings.
 (env
- (dev (flags :standard -w @a-4-40-44-50)))
+ (dev (flags :standard -w @a-4-40-44-45-50)))
 
 (deprecated_library_name
  (old_public_name coq.kernel)

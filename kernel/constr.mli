@@ -292,6 +292,8 @@ type ('constr, 'types, 'sort, 'univs, 'r) kind_of_term =
   (** [Array (u,vals,def,t)] is an array of [vals] in type [t] with default value [def].
       [u] is a universe containing [t]. *)
 
+val constr_descr : CoqSharingAnalyser.SharingAnalyser.type_descr
+
 (** User view of [constr]. For [App], it is ensured there is at
    least one argument and the function is not itself an applicative
    term *)
@@ -667,3 +669,9 @@ val hcons_annot : Name.t binder_annot -> Name.t binder_annot
 val hcons_caseinfo : case_info -> case_info
 
 val hash_cast_kind : cast_kind -> int
+
+type debug
+
+val mk_debug : CoqSharingAnalyser.SharingAnalyser.analysis -> t -> debug
+
+val get_debug : debug -> CoqSharingAnalyser.SharingAnalyser.analysis * t

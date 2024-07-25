@@ -118,6 +118,41 @@ type t = T of (t, t, Sorts.t, Instance.t, Sorts.relevance) kind_of_term [@@unbox
 type constr = t
 type types = constr
 
+let constr_descr =
+  let open CoqSharingAnalyser.SharingAnalyser in
+  cofix (fun constr ->
+  remember @@ sum [|
+    (* Rel *) [|ignore|];
+    (* Var *) [|ignore|];
+    (* Meta *) [|ignore|];
+    (* Evar *) [|tuple [|ignore;slist constr|]|];
+    (* Sort *) [|ignore|];
+    (* Cast *) [|constr;ignore;constr|];
+    (* Prod *) [|ignore;constr;constr|];
+    (* Lambda *) [|ignore;constr;constr|];
+    (* LetIn *) [|ignore;constr;constr;constr|];
+    (* App *) [|constr;array constr|];
+    (* Const *) [|ignore|];
+    (* Ind *) [|ignore|];
+    (* Construct *) [|ignore|];
+    (* Case *)
+    [|ignore(*ci*);
+      ignore(*u*);
+      array constr(*pms*);
+      pair (pair ignore constr) ignore(*return*);
+      sum [|[|array constr|]|](*case_invert*);
+      constr(*head*);
+      array (pair ignore constr)(*branches*);
+    |];
+    (* Fix *) [|pair ignore (tuple [|ignore;array constr;array constr|])|];
+    (* CoFix *) [|pair ignore (tuple [|ignore;array constr;array constr|])|];
+    (* Proj *) [|ignore;ignore;constr|];
+    (* Int *) [|ignore|];
+    (* Float *) [|ignore|];
+    (* String *) [|ignore|];
+    (* Array *) [|ignore;array constr;constr;constr|];
+  |])
+
 type existential = existential_key * constr SList.t
 
 type case_invert = constr pcase_invert
@@ -1614,3 +1649,10 @@ and debug_invert = let open Pp in function
   | CaseInvert {indices;} ->
     spc() ++ str"Invert {indices=" ++
     prlist_with_sep spc debug_print (Array.to_list indices) ++ str "} "
+
+
+type debug = CoqSharingAnalyser.SharingAnalyser.analysis * t
+
+let mk_debug x y : debug = x, y
+
+let get_debug x  = x

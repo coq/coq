@@ -1,5 +1,7 @@
 install_printer Top_printers.pP
 install_printer Top_printers.ppfuture
+install_printer Top_printers.pp_rec_analysis
+install_printer Top_printers.ppdebug
 install_printer Top_printers.ppid
 install_printer Top_printers.pplab
 install_printer Top_printers.ppmbid

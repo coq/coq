@@ -197,5 +197,10 @@ val ppgenargargt : ('a, 'b, 'c) Genarg.ArgT.tag -> unit
 
 val ppist : Geninterp.interp_sign -> unit
 
+val pr_rec_analysis : CoqSharingAnalyser.SharingAnalyser.analysis -> Pp.t
+val pp_rec_analysis : CoqSharingAnalyser.SharingAnalyser.analysis -> unit
+
+val ppdebug : Constr.debug -> unit
+
 val raw_string_of_ref : ?loc:Loc.t -> Names.Id.Set.t -> Names.GlobRef.t -> Libnames.qualid
 val short_string_of_ref : ?loc:Loc.t -> Names.Id.Set.t -> Names.GlobRef.t -> Libnames.qualid

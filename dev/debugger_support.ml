@@ -12,6 +12,7 @@ let rawdebug = ref false
 
 let () =
   Flags.in_debugger := true;
+  Goptions.set_bool_option_value ["Printing";"All"] true;
   Goptions.set_bool_option_value ["Printing";"Existential";"Instances"] true;
   Detyping.print_universes := true;
   Goptions.set_bool_option_value ["Printing";"Matching"] false;
