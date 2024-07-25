@@ -136,6 +136,10 @@ val expand_case_specif : mutual_inductive_body -> case -> expanded_case
     the expected form. *)
 val contract_case : env -> expanded_case -> case
 
+(** Same as [expand_case], but doesn't turn contexts into binders *)
+val annotate_case : Environ.env -> case ->
+  case_info * Instance.t * t array * ((rel_context * t) * Sorts.relevance) * case_invert * t * (rel_context * t) array
+
 (** [instantiate_context u subst nas ctx] applies both [u] and [subst]
     to [ctx] while replacing names using [nas] (order reversed). In particular,
     assumes that [ctx] and [nas] have the same length. *)

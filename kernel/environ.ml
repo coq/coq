@@ -497,6 +497,10 @@ let push_context_set ?(strict=false) ctx env =
 let push_floating_context_set ctx env =
   map_universes (add_universes_set ~lbound:UGraph.Bound.Prop ~strict:false ctx) env
 
+let push_floating_full_context_set ((qs, us), cstrs) env =
+  let env = { env with env_qualities = Sorts.QVar.Set.union qs env.env_qualities } in
+  map_universes (add_universes_set ~lbound:UGraph.Bound.Prop ~strict:false (us, cstrs)) env
+
 let push_subgraph (levels,csts) env =
   let add_subgraph g =
     let newg = Univ.Level.Set.fold (fun v g -> UGraph.add_universe ~lbound:UGraph.Bound.Set ~strict:false v g) levels g in

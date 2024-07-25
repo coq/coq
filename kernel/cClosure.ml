@@ -760,6 +760,9 @@ let rec eta_expand_stack info na = function
     in
     [Zshift 1; Zapp [|arg|]]
 
+let eta_expand_fterm m =
+  { mark = neutr m.mark; term = FApp (lift_fconstr 1 m, [| { mark = Ntrl; term = FRel 1 } |]) }
+
 (* Get the arguments of a native operator *)
 let rec skip_native_args rargs nargs =
   match nargs with
@@ -927,6 +930,28 @@ let eta_expand_ind_stack env (ind,u) m s (f, s') =
         projs
     in
     argss, [Zapp hstack]
+  | None -> raise Not_found (* disallow eta-exp for non-primitive records *)
+
+let eta_expand_ind_fterm env (ind, u) args t' =
+  let open Declarations in
+  let mib = lookup_mind (fst ind) env in
+  (* disallow eta-exp for non-primitive records *)
+  if not (mib.mind_finite == BiFinite) then raise Not_found;
+  match Declareops.inductive_make_projections ind mib with
+  | Some projs ->
+    (* (Construct, pars1 .. parsm :: arg1...argn :: []) ~= (f, s') ->
+           arg1..argn ~= (proj1 t...projn t) where t = zip (f,s') *)
+    let pars = mib.Declarations.mind_nparams in
+    (** Try to drop the params, might fail on partially applied constructors. *)
+    let nargs = Array.length args in
+    if pars >= nargs then raise Not_found;
+    let args = Array.sub args pars (nargs - pars) in
+    let projapps = Array.map (fun (p,r) ->
+        { mark = neutr t'.mark;
+          term = FProj (Projection.make p true, UVars.subst_instance_relevance u r, t') })
+        projs
+    in
+    args, projapps
   | None -> raise Not_found (* disallow eta-exp for non-primitive records *)
 
 let rec project_nth_arg n = function
@@ -2163,6 +2188,14 @@ let whd_stack infos tab m stk = match m.mark with
       if not (m == m' && stk == stk') then ignore (zip m' stk')
   in
   k
+
+let whd_fterm infos tab m = match m.mark with
+| Ntrl ->
+  (** No need to perform [kni] because
+      every head subterm of [m] is [Ntrl] *)
+  fapp_stack (knh infos m [])
+| Red | Cstr ->
+  fapp_stack (kni infos tab m [])
 
 let create_infos i_mode ?univs ?evars i_flags i_env =
   let evars = Option.default (default_evar_handler i_env) evars in

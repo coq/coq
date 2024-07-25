@@ -780,16 +780,9 @@ struct
       (* Ne faudrait-il pas s'assurer que hyps est bien un
          sous-contexte du contexte courant, et qu'il n'y a pas de Rel "caché" *)
       let id = interp_ltac_id env id in
-      let sigma, evk =
-        match Evd.evar_key id sigma with
-        | evk -> sigma, evk
-        | exception Not_found ->
-            if flags.undeclared_evars_patvars then
-              let k = Evar_kinds.(MatchingVar (FirstOrderPatVar id)) in
-              let sigma, uj_val, _ = new_typed_evar env sigma ~naming:(IntroIdentifier id) ~src:(loc,k) tycon in
-              sigma, fst (destEvar sigma uj_val)
-            else
-              error_evar_not_found ?loc:locid !!env sigma id
+      let evk =
+        try Evd.evar_key id sigma
+        with Not_found -> error_evar_not_found ?loc:locid !!env sigma id
       in
       let EvarInfo evi = Evd.find sigma evk in
       let hyps = evar_filtered_context evi in

@@ -510,6 +510,18 @@ let contract_case env (ci, (p,rp), iv, c, br) =
   in
   (ci, u, pms, p, iv, c, Array.mapi map br)
 
+let annotate_case env (ci, u, pms, _, iv, c, _ as case) =
+  let (_, (p,r), _, _, bl) = expand_case env case in
+  let p =
+    (* Too bad we need to fetch this data in the environment, should be in the
+      case_info instead. *)
+    let (_, mip) = lookup_mind_specif env ci.ci_ind in
+    Term.decompose_lambda_n_decls (mip.Declarations.mind_nrealdecls + 1) p
+  in
+  let mk_br c n = Term.decompose_lambda_n_decls n c in
+  let bl = Array.map2 mk_br bl ci.ci_cstr_ndecls in
+  (ci, u, pms, (p,r), iv, c, bl)
+
 (************************************************************************)
 (* Type of case branches *)
 

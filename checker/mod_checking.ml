@@ -91,9 +91,25 @@ let check_constant_declaration env opac kn cb opacify =
 let check_rewrite_rule env lab i rule =
   Flags.if_verbose Feedback.msg_notice (str "  checking rule:" ++ Label.print lab ++ str"#" ++ Pp.int i);
   let open Rewrite_rules_ops in
+  let { pattern; replacement; info } = rule in
 
-  (* TODO *)
+  let evd, j = typecheck_pattern env pattern in
+  let jty = nf_evar info j.uj_type in
 
+  let () = check_pattern_redex env pattern in
+
+  let () = check_inferred_constraints env evd info in
+  let () = check_pattern_relevances evd (Relevanceops.relevance_of_term env (j_val j)) in
+
+  let () =
+    let Info info = info in
+    let env = push_floating_full_context_set ((Sorts.QVar.Map.domain info.qualities, Univ.Level.Map.domain info.univs), info.ucstrs) env in
+    let sigma = ExtraEnv.sigma_of evd in
+    let jr = Typeops.infer env ~sigma replacement in
+    match conv_leq env ~evars:evar_handler jr.uj_type jty with
+    | Result.Ok () -> ()
+    | Result.Error () -> Type_errors.error_actual_type env jr j.uj_type
+  in
   let (symb, rule) = translate_rewrite_rule env rule in
 
   let symb_cb = Environ.lookup_constant symb env in
