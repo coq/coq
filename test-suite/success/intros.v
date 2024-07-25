@@ -164,3 +164,20 @@ exact _H.
 Qed.
 
 End Wildcard.
+
+Module SimplNever.
+
+Fixpoint arrow n X :=
+  match n with
+  | 0 => X
+  | S n => X -> arrow n X
+  end.
+
+Arguments arrow : simpl never.
+
+Goal arrow 1 False.
+intro H.
+exact H.
+Qed.
+
+End SimplNever.
