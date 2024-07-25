@@ -45,6 +45,7 @@ val new_evar :
   ?abstract_arguments:Abstraction.t -> ?candidates:constr list ->
   ?naming:intro_pattern_naming_expr ->
   ?typeclass_candidate:bool ->
+  ?rrpat:bool ->
   ?hypnaming:naming_mode ->
   env -> evar_map -> types -> evar_map * EConstr.t
 
@@ -55,6 +56,7 @@ val new_pure_evar :
   ?abstract_arguments:Abstraction.t -> ?candidates:constr list ->
   ?name:Id.t ->
   ?typeclass_candidate:bool ->
+  ?rrpat:bool ->
   named_context_val -> evar_map -> types -> evar_map * Evar.t
 
 (** Create a new Type existential variable, as we keep track of

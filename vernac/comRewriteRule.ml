@@ -294,8 +294,7 @@ and safe_head_pattern_of_constr ~loc env evd usubst depth state t = Constr.kind 
 and safe_arg_pattern_of_constr ~loc env evd usubst depth (st, stateq, stateu as state) t = Constr.kind t |> function
   | Evar (evk, inst) ->
     let EvarInfo evi = Evd.find evd evk in
-    (match snd (Evd.evar_source evi) with
-    | Evar_kinds.MatchingVar (Evar_kinds.FirstOrderPatVar id) ->
+    if Evd.is_rewrite_rule_evar evd evk then
       let holei, st = update_invtbl ~loc env evd evk st in
       if not @@ is_rel_inst 1 inst then
         CErrors.user_err ?loc
@@ -306,6 +305,9 @@ and safe_arg_pattern_of_constr ~loc env evd usubst depth (st, stateq, stateu as 
       if Evd.evar_hyps evi |> Environ.named_context_of_val |> Context.Named.length <> SList.length inst then
         CErrors.user_err ?loc Pp.(str "Pattern variable cannot access the whole context: " ++ Printer.safe_pr_lconstr_env env evd t);
       (st, stateq, stateu), EHole holei
+    else
+    (match snd (Evd.evar_source evi) with
+    | Evar_kinds.RewriteRulePattern _ -> assert false (* Dealt with just above *)
     | Evar_kinds.NamedHole _ -> CErrors.user_err ?loc Pp.(str "Named holes are not supported, you must use regular evars: " ++ Printer.safe_pr_lconstr_env env evd t)
     | _ ->
       if Option.is_empty @@ Evd.evar_ident evk evd then state, EHoleIgnored else
@@ -415,7 +417,7 @@ let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) 
   let rhs_loc = rhs.CAst.loc in
 
   let lhs = Constrintern.(intern_gen WithoutTypeConstraint env evd lhs) in
-  let flags = { Pretyping.no_classes_no_fail_inference_flags with undeclared_evars_patvars = true; patvars_abstract = true; expand_evars = false; solve_unification_constraints = false } in
+  let flags = { Pretyping.no_classes_no_fail_inference_flags with undeclared_evars_rr = true; expand_evars = false; solve_unification_constraints = false } in
   let evd, lhs, typ = Pretyping.understand_tcc_ty ~flags env evd lhs in
 
   let evd = Evd.minimize_universes evd in
@@ -460,7 +462,7 @@ let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) 
   (* The udecl constraints (or, if none, the lhs constraints) must imply those of the rhs *)
   let evd = Evd.set_universe_context evd uctx in
   let rhs = Constrintern.(intern_gen WithoutTypeConstraint env evd rhs) in
-  let flags = { Pretyping.no_classes_no_fail_inference_flags with patvars_abstract = true } in
+  let flags = Pretyping.no_classes_no_fail_inference_flags in
   let evd', rhs =
     try Pretyping.understand_tcc ~flags env evd ~expected_type:(OfType typ) rhs
     with Type_errors.TypeError _ | Pretype_errors.PretypeError _ ->
