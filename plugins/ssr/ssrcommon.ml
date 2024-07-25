@@ -176,7 +176,7 @@ let interp_refine env sigma ist ~concl rc =
     program_mode = false;
     polymorphic = false;
     undeclared_evars_patvars = false;
-    patvars_abstract = false;
+    rrpat_evars_abstract = true;
     unconstrained_sorts = false;
   }
   in
