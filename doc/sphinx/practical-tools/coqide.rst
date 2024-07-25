@@ -23,21 +23,40 @@ for CoqIDE.  Use `coqide --help` to see the list of command line options.
 
 .. _coqide_mainscreen:
 
-  .. image:: ../_static/coqide.png
-     :alt: CoqIDE main screen
+.. image:: ../_static/coqide.png
+   :alt: CoqIDE main screen
+
+..  Here is the code used in the screenshot:
+
+    Fixpoint power (x n : nat) {struct n} : nat :=
+      match n with
+      | O => 1
+      | S m => x * power x m
+      end.
+
+    Notation "x ^ n" := (power x n).
+
+    Theorem Fermat :
+      (forall x y z n : nat, x^n + y^n = z^n -> n <= 2).
+    Proof.
+      Induction n.
 
 The screenshot shows CoqIDE as the user is stepping through the file `Fermat.v`.
+
 A menu bar and a tool bar appear at the top of the window. The left-hand panel shows
 the current *script buffer*.  Each script buffer corresponds to a separate Coq process.
 The upper right panel is the *proof panel*, which shows the goals to be proven.
 
-The lower right panel has three tabs: the *Messages
-panel*, which shows messages produced by commands and tactics; the *Errors panel*,
-which shows errors detected when running in :ref:`async mode <asyncmode>` and the
-*Jobs panel,* which shows information on the worker processes used by async mode.
-The contents of the right-hand panels are specific to the currently-displayed script.
+The lower right panel has four tabs:
+
+- the *Messages panel* shows messages produced by commands and tactics;
+- the *Errors panel* shows errors detected when running in :ref:`async mode <asyncmode>`;
+- the *Warnings panel* shows warnings detected when running in async mode;
+- the *Jobs panel* shows information on the worker processes used by async mode.
+
+The contents of the right-hand panels are specific to the currently displayed script.
 Click the arrow icons to detach these panel into separate windows.  The proof panel
-can be detached from the `Windows/Detach Proof` menu item.
+can be detached with the *Windows/Detach Proof* menu item.
 
 The *status bar* is a line of text that appears at the bottom of the window.
 
@@ -77,8 +96,8 @@ directory as ``<NAME>``.  Unnamed buffers are saved in
 ``Unnamed_coqscript_<N>.crashcoqide`` in the directory that CoqIDE was started in.
 
 In the *View* menu, you can set several printing options that
-correspond to options that can appear in the script.  For example, "Display
-notations" on the menu corresponds to the :flag:`Printing Notations` flag.  You
+correspond to options that can appear in the script.  For example, *Display
+notations* on the menu corresponds to the :flag:`Printing Notations` flag.  You
 should use the menu instead of controlling these settings in your script.
 
 Running Coq scripts
@@ -88,14 +107,14 @@ Operations for running the script are available in the *Navigation* menu,
 from the toolbar and from the keyboard.  These include:
 
 - Forward (`Alt-Down`) to run one command or tactic
-- Backward (`Alt-Up`) undo one command or tactic
+- Backward (`Alt-Up`) to undo one command or tactic
 - Run to cursor (`Alt-Right`) to run commands up to the cursor
-- Run to end (`Alt-End`) to run commands to the end of the buffer
 - Reset Coq (`Alt-Home`) to restart the Coq process
+- Run to end (`Alt-End`) to run commands to the end of the buffer
 - Interrupt to stop processing commands after the current command completes.
   (Note: on Windows but not on WSL, Interrupt doesn't work if you start CoqIDE
   as a background process, e.g. `coqide &` in bash.  See Coq issue
-  `#16142 <https://github.com/coq/coq/pull/16142>`_).
+  `#16142 <https://github.com/coq/coq/pull/16142>`_.)
 
 On macOS, use `Cmd-Ctrl` instead of `Alt` for these operations.
 
@@ -131,11 +150,12 @@ everything after that point is undone.  Unlike in `coqtop`, you should not use
 
 The other buttons on the toolbar do the following:
 
+- Open a file (folder icon)
 - Save the current buffer (down arrow icon)
 - Close the current buffer ("X" icon)
 - Fully check the document (gears icon) - for async mode
 - Previous occurrence (left arrow icon) - find the previous occurrence
-  of the current word (The current word is determined by the cursor position.)
+  of the current word (the word under cursor)
 - Next occurrence (right arrow icon) - find the next occurrence
   of the current word
 
@@ -209,33 +229,30 @@ the *View* menu, or using the shortcut ``F2``.
 You can also do queries by selecting some text, then choosing an
 item from the *Queries* menu. The response will appear in the message panel.
 The image above shows the result after selecting
-``Nat.mul`` in the bottom line of the script panel, then choosing ``Print``
-from the ``Queries`` menu.
-
-.. todo: should names of menus be *Menu* or `Menu` or ??  not consistent
-
+``Nat.mul`` in the bottom line of the script panel, then choosing *Print*
+from the *Queries* menu.
 
 Compilation
 -----------
 
-The `Compile` menu offers direct commands to:
+The *Compile* menu offers direct commands to:
 
-+ compile the current buffer
-+ run a compilation using `make`
-+ go to the next compilation error and
++ compile the current buffer;
++ run a compilation using `make`;
++ go to the next compilation error; and
 + create a `Makefile` using `coq_makefile`.
 
 At the moment these are not working well.  We recommend you compile
 from a terminal window for now.  We expect to fix them soon.
 
-`Compile buffer` saves the current buffer and compiles it with `coqc` as specified
-in the `Externals` section of the `Edit/Preferences` dialog.  Output appears
-in the `Messages` panel.  It's mostly useful for single-file projects because it doesn't
+*Compile buffer* saves the current buffer and compiles it with `coqc` as specified
+in the *Externals* section of the *Edit/Preferences* dialog.  Output appears
+in the *Messages* panel.  It's mostly useful for single-file projects because it doesn't
 automatically recompile other files that it depends on that may have changed.
 
-`Make` and `Make makefile` run the `make` and `coqmakefile` commands shown in
-the `Externals` section of the `Edit/Preferences` dialog.  Output appears in the
-`Messages` panel.  If you use `_CoqProject` files, you may want to change the settings to
+*Make* and *Make makefile* run the `make` and `coqmakefile` commands shown in
+the *Externals* section of the *Edit/Preferences* dialog.  Output appears in the
+*Messages* panel.  If you use `_CoqProject` files, you may want to change the settings to
 `make -f CoqMakefile` and `coq_makefile -f _CoqProject -o CoqMakefile` as suggested
 in :ref:`here <building_with_coqproject>`.  Alternatively, you may find it easier
 to do your `make` and `coq_makefile` commands from the command line.
@@ -243,17 +260,17 @@ to do your `make` and `coq_makefile` commands from the command line.
 .. _coqide_make_note:
 
 Note that you must explicitly save changed buffers before you run `make`.
-`File/Save all` is helpful for this.  Notice that modified and unmodified buffers show
+*File/Save all* is helpful for this.  Notice that modified and unmodified buffers show
 different icons next to the filename on the tab.  You may find them helpful.
 
 To use the compiled files after compiling a project with the makefile,
-you must restart the Coq interpreter (using `Navigation/Start` in the
-menu or Ctrl-Home) for any buffer in which you're stepping through code
+you must restart the Coq interpreter (using *Navigation/Start* in the
+menu or `Alt-Home`) for any buffer in which you're stepping through code
 that relies on the compiled files.
 
 To make changes to `_CoqProject` take effect, you must close and reopen buffers
 associated with files in the project.  Note that each buffer is independently associated
-with a `_CoqProject`.  The `Project` section of the Edit/Preferences` dialog
+with a `_CoqProject`.  The *Project* section of the *Edit/Preferences* dialog
 specifies the name to use for the `_CoqProject` file.  We recommend not changing
 this.  Remember that these settings are done on a per-installation basis; they
 currently can't be set differently for each package you're developing.
@@ -265,7 +282,30 @@ Preferences
 ~~~~~~~~~~~
 
 You may customize your environment with the *Preferences* dialog, which is
-accessible from *Edit/Preferences* on the menu. There are several sections:
+accessible from *Edit/Preferences* on the menu. There are several sections.
+
+.. image:: ../_static/coqide-preferences-editor.png
+   :alt: CoqIDE preferences dialog, Editor section
+
+The *Files* section is devoted to file management: you may configure
+automatic saving of files, by periodically saving the contents into
+files named `#f#` for each opened file `f`. You may also activate the
+*auto reload* feature: in case an opened file is modified on disk by a
+third party, CoqIDE may read it again for you. Note that in the case
+you edited that same file, you will be prompted to choose to either
+discard your changes or not. The File charset encoding choice is
+described below in :ref:`character-encoding-saved-files`.
+
+The *Project* section enables you to change the default name for
+project files and the way that project file options are used.
+
+The *Editor* section (shown in the screenshot above) is for
+customizing the editor. It includes in particular the ability
+to activate an Emacs mode named micro-Proof-General
+(use the Help menu to know more about the available bindings).
+
+The *Appearance* section offers controls to set CoqIDE's window
+default size and the position of tabs.
 
 The *Fonts* section is for selecting the text font used for scripts,
 goal and message panels.
@@ -283,28 +323,10 @@ governed by files such as ``settings.ini`` and ``gtk.css`` in
 variable ``GTK_THEME`` (search the internet for the various
 possibilities).
 
-The *Editor* section is for customizing the editor. It includes in
-particular the ability to activate an Emacs mode named
-micro-Proof-General (use the Help menu to know more about the
-available bindings).
-
-The *Files* section is devoted to file management: you may configure
-automatic saving of files, by periodically saving the contents into
-files named `#f#` for each opened file `f`. You may also activate the
-*revert* feature: in case a opened file is modified on the disk by a
-third party, CoqIDE may read it again for you. Note that in the case
-you edited that same file, you will be prompted to choose to either
-discard your changes or not. The File charset encoding choice is
-described below in :ref:`character-encoding-saved-files`.
-
-*Project*
-
-*Appearance*
-
 The *Externals* section allows customizing the external commands for
 compilation, printing, web browsing. In the browser command, you may
 use `%s` to denote the URL to open, for example:
-`firefox -remote "OpenURL(%s)"`.
+`firefox "%s"`.
 
 .. _shortcuts:
 
@@ -318,10 +340,9 @@ will be removed.  You can then rebind one of the menu entries as described
 in the next section.
 
 The top of the *Shortcuts* section lets you select the allowed modifiers
-that can be selected for the listed menus.  (The changes won't appear until
-you close and reopen the Preferences dialog.)
+that can be selected for the listed menus.
 
-*Misc*
+*Misc* – to be documented
 
 .. _user-configuration-directory:
 
@@ -329,26 +350,35 @@ Preferences and key bindings are saved in the user configuration directory,
 which is ``$XDG_CONFIG_HOME/coq`` if the environment variable ``$XDG_CONFIG_HOME``
 is set.  If the variable isn't set, the directory is ``~/.config/coq`` on Linux
 and `C:\\Users\\<USERNAME>\\AppData\\Local\\coq` on Windows.
-Preferences are in the file "coqiderc" and key bindings are in the file "coqide.keys".
+Preferences are in the file `coqiderc` and key bindings are in the file `coqide.keys`.
+
+.. _coqide_key_bindings:
 
 .. _key_bindings:
 
 Key bindings
 ~~~~~~~~~~~~
 
+As explained just above, the *Edit/Preferences/Shortcuts* panel
+offers buttons to modify in a few clicks the key bindings for a whole menu.
+Here is a screenshot of the panel:
+
+.. image:: ../_static/coqide-preferences-shortcuts.png
+   :alt: CoqIDE preferences dialog, Shortcuts section
+
 Each menu item in the GUI shows its key binding, if one has been defined,
 on the right-hand side.  Typing the key binding is equivalent to selecting
-the associated item from the menu.
-A GTK+ accelerator keymap is saved under the name ``coqide.keys`` in
-the :ref:`user configuration directory<user-configuration-directory>`.
-You can modify the key binding ("accelerator") for a menu entry by
-going to the corresponding menu item without releasing the
-mouse button, pressing the keys you want for the new binding and then releasing
-the mouse button.
+the associated item from the menu.  On some systems, you can modify the
+key binding ("accelerator") for a menu entry by going to the corresponding
+menu item without releasing the mouse button, pressing the keys you want
+for the new binding and then releasing the mouse button.
 
-Alternatively, you can edit the file directly.  Make sure there are no
-CoqIDE processes running while you edit the file.  (CoqIDE creates or
-overwrites the file when it terminates, which may reorder the lines).
+Alternatively, you can edit the configuration file directly.
+Key bindings are saved in the file `coqide.keys` in
+the :ref:`user configuration directory<user-configuration-directory>`.
+Make sure there are no CoqIDE processes running while you edit the file
+(CoqIDE creates or overwrites the file when it terminates,
+which may reorder the lines).
 
 The file contains lines such as:
 
@@ -359,7 +389,7 @@ The file contains lines such as:
      (gtk_accel_path "<Actions>/Edit/Find Next" "F4")
 
 The first line corresponds to the menu item for the Queries/About menu item,
-which was bound by default to `Shift-Ctrl-A`.  "<Primary>" indicates `Cmd` on macOS
+which was bound by default to `Shift-Ctrl-A`. `<Primary>` indicates `Cmd` on macOS
 and otherwise `Ctrl`.
 The second line is for a menu item that has no key binding.
 
@@ -369,7 +399,7 @@ and set the third item in the list as desired, such as in the third line.
 Avoid assigning the same binding to multiple items.
 
 If the same menu item name appears on multiple lines in the file, the value from the
-last line is used.  This is convenient for copying a group of changes from elsewhere--just
+last line is used.  This is convenient for copying a group of changes from elsewhere–just
 insert the changes at the end of the file.  The next time CoqIDE terminates, it will
 resort the items.
 
@@ -378,7 +408,7 @@ The end of
 gives the names of the keys.
 
 Modifiers (e.g. Alt, Ctrl) for some menus can be can be changed as a group from the
-Edit/Preferences/Shortcuts panel.  See :ref:`Shortcuts<shortcuts>`.
+Edit/Preferences/Shortcuts panel. See :ref:`Shortcuts<shortcuts>`.
 
 .. todo: list common rebindings?
 
@@ -429,14 +459,14 @@ Bindings for input of Unicode symbols
 
 CoqIDE supports a builtin mechanism to input non-ASCII symbols.
 For example, to input ``π``, it suffices to type ``\pi`` then press the
-combination of key ``Shift+Space`` (default key binding). Often, it
-suffices to type a prefix of the latex token, e.g. typing ``\p``
-then ``Shift+Space`` suffices to insert a ``π``.
+combination of key ``Ctrl+Space`` (default key binding). Often, it
+suffices to type a prefix of the LaTeX token, e.g. typing ``\p``
+then ``Ctrl+Space`` suffices to insert a ``π``.
 
 For several symbols, ASCII art is also recognized, e.g. ``\->`` for a
 right arrow, or ``\>=`` for a greater than or equal sign.
 
-A larger number of latex tokens are supported by default. The full list
+A larger number of LaTeX tokens are supported by default. The full list
 is available here:
 https://github.com/coq/coq/blob/master/ide/coqide/default_bindings_src.ml
 
@@ -550,19 +580,19 @@ This screenshot shows the debugger stopped at a breakpoint in the |Ltac| tactic
 shown with a dark blue background.  `Set Ltac Debug.` enables stopping in the
 debugger.
 
-  .. image:: ../_static/debugger.png
-     :alt: CoqIDE Debugger
+.. image:: ../_static/debugger.png
+   :alt: CoqIDE Debugger
 
-  .. created with:
-     Set Ltac Debug.  (* enable the debugger *)
+.. created with:
+   Set Ltac Debug.  (* enable the debugger *)
 
-     Ltac my_tac c :=
-       let con := constr:(forall a b : nat,
-         (a + b) * c = a * c + b * c) in
-       idtac "A"; idtac "B"; idtac "C".
+   Ltac my_tac c :=
+     let con := constr:(forall a b : nat,
+       (a + b) * c = a * c + b * c) in
+     idtac "A"; idtac "B"; idtac "C".
 
-     Goal True.
-     my_tac 2.
+   Goal True.
+   my_tac 2.
 
 You can control the debugger with function and control keys.  Some
 messages are shown in the Messages panel.  You can type
@@ -594,21 +624,21 @@ Toggle breakpoint (F8)
 
 Continue (F9)
   Continue processing the proof.  If you're not stopped in the debugger, this is
-  equivalent to "Run to end" (Control End).
+  equivalent to "Run to end" (Alt-End).
 
-Step over (Control ↓)
+Step over (Alt-↓)
   When stopped in the debugger,
   execute the next tactic without stopping inside it.  If the debugger reaches
   a breakpoint in the tactic, it will stop.  This is the same key combination used
-  for "Forward one command"—if you're stopped in the debugger then it does a "Step over"
-  and otherwise it does a "Forward".  Combining the two functions makes it easy
+  for *Forward one command*—if you're stopped in the debugger then it does a *Step over*
+  and otherwise it does a *Forward*.  Combining the two functions makes it easy
   to step through a script in a natural way when some breakpoints are set.
 
 Step in (F10)
   When stopped in the debugger, if next tactic is an |Ltac| tactic, stop at the
   first possible point in the tactic.  Otherwise acts as a "step over".
 
-Step out (Shift F10)
+Step out (Shift-F10)
   When stopped in the debugger, continue and then
   stop at the first possible point after exiting the current |Ltac| tactic.  If the
   debugger reaches a breakpoint in the tactic, it will stop.
@@ -660,13 +690,13 @@ with :n:`???`) and may be extraneous. In some cases, the tactic name is not show
 Click on a stack frame or press the Up (↑) or Down (↓) keys to select a
 stack frame.  Coq will jump to the associated code and display the variables for that stack
 frame.  You can select text with the mouse and then copy it to the clipboard with
-Control-C.  Control-A selects the entire stack.
+Ctrl-C.  Ctrl-A selects the entire stack.
 
 The variables panel uses a tree control to show variables defined in the selected
 stack frame.  To see values that don't fit on a single line, click on the triangle.
 You can select one or more entries from the tree in the usual way by
-clicking, shift-clicking and control-clicking on an entry.  Control-A selects
-all entries.  Control-C copies the selected entries to the clipboard.
+clicking, shift-clicking and control-clicking on an entry.  Ctrl-A selects
+all entries.  Ctrl-C copies the selected entries to the clipboard.
 
 Note: Some variable are not displayed in a useful form.  For example, the value
 shown for :n:`tac` in a script containing :n:`let tac = ltac:(auto)` appears
@@ -693,13 +723,13 @@ case, breakpoints in the secondary script that move due to script editing may no
 match the locations in the compiled secondary script.  The debugger won't stop at these
 breakpoints as you expect.  Also, the code highlighted for stack frames in that
 script may be incorrect.  You will need to re-compile
-the secondary script and then restart the primary script (Restart, `Ctrl-HOME`) to get back
+the secondary script and then restart the primary script (Restart, `Alt-Home`) to get back
 to a consistent state.
 
 For multi-file debugging, we suggest detaching the Messages, Proof Context
-and Debugger panels so they are
-in separate windows.  To do so, click on the arrow icon next to "Messages",
-select "Windows / Detach Proof" from the menu and click on "DETACH" in the
+and Debugger panels so they are in separate windows.
+To do so, click on the arrow icon next to *Messages*,
+select *Windows / Detach Proof* from the menu and click on *DETACH* in the
 Debugger panel.  Note that the Debugger panel is initially attached to
 the Script panel of the toplevel script.  Also note that, for now, the
 "in progress" slider is accurate only when the associated toplevel script panel
