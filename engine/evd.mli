@@ -193,6 +193,7 @@ val new_pure_evar :
   ?abstract_arguments:Abstraction.t -> ?candidates:econstr list ->
   ?name:Id.t ->
   ?typeclass_candidate:bool ->
+  ?rrpat:bool ->
   named_context_val -> evar_map -> etypes -> evar_map * Evar.t
 (** Low-level interface to create an evar.
   @param src User-facing source for the evar
@@ -358,6 +359,12 @@ val is_obligation_evar : evar_map -> Evar.t -> bool
 
 val get_impossible_case_evars : evar_map -> Evar.Set.t
 (** Set of undefined evars with ImpossibleCase evar source. *)
+
+val get_rewrite_rule_evars : evar_map -> Evar.Set.t
+(** Set of evars declared as an ununifiable rewrite rule evar *)
+
+val is_rewrite_rule_evar : evar_map -> Evar.t -> bool
+(** Is the evar declared as an ununifiable rewrite rule evar *)
 
 val downcast : Evar.t-> etypes -> evar_map -> evar_map
 (** Change the type of an undefined evar to a new type assumed to be a
