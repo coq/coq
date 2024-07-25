@@ -144,7 +144,7 @@ exception NotConvertibleTrace of payload
     and this holds whatever Set is predicative or impredicative
 *)
 
-type conv_pb =
+type conv_pb = Declarations.conv_pb =
   | CONV
   | CUMUL
 

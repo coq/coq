@@ -302,6 +302,48 @@ type ('q, 'u) instance_mask = ('q, 'u) UVars.Instance.mask
 type ('q, 'u) sort_pattern = ('q, 'u) Sorts.pattern =
   | PSProp | PSSProp | PSSet | PSType of 'u | PSQSort of 'q * 'u
 
+type pattern =
+  | PRel     of int
+  | PSort    of (Sorts.QVar.t * bool, Univ.Level.t * bool) sort_pattern * Univ.Level.t
+  | PSymbol  of Constant.t * (Sorts.QVar.t * bool, Univ.Level.t * bool) instance_mask
+  | PInd     of inductive * (Sorts.QVar.t * bool, Univ.Level.t * bool) instance_mask
+  | PConstr  of constructor * (Sorts.QVar.t * bool, Univ.Level.t * bool) instance_mask
+  | PInt     of Uint63.t
+  | PFloat   of Float64.t
+  | PString  of Pstring.t
+  | PLambda  of Name.t * arg_pattern * (Sorts.QVar.t * Univ.Level.t) * pattern
+  | PProd    of Name.t * arg_pattern * (Sorts.QVar.t * Univ.Level.t) * arg_pattern * (Sorts.QVar.t * Univ.Level.t) * Univ.Level.t
+  | PApp     of pattern * arg_pattern * (Evar.t * Sorts.QVar.t * Univ.Level.t) * (Evar.t * Sorts.QVar.t * Univ.Level.t)
+  | PCase    of pattern * inductive * (Sorts.QVar.t array * Univ.Level.t array * Evar.t array) * ((Name.t array * arg_pattern) * (Sorts.QVar.t * Univ.Level.t)) * (Name.t array * arg_pattern) array
+  | PProj    of pattern * Projection.Repr.t * (Sorts.QVar.t array * Univ.Level.t array * Evar.t array)
+
+and arg_pattern =
+  | PVar of Evar.t * Name.t
+  | Pat of pattern
+
+type conv_pb = CONV | CUMUL
+
+type imitation_cmp = LESS of Univ.Level.t list | EQUAL | GREATER of Univ.Level.t list
+
+type rewrite_rule_info = Info of {
+  qualities : bool Sorts.QVar.Map.t;
+  univs: bool Univ.Level.Map.t;
+  evars: Evar.t list;
+  qgraph: Sorts.Quality.t Sorts.QVar.Map.t;
+  qabove_prop: Sorts.QVar.Set.t;
+  ucstrs: Univ.Constraints.t;
+  full_qcstrs: Sorts.QConstraints.t;
+  full_ucstrs: (Sorts.Quality.t * Univ.Universe.t * conv_pb * Univ.Universe.t) list;
+  evar_map: (rel_context * types * Sorts.relevance * Name.t) Evar.Map.t;
+  evar_defs: (imitation_cmp * constr) Evar.Map.t;
+}
+
+type rewrite_rule = {
+  pattern: pattern;
+  replacement: constr;
+  info: rewrite_rule_info;
+}
+
 (** Patterns are internally represented as pairs of a head-pattern and a list of eliminations
     Eliminations correspond to elements of the stack in a reduction machine,
     they represent a pattern with a hole, to be filled with the head-pattern
@@ -340,7 +382,7 @@ type machine_rewrite_rule = {
 
 (** [(c, { lhs_pat = (u, elims); rhs })] in this list stands for [(PHSymbol (c,u), elims) ==> rhs] *)
 type rewrite_rules_body = {
-  rewrules_rules : (Constant.t * machine_rewrite_rule) list;
+  rewrules_rules : rewrite_rule list;
 }
 
 (** {6 Module declarations } *)

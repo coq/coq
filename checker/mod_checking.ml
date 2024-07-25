@@ -87,103 +87,20 @@ let check_constant_declaration env opac kn cb opacify =
   in
   Environ.add_constant kn cb env, opac
 
-let check_quality_mask env qmask lincheck =
-  let open Sorts.Quality in
-  match qmask with
-  | PQConstant QSProp -> if Environ.sprop_allowed env then lincheck else Type_errors.error_disallowed_sprop env
-  | PQConstant (QProp | QType) -> lincheck
-  | PQVar qio -> Partial_subst.maybe_add_quality qio () lincheck
 
-let check_instance_mask env udecl umask lincheck =
-  match udecl, umask with
-    | Monomorphic, ([||], [||]) -> lincheck
-    | Polymorphic uctx, (qmask, umask) ->
-        let lincheck = Array.fold_left_i (fun i lincheck mask -> check_quality_mask env mask lincheck) lincheck qmask in
-        let lincheck = Array.fold_left_i (fun i lincheck mask -> Partial_subst.maybe_add_univ mask () lincheck) lincheck umask in
-        if (Array.length qmask, Array.length umask) <> UVars.AbstractContext.size uctx then CErrors.anomaly Pp.(str "Bad univ mask length.");
-        lincheck
-    | _ -> CErrors.anomaly Pp.(str "Bad univ mask length.")
-
-let rec get_holes_profiles env nargs ndecls lincheck el =
-  List.fold_left (get_holes_profiles_elim env nargs ndecls) lincheck el
-
-and get_holes_profiles_elim env nargs ndecls lincheck = function
-  | PEApp args -> Array.fold_left (get_holes_profiles_parg env nargs ndecls) lincheck args
-  | PECase (ind, ret, brs) ->
-      let mib, mip = Inductive.lookup_mind_specif env ind in
-      let lincheck = get_holes_profiles_parg env (nargs + mip.mind_nrealargs + 1) (ndecls + mip.mind_nrealdecls + 1) lincheck ret in
-      Array.fold_left3 (fun lincheck nargs_b ndecls_b -> get_holes_profiles_parg env (nargs + nargs_b) (ndecls + ndecls_b) lincheck) lincheck mip.mind_consnrealargs mip.mind_consnrealdecls brs
-  | PEProj proj ->
-      let () = lookup_projection (Projection.make proj false) env |> ignore in
-      lincheck
-
-and get_holes_profiles_headelim env nargs ndecls lincheck (h, el) =
-  let lincheck = get_holes_profiles_head env nargs ndecls lincheck h in
-  get_holes_profiles env nargs ndecls lincheck el
-
-and get_holes_profiles_parg env nargs ndecls lincheck = function
-  | EHoleIgnored -> lincheck
-  | EHole i -> Partial_subst.add_term i nargs lincheck
-  | ERigid hel ->
-      get_holes_profiles_headelim env nargs ndecls lincheck hel
-
-and get_holes_profiles_head env nargs ndecls lincheck = function
-  | PHRel n -> if n <= ndecls then lincheck else Type_errors.error_unbound_rel env n
-  | PHSymbol (c, u) ->
-      let cb = lookup_constant c env in
-      check_instance_mask env cb.const_universes u lincheck
-  | PHConstr (c, u) ->
-      let (mib, _) = Inductive.lookup_mind_specif env (inductive_of_constructor c) in
-      check_instance_mask env mib.mind_universes u lincheck
-  | PHInd (ind, u) ->
-      let (mib, _) = Inductive.lookup_mind_specif env ind in
-      check_instance_mask env mib.mind_universes u lincheck
-  | PHInt _  | PHFloat _ | PHString _ -> lincheck
-  | PHSort PSSProp -> if Environ.sprop_allowed env then lincheck else Type_errors.error_disallowed_sprop env
-  | PHSort PSType io -> Partial_subst.maybe_add_univ io () lincheck
-  | PHSort PSQSort (qio, uio) ->
-      lincheck
-      |> Partial_subst.maybe_add_quality qio ()
-      |> Partial_subst.maybe_add_univ uio ()
-  | PHSort _ -> lincheck
-  | PHLambda (tys, bod) ->
-      let lincheck = Array.fold_left_i (fun i -> get_holes_profiles_parg env (nargs + i) (ndecls + i)) lincheck tys in
-      let lincheck = get_holes_profiles_headelim env (nargs + Array.length tys) (ndecls + Array.length tys) lincheck bod in
-      lincheck
-  | PHProd (tys, bod) ->
-      let lincheck = Array.fold_left_i (fun i -> get_holes_profiles_parg env (nargs + i) (ndecls + i)) lincheck tys in
-      let lincheck = get_holes_profiles_parg env (nargs + Array.length tys) (ndecls + Array.length tys) lincheck bod in
-      lincheck
-
-let check_rhs env holes_profile rhs =
-  let rec check i c = match Constr.kind c with
-    | App (f, args) when Constr.isRel f ->
-        let n = Constr.destRel f in
-        if n <= i then () else
-          if n - i > Array.length holes_profile then CErrors.anomaly Pp.(str "Malformed right-hand-side substitution site");
-          let d = holes_profile.(n-i-1) in
-          if Array.length args >= d then () else CErrors.anomaly Pp.(str "Malformed right-hand-side substitution site")
-    | Rel n when n > i ->
-        if n - i > Array.length holes_profile then CErrors.anomaly Pp.(str "Malformed right-hand-side substitution site");
-        let d = holes_profile.(n-i-1) in
-        if d = 0 then () else CErrors.anomaly Pp.(str "Malformed right-hand-side substitution site")
-    | _ -> Constr.iter_with_binders succ check i c
-  in
-  check 0 rhs
-
-let check_rewrite_rule env lab i (symb, rule) =
+let check_rewrite_rule env lab i rule =
   Flags.if_verbose Feedback.msg_notice (str "  checking rule:" ++ Label.print lab ++ str"#" ++ Pp.int i);
-  let { nvars; lhs_pat; rhs } = rule in
+  let open Rewrite_rules_ops in
+
+  (* TODO *)
+
+  let (symb, rule) = translate_rewrite_rule env rule in
+
   let symb_cb = Environ.lookup_constant symb env in
   let () =
     match symb_cb.const_body with Symbol _ -> ()
     | _ -> ignore @@ invalid_arg "Rule defined on non-symbol"
   in
-  let lincheck = Partial_subst.make nvars in
-  let lincheck = check_instance_mask env symb_cb.const_universes (fst lhs_pat) lincheck in
-  let lincheck = get_holes_profiles env 0 0 lincheck (snd lhs_pat) in
-  let holes_profile, _, _ = Partial_subst.to_arrays lincheck in
-  let () = check_rhs env holes_profile rhs in
   ()
 
 let check_rewrite_rules_body env lab rrb =
@@ -290,7 +207,8 @@ and check_structure_field env opac mp lab res opacify = function
       add_modtype mp mty env, opac
   | SFBrules rrb ->
       check_rewrite_rules_body env lab rrb;
-      Environ.add_rewrite_rules rrb.rewrules_rules env, opac
+      let rules = List.map (Rewrite_rules_ops.translate_rewrite_rule env) rrb.rewrules_rules in
+      Environ.add_rewrite_rules rules env, opac
 
 and check_signature env opac sign mp_mse res opacify = match sign with
   | MoreFunctor (arg_id, mtb, body) ->

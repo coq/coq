@@ -355,10 +355,80 @@ let hcons_mind mib =
     mind_template = Option.Smart.map hcons_template_universe mib.mind_template;
     mind_universes = hcons_universes mib.mind_universes }
 
+
+let subst_pattern subst p =
+  let open Declarations in
+  let rec on_pat p = match p with
+    | PSymbol (cst, mask) ->
+      let cst' = subst_constant subst cst in
+      if cst' == cst then p else
+        PSymbol (cst', mask)
+    | PInd (ind, mask) ->
+        let ind' = subst_ind subst ind in
+        if ind'==ind then p else PInd (ind', mask)
+    | PConstr (cstr, mask) ->
+        let cstr' = subst_constructor subst cstr in
+        if cstr'==cstr then p else PConstr (cstr', mask)
+    | PCase (c, ind, annots, ((nas, r), rannot), brs) ->
+      let ind' = subst_ind subst ind in
+      let c' = on_pat c in
+      let r' = on_arg_pat r in
+      let brs' = Array.Smart.map (fun (nas, br) -> nas, on_arg_pat br) brs in
+      if ind' == ind && c' == c && r' == r && brs' == brs then p else
+        PCase (c', ind', annots, ((nas, r'), rannot), brs')
+    | PProj (c, pr, annots) ->
+        let pr' = subst_proj_repr subst pr in
+        let c' = on_pat c in
+        if pr' == pr && c' == c then p else
+          PProj (c', pr', annots)
+    | PLambda (na, ty, annot, bod) ->
+        let ty' = on_arg_pat ty in
+        let bod' = on_pat bod in
+        if ty' == ty && bod' == bod then p else
+          PLambda (na, ty', annot, bod')
+    | PProd (na, dom, annot, codom, annot', retuniv) ->
+        let dom' = on_arg_pat dom in
+        let codom' = on_arg_pat codom in
+        if dom' == dom && codom' == codom then p else
+          PProd (na, dom', annot, codom', annot', retuniv)
+    | PApp (f, arg, annot, annot') ->
+      let f' = on_pat f in
+      let arg' = on_arg_pat arg in
+      if f' == f && arg' == arg then p else
+        PApp (f', arg', annot, annot')
+    | PRel _ | PSort _ | PInt _ | PFloat _ | PString _ as p -> p
+  and on_arg_pat = function
+    | Pat pat as argpat ->
+        let pat' = on_pat pat in
+        if pat == pat' then argpat else Pat pat'
+    | PVar _ as argpat -> argpat
+  in
+  on_pat p
+
+let subst_rr_info subst (Info info as orig) =
+  let evar_map' = Evar.Map.Smart.map (fun (ctx, ty, rel, name as orig) ->
+    let ctx' = subst_rel_context subst ctx in
+    let ty' = subst_mps subst ty in
+    if ctx' == ctx && ty' == ty then orig else
+      (ctx', ty', rel, name)
+    ) info.evar_map
+  in
+  let evar_defs' = Evar.Map.Smart.map (on_snd @@ subst_mps subst) info.evar_defs in
+  if evar_map' == info.evar_map && evar_defs' == info.evar_defs then orig else
+    Info { info with evar_map=evar_map'; evar_defs=evar_defs' }
+
 let subst_rewrite_rules subst ({ rewrules_rules } as rules) =
-  let body' = List.Smart.map (fun (name, ({ rhs; _ } as rule) as orig) ->
-      let rhs' = subst_mps subst rhs in
-      if rhs == rhs' then orig else name, { rule with rhs = rhs' })
+  let body' = List.Smart.map (fun rule ->
+      let pattern' = subst_pattern subst rule.pattern in
+      let replacement' = subst_mps subst rule.replacement in
+      let rr_info' = subst_rr_info subst rule.info in
+      if
+        pattern' == rule.pattern &&
+        replacement' == rule.replacement &&
+        rr_info' == rule.info then
+          rule
+      else
+        { pattern=pattern'; replacement=replacement'; info=rr_info'})
       rewrules_rules
   in
   if rewrules_rules == body' then rules else
