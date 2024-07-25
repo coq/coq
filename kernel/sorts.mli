@@ -180,6 +180,7 @@ val relevance_hash : relevance -> int
 
 val relevance_equal : relevance -> relevance -> bool
 
+val relevance_subst_rel_fn : (QVar.t -> relevance) -> relevance -> relevance
 val relevance_subst_fn : (QVar.t -> Quality.t) -> relevance -> relevance
 
 val relevance_of_sort : t -> relevance
