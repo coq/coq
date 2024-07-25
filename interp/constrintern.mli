@@ -99,13 +99,13 @@ val intern_context : env -> bound_univs:UnivNames.universe_binders ->
     expecting evars and pending problems to be all resolved *)
 
 val interp_constr : ?flags:inference_flags -> ?expected_type:typing_constraint -> env -> evar_map -> ?impls:internalization_env ->
-  constr_expr -> constr Evd.in_evar_universe_context
+  constr_expr -> constr Evd.in_ustate
 
 val interp_casted_constr : ?flags:inference_flags -> env -> evar_map -> ?impls:internalization_env ->
-  constr_expr -> types -> constr Evd.in_evar_universe_context
+  constr_expr -> types -> constr Evd.in_ustate
 
 val interp_type : ?flags:inference_flags -> env -> evar_map -> ?impls:internalization_env ->
-  constr_expr -> types Evd.in_evar_universe_context
+  constr_expr -> types Evd.in_ustate
 
 (** Main interpretation function expecting all postponed problems to
     be resolved, but possibly leaving evars. *)
@@ -162,7 +162,7 @@ val interp_reference : ltac_sign -> qualid -> glob_constr
 (** Interpret binders *)
 
 val interp_binder  : env -> evar_map -> Name.t -> constr_expr ->
-  types Evd.in_evar_universe_context
+  types Evd.in_ustate
 
 val interp_binder_evars : env -> evar_map -> Name.t -> constr_expr -> evar_map * types
 

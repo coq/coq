@@ -78,7 +78,7 @@ let tj_nf_evar sigma {utj_val=v;utj_type=t} =
   {utj_val=nf_evar sigma v;utj_type=t}
 
 let nf_relevance sigma r =
-  UState.nf_relevance (Evd.evar_universe_context sigma) r
+  UState.nf_relevance (Evd.ustate sigma) r
 
 let nf_named_context_evar sigma ctx =
   Context.Named.map_with_relevance (nf_relevance sigma) (nf_evars_universes sigma) ctx

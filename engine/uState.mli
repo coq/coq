@@ -275,6 +275,8 @@ val id_of_qvar : t -> Sorts.QVar.t -> Id.t option
 
 val pr_weak : (Univ.Level.t -> Pp.t) -> t -> Pp.t
 
+val pr : t -> Pp.t
+
 val pr_sort_opt_subst : t -> Pp.t
 
 module Internal :

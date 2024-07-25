@@ -399,7 +399,7 @@ let resolve_typeclasses env sigma ~where ~fail =
 
 let abs_evars env sigma0 ?(rigid = []) (sigma, c0) =
   let c0 = Evarutil.nf_evar sigma c0 in
-  let sigma0, ucst = sigma0, Evd.evar_universe_context sigma in
+  let sigma0, ucst = sigma0, Evd.ustate sigma in
   let nenv = env_size env in
   let abs_evar n k =
     let open EConstr in
@@ -894,7 +894,7 @@ let refine_with ?(first_goes_last=false) ?beta ?(with_evars=true) oc =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
-  let uct = Evd.evar_universe_context (fst oc) in
+  let uct = Evd.ustate (fst oc) in
   let n, oc = abs_evars_pirrel env sigma oc in
   Proofview.Unsafe.tclEVARS (Evd.set_universe_context sigma uct) <*>
   Proofview.tclORELSE (applyn ~with_evars ~first_goes_last ?beta n oc)
@@ -1017,7 +1017,7 @@ let get_hyp env sigma id =
 (* XXX the k of the redex should percolate out *)
 let pf_interp_gen_aux env sigma ~concl to_ind ((oclr, occ), t) =
   let pat = interp_cpattern env sigma t None in (* UGLY API *)
-  let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context @@ pat.pat_sigma) in
+  let sigma = Evd.merge_universe_context sigma (Evd.ustate @@ pat.pat_sigma) in
   let sigma, c, cl = fill_rel_occ_pattern env sigma concl pat occ in
   let clr = interp_clr sigma (oclr, (tag_of_cpattern t, c)) in
   if not(occur_existential sigma c) then
@@ -1099,7 +1099,7 @@ let abs_wgen env sigma keep_let f gen (args,c) =
   | _, Some ((x, "@"), Some p) ->
      let x = hoi_id x in
      let cp = interp_cpattern env sigma p None in
-     let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context cp.pat_sigma) in
+     let sigma = Evd.merge_universe_context sigma (Evd.ustate cp.pat_sigma) in
      let sigma, t, c = fill_rel_occ_pattern env sigma c cp None in
      evar_closed t p;
      let ut = red_product_skip_id env sigma t in
@@ -1108,7 +1108,7 @@ let abs_wgen env sigma keep_let f gen (args,c) =
   | _, Some ((x, _), Some p) ->
      let x = hoi_id x in
      let cp = interp_cpattern env sigma p None in
-     let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context cp.pat_sigma) in
+     let sigma = Evd.merge_universe_context sigma (Evd.ustate cp.pat_sigma) in
      let sigma, t, c = fill_rel_occ_pattern env sigma c cp None in
      evar_closed t p;
      let sigma, ty, r = pfe_type_relevance_of env sigma t in

@@ -241,7 +241,7 @@ let nf_open_term sigma0 ise c =
   let c' = nf c in
   let _ = Evd.fold_undefined copy_def sigma0 () in
   let changed = sigma0 != !s' in
-  changed, !s', Evd.evar_universe_context ise, c'
+  changed, !s', Evd.ustate ise, c'
 
 let unif_end ?(solve_TC=true) env sigma0 ise0 pt ok =
   let ise = Evarconv.solve_unif_constraints_with_heuristics env ise0 in
@@ -1295,7 +1295,7 @@ let redex_of_pattern_nf env p =
   | None -> CErrors.anomaly (str"pattern without redex.")
   | Some (sigma, e) -> sigma, e
   in
-  Evarutil.nf_evar sigma e, Evd.evar_universe_context sigma
+  Evarutil.nf_evar sigma e, Evd.ustate sigma
 
 let fill_occ_pattern ?raise_NoMatch env sigma cl pat occ h =
   let do_make_rel, occ =

@@ -333,7 +333,7 @@ let declare_instance_program pm env sigma ~locality ~poly name pri impargs udecl
   in
   let obls, _, body, typ = RetrieveObl.retrieve_obligations env name sigma 0 term termtype in
   let hook = Declare.Hook.make hook in
-  let uctx = Evd.evar_universe_context sigma in
+  let uctx = Evd.ustate sigma in
   let kind = Decls.IsDefinition Decls.Instance in
   let cinfo = Declare.CInfo.make ~name ~typ ~impargs () in
   let info = Declare.Info.make  ~udecl ~poly ~kind ~hook () in

@@ -167,7 +167,7 @@ let show_top_evars ~proof =
 let show_universes ~proof =
   let Proof.{goals;sigma} = Proof.data proof in
   let ctx = Evd.universe_context_set (Evd.minimize_universes sigma) in
-  Termops.pr_evar_universe_context (Evd.evar_universe_context sigma) ++ fnl () ++
+  UState.pr (Evd.ustate sigma) ++ fnl () ++
   v 1 (str "Normalized constraints:" ++ cut() ++
        Univ.pr_universe_context_set (Termops.pr_evd_level sigma) ctx)
 

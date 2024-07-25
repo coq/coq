@@ -424,7 +424,7 @@ let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) 
   let evd = Evd.minimize_universes evd in
   let _qvars, uvars = EConstr.universes_of_constr evd lhs in
   let evd = Evd.restrict_universe_context evd uvars in
-  let uctx, uctx' = UState.check_univ_decl_rev (Evd.evar_universe_context evd) udecl in
+  let uctx, uctx' = UState.check_univ_decl_rev (Evd.ustate evd) udecl in
 
   let usubst =
     let inst, auctx = UVars.abstract_universes uctx' in
@@ -475,7 +475,7 @@ let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) 
   let _qvars', uvars' = EConstr.universes_of_constr evd' rhs in
   let evd' = Evd.restrict_universe_context evd' (Univ.Level.Set.union uvars uvars') in
   let fail pp = warn_rewrite_rules_break_SR ~loc:rhs_loc Pp.(str "universe inconsistency, missing constraints: " ++ pp) in
-  let () = UState.check_uctx_impl ~fail (Evd.evar_universe_context evd) (Evd.evar_universe_context evd') in
+  let () = UState.check_uctx_impl ~fail (Evd.ustate evd) (Evd.ustate evd') in
   let evd = evd' in
 
   let rhs =

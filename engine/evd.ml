@@ -334,7 +334,7 @@ let make_evar_instance_array info args =
     let push id c l = if isVarId id c then l else (id, c) :: l in
     evar_instance_array [] push info args
 
-type 'a in_evar_universe_context = 'a * UState.t
+type 'a in_ustate = 'a * UState.t
 
 (*******************************************************************)
 (* Metamaps *)
@@ -1118,7 +1118,9 @@ let univ_rigid = UnivRigid
 let univ_flexible = UnivFlexible false
 let univ_flexible_alg = UnivFlexible true
 
-let evar_universe_context d = d.universes
+let ustate d = d.universes
+
+let evar_universe_context d = ustate d
 
 let universe_context_set d = UState.context_set d.universes
 
@@ -1141,7 +1143,7 @@ let check_univ_decl_early ~poly ~with_obls sigma udecl terms =
                  with monomorphic Program definitions.")
   in
   let vars = List.fold_left (fun acc b -> Univ.Level.Set.union acc (Vars.universes_of_constr b)) Univ.Level.Set.empty terms in
-  let uctx = evar_universe_context sigma in
+  let uctx = ustate sigma in
   let uctx = UState.collapse_sort_variables uctx in
   let uctx = UState.restrict uctx vars in
   ignore (UState.check_univ_decl ~poly uctx udecl)

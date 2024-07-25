@@ -48,7 +48,7 @@ let redex_of_pattern_tc env p =
   | Some (sigma, e) -> sigma, e
   in
   let sigma = Typeclasses.resolve_typeclasses ~fail:false env sigma in
-  Evarutil.nf_evar sigma e, Evd.evar_universe_context sigma
+  Evarutil.nf_evar sigma e, Evd.ustate sigma
 
 let ssrsettac id ((_, (pat, pty)), (_, occ)) =
   let open Proofview.Notations in

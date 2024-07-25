@@ -149,7 +149,7 @@ let mkTpat env sigma0 (sigma, t) = (* takes a term, refreshes it and makes a T p
 
 let redex_of_pattern env p = match redex_of_pattern p with
 | None -> CErrors.anomaly (Pp.str "pattern without redex.")
-| Some (sigma, e) -> Evarutil.nf_evar sigma e, Evd.evar_universe_context sigma
+| Some (sigma, e) -> Evarutil.nf_evar sigma e, Evd.ustate sigma
 
 let unif_redex env sigma0 nsigma p t = (* t is a hint for the redex of p *)
   let t, evs, ucst = abs_evars env sigma0 (nsigma, fire_subst nsigma t) in
@@ -375,7 +375,7 @@ let generate_pred env sigma0 ~concl patterns predty eqid is_rec deps elim_args n
         let erefl = fire_subst sigma erefl in
         let erefl_ty = Retyping.get_type_of env sigma erefl in
         let eq_ty = Retyping.get_type_of env sigma erefl_ty in
-        let ucst = Evd.evar_universe_context sigma in
+        let ucst = Evd.ustate sigma in
         let evds = Evar.Map.bind (Evd.find_undefined sigma) @@
           Evd.evars_of_term sigma new_concl in
         let gen_eq_tac =

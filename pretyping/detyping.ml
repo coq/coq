@@ -359,7 +359,7 @@ let { Goptions.get = print_relevances } =
 
 let detype_level_name sigma l =
   if Univ.Level.is_set l then GSet else
-    match UState.id_of_level (Evd.evar_universe_context sigma) l with
+    match UState.id_of_level (Evd.ustate sigma) l with
     | Some id -> GLocalUniv (CAst.make id)
     | None -> GUniv l
 
@@ -367,7 +367,7 @@ let detype_level sigma l =
   UNamed (detype_level_name sigma l)
 
 let detype_qvar sigma q =
-  match UState.id_of_qvar (Evd.evar_universe_context sigma) q with
+  match UState.id_of_qvar (Evd.ustate sigma) q with
   | Some id -> GLocalQVar (CAst.make (Name id))
   | None -> GQVar q
 

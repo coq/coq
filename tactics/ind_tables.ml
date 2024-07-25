@@ -27,9 +27,9 @@ open Util
 type handle = Evd.side_effects
 
 type mutual_scheme_object_function =
-  Environ.env -> handle -> MutInd.t -> constr array Evd.in_evar_universe_context
+  Environ.env -> handle -> MutInd.t -> constr array Evd.in_ustate
 type individual_scheme_object_function =
-  Environ.env -> handle -> inductive -> constr Evd.in_evar_universe_context
+  Environ.env -> handle -> inductive -> constr Evd.in_ustate
 
 type 'a scheme_kind = string
 

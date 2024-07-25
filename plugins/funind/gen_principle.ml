@@ -202,7 +202,7 @@ let build_functional_principle env (sigma : Evd.evar_map) old_princ_type sorts f
   in
   let map (c, u) = EConstr.mkConstU (c, EConstr.EInstance.make u) in
   let ftac = proof_tac (Array.map map funs) mutr_nparams in
-  let uctx = Evd.evar_universe_context sigma in
+  let uctx = Evd.ustate sigma in
   let typ = EConstr.of_constr new_principle_type in
   let body, typ, univs, _safe, _uctx =
     Declare.build_by_tactic env ~uctx ~poly:false ~typ ftac
@@ -303,7 +303,7 @@ let generate_functional_principle (evd : Evd.evar_map ref) old_princ_type sorts
     (* Pr  1278 :
        Don't forget to close the goal if an error is raised !!!!
     *)
-    let uctx = Evd.evar_universe_context sigma in
+    let uctx = Evd.ustate sigma in
     let entry = Declare.definition_entry ~univs ?types body in
     let (_ : Names.GlobRef.t) =
       Declare.declare_entry ~name:new_princ_name ~hook
