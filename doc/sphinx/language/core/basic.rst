@@ -579,9 +579,16 @@ they appear after a boldface label.  They are listed in the
 
    Adds the specified values to the table :n:`@setting_name`.
 
+   This command supports the :attr:`local`, :attr:`global` and :attr:`export` attributes.
+   The default is `export` outside sections and `local` inside sections.
+   Depending on the table some values may only allow `local`,
+   typically section variables cannot be added with `export` or `global`.
+
 .. cmd:: Remove @setting_name {+ {| @qualid | @string } }
 
    Removes the specified value from the table :n:`@setting_name`.
+
+   This command supports the same attributes as :cmd:`Add`.
 
 .. cmd:: Test @setting_name {? for {+ {| @qualid | @string } } }
 

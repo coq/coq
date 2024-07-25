@@ -87,7 +87,7 @@ val dEqThen : keep_proofs:(bool option) -> evars_flag -> (int -> unit Proofview.
 val rewriteInHyp : bool -> constr -> Id.t -> unit Proofview.tactic
 val rewriteInConcl : bool -> constr -> unit Proofview.tactic
 
-val set_keep_equality : inductive -> bool -> unit
+val set_keep_equality : Libobject.locality -> inductive -> bool -> unit
 
 (* Subst *)
 

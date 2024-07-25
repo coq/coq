@@ -81,22 +81,28 @@ end
    the internal version of the vernacular "Test ...": it tells if a
    given object is in the table.  *)
 
+module type RefConvertArg = sig
+  type t
+  module Set : CSig.USetS with type elt = t
+  val encode : Environ.env -> Libnames.qualid -> t
+  val subst : Mod_subst.substitution -> t -> t
+
+  val check_local : Libobject.locality -> t -> unit
+  val discharge : t -> t
+  (** Elements which cannot be discharged should only be added with Local *)
+
+  val printer : t -> Pp.t
+  val key : option_name
+  val title : string
+  val member_message : t -> bool -> Pp.t
+end
+
 module MakeRefTable :
-  functor
-    (A : sig
-       type t
-       module Set : CSig.USetS with type elt = t
-       val encode : Environ.env -> Libnames.qualid -> t
-       val subst : Mod_subst.substitution -> t -> t
-       val printer : t -> Pp.t
-       val key : option_name
-       val title : string
-       val member_message : t -> bool -> Pp.t
-     end) ->
+  functor (A : RefConvertArg) ->
 sig
   val v : unit -> A.Set.t
   val active : A.t -> bool
-  val set : A.t -> bool -> unit
+  val set : Libobject.locality -> A.t -> bool -> unit
 end
 
 
@@ -159,8 +165,8 @@ val declare_interpreted_string_option_and_ref : (string -> 'a) -> ('a -> string)
 module OptionMap : CSig.MapS with type key = option_name
 
 type 'a table_of_A =  {
-  add : Environ.env -> 'a -> unit;
-  remove : Environ.env -> 'a -> unit;
+  add : Environ.env -> Libobject.locality -> 'a -> unit;
+  remove : Environ.env -> Libobject.locality -> 'a -> unit;
   mem : Environ.env -> 'a -> unit;
   print : unit -> unit;
 }

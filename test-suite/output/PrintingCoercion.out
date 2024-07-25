@@ -1,0 +1,29 @@
+a : C
+     : C
+File "./output/PrintingCoercion.v", line 25, characters 6-43:
+The command has indeed failed with message:
+h' cannot be added with locality global.
+File "./output/PrintingCoercion.v", line 26, characters 6-46:
+The command has indeed failed with message:
+h' cannot be added with locality export.
+g (f a) : D
+     : D
+File "./output/PrintingCoercion.v", line 30, characters 6-35:
+The command has indeed failed with message:
+h is not a coercion.
+h' (g (f a)) : D
+     : D
+g a : C
+     : C
+h (g (f a)) : D
+     : D
+f a : C
+     : C
+f a : C
+     : C
+a : C
+     : C
+a : D
+     : D
+h (g a) : D
+     : D

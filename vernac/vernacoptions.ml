@@ -38,9 +38,9 @@ let vernac_set_option ~locality ~stage table v = match v with
 
 let iter_table f k v = Goptions.iter_table (Global.env()) f k v
 
-let vernac_add_option = iter_table { aux = fun table -> table.add }
+let vernac_add_option local = iter_table { aux = fun table env x -> table.add env local x }
 
-let vernac_remove_option = iter_table { aux = fun table -> table.remove }
+let vernac_remove_option local = iter_table { aux = fun table env x -> table.remove env local x }
 
 let vernac_mem_option = iter_table { aux = fun table -> table.mem }
 
