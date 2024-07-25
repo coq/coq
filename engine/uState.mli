@@ -243,6 +243,8 @@ val fix_undefined_variables : t -> t
 (** Universe minimization *)
 val minimize : t -> t
 
+val freeze_sort_variables : t -> t
+
 val collapse_sort_variables : ?except:QVar.Set.t -> only_above_prop:bool -> t -> t
 
 type ('a, 'b, 'c, 'd) gen_universe_decl = {
