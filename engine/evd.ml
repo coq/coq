@@ -1219,6 +1219,12 @@ let collapse_sort_variables evd =
   let universes = UState.collapse_sort_variables evd.universes in
   { evd with universes }
 
+let allow_failures evd =
+  { evd with universes = UState.allow_failures evd.universes }
+
+let recheck_failures ?fail checker evd =
+  { evd with universes = UState.recheck_failures ?fail checker evd.universes }
+
 let minimize_universes ?lbound evd =
   let uctx' = UState.collapse_sort_variables evd.universes in
   let uctx' = UState.normalize_variables uctx' in

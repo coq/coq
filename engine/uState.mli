@@ -224,6 +224,10 @@ val constrain_variables : Univ.Level.Set.t -> t -> t
 val fix_undefined_variables : t -> t
 (** cf UnivFlex *)
 
+val allow_failures : t -> t
+
+val recheck_failures : ?fail:(Pp.t -> unit) -> (UnivProblem.t -> bool) -> t -> t
+
 (** Universe minimization *)
 val minimize : ?lbound:UGraph.Bound.t -> t -> t
 
