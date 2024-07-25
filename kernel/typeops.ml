@@ -28,6 +28,16 @@ module NamedDecl = Context.Named.Declaration
 exception NotConvertible
 exception NotConvertibleVect of int
 
+type evar_handler = {
+  evar_types: constr pexistential -> types;
+  under_typing: bool;
+}
+
+let default_evar_handler = {
+  evar_types = (fun _ -> anomaly ~label:"typing" (Pp.str "the kernel does not support existential variables."));
+  under_typing = false;
+}
+
 let conv_leq env x y = default_conv CUMUL env x y
 
 let conv_leq_vecti env v1 v2 =
@@ -129,10 +139,10 @@ let type_of_type u =
   let uu = Universe.super u in
     mkType uu
 
-let type_of_sort = function
+let type_of_sort ?(under_typing=false) = function
   | SProp | Prop | Set -> type1
   | Type u -> type_of_type u
-  | QSort (_, u) -> type_of_type u
+  | QSort (_, u) -> if under_typing then type1 else type_of_type u
 
 (*s Type of a de Bruijn index. *)
 
@@ -319,8 +329,9 @@ let type_of_array env u =
 
 (* Type of product *)
 
-let sort_of_product env domsort rangsort =
+let sort_of_product env ?(under_typing=false) domsort rangsort =
   match (domsort, rangsort) with
+    | (_, QSort _) | (QSort _, _) when under_typing -> rangsort
     | (_, SProp) | (SProp, _) -> rangsort
     (* Product rule (s,Prop,Prop) *)
     | (_,       Prop)  -> rangsort
@@ -353,8 +364,8 @@ let sort_of_product env domsort rangsort =
 
   where j.uj_type is convertible to a sort s2
 *)
-let type_of_product env _name s1 s2 =
-  let s = sort_of_product env s1 s2 in
+let type_of_product env ?under_typing _name s1 s2 =
+  let s = sort_of_product env ?under_typing s1 s2 in
     mkSort s
 
 (* Type of a type cast *)
@@ -395,9 +406,9 @@ let check_cast env c ct k expected_type =
    the App case of execute; from this constraints, the expected
    dynamic constraints of the form u<=v are enforced *)
 
-let make_param_univs env indu spec args argtys =
+let make_param_univs env ?evars indu spec args argtys =
   Array.to_list @@ Array.mapi (fun i argt ~expected ->
-      match (snd (Reduction.dest_arity env argt)) with
+      match (snd (Reduction.dest_arity env ?evars argt)) with
       | SProp | exception Reduction.NotArity ->
         Type_errors.error_cant_apply_bad_type env
           (i+1, mkType (Universe.make expected), argt)
@@ -630,17 +641,17 @@ let push_rec_types (lna,typarray,_) env =
   Array.fold_left (fun e assum -> push_rel assum e) env ctxt
 
 (* The typing machine. *)
-let rec execute tbl env cstr =
-  if Int.equal (HConstr.refcount cstr) 1 then execute_aux tbl env cstr
+let rec execute tbl env sigma cstr =
+  if Int.equal (HConstr.refcount cstr) 1 then execute_aux tbl env sigma cstr
   else begin match HConstr.Tbl.find_opt tbl cstr with
     | Some v -> v
     | None ->
-      let v = execute_aux tbl env cstr in
+      let v = execute_aux tbl env sigma cstr in
       HConstr.Tbl.add tbl cstr v;
       v
   end
 
-and execute_aux tbl env cstr =
+and execute_aux tbl env sigma cstr =
   let open Context.Rel.Declaration in
   let self = HConstr.self in
   match HConstr.kind cstr with
@@ -650,7 +661,7 @@ and execute_aux tbl env cstr =
       | SProp -> if not (Environ.sprop_allowed env) then error_disallowed_sprop env
       | QSort _ | Prop | Set | Type _ -> ()
       in
-      type_of_sort s
+      type_of_sort ~under_typing:sigma.under_typing s
 
     | Rel n ->
       type_of_relative env n
@@ -662,14 +673,14 @@ and execute_aux tbl env cstr =
       type_of_constant env c
 
     | Proj (p, r, c) ->
-      let ct = execute tbl env c in
+      let ct = execute tbl env sigma c in
       let r', ty = type_of_projection env p (self c) ct in
       assert (check_relevance env r r');
       ty
 
     (* Lambda calculus operators *)
     | App (f,args) ->
-      let argst = execute_array tbl env args in
+      let argst = execute_array tbl env sigma args in
       let args = snd @@ destApp (self cstr) in
         let ft =
           match HConstr.kind f with
@@ -679,38 +690,38 @@ and execute_aux tbl env cstr =
             type_of_constructor_knowing_parameters env cstr args argst
           | _ ->
             (* No template polymorphism *)
-            execute tbl env f
+            execute tbl env sigma f
         in
         type_of_apply env (self f) ft args argst
 
     | Lambda (name,c1,c2) ->
-      let s = execute_is_type tbl env c1 in
+      let s = execute_is_type tbl env sigma c1 in
       let () = check_assum_annot env s name (self c1) in
       let env1 = push_rel (LocalAssum (name,self c1)) env in
-      let c2t = execute tbl env1 c2 in
+      let c2t = execute tbl env1 sigma c2 in
       type_of_abstraction env name (self c1) c2t
 
     | Prod (name,c1,c2) ->
-      let vars = execute_is_type tbl env c1 in
+      let vars = execute_is_type tbl env sigma c1 in
       let () = check_assum_annot env vars name (self c1) in
       let env1 = push_rel (LocalAssum (name,self c1)) env in
-      let vars' = execute_is_type tbl env1 c2 in
-      type_of_product env name vars vars'
+      let vars' = execute_is_type tbl env1 sigma c2 in
+      type_of_product env ~under_typing:sigma.under_typing name vars vars'
 
     | LetIn (name,c1,c2,c3) ->
-      let c1t = execute tbl env c1 in
-      let c2s = execute_is_type tbl env c2 in
+      let c1t = execute tbl env sigma c1 in
+      let c2s = execute_is_type tbl env sigma c2 in
       let c1 = self c1 in
       let c2 = self c2 in
       let () = check_let_annot env c2s name c1 c2 in
       let () = check_cast env c1 c1t DEFAULTcast c2 in
       let env1 = push_rel (LocalDef (name,c1,c2)) env in
-      let c3t = execute tbl env1 c3 in
+      let c3t = execute tbl env1 sigma c3 in
       subst1 c1 c3t
 
     | Cast (c,k,t) ->
-      let ct = execute tbl env c in
-      let _ts : Sorts.t = execute_is_type tbl env t in
+      let ct = execute tbl env sigma c in
+      let _ts : Sorts.t = execute_is_type tbl env sigma t in
       let () = check_cast env (self c) ct k (self t) in
       self t
 
@@ -722,7 +733,7 @@ and execute_aux tbl env cstr =
       type_of_constructor env c
 
     | Case (ci, u, pms, (p,_), iv, c, lf) ->
-        let ct = execute tbl env c in
+        let ct = execute tbl env sigma c in
         let () = match iv with
           | NoInvert -> ()
           | CaseInvert {indices} ->
@@ -731,14 +742,14 @@ and execute_aux tbl env cstr =
               let mk = HConstr.of_kind_nohashcons in
               mk @@ App (mk @@ Ind (ci.ci_ind,u), args)
             in
-            let _ : Sorts.t = execute_is_type tbl env ct' in
+            let _ : Sorts.t = execute_is_type tbl env sigma ct' in
             match conv_leq env ct (self ct') with
             | Result.Ok () -> ()
             | Result.Error () -> error_bad_invert env (* TODO: more informative message *)
 
         in
         let mib, mip = Inductive.lookup_mind_specif env ci.ci_ind in
-        let pmst = execute_array tbl env pms in
+        let pmst = execute_array tbl env sigma pms in
         let pms = Array.map self pms in
         let cst, params = match mib.mind_template with
         | None ->
@@ -768,7 +779,7 @@ and execute_aux tbl env cstr =
             with ArgumentsMismatch -> error_elim_arity env (ci.ci_ind, u) (HConstr.self c) None
           in
           let p_env = Environ.push_rel_context realdecls env in
-          let pt = execute tbl p_env p in
+          let pt = execute tbl p_env sigma p in
           (realdecls, pt)
         in
         let () =
@@ -786,7 +797,7 @@ and execute_aux tbl env cstr =
               error_elim_arity env (ci.ci_ind, u) (self c) None
           in
           let br_env = Environ.push_rel_context ctx env in
-          let brt = execute tbl br_env br in
+          let brt = execute tbl br_env sigma br in
           let cty = esubst u (Esubst.subs_liftn mip.mind_consnrealdecls.(i) paramsubst) cty in
           (ctx, brt, cty)
         in
@@ -796,12 +807,12 @@ and execute_aux tbl env cstr =
         type_of_case env (mib, mip) ci u pms (pctx, fst p, snd p, rp, pt) iv c ct lf lft
 
     | Fix ((_,i),recdef) ->
-      let fix_ty = execute_recdef tbl env recdef i in
+      let fix_ty = execute_recdef tbl env sigma recdef i in
       check_fix env (destFix @@ self cstr);
       fix_ty
 
     | CoFix (i,recdef) ->
-      let fix_ty = execute_recdef tbl env recdef i in
+      let fix_ty = execute_recdef tbl env sigma recdef i in
       check_cofix env (destCoFix @@ self cstr);
       fix_ty
 
@@ -815,14 +826,14 @@ and execute_aux tbl env cstr =
         | [||], [|u|] -> u
         | _ -> assert false
       in
-      let tyty = execute tbl env ty in
+      let tyty = execute tbl env sigma ty in
       let ty = self ty in
       check_cast env ty tyty DEFAULTcast (mkType (Universe.make ulev));
-      let def_ty = execute tbl env def in
+      let def_ty = execute tbl env sigma def in
       check_cast env (self def) def_ty DEFAULTcast ty;
       let ta = type_of_array env u in
       let () = Array.iter (fun x ->
-          let xt = execute tbl env x in
+          let xt = execute tbl env sigma x in
           check_cast env (self x) xt DEFAULTcast ty)
           t
       in
@@ -832,25 +843,25 @@ and execute_aux tbl env cstr =
     | Meta _ ->
         anomaly (Pp.str "the kernel does not support metavariables.")
 
-    | Evar _ ->
-        anomaly (Pp.str "the kernel does not support existential variables.")
+    | Evar (ev, args) ->
+        sigma.evar_types (ev, SList.Skip.map HConstr.self args)
 
-and execute_is_type tbl env constr =
-  let t = execute tbl env constr in
+and execute_is_type tbl env sigma constr =
+  let t = execute tbl env sigma constr in
   check_type env (HConstr.self constr) t
 
-and execute_recdef tbl env (names,lar,vdef) i =
-  let lart = execute_array tbl env lar in
+and execute_recdef tbl env sigma (names,lar,vdef) i =
+  let lart = execute_array tbl env sigma lar in
   let lar = Array.map HConstr.self lar in
   let () = Array.iteri (fun i na -> check_assumption env na lar.(i) lart.(i)) names in
   let env1 = push_rec_types (names,lar,vdef) env in (* vdef is ignored *)
-  let vdeft = execute_array tbl env1 vdef in
+  let vdeft = execute_array tbl env1 sigma vdef in
   let vdef = Array.map HConstr.self vdef in
   let () = check_fixpoint env1 names lar vdef vdeft in
   lar.(i)
 
-and execute_array tbl env cs =
-  Array.map (fun c -> execute tbl env c) cs
+and execute_array tbl env sigma cs =
+  Array.map (fun c -> execute tbl env sigma c) cs
 
 let execute env c =
   NewProfile.profile "Typeops.execute" (fun () -> execute (HConstr.Tbl.create ()) env c) ()
@@ -874,40 +885,44 @@ let check_wellformed_universes env c =
 let check_wellformed_universes env c =
   NewProfile.profile "check-wf-univs" (fun () -> check_wellformed_universes env c) ()
 
-let infer_hconstr env hconstr =
+let infer_hconstr env ?sigma hconstr =
   let constr = HConstr.self hconstr in
+  let sigma = Option.default default_evar_handler sigma in
   let () = check_wellformed_universes env constr in
-  let t = execute env hconstr in
+  let t = execute env sigma hconstr in
   make_judge constr t
 
-let infer env c =
+let infer env ?sigma c =
   let c = HConstr.of_constr env c in
-  infer_hconstr env c
+  let sigma = Option.default default_evar_handler sigma in
+  infer_hconstr env ~sigma c
 
 let assumption_of_judgment env {uj_val=c; uj_type=t} =
   infer_assumption env c t
 
-let infer_type env constr =
+let infer_type env ?sigma constr =
   let () = check_wellformed_universes env constr in
+  let sigma = Option.default default_evar_handler sigma in
   let hconstr = HConstr.of_constr env constr in
   let constr = HConstr.self hconstr in
-  let t = execute env hconstr in
+  let t = execute env sigma hconstr in
   let s = check_type env constr t in
   {utj_val = constr; utj_type = s}
 
 (* Typing of several terms. *)
 
-let check_context env rels =
+let check_context env ?sigma rels =
+  let sigma = Option.default default_evar_handler sigma in
   let open Context.Rel.Declaration in
   Context.Rel.fold_outside (fun d (env,rels) ->
     match d with
       | LocalAssum (x,ty) ->
-        let jty = infer_type env ty in
+        let jty = infer_type env ~sigma ty in
         let () = check_assum_annot env jty.utj_type x jty.utj_val in
         push_rel d env, LocalAssum (x,jty.utj_val) :: rels
       | LocalDef (x,bd,ty) ->
-        let j1 = infer env bd in
-        let jty = infer_type env ty in
+        let j1 = infer env ~sigma bd in
+        let jty = infer_type env ~sigma ty in
         let () = match conv_leq env j1.uj_type ty with
         | Result.Ok () -> ()
         | Result.Error () -> error_actual_type env j1 ty
@@ -1001,3 +1016,114 @@ let type_of_prim_or_type env u = let open CPrimitives in
   | OT_type t -> type_of_prim_type env u t
   | OT_op op -> type_of_prim env u op
   | OT_const c -> type_of_prim_const env u c
+
+let sort_of_sort ~under_typing = function
+  | SProp | Prop | Set -> Sorts.type1
+  | Type u -> Sorts.sort_of_univ (Universe.super u)
+  | QSort (_, u) -> if under_typing then Sorts.type1 else Sorts.sort_of_univ (Universe.super u)
+
+exception Fail
+let rec subst_type env sigma evars subs typ = function
+  | [] -> substl subs typ
+  | h::rest ->
+    (* Fast path if the type is already a product *)
+    match kind typ with
+    | Prod (_, _, c2) -> subst_type env sigma evars (h :: subs) c2 rest
+    | _ ->
+      let typ = substl subs typ in
+      match kind (Reduction.whd_all env ~evars typ) with
+        | Prod (_, _, c2) -> subst_type env sigma evars [h] c2 rest
+        | _ -> raise Fail
+
+let subst_type env sigma evars f typ args =
+  try subst_type env sigma evars [] typ args
+  with Fail -> error_cant_apply_not_functional env
+    (make_judge f typ)
+    (make_judgev (Array.of_list args) (Array.map_of_list (fun _ -> mkVar (Names.Id.of_string "untyped")) args))
+
+let sort_of_atomic_type env evars ft args =
+  let open Context.Rel.Declaration in
+  let rec concl_of_arity env n ar args =
+    match kind (Reduction.whd_all env ~evars ar), args with
+    | Prod (na, t, b), h::l ->
+      concl_of_arity (push_rel (LocalDef (na, lift n h, t)) env) (n + 1) b l
+    | Sort s, [] -> s
+    | _ -> anomaly ~label:"retyping" Pp.(str"Not a sort")
+  in concl_of_arity env 0 ft (Array.to_list args)
+
+let decomp_sort env evars t =
+  match kind (Reduction.whd_all env ~evars t) with
+  | Sort s -> s
+  | _ -> anomaly ~label:"retyping" Pp.(str"Not a sort")
+
+
+let rec type_of env sigma evars cstr =
+  let open Context.Rel.Declaration in
+  match kind cstr with
+  | Meta _ -> anomaly (Pp.str "the kernel does not support metavariables.")
+  | Evar (ev, args) -> sigma.evar_types (ev, args)
+  | Rel n -> type_of_relative env n
+  | Var id -> type_of_variable env id
+  | Const c -> type_of_constant env c
+  | Ind ind -> type_of_inductive env ind
+  | Construct c -> type_of_constructor env c
+  | Case (ci, _, _,((_, p), _), _,c, _) ->
+      let mib, mip = Inductive.lookup_mind_specif env ci.ci_ind in
+      let ct = type_of env sigma evars c in
+      let (_, largs) =
+        try find_rectype env ct
+        with Not_found -> error_case_not_inductive env (make_judge c ct)
+      in
+      let realdecls, _ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
+      let (_, realargs) = List.chop mib.mind_nparams largs in
+      let subst = Vars.subst_of_rel_context_instance_list realdecls (realargs @ [c]) in
+      Vars.substl subst p
+  | Lambda (name,c1,c2) ->
+      mkProd (name, c1, type_of (push_rel (LocalAssum (name,c1)) env) sigma evars c2)
+  | LetIn (name,b,c1,c2) ->
+      subst1 b (type_of (push_rel (LocalDef (name,b,c1)) env) sigma evars c2)
+  | Fix ((_,i),(_,tys,_)) -> tys.(i)
+  | CoFix (i,(_,tys,_)) -> tys.(i)
+  | App (f, args) when match kind f with Ind ind -> Environ.template_polymorphic_pind ind env | _ -> false ->
+      let t = type_of_global_reference_knowing_parameters env sigma evars f args in
+      subst_type env sigma evars f t (Array.to_list args)
+  | App (f, args) ->
+      subst_type env sigma evars f (type_of env sigma evars f) (Array.to_list args)
+  | Proj (p,_,c) ->
+      let ty = type_of env sigma evars c in
+      snd @@ type_of_projection env p c ty
+  | Cast (_, _, t) -> t
+  | Sort _ | Prod _ -> mkSort (sort_of env sigma evars cstr)
+  | Int _ -> type_of_int env
+  | Float _ -> type_of_float env
+  | String _ -> type_of_string env
+  | Array (u, _, _, ty) ->
+    let arr = type_of_array env u in
+    mkApp(arr, [|ty|])
+
+and sort_of env sigma evars t : Sorts.t =
+  let open Context.Rel.Declaration in
+  match kind t with
+  | Cast (_, _, s) when isSort s -> destSort s
+  | Sort s -> sort_of_sort ~under_typing:sigma.under_typing s
+  | Prod (name,t,c2) ->
+    let dom = sort_of env sigma evars t in
+    let rang = sort_of (push_rel (LocalAssum (name,t)) env) sigma evars c2 in
+    sort_of_product env ~under_typing:sigma.under_typing dom rang
+  | App (f, args) when match kind f with Ind ind -> Environ.template_polymorphic_pind ind env | _ -> false ->
+    let t = type_of_global_reference_knowing_parameters env sigma evars f args in
+    sort_of_atomic_type env evars t args
+  | App(f,args) -> sort_of_atomic_type env evars (type_of env sigma evars f) args
+  | Lambda _ | Fix _ | Construct _ -> error_not_type env (make_judge t (mkVar (Names.Id.of_string "untyped")))
+  | _ -> decomp_sort env evars (type_of env sigma evars t)
+
+and type_of_global_reference_knowing_parameters env sigma evars c args =
+  match kind c with
+  | Ind (ind, u) ->
+    let mip = lookup_mind_specif env ind in
+    let argsty = Array.map (type_of env sigma evars) args in
+    let paramtyps = make_param_univs env ~evars (ind, u) mip args argsty in
+    fst @@ Inductive.type_of_inductive_knowing_parameters (mip, u) paramtyps
+  | Construct (cstr, u) ->
+    type_of_constructor env (cstr, u)
+  | _ -> assert false

@@ -250,6 +250,7 @@ let push_decl d env = match d with
 
 let hash_annot = hash_annot Name.hash
 
+let hash_slist hashf a = SList.Skip.fold (fun hash x -> Hashset.Combine.combine hash (hashf x)) 0 a
 let hash_array hashf a = Array.fold_left (fun hash x -> Hashset.Combine.combine hash (hashf x)) 0 a
 
 let hash_kind = let open Hashset.Combine in function
@@ -260,7 +261,7 @@ let hash_kind = let open Hashset.Combine in function
   | Lambda (na,t,c) -> combinesmall 5 (combine3 (hash_annot na) t.hash c.hash)
   | LetIn (na,b,t,c) -> combinesmall 6 (combine4 (hash_annot na) b.hash t.hash c.hash)
   | App (h,args) -> combinesmall 7 (Array.fold_left (fun hash c -> combine hash c.hash) h.hash args)
-  | Evar _ -> assert false
+  | Evar (ev, inst) -> combinesmall 8 (combine (Evar.hash ev) (hash_slist hash inst))
   | Const (c,u) -> combinesmall 9 (combine (Constant.SyntacticOrd.hash c) (UVars.Instance.hash u))
   | Ind (ind,u) -> combinesmall 10 (combine (Ind.SyntacticOrd.hash ind) (UVars.Instance.hash u))
   | Construct (c,u) -> combinesmall 11 (combine (Construct.SyntacticOrd.hash c) (UVars.Instance.hash u))
@@ -289,7 +290,8 @@ let hash_kind = let open Hashset.Combine in function
 let kind_to_constr = function
   | Rel n -> mkRel n
   | Var i -> mkVar i
-  | Meta _ | Evar _ -> assert false
+  | Evar (ev, inst) -> mkEvar (ev, SList.Skip.map self inst)
+  | Meta _ -> assert false
   | Sort s -> mkSort s
   | Cast (c,k,t) -> mkCast (c.self,k,t.self)
   | Prod (na,t,c) -> mkProd (na,t.self,c.self)
@@ -400,7 +402,9 @@ and of_constr_aux henv c =
     let h = of_constr henv h in
     let args = Array.map (of_constr henv) args in
     App (h, args)
-  | Evar _ -> CErrors.anomaly Pp.(str "evar in typeops")
+  | Evar (ev, inst) ->
+    let inst = SList.Skip.map (of_constr henv) inst in
+    Evar (ev, inst)
   | Meta _ -> CErrors.anomaly Pp.(str "meta in typeops")
   | Const (c,u) ->
     let c = hcons_con c in

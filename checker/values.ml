@@ -226,6 +226,8 @@ let v_proj = v_tuple "projection" [|v_proj_repr; v_bool|]
 let v_uint63 =
   if Sys.word_size == 64 then v_int else v_int64
 
+let v_evar = v_int
+
 let v_constr =
   fix (fun v_constr ->
 let v_prec =
@@ -241,7 +243,7 @@ let v_case_return = v_tuple_c ("case_return", [|v_tuple_c ("case_return'", [|v_a
     [|v_int|]; (* Rel *)
     [|v_id|]; (* Var *)
     [|v_fail "Meta"|]; (* Meta *)
-    [|v_fail "Evar"|]; (* Evar *)
+    [|v_pair v_evar v_any|]; (* Evar *)
     [|v_sort|]; (* Sort *)
     [|v_constr;v_cast;v_constr|]; (* Cast *)
     [|v_binder_annot v_name;v_constr;v_constr|]; (* Prod *)
