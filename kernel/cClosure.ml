@@ -130,6 +130,7 @@ type evar_handler = {
   evar_expand : constr pexistential -> constr evar_expansion;
   evar_repack : Evar.t * constr list -> constr;
   evar_irrelevant : constr pexistential -> bool;
+  qnorm : Sorts.QVar.t -> Sorts.Quality.t;
   qvar_irrelevant : Sorts.QVar.t -> bool;
 }
 
@@ -137,6 +138,9 @@ let default_evar_handler env = {
   evar_expand = (fun _ -> assert false);
   evar_repack = (fun _ -> assert false);
   evar_irrelevant = (fun _ -> assert false);
+  qnorm = (fun q ->
+      (* assert (Sorts.QVar.Set.mem q env.env_qualities); *)
+      Sorts.Quality.QVar q);
   qvar_irrelevant = (fun q ->
       assert (Sorts.QVar.Set.mem q env.env_qualities);
       false);
@@ -159,6 +163,7 @@ type clos_infos = {
 let info_flags info = info.i_flags
 let info_env info = info.i_cache.i_env
 let info_univs info = info.i_cache.i_univs
+let info_qnorm info = info.i_cache.i_sigma.qnorm
 
 let push_relevance infos x =
   { infos with i_relevances = Range.cons x.binder_relevance infos.i_relevances }
