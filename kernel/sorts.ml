@@ -459,6 +459,14 @@ let relevance_hash = function
   | Irrelevant -> 1
   | RelevanceVar q -> Hashset.Combine.combinesmall 2 (QVar.hash q)
 
+let relevance_subst_rel_fn f = function
+  | Relevant | Irrelevant as r -> r
+  | RelevanceVar qv as r ->
+    match f qv with
+    | Relevant | Irrelevant as r -> r
+    | RelevanceVar qv' ->
+      if qv' == qv then r else RelevanceVar qv'
+
 let relevance_subst_fn f = function
   | Relevant | Irrelevant as r -> r
   | RelevanceVar qv as r ->

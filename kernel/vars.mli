@@ -190,8 +190,8 @@ open UVars
 
 (** Level substitutions for polymorphism. *)
 
-val subst_univs_level_constr : sort_level_subst -> constr -> constr
-val subst_univs_level_context : sort_level_subst -> Constr.rel_context -> Constr.rel_context
+val subst_univs_level_constr : ?subst_rel:(Sorts.relevance -> Sorts.relevance) -> sort_level_subst -> constr -> constr
+val subst_univs_level_context : ?subst_rel:(Sorts.relevance -> Sorts.relevance) -> sort_level_subst -> Constr.rel_context -> Constr.rel_context
 
 (** Instance substitution for polymorphism. *)
 val subst_instance_constr : Instance.t -> constr -> constr
