@@ -361,6 +361,12 @@ val is_obligation_evar : evar_map -> Evar.t -> bool
 val get_impossible_case_evars : evar_map -> Evar.Set.t
 (** Set of undefined evars with ImpossibleCase evar source. *)
 
+val get_rewrite_rule_evars : evar_map -> Evar.Set.t
+(** Set of evars declared as an ununifiable rewrite rule evar *)
+
+val is_rewrite_rule_evar : evar_map -> Evar.t -> bool
+(** Is the evar declared as an ununifiable rewrite rule evar *)
+
 val downcast : Evar.t-> etypes -> evar_map -> evar_map
 (** Change the type of an undefined evar to a new type assumed to be a
     subtype of its current type; subtyping must be ensured by caller *)
