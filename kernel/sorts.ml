@@ -333,6 +333,18 @@ let levels s = match s with
 | Set -> Level.Set.singleton Level.set
 | Type u | QSort (_, u) -> Universe.levels u
 
+let qnorm fq = function
+  | SProp | Prop | Set | Type _ as s -> s
+  | QSort (q, v) as s ->
+    let open Quality in
+    match fq q with
+    | QVar q' ->
+      if q' == q then s
+      else qsort q' v
+    | QConstant QSProp -> sprop
+    | QConstant QProp -> prop
+    | QConstant QType -> sort_of_univ v
+
 let subst_fn (fq,fu) = function
   | SProp | Prop | Set as s -> s
   | Type v as s ->

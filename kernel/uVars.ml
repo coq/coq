@@ -86,6 +86,8 @@ module Instance : sig
 
     val share : t -> t * int
 
+    val qnorm : (Sorts.QVar.t -> Quality.t) -> t -> t
+
     val subst_fn : (Sorts.QVar.t -> Quality.t) * (Level.t -> Level.t) -> t -> t
 
     val pr : (Sorts.QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
@@ -174,6 +176,10 @@ struct
     of_array (qs,us)
 
   let length (aq,au) = Array.length aq, Array.length au
+
+  let qnorm fq (q,u as orig) : t =
+    let q' = CArray.Smart.map (Quality.subst fq) q in
+    if q' == q then orig else q', u
 
   let subst_fn (fq, fn) (q,u as orig) : t =
     let q' = CArray.Smart.map (Quality.subst fq) q in

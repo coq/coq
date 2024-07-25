@@ -167,6 +167,8 @@ val levels : t -> Univ.Level.Set.t
 
 val super : t -> t
 
+val qnorm : (QVar.t -> Quality.t) -> t -> t
+
 val subst_fn : (QVar.t -> Quality.t) * (Univ.Universe.t -> Univ.Universe.t)
   -> t -> t
 
