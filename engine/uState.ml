@@ -46,8 +46,10 @@ module QState : sig
   val undefined : t -> QVar.Set.t
   val collapse_above_prop : to_prop:bool -> t -> t
   val collapse : t -> t
+  val freeze : t -> t
   val pr : (QVar.t -> Pp.t) -> t -> Pp.t
   val of_set : QVar.Set.t -> t
+  val restrict : t -> QVar.Set.t -> t
 end =
 struct
 
@@ -178,6 +180,12 @@ let undefined m =
   let m = QMap.filter (fun _ v -> Option.is_empty v) m.qmap in
   QMap.domain m
 
+let restrict m qvars =
+  let qvars = QSet.union qvars m.named in
+  { named = m.named;
+    qmap = QMap.filter (fun qv _ -> QSet.mem qv qvars) m.qmap;
+    above = QSet.inter m.above qvars }
+
 let collapse_above_prop ~to_prop m =
   let map q v = match v with
     | None ->
@@ -195,6 +203,9 @@ let collapse m =
   in
   { named = m.named; qmap = QMap.mapi map m.qmap; above = QSet.empty }
 
+let freeze m =
+  { m with named = QSet.union m.named (undefined m) }
+
 let pr prqvar { qmap; above; named } =
   let open Pp in
   let prbody u = function
@@ -208,7 +219,6 @@ let pr prqvar { qmap; above; named } =
     str " := " ++ q
   in
   h (prlist_with_sep fnl (fun (u, v) -> prqvar u ++ prbody u v) (QMap.bindings qmap))
-
 end
 
 module UPairSet = UnivMinim.UPairSet
@@ -969,6 +979,9 @@ let restrict ?lbound uctx vars =
   let uctx' = restrict_universe_context ?lbound uctx.local vars in
   { uctx with local = uctx' }
 
+let restrict_sort_variables uctx qvars =
+  { uctx with sort_variables = QState.restrict uctx.sort_variables qvars }
+
 let restrict_even_binders ?lbound uctx vars =
   let uctx' = restrict_universe_context ?lbound uctx.local vars in
   { uctx with local = uctx' }
@@ -1194,6 +1207,9 @@ let fix_undefined_variables uctx =
 
 let collapse_above_prop_sort_variables ~to_prop uctx =
   { uctx with sort_variables = QState.collapse_above_prop ~to_prop uctx.sort_variables }
+
+let freeze_sort_variables uctx =
+  { uctx with sort_variables = QState.freeze uctx.sort_variables }
 
 let collapse_sort_variables uctx =
   { uctx with sort_variables = QState.collapse uctx.sort_variables }
