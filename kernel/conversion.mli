@@ -20,7 +20,7 @@ type 'a extended_conversion_function =
   ?evars:CClosure.evar_handler ->
   'a -> 'a -> (unit, unit) result
 
-type conv_pb = CONV | CUMUL
+type conv_pb = Declarations.conv_pb = CONV | CUMUL
 
 type ('a, 'err) universe_compare = {
   compare_sorts : env -> conv_pb -> Sorts.t -> Sorts.t -> 'a -> ('a, 'err option) result;
