@@ -73,7 +73,7 @@ type env = private {
   env_rel_context   : rel_context_val;
   env_universes : UGraph.t;
   env_qualities : Sorts.QVar.Set.t;
-  symb_pats : rewrite_rule list Cmap_env.t;
+  symb_pats : machine_rewrite_rule list Cmap_env.t;
   env_typing_flags  : typing_flags;
   vm_library : Vmlibrary.t;
   retroknowledge : Retroknowledge.retroknowledge;
@@ -213,7 +213,7 @@ val evaluable_constant : Constant.t -> env -> bool
 
 val mem_constant : Constant.t -> env -> bool
 
-val add_rewrite_rules : (Constant.t * rewrite_rule) list -> env -> env
+val add_rewrite_rules : (Constant.t * machine_rewrite_rule) list -> env -> env
 
 (** New-style polymorphism *)
 val polymorphic_constant  : Constant.t -> env -> bool
@@ -231,7 +231,7 @@ type const_evaluation_result =
   | NoBody
   | Opaque
   | IsPrimitive of Instance.t * CPrimitives.t
-  | HasRules of Instance.t * bool * rewrite_rule list
+  | HasRules of Instance.t * bool * machine_rewrite_rule list
 exception NotEvaluableConst of const_evaluation_result
 
 val constant_type : env -> Constant.t puniverses -> types constrained
