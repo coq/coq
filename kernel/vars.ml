@@ -358,14 +358,15 @@ let fold_kind_relevance f acc c =
   | CoFix (_,data) ->
     fold_rec_declaration_relevance f acc data
 
-let subst_univs_level_constr subst c =
+let subst_univs_level_constr ?subst_rel subst c =
   if UVars.is_empty_sort_subst subst then c
   else
+    let subst_rel = Option.default (UVars.subst_sort_level_relevance subst) subst_rel in
     let f = UVars.subst_sort_level_instance subst in
     (* XXX shouldn't Constr.map return the pointer equal term when unchanged instead? *)
     let changed = ref false in
     let rec aux t =
-      let t' = map_constr_relevance (UVars.subst_sort_level_relevance subst) t in
+      let t' = map_constr_relevance subst_rel t in
       let t = if t' == t then t else (changed := true; t') in
       match kind t with
       | Const (c, u) ->
@@ -412,10 +413,11 @@ let subst_univs_level_constr subst c =
     let c' = aux c in
       if !changed then c' else c
 
-let subst_univs_level_context s ctx =
+let subst_univs_level_context ?subst_rel s ctx =
+  let subst_rel = Option.default (UVars.subst_sort_level_relevance s) subst_rel in
   CList.Smart.map (fun d ->
-      let d = RelDecl.map_relevance (UVars.subst_sort_level_relevance s) d in
-      RelDecl.map_constr (subst_univs_level_constr s) d)
+      let d = RelDecl.map_relevance subst_rel d in
+      RelDecl.map_constr (subst_univs_level_constr ~subst_rel s) d)
     ctx
 
 let subst_instance_constr subst c =
