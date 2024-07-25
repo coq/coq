@@ -65,9 +65,9 @@ let install_precommit_hook prefs =
 let browser prefs arch =
   match prefs.browser with
   | Some b -> b
-  | None when arch_is_win32 arch -> "start %s"
-  | None when arch = "Darwin" -> "open %s"
-  | _ -> "firefox -remote \"OpenURL(%s,new-tab)\" || firefox %s &"
+  | None when arch_is_win32 arch -> {|start "%s"|}
+  | None when arch = "Darwin" -> {|open "%s"|}
+  | _ -> {|xdg-open "%s"|}
 
 (** * OCaml programs *)
 module CamlConf = struct

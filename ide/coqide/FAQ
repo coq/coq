@@ -1,5 +1,7 @@
 			CoqIDE FAQ
 
+TODO: Put the relevant info in the doc and delete this file.
+
 Q0) What is CoqIDE?
 R0: A powerful graphical interface for Coq. See http://coq.inria.fr. for more informations.
 

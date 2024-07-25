@@ -1435,7 +1435,7 @@ let build_ui () =
     item "Latex" ~label:"_LaTeX" ~callback:(File.export "latex");
     item "Dvi" ~label:"_DVI" ~callback:(File.export "dvi");
     item "Pdf" ~label:"_PDF" ~callback:(File.export "pdf");
-    item "Ps" ~label:"_PostScript" ~callback:(File.export "ps");
+    item "Ps" ~label:"P_ostScript" ~callback:(File.export "ps");
   ];
 
   menu edit_menu [

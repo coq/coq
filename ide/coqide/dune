@@ -89,11 +89,6 @@
  (deps (:gen ./default_bindings_src.exe))
  (action (run %{gen} %{targets})))
 
-(install
- (section doc)
- (package coqide)
- (files FAQ))
-
 ; FIXME: we should install those in share/coqide. We better do this
 ; once the make-based system has been phased out.
 (install
