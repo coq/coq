@@ -632,6 +632,19 @@ let push_rec_types (lna,typarray,_) env =
   let ctxt = Array.map2_i (fun i na t -> RelDecl.LocalAssum (na, lift i t)) lna typarray in
   Array.fold_left (fun e assum -> push_rel assum e) env ctxt
 
+let share_application tbl f args =
+  let rec share n =
+    if n <= 1 then None
+    else
+      let sargs = Array.sub args 0 n in
+      let app = HConstr.of_kind_nohashcons (App (f, sargs)) in
+      match HConstr.Tbl.find_opt tbl app with
+      | None -> share (n - 1)
+      | Some ans ->
+        Some (ans, app, Array.sub args n (Array.length args - n))
+  in
+  share (Array.length args - 1)
+
 (* The typing machine. *)
 let rec execute tbl env cstr =
   if Int.equal (HConstr.refcount cstr) 1 then execute_aux tbl env cstr
@@ -672,17 +685,34 @@ and execute_aux tbl env cstr =
 
     (* Lambda calculus operators *)
     | App (f,args) ->
-      let argst = execute_array tbl env args in
-      let args = snd @@ destApp (self cstr) in
-        let ft =
-          match HConstr.kind f with
-          | Ind ind when Environ.template_polymorphic_pind ind env ->
+      let is_template = match HConstr.kind f with
+      | Ind ind -> Environ.template_polymorphic_pind ind env
+      | Construct ((ind, _), _) -> Environ.template_polymorphic_ind ind env
+      | _ -> false
+      in
+      if is_template then
+        let argst = execute_array tbl env args in
+        let args = snd @@ destApp (self cstr) in
+          let ft = match HConstr.kind f with
+          | Ind ind ->
             type_of_inductive_knowing_parameters env ind args argst
-          | Construct ((ind, _), _ as cstr) when Environ.template_polymorphic_ind ind env ->
+          | Construct cstr ->
             type_of_constructor_knowing_parameters env cstr args argst
-          | _ ->
-            (* No template polymorphism *)
-            execute tbl env f
+          | _ -> assert false
+          in
+          type_of_apply env (self f) ft args argst
+      else
+        (* No template polymorphism *)
+        let (f, ft, args, argst) = match share_application tbl f args with
+        | None ->
+          let ft = execute tbl env f in
+          let argst = execute_array tbl env args in
+          let args = snd @@ destApp (self cstr) in
+          f, ft, args, argst
+        | Some (ft, f, args) ->
+          let argst = execute_array tbl env args in
+          let args = Array.map self args in
+          f, ft, args, argst
         in
         type_of_apply env (self f) ft args argst
 
