@@ -117,6 +117,8 @@ type local_env = {
   rels : int Range.t;
   (* global counter *)
   cnt : int ref;
+  (* how many unknown_rel we have seen *)
+  unknown_cnt : int ref;
   assum_uids : int Tbl.t;
   (* the surrounding table is for the body, the inner table for the type *)
   letin_uids : int Tbl.t Tbl.t;
@@ -125,12 +127,14 @@ type local_env = {
 let empty_env () = {
   rels = Range.empty;
   cnt = ref 0;
+  unknown_cnt = ref 0;
   assum_uids = Tbl.create 47;
   letin_uids = Tbl.create 47;
 }
 
 let push_unknown_rel env =
   incr env.cnt;
+  incr env.unknown_cnt;
   { env with rels = Range.cons !(env.cnt) env.rels }
 
 let push_assum t env =
@@ -398,6 +402,8 @@ let of_constr env c =
       let stats = Tbl.stats tbl in
       let tree_size = tree_size (self c) in
       v 0 (
+        str "rel cnt = " ++ int !(local_env.cnt) ++ spc() ++
+        str "unknwown rels = " ++ int !(local_env.unknown_cnt) ++ spc() ++
         str "hashes = " ++ int stats.Tbl.hashes ++ spc() ++
         str "bindings = " ++ int stats.Tbl.bindings ++ spc() ++
         str "tree size = " ++ int tree_size ++ spc() ++
