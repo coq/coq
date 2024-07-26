@@ -316,8 +316,10 @@ let install_path_comparator f = path_comparator := f
 
 let compare_path env sigma cl p q = !path_comparator env sigma cl p q
 
+let warning_ambiguous_path = "ambiguous-paths"
+
 let warn_ambiguous_path =
-  CWarnings.create ~name:"ambiguous-paths" ~category:CWarnings.CoreCategories.coercions
+  CWarnings.create ~name:warning_ambiguous_path ~category:CWarnings.CoreCategories.coercions
     (fun l -> prlist_with_sep fnl (fun (c,p,q) ->
          str"New coercion path " ++ print_path (c,p) ++
          if List.is_empty q then
@@ -345,7 +347,16 @@ let add_coercion_in_graph env sigma ?(update=false) ic =
   let ambig_paths :
     ((cl_typ * cl_typ) * inheritance_path * inheritance_path) list ref =
     ref [] in
+  let warn = match CWarnings.get_warning warning_ambiguous_path with
+  | There w ->
+    begin match CWarnings.warning_status w with
+    | Disabled -> false
+    | Enabled | AsError -> true
+    end
+  | NotThere | OtherType -> assert false
+  in
   let check_coherence (i, j as ij) p q =
+    if warn then
     let i_info = class_info i in
     let j_info = class_info j in
     let between_ij = ClTypSet.inter i_info.cl_reachable_from j_info.cl_reachable_to in
@@ -363,7 +374,7 @@ let add_coercion_in_graph env sigma ?(update=false) ic =
       ambig_paths := (ij, p, q) :: !ambig_paths
   in
   let try_add_new_path (i,j as ij) p =
-    if cl_typ_eq i j then check_coherence ij p [];
+    let () = if cl_typ_eq i j then check_coherence ij p [] in
     if not (cl_typ_eq i j) || different_class_params env i then
       if update then let () = add_path ij p in true else
         match lookup_path_between_class ij with
