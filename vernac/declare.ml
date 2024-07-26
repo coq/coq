@@ -214,7 +214,7 @@ let make_univs_immediate_private_mono ~initial_euctx ~uctx ~udecl ~eff body typ 
        the body.  So we keep the two sets distinct. *)
     let uctx_body = UState.restrict uctx used_univs in
     UState.check_mono_univ_decl uctx_body udecl in
-  utyp, Default { body = (body, eff); opaque = Opaque ubody }
+  initial_euctx, utyp, Default { body = (body, eff); opaque = Opaque ubody }
 
 let make_univs_immediate_private_poly ~uctx ~udecl ~eff body typ =
   let used_univs_typ, used_univs = universes_of_body_type body typ in
@@ -226,7 +226,7 @@ let make_univs_immediate_private_poly ~uctx ~udecl ~eff body typ =
       (UState.context_set uctx)
       (UState.context_set uctx')
   in
-  utyp, Default { body = (body, eff); opaque = Opaque ubody }
+  uctx', utyp, Default { body = (body, eff); opaque = Opaque ubody }
 
 let make_univs_immediate_default ~poly ~opaque ~uctx ~udecl ~eff body typ =
   let _, used_univs = universes_of_body_type body typ in
@@ -249,7 +249,7 @@ let make_univs_immediate_default ~poly ~opaque ~uctx ~udecl ~eff body typ =
          when monomorphic it shouldn't really matter. *)
       Monomorphic_entry (Univ.ContextSet.union uctx (Safe_typing.universes_of_private eff.Evd.seff_private)), snd utyp
   in
-  utyp, Default { body = (body, eff); opaque = if opaque then Opaque Univ.ContextSet.empty else Transparent }
+  uctx, utyp, Default { body = (body, eff); opaque = if opaque then Opaque Univ.ContextSet.empty else Transparent }
 
 let make_univs_immediate ~poly ?keep_body_ucst_separate ~opaque ~uctx ~udecl ~eff body typ =
   (* allow_deferred case *)
@@ -2004,7 +2004,7 @@ let close_proof ?warn_incomplete ~opaque ~keep_body_ucst_separate ps =
 
   let make_entry ((body, eff), typ) =
     let keep_body_ucst_separate = if keep_body_ucst_separate then Some initial_euctx else None in
-    let univs, body =
+    let _, univs, body =
       make_univs_immediate ~poly ?keep_body_ucst_separate ~opaque ~uctx ~udecl ~eff body (Some typ) in
     definition_entry_core ?using ~univs ~types:typ body
   in
