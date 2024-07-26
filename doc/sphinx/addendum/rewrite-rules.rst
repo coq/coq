@@ -49,7 +49,7 @@ Rewrite rules
   .. insertprodn rewrite_rule rewrite_rule
 
   .. prodn::
-     rewrite_rule ::= {? @univ_decl %|- } @rw_pattern => @term
+     rewrite_rule ::= @rw_pattern => @term
 
 Declares a named block of rewrite rules. The name is declared in the same namespace as constants and inductives.
 
@@ -128,37 +128,35 @@ Universe polymorphic rules
 --------------------------
 
 Rewrite rules support universe and sort quality polymorphism.
-Universe levels and sort quality variables must be declared with the notation :n:`@{q1 q2|u1 u2+|+}`
-(the same notation as universe instance declarations);
-each variable must appear exactly once in the pattern.
-If any universe level isn't bound in the rule,
-as is often the case with the level of a pattern variable when it is a type,
-you need to make the universe instance extensible (with the final +).
-Universe level constraints, as inferred from the pattern, must imply those given,
-which in turn must imply the constraints needed for the replacement.
-You can make the declared constraints extensible
-so all inferred constraints from the left-hand side are used for the replacement.
+As with pattern variables, universe levels and sort quality variables
+must appear linearly in the pattern.
+Sort quality variables which appear only in relevances in the replacement
+will be detected if they also appear in a relevance in the pattern, such that
+they can be substituted when the rule is applied (otherwise you will get an undeclared sort quality error).
 
    .. coqtop:: reset all warn
 
       #[universes(polymorphic)] Symbol raise@{q|u|} : forall (A : Type@{q|u}), A.
       Rewrite Rule raise_nat :=
-        @{q|u+|+} |- raise@{q|u} (forall (x : ?A), ?P) => fun (x : ?A) => raise@{q|u} ?P.
+        raise@{q|u} (forall (x : ?A), ?P) => fun (x : ?A) => raise@{q|u} ?P.
 
 Rewrite rules, type preservation, confluence and termination
 ------------------------------------------------------------
 
-Currently, rewrite rules do not ensure that types must be preserved.
-There is a superficial check that the replacement needs to be typed
-against the type inferred for the pattern (for an unclear definition of type of a pattern),
-but it is known to be incomplete and only emits a warning if failed.
-This then means that reductions using rewrite rules have no reason to preserve well-typedness at all.
-The responsibility of ensuring type preservation falls on the user entirely.
+The rewrite rules are typechecked in such a way that all substituted replacements
+have the type that the term before rewriting had (as described in :cite:`Rew24`).
+This means that the check is more stringent than ensuring the two sides have a shared type.
+This also means that the pattern is typechecked in an alternate way to the regular terms,
+where unification is more limited, which leads to rules that can respect the criterion
+but which the typechecker refuses nonetheless.
+For this reason, the typechecker only emits warnings on failure,
+letting the user take responsibility over the correctness of the rule.
 
-Similarly, neither confluence nor termination are checked by the compiler.
+Confluence, which is required for the invariants that the typechecker use,
+is currently not checked by the compiler.
+There are future plans to add a check using the triangle criterion :cite:`TotR21`.
 
-There are future plans to add a check on confluence using the triangle criterion :cite:`TotR21`
-and a more complete check on type preservation.
+Similarly, termination is not checked by the compiler.
 
 Compatibility with the eta laws
 -------------------------------
