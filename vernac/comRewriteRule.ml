@@ -366,8 +366,7 @@ and test_pattern_redex_aux env evd ~loc = function
 let warn_rewrite_rules_break_SR =
   CWarnings.create ~name:"rewrite-rules-break-SR" ~category:CWarnings.CoreCategories.rewrite_rules
     Pp.(fun reason ->
-        str "This rewrite rule breaks subject reduction" ++ spc() ++
-        surround reason ++ str ".")
+        str "This rewrite rule breaks subject reduction" ++ spc() ++ reason)
 
 let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) =
   let env = Global.env () in
@@ -464,15 +463,16 @@ let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) 
   let flags = Pretyping.no_classes_no_fail_inference_flags in
   let evd', rhs =
     try Pretyping.understand_tcc ~flags env evd ~expected_type:(OfType typ) rhs
-    with Type_errors.TypeError _ | Pretype_errors.PretypeError _ ->
-      warn_rewrite_rules_break_SR ?loc:rhs_loc (Pp.str "the replacement term doesn't have the type of the pattern");
+    with Pretype_errors.PretypeError (env', evd', e) ->
+      warn_rewrite_rules_break_SR ?loc:rhs_loc
+        Pp.(surround (str "the replacement term doesn't have the type of the pattern") ++ str "." ++ fnl () ++ Himsg.explain_pretype_error env' evd' e);
       Pretyping.understand_tcc ~flags env evd rhs
   in
 
   let evd' = Evd.minimize_universes evd' in
   let _qvars', uvars' = EConstr.universes_of_constr evd' rhs in
   let evd' = Evd.restrict_universe_context evd' (Univ.Level.Set.union uvars uvars') in
-  let fail pp = warn_rewrite_rules_break_SR ?loc:rhs_loc Pp.(str "universe inconsistency, missing constraints: " ++ pp) in
+  let fail pp = warn_rewrite_rules_break_SR ?loc:rhs_loc Pp.(surround (str "universe inconsistency") ++ str"." ++ spc() ++ str "Missing constraints: " ++ pp) in
   let () = UState.check_uctx_impl ~fail (Evd.ustate evd) (Evd.ustate evd') in
   let evd = evd' in
 
