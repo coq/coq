@@ -420,7 +420,7 @@ let of_constr env c =
   let local_env = empty_env env in
   let local_env = iterate push_unknown_rel (Environ.nb_rel env) local_env in
   let tbl = Tbl.create 57 in
-  let c = of_constr tbl local_env c in
+  let c = NewProfile.profile "HConstr.to_constr" (fun () -> of_constr tbl local_env c) () in
   dbg Pp.(fun () ->
       let stats = Tbl.stats tbl in
       let tree_size = tree_size (self c) in
@@ -434,8 +434,6 @@ let of_constr env c =
     )
     );
   c
-
-let of_constr env c = NewProfile.profile "HConstr.of_constr" (fun () -> of_constr env c) ()
 
 let kind x = x.kind
 
