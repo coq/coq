@@ -16,6 +16,7 @@ User-defined rewrite rules
 This section describes the extension of Rocq's reduction mechanisms with user-defined rewrite rules,
 as a means to extend definitional equality. It should not be confused with the :ref:`rewrite tactic <rewritingexpressions>`
 or :ref:`setoid rewriting <generalizedrewriting>` which operate on propositional equality and other relations which are defined in Rocq.
+This extension is described in :cite:`Rew24`, following the theory developed in :cite:`TotR21`.
 
 Rewrite rules need to be enabled by passing the option ``-allow-rewrite-rules``
 to the Rocq program.
@@ -49,7 +50,7 @@ Rewrite rules
   .. insertprodn rewrite_rule rewrite_rule
 
   .. prodn::
-     rewrite_rule ::= {? @univ_decl %|- } @rw_pattern => @term
+     rewrite_rule ::= @rw_pattern => @term
 
 Declares a named block of rewrite rules. The name is declared in the same namespace as constants and inductives.
 
@@ -89,7 +90,7 @@ and eliminations (non-base-case constructions for :n:`@rw_pattern`):
      | match @rw_pattern {? as @name } {? in @pattern } {? return @rw_pattern_arg } with {? | } {*| @pattern => @rw_pattern_arg } end
      rw_head_pattern ::= @ident
      | @qualid {? @univ_annot }
-     | fun {+ ({+ @name } {? : @rw_pattern_arg}) } => @rw_pattern_arg
+     | fun {+ ({+ @name } {? : @rw_pattern_arg}) } => @rw_pattern
      | forall {+ ({+ @name } {? : @rw_pattern_arg}) }, @rw_pattern_arg
      rw_pattern_arg ::= ?@name
      | _
@@ -112,7 +113,7 @@ Note that if in the replacement, the context was extended with a variable bearin
 this explicit substitution is inferred automatically (like for existential variable instantiations).
 
 
-   .. rocqtop:: all warn
+   .. rocqtop:: reset all warn
 
       Symbol raise : forall (A : Type), A.
       Rewrite Rule raise_nat :=
@@ -128,45 +129,46 @@ Universe polymorphic rules
 --------------------------
 
 Rewrite rules support universe and sort quality polymorphism.
-Universe levels and sort quality variables must be declared with the notation :n:`@{q1 q2|u1 u2+|+}`
-(the same notation as universe instance declarations);
-each variable must appear exactly once in the pattern.
-If any universe level isn't bound in the rule,
-as is often the case with the level of a pattern variable when it is a type,
-you need to make the universe instance extensible (with the final +).
-Universe level constraints, as inferred from the pattern, must imply those given,
-which in turn must imply the constraints needed for the replacement.
-You can make the declared constraints extensible
-so all inferred constraints from the left-hand side are used for the replacement.
+As with pattern variables, universe levels and sort quality variables
+must appear linearly (not more than once each) in the pattern.
+Sort quality variables which appear only in :term:`relevance marks <relevance mark>` in the replacement
+will be detected if they also appear in a relevance mark in the pattern, such that
+they can be substituted when the rule is applied (otherwise you will get an undeclared sort quality error).
 
    .. rocqtop:: reset all warn
 
       #[universes(polymorphic)] Symbol raise@{q|u|} : forall (A : Type@{q|u}), A.
       Rewrite Rule raise_nat :=
-        @{q|u+|+} |- raise@{q|u} (forall (x : ?A), ?P) => fun (x : ?A) => raise@{q|u} ?P.
+        raise@{q|u} (forall (x : ?A), ?P) => fun (x : ?A) => raise@{q|u} ?P.
 
 Rewrite rules, type preservation, confluence and termination
 ------------------------------------------------------------
 
-Currently, rewrite rules do not ensure that types must be preserved.
-There is a superficial check that the replacement needs to be typed
-against the type inferred for the pattern (for an unclear definition of type of a pattern),
-but it is known to be incomplete and only emits a warning if failed.
-This then means that reductions using rewrite rules have no reason to preserve well-typedness at all.
-The responsibility of ensuring type preservation falls on the user entirely.
+The rewrite rules are typechecked so that all substituted replacements
+have the type that the term being rewritten has (as described in :cite:`Rew24`).
+This means that the check is more stringent than ensuring the two sides have a shared type.
+This also means that the pattern is typechecked differently from regular terms,
+with an especially more restricted unification engine,
+which leads to the typechecker refusing rules that do respect the criterion.
+For this reason, the typechecker only emits warnings when it fails to verify the rule,
+letting the user take responsibility over the correctness of the rule.
 
-Similarly, neither confluence nor termination are checked by the compiler.
+Rocq currently doesn't check for confluence of the rewrite rules,
+even though it is required for the invariants that the typechecker uses.
+There are plans to add a check using the triangle criterion described in :cite:`TotR21`.
 
-There are future plans to add a check on confluence using the triangle criterion :cite:`TotR21`
-and a more complete check on type preservation.
+Rocq doesn't check for termination of the rewrite rules either.
+Indeed, non-terminating rules are generally fine except for one thing:
+the typechecker itself might not always terminate anymore.
+Unlike the previous two properties, non-termination cannot cause crashes or anomalies.
 
 Compatibility with the eta laws
 -------------------------------
 
 Currently, pattern matching against rewrite rules pattern cannot do eta-expansion or contraction,
 which means that it cannot properly match against terms of functional types or primitive records.
-As with type preservation, a check is done to test whether this may happen,
-but it is not complete (false positives) and thus only emits a warning if failed.
+Rocq checks whether this may happen, but the check is imperfect (it reports false positives).
+Therefore, the check fails by only emitting a warning, similar to the check for type preservation.
 
 Level of support
 ----------------
