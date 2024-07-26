@@ -35,6 +35,10 @@ end
 
 include Self
 
+let raw_equal a ~isRel ~kind =
+  a.isRel == isRel
+  && hasheq_kind a.kind kind
+
 let self x = x.self
 
 let refcount x = x.refcount
@@ -267,10 +271,7 @@ let rec of_constr tbl local_env c =
   match nonrel_leaf tbl c with
   | Some v -> v
   | None ->
-  let c =
     let kind = of_constr_aux tbl local_env c in
-    let self = kind_to_constr kind in
-    let self = if hasheq_kind (Constr.kind self) (Constr.kind c) then c else self in
     let hash = hash_kind kind in
     let isRel, hash = match kind with
       | Rel n ->
@@ -279,11 +280,15 @@ let rec of_constr tbl local_env c =
         uid, Hashset.Combine.combine uid hash
       | _ -> 0, hash
     in
-    { self; kind; hash; isRel; refcount = 1 }
-  in
-  match Tbl.find_opt tbl c with
-  | Some c' -> c'.refcount <- c'.refcount + 1; c'
-  | None -> Tbl.add tbl c c; c
+    match Tbl.raw_find tbl hash (fun c' -> raw_equal c' ~isRel ~kind) with
+    | Some c' -> c'.refcount <- c'.refcount + 1; c'
+    | None ->
+      let c =
+        let self = kind_to_constr kind in
+        let self = if hasheq_kind (Constr.kind self) (Constr.kind c) then c else self in
+        { self; kind; hash; isRel; refcount = 1 }
+      in
+    Tbl.add tbl c c; c
 
 and of_constr_aux tbl local_env c =
   match kind c with
