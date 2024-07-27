@@ -385,7 +385,7 @@ $(addsuffix .log,$(wildcard bugs/*.v ssr/*.v success/*.v failure/*.v stm/*.v mic
 	@if ! grep -q -F "Error!" $@; then echo "CHECK     $< $(call get_coqchk_prog_args_in_parens,"$<")"; fi
 	$(HIDE)if ! grep -q -F "Error!" $@; then { \
 	  $(call WITH_TIMER,$(patsubst %.v.log,%.chk.log,$@),\
-	    $(coqchk) -silent $(call get_coqchk_prog_args,"$<") \
+	    $(coqchk) $(call get_coqchk_prog_args,"$<") \
 	      $(if $(findstring modules/,$<), \
 		-R modules Mods -norec Mods.$(shell basename $< .v), \
 		-Q $(shell dirname $<) "" -norec $(shell basename $< .v)) 2>&1); R=$$?; \
