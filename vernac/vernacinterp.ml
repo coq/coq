@@ -181,8 +181,6 @@ end
 let fs_intern = Intern.fs_intern
 
 let interp_qed_delayed_proof ~proof ~st ~control (CAst.{loc; v = pe } as e) : Vernacstate.Interp.t =
-  (* Synterp duplication of control handling bites us here... *)
-  let control = VernacControl.from_syntax control in
   NewProfile.profile "interp-delayed-qed" (fun () ->
       interp_gen ~verbosely:false ~st
         ~interp_fn:(interp_qed_delayed_control ~proof ~control) e)

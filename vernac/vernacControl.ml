@@ -81,6 +81,8 @@ let with_fail f : (Loc.t option * Pp.t, 'a) result =
 
 type ('st0,'st) with_local_state = { with_local_state : 'a. 'st0 -> (unit -> 'a) -> 'st * 'a }
 
+let trivial_state = { with_local_state = fun () f -> (), f () }
+
 let with_fail ~loc ~with_local_state st0 f =
   let transient_st, res = with_local_state.with_local_state st0 (fun () -> with_fail f) in
   match res with

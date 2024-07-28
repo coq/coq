@@ -21,6 +21,8 @@ type ('st0,'st) with_local_state = { with_local_state : 'a. 'st0 -> (unit -> 'a)
     capture the state produced by running [f] and revert the global state afterwards.
 *)
 
+val trivial_state : (unit,unit) with_local_state
+
 (** [under_control ~loc ~with_local_state control ~noop f]
     runs [f ()] in the context given by the [control].
 
