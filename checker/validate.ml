@@ -130,7 +130,24 @@ let val_dyn mem ctx o =
 
 open Values
 
-let rec val_gen v mem ctx o = match v with
+type memory = {
+  mem : obj LargeArray.t;
+  seen : value list LargeArray.t;
+}
+
+let rec val_gen v mem ctx o = match o with
+  | Ptr p ->
+    let seen = LargeArray.get mem.seen p in
+    if List.exists (fun v' -> v' == v) seen then ()
+    else begin
+      (* Setting before we recurse means we allow recursive values.
+         Do we care? *)
+      LargeArray.set mem.seen p (v::seen);
+      val_gen_aux v mem ctx o
+    end
+  | Int _ | Atm _ | Fun _ -> val_gen_aux v mem ctx o
+
+and val_gen_aux v mem ctx o = match v with
   | Tuple (name,vs) -> val_tuple ~name vs mem ctx o
   | Sum (name,cc,vv) -> val_sum name cc vv mem ctx o
   | Array v -> val_array v mem ctx o
@@ -138,12 +155,12 @@ let rec val_gen v mem ctx o = match v with
   | Opt v -> val_sum "option" 1 [|[|v|]|] mem ctx o
   | Int -> if not (is_int mem o) then fail mem ctx o "expected an int"
   | String ->
-    (try val_tag Obj.string_tag mem ctx o
+    (try val_tag Obj.string_tag mem.mem ctx o
      with Failure _ -> fail mem ctx o "expected a string")
   | Any -> ()
   | Fail s -> fail mem ctx o ("unexpected object " ^ s)
   | Annot (s,v) -> val_gen v mem (ctx/CtxAnnot s) o
-  | Dyn -> val_dyn mem ctx o
+  | Dyn -> val_dyn mem.mem ctx o
   | Proxy { contents = v } -> val_gen v mem ctx o
   | Int64 -> val_int64 mem ctx o
   | Float64 -> val_float64 mem ctx o
@@ -158,12 +175,12 @@ and val_tuple ?name vs mem ctx o =
   in
   let n = Array.length vs in
   let val_fld i v =
-    val_gen v mem (ctx/(CtxField i)) (field mem o i) in
-  val_block mem ctx o;
-  if size mem o = n then Array.iteri val_fld vs
+    val_gen v mem (ctx/(CtxField i)) (field mem.mem o i) in
+  val_block mem.mem ctx o;
+  if size mem.mem o = n then Array.iteri val_fld vs
   else
     fail mem ctx o
-      ("tuple size: found "^string_of_int (size mem o)^
+      ("tuple size: found "^string_of_int (size mem.mem o)^
           ", expected "^string_of_int n)
 
 (* Check that the object is either a constant constructor of tag < cc,
@@ -175,9 +192,9 @@ and val_tuple ?name vs mem ctx o =
 and val_sum name cc vv mem ctx o =
   let ctx = ctx/CtxType name in
   if is_block mem o then
-    (val_block mem ctx o;
+    (val_block mem.mem ctx o;
     let n = Array.length vv in
-    let i = tag mem o in
+    let i = tag mem.mem o in
     let ctx' = if n=1 then ctx else ctx/CtxTag i in
     if i < n then val_tuple vv.(i) mem ctx' o
     else fail mem ctx' o ("sum: unexpected tag"))
@@ -189,18 +206,26 @@ and val_sum name cc vv mem ctx o =
 
 (* Check the o is an array of values satisfying f. *)
 and val_array v mem ctx o =
-  val_block mem (ctx/CtxType "array") o;
-  for i = 0 to size mem o - 1 do
-    val_gen v mem ctx (field mem o i)
+  val_block mem.mem (ctx/CtxType "array") o;
+  for i = 0 to size mem.mem o - 1 do
+    val_gen v mem ctx (field mem.mem o i)
   done
 
 and val_int64 mem ctx o =
-  if not (is_int64 mem o) then
+  if not (is_int64 mem.mem o) then
     fail mem ctx o "not a 63-bit unsigned integer"
 
 and val_float64 mem ctx o =
-  if not (is_float64 mem o) then
+  if not (is_float64 mem.mem o) then
     fail mem ctx o "not a 64-bit float"
+
+let val_gen v mem ctx o =
+  let mem = {
+    mem;
+    seen = LargeArray.make (LargeArray.length mem) [];
+  }
+  in
+  val_gen v mem ctx o
 
 let print_frame = function
 | CtxType t -> t
