@@ -510,7 +510,8 @@ vok: $(VOFILES:%.vo=%.vok)
 .PHONY: vok
 
 validate: $(VOFILES)
-	$(TIMER) $(COQCHK) $(COQCHKFLAGS) $(COQLIBS_NOML) $^
+	$(TIMER) $(COQCHK) $(COQCHKFLAGS) $(COQLIBS_NOML) $(PROFILE_ARG) $^
+	$(HIDE)$(PROFILE_ZIP)
 .PHONY: validate
 
 only: $(TGTS)

@@ -436,6 +436,11 @@ let parse chan =
   let () = fill ans 0 [] in
   (ans.(0), memory)
 
+let parse chan : _ * _ =
+  NewProfile.profile "analyze"
+    (fun () -> parse chan)
+    ()
+
 end
 
 module IChannel =
@@ -504,3 +509,6 @@ let instantiate (p, mem) =
     | String _ -> ()
   done;
   get_data p
+
+let instantiate pmem : Obj.t =
+  NewProfile.profile "instantiate" (fun () -> instantiate pmem) ()
