@@ -79,7 +79,11 @@ let check_constant_declaration env opac kn cb opacify =
   | Some _ | None -> opac
 
 let check_constant_declaration env opac kn cb opacify =
-  let opac = check_constant_declaration env opac kn cb opacify in
+  let opac = NewProfile.profile "check_constant" ~args:(fun () ->
+      [("name", `String (Constant.to_string kn))])
+      (fun () -> check_constant_declaration env opac kn cb opacify)
+      ()
+  in
   Environ.add_constant kn cb env, opac
 
 let check_quality_mask env qmask lincheck =
@@ -297,4 +301,8 @@ and check_signature env opac sign mp_mse res opacify = match sign with
       in
       opac
 
-let check_module env opac mp mb = check_module env opac mp mb Cset.empty
+let check_module env opac mp mb =
+  NewProfile.profile "check_module"
+    ~args:(fun () -> [("name", `String (ModPath.to_string mp))])
+    (fun () -> check_module env opac mp mb Cset.empty)
+    ()

@@ -127,6 +127,11 @@ let init_load_path () =
   (* then current directory *)
   add_path ~unix_path:"." ~coq_root:Check.default_root_prefix
 
+let init_load_path () : unit =
+  NewProfile.profile "init_load_path"
+    init_load_path
+    ()
+
 let impredicative_set = ref false
 let set_impredicative_set () = impredicative_set := true
 
@@ -188,6 +193,7 @@ let print_usage_channel co command =
 \n\
 \n  -d (d1,..,dn)               enable specified debug messages\
 \n  -debug                      enable all debug messages\
+\n  -profile file               output profiling info to file\
 \n  -where                      print coqchk's standard library location and exit\
 \n  -v, --version               print coqchk version and exit\
 \n  -o, --output-context        print the list of assumptions\
@@ -323,6 +329,8 @@ let explain_exn = function
                report ())
   | e -> CErrors.print e (* for anomalies and other uncaught exceptions *)
 
+let profile = ref None
+
 let parse_args argv =
   let rec parse = function
     | [] -> ()
@@ -355,6 +363,12 @@ let parse_args argv =
       parse rem
     | "-debug" :: rem -> CDebug.set_debug_all true; parse rem
 
+    | "-profile" :: s :: rem ->
+      profile := Some s;
+      parse rem
+
+    | "-profile" :: [] -> usage 1
+
     | "-where" :: _ ->
       let env = Boot.Env.init () in
       let coqlib = Boot.Env.coqlib env |> Boot.Path.to_string in
@@ -383,6 +397,13 @@ let parse_args argv =
   in
   parse (List.tl (Array.to_list argv))
 
+let init_profile ~file =
+  let ch = open_out file in
+  let fname = Filename.basename file in
+  NewProfile.init { output = Format.formatter_of_out_channel ch; fname; };
+  at_exit (fun () ->
+      NewProfile.finish ();
+      close_out ch)
 
 (* XXX: At some point we need to either port the checker to use the
    feedback system or to remove its use completely. *)
@@ -390,13 +411,16 @@ let init_with_argv argv =
   let _fhandle = Feedback.(add_feeder (console_feedback_listener Format.err_formatter)) in
   try
     parse_args argv;
+    Option.iter (fun file -> init_profile ~file) !profile;
     if CDebug.(get_flag misc) then Printexc.record_backtrace true;
     Flags.if_verbose print_header ();
     if not !boot then init_load_path ();
     (* additional loadpath, given with -R/-Q options *)
-    List.iter
-      (fun (unix_path, coq_root) -> add_rec_path ~unix_path ~coq_root)
-      (List.rev !includes);
+    NewProfile.profile "add_load_paths" (fun () ->
+        List.iter
+          (fun (unix_path, coq_root) -> add_rec_path ~unix_path ~coq_root)
+          (List.rev !includes))
+      ();
     includes := [];
     make_senv ()
   with e ->
