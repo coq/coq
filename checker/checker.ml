@@ -186,7 +186,8 @@ let print_usage_channel co command =
 \n  -admit module               load module and dependencies without checking\
 \n  -norec module               check module but admit dependencies without checking\
 \n\
-\n  -debug                      enable debugging info\
+\n  -d (d1,..,dn)               enable specified debug messages\
+\n  -debug                      enable all debug messages\
 \n  -where                      print coqchk's standard library location and exit\
 \n  -v, --version               print coqchk version and exit\
 \n  -o, --output-context        print the list of assumptions\
@@ -349,6 +350,9 @@ let parse_args argv =
     | ("-Q"|"-R") :: d :: p :: rem -> set_include d p;parse rem
     | ("-Q"|"-R") :: ([] | [_]) -> usage 1
 
+    | "-d" :: s :: rem ->
+      CDebug.set_flags s;
+      parse rem
     | "-debug" :: rem -> CDebug.set_debug_all true; parse rem
 
     | "-where" :: _ ->
