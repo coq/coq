@@ -137,11 +137,12 @@ Summary of locality attributes in a section
 -------------------------------------------
 
 This table sums up the effect of locality attributes on the scope of vernacular
-commands in a section, when outside the section where they were entered. A cross
-(❌) marks an unsupported attribute, which will provoke a compilation error. In
-this table, "not available", means that the command has no effect outside the
-section it was entered, while "available" means that the effects of the command
-persists outside the section.
+commands in a section, when outside the section where they were entered. In the
+following table:
+
+* a cross (❌) marks an unsupported attribute (compilation error);
+* "not available" means that the command has no effect outside the section it was entered;
+* "available" means that the effect of the command persists outside the section.
 
 A similar table for :cmd:`Module` can be found
 :ref:`here <visibility-attributes-modules>`.
@@ -161,7 +162,13 @@ A similar table for :cmd:`Module` can be found
     - ❌
     - ❌
 
-  * - :cmd:`Notation`
+  * - :cmd:`Ltac`
+    - :attr:`local`
+    - not available
+    - ❌
+    - ❌
+
+  * - :cmd:`Ltac2`
     - :attr:`local`
     - not available
     - ❌
@@ -173,37 +180,7 @@ A similar table for :cmd:`Module` can be found
     - ❌
     - ❌
 
-  * - ``Hints`` (and :cmd:`Instance`)
-    - :attr:`local`
-    - not available
-    - ❌
-    - ❌
-
-  * - :cmd:`Set` or :cmd:`Unset` a flag
-    - :attr:`local`
-    - not available
-    - available
-    - available
-
-  * - :cmd:`Canonical Structure`
-    - :attr:`global`
-    - not available
-    - ❌
-    - available
-
-  * - :cmd:`Coercion`
-    - :attr:`global`
-    - not available
-    - ❌
-    - available
-
-  * - :cmd:`Ltac`
-    - :attr:`local`
-    - not available
-    - ❌
-    - ❌
-
-  * - :cmd:`Ltac2`
+  * - :cmd:`Notation`
     - :attr:`local`
     - not available
     - ❌
@@ -220,6 +197,30 @@ A similar table for :cmd:`Module` can be found
     - not available
     - ❌
     - ❌
+
+  * - :cmd:`Coercion`
+    - :attr:`global`
+    - not available
+    - ❌
+    - available
+
+  * - :cmd:`Canonical Structure`
+    - :attr:`global`
+    - not available
+    - ❌
+    - available
+
+  * - ``Hints`` (and :cmd:`Instance`)
+    - :attr:`local`
+    - not available
+    - ❌
+    - ❌
+
+  * - :cmd:`Set` or :cmd:`Unset` a flag
+    - :attr:`local`
+    - not available
+    - available
+    - available
 
 .. _Admissible-rules-for-global-environments:
 

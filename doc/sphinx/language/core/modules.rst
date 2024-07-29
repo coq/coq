@@ -679,13 +679,20 @@ Summary of locality attributes in a module
 ------------------------------------------
 
 This table sums up the effect of locality attributes on the scope of vernacular
-commands in a module, when outside the module where they were entered. A cross
-(❌) marks an unsupported attribute, which will provoke a compilation error. In
-this table, "not available", means that the command has no effect outside the
-module it was entered and "short name when imported" means that the command
-always has effects outside the module but if the module (or the command, via
-selective importation, when available) is not imported, the corresponding
-identifier must be qualified in order to be used.
+commands in a module, when outside the module where they were entered. In the
+following table:
+
+* a cross (❌) marks an unsupported attribute (compilation error);
+* "not available" means that the command has no effect outside the module it was entered;
+* "when imported" means that the command has effect outside the module if, and
+  only if, the module (or the command, via selective importation) is imported;
+* "short name when imported" means that the command has effects outside the module;
+  if the module (or command, via selective importation) is not imported, the
+  associated identifiers must be qualified;
+* "qualified name" means that the command has effects outside the module, but
+  the corresponding identifier may only be referred to with a qualified name;
+* "always" means that the command always has effects outside the module (even if
+  it is not imported).
 
 A similar table for :cmd:`Section` can be found
 :ref:`here<visibility-attributes-sections>`.
@@ -709,46 +716,6 @@ A similar table for :cmd:`Section` can be found
 
       when imported
 
-  * - :cmd:`Notation`
-    - :attr:`global`
-    - not available
-    - ❌
-    - when imported
-
-  * - :cmd:`Notation (abbreviation)`
-    - :attr:`global`
-    - not available
-    - ❌
-    - short name
-
-      when imported
-
-  * - ``Hints`` (and :cmd:`Instance`)
-    - :attr:`export`
-    - not available
-    - when imported
-    - always
-
-  * - :cmd:`Set` or :cmd:`Unset` a flag
-    - :attr:`local`
-    - not available
-    - when imported
-    - always
-
-  * - :cmd:`Canonical Structure`
-    - :attr:`local`
-
-      or :attr:`global`
-    - when imported
-    - ❌
-    - when imported
-
-  * - :cmd:`Coercion`
-    - :attr:`global`
-    - not available
-    - ❌
-    - when imported
-
   * - :cmd:`Ltac`
     - :attr:`global`
     - not available
@@ -765,6 +732,20 @@ A similar table for :cmd:`Section` can be found
 
       when imported
 
+  * - :cmd:`Notation (abbreviation)`
+    - :attr:`global`
+    - not available
+    - ❌
+    - short name
+
+      when imported
+
+  * - :cmd:`Notation`
+    - :attr:`global`
+    - not available
+    - ❌
+    - when imported
+
   * - :cmd:`Tactic Notation`
     - :attr:`global`
     - not available
@@ -776,6 +757,31 @@ A similar table for :cmd:`Section` can be found
     - not available
     - ❌
     - when imported
+
+  * - :cmd:`Coercion`
+    - :attr:`global`
+    - not available
+    - ❌
+    - when imported
+
+  * - :cmd:`Canonical Structure`
+    - :attr:`global`
+
+    - when imported
+    - ❌
+    - when imported
+
+  * - ``Hints`` (and :cmd:`Instance`)
+    - :attr:`export`
+    - not available
+    - when imported
+    - always
+
+  * - :cmd:`Set` or :cmd:`Unset` a flag
+    - :attr:`local`
+    - not available
+    - when imported
+    - always
 
 Typing Modules
 ------------------
