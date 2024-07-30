@@ -375,7 +375,7 @@ let id_map_redex _ sigma ~before:_ ~after = sigma, after
 
 (* Invariants expected from the arguments:
     ⊢ rdx : rdx_ty
-    pattern_id : rdx_ty ⊢ pred : Type@{s}
+    pattern_id : rdx_ty | #1 : rdx_ty ⊢ pred : Type@{s}
     ⊢ new_rdx : rdx_ty
     ⊢ c : c_ty
     ⊢ c_ty ≡ EQN rdx_ty rdx new_rdx
@@ -388,9 +388,6 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
   let env = pf_env gl in
   let beta = Reductionops.clos_norm_flags RedFlags.beta env sigma in
   let sigma, new_rdx = map_redex env sigma ~before:rdx ~after:new_rdx in
-  let sigma, p = (* The resulting goal *)
-    Evarutil.new_evar env sigma (beta (EConstr.Vars.subst1 new_rdx pred)) in
-  let pred = EConstr.mkNamedLambda sigma (make_annot pattern_id ERelevance.relevant) rdx_ty pred in
   let sigma, elim =
     let sort = Tacticals.elimination_sort_of_goal gl in
     match Equality.eq_elimination_ref (dir = L2R) sort with
@@ -406,20 +403,32 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
       let c1' = Global.constant_of_delta_kn (Constant.canonical (Constant.make2 mp l')) in
       Evd.fresh_global env sigma (ConstRef c1')
   in
+  (* The resulting goal *)
+  let sigma, p = Evarutil.new_evar env sigma (beta (EConstr.Vars.subst1 new_rdx pred)) in
   (* We check the proof is well typed. We assume that the type of [elim] is of
      the form [forall (A : Type) (x : A) (P : A -> Type@{s}), T] s.t. the only
      universes to unify are by checking the [A] and [P] arguments. *)
-  let sigma =
+  let sigma, p, pred =
     try
       let open EConstr in
       let elimT = Retyping.get_type_of env sigma elim in
       let (idA, tA, elimT) = destProd sigma elimT in
       let (_, _, elimT) = destProd sigma elimT in
       let (idP, tP, _) = destProd sigma elimT in
-      let sigma = Typing.check env sigma rdx_ty tA in
+      let sigma = Typing.check_actual_type env sigma (Retyping.get_judgment_of env sigma rdx_ty) tA in
       let tP = mkLetIn (idA, rdx_ty, tA, mkLetIn (anonR, mkProp, mkType Univ.Universe.type1, tP)) in
-      let sigma = Typing.check env sigma pred tP in
-      sigma
+      (* Do not fully retype pred, we already know that the domain is well-typed.
+         The way this is written makes it easier to profile which part of
+         typing is takes time. *)
+      let sigma, pred =
+        let id = make_annot (Name pattern_id) ERelevance.relevant in
+        let penv = EConstr.push_rel (LocalAssum (id, rdx_ty)) env in
+        let pred = Vars.subst_var sigma pattern_id pred in
+        let sigma, predty = Typing.type_of penv sigma pred in
+        sigma, { Environ.uj_val = mkLambda (id, rdx_ty, pred); uj_type = mkProd (id, rdx_ty, predty) }
+      in
+      let sigma = Typing.check_actual_type env sigma pred tP in
+      sigma, p, pred.uj_val
     with
     | Pretype_errors.PretypeError (env, sigma, te) -> raise (PRtype_error (Some (env, sigma, te)))
     | e when CErrors.noncritical e -> raise (PRtype_error None)
