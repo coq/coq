@@ -131,8 +131,9 @@ sig
   (** Try to get a level out of a universe, returns [None] if it
       is an algebraic universe. *)
 
-  val levels : t -> Level.Set.t
-  (** Get the levels inside the universe, forgetting about increments *)
+  val levels : ?init:Level.Set.t -> t -> Level.Set.t
+  (** Get the levels inside the universe, forgetting about increments,
+      and add them to [init] (default empty) *)
 
   val super : t -> t
   (** The universe strictly above *)

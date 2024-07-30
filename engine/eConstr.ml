@@ -787,35 +787,6 @@ let add_universes_of_instance sigma (qs,us) u =
   in
   qs, Univ.Level.Set.union us us'
 
-let fold_annot_relevance f acc na =
-  f acc na.Context.binder_relevance
-
-let fold_case_under_context_relevance f acc (nas,_) =
-  Array.fold_left (fold_annot_relevance f) acc nas
-
-let fold_rec_declaration_relevance f acc (nas,_,_) =
-  Array.fold_left (fold_annot_relevance f) acc nas
-
-let fold_constr_relevance sigma f acc c =
-  match kind sigma c with
-  | Rel _ | Var _ | Meta _ | Evar _
-  |  Sort _ | Cast _ | App _
-  | Const _ | Ind _ | Construct _ | Proj _
-  | Int _ | Float _ | String _ | Array _ -> acc
-
-  | Prod (na,_,_) | Lambda (na,_,_) | LetIn (na,_,_,_) ->
-    fold_annot_relevance f acc na
-
-  | Case (_,_u,_params,(ret,r),_iv,_v,brs) ->
-    let acc = f acc r in
-    let acc = fold_case_under_context_relevance f acc ret in
-    let acc = CArray.fold_left (fold_case_under_context_relevance f) acc brs in
-    acc
-
-  | Fix (_,data)
-  | CoFix (_,data) ->
-    fold_rec_declaration_relevance f acc data
-
 let add_relevance sigma (qs,us as v) r =
   let open Sorts in
   (* NB this normalizes above_prop to Relevant which makes it disappear *)
@@ -823,31 +794,36 @@ let add_relevance sigma (qs,us as v) r =
   | Irrelevant | Relevant -> v
   | RelevanceVar q -> QVar.Set.add q qs, us
 
-let universes_of_constr sigma c =
+let univs_and_qvars_visitor sigma =
   let open Univ in
+  let visit_sort (qs,us as acc) s =
+    match ESorts.kind sigma s with
+    | Sorts.Type u ->
+      qs, Universe.levels ~init:us u
+    | Sorts.QSort (q,u) ->
+      Sorts.QVar.Set.add q qs, Universe.levels ~init:us u
+    | Sorts.(SProp | Prop | Set) -> acc
+  in
+  let visit_instance acc u = add_universes_of_instance sigma acc u in
+  let visit_relevance acc r = add_relevance sigma acc r in
+  {
+    Vars.visit_sort = visit_sort;
+    visit_instance = visit_instance;
+    visit_relevance = visit_relevance;
+  }
+
+let universes_of_constr ?(init=Sorts.QVar.Set.empty,Univ.Level.Set.empty) sigma c =
+  let visit = univs_and_qvars_visitor sigma in
   let rec aux s c =
-    let s = fold_constr_relevance sigma (add_relevance sigma) s c in
-    match kind sigma c with
-    | Const (_, u) | Ind (_, u) | Construct (_,u) -> add_universes_of_instance sigma s u
-    | Sort u -> begin match ESorts.kind sigma u with
-        | Type u ->
-          Util.on_snd (Level.Set.fold Level.Set.add (Universe.levels u)) s
-        | QSort (q, u) ->
-          let qs, us = s in
-          Sorts.QVar.Set.add q qs, Level.Set.union us (Universe.levels u)
-        | SProp | Prop | Set -> s
-      end
+    let kc = kind sigma c in
+    let s = Vars.visit_kind_univs visit s kc in
+    match kc with
     | Evar (k, args) ->
       let concl = Evd.evar_concl (Evd.find_undefined sigma k) in
       fold sigma aux (aux s concl) c
-    | Array (u,_,_,_) ->
-      let s = add_universes_of_instance sigma s u in
-      fold sigma aux s c
-    | Case (_,u,_,_,_,_,_) ->
-      let s = add_universes_of_instance sigma s u in
-      fold sigma aux s c
     | _ -> fold sigma aux s c
-  in aux (Sorts.QVar.Set.empty,Level.Set.empty) c
+  in
+  aux init c
 
 open Context
 open Environ

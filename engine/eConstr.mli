@@ -367,7 +367,7 @@ val fold_with_binders : Evd.evar_map -> ('a -> 'a) -> ('a -> 'b -> t -> 'b) -> '
 
 (** Gather the universes transitively used in the term, including in the
    type of evars appearing in it. *)
-val universes_of_constr : Evd.evar_map -> t -> Sorts.QVar.Set.t * Univ.Level.Set.t
+val universes_of_constr : ?init:Sorts.QVar.Set.t * Univ.Level.Set.t -> Evd.evar_map -> t -> Sorts.QVar.Set.t * Univ.Level.Set.t
 
 (** {6 Substitutions} *)
 
