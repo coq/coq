@@ -350,8 +350,6 @@ let intern_from_file ~intern_mode ~enable_VM (dir, f) =
       in
       (* Verification of the final checksum *)
       let () = close_in ch in
-      let ch = open_in_bin f in
-      let () = close_in ch in
       let () = System.check_caml_version ~caml:sd.md_ocaml ~file:f in
       if dir <> sd.md_name then
         CErrors.user_err
