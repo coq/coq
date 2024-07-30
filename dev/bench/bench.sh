@@ -70,8 +70,8 @@ check_variable () {
 : "${old_ocaml_version:=4.14.1}"
 : "${new_ocaml_flambda:=0}"
 : "${old_ocaml_flambda:=0}"
-: "${new_coq_repository:=$CI_REPOSITORY_URL}"
-: "${old_coq_repository:=$CI_REPOSITORY_URL}"
+: "${new_coq_repository:=${CI_REPOSITORY_URL:-.}}"
+: "${old_coq_repository:=${CI_REPOSITORY_URL:-.}}"
 : "${new_coq_opam_archive_git_uri:=https://github.com/coq/opam-coq-archive.git}"
 : "${old_coq_opam_archive_git_uri:=https://github.com/coq/opam-coq-archive.git}"
 : "${new_coq_opam_archive_git_branch:=master}"
@@ -88,8 +88,20 @@ check_variable () {
 : "${new_opam_override_urls:=}"
 : "${old_opam_override_urls:=}"
 
-: "${new_coq_commit:=$(git rev-parse HEAD^2)}"
-: "${old_coq_commit:=$(git merge-base HEAD^1 $new_coq_commit)}"
+if [ "$CI" ]; then
+  : "${new_coq_commit:=$(git rev-parse HEAD^2)}"
+  : "${old_coq_commit:=$(git merge-base HEAD^1 $new_coq_commit)}"
+else
+  echo New coq commit:
+  read -r new_coq_commit
+  new_coq_commit=$(git rev-parse "$new_coq_commit")
+  echo "new_coq_commit=$new_coq_commit"
+
+  echo Old coq commit:
+  read -r old_coq_commit
+  old_coq_commit=$(git rev-parse "$old_coq_commit")
+  echo "old_coq_commit=$old_coq_commit"
+fi
 
 new_ocaml_switch=ocaml-base-compiler.$new_ocaml_version
 old_ocaml_switch=ocaml-base-compiler.$old_ocaml_version
@@ -716,7 +728,7 @@ for f in fast_table.html slow_table.html timings_table.html; do
 done
 fi
 
-echo "INFO: workspace = ${CI_JOB_URL}/artifacts/browse/${bench_dirname}"
+echo "INFO: workspace = ${CI_JOB_URL:-.}/artifacts/browse/${bench_dirname}"
 
 # Print the final results.
 if [ -z "$installable_coq_opam_packages" ]; then
@@ -732,7 +744,7 @@ rendered_results="$($render_results "$log_dir" $num_of_iterations $new_coq_commi
 echo "${rendered_results}"
 echo "${rendered_results}" > $timings/bench_summary
 
-echo "INFO: per line timing: ${CI_JOB_URL}/artifacts/browse/${bench_dirname}/html/"
+echo "INFO: per line timing: ${CI_JOB_URL:-.}/artifacts/browse/${bench_dirname}/html/"
 
 cd "$coq_dir"
 echo INFO: Old Coq version
