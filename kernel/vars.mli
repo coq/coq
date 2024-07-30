@@ -190,8 +190,8 @@ open UVars
 
 (** Level substitutions for polymorphism. *)
 
-val subst_univs_level_constr : sort_level_subst -> constr -> constr
-val subst_univs_level_context : sort_level_subst -> Constr.rel_context -> Constr.rel_context
+val subst_univs_level_constr : ?subst_rel:(Sorts.relevance -> Sorts.relevance) -> sort_level_subst -> constr -> constr
+val subst_univs_level_context : ?subst_rel:(Sorts.relevance -> Sorts.relevance) -> sort_level_subst -> Constr.rel_context -> Constr.rel_context
 
 (** Instance substitution for polymorphism. *)
 val subst_instance_constr : Instance.t -> constr -> constr
@@ -206,6 +206,9 @@ val map_constr_relevance : (Sorts.relevance -> Sorts.relevance) -> Constr.t -> C
 val sort_and_universes_of_constr : constr -> Sorts.QVar.Set.t * Univ.Level.Set.t
 
 val universes_of_constr : constr -> Univ.Level.Set.t
+
+val test_sort_and_universes :
+  (rel:bool -> Sorts.QVar.t -> unit) -> (sort:bool -> Univ.Level.t -> unit) -> types -> unit
 
 (** {3 Low-level cached lift type} *)
 

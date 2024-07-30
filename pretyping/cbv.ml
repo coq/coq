@@ -53,7 +53,7 @@ type cbv_value =
   | CONSTRUCT of constructor UVars.puniverses * cbv_value array
   | PRIMITIVE of CPrimitives.t * pconstant * cbv_value array
   | ARRAY of UVars.Instance.t * cbv_value Parray.t * cbv_value
-  | SYMBOL of { cst: Constant.t UVars.puniverses; unfoldfix: bool; rules: Declarations.rewrite_rule list; stk: cbv_stack }
+  | SYMBOL of { cst: Constant.t UVars.puniverses; unfoldfix: bool; rules: Declarations.machine_rewrite_rule list; stk: cbv_stack }
 
 (* type of terms with a hole. This hole can appear only under App or Case.
  *   TOP means the term is considered without context
@@ -173,7 +173,7 @@ end)
 
 type cbv_infos = {
   env : Environ.env;
-  tab : (cbv_value, Empty.t, bool * Declarations.rewrite_rule list) Declarations.constant_def KeyTable.t;
+  tab : (cbv_value, Empty.t, bool * Declarations.machine_rewrite_rule list) Declarations.constant_def KeyTable.t;
   reds : RedFlags.reds;
   sigma : Evd.evar_map;
   strong : bool;
@@ -787,6 +787,10 @@ and cbv_match_arg_pattern_lift info env ctx n psubst p t =
   cbv_match_arg_pattern info env ctx psubst p
     (cbv_stack_term info TOP env t)
 
+and cbv_match_arg_pattern_rel_lift info env ctx n psubst (io, p) (na, t) =
+  let psubst = Sorts.relevance_match io na.Context.binder_relevance psubst in
+  cbv_match_arg_pattern_lift info env ctx n psubst p t
+
 and match_sort ps s subst =
   match Sorts.pattern_match ps s subst with
   | Some subst -> subst
@@ -830,8 +834,8 @@ and cbv_match_rigid_arg_pattern info env ctx psubst p t =
     let ctx' = apply_env_context env ctx' in
     let tys = Array.of_list ntys in
     let contexts_upto = Array.init np (fun i -> List.lastn i ctx' @ ctx) in
-    let psubst = Array.fold_left3_i (fun i psubst ctx pty (_, ty) -> cbv_match_arg_pattern_lift info env ctx i psubst pty ty) psubst contexts_upto ptys tys in
-    let psubst = cbv_match_arg_pattern_lift info env (ctx' @ ctx) np psubst pbod body in
+    let psubst = Array.fold_left3_i (fun i psubst ctx iopty naty -> cbv_match_arg_pattern_rel_lift info env ctx i psubst iopty naty) psubst contexts_upto ptys tys in
+    let psubst = cbv_match_arg_pattern_lift info env (ctx' @ ctx) np psubst (ERigid pbod) body in
     psubst
   | PHProd (ptys, pbod), PROD (na, ty, body, env) ->
     let ntys, _ = Term.decompose_prod body in
@@ -844,7 +848,7 @@ and cbv_match_rigid_arg_pattern info env ctx psubst p t =
     let tys = Array.of_list ((na, ty) :: List.rev ntys) in
     let na = Array.length tys in
     let contexts_upto = Array.init na (fun i -> List.lastn i ctx' @ ctx) in
-    let psubst = Array.fold_left3_i (fun i psubst ctx pty (_, ty) -> cbv_match_arg_pattern_lift info env ctx i psubst pty ty) psubst contexts_upto ptys tys in
+    let psubst = Array.fold_left3_i (fun i psubst ctx iopty naty -> cbv_match_arg_pattern_rel_lift info env ctx i psubst iopty naty) psubst contexts_upto ptys tys in
     let psubst = cbv_match_arg_pattern_lift info env (ctx' @ ctx) na psubst pbod body in
     psubst
   | (PHInd _ | PHConstr _ | PHRel _ | PHInt _ | PHFloat _ | PHString _ | PHSort _ | PHSymbol _ | PHLambda _ | PHProd _), _ -> raise PatternFailure
@@ -868,13 +872,12 @@ and cbv_apply_rule info env ctx psubst es stk =
         let usedpargs, rempargs = Array.chop na pargs in
         let psubst = Array.fold_left2 (cbv_match_arg_pattern info env ctx) psubst usedpargs args in
         cbv_apply_rule info env ctx psubst (PEApp rempargs :: e) s
-  | Declarations.PECase (pind, pu, pret, pbrs) :: e, CASE (u, pms, (p, _), brs, iv, ci, env, s) ->
+  | Declarations.PECase (pind, pret, pbrs) :: e, CASE (u, pms, (p, _), brs, iv, ci, env, s) ->
       if not @@ Ind.CanOrd.equal pind ci.ci_ind then raise PatternFailure;
       let specif = Inductive.lookup_mind_specif info.env ci.ci_ind in
       let ntys_ret = Inductive.expand_arity specif (ci.ci_ind, u) pms (fst p) in
       let ntys_ret = apply_env_context env ntys_ret in
       let ntys_brs = Inductive.expand_branch_contexts specif u pms brs in
-      let psubst = match_instance pu u psubst in
       let brs = Array.map2 (fun ctx' br -> List.length ctx', ctx' @ ctx, (snd br)) ntys_brs brs in
       let psubst = cbv_match_arg_pattern_lift info env (ntys_ret @ ctx) (List.length ntys_ret) psubst pret (snd p) in
       let psubst = Array.fold_left2 (fun psubst pat (n, ctx, br) -> cbv_match_arg_pattern_lift info env (apply_env_context env ctx) n psubst pat br) psubst pbrs brs in

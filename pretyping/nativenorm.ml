@@ -287,7 +287,7 @@ and nf_prod env sigma (na, dom, codom) =
   let vn = mk_rel_accu (nb_rel env) in
   let env = push_rel (LocalAssum (na, dom)) env in
   let codom, scodom = nf_type_sort env sigma (apply codom vn) in
-  mkProd (na, dom, codom), destSort (Typeops.type_of_product env na sdom scodom)
+  mkProd (na, dom, codom), Typeops.sort_of_product env sdom scodom
 
 and nf_atom env sigma atom =
   match atom with
