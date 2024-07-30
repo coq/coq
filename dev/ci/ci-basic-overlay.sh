@@ -492,18 +492,14 @@ project itauto "https://gitlab.inria.fr/fbesson/itauto" "master"
 ########################################################################
 # Mathcomp-word
 ########################################################################
-project mathcomp_word "https://github.com/jasmin-lang/coqword" "v2.2"
+project mathcomp_word "https://github.com/jasmin-lang/coqword" "main"
 # Contact @vbgl, @strub on github
-# go back to "main" and change dependency to MC 2 when
-# https://github.com/jasmin-lang/jasmin/pull/560 is merged
 
 ########################################################################
 # Jasmin
 ########################################################################
-project jasmin "https://github.com/jasmin-lang/jasmin" "e8380c779b5c284c6d4c654d4ea86c56521a6d4c"
+project jasmin "https://github.com/jasmin-lang/jasmin" "main"
 # Contact @vbgl, @bgregoir on github
-# go back to "main" and change dependency to MC 2 when
-# https://github.com/jasmin-lang/jasmin/pull/560 is merged
 
 ########################################################################
 # Lean Importer

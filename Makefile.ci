@@ -141,7 +141,7 @@ ci-oddorder: ci-mathcomp
 ci-fcsl_pcm: ci-mathcomp_1
 ci-mczify: ci-mathcomp
 ci-mathcomp_test: ci-mathcomp
-ci-mathcomp_word: ci-mathcomp_1
+ci-mathcomp_word: ci-mathcomp
 ci-finmap: ci-mathcomp
 ci-bigenough: ci-mathcomp
 ci-analysis: ci-elpi_hb ci-finmap ci-bigenough
