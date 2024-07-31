@@ -403,6 +403,8 @@ let ubrels_from_env (type a) local_env (v:a SList.t) =
   in
   aux local_env.rels v
 
+let trace = CDebug.create ~name:"hconstr-sharing-trace" ()
+
 type sharing_info =
   | Fresh of {
       idx : int;
@@ -412,7 +414,53 @@ type sharing_info =
   | RelsDiffer of int * local_env * UBRelKey.t
   | Seen of t
 
-let trace = CDebug.create ~name:"hconstr-sharing-trace" ()
+let sharing_info_core local_env ~this_restart info_ref this_info c =
+  (* if we see Fresh but already have a value, we won't recurse
+     so we need to advance the info manually
+     if we see Seen but don't have a value, we need to reset the info while recursing
+  *)
+  let this = match this_info with
+    | SharingAnalyser.Fresh n ->
+      trace Pp.(fun () -> str "Fresh " ++ int n ++ str " in " ++ int this_restart);
+      n
+    | SharingAnalyser.Seen n ->
+      trace Pp.(fun () -> str "Seen " ++ int n ++ str " in " ++ int this_restart);
+      n
+  in
+  match local_env.shared_seen.(this) with
+  | None ->
+    let () = match this_info with
+      | SharingAnalyser.Fresh _ -> ()
+      | SharingAnalyser.Seen _ -> assert false
+    in
+    Fresh {idx = this; start_info = !info_ref; info_ref = info_ref;}
+  | Some seen ->
+    if c != seen.seen_self then CErrors.anomaly Pp.(str "hconstr sharing_info mismatch at idx " ++ int this);
+    let key =
+      let key', _ = UBRelMap.choose seen.data in
+      ubrels_from_env local_env key'
+    in
+    match UBRelMap.find_opt key seen.data with
+    | None ->
+      let local_env = match this_info with
+        | SharingAnalyser.Fresh _ ->
+          assert (SharingAnalyser.analysis_equal !info_ref seen.start_info);
+          local_env
+        | SharingAnalyser.Seen _ ->
+          incr local_env.restart_cnt;
+          trace Pp.(fun () -> str "RESTART " ++ int !(local_env.restart_cnt));
+          { local_env with sharing_info = Some (ref seen.start_info, !(local_env.restart_cnt)) }
+      in
+      RelsDiffer (this, local_env, key)
+    | Some v ->
+      let () = match this_info with
+        | SharingAnalyser.Fresh _ ->
+          assert (SharingAnalyser.analysis_equal !info_ref seen.start_info);
+          trace Pp.(fun () -> str "SKIP");
+          info_ref := seen.end_info
+        | SharingAnalyser.Seen _ -> ()
+      in
+      Seen v
 
 let sharing_info local_env c =
   match local_env.sharing_info with
@@ -421,52 +469,13 @@ let sharing_info local_env c =
     let _debug = mk_debug !info c in
     let next, this_info = SharingAnalyser.step !info in
     info := next;
-    (* if we see Fresh but already have a value, we won't recurse
-       so we need to advance the info manually
-       if we see Seen but don't have a value, we need to reset the info while recursing
-    *)
-    let this = match this_info with
-      | SharingAnalyser.Fresh n ->
-        trace Pp.(fun () -> str "Fresh " ++ int n ++ str " in " ++ int this_restart);
-        n
-      | SharingAnalyser.Seen n ->
-        trace Pp.(fun () -> str "Seen " ++ int n ++ str " in " ++ int this_restart);
-        n
-    in
-    match local_env.shared_seen.(this) with
-    | None ->
-      let () = match this_info with
-        | SharingAnalyser.Fresh _ -> ()
-        | SharingAnalyser.Seen _ -> assert false
-      in
-      Some (Fresh {idx = this; start_info = next; info_ref = info;})
-    | Some seen ->
-      if c != seen.seen_self then CErrors.anomaly Pp.(str "hconstr sharing_info mismatch at idx " ++ int this);
-      let key =
-        let key', _ = UBRelMap.choose seen.data in
-        ubrels_from_env local_env key'
-      in
-      match UBRelMap.find_opt key seen.data with
-      | None ->
-        let local_env = match this_info with
-          | SharingAnalyser.Fresh _ ->
-            assert (SharingAnalyser.analysis_equal !info seen.start_info);
-            local_env
-          | SharingAnalyser.Seen _ ->
-            incr local_env.restart_cnt;
-            trace Pp.(fun () -> str "RESTART " ++ int !(local_env.restart_cnt));
-            { local_env with sharing_info = Some (ref seen.start_info, !(local_env.restart_cnt)) }
-        in
-        Some (RelsDiffer (this, local_env, key))
-      | Some v ->
-        let () = match this_info with
-          | SharingAnalyser.Fresh _ ->
-            assert (SharingAnalyser.analysis_equal !info seen.start_info);
-            trace Pp.(fun () -> str "SKIP");
-            info := seen.end_info
-          | SharingAnalyser.Seen _ -> ()
-        in
-        Some (Seen v)
+    match kind c with
+    | Rel _ ->
+      (* Skip rels, doing [of_constr_fresh] directly seems as efficient.
+         NB since there are no subterms it doesn't matter if we're [Fresh] or [Seen]. *)
+      None
+    | _ ->
+      Some (sharing_info_core local_env ~this_restart info this_info c)
 
 let steps = ref 0
 
