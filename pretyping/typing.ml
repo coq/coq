@@ -32,21 +32,47 @@ let meta_type env evd mv =
     with Not_found -> anomaly (str "unknown meta ?" ++ str (Nameops.string_of_meta mv) ++ str ".") in
   meta_instance env evd ty
 
-let make_param_univs env sigma indu spec jl =
-  Array.to_list @@ Array.mapi (fun i j ~expected ->
-      match ESorts.kind sigma @@ Reductionops.sort_of_arity env sigma j.uj_type with
-      | Sorts.SProp | exception Reduction.NotArity ->
-        let indty = EConstr.of_constr @@
-          Inductive.type_of_inductive (spec, Unsafe.to_instance @@ snd indu)
+let fresh_template_context env0 sigma indu (mib, mip as spec) args =
+  let templ = match mib.Declarations.mind_template with
+  | None -> assert false
+  | Some t -> Array.of_list t.template_param_arguments
+  in
+  let ctx = List.rev (EConstr.of_rel_context mib.Declarations.mind_params_ctxt) in
+  let rec freshen i env sigma accu sorts = function
+  | [] -> sigma, List.rev sorts
+  | LocalAssum (na, t) as decl :: ctx ->
+    let sigma, decl, s =
+      if templ.(i) then
+        let decls, s0 = Reductionops.dest_arity env sigma t in
+        let sigma, s =
+          if i < Array.length args then match Reductionops.sort_of_arity env sigma args.(i).uj_type with
+          | s -> sigma, s
+          | exception Reduction.NotArity -> Evd.new_sort_variable Evd.univ_flexible sigma
+          else sigma, s0
         in
-        error_cant_apply_bad_type env sigma
-          (i+1, mkType (Univ.Universe.make expected), j.uj_type)
-          (make_judge (mkIndU indu) indty)
-          jl
-      | Sorts.Prop -> TemplateProp
-      | Sorts.Set -> TemplateUniv Univ.Universe.type0
-      | Sorts.Type u | Sorts.QSort (_, u) -> TemplateUniv u)
-    jl
+        let t = EConstr.it_mkProd_or_LetIn (mkSort s) decls in
+        let s ~expected = match ESorts.kind sigma s with
+        | Sorts.SProp ->
+          let indty = EConstr.of_constr @@
+            Inductive.type_of_inductive (spec, Unsafe.to_instance @@ snd indu)
+          in
+          error_cant_apply_bad_type env0 sigma
+            (i+1, mkType (Univ.Universe.make expected), args.(i).uj_type)
+            (make_judge (mkIndU indu) indty)
+            args
+        | Sorts.Prop -> TemplateProp
+        | Sorts.Set -> TemplateUniv Univ.Universe.type0
+        | Sorts.Type u | Sorts.QSort (_, u) -> TemplateUniv u
+        in
+        sigma, LocalAssum (na, t), s
+      else
+        sigma, decl, (fun ~expected -> assert false)
+    in
+    freshen (i + 1) (push_rel decl env) sigma (decl :: accu) (s :: sorts) ctx
+  | LocalDef (na, b, t) as decl :: ctx ->
+    freshen i (push_rel decl env) sigma (decl :: accu) sorts ctx
+  in
+  freshen 0 env0 sigma [] [] ctx
 
 let type_judgment env sigma j =
   match EConstr.kind sigma (whd_all env sigma j.uj_type) with
@@ -109,7 +135,7 @@ let judge_of_applied ~check env sigma funj argjv =
 let judge_of_applied_inductive_knowing_parameters ~check env sigma (ind, u) argjv =
   let (mib,_ as specif) = Inductive.lookup_mind_specif env ind in
   let () = if check then Reductionops.check_hyps_inclusion env sigma (GR.IndRef ind) mib.mind_hyps in
-  let paramstyp = make_param_univs env sigma (ind, u) specif argjv in
+  let sigma, paramstyp = fresh_template_context env sigma (ind, u) specif argjv in
   let u0 = EInstance.kind sigma u in
   let ty, csts = Inductive.type_of_inductive_knowing_parameters (specif, u0) paramstyp in
   let sigma = Evd.add_constraints sigma csts in
@@ -119,7 +145,7 @@ let judge_of_applied_inductive_knowing_parameters ~check env sigma (ind, u) argj
 let judge_of_applied_constructor_knowing_parameters ~check env sigma ((ind, _ as cstr), u) argjv =
   let (mib,_ as specif) = Inductive.lookup_mind_specif env ind in
   let () = if check then Reductionops.check_hyps_inclusion env sigma (GR.IndRef ind) mib.mind_hyps in
-  let paramstyp = make_param_univs env sigma (ind, u) specif argjv in
+  let sigma, paramstyp = fresh_template_context env sigma (ind, u) specif argjv in
   let u0 = EInstance.kind sigma u in
   let ty, csts = Inductive.type_of_constructor_knowing_parameters (cstr, u0) specif paramstyp in
   let sigma = Evd.add_constraints sigma csts in
