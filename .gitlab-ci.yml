@@ -861,14 +861,14 @@ library:ci-mathcomp_word:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-mathcomp_1
+  - library:ci-mathcomp
   stage: build-2
 
 library:ci-jasmin:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-mathcomp_1
+  - library:ci-mathcomp
   - library:ci-mathcomp_word
   stage: build-3+
 
