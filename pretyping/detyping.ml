@@ -669,6 +669,9 @@ let detype_case computable detype detype_eqns avoid env sigma (ci, univs, params
       | NoInvert ->
         if Array.is_empty params && EInstance.is_empty univs
         then tomatch
+        else if !Flags.in_debugger then
+          let t = mkApp (mkIndU (ci.ci_ind,univs), params) in
+          DAst.make @@ GCast (tomatch, None, detype t)
         else
           let _, mip = Global.lookup_inductive ci.ci_ind in
           let hole = DAst.make @@ GHole (GInternalHole) in
