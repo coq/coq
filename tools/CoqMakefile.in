@@ -308,8 +308,8 @@ else
 endif
 
 ifneq (,$(PROFILING))
-  PROFILE_ARG=-profile $<.prof.json
-  PROFILE_ZIP=gzip -f $<.prof.json
+  PROFILE_ARG=-profile $@.prof.json
+  PROFILE_ZIP=gzip -f $@.prof.json
 else
   PROFILE_ARG=
   PROFILE_ZIP=true
