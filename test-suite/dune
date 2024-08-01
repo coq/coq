@@ -25,7 +25,7 @@
    ../config/coq_config.py
    (source_tree doc/changelog)
    (package coq-core)
-   (package coq-stdlib)
+   (package rocq-core)
    ; For fake_ide
    (package coqide-server)
    (source_tree .))

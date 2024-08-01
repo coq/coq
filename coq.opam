@@ -22,7 +22,8 @@ bug-reports: "https://github.com/coq/coq/issues"
 depends: [
   "dune" {>= "3.8"}
   "coq-core" {= version}
-  "coq-stdlib" {= version}
+  "rocq-core" {= version}
+  "coq-stdlib"
   "coqide-server" {= version}
   "ounit2" {with-test}
   "conf-python-3" {with-test}

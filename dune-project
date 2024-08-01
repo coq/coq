@@ -48,14 +48,14 @@ not the vernacular standard library.
 
 Note that in this setup, Coq needs to be started with the -boot and
 -noinit options, as will otherwise fail to find the regular Coq
-prelude, now living in the coq-stdlib package."))
+prelude, now living in the rocq-core package."))
 
 (package
- (name coq-stdlib)
+ (name rocq-core)
  (depends
   (coq-core (= :version)))
  (depopts coq-native)
- (synopsis "The Coq Proof Assistant -- Standard Library")
+ (synopsis "The Coq Proof Assistant -- prelude")
  (description "Coq is a formal proof management system. It provides
 a formal language to write mathematical definitions, executable
 algorithms and theorems together with an environment for
@@ -67,8 +67,10 @@ project, or the Bedrock verified low-level programming library), the
 formalization of mathematics (e.g. the full formalization of the
 Feit-Thompson theorem or homotopy type theory) and teaching.
 
-This package includes the Coq Standard Library, that is to say, the
-set of modules usually bound to the Coq.* namespace."))
+This package includes the Coq prelude, that is to say,
+some of the modules usually bound to the Stdlib.* namespace
+and in particular, those that are loaded automatically by Coq
+in every .v file"))
 
 (package
  (name coqide-server)
@@ -119,9 +121,11 @@ This package provides the Coq Reference Manual."))
 
 (package
  (name coq)
+ (allow_empty)
  (depends
   (coq-core (= :version))
-  (coq-stdlib (= :version))
+  (rocq-core (= :version))
+  coq-stdlib
   (coqide-server (= :version))
   (ounit2 :with-test)
   (conf-python-3 :with-test)

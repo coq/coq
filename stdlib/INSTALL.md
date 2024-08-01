@@ -24,7 +24,7 @@ Opam (https://opam.ocaml.org/) is recommended to install Coq.
 
     $ opam switch create coq --packages="ocaml-variants.4.14.1+options,ocaml-option-flambda"
     $ eval $(opam env)
-    $ opam install coq-core rocq-init
+    $ opam install rocq-core
 
 should get you a reasonable Coq environment to compile the stdlib.
 See the OPAM documentation for more help.

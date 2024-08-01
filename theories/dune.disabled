@@ -1,7 +1,7 @@
 ; For now we use coq_dune to generate the rules here
 (coq.theory
  (name Stdlib)
- (package coq-stdlib)
+ (package rocq-core)
  (synopsis "Coq's Standard Library")
  ; Uncomment this to have dune compile native files in release mode
  ; (mode native)
@@ -32,4 +32,4 @@
 (include_subdirs qualified)
 
 (documentation
- (package coq-stdlib))
+ (package rocq-core))

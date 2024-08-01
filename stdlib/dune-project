@@ -25,7 +25,7 @@
  (name coq-stdlib)
  (depends
   coq-core
-  (rocq-init (= :version)))
+  (rocq-core (= :version)))
  (depopts coq-native)
  (synopsis "The Coq Proof Assistant -- Standard Library")
  (description "Coq is a formal proof management system. It provides

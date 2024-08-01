@@ -83,8 +83,8 @@ environment variables to determine the locale; see the
 
 ### Libraries
 
-Most of the refman compiles with only the coq-core and rocq-init
-packages. However, in order to showcase some nice advertising
+Most of the refman compiles with only the rocq-core package.
+However, in order to showcase some nice advertising
 examples with some external libraries included in Coq CI, a few code
 blocks in the refman depend on those libraries. These blocks are
 marked with the `extra` parameter (see
@@ -135,5 +135,5 @@ The produced documents are stored in the described directories above,
 you can install them just by copying the contents to the desired
 directory.
 
-In the future, the `coq-doc` and `coq-stdlib` opam packages will
+In the future, the `coq-doc` and `rocq-core` opam packages will
 install the documentation automatically.

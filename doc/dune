@@ -14,7 +14,7 @@
   ;   + config/coq_config.py
   ;   + tools/coqdoc/coqdoc.css
   (package coq-core)
-  (package coq-stdlib)
+  (package rocq-core)
   (source_tree sphinx)
   (source_tree tools/coqrst)
   unreleased.rst
@@ -30,7 +30,7 @@
  ; EJGA: note this should've been fixed in dune master as of 05/03/2021
  (deps
   (package coq-core)
-  (package coq-stdlib)
+  (package rocq-core)
   (source_tree sphinx)
   (source_tree tools/coqrst)
   ../config/coq_config.py
@@ -49,7 +49,7 @@
  ; EJGA: note this should've been fixed in dune master as of 05/03/2021
  (deps
   (package coq-core)
-  (package coq-stdlib)
+  (package rocq-core)
   (source_tree sphinx)
   (source_tree tools/coqrst)
   unreleased.rst

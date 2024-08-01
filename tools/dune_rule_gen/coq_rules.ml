@@ -280,6 +280,6 @@ let install_rule ~(cctx : Context.t) coq_module =
     Coq_module.install_files ~tname ~rule coq_module
     |> List.map (fun (src,dst) -> src, Filename.concat dst_base dst) in
   (* May need to woraround invalid empty `(install )` stanza if that happens *)
-  Dune_file.Install.{ section = "lib_root"; package = "coq-stdlib"; files }
+  Dune_file.Install.{ section = "lib_root"; package = "rocq-core"; files }
 
 let install_rules ~dir_info ~cctx = gen_rules ~dir_info ~cctx ~f:install_rule

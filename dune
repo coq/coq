@@ -21,7 +21,7 @@
 
 (alias
  (name default)
- (deps coq-core.install coq-stdlib.install coqide-server.install))
+ (deps coq-core.install rocq-core.install coqide-server.install))
 
 (install
  (section lib)
@@ -80,7 +80,7 @@
 ; Use summary.log as the target
 (alias
  (name runtest)
- (package coq)
+ (package rocq-core)
  (deps test-suite/summary.log))
 
 ; For make compat
@@ -92,8 +92,5 @@
   (source_tree plugins)))
 
 ; (dirs (:standard _build_ci))
-
-(documentation
- (package coq))
 
 (dirs :standard \ stdlib)
