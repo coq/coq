@@ -856,7 +856,7 @@ and execute_array tbl env cs =
   Array.map (fun c -> execute tbl env c) cs
 
 let execute env c =
-  NewProfile.profile "Typeops.execute" (fun () -> execute (HConstr.Tbl.create 57) env c) ()
+  NewProfile.profile "Typeops.execute" (fun () -> execute (HConstr.Tbl.create ()) env c) ()
 
 (* Derived functions *)
 

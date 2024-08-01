@@ -65,7 +65,7 @@ module Tbl = struct
        perhaps because of differences between hashtbl and our hashset implementation. *)
   type 'a t = (key * 'a) list Int.Map.t ref
 
-  let create _ = ref Int.Map.empty
+  let create () = ref Int.Map.empty
 
   let add tbl key v =
     tbl := Int.Map.update key.hash (function
@@ -131,8 +131,8 @@ let empty_env env = {
   rels = Range.empty;
   cnt = ref 0;
   unknown_cnt = ref 0;
-  assum_uids = Tbl.create 47;
-  letin_uids = Tbl.create 47;
+  assum_uids = Tbl.create ();
+  letin_uids = Tbl.create ();
 }
 
 (* still used in fixpoint *)
@@ -173,7 +173,7 @@ let push_letin ~body ~typ env =
     | None ->
       incr env.cnt;
       let uid = !(env.cnt) in
-      let tbl = Tbl.create 3 in
+      let tbl = Tbl.create () in
       Tbl.add tbl typ uid;
       Tbl.add env.letin_uids body tbl;
       uid
@@ -422,7 +422,7 @@ let tree_size c =
 let of_constr env c =
   let local_env = empty_env env in
   let local_env = iterate push_unknown_rel (Environ.nb_rel env) local_env in
-  let tbl = Tbl.create 57 in
+  let tbl = Tbl.create () in
   steps := 0;
   let c = NewProfile.profile "HConstr.of_constr" (fun () -> of_constr tbl local_env c) () in
   dbg Pp.(fun () ->
@@ -443,7 +443,7 @@ let of_constr env c =
 let kind x = x.kind
 
 let hcons x =
-  let tbl = Tbl.create 47 in
+  let tbl = Tbl.create () in
   let module HCons = GenHCons(struct
       type nonrec t = t
       let kind = kind
