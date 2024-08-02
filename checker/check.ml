@@ -257,6 +257,16 @@ let try_locate_qualified_library lib = match lib with
     | LibUnmappedDir -> error_unmapped_dir qid
     | LibNotFound -> error_lib_not_found qid
 
+let lib_to_string = function
+  | PhysicalFile f -> f
+  | LogicalFile qid -> String.concat "." (List.rev (qid.basename :: qid.dirpath))
+
+let try_locate_qualified_library lib : _ * _ =
+  NewProfile.profile "try_locate_qualified_library"
+    ~args:(fun () -> [("name", `String (lib_to_string lib))])
+    (fun () -> try_locate_qualified_library lib)
+    ()
+
 (************************************************************************)
 (*s Low-level interning of libraries from files *)
 
@@ -304,6 +314,7 @@ type intern_mode = Rec | Root | Dep (* Rec = standard, Root = -norec, Dep = depe
 let depgraph = ref LibraryMap.empty
 
 let marshal_in_segment (type a) ~validate ~value ~(segment : a ObjFile.segment) f ch : a =
+  NewProfile.profile "marshal_in_segment" (fun () ->
   let () = LargeFile.seek_in ch segment.ObjFile.pos in
   if validate then
     let v =
@@ -319,7 +330,8 @@ let marshal_in_segment (type a) ~validate ~value ~(segment : a ObjFile.segment) 
     let v = Analyze.instantiate v in
     Obj.obj v
   else
-    System.marshal_in f ch
+    System.marshal_in f ch)
+    ()
 
 let summary_seg : summary_disk ObjFile.id = ObjFile.make_id "summary"
 let library_seg : library_disk ObjFile.id = ObjFile.make_id "library"
@@ -362,6 +374,12 @@ let intern_from_file ~intern_mode ~enable_VM (dir, f) =
   depgraph := LibraryMap.add sd.md_name sd.md_deps !depgraph;
   opaque_tables := LibraryMap.add sd.md_name table !opaque_tables;
   mk_library sd md f table digest (Vmlibrary.inject vmlib)
+
+let intern_from_file ~intern_mode ~enable_VM dirf : library_t =
+  NewProfile.profile "intern_from_file"
+    ~args:(fun () -> [("name", `String (DirPath.to_string (fst dirf)))])
+    (fun () -> intern_from_file ~intern_mode ~enable_VM dirf)
+    ()
 
 (* Read a compiled library and all dependencies, in reverse order.
    Do not include files that are already in the context. *)

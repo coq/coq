@@ -21,5 +21,16 @@ let import senv opac clib vmtab digest =
   let opac = Mod_checking.check_module env opac mb.mod_mp mb in
   let (_,senv) = Safe_typing.import clib vmtab digest senv in senv, opac
 
+let import senv opac clib vmtab digest : _ * _ =
+  NewProfile.profile "import"
+    ~args:(fun () ->
+        let dp = match (Safe_typing.module_of_library clib).mod_mp with
+          | MPfile dp -> dp
+          | _ -> assert false
+        in
+        [("name", `String (Names.DirPath.to_string dp))])
+    (fun () ->import senv opac clib vmtab digest)
+    ()
+
 let unsafe_import senv clib vmtab digest =
   let (_,senv) = Safe_typing.import clib vmtab digest senv in senv
