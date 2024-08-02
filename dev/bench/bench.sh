@@ -316,7 +316,9 @@ zulip_autofail() {
 if [[ $zulip_post ]]; then trap zulip_autofail ERR; fi
 
 # see https://github.com/coq/coq/pull/15807
-ulimit -S -s $((2 * $(ulimit -s)))
+if [ "$(ulimit -s)" != "unlimited" ]; then
+  ulimit -S -s $((2 * $(ulimit -s)))
+fi
 
 # Clone the indicated git-repository.
 
