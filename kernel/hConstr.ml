@@ -113,24 +113,32 @@ module Tbl = struct
 end
 
 type local_env = {
+  (* only used for globals, rel context is not correct *)
+  globals : Environ.env;
   (* unique identifiers for each binder crossed *)
   rels : int Range.t;
   (* global counter *)
   cnt : int ref;
+  (* how many unknown_rel we have seen *)
+  unknown_cnt : int ref;
   assum_uids : int Tbl.t;
   (* the surrounding table is for the body, the inner table for the type *)
   letin_uids : int Tbl.t Tbl.t;
 }
 
-let empty_env () = {
+let empty_env env = {
+  globals = env;
   rels = Range.empty;
   cnt = ref 0;
+  unknown_cnt = ref 0;
   assum_uids = Tbl.create 47;
   letin_uids = Tbl.create 47;
 }
 
+(* still used in fixpoint *)
 let push_unknown_rel env =
   incr env.cnt;
+  incr env.unknown_cnt;
   { env with rels = Range.cons !(env.cnt) env.rels }
 
 let push_assum t env =
@@ -171,6 +179,12 @@ let push_letin ~body ~typ env =
       uid
   in
   { env with rels = Range.cons uid env.rels }
+
+module RelDecl = Context.Rel.Declaration
+
+let push_decl d env = match d with
+  | RelDecl.LocalAssum (_,t) -> push_assum t env
+  | RelDecl.LocalDef (_,body,typ) -> push_letin ~body ~typ env
 
 let hash_annot = hash_annot Name.hash
 
@@ -338,22 +352,28 @@ and of_constr_aux tbl local_env c =
     let u = UVars.Instance.hcons u in
     Construct (c,u)
   | Case (ci,u,pms,(p,r),iv,c,bl) ->
-    let of_ctx (bnd, c) =
+    let pctx, blctx =
+      let specif = Inductive.lookup_mind_specif local_env.globals ci.ci_ind in
+      let pctx = Inductive.expand_arity specif (ci.ci_ind,u) pms (fst p) in
+      let blctx = Inductive.expand_branch_contexts specif u pms bl in
+      pctx, blctx
+    in
+    let of_ctx (bnd, c) bnd' =
       let () = hcons_inplace hcons_annot bnd in
-      let local_env = Array.fold_left (fun local_env _ -> push_unknown_rel local_env) local_env bnd in
+      let local_env = push_rel_context tbl local_env bnd' in
       let c = of_constr tbl local_env c in
       bnd, c
     in
     let ci = hcons_caseinfo ci in
     let u = UVars.Instance.hcons u in
     let pms = Array.map (of_constr tbl local_env) pms in
-    let p = of_ctx p in
+    let p = of_ctx p pctx in
     let iv = match iv with
       | NoInvert -> NoInvert
       | CaseInvert {indices} -> CaseInvert {indices=Array.map (of_constr tbl local_env) indices}
     in
     let c = of_constr tbl local_env c in
-    let bl = Array.map of_ctx bl in
+    let bl = Array.map2 of_ctx bl blctx in
     Case (ci,u,pms,(p,r),iv,c,bl)
   | Fix (ln,(lna,tl,bl)) ->
     let () = hcons_inplace hcons_annot lna in
@@ -381,6 +401,13 @@ and of_constr_aux tbl local_env c =
     let ty = of_constr tbl local_env ty in
     Array (u,t,def,ty)
 
+and push_rel_context tbl local_env ctx =
+  List.fold_right (fun d local_env ->
+      let d = RelDecl.map_constr_het (fun r -> r) (of_constr tbl local_env) d in
+      push_decl d local_env)
+    ctx
+    local_env
+
 let dbg = CDebug.create ~name:"hconstr" ()
 
 let tree_size c =
@@ -390,7 +417,7 @@ let tree_size c =
   aux 0 c
 
 let of_constr env c =
-  let local_env = empty_env () in
+  let local_env = empty_env env in
   let local_env = iterate push_unknown_rel (Environ.nb_rel env) local_env in
   let tbl = Tbl.create 57 in
   let c = of_constr tbl local_env c in
@@ -398,6 +425,8 @@ let of_constr env c =
       let stats = Tbl.stats tbl in
       let tree_size = tree_size (self c) in
       v 0 (
+        str "rel cnt = " ++ int !(local_env.cnt) ++ spc() ++
+        str "unknwown rels = " ++ int !(local_env.unknown_cnt) ++ spc() ++
         str "hashes = " ++ int stats.Tbl.hashes ++ spc() ++
         str "bindings = " ++ int stats.Tbl.bindings ++ spc() ++
         str "tree size = " ++ int tree_size ++ spc() ++
