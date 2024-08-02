@@ -372,21 +372,6 @@ let check_cast env c ct k expected_type =
   | Result.Error () ->
     error_actual_type env (make_judge c ct) expected_type
 
-let judge_of_int env i =
-  make_judge (Constr.mkInt i) (type_of_int env)
-
-let judge_of_float env f =
-  make_judge (Constr.mkFloat f) (type_of_float env)
-
-let judge_of_string env s =
-  make_judge (Constr.mkString s) (type_of_string env)
-
-let judge_of_array env u tj defj =
-  let def = defj.uj_val in
-  let ty = defj.uj_type in
-  Array.iter (fun j -> check_cast env j.uj_val j.uj_type DEFAULTcast ty) tj;
-  make_judge (mkArray(u, Array.map j_val tj, def, ty)) (mkApp (type_of_array env u, [|ty|]))
-
 (* Inductive types. *)
 
 (* The type is parametric over the uniform parameters whose conclusion
@@ -890,10 +875,6 @@ let infer env c =
 let assumption_of_judgment env {uj_val=c; uj_type=t} =
   infer_assumption env c t
 
-let type_judgment env {uj_val=c; uj_type=t} =
-  let s = check_type env c t in
-  {utj_val = c; utj_type = s }
-
 let infer_type env constr =
   let () = check_wellformed_universes env constr in
   let hconstr = HConstr.of_constr env constr in
@@ -923,49 +904,8 @@ let check_context env rels =
         push_rel d env, LocalDef (x,j1.uj_val,jty.utj_val) :: rels)
     rels ~init:(env,[])
 
-let judge_of_prop = make_judge mkProp type1
-let judge_of_set = make_judge mkSet type1
-let judge_of_type u = make_judge (mkType u) (type_of_type u)
-
-let judge_of_relative env k = make_judge (mkRel k) (type_of_relative env k)
-
-let judge_of_variable env x = make_judge (mkVar x) (type_of_variable env x)
-
-let judge_of_constant env cst = make_judge (mkConstU cst) (type_of_constant env cst)
-
-let judge_of_projection env p cj =
-  let r, ty = type_of_projection env p cj.uj_val cj.uj_type in
-  make_judge (mkProj (p,r,cj.uj_val)) ty
-
-let dest_judgev v =
-  Array.map j_val v, Array.map j_type v
-
-let judge_of_apply env funj argjv =
-  let args, argtys = dest_judgev argjv in
-  make_judge (mkApp (funj.uj_val, args)) (type_of_apply env funj.uj_val funj.uj_type args argtys)
-
-(* let judge_of_abstraction env x varj bodyj = *)
-(*   make_judge (mkLambda (x, varj.utj_val, bodyj.uj_val)) *)
-(*              (type_of_abstraction env x varj.utj_val bodyj.uj_type) *)
-
-(* let judge_of_product env x varj outj = *)
-(*   make_judge (mkProd (x, varj.utj_val, outj.utj_val)) *)
-(*              (mkSort (sort_of_product env varj.utj_type outj.utj_type)) *)
-
-(* let judge_of_letin env name defj typj j = *)
-(*   make_judge (mkLetIn (name, defj.uj_val, typj.utj_val, j.uj_val)) *)
-(*              (subst1 defj.uj_val j.uj_type) *)
-
-let judge_of_cast env cj k tj =
-  let () = check_cast env cj.uj_val cj.uj_type k tj.utj_val in
-  let c = mkCast (cj.uj_val, k, tj.utj_val) in
-  make_judge c tj.utj_val
-
-let judge_of_inductive env indu =
-  make_judge (mkIndU indu) (type_of_inductive env indu)
-
-let judge_of_constructor env cu =
-  make_judge (mkConstructU cu) (type_of_constructor env cu)
+let check_cast env cj k tj =
+  check_cast env cj.uj_val cj.uj_type k tj.utj_val
 
 (* Building type of primitive operators and type *)
 

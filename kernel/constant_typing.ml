@@ -226,7 +226,7 @@ let infer_definition ~sec_univs env entry =
       Vars.subst_univs_level_constr usubst j.uj_type
     | Some t ->
       let tj = Typeops.infer_type env t in
-      let _ = Typeops.judge_of_cast env j DEFAULTcast tj in
+      let () = Typeops.check_cast env j DEFAULTcast tj in
       Vars.subst_univs_level_constr usubst tj.utj_val
   in
   let body = Vars.subst_univs_level_constr usubst j.uj_val in
@@ -285,7 +285,7 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
   let hbody = HConstr.of_constr env body in
   let j = Typeops.infer_hconstr env hbody in
   let j = unzip ectx j in
-  let _ = Typeops.judge_of_cast env j DEFAULTcast tyj in
+  let () = Typeops.check_cast env j DEFAULTcast tyj in
   let declared =
     if List.is_empty (named_context env) then declared
     else Environ.really_needed env (Id.Set.union declared (global_vars_set env tyj.utj_val))
@@ -310,7 +310,7 @@ let infer_local_def env _id { secdef_body; secdef_type; } =
     | None -> j.uj_type
     | Some typ ->
       let tj = Typeops.infer_type env typ in
-      let _ = Typeops.judge_of_cast env j DEFAULTcast tj in
+      let () = Typeops.check_cast env j DEFAULTcast tj in
       tj.utj_val
   in
   let c = j.uj_val in

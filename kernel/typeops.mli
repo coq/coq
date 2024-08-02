@@ -10,8 +10,6 @@
 
 open Names
 open Constr
-open Univ
-open UVars
 open Environ
 
 (** {6 Typing functions (not yet tagged as safe) }
@@ -37,60 +35,29 @@ val check_context :
    returns the type {% $ %}c{% $ %}, checking that {% $ %}t{% $ %} is a sort. *)
 
 val assumption_of_judgment :  env -> unsafe_judgment -> Sorts.relevance
-val type_judgment          :  env -> unsafe_judgment -> unsafe_type_judgment
 
 (** {6 Type of sorts. } *)
 val type1 : types
 val type_of_sort : Sorts.t -> types
-val judge_of_prop : unsafe_judgment
-val judge_of_set  : unsafe_judgment
-val judge_of_type           : Universe.t -> unsafe_judgment
 
 (** {6 Type of a bound variable. } *)
 val type_of_relative : env -> int -> types
-val judge_of_relative : env -> int -> unsafe_judgment
 
 (** {6 Type of variables } *)
 val type_of_variable : env -> variable -> types
-val judge_of_variable : env -> variable -> unsafe_judgment
 
 (** {6 type of a constant } *)
 val type_of_constant_in : env -> pconstant -> types
-val judge_of_constant : env -> pconstant -> unsafe_judgment
 
 (** {6 type of an applied projection } *)
-val judge_of_projection : env -> Projection.t -> unsafe_judgment -> unsafe_judgment
-
-(** {6 Type of application. } *)
-val judge_of_apply :
-  env -> unsafe_judgment -> unsafe_judgment array
-    -> unsafe_judgment
-
-(** {6 Type of an abstraction. } *)
-(* val judge_of_abstraction : *)
-(*   env -> Name.t -> unsafe_type_judgment -> unsafe_judgment *)
-(*     -> unsafe_judgment *)
+val type_of_projection : env -> Projection.t -> constr -> types -> Sorts.relevance * types
 
 (** {6 Type of a product. } *)
 val sort_of_product : env -> Sorts.t -> Sorts.t -> Sorts.t
-val type_of_product : env -> Name.t binder_annot -> Sorts.t -> Sorts.t -> types
-(* val judge_of_product : *)
-(*   env -> Name.t -> unsafe_type_judgment -> unsafe_type_judgment *)
-(*     -> unsafe_judgment *)
-
-(** s Type of a let in. *)
-(* val judge_of_letin : *)
-(*   env -> Name.t -> unsafe_judgment -> unsafe_type_judgment -> unsafe_judgment *)
-(*     -> unsafe_judgment *)
 
 (** {6 Type of a cast. } *)
-val judge_of_cast :
-  env -> unsafe_judgment -> cast_kind -> unsafe_type_judgment ->
-  unsafe_judgment
-
-(** {6 Inductive types. } *)
-val judge_of_inductive : env -> inductive puniverses -> unsafe_judgment
-val judge_of_constructor : env -> constructor puniverses -> unsafe_judgment
+val check_cast :
+  env -> unsafe_judgment -> cast_kind -> unsafe_type_judgment -> unit
 
 (** {6 Type of global references. } *)
 
@@ -111,17 +78,9 @@ val check_hyps_inclusion : env -> ?evars:CClosure.evar_handler ->
 (** Types for primitives *)
 
 val type_of_int : env -> types
-val judge_of_int : env -> Uint63.t -> unsafe_judgment
-
 val type_of_float : env -> types
-val judge_of_float : env -> Float64.t -> unsafe_judgment
-
 val type_of_string : env -> types
-val judge_of_string : env -> Pstring.t -> unsafe_judgment
-
 val type_of_array : env -> UVars.Instance.t -> types
-val judge_of_array : env -> UVars.Instance.t -> unsafe_judgment array -> unsafe_judgment -> unsafe_judgment
-
 val type_of_prim_type : env -> UVars.Instance.t -> 'a CPrimitives.prim_type -> types
 val type_of_prim : env -> UVars.Instance.t -> CPrimitives.t -> types
 val type_of_prim_or_type : env -> UVars.Instance.t -> CPrimitives.op_or_type -> types

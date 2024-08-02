@@ -287,7 +287,7 @@ and nf_prod env sigma (na, dom, codom) =
   let vn = mk_rel_accu (nb_rel env) in
   let env = push_rel (LocalAssum (na, dom)) env in
   let codom, scodom = nf_type_sort env sigma (apply codom vn) in
-  mkProd (na, dom, codom), destSort (Typeops.type_of_product env na sdom scodom)
+  mkProd (na, dom, codom), Typeops.sort_of_product env sdom scodom
 
 and nf_atom env sigma atom =
   match atom with
@@ -378,8 +378,8 @@ and nf_atom_type env sigma atom =
       let c,tc = nf_accu_type env sigma c in
       let cj = make_judge c tc in
       let p, _ = get_proj env p in
-      let uj = Typeops.judge_of_projection env p cj in
-      uj.uj_val, uj.uj_type
+      let r, ty = Typeops.type_of_projection env p cj.uj_val cj.uj_type in
+      mkProj (p, r, cj.uj_val), ty
 
 
 and nf_predicate env sigma ind mip params v pctx =
