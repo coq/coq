@@ -379,8 +379,9 @@ create_opam() {
     else flambda=
     fi
 
-    opam switch create -qy -j$number_of_processors "ocaml-$RUNNER" "$OPAM_COMP" $flambda
-    eval $(opam env)
+    local SWITCH="ocaml-$RUNNER"
+    opam switch create -qy -j$number_of_processors "$SWITCH"  "$OPAM_COMP" $flambda
+    eval $(opam env --switch="$SWITCH" --set-switch)
 
     # For some reason opam guesses an incorrect upper bound on the
     # number of jobs available on Travis, so we set it here manually:
