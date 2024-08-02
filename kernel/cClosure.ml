@@ -71,7 +71,7 @@ type red_state = Ntrl | Cstr | Red
 let neutr = function Ntrl -> Ntrl | Red | Cstr -> Red
 let is_red = function Red -> true | Ntrl | Cstr -> false
 
-type table_key = Constant.t UVars.puniverses tableKey
+type table_key = Constr.t tableKey
 
 type evar_repack = Evar.t * constr list -> constr
 
@@ -84,8 +84,8 @@ and fterm =
   | FRel of int
   | FAtom of constr (* Metas and Sorts *)
   | FFlex of table_key
-  | FInd of pinductive
-  | FConstruct of pconstructor
+  | FInd of Constr.t
+  | FConstruct of Constr.t
   | FApp of fconstr * fconstr array
   | FProj of Projection.t * Sorts.relevance * fconstr
   | FFix of fixpoint * usubs
@@ -182,7 +182,7 @@ type stack_member =
   | ZcaseT of case_info * UVars.Instance.t * constr array * case_return * case_branch array * usubs
   | Zproj of Projection.Repr.t * Sorts.relevance
   | Zfix of fconstr * stack
-  | Zprimitive of CPrimitives.t * pconstant * fconstr list * fconstr next_native_args
+  | Zprimitive of CPrimitives.t * Constr.t * fconstr list * fconstr next_native_args
        (* operator, constr def, arguments already seen (in rev order), next arguments *)
   | Zshift of int
   | Zupdate of fconstr
@@ -270,10 +270,6 @@ let usubst_instance (_,u) u' =
   if UVars.Instance.is_empty u then u'
   else UVars.subst_instance_instance u u'
 
-let usubst_punivs (_,u) (v,u' as orig) =
-  if UVars.Instance.is_empty u then orig
-  else v, UVars.subst_instance_instance u u'
-
 let usubst_sort (_,u) s =
   if UVars.Instance.is_empty u then s
   else UVars.subst_instance_sort u s
@@ -310,13 +306,13 @@ let mk_clos (e:usubs) t =
   match kind t with
     | Rel i -> clos_rel (fst e) i
     | Var x -> {mark = Red; term = FFlex (VarKey x) }
-    | Const c -> {mark = Red; term = FFlex (ConstKey (usubst_punivs e c)) }
+    | Const _ -> {mark = Red; term = FFlex (ConstKey (Vars.subst_instance_constr (snd e) t)) }
     | Sort s ->
       let s = usubst_sort e s in
       {mark = Ntrl; term = FAtom (mkSort s) }
     | Meta _ -> {mark = Ntrl; term = FAtom t }
-    | Ind kn -> {mark = Ntrl; term = FInd (usubst_punivs e kn) }
-    | Construct kn -> {mark = Cstr; term = FConstruct (usubst_punivs e kn) }
+    | Ind _ -> {mark = Ntrl; term = FInd (Vars.subst_instance_constr (snd e) t) }
+    | Construct _ -> {mark = Cstr; term = FConstruct (Vars.subst_instance_constr (snd e) t) }
     | Int i -> {mark = Cstr; term = FInt i}
     | Float f -> {mark = Cstr; term = FFloat f}
     | String s -> {mark = Cstr; term = FString s}
@@ -347,8 +343,13 @@ module Table : sig
 end = struct
   module Table = Hashtbl.Make(struct
     type t = table_key
-    let equal = eq_table_key (eq_pair eq_constant_key UVars.Instance.equal)
-    let hash = hash_table_key (fun (c, _) -> Constant.UserOrd.hash c)
+    let eq_const cnst1 cnst2 =
+      let cnst1 = destConst cnst1 in
+      let cnst2 = destConst cnst2 in
+      eq_pair eq_constant_key UVars.Instance.equal cnst1 cnst2
+    let equal = eq_table_key eq_const
+    let hash_key c = Constant.UserOrd.hash (fst (destConst c))
+    let hash = hash_table_key hash_key
   end)
 
   type t = table_val Table.t
@@ -399,7 +400,8 @@ end = struct
           Def (assoc_defined def, [||])
         else
           raise Not_found
-      | ConstKey (cst,u) ->
+      | ConstKey cnst ->
+        let (cst, u) = destConst cnst in
         let cb = lookup_constant cst env in
         shortcut_irrelevant info (UVars.subst_instance_relevance u cb.const_relevance);
         let ts = RedFlags.red_transparent info.i_flags in
@@ -493,9 +495,9 @@ let rec to_constr (lfts, usubst as ulfts) v =
     | FFlex (RelKey p) -> mkRel (reloc_rel p lfts)
     | FFlex (VarKey x) -> mkVar x
     | FAtom c -> subst_us (exliftn lfts c)
-    | FFlex (ConstKey op) -> subst_us (mkConstU op)
-    | FInd op -> subst_us (mkIndU op)
-    | FConstruct op -> subst_us (mkConstructU op)
+    | FFlex (ConstKey op) -> subst_us op
+    | FInd op -> subst_us op
+    | FConstruct op -> subst_us op
     | FCaseT (ci, u, pms, p, c, ve, env) ->
       to_constr_case ulfts ci u pms p NoInvert c ve env
     | FCaseInvert (ci, u, pms, p, indices, c, ve, env) ->
@@ -988,7 +990,7 @@ module FNativeEntries =
 
     let mk_construct c =
       (* All constructors used in primitive functions are relevant *)
-      { mark = Cstr; term = FConstruct (UVars.in_punivs c) }
+      { mark = Cstr; term = FConstruct (UnsafeMonomorphic.mkConstruct c) }
 
     let get = Array.get
 
@@ -1022,7 +1024,7 @@ module FNativeEntries =
       match retro.Retroknowledge.retro_int63 with
       | Some c ->
         defined_int := true;
-        fint := { mark = Ntrl; term = FFlex (ConstKey (UVars.in_punivs c)) }
+        fint := { mark = Ntrl; term = FFlex (ConstKey (UnsafeMonomorphic.mkConst c)) }
       | None -> defined_int := false
 
     let defined_float = ref false
@@ -1032,7 +1034,7 @@ module FNativeEntries =
       match retro.Retroknowledge.retro_float64 with
       | Some c ->
         defined_float := true;
-        ffloat := { mark = Ntrl; term = FFlex (ConstKey (UVars.in_punivs c)) }
+        ffloat := { mark = Ntrl; term = FFlex (ConstKey (UnsafeMonomorphic.mkConst c)) }
       | None -> defined_float := false
 
     let defined_string = ref false
@@ -1042,7 +1044,7 @@ module FNativeEntries =
       match retro.Retroknowledge.retro_string with
       | Some c ->
         defined_string := true;
-        fstring := { mark = Ntrl; term = FFlex (ConstKey (UVars.in_punivs c)) }
+        fstring := { mark = Ntrl; term = FFlex (ConstKey (UnsafeMonomorphic.mkConst c)) }
       | None -> defined_string := false
 
     let defined_bool = ref false
@@ -1093,7 +1095,7 @@ module FNativeEntries =
         fLt := mk_construct cLt;
         fGt := mk_construct cGt;
         let (icmp, _) = cEq in
-        fcmp := { mark = Ntrl; term = FInd (UVars.in_punivs icmp) }
+        fcmp := { mark = Ntrl; term = FInd (UnsafeMonomorphic.mkInd icmp) }
       | None -> defined_cmp := false
 
     let defined_f_cmp = ref false
@@ -1676,7 +1678,8 @@ and match_arg : 'a. ('a, 'a patstate) reduction -> _ -> _ -> pat_state:(fconstr,
 and match_head : 'a. ('a, 'a patstate) reduction -> _ -> _ -> pat_state:(fconstr, stack, _, 'a) depth -> _ -> _ -> _ -> _ -> _ -> _ -> 'a =
   fun red info tab ~pat_state next context states patterns t stk ->
   match [@ocaml.warning "-4"] t.term with
-  | FInd (ind', u) ->
+  | FInd ind ->
+    let (ind', u) = destInd ind in
     let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
     | (PHInd (ind, pu), elims), psubst ->
       if not @@ Ind.CanOrd.equal ind ind' then None else
@@ -1686,7 +1689,8 @@ and match_head : 'a. ('a, 'a patstate) reduction -> _ -> _ -> pat_state:(fconstr
     in
     let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
     match_main red info tab ~pat_state states loc
-  | FConstruct (constr', u) ->
+  | FConstruct constr ->
+    let (constr', u) = destConstruct constr in
     let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
     | (PHConstr (constr, pu), elims), psubst ->
       if not @@ Construct.CanOrd.equal constr constr' then None else
@@ -1712,7 +1716,8 @@ and match_head : 'a. ('a, 'a patstate) reduction -> _ -> _ -> pat_state:(fconstr
       match_main red info tab ~pat_state states loc
     | _ -> assert false
     end
-  | FFlex (ConstKey (c', u)) ->
+  | FFlex (ConstKey cnst) ->
+    let (c', u) = destConst cnst in
     let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
     | (PHSymbol (c, pu), elims), psubst ->
       if not @@ Constant.CanOrd.equal c c' then None else
@@ -1866,7 +1871,7 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
         | (depth, args, ZcaseT(ci,_,pms,_,br,e)::s) when use_match ->
             assert (ci.ci_npar>=0);
             (* instance on the case and instance on the constructor are compatible by typing *)
-            let (br, e) = get_branch info depth ci pms c br e args in
+            let (br, e) = get_branch info depth ci pms (destConstruct c) br e args in
             knit info tab ~pat_state e br s
         | (_, cargs, Zfix(fx,par)::s) when use_fix ->
             let rarg = fapp_stack(m,cargs) in
@@ -1878,11 +1883,11 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
             let rarg = project_nth_arg (Projection.Repr.arg p) rargs in
             kni info tab ~pat_state rarg s
         | (_,args,s) ->
-          if is_irrelevant_constructor info c then
+          if is_irrelevant_constructor info (destConstruct c) then
             knr_ret info tab ~pat_state (mk_irrelevant, skip_irrelevant_stack info stk)
           else
             knr_ret info tab ~pat_state (m,args@s))
-     else if is_irrelevant_constructor info c then
+     else if is_irrelevant_constructor info (destConstruct c) then
       knr_ret info tab ~pat_state (mk_irrelevant, skip_irrelevant_stack info stk)
      else
       knr_ret info tab ~pat_state (m, stk)
@@ -1901,12 +1906,12 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
       knit info tab ~pat_state (on_fst (subs_cons v) e) bd stk
   | FInt _ | FFloat _ | FString _ | FArray _ ->
     (match [@ocaml.warning "-4"] strip_update_shift_app m stk with
-     | (_, _, Zprimitive(op,(_,u as c),rargs,nargs)::s) ->
+     | (_, _, Zprimitive(op,c,rargs,nargs)::s) ->
        let (rargs, nargs) = skip_native_args (m::rargs) nargs in
        begin match nargs with
          | [] ->
            let args = Array.of_list (List.rev rargs) in
-           begin match FredNative.red_prim (info_env info) () op u args with
+           begin match FredNative.red_prim (info_env info) () op (snd (destConst c)) args with
             | Some m -> kni info tab ~pat_state m s
             | None -> assert false
            end
@@ -2139,7 +2144,7 @@ and zip_term info tab m stk = match stk with
     let kargs = List.map (fun (_,a) -> kl info tab a) kargs in
     let args =
       List.fold_left (fun args a -> kl info tab a ::args) (m::kargs) rargs in
-    let h = mkApp (mkConstU c, Array.of_list args) in
+    let h = mkApp (c, Array.of_list args) in
     zip_term info tab h s
 
 (* Initialization and then normalization *)

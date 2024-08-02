@@ -28,7 +28,7 @@ type evar_repack
 
 type usubs = fconstr subs UVars.puniverses
 
-type table_key = Constant.t UVars.puniverses tableKey
+type table_key = Constr.t tableKey
 
 (** Relevances (eg in binder_annot or case_info) have NOT been substituted
     when there is a usubs field *)
@@ -36,8 +36,8 @@ type fterm =
   | FRel of int
   | FAtom of constr (** Metas and Sorts *)
   | FFlex of table_key
-  | FInd of pinductive
-  | FConstruct of pconstructor
+  | FInd of Constr.t
+  | FConstruct of Constr.t
   | FApp of fconstr * fconstr array
   | FProj of Projection.t * Sorts.relevance * fconstr
   | FFix of fixpoint * usubs
@@ -67,7 +67,7 @@ type stack_member =
   | ZcaseT of case_info * UVars.Instance.t * constr array * case_return * case_branch array * usubs
   | Zproj of Projection.Repr.t * Sorts.relevance
   | Zfix of fconstr * stack
-  | Zprimitive of CPrimitives.t * pconstant * fconstr list * fconstr next_native_args
+  | Zprimitive of CPrimitives.t * Constr.t * fconstr list * fconstr next_native_args
        (* operator, constr def, arguments already seen (in rev order), next arguments *)
   | Zshift of int
   | Zupdate of fconstr
@@ -78,7 +78,7 @@ val empty_stack : stack
 val append_stack : fconstr array -> stack -> stack
 
 val check_native_args : CPrimitives.t -> stack -> bool
-val get_native_args1 : CPrimitives.t -> pconstant -> stack ->
+val get_native_args1 : CPrimitives.t -> Constr.t -> stack ->
   fconstr list * fconstr * fconstr next_native_args * stack
 
 val get_invert : finvert -> fconstr array

@@ -74,7 +74,7 @@ type lft_constr_stack_elt =
   | Zlfix of (lift * fconstr) * lft_constr_stack
   | Zlcase of case_info * lift * UVars.Instance.t * constr array * case_return * case_branch array * usubs
   | Zlprimitive of
-     CPrimitives.t * pconstant * lft_fconstr list * lft_fconstr next_native_args
+     CPrimitives.t * Constr.t * lft_fconstr list * lft_fconstr next_native_args
 and lft_constr_stack = lft_constr_stack_elt list
 
 let rec zlapp v = function
@@ -238,13 +238,18 @@ let convert_constructors ctor nargs u1 u2 (s, check) =
 let conv_table_key infos ~nargs k1 k2 cuniv =
   if k1 == k2 then cuniv else
   match k1, k2 with
-  | ConstKey (cst, u), ConstKey (cst', u') when Constant.CanOrd.equal cst cst' ->
-    if UVars.Instance.equal u u' then cuniv
-    else if Int.equal nargs 1 && is_array_type (info_env infos.cnv_inf) cst then cuniv
+  | ConstKey cst, ConstKey cst' ->
+    let (cst, u) = destConst cst in
+    let (cst', u') = destConst cst' in
+    if Constant.CanOrd.equal cst cst' then
+      if UVars.Instance.equal u u' then cuniv
+      else if Int.equal nargs 1 && is_array_type (info_env infos.cnv_inf) cst then cuniv
+      else
+        let flex = evaluable_constant cst (info_env infos.cnv_inf)
+          && RedFlags.red_set (info_flags infos.cnv_inf) (RedFlags.fCONST cst)
+        in fail_check infos @@ convert_instances ~flex u u' cuniv
     else
-      let flex = evaluable_constant cst (info_env infos.cnv_inf)
-        && RedFlags.red_set (info_flags infos.cnv_inf) (RedFlags.fCONST cst)
-      in fail_check infos @@ convert_instances ~flex u u' cuniv
+      raise NotConvertible
   | VarKey id, VarKey id' when Id.equal id id' -> cuniv
   | RelKey n, RelKey n' when Int.equal n n' -> cuniv
   | _ -> raise NotConvertible
@@ -297,7 +302,9 @@ let esubst_of_context ctx u args e =
   aux 0 e args (List.rev ctx)
 
 let irr_flex infos = function
-  | ConstKey (con,u) -> begin match Cmap_env.find_opt con (info_env infos).Environ.irr_constants with
+  | ConstKey cst -> begin
+      let (con,u) = destConst cst in
+      match Cmap_env.find_opt con (info_env infos).Environ.irr_constants with
       | None -> false
       | Some r -> is_irrelevant infos @@ UVars.subst_instance_relevance u r
     end
@@ -456,7 +463,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           let oracle = CClosure.oracle_of_infos infos.cnv_inf in
           let to_er fl =
             match fl with
-            | ConstKey (c, _) -> Some (Conv_oracle.EvalConstRef c)
+            | ConstKey c -> Some (Conv_oracle.EvalConstRef (fst (destConst c)))
             | VarKey id -> Some (Conv_oracle.EvalVarRef id)
             | RelKey _ -> None
           in
@@ -586,7 +593,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
             eqappr cv_pb l2r infos (lft1, r1) appr2 cuniv
         | None ->
           (match c2 with
-           | FConstruct ((ind2,_j2),u2) ->
+           | FConstruct c ->
+             let ((ind2,_j2),u2) = destConstruct c in
              (try
                 let v2, v1 =
                   eta_expand_ind_stack (info_env infos.cnv_inf) (ind2,u2) hd2 v2 (snd appr1)
@@ -604,7 +612,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           eqappr cv_pb l2r infos appr1 (lft2, r2) cuniv
         | None ->
           match c1 with
-          | FConstruct ((ind1,_j1),u1) ->
+          | FConstruct c ->
+            let ((ind1,_j1),u1) = destConstruct c in
             (try let v1, v2 =
                    eta_expand_ind_stack (info_env infos.cnv_inf) (ind1,u1) hd1 v1 (snd appr2)
                in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
@@ -613,7 +622,9 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
        end
 
     (* Inductive types:  MutInd MutConstruct Fix Cofix *)
-    | (FInd (ind1,u1 as pind1), FInd (ind2,u2 as pind2)) ->
+    | (FInd (pind1), FInd (pind2)) ->
+      let (ind1,u1 as pind1) = destInd pind1 in
+      let (ind2,u2 as pind2) = destInd pind2 in
       if Ind.CanOrd.equal ind1 ind2 then
         if UVars.Instance.is_empty u1 || UVars.Instance.is_empty u2 then
           let cuniv = fail_check infos @@ convert_instances ~flex:false u1 u2 cuniv in
@@ -630,7 +641,9 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
             eqappr cv_pb l2r infos (lft1,(hd1,v1)) (lft2,(hd2,v2)) cuniv
       else raise NotConvertible
 
-    | (FConstruct ((ind1,j1),u1 as pctor1), FConstruct ((ind2,j2),u2 as pctor2)) ->
+    | (FConstruct (pctor1), FConstruct (pctor2)) ->
+      let ((ind1,j1),u1 as pctor1) = destConstruct pctor1 in
+      let ((ind2,j2),u2 as pctor2) = destConstruct pctor2 in
       if Int.equal j1 j2 && Ind.CanOrd.equal ind1 ind2 then
         if UVars.Instance.is_empty u1 || UVars.Instance.is_empty u2 then
           let cuniv = fail_check infos @@ convert_instances ~flex:false u1 u2 cuniv in
@@ -648,14 +661,16 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
       else raise NotConvertible
 
     (* Eta expansion of records *)
-    | (FConstruct ((ind1,_j1),u1), _) ->
+    | (FConstruct pctor1, _) ->
+      let ((ind1,_j1),u1) = destConstruct pctor1 in
       (try
          let v1, v2 =
             eta_expand_ind_stack (info_env infos.cnv_inf) (ind1,u1) hd1 v1 (snd appr2)
          in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
        with Not_found -> raise NotConvertible)
 
-    | (_, FConstruct ((ind2,_j2),u2)) ->
+    | (_, FConstruct pctor2) ->
+      let ((ind2,_j2),u2) = destConstruct pctor2 in
       (try
          let v2, v1 =
             eta_expand_ind_stack (info_env infos.cnv_inf) (ind2,u2) hd2 v2 (snd appr1)

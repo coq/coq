@@ -202,7 +202,7 @@ let rec infer_fterm cv_pb infos variances hd stk =
       try
         let infer_mode = get_infer_mode variances in
         let variances = if Option.has_some def then set_infer_mode false variances else variances in
-        let variances = infer_constant (info_env (fst infos)) variances con in
+        let variances = infer_constant (info_env (fst infos)) variances (destConst con) in
         let variances = infer_stack infos variances stk in
         set_infer_mode infer_mode variances
       with BadVariance _ | NotInferring as e ->
@@ -221,13 +221,15 @@ let rec infer_fterm cv_pb infos variances hd stk =
     let na = usubst_binder e na in
     let variances = infer_fterm CONV infos variances dom [] in
     infer_fterm cv_pb (push_relevance infos na) variances (mk_clos (CClosure.usubs_lift e) codom) []
-  | FInd (ind, u) ->
+  | FInd ind ->
+    let (ind, u) = destInd ind in
     let variances =
       let nargs = stack_args_size stk in
       infer_inductive_instance cv_pb (info_env (fst infos)) variances ind nargs u
     in
     infer_stack infos variances stk
-  | FConstruct (ctor,u) ->
+  | FConstruct ctor ->
+    let (ctor,u) = destConstruct ctor in
     let variances =
       let nargs = stack_args_size stk in
       infer_constructor_instance_eq (info_env (fst infos)) variances ctor nargs u

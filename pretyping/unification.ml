@@ -516,7 +516,8 @@ type key =
   | IsProj of Projection.t * ERelevance.t * EConstr.constr
 
 let expand_table_key ts env sigma args = function
-  | ConstKey (c, _ as cst) ->
+  | ConstKey cst ->
+      let (c, _ as cst) = Constr.destConst cst in
       if Structures.PrimitiveProjections.is_transparent_constant ts c then
         match constant_value_in env cst with
         (* If we are unfolding a compatibility constant we want to return the
@@ -577,7 +578,7 @@ let key_of env sigma b flags f =
       (Structures.PrimitiveProjections.is_transparent_constant flags.modulo_delta cst
        || PrimitiveProjections.mem cst) ->
       let u = EInstance.kind sigma u in
-      Some (IsKey (ConstKey (cst, u)))
+      Some (IsKey (ConstKey (Constr.mkConstU (cst, u))))
   | Var id when is_transparent env (Evaluable.EvalVarRef id) &&
       TransparentState.is_transparent_variable flags.modulo_delta id ->
     Some (IsKey (VarKey id))
@@ -589,7 +590,7 @@ let key_of env sigma b flags f =
 
 
 let translate_key = function
-  | ConstKey (cst,u) -> Some (Conv_oracle.EvalConstRef cst)
+  | ConstKey cst -> Some (Conv_oracle.EvalConstRef (fst (Constr.destConst cst)))
   | VarKey id -> Some (Conv_oracle.EvalVarRef id)
   | RelKey _ -> None
 
@@ -608,11 +609,11 @@ let oracle_order env cf1 cf2 =
       | None -> Some true
       | Some k2 ->
         match k1, k2 with
-        | IsProj (p, _, _), IsKey (ConstKey (p',_))
-          when Environ.QConstant.equal env (Projection.constant p) p' ->
+        | IsProj (p, _, _), IsKey (ConstKey p')
+          when Environ.QConstant.equal env (Projection.constant p) (fst (Constr.destConst p')) ->
           Some (not (Projection.unfolded p))
-        | IsKey (ConstKey (p,_)), IsProj (p', _, _)
-          when Environ.QConstant.equal env p (Projection.constant p') ->
+        | IsKey (ConstKey p), IsProj (p', _, _)
+          when Environ.QConstant.equal env (fst (Constr.destConst p)) (Projection.constant p') ->
           Some (Projection.unfolded p')
         | _ ->
           Some (Conv_oracle.oracle_order
