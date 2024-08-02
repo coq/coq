@@ -997,28 +997,46 @@ let subst_instance_relevance subst r =
 
 (** Operations that dot NOT commute with evar-normalization *)
 let noccurn sigma n term =
-  let rec occur_rec n c = match kind sigma c with
+  let rec occur_rec n h c =
+    let (h, knd) = Expand.kind sigma h c in
+    match knd with
     | Rel m -> if Int.equal m n then raise LocalOccur
-    | Evar (_, l) -> SList.Skip.iter (fun c -> occur_rec n c) l
-    | _ -> iter_with_binders sigma succ occur_rec n c
+    | Evar (evk, l) ->
+      let evi = Evd.find_undefined sigma evk in
+      let l = Expand.expand_instance ~skip:true evi h l in
+      SList.Skip.iter (fun c -> occur_rec n h c) l
+    | _ -> Expand.iter_with_binders sigma succ occur_rec n h knd
   in
-  try occur_rec n term; true with LocalOccur -> false
+  let h, term = Expand.make term in
+  try occur_rec n h term; true with LocalOccur -> false
 
 let noccur_between sigma n m term =
-  let rec occur_rec n c = match kind sigma c with
+  let rec occur_rec n h c =
+    let (h, knd) = Expand.kind sigma h c in
+    match knd with
     | Rel p -> if n<=p && p<n+m then raise LocalOccur
-    | Evar (_, l) -> SList.Skip.iter (fun c -> occur_rec n c) l
-    | _        -> iter_with_binders sigma succ occur_rec n c
+    | Evar (evk, l) ->
+      let evi = Evd.find_undefined sigma evk in
+      let l = Expand.expand_instance ~skip:true evi h l in
+      SList.Skip.iter (fun c -> occur_rec n h c) l
+    | _        -> Expand.iter_with_binders sigma succ occur_rec n h knd
   in
-  try occur_rec n term; true with LocalOccur -> false
+  let h, term = Expand.make term in
+  try occur_rec n h term; true with LocalOccur -> false
 
 let closedn sigma n c =
-  let rec closed_rec n c = match kind sigma c with
+  let rec closed_rec n h c =
+    let (h, knd) = Expand.kind sigma h c in
+    match knd with
     | Rel m -> if m>n then raise LocalOccur
-    | Evar (_, l) -> SList.Skip.iter (fun c -> closed_rec n c) l
-    | _ -> iter_with_binders sigma succ closed_rec n c
+    | Evar (evk, l) ->
+      let evi = Evd.find_undefined sigma evk in
+      let l = Expand.expand_instance ~skip:true evi h l in
+      SList.Skip.iter (fun c -> closed_rec n h c) l
+    | _ -> Expand.iter_with_binders sigma succ closed_rec n h knd
   in
-  try closed_rec n c; true with LocalOccur -> false
+  let h, c = Expand.make c in
+  try closed_rec n h c; true with LocalOccur -> false
 
 let closed0 sigma c = closedn sigma 0 c
 

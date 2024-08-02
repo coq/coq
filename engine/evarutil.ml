@@ -105,11 +105,14 @@ let nf_evar_map_undefined evm =
  *)
 
 let has_undefined_evars evd t =
-  let rec has_ev t =
-    match EConstr.kind evd t with
+  let rec f h t =
+    let (h, knd) = EConstr.Expand.kind evd h t in
+    match knd with
     | Evar _ -> raise NotInstantiatedEvar
-    | _ -> EConstr.iter evd has_ev t in
-  try let _ = has_ev t in false
+    | _ -> EConstr.Expand.iter evd f h knd
+  in
+  let h, t = EConstr.Expand.make t in
+  try let _ = f h t in false
   with (Not_found | NotInstantiatedEvar) -> true
 
 let is_ground_term evd t =
