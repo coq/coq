@@ -282,7 +282,7 @@ let rec get_children v o pos = match v with
       [|(Int, id, 0 :: pos); (tpe, o, 1 :: pos)|]
     | _ -> raise_notrace Exit
     end
-  |Fail s -> raise Forbidden
+  | Fail s -> raise Forbidden
   | Proxy v -> get_children !v o pos
   | Int64 -> raise_notrace Exit
   | Float64 -> raise_notrace Exit
@@ -458,8 +458,6 @@ let visit_vo f =
   let known_segments = [
     "summary", Values.v_libsum;
     "library", Values.v_lib;
-    "universes", Values.v_univopaques;
-    "tasks", (Opt Values.v_stm_seg);
     "opaques", Values.v_opaquetable;
   ] in
   let repr =
