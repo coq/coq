@@ -16,37 +16,6 @@ bt='`'               # backtick
 start_code_block='```'
 end_code_block='```'
 
-# We put local binaries such as opam in .bin and extend PATH
-BIN=$(pwd)/.bin
-mkdir "$BIN"
-wget https://github.com/ocaml/opam/releases/download/2.1.3/opam-2.1.3-x86_64-linux -O "$BIN"/opam
-chmod +x "$BIN"/opam
-
-export OPAMSKIPUPDATE=1 # stop opam from messing with our pin edits
-
-export NJOBS=1 # used by the test suite through dune
-
-# generate per file info in test suite and coq_makefile devs
-export TIMED=1
-
-export PATH="$BIN":$PATH
-
-echo "Global env info:"
-echo "----------------"
-echo "pwd: $PWD"
-echo "path: $PATH"
-echo "opam version: `opam --version`"
-
-number_of_processors=$(cat /proc/cpuinfo | grep '^processor *' | wc -l)
-
-program_name="$0"
-program_path=$(readlink -f "${program_name%/*}")
-render_results="dune exec --no-print-directory --root $program_path/../.. -- dev/bench/render_results.exe"
-render_line_results="dune exec --no-print-directory --root $program_path/../.. -- dev/bench/render_line_results.exe"
-timelog2html="dune exec --no-print-directory --root $program_path/../.. -- dev/bench/timelog2html.exe"
-
-coqbot_url_prefix="https://coqbot.herokuapp.com/pendulum/"
-
 # Check that the required arguments are provided
 
 check_variable () {
@@ -142,6 +111,37 @@ echo "DEBUG: old_opam_override_urls = $old_opam_override_urls"
 echo "DEBUG: coq_pr_number = $coq_pr_number"
 echo "DEBUG: coq_pr_comment_id = $coq_pr_comment_id"
 echo "DEBUG: coq_native = $coq_native"
+
+# We put local binaries such as opam in .bin and extend PATH
+BIN=$(pwd)/.bin
+mkdir "$BIN"
+wget https://github.com/ocaml/opam/releases/download/2.1.3/opam-2.1.3-x86_64-linux -O "$BIN"/opam
+chmod +x "$BIN"/opam
+
+export OPAMSKIPUPDATE=1 # stop opam from messing with our pin edits
+
+export NJOBS=1 # used by the test suite through dune
+
+# generate per file info in test suite and coq_makefile devs
+export TIMED=1
+
+export PATH="$BIN":$PATH
+
+echo "Global env info:"
+echo "----------------"
+echo "pwd: $PWD"
+echo "path: $PATH"
+echo "opam version: `opam --version`"
+
+number_of_processors=$(cat /proc/cpuinfo | grep '^processor *' | wc -l)
+
+program_name="$0"
+program_path=$(readlink -f "${program_name%/*}")
+render_results="dune exec --no-print-directory --root $program_path/../.. -- dev/bench/render_results.exe"
+render_line_results="dune exec --no-print-directory --root $program_path/../.. -- dev/bench/render_line_results.exe"
+timelog2html="dune exec --no-print-directory --root $program_path/../.. -- dev/bench/timelog2html.exe"
+
+coqbot_url_prefix="https://coqbot.herokuapp.com/pendulum/"
 
 # --------------------------------------------------------------------------------
 
