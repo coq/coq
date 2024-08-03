@@ -679,15 +679,15 @@ commands in a module, when outside the module where they were entered. In the
 following table:
 
 * a cross (❌) marks an unsupported attribute (compilation error);
-* "not available" means that the command has no effect outside the module it was entered;
-* "when imported" means that the command has effect outside the module if, and
+* “not available” means that the command has no effect outside the module it was entered;
+* “when imported” means that the command has effect outside the module if, and
   only if, the module (or the command, via selective importation) is imported;
-* "short name when imported" means that the command has effects outside the module;
+* “short name when imported” means that the command has effects outside the module;
   if the module (or command, via selective importation) is not imported, the
   associated identifiers must be qualified;
-* "qualified name" means that the command has effects outside the module, but
+* “qualified name” means that the command has effects outside the module, but
   the corresponding identifier may only be referred to with a qualified name;
-* "always" means that the command always has effects outside the module (even if
+* “always” means that the command always has effects outside the module (even if
   it is not imported).
 
 A similar table for :cmd:`Section` can be found
