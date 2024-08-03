@@ -70,7 +70,6 @@ let create_preferences_box pref_struct current_section =
   in
 
   (* Populate the tree *)
-
   let rec make_tree ?parent { label; icon; sections; children } =
     (* box is not shown at first *)
     let box = GPack.vbox ~packing:(menu_box#pack ~expand:true) ~show:false () in
@@ -82,6 +81,8 @@ let create_preferences_box pref_struct current_section =
     } in
     let new_iter = tree#append ?parent () in
     Option.iter (tree#set ~row:new_iter ~column:icon_col) icon;
+    (* Indent labels that are below the top-level *)
+    let label = if parent <> None then "  " ^ label else label in
     tree#set ~row:new_iter ~column:label_col label;
     tree#set ~row:new_iter ~column:box_col box_widget;
     List.iter (make_tree ~parent:new_iter) children;
