@@ -4,15 +4,19 @@ Sections
 ====================================
 
 Sections are naming scopes that permit creating section-local declarations that can
-be used by other declarations in the section.  Declarations made
-with :cmd:`Variable`, :cmd:`Hypothesis`, :cmd:`Context`,
-:cmd:`Let`, :cmd:`Let Fixpoint` and
-:cmd:`Let CoFixpoint` (or the plural variants of the first two) within sections
-are local to the section.
+be used by other declarations in the section. Declarations made with
+:cmd:`Variable`, :cmd:`Hypothesis`, :cmd:`Context`
+(or the plural variants of the first two)
+and definitions made with
+:cmd:`Let`, :cmd:`Let Fixpoint` and :cmd:`Let CoFixpoint`
+within sections are local to the section.
 
 In proofs done within the section, section-local declarations
 are included in the :term:`local context` of the initial goal of the proof.
 They are also accessible in definitions made with the :cmd:`Definition` command.
+
+Using sections
+--------------
 
 Sections are opened by the :cmd:`Section` command, and closed by :cmd:`End`.
 Sections can be nested.
@@ -48,6 +52,8 @@ usable outside the section as shown in this :ref:`example <section_local_declara
    Most commands, such as the :ref:`Hint <creating_hints>` commands,
    :cmd:`Notation` and option management commands that
    appear inside a section are canceled when the section is closed.
+   In some cases, this behaviour can be tuned with locality attributes.
+   See :ref:`this table<visibility-attributes-sections>`.
 
 .. cmd:: Let @ident_decl @def_body
          Let Fixpoint @fix_definition {* with @fix_definition }
@@ -141,8 +147,14 @@ commands in a section, when outside the section where they were entered. In the
 following table:
 
 * a cross (❌) marks an unsupported attribute (compilation error);
-* "not available" means that the command has no effect outside the section it was entered;
-* "available" means that the effect of the command persists outside the section.
+* “not available” means that the command has no effect outside the section it
+  was entered;
+* “available” means that the effects of the command persists outside the section.
+* For :cmd:`Definition` (and :cmd:`Lemma`, ...), :cmd:`Canonical Structure`,
+  :cmd:`Coercion` and :cmd:`Set` (and :cmd:`Unset`), some locality attributes
+  will be passed on to the :cmd:`Module` containing the current :cmd:`Section`,
+  see the associated footnotes.
+
 
 A similar table for :cmd:`Module` can be found
 :ref:`here <visibility-attributes-modules>`.
@@ -157,8 +169,10 @@ A similar table for :cmd:`Module` can be found
     - :attr:`global`
 
   * - :cmd:`Definition`, :cmd:`Lemma`, :cmd:`Axiom`, ...
-    - :attr:`local`
-    - available
+    - available [#note1]_
+    - :attr:`local` in
+
+      current module [#note1]_
     - ❌
     - ❌
 
@@ -202,13 +216,17 @@ A similar table for :cmd:`Module` can be found
     - :attr:`global`
     - not available
     - ❌
-    - available
+    - :attr:`global` in
+
+      current module [#note2]_
 
   * - :cmd:`Canonical Structure`
     - :attr:`global`
     - not available
     - ❌
-    - available
+    - :attr:`global` in
+
+      current module [#note2]_
 
   * - ``Hints`` (and :cmd:`Instance`)
     - :attr:`local`
@@ -217,10 +235,32 @@ A similar table for :cmd:`Module` can be found
     - ❌
 
   * - :cmd:`Set` or :cmd:`Unset` a flag
-    - :attr:`local`
+    - available
     - not available
-    - available
-    - available
+    - :attr:`export` in
+
+      current module [#note3]_
+    - :attr:`global` in
+
+      current module [#note3]_
+
+.. [#note1] For :cmd:`Definition`, :cmd:`Lemma`, ... the default visibility is
+   to be available outside the section and available with a short name when
+   imported outside the current module. The :attr:`local` attribute make the
+   corresponding identifiers available in the current module but only with a
+   fully qualified name outside the current module.
+
+.. [#note2] For :cmd:`Coercion` and :cmd:`Canonical Structure`, the :attr:`global`
+   visibility, which is the default, makes them available outside the section,
+   in the current module, and outside the current module when it is imported.
+
+.. [#note3] For :cmd:`Set` and :cmd:`Unset`, the :attr:`export` and
+   :attr:`global` attributes both make the command's effects persist outside the
+   current section, in the current module. It will also persist outside the
+   current module with the :attr:`global` attribute, or with the :attr:`export`
+   attribute, when the module is imported.
+   The default behaviour (no attribute) is to make the setting persist outside
+   the section in the current module, but not outside the current module.
 
 .. _Admissible-rules-for-global-environments:
 
