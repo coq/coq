@@ -457,6 +457,7 @@ let visit_vo f =
     "summary", Values.v_libsum;
     "library", Values.v_lib;
     "opaques", Values.v_opaquetable;
+    "vmlibrary", Values.v_vmlib;
   ] in
   let repr =
     if Sys.word_size = 64 then (module ReprMem : S) else (module ReprObj : S)
