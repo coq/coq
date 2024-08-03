@@ -144,7 +144,6 @@ let rec val_gen v mem ctx o = match v with
   | Fail s -> fail mem ctx o ("unexpected object " ^ s)
   | Annot (s,v) -> val_gen v mem (ctx/CtxAnnot s) o
   | Dyn -> val_dyn mem ctx o
-  | Proxy { contents = v } -> val_gen v mem ctx o
   | Int64 -> val_int64 mem ctx o
   | Float64 -> val_float64 mem ctx o
 
