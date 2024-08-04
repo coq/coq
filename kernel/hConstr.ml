@@ -122,14 +122,6 @@ end
 module UBRelMap = Map.Make(UBRelKey)
 
 type seen = {
-  (* If the ub rels are different we need to restart
-     (this is the [analysis] after the [Fresh] corresponding to [seen_self],
-     so eg if [seen_self] is [App (x,[|y|])] the first element is the index of [x]) *)
-  start_info : SharingAnalyser.analysis;
-  (* After we have restarted we may see a [Fresh] whose value we
-     already know. In that case we need to set the [analysis] to after
-     the current term. *)
-  end_info : SharingAnalyser.analysis;
   seen_self : Constr.t;
   data : t UBRelMap.t;
 }
@@ -143,17 +135,17 @@ type local_env = {
   cnt : int ref;
   (* how many unknown_rel we have seen *)
   unknown_cnt : int ref;
+  (* map from uids to binders (unknown_rels are not present) *)
+  uid_revmap : (t option * t) Int.Map.t ref;
   assum_uids : int Tbl.t;
   (* the surrounding table is for the body, the inner table for the type *)
   letin_uids : int Tbl.t Tbl.t;
-  (* counter used in the "hconstr-sharing-trace" debug *)
-  restart_cnt : int ref;
   (* sharing info (needs to be optional to handle the Case binders,
      also if we want a mode which doesn't exploit sharing,
      also should make jscoq devs's work easier).
      The [int] is the id of this restart, for debugging.
   *)
-  sharing_info : (SharingAnalyser.analysis ref * int) option;
+  sharing_info : SharingAnalyser.analysis ref option;
   (* already seen terms according to sharing info *)
   shared_seen : seen option array;
 }
@@ -168,10 +160,10 @@ let empty_env env info = {
   rels = Range.empty;
   cnt = ref 0;
   unknown_cnt = ref 0;
+  uid_revmap = ref Int.Map.empty;
   assum_uids = Tbl.create 47;
   letin_uids = Tbl.create 47;
-  restart_cnt = ref 0;
-  sharing_info = Option.map (fun info -> ref info, 0) info;
+  sharing_info = Option.map ref info;
   shared_seen = init_seen info;
 }
 
@@ -188,6 +180,7 @@ let push_assum t env =
     incr env.cnt;
     let uid = !(env.cnt) in
     Tbl.add env.assum_uids t uid;
+    env.uid_revmap := Int.Map.add uid (None,t) !(env.uid_revmap);
     uid
   in
   { env with rels = Range.cons uid env.rels }
@@ -208,6 +201,7 @@ let push_letin ~body ~typ env =
           incr env.cnt;
           let uid = !(env.cnt) in
           Tbl.add tbl typ uid;
+          env.uid_revmap := Int.Map.add uid (Some body,typ) !(env.uid_revmap);
           uid
       end
     | None ->
@@ -216,6 +210,7 @@ let push_letin ~body ~typ env =
       let tbl = Tbl.create 3 in
       Tbl.add tbl typ uid;
       Tbl.add env.letin_uids body tbl;
+      env.uid_revmap := Int.Map.add uid (Some body,typ) !(env.uid_revmap);
       uid
   in
   { env with rels = Range.cons uid env.rels }
@@ -365,6 +360,219 @@ let kind_unbound_rels = function
     let rels = combine_unbound_rels def.unbound_rels ty.unbound_rels in
     Array.fold_left (fun rels elem -> combine_unbound_rels rels elem.unbound_rels) rels elems
 
+(** [diff_rels main other] produces the sublist of [main] which s different from [other]. *)
+let rec diff_rels main other =
+  let open SList in
+  match main, other with
+  | Nil, Nil -> SList.empty
+  | Cons (x,tl), Cons (y,tl') ->
+    let tl0 = diff_rels tl tl' in
+    if Int.equal x y then begin match tl0 with
+      | Nil -> SList.empty
+      | Cons _ | Default _ -> SList.default tl0
+    end
+    else if tl0 == tl then main else SList.cons x tl0
+  | Default (n,tl), Default (m,tl') ->
+    assert (Int.equal n m);
+    let tl0 = diff_rels tl tl' in
+    begin match tl0 with
+    | Nil -> SList.empty
+    | Cons _ | Default _ ->
+      if tl0 == tl then main else SList.defaultn n tl0
+    end
+  | (Nil | Cons _ | Default _), _ -> assert false
+
+let is_identity_on subst c =
+  let rec aux subst ubrels =
+    let open SList in
+    match subst, ubrels with
+    | Nil, _ -> (* rest of ubrels are not modified *) true
+    | _, Nil -> (* no more ubrels to modify *) true
+    | Cons (x,_), Cons (y, _) ->
+      assert (not @@ Int.equal x y);
+      false
+    | _, Default (m, tl') -> aux (pop_unbound_rels m subst) tl'
+    | Default (n, tl), _ -> aux tl (pop_unbound_rels n ubrels)
+  in
+  aux subst c.unbound_rels
+
+let incr_refcount v = v.refcount <- v.refcount + 1
+
+let make ?unbound_rels tbl local_env self kind =
+  let hash = hash_kind kind in
+  let isRel, hash = match kind with
+    | Rel n ->
+      let uid = Range.get local_env.rels (n-1) in
+      assert (uid <> 0);
+      uid, Hashset.Combine.combine uid hash
+    | _ -> 0, hash
+  in
+  match Tbl.raw_find tbl hash (fun c' -> raw_equal c' ~isRel ~kind) with
+  | Some c' -> c'.refcount <- c'.refcount + 1; c'
+  | None ->
+    let unbound_rels = match unbound_rels with
+      | Some v -> v
+      | None -> match kind with
+        | Rel n -> SList.defaultn (n-1) (SList.cons isRel SList.empty)
+        | _ -> kind_unbound_rels kind
+    in
+    let c =
+      let self' = kind_to_constr kind in
+      let self = if hasheq_kind (Constr.kind self') (Constr.kind self) then self else self' in
+      { self; kind; hash; isRel; unbound_rels; refcount = 1 }
+    in
+    Tbl.add tbl c c; c
+
+let push1_subst henv subst ubrels =
+  let open SList in
+  match ubrels with
+  | Nil | Default _ -> SList.default subst
+  | Cons (x,_) ->
+    let y = Range.hd henv.rels in
+    if Int.equal x y then SList.default subst
+    else SList.cons y subst
+
+(* v tells which rels are bound *)
+let ubrels_from_env (type a) local_env (v:a SList.t) =
+  let rec aux local_env rels = match rels with
+    | SList.Nil -> SList.empty
+    | SList.Cons (_,tl) ->
+      SList.cons (Range.hd local_env)
+        (aux (Range.tl local_env) tl)
+    | SList.Default (n,tl) ->
+      SList.defaultn n (aux (Range.skipn n local_env) tl)
+  in
+  aux local_env.rels v
+
+let rec change_bound cache tbl henv subst c =
+  if is_identity_on subst c then (incr_refcount c; c)
+  else if c.refcount = 1 then
+      let kind = change_bound_rec cache tbl henv subst c in
+      make tbl henv c.self kind
+  else
+    let c_cache = Option.default UBRelMap.empty (Tbl.find_opt cache c) in
+    let key = ubrels_from_env henv c.unbound_rels in
+    match UBRelMap.find_opt key c_cache with
+    | Some v -> incr_refcount v; v
+    | None ->
+      let kind = change_bound_rec cache tbl henv subst c in
+      let v = make tbl henv c.self kind in
+      Tbl.add cache c (UBRelMap.add key v c_cache);
+      v
+
+and change_bound_rec cache tbl henv subst c =
+  match c.kind with
+  | Rel _ as k ->
+    (* the actual change happens in [make] when recomputing unbound_rels *)
+    k
+  | Var _ | Const _ | Ind _ | Construct _ | Sort _
+  | Meta _ | Int _ | Float _ | String _ ->
+    (* closed -> always is_identity_on = true *)
+    assert false
+  | Evar _ -> assert false
+  | Cast (c1,k,c2) ->
+    let c1 = change_bound cache tbl henv subst c1 in
+    let c2 = change_bound cache tbl henv subst c2 in
+    Cast (c1,k,c2)
+  | Prod (na,t,c) ->
+    let t = change_bound cache tbl henv subst t in
+    let henv = push_assum t henv in
+    let subst = push1_subst henv subst c.unbound_rels in
+    let c = change_bound cache tbl henv subst c in
+    Prod (na,t,c)
+  | Lambda (na,t,c) ->
+    let t = change_bound cache tbl henv subst t in
+    let henv = push_assum t henv in
+    let subst = push1_subst henv subst c.unbound_rels in
+    let c = change_bound cache tbl henv subst c in
+    Lambda (na,t,c)
+  | LetIn (na,b,t,c) ->
+    let b = change_bound cache tbl henv subst b in
+    let t = change_bound cache tbl henv subst t in
+    let henv = push_letin ~body:b ~typ:t henv in
+    let subst = push1_subst henv subst c.unbound_rels in
+    let c = change_bound cache tbl henv subst c in
+    LetIn (na,b,t,c)
+  | App (h,args) ->
+    let h = change_bound cache tbl henv subst h in
+    let args = CArray.Smart.map (change_bound cache tbl henv subst) args in
+    App (h,args)
+  | Case (ci,u,pms,(p,r as pr),iv,c,bl) ->
+    let pms = CArray.Smart.map (change_bound cache tbl henv subst) pms in
+    let change_in_ctx (bnd, c) =
+      let henv, subst = Array.fold_left_i (fun i (henv,subst) _ ->
+          let open SList in
+          match pop_unbound_rels (Array.length bnd - i - 1) c.unbound_rels with
+          | Nil | Default _ ->
+            (* unused binder *)
+            { henv with rels = Range.cons (-1) henv.rels }, SList.default subst
+          | Cons (x, _) as ubrels ->
+            let t = Int.Map.get x !(henv.uid_revmap) in
+            let t =
+              let f x = change_bound cache tbl henv subst x in
+              Option.map f (fst t), f (snd t)
+            in
+            let henv = match t with
+              | (Some body, typ) -> push_letin ~body ~typ henv
+              | (None, typ) -> push_assum typ henv
+            in
+            let subst = push1_subst henv subst ubrels in
+            henv, subst)
+          (henv, subst)
+          bnd
+      in
+      bnd, change_bound cache tbl henv subst c
+    in
+    let pr =
+      let p' = change_in_ctx p in
+      if p' == p then pr else p',r
+    in
+    let iv = map_invert (change_bound cache tbl henv subst) iv in
+    let c = change_bound cache tbl henv subst c in
+    let bl = CArray.Smart.map change_in_ctx bl in
+    Case (ci,u,pms,pr,iv,c,bl)
+  | Fix (x,v) -> Fix (x, change_bound_recdef cache tbl henv subst v)
+  | CoFix (x,v) -> CoFix (x, change_bound_recdef cache tbl henv subst v)
+  | Proj (p,r,c) ->
+    let c = change_bound cache tbl henv subst c in
+    Proj (p,r,c)
+  | Array (u,elems,def,ty) ->
+    let elems = CArray.Smart.map (change_bound cache tbl henv subst) elems in
+    let def = change_bound cache tbl henv subst def in
+    let ty = change_bound cache tbl henv subst ty in
+    Array (u,elems,def,ty)
+
+and change_bound_recdef cache tbl henv subst (na,tl,bl) =
+  let tl' = CArray.Smart.map (change_bound cache tbl henv subst) tl in
+  let ubrels_orig_bdys = Array.fold_left (fun acc c -> combine_unbound_rels acc c.unbound_rels)
+      SList.empty
+      bl
+  in
+  let henv, subst = CArray.fold_left_i (fun i (henv,subst) t' ->
+      let ubrels = pop_unbound_rels (Array.length tl - i - 1) ubrels_orig_bdys in
+      let open SList in
+      match ubrels with
+      | Nil | Default _ ->
+        (* ith (co)fixpoint not used in the bodies (rare: not actually recursive fixpoints but ok) *)
+        { henv with rels = Range.cons (-1) henv.rels }, SList.default subst
+      | Cons (x, _) ->
+        if t' == tl.(i) then
+          (* unchanged binding even if it used unknown_rel *)
+          { henv with rels = Range.cons x henv.rels },
+          SList.default subst
+        else if Int.equal i 0 then
+          (* no need to lift *)
+          let henv = push_assum t' henv in
+          henv, push1_subst henv subst ubrels
+        else
+          let henv = push_unknown_rel henv in
+          henv, SList.cons (Range.hd henv.rels) subst)
+      (henv, subst)
+      tl'
+  in
+  let bl = CArray.Smart.map (change_bound cache tbl henv subst) bl in
+  (na,tl',bl)
+
 let of_kind_nohashcons = function
   | App (c, [||]) -> c
   | kind ->
@@ -391,150 +599,81 @@ let nonrel_leaf tbl c = match kind c with
     Tbl.raw_find tbl h (fun c' -> eq_leaf c c')
   | _ -> None
 
-(* v tells which rels are bound *)
-let ubrels_from_env (type a) local_env (v:a SList.t) =
-  let rec aux local_env rels = match rels with
-    | SList.Nil -> SList.empty
-    | SList.Cons (_,tl) ->
-      SList.cons (Range.hd local_env)
-        (aux (Range.tl local_env) tl)
-    | SList.Default (n,tl) ->
-      SList.defaultn n (aux (Range.skipn n local_env) tl)
-  in
-  aux local_env.rels v
-
-let trace = CDebug.create ~name:"hconstr-sharing-trace" ()
+let dbg_trace = CDebug.create ~name:"hconstr-trace" ()
 
 type sharing_info =
   | Fresh of {
       idx : int;
-      start_info : SharingAnalyser.analysis;
-      info_ref : SharingAnalyser.analysis ref;
     }
-  | RelsDiffer of int * local_env * UBRelKey.t
   | Seen of t
 
-let sharing_info_core local_env ~this_restart info_ref this_info c =
-  (* if we see Fresh but already have a value, we won't recurse
-     so we need to advance the info manually
-     if we see Seen but don't have a value, we need to reset the info while recursing
-  *)
-  let this = match this_info with
-    | SharingAnalyser.Fresh n ->
-      trace Pp.(fun () -> str "Fresh " ++ int n ++ str " in " ++ int this_restart);
-      n
-    | SharingAnalyser.Seen n ->
-      trace Pp.(fun () -> str "Seen " ++ int n ++ str " in " ++ int this_restart);
-      n
-  in
-  match local_env.shared_seen.(this) with
-  | None ->
-    let () = match this_info with
-      | SharingAnalyser.Fresh _ -> ()
-      | SharingAnalyser.Seen _ -> assert false
-    in
-    Fresh {idx = this; start_info = !info_ref; info_ref = info_ref;}
-  | Some seen ->
-    if c != seen.seen_self then CErrors.anomaly Pp.(str "hconstr sharing_info mismatch at idx " ++ int this);
-    let key =
-      let key', _ = UBRelMap.choose seen.data in
-      ubrels_from_env local_env key'
-    in
-    match UBRelMap.find_opt key seen.data with
+let sharing_info_core tbl local_env this_info c =
+  match this_info with
+  | SharingAnalyser.Fresh this ->
+    dbg_trace Pp.(fun () -> str "Fresh " ++ int this);
+    Fresh {idx=this}
+  | SharingAnalyser.Seen this ->
+    dbg_trace Pp.(fun () -> str "Seen " ++ int this);
+    match local_env.shared_seen.(this) with
     | None ->
-      let local_env = match this_info with
-        | SharingAnalyser.Fresh _ ->
-          assert (SharingAnalyser.analysis_equal !info_ref seen.start_info);
-          local_env
-        | SharingAnalyser.Seen _ ->
-          incr local_env.restart_cnt;
-          trace Pp.(fun () -> str "RESTART " ++ int !(local_env.restart_cnt));
-          { local_env with sharing_info = Some (ref seen.start_info, !(local_env.restart_cnt)) }
-      in
-      RelsDiffer (this, local_env, key)
-    | Some v ->
-      let () = match this_info with
-        | SharingAnalyser.Fresh _ ->
-          assert (SharingAnalyser.analysis_equal !info_ref seen.start_info);
-          trace Pp.(fun () -> str "SKIP");
-          info_ref := seen.end_info
-        | SharingAnalyser.Seen _ -> ()
-      in
-      Seen v
+      (* circular value? *)
+      assert false
+    | Some seen ->
+      if c != seen.seen_self
+      then CErrors.anomaly Pp.(str "hconstr sharing_info mismatch at idx " ++ int this);
+      let key', v' = UBRelMap.choose seen.data in
+      let key = ubrels_from_env local_env key' in
+      match UBRelMap.find_opt key seen.data with
+      | None ->
+        dbg_trace Pp.(fun () -> str"change_bound");
+        let v = change_bound (Tbl.create()) tbl local_env (diff_rels key key') v' in
+        let () =
+          local_env.shared_seen.(this) <-
+            Some { seen with data = UBRelMap.add key v seen.data }
+        in
+        Seen v
+      | Some v ->
+        Seen v
 
-let sharing_info local_env c =
+let sharing_info tbl local_env c =
   match local_env.sharing_info with
   | None -> None
-  | Some (info, this_restart) ->
+  | Some info ->
     let _debug = mk_debug !info c in
     let next, this_info = SharingAnalyser.step !info in
     info := next;
     match kind c with
     | Rel _ ->
-      (* Skip rels, doing [of_constr_fresh] directly seems as efficient.
-         NB since there are no subterms it doesn't matter if we're [Fresh] or [Seen]. *)
+      (* Skip rels, doing [of_constr_fresh] directly seems as efficient. *)
       None
     | _ ->
-      Some (sharing_info_core local_env ~this_restart info this_info c)
+      Some (sharing_info_core tbl local_env this_info c)
 
 let steps = ref 0
 
 let rec of_constr tbl local_env c =
   incr steps;
-  match sharing_info local_env c with
+  match sharing_info tbl local_env c with
   | None -> of_constr_fresh tbl local_env ~unbound_rels:None c
-  | Some (Fresh {idx; start_info; info_ref}) ->
+  | Some (Fresh {idx}) ->
     let v = of_constr_fresh tbl local_env ~unbound_rels:None c in
     let () =
       local_env.shared_seen.(idx) <-
         (* add [c] NOT [v.self] otherwise we will get false positive mismatch errors *)
         Some {
-          start_info;
-          end_info = !info_ref;
           seen_self = c;
           data = UBRelMap.singleton v.unbound_rels v;
         }
-    in
-    v
-  | Some (RelsDiffer (idx, local_env, key)) ->
-    let v = of_constr_fresh tbl local_env ~unbound_rels:(Some key) c in
-    let () =
-      local_env.shared_seen.(idx) <-
-        match local_env.shared_seen.(idx) with
-        | None -> assert false
-        | Some seen -> Some {seen with data = UBRelMap.add v.unbound_rels v seen.data}
     in
     v
   | Some (Seen v) -> v.refcount <- v.refcount + 1; v
 
 and of_constr_fresh tbl local_env ~unbound_rels c =
   match nonrel_leaf tbl c with
-  | Some v -> v
+  | Some v -> v (* v.refcount <- v.refcount + 1? *)
   | None ->
     let kind = of_constr_aux tbl local_env c in
-    let hash = hash_kind kind in
-    let isRel, hash = match kind with
-      | Rel n ->
-        let uid = Range.get local_env.rels (n-1) in
-        assert (uid <> 0);
-        uid, Hashset.Combine.combine uid hash
-      | _ -> 0, hash
-    in
-    match Tbl.raw_find tbl hash (fun c' -> raw_equal c' ~isRel ~kind) with
-    | Some c' -> c'.refcount <- c'.refcount + 1; c'
-    | None ->
-      let unbound_rels = match unbound_rels with
-        | Some v -> v
-        | None -> match kind with
-          | Rel n -> SList.defaultn (n-1) (SList.cons isRel SList.empty)
-          | _ -> kind_unbound_rels kind
-      in
-      let c =
-        let self = kind_to_constr kind in
-        let self = if hasheq_kind (Constr.kind self) (Constr.kind c) then c else self in
-        { self; kind; hash; isRel; unbound_rels; refcount = 1 }
-      in
-      Tbl.add tbl c c; c
+    make ?unbound_rels tbl local_env c kind
 
 and of_constr_aux tbl local_env c =
   match kind c with
