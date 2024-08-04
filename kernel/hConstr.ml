@@ -146,7 +146,11 @@ type local_env = {
      The [int] is the id of this restart, for debugging.
   *)
   sharing_info : SharingAnalyser.analysis ref option;
-  (* already seen terms according to sharing info *)
+  (* already seen terms according to sharing info
+
+     XXX now that we have 1-bit refcount on sharing does it still make
+     sense to use an array instead of int map? since with the refcount
+     we won't be filling every cell. *)
   shared_seen : seen option array;
 }
 
@@ -602,6 +606,7 @@ let nonrel_leaf tbl c = match kind c with
 let dbg_trace = CDebug.create ~name:"hconstr-trace" ()
 
 type sharing_info =
+  | Unshared
   | Fresh of {
       idx : int;
     }
@@ -609,6 +614,9 @@ type sharing_info =
 
 let sharing_info_core tbl local_env this_info c =
   match this_info with
+  | SharingAnalyser.Unshared this ->
+    dbg_trace Pp.(fun () -> str "Unshared " ++ int this);
+    Unshared
   | SharingAnalyser.Fresh this ->
     dbg_trace Pp.(fun () -> str "Fresh " ++ int this);
     Fresh {idx=this}
@@ -654,7 +662,7 @@ let steps = ref 0
 let rec of_constr tbl local_env c =
   incr steps;
   match sharing_info tbl local_env c with
-  | None -> of_constr_fresh tbl local_env ~unbound_rels:None c
+  | None | Some Unshared -> of_constr_fresh tbl local_env ~unbound_rels:None c
   | Some (Fresh {idx}) ->
     let v = of_constr_fresh tbl local_env ~unbound_rels:None c in
     let () =
@@ -835,13 +843,15 @@ let of_constr env c =
   let () =
     dbg_sharing Pp.(fun () ->
         let l = SharingAnalyser.to_list c_sharing_info in
-        let (fresh,shared) = List.fold_left (fun (fresh,shared) -> function
-            | SharingAnalyser.Fresh _ -> fresh+1, shared
-            | SharingAnalyser.Seen _ -> fresh, shared+1)
-            (0,0)
+        let (unshared,fresh,shared) = List.fold_left (fun (unshared,fresh,shared) -> function
+            | SharingAnalyser.Unshared _ -> unshared+1, fresh, shared
+            | SharingAnalyser.Fresh _ -> unshared, fresh+1, shared
+            | SharingAnalyser.Seen _ -> unshared, fresh, shared+1)
+            (0, 0, 0)
             l
         in
         str "raw length = " ++ int (SharingAnalyser.raw_length c_sharing_info) ++ pr_comma() ++
+        str "unshared = " ++ int unshared ++ pr_comma() ++
         str "fresh = " ++ int fresh ++ pr_comma() ++
         str "shared = " ++ int shared
       )

@@ -42,7 +42,9 @@ val analysis_equal : analysis -> analysis -> bool
 
 val analyse : type_descr -> Obj.t -> analysis
 
+(** [Unshared] means refcount = 1, [Fresh] means refcount > 1 *)
 type sharing_info =
+  | Unshared of int
   | Fresh of int
   | Seen of int
 

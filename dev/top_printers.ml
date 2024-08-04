@@ -324,6 +324,7 @@ let pr_rec_analysis x =
   let open CoqSharingAnalyser.SharingAnalyser in
   let l = to_list x in
   let pr_one = function
+    | Unshared n -> str "Unshared " ++ int n
     | Fresh n -> str "Fresh " ++ int n
     | Seen n -> str "Seen " ++ int n
   in
@@ -397,6 +398,7 @@ let ppdebug d =
   let open CoqSharingAnalyser.SharingAnalyser in
   let info, c = Constr.get_debug d in
   let info = ref info in
+  let unshared = ref Int.Map.empty in
   let map = ref Int.Map.empty in
   let annot s c =
     let s = Id.of_string_soft ("(* "^s^" *)") in
@@ -406,7 +408,13 @@ let ppdebug d =
     let i', cinf = step !info in
     info := i';
     match cinf with
+    | Unshared idx ->
+      assert (not (Int.Map.mem idx !unshared || Int.Map.mem idx !map));
+      unshared := Int.Map.add idx c !unshared;
+      let c = map_ltr aux c in
+      annot ("unshared " ^ string_of_int idx) c
     | Fresh idx ->
+      assert (not (Int.Map.mem idx !unshared || Int.Map.mem idx !map));
       map := Int.Map.add idx c !map;
       let c = map_ltr aux c in
       annot ("fresh " ^ string_of_int idx) c
@@ -417,11 +425,12 @@ let ppdebug d =
         else annot ("seen " ^ string_of_int idx) c
   in
   let c = aux c in
+  let map = Int.Map.union (fun _ _ _ -> assert false) !map !unshared in
   let msg =
     str "is_done = " ++ bool (is_done !info) ++ fnl () ++
     pr_constr c ++ fnl() ++ fnl() ++
     prlist_with_sep fnl (fun (i,c) -> int i ++ str " ==> " ++ pr_constr c)
-      (Int.Map.bindings !map)
+      (Int.Map.bindings map)
   in
   pp msg
 

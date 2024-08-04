@@ -63,12 +63,14 @@ let list x = cofix (fun x_list -> sum [|[|x;x_list|]|])
 let slist x = cofix (fun x_slist -> sum [|[|x;x_slist|];[|ignore;x_slist|]|])
 
 type sharing_info =
+  | Unshared of int
   | Fresh of int
   | Seen of int
 
 (* format: stream of encoded ints such that
-   0 means a new object
-   otherwise [n] means a reference to [n - 1] (absolute)
+   0 means a new object with refcount 1
+   1 means a new object with refcount >1
+   otherwise [n] means a reference to [n - 2] (absolute)
 
    int encoding: one or several bytes like 1xxxxxxx 1yyyyyyy 0zzzzzzz.
    First bytes have top bit 1, last byte has top bit 0.
@@ -111,8 +113,9 @@ let read_int data offset : int * int =
 
 let step {data; offset; seen;} =
   let this, offset = read_int data offset in
-  let info, seen = if this = 0 then Fresh (seen+1), seen+1
-    else Seen (this - 1), seen
+  let info, seen = if this = 0 then Unshared (seen+1), seen+1
+    else if this = 1 then Fresh (seen+1), seen+1
+    else Seen (this - 2), seen
   in
   {data; offset; seen}, info
 
@@ -123,7 +126,7 @@ let max_index {data; offset; seen} =
     if String.length data = offset then seen
     else
       let this, offset = read_int data offset in
-      let seen = if this = 0 then seen+1 else seen in
+      let seen = if this = 0 || this = 1 then seen+1 else seen in
       loop data offset seen
   in
   loop data offset seen

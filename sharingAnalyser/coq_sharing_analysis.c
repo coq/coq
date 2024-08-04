@@ -39,7 +39,8 @@ struct analyse_item { volatile value * v; volatile value * descr; mlsize_t count
 
 /* Hash table to record already-analysed values and their positions */
 
-struct object_position { value obj; uintnat pos; };
+/* if non null, write_loc points to where we wrote the "0" for the first occurrence of object. */
+struct object_position { value obj; uintnat pos; char * write_loc; };
 
 /* The hash table uses open addressing, linear probing, and a redundant
    representation:
@@ -310,6 +311,10 @@ Caml_inline int analyse_lookup_position(struct analyse_state *s, value obj,
     }
     if (s->pos_table.entries[h].obj == obj) {
       *p_out = s->pos_table.entries[h].pos;
+      if (s->pos_table.entries[h].write_loc) {
+        *(s->pos_table.entries[h].write_loc) = 1;
+        s->pos_table.entries[h].write_loc = NULL;
+      }
       return 1;
     }
     h = (h + 1) & s->pos_table.mask;
@@ -326,6 +331,7 @@ static void analyse_record_location(struct analyse_state* s,
   bitvect_set(s->pos_table.present, h);
   s->pos_table.entries[h].obj = obj;
   s->pos_table.entries[h].pos = s->obj_counter;
+  s->pos_table.entries[h].write_loc = s->analyse_ptr - 1;
   s->obj_counter++;
   if (s->obj_counter >= s->pos_table.threshold)
     analyse_resize_position_table(s);
@@ -417,7 +423,7 @@ static void analyse_rec(struct analyse_state* s, value top_type_descr, value v)
         if (analyse_lookup_position(s, v, &pos, &h)) {
           if (pos > s->obj_counter)
             analyse_invalid_argument (s, "sharingAnalyser found nonsense position");
-          analyse_write_int(s, pos + 1);
+          analyse_write_int(s, pos + 2);
           goto next_item;
         }
         else {
