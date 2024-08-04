@@ -1,7 +1,24 @@
 (** This file tests how locality attributes affect usual vernacular commands.
     PLEASE, when this file fails to compute following a voluntary change in
     Coq's behaviour, modify accordingly the tables in [sections.rst] and
-    [modules.rst] in [doc/sphinx/language/core] *)
+    [modules.rst] in [doc/sphinx/language/core].
+
+    Also look at the corresponding discussions about locality attributes in the
+    refman (directory doc/sphinx)
+    - For Definition, Lemma, ..., look at language/core/definitions.rst
+    - For Axiom, Conjecture, ..., look at language/core/assumptions.rst
+    - For abbreviations, look at user-extensions/syntax-extensions.rst
+    - For Notations, look at user-extensions/syntax-extensions.rst
+    - For Tactic Notations, look at user-extensions/syntax-extensions.rst
+    - For Ltac, look at proof-engine/ltac.rst
+    - For Canonical Structures, look at language/extensions/canonical.rst
+    - For Hints, look at proofs/automatic-tactics/auto.rst
+    - For Coercions, look at addendum/implicit-coercions.rst
+    - For Ltac2, look at proof-engine/ltac2.rst
+    - For Ltac2 Notations, look at proof-engine/ltac2.rst
+    - For Set, look at language/core/basic.rst
+*)
+
 
 (** This structure is used to test availability or not of a
     [Canonical Structure]. *)
