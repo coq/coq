@@ -7,15 +7,17 @@ In this chapter, we introduce advanced commands to modify the way Coq
 parses and prints objects, i.e. the translations between the concrete
 and internal representations of terms and commands.
 
+We first introduce :ref:`abbreviations <Abbreviations>`, a kind of
+macro which does not modify the parser.
+
 The main commands to provide custom symbolic notations for terms are
 :cmd:`Notation` and :cmd:`Infix`; they will be described in the
-:ref:`next section <Notations>`. There is also a
-variant of :cmd:`Notation` which does not modify the parser; this provides a
-form of :ref:`abbreviation <Abbreviations>`. It is
+:ref:`next section <Notations>`. It is
 sometimes expected that the same symbolic notation has different meanings in
 different contexts; to achieve this form of overloading, Coq offers a notion
 of :ref:`notation scopes <Scopes>`.
-The main command to provide custom notations for tactics is :cmd:`Tactic Notation`.
+
+Finally, the main command to provide custom notations for tactics is :cmd:`Tactic Notation`.
 
 .. coqtop:: none
 
@@ -33,9 +35,15 @@ Abbreviations
       :name: is omitted
 
    Defines an abbreviation :token:`ident` with the parameters :n:`@ident__parm`.
+   Note that the right-hand side being :token:`one_term`, it requires
+   surrounding parentheses for everything but trivial terms.
 
-   This command supports the :attr:`local` attribute, which limits the notation to the
+   This command supports the :attr:`local` attribute, which limits the abbreviation to the
    current module.
+
+   .. note::
+      Abbreviations use the same keyword :n:`Notation` as the :cmd:`Notation` command
+      but those are two independent features.
 
    An *abbreviation* is a name, possibly applied to arguments, that
    denotes a (presumably) more complex expression. Here are examples:
@@ -72,7 +80,7 @@ Abbreviations
       Compute (Plus1 3).
 
    An abbreviation expects no precedence nor associativity, since it
-   is parsed as an usual application. Abbreviations are used as
+   is parsed as a usual application. Abbreviations are used as
    much as possible by the Coq printers unless the modifier ``(only
    parsing)`` is given.
 
