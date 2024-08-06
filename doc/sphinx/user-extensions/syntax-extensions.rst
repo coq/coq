@@ -21,6 +21,107 @@ The main command to provide custom notations for tactics is :cmd:`Tactic Notatio
 
    Set Printing Depth 50.
 
+.. _Abbreviations:
+
+Abbreviations
+--------------
+
+.. cmd:: Notation @ident {* @ident__parm } := @one_term {? ( {+, @syntax_modifier } ) }
+   :name: Notation (abbreviation)
+
+   .. todo: for some reason, Sphinx doesn't complain about a duplicate name if
+      :name: is omitted
+
+   Defines an abbreviation :token:`ident` with the parameters :n:`@ident__parm`.
+
+   This command supports the :attr:`local` attribute, which limits the notation to the
+   current module.
+
+   An *abbreviation* is a name, possibly applied to arguments, that
+   denotes a (presumably) more complex expression. Here are examples:
+
+   .. coqtop:: none
+
+      Require Import List.
+      Require Import Relations.
+      Set Printing Notations.
+
+   .. coqtop:: in
+
+      Notation Nlist := (list nat).
+
+   .. coqtop:: all
+
+      Check 1 :: 2 :: 3 :: nil.
+
+   .. coqtop:: in
+
+      Notation reflexive R := (forall x, R x x).
+
+   .. coqtop:: all
+
+      Check forall A:Prop, A <-> A.
+      Check reflexive iff.
+
+   .. coqtop:: in
+
+      Notation Plus1 B := (Nat.add B 1).
+
+   .. coqtop:: all
+
+      Compute (Plus1 3).
+
+   An abbreviation expects no precedence nor associativity, since it
+   is parsed as an usual application. Abbreviations are used as
+   much as possible by the Coq printers unless the modifier ``(only
+   parsing)`` is given.
+
+   An abbreviation is bound to an absolute name as an ordinary definition is
+   and it also can be referred to by a qualified name.
+
+   Abbreviations are syntactic in the sense that they are bound to
+   expressions which are not typed at the time of the definition of the
+   abbreviation but at the time they are used. Especially, abbreviations
+   can be bound to terms with holes (i.e. with “``_``”). For example:
+
+   .. coqtop:: none reset
+
+      Set Strict Implicit.
+      Set Printing Depth 50.
+
+   .. coqtop:: in
+
+      Definition explicit_id (A:Set) (a:A) := a.
+
+   .. coqtop:: in
+
+      Notation id := (explicit_id _).
+
+   .. coqtop:: all
+
+      Check (id 0).
+
+   Abbreviations disappear when a section is closed. No typing of the
+   denoted expression is performed at definition time. Type checking is
+   done only at the time of use of the abbreviation.
+
+   Like for notations, if the right-hand side of an abbreviation is a
+   partially applied constant, the abbreviation inherits the implicit
+   arguments and notation scopes of the constant. As an
+   exception, if the right-hand side is just of the form :n:`@@qualid`,
+   this conventionally stops the inheritance of implicit arguments.
+
+   Like for notations, it is possible to bind binders in
+   abbreviations. Here is an example:
+
+   .. coqtop:: in reset
+
+      Definition force2 q (P:nat*nat -> Prop) :=
+        (forall n', n' >= fst q -> forall p', p' >= snd q -> P q).
+
+      Notation F p P := (force2 p (fun p => P)).
+      Check exists x y, F (x,y) (x >= 1 /\ y >= 2).
+
 .. _Notations:
 
 Notations
@@ -1875,107 +1976,6 @@ Displaying information about scopes
    Displays all notations defined in the notation scope :n:`@scope_name`.
    It also displays the delimiting key and the class to which the
    scope is bound, if any.
-
-.. _Abbreviations:
-
-Abbreviations
---------------
-
-.. cmd:: Notation @ident {* @ident__parm } := @one_term {? ( {+, @syntax_modifier } ) }
-   :name: Notation (abbreviation)
-
-   .. todo: for some reason, Sphinx doesn't complain about a duplicate name if
-      :name: is omitted
-
-   Defines an abbreviation :token:`ident` with the parameters :n:`@ident__parm`.
-
-   This command supports the :attr:`local` attribute, which limits the notation to the
-   current module.
-
-   An *abbreviation* is a name, possibly applied to arguments, that
-   denotes a (presumably) more complex expression. Here are examples:
-
-   .. coqtop:: none
-
-      Require Import List.
-      Require Import Relations.
-      Set Printing Notations.
-
-   .. coqtop:: in
-
-      Notation Nlist := (list nat).
-
-   .. coqtop:: all
-
-      Check 1 :: 2 :: 3 :: nil.
-
-   .. coqtop:: in
-
-      Notation reflexive R := (forall x, R x x).
-
-   .. coqtop:: all
-
-      Check forall A:Prop, A <-> A.
-      Check reflexive iff.
-
-   .. coqtop:: in
-
-      Notation Plus1 B := (Nat.add B 1).
-
-   .. coqtop:: all
-
-      Compute (Plus1 3).
-
-   An abbreviation expects no precedence nor associativity, since it
-   is parsed as an usual application. Abbreviations are used as
-   much as possible by the Coq printers unless the modifier ``(only
-   parsing)`` is given.
-
-   An abbreviation is bound to an absolute name as an ordinary definition is
-   and it also can be referred to by a qualified name.
-
-   Abbreviations are syntactic in the sense that they are bound to
-   expressions which are not typed at the time of the definition of the
-   abbreviation but at the time they are used. Especially, abbreviations
-   can be bound to terms with holes (i.e. with “``_``”). For example:
-
-   .. coqtop:: none reset
-
-      Set Strict Implicit.
-      Set Printing Depth 50.
-
-   .. coqtop:: in
-
-      Definition explicit_id (A:Set) (a:A) := a.
-
-   .. coqtop:: in
-
-      Notation id := (explicit_id _).
-
-   .. coqtop:: all
-
-      Check (id 0).
-
-   Abbreviations disappear when a section is closed. No typing of the
-   denoted expression is performed at definition time. Type checking is
-   done only at the time of use of the abbreviation.
-
-   Like for notations, if the right-hand side of an abbreviation is a
-   partially applied constant, the abbreviation inherits the implicit
-   arguments and notation scopes of the constant. As an
-   exception, if the right-hand side is just of the form :n:`@@qualid`,
-   this conventionally stops the inheritance of implicit arguments.
-
-   Like for notations, it is possible to bind binders in
-   abbreviations. Here is an example:
-
-   .. coqtop:: in reset
-
-      Definition force2 q (P:nat*nat -> Prop) :=
-        (forall n', n' >= fst q -> forall p', p' >= snd q -> P q).
-
-      Notation F p P := (force2 p (fun p => P)).
-      Check exists x y, F (x,y) (x >= 1 /\ y >= 2).
 
 .. extracted from Gallina chapter
 
