@@ -130,44 +130,34 @@ Abbreviations
       Notation F p P := (force2 p (fun p => P)).
       Check exists x y, F (x,y) (x >= 1 /\ y >= 2).
 
-.. _Notations:
+.. _ReservingNotations:
 
-Notations
----------
+Reserving notations
+~~~~~~~~~~~~~~~~~~~
 
-.. _BasicNotations:
+.. cmd:: Reserved Notation @string {? ( {+, @syntax_modifier } ) }
 
-Basic notations
-~~~~~~~~~~~~~~~
+   A given notation may be used in different contexts. Coq expects all
+   uses of the notation to be defined at the same precedence and with the
+   same associativity. To avoid giving the precedence and associativity
+   every time, this command declares a parsing rule (:token:`string`) in advance
+   without giving its interpretation. Here is an example from the initial
+   state of Coq.
 
-.. cmd:: Notation @notation_declaration
+   .. coqtop:: in
 
-   .. insertprodn notation_declaration notation_declaration
+      Reserved Notation "x = y" (at level 70, no associativity).
 
-   .. prodn::
-      notation_declaration ::= @string := @one_term {? ( {+, @syntax_modifier } ) } {? : @scope_name }
+   Reserving a notation is also useful for simultaneously defining an
+   inductive type or a recursive constant and a notation for it.
 
-   Defines a *notation*, an alternate syntax for entering or displaying
-   a specific term or term pattern.
+   .. note:: The notations mentioned in the module :ref:`init-notations` are reserved. Hence
+             their precedence and associativity cannot be changed.
 
-   This command supports the :attr:`local` attribute, which limits its effect to the
-   current module.
-   If the command is inside a section, its effect is limited to the section.
+   .. cmd:: Reserved Infix @string {? ( {+, @syntax_modifier } ) }
 
-   Specifying :token:`scope_name` associates the notation with that scope.  Otherwise
-   it is a :gdef:`lonely notation`, that is, not associated with a scope.
-
-   .. todo indentation of this chapter is not consistent with other chapters.  Do we have a standard?
-
-For example, the following definition permits using the infix expression :g:`A /\ B`
-to represent :g:`(and A B)`:
-
-.. coqtop:: in
-
-   Notation "A /\ B" := (and A B).
-
-:g:`"A /\ B"` is a *notation*, which tells how to represent the abbreviated term
-:g:`(and A B)`.
+      This command declares an infix parsing rule without giving its
+      interpretation.
 
 Notations must be in double quotes, except when the
 abbreviation has the form of an ordinary applicative expression;
@@ -200,33 +190,18 @@ In this case, no spaces are allowed in the symbol.  Also, if the
 symbol starts with a double quote, it must be surrounded with single
 quotes to prevent confusion with the beginning of a string symbol.
 
-A notation binds a syntactic expression to a term, called its :gdef:`interpretation`. Unless the parser
-and pretty-printer of Coq already know how to deal with the syntactic
-expression (such as through :cmd:`Reserved Notation` or for notations
-that contain only literals), explicit precedences and
-associativity rules have to be given.
+When a format is attached to a reserved notation (with the `format`
+:token:`syntax_modifier`), it is used by
+default by all subsequent interpretations of the corresponding
+notation. Individual interpretations can override the format.
 
-.. note::
+.. warn:: Notations "a b" defined at level x and "a c" defined at level y have incompatible prefixes. One of them will likely not work.
+   :name: notation-incompatible-prefix
 
-   The right-hand side of a notation is interpreted at the time the notation is
-   given. Disambiguation of constants, :ref:`implicit arguments
-   <ImplicitArguments>` and other notations are resolved at the
-   time of the declaration of the notation. The right-hand side is
-   currently typed only at use time but this may change in the future.
-
-.. exn:: Unterminated string in notation
-
-   Occurs when the notation string contains an unterminated quoted
-   string, as e.g. in :g:`Reserved Notation "A ""an unended string B"`, for which the
-   user may instead mean :g:`Reserved Notation "A ""an ended string"" B`.
-
-.. exn:: End of quoted string not followed by a space in notation.
-
-   Occurs when the notation string contains a quoted string which
-   contains a double quote not ending the quoted string, as e.g. in
-   :g:`Reserved Notation "A ""string""! B"` or `Reserved Notation "A ""string""!"" B"`, for which
-   the user may instead mean :g:`Reserved Notation "A ""string"""" ! B`,
-   :g:`Reserved Notation "A ""string""""!"" B`, or :g:`Reserved Notation "A '""string""!' B`.
+   The two notations have a common prefix but different levels.
+   The levels of one of the notations should be adjusted to match
+   the other. See :ref:`factorization <NotationFactorization>` for
+   details.
 
 Precedences and associativity
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -279,31 +254,6 @@ Some :ref:`associativities are predefined <init-notations>` in the
 ``Notations`` module.
 
 .. TODO I don't find it obvious -- CPC
-
-Complex notations
-~~~~~~~~~~~~~~~~~
-
-Notations can be made from arbitrarily complex symbols. One can for
-instance define prefix notations.
-
-.. coqtop:: in
-
-   Notation "~ x" := (not x) (at level 75, right associativity).
-
-One can also define notations for incomplete terms, with the hole
-expected to be inferred during type checking.
-
-.. coqtop:: in
-
-   Notation "x = y" := (@eq _ x y) (at level 70, no associativity).
-
-One can define *closed* notations whose both sides are symbols. In this case,
-the default precedence level for the inner sub-expression is 200, and the default
-level for the notation itself is 0.
-
-.. coqtop:: in
-
-   Notation "( x , y )" := (@pair _ _ x y).
 
 One can also define notations for binders.
 
@@ -377,6 +327,480 @@ of Coq predefined notations can be found in the chapter on :ref:`thecoqlibrary`.
    :name: postfix-notation-not-level-1
 
    It is usually better to put postfix notations, that is the ones ending with a terminal symbol, at level 1.
+
+Predefined entries
+~~~~~~~~~~~~~~~~~~
+
+By default, sub-expressions are parsed as terms and the corresponding
+grammar entry is called ``constr``. However, one may sometimes want
+to restrict the syntax of terms in a notation. For instance, the
+following notation will accept to parse only global reference in
+position of :g:`x`:
+
+.. coqtop:: in
+
+   Notation "'apply' f a1 .. an" := (.. (f a1) .. an)
+     (at level 10, f global, a1, an at level 9).
+
+In addition to ``global``, one can restrict the syntax of a
+sub-expression by using the entry names ``ident``, ``name`` or ``pattern``
+already seen in :ref:`NotationsWithBinders`, even when the
+corresponding expression is not used as a binder in the right-hand
+side. E.g.:
+
+.. coqtop:: in
+
+   Notation "'apply_id' f a1 .. an" := (.. (f a1) .. an)
+     (at level 10, f ident, a1, an at level 9).
+
+.. _custom-entries:
+
+Custom entries
+~~~~~~~~~~~~~~
+
+.. cmd:: Declare Custom Entry @ident
+
+   Defines new grammar entries, called *custom
+   entries*, that can later be referred to using the entry name
+   :n:`custom @ident`.
+
+   This command supports the :attr:`local` attribute, which limits the entry to the
+   current module.
+
+   Non-local custom entries survive module closing and are
+   declared when a file is Required.
+
+.. example::
+
+   For instance, we may want to define an ad hoc
+   parser for arithmetical operations and proceed as follows:
+
+   .. coqtop:: reset all
+
+      Inductive Expr :=
+      | One : Expr
+      | Mul : Expr -> Expr -> Expr
+      | Add : Expr -> Expr -> Expr.
+
+      Declare Custom Entry expr.
+      Notation "[ e ]" := e (e custom expr at level 2).
+      Notation "1" := One (in custom expr at level 0).
+      Notation "x y" := (Mul x y) (in custom expr at level 1, left associativity).
+      Notation "x + y" := (Add x y) (in custom expr at level 2, left associativity).
+      Notation "( x )" := x (in custom expr, x at level 2).
+      Notation "{ x }" := x (in custom expr, x constr).
+      Notation "x" := x (in custom expr at level 0, x ident).
+
+      Axiom f : nat -> Expr.
+      Check fun x y z => [1 + y z + {f x}].
+      Unset Printing Notations.
+      Check fun x y z => [1 + y z + {f x}].
+      Set Printing Notations.
+      Check fun e => match e with
+      | [1 + 1] => [1]
+      | [x y + z] => [x + y z]
+      | y => [y + e]
+      end.
+
+Custom entries have levels, like the main grammar of terms and grammar
+of patterns have. The lower level is 0 and this is the level used by
+default to put rules delimited with tokens on both ends. The level is
+left to be inferred by Coq when using :n:`in custom @ident`. The
+level is otherwise given explicitly by using the syntax
+:n:`in custom @ident at level @natural`, where :n:`@natural` refers to the level.
+
+Levels are cumulative: a notation at level ``n`` of which the left end
+is a term shall use rules at level less than ``n`` to parse this
+subterm. More precisely, it shall use rules at level strictly less
+than ``n`` if the rule is declared with ``right associativity`` and
+rules at level less or equal than ``n`` if the rule is declared with
+``left associativity``. Similarly, a notation at level ``n`` of which
+the right end is a term shall use by default rules at level strictly
+less than ``n`` to parse this subterm if the rule is declared left
+associative and rules at level less or equal than ``n`` if the rule is
+declared right associative. This is what happens for instance in the
+rule
+
+.. coqtop:: in
+
+   Notation "x + y" := (Add x y) (in custom expr at level 2, left associativity).
+
+where ``x`` is any expression parsed in entry
+``expr`` at level less or equal than ``2`` (including, recursively,
+the given rule) and ``y`` is any expression parsed in entry ``expr``
+at level strictly less than ``2``.
+
+Rules associated with an entry can refer different sub-entries. The
+grammar entry name ``constr`` can be used to refer to the main grammar
+of term as in the rule
+
+.. coqtop:: in
+
+   Notation "{ x }" := x (in custom expr at level 0, x constr).
+
+which indicates that the subterm ``x`` should be
+parsed using the main grammar. If not indicated, the level is computed
+as for notations in ``constr``, e.g. using 200 as default level for
+inner sub-expressions. The level can otherwise be indicated explicitly
+by using ``constr at level n`` for some ``n``, or ``constr at next
+level``.
+
+Conversely, custom entries can be used to parse sub-expressions of the
+main grammar, or from another custom entry as is the case in
+
+.. coqtop:: in
+
+   Notation "[ e ]" := e (e custom expr at level 2).
+
+to indicate that ``e`` has to be parsed at level ``2`` of the grammar
+associated with the custom entry ``expr``. The level can be omitted, as in
+
+.. coqdoc::
+
+   Notation "[ e ]" := e (e custom expr).
+
+in which case Coq infer it. If the sub-expression is at a border of
+the notation (as e.g. ``x`` and ``y`` in ``x + y``), the level is
+determined by the associativity. If the sub-expression is not at the
+border of the notation (as e.g. ``e`` in ``"[ e ]``), the level is
+inferred to be the highest level used for the entry. In particular,
+this level depends on the highest level existing in the entry at the
+time of use of the notation.
+
+In the absence of an explicit entry for parsing or printing a
+sub-expression of a notation in a custom entry, the default is to
+consider that this sub-expression is parsed or printed in the same
+custom entry where the notation is defined. In particular, if ``x at
+level n`` is used for a sub-expression of a notation defined in custom
+entry ``foo``, it shall be understood the same as ``x custom foo at
+level n``.
+
+In general, rules are required to be *productive* on the right-hand
+side, i.e. that they are bound to an expression which is not
+reduced to a single variable. If the rule is not productive on the
+right-hand side, as it is the case above for
+
+.. coqtop:: in
+
+   Notation "( x )" := x (in custom expr at level 0, x at level 2).
+
+and
+
+.. coqtop:: in
+
+   Notation "{ x }" := x (in custom expr at level 0, x constr).
+
+it is used as a *grammar coercion* which means that it is used to parse or
+print an expression which is not available in the current grammar at the
+current level of parsing or printing for this grammar but which is available
+in another grammar or in another level of the current grammar. For instance,
+
+.. coqtop:: in
+
+   Notation "( x )" := x (in custom expr at level 0, x at level 2).
+
+tells that parentheses can be inserted to parse or print an expression
+declared at level ``2`` of ``expr`` whenever this expression is
+expected to be used as a subterm at level 0 or 1.  This allows for
+instance to parse and print :g:`Add x y` as a subterm of :g:`Mul (Add
+x y) z` using the syntax ``(x + y) z``. Similarly,
+
+.. coqtop:: in
+
+   Notation "{ x }" := x (in custom expr at level 0, x constr).
+
+gives a way to let any arbitrary expression which is not handled by the
+custom entry ``expr`` be parsed or printed by the main grammar of term
+up to the insertion of a pair of curly brackets.
+
+Another special situation is when parsing global references or
+identifiers. To indicate that a custom entry should parse identifiers,
+use the following form:
+
+.. coqtop:: reset none
+
+   Declare Custom Entry expr.
+
+.. coqtop:: in
+
+   Notation "x" := x (in custom expr at level 0, x ident).
+
+Similarly, to indicate that a custom entry should parse global references
+(i.e. qualified or unqualified identifiers), use the following form:
+
+.. coqtop:: reset none
+
+   Declare Custom Entry expr.
+
+.. coqtop:: in
+
+   Notation "x" := x (in custom expr at level 0, x global).
+
+.. cmd:: Print Custom Grammar @ident
+
+   This displays the state of the grammar for terms associated with
+   the custom entry :token:`ident`.
+
+Displaying information about notations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. cmd:: Print Notation @string {? in custom @ident }
+
+   Displays information about the previously reserved notation string
+   :token:`string`. :token:`ident`, if specified, is the name of the associated
+   custom entry. See :cmd:`Declare Custom Entry`.
+
+   .. coqtop:: all
+
+      Reserved Notation "x # y" (at level 123, right associativity).
+      Print Notation "_ # _".
+
+   Variables can be indicated with either `"_"` or names, as long as these can
+   not be confused with notation symbols. When confusion may arise, for example
+   with notation symbols that are entirely made up of letters, use single quotes
+   to delimit those symbols. Using `"_"` is preferred, as it avoids this
+   confusion. Note that there must always be (at least) a space between notation
+   symbols and arguments, even when the notation format does not include those
+   spaces.
+
+   .. example:: :cmd:`Print Notation`
+
+      .. coqtop:: reset all
+
+         Reserved Notation "x 'mod' y" (at level 40, no associativity).
+         Print Notation "_ mod _".
+         Print Notation "x 'mod' y".
+
+         Reserved Notation "# x #" (at level 0, format "# x #").
+         Fail Print Notation "#x#".
+         Print Notation "# x #".
+
+         Reserved Notation "( x , y , .. , z )" (at level 0).
+         Print Notation "( _ , _ , .. , _ )".
+
+
+         Reserved Notation "x $ y" (at level 50, left associativity).
+
+         Declare Custom Entry expr.
+         Reserved Notation "x $ y"
+           (in custom expr at level 30, x custom expr, y at level 80, no associativity).
+
+         Print Notation "_ $ _".
+         Print Notation "_ $ _" in custom expr.
+
+   .. exn:: @string cannot be interpreted as a known notation. Make sure that symbols are surrounded by spaces and that holes are explicitly denoted by "_".
+
+      Occurs when :cmd:`Print Notation` can't find a notation associated with
+      :token:`string`. This can happen, for example, when the notation does not
+      exist in the current context, :token:`string` is not specific enough,
+      there are missing spaces between symbols, or some symbols need to be
+      quoted with `"'"`.
+
+   .. exn:: @string cannot be interpreted as a known notation in @ident entry. Make sure that symbols are surrounded by spaces and that holes are explicitly denoted by "_".
+      :undocumented:
+
+.. seealso::
+
+    :cmd:`Locate` for information on the definitions and scopes associated with
+    a notation.
+
+.. cmd:: Print Keywords
+
+   Prints the current reserved :ref:`keywords <keywords>` and parser tokens, one
+   per line. Keywords cannot be used as identifiers.
+
+.. cmd:: Print Grammar {* @ident }
+
+   When no :token:`ident` is provided, shows the whole grammar.
+   Otherwise shows the grammar for the nonterminal :token:`ident`\s, except for
+   the following, which will include some related nonterminals:
+
+   - `constr` - for :token:`term`\s
+   - `tactic` - for currently-defined tactic notations, :token:`tactic`\s and tacticals
+     (corresponding to :token:`ltac_expr` in the documentation).
+   - `vernac` - for :token:`command`\s
+   - `ltac2` - for Ltac2 notations (corresponding to :token:`ltac2_expr`)
+
+   This command can display any nonterminal in the grammar reachable from `vernac_control`.
+
+   Most of the grammar in the documentation was updated in 8.12 to make it accurate and
+   readable.  This was done using a new developer tool that extracts the grammar from the
+   source code, edits it and inserts it into the documentation files.  While the
+   edited grammar is equivalent to the original, for readability some nonterminals
+   have been renamed and others have been eliminated by substituting the nonterminal
+   definition where the nonterminal was referenced.  This command shows the original grammar,
+   so it won't exactly match the documentation.
+
+   The Coq parser is based on Camlp5.  The documentation for
+   `Extensible grammars <http://camlp5.github.io/doc/htmlc/grammars.html>`_ is the
+   most relevant but it assumes considerable knowledge.  Here are the essentials:
+
+   Productions can contain the following elements:
+
+   - nonterminal names - identifiers in the form `[a-zA-Z0-9_]*`
+   - `"…"` - a literal string that becomes a keyword and cannot be used as an :token:`ident`.
+     The string doesn't have to be a valid identifier; frequently the string will contain only
+     punctuation characters.
+   - `IDENT "…"` - a literal string that has the form of an :token:`ident`
+   - `OPT element` - optionally include `element` (e.g. a nonterminal, IDENT "…" or "…")
+   - `LIST1 element` - a list of one or more `element`\s
+   - `LIST0 element` - an optional list of `element`\s
+   - `LIST1 element SEP sep` - a list of `element`\s separated by `sep`
+   - `LIST0 element SEP sep` - an optional list of `element`\s separated by `sep`
+   - `[ elements1 | elements2 | … ]` - alternatives (either `elements1` or `elements2` or …)
+
+   Nonterminals can have multiple **levels** to specify precedence and associativity
+   of its productions.  This feature of grammars makes it simple to parse input
+   such as `1+2*3` in the usual way as `1+(2*3)`.  However, most nonterminals have a single level.
+
+   For example, this output from `Print Grammar tactic` shows the first 3 levels for
+   `ltac_expr`, designated as "5", "4" and "3".  Level 3 is right-associative,
+   which applies to the productions within it, such as the `try` construct::
+
+     Entry ltac_expr is
+     [ "5" RIGHTA
+       [ ]
+     | "4" LEFTA
+       [ SELF; ";"; SELF
+       | SELF; ";"; tactic_then_locality; for_each_goal; "]" ]
+     | "3" RIGHTA
+       [ IDENT "try"; SELF
+       :
+
+   The interpretation of `SELF` depends on its position in the production and the
+   associativity of the level:
+
+   - At the beginning of a production, `SELF` means the next level.  In the
+     fragment shown above, the next level for `try` is "2".  (This is defined by the order
+     of appearance in the grammar or output; the levels could just as well be
+     named "foo" and "bar".)
+   - In the middle of a production, `SELF` means the top level ("5" in the fragment)
+   - At the end of a production, `SELF` means the next level within
+     `LEFTA` levels and the current level within `RIGHTA` levels.
+
+   `NEXT` always means the next level. `nonterminal LEVEL "…"` is a reference to the specified level
+   for `nonterminal`.
+
+   `Associativity <http://camlp5.github.io/doc/htmlc/grammars.html#b:Associativity>`_
+   explains `SELF` and `NEXT` in somewhat more detail.
+
+   The output for `Print Grammar constr` includes :cmd:`Notation` definitions,
+   which are dynamically added to the grammar at run time.
+   For example, in the definition for `term`, the production on the second line shown
+   here is defined by a :cmd:`Reserved Notation` command in `Notations.v`::
+
+     | "50" LEFTA
+       [ SELF; "||"; NEXT
+
+   Similarly, `Print Grammar tactic` includes :cmd:`Tactic Notation`\s, such as :tacn:`dintuition`.
+
+   The file
+   `doc/tools/docgram/fullGrammar <http://github.com/coq/coq/blob/master/doc/tools/docgram/fullGrammar>`_
+   in the source tree extracts the full grammar for
+   Coq (not including notations and tactic notations defined in `*.v` files nor some optionally-loaded plugins)
+   in a single file with minor changes to handle nonterminals using multiple levels (described in
+   `doc/tools/docgram/README.md <http://github.com/coq/coq/blob/master/doc/tools/docgram/README.md>`_).
+   This is complete and much easier to read than the grammar source files.
+   `doc/tools/docgram/orderedGrammar <http://github.com/coq/coq/blob/master/doc/tools/docgram/orderedGrammar>`_
+   has the edited grammar that's used in the documentation.
+
+   Developer documentation for parsing is in
+   `dev/doc/parsing.md <http://github.com/coq/coq/blob/master/dev/doc/parsing.md>`_.
+
+.. _Notations:
+
+Notations
+---------
+
+.. _BasicNotations:
+
+Basic notations
+~~~~~~~~~~~~~~~
+
+.. cmd:: Notation @notation_declaration
+
+   .. insertprodn notation_declaration notation_declaration
+
+   .. prodn::
+      notation_declaration ::= @string := @one_term {? ( {+, @syntax_modifier } ) } {? : @scope_name }
+
+   Defines a *notation*, an alternate syntax for entering or displaying
+   a specific term or term pattern.
+   Notations disappear when a section is closed. No typing of the denoted
+   expression is performed at definition time. Type checking is done only
+   at the time of use of the notation.
+
+   This command supports the :attr:`local` attribute, which limits its effect to the
+   current module.
+   If the command is inside a section, its effect is limited to the section.
+
+   Specifying :token:`scope_name` associates the notation with that scope.  Otherwise
+   it is a :gdef:`lonely notation`, that is, not associated with a scope.
+
+   .. todo indentation of this chapter is not consistent with other chapters.  Do we have a standard?
+
+For example, the following definition permits using the infix expression :g:`A /\ B`
+to represent :g:`(and A B)`:
+
+.. coqtop:: in
+
+   Notation "A /\ B" := (and A B).
+
+:g:`"A /\ B"` is a *notation*, which tells how to represent the abbreviated term
+:g:`(and A B)`.
+
+A notation binds a syntactic expression to a term, called its :gdef:`interpretation`. Unless the parser
+and pretty-printer of Coq already know how to deal with the syntactic
+expression (such as through :cmd:`Reserved Notation` or for notations
+that contain only literals), explicit precedences and
+associativity rules have to be given.
+
+.. note::
+
+   The right-hand side of a notation is interpreted at the time the notation is
+   given. Disambiguation of constants, :ref:`implicit arguments
+   <ImplicitArguments>` and other notations are resolved at the
+   time of the declaration of the notation. The right-hand side is
+   currently typed only at use time but this may change in the future.
+
+.. exn:: Unterminated string in notation
+
+   Occurs when the notation string contains an unterminated quoted
+   string, as e.g. in :g:`Reserved Notation "A ""an unended string B"`, for which the
+   user may instead mean :g:`Reserved Notation "A ""an ended string"" B`.
+
+.. exn:: End of quoted string not followed by a space in notation.
+
+   Occurs when the notation string contains a quoted string which
+   contains a double quote not ending the quoted string, as e.g. in
+   :g:`Reserved Notation "A ""string""! B"` or `Reserved Notation "A ""string""!"" B"`, for which
+   the user may instead mean :g:`Reserved Notation "A ""string"""" ! B`,
+   :g:`Reserved Notation "A ""string""""!"" B`, or :g:`Reserved Notation "A '""string""!' B`.
+
+Complex notations
+~~~~~~~~~~~~~~~~~
+
+Notations can be made from arbitrarily complex symbols. One can for
+instance define prefix notations.
+
+.. coqtop:: in
+
+   Notation "~ x" := (not x) (at level 75, right associativity).
+
+One can also define notations for incomplete terms, with the hole
+expected to be inferred during type checking.
+
+.. coqtop:: in
+
+   Notation "x = y" := (@eq _ x y) (at level 70, no associativity).
+
+One can define *closed* notations whose both sides are symbols. In this case,
+the default precedence level for the inner sub-expression is 200, and the default
+level for the notation itself is 0.
+
+.. coqtop:: in
+
+   Notation "( x , y )" := (@pair _ _ x y).
 
 .. _UseOfNotationsForPrinting:
 
@@ -466,10 +890,6 @@ the possible following elements delimited by single quotes:
 
 - extra spaces in other tokens are preserved in the output
 
-Notations disappear when a section is closed. No typing of the denoted
-expression is performed at definition time. Type checking is done only
-at the time of use of the notation.
-
 .. note::
 
    The default for a notation is to be used both for parsing and
@@ -534,48 +954,6 @@ symbols.
    .. coqtop:: in
 
       Infix "/\" := and (at level 80, right associativity).
-
-.. _ReservingNotations:
-
-Reserving notations
-~~~~~~~~~~~~~~~~~~~
-
-.. cmd:: Reserved Notation @string {? ( {+, @syntax_modifier } ) }
-
-   A given notation may be used in different contexts. Coq expects all
-   uses of the notation to be defined at the same precedence and with the
-   same associativity. To avoid giving the precedence and associativity
-   every time, this command declares a parsing rule (:token:`string`) in advance
-   without giving its interpretation. Here is an example from the initial
-   state of Coq.
-
-   .. coqtop:: in
-
-      Reserved Notation "x = y" (at level 70, no associativity).
-
-   Reserving a notation is also useful for simultaneously defining an
-   inductive type or a recursive constant and a notation for it.
-
-   .. note:: The notations mentioned in the module :ref:`init-notations` are reserved. Hence
-             their precedence and associativity cannot be changed.
-
-   .. cmd:: Reserved Infix @string {? ( {+, @syntax_modifier } ) }
-
-      This command declares an infix parsing rule without giving its
-      interpretation.
-
-   When a format is attached to a reserved notation (with the `format`
-   :token:`syntax_modifier`), it is used by
-   default by all subsequent interpretations of the corresponding
-   notation. Individual interpretations can override the format.
-
-   .. warn:: Notations "a b" defined at level x and "a c" defined at level y have incompatible prefixes. One of them will likely not work.
-      :name: notation-incompatible-prefix
-
-      The two notations have a common prefix but different levels.
-      The levels of one of the notations should be adjusted to match
-      the other. See :ref:`factorization <NotationFactorization>` for
-      details.
 
 Simultaneous definition of terms and notations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -755,169 +1133,6 @@ Displaying information about notations
 .. seealso::
 
    :flag:`Printing All` to disable other elements in addition to notations.
-
-.. cmd:: Print Notation @string {? in custom @ident }
-
-   Displays information about the previously reserved notation string
-   :token:`string`. :token:`ident`, if specified, is the name of the associated
-   custom entry. See :cmd:`Declare Custom Entry`.
-
-   .. coqtop:: all
-
-      Reserved Notation "x # y" (at level 123, right associativity).
-      Print Notation "_ # _".
-
-   Variables can be indicated with either `"_"` or names, as long as these can
-   not be confused with notation symbols. When confusion may arise, for example
-   with notation symbols that are entirely made up of letters, use single quotes
-   to delimit those symbols. Using `"_"` is preferred, as it avoids this
-   confusion. Note that there must always be (at least) a space between notation
-   symbols and arguments, even when the notation format does not include those
-   spaces.
-
-   .. example:: :cmd:`Print Notation`
-
-      .. coqtop:: all
-
-         Reserved Notation "x 'mod' y" (at level 40, no associativity).
-         Print Notation "_ mod _".
-         Print Notation "x 'mod' y".
-
-         Reserved Notation "# x #" (at level 0, format "# x #").
-         Fail Print Notation "#x#".
-         Print Notation "# x #".
-
-         Reserved Notation "( x , y , .. , z )" (at level 0).
-         Print Notation "( _ , _ , .. , _ )".
-
-
-         Reserved Notation "x $ y" (at level 50, left associativity).
-
-         Declare Custom Entry expr.
-         Reserved Notation "x $ y"
-           (in custom expr at level 30, x custom expr, y at level 80, no associativity).
-
-         Print Notation "_ $ _".
-         Print Notation "_ $ _" in custom expr.
-
-   .. exn:: @string cannot be interpreted as a known notation. Make sure that symbols are surrounded by spaces and that holes are explicitly denoted by "_".
-
-      Occurs when :cmd:`Print Notation` can't find a notation associated with
-      :token:`string`. This can happen, for example, when the notation does not
-      exist in the current context, :token:`string` is not specific enough,
-      there are missing spaces between symbols, or some symbols need to be
-      quoted with `"'"`.
-
-   .. exn:: @string cannot be interpreted as a known notation in @ident entry. Make sure that symbols are surrounded by spaces and that holes are explicitly denoted by "_".
-      :undocumented:
-
-.. seealso::
-
-    :cmd:`Locate` for information on the definitions and scopes associated with
-    a notation.
-
-.. cmd:: Print Keywords
-
-   Prints the current reserved :ref:`keywords <keywords>` and parser tokens, one
-   per line. Keywords cannot be used as identifiers.
-
-.. cmd:: Print Grammar {* @ident }
-
-   When no :token:`ident` is provided, shows the whole grammar.
-   Otherwise shows the grammar for the nonterminal :token:`ident`\s, except for
-   the following, which will include some related nonterminals:
-
-   - `constr` - for :token:`term`\s
-   - `tactic` - for currently-defined tactic notations, :token:`tactic`\s and tacticals
-     (corresponding to :token:`ltac_expr` in the documentation).
-   - `vernac` - for :token:`command`\s
-   - `ltac2` - for Ltac2 notations (corresponding to :token:`ltac2_expr`)
-
-   This command can display any nonterminal in the grammar reachable from `vernac_control`.
-
-   Most of the grammar in the documentation was updated in 8.12 to make it accurate and
-   readable.  This was done using a new developer tool that extracts the grammar from the
-   source code, edits it and inserts it into the documentation files.  While the
-   edited grammar is equivalent to the original, for readability some nonterminals
-   have been renamed and others have been eliminated by substituting the nonterminal
-   definition where the nonterminal was referenced.  This command shows the original grammar,
-   so it won't exactly match the documentation.
-
-   The Coq parser is based on Camlp5.  The documentation for
-   `Extensible grammars <http://camlp5.github.io/doc/htmlc/grammars.html>`_ is the
-   most relevant but it assumes considerable knowledge.  Here are the essentials:
-
-   Productions can contain the following elements:
-
-   - nonterminal names - identifiers in the form `[a-zA-Z0-9_]*`
-   - `"…"` - a literal string that becomes a keyword and cannot be used as an :token:`ident`.
-     The string doesn't have to be a valid identifier; frequently the string will contain only
-     punctuation characters.
-   - `IDENT "…"` - a literal string that has the form of an :token:`ident`
-   - `OPT element` - optionally include `element` (e.g. a nonterminal, IDENT "…" or "…")
-   - `LIST1 element` - a list of one or more `element`\s
-   - `LIST0 element` - an optional list of `element`\s
-   - `LIST1 element SEP sep` - a list of `element`\s separated by `sep`
-   - `LIST0 element SEP sep` - an optional list of `element`\s separated by `sep`
-   - `[ elements1 | elements2 | … ]` - alternatives (either `elements1` or `elements2` or …)
-
-   Nonterminals can have multiple **levels** to specify precedence and associativity
-   of its productions.  This feature of grammars makes it simple to parse input
-   such as `1+2*3` in the usual way as `1+(2*3)`.  However, most nonterminals have a single level.
-
-   For example, this output from `Print Grammar tactic` shows the first 3 levels for
-   `ltac_expr`, designated as "5", "4" and "3".  Level 3 is right-associative,
-   which applies to the productions within it, such as the `try` construct::
-
-     Entry ltac_expr is
-     [ "5" RIGHTA
-       [ ]
-     | "4" LEFTA
-       [ SELF; ";"; SELF
-       | SELF; ";"; tactic_then_locality; for_each_goal; "]" ]
-     | "3" RIGHTA
-       [ IDENT "try"; SELF
-       :
-
-   The interpretation of `SELF` depends on its position in the production and the
-   associativity of the level:
-
-   - At the beginning of a production, `SELF` means the next level.  In the
-     fragment shown above, the next level for `try` is "2".  (This is defined by the order
-     of appearance in the grammar or output; the levels could just as well be
-     named "foo" and "bar".)
-   - In the middle of a production, `SELF` means the top level ("5" in the fragment)
-   - At the end of a production, `SELF` means the next level within
-     `LEFTA` levels and the current level within `RIGHTA` levels.
-
-   `NEXT` always means the next level. `nonterminal LEVEL "…"` is a reference to the specified level
-   for `nonterminal`.
-
-   `Associativity <http://camlp5.github.io/doc/htmlc/grammars.html#b:Associativity>`_
-   explains `SELF` and `NEXT` in somewhat more detail.
-
-   The output for `Print Grammar constr` includes :cmd:`Notation` definitions,
-   which are dynamically added to the grammar at run time.
-   For example, in the definition for `term`, the production on the second line shown
-   here is defined by a :cmd:`Reserved Notation` command in `Notations.v`::
-
-     | "50" LEFTA
-       [ SELF; "||"; NEXT
-
-   Similarly, `Print Grammar tactic` includes :cmd:`Tactic Notation`\s, such as :tacn:`dintuition`.
-
-   The file
-   `doc/tools/docgram/fullGrammar <http://github.com/coq/coq/blob/master/doc/tools/docgram/fullGrammar>`_
-   in the source tree extracts the full grammar for
-   Coq (not including notations and tactic notations defined in `*.v` files nor some optionally-loaded plugins)
-   in a single file with minor changes to handle nonterminals using multiple levels (described in
-   `doc/tools/docgram/README.md <http://github.com/coq/coq/blob/master/doc/tools/docgram/README.md>`_).
-   This is complete and much easier to read than the grammar source files.
-   `doc/tools/docgram/orderedGrammar <http://github.com/coq/coq/blob/master/doc/tools/docgram/orderedGrammar>`_
-   has the edited grammar that's used in the documentation.
-
-   Developer documentation for parsing is in
-   `dev/doc/parsing.md <http://github.com/coq/coq/blob/master/dev/doc/parsing.md>`_.
 
 .. _locating-notations:
 
@@ -1303,219 +1518,6 @@ used. Here is an example:
    Notation "'exists_non_null' x .. y  , P" :=
      (ex (fun x => x <> 0 /\ .. (ex (fun y => y <> 0 /\ P)) ..))
      (at level 200, x binder).
-
-Predefined entries
-~~~~~~~~~~~~~~~~~~
-
-By default, sub-expressions are parsed as terms and the corresponding
-grammar entry is called ``constr``. However, one may sometimes want
-to restrict the syntax of terms in a notation. For instance, the
-following notation will accept to parse only global reference in
-position of :g:`x`:
-
-.. coqtop:: in
-
-   Notation "'apply' f a1 .. an" := (.. (f a1) .. an)
-     (at level 10, f global, a1, an at level 9).
-
-In addition to ``global``, one can restrict the syntax of a
-sub-expression by using the entry names ``ident``, ``name`` or ``pattern``
-already seen in :ref:`NotationsWithBinders`, even when the
-corresponding expression is not used as a binder in the right-hand
-side. E.g.:
-
-.. coqtop:: in
-
-   Notation "'apply_id' f a1 .. an" := (.. (f a1) .. an)
-     (at level 10, f ident, a1, an at level 9).
-
-.. _custom-entries:
-
-Custom entries
-~~~~~~~~~~~~~~
-
-.. cmd:: Declare Custom Entry @ident
-
-   Defines new grammar entries, called *custom
-   entries*, that can later be referred to using the entry name
-   :n:`custom @ident`.
-
-   This command supports the :attr:`local` attribute, which limits the entry to the
-   current module.
-
-   Non-local custom entries survive module closing and are
-   declared when a file is Required.
-
-.. example::
-
-   For instance, we may want to define an ad hoc
-   parser for arithmetical operations and proceed as follows:
-
-   .. coqtop:: reset all
-
-      Inductive Expr :=
-      | One : Expr
-      | Mul : Expr -> Expr -> Expr
-      | Add : Expr -> Expr -> Expr.
-
-      Declare Custom Entry expr.
-      Notation "[ e ]" := e (e custom expr at level 2).
-      Notation "1" := One (in custom expr at level 0).
-      Notation "x y" := (Mul x y) (in custom expr at level 1, left associativity).
-      Notation "x + y" := (Add x y) (in custom expr at level 2, left associativity).
-      Notation "( x )" := x (in custom expr, x at level 2).
-      Notation "{ x }" := x (in custom expr, x constr).
-      Notation "x" := x (in custom expr at level 0, x ident).
-
-      Axiom f : nat -> Expr.
-      Check fun x y z => [1 + y z + {f x}].
-      Unset Printing Notations.
-      Check fun x y z => [1 + y z + {f x}].
-      Set Printing Notations.
-      Check fun e => match e with
-      | [1 + 1] => [1]
-      | [x y + z] => [x + y z]
-      | y => [y + e]
-      end.
-
-Custom entries have levels, like the main grammar of terms and grammar
-of patterns have. The lower level is 0 and this is the level used by
-default to put rules delimited with tokens on both ends. The level is
-left to be inferred by Coq when using :n:`in custom @ident`. The
-level is otherwise given explicitly by using the syntax
-:n:`in custom @ident at level @natural`, where :n:`@natural` refers to the level.
-
-Levels are cumulative: a notation at level ``n`` of which the left end
-is a term shall use rules at level less than ``n`` to parse this
-subterm. More precisely, it shall use rules at level strictly less
-than ``n`` if the rule is declared with ``right associativity`` and
-rules at level less or equal than ``n`` if the rule is declared with
-``left associativity``. Similarly, a notation at level ``n`` of which
-the right end is a term shall use by default rules at level strictly
-less than ``n`` to parse this subterm if the rule is declared left
-associative and rules at level less or equal than ``n`` if the rule is
-declared right associative. This is what happens for instance in the
-rule
-
-.. coqtop:: in
-
-   Notation "x + y" := (Add x y) (in custom expr at level 2, left associativity).
-
-where ``x`` is any expression parsed in entry
-``expr`` at level less or equal than ``2`` (including, recursively,
-the given rule) and ``y`` is any expression parsed in entry ``expr``
-at level strictly less than ``2``.
-
-Rules associated with an entry can refer different sub-entries. The
-grammar entry name ``constr`` can be used to refer to the main grammar
-of term as in the rule
-
-.. coqtop:: in
-
-   Notation "{ x }" := x (in custom expr at level 0, x constr).
-
-which indicates that the subterm ``x`` should be
-parsed using the main grammar. If not indicated, the level is computed
-as for notations in ``constr``, e.g. using 200 as default level for
-inner sub-expressions. The level can otherwise be indicated explicitly
-by using ``constr at level n`` for some ``n``, or ``constr at next
-level``.
-
-Conversely, custom entries can be used to parse sub-expressions of the
-main grammar, or from another custom entry as is the case in
-
-.. coqtop:: in
-
-   Notation "[ e ]" := e (e custom expr at level 2).
-
-to indicate that ``e`` has to be parsed at level ``2`` of the grammar
-associated with the custom entry ``expr``. The level can be omitted, as in
-
-.. coqdoc::
-
-   Notation "[ e ]" := e (e custom expr).
-
-in which case Coq infer it. If the sub-expression is at a border of
-the notation (as e.g. ``x`` and ``y`` in ``x + y``), the level is
-determined by the associativity. If the sub-expression is not at the
-border of the notation (as e.g. ``e`` in ``"[ e ]``), the level is
-inferred to be the highest level used for the entry. In particular,
-this level depends on the highest level existing in the entry at the
-time of use of the notation.
-
-In the absence of an explicit entry for parsing or printing a
-sub-expression of a notation in a custom entry, the default is to
-consider that this sub-expression is parsed or printed in the same
-custom entry where the notation is defined. In particular, if ``x at
-level n`` is used for a sub-expression of a notation defined in custom
-entry ``foo``, it shall be understood the same as ``x custom foo at
-level n``.
-
-In general, rules are required to be *productive* on the right-hand
-side, i.e. that they are bound to an expression which is not
-reduced to a single variable. If the rule is not productive on the
-right-hand side, as it is the case above for
-
-.. coqtop:: in
-
-   Notation "( x )" := x (in custom expr at level 0, x at level 2).
-
-and
-
-.. coqtop:: in
-
-   Notation "{ x }" := x (in custom expr at level 0, x constr).
-
-it is used as a *grammar coercion* which means that it is used to parse or
-print an expression which is not available in the current grammar at the
-current level of parsing or printing for this grammar but which is available
-in another grammar or in another level of the current grammar. For instance,
-
-.. coqtop:: in
-
-   Notation "( x )" := x (in custom expr at level 0, x at level 2).
-
-tells that parentheses can be inserted to parse or print an expression
-declared at level ``2`` of ``expr`` whenever this expression is
-expected to be used as a subterm at level 0 or 1.  This allows for
-instance to parse and print :g:`Add x y` as a subterm of :g:`Mul (Add
-x y) z` using the syntax ``(x + y) z``. Similarly,
-
-.. coqtop:: in
-
-   Notation "{ x }" := x (in custom expr at level 0, x constr).
-
-gives a way to let any arbitrary expression which is not handled by the
-custom entry ``expr`` be parsed or printed by the main grammar of term
-up to the insertion of a pair of curly brackets.
-
-Another special situation is when parsing global references or
-identifiers. To indicate that a custom entry should parse identifiers,
-use the following form:
-
-.. coqtop:: reset none
-
-   Declare Custom Entry expr.
-
-.. coqtop:: in
-
-   Notation "x" := x (in custom expr at level 0, x ident).
-
-Similarly, to indicate that a custom entry should parse global references
-(i.e. qualified or unqualified identifiers), use the following form:
-
-.. coqtop:: reset none
-
-   Declare Custom Entry expr.
-
-.. coqtop:: in
-
-   Notation "x" := x (in custom expr at level 0, x global).
-
-.. cmd:: Print Custom Grammar @ident
-
-   This displays the state of the grammar for terms associated with
-   the custom entry :token:`ident`.
 
 .. _NotationSyntax:
 
