@@ -172,7 +172,7 @@ A similar table for :cmd:`Module` can be found
     - available [#note1]_
     - :attr:`local` in
 
-      current module [#note1]_
+      module [#note1]_
     - ❌
     - ❌
 
@@ -218,7 +218,7 @@ A similar table for :cmd:`Module` can be found
     - ❌
     - :attr:`global` in
 
-      current module [#note2]_
+      module [#note2]_
 
   * - :cmd:`Canonical Structure`
     - :attr:`global`
@@ -226,7 +226,7 @@ A similar table for :cmd:`Module` can be found
     - ❌
     - :attr:`global` in
 
-      current module [#note2]_
+      module [#note2]_
 
   * - ``Hints`` (and :cmd:`Instance`)
     - :attr:`local`
@@ -235,14 +235,14 @@ A similar table for :cmd:`Module` can be found
     - ❌
 
   * - :cmd:`Set` or :cmd:`Unset` a flag
-    - available
+    - available [#note3]_
     - not available
     - :attr:`export` in
 
-      current module [#note3]_
+      module [#note3]_
     - :attr:`global` in
 
-      current module [#note3]_
+      module [#note3]_
 
 .. [#note1] For :cmd:`Definition`, :cmd:`Lemma`, ... the default visibility is
    to be available outside the section and available with a short name when
