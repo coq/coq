@@ -143,13 +143,13 @@ Summary of locality attributes in a section
 -------------------------------------------
 
 This table sums up the effect of locality attributes on the scope of vernacular
-commands in a section, when outside the section where they were entered. In the
+commands in a :cmd:`Section`, when outside the :cmd:`Section` where they were entered. In the
 following table:
 
 * a cross (❌) marks an unsupported attribute (compilation error);
-* “not available” means that the command has no effect outside the section it
+* “not available” means that the command has no effect outside the :cmd:`Section` it
   was entered;
-* “available” means that the effects of the command persists outside the section.
+* “available” means that the effects of the command persists outside the :cmd:`Section`.
 * For :cmd:`Definition` (and :cmd:`Lemma`, ...), :cmd:`Canonical Structure`,
   :cmd:`Coercion` and :cmd:`Set` (and :cmd:`Unset`), some locality attributes
   will be passed on to the :cmd:`Module` containing the current :cmd:`Section`,
@@ -245,22 +245,27 @@ A similar table for :cmd:`Module` can be found
       module [#note3]_
 
 .. [#note1] For :cmd:`Definition`, :cmd:`Lemma`, ... the default visibility is
-   to be available outside the section and available with a short name when
-   imported outside the current module. The :attr:`local` attribute make the
-   corresponding identifiers available in the current module but only with a
-   fully qualified name outside the current module.
+   to be available outside the section and available with a short name when the
+   current :cmd:`Module` is imported (with :cmd:`Import` or cmd:`Export`)
+   outside the current :cmd:`Module`.
+   The :attr:`local` attribute make the corresponding identifiers available in
+   the current :cmd:`Module` but only with a fully qualified name outside the
+   current :cmd:`Module`.
 
-.. [#note2] For :cmd:`Coercion` and :cmd:`Canonical Structure`, the :attr:`global`
-   visibility, which is the default, makes them available outside the section,
-   in the current module, and outside the current module when it is imported.
+.. [#note2] For :cmd:`Coercion` and :cmd:`Canonical Structure`, the
+   :attr:`global` visibility, which is the default, makes them available outside
+   the section, in the current :cmd:`Module`, and outside the current
+   :cmd:`Module` when it is imported (with :cmd:`Import` or cmd:`Export`).
 
 .. [#note3] For :cmd:`Set` and :cmd:`Unset`, the :attr:`export` and
    :attr:`global` attributes both make the command's effects persist outside the
-   current section, in the current module. It will also persist outside the
-   current module with the :attr:`global` attribute, or with the :attr:`export`
-   attribute, when the module is imported.
+   current section, in the current :cmd:`Module`.
+   It will also persist outside the current :cmd:`Module` with the
+   :attr:`global` attribute, or with the :attr:`export` attribute, when the
+   :cmd:`Module` is imported (with :cmd:`Import` or cmd:`Export`).
    The default behaviour (no attribute) is to make the setting persist outside
-   the section in the current module, but not outside the current module.
+   the section in the current :cmd:`Module`, but not outside the current
+   :cmd:`Module`.
 
 .. _Admissible-rules-for-global-environments:
 
