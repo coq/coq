@@ -267,6 +267,7 @@ let v_non_subst_reloc = v_sum "vm_non_subst_reloc" 0 [|
   [|Any|]; (* contains a Vmvalues.value *)
   [|v_uint63|];
   [|Float64|];
+  [|String|];
   [|v_vm_annot_switch|];
   [|v_vm_caml_prim|];
 |]
