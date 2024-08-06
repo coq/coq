@@ -41,6 +41,10 @@ in :ref:`canonicalstructures`; here only a simple example is given.
    This command supports the :attr:`local` attribute.  When used, the
    structure is canonical only within the :cmd:`Section` containing it.
 
+   Outside a :cmd:`Section`, the structure is canonical as soon as
+   :cmd:`Import` (or one of its variants) has been used on the :cmd:`Module`
+   in which it is defined, regardless of its locality attribute, if any.
+
    :token:`qualid` (in :token:`reference`) denotes an object :n:`(Build_struct c__1 … c__n)` in the
    structure :g:`struct` for which the fields are :n:`x__1, …, x__n`.
    Then, each time an equation of the form :n:`(x__i _)` |eq_beta_delta_iota_zeta| :n:`c__i` has to be
