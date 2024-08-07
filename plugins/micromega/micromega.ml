@@ -888,7 +888,8 @@ let rec pmul cO cI cadd cmul ceqb p p'' = match p'' with
      let pP' = pmul cO cI cadd cmul ceqb p2 p' in
      padd cO cadd ceqb
        (mkPX cO ceqb (padd cO cadd ceqb (mkPX cO ceqb pP' i (p0 cO)) qP') i'
-         (p0 cO)) (mkPX cO ceqb pQ' i qQ'))
+         (p0 cO))
+       (mkPX cO ceqb pQ' i qQ'))
 
 (** val psquare :
     'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1
@@ -921,7 +922,8 @@ let rec ppow_pos cO cI cadd cmul ceqb subst_l res p = function
   subst_l
     (pmul cO cI cadd cmul ceqb
       (ppow_pos cO cI cadd cmul ceqb subst_l
-        (ppow_pos cO cI cadd cmul ceqb subst_l res p p3) p p3) p)
+        (ppow_pos cO cI cadd cmul ceqb subst_l res p p3) p p3)
+      p)
 | XO p3 ->
   ppow_pos cO cI cadd cmul ceqb subst_l
     (ppow_pos cO cI cadd cmul ceqb subst_l res p p3) p p3
@@ -1314,7 +1316,8 @@ let xror_clause_cnf unsat deduce t0 f =
     let acc,tg = pat in
     (match ror_clause unsat deduce t0 e with
      | Inl cl -> (cl::acc),tg
-     | Inr l -> acc,(Merge (tg, l)))) f ([],Null)
+     | Inr l -> acc,(Merge (tg, l))))
+    f ([],Null)
 
 (** val ror_clause_cnf :
     ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) list -> ('a1,

@@ -11,7 +11,8 @@
              match n with
              | 0 => m
              | S p => S (add p m)
-             end) 1 2)
+             end)
+            1 2)
      : nat
      = 4
      : nat
@@ -19,7 +20,8 @@
           match n with
           | 0 => m
           | S p => S (add p m)
-          end) 2 2
+          end)
+         2 2
      : nat
      = S (1 + (2 + 2))
      : nat

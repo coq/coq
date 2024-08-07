@@ -24,8 +24,9 @@ let (m : '__α Pattern.goal_matching) :=
      let h := Array.get h 0 in
      fun _ => fun _ => fun _ => fun _ => Std.clear h));
     (([], (Pattern.MatchPattern, pat:(_))),
-     (fun _ => fun _ => fun _ => fun _ => fun _ => ()))] : _
-    Pattern.goal_matching in
+     (fun _ => fun _ => fun _ => fun _ => fun _ => ()))]
+    : _ Pattern.goal_matching
+  in
 Pattern.lazy_goal_match0 false m
 :'__α
 constr:(ltac2:(()))

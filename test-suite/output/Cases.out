@@ -113,7 +113,8 @@ Arguments lem3 k
   e1, e2 := match x return (x = x) with
             | 0 => eq_refl
             | S n => eq_refl
-            end : x = x
+            end
+    : x = x
   ============================
   x + 0 = 0
 1 goal

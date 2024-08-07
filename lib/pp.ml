@@ -179,7 +179,7 @@ let pp_with ft pp =
     | Pp_hbox     -> Format.pp_open_hbox ft ()
     | Pp_vbox n   -> Format.pp_open_vbox ft n
     | Pp_hvbox n  -> Format.pp_open_hvbox ft n
-    | Pp_hovbox n -> Format.pp_open_hovbox ft n
+    | Pp_hovbox n -> Format.pp_open_box ft n
   in
   let rec pp_cmd = let open Format in function
     | Ppcmd_empty             -> ()
@@ -374,7 +374,7 @@ let pp_as_format ?(with_tags=false) pp =
     | Pp_hbox -> fprintf fmt "<h>"
     | Pp_vbox i -> if i = 0 then fprintf fmt "<v>" else fprintf fmt "<v %d>" i
     | Pp_hvbox i -> if i = 0 then fprintf fmt "<hv>" else fprintf fmt "<hv %d>" i
-    | Pp_hovbox i -> if i = 0 then fprintf fmt "<hov>" else fprintf fmt "<hov %d>" i
+    | Pp_hovbox i -> if i = 0 then () else fprintf fmt "<%d>" i
   in
   let close_box () = fprintf fmt "%s" "@]" in
   let rec pprec pp =
