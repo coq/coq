@@ -9,7 +9,7 @@ and internal representations of terms and commands.
 
 When inputing a term to Coq, it goes through several successive steps.
 
-* :gdef:`lexing`: the input is split in a linear stream of tokens, for
+* :gdef:`lexing`: the input is split into a sequence of tokens, for
   instance the string ``"1 + 2 * 2"`` will be split into the sequence
   of five tokens `'1' '+' '2' '*' '2'`
 
@@ -419,8 +419,8 @@ side.
 
 .. _custom-entries:
 
-Custom entries
-~~~~~~~~~~~~~~
+Defining custom entries
+~~~~~~~~~~~~~~~~~~~~~~~
 
 .. cmd:: Declare Custom Entry @ident
 
@@ -960,8 +960,14 @@ the possible following elements delimited by single quotes:
    scope (see :ref:`Scopes`), either the scope has to be opened or a
    delimiter has to exist in the scope for the notation to be usable.
 
-Custom entries
-~~~~~~~~~~~~~~
+.. _UsingCustomEntries:
+
+Using custom entries
+~~~~~~~~~~~~~~~~~~~~
+
+Once a custom entry :token:`ident` has been defined as :ref:`explained
+above <custom-entries>`, it can be used with the :cmd:`Notation`
+command and :g:`in_custom @ident`.
 
 .. example::
 
