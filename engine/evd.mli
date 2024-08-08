@@ -495,7 +495,6 @@ type 'a freelisted = {
 
 val metavars_of : econstr -> Metaset.t
 val mk_freelisted : econstr -> econstr freelisted
-val map_fl : ('a -> 'b) -> 'a freelisted -> 'b freelisted
 
 (** Status of an instance found by unification wrt to the meta it solves:
   - a supertype of the meta (e.g. the solution to ?X <= T is a supertype of ?X)
@@ -505,9 +504,6 @@ val map_fl : ('a -> 'b) -> 'a freelisted -> 'b freelisted
 *)
 
 type instance_constraint = IsSuperType | IsSubType | Conv
-
-val eq_instance_constraint :
-  instance_constraint -> instance_constraint -> bool
 
 (** Status of the unification of the type of an instance against the type of
      the meta it instantiates:
@@ -580,21 +576,17 @@ val meta_name      : evar_map -> metavariable -> Name.t
 val meta_declare   :
   metavariable -> etypes -> ?name:Name.t -> evar_map -> evar_map
 val meta_assign    : metavariable -> econstr * instance_status -> evar_map -> evar_map
-val meta_reassign  : metavariable -> econstr * instance_status -> evar_map -> evar_map
 
 val clear_metas : evar_map -> evar_map
 
 (** [meta_merge evd1 evd2] returns [evd2] extended with the metas of [evd1] *)
 val meta_merge : clbinding Metamap.t -> evar_map -> evar_map
 
-val map_metas_fvalue : (econstr -> econstr) -> evar_map -> evar_map
 val map_metas : (econstr -> econstr) -> evar_map -> evar_map
 
-type metabinding = metavariable * econstr * instance_status
-
-val retract_coercible_metas : evar_map -> metabinding list * evar_map
-
 val evar_source_of_meta : metavariable -> evar_map -> Evar_kinds.t located
+
+val set_metas : evar_map -> clbinding Metamap.t -> evar_map
 
 end
 

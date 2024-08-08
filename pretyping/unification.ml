@@ -32,6 +32,45 @@ open Locus
 open Locusops
 open Find_subterm
 
+module Meta =
+struct
+
+open Evd.Meta
+
+let meta_reassign mv (v, pb) evd =
+  let modify _ = function
+  | Clval(na, _, ty) -> Clval (na, (mk_freelisted v, pb), ty)
+  | _ -> anomaly ~label:"meta_reassign" (Pp.str "not yet defined.")
+  in
+  let metas = Metamap.modify mv modify (meta_list evd) in
+  set_metas evd metas
+
+let map_metas_fvalue f evd =
+  let map = function
+  | Clval(id,(c,s),typ) -> Clval(id,(mk_freelisted (f c.rebus),s),typ)
+  | x -> x
+  in
+  set_metas evd (Metamap.Smart.map map (meta_list evd))
+
+let retract_coercible_metas evd =
+  let mc = ref [] in
+  let map n v = match v with
+  | Clval (na, (b, (Conv, CoerceToType as s)), typ) ->
+    let () = mc := (n, b.rebus, s) :: !mc in
+    Cltyp (na, typ)
+  | v -> v
+  in
+  let metas = Metamap.Smart.mapi map (meta_list evd) in
+  !mc, set_metas evd metas
+
+end
+
+let meta_type env evd mv =
+  let ty =
+    try Evd.Meta.meta_ftype evd mv
+    with Not_found -> anomaly (str "unknown meta ?" ++ str (Nameops.string_of_meta mv) ++ str ".") in
+  meta_instance env evd ty
+
 type metabinding = (metavariable * EConstr.constr * (instance_constraint * instance_typing_status))
 
 type subst0 = {
@@ -210,7 +249,7 @@ let pose_all_metas_as_evars env evd t =
         let ty = nf_betaiota env !evdref ty in
         let src = Evd.Meta.evar_source_of_meta mv !evdref in
         let evd, ev = Evarutil.new_evar env !evdref ~src ty in
-        evdref := Meta.meta_assign mv (ev,(Conv,TypeNotProcessed)) evd;
+        evdref := Evd.Meta.meta_assign mv (ev,(Conv,TypeNotProcessed)) evd;
         ev)
   | _ ->
       EConstr.map !evdref aux t in
@@ -800,8 +839,8 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
             let stM,stN = extract_instance_status pb in
             let sigma =
               if opt.with_types && flags.check_applied_meta_types then
-                let tyM = Typing.meta_type curenv sigma k1 in
-                let tyN = Typing.meta_type curenv sigma k2 in
+                let tyM = meta_type curenv sigma k1 in
+                let tyN = meta_type curenv sigma k2 in
                 let l, r = if k2 < k1 then tyN, tyM else tyM, tyN in
                   check_compatibility curenv CUMUL flags substn l r
               else sigma
@@ -813,7 +852,7 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
             let sigma =
               if opt.with_types && flags.check_applied_meta_types then
                 (try
-                   let tyM = Typing.meta_type curenv sigma k in
+                   let tyM = meta_type curenv sigma k in
                    let tyN = get_type_of curenv ~lax:true sigma cN in
                      check_compatibility curenv CUMUL flags substn tyN tyM
                  with RetypeError _ ->
@@ -833,7 +872,7 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
             if opt.with_types && flags.check_applied_meta_types then
               (try
                  let tyM = get_type_of curenv ~lax:true sigma cM in
-                 let tyN = Typing.meta_type curenv sigma k in
+                 let tyN = meta_type curenv sigma k in
                    check_compatibility curenv CUMUL flags substn tyM tyN
                with RetypeError _ ->
                  (* Renounce, maybe metas/evars prevents typing *) sigma)
@@ -1232,7 +1271,7 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
                 (evd,t2::ks, m-1)
             else
               let mv = new_meta () in
-              let evd' = Meta.meta_declare mv (substl ks b) evd in
+              let evd' = Evd.Meta.meta_declare mv (substl ks b) evd in
               (evd', mkMeta mv :: ks, m - 1))
           (sigma,[],List.length bs) bs
       in
@@ -1328,6 +1367,8 @@ let rec unify_with_eta keptside flags env sigma c1 c2 =
    Rem: the upper constraint is lost in case u <= ?n <= u' (and symmetrically
    in the case u' <= ?n <= u)
  *)
+
+let eq_instance_constraint (c1 : instance_constraint) c2 = c1 == c2
 
 let merge_instances env sigma flags st1 st2 c1 c2 =
   match (opp_status st1, st2) with
@@ -1436,7 +1477,7 @@ let try_to_coerce env evd c cty tycon =
   let j = make_judge c cty in
   let (evd',j',_trace) = Coercion.inh_conv_coerce_rigid_to ~program_mode:false ~resolve_tc:true env evd j tycon in
   let evd' = Evarconv.solve_unif_constraints_with_heuristics env evd' in
-  let evd' = Evd.Meta.map_metas_fvalue (fun c -> nf_evar evd' c) evd' in
+  let evd' = Meta.map_metas_fvalue (fun c -> nf_evar evd' c) evd' in
     (evd',j'.uj_val)
 
 let w_coerce_to_type env evd c cty mvty =
@@ -1451,7 +1492,7 @@ let w_coerce_to_type env evd c cty mvty =
 
 let w_coerce env evd mv c =
   let cty = get_type_of env evd c in
-  let mvty = Typing.meta_type env evd mv in
+  let mvty = meta_type env evd mv in
   w_coerce_to_type env evd c cty mvty
 
 let nf_meta env sigma c =
@@ -1465,7 +1506,7 @@ let unify_to_type env sigma flags c status u =
     unify_0 env sigma CUMUL flags t u
 
 let unify_type env sigma flags mv status c =
-  let mvty = Typing.meta_type env sigma mv in
+  let mvty = meta_type env sigma mv in
   let mvty = nf_meta env sigma mvty in
     unify_to_type env sigma
       (set_flags_for_type flags)
@@ -1551,7 +1592,7 @@ let w_merge env with_types flags (substn : subst0) =
           else
             ((evd,c),([],[])),eqns
         in
-        begin match Meta.meta_opt_fvalue evd mv with
+        begin match Evd.Meta.meta_opt_fvalue evd mv with
         | Some ({ rebus = c' }, (status', _)) ->
             let (take_left, st, { subst_sigma = evd; subst_metas = metas'; subst_evars = evars' }) =
               merge_instances env evd flags status' status c' c
@@ -1567,7 +1608,7 @@ let w_merge env with_types flags (substn : subst0) =
                 if isMetaOf evd mv (whd_all env evd c) then evd
                 else error_cannot_unify env evd (mkMeta mv,c)
               else
-                Meta.meta_assign mv (c,(status,TypeProcessed)) evd in
+                Evd.Meta.meta_assign mv (c,(status,TypeProcessed)) evd in
             w_merge_rec evd' (metas''@metas) evars'' eqns
         end
     | [] ->
@@ -2223,7 +2264,7 @@ let secondOrderAbstraction env evd flags typ (p, oplist) =
   (* Remove delta when looking for a subterm *)
   let flags = { flags with core_unify_flags = flags.subterm_unify_flags } in
   let (evd',cllist) = w_unify_to_subterm_list env evd flags p oplist typ in
-  let typp = Typing.meta_type env evd' p in
+  let typp = meta_type env evd' p in
   let evd',(pred,predtyp) = abstract_list_all env evd' typp typ cllist in
   match infer_conv ~pb:CUMUL env evd' predtyp typp with
   | None ->
@@ -2234,7 +2275,7 @@ let secondOrderAbstraction env evd flags typ (p, oplist) =
     { subst_sigma = evd'; subst_metas = [p,pred,(Conv,TypeProcessed)]; subst_evars = [] }
 
 let secondOrderDependentAbstraction env evd flags typ (p, oplist) =
-  let typp = Typing.meta_type env evd p in
+  let typp = meta_type env evd p in
   let evd, pred = abstract_list_all_with_dependencies env evd typp typ oplist in
   w_merge env false flags.merge_unify_flags
     { subst_sigma = evd; subst_metas = [p,pred,(Conv,TypeProcessed)]; subst_evars = [] }

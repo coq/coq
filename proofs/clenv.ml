@@ -126,10 +126,11 @@ let clenv_refresh env sigma ctx clenv =
     let emap c = Vars.subst_univs_level_constr subst c in
     let evd = Evd.merge_sort_context_set Evd.univ_flexible evd ctx in
     (* Only metas are mentioning the old universes. *)
+    let map_fl cfl = { cfl with rebus = emap cfl.rebus } in
     mk_clausenv env (Evd.Meta.map_metas emap evd) clenv.metas
       (emap clenv.templval)
       clenv.metaset
-      (Evd.map_fl emap clenv.templtyp)
+      (map_fl clenv.templtyp)
   | None ->
     (* We also refresh template arguments. This assumes that callers of
        {!clenv_refresh} use a freshly minted clenv, but this is the case as this
@@ -747,7 +748,7 @@ let rec mk_refgoals env sigma goalacc conclty trm = match trm with
   (goalacc, ty, sigma, trm)
 | RfHole mv ->
   let conclty = match conclty with
-  | None -> Typing.meta_type env sigma mv
+  | None -> Unification.meta_type env sigma mv
   | Some conclty -> conclty
   in
   let conclty = nf_betaiota env sigma conclty in

@@ -370,8 +370,6 @@ let map_fl f cfl = { cfl with rebus=f cfl.rebus }
 
 type instance_constraint = IsSuperType | IsSubType | Conv
 
-let eq_instance_constraint c1 c2 = c1 == c2
-
 (* Status of the unification of the type of an instance against the type of
      the meta it instantiates:
    - CoerceToType means that the unification of types has not been done
@@ -1516,13 +1514,6 @@ let set_metas evd metas = {
 
 let meta_list evd = evd.metas
 
-let map_metas_fvalue f evd =
-  let map = function
-  | Clval(id,(c,s),typ) -> Clval(id,(mk_freelisted (f c.rebus),s),typ)
-  | x -> x
-  in
-  set_metas evd (Metamap.Smart.map map evd.metas)
-
 let map_metas f evd =
   let map cl = map_clb f cl in
   set_metas evd (Metamap.Smart.map map evd.metas)
@@ -1575,32 +1566,11 @@ let meta_assign mv (v, pb) evd =
   let evd = use_meta_source evd mv v in
   set_metas evd metas
 
-let meta_reassign mv (v, pb) evd =
-  let modify _ = function
-  | Clval(na, _, ty) -> Clval (na, (mk_freelisted v, pb), ty)
-  | _ -> anomaly ~label:"meta_reassign" (Pp.str "not yet defined.")
-  in
-  let metas = Metamap.modify mv modify evd.metas in
-  set_metas evd metas
-
 let clear_metas evd = {evd with metas = Metamap.empty}
 
 let meta_merge metas sigma =
   let metas = Metamap.fold Metamap.add metas sigma.metas in
   { sigma with metas }
-
-type metabinding = metavariable * constr * instance_status
-
-let retract_coercible_metas evd =
-  let mc = ref [] in
-  let map n v = match v with
-  | Clval (na, (b, (Conv, CoerceToType as s)), typ) ->
-    let () = mc := (n, b.rebus, s) :: !mc in
-    Cltyp (na, typ)
-  | v -> v
-  in
-  let metas = Metamap.Smart.mapi map evd.metas in
-  !mc, set_metas evd metas
 
 end
 

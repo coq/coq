@@ -93,3 +93,5 @@ val pose_all_metas_as_evars : env -> evar_map -> constr -> evar_map * constr
    (exported for inv.ml) *)
 val abstract_list_all :
   env -> evar_map -> constr -> constr -> constr list -> evar_map * (constr * types)
+
+val meta_type : env -> evar_map -> Constr.metavariable -> types
