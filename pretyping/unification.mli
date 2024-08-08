@@ -94,4 +94,7 @@ val pose_all_metas_as_evars : env -> evar_map -> constr -> evar_map * constr
 val abstract_list_all :
   env -> evar_map -> constr -> constr -> constr list -> evar_map * (constr * types)
 
+(** {5 Meta-related functions} *)
+
 val meta_type : env -> evar_map -> Constr.metavariable -> types
+val meta_instance : env -> evar_map -> constr freelisted -> constr

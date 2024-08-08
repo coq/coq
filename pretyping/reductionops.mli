@@ -311,9 +311,6 @@ val apply_rules : (state -> state) -> env -> evar_map -> EInstance.t ->
 
 val is_head_evar : env -> evar_map -> constr -> bool
 
-(** {6 Meta-related reduction functions } *)
-val meta_instance : env -> evar_map -> constr freelisted -> constr
-
 exception AnomalyInConversion of exn
 
 (* inferred_universes just gathers the constraints. *)

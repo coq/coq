@@ -65,6 +65,55 @@ let retract_coercible_metas evd =
 
 end
 
+(* [instance] is used for [res_pf]; the call to [local_strong whd_betaiota]
+   has (unfortunately) different subtle side effects:
+
+   - ** Order of subgoals **
+     If the lemma is a case analysis with parameters, it will move the
+     parameters as first subgoals (e.g. "case H" applied on
+     "H:D->A/\B|-C" will present the subgoal |-D first while w/o
+     betaiota the subgoal |-D would have come last).
+
+   - ** Betaiota-contraction in statement **
+     If the lemma has a parameter which is a function and this
+     function is applied in the lemma, then the _strong_ betaiota will
+     contract the application of the function to its argument (e.g.
+     "apply (H (fun x => x))" in "H:forall f, f 0 = 0 |- 0=0" will
+     result in applying the lemma 0=0 in which "(fun x => x) 0" has
+     been contracted). A goal to rewrite may then fail or succeed
+     differently.
+
+   - ** Naming of hypotheses **
+     If a lemma is a function of the form "fun H:(forall a:A, P a)
+     => .. F H .." where the expected type of H is "forall b:A, P b",
+     then, without reduction, the application of the lemma will
+     generate a subgoal "forall a:A, P a" (and intro will use name
+     "a"), while with reduction, it will generate a subgoal "forall
+     b:A, P b" (and intro will use name "b").
+
+   - ** First-order pattern-matching **
+     If a lemma has the type "(fun x => p) t" then rewriting t may fail
+     if the type of the lemma is first beta-reduced (this typically happens
+     when rewriting a single variable and the type of the lemma is obtained
+     by meta_instance (with empty map) which itself calls instance with this
+     empty map).
+ *)
+
+let instance env sigma c =
+  (* if s = [] then c else *)
+  (* No need to compute contexts under binders as whd_betaiota is local *)
+  let rec strongrec t = EConstr.map sigma strongrec (whd_betaiota env sigma t) in
+  strongrec c
+
+(*************************************)
+(* Metas *)
+
+let meta_instance env sigma b =
+  let fm = b.freemetas in
+  if Metaset.is_empty fm then b.rebus
+  else
+    instance env sigma b.rebus
+
 let meta_type env evd mv =
   let ty =
     try Evd.Meta.meta_ftype evd mv
