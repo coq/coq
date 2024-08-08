@@ -28,7 +28,7 @@ module GR = Names.GlobRef
 
 let meta_type env evd mv =
   let ty =
-    try Evd.meta_ftype evd mv
+    try Evd.Meta.meta_ftype evd mv
     with Not_found -> anomaly (str "unknown meta ?" ++ str (Nameops.string_of_meta mv) ++ str ".") in
   meta_instance env evd ty
 

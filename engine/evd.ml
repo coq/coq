@@ -1492,6 +1492,9 @@ let update_source evd evk src =
 (**********************************************************)
 (* Accessing metas *)
 
+module Meta =
+struct
+
 (** We use this function to overcome OCaml compiler limitations and to prevent
     the use of costly in-place modifications. *)
 let set_metas evd metas = {
@@ -1598,6 +1601,8 @@ let retract_coercible_metas evd =
   in
   let metas = Metamap.Smart.mapi map evd.metas in
   !mc, set_metas evd metas
+
+end
 
 let dependent_evar_ident ev evd =
   let EvarInfo evi = find evd ev in

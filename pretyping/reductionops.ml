@@ -469,7 +469,7 @@ let pr_state env sigma (tm,sk) =
 (*************************************)
 
 let safe_meta_value sigma ev =
-  try Some (Evd.meta_value sigma ev)
+  try Some (Evd.Meta.meta_value sigma ev)
   with Not_found -> None
 
 (*************************************)

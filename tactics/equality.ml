@@ -266,7 +266,7 @@ let general_elim_clause with_evars frzevars tac cls c (ctx, eqn, args) l l2r eli
       general_elim_clause with_evars flags cls (submetas, c, Clenv.clenv_type rew) elim
       end
     in
-    Proofview.Unsafe.tclEVARS (Evd.clear_metas (Clenv.clenv_evd rew)) <*>
+    Proofview.Unsafe.tclEVARS (Evd.Meta.clear_metas (Clenv.clenv_evd rew)) <*>
     elim_wrapper cls rewrite_elim
   in
   let strat, tac =

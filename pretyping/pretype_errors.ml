@@ -159,11 +159,11 @@ let error_wrong_abstraction_type env sigma na a p l =
   raise (PretypeError (env, sigma,WrongAbstractionType (na,a,p,l)))
 
 let error_abstraction_over_meta env sigma hdmeta metaarg =
-  let m = Evd.meta_name sigma hdmeta and n = Evd.meta_name sigma metaarg in
+  let m = Evd.Meta.meta_name sigma hdmeta and n = Evd.Meta.meta_name sigma metaarg in
   raise (PretypeError (env, sigma,AbstractionOverMeta (m,n)))
 
 let error_non_linear_unification env sigma hdmeta t =
-  let m = Evd.meta_name sigma hdmeta in
+  let m = Evd.Meta.meta_name sigma hdmeta in
   raise (PretypeError (env, sigma,NonLinearUnification (m,t)))
 
 (*s Ml Case errors *)

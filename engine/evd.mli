@@ -373,8 +373,6 @@ val evar_key : Id.t -> evar_map -> Evar.t
 
 val evar_names : evar_map -> Nameops.Fresh.t
 
-val evar_source_of_meta : metavariable -> evar_map -> Evar_kinds.t located
-
 val dependent_evar_ident : Evar.t -> evar_map -> Id.t
 
 (** {5 Side-effects} *)
@@ -567,6 +565,9 @@ val evars_of_named_context : evar_map -> (econstr, etypes, erelevance) Context.N
 val evars_of_filtered_evar_info : evar_map -> 'a evar_info -> Evar.Set.t
 
 (** Metas *)
+module Meta :
+sig
+
 val meta_list : evar_map -> clbinding Metamap.t
 
 val meta_value     : evar_map -> metavariable -> econstr
@@ -592,6 +593,10 @@ val map_metas : (econstr -> econstr) -> evar_map -> evar_map
 type metabinding = metavariable * econstr * instance_status
 
 val retract_coercible_metas : evar_map -> metabinding list * evar_map
+
+val evar_source_of_meta : metavariable -> evar_map -> Evar_kinds.t located
+
+end
 
 (** {5 FIXME: Nothing to do here} *)
 

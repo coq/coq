@@ -378,7 +378,7 @@ let rec get_nth n = function
 
 let rec decompose_projection sigma c args =
   match EConstr.kind sigma c with
-  | Meta mv -> decompose_projection sigma (Evd.meta_value sigma mv) args
+  | Meta mv -> decompose_projection sigma (Evd.Meta.meta_value sigma mv) args
   | Cast (c, _, _) -> decompose_projection sigma c args
   | App (c, arg) -> decompose_projection sigma c (arg :: args)
   | Const (c, u) ->

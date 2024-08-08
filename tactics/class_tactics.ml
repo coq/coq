@@ -1004,7 +1004,7 @@ module Search = struct
     in
     let evm = Evd.set_typeclass_evars evm Evar.Set.empty in
     let evm = Evd.push_future_goals evm in
-    evm, Evd.meta_list evm, sorted_goals
+    evm, Evd.Meta.meta_list evm, sorted_goals
 
 
   let run_on_goals env evm tac ~goals =
@@ -1056,7 +1056,7 @@ module Search = struct
     in
     (* FIXME: the need to merge metas seems to come from this being called
        internally from Unification. It should be handled there instead. *)
-    let sigma = Evd.meta_merge old_metas (Evd.clear_metas sigma) in
+    let sigma = Evd.Meta.meta_merge old_metas (Evd.Meta.clear_metas sigma) in
     let sigma = Evd.set_typeclass_evars sigma nongoals in
     let () = ppdebug 1 (fun () ->
         str"New typeclass evars are: " ++

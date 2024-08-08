@@ -143,7 +143,7 @@ let retype ?(polyprop=true) sigma =
   let rec type_of env cstr =
     match EConstr.kind sigma cstr with
     | Meta n ->
-      (try strip_outer_cast sigma (Evd.meta_ftype sigma n).Evd.rebus
+      (try strip_outer_cast sigma (Evd.Meta.meta_ftype sigma n).Evd.rebus
        with Not_found -> retype_error (BadMeta n))
     | Rel n ->
       let ty = try RelDecl.get_type (lookup_rel n env)

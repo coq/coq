@@ -85,7 +85,7 @@ let occur_meta_or_undefined_evar evd c =
 
 let whd_meta sigma c = match EConstr.kind sigma c with
   | Meta p ->
-    (try Evd.meta_value sigma p with Not_found -> c)
+    (try Evd.Meta.meta_value sigma p with Not_found -> c)
     (* Not recursive, for some reason *)
   | _ -> c
 
@@ -199,18 +199,18 @@ let pose_all_metas_as_evars env evd t =
   let evdref = ref evd in
   let rec aux t = match EConstr.kind !evdref t with
   | Meta mv ->
-      (match Evd.meta_opt_fvalue !evdref mv with
+      (match Evd.Meta.meta_opt_fvalue !evdref mv with
        | Some ({rebus=c;freemetas=mvs},_) ->
          let c = if Evd.Metaset.is_empty mvs then c else aux c in
-         evdref := meta_reassign mv (c,(Conv,TypeNotProcessed)) !evdref;
+         evdref := Meta.meta_reassign mv (c,(Conv,TypeNotProcessed)) !evdref;
          c
        | None ->
-        let {rebus=ty;freemetas=mvs} = Evd.meta_ftype !evdref mv in
+        let {rebus=ty;freemetas=mvs} = Evd.Meta.meta_ftype !evdref mv in
         let ty = if Evd.Metaset.is_empty mvs then ty else aux ty in
         let ty = nf_betaiota env !evdref ty in
-        let src = Evd.evar_source_of_meta mv !evdref in
+        let src = Evd.Meta.evar_source_of_meta mv !evdref in
         let evd, ev = Evarutil.new_evar env !evdref ~src ty in
-        evdref := meta_assign mv (ev,(Conv,TypeNotProcessed)) evd;
+        evdref := Meta.meta_assign mv (ev,(Conv,TypeNotProcessed)) evd;
         ev)
   | _ ->
       EConstr.map !evdref aux t in
@@ -1232,7 +1232,7 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
                 (evd,t2::ks, m-1)
             else
               let mv = new_meta () in
-              let evd' = meta_declare mv (substl ks b) evd in
+              let evd' = Meta.meta_declare mv (substl ks b) evd in
               (evd', mkMeta mv :: ks, m - 1))
           (sigma,[],List.length bs) bs
       in
@@ -1414,7 +1414,7 @@ let applyHead env evd c cl =
       | Prod ({binder_name},c1,c2) ->
         let src =
           match EConstr.kind evd a with
-          | Meta mv -> Evd.evar_source_of_meta mv evd
+          | Meta mv -> Evd.Meta.evar_source_of_meta mv evd
           | _ ->
             (* Does not matter, the evar will be later instantiated by [a] *)
             Loc.tag Evar_kinds.InternalHole in
@@ -1436,7 +1436,7 @@ let try_to_coerce env evd c cty tycon =
   let j = make_judge c cty in
   let (evd',j',_trace) = Coercion.inh_conv_coerce_rigid_to ~program_mode:false ~resolve_tc:true env evd j tycon in
   let evd' = Evarconv.solve_unif_constraints_with_heuristics env evd' in
-  let evd' = Evd.map_metas_fvalue (fun c -> nf_evar evd' c) evd' in
+  let evd' = Evd.Meta.map_metas_fvalue (fun c -> nf_evar evd' c) evd' in
     (evd',j'.uj_val)
 
 let w_coerce_to_type env evd c cty mvty =
@@ -1551,14 +1551,14 @@ let w_merge env with_types flags (substn : subst0) =
           else
             ((evd,c),([],[])),eqns
         in
-        begin match meta_opt_fvalue evd mv with
+        begin match Meta.meta_opt_fvalue evd mv with
         | Some ({ rebus = c' }, (status', _)) ->
             let (take_left, st, { subst_sigma = evd; subst_metas = metas'; subst_evars = evars' }) =
               merge_instances env evd flags status' status c' c
             in
             let evd' =
               if take_left then evd
-              else meta_reassign mv (c,(st,TypeProcessed)) evd
+              else Meta.meta_reassign mv (c,(st,TypeProcessed)) evd
             in
               w_merge_rec evd' (metas'@metas@metas'') (evars'@evars'') eqns
         | None ->
@@ -1567,7 +1567,7 @@ let w_merge env with_types flags (substn : subst0) =
                 if isMetaOf evd mv (whd_all env evd c) then evd
                 else error_cannot_unify env evd (mkMeta mv,c)
               else
-                meta_assign mv (c,(status,TypeProcessed)) evd in
+                Meta.meta_assign mv (c,(status,TypeProcessed)) evd in
             w_merge_rec evd' (metas''@metas) evars'' eqns
         end
     | [] ->
@@ -1599,7 +1599,7 @@ let w_merge env with_types flags (substn : subst0) =
     else Evd.define sp (Evarutil.nf_evar evd''' c) evd''' in
 
   let check_types evd =
-    let metas = Evd.meta_list evd in
+    let metas = Evd.Meta.meta_list evd in
     let eqns = Metamap.fold (fun mv b acc ->
       match b with
       | Clval (n, (t, (c, TypeNotProcessed)), v) -> (mv, c, t.rebus) :: acc
@@ -1615,7 +1615,7 @@ let w_merge env with_types flags (substn : subst0) =
   if with_types then check_types res else res
 
 let w_unify_meta_types env ?(flags=default_unify_flags ()) evd =
-  let metas,evd = retract_coercible_metas evd in
+  let metas,evd = Meta.retract_coercible_metas evd in
   w_merge env true flags.merge_unify_flags { subst_sigma = evd; subst_metas = metas; subst_evars = [] }
 
 (* [w_unify env evd M N]
@@ -1655,7 +1655,7 @@ let try_resolve_typeclasses env evd flag m n =
   else evd
 
 let w_unify_core_0 env evd with_types cv_pb flags m n =
-  let (mc1,evd') = retract_coercible_metas evd in
+  let (mc1,evd') = Meta.retract_coercible_metas evd in
   let substn = check_types env (set_flags_for_type flags.core_unify_flags) { subst_sigma = evd'; subst_metas = mc1; subst_evars = [] } (fst m) (fst n) in
   let subst2 =
      unify_0_with_initial_metas substn false env cv_pb
@@ -1668,7 +1668,7 @@ let w_typed_unify env evd = w_unify_core_0 env evd true
 
 let w_typed_unify_array env evd flags f1 l1 f2 l2 =
   let f1,l1,f2,l2 = adjust_app_array_size f1 l1 f2 l2 in
-  let (mc1,evd') = retract_coercible_metas evd in
+  let (mc1,evd') = Meta.retract_coercible_metas evd in
   let fold_subst subst m n = unify_0_with_initial_metas subst true env CONV flags.core_unify_flags (m, Unknown) (n, Unknown) in
   let subst = fold_subst { subst_sigma = evd'; subst_metas = []; subst_evars = [] } f1 f2 in
   let subst = Array.fold_left2 fold_subst subst l1 l2 in
@@ -2228,7 +2228,7 @@ let secondOrderAbstraction env evd flags typ (p, oplist) =
   match infer_conv ~pb:CUMUL env evd' predtyp typp with
   | None ->
     error_wrong_abstraction_type env evd'
-      (Evd.meta_name evd p) pred typp predtyp;
+      (Evd.Meta.meta_name evd p) pred typp predtyp;
   | Some evd' ->
   w_merge env false flags.merge_unify_flags
     { subst_sigma = evd'; subst_metas = [p,pred,(Conv,TypeProcessed)]; subst_evars = [] }
