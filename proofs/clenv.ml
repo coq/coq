@@ -90,6 +90,13 @@ let strip_params env sigma c =
     | _ -> c)
   | _ -> c
 
+let meta_handler sigma =
+  let meta_value mv = match Evd.Meta.meta_opt_fvalue sigma mv with
+  | None -> None
+  | Some (b, _) -> Some b.rebus
+  in
+  { Reductionops.meta_value }
+
 let clenv_strip_proj_params clenv =
   let templval = strip_params clenv.env clenv.evd clenv.templval in
   mk_clausenv clenv.env clenv.evd clenv.metas templval clenv.metaset clenv.templtyp
@@ -164,7 +171,8 @@ let clenv_value clenv = meta_instance clenv.env clenv.evd { rebus = clenv.templv
 let clenv_type clenv = meta_instance clenv.env clenv.evd clenv.templtyp
 
 let clenv_push_prod cl =
-  let typ = whd_all cl.env (clenv_evd cl) (clenv_type cl) in
+  let metas = meta_handler (clenv_evd cl) in
+  let typ = whd_all ~metas cl.env (clenv_evd cl) (clenv_type cl) in
   let rec clrec typ = match EConstr.kind cl.evd typ with
     | Cast (t,_,_) -> clrec t
     | Prod (na,t,u) ->
@@ -393,7 +401,8 @@ let clenv_unify_meta_types ?(flags=default_unify_flags ()) clenv =
   update_clenv_evd clenv (w_unify_meta_types ~flags:flags clenv.env clenv.evd)
 
 let clenv_unique_resolver ?(flags=default_unify_flags ()) clenv concl =
-  let (hd, _) = decompose_app clenv.evd (whd_nored clenv.env clenv.evd clenv.templtyp.rebus) in
+  let metas = meta_handler clenv.evd in
+  let (hd, _) = decompose_app clenv.evd (whd_nored ~metas clenv.env clenv.evd clenv.templtyp.rebus) in
   let clenv = if isMeta clenv.evd hd then clenv_unify_meta_types ~flags clenv else clenv in
   clenv_unify CUMUL ~flags (clenv_type clenv) concl clenv
 
@@ -599,7 +608,8 @@ let error_already_defined b =
           Pp.(str "Position " ++ int n ++ str" already defined.")
 
 let clenv_unify_binding_type env sigma c t u =
-  if isMeta sigma (fst (decompose_app sigma (whd_nored env sigma u))) then
+  let metas = meta_handler sigma in
+  if isMeta sigma (fst (decompose_app sigma (whd_nored ~metas env sigma u))) then
     (* Not enough information to know if some subtyping is needed *)
     CoerceToType, sigma, c
   else
@@ -778,7 +788,8 @@ let rec mk_refgoals env sigma goalacc conclty trm = match trm with
 
 and mk_arggoals env sigma goalacc funty allargs =
   let foldmap (goalacc, funty, sigma) harg =
-    let t = whd_all env sigma funty in
+    let metas = meta_handler sigma in
+    let t = whd_all ~metas env sigma funty in
     match EConstr.kind sigma t with
     | Prod (_, c1, b) ->
       let (acc, hargty, sigma, arg) = mk_refgoals env sigma goalacc (Some c1) harg in
@@ -999,7 +1010,8 @@ let case_pf ?(with_evars=false) ~dep (indarg, typ) =
   in
   let sigma = Typeclasses.make_unresolvables (fun x -> true) sigma in
   (* Note that the environment rel context does not matter for betaiota *)
-  let rec nf_betaiota c = EConstr.map sigma nf_betaiota (whd_betaiota env sigma c) in
+  let metas = meta_handler sigma in
+  let rec nf_betaiota c = EConstr.map sigma nf_betaiota (whd_betaiota ~metas env sigma c) in
   (* Call the legacy refiner on the result *)
   let arg = match body with
   | RealCase (ci, u, pms, (p,r), iv, c) ->

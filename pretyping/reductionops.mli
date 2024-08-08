@@ -19,6 +19,8 @@ open Environ
 
 exception Elimconst
 
+type meta_handler = { meta_value : metavariable -> EConstr.t option }
+
 val debug_RAKAM : CDebug.t
 
 module CredNative : Primred.RedNative with
@@ -152,36 +154,36 @@ val nf_evar : evar_map -> constr -> constr
 (** Lazy strategy, weak head reduction *)
 
 val whd_evar :  evar_map -> constr -> constr
-val whd_nored : reduction_function
+val whd_nored : ?metas:meta_handler -> reduction_function
 val whd_beta : reduction_function
-val whd_betaiota : reduction_function
-val whd_betaiotazeta : reduction_function
-val whd_all :  reduction_function
+val whd_betaiota : ?metas:meta_handler -> reduction_function
+val whd_betaiotazeta : ?metas:meta_handler -> reduction_function
+val whd_all : ?metas:meta_handler -> reduction_function
 val whd_allnolet :  reduction_function
 val whd_betalet : reduction_function
 
 (** Removes cast and put into applicative form *)
-val whd_nored_stack : stack_reduction_function
-val whd_beta_stack : stack_reduction_function
-val whd_betaiota_stack : stack_reduction_function
-val whd_betaiotazeta_stack : stack_reduction_function
-val whd_all_stack : stack_reduction_function
-val whd_allnolet_stack : stack_reduction_function
-val whd_betalet_stack : stack_reduction_function
+val whd_nored_stack : ?metas:meta_handler -> stack_reduction_function
+val whd_beta_stack : ?metas:meta_handler -> stack_reduction_function
+val whd_betaiota_stack : ?metas:meta_handler -> stack_reduction_function
+val whd_betaiotazeta_stack : ?metas:meta_handler -> stack_reduction_function
+val whd_all_stack : ?metas:meta_handler -> stack_reduction_function
+val whd_allnolet_stack : ?metas:meta_handler -> stack_reduction_function
+val whd_betalet_stack : ?metas:meta_handler -> stack_reduction_function
 
 (** {6 Head normal forms } *)
 
 val whd_const : Constant.t -> reduction_function
-val whd_delta_stack :  stack_reduction_function
+val whd_delta_stack : ?metas:meta_handler -> stack_reduction_function
 val whd_delta :  reduction_function
-val whd_betadeltazeta_stack :  stack_reduction_function
+val whd_betadeltazeta_stack : ?metas:meta_handler -> stack_reduction_function
 val whd_betadeltazeta :  reduction_function
-val whd_zeta_stack : stack_reduction_function
+val whd_zeta_stack : ?metas:meta_handler -> stack_reduction_function
 val whd_zeta : reduction_function
 
 val shrink_eta : evar_map -> constr -> constr
 
-val whd_stack_gen : RedFlags.reds -> stack_reduction_function
+val whd_stack_gen : RedFlags.reds -> ?metas:meta_handler -> stack_reduction_function
 
 (** Various reduction functions *)
 
@@ -300,10 +302,10 @@ type state_reduction_function =
 
 val pr_state : env -> evar_map -> state -> Pp.t
 
-val whd_nored_state : state_reduction_function
+val whd_nored_state : ?metas:meta_handler -> state_reduction_function
 
 val whd_betaiota_deltazeta_for_iota_state :
-  TransparentState.t -> state_reduction_function
+  TransparentState.t -> ?metas:meta_handler -> state_reduction_function
 
 exception PatternFailure
 val apply_rules : (state -> state) -> env -> evar_map -> EInstance.t ->

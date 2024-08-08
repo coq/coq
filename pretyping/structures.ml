@@ -376,11 +376,18 @@ let rec get_nth n = function
   if n < len then arg.(n)
   else get_nth (n - len) args
 
-let rec decompose_projection sigma c args =
+let rec decompose_projection ?metas sigma c args =
   match EConstr.kind sigma c with
-  | Meta mv -> decompose_projection sigma (Evd.Meta.meta_value sigma mv) args
-  | Cast (c, _, _) -> decompose_projection sigma c args
-  | App (c, arg) -> decompose_projection sigma c (arg :: args)
+  | Meta mv ->
+    begin match metas with
+    | None -> raise Not_found
+    | Some m ->
+      match m.meta_value mv with
+      | None -> raise Not_found
+      | Some v -> decompose_projection ?metas sigma v args
+    end
+  | Cast (c, _, _) -> decompose_projection ?metas sigma c args
+  | App (c, arg) -> decompose_projection ?metas sigma c (arg :: args)
   | Const (c, u) ->
      let n = Structure.projection_nparams c in
      (* Check if there is some canonical projection attached to this structure *)
@@ -391,12 +398,12 @@ let rec decompose_projection sigma c args =
      c
   | _ -> raise Not_found
 
-let is_open_canonical_projection env sigma c =
+let is_open_canonical_projection ?metas env sigma c =
   let open EConstr in
   try
-    let arg = decompose_projection sigma c [] in
+    let arg = decompose_projection ?metas sigma c [] in
     try
-      let arg = whd_all env sigma arg in
+      let arg = whd_all ?metas env sigma arg in
       let hd = match EConstr.kind sigma arg with App (hd, _) -> hd | _ -> arg in
       not (isConstruct sigma hd)
     with Failure _ -> false

@@ -99,10 +99,18 @@ end
      empty map).
  *)
 
+let meta_handler sigma =
+  let meta_value mv = match Evd.Meta.meta_opt_fvalue sigma mv with
+  | None -> None
+  | Some (b, _) -> Some b.rebus
+  in
+  { Reductionops.meta_value }
+
 let instance env sigma c =
   (* if s = [] then c else *)
   (* No need to compute contexts under binders as whd_betaiota is local *)
-  let rec strongrec t = EConstr.map sigma strongrec (whd_betaiota env sigma t) in
+  let metas = meta_handler sigma in
+  let rec strongrec t = EConstr.map sigma strongrec (whd_betaiota ~metas env sigma t) in
   strongrec c
 
 (*************************************)
@@ -618,9 +626,10 @@ let expand_table_key ts env sigma args = function
         Some (EConstr.of_constr @@ Option.default def unf, args)
         | exception NotEvaluableConst (HasRules (u, b, r)) ->
         begin try
+          let metas = meta_handler sigma in
           let sk = Stack.( append_app args empty ) in
           let rhs, stack = Reductionops.apply_rules
-            (whd_betaiota_deltazeta_for_iota_state ts env sigma) env sigma (EInstance.make u) r sk
+            (whd_betaiota_deltazeta_for_iota_state ts ~metas env sigma) env sigma (EInstance.make u) r sk
           in
           let args' = Stack.list_of_app_stack stack
             |> (function Some l -> l | None -> assert false)
@@ -641,7 +650,8 @@ let unfold_projection env p r stk =
 let expand_key ts env sigma args = function
   | Some (IsKey k) -> (expand_table_key ts env sigma args k)
   | Some (IsProj (p, r, c)) ->
-    let red = Stack.zip sigma (whd_betaiota_deltazeta_for_iota_state ts env sigma
+    let metas = meta_handler sigma in
+    let red = Stack.zip sigma (whd_betaiota_deltazeta_for_iota_state ts ~metas env sigma
                                (c, unfold_projection env p r []))
     in if EConstr.eq_constr sigma (EConstr.mkProj (p, r, c)) red then None else Some (red, args)
   | None -> None
@@ -737,7 +747,8 @@ let constr_cmp pb env sigma flags ?nargs t u =
     None
 
 let do_reduce ts (env, nb) sigma c =
-  Stack.zip sigma (whd_betaiota_deltazeta_for_iota_state
+  let metas = meta_handler sigma in
+  Stack.zip sigma (whd_betaiota_deltazeta_for_iota_state ~metas
                   ts env sigma (c, Stack.empty))
 
 let is_evar_allowed flags evk =
@@ -1098,7 +1109,8 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
     let tterm = try Retyping.get_type_of ~lax:true env sigma term
       with RetypeError _ -> fail ()
     in
-    let tterm' = Reductionops.whd_all env sigma tterm in
+    let metas = meta_handler sigma in
+    let tterm' = Reductionops.whd_all ~metas env sigma tterm in
      match EConstr.kind sigma (fst (decompose_app sigma tterm')) with
       | Ind (ind',_) when QInd.equal env ind ind' -> substn
       | _ ->
@@ -1253,6 +1265,7 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
       match res with
       | Some substn -> substn
       | None ->
+      let metas = meta_handler sigma in
       let cf1 = key_of curenv sigma opt flags f1 and cf2 = key_of curenv sigma opt flags f2 in
         match oracle_order curenv cf1 cf2 with
         | None -> error_cannot_unify curenv sigma (cM,cN)
@@ -1260,32 +1273,33 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
             (match expand_key flags.modulo_delta curenv sigma l1 cf1 with
             | Some c_l1 ->
                 unirec_rec curenvnb pb opt substn
-                  (whd_betaiotazeta curenv sigma (mkApp c_l1)) cN
+                  (whd_betaiotazeta ~metas curenv sigma (mkApp c_l1)) cN
             | None ->
                 (match expand_key flags.modulo_delta curenv sigma l2 cf2 with
                 | Some c_l2 ->
                     unirec_rec curenvnb pb opt substn cM
-                      (whd_betaiotazeta curenv sigma (mkApp c_l2))
+                      (whd_betaiotazeta ~metas curenv sigma (mkApp c_l2))
                 | None ->
                     error_cannot_unify curenv sigma (cM,cN)))
         | Some false ->
             (match expand_key flags.modulo_delta curenv sigma l2 cf2 with
             | Some c_l2 ->
                 unirec_rec curenvnb pb opt substn cM
-                  (whd_betaiotazeta curenv sigma (mkApp c_l2))
+                  (whd_betaiotazeta ~metas curenv sigma (mkApp c_l2))
             | None ->
                 (match expand_key flags.modulo_delta curenv sigma l1 cf1 with
                 | Some c_l1 ->
                     unirec_rec curenvnb pb opt substn
-                      (whd_betaiotazeta curenv sigma (mkApp c_l1)) cN
+                      (whd_betaiotazeta ~metas curenv sigma (mkApp c_l1)) cN
                 | None ->
                     error_cannot_unify curenv sigma (cM,cN)))
 
   and canonical_projections (curenv, _ as curenvnb) pb opt cM cN substn =
     let sigma = substn.subst_sigma in
+    let metas = meta_handler sigma in
     let f1 () =
       if isApp_or_Proj sigma cM then
-          if CanonicalSolution.is_open_canonical_projection curenv sigma cM then
+          if CanonicalSolution.is_open_canonical_projection ~metas curenv sigma cM then
             solve_canonical_projection curenvnb pb opt cM cN substn
           else error_cannot_unify (fst curenvnb) sigma (cM,cN)
       else error_cannot_unify (fst curenvnb) sigma (cM,cN)
@@ -1299,15 +1313,16 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
       else
         try f1 () with e when precatchable_exception e ->
           if isApp_or_Proj sigma cN then
-              if CanonicalSolution.is_open_canonical_projection curenv sigma cN then
+              if CanonicalSolution.is_open_canonical_projection ~metas curenv sigma cN then
                 solve_canonical_projection curenvnb pb opt cN cM substn
               else error_cannot_unify (fst curenvnb) sigma (cM,cN)
           else error_cannot_unify (fst curenvnb) sigma (cM,cN)
 
   and solve_canonical_projection curenvnb pb opt cM cN substn =
     let sigma = substn.subst_sigma in
-    let f1l1 = whd_nored_state (fst curenvnb) sigma (cM,Stack.empty) in
-    let f2l2 = whd_nored_state (fst curenvnb) sigma (cN,Stack.empty) in
+    let metas = meta_handler sigma in
+    let f1l1 = whd_nored_state ~metas (fst curenvnb) sigma (cM,Stack.empty) in
+    let f2l2 = whd_nored_state ~metas (fst curenvnb) sigma (cN,Stack.empty) in
     let (sigma,t,c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
       try Evarconv.check_conv_record (fst curenvnb) sigma f1l1 f2l2
       with Not_found -> error_cannot_unify (fst curenvnb) sigma (cM,cN)
@@ -1500,7 +1515,8 @@ let applyHead env evd c cl =
     match cl with
     | [] -> (evd, c)
     | a::cl ->
-      match EConstr.kind evd (whd_all env evd cty) with
+      let metas = meta_handler evd in
+      match EConstr.kind evd (whd_all ~metas env evd cty) with
       | Prod ({binder_name},c1,c2) ->
         let src =
           match EConstr.kind evd a with
@@ -1654,7 +1670,8 @@ let w_merge env with_types flags (substn : subst0) =
         | None ->
             let evd' =
               if occur_meta_evd evd mv c then
-                if isMetaOf evd mv (whd_all env evd c) then evd
+                let metas = meta_handler evd in
+                if isMetaOf evd mv (whd_all ~metas env evd c) then evd
                 else error_cannot_unify env evd (mkMeta mv,c)
               else
                 Evd.Meta.meta_assign mv (c,(status,TypeProcessed)) evd in
@@ -1719,7 +1736,8 @@ let w_unify_meta_types env ?(flags=default_unify_flags ()) evd =
    types of metavars are unifiable with the types of their instances    *)
 
 let head_app env sigma m =
-  fst (whd_nored_state env sigma (m, Stack.empty))
+  let metas = meta_handler sigma in
+  fst (whd_nored_state ~metas env sigma (m, Stack.empty))
 
 let isEvar_or_Meta sigma c = match EConstr.kind sigma c with
 | Evar _ | Meta _ -> true
@@ -2334,8 +2352,9 @@ let secondOrderAbstractionAlgo dep =
   if dep then secondOrderDependentAbstraction else secondOrderAbstraction
 
 let w_unify2 env evd flags dep cv_pb ty1 ty2 =
-  let c1, oplist1 = whd_nored_stack env evd ty1 in
-  let c2, oplist2 = whd_nored_stack env evd ty2 in
+  let metas = meta_handler evd in
+  let c1, oplist1 = whd_nored_stack ~metas env evd ty1 in
+  let c2, oplist2 = whd_nored_stack ~metas env evd ty2 in
   match EConstr.kind evd c1, EConstr.kind evd c2 with
     | Meta p1, _ ->
         (* Find the predicate *)
@@ -2366,8 +2385,9 @@ let w_unify2 env evd flags dep cv_pb ty1 ty2 =
    convertible and first-order otherwise. But if failed if e.g. the type of
    Meta(1) had meta-variables in it. *)
 let w_unify env evd cv_pb ?(flags=default_unify_flags ()) ty1 ty2 =
-  let hd1,l1 = decompose_app evd (whd_nored env evd ty1) in
-  let hd2,l2 = decompose_app evd (whd_nored env evd ty2) in
+  let metas = meta_handler evd in
+  let hd1,l1 = decompose_app evd (whd_nored ~metas env evd ty1) in
+  let hd2,l2 = decompose_app evd (whd_nored ~metas env evd ty2) in
   let is_empty1 = Array.is_empty l1 in
   let is_empty2 = Array.is_empty l2 in
     match EConstr.kind evd hd1, not is_empty1, EConstr.kind evd hd2, not is_empty2 with

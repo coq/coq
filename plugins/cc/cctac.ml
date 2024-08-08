@@ -43,8 +43,10 @@ let whd env sigma t =
 let whd_delta env sigma t =
   Reductionops.clos_whd_flags RedFlags.all env sigma t
 
+let whd_all env sigma c = Reductionops.whd_all env sigma c
+
 let whd_in_concl =
-  reduct_in_concl ~cast:true ~check:false (Reductionops.whd_all, DEFAULTcast)
+  reduct_in_concl ~cast:true ~check:false (whd_all, DEFAULTcast)
 
 (* decompose member of equality in an applicative format *)
 
