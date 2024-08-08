@@ -543,7 +543,6 @@ let get_previous_hyp_position env sigma id =
 
 let clear_hyps2 env sigma ids sign t cl =
   try
-    let sigma = Evd.clear_metas sigma in
     Evarutil.clear_hyps2_in_evi env sigma sign t cl ids
   with Evarutil.ClearDependencyError (id,err,inglobal) ->
     error_replacing_dependency env sigma id err inglobal
