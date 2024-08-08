@@ -14,7 +14,7 @@ in Coq's grammar are entered and displayed.  Syntax extensions include:
   Notation definitions let you specify:
   
   - *Precedence* so that :n:`1+2*3` is interpreted
-    in the usual way as :n:`1+(2*3)` rather than as `(1+2)*3`.
+    in the usual way as :n:`1+(2*3)` rather than as :n:`(1+2)*3`.
   - *Associativity* (right, left or not associative) so
     that :n:`4/2/2` is interpreted as :n:`(4/2)/2`.
   - *Overloading*, so that :n:`A+B` can be interpreted appropriately for
