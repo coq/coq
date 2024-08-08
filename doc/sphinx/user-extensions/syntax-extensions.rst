@@ -3,64 +3,34 @@
 Syntax extensions and notation scopes
 =====================================
 
-Syntax extensions let you customize how some nonterminal symbols
-in Coq's grammar are entered and displayed.  Syntax extensions include:
+While, it's in theory possible to write down every Gallina term
+explicitly, in the way they are understood by the kernel, for instance
+:n:`Nat.add (S O) (Nat.mul (S (S O)) (S (S O)))`, this would be very
+tedious and error-prone and take us away from our usual mathematical
+practice. To circumvent this, Coq offers notation mechanisms that
+reflect the eponym mathematical practice and allows for instance to
+write :n:`1 + 2 * 2` instead. Those mechanisms range from simple
+:ref:`Abbreviations` to full fledged :ref:`Notations` with user
+defined :ref:`syntaxes <ReservingNotations>`. Multiple interpretations
+can be given to the same notation in different contexts thanks to the
+:ref:`scope <Scopes>` mechanism. For instance :n:`(1 + 2 * 2)%N` could
+denote the above natural number expression while :n:`(1 + 2 * 2)%Z`
+could denote a similar expression with integers.
 
-- :ref:`Notations <Notations>`, which customize :n:`@term`\s.  They
-  let you use the familiar syntax :n:`1+2*3` instead of
-  :n:`(Nat.add 1 (Nat.mul 2 3))`.  (Coq accepts both forms; the :flag:`Printing Notations`
-  flag controls which is displayed.)
+Introduction
+------------
 
-  Notation definitions let you specify:
-  
-  - *Precedence* so that :n:`1+2*3` is interpreted
-    in the usual way as :n:`1+(2*3)` rather than as :n:`(1+2)*3`.
-  - *Associativity* (right, left or not associative) so
-    that :n:`4/2/2` is interpreted as :n:`(4/2)/2`.
-  - *Overloading*, so that :n:`A+B` can be interpreted appropriately for
-    various types, such as natural numbers, integers and real numbers,
-    each of which has its own :term:`notation scope`.  :n:`@scope_key`\s
-    are used to syntactically select the appropriate scope, for example
-    :n:`%nat` in :n:`(1+2)%nat` selects the scope for natural numbers. 
-
-    Overloaded notations must be defined with
-    :ref:`reserved notations <ReservingNotations>`.
-
-- :ref:`Abbreviations <Abbreviations>` are names, possibly with arguments, that are
-  replaced with another expression.  They are notations that don't define
-  new syntax.  For example, an abbreviation could replace
-  :n:`reflexive R` with :n:`(forall x, R x x)`.  (For Ltac2, use
-  :cmd:`Ltac2 Notation (abbreviation)`.)
-  
-
-- :ref:`Number <number-notations>` and :ref:`String <string-notations>` 
-  notations permit customizing how number and string tokens are processed.
-  For example, numbers can be processed as natural, integer or real numbers.
-  Notation scopes can be used to control which number or string notation to use.
-  
-  By default, Coq accepts natural numbers both in the usual decimal form
-  as well as in unary form (:n:`O` is 0, :n:`S O` is 1,
-  :n:`S (S O)` is 2, ...).  The :flag:`Printing Raw Literals` flag controls
-  which is displayed.
-  
-- :ref:`Tactic notations <TacticNotation>` allow customizing the syntax of
-  tactics.  (Use :cmd:`Ltac2 Notation` to do similar customization for Ltac2
-  tactics.)
-
-Notations often define new keywords and add new rules to the parser grammar.
-Adding keywords can break parsing of other constructs.  For example, "apply"
-is not a keyword.  Making it a keyword will make the :tacn:`apply` tactic
-unparsable.  Use :cmd:`Print Keywords` to see the currently-defined keywords. 
-
-Coq's standard library defines a number of useful syntax extensions.
-
-(END OF INTRODUCTION)
-
-When inputing a term to Coq, it goes through several successive steps.
+In order to use effectively Coq's notation system, one needs a basic
+understanding of the multiple steps needed to transform a term
+(possibly with notations) into the valid Gallina term which Coq will
+ultimately use internally. When inputing a term to Coq, it goes
+through several successive steps:
 
 * :gdef:`lexing`: the input is split into a sequence of tokens, for
   instance the string ``"1 + 2 * 2"`` will be split into the sequence
-  of five tokens `'1' '+' '2' '*' '2'`
+  of five tokens `'1' '+' '2' '*' '2'`. A set of :ref:`basic tokens
+  <lexical-conventions>` are predefined and can be extended, in
+  particular by :ref:`reserving notations <ReservingNotations>`.
 
 * :gdef:`parsing`: the previous stream is given a tree-like structure, for
   instance here
@@ -74,11 +44,15 @@ When inputing a term to Coq, it goes through several successive steps.
               / \
              2   2
 
+  The parsed grammar can be modified by :ref:`reserving notations
+  <ReservingNotations>`.
+
 * notation :gdef:`interpretation`: each syntactic element gets translated to a
   term, for instance :n:`1` can be interpreted as the natural number
   :n:`S O` then :n:`2` is interpreted as :n:`S (S O)`, then :n:`2 * 2`
   as :n:`Nat.mul (S (S O)) (S (S O))` and finally our whole term as
-  :n:`Nat.add (S O) (Nat.mul (S (S O)) (S (S O)))`.
+  :n:`Nat.add (S O) (Nat.mul (S (S O)) (S (S O)))`. The same expression can
+  be given multiple interpretations in various contexts thanks to :ref:`Scopes`.
 
 Coq performs these steps successively and independently. Once a step
 is completed, there is no going back. Then, the result goes
@@ -89,22 +63,49 @@ phases. And reciprocally, no notation remains during the later type
 checking phases. This chapter introduces commands enabling to
 customize those notation steps.
 
-We first introduce :ref:`abbreviations <Abbreviations>`. These are
-similar to what is called "macros" in many programming languages.
-They merely map an identifier (possibly with syntactic variables) to a
-relacement text.
+Syntax extensions include:
 
-More elaborate custom notations can also be defined by modifying the
-lexer and parser thanks to the :cmd:`Reserved Notation` command, then
-giving interpretations to the new syntax via the :cmd:`Notation`
-command. The :cmd:`Infix` command provides a shortcut to the latter
-for the specific case of infix notations. It is sometimes expected
-that the same syntax has different meanings in different contexts; to
-achieve this form of overloading, Coq offers a notion of
-:ref:`notation scopes <Scopes>`.
+- :ref:`Abbreviations <Abbreviations>` are names, possibly with arguments, that are
+  replaced with another expression.  They are notations that don't define
+  new syntax, i.e., don't modify the set of tokens considered by the :ref:`lexer <lexing>`,
+  nor the grammar used by the :ref:`parser <parsing>`. For example, an abbreviation could replace
+  :n:`reflexive R` with :n:`(forall x, R x x)`.
 
-Finally, the main command to provide custom notations for tactics is
-:cmd:`Tactic Notation`.
+- :ref:`Reserved Notations <ReservingNotations>`, which customize the :n:`@term`\s syntax,
+  i.e., extend the :ref:`parser grammar <parsing>` and possibly the set of :ref:`lexer tokens <lexing>`.
+  Notation reservations in particular let you specify the grammar extensions through:
+
+  - *Precedence* so that for instance :n:`1 + 2 * 2` is interpreted
+    in the usual way as :n:`1 + (2 * 2)` rather than as :n:`(1 + 2) * 2`.
+  - *Associativity* (right, left or not associative) so
+    that for instance :n:`4 / 2 / 2` is interpreted as :n:`(4 / 2) / 2`.
+
+- :ref:`Notations <Notations>`, which attach an interpretation to the previous
+  grammar extensions.
+
+- *Overloading* of notations, that is attaching multiple interpretations to a same syntax
+  is made possible thanks to :ref:`Scopes`, so that for instance :n:`A + B` can be
+  interpreted appropriately for various types, such as natural numbers,
+  integers and real numbers, each of which has its own :term:`notation scope`.
+  :n:`@scope_key`\s can be used to syntactically select the appropriate scope,
+  for example :n:`%nat` in :n:`(1+2)%nat` selects the scope for natural numbers.
+
+- :ref:`Number <number-notations>` and :ref:`String <string-notations>`
+  notations permit customizing how :ref:`number and string tokens <lexical-conventions>` are processed.
+  For example, numbers can be processed as natural, integer or real numbers.
+  Notation scopes can again be used to control which number or string notation to use.
+
+  With the :ref:`default loaded prelude <thecoqlibrary>`, numbers are interpreted
+  by default as natural numbers in unary encoding (:n:`O` is 0, :n:`S O` is 1,
+  :n:`S (S O)` is 2, ...). The :flag:`Printing Raw Literals` flag can be used to
+  disactivate the printing and see the raw terms.
+
+.. note::
+
+   Both the :ref:`Ltac 2 <ltac2_notations>` and :ref:`Ltac 1
+   <TacticNotation>` tactic languages offer a tactic notation mechanism, with some
+   functionalities for the language of tactics, similar to what is
+   offered here for the language of terms.
 
 .. coqtop:: none
 
@@ -288,7 +289,8 @@ This modifies the lexer, adding the keyword `'+2'`. Now, if the string
 of the previous example is written without spaces, i.e., ``"1+2*2"``,
 it would be lexed as four tokens `'1' '+2' '*' '2''` instead of the
 previous five. This example shows that new keywords should be
-introduced with a lot of care.
+introduced with a lot of care. Use :cmd:`Print Keywords` to see the
+currently-defined keywords.
 
 .. cmd:: Reserved Infix @string {? ( {+, @syntax_modifier } ) }
 
