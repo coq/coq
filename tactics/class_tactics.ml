@@ -225,7 +225,7 @@ let hintmap_of env sigma hdc secvars concl =
     fun db -> Hint_db.map_eauto env sigma ~secvars hdc concl db
 
 (** Hack to properly solve dependent evars that are typeclasses *)
-let rec e_trivial_fail_db only_classes db_list local_db secvars =
+let rec e_trivial_fail_db db_list local_db secvars =
   let open Tacticals in
   let open Tacmach in
   let trivial_fail =
@@ -235,13 +235,13 @@ let rec e_trivial_fail_db only_classes db_list local_db secvars =
     let sigma = Tacmach.project gl in
     let d = NamedDecl.get_id @@ pf_last_hyp gl in
     let hints = push_resolve_hyp env sigma d local_db in
-      e_trivial_fail_db only_classes db_list hints secvars
+      e_trivial_fail_db db_list hints secvars
       end
   in
   let trivial_resolve =
     Proofview.Goal.enter
     begin fun gl ->
-    let tacs = e_trivial_resolve db_list local_db secvars only_classes
+    let tacs = e_trivial_resolve db_list local_db secvars
                                  (pf_env gl) (project gl) (pf_concl gl) in
       tclFIRST (List.map (fun (x,_,_,_,_) -> x) tacs)
     end
@@ -252,13 +252,13 @@ let rec e_trivial_fail_db only_classes db_list local_db secvars =
   in
   tclSOLVE tacl
 
-and e_my_find_search db_list local_db secvars hdc complete only_classes env sigma concl0 =
+and e_my_find_search db_list local_db secvars hdc complete env sigma concl0 =
   let prods, concl = EConstr.decompose_prod_decls sigma concl0 in
   let nprods = List.length prods in
   let allowed_evars =
     let all = Evarsolve.AllowedEvars.all in
     match hdc with
-    | Some (hd,_) when only_classes ->
+    | Some (hd,_) ->
       begin match Typeclasses.class_info hd with
       | Some cl ->
         if cl.cl_strict then
@@ -289,7 +289,7 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
       | Res_pf_THEN_trivial_fail h ->
          let fst = with_prods nprods h (unify_resolve ~with_evars:true flags h) in
          let snd = if complete then Tacticals.tclIDTAC
-                   else e_trivial_fail_db only_classes db_list local_db secvars in
+                   else e_trivial_fail_db db_list local_db secvars in
          Tacticals.tclTHEN fst snd
       | Unfold_nth c ->
          Proofview.tclPROGRESS (unfold_in_concl [AllOccurrences,c])
@@ -336,18 +336,18 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
     in
     Some (all_mode_match, hintl)
 
-and e_trivial_resolve db_list local_db secvars only_classes env sigma concl =
+and e_trivial_resolve db_list local_db secvars env sigma concl =
   let hd = try Some (decompose_app_bound sigma concl) with Bound -> None in
   try
-    (match e_my_find_search db_list local_db secvars hd true only_classes env sigma concl with
+    (match e_my_find_search db_list local_db secvars hd true env sigma concl with
     | Some (_,l) -> l
     | None -> [])
   with Not_found -> []
 
-let e_possible_resolve db_list local_db secvars only_classes env sigma concl =
+let e_possible_resolve db_list local_db secvars env sigma concl =
   let hd = try Some (decompose_app_bound sigma concl) with Bound -> None in
   try
-    e_my_find_search db_list local_db secvars hd false only_classes env sigma concl
+    e_my_find_search db_list local_db secvars hd false env sigma concl
   with Not_found -> Some (true, [])
 
 let cut_of_hints h =
@@ -709,7 +709,7 @@ module Search = struct
     in
     let secvars = compute_secvars gl in
     match e_possible_resolve hints info.search_hints secvars
-            info.search_only_classes env sigma concl with
+            env sigma concl with
     | None ->
       Proofview.tclZERO StuckGoal
     | Some (all_mode_match, poss) ->
