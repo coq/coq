@@ -68,9 +68,9 @@ When inputing a term to Coq, it goes through several successive steps.
   .. code-block:: text
      :name: after-parsing
 
-             *
+             +
             / \
-           1   +
+           1   *
               / \
              2   2
 
@@ -80,8 +80,8 @@ When inputing a term to Coq, it goes through several successive steps.
   as :n:`Nat.mul (S (S O)) (S (S O))` and finally our whole term as
   :n:`Nat.add (S O) (Nat.mul (S (S O)) (S (S O)))`.
 
-Each step is performed independently and there isn't any kind of
-backtracking from any step to a previous one. Then, the result goes
+Coq performs these steps successively and independently. Once a step
+is completed, there is no going back. Then, the result goes
 through the remaining of the proof assistant, that is the elaboration
 and type checking phases discussed everywhere else in this manual. No
 types are involved at any point during the above notation handling
@@ -89,8 +89,10 @@ phases. And reciprocally, no notation remains during the later type
 checking phases. This chapter introduces commands enabling to
 customize those notation steps.
 
-We first introduce :ref:`abbreviations <Abbreviations>`, a kind of
-macro which does not modify the parser.
+We first introduce :ref:`abbreviations <Abbreviations>`. These are
+similar to what is called "macros" in many programming languages.
+They merely map an identifier (possibly with syntactic variables) to a
+relacement text.
 
 More elaborate custom notations can also be defined by modifying the
 lexer and parser thanks to the :cmd:`Reserved Notation` command, then
@@ -198,13 +200,13 @@ Abbreviations
    denoted expression is performed at definition time. Type checking is
    done only at the time of use of the abbreviation.
 
-   Like for notations, if the right-hand side of an abbreviation is a
+   If the right-hand side of an abbreviation is a
    partially applied constant, the abbreviation inherits the implicit
    arguments and notation scopes of the constant. As an
    exception, if the right-hand side is just of the form :n:`@@qualid`,
    this conventionally stops the inheritance of implicit arguments.
 
-   Like for notations, it is possible to bind binders in
+   It is possible to bind (syntactic) variables in
    abbreviations. Here is an example:
 
    .. coqtop:: in reset
@@ -224,9 +226,8 @@ Reserving notations
 
    Modifies the lexer (by adding keywords) and the parser.
 
-Notations must be in double quotes, except when the
-abbreviation has the form of an ordinary applicative expression;
-see :ref:`Abbreviations`. The notation consists of *tokens* separated by
+Notations must be in double quotes, unlike :ref:`Abbreviations`.
+The notation consists of *tokens* separated by
 spaces. Tokens which are identifiers (such as ``A``, ``x0'``, etc.) are the *parameters*
 of the notation. The
 other elements of the string (such as ``/\``) are the *symbols*, which must appear
@@ -264,7 +265,7 @@ Here are examples from the initial state of Coq.
    Reserved Notation "x * y" (at level 40, left associativity).
 
 Those notations are already reserved in the `Notations.v` file of the
-prelude, loaded by defauylt when starting Coq. The levels give
+prelude, loaded by default when starting Coq. The levels give
 priorities. The smallest the number, the highest the priority.  For
 instance the respective levels of `+` and `*` explain why our example
 `"1 + 2 * 2"` is parsed as `1 + (2 * 2)` rather than `(1 + 2) *
@@ -354,12 +355,10 @@ parenthesized :n:`@syntax_modifier`\s.  Here is how the previous examples refine
 By default, a notation is considered nonassociative, but the
 precedence level is mandatory (except for special cases whose level is
 canonical, c.f. :ref:`next section <NotationFactorization>`).
-The level is either a number or the phrase ``next level``
-whose meaning is obvious.
+The level is either a number or the phrase ``next level``,
+meaning level ``n - 1`` when the rule is at level ``n``.
 Some :ref:`associativities are predefined <init-notations>` in the
 ``Notations`` module.
-
-.. TODO I don't find it obvious -- CPC
 
 Sometimes, levels have to be voluntarily lowered, for instance if one tries
 
@@ -369,7 +368,7 @@ Sometimes, levels have to be voluntarily lowered, for instance if one tries
 
 there is a conflict with the notation for
 type casts. The notation for type casts, as shown by the command :cmd:`Print
-Grammar` `constr` is at level 100. To avoid ``x : A`` being parsed as a type cast,
+Grammar` puts `constr` at level 100. To avoid ``x : A`` being parsed as a type cast,
 it is necessary to put ``x`` at a level below 100, typically 99. Hence, a correct
 definition is the following:
 
