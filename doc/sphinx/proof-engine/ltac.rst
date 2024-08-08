@@ -1935,6 +1935,198 @@ Printing |Ltac| tactics
 
    This command displays a list of all user-defined tactics, with their arguments.
 
+.. _TacticNotation:
+
+Tactic Notations
+-----------------
+
+Tactic notations allow customizing the syntax of tactics.
+
+.. todo move to the Ltac chapter
+
+.. todo to discuss after moving to the ltac chapter:
+   any words of wisdom on when to use tactic notation vs ltac?
+   can you run into problems if you shadow another tactic or tactic notation?
+   If so, how to avoid ambiguity?
+
+.. cmd:: Tactic Notation {? ( at level @natural ) } {+ @ltac_production_item } := @ltac_expr
+
+   .. insertprodn ltac_production_item ltac_production_item
+
+   .. prodn::
+      ltac_production_item ::= @string
+      | @ident {? ( @ident {? , @string } ) }
+
+   Defines a *tactic notation*, which extends the parsing and pretty-printing of tactics.
+
+   This command supports the :attr:`local` attribute, which limits the notation to the
+   current module.
+
+      :token:`natural`
+         The parsing precedence to assign to the notation.  This information is particularly
+         relevant for notations for tacticals.  Levels can be in the range 0 .. 5 (default is 5).
+
+      :n:`{+ @ltac_production_item }`
+         The notation syntax.  Notations for simple tactics should begin with a :token:`string`.
+         Note that `Tactic Notation foo := idtac` is not valid; it should be `Tactic Notation "foo" := idtac`.
+
+         .. todo: "Tactic Notation constr := idtac" gives a nice message, would be good to show
+            that message for the "foo" example above.
+
+      :token:`string`
+         represents a literal value in the notation
+
+      :n:`@ident`
+         is the name of a grammar nonterminal listed in the table below.  In a few cases,
+         to maintain backward compatibility, the name differs from the nonterminal name
+         used elsewhere in the documentation.
+
+      :n:`( @ident__parm {? , @string__s } )`
+         :n:`@ident__parm` is the parameter name associated with :n:`@ident`.   The :n:`@string__s`
+         is the separator string to use when :n:`@ident` specifies a list with separators
+         (i.e. :n:`@ident` ends with `_list_sep`).
+
+      :n:`@ltac_expr`
+         The tactic expression to substitute for the notation.  :n:`@ident__parm`
+         tokens appearing in :n:`@ltac_expr` are substituted with the associated
+         nonterminal value.
+
+   For example, the following command defines a notation with a single parameter `x`.
+
+   .. coqtop:: in
+
+      Tactic Notation "destruct_with_eqn" constr(x) := destruct x eqn:?.
+
+   For a complex example, examine the 16 `Tactic Notation "setoid_replace"`\s
+   defined in :file:`$COQLIB/theories/Classes/SetoidTactics.v`, which are designed
+   to accept any subset of 4 optional parameters.
+
+   The nonterminals that can specified in the tactic notation are:
+
+     .. Some missing entries: "ref", "string", "preident", "int" and "ssrpatternarg".
+        (from reading .v files).
+        Looks like any string passed to "make0" in the code is valid.  But do
+        we want to support all these?
+        @JasonGross's opinion here: https://github.com/coq/coq/pull/11718#discussion_r415387421
+
+   .. list-table::
+      :header-rows: 1
+
+      * -  Specified :token:`ident`
+        - Parsed as
+        - Interpreted as
+        - as in tactic
+
+      * - ``ident``
+        - :token:`ident`
+        - a user-given name
+        - :tacn:`intro`
+
+      * - ``simple_intropattern``
+        - :token:`simple_intropattern`
+        - an introduction pattern
+        - :tacn:`assert` `as`
+
+      * - ``hyp``
+        - :token:`ident`
+        - a hypothesis defined in context
+        - :tacn:`clear`
+
+      * - ``reference``
+        - :token:`qualid`
+        - a qualified identifier
+        - name of an |Ltac|-defined tactic
+
+      * - ``smart_global``
+        - :token:`reference`
+        - a global reference of term
+        - :tacn:`unfold`, :tacn:`with_strategy`
+
+      * - ``constr``
+        - :token:`one_term`
+        - a term
+        - :tacn:`exact`
+
+      * - ``open_constr``
+        - :token:`one_term`
+        - a term where all `_` which are not resolved by unification become evars; typeclass resolution is not triggered
+        - tacn:`epose`, tacn:`eapply`
+
+      * - ``uconstr``
+        - :token:`one_term`
+        - an untyped term
+        - :tacn:`refine`
+
+      * - ``integer``
+        - :token:`integer`
+        - an integer
+        -
+
+      * - ``int_or_var``
+        - :token:`int_or_var`
+        - an integer
+        - :tacn:`do`
+
+      * - ``strategy_level``
+        - :token:`strategy_level`
+        - a strategy level
+        -
+
+      * - ``strategy_level_or_var``
+        - :token:`strategy_level_or_var`
+        - a strategy level
+        - :tacn:`with_strategy`
+
+      * - ``tactic``
+        - :token:`ltac_expr`
+        - a tactic
+        -
+
+      * - ``tactic``\ *n* (*n* in 0..5)
+        - :token:`ltac_expr`\ *n*
+        - a tactic at level *n*
+        -
+
+      * - *entry*\ ``_list``
+        - :n:`{* entry }`
+        - a list of how *entry* is interpreted
+        -
+
+      * - ``ne_``\ *entry*\ ``_list``
+        - :n:`{+ entry }`
+        - a list of how *entry* is interpreted
+        -
+
+      * - *entry*\ ``_list_sep``
+        - :n:`{*s entry }`
+        - a list of how *entry* is interpreted
+        -
+
+      * - ``ne_``\ *entry*\ ``_list_sep``
+        - :n:`{+s entry }`
+        - a list of how *entry* is interpreted
+        -
+
+   .. todo: notation doesn't support italics
+
+   .. note:: In order to be bound in tactic definitions, each
+             syntactic entry for argument type must include the case
+             of a simple |Ltac| identifier as part of what it
+             parses. This is naturally the case for ``ident``,
+             ``simple_intropattern``, ``reference``, ``constr``, ...
+             but not for ``integer`` nor for ``strategy_level``.  This
+             is the reason for introducing special entries
+             ``int_or_var`` and ``strategy_level_or_var`` which
+             evaluate to integers or strategy levels only,
+             respectively, but which syntactically includes
+             identifiers in order to be usable in tactic definitions.
+
+   .. note:: The *entry*\ ``_list*`` and ``ne_``\ *entry*\ ``_list*``
+             entries can be used in primitive tactics or in other
+             notations at places where a list of the underlying entry
+             can be used: entry is either ``constr``, ``hyp``,
+             ``integer``, ``reference``, ``strategy_level``,
+             ``strategy_level_or_var``, or ``int_or_var``.
 
 .. _ltac-examples:
 
