@@ -183,6 +183,84 @@ let make_ubinders uctx (univs, ubinders as u) = match univs with
   | UState.Monomorphic_entry _ -> (UState.Monomorphic_entry uctx, ubinders)
   | UState.Polymorphic_entry _ -> u
 
+let { Goptions.get = private_poly_univs } =
+  Goptions.declare_bool_option_and_ref
+    ~key:["Private";"Polymorphic";"Universes"]
+    ~value:true
+    ()
+
+let universes_of_body_type body typ =
+  let used_univs_body = Vars.universes_of_constr body in
+  let used_univs_typ = Option.cata Vars.universes_of_constr Univ.Level.Set.empty typ in
+  let used_univs = Univ.Level.Set.union used_univs_body used_univs_typ in
+  used_univs_typ, used_univs
+
+let make_univs_deferred_private_mono ~initial_euctx ?feedback_id ~uctx ~udecl body typ =
+  let _, used_univs = universes_of_body_type body typ in
+  let uctx = UState.constrain_variables (fst (UState.context_set initial_euctx)) uctx in
+  (* For vi2vo compilation proofs are computed now but we need to
+     complement the univ constraints of the typ with the ones of
+     the body.  So we keep the two sets distinct. *)
+  let uctx_body = UState.restrict uctx used_univs in
+  UState.check_mono_univ_decl uctx_body udecl
+
+let make_univs_immediate_private_mono ~initial_euctx ~uctx ~udecl ~eff body typ =
+  let utyp = UState.univ_entry ~poly:false initial_euctx in
+  let ubody =
+    let _, used_univs = universes_of_body_type body typ in
+    let uctx = UState.constrain_variables (fst (UState.context_set initial_euctx)) uctx in
+    (* For vi2vo compilation proofs are computed now but we need to
+       complement the univ constraints of the typ with the ones of
+       the body.  So we keep the two sets distinct. *)
+    let uctx_body = UState.restrict uctx used_univs in
+    UState.check_mono_univ_decl uctx_body udecl in
+  initial_euctx, utyp, Default { body = (body, eff); opaque = Opaque ubody }
+
+let make_univs_immediate_private_poly ~uctx ~udecl ~eff body typ =
+  let used_univs_typ, used_univs = universes_of_body_type body typ in
+  let uctx' = UState.restrict uctx used_univs_typ in
+  let utyp = UState.check_univ_decl ~poly:true uctx' udecl in
+  let ubody =
+    let uctx = UState.restrict uctx used_univs in
+    Univ.ContextSet.diff
+      (UState.context_set uctx)
+      (UState.context_set uctx')
+  in
+  uctx', utyp, Default { body = (body, eff); opaque = Opaque ubody }
+
+let make_univs_immediate_default ~poly ~opaque ~uctx ~udecl ~eff body typ =
+  let _, used_univs = universes_of_body_type body typ in
+  (* Since the proof is computed now, we can simply have 1 set of
+     constraints in which we merge the ones for the body and the ones
+     for the typ. We recheck the declaration after restricting with
+     the actually used universes.
+     TODO: check if restrict is really necessary now. *)
+  let uctx = UState.restrict uctx used_univs in
+  let utyp = UState.check_univ_decl ~poly uctx udecl in
+  let utyp = match fst utyp with
+    | Polymorphic_entry _ -> utyp
+    | Monomorphic_entry uctx ->
+      (* the constraints from the body may depend on universes from
+         the side effects, so merge it all together.
+         Example failure if we don't is "l1" in test-suite/success/rewrite.v.
+
+         Not sure if it makes more sense to merge them in the ustate
+         before restrict/check_univ_decl or here. Since we only do it
+         when monomorphic it shouldn't really matter. *)
+      Monomorphic_entry (Univ.ContextSet.union uctx (Safe_typing.universes_of_private eff.Evd.seff_private)), snd utyp
+  in
+  uctx, utyp, Default { body = (body, eff); opaque = if opaque then Opaque Univ.ContextSet.empty else Transparent }
+
+let make_univs_immediate ~poly ?keep_body_ucst_separate ~opaque ~uctx ~udecl ~eff body typ =
+  (* allow_deferred case *)
+  match keep_body_ucst_separate with
+  | Some initial_euctx when not poly -> make_univs_immediate_private_mono ~initial_euctx ~uctx ~udecl ~eff body typ
+  | _ ->
+  (* private_poly_univs case *)
+  if poly && opaque && private_poly_univs ()
+  then make_univs_immediate_private_poly ~uctx ~udecl ~eff body typ
+  else make_univs_immediate_default ~poly ~opaque ~uctx ~udecl ~eff body typ
+
 (** [univsbody] are universe-constraints attached to the body-only,
    used in vio-delayed opaque constants and private poly universes *)
 let definition_entry_core ?using ?(inline=false) ?types
@@ -733,6 +811,50 @@ module Internal = struct
 
 end
 
+(* The word [proof] is to be understood as [justification] *)
+(* A possible alternatve would be [evidence]?? *)
+type closed_proof_output = ((Constr.t * Evd.side_effects) * Constr.t option) list * UState.t
+
+type proof_object =
+  | DefaultProof of
+      { proof : closed_proof_output
+      ; opaque : bool
+      ; using : Names.Id.Set.t option
+      ; keep_body_ucst_separate : UState.t option
+      }
+  | DeferredOpaqueProof of
+      { deferred_proof : closed_proof_output Future.computation
+      ; using : Names.Id.Set.t option
+      ; initial_proof_data : Proof.data
+      ; feedback_id : Stateid.t
+      ; initial_euctx : UState.t
+      }
+
+let future_map2_pair_list_distribute p l f =
+  List.map_i (fun i c -> f (Future.chain p (fun (a, b) -> (List.nth a i, b))) c) 0 l
+
+let process_proof ~info:Info.({ udecl; poly }) = function
+  | DefaultProof { proof = (entries, uctx); opaque; using; keep_body_ucst_separate } ->
+    let entries = List.map (fun ((body, eff), typ) ->
+        let uctx, univs, body = make_univs_immediate ~poly ?keep_body_ucst_separate ~opaque ~uctx ~udecl ~eff body typ in
+        definition_entry_core ?using ~univs ?types:typ body) entries in
+    entries, uctx
+  | DeferredOpaqueProof { deferred_proof = bodies; using; initial_proof_data; feedback_id; initial_euctx } ->
+    let { Proof.poly; entry; sigma } = initial_proof_data in
+    let entries =
+      future_map2_pair_list_distribute bodies (Proofview.initial_goals entry)
+        (fun body_typ_uctx (_, _, initial_typ) ->
+           (* Testing if evar-closed? *)
+           let initial_typ = Evarutil.nf_evars_universes sigma (EConstr.Unsafe.to_constr initial_typ) in
+           (* The flags keep_body_ucst_separate, opaque, etc. should be consistent with evar-closedness? *)
+           let univs = UState.univ_entry ~poly:false initial_euctx in
+           let body = Future.chain body_typ_uctx (fun (((body, eff), typ), uctx) ->
+               let uctx = make_univs_deferred_private_mono ~initial_euctx ~uctx ~udecl body typ in
+               ((body, uctx), eff)) in
+           delayed_definition_entry ?using ~univs ~types:initial_typ ~feedback_id body)
+    in
+    entries, initial_euctx
+
 let declare_definition_scheme ~internal ~univs ~role ~name ?loc c =
   let kind = Decls.(IsDefinition Scheme) in
   let entry = pure_definition_entry ~univs c in
@@ -768,6 +890,27 @@ let declare_entry_core ~name ?(scope=Locality.default_scope) ?(clearbody=false) 
 
 let declare_entry = declare_entry_core ~obls:[]
 
+let warn_let_as_axiom =
+  CWarnings.create ~name:"let-as-axiom" ~category:CWarnings.CoreCategories.vernacular
+    Pp.(fun id -> strbrk "Let definition" ++ spc () ++ Names.Id.print id ++
+                  spc () ++ strbrk "declared as an axiom.")
+
+(* Declare an assumption when not in a section: Parameter/Axiom but also
+   Variable/Hypothesis seen as Local Parameter/Axiom *)
+let declare_parameter ~name ~scope ~hook ~impargs ~uctx pe =
+  let local = match scope with
+    | Locality.Discharge -> warn_let_as_axiom name; Locality.ImportNeedQualified
+    | Locality.Global local -> local
+  in
+  let kind = Decls.(IsAssumption Conjectural) in
+  let decl = ParameterEntry pe in
+  let cst = declare_constant ~name ~local ~kind ~typing_flags:None decl in
+  let dref = Names.GlobRef.ConstRef cst in
+  let () = Impargs.maybe_declare_manual_implicits false dref impargs in
+  let () = assumption_message name in
+  let () = Hook.(call ?hook { S.uctx; obls = []; scope; dref}) in
+  cst
+
 (* Using processing *)
 let interp_proof_using_gen f env evd cinfo using =
   let cextract v (fixnames, terms) =
@@ -785,6 +928,43 @@ let gather_mutual_using_data =
   List.fold_left2 (fun acc CInfo.{ name; typ; _ } (body, _) ->
       let typ, body = EConstr.(of_constr typ, of_constr body) in
       (name, [typ; body]) :: acc) []
+
+(* XXX: this should be unified with the code for non-interactive
+   mutuals previously on this file. *)
+
+let declare_possibly_mutual_definitions ~info ~cinfo proof_obj =
+  let entries, uctx = process_proof ~info proof_obj in
+  let { Info.hook; scope; clearbody; kind; typing_flags; user_warns; _ } = info in
+  let refs = List.map2 (fun CInfo.{name; impargs} ->
+      declare_entry ~name ~scope ~clearbody ~kind ?hook ~impargs ~typing_flags ~user_warns ~uctx) cinfo entries in
+  let () =
+    (* We override the temporary notations used while proving, now using the global names *)
+    let local = info.scope=Locality.Discharge in
+    CWarnings.with_warn ("-"^Notation.warning_overridden_name)
+      (List.iter (Metasyntax.add_notation_interpretation ~local (Global.env()))) info.ntns
+  in
+  refs
+
+let declare_possibly_mutual_parameters ~info ~cinfo ~uctx ?(mono_uctx_extra=UState.empty) ~sec_vars typs =
+  (* Note, if an initial uctx, minimize and restrict have not been done *)
+  (* if the uctx of an abandonned proof, minimize is redundant (see close_proof) *)
+  let { Info.scope; poly; hook; udecl } = info in
+  pi3 (List.fold_left2 (
+    fun (i, subst, csts) { CInfo.name; impargs } typ ->
+      let uctx' = UState.restrict uctx (Vars.universes_of_constr typ) in
+      let univs = UState.check_univ_decl ~poly uctx' udecl in
+      let univs = if i = 0 then add_mono_uctx mono_uctx_extra univs else univs in
+      let typ = Vars.replace_vars subst typ in
+      let pe = {
+          parameter_entry_secctx = sec_vars;
+          parameter_entry_type = Evarutil.nf_evars_universes (Evd.from_ctx uctx) typ;
+          parameter_entry_universes = univs;
+          parameter_entry_inline_code = None;
+        } in
+      let cst = declare_parameter ~name ~scope ~hook ~impargs ~uctx pe in
+      let inst = instance_of_univs univs in
+      (i+1, (name, Constr.mkConstU (cst,inst))::subst, (cst, univs)::csts)
+  ) (0, [], []) cinfo typs)
 
 let make_recursive_bodies env ~typing_flags ~possible_guard ~rec_declaration =
   let env = Environ.update_typing_flags ?typing_flags env in
@@ -813,9 +993,6 @@ let declare_mutual_definitions ~info ~cinfo ~opaque ~uctx ~bodies ~possible_guar
   let fixtypes = List.map (fun CInfo.{typ} -> typ) cinfo in
   let rec_declaration = prepare_recursive_declaration cinfo fixtypes fixrelevances bodies in
   let bodies_types, indexes = make_recursive_bodies env ~typing_flags ~rec_declaration ~possible_guard in
-  let vars = Vars.universes_of_constr (fst (List.hd bodies_types)) in (* All bodies have same vars *)
-  let uctx = UState.restrict uctx vars in
-  let univs = UState.check_univ_decl ~poly uctx udecl in
   let evd = Evd.from_env env in
   let using =
     Option.map (fun using ->
@@ -826,7 +1003,8 @@ let declare_mutual_definitions ~info ~cinfo ~opaque ~uctx ~bodies ~possible_guar
   in
   let csts = CList.map2
       (fun CInfo.{ name; typ; impargs } (body, _) ->
-         let entry = definition_entry ~opaque ~types:typ ~univs ?using body in
+         let uctx, univs, body = make_univs_immediate ~poly ~opaque ~uctx ~udecl ~eff:Evd.empty_side_effects body (Some typ) in
+         let entry = definition_entry_core ~types:typ ~univs ?using body in
          declare_entry ~name ~scope ~clearbody ~kind ~impargs ~uctx ~typing_flags ~user_warns entry)
       cinfo bodies_types
   in
@@ -835,27 +1013,6 @@ let declare_mutual_definitions ~info ~cinfo ~opaque ~uctx ~bodies ~possible_guar
   recursive_message isfix indexes fixnames;
   List.iter (Metasyntax.add_notation_interpretation ~local:(scope=Locality.Discharge) (Global.env())) ntns;
   csts
-
-let warn_let_as_axiom =
-  CWarnings.create ~name:"let-as-axiom" ~category:CWarnings.CoreCategories.vernacular
-    Pp.(fun id -> strbrk "Let definition" ++ spc () ++ Names.Id.print id ++
-                  spc () ++ strbrk "declared as an axiom.")
-
-(* Declare an assumption when not in a section: Parameter/Axiom but also
-   Variable/Hypothesis seen as Local Parameter/Axiom *)
-let declare_parameter ~name ~scope ~hook ~impargs ~uctx pe =
-  let local = match scope with
-    | Locality.Discharge -> warn_let_as_axiom name; Locality.ImportNeedQualified
-    | Locality.Global local -> local
-  in
-  let kind = Decls.(IsAssumption Conjectural) in
-  let decl = ParameterEntry pe in
-  let cst = declare_constant ~name ~local ~kind ~typing_flags:None decl in
-  let dref = Names.GlobRef.ConstRef cst in
-  let () = Impargs.maybe_declare_manual_implicits false dref impargs in
-  let () = assumption_message name in
-  let () = Hook.(call ?hook { S.uctx; obls = []; scope; dref}) in
-  cst
 
 (* Preparing proof entries *)
 let error_unresolved_evars env sigma t evars =
@@ -880,17 +1037,17 @@ let prepare_definition ~info ~opaque ?using ~name ~body ~typ sigma =
   let env = Global.env () in
   Option.iter (check_evars_are_solved env sigma) typ;
   check_evars_are_solved env sigma body;
-  let sigma, (body, types) = Evarutil.finalize
-      sigma (fun nf -> nf body, Option.map nf typ)
-  in
-  let univs = Evd.check_univ_decl ~poly sigma udecl in
+  let sigma = Evd.minimize_universes sigma in
   let using =
     let f (name, body, typ) =
-      name, Option.List.flatten [ Some (EConstr.of_constr body); typ ] in
+      name, Option.List.flatten [ Some body; typ ] in
     Option.map (interp_proof_using_gen f env sigma [name, body, typ]) using
   in
-  let entry = definition_entry ~opaque ?using ~inline ?types ~univs body in
+  let body = EConstr.to_constr sigma body in
+  let typ = Option.map (EConstr.to_constr sigma) typ in
   let uctx = Evd.ustate sigma in
+  let uctx, univs, body = make_univs_immediate ~poly ~opaque ~uctx ~udecl ~eff:Evd.empty_side_effects body typ in
+  let entry = definition_entry_core ?using ~inline ?types:typ ~univs body in
   entry, uctx
 
 let declare_definition_core ~info ~cinfo ~opaque ~obls ~body ?using sigma =
@@ -1536,10 +1693,6 @@ module Proof_ending = struct
 
 end
 
-(* Alias *)
-module Proof_ = Proof
-module Proof = struct
-
 module Proof_info = struct
 
   type t =
@@ -1562,6 +1715,22 @@ module Proof_info = struct
     }
 
 end
+
+module Proof_object = struct
+
+  type t =
+    { proof_object : proof_object
+    ; pinfo : Proof_info.t
+    }
+
+end
+
+(* Alias *)
+module Proof_ = Proof
+module Proof = struct
+
+type nonrec closed_proof_output = closed_proof_output
+type proof_object = Proof_object.t
 
 type t =
   { endline_tactic : Genarg.glob_generic_argument option
@@ -1763,18 +1932,6 @@ let get_open_goals ps =
     (List.map (fun (l1,l2) -> List.length l1 + List.length l2) stack) +
   List.length (Evd.shelf sigma)
 
-type proof_object =
-  { entries : proof_entry list
-  ; uctx: UState.t
-  ; pinfo : Proof_info.t
-  }
-
-let { Goptions.get = private_poly_univs } =
-  Goptions.declare_bool_option_and_ref
-    ~key:["Private";"Polymorphic";"Universes"]
-    ~value:true
-    ()
-
 let warn_remaining_shelved_goals =
   CWarnings.create ~name:"remaining-shelved-goals" ~category:CWarnings.CoreCategories.tactics
     (fun () -> Pp.str"The proof has remaining shelved goals.")
@@ -1814,6 +1971,25 @@ let () = CErrors.register_handler begin function
   | _ -> None
   end
 
+let raise_non_ground_proof evd pid c =
+  let has_given_up =
+    let exception Found in
+    let rec aux c =
+      let () = match EConstr.kind evd c with
+        | Evar (e,_) -> if Evar.Set.mem e (Evd.given_up evd) then raise Found
+        | _ -> ()
+      in
+      EConstr.iter evd aux c
+    in
+    try aux c; false with Found -> true
+  in
+  raise (OpenProof (pid, NonGroundResult has_given_up))
+
+let check_incomplete_proof evd =
+  if Evd.has_shelved evd then warn_remaining_shelved_goals ()
+  else if Evd.has_given_up evd then warn_given_up ()
+  else if Evd.has_undefined evd then warn_remaining_unresolved_evars ()
+
 (* XXX: This is still separate from close_proof below due to drop_pt in the STM *)
 let prepare_proof ?(warn_incomplete=true) { proof; pinfo } =
   let Proof.{name=pid;entry;poly;sigma=evd} = Proof.data proof in
@@ -1828,19 +2004,7 @@ let prepare_proof ?(warn_incomplete=true) { proof; pinfo } =
   let to_constr c =
     match EConstr.to_constr_opt evd c with
     | Some p -> p
-    | None ->
-      let has_given_up =
-        let exception Found in
-        let rec aux c =
-          let () = match EConstr.kind evd c with
-          | Evar (e,_) -> if Evar.Set.mem e (Evd.given_up evd) then raise Found
-          | _ -> ()
-          in
-          EConstr.iter evd aux c
-        in
-        try aux c; false with Found -> true
-      in
-      raise (OpenProof (pid, NonGroundResult has_given_up))
+    | None -> raise_non_ground_proof evd pid c
   in
   (* ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
      side-effects... This may explain why one need to uniquize side-effects
@@ -1863,15 +2027,8 @@ let prepare_proof ?(warn_incomplete=true) { proof; pinfo } =
       let rec_declaration = prepare_recursive_declaration pinfo.cinfo fixtypes fixrelevances fixbodies in
       let typing_flags = pinfo.info.typing_flags in
       fst (make_recursive_bodies env ~typing_flags ~possible_guard ~rec_declaration) in
-  let add_univ c = (Vars.universes_of_constr c, c) in
-  let proofs = List.map (fun (body, typ) -> ((add_univ body, eff), add_univ typ)) proofs in
-  let () =
-    if warn_incomplete then begin
-      if Evd.has_shelved evd then warn_remaining_shelved_goals ()
-      else if Evd.has_given_up evd then warn_given_up ()
-      else if Evd.has_undefined evd then warn_remaining_unresolved_evars ()
-    end
-  in
+  let proofs = List.map (fun (body, typ) -> ((body, eff), Some typ)) proofs in
+  let () = if warn_incomplete then check_incomplete_proof evd in
   proofs, Evd.ustate evd
 
 exception NotGuarded of
@@ -1921,124 +2078,28 @@ let control_only_guard { proof; pinfo } =
       raise (NotGuarded (env, sigma, cofix_error, fix_errors, rec_declaration))
     with Exit -> ()
 
-let make_univs_deferred ~poly ~initial_euctx ~uctx ~udecl
-    (used_univs_typ, typ) (used_univs_body, body) eff =
-  let used_univs = Univ.Level.Set.union used_univs_body used_univs_typ in
-  let utyp = UState.univ_entry ~poly initial_euctx in
-  let uctx = UState.constrain_variables (fst (UState.context_set initial_euctx)) uctx in
-  (* For vi2vo compilation proofs are computed now but we need to
-     complement the univ constraints of the typ with the ones of
-     the body.  So we keep the two sets distinct. *)
-  let uctx_body = UState.restrict uctx used_univs in
-  let ubody = UState.check_mono_univ_decl uctx_body udecl in
-  utyp, Default { body = (body, eff); opaque = Opaque ubody }
+let return_proof p = (prepare_proof p : closed_proof_output)
 
-let make_univs_private_poly ~poly ~uctx ~udecl (used_univs_typ, typ) (used_univs_body, body) eff =
-  let used_univs = Univ.Level.Set.union used_univs_body used_univs_typ in
-  let uctx = UState.restrict uctx used_univs in
-  let uctx' = UState.restrict uctx used_univs_typ in
-  let utyp = UState.check_univ_decl ~poly uctx' udecl in
-  let ubody = Univ.ContextSet.diff
-      (UState.context_set uctx)
-      (UState.context_set uctx')
-  in
-  utyp, Default { body = (body, eff); opaque = Opaque ubody }
+let bool_of_opacity = function
+  | Vernacexpr.Opaque -> true
+  | Vernacexpr.Transparent -> false
 
-let make_univs ~poly ~uctx ~udecl ~opaque (used_univs_typ, typ) (used_univs_body, body) eff =
-  let used_univs = Univ.Level.Set.union used_univs_body used_univs_typ in
-  (* Since the proof is computed now, we can simply have 1 set of
-     constraints in which we merge the ones for the body and the ones
-     for the typ. We recheck the declaration after restricting with
-     the actually used universes.
-     TODO: check if restrict is really necessary now. *)
-  let uctx = UState.restrict uctx used_univs in
-  let utyp = UState.check_univ_decl ~poly uctx udecl in
-  let utyp = match fst utyp with
-    | Polymorphic_entry _ -> utyp
-    | Monomorphic_entry uctx ->
-      (* the constraints from the body may depend on universes from
-         the side effects, so merge it all together.
-         Example failure if we don't is "l1" in test-suite/success/rewrite.v.
+let close_proof ?warn_incomplete ~opaque ~keep_body_ucst_separate (proof : t) : Proof_object.t =
+  let opaque = bool_of_opacity opaque in
+  let keep_body_ucst_separate = if keep_body_ucst_separate then Some proof.initial_euctx else None in
+  { proof_object =
+      DefaultProof { proof = prepare_proof ?warn_incomplete proof; opaque; using = proof.using; keep_body_ucst_separate }
+  ; pinfo = proof.pinfo
+  }
 
-         Not sure if it makes more sense to merge them in the ustate
-         before restrict/check_univ_decl or here. Since we only do it
-         when monomorphic it shouldn't really matter. *)
-      Monomorphic_entry (Univ.ContextSet.union uctx (Safe_typing.universes_of_private eff.Evd.seff_private)), snd utyp
-  in
-  utyp, Default { body = (body, eff); opaque = if opaque then Opaque Univ.ContextSet.empty else Transparent }
-
-let close_proof ?warn_incomplete ~opaque ~keep_body_ucst_separate ps =
-
-  let { using; proof; initial_euctx; pinfo } = ps in
-  let { Proof_info.info = { Info.udecl } } = pinfo in
-  let { Proof.poly } = Proof.data proof in
-  let elist, uctx = prepare_proof ?warn_incomplete ps in
-  let opaque = match opaque with
-    | Vernacexpr.Opaque -> true
-    | Vernacexpr.Transparent -> false in
-
-  let make_entry ((((_ub, body) as b), eff), ((_ut, typ) as t)) =
-    let utyp, body =
-      (* allow_deferred case *)
-      if not poly && keep_body_ucst_separate
-      then make_univs_deferred ~initial_euctx ~poly ~uctx ~udecl t b eff
-      (* private_poly_univs case *)
-      else if poly && opaque && private_poly_univs ()
-      then make_univs_private_poly ~poly ~uctx ~udecl t b eff
-      else make_univs ~poly ~uctx ~udecl ~opaque t b eff
-    in
-    definition_entry_core ?using ~univs:utyp ~types:typ body
-  in
-  let entries = CList.map make_entry elist in
-  { entries; uctx; pinfo }
-
-type closed_proof_output = (Constr.t * Evd.side_effects) list * UState.t
-
-let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.computation) =
-  let { using; proof; initial_euctx; pinfo } = ps in
-  let { Proof_info.info = { Info.udecl } } = pinfo in
-  let { Proof.poly; entry; sigma } = Proof.data proof in
-
-  (* We don't allow poly = true in this path *)
-  if poly then
-    CErrors.anomaly (Pp.str "Cannot delay universe-polymorphic constants.");
-
-  (* Because of dependent subgoals at the beginning of proofs, we could
-     have existential variables in the initial types of goals, we need to
-     normalise them for the kernel. *)
-  let nf = Evarutil.nf_evars_universes (Evd.set_universe_context sigma initial_euctx) in
-
-  (* We only support opaque proofs, this will be enforced by using
-     different entries soon *)
-  let make_entry i (_, _, types) =
-    (* Already checked the univ_decl for the type universes when starting the proof. *)
-    let univs = UState.univ_entry ~poly:false initial_euctx in
-    let types = nf (EConstr.Unsafe.to_constr types) in
-
-    (* NB: for Admitted proofs [fpl] is not valid (raises anomaly when forced) *)
-    Future.chain fpl (fun (pf, uctx) ->
-        let (pt, eff) = List.nth pf i in
-        (* Deferred proof, we already checked the universe declaration with
-             the initial universes, ensure that the final universes respect
-             the declaration as well. If the declaration is non-extensible,
-             this will prevent the body from adding universes and constraints. *)
-        let uctx = UState.constrain_variables (fst (UState.context_set initial_euctx)) uctx in
-        let used_univs = Univ.Level.Set.union
-            (Vars.universes_of_constr types)
-            (Vars.universes_of_constr pt)
-        in
-        let uctx = UState.restrict uctx used_univs in
-        let uctx = UState.check_mono_univ_decl uctx udecl in
-        ((pt,uctx),eff))
-    |> delayed_definition_entry ?using ~univs ~types ~feedback_id in
-  let entries = CList.map_i make_entry 0 (Proofview.initial_goals entry) in
-  { entries; uctx = initial_euctx; pinfo }
+let close_proof_delayed ~feedback_id proof (fpl : closed_proof_output Future.computation) : Proof_object.t =
+  { proof_object =
+      DeferredOpaqueProof { deferred_proof = fpl; using = proof.using; initial_proof_data = Proof.data proof.proof;
+                          feedback_id; initial_euctx = proof.initial_euctx }
+  ; pinfo = proof.pinfo
+  }
 
 let close_future_proof = close_proof_delayed
-
-let return_proof ps =
-  let p, uctx = prepare_proof ps in
-  List.map (fun (((_ub, body),eff),_) -> (body,eff)) p, uctx
 
 let update_sigma_univs ugraph p =
   map ~f:(Proof.update_sigma_univs ugraph) p
@@ -2053,11 +2114,12 @@ let build_constant_by_tactic ~name ?warn_incomplete ~sigma ~sign ~poly (typ : EC
   let pinfo = Proof_info.make ~cinfo ~info () in
   let pf = start_proof_core ~name ~pinfo sigma [Some sign, typ] in
   let pf, status = by tac pf in
-  let { entries; uctx } = close_proof ?warn_incomplete ~opaque:Vernacexpr.Transparent ~keep_body_ucst_separate:false pf in
+  let proof = close_proof ?warn_incomplete ~keep_body_ucst_separate:false ~opaque:Vernacexpr.Transparent pf in
+  let entries, uctx = process_proof ~info proof.proof_object in
   let { Proof.sigma } = Proof.data pf.proof in
-  let sigma = Evd.set_universe_context sigma uctx in
   match entries with
   | [ { proof_entry_body = Default { body; opaque = Transparent } } as entry] ->
+    let sigma = Evd.set_universe_context sigma uctx in
     { entry with proof_entry_body = body }, status, sigma
   | _ ->
     CErrors.anomaly Pp.(str "[build_constant_by_tactic] close_proof returned more than one proof term, or a non transparent one.")
@@ -2128,64 +2190,6 @@ let get_current_context pf =
   let p = get pf in
   Proof.get_proof_context p
 
-(* Support for mutually proved theorems *)
-
-(* XXX: this should be unified with the code for non-interactive
-   mutuals previously on this file. *)
-module MutualEntry : sig
-
-  val declare_possibly_mutual_parameters
-    : pinfo:Proof_info.t
-    -> uctx:UState.t
-    -> ?mono_uctx_extra:UState.t
-    -> sec_vars:Id.Set.t option
-    -> Constr.t list
-    -> (Constant.t * UState.named_universes_entry) list
-
-  val declare_possibly_mutual_definitions
-    (* Common to all recthms *)
-    : pinfo:Proof_info.t
-    -> uctx:UState.t
-    -> proof_entry list
-    -> Names.GlobRef.t list
-
-end = struct
-
-  let declare_possibly_mutual_definitions ~pinfo ~uctx entries =
-    let { Proof_info.info = { Info.hook; scope; clearbody; kind; typing_flags; user_warns; _ } } = pinfo in
-    let refs = List.map2 (fun CInfo.{name; impargs} ->
-        declare_entry ~name ~scope ~clearbody ~kind ?hook ~impargs ~typing_flags ~user_warns ~uctx) pinfo.Proof_info.cinfo entries in
-    let () =
-      (* We override the temporary notations used while proving, now using the global names *)
-      let local = pinfo.info.scope=Locality.Discharge in
-      CWarnings.with_warn ("-"^Notation.warning_overridden_name)
-        (List.iter (Metasyntax.add_notation_interpretation ~local (Global.env()))) pinfo.info.ntns
-    in
-    refs
-
-  let declare_possibly_mutual_parameters ~pinfo ~uctx ?(mono_uctx_extra=UState.empty) ~sec_vars typs =
-    (* Note, if an initial uctx, minimize and restrict have not been done *)
-    (* if the uctx of an abandonned proof, minimize is redundant (see close_proof) *)
-    let { Info.scope; poly; hook; udecl } = pinfo.Proof_info.info in
-    pi3 (List.fold_left2 (
-      fun (i, subst, csts) { CInfo.name; impargs } typ ->
-        let uctx' = UState.restrict uctx (Vars.universes_of_constr typ) in
-        let univs = UState.check_univ_decl ~poly uctx' udecl in
-        let univs = if i = 0 then add_mono_uctx mono_uctx_extra univs else univs in
-        let typ = Vars.replace_vars subst typ in
-        let pe = {
-            parameter_entry_secctx = sec_vars;
-            parameter_entry_type = Evarutil.nf_evars_universes (Evd.from_ctx uctx) typ;
-            parameter_entry_universes = univs;
-            parameter_entry_inline_code = None;
-          } in
-        let cst = declare_parameter ~name ~scope ~hook ~impargs ~uctx pe in
-        let inst = instance_of_univs univs in
-        (i+1, (name, Constr.mkConstU (cst,inst))::subst, (cst, univs)::csts)
-    ) (0, [], []) pinfo.Proof_info.cinfo typs)
-
-end
-
 (************************************************************************)
 (* Admitting a lemma-like constant                                      *)
 (************************************************************************)
@@ -2226,14 +2230,15 @@ let check_type_evars_solved env sigma typ =
 
 let finish_admitted ~pm ~pinfo ~uctx ~sec_vars typs =
   (* If the constant was an obligation we need to update the program map *)
+  let { Proof_info.info; cinfo } = pinfo in
   match CEphemeron.default pinfo.Proof_info.proof_ending Proof_ending.Regular with
   | Proof_ending.End_obligation oinfo ->
     let declare_fun ~uctx ~mono_uctx_extra typ =
-      List.hd (MutualEntry.declare_possibly_mutual_parameters ~pinfo ~uctx ~sec_vars ~mono_uctx_extra [typ]) in
+      List.hd (declare_possibly_mutual_parameters ~info ~cinfo ~uctx ~sec_vars ~mono_uctx_extra [typ]) in
     let typ = match typs with [typ] -> typ | _ -> assert false in
     Obls_.obligation_admitted_terminator ~pm typ oinfo declare_fun sec_vars uctx
   | _ ->
-    let (_ : 'a list) = MutualEntry.declare_possibly_mutual_parameters ~pinfo ~uctx ~sec_vars typs in
+    let (_ : 'a list) = declare_possibly_mutual_parameters ~info ~cinfo ~uctx ~sec_vars typs in
     pm
 
 let save_admitted ~pm ~proof =
@@ -2293,7 +2298,7 @@ let finish_derived ~f ~name ~entries =
   let ct = declare_constant ~name ~typing_flags:None ~kind:Decls.(IsProof Proposition) lemma_def in
   [GlobRef.ConstRef f_kn; GlobRef.ConstRef ct]
 
-let finish_proved_equations ~pm ~kind ~hook i proof_obj types sigma0 =
+let finish_proved_equations ~pm ~kind ~hook i entries types sigma0 =
 
   let obls = ref 1 in
   let sigma, recobls =
@@ -2310,31 +2315,34 @@ let finish_proved_equations ~pm ~kind ~hook i proof_obj types sigma0 =
         let sigma, app = Evd.fresh_global (Global.env ()) sigma (GlobRef.ConstRef cst) in
         let sigma = Evd.define ev (EConstr.applist (app, args)) sigma in
         sigma, cst) sigma0
-      types proof_obj.entries
+      types entries
   in
   let pm = hook ~pm recobls sigma in
   pm, List.map (fun cst -> GlobRef.ConstRef cst) recobls
 
-let check_single_entry { entries; uctx } label =
+let check_single_entry entries label =
   match entries with
-  | [entry] -> entry, uctx
+  | [entry] -> entry
   | _ ->
     CErrors.anomaly ~label Pp.(str "close_proof returned more than one proof term")
 
 let finish_proof ~pm proof_obj proof_info =
   let open Proof_ending in
+  let { Proof_info.info; cinfo; possible_guard } = proof_info in
   match CEphemeron.default proof_info.Proof_info.proof_ending Regular with
   | Regular ->
-    let {entries; uctx} = proof_obj in
-    pm, MutualEntry.declare_possibly_mutual_definitions ~uctx ~pinfo:proof_info entries
+    pm, declare_possibly_mutual_definitions ~info ~cinfo proof_obj
   | End_obligation oinfo ->
-    let entry, uctx = check_single_entry proof_obj "Obligation.save" in
+    let entries, uctx = process_proof ~info proof_obj in
+    let entry = check_single_entry entries "Obligation.save" in
     Obls_.obligation_terminator ~pm ~entry ~uctx ~oinfo
   | End_derive { f ; name } ->
-    pm, finish_derived ~f ~name ~entries:proof_obj.entries
+    let entries, uctx = process_proof ~info proof_obj in
+    pm, finish_derived ~f ~name ~entries
   | End_equations { hook; i; types; sigma } ->
-    let kind = proof_info.Proof_info.info.Info.kind in
-    finish_proved_equations ~pm ~kind ~hook i proof_obj types sigma
+    let kind = info.Info.kind in
+    let entries, uctx = process_proof ~info proof_obj in
+    finish_proved_equations ~pm ~kind ~hook i entries types sigma
 
 let err_save_forbidden_in_place_of_qed () =
   CErrors.user_err (Pp.str "Cannot use Save with more than one constant or in this proof mode")
@@ -2356,7 +2364,7 @@ let save ~pm ~proof ~opaque ~idopt =
   (* Env and sigma are just used for error printing in save_remaining_recthms *)
   let proof_obj = close_proof ~opaque ~keep_body_ucst_separate:false proof in
   let proof_info = process_idopt_for_save ~idopt proof.pinfo in
-  finish_proof ~pm proof_obj proof_info
+  finish_proof ~pm proof_obj.proof_object proof_info
 
 let save_regular ~(proof : t) ~opaque ~idopt =
   let open Proof_ending in
@@ -2370,7 +2378,8 @@ let save_regular ~(proof : t) ~opaque ~idopt =
 (* Special case to close a lemma without forcing a proof               *)
 (***********************************************************************)
 let save_lemma_admitted_delayed ~pm ~proof =
-  let { entries; uctx; pinfo } = proof in
+  let { Proof_object.proof_object; pinfo } = proof in
+  let entries, uctx = process_proof ~info:pinfo.info proof_object in
   let typs = List.map (function { proof_entry_type } -> Option.get proof_entry_type) entries in
   (* Note: an alternative would be to compute sec_vars of the partial
      proof as a Future computation, as in compute_proof_using_for_admitted *)
@@ -2378,12 +2387,12 @@ let save_lemma_admitted_delayed ~pm ~proof =
   (* If the proof is partial, do we want to take the (restriction on
      visible uvars of) uctx so far or (as done below) the initial ones
      that refers to only the types *)
-  finish_admitted ~pm ~uctx ~pinfo ~sec_vars typs
+  finish_admitted ~pm ~uctx ~pinfo:proof.pinfo ~sec_vars typs
 
 let save_lemma_proved_delayed ~pm ~proof ~idopt =
   (* vio2vo used to call this with invalid [pinfo], now it should work fine. *)
-  let pinfo = process_idopt_for_save ~idopt proof.pinfo in
-  let pm, _ = finish_proof ~pm proof pinfo in
+  let pinfo = process_idopt_for_save ~idopt proof.Proof_object.pinfo in
+  let pm, _ = finish_proof ~pm proof.proof_object pinfo in
   pm
 
 end (* Proof module *)

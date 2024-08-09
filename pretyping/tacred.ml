@@ -666,6 +666,7 @@ let rec beta_applist sigma accu c stk = match EConstr.kind sigma c, stk with
 | _ -> Vars.substl accu c, stk
 
 let whd_nothing_for_iota env sigma s =
+  (* beta-delta-zeta but not in arguments of case/fix/proj *)
   let rec whrec (x, stack as s) =
     match EConstr.kind sigma x with
       | Rel n ->
