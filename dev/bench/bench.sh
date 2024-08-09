@@ -35,7 +35,7 @@ check_variable () {
 
 : "${coq_pr_number:=}"
 : "${coq_pr_comment_id:=}"
-: "${new_ocaml_version:=4.14.1}"
+: "${new_ocaml_version:=5.2.0}"
 : "${old_ocaml_version:=4.14.1}"
 : "${new_ocaml_flambda:=0}"
 : "${old_ocaml_flambda:=0}"
@@ -455,12 +455,20 @@ create_opam() {
         done
     done
 
+    # Try to install conflicting packages earlier
+    opam update
+    opam install -y -b -j "$this_nproc" coq-elpi.dev
+    opam repo list
+
 }
 
 # Create an OPAM-root to which we will install the NEW version of Coq.
 create_opam "NEW" "$new_ocaml_version" "$new_coq_commit" "$new_coq_version" \
             "$new_coq_opam_archive_dir" "$new_opam_override_urls" "$new_ocaml_flambda"
 new_coq_commit_long="$COQ_HASH_LONG"
+
+# Hack to test Gabriel's patch
+opam pin add -y ocaml-base-compiler https://github.com/ejgallego/ocaml.git#5.2.0_require_streamline
 
 # Create an OPAM-root to which we will install the OLD version of Coq.
 create_opam "OLD" "$old_ocaml_version" "$old_coq_commit" "$old_coq_version" \
