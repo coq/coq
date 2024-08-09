@@ -15,7 +15,7 @@ open Context.Named.Declaration
     (which can contain references to [f]) in the context extended by
     [f:=?x]. When the proof ends, [f] is defined as the value of [?x]
     and [lemma] as the proof. *)
-let start_deriving f suchthat name : Declare.Proof.t =
+let start_deriving f suchthat opaque name : Declare.Proof.t =
 
   let env = Global.env () in
   let sigma = Evd.from_env env in

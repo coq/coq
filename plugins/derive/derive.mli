@@ -15,5 +15,6 @@
 val start_deriving
   :  Names.Id.t
   -> Constrexpr.constr_expr
+  -> bool option
   -> Names.Id.t
   -> Declare.Proof.t
