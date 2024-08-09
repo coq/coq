@@ -35,18 +35,13 @@ type value =
   | Dyn
   (** Coq's Dyn.t *)
 
-  | Proxy of value ref
-  (** Same as the inner value, used to define recursive types *)
-
   | Int64
   | Float64
 
 (** NB: List and Opt have their own constructors to make it easy to
    define eg [let rec foo = List foo]. *)
 
-val v_univopaques : value
 val v_libsum : value
 val v_lib : value
 val v_opaquetable : value
-val v_stm_seg : value
 val v_vmlib : value
