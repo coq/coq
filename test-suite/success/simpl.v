@@ -321,3 +321,24 @@ match goal with [ |- n + (n + 1) * n = 0 ] => idtac end.
 Abort.
 
 End RefoldingOfNeverConstantInArgOfDestructor.
+
+Module SimplWithLocalConstants.
+
+Goal 0 + 0 = 0.
+simpl -[Nat.add].
+match goal with [ |- 0 + 0 = 0 ] => idtac end.
+Abort.
+
+Arguments Nat.add : simpl never.
+Goal 0 + 0 = 0.
+simpl [Nat.add].
+match goal with [ |- 0 = 0 ] => idtac end.
+Abort.
+
+Opaque Nat.add.
+Goal 0 + 0 = 0.
+simpl [Nat.add].
+match goal with [ |- 0 = 0 ] => idtac end.
+Abort.
+
+End SimplWithLocalConstants.
