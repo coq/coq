@@ -56,7 +56,12 @@ dune* whitespace=blank-at-eol,tab-in-indent
 .gitattributes whitespace=blank-at-eol,tab-in-indent
 _CoqProject whitespace=blank-at-eol,tab-in-indent
 Dockerfile whitespace=blank-at-eol,tab-in-indent
+
+# multiple newlines at the end
 00000-title.rst -whitespace
+
+# tests location correctness with trailing whitespace
+/test-suite/output-coqtop/BracketLoc.v -whitespace
 
 # tabs are allowed in Makefiles.
 Makefile* whitespace=blank-at-eol

@@ -1,0 +1,27 @@
+
+Coq < 1 goal
+  
+  ============================
+  True
+
+Toplevel input, characters 11-12:
+> Goal True. }
+>            ^
+Error: The proof is not focused
+
+Unnamed_thm < Toplevel input, characters 2-3:
+>   }
+>   ^
+Error: The proof is not focused
+
+Unnamed_thm < Toplevel input, characters 2-3:
+>   }
+>   ^
+Error: The proof is not focused
+
+Unnamed_thm < Toplevel input, characters 8-9:
+>   exact 0.
+>         ^
+Error: The term "0" has type "nat" while it is expected to have type "True".
+
+Unnamed_thm < 
