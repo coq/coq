@@ -52,20 +52,20 @@ let set_dyndep = function
   | "var" -> option_dynlink := Variable
   | o -> CErrors.user_err Pp.(str "Incorrect -dyndep option: " ++ str o)
 
-let mldep_to_make (base, suff) =
+let mldep_to_make base =
   match !option_dynlink with
   | No -> []
-  | Byte -> [sprintf "%s%s" base suff]
+  | Byte -> [sprintf "%s.cma" base]
   | Opt -> [sprintf "%s.cmxs" base]
   | Both ->
-    [sprintf "%s%s" base suff ; sprintf "%s.cmxs" base]
+    [sprintf "%s.cma" base; sprintf "%s.cmxs" base]
   | Variable ->
-    [sprintf "%s%s" base (if suff=".cmo" then "$(DYNOBJ)" else "$(DYNLIB)")]
+    [sprintf "%s%s" base "$(DYNLIB)"]
 
 let string_of_dep ~suffix = let open Dep_info.Dep in
   function
   | Require basename -> [escape basename ^ suffix]
-  | Ml (base,suff) -> mldep_to_make (escape base,suff)
+  | Ml base -> mldep_to_make (escape base)
   | Other s -> [escape s]
 
 let string_of_dependency_list ~suffix deps =
