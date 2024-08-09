@@ -55,7 +55,7 @@ module Tbl : sig
 
   val add : 'a t -> key -> 'a -> unit
 
-  val create : int -> 'a t
+  val create : unit -> 'a t
 end
 
 val hcons : t -> Constr.t
