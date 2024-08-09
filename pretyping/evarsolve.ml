@@ -1566,11 +1566,11 @@ let occur_evar_upto_types sigma n c =
   let rec occur_rec c = match EConstr.kind sigma c with
     | Evar (sp,_) when Evar.equal sp n -> raise Occur
     | Evar (sp,args as e) ->
-       if Evar.Set.mem sp !seen then
-         SList.Skip.iter occur_rec args
-       else (
+       if not @@ Evar.Set.mem sp !seen then begin
          seen := Evar.Set.add sp !seen;
-         occur_rec (Evd.existential_type sigma e))
+         occur_rec (Evd.existential_type sigma e)
+       end;
+       SList.Skip.iter occur_rec args
     | _ -> EConstr.iter sigma occur_rec c
   in
   try occur_rec c; false with Occur -> true
