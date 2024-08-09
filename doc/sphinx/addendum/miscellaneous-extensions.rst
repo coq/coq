@@ -4,7 +4,7 @@ Program derivation
 Coq comes with an extension called ``Derive``, which supports program
 derivation. Typically in the style of Bird and Meertens or derivations
 of program refinements. To use the Derive extension it must first be
-required with ``Require Coq.derive.Derive``. When the extension is loaded,
+required with ``Require Stdlib.derive.Derive``. When the extension is loaded,
 it provides the following command:
 
 .. cmd:: Derive @ident__1 SuchThat @one_term As @ident__2
@@ -28,7 +28,7 @@ it provides the following command:
 
   .. coqtop:: all
 
-     Require Coq.derive.Derive.
+     Require Stdlib.derive.Derive.
      Require Import PeanoNat.
 
      Section P.

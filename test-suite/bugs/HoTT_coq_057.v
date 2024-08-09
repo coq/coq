@@ -1,4 +1,4 @@
-Require Export Coq.Lists.List.
+Require Export Stdlib.Lists.List.
 
 Polymorphic Fixpoint LIn (A : Type) (a:A) (l:list A) : Type :=
   match l with

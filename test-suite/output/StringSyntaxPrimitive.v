@@ -1,7 +1,7 @@
-Require Import Coq.Lists.List.
-Require Import Coq.Strings.String Coq.Strings.Byte Coq.Strings.Ascii.
-Require Coq.Array.PArray Coq.Floats.PrimFloat.
-Require Import Coq.Numbers.BinNums Coq.Numbers.Cyclic.Int63.Uint63.
+Require Import Stdlib.Lists.List.
+Require Import Stdlib.Strings.String Stdlib.Strings.Byte Stdlib.Strings.Ascii.
+Require Stdlib.Array.PArray Stdlib.Floats.PrimFloat.
+Require Import Stdlib.Numbers.BinNums Stdlib.Numbers.Cyclic.Int63.Uint63.
 
 Set Printing Depth 100000.
 Set Printing Width 1000.

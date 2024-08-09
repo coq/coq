@@ -182,7 +182,7 @@ Record wrap (A : Type) := { unwrap : A; unwrap2 : A }.
 Definition term (x : wrap nat) := x.(unwrap).
 Definition term' (x : wrap nat) := let f := (@unwrap2 nat) in f x.
 
-Require Coq.extraction.Extraction.
+Require Stdlib.extraction.Extraction.
 Recursive Extraction term term'.
 Extraction TestCompile term term'.
 (*Unset Printing Primitive Projection Parameters.*)

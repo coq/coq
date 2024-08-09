@@ -1,4 +1,4 @@
-From Coq Require Import Setoid Morphisms.
+From Stdlib Require Import Setoid Morphisms.
 
 Axiom lattice_for : Type -> Type.
 Axiom constant : forall {T : Type}, T -> lattice_for T.

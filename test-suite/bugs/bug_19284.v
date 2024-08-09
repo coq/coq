@@ -1,4 +1,4 @@
-Require Export Coq.Program.Tactics.
+Require Export Stdlib.Program.Tactics.
 
 Set Printing Universes.
 

@@ -116,7 +116,7 @@ End B.
 
 (* This was submitted by Anthony Cowley *)
 
-Require Import Coq.Classes.Morphisms.
+Require Import Stdlib.Classes.Morphisms.
 Require Import Setoid.
 
 Module C.

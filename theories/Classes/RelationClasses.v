@@ -17,10 +17,10 @@
    Institution: LRI, CNRS UMR 8623 - University Paris Sud
 *)
 
-Require Export Coq.Classes.Init.
-Require Import Coq.Program.Basics.
-Require Import Coq.Program.Tactics.
-Require Import Coq.Relations.Relation_Definitions.
+Require Export Stdlib.Classes.Init.
+Require Import Stdlib.Program.Basics.
+Require Import Stdlib.Program.Tactics.
+Require Import Stdlib.Relations.Relation_Definitions.
 
 Generalizable Variables A B C D R S T U l eqA eqB eqC eqD.
 

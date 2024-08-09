@@ -12,7 +12,7 @@
 
 Require Export JMeq.
 
-Require Import Coq.Program.Tactics.
+Require Import Stdlib.Program.Tactics.
 
 Ltac is_ground_goal := 
   match goal with

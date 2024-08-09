@@ -25,7 +25,7 @@ This gives the following lemmas:
 - [add_shuffle1],  [add_shuffle2] to rearrange sums of 4 elements
 - [sub_1_r]
 *)
-From Coq.Numbers.NatInt Require Import NZAxioms NZBase.
+From Stdlib.Numbers.NatInt Require Import NZAxioms NZBase.
 
 Module Type NZAddProp (Import NZ : NZBasicFunsSig')(Import NZBase : NZBaseProp NZ).
 

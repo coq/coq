@@ -8,7 +8,7 @@ Qed.
    coqtop version cagnode15:/afs/csail.mit.edu/u/j/jgross/coq-8.5,v8.5 (1b3759e78f227eb85a128c58b8ce8c11509dd8c3) *)
 Axiom proof_admitted : False.
 Tactic Notation "admit" := case proof_admitted.
-Require Import Coq.Lists.SetoidList.
+Require Import Stdlib.Lists.SetoidList.
 Import ListNotations.
 
 Global Set Implicit Arguments.
@@ -91,7 +91,7 @@ Record StringWithSplitState {CharType} (String : string_like CharType) (split_st
     state_val : split_stateT string_val }.
 
 Module Export ContextFreeGrammar.
-  Require Import Coq.Strings.String.
+  Require Import Stdlib.Strings.String.
 
   Section cfg.
     Variable CharType : Type.
@@ -119,7 +119,7 @@ Module Export ContextFreeGrammar.
 
 End ContextFreeGrammar.
 Module Export BaseTypes.
-  Import Coq.Strings.String.
+  Import Stdlib.Strings.String.
 
   Local Open Scope string_like_scope.
 
@@ -163,7 +163,7 @@ Module Export BaseTypes.
   End recursive_descent_parser.
 
 End BaseTypes.
-Import Coq.Strings.String.
+Import Stdlib.Strings.String.
 
 Section cfg.
   Context CharType (String : string_like CharType) (G : grammar CharType).

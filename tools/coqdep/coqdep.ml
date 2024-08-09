@@ -46,8 +46,8 @@ let coqdep () =
     let stdlib = Boot.Env.(stdlib env |> Path.to_string) in
     let plugins = Boot.Env.(plugins env |> Path.to_string) in
     let user_contrib = Boot.Env.(user_contrib env |> Path.to_string) in
-    Loadpath.add_rec_dir_import (Loadpath.add_coqlib_known lst) stdlib ["Coq"];
-    Loadpath.add_rec_dir_import (Loadpath.add_coqlib_known lst) plugins ["Coq"];
+    Loadpath.add_rec_dir_import (Loadpath.add_coqlib_known lst) stdlib ["Stdlib"];
+    Loadpath.add_rec_dir_import (Loadpath.add_coqlib_known lst) plugins ["Stdlib"];
     if Sys.file_exists user_contrib then
       Loadpath.add_rec_dir_no_import (Loadpath.add_coqlib_known lst) user_contrib [];
     let add_dir s = Loadpath.add_rec_dir_no_import (Loadpath.add_coqlib_known lst) s [] in

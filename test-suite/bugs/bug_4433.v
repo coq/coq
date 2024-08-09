@@ -1,4 +1,4 @@
-Require Import Coq.Arith.Arith Coq.Init.Wf.
+Require Import Stdlib.Arith.Arith Stdlib.Init.Wf.
 Axiom proof_admitted : False.
 Goal exists x y z : nat, Fix
                            Wf_nat.lt_wf

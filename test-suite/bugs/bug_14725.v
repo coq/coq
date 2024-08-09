@@ -1,4 +1,4 @@
-From Coq Require Import Setoid Morphisms.
+From Stdlib Require Import Setoid Morphisms.
 
 Axiom T : Type.
 Axiom Teq : relation T.

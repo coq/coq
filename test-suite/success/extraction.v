@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Coq.extraction.Extraction.
+Require Stdlib.extraction.Extraction.
 Require Import Arith.
 Require Import List.
 

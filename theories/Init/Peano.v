@@ -29,7 +29,7 @@ Require Import Notations.
 Require Import Ltac.
 Require Import Datatypes.
 Require Import Logic.
-Require Coq.Init.Nat.
+Require Stdlib.Init.Nat.
 
 Open Scope nat_scope.
 Local Notation "0" := O.

@@ -1,6 +1,6 @@
 (* There used to be an evar leak in the to_nat example *)
 
-Require Import Coq.Lists.List.
+Require Import Stdlib.Lists.List.
 Import ListNotations.
 
 Fixpoint Idx {A:Type} (l:list A) : Type :=

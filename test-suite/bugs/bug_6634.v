@@ -1,4 +1,4 @@
-From Coq Require Import ssreflect.
+From Stdlib Require Import ssreflect.
 
 Lemma normalizeP (p : tt = tt) : p = p.
 Proof.

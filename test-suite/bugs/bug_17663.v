@@ -1,4 +1,4 @@
-From Coq Require Import Uint63.
+From Stdlib Require Import Uint63.
 
 Module Type T.
   Parameter eq : int -> int -> bool.

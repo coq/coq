@@ -1,4 +1,4 @@
-From Coq Require Import ssreflect.
+From Stdlib Require Import ssreflect.
 
 Module R.
   #[local] Set Printing Unfolded Projections As Match.

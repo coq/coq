@@ -505,7 +505,7 @@ Proof.
   exact H.
 Qed.
 
-Require Import Coq.micromega.Tauto.
+Require Import Stdlib.micromega.Tauto.
 
 Definition Rnormalise := @cnf_normalise Q 0%Q 1%Q Qplus Qmult Qminus Qopp Qeq_bool Qle_bool.
 Definition Rnegate := @cnf_negate Q 0%Q 1%Q Qplus Qmult Qminus Qopp Qeq_bool Qle_bool.

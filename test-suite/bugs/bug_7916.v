@@ -1,4 +1,4 @@
-From Coq Require Import Setoid.
+From Stdlib Require Import Setoid.
 
 Lemma test {A}
       (lookup : list A -> nat -> option A)
@@ -23,14 +23,14 @@ Module MathComp.
    coqtop version 8.14+alpha *)
    Axiom proof_admitted : False.
    Tactic Notation "admit" := abstract case proof_admitted.
-   Require Coq.ssr.ssreflect.
+   Require Stdlib.ssr.ssreflect.
 
-   Export Coq.ssr.ssreflect.
+   Export Stdlib.ssr.ssreflect.
    Global Set Asymmetric Patterns.
-   Require Coq.ssr.ssrbool.
-   Require Coq.NArith.BinNat.
-   Export Coq.ssr.ssrfun.
-   Export Coq.ssr.ssrbool.
+   Require Stdlib.ssr.ssrbool.
+   Require Stdlib.NArith.BinNat.
+   Export Stdlib.ssr.ssrfun.
+   Export Stdlib.ssr.ssrbool.
 
    Definition PredType : forall T pT, (pT -> pred T) -> predType T.
    exact PredType || exact mkPredType.
@@ -140,15 +140,15 @@ Module Iris.
    coqtop version 8.14+alpha *)
    Axiom proof_admitted : False.
    Tactic Notation "admit" := abstract case proof_admitted.
-   Require Coq.ssr.ssreflect.
-   Require Coq.Lists.List.
-   Require Coq.Unicode.Utf8.
+   Require Stdlib.ssr.ssreflect.
+   Require Stdlib.Lists.List.
+   Require Stdlib.Unicode.Utf8.
    Module Export stdpp_DOT_base.
    Module Export stdpp.
    Module Export base.
-   Export Coq.Classes.Morphisms.
-   Export Coq.Setoids.Setoid.
-   Export Coq.Unicode.Utf8.
+   Export Stdlib.Classes.Morphisms.
+   Export Stdlib.Setoids.Setoid.
+   Export Stdlib.Unicode.Utf8.
 
    Global Generalizable All Variables.
 
@@ -230,7 +230,7 @@ Module Iris.
    Export stdpp.tactics.
 
    End prelude.
-   Export Coq.ssr.ssreflect.
+   Export Stdlib.ssr.ssreflect.
    Export stdpp.prelude.
    Set Primitive Projections.
 
@@ -300,10 +300,10 @@ Module SSr.
    coqtop version 8.14+alpha *)
    Axiom proof_admitted : False.
    Tactic Notation "admit" := abstract case proof_admitted.
-   Require Coq.ssr.ssreflect.
+   Require Stdlib.ssr.ssreflect.
 
-   Export Coq.ssr.ssreflect.
-   Require Coq.NArith.BinNat.
+   Export Stdlib.ssr.ssreflect.
+   Require Stdlib.NArith.BinNat.
 
    Set Implicit Arguments.
    Unset Strict Implicit.
@@ -410,7 +410,7 @@ Module SSr.
    Notation "x >= y" := (y <= x) (only parsing) : real_scope.
    Notation "x < y" := (~ (x >= y)) : real_scope.
    Notation "x <= y <= z" := (x <= y /\ y <= z) : real_scope.
-   Import Coq.Classes.Morphisms.
+   Import Stdlib.Classes.Morphisms.
 
    Section RealLemmas.
 

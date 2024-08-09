@@ -1,4 +1,4 @@
-Require Import Coq.setoid_ring.Ring.
+Require Import Stdlib.setoid_ring.Ring.
 
 Set Universe Polymorphism.
 Inductive word : Type -> Type :=.

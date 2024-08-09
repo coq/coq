@@ -112,7 +112,7 @@ Goal True -> True. intros H. exact H. Qed.
 Notation "[ a , .. , b ]" := (a, (.. (b,tt) ..)).
 
 (* Check that vector notations do not break Ltac [] (bugs #4785, #4733) *)
-Require Import Coq.Vectors.VectorDef.
+Require Import Stdlib.Vectors.VectorDef.
 Import VectorNotations.
 Goal True. idtac; []. (* important for test: no space here *) constructor. Qed.
 

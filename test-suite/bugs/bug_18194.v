@@ -1,4 +1,4 @@
-Require Import Coq.Program.Tactics.
+Require Import Stdlib.Program.Tactics.
 
 Program Definition a := Eval cbv zeta in (fun (a : True) => (?[A] : nat),
   let r :=

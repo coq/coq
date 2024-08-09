@@ -575,7 +575,7 @@ let print_pure_constr csr =
     let ls =
       match List.rev_map Id.to_string (DirPath.repr dir) with
           ("Top"::l)-> l
-        | ("Coq"::_::l) -> l
+        | ("Stdlib"::_::l) -> l
         | l             -> l
     in  List.iter (fun x -> print_string x; print_string ".") ls;*)
       print_string (MutInd.debug_to_string sp)
@@ -584,7 +584,7 @@ let print_pure_constr csr =
     let ls =
       match List.rev_map Id.to_string (DirPath.repr dir) with
           ("Top"::l)-> l
-        | ("Coq"::_::l) -> l
+        | ("Stdlib"::_::l) -> l
         | l             -> l
     in  List.iter (fun x -> print_string x; print_string ".") ls;*)
       print_string (Constant.debug_to_string sp)

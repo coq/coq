@@ -1,5 +1,5 @@
-Require Import Coq.Logic.FunctionalExtensionality.
-Require Import Coq.Program.Tactics.
+Require Import Stdlib.Logic.FunctionalExtensionality.
+Require Import Stdlib.Program.Tactics.
 
 Global Set Primitive Projections.
 

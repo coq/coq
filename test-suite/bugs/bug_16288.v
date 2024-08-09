@@ -8,8 +8,8 @@ Module M (N : Nop).
   Record M_t_NonEmpty' X Y := { a : X ; b : Y }.
 End M.
 Module M' := M Empty.
-Require Import Coq.extraction.Extraction.
-Require Import Coq.extraction.ExtrOcamlBasic.
+Require Import Stdlib.extraction.Extraction.
+Require Import Stdlib.extraction.ExtrOcamlBasic.
 Extraction Language OCaml.
 Recursive Extraction M'.
 Extraction TestCompile M'.

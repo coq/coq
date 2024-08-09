@@ -4,8 +4,8 @@
     - [strong_induction_le] in BinNat
     work with the [induction] tactic. *)
 
-From Coq.Arith Require Import PeanoNat.
-From Coq.NArith Require Import BinNat.
+From Stdlib.Arith Require Import PeanoNat.
+From Stdlib.NArith Require Import BinNat.
 
 Open Scope nat_scope.
 

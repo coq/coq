@@ -70,8 +70,12 @@ let parse st args =
     | "-f" :: f :: ll -> parse { st with coqproject = Some f } ll
     | "-I" :: r :: ll -> parse { st with ml_path = r :: st.ml_path } ll
     | "-I" :: [] -> usage ()
-    | "-R" :: r :: ln :: ll -> parse { st with vo_path = (true, r, ln) :: st.vo_path } ll
-    | "-Q" :: r :: ln :: ll -> parse { st with vo_path = (false, r, ln) :: st.vo_path } ll
+    | "-R" :: r :: ln :: ll ->
+       let ln = if String.equal ln "Coq" then "Stdlib" else ln in
+       parse { st with vo_path = (true, r, ln) :: st.vo_path } ll
+    | "-Q" :: r :: ln :: ll ->
+       let ln = if String.equal ln "Coq" then "Stdlib" else ln in
+       parse { st with vo_path = (false, r, ln) :: st.vo_path } ll
     | "-R" :: ([] | [_]) -> usage ()
     | "-exclude-dir" :: r :: ll -> System.exclude_directory r; parse st ll
     | "-exclude-dir" :: [] -> usage ()

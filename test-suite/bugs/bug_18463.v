@@ -1,4 +1,4 @@
-From Coq Require Import Setoid.
+From Stdlib Require Import Setoid.
 
 Module Type Nop. End Nop.
 Module nop. End nop.
@@ -26,7 +26,7 @@ Module RewriteStratSubstTest := RewriteStratSubstTestF nop.
 
 Goal forall x, RewriteStratSubstTest.h 6 x = RewriteStratSubstTest.f x /\ RewriteStratSubstTest.idnat 5 = id 5.
   intros.
-  Print Ltac RewriteStratSubstTest.rs1. (* Ltac RewriteStratSubstTest.rs1 := Coq.Init.Ltac.rewrite_strat_#_521927FC _ (* Generic printer *) *)
+  Print Ltac RewriteStratSubstTest.rs1. (* Ltac RewriteStratSubstTest.rs1 := Stdlib.Init.Ltac.rewrite_strat_#_521927FC _ (* Generic printer *) *)
   RewriteStratSubstTest.rs1. (* Error: Anomaly "Constant rewrite_strat.RewriteStratSubstTestF.lem2 does not appear in the environment."
 Please report at http://coq.inria.fr/bugs/. *)
 Undo 1.

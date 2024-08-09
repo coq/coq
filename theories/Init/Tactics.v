@@ -18,7 +18,7 @@ Require Import Specif.
 (** Ex falso quodlibet : a tactic for proving False instead of the current goal.
     This is just a nicer name for tactics such as [cut False]. *)
 
-Ltac exfalso := Coq.Init.Ltac.exfalso.
+Ltac exfalso := Stdlib.Init.Ltac.exfalso.
 
 (** A tactic for proof by contradiction. With contradict H,
     -   H:~A |-  B    gives       |-  A
@@ -239,14 +239,14 @@ Tactic Notation "revert" "dependent" hyp(h) :=
  generalize dependent h.
 
 (** Provide an error message for dependent induction/dependent destruction that
-    reports an import is required to use it. Importing Coq.Program.Equality will
+    reports an import is required to use it. Importing Stdlib.Program.Equality will
     shadow this notation with the actual tactics. *)
 
 Tactic Notation "dependent" "induction" ident(H) :=
-  fail "To use dependent induction, first [Require Import Coq.Program.Equality.]".
+  fail "To use dependent induction, first [Require Import Stdlib.Program.Equality.]".
 
 Tactic Notation "dependent" "destruction" ident(H) :=
-  fail "To use dependent destruction, first [Require Import Coq.Program.Equality.]".
+  fail "To use dependent destruction, first [Require Import Stdlib.Program.Equality.]".
 
 (** *** [inversion_sigma] *)
 (** The built-in [inversion] will frequently leave equalities of

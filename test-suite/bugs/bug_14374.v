@@ -1,4 +1,4 @@
-From Coq Require Import Arith.
+From Stdlib Require Import Arith.
 Import Logic.EqNotations.
 
 Definition le n m := forall p, p <= n -> p <= m.

@@ -5,6 +5,13 @@ Unfoldable projection definitions: all
 Cut: _
 For any goal ->   
 For nat ->   
+
+Non-discriminated database
+Unfoldable variable definitions: all
+Unfoldable constant definitions: all
+Unfoldable projection definitions: all
+Cut: emp
+For any goal ->   
 For S (modes !) ->   
 
 Non-discriminated database
@@ -14,6 +21,13 @@ Unfoldable projection definitions: all
 Cut: _
 For any goal ->   
 For nat ->   
+
+Non-discriminated database
+Unfoldable variable definitions: all
+Unfoldable constant definitions: all
+Unfoldable projection definitions: all
+Cut: emp
+For any goal ->   
 For S (modes !) ->   
 
 Non-discriminated database
@@ -23,6 +37,13 @@ Unfoldable projection definitions: all
 Cut: _
 For any goal ->   
 For nat ->   
+
+Non-discriminated database
+Unfoldable variable definitions: all
+Unfoldable constant definitions: all
+Unfoldable projection definitions: all
+Cut: emp
+For any goal ->   
 For S (modes !) ->   
 
 Non-discriminated database
@@ -32,6 +53,13 @@ Unfoldable projection definitions: all
 Cut: _
 For any goal ->   
 For nat ->   
+
+Non-discriminated database
+Unfoldable variable definitions: all
+Unfoldable constant definitions: all
+Unfoldable projection definitions: all
+Cut: emp
+For any goal ->   
 For S (modes !) ->   
 
 Non-discriminated database
@@ -48,7 +76,21 @@ Unfoldable constant definitions: all
 Unfoldable projection definitions: all
 Cut: emp
 For any goal ->   
+
+Non-discriminated database
+Unfoldable variable definitions: all
+Unfoldable constant definitions: all
+Unfoldable projection definitions: all
+Cut: emp
+For any goal ->   
 For nat ->   simple apply 0 ; trivial(level 1, pattern nat, id 0) 
+
+Non-discriminated database
+Unfoldable variable definitions: all
+Unfoldable constant definitions: all
+Unfoldable projection definitions: all
+Cut: emp
+For any goal ->   
 
 Non-discriminated database
 Unfoldable variable definitions: all
@@ -57,6 +99,13 @@ Unfoldable projection definitions: all
 Cut: _
 For any goal ->   
 For nat ->   
+
+Non-discriminated database
+Unfoldable variable definitions: all
+Unfoldable constant definitions: all
+Unfoldable projection definitions: all
+Cut: emp
+For any goal ->   
 For S (modes !) ->   
 
 Non-discriminated database
@@ -69,14 +118,28 @@ For nat ->   simple apply 0 ; trivial(level 1, pattern nat, id 0)
 
 Non-discriminated database
 Unfoldable variable definitions: all
+Unfoldable constant definitions: all
+Unfoldable projection definitions: all
+Cut: emp
+For any goal ->   
+
+Non-discriminated database
+Unfoldable variable definitions: all
 Unfoldable constant definitions: all except: id
 Unfoldable projection definitions: all
 Cut: _
 For any goal ->   
 For nat ->   
+
+Non-discriminated database
+Unfoldable variable definitions: all
+Unfoldable constant definitions: all
+Unfoldable projection definitions: all
+Cut: emp
+For any goal ->   
 For S (modes !) ->   
 
-File "./output/HintLocality.v", line 61, characters 0-38:
+File "./output/HintLocality.v", line 74, characters 0-38:
 The command has indeed failed with message:
 This command does not support the global attribute in sections.
 Non-discriminated database
@@ -86,6 +149,13 @@ Unfoldable projection definitions: all
 Cut: _
 For any goal ->   
 For nat ->   
+
+Non-discriminated database
+Unfoldable variable definitions: all
+Unfoldable constant definitions: all
+Unfoldable projection definitions: all
+Cut: emp
+For any goal ->   
 For S (modes !) ->   
 
 Non-discriminated database
@@ -95,17 +165,24 @@ Unfoldable projection definitions: all
 Cut: _
 For any goal ->   
 For nat ->   simple apply 0 ; trivial(level 1, pattern nat, id 0) 
+
+Non-discriminated database
+Unfoldable variable definitions: all
+Unfoldable constant definitions: all
+Unfoldable projection definitions: all
+Cut: emp
+For any goal ->   
 For S (modes !) ->   
 
-File "./output/HintLocality.v", line 92, characters 0-39:
+File "./output/HintLocality.v", line 107, characters 0-39:
 Warning: This hint is not local but depends on a section variable. It will
 disappear when the section is closed.
 [non-local-section-hint,automation,default]
-File "./output/HintLocality.v", line 94, characters 0-40:
+File "./output/HintLocality.v", line 109, characters 0-40:
 Warning: This hint is not local but depends on a section variable. It will
 disappear when the section is closed.
 [non-local-section-hint,automation,default]
-File "./output/HintLocality.v", line 98, characters 0-39:
+File "./output/HintLocality.v", line 113, characters 0-39:
 Warning: This hint is not local but depends on a section variable. It will
 disappear when the section is closed.
 [non-local-section-hint,automation,default]

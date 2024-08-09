@@ -27,7 +27,7 @@
  (action
   (progn
    (run mkdir -p html)
-   (bash "%{bin:coqdoc} -q -d html --with-header %{header} --with-footer %{footer} --multi-index --html -g -coqlib %{project_root} -R %{project_root}/theories Coq -Q %{project_root}/user-contrib/Ltac2 Ltac2 $(find %{project_root}/theories %{project_root}/user-contrib -name *.v)")
+   (bash "%{bin:coqdoc} -q -d html --with-header %{header} --with-footer %{footer} --multi-index --html -g -coqlib %{project_root} -R %{project_root}/theories Stdlib -Q %{project_root}/user-contrib/Ltac2 Ltac2 $(find %{project_root}/theories %{project_root}/user-contrib -name *.v)")
    (run mv html/index.html html/genindex.html)
    (with-stdout-to
      _index.html

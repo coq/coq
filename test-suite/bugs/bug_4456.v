@@ -8,14 +8,14 @@ Axiom proof_admitted : False.
 
 Tactic Notation "admit" := case proof_admitted.
 
-Require Coq.Program.Program.
-Require Coq.Strings.String.
-Require Coq.micromega.Lia.
+Require Stdlib.Program.Program.
+Require Stdlib.Strings.String.
+Require Stdlib.micromega.Lia.
 Module Export Fiat_DOT_Common.
 Module Export Fiat.
 Module Common.
-Import Coq.Lists.List.
-Export Coq.Program.Program.
+Import Stdlib.Lists.List.
+Export Stdlib.Program.Program.
 
 Global Set Implicit Arguments.
 
@@ -43,8 +43,8 @@ Module Export Fiat.
 Module Export Parsers.
 Module Export StringLike.
 Module Export Core.
-Import Coq.Relations.Relation_Definitions.
-Import Coq.Classes.Morphisms.
+Import Stdlib.Relations.Relation_Definitions.
+Import Stdlib.Classes.Morphisms.
 
 Local Coercion is_true : bool >-> Sortclass.
 
@@ -110,8 +110,8 @@ Module Export Fiat.
 Module Export Parsers.
 Module Export ContextFreeGrammar.
 Module Export Core.
-Import Coq.Strings.String.
-Import Coq.Lists.List.
+Import Stdlib.Strings.String.
+Import Stdlib.Lists.List.
 Export Fiat.Parsers.StringLike.Core.
 
 Section cfg.
@@ -157,7 +157,7 @@ Module Export Fiat_DOT_Parsers_DOT_BaseTypes.
 Module Export Fiat.
 Module Export Parsers.
 Module Export BaseTypes.
-Import Coq.Arith.Wf_nat.
+Import Stdlib.Arith.Wf_nat.
 
 Local Coercion is_true : bool >-> Sortclass.
 
@@ -229,7 +229,7 @@ Module Export Common.
 Module Export List.
 Module Export Operations.
 
-Import Coq.Lists.List.
+Import Stdlib.Lists.List.
 
 Module Export List.
   Section InT.
@@ -309,7 +309,7 @@ Module Export Fiat_DOT_Parsers_DOT_MinimalParse.
 Module Export Fiat.
 Module Export Parsers.
 Module Export MinimalParse.
-Import Coq.Lists.List.
+Import Stdlib.Lists.List.
 Import Fiat.Parsers.ContextFreeGrammar.Core.
 
 Local Coercion is_true : bool >-> Sortclass.
@@ -385,7 +385,7 @@ Module Export Fiat_DOT_Parsers_DOT_CorrectnessBaseTypes.
 Module Export Fiat.
 Module Export Parsers.
 Module Export CorrectnessBaseTypes.
-Import Coq.Lists.List.
+Import Stdlib.Lists.List.
 Import Fiat.Parsers.ContextFreeGrammar.Core.
 Import Fiat_DOT_Common.Fiat.Common.
 Section general.
@@ -488,9 +488,9 @@ Defined.
 
   End app.
 
-Import Coq.Lists.List.
-Import Coq.Arith.Arith.
-Import Coq.micromega.Lia.
+Import Stdlib.Lists.List.
+Import Stdlib.Arith.Arith.
+Import Stdlib.micromega.Lia.
 Import Fiat_DOT_Common.Fiat.Common.
 Import Fiat.Parsers.ContextFreeGrammar.Valid.
 Local Open Scope string_like_scope.

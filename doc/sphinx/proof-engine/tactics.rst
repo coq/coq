@@ -453,7 +453,7 @@ Examples:
 
       .. coqtop:: reset none
 
-         Require Import Coq.Lists.List.
+         Require Import Stdlib.Lists.List.
          Section IntroPatterns.
          Variables (A : Type) (xs ys : list A).
 

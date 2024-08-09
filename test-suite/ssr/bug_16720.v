@@ -1,4 +1,4 @@
-From Coq Require Import ssreflect.
+From Stdlib Require Import ssreflect.
 Class Trivial := trivial {}.
 #[local] Existing Instance trivial.
 Goal Trivial.
@@ -8,7 +8,7 @@ Goal Trivial.
   match goal with |- True -> Trivial => admit end.
 Abort.
 
-From Coq Require Import DecidableClass.
+From Stdlib Require Import DecidableClass.
 
 Goal True.
 Proof.

@@ -16,7 +16,7 @@ let make_dir l = DirPath.make (List.rev_map Id.of_string l)
 (************************************************************************)
 (* Coq reference API                                                    *)
 (************************************************************************)
-let coq = Libnames.coq_string (* "Coq" *)
+let coq = Libnames.coq_string (* "Stdlib" *)
 
 let init_dir = [ coq; "Init"]
 

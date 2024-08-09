@@ -1,5 +1,5 @@
-Require Import Coq.Lists.List.
-Require Import Coq.Strings.String Coq.Strings.Byte Coq.Strings.Ascii.
+Require Import Stdlib.Lists.List.
+Require Import Stdlib.Strings.String Stdlib.Strings.Byte Stdlib.Strings.Ascii.
 Import ListNotations.
 
 Set Printing Depth 100000.

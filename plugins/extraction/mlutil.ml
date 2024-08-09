@@ -1541,16 +1541,16 @@ let con_of_string s =
 
 let manual_inline_set =
   List.fold_right (fun x -> Cset_env.add (con_of_string x))
-    [ "Coq.Init.Wf.well_founded_induction_type";
-      "Coq.Init.Wf.well_founded_induction";
-      "Coq.Init.Wf.Acc_iter";
-      "Coq.Init.Wf.Fix_F";
-      "Coq.Init.Wf.Fix";
-      "Coq.Init.Datatypes.andb";
-      "Coq.Init.Datatypes.orb";
-      "Coq.Init.Logic.eq_rec_r";
-      "Coq.Init.Logic.eq_rect_r";
-      "Coq.Init.Specif.proj1_sig";
+    [ "Stdlib.Init.Wf.well_founded_induction_type";
+      "Stdlib.Init.Wf.well_founded_induction";
+      "Stdlib.Init.Wf.Acc_iter";
+      "Stdlib.Init.Wf.Fix_F";
+      "Stdlib.Init.Wf.Fix";
+      "Stdlib.Init.Datatypes.andb";
+      "Stdlib.Init.Datatypes.orb";
+      "Stdlib.Init.Logic.eq_rec_r";
+      "Stdlib.Init.Logic.eq_rect_r";
+      "Stdlib.Init.Specif.proj1_sig";
     ]
     Cset_env.empty
 

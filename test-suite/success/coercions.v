@@ -163,7 +163,7 @@ End TestPropAsSourceCoercion.
 
 Module TestTypeAsSourceCoercion.
 
-  Require Import Coq.Setoids.Setoid.
+  Require Import Stdlib.Setoids.Setoid.
 
   Record setoid := { A : Type ; R : relation A ; eqv : Equivalence R }.
 
