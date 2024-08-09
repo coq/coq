@@ -419,14 +419,6 @@ and ``coqtop``, unless stated otherwise:
   *string* must be :n:`"@setting_name"`.
   See the :ref:`note above <interleave-command-line>` regarding the order
   of command-line options.
-:-compat *version*: Load a file that sets a few options to maintain
-  partial backward-compatibility with a previous version.  This is
-  equivalent to :cmd:`Require Import` `Coq.Compat.CoqXXX` with `XXX`
-  one of the last three released versions (including the current
-  version).  Note that the :ref:`explanations above
-  <interleave-command-line>` regarding the order of command-line
-  options apply, and this could be relevant if you are resetting some
-  of the compatibility options.
 :-dump-glob *file*: Dump references for global names in file *file*
   (to be used by coqdoc, see :ref:`coqdoc`). By default, if *file.v* is being
   compiled, *file.glob* is used.

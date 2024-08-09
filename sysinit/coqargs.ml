@@ -230,26 +230,6 @@ let set_option = let open Goptions in function
   | opt, OptionSet (Some v) -> set_option_value ~locality:OptLocal (interp_set_option opt) opt v
   | opt, OptionAppend v -> set_string_option_append_value_gen ~locality:OptLocal opt v
 
-let get_compat_file = function
-  | "8.21" -> "Coq.Compat.Coq821"
-  | "8.20" -> "Coq.Compat.Coq820"
-  | "8.19" -> "Coq.Compat.Coq819"
-  | "8.18" -> "Coq.Compat.Coq818"
-  | ("8.17" | "8.16" | "8.15" | "8.14" | "8.13" | "8.12" | "8.11" | "8.10" | "8.9" | "8.8" | "8.7" | "8.6" | "8.5" | "8.4" | "8.3" | "8.2" | "8.1" | "8.0") as s ->
-    CErrors.user_err
-      Pp.(str "Compatibility with version " ++ str s ++ str " not supported.")
-  | s ->
-    CErrors.user_err
-      Pp.(str "Unknown compatibility version \"" ++ str s ++ str "\".")
-
-(* Workaround for the OCaml parser using regex in update-compat.py *)
-let get_compat_files v =
-  let coq_compat = get_compat_file v in
-  match v with
-  | "8.19" -> coq_compat :: ["Ltac2.Compat.Coq819"]
-  | "8.18" | "8.17" -> coq_compat :: ["Ltac2.Compat.Coq818"]
-  | _ -> [coq_compat]
-
 let to_opt_key = Str.(split (regexp " +"))
 
 let parse_option_set opt =
@@ -310,10 +290,6 @@ let parse_args ~usage ~init arglist : t * string list =
     |"-coqlib" ->
       { oval with config = { oval.config with coqlib = Some (next ())
       }}
-
-    |"-compat" ->
-      get_compat_files (next ()) |>
-      List.fold_left (fun oval lib -> add_vo_require oval lib None (Some Lib.Import)) oval
 
     |"-exclude-dir" ->
       System.exclude_directory (next ()); oval

@@ -34,7 +34,6 @@ let print_usage_common co command =
 \n  -boot                  don't bind the `Coq.` prefix to the default -coqlib dir\
 \n  -noinit                don't load Coq.Init.Prelude on start \
 \n  -nois                  (idem)\
-\n  -compat X.Y            provides compatibility support for Coq version X.Y\
 \n\
 \n  -load-vernac-source f  load Coq file f.v (Load \"f\".)\
 \n  -l f                   (idem)\

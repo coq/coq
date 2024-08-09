@@ -21,11 +21,6 @@
    ; when TIMED is set, used to print the timing table
    ../tools/make-one-time-file.py
    ../tools/TimeFileMaker.py
-   ; Stuff for the compat script test
-   ../dev/header.ml
-   ../dev/tools/update-compat.py
-   ../doc/stdlib/index-list.html.template
-   ../sysinit/coqargs.ml
    ; For the changelog test
    ../config/coq_config.py
    (source_tree doc/changelog)
