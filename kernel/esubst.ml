@@ -227,7 +227,7 @@ let rec pop n i e =
   | ELLFT (k, e) ->
     if k <= n then pop (n - k) i e
     else i, ELLFT (k - n, e)
-  | ELSHFT (e, k) -> pop n (i + k) e
+  | ELSHFT (e, k) -> pop (n + k) (i + k) e
 
 let apply mk e = function
 | Var i -> Var (reloc_rel i e)
