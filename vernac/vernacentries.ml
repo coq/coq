@@ -104,24 +104,27 @@ module DefAttributes = struct
   let clearbody = bool_attribute ~name:"clearbody"
 
   (* [XXX] EJGA: coercion is unused here *)
-  let parse ?(coercion=false) ?(discharge=NoDischarge,"","") f =
+  let def_attributes_gen ?(coercion=false) ?(discharge=NoDischarge,"","") () =
     let discharge, deprecated_thing, replacement = discharge in
     let clearbody = match discharge with DoDischarge -> clearbody | NoDischarge -> return None in
-    let (((((((locality, user_warns), polymorphic), program),
-         canonical_instance), typing_flags), using),
-         reversible), clearbody =
-      parse (locality ++ user_warns_with_use_globref_instead ++ polymorphic ++ program ++
-             canonical_instance ++ typing_flags ++ using ++
-             reversible ++ clearbody)
-        f
-    in
-    let using = Option.map Proof_using.using_from_string using in
-    let reversible = Option.default false reversible in
-    let () = if Option.has_some clearbody && not (Lib.sections_are_opened())
-      then CErrors.user_err Pp.(str "Cannot use attribute clearbody outside sections.")
-    in
-    let scope = scope_of_locality locality discharge deprecated_thing replacement in
-    { scope; locality; polymorphic; program; user_warns; canonical_instance; typing_flags; using; reversible; clearbody }
+    (locality ++ user_warns_with_use_globref_instead ++ polymorphic ++ program ++
+               canonical_instance ++ typing_flags ++ using ++
+               reversible ++ clearbody) >>= fun ((((((((locality, user_warns), polymorphic), program),
+           canonical_instance), typing_flags), using),
+           reversible), clearbody) ->
+      let using = Option.map Proof_using.using_from_string using in
+      let reversible = Option.default false reversible in
+      let () = if Option.has_some clearbody && not (Lib.sections_are_opened())
+        then CErrors.user_err Pp.(str "Cannot use attribute clearbody outside sections.")
+      in
+      let scope = scope_of_locality locality discharge deprecated_thing replacement in
+      return { scope; locality; polymorphic; program; user_warns; canonical_instance; typing_flags; using; reversible; clearbody }
+
+  let parse ?coercion ?discharge f =
+    Attributes.parse (def_attributes_gen ?coercion ?discharge ()) f
+
+  let def_attributes = def_attributes_gen ()
+
 end
 
 let with_def_attributes ?coercion ?discharge ~atts f =

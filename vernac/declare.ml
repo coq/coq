@@ -1641,11 +1641,10 @@ let start_core ~info ~cinfo ?proof_ending ?using sigma =
 
 let start = start_core ?proof_ending:None
 
-let start_dependent ~info ~name ~proof_ending goals =
+let start_dependent ~info ~cinfo ~name ~proof_ending goals =
   let { Info.poly; typing_flags; _ } = info in
   let proof = Proof.dependent_start ~name ~poly ?typing_flags goals in
   let initial_euctx = Evd.ustate Proof.((data proof).sigma) in
-  let cinfo = [] in
   let pinfo = Proof_info.make ~info ~cinfo ~proof_ending () in
   { proof
   ; endline_tactic = None
@@ -1654,13 +1653,13 @@ let start_dependent ~info ~name ~proof_ending goals =
   ; pinfo
   }
 
-let start_derive ~f ~name ~info goals =
+let start_derive ~f ~name ~info ~cinfo goals =
   let proof_ending = Proof_ending.End_derive {f; name} in
-  start_dependent ~info ~name ~proof_ending goals
+  start_dependent ~info ~cinfo ~name ~proof_ending goals
 
 let start_equations ~name ~info ~hook ~types sigma goals =
   let proof_ending = Proof_ending.End_equations {hook; i=name; types; sigma} in
-  start_dependent ~name ~info ~proof_ending goals
+  start_dependent ~name ~cinfo:[] ~info ~proof_ending goals
 
 let start_definition ~info ~cinfo ?using sigma =
   let { CInfo.name; typ; args } = cinfo in
@@ -2239,6 +2238,7 @@ let finish_admitted ~pm ~pinfo ~uctx ~sec_vars typs =
 let save_admitted ~pm ~proof =
   let Proof.{ entry; sigma } = Proof.data (get proof) in
   let typs = List.map pi3 (Proofview.initial_goals entry) in
+  List.iter (check_type_evars_solved (Global.env()) sigma) typs;
   let iproof = get proof in
   List.iter (check_type_evars_solved (Global.env()) sigma) typs;
   let sec_vars = compute_proof_using_for_admitted proof.pinfo proof typs iproof in
@@ -2256,42 +2256,28 @@ let save_admitted ~pm ~proof =
 (* Saving a lemma-like constant                                         *)
 (************************************************************************)
 
-let finish_derived ~f ~name ~entries =
+let finish_derived ~f ~name {entries; pinfo; uctx} =
   (* [f] and [name] correspond to the proof of [f] and of [suchthat], respectively. *)
 
-  let f_def, lemma_def =
-    match entries with
-    | [_;f_def;lemma_def] ->
-      f_def, lemma_def
-    | _ -> assert false
-  in
-  (* The opacity of [f_def] is adjusted to be [false], as it
-     must. Then [f] is declared in the global environment. *)
-  let f_def = ProofEntry.set_transparent_for_derived f_def in
-  let f_kind = Decls.(IsDefinition Definition) in
-  let f_def = DefinitionEntry f_def in
-  let f_kn = declare_constant ~name:f ~kind:f_kind f_def ~typing_flags:None in
-  (* Derive does not support univ poly *)
-  let () = assert (not (Global.is_polymorphic (ConstRef f_kn))) in
-  let f_kn_term = Constr.UnsafeMonomorphic.mkConst f_kn in
-  (* In the type and body of the proof of [suchthat] there can be
-     references to the variable [f]. It needs to be replaced by
-     references to the constant [f] declared above. This substitution
-     performs this precise action. *)
-  let substf c = Vars.replace_vars [f,f_kn_term] c in
-  (* Extracts the type of the proof of [suchthat]. *)
-  let lemma_pretype typ =
-    match typ with
-    | Some t -> Some (substf t)
-    | None -> assert false (* Declare always sets type here. *)
-  in
-  (* The references of [f] are subsituted appropriately. *)
-  let lemma_def = ProofEntry.map_entry_type lemma_def ~f:lemma_pretype in
-  (* The same is done in the body of the proof. *)
-  let lemma_def = ProofEntry.map_proof_entry lemma_def ~f:(fun (b,fx) -> (substf b, fx)) in
-  let lemma_def = DefinitionEntry lemma_def in
-  let ct = declare_constant ~name ~typing_flags:None ~kind:Decls.(IsProof Proposition) lemma_def in
-  [GlobRef.ConstRef f_kn; GlobRef.ConstRef ct]
+  let { Proof_info.info = { Info.hook; scope; clearbody; kind; typing_flags; user_warns; poly; udecl; _ } } = pinfo in
+  let _, _, refs, _ =
+    List.fold_left2 (fun (i, subst, refs, used_univs) CInfo.{name; impargs} entry ->
+      (* The opacity of the specification is adjusted to be [false], as it must.*)
+      let entry = if i = 0 then ProofEntry.set_transparent_for_derived entry else entry in
+      let f c = UState.nf_universes uctx (Vars.replace_vars subst c) in
+      let entry = ProofEntry.map_entry_type entry ~f:(Option.map f) in
+      let entry = ProofEntry.map_proof_entry entry ~f:(fun (b,fx) -> (f b, fx)) in
+      let used_univs_body = Vars.universes_of_constr (fst (fst (ProofEntry.get_entry_body entry))) (* Currently assume not delayed *) in
+      let used_univs_typ = Option.cata Vars.universes_of_constr Univ.Level.Set.empty entry.proof_entry_type in
+      let used_univs = Univ.Level.Set.union used_univs (Univ.Level.Set.union used_univs_body used_univs_typ) in
+      let uctx' = UState.restrict uctx used_univs in
+      let entry = { entry with proof_entry_universes = UState.check_univ_decl ~poly uctx' udecl } in
+      let gref = declare_entry ~name ~scope ~clearbody ~kind ?hook ~impargs ~typing_flags ~user_warns ~uctx entry in
+      let cst = match gref with ConstRef cst -> cst | _ -> assert false in
+      let inst = instance_of_univs entry.proof_entry_universes in
+      (i+1, (name, Constr.mkConstU (cst,inst))::subst, gref::refs, used_univs))
+      (0, [], [], Univ.Level.Set.empty) pinfo.Proof_info.cinfo entries in
+  refs
 
 let finish_proved_equations ~pm ~kind ~hook i proof_obj types sigma0 =
 
@@ -2331,7 +2317,7 @@ let finish_proof ~pm proof_obj proof_info =
     let entry, uctx = check_single_entry proof_obj "Obligation.save" in
     Obls_.obligation_terminator ~pm ~entry ~uctx ~oinfo
   | End_derive { f ; name } ->
-    pm, finish_derived ~f ~name ~entries:proof_obj.entries
+    pm, finish_derived ~f ~name proof_obj
   | End_equations { hook; i; types; sigma } ->
     let kind = proof_info.Proof_info.info.Info.kind in
     finish_proved_equations ~pm ~kind ~hook i proof_obj types sigma
