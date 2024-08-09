@@ -140,7 +140,7 @@ module Make(T : Task) () = struct
           | "-dump-glob" | "-bytecode-compiler" | "-native-compiler" as x) :: a :: tl ->
           x :: a :: set_slave_opt tl
         (* We need to pass some options with two arguments *)
-        | ( "-R" | "-Q" as x) :: a1 :: a2 :: tl ->
+        | ("-L" | "-R" | "-Q" as x) :: a1 :: a2 :: tl ->
           x :: a1 :: a2 :: set_slave_opt tl
         (* Finally we pass all options starting in '-'; check this is safe w.r.t the weird vio* option set *)
         | x :: tl when x.[0] = '-' ->

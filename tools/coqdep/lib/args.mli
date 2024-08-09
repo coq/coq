@@ -15,7 +15,7 @@ type t =
   ; noglob : bool
   ; coqproject : string option
   ; ml_path : string list
-  ; vo_path : (bool * string * string) list
+  ; vo_path : (bool * bool * string * string) list
   ; dyndep : string
   ; meta_files : string list
   ; files : string list

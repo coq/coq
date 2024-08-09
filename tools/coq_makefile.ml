@@ -20,8 +20,9 @@ let usage_coq_makefile ~ok =
   output_string out "Usage summary:\
 \n\
 \ncoq_makefile .... [file.v] ... [file.ml[ig]?] ... [file.ml{lib,pack}]\
-\n  ... [-I dir] ... [-R physicalpath logicalpath]\
-\n  ... [-Q physicalpath logicalpath] ... [VARIABLE = value]\
+\n  ... [-I dir] ... [-L physicalpath logicalpath] \
+\n  ... [-R physicalpath logicalpath] ... [-Q physicalpath logicalpath] \
+\n  ... [VARIABLE = value]\
 \n  ... [-arg opt] ... [-docroot path] [-f file] [-o file]\
 \n  ... [-generate-meta-for-package project-name]\
 \n  [-h] [--help] [-v] [--version]\
@@ -34,6 +35,9 @@ let usage_coq_makefile ~ok =
 \n[file.ml{lib,pack}]: ocamlbuild-style file that describes a Objective Caml\
 \n  library/module\
 \n[-I dir]: look for Objective Caml dependencies in \"dir\"\
+\n[-L physicalpath logicalpath]: look for Coq dependencies recursively\
+\n  starting from \"physicalpath\". Build the dependencies at \"physicalpath\"
+\n  then the logical path associated to the physical path is \"logicalpath\".\
 \n[-R physicalpath logicalpath]: look for Coq dependencies recursively\
 \n  starting from \"physicalpath\". The logical path associated to the\
 \n  physical path is \"logicalpath\".\
@@ -193,8 +197,8 @@ let section oc s =
   fprintf oc "%s\n\n" sharps
 ;;
 
-let generate_conf_includes oc { ml_includes; r_includes; q_includes } =
-  section oc "Path directives (-I, -R, -Q).";
+let generate_conf_includes oc { ml_includes; l_includes; r_includes; q_includes } =
+  section oc "Path directives (-I, -L, -R, -Q).";
   let module S = String in
   let map = map_sourced_list in
   let dash1 opt v = sprintf "-%s %s" opt (quote v) in
@@ -203,9 +207,12 @@ let generate_conf_includes oc { ml_includes; r_includes; q_includes } =
     (S.concat " " (map (fun { path } -> dash1 "I" path) ml_includes));
   fprintf oc "COQMF_SRC_SUBDIRS = %s\n"
     (S.concat " " (map (fun { path } -> quote path) ml_includes));
-  fprintf oc "COQMF_COQLIBS = %s %s %s\n"
+  fprintf oc "COQMF_INDEP_COQLIBS = %s\n"
+    (S.concat " " (map (fun ({ path },l) -> dash2 "L" path l) l_includes));
+  fprintf oc "COQMF_COQLIBS = %s %s %s %s\n"
     (S.concat " " (map (fun { path } -> dash1 "I" path) ml_includes))
     (S.concat " " (map (fun ({ path },l) -> dash2 "Q" path l) q_includes))
+    (S.concat " " (map (fun ({ path },l) -> dash2 "L" path l) l_includes))
     (S.concat " " (map (fun ({ path },l) -> dash2 "R" path l) r_includes));
   fprintf oc "COQMF_COQLIBS_NOML = %s %s\n"
     (S.concat " " (map (fun ({ path },l) -> dash2 "Q" path l) q_includes))
@@ -282,6 +289,8 @@ let rec logic_gcd acc = function
       then logic_gcd (acc @ [hd]) (tl :: List.map List.tl rest)
       else acc
 
+(*  NOTE: I believe l_includes are not necessary here due to them being
+    recursively built *)
 let generate_conf_doc oc { docroot; q_includes; r_includes } =
   let includes = List.map (forget_source > snd) (q_includes @ r_includes) in
   let logpaths = List.map (String.split_on_char '.') includes in
@@ -330,12 +339,13 @@ let generate_conf oc project args  =
 ;;
 
 let ensure_root_dir
-  ({ ml_includes; r_includes; q_includes; files } as project)
+  ({ ml_includes; l_includes; r_includes; q_includes; files } as project)
   =
   let exists f = List.exists (forget_source > f) in
   let here = Sys.getcwd () in
   let not_tops = List.for_all (fun s -> s.thing <> Filename.basename s.thing) in
   if exists (fun { canonical_path = x } -> x = here) ml_includes
+  || exists (fun ({ canonical_path = x },_) -> is_prefix x here) l_includes
   || exists (fun ({ canonical_path = x },_) -> is_prefix x here) r_includes
   || exists (fun ({ canonical_path = x },_) -> is_prefix x here) q_includes
   || not_tops files
@@ -349,19 +359,25 @@ let ensure_root_dir
         r_includes = source (here_path, "Top") :: r_includes }
 ;;
 
-let check_overlapping_include { q_includes; r_includes } =
+let check_overlapping_include { q_includes; l_includes; r_includes } =
   let pwd = Sys.getcwd () in
-  let aux = function
+  let subdir_aux = function
     | [] -> ()
     | {thing = { path; canonical_path }, _} :: l ->
         if not (is_prefix pwd canonical_path) then
           eprintf "Warning: %s (used in -R or -Q) is not a subdirectory of the current directory\n\n" path;
+  in
+  let overlap_aux = function
+    | [] -> ()
+    | {thing = { path; canonical_path }, _} :: l ->
         List.iter (fun {thing={ path = p; canonical_path = cp }, _} ->
           if is_prefix canonical_path cp  || is_prefix cp canonical_path then
-            eprintf "Warning: %s and %s overlap (used in -R or -Q)\n\n"
+            eprintf "Warning: %s and %s overlap (used in -L, -R or -Q)\n\n"
               path p) l
   in
-    aux (q_includes @ r_includes)
+    (* NOTE: Chose to allow people to load -L's from non sub-dirs *)
+    subdir_aux (q_includes @ r_includes);
+    overlap_aux (q_includes @ r_includes @ l_includes)
 ;;
 
 let check_native_compiler = function
@@ -394,9 +410,9 @@ let parse_extra f r opts = match f, r with
   | ("-v"|"--version"), _ -> Boot.Usage.version (); exit 0
   | _ -> None
 
-let destination_of { ml_includes; q_includes; r_includes; } file =
+let destination_of { ml_includes; q_includes; l_includes; r_includes; } file =
   let file_dir = CUnix.canonical_path_name (Filename.dirname file) in
-  let includes = q_includes @ r_includes in
+  let includes = l_includes @ q_includes @ r_includes in
   let mk_destination logic canonical_path =
     Filename.concat
       (physical_dir_of_logical_dir logic)
@@ -411,6 +427,7 @@ let destination_of { ml_includes; q_includes; r_includes; } file =
   | [] ->
      (* BACKWARD COMPATIBILITY: -I into the only logical root *)
      begin match
+        (* Is management for l_includes needed here? *)
         r_includes,
         List.find (fun {thing={ canonical_path = p }} -> is_prefix p file_dir)
           ml_includes
