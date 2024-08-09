@@ -94,8 +94,9 @@ Section :ref:`typing-rules`.
 
    These commands bind :n:`@term` to the name :n:`@ident` in the global environment,
    provided that :n:`@term` is well-typed.  They can take the :attr:`local` :term:`attribute`,
-   which makes the defined :n:`@ident` accessible by :cmd:`Import` and its variants
-   only through their fully qualified names.
+   which makes the defined :n:`@ident` accessible only through their fully
+   qualified names, even if :cmd:`Import` or its variants has been used on the
+   current :cmd:`Module`.
    If :n:`@reduce` is present then :n:`@ident` is bound to the result of the specified
    computation on :n:`@term`.
 

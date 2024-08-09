@@ -1892,6 +1892,11 @@ Abbreviations
    This command supports the :attr:`local` attribute, which limits the notation to the
    current module.
 
+   Unlike a :cmd:`Notation`, an abbreviation defined with the default locality
+   is available (with a fully qualified name) outside the current module even
+   when :cmd:`Import` (or one of its variants) has not been used on the current
+   :cmd:`Module`.
+
    An *abbreviation* is a name, possibly applied to arguments, that
    denotes a (presumably) more complex expression. Here are examples:
 

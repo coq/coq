@@ -175,6 +175,10 @@ has type :n:`@type`.
 
    :cmd:`Axiom`, :cmd:`Conjecture`, :cmd:`Parameter` and their plural forms
    are equivalent.  They can take the :attr:`local` :term:`attribute`,
+   which makes the declared :n:`@ident` accessible only through their fully
+   qualified names, even if :cmd:`Import` or its variants has been used on the
+   current module.
+
    which makes the defined :n:`@ident`\s accessible by :cmd:`Import` and its variants
    only through their fully qualified names.
 

@@ -4,15 +4,19 @@ Sections
 ====================================
 
 Sections are naming scopes that permit creating section-local declarations that can
-be used by other declarations in the section.  Declarations made
-with :cmd:`Variable`, :cmd:`Hypothesis`, :cmd:`Context`,
-:cmd:`Let`, :cmd:`Let Fixpoint` and
-:cmd:`Let CoFixpoint` (or the plural variants of the first two) within sections
-are local to the section.
+be used by other declarations in the section. Declarations made with
+:cmd:`Variable`, :cmd:`Hypothesis`, :cmd:`Context`
+(or the plural variants of the first two)
+and definitions made with
+:cmd:`Let`, :cmd:`Let Fixpoint` and :cmd:`Let CoFixpoint`
+within sections are local to the section.
 
 In proofs done within the section, section-local declarations
 are included in the :term:`local context` of the initial goal of the proof.
 They are also accessible in definitions made with the :cmd:`Definition` command.
+
+Using sections
+--------------
 
 Sections are opened by the :cmd:`Section` command, and closed by :cmd:`End`.
 Sections can be nested.
@@ -48,6 +52,8 @@ usable outside the section as shown in this :ref:`example <section_local_declara
    Most commands, such as the :ref:`Hint <creating_hints>` commands,
    :cmd:`Notation` and option management commands that
    appear inside a section are canceled when the section is closed.
+   In some cases, this behaviour can be tuned with locality attributes.
+   See :ref:`this table<visibility-attributes-sections>`.
 
 .. cmd:: Let @ident_decl @def_body
          Let Fixpoint @fix_definition {* with @fix_definition }
@@ -131,6 +137,135 @@ usable outside the section as shown in this :ref:`example <section_local_declara
    Notice the difference between the value of :g:`x'` and :g:`x''` inside section
    :g:`s1` and outside.
 
+.. _visibility-attributes-sections:
+
+Summary of locality attributes in a section
+-------------------------------------------
+
+This table sums up the effect of locality attributes on the scope of vernacular
+commands in a :cmd:`Section`, when outside the :cmd:`Section` where they were entered. In the
+following table:
+
+* a cross (❌) marks an unsupported attribute (compilation error);
+* “not available” means that the command has no effect outside the :cmd:`Section` it
+  was entered;
+* “available” means that the effects of the command persists outside the :cmd:`Section`.
+* For :cmd:`Definition` (and :cmd:`Lemma`, ...), :cmd:`Canonical Structure`,
+  :cmd:`Coercion` and :cmd:`Set` (and :cmd:`Unset`), some locality attributes
+  will be passed on to the :cmd:`Module` containing the current :cmd:`Section`,
+  see the associated footnotes.
+
+
+A similar table for :cmd:`Module` can be found
+:ref:`here <visibility-attributes-modules>`.
+
+.. list-table::
+  :header-rows: 1
+
+  * - ``Command``
+    - no attribute
+    - :attr:`local`
+    - :attr:`export`
+    - :attr:`global`
+
+  * - :cmd:`Definition`, :cmd:`Lemma`, :cmd:`Axiom`, ...
+    - available [#note1]_
+    - :attr:`local` in
+
+      module [#note1]_
+    - ❌
+    - ❌
+
+  * - :cmd:`Ltac`
+    - :attr:`local`
+    - not available
+    - ❌
+    - ❌
+
+  * - :cmd:`Ltac2`
+    - :attr:`local`
+    - not available
+    - ❌
+    - ❌
+
+  * - :cmd:`Notation (abbreviation)`
+    - :attr:`local`
+    - not available
+    - ❌
+    - ❌
+
+  * - :cmd:`Notation`
+    - :attr:`local`
+    - not available
+    - ❌
+    - ❌
+
+  * - :cmd:`Tactic Notation`
+    - :attr:`local`
+    - not available
+    - ❌
+    - ❌
+
+  * - :cmd:`Ltac2 Notation`
+    - :attr:`local`
+    - not available
+    - ❌
+    - ❌
+
+  * - :cmd:`Coercion`
+    - :attr:`global`
+    - not available
+    - ❌
+    - :attr:`global` in
+
+      module [#note2]_
+
+  * - :cmd:`Canonical Structure`
+    - :attr:`global`
+    - not available
+    - ❌
+    - :attr:`global` in
+
+      module [#note2]_
+
+  * - ``Hints`` (and :cmd:`Instance`)
+    - :attr:`local`
+    - not available
+    - ❌
+    - ❌
+
+  * - :cmd:`Set` or :cmd:`Unset` a flag
+    - available [#note3]_
+    - not available
+    - :attr:`export` in
+
+      module [#note3]_
+    - :attr:`global` in
+
+      module [#note3]_
+
+.. [#note1] For :cmd:`Definition`, :cmd:`Lemma`, ... the default visibility is
+   to be available outside the section and available with a short name when the
+   current :cmd:`Module` is imported (with :cmd:`Import` or cmd:`Export`)
+   outside the current :cmd:`Module`.
+   The :attr:`local` attribute make the corresponding identifiers available in
+   the current :cmd:`Module` but only with a fully qualified name outside the
+   current :cmd:`Module`.
+
+.. [#note2] For :cmd:`Coercion` and :cmd:`Canonical Structure`, the
+   :attr:`global` visibility, which is the default, makes them available outside
+   the section, in the current :cmd:`Module`, and outside the current
+   :cmd:`Module` when it is imported (with :cmd:`Import` or cmd:`Export`).
+
+.. [#note3] For :cmd:`Set` and :cmd:`Unset`, the :attr:`export` and
+   :attr:`global` attributes both make the command's effects persist outside the
+   current section, in the current :cmd:`Module`.
+   It will also persist outside the current :cmd:`Module` with the
+   :attr:`global` attribute, or with the :attr:`export` attribute, when the
+   :cmd:`Module` is imported (with :cmd:`Import` or cmd:`Export`).
+   The default behaviour (no attribute) is to make the setting persist outside
+   the section in the current :cmd:`Module`, but not outside the current
+   :cmd:`Module`.
 
 .. _Admissible-rules-for-global-environments:
 
