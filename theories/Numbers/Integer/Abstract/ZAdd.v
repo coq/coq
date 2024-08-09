@@ -66,13 +66,6 @@ rewrite <- (succ_pred n) at 2.
 rewrite opp_succ. now rewrite succ_pred.
 Qed.
 
-Theorem sub_diag n : n - n == 0.
-Proof.
-nzinduct n.
-- now nzsimpl.
-- intro n. rewrite sub_succ_r, sub_succ_l; now rewrite pred_succ.
-Qed.
-
 Theorem add_opp_diag_l n : - n + n == 0.
 Proof.
 now rewrite add_comm, add_opp_r, sub_diag.
@@ -132,12 +125,6 @@ Qed.
 Theorem eq_opp_r n m : n == - m <-> - n == m.
 Proof.
 symmetry; apply eq_opp_l.
-Qed.
-
-Theorem sub_add_distr n m p : n - (m + p) == (n - m) - p.
-Proof.
-rewrite <- add_opp_r, opp_add_distr, add_assoc.
-now rewrite 2 add_opp_r.
 Qed.
 
 Theorem sub_sub_distr n m p : n - (m - p) == (n - m) + p.
@@ -230,16 +217,6 @@ Qed.
     terms. The name includes the first operator and the position of
     the term being canceled. *)
 
-Theorem add_simpl_l n m : n + m - n == m.
-Proof.
-now rewrite add_sub_swap, sub_diag, add_0_l.
-Qed.
-
-Theorem add_simpl_r n m : n + m - m == n.
-Proof.
-now rewrite <- add_sub_assoc, sub_diag, add_0_r.
-Qed.
-
 Theorem sub_simpl_l n m : - n - m + n == - m.
 Proof.
 now rewrite <- add_sub_swap, add_opp_diag_l, sub_0_l.
@@ -257,27 +234,6 @@ Qed.
 
 (** Now we have two sums or differences; the name includes the two
     operators and the position of the terms being canceled *)
-
-Theorem add_add_simpl_l_l n m p : (n + m) - (n + p) == m - p.
-Proof.
-now rewrite (add_comm n m), <- add_sub_assoc,
-sub_add_distr, sub_diag, sub_0_l, add_opp_r.
-Qed.
-
-Theorem add_add_simpl_l_r n m p : (n + m) - (p + n) == m - p.
-Proof.
-rewrite (add_comm p n); apply add_add_simpl_l_l.
-Qed.
-
-Theorem add_add_simpl_r_l n m p : (n + m) - (m + p) == n - p.
-Proof.
-rewrite (add_comm n m); apply add_add_simpl_l_l.
-Qed.
-
-Theorem add_add_simpl_r_r n m p : (n + m) - (p + m) == n - p.
-Proof.
-rewrite (add_comm p m); apply add_add_simpl_r_l.
-Qed.
 
 Theorem sub_add_simpl_r_l n m p : (n - m) + (m + p) == n + p.
 Proof.
