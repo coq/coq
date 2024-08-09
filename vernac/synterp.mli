@@ -27,17 +27,6 @@ val with_generic_atts :
 
 type module_entry = Modintern.module_struct_expr * Names.ModPath.t * Modintern.module_kind * Entries.inline
 
-type control_entry =
-  | ControlTime of { synterp_duration: System.duration }
-  | ControlInstructions of { synterp_instructions: System.instruction_count }
-  | ControlRedirect of string
-  | ControlTimeout of { remaining : float }
-  | ControlFail of { st : Vernacstate.Synterp.t }
-  | ControlSucceed of { st : Vernacstate.Synterp.t }
-
-(** Interprete control flag assuming a synpure command. *)
-val synpure_control : Vernacexpr.control_flag -> control_entry
-
 type synterp_entry =
   | EVernacNoop
   | EVernacNotation of { local : bool; decl : Metasyntax.notation_interpretation_decl }
@@ -69,7 +58,9 @@ and vernac_entry = synterp_entry Vernacexpr.vernac_expr_gen
 
 (** [vernac_control_entry] defines elaborated vernacular expressions, after the
     syntactic interpretation phase and before full interpretation *)
-and vernac_control_entry = (control_entry, synterp_entry) Vernacexpr.vernac_control_gen_r CAst.t
+and vernac_control_entry =
+  (Vernacstate.Synterp.t VernacControl.control_entry, synterp_entry)
+    Vernacexpr.vernac_control_gen_r CAst.t
 
 exception UnmappedLibrary of Names.DirPath.t option * Libnames.qualid
 exception NotFoundLibrary of Names.DirPath.t option * Libnames.qualid
@@ -88,8 +79,6 @@ val synterp_control :
   intern:Library.Intern.t ->
   Vernacexpr.vernac_control ->
   vernac_control_entry
-
-val add_default_timeout : Vernacexpr.control_flag list -> Vernacexpr.control_flag list
 
 (** Default proof mode set by `start_proof` *)
 val get_default_proof_mode : unit -> Pvernac.proof_mode

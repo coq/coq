@@ -2097,12 +2097,21 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                         | None ->
                           CErrors.anomaly Pp.(str "Attempting to force admitted proof contents."))
                     in
-                    let proof =
-                      PG_compat.close_future_proof ~feedback_id:id fp' in
+                    let control, pe = extract_pe x in
+                    let control = VernacControl.from_syntax control in
+                    let control, proof =
+                      VernacControl.under_control ~loc:x.expr.loc
+                        ~with_local_state:VernacControl.trivial_state
+                        control
+                        ~noop:None
+                        (fun () -> Some (PG_compat.close_future_proof ~feedback_id:id fp'))
+                    in
+                    (* We only get [noop] from [Fail],
+                       but we can't see [Fail] in this classification. *)
+                    let proof = Option.get proof in
                     if not delegate then ignore(Future.compute fp);
                     reach view.next;
                     let st = Vernacstate.freeze_full_state () in
-                    let control, pe = extract_pe x in
                     ignore(stm_qed_delay_proof ~id ~st ~proof ~loc ~control pe);
                     feedback ~id:id Incomplete
                 | { VCS.kind = Master }, _ -> assert false
@@ -2131,10 +2140,24 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                       | VtKeepOpaque -> Opaque | VtKeepDefined -> Transparent
                       | VtKeepAxiom -> assert false
                     in
-                    try Some (PG_compat.close_proof ~opaque ~keep_body_ucst_separate:false)
-                    with exn ->
-                      let iexn = Exninfo.capture exn in
-                      Exninfo.iraise (State.exn_on id ~valid:eop iexn)
+                    let control, pe = extract_pe x in
+                    let control = VernacControl.from_syntax control in
+                    let control, proof =
+                      try
+                        VernacControl.under_control ~loc:x.expr.loc
+                          ~with_local_state:VernacControl.trivial_state
+                          control
+                          (* noop should be unreachable in this classification *)
+                          ~noop:None
+                          (fun () ->
+                             Some (PG_compat.close_proof ~opaque ~keep_body_ucst_separate:false))
+                      with exn ->
+                        let iexn = Exninfo.capture exn in
+                        Exninfo.iraise (State.exn_on id ~valid:eop iexn)
+                    in
+                    match proof with
+                    | None -> assert false
+                    | Some proof -> Some (control, pe, proof)
                 in
                 if keep <> VtKeep VtKeepAxiom then
                   reach view.next;
@@ -2142,8 +2165,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                 let st = Vernacstate.freeze_full_state () in
                 let _st = match proof with
                   | None -> stm_vernac_interp id st x
-                  | Some proof ->
-                    let control, pe = extract_pe x in
+                  | Some (control,pe,proof) ->
                     { st with interp = stm_qed_delay_proof ~id ~st ~proof ~loc ~control pe }
                 in
                 let wall_clock3 = Unix.gettimeofday () in

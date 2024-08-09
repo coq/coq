@@ -68,8 +68,9 @@ val in_phase : phase:execution_phase -> ('a -> 'b) -> 'a -> 'b
 val pr_phase : ?loc:Loc.t -> unit -> Pp.t option
 val print_err_exn : exn -> unit
 
-(** [with_output_to_file file f x] executes [f x] with logging
-    redirected to a file [file] *)
-val with_output_to_file : string -> ('a -> 'b) -> 'a -> 'b
+(** [with_output_to_file ~truncate file f x] executes [f x] with
+    logging redirected to a file [file] (starting empty if
+    [truncate:true], otherwise appending if it already exists). *)
+val with_output_to_file : truncate:bool -> string -> ('a -> 'b) -> 'a -> 'b
 
 val pr_cmd_header : Vernacexpr.vernac_control -> Pp.t
