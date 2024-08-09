@@ -1,5 +1,5 @@
 Require Import TestSuite.admit.
-Require Import Coq.Classes.Morphisms Coq.Classes.RelationClasses Coq.Program.Program Coq.Setoids.Setoid.
+Require Import Stdlib.Classes.Morphisms Stdlib.Classes.RelationClasses Stdlib.Program.Program Stdlib.Setoids.Setoid.
 
 Global Set Implicit Arguments.
 

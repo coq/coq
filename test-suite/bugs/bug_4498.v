@@ -1,7 +1,7 @@
-Require Export Coq.Unicode.Utf8.
-Require Export Coq.Classes.Morphisms.
-Require Export Coq.Relations.Relation_Definitions.
-Require Export Coq.Setoids.Setoid.
+Require Export Stdlib.Unicode.Utf8.
+Require Export Stdlib.Classes.Morphisms.
+Require Export Stdlib.Relations.Relation_Definitions.
+Require Export Stdlib.Setoids.Setoid.
 
 Set Universe Polymorphism.
 

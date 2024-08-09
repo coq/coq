@@ -1,4 +1,4 @@
-Require Coq.Program.Wf.
+Require Stdlib.Program.Wf.
 
 Axiom proof_admitted : False.
 Tactic Notation "admit" := abstract case proof_admitted.

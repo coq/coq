@@ -1,4 +1,4 @@
-Require Import Coq.Program.Tactics.
+Require Import Stdlib.Program.Tactics.
 
 (** We make a version of [rapply] that takes [uconstr]; we do not
 currently test what scope [rapply] interprets terms in. *)

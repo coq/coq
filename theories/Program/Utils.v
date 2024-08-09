@@ -10,7 +10,7 @@
 
 (** Various syntactic shorthands that are useful with [Program]. *)
 
-Require Export Coq.Program.Tactics.
+Require Export Stdlib.Program.Tactics.
 
 Set Implicit Arguments.
 
@@ -33,7 +33,7 @@ Notation " `  t " := (proj1_sig t) (at level 10, t at next level) : program_scop
 
 (** Coerces objects to their support before comparing them. *)
 
-Require Import Coq.Bool.Sumbool.
+Require Import Stdlib.Bool.Sumbool.
 
 (** Construct a dependent disjunction from a boolean. *)
 

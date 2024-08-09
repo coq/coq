@@ -80,7 +80,7 @@ Definition foo {A R} {HR : @Test A R} {default} : Test (@lift_relation A R defau
 
 End Collapse.
 
-From Coq Require List.
+From Stdlib Require List.
 
 Module FMap.
 

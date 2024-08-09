@@ -585,11 +585,11 @@ let rewriteRL c =
 (* Replacing tactics *)
 
 let classes_dirpath =
-  DirPath.make (List.map Id.of_string ["Classes";"Coq"])
+  DirPath.make (List.map Id.of_string ["Classes";"Stdlib"])
 
 let init_setoid () =
   if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
-  else check_required_library ["Coq";"Setoids";"Setoid"]
+  else check_required_library ["Stdlib";"Setoids";"Setoid"]
 
 let check_setoid cl =
   let concloccs = Locusops.occurrences_map (fun x -> x) cl.concl_occs in

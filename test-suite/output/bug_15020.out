@@ -6,4 +6,4 @@ eq_rect is not universe polymorphic
 Arguments eq_rect {A}%type_scope {x} P%function_scope f {y} e
   (where some original arguments have been renamed)
 eq_rect is transparent
-Expands to: Constant Coq.Init.Logic.eq_rect
+Expands to: Constant Stdlib.Init.Logic.eq_rect

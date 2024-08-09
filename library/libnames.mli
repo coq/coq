@@ -91,8 +91,8 @@ val idset_mem_qualid : qualid -> Id.Set.t -> bool
 (** {6 ... } *)
 
 (** This is the root of the standard library of Coq *)
-val coq_root : module_ident (* "Coq" *)
-val coq_string : string (* "Coq" *)
+val coq_root : module_ident (* "Stdlib" *)
+val coq_string : string (* "Stdlib" *)
 
 (** This is the default root prefix for developments which doesn't
    mention a root *)

@@ -1,1 +1,1 @@
-From Coq Require Import Setoid CMorphisms.
+From Stdlib Require Import Setoid CMorphisms.

@@ -10,10 +10,10 @@
 
 (** Compatibility file for making Coq act similar to Coq v8.18 *)
 
-Require Export Coq.Compat.Coq819.
+Require Export Stdlib.Compat.Coq819.
 
 (* Restore broken behavior of [zify] reported in COQBUG(https://github.com/coq/coq/issues/17936) *)
-From Coq Require Import Arith BinInt BinNat Znat Nnat PreOmega.
+From Stdlib Require Import Arith BinInt BinNat Znat Nnat PreOmega.
 
 #[local] Open Scope Z_scope.
 Ltac Z.euclidean_division_equations_cleanup ::=

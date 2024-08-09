@@ -19,7 +19,7 @@ Require Import QMicromega.
 Require Import Rdefinitions.
 Require Import RingMicromega.
 Require Import VarMap.
-Require Coq.micromega.Tauto.
+Require Stdlib.micromega.Tauto.
 Require Import Rregisternames.
 Declare ML Module "micromega_core_plugin:coq-core.plugins.micromega_core".
 Declare ML Module "micromega_plugin:coq-core.plugins.micromega".

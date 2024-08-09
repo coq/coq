@@ -14,7 +14,7 @@
 * Properties of orders and multiplication for modules implementing [NZOrdAxiomsSig']
 
 This file defines the [NZMulOrderProp] functor type, meant to be [Include]d
-in a module implementing [NZOrdAxiomsSig'] (see [Coq.Numbers.NatInt.NZAxioms]).
+in a module implementing [NZOrdAxiomsSig'] (see [Stdlib.Numbers.NatInt.NZAxioms]).
 
 This gives important basic compatibility lemmas between [mul] and [lt], [le].
 It also gives cancellation lemmas between [mul] and [eq].

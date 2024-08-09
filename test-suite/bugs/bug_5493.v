@@ -1,4 +1,4 @@
-Require Import Coq.FSets.FSetAVL.
+Require Import Stdlib.FSets.FSetAVL.
 Declare Module NatKey : OrderedType.OrderedType
     with Definition t := nat
     with Definition eq := @ eq nat.

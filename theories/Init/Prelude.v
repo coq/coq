@@ -12,16 +12,16 @@ Require Export Notations.
 Require Export Logic.
 Require Export Datatypes.
 Require Export Specif.
-Require Coq.Init.Byte.
-Require Coq.Init.Decimal.
-Require Coq.Init.Hexadecimal.
-Require Coq.Init.Number.
-Require Coq.Init.Nat.
+Require Stdlib.Init.Byte.
+Require Stdlib.Init.Decimal.
+Require Stdlib.Init.Hexadecimal.
+Require Stdlib.Init.Number.
+Require Stdlib.Init.Nat.
 Require Export Peano.
-Require Export Coq.Init.Wf.
-Require Export Coq.Init.Ltac.
-Require Export Coq.Init.Tactics.
-Require Export Coq.Init.Tauto.
+Require Export Stdlib.Init.Wf.
+Require Export Stdlib.Init.Ltac.
+Require Export Stdlib.Init.Tactics.
+Require Export Stdlib.Init.Tauto.
 (* Some initially available plugins. See also:
    - ltac_plugin (in Ltac)
    - tauto_plugin (in Tauto).

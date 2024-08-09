@@ -10,9 +10,9 @@
 
 (* Extraction to Ocaml : extract ascii to OCaml's char type *)
 
-Require Coq.extraction.Extraction.
+Require Stdlib.extraction.Extraction.
 
-Require Import Ascii String Coq.Strings.Byte.
+Require Import Ascii String Stdlib.Strings.Byte.
 Require Export ExtrOcamlBasic.
 
 Extract Inductive ascii => char

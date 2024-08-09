@@ -1,4 +1,4 @@
-From Coq Require Import Program.Tactics.
+From Stdlib Require Import Program.Tactics.
 
 (* Part using attributes *)
 

@@ -22,7 +22,7 @@ Require Import ZArith.
 Require Import Rdefinitions.
 Require Import RingMicromega.
 Require Import VarMap.
-Require Coq.micromega.Tauto.
+Require Stdlib.micromega.Tauto.
 Require Lia.
 Require Lra.
 Require Lqa.

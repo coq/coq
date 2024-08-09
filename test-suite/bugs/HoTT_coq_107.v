@@ -1,8 +1,8 @@
 (* -*- mode: coq; coq-prog-args: ("-nois" "-R" "../theories" "Coq") -*- *)
 (* File reduced by coq-bug-finder from 4897 lines to 2605 lines, then from 2297 lines to 236 lines, then from 239 lines to 137 lines, then from 118 lines to 67 lines, then from 520 lines to 76 lines. *)
 (** Note: The bug here is the same as the #113, that is, HoTT_coq_113.v *)
-Require Import Coq.Init.Logic.
-Require Import Coq.Init.Ltac.
+Require Import Stdlib.Init.Logic.
+Require Import Stdlib.Init.Ltac.
 Global Set Universe Polymorphism.
 Global Set Asymmetric Patterns.
 Set Implicit Arguments.

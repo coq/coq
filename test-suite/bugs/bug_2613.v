@@ -6,7 +6,7 @@ Require Recdef.
 
 Axiom nat_eq_dec: forall x y : nat, {x=y}+{x<>y}.
 
-Locate eq_sym.  (* Constant Coq.Init.Logic.eq_sym  *)
+Locate eq_sym.  (* Constant Stdlib.Init.Logic.eq_sym  *)
 
 Function loop (n: nat) {measure (fun x => x) n} : bool :=
   if nat_eq_dec n 0 then false else loop (pred n).

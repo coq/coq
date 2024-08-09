@@ -29,7 +29,7 @@ from io import open
 #
 # - Add a file `theories/Compat/CoqXX.v` which contains just the header
 #   from [`dev/header.ml`](/dev/header.ml)
-# - Add the line `Require Export Coq.Compat.CoqXX.` at the top of
+# - Add the line `Require Export Stdlib.Compat.CoqXX.` at the top of
 #   `theories/Compat/CoqYY.v`, where Y.Y is the version prior to X.X.
 # - Update
 #   [`doc/stdlib/index-list.html.template`](/doc/stdlib/index-list.html.template)
@@ -221,7 +221,7 @@ def update_compat_files(old_versions, new_versions, assert_unchanged=False, **ar
             print('Creating %s...' % compat_file)
             contents = HEADER + (EXTRA_HEADER % v)
             if next_v is not None:
-                contents += '\nRequire Export Coq.Compat.%s.\n' % version_name_to_compat_name(next_v, ext='')
+                contents += '\nRequire Export Stdlib.Compat.%s.\n' % version_name_to_compat_name(next_v, ext='')
             update_file(contents, compat_path, exn_string='%s does not exist!', assert_unchanged=assert_unchanged, **args)
         else:
             # print('Checking %s...' % compat_file)
@@ -232,7 +232,7 @@ def update_compat_files(old_versions, new_versions, assert_unchanged=False, **ar
             if not contents.startswith(header):
                 raise Exception("Invalid header in %s; missing line %s" % (compat_file, EXTRA_HEADER.strip('\n') % v))
             if next_v is not None:
-                line = 'Require Export Coq.Compat.%s.' % version_name_to_compat_name(next_v, ext='')
+                line = 'Require Export Stdlib.Compat.%s.' % version_name_to_compat_name(next_v, ext='')
                 if ('\n%s\n' % line) not in contents:
                     if not contents.startswith(header + '\n'):
                         contents = contents.replace(header, header + '\n')
@@ -247,7 +247,7 @@ def update_get_compat_file(new_versions, contents, relpath):
         cur_line = split_contents[:line_count][-1]
         if re.match(r'^  \| \([0-9 "\.\|]*\) as s ->$', cur_line) is not None:
             break
-        elif re.match(r'^  \| "[0-9\.]*" -> "Coq.Compat.Coq[0-9]*"$', cur_line) is not None:
+        elif re.match(r'^  \| "[0-9\.]*" -> "Stdlib.Compat.Coq[0-9]*"$', cur_line) is not None:
             line_count += 1
         else:
             raise Exception('Could not recognize line %d of get_compat_file in %s as a list of invalid versions (line was %s)' % (line_count, relpath, repr(cur_line)))
@@ -255,7 +255,7 @@ def update_get_compat_file(new_versions, contents, relpath):
     all_versions = re.findall(r'"([0-9\.]+)"', ''.join(old_function_lines))
     invalid_versions = tuple(i for i in all_versions if i not in new_versions)
     new_function_lines = [first_line]
-    for v, V in reversed(list(zip(new_versions, ['"Coq.Compat.Coq%s%s"' % tuple(v.split('.')) for v in new_versions]))):
+    for v, V in reversed(list(zip(new_versions, ['"Stdlib.Compat.Coq%s%s"' % tuple(v.split('.')) for v in new_versions]))):
         new_function_lines.append('  | "%s" -> %s' % (v, V))
     new_function_lines.append('  | (%s) as s ->' % ' | '.join('"%s"' % v for v in invalid_versions))
     new_lines = '\n'.join(new_function_lines)
@@ -286,7 +286,7 @@ def update_test_suite(new_versions, assert_unchanged=False, test_suite_paths=TES
         lines = ['(* -*- coq-prog-args: ("-compat" "%s") -*- *)' % v,
                  '(** Check that the %s compatibility flag actually requires the relevant modules. *)' % descr]
         for imp_v in reversed(new_versions[i:]):
-            lines.append('Import Coq.Compat.%s.' % version_name_to_compat_name(imp_v, ext=''))
+            lines.append('Import Stdlib.Compat.%s.' % version_name_to_compat_name(imp_v, ext=''))
         lines.append('')
         new_contents = '\n'.join(lines)
         update_if_changed(contents, new_contents, path, suggest_add=suggest_add, **args)

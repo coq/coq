@@ -15,8 +15,8 @@
 *)
 
 Require Import Relation_Definitions.
-Require Import Coq.Classes.Morphisms.
-Require Import Coq.Program.Program.
+Require Import Stdlib.Classes.Morphisms.
+Require Import Stdlib.Program.Program.
 
 Generalizable Variables A l.
 

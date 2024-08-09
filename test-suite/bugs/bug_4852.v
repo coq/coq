@@ -1,6 +1,6 @@
 (** BZ 4852 : unsatisfactory Extraction Implicit for a fixpoint defined via wf *)
 
-Require Import Coq.Lists.List.
+Require Import Stdlib.Lists.List.
 Import ListNotations.
 Require Import Lia.
 

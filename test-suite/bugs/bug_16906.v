@@ -1,5 +1,5 @@
-Require Import Coq.Program.Program.
-Require Import Coq.Lists.List.
+Require Import Stdlib.Program.Program.
+Require Import Stdlib.Lists.List.
 Import ListNotations.
 Open Scope list_scope.
 Program Fixpoint foo

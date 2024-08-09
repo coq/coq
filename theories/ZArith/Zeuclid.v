@@ -11,12 +11,12 @@
 Attributes deprecated(since="8.20",
   note="Use floor division or truncation division in BinInt instead.").
 
-From Coq.Classes Require Import Morphisms.
-From Coq.ZArith Require Import BinInt.
+From Stdlib.Classes Require Import Morphisms.
+From Stdlib.ZArith Require Import BinInt.
 
 #[local]
 Set Warnings "-deprecated-library-file".
-From Coq.Numbers.Integer.Abstract Require Import ZDivEucl.
+From Stdlib.Numbers.Integer.Abstract Require Import ZDivEucl.
 
 Local Open Scope Z_scope.
 

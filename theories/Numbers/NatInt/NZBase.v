@@ -24,11 +24,11 @@ The functor type [NZBaseProp] is meant to be [Include]d in a module implementing
 [NZDomainSig'].
 *)
 
-From Coq.Numbers.NatInt Require Import NZAxioms.
+From Stdlib.Numbers.NatInt Require Import NZAxioms.
 
 Module Type NZBaseProp (Import NZ : NZDomainSig').
 
-(** This functor from [Coq.Structures.Equalities] gives
+(** This functor from [Stdlib.Structures.Equalities] gives
     [eq_refl], [eq_sym] and [eq_trans]. *)
 Include BackportEq NZ NZ.
 

@@ -5,8 +5,8 @@
 Set Asymmetric Patterns.
 Axiom proof_admitted : False.
 Tactic Notation "admit" := case proof_admitted.
-Require Import Coq.Lists.List.
-Require Import Coq.Setoids.Setoid.
+Require Import Stdlib.Lists.List.
+Require Import Stdlib.Setoids.Setoid.
 Global Set Implicit Arguments.
 Global Generalizable All Variables.
 Coercion is_true : bool >-> Sortclass.
@@ -123,8 +123,8 @@ Module Export ADTSynthesis.
 Module Export Parsers.
 Module Export StringLike.
 Module Export Core.
-Import Coq.Setoids.Setoid.
-Import Coq.Classes.Morphisms.
+Import Stdlib.Setoids.Setoid.
+Import Stdlib.Classes.Morphisms.
 
 
 
@@ -186,8 +186,8 @@ End ADTSynthesis_DOT_Parsers_DOT_StringLike_DOT_Core.
 Module Export ADTSynthesis.
 Module Export Parsers.
 Module Export ContextFreeGrammar.
-Require Import Coq.Strings.String.
-Require Import Coq.Lists.List.
+Require Import Stdlib.Strings.String.
+Require Import Stdlib.Lists.List.
 Export ADTSynthesis.Parsers.StringLike.Core.
 Import ADTSynthesis.Common.
 
@@ -273,7 +273,7 @@ Section recursive_descent_parser.
 End recursive_descent_parser.
 
 End BaseTypes.
-Import Coq.Lists.List.
+Import Stdlib.Lists.List.
 Import ADTSynthesis.Parsers.ContextFreeGrammar.
 
 Local Open Scope string_like_scope.
@@ -377,9 +377,9 @@ Section general.
 End general.
 
 Module Export BooleanRecognizer.
-Import Coq.Arith.PeanoNat.
-Import Coq.Arith.Compare_dec.
-Import Coq.Arith.Wf_nat.
+Import Stdlib.Arith.PeanoNat.
+Import Stdlib.Arith.Compare_dec.
+Import Stdlib.Arith.Wf_nat.
 
 Section recursive_descent_parser.
   Context {Char} {HSL : StringLike Char} {HSLP : StringLikeProperties Char} {G : grammar Char}.
@@ -613,7 +613,7 @@ Defined.
   End general.
 End sound.
 
-Import Coq.Strings.String.
+Import Stdlib.Strings.String.
 Import ADTSynthesis.Parsers.ContextFreeGrammar.
 
 Fixpoint list_to_productions {T} (default : T) (ls : list (string * T)) : string -> T

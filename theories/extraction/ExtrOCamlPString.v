@@ -21,8 +21,8 @@ you will just need to add in the "_CoqProject" file: [test.v], [-I extracted]
 and the list of [extracted/*.ml] and [extracted/*.mli] files, then add
 [CAMLFLAGS += -w -33] in the Makefile.local file.  *)
 
-From Coq Require PrimString Extraction.
-From Coq Require Import ExtrOCamlInt63.
+From Stdlib Require PrimString Extraction.
+From Stdlib Require Import ExtrOCamlInt63.
 
 (** Primitive types and operators. *)
 

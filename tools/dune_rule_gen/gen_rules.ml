@@ -72,12 +72,12 @@ let main () =
 
   let stdlib =
     let directory = Path.make "theories" in
-    Coq_rules.Theory.{ directory; dirname = ["Coq"]; implicit = true; deps = [] }
+    Coq_rules.Theory.{ directory; dirname = ["Stdlib"]; implicit = true; deps = [] }
   in
 
   (* usually the else case here is Ltac2, but other libraries could be
      handled as well *)
-  let boot, implicit = if tname = ["Coq"]
+  let boot, implicit = if tname = ["Stdlib"]
     then Coq_rules.Boot_type.Stdlib, true
     else Coq_rules.Boot_type.Regular stdlib, false
   in

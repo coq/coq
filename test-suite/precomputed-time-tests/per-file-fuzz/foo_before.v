@@ -1,5 +1,5 @@
-Require Import Coq.Lists.List.
-Require Import Coq.ZArith.ZArith.
+Require Import Stdlib.Lists.List.
+Require Import Stdlib.ZArith.ZArith.
 Goal True.
   constructor.
 Qed.

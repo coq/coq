@@ -12,7 +12,7 @@ Module Bug12525.
   End M.
 End Bug12525.
 
-From Coq Require Lia.
+From Stdlib Require Lia.
 
 Module Bug12647.
   (* Similar to #12525 *)

@@ -502,7 +502,7 @@ Proof.
   rewrite (not_compat _ _ _ (H x)); auto.
 Qed.
 
-Require Export Coq.Logic.FunctionalExtensionality.
+Require Export Stdlib.Logic.FunctionalExtensionality.
 Print PLanguage.
 
 Program Definition PTransfo l1 l2 (tr: Transformation l1 l2) (h: isSharedTransfo l1 l2 tr):

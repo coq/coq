@@ -1,6 +1,6 @@
 (* Uselessly long but why not *)
 
-From Coq Require Export Utf8.
+From Stdlib Require Export Utf8.
 
 Local Set Universe Polymorphism.
 

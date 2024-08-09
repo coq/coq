@@ -1,5 +1,5 @@
-From Coq Require Import ssreflect.
-From Coq Require Import ssrbool.
+From Stdlib Require Import ssreflect.
+From Stdlib Require Import ssrbool.
 
 Set Printing All.
 Set Debug Ssreflect.

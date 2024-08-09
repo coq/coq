@@ -1,11 +1,11 @@
 File "./output/Qf_extraction.v", line 5, characters 11-14:
 Warning: The name nat is ambiguous, do you mean module Qf_extraction.nat or
-object Coq.Init.Datatypes.nat ?
+object Stdlib.Init.Datatypes.nat ?
 First choice is assumed, for the second one please use fully qualified name.
  [extraction-ambiguous-name,extraction,default]
 Quickfix:
 Replace File "./output/Qf_extraction.v", line 5, characters 11-14 with Qf_extraction.nat
-Replace File "./output/Qf_extraction.v", line 5, characters 11-14 with Coq.Init.Datatypes.nat
+Replace File "./output/Qf_extraction.v", line 5, characters 11-14 with Stdlib.Init.Datatypes.nat
 
 module Coq_nat =
  struct

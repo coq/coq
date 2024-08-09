@@ -1,4 +1,4 @@
-Require Import Coq.Arith.Arith.
+Require Import Stdlib.Arith.Arith.
 
 Module A.
 

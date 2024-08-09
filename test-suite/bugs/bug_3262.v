@@ -1,6 +1,6 @@
 (* Not having a [return] clause causes the [refine] at the bottom to stack overflow before f65fa9de8a4c9c12d933188a755b51508bd51921 *)
 
-Require Import Coq.Lists.List.
+Require Import Stdlib.Lists.List.
 Require Import Relations RelationClasses.
 
 Set Implicit Arguments.

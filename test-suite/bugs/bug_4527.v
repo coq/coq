@@ -5,14 +5,14 @@ then from 269 lines to 255 lines *)
 (* coqc version 8.5 (January 2016) compiled on Jan 23 2016 16:15:22 with OCaml
 4.01.0
    coqtop version 8.5 (January 2016) *)
-Require Import Coq.Init.Ltac.
+Require Import Stdlib.Init.Ltac.
 Inductive False := .
 Axiom proof_admitted : False.
 Tactic Notation "admit" := case proof_admitted.
-Require Coq.Init.Datatypes.
-Require Import Coq.Init.Tactics.
+Require Stdlib.Init.Datatypes.
+Require Import Stdlib.Init.Tactics.
 
-Import Coq.Init.Notations.
+Import Stdlib.Init.Notations.
 
 Global Set Universe Polymorphism.
 
@@ -23,9 +23,9 @@ Inductive True : Type :=
 Module Export Datatypes.
 
 Set Implicit Arguments.
-Notation nat := Coq.Init.Datatypes.nat.
-Notation O := Coq.Init.Datatypes.O.
-Notation S := Coq.Init.Datatypes.S.
+Notation nat := Stdlib.Init.Datatypes.nat.
+Notation O := Stdlib.Init.Datatypes.O.
+Notation S := Stdlib.Init.Datatypes.S.
 Notation two := (S (S O)).
 
 Record prod (A B : Type) := pair { fst : A ; snd : B }.

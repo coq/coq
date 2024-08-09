@@ -9,12 +9,12 @@
 (************************************************************************)
 
 
-Require Import Coq.Reals.Rdefinitions.
-Require Import Coq.Reals.Raxioms.
+Require Import Stdlib.Reals.Rdefinitions.
+Require Import Stdlib.Reals.Raxioms.
 Require Import Rfunctions.
-Require Import Coq.Reals.RIneq.
-Require Import Coq.Logic.FinFun.
-Require Import Coq.Logic.ConstructiveEpsilon.
+Require Import Stdlib.Reals.RIneq.
+Require Import Stdlib.Logic.FinFun.
+Require Import Stdlib.Logic.ConstructiveEpsilon.
 
 
 Definition enumeration (A : Type) (u : nat -> A) (v : A -> nat) : Prop :=

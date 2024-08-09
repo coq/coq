@@ -1,4 +1,4 @@
-Require Coq.extraction.Extraction.
+Require Stdlib.extraction.Extraction.
 
 Module Type TRIVIAL.
 Parameter t:Type.

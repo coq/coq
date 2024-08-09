@@ -1,6 +1,6 @@
 (* -*- coqchk-prog-args: ("-bytecode-compiler" "yes") -*- *)
-Require Import Coq.ZArith.ZArith.
-Require Import Coq.micromega.Lia.
+Require Import Stdlib.ZArith.ZArith.
+Require Import Stdlib.micromega.Lia.
 Open Scope Z_scope.
 
 (** Add [Z.to_euclidean_division_equations] to the end of [zify], just for this
@@ -596,7 +596,7 @@ Example Zquot_Zquot_le_lower_bound : forall a b q : Z, 0 < b -> q * b <= a -> q 
 Example Zquot_Zquot_le_upper_bound : forall a b q : Z, 0 < b -> a <= q * b -> a ÷ b <= q. Proof. intros; nia. Qed.
 Example Zquot_Z_quot_lt : forall a b : Z, 0 < a -> 2 <= b -> a ÷ b < a. Proof. intros; nia. Qed.
 Example Zquot_Zquot_lt_upper_bound : forall a b q : Z, 0 <= a -> 0 < b -> a < q * b -> a ÷ b < q. Proof. intros; nia. Qed.
-From Coq Require Zquot.
+From Stdlib Require Zquot.
 Example Zquot_Zquot_mod_unique_full : forall a b q r : Z, Zquot.Remainder a b r -> a = b * q + r -> q = a ÷ b /\ r = Z.rem a b. Proof. intros. Fail nia. Abort.
 Example Zquot_Z_quot_monotone : forall a b c : Z, 0 <= c -> a <= b -> a ÷ c <= b ÷ c. Proof. intros. Fail nia. Abort.
 Example Zquot_Zquot_mult_cancel_l : forall a b c : Z, c <> 0 -> c * a ÷ (c * b) = a ÷ b. Proof. intros. Abort.

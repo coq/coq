@@ -1,4 +1,4 @@
-Require Import Coq.Reals.Reals Coq.nsatz.Nsatz.
+Require Import Stdlib.Reals.Reals Stdlib.nsatz.Nsatz.
 Local Open Scope R.
 
 Goal forall x y : R,

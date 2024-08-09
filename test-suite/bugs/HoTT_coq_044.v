@@ -27,10 +27,10 @@ Fixpoint Row_eq (Ts : RowType)
 (* Toplevel input, characters 81-87:
 Error:
 In environment
-Ts : RowType (* Top.53 Coq.Init.Logic.8 *)
+Ts : RowType (* Top.53 Stdlib.Init.Logic.8 *)
 r1 : Row (* Top.54 Top.55 *) Ts
 r2 : Row (* Top.56 Top.57 *) Ts
-The term "Row (* Coq.Init.Logic.8 Top.59 *) Ts" has type
+The term "Row (* Stdlib.Init.Logic.8 Top.59 *) Ts" has type
  "Type (* max(Top.58+1, Top.59) *)" while it is expected to have type
- "Type (* Coq.Init.Logic.8 *)" (Universe inconsistency). *)
+ "Type (* Stdlib.Init.Logic.8 *)" (Universe inconsistency). *)
 Abort.

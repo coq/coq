@@ -470,7 +470,7 @@ Requests to the environment
       Locate nat.
       Locate Datatypes.O.
       Locate Init.Datatypes.O.
-      Locate Coq.Init.Datatypes.O.
+      Locate Stdlib.Init.Datatypes.O.
       Locate I.Dont.Exist.
 
 .. _printing-flags:
@@ -556,7 +556,7 @@ file is a particular case of a module called a *library file*.
    (if :n:`From @dirpath` is given) or :n:`{* @ident__implicit. }@qualid` (if
    the optional `From` clause is absent). :n:`{* @ident__implicit. }` represents
    the parts of the fully qualified name that are implicit.  For example,
-   `From Coq Require Nat` loads `Coq.Init.Nat` and `Init` is implicit.
+   `From Stdlib Require Nat` loads `Stdlib.Init.Nat` and `Init` is implicit.
    :n:`@ident` is the final component of the :n:`@qualid`.
 
    If a file is found, its logical name must be the same as the one

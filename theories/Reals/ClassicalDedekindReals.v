@@ -8,9 +8,9 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Coq.Logic.Eqdep_dec.
-Require Import Coq.Logic.FunctionalExtensionality.
-Require Import Coq.Logic.HLevels.
+Require Import Stdlib.Logic.Eqdep_dec.
+Require Import Stdlib.Logic.FunctionalExtensionality.
+Require Import Stdlib.Logic.HLevels.
 Require Import QArith.
 Require Import Qabs.
 Require Import ConstructiveCauchyReals.

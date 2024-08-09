@@ -1,5 +1,5 @@
-Require Import Coq.ZArith.BinInt.
-Require Import Coq.Classes.RelationClasses.
+Require Import Stdlib.ZArith.BinInt.
+Require Import Stdlib.Classes.RelationClasses.
 
 Axiom mod_mod : forall a b : Z, Z.modulo (Z.modulo b a) a = Z.modulo b a.
 

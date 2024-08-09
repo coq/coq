@@ -1,4 +1,4 @@
-Require Import Coq.Program.Program.
+Require Import Stdlib.Program.Program.
 (* Set Universe Polymorphism. *)
 Set Printing Universes.
 
@@ -36,7 +36,7 @@ Qed.
 Print quote_mult_obligation_1.
 (* quote_mult_obligation_1@{} =
 let Top_internal_eq_rew_dep :=
-  fun (A : Type@{Coq.Init.Logic.8}) (x : A) (P : forall a : A, x = a -> Type@{Top.5} (* <- XXX *))
+  fun (A : Type@{Stdlib.Init.Logic.8}) (x : A) (P : forall a : A, x = a -> Type@{Top.5} (* <- XXX *))
     (f : P x eq_refl) (y : A) (e : x = y) =>
   match e as e0 in (_ = y0) return (P y0 e0) with
   | eq_refl => f

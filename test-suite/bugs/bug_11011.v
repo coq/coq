@@ -1,6 +1,6 @@
 Require Import Setoid.
-Require Import Coq.Classes.CRelationClasses.
-Require Import Coq.Classes.CMorphisms.
+Require Import Stdlib.Classes.CRelationClasses.
+Require Import Stdlib.Classes.CMorphisms.
 
 Parameter B C : Type.
 Parameter P : Type -> Type -> Type.

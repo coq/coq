@@ -1,4 +1,4 @@
-From Coq Require Export Lia.
+From Stdlib Require Export Lia.
 Set Mangle Names.
 Lemma test (n : nat) : n <= 10 -> n <= 20.
 Proof. lia. Qed.

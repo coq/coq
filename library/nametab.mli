@@ -265,3 +265,5 @@ module Modules : sig
   val unfreeze : t -> unit
   val summary_tag : t Summary.Dyn.tag
 end
+
+val warn_deprecated_dirpath_Coq : ?loc:Loc.t -> module_ident list * Id.t -> unit
