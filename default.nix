@@ -111,7 +111,7 @@ stdenv.mkDerivation rec {
 
   enableParallelBuilding = true;
 
-  buildFlags = [ "world" ];
+  buildFlags = [ "world" ] ++ optional buildIde "coqide";
 
   # TODO, building of documentation package when not in dev mode
   # https://github.com/coq/coq/issues/16198

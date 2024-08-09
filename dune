@@ -21,7 +21,7 @@
 
 (alias
  (name default)
- (deps coq-core.install coq-stdlib.install coqide-server.install coqide.install))
+ (deps coq-core.install coq-stdlib.install coqide-server.install))
 
 (install
  (section lib)
