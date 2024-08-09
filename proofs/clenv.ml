@@ -679,7 +679,7 @@ let rec mk_refgoals env sigma goalacc conclty trm = match trm with
   gl::goalacc, conclty, sigma, ev
 | RfApp (f, l) ->
   let (acc',hdty,sigma,applicand) = match f with
-  | RfGround f when Termops.is_template_polymorphic_ind env sigma f ->
+  | RfGround f when Termops.is_template_polymorphic_ref env sigma f ->
     let ty =
       (* Template polymorphism of definitions and inductive types *)
       let args, _ = List.split_when (fun p -> not (is_ground p)) l in
