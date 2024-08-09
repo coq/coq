@@ -417,78 +417,82 @@ let cases_pattern_expr_of_name { CAst.loc; v = na } = CAst.make ?loc @@ match na
   | Anonymous -> CPatAtom None
   | Name id   -> CPatAtom (Some (qualid_of_ident ?loc id))
 
-type 'r env = {
-  constrs : 'r list;
-  constrlists : 'r list list;
-  binders : kinded_cases_pattern_expr list;
-  binderlists : local_binder_expr list list;
-}
+let push a subst = NtnTypeArg a :: subst
 
-let push_constr subst v = { subst with constrs = v :: subst.constrs }
+type env = (constr_expr, kinded_cases_pattern_expr, local_binder_expr list) notation_arg_type list
 
-let push_item : type s r. s target -> (s, r) entry -> s env -> r -> s env = fun forpat e subst v ->
+let push_item : type s r. s target -> (s, r) entry -> env -> r -> env = fun forpat e subst v ->
+let open Glob_term in
 match e with
-| TTConstr _ -> push_constr subst v
-| TTIdent -> { subst with binders = (cases_pattern_expr_of_id v, Glob_term.Explicit) :: subst.binders }
-| TTName -> { subst with binders = (cases_pattern_expr_of_name v, Glob_term.Explicit) :: subst.binders }
-| TTPattern _ -> { subst with binders = (v, Glob_term.Explicit) :: subst.binders }
-| TTBinder o -> { subst with binders = v :: subst.binders }
-| TTOpenBinderList -> { subst with binderlists = v :: subst.binderlists }
-| TTClosedBinderListPure _ -> { subst with binderlists = List.flatten v :: subst.binderlists }
-| TTClosedBinderListOther (TTIdent, _) -> { subst with binderlists = List.map (fun a -> CLocalPattern (cases_pattern_expr_of_id a)) v :: subst.binderlists }
-| TTClosedBinderListOther (TTName, _) -> { subst with binderlists = List.map (fun a -> CLocalPattern (cases_pattern_expr_of_name a)) v :: subst.binderlists }
-| TTClosedBinderListOther (TTPattern _, _) -> { subst with binderlists = List.map (fun a -> CLocalPattern a) v :: subst.binderlists }
+| TTConstr _ ->
+  begin match forpat with
+  | ForConstr -> push (NtnTypeArgConstr v) subst
+  | ForPattern -> push (NtnTypeArgPattern (v, Explicit)) subst
+  end
+| TTIdent -> push (NtnTypeArgPattern (cases_pattern_expr_of_id v, Glob_term.Explicit)) subst
+| TTName -> push (NtnTypeArgPattern (cases_pattern_expr_of_name v, Glob_term.Explicit)) subst
+| TTPattern _ -> push (NtnTypeArgPattern (v, Glob_term.Explicit)) subst
+| TTBinder o -> push (NtnTypeArgPattern v) subst
+| TTOpenBinderList -> push (NtnTypeArgBinders v) subst
+| TTClosedBinderListPure _ -> push (NtnTypeArgBinders (List.flatten v)) subst
+| TTClosedBinderListOther (TTIdent, _) -> push (NtnTypeArgBinders (List.map (fun a -> CLocalPattern (cases_pattern_expr_of_id a)) v)) subst
+| TTClosedBinderListOther (TTName, _) -> push (NtnTypeArgBinders (List.map (fun a -> CLocalPattern (cases_pattern_expr_of_name a)) v)) subst
+| TTClosedBinderListOther (TTPattern _, _) -> push (NtnTypeArgBinders (List.map (fun a -> CLocalPattern a) v)) subst
 | TTClosedBinderListOther _ -> user_err (Pp.str "Invalid binder list entry.")
 | TTBigint ->
   begin match forpat with
-  | ForConstr ->  push_constr subst (CAst.make @@ CPrim (Number (NumTok.Signed.of_int_string v)))
-  | ForPattern -> push_constr subst (CAst.make @@ CPatPrim (Number (NumTok.Signed.of_int_string v)))
+  | ForConstr -> push (NtnTypeArgConstr (CAst.make @@ CPrim (Number (NumTok.Signed.of_int_string v)))) subst
+  | ForPattern -> push (NtnTypeArgPattern (CAst.make @@ CPatPrim (Number (NumTok.Signed.of_int_string v)), Explicit)) subst
   end
 | TTGlobal ->
   begin match forpat with
-  | ForConstr  -> push_constr subst (CAst.make @@ CRef (v, None))
-  | ForPattern -> push_constr subst (CAst.make @@ CPatAtom (Some v))
+  | ForConstr  -> push (NtnTypeArgConstr (CAst.make @@ CRef (v, None))) subst
+  | ForPattern -> push (NtnTypeArgPattern (CAst.make @@ CPatAtom (Some v), Explicit)) subst
   end
-| TTConstrList _ -> { subst with constrlists = v :: subst.constrlists }
+| TTConstrList _ ->
+  begin match forpat with
+  | ForConstr -> NtnTypeArgList (List.map (fun x -> NtnTypeArg (NtnTypeArgConstr x)) v) :: subst
+  | ForPattern -> NtnTypeArgList (List.map (fun x -> NtnTypeArg (NtnTypeArgPattern (x, Explicit))) v) :: subst
+  end
 
 type (_, _) ty_symbol =
 | TyTerm : 'a Tok.p -> ('s, 'a) ty_symbol
-| TyNonTerm : 's target * ('s, 'a) entry * ('s, 'a) mayrec_symbol * bool -> ('s, 'a) ty_symbol
+| TyNonTerm : 's target * ('s, 'a) entry * ('s, 'a) mayrec_symbol * Id.t option -> ('s, 'a) ty_symbol
 
 type ('self, _, 'r) ty_rule =
 | TyStop : ('self, 'r, 'r) ty_rule
 | TyNext : ('self, 'a, 'r) ty_rule * ('self, 'b) ty_symbol -> ('self, 'b -> 'a, 'r) ty_rule
 | TyMark : int * bool * int * ('self, 'a, 'r) ty_rule -> ('self, 'a, 'r) ty_rule
 
-type 'r gen_eval = Loc.t -> 'r env -> 'r
+type 'r gen_eval = Loc.t -> env -> 'r
 
-let rec ty_eval : type s a. (s, a, Loc.t -> s) ty_rule -> s gen_eval -> s env -> a = function
+let rec ty_eval : type s a. (s, a, Loc.t -> s) ty_rule -> s gen_eval -> env -> a = function
 | TyStop ->
   fun f env loc -> f loc env
 | TyNext (rem, TyTerm _) ->
   fun f env _ -> ty_eval rem f env
-| TyNext (rem, TyNonTerm (_, _, _, false)) ->
+| TyNext (rem, TyNonTerm (_, _, _, None)) ->
   fun f env _ -> ty_eval rem f env
-| TyNext (rem, TyNonTerm (forpat, e, _, true)) ->
+| TyNext (rem, TyNonTerm (forpat, e, _, Some id)) ->
   fun f env v ->
     ty_eval rem f (push_item forpat e env v)
 | TyMark (n, b, p, rem) ->
   fun f env ->
-    let heads, constrs = List.chop n env.constrs in
-    let constrlists, constrs =
+    let heads, env = List.chop n env in
+    let env =
       if b then
          (* We rearrange constrs = c1..cn rem and constrlists = [d1..dr e1..ep] rem' into
             constrs = e1..ep rem and constrlists [c1..cn d1..dr] rem' *)
-         let constrlist = List.hd env.constrlists in
+         let constrlist = match List.hd env with NtnTypeArgList l -> l | _ -> anomaly (Pp.str "TyMark: List expected") in
          let constrlist, tail = List.chop (List.length constrlist - p) constrlist in
-         (heads @ constrlist) :: List.tl env.constrlists, tail @ constrs
+         NtnTypeArgList (heads @ constrlist) :: tail @ List.tl env
       else
          (* We rearrange constrs = c1..cn e1..ep rem into
             constrs = e1..ep rem and add a constr list [c1..cn] *)
         let constrlist, tail = List.chop (n - p) heads in
-        constrlist :: env.constrlists, tail @ constrs
+        NtnTypeArgList constrlist :: tail @ env
     in
-    ty_eval rem f { env with constrs; constrlists; }
+    ty_eval rem f env
 
 type ('s, 'a, 'r) mayrec_rule =
 | MayRecRNo : ('s, Gramlib.Grammar.norec, 'a, 'r) Rule.t -> ('s, 'a, 'r) mayrec_rule
@@ -522,8 +526,7 @@ let make_ty_rule assoc from forpat prods =
     let AnyTyRule r = make_ty_rule rem in
     let TTAny e = interp_entry forpat e in
     let s = symbol_of_entry assoc from e in
-    let bind = match var with None -> false | Some _ -> true in
-    AnyTyRule (TyNext (r, TyNonTerm (forpat, e, s, bind)))
+    AnyTyRule (TyNext (r, TyNonTerm (forpat, e, s, var)))
   | GramConstrListMark (n, b, p) :: rem ->
     let AnyTyRule r = make_ty_rule rem in
     AnyTyRule (TyMark (n, b, p, r))
@@ -576,10 +579,8 @@ let rec pure_sublevels' assoc from forpat level = function
 
 let make_act : type r. r target -> _ -> r gen_eval = function
 | ForConstr -> fun notation loc env ->
-  let env = (env.constrs, env.constrlists, env.binders, env.binderlists) in
   CAst.make ~loc @@ CNotation (None, notation, env)
 | ForPattern -> fun notation loc env ->
-  let env = (env.constrs, env.constrlists, env.binders) in
   CAst.make ~loc @@ CPatNotation (None, notation, env, [])
 
 let extend_constr state forpat ng =
@@ -593,8 +594,7 @@ let extend_constr state forpat ng =
     let needed_levels, state = register_empty_levels state isforpat pure_sublevels in
     let (pos,p4assoc,name,reinit), state = find_position state custom isforpat assoc level in
     let empty_rules = List.map (prepare_empty_levels forpat) needed_levels in
-    let empty = { constrs = []; constrlists = []; binders = []; binderlists = [] } in
-    let act = ty_eval r (make_act forpat ng.notgram_notation) empty in
+    let act = ty_eval r (make_act forpat ng.notgram_notation) [] in
     let rule =
       let r = match ty_erase r with
         | MayRecRNo symbs -> Pcoq.Production.make symbs act
