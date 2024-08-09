@@ -242,10 +242,6 @@ let try_locate_absolute_library dir =
 
 let try_locate_qualified_library lib = match lib with
 | PhysicalFile f ->
-  let () =
-    if not (System.file_exists_respecting_case "" f) then
-      error_lib_not_found { dirpath = []; basename = f; }
-  in
   let dir = Filename.dirname f in
   let base = Filename.chop_extension (Filename.basename f) in
   let dir = extend_dirpath (find_logical_path dir) (Id.of_string base) in
