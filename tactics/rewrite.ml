@@ -555,6 +555,7 @@ let rewrite_core_unif_flags = {
   Unification.use_meta_bound_pattern_unification = true;
   Unification.allowed_evars = Evarsolve.AllowedEvars.all;
   Unification.restrict_conv_on_strict_subterms = false;
+  Unification.firstorder_function_conversion = Unification.firstorder_function_conversion ();
   Unification.modulo_betaiota = false;
   Unification.modulo_eta = true;
 }
