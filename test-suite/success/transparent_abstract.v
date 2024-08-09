@@ -5,7 +5,6 @@ Goal True /\ True.
 Proof.
   split.
   transparent_abstract exact I using foo.
-  let x := (eval hnf in foo) in constr_eq x I.
   let x := constr:(ltac:(constructor) : True) in
   let T := type of x in
   let x := constr:(_ : by_transparent_abstract x) in

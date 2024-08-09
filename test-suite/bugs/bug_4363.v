@@ -2,7 +2,7 @@ Set Printing Universes.
 Definition foo : Type.
 Proof.
   assert (H : Set) by abstract (assert Type by abstract exact Type using bar; exact nat).
-  exact bar.
+  exact H.
 Defined. (* Toplevel input, characters 0-8:
 Error:
 The term "(fun _ : Set => bar) foo_subproof" has type
