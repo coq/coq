@@ -639,7 +639,7 @@ let interp_mutual_inductive_gen env0 ~flags udecl (uparamsl,paramsl,indl) notati
   let ninds = List.length indl in
 
   (* In case of template polymorphism, we need to compute more constraints *)
-  let unconstrained_sorts = not flags.poly in
+  let unconstrained_sorts = not flags.poly && env0.env_typing_flags.cumulative_prop in
 
   let sigma, env_params, (ctx_params, env_uparams, ctx_uparams, userimpls, useruimpls, impls, udecl, variances) =
     interp_params ~unconstrained_sorts env0 udecl uparamsl paramsl

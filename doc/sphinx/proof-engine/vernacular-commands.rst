@@ -1097,6 +1097,12 @@ Controlling Typing Flags
    This :term:`boolean attribute` is similar to the :flag:`Universe Checking` flag, but on a per-declaration basis.
    Disable universe checking locally with ``bypass_check(universes)``.
 
+.. flag:: Cumulative Prop
+
+   This :term:`flag` can be used to control whether `Prop` is in
+   cumulativity with the predicative universes (`Set` and instantiations of `Type`).
+   It is on by default.
+
 .. cmd:: Print Typing Flags
 
    Print the status of the three typing flags: guard checking, positivity checking
