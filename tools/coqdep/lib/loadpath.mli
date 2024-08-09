@@ -67,7 +67,3 @@ val add_coqlib_known : State.t -> bool -> root -> dirname -> dirpath -> basename
    it hasn't. We may also use this to warn if ap hysical path is met
    twice.*)
 val find_dir_logpath : string -> string list
-
-(* Used only in "canonize" *)
-val absolute_dir : string -> string
-val absolute_file_name : filename_concat:(string -> string -> string) -> string -> string option -> string
