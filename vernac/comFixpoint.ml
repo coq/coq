@@ -288,10 +288,12 @@ let position_of_argument ctx binders na =
     Found k -> k
 
 (* Interpret the index of a recursion order annotation *)
-let find_rec_annot ~program_mode ~function_mode Vernacexpr.{fname={CAst.loc}; binders} ctx = function
+let find_rec_annot ~program_mode ~function_mode env sigma Vernacexpr.{fname={CAst.loc}; binders} ctx typ = function
   | None ->
-    if Int.equal (Context.Rel.nhyps ctx) 0 then CErrors.user_err ?loc Pp.(str "A fixpoint needs at least one parameter.");
-    None, List.interval 0 (Context.Rel.nhyps ctx - 1)
+    let ctx', _ = Reductionops.whd_decompose_prod_decls (push_rel_context ctx env) sigma typ in
+    let n = Context.Rel.nhyps ctx + Context.Rel.nhyps ctx' in
+    if Int.equal n 0 then CErrors.user_err ?loc Pp.(str "A fixpoint needs at least one parameter.");
+    None, List.interval 0 (n - 1)
   | Some CAst.{v=rec_order;loc} ->
     let default_order r = Option.default (CAst.make @@ CRef (lt_ref,None)) r in
     match rec_order with
@@ -315,7 +317,7 @@ let find_rec_annot ~program_mode ~function_mode Vernacexpr.{fname={CAst.loc}; bi
           | None, rfel -> default_order rfel in
         Some (r, mes), [] (* useless: will use Fix_sub *)
 
-let interp_rec_annot ~program_mode ~function_mode sigma fixl ctxl ccll rec_order =
+let interp_rec_annot ~program_mode ~function_mode env sigma fixl ctxl ccll rec_order =
   let open Pretyping in
   let nowf () = List.map (fun _ -> None) fixl in
   match rec_order with
@@ -325,7 +327,7 @@ let interp_rec_annot ~program_mode ~function_mode sigma fixl ctxl ccll rec_order
        doesn't seem to worth the effort (except for huge mutual
        fixpoints ?) *)
     | CFixRecOrder fix_orders ->
-      let fixwf, possible_guard = List.split (List.map3 (find_rec_annot ~program_mode ~function_mode) fixl ctxl fix_orders) in
+      let fixwf, possible_guard = List.split (List.map4 (find_rec_annot ~program_mode ~function_mode env sigma) fixl ctxl ccll fix_orders) in
       Decls.Fixpoint, fixwf, {possibly_cofix = false; possible_fix_indices = possible_guard}
     | CCoFixRecOrder -> Decls.CoFixpoint, nowf (), {possibly_cofix = true; possible_fix_indices = List.map (fun _ -> []) fixl}
     | CUnknownRecOrder -> Decls.Definition, nowf (), RecLemmas.find_mutually_recursive_statements sigma ctxl ccll
@@ -421,7 +423,7 @@ let interp_mutual_definition env ~program_mode ~function_mode rec_order fixl =
   let sigma, (fixccls,fixrs,fixcclimps) =
     on_snd List.split3 @@
       List.fold_left3_map (interp_fix_ccl ~program_mode) sigma fixctximpenvs fixenv fixl in
-  let fixkind, fixwfs, possible_guard = interp_rec_annot ~program_mode ~function_mode sigma fixl fixctxs fixccls rec_order in
+  let fixkind, fixwfs, possible_guard = interp_rec_annot ~program_mode ~function_mode env sigma fixl fixctxs fixccls rec_order in
   let sigma, (fixextras, fixwfs, fixwfimps) =
     on_snd List.split3 @@ (List.fold_left4_map (interp_wf ~program_mode env) sigma fixnames fixctxs fixccls fixwfs) in
   let fixtypes = List.map3 (build_fix_type sigma) fixctxs fixccls fixextras in
