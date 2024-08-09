@@ -411,15 +411,14 @@ let evars_to_goals p evm =
 (** Making local hints  *)
 let make_resolve_hyp env sigma st only_classes decl db =
   let id = NamedDecl.get_id decl in
-  let cty = Evarutil.nf_evar sigma (NamedDecl.get_type decl) in
-  let iscl env ty =
-    let ctx, ar = decompose_prod_decls sigma ty in
+  let cty = NamedDecl.get_type decl in
+  let is_class =
+    let ctx, ar = decompose_prod_decls sigma cty in
       match EConstr.kind sigma (fst (decompose_app sigma ar)) with
       | Const (c,_) -> is_class (GlobRef.ConstRef c)
       | Ind (i,_) -> is_class (GlobRef.IndRef i)
       | _ -> false
   in
-  let is_class = iscl env cty in
   let keep = not only_classes || is_class in
     if keep then
       let id = GlobRef.VarRef id in
