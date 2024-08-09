@@ -449,6 +449,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Wellfounded/Inverse_Image.v
     theories/Wellfounded/Lexicographic_Exponentiation.v
     theories/Wellfounded/Lexicographic_Product.v
+    theories/Wellfounded/List_Extension.v
     theories/Wellfounded/Transitive_Closure.v
     theories/Wellfounded/Union.v
     theories/Wellfounded/Wellfounded.v

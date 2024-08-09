@@ -85,6 +85,14 @@ Section Properties.
       - constructor 2.
     Qed.
 
+    Lemma clos_t_clos_rt :
+      inclusion (clos_trans R) (clos_refl_trans R).
+    Proof.
+      induction 1 as [? ?| ].
+      - constructor. auto.
+      - econstructor 3; eassumption.
+    Qed.
+
     Lemma clos_rt_t : forall x y z,
       clos_refl_trans R x y -> clos_trans R y z ->
       clos_trans R x z.
