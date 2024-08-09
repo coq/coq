@@ -366,8 +366,8 @@ let rec compare_under e1 c1 e2 c2 =
 
 
 let rec fast_test lft1 term1 lft2 term2 = match fterm_of term1, fterm_of term2 with
-  | FLIFT (i, term1), (FLIFT _ | FCLOS _) -> fast_test (el_shft i lft1) term1 lft2 term2
-  | FCLOS _, FLIFT (j, term2) -> fast_test lft1 term1 (el_shft j lft2) term2
+  | FLIFT (i, term1), (FLIFT _ | FCLOS _) -> fast_test (el_popn i lft1) term1 lft2 term2
+  | FCLOS _, FLIFT (j, term2) -> fast_test lft1 term1 (el_popn j lft2) term2
   | FCLOS (c1, (e1,u1)), FCLOS (c2, (e2,u2)) ->
     eq_lift lft1 lft2 &&
     compare_under (e1, u1) c1 (e2, u2) c2
@@ -528,7 +528,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
       end
 
     (* other constructors *)
-    | (FLambda _, FLambda _) ->
+    | ((FLambda _ | FLambdaF _), (FLambda _ | FLambdaF _)) ->
         (* Inconsistency: we tolerate that v1, v2 contain shift and update but
            we throw them away *)
         if not (is_empty_stack v1 && is_empty_stack v2) then
@@ -552,7 +552,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         ccnv cv_pb l2r (push_relevance infos x1) (el_lift el1) (el_lift el2) (mk_clos (usubs_lift e) c2) (mk_clos (usubs_lift e') c'2) cuniv
 
     (* Eta-expansion on the fly *)
-    | (FLambda _, _) ->
+    | ((FLambda _ | FLambdaF _), _) ->
         let () = match v1 with
         | [] -> ()
         | _ ->
@@ -562,7 +562,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         let infos = push_relevance infos x1 in
         eqappr CONV l2r infos
           (el_lift lft1, (bd1, [])) (el_lift lft2, (hd2, eta_expand_stack infos.cnv_inf x1 v2)) cuniv
-    | (_, FLambda _) ->
+    | (_, (FLambda _ | FLambdaF _)) ->
         let () = match v2 with
         | [] -> ()
         | _ ->
@@ -765,7 +765,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
       convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
 
      (* Should not happen because both (hd1,v1) and (hd2,v2) are in whnf *)
-     | ( (FLetIn _, _) | (FCaseT _,_) | (FApp _,_) | (FCLOS _,_) | (FLIFT _,_)
+     | ( ((FLetIn _ | FLetInF _), _) | (FCaseT _,_) | (FApp _,_) | (FCLOS _,_) | (FLIFT _,_)
        | (_, FLetIn _) | (_,FCaseT _) | (_,FApp _) | (_,FCLOS _) | (_,FLIFT _)
        | (FLOCKED,_) | (_,FLOCKED) ) -> assert false
 

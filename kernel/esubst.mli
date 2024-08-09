@@ -44,6 +44,13 @@ val subs_lift: 'a subs -> 'a subs
 (** Assuming Γ ⊢ σ : Δ and |Ξ| = n, then Γ, Ξ ⊢ subs_liftn n σ : Δ, Ξ *)
 val subs_liftn: int -> 'a subs -> 'a subs
 
+(** Unary variant of {!subst_popn}. *)
+val subs_pop: 'a subs -> 'a subs
+
+(** Assuming Γ ⊢ σ : Δ, Δ' and |Δ'| = n, then Γ ⊢ subs_popn n σ : Δ *)
+val subs_popn: int -> 'a subs -> 'a subs
+
+
 (** [expand_rel k subs] expands de Bruijn [k] in the explicit substitution
     [subs]. The result is either (Inl(lams,v)) when the variable is
     substituted by value [v] under [lams] binders (i.e. v *has* to be
@@ -56,11 +63,16 @@ val expand_rel: int -> 'a subs -> (int * 'a, int * int option) Util.union
 (** Tests whether a substitution behaves like the identity *)
 val is_subs_id: 'a subs -> bool
 
-(** Composition of substitutions: [comp mk_clos s1 s2] computes a
+(** Composition of substitutions: [comp mk_clos lift_clos s1 s2] computes a
     substitution equivalent to applying s2 then s1. Argument
     mk_clos is used when a closure has to be created, i.e. when
-    s1 is applied on an element of s2.
+    s1 is applied on an element of s2. Argument lift_clos is used when
+    an element of s1 needs to be lifted.
+
+    That is, if Γ ⊢ σ : Δ and Δ ⊢ τ : Ξ, then Γ ⊢ comp mk lft σ τ : Ξ.
 *)
+val comp : ('a subs -> 'b -> 'a) -> (int -> 'a -> 'a) -> 'a subs -> 'b subs -> 'a subs
+
 
 (** {6 Compact representation } *)
 (** Compact representation of explicit relocations
@@ -88,8 +100,15 @@ val el_shft : int -> lift -> lift
 (** Assuming Γ ⊢ σ : Δ and |Ξ| = n, then Γ, Ξ ⊢ el_liftn n σ : Δ, Ξ *)
 val el_liftn : int -> lift -> lift
 
-(** Unary variant of {!subst_liftn}. *)
+(** Unary variant of {!el_liftn}. *)
 val el_lift : lift -> lift
+
+(** Assuming Γ ⊢ σ : Δ, Δ' and |Δ'| = n, then Γ ⊢ el_popn n σ : Δ *)
+val el_popn: int -> lift -> lift
+
+(** Unary variant of {!el_popn}. *)
+val el_pop: lift -> lift
+
 
 (** Assuming Γ₁, A, Γ₂ ⊢ σ : Δ₁, A, Δ₂ and Δ₁, A, Δ₂ ⊢ n : A,
     then Γ₁, A, Γ₂ ⊢ reloc_rel n σ : A *)

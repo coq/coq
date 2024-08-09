@@ -58,6 +58,34 @@ let el_liftn n el = if Int.equal n 0 then el else el_liftn_rec n el
 
 let el_lift el = el_liftn_rec 1 el
 
+(* el_pop_rec is the n-ary tailrec variant of a function whose typing rules would be
+   given as follows. Assume Γ ⊢ e : Δ, A, then
+   - Γ := Ξ, A, Ω for some Ξ and Ω with |Ω| := fst (el_pop_rec e)
+   - Ξ ⊢ snd (el_pop e) : Δ
+*)
+let rec el_pop_rec n i e =
+  if Int.equal n 0 then i, e
+  else match e with
+  | ELID -> i, e
+  | ELLFT (k, e) ->
+    if k <= n then el_pop_rec (n - k) i e
+    else i, ELLFT (k - n, e)
+  | ELSHFT (e, k) -> el_pop_rec n (i + k) e
+
+(* [el_popn n e] precomposes e with a relocation of magnitude n (pops its n top-most elements)
+   Assuming Γ ⊢ e : Δ, Δ' with |Δ'| = n, then Γ ⊢ el_popn n e : Δ
+*)
+let el_popn n e =
+  let k, e = el_pop_rec n 0 e in
+  el_shft (k + n) e
+
+(* [el_pop e] precomposes e with a relocation (pops its top-most element)
+   Assume Γ ⊢ e : Δ, A, then Γ ⊢ el_pop e : Δ
+*)
+let el_pop e =
+  let k, e = el_pop_rec 1 0 e in
+  el_shft (k + 1) e
+
 (* relocation of de Bruijn n in an explicit lift *)
 let rec reloc_rel n = function
   | ELID -> n
@@ -215,33 +243,66 @@ let subs_id n = Nil (0, n)
 
 let subs_shft (n, s) = write n s
 
-(* pop is the n-ary tailrec variant of a function whose typing rules would be
-   given as follows. Assume Γ ⊢ e : Δ, A, then
-   - Γ := Ξ, A, Ω for some Ξ and Ω with |Ω| := fst (pop e)
-   - Ξ ⊢ snd (pop e) : Δ
-*)
-let rec pop n i e =
-  if Int.equal n 0 then i, e
-  else match e with
-  | ELID -> i, e
-  | ELLFT (k, e) ->
-    if k <= n then pop (n - k) i e
-    else i, ELLFT (k - n, e)
-  | ELSHFT (e, k) -> pop n (i + k) e
+let rec tree_pop h n i rem s =
+  if Int.equal n 0 then i, Cons (h, s, rem)
+  else match s with
+  | Leaf _ ->
+    if Int.equal n 1 then
+      i, rem
+    else assert false
+  | Node (w, _, t1, t2, _) ->
+    let h = h lsr 1 in
+    let n = n - 1 in
+    let i = cmp w i in
+    if n - 1 >= h then
+      tree_pop h (n - h) (cmp (eval t1) i) rem t2
+    else
+      tree_pop h n i (Cons (h, t2, rem)) t1
 
-let apply mk e = function
+(* subs_pop_rec is the n-ary tailrec variant of a function whose typing rules would be
+   given as follows. Assume Γ ⊢ σ : Δ, A, then
+   - Γ := Ξ, Ω for some Ξ and Ω with |Ω| := fst (subs_pop_rec σ)
+   - Ξ ⊢ snd (subs_pop_rec σ) : Δ
+*)
+let rec subs_pop_rec n i s =
+  if Int.equal n 0 then
+    i, s
+  else match s with
+  | Nil (w, m) ->
+    i + n, Nil (w, m - n)
+  | Cons (h, t, rem) ->
+    if n >= h then
+      subs_pop_rec (n - h) (cmp (eval t) i) rem
+    else
+      tree_pop h n i rem t
+
+(* [subs_popn n σ] precomposes σ with a relocation of magnitude n (pops its n top-most elements)
+   Assuming Γ ⊢ σ : Δ, Δ' with |Δ'| = n, then Γ ⊢ subs_popn n σ : Δ
+*)
+let subs_popn n e =
+  let k, e = subs_pop_rec n 0 e in
+  write k e
+
+(* [subs_pop e] precomposes σ with a relocation (pops its top-most element)
+   Assume Γ ⊢ σ : Δ, A, then Γ ⊢ subs_pop σ : Δ
+*)
+let subs_pop e =
+  let k, e = subs_pop_rec 1 0 e in
+  write k e
+
+let apply_lift mk e = function
 | Var i -> Var (reloc_rel i e)
 | Arg v -> Arg (mk e v)
 
-let rec tree_map mk e = function
+let rec lift_tree mk e = function
 | Leaf (w, x) ->
-  let (n, e) = pop w 0 e in
-  Leaf (w + n, apply mk e x), e
+  let (n, e) = el_pop_rec w 0 e in
+  Leaf (w + n, apply_lift mk e x), e
 | Node (w, x, t1, t2, _) ->
-  let (n, e) = pop w 0 e in
-  let x = apply mk e x in
-  let t1, e = tree_map mk e t1 in
-  let t2, e = tree_map mk e t2 in
+  let (n, e) = el_pop_rec w 0 e in
+  let x = apply_lift mk e x in
+  let t1, e = lift_tree mk e t1 in
+  let t2, e = lift_tree mk e t2 in
   Node (w + n, x, t1, t2, cmp (eval t1) (eval t2)), e
 
 let rec lift_id e n = match e with
@@ -253,12 +314,50 @@ let rec lift_id e n = match e with
 
 let rec lift_subst mk e s = match s with
 | Nil (w, m) ->
-  let (n, e) = pop w 0 e in
+  let (n, e) = el_pop_rec w 0 e in
   write (w + n) (lift_id e m)
 | Cons (h, t, rem) ->
-  let t, e = tree_map mk e t in
+  let t, e = lift_tree mk e t in
   let rem = lift_subst mk e rem in
   Cons (h, t, rem)
+
+
+let rec resize m = function
+| Nil (w, _) ->
+  if m < 0 then assert false (* Cannot contract a non-id substitution *)
+  else Nil (w, m)
+| Cons (h, t, rem) ->
+  Cons (h, t, resize (m - h) rem)
+
+let apply_subs mk lft s1 = function
+| Arg v -> Arg (mk s1 v)
+| Var i ->
+  begin match expand_rel i s1 with
+  | Inl (k, x) -> Arg (lft k x)
+  | Inr (i, _) -> Var i
+  end
+
+let rec tree_comp mk lft s1 = function
+| Leaf (w, x) ->
+  let n, s1 = subs_pop_rec w 0 s1 in
+  let x = apply_subs mk lft s1 x in
+  Leaf (n, x), s1
+| Node (w, x, t1, t2, _) ->
+  let n, s1 = subs_pop_rec w 0 s1 in
+  let x = apply_subs mk lft s1 x in
+  let t1, s1 = tree_comp mk lft s1 t1 in
+  let t2, s1 = tree_comp mk lft s1 t2 in
+  Node (n, x, t1, t2, cmp (eval t1) (eval t2)), s1
+
+let rec comp mk lft s1 = function
+| Nil (w, m) ->
+  let n, s1 = subs_pop_rec w 0 s1 in
+  write n (resize m s1)
+| Cons (h, t, rem) ->
+  let t, s1 = tree_comp mk lft s1 t in
+  let rem = comp mk lft s1 rem in
+  Cons (h, t, rem)
+
 
 module Internal =
 struct
