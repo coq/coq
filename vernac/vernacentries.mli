@@ -71,3 +71,22 @@ val preprocess_inductive_decl
   -> Vernacexpr.inductive_kind
   -> (Vernacexpr.inductive_expr * Vernacexpr.notation_declaration list) list
   -> Preprocessed_Mind_decl.t
+
+module DefAttributes : sig
+
+type t = {
+  scope : Locality.definition_scope;
+  locality : bool option;
+  polymorphic : bool;
+  program : bool;
+  user_warns : Globnames.extended_global_reference UserWarn.with_qf option;
+  canonical_instance : bool;
+  typing_flags : Declarations.typing_flags option;
+  using : Vernacexpr.section_subset_expr option;
+  reversible : bool;
+  clearbody: bool option;
+}
+
+val def_attributes : t Attributes.attribute
+
+end
