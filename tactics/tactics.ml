@@ -1006,7 +1006,7 @@ let reduce redexp cl =
   let check = match redexp with Fold _ | Pattern _ -> true | _ -> false in
   let reorder = match redexp with
   | Fold _ | Pattern _ -> AnyHypConv
-  | Simpl (flags, _) | Cbv flags | Cbn flags | Lazy flags ->
+  | Simpl (flags, _) | Cbv flags | Cbn flags | Kred flags | Lazy flags ->
     if is_local_flag env flags then LocalHypConv else StableHypConv
   | Unfold flags ->
     if is_local_unfold env flags then LocalHypConv else StableHypConv
