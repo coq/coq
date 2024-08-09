@@ -796,7 +796,7 @@ and apply_rule whrec env sigma ctx psubst es stk =
       let psubst = Array.fold_left2 (fun psubst pat (ctx', br) -> match_arg_pattern whrec env sigma (ctx' @ ctx) psubst pat br) psubst pbrs brs in
       apply_rule whrec env sigma ctx psubst e s
   | Declarations.PEProj proj :: e, Stack.Proj (proj', r) :: s ->
-      if not @@ Projection.CanOrd.equal proj proj' then raise PatternFailure;
+      if not @@ Projection.(Repr.CanOrd.equal proj (repr proj')) then raise PatternFailure;
       apply_rule whrec env sigma ctx psubst e s
   | _, _ -> raise PatternFailure
 
@@ -1671,6 +1671,16 @@ let whd_betaiota_deltazeta_for_iota_state ts env sigma s =
   in
   let rec whrec s =
     let (t, stack as s) = whd_state_gen RedFlags.betaiota env sigma s in
+    match match kind sigma t with
+      | Const (cst, u) when Environ.is_symbol env cst ->
+        begin
+          try
+            let r = match Cmap_env.find_opt cst env.symb_pats with Some r -> r | None -> assert false in
+            Some (apply_rules whrec env sigma u r stack)
+          with PatternFailure -> None
+        end
+      | _ -> None
+    with Some r -> whrec r | None ->
     match Stack.strip_app stack with
       |args, (Stack.Case _ :: _ as stack') ->
         begin match whd_opt (t, args) with
