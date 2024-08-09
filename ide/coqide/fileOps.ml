@@ -72,11 +72,11 @@ object(self)
       | Some f ->
         if not buffer#modified then do_reload f
         else
-          let answ = Configwin_ihm.question_box
+          let answ = Ui_dialogs.question_box
             ~title:"Modified buffer changed on disk"
-            ~buttons:["Reload from File";
-                      "Overwrite File";
-                      "Disable Auto Reload"]
+            ~buttons:[ButtonWithLabel "Reload from file";
+                      ButtonWithLabel "Overwrite file";
+                      ButtonWithLabel "Disable Auto Reload"]
             ~default:0
             ~icon:(stock_to_widget `DIALOG_WARNING)
             ?parent
@@ -106,8 +106,10 @@ object(self)
   method saveas ?parent f =
   if not (Sys.file_exists f) then self#save f
   else
-    let answ = Configwin_ihm.question_box ~title:"File exists on disk"
-      ~buttons:["Overwrite"; "Cancel";]
+    (* The dialog's content may be determined by GTK, but we have to provide placeholders
+       or the dialog may not appear at all *)
+    let answ = Ui_dialogs.question_box ~title:"File exists on disk"
+      ~buttons:[ButtonWithLabel "Overwrite"; ButtonWithStock `CANCEL]
       ~default:1
       ~icon:(warn_image ())#coerce
       ?parent

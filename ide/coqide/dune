@@ -28,7 +28,6 @@
  (wrapped false)
  (modules (:standard \ document idetop coqide_main default_bindings_src gen_gtk_platform
     shared shared_os_specific))
- (modules_without_implementation configwin_types)
  (foreign_stubs
   (language c)
   (names coqide_os_stubs))
