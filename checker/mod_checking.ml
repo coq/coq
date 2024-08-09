@@ -2,7 +2,6 @@ open Pp
 open Util
 open Names
 open Conversion
-open Typeops
 open Declarations
 open Environ
 
@@ -49,7 +48,7 @@ let check_constant_declaration env opac kn cb opacify =
       true, env
   in
   let ty = cb.const_type in
-  let jty = infer_type env ty in
+  let jty = Typeops.infer_type env ty in
   if not (Sorts.relevance_equal cb.const_relevance (Sorts.relevance_of_sort jty.utj_type))
   then raise Pp.(BadConstant (kn, str "incorrect const_relevance"));
   let body, env = match cb.const_body with
@@ -68,7 +67,7 @@ let check_constant_declaration env opac kn cb opacify =
   let () =
     match body with
     | Some bd ->
-      let j = infer env bd in
+      let j = Typeops.infer env bd in
       begin match conv_leq env j.uj_type ty with
       | Result.Ok () -> ()
       | Result.Error () -> Type_errors.error_actual_type env j ty
