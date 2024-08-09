@@ -76,7 +76,7 @@ val check_problems_are_solved : ?evars:Evar.Set.t -> env -> evar_map -> unit
 
 (** Hook for the canonical structure resolution *)
 
-type hook = Environ.env -> Evd.evar_map -> ((Names.Constant.t * EConstr.EInstance.t) * EConstr.t list * EConstr.t) -> (EConstr.t * EConstr.t list) -> (Evd.evar_map * Structures.CanonicalSolution.t) option
+type hook = Environ.env -> Evd.evar_map -> ((Names.Constant.t * EConstr.EInstance.t) * EConstr.t list option * EConstr.t) -> (EConstr.t * EConstr.t list) -> (Evd.evar_map * Structures.CanonicalSolution.t) option
 
 val all_hooks : hook CString.Map.t ref
 
@@ -95,7 +95,7 @@ val apply_hooks : hook
 val check_conv_record : env -> evar_map ->
   state -> state ->
   evar_map * (constr * constr)
-  * constr * constr list * (EConstr.t list * EConstr.t list) *
+  * constr * constr list * (EConstr.t list * EConstr.t list option) *
     (EConstr.t list * EConstr.t list) *
     (Stack.t * Stack.t) * constr *
     (int option * constr)

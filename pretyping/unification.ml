@@ -1242,7 +1242,7 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
         with Invalid_argument _ -> assert false (* check_conv_record ensures lengths coincide *)
       in
       let substn = foldl (push_sigma evd substn) us2 us in
-      let substn = foldl substn params1 params in
+      let substn = match params1 with None -> substn | Some params1 -> foldl substn params1 params in
       let substn = Reductionops.Stack.fold2 (fun s u1 u2 -> unirec_rec curenvnb pb opt' s u1 u2) substn ts ts1 in
       let app = mkApp (c, Array.rev_of_list ks) in
       (* let substn = unirec_rec curenvnb pb b false substn t cN in *)
