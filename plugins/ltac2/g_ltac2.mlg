@@ -111,6 +111,7 @@ let tac2def_syn = Entry.make "tac2def_syn"
 let tac2def_mut = Entry.make "tac2def_mut"
 let tac2mode = Entry.make "ltac2_command"
 let ltac2_atom = Entry.make "ltac2_atom"
+let ltac2_scope = Entry.make "ltac2_scope"
 
 let tac2expr_in_env = Tac2entries.Pltac.tac2expr_in_env
 
@@ -140,7 +141,7 @@ let opt_fun ?loc args ty e =
 
 GRAMMAR EXTEND Gram
   GLOBAL: ltac2_expr ltac2_type tac2def_val tac2def_typ tac2def_ext tac2def_syn
-          tac2def_mut tac2expr_in_env ltac2_atom;
+          tac2def_mut tac2expr_in_env ltac2_atom ltac2_scope;
   tac2pat:
     [ "1" LEFTA
       [ qid = Prim.qualid; pl = LIST1 tac2pat LEVEL "0" -> {

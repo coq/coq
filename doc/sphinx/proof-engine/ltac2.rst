@@ -1884,6 +1884,9 @@ It has the same typing rules as `ltac2:()` except the expression must have type 
      idtac v.
    Abort.
 
+.. cmd:: Ltac2 Ltac1 Notation @ltac2def_ltac1
+   :undocumented:
+
 Switching between Ltac languages
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
