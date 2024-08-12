@@ -632,11 +632,17 @@ The :cmd:`Set` and :cmd:`Unset` commands support the mutually
 exclusive :attr:`local`, :attr:`export` and :attr:`global` locality
 attributes.
 
-If no attribute is specified, the original value of the flag or option
-is restored at the end of the current module but it is *not* restored
-at the end of the current section.
-
-Newly opened modules and sections inherit the current settings.
+* If no attribute is specified, the original value of the flag or option
+  is restored at the end of the current module but it is *not* restored
+  at the end of the current section.
+* The :attr:`local` attribute makes the setting local to the current
+  :cmd:`Section` (if applicable) or :cmd:`Module`.
+* The :attr:`export` attribute makes the setting local to the current
+  :cmd:`Module`, unless :cmd:`Import` (or one of its variants) is used
+  on the :cmd:`Module`.
+* The :attr:`global` attribute makes the setting persist outside the current
+  :cmd:`Module` in the current file, or whenever :cmd:`Require` is used on the
+  current file.
 
 .. note::
 
