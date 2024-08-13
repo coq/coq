@@ -511,6 +511,276 @@ transparent constraint
 Notice that ``M`` is a correct body for the component ``M2`` since its ``T``
 component is ``nat`` as specified for ``M1.T``.
 
+.. extracted from Gallina extensions chapter
+
+.. _qualified-names:
+
+Qualified names
+---------------
+
+Qualified names (:token:`qualid`\s) are hierarchical names that are used to
+identify items such as definitions, theorems and parameters that may be defined
+inside modules (see :cmd:`Module`).  In addition, they are used to identify
+compiled files.  Syntactically, they have this form:
+
+.. insertprodn qualid qualid
+
+.. prodn::
+   qualid ::= @ident {* .@ident }
+
+*Fully qualified* or *absolute* qualified names uniquely identify files
+(as in the `Require` command) and items within files, such as a single
+:cmd:`Variable` definition.  It's usually possible to use a suffix of the fully
+qualified name (a *short name*) that uniquely identifies an item.
+
+The first part of a fully qualified name identifies a file, which may be followed
+by a second part that identifies a specific item within that file.  Qualified names
+that identify files don't have a second part.
+
+While qualified names always consist of a series of dot-separated :n:`@ident`\s,
+*the following few paragraphs omit the dots for the sake of simplicity.*
+
+**File part.** Files are identified by :gdef:`logical paths <logical path>`,
+which are prefixes in the form :n:`{* @ident__logical } {+ @ident__file }`, such
+as :n:`Coq.Init.Logic`, in which:
+
+- :n:`{* @ident__logical }`, the :gdef:`logical name`, maps to one or more
+  directories (or :gdef:`physical paths <physical path>`) in the user's file system.
+  The logical name
+  is used so that Coq scripts don't depend on where files are installed.
+  For example, the directory associated with :n:`Coq` contains Coq's standard library.
+  The logical name is generally a single :n:`@ident`.
+
+- :n:`{+ @ident__file }` corresponds to the file system path of the file relative
+  to the directory that contains it.  For example, :n:`Init.Logic`
+  corresponds to the file system path :n:`Init/Logic.v` on Linux)
+
+When Coq is processing a script that hasn't been saved in a file, such as a new
+buffer in CoqIDE or anything in coqtop, definitions in the script are associated
+with the logical name :n:`Top` and there is no associated file system path.
+
+**Item part.** Items are further qualified by a suffix in the form
+:n:`{* @ident__module } @ident__base` in which:
+
+- :n:`{* @ident__module }` gives the names of the nested modules, if any,
+  that syntactically contain the definition of the item.  (See :cmd:`Module`.)
+
+- :n:`@ident__base` is the base name used in the command defining
+  the item.  For example, :n:`eq` in the :cmd:`Inductive` command defining it
+  in `Coq.Init.Logic` is the base name for `Coq.Init.Logic.eq`, the standard library
+  definition of :term:`Leibniz equality`.
+
+If :n:`@qualid` is the fully qualified name of an item, Coq
+always interprets :n:`@qualid` as a reference to that item.  If :n:`@qualid` is also a
+partially qualified name for another item, then you must provide a more-qualified
+name to uniquely identify that other item.  For example, if there are two
+fully qualified items named `Foo.Bar` and `Coq.X.Foo.Bar`, then `Foo.Bar` refers
+to the first item and `X.Foo.Bar` is the shortest name for referring to the second item.
+
+Definitions with the :attr:`local` attribute are only accessible with
+their fully qualified name (see :ref:`gallina-definitions`).
+
+.. example::
+
+    .. coqtop:: all
+
+       Check 0.
+
+       Definition nat := bool.
+
+       Check 0.
+
+       Check Datatypes.nat.
+
+       Locate nat.
+
+.. seealso:: Commands :cmd:`Locate`.
+
+:ref:`logical-paths-load-path` describes how :term:`logical paths <logical path>`
+become associated with specific files.
+
+.. _controlling-locality-of-commands:
+
+Controlling the scope of commands with locality attributes
+----------------------------------------------------------
+
+Many commands have effects that apply only within a specific scope,
+typically the section or the module in which the command was
+called. Locality :term:`attributes <attribute>` can alter the scope of
+the effect. Below, we give the semantics of each locality attribute
+while noting a few exceptional commands for which :attr:`local` and
+:attr:`global` attributes are interpreted differently.
+
+.. attr:: local
+
+   This :term:`attribute` limits the effect of the command to the
+   current scope (section or module).
+
+   The ``Local`` prefix is an alternative syntax for the :attr:`local`
+   attribute (see :n:`@legacy_attr`).
+
+   .. note::
+
+      - For some commands, this is the only locality supported within
+        sections (e.g., for :cmd:`Notation`, :cmd:`Ltac` and
+        :ref:`Hint <creating_hints>` commands).
+
+      - For some commands, this is the default locality within
+        sections even though other locality attributes are supported
+        as well (e.g., for the :cmd:`Arguments` command).
+
+   .. warning::
+
+      **Exception:** when :attr:`local` is applied to
+      :cmd:`Definition`, :cmd:`Theorem` or their variants, its
+      semantics are different: it makes the defined objects available
+      only through their fully qualified names rather than their
+      unqualified names after an :cmd:`Import`.
+
+.. attr:: export
+
+   This :term:`attribute` makes the effect of the command
+   persist when the section is closed and applies the effect when the
+   module containing the command is imported.
+
+   Commands supporting this attribute include :cmd:`Set`, :cmd:`Unset`
+   and the :ref:`Hint <creating_hints>` commands, although the latter
+   don't support it within sections.
+
+.. attr:: global
+
+   This :term:`attribute` makes the effect of the command
+   persist even when the current section or module is closed.  Loading
+   the file containing the command (possibly transitively) applies the
+   effect of the command.
+
+   The ``Global`` prefix is an alternative syntax for the
+   :attr:`global` attribute (see :n:`@legacy_attr`).
+
+   .. warning::
+
+      **Exception:** for a few commands (like :cmd:`Notation` and
+      :cmd:`Ltac`), this attribute behaves like :attr:`export`.
+
+   .. warning::
+
+      We strongly discourage using the :attr:`global` locality
+      attribute because the transitive nature of file loading gives
+      the user little control. We recommend using the :attr:`export`
+      locality attribute where it is supported.
+
+.. _visibility-attributes-modules:
+
+Summary of locality attributes in a module
+------------------------------------------
+
+This table sums up the effect of locality attributes on the scope of vernacular
+commands in a module, when outside the module where they were entered. In the
+following table:
+
+* a cross (❌) marks an unsupported attribute (compilation error);
+* “not available” means that the command has no effect outside the :cmd:`Module` it
+  was entered;
+* “when imported” means that the command has effect outside the :cmd:`Module` if, and
+  only if, the :cmd:`Module` (or the command, via :n:`@filtered_import`) is imported
+  (with :cmd:`Import` or :cmd:`Export`).
+* “short name when imported” means that the command has effects outside the
+  :cmd:`Module`; if the :cmd:`Module` (or command, via :n:`@filtered_import`) is not
+  imported, the associated identifiers must be qualified;
+* “qualified name” means that the command has effects outside the :cmd:`Module`, but
+  the corresponding identifier may only be referred to with a qualified name;
+* “always” means that the command always has effects outside the :cmd:`Module` (even
+  if it is not imported).
+
+A similar table for :cmd:`Section` can be found
+:ref:`here<visibility-attributes-sections>`.
+
+.. list-table::
+  :header-rows: 1
+
+  * - ``Command``
+    - no attribute
+    - :attr:`local`
+    - :attr:`export`
+    - :attr:`global`
+
+  * - :cmd:`Definition`, :cmd:`Lemma`,
+
+      :cmd:`Axiom`, ...
+    - :attr:`global`
+    - qualified name
+    - ❌
+    - short name
+
+      when imported
+
+  * - :cmd:`Ltac`
+    - :attr:`global`
+    - not available
+    - ❌
+    - short name
+
+      when imported
+
+  * - :cmd:`Ltac2`
+    - :attr:`global`
+    - not available
+    - ❌
+    - short name
+
+      when imported
+
+  * - :cmd:`Notation (abbreviation)`
+    - :attr:`global`
+    - not available
+    - ❌
+    - short name
+
+      when imported
+
+  * - :cmd:`Notation`
+    - :attr:`global`
+    - not available
+    - ❌
+    - when imported
+
+  * - :cmd:`Tactic Notation`
+    - :attr:`global`
+    - not available
+    - ❌
+    - when imported
+
+  * - :cmd:`Ltac2 Notation`
+    - :attr:`global`
+    - not available
+    - ❌
+    - when imported
+
+  * - :cmd:`Coercion`
+    - :attr:`global`
+    - not available
+    - ❌
+    - when imported
+
+  * - :cmd:`Canonical Structure`
+    - :attr:`global`
+
+    - when imported
+    - ❌
+    - when imported
+
+  * - ``Hints`` (and :cmd:`Instance`)
+    - :attr:`export`
+    - not available
+    - when imported
+    - always
+
+  * - :cmd:`Set` or :cmd:`Unset` a flag
+    - :attr:`local`
+    - not available
+    - when imported
+    - always
+
 Typing Modules
 ------------------
 
@@ -905,161 +1175,3 @@ and :math:`Γ_C` is :math:`[c_1{:}∀ Γ_P, C_1 ; …; c_n{:}∀ Γ_P, C_n ]`.
    E[] ⊢ p :~\Struct~e_1 ;…;e_i ; \Indp{r}{Γ_I}{Γ_C}{p'} ;… ~\End
    --------------------------
    E[] ⊢ p.c_i \triangleright_δ p'.c_i
-
-.. extracted from Gallina extensions chapter
-
-.. _qualified-names:
-
-Qualified names
----------------
-
-Qualified names (:token:`qualid`\s) are hierarchical names that are used to
-identify items such as definitions, theorems and parameters that may be defined
-inside modules (see :cmd:`Module`).  In addition, they are used to identify
-compiled files.  Syntactically, they have this form:
-
-.. insertprodn qualid qualid
-
-.. prodn::
-   qualid ::= @ident {* .@ident }
-
-*Fully qualified* or *absolute* qualified names uniquely identify files
-(as in the `Require` command) and items within files, such as a single
-:cmd:`Variable` definition.  It's usually possible to use a suffix of the fully
-qualified name (a *short name*) that uniquely identifies an item.
-
-The first part of a fully qualified name identifies a file, which may be followed
-by a second part that identifies a specific item within that file.  Qualified names
-that identify files don't have a second part.
-
-While qualified names always consist of a series of dot-separated :n:`@ident`\s,
-*the following few paragraphs omit the dots for the sake of simplicity.*
-
-**File part.** Files are identified by :gdef:`logical paths <logical path>`,
-which are prefixes in the form :n:`{* @ident__logical } {+ @ident__file }`, such
-as :n:`Coq.Init.Logic`, in which:
-
-- :n:`{* @ident__logical }`, the :gdef:`logical name`, maps to one or more
-  directories (or :gdef:`physical paths <physical path>`) in the user's file system.
-  The logical name
-  is used so that Coq scripts don't depend on where files are installed.
-  For example, the directory associated with :n:`Coq` contains Coq's standard library.
-  The logical name is generally a single :n:`@ident`.
-
-- :n:`{+ @ident__file }` corresponds to the file system path of the file relative
-  to the directory that contains it.  For example, :n:`Init.Logic`
-  corresponds to the file system path :n:`Init/Logic.v` on Linux)
-
-When Coq is processing a script that hasn't been saved in a file, such as a new
-buffer in CoqIDE or anything in coqtop, definitions in the script are associated
-with the logical name :n:`Top` and there is no associated file system path.
-
-**Item part.** Items are further qualified by a suffix in the form
-:n:`{* @ident__module } @ident__base` in which:
-
-- :n:`{* @ident__module }` gives the names of the nested modules, if any,
-  that syntactically contain the definition of the item.  (See :cmd:`Module`.)
-
-- :n:`@ident__base` is the base name used in the command defining
-  the item.  For example, :n:`eq` in the :cmd:`Inductive` command defining it
-  in `Coq.Init.Logic` is the base name for `Coq.Init.Logic.eq`, the standard library
-  definition of :term:`Leibniz equality`.
-
-If :n:`@qualid` is the fully qualified name of an item, Coq
-always interprets :n:`@qualid` as a reference to that item.  If :n:`@qualid` is also a
-partially qualified name for another item, then you must provide a more-qualified
-name to uniquely identify that other item.  For example, if there are two
-fully qualified items named `Foo.Bar` and `Coq.X.Foo.Bar`, then `Foo.Bar` refers
-to the first item and `X.Foo.Bar` is the shortest name for referring to the second item.
-
-Definitions with the :attr:`local` attribute are only accessible with
-their fully qualified name (see :ref:`gallina-definitions`).
-
-.. example::
-
-    .. coqtop:: all
-
-       Check 0.
-
-       Definition nat := bool.
-
-       Check 0.
-
-       Check Datatypes.nat.
-
-       Locate nat.
-
-.. seealso:: Commands :cmd:`Locate`.
-
-:ref:`logical-paths-load-path` describes how :term:`logical paths <logical path>`
-become associated with specific files.
-
-.. _controlling-locality-of-commands:
-
-Controlling the scope of commands with locality attributes
-----------------------------------------------------------
-
-Many commands have effects that apply only within a specific scope,
-typically the section or the module in which the command was
-called. Locality :term:`attributes <attribute>` can alter the scope of
-the effect. Below, we give the semantics of each locality attribute
-while noting a few exceptional commands for which :attr:`local` and
-:attr:`global` attributes are interpreted differently.
-
-.. attr:: local
-
-   This :term:`attribute` limits the effect of the command to the
-   current scope (section or module).
-
-   The ``Local`` prefix is an alternative syntax for the :attr:`local`
-   attribute (see :n:`@legacy_attr`).
-
-   .. note::
-
-      - For some commands, this is the only locality supported within
-        sections (e.g., for :cmd:`Notation`, :cmd:`Ltac` and
-        :ref:`Hint <creating_hints>` commands).
-
-      - For some commands, this is the default locality within
-        sections even though other locality attributes are supported
-        as well (e.g., for the :cmd:`Arguments` command).
-
-   .. warning::
-
-      **Exception:** when :attr:`local` is applied to
-      :cmd:`Definition`, :cmd:`Theorem` or their variants, its
-      semantics are different: it makes the defined objects available
-      only through their fully qualified names rather than their
-      unqualified names after an :cmd:`Import`.
-
-.. attr:: export
-
-   This :term:`attribute` makes the effect of the command
-   persist when the section is closed and applies the effect when the
-   module containing the command is imported.
-
-   Commands supporting this attribute include :cmd:`Set`, :cmd:`Unset`
-   and the :ref:`Hint <creating_hints>` commands, although the latter
-   don't support it within sections.
-
-.. attr:: global
-
-   This :term:`attribute` makes the effect of the command
-   persist even when the current section or module is closed.  Loading
-   the file containing the command (possibly transitively) applies the
-   effect of the command.
-
-   The ``Global`` prefix is an alternative syntax for the
-   :attr:`global` attribute (see :n:`@legacy_attr`).
-
-   .. warning::
-
-      **Exception:** for a few commands (like :cmd:`Notation` and
-      :cmd:`Ltac`), this attribute behaves like :attr:`export`.
-
-   .. warning::
-
-      We strongly discourage using the :attr:`global` locality
-      attribute because the transitive nature of file loading gives
-      the user little control. We recommend using the :attr:`export`
-      locality attribute where it is supported.
