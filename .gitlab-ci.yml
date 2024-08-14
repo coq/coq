@@ -871,7 +871,6 @@ library:ci-jasmin:
   - library:ci-mathcomp
   - library:ci-mathcomp_word
   stage: build-3+
-  allow_failure: true
 
 library:ci-http:
   extends: .ci-template-flambda
