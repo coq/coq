@@ -37,7 +37,10 @@ let error msg = CErrors.user_err Pp.(str msg)
 
 type protect_flag = Eval|Prot|Rec
 
-type protection = Environ.env -> Evd.evar_map -> EConstr.t -> GlobRef.t -> (Int.t -> protect_flag) option
+type protection = {
+  with_eq : bool;
+  arguments : (GlobRef.t Lazy.t * (int -> protect_flag)) list;
+}
 
 let global_head_of_constr sigma c =
   let f, args = decompose_app sigma c in
@@ -70,10 +73,34 @@ let interp_map env l t =
 
 let protect_maps : protection String.Map.t ref = ref String.Map.empty
 let add_map s m = protect_maps := String.Map.add s m !protect_maps
-let lookup_map map =
-  try String.Map.find map !protect_maps
-  with Not_found ->
+
+let dest_rel0 sigma t =
+  match EConstr.kind sigma t with
+  | App(f,args) when Array.length args >= 2 ->
+      let rel = mkApp(f,Array.sub args 0 (Array.length args - 2)) in
+      if closed0 sigma rel then
+        (rel,args.(Array.length args - 2),args.(Array.length args - 1))
+      else error "ring: cannot find relation (not closed)"
+  | _ -> error "ring: cannot find relation"
+
+let rec dest_rel sigma t =
+  match EConstr.kind sigma t with
+  | Prod(_,_,c) -> dest_rel sigma c
+  | _ -> dest_rel0 sigma t
+
+let lookup_map map env sigma c =
+  let map = match String.Map.find_opt map !protect_maps with
+  | Some map -> map
+  | None ->
     CErrors.user_err (str "Map " ++ qs map ++ str "not found.")
+  in
+  if map.with_eq then
+    let (req,_,_) = dest_rel sigma c in
+    interp_map env
+      ((global_head_of_constr sigma req,(function -1->Prot|_->Rec))::
+      List.map (fun (c,map) -> (Lazy.force c,map)) map.arguments)
+  else
+    interp_map env (List.map (fun (c,map) -> (Lazy.force c,map)) map.arguments)
 
 let protect_red map env sigma c =
   let tab = create_tab () in
@@ -221,20 +248,6 @@ let plapp sigma f args =
   let sigma, fc = Evd.fresh_global (Global.env ()) sigma (Lazy.force f) in
   sigma, mkApp(fc,args)
 
-let dest_rel0 sigma t =
-  match EConstr.kind sigma t with
-  | App(f,args) when Array.length args >= 2 ->
-      let rel = mkApp(f,Array.sub args 0 (Array.length args - 2)) in
-      if closed0 sigma rel then
-        (rel,args.(Array.length args - 2),args.(Array.length args - 1))
-      else error "ring: cannot find relation (not closed)"
-  | _ -> error "ring: cannot find relation"
-
-let rec dest_rel sigma t =
-  match EConstr.kind sigma t with
-  | Prod(_,_,c) -> dest_rel sigma c
-  | _ -> dest_rel0 sigma t
-
 (****************************************************************************)
 (* Library linking *)
 
@@ -292,14 +305,11 @@ let coq_mkhypo = my_reference "mkhypo"
 let coq_hypo = my_reference "hypo"
 
 (* Equality: do not evaluate but make recursive call on both sides *)
-let map_with_eq arg_map env sigma c =
-  let (req,_,_) = dest_rel sigma c in
-  interp_map env
-    ((global_head_of_constr sigma req,(function -1->Prot|_->Rec))::
-    List.map (fun (c,map) -> (Lazy.force c,map)) arg_map)
+let map_with_eq arg_map =
+  { with_eq = true; arguments = arg_map }
 
-let map_without_eq arg_map env _ _ =
-  interp_map env (List.map (fun (c,map) -> (Lazy.force c,map)) arg_map)
+let map_without_eq arg_map =
+  { with_eq = false; arguments = arg_map }
 
 let _ = add_map "ring"
   (map_with_eq
