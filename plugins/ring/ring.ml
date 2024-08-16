@@ -327,20 +327,29 @@ let map_with_eq arg_map =
 let map_without_eq arg_map =
   { with_eq = false; arguments = arg_map }
 
+let base_red = [
+  coq_cons, Arg (function 2->Rec|_->Prot);
+  coq_nil, Arg (function _ -> Prot);
+  my_reference "IDphi", Full;
+  my_reference "gen_phiZ", Full;
+]
+
+let ring_red = [
+  (* Pphi_dev: evaluate polynomial and coef operations, protect
+      ring operations and make recursive call on the var map *)
+  pol_cst "Pphi_dev", Arg (function 8|9|10|12|14->Eval|11|13->Rec|_->Prot);
+  pol_cst "Pphi_pow",
+        Arg (function 8|9|10|13|15|17->Eval|11|16->Rec|_->Prot);
+  (* PEeval: evaluate polynomial, protect ring
+      operations and make recursive call on the var map *)
+  pol_cst "PEeval", Arg (function 10|13->Eval|8|12->Rec|_->Prot)
+]
+
 let _ = add_map "ring"
   (map_with_eq
-    [coq_cons, Arg (function 2->Rec|_->Prot);
-    coq_nil, Arg (function _ -> Prot);
-    my_reference "IDphi", Full;
-    my_reference "gen_phiZ", Full;
-    (* Pphi_dev: evaluate polynomial and coef operations, protect
-       ring operations and make recursive call on the var map *)
-    pol_cst "Pphi_dev", Arg (function 8|9|10|12|14->Eval|11|13->Rec|_->Prot);
-    pol_cst "Pphi_pow",
-          Arg (function 8|9|10|13|15|17->Eval|11|16->Rec|_->Prot);
-    (* PEeval: evaluate polynomial, protect ring
-       operations and make recursive call on the var map *)
-    pol_cst "PEeval", Arg (function 10|13->Eval|8|12->Rec|_->Prot)])
+    @@
+    base_red @
+    ring_red)
 
 (****************************************************************************)
 (* Ring database *)
@@ -727,35 +736,22 @@ let field_ltac s =
 
 
 let _ = add_map "field"
-  (map_with_eq
-    [coq_cons, Arg (function 2->Rec|_->Prot);
-    coq_nil, Arg (function _ -> Prot);
-    my_reference "IDphi", Full;
-    my_reference "gen_phiZ", Full;
+  (map_with_eq @@
+    base_red @
+    ring_red @ [
     (* display_linear: evaluate polynomials and coef operations, protect
        field operations and make recursive call on the var map *)
     my_reference "display_linear",
       Arg (function 9|10|11|13|15|16->Eval|12|14->Rec|_->Prot);
     my_reference "display_pow_linear",
      Arg (function 9|10|11|14|16|18|19->Eval|12|17->Rec|_->Prot);
-   (* Pphi_dev: evaluate polynomial and coef operations, protect
-       ring operations and make recursive call on the var map *)
-    pol_cst "Pphi_dev", Arg (function 8|9|10|12|14->Eval|11|13->Rec|_->Prot);
-    pol_cst "Pphi_pow",
-          Arg (function 8|9|10|13|15|17->Eval|11|16->Rec|_->Prot);
-    (* PEeval: evaluate polynomial, protect ring
-       operations and make recursive call on the var map *)
-    pol_cst "PEeval", Arg (function 10|13->Eval|8|12->Rec|_->Prot);
     (* FEeval: evaluate polynomial, protect field
        operations and make recursive call on the var map *)
     my_reference "FEeval", Arg (function 12|15->Eval|10|14->Rec|_->Prot)]);;
 
 let _ = add_map "field_cond"
-  (map_without_eq
-    [coq_cons, Arg (function 2->Rec|_->Prot);
-     coq_nil, Arg (function _ -> Prot);
-     my_reference "IDphi", Full;
-     my_reference "gen_phiZ", Full;
+  (map_without_eq @@
+    base_red @ [
     (* PCond: evaluate denum list, protect ring
        operations and make recursive call on the var map *)
      my_reference "PCond", Arg (function 11|14->Eval|9|13->Rec|_->Prot)]);;
