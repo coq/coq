@@ -36,15 +36,16 @@ let error msg = CErrors.user_err Pp.(str msg)
 (* controlled reduction *)
 
 type protect_flag = Eval|Prot|Rec
+type 'a reduction = Full | Arg of 'a
 
 type protection = {
   with_eq : bool;
-  arguments : (GlobRef.t Lazy.t * (int -> protect_flag)) list;
+  arguments : (GlobRef.t Lazy.t * (int -> protect_flag) reduction) list;
 }
 
 type rprotection = {
   r_with_eq : GlobRef.t option;
-  r_arguments : (GlobRef.t * (int -> protect_flag)) list;
+  r_arguments : (GlobRef.t * (int -> protect_flag) reduction) list;
 }
 
 let global_head_of_constr sigma c =
@@ -62,15 +63,19 @@ let interp_map env l t =
   let eq g1 g2 = QGlobRef.equal env g1 g2 in
   try
     let gr = match l.r_with_eq with None -> raise Exit | Some gr -> gr in
-    if eq t gr then Some (Prot, function _ -> Rec)
+    if eq t gr then Some (Arg (Prot, (function _ -> Rec)))
     else raise Exit
   with Exit ->
-    try Some (Eval, List.assoc_f eq t l.r_arguments) with Not_found -> None
+    match List.assoc_f eq t l.r_arguments with
+    | exception Not_found -> None
+    | Full -> Some Full
+    | Arg f -> Some (Arg (Eval, f))
 
 let rec mk_clos_but env sigma f_map n t =
   let (f, args) = EConstr.decompose_app sigma t in
   match interp_map env f_map (global_of_constr_nofail sigma f) with
-  | Some (hd, tag) ->
+  | Some Full -> tag_arg env sigma f_map n Eval t
+  | Some (Arg (hd, tag)) ->
       let map i t = tag_arg env sigma f_map n (tag i) t in
       let f = tag_arg env sigma f_map n hd f in
       if Array.is_empty args then f
@@ -324,18 +329,18 @@ let map_without_eq arg_map =
 
 let _ = add_map "ring"
   (map_with_eq
-    [coq_cons,(function 2->Rec|_->Prot);
-    coq_nil, (function _ -> Prot);
-    my_reference "IDphi", (function _->Eval);
-    my_reference "gen_phiZ", (function _->Eval);
+    [coq_cons, Arg (function 2->Rec|_->Prot);
+    coq_nil, Arg (function _ -> Prot);
+    my_reference "IDphi", Full;
+    my_reference "gen_phiZ", Full;
     (* Pphi_dev: evaluate polynomial and coef operations, protect
        ring operations and make recursive call on the var map *)
-    pol_cst "Pphi_dev", (function 8|9|10|12|14->Eval|11|13->Rec|_->Prot);
+    pol_cst "Pphi_dev", Arg (function 8|9|10|12|14->Eval|11|13->Rec|_->Prot);
     pol_cst "Pphi_pow",
-          (function 8|9|10|13|15|17->Eval|11|16->Rec|_->Prot);
+          Arg (function 8|9|10|13|15|17->Eval|11|16->Rec|_->Prot);
     (* PEeval: evaluate polynomial, protect ring
        operations and make recursive call on the var map *)
-    pol_cst "PEeval", (function 10|13->Eval|8|12->Rec|_->Prot)])
+    pol_cst "PEeval", Arg (function 10|13->Eval|8|12->Rec|_->Prot)])
 
 (****************************************************************************)
 (* Ring database *)
@@ -723,37 +728,37 @@ let field_ltac s =
 
 let _ = add_map "field"
   (map_with_eq
-    [coq_cons,(function 2->Rec|_->Prot);
-    coq_nil, (function _ -> Prot);
-    my_reference "IDphi", (function _->Eval);
-    my_reference "gen_phiZ", (function _->Eval);
+    [coq_cons, Arg (function 2->Rec|_->Prot);
+    coq_nil, Arg (function _ -> Prot);
+    my_reference "IDphi", Full;
+    my_reference "gen_phiZ", Full;
     (* display_linear: evaluate polynomials and coef operations, protect
        field operations and make recursive call on the var map *)
     my_reference "display_linear",
-      (function 9|10|11|13|15|16->Eval|12|14->Rec|_->Prot);
+      Arg (function 9|10|11|13|15|16->Eval|12|14->Rec|_->Prot);
     my_reference "display_pow_linear",
-     (function 9|10|11|14|16|18|19->Eval|12|17->Rec|_->Prot);
+     Arg (function 9|10|11|14|16|18|19->Eval|12|17->Rec|_->Prot);
    (* Pphi_dev: evaluate polynomial and coef operations, protect
        ring operations and make recursive call on the var map *)
-    pol_cst "Pphi_dev", (function 8|9|10|12|14->Eval|11|13->Rec|_->Prot);
+    pol_cst "Pphi_dev", Arg (function 8|9|10|12|14->Eval|11|13->Rec|_->Prot);
     pol_cst "Pphi_pow",
-          (function 8|9|10|13|15|17->Eval|11|16->Rec|_->Prot);
+          Arg (function 8|9|10|13|15|17->Eval|11|16->Rec|_->Prot);
     (* PEeval: evaluate polynomial, protect ring
        operations and make recursive call on the var map *)
-    pol_cst "PEeval", (function 10|13->Eval|8|12->Rec|_->Prot);
+    pol_cst "PEeval", Arg (function 10|13->Eval|8|12->Rec|_->Prot);
     (* FEeval: evaluate polynomial, protect field
        operations and make recursive call on the var map *)
-    my_reference "FEeval", (function 12|15->Eval|10|14->Rec|_->Prot)]);;
+    my_reference "FEeval", Arg (function 12|15->Eval|10|14->Rec|_->Prot)]);;
 
 let _ = add_map "field_cond"
   (map_without_eq
-    [coq_cons,(function 2->Rec|_->Prot);
-     coq_nil, (function _ -> Prot);
-     my_reference "IDphi", (function _->Eval);
-     my_reference "gen_phiZ", (function _->Eval);
+    [coq_cons, Arg (function 2->Rec|_->Prot);
+     coq_nil, Arg (function _ -> Prot);
+     my_reference "IDphi", Full;
+     my_reference "gen_phiZ", Full;
     (* PCond: evaluate denum list, protect ring
        operations and make recursive call on the var map *)
-     my_reference "PCond", (function 11|14->Eval|9|13->Rec|_->Prot)]);;
+     my_reference "PCond", Arg (function 11|14->Eval|9|13->Rec|_->Prot)]);;
 
 
 let _ = Redexpr.declare_reduction "simpl_field_expr"
