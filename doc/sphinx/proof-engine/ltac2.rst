@@ -413,7 +413,7 @@ standard IO monad as the ambient effectful world, Ltac2 has a tactic monad.
 Note that the order of evaluation of application is *not* specified and is
 implementation-dependent, as in OCaml.
 
-We recall that the `Proofview.tactic` monad is essentially a IO monad together
+We recall that the `Proofview.tactic` monad is essentially an IO monad together
 with backtracking state representing the proof state.
 
 Intuitively a thunk of type :n:`unit -> 'a` can do the following:
@@ -467,6 +467,35 @@ destroy all backtrack and return values.
 Backtracking
 ++++++++++++
 
+Earlier, we said that "the `Proofview.tactic` monad is essentially an
+IO monad together with backtracking state representing the proof
+state." What this means is that all Ltac2 expressions of type `a`
+implicitly return, not just a value of type `a`, but also an exception
+handler which will be used if a computation "downstream" raises an
+exception. This additional information is suppressed from the type
+system for readability.
+
+The semicolon operator `;` for sequencing computations is
+fundamental to the semantics of backtracking. If `t_1` is an Ltac2
+expression of type `unit`, and `t_2` is an expression of type `'a`,
+then the expression `t_1; t_2` first evaluates `t_1` to return a value
+of unit type, a change in the proof state, and a continuation
+expressing how `t_2` should proceed in the event that it raises an
+exception. Another way to understand this is that if `t_2` fails and
+raises an exception, `t_1` can catch the exception, modify the proof
+state again in a different way, and pass control back to `t_2`, over
+and over until `t_1` has exhausted its responses to the exceptions
+raised by `t_2`. The :ref:`multi_match!
+tactic<ltac2_match_vs_multimatch_ex>` is the most basic example
+of this kind of control flow.
+
+Similarly, if `t_1` is an Ltac2 expression of type `'a` and `t_2[x]`
+is an Ltac2 expression of type `'b` where `x` is an Ltac2 variable of
+type `'a` which is free in `t_2`, then `let x := t_1 in t_2` will
+evaluate `t_1` to return a value of type `'a`. If `t_2` fails and
+raises an exception, `t_1` can catch the exception and return a new
+value of `'a`, passing control back to `t_2`.
+
 In Ltac2, we have the following backtracking primitives, defined in the
 `Control` module::
 
@@ -476,14 +505,110 @@ In Ltac2, we have the following backtracking primitives, defined in the
   val plus : (unit -> 'a) -> (exn -> 'a) -> 'a
   val case : (unit -> 'a) -> ('a * (exn -> 'a)) result
 
+`zero` takes an exception and raises it. It can be understood as the
+trivial exception handler which performs no handling.
+
+`plus` takes a computation `r` `and an exception handler `h`, and runs
+the computation `r` under the handler `h`. If `r ()` returns a value
+`a`, `plus` returns `a`. If `r ()` raises an exception `e`, `plus`
+tries to compute `h e`. If this raises an exception `e'`, `plus` raises
+the exception `e'`. Otherwise, if it returns a value `a`, `plus r h`
+returns `a`.
+
+By repeated application of `plus`, it is possible to stack exception
+handlers. If `h_1, h_2 : exn -> 'a` are exception handlers, then `fun
+e => plus (fun () => h1 e ()) h2` is an exception handler which first
+attempts to handle the exception `e` using `h_1`, and, if this fails
+and raises an exception `e'`, attempts to handle `e'` with `h_2`.
+
+.. coqtop:: in
+
+	    Ltac2 rec t1 (s : (unit -> constr) list) : unit -> constr :=
+	    match s with
+	    | [] => (fun () => zero No_value)
+	    | hd :: tail => (fun () => Control.plus hd (fun _ => t1 tail ()))
+	    end.
+
+	    Goal True.
+	    let v := List.map (fun a => (fun () => a)) [ '(0%nat); '(1%nat); '2%nat ] in 
+	    let n := t1 v () in
+	    Message.print (Message.of_constr n); fail.
+
+            Abort.
+
+It is also possible to create an infinite stream of values using a thunk.
+
+.. coqtop:: in
+
+	    Ltac2 int_seq () :=
+	        let rec succ thunk_n :=
+		    Control.plus thunk_n (fun _ => succ (fun _ => Int.add (thunk_n ()) 1))
+		in succ (fun _ => 0).
+
+	    Goal nat.
+	        let n := int_seq () in
+		if Int.lt n 10 then (Message.print (Message.of_int n); fail)
+		else Control.throw Not_found.
+
+More generally, we can encode a state machine into a thunk, so that a
+downstream tactic which fails can communicate useful information back
+upstream through the exception, and the thunk can choose which value
+to return next based on the choice of exception.
+
+.. coqtop:: in
+
+	    Ltac2 state_transition_thunk (init_state : 's) (f : 's * exn -> 's * 'a) 
+	        (init_guess: 'a) :=
+	    let rec succ state e :=
+	        let (next_state, next_guess) :=  f (state, e) in
+		Control.plus (fun _ => next_guess)
+		    (fun next_exn => succ next_state next_exn)
+	    in Control.plus (fun _ => init_guess)
+	           (fun init_exn => succ init_state init_exn).
+
+
+The function `case` allows the user to implement similar backtracking
+control flow functionality to what is baked into Ltac2 with the
+semicolon operator and let bindings.
+
+To illustrate, we will show how to implement the semicolon operator
+ourselves directly using `case`:
+
+.. coqtop:: in
+
+	    Ltac2 rec concat (tac1 : unit -> unit) (tac2 : unit -> 'a) : 'a :=
+	        match case tac1 with
+		| Err e => zero e
+		| Val ( _ , f ) => 
+   	            plus tac2 (fun e' =>
+		        concat (fun () => f e') (fun _ => tac2 ()))
+	    end.
+
+	    Ltac2 Notation "<" tac1(thunk(tactic(6))) ";" tac2(thunk(tactic(6))) ">" := concat tac1 tac2.
+
+
+`case` is a "safe" exception handler which always returns a value and
+never re-raises an exception. If `r ()` would raise an exception `e`,
+then `case r` returns `Err e`; otherwise, if `r ()` is equal to a
+value `t`, then `case r = Val(t, f)`, where `f` is the
+exception-handling continuation *implicitly* returned by `r ()`. Thus,
+`case` lets us access directly as values the exceptions and
+backtracking continuations that normally live in the effects monad.
+
 If one views thunks as lazy lists, then `zero` is the empty list and `plus` is
 list concatenation, while `case` is pattern-matching.
 
 The backtracking is first-class, i.e. one can write
 :n:`plus (fun () => "x") (fun _ => "y") : string` producing a backtracking string.
 
-These operations are expected to satisfy a few equations, most notably that they
-form a monoid compatible with sequentialization.::
+These operations are expected to satisfy a few equations, most notably
+that they form a monoid compatible with sequentialization. Note that
+the variables in these equations range over values, rather than
+expressions, but the stated equivalence should be understood as a
+behavioral equivalence of programs, expressing that both sides of the
+equation cause the same side effects, return the same implicit
+exception handler, and raise the same exceptions or converge to the
+same value. ::
 
   plus t zero ≡ t ()
   plus (fun () => zero e) f ≡ f e
