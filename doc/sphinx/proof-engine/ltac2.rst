@@ -515,6 +515,14 @@ tries to compute `h e`. If this raises an exception `e'`, `plus` raises
 the exception `e'`. Otherwise, if it returns a value `a`, `plus r h`
 returns `a`.
 
+`case` is a "safe" exception handler which always returns a value and
+never re-raises an exception. If `r ()` would raise an exception `e`,
+then `case r` returns `Err e`; otherwise, if `r ()` is equal to a
+value `t`, then `case r = Val(t, f)`, where `f` is the
+exception-handling continuation *implicitly* returned by `r ()`. Thus,
+`case` lets us access directly as values the exceptions and
+backtracking continuations that normally live in the effects monad.
+
 By repeated application of `plus`, it is possible to stack exception
 handlers. If `h_1, h_2 : exn -> 'a` are exception handlers, then `fun
 e => plus (fun () => h1 e ()) h2` is an exception handler which first
@@ -525,18 +533,26 @@ and raises an exception `e'`, attempts to handle `e'` with `h_2`.
 
      .. coqtop:: in
 
-        Ltac2 rec t1 (s : (unit -> constr) list) : unit -> constr :=
+        (** Convert a list of thunked terms into a single thunked term that behaves as \
+        a stream of values from the original list. Whenever a downstream computation \
+        fails, the next value from the stream is returned. *)
+        Ltac2 rec to_stream (s : (unit -> constr) list) : unit -> constr :=
           match s with
           | [] => (fun () => Control.zero No_value)
-          | hd :: tail => (fun () => Control.plus hd (fun _ => t1 tail ()))
+          | hd :: tail => (fun () => Control.plus hd (fun _ => to_stream tail ()))
           end.
 
         Goal True.
           let v := List.map (fun a => (fun () => a)) [ '(0%nat); '(1%nat); '2%nat ] in
-          let n := t1 v () in
+          let n := to_stream v () in
           try (Message.print (Message.of_constr n); fail).
+          (** Prints 0, 1, 2. *)
 
      .. coqtop:: all abort
+
+This illustrates that one can view thunks as lazy lists of results,
+where `zero` is the empty list and `plus` is list concatenation, while
+`case` is pattern-matching.
 
 It is also possible to create an infinite stream of values using a thunk.
 
@@ -544,35 +560,46 @@ It is also possible to create an infinite stream of values using a thunk.
 
      .. coqtop:: in
 
-	    Ltac2 int_seq () :=
-	        let rec succ thunk_n :=
-		    Control.plus thunk_n (fun _ => succ (fun _ => Int.add (thunk_n ()) 1))
-		in succ (fun _ => 0).
+        Ltac2 int_seq () :=
+          let rec succ thunk_n :=
+          Control.plus thunk_n (fun _ => succ (fun _ => Int.add (thunk_n ()) 1))
+                in succ (fun _ => 0).
 
-	    Goal nat.
-	        let n := int_seq () in
-		if Int.lt n 10 then (Message.print (Message.of_int n); fail)
+            Goal nat.
+                let n := int_seq () in
+                if Int.lt n 10 then (Message.print (Message.of_int n); fail)
                 else ().
+                (** Prints 0, 1, 2... 9 . *)
 
      .. coqtop:: all abort
 
-More generally, we can encode a state machine into a thunk, so that a
-downstream tactic which fails can communicate useful information back
-upstream through the exception, and the thunk can choose which value
-to return next based on the choice of exception.
+The relationship between `to_stream l` and the "downstream"
+computation is a naive one. The downstream computation either
+succeeds, in which case control never returns to `to_stream l`; or it
+fails, in which case `to_stream l` naively returns the next element in
+the stream. The same criticism applies to `int_seq ()`. We would like to engineer more sophisticated error
+handling; in a situation `t_1; t_2`, if `t_2` fails, it is desirable
+for `t_2` to be able to communicate the manner of failure back
+upstream to `t_1`, so that `t_1` can intelligently respond with a new
+value (and a new change in the proof state) in an appropriate way.
+
+The most general way of doing this is to encode a state machine into `t_1`, so that a
+downstream tactic `t_2` which fails can communicate useful information back
+upstream through the exception it raises, and `t_1` can choose which value
+to return next based on the exception and its current state.
 
   .. example::
 
      .. coqtop:: in
 
         Ltac2 state_transition_thunk (init_state : 's) (f : 's * exn -> 's * 'a)
-	        (init_guess: 'a) :=
-	    let rec succ state e :=
-	        let (next_state, next_guess) :=  f (state, e) in
-		Control.plus (fun _ => next_guess)
-		    (fun next_exn => succ next_state next_exn)
-	    in Control.plus (fun _ => init_guess)
-	           (fun init_exn => succ init_state init_exn).
+                (init_guess: 'a) :=
+            let rec succ state e :=
+                let (next_state, next_guess) :=  f (state, e) in
+                Control.plus (fun _ => next_guess)
+                    (fun next_exn => succ next_state next_exn)
+            in Control.plus (fun _ => init_guess)
+                   (fun init_exn => succ init_state init_exn).
 
 
 The function `case` allows the user to implement similar backtracking
@@ -595,18 +622,6 @@ ourselves directly using `case`:
         end.
 
       Ltac2 Notation "<" tac1(thunk(tactic(6))) ";" tac2(thunk(tactic(6))) ">" := concat tac1 tac2.
-
-
-`case` is a "safe" exception handler which always returns a value and
-never re-raises an exception. If `r ()` would raise an exception `e`,
-then `case r` returns `Err e`; otherwise, if `r ()` is equal to a
-value `t`, then `case r = Val(t, f)`, where `f` is the
-exception-handling continuation *implicitly* returned by `r ()`. Thus,
-`case` lets us access directly as values the exceptions and
-backtracking continuations that normally live in the effects monad.
-
-If one views thunks as lazy lists, then `zero` is the empty list and `plus` is
-list concatenation, while `case` is pattern-matching.
 
 The backtracking is first-class, i.e. one can write
 :n:`plus (fun () => "x") (fun _ => "y") : string` producing a backtracking string.
@@ -1756,7 +1771,7 @@ Here is the syntax for the :n:`q_*` nonterminals:
    ident_or_anti ::= @ident
    | $ @ident
 
-.. insertprodn 	ltac2_destruction_arg ltac2_constr_with_bindings
+.. insertprodn  ltac2_destruction_arg ltac2_constr_with_bindings
 
 .. prodn::
    ltac2_destruction_arg ::= @natural
