@@ -469,8 +469,8 @@ Backtracking
 
 Earlier, we said that "the `Proofview.tactic` monad is essentially an
 IO monad together with backtracking state representing the proof
-state." What this means is that all Ltac2 expressions of type `a`
-implicitly return, not just a value of type `a`, but also an exception
+state." What this means is that all Ltac2 expressions of type `'a`
+implicitly return, not just a value of type `'a`, but also an exception
 handler which will be used if a computation "downstream" raises an
 exception. This additional information is suppressed from the type
 system for readability.
@@ -508,7 +508,7 @@ In Ltac2, we have the following backtracking primitives, defined in the
 `zero` takes an exception and raises it. It can be understood as the
 trivial exception handler which performs no handling.
 
-`plus` takes a computation `r` `and an exception handler `h`, and runs
+`plus` takes a computation `r` and an exception handler `h`, and runs
 the computation `r` under the handler `h`. If `r ()` returns a value
 `a`, `plus` returns `a`. If `r ()` raises an exception `e`, `plus`
 tries to compute `h e`. If this raises an exception `e'`, `plus` raises
@@ -521,24 +521,28 @@ e => plus (fun () => h1 e ()) h2` is an exception handler which first
 attempts to handle the exception `e` using `h_1`, and, if this fails
 and raises an exception `e'`, attempts to handle `e'` with `h_2`.
 
-.. coqtop:: in
+  .. example::
 
-	    Ltac2 rec t1 (s : (unit -> constr) list) : unit -> constr :=
-	    match s with
-	    | [] => (fun () => zero No_value)
-	    | hd :: tail => (fun () => Control.plus hd (fun _ => t1 tail ()))
-	    end.
+     .. coqtop:: in
 
-	    Goal True.
-	    let v := List.map (fun a => (fun () => a)) [ '(0%nat); '(1%nat); '2%nat ] in 
-	    let n := t1 v () in
-	    Message.print (Message.of_constr n); fail.
+        Ltac2 rec t1 (s : (unit -> constr) list) : unit -> constr :=
+          match s with
+          | [] => (fun () => Control.zero No_value)
+          | hd :: tail => (fun () => Control.plus hd (fun _ => t1 tail ()))
+          end.
 
-            Abort.
+        Goal True.
+          let v := List.map (fun a => (fun () => a)) [ '(0%nat); '(1%nat); '2%nat ] in
+          let n := t1 v () in
+          try (Message.print (Message.of_constr n); fail).
+
+     .. coqtop:: all abort
 
 It is also possible to create an infinite stream of values using a thunk.
 
-.. coqtop:: in
+  .. example::
+
+     .. coqtop:: in
 
 	    Ltac2 int_seq () :=
 	        let rec succ thunk_n :=
@@ -548,16 +552,20 @@ It is also possible to create an infinite stream of values using a thunk.
 	    Goal nat.
 	        let n := int_seq () in
 		if Int.lt n 10 then (Message.print (Message.of_int n); fail)
-		else Control.throw Not_found.
+                else ().
+
+     .. coqtop:: all abort
 
 More generally, we can encode a state machine into a thunk, so that a
 downstream tactic which fails can communicate useful information back
 upstream through the exception, and the thunk can choose which value
 to return next based on the choice of exception.
 
-.. coqtop:: in
+  .. example::
 
-	    Ltac2 state_transition_thunk (init_state : 's) (f : 's * exn -> 's * 'a) 
+     .. coqtop:: in
+
+        Ltac2 state_transition_thunk (init_state : 's) (f : 's * exn -> 's * 'a)
 	        (init_guess: 'a) :=
 	    let rec succ state e :=
 	        let (next_state, next_guess) :=  f (state, e) in
@@ -574,17 +582,19 @@ semicolon operator and let bindings.
 To illustrate, we will show how to implement the semicolon operator
 ourselves directly using `case`:
 
-.. coqtop:: in
+.. example::
 
-	    Ltac2 rec concat (tac1 : unit -> unit) (tac2 : unit -> 'a) : 'a :=
-	        match case tac1 with
-		| Err e => zero e
-		| Val ( _ , f ) => 
-   	            plus tac2 (fun e' =>
-		        concat (fun () => f e') (fun _ => tac2 ()))
-	    end.
+   .. coqtop:: in
 
-	    Ltac2 Notation "<" tac1(thunk(tactic(6))) ";" tac2(thunk(tactic(6))) ">" := concat tac1 tac2.
+      Ltac2 rec concat (tac1 : unit -> unit) (tac2 : unit -> 'a) : 'a :=
+        match Control.case tac1 with
+        | Err e => Control.zero e
+        | Val ( _ , f ) =>
+             Control.plus tac2 (fun e' =>
+             concat (fun () => f e') (fun _ => tac2 ()))
+        end.
+
+      Ltac2 Notation "<" tac1(thunk(tactic(6))) ";" tac2(thunk(tactic(6))) ">" := concat tac1 tac2.
 
 
 `case` is a "safe" exception handler which always returns a value and
