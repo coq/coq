@@ -780,7 +780,7 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
 
       .. coqtop:: none
 
-         Require Import Coq.Lists.List.
+         Require Import Stdlib.Lists.List.
          Local Open Scope list_scope.
 
       .. coqtop:: all abort

@@ -335,8 +335,8 @@ optional tactic is replaced by the default one if not specified.
    (the default), or if the system should infer which obligations can be
    declared opaque.
 
-The module :g:`Coq.Program.Tactics` defines the default tactic for solving
-obligations called :g:`program_simpl`. Importing :g:`Coq.Program.Program` also
+The module :g:`Stdlib.Program.Tactics` defines the default tactic for solving
+obligations called :g:`program_simpl`. Importing :g:`Stdlib.Program.Program` also
 adds some useful notations, as documented in the file itself.
 
 .. _program-faq:

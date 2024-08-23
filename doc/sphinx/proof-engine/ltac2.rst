@@ -1359,7 +1359,7 @@ You can make them accessible in Ltac2 with commands similar to the following:
 
 .. coqtop:: in
 
-   From Coq Require Import Lia.
+   From Stdlib Require Import Lia.
    Local Ltac2 lia_ltac1 () := ltac1:(lia).
    Ltac2 Notation "lia" := lia_ltac1 ().
 

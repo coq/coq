@@ -28,7 +28,7 @@ Coq program or by turning the :flag:`Allow StrictProp` flag off.
       :undocumented:
 
 Some of the definitions described in this document are available
-through ``Coq.Logic.StrictProp``, which see.
+through ``Stdlib.Logic.StrictProp``, which see.
 
 Basic constructs
 ----------------

@@ -210,7 +210,7 @@ files it generates.
 Logical paths and the load path
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Coq commands such as :cmd:`Require` identify files with :term:`logical paths<logical path>` rather
+Commands such as :cmd:`Require` identify files with :term:`logical paths<logical path>` rather
 than file system paths so that scripts don't have to be modified to run on
 different computers.  The :cmd:`Print LoadPath` command displays the :gdef:`load path`,
 which is a list of (logical path, :term:`physical path`) pairs for directories.
@@ -273,7 +273,7 @@ directory, e.g. the file `Foo/Bar/script.vo` becomes `Foo.Bar.script`:
 .. todo: document loadpath for ml files
 
 Each directory may contain multiple `.v`/`.vo` files.  For example,
-:n:`Require Import Coq.Numbers.Natural.Binary.NBinary` loads the file
+:n:`Require Import Stdlib.Numbers.Natural.Binary.NBinary` loads the file
 :n:`NBinary.vo` from the associated directory.  Note that a short name
 is often sufficient in :cmd:`Require` instead of a fully qualified
 name.
@@ -887,7 +887,7 @@ line timing data:
 
        ::
 
-          Chars 0 - 26 [Require~Coq.ZArith.BinInt.] 0.157 secs (0.128u,0.028s)
+          Chars 0 - 26 [Require~Stdlib.ZArith.BinInt.] 0.157 secs (0.128u,0.028s)
           Chars 27 - 68 [Declare~Reduction~comp~:=~vm_c...] 0. secs (0.u,0.s)
           Chars 69 - 162 [Definition~foo0~:=~Eval~comp~i...] 0.153 secs (0.136u,0.019s)
           Chars 163 - 208 [Definition~foo1~:=~Eval~comp~i...] 0.239 secs (0.236u,0.s)
@@ -955,7 +955,7 @@ line timing data:
           0m00.50s  | Total                                               | 0m04.17s  || -0m03.66s | -87.96%
           ---------------------------------------------------------------------------------------------------
           0m00.145s | Chars 069 - 162 [Definition~foo0~:=~Eval~comp~i...] | 0m00.192s || -0m00.04s | -24.47%
-          0m00.126s | Chars 000 - 026 [Require~Coq.ZArith.BinInt.]        | 0m00.143s || -0m00.01s | -11.88%
+          0m00.126s | Chars 000 - 026 [Require~Stdlib.ZArith.BinInt.]     | 0m00.143s || -0m00.01s | -11.88%
              N/A    | Chars 027 - 068 [Declare~Reduction~comp~:=~nati...] | 0m00.s    || +0m00.00s | N/A
           0m00.s    | Chars 027 - 068 [Declare~Reduction~comp~:=~vm_c...] |    N/A    || +0m00.00s | N/A
           0m00.231s | Chars 163 - 208 [Definition~foo1~:=~Eval~comp~i...] | 0m03.836s || -0m03.60s | -93.97%

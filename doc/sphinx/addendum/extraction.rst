@@ -17,7 +17,7 @@ to any of the three.
    Before using any of the commands or options described in this chapter,
    the extraction framework should first be loaded explicitly
    via ``Require Extraction``, or via the more robust
-   ``From Coq Require Extraction``.
+   ``From Stdlib Require Extraction``.
 
 .. coqtop:: in
 
@@ -453,7 +453,7 @@ OCaml code with C code, the linker needs to know
    .. coqtop:: in
 
       Require Extraction.
-      Require Coq.extraction.ExtrOcamlNatInt.
+      Require Stdlib.extraction.ExtrOcamlNatInt.
       Axiom f : nat -> nat -> nat.
       Extract Foreign Constant f => "f_impl".
 

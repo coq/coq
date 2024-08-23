@@ -408,7 +408,7 @@ Induction
 
    The *experimental* tactic :tacn:`dependent induction` performs
    induction-inversion on an instantiated inductive predicate. One needs to first
-   :cmd:`Require` the `Coq.Program.Equality` module to use this tactic. The tactic
+   :cmd:`Require` the `Stdlib.Program.Equality` module to use this tactic. The tactic
    is based on the BasicElim tactic by Conor McBride
    :cite:`DBLP:conf/types/McBride00` and the work of Cristina Cornes around
    inversion :cite:`DBLP:conf/types/CornesT95`. From an instantiated
@@ -442,7 +442,7 @@ Induction
 
       .. coqtop:: reset all
 
-         Require Import Coq.Program.Equality.
+         Require Import Stdlib.Program.Equality.
          Lemma lt_1_r : forall n:nat, n < 1 -> n = 0.
          intros n H ; dependent induction H.
 
@@ -463,7 +463,7 @@ Induction
       This technique works with any inductive predicate. In fact, the
       :tacn:`dependent induction` tactic is just a wrapper around the :tacn:`induction`
       tactic. One can make its own variant by just writing a new tactic
-      based on the definition found in ``Coq.Program.Equality``.
+      based on the definition found in ``Stdlib.Program.Equality``.
 
    .. seealso:: :tacn:`functional induction`
 
@@ -839,7 +839,7 @@ This section describes some special purpose tactics to work with
    .. exn:: @ident is not an equality of Σ types
 
       When applied to a hypothesis, :tacn:`inversion_sigma` can only be called on hypotheses that
-      are equalities using :g:`Coq.Logic.Init.eq`.
+      are equalities using :g:`Stdlib.Logic.Init.eq`.
 
 .. example:: Non-dependent inversion
 
@@ -923,7 +923,7 @@ This section describes some special purpose tactics to work with
 
    .. coqtop:: reset all
 
-      Require Import Coq.Logic.Eqdep_dec.
+      Require Import Stdlib.Logic.Eqdep_dec.
 
       Inductive vec A : nat -> Type :=
       | nil : vec A O
@@ -1349,12 +1349,12 @@ equalities we get the expected goals.
 
 The abstracting tactic is called generalize_eqs and it takes as
 argument a hypothesis to generalize. It uses the JMeq datatype
-defined in Coq.Logic.JMeq, hence we need to require it before. For
+defined in Stdlib.Logic.JMeq, hence we need to require it before. For
 example, revisiting the first example of the inversion documentation:
 
 .. coqtop:: in reset
 
-   Require Import Coq.Logic.JMeq.
+   Require Import Stdlib.Logic.JMeq.
 
    Inductive Le : nat -> nat -> Set :=
         | LeO : forall n:nat, Le 0 n
@@ -1392,7 +1392,7 @@ as well in this case, e.g.:
 
 .. coqtop:: none
 
-   Require Import Coq.Program.Equality.
+   Require Import Stdlib.Program.Equality.
 
 .. coqtop:: in
 
@@ -1412,14 +1412,14 @@ directly solved because of inconsistent contexts arising from the
 constraints on indexes. The nice thing is that we can make a tactic
 based on discriminate, injection and variants of substitution to
 automatically do such simplifications (which may involve the axiom K).
-This is what the ``simplify_dep_elim`` tactic from ``Coq.Program.Equality``
+This is what the ``simplify_dep_elim`` tactic from ``Stdlib.Program.Equality``
 does. For example, we might simplify the previous goals considerably:
 
 .. coqtop:: all abort
 
    induction p ; simplify_dep_elim.
 
-The higher-order tactic ``do_depind`` defined in ``Coq.Program.Equality``
+The higher-order tactic ``do_depind`` defined in ``Stdlib.Program.Equality``
 takes a tactic and combines the building blocks we have seen with it:
 generalizing by equalities calling the given tactic with the
 generalized induction hypothesis as argument and cleaning the subgoals
@@ -1570,8 +1570,8 @@ back automatically. Indeed we can simply write:
 
 .. coqtop:: in
 
-   Require Import Coq.Program.Tactics.
-   Require Import Coq.Program.Equality.
+   Require Import Stdlib.Program.Tactics.
+   Require Import Stdlib.Program.Equality.
 
 .. coqtop:: in
 
