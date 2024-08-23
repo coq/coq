@@ -283,7 +283,10 @@ let _ = CErrors.register_handler begin function
 end
 
 let warn_deprecated_from_Coq =
-  fun _ -> ()
+  CWarnings.create ~name:"deprecated-from-Coq"
+    ~category:Deprecation.Version.v8_21
+    (fun () -> strbrk
+        "\"From Coq\" has been replaced by \"From Stdlib\".")
 
 let deprecated_Coq p =
   if not (Libnames.qualid_eq p (Libnames.qualid_of_string "Coq")) then p else

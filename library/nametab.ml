@@ -108,7 +108,13 @@ let coq_id = Id.of_string "Coq"
 let stdlib_id = Id.of_string "Stdlib"
 
 let warn_deprecated_dirpath_Coq =
-  let dummy ?loc _ = () in dummy
+  CWarnings.create ~name:"deprecated-dirpath-Coq"
+    ~category:Deprecation.Version.v8_21
+    (fun (l, id) ->
+      let l' = List.rev (stdlib_id :: List.tl (List.rev l)) in
+      Pp.(DirPath.(print (make l)) ++ str "." ++ Id.print id ++ spc ()
+          ++ str "has been replaced by" ++ spc ()
+          ++ DirPath.(print (make l')) ++ str "." ++ Id.print id ++ str "."))
 
 module Make (U : UserName) (E : EqualityType) : NAMETREE
   with type user_name = U.t and type elt = E.t =
