@@ -151,6 +151,14 @@ let declare_ml_to_file file decl =
       Pp.(str "Failed to resolve plugin " ++
           pr_sequence (pr_sequence str) plist)
 
+let coq_to_stdlib from strl =
+  let tr_qualid = function
+    | "Coq" :: l -> "Stdlib" :: l
+    | l -> l in
+  match from with
+  | Some from -> Some (tr_qualid from), strl
+  | None -> None, List.map tr_qualid strl
+
 let rec find_dependencies st basename =
   let verbose = true in (* for past/future use? *)
   try
@@ -178,6 +186,7 @@ let rec find_dependencies st basename =
         let tok = coq_action buf in
         match tok with
         | Require (from, strl) ->
+          let from, strl = coq_to_stdlib from strl in
           let decl str =
             if should_visit_v_and_mark from str then begin
               match safe_assoc st from verbose f str with

@@ -30,7 +30,7 @@ let classes_dirpath =
 
 let init_setoid () =
   if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
-  else Coqlib.check_required_library ["Coq";"Setoids";"Setoid"]
+  else Coqlib.check_required_library ["Stdlib";"Setoids";"Setoid"]
 
 type rewrite_attributes = {
   polymorphic : bool;

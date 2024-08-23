@@ -282,7 +282,16 @@ let _ = CErrors.register_handler begin function
   | _ -> None
 end
 
+let warn_deprecated_from_Coq =
+  fun _ -> ()
+
+let deprecated_Coq p =
+  if not (Libnames.qualid_eq p (Libnames.qualid_of_string "Coq")) then p else
+    let () = warn_deprecated_from_Coq () in
+    Libnames.qualid_of_ident (Id.of_string "Stdlib")
+
 let synterp_require ~intern from export qidl =
+  let from = Option.map deprecated_Coq from in
   let root = match from with
   | None -> None
   | Some from ->

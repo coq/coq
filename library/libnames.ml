@@ -170,6 +170,6 @@ let idset_mem_qualid qid s =
 (* Default paths *)
 
 (*s Roots of the space of absolute names *)
-let coq_string = "Coq"
+let coq_string = "Stdlib"
 let coq_root = Id.of_string coq_string
 let default_root_prefix = DirPath.empty

@@ -300,10 +300,12 @@ let parse_args ~usage ~init arglist : t * string list =
     |"-Q" ->
       let d = next () in
       let p = next () in
+      let p = if String.equal p "Coq" then "Stdlib" else p in
       add_vo_include oval d p false
     |"-R" ->
       let d = next () in
       let p = next () in
+      let p = if String.equal p "Coq" then "Stdlib" else p in
       add_vo_include oval d p true
 
     (* Options with one arg *)
