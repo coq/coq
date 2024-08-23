@@ -44,14 +44,9 @@ type protection = {
 }
 
 type rprotection = {
-  r_with_eq : GlobRef.t option;
+  r_with_eq : bool;
   r_arguments : (GlobRef.t * (int -> protect_flag) reduction) list;
 }
-
-let global_head_of_constr sigma c =
-  let f, args = decompose_app sigma c in
-    try fst (EConstr.destRef sigma f)
-    with DestKO -> CErrors.anomaly (str "global_head_of_constr.")
 
 let global_of_constr_nofail sigma c =
   try fst @@ EConstr.destRef sigma c
@@ -61,23 +56,18 @@ let mk_atom c = CClosure.mk_atom (EConstr.Unsafe.to_constr c)
 
 let interp_map env l t =
   let eq g1 g2 = QGlobRef.equal env g1 g2 in
-  try
-    let gr = match l.r_with_eq with None -> raise Exit | Some gr -> gr in
-    if eq t gr then Some (Arg (Prot, (function _ -> Rec)))
-    else raise Exit
-  with Exit ->
-    match List.assoc_f eq t l.r_arguments with
-    | exception Not_found -> None
-    | Full -> Some Full
-    | Arg f -> Some (Arg (Eval, f))
+  match List.assoc_f eq t l.r_arguments with
+  | exception Not_found -> None
+  | Full -> Some Full
+  | Arg f -> Some (Arg f)
 
 let rec mk_clos_but env sigma f_map n t =
   let (f, args) = EConstr.decompose_app sigma t in
   match interp_map env f_map (global_of_constr_nofail sigma f) with
   | Some Full -> tag_arg env sigma f_map n Eval t
-  | Some (Arg (hd, tag)) ->
+  | Some (Arg tag) ->
       let map i t = tag_arg env sigma f_map n (tag i) t in
-      let f = tag_arg env sigma f_map n hd f in
+      let f = tag_arg env sigma f_map n Eval f in
       if Array.is_empty args then f
       else mk_red (FApp (f, Array.mapi map args))
   | None -> mk_atom t
@@ -90,7 +80,7 @@ and tag_arg env sigma f_map n tag c = match tag with
 let protect_maps : protection String.Map.t ref = ref String.Map.empty
 let add_map s m = protect_maps := String.Map.add s m !protect_maps
 
-let dest_rel0 sigma t =
+let dest_rel sigma t =
   match EConstr.kind sigma t with
   | App(f,args) when Array.length args >= 2 ->
       let rel = mkApp(f,Array.sub args 0 (Array.length args - 2)) in
@@ -99,32 +89,28 @@ let dest_rel0 sigma t =
       else error "ring: cannot find relation (not closed)"
   | _ -> error "ring: cannot find relation"
 
-let rec dest_rel sigma t =
-  match EConstr.kind sigma t with
-  | Prod(_,_,c) -> dest_rel sigma c
-  | _ -> dest_rel0 sigma t
-
-let lookup_map map env sigma c =
+let lookup_map map =
   let map = match String.Map.find_opt map !protect_maps with
   | Some map -> map
   | None -> CErrors.user_err (str "Map " ++ qs map ++ str "not found.")
   in
   let r_arguments = List.map (fun (lazy c, map) -> (c, map)) map.arguments in
-  let r_with_eq =
-    if map.with_eq then
-      let (req, _, _) = dest_rel sigma c in
-      Some (global_head_of_constr sigma req)
-    else None
-  in
+  let r_with_eq = map.with_eq in
   { r_with_eq; r_arguments }
 
 let protect_red map env sigma c =
   let tab = create_tab () in
   let infos = Evarutil.create_clos_infos env sigma RedFlags.all in
-  let map = lookup_map map env sigma c in
+  let map = lookup_map map in
   let rec eval n c = match EConstr.kind sigma c with
   | Prod (na, t, u) -> EConstr.mkProd (na, eval n t, eval (n + 1) u)
-  | _ -> EConstr.of_constr @@ norm_val infos tab (mk_clos_but env sigma map n c)
+  | _ ->
+    let norm c = EConstr.of_constr @@ norm_val infos tab (mk_clos_but env sigma map n c) in
+    if map.r_with_eq then
+      let (rel, a1, a2) = dest_rel sigma c in
+      mkApp (rel, [|norm a1; norm a2|])
+    else
+      norm c
   in
   eval 0 c
 
@@ -683,7 +669,7 @@ let add_theory id rth l =
 
 let make_args_list sigma rl t =
   match rl with
-  | [] -> let (_,t1,t2) = dest_rel0 sigma t in [t1;t2]
+  | [] -> let (_,t1,t2) = dest_rel sigma t in [t1;t2]
   | _ -> rl
 
 let make_term_list env sigma carrier rl =
