@@ -17,7 +17,7 @@
 
 (** Hints for the proof search: these combinators should be considered rigid. *)
 
-Require Import Coq.Program.Basics.
+Require Import Stdlib.Program.Basics.
 
 Global Typeclasses Opaque id const flip compose arrow impl iff not all.
 

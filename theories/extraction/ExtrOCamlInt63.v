@@ -10,7 +10,7 @@
 
 (** Extraction to OCaml of native 63-bit machine integers. *)
 
-From Coq Require Uint63 Sint63 Extraction.
+From Stdlib Require Uint63 Sint63 Extraction.
 
 (** Basic data types used by some primitive operators. *)
 

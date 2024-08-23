@@ -1,4 +1,4 @@
-From Coq Require Import PrimFloat.
+From Stdlib Require Import PrimFloat.
 
 Definition foo : { x : float | x = 1%float }.
 Proof.

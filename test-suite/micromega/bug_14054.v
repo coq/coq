@@ -5,12 +5,12 @@ Fail Add Zify InjTyp id.
 
 (* bug 14054 *)
 
-Require Import Coq.ZArith.ZArith. Open Scope Z_scope.
-Require Coq.Init.Byte .
-Require Coq.Strings.Byte .
-Require Import Coq.micromega.ZifyClasses Coq.micromega.Lia.
+Require Import Stdlib.ZArith.ZArith. Open Scope Z_scope.
+Require Stdlib.Init.Byte .
+Require Stdlib.Strings.Byte .
+Require Import Stdlib.micromega.ZifyClasses Stdlib.micromega.Lia.
 
-Notation byte := Coq.Init.Byte.byte.
+Notation byte := Stdlib.Init.Byte.byte.
 
 Module byte.
   Definition unsigned(b: byte): Z := Z.of_N (Byte.to_N b).

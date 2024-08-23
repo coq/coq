@@ -129,7 +129,7 @@ let lt_S_n = function () -> coq_constant "num.nat.lt_S_n"
 let le_n = function () -> coq_init_constant "num.nat.le_n"
 
 let coq_sig_ref = function
-  | () -> find_reference ["Coq"; "Init"; "Specif"] "sig"
+  | () -> find_reference ["Stdlib"; "Init"; "Specif"] "sig"
 
 let coq_proj1_sig = lazy (Coqlib.build_sigma ()).proj1
 

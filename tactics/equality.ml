@@ -1168,7 +1168,7 @@ let warn_inject_no_eqdep_dec =
   CWarnings.create ~name:"injection-missing-eqdep-dec" ~category:CWarnings.CoreCategories.tactics
     Pp.(fun (env,ind) ->
         str "The equality scheme for" ++ spc() ++ Printer.pr_inductive env ind ++ spc() ++
-        str "could not be used as Coq.Logic.Eqdep_dec has not been required.")
+        str "could not be used as Stdlib.Logic.Eqdep_dec has not been required.")
 
 let inject_if_homogenous_dependent_pair ty =
   Proofview.Goal.enter begin fun gl ->

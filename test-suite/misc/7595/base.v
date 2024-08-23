@@ -1,7 +1,7 @@
-From Coq Require Export Morphisms RelationClasses List Bool Utf8 Setoid.
+From Stdlib Require Export Morphisms RelationClasses List Bool Utf8 Setoid.
 Set Default Proof Using "Type".
 Export ListNotations.
-From Coq.Program Require Export Basics Syntax.
+From Stdlib.Program Require Export Basics Syntax.
 Global Generalizable All Variables.
 
 (** * Type classes *)

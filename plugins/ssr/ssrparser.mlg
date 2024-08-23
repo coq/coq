@@ -86,7 +86,7 @@ let inSsrGrammar : tactic_grammar_obj -> obj =
                   cache_function = cache_tactic_notation;
                   classify_function = (fun x -> Keep)}
 
-let path = MPfile (DirPath.make @@ List.map Id.of_string ["ssreflect"; "ssr"; "Coq"])
+let path = MPfile (DirPath.make @@ List.map Id.of_string ["ssreflect"; "ssr"; "Stdlib"])
 
 let register_ssrtac name f prods =
   let open Pptactic in

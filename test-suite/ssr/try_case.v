@@ -1,4 +1,4 @@
-From Coq Require Import ssreflect.
+From Stdlib Require Import ssreflect.
 
 Axiom T : Type.
 Axiom R : T -> T -> Type.

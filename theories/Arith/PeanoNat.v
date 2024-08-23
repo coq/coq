@@ -22,7 +22,7 @@ Module Nat
 
 (** Operations over [nat] are defined in a separate module *)
 
-Include Coq.Init.Nat.
+Include Stdlib.Init.Nat.
 
 (** When including property functors, inline t eq zero one two lt le succ *)
 
@@ -81,7 +81,7 @@ Proof.
   induction n; simpl; auto.
 Qed.
 
-(** ** Remaining constants not defined in Coq.Init.Nat *)
+(** ** Remaining constants not defined in Stdlib.Init.Nat *)
 
 (** NB: Aliasing [le] is mandatory, since only a Definition can implement
     an interface Parameter... *)
@@ -727,15 +727,15 @@ Proof.
     apply le_trans with a; [ apply le_div2 | trivial ].
 Qed.
 
-(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
+(* needed to implement Stdlib.Numbers.NatInt.NZBitsSpec *)
 Lemma testbit_0_l : forall n, testbit 0 n = false.
 Proof. now intro n; induction n. Qed.
 
-(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
+(* needed to implement Stdlib.Numbers.NatInt.NZBitsSpec *)
 Lemma testbit_odd_0 a : testbit (2*a+1) 0 = true.
 Proof. unfold testbit; rewrite odd_spec; now exists a. Qed.
 
-(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
+(* needed to implement Stdlib.Numbers.NatInt.NZBitsSpec *)
 Lemma testbit_even_0 a : testbit (2*a) 0 = false.
 Proof.
   unfold testbit, odd.
@@ -773,7 +773,7 @@ Proof.
     now apply IHn.
 Qed.
 
-(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
+(* needed to implement Stdlib.Numbers.NatInt.NZBitsSpec *)
 Lemma shiftl_spec_low : forall a n m, m<n ->
   testbit (shiftl a n) m = false.
 Proof.
@@ -842,17 +842,17 @@ Proof.
       apply IHn; now apply div2_decr.
 Qed.
 
-(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
+(* needed to implement Stdlib.Numbers.NatInt.NZBitsSpec *)
 Lemma land_spec a b n :
   testbit (land a b) n = testbit a n && testbit b n.
 Proof. unfold land; apply testbit_bitwise_1; trivial. Qed.
 
-(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
+(* needed to implement Stdlib.Numbers.NatInt.NZBitsSpec *)
 Lemma ldiff_spec a b n :
   testbit (ldiff a b) n = testbit a n && negb (testbit b n).
 Proof. unfold ldiff; apply testbit_bitwise_1; trivial. Qed.
 
-(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
+(* needed to implement Stdlib.Numbers.NatInt.NZBitsSpec *)
 Lemma lor_spec a b n :
   testbit (lor a b) n = testbit a n || testbit b n.
 Proof.
@@ -868,7 +868,7 @@ Proof.
     + now apply lt_le_incl in H; rewrite max_l.
 Qed.
 
-(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
+(* needed to implement Stdlib.Numbers.NatInt.NZBitsSpec *)
 Lemma lxor_spec a b n :
   testbit (lxor a b) n = xorb (testbit a n) (testbit b n).
 Proof.
@@ -884,26 +884,26 @@ Proof.
     + now apply lt_le_incl in H; rewrite max_l.
 Qed.
 
-(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
+(* needed to implement Stdlib.Numbers.NatInt.NZBitsSpec *)
 Lemma div2_spec a : div2 a = shiftr a 1.
 Proof. reflexivity. Qed.
 
 (** Aliases with extra dummy hypothesis, to fulfil the interface *)
 
-(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
+(* needed to implement Stdlib.Numbers.NatInt.NZBitsSpec *)
 Definition testbit_odd_succ a n (_:0<=n) := testbit_odd_succ' a n.
 
-(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
+(* needed to implement Stdlib.Numbers.NatInt.NZBitsSpec *)
 Definition testbit_even_succ a n (_:0<=n) := testbit_even_succ' a n.
 
-(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
+(* needed to implement Stdlib.Numbers.NatInt.NZBitsSpec *)
 Lemma testbit_neg_r a n (H:n<0) : testbit a n = false.
 Proof. inversion H. Qed.
 
-(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
+(* needed to implement Stdlib.Numbers.NatInt.NZBitsSpec *)
 Definition shiftl_spec_high a n m (_:0<=m) := shiftl_specif_high a n m.
 
-(* needed to implement Coq.Numbers.NatInt.NZBitsSpec *)
+(* needed to implement Stdlib.Numbers.NatInt.NZBitsSpec *)
 Definition shiftr_spec a n m (_:0<=m) := shiftr_specif a n m.
 End PrivateImplementsBitwiseSpec.
 Include PrivateImplementsBitwiseSpec.

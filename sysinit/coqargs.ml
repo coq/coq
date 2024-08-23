@@ -231,10 +231,10 @@ let set_option = let open Goptions in function
   | opt, OptionAppend v -> set_string_option_append_value_gen ~locality:OptLocal opt v
 
 let get_compat_file = function
-  | "8.21" -> "Coq.Compat.Coq821"
-  | "8.20" -> "Coq.Compat.Coq820"
-  | "8.19" -> "Coq.Compat.Coq819"
-  | "8.18" -> "Coq.Compat.Coq818"
+  | "8.21" -> "Stdlib.Compat.Coq821"
+  | "8.20" -> "Stdlib.Compat.Coq820"
+  | "8.19" -> "Stdlib.Compat.Coq819"
+  | "8.18" -> "Stdlib.Compat.Coq818"
   | ("8.17" | "8.16" | "8.15" | "8.14" | "8.13" | "8.12" | "8.11" | "8.10" | "8.9" | "8.8" | "8.7" | "8.6" | "8.5" | "8.4" | "8.3" | "8.2" | "8.1" | "8.0") as s ->
     CErrors.user_err
       Pp.(str "Compatibility with version " ++ str s ++ str " not supported.")
@@ -468,7 +468,7 @@ let parse_args ~usage ~init args =
 (******************************************************************************)
 
 (* prelude_data == From Coq Require Import Prelude. *)
-let prelude_data = RequireInjection { lib = "Prelude"; prefix = Some "Coq"; export = Some Lib.Import; }
+let prelude_data = RequireInjection { lib = "Prelude"; prefix = Some "Stdlib"; export = Some Lib.Import; }
 
 let injection_commands opts =
   if opts.pre.load_init then prelude_data :: opts.pre.injections else opts.pre.injections

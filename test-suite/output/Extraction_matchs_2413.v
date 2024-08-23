@@ -1,6 +1,6 @@
 (** Extraction : tests of optimizations of pattern matching *)
 
-Require Coq.extraction.Extraction.
+Require Stdlib.extraction.Extraction.
 
 (** First, a few basic tests *)
 

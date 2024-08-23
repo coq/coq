@@ -1,4 +1,4 @@
-Require Import Coq.ssr.ssreflect.
+Require Import Stdlib.ssr.ssreflect.
 
 Axiom xget : forall {T} (P : T -> Prop), T.
 

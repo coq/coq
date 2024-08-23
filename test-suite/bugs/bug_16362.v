@@ -1,6 +1,6 @@
-Require Coq.Setoids.Setoid.
-Export Coq.Classes.Morphisms.
-Export Coq.Setoids.Setoid.
+Require Stdlib.Setoids.Setoid.
+Export Stdlib.Classes.Morphisms.
+Export Stdlib.Setoids.Setoid.
 
 Axiom A : Type.
 Axiom equiv : relation A.

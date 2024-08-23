@@ -1,7 +1,7 @@
 (** Test extraction of big integers using zarith *)
 
-From Coq Require Extraction ExtrOcamlZBigInt.
-From Coq Require Import Bool Arith ZArith List.
+From Stdlib Require Extraction ExtrOcamlZBigInt.
+From Stdlib Require Import Bool Arith ZArith List.
 Import ListNotations.
 
 Definition from_sumbool {P Q} (p : {P} + {Q}) : bool :=

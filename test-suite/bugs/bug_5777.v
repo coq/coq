@@ -1,5 +1,5 @@
-Require Import Coq.Program.Tactics.
-Require Import Coq.Program.Utils JMeq Lia.
+Require Import Stdlib.Program.Tactics.
+Require Import Stdlib.Program.Utils JMeq Lia.
 
 #[local]
 Open Scope program_scope.

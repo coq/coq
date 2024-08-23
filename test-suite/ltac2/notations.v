@@ -1,5 +1,5 @@
 From Ltac2 Require Import Ltac2.
-From Coq Require Import ZArith String List.
+From Stdlib Require Import ZArith String List.
 
 (** * Test cases for the notation system itself *)
 

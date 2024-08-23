@@ -1,5 +1,5 @@
-From Coq Require Import ssreflect ssrbool ssrfun.
-From Coq Require Import List.
+From Stdlib Require Import ssreflect ssrbool ssrfun.
+From Stdlib Require Import List.
 
 Import Nat.
 

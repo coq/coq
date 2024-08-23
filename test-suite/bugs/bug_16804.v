@@ -1,4 +1,4 @@
-From Coq Require Import ssreflect.
+From Stdlib Require Import ssreflect.
 Definition f (x : unit) := True.
 Goal exists (x : unit), forall (y : True = f x), True.
 eexists ?[x]. intros.

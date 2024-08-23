@@ -2,8 +2,8 @@
 
 (* Note: not an utf8 file *)
 
-Require Import Coq.ZArith.BinInt Coq.Lists.List.
-Require Coq.Init.Byte Coq.Strings.Byte Coq.Strings.String.
+Require Import Stdlib.ZArith.BinInt Stdlib.Lists.List.
+Require Stdlib.Init.Byte Stdlib.Strings.Byte Stdlib.Strings.String.
 
 Definition allBytes: list Byte.byte :=
   map (fun nn => match Byte.of_N (BinNat.N.of_nat nn) with

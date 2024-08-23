@@ -1,4 +1,4 @@
-Require Coq.Strings.String.
+Require Stdlib.Strings.String.
 
 Set Implicit Arguments.
 
@@ -28,8 +28,8 @@ Definition str_le {CharType} {String : string_like CharType} (s1 s2 : String)
 Infix "â‰¤s" := str_le (at level 70, right associativity).
 
 Module Export ContextFreeGrammar.
-  Import Coq.Strings.String.
-  Import Coq.Lists.List.
+  Import Stdlib.Strings.String.
+  Import Stdlib.Lists.List.
 
   Section cfg.
     Variable CharType : Type.
@@ -108,7 +108,7 @@ p'')%type
 End ContextFreeGrammarProperties.
 
 Module Export DependentlyTyped.
-  Import Coq.Strings.String.
+  Import Stdlib.Strings.String.
 
   Section recursive_descent_parser.
 
@@ -122,8 +122,8 @@ nonterminal_names_listT }.
   End recursive_descent_parser.
 
 End DependentlyTyped.
-Import Coq.Strings.String.
-Import Coq.Lists.List.
+Import Stdlib.Strings.String.
+Import Stdlib.Lists.List.
 
 Section cfg.
   Context CharType (String : string_like CharType) (G : grammar).

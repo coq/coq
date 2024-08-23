@@ -1,7 +1,7 @@
 (** Check that we avoid an extraction error that came up in PR #14174 in metacoq *)
-Require Import Coq.extraction.ExtrOcamlBasic.
+Require Import Stdlib.extraction.ExtrOcamlBasic.
 Module A.
-  Include Coq.Init.Specif.
+  Include Stdlib.Init.Specif.
 End A.
 Recursive Extraction A.
 (* Avoding

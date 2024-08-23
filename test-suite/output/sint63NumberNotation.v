@@ -1,4 +1,4 @@
-From Coq
+From Stdlib
 Require Import Uint63.
 Import ZArith.
 

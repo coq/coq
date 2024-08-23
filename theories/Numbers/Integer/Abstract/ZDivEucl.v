@@ -10,8 +10,8 @@
 
 Attributes deprecated(since="8.20", note="Use ZDivTrunc or ZDivFloor instead.").
 
-From Coq.Numbers.Integer.Abstract Require Import ZAxioms ZMulOrder ZSgnAbs.
-From Coq.Numbers.NatInt Require Import NZDiv.
+From Stdlib.Numbers.Integer.Abstract Require Import ZAxioms ZMulOrder ZSgnAbs.
+From Stdlib.Numbers.NatInt Require Import NZDiv.
 
 (** * Euclidean Division for integers, Euclid convention
 

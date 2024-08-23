@@ -1,5 +1,5 @@
 Require Import TestSuite.admit.
-Require Import Coq.Arith.PeanoNat.
+Require Import Stdlib.Arith.PeanoNat.
 #[export] Hint Extern 1 => admit : typeclass_instances.
 Require Import Setoid.
 Goal forall a b (f : nat -> Set) (R : nat -> nat -> Prop),

@@ -1,4 +1,4 @@
-Require Import Coq.Arith.Arith Coq.Classes.Morphisms Coq.Classes.RelationClasses.
+Require Import Stdlib.Arith.Arith Stdlib.Classes.Morphisms Stdlib.Classes.RelationClasses.
 Coercion is_true : bool >-> Sortclass.
 Global Instance: Transitive leb.
 Admitted.

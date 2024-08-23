@@ -1,4 +1,4 @@
-From Coq Require Import Utf8.
+From Stdlib Require Import Utf8.
 
 Class ElimInv {X Y : Type} (Pout : X → Y) (Pclose : X → option Y) :=
   elim_inv : False.

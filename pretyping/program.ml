@@ -44,7 +44,7 @@ let mk_coq_not env sigma x =
 let coq_JMeq_ind  () =
   try Coqlib.lib_ref "core.JMeq.type"
   with Not_found ->
-    user_err (Pp.str "cannot find Coq.Logic.JMeq.JMeq; maybe library Coq.Logic.JMeq has to be required first.")
+    user_err (Pp.str "cannot find Stdlib.Logic.JMeq.JMeq; maybe library Stdlib.Logic.JMeq has to be required first.")
 let coq_JMeq_refl () = Coqlib.lib_ref "core.JMeq.refl"
 
 (* let coq_not () = Universes.constr_of_global @@ Coqlib.lib_ref "core.not.type" *)

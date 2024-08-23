@@ -1,5 +1,5 @@
 (* -*- coq-prog-args: ("-noinit"); -*- *)
-Require Import Coq.Init.Notations.
+Require Import Stdlib.Init.Notations.
 
 Notation "x -> y" := (forall _ : x, y).
 

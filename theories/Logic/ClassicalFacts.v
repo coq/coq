@@ -768,7 +768,7 @@ Qed.
 
 (** ** Principle of unrestricted minimization *)
 
-Require Import Coq.Arith.PeanoNat.
+Require Import Stdlib.Arith.PeanoNat.
 
 Definition Minimal (P:nat -> Prop) (n:nat) : Prop :=
   P n /\ forall k, P k -> n<=k.

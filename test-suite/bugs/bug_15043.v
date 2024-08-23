@@ -13,12 +13,12 @@ Module OriginalReport.
 
 Axiom proof_admitted : False.
 Tactic Notation "admit" := abstract case proof_admitted.
-Require Coq.micromega.Psatz.
-Require Coq.Unicode.Utf8.
+Require Stdlib.micromega.Psatz.
+Require Stdlib.Unicode.Utf8.
 
-Import Coq.Arith.Arith.
-Import Coq.micromega.Psatz.
-Import Coq.Unicode.Utf8.
+Import Stdlib.Arith.Arith.
+Import Stdlib.micromega.Psatz.
+Import Stdlib.Unicode.Utf8.
 
 Fixpoint log3_iter down_counter log_up_counter up_counter dist_next :=
     match down_counter with

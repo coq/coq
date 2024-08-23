@@ -1,4 +1,4 @@
-From Coq Require Import Utf8.
+From Stdlib Require Import Utf8.
 Set Default Proof Using "Type".
 
 Module SimpleExamples.

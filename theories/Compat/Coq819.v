@@ -10,4 +10,4 @@
 
 (** Compatibility file for making Coq act similar to Coq v8.19 *)
 
-Require Export Coq.Compat.Coq820.
+Require Export Stdlib.Compat.Coq820.

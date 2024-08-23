@@ -1,5 +1,5 @@
 
-Require Import Coq.Setoids.Setoid Coq.Classes.Morphisms.
+Require Import Stdlib.Setoids.Setoid Stdlib.Classes.Morphisms.
 Definition f (v : option nat) := match v with
                                  | Some k => Some k
                                  | None => None

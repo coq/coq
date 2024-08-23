@@ -17,4 +17,4 @@ End F.
 
 Set Printing Universes.
 Fail Module X := F M.
-(* Universe inconsistency. Cannot enforce j <= i because i < Coq.Logic.Hurkens.105 = j. *)
+(* Universe inconsistency. Cannot enforce j <= i because i < Stdlib.Logic.Hurkens.105 = j. *)

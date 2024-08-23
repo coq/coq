@@ -147,7 +147,7 @@ Proof.
  intros; absurd (p < p); eauto with arith.
 Qed.
 
-Require Coq.extraction.Extraction.
+Require Stdlib.extraction.Extraction.
 Extraction max.
 
 

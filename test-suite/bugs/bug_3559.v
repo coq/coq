@@ -6,7 +6,7 @@ then from 51 lines to 37 lines, then from 43 lines to 30 lines *)
 4.01.0
   coqtop version cagnode17:/afs/csail.mit.edu/u/j/jgross/coq-trunk,trunk
 (437b91a3ffd7327975a129b95b24d3f66ad7f3e4) *)
-Require Import Coq.Init.Notations.
+Require Import Stdlib.Init.Notations.
 Set Universe Polymorphism.
 Generalizable All Variables.
 Record prod A B := pair { fst : A ; snd : B }.
