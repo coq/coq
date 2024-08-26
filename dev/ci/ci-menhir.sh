@@ -15,8 +15,6 @@ if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
     sed -i.bak "s/unreleased/$date/" dune-project
     echo "Definition require_$date := tt." > coq-menhirlib/src/Version.v
   fi
-  dune build @install -p menhirLib,menhirSdk,menhir
-  dune install -p menhirLib,menhirSdk,menhir menhir menhirSdk menhirLib --prefix="$CI_INSTALL_DIR"
 
   make -C coq-menhirlib
   make -C coq-menhirlib install
