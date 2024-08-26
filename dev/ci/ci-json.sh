@@ -10,6 +10,6 @@ git_download json
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 ( cd "${CI_BUILD_DIR}/json"
-  make
+  make MENHIRFLAGS="--coq --coq-no-version-check"
   make install
 )

@@ -981,7 +981,7 @@ plugin:ci-quickchick:
   - build:edge+flambda
   - library:ci-ext_lib
   - library:ci-simple_io
-  - library:ci-mathcomp_1
+  - library:ci-mathcomp
   stage: build-3+
 
 plugin:ci-quickchick_test:
