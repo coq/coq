@@ -1628,11 +1628,11 @@ let pr_id_hint env sigma (id, v) =
   | Some (ConstrPattern p | SyntacticPattern p) -> str", pattern " ++ pr_lconstr_pattern_env env sigma p
   | Some DefaultPattern -> str", pattern " ++ pr_leconstr_env env sigma (get_default_pattern v.code.obj)
   in
-  (pr_hint env sigma v.code ++ str"(level " ++ int v.pri ++ pr_pat v
-   ++ str", id " ++ int id ++ str ")" ++ spc ())
+  (pr_hint env sigma v.code ++ str" (level " ++ int v.pri ++ pr_pat v
+   ++ str", id " ++ int id ++ str ")")
 
 let pr_hint_list env sigma hintlist =
-  (str "  " ++ hov 0 (prlist (pr_id_hint env sigma) hintlist) ++ fnl ())
+  (str "  " ++ hov 0 (prlist_with_sep fnl (pr_id_hint env sigma) hintlist) ++ fnl ())
 
 let pr_hints_db env sigma (name,db,hintlist) =
   (str "In the database " ++ str name ++ str ":" ++

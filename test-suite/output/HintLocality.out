@@ -40,7 +40,7 @@ Unfoldable constant definitions: all
 Unfoldable projection definitions: all
 Cut: emp
 For any goal ->   
-For nat ->   simple apply 0 ; trivial(level 1, pattern nat, id 0) 
+For nat ->   simple apply 0 ; trivial (level 1, pattern nat, id 0)
 
 Non-discriminated database
 Unfoldable variable definitions: all
@@ -48,7 +48,7 @@ Unfoldable constant definitions: all
 Unfoldable projection definitions: all
 Cut: emp
 For any goal ->   
-For nat ->   simple apply 0 ; trivial(level 1, pattern nat, id 0) 
+For nat ->   simple apply 0 ; trivial (level 1, pattern nat, id 0)
 
 Non-discriminated database
 Unfoldable variable definitions: all
@@ -65,7 +65,7 @@ Unfoldable constant definitions: all
 Unfoldable projection definitions: all
 Cut: emp
 For any goal ->   
-For nat ->   simple apply 0 ; trivial(level 1, pattern nat, id 0) 
+For nat ->   simple apply 0 ; trivial (level 1, pattern nat, id 0)
 
 Non-discriminated database
 Unfoldable variable definitions: all
@@ -94,7 +94,7 @@ Unfoldable constant definitions: all except: id
 Unfoldable projection definitions: all
 Cut: _
 For any goal ->   
-For nat ->   simple apply 0 ; trivial(level 1, pattern nat, id 0) 
+For nat ->   simple apply 0 ; trivial (level 1, pattern nat, id 0)
 For S (modes !) ->   
 
 File "./output/HintLocality.v", line 92, characters 0-39:
