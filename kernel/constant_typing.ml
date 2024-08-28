@@ -74,31 +74,25 @@ type 'a effect_handler =
   env -> Constr.t -> 'a -> (Constr.t * ContextSet.t * int)
 
 let skip_trusted_seff sl b e =
-  let rec aux sl b e acc =
+  let rec aux sl b e =
     let open Context.Rel.Declaration in
-    if Int.equal sl 0 then b, e, acc
-    else match kind b with
+    if Int.equal sl 0 then b, e
+    else match HConstr.kind b with
     | LetIn (n,c,ty,bo) ->
-       aux (sl - 1) bo
-         (Environ.push_rel (LocalDef (n,c,ty)) e) (`Let(n,c,ty)::acc)
-    | App(hd,arg) ->
-       begin match kind hd with
-       | Lambda (n,ty,bo) ->
-           aux (sl - 1) bo
-             (Environ.push_rel (LocalAssum (n,ty)) e) (`Cut(n,ty,arg)::acc)
-       | _ -> assert false
-       end
+      let c = HConstr.self c in
+      let ty = HConstr.self ty in
+      aux (sl - 1) bo (Environ.push_rel (LocalDef (n,c,ty)) e)
+    | App (hd, args) ->
+      let () = assert (Int.equal (Array.length args) 1) in
+      begin match HConstr.kind hd with
+      | Lambda (n,ty,bo) ->
+        let ty = HConstr.self ty in
+        aux (sl - 1) bo (Environ.push_rel (LocalAssum (n,ty)) e)
+      | _ -> assert false
+      end
     | _ -> assert false
     in
-  aux sl b e []
-
-let rec unzip ctx j =
-  match ctx with
-  | [] -> j
-  | `Let (n,c,ty) :: ctx ->
-      unzip ctx { j with uj_val = mkLetIn (n,c,ty,j.uj_val) }
-  | `Cut (n,ty,arg) :: ctx ->
-      unzip ctx { j with uj_val = mkApp (mkLambda (n,ty,j.uj_val),arg) }
+  aux sl b e
 
 type typing_context =
   TyCtx of Environ.env * unsafe_type_judgment * Id.Set.t * UVars.sort_level_subst * universes
@@ -281,11 +275,14 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
        Opaqueproof.PrivatePolymorphic private_univs
   in
   (* Note: non-trivial trusted side-effects only in monomorphic case *)
-  let body,env,ectx = skip_trusted_seff valid_signatures body env in
   let hbody = HConstr.of_constr env body in
-  let j = Typeops.infer_hconstr env hbody in
-  let j = unzip ectx j in
-  let () = Typeops.check_cast env j DEFAULTcast tyj in
+  let () =
+    let eff_body, eff_env = skip_trusted_seff valid_signatures hbody env in
+    let j = Typeops.infer_hconstr eff_env eff_body in
+    let () = assert (HConstr.self eff_body == j.uj_val) in
+    let j = { uj_val = HConstr.self hbody; uj_type = j.uj_type } in
+    Typeops.check_cast eff_env j DEFAULTcast tyj
+  in
   let declared =
     if List.is_empty (named_context env) then declared
     else Environ.really_needed env (Id.Set.union declared (global_vars_set env tyj.utj_val))
@@ -293,8 +290,8 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
   let declared' = check_section_variables env declared (Some body) tyj.utj_val in
   let () = assert (Id.Set.equal declared declared') in
   (* Note: non-trivial usubst only in polymorphic case *)
-  let def = Vars.subst_univs_level_constr usubst j.uj_val in
-  let hbody = if def == j.uj_val && List.is_empty ectx then Some hbody else None in
+  let def = Vars.subst_univs_level_constr usubst (HConstr.self hbody) in
+  let hbody = if def == HConstr.self hbody then Some hbody else None in
   hbody, def, univs
 
 (*s Global and local constant declaration. *)
