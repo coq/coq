@@ -842,7 +842,7 @@ Section Elts.
   Lemma remove_remove_eq : forall l x, remove x (remove x l) = remove x l.
   Proof. intros l x; now rewrite (notin_remove _ _ (remove_In l x)). Qed.
 
-  Lemma remove_length_le : forall l x, length (remove x l) <= length l.
+  Lemma length_remove_le : forall l x, length (remove x l) <= length l.
   Proof.
     intro l; induction l as [|y l IHl]; simpl; intros x; trivial.
     destruct (eq_dec x y); simpl.
@@ -850,13 +850,13 @@ Section Elts.
     - apply (proj1 (Nat.succ_le_mono _ _) (IHl x)).
   Qed.
 
-  Lemma remove_length_lt : forall l x, In x l -> length (remove x l) < length l.
+  Lemma length_remove_lt : forall l x, In x l -> length (remove x l) < length l.
   Proof.
     intro l; induction l as [|y l IHl]; simpl; intros x Hin.
     - contradiction Hin.
     - destruct Hin as [-> | Hin].
       + destruct (eq_dec x x); [|easy].
-        apply Nat.lt_succ_r, remove_length_le.
+        apply Nat.lt_succ_r, length_remove_le.
       + specialize (IHl _ Hin); destruct (eq_dec x y); simpl; auto.
         now apply Nat.succ_lt_mono in IHl.
   Qed.
@@ -1730,20 +1730,20 @@ End Fold_Right_Recursor.
       - cbn. rewrite IH. destruct (f x); reflexivity.
     Qed.
 
-    Corollary filter_length f (l : list A) : length (filter f l) + length (filter (fun x => negb (f x)) l) = length l.
+    Corollary length_filter f (l : list A) : length (filter f l) + length (filter (fun x => negb (f x)) l) = length l.
     Proof. symmetry. apply (partition_length f), partition_as_filter. Qed.
 
-    Corollary filter_length_le f (l : list A): length (filter f l) <= length l.
-    Proof. rewrite <- (filter_length f l). apply Nat.le_add_r. Qed.
+    Corollary length_filter_le f (l : list A): length (filter f l) <= length l.
+    Proof. rewrite <- (length_filter f l). apply Nat.le_add_r. Qed.
 
-    Lemma filter_length_forallb f (l : list A): length (filter f l) = length l -> forallb f l = true.
+    Lemma forallb_length_filter f (l : list A): length (filter f l) = length l -> forallb f l = true.
     Proof.
       intro H. induction l as [|x l IH]; [reflexivity |].
       cbn in *. destruct (f x).
       - apply IH. now injection H.
       - exfalso. assert (length l < length (filter f l)) as E.
         + symmetry in H. apply Nat.eq_le_incl in H. exact H.
-        + eapply Nat.le_ngt; [apply filter_length_le | exact E].
+        + eapply Nat.le_ngt; [apply length_filter_le | exact E].
     Qed.
 
     (** Remove by filtering *)
@@ -2185,14 +2185,14 @@ Section Cutting.
   Lemma firstn_O l: firstn 0 l = [].
   Proof. now simpl. Qed.
 
-  Lemma firstn_le_length n: forall l:list A, length (firstn n l) <= n.
+  Lemma length_firstn_le n: forall l:list A, length (firstn n l) <= n.
   Proof.
     induction n as [|k iHk]; simpl; [auto | intro l; destruct l as [|x xs]; simpl].
     - now apply Nat.le_0_l.
     - now rewrite <- Nat.succ_le_mono.
   Qed.
 
-  Lemma firstn_length_le: forall l:list A, forall n:nat,
+  Lemma length_firstn_eq: forall l:list A, forall n:nat,
     n <= length l -> length (firstn n l) = n.
   Proof. intro l; induction l as [|x xs Hrec].
     - simpl. intros n H. apply Nat.le_0_r in H. now subst.
@@ -3670,7 +3670,7 @@ Section Repeat.
       | S k => x::(repeat x k)
     end.
 
-  Theorem repeat_length x n:
+  Theorem length_repeat x n:
     length (repeat x n) = n.
   Proof.
     induction n as [| k Hrec]; simpl; rewrite ?Hrec; reflexivity.
@@ -3701,7 +3701,7 @@ Section Repeat.
     repeat x n = l1 ++ l2 -> repeat x (length l1) = l1 /\ repeat x (length l2) = l2.
   Proof.
     revert n; induction l1 as [|a l1 IHl1]; simpl; intros n Hr; subst.
-    - repeat split; now rewrite repeat_length.
+    - repeat split; now rewrite length_repeat.
     - destruct n; inversion Hr as [ [Heq Hr0] ]; subst.
       now apply IHl1 in Hr0 as [-> ->].
   Qed.
@@ -3799,7 +3799,7 @@ Section Repeat.
   Proof.
     intro Hnm. rewrite (nth_error_nth' _ a).
     - now rewrite nth_repeat.
-    - now rewrite repeat_length.
+    - now rewrite length_repeat.
   Qed.
 
 End Repeat.
@@ -3854,7 +3854,7 @@ Proof.
   rewrite flat_map_concat_map, length_concat, map_map. reflexivity.
 Qed.
 
-Corollary flat_map_constant_length A B c (f: A -> list B) l:
+Corollary length_flat_map_constant A B c (f: A -> list B) l:
   (forall x, In x l -> length (f x) = c) -> length (flat_map f l) = (length l) * c.
 Proof.
   intro H. rewrite length_flat_map.
@@ -3867,7 +3867,7 @@ Lemma length_list_power (A B:Type)(l:list A) (l':list B):
     length (list_power l l') = (length l')^(length l).
 Proof.
   induction l as [ | a m IH ]; [reflexivity|].
-  cbn. rewrite flat_map_constant_length with (c := length l').
+  cbn. rewrite length_flat_map_constant with (c := length l').
   - rewrite IH. apply Nat.mul_comm.
   - intros x H. apply length_map.
 Qed.
@@ -4013,6 +4013,15 @@ Notation concat_length := length_concat (only parsing).
 Notation flat_map_length := length_flat_map (only parsing).
 #[deprecated(since = "8.20", note = "Use length_list_power instead.")]
 Notation list_power_length := length_list_power (only parsing).
+Notation remove_length_le := length_remove_le (only parsing).
+Notation remove_length_lt := length_remove_lt (only parsing).
+Notation filter_length := length_filter (only parsing).
+Notation filter_length_le := length_filter_le (only parsing).
+Notation filter_length_forallb := forallb_length_filter (only parsing).
+Notation firstn_le_length := length_firstn_le (only parsing).
+Notation firstn_length_le := length_firstn_eq (only parsing).
+Notation repeat_length := length_repeat (only parsing).
+Notation flat_map_constant_length := length_flat_map_constant (only parsing).
 (* end hide *)
 
 
