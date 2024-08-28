@@ -117,6 +117,10 @@ end
 
 let genset = Generator.idset
 
+let next_name_away0 na (gen, avoid) =
+  let (id, avoid) = Namegen.Generator.next_name_away gen na avoid in
+  (id, (gen, avoid))
+
 module Avoid :
 sig
   type t
@@ -131,7 +135,7 @@ struct
 open Nameops
 
 type t =
-| Nice of Id.Set.t
+| Nice : 'a Generator.t * 'a -> t
 | Fast of Subscript.t Id.Map.t
   (** Overapproximation of the set of names to avoid. If [(id ↦ s) ∈ m] then for
       all subscript [s'] smaller than [s], [add_subscript id s'] needs to be
@@ -147,7 +151,7 @@ let make ~fast ids =
     in
     let avoid = Id.Set.fold fold ids Id.Map.empty in
     Fast avoid
-  else Nice ids
+  else Nice (genset, ids)
 
 let fresh_id_in id avoid =
   let id, _ = get_subscript id in
@@ -158,17 +162,17 @@ let fresh_id_in id avoid =
 
 let compute_name sigma ~let_in ~pattern flags avoid env na c =
 match avoid with
-| Nice avoid ->
+| Nice (gen, avoid) ->
   let flags =
     if flags.flg_isgoal then RenamingForGoal
     else if pattern then RenamingForCasesPattern (fst env, c)
     else RenamingElsewhereFor (fst env, c)
   in
   let na, avoid =
-    if let_in then compute_displayed_let_name_in genset (Global.env ()) sigma flags avoid na
-    else compute_displayed_name_in genset (Global.env ()) sigma flags avoid na c
+    if let_in then compute_displayed_let_name_in gen (Global.env ()) sigma flags avoid na
+    else compute_displayed_name_in gen (Global.env ()) sigma flags avoid na c
   in
-  na, Nice avoid
+  na, Nice (gen, avoid)
 | Fast avoid ->
   (* In fast mode, we use a dumber algorithm but algorithmically more
       efficient algorithm that doesn't iterate through the term to find the
@@ -184,9 +188,9 @@ match avoid with
   (Name id, Fast avoid)
 
 let next_name_away flags na avoid = match avoid with
-| Nice avoid ->
-  let id = next_name_away na avoid in
-  id, Nice (Id.Set.add id avoid)
+| Nice (gen, avoid) ->
+  let id, (gen, avoid) = next_name_away0 na (gen, avoid) in
+  id, Nice (gen, avoid)
 | Fast avoid ->
   let id = match na with
   | Anonymous -> default_non_dependent_ident
@@ -795,8 +799,7 @@ let rec share_pattern_names detype n l avoid env sigma c t =
           | _, Name _ -> na'
           | _ -> na in
         let t' = detype avoid env sigma t in
-        let id = Namegen.next_name_away na avoid in
-        let avoid = Id.Set.add id avoid in
+        let id, avoid = next_name_away0 na avoid in
         let env = Name id :: env in
         share_pattern_names detype (n-1) ((Name id,None,Explicit,None,t')::l) avoid env sigma c c'
     | _ ->

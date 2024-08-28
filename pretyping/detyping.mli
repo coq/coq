@@ -55,9 +55,9 @@ val detype_rel_context : 'a delay -> constr option -> Id.Set.t -> (names_context
   evar_map -> rel_context -> 'a glob_decl_g list
 
 val share_pattern_names :
-  (Id.Set.t -> names_context -> 'c -> 'd Pattern.constr_pattern_r -> 'a) -> int ->
+  ('g Namegen.Generator.input -> names_context -> 'c -> 'd Pattern.constr_pattern_r -> 'a) -> int ->
   (Name.t * 'e option * binding_kind * 'b option * 'a) list ->
-  Id.Set.t -> names_context -> 'c -> 'd Pattern.constr_pattern_r ->
+  'g Namegen.Generator.input -> names_context -> 'c -> 'd Pattern.constr_pattern_r ->
   'd Pattern.constr_pattern_r ->
   (Name.t * 'e option * binding_kind * 'b option * 'a) list * 'a * 'a
 
