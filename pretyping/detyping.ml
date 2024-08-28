@@ -115,6 +115,8 @@ let branch env sigma (ind, i) u params (nas, br) =
 
 end
 
+let genset = Generator.idset
+
 module Avoid :
 sig
   type t
@@ -163,8 +165,8 @@ match avoid with
     else RenamingElsewhereFor (fst env, c)
   in
   let na, avoid =
-    if let_in then compute_displayed_let_name_in (Global.env ()) sigma flags avoid na
-    else compute_displayed_name_in (Global.env ()) sigma flags avoid na c
+    if let_in then compute_displayed_let_name_in genset (Global.env ()) sigma flags avoid na
+    else compute_displayed_name_in genset (Global.env ()) sigma flags avoid na c
   in
   na, Nice avoid
 | Fast avoid ->
@@ -420,11 +422,11 @@ let computable sigma (nas, ccl) =
 let lookup_name_as_displayed env sigma t s =
   let rec lookup avoid n c = match EConstr.kind sigma c with
     | Prod (name,_,c') ->
-        (match compute_displayed_name_in (Global.env ()) sigma RenamingForGoal avoid name.binder_name c' with
+        (match compute_displayed_name_in genset (Global.env ()) sigma RenamingForGoal avoid name.binder_name c' with
            | (Name id,avoid') -> if Id.equal id s then Some n else lookup avoid' (n+1) c'
            | (Anonymous,avoid') -> lookup avoid' (n+1) (pop c'))
     | LetIn (name,_,_,c') ->
-        (match Namegen.compute_displayed_name_in (Global.env ()) sigma RenamingForGoal avoid name.binder_name c' with
+        (match Namegen.compute_displayed_name_in genset (Global.env ()) sigma RenamingForGoal avoid name.binder_name c' with
            | (Name id,avoid') -> if Id.equal id s then Some n else lookup avoid' (n+1) c'
            | (Anonymous,avoid') -> lookup avoid' (n+1) (pop c'))
     | Cast (c,_,_) -> lookup avoid n c
@@ -434,7 +436,7 @@ let lookup_name_as_displayed env sigma t s =
 let lookup_index_as_renamed env sigma t n =
   let rec lookup n d c = match EConstr.kind sigma c with
     | Prod (name,_,c') ->
-          (match Namegen.compute_displayed_name_in (Global.env ()) sigma RenamingForGoal Id.Set.empty name.binder_name c' with
+          (match Namegen.compute_displayed_name_in genset (Global.env ()) sigma RenamingForGoal Id.Set.empty name.binder_name c' with
                (Name _,_) -> lookup n (d+1) c'
              | (Anonymous,_) ->
                  if Int.equal n 0 then
@@ -444,7 +446,7 @@ let lookup_index_as_renamed env sigma t n =
                  else
                    lookup (n-1) (d+1) c')
     | LetIn (name,_,_,c') ->
-          (match Namegen.compute_displayed_name_in (Global.env ()) sigma RenamingForGoal Id.Set.empty name.binder_name c' with
+          (match Namegen.compute_displayed_name_in genset (Global.env ()) sigma RenamingForGoal Id.Set.empty name.binder_name c' with
              | (Name _,_) -> lookup n (d+1) c'
              | (Anonymous,_) ->
                  if Int.equal n 0 then

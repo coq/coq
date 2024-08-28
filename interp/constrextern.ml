@@ -1426,9 +1426,11 @@ let any_any_branch =
   (* | _ => _ *)
   CAst.make ([],[DAst.make @@ PatVar Anonymous], DAst.make @@ GHole (GInternalHole))
 
+let genset = Namegen.Generator.idset
+
 let compute_displayed_name_in_pattern sigma avoid na c =
   let open Namegen in
-  compute_displayed_name_in_gen (fun _ -> Patternops.noccurn_pattern) sigma avoid na c
+  compute_displayed_name_in_gen genset (fun _ -> Patternops.noccurn_pattern) sigma avoid na c
 
 let glob_of_pat_under_context glob_of_pat avoid env sigma (nas, pat) =
   let fold (avoid, env, nas, epat) na =
@@ -1481,7 +1483,7 @@ let rec glob_of_pat
       let env' = Termops.add_name na' env in
       GProd (na',None,Explicit,glob_of_pat avoid env sigma t,glob_of_pat avoid' env' sigma c)
   | PLetIn (na,b,t,c) ->
-      let na',avoid' = Namegen.compute_displayed_let_name_in (Global.env ()) sigma Namegen.RenamingForGoal avoid na in
+      let na',avoid' = Namegen.compute_displayed_let_name_in genset (Global.env ()) sigma Namegen.RenamingForGoal avoid na in
       let env' = Termops.add_name na' env in
       GLetIn (na',None,glob_of_pat avoid env sigma b, Option.map (glob_of_pat avoid env sigma) t,
               glob_of_pat avoid' env' sigma c)

@@ -280,6 +280,45 @@ let restart_subscript id =
      *** make_ident id (Some 0) *** but compatibility would be lost... *)
     forget_subscript id
 
+module Generator =
+struct
+
+type _ t =
+| Fresh : Fresh.t t
+| IdSet : Id.Set.t t
+
+type 'a input = 'a t * 'a
+
+let fresh = Fresh
+let idset = IdSet
+
+let is_fresh (type a) (gen : a t) id (avoid : a) = match gen with
+| Fresh -> not (Fresh.mem id avoid)
+| IdSet -> not (Id.Set.mem id avoid)
+
+let gen_ident (type a) ?(mangle = true) ?(filter = (fun _ -> false)) (gen : a t) id (state : a) : Id.t * a =
+  let id = if mangle then mangle_id id else id in
+  match gen with
+  | Fresh ->
+    let rec gen state id =
+      let (id, state) = Fresh.fresh id state in
+      if filter id then gen state id else id
+    in
+    let id = gen state id in
+    (id, Fresh.add id state)
+  | IdSet ->
+    let rec gen id = if Id.Set.mem id state || filter id then gen (increment_subscript id) else id in
+    let id = gen id in
+    (id, Id.Set.add id state)
+
+let next_name_away gen na avoid =
+  let id = match na with Name id -> id | Anonymous -> default_non_dependent_ident in
+  let id = mangle_id id in
+  let id = if is_fresh gen id avoid then id else restart_subscript id in
+  gen_ident ~mangle:false gen id avoid
+
+end
+
 let visible_ids sigma (nenv, c) =
   let accu = ref (GlobRef.Set_env.empty, Int.Set.empty, Id.Set.empty) in
   let rec visible_ids n c = match EConstr.kind sigma c with
@@ -333,12 +372,11 @@ let visible_ids sigma (nenv, c) =
 
 (* 1- Looks for a fresh name for printing in cases pattern *)
 
-let next_name_away_in_cases_pattern sigma env_t na avoid =
+let next_name_away_in_cases_pattern gen sigma env_t na avoid =
   let id = match na with Name id -> id | Anonymous -> default_dependent_ident in
   let visible = visible_ids sigma env_t in
-  let bad id = Id.Set.mem id avoid || is_constructor id
-                                    || Id.Set.mem id visible in
-  next_ident_away_from id bad
+  let bad id = is_constructor id || Id.Set.mem id visible in
+  Generator.gen_ident ~filter:bad gen id avoid
 
 (* 2- Looks for a fresh name for introduction in goal *)
 
@@ -354,11 +392,13 @@ let next_ident_away_in_goal env id avoid =
   let bad id = Id.Set.mem id avoid || (is_global id && not (is_section_variable env id)) in
   next_ident_away_from id bad
 
-let next_name_away_in_goal env na avoid =
+let next_name_away_in_goal (type a) (gen : a Generator.t) env na (avoid : a) =
   let id = match na with
     | Name id -> id
     | Anonymous -> default_non_dependent_ident in
-  next_ident_away_in_goal env id avoid
+  let id = if Generator.is_fresh gen id avoid then id else restart_subscript id in
+  let bad id = is_global id && not (is_section_variable env id) in
+  Generator.gen_ident ~filter:bad gen id avoid
 
 (* 3- Looks for next fresh name outside a list that is moreover valid
    as a global identifier; the legacy algorithm is that if the name is
@@ -422,12 +462,12 @@ let make_all_name_different env sigma =
    looks for name of same base with lower available subscript beyond current
    subscript *)
 
-let next_ident_away_for_default_printing sigma env_t id avoid =
+let next_ident_away_for_default_printing gen sigma env_t id avoid =
   let visible = visible_ids sigma env_t in
-  let bad id = Id.Set.mem id avoid || Id.Set.mem id visible in
-  next_ident_away_from id bad
+  let bad id = Id.Set.mem id visible in
+  Generator.gen_ident ~filter:bad gen id avoid
 
-let next_name_away_for_default_printing sigma env_t na avoid =
+let next_name_away_for_default_printing gen sigma env_t na avoid =
   let id = match na with
   | Name id   -> id
   | Anonymous ->
@@ -435,7 +475,7 @@ let next_name_away_for_default_printing sigma env_t na avoid =
       (* taken into account by the function compute_displayed_name_in; *)
       (* just in case, invent a valid name *)
       default_non_dependent_ident in
-  next_ident_away_for_default_printing sigma env_t id avoid
+  next_ident_away_for_default_printing gen sigma env_t id avoid
 
 (**********************************************************************)
 (* Displaying terms avoiding bound variables clashes *)
@@ -462,26 +502,26 @@ type renaming_flags =
   | RenamingForGoal
   | RenamingElsewhereFor of (Name.t list * constr)
 
-let next_name_for_display env sigma flags =
+let next_name_for_display gen env sigma flags na avoid =
   match flags with
-  | RenamingForCasesPattern env_t -> next_name_away_in_cases_pattern sigma env_t
-  | RenamingForGoal -> next_name_away_in_goal env
-  | RenamingElsewhereFor env_t -> next_name_away_for_default_printing sigma env_t
+  | RenamingForCasesPattern env_t -> next_name_away_in_cases_pattern gen sigma env_t na avoid
+  | RenamingForGoal -> next_name_away_in_goal gen env na avoid
+  | RenamingElsewhereFor env_t -> next_name_away_for_default_printing gen sigma env_t na avoid
 
 (* Remark: Anonymous var may be dependent in Evar's contexts *)
-let compute_displayed_name_in_gen_poly noccurn_fun env sigma flags avoid na c =
+let compute_displayed_name_in_gen_poly gen noccurn_fun env sigma flags avoid na c =
   if noccurn_fun sigma 1 c then Anonymous, avoid
   else
-    let fresh_id = next_name_for_display env sigma flags na avoid in
-    Name fresh_id, Id.Set.add fresh_id avoid
+    let fresh_id, avoid = next_name_for_display gen env sigma flags na avoid in
+    Name fresh_id, avoid
 
-let compute_displayed_name_in = compute_displayed_name_in_gen_poly noccurn
+let compute_displayed_name_in gen = compute_displayed_name_in_gen_poly gen noccurn
 
-let compute_displayed_name_in_gen f env sigma =
+let compute_displayed_name_in_gen gen f env sigma =
   (* only flag which does not need a constr, maybe to be refined *)
   let flag = RenamingForGoal in
-  compute_displayed_name_in_gen_poly f env sigma flag
+  compute_displayed_name_in_gen_poly gen f env sigma flag
 
-let compute_displayed_let_name_in env sigma flags avoid na =
-  let fresh_id = next_name_for_display env sigma flags na avoid in
-  (Name fresh_id, Id.Set.add fresh_id avoid)
+let compute_displayed_let_name_in gen env sigma flags avoid na =
+  let fresh_id, avoid = next_name_for_display gen env sigma flags na avoid in
+  (Name fresh_id, avoid)
