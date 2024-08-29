@@ -1396,11 +1396,10 @@ let extern_constr ?(inctx=false) ?scope env sigma t =
 let extern_constr_in_scope ?inctx scope env sigma t =
   extern_constr ?inctx ~scope env sigma t
 
-type any_input = Any : 'a Namegen.Generator.input -> any_input
-
 let make_avoid goal_concl_style env =
-  if goal_concl_style then Any (Namegen.Generator.idset, vars_of_env env) (* TODO *)
-  else Any (Namegen.Generator.fresh, Nameops.Fresh.empty)
+  if goal_concl_style then (Namegen.Generator.fresh, Fresh.of_set @@ vars_of_env env)
+  (* TODO: this is linear in the size of the environment, maybe we can do better *)
+  else (Namegen.Generator.fresh, Nameops.Fresh.empty)
 
 let extern_type ?(goal_concl_style=false) env sigma ?impargs t =
   (* "goal_concl_style" means do alpha-conversion using the "goal" convention *)
@@ -1410,14 +1409,14 @@ let extern_type ?(goal_concl_style=false) env sigma ?impargs t =
   (* Not "goal_concl_style" means do alpha-conversion avoiding only *)
   (* those goal/section/rel variables that occurs in the subterm under *)
   (* consideration; see namegen.ml for further details *)
-  let Any avoid = make_avoid goal_concl_style env in
+  let avoid = make_avoid goal_concl_style env in
   let r = Detyping.detype Detyping.Later ~isgoal:goal_concl_style ~avoid env sigma t in
   extern_glob_type ?impargs (extern_env env sigma) r
 
 let extern_sort sigma s = extern_glob_sort (Evd.universe_binders sigma) (detype_sort sigma s)
 
 let extern_closed_glob ?(goal_concl_style=false) ?(inctx=false) ?scope env sigma t =
-  let Any avoid = make_avoid goal_concl_style env in
+  let avoid = make_avoid goal_concl_style env in
   let r =
     Detyping.detype_closed_glob ~isgoal:goal_concl_style ~avoid env sigma t
   in
