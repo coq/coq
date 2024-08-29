@@ -292,6 +292,18 @@ type 'a input = 'a t * 'a
 let fresh = Fresh
 let idset = IdSet
 
+let max_map (type a) (gen : a t) (avoid : a) =
+match gen with
+| Fresh -> Fresh.max_map avoid
+| IdSet ->
+  let fold id accu =
+    let id, ss = get_subscript id in
+    match Id.Map.find_opt id accu with
+    | Some old_ss when Subscript.compare ss old_ss <= 0 -> accu
+    | _ -> Id.Map.add id ss accu
+  in
+  Id.Set.fold fold avoid Id.Map.empty
+
 let is_fresh (type a) (gen : a t) id (avoid : a) = match gen with
 | Fresh -> not (Fresh.mem id avoid)
 | IdSet -> not (Id.Set.mem id avoid)

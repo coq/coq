@@ -116,6 +116,8 @@ val fresh : Nameops.Fresh.t t
 val idset : Id.Set.t t
 
 val next_name_away : 'a t -> Name.t -> 'a -> Id.t * 'a
+
+val max_map : 'a t -> 'a -> Nameops.Subscript.t Id.Map.t
 end
 
 type renaming_flags =
