@@ -2157,7 +2157,7 @@ Section Cutting.
   Proof. now simpl. Qed.
 
   Lemma nth_error_firstn n l i
-    : nth_error (firstn n l) i = if Nat.ltb i n then nth_error l i else None.
+    : nth_error (firstn n l) i = if i <? n then nth_error l i else None.
   Proof.
     revert l i; induction n, l, i; cbn [firstn nth_error]; trivial.
     case Nat.ltb; trivial.
@@ -2173,7 +2173,7 @@ Section Cutting.
   Lemma firstn_all l: firstn (length l) l = l.
   Proof. induction l as [| ? ? H]; simpl; [reflexivity | now rewrite H]. Qed.
 
-  Lemma firstn_all2 n: forall (l:list A), (length l) <= n -> firstn n l = l.
+  Lemma firstn_all2 n: forall (l:list A), length l <= n -> firstn n l = l.
   Proof. induction n as [|k iHk].
     - intro l. inversion 1 as [H1|?].
       rewrite (length_zero_iff_nil l) in H1. subst. now simpl.
