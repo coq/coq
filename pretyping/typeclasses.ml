@@ -263,12 +263,14 @@ let resolve_typeclasses ?(filter=no_goals) ?(unique=get_typeclasses_unique_solut
 let error_unresolvable env evd comp =
   let exception MultipleFound in
   let fold ev accu =
-    let evi = Evd.find_undefined evd ev in
-    let ev_class = class_of_constr env evd (Evd.evar_concl evi) in
-    if Option.is_empty ev_class then accu
-    else (* focus on one instance if only one was searched for *)
-    if Option.has_some accu then raise MultipleFound
-    else (Some ev)
+    match Evd.find_undefined evd ev with
+    | exception Not_found -> None
+    | evi ->
+      let ev_class = class_of_constr env evd (Evd.evar_concl evi) in
+      if Option.is_empty ev_class then accu
+      else (* focus on one instance if only one was searched for *)
+      if Option.has_some accu then raise MultipleFound
+      else (Some ev)
   in
   let ev = try Evar.Set.fold fold comp None with MultipleFound -> None in
   Pretype_errors.unsatisfiable_constraints env evd ev comp

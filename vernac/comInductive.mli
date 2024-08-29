@@ -19,6 +19,7 @@ type flags = {
   template : bool option;
   auto_prop_lowering : bool;
   finite : Declarations.recursivity_kind;
+  mode : Hints.hint_mode list option;
 }
 
 (** Entry points for the vernacular commands Inductive and CoInductive *)

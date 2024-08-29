@@ -599,17 +599,19 @@ Creating Hints
 
    .. cmd:: Hint Mode @qualid {+ {| + | ! | - } } {? : {+ @ident } }
 
-      Sets an optional mode of use for the identifier :n:`@qualid`. When
+      Sets an optional mode of resolution for the identifier :n:`@qualid`. When
       proof search has a goal that ends in an application of :n:`@qualid` to
       arguments :n:`@arg ... @arg`, the mode tells if the hints associated with
-      :n:`@qualid` can be applied or not. A mode specification is a list of ``+``,
-      ``!`` or ``-`` items that specify if an argument of the identifier is to be
-      treated as an input (``+``), if its head only is an input (``!``) or an output
-      (``-``) of the identifier. Mode ``-`` matches any term, mode ``+`` matches a
+      :n:`@qualid` can be applied or not, depending on a criterion on the arguments.
+      A mode specification is a list of ``+``, ``!`` or ``-`` items that specify if
+      an argument of the identifier is to be treated as an input (``+``), if its
+      head only is an input (``!``) or an output (``-``) of the identifier.
+      Mode ``-`` matches any term, mode ``+`` matches a
       term if and only if it does not contain existential variables, while mode ``!``
       matches a term if and only if the *head* of the term is not an existential variable.
       The head of a term is understood here as the applicative head, recursively,
-      ignoring casts.
+      ignoring casts. For a mode declaration to match a list of arguments, each argument should
+      match its corresponding mode.
 
       :cmd:`Hint Mode` is especially useful for typeclasses, when one does not want
       to support default instances and wants to avoid ambiguity in general. Setting a parameter
@@ -631,6 +633,44 @@ Creating Hints
       A hint with a non-local attribute was added inside a section, but it
       refers to a local variable that will go out of scope when closing the
       section. As a result the hint will not survive either.
+
+   .. example:: Logic programming with addition on natural numbers
+
+      This example illustrates the use of modes to control how resolutions
+      can be triggered during proof search.
+
+      .. coqtop:: all reset
+
+         Parameter plus : nat -> nat -> nat -> Prop.
+         Hint Mode plus ! - - : plus.
+         Hint Mode plus - ! - : plus.
+
+      .. coqtop:: in
+
+         Axiom plus0l : forall m : nat, plus 0 m m.
+         Axiom plus0r : forall n : nat, plus n 0 n.
+         Axiom plusSl : forall n m r : nat, plus n m r -> plus (S n) m (S r).
+         Axiom plusSr : forall n m r : nat, plus n m r -> plus m (S m) (S r).
+         Hint Resolve plus0l plus0r plusSl plusSr : plus.
+
+      The previous commands define the addition predicate and set its mode so it
+      can resolve goals if and only if one of the first two arguments is headed
+      by a constructor or constant. The last argument of the predicate will be
+      the inferred result.
+
+      .. coqtop:: all
+
+         Goal exists x y, plus x y 12.
+         Proof. eexists ?[x], ?[y].
+            Fail typeclasses eauto with plus.
+            instantiate (y := 1).
+            typeclasses eauto with plus.
+         Defined.
+
+      In the proof script, the first call to :tacn:`typeclasses eauto` fails as the two
+      arguments are headed by an existential variable, while when we instantiate the second
+      argument with ``1``, typeclass resolution succeeds as the second declared mode is matched,
+      and instantiates ``x`` with ``11``.
 
 .. cmd:: Hint Rewrite {? {| -> | <- } } {+ @one_term } {? using @ltac_expr } {? : {* @ident } }
 

@@ -1524,6 +1524,7 @@ let do_build_inductive evd (funconstants : pconstant list)
       template = Some false;
       auto_prop_lowering = false;
       finite = Finite;
+      mode = None;
     }
     in
     with_full_print
