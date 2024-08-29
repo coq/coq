@@ -54,8 +54,8 @@ Section Lists.
 
   Definition tl (l:list A) :=
     match l with
-      | [] => nil
-      | a :: m => m
+      | [] => []
+      | _ :: m => m
     end.
 
   (** The [In] predicate *)
@@ -97,7 +97,7 @@ Section Facts.
     - now intros [= -> ->].
   Qed.
 
-  Lemma hd_error_some_nil l (a:A) : hd_error l = Some a -> l <> nil.
+  Lemma hd_error_some_nil l (a:A) : hd_error l = Some a -> l <> [].
   Proof. unfold hd_error. destruct l; now discriminate. Qed.
 
   Theorem length_zero_iff_nil (l : list A):
@@ -173,7 +173,7 @@ Section Facts.
   Qed.
 
   Lemma app_eq_cons x y z (a : A):
-    x ++ y = a :: z -> (x = nil /\ y = a :: z) \/ exists x', x = a :: x' /\ z = x' ++ y.
+    x ++ y = a :: z -> (x = [] /\ y = a :: z) \/ exists x', x = a :: x' /\ z = x' ++ y.
   Proof.
     intro H. destruct x as [|b x].
     - now left.
@@ -227,7 +227,7 @@ Section Facts.
     intro l; induction l; simpl; auto.
   Qed.
 
-  Lemma last_length : forall (l : list A) a, length (l ++ a :: nil) = S (length l).
+  Lemma last_length : forall (l : list A) a, length (l ++ [a]) = S (length l).
   Proof.
     intros ; rewrite length_app ; simpl.
     rewrite Nat.add_succ_r, Nat.add_0_r; reflexivity.
@@ -637,7 +637,7 @@ Section Elts.
         end.
   Proof. destruct n; reflexivity. Qed.
 
-  Lemma nth_error_nil n : nth_error nil n = None.
+  Lemma nth_error_nil n : nth_error [] n = None.
   Proof. destruct n; reflexivity. Qed.
 
   Lemma nth_error_cons x xs n
@@ -1081,11 +1081,11 @@ Section ListOps.
 
   Fixpoint concat (l : list (list A)) : list A :=
   match l with
-  | nil => nil
-  | cons x l => x ++ concat l
+  | [] => []
+  | x :: l => x ++ concat l
   end.
 
-  Lemma concat_nil : concat nil = nil.
+  Lemma concat_nil : concat [] = [].
   Proof.
   reflexivity.
   Qed.
@@ -1277,8 +1277,8 @@ Section FlatMap.
     Definition flat_map :=
       fix flat_map (l:list A) : list B :=
       match l with
-        | nil => nil
-        | cons x t => (f x)++(flat_map t)
+        | [] => []
+        | x :: t => f x ++ flat_map t
       end.
 
     Lemma flat_map_concat_map l :
@@ -1389,8 +1389,8 @@ Section Fold_Left_Recursor.
 
   Fixpoint fold_left (l:list B) (a0:A) : A :=
     match l with
-      | nil => a0
-      | cons b t => fold_left t (f a0 b)
+      | [] => a0
+      | b :: t => fold_left t (f a0 b)
     end.
 
   Lemma fold_left_app : forall (l l':list B)(i:A),
@@ -1419,8 +1419,8 @@ Section Fold_Right_Recursor.
 
   Fixpoint fold_right (l:list B) : A :=
     match l with
-      | nil => a0
-      | cons b t => f b (fold_right t)
+      | [] => a0
+      | b :: t => f b (fold_right t)
     end.
 
 End Fold_Right_Recursor.
@@ -1463,9 +1463,9 @@ End Fold_Right_Recursor.
   Fixpoint list_power (A B:Type)(l:list A) (l':list B) :
     list (list (A * B)) :=
     match l with
-      | nil => cons nil nil
-      | cons x t =>
-        flat_map (fun f:list (A * B) => map (fun y:B => cons (x, y) f) l')
+      | [] => [[]]
+      | x :: t =>
+        flat_map (fun f:list (A * B) => map (fun y:B => (x, y) :: f) l')
         (list_power t l')
     end.
 
@@ -1483,7 +1483,7 @@ End Fold_Right_Recursor.
 
     Fixpoint existsb (l:list A) : bool :=
       match l with
-      | nil => false
+      | [] => false
       | a::l => f a || existsb l
       end.
 
@@ -1523,7 +1523,7 @@ End Fold_Right_Recursor.
 
     Fixpoint forallb (l:list A) : bool :=
       match l with
-      | nil => true
+      | [] => true
       | a::l => f a && forallb l
       end.
 
@@ -1551,7 +1551,7 @@ End Fold_Right_Recursor.
 
     Fixpoint filter (l:list A) : list A :=
       match l with
-      | nil => nil
+      | [] => []
       | x :: l => if f x then x::(filter l) else filter l
       end.
 
@@ -1597,7 +1597,7 @@ End Fold_Right_Recursor.
 
     Fixpoint find (l:list A) : option A :=
       match l with
-      | nil => None
+      | [] => None
       | x :: tl => if f x then Some x else find tl
       end.
 
@@ -1620,7 +1620,7 @@ End Fold_Right_Recursor.
 
     Fixpoint partition (l:list A) : list A * list A :=
       match l with
-      | nil => (nil, nil)
+      | [] => ([], [])
       | x :: tl => let (g,d) := partition tl in
                    if f x then (x::g,d) else (g,x::d)
       end.
@@ -1836,7 +1836,7 @@ End Fold_Right_Recursor.
     Fixpoint combine (l : list A) (l' : list B) : list (A*B) :=
       match l,l' with
       | x::tl, y::tl' => (x,y)::(combine tl tl')
-      | _, _ => nil
+      | _, _ => []
       end.
 
     Lemma split_combine : forall (l: list (A*B)),
@@ -1905,8 +1905,8 @@ End Fold_Right_Recursor.
     Fixpoint list_prod (l:list A) (l':list B) :
       list (A * B) :=
       match l with
-      | nil => nil
-      | cons x t => (map (fun y:B => (x, y)) l')++(list_prod t l')
+      | [] => []
+      | x :: t => (map (fun y:B => (x, y)) l')++(list_prod t l')
       end.
 
     Lemma in_prod_aux :
@@ -1995,7 +1995,7 @@ Section length_order.
     intros. now apply Nat.succ_le_mono.
   Qed.
 
-  Lemma lel_nil : forall l':list A, lel l' nil -> nil = l'.
+  Lemma lel_nil : forall l':list A, lel l' [] -> [] = l'.
   Proof.
     intro l'; elim l'; [now intros|].
     now intros a' y H H0 %Nat.nle_succ_0.
@@ -2019,12 +2019,12 @@ Section SetIncl.
   #[local]
   Hint Unfold incl : core.
 
-  Lemma incl_nil_l : forall l, incl nil l.
+  Lemma incl_nil_l : forall l, incl [] l.
   Proof.
     intros l a Hin; inversion Hin.
   Qed.
 
-  Lemma incl_l_nil : forall l, incl l nil -> l = nil.
+  Lemma incl_l_nil : forall l, incl l [] -> l = [].
   Proof.
     intro l; destruct l as [|a l]; intros Hincl.
     - reflexivity.
@@ -2141,11 +2141,11 @@ Section Cutting.
 
   Variable A : Type.
 
-  Fixpoint firstn (n:nat)(l:list A) : list A :=
+  Fixpoint firstn (n:nat) (l:list A) : list A :=
     match n with
-      | 0 => nil
+      | 0 => []
       | S n => match l with
-                 | nil => nil
+                 | [] => []
                  | a::l => a::(firstn n l)
                end
     end.
@@ -2240,7 +2240,7 @@ Section Cutting.
     match n with
       | 0 => l
       | S n => match l with
-                 | nil => nil
+                 | [] => []
                  | a::l => skipn n l
                end
     end.
@@ -2277,7 +2277,7 @@ Section Cutting.
   Lemma skipn_cons n a l: skipn (S n) (a::l) = skipn n l.
   Proof. reflexivity. Qed.
 
-  Lemma skipn_all : forall l, skipn (length l) l = nil.
+  Lemma skipn_all : forall l, skipn (length l) l = [].
   Proof. now intro l; induction l. Qed.
 
   Lemma skipn_all2 n: forall l, length l <= n -> skipn n l = [].
@@ -2286,7 +2286,7 @@ Section Cutting.
     now rewrite skipn_firstn_comm, L.
   Qed.
 
-  Lemma skipn_all_iff n l : length l <= n <-> skipn n l = nil.
+  Lemma skipn_all_iff n l : length l <= n <-> skipn n l = [].
   Proof.
     split; [apply skipn_all2|].
     revert l; induction n as [|n IH]; intros l.
@@ -2526,7 +2526,7 @@ Section ReDun.
   Variable A : Type.
 
   Inductive NoDup : list A -> Prop :=
-    | NoDup_nil : NoDup nil
+    | NoDup_nil : NoDup []
     | NoDup_cons : forall x l, ~ In x l -> NoDup l -> NoDup (x::l).
 
   Lemma NoDup_Add a l l' : Add a l l' -> (NoDup l' <-> NoDup l /\ ~In a l).
@@ -2805,7 +2805,7 @@ Section NatSeq.
 
   Fixpoint seq (start len:nat) : list nat :=
     match len with
-      | 0 => nil
+      | 0 => []
       | S len => start :: seq (S start) len
     end.
 
@@ -2901,9 +2901,9 @@ Section Compare.
 
   Fixpoint list_compare (xs ys : list A) : comparison :=
     match xs, ys with
-    | nil   , nil    => Eq
-    | nil   , _      => Lt
-    | _     , nil    => Gt
+    | []    , []     => Eq
+    | []    , _      => Lt
+    | _     , []     => Gt
     | x :: xs, y :: ys =>
         match cmp x y with
         | Eq => list_compare xs ys
@@ -3018,8 +3018,8 @@ Section Compare.
     Lemma list_compareP (xs ys : list A) :
       ListCompareSpec xs ys (list_compare xs ys).
     Proof.
-      assert (xs = nil ++ xs) as Hxs by reflexivity.
-      assert (ys = nil ++ ys) as Hys by reflexivity.
+      assert (xs = [] ++ xs) as Hxs by reflexivity.
+      assert (ys = [] ++ ys) as Hys by reflexivity.
       revert Hxs Hys.
       generalize (@nil A) as prefix.
       generalize ys at 2 4.
@@ -3127,7 +3127,7 @@ Section Exists_Forall.
         + assumption.
     Qed.
 
-    Lemma Exists_nil : Exists nil <-> False.
+    Lemma Exists_nil : Exists [] <-> False.
     Proof. split; inversion 1. Qed.
 
     Lemma Exists_cons x l:
@@ -3176,7 +3176,7 @@ Section Exists_Forall.
     Qed.
 
     Inductive Forall : list A -> Prop :=
-      | Forall_nil : Forall nil
+      | Forall_nil : Forall []
       | Forall_cons : forall x l, P x -> Forall l -> Forall (x::l).
 
     #[local]
@@ -3448,7 +3448,7 @@ Proof.
 Qed.
 
 Lemma concat_nil_Forall A : forall (l : list (list A)),
-  concat l = nil <-> Forall (fun x => x = nil) l.
+  concat l = [] <-> Forall (fun x => x = []) l.
 Proof.
   intro l; induction l as [|a l IHl]; simpl; split; intros Hc; auto.
   - apply app_eq_nil in Hc.
@@ -3579,7 +3579,7 @@ Section ForallPairs.
      of elements of a list, but now the order of elements matters. *)
 
   Inductive ForallOrdPairs : list A -> Prop :=
-    | FOP_nil : ForallOrdPairs nil
+    | FOP_nil : ForallOrdPairs []
     | FOP_cons : forall a l,
       Forall (R a) l -> ForallOrdPairs l -> ForallOrdPairs (a::l).
 
@@ -3683,7 +3683,7 @@ Section Repeat.
   Qed.
 
   Lemma repeat_cons n a :
-    a :: repeat a n = repeat a n ++ (a :: nil).
+    a :: repeat a n = repeat a n ++ [a].
   Proof.
     induction n as [|n IHn]; simpl.
     - reflexivity.
@@ -3765,7 +3765,7 @@ Section Repeat.
     apply Hocc, count_occ_not_In in Hneq; intuition.
   Qed.
 
-  Lemma count_occ_sgt l x : l = x :: nil <->
+  Lemma count_occ_sgt l x : l = [x] <->
     count_occ decA l x = 1 /\ forall y, y <> x -> count_occ decA l y = 0.
   Proof.
     split.
@@ -3893,7 +3893,7 @@ Proof.
   - now rewrite Forall_cons_iff, <- IHl, Nat.max_lub_iff.
 Qed.
 
-Lemma list_max_lt : forall l n, l <> nil ->
+Lemma list_max_lt : forall l n, l <> [] ->
   list_max l < n <-> Forall (fun k => k < n) l.
 Proof.
 intro l; induction l as [|a l IHl]; simpl; intros n Hnil; split; intros H; intuition.
@@ -3914,8 +3914,8 @@ Qed.
 
 Ltac is_list_constr c :=
  match c with
-  | nil => idtac
-  | (_::_) => idtac
+  | [] => idtac
+  | _ :: _ => idtac
   | _ => fail
  end.
 
