@@ -448,7 +448,7 @@ let cc_tactic depth additional_terms b =
         let env = Proofview.Goal.env gl in
         let hole = DAst.make @@ GHole (GInternalHole) in
         let pr_missing (c, missing) =
-          let c = Detyping.detype Detyping.Now Id.Set.empty env sigma c in
+          let c = Detyping.detype Detyping.Now env sigma c in
           let holes = List.init missing (fun _ -> hole) in
           Printer.pr_glob_constr_env env sigma (DAst.make @@ GApp (c, holes))
         in

@@ -783,11 +783,11 @@ let notation_constr_of_glob_constr nenv a =
 (**********************************************************************)
 (* Substitution of kernel names, avoiding a list of bound identifiers *)
 
-let notation_constr_of_constr avoiding t =
+let notation_constr_of_constr avoid t =
   let t = EConstr.of_constr t in
   let env = Global.env () in
   let evd = Evd.from_env env in
-  let t = Detyping.detype Detyping.Now avoiding env evd t in
+  let t = Detyping.detype Detyping.Now ~avoid env evd t in
   let nenv = {
     ninterp_var_type = Id.Map.empty;
     ninterp_rec_vars = Id.Map.empty;
@@ -942,8 +942,8 @@ let rec subst_notation_constr subst bound raw =
           NArray(t',def',ty')
 
 let subst_interpretation subst (metas,pat) =
-  let bound = List.fold_left (fun accu (id, _) -> Id.Set.add id accu) Id.Set.empty metas in
-  (metas,subst_notation_constr subst bound pat)
+  let bound = List.fold_left (fun accu (id, _) -> Fresh.add id accu) Fresh.empty metas in
+  (metas,subst_notation_constr subst (Namegen.Generator.fresh, bound) pat)
 
 (**********************************************************************)
 (* Pattern-matching a [glob_constr] against a [notation_constr]       *)

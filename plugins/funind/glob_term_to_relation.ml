@@ -417,7 +417,7 @@ let rec pattern_to_term_and_type env typ =
           (Array.init
              (cst_narg - List.length patternl)
              (fun i ->
-               Detyping.detype Detyping.Now Id.Set.empty env
+               Detyping.detype Detyping.Now env
                  (Evd.from_env env)
                  csta.(i)))
       in
@@ -507,7 +507,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
       let rt_as_constr, ctx = Pretyping.understand env (Evd.from_env env) rt in
       let rt_typ = Retyping.get_type_of env (Evd.from_env env) rt_as_constr in
       let res_raw_type =
-        Detyping.detype Detyping.Now Id.Set.empty env (Evd.from_env env)
+        Detyping.detype Detyping.Now env (Evd.from_env env)
           rt_typ
       in
       let res = fresh_id args_res.to_avoid "_res" in
@@ -764,7 +764,7 @@ and build_entry_lc_from_case_term env sigma types funname make_discr
             (fun id acc ->
               let typ_of_id = Typing.type_of_variable env_with_pat_ids id in
               let raw_typ_of_id =
-                Detyping.detype Detyping.Now Id.Set.empty env_with_pat_ids
+                Detyping.detype Detyping.Now env_with_pat_ids
                   (Evd.from_env env) typ_of_id
               in
               mkGProd (Name id, raw_typ_of_id, acc))
@@ -801,7 +801,7 @@ and build_entry_lc_from_case_term env sigma types funname make_discr
            (fun pat e typ_as_constr ->
              let this_pat_ids = ids_of_pat pat in
              let typ =
-               Detyping.detype Detyping.Now Id.Set.empty new_env
+               Detyping.detype Detyping.Now new_env
                  (Evd.from_env env) typ_as_constr
              in
              let pat_as_term = pattern_to_term pat in
@@ -817,7 +817,7 @@ and build_entry_lc_from_case_term env sigma types funname make_discr
                    ( Prod (Name id)
                    , let typ_of_id = Typing.type_of_variable new_env id in
                      let raw_typ_of_id =
-                       Detyping.detype Detyping.Now Id.Set.empty new_env
+                       Detyping.detype Detyping.Now new_env
                          (Evd.from_env env) typ_of_id
                      in
                      raw_typ_of_id )
@@ -978,7 +978,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
                ( DAst.make @@ GRef (GlobRef.IndRef (fst ind), None)
                , List.map
                    (fun p ->
-                     Detyping.detype Detyping.Now Id.Set.empty env
+                     Detyping.detype Detyping.Now env
                        (Evd.from_env env) p)
                    params
                  @ Array.to_list
@@ -1013,12 +1013,12 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
                   | Anonymous -> acc
                   | Name id' ->
                     ( id'
-                    , Detyping.detype Detyping.Now Id.Set.empty env
+                    , Detyping.detype Detyping.Now env
                         (Evd.from_env env) arg )
                     :: acc
                 else if EConstr.isVar sigma var_as_constr then
                   (EConstr.destVar sigma var_as_constr
-                  , Detyping.detype Detyping.Now Id.Set.empty env
+                  , Detyping.detype Detyping.Now env
                       (Evd.from_env env) arg )
                   :: acc
                 else acc)

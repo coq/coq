@@ -1529,7 +1529,7 @@ let vernac_reserve bl =
     let sigma = Evd.from_env env in
     let t,ctx = Constrintern.interp_type env sigma c in
     let t = Flags.without_option Detyping.print_universes (fun () ->
-        Detyping.detype Detyping.Now Id.Set.empty env (Evd.from_ctx ctx) t)
+        Detyping.detype Detyping.Now env (Evd.from_ctx ctx) t)
         ()
     in
     let t,_ = Notation_ops.notation_constr_of_glob_constr (default_env ()) t in

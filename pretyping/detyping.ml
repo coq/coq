@@ -124,7 +124,7 @@ let next_name_away0 na (gen, avoid) =
 module Avoid :
 sig
   type t
-  val make : fast:bool -> Id.Set.t -> t
+  val make : fast:bool -> 'a Generator.input option -> t
   val compute_name : Evd.evar_map -> let_in:bool -> pattern:bool ->
     detyping_flags -> t -> Name.t list * 'a -> Name.t ->
     EConstr.constr -> Name.t * t
@@ -141,17 +141,13 @@ type t =
       all subscript [s'] smaller than [s], [add_subscript id s'] needs to be
       avoided. *)
 
-let make ~fast ids =
-  if fast then
-    let fold id accu =
-      let id, ss = get_subscript id in
-      match Id.Map.find_opt id accu with
-      | Some old_ss when Subscript.compare ss old_ss <= 0 -> accu
-      | _ -> Id.Map.add id ss accu
-    in
-    let avoid = Id.Set.fold fold ids Id.Map.empty in
-    Fast avoid
-  else Nice (genset, ids)
+let make0 ~fast gen ids =
+  if fast then Fast (Generator.max_map gen ids)
+  else Nice (gen, ids)
+
+let make ~fast = function
+| None -> make0 ~fast Generator.fresh Fresh.empty
+| Some (gen, avoid) -> make0 ~fast gen avoid
 
 let fresh_id_in id avoid =
   let id, _ = get_subscript id in
@@ -1110,17 +1106,17 @@ let detype_rel_context d flags where avoid env sigma sign =
       (na',r,Explicit,b',t') :: aux avoid' (add_name (set_name na' decl) env) rest
   in aux avoid env (List.rev sign)
 
-let detype d ?(isgoal=false) avoid env sigma t =
+let detype d ?(isgoal=false) ?avoid env sigma t =
   let flags = { flg_isgoal = isgoal; } in
   let avoid = Avoid.make ~fast:(fast_name_generation ()) avoid in
   detype d flags avoid (names_of_rel_context env, env) sigma t
 
-let detype_rel_context d where avoid env sigma sign =
+let detype_rel_context d where ?avoid env sigma sign =
   let flags = { flg_isgoal = false; } in
   let avoid = Avoid.make ~fast:(fast_name_generation ()) avoid in
   detype_rel_context d flags where avoid env sigma sign
 
-let detype_closed_glob ?isgoal avoid env sigma t =
+let detype_closed_glob ?isgoal ?avoid env sigma t =
   let convert_id cl id =
     try Id.Map.find id cl.idents
     with Not_found -> id
@@ -1143,7 +1139,7 @@ let detype_closed_glob ?isgoal avoid env sigma t =
              [Printer.pr_constr_under_binders_env] does. *)
           let assums = List.map (fun id -> LocalAssum (make_annot (Name id) ERelevance.relevant,(* dummy *) mkProp)) b in
           let env = push_rel_context assums env in
-          DAst.get (detype Now ?isgoal avoid env sigma c)
+          DAst.get (detype Now ?isgoal ?avoid env sigma c)
         (* if [id] is bound to a [closed_glob_constr]. *)
         with Not_found -> try
           let {closure;term} = Id.Map.find id cl.untyped in
@@ -1199,7 +1195,7 @@ let rec subst_glob_constr env subst = DAst.map (function
         | Some t ->
           let evd = Evd.from_env env in
           let t = t.UVars.univ_abstracted_value in (* XXX This seems dangerous *)
-          DAst.get (detype Now Id.Set.empty env evd (EConstr.of_constr t)))
+          DAst.get (detype Now env evd (EConstr.of_constr t)))
 
   | GSort _
   | GVar _
