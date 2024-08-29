@@ -648,7 +648,7 @@ Section Elts.
         end.
   Proof. apply unfold_nth_error. Qed.
 
-  Lemma nth_error_O l
+  Lemma nth_error_0 l
     : nth_error l O = hd_error l.
   Proof. destruct l; reflexivity. Qed.
 
@@ -1401,7 +1401,7 @@ Section Fold_Left_Recursor.
 
 End Fold_Left_Recursor.
 
-Lemma fold_left_S_O :
+Lemma fold_left_S_0 :
   forall (A:Type)(l:list A), fold_left (fun x _ => S x) l 0 = length l.
 Proof.
   intros A l. induction l as [|? ? IH] using rev_ind; [reflexivity|].
@@ -2182,7 +2182,7 @@ Section Cutting.
       * simpl. intro H. f_equal. apply iHk. now apply Nat.succ_le_mono.
   Qed.
 
-  Lemma firstn_O l: firstn 0 l = [].
+  Lemma firstn_0 l: firstn 0 l = [].
   Proof. now simpl. Qed.
 
   Lemma firstn_le_length n: forall l:list A, length (firstn n l) <= n.
@@ -2258,7 +2258,7 @@ Section Cutting.
   Qed.
 
   Lemma hd_error_skipn n l : hd_error (skipn n l) = nth_error l n.
-  Proof. rewrite <-nth_error_O, nth_error_skipn, Nat.add_0_r; trivial. Qed.
+  Proof. rewrite <-nth_error_0, nth_error_skipn, Nat.add_0_r; trivial. Qed.
 
   Lemma firstn_skipn_comm : forall m n l,
   firstn m (skipn n l) = skipn n (firstn (n + m) l).
@@ -2268,7 +2268,7 @@ Section Cutting.
   skipn m (firstn n l) = firstn (n - m) (skipn m l).
   Proof. now intro m; induction m; intros [] []; simpl; rewrite ?firstn_nil. Qed.
 
-  Lemma skipn_O : forall l, skipn 0 l = l.
+  Lemma skipn_0 : forall l, skipn 0 l = l.
   Proof. reflexivity. Qed.
 
   Lemma skipn_nil : forall n, skipn n ([] : list A) = [].
@@ -3991,8 +3991,8 @@ Notation app_length := length_app (only parsing).
 Notation rev_length := length_rev (only parsing).
 #[deprecated(since = "8.20", note = "Use length_map instead.")]
 Notation map_length := length_map (only parsing).
-#[deprecated(since = "8.20", note = "Use fold_left_S_O instead.")]
-Notation fold_left_length := fold_left_S_O (only parsing).
+#[deprecated(since = "8.20", note = "Use fold_left_S_0 instead.")]
+Notation fold_left_length := fold_left_S_0 (only parsing).
 #[deprecated(since = "8.20", note = "Use length_fst_split instead.")]
 Notation split_length_l := length_fst_split (only parsing).
 #[deprecated(since = "8.20", note = "Use length_snd_split instead.")]
@@ -4012,6 +4012,9 @@ Notation concat_length := length_concat (only parsing).
 #[deprecated(since = "8.20", note = "Use length_flat_map instead.")]
 Notation flat_map_length := length_flat_map (only parsing).
 #[deprecated(since = "8.20", note = "Use length_list_power instead.")]
+Notation nth_error_O := nth_error_0 (only parsing).
+Notation firstn_O := firstn_0 (only parsing).
+Notation skipn_O := skipn_0 (only parsing).
 Notation list_power_length := length_list_power (only parsing).
 (* end hide *)
 
