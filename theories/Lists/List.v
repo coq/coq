@@ -222,6 +222,16 @@ Section Facts.
 
   (** Compatibility with other operations *)
 
+  Lemma length_nil : length (@nil A) = 0.
+  Proof.
+    reflexivity.
+  Qed.
+
+  Lemma length_cons : forall (l : list A) a, length (a :: l) = S (length l).
+  Proof.
+    reflexivity.
+  Qed.
+
   Lemma length_app : forall l l' : list A, length (l++l') = length l + length l'.
   Proof.
     intro l; induction l; simpl; auto.
