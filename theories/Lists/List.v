@@ -2222,6 +2222,20 @@ Section Cutting.
       * rewrite <- app_comm_cons. simpl. f_equal. apply iHk.
   Qed.
 
+  Lemma firstn_app_exact:
+    forall l1 l2,
+    firstn (length l1) (l1 ++ l2) = l1.
+  Proof.
+    intros. now rewrite firstn_app, Nat.sub_diag, firstn_O, firstn_all, app_nil_r.
+  Qed.
+
+  Lemma firstn_app_exact_eq:
+    forall n l1 l2,
+    n = length l1 -> firstn n (l1 ++ l2) = l1.
+  Proof.
+    intros * ->. apply firstn_app_exact.
+  Qed.
+
   Lemma firstn_app_2 n:
     forall l1 l2,
     firstn ((length l1) + n) (l1 ++ l2) = l1 ++ firstn n l2.
