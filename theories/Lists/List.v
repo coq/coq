@@ -2185,20 +2185,31 @@ Section Cutting.
   Lemma firstn_O l: firstn 0 l = [].
   Proof. now simpl. Qed.
 
-  Lemma length_firstn_le n: forall l:list A, length (firstn n l) <= n.
+  Lemma length_firstn_min : forall n l, length (firstn n l) = min n (length l).
   Proof.
-    induction n as [|k iHk]; simpl; [auto | intro l; destruct l as [|x xs]; simpl].
-    - now apply Nat.le_0_l.
-    - now rewrite <- Nat.succ_le_mono.
+    intro n; induction n; intro l; destruct l; simpl; auto.
   Qed.
 
-  Lemma length_firstn_eq: forall l:list A, forall n:nat,
+  Lemma le_length_firstn n: forall l:list A, length (firstn n l) <= n.
+  Proof.
+    intros. rewrite length_firstn_min. apply Nat.le_min_l.
+  Qed.
+
+  Lemma le_length_firstn_length n: forall l:list A, length (firstn n l) <= length l.
+  Proof.
+    intros. rewrite length_firstn_min. apply Nat.le_min_r.
+  Qed.
+
+  Lemma length_firstn_le n: forall l:list A,
     n <= length l -> length (firstn n l) = n.
-  Proof. intro l; induction l as [|x xs Hrec].
-    - simpl. intros n H. apply Nat.le_0_r in H. now subst.
-    - intro n; destruct n as [|n].
-      * now simpl.
-      * simpl. intro H. f_equal. apply Hrec. now apply Nat.succ_le_mono.
+  Proof.
+    intros. rewrite length_firstn_min. now apply Nat.min_l.
+  Qed.
+
+  Lemma length_firstn_length_le n: forall l:list A,
+    length l <= n -> length (firstn n l) = length l.
+  Proof.
+    intros. rewrite length_firstn_min. now apply Nat.min_r.
   Qed.
 
   Lemma firstn_app n:
@@ -2225,8 +2236,8 @@ Section Cutting.
         rewrite H0, firstn_all2; [reflexivity | now apply Nat.le_add_r].
   Qed.
 
-  Lemma firstn_firstn:
-    forall l:list A,
+  Lemma firstn_firstn_min:
+    forall l : list A,
     forall i j : nat,
     firstn i (firstn j l) = firstn (min i j) l.
   Proof. intro l; induction l as [|x xs Hl].
@@ -2234,6 +2245,38 @@ Section Cutting.
     - intros [|i]; [easy|].
       intros [|j]; [easy|].
       cbn. f_equal. apply Hl.
+  Qed.
+
+  Lemma firstn_idemp:
+    forall l : list A,
+    forall i : nat,
+    firstn i (firstn i l) = firstn i l.
+  Proof.
+    now intros; rewrite firstn_firstn_min, Nat.min_id.
+  Qed.
+
+  Lemma firstn_firstn_l:
+    forall l : list A,
+    forall i j : nat,
+    i <= j -> firstn i (firstn j l) = firstn i l.
+  Proof.
+    now intros; rewrite firstn_firstn_min, Nat.min_l.
+  Qed.
+
+  Lemma firstn_firstn_r:
+    forall l : list A,
+    forall i j : nat,
+    j <= i -> firstn i (firstn j l) = firstn j l.
+  Proof.
+    now intros; rewrite firstn_firstn_min, Nat.min_r.
+  Qed.
+
+  Lemma firstn_comm:
+    forall l : list A,
+    forall i j : nat,
+    firstn i (firstn j l) = firstn j (firstn i l).
+  Proof.
+    now intros; rewrite !firstn_firstn_min, Nat.min_comm.
   Qed.
 
   Fixpoint skipn (n:nat)(l:list A) : list A :=
@@ -2322,11 +2365,6 @@ Section Cutting.
     - injection 1. intros ->. reflexivity.
     - discriminate.
     - simpl. intros H. f_equal. apply IH. exact H.
-  Qed.
-
-  Lemma length_firstn : forall n l, length (firstn n l) = min n (length l).
-  Proof.
-    intro n; induction n; intro l; destruct l; simpl; auto.
   Qed.
 
   Lemma length_skipn n :
@@ -4002,7 +4040,7 @@ Notation combine_length := length_combine (only parsing).
 #[deprecated(since = "8.20", note = "Use length_prod instead.")]
 Notation prod_length := length_prod (only parsing).
 #[deprecated(since = "8.20", note = "Use length_firstn instead.")]
-Notation firstn_length := length_firstn (only parsing).
+Notation firstn_length := length_firstn_min (only parsing).
 #[deprecated(since = "8.20", note = "Use length_skipn instead.")]
 Notation skipn_length := length_skipn (only parsing).
 #[deprecated(since = "8.20", note = "Use length_seq instead.")]
@@ -4015,11 +4053,14 @@ Notation flat_map_length := length_flat_map (only parsing).
 Notation list_power_length := length_list_power (only parsing).
 Notation remove_length_le := length_remove_le (only parsing).
 Notation remove_length_lt := length_remove_lt (only parsing).
+Notation length_firstn := length_firstn_min (only parsing). (* grab the name to prevent further uses *)
 Notation filter_length := length_filter (only parsing).
 Notation filter_length_le := length_filter_le (only parsing).
 Notation filter_length_forallb := forallb_length_filter (only parsing).
-Notation firstn_le_length := length_firstn_le (only parsing).
-Notation firstn_length_le := length_firstn_eq (only parsing).
+Notation firstn_le_length := le_length_firstn (only parsing).
+#[deprecated(since = "8.21", use = length_firstn_le)]
+Definition firstn_length_le A l n := @length_firstn_le A n l.
+Notation firstn_firstn := firstn_firstn_min (only parsing).
 Notation repeat_length := length_repeat (only parsing).
 Notation flat_map_constant_length := length_flat_map_constant (only parsing).
 (* end hide *)

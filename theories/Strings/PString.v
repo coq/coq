@@ -124,7 +124,7 @@ Lemma sub_length_spec (s : string) (off len : int) :
 Proof.
   intros Hoff Hlen.
   pose proof (length_spec (sub s off len)) as Hs.
-  rewrite sub_spec, List.length_firstn_eq in Hs; [lia|].
+  rewrite sub_spec, List.length_firstn_le in Hs; [lia|].
   rewrite List.length_skipn, <-length_spec. lia.
 Qed.
 
