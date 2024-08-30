@@ -2940,6 +2940,27 @@ Section NatSeq.
     cbn [option_map]; rewrite ?plus_n_Sm; trivial.
   Qed.
 
+  Lemma firstn_seq_min n m start : firstn n (seq start m) = seq start (Nat.min n m).
+  Proof.
+    induction m in n, start |- *; simpl.
+    - now rewrite Nat.min_0_r, firstn_nil.
+    - destruct n; simpl.
+      + reflexivity.
+      + now rewrite IHm.
+  Qed.
+
+  Lemma firstn_seq_le n m start :
+    n <= m -> firstn n (seq start m) = seq start n.
+  Proof.
+    intro. now rewrite firstn_seq_min, Nat.min_l.
+  Qed.
+
+  Lemma firstn_seq_ge n m start :
+    m <= n -> firstn n (seq start m) = seq start m.
+  Proof.
+    intro. now rewrite firstn_seq_min, Nat.min_r.
+  Qed.
+
 End NatSeq.
 
 (***********************)
@@ -3852,6 +3873,28 @@ Section Repeat.
     intro Hnm. rewrite (nth_error_nth' _ a).
     - now rewrite nth_repeat.
     - now rewrite length_repeat.
+  Qed.
+
+  Lemma firstn_repeat_min a m n :
+    firstn n (repeat a m) = repeat a (Nat.min m n).
+  Proof.
+    induction m in n |- *; simpl.
+    - apply firstn_nil.
+    - destruct n; simpl.
+      + reflexivity.
+      + now rewrite IHm.
+  Qed.
+
+  Lemma firstn_repeat_le a m n :
+    n <= m -> firstn n (repeat a m) = repeat a n.
+  Proof.
+    intro. now rewrite firstn_repeat_min, Nat.min_r.
+  Qed.
+
+  Lemma firstn_repeat_ge a m n :
+    m <= n -> firstn n (repeat a m) = repeat a m.
+  Proof.
+    intro. now rewrite firstn_repeat_min, Nat.min_l.
   Qed.
 
 End Repeat.
