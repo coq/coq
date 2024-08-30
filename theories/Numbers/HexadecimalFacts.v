@@ -623,7 +623,7 @@ Proof.
   { simpl; intro H; exfalso; revert H; apply Nat.le_ngt, Nat.le_0_l. }
   intro Hn'; generalize (Nat.sub_gt _ _ Hn'); rewrite List.length_rev.
   case (_ - _); [now simpl|]; intros n' _.
-  rewrite List.firstn_cons, lnzhead_head_nd0; [now simpl|].
+  rewrite List.firstn_S_cons, lnzhead_head_nd0; [now simpl|].
   intro Hh; revert Hu'; rewrite Hh; apply lnzhead_neq_d0_head.
 Qed.
 

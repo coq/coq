@@ -2153,7 +2153,7 @@ Section Cutting.
   Lemma firstn_nil n: firstn n [] = [].
   Proof. induction n; now simpl. Qed.
 
-  Lemma firstn_cons n a l: firstn (S n) (a::l) = a :: (firstn n l).
+  Lemma firstn_S_cons n a l: firstn (S n) (a::l) = a :: (firstn n l).
   Proof. now simpl. Qed.
 
   Lemma nth_error_firstn n l i
@@ -2507,7 +2507,7 @@ Section Combining.
       - destruct l' as [| x' l'].
         + simpl. repeat (rewrite firstn_nil). rewrite combine_nil. reflexivity.
         + simpl. destruct n as [| n]; [reflexivity|].
-          repeat (rewrite firstn_cons). simpl.
+          repeat (rewrite firstn_S_cons). simpl.
           rewrite IHl. reflexivity.
     Qed.
 
@@ -4114,6 +4114,8 @@ Notation length_firstn := length_firstn_min (only parsing). (* grab the name to 
 Notation filter_length := length_filter (only parsing).
 Notation filter_length_le := length_filter_le (only parsing).
 Notation filter_length_forallb := forallb_length_filter (only parsing).
+#[deprecated(since = "8.21", note = "Use firstn_S_cons instead.")]
+Notation firstn_cons := firstn_S_cons (only parsing).
 Notation firstn_le_length := le_length_firstn (only parsing).
 #[deprecated(since = "8.21", use = length_firstn_le)]
 Definition firstn_length_le A l n := @length_firstn_le A n l.
