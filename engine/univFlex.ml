@@ -117,12 +117,22 @@ let normalize_universe subst =
   UnivSubst.subst_univs_universe normlevel
 
 let normalize ctx =
-  let normalize = normalize_universe ctx in
-  let subst =
-    Univ.Level.Map.mapi (fun u -> function
-        | None -> None
-        | Some v -> Some (normalize v)) ctx.subst
+  let rec fold l v accu =
+    if Univ.Level.Map.mem l accu then accu
+    else match v with
+    | None -> Univ.Level.Map.add l None accu
+    | Some v ->
+      let levels = Univ.Universe.levels v in
+      let foldu l accu = match Univ.Level.Map.find_opt l ctx.subst with
+      | None -> accu
+      | Some v -> fold l v accu
+      in
+      let accu = Univ.Level.Set.fold foldu levels accu in
+      let norm l = Option.flatten (Univ.Level.Map.find_opt l accu) in
+      let v = UnivSubst.subst_univs_universe norm v in
+      Univ.Level.Map.add l (Some v) accu
   in
+  let subst = Univ.Level.Map.fold fold ctx.subst Univ.Level.Map.empty in
   {subst; algs = ctx.algs}
 
 let normalize_univ_variables ctx =
