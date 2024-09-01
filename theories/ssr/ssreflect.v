@@ -392,13 +392,6 @@ Register locked as plugins.ssreflect.locked.
 
 Lemma lock A x : x = locked x :> A. Proof. unlock; reflexivity. Qed.
 
-(**  The basic closing tactic "done".  **)
-Ltac done :=
-  trivial; hnf; intros; solve
-   [ do ![solve [trivial | simple refine (@sym_equal _ _ _ _); trivial]
-         | discriminate | contradiction | split]
-   | match goal with H : ~ _ |- _ => solve [case H; trivial] end ].
-
 (**  Quicker done tactic not including split, syntax: /0/  **)
 Ltac ssrdone0 :=
   trivial; hnf; intros; solve

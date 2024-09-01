@@ -152,6 +152,36 @@ bapply lemma ltac:(fun H => destruct H as [H _]; apply H in J).
 Tactic Notation "apply" "<-" constr(lemma) "in" hyp(J) :=
 bapply lemma ltac:(fun H => destruct H as [_ H]; apply H in J).
 
+(* A done tactic compromising ssreflect's orginial one, and std++ version of it
+   It is a finishing tactic meant to solve "trivial" goals faster than easy   *)
+Ltac fast_done :=
+  solve
+    [ eassumption
+    | symmetry; eassumption
+    | reflexivity ].
+
+Ltac done_gen tac :=
+  solve
+  [ repeat first
+    (* 1. eassumption + refl => no intro *)
+    [ fast_done
+    (* 2. intro + assumption +  *)
+    | solve [trivial]
+    | solve [symmetry; trivial]
+    (* | solve [apply not_symmetry; trivial] *)
+    | progress (hnf; intros)
+    (* | progress (repeat (intros ?)) *)
+    (* 3. Inconsistencies *)
+    | contradiction  (* (P, ~P) or (~True) *)
+    | match goal with H : ~ _ |- _ => solve [case H; reflexivity || trivial] end
+    | tac            (* inversion scheme *)
+    (* 4. Change goal *)
+    | split
+    ]
+  ].
+
+Ltac done := done_gen discriminate.
+
 (** An experimental tactic simpler than auto that is useful for ending
     proofs "in one step" *)
 
