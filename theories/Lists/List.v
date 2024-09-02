@@ -2172,6 +2172,12 @@ Section Cutting.
     case Nat.ltb; trivial.
   Qed.
 
+  Lemma nth_error_firstn_Some n m l x
+    : nth_error (firstn n l) m = Some x -> nth_error l m = Some x.
+  Proof.
+    induction m in n, l |- *; intros H; destruct n, l; cbn in *; try solve [inversion H]; eauto.
+  Qed.
+
   Lemma nth_firstn (n : nat) (l : list A) (i : nat) (d : A) :
     nth i (firstn n l) d = if i <? n then nth i l d else d.
   Proof.
@@ -2194,6 +2200,9 @@ Section Cutting.
   Lemma firstn_0 l: firstn 0 l = [].
   Proof. now simpl. Qed.
 
+  Lemma firstn_O_eq n l : n = 0 -> firstn n l = [].
+  Proof. now intros ->. Qed.
+
   Lemma length_firstn_min : forall n l, length (firstn n l) = min n (length l).
   Proof.
     intro n; induction n; intro l; destruct l; simpl; auto.
@@ -2213,6 +2222,12 @@ Section Cutting.
     n <= length l -> length (firstn n l) = n.
   Proof.
     intros. rewrite length_firstn_min. now apply Nat.min_l.
+  Qed.
+
+  Lemma length_firstn_le_inv n : forall l:list A,
+    length (firstn n l) = n -> n <= length l.
+  Proof.
+    intros l <-. apply le_length_firstn_length.
   Qed.
 
   Lemma length_firstn_length_le n: forall l:list A,
@@ -2235,7 +2250,7 @@ Section Cutting.
     forall l1 l2,
     firstn (length l1) (l1 ++ l2) = l1.
   Proof.
-    intros. now rewrite firstn_app, Nat.sub_diag, firstn_O, firstn_all, app_nil_r.
+    intros. now rewrite firstn_app, Nat.sub_diag, firstn_0, firstn_all, app_nil_r.
   Qed.
 
   Lemma firstn_app_exact_eq:
@@ -2257,6 +2272,13 @@ Section Cutting.
       * rewrite firstn_app. assert (H0 : (length l1 + S k - length l1) = S k).
         1:now rewrite Nat.add_comm, Nat.add_sub.
         rewrite H0, firstn_all2; [reflexivity | now apply Nat.le_add_r].
+  Qed.
+
+  Lemma firstn_app_2_eq n:
+    forall l1 l2 k,
+    k = length l1 + n -> firstn k (l1 ++ l2) = l1 ++ firstn n l2.
+  Proof.
+    intros * ->; apply firstn_app_2.
   Qed.
 
   Lemma firstn_firstn_min:
@@ -2334,6 +2356,21 @@ Section Cutting.
   skipn m (firstn n l) = firstn (n - m) (skipn m l).
   Proof. now intro m; induction m; intros [] []; simpl; rewrite ?firstn_nil. Qed.
 
+  Lemma firstn_add : forall m n l,
+  firstn (m + n) l = firstn m l ++ firstn n (skipn m l).
+  Proof.
+    induction m. simpl. reflexivity.
+    simpl. destruct l; simpl.
+    now rewrite firstn_nil.
+    rewrite IHm. now rewrite app_comm_cons.
+  Qed.
+
+  Lemma skipn_firstn_succ_skipn_succ n (l : list A) : skipn n (firstn (S n) l) ++ skipn (S n) l = skipn n l.
+  Proof.
+    induction l in n |- *; simpl; auto. now rewrite app_nil_r.
+    destruct n; simpl; auto.
+  Qed.
+
   Lemma skipn_0 : forall l, skipn 0 l = l.
   Proof. reflexivity. Qed.
 
@@ -2401,6 +2438,19 @@ Section Cutting.
   Lemma skipn_app n : forall l1 l2,
     skipn n (l1 ++ l2) = (skipn n l1) ++ (skipn (n - length l1) l2).
   Proof. induction n; auto; intros [|]; simpl; auto. Qed.
+
+  Lemma skipn_app_exact (l1 l2 : list A) : skipn (length l1) (l1 ++ l2) = l2.
+  Proof.
+    intros.
+    induction l1 in l2 |- *.
+    - reflexivity.
+    - simpl. eauto.
+  Qed.
+
+  Lemma skipn_app_exact_eq n (l1 l2 : list A) : n = length l1 -> skipn n (l1 ++ l2) = l2.
+  Proof.
+    intros ->. apply skipn_app_exact.
+  Qed.
 
   Lemma firstn_skipn_rev: forall x l,
       firstn x l = rev (skipn (length l - x) (rev l)).
