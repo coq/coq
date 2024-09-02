@@ -173,10 +173,10 @@ let retype ?(polyprop=true) sigma =
          subst1 b (type_of (push_rel (LocalDef (name,b,c1)) env) c2)
     | Fix ((_,i),(_,tys,_)) -> tys.(i)
     | CoFix (i,(_,tys,_)) -> tys.(i)
-    | App(f,args) when Termops.is_template_polymorphic_ref env sigma f ->
-        let t = type_of_global_reference_knowing_parameters env f args in
-        strip_outer_cast sigma (subst_type env sigma t (Array.to_list args))
     | App(f,args) ->
+      if Termops.is_template_polymorphic_ref env sigma f then
+        substituted_type_of_global_reference_knowing_parameters env f args
+      else
         strip_outer_cast sigma
           (subst_type env sigma (type_of env f) (Array.to_list args))
     | Proj (p,_,c) ->
@@ -210,6 +210,23 @@ let retype ?(polyprop=true) sigma =
     | App(f,args) -> sort_of_atomic_type env sigma (type_of env f) args
     | Lambda _ | Fix _ | Construct _ -> retype_error NotAType
     | _ -> decomp_sort env sigma (type_of env t)
+
+  and substituted_type_of_global_reference_knowing_parameters env c args =
+    match EConstr.kind sigma c with
+    | Ind (ind, u) ->
+      let ty = type_of_global_reference_knowing_parameters env c args in
+      strip_outer_cast sigma (subst_type env sigma ty (Array.to_list args))
+    | Construct ((ind, i), u) ->
+      let mib, mip = Inductive.lookup_mind_specif env ind in
+      let ty =
+        if mib.mind_nparams <= Array.length args then
+        (* Fully applied parameters, we do not have to substitute *)
+          EConstr.of_constr mip.mind_user_lc.(i - 1)
+      else
+        type_of_global_reference_knowing_parameters env c args
+      in
+      strip_outer_cast sigma (subst_type env sigma ty (Array.to_list args))
+    | _ -> assert false
 
   and type_of_global_reference_knowing_parameters env c args =
     match EConstr.kind sigma c with
