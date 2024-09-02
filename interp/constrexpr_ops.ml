@@ -39,6 +39,11 @@ let qvar_expr_eq c1 c2 = match c1, c2 with
   | CRawQVar q1, CRawQVar q2 -> Sorts.QVar.equal q1 q2
   | (CQVar _ | CQAnon _ | CRawQVar _), _ -> false
 
+let quality_expr_eq q1 q2 = match q1, q2 with
+  | CQConstant q1, CQConstant q2 -> Sorts.Quality.Constants.equal q1 q2
+  | CQualVar q1, CQualVar q2 -> qvar_expr_eq q1 q2
+  | (CQConstant _ | CQualVar _), _ -> false
+
 let relevance_expr_eq a b = match a, b with
   | CRelevant, CRelevant | CIrrelevant, CIrrelevant -> true
   | CRelevanceVar q1, CRelevanceVar q2 -> qvar_expr_eq q1 q2
@@ -56,6 +61,9 @@ let sort_expr_eq (q1, l1) (q2, l2) =
       sort_name_expr_eq x y
       && Int.equal m n))
     l1 l2
+
+let instance_expr_eq (q1,u1) (q2,u2) =
+  List.equal quality_expr_eq q1 q2 && List.equal univ_level_expr_eq u1 u2
 
 (***********************)
 (* For binders parsing *)
@@ -128,12 +136,6 @@ and cases_pattern_notation_substitution_eq (s1, n1, b1) (s2, n2, b2) =
 let kinded_cases_pattern_expr_eq (p1,bk1) (p2,bk2) =
   cases_pattern_expr_eq p1 p2 && Glob_ops.binding_kind_eq bk1 bk2
 
-let eq_universes u1 u2 =
-  match u1, u2 with
-  | None, None -> true
-  | Some l, Some l' -> l = l'
-  | _, _ -> false
-
 (* We use a functor to avoid passing the recursion all over the place *)
 module EqGen (A:sig val constr_expr_eq : constr_expr -> constr_expr -> bool end) = struct
 
@@ -195,7 +197,7 @@ module EqGen (A:sig val constr_expr_eq : constr_expr -> constr_expr -> bool end)
   let constr_expr_eq e1 e2 =
     if CAst.(e1.v == e2.v) then true
     else match CAst.(e1.v, e2.v) with
-      | CRef (r1,u1), CRef (r2,u2) -> qualid_eq r1 r2 && eq_universes u1 u2
+      | CRef (r1,u1), CRef (r2,u2) -> qualid_eq r1 r2 && Option.equal instance_expr_eq u1 u2
       | CFix(id1,fl1), CFix(id2,fl2) ->
         lident_eq id1 id2 &&
         List.equal fix_expr_eq fl1 fl2
@@ -215,7 +217,7 @@ module EqGen (A:sig val constr_expr_eq : constr_expr -> constr_expr -> bool end)
         constr_expr_eq b1 b2
       | CAppExpl((r1,u1),al1), CAppExpl((r2,u2),al2) ->
         qualid_eq r1 r2 &&
-        eq_universes u1 u2 &&
+        Option.equal instance_expr_eq u1 u2 &&
         List.equal constr_expr_eq al1 al2
       | CApp(e1,al1), CApp(e2,al2) ->
         constr_expr_eq e1 e2 &&
@@ -223,7 +225,7 @@ module EqGen (A:sig val constr_expr_eq : constr_expr -> constr_expr -> bool end)
       | CProj(e1,(p1,u1),al1,c1), CProj(e2,(p2,u2),al2,c2) ->
         e1 = (e2:bool) &&
         qualid_eq p1 p2 &&
-        eq_universes u1 u2 &&
+        Option.equal instance_expr_eq u1 u2 &&
         List.equal args_eq al1 al2 &&
         constr_expr_eq c1 c2
       | CRecord l1, CRecord l2 ->
@@ -274,7 +276,7 @@ module EqGen (A:sig val constr_expr_eq : constr_expr -> constr_expr -> bool end)
       | CArray(u1,t1,def1,ty1), CArray(u2,t2,def2,ty2) ->
         Array.equal constr_expr_eq t1 t2 &&
         constr_expr_eq def1 def2 && constr_expr_eq ty1 ty2 &&
-        eq_universes u1 u2
+        Option.equal instance_expr_eq u1 u2
       | (CRef _ | CFix _ | CCoFix _ | CProdN _ | CLambdaN _ | CLetIn _ | CAppExpl _
         | CApp _ | CProj _ | CRecord _ | CCases _ | CLetTuple _ | CIf _ | CHole _
         | CGenarg _ | CGenargGlob _
