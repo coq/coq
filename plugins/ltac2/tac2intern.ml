@@ -1112,8 +1112,8 @@ let warn_unused_variables = CWarnings.create ~name:"ltac2-unused-variable"
     ~category:CWarnings.CoreCategories.ltac2
     Pp.(fun ids -> str "Unused " ++ str (String.lplural ids "variable") ++ str ":" ++ spc() ++ prlist_with_sep spc Id.print ids ++ str ".")
 
-let check_unused_variables ?loc env to_name bnd =
-  let unused = List.filter_map (fun bnd -> match to_name bnd with
+let check_unused_variables ?loc env bnd =
+  let unused = List.filter_map (function
       | Anonymous -> None
       | Name id ->
         if CString.is_prefix "_" (Id.to_string id)
@@ -1170,7 +1170,7 @@ let rec intern_rec env tycon {loc;v=e} =
   let (e, t) = intern_rec env tycon (exp e) in
   let () =
     (* TODO better loc? *)
-    check_unused_variables ?loc env (fun x -> x) nas
+    check_unused_variables ?loc env nas
   in
   let t = match tycon with
     | None -> List.fold_right (fun t accu -> GTypArrow (t, accu)) tl t
@@ -1400,7 +1400,7 @@ and intern_let env loc ids el tycon e =
   let (e, elp) = List.fold_left_map fold e el in
   let env = List.fold_left (fun accu (na, _, t) -> push_name na t accu) env elp in
   let (e, t) = intern_rec env tycon e in
-  let () = check_unused_variables ?loc env pi1 elp in
+  let () = check_unused_variables ?loc env (List.map pi1 elp) in
   let el = List.map (fun (na, e, _) -> na, e) elp in
   (GTacLet (false, el, e), t)
 
@@ -1467,7 +1467,7 @@ and intern_let_rec env loc el tycon e =
   let (e, t) = intern_rec env tycon e in
   let () =
     (* TODO better loc? *)
-    check_unused_variables ?loc env fst el
+    check_unused_variables ?loc env (List.map fst el)
   in
   (GTacLet (true, el, e), t)
 
@@ -1535,7 +1535,9 @@ and intern_case env loc e tycon pl =
       let patvars, pat = intern_pat env cpat et in
       let patenv = push_ids patvars env in
       let br = intern_rec_with_constraint patenv cbr rt in
-      let () = check_unused_variables ?loc patenv (fun (id,_) -> Name id) (Id.Map.bindings patvars) in
+      let () = check_unused_variables ?loc patenv
+          (List.map (fun (id,_) -> Name id) (Id.Map.bindings patvars))
+      in
       pat, br)
       pl
   in
@@ -1764,7 +1766,9 @@ let intern_notation_data ids body =
     in
     let env, argtys = Id.Set.fold fold ids (env,Id.Map.empty) in
     let body, ty = intern_rec env None body in
-    let () = check_unused_variables env (fun (id,_) -> Name id) (Id.Map.bindings argtys) in
+    let () = check_unused_variables env
+        (List.map (fun (id,_) -> Name id) (Id.Map.bindings argtys))
+    in
     let count = ref 0 in
     let vars = ref TVar.Map.empty in
     let argtys = Id.Map.map (fun ty -> normalize env (count, vars) ty) argtys in
@@ -2066,7 +2070,7 @@ let () =
     let env = List.fold_left fold env ids in
     let loc = tac.loc in
     let (tac, t) = intern_rec env None tac in
-    let () = check_unused_variables ?loc env (fun x -> Name x) ids in
+    let () = check_unused_variables ?loc env (List.map (fun x -> Name x) ids) in
     let () = check_elt_unit loc env t in
     (ist, (ids, tac))
   in
