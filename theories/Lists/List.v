@@ -4156,7 +4156,7 @@ Notation combine_length := length_combine (only parsing).
 #[deprecated(since = "8.20", use = length_prod)]
 Notation prod_length := length_prod (only parsing).
 #[deprecated(since = "8.20", use = length_firstn_min)]
-Notation firstn_length := length_firstn_min(only parsing).
+Notation firstn_length := length_firstn_min (only parsing).
 #[deprecated(since = "8.20", use = length_skipn)]
 Notation skipn_length := length_skipn (only parsing).
 #[deprecated(since = "8.20", use = length_seq)]
@@ -4176,7 +4176,7 @@ Notation length_firstn := length_firstn_min (only parsing). (* grab the name to 
 Notation filter_length := length_filter (only parsing).
 Notation filter_length_le := length_filter_le (only parsing).
 Notation filter_length_forallb := forallb_length_filter (only parsing).
-#[deprecated(since = "8.21", note = "Use firstn_S_cons instead.")]
+#[deprecated(since = "8.21", use = firstn_S_cons)]
 Notation firstn_cons := firstn_S_cons (only parsing).
 Notation firstn_le_length := le_length_firstn (only parsing).
 #[deprecated(since = "8.21", use = length_firstn_le)]
