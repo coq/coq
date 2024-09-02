@@ -116,9 +116,6 @@ val judge_of_new_Type : evar_map -> evar_map * unsafe_judgment
 
 val create_clos_infos : env -> evar_map -> RedFlags.reds -> CClosure.clos_infos
 
-(** [flush_and_check_evars] raise [Uninstantiated_evar] if an evar remains
-    uninstantiated; [nf_evar] leaves uninstantiated evars as is *)
-
 val whd_evar :  evar_map -> constr -> constr
 val nf_evar :  evar_map -> constr -> constr
 val j_nf_evar :  evar_map -> unsafe_judgment -> unsafe_judgment
@@ -141,10 +138,6 @@ val nf_relevance : evar_map -> Sorts.relevance -> Sorts.relevance
 (** Presenting terms without solved evars *)
 
 val nf_evars_universes : evar_map -> Constr.constr -> Constr.constr
-
-(** Replacing all evars, possibly raising [Uninstantiated_evar] *)
-exception Uninstantiated_evar of Evar.t
-val flush_and_check_evars :  evar_map -> constr -> Constr.constr
 
 (** [finalize env sigma f] combines universe minimisation,
    evar-and-universe normalisation and universe restriction.
