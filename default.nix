@@ -120,7 +120,7 @@ stdenv.mkDerivation rec {
   # From https://github.com/NixOS/nixpkgs/blob/master/pkgs/build-support/ocaml/dune.nix
   installPhase = ''
     runHook preInstall
-    dune install --prefix $out --libdir $OCAMLFIND_DESTDIR coq-core coq-stdlib coq coqide-server coqide
+    dune install --prefix $out --libdir $OCAMLFIND_DESTDIR coq-core coq-stdlib coq coqide-server ${optionalString buildIde "coqide"}
     runHook postInstall
   '';
 
