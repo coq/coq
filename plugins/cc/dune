@@ -3,7 +3,7 @@
  (public_name coq-core.plugins.cc_core)
  (synopsis "Coq's congruence closure plugin")
  (modules (:standard \ g_congruence))
- (libraries coq-core.tactics))
+ (libraries coq-core.vernac))
 
 (library
  (name cc_plugin)
