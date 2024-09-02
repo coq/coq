@@ -4131,33 +4131,33 @@ Notation nth_error_cons_S := nth_error_cons_succ.
 #[global]
 Hint Resolve app_nil_end_deprecated : datatypes.
 
-#[deprecated(since = "8.20", note = "Use length_app instead.")]
+#[deprecated(since = "8.20", use = length_app)]
 Notation app_length := length_app (only parsing).
-#[deprecated(since = "8.20", note = "Use length_rev instead.")]
+#[deprecated(since = "8.20", use = length_rev)]
 Notation rev_length := length_rev (only parsing).
-#[deprecated(since = "8.20", note = "Use length_map instead.")]
+#[deprecated(since = "8.20", use = length_map)]
 Notation map_length := length_map (only parsing).
-#[deprecated(since = "8.20", note = "Use fold_left_S_O instead.")]
+#[deprecated(since = "8.20", use = fold_left_S_O)]
 Notation fold_left_length := fold_left_S_O (only parsing).
-#[deprecated(since = "8.20", note = "Use length_fst_split instead.")]
+#[deprecated(since = "8.20", use = length_fst_split)]
 Notation split_length_l := length_fst_split (only parsing).
-#[deprecated(since = "8.20", note = "Use length_snd_split instead.")]
+#[deprecated(since = "8.20", use = length_snd_split)]
 Notation split_length_r := length_snd_split (only parsing).
-#[deprecated(since = "8.20", note = "Use length_combine instead.")]
+#[deprecated(since = "8.20", use = length_combine)]
 Notation combine_length := length_combine (only parsing).
-#[deprecated(since = "8.20", note = "Use length_prod instead.")]
+#[deprecated(since = "8.20", use = length_prod)]
 Notation prod_length := length_prod (only parsing).
-#[deprecated(since = "8.20", note = "Use length_firstn instead.")]
+#[deprecated(since = "8.20", use = length_firstn_min)]
 Notation firstn_length := length_firstn_min (only parsing).
-#[deprecated(since = "8.20", note = "Use length_skipn instead.")]
+#[deprecated(since = "8.20", use = length_skipn)]
 Notation skipn_length := length_skipn (only parsing).
-#[deprecated(since = "8.20", note = "Use length_seq instead.")]
+#[deprecated(since = "8.20", use = length_seq)]
 Notation seq_length := length_seq (only parsing).
-#[deprecated(since = "8.20", note = "Use length_concat instead.")]
+#[deprecated(since = "8.20", use = length_concat)]
 Notation concat_length := length_concat (only parsing).
-#[deprecated(since = "8.20", note = "Use length_flat_map instead.")]
+#[deprecated(since = "8.20", use = length_flat_map)]
 Notation flat_map_length := length_flat_map (only parsing).
-#[deprecated(since = "8.20", note = "Use length_list_power instead.")]
+#[deprecated(since = "8.20", use = length_list_power)]
 Notation list_power_length := length_list_power (only parsing).
 Notation remove_length_le := length_remove_le (only parsing).
 Notation remove_length_lt := length_remove_lt (only parsing).
@@ -4165,7 +4165,7 @@ Notation length_firstn := length_firstn_min (only parsing). (* grab the name to 
 Notation filter_length := length_filter (only parsing).
 Notation filter_length_le := length_filter_le (only parsing).
 Notation filter_length_forallb := forallb_length_filter (only parsing).
-#[deprecated(since = "8.21", note = "Use firstn_S_cons instead.")]
+#[deprecated(since = "8.21", use = firstn_S_cons)]
 Notation firstn_cons := firstn_S_cons (only parsing).
 Notation firstn_le_length := le_length_firstn (only parsing).
 #[deprecated(since = "8.21", use = length_firstn_le)]
