@@ -163,19 +163,18 @@ Ltac fast_done :=
 Ltac done_gen tac :=
   solve
   [ repeat first
-    (* 1. eassumption + refl => no intro *)
+    (* 1. eassumption + reflexivity *)
     [ fast_done
-    (* 2. intro + assumption +  *)
+    (* 2. intros ? + assumption + 0 cost hints *)
     | solve [trivial]
     | solve [symmetry; trivial]
-    (* | solve [apply not_symmetry; trivial] *)
+    (* 3. introduces varibales *)
     | progress (hnf; intros)
-    (* | progress (repeat (intros ?)) *)
-    (* 3. Inconsistencies *)
-    | contradiction  (* (P, ~P) or (~True) *)
+    (* 4. check for inconsistencies *)
+    | contradiction
     | match goal with H : ~ _ |- _ => solve [case H; reflexivity || trivial] end
     | tac            (* inversion scheme *)
-    (* 4. Change goal *)
+    (* 5. change goal *)
     | split
     ]
   ].
