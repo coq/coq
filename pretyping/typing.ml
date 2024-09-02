@@ -20,7 +20,6 @@ open Vars
 open Reductionops
 open Inductive
 open Inductiveops
-open Typeops
 open Arguments_renaming
 open Pretype_errors
 open Context.Rel.Declaration
@@ -251,7 +250,7 @@ let judge_of_case env sigma case ci (pj,rp) iv cj lfj =
   let () = check_case_info env ind ci in
   let sigma = check_branch_types env sigma ind cj (lfj,bty) in
   let () = if (match iv with | NoInvert -> false | CaseInvert _ -> true)
-              != should_invert_case env (ERelevance.kind sigma rp) ci
+              != Typeops.should_invert_case env (ERelevance.kind sigma rp) ci
     then Type_errors.error_bad_invert env
   in
   sigma, { uj_val  = mkCase case;
@@ -332,14 +331,17 @@ let judge_of_sort s =
   in
   { uj_val = EConstr.mkSort (ESorts.make s); uj_type = EConstr.mkType u }
 
+let type_of_relative env n =
+  EConstr.of_constr (Typeops.type_of_relative env n)
+
 let judge_of_relative env v =
-  Environ.on_judgment EConstr.of_constr (judge_of_relative env v)
+  { uj_val = mkRel v; uj_type = type_of_relative env v }
 
 let type_of_variable env id =
-  EConstr.of_constr (type_of_variable env id)
+  EConstr.of_constr (Typeops.type_of_variable env id)
 
 let judge_of_variable env id =
-  Environ.on_judgment EConstr.of_constr (judge_of_variable env id)
+  { uj_val = mkVar id; uj_type = type_of_variable env id }
 
 let judge_of_projection env sigma p cj =
   let pr, pty = lookup_projection p env in
@@ -362,7 +364,7 @@ let judge_of_product env sigma name t1 t2 =
   let s1 = ESorts.kind sigma t1.utj_type in
   let s2 = ESorts.kind sigma t2.utj_type in
   let r = ERelevance.make @@ Sorts.relevance_of_sort s1 in
-  let s = ESorts.make (sort_of_product env s1 s2) in
+  let s = ESorts.make (Typeops.sort_of_product env s1 s2) in
   { uj_val = mkProd (make_annot name r, t1.utj_val, t2.utj_val);
     uj_type = mkSort s }
 
@@ -398,14 +400,20 @@ let type_of_constructor env sigma ((ind,_ as ctor),u) =
   let sigma = Evd.add_constraints sigma csts in
   sigma, (EConstr.of_constr (rename_type ty (GR.ConstructRef ctor)))
 
+let type_of_int env = EConstr.of_constr (Typeops.type_of_int env)
+
 let judge_of_int env v =
-  Environ.on_judgment EConstr.of_constr (judge_of_int env v)
+  { uj_val = mkInt v; uj_type = type_of_int env }
+
+let type_of_float env = EConstr.of_constr (Typeops.type_of_float env)
 
 let judge_of_float env v =
-  Environ.on_judgment EConstr.of_constr (judge_of_float env v)
+  { uj_val = mkFloat v; uj_type = type_of_float env }
+
+let type_of_string env = EConstr.of_constr (Typeops.type_of_string env)
 
 let judge_of_string env v =
-  Environ.on_judgment EConstr.of_constr (judge_of_string env v)
+  { uj_val = mkString v; uj_type = type_of_string env }
 
 let judge_of_array env sigma u tj defj tyj =
   let ulev = match UVars.Instance.to_array u with
@@ -418,7 +426,7 @@ let judge_of_array env sigma u tj defj tyj =
   let check_one sigma j = check_actual_type env sigma j tyj.utj_val in
   let sigma = check_one sigma defj in
   let sigma = Array.fold_left check_one sigma tj in
-  let arr = EConstr.of_constr @@ type_of_array env u in
+  let arr = EConstr.of_constr @@ Typeops.type_of_array env u in
   let j = make_judge (mkArray(EInstance.make u, Array.map j_val tj, defj.uj_val, tyj.utj_val))
       (mkApp (arr, [|tyj.utj_val|]))
   in

@@ -19,7 +19,6 @@ open Sorts
 open Constr
 open Indrec
 open Declarations
-open Typeops
 open Ind_tables
 
 (* Induction/recursion schemes *)
@@ -85,7 +84,7 @@ let optimize_non_type_induction_scheme kind dep sort env _handle ind =
        appropriate type *)
     let sigma, cte = Evd.fresh_constant_instance env sigma cte in
     let c = mkConstU cte in
-    let t = type_of_constant_in env cte in
+    let t = Typeops.type_of_constant_in env cte in
     let (mib,mip) = Inductive.lookup_mind_specif env ind in
     let npars =
       (* if a constructor of [ind] contains a recursive call, the scheme
