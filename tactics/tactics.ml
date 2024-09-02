@@ -121,7 +121,7 @@ let clear_dependency_msg env sigma id err inglobal =
   | Evarutil.EvarTypingBreak ev ->
       str "Cannot remove " ++ ppid id ++
       strbrk " without breaking the typing of " ++
-      Printer.pr_existential env sigma ev ++ str"."
+      Printer.pr_leconstr_env env sigma (mkEvar ev) ++ str"."
   | Evarutil.NoCandidatesLeft ev ->
       str "Cannot remove " ++ ppid id ++ str " as it would leave the existential " ++
       Printer.pr_existential_key env sigma ev ++ str" without candidates."
@@ -137,7 +137,7 @@ let replacing_dependency_msg env sigma id err inglobal =
   | Evarutil.EvarTypingBreak ev ->
       str "Cannot change " ++ Id.print id ++
       strbrk " without breaking the typing of " ++
-      Printer.pr_existential env sigma ev ++ str"."
+      Printer.pr_leconstr_env env sigma (mkEvar ev) ++ str"."
   | Evarutil.NoCandidatesLeft ev ->
       str "Cannot change " ++ Id.print id ++ str " as it would leave the existential " ++
       Printer.pr_existential_key env sigma ev ++ str" without candidates."
