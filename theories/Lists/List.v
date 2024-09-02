@@ -55,14 +55,14 @@ Section Lists.
   Definition tl (l:list A) :=
     match l with
       | [] => []
-      | _ :: m => m
+      | _ :: l' => l'
     end.
 
   (** The [In] predicate *)
   Fixpoint In (a:A) (l:list A) : Prop :=
     match l with
       | [] => False
-      | b :: m => b = a \/ In a m
+      | b :: l' => b = a \/ In a l'
     end.
 
 End Lists.
@@ -405,7 +405,7 @@ Section Elts.
       | O, x :: l' => x
       | O, [] => default
       | S m, [] => default
-      | S m, x :: t => nth m t default
+      | S m, x :: l' => nth m l' default
     end.
 
   Fixpoint nth_ok (n:nat) (l:list A) (default:A) {struct l} : bool :=
@@ -413,7 +413,7 @@ Section Elts.
       | O, x :: l' => true
       | O, [] => false
       | S m, [] => false
-      | S m, x :: t => nth_ok m t default
+      | S m, x :: l' => nth_ok m l' default
     end.
 
   Lemma nth_in_or_default :
@@ -436,7 +436,7 @@ Section Elts.
   Fixpoint nth_error (l:list A) (n:nat) {struct n} : option A :=
     match n, l with
       | O, x :: _ => Some x
-      | S n, _ :: l => nth_error l n
+      | S n, _ :: l' => nth_error l' n
       | _, _ => None
     end.
 
@@ -642,7 +642,7 @@ Section Elts.
     : nth_error l n
       = match n, l with
         | O, x :: _ => Some x
-        | S n, _ :: l => nth_error l n
+        | S n, _ :: l' => nth_error l' n
         | _, _ => None
         end.
   Proof. destruct n; reflexivity. Qed.
@@ -710,7 +710,7 @@ Section Elts.
   match l with
     | [] => d
     | [a] => a
-    | a :: l => last l d
+    | a :: l' => last l' d
   end.
 
   Lemma last_last : forall l a d, last (l ++ [a]) d = a.
@@ -726,7 +726,7 @@ Section Elts.
     match l with
       | [] =>  []
       | [a] => []
-      | a :: l => a :: removelast l
+      | a :: l' => a :: removelast l'
     end.
 
   Lemma app_removelast_last :
@@ -1163,7 +1163,7 @@ Section Map.
   Fixpoint map (l:list A) : list B :=
     match l with
       | [] => []
-      | a :: t => (f a) :: (map t)
+      | a :: l => (f a) :: (map l)
     end.
 
   Lemma map_cons (x:A)(l:list A) : map (x::l) = (f x) :: (map l).
@@ -1288,7 +1288,7 @@ Section FlatMap.
       fix flat_map (l:list A) : list B :=
       match l with
         | [] => []
-        | x :: t => f x ++ flat_map t
+        | x :: l => f x ++ flat_map l
       end.
 
     Lemma flat_map_concat_map l :
@@ -1400,7 +1400,7 @@ Section Fold_Left_Recursor.
   Fixpoint fold_left (l:list B) (a0:A) : A :=
     match l with
       | [] => a0
-      | b :: t => fold_left t (f a0 b)
+      | b :: l => fold_left l (f a0 b)
     end.
 
   Lemma fold_left_app : forall (l l':list B)(i:A),
@@ -1430,7 +1430,7 @@ Section Fold_Right_Recursor.
   Fixpoint fold_right (l:list B) : A :=
     match l with
       | [] => a0
-      | b :: t => f b (fold_right t)
+      | b :: l => f b (fold_right l)
     end.
 
 End Fold_Right_Recursor.
@@ -1474,9 +1474,9 @@ End Fold_Right_Recursor.
     list (list (A * B)) :=
     match l with
       | [] => [[]]
-      | x :: t =>
+      | x :: l =>
         flat_map (fun f:list (A * B) => map (fun y:B => (x, y) :: f) l')
-        (list_power t l')
+        (list_power l l')
     end.
 
 
@@ -1493,8 +1493,8 @@ End Fold_Right_Recursor.
 
     Fixpoint existsb (l:list A) : bool :=
       match l with
-      | [] => false
-      | a::l => f a || existsb l
+        | [] => false
+        | a :: l => f a || existsb l
       end.
 
     Lemma existsb_exists :
