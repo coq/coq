@@ -24,3 +24,5 @@ File "./output/ltac2_unused_var.v", line 30, characters 18-55:
 Warning: Unused variable: y. [ltac2-unused-variable,ltac2,default]
 File "./output/ltac2_unused_var.v", line 42, characters 37-39:
 Warning: Unused variable: x. [ltac2-unused-variable,ltac2,default]
+File "./output/ltac2_unused_var.v", line 49, characters 6-20:
+Warning: Unused variable: a. [ltac2-unused-variable,ltac2,default]

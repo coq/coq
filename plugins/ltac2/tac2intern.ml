@@ -1113,14 +1113,20 @@ let warn_unused_variables = CWarnings.create ~name:"ltac2-unused-variable"
     Pp.(fun ids -> str "Unused " ++ str (String.lplural ids "variable") ++ str ":" ++ spc() ++ prlist_with_sep spc Id.print ids ++ str ".")
 
 let check_unused_variables ?loc env bnd =
-  let unused = List.filter_map (function
-      | Anonymous -> None
+  let unused, _seen = List.fold_right (fun na (unused,seen) -> match na with
+      | Anonymous -> (unused, seen)
       | Name id ->
-        if CString.is_prefix "_" (Id.to_string id)
-        || is_used_var id env
-        then None
-        else Some id)
+        (* if [id] occurred in the tail of the list, this occurrence is unused
+           (eg in [fun x x => x] the first [x] is unused) *)
+        let unused =
+          if CString.is_prefix "_" (Id.to_string id)
+          || (not (Id.Set.mem id seen) && is_used_var id env)
+          then unused
+          else id :: unused
+        in
+        unused, (Id.Set.add id seen))
       bnd
+      ([], Id.Set.empty)
   in
   if CList.is_empty unused then ()
   else warn_unused_variables ?loc unused
