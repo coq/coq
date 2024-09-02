@@ -777,7 +777,7 @@ Section Elts.
   Fixpoint remove (x : A) (l : list A) : list A :=
     match l with
       | [] => []
-      | y::tl => if (eq_dec x y) then remove x tl else y::(remove x tl)
+      | y::tl => if (eq_dec x y) then remove x tl else y :: remove x tl
     end.
 
   Lemma remove_cons : forall x l, remove x (x :: l) = remove x l.
@@ -1068,7 +1068,7 @@ Section ListOps.
   Fixpoint rev_append (l l': list A) : list A :=
     match l with
       | [] => l'
-      | a::l => rev_append l (a::l')
+      | a :: l => rev_append l (a::l')
     end.
 
   Definition rev' l : list A := rev_append l [].
@@ -1090,10 +1090,10 @@ Section ListOps.
   (*************************)
 
   Fixpoint concat (l : list (list A)) : list A :=
-  match l with
-  | [] => []
-  | x :: l => x ++ concat l
-  end.
+    match l with
+     | [] => []
+     | x :: l => x ++ concat l
+    end.
 
   Lemma concat_nil : concat [] = [].
   Proof.
