@@ -713,11 +713,9 @@ let filtered_undefined_evars_of_evar_info (type a) ?cache sigma (evi : a evar_in
    [evar_map]. If unification only need to check superficially, tactics
    do not have this luxury, and need the more complete version. *)
 let occur_evar_upto sigma n c =
-  let c = EConstr.Unsafe.to_constr c in
-  let rec occur_rec c = match kind c with
-    | Evar (sp,_) when Evar.equal sp n -> raise Occur
-    | Evar e -> Option.iter occur_rec (existential_opt_value0 sigma e)
-    | _ -> Constr.iter occur_rec c
+  let rec occur_rec c = match EConstr.kind sigma c with
+    | Evar (evk, _) -> if Evar.equal evk n then raise Occur
+    | _ -> EConstr.iter sigma occur_rec c
   in
   try occur_rec c; false with Occur -> true
 
