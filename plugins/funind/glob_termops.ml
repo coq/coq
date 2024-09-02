@@ -611,7 +611,7 @@ let resolve_and_replace_implicits exptyp env sigma rt =
     match Evd.evar_body evi with
     | Evar_defined c ->
       (* we just have to lift the solution in glob_term *)
-      Detyping.detype Detyping.Now Id.Set.empty env ctx (f c)
+      Detyping.detype Detyping.Now env ctx (f c)
     | Evar_empty ->
       (* the hole was not solved : we do nothing *)
       default

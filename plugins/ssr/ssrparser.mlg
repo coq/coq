@@ -375,7 +375,7 @@ let interp_index ist env sigma idx =
         | None ->
         begin match Tacinterp.Value.to_constr v with
         | Some c ->
-          let rc = Detyping.detype Detyping.Now Id.Set.empty env sigma c in
+          let rc = Detyping.detype Detyping.Now env sigma c in
           begin match Notation.uninterp_prim_token rc ([], []) with
           | Constrexpr.Number n, _ when NumTok.Signed.is_int n ->
             int_of_string (NumTok.Signed.to_string n)

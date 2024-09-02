@@ -161,7 +161,7 @@ let newssrcongrtac arg ist =
   (fun sigma' ->
     let x = List.find_map_exn (fun (n, x, _) -> if n = 0 then Some x else None) eq_args in
     let ty = fs sigma' x in
-    congrtac (arg, Detyping.detype Detyping.Now Id.Set.empty env sigma ty) ist)
+    congrtac (arg, Detyping.detype Detyping.Now env sigma ty) ist)
   (fun () ->
     try
     let sigma, t_lhs = Evarutil.new_Type sigma in

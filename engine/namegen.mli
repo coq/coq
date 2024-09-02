@@ -105,20 +105,32 @@ val set_reserved_typed_name : (types -> Name.t) -> unit
 (*********************************************************************
    Making name distinct for displaying *)
 
+val make_all_rel_context_name_different : env -> evar_map -> rel_context -> env * rel_context
+val make_all_name_different : env -> evar_map -> env
+
+module Generator :
+sig
+type 'a t
+type 'a input = 'a t * 'a
+val fresh : Nameops.Fresh.t t
+val idset : Id.Set.t t
+
+val next_name_away : 'a t -> Name.t -> 'a -> Id.t * 'a
+
+val max_map : 'a t -> 'a -> Nameops.Subscript.t Id.Map.t
+end
+
 type renaming_flags =
   | RenamingForCasesPattern of (Name.t list * constr) (** avoid only global constructors *)
   | RenamingForGoal (** avoid all globals (as in intro) *)
   | RenamingElsewhereFor of (Name.t list * constr)
 
-val make_all_rel_context_name_different : env -> evar_map -> rel_context -> env * rel_context
-val make_all_name_different : env -> evar_map -> env
-
 val compute_displayed_name_in :
-  Environ.env -> evar_map -> renaming_flags -> Id.Set.t -> Name.t -> constr -> Name.t * Id.Set.t
+  'a Generator.t -> Environ.env -> evar_map -> renaming_flags -> 'a -> Name.t -> constr -> Name.t * 'a
 val compute_displayed_let_name_in :
-  Environ.env -> evar_map -> renaming_flags -> Id.Set.t -> Name.t -> Name.t * Id.Set.t
+  'a Generator.t -> Environ.env -> evar_map -> renaming_flags -> 'a -> Name.t -> Name.t * 'a
 
 (* Generic function expecting a "not occurn" function *)
 val compute_displayed_name_in_gen :
-  (evar_map -> int -> 'a -> bool) ->
-  Environ.env -> evar_map -> Id.Set.t -> Name.t -> 'a -> Name.t * Id.Set.t
+  'a Generator.t -> (evar_map -> int -> 'constr -> bool) ->
+  Environ.env -> evar_map -> 'a -> Name.t -> 'constr -> Name.t * 'a

@@ -1388,13 +1388,18 @@ let extern_glob_type ?impargs vars c =
 (* Main translation function from constr -> constr_expr *)
 
 let extern_constr ?(inctx=false) ?scope env sigma t =
-  let r = Detyping.detype Detyping.Later Id.Set.empty env sigma t in
+  let r = Detyping.detype Detyping.Later env sigma t in
   let vars = extern_env env sigma in
   let scope = Option.cata (fun x -> [x]) [] scope in
   extern inctx ((constr_some_level,None),(scope,[])) vars r
 
 let extern_constr_in_scope ?inctx scope env sigma t =
   extern_constr ?inctx ~scope env sigma t
+
+let make_avoid goal_concl_style env =
+  if goal_concl_style then (Namegen.Generator.fresh, Fresh.of_set @@ vars_of_env env)
+  (* TODO: this is linear in the size of the environment, maybe we can do better *)
+  else (Namegen.Generator.fresh, Nameops.Fresh.empty)
 
 let extern_type ?(goal_concl_style=false) env sigma ?impargs t =
   (* "goal_concl_style" means do alpha-conversion using the "goal" convention *)
@@ -1404,16 +1409,16 @@ let extern_type ?(goal_concl_style=false) env sigma ?impargs t =
   (* Not "goal_concl_style" means do alpha-conversion avoiding only *)
   (* those goal/section/rel variables that occurs in the subterm under *)
   (* consideration; see namegen.ml for further details *)
-  let avoid = if goal_concl_style then vars_of_env env else Id.Set.empty in
-  let r = Detyping.detype Detyping.Later ~isgoal:goal_concl_style avoid env sigma t in
+  let avoid = make_avoid goal_concl_style env in
+  let r = Detyping.detype Detyping.Later ~isgoal:goal_concl_style ~avoid env sigma t in
   extern_glob_type ?impargs (extern_env env sigma) r
 
 let extern_sort sigma s = extern_glob_sort (Evd.universe_binders sigma) (detype_sort sigma s)
 
 let extern_closed_glob ?(goal_concl_style=false) ?(inctx=false) ?scope env sigma t =
-  let avoid = if goal_concl_style then vars_of_env env else Id.Set.empty in
+  let avoid = make_avoid goal_concl_style env in
   let r =
-    Detyping.detype_closed_glob ~isgoal:goal_concl_style avoid env sigma t
+    Detyping.detype_closed_glob ~isgoal:goal_concl_style ~avoid env sigma t
   in
   let vars = extern_env env sigma in
   let scope = Option.cata (fun x -> [x]) [] scope in
@@ -1426,9 +1431,21 @@ let any_any_branch =
   (* | _ => _ *)
   CAst.make ([],[DAst.make @@ PatVar Anonymous], DAst.make @@ GHole (GInternalHole))
 
-let compute_displayed_name_in_pattern sigma avoid na c =
+let genset = Namegen.Generator.idset
+
+let next_name_away na (gen, avoid) =
+  let (id, avoid) = Namegen.Generator.next_name_away gen na avoid in
+  (id, (gen, avoid))
+
+let compute_displayed_let_name_in env sigma flags (gen, avoid) na =
   let open Namegen in
-  compute_displayed_name_in_gen (fun _ -> Patternops.noccurn_pattern) sigma avoid na c
+  let na, avoid = compute_displayed_let_name_in gen env sigma flags avoid na in
+  na, (gen, avoid)
+
+let compute_displayed_name_in_pattern env sigma (gen, avoid) na c =
+  let open Namegen in
+  let na, avoid = compute_displayed_name_in_gen gen (fun _ -> Patternops.noccurn_pattern) env sigma avoid na c in
+  na, (gen, avoid)
 
 let glob_of_pat_under_context glob_of_pat avoid env sigma (nas, pat) =
   let fold (avoid, env, nas, epat) na =
@@ -1443,8 +1460,8 @@ let glob_of_pat_under_context glob_of_pat avoid env sigma (nas, pat) =
   (Array.rev_of_list nas, pat)
 
 let rec glob_of_pat
-  : 'a. _ -> _ -> _ -> 'a constr_pattern_r -> _
-  = fun (type a) avoid env sigma (pat: a constr_pattern_r) ->
+  : 'a 's. 's Namegen.Generator.input -> _ -> _ -> 'a constr_pattern_r -> _
+  = fun (type a s) (avoid : s Namegen.Generator.t * s) env sigma (pat: a constr_pattern_r) ->
     DAst.make @@ match pat with
   | PRef ref -> GRef (ref,None)
   | PVar id  -> GVar id
@@ -1481,7 +1498,7 @@ let rec glob_of_pat
       let env' = Termops.add_name na' env in
       GProd (na',None,Explicit,glob_of_pat avoid env sigma t,glob_of_pat avoid' env' sigma c)
   | PLetIn (na,b,t,c) ->
-      let na',avoid' = Namegen.compute_displayed_let_name_in (Global.env ()) sigma Namegen.RenamingForGoal avoid na in
+      let na',avoid' = compute_displayed_let_name_in (Global.env ()) sigma Namegen.RenamingForGoal avoid na in
       let env' = Termops.add_name na' env in
       GLetIn (na',None,glob_of_pat avoid env sigma b, Option.map (glob_of_pat avoid env sigma) t,
               glob_of_pat avoid' env' sigma c)
@@ -1526,8 +1543,8 @@ let rec glob_of_pat
      let def_avoid, def_env, lfi =
        Array.fold_left
          (fun (avoid, env, l) na ->
-           let id = Namegen.next_name_away na avoid in
-           (Id.Set.add id avoid, Name id :: env, id::l))
+           let id, avoid = next_name_away na avoid in
+           (avoid, Name id :: env, id::l))
       (avoid, env, []) lna in
      let n = Array.length tl in
      let v = Array.map3
@@ -1541,8 +1558,8 @@ let rec glob_of_pat
      let def_avoid, def_env, lfi =
        Array.fold_left
          (fun (avoid, env, l) na ->
-           let id = Namegen.next_name_away na avoid in
-           (Id.Set.add id avoid, Name id :: env, id::l))
+           let id, avoid = next_name_away na avoid in
+           (avoid, Name id :: env, id::l))
          (avoid, env, []) lna in
      let ntys = Array.length tl in
      let v = Array.map2
@@ -1567,10 +1584,10 @@ let extern_constr_pattern env sigma pat =
   extern true ((constr_some_level,None),([],[]))
     (* XXX no vars? *)
     (Id.Set.empty, Evd.universe_binders sigma)
-    (glob_of_pat Id.Set.empty env sigma pat)
+    (glob_of_pat (genset, Id.Set.empty) env sigma pat)
 
 let extern_rel_context where env sigma sign =
-  let a = detype_rel_context Detyping.Later where Id.Set.empty ([],env) sigma sign in
+  let a = detype_rel_context Detyping.Later where ([],env) sigma sign in
   let vars = extern_env env sigma in
   let a = List.map (extended_glob_local_binder_of_decl) a in
   pi3 (extern_local_binder ((constr_some_level,None),([],[])) vars a)

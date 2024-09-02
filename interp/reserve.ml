@@ -118,7 +118,7 @@ let revert_reserved_type t =
     let reserved = KeyMap.find (constr_key env t) !reserve_revtable in
     let t = EConstr.of_constr t in
     let evd = Evd.from_env env in
-    let t = Detyping.detype Detyping.Now Id.Set.empty env evd t in
+    let t = Detyping.detype Detyping.Now env evd t in
     (* pedrot: if [Notation_ops.match_notation_constr] may raise [Failure _]
         then I've introduced a bug... *)
     let filter _ pat =

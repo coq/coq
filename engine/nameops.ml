@@ -215,6 +215,8 @@ sig
   val fresh : int -> t -> int * t
   (** Efficient composition of [next] and [add] *)
 
+  val max_elt_opt : t -> int option
+
 end =
 struct
 
@@ -333,6 +335,10 @@ let fresh n s =
       in
       n, s
 
+let max_elt_opt s = match SegSet.max_elt_opt s with
+| None -> None
+| Some (p, q) -> Some (q - 1)
+
 end
 
 module SubSet =
@@ -448,6 +454,21 @@ struct
       let subs, num = SegTree.fresh ss.ss_subs s.num in
       { ss_zero = 0; ss_subs = subs }, { s with num }
 
+  let max_elt_opt s =
+    let mapi i m = match SegTree.max_elt_opt m with
+    | None -> None
+    | Some k -> Some { Subscript.ss_zero = i; ss_subs = k }
+    in
+    let maxs = List.mapi mapi (s.num :: s.pre) in
+    let fold s accu = match s with
+    | None -> accu
+    | Some ss ->
+      match accu with
+      | None -> Some ss
+      | Some ss' -> if Subscript.compare ss ss' <= 0 then accu else s
+    in
+    List.fold_left fold None maxs
+
 end
 
 module Fresh =
@@ -498,6 +519,10 @@ let of_set s =
 
 let of_named_context_val s =
   of_set @@ Environ.ids_of_named_context_val s
+
+let max_map s =
+  let filter id m = SubSet.max_elt_opt m in
+  Id.Map.filter_map filter s
 
 end
 

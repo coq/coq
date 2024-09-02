@@ -65,6 +65,8 @@ sig
   val of_list : Id.t list -> t
   val of_set : Id.Set.t -> t
   val of_named_context_val : Environ.named_context_val -> t
+
+  val max_map : t -> Subscript.t Id.Map.t
 end
 
 
