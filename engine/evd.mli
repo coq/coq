@@ -293,13 +293,9 @@ val existential_value : evar_map -> econstr pexistential -> econstr
 (** [existential_value sigma ev] raises [NotInstantiatedEvar] if [ev] has
     no body and [Not_found] if it does not exist in [sigma] *)
 
-val existential_value0 : evar_map -> existential -> constr
-
 val existential_type_opt : evar_map -> econstr pexistential -> etypes option
 
 val existential_type : evar_map -> econstr pexistential -> etypes
-
-val existential_type0 : evar_map -> existential -> types
 
 val existential_opt_value : evar_map -> econstr pexistential -> econstr option
 (** Same as {!existential_value} but returns an option instead of raising an
