@@ -50,7 +50,9 @@ Ltac close_varlist lvar :=
   | _ => let _ := constr:(eq_refl : lvar = @nil _) in idtac
   end.
 
-Ltac extra_reify term := open_constr:((false,tt)).
+(* extensibility: override to add ways to reify a term.
+   Return [tt] for terms which aren't handled (tt doesn't have type PExpr so is unambiguous) *)
+Ltac extra_reify term := open_constr:(tt).
 
 Ltac reify_term Tring lvar term :=
   match open_constr:((Tring, term)) with
@@ -112,10 +114,10 @@ Ltac reify_term Tring lvar term :=
   | _ =>
       let extra := extra_reify term in
       lazymatch extra with
-      | (false,_) =>
+      | tt =>
         let n := reify_as_var lvar term in
         open_constr:(PEX Z (Pos.of_succ_nat n))
-      | (true,?v) => v
+      | ?v => v
       end
   end.
 
