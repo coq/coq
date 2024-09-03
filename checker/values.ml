@@ -37,7 +37,7 @@ type value =
   | Int64
   | Float64
 
-let fix (f : value -> value) : value =
+let _fix (f : value -> value) : value =
   let self = ref Any in
   let ans = f (Proxy self) in
   let () = self := ans in
@@ -482,31 +482,6 @@ let v_flags = v_tuple "flags" [|v_bool|] (* Allow Rewrite Rules *)
 let v_compiled_lib =
   v_tuple "compiled" [|v_dp;v_module;v_context_set;v_deps; v_flags|]
 
-(** STM objects *)
-
-let v_frozen = Tuple ("frozen", [|List (v_pair Int Dyn); Opt Dyn|])
-let v_states = v_pair Any v_frozen
-let v_state = Tuple ("state", [|v_states; Any; v_bool|])
-
-let v_vcs =
-  let vcs self =
-    Tuple ("vcs",
-      [|Any; Any;
-        Tuple ("dag",
-          [|Any; Any; v_map Any (Tuple ("state_info",
-            [|Any; Any; Opt v_state; v_pair (Opt self) Any|]))
-          |])
-      |])
-  in
-  fix vcs
-
-let v_uuid = Any
-let v_request id doc =
-  Tuple ("request", [|Any; Any; doc; Any; id; String|])
-let v_tasks = List (v_pair (v_request v_uuid v_vcs) v_bool)
-let v_counters = Any
-let v_stm_seg = v_pair v_tasks v_counters
-
 (** Toplevel structures in a vo (see Cic.mli) *)
 
 let v_libsum =
@@ -519,7 +494,5 @@ let v_delayed_universes =
   Sum ("delayed_universes", 0, [| [| v_unit |]; [| v_context_set |] |])
 
 let v_opaquetable = Array (Opt (v_pair v_constr v_delayed_universes))
-let v_univopaques =
-  Opt (Tuple ("univopaques",[|v_context_set;v_bool|]))
 
 let v_vmlib = v_tuple "vmlibrary" [|v_dp; Array v_vm_to_patch|]
