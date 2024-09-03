@@ -44,3 +44,6 @@ Ltac2 foo16 () := ltac1:(ltac2:(x |- ())).
 (* no warning for y even though it's bound in the ltac2 context
    (ltac2 can't tell that the notation isn't eg "ltac2:(...) + y") *)
 Notation foo17 x y := ltac2:(exact $preterm:x) (only parsing).
+
+(* the usage of the second "a" binder should not prevent warning for the first "a" *)
+Ltac2 foo18 a a := a.
