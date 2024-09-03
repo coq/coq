@@ -26,3 +26,6 @@ Definition d2 := v = 3.
 
 Fail #[deprecated(use=w)]
 Notation "a +++ b" := (a + b) (at level 2).
+
+Fail #[deprecated(use=nonexisting)]
+Definition y := 2.

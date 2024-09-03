@@ -324,7 +324,10 @@ let no_use_allowed ?since ?note = function
 let extended_globref_allowed ?since ?note = function
   | None -> Deprecation.make_with_qf ?since ?note ()
   | Some (FlagQualid p) ->
-      let use_instead = Nametab.locate_extended p in
+      let use_instead =
+        try Nametab.locate_extended p
+        with Not_found -> CErrors.user_err ?loc:p.CAst.loc Pp.(Libnames.pr_qualid p ++ str " not found.")
+      in
       Deprecation.make_with_qf ?since ?note ~use_instead ()
   | Some _ -> CErrors.user_err Pp.(str "Attribute \"use\" should be a (qualified) identifier")
 
