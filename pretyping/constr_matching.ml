@@ -273,12 +273,16 @@ let merge_binding sigma allow_bound_rels ctx n cT subst =
   in
   constrain sigma n c subst
 
+let rec strip_outer_cast sigma c = match EConstr.kind sigma c with
+| Cast (c, _, _) -> strip_outer_cast sigma c
+| k -> k
+
 let matches_core env sigma allow_bound_rels
     (binding_vars,pat) c =
   let open EConstr in
   let convref ref c =
     let open GlobRef in
-    match ref, EConstr.kind sigma c with
+    match ref, c with
     | VarRef id, Var id' -> Names.Id.equal id id'
     | ConstRef c, Const (c',_) -> Environ.QConstant.equal env c c'
     | IndRef i, Ind (i', _) -> Environ.QInd.equal env i i'
@@ -287,7 +291,7 @@ let matches_core env sigma allow_bound_rels
   in
   let rec sorec ctx env subst (p:constr_pattern) t =
     let cT = strip_outer_cast sigma t in
-    match p, EConstr.kind sigma cT with
+    match p, cT with
       | PSoApp (n,args),m ->
         let fold (ans, seen) = function
         | PRel n ->
@@ -296,13 +300,14 @@ let matches_core env sigma allow_bound_rels
         | _ -> user_err (str "Only bound indices allowed in second order pattern matching.")
         in
         let relargs, relset = List.fold_left fold ([], Int.Set.empty) args in
+        let cT = EConstr.of_kind cT in
         let frels = free_rels sigma cT in
         if Int.Set.subset frels relset then
           constrain sigma n ([], build_lambda sigma relargs ctx cT) subst
         else
           raise PatternMatchingFailure
 
-      | PMeta (Some n), m -> merge_binding sigma allow_bound_rels ctx n cT subst
+      | PMeta (Some n), m -> merge_binding sigma allow_bound_rels ctx n (EConstr.of_kind cT) subst
 
       | PMeta None, m -> subst
 
