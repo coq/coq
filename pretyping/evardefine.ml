@@ -39,7 +39,7 @@ let env_nf_betaiotaevar sigma env =
 
 type type_constraint = EConstr.types option
 
-type val_constraint = EConstr.constr option
+type val_constraint = EConstr.constr
 
 (* Old comment...
  * Basically, we have the following kind of constraints (in increasing

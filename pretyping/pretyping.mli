@@ -185,7 +185,8 @@ type pretype_flags = {
   unconstrained_sorts : bool;
 }
 
-type 'a pretype_fun = ?loc:Loc.t -> flags:pretype_flags -> Evardefine.type_constraint -> GlobEnv.t -> evar_map -> evar_map * 'a
+type 'a pretype_fun_gen = ?loc:Loc.t -> flags:pretype_flags -> GlobEnv.t -> evar_map -> evar_map * 'a
+type 'a pretype_fun = Evardefine.type_constraint -> 'a pretype_fun_gen
 
 type pretyper = {
   pretype_ref : pretyper -> GlobRef.t * glob_instance option -> unsafe_judgment pretype_fun;
@@ -209,7 +210,7 @@ type pretyper = {
   pretype_float : pretyper -> Float64.t -> unsafe_judgment pretype_fun;
   pretype_string : pretyper -> Pstring.t -> unsafe_judgment pretype_fun;
   pretype_array : pretyper -> glob_instance option * glob_constr array * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
-  pretype_type : pretyper -> glob_constr -> unsafe_type_judgment pretype_fun;
+  pretype_type : pretyper -> glob_constr -> ?valcon:Evardefine.val_constraint -> unsafe_type_judgment pretype_fun_gen;
 }
 (** Type of pretyping algorithms in open-recursion style. A typical way to
     implement a pretyping variant is to inherit from some pretyper using

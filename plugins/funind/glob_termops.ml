@@ -566,15 +566,15 @@ let resolve_and_replace_implicits exptyp env sigma rt =
     | GBinderType na -> binder_holes := ((loc, na), evk) :: !binder_holes
     | _ -> ()
     in
-    let pretype_hole self kind ?loc ~flags tycon env sigma =
+    let pretype_hole self kind tycon ?loc ~flags env sigma =
       let sigma, j = default_pretyper.pretype_hole self kind ?loc ~flags tycon env sigma in
       (* The value is guaranteed to be an undefined evar at this point *)
       let evk, _ = EConstr.destEvar sigma j.uj_val in
       let () = register_evar kind loc evk  in
       sigma, j
     in
-    let pretype_type self c ?loc ~flags valcon env sigma =
-      let sigma, j = default_pretyper.pretype_type self c ?loc ~flags valcon env sigma in
+    let pretype_type self c ?valcon ?loc ~flags env sigma =
+      let sigma, j = default_pretyper.pretype_type self c ?loc ~flags ?valcon env sigma in
       let () = match DAst.get c, EConstr.kind sigma j.utj_val with
       | GHole (kind), Evar (evk, _) -> register_evar kind c.CAst.loc evk
       | _ -> ()

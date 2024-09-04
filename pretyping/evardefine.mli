@@ -16,12 +16,12 @@ val env_nf_evar : evar_map -> env -> env
 val env_nf_betaiotaevar : evar_map -> env -> env
 
 type type_constraint = types option
-type val_constraint = constr option
+type val_constraint = constr
 
 val empty_tycon : type_constraint
 val mk_tycon : constr -> type_constraint
-val empty_valcon : val_constraint
-val mk_valcon : constr -> val_constraint
+val empty_valcon : val_constraint option
+val mk_valcon : constr -> val_constraint option
 
 (** Instantiate an evar by as many lambda's as needed so that its arguments
     are moved to the evar substitution (i.e. turn [?x[vars1:=args1] args] into
@@ -35,7 +35,7 @@ val split_as_array : env -> evar_map -> type_constraint ->
 (** If the constraint can be made to look like [array A] return [A],
    otherwise return [None] (this makes later coercion possible). *)
 
-val valcon_of_tycon : type_constraint -> val_constraint
+val valcon_of_tycon : type_constraint -> val_constraint option
 val lift_tycon : int -> type_constraint -> type_constraint
 
 val define_evar_as_product : env -> evar_map -> ?name:Names.Id.t -> existential -> evar_map * types
