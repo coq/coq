@@ -595,7 +595,7 @@ let resolve_and_replace_implicits exptyp env sigma rt =
     let hypnaming = RenameExistingBut vars in
     let genv = GlobEnv.make ~hypnaming env sigma Glob_ops.empty_lvar in
     let pretyper = { default_pretyper with pretype_hole; pretype_type } in
-    let sigma', _ = eval_pretyper pretyper ~flags:pretype_flags (Some exptyp) genv sigma rt in
+    let sigma', _ = eval_pretyper pretyper ~flags:pretype_flags (OfType exptyp) genv sigma rt in
     solve_remaining_evars flags env ~initial:sigma sigma'
   in
   let ctx = Evd.minimize_universes ctx in

@@ -305,7 +305,7 @@ let raw_push_named (na, raw_value, raw_typ) env =
   | Name id -> (
     let typ, _ =
       Pretyping.understand env (Evd.from_env env)
-        ~expected_type:Pretyping.IsType raw_typ
+        ~expected_type:Pretyping.is_type raw_typ
     in
     let na = make_annot id ERelevance.relevant in
     (* TODO relevance *)

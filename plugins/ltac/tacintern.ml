@@ -217,7 +217,7 @@ let intern_binding_name ist x =
   x
 
 let intern_constr_gen pattern_mode isarity {ltacvars=lfun; genv=env; extra; intern_sign; strict_check} c =
-  let scope = if isarity then Pretyping.IsType else Pretyping.WithoutTypeConstraint in
+  let scope = if isarity then Pretyping.is_type else Pretyping.WithoutTypeConstraint in
   let ltacvars = {
     Constrintern.ltac_vars = lfun;
     ltac_bound = Id.Set.empty;

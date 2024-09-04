@@ -47,7 +47,13 @@ open Evarconv
 
 module NamedDecl = Context.Named.Declaration
 
-type typing_constraint = IsType | OfType of types | WithoutTypeConstraint
+
+type typing_constraint = Evardefine.type_constraint =
+  | OfArity of rel_context
+  | OfType of types
+  | WithoutTypeConstraint
+
+let is_type = OfArity []
 
 let (!!) env = GlobEnv.env env
 
@@ -501,10 +507,9 @@ let adjust_evar_source sigma na c =
   | _, _ -> sigma, c
 
 (* coerce to tycon if any *)
-let inh_conv_coerce_to_tycon ?loc ~flags:{ program_mode; resolve_tc; use_coercions; patvars_abstract } env sigma j = function
-  | None -> sigma, j, Some Coercion.empty_coercion_trace
-  | Some t ->
-    Coercion.inh_conv_coerce_to ?loc ~program_mode ~resolve_tc ~use_coercions ~patvars_abstract !!env sigma j t
+let inh_conv_coerce_to_tycon ?loc ~flags:{ program_mode; resolve_tc; use_coercions; patvars_abstract } env sigma j tycon : _ * _ * _ =
+  Coercion.inh_conv_coerce_to_tycon ?loc ~program_mode ~resolve_tc ~use_coercions ~patvars_abstract
+    !!env sigma j tycon
 
 let check_instance subst = function
   | [] -> ()
@@ -600,7 +605,8 @@ let pretype_sort ?loc ~flags sigma s =
   let sigma, s = sort ?loc ~flags sigma s in
   judge_of_sort ?loc sigma s
 
-let new_typed_evar env sigma ?naming ~src tycon =
+let new_typed_evar ?loc env sigma ?naming ~src tycon =
+  let sigma, tycon = GlobEnv.tycon_to_type_opt ?loc env sigma tycon in
   match tycon with
   | Some ty ->
     let sigma, c = new_evar env sigma ~src ?naming ty in
@@ -697,7 +703,7 @@ let eval_pretyper self ~flags tycon env sigma t =
     self.pretype_array self (u,t,def,ty) ?loc ~flags tycon env sigma
 
 let eval_type_pretyper self ~flags ?valcon env sigma t =
-  self.pretype_type self t ~flags ?valcon env sigma
+  self.pretype_type self t ?loc:t.CAst.loc ~flags ?valcon env sigma
 
 let pretype_instance self ~flags env sigma loc hyps evk update =
   let f decl (subst,update,sigma) =
@@ -786,7 +792,7 @@ struct
         | exception Not_found ->
             if flags.undeclared_evars_patvars then
               let k = Evar_kinds.(MatchingVar (FirstOrderPatVar id)) in
-              let sigma, uj_val, _ = new_typed_evar env sigma ~naming:(IntroIdentifier id) ~src:(loc,k) tycon in
+              let sigma, uj_val, _ = new_typed_evar ?loc env sigma ~naming:(IntroIdentifier id) ~src:(loc,k) tycon in
               sigma, fst (destEvar sigma uj_val)
             else
               error_evar_not_found ?loc:locid !!env sigma id
@@ -800,7 +806,7 @@ struct
 
   let pretype_patvar self kind tycon ?loc ~flags env sigma =
     let k = Evar_kinds.MatchingVar kind in
-    let sigma, uj_val, uj_type = new_typed_evar env sigma ~src:(loc,k) tycon in
+    let sigma, uj_val, uj_type = new_typed_evar ?loc env sigma ~src:(loc,k) tycon in
     sigma, { uj_val; uj_type }
 
   let pretype_hole self k tycon ?loc ~flags env sigma =
@@ -811,7 +817,7 @@ struct
       | IntroAnonymous -> IntroAnonymous
       | IntroFresh id -> IntroFresh (interp_ltac_id env id) in
     let k = kind_of_glob_kind k in
-    let sigma, uj_val, uj_type = new_typed_evar env sigma ~src:(loc,k) ~naming tycon in
+    let sigma, uj_val, uj_type = new_typed_evar ?loc env sigma ~src:(loc,k) ~naming tycon in
     let sigma = if flags.program_mode then mark_obligation_evar sigma k uj_val else sigma in
     sigma, { uj_val; uj_type }
 
@@ -851,6 +857,7 @@ struct
     let ftys = Array.map2 (fun e a -> it_mkProd_or_LetIn a e) ctxtv lara in
     let nbfix = Array.length lar in
     let names = Array.map (fun id -> Name id) names in
+    let sigma, tycon = GlobEnv.tycon_to_type_opt ?loc env sigma tycon in
     let sigma =
       match tycon with
       | Some t ->
@@ -911,7 +918,7 @@ struct
           let () = esearch_cofix_guard ?loc !!env sigma fixdecls in
           make_judge (mkCoFix cofix) ftys.(i)
       in
-      discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma fixj tycon
+      discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma fixj (mk_tycon_opt tycon)
 
   let pretype_sort self s =
     fun tycon ?loc ~flags env sigma ->
@@ -925,10 +932,13 @@ struct
     let floc = loc_of_glob_constr f in
     let length = List.length args in
     let nargs_before_bidi =
-      if Option.is_empty tycon then length
-      (* We apply bidirectionality hints only if an expected type is specified *)
-      else
-      (* if `f` is a global, we retrieve bidirectionality hints *)
+      match tycon with
+      | WithoutTypeConstraint ->
+        (* We apply bidirectionality hints only if an expected type is specified *)
+        length
+      | OfType _ | OfArity _ ->
+        (* if `f` is a global, we retrieve bidirectionality hints *)
+        (* XXX is bidi useful for OfArity constraints? *)
         try
           let (gr,_) = destRef sigma fj.uj_val in
           Option.default length @@ get_bidirectionality_hint gr
@@ -945,8 +955,8 @@ struct
          for constructors corresponding to their number of parameters. *)
       if flags.program_mode && length > 0 && isConstruct sigma fj.uj_val then
         match tycon with
-        | None -> []
-        | Some ty ->
+        | WithoutTypeConstraint | OfArity _ -> []
+        | OfType ty ->
           let ((ind, i), u) = destConstruct sigma fj.uj_val in
           let npars = inductive_nparams !!env ind in
           if Int.equal npars 0 then []
@@ -1025,7 +1035,7 @@ struct
             let sigma, c_hole = new_evar env sigma ~src:(loc,Evar_kinds.InternalHole) c1 in
             (sigma, make_judge c_hole c1), (c_hole, c1, c, trace) :: bidiargs
           else
-            let tycon = Some c1 in
+            let tycon = mk_tycon c1 in
             pretype tycon env sigma c, bidiargs
         in
         let sigma, candargs, ujval =
@@ -1091,7 +1101,7 @@ struct
       (* Refine an argument (originally `origarg`) represented by an evar
          (`newarg`) to use typing information from the context *)
       (* Type the argument using the expected type *)
-      let sigma, j = pretype (Some ty) env sigma origarg in
+      let sigma, j = pretype (mk_tycon ty) env sigma origarg in
       (* Unify the (possibly refined) existential variable with the
          (typechecked) original value *)
       let sigma = try Evarconv.unify_delay !!env sigma newarg (j_val j)
@@ -1123,21 +1133,39 @@ struct
     pretype_app self (DAst.make ?loc (GRef (GlobRef.ConstRef f,us)), args @ [c])
       tycon ?loc ~flags env sigma
 
+  let remove_subset env sigma = function
+    | WithoutTypeConstraint | OfArity _ as t -> t
+    | OfType t -> OfType (Coercion.remove_subset env sigma t)
+
   let pretype_lambda self (name, bk, c1, c2) =
     fun tycon ?loc ~flags env sigma ->
     let open Context.Rel.Declaration in
     let tycon' = if flags.program_mode && flags.use_coercions
-      then Option.map (Coercion.remove_subset !!env sigma) tycon
+      then remove_subset !!env sigma tycon
       else tycon
     in
     let sigma,name',dom,rng =
       match tycon' with
-      | None -> sigma,Anonymous, None, None
-      | Some ty ->
+      | WithoutTypeConstraint -> sigma,Anonymous, None, WithoutTypeConstraint
+      | OfArity ctx ->
+        let t = mkArity (ctx, ESorts.prop) in
+        begin match whd_decompose_prod_n !!env sigma 1 t with
+        | exception Invalid_argument _ ->
+          (* No chance of unifying with a product.
+             NB: Funclass cannot be a source class so no coercions. *)
+          (* Generate a sort for the error message instead of using Prop *)
+          let sigma, s = Evd.new_sort_variable ?loc Evd.univ_flexible_alg sigma in
+          error_not_product ?loc !!env sigma (mkArity (ctx, s))
+        | [na,dom], t ->
+          let ctx, _ = destArity sigma t in
+          sigma, na.binder_name, Some dom, OfArity ctx
+        | ([]|_::_::_), _ -> assert false
+        end
+      | OfType ty ->
         let sigma, ty = Evardefine.presplit !!env sigma ty in
         match EConstr.kind sigma ty with
         | Prod (na,dom,rng) ->
-          sigma, na.binder_name, Some dom, Some rng
+          sigma, na.binder_name, Some dom, OfType rng
         | Evar ev ->
           (* define_evar_as_product works badly when impredicativity
              is possible but not known (#12623). OTOH if we know we
@@ -1149,18 +1177,17 @@ struct
           then
             let sigma, prod = define_evar_as_product !!env sigma ev in
             let na,dom,rng = destProd sigma prod in
-            sigma, na.binder_name, Some dom, Some rng
+            sigma, na.binder_name, Some dom, OfType rng
           else
-            sigma, Anonymous, None, None
+            sigma, Anonymous, None, WithoutTypeConstraint
         | _ ->
-          if Reductionops.is_head_evar !!env sigma ty then sigma, Anonymous, None, None
+          if Reductionops.is_head_evar !!env sigma ty then sigma, Anonymous, None, WithoutTypeConstraint
           else
             (* No chance of unifying with a product.
                NB: Funclass cannot be a source class so no coercions. *)
             error_not_product ?loc !!env sigma ty
     in
-    let dom_valcon = valcon_of_tycon dom in
-    let sigma, j = eval_type_pretyper self ~flags ?valcon:dom_valcon env sigma c1 in
+    let sigma, j = eval_type_pretyper self ~flags ?valcon:dom env sigma c1 in
     let name = {binder_name=name; binder_relevance=ESorts.relevance_of_sort j.utj_type} in
     let var = LocalAssum (name, j.utj_val) in
     let vars = VarSet.variables (Global.env ()) in
@@ -1322,6 +1349,7 @@ struct
   let pretype_cases self (sty, po, tml, eqns)  =
     fun tycon ?loc ~flags env sigma ->
     let pretype tycon env sigma c = eval_pretyper self ~flags tycon env sigma c in
+    let sigma, tycon = GlobEnv.tycon_to_type_opt ?loc env sigma tycon in
     Cases.compile_cases ?loc ~program_mode:flags.program_mode sty (pretype, sigma) tycon env (po,tml,eqns)
 
   let pretype_if self (c, (na, po), b1, b2) =
@@ -1359,10 +1387,7 @@ struct
           let typ = lift (- nar) (beta_applist sigma (pred,[cj.uj_val])) in
           sigma, pred, typ
         | None ->
-          let sigma, p = match tycon with
-            | Some ty -> sigma, ty
-            | None -> new_type_evar env sigma ~src:(loc,Evar_kinds.CasesType false)
-          in
+          let sigma, p = GlobEnv.tycon_to_type ?loc ~kind:(CasesType false) env sigma tycon in
           sigma, it_mkLambda_or_LetIn (lift (nar+1) p) psign, p in
       let pred = nf_evar sigma pred in
       let p = nf_evar sigma p in
@@ -1432,7 +1457,6 @@ struct
 (* [pretype_type valcon env sigma c] coerces [c] into a type *)
 let pretype_type self c ?valcon ?loc ~flags (env : GlobEnv.t) sigma = match DAst.get c with
   | GHole knd ->
-      let loc = loc_of_glob_constr c in
       let naming = naming_of_glob_kind knd in
       let knd = kind_of_glob_kind knd in
       (match valcon with
@@ -1459,11 +1483,17 @@ let pretype_type self c ?valcon ?loc ~flags (env : GlobEnv.t) sigma = match DAst
          let sigma = if flags.program_mode then mark_obligation_evar sigma knd utj_val else sigma in
          sigma, { utj_val; utj_type = s})
   | _ ->
+      (* XXX it would be more bidi to use tycon [is_type]
+         but when we need a [types option] tycon later (typically match compilation)
+         the generated qvar will collapse to Type where we should be inferring Prop ie #19246
+         see test case [Check fun x => True -> match x with true => True | false => False end.]
+         see https://github.com/coq/coq/pull/19502#issuecomment-2331310974 for more info *)
       let sigma, j = eval_pretyper self ~flags empty_tycon env sigma c in
       let loc = loc_of_glob_constr c in
       let sigma, tj =
         let use_coercions = flags.use_coercions in
-        Coercion.inh_coerce_to_sort ?loc ~use_coercions !!env sigma j in
+        discard_trace @@ Coercion.inh_coerce_to_sort ?loc ~use_coercions !!env sigma j
+      in
       match valcon with
       | None -> sigma, tj
       | Some v ->
@@ -1593,15 +1623,12 @@ let ise_pretype_gen (flags : inference_flags) env sigma lvar kind c =
   let hypnaming = if flags.program_mode then ProgramNaming vars else RenameExistingBut vars in
   let env = GlobEnv.make ~hypnaming env sigma lvar in
   let sigma', c', c'_ty = match kind with
-    | WithoutTypeConstraint ->
-      let sigma, j = pretype ~flags:pretype_flags empty_tycon env sigma c in
-      sigma, j.uj_val, j.uj_type
-    | OfType exptyp ->
-      let sigma, j = pretype ~flags:pretype_flags (mk_tycon exptyp) env sigma c in
-      sigma, j.uj_val, j.uj_type
-    | IsType ->
+    | OfArity [] ->
       let sigma, tj = pretype_type ~flags:pretype_flags env sigma c in
       sigma, tj.utj_val, mkSort tj.utj_type
+    | OfArity _ | WithoutTypeConstraint | OfType _ ->
+      let sigma, j = pretype ~flags:pretype_flags kind env sigma c in
+      sigma, j.uj_val, j.uj_type
   in
   process_inference_flags flags !!env sigma (sigma',c',c'_ty)
 

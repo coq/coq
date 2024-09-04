@@ -32,7 +32,7 @@ let absurd c =
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
     let j = Retyping.get_judgment_of env sigma c in
-    let sigma, j = Coercion.inh_coerce_to_sort env sigma j in
+    let sigma, j, _trace = Coercion.inh_coerce_to_sort env sigma j in
     let t = nf_betaiota env sigma j.Environ.utj_val in
     let r = ESorts.relevance_of_sort j.Environ.utj_type in
     Proofview.Unsafe.tclEVARS sigma <*>

@@ -64,6 +64,16 @@ val new_evar : t -> evar_map -> ?src:Evar_kinds.t Loc.located ->
 
 val new_type_evar : t -> evar_map -> src:Evar_kinds.t Loc.located -> evar_map * constr
 
+(** Generate a type matching the constraint
+    (OfType t -> t,
+     WithoutTypeConstraint -> fresh evar using [kind],
+     OfArity Γ -> forall Γ, fresh sort) *)
+val tycon_to_type : ?loc:Loc.t -> ?kind:Evar_kinds.t -> t -> evar_map -> Evardefine.type_constraint -> evar_map * types
+
+(** Like [tycon_to_type] but returns [None] for [WithoutTypeConstraint]
+    instead of generating a fresh evar. *)
+val tycon_to_type_opt : ?loc:Loc.t -> ?kind:Evar_kinds.t -> t -> evar_map -> Evardefine.type_constraint -> evar_map * types option
+
 (** [hide_variable env na id] tells to hide the binding of [id] in
     the ltac environment part of [env] and to additionally rebind
     it to [id'] in case [na] is some [Name id']. It is useful e.g.

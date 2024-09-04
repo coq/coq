@@ -109,6 +109,20 @@ let new_type_evar env sigma ~src =
   let sigma, s = Evd.new_sort_variable Evd.univ_flexible_alg sigma in
   new_evar env sigma ~src (EConstr.mkSort s)
 
+let tycon_to_type ?loc ?(kind=Evar_kinds.InternalHole) env sigma = function
+  | Evardefine.OfType t -> sigma, t
+  | WithoutTypeConstraint ->
+    new_type_evar env sigma ~src:(loc,kind)
+  | OfArity ctx ->
+    let sigma, s = Evd.new_sort_variable ?loc Evd.univ_flexible_alg sigma in
+    sigma, mkArity (ctx,s)
+
+let tycon_to_type_opt ?loc ?kind env sigma = function
+  | Evardefine.WithoutTypeConstraint -> sigma, None
+  | OfType _ | OfArity _ as t ->
+    let sigma, t = tycon_to_type ?loc ?kind env sigma t in
+    sigma, Some t
+
 let hide_variable env expansion id =
   let lvar = env.lvar in
   if Id.Map.mem id lvar.ltac_genargs then

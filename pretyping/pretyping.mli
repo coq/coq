@@ -59,10 +59,14 @@ val esearch_fix_guard : (* For Fixpoints only *)
 
 val esearch_cofix_guard : ?loc:Loc.t -> env -> evar_map -> EConstr.rec_declaration -> unit
 
-type typing_constraint =
-  | IsType (** Necessarily a type *)
+type typing_constraint = Evardefine.type_constraint =
+  | OfArity of rel_context
+  (** Necessarily an arity, ie [forall] from that context to some sort.
+      In particular when the context is empty it means is a type. *)
   | OfType of types (** A term of the expected type *)
   | WithoutTypeConstraint (** A term of unknown expected type *)
+
+val is_type : typing_constraint
 
 type use_typeclasses = NoUseTC | UseTCForConv | UseTC
 (** Typeclasses are used in 2 ways:

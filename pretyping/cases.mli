@@ -46,7 +46,7 @@ val irrefutable : env -> cases_pattern -> bool
 val compile_cases :
   ?loc:Loc.t -> program_mode:bool -> case_style ->
   (type_constraint -> GlobEnv.t -> evar_map -> glob_constr -> evar_map * unsafe_judgment) * evar_map ->
-  type_constraint ->
+  types option ->
   GlobEnv.t -> glob_constr option * tomatch_tuples * cases_clauses ->
   evar_map * unsafe_judgment
 

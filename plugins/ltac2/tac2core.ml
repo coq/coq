@@ -817,7 +817,7 @@ let () =
     (bool @-> pretype_flags @-> ret pretype_flags) @@ fun b flags ->
   { flags with expand_evars = b }
 
-let () = define "expected_istype" (ret (repr_ext val_expected_type)) IsType
+let () = define "expected_istype" (ret (repr_ext val_expected_type)) Pretyping.is_type
 
 let () = define "expected_oftype" (constr @-> ret (repr_ext val_expected_type)) @@ fun c ->
   OfType c
@@ -1786,23 +1786,21 @@ let () =
     let ist = Tac2interp.get_env @@ GlobEnv.lfun env in
     let tac = Proofview.tclIGNORE (Tac2interp.interp ist tac) in
     let name, poly = Id.of_string "ltac2", poly in
-    let sigma, concl = match tycon with
-    | Some ty -> sigma, ty
-    | None -> GlobEnv.new_type_evar env sigma ~src:(loc,Evar_kinds.InternalHole)
-    in
+    let sigma, concl = GlobEnv.tycon_to_type ?loc env sigma tycon in
     let c, sigma = Proof.refine_by_tactic ~name ~poly (GlobEnv.renamed_env env) sigma concl tac in
     let j = { Environ.uj_val = c; Environ.uj_type = concl } in
     (j, sigma)
   in
   GlobEnv.register_constr_interp0 wit_ltac2_constr interp
 
-let interp_constr_var_as_constr ?loc env sigma tycon id =
-  let ist = Tac2interp.get_env @@ GlobEnv.lfun env in
-  let env = GlobEnv.renamed_env env in
+let interp_constr_var_as_constr ?loc genv sigma tycon id =
+  let ist = Tac2interp.get_env @@ GlobEnv.lfun genv in
+  let env = GlobEnv.renamed_env genv in
   let c = Id.Map.find id ist.env_ist in
   let c = Tac2ffi.to_constr c in
   let t = Retyping.get_type_of env sigma c in
   let j = { Environ.uj_val = c; uj_type = t } in
+  let sigma, tycon = GlobEnv.tycon_to_type_opt ?loc genv sigma tycon in
   match tycon with
   | None ->
     j, sigma
@@ -1828,18 +1826,14 @@ let interp_preterm_var_as_constr ?loc env sigma tycon id =
   }
   in
   let flags = preterm_flags in
-  let tycon = let open Pretyping in match tycon with
-    | Some ty -> OfType ty
-    | None -> WithoutTypeConstraint
-  in
   let sigma, t, ty = Pretyping.understand_ltac_ty flags env sigma vars tycon term in
   Environ.make_judge t ty, sigma
 
 let () =
   let interp ?loc ~poly env sigma tycon (kind,id) =
     let f = match kind with
-      | ConstrVar -> interp_constr_var_as_constr
       | PretermVar -> interp_preterm_var_as_constr
+      | ConstrVar -> interp_constr_var_as_constr
       | PatternVar -> assert false
     in
     f ?loc env sigma tycon id

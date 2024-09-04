@@ -177,9 +177,9 @@ let build_type_telescope ~unconstrained_sorts newps env0 sigma { DataI.arity; _ 
     let env = EConstr.push_rel_context newps env0 in
     let impls = Constrintern.empty_internalization_env in
     let sigma, s =
-      let t = Constrintern.intern_gen IsType ~impls env sigma t in
+      let t = Constrintern.intern_gen Pretyping.is_type ~impls env sigma t in
       let flags = { Pretyping.all_no_fail_flags with program_mode = false; unconstrained_sorts } in
-      Pretyping.understand_tcc ~flags env sigma ~expected_type:IsType t
+      Pretyping.understand_tcc ~flags env sigma ~expected_type:Pretyping.is_type t
     in
     let sred = Reductionops.whd_allnolet env sigma s in
     (match EConstr.kind sigma sred with

@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Pp
 open Names
 open Constr
 open Context
@@ -37,7 +36,10 @@ let env_nf_betaiotaevar sigma env =
 (* Operations on value/type constraints *)
 (****************************************)
 
-type type_constraint = EConstr.types option
+type type_constraint =
+  | OfArity of rel_context
+  | OfType of types
+  | WithoutTypeConstraint
 
 type val_constraint = EConstr.constr
 
@@ -56,16 +58,14 @@ type val_constraint = EConstr.constr
  *)
 
 (* The empty type constraint *)
-let empty_tycon = None
+let empty_tycon = WithoutTypeConstraint
 
 (* Builds a type constraint *)
-let mk_tycon ty = Some ty
+let mk_tycon ty = OfType ty
 
-(* Constrains the value of a type *)
-let empty_valcon = None
-
-(* Builds a value constraint *)
-let mk_valcon c = Some c
+let mk_tycon_opt = function
+  | None -> WithoutTypeConstraint
+  | Some t -> OfType t
 
 let idx = Namegen.default_dependent_ident
 
@@ -209,9 +209,12 @@ let is_array_const env sigma c =
      | Some cst' -> Environ.QConstant.equal env cst cst')
   | _ -> false
 
+(** If the constraint can be made to look like [array A] return [A],
+    otherwise return [None] (this makes later coercion possible). *)
 let split_as_array env sigma0 = function
-  | None -> sigma0, None
-  | Some c ->
+  | WithoutTypeConstraint -> sigma0, None
+  | OfArity _ -> sigma0, None
+  | OfType c ->
     let sigma, c = presplit env sigma0 c in
     match EConstr.kind sigma c with
     | App (h,[|ty|]) when is_array_const env sigma h -> sigma, Some ty
@@ -224,9 +227,7 @@ let split_as_array env sigma0 = function
       sigma, Some ty
     | _ -> sigma0, None
 
-let valcon_of_tycon x = x
-let lift_tycon n = Option.map (lift n)
-
-let pr_tycon env sigma = function
-    None -> str "None"
-  | Some t -> Termops.Internal.print_constr_env env sigma t
+let lift_tycon n = function
+  | WithoutTypeConstraint -> WithoutTypeConstraint
+  | OfType t -> OfType (lift n t)
+  | OfArity ctx -> OfArity (lift_rel_context n ctx)

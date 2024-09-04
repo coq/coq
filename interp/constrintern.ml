@@ -2666,12 +2666,17 @@ let extract_ids env =
 let bound_univs sigma = Evd.universe_binders sigma
 
 let scope_of_type_kind env sigma = function
-  | IsType -> Notation.current_type_scope_names ()
+  | OfArity [] -> Notation.current_type_scope_names ()
+  | OfArity _ ->
+    (* XXX intern should have its own constraint type with only IsType
+       and no generalized arity value *)
+    []
   | OfType typ -> compute_type_scope env sigma typ
   | WithoutTypeConstraint -> []
 
 let allowed_binder_kind_of_type_kind = function
-  | IsType -> AbsPi
+  | OfArity [] -> AbsPi
+  | OfArity _ -> AbsLambda
   | OfType _ | WithoutTypeConstraint -> AbsLambda
 
 let empty_ltac_sign = {
@@ -2698,7 +2703,7 @@ let intern_gen kind env sigma ?impls ?strict_check ?pattern_mode ?ltacvars c =
   intern_gen (Some kind) env sigma ?impls ?strict_check ?pattern_mode ?ltacvars c
 
 let intern_constr env sigma c = intern_gen WithoutTypeConstraint env sigma c
-let intern_type env sigma c = intern_gen IsType env sigma c
+let intern_type env sigma c = intern_gen is_type env sigma c
 let intern_pattern globalenv patt =
   let env = {pat_ids = None; pat_scopes = ([], [])} in
   intern_cases_pattern test_kind_tolerant globalenv Id.Map.empty env empty_alias patt
@@ -2716,7 +2721,7 @@ let interp_constr ?flags ?(expected_type=WithoutTypeConstraint) env sigma ?(impl
   interp_gen ?flags expected_type env sigma c
 
 let interp_type ?flags env sigma ?(impls=empty_internalization_env) c =
-  interp_gen ?flags IsType env sigma ~impls c
+  interp_gen ?flags is_type env sigma ~impls c
 
 let interp_casted_constr ?flags env sigma ?(impls=empty_internalization_env) c typ =
   interp_gen ?flags (OfType typ) env sigma ~impls c
@@ -2731,7 +2736,7 @@ let interp_open_constr ?(expected_type=WithoutTypeConstraint) env sigma c =
 let interp_constr_evars_gen_impls ?(flags=Pretyping.all_no_fail_flags) env sigma
     ?(impls=empty_internalization_env) expected_type c =
   let c = intern_gen expected_type ~impls env sigma c in
-  let imps = Implicit_quantifiers.implicits_of_glob_constr ~with_products:(expected_type == IsType) c in
+  let imps = Implicit_quantifiers.implicits_of_glob_constr ~with_products:(expected_type = is_type) c in
   let sigma, c = understand_tcc ~flags env sigma ~expected_type c in
   sigma, (c, imps)
 
@@ -2744,7 +2749,7 @@ let interp_casted_constr_evars_impls ?(program_mode=false) env evdref ?(impls=em
   interp_constr_evars_gen_impls ~flags env evdref ~impls (OfType typ) c
 
 let interp_type_evars_impls ?(flags=Pretyping.all_no_fail_flags) env sigma ?(impls=empty_internalization_env) c =
-  interp_constr_evars_gen_impls ~flags env sigma ~impls IsType c
+  interp_constr_evars_gen_impls ~flags env sigma ~impls is_type c
 
 (* Not all evars expected to be resolved, with side-effect on evars *)
 
@@ -2760,17 +2765,17 @@ let interp_casted_constr_evars ?program_mode env sigma ?(impls=empty_internaliza
   interp_constr_evars_gen ?program_mode env sigma ~impls (OfType typ) c
 
 let interp_type_evars ?program_mode env sigma ?(impls=empty_internalization_env) c =
-  interp_constr_evars_gen ?program_mode env sigma IsType ~impls c
+  interp_constr_evars_gen ?program_mode env sigma is_type ~impls c
 
 (* Miscellaneous *)
 
 let intern_constr_pattern env sigma ?(as_type=false) ?strict_check ?(ltacvars=empty_ltac_sign) c =
-  let c = intern_gen (if as_type then IsType else WithoutTypeConstraint)
+  let c = intern_gen (if as_type then is_type else WithoutTypeConstraint)
             ?strict_check ~pattern_mode:true ~ltacvars env sigma c in
   pattern_of_glob_constr env c
 
 let intern_uninstantiated_constr_pattern env sigma ?(as_type=false) ?strict_check ?(ltacvars=empty_ltac_sign) c =
-  let c = intern_gen (if as_type then IsType else WithoutTypeConstraint)
+  let c = intern_gen (if as_type then is_type else WithoutTypeConstraint)
             ?strict_check ~pattern_mode:true ~ltacvars env sigma c in
   uninstantiated_pattern_of_glob_constr env c
 
@@ -2816,14 +2821,14 @@ let interp_notation_constr env ?(impls=empty_internalization_env) nenv a =
 (* Interpret binders and contexts  *)
 
 let interp_binder env sigma na t =
-  let t = intern_gen IsType env sigma t in
+  let t = intern_gen is_type env sigma t in
   let t' = locate_if_hole ?loc:(loc_of_glob_constr t) na t in
-  understand ~expected_type:IsType env sigma t'
+  understand ~expected_type:is_type env sigma t'
 
 let interp_binder_evars env sigma na t =
-  let t = intern_gen IsType env sigma t in
+  let t = intern_gen is_type env sigma t in
   let t' = locate_if_hole ?loc:(loc_of_glob_constr t) na t in
-  understand_tcc env sigma ~expected_type:IsType t'
+  understand_tcc env sigma ~expected_type:is_type t'
 
 let my_intern_constr env lvar acc c =
   internalize env acc false lvar c
@@ -2877,7 +2882,7 @@ let interp_context_evars_gen ?(program_mode=false) ?(unconstrained_sorts = false
           let (na, _, bk, b', t) = glob_local_binder_of_extended b' in
           let sigma, t =
               let t' = if Option.is_empty b' then locate_if_hole ?loc:(loc_of_glob_constr t) na t else t in (* useful? *)
-              let sigma, t, _ = Pretyping.ise_pretype_gen flags env sigma empty_lvar IsType t' in
+              let sigma, t, _ = Pretyping.ise_pretype_gen flags env sigma empty_lvar is_type t' in
               sigma, t
           in
           let r = Retyping.relevance_of_type env sigma t in
