@@ -158,7 +158,7 @@ ci-jasmin: ci-mathcomp_word
 ci-iris: ci-autosubst
 
 ci-simple_io: ci-ext_lib
-ci-quickchick: ci-ext_lib ci-simple_io ci-mathcomp_1
+ci-quickchick: ci-ext_lib ci-simple_io ci-mathcomp
 ci-quickchick_test: ci-quickchick
 ci-itree: ci-ext_lib ci-paco
 ci-itree_io: ci-itree ci-simple_io
