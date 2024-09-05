@@ -32,7 +32,7 @@ Ltac reify_as_var_aux n lvar term :=
         | _ => open_constr:(false)
         end
       in
-      match conv with
+      lazymatch conv with
       | true => n
       | false => reify_as_var_aux open_constr:(S n) tl term
       end
@@ -44,7 +44,7 @@ Ltac reify_as_var_aux n lvar term :=
 Ltac reify_as_var lvar term := reify_as_var_aux Datatypes.O lvar term.
 
 Ltac close_varlist lvar :=
-  match lvar with
+  lazymatch lvar with
   | @nil _ => idtac
   | @cons _ _ ?tl => close_varlist tl
   | _ => let _ := constr:(eq_refl : lvar = @nil _) in idtac
@@ -64,10 +64,10 @@ Ltac reify_term R ring0 ring1 add mul sub opp lvar term :=
 
   (* ring constants *)
   | _ =>
-    let _ := match goal with _ => convert ring0 term end in
+    let _ := lazymatch goal with _ => convert ring0 term end in
     open_constr:(PEc 0%Z)
   | _ =>
-    let _ := match goal with _ => convert ring1 term end in
+    let _ := lazymatch goal with _ => convert ring1 term end in
     open_constr:(PEc 1%Z)
 
   (* binary operators *)
@@ -77,18 +77,18 @@ Ltac reify_term R ring0 ring1 add mul sub opp lvar term :=
     let _ := open_constr:(t2 : R) in
     match tt with
     | _ =>
-      let _ := match goal with _ => convert add op end in
+      let _ := lazymatch goal with _ => convert add op end in
       (* NB: don't reify before we recognize the operator in case we can't recognire it *)
       let et1 := reify_term t1 in
       let et2 := reify_term t2 in
       open_constr:(PEadd et1 et2)
     | _ =>
-      let _ := match goal with _ => convert mul op end in
+      let _ := lazymatch goal with _ => convert mul op end in
       let et1 := reify_term t1 in
       let et2 := reify_term t2 in
       open_constr:(PEmul et1 et2)
     | _ =>
-      let _ := match goal with _ => convert sub op end in
+      let _ := lazymatch goal with _ => convert sub op end in
       let et1 := reify_term t1 in
       let et2 := reify_term t2 in
       open_constr:(PEsub et1 et2)
@@ -96,7 +96,7 @@ Ltac reify_term R ring0 ring1 add mul sub opp lvar term :=
 
   (* unary operator (opposite) *)
   | ?op ?t =>
-    let _ := match goal with _ => convert opp op end in
+    let _ := lazymatch goal with _ => convert opp op end in
     let et := reify_term t in
     open_constr:(PEopp et)
 
@@ -123,7 +123,7 @@ Ltac reify_term R ring0 ring1 add mul sub opp lvar term :=
   end.
 
 Ltac list_reifyl_core Tring lvar lterm :=
-  match lterm with
+  lazymatch lterm with
   | @nil _ => open_constr:(@nil (PExpr Z))
   | @cons _ ?t ?tl =>
       lazymatch Tring with
@@ -136,17 +136,17 @@ Ltac list_reifyl_core Tring lvar lterm :=
   end.
 
 Ltac list_reifyl lvar lterm :=
-  match lterm with
+  lazymatch lterm with
   | @cons ?R _ _ =>
       let R_ring := constr:(_ :> Ring (T:=R)) in
       let Tring := type of R_ring in
       let lexpr := list_reifyl_core Tring lvar lterm in
-      let _ := match goal with _ => close_varlist lvar end in
+      let _ := lazymatch goal with _ => close_varlist lvar end in
       constr:((lvar,lexpr))
   end.
 
 Ltac list_reifyl0 lterm :=
-  match lterm with
+  lazymatch lterm with
   | @cons ?R _ _ =>
       let lvar := open_constr:(_ :> list R) in
       list_reifyl lvar lterm
