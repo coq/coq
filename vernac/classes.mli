@@ -115,6 +115,12 @@ val set_typeclass_transparency_com
   -> bool
   -> unit
 
+val set_typeclass_mode
+  :  locality:Hints.hint_locality
+  -> GlobRef.t
+  -> Hints.hint_mode list
+  -> unit
+
 (** For generation on names based on classes only *)
 
 val id_of_class : typeclass -> Id.t
@@ -126,3 +132,7 @@ module Internal :
 sig
 val add_instance : typeclass -> hint_info -> Hints.hint_locality -> GlobRef.t -> unit
 end
+
+
+(** A configurable warning to output if a default mode is used for a class declaration. *)
+val warn_default_mode : ?loc:Loc.t -> (GlobRef.t * Hints.hint_mode list) -> unit

@@ -317,12 +317,21 @@ Command summary
    :attr:`universes(polymorphic)`, :attr:`universes(template)`,
    :attr:`universes(cumulative)` and :attr:`private(matching)` attributes.
 
+   It also supports the :attr:`mode` attribute for setting a hint mode
+   declaration for the class.
+
    .. note::
       Don't confuse typeclasses with "coercion classes", described in
       `implicit coercions<classes-implicit-coercions>`.
 
    When record syntax is used, this command also supports the
    :attr:`projections(primitive)` :term:`attribute`.
+
+   .. attr:: mode = @string
+      :name: mode
+
+      Sets the mode of resolution for queries on the class.
+      The syntax to use in the quoted string is explained in :cmd:`Hint Mode`.
 
    .. cmd:: Existing Class @qualid
 
@@ -563,6 +572,25 @@ type, like:
 
 Settings
 ~~~~~~~~
+
+.. _TypeclassesDefaultMode:
+
+.. opt:: Typeclasses Default Mode {| "+" | "-" | "!" }.
+
+   Sets the default mode declaration associated with a :cmd:`Class` or :cmd:`Existing Class`
+   declaration. It is set by default to "-", i.e. doing no mode filtering
+   by default. Each class declaration uses this default mode for *all* its parameters,
+   unless a :attr:`mode` attribute is used to set the mode explicitly.
+
+   .. _class-declaration-default-mode:
+
+   .. warn:: Using inferred default mode: “mode” for “@ident”
+
+      Indicates that the :attr:`mode` for a :cmd:`Class` declaration has been
+      assigned automatically using the default mode.
+      This warning is named ``class-declaration-default-mode``.
+      It is disabled by default.
+      Enable it to find (and fix) any typeclasses that don't have explicit mode declarations.
 
 .. flag:: Typeclasses Dependency Order
 

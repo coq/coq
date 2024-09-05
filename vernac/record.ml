@@ -40,6 +40,12 @@ let { Goptions.get = typeclasses_unique } =
     ~value:false
     ()
 
+let { Goptions.get = typeclasses_default_mode } =
+  Goptions.declare_interpreted_string_option_and_ref Hints.parse_mode Hints.string_of_mode
+    ~key:["Typeclasses";"Default";"Mode"]
+    ~value:Hints.ModeOutput
+    ()
+
 let interp_fields_evars env sigma ~ninds ~nparams impls_env nots l =
   let _, sigma, impls, newfs, _ =
     List.fold_left2
@@ -922,6 +928,30 @@ let declare_class_constant ~univs paramimpls params data =
   } in
   [cref], [m]
 
+
+let set_class_mode ref mode ctx =
+  let modes =
+    match mode with
+    | Some (Some m) -> Some m
+    | _ ->
+      let ctxl = Context.Rel.nhyps ctx in
+      let def = typeclasses_default_mode () in
+      let mode = match def with
+      | Hints.ModeOutput -> None
+      | Hints.ModeInput ->
+        Some (List.init ctxl (fun _ -> Hints.ModeInput))
+      | Hints.ModeNoHeadEvar ->
+        Some (List.init ctxl (fun _ -> Hints.ModeNoHeadEvar))
+      in
+      let wm = List.init ctxl (fun _ -> def) in
+      Classes.warn_default_mode (ref, wm);
+      mode
+  in
+  match modes with
+  | None -> ()
+  | Some modes -> Classes.set_typeclass_mode ~locality:Hints.SuperGlobal ref modes
+
+
 (** [declare_class] will prepare and declare a [Class]. This is done in
    2 steps:
 
@@ -946,7 +976,7 @@ let declare_class_constant ~univs paramimpls params data =
    in the form of [Classes.typeclass]
 
   *)
-let declare_class ~univs params inds def data =
+let declare_class ~univs params inds def ?mode data =
   let { Data.rdata } = get_class_params data in
   let fields = rdata.DataR.fields in
   let map ind =
@@ -984,7 +1014,8 @@ let declare_class ~univs params inds def data =
         cl_props = fields;
         cl_projs = projs }
     in
-    Classes.add_class k
+    Classes.add_class k;
+    set_class_mode impl mode params
   in
   List.iter map data
 
@@ -1012,8 +1043,8 @@ let add_constant_class cst =
 let add_inductive_class ind =
   let env = Global.env () in
   let mind, oneind = Inductive.lookup_mind_specif env ind in
+  let ctx = oneind.mind_arity_ctxt in
   let k =
-    let ctx = oneind.mind_arity_ctxt in
     let univs = Declareops.inductive_polymorphic_context mind in
     let inst = UVars.make_abstract_instance univs in
     let ty = Inductive.type_of_inductive ((mind, oneind), inst) in
@@ -1071,7 +1102,7 @@ let definition_structure ~flags udecl kind ~primitive_proj (records : Ast.t list
           impargs params template ~projections_kind ~indlocs data in
       declare_structure structure
   in
-  if kind_class kind <> NotClass then declare_class ~univs params inds def data;
+  if kind_class kind <> NotClass then declare_class ~univs params inds def ~mode:flags.mode data;
   inds
 
 module Internal = struct

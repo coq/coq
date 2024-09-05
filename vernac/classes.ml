@@ -26,6 +26,11 @@ open Libobject
 module RelDecl = Context.Rel.Declaration
 (*i*)
 
+let warn_default_mode = CWarnings.create ~name:"class-declaration-default-mode" ~category:CWarnings.CoreCategories.automation
+  ~default:CWarnings.Disabled
+  Pp.(fun (gr, m) -> hov 2 (str "Using an inferred default mode: " ++ prlist_with_sep spc Hints.pp_hint_mode m ++
+    spc () ++ str "for" ++ spc () ++ Printer.pr_global gr))
+
 let set_typeclass_transparency ~locality c b =
   Hints.add_hints ~locality [typeclasses_db]
     (Hints.HintsTransparencyEntry (Hints.HintsReferences c, b))
@@ -38,6 +43,10 @@ let set_typeclass_transparency_com ~locality refs b =
       refs
   in
   set_typeclass_transparency ~locality refs b
+
+let set_typeclass_mode ~locality c b =
+  Hints.add_hints ~locality [typeclasses_db]
+    (Hints.HintsModeEntry (c, b))
 
 let add_instance_hint gr ~locality info =
   let inst = Hints.hint_globref gr in

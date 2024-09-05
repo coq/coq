@@ -59,3 +59,39 @@ Module BestEffort.
   Admitted.
 
 End BestEffort.
+
+Module Plus.
+  Parameter plus : nat -> nat -> nat -> Prop.
+
+  Axiom plus0l : forall m : nat, plus 0 m m.
+  Axiom plus0r : forall n : nat, plus n 0 n.
+  Axiom plusSl : forall n m r : nat, plus n m r -> plus (S n) m (S r).
+  Axiom plusSr : forall n m r : nat, plus n m r -> plus m (S m) (S r).
+
+  Hint Resolve plus0l plus0r plusSl plusSr : plus.
+  Hint Mode plus ! - - : plus.
+  Hint Mode plus - ! - : plus.
+
+  Require Coq.derive.Derive.
+  Derive r SuchThat (plus 1 4 r) As r_proof.
+  Proof.
+    subst r. typeclasses eauto with plus.
+  Qed.
+
+  Goal exists x y, plus x y 12.
+  Proof.
+    eexists ?[x], ?[y].
+    Set Typeclasses Debug.
+    Fail typeclasses eauto with plus.
+    instantiate (y := 1).
+    typeclasses eauto with plus.
+  Defined.
+End Plus.
+
+Module ModeAttr.
+  Fail #[mode="+"] Inductive foo (A : Type) : Set :=.
+
+  Fail #[mode=""] Class Foo (A : Type) := {}.
+  #[mode="+"] Class Foo (A : Type) := {}.
+  Fail #[mode="+ +"] Class Foo' (A : Type) := {}.
+End ModeAttr.

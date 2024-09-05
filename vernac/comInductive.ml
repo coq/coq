@@ -35,6 +35,7 @@ type flags = {
   template : bool option;
   auto_prop_lowering : bool;
   finite : Declarations.recursivity_kind;
+  mode : Hints.hint_mode list option;
 }
 
 (* 3b| Mutual inductive definitions *)
