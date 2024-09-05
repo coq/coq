@@ -232,7 +232,7 @@ let rec safe_pattern_of_constr_aux ~loc env evd usubst depth state t = Constr.ki
       state, (head, elims @ [PECase (ci.ci_ind, mask, pret, pbrs)])
   | Proj (p, _, c) ->
       let state, (head, elims) = safe_pattern_of_constr_aux ~loc env evd usubst depth state c in
-      state, (head, elims @ [PEProj p])
+      state, (head, elims @ [PEProj (Projection.repr p)])
   | _ ->
       let state, head = safe_head_pattern_of_constr ~loc env evd usubst depth state t in
       state, (head, [])
@@ -339,7 +339,7 @@ let test_projection_apps env evd ~loc ind args =
     | ERigid (_, []) -> false
     | ERigid (_, elims) ->
       match List.last elims with
-      | PEProj p -> Ind.CanOrd.equal (Projection.inductive p) ind && Projection.arg p = i
+      | PEProj p -> Ind.CanOrd.equal (Projection.Repr.inductive p) ind && Projection.Repr.arg p = i
       | _ -> false
   ) 0 args then
     warn_redex_in_rewrite_rules ?loc Pp.(str " subpattern compatible with an eta-long form for " ++ Id.print (snd specif).mind_typename ++ str"," )
