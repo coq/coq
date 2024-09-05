@@ -190,7 +190,10 @@ let collapse_above_prop ~to_prop m =
 
 let collapse m =
   let map q v = match v with
-  | None -> if QSet.mem q m.named then None else Some (QConstant QType)
+  | None ->
+    if QSet.mem q m.named then None else
+    if QSet.mem q m.above then Some (QConstant QProp)
+    else Some (QConstant QType)
   | Some _ -> v
   in
   { named = m.named; qmap = QMap.mapi map m.qmap; above = QSet.empty }
