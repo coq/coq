@@ -428,5 +428,4 @@ let normalize_context_set ~lbound g ctx (us:UnivFlex.t) {weak_constraints=weak;a
   let ctx', us, inst, noneqs =
     minimize_univ_variables ctx us ucstrsr ucstrsl noneqs
   in
-  let us = UnivFlex.normalize us in
   us, (ctx', Constraints.union noneqs eqs)
