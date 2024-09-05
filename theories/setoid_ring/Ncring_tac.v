@@ -54,11 +54,8 @@ Ltac close_varlist lvar :=
    Return [tt] for terms which aren't handled (tt doesn't have type PExpr so is unambiguous) *)
 Ltac extra_reify term := open_constr:(tt).
 
-Ltac reify_term Tring lvar term :=
-  lazymatch Tring with
-  | Ring (T:=?R) (ring0:=?ring0) (ring1:=?ring1)
-    (add:=?add) (mul:=?mul) (sub:=?sub) (opp:=?opp)
-    =>
+Ltac reify_term R ring0 ring1 add mul sub opp lvar term :=
+  let reify_term x := reify_term R ring0 ring1 add mul sub opp lvar x in
   match term with
   (* int literals *)
   | Z0 => open_constr:(PEc 0%Z)
@@ -82,36 +79,36 @@ Ltac reify_term Tring lvar term :=
     | _ =>
       let _ := match goal with _ => convert add op end in
       (* NB: don't reify before we recognize the operator in case we can't recognire it *)
-      let et1 := reify_term Tring lvar t1 in
-      let et2 := reify_term Tring lvar t2 in
+      let et1 := reify_term t1 in
+      let et2 := reify_term t2 in
       open_constr:(PEadd et1 et2)
     | _ =>
       let _ := match goal with _ => convert mul op end in
-      let et1 := reify_term Tring lvar t1 in
-      let et2 := reify_term Tring lvar t2 in
+      let et1 := reify_term t1 in
+      let et2 := reify_term t2 in
       open_constr:(PEmul et1 et2)
     | _ =>
       let _ := match goal with _ => convert sub op end in
-      let et1 := reify_term Tring lvar t1 in
-      let et2 := reify_term Tring lvar t2 in
+      let et1 := reify_term t1 in
+      let et2 := reify_term t2 in
       open_constr:(PEsub et1 et2)
     end
 
   (* unary operator (opposite) *)
   | ?op ?t =>
     let _ := match goal with _ => convert opp op end in
-    let et := reify_term Tring lvar t in
+    let et := reify_term t in
     open_constr:(PEopp et)
 
   (* special cases (XXX can/should we be less syntactic?) *)
   | @multiplication Z _ _ ?z ?t =>
-    let et := reify_term Tring lvar t in
+    let et := reify_term t in
     open_constr:(PEmul (PEc z) et)
   | pow_N ?t ?n =>
-    let et := reify_term Tring lvar t in
+    let et := reify_term t in
     open_constr:(PEpow et n)
   | @power _ _ power_ring ?t ?n =>
-    let et := reify_term Tring lvar t in
+    let et := reify_term t in
     open_constr:(PEpow et (ZN n))
 
   (* extensibility and variable case *)
@@ -123,15 +120,19 @@ Ltac reify_term Tring lvar term :=
       open_constr:(PEX Z (Pos.of_succ_nat n))
     | ?v => v
     end
-  end end.
+  end.
 
 Ltac list_reifyl_core Tring lvar lterm :=
   match lterm with
   | @nil _ => open_constr:(@nil (PExpr Z))
   | @cons _ ?t ?tl =>
-      let et := reify_term Tring lvar t in
-      let etl := list_reifyl_core Tring lvar tl in
-      open_constr:(@cons (PExpr Z) et etl)
+      lazymatch Tring with
+      | Ring (T:=?R) (ring0:=?ring0) (ring1:=?ring1)
+          (add:=?add) (mul:=?mul) (sub:=?sub) (opp:=?opp) =>
+        let et := reify_term R ring0 ring1 add mul sub opp lvar t in
+        let etl := list_reifyl_core Tring lvar tl in
+        open_constr:(@cons (PExpr Z) et etl)
+      end
   end.
 
 Ltac list_reifyl lvar lterm :=
