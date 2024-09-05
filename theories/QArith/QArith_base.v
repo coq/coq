@@ -1127,14 +1127,16 @@ Hint Resolve Qopp_le_compat Qopp_lt_compat : qarith.
 Lemma Qle_minus_iff : forall p q, p <= q <-> 0 <= q+-p.
 Proof.
   intros (x1,x2) (y1,y2); unfold Qle; simpl.
-  rewrite Z.mul_1_r, Z.mul_opp_l, <- Z.le_sub_le_add_r, Z.opp_involutive.
+  rewrite Z.mul_1_r, Z.mul_opp_l, <- Z.le_sub_le_add_r.
+  unfold Z.sub. (* we have subterm "0 - - _", this simplifies to "0 + (- - _)" *)
+  rewrite Z.opp_involutive.
   reflexivity.
 Qed.
 
 Lemma Qlt_minus_iff : forall p q, p < q <-> 0 < q+-p.
 Proof.
   intros (x1,x2) (y1,y2); unfold Qlt; simpl.
-  rewrite Z.mul_1_r, Z.mul_opp_l, <- Z.lt_sub_lt_add_r, Z.opp_involutive.
+  rewrite Z.mul_1_r, Z.mul_opp_l, <- Z.lt_sub_lt_add_r; unfold Z.sub; rewrite Z.opp_involutive.
   reflexivity.
 Qed.
 

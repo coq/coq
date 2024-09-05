@@ -240,7 +240,7 @@ Module OT_to_Alt (Import O:OrderedType) <: OrderedTypeAlt.
    forall c x y z, (x?=y) = c -> (y?=z) = c -> (x?=z) = c.
  Proof.
  intros c x y z.
- destruct c; unfold compare;
+ destruct c;
   rewrite ?compare_Eq, ?compare_Lt, ?compare_Gt;
   transitivity y; auto.
  Qed.

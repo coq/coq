@@ -371,7 +371,7 @@ Proof.
   rewrite Zeval_formula_compat'.
   unfold xnnormalise.
   destruct f as [lhs o rhs].
-  destruct o eqn:O ; cbn ; rewrite ?eval_pol_sub;
+  destruct o eqn:O ; cbn ; fold eval_pol; rewrite ?eval_pol_sub;
     rewrite <- !eval_pol_norm ; simpl in *;
       unfold eval_expr;
       generalize (   eval_pexpr  Z.add Z.mul Z.sub Z.opp (fun x : Z => x)
@@ -433,8 +433,8 @@ Lemma xnormalise_correct : forall env f,
     (make_conj (fun x => eval_nformula env x -> False) (xnormalise f)) <-> eval_nformula env f.
 Proof.
   intros env f.
-  destruct f as [e o]; destruct o eqn:Op; cbn - [psub];
-    repeat rewrite eval_pol_sub; fold eval_pol; repeat rewrite eval_pol_Pc;
+  destruct f as [e o]; destruct o eqn:Op; cbn - [psub]; fold eval_pol;
+    repeat rewrite eval_pol_sub; repeat rewrite eval_pol_Pc;
       generalize (eval_pol env e) as x; intro.
   - apply eq_cnf.
   - unfold not. tauto.
@@ -522,8 +522,8 @@ Lemma xnegate_correct : forall env f,
     (make_conj (fun x => eval_nformula env x -> False) (xnegate f)) <-> ~ eval_nformula env f.
 Proof.
   intros env f.
-  destruct f as [e o]; destruct o eqn:Op; cbn - [psub];
-    repeat rewrite eval_pol_sub; fold eval_pol; repeat rewrite eval_pol_Pc;
+  destruct f as [e o]; destruct o eqn:Op; cbn - [psub]; fold eval_pol;
+    repeat rewrite eval_pol_sub; repeat rewrite eval_pol_Pc;
       generalize (eval_pol env e) as x; intro x.
   - tauto.
   - rewrite eq_cnf.
@@ -835,8 +835,11 @@ Lemma Zgcd_pol_correct_lt : forall p env g c, Zgcd_pol p = (g,c) -> 0 < g -> eva
 Proof.
   intros.
   rewrite <- Zdiv_pol_correct ; auto.
-  - rewrite (RingMicromega.PsubC_ok Zsor ZSORaddon).
-    unfold eval_pol. ring.
+  - pose proof (RingMicromega.PsubC_ok Zsor ZSORaddon) as H1.
+    fold eval_pol in H1. simpl in H1.
+    unfold psubC in H1.
+    rewrite H1.
+    ring.
     (**)
   - apply Zgcd_pol_div ; auto.
 Qed.
@@ -1202,6 +1205,7 @@ Proof.
   unfold eval_nformula. unfold RingMicromega.eval_nformula.
   unfold eval_op1.
   intros env e e' c H H0.
+  unfold padd.
   rewrite (RingMicromega.eval_pol_add Zsor ZSORaddon).
   simpl.
   (**)
@@ -1288,6 +1292,7 @@ Proof.
     unfold RingMicromega.eval_nformula in *.
     unfold nformula_of_cutting_plane.
     unfold eval_op1 in *.
+    unfold padd.
     rewrite (RingMicromega.eval_pol_add Zsor ZSORaddon).
     simpl. now rewrite Z.add_0_r.
   - (* Strict *)
@@ -1297,6 +1302,7 @@ Proof.
     inv H1.
     apply (makeCuttingPlane_ns_sound env) with (2:= H).
     simpl in *.
+    change (PsubC Z.sub e 1) with (psubC Z.sub e 1).
     rewrite (RingMicromega.PsubC_ok Zsor ZSORaddon).
     now apply Z.lt_le_pred.
   - (* NonStrict *)
@@ -1709,6 +1715,7 @@ Proof.
            unfold  eval_nformula.
            unfold RingMicromega.eval_nformula.
            simpl.
+           change (PsubC ?x ?y) with (psubC x y).
            rewrite (RingMicromega.PsubC_ok Zsor ZSORaddon).
            unfold eval_pol. ring.
         -- discriminate.

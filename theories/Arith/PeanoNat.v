@@ -795,7 +795,7 @@ Lemma div2_bitwise : forall op n a b,
 Proof.
   intros op n a b; unfold bitwise; fold bitwise.
   destruct (op (odd a) (odd b)).
-  - now rewrite div2_succ_double.
+  - now rewrite add_1_l, div2_succ_double.
   - now rewrite add_0_l, div2_double.
 Qed.
 
@@ -1234,7 +1234,7 @@ Proof. exists 0; reflexivity. Qed.
 Lemma OddT_2 n : OddT n -> OddT (S (S n)).
 Proof.
   intros [m H]; exists (S m).
-  rewrite H, ? mul_succ_r, <- ? add_1_r, add_assoc; reflexivity.
+  rewrite H, ? mul_succ_r, <- 3 add_1_r, add_assoc; reflexivity.
 Qed.
 
 Lemma EvenT_S_OddT n : EvenT (S n) -> OddT n.

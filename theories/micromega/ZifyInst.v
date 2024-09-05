@@ -122,7 +122,7 @@ Add Zify UnOp Op_Z_abs_nat.
 #[global]
 Instance Op_nat_div2 : UnOp Nat.div2 :=
   { TUOp x := x / 2 ;
-    TUOpInj x := ltac:(now rewrite Nat2Z.inj_div2, Z.div2_div) }.
+    TUOpInj x := ltac:(simpl; now rewrite Nat2Z.inj_div2, Z.div2_div) }.
 Add Zify UnOp Op_nat_div2.
 
 #[global]
@@ -237,7 +237,7 @@ Add Zify UnOp Op_pos_of_succ_nat.
 #[global]
 Instance Op_pos_of_nat : UnOp Pos.of_nat :=
   { TUOp x := Z.max 1 x ;
-    TUOpInj x := ltac: (now destruct x;
+    TUOpInj x := ltac: (simpl; now destruct x;
                         [|rewrite <- Pos.of_nat_succ, <- (Nat2Z.inj_max 1)]) }.
 Add Zify UnOp Op_pos_of_nat.
 
@@ -249,7 +249,7 @@ Add Zify BinOp Op_pos_add.
 #[global]
 Instance Op_pos_add_carry : BinOp Pos.add_carry :=
   { TBOp x y := x + y + 1 ;
-    TBOpInj := ltac:(now intros; rewrite Pos.add_carry_spec, Pos2Z.inj_succ) }.
+    TBOpInj := ltac:(simpl; now intros; rewrite Pos.add_carry_spec, Pos2Z.inj_succ) }.
 Add Zify BinOp Op_pos_add_carry.
 
 #[global]
@@ -429,7 +429,7 @@ Add Zify UnOp Op_N_succ_pos.
 #[global]
 Instance Op_N_div2 : UnOp N.div2 :=
   { TUOp x := x / 2 ;
-    TUOpInj x := ltac:(now rewrite N2Z.inj_div2, Z.div2_div) }.
+    TUOpInj x := ltac:(simpl; now rewrite N2Z.inj_div2, Z.div2_div) }.
 Add Zify UnOp Op_N_div2.
 
 #[global]
@@ -440,7 +440,7 @@ Add Zify BinOp Op_N_pow.
 #[global]
 Instance Op_N_square : UnOp N.square :=
   { TUOp x := x * x ;
-    TUOpInj x := ltac:(now rewrite N.square_spec, N2Z.inj_mul) }.
+    TUOpInj x := ltac:(simpl; now rewrite N.square_spec, N2Z.inj_mul) }.
 Add Zify UnOp Op_N_square.
 
 (** Support for Z - injected to itself *)

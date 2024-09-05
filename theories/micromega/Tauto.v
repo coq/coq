@@ -1962,7 +1962,7 @@ Section S.
       + (* pol = true *)
         intros. unfold mk_or in H.
         rewrite eval_cnf_and_opt in H.
-        unfold and_cnf.
+        unfold and_cnf in H.
         rewrite eval_cnf_app in H.
         destruct H as [H0 H1].
         simpl.

@@ -67,6 +67,7 @@ Module Signed.
 Lemma of_to (n:N) : N.of_int (N.to_int n) = Some n.
 Proof.
   unfold N.to_int, N.of_int, norm. f_equal.
+  change Pos.of_uint with N.of_uint.
   rewrite Unsigned.of_uint_norm. apply Unsigned.of_to.
 Qed.
 
@@ -74,7 +75,7 @@ Lemma to_of (d:int)(n:N) : N.of_int d = Some n -> N.to_int n = norm d.
 Proof.
   unfold N.of_int.
   destruct (norm d) eqn:Hd; intros [= <-].
-  unfold N.to_int. rewrite Unsigned.to_of. f_equal.
+  unfold N.to_int. change Pos.of_uint with N.of_uint. rewrite Unsigned.to_of. f_equal.
   revert Hd; destruct d; simpl.
   - intros [= <-]. apply unorm_involutive.
   - destruct (nzhead d); now intros [= <-].

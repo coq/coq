@@ -570,7 +570,7 @@ Lemma bal_spec : forall l x r y,
  InT y (bal l x r) <-> X.eq y x \/ InT y l \/ InT y r.
 Proof.
  intros l x r; induction l, x, r, (bal l x r) using bal_ind; subst; intros; try clear e0;
- rewrite !create_spec; intuition_in.
+ unfold assert_false; rewrite !create_spec; intuition_in.
 Qed.
 
 #[global]
@@ -644,7 +644,8 @@ Qed.
 Instance join_ok : forall l x r `(Ok l, Ok r, lt_tree x l, gt_tree x r),
  Ok (join l x r).
 Proof.
- join_tac; auto with *; inv; apply bal_ok; auto;
+ (* XXX not sure what's going on here *)
+ join_tac; try solve [auto with *; simpl; auto with *]; inv; apply bal_ok; auto;
  clear Hrl Hlr; intro; intros; rewrite join_spec in *.
  - intuition; [ setoid_replace y with x | ]; eauto.
  - intuition; [ setoid_replace y with x | ]; eauto.
