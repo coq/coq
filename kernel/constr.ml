@@ -344,38 +344,37 @@ let rels = Array.init 17 (fun i -> T (Rel i))
 
 let mkRel n = if 0<=n && n<=16 then rels.(n) else T (Rel n)
 
-(* If lt = [t1; ...; tn], constructs the application (t1 ... tn) *)
-(* We ensure applicative terms have at least one argument and the
-   function is not itself an applicative term *)
-let mkApp (f, a) =
-  if Int.equal (Array.length a) 0 then f else
-    match kind f with
-      | App (g, cl) -> T (App (g, Array.append cl a))
-      | _ -> T (App (f, a))
+let mkSProp = T (Sort Sorts.sprop)
+let mkProp  = T (Sort Sorts.prop)
+let mkSet   = T (Sort Sorts.set)
 
-(* Constructs the term t1::t2, i.e. the term t1 casted with the type t2 *)
-(* (that means t2 is declared as the type of t1) *)
-let mkCast (t1,k2,t2) =
-  match kind t1 with
-  | Cast (c,k1, _) when (k1 == VMcast || k1 == NATIVEcast) && k1 == k2 -> T (Cast (c,k1,t2))
-  | _ -> T (Cast (t1,k2,t2))
-
-(* The other way around. We treat specifically smart constructors *)
+(* Enforces:
+   - applicative terms have at least one argument and the
+     function is not itself an applicative term
+   - stacks of VM or native casts are collapsed
+   - small rels are shared
+   - small sorts are shared
+*)
 let of_kind = function
-| App (f, a) -> mkApp (f, a)
-| Cast (c, knd, t) -> mkCast (c, knd, t)
+| Rel n when 0 <= n && n < Array.length rels -> rels.(n)
+| App (f, [||]) -> f
+| App (f, a) as k -> begin match kind f with
+    | App (g, cl) -> T (App (g, Array.append cl a))
+    | _ -> T k
+  end
+| Cast (c, knd, t) as k -> begin match kind c with
+    | Cast (c, knd', _) when (knd == VMcast || knd == NATIVEcast) && knd == knd' ->
+      T (Cast (c, knd, t))
+    | _ -> T k
+  end
+| Sort Sorts.SProp -> mkSProp
+| Sort Sorts.Prop -> mkProp
+| Sort Sorts.Set -> mkSet
 | k -> T k
 
 (* Construct a type *)
-let mkSProp  = of_kind @@ Sort Sorts.sprop
-let mkProp   = of_kind @@ Sort Sorts.prop
-let mkSet    = of_kind @@ Sort Sorts.set
 let mkType u = of_kind @@ Sort (Sorts.sort_of_univ u)
-let mkSort   = function
-  | Sorts.SProp -> mkSProp
-  | Sorts.Prop -> mkProp (* Easy sharing *)
-  | Sorts.Set -> mkSet
-  | (Sorts.Type _ | Sorts.QSort _) as s -> of_kind @@ Sort s
+let mkSort s = of_kind @@ Sort s
 
 (* Constructs the product (x:t1)t2 *)
 let mkProd (x,t1,t2) = of_kind @@ Prod (x,t1,t2)
@@ -385,6 +384,12 @@ let mkLambda (x,t1,t2) = of_kind @@ Lambda (x,t1,t2)
 
 (* Constructs [x=c_1:t]c_2 *)
 let mkLetIn (x,c1,t,c2) = of_kind @@ LetIn (x,c1,t,c2)
+
+let mkApp (f, a) = of_kind (App (f, a))
+
+(* Constructs the term t1::t2, i.e. the term t1 casted with the type t2 *)
+(* (that means t2 is declared as the type of t1) *)
+let mkCast (t1,k,t2) = of_kind @@ Cast (t1,k,t2)
 
 let map_puniverses f (x,u) = (f x, u)
 let in_punivs a = (a, UVars.Instance.empty)
