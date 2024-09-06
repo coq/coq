@@ -188,7 +188,7 @@ let dump_modref ?loc mp ty =
 let dump_libref ?loc dp ty =
   dump_ref ?loc (Names.DirPath.to_string dp) "<>" "<>" ty
 
-let cook_notation (from,df) sc =
+let cook_notation Constrexpr.{ ntn_entry = from; ntn_key = df } sc =
   (* We encode notations so that they are space-free and still human-readable *)
   (* - all spaces are replaced by _                                           *)
   (* - all _ denoting a non-terminal symbol are replaced by x                 *)

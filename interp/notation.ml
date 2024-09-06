@@ -52,7 +52,7 @@ let notation_cat = Libobject.create_category "notations"
     expression, set this scope to be the current scope
 *)
 
-let pr_notation (from,ntn) = qstring ntn ++ match from with InConstrEntry -> mt () | InCustomEntry s -> str " in custom " ++ str s
+let pr_notation ntn = qstring ntn.ntn_key ++ match ntn.ntn_entry with InConstrEntry -> mt () | InCustomEntry s -> str " in custom " ++ str s
 
 module NotationOrd =
   struct
@@ -1479,10 +1479,12 @@ let find_notation ntn sc =
   | OnlyParsingData (true,data) | ParsingAndPrintingData (true,_,data) -> data
   | _ -> raise Not_found
 
-let notation_of_prim_token = function
-  | Constrexpr.Number (SPlus,n) -> InConstrEntry, NumTok.Unsigned.sprint n
-  | Constrexpr.Number (SMinus,n) -> InConstrEntry, "- "^NumTok.Unsigned.sprint n
-  | String s -> InConstrEntry, String.quote_coq_string s
+let notation_of_prim_token p =
+  let k = match p with
+    | Constrexpr.Number (SPlus,n) -> NumTok.Unsigned.sprint n
+    | Constrexpr.Number (SMinus,n) -> "- "^NumTok.Unsigned.sprint n
+    | Constrexpr.String s -> String.quote_coq_string s in
+  Constrexpr.{ ntn_entry = InConstrEntry; ntn_key = k }
 
 let find_prim_token check_allowed ?loc p sc =
   (* Try for a user-defined numerical notation *)
@@ -1507,7 +1509,8 @@ let find_prim_token check_allowed ?loc p sc =
 
 let interp_prim_token_gen ?loc g p local_scopes =
   let scopes = make_current_scopes local_scopes in
-  let p_as_ntn = try notation_of_prim_token p with Not_found -> InConstrEntry,"" in
+  let p_as_ntn = try notation_of_prim_token p with Not_found ->
+    Constrexpr.{ ntn_entry = InConstrEntry; ntn_key = "" } in
   try
     let pat, sc = find_interpretation p_as_ntn (find_prim_token ?loc g p) scopes in
     pat, sc
@@ -2118,8 +2121,8 @@ let rec string_of_symbol = function
      let l = List.flatten (List.map string_of_symbol l) in "_"::l@".."::l@["_"]
   | Break _ -> []
 
-let make_notation_key from symbols =
-  (from,String.concat " " (List.flatten (List.map string_of_symbol symbols)))
+let make_notation_key ntn_entry symbols =
+  Constrexpr.{ ntn_entry; ntn_key = String.concat " " (List.flatten (List.map string_of_symbol symbols)) }
 
 let decompose_notation_pure_key s =
   let len = String.length s in
@@ -2148,8 +2151,8 @@ let decompose_notation_pure_key s =
   in
     decomp_ntn [] 0
 
-let decompose_notation_key (from,s) =
-  from, decompose_notation_pure_key s
+let decompose_notation_key ntn =
+  ntn.ntn_entry, decompose_notation_pure_key ntn.ntn_key
 
 let is_prim_token_constant_in_constr (entry, symbs) =
   match entry, List.filter (function Break _ -> false | _ -> true) symbs with
@@ -2162,7 +2165,7 @@ let is_prim_token_constant_in_constr (entry, symbs) =
 let level_of_notation ntn =
   if is_prim_token_constant_in_constr (decompose_notation_key ntn) then
     (* A primitive notation *)
-    ({ notation_entry = fst ntn; notation_level = 0}, []) (* TODO: string notations*)
+    ({ notation_entry = ntn.ntn_entry; notation_level = 0}, []) (* TODO: string notations*)
   else
     NotationMap.find ntn !notation_level_map
 
@@ -2402,8 +2405,8 @@ let interpret_notation_string ntn =
       raw_analyze_notation_tokens toks
   in
   let _,toks = interp_list_parser [] [] toks in
-  let _,ntn' = make_notation_key None toks in
-  ntn'
+  let ntn' = make_notation_key InConstrEntry toks in
+  ntn'.ntn_key
 
 (* Tell if a non-recursive notation is an instance of a recursive one *)
 let is_approximation ntn ntn' =
@@ -2438,7 +2441,7 @@ let match_notation_key strict ntn ntn' =
 
 let browse_notation strict ntn map =
   let ntn = interpret_notation_string ntn in
-  let find (from,ntn') = match_notation_key strict ntn ntn' in
+  let find ntn' = match_notation_key strict ntn ntn'.ntn_key in
   let l =
     String.Map.fold
       (fun scope_name sc ->
@@ -2447,7 +2450,7 @@ let browse_notation strict ntn map =
           then List.map (fun d -> (ntn,scope_name,d)) (extract_notation_data data) @ l
           else l) sc.notations)
       map [] in
-  List.sort (fun x y -> String.compare (snd (pi1 x)) (snd (pi1 y))) l
+  List.sort (fun x y -> String.compare (pi1 x).ntn_key (pi1 y).ntn_key) l
 
 let global_reference_of_notation ~head test (ntn,sc,(on_parsing,on_printing,{not_interp = (_,c as interp); not_location = (_, df)})) =
   match c with
@@ -2642,17 +2645,18 @@ let toggle_notations_in_scope ~on found inscope ntn_pattern ntns =
     (* shortcut *)
     List.fold_right (fun ntn_entry ntns ->
       try
-        NotationMap.add (ntn_entry, ntn)
+        let ntn = Constrexpr.{ ntn_entry; ntn_key = ntn } in
+        NotationMap.add ntn
           (toggle_notations_by_interpretation ~on found ntn_pattern
-             (inscope,(ntn_entry,ntn))
-             (NotationMap.find (ntn_entry, ntn) ntns))
+             (inscope, ntn)
+             (NotationMap.find ntn ntns))
           ntns
       with Not_found -> ntns)
         ntn_entries ntns
     (* Deal with full notations *)
   | ntn_entries, ntn_rule -> (* This is the table of notations, not of abbreviations *)
-    NotationMap.mapi (fun (ntn_entry,ntn_key' as ntn') data ->
-        if match_notation_entry ntn_entries ntn_entry && match_notation_rule ntn_rule ntn_key' then
+    NotationMap.mapi (fun ntn' data ->
+        if match_notation_entry ntn_entries ntn'.ntn_entry && match_notation_rule ntn_rule ntn'.ntn_key then
           toggle_notations_by_interpretation ~on found ntn_pattern
             (inscope,ntn')
             data
@@ -2727,7 +2731,7 @@ let toggle_notations ~on ~all ?(verbose=true) prglob ntn_pattern =
           str ":" ++ fnl () ++
           prlist_with_sep fnl (fun (kind, (vars,a as i)) ->
             match kind with
-            | Inl (l, (sc, (entry, _))) ->
+            | Inl (l, (sc, { ntn_entry = entry })) ->
               let sc = match sc with NotationInScope sc -> sc | LastLonelyNotation -> default_scope in
               let data = { not_interp = i; not_location = l; not_user_warns = None } in
               hov 0 (str "Notation " ++ pr_notation_data prglob (Some true,Some true,data) ++

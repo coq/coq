@@ -651,6 +651,9 @@ let ntn_loc ?loc subst =
 let error_invalid_pattern_notation ?loc () =
   CErrors.user_err ?loc  (str "Invalid notation for pattern.")
 
+let mk_ntn ntn_entry ntn_key = { ntn_entry; ntn_key }
+let mk_ntn_in_constr = mk_ntn InConstrEntry
+
 (** Pseudo-constructors *)
 
 let mkIdentC id   = CAst.make @@ CRef (qualid_of_ident id,None)

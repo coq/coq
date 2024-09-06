@@ -76,7 +76,10 @@ type notation_entry_relative_level = {
 type notation_key = string
 
 (* A notation associated to a given parsing rule *)
-type notation = notation_entry * notation_key
+type notation = {
+  ntn_entry : notation_entry;
+  ntn_key : notation_key;
+}
 
 (* A notation associated to a given interpretation *)
 type specific_notation = notation_with_optional_scope * notation

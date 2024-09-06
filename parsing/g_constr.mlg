@@ -222,7 +222,7 @@ GRAMMAR EXTEND Gram
              collapse -(3) into the number -3. *)
           (match c.CAst.v with
             | CPrim (Number (NumTok.SPlus,n)) ->
-                CAst.make ~loc @@ CNotation(None,(InConstrEntry,"( _ )"),[NtnTypeArg (NtnTypeArgConstr c)])
+                CAst.make ~loc @@ CNotation(None,(mk_ntn_in_constr "( _ )"),[NtnTypeArg (NtnTypeArgConstr c)])
             | _ -> c) }
       | "{|"; c = record_declaration; bar_cbrace -> { c }
       | "`{"; c = term LEVEL "200"; "}" ->
@@ -417,7 +417,7 @@ GRAMMAR EXTEND Gram
              collapse -(3) into the number -3. *)
           match p.CAst.v with
           | CPatPrim (Number (NumTok.SPlus,n)) ->
-              CAst.make ~loc @@ CPatNotation(None,(InConstrEntry,"( _ )"),[NtnTypeArg (NtnTypeArgPattern (p,Explicit))],[])
+              CAst.make ~loc @@ CPatNotation(None,(mk_ntn_in_constr "( _ )"),[NtnTypeArg (NtnTypeArgPattern (p,Explicit))],[])
           | _ -> p }
       | "("; p = pattern LEVEL "200"; "|" ; pl = LIST1 pattern LEVEL "200" SEP "|"; ")" ->
         { CAst.make ~loc @@ CPatOr (p::pl) }

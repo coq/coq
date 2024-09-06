@@ -957,10 +957,10 @@ let print_any_name access env sigma na udecl =
     print_named_decl env sigma true str
   with Not_found -> user_err ?loc:qid.loc (pr_qualid qid ++ spc () ++ str "not a defined object.")
 
-let print_notation_interpretation env sigma (entry,ntn) df sc c =
+let print_notation_interpretation env sigma ntn df sc c =
   let filter = Notation.{
-    notation_entry_pattern = [entry];
-    interp_rule_key_pattern = Some (Inl ntn);
+    notation_entry_pattern = [ntn.Constrexpr.ntn_entry];
+    interp_rule_key_pattern = Some (Inl ntn.Constrexpr.ntn_key);
     use_pattern = OnlyPrinting;
     scope_pattern = sc;
     interpretation_pattern = Some c;
@@ -1011,7 +1011,7 @@ let print_notation env sigma entry raw_ntn =
   in
   (* convert notation string to key. eg. "x + y" to "_ + _" *)
   let interp_ntn = Notation.interpret_notation_string raw_ntn in
-  let ntn = (entry, interp_ntn) in
+  let ntn = Constrexpr_ops.mk_ntn entry interp_ntn in
   try
     let lvl = Notation.level_of_notation ntn in
     let args = Notgram_ops.non_terminals_of_notation ntn in

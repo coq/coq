@@ -296,12 +296,12 @@ let destPrim = function { CAst.v = CPrim t } -> Some t | _ -> None
 let destPatPrim = function { CAst.v = CPatPrim t } -> Some t | _ -> None
 
 let parenthesis_notation ?loc subst =
-  CAst.make ?loc @@ CNotation (None,(InConstrEntry,"( _ )"),subst)
+  CAst.make ?loc @@ CNotation (None,mk_ntn_in_constr "( _ )",subst)
 let parenthesis_pat_notation ?loc subst =
-  CAst.make ?loc @@ CPatNotation (None,(InConstrEntry,"( _ )"),subst,[])
+  CAst.make ?loc @@ CPatNotation (None,mk_ntn_in_constr "( _ )",subst,[])
 
 let make_notation_gen loc ntn mknot mkprim destprim subst =
-  match snd ntn, subst with
+  match ntn.ntn_key, subst with
   | "- _", [NtnTypeArg x] ->
     (match x with
     (* Special case to avoid writing "- 3" for e.g. (Z.opp 3) *)

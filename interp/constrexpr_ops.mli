@@ -49,6 +49,9 @@ val local_binders_loc : local_binder_expr list -> Loc.t option
 
 (** {6 Constructors} *)
 
+val mk_ntn : notation_entry -> notation_key -> notation
+val mk_ntn_in_constr : notation_key -> notation
+
 (** {7 Term constructors} *)
 
 (** Basic form of the corresponding constructors *)
