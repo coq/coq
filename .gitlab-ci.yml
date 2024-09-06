@@ -892,7 +892,7 @@ library:ci-wasm:
   extends: .ci-template
   needs:
   - library: ci-compcert
-  - library: ci-ext-lib
+  - library: ci-ext_lib
   - library: ci-mathcomp
   stage: build-3+
   
