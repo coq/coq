@@ -79,7 +79,7 @@ type notation_key = string
 type notation = notation_entry * notation_key
 
 (* A notation associated to a given interpretation *)
-type specific_notation = notation_with_optional_scope * (notation_entry * notation_key)
+type specific_notation = notation_with_optional_scope * notation
 
 type 'a or_by_notation_r =
   | AN of 'a
