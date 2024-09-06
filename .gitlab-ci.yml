@@ -888,6 +888,14 @@ library:ci-trakt:
   - plugin:ci-elpi_hb
   stage: build-2
 
+library:ci-wasm:
+  extends: .ci-template
+  needs:
+  - library: ci-compcert
+  - library: ci-ext-lib
+  - library: ci-mathcomp
+  stage: build-3+
+  
 # Plugins are by definition the projects that depend on Coq's ML API
 
 plugin:ci-aac_tactics:
@@ -1048,6 +1056,7 @@ plugin:ci-stalmarck:
 
 plugin:ci-tactician:
   extends: .ci-template-flambda
+
 
 plugin:ci-waterproof:
   extends: .ci-template-flambda
