@@ -1002,6 +1002,7 @@ command: [
 | "Hint" "Extern" natural OPT one_pattern "=>" ltac_expr OPT ( ":" LIST1 ident )
 | "Time" sentence
 | "Instructions" sentence
+| "Profile" OPT string sentence
 | "Redirect" string sentence
 | "Timeout" natural sentence
 | "Fail" sentence

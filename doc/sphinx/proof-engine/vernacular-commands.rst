@@ -871,6 +871,18 @@ Quitting and debugging
    message in the place of the instruction count.
 
 
+.. cmd:: Profile {? @string } @sentence
+
+   Executes :n:`@sentence` and displays profiling information. If
+   :n:`@string` is given, a full trace is written to
+   ":n:`@string`.json".
+
+   If :n:`@string` is a relative filename, it refers to the directory
+   specified by the :ref:`command line option <command-line-options>`
+   `-output-directory`, if set and otherwise, the current directory.
+   Use :cmd:`Pwd` to display the current directory.
+
+
 .. cmd:: Redirect @string @sentence
 
    Executes :n:`@sentence`, redirecting its

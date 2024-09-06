@@ -816,6 +816,7 @@ red_expr: [
 vernac_control: [
 | "Time" vernac_control
 | "Instructions" vernac_control
+| "Profile" OPT STRING vernac_control
 | "Redirect" ne_string vernac_control
 | "Timeout" natural vernac_control
 | "Fail" vernac_control
