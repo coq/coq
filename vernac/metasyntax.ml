@@ -854,7 +854,7 @@ let warn_incompatible_format =
     (fun (specific,ntn) ->
        let head,scope = match specific with
        | None -> str "Notation", mt ()
-       | Some LastLonelyNotation -> str "Lonely notation", mt ()
+       | Some NotationNoScope -> str "Lonely notation", mt ()
        | Some (NotationInScope sc) -> str "Notation", strbrk (" in scope " ^ sc) in
        head ++ spc () ++ pr_notation ntn ++
        strbrk " was already defined with a different format" ++ scope ++ str ".")
@@ -1669,7 +1669,7 @@ let open_notation i nobj =
     let (ntn, df) = nobj.notobj_notation in
     let pat = nobj.notobj_interp in
     let user_warns = nobj.notobj_user_warns in
-    let scope = match scope with None -> LastLonelyNotation | Some sc -> NotationInScope sc in
+    let scope = match scope with None -> NotationNoScope | Some sc -> NotationInScope sc in
     (* Declare the notation *)
     (match nobj.notobj_use with
     | Some use -> Notation.declare_notation (scope,ntn) pat df ~use nobj.notobj_coercion user_warns

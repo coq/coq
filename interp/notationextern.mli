@@ -19,7 +19,7 @@ open Notation_term
 val notation_entry_eq : notation_entry -> notation_entry -> bool
 (** Equality on [notation_entry]. *)
 
-val notation_with_optional_scope_eq : notation_with_optional_scope -> notation_with_optional_scope -> bool
+val notation_scope_opt_eq : notation_scope_opt -> notation_scope_opt -> bool
 
 val notation_eq : notation -> notation -> bool
 (** Equality on [notation]. *)

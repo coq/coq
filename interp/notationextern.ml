@@ -20,10 +20,10 @@ open Notation_term
 open Glob_term
 (*i*)
 
-let notation_with_optional_scope_eq inscope1 inscope2 = match (inscope1,inscope2) with
-  | LastLonelyNotation, LastLonelyNotation -> true
+let notation_scope_opt_eq inscope1 inscope2 = match (inscope1,inscope2) with
+  | NotationNoScope, NotationNoScope -> true
   | NotationInScope s1, NotationInScope s2 -> String.equal s1 s2
-  | (LastLonelyNotation | NotationInScope _), _ -> false
+  | (NotationNoScope | NotationInScope _), _ -> false
 
 let entry_relative_level_eq t1 t2 = match t1, t2 with
   | LevelLt n1, LevelLt n2 -> Int.equal n1 n2
@@ -110,7 +110,7 @@ type 'a interp_rule_gen =
 type interp_rule = KerName.t interp_rule_gen
 
 let specific_notation_eq (sc1, ntn1) (sc2, ntn2) =
-  notation_with_optional_scope_eq sc1 sc2 && notation_eq ntn1 ntn2
+  notation_scope_opt_eq sc1 sc2 && notation_eq ntn1 ntn2
 
 let interp_rule_eq r1 r2 = match r1, r2 with
 | NotationRule n1, NotationRule n2 -> specific_notation_eq n1 n2

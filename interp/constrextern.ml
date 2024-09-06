@@ -165,11 +165,11 @@ let insert_pat_alias ?loc p = function
 
 let rec insert_entry_coercion ?loc l c = match l with
   | [] -> c
-  | (inscope,ntn)::l -> CAst.make ?loc @@ CNotation (Some inscope,ntn,[NtnTypeArg (NtnTypeArgConstr (insert_entry_coercion ?loc l c))])
+  | (inscope,ntn)::l -> CAst.make ?loc @@ CNotation (inscope,ntn,[NtnTypeArg (NtnTypeArgConstr (insert_entry_coercion ?loc l c))])
 
 let rec insert_pat_coercion ?loc l c = match l with
   | [] -> c
-  | (inscope,ntn)::l -> CAst.make ?loc @@ CPatNotation (Some inscope,ntn,[NtnTypeArg (NtnTypeArgPattern (insert_pat_coercion ?loc l c, Explicit))],[])
+  | (inscope,ntn)::l -> CAst.make ?loc @@ CPatNotation (inscope,ntn,[NtnTypeArg (NtnTypeArgPattern (insert_pat_coercion ?loc l c, Explicit))],[])
 
 (**********************************************************************)
 (* conversion of references                                           *)
@@ -296,9 +296,9 @@ let destPrim = function { CAst.v = CPrim t } -> Some t | _ -> None
 let destPatPrim = function { CAst.v = CPatPrim t } -> Some t | _ -> None
 
 let parenthesis_notation ?loc subst =
-  CAst.make ?loc @@ CNotation (None,mk_ntn_in_constr "( _ )",subst)
+  CAst.make ?loc @@ CNotation (NotationNoScope,mk_ntn_in_constr "( _ )",subst)
 let parenthesis_pat_notation ?loc subst =
-  CAst.make ?loc @@ CPatNotation (None,mk_ntn_in_constr "( _ )",subst,[])
+  CAst.make ?loc @@ CPatNotation (NotationNoScope,mk_ntn_in_constr "( _ )",subst,[])
 
 let make_notation_gen loc ntn mknot mkprim destprim subst =
   match ntn.ntn_key, subst with
@@ -327,13 +327,13 @@ let make_notation_gen loc ntn mknot mkprim destprim subst =
 
 let make_notation loc (inscope,ntn) subst =
   make_notation_gen loc ntn
-    (fun (loc,ntn,subst) -> CAst.make ?loc @@ CNotation (Some inscope,ntn,subst))
+    (fun (loc,ntn,subst) -> CAst.make ?loc @@ CNotation (inscope,ntn,subst))
     (fun (loc,p) -> CAst.make ?loc @@ CPrim p)
     destPrim subst
 
 let make_pat_notation ?loc (inscope,ntn) subst =
   make_notation_gen loc ntn
-    (fun (loc,ntn,subst) -> CAst.make ?loc @@ CPatNotation (Some inscope,ntn,subst,[]))
+    (fun (loc,ntn,subst) -> CAst.make ?loc @@ CPatNotation (inscope,ntn,subst,[]))
     (fun (loc,p)     -> CAst.make ?loc @@ CPatPrim p)
     destPatPrim subst
 

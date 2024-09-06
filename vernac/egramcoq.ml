@@ -579,9 +579,9 @@ let rec pure_sublevels' assoc from forpat level = function
 
 let make_act : type r. r target -> _ -> r gen_eval = function
 | ForConstr -> fun notation loc env ->
-  CAst.make ~loc @@ CNotation (None, notation, env)
+  CAst.make ~loc @@ CNotation (NotationNoScope, notation, env)
 | ForPattern -> fun notation loc env ->
-  CAst.make ~loc @@ CPatNotation (None, notation, env, [])
+  CAst.make ~loc @@ CPatNotation (NotationNoScope, notation, env, [])
 
 let extend_constr state forpat ng =
   let {notation_entry = custom; notation_level = _} as fromlev,_ = ng.notgram_level in

@@ -51,7 +51,10 @@ type ident_decl = lident * universe_decl_expr option
 type cumul_ident_decl = lident * cumul_univ_decl_expr option
 type name_decl = lname * universe_decl_expr option
 
-type notation_with_optional_scope = LastLonelyNotation | NotationInScope of string
+type notation_scope_opt = NotationNoScope  | NotationInScope of string
+(* NotationNoScope can be used either to mark an unknown scope
+   (as in parsing and constrintern.ml)
+   or last lonely notation as in (constrextern.ml) *)
 
 type side = Left | Right
 type entry_level = int
@@ -82,7 +85,7 @@ type notation = {
 }
 
 (* A notation associated to a given interpretation *)
-type specific_notation = notation_with_optional_scope * notation
+type specific_notation = notation_scope_opt * notation
 
 type 'a or_by_notation_r =
   | AN of 'a
@@ -130,7 +133,7 @@ type cases_pattern_expr_r =
   (** [CPatCstr (_, c, Some l1, l2)] represents [(@ c l1) l2] *)
   | CPatAtom of qualid option
   | CPatOr   of cases_pattern_expr list
-  | CPatNotation of notation_with_optional_scope option * notation * notation_substitution
+  | CPatNotation of notation_scope_opt * notation * notation_substitution
     * cases_pattern_expr list (** CPatNotation (_, n, l1 ,l2) represents
                                   (notation n applied with substitution l1)
                                   applied to arguments l2 *)
@@ -175,7 +178,7 @@ and constr_expr_r =
   | CEvar   of Glob_term.existential_name CAst.t * (lident * constr_expr) list
   | CSort   of sort_expr
   | CCast   of constr_expr * Constr.cast_kind option * constr_expr
-  | CNotation of notation_with_optional_scope option * notation * notation_substitution
+  | CNotation of notation_scope_opt * notation * notation_substitution
   | CGeneralization of Glob_term.binding_kind * constr_expr
   | CPrim of prim_token
   | CDelimiters of delimiter_depth * string * constr_expr

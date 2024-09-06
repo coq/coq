@@ -62,4 +62,4 @@ val declare_specific_notation_printing_rules : specific_notation -> notation_pri
 val has_generic_notation_printing_rule : notation -> bool
 val find_generic_notation_printing_rule : notation -> generic_notation_printing_rules
 val find_specific_notation_printing_rule : specific_notation -> notation_printing_rules
-val find_notation_printing_rule : notation_with_optional_scope option -> notation -> notation_printing_rules
+val find_notation_printing_rule : notation_scope_opt -> notation -> notation_printing_rules

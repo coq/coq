@@ -1334,7 +1334,7 @@ let check_required_module ?loc sc (sp,d) =
    the scope stack [scopes], and if yes, using delimiters or not *)
 
 let find_with_delimiters = function
-  | LastLonelyNotation -> None
+  | NotationNoScope -> None
   | NotationInScope scope ->
       match (String.Map.find scope !scope_map).delimiters with
         | Some key -> Some (Some scope, Some key)
@@ -1359,7 +1359,7 @@ let rec find_without_delimiters find (ntn_scope,ntn) = function
       begin match ntn with
       | Some ntn'' when notation_eq ntn' ntn'' ->
         begin match ntn_scope with
-        | LastLonelyNotation ->
+        | NotationNoScope ->
           (* If the first notation with same string in the visibility stack
              is the one we want to print, then it can be used without
              risking a collision *)
@@ -1384,7 +1384,7 @@ let rec find_without_delimiters find (ntn_scope,ntn) = function
 (* The mapping between notations and their interpretation *)
 
 let pr_optional_scope = function
-  | LastLonelyNotation -> mt ()
+  | NotationNoScope -> mt ()
   | NotationInScope scope -> spc () ++ strbrk "in scope" ++ spc () ++ str scope
 
 let warning_overridden_name = "notation-overridden"
@@ -1551,7 +1551,7 @@ let has_active_parsing_rule_in_scope ntn sc =
   with Not_found -> false
 
 let is_printing_active_in_scope (scope,ntn) pat =
-  let sc = match scope with NotationInScope sc -> sc | LastLonelyNotation -> default_scope in
+  let sc = match scope with NotationInScope sc -> sc | NotationNoScope -> default_scope in
   let is_active extra =
     try
       let (_,(active,_)) = List.extract_first (fun (active,d) -> interpretation_eq d.not_interp pat) extra in
@@ -1586,7 +1586,7 @@ let availability_of_notation (ntn_scope,ntn) scopes =
    commonly from the lowest level of the source entry to the highest
    level of the target entry. *)
 
-type entry_coercion = (notation_with_optional_scope * notation) list
+type entry_coercion = (notation_scope_opt * notation) list
 
 module EntryCoercionOrd =
  struct
@@ -1729,7 +1729,7 @@ type entry_coercion_kind =
 
 let declare_notation (scopt,ntn) pat df ~use coe user_warns =
   (* Register the interpretation *)
-  let scope = match scopt with NotationInScope s -> s | LastLonelyNotation -> default_scope in
+  let scope = match scopt with NotationInScope s -> s | NotationNoScope -> default_scope in
   let sc = find_scope scope in
   let notdata = {
     not_interp = pat;
@@ -1741,7 +1741,7 @@ let declare_notation (scopt,ntn) pat df ~use coe user_warns =
   scope_map := String.Map.add scope sc !scope_map;
   (* Register visibility of lonely notations *)
   begin match scopt with
-  | LastLonelyNotation -> scope_stack := LonelyNotationItem ntn :: !scope_stack
+  | NotationNoScope -> scope_stack := LonelyNotationItem ntn :: !scope_stack
   | NotationInScope _ -> ()
   end;
   (* Declare a possible coercion *)
@@ -2481,7 +2481,7 @@ let interp_notation_as_global_reference_expanded ?loc ~head test ntn sc =
   | None -> !scope_map in
   let ntns = browse_notation true ntn scopes in
   let refs = List.map (global_reference_of_notation ~head test) ntns in
-  let make_scope sc = if String.equal sc default_scope then LastLonelyNotation else NotationInScope sc in
+  let make_scope sc = if String.equal sc default_scope then NotationNoScope else NotationInScope sc in
   match Option.List.flatten refs with
   | [Some true,_ (* why not if the only one? *),ntn,df,sc,interp,ref] -> (ntn,df,make_scope sc,interp,ref)
   | [] -> error_notation_not_reference ?loc ntn ntns
@@ -2612,7 +2612,7 @@ type 'a notation_query_pattern_gen = {
     notation_entry_pattern : notation_entry list;
     interp_rule_key_pattern : (notation_key, 'a) Util.union option;
     use_pattern : notation_use;
-    scope_pattern : notation_with_optional_scope option;
+    scope_pattern : notation_scope_opt option;
     interpretation_pattern : interpretation option;
   }
 
@@ -2707,11 +2707,11 @@ let toggle_notations ~on ~all ?(verbose=true) prglob ntn_pattern =
     match ntn_pattern.scope_pattern with
     | None ->
       scope_map := String.Map.mapi (fun sc {notations;delimiters} ->
-                      let inscope = if String.equal sc default_scope then LastLonelyNotation else NotationInScope sc in
+                      let inscope = if String.equal sc default_scope then NotationNoScope else NotationInScope sc in
                       {notations = toggle_notations_in_scope ~on found inscope ntn_pattern notations;delimiters}) !scope_map;
     | Some inscope ->
       (* shortcut when a scope is given *)
-      let sc = match inscope with NotationInScope sc -> sc | LastLonelyNotation -> default_scope in
+      let sc = match inscope with NotationInScope sc -> sc | NotationNoScope -> default_scope in
       scope_map := String.Map.add sc (let {notations;delimiters} = find_scope sc in {notations = toggle_notations_in_scope ~on found inscope ntn_pattern notations;delimiters}) !scope_map
   end;
   (* Deal with abbreviations *)
@@ -2732,7 +2732,7 @@ let toggle_notations ~on ~all ?(verbose=true) prglob ntn_pattern =
           prlist_with_sep fnl (fun (kind, (vars,a as i)) ->
             match kind with
             | Inl (l, (sc, { ntn_entry = entry })) ->
-              let sc = match sc with NotationInScope sc -> sc | LastLonelyNotation -> default_scope in
+              let sc = match sc with NotationInScope sc -> sc | NotationNoScope -> default_scope in
               let data = { not_interp = i; not_location = l; not_user_warns = None } in
               hov 0 (str "Notation " ++ pr_notation_data prglob (Some true,Some true,data) ++
               (match entry with InCustomEntry s -> str " (in custom " ++ str s ++ str ")" | _ -> mt ()) ++

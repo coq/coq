@@ -217,7 +217,7 @@ let contract_curly_brackets ntn subst =
   let ntn' = ref ntn.ntn_key in
   let rec contract_squash n = function
     | [] -> []
-    | NtnTypeArg (NtnTypeArgConstr { CAst.v = CNotation (None,{ntn_entry = InConstrEntry; ntn_key = "{ _ }"},[NtnTypeArg (NtnTypeArgConstr a)]) }) :: l ->
+    | NtnTypeArg (NtnTypeArgConstr { CAst.v = CNotation (NotationNoScope,{ntn_entry = InConstrEntry; ntn_key = "{ _ }"},[NtnTypeArg (NtnTypeArgConstr a)]) }) :: l ->
         ntn' := expand_notation_string !ntn' n;
         contract_squash n (NtnTypeArg (NtnTypeArgConstr a)::l)
     | a :: l ->
@@ -233,7 +233,7 @@ let contract_curly_brackets_pat ntn subst =
   let ntn' = ref ntn.ntn_key in
   let rec contract_squash n = function
     | [] -> []
-    | NtnTypeArg (NtnTypeArgPattern ({ CAst.v = CPatNotation (None,{ntn_entry = InConstrEntry; ntn_key = "{ _ }"},[NtnTypeArg (NtnTypeArgPattern a)],[]) }, Explicit)) :: l ->
+    | NtnTypeArg (NtnTypeArgPattern ({ CAst.v = CPatNotation (NotationNoScope,{ntn_entry = InConstrEntry; ntn_key = "{ _ }"},[NtnTypeArg (NtnTypeArgPattern a)],[]) }, Explicit)) :: l ->
         ntn' := expand_notation_string !ntn' n;
         contract_squash n (NtnTypeArg (NtnTypeArgPattern a)::l)
     | a :: l ->

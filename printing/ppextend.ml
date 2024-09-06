@@ -97,7 +97,5 @@ let find_specific_notation_printing_rule specific_ntn =
   SpecificNotationMap.find specific_ntn !specific_notation_printing_rules
 
 let find_notation_printing_rule which ntn =
-  try match which with
-  | None -> raise Not_found (* Normally not the case *)
-  | Some which -> (find_specific_notation_printing_rule (which,ntn))
+  try find_specific_notation_printing_rule (which,ntn)
   with Not_found -> (find_generic_notation_printing_rule ntn).notation_printing_rules

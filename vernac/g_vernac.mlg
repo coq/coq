@@ -1380,7 +1380,7 @@ GRAMMAR EXTEND Gram
   ;
   opt_scope:
     [ [ ":"; sc = IDENT -> { Some (NotationInScope sc) }
-      | ":"; IDENT "no"; IDENT "scope" -> { Some LastLonelyNotation }
+      | ":"; IDENT "no"; IDENT "scope" -> { Some NotationNoScope }
       | -> { None } ] ]
   ;
   level:

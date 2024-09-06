@@ -147,7 +147,7 @@ module EqGen (A:sig
     | CPatOr a1, CPatOr a2 ->
       List.equal cases_pattern_expr_eq a1 a2
     | CPatNotation (inscope1, n1, s1, l1), CPatNotation (inscope2, n2, s2, l2) ->
-      Option.equal notation_with_optional_scope_eq inscope1 inscope2 &&
+      notation_scope_opt_eq inscope1 inscope2 &&
       notation_eq n1 n2 &&
       notation_substitution_eq s1 s2 &&
       List.equal cases_pattern_expr_eq l1 l2
@@ -269,7 +269,7 @@ module EqGen (A:sig
       | CCast(c1,k1,t1), CCast(c2,k2,t2) ->
         constr_expr_eq c1 c2 && Option.equal Glob_ops.cast_kind_eq k1 k2 && constr_expr_eq t1 t2
       | CNotation(inscope1, n1, s1), CNotation(inscope2, n2, s2) ->
-        Option.equal notation_with_optional_scope_eq inscope1 inscope2 &&
+        notation_scope_opt_eq inscope1 inscope2 &&
         notation_eq n1 n2 &&
         notation_substitution_eq s1 s2
       | CPrim i1, CPrim i2 ->
