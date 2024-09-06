@@ -1555,7 +1555,7 @@ let find_precedence custom lev etyps symbols onlyprint =
     | _ -> msgs @ [warn_level_0_notation_not_closed], lev
 
 let check_curly_brackets_notation_exists () =
-  try let _ = Notation.level_of_notation (InConstrEntry,"{ _ }") in ()
+  try let _ = Notation.level_of_notation (mk_ntn_in_constr "{ _ }") in ()
   with Not_found ->
     user_err Pp.(str "Notations involving patterns of the form \"{ _ }\" are treated \n\
 specially and require that the notation \"{ _ }\" is already reserved.")
@@ -1656,7 +1656,7 @@ let default_prefix_level ntn_prefix =
     Flags.if_verbose Feedback.msg_info
       (strbrk "Setting notation at level " ++ int level ++ spc ()
        ++ str "to match previous notation with longest common prefix:"
-       ++ spc () ++ str "\"" ++ str (snd prefix) ++ str "\".");
+       ++ spc () ++ str "\"" ++ str prefix.ntn_key ++ str "\".");
     level in
   function Some n -> Some n | None ->
     Option.map (fun (prefix, level, _) -> with_prefix prefix level) ntn_prefix
@@ -1669,14 +1669,14 @@ let default_prefix_level_subentries ntn ntn_prefix symbols etyps =
         | LevelLe n | LevelLt n -> NumLevel n
         | LevelSome -> DefaultLevel in
       let e = List.assoc_opt x etyps
-        |> Option.default (ETConstr (fst ntn, None, DefaultLevel)) in
+        |> Option.default (ETConstr (ntn.ntn_entry, None, DefaultLevel)) in
       match l', e with
       | (NumLevel _ | NextLevel), ETConstr (n, b, DefaultLevel) ->
          Flags.if_verbose Feedback.msg_info
            (strbrk "Setting " ++ Id.print x ++ str " "
             ++ pr_arg_level from_level (l, e) ++ spc ()
             ++ str "to match previous notation with longest common prefix:"
-            ++ spc () ++ str "\"" ++ str (snd prefix) ++ str "\".");
+            ++ spc () ++ str "\"" ++ str prefix.ntn_key ++ str "\".");
          (x, ETConstr (n, b, l')) :: List.remove_assoc x etyps
       | _ -> etyps in
     let levels =
@@ -1880,7 +1880,7 @@ let recover_notation_syntax loc ntn =
 
 let recover_squash_syntax sy =
   (* use `None` because this entire function is a hack anyways... *)
-  let sq = recover_notation_syntax None (InConstrEntry,"{ _ }") in
+  let sq = recover_notation_syntax None (mk_ntn_in_constr "{ _ }") in
   match sq.synext_notgram with
   | Some gram -> sy :: gram
   | None -> raise NoSyntaxRule

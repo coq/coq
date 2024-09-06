@@ -58,12 +58,13 @@ let notation_entry_relative_level_eq
     { notation_subentry = e2; notation_relative_level = n2; notation_position = s2 } =
   notation_entry_eq e1 e2 && entry_relative_level_eq n1 n2 && s1 = s2
 
-let notation_eq (from1,ntn1) (from2,ntn2) =
-  notation_entry_eq from1 from2 && String.equal ntn1 ntn2
+let notation_eq ntn1 ntn2 =
+  notation_entry_eq ntn1.ntn_entry ntn2.ntn_entry
+  && String.equal ntn1.ntn_key ntn2.ntn_key
 
-let notation_compare (from1,ntn1) (from2,ntn2) =
-  let c = notation_entry_compare from1 from2 in
-  if c <> 0 then c else String.compare ntn1 ntn2
+let notation_compare ntn1 ntn2 =
+  let c = notation_entry_compare ntn1.ntn_entry ntn2.ntn_entry in
+  if c <> 0 then c else String.compare ntn1.ntn_key ntn2.ntn_key
 
 let specific_notation_compare (scope1,ntn1) (scope2,ntn2) =
   let c = notation_with_optional_scope_compare scope1 scope2 in
@@ -139,10 +140,8 @@ type interp_rule =
   | NotationRule of Constrexpr.specific_notation
   | AbbrevRule of Globnames.abbreviation
 
-let specific_notation_eq (sc1, (e1, s1)) (sc2, (e2, s2)) =
-  notation_with_optional_scope_eq sc1 sc2 &&
-  notation_entry_eq e1 e2 &&
-  String.equal s1 s2
+let specific_notation_eq (sc1, ntn1) (sc2, ntn2) =
+  notation_with_optional_scope_eq sc1 sc2 && notation_eq ntn1 ntn2
 
 let interp_rule_eq r1 r2 = match r1, r2 with
 | NotationRule n1, NotationRule n2 -> specific_notation_eq n1 n2

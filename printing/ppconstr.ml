@@ -409,7 +409,7 @@ and pr_patt ~flags sep pr lev_after inh p =
         let pp p = hov 0 (pr_patt ~flags mt pr lev_after lpattop p) in
         surround (hov 0 (prlist_with_sep pr_spcbar pp pl))) lpator
 
-  | CPatNotation (_,(_,"( _ )"),[NtnTypeArg (NtnTypeArgPattern (p,_bk))],[]) ->
+  | CPatNotation (_,{ntn_key = "( _ )"},[NtnTypeArg (NtnTypeArgPattern (p,_bk))],[]) ->
     return (fun lev_after -> pr_patt ~flags (fun()->str"(") pr no_after lpattop p ++ str")") latom
 
   | CPatNotation (which,s,l,args) ->
@@ -818,7 +818,7 @@ let pr ~flags pr sep lev_after inherited a =
         hv 0 (pr mt no_after (LevelLt lcast) a ++ spc () ++
               (pr_cast k) ++ ws 1 ++ pr mt lev_after (LevelLe lprod) b))
       lcast
-  | CNotation (_,(_,"( _ )"),[NtnTypeArg (NtnTypeArgConstr t)]) ->
+  | CNotation (_,{ntn_key = "( _ )"},[NtnTypeArg (NtnTypeArgConstr t)]) ->
     return (fun lev_after -> pr (fun()->str"(") no_after ltop t ++ str")") latom
   | CNotation (which,s,env) ->
     let l_not = (find_notation_printing_rule which s).notation_printing_level in
