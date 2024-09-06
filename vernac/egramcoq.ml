@@ -622,7 +622,7 @@ let extend_constr state forpat ng =
 let constr_levels = GramState.field "constr_levels"
 
 let is_disjunctive_pattern_rule ng =
-  String.is_sub "( _ | " (snd ng.notgram_notation) 0
+  String.is_sub "( _ | " ng.notgram_notation.ntn_key 0
 
 let warn_disj_pattern_notation =
   let open Pp in

@@ -211,36 +211,36 @@ let expand_notation_string ntn n =
 (* This contracts the special case of "{ _ }" for sumbool, sumor notations *)
 (* Remark: expansion of squash at definition is done in metasyntax.ml *)
 let contract_curly_brackets ntn subst =
-  match ntn with
-  | InCustomEntry _,_ -> ntn, subst
-  | InConstrEntry, ntn ->
-  let ntn' = ref ntn in
+  match ntn.ntn_entry with
+  | InCustomEntry _ -> ntn, subst
+  | InConstrEntry ->
+  let ntn' = ref ntn.ntn_key in
   let rec contract_squash n = function
     | [] -> []
-    | NtnTypeArg (NtnTypeArgConstr { CAst.v = CNotation (None,(InConstrEntry,"{ _ }"),[NtnTypeArg (NtnTypeArgConstr a)]) }) :: l ->
+    | NtnTypeArg (NtnTypeArgConstr { CAst.v = CNotation (None,{ntn_entry = InConstrEntry; ntn_key = "{ _ }"},[NtnTypeArg (NtnTypeArgConstr a)]) }) :: l ->
         ntn' := expand_notation_string !ntn' n;
         contract_squash n (NtnTypeArg (NtnTypeArgConstr a)::l)
     | a :: l ->
         a::contract_squash (n+1) l in
   let subst = contract_squash 0 subst in
   (* side effect; don't inline *)
-  (InConstrEntry,!ntn'), subst
+  mk_ntn_in_constr !ntn', subst
 
 let contract_curly_brackets_pat ntn subst =
-  match ntn with
-  | InCustomEntry _,_ -> ntn, subst
-  | InConstrEntry, ntn ->
-  let ntn' = ref ntn in
+  match ntn.ntn_entry with
+  | InCustomEntry _ -> ntn, subst
+  | InConstrEntry ->
+  let ntn' = ref ntn.ntn_key in
   let rec contract_squash n = function
     | [] -> []
-    | NtnTypeArg (NtnTypeArgPattern ({ CAst.v = CPatNotation (None,(InConstrEntry,"{ _ }"),[NtnTypeArg (NtnTypeArgPattern a)],[]) }, Explicit)) :: l ->
+    | NtnTypeArg (NtnTypeArgPattern ({ CAst.v = CPatNotation (None,{ntn_entry = InConstrEntry; ntn_key = "{ _ }"},[NtnTypeArg (NtnTypeArgPattern a)],[]) }, Explicit)) :: l ->
         ntn' := expand_notation_string !ntn' n;
         contract_squash n (NtnTypeArg (NtnTypeArgPattern a)::l)
     | a :: l ->
         a :: contract_squash (n+1) l in
   let subst = contract_squash 0 subst in
   (* side effect; don't inline *)
-  (InConstrEntry,!ntn'), subst
+  mk_ntn_in_constr !ntn', subst
 
 type local_univs = { bound : UnivNames.universe_binders; unb_univs : bool }
 
@@ -1846,12 +1846,12 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
         | Some (g,pl) -> DAst.make ?loc @@ RCPatCstr (g, pl)
         | None -> Loc.raise ?loc (InternalizationError (NotAConstructor qid))
       end
-    | CPatNotation (_,(InConstrEntry,"- _"),[NtnTypeArg (NtnTypeArgPattern (a,Explicit))],[]) when is_non_zero_pat a ->
+    | CPatNotation (_,{ntn_entry = InConstrEntry; ntn_key = "- _"},[NtnTypeArg (NtnTypeArgPattern (a,Explicit))],[]) when is_non_zero_pat a ->
       let p = match a.CAst.v with CPatPrim (Number (_, p)) -> p | _ -> assert false in
       let pat, _df = Notation.interp_prim_token_cases_pattern_expr ?loc
           (check_allowed_ref_in_pat test_kind) (Number (SMinus,p)) scopes in
       rcp_of_glob scopes pat
-    | CPatNotation (_,(InConstrEntry,"( _ )"),[NtnTypeArg (NtnTypeArgPattern (a,Explicit))],[]) ->
+    | CPatNotation (_,{ntn_entry = InConstrEntry; ntn_key = "( _ )"},[NtnTypeArg (NtnTypeArgPattern (a,Explicit))],[]) ->
       in_pat test_kind scopes a
     | CPatNotation (_,ntn,fullargs,extrargs) ->
       let ntn, subst = contract_curly_brackets_pat ntn fullargs in
@@ -2234,10 +2234,10 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         DAst.make ?loc @@
         GLetIn (na.CAst.v, None, inc1, int,
           intern_restart_binders (push_name_env ~dump:true ntnvars (impls_term_list 1 inc1) env na) c2)
-    | CNotation (_,(InConstrEntry,"- _"), [NtnTypeArg (NtnTypeArgConstr a)]) when is_non_zero a ->
+    | CNotation (_,{ntn_entry = InConstrEntry; ntn_key = "- _"}, [NtnTypeArg (NtnTypeArgConstr a)]) when is_non_zero a ->
       let p = match a.CAst.v with CPrim (Number (_, p)) -> p | _ -> assert false in
        intern env (CAst.make ?loc @@ CPrim (Number (SMinus,p)))
-    | CNotation (_,(InConstrEntry,"( _ )"),[NtnTypeArg (NtnTypeArgConstr a)]) -> intern env a
+    | CNotation (_,{ntn_entry = InConstrEntry; ntn_key = "( _ )"},[NtnTypeArg (NtnTypeArgConstr a)]) -> intern env a
     | CNotation (_,ntn,args) ->
         let c = intern_notation intern env ntnvars loc ntn args in
         apply_impargs env loc c []
