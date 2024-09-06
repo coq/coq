@@ -69,7 +69,7 @@ let { Goptions.get = is_keyed_unification } =
 let { Goptions.get = firstorder_function_conversion } =
   Goptions.declare_bool_option_and_ref
     ~key:["Unification";"Firstorder";"Function";"Conversion"]
-    ~value:true
+    ~value:false
     ()
 
 let debug_tactic_unification = CDebug.create ~name:"tactic-unification" ()
