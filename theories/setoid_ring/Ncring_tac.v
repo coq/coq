@@ -32,7 +32,7 @@ Ltac reify_as_var_aux n lvar term :=
         | _ => open_constr:(false)
         end
       in
-      match conv with
+      lazymatch conv with
       | true => n
       | false => reify_as_var_aux open_constr:(S n) tl term
       end
@@ -44,102 +44,109 @@ Ltac reify_as_var_aux n lvar term :=
 Ltac reify_as_var lvar term := reify_as_var_aux Datatypes.O lvar term.
 
 Ltac close_varlist lvar :=
-  match lvar with
+  lazymatch lvar with
   | @nil _ => idtac
   | @cons _ _ ?tl => close_varlist tl
   | _ => let _ := constr:(eq_refl : lvar = @nil _) in idtac
   end.
 
-Ltac extra_reify term := open_constr:((false,tt)).
+(* extensibility: override to add ways to reify a term.
+   Return [tt] for terms which aren't handled (tt doesn't have type PExpr so is unambiguous) *)
+Ltac extra_reify term := open_constr:(tt).
 
-Ltac reify_term Tring lvar term :=
-  match open_constr:((Tring, term)) with
+Ltac reify_term R ring0 ring1 add mul sub opp lvar term :=
+  let reify_term x := reify_term R ring0 ring1 add mul sub opp lvar x in
+  match term with
   (* int literals *)
-  | (_, Z0) => open_constr:(PEc 0%Z)
-  | (_, Zpos ?p) => open_constr:(PEc (Zpos p))
-  | (_, Zneg ?p) => open_constr:(PEc (Zneg p))
+  | Z0 => open_constr:(PEc 0%Z)
+  | Zpos ?p => open_constr:(PEc (Zpos p))
+  | Zneg ?p => open_constr:(PEc (Zneg p))
 
   (* ring constants *)
-  | (Ring (ring0:=?op), _) =>
-      let _ := match goal with _ => convert op term end in
-      open_constr:(PEc 0%Z)
-  | (Ring (ring1:=?op), _) =>
-      let _ := match goal with _ => convert op term end in
-      open_constr:(PEc 1%Z)
+  | _ =>
+    let _ := lazymatch goal with _ => convert ring0 term end in
+    open_constr:(PEc 0%Z)
+  | _ =>
+    let _ := lazymatch goal with _ => convert ring1 term end in
+    open_constr:(PEc 1%Z)
 
   (* binary operators *)
-  | (Ring (T:=?R) (add:=?add) (mul:=?mul) (sub:=?sub), ?op ?t1 ?t2) =>
-      (* quick(?) check op is of th right type? TODO try without this check *)
-      let _ := open_constr:(t1 : R) in
-      let _ := open_constr:(t2 : R) in
-      match tt with
-      | _ =>
-          let _ := match goal with _ => convert add op end in
-          (* NB: don't reify before we recognize the operator in case we can't recognire it *)
-          let et1 := reify_term Tring lvar t1 in
-          let et2 := reify_term Tring lvar t2 in
-          open_constr:(PEadd et1 et2)
-      | _ =>
-          let _ := match goal with _ => convert mul op end in
-          let et1 := reify_term Tring lvar t1 in
-          let et2 := reify_term Tring lvar t2 in
-          open_constr:(PEmul et1 et2)
-      | _ =>
-          let _ := match goal with _ => convert sub op end in
-          let et1 := reify_term Tring lvar t1 in
-          let et2 := reify_term Tring lvar t2 in
-          open_constr:(PEsub et1 et2)
-      end
+  | ?op ?t1 ?t2 =>
+    (* quick(?) check op is of the right type? TODO try without this check *)
+    let _ := open_constr:(t1 : R) in
+    let _ := open_constr:(t2 : R) in
+    match tt with
+    | _ =>
+      let _ := lazymatch goal with _ => convert add op end in
+      (* NB: don't reify before we recognize the operator in case we can't recognire it *)
+      let et1 := reify_term t1 in
+      let et2 := reify_term t2 in
+      open_constr:(PEadd et1 et2)
+    | _ =>
+      let _ := lazymatch goal with _ => convert mul op end in
+      let et1 := reify_term t1 in
+      let et2 := reify_term t2 in
+      open_constr:(PEmul et1 et2)
+    | _ =>
+      let _ := lazymatch goal with _ => convert sub op end in
+      let et1 := reify_term t1 in
+      let et2 := reify_term t2 in
+      open_constr:(PEsub et1 et2)
+    end
 
   (* unary operator (opposite) *)
-  | (Ring (T:=?R) (opp:=?opp), ?op ?t) =>
-      let _ := match goal with _ => convert opp op end in
-      let et := reify_term Tring lvar t in
-      open_constr:(PEopp et)
+  | ?op ?t =>
+    let _ := lazymatch goal with _ => convert opp op end in
+    let et := reify_term t in
+    open_constr:(PEopp et)
 
   (* special cases (XXX can/should we be less syntactic?) *)
-  | (_, @multiplication Z _ _ ?z ?t) =>
-      let et := reify_term Tring lvar t in
-      open_constr:(PEmul (PEc z) et)
-  | (_, pow_N ?t ?n) =>
-      let et := reify_term Tring lvar t in
-      open_constr:(PEpow et n)
-  | (_, @power _ _ power_ring ?t ?n) =>
-      let et := reify_term Tring lvar t in
-      open_constr:(PEpow et (ZN n))
+  | @multiplication Z _ _ ?z ?t =>
+    let et := reify_term t in
+    open_constr:(PEmul (PEc z) et)
+  | pow_N ?t ?n =>
+    let et := reify_term t in
+    open_constr:(PEpow et n)
+  | @power _ _ power_ring ?t ?n =>
+    let et := reify_term t in
+    open_constr:(PEpow et (ZN n))
 
   (* extensibility and variable case *)
   | _ =>
-      let extra := extra_reify term in
-      lazymatch extra with
-      | (false,_) =>
-        let n := reify_as_var lvar term in
-        open_constr:(PEX Z (Pos.of_succ_nat n))
-      | (true,?v) => v
-      end
+    let extra := extra_reify term in
+    lazymatch extra with
+    | tt =>
+      let n := reify_as_var lvar term in
+      open_constr:(PEX Z (Pos.of_succ_nat n))
+    | ?v => v
+    end
   end.
 
 Ltac list_reifyl_core Tring lvar lterm :=
-  match lterm with
+  lazymatch lterm with
   | @nil _ => open_constr:(@nil (PExpr Z))
   | @cons _ ?t ?tl =>
-      let et := reify_term Tring lvar t in
-      let etl := list_reifyl_core Tring lvar tl in
-      open_constr:(@cons (PExpr Z) et etl)
+      lazymatch Tring with
+      | Ring (T:=?R) (ring0:=?ring0) (ring1:=?ring1)
+          (add:=?add) (mul:=?mul) (sub:=?sub) (opp:=?opp) =>
+        let et := reify_term R ring0 ring1 add mul sub opp lvar t in
+        let etl := list_reifyl_core Tring lvar tl in
+        open_constr:(@cons (PExpr Z) et etl)
+      end
   end.
 
 Ltac list_reifyl lvar lterm :=
-  match lterm with
+  lazymatch lterm with
   | @cons ?R _ _ =>
       let R_ring := constr:(_ :> Ring (T:=R)) in
       let Tring := type of R_ring in
       let lexpr := list_reifyl_core Tring lvar lterm in
-      let _ := match goal with _ => close_varlist lvar end in
+      let _ := lazymatch goal with _ => close_varlist lvar end in
       constr:((lvar,lexpr))
   end.
 
 Ltac list_reifyl0 lterm :=
-  match lterm with
+  lazymatch lterm with
   | @cons ?R _ _ =>
       let lvar := open_constr:(_ :> list R) in
       list_reifyl lvar lterm

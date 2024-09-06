@@ -68,13 +68,13 @@ try (try apply Rsth;
 Defined.
 
 Ltac extra_reify term ::=
-  match term with
+  lazymatch term with
   | IZR ?z =>
-      match isZcst z with
-      | true => open_constr:((true, PEc z))
-      | false => open_constr:((false,tt))
+      lazymatch isZcst z with
+      | true => open_constr:(PEc z)
+      | false => open_constr:(tt)
       end
-  | _ => open_constr:((false,tt))
+  | _ => open_constr:(tt)
   end.
 
 Lemma R_one_zero: 1%R <> 0%R.
