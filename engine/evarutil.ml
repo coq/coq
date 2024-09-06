@@ -46,21 +46,6 @@ let finalize ?abort_on_undefined_evars sigma f =
   let sigma = restrict_universe_context sigma !uvars in
   sigma, v
 
-(* flush_and_check_evars fails if an existential is undefined *)
-
-exception Uninstantiated_evar of Evar.t
-
-let rec flush_and_check_evars sigma c =
-  match kind c with
-  | Evar (evk,_ as ev) ->
-      (match existential_opt_value0 sigma ev with
-       | None -> raise (Uninstantiated_evar evk)
-       | Some c -> flush_and_check_evars sigma c)
-  | _ -> Constr.map (flush_and_check_evars sigma) c
-
-let flush_and_check_evars sigma c =
-  flush_and_check_evars sigma (EConstr.Unsafe.to_constr c)
-
 (** Term exploration up to instantiation. *)
 let kind_of_term_upto = EConstr.kind_upto
 
@@ -464,7 +449,7 @@ let generalize_evar_over_rels sigma (ev,args) =
 
 type clear_dependency_error =
 | OccurHypInSimpleClause of Id.t option
-| EvarTypingBreak of existential
+| EvarTypingBreak of EConstr.existential
 | NoCandidatesLeft of Evar.t
 
 exception ClearDependencyError of Id.t * clear_dependency_error * GlobRef.t option
@@ -490,27 +475,27 @@ let rec check_and_clear_in_constr ~is_section_variable env evdref err ids ~globa
      (ie the hypotheses ids have been removed from the contexts of
      evars). [global] should be true iff there is some variable of [ids] which
      is a section variable *)
-    match kind c with
+    match EConstr.kind !evdref c with
       | Var id' ->
       if Id.Set.mem id' ids then raise (ClearDependencyError (id', err, None)) else c
 
-      | ( Const _ | Ind _ | Construct _ ) ->
+      | ( Const _ | Ind _ | Construct _ ) as ref ->
         let () = if global then
+          let r = match ref with
+          | Const (c, _) -> GlobRef.ConstRef c
+          | Ind (ind, _) -> IndRef ind
+          | Construct (c, _) -> ConstructRef c
+          | _ -> assert false
+          in
           let check id' =
             if Id.Set.mem id' ids then
-              raise (ClearDependencyError (id',err,Some (fst @@ destRef c)))
+              raise (ClearDependencyError (id',err,Some r))
           in
-          Id.Set.iter check (Environ.vars_of_global env (fst @@ destRef c))
+          Id.Set.iter check (Environ.vars_of_global env r)
         in
         c
 
       | Evar (evk,l as ev) ->
-          if Evd.is_defined !evdref evk then
-            (* If evk is already defined we replace it by its definition *)
-            let nc = Evd.existential_value !evdref (EConstr.of_existential ev) in
-            let nc = EConstr.Unsafe.to_constr nc in
-            check_and_clear_in_constr ~is_section_variable env evdref err ids ~global nc
-          else
             (* We check for dependencies to elements of ids in the
                evar_info corresponding to e and in the instance of
                arguments. Concurrently, we build a new evar
@@ -529,7 +514,7 @@ let rec check_and_clear_in_constr ~is_section_variable env evdref err ids ~globa
                 let check id = if Id.Set.mem id ids then raise (Depends id) in
                 let a = match a with
                 | None -> Id.Set.singleton (NamedDecl.get_id h)
-                | Some a -> collect_vars !evdref (EConstr.of_constr a)
+                | Some a -> collect_vars !evdref a
                 in
                 let () = Id.Set.iter check a in
               (* Check if some rid to clear in the context of ev
@@ -547,11 +532,11 @@ let rec check_and_clear_in_constr ~is_section_variable env evdref err ids ~globa
             let (rids, filter) = fold (Id.Map.empty, []) ctxt l in
             (* Check if some rid to clear in the context of ev has dependencies
                in the type of ev and adjust the source of the dependency *)
-            let _nconcl : Constr.t =
+            let _nconcl : EConstr.t =
               try
                 let nids = Id.Map.domain rids in
                 let global = Id.Set.exists is_section_variable nids in
-                let concl = EConstr.Unsafe.to_constr (evar_concl evi) in
+                let concl = evar_concl evi in
                 check_and_clear_in_constr ~is_section_variable env evdref (EvarTypingBreak ev) nids ~global concl
               with ClearDependencyError (rid,err,where) ->
                 raise (ClearDependencyError (Id.Map.find rid rids,err,where)) in
@@ -564,33 +549,32 @@ let rec check_and_clear_in_constr ~is_section_variable env evdref err ids ~globa
               let candidates = Evd.evar_candidates evi in
               let (evd,_) = restrict_evar evd evk filter candidates in
               evdref := evd;
-              Evd.existential_value0 !evdref ev
+              Evd.existential_value !evdref ev
 
-      | _ -> Constr.map (check_and_clear_in_constr ~is_section_variable env evdref err ids ~global) c
+      | _ -> EConstr.map !evdref (check_and_clear_in_constr ~is_section_variable env evdref err ids ~global) c
 
 let clear_hyps_in_evi_main env sigma hyps terms ids =
   (* clear_hyps_in_evi erases hypotheses ids in hyps, checking if some
      hypothesis does not depend on a element of ids, and erases ids in
      the contexts of the evars occurring in evi *)
   let evdref = ref sigma in
-  let terms = List.map EConstr.Unsafe.to_constr terms in
   let is_section_variable id = is_section_variable (Global.env ()) id in
   let global = Id.Set.exists is_section_variable ids in
   let terms =
     List.map (check_and_clear_in_constr ~is_section_variable env evdref (OccurHypInSimpleClause None) ids ~global) terms in
   let nhyps =
     let check_context decl =
+      let decl = EConstr.of_named_decl decl in
       let err = OccurHypInSimpleClause (Some (NamedDecl.get_id decl)) in
-      NamedDecl.map_constr (check_and_clear_in_constr ~is_section_variable env evdref err ids ~global) decl
+      EConstr.Unsafe.to_named_decl @@ NamedDecl.map_constr (check_and_clear_in_constr ~is_section_variable env evdref err ids ~global) decl
     in
     remove_hyps ids check_context hyps
   in
-  (!evdref, nhyps,List.map EConstr.of_constr terms)
+  (!evdref, nhyps, terms)
 
 let check_and_clear_in_constr env evd err ids c =
   let evdref = ref evd in
-  let c = EConstr.Unsafe.to_constr c in
-  let _ : constr = check_and_clear_in_constr
+  let _ : EConstr.constr = check_and_clear_in_constr
       ~is_section_variable:(fun _ -> true) ~global:true
       env evdref err ids c
   in
@@ -714,11 +698,9 @@ let filtered_undefined_evars_of_evar_info (type a) ?cache sigma (evi : a evar_in
    [evar_map]. If unification only need to check superficially, tactics
    do not have this luxury, and need the more complete version. *)
 let occur_evar_upto sigma n c =
-  let c = EConstr.Unsafe.to_constr c in
-  let rec occur_rec c = match kind c with
-    | Evar (sp,_) when Evar.equal sp n -> raise Occur
-    | Evar e -> Option.iter occur_rec (existential_opt_value0 sigma e)
-    | _ -> Constr.iter occur_rec c
+  let rec occur_rec c = match EConstr.kind sigma c with
+    | Evar (evk, _) -> if Evar.equal evk n then raise Occur
+    | _ -> EConstr.iter sigma occur_rec c
   in
   try occur_rec c; false with Occur -> true
 

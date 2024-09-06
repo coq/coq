@@ -906,8 +906,6 @@ let existential_value d ev = match existential_opt_value d ev with
   | None -> raise NotInstantiatedEvar
   | Some v -> v
 
-let existential_value0 = existential_value
-
 let existential_opt_value0 = existential_opt_value
 
 let existential_expand_value0 sigma (evk, args) = match existential_opt_value sigma (evk, args) with
@@ -949,8 +947,6 @@ let existential_type_opt d (n, args) =
 let existential_type d n = match existential_type_opt d n with
   | Some t -> t
   | None -> anomaly (str "Evar " ++ str (string_of_existential (fst n)) ++ str " was not declared.")
-
-let existential_type0 = existential_type
 
 let add_constraints d c =
   { d with universes = UState.add_constraints d.universes c }
