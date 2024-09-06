@@ -194,9 +194,9 @@ let is_subs_id = function
 
 let subs_cons v s = cons (Arg v) s
 
-let rec push_vars i s =
-  if Int.equal i 0 then s
-  else push_vars (pred i) (cons (Var i) s)
+let rec push_vars_until i k s =
+  if Int.equal k i then s
+  else push_vars_until i (pred k) (cons (Var k) s)
 
 let subs_liftn n s =
   if Int.equal n 0 then s
@@ -204,7 +204,7 @@ let subs_liftn n s =
   | Nil (0, m) -> Nil (0, m + n) (* Preserve identity substitutions *)
   | Nil _ | Cons _ ->
     let s = write n s in
-    push_vars n s
+    push_vars_until 0 n s
 
 let subs_lift s = match s with
 | Nil (0, m) -> Nil (0, m + 1) (* Preserve identity substitutions *)
@@ -227,7 +227,7 @@ let rec pop n i e =
   | ELLFT (k, e) ->
     if k <= n then pop (n - k) i e
     else i, ELLFT (k - n, e)
-  | ELSHFT (e, k) -> pop n (i + k) e
+  | ELSHFT (e, k) -> pop (n + k) (i + k) e
 
 let apply mk e = function
 | Var i -> Var (reloc_rel i e)
@@ -244,17 +244,22 @@ let rec tree_map mk e = function
   let t2, e = tree_map mk e t2 in
   Node (w + n, x, t1, t2, cmp (eval t1) (eval t2)), e
 
-let rec lift_id e n = match e with
-| ELID -> Nil (0, n)
-| ELSHFT (e, k) -> write k (lift_id e n)
+let rec lift_id e i n = match e with
+| ELID -> Nil (i, n - i)
+| ELSHFT (e, k) -> lift_id e (i + k) (n + k)
 | ELLFT (k, e) ->
-  if k <= n then subs_liftn k (lift_id e (n - k))
+  if k <= i then
+    write k (lift_id e (i - k) (n - k))
+  else if k <= n then
+    let s = lift_id e 0 (n - k) in
+    let s = write k s in
+    push_vars_until i k s
   else assert false
 
 let rec lift_subst mk e s = match s with
 | Nil (w, m) ->
   let (n, e) = pop w 0 e in
-  write (w + n) (lift_id e m)
+  write (w + n) (lift_id e 0 m)
 | Cons (h, t, rem) ->
   let t, e = tree_map mk e t in
   let rem = lift_subst mk e rem in
