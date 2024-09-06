@@ -288,7 +288,7 @@ val interp_notation_as_global_reference : ?loc:Loc.t -> head:bool ->
 (** Same together with the full notation *)
 val interp_notation_as_global_reference_expanded : ?loc:Loc.t -> head:bool ->
       (GlobRef.t -> bool) -> notation_key -> delimiters option ->
-  (notation_entry * notation_key) * notation_key * notation_with_optional_scope * interpretation * GlobRef.t
+  notation * notation_key * notation_with_optional_scope * interpretation * GlobRef.t
 
 (** Declares and looks for scopes associated to arguments of a global ref *)
 val declare_arguments_scope :
