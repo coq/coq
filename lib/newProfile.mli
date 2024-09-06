@@ -50,3 +50,14 @@ val pause : unit -> accu option
 val resume : accu -> unit
 (** Profiling must not be active.
     Activates profiling with the given state. *)
+
+type sums
+(** Timings for sub-events *)
+
+val with_profiling : (unit -> 'a) -> MiniJson.t list * sums * 'a
+(** Runs the given function with profiling active and returns the
+    produced events and sum times of subevents. *)
+
+val insert_results : MiniJson.t list -> sums -> unit
+(** Profiling must be active.
+    Outputs the given events and includes the sum times in the current event. *)

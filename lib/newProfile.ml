@@ -70,18 +70,17 @@ module MiniJson = struct
     `Assoc l
 end
 
+type sums = (float * int) CString.Map.t
+
 type accu = {
-  ch : Format.formatter;
-  mutable sums : (float * (float * int) CString.Map.t) list;
+  output : Format.formatter option;
+  accumulate : MiniJson.t list ref option;
+  mutable sums : (float * sums) list;
 }
 
 let accu = ref None
 
 let is_profiling () = Option.has_some !accu
-
-let f fmt = match !accu with
-  | None -> assert false
-  | Some { ch } -> Format.fprintf ch fmt
 
 let gettime = Unix.gettimeofday
 
@@ -142,8 +141,16 @@ end
 
 let global_start_time = gettime ()
 
-let duration ~time name ph ?args ?(last=",") () =
-  f "%a%s\n" MiniJson.pr (MiniJson.duration ~name ~ph ~ts:(prtime time) ?args ()) last
+let output_event json ?(last=",") () =
+  let accu = Option.get !accu in
+  accu.output |> Option.iter (fun ch ->
+      Format.fprintf ch "%a%s\n" MiniJson.pr json last);
+  accu.accumulate |> Option.iter (fun out ->
+      out := json :: !out)
+
+let duration ~time name ph ?args ?last () =
+  let duration = MiniJson.duration ~name ~ph ~ts:(prtime time) ?args () in
+  output_event duration ?last ()
 
 let enter_sums ?time () =
   let accu = Option.get !accu in
@@ -247,8 +254,8 @@ type settings =
 
 let init { output; fname; } =
   let () = assert (not (is_profiling())) in
-  accu := Some { ch = output; sums = []; };
-  f "{ \"traceEvents\": [\n";
+  accu := Some { output = Some output; accumulate = None; sums = []; };
+  Format.fprintf output "{ \"traceEvents\": [\n";
   enter ~time:global_start_time ~args:["fname", `String fname] "process" ();
   enter ~time:global_start_time "init" ();
   let args = Counters.(make_diffs ~start:global_start ~stop:(get())) in
@@ -264,9 +271,68 @@ let resume v =
   accu := Some v
 
 let finish () = match !accu with
-  | None -> assert false
-  | Some { ch } ->
+  | None | Some { output = None } -> assert false
+  | Some { output = Some ch } ->
     let args = Counters.(make_diffs ~start:global_start ~stop:(get())) in
     leave "process" ~last:"" ~args ();
     Format.fprintf ch "],\n\"displayTimeUnit\": \"us\" }@.";
     accu := None
+
+let insert_sums sums =
+  let accu = Option.get !accu in
+  match accu.sums with
+  | [] -> assert false
+  | (start, sums') :: rest ->
+    let sums = CString.Map.union (fun _name (l,cnt) (r,cnt') ->
+        Some (l +. r, cnt + cnt'))
+        sums sums'
+    in
+    accu.sums <- (start, sums) :: rest
+
+let insert_results events sums =
+  List.iter (fun e -> output_event e ()) events;
+  insert_sums sums
+
+let with_profiling f =
+  let out = ref [] in
+  let this_accu, old_accu = match !accu with
+    | None ->
+      { output = None;
+        accumulate = Some out;
+        sums = [0., CString.Map.empty];
+      }
+    , None
+    | Some accu ->
+      { output = accu.output;
+        accumulate = Some out;
+        sums = [0., CString.Map.empty];
+      }
+      , Some accu
+  in
+  let finally () =
+    let out = List.rev !out in
+    let sums = match this_accu.sums with
+      | [_, x] -> x
+      | _ -> assert false
+    in
+    accu := old_accu;
+    let () = match old_accu with
+      | None -> ()
+      | Some accu ->
+        (* events have already been output to the formatter if there is one *)
+        accu.accumulate |> Option.iter (fun accumulate ->
+            accumulate := List.rev_append out !accumulate);
+        insert_sums sums
+    in
+    out, sums
+  in
+  accu := Some this_accu;
+  let v = try f () with e ->
+    let e = Exninfo.capture e in
+    ignore (finally() : _ * _);
+    Exninfo.iraise e
+  in
+
+  let out, sums = finally () in
+
+  out, sums, v
