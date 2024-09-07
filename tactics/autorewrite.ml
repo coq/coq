@@ -371,6 +371,7 @@ let one_base where conds tac_main bas =
   in
   let try_rewrite h tc =
   Proofview.Goal.enter begin fun gl ->
+    Control.check_for_interrupt ();
     let sigma = Proofview.Goal.sigma gl in
     let subst, ctx' = UnivGen.fresh_universe_context_set_instance h.rew_ctx in
     let subst = Sorts.QVar.Map.empty, subst in
