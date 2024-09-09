@@ -662,7 +662,7 @@ library:ci-fcsl_pcm:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-mathcomp_1
+  - library:ci-mathcomp
   stage: build-2
 
 library:ci-fiat_crypto:
@@ -749,9 +749,6 @@ library:ci-mathcomp:
   - build:edge+flambda
   - plugin:ci-elpi_hb  # for Hierarchy Builder
   stage: build-2
-
-library:ci-mathcomp_1:
-  extends: .ci-template-flambda
 
 library:ci-mathcomp_test:
   extends: .ci-template-flambda
