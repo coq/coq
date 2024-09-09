@@ -308,8 +308,8 @@ else
 endif
 
 ifneq (,$(PROFILING))
-  PROFILE_ARG=-profile $<.prof.json
-  PROFILE_ZIP=gzip -f $<.prof.json
+  PROFILE_ARG=-profile $@.prof.json
+  PROFILE_ZIP=gzip -f $@.prof.json
 else
   PROFILE_ARG=
   PROFILE_ZIP=true
@@ -510,7 +510,8 @@ vok: $(VOFILES:%.vo=%.vok)
 .PHONY: vok
 
 validate: $(VOFILES)
-	$(TIMER) $(COQCHK) $(COQCHKFLAGS) $(COQLIBS_NOML) $^
+	$(TIMER) $(COQCHK) $(COQCHKFLAGS) $(COQLIBS_NOML) $(PROFILE_ARG) $^
+	$(HIDE)$(PROFILE_ZIP)
 .PHONY: validate
 
 only: $(TGTS)

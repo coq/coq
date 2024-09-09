@@ -233,8 +233,8 @@ let print_frame = function
 | CtxField i -> Printf.sprintf "fld=%i" i
 | CtxTag i -> Printf.sprintf "tag=%i" i
 
-let validate v (o, mem) =
-  try val_gen v mem mt_ec o
+let validate v (o, mem) : unit =
+  try NewProfile.profile "validate" (fun () -> val_gen v mem mt_ec o) ()
   with ValidObjError(msg,ctx,obj) ->
     let rctx = List.rev_map print_frame ctx in
     print_endline ("Context: "^String.concat"/"rctx);

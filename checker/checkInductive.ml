@@ -218,3 +218,9 @@ let check_inductive env mind mb =
   (* TODO non oracle flags *)
 
   add_mind mind mb env
+
+let check_inductive env mind mb : Environ.env =
+  NewProfile.profile "check_inductive"
+    ~args:(fun () -> [("name", `String (MutInd.to_string mind))])
+    (fun () -> check_inductive env mind mb)
+    ()
