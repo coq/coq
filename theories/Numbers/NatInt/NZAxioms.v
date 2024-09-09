@@ -10,103 +10,81 @@
 
 (** Initial Author : Evgeny Makarov, INRIA, 2007 *)
 
-(** * Axioms for a domain with [zero], [succ], [pred]. *)
+(** * Axioms for a domain with [zero], [succ], [pred], [le] and [lt] *)
+
+(** This file is the starting point of a modular and axiomatic development of
+natural numbers and integers. The files and modules in [Coq.Numbers.NatInt]
+contain specifications and proofs which are common to natural numbers and
+integers. The files and modules in [Coq.Numbers.Natural.Abstract] give specific
+results about natural numbers, with the extra axiom that the predecessor of 0
+is 0, while the sublibrary [Coq.Numbers.Integer.Abstract] give specific
+results about integers, with the extra axiom that successor and predecessor
+are one-to-one correspondences.
+
+The module type [NZDomainSig'] specifies a type [t] with:
+- a general equality [eq], denoted by [==] and its negation [neq] denoted by [~=],
+- a constant [zero] denoted by [0] and unary operators [succ] and [pred],
+  denoted by [S] and [P] satisfying
+  - [pred_succ : forall n, P (S n) == n]
+  - [bi_induction], a bidirectional induction principle centered at [0]
+- the constants [1 = S 0] and [2 = S 1]
+
+The module type [NZOrdSig'] further assumes the existence of the predicates
+[le] (denoted by [<=]) and [lt] (denoted by [<]) satisfying
+- [lt_eq_cases : forall n m : t, n <= m <-> n < m \/ n == m]
+- [lt_irrefl : forall n : t, ~ n < n]
+- [lt_succ_r : forall n m : t, n < S m <-> n <= m]
+The combined specification, imposes that the models of this theory are
+infinite. There are two cases:
+- either [S] is surjective, in which case we have integers
+- or there exists a unique initial point [i <= 0] such that [S (P i) ~= i],
+  in which case we have natural numbers, possibly shifted on the left; the
+  predecessor of the initial point being arbitrary.
+
+The interested reader can refer to [Coq.Numbers.NatInt.NZOrder], in particular
+[lt_exists_pred], [lt_succ_pred] and the module type [NatIntOrderProp].
+
+This underspecification in the natural case prevented to state common results
+about subtraction, therefore we complete it with the module type [IsNatInt]
+which further imposes:
+- [Private_succ_pred : forall n, n ~= 0 -> S (P n) == n]
+- [le_pred_l : forall n, P n <= n]
+In the natural case, this forces the initial point to be [0] and [P 0 == 0].
+So this restricts the models to only natural numbers or integers.
+The module type [IsNatInt] is currently kept separate from all the other module
+types for technical and historical reasons.
+
+The module type [NZBasicFunsSig'] adds to [NZDomainSig'] the operations [add],
+[sub] and [mul] denoted by [+], [-] and [*] respectively, satisfying
+- [add_0_l : forall n, 0 + n == n]
+- [add_succ_l : forall n m, (S n) + m == S (n + m)]
+- [sub_0_r : forall n, n - 0 == n]
+- [sub_succ_r : forall n m, n - (S m) == P (n - m)]
+- [mul_0_l : forall n, 0 * n == 0]
+- [mul_succ_l : forall n m, S n * m == n * m + m]
+
+We build the module type [NZOrdAxiomsSig'] by adding the orders as well as
+[min] and [max] functions consistent with [le].
+
+Finally, [NZDecOrdAxiomsSig'] is obtained by adding a three-valued [compare]
+function, therefore imposing that equality and orders are decidable.
+*)
 
 From Coq.Structures Require Export Equalities Orders.
 
 (** We use the [Equalities] module in order to work with a general decidable
-    equality [eq]. *)
-
-(** The [Orders] module contains module types about orders [lt] and [le] in
-    [Prop].
-*)
+equality [eq]. The [Orders] module contains module types about orders [lt] and
+[le] in [Prop]. *)
 
 From Coq.Numbers Require Export NumPrelude.
 
 From Coq.Structures Require Export GenericMinMax.
-(** The [GenericMinMax] module adds specifications and basic lemmas for [min]
-   and [max] operators on ordered types. *)
+(** The [GenericMinMax] module gives specifications and basic lemmas for [min]
+ and [max] operators on ordered types. *)
 
+(** ** Axiomatization of a domain with [zero], [succ], [pred] and a bi-directional induction principle *)
 
-(** At the end of the day, this file defines the module types
-    [NZDecOrdAxiomsSig] and [NZDecOrdAxiomsSig'] (with notations) :
-[[
-Module Type
- NZDecOrdAxiomsSig' =
- Sig
-   Parameter t : Type.
-   Parameter eq : t -> t -> Prop.
-   Parameter eq_equiv : Equivalence eq.
-   Parameter zero : t.
-   Parameter succ : t -> t.
-   Parameter pred : t -> t.
-   Parameter succ_wd : Proper (eq ==> eq) succ.
-   Parameter pred_wd : Proper (eq ==> eq) pred.
-   Parameter pred_succ : forall n : t, eq (pred (succ n)) n.
-   Parameter bi_induction :
-     forall A : t -> Prop,
-     Proper (eq ==> iff) A ->
-     A zero -> (forall n : t, A n <-> A (succ n)) -> forall n : t, A n.
-   Parameter one : t.
-   Parameter two : t.
-   Parameter one_succ : eq one (succ zero).
-   Parameter two_succ : eq two (succ one).
-   Parameter lt : t -> t -> Prop.
-   Parameter le : t -> t -> Prop.
-   Parameter lt_wd : Proper (eq ==> eq ==> iff) lt.
-   Parameter lt_eq_cases : forall n m : t, le n m <-> lt n m \/ eq n m.
-   Parameter lt_irrefl : forall n : t, ~ lt n n.
-   Parameter lt_succ_r : forall n m : t, lt n (succ m) <-> le n m.
-   Parameter add : t -> t -> t.
-   Parameter sub : t -> t -> t.
-   Parameter mul : t -> t -> t.
-   Parameter add_wd : Proper (eq ==> eq ==> eq) add.
-   Parameter sub_wd : Proper (eq ==> eq ==> eq) sub.
-   Parameter mul_wd : Proper (eq ==> eq ==> eq) mul.
-   Parameter add_0_l : forall n : t, eq (add zero n) n.
-   Parameter add_succ_l :
-     forall n m : t, eq (add (succ n) m) (succ (add n m)).
-   Parameter sub_0_r : forall n : t, eq (sub n zero) n.
-   Parameter sub_succ_r :
-     forall n m : t, eq (sub n (succ m)) (pred (sub n m)).
-   Parameter mul_0_l : forall n : t, eq (mul zero n) zero.
-   Parameter mul_succ_l :
-     forall n m : t, eq (mul (succ n) m) (add (mul n m) m).
-   Parameter max : t -> t -> t.
-   Parameter max_l : forall x y : t, le y x -> eq (max x y) x.
-   Parameter max_r : forall x y : t, le x y -> eq (max x y) y.
-   Parameter min : t -> t -> t.
-   Parameter min_l : forall x y : t, le x y -> eq (min x y) x.
-   Parameter min_r : forall x y : t, le y x -> eq (min x y) y.
-   Parameter compare : t -> t -> comparison.
-   Parameter compare_spec :
-     forall x y : t, CompareSpec (eq x y) (lt x y) (lt y x) (compare x y).
- End
-]]
- *)
-
-(** ** Axiomatization of a domain with [zero], [succ], [pred] and a bi-directional induction principle. *)
-
-(* NB: This was Pierre Letouzey's conclusion in the (now deprecated) NZDomain
-   file. *)
-(** We require [P (S n) = n] but not the other way around, since this domain
-    is meant to be either N or Z. In fact it can be a few other things,
-
-    S is always injective, P is always surjective  (thanks to [pred_succ]).
-
-    I) If S is not surjective, we have an initial point, which is unique.
-       This bottom is below zero: we have N shifted (or not) to the left.
-       P cannot be injective: P init = P (S (P init)).
-       (P init) can be arbitrary.
-
-    II) If S is surjective, we have [forall n, S (P n) = n], S and P are
-       bijective and reciprocal.
-
-       IIa) if [exists k<>O, 0 == S^k 0], then we have a cyclic structure Z/nZ
-       IIb) otherwise, we have Z
-*)
-
-(** The [Typ] module type in [Equalities] only has a parameter [t : Type]. *)
+(** The [Typ] module type in [Equalities] has a unique parameter [t : Type]. *)
 
 Module Type ZeroSuccPred (Import T:Typ).
  Parameter Inline(20) zero : t.
@@ -124,7 +102,7 @@ Module Type ZeroSuccPred' (T:Typ) :=
  ZeroSuccPred T <+ ZeroSuccPredNotation T.
 
 (** The [Eq'] module type in [Equalities] is a [Type] [t] with a binary predicate
-    [eq] denoted [==]. The negation of [==] is denoted [~=]. *)
+    [eq] denoted by [==]. The negation of [==] is denoted by [~=]. *)
 
 Module Type IsNZDomain (Import E:Eq')(Import NZ:ZeroSuccPred' E).
 #[global]
@@ -137,11 +115,8 @@ Module Type IsNZDomain (Import E:Eq')(Import NZ:ZeroSuccPred' E).
     A 0 -> (forall n, A n <-> A (S n)) -> forall n, A n.
 End IsNZDomain.
 
-(** ** Axiomatization of some more constants *)
-
-(** Simply denoting "1" for (S 0) and so on works ok when implementing
-    by [nat], but leaves some ([N.succ N0]) when implementing by [N].
-*)
+(* Simply denoting "1" for (S 0) and so on works ok when implementing
+by [nat], but leaves some ([N.succ N0]) when implementing by [N]. *)
 
 Module Type OneTwo (Import T:Typ).
  Parameter Inline(20) one two : t.
@@ -165,12 +140,33 @@ Module Type NZDomainSig :=
 Module Type NZDomainSig' :=
  EqualityType' <+ ZeroSuccPred' <+ IsNZDomain <+ OneTwo' <+ IsOneTwo.
 
-(** At this point, a module implementing [NZDomainSig] has :
-- two unary operators [pred] and [succ] such that
-  [forall n, pred (succ n) = n].
-- a bidirectional induction principle
-- three constants [0], [1 = S 0], [2 = S 1]
-*)
+(** ** Axiomatization of order *)
+
+(** The module type [HasLt] (resp. [HasLe]) is just a type equipped with
+a relation [lt] (resp. [le]) in [Prop]. *)
+
+Module Type NZOrd := NZDomainSig <+ HasLt <+ HasLe.
+Module Type NZOrd' := NZDomainSig' <+ HasLt <+ HasLe <+
+                      LtNotation <+ LeNotation <+ LtLeNotation.
+
+Module Type IsNZOrd (Import NZ : NZOrd').
+#[global]
+ Declare Instance lt_wd : Proper (eq ==> eq ==> iff) lt.
+ Axiom lt_eq_cases : forall n m, n <= m <-> n < m \/ n == m.
+ Axiom lt_irrefl : forall n, ~ (n < n).
+ Axiom lt_succ_r : forall n m, n < S m <-> n <= m.
+End IsNZOrd.
+
+(* NB: the compatibility of [le] can be proved later from [lt_wd] and
+[lt_eq_cases]. *)
+
+Module Type NZOrdSig := NZOrd <+ IsNZOrd.
+Module Type NZOrdSig' := NZOrd' <+ IsNZOrd.
+
+Module Type IsNatInt (Import NZ : NZOrdSig').
+ Axiom Private_succ_pred : forall n, n ~= 0 -> S (P n) == n.
+ Axiom le_pred_l : forall n, P n <= n.
+End IsNatInt.
 
 (** ** Axiomatization of basic operations : [+] [-] [*] *)
 
@@ -204,50 +200,19 @@ End IsAddSubMul.
 Module Type NZBasicFunsSig := NZDomainSig <+ AddSubMul <+ IsAddSubMul.
 Module Type NZBasicFunsSig' := NZDomainSig' <+ AddSubMul' <+IsAddSubMul.
 
-(** Old name for the same interface: *)
-
-Module Type NZAxiomsSig := NZBasicFunsSig.
-Module Type NZAxiomsSig' := NZBasicFunsSig'.
-
-(** ** Axiomatization of order *)
-
-(** The module type [HasLt] (resp. [HasLe]) is just a type equipped with
-    a relation [lt] (resp. [le]) in [Prop]. *)
-Module Type NZOrd := NZDomainSig <+ HasLt <+ HasLe.
-Module Type NZOrd' := NZDomainSig' <+ HasLt <+ HasLe <+
-                      LtNotation <+ LeNotation <+ LtLeNotation.
-
-Module Type IsNZOrd (Import NZ : NZOrd').
-#[global]
- Declare Instance lt_wd : Proper (eq ==> eq ==> iff) lt.
- Axiom lt_eq_cases : forall n m, n <= m <-> n < m \/ n == m.
- Axiom lt_irrefl : forall n, ~ (n < n).
- Axiom lt_succ_r : forall n m, n < S m <-> n <= m.
-End IsNZOrd.
-
-(** NB: the compatibility of [le] can be proved later from [lt_wd]
-    and [lt_eq_cases] *)
-
-Module Type NZOrdSig := NZOrd <+ IsNZOrd.
-Module Type NZOrdSig' := NZOrd' <+ IsNZOrd.
-
-(** Everything together : *)
+(** ** Everything together with [min], [max] and [compare] functions *)
 
 (** The [HasMinMax] module type is a type with [min] and [max] operators
-   consistent with [le]. *)
+consistent with [le]. *)
 
 Module Type NZOrdAxiomsSig <: NZBasicFunsSig <: NZOrdSig
  := NZOrdSig <+ AddSubMul <+ IsAddSubMul <+ HasMinMax.
 Module Type NZOrdAxiomsSig' <: NZOrdAxiomsSig
  := NZOrdSig' <+ AddSubMul' <+ IsAddSubMul <+ HasMinMax.
 
-
-(** Same, plus a comparison function. *)
-
 (** The [HasCompare] module type requires a comparison function in type
-    [comparison] consistent with [eq] and [lt]. In particular, this imposes
-    that the order is decidable.
-*)
+[comparison] consistent with [eq] and [lt]. In particular, this imposes
+that the order is decidable. *)
 
 Module Type NZDecOrdSig := NZOrdSig <+ HasCompare.
 Module Type NZDecOrdSig' := NZOrdSig' <+ HasCompare.

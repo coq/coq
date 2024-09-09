@@ -11,10 +11,12 @@
 (************************************************************************)
 
 (**
-* Lemmas about orders for modules implementing [NZOrdSig']
+* Lemmas about orders for natural numbers or integers
 
 This file defines the [NZOrderProp] functor type, meant to be [Include]d in
-a module implementing the [NZOrdSig'] module type.
+a module implementing the [NZOrdSig'] module type and the [NatIntOrderProp]
+functor type (with only private lemmas) about modules further implementing
+the [IsNatInt] module type.
 
 It contains lemmas and tactics about [le], [lt] and [eq].
 
@@ -29,6 +31,10 @@ It also adds the following tactics:
 
 The second part proves many induction principles involving the orders and
 defines the tactic notation [nzord_induct].
+
+The third part contains private results stating in particular that the models
+satisfying [IsNatInt] as exactly natural numbers or integers. These private
+lemma are useful later to prove lemmas about subtraction (see [NZAddOrder]).
 *)
 From Coq.Numbers.NatInt Require Import NZAxioms NZBase.
 From Coq.Logic Require Import Decidable.
@@ -117,7 +123,7 @@ Qed.
 
 Notation lt_eq_gt_cases := lt_trichotomy (only parsing).
 
-(** *** Asymmetry and transitivity. *)
+(** *** Asymmetry and transitivity *)
 
 Theorem lt_asymm : forall n m, n < m -> ~ m < n.
 Proof.
@@ -669,11 +675,86 @@ End MeasureInduction.
 
 End NZOrderProp.
 
-(* If we have moreover a [compare] function, we can build
-    an [OrderedType] structure. *)
+(** ** Private basic lemmas for modules satisfying [IsNatInt]
 
-(* Temporary workaround for bug #2949: remove this problematic + unused functor
-Module NZOrderedType (NZ : NZDecOrdSig')
- <: DecidableTypeFull <: OrderedTypeFull
- := NZ <+ NZBaseProp <+ NZOrderProp <+ Compare2EqBool <+ HasEqBool2Dec.
-*)
+Unfortunately, we need a little part of the specific theories of natural numbers
+and integers in order to prove common lemmas afterwards. Since these lemmas
+have an additional condition, they must be kept private before being
+   specialized in [Natural] and/or [Integer]. *)
+
+Module Type NatIntOrderProp
+ (Import NZ : NZOrdSig')
+ (Import NI : IsNatInt NZ)
+ (Import NZBase : NZBaseProp NZ)
+ (Import NZOP : NZOrderProp NZ NZBase).
+
+Lemma Private_nat_le_0_l_aux : S (P 0) ~= 0 -> forall n, 0 <= n.
+Proof.
+  intros H0 n. destruct (le_gt_cases 0 n) as [I | I]; [exact I |].
+  exfalso; apply H0; apply lt_succ_pred in I; exact I.
+Qed.
+
+Lemma Private_int_or_nat : (forall n, S (P n) == n) \/ (P 0 == 0).
+Proof.
+  destruct (eq_decidable (S (P 0)) 0) as [E | NE]; [left; intros n | right].
+  - now destruct (eq_decidable n 0) as [-> | ->%Private_succ_pred].
+  - now apply le_antisymm; [exact (le_pred_l 0) | apply Private_nat_le_0_l_aux].
+Qed.
+
+Lemma Private_nat_le_0_l : P 0 == 0 -> forall n, 0 <= n.
+Proof.
+  intros H; apply Private_nat_le_0_l_aux; rewrite H; exact (neq_succ_diag_l _).
+Qed.
+
+Lemma Private_nat_neq_succ_0 : P 0 == 0 -> forall n, S n ~= 0.
+Proof.
+  intros H n E; rewrite <-E in H at 1; rewrite pred_succ in H; rewrite H in E.
+  now apply (neq_succ_diag_l 0).
+Qed.
+
+Lemma Private_nat_zero_or_succ :
+  P 0 == 0 -> forall n, n == 0 \/ exists m, n == S m.
+Proof.
+  intros H n; destruct (eq_decidable n 0) as [-> | NE]; [now left | right].
+  exists (P n); symmetry; exact (Private_succ_pred n NE).
+Qed.
+
+Theorem Private_nat_induction :
+  P 0 == 0 -> forall Q : t -> Prop, Proper (eq ==> iff) Q -> Q 0 ->
+  (forall n, Q n -> Q (S n)) -> forall n, Q n.
+Proof.
+  intros isNat Q Qprop H0 IH n; apply right_induction with 0;
+    [exact Qprop | exact H0 | intros m _; exact (IH _) |].
+  apply Private_nat_le_0_l; exact isNat.
+Qed.
+
+Lemma Private_nat_nle_succ_0 : P 0 == 0 -> forall n, ~ (S n <= 0).
+Proof.
+  intros isNat n; apply nle_gt, le_neq; split.
+  - exact (Private_nat_le_0_l isNat _).
+  - apply neq_sym; exact (Private_nat_neq_succ_0 isNat _).
+Qed.
+
+Lemma Private_nat_nlt_0_r : P 0 == 0 -> forall n, ~ n < 0.
+Proof.
+  intros isNat n I; apply (lt_irrefl 0), le_lt_trans with (2 := I).
+  exact (Private_nat_le_0_l isNat n).
+Qed.
+
+Lemma Private_nat_neq_0_lt_0 : P 0 == 0 -> forall n, n ~= 0 <-> 0 < n.
+Proof.
+  intros isNat n; destruct (Private_nat_zero_or_succ isNat n) as [-> | [m ->]].
+  - split; intros H; exfalso;
+      [apply H; reflexivity | apply (lt_irrefl 0); exact H].
+  - split; intros _.
+    + apply nle_gt; exact (Private_nat_nle_succ_0 isNat _).
+    + exact (Private_nat_neq_succ_0 isNat _).
+Qed.
+
+Lemma Private_int_pred_inj :
+  (forall n, S (P n) == n) -> forall n m, pred n == pred m <-> n == m.
+Proof.
+  intros isInt n m; split; [| intros ->; reflexivity].
+  intros H; rewrite <-(isInt n), <-(isInt m), H; reflexivity.
+Qed.
+End NatIntOrderProp.
