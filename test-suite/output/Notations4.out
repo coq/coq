@@ -42,7 +42,7 @@ let v := 0%test17 in v : myint63
      : myint63
 fun y : nat => # (x, z) |-> y & y
      : forall y : nat,
-       (?T1 * ?T2 -> ?T1 * ?T2 * nat) * (?T * ?T0 -> ?T * ?T0 * nat)
+       (?T * ?T0 -> ?T * ?T0 * nat) * (?T1 * ?T2 -> ?T1 * ?T2 * nat)
 where
 ?T :
   [y : nat  pat : ?T * ?T0  p0 : ?T * ?T0  p := p0 : ?T * ?T0 |- Type] (pat,
@@ -125,7 +125,7 @@ V tt
 fun x : nat => V x
      : forall x : nat, nat * (?T -> ?T)
 where
-?T : [x : nat  x0 : ?T |- Type] (x0 cannot be used)
+?T : [x : nat |- Type]
 File "./output/Notations4.v", line 266, characters 0-30:
 Warning: Notation "_ :=: _" was already used.
 [notation-overridden,parsing,default]

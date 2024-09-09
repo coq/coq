@@ -1730,7 +1730,7 @@ let make_projection env sigma params cstr sign elim i n c (ind, u) =
           let pnas = Array.append (mknas (EConstr.of_rel_context arity)) [|make_annot Anonymous indr|] in
           let p = (pnas, lift (Array.length pnas) t) in
           let c = mkCase (ci, u, Array.of_list params, (p, get_relevance decl), NoInvert, mkApp (c, args), br) in
-          Some (it_mkLambda_or_LetIn c sign, it_mkProd_or_LetIn t sign)
+          Some (sigma, it_mkLambda_or_LetIn c sign, it_mkProd_or_LetIn t sign)
         else None
       else
         None
@@ -1739,17 +1739,18 @@ let make_projection env sigma params cstr sign elim i n c (ind, u) =
       match List.nth l i with
       | Some proj ->
           let args = Context.Rel.instance mkRel 0 sign in
-          let proj =
+          let sigma, proj =
             match Structures.PrimitiveProjections.find_opt_with_relevance (proj,u) with
             | Some (proj,r) ->
-              mkProj (Projection.make proj false, r, mkApp (c, args))
+              sigma, mkProj (Projection.make proj false, r, mkApp (c, args))
             | None ->
-              mkApp (mkConstU (proj,u), Array.append (Array.of_list params)
-                [|mkApp (c, args)|])
+              let env = EConstr.push_rel_context sign env in
+              let args = Array.append (Array.of_list params) [|mkApp (c, args)|] in
+              Typing.checked_appvect env sigma (mkConstU (proj, u)) args
           in
           let app = it_mkLambda_or_LetIn proj sign in
           let t = Retyping.get_type_of env sigma app in
-            Some (app, t)
+            Some (sigma, app, t)
       | None -> None
   in elim
 
@@ -1782,7 +1783,8 @@ let descend_in_conjunctions avoid tac (err, info) c =
             match make_projection env sigma params cstr sign elim i n c (ind, u) with
             | None ->
               Proofview.tclZERO ~info err
-            | Some (p,pt) ->
+            | Some (sigma, p, pt) ->
+              Proofview.Unsafe.tclEVARS sigma <*>
               Tacticals.tclTHENS
                 (Proofview.tclORELSE
                   (assert_before_gen false (NamingAvoid avoid) pt)
