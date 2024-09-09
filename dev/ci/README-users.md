@@ -65,10 +65,6 @@ as "plugins"] do have some special requirements:
   [Bors](https://github.com/apps/bors) that allow for automatic
   management of Pull Requests.
 
-- Plugins in the CI should compile with the OCaml flags that Coq
-  uses. In particular, warnings that are considered fatal by the Coq
-  developers _must_ be also fatal for plugin CI code.
-
 ### Add your project by submitting a pull request
 
 Add a new `ci-mydev.sh` script to [`dev/ci`](.); set the corresponding
