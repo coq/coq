@@ -50,6 +50,8 @@ type template_univ =
   | TemplateProp
   | TemplateUniv of Universe.t
 
+val max_template_universe : template_univ -> template_univ -> template_univ
+
 type param_univs = (expected:Univ.Level.t -> template_univ) list
 
 val instantiate_template_constraints

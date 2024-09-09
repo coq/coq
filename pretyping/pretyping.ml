@@ -925,6 +925,39 @@ struct
     let sigma, j = pretype_sort ?loc ~flags sigma s in
     discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma j tycon
 
+  type template_info = Univ.Level.t option list * template_univ Univ.Level.Map.t
+
+  type template_tycon =
+    | NotTemplateArg of template_info option * types
+    | TemplateArg of template_info * rel_context * Univ.Level.t
+
+  let pop_template_arg sigma template c1 = match template with
+    | None | Some ([],_) -> NotTemplateArg (template, c1)
+    | Some (None :: t, bound) -> NotTemplateArg (Some (t,bound), c1)
+    | Some (Some u0 :: t, bound) ->
+      (* template arg: type guaranteed to be syntactically an arity *)
+      let ctx, _ = destArity sigma c1 in
+      TemplateArg ((t,bound), ctx, u0)
+
+  let bind_template_univ bound u0 u =
+    Univ.Level.Map.update u0 (function
+        | None -> Some u
+        | Some u' -> Some (max_template_universe u u'))
+      bound
+
+  (* for bidi *)
+  let template_arg_to_type sigma = function
+    | NotTemplateArg (template, t) -> sigma, template, t
+    | TemplateArg ((t,bound), ctx, u0) ->
+      (* we make a fresh output universe *)
+      let sigma, u = Evd.new_univ_level_variable UState.univ_flexible_alg sigma in
+      let s = ESorts.make @@ Sorts.sort_of_univ @@ Univ.Universe.make u in
+      let bound =
+        let u = TemplateUniv (Univ.Universe.make u) in
+        bind_template_univ bound u0 u
+      in
+      sigma, Some (t,bound), mkArity (ctx,s)
+
   let pretype_app self (f, args) =
     fun tycon ?loc ~flags env sigma ->
     let pretype tycon env sigma c = eval_pretyper self ~flags tycon env sigma c in
@@ -1009,34 +1042,44 @@ struct
           in
           sigma, body, na, c1, Esubst.subs_id 0, c2, trace
         in
-        let sigma, template, c1 = match template with
-          | None | Some ([],_) -> sigma, template, c1
-          | Some (None :: t, bound) -> sigma, Some (t,bound), c1
-          | Some (Some u0 :: t, bound) ->
-            (* template arg: type guaranteed to be syntactically an arity
-               we replace the output universe with a fresh one *)
-            let sigma, u = Evd.new_univ_level_variable UState.univ_flexible_alg sigma in
-            let s = ESorts.make @@ Sorts.sort_of_univ @@ Univ.Universe.make u in
-            let ctx, _ = destArity sigma c1 in
-            let bound =
-              let u = Univ.Universe.make u in
-              Univ.Level.Map.update u0 (function
-                  | None -> Some u
-                  | Some u' -> Some (Univ.Universe.sup u u'))
-                bound
-            in
-            sigma, Some (t,bound), mkArity (ctx,s)
-        in
-        let (sigma, hj), bidiargs =
+        let c1 = pop_template_arg sigma template c1 in
+        let (sigma, hj), template, bidiargs =
           if bidi then
             (* We want to get some typing information from the context before
                typing the argument, so we replace it by an existential
                variable *)
+            let sigma, template, c1 = template_arg_to_type sigma c1 in
             let sigma, c_hole = new_evar env sigma ~src:(loc,Evar_kinds.InternalHole) c1 in
-            (sigma, make_judge c_hole c1), (c_hole, c1, c, trace) :: bidiargs
-          else
-            let tycon = mk_tycon c1 in
-            pretype tycon env sigma c, bidiargs
+            (sigma, make_judge c_hole c1), template, (c_hole, c1, c, trace) :: bidiargs
+          else match c1 with
+            | NotTemplateArg (template, c1) ->
+              let tycon = mk_tycon c1 in
+              pretype tycon env sigma c, template, bidiargs
+            | TemplateArg ((tinfo,bound),ctx,u0) ->
+              let sigma, j = pretype (OfArity ctx) env sigma c in
+              let _, s = destArity sigma j.uj_type in
+              let sigma, u = match ESorts.kind sigma s with
+                | SProp ->
+                  let sigma, u = Evd.new_univ_level_variable Evd.univ_flexible_alg sigma in
+                  let u = Sorts.sort_of_univ (Univ.Universe.make u) in
+                  let why = UnifUnivInconsistency (None,(Le,Sorts.sprop,u,None)) in
+                  raise (PretypeError
+                           (!!env,sigma,
+                            CannotUnify (j_type j, mkArity (ctx,ESorts.make u), Some why)))
+                | Prop -> sigma, TemplateProp
+                | Set -> sigma, TemplateUniv Univ.Universe.type0
+                | Type u -> sigma, TemplateUniv u
+                | QSort (q,u) ->
+                  let sigma =
+                    (* XXX not great error when q is a user bound sort quality
+                       (ie sort poly) *)
+                    Evd.set_leq_sort !!env sigma ESorts.prop
+                      (ESorts.make (Sorts.qsort q Univ.Universe.type0))
+                  in
+                  sigma, TemplateUniv u
+              in
+              let bound = bind_template_univ bound u0 u in
+              (sigma, j), Some (tinfo,bound), bidiargs
         in
         let sigma, candargs, ujval =
           match candargs with
@@ -1091,7 +1134,6 @@ struct
       | None, None -> sigma
       | Some _, None | None, Some _ -> assert false
       | Some (_,bound), Some t ->
-        let bound = Univ.Level.Map.map (fun u -> TemplateUniv u) bound in
         let csts = Inductive.instantiate_template_constraints bound t in
         Evd.add_constraints sigma csts
     in
