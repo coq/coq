@@ -54,7 +54,7 @@ underscores (_) with a ".v" suffix on the final component.
 For example ``/bar/foo/toto.v`` is valid, but ``/bar/foo/to-to.v`` is not.
 
 We recommend specifying a :term:`logical path` (which is also the module name)
-with the `-R` or the `-Q` options.
+with the `-R`, `-L`, or the `-Q` options.
 Generally we recommend using utilities such as `make` (using `coq_makefile`
 to generate the `Makefile`) or `dune` to build Coq projects.
 See :ref:`coq_makefile` and :ref:`building_dune`.
@@ -227,13 +227,19 @@ and ``coqtop``, unless stated otherwise:
 :-R *directory dirpath*: Similar to ``-Q`` *directory dirpath*, but allows using
   :cmd:`Require` with a partially qualified name (i.e. without a `From` clause).
 
+:-L *directory dirpath*: Recursively enters *directory* and using 
+  *directory/_CoqProject* to build a project. This project is then 
+  made available to the Coq toplevel with the logical path *dirpath*.
+  Similarly to ``-R`` option, the logical path can be used in :cmd:`Require`
+  with a partially qualified name (i.e. without a `From` clause).
+
 :-top *dirpath*: Set the logical module name to :n:`@dirpath` for the
   `coqtop` interactive session. If no module name is specified,
   `coqtop` will default to ``Top``. `coqc` does not accept this option
   because the logical module name is inferred from the name of
-  the input file and the corresponding `-R` / `-Q` options.
+  the input file and the corresponding `-R` / `-L` / `-Q` options.
 :-exclude-dir *directory*: Exclude any subdirectory named *directory*
-  while processing options such as -R and -Q. By default, only the
+  while processing options such as -L, -R and -Q. By default, only the
   conventional version control management directories named CVS
   and_darcs are excluded.
 :-nois, -noinit: Start from an empty state instead of loading the `Init.Prelude`
@@ -631,9 +637,9 @@ that the produced compiled libraries are correct. ``coqchk`` is a
 standalone verifier, and thus it cannot be tainted by such malicious
 code.
 
-Command-line options ``-Q``, ``-R``, ``-where`` and ``-impredicative-set`` are supported
+Command-line options ``-Q``, ``-R``, ``-L``, ``-where`` and ``-impredicative-set`` are supported
 by ``coqchk`` and have the same meaning as for ``coqtop``. As there is no notion of
-relative paths in object files ``-Q`` and ``-R`` have exactly the same meaning.
+relative paths in object files ``-Q``, ``-L``, and ``-R`` have exactly the same meaning.
 
 :-norec *module*: Check *module* but do not check its dependencies.
 :-admit *module*: Do not check *module* and any of its dependencies,

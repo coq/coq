@@ -377,12 +377,14 @@ Command line options
     Coq``.
   :-R dir coqdir: Recursively map physical directory dir to Coq logical
     directory  ``coqdir`` (similarly to Coq option ``-R``).
+  :-L dir coqdir: Recursively map physical directory dir to Coq logical
+    directory  ``coqdir`` (similarly to Coq option ``-L`` except no building needs to occur).
   :-Q dir coqdir: Map physical directory dir to Coq logical
     directory  ``coqdir`` (similarly to Coq option ``-Q``).
 
     .. note::
 
-       options ``-R`` and ``-Q`` only have
+       options ``-R``, ``-L``, and ``-Q`` only have
        effect on the files *following* them on the command line, so you will
        probably need to put this option first.
 

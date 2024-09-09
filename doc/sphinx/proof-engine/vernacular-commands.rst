@@ -578,32 +578,35 @@ file is a particular case of a module called a *library file*.
    For example, the ``-Q path Lib`` command line parameter associates the file
    ``path/Foo/File.vo`` with the logical name ``Lib.Foo.File``.  It allows this
    file to be loaded through :n:`Require Lib.Foo.File`, :n:`From Lib Require Foo.File`,
-   :n:`From Lib Require File` or :n:`From Lib.Foo Require File`.  The `-R path Lib`
-   command line parameter allows loading the file with the additional alternatives
-   :n:`Require Foo.File` and :n:`Require File`  In particular,
-   `From` is useful to ensure that the file comes from a particular
+   :n:`From Lib Require File` or :n:`From Lib.Foo Require File`.  The `-R path Lib` 
+   or `-L path Lib` command line parameter allows loading the file with the 
+   additional alternatives :n:`Require Foo.File` and :n:`Require File`. 
+   In particular, `From` is useful to ensure that the file comes from a particular
    package or subpackage.  Use of `-Q` is better for avoiding ambiguous
-   path names.
+   path names. For further information on the differences between 
+   ``-L``, ``-R``, ``-Q``, and ``-I``, see :ref:`command-line-options`.
 
    Exact matches are preferred when looking for a file with the logical name
    :n:`@dirpath.{* @ident__implicit. }@qualid` or
    :n:`{* @ident__implicit. }@qualid`
    (that is, matches where the implicit part is empty). If the name exactly
-   matches in multiple `-R` or `-Q` options, the file corresponding to the last
-   `-R` or `-Q` specified is used.  (In :cmd:`Print LoadPath`, that's the first
+   matches in multiple `-R`, `-L`, or `-Q` options, the file corresponding to the last
+   `-R`, `-L`, or `-Q` specified is used.  (In :cmd:`Print LoadPath`, that's the first
    match from the top.)
 
    If there is no exact match, the
-   matches from the last `-R` or `-Q` are selected. If this
+   matches from the last `-R`, `-L`, or `-Q` are selected. If this
    results in a unique match, the corresponding file is selected. If
    this results in several matches, it is an error. The difference
-   between the `-R` and the `-Q` option is that non-exact matches are
+   between the `-R` or `-L` options and the `-Q` option is that non-exact matches are
    allowed for `-Q` only if `From` is present.  Matching is done when the script
    is compiled or processed rather than when its .vo file is loaded.  .vo files use
    fully-qualified names.
 
    We recommend you use `-R` only to refer to files in the same package.  Use `-Q`
-   (if necessary) to refer to files in a different package.
+   (if necessary) to refer to files in a different package. 
+   Use `-L` to refer to files from a different package that you want to ensure is
+   rebuilt each time you compile your file.
 
    .. exn:: Cannot load @qualid: no physical path bound to @dirpath.
       :undocumented:

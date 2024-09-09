@@ -40,6 +40,7 @@ val add_caml_dir : State.t -> System.unix_path -> unit
 
 val add_current_dir : State.t -> System.unix_path -> unit
 val add_q_include : State.t -> System.unix_path -> string -> unit
+val add_l_include : State.t -> System.unix_path -> string -> unit
 val add_r_include : State.t -> System.unix_path -> string -> unit
 
 (* These should disappear in favor of add_q / add_r *)
@@ -51,6 +52,10 @@ val add_norec_dir_import :
 
 (** -Q semantic: go in subdirs but only full logical paths are known. *)
 val add_rec_dir_no_import :
+  (bool -> root -> dirname -> dirpath -> basename -> unit) -> dirname -> dirpath -> unit
+
+(** -L semantic: go in subdirs and suffixes of logical paths are known. (Same as -R) *)
+val add_rec_dir_import_l :
   (bool -> root -> dirname -> dirpath -> basename -> unit) -> dirname -> dirpath -> unit
 
 (** -R semantic: go in subdirs and suffixes of logical paths are known. *)

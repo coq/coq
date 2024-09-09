@@ -29,6 +29,7 @@ type 'a project = {
   meta_file : meta_file;
 
   ml_includes : path sourced list;
+  l_includes  : (path * logic_path) sourced list;
   r_includes  : (path * logic_path) sourced list;
   q_includes  : (path * logic_path) sourced list;
   extra_args : string sourced list;

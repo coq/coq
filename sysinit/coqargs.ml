@@ -301,6 +301,10 @@ let parse_args ~usage ~init arglist : t * string list =
       let d = next () in
       let p = next () in
       add_vo_include oval d p false
+    |"-L" ->
+      let d = next () in
+      let p = next () in
+      add_vo_include oval d p true
     |"-R" ->
       let d = next () in
       let p = next () in
