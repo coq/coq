@@ -11,6 +11,14 @@ Coq's CI. This means that:
 
 On the condition that:
 
+- For libraries: your project should exercise some part of Coq which
+  is not well covered by the existing CI and test suite.
+
+  There is no such requirement for plugins: Coq developers reduce the
+  cost of having to work with Coq's unstable OCaml API by adding
+  plugins to Coq's CI and patching them when the API changes (as long
+  as fixing your plugin doesn't get too hard).
+
 - At the time of the submission, your project works with Coq's
   `master` branch.
 
