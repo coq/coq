@@ -46,10 +46,8 @@ merged in Coq upstream, CI for your contrib will be broken until you
 merge the corresponding pull request with the fix for your contribution.
 
 As of today, you have to worry about synchronizing with Coq upstream
-every once in a while; we hope we will improve this in the future by
-using [coqbot](https://github.com/coq/bot); meanwhile, a workaround is
-to give merge permissions to someone from the Coq team as to help with
-these kind of merges.
+every once in a while; a workaround is to give merge permissions to
+someone from the Coq team as to help with these kind of merges.
 
 ### OCaml and plugin-specific considerations
 
