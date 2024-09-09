@@ -62,7 +62,6 @@ CI_TARGETS= \
     ci-lean_importer \
     ci-ltac2_compiler \
     ci-math_classes \
-    ci-mathcomp_1 \
     ci-mathcomp \
     ci-mathcomp_test \
     ci-mathcomp_word \
@@ -138,7 +137,7 @@ ci-fiat_crypto_ocaml: ci-fiat_crypto
 
 ci-fourcolor: ci-mathcomp
 ci-oddorder: ci-mathcomp
-ci-fcsl_pcm: ci-mathcomp_1
+ci-fcsl_pcm: ci-mathcomp
 ci-mczify: ci-mathcomp
 ci-mathcomp_test: ci-mathcomp
 ci-mathcomp_word: ci-mathcomp
