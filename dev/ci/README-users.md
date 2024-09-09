@@ -22,8 +22,8 @@ On the condition that:
   that it takes longer than when we are just requesting to integrate a
   simple (and already fully prepared) patch.
 
-- You do not push, to the branches that we test, commits that haven't been
-  first tested to compile with the corresponding branch(es) of Coq.
+- You do not push, to the branch that we test, commits that haven't been
+  first tested to compile with the corresponding branch of Coq.
 
   For that, we recommend setting a CI system for you project, see
   [supported CI images for Coq](#supported-ci-images-for-coq) below.
@@ -31,7 +31,7 @@ On the condition that:
 - You maintain a reasonable build time for your project, or you provide
   a "lite" target that we can use.
 
-- You keep points-of-contact up to date.
+- You keep points of contact up to date.
 
 In case you forget to comply with these last four conditions, we would reach
 out to you and give you a 30-day grace period during which your project
