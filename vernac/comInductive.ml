@@ -395,7 +395,7 @@ let get_arity c =
    (starting from the most recent and ignoring let-definitions) is not
    contributing to the inductive type's sort or is Some u_k if its level
    is u_k and is contributing. *)
-let template_polymorphic_univs ~ctor_levels uctx paramsctxt u =
+let template_polymorphic_univs ~non_template_levels uctx paramsctxt u =
   let unbounded_from_below u cstrs =
     let open Univ in
     Univ.Constraints.for_all (fun (l, d, r) ->
@@ -425,7 +425,7 @@ let template_polymorphic_univs ~ctor_levels uctx paramsctxt u =
     is_linear l &&
     (let () = assert (not @@ Univ.Level.is_set l) in true) &&
     unbounded_from_below l (Univ.ContextSet.constraints uctx) &&
-    not (Univ.Level.Set.mem l ctor_levels)
+    not (Univ.Level.Set.mem l non_template_levels)
   in
   let univs = Univ.Universe.repr u in
   let univs = List.filter check_level univs in
@@ -434,11 +434,11 @@ let template_polymorphic_univs ~ctor_levels uctx paramsctxt u =
 let template_polymorphism_candidate uctx params entry template_syntax = match template_syntax with
 | SyntaxNoTemplatePoly -> Univ.Level.Set.empty
 | SyntaxAllowsTemplatePoly ->
-  let _, concl = Term.destArity entry.mind_entry_arity in
+  let ctx, concl = Term.destArity entry.mind_entry_arity in
   match concl with
   | Set | SProp | Prop -> Univ.Level.Set.empty
   | Type u ->
-    let ctor_levels =
+    let non_template_levels =
       let add_levels c levels = Univ.Level.Set.union levels (CVars.universes_of_constr c) in
       let fold_params levels = function
       | LocalDef (_, b, t) -> add_levels b (add_levels t levels)
@@ -447,11 +447,12 @@ let template_polymorphism_candidate uctx params entry template_syntax = match te
         | None -> add_levels t levels
         | Some (decls, _) -> add_levels (Term.it_mkProd_or_LetIn Constr.mkProp decls) levels
       in
-      let param_levels = List.fold_left fold_params Univ.Level.Set.empty params in
+      let levels = List.fold_left fold_params Univ.Level.Set.empty params in
+      let levels = add_levels (Term.mkArity (ctx,Sorts.prop)) levels in
       List.fold_left (fun levels c -> add_levels c levels)
-        param_levels entry.mind_entry_lc
+        levels entry.mind_entry_lc
     in
-    let univs = template_polymorphic_univs ~ctor_levels uctx params u in
+    let univs = template_polymorphic_univs ~non_template_levels uctx params u in
     univs
   | QSort _ -> assert false
 
