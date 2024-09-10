@@ -624,15 +624,19 @@ let declare_prop_but_default_dependent_elim i =
 let is_prop_but_default_dependent_elim i = Indset_env.mem i !prop_but_default_dependent_elim
 
 let pseudo_sort_family_for_elim ind mip =
-  match mip.mind_arity with
-  | RegularArity s when Sorts.is_prop s.mind_sort && is_prop_but_default_dependent_elim ind -> InType
-  | RegularArity s -> Sorts.family s.mind_sort
-  | TemplateArity _ -> InType
+  let s = match mip.mind_arity with
+    | RegularArity a -> a.mind_sort
+    | TemplateArity a -> a.template_level
+  in
+  if Sorts.is_prop s && is_prop_but_default_dependent_elim ind then InType
+  else Sorts.family s
 
 let is_in_prop mip =
-  match mip.mind_arity with
-  | RegularArity s -> Sorts.is_prop s.mind_sort
-  | TemplateArity _ -> false
+  let s = match mip.mind_arity with
+    | RegularArity a -> a.mind_sort
+    | TemplateArity a -> a.template_level
+  in
+  Sorts.is_prop s
 
 let default_case_analysis_dependence env ind =
   let _, mip as specif = lookup_mind_specif env ind in

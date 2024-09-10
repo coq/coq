@@ -19,7 +19,7 @@ Arguments eq_refl {B}%type_scope {y}, [_] _
   (where some original arguments have been renamed)
 eq_refl : forall {B : Type} {y : B}, y = y
 
-eq_refl is not universe polymorphic
+eq_refl is template universe polymorphic
 Arguments eq_refl {B}%type_scope {y}, [_] _
   (where some original arguments have been renamed)
 Expands to: Constructor Stdlib.Init.Logic.eq_refl
@@ -30,7 +30,7 @@ Arguments myrefl {C}%type_scope x _
   (where some original arguments have been renamed)
 myrefl : forall {C : Type} (x : A), C -> myEq C x x
 
-myrefl is not universe polymorphic
+myrefl is template universe polymorphic
 Arguments myrefl {C}%type_scope x _
   (where some original arguments have been renamed)
 myrefl uses section variable A.
@@ -64,7 +64,7 @@ Arguments myrefl A%type_scope {C}%type_scope x _
   (where some original arguments have been renamed)
 myrefl : forall (A : Type) {C : Type} (x : A), C -> myEq A C x x
 
-myrefl is not universe polymorphic
+myrefl is template universe polymorphic
 Arguments myrefl A%type_scope {C}%type_scope x _
   (where some original arguments have been renamed)
 Expands to: Constructor Arguments_renaming.myrefl

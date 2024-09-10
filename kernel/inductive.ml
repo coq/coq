@@ -385,27 +385,28 @@ let quality_leq q q' =
 type squash = SquashToSet | SquashToQuality of Sorts.Quality.t
 
 let is_squashed ((_,mip),u) =
-  match mip.mind_arity with
-  | TemplateArity _ -> None (* template is never squashed *)
-  | RegularArity a ->
-    match mip.mind_squashed with
-    | None -> None
-    | Some squash ->
-      let indq = Sorts.quality (UVars.subst_instance_sort u a.mind_sort) in
-      match squash with
-      | AlwaysSquashed -> begin match a.mind_sort with
-          | Sorts.Set -> Some SquashToSet
-          | _ -> Some (SquashToQuality indq)
-        end
-      | SometimesSquashed squash ->
-        (* impredicative set squashes are always AlwaysSquashed,
-           so here if inds=Set it is a sort poly squash (see "foo6" in test sort_poly.v) *)
-        if Sorts.Quality.Set.for_all (fun q ->
-            let q = UVars.subst_instance_quality u q in
-            quality_leq q indq)
-            squash
-        then None
-        else Some (SquashToQuality indq)
+  let s = match mip.mind_arity with
+    | RegularArity a -> a.mind_sort
+    | TemplateArity a -> a.template_level
+  in
+  match mip.mind_squashed with
+  | None -> None
+  | Some squash ->
+    let indq = Sorts.quality (UVars.subst_instance_sort u s) in
+    match squash with
+    | AlwaysSquashed -> begin match s with
+        | Sorts.Set -> Some SquashToSet
+        | _ -> Some (SquashToQuality indq)
+      end
+    | SometimesSquashed squash ->
+      (* impredicative set squashes are always AlwaysSquashed,
+         so here if inds=Set it is a sort poly squash (see "foo6" in test sort_poly.v) *)
+      if Sorts.Quality.Set.for_all (fun q ->
+          let q = UVars.subst_instance_quality u q in
+          quality_leq q indq)
+          squash
+      then None
+      else Some (SquashToQuality indq)
 
 let is_allowed_elimination specifu s =
   let open Sorts in

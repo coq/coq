@@ -390,71 +390,83 @@ let get_arity c =
     end
   | _ -> None
 
+let non_template_levels ~params entry =
+  let ctx, u = Term.destArity entry.mind_entry_arity in
+  let add_levels c levels = Univ.Level.Set.union levels (CVars.universes_of_constr c) in
+  let fold_params levels = function
+    | LocalDef (_, b, t) -> add_levels b (add_levels t levels)
+    | LocalAssum (_, t) ->
+      match get_arity t with
+      | None -> add_levels t levels
+      | Some (decls, _) -> add_levels (Term.it_mkProd_or_LetIn Constr.mkProp decls) levels
+  in
+  (* Levels in LocalDef params, on the left of the context in LocalAssum params,
+     in the indices and in the constructor types are not allowed to be template.
+     (partly to guarantee Irrelevant variance, and partly to simplify universe substitution code) *)
+  let levels = List.fold_left fold_params Univ.Level.Set.empty params in
+  let levels = add_levels (Term.mkArity (ctx,Sorts.prop)) levels in
+  let levels = List.fold_left (fun levels c -> add_levels c levels)
+      levels entry.mind_entry_lc
+  in
+  (* levels with nonzero increment in the conclusion may not be template
+     (until constraint checking can handle arbitrary +k, cf #19230) *)
+  let concl_univs = match u with
+    | Sorts.Type u -> Univ.Universe.repr u
+    | QSort _ -> assert false
+    | SProp | Prop | Set -> []
+  in
+  let levels =
+    List.fold_left (fun levels (u,n) ->
+        if Int.equal n 0 then levels else Univ.Level.Set.add u levels)
+      levels
+      concl_univs
+  in
+  levels
+
+let unbounded_from_below u cstrs =
+  let open Univ in
+  Univ.Constraints.for_all (fun (l, d, r) ->
+      match d with
+      | Eq | Lt -> not (Univ.Level.equal l u) && not (Univ.Level.equal r u)
+      | Le -> not (Univ.Level.equal r u))
+    cstrs
+
+type linearity = Linear | NonLinear
+
 (* Returns the list [x_1, ..., x_n] of levels contributing to template
    polymorphism. The elements x_k is None if the k-th parameter
    (starting from the most recent and ignoring let-definitions) is not
-   contributing to the inductive type's sort or is Some u_k if its level
-   is u_k and is contributing. *)
-let template_polymorphic_univs ~non_template_levels uctx paramsctxt u =
-  let unbounded_from_below u cstrs =
-    let open Univ in
-    Univ.Constraints.for_all (fun (l, d, r) ->
-        match d with
-        | Eq | Lt -> not (Univ.Level.equal l u) && not (Univ.Level.equal r u)
-        | Le -> not (Univ.Level.equal r u))
-      cstrs
-  in
+   template or is Some u_k if its level is u_k and is template. *)
+let template_polymorphic_univs uctx params entry =
+  let non_template_levels = non_template_levels ~params entry in
   let fold_params accu decl = match decl with
   | LocalAssum (_, p) ->
     let c = Term.strip_prod_decls p in
-    let update = function None -> Some 0 | Some n -> Some (n + 1) in
     begin match get_arity c with
-    | Some (_, l) -> Univ.Level.Map.update l update accu
+    | Some (_, l) ->
+      Univ.Level.Map.update l (function None -> Some Linear | Some _ -> Some NonLinear) accu
     | None -> accu
     end
   | LocalDef _ -> accu
   in
-  let paramslevels = List.fold_left fold_params Univ.Level.Map.empty paramsctxt in
-  let is_linear l = match Univ.Level.Map.find_opt l paramslevels with
-  | None -> false
-  | Some n -> Int.equal n 0
+  let paramslevels = List.fold_left fold_params Univ.Level.Map.empty params in
+  let paramslevels =
+    Univ.Level.Map.filter (fun u -> function
+        | NonLinear -> false
+        | Linear ->
+          assert (not @@ Univ.Level.is_set u);
+          Univ.Level.Set.mem u (Univ.ContextSet.levels uctx) &&
+          unbounded_from_below u (Univ.ContextSet.constraints uctx) &&
+          not (Univ.Level.Set.mem u non_template_levels))
+      paramslevels
   in
-  let check_level (l, n) =
-    Int.equal n 0 &&
-    Univ.Level.Set.mem l (Univ.ContextSet.levels uctx) &&
-    is_linear l &&
-    (let () = assert (not @@ Univ.Level.is_set l) in true) &&
-    unbounded_from_below l (Univ.ContextSet.constraints uctx) &&
-    not (Univ.Level.Set.mem l non_template_levels)
-  in
-  let univs = Univ.Universe.repr u in
-  let univs = List.filter check_level univs in
-  List.fold_left (fun accu (l, _) -> Univ.Level.Set.add l accu) Univ.Level.Set.empty univs
+  Univ.Level.Map.domain paramslevels
 
 let template_polymorphism_candidate uctx params entry template_syntax = match template_syntax with
 | SyntaxNoTemplatePoly -> Univ.Level.Set.empty
 | SyntaxAllowsTemplatePoly ->
-  let ctx, concl = Term.destArity entry.mind_entry_arity in
-  match concl with
-  | Set | SProp | Prop -> Univ.Level.Set.empty
-  | Type u ->
-    let non_template_levels =
-      let add_levels c levels = Univ.Level.Set.union levels (CVars.universes_of_constr c) in
-      let fold_params levels = function
-      | LocalDef (_, b, t) -> add_levels b (add_levels t levels)
-      | LocalAssum (_, t) ->
-        match get_arity t with
-        | None -> add_levels t levels
-        | Some (decls, _) -> add_levels (Term.it_mkProd_or_LetIn Constr.mkProp decls) levels
-      in
-      let levels = List.fold_left fold_params Univ.Level.Set.empty params in
-      let levels = add_levels (Term.mkArity (ctx,Sorts.prop)) levels in
-      List.fold_left (fun levels c -> add_levels c levels)
-        levels entry.mind_entry_lc
-    in
-    let univs = template_polymorphic_univs ~non_template_levels uctx params u in
-    univs
-  | QSort _ -> assert false
+  let univs = template_polymorphic_univs uctx params entry in
+  univs
 
 let split_universe_context subset (univs, csts) =
   let subfilter (l, _, r) =

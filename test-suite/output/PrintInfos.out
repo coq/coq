@@ -17,7 +17,7 @@ Arguments eq {A}%type_scope x _
 Arguments eq_refl {A}%type_scope {x}, [_] _
 eq_refl : forall {A : Type} {x : A}, x = x
 
-eq_refl is not universe polymorphic
+eq_refl is template universe polymorphic
 Arguments eq_refl {A}%type_scope {x}, [_] _
 Expands to: Constructor Stdlib.Init.Logic.eq_refl
 eq_refl : forall {A : Type} {x : A}, x = x
@@ -103,13 +103,13 @@ h:(n <> newdef n)
 Hypothesis of the goal context.
 Alias.eq : forall {A : Type}, A -> A -> Prop
 
-Alias.eq is not universe polymorphic
+Alias.eq is template universe polymorphic
 Arguments Alias.eq {A}%type_scope x _
 Expands to: Inductive PrintInfos.Alias.eq (syntactically equal to
 Stdlib.Init.Logic.eq)
 Alias.eq_refl : forall {A : Type} {x : A}, x = x
 
-Alias.eq_refl is not universe polymorphic
+Alias.eq_refl is template universe polymorphic
 Arguments Alias.eq_refl {A}%type_scope {x}, [_] _
 Expands to: Constructor PrintInfos.Alias.eq_refl (syntactically equal to
 Stdlib.Init.Logic.eq_refl)
