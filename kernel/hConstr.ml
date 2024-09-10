@@ -15,25 +15,16 @@ open Context
 
 (* TODO explain how this works *)
 
-module Self = struct
-
 type t = {
   self : constr;
   kind : (t,t,Sorts.t,UVars.Instance.t,Sorts.relevance) kind_of_term;
   isRel : int (* 0 -> not a rel, otherwise unique identifier of that binder *);
+  uid : int (* 0 is a dummy value *);
   hash : int;
   mutable refcount : int;
 }
 
-let equal a b =
-  a.isRel == b.isRel
-  && hasheq_kind a.kind b.kind
-
 let hash x = x.hash
-
-end
-
-include Self
 
 let raw_equal a ~isRel ~kind =
   a.isRel == isRel
@@ -42,6 +33,33 @@ let raw_equal a ~isRel ~kind =
 let self x = x.self
 
 let refcount x = x.refcount
+
+module Map : sig
+  type key = t
+
+  type +'a t
+
+  val empty : 'a t
+
+  val add : key -> 'a -> 'a t -> 'a t
+
+  val find_opt : key -> 'a t -> 'a option
+end = struct
+  type key = t
+
+  type 'a t = 'a Int.Map.t
+
+  let empty = Int.Map.empty
+
+  let add c v m =
+    assert (c.uid != 0);
+    Int.Map.add c.uid v m
+
+  let find_opt c m =
+    assert (c.uid != 0);
+    Int.Map.find_opt c.uid m
+
+end
 
 module Tbl = struct
   type key = t
@@ -78,14 +96,6 @@ module Tbl = struct
     | None -> None
     | Some l -> List.find_map (fun (k,v) -> if p k then Some v else None) l
 
-  let find_opt tbl key =
-    match Int.Map.find_opt key.hash !tbl with
-    | None -> None
-    | Some l ->
-      List.find_map (fun (k',v) ->
-          if equal key k' then Some v else None)
-        l
-
   type stats = {
     hashes : int;
     bindings : int;
@@ -121,13 +131,15 @@ type henv = {
   steps : int ref;
   (* unique identifiers for each binder crossed *)
   rels : int Range.t;
+  (* counter to generate uids for terms *)
+  uid_cnt : int ref;
   (* counter to generate uids for binders *)
   binder_cnt : int ref;
   (* how many unknown_rel we have seen *)
   unknown_cnt : int ref;
-  assum_uids : int Tbl.t;
+  assum_uids : int Map.t ref;
   (* the surrounding table is for the body, the inner table for the type *)
-  letin_uids : int Tbl.t Tbl.t;
+  letin_uids : int Map.t ref Map.t ref;
 }
 
 let empty_env env = {
@@ -135,10 +147,11 @@ let empty_env env = {
   tbl = Tbl.create ();
   steps = ref 0;
   rels = Range.empty;
+  uid_cnt = ref 0;
   binder_cnt = ref 0;
   unknown_cnt = ref 0;
-  assum_uids = Tbl.create ();
-  letin_uids = Tbl.create ();
+  assum_uids = ref Map.empty;
+  letin_uids = ref Map.empty;
 }
 
 (* still used in fixpoint *)
@@ -148,12 +161,12 @@ let push_unknown_rel env =
   { env with rels = Range.cons !(env.binder_cnt) env.rels }
 
 let push_assum t env =
-  let uid = match Tbl.find_opt env.assum_uids t with
+  let uid = match Map.find_opt t !(env.assum_uids) with
   | Some uid -> uid
   | None ->
     incr env.binder_cnt;
     let uid = !(env.binder_cnt) in
-    Tbl.add env.assum_uids t uid;
+    env.assum_uids := Map.add t uid !(env.assum_uids);
     uid
   in
   { env with rels = Range.cons uid env.rels }
@@ -167,21 +180,21 @@ let push_rec ts env =
     ts
 
 let push_letin ~body ~typ env =
-  let uid = match Tbl.find_opt env.letin_uids body with
-    | Some tbl -> begin match Tbl.find_opt tbl typ with
+  let uid = match Map.find_opt body !(env.letin_uids) with
+    | Some tbl -> begin match Map.find_opt typ !tbl with
         | Some uid -> uid
         | None ->
           incr env.binder_cnt;
           let uid = !(env.binder_cnt) in
-          Tbl.add tbl typ uid;
+          tbl := Map.add typ uid !tbl;
           uid
       end
     | None ->
       incr env.binder_cnt;
       let uid = !(env.binder_cnt) in
-      let tbl = Tbl.create () in
-      Tbl.add tbl typ uid;
-      Tbl.add env.letin_uids body tbl;
+      let tbl = ref Map.empty in
+      tbl := Map.add typ uid !tbl;
+      env.letin_uids := Map.add body tbl !(env.letin_uids);
       uid
   in
   { env with rels = Range.cons uid env.rels }
@@ -271,7 +284,7 @@ let of_kind_nohashcons = function
     | Rel _ -> assert false
     | _ -> ()
   in
-  { self; kind; hash; isRel = 0; refcount = 1 }
+  { self; kind; hash; isRel = 0; refcount = 1; uid = 0 }
 
 let eq_leaf c c' = match kind c, c'.kind with
   | Var i, Var i' -> Id.equal i i'
@@ -307,9 +320,10 @@ let rec of_constr henv c =
       let c =
         let self = kind_to_constr kind in
         let self = if hasheq_kind (Constr.kind self) (Constr.kind c) then c else self in
-        { self; kind; hash; isRel; refcount = 1 }
+        incr henv.uid_cnt;
+        { self; kind; hash; isRel; refcount = 1; uid = !(henv.uid_cnt) }
       in
-    Tbl.add henv.tbl c c; c
+      Tbl.add henv.tbl c c; c
 
 and of_constr_aux henv c =
   match kind c with
@@ -445,16 +459,16 @@ let of_constr env c =
 let kind x = x.kind
 
 let hcons x =
-  let tbl = Tbl.create () in
+  let tbl = ref Map.empty in
   let module HCons = GenHCons(struct
       type nonrec t = t
       let kind = kind
       let self = self
       let refcount = refcount
-        let via_hconstr = true
+      let via_hconstr = true
       module Tbl = struct
-        let find_opt x = Tbl.find_opt tbl x
-        let add x y = Tbl.add tbl x y
+        let find_opt x = Map.find_opt x !tbl
+        let add x y = tbl := Map.add x y !tbl
       end
     end) in
   HCons.hcons x

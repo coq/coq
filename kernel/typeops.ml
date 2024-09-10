@@ -620,11 +620,11 @@ let push_rec_types (lna,typarray,_) env =
 (* The typing machine. *)
 let rec execute tbl env cstr =
   if Int.equal (HConstr.refcount cstr) 1 then execute_aux tbl env cstr
-  else begin match HConstr.Tbl.find_opt tbl cstr with
+  else begin match HConstr.Map.find_opt cstr !tbl with
     | Some v -> v
     | None ->
       let v = execute_aux tbl env cstr in
-      HConstr.Tbl.add tbl cstr v;
+      tbl := HConstr.Map.add cstr v !tbl;
       v
   end
 
@@ -841,7 +841,7 @@ and execute_array tbl env cs =
   Array.map (fun c -> execute tbl env c) cs
 
 let execute env c =
-  NewProfile.profile "Typeops.execute" (fun () -> execute (HConstr.Tbl.create ()) env c) ()
+  NewProfile.profile "Typeops.execute" (fun () -> execute (ref HConstr.Map.empty) env c) ()
 
 (* Derived functions *)
 

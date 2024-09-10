@@ -42,20 +42,22 @@ val of_kind_nohashcons : (t,t,Sorts.t,UVars.Instance.t,Sorts.relevance) kind_of_
 
     This is intended for the reconstruction of the inductive type when checking CaseInvert. *)
 
-module Tbl : sig
-  (** Imperative tables indexed by [HConstr.t].
-      The interfaces exposed are the same as [Hashtbl]
-      but are not guaranteed to be implemented by [Hashtbl]. *)
-
+module Map :  sig
   type key = t
 
-  type 'a t
+  (** Map from [HConstr.t] to ['a]. Keys added and looked up in a
+      given map should all be from the same [of_constr] run.
 
-  val find_opt : 'a t -> key -> 'a option
+      Results of [of_kind_nohashcons] are also not allowed except in
+      the degenerate case where the kind is [App (x,[||])] and [x] is allowed
+      (checking [refcount result > 1] is enough to ensure this). *)
+  type +'a t
 
-  val add : 'a t -> key -> 'a -> unit
+  val empty : 'a t
 
-  val create : unit -> 'a t
+  val add : key -> 'a -> 'a t -> 'a t
+
+  val find_opt : key -> 'a t -> 'a option
 end
 
 val hcons : t -> Constr.t
