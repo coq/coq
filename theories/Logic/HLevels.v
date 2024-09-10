@@ -21,7 +21,7 @@
 
 (* It is almost impossible to prove that a type is a homotopy proposition
    without funext, so we assume it here. *)
-Require Import Coq.Logic.FunctionalExtensionality.
+Require Import Stdlib.Logic.FunctionalExtensionality.
 
 (* A homotopy proposition is a type that has at most one element.
    Its unique inhabitant, when it exists, is to be interpreted as the
@@ -34,7 +34,7 @@ Definition IsHProp (P : Type) : Prop
 (* A homotopy set is a type such as each equality type x = y is a
    homotopy proposition. For example, any type which equality is
    decidable in sort Prop is a homotopy set, as shown in file
-   Coq.Logic.Eqdep_dec.v. *)
+   Stdlib.Logic.Eqdep_dec.v. *)
 Definition IsHSet (X : Type) : Prop
   := forall (x y : X) (p q : x = y), p = q.
 

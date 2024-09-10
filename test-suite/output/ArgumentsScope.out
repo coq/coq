@@ -25,7 +25,7 @@ negb : bool -> bool
 negb is not universe polymorphic
 Arguments negb b%bool_scope
 negb is transparent
-Expands to: Constant Coq.Init.Datatypes.negb
+Expands to: Constant Stdlib.Init.Datatypes.negb
 a : bool -> bool
 
 a is not universe polymorphic
@@ -39,7 +39,7 @@ negb : bool -> bool
 negb is not universe polymorphic
 Arguments negb b
 negb is transparent
-Expands to: Constant Coq.Init.Datatypes.negb
+Expands to: Constant Stdlib.Init.Datatypes.negb
 negb' : bool -> bool
 
 negb' is not universe polymorphic
@@ -61,7 +61,7 @@ negb : bool -> bool
 negb is not universe polymorphic
 Arguments negb b
 negb is transparent
-Expands to: Constant Coq.Init.Datatypes.negb
+Expands to: Constant Stdlib.Init.Datatypes.negb
 negb' : bool -> bool
 
 negb' is not universe polymorphic

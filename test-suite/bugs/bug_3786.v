@@ -1,7 +1,7 @@
 Require Import TestSuite.admit.
-Require Coq.Lists.List.
-Require Coq.Sets.Ensembles.
-Import Coq.Sets.Ensembles.
+Require Stdlib.Lists.List.
+Require Stdlib.Sets.Ensembles.
+Import Stdlib.Sets.Ensembles.
 Global Set Implicit Arguments.
 Delimit Scope comp_scope with comp.
 Inductive Comp : Type -> Type :=

@@ -19,7 +19,7 @@ Section Foo.
   End Bar.
 End Foo.
 
-Require Coq.Classes.RelationClasses.
+Require Stdlib.Classes.RelationClasses.
 
 Axiom PreOrder : forall (A : Type) (r : A -> A -> Type), Type.
 

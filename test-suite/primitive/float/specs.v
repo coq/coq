@@ -9,7 +9,7 @@
        Again on each float/int from the lists, each operator
        is evaluated in multiple evaluation mechanisms to check
        that their results agree with the one given by vm_compute. *)
-From Coq Require Import String List ZArith Sint63 Uint63 Floats.
+From Stdlib Require Import String List ZArith Sint63 Uint63 Floats.
 From Ltac2 Require Import Ltac2 Printf.
 Import ListNotations.
 Open Scope string_scope.

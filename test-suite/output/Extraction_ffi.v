@@ -1,6 +1,6 @@
 (* @eladrion's example for issue #18212 *)
 
-From Coq Require Extraction.
+From Stdlib Require Extraction.
 
 (* Define an axiomatic function. *)
 Axiom ax_fun : nat -> nat.

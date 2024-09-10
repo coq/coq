@@ -12,7 +12,7 @@
 
 (** * Axioms for a domain with [zero], [succ], [pred]. *)
 
-From Coq.Structures Require Export Equalities Orders.
+From Stdlib.Structures Require Export Equalities Orders.
 
 (** We use the [Equalities] module in order to work with a general decidable
     equality [eq]. *)
@@ -21,9 +21,9 @@ From Coq.Structures Require Export Equalities Orders.
     [Prop].
 *)
 
-From Coq.Numbers Require Export NumPrelude.
+From Stdlib.Numbers Require Export NumPrelude.
 
-From Coq.Structures Require Export GenericMinMax.
+From Stdlib.Structures Require Export GenericMinMax.
 (** The [GenericMinMax] module adds specifications and basic lemmas for [min]
    and [max] operators on ordered types. *)
 

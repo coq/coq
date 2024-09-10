@@ -1717,16 +1717,20 @@ let pr_hint_db_env env sigma db =
     else str" (modes " ++ prlist_with_sep pr_comma pr_mode l ++ str")"
   in
   let content =
-    let fold head modes hintlist accu =
+    let pr_one (head, modes, hintlist) =
       let goal_descr = match head with
       | None -> str "For any goal"
       | Some head -> str "For " ++ pr_global head ++ pr_modes modes
       in
       let hints = pr_hint_list env sigma (List.map (fun x -> (0, x)) hintlist) in
-      let hint_descr = hov 0 (goal_descr ++ str " -> " ++ hints) in
-      accu ++ hint_descr
+      hov 0 (goal_descr ++ str " -> " ++ hints)
     in
-    Hint_db.fold fold db (mt ())
+    let hints =
+      let order (h1, _, _) (h2, _, _) =
+        Option.compare GlobRef.UserOrd.compare h1 h2 in
+      let hints = Hint_db.fold (fun h m hl l -> (h, m, hl) :: l) db [] in
+      List.stable_sort order hints in
+    Pp.prlist pr_one hints
   in
   let { TransparentState.tr_var = ids; tr_cst = csts; tr_prj = ps } =
     Hint_db.transparent_state db

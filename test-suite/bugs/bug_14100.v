@@ -1,4 +1,4 @@
-From Coq Require Import Extraction.
+From Stdlib Require Import Extraction.
 
 Set Warnings "-extraction-inside-module".
 

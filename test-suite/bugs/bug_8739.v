@@ -1,11 +1,11 @@
-Require Coq.Program.Program.
-Require Coq.Classes.CMorphisms.
+Require Stdlib.Program.Program.
+Require Stdlib.Classes.CMorphisms.
 Require Setoid.
 
-Export Coq.Program.Program.
+Export Stdlib.Program.Program.
 Delimit Scope category_theory_scope with category_theory.
 Open Scope category_theory_scope.
-Export Coq.Classes.CMorphisms.
+Export Stdlib.Classes.CMorphisms.
 
 Notation "∀  x .. y , P" := (forall x, .. (forall y, P) ..)
   (at level 200, x binder, y binder, right associativity) :

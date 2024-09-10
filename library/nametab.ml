@@ -104,6 +104,18 @@ end
 let masking_absolute = CWarnings.create_warning
     ~from:[Deprecation.Version.v8_8] ~name:"masking-absolute-name" ()
 
+let coq_id = Id.of_string "Coq"
+let stdlib_id = Id.of_string "Stdlib"
+
+let warn_deprecated_dirpath_Coq =
+  CWarnings.create ~name:"deprecated-dirpath-Coq"
+    ~category:Deprecation.Version.v8_21
+    (fun (l, id) ->
+      let l' = List.rev (stdlib_id :: List.tl (List.rev l)) in
+      Pp.(DirPath.(print (make l)) ++ str "." ++ Id.print id ++ spc ()
+          ++ str "has been replaced by" ++ spc ()
+          ++ DirPath.(print (make l')) ++ str "." ++ Id.print id ++ str "."))
+
 module Make (U : UserName) (E : EqualityType) : NAMETREE
   with type user_name = U.t and type elt = E.t =
 struct
@@ -262,12 +274,26 @@ let remove uname tab =
   with Not_found -> tab
 
 let rec search tree = function
-  | modid :: path -> search (ModIdmap.find modid tree.map) path
-  | [] -> tree.path
+  | [modid] when Id.equal modid coq_id ->
+     let _warn, p =
+       match ModIdmap.find_opt stdlib_id tree.map with
+       | None -> true, None
+       | Some modid -> search modid [] in
+     true, p
+  | modid :: path ->
+     begin match ModIdmap.find_opt modid tree.map with
+     | None -> false, None
+     | Some modid -> search modid path end
+  | [] -> false, Some tree.path
+
+let search id tree dir =
+  let warn, p = search tree dir in
+  if warn then warn_deprecated_dirpath_Coq (dir,id);
+  match p with Some p -> p | None -> raise Not_found
 
 let find_node qid tab =
   let (dir,id) = repr_qualid qid in
-    search (Id.Map.find id tab) (DirPath.repr dir)
+    search id (Id.Map.find id tab) (DirPath.repr dir)
 
 let locate qid tab =
   let o = match find_node qid tab with
@@ -285,7 +311,7 @@ let user_name qid tab =
 
 let find uname tab =
   let id,l = U.repr uname in
-    match search (Id.Map.find id tab) l with
+    match search id (Id.Map.find id tab) l with
         Absolute (_,o) :: _ -> o
       | _ -> raise Not_found
 

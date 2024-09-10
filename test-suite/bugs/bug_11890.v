@@ -1,4 +1,4 @@
-Require Import Coq.Structures.Orders Coq.ZArith.ZArith Coq.Sorting.Mergesort.
+Require Import Stdlib.Structures.Orders Stdlib.ZArith.ZArith Stdlib.Sorting.Mergesort.
 (* Note that this has always worked fine without the '; we are testing importing notations from the stdlib here *)
 Declare Module A : LeBool'.
 Declare Module B : LtBool'.

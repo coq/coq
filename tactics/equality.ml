@@ -585,11 +585,11 @@ let rewriteRL c =
 (* Replacing tactics *)
 
 let classes_dirpath =
-  DirPath.make (List.map Id.of_string ["Classes";"Coq"])
+  DirPath.make (List.map Id.of_string ["Classes";"Stdlib"])
 
 let init_setoid () =
   if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
-  else check_required_library ["Coq";"Setoids";"Setoid"]
+  else check_required_library ["Stdlib";"Setoids";"Setoid"]
 
 let check_setoid cl =
   let concloccs = Locusops.occurrences_map (fun x -> x) cl.concl_occs in
@@ -1168,7 +1168,7 @@ let warn_inject_no_eqdep_dec =
   CWarnings.create ~name:"injection-missing-eqdep-dec" ~category:CWarnings.CoreCategories.tactics
     Pp.(fun (env,ind) ->
         str "The equality scheme for" ++ spc() ++ Printer.pr_inductive env ind ++ spc() ++
-        str "could not be used as Coq.Logic.Eqdep_dec has not been required.")
+        str "could not be used as Stdlib.Logic.Eqdep_dec has not been required.")
 
 let inject_if_homogenous_dependent_pair ty =
   Proofview.Goal.enter begin fun gl ->

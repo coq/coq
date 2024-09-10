@@ -1,4 +1,4 @@
-Require Import Coq.micromega.Lia.
+Require Import Stdlib.micromega.Lia.
 Unset Lia Cache.
 Set Primitive Projections.
 

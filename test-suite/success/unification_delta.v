@@ -1,5 +1,5 @@
-Require Import Coq.Classes.Equivalence.
-Require Import Coq.Program.Program.
+Require Import Stdlib.Classes.Equivalence.
+Require Import Stdlib.Program.Program.
 Import Relation_Definitions.
 Import Morphisms.
 Require Setoid.

@@ -1,4 +1,4 @@
-From Coq Require Import Lia Lists.List Program.Wf.
+From Stdlib Require Import Lia Lists.List Program.Wf.
 
 Import ListNotations Nat.
 

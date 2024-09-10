@@ -544,7 +544,7 @@ let lz_setoid_relation =
   | _ ->
     let srel =
        try Some (UnivGen.constr_of_monomorphic_global (Global.env ()) @@
-                 Coqlib.find_reference "Class_setoid" ("Coq"::sdir) "RewriteRelation" [@ocaml.warning "-3"])
+                 Coqlib.find_reference "Class_setoid" ("Stdlib"::sdir) "RewriteRelation" [@ocaml.warning "-3"])
        with e when CErrors.noncritical e -> None in
     last_srel := Some (env, srel); srel
 

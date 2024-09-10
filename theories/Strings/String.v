@@ -15,7 +15,7 @@
 Require Import Arith.
 Require Import Ascii.
 Require Import Bool.
-Require Import Coq.Strings.Byte.
+Require Import Stdlib.Strings.Byte.
 Import IfNotations.
 
 (** *** Definition of strings *)

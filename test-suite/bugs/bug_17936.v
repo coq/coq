@@ -1,4 +1,4 @@
-From Coq Require Import Lia ZArith Zify PreOmega.
+From Stdlib Require Import Lia ZArith Zify PreOmega.
 Open Scope Z_scope.
 
 Goal forall m n, n * m = 1 -> n = 1 \/ n = -1.

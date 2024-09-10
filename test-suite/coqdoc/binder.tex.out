@@ -24,6 +24,6 @@ Link binders
 \begin{coqdoccode}
 \coqdocemptyline
 \coqdocnoindent
-\coqdockw{Definition} \coqdef{Coqdoc.binder.foo}{foo}{\coqdocdefinition{foo}} \coqdef{Coqdoc.binder.alpha:1}{alpha}{\coqdocbinder{alpha}} \coqdef{Coqdoc.binder.beta:2}{beta}{\coqdocbinder{beta}} := \coqref{Coqdoc.binder.alpha:1}{\coqdocvariable{alpha}} \coqexternalref{::nat scope:x '+' x}{http://coq.inria.fr/stdlib/Coq.Init.Peano}{\coqdocnotation{+}} \coqref{Coqdoc.binder.beta:2}{\coqdocvariable{beta}}.\coqdoceol
+\coqdockw{Definition} \coqdef{Coqdoc.binder.foo}{foo}{\coqdocdefinition{foo}} \coqdef{Coqdoc.binder.alpha:1}{alpha}{\coqdocbinder{alpha}} \coqdef{Coqdoc.binder.beta:2}{beta}{\coqdocbinder{beta}} := \coqref{Coqdoc.binder.alpha:1}{\coqdocvariable{alpha}} \coqexternalref{::nat scope:x '+' x}{http://coq.inria.fr/stdlib/Stdlib.Init.Peano}{\coqdocnotation{+}} \coqref{Coqdoc.binder.beta:2}{\coqdocvariable{beta}}.\coqdoceol
 \end{coqdoccode}
 \end{document}

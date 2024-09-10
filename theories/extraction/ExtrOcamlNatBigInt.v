@@ -10,7 +10,7 @@
 
 (** Extraction of [nat] into Zarith's [Z.t] *)
 
-Require Coq.extraction.Extraction.
+Require Stdlib.extraction.Extraction.
 
 Require Import Arith EqNat Euclid.
 Require Import ExtrOcamlBasic.

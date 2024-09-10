@@ -1,4 +1,4 @@
-Require Import Coq.Program.Equality.
+Require Import Stdlib.Program.Equality.
 
 Inductive star {genv state : Type}
   (step : genv -> state -> state -> Prop)

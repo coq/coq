@@ -1,5 +1,5 @@
-Require Import Coq.ZArith.BinInt.
-From Coq Require Import Zify ZifyClasses.
+Require Import Stdlib.ZArith.BinInt.
+From Stdlib Require Import Zify ZifyClasses.
 Import Z.
 Open Scope Z_scope.
 

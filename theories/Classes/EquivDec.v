@@ -16,15 +16,15 @@
 
 (** Export notations. *)
 
-Require Export Coq.Classes.Equivalence.
+Require Export Stdlib.Classes.Equivalence.
 
 (** The [DecidableSetoid] class asserts decidability of a [Setoid].
    It can be useful in proofs to reason more classically. *)
 
-Require Import Coq.Logic.Decidable.
-Require Import Coq.Bool.Bool.
-Require Import Coq.Arith.Peano_dec.
-Require Import Coq.Program.Program.
+Require Import Stdlib.Logic.Decidable.
+Require Import Stdlib.Bool.Bool.
+Require Import Stdlib.Arith.Peano_dec.
+Require Import Stdlib.Program.Program.
 
 Generalizable Variables A B R.
 

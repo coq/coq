@@ -1,4 +1,4 @@
-Require Import Coq.Program.Program Coq.Program.Equality.
+Require Import Stdlib.Program.Program Stdlib.Program.Equality.
 
 Goal forall (H: forall n m : nat, n = m -> n = 0) x, x = tt.
 intros.

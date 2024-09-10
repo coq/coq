@@ -54,10 +54,10 @@ Section PreMonoidalCategory.
   Variable Associator : NaturalIsomorphism TriMonoidalProductL TriMonoidalProductR.
   (* Toplevel input, characters 15-96:
 Error: Unsatisfied constraints:
-Coq.Init.Datatypes.28 <= Coq.Init.Datatypes.29
-Top.168 <= Coq.Init.Datatypes.29
-Top.168 <= Coq.Init.Datatypes.28
-Top.169 <= Coq.Init.Datatypes.29
-Top.169 <= Coq.Init.Datatypes.28
+Stdlib.Init.Datatypes.28 <= Coq.Init.Datatypes.29
+Top.168 <= Stdlib.Init.Datatypes.29
+Top.168 <= Stdlib.Init.Datatypes.28
+Top.169 <= Stdlib.Init.Datatypes.29
+Top.169 <= Stdlib.Init.Datatypes.28
  (maybe a bugged tactic). *)
 End PreMonoidalCategory.

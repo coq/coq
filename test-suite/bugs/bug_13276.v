@@ -1,4 +1,4 @@
-From Coq Require Import Floats.
+From Stdlib Require Import Floats.
 Open Scope float_scope.
 
 Lemma foo :

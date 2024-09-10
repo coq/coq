@@ -26,11 +26,11 @@ end
 module TC = Typeclasses
 
 let classes_dirpath =
-  Names.DirPath.make (List.map Id.of_string ["Classes";"Coq"])
+  Names.DirPath.make (List.map Id.of_string ["Classes";"Stdlib"])
 
 let init_setoid () =
   if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
-  else Coqlib.check_required_library ["Coq";"Setoids";"Setoid"]
+  else Coqlib.check_required_library ["Stdlib";"Setoids";"Setoid"]
 
 type rewrite_attributes = {
   polymorphic : bool;
@@ -57,7 +57,7 @@ let lazy_find_reference dir s =
 
 module PropGlobal = struct
 
-  let morphisms = ["Coq"; "Classes"; "Morphisms"]
+  let morphisms = ["Stdlib"; "Classes"; "Morphisms"]
 
   let respectful_ref = lazy_find_reference morphisms "respectful"
 
@@ -88,23 +88,23 @@ let anew_instance atts binders (name,t) fields =
   ()
 
 let declare_instance_refl atts binders a aeq n lemma =
-  let instance = declare_instance a aeq (add_suffix n "_Reflexive") "Coq.Classes.RelationClasses.Reflexive"
+  let instance = declare_instance a aeq (add_suffix n "_Reflexive") "Stdlib.Classes.RelationClasses.Reflexive"
   in anew_instance atts binders instance
        [(qualid_of_ident (Id.of_string "reflexivity"),lemma)]
 
 let declare_instance_sym atts binders a aeq n lemma =
-  let instance = declare_instance a aeq (add_suffix n "_Symmetric") "Coq.Classes.RelationClasses.Symmetric"
+  let instance = declare_instance a aeq (add_suffix n "_Symmetric") "Stdlib.Classes.RelationClasses.Symmetric"
   in anew_instance atts binders instance
        [(qualid_of_ident (Id.of_string "symmetry"),lemma)]
 
 let declare_instance_trans atts binders a aeq n lemma =
-  let instance = declare_instance a aeq (add_suffix n "_Transitive") "Coq.Classes.RelationClasses.Transitive"
+  let instance = declare_instance a aeq (add_suffix n "_Transitive") "Stdlib.Classes.RelationClasses.Transitive"
   in anew_instance atts binders instance
        [(qualid_of_ident (Id.of_string "transitivity"),lemma)]
 
 let declare_relation atts ?(binders=[]) a aeq n refl symm trans =
   init_setoid ();
-  let instance = declare_instance a aeq (add_suffix n "_relation") "Coq.Classes.RelationClasses.RewriteRelation" in
+  let instance = declare_instance a aeq (add_suffix n "_relation") "Stdlib.Classes.RelationClasses.RewriteRelation" in
   let () = anew_instance atts binders instance [] in
   match (refl,symm,trans) with
     (None, None, None) -> ()
@@ -120,14 +120,14 @@ let declare_relation atts ?(binders=[]) a aeq n refl symm trans =
   | (Some lemma1, None, Some lemma3) ->
     let () = declare_instance_refl atts binders a aeq n lemma1 in
     let () = declare_instance_trans atts binders a aeq n lemma3 in
-    let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.PreOrder" in
+    let instance = declare_instance a aeq n "Stdlib.Classes.RelationClasses.PreOrder" in
     anew_instance atts binders instance
       [(qualid_of_ident (Id.of_string "PreOrder_Reflexive"), lemma1);
        (qualid_of_ident (Id.of_string "PreOrder_Transitive"),lemma3)]
   | (None, Some lemma2, Some lemma3) ->
     let () = declare_instance_sym atts binders a aeq n lemma2 in
     let () = declare_instance_trans atts binders a aeq n lemma3 in
-    let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.PER" in
+    let instance = declare_instance a aeq n "Stdlib.Classes.RelationClasses.PER" in
     anew_instance atts binders instance
       [(qualid_of_ident (Id.of_string "PER_Symmetric"), lemma2);
        (qualid_of_ident (Id.of_string "PER_Transitive"),lemma3)]
@@ -135,7 +135,7 @@ let declare_relation atts ?(binders=[]) a aeq n refl symm trans =
     let () = declare_instance_refl atts binders a aeq n lemma1 in
     let () = declare_instance_sym atts binders a aeq n lemma2 in
     let () = declare_instance_trans atts binders a aeq n lemma3 in
-    let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence" in
+    let instance = declare_instance a aeq n "Stdlib.Classes.RelationClasses.Equivalence" in
     anew_instance atts binders instance
       [(qualid_of_ident (Id.of_string "Equivalence_Reflexive"), lemma1);
        (qualid_of_ident (Id.of_string "Equivalence_Symmetric"), lemma2);
@@ -194,7 +194,7 @@ let add_setoid atts binders a aeq t n =
   let () = declare_instance_refl atts binders a aeq n (mkappc "Seq_refl" [a;aeq;t]) in
   let () = declare_instance_sym atts binders a aeq n (mkappc "Seq_sym" [a;aeq;t]) in
   let () = declare_instance_trans atts binders a aeq n (mkappc "Seq_trans" [a;aeq;t]) in
-  let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence"
+  let instance = declare_instance a aeq n "Stdlib.Classes.RelationClasses.Equivalence"
   in
   anew_instance atts binders instance
     [(qualid_of_ident (Id.of_string "Equivalence_Reflexive"), mkappc "Seq_refl" [a;aeq;t]);
@@ -246,7 +246,7 @@ let add_morphism atts ~tactic binders m s n =
   let instance_name = (CAst.make @@ Name instance_id),None in
   let instance_t =
     CAst.make @@ CAppExpl
-      ((Libnames.qualid_of_string "Coq.Classes.Morphisms.Proper",None),
+      ((Libnames.qualid_of_string "Stdlib.Classes.Morphisms.Proper",None),
        [cHole; s; m])
   in
   let _id, lemma = Classes.new_instance_interactive

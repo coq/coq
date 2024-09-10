@@ -1,4 +1,4 @@
-From Coq Require Extraction.
+From Stdlib Require Extraction.
 
 (** Testing extraction of stdlib Empty_set *)
 

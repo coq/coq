@@ -22,12 +22,12 @@ Generalizable Variables A B .
 
 (** Export notations. *)
 
-Require Export Coq.Classes.SetoidClass.
+Require Export Stdlib.Classes.SetoidClass.
 
 (** The [DecidableSetoid] class asserts decidability of a [Setoid].
    It can be useful in proofs to reason more classically. *)
 
-Require Import Coq.Logic.Decidable.
+Require Import Stdlib.Logic.Decidable.
 
 Class DecidableSetoid `(S : Setoid A) :=
   setoid_decidable : forall x y : A, decidable (x == y).
@@ -50,7 +50,7 @@ Definition swap_sumbool {A B} (x : { A } + { B }) : { B } + { A } :=
     | right H => @left _ _ H
   end.
 
-Require Import Coq.Program.Program.
+Require Import Stdlib.Program.Program.
 
 Local Open Scope program_scope.
 
@@ -75,7 +75,7 @@ Infix "<>b" := nequiv_decb (no associativity, at level 70).
 
 (** Decidable leibniz equality instances. *)
 
-Require Import Coq.Arith.Arith.
+Require Import Stdlib.Arith.Arith.
 
 (** The equiv is buried inside the setoid, but we can recover
   it by specifying which setoid we're talking about. *)
@@ -88,7 +88,7 @@ Program Instance eq_setoid A : Setoid A | 10 :=
 Program Instance nat_eq_eqdec : EqDec (eq_setoid nat) :=
   eq_nat_dec.
 
-Require Import Coq.Bool.Bool.
+Require Import Stdlib.Bool.Bool.
 
 #[global]
 Program Instance bool_eqdec : EqDec (eq_setoid bool) :=

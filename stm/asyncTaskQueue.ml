@@ -141,6 +141,7 @@ module Make(T : Task) () = struct
           x :: a :: set_slave_opt tl
         (* We need to pass some options with two arguments *)
         | ( "-R" | "-Q" as x) :: a1 :: a2 :: tl ->
+          let a2 = if String.equal a2 "Coq" then "Stdlib" else a2 in
           x :: a1 :: a2 :: set_slave_opt tl
         (* Finally we pass all options starting in '-'; check this is safe w.r.t the weird vio* option set *)
         | x :: tl when x.[0] = '-' ->

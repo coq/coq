@@ -8,10 +8,10 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Coq.Arith.EqNat.
-Require Import Coq.NArith.BinNat.
-Require Import Coq.NArith.Nnat.
-Require Export Coq.Init.Byte.
+Require Import Stdlib.Arith.EqNat.
+Require Import Stdlib.NArith.BinNat.
+Require Import Stdlib.NArith.Nnat.
+Require Export Stdlib.Init.Byte.
 
 Local Set Implicit Arguments.
 

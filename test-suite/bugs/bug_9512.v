@@ -1,4 +1,4 @@
-Require Import Coq.ZArith.BinInt Coq.micromega.Lia.
+Require Import Stdlib.ZArith.BinInt Stdlib.micromega.Lia.
 
 Set Primitive Projections.
 Record params := { width : Z }.
