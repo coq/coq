@@ -1,5 +1,20 @@
 How to write plugins in Coq
 ===========================
+
+  This document describes how to extend Coq by writing plugins in the
+  [OCaml](https://ocaml.org/) functional programming language.
+  Before writing a plugin, you should consider whether easier approaches
+  can achieve your goal. It is often easier to use an
+  extension language such as Ltac2 or Elpi. Ltac2 is documented in the
+  [refman](https://coq.inria.fr/refman/proof-engine/ltac2.html)
+  and Elpi comes with excellent
+  [tutorials](https://github.com/LPCIC/coq-elpi/#tutorials). Plugin
+  development is harder due to the lower level OCaml API it uses.
+  It is also more maintenance intensive because the OCaml API can
+  change from release to release without any backward compatibility
+  (it's not uncommon for plugins to only work with a given
+  version of Coq).
+
   # Working environment
 
   In addition to installing OCaml and Coq, you need to make sure that you also have the development
