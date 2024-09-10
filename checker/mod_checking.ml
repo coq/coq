@@ -114,7 +114,7 @@ and get_holes_profiles_elim env nargs ndecls lincheck = function
       let lincheck = get_holes_profiles_parg env (nargs + mip.mind_nrealargs + 1) (ndecls + mip.mind_nrealdecls + 1) lincheck ret in
       Array.fold_left3 (fun lincheck nargs_b ndecls_b -> get_holes_profiles_parg env (nargs + nargs_b) (ndecls + ndecls_b) lincheck) lincheck mip.mind_consnrealargs mip.mind_consnrealdecls brs
   | PEProj proj ->
-      let () = lookup_projection proj env |> ignore in
+      let () = lookup_projection (Projection.make proj false) env |> ignore in
       lincheck
 
 and get_holes_profiles_parg env nargs ndecls lincheck = function

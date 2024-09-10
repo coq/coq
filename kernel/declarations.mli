@@ -318,7 +318,7 @@ type 'arg head_pattern =
 type pattern_elimination =
   | PEApp     of pattern_argument array
   | PECase    of inductive * instance_mask * pattern_argument * pattern_argument array
-  | PEProj    of Projection.t
+  | PEProj    of Projection.Repr.t
 
 and head_elimination = pattern_argument head_pattern * pattern_elimination list
 

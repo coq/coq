@@ -880,7 +880,7 @@ and cbv_apply_rule info env ctx psubst es stk =
       let psubst = Array.fold_left2 (fun psubst pat (n, ctx, br) -> cbv_match_arg_pattern_lift info env (apply_env_context env ctx) n psubst pat br) psubst pbrs brs in
       cbv_apply_rule info env ctx psubst e s
   | Declarations.PEProj proj :: e, PROJ (proj', r, s) ->
-      if not @@ Projection.CanOrd.equal proj proj' then raise PatternFailure;
+      if not @@ Projection.(Repr.CanOrd.equal proj (repr proj')) then raise PatternFailure;
       cbv_apply_rule info env ctx psubst e s
   | _, _ -> raise PatternFailure
 
