@@ -204,7 +204,7 @@ module Context = struct
       in
       let native_common = native_common ~split () in
       let native_coqc = native_coqc ~native_common ~native:(Coq_module.Rule_type.native_coqc rule) in
-      let common = Arg.[ A "-w"; A "+default"; A "-q" ] in
+      let common = Arg.[ A "-w"; A "+default,private-mono"; A "-q" ] in
 
       { Flags.user = user_flags; common; loadpath; native_common; native_coqc } in
 

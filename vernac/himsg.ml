@@ -1700,3 +1700,9 @@ let explain_notation_not_reference = function
 let _ = CErrors.register_handler (function
     | Notation.NotationAsReferenceError e -> Some (explain_notation_not_reference e)
     | _ -> None)
+
+let () =
+  CWarnings.register_printer Safe_typing.warn_private_mono
+    Pp.(fun csts ->
+        str "Adding constraints to the global env from Qed body:" ++ spc() ++
+        Univ.Constraints.pr UnivNames.pr_level_with_global_universes csts)
