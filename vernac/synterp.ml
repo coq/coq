@@ -75,14 +75,6 @@ let with_generic_atts ~check atts f =
 
 type module_entry = Modintern.module_struct_expr * Names.ModPath.t * Modintern.module_kind * Entries.inline
 
-type control_entry =
-  | ControlTime of { synterp_duration: System.duration }
-  | ControlInstructions of { synterp_instructions: System.instruction_count }
-  | ControlRedirect of string
-  | ControlTimeout of { remaining : float }
-  | ControlFail of { st : Vernacstate.Synterp.t }
-  | ControlSucceed of { st : Vernacstate.Synterp.t }
-
 type synterp_entry =
   | EVernacNoop
   | EVernacNotation of { local : bool; decl : Metasyntax.notation_interpretation_decl }
@@ -113,7 +105,9 @@ type synterp_entry =
 
 and vernac_entry = synterp_entry Vernacexpr.vernac_expr_gen
 
-and vernac_control_entry = (control_entry, synterp_entry) Vernacexpr.vernac_control_gen_r CAst.t
+and vernac_control_entry =
+  (Vernacstate.Synterp.t VernacControl.control_entry, synterp_entry)
+    Vernacexpr.vernac_control_gen_r CAst.t
 
 let synterp_reserved_notation ~module_local ~infix l =
   Metasyntax.add_reserved_notation ~local:module_local ~infix l
@@ -361,104 +355,15 @@ let synterp_begin_section ({v=id} as lid) =
   Dumpglob.dump_definition lid true "sec";
   Lib.Synterp.open_section id
 
-(** A global default timeout, controlled by option "Set Default Timeout n".
-    Use "Unset Default Timeout" to deactivate it (or set it to 0). *)
-
-let check_timeout n =
-  if n <= 0 then CErrors.user_err Pp.(str "Timeout must be > 0.")
-
-(* Timeout *)
-let with_timeout ~timeout:n (f : 'a -> 'b) (x : 'a) : 'b =
-  check_timeout n;
-  let n = float_of_int n in
-  let start = Unix.gettimeofday () in
-  begin match Control.timeout n f x with
-  | None -> Exninfo.iraise (Exninfo.capture CErrors.Timeout)
-  | Some (ctrl,v) ->
-    let stop = Unix.gettimeofday () in
-    let remaining = n -. (start -. stop) in
-    if remaining <= 0. then Exninfo.iraise (Exninfo.capture CErrors.Timeout)
-    else ControlTimeout { remaining } :: ctrl, v
-  end
-
-(* Restoring the state is the caller's responsibility *)
-let with_fail f : (Loc.t option * Pp.t, 'a) result =
-  try
-    let x = f () in
-    Error x
-  with
-  (* Fail Timeout is a common pattern so we need to support it. *)
-  | e ->
-    (* The error has to be printed in the failing state *)
-    let _, info as exn = Exninfo.capture e in
-    if CErrors.is_anomaly e && e != CErrors.Timeout then Exninfo.iraise exn;
-    Ok (Loc.get_loc info, CErrors.iprint exn)
-
-let real_error_loc ~cmdloc ~eloc =
-  if Loc.finer eloc cmdloc then eloc
-  else cmdloc
-
-let with_fail ~loc f =
-  let st = Vernacstate.Synterp.freeze () in
-  let res = with_fail f in
-  let transient_st = Vernacstate.Synterp.freeze () in
-  Vernacstate.Synterp.unfreeze st;
-  match res with
-  | Error (ctrl, v) ->
-    ControlFail { st = transient_st } :: ctrl, v
-  | Ok (eloc, msg) ->
-    let loc = if !Flags.test_mode then real_error_loc ~cmdloc:loc ~eloc else None in
-    if not !Flags.quiet || !Flags.test_mode
-    then Feedback.msg_notice ?loc Pp.(str "The command has indeed failed with message:" ++ fnl () ++ msg);
-    [], VernacSynterp EVernacNoop
-
-let with_succeed f =
-  let st = Vernacstate.Synterp.freeze () in
-  let (ctrl, v) = f () in
-  let transient_st = Vernacstate.Synterp.freeze () in
-  Vernacstate.Synterp.unfreeze st;
-  ControlSucceed { st = transient_st } :: ctrl, v
-
-let synpure_control : control_flag -> control_entry =
-  let freeze = Vernacstate.Synterp.freeze in function
-  | ControlTime -> ControlTime { synterp_duration = System.empty_duration }
-  | ControlInstructions -> ControlInstructions { synterp_instructions = Ok 0L }
-  | ControlRedirect s -> ControlRedirect s
-  | ControlTimeout timeout ->
-    check_timeout timeout;
-    ControlTimeout { remaining = float_of_int timeout }
-  | ControlFail -> ControlFail { st = freeze() }
-  | ControlSucceed -> ControlSucceed { st = freeze() }
-
-(* We restore the state always *)
-let rec synterp_control_flag ~loc (f : control_flag list) fn expr =
-  match f with
-  | [] -> [], fn expr
-  | ControlFail :: l ->
-    with_fail ~loc (fun () -> synterp_control_flag ~loc l fn expr)
-  | ControlSucceed :: l ->
-    with_succeed (fun () -> synterp_control_flag ~loc l fn expr)
-  | ControlTimeout timeout :: l ->
-    with_timeout ~timeout (synterp_control_flag ~loc l fn) expr
-  | ControlTime :: l ->
-    begin match System.measure_duration (synterp_control_flag ~loc l fn) expr with
-    | Ok((ctrl,v), synterp_duration) ->
-      ControlTime { synterp_duration } :: ctrl, v
-    | Error(exn, synterp_duration) as e ->
-      Feedback.msg_notice @@ System.fmt_transaction_result e;
-      Exninfo.iraise exn
-    end
-  | ControlInstructions :: l ->
-    begin match System.count_instructions (synterp_control_flag ~loc l fn) expr with
-    | Ok((ctrl,v), synterp_instructions) ->
-      ControlInstructions { synterp_instructions } :: ctrl, v
-    | Error(exn, synterp_instructions) as e ->
-      Feedback.msg_notice @@ System.fmt_instructions_result e;
-      Exninfo.iraise exn
-    end
-  | ControlRedirect s :: l ->
-    let (ctrl, v) = Topfmt.with_output_to_file s (synterp_control_flag ~loc l fn) expr in
-    (ControlRedirect s :: ctrl, v)
+let with_synterp_state =
+  let with_local_state () f =
+    let st = Vernacstate.Synterp.freeze () in
+    let v = f () in
+    let transient_st = Vernacstate.Synterp.freeze () in
+    Vernacstate.Synterp.unfreeze st;
+    transient_st, v
+  in
+  { VernacControl.with_local_state }
 
 let rec synterp ~intern ?loc ~atts v =
   match v with
@@ -565,34 +470,13 @@ and synterp_control ~intern CAst.{ loc; v = cmd } =
     with_generic_atts ~check:true cmd.attrs (fun ~atts ->
         synterp ~intern ?loc ~atts cmd.expr)
   in
-  let control, expr = synterp_control_flag ~loc cmd.control fn cmd.expr in
+  let control, expr =
+    VernacControl.under_control ~loc ~with_local_state:with_synterp_state
+      (VernacControl.from_syntax cmd.control)
+      ~noop:(VernacSynterp EVernacNoop)
+      (fun () -> fn cmd.expr)
+  in
   CAst.make ?loc { expr; control; attrs = cmd.attrs }
-
-let default_timeout = ref None
-
-let () = let open Goptions in
-  declare_int_option
-    { optstage = Summary.Stage.Synterp;
-      optdepr  = None;
-      optkey   = ["Default";"Timeout"];
-      optread  = (fun () -> !default_timeout);
-      optwrite = (fun n -> Option.iter check_timeout n; default_timeout := n) }
-
-let has_timeout ctrl = ctrl |> List.exists (function
-    | Vernacexpr.ControlTimeout _ -> true
-    | _ -> false)
-
-let add_default_timeout control =
-  match !default_timeout with
-  | None -> control
-  | Some n ->
-    if has_timeout control then control
-    else Vernacexpr.ControlTimeout n :: control
-
-let synterp_control ~intern cmd =
-  synterp_control ~intern (CAst.map (fun cmd ->
-      { cmd with control = add_default_timeout cmd.control })
-      cmd)
 
 let synterp_control ~intern cmd =
   Flags.with_option Flags.in_synterp_phase (synterp_control ~intern) cmd

@@ -30,6 +30,6 @@ val interp_entry
 val interp_qed_delayed_proof
   :  proof:Declare.Proof.proof_object
   -> st:Vernacstate.t
-  -> control:Vernacexpr.control_flag list
+  -> control:unit VernacControl.control_entries
   -> Vernacexpr.proof_end CAst.t
   -> Vernacstate.Interp.t
