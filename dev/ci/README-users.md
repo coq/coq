@@ -11,14 +11,6 @@ Coq's CI. This means that:
 
 On the condition that:
 
-- For libraries: your project should exercise some part of Coq which
-  is not well covered by the existing CI and test suite.
-
-  There is no such requirement for plugins: developers may reduce the
-  cost of working with Coq's unstable OCaml API by adding
-  their plugin to Coq's CI and getting it fixed when the API changes (as long
-  as fixing the plugin doesn't put an undue burden on Coq developers).
-
 - At the time of the submission, your project works with Coq's
   `master` branch.
 
@@ -46,6 +38,19 @@ out to you and give you a 30-day grace period during which your project
 would be moved into our "allow failure" category. At the end of the grace
 period, in the absence of progress, the project would be removed from our
 CI.
+
+Due to a lack of computing resources, submitted libraries which do not
+clearly expand what Coq's CI covers might not be integrated. You are
+encouraged to discuss the addition of your project on [Coq's
+Zulip](https://coq.zulipchat.com/). You are also encouraged to test
+your project with Coq master and report any issues you find (not just
+bugs) even if it is not in Coq's CI; if your project repeatedly finds
+issues they will be evidence that it would expand the CI's coverage.
+
+There is no such requirement for plugins: developers may reduce the
+cost of working with Coq's unstable OCaml API by adding
+their plugin to Coq's CI and getting it fixed when the API changes (as long
+as fixing the plugin doesn't put an undue burden on Coq developers).
 
 ### Timely merging of overlays
 
