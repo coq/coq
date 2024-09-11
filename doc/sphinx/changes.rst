@@ -148,6 +148,8 @@ Kernel
   (`#18973 <https://github.com/coq/coq/pull/18973>`_,
   by Rodolphe Lepigre).
 
+.. _819_changes_spec_language:
+
 Specification language, type inference
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
