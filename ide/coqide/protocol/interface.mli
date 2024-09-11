@@ -16,16 +16,7 @@ type raw = bool
 type verbose = bool
 
 (** The type of coqtop goals *)
-type goal = {
-  goal_id : string;
-  (** Unique goal identifier *)
-  goal_hyp : Pp.t list;
-  (** List of hypotheses *)
-  goal_ccl : Pp.t;
-  (** Goal conclusion *)
-  goal_name : string option;
-  (** User-level goal name *)
-}
+type goal = DebuggerTypes.goal
 
 type evar = {
   evar_info : string;
@@ -43,16 +34,7 @@ type status = {
   (** An id describing the state of the current proof. *)
 }
 
-type 'a pre_goals = {
-  fg_goals : 'a list;
-  (** List of the focused goals *)
-  bg_goals : ('a list * 'a list) list;
-  (** Zipper representing the unfocused background goals *)
-  shelved_goals : 'a list;
-  (** List of the goals on the shelf. *)
-  given_up_goals : 'a list;
-  (** List of the goals that have been given up *)
-}
+type 'a pre_goals = 'a DebuggerTypes.pre_goals
 
 type goals = goal pre_goals
 
@@ -98,13 +80,7 @@ type search_constraint =
 type search_flags = (search_constraint * bool) list
 
 (** Subset of goals to print. *)
-type goal_flags = {
-  gf_mode : string;
-  gf_fg : bool;
-  gf_bg : bool;
-  gf_shelved : bool;
-  gf_given_up : bool;
-}
+type goal_flags = DebuggerTypes.goal_flags
 
 (** A named object in Coq. [coq_object_qualid] is the shortest path defined for
     the user. [coq_object_prefix] is the missing part to recover the fully
@@ -126,9 +102,13 @@ type coq_info = {
 (* a subset of DebugHook.Action.t *)
 type db_continue_opt =
   | StepIn
+  | StepInRev
   | StepOver
+  | StepOverRev
   | StepOut
+  | StepOutRev
   | Continue
+  | ContinueRev
   | Interrupt
 
 (** Calls result *)
@@ -182,12 +162,12 @@ type query_rty = unit
 (** Fetching the list of current goals. Return [None] if no proof is in
     progress, [Some gl] otherwise. *)
 type goals_sty = unit
-type goals_rty = goals option
+type goals_rty = DebuggerTypes.goals_rty
 
 (** Same as above, but specific kind of goals can be retrieved by setting the
     flags. *)
 type subgoals_sty = goal_flags
-type subgoals_rty = goals option
+type subgoals_rty = DebuggerTypes.subgoals_rty
 
 (** Retrieve the list of uninstantiated evars in the current proof. [None] if no
     proof is in progress. *)

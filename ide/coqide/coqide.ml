@@ -171,7 +171,7 @@ let db_cmd sn cmd =
       (sn.coqops#process_db_cmd cmd ~next:(function | _ -> Coq.return ()))
       (fun () -> Minilib.log "Coq busy, discarding db_cmd")
 
-let forward_db_stack = ref ((fun _ -> failwith "forward_db_stack")
+let forward_db_stack_n_goals = ref ((fun _ -> failwith "forward_db_stack_n_goals")
                      : session -> unit -> unit)
 let forward_db_vars = ref ((fun _ -> failwith "forward_db_vars")
                      : session -> int -> unit)
@@ -190,18 +190,12 @@ let create_session f =
   sn.debugger#set_forward_get_basename (fun _ -> sn.basename);
   Coq.set_restore_bpts sn.coqtop (fun _ -> !forward_restore_bpts sn);
   (sn.messages#route 0)#set_forward_send_db_cmd (db_cmd sn);
-  (sn.messages#route 0)#set_forward_send_db_stack (!forward_db_stack sn);
+  (sn.messages#route 0)#set_forward_db_stack_n_goals (!forward_db_stack_n_goals sn);
   sn.debugger#set_forward_highlight_code (!forward_highlight_code sn);
   sn.debugger#set_forward_clear_db_highlight (clear_db_highlight sn);
   sn.debugger#set_forward_db_vars (!forward_db_vars sn);
   sn.coqops#set_forward_clear_db_highlight (clear_db_highlight ~retn:true sn);
-  sn.coqops#set_forward_set_goals_of_dbg_session
-    (fun msg ->
-      sn.coqops#set_debug_goal msg;
-      sn.last_db_goals <- msg;
-      let osn = (find_secondary_sn sn) in
-      osn.coqops#set_debug_goal msg;
-      osn.last_db_goals <- msg);
+  sn.coqops#set_forward_get_other_proof (fun () -> (find_secondary_sn sn).proof);
   sn.coqops#set_forward_init_db (fun () -> !forward_init_db sn);
   let _ = set_drag sn.script#drag in
   sn
@@ -732,12 +726,12 @@ let find_next_occurrence ~backward sn =
     |None -> ()
     |Some(where, _) -> b#place_cursor ~where; sn.script#recenter_insert
 
-let send_to_coq_aux f sn =
-  let info () = Minilib.log "Coq busy, discarding query" in
+let send_to_coq_aux name f sn =
+  let info () = Minilib.log ("Coq busy, discarding " ^ name) in
   let f = Coq.seq (f sn) (update_status sn) in
   ignore @@ Coq.try_grab sn.coqtop f info
 
-let send_to_coq f = on_current_term (send_to_coq_aux f)
+let send_to_coq name f = on_current_term (send_to_coq_aux name f)
 
 let db_continue opt sn =
   Coq.try_grab ~db:true sn.coqtop (sn.coqops#process_db_continue opt
@@ -816,26 +810,33 @@ let maybe_update_breakpoints () =
     ) notebook#pages upds
 
 module Nav = struct
-  let forward_one_sid ?sid _ =
-    maybe_update_breakpoints ();
+  let forward_one_sid ?sid _ = maybe_update_breakpoints ();
     if not (resume_debugger ?sid Interface.StepOver) then
-      send_to_coq (fun sn -> sn.coqops#process_next_phrase)
+      send_to_coq "forward one" (fun sn -> sn.coqops#process_next_phrase)
   let forward_one x = forward_one_sid x
   let continue ?sid _ = maybe_update_breakpoints ();
     if not (resume_debugger ?sid Interface.Continue) then
-      send_to_coq (fun sn -> sn.coqops#process_until_end_or_error)
+      send_to_coq "continue" (fun sn -> sn.coqops#process_until_end_or_error)
+  let continue_rev ?sid _ = maybe_update_breakpoints ();
+    ignore @@ resume_debugger ?sid Interface.ContinueRev
   let step_in ?sid _ = maybe_update_breakpoints ();
     if not (resume_debugger ?sid Interface.StepIn) then
-      send_to_coq (fun sn -> sn.coqops#process_next_phrase)
+      send_to_coq "step in" (fun sn -> sn.coqops#process_next_phrase)
+  let step_in_rev ?sid _ = maybe_update_breakpoints ();
+    ignore @@ resume_debugger ?sid Interface.StepInRev
   let step_out ?sid _ = maybe_update_breakpoints ();
     if not (resume_debugger ?sid Interface.StepOut) then
-      send_to_coq (fun sn -> sn.coqops#process_next_phrase)
-  let backward_one _ = maybe_update_breakpoints ();
-    send_to_coq (fun sn -> init_bpts sn; sn.coqops#backtrack_last_phrase)
+      send_to_coq "step out" (fun sn -> sn.coqops#process_next_phrase)
+  let step_out_rev ?sid _ = maybe_update_breakpoints ();
+    ignore @@ resume_debugger ?sid Interface.StepOutRev
+  let backward_one_sid ?sid _ = maybe_update_breakpoints ();
+    if not (resume_debugger ?sid Interface.StepOverRev) then  (* right?? *)
+      send_to_coq "back one" (fun sn -> init_bpts sn; sn.coqops#backtrack_last_phrase)
+  let backward_one x = backward_one_sid x
   let run_to_cursor _ = maybe_update_breakpoints ();
-    send_to_coq (fun sn -> sn.coqops#go_to_insert)
+    send_to_coq "run to cursor" (fun sn -> sn.coqops#go_to_insert)
   let run_to_end _ = maybe_update_breakpoints ();
-    send_to_coq (fun sn -> sn.coqops#process_until_end_or_error)
+    send_to_coq "run to end" (fun sn -> sn.coqops#process_until_end_or_error)
   let previous_occ = cb_on_current_term (find_next_occurrence ~backward:true)
   let next_occ = cb_on_current_term (find_next_occurrence ~backward:false)
   let restart _ =
@@ -860,35 +861,39 @@ module Nav = struct
     end
   let show_debugger _ =
     on_current_term (fun sn -> sn.debugger#show ())
-  let join_document _ = send_to_coq (fun sn -> sn.coqops#join_document)
+  let join_document _ = send_to_coq "join" (fun sn -> sn.coqops#join_document)
 end
-
-let f9       = GtkData.AccelGroup.parse "F9"
-let f10      = GtkData.AccelGroup.parse "F10"
-let f11      = GtkData.AccelGroup.parse "F11"
-let shft_f10 = GtkData.AccelGroup.parse "<Shift>F10"
-let ctl_up   = GtkData.AccelGroup.parse "<Ctrl>Up"
-let ctl_down = GtkData.AccelGroup.parse "<Ctrl>Down"
 
 (* handle certain function keys from detached Messages panel
    functions are directed to the specified session or the
    current session, not the Messages session (debatable) *)
 let forward_keystroke key sid =
-  if      key = f9 then (Nav.continue ~sid (); true)
-  else if key = f10 then (Nav.step_in ~sid (); true)
-  else if key = f11 then (Nav.break ~sid (); true)
-  else if key = shft_f10 then (Nav.step_out ~sid (); true)
-  else if key = ctl_up then (Nav.backward_one (*~sid*) (); true)
-  else if key = ctl_down then (Nav.forward_one_sid ~sid (); true)
+  let is_action path = Preferences.is_action key path in
+  if      is_action "<Actions>/Debug/Continue" then (Nav.continue ~sid (); true)
+  else if is_action "<Actions>/Debug/Step in" then (Nav.step_in ~sid (); true)
+  else if is_action "<Actions>/Debug/Break" then (Nav.break ~sid (); true)
+  else if is_action "<Actions>/Debug/Step out" then (Nav.step_out ~sid (); true)
+  else if is_action "<Actions>/Navigation/Backward" then (Nav.backward_one_sid ~sid (); true)
+  else if is_action "<Actions>/Navigation/Forward" then (Nav.forward_one_sid ~sid (); true)
+  else if is_action "<Actions>/Debug/Continue back" then (Nav.continue_rev ~sid (); true)
+  else if is_action "<Actions>/Debug/Step in back" then (Nav.step_in_rev ~sid (); true)
+  else if is_action "<Actions>/Debug/Step out back" then (Nav.step_out_rev ~sid (); true)
   else false
 
 let _ = Wg_MessageView.forward_keystroke := forward_keystroke
 let _ = Wg_Debugger.forward_keystroke := forward_keystroke
 
 let printopts_callback opts v =
-  let b = v#get_active in
-  let () = List.iter (fun o -> Coq.PrintOpt.set o b) opts in
-  send_to_coq (fun sn -> sn.coqops#show_goals)
+  if notebook#pages = [] then ()
+  else begin
+    let sn = find_db_sn () in
+    let b = v#get_active in
+    let () = List.iter (fun o -> Coq.PrintOpt.set o b) opts in
+    Coq.add_do_when_ready sn.coqtop (fun _ ->
+      ignore @@ Coq.try_grab ~db:true sn.coqtop (sn.coqops#show_goals true)
+        (fun () -> Minilib.log "Coq busy, discarding show_goals")
+    )
+  end
 
 (** Templates menu *)
 
@@ -1040,8 +1045,6 @@ let highlight_code sn loc =
     clear_db_highlight sn ();
     notebook#current_term.script#set_debugging_highlight bp ep;
     sn.debug_stop_pt <- Some (notebook#current_term, bp, ep);
-    (* also show goal in secondary script goal panel *)
-    notebook#current_term.coqops#set_debug_goal sn.last_db_goals
   in
   if file = "ToplevelInput" then begin
     notebook#goto_term sn;
@@ -1062,7 +1065,8 @@ let highlight_code sn loc =
 
 let _ = forward_highlight_code := highlight_code
 
-let db_stack sn _ =
+let db_stack_n_goals sn _ =
+  (* get stack first so goals can be shown in the right buffer *)
   Coq.add_do_when_ready sn.coqtop (fun _ ->
     ignore @@ Coq.try_grab ~db:true sn.coqtop (sn.coqops#process_db_stack
       ~next:(function
@@ -1073,9 +1077,13 @@ let db_stack sn _ =
             Coq.return ()
           ))
       (fun () -> Minilib.log "Coq busy, discarding db_stack")
+  );
+  Coq.add_do_when_ready sn.coqtop (fun _ ->
+    ignore @@ Coq.try_grab ~db:true sn.coqtop (sn.coqops#show_goals true)
+      (fun () -> Minilib.log "Coq busy, discarding show_goals")
   )
 
-let _ = forward_db_stack := db_stack
+let _ = forward_db_stack_n_goals := db_stack_n_goals
 
 let db_vars sn line =
   Coq.add_do_when_ready sn.coqtop (fun _ ->
@@ -1474,6 +1482,10 @@ let build_ui () =
     item "Next tab" ~label:"_Next tab" ~accel:"<Alt>Right"
       ~stock:`GO_FORWARD
       ~callback:(fun _ -> notebook#next_page ());
+    item "Previous goal" ~label:"Previous goal" ~accel:"<Alt>Page_Up"
+      ~callback:(fun _ -> on_current_term (fun sn -> sn.proof#incr_sel_goal_num (-1)));
+    item "Next goal" ~label:"Next goal" ~accel:"<Alt>Page_Down"
+      ~callback:(fun _ -> on_current_term (fun sn -> sn.proof#incr_sel_goal_num 1));
     item "Zoom in" ~label:"_Zoom in" ~accel:("<Primary>plus")
         ~stock:`ZOOM_IN ~callback:(fun _ ->
           let ft = Pango.Font.from_string text_font#get in
@@ -1507,7 +1519,11 @@ let build_ui () =
         | 1 -> List.iter (fun o -> Opt.set o "on"; diffs#set "on") Opt.diff_item.Opt.opts
         | 2 -> List.iter (fun o -> Opt.set o "removed"; diffs#set "removed") Opt.diff_item.Opt.opts
         | _ -> assert false);
-        send_to_coq (fun sn -> sn.coqops#show_goals)
+          let sn = find_db_sn () in
+          Coq.add_do_when_ready sn.coqtop (fun _ ->
+            ignore @@ Coq.try_grab ~db:true sn.coqtop (sn.coqops#show_goals true)
+              (fun () -> Minilib.log "Coq busy, discarding show_goals")
+          )
         end
       [
         radio "Unset diff" 0 ~label:"_Don't show diffs";
@@ -1603,6 +1619,9 @@ let build_ui () =
     item "Step in" ~label:"Step in" ~accel:"F10" ~callback:Nav.step_in;
     item "Step out" ~label:"Step out" ~accel:"<Shift>F10" ~callback:Nav.step_out;
     (* todo: consider other names for Break and Interrupt to be clearer to users *)
+    item "Continue back" ~label:"_Continue back" ~accel:"<Ctrl>F9" ~callback:Nav.continue_rev;
+    item "Step in back" ~label:"Step in back" ~accel:"<Ctrl>F10" ~callback:Nav.step_in_rev;
+    item "Step out back" ~label:"Step out back" ~accel:"<Ctrl><Shift>F10" ~callback:Nav.step_out_rev;
     item "Break" ~label:"Break" ~accel:"F11" ~callback:Nav.break;
     item "Show debug panel" ~label:"Show debug panel" ~callback:Nav.show_debugger;
   ];

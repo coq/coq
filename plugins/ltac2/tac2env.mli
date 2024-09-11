@@ -139,8 +139,17 @@ type 'a or_glb_tacexpr =
 
 type ('a, 'b, 'r) intern_fun = Genintern.glob_sign -> 'a -> 'b * 'r glb_typexpr
 
+type typed_valexpr = {
+  e : valexpr;
+  t : Obj.t option   (* Obj.t is really Tac2expr.glb_typexpr *)
+}
+
 type environment = {
-  env_ist : valexpr Id.Map.t;
+  env_ist : typed_valexpr Id.Map.t;
+  locs : Loc.t option list;
+  stack : (string * Loc.t option) list option;
+  varmaps : typed_valexpr Id.Map.t list;
+  prev_chunks : DebugCommon.chunk list;
 }
 
 type ('a, 'b) ml_object = {

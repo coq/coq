@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open DebuggerTypes
+
 (** Ltac debugger interface; clients should register hooks to interact
    with their provided interface. *)
 
@@ -30,9 +32,13 @@
 module Action : sig
   type t =
     | StepIn    (* execute a single step in the tactic *)
+    | StepInRev (* reverse StepIn *)
     | StepOver  (* execute steps until DB is back in the current stack frame *)
+    | StepOverRev
     | StepOut   (* execute steps until DB exits current stack frame *)
+    | StepOutRev
     | Continue  (* execute steps until a breakpoint or the debugger exits *)
+    | ContinueRev
     | Skip      (* legacy: continue execution with no further debugging *)
     | Interrupt (* exit the debugger *)
     | Help      (* legacy: print help text *)
@@ -48,6 +54,7 @@ module Action : sig
                 (* request the variables defined for stack frame N,
                    returned as Answer.Vars.  0 is the topmost frame,
                    followed by 1,2,3, ... *)
+    | Subgoals of goal_flags
     | RunCnt of int
                 (* legacy: run for N steps *)
     | RunBreakpoint of string
@@ -56,6 +63,8 @@ module Action : sig
                 (* legacy: user-typed command to the debugger *)
     | Failed    (* legacy: user command doesn't parse *)
     | Ignore    (* internal: do nothing, read another command *)
+
+  val to_string : t -> string
 
   (* XXX: Should be moved to the clients *)
   val parse : string -> (t, string) result
@@ -66,10 +75,10 @@ module Answer : sig
     | Prompt of Pp.t (* output signalling the debugger has stopped
                         Should be printed as a prompt for user input,
                         e.g. in color without a newline at the end *)
-    | Goal of Pp.t   (* goal for the current proof state *)
     | Output of Pp.t (* general output *)
     | Init           (* signals initialization of the debugger *)
-    | Stack of (string * (string * int list) option) list
+    | Stack of db_stack_rty
+                     (* (string * (string * int list) option) list *)
                      (* The call stack, starting from TOS.
                         Values are:
                         - description of the frame
@@ -77,15 +86,17 @@ module Answer : sig
                         - absolute pathname of the file
                         - array containing Loc.bp and Loc.ep of the
                           corresponding code *)
-    | Vars of (string * Pp.t) list
+    | Vars of db_vars_rty
+                     (* (string * Pp.t) list *)
                      (* The variable values for the specified stack
                         frame.  Values are variable name and variable value *)
+    | Subgoals of goals_rty
 end
 
 module Intf : sig
   type t =
-    { read_cmd : unit -> Action.t
-    (** request a debugger command from the client *)
+    { read_cmd : bool -> Action.t
+    (** request a debugger command from the client.  true = in debugger *)
     ; submit_answer : Answer.t -> unit
     (** receive a debugger answer from Ltac *)
     ; isTerminal : bool

@@ -36,8 +36,7 @@ module type MainLoopModel = sig
   val add_watch : callback:(condition list -> bool) -> async_chan -> watch_id
   val remove_watch : watch_id -> unit
   val read_all : async_chan -> string
-  val async_chan_of_file : Unix.file_descr -> async_chan
-  val async_chan_of_socket : Unix.file_descr -> async_chan
+  val async_chan_of_file_or_socket : Unix.file_descr -> async_chan
 end
 
 (* Common code *)
@@ -191,9 +190,7 @@ let spawn ?(prefer_sock=prefer_sock) ?(env=Unix.environment ())
   let pid, oob_resp, oob_req, cin, cout, main, is_sock =
     spawn_with_control prefer_sock env prog args in
   Unix.set_nonblock (fst main);
-  let gchan =
-    if is_sock then ML.async_chan_of_socket (fst main)
-    else ML.async_chan_of_file (fst main) in
+  let gchan = ML.async_chan_of_file_or_socket (fst main) in
   let alive, watch = true, None in
   let p = { cin; cout; gchan; pid; oob_resp; oob_req; alive; watch } in
   p.watch <- Some (

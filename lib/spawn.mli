@@ -43,8 +43,7 @@ module type MainLoopModel = sig
   val add_watch : callback:(condition list -> bool) -> async_chan -> watch_id
   val remove_watch : watch_id -> unit
   val read_all : async_chan -> string
-  val async_chan_of_file : Unix.file_descr -> async_chan
-  val async_chan_of_socket : Unix.file_descr -> async_chan
+  val async_chan_of_file_or_socket : Unix.file_descr -> async_chan
 end
 
 (* spawn a process and read its output asynchronously *)

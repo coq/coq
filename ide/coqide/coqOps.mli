@@ -33,7 +33,7 @@ object
   method raw_coq_query :
     route_id:int -> next:(query_rty value -> unit task) -> string -> unit task
   method proof_diff : GText.mark -> next:(Pp.t value -> unit task) -> unit task
-  method show_goals : unit task
+  method show_goals : bool -> unit task
   method backtrack_last_phrase : unit task
   method initialize : unit task
   method join_document : unit task
@@ -48,9 +48,8 @@ object
   method destroy : unit -> unit
   method scroll_to_start_of_input : unit -> unit
   method set_forward_clear_db_highlight : (unit -> unit) -> unit
-  method set_forward_set_goals_of_dbg_session : (Pp.t -> unit) -> unit
+  method set_forward_get_other_proof : (unit -> Wg_ProofView.proof_view) -> unit
   method set_forward_init_db : (unit -> unit) -> unit
-  method set_debug_goal : Pp.t -> unit
 end
 
 class coqops :
