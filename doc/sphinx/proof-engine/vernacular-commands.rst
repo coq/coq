@@ -964,6 +964,7 @@ Controlling display
    `parsing`,
    `pedantic`,
    `records`,
+   `rewrite-rules`,
    `ssr`,
    `syntax`,
    `tactics`,

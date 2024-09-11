@@ -160,15 +160,15 @@ let safe_sort_pattern_of_sort ~loc evd (qsubst, usubst) (st, sq, su as state) s 
 
 
 let warn_irrelevant_pattern =
-  CWarnings.create ~name:"irrelevant-pattern"
-    (fun () -> Pp.(str "This subpattern is irrelevant and can never be matched against."))
+  CWarnings.create ~name:"irrelevant-pattern" ~category:CWarnings.CoreCategories.rewrite_rules
+    Pp.(fun () -> str "This subpattern is irrelevant and can never be matched against.")
 
 let warn_eta_in_pattern =
-  CWarnings.create ~name:"eta-in-pattern" Fun.id
+  CWarnings.create ~name:"eta-in-pattern" ~category:CWarnings.CoreCategories.rewrite_rules Fun.id
 
 let warn_redex_in_rewrite_rules =
-  CWarnings.create ~name:"redex-in-rewrite-rules"
-  (fun redex -> Pp.(str "This pattern contains a" ++ redex ++ str " which may prevent this rule from being triggered."))
+  CWarnings.create ~name:"redex-in-rewrite-rules" ~category:CWarnings.CoreCategories.rewrite_rules
+  Pp.(fun redex -> str "This pattern contains a" ++ redex ++ str " which may prevent this rule from being triggered.")
 
 let rec check_may_eta ~loc env evd t =
   match EConstr.kind evd (Reductionops.whd_all env evd t) with
@@ -361,7 +361,7 @@ and test_pattern_redex_aux env evd ~loc = function
 
 
 let warn_rewrite_rules_break_SR =
-  CWarnings.create ~name:"rewrite-rules-break-SR"
+  CWarnings.create ~name:"rewrite-rules-break-SR" ~category:CWarnings.CoreCategories.rewrite_rules
     Pp.(fun reason ->
         str "This rewrite rule breaks subject reduction" ++ spc() ++
         surround reason ++ str ".")

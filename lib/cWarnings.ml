@@ -437,6 +437,7 @@ module CoreCategories = struct
   let parsing = make "parsing"
   let pedantic = make "pedantic"
   let records = make "records"
+  let rewrite_rules = make "rewrite-rules"
   let ssr = make "ssr"
   let syntax = make "syntax"
   let tactics = make "tactics"
