@@ -54,13 +54,19 @@ module Make(T : Task) () = struct
 
   exception Die
   type response =
-    | Response of T.response
+    | Response of T.response * (NewProfile.MiniJson.t list * NewProfile.sums) option
     | RespFeedback of Feedback.feedback
-  type request = Request of T.request
+  type request = { request : T.request; profiling : bool }
 
-  let slave_respond (Request r) =
-    let res = T.perform r in
-    Response res
+  let slave_respond { request = r; profiling } =
+    if profiling then
+      let events, sums, res =
+        NewProfile.with_profiling (fun () -> T.perform r)
+      in
+      Response (res, Some (events, sums))
+    else
+      let res = T.perform r in
+      Response (res, None)
 
   exception MarshalError of string
 
@@ -121,7 +127,7 @@ module Make(T : Task) () = struct
           | "-load-vernac-source" | "-l" | "-load-vernac-source-verbose" | "-lv"
           | "-require-import" | "-require-export" | "-ri" | "-re"
           | "-load-vernac-object"
-          | "-time-file"
+          | "-time-file" | "-profile"
           | "-set" | "-unset" | "-compat" | "-mangle-names" | "-diffs"
           | "-async-proofs-cache" | "-async-proofs-j" | "-async-proofs-tac-j"
           | "-async-proofs-private-flags" | "-async-proofs-tactic-error-resilience"
@@ -219,18 +225,19 @@ module Make(T : Task) () = struct
       | Some req ->
       try
         get_exec_token ();
-        marshal_request oc (Request req);
+        marshal_request oc {request = req; profiling = NewProfile.is_profiling()};
         let rec continue () =
           match unmarshal_response ic with
           | RespFeedback fbk -> T.forward_feedback fbk; continue ()
-          | Response resp ->
-              match T.use_response !worker_age task resp with
-              | `End -> raise Die
-              | `Stay(competence, new_tasks) ->
-                   last_task := None;
-                   giveback_exec_token ();
-                   worker_age := T.Old competence;
-                   add_tasks new_tasks
+          | Response (resp, prof) ->
+            Option.iter (fun (events,sums) -> NewProfile.insert_results events sums) prof;
+            match T.use_response !worker_age task resp with
+            | `End -> raise Die
+            | `Stay(competence, new_tasks) ->
+              last_task := None;
+              giveback_exec_token ();
+              worker_age := T.Old competence;
+              add_tasks new_tasks
         in
           continue ()
       with
@@ -281,7 +288,7 @@ module Make(T : Task) () = struct
 
   let cancel_worker { active } n = Pool.cancel n active
 
-  let name_of_request (Request r) = T.name_of_request r
+  let name_of_request {request = r} = T.name_of_request r
 
   let set_order { queue } cmp =
     TQueue.set_order queue (fun (t1,_) (t2,_) -> cmp t1 t2)
