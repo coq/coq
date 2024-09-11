@@ -14,10 +14,10 @@ On the condition that:
 - For libraries: your project should exercise some part of Coq which
   is not well covered by the existing CI and test suite.
 
-  There is no such requirement for plugins: Coq developers reduce the
-  cost of having to work with Coq's unstable OCaml API by adding
-  plugins to Coq's CI and patching them when the API changes (as long
-  as fixing your plugin doesn't get too hard).
+  There is no such requirement for plugins: developers may reduce the
+  cost of working with Coq's unstable OCaml API by adding
+  their plugin to Coq's CI and getting it fixed when the API changes (as long
+  as fixing the plugin doesn't put an undue burden on Coq developers).
 
 - At the time of the submission, your project works with Coq's
   `master` branch.
