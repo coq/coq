@@ -22,8 +22,8 @@ On the condition that:
   that it takes longer than when we are just requesting to integrate a
   simple (and already fully prepared) patch.
 
-- You do not push, to the branches that we test, commits that haven't been
-  first tested to compile with the corresponding branch(es) of Coq.
+- You do not push, to the branch that we test, commits that haven't been
+  first tested to compile with the corresponding branch of Coq.
 
   For that, we recommend setting a CI system for you project, see
   [supported CI images for Coq](#supported-ci-images-for-coq) below.
@@ -31,13 +31,26 @@ On the condition that:
 - You maintain a reasonable build time for your project, or you provide
   a "lite" target that we can use.
 
-- You keep points-of-contact up to date.
+- You keep points of contact up to date.
 
 In case you forget to comply with these last four conditions, we would reach
 out to you and give you a 30-day grace period during which your project
 would be moved into our "allow failure" category. At the end of the grace
 period, in the absence of progress, the project would be removed from our
 CI.
+
+Due to a lack of computing resources, submitted libraries which do not
+clearly expand what Coq's CI covers might not be integrated. You are
+encouraged to discuss the addition of your project on [Coq's
+Zulip](https://coq.zulipchat.com/). You are also encouraged to test
+your project with Coq master and report any issues you find (not just
+bugs) even if it is not in Coq's CI; if your project repeatedly finds
+issues they will be evidence that it would expand the CI's coverage.
+
+There is no such requirement for plugins: developers may reduce the
+cost of working with Coq's unstable OCaml API by adding
+their plugin to Coq's CI and getting it fixed when the API changes (as long
+as fixing the plugin doesn't put an undue burden on Coq developers).
 
 ### Timely merging of overlays
 
@@ -46,10 +59,8 @@ merged in Coq upstream, CI for your contrib will be broken until you
 merge the corresponding pull request with the fix for your contribution.
 
 As of today, you have to worry about synchronizing with Coq upstream
-every once in a while; we hope we will improve this in the future by
-using [coqbot](https://github.com/coq/bot); meanwhile, a workaround is
-to give merge permissions to someone from the Coq team as to help with
-these kind of merges.
+every once in a while; a workaround is to give merge permissions to
+someone from the Coq team as to help with these kind of merges.
 
 ### OCaml and plugin-specific considerations
 
@@ -66,10 +77,6 @@ as "plugins"] do have some special requirements:
   granting access to the plugin repository or by using `bots` such as
   [Bors](https://github.com/apps/bors) that allow for automatic
   management of Pull Requests.
-
-- Plugins in the CI should compile with the OCaml flags that Coq
-  uses. In particular, warnings that are considered fatal by the Coq
-  developers _must_ be also fatal for plugin CI code.
 
 ### Add your project by submitting a pull request
 
