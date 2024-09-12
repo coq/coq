@@ -91,6 +91,9 @@ CI_TARGETS= \
     ci-smtcoq \
     ci-smtcoq_trakt \
     ci-stalmarck \
+    ci-stdlib \
+    ci-stdlib_doc \
+    ci-stdlib_test \
     ci-tactician \
     ci-tlc \
     ci-trakt \
@@ -112,7 +115,17 @@ ci-help:
 
 ci-all: $(CI_TARGETS)
 
+ci-argosy: ci-stdlib
+
+ci-atbr: ci-stdlib
+
+ci-bbv: ci-stdlib
+
+ci-bignums: ci-stdlib
+
 ci-category_theory: ci-equations
+
+ci-coinduction: ci-stdlib
 
 ci-color: ci-bignums
 
@@ -123,16 +136,31 @@ ci-coquelicot: ci-mathcomp
 ci-deriving: ci-mathcomp
 ci-math_classes: ci-bignums
 
+ci-coqhammer: ci-stdlib
+
+ci-coq_dpdgraph: ci-stdlib
+
+ci-coq_performance_tests: ci-stdlib
+
+ci-coq_tools: ci-stdlib
+
 ci-corn: ci-math_classes ci-elpi
 
-ci-mtac2: ci-unicoq
+ci-cross_crypto: ci-stdlib
 
+ci-mtac2: ci-unicoq ci-stdlib
+
+ci-coqutil: ci-stdlib
+ci-kami: ci-stdlib
+ci-rewriter: ci-stdlib
 ci-riscv_coq: ci-coqutil
 ci-bedrock2: ci-coqutil ci-riscv_coq ci-kami
 ci-bedrock2_examples: ci-bedrock2
 ci-rupicola: ci-bedrock2 ci-coqutil
 ci-fiat_crypto: ci-coqprime ci-rewriter ci-bedrock2 ci-coqutil ci-rupicola
+ci-fiat_crypto_legacy: ci-stdlib
 ci-fiat_crypto_ocaml: ci-fiat_crypto
+ci-fiat_parsers: ci-stdlib
 
 ci-fourcolor: ci-mathcomp
 ci-oddorder: ci-mathcomp
@@ -146,37 +174,75 @@ ci-analysis: ci-elpi_hb ci-finmap ci-bigenough
 
 ci-hb: ci-elpi
 
+ci-elpi: ci-stdlib
 ci-elpi_test: ci-elpi
 ci-hb_test: ci-hb
 
 ci-trakt: ci-elpi
 
+ci-engine_bench: ci-stdlib
+
+ci-ext_lib: ci-stdlib
+
+ci-itauto: ci-stdlib
+
 ci-jasmin: ci-mathcomp_word
 
+ci-autosubst: ci-stdlib
 ci-iris: ci-autosubst
 
 ci-simple_io: ci-ext_lib
 ci-quickchick: ci-ext_lib ci-simple_io ci-mathcomp
 ci-quickchick_test: ci-quickchick
+ci-paco: ci-stdlib
 ci-itree: ci-ext_lib ci-paco
 ci-itree_io: ci-itree ci-simple_io
 
+ci-ceres: ci-stdlib
 ci-parsec: ci-ext_lib ci-ceres
 ci-json: ci-parsec ci-menhir
 ci-async_test: ci-itree_io ci-json ci-quickchick
 ci-http: ci-async_test
 
+ci-equations: ci-stdlib
 ci-equations_test: ci-equations
 
+ci-flocq: ci-stdlib
+
+ci-menhir: ci-stdlib
+
 ci-metacoq: ci-equations
+
+ci-neural_net_interp: ci-stdlib
 
 ci-vst: ci-compcert
 
 ci-compcert: ci-menhir ci-flocq
 
+ci-paramcoq: ci-stdlib
+
+ci-perennial: ci-stdlib
+
+ci-aac_tactics: ci-stdlib
 ci-relation_algebra: ci-aac_tactics ci-mathcomp
 
-ci-smtcoq_trakt: ci-trakt
+ci-coq_lsp: ci-stdlib
+
+ci-sf: ci-stdlib
+
+ci-smtcoq: ci-stdlib
+ci-smtcoq_trakt: ci-stdlib ci-trakt
+
+ci-stalmarck: ci-stdlib
+
+ci-stdlib_test: ci-stdlib
+ci-stdlib_doc: ci-stdlib
+
+ci-tlc: ci-stdlib
+
+ci-verdi_raft: ci-stdlib
+
+ci-waterproof: ci-stdlib
 
 # Virtual targets used by the CI to group compilation of rules in a single job
 
