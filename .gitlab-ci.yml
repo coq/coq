@@ -188,7 +188,7 @@ before_script:
   extends: .auto-use-tags
   script:
     - ulimit -S -s 16384           # For flambda + native
-    - make -f Makefile.ci -j "$NJOBS" "${CI_JOB_NAME#*:}"
+    - make -f Makefile.ci -j "$NJOBS" "$(echo ${CI_JOB_NAME#*:} | sed -e 's/+.*$//')"
   artifacts:
     name: "$CI_JOB_NAME"
     paths:
@@ -434,7 +434,7 @@ doc:refman-pdf:
       - _build/log
       - _build/default/doc/refman-pdf
 
-doc:stdlib:
+doc:init:
   extends: .doc-template
   variables:
     DUNE_TARGET: stdlib-html
@@ -454,17 +454,22 @@ doc:refman:deploy:
   needs:
     - doc:ml-api:odoc
     - doc:refman
-    - doc:stdlib
+    - doc:init
+    - library:ci-stdlib_doc
   script:
     - echo "$DOCUMENTATION_DEPLOY_KEY" | tr -d '\r' | ssh-add - > /dev/null
     - git clone git@github.com:coq/doc.git _deploy
     - rm -rf _deploy/$CI_COMMIT_REF_NAME/api
     - rm -rf _deploy/$CI_COMMIT_REF_NAME/refman
+    - rm -rf _deploy/$CI_COMMIT_REF_NAME/init
+    - rm -rf _deploy/$CI_COMMIT_REF_NAME/refman-stdlib
     - rm -rf _deploy/$CI_COMMIT_REF_NAME/stdlib
     - mkdir -p _deploy/$CI_COMMIT_REF_NAME
     - cp -rv _build/default/_doc/_html _deploy/$CI_COMMIT_REF_NAME/api
     - cp -rv _build/default/doc/refman-html _deploy/$CI_COMMIT_REF_NAME/refman
-    - cp -rv _build/default/doc/stdlib/html _deploy/$CI_COMMIT_REF_NAME/stdlib
+    - cp -rv _build/default/doc/stdlib/html _deploy/$CI_COMMIT_REF_NAME/init
+    - cp -rv _build_ci/stdlib/_build/default/doc/refman-html _deploy/$CI_COMMIT_REF_NAME/refman-stdlib
+    - cp -rv _build_ci/stdlib/html _deploy/$CI_COMMIT_REF_NAME/stdlib
     - cd _deploy/$CI_COMMIT_REF_NAME/
     - git add api refman stdlib
     - git commit -m "Documentation of branch “$CI_COMMIT_REF_NAME” at $CI_COMMIT_SHORT_SHA"
@@ -582,12 +587,21 @@ validate:edge+flambda:
 
 library:ci-argosy:
   extends: .ci-template
+  needs:
+  - build:base
+  - library:ci-stdlib
 
 library:ci-autosubst:
   extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
 
 library:ci-bbv:
   extends: .ci-template
+  needs:
+  - build:base
+  - library:ci-stdlib
 
 library:ci-bedrock2:
   extends: .ci-template-flambda
@@ -595,6 +609,7 @@ library:ci-bedrock2:
     NJOBS: "1"
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - library:ci-coqutil
   - library:ci-kami
   - library:ci-riscv_coq
@@ -614,6 +629,7 @@ library:ci-category_theory:
   extends: .ci-template
   needs:
   - build:base
+  - library:ci-stdlib
   - plugin:ci-equations
   stage: build-2
 
@@ -621,6 +637,7 @@ library:ci-color:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - plugin:ci-bignums
   stage: build-2
 
@@ -628,20 +645,28 @@ library:ci-compcert:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - library:ci-flocq
   - library:ci-menhir
   stage: build-2
 
 library:ci-coq_performance_tests:
   extends: .ci-template
+  needs:
+  - build:base
+  - library:ci-stdlib
 
 library:ci-coq_tools:
   extends: .ci-template
+  needs:
+  - build:base
+  - library:ci-stdlib
 
 library:ci-coqprime:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - plugin:ci-bignums
   stage: build-2
 
@@ -652,25 +677,39 @@ library:ci-coquelicot:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - library:ci-mathcomp
   stage: build-3+
 
 library:ci-coqutil:
   extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
 
 library:ci-cross_crypto:
   extends: .ci-template
+  needs:
+  - build:base
+  - library:ci-stdlib
 
 library:ci-engine_bench:
   extends: .ci-template
+  needs:
+  - build:base
+  - library:ci-stdlib
 
 library:ci-ext_lib:
   extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
 
 library:ci-fcsl_pcm:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - library:ci-mathcomp
   stage: build-2
 
@@ -680,6 +719,7 @@ library:ci-fiat_crypto:
     COQEXTRAFLAGS: "-async-proofs-tac-j 0"
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - library:ci-coqprime
   - library:ci-rupicola
   - plugin:ci-rewriter
@@ -688,6 +728,9 @@ library:ci-fiat_crypto:
 
 library:ci-fiat_crypto_legacy:
   extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
   timeout: 1h 30min
 
 # We cannot use flambda due to
@@ -697,6 +740,7 @@ library:ci-fiat_crypto_ocaml:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - library:ci-fiat_crypto
   stage: build-3+
   artifacts:
@@ -704,17 +748,27 @@ library:ci-fiat_crypto_ocaml:
 
 library:ci-flocq:
   extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
 
 library:ci-kami:
   extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
 
 library:ci-menhir:
   extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
 
 library:ci-oddorder:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - plugin:ci-elpi_hb
   - library:ci-mathcomp
   stage: build-3+
@@ -723,6 +777,7 @@ library:ci-fourcolor:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - plugin:ci-elpi_hb
   - library:ci-mathcomp
   stage: build-3+
@@ -731,6 +786,7 @@ library:ci-corn:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - plugin:ci-bignums
   - library:ci-math_classes
   stage: build-3+
@@ -741,14 +797,16 @@ library:ci-hott:
 library:ci-iris:
   extends: .ci-template-flambda
   needs:
-    - build:edge+flambda
-    - library:ci-autosubst
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
+  - library:ci-autosubst
   stage: build-2
 
 library:ci-math_classes:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - plugin:ci-bignums
   stage: build-2
 
@@ -756,6 +814,7 @@ library:ci-mathcomp:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - plugin:ci-elpi_hb  # for Hierarchy Builder
   stage: build-2
 
@@ -763,6 +822,7 @@ library:ci-mathcomp_test:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - plugin:ci-elpi_hb
   - library:ci-mathcomp
   stage: build-3+
@@ -771,6 +831,7 @@ library:ci-mczify:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - plugin:ci-elpi_hb
   - library:ci-mathcomp
   stage: build-3+
@@ -779,6 +840,7 @@ library:ci-finmap:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - library:ci-mathcomp
   stage: build-3+
 
@@ -786,6 +848,7 @@ library:ci-bigenough:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - library:ci-mathcomp
   stage: build-3+
 
@@ -793,6 +856,7 @@ library:ci-analysis:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - library:ci-mathcomp
   - library:ci-finmap
   - library:ci-bigenough
@@ -801,47 +865,85 @@ library:ci-analysis:
 
 library:ci-neural_net_interp:
   extends: .ci-template
+  needs:
+  - build:base
+  - library:ci-stdlib
 
 library:ci-paco:
   extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
 
 library:ci-itree:
   extends: .ci-template-flambda
   needs:
-    - build:edge+flambda
-    - library:ci-ext_lib
-    - library:ci-paco
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
+  - library:ci-ext_lib
+  - library:ci-paco
   stage: build-2
 
 library:ci-itree_io:
   extends: .ci-template-flambda
   needs:
-    - build:edge+flambda
-    - library:ci-simple_io
-    - library:ci-itree
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
+  - library:ci-simple_io
+  - library:ci-itree
   stage: build-3+
 
 library:ci-simple_io:
   extends: .ci-template-flambda
   needs:
-    - build:edge+flambda
-    - library:ci-ext_lib
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
+  - library:ci-ext_lib
   stage: build-2
 
 library:ci-sf:
   extends: .ci-template
+  needs:
+  - build:base
+  - library:ci-stdlib
+
+library:ci-stdlib:
+  extends: .ci-template
+
+library:ci-stdlib+flambda:
+  extends: .ci-template-flambda
+
+library:ci-stdlib_test:
+  extends: .ci-template
+  needs:
+  - build:base
+  - library:ci-stdlib
+  stage: build-2
+
+library:ci-stdlib_doc:
+  extends: .ci-template
+  needs:
+  - build:base
+  - library:ci-stdlib
+  stage: build-2
 
 library:ci-stdlib2:
   extends: .ci-template-flambda
 
 library:ci-tlc:
   extends: .ci-template
+  needs:
+  - build:base
+  - library:ci-stdlib
 
 library:ci-unimath:
   extends: .ci-template-flambda
 
 library:ci-verdi_raft:
   extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
 
 library:ci-vst:
   extends: .ci-template-flambda
@@ -849,6 +951,7 @@ library:ci-vst:
     NJOBS: "1"
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - library:ci-flocq
   - library:ci-menhir
   - library:ci-compcert
@@ -859,6 +962,7 @@ library:ci-deriving:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - plugin:ci-elpi_hb
   - library:ci-mathcomp
   stage: build-3+
@@ -867,6 +971,7 @@ library:ci-mathcomp_word:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - library:ci-mathcomp
   stage: build-2
 
@@ -874,6 +979,7 @@ library:ci-jasmin:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - library:ci-mathcomp
   - library:ci-mathcomp_word
   stage: build-3+
@@ -882,6 +988,7 @@ library:ci-http:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - library:ci-menhir
   - library:ci-itree_io
   - plugin:ci-quickchick
@@ -891,6 +998,7 @@ library:ci-trakt:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - plugin:ci-elpi_hb
   stage: build-2
 
@@ -898,35 +1006,63 @@ library:ci-trakt:
 
 plugin:ci-aac_tactics:
   extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
 
 plugin:ci-atbr:
   extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
 
 plugin:ci-autosubst_ocaml:
   extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
 
 plugin:ci-itauto:
   extends: .ci-template
+  needs:
+  - build:base
+  - library:ci-stdlib
 
 plugin:ci-bignums:
   extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
 
 plugin:ci-coinduction:
   extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
 
 plugin:ci-coq_dpdgraph:
   extends: .ci-template
+  needs:
+  - build:base
+  - library:ci-stdlib
 
 plugin:ci-coqhammer:
   extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
 
 plugin:ci-elpi_hb:
   extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
 
 plugin:ci-elpi_test:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - plugin:ci-elpi_hb
   stage: build-2
 
@@ -934,21 +1070,29 @@ plugin:ci-hb_test:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - plugin:ci-elpi_hb
   stage: build-2
 
 plugin:ci-equations:
   extends: .ci-template
+  needs:
+  - build:base
+  - library:ci-stdlib
 
 plugin:ci-equations_test:
   extends: .ci-template
   needs:
   - build:base
+  - library:ci-stdlib
   - plugin:ci-equations
   stage: build-2
 
 plugin:ci-fiat_parsers:
   extends: .ci-template
+  needs:
+  - build:base
+  - library:ci-stdlib
 
 plugin:ci-lean_importer:
   extends: .ci-template
@@ -960,18 +1104,28 @@ plugin:ci-metacoq:
   extends: .ci-template
   needs:
   - build:base
+  - library:ci-stdlib
   - plugin:ci-equations
   stage: build-2
   timeout: 1h 30min
 
 plugin:ci-mtac2:
   extends: .ci-template
+  needs:
+  - build:base
+  - library:ci-stdlib
 
 plugin:ci-paramcoq:
   extends: .ci-template
+  needs:
+  - build:base
+  - library:ci-stdlib
 
 plugin:ci-perennial:
   extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-stdlib
 
 plugin:plugin-tutorial:
   stage: build-0
@@ -985,6 +1139,7 @@ plugin:ci-quickchick:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - library:ci-ext_lib
   - library:ci-simple_io
   - library:ci-mathcomp
@@ -994,6 +1149,7 @@ plugin:ci-quickchick_test:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - plugin:ci-quickchick
   stage: build-3+
 
@@ -1004,6 +1160,7 @@ plugin:ci-relation_algebra:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - plugin:ci-elpi_hb
   - library:ci-mathcomp
   - plugin:ci-aac_tactics
@@ -1011,11 +1168,15 @@ plugin:ci-relation_algebra:
 
 plugin:ci-rewriter:
   extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
 
 library:ci-riscv_coq:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - library:ci-coqutil
   stage: build-2
 
@@ -1023,11 +1184,15 @@ library:ci-rupicola:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - library:ci-bedrock2
   stage: build-3+
 
 plugin:ci-coq_lsp:
   extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
 
 plugin:ci-serapi:
   extends: .ci-template-flambda
@@ -1041,19 +1206,29 @@ plugin:ci-vscoq:
 
 plugin:ci-smtcoq:
   extends: .ci-template
+  needs:
+  - build:base
+  - library:ci-stdlib
 
 plugin:ci-smtcoq_trakt:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
   - library:ci-trakt
   stage: build-3+
 
 plugin:ci-stalmarck:
   extends: .ci-template
+  needs:
+  - build:base
+  - library:ci-stdlib
 
 plugin:ci-tactician:
   extends: .ci-template-flambda
 
 plugin:ci-waterproof:
   extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
