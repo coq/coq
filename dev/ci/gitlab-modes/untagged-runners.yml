@@ -3,4 +3,5 @@
 
 .auto-use-docker-tags:
   tags:
-    - docker
+    # https://docs.gitlab.com/ee/ci/runners/hosted_runners/linux.html#docker-in-docker-support
+    - saas-linux-small-amd64
