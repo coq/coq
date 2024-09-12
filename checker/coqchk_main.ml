@@ -13,7 +13,6 @@ open CErrors
 open Util
 open System
 open Names
-open Check
 open Environ
 
 let () = at_exit flush_all
@@ -38,13 +37,13 @@ let parse_dir s =
     decoupe_dirs [] 0
 let dirpath_of_string s =
   match parse_dir s with
-      [] -> Check.default_root_prefix
-    | dir -> DirPath.make (List.map Id.of_string dir)
+  | [] -> CheckLibrary.default_root_prefix
+  | dir -> DirPath.make (List.map Id.of_string dir)
 let path_of_string s =
-  if Filename.check_suffix s ".vo" then PhysicalFile s
+  if Filename.check_suffix s ".vo" then CheckLibrary.PhysicalFile s
   else match parse_dir s with
-      [] -> invalid_arg "path_of_string"
-    | l::dir -> LogicalFile {dirpath=dir; basename=l}
+    | [] -> invalid_arg "path_of_string"
+    | l::dir -> CheckLibrary.LogicalFile {dirpath=dir; basename=l}
 
 let get_version () =
   try
@@ -65,7 +64,7 @@ let print_header () =
 let add_path ~unix_path:dir ~coq_root:coq_dirpath =
   if exists_dir dir then
     begin
-      Check.add_load_path (dir,coq_dirpath)
+      CheckLibrary.add_load_path (dir,coq_dirpath)
     end
   else
     Feedback.msg_warning (str "Cannot open " ++ str dir)
@@ -88,8 +87,8 @@ let add_rec_path ~unix_path ~coq_root =
       with Exit -> None
     in
     let dirs = List.map_filter convert_dirs dirs in
-    List.iter Check.add_load_path dirs;
-    Check.add_load_path (unix_path, coq_root)
+    List.iter CheckLibrary.add_load_path dirs;
+    CheckLibrary.add_load_path (unix_path, coq_root)
   else
     Feedback.msg_warning (str "Cannot open " ++ str unix_path)
 
@@ -119,14 +118,14 @@ let init_load_path () =
   add_rec_path ~unix_path:plugins ~coq_root:(Names.DirPath.make [coq_root]);
   (* then user-contrib *)
   if Sys.file_exists user_contrib then
-    add_rec_path ~unix_path:user_contrib ~coq_root:Check.default_root_prefix;
+    add_rec_path ~unix_path:user_contrib ~coq_root:CheckLibrary.default_root_prefix;
   (* then directories in XDG_DATA_DIRS and XDG_DATA_HOME *)
-  List.iter (fun s -> add_rec_path ~unix_path:s ~coq_root:Check.default_root_prefix)
+  List.iter (fun s -> add_rec_path ~unix_path:s ~coq_root:CheckLibrary.default_root_prefix)
     (xdg_dirs ~warn:(fun x -> Feedback.msg_warning (str x)));
   (* then directories in COQPATH *)
-  List.iter (fun s -> add_rec_path ~unix_path:s ~coq_root:Check.default_root_prefix) coqpath;
+  List.iter (fun s -> add_rec_path ~unix_path:s ~coq_root:CheckLibrary.default_root_prefix) coqpath;
   (* then current directory *)
-  add_path ~unix_path:"." ~coq_root:Check.default_root_prefix
+  add_path ~unix_path:"." ~coq_root:CheckLibrary.default_root_prefix
 
 let init_load_path () : unit =
   NewProfile.profile "init_load_path"
@@ -151,15 +150,15 @@ let make_senv () =
   let senv = Safe_typing.set_allow_sprop true senv in (* be smarter later *)
   Safe_typing.set_native_compiler false senv
 
-let admit_list = ref ([] : object_file list)
+let admit_list = ref ([] : CheckLibrary.object_file list)
 let add_admit s =
   admit_list := path_of_string s :: !admit_list
 
-let norec_list = ref ([] : object_file list)
+let norec_list = ref ([] : CheckLibrary.object_file list)
 let add_norec s =
   norec_list := path_of_string s :: !norec_list
 
-let compile_list = ref ([] : object_file list)
+let compile_list = ref ([] : CheckLibrary.object_file list)
 let add_compile s =
   compile_list := path_of_string s :: !compile_list
 
@@ -168,7 +167,7 @@ let add_compile s =
     between coqtop and coqc. *)
 
 let compile_files senv =
-  Check.recheck_library senv
+  CheckLibrary.recheck_library senv
     ~norec:(List.rev !norec_list)
     ~admit:(List.rev !admit_list)
     ~check:(List.rev !compile_list)
@@ -437,7 +436,7 @@ let run senv =
     if CDebug.(get_flag misc) then Printexc.print_backtrace stderr;
     fatal_error (explain_exn e) (is_anomaly e)
 
-let start () =
+let main () =
   let senv = init() in
   let senv, opac = run senv in
   Check_stat.stats (Safe_typing.env_of_safe_env senv) opac;

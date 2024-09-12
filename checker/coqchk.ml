@@ -1,2 +1,2 @@
 
-let _ = Checker.start ()
+let () = Coqchk_main.main ()
