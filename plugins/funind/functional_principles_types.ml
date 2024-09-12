@@ -66,7 +66,7 @@ let compute_new_princ_type_from_rel env rel_to_fun sorts princ_type =
       if princ_type_info.indarg_in_concl then List.tl args else args
     in
     let na = map_annot Nameops.Name.get_id (Context.Rel.Declaration.get_annot decl) in
-    let na = map_annot_relevance EConstr.Unsafe.to_relevance na in
+    let na = EConstr.Unsafe.to_binder_annot na in
     Context.Named.Declaration.LocalAssum (na, Term.it_mkProd_or_LetIn (mkSort new_sort) real_args)
   in
   let new_predicates =

@@ -33,7 +33,9 @@ val hash_annot : ('a -> int) -> ('a,Sorts.relevance) pbinder_annot -> int
 
 val map_annot : ('a -> 'b) -> ('a,'r) pbinder_annot -> ('b,'r) pbinder_annot
 
-val map_annot_relevance : ('r1 -> 'r2) -> ('a,'r1) pbinder_annot -> ('a,'r2) pbinder_annot
+val map_annot_relevance : ('r -> 'r) -> ('a,'r) pbinder_annot -> ('a,'r) pbinder_annot
+
+val map_annot_relevance_het : ('r1 -> 'r2) -> ('a,'r1) pbinder_annot -> ('a,'r2) pbinder_annot
 
 val make_annot : 'a -> 'r -> ('a,'r) pbinder_annot
 
