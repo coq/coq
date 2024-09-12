@@ -525,31 +525,41 @@ This section describes some special purpose tactics to work with
 
 .. tacn:: discriminate {? @induction_arg }
 
-   Proves any goal for which a hypothesis in the form :n:`@term__1 = @term__2`
-   states an impossible structural equality for an inductive type.
-   If :n:`@induction_arg` is not given, it checks all the hypotheses
-   for impossible equalities.
-   For example, :g:`(S (S O)) = (S O)` is impossible.
-   If provided, :n:`@induction_arg` is a proof of an equality, typically
-   specified as the name of a hypothesis.
+   Proves goals for which a hypothesis or a :term:`premise` in
+   the goal that is convertible to the form :n:`@term__1 = @term__2`
+   has inconsistent constructors between the two sides of
+   the equality (i.e., a contradiction).  The tactic also works for goals
+   in the form :n:`@term__1 <> @term__2` that are inconsistent
+   (:ref:`example <discriminate_goal_inequality_ex>`).
 
-   If no :n:`@induction_arg` is provided and the goal is in the form
-   :n:`@term__1 <> @term__2`, then the tactic behaves like
-   :n:`intro @ident; discriminate @ident`.
+   The tactic relies on the fact that constructors of inductive types are injective
+   and disjoint, i.e. if `C1` and `C2` are distinct constructors of an inductive type then
+   :n:`C1 @term__1 = C1 @term__2` implies that :n:`@term__1 = @term__2` (injectivity)
+   and :n:`C1 @term__1 = C2 @term__2` is a contradiction (disjointedness).
+   For example, :g:`S (S O) = S O` is a contradiction: while
+   the outermost constructors are both `S`, the next ones differ (`S` versus `O`).
 
    The tactic traverses the normal forms of :n:`@term__1` and :n:`@term__2`,
-   looking for subterms :g:`u` and :g:`w` placed in the same positions and whose
+   looking for subterms placed in the same positions whose
    head symbols are different constructors. If such subterms are present, the
    equality is impossible and the current goal is completed.
    Otherwise the tactic fails.  Note that opaque constants are not expanded by
-   δ reductions while computing the normal form.
+   δ reductions while computing the head normal form.
 
-   :n:`@ident`  (in :n:`@induction_arg`)
+   Note that :n:`discriminate` doesn't handle contradictory equalities such as
+   :g:`n = S n`.  In this case you must use :tacn:`induction` (see
+   :ref:`example <discriminate_example>`).
+
+   If :n:`@induction_arg` is not given, the tactic does an :tacn:`intro`
+   for each premise in the goal, then it checks all the resulting hypotheses
+   for impossible equalities.
+
+   :n:`@ident`  (as :n:`@induction_arg`)
      Checks the hypothesis :n:`@ident` for impossible equalities.
      If :n:`@ident` is not already in the context, this is equivalent to
      :n:`intros until @ident; discriminate @ident`.
 
-   :n:`@natural` (in :n:`@induction_arg`)
+   :n:`@natural` (as :n:`@induction_arg`)
      Equivalent to :tacn:`intros` :n:`until @natural; discriminate @ident`,
      where :n:`@ident` is the identifier for the last introduced hypothesis.
 
@@ -569,6 +579,59 @@ This section describes some special purpose tactics to work with
       Works the same as :tacn:`discriminate` but if the type of :token:`one_term`, or the
       type of the hypothesis referred to by :token:`natural`, has uninstantiated
       parameters, these parameters are left as existential variables.
+
+.. _discriminate_goal_inequality_ex:
+
+   .. example:: Proving `1 <> 2`
+
+      .. coqtop:: reset in
+
+         Goal 1 <> 2.
+         discriminate.
+         Qed.
+
+      This works because `1 <> 2` is represented internally as `not (1 = 2)`,
+      which is just `(1 = 2) -> False` from the definition of `not`:
+
+      .. coqtop:: all
+
+         Print not.
+
+      You can see this better by doing the :n:`intro` explicitly:
+
+      .. coqtop:: in
+
+         Goal 1 <> 2.
+
+      .. coqtop:: all
+
+         intro.      (* if omitted, "discriminate" does an intro *)
+
+      .. coqtop:: in
+
+         discriminate.
+         Qed.
+
+.. _discriminate_example:
+
+   .. example:: :n:`discriminate` limitation: proving `n <> S n`
+
+      .. coqtop:: reset in
+
+         Goal forall n:nat, n <> S n.
+         intro n.
+         induction n.
+
+      .. coqtop:: all
+
+         - discriminate.       (* works: O and (S O) start with different constructors *)
+         - Fail discriminate.  (* fails: discriminate doesn't handle this case *)
+           injection.
+
+      .. coqtop:: in
+
+           assumption.
+           Qed.
 
 .. tacn:: injection {? @induction_arg } {? as {* @simple_intropattern } }
 
