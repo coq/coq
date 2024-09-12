@@ -417,7 +417,7 @@ let of_binder_annot : 'a Constr.binder_annot -> 'a binder_annot =
   match Evd.MiniEConstr.unsafe_relevance_eq with
   | Refl -> fun x -> x
 
-let to_binder_annot sigma x = Context.map_annot_relevance (ERelevance.kind sigma) x
+let to_binder_annot sigma x = Context.map_annot_relevance_het (ERelevance.kind sigma) x
 
 let to_rel_decl sigma d =
   Context.Rel.Declaration.map_constr_het (ERelevance.kind sigma) (to_constr sigma) d

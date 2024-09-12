@@ -40,10 +40,16 @@ let hash_annot h {binder_name=n;binder_relevance=r} =
   Hashset.Combine.combinesmall (Sorts.relevance_hash r) (h n)
 
 let map_annot f {binder_name=na;binder_relevance} =
-  {binder_name=f na;binder_relevance}
+  let na' = f na in
+  {binder_name=na';binder_relevance}
 
-let map_annot_relevance fr {binder_name=na;binder_relevance=r} =
-  {binder_name=na;binder_relevance=fr r}
+let map_annot_relevance fr ({binder_name=na;binder_relevance=r} as a) =
+  let r' = fr r in
+  if r == r' then a else {binder_name=na;binder_relevance=r'}
+
+let map_annot_relevance_het fr {binder_name=na;binder_relevance=r} =
+  let r' = fr r in
+  {binder_name=na;binder_relevance=r'}
 
 let make_annot x r = {binder_name=x;binder_relevance=r}
 
@@ -187,11 +193,11 @@ struct
     let map_constr_het fr f = function
       | LocalAssum (na, ty) ->
           let ty' = f ty in
-          LocalAssum (map_annot_relevance fr na, ty')
+          LocalAssum (map_annot_relevance_het fr na, ty')
       | LocalDef (na, v, ty) ->
           let v' = f v in
           let ty' = f ty in
-          LocalDef (map_annot_relevance fr na, v', ty')
+          LocalDef (map_annot_relevance_het fr na, v', ty')
 
     (** Perform a given action on all terms in a given declaration. *)
     let iter_constr f = function
@@ -446,11 +452,11 @@ struct
     let map_constr_het fr f = function
       | LocalAssum (id, ty) ->
           let ty' = f ty in
-          LocalAssum (map_annot_relevance fr id, ty')
+          LocalAssum (map_annot_relevance_het fr id, ty')
       | LocalDef (id, v, ty) ->
           let v' = f v in
           let ty' = f ty in
-          LocalDef (map_annot_relevance fr id, v', ty')
+          LocalDef (map_annot_relevance_het fr id, v', ty')
 
     (** Perform a given action on all terms in a given declaration. *)
     let iter_constr f = function
@@ -477,9 +483,9 @@ struct
 
     let of_rel_decl f = function
       | Rel.Declaration.LocalAssum (na,t) ->
-          LocalAssum (map_annot f na, t)
+        LocalAssum (map_annot f na, t)
       | Rel.Declaration.LocalDef (na,v,t) ->
-          LocalDef (map_annot f na, v, t)
+        LocalDef (map_annot f na, v, t)
 
     let to_rel_decl =
       let name x = {binder_name=Name x.binder_name;binder_relevance=x.binder_relevance} in

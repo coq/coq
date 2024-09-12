@@ -224,8 +224,8 @@ let map_ptype_error fr f = function
   CantApplyBadType ((n, f c1, f c2), on_judgment f j, Array.map (on_judgment f) vj)
 | CantApplyNonFunctional (j, jv) -> CantApplyNonFunctional (on_judgment f j, Array.map (on_judgment f) jv)
 | IllFormedRecBody (ge, na, n, env, jv) ->
-  IllFormedRecBody (map_pguard_error f ge, Array.map (Context.map_annot_relevance fr) na, n, env, Array.map (on_judgment f) jv)
+  IllFormedRecBody (map_pguard_error f ge, Array.map (Context.map_annot_relevance_het fr) na, n, env, Array.map (on_judgment f) jv)
 | IllTypedRecBody (n, na, jv, t) ->
-  IllTypedRecBody (n, Array.map (Context.map_annot_relevance fr) na, Array.map (on_judgment f) jv, Array.map f t)
+  IllTypedRecBody (n, Array.map (Context.map_annot_relevance_het fr) na, Array.map (on_judgment f) jv, Array.map f t)
 | BadBinderRelevance (rlv, decl) -> BadBinderRelevance (fr rlv, Context.Rel.Declaration.map_constr_het fr f decl)
 | BadCaseRelevance (rlv, case) -> BadCaseRelevance (fr rlv, f case)
