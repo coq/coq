@@ -159,6 +159,7 @@ ci-bedrock2: ci-coqutil ci-riscv_coq ci-kami
 ci-bedrock2_examples: ci-bedrock2
 ci-rupicola: ci-bedrock2 ci-coqutil
 ci-fiat_crypto: ci-coqprime ci-rewriter ci-bedrock2 ci-coqutil ci-rupicola
+ci-fiat_crypto_legacy: ci-stdlib
 ci-fiat_crypto_ocaml: ci-fiat_crypto
 ci-fiat_parsers: ci-stdlib
 
