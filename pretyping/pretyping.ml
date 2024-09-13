@@ -1075,8 +1075,9 @@ struct
       | TypeHole :: args -> fold_args (depth+1) sigma args
       | ArgInHole (arg,i,u) :: args ->
         assert (univs.(u) == dummy_univ && vs.(depth - i)  == dummy);
-        let sigma, arg = pretype empty_tycon env sigma arg in
-        let s = Retyping.get_sort_of !!env sigma arg.uj_type in
+        let sigma, {uj_val=arg; uj_type=argt} = pretype empty_tycon env sigma arg in
+        let sigma, argt = Evarsolve.refresh_universes ~onlyalg:true (Some false) !!env sigma argt in
+        let s = Retyping.get_sort_of !!env sigma argt in
         let sigma = match ESorts.kind sigma s with
           | SProp -> CErrors.user_err Pp.(str "sprop not allowed here")
           | Prop | Set -> Array.set univs u Univ.Level.set; sigma
@@ -1102,8 +1103,8 @@ struct
             Array.set univs u u'';
             sigma
         in
-        Array.set vs (depth - i) (CVars.make_substituend (EConstr.Unsafe.to_constr arg.uj_type));
-        Array.set vs depth (CVars.make_substituend (EConstr.Unsafe.to_constr arg.uj_val));
+        Array.set vs (depth - i) (CVars.make_substituend (EConstr.Unsafe.to_constr argt));
+        Array.set vs depth (CVars.make_substituend (EConstr.Unsafe.to_constr arg));
         fold_args (depth+1) sigma args
       | Arg (arg,t) :: args ->
         let t = EConstr.of_constr @@ simple_subst depth vs t in
