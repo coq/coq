@@ -26,10 +26,24 @@ There are multiple notions of :gdef:`equality` in Coq:
 
 - :gdef:`Definitional equality <definitional equality>` is equality based on the
   :ref:`conversion rules <Conversion-rules>`, which Coq can determine automatically.
-  When two terms are definitionally equal, Coq knows it can
+  Two terms are definitionally equal when they reduce to syntactically identical terms
+  using the conversion rules.  When two terms are definitionally equal, Coq knows it can
   replace one with the other, such as with :tacn:`change` `X with Y`, among many
   other advantages.  ":term:`Convertible <convertible>`" is another way of saying that
   two terms are definitionally equal.
+
+  Among other reductions, the conversion rules can do computation to simplify
+  expressions.  The behavior depends on the function associated with an
+  operator, such as `+` (through the :ref:`Notation <syntax-extensions-and-notation-scopes>`
+  mechanism).  `+` refers to different functions depending on the data type of its
+  operands.
+  Using the standard library definitions of `+` for `nat` and `Z`, `1 + 2` will be reduced to `3`.
+  But the conversion rules don't do all the reductions that a person might.  For example,
+  for the mentioned definitions, `n + 0` is not reducible due to how the add function is defined
+  (see the aside :ref:`here <reversed_add_example>`).  `n + 1 + 2` isn't reducible because it's
+  represented as `(n + 1) + 2` and convertibility doesn't consider associativity.
+
+  In contrast, for type `R`, `1 + 2` is not reduced at all.
 
 Tactics for dealing with equality of inductive types such as :tacn:`injection`
 and :tacn:`inversion` are described :ref:`here <equality-inductive_types>`.
@@ -39,15 +53,14 @@ Tactics for simple equalities
 
 .. tacn:: reflexivity
 
-   For a goal with the form :n:`{? forall @open_binders , } t = u`,
-   verifies that `t` and `u` are
-   :term:`definitionally equal <definitional equality>`, and if so,
-   solves the goal (by applying `eq_refl`).  If not, it fails.
+   After doing an :tacn:`intros`,
+   if the resulting goal is in the form `t = u` in which `t` and `u` are
+   :term:`definitionally equal <definitional equality>`, the tactic
+   proves the goal (by applying `eq_refl`).  If not, it fails.
 
-   The tactic may also be applied to goals with the form
-   :n:`{? forall @open_binders , } R @term__1 @term__2` where
-   `R` is a reflexive relation registered with the `Equivalence` or `Reflexive`
-   typeclasses.  See :cmd:`Class` and :cmd:`Instance`.
+   The tactic also works if the resulting goal (after the :tacn:`intros`) has the
+   form `R t u` where `R` is a reflexive relation registered with the `Equivalence`
+   or `Reflexive` typeclasses.  See :cmd:`Class` and :cmd:`Instance`.
 
    .. exn:: The relation @ident is not a declared reflexive relation. Maybe you need to require the Coq.Classes.RelationClasses library
       :undocumented:
