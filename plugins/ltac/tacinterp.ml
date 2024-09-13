@@ -951,9 +951,9 @@ let interp_constr_with_bindings ist env sigma (c,bl) =
   let sigma, c = interp_constr ist env sigma c in
   sigma, (c,bl)
 
-let interp_open_constr_with_bindings ist env sigma (c,bl) =
+let interp_open_constr_with_bindings ?expected_type ist env sigma (c,bl) =
   let sigma, bl = interp_bindings ist env sigma bl in
-  let sigma, c = interp_open_constr ist env sigma c in
+  let sigma, c = interp_open_constr ?expected_type ist env sigma c in
   sigma, (c, bl)
 
 let loc_of_bindings = function
