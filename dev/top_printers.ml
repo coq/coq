@@ -80,6 +80,8 @@ let pppattern = (fun x -> pp(envpp pr_constr_pattern_env x))
 let pptype = (fun x -> try pp(envpp (fun env evm t -> pr_ltype_env env evm t) x) with e -> pp (str (Printexc.to_string e)))
 let ppfconstr c = ppconstr (CClosure.term_of_fconstr c)
 
+let ppsubstituend x = ppconstr (Vars.lift_substituend 0 x)
+
 let ppuint63 i = pp (str (Uint63.to_string i))
 
 let pp_parray pr a =

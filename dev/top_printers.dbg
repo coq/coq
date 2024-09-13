@@ -22,6 +22,7 @@ install_printer Top_printers.pp_fconstr_parray
 install_printer Top_printers.ppconstr
 install_printer Top_printers.ppeconstr
 install_printer Top_printers.ppconstr_expr
+install_printer Top_printers.ppsubstituend
 install_printer Top_printers.ppglob_constr
 install_printer Top_printers.pppattern
 install_printer Top_printers.ppfconstr
