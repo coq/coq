@@ -218,7 +218,7 @@ let components =
       CString.Pred.empty
       (String.split_on_char ',' s)
 
-let profile name ?args f () =
+let profile name ?args f =
   if not (is_profiling ()) then f ()
   else if CString.Pred.mem name components then begin
     let args = Option.map (fun f -> f()) args in

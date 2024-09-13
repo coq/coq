@@ -1606,9 +1606,8 @@ let ise_pretype_gen (flags : inference_flags) env sigma lvar kind c =
   process_inference_flags flags !!env sigma (sigma',c',c'_ty)
 
 let ise_pretype_gen flags env sigma lvar kind c : _ * _ * _ =
-  NewProfile.profile "pretyping" (fun () ->
-      ise_pretype_gen flags env sigma lvar kind c)
-    ()
+  NewProfile.profile "pretyping" @@ fun () ->
+  ise_pretype_gen flags env sigma lvar kind c
 
 let default_inference_flags fail = {
   use_coercions = true;

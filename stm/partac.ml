@@ -106,6 +106,9 @@ end = struct (* {{{ *)
     | Some st -> state := Some st
 
   let perform { r_state = st; r_ast = tactic; r_goal; r_goalno } =
+    NewProfile.profile "partac.perform"
+      ~args:(fun () -> ["goalno", `Intlit (string_of_int r_goalno)])
+    @@ fun () ->
     receive_state st;
     Vernacstate.unfreeze_full_state (Option.get !state);
     try
@@ -134,12 +137,6 @@ end = struct (* {{{ *)
     with e ->
       let noncrit = CErrors.noncritical e in
       RespError (noncrit, CErrors.print e ++ spc() ++ str "(for goal "++int r_goalno ++ str ")")
-
-  let perform r : response =
-    NewProfile.profile "partac.perform"
-      ~args:(fun () -> ["goalno", `Intlit (string_of_int r.r_goalno)])
-      (fun () -> perform r)
-      ()
 
   let name_of_task { t_name } = t_name
   let name_of_request { r_name } = r_name
@@ -207,9 +204,8 @@ let enable_par ~nworkers = ComTactic.set_par_implementation
     TaskQueue.join queue;
     let results = get_results results in
     let p,_,() =
-      NewProfile.profile "partac.assign" (fun () ->
-          Proof.run_tactic (Global.env())
-            (assign_tac ~abstract results) p)
-        ()
+      NewProfile.profile "partac.assign" @@ fun () ->
+      Proof.run_tactic (Global.env())
+        (assign_tac ~abstract results) p
     in
     p)))

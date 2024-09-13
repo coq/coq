@@ -55,23 +55,22 @@ let env () = Safe_typing.env_of_safe_env (safe_env ())
 
 (** Turn ops over the safe_environment state monad to ops on the global env *)
 
-let prof f () =
-  NewProfile.profile "kernel" f ()
+let prof f =
+  NewProfile.profile "kernel" f
 
-let globalize0 f = prof (fun () -> GlobalSafeEnv.set_safe_env (f (safe_env ()))) ()
+let globalize0 f = prof @@ fun () -> GlobalSafeEnv.set_safe_env (f (safe_env ()))
 
 let globalize f =
-  prof (fun () ->
-      let res,env = f (safe_env ()) in GlobalSafeEnv.set_safe_env env; res)
-    ()
+  prof @@ fun () ->
+  let res,env = f (safe_env ()) in GlobalSafeEnv.set_safe_env env; res
 
 let globalize0_with_summary fs f =
-  let env = prof (fun () -> f (safe_env ())) () in
+  let env = prof @@ fun () -> f (safe_env ()) in
   Summary.Interp.unfreeze_summaries fs;
   GlobalSafeEnv.set_safe_env env
 
 let globalize_with_summary fs f =
-  let res,env = prof (fun () -> f (safe_env ())) () in
+  let res,env = prof @@ fun () -> f (safe_env ()) in
   Summary.Interp.unfreeze_summaries fs;
   GlobalSafeEnv.set_safe_env env;
   res

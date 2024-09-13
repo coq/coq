@@ -1936,9 +1936,8 @@ let solve_unif_constraints_with_heuristics env
 exception UnableToUnify of evar_map * unification_error
 
 let evar_conv_x flags env evd pb x1 x2 : unification_result =
-  NewProfile.profile "unification" (fun () ->
-      evar_conv_x flags env evd pb x1 x2)
-    ()
+  NewProfile.profile "unification" @@ fun () ->
+  evar_conv_x flags env evd pb x1 x2
 
 let unify_delay ?flags env evd t1 t2 =
   let flags =

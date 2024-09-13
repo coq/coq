@@ -1481,7 +1481,7 @@ and hash_term_array ct t =
   let h = !accu in
   (HashsetTermArray.repr h ct term_array_table, h)
 
-let hcons t = NewProfile.profile "Constr.hcons" (fun () -> fst (sh_rec t)) ()
+let hcons t = NewProfile.profile "Constr.hcons" @@ fun () -> fst (sh_rec t)
 
 let hcons t =
   steps := 0;

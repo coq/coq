@@ -182,6 +182,9 @@ let check_same_record r1 r2 = match r1, r2 with
   | (NotRecord | FakeRecord | PrimRecord _), _ -> false
 
 let check_inductive env mind mb =
+  NewProfile.profile "check_inductive"
+    ~args:(fun () -> [("name", `String (MutInd.to_string mind))])
+  @@ fun () ->
   let entry = to_entry mind mb in
   let { mind_packets; mind_record; mind_finite; mind_ntypes; mind_hyps; mind_univ_hyps;
         mind_nparams; mind_nparams_rec; mind_params_ctxt;
@@ -218,9 +221,3 @@ let check_inductive env mind mb =
   (* TODO non oracle flags *)
 
   add_mind mind mb env
-
-let check_inductive env mind mb : Environ.env =
-  NewProfile.profile "check_inductive"
-    ~args:(fun () -> [("name", `String (MutInd.to_string mind))])
-    (fun () -> check_inductive env mind mb)
-    ()

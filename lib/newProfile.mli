@@ -18,7 +18,7 @@ module MiniJson : sig
   ]
 end
 
-val profile : string -> ?args:(unit -> (string * MiniJson.t) list) -> (unit -> 'a) -> unit -> 'a
+val profile : string -> ?args:(unit -> (string * MiniJson.t) list) -> (unit -> 'a) -> 'a
 (** Profile the given function.
 
     [args] is called only if profiling is active, it is used to

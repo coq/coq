@@ -426,7 +426,7 @@ let tree_size c =
 let of_constr env c =
   let henv = empty_env env in
   let henv = iterate push_unknown_rel (Environ.nb_rel env) henv in
-  let c = NewProfile.profile "HConstr.of_constr" (fun () -> of_constr henv c) () in
+  let c = NewProfile.profile "HConstr.of_constr" @@ fun () -> of_constr henv c in
   dbg Pp.(fun () ->
       let stats = Tbl.stats henv.tbl in
       let tree_size = tree_size (self c) in

@@ -103,6 +103,7 @@ let set_include d p =
 
 (* Initializes the LoadPath *)
 let init_load_path () =
+  NewProfile.profile "init_load_path" @@ fun () ->
   let coqenv = Boot.Env.init () in
   (* the to_string casting won't be necessary once Boot handles
      include paths *)
@@ -126,11 +127,6 @@ let init_load_path () =
   List.iter (fun s -> add_rec_path ~unix_path:s ~coq_root:CheckLibrary.default_root_prefix) coqpath;
   (* then current directory *)
   add_path ~unix_path:"." ~coq_root:CheckLibrary.default_root_prefix
-
-let init_load_path () : unit =
-  NewProfile.profile "init_load_path"
-    init_load_path
-    ()
 
 let impredicative_set = ref false
 let set_impredicative_set () = impredicative_set := true
@@ -416,11 +412,11 @@ let init_with_argv argv =
     Flags.if_verbose print_header ();
     if not !boot then init_load_path ();
     (* additional loadpath, given with -R/-Q options *)
-    NewProfile.profile "add_load_paths" (fun () ->
-        List.iter
-          (fun (unix_path, coq_root) -> add_rec_path ~unix_path ~coq_root)
-          (List.rev !includes))
-      ();
+    let () = NewProfile.profile "add_load_paths" @@ fun () ->
+      List.iter
+        (fun (unix_path, coq_root) -> add_rec_path ~unix_path ~coq_root)
+        (List.rev !includes)
+    in
     includes := [];
     make_senv ()
   with e ->

@@ -1071,8 +1071,8 @@ module Search = struct
   let typeclasses_eauto env evd ~goals ?depth ~unique ~best_effort st hints =
     let only_classes = true in
     let dep = unique in
-    NewProfile.profile "typeclass search" (fun () ->
-      run_on_goals env evd (eauto_tac_stuck st ~unique ~only_classes ~best_effort ~depth ~dep hints) ~goals) ()
+    NewProfile.profile "typeclass search" @@ fun () ->
+    run_on_goals env evd (eauto_tac_stuck st ~unique ~only_classes ~best_effort ~depth ~dep hints) ~goals
 
   let typeclasses_resolve : solver = { solver = fun env evd ~depth ~unique ~best_effort ~goals ->
     let db = searchtable_map typeclasses_db in

@@ -109,10 +109,9 @@ let load_vernac_core ~echo ~check ~state ?source file =
   let rec loop state ids =
     let tstart = System.get_time () in
     match
-      NewProfile.profile "parse_command" (fun () ->
-          Stm.parse_sentence
-            ~doc:state.doc ~entry:Pvernac.main_entry state.sid in_pa)
-        ()
+      NewProfile.profile "parse_command" @@ fun () ->
+      Stm.parse_sentence
+        ~doc:state.doc ~entry:Pvernac.main_entry state.sid in_pa
     with
     | None ->
       input_cleanup ();
@@ -134,8 +133,8 @@ let load_vernac_core ~echo ~check ~state ?source file =
                    in
                    [("cmd", `String (Pp.string_of_ppcmds (Topfmt.pr_cmd_header ast)));
                     ("line", `String lnum)])
-               (fun () ->
-             Flags.silently (interp_vernac ~check ~state) ast) ())
+             @@ fun () ->
+             Flags.silently (interp_vernac ~check ~state) ast)
           ()
           (fun () ->
              let tend = System.get_time () in

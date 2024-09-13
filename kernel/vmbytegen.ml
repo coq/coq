@@ -953,7 +953,8 @@ let warn_compile_error =
     Vmerrors.pr_error
 
 let compile ~fail_on_error ?universes env sigma c =
-  try NewProfile.profile "vm_compile" (fun () -> Some (compile ?universes env sigma c)) ()
+  NewProfile.profile "vm_compile" @@ fun () ->
+  try Some (compile ?universes env sigma c)
   with Vmerrors.CompileError msg as exn ->
     let exn = Exninfo.capture exn in
     if fail_on_error then

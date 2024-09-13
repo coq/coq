@@ -29,8 +29,8 @@ let import senv opac clib vmtab digest : _ * _ =
           | _ -> assert false
         in
         [("name", `String (Names.DirPath.to_string dp))])
-    (fun () ->import senv opac clib vmtab digest)
-    ()
+  @@ fun () ->
+  import senv opac clib vmtab digest
 
 let unsafe_import senv clib vmtab digest =
   let (_,senv) = Safe_typing.import clib vmtab digest senv in senv

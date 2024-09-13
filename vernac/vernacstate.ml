@@ -165,10 +165,9 @@ let freeze_full_state () =
   }
 
 let unfreeze_full_state st =
-  NewProfile.profile "unfreeze_full_state" (fun () ->
-      Synterp.unfreeze st.synterp;
-      Interp.unfreeze_interp_state st.interp)
-    ()
+  NewProfile.profile "unfreeze_full_state" @@ fun () ->
+  Synterp.unfreeze st.synterp;
+  Interp.unfreeze_interp_state st.interp
 
 (* Compatibility module *)
 module Declare_ = struct
@@ -225,14 +224,12 @@ module Declare_ = struct
   let return_proof () = cc Declare.Proof.return_proof
 
   let close_future_proof ~feedback_id pf =
-    NewProfile.profile "close_future_proof" (fun () ->
-        cc (fun pt -> Declare.Proof.close_future_proof ~feedback_id pt pf))
-      ()
+    NewProfile.profile "close_future_proof" @@ fun () ->
+    cc (fun pt -> Declare.Proof.close_future_proof ~feedback_id pt pf)
 
   let close_proof ~opaque ~keep_body_ucst_separate =
-    NewProfile.profile "close_proof" (fun () ->
-        cc (fun pt -> Declare.Proof.close_proof ~opaque ~keep_body_ucst_separate pt))
-      ()
+    NewProfile.profile "close_proof" @@ fun () ->
+    cc (fun pt -> Declare.Proof.close_proof ~opaque ~keep_body_ucst_separate pt)
 
   let discard_all () = s_lemmas := None
   let update_sigma_univs ugraph = dd (Declare.Proof.update_sigma_univs ugraph)

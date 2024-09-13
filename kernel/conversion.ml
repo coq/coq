@@ -912,24 +912,23 @@ and convert_list l2r infos lft1 lft2 v1 v2 cuniv = match v1, v2 with
 | _, _ -> raise NotConvertible
 
 let clos_gen_conv (type err) ~typed trans cv_pb l2r evars env graph univs t1 t2 =
-  NewProfile.profile "Conversion" begin fun () ->
-      let reds = RedFlags.red_add_transparent RedFlags.betaiotazeta trans in
-      let infos = create_conv_infos ~univs:graph ~evars reds env in
-      let module Error = struct type payload += Error of err end in
-      let box e = Error.Error e in
-      let infos = {
-        cnv_inf = infos;
-        cnv_typ = typed;
-        lft_tab = create_tab ();
-        rgt_tab = create_tab ();
-        err_ret = box;
-      } in
-      try Result.Ok (ccnv cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs)
-      with
-      | NotConvertible -> Result.Error None
-      | NotConvertibleTrace (Error.Error e) -> Result.Error (Some e)
-      | NotConvertibleTrace _ -> assert false
-  end ()
+  NewProfile.profile "Conversion" @@ fun () ->
+  let reds = RedFlags.red_add_transparent RedFlags.betaiotazeta trans in
+  let infos = create_conv_infos ~univs:graph ~evars reds env in
+  let module Error = struct type payload += Error of err end in
+  let box e = Error.Error e in
+  let infos = {
+    cnv_inf = infos;
+    cnv_typ = typed;
+    lft_tab = create_tab ();
+    rgt_tab = create_tab ();
+    err_ret = box;
+  } in
+  try Result.Ok (ccnv cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs)
+  with
+  | NotConvertible -> Result.Error None
+  | NotConvertibleTrace (Error.Error e) -> Result.Error (Some e)
+  | NotConvertibleTrace _ -> assert false
 
 let check_eq univs u u' =
   if UGraph.check_eq_sort univs u u' then Result.Ok univs else Result.Error None

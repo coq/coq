@@ -841,7 +841,8 @@ and execute_array tbl env cs =
   Array.map (fun c -> execute tbl env c) cs
 
 let execute env c =
-  NewProfile.profile "Typeops.execute" (fun () -> execute (HConstr.Tbl.create ()) env c) ()
+  NewProfile.profile "Typeops.execute" @@ fun () ->
+  execute (HConstr.Tbl.create ()) env c
 
 (* Derived functions *)
 
@@ -860,7 +861,8 @@ let check_wellformed_universes env c =
   | Error u -> error_undeclared_universes env u
 
 let check_wellformed_universes env c =
-  NewProfile.profile "check-wf-univs" (fun () -> check_wellformed_universes env c) ()
+  NewProfile.profile "check-wf-univs" @@ fun () ->
+  check_wellformed_universes env c
 
 let infer_hconstr env hconstr =
   let constr = HConstr.self hconstr in

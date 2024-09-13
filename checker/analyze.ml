@@ -437,9 +437,8 @@ let parse chan =
   (ans.(0), memory)
 
 let parse chan : _ * _ =
-  NewProfile.profile "analyze"
-    (fun () -> parse chan)
-    ()
+  NewProfile.profile "analyze" @@ fun () ->
+  parse chan
 
 end
 
@@ -511,4 +510,4 @@ let instantiate (p, mem) =
   get_data p
 
 let instantiate pmem : Obj.t =
-  NewProfile.profile "instantiate" (fun () -> instantiate pmem) ()
+  NewProfile.profile "instantiate" @@ fun () -> instantiate pmem

@@ -264,8 +264,7 @@ let lib_to_string = function
 let try_locate_qualified_library lib : _ * _ =
   NewProfile.profile "try_locate_qualified_library"
     ~args:(fun () -> [("name", `String (lib_to_string lib))])
-    (fun () -> try_locate_qualified_library lib)
-    ()
+    @@ fun () -> try_locate_qualified_library lib
 
 (************************************************************************)
 (*s Low-level interning of libraries from files *)
@@ -378,8 +377,7 @@ let intern_from_file ~intern_mode ~enable_VM (dir, f) =
 let intern_from_file ~intern_mode ~enable_VM dirf : library_t =
   NewProfile.profile "intern_from_file"
     ~args:(fun () -> [("name", `String (DirPath.to_string (fst dirf)))])
-    (fun () -> intern_from_file ~intern_mode ~enable_VM dirf)
-    ()
+    @@ fun () -> intern_from_file ~intern_mode ~enable_VM dirf
 
 (* Read a compiled library and all dependencies, in reverse order.
    Do not include files that are already in the context. *)

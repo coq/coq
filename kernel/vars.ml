@@ -537,9 +537,8 @@ let sort_and_universes_of_constr ?(init=Sorts.QVar.Set.empty,Univ.Level.Set.empt
   aux init c
 
 let sort_and_universes_of_constr ?init c =
-  NewProfile.profile "sort_and_universes_of_constr" (fun () ->
-      sort_and_universes_of_constr ?init c)
-    ()
+  NewProfile.profile "sort_and_universes_of_constr" @@ fun () ->
+  sort_and_universes_of_constr ?init c
 
 let universes_of_constr ?(init=Univ.Level.Set.empty) c =
   snd (sort_and_universes_of_constr ~init:(Sorts.QVar.Set.empty,init) c)
