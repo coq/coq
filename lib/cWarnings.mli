@@ -122,6 +122,7 @@ module CoreCategories : sig
   val parsing : category
   val pedantic : category
   val records : category
+  val rewrite_rules : category
   val ssr : category
   val syntax : category
   val tactics : category
