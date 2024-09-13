@@ -1671,6 +1671,19 @@ let whd_betaiota_deltazeta_for_iota_state ts env sigma s =
   in
   let rec whrec s =
     let (t, stack as s) = whd_state_gen RedFlags.betaiota env sigma s in
+    let rewrite_step =
+      match kind sigma t with
+      | Const (cst, u) when Environ.is_symbol env cst ->
+        let r = Cmap_env.get cst env.symb_pats in
+        begin match apply_rules whrec env sigma u r stack with
+        | r -> Some r
+        | exception PatternFailure -> None
+        end
+      | _ -> None
+    in
+    match rewrite_step with
+    | Some r -> whrec r
+    | None ->
     match Stack.strip_app stack with
       |args, (Stack.Case _ :: _ as stack') ->
         begin match whd_opt (t, args) with
