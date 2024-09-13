@@ -214,7 +214,8 @@ let rec safe_pattern_of_constr_aux ~loc env evd usubst depth state t = Constr.ki
           let inst = UVars.Instance.(abstract_instance (length u)) in
           mkApp (mkIndU (ci.ci_ind, inst), args)
         in
-        let realdecls = Context.Rel.Declaration.LocalAssum (Context.make_annot Anonymous mip.mind_relevance, self) :: realdecls in
+        let na = Context.make_annot Anonymous mip.mind_relevance in
+        let realdecls = Context.Rel.Declaration.LocalAssum (na, self) :: realdecls in
         let realdecls =
           Inductive.instantiate_context u paramsubst nas realdecls
         in

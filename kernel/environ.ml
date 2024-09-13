@@ -287,7 +287,7 @@ let expand_arity (mib, mip) (ind, u) params nas =
     let args = Context.Rel.instance mkRel 0 mip.mind_arity_ctxt in
     mkApp (mkIndU (ind, u), args)
   in
-  let na = Context.make_annot Anonymous (UVars.subst_instance_relevance u mip.mind_relevance)  in
+  let na = Context.make_annot Anonymous mip.mind_relevance in
   let realdecls = LocalAssum (na, self) :: realdecls in
   instantiate_context u params nas realdecls
 
