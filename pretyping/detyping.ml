@@ -85,7 +85,8 @@ let return_clause env sigma ind u params ((nas, p),_) =
       let inst = Instance.(abstract_instance (length u)) in
       mkApp (mkIndU (ind, inst), args)
     in
-    let realdecls = LocalAssum (Context.anonR, self) :: realdecls in
+    let na = Context.make_annot Anonymous mip.mind_relevance in
+    let realdecls = LocalAssum (na, self) :: realdecls in
     let realdecls = instantiate_context u paramsubst nas realdecls in
     List.map EConstr.of_rel_decl realdecls, p
   with e when CErrors.noncritical e ->

@@ -288,7 +288,8 @@ let pred_context env ci params u nas =
     let inst = UVars.Instance.(abstract_instance (length u)) in
     mkApp (mkIndU (ci.ci_ind, inst), args)
   in
-  let realdecls = RelDecl.LocalAssum (Context.anonR, self) :: realdecls in
+  let na = Context.make_annot Anonymous mip.mind_relevance in
+  let realdecls = RelDecl.LocalAssum (na, self) :: realdecls in
   Inductive.instantiate_context u paramsubst nas realdecls
 
 let branch_context env ci params u nas i =
