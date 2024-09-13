@@ -959,13 +959,12 @@ struct
       else []
     in
     let refresh_template env sigma resj =
-      (* Special case for inductive type applications that must be
-         refreshed right away. *)
+      (* apply_rec on a template poly head produces the type using the default (global) universes,
+         we retype afterwards to get the actual type *)
       match EConstr.kind sigma resj.uj_val with
       | App (f,args) ->
         if Termops.is_template_polymorphic_ind !!env sigma f then
           let c = mkApp (f, args) in
-          let sigma, c = Evarsolve.refresh_universes (Some true) !!env sigma c in
           let t = Retyping.get_type_of !!env sigma c in
           sigma, make_judge c (* use this for keeping evars: resj.uj_val *) t
         else sigma, resj
