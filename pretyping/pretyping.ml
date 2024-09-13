@@ -939,8 +939,11 @@ struct
     | PArgInHole of glob_constr * int * int
     | PArg of glob_constr * Constr.types
 
+  let use_simple_app = Goptions.declare_bool_option_and_ref ~key:["Simple";"App"] ~value:true ()
+
   let get_simple_app env f args =
     let floc = f.CAst.loc in
+    if not @@ use_simple_app.get () then None else
     (* XXX check not program mode *)
     match DAst.get f with
     | GRef (f,(None|Some ([],[]))) when Option.is_empty (get_bidirectionality_hint f) ->
@@ -1056,9 +1059,12 @@ struct
         | _ -> Constr.map_with_binders succ substrec depth c in
       substrec 0 c
 
+  let dbg = CDebug.create ~name:"simple-app" ()
+
   let pretype_simple_app self { head = (floc,f); nunivs; args } =
     fun ?loc ~flags tycon env sigma ->
     let pretype tycon env sigma c = eval_pretyper self ~flags tycon env sigma c in
+    dbg (fun () -> GlobRef.print f);
     let () =
       (* XXX why does check_hyps_inclusion take hyps instead of getting them from the env?? *)
       let hyps = match f with
