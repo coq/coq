@@ -29,9 +29,12 @@ new tactics:
   the vernacular language) and tactics.
 
 - The most traditional way of building new complex tactics is to write
-  a Coq plugin in OCaml.  Beware that this also requires much more
-  effort and commitment.  A tutorial for writing Coq plugins is
-  available in the Coq repository in `doc/plugin_tutorial
+  a Coq plugin in OCaml. Beware that this requires much more
+  effort. Furthermore, Coq's OCaml API can change from release
+  to release without backward compatibility support, which can cause
+  a significant ongoing maintenance burden.
+  A tutorial for writing Coq plugins is available in the Coq
+  repository in `doc/plugin_tutorial
   <https://github.com/coq/coq/tree/master/doc/plugin_tutorial>`_.
 
 .. toctree::
