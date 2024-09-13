@@ -235,13 +235,14 @@ type +'a tactic = 'a Proof.t
 (** Applies a tactic to the current proofview. *)
 let apply ~name ~poly env t sp =
   let open Logic_monad in
+  NewProfile.profile "Proofview.apply" (fun () ->
   let ans = Proof.repr (Proof.run t P.{trace=false; name; poly} (sp,env)) in
   let ans = Logic_monad.NonLogical.run ans in
   match ans with
   | Nil (e, info) -> Exninfo.iraise (TacticFailure e, info)
   | Cons ((r, (state, _), status, info), _) ->
-    r, state, status, Trace.to_tree info
-
+    r, state, status, Trace.to_tree info)
+    ()
 
 
 (** {7 Monadic primitives} *)

@@ -1990,6 +1990,7 @@ let control_only_guard { proof; pinfo } =
     with Exit -> ()
 
 let close_proof ?warn_incomplete ~opaque ~keep_body_ucst_separate ps =
+  NewProfile.profile "close_proof" (fun () ->
 
   let { using; proof; initial_euctx; pinfo } = ps in
   let { Proof_info.info = { Info.udecl } } = pinfo in
@@ -2006,11 +2007,13 @@ let close_proof ?warn_incomplete ~opaque ~keep_body_ucst_separate ps =
     definition_entry_core ?using ~univs ~types:typ body
   in
   let entries = CList.map make_entry elist in
-  { entries; uctx; pinfo }
+  { entries; uctx; pinfo })
+    ()
 
 type closed_proof_output = (Constr.t * Evd.side_effects) list * UState.t
 
 let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.computation) =
+  NewProfile.profile "close_proof_delayed" (fun () ->
   let { using; proof; initial_euctx; pinfo } = ps in
   let { Proof_info.info = { Info.udecl } } = pinfo in
   let { Proof.poly; entry; sigma } = Proof.data proof in
@@ -2043,7 +2046,8 @@ let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.comput
     |> delayed_definition_entry ?using ~univs ~types:typ ~feedback_id
   in
   let entries = CList.map_i make_entry 0 (Proofview.initial_goals entry) in
-  { entries; uctx = initial_euctx; pinfo }
+  { entries; uctx = initial_euctx; pinfo })
+    ()
 
 let close_future_proof = close_proof_delayed
 

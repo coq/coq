@@ -2036,6 +2036,7 @@ let evars_of_filtered_evar_info (type a) evd (evi : a evar_info) =
        (evars_of_named_context evd (evar_filtered_context evi)))
 
 let drop_new_defined ~original sigma =
+  NewProfile.profile "drop_new_defined" (fun () ->
   let to_keep, to_drop = Evar.Map.partition (fun ev _ ->
       Evar.Map.mem ev original.defn_evars || Evar.Map.mem ev original.undf_evars)
       sigma.defn_evars
@@ -2056,4 +2057,5 @@ let drop_new_defined ~original sigma =
   in
   let to_keep = normalize_against original.defn_evars to_keep in
   let undf_evars = normalize_against original.undf_evars sigma.undf_evars in
-  { sigma with defn_evars = to_keep; undf_evars }
+  { sigma with defn_evars = to_keep; undf_evars })
+    ()
