@@ -1043,14 +1043,15 @@ struct
   let dummy_univ =
     Univ.Level.make (Univ.UGlobal.make DirPath.empty "dummy" (-42))
 
-  (* like [substn_many [sub lamv 0 depth] 0 c] *)
+  (* like [substn_many [rev (sub lamv 0 depth)] 0 c] *)
   let simple_subst lv lamv c =
     if Int.equal lv 0 then c
     else
       let rec substrec depth c = match Constr.kind c with
         | Constr.Rel k     ->
           if k<=depth then c
-          else if k-depth <= lv then CVars.lift_substituend depth (Array.unsafe_get lamv (k-depth-1))
+          else if k-depth <= lv
+          then CVars.lift_substituend depth (Array.get lamv (lv - (k-depth)))
           else Constr.mkRel (k-lv)
         | _ -> Constr.map_with_binders succ substrec depth c in
       substrec 0 c
