@@ -1083,7 +1083,7 @@ struct
           | SProp -> CErrors.user_err Pp.(str "sprop not allowed here")
           | Prop | Set -> Array.set univs u Univ.Level.set; sigma
           | Type u' -> begin match Univ.Universe.level u' with
-              | Some u' -> Array.set univs u u'; sigma
+              | Some u' -> Array.set univs u u'; Evd.make_nonalgebraic_variable sigma u'
               | None ->
                 let sigma, u' = Evd.new_univ_level_variable ?loc:floc Evd.univ_flexible sigma in
                 let sigma = Evd.set_leq_sort !!env sigma s
@@ -1094,7 +1094,7 @@ struct
             end
           | QSort (q,u') ->
             let sigma, u' = match Univ.Universe.level u' with
-              | Some u' -> sigma, u'
+              | Some u' -> Evd.make_nonalgebraic_variable sigma u', u'
               | None -> Evd.new_univ_level_variable ?loc:floc Evd.univ_flexible sigma
             in
             let sigma, u'' = Evd.new_univ_level_variable ?loc:floc Evd.univ_flexible sigma in
