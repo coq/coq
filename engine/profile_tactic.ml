@@ -382,7 +382,7 @@ let do_profile_gen pp_call call_trace ?(count_call=true) tac =
      overhead of [tclWRAPFINALLY] when profiling is not set
      *)
   Proofview.tclLIFT (Proofview.NonLogical.make (fun () -> !is_profiling)) >>= function
-  | false -> tac
+  | false -> tclWRAPFINALLY (Proofview.tclUNIT ()) tac (fun () -> Proofview.tclUNIT())
   | true ->
     tclWRAPFINALLY
       (Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->

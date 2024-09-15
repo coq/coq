@@ -66,7 +66,7 @@ let with_frame frame tac =
       Proofview.tclUNIT ans
     else tac
   in
-  if !ltac2_in_ltac1_profiling then
+  if true || !ltac2_in_ltac1_profiling then
     let pr_frame f = Some (Hook.get pr_frame f) in
     Profile_tactic.do_profile_gen pr_frame frame ~count_call:true tac
   else tac
