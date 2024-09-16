@@ -1,13 +1,13 @@
 (* Simple Coq compiler *)
 
 let _print_st_stats
-    { Vernacstate.synterp = { parsing; _ }
+    { Vernacstate.synterp
     ; interp = { system; lemmas; _ }
     } =
   (* Compact the heap, just in case. *)
   Gc.compact ();
   Format.eprintf "State stats:@\n%!";
-  Format.eprintf " [parsing] mem reach: %d@\n%!" (Obj.reachable_words (Obj.magic parsing));
+  Format.eprintf " [synterp] mem reach: %d@\n%!" (Obj.reachable_words (Obj.magic synterp));
   Format.eprintf " [system ] mem reach: %d@\n%!" (Obj.reachable_words (Obj.magic system));
   Format.eprintf " [lemmas ] mem reach: %d@\n%!" (Obj.reachable_words (Obj.magic lemmas));
   (* Diabled for now *)
@@ -16,14 +16,18 @@ let _print_st_stats
 
 let parse ~st pa =
   let mode = Option.map (fun _ -> Synterp.get_default_proof_mode ()) st.Vernacstate.interp.lemmas in
-  Vernacstate.(Parser.parse st.synterp.parsing Pvernac.(main_entry mode)) pa
+  let { Vernacstate.synterp; _ } = st in
+  Pcoq.unfreeze (Vernacstate.Synterp.parsing synterp);
+  Pcoq.Entry.parse Pvernac.(main_entry mode) pa
 
 let error_loc = ref None
 
 let loc_of_cmd (cmd : Vernacexpr.vernac_control) = cmd.loc
 
+let intern = Vernacinterp.fs_intern
+
 let execute ~st cmd : Vernacstate.t =
-  try Vernacinterp.interp ~st cmd
+  try Vernacinterp.interp ~intern ~st cmd
   with exn ->
     let exn, info = Exninfo.capture exn in
     error_loc := loc_of_cmd cmd;
@@ -108,7 +112,7 @@ let compile_file ~args ~injections ~root_st ~out_file in_file =
   let f_in = open_in in_file in
   let () = start_glob ~in_file in
   let libname = Util.dirpath_of_file in_file in
-  let () = Coqinit.start_library ~top:libname injections in
+  let () = Coqinit.start_library ~intern ~top:libname injections in
   let st = Vernacstate.freeze_full_state () in
   let loc = Loc.(initial (InFile { dirpath = None; file = in_file })) in
   let pa = Pcoq.Parsable.make ~loc (Gramlib.Stream.of_channel f_in) in

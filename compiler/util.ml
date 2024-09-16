@@ -25,5 +25,5 @@ let print_message (lvl, _loc, msg) =
 let fb_handler = function
   | Feedback.{ contents; _ } ->
     match contents with
-    | Message (l,r,m) -> print_message (l,r,m)
+    | Message (l,r,_,m) -> print_message (l,r,m)
     | _ -> ()
