@@ -18,6 +18,7 @@ CI_TARGETS= \
     ci-autosubst_ocaml \
     ci-bbv \
     ci-bedrock2 \
+    ci-bedrock2_examples \
     ci-bignums \
     ci-category_theory \
     ci-ceres \
@@ -131,6 +132,7 @@ ci-mtac2: ci-unicoq
 
 ci-riscv_coq: ci-coqutil
 ci-bedrock2: ci-coqutil ci-riscv_coq ci-kami
+ci-bedrock2_examples: ci-bedrock2
 ci-rupicola: ci-bedrock2 ci-coqutil
 ci-fiat_crypto: ci-coqprime ci-rewriter ci-bedrock2 ci-coqutil ci-rupicola
 ci-fiat_crypto_ocaml: ci-fiat_crypto

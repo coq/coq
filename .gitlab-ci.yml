@@ -599,6 +599,15 @@ library:ci-bedrock2:
   - library:ci-kami
   - library:ci-riscv_coq
   stage: build-3+
+
+library:ci-bedrock2_examples:
+  extends: .ci-template-flambda
+  variables:
+    NJOBS: "1"
+  needs:
+  - build:edge+flambda
+  - library:ci-bedrock2
+  stage: build-3+
   timeout: 2h
 
 library:ci-category_theory:
