@@ -1083,8 +1083,9 @@ struct
       | ArgInHole (arg,i,u) :: args ->
         assert (univs.(u) == dummy_univ && vs.(depth - i)  == dummy);
         let sigma, {uj_val=arg; uj_type=argt} = pretype empty_tycon env sigma arg in
-        let sigma, argt = Evarsolve.refresh_universes ~status:Evd.univ_flexible ~onlyalg:true (Some false) !!env sigma argt in
         let argt = whd_betaiota !!env sigma argt in
+        (* this is what evarsolve does, but maybe refresh onlyalg flexible would work fine *)
+        let sigma, argt = Evarsolve.refresh_universes (Some false) !!env sigma argt in
         let s = Retyping.get_sort_of !!env sigma argt in
         let sigma = match ESorts.kind sigma s with
           | SProp -> CErrors.user_err Pp.(str "sprop not allowed here")
