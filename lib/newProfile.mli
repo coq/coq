@@ -25,6 +25,16 @@ val profile : string -> ?args:(unit -> (string * MiniJson.t) list) -> (unit -> '
     produce additional annotations.
 *)
 
+type profile_pair = ProfPair : { enter : unit -> 'a; leave : 'a -> unit } -> profile_pair
+
+val profile_pair : string -> ?args:(unit -> (string * MiniJson.t) list) -> unit -> profile_pair option
+(** Low level API: [enter] should be called at the start of a
+    profiling component and [leave] at the exit (including exiting by
+    raised exception).
+
+    You can reuse them as long as [is_profiling] doesn't change.
+*)
+
 val is_profiling : unit -> bool
 
 type settings =

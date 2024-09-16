@@ -218,34 +218,40 @@ let components =
       CString.Pred.empty
       (String.split_on_char ',' s)
 
-let profile name ?args f () =
-  if not (is_profiling ()) then f ()
-  else if CString.Pred.mem name components then begin
-    let args = Option.map (fun f -> f()) args in
-    enter name ?args ();
-    let start = Counters.get () in
-    let v = try f ()
-      with e ->
-        let e = Exninfo.capture e in
+type profile_pair = ProfPair : { enter : unit -> 'a; leave : 'a -> unit } -> profile_pair
+
+let profile_pair name ?args () =
+  if not (is_profiling()) then None
+  else if CString.Pred.mem name components then
+    let enter () =
+      let args = Option.map (fun f -> f()) args in
+      enter name ?args ();
+      let start = Counters.get () in
+      start
+    in
+    let leave start =
         let args = Counters.make_diffs ~start ~stop:(Counters.get()) in
-        leave name ~args ();
-        Exninfo.iraise e
+        leave name ~args ()
     in
-    let args = Counters.make_diffs ~start ~stop:(Counters.get()) in
-    leave name ~args ();
-    v
-  end
-  else begin
-    enter_sums ();
-    let v = try f ()
+    Some (ProfPair { enter; leave })
+  else
+    let enter () = enter_sums () in
+    let leave () = ignore (leave_sums name () : _ * _) in
+    Some (ProfPair {enter; leave})
+
+let profile name ?args f () =
+  match profile_pair name ?args () with
+  | None -> f()
+  | Some (ProfPair {enter; leave}) ->
+    let start = enter () in
+    let v = try f()
       with e ->
         let e = Exninfo.capture e in
-        ignore (leave_sums name () : _ * _);
+        leave start;
         Exninfo.iraise e
     in
-    ignore (leave_sums name () : _ * _);
+    leave start;
     v
-  end
 
 type settings =
   { output : Format.formatter;
