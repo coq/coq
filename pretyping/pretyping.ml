@@ -929,14 +929,14 @@ struct
   *)
   type simple_arg =
     | TypeHole
-    | ArgInHole of glob_constr * int (* Rel *) * int (* univ of the hole *)
+    | ArgInHole of glob_constr * int (* Rel *) * int option (* univ of the hole, None for template *)
     | Arg of glob_constr * Constr.types
 
   type simple_app = { head : GlobRef.t Loc.located; nunivs : int; args : simple_arg list }
 
   type pre_arg =
-    | PTypeHole of int (* univ of the hole *) * bool ref (* seen as the exact type of a following arg *)
-    | PArgInHole of glob_constr * int * int
+    | PTypeHole of int option (* univ of the hole (None for template) *) * bool ref (* seen as the exact type of a following arg *)
+    | PArgInHole of glob_constr * int * int option
     | PArg of glob_constr * Constr.types
 
   let use_simple_app = Goptions.declare_bool_option_and_ref ~key:["Simple";"App"] ~value:true ()
@@ -944,18 +944,30 @@ struct
   let get_simple_app env f args =
     let floc = f.CAst.loc in
     if not @@ use_simple_app.get () then None else
-    (* XXX check not program mode *)
-    match DAst.get f with
-    | GRef (f,(None|Some ([],[]))) when Option.is_empty (get_bidirectionality_hint f) ->
-      (* todo if template poly then ... *)
-      let t, auctx = Typeops.type_of_global_in_context env f in
-      let has_constraints =
-        let uctx = UVars.AbstractContext.repr auctx in
-        not @@ Univ.Constraints.is_empty (UVars.UContext.constraints uctx)
+      let simple_head = match DAst.get f with
+        | GRef (f,(None|Some ([],[]))) when Option.is_empty (get_bidirectionality_hint f) ->
+          let t, auctx = Typeops.type_of_global_in_context env f in
+          if is_template_polymorphic env f then begin
+            let mind = match f with IndRef (mind,_) | ConstructRef ((mind,_),_) -> mind | _ -> assert false in
+            let mb = lookup_mind mind env in
+            let template = Option.get mb.mind_template in
+            if not @@ Univ.Constraints.is_empty (Univ.ContextSet.constraints template.template_context) then None
+            else
+              Some (f,t,0,Some template.template_param_arguments)
+          end
+          else
+            let has_constraints =
+              let uctx = UVars.AbstractContext.repr auctx in
+              not @@ Univ.Constraints.is_empty (UVars.UContext.constraints uctx)
+            in
+            let qsize, usize = UVars.AbstractContext.size auctx in
+            if has_constraints || qsize <> 0 || usize = 0 then None
+            else Some (f,t,usize,None)
+        | _ -> None
       in
-      let qsize, usize = UVars.AbstractContext.size auctx in
-      if has_constraints || qsize <> 0 || usize = 0 then None
-      else
+      match simple_head with
+      | None -> None
+      | Some (f,t,usize,template) ->
         let seen_univs = Array.make usize false in
         let exception Stop in
         let visit_unbound_univs =
@@ -980,7 +992,7 @@ struct
                 | _ -> ()
               end
             | _ ->
-              CVars.visit_kind_univs visit_unbound_univs () (Constr.kind a);
+              let () = if Option.is_empty template then CVars.visit_kind_univs visit_unbound_univs () (Constr.kind a) in
               Constr.iter_with_binders succ check k a
           in
           check 1 a
@@ -995,12 +1007,12 @@ struct
             end
           | _ -> check_arg_unbound acc a; None
         in
-        let rec fold acc t args =
+        let rec fold acc t args template =
           match Constr.kind t, args with
           | _, [] -> acc
           | Prod (_,a,b), arg::args ->
-            begin match Constr.kind a, DAst.get arg with
-            | Sort (Type u), GHole k when
+            begin match Constr.kind a, DAst.get arg, template with
+            | Sort (Type u), GHole k, None when
                 (match Univ.Universe.level u with
                  | None -> false
                  | Some u -> match Univ.Level.var_index u with
@@ -1011,17 +1023,23 @@ struct
               let u = Option.get (Univ.Level.var_index (Option.get (Univ.Universe.level u))) in
               if seen_univs.(u) then raise Stop;
               Array.set seen_univs u true;
-              fold (Range.cons (PTypeHole (u,ref false)) acc) b args
-            | _ ->
-              begin match check_arg_type acc a with
-              | Some (i,u) -> fold (Range.cons (PArgInHole (arg,i,u)) acc) b args
-              | None ->
-                fold (Range.cons (PArg (arg,a)) acc) b args
-              end
+              fold (Range.cons (PTypeHole (Some u,ref false)) acc) b args None
+            | Sort (Type u), GHole k, Some (true::template) when
+                naming_of_glob_kind k = IntroAnonymous
+              ->
+              fold (Range.cons (PTypeHole (None,ref false)) acc) b args (Some template)
+            | _, _, Some (true::_) -> raise Stop
+            | _, _, (None|Some ([] | false::_)) ->
+              let acc = match check_arg_type acc a with
+                | Some (i,u) -> Range.cons (PArgInHole (arg,i,u)) acc
+                | None -> Range.cons (PArg (arg,a)) acc
+              in
+              let template = Option.map (function [] -> [] | _::tl -> tl) template in
+              fold acc b args template
             end
           | _, _::_ -> raise Stop
         in
-        begin match fold Range.empty t args with
+        begin match fold Range.empty t args template with
         | exception Stop -> None
         | args ->
           if not (Array.for_all (fun x -> x) seen_univs) then None
@@ -1041,7 +1059,7 @@ struct
               Some { head = (floc,f); nunivs = usize; args }
             end
         end
-    | _ -> None
+
 
   let dummy_univ =
     Univ.Level.make (Univ.UGlobal.make DirPath.empty "dummy" (-42))
@@ -1081,35 +1099,38 @@ struct
       | [] -> sigma
       | TypeHole :: args -> fold_args (depth+1) sigma args
       | ArgInHole (arg,i,u) :: args ->
-        assert (univs.(u) == dummy_univ && vs.(depth - i)  == dummy);
+        assert ((match u with Some u -> univs.(u) == dummy_univ | None -> true) && vs.(depth - i)  == dummy);
         let sigma, {uj_val=arg; uj_type=argt} = pretype empty_tycon env sigma arg in
         let argt = whd_betaiota !!env sigma argt in
         let sigma, argt = Evarsolve.refresh_universes (Some false) !!env sigma argt ~onlyalg:true ~status:Evd.univ_flexible in
-        let s = Retyping.get_sort_of !!env sigma argt in
-        let sigma = match ESorts.kind sigma s with
-          | SProp -> CErrors.user_err Pp.(str "sprop not allowed here")
-          | Prop | Set -> Array.set univs u Univ.Level.set; sigma
-          | Type u' -> begin match Univ.Universe.level u' with
-              | Some u' -> Array.set univs u u'; Evd.make_nonalgebraic_variable sigma u'
-              | None ->
-                let sigma, u' = Evd.new_univ_level_variable ?loc:floc Evd.univ_flexible sigma in
-                let sigma = Evd.set_leq_sort !!env sigma s
-                    (ESorts.make (Sorts.sort_of_univ (Univ.Universe.make u')))
-                in
-                Array.set univs u u';
-                sigma
-            end
-          | QSort (q,u') ->
-            let sigma, u' = match Univ.Universe.level u' with
-              | Some u' -> Evd.make_nonalgebraic_variable sigma u', u'
-              | None -> Evd.new_univ_level_variable ?loc:floc Evd.univ_flexible sigma
-            in
-            let sigma, u'' = Evd.new_univ_level_variable ?loc:floc Evd.univ_flexible sigma in
-            let sigma = Evd.set_leq_sort !!env sigma s
-                (ESorts.make (Sorts.sort_of_univ (Univ.Universe.make u'')))
-            in
-            Array.set univs u u'';
-            sigma
+        let sigma = match u with
+          | None -> (* template *) sigma
+          | Some u ->
+            let s = Retyping.get_sort_of !!env sigma argt in
+            match ESorts.kind sigma s with
+            | SProp -> CErrors.user_err Pp.(str "sprop not allowed here")
+            | Prop | Set -> Array.set univs u Univ.Level.set; sigma
+            | Type u' -> begin match Univ.Universe.level u' with
+                | Some u' -> Array.set univs u u'; Evd.make_nonalgebraic_variable sigma u'
+                | None ->
+                  let sigma, u' = Evd.new_univ_level_variable ?loc:floc Evd.univ_flexible sigma in
+                  let sigma = Evd.set_leq_sort !!env sigma s
+                      (ESorts.make (Sorts.sort_of_univ (Univ.Universe.make u')))
+                  in
+                  Array.set univs u u';
+                  sigma
+              end
+            | QSort (q,u') ->
+              let sigma, u' = match Univ.Universe.level u' with
+                | Some u' -> Evd.make_nonalgebraic_variable sigma u', u'
+                | None -> Evd.new_univ_level_variable ?loc:floc Evd.univ_flexible sigma
+              in
+              let sigma, u'' = Evd.new_univ_level_variable ?loc:floc Evd.univ_flexible sigma in
+              let sigma = Evd.set_leq_sort !!env sigma s
+                  (ESorts.make (Sorts.sort_of_univ (Univ.Universe.make u'')))
+              in
+              Array.set univs u u'';
+              sigma
         in
         Array.set vs (depth - i) (CVars.make_substituend (EConstr.Unsafe.to_constr argt));
         Array.set vs depth (CVars.make_substituend (EConstr.Unsafe.to_constr arg));
