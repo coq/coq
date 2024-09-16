@@ -112,7 +112,10 @@ let judge_of_apply_core env sigma funj argjv =
         let (_, c1, c2) = destProd sigma t in
         sigma, c1, subs, c2
       | _ ->
-        error_cant_apply_not_functional env sigma funj argjv
+        let seen, rest = Array.chop (n-1) argjv in
+        error_cant_apply_not_functional env sigma
+          (make_judge (mkApp (funj.uj_val, Array.map j_val seen)) typ)
+          rest
     in
     match Evarconv.unify_leq_delay env sigma hj.uj_type c1 with
     | sigma ->
@@ -166,6 +169,8 @@ let checked_appvect env sigma f args =
   let mk c = Retyping.get_judgment_of env sigma c in
   let sigma, j = judge_of_apply env sigma (mk f) (Array.map mk args) in
   sigma, j.uj_val
+
+let () = Hook.set Evarsolve.checked_appvect_hook checked_appvect
 
 let checked_applist env sigma f args = checked_appvect env sigma f (Array.of_list args)
 
