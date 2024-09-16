@@ -1102,7 +1102,10 @@ struct
         assert ((match u with Some u -> univs.(u) == dummy_univ | None -> true) && vs.(depth - i)  == dummy);
         let sigma, {uj_val=arg; uj_type=argt} = pretype empty_tycon env sigma arg in
         let argt = whd_betaiota !!env sigma argt in
-        let sigma, argt = Evarsolve.refresh_universes (Some false) !!env sigma argt ~onlyalg:true ~status:Evd.univ_flexible in
+        (* refresh like unifying with an evar would *)
+        (* with onlyalg and univ_flexible, setoid_test fails.
+           with only_alg or univ_flexible, bug 5208 fails (but maybe not in a bad way) *)
+        let sigma, argt = Evarsolve.refresh_universes (Some false) !!env sigma argt in
         let sigma = match u with
           | None -> (* template *) sigma
           | Some u ->
