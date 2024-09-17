@@ -1457,7 +1457,7 @@ let nf_meta env sigma c =
   meta_instance env sigma { cl with rebus = cl.rebus }
 
 let unify_to_type env sigma flags c status u =
-  let sigma, c = refresh_universes (Some false) env sigma c in
+  let sigma, c = refresh_universes ~status:Evd.univ_flexible ~onlyalg:true (Some false) env sigma c in
   let t = get_type_of env sigma (nf_meta env sigma c) in
   let t = nf_betaiota env sigma (nf_meta env sigma t) in
     unify_0 env sigma CUMUL flags t u
