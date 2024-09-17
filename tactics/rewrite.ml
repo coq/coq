@@ -32,6 +32,8 @@ open Context.Named.Declaration
 
 module TC = Typeclasses
 
+let debug_rewrite_constraints, _ = CDebug.create_full ~name:"rewrite-constraints" ()
+
 (** Typeclass-based generalized rewriting. *)
 
 (** Constants used by the tactic. *)
@@ -1455,7 +1457,7 @@ exception RewriteFailure of Environ.env * Evd.evar_map * pretype_error
 
 type result = (evar_map * constr option * types) option option
 
-exception UnsolvedConstraints of Environ.env * Evd.evar_map * Evar.t
+exception UnsolvedConstraints of Environ.env * evar_map * Evar.t
 
 let () = CErrors.register_handler begin function
 | UnsolvedConstraints (env, evars, ev) ->
@@ -1588,7 +1590,12 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
       beta <*> Proofview.shelve_unifiable
     with
     | PretypeError (env, evd, (UnsatisfiableConstraints _ as e)) ->
-      raise (RewriteFailure (env, evd, e))
+      if CDebug.get_flag debug_rewrite_constraints then
+        let fold ev _ accu = ev :: accu in
+        let gls = List.rev (Evd.fold_undefined fold evd []) in
+        let gls = List.map (fun gl -> Proofview.goal_with_state gl state) gls in
+         Proofview.Unsafe.tclEVARS evd <*> Proofview.Unsafe.tclNEWGOALS gls
+      else raise (RewriteFailure (env, evd, e))
   end
 
 let tactic_init_rewrite () =
