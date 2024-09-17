@@ -26,6 +26,13 @@ let debug_switch_union_upto, _debug_switch_union_upto = CDebug.create_full ~name
 
 (* let _ = CDebug.set_flag debug_loop_checking_check true *)
 
+let debug_pr_level_ref = ref Level.raw_pr
+let set_debug_pr_level fn =
+  debug_global Pp.(fun _ -> str"resetting pr_level function");
+  debug_pr_level_ref := fn
+
+let debug_pr_level l = !debug_pr_level_ref l
+
 let _time prefix =
   let accum = ref 0. in
   fun f x ->
@@ -843,8 +850,8 @@ let repr_node m u =
   try repr m (Index.find u m.table)
   with Not_found ->
     CErrors.anomaly ~label:"Univ.repr"
-      Pp.(str"Universe " ++ Level.raw_pr u ++ str" undefined" ++
-      (if Index.mem u m.table then str" (index found)" else str " (index not found in " ++ Level.Set.pr Level.raw_pr (Index.dom m.table) ++ str")") ++ str".")
+      Pp.(str"Universe " ++ debug_pr_level u ++ str" undefined" ++
+      (if Index.mem u m.table then str" (index found)" else str " (index not found in " ++ Level.Set.pr debug_pr_level (Index.dom m.table) ++ str")") ++ str".")
 
 let repr_node_expr m (u, k) =
   let (can, k') = repr_node m u in (can, k + k')
@@ -853,9 +860,9 @@ let repr_compress_node m u =
   try repr_compress m (Index.find u m.table)
   with Not_found ->
     CErrors.anomaly ~label:"Univ.repr"
-      Pp.(str"Universe " ++ Level.raw_pr u ++ str" undefined.")
+      Pp.(str"Universe " ++ debug_pr_level u ++ str" undefined.")
 
-let pr_expr = LevelExpr.pr Level.raw_pr
+let pr_expr = LevelExpr.pr debug_pr_level
 
 let pr_raw_index_point m idx =
   try pr_expr (Index.repr idx m.table, 0)
@@ -1157,7 +1164,7 @@ let without_bound (m : model) : int =
 
 let _pr_updates m s =
   let open Pp in
-  prlist_with_sep spc (fun idx -> Level.raw_pr (Index.repr idx m.table)) (PSet.elements s)
+  prlist_with_sep spc (fun idx -> debug_pr_level (Index.repr idx m.table)) (PSet.elements s)
 
 let length_path_from m idx =
   let rec aux = function
@@ -1182,7 +1189,7 @@ let statistics model =
   str", " ++ int (maximal_path model.entries) ++ str" maximal path length in equiv nodes"
 
 let pr_can m can =
-  Level.raw_pr (Index.repr can.canon m.table)
+  debug_pr_level (Index.repr can.canon m.table)
 
 let pr_can_clauses m can =
   Pp.(str"For " ++ pr_can m can ++ fnl () ++ pr_clauses_of m can.canon can.clauses_bwd ++ fnl () ++
@@ -1283,12 +1290,12 @@ struct
 
   let _pr m (w, _) =
     let open Pp in
-    prlist_with_sep spc (fun (idx, _) -> Level.raw_pr (Index.repr idx m.table)) (PMap.bindings w)
+    prlist_with_sep spc (fun (idx, _) -> debug_pr_level (Index.repr idx m.table)) (PMap.bindings w)
 
   let pr_clauses m (w, _) =
     let open Pp in
     prlist_with_sep spc (fun (idx, fwd) ->
-      Level.raw_pr (Index.repr idx m.table) ++ str": " ++ spc () ++
+      debug_pr_level (Index.repr idx m.table) ++ str": " ++ spc () ++
       str" Forward clauses " ++ pr_fwd_clause m idx fwd)
       (PMap.bindings w)
 
@@ -1610,7 +1617,7 @@ let pr_levelmap (m : model) : Pp.t =
   h (prlist_with_sep fnl (fun (u, v) ->
     let value = entry_value m v in
     let point = Index.repr u m.table in
-    Level.raw_pr point ++ str" -> " ++ pr_opt int value) (PMap.bindings m.entries))
+    debug_pr_level point ++ str" -> " ++ pr_opt int value) (PMap.bindings m.entries))
   (* Level.Map.pr Pp.int m  *)
 
 let pr_model model =
@@ -2417,7 +2424,7 @@ let enforce_eq_level u v m =
 let enforce_eq_level = time3 (Pp.str "enforce_eq_level") enforce_eq_level
 
 let check_eq_level_expr u v m =
-  let vl = v in debug_global Pp.(fun () -> str"Checking equality of representatives " ++ LevelExpr.pr Level.raw_pr u ++ str " and " ++ LevelExpr.pr Level.raw_pr vl);
+  let vl = v in debug_global Pp.(fun () -> str"Checking equality of representatives " ++ LevelExpr.pr debug_pr_level u ++ str " and " ++ LevelExpr.pr debug_pr_level vl);
   let canu, ku = repr_node_expr m u in
   let canv, kv = repr_node_expr m v in
   canu == canv && Int.equal ku kv
@@ -2485,10 +2492,10 @@ let enforce u k v m =
   | _, _, _ -> enforce_constraint u k v m
 
 let enforce_eq u v m =
-  debug_enforce_eq (let vc = v in Pp.(fun () -> Universe.pr Level.raw_pr u ++ str" = " ++ Universe.pr Level.raw_pr vc));
+  debug_enforce_eq (let vc = v in Pp.(fun () -> Universe.pr debug_pr_level u ++ str" = " ++ Universe.pr debug_pr_level vc));
   enforce u Eq v m
 let enforce_leq u v m =
-  debug_enforce_eq (let vc = v in Pp.(fun () -> Universe.pr Level.raw_pr u ++ str" ≤ " ++ Universe.pr Level.raw_pr vc));
+  debug_enforce_eq (let vc = v in Pp.(fun () -> Universe.pr debug_pr_level u ++ str" ≤ " ++ Universe.pr debug_pr_level vc));
   enforce u Le v m
 let enforce_lt u v m = enforce_constraint (Universe.addn u 1) Le v m
 
@@ -2501,7 +2508,7 @@ let check_clause model cl =
 let check_clause = time2 (Pp.str "check_clause") check_clause
 
 let check_constraint (m : t) u k u' =
-  debug_global Pp.(fun () -> str"Checking " ++ Constraints.pr Level.raw_pr (Constraints.singleton (u,k,u')));
+  debug_global Pp.(fun () -> str"Checking " ++ Constraints.pr debug_pr_level (Constraints.singleton (u,k,u')));
   let cls = clauses_of_constraint u k u' [] in
   let res = List.fold_left (fun check cl -> check && check_clause m (can_clause_of_clause m cl)) true cls in
   if res then (debug_global Pp.(fun () -> str" Clause holds"); res)
@@ -2520,7 +2527,7 @@ exception AlreadyDeclared
 
 let add_model u { entries; table; values; canonical; canentries } =
   if Index.mem u table then
-   (debug_global Pp.(fun () -> str"Already declared level: " ++ Level.raw_pr u);
+   (debug_global Pp.(fun () -> str"Already declared level: " ++ debug_pr_level u);
     raise AlreadyDeclared)
   else
     let idx, table = Index.fresh u table in
@@ -2532,7 +2539,7 @@ let add_model u { entries; table; values; canonical; canentries } =
 
 let add ?(rank:int option) u model =
   let _r = rank in
-  debug_global Pp.(fun () -> str"Declaring level " ++ Level.raw_pr u);
+  debug_global Pp.(fun () -> str"Declaring level " ++ debug_pr_level u);
   let _idx, model = add_model u model in
   model
 
@@ -2578,8 +2585,8 @@ let repr_node_expr_eq m (u, k) =
   let (can, k' as e) = repr_node_expr m (u, k) in
   let canl = Index.repr can.canon m.table in
   if not (Level.equal canl u) then
-    (debug_find_to_merge Pp.(fun () -> str "repr_node_expr " ++  LevelExpr.pr Level.raw_pr (u,k) ++ str " = "
-      ++ LevelExpr.pr Level.raw_pr (canl, k'));
+    (debug_find_to_merge Pp.(fun () -> str "repr_node_expr " ++  LevelExpr.pr debug_pr_level (u,k) ++ str " = "
+      ++ LevelExpr.pr debug_pr_level (canl, k'));
     Some (u, k), e)
   else None, e
 
@@ -2741,7 +2748,7 @@ exception InconsistentEquality
 
   @raises InconsistentEquality if one of the constraints involving [idx] cannot be satisfied when substituting [idx] with [u]. *)
 let set lvl u model =
-  _debug_set Pp.(fun () -> str"Setting " ++ Level.raw_pr lvl ++ str" := " ++ Universe.pr Level.raw_pr u);
+  _debug_set Pp.(fun () -> str"Setting " ++ debug_pr_level lvl ++ str" := " ++ Universe.pr debug_pr_level u);
   let can, k = repr_node model lvl in
   let u = NeList.of_list (repr_univ model u) in
   let u =
@@ -2860,7 +2867,7 @@ let constraints_for ~(kept:Level.Set.t) model (fold : 'a constraint_fold) (accu 
   let add_cst u knd v (cst : 'a) : 'a =
     fold (interp_univ model u, knd, interp_univ model v) cst
   in
-  (* debug_global Pp.(fun () -> str"constraints_for kept: " ++ Level.Set.pr Level.raw_pr kept ++ pr_clauses model); *)
+  (* debug_global Pp.(fun () -> str"constraints_for kept: " ++ Level.Set.pr debug_pr_level kept ++ pr_clauses model); *)
   let keptp = Level.Set.fold (fun u accu -> PSet.add (Index.find u model.table) accu) kept PSet.empty in
   (* rmap: partial map from canonical points to kept points *)
   let rmap, csts = PSet.fold (fun u (rmap,csts) ->

@@ -2975,7 +2975,9 @@ let interp_univ_decl env decl =
     univdecl_constraints = cstrs;
     univdecl_extensible_constraints = decl.univdecl_extensible_constraints;
   }
-  in evd, decl
+  in
+  Loop_checking.set_debug_pr_level (UState.pr_uctx_level (Evd.ustate evd));
+  evd, decl
 
 let interp_cumul_univ_decl env decl =
   let open UState in
@@ -3002,6 +3004,7 @@ let interp_cumul_univ_decl env decl =
     univdecl_extensible_constraints = decl.univdecl_extensible_constraints;
   }
   in
+  Loop_checking.set_debug_pr_level (UState.pr_uctx_level (Evd.ustate evd));
   evd, decl, variances
 
 let interp_univ_decl_opt env l =

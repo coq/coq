@@ -35,3 +35,5 @@ let pr_level_with_global_universes ?(binders=empty_binders) l =
   match qualid_of_level binders l with
   | Some qid  -> Libnames.pr_qualid qid
   | None -> Level.raw_pr l
+
+let () = Loop_checking.set_debug_pr_level pr_level_with_global_universes

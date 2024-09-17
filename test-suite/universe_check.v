@@ -141,6 +141,10 @@ Module PrivatePoly.
   Set Private Polymorphic Universes.
   Set Universe Polymorphism.
 
+  Set Debug "loop-checking-find-to-merge".
+  Set Debug "loop-checking-global".
+
+
   Lemma foo@{i} : Type@{i}.
   Proof. exact Type. Qed.
 
@@ -157,6 +161,9 @@ Module PrivatePoly.
   Lemma baz : Type@{outer}. Proof. exact Type@{inner}. Qed.
   About baz.
 End PrivatePoly.
+
+Set Debug "loop-checking-find-to-merge".
+Set Debug "loop-checking-global".
 
 Polymorphic Definition type@{u} := Type@{u}.
 Fail Check type@{Prop}.
@@ -240,7 +247,7 @@ Module max_union_find4.
   Check Constraint w = y.
   Check Constraint w = z.
   (* Set Debug "loop-checking-enforce-eq". *)
-  (* Set Debug "loop-checking". *)
+  Set Debug "loop-checking".
   Constraint x' <= max(y, z).
   Check Constraint x = w.
   Check Constraint x = z.
