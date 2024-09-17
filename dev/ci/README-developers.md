@@ -2,7 +2,7 @@ Information for developers about the CI system
 ----------------------------------------------
 
 When you submit a pull request (PR) on the Coq GitHub repository, this will
-automatically launch a battery of CI tests. The PR will not be integrated
+launch a battery of CI tests. The PR will not be integrated
 unless these tests pass.
 
 We are currently running tests on the following platforms:
@@ -39,6 +39,13 @@ there are some.
 You can also run one CI target locally (using `make ci-somedev`).
 
 See also [`test-suite/README.md`](../../test-suite/README.md) for information about adding new tests to the test-suite.
+
+### Light and full CI
+
+By default, only a light CI is run, mostly testing only Coq itself.
+Before merging a PR, it must also pass full CI testing multiple third party
+developments. See [`CONTRIBUTING.md`](../../CONTRIBUTING.md#understanding-automatic-feedback)
+for more details.
 
 ### Breaking changes
 
