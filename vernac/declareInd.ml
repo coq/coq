@@ -193,7 +193,7 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typi
               let _, mip = Global.lookup_inductive ind in
               match mip.mind_arity with
               | RegularArity ar -> Sorts.is_prop ar.mind_sort
-              | TemplateArity _ -> false
+              | TemplateArity ar -> Sorts.is_prop ar.template_level
           in
           if prop_but_default_dep_elim then
             Indrec.declare_prop_but_default_dependent_elim ind)

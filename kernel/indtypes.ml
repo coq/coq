@@ -503,7 +503,7 @@ let build_inductive env ~sec_univs names prv univs template variance
         splayed_lc in
     let mind_relevance = match arity with
       | RegularArity { mind_sort;_ } -> Sorts.relevance_of_sort mind_sort
-      | TemplateArity _ -> Sorts.Relevant
+      | TemplateArity a -> Sorts.relevance_of_sort a.template_level
     in
     (* Assigning VM tags to constructors *)
     let nconst, nblock = ref 0, ref 0 in
