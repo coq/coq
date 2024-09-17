@@ -12,3 +12,5 @@ type g_assoc = NonA | RightA | LeftA
 
 val pr_assoc : g_assoc -> Pp.t
 (** Prints a [g_assoc] value. *)
+
+val g_assoc_eq : g_assoc -> g_assoc -> bool
