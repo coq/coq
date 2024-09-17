@@ -74,7 +74,9 @@ are the steps to manually prepare a patch:
    developer who merges the PR on Coq. There are plans to improve this, cf.
    [#6724](https://github.com/coq/coq/issues/6724).
 
-Moreover your PR must absolutely update the [`CHANGES.md`](../../CHANGES.md) file.
+Moreover, in case of user visible change, your PR must absolutely add
+a changelog entry. See the README in [`doc/changelog`][user-changelog]
+for how to add a changelog entry.
 
 ### Experimental automatic overlay creation and building
 
