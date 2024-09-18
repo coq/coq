@@ -192,14 +192,13 @@ let { Goptions.get = private_poly_univs } =
     ~value:true
     ()
 
-let universes_of_body_type body typ =
-  let used_univs_body = Vars.universes_of_constr body in
-  let used_univs_typ = Option.cata Vars.universes_of_constr Univ.Level.Set.empty typ in
-  let used_univs = Univ.Level.Set.union used_univs_body used_univs_typ in
+let universes_of_body_type ~used_univs body typ =
+  let used_univs_typ = Option.cata (Vars.universes_of_constr ~init:used_univs) used_univs typ in
+  let used_univs = Vars.universes_of_constr body ~init:used_univs_typ in
   used_univs_typ, used_univs
 
 let make_univs_deferred_private_mono ~initial_euctx ?feedback_id ~uctx ~udecl body typ =
-  let _, used_univs = universes_of_body_type body typ in
+  let _, used_univs = universes_of_body_type ~used_univs:Univ.Level.Set.empty body typ in
   let uctx = UState.constrain_variables (fst (UState.context_set initial_euctx)) uctx in
   (* For vi2vo compilation proofs are computed now but we need to
      complement the univ constraints of the typ with the ones of
@@ -207,20 +206,20 @@ let make_univs_deferred_private_mono ~initial_euctx ?feedback_id ~uctx ~udecl bo
   let uctx_body = UState.restrict uctx used_univs in
   UState.check_mono_univ_decl uctx_body udecl
 
-let make_univs_immediate_private_mono ~initial_euctx ~uctx ~udecl ~eff body typ =
+let make_univs_immediate_private_mono ~initial_euctx ~uctx ~udecl ~eff ~used_univs body typ =
   let utyp = UState.univ_entry ~poly:false initial_euctx in
+  let _, used_univs = universes_of_body_type ~used_univs body typ in
   let ubody =
-    let _, used_univs = universes_of_body_type body typ in
     let uctx = UState.constrain_variables (fst (UState.context_set initial_euctx)) uctx in
     (* For vi2vo compilation proofs are computed now but we need to
        complement the univ constraints of the typ with the ones of
        the body.  So we keep the two sets distinct. *)
     let uctx_body = UState.restrict uctx used_univs in
     UState.check_mono_univ_decl uctx_body udecl in
-  initial_euctx, utyp, Default { body = (body, eff); opaque = Opaque ubody }
+  initial_euctx, utyp, used_univs, Default { body = (body, eff); opaque = Opaque ubody }
 
-let make_univs_immediate_private_poly ~uctx ~udecl ~eff body typ =
-  let used_univs_typ, used_univs = universes_of_body_type body typ in
+let make_univs_immediate_private_poly ~uctx ~udecl ~eff ~used_univs body typ =
+  let used_univs_typ, used_univs = universes_of_body_type ~used_univs body typ in
   let uctx' = UState.restrict uctx used_univs_typ in
   let utyp = UState.check_univ_decl ~poly:true uctx' udecl in
   let ubody =
@@ -229,10 +228,10 @@ let make_univs_immediate_private_poly ~uctx ~udecl ~eff body typ =
       (UState.context_set uctx)
       (UState.context_set uctx')
   in
-  uctx', utyp, Default { body = (body, eff); opaque = Opaque ubody }
+  uctx', utyp, used_univs, Default { body = (body, eff); opaque = Opaque ubody }
 
-let make_univs_immediate_default ~poly ~opaque ~uctx ~udecl ~eff body typ =
-  let _, used_univs = universes_of_body_type body typ in
+let make_univs_immediate_default ~poly ~opaque ~uctx ~udecl ~eff ~used_univs body typ =
+  let _, used_univs = universes_of_body_type ~used_univs body typ in
   (* Since the proof is computed now, we can simply have 1 set of
      constraints in which we merge the ones for the body and the ones
      for the typ. We recheck the declaration after restricting with
@@ -252,17 +251,17 @@ let make_univs_immediate_default ~poly ~opaque ~uctx ~udecl ~eff body typ =
          when monomorphic it shouldn't really matter. *)
       Monomorphic_entry (Univ.ContextSet.union uctx (Safe_typing.universes_of_private eff.Evd.seff_private)), snd utyp
   in
-  uctx, utyp, Default { body = (body, eff); opaque = if opaque then Opaque Univ.ContextSet.empty else Transparent }
+  uctx, utyp, used_univs, Default { body = (body, eff); opaque = if opaque then Opaque Univ.ContextSet.empty else Transparent }
 
-let make_univs_immediate ~poly ?keep_body_ucst_separate ~opaque ~uctx ~udecl ~eff body typ =
+let make_univs_immediate ~poly ?keep_body_ucst_separate ~opaque ~uctx ~udecl ~eff ~used_univs body typ =
   (* allow_deferred case *)
   match keep_body_ucst_separate with
-  | Some initial_euctx when not poly -> make_univs_immediate_private_mono ~initial_euctx ~uctx ~udecl ~eff body typ
+  | Some initial_euctx when not poly -> make_univs_immediate_private_mono ~initial_euctx ~uctx ~udecl ~eff ~used_univs body typ
   | _ ->
   (* private_poly_univs case *)
   if poly && opaque && private_poly_univs ()
-  then make_univs_immediate_private_poly ~uctx ~udecl ~eff body typ
-  else make_univs_immediate_default ~poly ~opaque ~uctx ~udecl ~eff body typ
+  then make_univs_immediate_private_poly ~uctx ~udecl ~eff ~used_univs body typ
+  else make_univs_immediate_default ~poly ~opaque ~uctx ~udecl ~eff ~used_univs body typ
 
 (** [univsbody] are universe-constraints attached to the body-only,
    used in vio-delayed opaque constants and private poly universes *)
@@ -847,7 +846,8 @@ let process_proof ~info:Info.({ udecl; poly }) ?(is_telescope=false) = function
           if i < n-1 && is_telescope then (* waiting for addition of cinfo-based opacity in #19029 *) false
           else opaque) in
     let entries = List.map2 (fun ((body, eff), typ) opaque ->
-        let uctx, univs, body = make_univs_immediate ~poly ?keep_body_ucst_separate ~opaque ~uctx ~udecl ~eff body typ in
+        let uctx, univs, _, body =
+          make_univs_immediate ~poly ?keep_body_ucst_separate ~opaque ~uctx ~udecl ~eff ~used_univs:Univ.Level.Set.empty body typ in
         definition_entry_core ?using ~univs ?types:typ body) entries opaques in
     entries, uctx
   | DeferredOpaqueProof { deferred_proof = bodies; using; initial_proof_data; feedback_id; initial_euctx } ->
@@ -1012,7 +1012,8 @@ let declare_mutual_definitions ~info ~cinfo ~opaque ~uctx ~bodies ~possible_guar
   in
   let csts = CList.map2
       (fun CInfo.{ name; typ; impargs } (body, _) ->
-         let uctx, univs, body = make_univs_immediate ~poly ~opaque ~uctx ~udecl ~eff:Evd.empty_side_effects body (Some typ) in
+         let uctx, univs, _, body =
+           make_univs_immediate ~poly ~opaque ~uctx ~udecl ~eff:Evd.empty_side_effects ~used_univs:Univ.Level.Set.empty body (Some typ) in
          let entry = definition_entry_core ~types:typ ~univs ?using body in
          declare_entry ~name ~scope ~clearbody ~kind ~impargs ~uctx ~typing_flags ~user_warns entry)
       cinfo bodies_types
@@ -1054,7 +1055,8 @@ let prepare_definition ~info ~opaque ?using ~name ~body ~typ sigma =
   let body = EConstr.to_constr sigma body in
   let typ = Option.map (EConstr.to_constr sigma) typ in
   let uctx = Evd.ustate sigma in
-  let uctx, univs, body = make_univs_immediate ~poly ~opaque ~uctx ~udecl ~eff:Evd.empty_side_effects body typ in
+  let uctx, univs, _, body =
+    make_univs_immediate ~poly ~opaque ~uctx ~udecl ~eff:Evd.empty_side_effects ~used_univs:Univ.Level.Set.empty body typ in
   let entry = definition_entry_core ?using ~inline ?types:typ ~univs body in
   entry, uctx
 
