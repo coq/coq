@@ -664,7 +664,6 @@ library:ci-fcsl_pcm:
   - build:edge+flambda
   - library:ci-mathcomp
   stage: build-2
-  allow_failure: true # See https://github.com/coq/coq/pull/19516
 
 library:ci-fiat_crypto:
   extends: .ci-template-flambda
