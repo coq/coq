@@ -1219,8 +1219,8 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
     let f1l1 = whd_nored_state (fst curenvnb) sigma (cM,Stack.empty) in
     let f2l2 = whd_nored_state (fst curenvnb) sigma (cN,Stack.empty) in
     let (sigma,t,c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
-      try Evarconv.check_conv_record (fst curenvnb) sigma f1l1 f2l2
-      with Not_found -> error_cannot_unify (fst curenvnb) sigma (cM,cN)
+      try Evarconv.check_conv_record (fst curenvnb) sigma (Evarconv.decompose_proj (fst curenvnb) sigma f1l1) f2l2
+      with Not_found | Evarconv.No_cs _ -> error_cannot_unify (fst curenvnb) sigma (cM,cN)
     in
     if Reductionops.Stack.compare_shape ts ts1 then
       let (evd,ks,_) =
