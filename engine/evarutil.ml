@@ -100,6 +100,14 @@ let has_undefined_evars evd t =
   try let _ = f h t in false
   with (Not_found | NotInstantiatedEvar) -> true
 
+let has_undefined_evars_or_metas evd t =
+  let rec has_ev t =
+    match EConstr.kind evd t with
+    | Evar _ | Meta _ -> raise NotInstantiatedEvar
+    | _ -> EConstr.iter evd has_ev t in
+  try let _ = has_ev t in false
+  with (Not_found | NotInstantiatedEvar) -> true
+
 let is_ground_term evd t =
   not (has_undefined_evars evd t)
 
