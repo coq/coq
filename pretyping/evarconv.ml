@@ -316,6 +316,13 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
       match Reductionops.Stack.strip_n_app structure.nparams sk1 with
       | Some (params1, c1, extra_args1) -> (Option.get @@ Reductionops.Stack.list_of_app_stack params1), c1, extra_args1
       | _ -> raise Not_found in
+  let () =
+    (* [proj (ctor ...)]: don't use CS *)
+    match kind sigma c1 with
+    | App (h,_) when isConstruct sigma h -> raise Not_found
+    | Construct _ -> raise Not_found
+    | _ -> ()
+  in
   let h2, sk2' = decompose_app sigma (shrink_eta sigma t2) in
   let sk2 = Stack.append_app sk2' sk2 in
   let k = Reductionops.Stack.args_size sk2 - Reductionops.Stack.args_size extra_args1 in
