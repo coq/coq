@@ -417,17 +417,29 @@ let of_binder_annot : 'a Constr.binder_annot -> 'a binder_annot =
   match Evd.MiniEConstr.unsafe_relevance_eq with
   | Refl -> fun x -> x
 
-let to_binder_annot sigma x = Context.map_annot_relevance (ERelevance.kind sigma) x
+let to_binder_annot sigma (x:_ binder_annot) : _ Constr.binder_annot =
+  let Refl = unsafe_relevance_eq in
+  Context.map_annot_relevance (ERelevance.kind sigma) x
 
-let to_rel_decl sigma d =
-  Context.Rel.Declaration.map_constr_het (ERelevance.kind sigma) (to_constr sigma) d
+let to_rel_decl sigma (d:rel_declaration) : Constr.rel_declaration =
+  let Refl = unsafe_eq in
+  let Refl = unsafe_relevance_eq in
+  Context.Rel.Declaration.map_constr_with_relevance (ERelevance.kind sigma) (to_constr sigma) d
 
-let to_rel_context sigma ctx = List.map (to_rel_decl sigma) ctx
+let to_rel_context sigma (ctx:rel_context) : Constr.rel_context =
+  let Refl = unsafe_eq in
+  let Refl = unsafe_relevance_eq in
+  List.Smart.map (to_rel_decl sigma) ctx
 
-let to_named_decl sigma d =
-  Context.Named.Declaration.map_constr_het (ERelevance.kind sigma) (to_constr sigma) d
+let to_named_decl sigma (d:named_declaration) : Constr.named_declaration =
+  let Refl = unsafe_eq in
+  let Refl = unsafe_relevance_eq in
+  Context.Named.Declaration.map_constr_with_relevance (ERelevance.kind sigma) (to_constr sigma) d
 
-let to_named_context sigma ctx = List.map (to_named_decl sigma) ctx
+let to_named_context sigma (ctx:named_context) : Constr.named_context =
+  let Refl = unsafe_eq in
+  let Refl = unsafe_relevance_eq in
+  List.Smart.map (to_named_decl sigma) ctx
 
 let map_branches f br =
   let f c = unsafe_to_constr (f (of_constr c)) in
