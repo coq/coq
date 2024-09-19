@@ -2272,11 +2272,6 @@ let finish_derived pinfo entries =
       let f c = UState.nf_universes uctx (Vars.replace_vars subst c) in
       let entry = ProofEntry.map_entry_type entry ~f:(Option.map f) in
       let entry = ProofEntry.map_proof_entry entry ~f:(fun (b,fx) -> (f b, fx)) in
-      let used_univs_body = Vars.universes_of_constr (fst (fst (ProofEntry.get_entry_body entry))) (* Currently assume not delayed *) in
-      let used_univs_typ = Option.cata Vars.universes_of_constr Univ.Level.Set.empty entry.proof_entry_type in
-      let used_univs = Univ.Level.Set.union used_univs (Univ.Level.Set.union used_univs_body used_univs_typ) in
-      let uctx' = UState.restrict uctx used_univs in
-      let entry = { entry with proof_entry_universes = UState.check_univ_decl ~poly uctx' udecl } in
       let gref = declare_entry ~name ~scope ~clearbody ~kind ?hook ~impargs ~typing_flags ~user_warns ~uctx entry in
       let cst = match gref with ConstRef cst -> cst | _ -> assert false in
       let inst = instance_of_univs entry.proof_entry_universes in
