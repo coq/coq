@@ -47,7 +47,7 @@ let map_annot_relevance_smart fr ({binder_name=na;binder_relevance=r} as a) =
   let r' = fr r in
   if r == r' then a else {binder_name=na;binder_relevance=r'}
 
-let map_annot_relevance_het fr {binder_name=na;binder_relevance=r} =
+let map_annot_relevance fr {binder_name=na;binder_relevance=r} =
   let r' = fr r in
   {binder_name=na;binder_relevance=r'}
 
@@ -193,11 +193,11 @@ struct
     let map_constr_het fr f = function
       | LocalAssum (na, ty) ->
           let ty' = f ty in
-          LocalAssum (map_annot_relevance_het fr na, ty')
+          LocalAssum (map_annot_relevance fr na, ty')
       | LocalDef (na, v, ty) ->
           let v' = f v in
           let ty' = f ty in
-          LocalDef (map_annot_relevance_het fr na, v', ty')
+          LocalDef (map_annot_relevance fr na, v', ty')
 
     (** Perform a given action on all terms in a given declaration. *)
     let iter_constr f = function
@@ -452,11 +452,11 @@ struct
     let map_constr_het fr f = function
       | LocalAssum (id, ty) ->
           let ty' = f ty in
-          LocalAssum (map_annot_relevance_het fr id, ty')
+          LocalAssum (map_annot_relevance fr id, ty')
       | LocalDef (id, v, ty) ->
           let v' = f v in
           let ty' = f ty in
-          LocalDef (map_annot_relevance_het fr id, v', ty')
+          LocalDef (map_annot_relevance fr id, v', ty')
 
     (** Perform a given action on all terms in a given declaration. *)
     let iter_constr f = function
