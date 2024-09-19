@@ -578,6 +578,7 @@ let print_constant env ~with_values with_implicit cst udecl =
   let cb = Environ.lookup_constant cst env in
   let typ = cb.const_type in
   let univs = cb.const_universes in
+  let variance = cb.const_variance in
   let uctx =
     UState.of_names
       (Printer.universe_binders_with_opt_names (Declareops.constant_polymorphic_context cb) udecl)
@@ -612,7 +613,7 @@ let print_constant env ~with_values with_implicit cst udecl =
       print_basename cst ++ print_instance sigma cb ++
       str (if Option.has_some optbody then " =" else " :") ++ spc() ++
       (match optbody with Some c-> print_typed_body env sigma ~impargs (c,typ) | None -> pr_ltype ~impargs typ)++
-      Printer.pr_universes sigma univs ?priv)
+      Printer.pr_universes sigma univs ?variance ?priv)
 
 let print_constant_with_infos env access cst udecl =
   print_constant env ~with_values:(Some access) true cst udecl ++

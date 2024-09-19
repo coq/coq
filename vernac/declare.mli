@@ -357,6 +357,7 @@ val definition_entry
   -> ?inline:bool
   -> ?types:Constr.types
   -> ?univs:UState.named_universes_entry
+  -> ?variances:Declarations.variances
   -> Constr.constr
   -> proof_entry
 
