@@ -25,7 +25,7 @@ On the condition that:
 - You do not push, to the branch that we test, commits that haven't been
   first tested to compile with the corresponding branch of Coq.
 
-  For that, we recommend setting a CI system for you project, see
+  For that, we recommend setting a CI system for you project, see for instance
   [supported CI images for Coq](#supported-ci-images-for-coq) below.
 
 - You maintain a reasonable build time for your project, or you provide

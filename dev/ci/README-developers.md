@@ -2,7 +2,7 @@ Information for developers about the CI system
 ----------------------------------------------
 
 When you submit a pull request (PR) on the Coq GitHub repository, this will
-automatically launch a battery of CI tests. The PR will not be integrated
+launch a battery of CI tests. The PR will not be integrated
 unless these tests pass.
 
 We are currently running tests on the following platforms:
@@ -40,6 +40,13 @@ You can also run one CI target locally (using `make ci-somedev`).
 
 See also [`test-suite/README.md`](../../test-suite/README.md) for information about adding new tests to the test-suite.
 
+### Light and full CI
+
+By default, only a light CI is run, mostly testing only Coq itself.
+Before merging a PR, it must also pass full CI testing multiple third party
+developments. See [`CONTRIBUTING.md`](../../CONTRIBUTING.md#understanding-automatic-feedback)
+for more details.
+
 ### Breaking changes
 
 When your PR breaks an external project we test in our CI, you must
@@ -64,10 +71,12 @@ are the steps to manually prepare a patch:
    can very rarely be made backward compatible and plugins we test will
    generally have a dedicated branch per Coq version.
    You can still open a pull request but the merging will be requested by the
-   developer who merges the PR on Coq. There are plans to improve this, cf.
-   [#6724](https://github.com/coq/coq/issues/6724).
+   developer who merges the PR on Coq. To avoid early merges of such PR,
+   which would break Coq CI, it is recommended to keep them as draft PRs.
 
-Moreover your PR must absolutely update the [`CHANGES.md`](../../CHANGES.md) file.
+Moreover, in case of user visible change, your PR must absolutely add
+a changelog entry. See the README in [`doc/changelog`][user-changelog]
+for how to add a changelog entry.
 
 ### Experimental automatic overlay creation and building
 
