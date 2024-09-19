@@ -1996,17 +1996,23 @@ let close_proof ?warn_incomplete ~opaque ~keep_body_ucst_separate ps =
   let { Proof_info.info = { Info.udecl } } = pinfo in
   let { Proof.poly } = Proof.data proof in
   let elist, uctx = prepare_proof ?warn_incomplete ps in
-  let opaque = match opaque with
-    | Vernacexpr.Opaque -> true
-    | Vernacexpr.Transparent -> false in
-
-  let make_entry ((body, eff), typ) =
+  let opaques =
+    let n = List.length elist in
+    let is_derived = match CEphemeron.default pinfo.Proof_info.proof_ending Regular with End_derive _ -> true | _ -> false in
+    List.init n (fun i ->
+        if i < n-1 && is_derived then
+          (* Temporary code for setting opacity in Derive, waiting for addition of cinfo-based opacity in #19029 *)
+          false
+        else match opaque with
+          | Vernacexpr.Opaque -> true
+          | Vernacexpr.Transparent -> false) in
+  let make_entry ((body, eff), typ) opaque =
     let keep_body_ucst_separate = if keep_body_ucst_separate then Some initial_euctx else None in
     let _, univs, body =
       make_univs_immediate ~poly ?keep_body_ucst_separate ~opaque ~uctx ~udecl ~eff body (Some typ) in
     definition_entry_core ?using ~univs ~types:typ body
   in
-  let entries = CList.map make_entry elist in
+  let entries = List.map2 make_entry elist opaques in
   { entries; uctx; pinfo })
     ()
 
