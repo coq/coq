@@ -38,13 +38,13 @@ deprecated compatibility alias using :cmd:`Notation (abbreviation)`
 
    .. warn:: Library File @qualid is deprecated since @string__since. @string__note. Use @qualid__use instead.
              Library File (transitively required) @qualid is deprecated since @string__since. @string__note. Use @qualid__use instead.
-             Ltac2 alias @qualid is deprecated since @string__since. @string__note. Use @qualid__use instead.
-             Ltac2 definition @qualid is deprecated since @string__since. @string__note. Use @qualid__use instead.
-             Ltac2 notation {+ @ltac2_scope } is deprecated since @string__since. @string__note. Use @qualid__use instead.
+             Ltac2 alias @qualid is deprecated since @string__since. @string__note.
+             Ltac2 definition @qualid is deprecated since @string__since. @string__note.
+             Ltac2 notation {+ @ltac2_scope } is deprecated since @string__since. @string__note.
              Ltac2 constructor @qualid is deprecated since @string__since. @string__note.
              Notation @string is deprecated since @string__since. @string__note. Use @qualid__use instead.
-             Tactic @qualid is deprecated since @string__since. @string__note. Use @qualid__use instead.
-             Tactic Notation @qualid is deprecated since @string__since. @string__note. Use @qualid__use instead.
+             Tactic @qualid is deprecated since @string__since. @string__note.
+             Tactic Notation @qualid is deprecated since @string__since. @string__note.
 
       :n:`@qualid` or :n:`@string` is the notation,
       :n:`@string__since` is the version number, :n:`@string__note` is
