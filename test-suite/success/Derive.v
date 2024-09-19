@@ -30,12 +30,19 @@ Check id 0.
 
 Set Universe Polymorphism.
 
+(* An example with no polymorphic universe constraints in the witness *)
 Derive id' : (forall {A}, A -> A) in (forall {A} (a:A), id' a = a) as spec'.
 Proof.
-unfold id.
 Unshelve.
 2: exact (fun A a => a).
-reflexivity. (* Polymorphism breaks unification? *)
+reflexivity.
+Qed.
+
+(* An example with polymorphic universe constraints in the witness *)
+Derive id'' : (forall {A}, A -> A) in (forall {A} (a:A), id'' a = a) as spec''.
+Proof.
+unfold id''.
+reflexivity.
 Qed.
 
 Check id'@{Set} 0.
