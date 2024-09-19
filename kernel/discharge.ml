@@ -78,6 +78,7 @@ let cook_constant _env info cb =
     const_type = typ;
     const_body_code = ();
     const_universes = univs;
+    const_variance = cb.const_variance; (* FIXME *)
     const_relevance = cb.const_relevance;
     const_inline_code = cb.const_inline_code;
     const_typing_flags = cb.const_typing_flags;

@@ -16,10 +16,8 @@ open Sorts
 module Variance :
 sig
   (** A universe position in the instance given to a cumulative
-     inductive can be the following. Note there is no Contravariant
-     case because [forall x : A, B <= forall x : A', B'] requires [A =
-     A'] as opposed to [A' <= A]. *)
-  type t = Irrelevant | Covariant | Invariant
+     inductive or definition can be the following. *)
+  type t = Irrelevant | Covariant | Contravariant | Invariant
 
   (** [check_subtype x y] holds if variance [y] is also an instance of [x] *)
   val check_subtype : t -> t -> bool

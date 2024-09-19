@@ -136,6 +136,10 @@ let compare_cumulative_instances  cv_pb variances u u' cstrs =
          (match cv_pb with
           | Conversion.CONV -> Set.add (UEq (make u, make u')) cstrs
           | Conversion.CUMUL -> Set.add (ULe (make u, make u')) cstrs)
+        | Contravariant ->
+          (match cv_pb with
+          | Conversion.CONV -> Set.add (UEq (make u, make u')) cstrs
+          | Conversion.CUMUL -> Set.add (ULe (make u', make u)) cstrs)
        | Invariant ->
          Set.add (UEq (make u, make u')) cstrs)
     cstrs variances us us'

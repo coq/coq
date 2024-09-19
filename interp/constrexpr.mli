@@ -51,7 +51,7 @@ type cumul_univ_decl_expr =
 
 type ident_decl = lident * universe_decl_expr option
 type cumul_ident_decl = lident * cumul_univ_decl_expr option
-type name_decl = lname * universe_decl_expr option
+type name_decl = lname * cumul_univ_decl_expr option
 
 type notation_with_optional_scope = LastLonelyNotation | NotationInScope of string
 

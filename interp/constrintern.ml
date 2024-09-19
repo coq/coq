@@ -3025,8 +3025,8 @@ let interp_mutual_univ_decl_opt env udecls =
       | Some ls , Some us ->
         let open UState in
         let lsu = ls.univdecl_instance and usu = us.univdecl_instance in
-        if not (CList.for_all2eq (fun x y -> Id.equal x.CAst.v y.CAst.v) lsu usu) then
+        if not (CList.for_all2eq (fun x y -> Id.equal (fst x).CAst.v (fst y).CAst.v) lsu usu) then
           CErrors.user_err Pp.(str "Mutual definitions should all have the same universe binders.");
         Some us) udecls None
   in
-  interp_univ_decl_opt env udecl
+  interp_cumul_univ_decl_opt env udecl

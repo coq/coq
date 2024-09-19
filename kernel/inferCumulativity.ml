@@ -35,7 +35,7 @@ module Inf : sig
   val start : (Level.t * Variance.t option) array -> variances
   val finish : variances -> Variance.t array
 end = struct
-  type inferred = IrrelevantI | CovariantI
+  type inferred = IrrelevantI | CovariantI | ContravariantI
   type mode = Check | Infer
 
   (**
@@ -56,6 +56,7 @@ end = struct
   let to_variance = function
     | IrrelevantI -> Irrelevant
     | CovariantI -> Covariant
+    | ContravariantI -> Contravariant
 
   let to_variance_opt o = Option.cata to_variance Invariant o
 
@@ -77,6 +78,7 @@ end = struct
       Level.Map.update u (function
           | None -> None
           | Some (_,CovariantI) as x -> x
+          | Some (_,ContravariantI) as x -> x
           | Some (Infer,IrrelevantI) ->
             if not variances.infer_mode then raise NotInferring;
             Some (Infer,CovariantI)
@@ -92,7 +94,8 @@ end = struct
         | None -> Level.Map.add u (Infer,IrrelevantI) univs
         | Some Invariant -> univs
         | Some Covariant -> Level.Map.add u (Check,CovariantI) univs
-        | Some Irrelevant -> Level.Map.add u (Check,IrrelevantI) univs)
+        | Some Irrelevant -> Level.Map.add u (Check,IrrelevantI) univs
+        | Some Contravariant -> Level.Map.add u (Check,ContravariantI) univs)
         Level.Map.empty us
     in
     if Level.Map.is_empty univs then raise TrivialVariance;
