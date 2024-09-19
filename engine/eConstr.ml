@@ -419,7 +419,7 @@ let of_binder_annot : 'a Constr.binder_annot -> 'a binder_annot =
 
 let to_binder_annot sigma (x:_ binder_annot) : _ Constr.binder_annot =
   let Refl = unsafe_relevance_eq in
-  Context.map_annot_relevance (ERelevance.kind sigma) x
+  Context.map_annot_relevance_smart (ERelevance.kind sigma) x
 
 let to_rel_decl sigma (d:rel_declaration) : Constr.rel_declaration =
   let Refl = unsafe_eq in

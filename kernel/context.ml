@@ -43,7 +43,7 @@ let map_annot f {binder_name=na;binder_relevance} =
   let na' = f na in
   {binder_name=na';binder_relevance}
 
-let map_annot_relevance fr ({binder_name=na;binder_relevance=r} as a) =
+let map_annot_relevance_smart fr ({binder_name=na;binder_relevance=r} as a) =
   let r' = fr r in
   if r == r' then a else {binder_name=na;binder_relevance=r'}
 
@@ -181,11 +181,11 @@ struct
     (** Map all terms in a given declaration. *)
     let map_constr_with_relevance g f = function
       | LocalAssum (na, ty) as decl ->
-          let na' = map_annot_relevance g na in
+          let na' = map_annot_relevance_smart g na in
           let ty' = f ty in
           if na == na' && ty == ty' then decl else LocalAssum (na', ty')
       | LocalDef (na, v, ty) as decl ->
-          let na' = map_annot_relevance g na in
+          let na' = map_annot_relevance_smart g na in
           let v' = f v in
           let ty' = f ty in
           if na == na' && v == v' && ty == ty' then decl else LocalDef (na', v', ty')
@@ -440,11 +440,11 @@ struct
     (** Map all terms in a given declaration. *)
     let map_constr_with_relevance g f = function
       | LocalAssum (id, ty) as decl ->
-          let id' = map_annot_relevance g id in
+          let id' = map_annot_relevance_smart g id in
           let ty' = f ty in
           if id == id' && ty == ty' then decl else LocalAssum (id', ty')
       | LocalDef (id, v, ty) as decl ->
-          let id' = map_annot_relevance g id in
+          let id' = map_annot_relevance_smart g id in
           let v' = f v in
           let ty' = f ty in
           if id == id' && v == v' && ty == ty' then decl else LocalDef (id', v', ty')
