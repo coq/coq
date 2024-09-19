@@ -126,12 +126,12 @@ let pr_name = function
 let find_constructor n empty def =
   let rec find n = function
   | [] -> assert false
-  | (id, []) as ans :: rem ->
+  | (_, id, []) as ans :: rem ->
     if empty then
       if Int.equal n 0 then ans
       else find (pred n) rem
     else find n rem
-  | (id, _ :: _) as ans :: rem ->
+  | (_, id, _ :: _) as ans :: rem ->
     if not empty then
       if Int.equal n 0 then ans
       else find (pred n) rem
@@ -144,17 +144,17 @@ let pr_internal_constructor tpe n is_const =
   | (_, GTydAlg data) -> data
   | _ -> assert false
   in
-  let (id, _) = find_constructor n is_const data.galg_constructors in
+  let (_, id, _) = find_constructor n is_const data.galg_constructors in
   let kn = change_kn_label tpe id in
   pr_constructor kn
 
 let order_branches cbr nbr def =
   let rec order cidx nidx def = match def with
   | [] -> []
-  | (id, []) :: rem ->
+  | (_, id, []) :: rem ->
     let ans = order (succ cidx) nidx rem in
     (id, [], cbr.(cidx)) :: ans
-  | (id, _ :: _) :: rem ->
+  | (_, id, _ :: _) :: rem ->
     let ans = order cidx (succ nidx) rem in
     let (vars, e) = nbr.(nidx) in
     (id, Array.to_list vars, e) :: ans
@@ -795,7 +795,7 @@ let rec pr_valexpr_gen env sigma lvl v t = match kind t with
           | E1 | E2 | E3 | E4 | E5 -> fun x -> x
         in
         let (n, args) = Tac2ffi.to_block v in
-        let (id, tpe) = find_constructor n false alg.galg_constructors in
+        let (_, id, tpe) = find_constructor n false alg.galg_constructors in
         let knc = change_kn_label kn id in
         let args = pr_constrargs env sigma params args tpe in
         paren (pr_constructor knc ++ spc () ++ args)

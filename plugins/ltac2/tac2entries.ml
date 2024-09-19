@@ -128,7 +128,7 @@ let push_typedef visibility sp kn (_, def) = match def with
   Tac2env.push_type visibility sp kn
 | GTydAlg { galg_constructors = cstrs } ->
   (* Register constructors *)
-  let iter (c, _) =
+  let iter (warn, c, _) =
     let spc = change_sp_label sp c in
     let knc = change_kn_label kn c in
     Tac2env.push_constructor visibility spc knc
@@ -159,7 +159,7 @@ let define_typedef kn (params, def as qdef) = match def with
   (* Define constructors *)
   let constant = ref 0 in
   let nonconstant = ref 0 in
-  let iter (c, args) =
+  let iter (warn, c, args) =
     let knc = change_kn_label kn c in
     let tag = if List.is_empty args then next constant else next nonconstant in
     let data = {
@@ -168,7 +168,7 @@ let define_typedef kn (params, def as qdef) = match def with
       cdata_args = args;
       cdata_indx = Some tag;
     } in
-    Tac2env.define_constructor knc data
+    Tac2env.define_constructor ?warn knc data
   in
   Tac2env.define_type kn qdef;
   List.iter iter cstrs
@@ -220,6 +220,7 @@ let inTypDef : Id.t -> typdef -> obj =
 (** Type extension *)
 
 type extension_data = {
+  edata_warn : UserWarn.t option;
   edata_name : Id.t;
   edata_args : int glb_typexpr list;
 }
@@ -248,7 +249,7 @@ let define_typext mp def =
       cdata_args = data.edata_args;
       cdata_indx = None;
     } in
-    Tac2env.define_constructor knc cdata
+    Tac2env.define_constructor ?warn:data.edata_warn knc cdata
   in
   List.iter iter def.typext_expr
 
@@ -416,21 +417,21 @@ let register_typedef ?(local = false) ?(abstract=false) isrec types =
         user_err ?loc (str "The type abbreviation " ++ Id.print id ++
           str " cannot be recursive")
     | CTydAlg cs ->
-      let same_name (id1, _) (id2, _) = Id.equal id1 id2 in
+      let same_name (_, id1, _) (_, id2, _) = Id.equal id1 id2 in
       let () = match List.duplicates same_name cs with
       | [] -> ()
-      | (id, _) :: _ ->
+      | (_, id, _) :: _ ->
         user_err (str "Multiple definitions of the constructor " ++ Id.print id)
       in
       let () =
-        let check_uppercase_ident (id,_) =
+        let check_uppercase_ident (_,id,_) =
           if not (Tac2env.is_constructor_id id)
           then user_err (str "Constructor name should start with an uppercase letter " ++ Id.print id)
         in
         List.iter check_uppercase_ident cs
       in
       let () =
-        let check_existing_ctor (id, _) =
+        let check_existing_ctor (_, id, _) =
           let (_, kn) = Lib.make_foname id in
           try let _ = Tac2env.interp_constructor kn in
             user_err (str "Constructor already defined in this module " ++ Id.print id)
@@ -516,13 +517,13 @@ let register_open ?(local = false) qid (params, def) =
   | CTydOpn -> ()
   | CTydAlg def ->
     let () =
-      let same_name (id1, _) (id2, _) = Id.equal id1 id2 in
+      let same_name (_, id1, _) (_, id2, _) = Id.equal id1 id2 in
       let () = match List.duplicates same_name def with
         | [] -> ()
-        | (id, _) :: _ ->
+        | (_, id, _) :: _ ->
           user_err (str "Multiple definitions of the constructor " ++ Id.print id)
       in
-      let check_existing_ctor (id, _) =
+      let check_existing_ctor (_, id, _) =
           let (_, kn) = Lib.make_foname id in
           try let _ = Tac2env.interp_constructor kn in
             user_err (str "Constructor already defined in this module " ++ Id.print id)
@@ -538,11 +539,12 @@ let register_open ?(local = false) qid (params, def) =
       | GTydDef (Some t) -> t
       | _ -> assert false
     in
-    let map (id, tpe) =
+    let map (atts, id, tpe) =
       if not (Tac2env.is_constructor_id id)
       then user_err (str "Constructor name should start with an uppercase letter " ++ Id.print id) ;
+      let warn = Attributes.parse Attributes.user_warns atts in
       let tpe = List.map intern_type tpe in
-      { edata_name = id; edata_args = tpe }
+      { edata_warn = warn; edata_name = id; edata_args = tpe }
     in
     let def = List.map map def in
     let def = {
@@ -1065,7 +1067,8 @@ let print_type ~print_def qid kn =
       | GTydDef (Some t) -> pr_glbtype name t
       | GTydAlg { galg_constructors = [] } -> str "[ ]"
       | GTydAlg { galg_constructors = ctors } ->
-        let pr_ctor (id, argtys) =
+        let pr_ctor (_, id, argtys) =
+          (* XXX print warning atrtribute? *)
           hov 0
             (Id.print id ++ if CList.is_empty argtys then mt()
              else spc() ++surround (prlist_with_sep pr_comma (pr_glbtype name) argtys))
@@ -1248,8 +1251,8 @@ let call_par ~pstate ~with_end_tac tac =
 
 let register_prim_alg name params def =
   let id = Id.of_string name in
-  let def = List.map (fun (cstr, tpe) -> (Id.of_string_soft cstr, tpe)) def in
-  let getn (const, nonconst) (c, args) = match args with
+  let def = List.map (fun (cstr, tpe) -> (None, Id.of_string_soft cstr, tpe)) def in
+  let getn (const, nonconst) (_, c, args) = match args with
   | [] -> (succ const, nonconst)
   | _ :: _ -> (const, succ nonconst)
   in

@@ -114,6 +114,8 @@ let ltac2_atom = Entry.make "ltac2_atom"
 
 let tac2expr_in_env = Tac2entries.Pltac.tac2expr_in_env
 
+let quoted_attributes = G_vernac.quoted_attributes
+
 let inj_wit wit loc x = CAst.make ~loc @@ CTacExt (wit, x)
 let inj_open_constr loc c = inj_wit Tac2quote.wit_open_constr loc c
 let inj_pattern loc c = inj_wit Tac2quote.wit_pattern loc c
@@ -363,8 +365,9 @@ GRAMMAR EXTEND Gram
       | cs = LIST0 tac2alg_constructor SEP "|" -> { cs } ] ]
   ;
   tac2alg_constructor:
-    [ [ c = Prim.ident -> { (c, []) }
-      | c = Prim.ident; "("; args = LIST0 ltac2_type SEP ","; ")"-> { (c, args) } ] ]
+    [ [ atts = quoted_attributes; c = Prim.ident -> { (atts, c, []) }
+      | atts = quoted_attributes; c = Prim.ident; "("; args = LIST0 ltac2_type SEP ","; ")" ->
+        { (atts, c, args) } ] ]
   ;
   tac2rec_fields:
     [ [ f = tac2rec_field; ";"; l = tac2rec_fields -> { f :: l }

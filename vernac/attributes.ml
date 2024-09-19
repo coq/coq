@@ -315,7 +315,10 @@ let deprecation_parser parse_use : _ key_parser = fun ?loc orig args ->
       let note = find_string_opt m "note" in
       let since = find_string_opt m "since" in
       CString.Map.find_opt "use" m |> parse_use ?since ?note
-  |  _ -> CErrors.user_err ?loc (Pp.str "Ill formed “deprecated” attribute.")
+  |  _ ->
+    CErrors.user_err ?loc
+      Pp.(str "Ill formed “deprecated” attribute:" ++ spc() ++
+          str "expected “deprecated(since = \"since\", note = \"note\")“.")
 
 let no_use_allowed ?since ?note = function
   | None -> Deprecation.make ?since ?note ()
