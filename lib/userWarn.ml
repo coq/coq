@@ -59,3 +59,14 @@ let create_warning ?default ~warning_name_if_no_cats () =
            w
     in
     w ?loc note
+
+let create_depr_and_user_warnings ?default ~object_name ~warning_name_base pp () =
+  let depr_warning = Deprecation.create_warning ?default
+      ~object_name ~warning_name_if_no_since:("deprecated-"^warning_name_base) pp
+  in
+  let user_warning = create_warning ?default
+      ~warning_name_if_no_cats:("warn-"^warning_name_base) ()
+  in
+  fun ?loc x w ->
+    w.depr |> Option.iter (fun depr -> depr_warning ?loc (x,depr));
+    w.warn |> List.iter (fun w -> user_warning ?loc w)
