@@ -3499,7 +3499,7 @@ Section Forall2.
 
   (* NB: when deprecation phase ends, instead of removing prove "Reflexive R -> Reflexive Forall2"
      and close #6131 *)
-  #[deprecated(since = "8.18", note = "Use Forall2_nil instead.")]
+  #[deprecated(since = "8.18", use = Forall2_nil)]
   Theorem Forall2_refl : Forall2 [] [].
   Proof. intros; apply Forall2_nil. Qed.
 
@@ -3973,9 +3973,9 @@ Notation tail := tl (only parsing).
 Notation head := hd_error (only parsing).
 Notation head_nil := hd_error_nil (only parsing).
 Notation head_cons := hd_error_cons (only parsing).
-#[deprecated(since = "8.18", note = "Use app_assoc instead.")]
+#[deprecated(since = "8.18", use = app_assoc)]
 Notation ass_app := app_assoc (only parsing).
-#[deprecated(since = "8.18", note = "Use app_assoc instead.")]
+#[deprecated(since = "8.18", use = app_assoc)]
 Notation app_ass := app_assoc_reverse_deprecated (only parsing).
 Notation In_split := in_split (only parsing).
 Notation In_rev := in_rev (only parsing).
@@ -3985,43 +3985,43 @@ Notation rev_acc := rev_append (only parsing).
 Notation rev_acc_rev := rev_append_rev (only parsing).
 Notation AllS := Forall (only parsing). (* was formerly in TheoryList *)
 
-#[deprecated(since = "8.18", note = "Use app_nil_r instead.")]
+#[deprecated(since = "8.18", use = app_nil_r)]
 Notation app_nil_end := app_nil_end_deprecated (only parsing).
-#[deprecated(since = "8.18", note = "Use app_assoc instead.")]
+#[deprecated(since = "8.18", use = app_assoc)]
 Notation app_assoc_reverse := app_assoc_reverse_deprecated (only parsing).
-#[deprecated(since = "8.20", note = "Use nth_error_cons_succ instead.")]
+#[deprecated(since = "8.20", use = nth_error_cons_succ)]
 Notation nth_error_cons_S := nth_error_cons_succ.
 
 #[global]
 Hint Resolve app_nil_end_deprecated : datatypes.
 
-#[deprecated(since = "8.20", note = "Use length_app instead.")]
+#[deprecated(since = "8.20", use = length_app)]
 Notation app_length := length_app (only parsing).
-#[deprecated(since = "8.20", note = "Use length_rev instead.")]
+#[deprecated(since = "8.20", use = length_rev)]
 Notation rev_length := length_rev (only parsing).
-#[deprecated(since = "8.20", note = "Use length_map instead.")]
+#[deprecated(since = "8.20", use = length_map)]
 Notation map_length := length_map (only parsing).
-#[deprecated(since = "8.20", note = "Use fold_left_S_0 instead.")]
+#[deprecated(since = "8.20", use = fold_left_S_0)]
 Notation fold_left_length := fold_left_S_0 (only parsing).
-#[deprecated(since = "8.20", note = "Use length_fst_split instead.")]
+#[deprecated(since = "8.20", use = length_fst_split)]
 Notation split_length_l := length_fst_split (only parsing).
-#[deprecated(since = "8.20", note = "Use length_snd_split instead.")]
+#[deprecated(since = "8.20", use = length_snd_split)]
 Notation split_length_r := length_snd_split (only parsing).
-#[deprecated(since = "8.20", note = "Use length_combine instead.")]
+#[deprecated(since = "8.20", use = length_combine)]
 Notation combine_length := length_combine (only parsing).
-#[deprecated(since = "8.20", note = "Use length_prod instead.")]
+#[deprecated(since = "8.20", use = length_prod)]
 Notation prod_length := length_prod (only parsing).
-#[deprecated(since = "8.20", note = "Use length_firstn instead.")]
+#[deprecated(since = "8.20", use = length_firstn)]
 Notation firstn_length := length_firstn (only parsing).
-#[deprecated(since = "8.20", note = "Use length_skipn instead.")]
+#[deprecated(since = "8.20", use = length_skipn)]
 Notation skipn_length := length_skipn (only parsing).
-#[deprecated(since = "8.20", note = "Use length_seq instead.")]
+#[deprecated(since = "8.20", use = length_seq)]
 Notation seq_length := length_seq (only parsing).
-#[deprecated(since = "8.20", note = "Use length_concat instead.")]
+#[deprecated(since = "8.20", use = length_concat)]
 Notation concat_length := length_concat (only parsing).
-#[deprecated(since = "8.20", note = "Use length_flat_map instead.")]
+#[deprecated(since = "8.20", use = length_flat_map)]
 Notation flat_map_length := length_flat_map (only parsing).
-#[deprecated(since = "8.20", note = "Use length_list_power instead.")]
+#[deprecated(since = "8.20", use = length_list_power)]
 Notation nth_error_O := nth_error_0 (only parsing).
 Notation firstn_O := firstn_0 (only parsing).
 Notation skipn_O := skipn_0 (only parsing).
