@@ -63,7 +63,7 @@ let start_deriving ~atts bl suchthat name : Declare.Proof.t =
             aux (EConstr.push_named d env) sigma ctx)) in
     aux env sigma ctx' in
   let kind = Decls.(IsDefinition Definition) in
-  let info = Declare.Info.make ~poly:(Attributes.is_universe_polymorphism ()) ~kind () in
+  let info = Declare.Info.make ~loc:None ~poly:(Attributes.is_universe_polymorphism ()) ~kind () in
   let extract_manual = function Some Impargs.{ impl_pos = (na,_,_); impl_expl = Manual; impl_max } -> Some (na, impl_max) | _ -> None in
   let cinfo =
     let open Declare.CInfo in

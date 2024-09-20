@@ -883,7 +883,7 @@ let generate_equation_lemma env evd fnames f fun_num nb_params nb_args rec_args_
 
   (*i The next call to mk_equation_id is valid since we are
      constructing the lemma Ensures by: obvious i*)
-  let info = Declare.Info.make () in
+  let info = Declare.Info.make ~loc:None () in
   let cinfo =
     Declare.CInfo.make ~name:(mk_equation_id f_id) ~typ:lemma_type ()
   in
