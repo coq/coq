@@ -99,7 +99,8 @@ module Info : sig
   (** Note that [opaque] doesn't appear here as it is not known at the
      start of the proof in the interactive case. *)
   val make
-    : ?poly:bool
+    : loc:Loc.t option
+    -> ?poly:bool
     -> ?inline : bool
     -> ?kind : Decls.logical_kind
     (** Theorem, etc... *)
@@ -380,7 +381,8 @@ val symbol_entry
     for removal from the public API, use higher-level declare APIs
     instead *)
 val declare_entry
-  :  name:Id.t
+  : ?loc:Loc.t
+  -> name:Id.t
   -> ?scope:Locality.definition_scope
   -> kind:Decls.logical_kind
   -> ?user_warns:Globnames.extended_global_reference UserWarn.with_qf
@@ -437,7 +439,8 @@ val prepare_parameter
   for removal from the public API, use higher-level declare APIs
   instead *)
 val declare_constant
-  :  ?local:Locality.import_status
+  : ?loc:Loc.t
+  -> ?local:Locality.import_status
   -> name:Id.t
   -> kind:Decls.logical_kind
   -> ?typing_flags:Declarations.typing_flags
@@ -643,3 +646,5 @@ module Internal : sig
   val export_side_effects : Evd.side_effects -> unit
 
 end
+
+val get_loc : Constant.t -> Loc.t option

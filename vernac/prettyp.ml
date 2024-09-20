@@ -904,6 +904,31 @@ let canonical_info env ref =
     | path -> spc() ++ str "(syntactically equal to" ++ spc() ++ pr_path path ++ str ")"
     | exception Not_found -> spc() ++ str "(missing canonical, bug?)"
 
+let pr_loc_use_dp loc = match loc.Loc.fname with
+  | Loc.ToplevelInput | InFile  { dirpath = None } -> Loc.pr loc
+  | InFile { dirpath = Some dp } ->
+    let f = Loadpath.locate_absolute_library @@ Libnames.dirpath_of_string dp in
+    let f = match f with
+      | Ok f ->
+        let f =  Filename.remove_extension f ^ ".v" in
+        if Sys.file_exists f
+        then str "File " ++ qstring f
+        else str "Library " ++ qstring dp
+      | Error _ -> str "Library " ++ qstring dp
+    in
+    (f ++
+     str", line " ++ int loc.line_nb ++ str", characters " ++
+     int (loc.bp-loc.bol_pos) ++ str"-" ++ int (loc.ep-loc.bol_pos))
+
+
+let loc_info = function
+  | GlobRef.ConstRef kn ->
+    begin match Declare.get_loc kn with
+    | None -> mt()
+    | Some loc -> spc() ++ hov 0 (str "Defined in" ++ spc() ++ pr_loc_use_dp loc)
+    end
+  | _ -> mt () (* todo *)
+
 let pr_located_qualid env = function
   | Term ref ->
       let ref_str = let open GlobRef in match ref with
@@ -913,7 +938,7 @@ let pr_located_qualid env = function
         | VarRef _ -> "Variable"
       in
       let extra = canonical_info env ref in
-      str ref_str ++ spc () ++ pr_path (Nametab.path_of_global ref) ++ extra
+      v 0 (hov 0 (str ref_str ++ spc () ++ pr_path (Nametab.path_of_global ref) ++ extra) ++ loc_info ref)
   | Abbreviation kn ->
       str "Notation" ++ spc () ++ pr_path (Nametab.path_of_abbreviation kn)
   | Dir dir ->

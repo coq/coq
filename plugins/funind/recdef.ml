@@ -1462,7 +1462,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
     in
     ()
   in
-  let info = Declare.Info.make ~hook:(Declare.Hook.make hook) () in
+  let info = Declare.Info.make ~loc:None ~hook:(Declare.Hook.make hook) () in
   let cinfo = Declare.CInfo.make ~name:na ~typ:gls_type () in
   let lemma = Declare.Proof.start ~cinfo ~info sigma in
   let lemma =
@@ -1498,7 +1498,7 @@ let com_terminate interactive_proof tcc_lemma_name tcc_lemma_ref is_mes
         ~typ:(EConstr.of_constr (compute_terminate_type nb_args fonctional_ref))
         ()
     in
-    let info = Declare.Info.make ~hook () in
+    let info = Declare.Info.make ~loc:None ~hook () in
     let lemma = Declare.Proof.start ~cinfo ~info ctx in
     let lemma =
       fst
@@ -1564,7 +1564,7 @@ let com_eqn uctx nb_arg eq_name functional_ref f_ref terminate_ref
   let evd = Evd.from_ctx uctx in
   let f_constr = constr_of_monomorphic_global (Global.env ()) f_ref in
   let equation_lemma_type = subst1 f_constr equation_lemma_type in
-  let info = Declare.Info.make () in
+  let info = Declare.Info.make ~loc:None () in
   let cinfo =
     Declare.CInfo.make ~name:eq_name
       ~typ:(EConstr.of_constr equation_lemma_type)
