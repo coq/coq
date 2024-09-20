@@ -5485,6 +5485,23 @@ equivalences are indeed taken into account; otherwise only single
 ``Hint Views`` are used.
 
 
+Additional view shortcuts
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following intro pattern ltac views are provided:
+
++ ``/[apply]`` shortcut for ``=> hyp {}/hyp``
++ ``/[swap]`` shortcut for ``=> x y; move: y x`` which swaps and preserves let
+  bindings
++ ``/[dup]`` shortcut for ``=> x; have copy := x; move: copy x`` which
+  copies and preserves let bindings
+
+One can call rewrite from an intro pattern, use with parsimony:
+
++ ``/[1! rules]`` shortcut for ``rewrite rules``
++ ``/[! rules]`` shortcut for ``rewrite !rules``
+
+
 Synopsis and Index
 ------------------
 
