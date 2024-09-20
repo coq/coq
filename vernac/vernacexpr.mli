@@ -110,10 +110,7 @@ type 'a search_restriction =
 
 type verbose_flag   = bool (* true = Verbose;       false = Silent         *)
 type coercion_flag  = AddCoercion | NoCoercion
-(* Remove BackInstanceWarning at end of deprecation phase
-   (this is just to print a warning when :> is used instead of ::
-   to declare instances in classes) *)
-type instance_flag  = BackInstance | BackInstanceWarning | NoInstance
+type instance_flag  = BackInstance | NoInstance
 
 type export_flag = Lib.export_flag = Export | Import
 

@@ -918,7 +918,7 @@ let preprocess_inductive_decl ~atts kind indl =
       user_err Pp.(str "Definitional classes do not support the \">\" syntax.");
     let ((attr, rf_coercion, rf_instance), (lid, ce)) = l in
     let rf_locality = match rf_coercion, rf_instance with
-      | AddCoercion, _ | _, (BackInstance | BackInstanceWarning) -> parse option_locality attr
+      | AddCoercion, _ | _, BackInstance -> parse option_locality attr
       | _ -> let () = unsupported_attributes attr in Goptions.OptDefault in
     let f = AssumExpr ((make ?loc:lid.loc @@ Name lid.v), [], ce),
             { rf_coercion ; rf_reversible = None ; rf_instance ; rf_priority = None ;
@@ -946,7 +946,7 @@ let preprocess_inductive_decl ~atts kind indl =
           | AddCoercion -> reversible
           | NoCoercion -> Notations.return None in
         let loc = match f.rfu_coercion, f.rfu_instance with
-          | AddCoercion, _ | _, (BackInstance | BackInstanceWarning) -> option_locality
+          | AddCoercion, _ | _, BackInstance -> option_locality
           | _ -> Notations.return Goptions.OptDefault in
         Notations.(rev ++ loc ++ canonical_field) in
       let (rf_reversible, rf_locality), rf_canonical = parse attr f.rfu_attrs in
