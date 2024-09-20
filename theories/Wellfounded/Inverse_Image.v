@@ -40,20 +40,45 @@ Section Inverse_Image.
   Let RoF (x y:A) : Prop :=
     exists2 b : B, F x b & (forall c:B, F y c -> R b c).
 
+  Lemma Acc_simulation (Q : A -> A -> Prop) :
+    forall b, Acc R b ->
+    (forall a1 a2 b1, Q a2 a1 -> F a1 b1 -> exists b2, F a2 b2 /\ R b2 b1) ->
+    forall a, F a b -> Acc Q a.
+  Proof.
+    intros b Hb Hstep.
+    induction Hb as [b IH1 IH2].
+    intros a Hab.
+    constructor. intros a' Ha'a.
+    destruct (Hstep _ _ _ Ha'a Hab) as [? [??]].
+    eapply IH2; eassumption.
+  Defined.
+
+  Lemma wf_simulation (Q : A -> A -> Prop) :
+    well_founded R ->
+    (forall a1 a2, Q a2 a1 -> exists b2, F a2 b2) ->
+    (forall a1 a2 b1, Q a2 a1 -> F a1 b1 -> exists b2, F a2 b2 /\ R b2 b1) ->
+    well_founded Q.
+  Proof.
+    intros HR Hintro Hstep a1.
+    constructor. intros a2 Ha2a1.
+    destruct (Hintro _ _ Ha2a1) as [b2 Ha2b2].
+    apply (Acc_simulation _ _ (HR b2) Hstep _ Ha2b2).
+  Defined.
+
   Lemma Acc_inverse_rel : forall b:B, Acc R b -> forall x:A, F x b -> Acc RoF x.
   Proof.
-    induction 1 as [x _ IHAcc]; intros x0 H2.
-    constructor; intros y H3.
-    destruct H3.
-    apply (IHAcc x1); auto.
+    intros b Hb a Hab.
+    refine (Acc_simulation _ _ Hb _ _ Hab).
+    intros ??? [b' ??] ?.
+    exists b'; auto.
   Qed.
-
 
   Theorem wf_inverse_rel : well_founded R -> well_founded RoF.
   Proof.
-    red; constructor; intros.
-    case H0; intros.
-    apply (Acc_inverse_rel x); auto.
+    intros HR ?.
+    constructor.
+    intros ? [b ??].
+    now apply (Acc_inverse_rel _ (HR b)).
   Qed.
 
 End Inverse_Image.

@@ -12,12 +12,12 @@
 
     From : Constructing Recursion Operators in Type Theory
            L. Paulson  JSC (1986) 2, 325-355  *)
-
 Require Import List.
 Require Import Relation_Operators.
 Require Import Operators_Properties.
+Require Import Inverse_Image.
 Require Import Transitive_Closure.
-
+Require Import List_Extension.
 Import ListNotations.
 
 Section Wf_Lexicographic_Exponentiation.
@@ -75,91 +75,57 @@ Section Wf_Lexicographic_Exponentiation.
 
   Lemma desc_prefix : forall (x : List) (a : A), Descl (x ++ [a]) -> Descl x.
   Proof.
-    intros.
-    inversion H.
-    - apply app_cons_not_nil in H1 as [].
-    - assert (x ++ [a] = [x0]) by auto with sets.
-      apply app_eq_unit in H0 as [(->, _)| (_, [=])].
-      auto using d_nil.
-    - apply app_inj_tail in H0 as (<-, _).
-      assumption.
+    intros x a H.
+    inversion H as [| |????? E].
+    - now destruct x.
+    - now destruct x as [|?[|??]]; [constructor|..].
+    - now apply app_inj_tail in E as (<-, _).
+  Qed.
+
+  Lemma desc_hd l : Descl l -> Forall (fun b => clos_refl_trans A leA b (hd b l)) l.
+  Proof.
+    intros H. induction H as [| |a' a'' l ? Hl IH].
+    - easy.
+    - now constructor; [apply rt_refl|].
+    - enough (H' : Forall (fun b => clos_refl_trans A leA b (hd b (l ++ [a'']))) ((l ++ [a'']) ++ [a'])).
+      { revert H'. apply Forall_impl. now destruct l. }
+      apply Forall_app. split; [easy|].
+      constructor; [|easy].
+      eapply rt_trans.
+      + apply clos_r_clos_rt. eassumption.
+      + apply Forall_app in IH as [_ IH].
+        destruct l as [|? l].
+        * now apply rt_refl.
+        * now apply Forall_cons_iff in IH as [??].
   Qed.
 
   Lemma desc_tail :
     forall (x : List) (a b : A),
       Descl (b :: x ++ [a]) -> clos_refl_trans A leA a b.
   Proof.
-    intro.
-    apply rev_ind with
-      (P := 
-        fun x : List =>
-        forall a b : A, Descl (b :: x ++ [a]) -> clos_refl_trans A leA a b);
-     intros.
-    - inversion H.
-      assert ([b; a] = ([] ++ [b]) ++ [a]) by auto with sets.
-      destruct (app_inj_tail (l ++ [y]) ([] ++ [b]) _ _ H0) as ((?, <-)%app_inj_tail, <-).
-      inversion H1; subst; [ apply rt_step; assumption | apply rt_refl ].
-    - inversion H0.
-      + apply app_cons_not_nil in H3 as [].
-      + rewrite app_comm_cons in H0, H1. apply desc_prefix in H0.
-        pose proof (H x0 b H0).
-        apply rt_trans with (y := x0); auto with sets.
-        enough (H5 : clos_refl A leA a x0)
-         by (inversion H5; subst; [ apply rt_step | apply rt_refl ];
-              assumption).
-        apply app_inj_tail in H1 as (H1, ->).
-        rewrite app_comm_cons in H1.
-        apply app_inj_tail in H1 as (_, <-).
-        assumption.
+    intros ??? [_ H]%desc_hd%(Forall_app _ (_ :: _)).
+    now apply Forall_cons_iff in H as [??].
   Qed.
-
-
-  Lemma dist_aux :
-    forall z : List,
-      Descl z -> forall x y : List, z = x ++ y -> Descl x /\ Descl y.
-  Proof.
-    intros z D.
-    induction D as [| | * H D Hind]; intros.
-    - assert (H0 : x ++ y = []) by auto with sets.
-      apply app_eq_nil in H0 as (->, ->).
-      split; apply d_nil.
-    - assert (E : x0 ++ y = [x]) by auto with sets.
-      apply app_eq_unit in E as [(->, ->)| (->, ->)].
-      + split.
-        * apply d_nil.
-        * apply d_one.
-      + split.
-        * apply d_one.
-        * apply d_nil.
-    - induction y0 using rev_ind in x0, H0 |- *.
-      + rewrite app_nil_r in H0.
-        rewrite <- H0.
-        split.
-        * apply d_conc; auto with sets.
-        * apply d_nil.
-      + induction y0 using rev_ind in x1, x0, H0 |- *.
-        * simpl.
-          split.
-          -- apply app_inj_tail in H0 as (<-, _). assumption.
-          -- apply d_one.
-        * rewrite 2!app_assoc in H0.
-          apply app_inj_tail in H0 as (H0, <-).
-          pose proof H0 as H0'.
-          apply app_inj_tail in H0' as (_, ->).
-          rewrite <- app_assoc in H0.
-          apply Hind in H0 as [].
-          split.
-          -- assumption.
-          -- apply d_conc; auto with sets.
-  Qed.
-
-
 
   Lemma dist_Desc_concat :
     forall x y : List, Descl (x ++ y) -> Descl x /\ Descl y.
   Proof.
-    intros.
-    apply (dist_aux (x ++ y) H x y); auto with sets.
+    intros x y H. split.
+    - revert x H.
+      induction y as [|a y IH] using rev_ind.
+      + intros x. now rewrite app_nil_r.
+      + intros x. rewrite app_assoc. now intros ?%desc_prefix%IH.
+    - induction y as [|a y IH] using rev_ind; [repeat constructor|].
+      induction y as [|a' y _] using rev_ind; [repeat constructor|].
+      rewrite !app_assoc in H.
+      inversion H as [| |????? E].
+      + now destruct x, y.
+      + now destruct x as [|? [|??]]; destruct y.
+      + constructor.
+        * apply app_inj_tail in E as [E <-].
+          now apply app_inj_tail in E as [_ <-].
+        * apply IH. rewrite app_assoc.
+          now apply desc_prefix in H.
   Qed.
 
   Lemma desc_end :
@@ -216,83 +182,31 @@ Section Wf_Lexicographic_Exponentiation.
     - unfold lex_exp; simpl; auto with sets.
   Qed.
 
-
   Theorem wf_lex_exp : well_founded leA -> well_founded Lex_Exp.
   Proof.
-    unfold well_founded at 2.
-    simple induction a; intros x y.
-    apply Acc_intro.
-    simple induction y0.
-    unfold lex_exp at 1; simpl.
-    apply rev_ind with
-      (A := A)
-      (P := 
-        fun x : List =>
-        forall (x0 : List) (y : Descl x0),
-          ltl x0 x -> Acc Lex_Exp << x0, y >>).
-    - intros.
-      inversion_clear H0.
-
-    - intro.
-      generalize (well_founded_ind (wf_clos_trans A leA H)).
-      intros GR.
-      apply GR with
-        (P :=
-           fun x0 : A =>
-             forall l : List,
-               (forall (x1 : List) (y : Descl x1),
-                   ltl x1 l -> Acc Lex_Exp << x1, y >>) ->
-               forall (x1 : List) (y : Descl x1),
-                 ltl x1 (l ++ [x0]) -> Acc Lex_Exp << x1, y >>).
-      intro; intros HInd; intros.
-      generalize (right_prefix x2 l [x1] H1).
-      simple induction 1.
-      + intro; apply (H0 x2 y1 H3).
-
-      + simple induction 1.
-        intro; simple induction 1.
-        clear H4 H2.
-        intro; generalize y1; clear y1.
-        rewrite H2.
-        apply rev_ind with
-          (A := A)
-          (P :=
-             fun x3 : List =>
-               forall y1 : Descl (l ++ x3),
-                 ltl x3 [x1] -> Acc Lex_Exp << l ++ x3, y1 >>).
-        * intros.
-          generalize (app_nil_r l); intros Heq.
-          generalize y1.
-          clear y1.
-          rewrite Heq.
-          intro.
-          apply Acc_intro.
-          simple induction y2.
-          unfold lex_exp at 1.
-          simpl; intros x4 y3. intros.
-          apply (H0 x4 y3); auto with sets.
-
-        * intros.
-          generalize (dist_Desc_concat l (l0 ++ [x4]) y1).
-          simple induction 1.
-          intros.
-          generalize (desc_end x4 x1 l0 (conj H8 H5)); intros.
-          generalize y1.
-          rewrite (app_assoc l l0 [x4]); intro.
-          generalize (HInd x4 H9 (l ++ l0)); intros HInd2.
-          generalize (ltl_unit l0 x4 x1 H8 H5); intro.
-          generalize (dist_Desc_concat (l ++ l0) [x4] y2).
-          simple induction 1; intros.
-          generalize (H4 H12 H10); intro.
-          generalize (Acc_inv H14).
-          generalize (acc_app l l0 H12 H14).
-          intros f g.
-          generalize (HInd2 f); intro.
-          apply Acc_intro.
-          simple induction y3.
-          unfold lex_exp at 1; simpl; intros.
-          apply H15; auto with sets.
+    intros wf_leA.
+    eapply (wf_simulation _ _ _ (fun '(exist _ l _) l'  => l = l')).
+    - apply wf_clos_trans. apply wf_list_ext. apply wf_clos_trans. apply wf_leA.
+    - intros ? [l ?] _. now exists l.
+    - unfold lex_exp. intros [l2 Hl2] [l1 Hl1]. cbn.
+      intros ? H <-. exists l1. split; [reflexivity|].
+      induction H as [|a b Hab l1 l2|].
+      + now apply clos_trans_list_ext_nil_l.
+      + assert (H'ab : clos_trans List (list_ext A (clos_trans A leA)) (a :: l1) [b]).
+        { apply t_step. rewrite <-(app_nil_r (a :: l1)).
+          eapply (list_ext_intro _ _ b (_ :: _) []).
+          constructor; [now apply t_step|].
+          apply desc_hd in Hl1.
+          apply Forall_cons_iff in Hl1 as [_ Hl1].
+          revert Hl1. apply Forall_impl.
+          intros. eapply clos_rt_t; [|apply t_step]; eassumption. }
+        rewrite <-(app_nil_r (a :: l1)).
+        apply (clos_trans_list_ext_app_l _ _ _ _ [b]); [assumption|].
+        destruct l2; [apply rt_refl|apply clos_t_clos_rt].
+        now apply clos_trans_list_ext_nil_l.
+      + apply (dist_Desc_concat [a]) in Hl1 as [_ ?].
+        apply (dist_Desc_concat [a]) in Hl2 as [_ ?].
+        apply (clos_trans_list_ext_app_r _ _ [a] _ [a]); auto using rt_refl.
   Qed.
-
 
 End Wf_Lexicographic_Exponentiation.
