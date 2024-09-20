@@ -86,3 +86,9 @@ val map : ('a -> 'b) -> 'a located -> 'b located
 
 val pr : t -> Pp.t
 (** Print for user consumption. *)
+
+(** {5 Location of the current command (if any) } *)
+
+val get_current_command_loc : unit -> t option
+
+val set_current_command_loc : t option -> unit

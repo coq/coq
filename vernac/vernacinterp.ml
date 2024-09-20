@@ -106,9 +106,14 @@ and vernac_load ~verbosely entries =
   stack, pm
 
 and interp_control ~st ({ CAst.v = cmd; loc }) =
-  interp_control_gen ~loc ~st cmd.control
-    ~unfreeze_transient:Vernacstate.Synterp.unfreeze
-    (fun () -> interp_expr ?loc ~st cmd)
+  Util.try_finally (fun () ->
+      Loc.set_current_command_loc loc;
+      interp_control_gen ~loc ~st cmd.control
+        ~unfreeze_transient:Vernacstate.Synterp.unfreeze
+        (fun () -> interp_expr ?loc ~st cmd))
+    ()
+    (fun () -> Loc.set_current_command_loc None)
+    ()
 
 (* XXX: This won't properly set the proof mode, as of today, it is
    controlled by the STM. Thus, we would need access information from

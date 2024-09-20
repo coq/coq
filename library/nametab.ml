@@ -10,6 +10,7 @@
 
 open Names
 open Libnames
+open Globnames
 
 type object_prefix = {
   obj_dir : DirPath.t;
@@ -400,7 +401,7 @@ struct
       id, (DirPath.repr dir)
 end
 
-module ExtRefEqual = Globnames.ExtRefOrdered
+module ExtRefEqual = ExtRefOrdered
 module MPEqual = Names.ModPath
 
 module ExtRefTab = Make(FullPath)(ExtRefEqual)
@@ -427,11 +428,11 @@ let the_univtab = Summary.ref ~name:"univtab" (UnivTab.empty : univtab)
 (* Reversed name tables ***************************************************)
 
 (* This table translates extended_global_references back to section paths *)
-type globrevtab = full_path Globnames.ExtRefMap.t
+type globrevtab = full_path ExtRefMap.t
 let the_globrevtab =
-  Summary.ref ~name:"globrevtab" (Globnames.ExtRefMap.empty : globrevtab)
+  Summary.ref ~name:"globrevtab" (ExtRefMap.empty : globrevtab)
 
-let the_globwarntab = Summary.ref ~name:"globwarntag" Globnames.ExtRefMap.empty
+let the_globwarntab = Summary.ref ~name:"globwarntag" ExtRefMap.empty
 
 type mprevtab = DirPath.t MPmap.t
 
@@ -479,9 +480,9 @@ let push_xref ?user_warns visibility sp xref =
   match visibility with
     | Until _ ->
         the_ccitab := ExtRefTab.push visibility sp xref !the_ccitab;
-        the_globrevtab := Globnames.ExtRefMap.add xref sp !the_globrevtab;
+        the_globrevtab := ExtRefMap.add xref sp !the_globrevtab;
         user_warns |> Option.iter (fun warn ->
-            the_globwarntab := Globnames.ExtRefMap.add xref warn !the_globwarntab)
+            the_globwarntab := ExtRefMap.add xref warn !the_globwarntab)
     | Exactly _ ->
       begin
         assert (Option.is_empty user_warns);
@@ -490,8 +491,8 @@ let push_xref ?user_warns visibility sp xref =
 
 let remove_xref sp xref =
   the_ccitab := ExtRefTab.remove sp !the_ccitab;
-  the_globrevtab := Globnames.ExtRefMap.remove xref !the_globrevtab;
-  the_globwarntab := Globnames.ExtRefMap.remove xref !the_globwarntab
+  the_globrevtab := ExtRefMap.remove xref !the_globrevtab;
+  the_globwarntab := ExtRefMap.remove xref !the_globwarntab
 
 let push_cci ?user_warns visibility sp ref =
   push_xref ?user_warns visibility sp (TrueGlobal ref)
@@ -538,7 +539,7 @@ let path_of_global ref =
   let open GlobRef in
   match ref with
     | VarRef id -> make_path DirPath.empty id
-    | _ -> Globnames.ExtRefMap.find (TrueGlobal ref) !the_globrevtab
+    | _ -> ExtRefMap.find (TrueGlobal ref) !the_globrevtab
 
 let dirpath_of_global ref =
   fst (repr_path (path_of_global ref))
@@ -547,7 +548,7 @@ let basename_of_global ref =
   snd (repr_path (path_of_global ref))
 
 let path_of_abbreviation kn =
-  Globnames.ExtRefMap.find (Abbrev kn) !the_globrevtab
+  ExtRefMap.find (Abbrev kn) !the_globrevtab
 
 let dirpath_of_module mp =
   MPmap.find mp Modules.(!nametab.modrevtab)
@@ -565,7 +566,7 @@ let shortest_qualid_of_global ?loc ctx ref =
   match ref with
     | VarRef id -> make_qualid ?loc DirPath.empty id
     | _ ->
-        let sp =  Globnames.ExtRefMap.find (TrueGlobal ref) !the_globrevtab in
+        let sp =  ExtRefMap.find (TrueGlobal ref) !the_globrevtab in
         ExtRefTab.shortest_qualid ?loc ctx sp !the_ccitab
 
 let shortest_qualid_of_abbreviation ?loc ctx kn =
@@ -599,7 +600,7 @@ let pr_global_env env ref =
 (* Locate functions *******************************************************)
 
 let pr_depr_xref xref =
-  let sp = Globnames.ExtRefMap.get xref !the_globrevtab in
+  let sp = ExtRefMap.get xref !the_globrevtab in
   pr_qualid (ExtRefTab.shortest_qualid Id.Set.empty sp !the_ccitab)
 
 let pr_depr_ref ref = pr_depr_xref (TrueGlobal ref)
@@ -615,13 +616,13 @@ let warn_deprecated_abbreviation =
   ~pp_qf:pr_depr_xref pr_depr_abbrev
 
 let warn_deprecated_xref ?loc depr = function
-  | Globnames.TrueGlobal ref -> warn_deprecated_ref ?loc (ref, depr)
+  | TrueGlobal ref -> warn_deprecated_ref ?loc (ref, depr)
   | Abbrev a -> warn_deprecated_abbreviation ?loc (a, depr)
 
 let warn_user_warn =
   UserWarn.create_warning ~warning_name_if_no_cats:"warn-reference" ()
 
-let is_warned_xref xref : Globnames.extended_global_reference UserWarn.with_qf option = Globnames.ExtRefMap.find_opt xref !the_globwarntab
+let is_warned_xref xref : extended_global_reference UserWarn.with_qf option = ExtRefMap.find_opt xref !the_globwarntab
 
 let warn_user_warn_xref ?loc user_warns xref =
   user_warns.UserWarn.depr_qf
@@ -669,7 +670,7 @@ let locate_section qid =
 let locate_all qid =
   List.fold_right (fun a l ->
     match a with
-    | Globnames.TrueGlobal a -> a::l
+    | TrueGlobal a -> a::l
     | _ -> l)
     (ExtRefTab.find_prefixes qid !the_ccitab) []
 
@@ -730,3 +731,13 @@ let exists_module dir = MPDTab.exists dir Modules.(!nametab.modtab)
 let exists_modtype sp = MPTab.exists sp Modules.(!nametab.modtypetab)
 
 let exists_universe kn = UnivTab.exists kn !the_univtab
+
+(* Source locations *)
+
+open Globnames
+
+let cci_loc_table : Loc.t ExtRefMap.t ref = Summary.ref ~name:"constant-loc-table" ExtRefMap.empty
+
+let set_cci_src_loc kn loc = cci_loc_table := ExtRefMap.add kn loc !cci_loc_table
+
+let cci_src_loc kn = ExtRefMap.find_opt kn !cci_loc_table

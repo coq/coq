@@ -54,6 +54,7 @@ The reduction tactics unfold myplus when the 2nd and
   3rd arguments evaluate to a constructor
 myplus is transparent
 Expands to: Constant Arguments_renaming.Test1.myplus
+Declared in library Arguments_renaming, line 31, characters 0-108
 @myplus
      : forall Z : Type, Z -> nat -> nat -> nat
 Inductive myEq (A B : Type) (x : A) : A -> Prop :=
@@ -89,6 +90,7 @@ The reduction tactics unfold myplus when the 2nd and
   3rd arguments evaluate to a constructor
 myplus is transparent
 Expands to: Constant Arguments_renaming.myplus
+Declared in library Arguments_renaming, line 31, characters 0-108
 @myplus
      : forall Z : Type, Z -> nat -> nat -> nat
 File "./output/Arguments_renaming.v", line 49, characters 0-36:
