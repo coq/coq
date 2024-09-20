@@ -595,7 +595,7 @@ let glob_local_binder_of_extended = DAst.with_loc_val (fun ?loc -> function
       let t = DAst.make ?loc @@ GHole (GBinderType na) in
       (na,None,Explicit,Some c,t)
   | GLocalPattern (_,_,_,_) ->
-      Loc.raise ?loc (Gramlib.Grammar.Error "Pattern with quote not allowed here.")
+      Loc.raise ?loc (Gramlib.Grammar.Error "Pattern with quote not allowed here")
   )
 
 let intern_cases_pattern_fwd = ref (fun _ -> failwith "intern_cases_pattern_fwd")
@@ -2873,6 +2873,7 @@ let interp_context_evars_gen ?(program_mode=false) ?(unconstrained_sorts = false
       (fun (int_env, acc) b ->
         let int_env, bl = intern_local_binder_aux ~dump (my_intern_constr env lvar) Id.Map.empty (int_env,[]) b in
         let int_env, acc = List.fold_right (fun b' (int_env, (env,sigma,params,impls)) ->
+          let loc = b'.CAst.loc in
           let (na, _, bk, b', t) = glob_local_binder_of_extended b' in
           let sigma, t =
               let t' = if Option.is_empty b' then locate_if_hole ?loc:(loc_of_glob_constr t) na t else t in (* useful? *)
@@ -2883,13 +2884,13 @@ let interp_context_evars_gen ?(program_mode=false) ?(unconstrained_sorts = false
           match b' with
           | None ->
             let int_env = if autoimp_enable then Name.fold_left (push_auto_implicit env sigma t) int_env na else int_env in
-            let d = make_decl (LocalAssum (make_annot na r,t)) in
+            let d = make_decl ?loc (LocalAssum (make_annot na r,t)) in
             let impls = impl_of_binder_kind na bk :: impls in
             (int_env, (push_decl d env, sigma, d::params, impls))
           | Some b ->
             assert (bk = Explicit);
             let sigma, c, _ = Pretyping.ise_pretype_gen flags env sigma empty_lvar (OfType t) b in
-            let d = make_decl (LocalDef (make_annot na r, c, t)) in
+            let d = make_decl ?loc (LocalDef (make_annot na r, c, t)) in
             (int_env, (push_decl d env, sigma, d::params, impls)))
           bl (int_env,acc) in
         int_env, acc)
@@ -2898,12 +2899,12 @@ let interp_context_evars_gen ?(program_mode=false) ?(unconstrained_sorts = false
   sigma, (int_env.impls, ((env, bl), List.rev impls))
 
 let interp_named_context_evars ?program_mode ?unconstrained_sorts ?impl_env ?autoimp_enable env sigma bl =
-  let extract_name = function Name id -> id | Anonymous -> user_err Pp.(str "Unexpected anonymous variable.") in
-  let make_decl = Context.Named.Declaration.of_rel_decl extract_name in
+  let extract_name ?loc = function Name id -> id | Anonymous -> user_err ?loc Pp.(str "Unexpected anonymous variable.") in
+  let make_decl ?loc = Context.Named.Declaration.of_rel_decl (extract_name ?loc) in
   interp_context_evars_gen ?program_mode ?unconstrained_sorts  ?impl_env ?autoimp_enable ~dump:false env sigma make_decl EConstr.push_named bl
 
 let interp_context_evars ?program_mode ?unconstrained_sorts ?impl_env env sigma bl =
-  interp_context_evars_gen ?program_mode ?unconstrained_sorts ?impl_env ~autoimp_enable:false ~dump:true env sigma (fun d -> d) EConstr.push_rel bl
+  interp_context_evars_gen ?program_mode ?unconstrained_sorts ?impl_env ~autoimp_enable:false ~dump:true env sigma (fun ?loc d -> d) EConstr.push_rel bl
 
 (** Local universe and constraint declarations. *)
 

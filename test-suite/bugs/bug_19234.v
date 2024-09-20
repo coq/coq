@@ -1,5 +1,5 @@
 Require Import Derive.
-Derive b SuchThat b As spec.
+Derive b in b as spec.
 Unshelve.
 2:exact Type.
 unfold b.

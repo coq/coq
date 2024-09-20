@@ -173,7 +173,10 @@ let instance_of_univs = function
 
 let add_mono_univ_uctx_for_derived ctx' = function
   | UState.Monomorphic_entry ctx, ubinders -> UState.Monomorphic_entry (Univ.ContextSet.union ctx ctx'), ubinders
-  | UState.Polymorphic_entry ctx, ubinders -> CErrors.anomaly (Pp.str "Derive does not support polymorphism yet.")
+  | UState.Polymorphic_entry ctx, ubinders as x ->
+    if not (Univ.ContextSet.is_empty ctx') then
+      CErrors.anomaly (Pp.str "Transparent component with private polymorphism in Derive.");
+    x
 
 let add_mono_uctx uctx = function
   | UState.Monomorphic_entry ctx, ubinders -> UState.Monomorphic_entry (Univ.ContextSet.union (UState.context_set uctx) ctx), ubinders
@@ -1602,7 +1605,7 @@ module Proof_ending = struct
   type t =
     | Regular
     | End_obligation of Obls_.obligation_qed_info
-    | End_derive of { f : Id.t; name : Id.t }
+    | End_derive
     | End_equations of
         { hook : pm:Obls_.State.t -> Constant.t list -> Evd.evar_map -> Obls_.State.t
         ; i : Id.t
@@ -1729,8 +1732,8 @@ let start_dependent ~info ~cinfo ~name ~proof_ending goals =
   ; pinfo
   }
 
-let start_derive ~f ~name ~info ~cinfo goals =
-  let proof_ending = Proof_ending.End_derive {f; name} in
+let start_derive ~name ~info ~cinfo goals =
+  let proof_ending = Proof_ending.End_derive in
   start_dependent ~info ~cinfo ~name ~proof_ending goals
 
 let start_equations ~name ~info ~hook ~types sigma goals =
@@ -1996,17 +1999,23 @@ let close_proof ?warn_incomplete ~opaque ~keep_body_ucst_separate ps =
   let { Proof_info.info = { Info.udecl } } = pinfo in
   let { Proof.poly } = Proof.data proof in
   let elist, uctx = prepare_proof ?warn_incomplete ps in
-  let opaque = match opaque with
-    | Vernacexpr.Opaque -> true
-    | Vernacexpr.Transparent -> false in
-
-  let make_entry ((body, eff), typ) =
+  let opaques =
+    let n = List.length elist in
+    let is_derived = match CEphemeron.default pinfo.Proof_info.proof_ending Regular with End_derive -> true | _ -> false in
+    List.init n (fun i ->
+        if i < n-1 && is_derived then
+          (* Temporary code for setting opacity in Derive, waiting for addition of cinfo-based opacity in #19029 *)
+          false
+        else match opaque with
+          | Vernacexpr.Opaque -> true
+          | Vernacexpr.Transparent -> false) in
+  let make_entry ((body, eff), typ) opaque =
     let keep_body_ucst_separate = if keep_body_ucst_separate then Some initial_euctx else None in
     let _, univs, body =
       make_univs_immediate ~poly ?keep_body_ucst_separate ~opaque ~uctx ~udecl ~eff body (Some typ) in
     definition_entry_core ?using ~univs ~types:typ body
   in
-  let entries = CList.map make_entry elist in
+  let entries = List.map2 make_entry elist opaques in
   { entries; uctx; pinfo })
     ()
 
@@ -2272,14 +2281,13 @@ let save_admitted ~pm ~proof =
 (* Saving a lemma-like constant                                         *)
 (************************************************************************)
 
-let finish_derived ~f ~name {entries; pinfo; uctx} =
-  (* [f] and [name] correspond to the proof of [f] and of [suchthat], respectively. *)
-
+let finish_derived {entries; pinfo; uctx} =
+  let n = List.length entries in
   let { Proof_info.info = { Info.hook; scope; clearbody; kind; typing_flags; user_warns; poly; udecl; _ } } = pinfo in
   let _, _, refs, _ =
     List.fold_left2 (fun (i, subst, refs, used_univs) CInfo.{name; impargs} entry ->
       (* The opacity of the specification is adjusted to be [false], as it must.*)
-      let entry = if i = 0 then ProofEntry.set_transparent_for_derived entry else entry in
+      let entry = if i < n-1 then ProofEntry.set_transparent_for_derived entry else entry in
       let f c = UState.nf_universes uctx (Vars.replace_vars subst c) in
       let entry = ProofEntry.map_entry_type entry ~f:(Option.map f) in
       let entry = ProofEntry.map_proof_entry entry ~f:(fun (b,fx) -> (f b, fx)) in
@@ -2332,8 +2340,8 @@ let finish_proof ~pm proof_obj proof_info =
   | End_obligation oinfo ->
     let entry, uctx = check_single_entry proof_obj "Obligation.save" in
     Obls_.obligation_terminator ~pm ~entry ~uctx ~oinfo
-  | End_derive { f ; name } ->
-    pm, finish_derived ~f ~name proof_obj
+  | End_derive ->
+    pm, finish_derived proof_obj
   | End_equations { hook; i; types; sigma } ->
     let kind = proof_info.Proof_info.info.Info.kind in
     finish_proved_equations ~pm ~kind ~hook i proof_obj types sigma

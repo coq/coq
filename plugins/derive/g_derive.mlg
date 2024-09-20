@@ -20,10 +20,22 @@ DECLARE PLUGIN "coq-core.plugins.derive"
 
 let classify_derive_command _ = Vernacextend.(VtStartProof (Doesn'tGuaranteeOpacity,[]))
 
+let () =
+   Mltop.add_init_function "coq-core.plugins.derive" (fun () ->
+     Pcoq.(set_keyword_state (CLexer.add_keyword_tok (get_keyword_state ()) (Tok.PKEYWORD "SuchThat"))))
+
+let warn_deprecated_derive_suchthat =
+   CWarnings.create ~name:"deprecated-derive-suchthat" ~category:Deprecation.Version.v8_21
+  (fun () -> Pp.strbrk "Use of \"SuchThat\" and \"As\" in \"Derive\" is deprecated; replace them respectively by \"in\" and \"as\".")
+
 }
 
 VERNAC COMMAND EXTEND Derive CLASSIFIED BY { classify_derive_command } STATE open_proof
 | #[ atts = Vernacentries.DefAttributes.def_attributes; ]
-  [ "Derive" identref(f) "SuchThat" constr(suchthat) "As" identref(lemma) ] ->
-  { Derive.start_deriving ~atts f suchthat lemma.CAst.v }
+  [ "Derive" open_binders(bl) "SuchThat" constr(suchthat) "As" identref(lemma) ] ->
+  { warn_deprecated_derive_suchthat ();
+    Derive.start_deriving ~atts bl suchthat lemma.CAst.v }
+| #[ atts = Vernacentries.DefAttributes.def_attributes; ]
+  [ "Derive" open_binders(bl) "in" constr(suchthat) "as" identref(lemma) ] ->
+  { Derive.start_deriving ~atts bl suchthat lemma.CAst.v }
 END
