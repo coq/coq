@@ -1751,7 +1751,7 @@ let () =
     GlbVal (GlobRef.VarRef id), gtypref t_reference
   | Tac2qexpr.QReference qid ->
     let gr =
-      try Nametab.locate qid
+      try Smartlocate.locate_global_with_alias qid
       with Not_found as exn ->
         let _, info = Exninfo.capture exn in
         Nametab.error_global_not_found ~info qid
