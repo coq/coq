@@ -6,11 +6,6 @@ set -xe
 : "${NJOBS:=1}"
 export NJOBS
 
-# We add $PWD/_install_ci/lib unconditionally due to a hack in the
-# ci-menhir script, which will install some OCaml libraries outside
-# our docker-opam / Nix setup; we have to do this for all the 3 cases
-# below; would we fix ci-menhir, then we just do this for the first
-# branch [ci case]
 if which cygpath >/dev/null 2>&1; then OCAMLFINDSEP=\;; else OCAMLFINDSEP=:; fi
 
 # We can remove setting COQLIB and COQCORELIB from here, but better to
