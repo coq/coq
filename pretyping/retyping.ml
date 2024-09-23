@@ -112,9 +112,16 @@ let type_of_var env id =
   with Not_found -> retype_error (BadVariable id)
 
 let decomp_sort env sigma t =
-  match EConstr.kind sigma (whd_all env sigma t) with
+  let t = whd_all env sigma t in
+  match EConstr.kind sigma t with
   | Sort s -> s
-  | _ -> retype_error NotASort
+  | _ ->
+    let t = try get_type_from_constraints env sigma t
+      with Not_found -> retype_error NotASort
+    in
+    match EConstr.kind sigma (whd_all env sigma t) with
+    | Sort s -> s
+    | _ -> retype_error NotASort
 
 let betazetaevar_applist sigma n c l =
   let rec stacklam n env t stack =
