@@ -260,3 +260,9 @@ forall [A : Type@{JMeq.u0}], A -> forall [B : Type@{JMeq.u1}], B -> Prop
 JMeq is template universe polymorphic on JMeq.u0
 Arguments JMeq [A]%type_scope x [B]%type_scope _
 Expands to: Inductive UnivBinders.PartialTemplate.JMeq
+File "./output/UnivBinders.v", line 232, characters 2-38:
+The command has indeed failed with message:
+Universe u0 already exists.
+File "./output/UnivBinders.v", line 239, characters 6-26:
+The command has indeed failed with message:
+Tactic failure: Not equal (due to universes).
