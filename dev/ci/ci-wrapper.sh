@@ -46,6 +46,9 @@ else
   bash "${DIR}/${CI_SCRIPT}" 2>&1 | tee "$CI_NAME.log"
 fi
 code=$?
+
+printf "\n%s exit code: %s\n" "$CI_NAME" "$code" >> "$CI_NAME.log"
+
 echo 'Aggregating timing log...'
 echo
 tools/make-one-time-file.py --real "$CI_NAME.log"
