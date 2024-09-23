@@ -384,3 +384,23 @@ Proof.
   pattern (S n) at 2 3, x.
   destruct x; reflexivity.
 Defined.
+
+
+Lemma UIP_None_l {A} (x : option A) (p1 p2 : None = x) : p1 = p2.
+Proof. apply eq_proofs_unicity_on. intros []; constructor; congruence. Qed.
+
+Lemma UIP_None_r {A} (x : option A) (p1 p2 : x = None) : p1 = p2.
+Proof. apply eq_proofs_unicity_on. intros []; constructor; congruence. Qed.
+
+Lemma UIP_None_None {A} (p1 p2 : None = None :> option A) : p1 = p2.
+Proof. apply eq_proofs_unicity_on. intros []; constructor; congruence. Qed.
+
+
+Lemma UIP_nil_l {A} (x : list A) (p1 p2 : nil = x) : p1 = p2.
+Proof. apply eq_proofs_unicity_on. intros []; constructor; congruence. Qed.
+
+Lemma UIP_nil_r {A} (x : list A) (p1 p2 : x = nil) : p1 = p2.
+Proof. apply eq_proofs_unicity_on. intros []; constructor; congruence. Qed.
+
+Lemma UIP_nil_nil {A} (p1 p2 : nil = nil :> list A) : p1 = p2.
+Proof. apply eq_proofs_unicity_on. intros []; constructor; congruence. Qed.
