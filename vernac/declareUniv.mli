@@ -18,6 +18,9 @@ exception AlreadyDeclared of (string option * Id.t)
    constants/inductives. Noop on polymorphic references. *)
 val declare_univ_binders : GlobRef.t -> UState.named_universes_entry -> unit
 
+(** Internally used to name universes associated with no particular constant in a section. *)
+val name_mono_section_univs : Univ.Level.Set.t -> unit
+
 (** Command [Universes]. *)
 val do_universe : poly:bool -> lident list -> unit
 
