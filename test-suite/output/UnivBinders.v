@@ -71,13 +71,15 @@ Fail Monomorphic Definition mono2@{uu} := Type@{uu}.
 
 Module SecLet.
   Unset Universe Polymorphism.
-  Section foo.
+  Section fooS.
     (* Fail Let foo@{} := Type@{uu}. (* doesn't parse: Let foo@{...} doesn't exist *) *)
+
     Unset Strict Universe Declaration.
-    Let tt : Type@{uu} := Type@{v}. (* names disappear in the ether *)
-    #[clearbody] Let ff : Type@{uu}. Proof. exact Type@{v}. Defined. (* names disappear into space *)
+    (* the names used disappear, and fresh names are generated instead of exposing raw ints *)
+    Let tt : Type@{uu} := Type@{v}.
+    #[clearbody] Let ff : Type@{uu}. Proof. exact Type@{v}. Defined.
     Definition bobmorane := tt -> ff.
-  End foo.
+  End fooS.
   Print bobmorane.
 End SecLet.
 

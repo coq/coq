@@ -24,8 +24,8 @@ let _ = CErrors.register_handler (function
 
 type universe_source =
   | BoundUniv (* polymorphic universe, bound in a function (this will go away someday) *)
-  | QualifiedUniv of Id.t (* global universe introduced by some global value *)
-  | UnqualifiedUniv (* other global universe *)
+  | QualifiedUniv of Id.t list (* global universe introduced by some global value *)
+  | UnqualifiedUniv (* other global universe, todo merge with [QualifiedUniv []] *)
 
 type universe_name_decl = universe_source * (Id.t * UGlobal.t) list
 
@@ -40,7 +40,7 @@ let qualify_univ i dp src id =
     i,  Libnames.make_path dp id
   | QualifiedUniv l ->
     let dp = DirPath.repr dp in
-    Nametab.map_visibility succ i, Libnames.make_path (DirPath.make (l::dp)) id
+    Nametab.map_visibility (fun n -> n + List.length l) i, Libnames.make_path (DirPath.make (List.append l dp)) id
 
 let do_univ_name ~check i dp src (id,univ) =
   let i, sp = qualify_univ i dp src id in
@@ -119,7 +119,20 @@ let declare_univ_binders gr (univs, pl) =
         aux, (id,univ) :: univs)
         (Level.Set.diff levels named) ((pl,0),univs)
     in
-    input_univ_names (QualifiedUniv l, univs)
+    input_univ_names (QualifiedUniv [l], univs)
+
+let name_mono_section_univs univs =
+  if Level.Set.is_empty univs then ()
+  else
+  let prefix = Lib.cwd () in
+  let sections = DirPath.repr @@ Libnames.drop_dirpath_prefix (Lib.cwd_except_section()) prefix in
+  let _, univs = Level.Set.fold (fun univ (aux,univs) ->
+      let id, aux = invent_name prefix aux univ in
+      let univ = Option.get (Level.name univ) in
+      aux, (id,univ) :: univs)
+      univs ((Id.Map.empty, 0), [])
+  in
+  input_univ_names (QualifiedUniv sections, univs)
 
 let do_universe ~poly l =
   let in_section = Lib.sections_are_opened () in
