@@ -245,3 +245,7 @@ Module Collision.
     constr_eq_strict a b.
   Abort.
 End Collision.
+
+Module Schemes.
+  Check eq_rect.
+End Schemes.
