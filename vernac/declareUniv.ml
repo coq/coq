@@ -77,10 +77,11 @@ let input_univ_names (src, l) =
   if CList.is_empty l then ()
   else Lib.add_leaf (input_univ_names (src, l))
 
-let invent_name (named,cnt) u =
+let invent_name prefix (named,cnt) u =
   let rec aux i =
     let na = Id.of_string ("u"^(string_of_int i)) in
-    if Id.Map.mem na named then aux (i+1)
+    let sp = Libnames.make_path prefix na in
+    if Id.Map.mem na named || Nametab.exists_universe sp then aux (i+1)
     else na, (Id.Map.add na u named, i+1)
   in
   aux cnt
@@ -111,8 +112,9 @@ let declare_univ_binders gr (univs, pl) =
         pl (Level.Set.empty,[])
     in
     (* then invent names for the rest *)
+    let prefix = DirPath.make (l :: DirPath.repr (Lib.cwd_except_section())) in
     let _, univs = Level.Set.fold (fun univ (aux,univs) ->
-        let id, aux = invent_name aux univ in
+        let id, aux = invent_name prefix aux univ in
         let univ = Option.get (Level.name univ) in
         aux, (id,univ) :: univs)
         (Level.Set.diff levels named) ((pl,0),univs)
