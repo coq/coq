@@ -1640,7 +1640,7 @@ let recursive_definition ~interactive_proof ~is_mes function_name rec_impls
   let evd, ty =
     interp_type_evars ~program_mode:false env evd ~impls:rec_impls eq
   in
-  let evd = Evd.minimize_universes evd in
+  let evd = Evd.minimize_universes ~poly:false evd in
   let equation_lemma_type =
     Reductionops.nf_betaiotazeta env evd (Evarutil.nf_evar evd ty)
   in

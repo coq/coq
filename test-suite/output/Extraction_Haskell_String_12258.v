@@ -11,8 +11,8 @@ Inductive output_type_code :=
 | byte_eq_dec
 .
 
-Definition output_type_sig (c : output_type_code) : { T : Type & T }
-  := existT (fun T => T)
+Definition output_type_sig (c : output_type_code) : { T : Set & T }
+  := existT (fun (T : Set) => T)
             _
             match c return match c with ascii_dec => _ | _ => _ end with
             | ascii_dec => Ascii.ascii_dec

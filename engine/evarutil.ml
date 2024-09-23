@@ -33,8 +33,8 @@ let create_clos_infos env sigma flags =
 (* Expanding/testing/exposing existential variables *)
 (****************************************************)
 
-let finalize ?abort_on_undefined_evars sigma f =
-  let sigma = minimize_universes sigma in
+let finalize ?poly ?abort_on_undefined_evars sigma f =
+  let sigma = minimize_universes ?poly sigma in
   let uvars = ref Univ.Level.Set.empty in
   let nf_constr c =
     let _, varsc = EConstr.universes_of_constr sigma c in

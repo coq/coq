@@ -959,7 +959,7 @@ let prepare_definition ~info ~opaque ?using ~name ~body ~typ sigma =
   let env = Global.env () in
   Option.iter (check_evars_are_solved env sigma) typ;
   check_evars_are_solved env sigma body;
-  let sigma = Evd.minimize_universes sigma in
+  let sigma = Evd.minimize_universes ~poly sigma in
   let using =
     let f (name, body, typ) =
       name, Option.List.flatten [ Some body; typ ] in
@@ -993,7 +993,7 @@ let prepare_obligations ~name ?types ~body env sigma =
     | Some t -> t
     | None -> Retyping.get_type_of env sigma body
   in
-  let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:false
+  let sigma, (body, types) = Evarutil.finalize ~poly:true ~abort_on_undefined_evars:false
       sigma (fun nf -> nf body, nf types)
   in
   RetrieveObl.check_evars env sigma;
@@ -1005,7 +1005,7 @@ let prepare_obligations ~name ?types ~body env sigma =
 let prepare_parameter ~poly ~udecl ~types sigma =
   let env = Global.env () in
   Pretyping.check_evars_are_solved ~program_mode:false env sigma;
-  let sigma, typ = Evarutil.finalize ~abort_on_undefined_evars:true
+  let sigma, typ = Evarutil.finalize ~poly ~abort_on_undefined_evars:true
       sigma (fun nf -> nf types)
   in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
@@ -1896,7 +1896,7 @@ let prepare_proof ?(warn_incomplete=true) { proof; pinfo } =
     Proof.unfocus_all proof
   in
   let eff = Evd.eval_side_effects evd in
-  let evd = Evd.minimize_universes evd in
+  let evd = Evd.minimize_universes ~poly evd in
   let to_constr c =
     match EConstr.to_constr_opt evd c with
     | Some p -> p
@@ -2272,7 +2272,7 @@ let save_admitted ~pm ~proof =
      do the same as in save_lemma_admitted_delayed, but we would need
      for that that fixpoints are represented with multi-statements; so
      we take the initial types *)
-  let sigma = Evd.minimize_universes sigma in
+  let sigma = Evd.minimize_universes ~poly:proof.pinfo.info.poly sigma in
   let typs = List.map (EConstr.to_constr sigma) typs in
   let uctx = Evd.ustate sigma in
   finish_admitted ~pm ~pinfo:proof.pinfo ~uctx ~sec_vars typs

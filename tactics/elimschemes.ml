@@ -96,7 +96,7 @@ let optimize_non_type_induction_scheme kind dep sort env _handle ind =
         mib.mind_nparams in
     let sigma, sort = Evd.fresh_sort_in_family sigma sort in
     let sigma, t', c' = weaken_sort_scheme env sigma sort npars c t in
-    let sigma = Evd.minimize_universes sigma in
+    let sigma = Evd.minimize_universes ~poly:true sigma in
     (Evarutil.nf_evars_universes sigma c', Evd.ustate sigma)
   | None ->
     build_induction_scheme_in_type env dep sort ind

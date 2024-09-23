@@ -1292,11 +1292,16 @@ let collapse_sort_variables evd =
   let universes = UState.collapse_sort_variables evd.universes in
   { evd with universes }
 
-let minimize_universes ?lbound evd =
-  let uctx' = UState.collapse_sort_variables evd.universes in
-  let uctx' = UState.normalize_variables uctx' in
-  let uctx' = UState.minimize ?lbound uctx' in
-  {evd with universes = uctx'}
+let minimize_universes ?(poly = true) ?lbound evd =
+  if poly then
+    let uctx' = UState.collapse_sort_variables evd.universes in
+    let uctx' = UState.normalize_variables uctx' in
+    let uctx' = UState.minimize ?lbound uctx' in
+    {evd with universes = uctx'}
+  else
+    let uctx' = UState.collapse_sort_variables evd.universes in
+    let uctx' = UState.normalize_variables uctx' in
+    {evd with universes = uctx'}
 
 let universe_of_name evd s = UState.universe_of_name evd.universes s
 

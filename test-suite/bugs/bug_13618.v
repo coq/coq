@@ -1,6 +1,6 @@
 Require Import Setoid CRelationClasses CMorphisms.
 
-Definition equiv@{i} (A B : Type@{i}) : Type@{i} :=
+Definition equiv@{i+|+} (A B : Type@{i}) : Type@{i} :=
   iffT A B.
 
 Section Equiv.

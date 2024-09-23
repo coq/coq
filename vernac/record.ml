@@ -264,7 +264,7 @@ let typecheck_params_and_fields ~auto_prop_lowering def ~poly udecl ps (records 
   let lbound = if unconstrained_sorts then UGraph.Bound.Prop else UGraph.Bound.Set in
   let sigma, (newps, ans) =
     (* too complex for Evarutil.finalize as we normalize non-constr *)
-    let sigma = Evd.minimize_universes ~lbound sigma in
+    let sigma = Evd.minimize_universes ~poly:true ~lbound sigma in
     let uvars = ref Univ.Level.Set.empty in
     let nf c =
       let _, varsc = EConstr.universes_of_constr sigma c in

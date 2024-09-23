@@ -410,7 +410,7 @@ let interp_wf ~program_mode env sigma recname ctx ccl = function
     in
     sigma, ((after, [extradecl]), Some (extradecl, rel, relargty, measure), [impl])
 
-let interp_mutual_definition env ~program_mode ~function_mode rec_order fixl =
+let interp_mutual_definition env ~program_mode ~function_mode ~poly rec_order fixl =
   let open Context.Named.Declaration in
   let open EConstr in
   let fixnames = List.map (fun fix -> fix.Vernacexpr.fname.CAst.v) fixl in
@@ -457,7 +457,7 @@ let interp_mutual_definition env ~program_mode ~function_mode rec_order fixl =
 
   (* Instantiate evars and check all are resolved *)
   let sigma = Evarconv.solve_unif_constraints_with_heuristics env sigma in
-  let sigma = Evd.minimize_universes sigma in
+  let sigma = Evd.minimize_universes ~poly sigma in
 
   (* Build the fix declaration block *)
   let fix = {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs} in
@@ -481,7 +481,7 @@ let ground_fixpoint env evd {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fix
 
 let interp_fixpoint_short rec_order fixpoint_exprl =
   let env = Global.env () in
-  let (_, _, sigma),(fix, _, _, _) = interp_mutual_definition ~program_mode:false ~function_mode:true env (CFixRecOrder rec_order) fixpoint_exprl in
+  let (_, _, sigma),(fix, _, _, _) = interp_mutual_definition ~poly:false ~program_mode:false ~function_mode:true env (CFixRecOrder rec_order) fixpoint_exprl in
   let sigma = Pretyping.(solve_remaining_evars all_no_fail_flags env sigma) in
   let typel = (ground_fixpoint env sigma fix).fixtypes in
   typel, sigma
@@ -544,7 +544,7 @@ let do_mutually_recursive ?pm ~program_mode ?(use_inference_hook=false) ?scope ?
   : Declare.OblState.t option * Declare.Proof.t option =
   let env = Global.env () in
   let env = Environ.update_typing_flags ?typing_flags env in
-  let (env,rec_sign,sigma),(fix,isfix,possible_guard,udecl) = interp_mutual_definition env ~program_mode ~function_mode:false rec_order fixl in
+  let (env,rec_sign,sigma),(fix,isfix,possible_guard,udecl) = interp_mutual_definition env ~poly ~program_mode ~function_mode:false rec_order fixl in
   check_recursive ~isfix env sigma fix;
   let kind = Decls.IsDefinition isfix in
   let sigma, ({fixdefs=bodies;fixrs;fixtypes;fixwfs} as fix), obls, hook =

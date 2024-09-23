@@ -13,7 +13,7 @@ Proof. auto. Qed.
 
 Module A.
   (* Note universe constraint! *)
-  Lemma foo@{s|X.s < s} : forall A, t@{s} X A A.
+  Lemma foo@{s|X.s < s +} : forall A, t@{s} X A A.
   Proof.
     assert_succeeds typeclasses eauto.
     intros; typeclasses eauto. (* fails but should succeed, I think *)
