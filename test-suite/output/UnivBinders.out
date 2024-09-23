@@ -265,3 +265,6 @@ Universe u0 already exists.
 File "./output/UnivBinders.v", line 241, characters 6-26:
 The command has indeed failed with message:
 Tactic failure: Not equal (due to universes).
+eq_rect
+     : forall (A : Type@{eq.u0}) (x : A) (P : A -> Type@{eq_rect.u0}),
+       P x -> forall y : A, x = y -> P y

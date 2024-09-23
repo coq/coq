@@ -673,6 +673,10 @@ let declare_private_constant ?role ?(local = Locality.ImportDefaultBehavior) ~na
       OpaqueEff de, ctx
   in
   let kn, eff = Global.add_private_constant name ctx de in
+  let () = if Univ.Level.Set.is_empty (fst ctx) then ()
+    else DeclareUniv.declare_univ_binders (ConstRef kn)
+        (Monomorphic_entry ctx, UnivNames.empty_binders)
+  in
   let () = register_constant kn kind local in
   let seff_roles = match role with None -> Cmap.empty | Some r -> Cmap.singleton kn r in
   let eff = { Evd.seff_private = eff; Evd.seff_roles; } in
