@@ -254,3 +254,9 @@ Arguments C2' A%type_scope p2
 File "./output/UnivBinders.v", line 207, characters 0-33:
 The command has indeed failed with message:
 Universe inconsistency. Cannot enforce a < a because a = a.
+File "./output/UnivBinders.v", line 219, characters 2-38:
+The command has indeed failed with message:
+Universe u0 already exists.
+File "./output/UnivBinders.v", line 225, characters 13-33:
+The command has indeed failed with message:
+Tactic failure: Not equal (due to universes).

@@ -207,3 +207,25 @@ Definition g@{a b} := Type@{a} : Type@{b}.
 Fail Definition h@{a} := g@{a a}.
 
 End Inconsistency.
+
+Module Collision.
+  Unset Universe Polymorphism.
+
+  Module x.
+    Universe u0.
+    Definition a := Type@{u0}.
+  End x.
+
+  Fail Definition x@{u0} := Type@{u0}.
+  Definition x := Type.
+
+  Goal True.
+    Fail let a := eval cbv in x.a in
+           let b := eval cbv in x in
+             constr_eq_strict a b.
+
+    let a := eval cbv in Type@{x.u1} in
+      let b := eval cbv in x in
+        constr_eq_strict a b.
+  Abort.
+End Collision.
