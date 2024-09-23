@@ -712,7 +712,10 @@ let declare_variable ~name ~kind ~typing_flags d =
   let impl,opaque = match d with (* Fails if not well-typed *)
     | SectionLocalAssum {typ;impl;univs} ->
       let () = match fst univs with
-        | UState.Monomorphic_entry uctx -> Global.push_context_set uctx
+        | UState.Monomorphic_entry uctx ->
+          (* XXX [snd univs] is ignored, should we use it? *)
+          DeclareUniv.name_mono_section_univs (fst uctx);
+          Global.push_context_set uctx
         | UState.Polymorphic_entry uctx -> Global.push_section_context uctx
       in
       let () = Global.push_named_assum (name,typ) in
@@ -726,6 +729,7 @@ let declare_variable ~name ~kind ~typing_flags d =
          term. *)
       let univs = match fst de.proof_entry_universes with
         | UState.Monomorphic_entry uctx ->
+          DeclareUniv.name_mono_section_univs (fst uctx);
           Global.push_context_set (Univ.ContextSet.union uctx body_uctx);
           UState.Monomorphic_entry Univ.ContextSet.empty, UnivNames.empty_binders
         | UState.Polymorphic_entry uctx ->
