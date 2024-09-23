@@ -108,10 +108,10 @@ tele (t : Type) (y := nat) (x : t) (z : y) := (y, z)
          ((nat -> nat) * ((nat -> nat) * ((nat -> nat) * (nat -> nat))))))
 foo5 x nat x
      : nat -> nat
-fun x : ?A => x === x
-     : forall x : ?A, x = x
+fun x : ?T => x === x
+     : forall x : ?T, x = x
 where
-?A : [x : ?A |- Type] (x cannot be used)
+?T : [ |- Type]
 {{0, 1}}
      : nat * nat
 {{0, 1, 2}}

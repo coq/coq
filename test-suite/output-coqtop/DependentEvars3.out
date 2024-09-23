@@ -26,7 +26,7 @@ x < 2 focused goals (shelved: 1)
 goal 2 is:
  exists m : nat, m = 6 \/ True
 
-(dependent evars: ?X10:?n; in current goal: ?X10)
+(dependent evars: ?X8:?n; in current goal: ?X8)
 
 x < 2 focused goals (shelved: 1)
   
@@ -36,6 +36,6 @@ x < 2 focused goals (shelved: 1)
 goal 2 is:
  exists m : nat, m = 6 \/ True
 
-(dependent evars: ?X10:?n; in current goal:)
+(dependent evars: ?X8:?n; in current goal:)
 
 x < 
