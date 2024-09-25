@@ -135,7 +135,7 @@ Module Inductives.
   Inductive foo6@{s| |} : Type@{s|Set} := Foo6.
   Fail Check foo6_sind.
 
-  Fail Definition foo6_rect@{s|+|+} (P:foo6@{s|} -> Type)
+  Fail Definition foo6_rect@{s|?|?} (P:foo6@{s|} -> Type)
     (H : P Foo6)
     (f : foo6)
     : P f

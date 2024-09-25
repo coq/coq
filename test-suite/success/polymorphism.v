@@ -432,20 +432,19 @@ Set Universe Polymorphism.
 Cumulative Record box (X : Type) (T := Type) : Type := wrap { unwrap : T }.
 
 Section test_letin_subtyping.
-  Universe i j k i' j' k'.
+  Universe i j i' j'.
   Constraint j < j'.
 
-  Context (W : Type) (X : box@{i j k} W).
-  Definition Y := X : box@{i' j' k'} W.
+  Context (W : Type) (X : box@{i j} W).
+  Definition Y := X : box@{i' j'} W.
 
-  Universe i1 j1 k1 i2 j2 k2.
+  Universe i1 j1 i2 j2.
   Constraint i1 < i2.
-  Constraint k2 < k1.
   Context (V : Type).
 
-  Definition Z : box@{i1 j1 k1} V := {| unwrap := V |}.
-  Definition Z' : box@{i2 j2 k2} V := {| unwrap := V |}.
-  Lemma ZZ' : @eq (box@{i2 j2 k2} V) Z Z'.
+  Definition Z : box@{i1 j1} V := {| unwrap := V |}.
+  Definition Z' : box@{i2 j2} V := {| unwrap := V |}.
+  Lemma ZZ' : @eq (box@{i2 j2} V) Z Z'.
   Proof.
     Set Printing All. Set Printing Universes.
     cbv.
@@ -458,7 +457,7 @@ Module ObligationRegression.
   (** Test for a regression encountered when fixing obligations for
       stronger restriction of universe context. *)
   Require Import CMorphisms.
-  Check trans_co_eq_inv_arrow_morphism@{_ _ _}.
+  Check trans_co_eq_inv_arrow_morphism@{_ _}.
 End ObligationRegression.
 
 Axiom poly@{i} : forall(A : Type@{i}) (a : A), unit.

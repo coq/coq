@@ -43,7 +43,7 @@ Open Scope function_scope.
 
 Set Printing Universes. Set Printing All.
 
-Inductive paths {A : Type} (a : A) : A -> Type :=
+Inductive paths@{u v} {A : Type@{u}} (a : A) : A -> Type@{v} :=
   idpath : paths a a.
 
 Arguments idpath {A a} , [A] a.
@@ -938,6 +938,7 @@ Section natural_transformation_identity.
     path_natural_transformation; auto with morphism.
   Qed.
 End natural_transformation_identity.
+
 Section associativity.
 
   Section nt.
@@ -951,6 +952,7 @@ Section associativity.
     : (T o U) o V = T o (U o V).
 
     Proof.
+      Set Debug "backtrace".
       path_natural_transformation.
       apply associativity.
     Qed.
