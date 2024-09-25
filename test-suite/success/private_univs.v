@@ -11,7 +11,7 @@ Definition internal_defined@{i j ?} (A : Type@{i}) : Type@{j}.
 pose(foo:=Type).
 exact A.
 Defined.
-Check internal_defined@{_ _ _ _}.
+Check internal_defined@{_ _ _}.
 
 Module M.
 Lemma internal_qed@{i j|i<=j} (A:Type@{i}) : Type@{j}.
@@ -48,4 +48,4 @@ Proof.
   pose (foo := Type).
   exact A.
 Qed.
-Check internal_noprivate_qed@{_ _ _ _}.
+Check internal_noprivate_qed@{_ _ _}.
