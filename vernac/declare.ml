@@ -2246,7 +2246,7 @@ let check_type_evars_solved env sigma typ =
   let evars = Evar.Set.elements (Evarutil.undefined_evars_of_term sigma typ) in
   match evars with
   | [] -> ()
-  | evk::_ -> CErrors.user_err (str "Cannot admit: the statement has still unresolved existential variables.")
+  | evk::_ -> CErrors.user_err (str "Cannot admit: the statement has unresolved existential variables.")
 
 let finish_admitted ~pm ~pinfo ~uctx ~sec_vars typs =
   (* If the constant was an obligation we need to update the program map *)
@@ -2261,17 +2261,12 @@ let finish_admitted ~pm ~pinfo ~uctx ~sec_vars typs =
     pm
 
 let save_admitted ~pm ~proof =
-  let Proof.{ entry; sigma } = Proof.data (get proof) in
-  let typs = List.map pi3 (Proofview.initial_goals entry) in
-  List.iter (check_type_evars_solved (Global.env()) sigma) typs;
   let iproof = get proof in
+  let Proof.{ entry } = Proof.data iproof in
+  let typs = List.map pi3 (Proofview.initial_goals entry) in
+  let sigma = Evd.from_ctx proof.initial_euctx in
   List.iter (check_type_evars_solved (Global.env()) sigma) typs;
   let sec_vars = compute_proof_using_for_admitted proof.pinfo proof typs iproof in
-  (* We have the choice of taking CInfo.typ and initial_euctx or or
-     the typs and uctx from the type. By uniformity we would like to
-     do the same as in save_lemma_admitted_delayed, but we would need
-     for that that fixpoints are represented with multi-statements; so
-     we take the initial types *)
   let sigma = Evd.minimize_universes sigma in
   let typs = List.map (EConstr.to_constr sigma) typs in
   let uctx = Evd.ustate sigma in

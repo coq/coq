@@ -10,4 +10,5 @@ Proof.
 Fail Admitted. (* Has still evars *)
 Unshelve.
 3:exact nat.
-Admitted.
+Fail Admitted.
+Abort.
