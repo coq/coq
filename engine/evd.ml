@@ -774,6 +774,7 @@ let get_typeclass_evars evd = evd.evar_flags.typeclass_evars
 
 let set_typeclass_evars evd tcs =
   let flags = evd.evar_flags in
+  let tcs = Evar.Set.filter (fun evk -> Evar.Map.mem evk evd.undf_evars) tcs in
   { evd with evar_flags = { flags with typeclass_evars = tcs } }
 
 let is_typeclass_evar evd evk =
