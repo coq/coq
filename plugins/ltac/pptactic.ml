@@ -1324,34 +1324,57 @@ let () =
   let pr_bool b = if b then str "true" else str "false" in
   let pr_unit _ = str "()" in
   let open Genprint in
-  register_basic_print0 wit_int_or_var (pr_or_var int) (pr_or_var int) int;
-  register_basic_print0 wit_nat_or_var (pr_or_var int) (pr_or_var int) int;
-  register_basic_print0 wit_ref
-    pr_qualid (pr_or_var (pr_located pr_global)) pr_global;
-  register_basic_print0 wit_smart_global
-    (pr_or_by_notation pr_qualid) (pr_or_var (pr_located pr_global)) pr_global;
-  register_basic_print0 wit_ident pr_id pr_id pr_id;
-  register_basic_print0 wit_hyp pr_lident pr_lident pr_id;
+  let register_arg : type a b c. (a, b, c) Stdarg.t -> unit = function
+    | WInt_or_var ->
+      register_basic_print0 wit_int_or_var (pr_or_var int) (pr_or_var int) int
+    | WNat_or_var ->
+      register_basic_print0 wit_nat_or_var (pr_or_var int) (pr_or_var int) int
+    | WRef ->
+      register_basic_print0 wit_ref
+        pr_qualid (pr_or_var (pr_located pr_global)) pr_global
+    | WSmart_global ->
+      register_basic_print0 wit_smart_global
+        (pr_or_by_notation pr_qualid) (pr_or_var (pr_located pr_global)) pr_global
+    | WIdent ->
+      register_basic_print0 wit_ident pr_id pr_id pr_id
+    | WHyp ->
+      register_basic_print0 wit_hyp pr_lident pr_lident pr_id;
+    | WClause_dft_concl ->
+      Genprint.register_print0
+        wit_clause_dft_concl
+        (lift (pr_clauses (Some true) pr_lident))
+        (lift (pr_clauses (Some true) pr_lident))
+        (fun c -> Genprint.TopPrinterBasic (fun () -> pr_clauses (Some true) (fun id -> pr_lident (CAst.make id)) c))
+    | WConstr ->
+      Genprint.register_print0
+        wit_constr
+        (lift_env Ppconstr.pr_constr_expr)
+        (lift_env (fun env sigma (c, _) -> pr_glob_constr_pptac env sigma c))
+        (make_constr_printer Printer.pr_econstr_n_env)
+    | WUconstr ->
+      Genprint.register_print0
+        wit_uconstr
+        (lift_env Ppconstr.pr_constr_expr)
+        (lift_env (fun env sigma (c,_) -> pr_glob_constr_pptac env sigma c))
+        (make_constr_printer Printer.pr_closed_glob_n_env)
+    | WInt ->
+      register_basic_print0 wit_int int int int
+    | WBool ->
+      register_basic_print0 wit_bool pr_bool pr_bool pr_bool
+    | WUnit ->
+      register_basic_print0 wit_unit pr_unit pr_unit pr_unit
+    | WPre_ident ->
+      register_basic_print0 wit_pre_ident str str str
+    | WString ->
+      register_basic_print0 wit_string qstring qstring qstring
+    (* those predef arg types don't have a registered printer *)
+    | WNat | WIdentref | WSort_family | WOpen_constr | WOpen_binders
+      -> ()
+  in
+  List.iter (fun (Any arg) -> register_arg arg) Stdarg.all_wits;
+
   register_print0 wit_intropattern pr_raw_intro_pattern pr_glob_intro_pattern pr_intro_pattern_env [@warning "-3"];
   register_print0 wit_simple_intropattern pr_raw_intro_pattern pr_glob_intro_pattern pr_intro_pattern_env;
-  Genprint.register_print0
-    wit_clause_dft_concl
-    (lift (pr_clauses (Some true) pr_lident))
-    (lift (pr_clauses (Some true) pr_lident))
-    (fun c -> Genprint.TopPrinterBasic (fun () -> pr_clauses (Some true) (fun id -> pr_lident (CAst.make id)) c))
-  ;
-  Genprint.register_print0
-    wit_constr
-    (lift_env Ppconstr.pr_constr_expr)
-    (lift_env (fun env sigma (c, _) -> pr_glob_constr_pptac env sigma c))
-    (make_constr_printer Printer.pr_econstr_n_env)
-  ;
-  Genprint.register_print0
-    wit_uconstr
-    (lift_env Ppconstr.pr_constr_expr)
-    (lift_env (fun env sigma (c,_) -> pr_glob_constr_pptac env sigma c))
-    (make_constr_printer Printer.pr_closed_glob_n_env)
-  ;
   Genprint.register_print0
     wit_open_constr
     (lift_env Ppconstr.pr_constr_expr)
@@ -1393,12 +1416,6 @@ let () =
     (lift_env (fun env sigma -> pr_destruction_arg (pr_and_constr_expr @@ pr_glob_constr_pptac env sigma)
                   (pr_and_constr_expr @@ pr_lglob_constr_pptac env sigma)))
     pr_destruction_arg_env
-  ;
-  register_basic_print0 Stdarg.wit_int int int int;
-  register_basic_print0 Stdarg.wit_bool pr_bool pr_bool pr_bool;
-  register_basic_print0 Stdarg.wit_unit pr_unit pr_unit pr_unit;
-  register_basic_print0 Stdarg.wit_pre_ident str str str;
-  register_basic_print0 Stdarg.wit_string qstring qstring qstring
 
 let () =
   let printer env sigma _ _ prtac = prtac env sigma in
