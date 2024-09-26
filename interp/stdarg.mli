@@ -63,6 +63,35 @@ val wit_clause_dft_concl :  (lident Locus.clause_expr, lident Locus.clause_expr,
 
 val wit_open_binders : local_binder_expr list uniform_genarg_type
 
+(** {5 All generic arguments} *)
+
+type (_, _, _) t =
+  | WUnit : (unit, unit, unit) t
+  | WBool : (bool, bool, bool) t
+  | WNat : (int, int, int) t
+  | WInt : (int, int, int) t
+  | WString : (string, string, string) t
+  | WPre_ident : (string, string, string) t
+  | WInt_or_var : (int or_var, int or_var, int) t
+  | WNat_or_var : (int or_var, int or_var, int) t
+  | WIdent : (Id.t, Id.t, Id.t) t
+  | WIdentref : (lident, lident, Id.t) t
+  | WHyp : (lident, lident, Id.t) t
+  | WRef : (qualid, GlobRef.t located or_var, GlobRef.t) t
+  | WSmart_global : (qualid or_by_notation, GlobRef.t located or_var, GlobRef.t) t
+  | WSort_family : (Sorts.family, unit, unit) t
+  | WConstr : (constr_expr, glob_constr_and_expr, constr) t
+  | WUconstr : (constr_expr, glob_constr_and_expr, Ltac_pretype.closed_glob_constr) t
+  | WOpen_constr : (constr_expr, glob_constr_and_expr, constr) t
+  | WClause_dft_concl :  (lident Locus.clause_expr, lident Locus.clause_expr, Names.Id.t Locus.clause_expr) t
+  | WOpen_binders : (local_binder_expr list, local_binder_expr list, local_binder_expr list) t
+
+val wit_for : ('a, 'b, 'c) t -> ('a, 'b, 'c) genarg_type
+
+type any_t = Any : (_, _, _) t -> any_t
+
+val all_wits : any_t list
+
 (** Aliases for compatibility *)
 
 val wit_natural : int uniform_genarg_type
