@@ -290,29 +290,31 @@ let create_generic_entry2 (type a) s (etyp : a raw_abstract_argument_type) : a E
 (* Initial grammar entries *)
 module Prim =
   struct
+    open Libnames
+    open Constrexpr
 
     (* Entries that can be referred via the string -> Entry.t table *)
     (* Typically for tactic or vernac extensions *)
-    let preident = Entry.make "preident"
-    let ident = Entry.make "ident"
-    let natural = Entry.make "natural"
-    let integer = Entry.make "integer"
+    let preident : string Entry.t = Entry.make "preident"
+    let ident : Names.Id.t Entry.t = Entry.make "ident"
+    let natural : int Entry.t = Entry.make "natural"
+    let integer : int Entry.t = Entry.make "integer"
     let bignat = Entry.make "bignat"
     let bigint = Entry.make "bigint"
-    let string = Entry.make "string"
+    let string : string Entry.t = Entry.make "string"
     let lstring = Entry.make "lstring"
-    let reference = Entry.make "reference"
+    let reference : qualid Entry.t = Entry.make "reference"
     let fields = Entry.make "fields"
     let by_notation = Entry.make "by_notation"
-    let smart_global = Entry.make "smart_global"
+    let smart_global : qualid or_by_notation Entry.t = Entry.make "smart_global"
     let strategy_level = Entry.make "strategy_level"
 
     (* parsed like ident but interpreted as a term *)
-    let hyp = Entry.make "hyp"
+    let hyp : Names.Id.t CAst.t Entry.t = Entry.make "hyp"
     let var = hyp
 
     let name = Entry.make "name"
-    let identref = Entry.make "identref"
+    let identref : Names.Id.t CAst.t Entry.t = Entry.make "identref"
     let univ_decl = Entry.make "univ_decl"
     let ident_decl = Entry.make "ident_decl"
     let pattern_ident = Entry.make "pattern_ident"
@@ -333,9 +335,10 @@ module Prim =
 
 module Constr =
   struct
+    open Constrexpr
 
     (* Entries that can be referred via the string -> Entry.t table *)
-    let constr = Entry.make "constr"
+    let constr : constr_expr Entry.t = Entry.make "constr"
     let term = Entry.make "term"
     let constr_eoi = eoi_entry constr
     let lconstr = Entry.make "lconstr"
@@ -344,14 +347,14 @@ module Constr =
     let global = Entry.make "global"
     let universe_name = Entry.make "universe_name"
     let sort = Entry.make "sort"
-    let sort_family = Entry.make "sort_family"
+    let sort_family : Sorts.family Entry.t = Entry.make "sort_family"
     let pattern = Entry.make "pattern"
     let constr_pattern = Entry.make "constr_pattern"
     let cpattern = Entry.make "cpattern"
     let closed_binder = Entry.make "closed_binder"
     let binder = Entry.make "binder"
     let binders = Entry.make "binders"
-    let open_binders = Entry.make "open_binders"
+    let open_binders : local_binder_expr list Entry.t = Entry.make "open_binders"
     let one_open_binder = Entry.make "one_open_binder"
     let one_closed_binder = Entry.make "one_closed_binder"
     let binders_fixannot = Entry.make "binders_fixannot"
@@ -551,16 +554,30 @@ let with_grammar_rule_protection f x =
 
 let () =
   let open Stdarg in
-  Grammar.register0 wit_nat (Prim.natural);
-  Grammar.register0 wit_int (Prim.integer);
-  Grammar.register0 wit_string (Prim.string);
-  Grammar.register0 wit_pre_ident (Prim.preident);
-  Grammar.register0 wit_identref (Prim.identref);
-  Grammar.register0 wit_ident (Prim.ident);
-  Grammar.register0 wit_hyp (Prim.hyp);
-  Grammar.register0 wit_ref (Prim.reference);
-  Grammar.register0 wit_smart_global (Prim.smart_global);
-  Grammar.register0 wit_sort_family (Constr.sort_family);
-  Grammar.register0 wit_constr (Constr.constr);
-  Grammar.register0 wit_open_binders (Constr.open_binders);
-  ()
+  let entry_for : type raw glb top . (raw, glb, top) Stdarg.t -> (raw, glb, top) GrammarObj.obj option
+    = function
+      | WNat -> Some Prim.natural
+      | WInt -> Some Prim.integer
+      | WString -> Some Prim.string
+      | WPre_ident -> Some Prim.preident
+      | WIdentref -> Some Prim.identref
+      | WIdent -> Some Prim.ident
+      | WHyp -> Some Prim.hyp
+      | WRef -> Some Prim.reference
+      | WSmart_global -> Some Prim.smart_global
+      | WSort_family -> Some Constr.sort_family
+      | WConstr -> Some Constr.constr
+      | WOpen_binders -> Some Constr.open_binders
+      (* those predef arg types don't have a registered parser *)
+      | WUnit | WBool
+      | WInt_or_var | WNat_or_var
+      | WUconstr | WOpen_constr
+      | WClause_dft_concl
+        -> None
+  in
+  List.iter (fun (Any arg) ->
+    match entry_for arg with
+    | None -> ()
+    | Some entry ->
+      Grammar.register0 (wit_for arg) entry
+  ) all_wits
