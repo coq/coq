@@ -551,8 +551,11 @@ constructions.
          end.
 
       because the declared decreasing argument :g:`n` does not actually
-      decrease in the recursive call. The function computing the addition over
-      the second argument should rather be written:
+      decrease in the recursive call.
+
+      .. _reversed_add_example:
+
+      The function computing the addition over the second argument should rather be written:
 
       .. coqtop:: all
 
@@ -561,6 +564,27 @@ constructions.
          | O => n
          | S p => S (plus n p)
          end.
+
+      **Aside**: Observe that `plus n 0` is reducible but `plus 0 n` is not,
+      the reverse of `Nat.add`, for which `0 + n` is reducible and `n + 0` is not.
+
+      .. coqtop:: all
+
+         Goal forall n:nat, plus n 0 = plus 0 n.
+         intros; simpl.  (* plus 0 n not reducible *)
+
+      .. coqtop:: none
+
+         Abort.
+
+      .. coqtop:: all
+
+         Goal forall n:nat, n + 0 = 0 + n.
+         intros; simpl.  (* n + 0 not reducible *)
+
+      .. coqtop:: none
+
+         Abort.
 
    .. example::
 
