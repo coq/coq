@@ -1,4 +1,8 @@
 Set < i
     < j
-i < j
+i < j (i <(foo) j)
+
+Set < i
+    < k
+i < k (i <(foo) j <(connect) l <(baz) k)
 
