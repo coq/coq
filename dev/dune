@@ -4,7 +4,10 @@
  (synopsis "Coq's Debug Printers")
  (wrapped false)
  (modules top_printers vm_printers)
- (libraries coq-core.toplevel coq-core.plugins.ltac))
+ ; NB currently we have no "install_printer" using ltac2,
+ ; but we still want to load_printer ltac2
+ ; so that its genarg printers are present in the debugger's printer process
+ (libraries coq-core.vernac coq-core.plugins.ltac coq-core.plugins.ltac2))
 
 (library
  (name debugger_support)
@@ -42,10 +45,8 @@
     %{lib:coq-core.printing:printing.cma}
     %{lib:coq-core.tactics:tactics.cma}
     %{lib:coq-core.vernac:vernac.cma}
-    %{lib:coq-core.stm:stm.cma}
-    %{lib:coq-core.sysinit:sysinit.cma}
-    %{lib:coq-core.toplevel:toplevel.cma}
     %{lib:coq-core.plugins.ltac:ltac_plugin.cma}
+    %{lib:coq-core.plugins.ltac2:ltac2_plugin.cma}
     %{lib:coq-core.dev:dev.cma}
     %{lib:coq-core.debugger_support:debugger_support.cmi}
     %{lib:coq-core.debugger_support:debugger_support.cma}
