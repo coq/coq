@@ -737,7 +737,7 @@ let () =
   return (EConstr.Vars.closedn sigma n c)
 
 let () =
-  define "constr_occur_between" (int @-> int @-> constr @-> tac bool) @@ fun n m c ->
+  define "constr_noccur_between" (int @-> int @-> constr @-> tac bool) @@ fun n m c ->
   Proofview.tclEVARMAP >>= fun sigma ->
   return (EConstr.Vars.noccur_between sigma n m c)
 
