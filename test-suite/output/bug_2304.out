@@ -1,0 +1,4 @@
+File "./output/bug_2304.v", line 3, characters 21-22:
+The command has indeed failed with message:
+Could not find an instance for "A unit".
+
