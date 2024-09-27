@@ -216,31 +216,29 @@ let add_conv_oriented_pb ?(tail=true) (pbty,env,t1,t2) evd =
   | None -> add_conv_pb ~tail (Conversion.CONV,env,t1,t2) evd
 
 (* We retype applications to ensure the universe constraints are collected *)
-
 exception IllTypedInstance of env * evar_map * EConstr.types * EConstr.types
 exception IllTypedInstanceFun of env * evar_map * EConstr.constr * EConstr.types
 
+let checked_appvect, checked_appvect_hook = Hook.make ()
+
 let recheck_applications unify flags env evdref t =
   let rec aux env t =
+    (* the order matters: if the sub-applications are incorrect, checked_appvect may fail badly *)
+    iter_with_full_binders env !evdref (fun d env -> push_rel d env) aux env t;
     match EConstr.kind !evdref t with
     | App (f, args) ->
-       let () = aux env f in
-       let fty = Retyping.get_type_of env !evdref f in
-       let argsty = Array.map (fun x -> aux env x; Retyping.get_type_of env !evdref x) args in
-       let rec aux i ty =
-         if i < Array.length argsty then
-         match EConstr.kind !evdref (whd_all env !evdref ty) with
-         | Prod (na, dom, codom) ->
-            (match unify flags TypeUnification env !evdref Conversion.CUMUL argsty.(i) dom with
-             | Success evd -> evdref := evd;
-                             aux (succ i) (subst1 args.(i) codom)
-             | UnifFailure (evd, reason) -> raise (IllTypedInstance (env, evd, argsty.(i), dom)))
-         | _ -> raise (IllTypedInstanceFun (env, !evdref, f, ty))
-       else ()
-     in aux 0 fty
-    | _ ->
-       iter_with_full_binders env !evdref (fun d env -> push_rel d env) aux env t
-  in aux env t
+      let evd, _ = Hook.get checked_appvect env !evdref f args in
+      evdref := evd
+    | _ -> ()
+  in
+  try aux env t
+  with PretypeError (env,sigma,e) ->
+  match e with
+  | CantApplyBadTypeExplained (((_,expected,argty),_,_),_) ->
+    raise (IllTypedInstance (env,sigma,argty, expected))
+  | TypingError (CantApplyNonFunctional (fj,_)) ->
+    raise (IllTypedInstanceFun (env,sigma,fj.uj_val,fj.uj_type))
+  | _ -> assert false
 
 
 (*------------------------------------*
