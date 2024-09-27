@@ -339,231 +339,9 @@ let diff_goal ?(short=false) ?og_s ng =
 
 (*** Code to determine which calls to compare between the old and new proofs ***)
 
-open Constrexpr
-open Names
-open CAst
-
-(* Compare the old and new proof trees to identify the correspondence between
-new and old goals.  Returns a map from the new evar name to the old,
-e.g. "Goal2" -> "Goal1".  Assumes that proof steps only rewrite CEvar nodes
-and that CEvar nodes cannot contain other CEvar nodes.
-
-The comparison works this way:
-1. Traverse the old and new trees together (ogname = "", ot != nt):
-- if the old and new trees both have CEvar nodes, add an entry to the map from
-  the new evar name to the old evar name.  (Position of goals is preserved but
-  evar names may not be--see below.)
-- if the old tree has a CEvar node and the new tree has a different type of node,
-  we've found a changed goal.  Set ogname to the evar name of the old goal and
-  go to step 2.
-- any other mismatch violates the assumptions, raise an exception
-2. Traverse the new tree from the point of the difference (ogname <> "", ot = nt).
-- if the node is a CEvar, generate a map entry from the new evar name to ogname.
-
-Goal ids for unchanged goals appear to be preserved across proof steps.
-However, the evar name associated with a goal id may change in a proof step
-even if that goal is not changed by the tactic.  You can see this by enabling
-the call to db_goal_map and entering the following:
-
-  Parameter P : nat -> Prop.
-  Goal (P 1 /\ P 2 /\ P 3) /\ P 4.
-  split.
-  Show Proof.
-  split.
-  Show Proof.
-
-  Which gives you this summarized output:
-
-  > split.
-  New Goals: 3 -> Goal  4 -> Goal0              <--- goal 4 is "Goal0"
-  Old Goals: 1 -> Goal
-  Goal map: 3 -> 1  4 -> 1
-  > Show Proof.
-  (conj ?Goal ?Goal0)                           <--- goal 4 is the rightmost goal in the proof
-  > split.
-  New Goals: 6 -> Goal0  7 -> Goal1  4 -> Goal  <--- goal 4 is now "Goal"
-  Old Goals: 3 -> Goal  4 -> Goal0
-  Goal map: 6 -> 3  7 -> 3
-  > Show Proof.
-  (conj (conj ?Goal0 ?Goal1) ?Goal)             <--- goal 4 is still the rightmost goal in the proof
- *)
-(* todo: fails for issue 14425 on a "clear". Perhaps this can be fixed by computing
-   the goal map directly from the kernel evars, which is likely much simpler *)
-let match_goals ot nt =
-  let nevar_to_oevar = ref CString.Map.empty in
-  (* ogname is "" when there is no difference on the current path.
-     It's set to the old goal's evar name once a rewritten goal is found,
-     at which point the code only searches for the replacing goals
-     (and ot is set to nt). *)
-  let iter2 f l1 l2 =
-    if List.length l1 = (List.length l2) then
-      List.iter2 f l1 l2
-  in
-  let rec match_goals_r ogname ot nt =
-    let constr_expr ogname exp exp2 =
-      match_goals_r ogname exp.v exp2.v
-    in
-    let constr_expr_opt ogname exp exp2 =
-      match exp, exp2 with
-      | Some expa, Some expb -> constr_expr ogname expa expb
-      | None, None -> ()
-      | _, _ -> raise (Diff_Failure "Unable to match goals between old and new proof states (1)")
-    in
-    let constr_arr ogname arr_exp arr_exp2 =
-      let len = Array.length arr_exp in
-      if len <> Array.length arr_exp2 then
-        raise (Diff_Failure "Unable to match goals between old and new proof states (6)");
-      for i = 0 to len -1 do
-        constr_expr ogname arr_exp.(i) arr_exp2.(i)
-      done
-    in
-    let local_binder_expr ogname exp exp2 =
-      match exp, exp2 with
-      | CLocalAssum (nal,_,bk,ty), CLocalAssum(nal2,_,bk2,ty2) ->
-        constr_expr ogname ty ty2
-      | CLocalDef (n,_,c,t), CLocalDef (n2,_,c2,t2) ->
-        constr_expr ogname c c2;
-        constr_expr_opt ogname t t2
-      | CLocalPattern p, CLocalPattern p2 ->
-        let ty = match p.v with CPatCast (_,ty) -> Some ty | _ -> None in
-        let ty2 = match p2.v with CPatCast (_,ty) -> Some ty | _ -> None in
-        constr_expr_opt ogname ty ty2
-      | _, _ -> raise (Diff_Failure "Unable to match goals between old and new proof states (2)")
-    in
-    let recursion_order_expr ogname exp exp2 =
-      match exp.CAst.v, exp2.CAst.v with
-      | CStructRec _, CStructRec _ -> ()
-      | CWfRec (_,c), CWfRec (_,c2) ->
-        constr_expr ogname c c2
-      | CMeasureRec (_,m,r), CMeasureRec (_,m2,r2) ->
-        constr_expr ogname m m2;
-        constr_expr_opt ogname r r2
-      | _, _ -> raise (Diff_Failure "Unable to match goals between old and new proof states (3)")
-    in
-    let fix_expr ogname exp exp2 =
-      let (l,_,ro,lb,ce1,ce2), (l2,_,ro2,lb2,ce12,ce22) = exp,exp2 in
-        Option.iter2 (recursion_order_expr ogname) ro ro2;
-        iter2 (local_binder_expr ogname) lb lb2;
-        constr_expr ogname ce1 ce12;
-        constr_expr ogname ce2 ce22
-    in
-    let cofix_expr ogname exp exp2 =
-      let (l,_,lb,ce1,ce2), (l2,_,lb2,ce12,ce22) = exp,exp2 in
-        iter2 (local_binder_expr ogname) lb lb2;
-        constr_expr ogname ce1 ce12;
-        constr_expr ogname ce2 ce22
-    in
-    let case_expr ogname exp exp2 =
-      let (ce,l,cp), (ce2,l2,cp2) = exp,exp2 in
-      constr_expr ogname ce ce2
-    in
-    let branch_expr ogname exp exp2 =
-      let (cpe,ce), (cpe2,ce2) = exp.v,exp2.v in
-        constr_expr ogname ce ce2
-    in
-    let constr_notation_substitution ogname exp exp2 =
-      let (ce, cel, cp, lb), (ce2, cel2, cp2, lb2) = exp, exp2 in
-      iter2 (constr_expr ogname) ce ce2;
-      iter2 (fun a a2 -> iter2 (constr_expr ogname) a a2) cel cel2;
-      iter2 (fun a a2 -> iter2 (local_binder_expr ogname) a a2) lb lb2
-    in
-    begin
-    match ot, nt with
-    | CRef (ref,us), CRef (ref2,us2) -> ()
-    | CFix (id,fl), CFix (id2,fl2) ->
-      iter2 (fix_expr ogname) fl fl2
-    | CCoFix (id,cfl), CCoFix (id2,cfl2) ->
-      iter2 (cofix_expr ogname) cfl cfl2
-    | CProdN (bl,c2), CProdN (bl2,c22)
-    | CLambdaN (bl,c2), CLambdaN (bl2,c22) ->
-      iter2 (local_binder_expr ogname) bl bl2;
-      constr_expr ogname c2 c22
-    | CLetIn (na,c1,t,c2), CLetIn (na2,c12,t2,c22) ->
-      constr_expr ogname c1 c12;
-      constr_expr_opt ogname t t2;
-      constr_expr ogname c2 c22
-    | CAppExpl ((ref,us),args), CAppExpl ((ref2,us2),args2) ->
-      iter2 (constr_expr ogname) args args2
-    | CApp (f,args), CApp (f2,args2) ->
-      constr_expr ogname f f2;
-      iter2 (fun a a2 -> let (c, _) = a and (c2, _) = a2 in
-          constr_expr ogname c c2) args args2
-    | CProj (expl,f,args,c), CProj (expl2,f2,args2,c2) ->
-      iter2 (fun a a2 -> let (c, _) = a and (c2, _) = a2 in
-          constr_expr ogname c c2) args args2;
-      constr_expr ogname c c2;
-    | CRecord fs, CRecord fs2 ->
-      iter2 (fun a a2 -> let (_, c) = a and (_, c2) = a2 in
-          constr_expr ogname c c2) fs fs2
-    | CCases (sty,rtnpo,tms,eqns), CCases (sty2,rtnpo2,tms2,eqns2) ->
-        constr_expr_opt ogname rtnpo rtnpo2;
-        iter2 (case_expr ogname) tms tms2;
-        iter2 (branch_expr ogname) eqns eqns2
-    | CLetTuple (nal,(na,po),b,c), CLetTuple (nal2,(na2,po2),b2,c2) ->
-      constr_expr_opt ogname po po2;
-      constr_expr ogname b b2;
-      constr_expr ogname c c2
-    | CIf (c,(na,po),b1,b2), CIf (c2,(na2,po2),b12,b22) ->
-      constr_expr ogname c c2;
-      constr_expr_opt ogname po po2;
-      constr_expr ogname b1 b12;
-      constr_expr ogname b2 b22
-    | CHole _, CHole _ -> ()
-    | CGenarg _, CGenarg _ -> ()
-    | CPatVar _, CPatVar _ -> ()
-    | CEvar (n,l), CEvar (n2,l2) ->
-      let oevar = if ogname = "" then Id.to_string n.CAst.v else ogname in
-      nevar_to_oevar := CString.Map.add (Id.to_string n2.CAst.v) oevar !nevar_to_oevar;
-      iter2  (fun x x2 -> let (_, g) = x and (_, g2) = x2 in constr_expr ogname g g2)  l l2
-    | CEvar (n,l), nt' ->
-      (* pass down the old goal evar name *)
-      match_goals_r (Id.to_string n.CAst.v) nt' nt'
-    | CSort s, CSort s2 -> ()
-    | CCast (c,k,t), CCast (c2,k2,t2) ->
-      constr_expr ogname c c2;
-      if not (Option.equal Glob_ops.cast_kind_eq k k2)
-      then raise (Diff_Failure "Unable to match goals between old and new proof states (4)");
-      constr_expr ogname t t2
-    | CNotation (_,ntn,args), CNotation (_,ntn2,args2) ->
-      constr_notation_substitution ogname args args2
-    | CGeneralization (b,c), CGeneralization (b2,c2) ->
-      constr_expr ogname c c2
-    | CPrim p, CPrim p2 -> ()
-    | CDelimiters (depth,key,e), CDelimiters (depth2,key2,e2) ->
-      constr_expr ogname e e2
-    | CArray(u,t,def,ty), CArray(u2,t2,def2,ty2) ->
-      constr_arr ogname t t2;
-      constr_expr ogname def def2;
-      constr_expr ogname ty ty2;
-    | _, _ -> raise (Diff_Failure "Unable to match goals between old and new proof states (5)")
-    end
-  in
-
-  let () = match_goals_r "" ot nt in
-  !nevar_to_oevar
-
-let get_proof_context (p : Proof.t) =
-  let Proof.{goals; sigma} = Proof.data p in
-  let env = Evd.evar_filtered_env (Global.env ()) (Evd.find_undefined sigma (List.hd goals)) in
-  sigma, env
-
-let to_constr pf =
-  let open CAst in
-  let pprf = Proof.partial_proof pf in
-  (* pprf generally has only one element, but it may have more in the derive plugin *)
-  let t = List.hd pprf in
-  let sigma, env = get_proof_context pf in
-  let x = Constrextern.extern_constr env sigma t in  (* todo: right options?? *)
-  x.v
-
-let has_fg_goals pf =
-  let Proof.{goals} = Proof.data pf in
-  goals <> []
-
-
 module GoalMap = Evar.Map
 
-let goal_to_evar g sigma = Id.to_string (Termops.evar_suggested_name (Global.env ()) sigma g)
+let goal_to_evar g sigma = Names.Id.to_string (Termops.evar_suggested_name (Global.env ()) sigma g)
 
 open Evar.Set
 
@@ -602,64 +380,32 @@ let map_goal g (osigma, map) = match GoalMap.find_opt g map with
     returning Some { it = g; sigma = sigma } will compare the new goal
     to itself and it won't be highlighted *)
 
-(* Create a map from new goals to old goals for proof diff.  New goals
- that are evars not appearing in the proof will not have a mapping.
-
- It proceeds as follows:
- 1. Find the goal ids that were removed from the old proof and that were
- added in the new proof.  If the same goal id is present in both proofs
- then conclude the goal is unchanged (assumption).
-
- 2. The code assumes that proof changes only take the form of replacing
- one or more goal symbols (CEvars) with new terms.  Therefore:
- - if there are no removals, the proofs are the same.
- - if there are no foreground goals in the new proof, the proofs are
-   considered the same for diffs
- - if there are removals but no additions, then there are no new goals
-   that aren't the same as their associated old goals.  For the both of
-   these cases, the map is empty because there are no new goals that differ
-   from their old goals
- - if there is only one removal, then any added goals should be mapped to
-   the removed goal.
- - if there are more than 2 removals and more than one addition, call
-   match_goals to get a map between old and new evar names, then use this
-   to create the map from new goal ids to old goal ids.
-*)
+(* Create a map from new goals to old goals for proof diff. *)
 let make_goal_map op np =
-  let open Evar.Set in
   let ogs = Proof.all_goals op in
   let ngs = Proof.all_goals np in
-  let rem_gs = diff ogs ngs in
-  let add_gs = diff ngs ogs in
+  let { Proof.sigma } = Proof.data np in
 
-  (* add common goals *)
-  let ng_to_og = Evar.Set.fold (fun x accu -> GoalMap.add x x accu) (inter ogs ngs) GoalMap.empty in
-
-  match Evar.Set.elements rem_gs with
-  | [] -> ng_to_og (* proofs are the same *)
-  | [hd] ->
-    (* only 1 removal, some additions *)
-    Evar.Set.fold (fun x accu -> GoalMap.add x hd accu) add_gs ng_to_og
-  | elts ->
-    if Evar.Set.is_empty add_gs || (* only removals *)
-        not (has_fg_goals np) (* only background goals *) then ng_to_og
-    else
-      (* >= 2 removals, >= 1 addition, need to match *)
-      let nevar_to_oevar = match_goals (to_constr op) (to_constr np) in
-
-      let Proof.{sigma=osigma} = Proof.data op in
-      let fold accu og = CString.Map.add (goal_to_evar og osigma) og accu in
-      let oevar_to_og = List.fold_left fold CString.Map.empty elts in
-
-      let Proof.{sigma=nsigma} = Proof.data np in
-      let get_og ng =
-        let nevar = goal_to_evar ng nsigma in
-        let oevar = CString.Map.find nevar nevar_to_oevar in
-        let og = CString.Map.find oevar oevar_to_og in
-        og
-      in
-      let fold ng accu = try GoalMap.add ng (get_og ng) accu with Not_found -> accu in
-      Evar.Set.fold fold add_gs ng_to_og
+  let fold_old_evar oevk acc =
+    match Evd.find sigma oevk with
+    | exception Not_found -> acc (* evar got deleted, maybe by Optimize Proof? *)
+    | EvarInfo evi -> match Evd.evar_body evi with
+      | Evar_empty ->
+        if Evar.Set.mem oevk ngs then Evar.Map.add oevk oevk acc
+        else
+          (* lost evar, probably a bug but we don't want to assert false in proof diffs *)
+          acc
+      | Evar_defined body ->
+        let evars = Evd.evars_of_term sigma body in
+        let evars =
+          (* remove lost evars (not sure if worth doing) *)
+          Evar.Set.inter evars ngs
+        in
+        Evar.Map.union (fun _ x _ -> Some x)
+          acc
+          (Evar.Map.bind (fun _ -> oevk) evars)
+  in
+  Evar.Set.fold fold_old_evar ogs Evar.Map.empty
 
 let make_goal_map op np =
   let map = make_goal_map op np in
