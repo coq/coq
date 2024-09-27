@@ -421,13 +421,12 @@ let dump_universes_gen prl g s =
     close ();
     Exninfo.iraise reraise
 
-(* [XXX] EGJA: loc unused here *)
-let universe_subgraph ?loc kept univ =
+let universe_subgraph kept univ =
   let open Univ in
   let parse q =
     try Level.make (Nametab.locate_universe q)
     with Not_found ->
-      CErrors.user_err Pp.(str "Undeclared universe " ++ pr_qualid q ++ str".")
+      CErrors.user_err ?loc:q.loc Pp.(str "Undeclared universe " ++ pr_qualid q ++ str".")
   in
   let kept = List.fold_left (fun kept q -> Level.Set.add (parse q) kept) Level.Set.empty kept in
   let csts = UGraph.constraints_for ~kept univ in
@@ -490,11 +489,11 @@ let sort_universes g =
   in
   Level.Map.fold fold g ans
 
-let print_universes ?loc ~sort ~subgraph dst =
+let print_universes ~sort ~subgraph dst =
   let univ = Global.universes () in
   let univ = match subgraph with
     | None -> univ
-    | Some g -> universe_subgraph ?loc g univ
+    | Some g -> universe_subgraph g univ
   in
   let univ = UGraph.repr univ in
   let univ = if sort then sort_universes univ else univ in
