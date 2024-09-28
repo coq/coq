@@ -17,14 +17,26 @@ in `Makefile`, `make` will display help. Note that dune will call
 configure for you if needed, so no need to call `./configure` in the
 regular development workflow, unless you want to tweak options.
 
-4 common operations are:
+
+2 common operations are:
 
 - `make check` : build all ml targets as fast as possible
 - `make world` : build a complete Coq distribution
-- `dune exec -- dev/shim/coqtop` : build and launch coqtop + prelude [equivalent to `make states`].
+
+For more targeted builds, you can also call `dune` directly. First,
+call `make dunestrap` to generate necessary build files (the `make`
+targets above do it automatically). Then you can use:
+
+- `dune exec -- dev/shim/coqtop` : build and launch coqtop + prelude
+  [equivalent to `make states`].
+- `dune exec -- dev/shim/coqc <args...>`: build and launch `coqc` with
+  arguments of your choice
 - `dune build $target`: where `$target` can refer to the build
   directory or the source directory [but will be placed under
   `_build`]
+
+You need to run `make dunestrap` again if the dependencies between the
+standard library .v files have changed.
 
 `dune build @install` will build all the public Coq artifacts; `dune
 build` builds the `@default` alias, defined in the top level `dune` file.
