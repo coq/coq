@@ -532,6 +532,12 @@ This section describes some special purpose tactics to work with
    in the form :n:`@term__1 <> @term__2` that are inconsistent
    (:ref:`example <discriminate_goal_inequality_ex>`).
 
+   If :n:`@induction_arg` is provided, only the provided proof term or
+   hypothesis is checked for inconsistency.
+   If :n:`@induction_arg` is not given, the tactic does an :tacn:`intro`
+   for each premise in the goal, then it checks all the resulting hypotheses
+   for impossible equalities.
+
    The tactic relies on the fact that constructors of inductive types are injective
    and disjoint, i.e. if `C1` and `C2` are distinct constructors of an inductive type then
    :n:`C1 @term__1 = C1 @term__2` implies that :n:`@term__1 = @term__2` (injectivity)
@@ -549,10 +555,6 @@ This section describes some special purpose tactics to work with
    Note that :n:`discriminate` doesn't handle contradictory equalities such as
    :g:`n = S n`.  In this case you must use :tacn:`induction` (see
    :ref:`example <discriminate_example>`).
-
-   If :n:`@induction_arg` is not given, the tactic does an :tacn:`intro`
-   for each premise in the goal, then it checks all the resulting hypotheses
-   for impossible equalities.
 
    :n:`@ident`  (as :n:`@induction_arg`)
      Checks the hypothesis :n:`@ident` for impossible equalities.
