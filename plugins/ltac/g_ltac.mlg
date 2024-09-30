@@ -50,7 +50,12 @@ let tactic_mode = Entry.make "tactic_command"
 let tacdef_body = Entry.make "tacdef_body"
 
 (* Registers [tactic_mode] as a parser for proof editing *)
-let classic_proof_mode = Pvernac.register_proof_mode "Classic" { command_entry = tactic_mode }
+let classic_proof_mode = Pvernac.register_proof_mode "Classic"
+    (ProofMode {
+        command_entry = tactic_mode;
+        wit_tactic_expr = Tacarg.wit_ltac;
+        tactic_expr_entry = Pltac.tactic;
+      })
 
 (* Tactics grammar rules *)
 

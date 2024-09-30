@@ -91,7 +91,7 @@ let is_known = let open Procq.Entry in function
 let full_grammar () =
   let open Pvernac.Vernac_ in
   let open Procq.Entry in
-  let proof_modes = List.map (fun (_,e) -> Any e.Pvernac.command_entry)
+  let proof_modes = List.map (fun (_,Pvernac.ProofMode e) -> Any e.command_entry)
       (CString.Map.bindings (Pvernac.list_proof_modes()))
   in
   let entries = (Any vernac_control) :: (Any noedit_mode) :: proof_modes in
