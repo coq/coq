@@ -26,7 +26,7 @@ let { Goptions.get = get_default_proof_mode } =
   Goptions.declare_interpreted_string_option_and_ref
     ~stage:Summary.Stage.Synterp
     ~key:proof_mode_opt_name
-    ~value:(Pvernac.register_proof_mode "Noedit" Pvernac.Vernac_.noedit_mode)
+    ~value:(Pvernac.register_proof_mode "Noedit" { command_entry = Pvernac.Vernac_.noedit_mode })
     (fun name -> match Pvernac.lookup_proof_mode name with
     | Some pm -> pm
     | None -> CErrors.user_err Pp.(str (Format.sprintf "No proof mode named \"%s\"." name)))
