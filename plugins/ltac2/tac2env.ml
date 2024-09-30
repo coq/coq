@@ -365,6 +365,10 @@ let wit_ltac2in1_val = Genarg.make0 "ltac2in1val"
 let wit_ltac2_constr = Genarg.make0 "ltac2:in-constr"
 let wit_ltac2_var_quotation = Genarg.make0 "ltac2:quotation"
 let wit_ltac2_val = Genarg.make0 "ltac2:value"
+let wit_ltac2_tac = Genarg.make0 "ltac2:tactic"
+
+let () = Geninterp.register_val0 wit_ltac2_tac
+    (Some (Geninterp.val_tag (Genarg.topwit Stdarg.wit_unit)))
 
 let is_constructor_id id =
   let id = Id.to_string id in
