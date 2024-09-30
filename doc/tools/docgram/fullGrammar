@@ -630,12 +630,9 @@ command: [
 | "Next" "Obligation" withtac
 | "Final" "Obligation" "of" identref withtac
 | "Final" "Obligation" withtac
-| "Solve" "Obligations" "of" identref "with" tactic
-| "Solve" "Obligations" "of" identref
-| "Solve" "Obligations" "with" tactic
-| "Solve" "Obligations"
-| "Solve" "All" "Obligations" "with" tactic
-| "Solve" "All" "Obligations"
+| "Solve" "Obligations" "of" identref withtac
+| "Solve" "Obligations" withtac
+| "Solve" "All" "Obligations" withtac
 | "Admit" "Obligations" "of" identref
 | "Admit" "Obligations"
 | "Obligation" "Tactic" ":=" tactic
@@ -2350,7 +2347,7 @@ ltac_tacdef_body: [
 
 withtac: [
 |
-| "with" tactic
+| "with" generic_tactic
 ]
 
 glob_constr_with_bindings: [
