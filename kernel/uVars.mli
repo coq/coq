@@ -30,6 +30,8 @@ sig
 
 end
 
+val pr_variances : Variance.t array -> Pp.t
+
 (** {6 Universe instances} *)
 
 module LevelInstance :

@@ -568,13 +568,15 @@ let process_universe_constraints uctx cstrs =
         instantiate_variable l' (Universe.make r') vars local
       else if is_flexible r' then
         instantiate_variable r' (Universe.make l') vars local
-      else if not (UnivProblem.check_eq local.local_univs (Universe.make l') (Universe.make r')) then
+      else
         if (Level.is_set l') || (Level.is_set r') then
           level_inconsistency Eq l' r'
-        else if fo then
-          raise UniversesDiffer
-        else add_local (l', Eq, r') local
-      else add_local (l', Eq, r') local
+        else
+          if fo then
+            if not (UnivProblem.check_eq local.local_univs (Universe.make l') (Universe.make r')) then
+              raise UniversesDiffer
+            else local
+          else add_local (l', Eq, r') local
   in
   let equalize_algebraic l ru local =
     let inst = univ_level_rem l ru ru in
@@ -777,6 +779,7 @@ let check_universe_constraint uctx (c:UnivProblem.t) =
   | UWeak _ -> true
 
 let check_universe_constraints uctx csts =
+  debug Pp.(fun () -> str"Calling check_universe_constraints with: " ++ UnivProblem.Set.pr csts);
   UnivProblem.Set.for_all (check_universe_constraint uctx) csts
 
 let constrain_variables diff uctx =

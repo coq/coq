@@ -71,6 +71,10 @@ struct
     Array.fold_left3 eq_constraint csts variance u u'
 end
 
+let pr_variances var =
+  let open Pp in
+  prvect_with_sep spc Variance.pr var
+
 module LevelInstance : sig
     type t
 

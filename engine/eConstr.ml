@@ -750,7 +750,7 @@ let cmp_inductives cv_pb (mind,ind as spec) nargs u1 u2 cstrs =
   match mind.Declarations.mind_variance with
   | None -> enforce_eq_instances_univs false u1 u2 cstrs
   | Some variances ->
-    let num_param_arity = Conversion.inductive_cumulativity_arguments spec in
+    let num_param_arity = UCompare.inductive_cumulativity_arguments spec in
     if not (Int.equal num_param_arity nargs) then enforce_eq_instances_univs false u1 u2 cstrs
     else compare_cumulative_instances cv_pb  variances u1 u2 cstrs
 
@@ -759,7 +759,7 @@ let cmp_constructors (mind, ind, cns as spec) nargs u1 u2 cstrs =
   match mind.Declarations.mind_variance with
   | None -> enforce_eq_instances_univs false u1 u2 cstrs
   | Some _ ->
-    let num_cnstr_args = Conversion.constructor_cumulativity_arguments spec in
+    let num_cnstr_args = UCompare.constructor_cumulativity_arguments spec in
     if not (Int.equal num_cnstr_args nargs)
     then enforce_eq_instances_univs false u1 u2 cstrs
     else
@@ -768,6 +768,16 @@ let cmp_constructors (mind, ind, cns as spec) nargs u1 u2 cstrs =
       let cstrs = enforce_eq_qualities qs1 qs2 cstrs in
       Array.fold_left2 (fun cstrs u1 u2 -> UnivProblem.(Set.add (UWeak (u1,u2)) cstrs))
         cstrs us1 us2
+
+let cmp_constants cv_pb cb nargs u1 u2 cstrs =
+  let open UnivProblem in
+  match cb.Declarations.const_variance with
+  | None -> enforce_eq_instances_univs true u1 u2 cstrs
+  | Some variance ->
+    (* FIXME check that enough args are applied (a variance should contain an int for the min number of applied args) *)
+    (* if not (Array.length variance <= nargs) then enforce_eq_instances_univs true u1 u2 cstrs
+    else  *)
+    compare_cumulative_instances cv_pb variance u1 u2 cstrs
 
 let eq_universes env sigma cstrs cv_pb refargs l l' =
   if EInstance.is_empty l then (assert (EInstance.is_empty l'); true)
@@ -780,7 +790,10 @@ let eq_universes env sigma cstrs cv_pb refargs l l' =
     | Some (ConstRef c, 1) when Environ.is_array_type env c ->
       cstrs := compare_cumulative_instances cv_pb [|UVars.Variance.Irrelevant|] l l' !cstrs;
       true
-    | None | Some (ConstRef _, _) ->
+    | Some (ConstRef c, n) ->
+      let cb = Environ.lookup_constant c env in
+      cstrs := cmp_constants cv_pb cb n l l' !cstrs; true
+    | None ->
       cstrs := enforce_eq_instances_univs true l l' !cstrs; true
     | Some (VarRef _, _) -> assert false (* variables don't have instances *)
     | Some (IndRef ind, nargs) ->
