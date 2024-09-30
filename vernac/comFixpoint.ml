@@ -551,7 +551,7 @@ let do_mutually_recursive ?pm ~program_mode ?(use_inference_hook=false) ?scope ?
     match pm with
     | Some pm -> finish_obligations env sigma rec_sign possible_guard poly udecl fix
     | None -> finish_regular env sigma use_inference_hook fix in
-  let info = Declare.Info.make ?scope ?clearbody ~kind ~poly ~udecl ?hook ?typing_flags ?user_warns ~ntns:fix.fixntns () in
+  let info = Declare.Info.make ~loc:None ?scope ?clearbody ~kind ~poly ~udecl ?hook ?typing_flags ?user_warns ~ntns:fix.fixntns () in
   let cinfo = build_recthms fix in
   match pm with
   | Some pm ->

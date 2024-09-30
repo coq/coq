@@ -1,11 +1,16 @@
 Constant Nametab.Q.N.K.foo
+Defined in Library "Nametab", line 5, characters 17-20
   (shorter name to refer to it in current context is Q.N.K.foo)
 Constant Nametab.Q.N.K.foo
+Defined in Library "Nametab", line 5, characters 17-20
   (shorter name to refer to it in current context is Q.N.K.foo)
 Constant Nametab.Q.N.K.foo
+Defined in Library "Nametab", line 5, characters 17-20
   (shorter name to refer to it in current context is Q.N.K.foo)
 Constant Nametab.Q.N.K.foo
+Defined in Library "Nametab", line 5, characters 17-20
 Constant Nametab.Q.N.K.foo
+Defined in Library "Nametab", line 5, characters 17-20
   (shorter name to refer to it in current context is Q.N.K.foo)
 Module Nametab.Q.N.K
   (shorter name to refer to it in current context is Q.N.K)
@@ -20,13 +25,18 @@ Module Nametab.Q.N (shorter name to refer to it in current context is Q.N)
 Module Nametab.Q
 Module Nametab.Q (shorter name to refer to it in current context is Q)
 Constant Nametab.Q.N.K.foo
+Defined in Library "Nametab", line 5, characters 17-20
   (shorter name to refer to it in current context is K.foo)
 Constant Nametab.Q.N.K.foo
+Defined in Library "Nametab", line 5, characters 17-20
 Constant Nametab.Q.N.K.foo
+Defined in Library "Nametab", line 5, characters 17-20
   (shorter name to refer to it in current context is K.foo)
 Constant Nametab.Q.N.K.foo
+Defined in Library "Nametab", line 5, characters 17-20
   (shorter name to refer to it in current context is K.foo)
 Constant Nametab.Q.N.K.foo
+Defined in Library "Nametab", line 5, characters 17-20
   (shorter name to refer to it in current context is K.foo)
 Module Nametab.Q.N.K
 Module Nametab.Q.N.K (shorter name to refer to it in current context is K)
