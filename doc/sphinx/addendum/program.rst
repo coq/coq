@@ -292,15 +292,15 @@ optional tactic is replaced by the default one if not specified.
 
    Displays all remaining obligations.
 
-.. cmd:: Obligation @natural {? of @ident } {? with @ltac_expr }
+.. cmd:: Obligation @natural {? of @ident } {? with @generic_tactic }
 
    Start the proof of obligation :token:`natural`.
 
-.. cmd:: Next Obligation {? of @ident } {? with @ltac_expr }
+.. cmd:: Next Obligation {? of @ident } {? with @generic_tactic }
 
    Start the proof of the next unsolved obligation.
 
-.. cmd:: Final Obligation {? of @ident } {? with @ltac_expr }
+.. cmd:: Final Obligation {? of @ident } {? with @generic_tactic }
 
    Like :cmd:`Next Obligation`, starts the proof of the next unsolved
    obligation. Additionally, at :cmd:`Qed` time, after the

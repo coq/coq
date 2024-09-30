@@ -1341,14 +1341,11 @@ command: [
 | WITH "Show" "Ltac" "Profile" OPT [ "CutOff" integer | string ]
 | DELETE "Show" "Ltac" "Profile" string
 | DELETE "Show" "Proof"  (* combined with Show Proof Diffs in vernac_toplevel *)
-| REPLACE "Solve" "All" "Obligations" "with" tactic
+| REPLACE "Solve" "All" "Obligations" withtac
 | WITH "Solve" "All" "Obligations" OPT ( "with" tactic )
-| DELETE "Solve" "All" "Obligations"
-| DELETE "Solve" "Obligations" "of" identref "with" tactic
-| DELETE "Solve" "Obligations" "of" identref
-| DELETE "Solve" "Obligations" "with" tactic
-| DELETE "Solve" "Obligations"
-| "Solve" "Obligations" OPT ( "of" identref ) OPT ( "with" tactic )
+| REPLACE "Solve" "Obligations" "of" identref withtac
+| WITH "Solve" "Obligations" OPT ( "of" identref ) OPT ( "with" tactic )
+| DELETE "Solve" "Obligations" withtac
 | DELETE "Undo"
 | DELETE "Undo" natural
 | REPLACE "Undo" "To" natural

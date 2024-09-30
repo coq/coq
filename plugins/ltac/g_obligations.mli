@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val wit_withtac :
-  Tacexpr.raw_tactic_expr option Genarg.vernac_genarg_type
+val wit_withtac : Genarg.raw_generic_argument option Genarg.vernac_genarg_type
 
-val withtac : Tacexpr.raw_tactic_expr option Procq.Entry.t
+val withtac : Genarg.raw_generic_argument option Procq.Entry.t

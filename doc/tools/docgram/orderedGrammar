@@ -850,9 +850,9 @@ command: [
 | "Attributes" LIST1 attribute SEP ","
 | "Declare" "Instance" ident_decl LIST0 binder ":" term OPT hint_info
 | "Declare" "Scope" scope_name
-| "Obligation" natural OPT ( "of" ident ) OPT ( "with" ltac_expr )
-| "Next" "Obligation" OPT ( "of" ident ) OPT ( "with" ltac_expr )
-| "Final" "Obligation" OPT ( "of" ident ) OPT ( "with" ltac_expr )
+| "Obligation" natural OPT ( "of" ident ) OPT ( "with" generic_tactic )
+| "Next" "Obligation" OPT ( "of" ident ) OPT ( "with" generic_tactic )
+| "Final" "Obligation" OPT ( "of" ident ) OPT ( "with" generic_tactic )
 | "Solve" "Obligations" OPT ( "of" ident ) OPT ( "with" ltac_expr )
 | "Solve" "All" "Obligations" OPT ( "with" ltac_expr )
 | "Admit" "Obligations" OPT ( "of" ident )
