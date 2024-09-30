@@ -1022,7 +1022,7 @@ END
 
 {
 
-let _ = Pvernac.register_proof_mode "Ltac2" tac2mode
+let _ : Pvernac.proof_mode = Pvernac.register_proof_mode "Ltac2" { command_entry = tac2mode }
 
 open Vernacextend
 

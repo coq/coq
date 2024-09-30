@@ -10,11 +10,15 @@
 
 open Procq
 
+type proof_mode_entry = {
+  command_entry : Vernacexpr.vernac_expr Entry.t;
+}
+
 type proof_mode = string
 
 (* Tactic parsing modes *)
 let register_proof_mode, find_proof_mode, lookup_proof_mode, list_proof_modes =
-  let proof_mode : (string, Vernacexpr.vernac_expr Entry.t) Hashtbl.t =
+  let proof_mode : (string, proof_mode_entry) Hashtbl.t =
     Hashtbl.create 19 in
   let register_proof_mode ename e = Hashtbl.add proof_mode ename e; ename in
   let find_proof_mode ename =
@@ -62,7 +66,7 @@ module Vernac_ =
     let select_tactic_entry spec =
       match spec with
       | None -> noedit_mode
-      | Some ename -> find_proof_mode ename
+      | Some ename -> (find_proof_mode ename).command_entry
 
     let command_entry =
       Procq.Entry.(of_parser "command_entry"

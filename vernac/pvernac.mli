@@ -50,7 +50,11 @@ val main_entry : proof_mode option -> vernac_control option Entry.t
   entry for parsing its tactics.
   *)
 
-val register_proof_mode : string -> Vernacexpr.vernac_expr Entry.t -> proof_mode
+type proof_mode_entry = {
+  command_entry : Vernacexpr.vernac_expr Entry.t;
+}
+
+val register_proof_mode : string -> proof_mode_entry -> proof_mode
 val lookup_proof_mode : string -> proof_mode option
 val proof_mode_to_string : proof_mode -> string
-val list_proof_modes : unit -> Vernacexpr.vernac_expr Entry.t CString.Map.t
+val list_proof_modes : unit -> proof_mode_entry CString.Map.t
