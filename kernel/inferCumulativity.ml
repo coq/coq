@@ -149,7 +149,7 @@ let infer_inductive_instance cv_pb env variances ind nargs u =
   match extended_mind_variance mind with
   | None -> infer_generic_instance_eq variances u
   | Some mind_variance ->
-    if not (Int.equal (inductive_cumulativity_arguments (mind,snd ind)) nargs)
+    if not (Int.equal (UCompare.inductive_cumulativity_arguments (mind,snd ind)) nargs)
     then infer_generic_instance_eq variances u
     else infer_cumulative_ind_instance cv_pb mind_variance variances u
 
@@ -159,7 +159,7 @@ let infer_constructor_instance_eq env variances ((mi,ind),ctor) nargs u =
   match extended_mind_variance mind with
   | None -> infer_generic_instance_eq variances u
   | Some _ ->
-    if not (Int.equal (constructor_cumulativity_arguments (mind,ind,ctor)) nargs)
+    if not (Int.equal (UCompare.constructor_cumulativity_arguments (mind,ind,ctor)) nargs)
     then infer_generic_instance_eq variances u
     else variances (* constructors are convertible at common supertype *)
 

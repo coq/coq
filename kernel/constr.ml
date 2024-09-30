@@ -929,7 +929,6 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq_evars eq le
     Projection.CanOrd.equal p1 p2 && eq 0 c1 c2
   | Evar (e1,l1), Evar (e2,l2) -> eq_evars (e1, l1) (e2, l2)
   | Const (c1,u1), Const (c2,u2) ->
-    (* The args length currently isn't used but may as well pass it. *)
     Constant.CanOrd.equal c1 c2 && leq_universes (Some (GlobRef.ConstRef c1, nargs)) u1 u2
   | Ind (c1,u1), Ind (c2,u2) -> Ind.CanOrd.equal c1 c2 && leq_universes (Some (GlobRef.IndRef c1, nargs)) u1 u2
   | Construct (c1,u1), Construct (c2,u2) ->
