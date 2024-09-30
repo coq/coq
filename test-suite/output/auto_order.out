@@ -1,0 +1,17 @@
+Non-discriminated database
+Unfoldable variable definitions: none
+Unfoldable constant definitions: none
+Unfoldable projection definitions: none
+Cut: emp
+For any goal ->   (*external*) (idtac "second"; fail) (cost 1, id 0)
+                  (*external*) (idtac "first"; fail) (cost 1, id 0)
+                  (*external*) (idtac "fourth"; fail) (cost 2, id 0)
+                  (*external*) (idtac "third"; fail) (cost 2, id 0)
+
+(* info auto: *)
+second
+first
+fourth
+third
+fifth, different hintDb
+idtac.
