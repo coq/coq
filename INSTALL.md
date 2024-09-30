@@ -22,7 +22,7 @@ To compile Coq yourself, you need:
 
   Support for OCaml 5.x remains experimental.
 
-- The [Dune OCaml build system](https://github.com/ocaml/dune/) >= 3.6.1
+- The [Dune OCaml build system](https://github.com/ocaml/dune/) >= 3.8
 
 - The [ZArith library](https://github.com/ocaml/Zarith) >= 1.11
 

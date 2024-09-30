@@ -24,7 +24,7 @@ jobs:
           opam switch set ocaml-base-compiler.$COMPILER
           eval $(opam env)
           opam update
-          opam install -j "$NJOBS" ocamlfind${FINDLIB_VER} ounit lablgtk3-sourceview3 zarith.1.11 dune.3.6.1
+          opam install -j "$NJOBS" ocamlfind${FINDLIB_VER} ounit lablgtk3-sourceview3 zarith.1.11 dune.3.8.3
           opam list
         env:
           COMPILER: "4.12.0"
