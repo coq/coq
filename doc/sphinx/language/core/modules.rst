@@ -197,7 +197,8 @@ are now available through the dot notation.
 
 .. cmd:: Import {? @import_categories } {+ @filtered_import }
 
-   If :token:`qualid` denotes a valid basic module (i.e. its module type is a
+   For each module name :n:`@qualid` in :n:`@filtered_import`,
+   if :n:`@qualid` denotes a valid basic module (i.e. its module type is a
    signature), makes its components available by their short names.
 
    When used inside a section, the effect is local to the section.
