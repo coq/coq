@@ -144,7 +144,7 @@ let do_universe ~poly l =
     let ctx = List.fold_left (fun ctx (_,qid) -> Level.Set.add (Level.make qid) ctx)
         Level.Set.empty l, Constraints.empty
     in
-    Global.push_context_set ~strict:true ctx
+    Global.push_context_set ctx
   | true ->
     let names = CArray.map_of_list (fun (na,_) -> Name na) l in
     let us = CArray.map_of_list (fun (_,l) -> Level.make l) l in
@@ -164,7 +164,7 @@ let do_constraint ~poly l =
   match poly with
   | false ->
     let uctx = ContextSet.add_constraints constraints ContextSet.empty in
-    Global.push_context_set ~strict:true uctx
+    Global.push_context_set uctx
   | true ->
     let uctx = UVars.UContext.make
         ([||],[||])
