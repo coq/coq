@@ -1847,6 +1847,15 @@ let () =
   GlobEnv.register_constr_interp0 wit_ltac2_var_quotation interp
 
 let () =
+  let interp _ist tac =
+    (* XXX should we be doing something with the ist? *)
+    let tac = Tac2interp.(interp empty_environment) tac in
+    Proofview.tclBIND tac (fun _ ->
+        Ftactic.return (Geninterp.Val.inject (Geninterp.val_tag (topwit Stdarg.wit_unit)) ()))
+  in
+  Geninterp.register_interp0 wit_ltac2_tac interp
+
+let () =
   let interp env sigma ist (kind,id) =
     let () = match kind with
       | ConstrVar -> assert false (* checked at intern time *)
@@ -1939,6 +1948,15 @@ let () =
     Genprint.PrinterBasic Pp.(fun _env _sigma -> ids ++ Tac2print.pr_glbexpr ~avoid:Id.Set.empty e)
   in
   Genprint.register_noval_print0 wit_ltac2_constr pr_raw pr_glb
+
+let () =
+  let pr_raw e = Genprint.PrinterBasic (fun _ _ ->
+      let e = Tac2intern.debug_globalize_allow_ext Id.Set.empty e in
+      Tac2print.pr_rawexpr_gen ~avoid:Id.Set.empty E5 e)
+  in
+  let pr_glb e = Genprint.PrinterBasic (fun _ _ -> Tac2print.pr_glbexpr ~avoid:Id.Set.empty e) in
+  let pr_top () = assert false in
+  Genprint.register_print0 wit_ltac2_tac pr_raw pr_glb pr_top
 
 (** Built-in notation scopes *)
 

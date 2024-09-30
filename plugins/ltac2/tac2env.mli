@@ -186,6 +186,9 @@ val ltac1_prefix : ModPath.t
 val wit_ltac2_constr : (raw_tacexpr, Id.Set.t * glb_tacexpr, Util.Empty.t) genarg_type
 (** Ltac2 quotations in Gallina terms *)
 
+val wit_ltac2_tac : (raw_tacexpr, glb_tacexpr, unit) genarg_type
+(** Ltac2 as a generic tactic depending on proof mode (eg as argument to Solve Obligations) *)
+
 type var_quotation_kind =
   | ConstrVar
   | PretermVar
