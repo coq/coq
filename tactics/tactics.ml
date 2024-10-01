@@ -2706,11 +2706,10 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
           let eqdata = build_coq_eq_data () in
           let args = if lr then [mkVar id;c] else [c;mkVar id]in
           let (sigma, eq) = Evd.fresh_global env sigma eqdata.eq in
-          let (sigma, refl) = Evd.fresh_global env sigma eqdata.refl in
+          let refl = mkRef (eqdata.refl, snd @@ destRef sigma eq) in
           let sigma, eq = Typing.checked_applist env sigma eq [t] in
-          let sigma, refl = Typing.checked_applist env sigma refl [t] in
           let eq = applist (eq, args) in
-          let refl = applist (refl, [mkVar id]) in
+          let refl = applist (refl, [t; mkVar id]) in
           let r = Retyping.relevance_of_term env sigma refl in
           let term = mkNamedLetIn sigma (make_annot id rel) c t
               (mkLetIn (make_annot (Name heq) r, refl, eq, ccl)) in
