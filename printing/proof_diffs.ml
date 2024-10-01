@@ -457,15 +457,47 @@ let match_goals ot nt =
       let (ce,l,cp), (ce2,l2,cp2) = exp,exp2 in
       constr_expr ogname ce ce2
     in
+    let rec atom_notation_substitution ogname exp exp2 =
+      match exp, exp2 with
+      | NtnTypeArgConstr ce, NtnTypeArgConstr ce2 -> constr_expr ogname ce ce2
+      | NtnTypeArgPattern (a,bk), NtnTypeArgPattern (a2,bk2) -> cases_pattern_expr ogname a a2
+      | NtnTypeArgBinders bl, NtnTypeArgBinders bl2 -> iter2 (local_binder_expr ogname) bl bl2
+      | (NtnTypeArgConstr _ | NtnTypeArgPattern _ | NtnTypeArgBinders _), _ ->
+        (* Should not occur I guess *)
+        raise (Diff_Failure "Unable to match goals between old and new proof states (6)")
+    and constr_notation_substitution ogname exp exp2 =
+      match exp, exp2 with
+      | NtnTypeArg t, NtnTypeArg t2 -> atom_notation_substitution ogname t t2
+      | NtnTypeArgList l, NtnTypeArgList l2 -> List.iter2 (constr_notation_substitution ogname) l l2
+      | NtnTypeArgTuple l, NtnTypeArgTuple l2 -> List.iter2 (constr_notation_substitution ogname) l l2
+      | (NtnTypeArg _ | NtnTypeArgList _ | NtnTypeArgTuple _), _ ->
+        (* Should not occur I guess *)
+        raise (Diff_Failure "Unable to match goals between old and new proof states (7)")
+    and cases_pattern_expr ogname cpe1 cpe2 =
+      match cpe1.v, cpe2.v with
+      | CPatAlias(a1,i1), CPatAlias(a2,i2) ->
+          cases_pattern_expr ogname a1 a2
+      | CPatCstr(c1,a1,b1), CPatCstr(c2,a2,b2) ->
+          Option.iter2 (List.iter2 (cases_pattern_expr ogname)) a1 a2;
+          List.iter2 (cases_pattern_expr ogname) b1 b2
+      | CPatAtom(r1), CPatAtom(r2) -> ()
+      | CPatOr a1, CPatOr a2 ->
+        List.iter2 (cases_pattern_expr ogname) a1 a2
+      | CPatNotation (inscope1, n1, s1, l1), CPatNotation (inscope2, n2, s2, l2) ->
+        List.iter2 (constr_notation_substitution ogname) s1 s2;
+        List.iter2 (cases_pattern_expr ogname) l1 l2
+      | CPatPrim i1, CPatPrim i2 -> ()
+      | CPatRecord l1, CPatRecord l2 ->
+        let f (r1, e1) (r2, e2) = cases_pattern_expr ogname e1 e2 in
+        List.iter2 f l1 l2
+      | CPatDelimiters(depth1,s1,e1), CPatDelimiters(depth2,s2,e2) ->
+        cases_pattern_expr ogname e1 e2
+      | _, _ -> raise (Diff_Failure "Unable to match goals between old and new proof states (8)")
+    in
     let branch_expr ogname exp exp2 =
       let (cpe,ce), (cpe2,ce2) = exp.v,exp2.v in
+        List.iter2 (List.iter2 (cases_pattern_expr ogname)) cpe cpe2;
         constr_expr ogname ce ce2
-    in
-    let constr_notation_substitution ogname exp exp2 =
-      let (ce, cel, cp, lb), (ce2, cel2, cp2, lb2) = exp, exp2 in
-      iter2 (constr_expr ogname) ce ce2;
-      iter2 (fun a a2 -> iter2 (constr_expr ogname) a a2) cel cel2;
-      iter2 (fun a a2 -> iter2 (local_binder_expr ogname) a a2) lb lb2
     in
     begin
     match ot, nt with
@@ -525,7 +557,7 @@ let match_goals ot nt =
       then raise (Diff_Failure "Unable to match goals between old and new proof states (4)");
       constr_expr ogname t t2
     | CNotation (_,ntn,args), CNotation (_,ntn2,args2) ->
-      constr_notation_substitution ogname args args2
+      List.iter2 (constr_notation_substitution ogname) args args2
     | CGeneralization (b,c), CGeneralization (b2,c2) ->
       constr_expr ogname c c2
     | CPrim p, CPrim p2 -> ()

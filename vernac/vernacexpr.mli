@@ -405,7 +405,7 @@ type nonrec synpure_vernac_expr =
   | VernacDeclareScope of scope_name
   | VernacDelimiters of scope_name * string option
   | VernacBindScope of scope_name * coercion_class list
-  | VernacEnableNotation of bool * (string, Id.t list * qualid) Util.union option * constr_expr option * notation_enable_modifier list * notation_with_optional_scope option
+  | VernacEnableNotation of bool * (string, Id.t list * qualid) Util.union option * constr_expr option * notation_enable_modifier list * notation_scope_opt option
 
   (* Gallina *)
   | VernacDefinition of (discharge * Decls.definition_object_kind) * name_decl * definition_expr

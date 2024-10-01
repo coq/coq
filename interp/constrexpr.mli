@@ -51,7 +51,10 @@ type ident_decl = lident * universe_decl_expr option
 type cumul_ident_decl = lident * cumul_univ_decl_expr option
 type name_decl = lname * universe_decl_expr option
 
-type notation_with_optional_scope = LastLonelyNotation | NotationInScope of string
+type notation_scope_opt = NotationNoScope  | NotationInScope of string
+(* NotationNoScope can be used either to mark an unknown scope
+   (as in parsing and constrintern.ml)
+   or last lonely notation as in (constrextern.ml) *)
 
 type side = Left | Right
 type entry_level = int
@@ -76,16 +79,29 @@ type notation_entry_relative_level = {
 type notation_key = string
 
 (* A notation associated to a given parsing rule *)
-type notation = notation_entry * notation_key
+type notation = {
+  ntn_entry : notation_entry;
+  ntn_key : notation_key;
+}
 
 (* A notation associated to a given interpretation *)
-type specific_notation = notation_with_optional_scope * (notation_entry * notation_key)
+type specific_notation = notation_scope_opt * notation
 
 type 'a or_by_notation_r =
   | AN of 'a
   | ByNotation of (string * string option)
 
 type 'a or_by_notation = 'a or_by_notation_r CAst.t
+
+type ('a,'b,'c) notation_arg_kind =
+  | NtnTypeArgConstr of 'a
+  | NtnTypeArgPattern of 'b
+  | NtnTypeArgBinders of 'c
+
+type ('a,'b,'c) notation_arg_type =
+  | NtnTypeArg of ('a,'b,'c) notation_arg_kind
+  | NtnTypeArgList of ('a,'b,'c) notation_arg_type list (* all elements assumed of same type *)
+  | NtnTypeArgTuple of ('a,'b,'c) notation_arg_type list
 
 (* NB: the last string in [ByNotation] is actually a [Notation.delimiters],
    but this formulation avoids a useless dependency. *)
@@ -117,7 +133,7 @@ type cases_pattern_expr_r =
   (** [CPatCstr (_, c, Some l1, l2)] represents [(@ c l1) l2] *)
   | CPatAtom of qualid option
   | CPatOr   of cases_pattern_expr list
-  | CPatNotation of notation_with_optional_scope option * notation * cases_pattern_notation_substitution
+  | CPatNotation of notation_scope_opt * notation * notation_substitution
     * cases_pattern_expr list (** CPatNotation (_, n, l1 ,l2) represents
                                   (notation n applied with substitution l1)
                                   applied to arguments l2 *)
@@ -128,11 +144,6 @@ type cases_pattern_expr_r =
 and cases_pattern_expr = cases_pattern_expr_r CAst.t
 
 and kinded_cases_pattern_expr = cases_pattern_expr * Glob_term.binding_kind
-
-and cases_pattern_notation_substitution =
-    cases_pattern_expr list *      (* for cases_pattern subterms parsed as terms *)
-    cases_pattern_expr list list * (* for recursive notations parsed as terms*)
-    kinded_cases_pattern_expr list (* for cases_pattern subterms parsed as binders *)
 
 and constr_expr_r =
   | CRef     of qualid * instance_expr option
@@ -167,7 +178,7 @@ and constr_expr_r =
   | CEvar   of Glob_term.existential_name CAst.t * (lident * constr_expr) list
   | CSort   of sort_expr
   | CCast   of constr_expr * Constr.cast_kind option * constr_expr
-  | CNotation of notation_with_optional_scope option * notation * constr_notation_substitution
+  | CNotation of notation_scope_opt * notation * notation_substitution
   | CGeneralization of Glob_term.binding_kind * constr_expr
   | CPrim of prim_token
   | CDelimiters of delimiter_depth * string * constr_expr
@@ -201,11 +212,12 @@ and local_binder_expr =
   | CLocalDef     of lname * relevance_info_expr * constr_expr * constr_expr option
   | CLocalPattern of cases_pattern_expr
 
-and constr_notation_substitution =
-    constr_expr list *      (* for constr subterms *)
-    constr_expr list list * (* for recursive notations *)
-    kinded_cases_pattern_expr list *   (* for binders *)
-    local_binder_expr list list (* for binder lists (recursive notations) *)
+and notation_arg_type_expr =
+  (* Instances of notation variables, with their type as parsed *)
+  (constr_expr, kinded_cases_pattern_expr, local_binder_expr list) notation_arg_type
+
+and notation_substitution =
+  notation_arg_type_expr list
 
 type constr_pattern_expr = constr_expr
 

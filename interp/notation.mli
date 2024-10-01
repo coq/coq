@@ -239,7 +239,7 @@ type entry_coercion_kind =
   | IsEntryGlobal of string * int
   | IsEntryIdent of string * int
 
-val declare_notation : notation_with_optional_scope * notation ->
+val declare_notation : notation_scope_opt * notation ->
   interpretation -> notation_location -> use:notation_use ->
   entry_coercion_kind option ->
   UserWarn.t option -> unit
@@ -261,7 +261,7 @@ type 'a notation_query_pattern_gen = {
     notation_entry_pattern : notation_entry list;
     interp_rule_key_pattern : (notation_key, 'a) Util.union option;
     use_pattern : notation_use;
-    scope_pattern : notation_with_optional_scope option;
+    scope_pattern : notation_scope_opt option;
     interpretation_pattern : interpretation option;
   }
 
@@ -288,7 +288,7 @@ val interp_notation_as_global_reference : ?loc:Loc.t -> head:bool ->
 (** Same together with the full notation *)
 val interp_notation_as_global_reference_expanded : ?loc:Loc.t -> head:bool ->
       (GlobRef.t -> bool) -> notation_key -> delimiters option ->
-  (notation_entry * notation_key) * notation_key * notation_with_optional_scope * interpretation * GlobRef.t
+  notation * notation_key * notation_scope_opt * interpretation * GlobRef.t
 
 (** Declares and looks for scopes associated to arguments of a global ref *)
 val declare_arguments_scope :
@@ -333,9 +333,9 @@ val make_notation_key : notation_entry -> symbol list -> notation
 val decompose_notation_key : notation -> notation_entry * symbol list
 
 type notation_symbols = {
-  recvars : (Id.t * Id.t) list; (* pairs (x,y) as in [ x ; .. ; y ] *)
-  mainvars : Id.t list; (* variables non involved in a recursive pattern *)
-  symbols : symbol list; (* the decomposition of the notation into terminals and nonterminals *)
+  mainvars : Id.t list; (* names of "toplevel" non-terminals *)
+  maintypes : Id.t notation_raw_type list; (* types of "toplevel" non-terminals *)
+  symbols : symbol list; (* the decomposition of the notation into terminals and nonterminals; there, recursive patterns refer to the left-hand variable *)
 }
 
 val is_prim_token_constant_in_constr :
@@ -365,7 +365,7 @@ val is_coercion : notation_entry_level -> notation_entry_relative_level -> bool
 val declare_entry_coercion : specific_notation -> notation_entry_level -> notation_entry_relative_level -> unit
   (** Add a coercion from some-entry to some-relative-entry *)
 
-type entry_coercion = (notation_with_optional_scope * notation) list
+type entry_coercion = (notation_scope_opt * notation) list
 val availability_of_entry_coercion : ?non_included:bool -> notation_entry_relative_level -> notation_entry_level -> entry_coercion option
   (** Return a coercion path from some-relative-entry to some-entry if there is one *)
 

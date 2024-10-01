@@ -817,7 +817,7 @@ let pr_synpure_vernac_expr v =
     let pr_opt_scope = function
       | None -> mt ()
       | Some (NotationInScope s) -> spc () ++ str ": " ++ str s
-      | Some LastLonelyNotation -> str ":" ++ spc () ++ str "none" in
+      | Some NotationNoScope -> str ":" ++ spc () ++ str "none" in
     let pp = pr_rule ++ pr_flags flags ++ pr_opt_scope scope in
     return (
       keyword (if on then "Enable Notation " else "Disable Notation ") ++ pp
