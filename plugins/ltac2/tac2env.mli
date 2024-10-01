@@ -59,7 +59,7 @@ type constructor_data = {
       constructor is a member of an open type. *)
 }
 
-val define_constructor : ltac_constructor -> constructor_data -> unit
+val define_constructor : ?warn:UserWarn.t -> ltac_constructor -> constructor_data -> unit
 val interp_constructor : ltac_constructor -> constructor_data
 
 val find_all_constructors_in_type : type_constant -> constructor_data KNmap.t
@@ -121,6 +121,9 @@ val locate_constructor : qualid -> ltac_constructor
 val locate_extended_all_constructor : qualid -> ltac_constructor list
 val shortest_qualid_of_constructor : ltac_constructor -> qualid
 val path_of_constructor : ltac_constructor -> full_path
+
+(** Emit warning if any for the constructor. *)
+val constructor_user_warn : ?loc:Loc.t -> ltac_constructor -> unit
 
 val push_type : visibility -> full_path -> type_constant -> unit
 val locate_type : qualid -> type_constant

@@ -117,8 +117,8 @@ One can define new types with the following commands.
       | [ {? {? %| } {+| @tac2alg_constructor } } ]
       | [ .. ]
       | %{ {? {+; @tac2rec_field } {? ; } } %}
-      tac2alg_constructor ::= @ident
-      | @ident ( {*, @ltac2_type } )
+      tac2alg_constructor ::= {* #[ {+, @attribute } ] } @ident
+      | {* #[ {+, @attribute } ] } @ident ( {*, @ltac2_type } )
       tac2rec_field ::= {? mutable } @ident : @ltac2_type
 
    :n:`:=`
@@ -137,6 +137,9 @@ One can define new types with the following commands.
 
    :n:`with @tac2typ_def`
      Permits definition of mutually recursive type definitions.
+
+   In :n:`@tac2alg_constructor`, :n:`attribute` supports :attr:`deprecated` (without `use`)
+   and :attr:`warn`.
 
    Each production of :token:`tac2typ_knd` defines one of four possible kinds
    of definitions, respectively: alias, variant, open variant and record types.

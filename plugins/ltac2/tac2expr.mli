@@ -54,7 +54,7 @@ and raw_typexpr = raw_typexpr_r CAst.t
 
 type raw_typedef =
 | CTydDef of raw_typexpr option
-| CTydAlg of (uid * raw_typexpr list) list
+| CTydAlg of (Attributes.vernac_flags * uid * raw_typexpr list) list
 | CTydRec of (lid * mutable_flag * raw_typexpr) list
 | CTydOpn
 
@@ -64,7 +64,7 @@ type 'a glb_typexpr =
 | GTypRef of type_constant or_tuple * 'a glb_typexpr list
 
 type glb_alg_type = {
-  galg_constructors : (uid * int glb_typexpr list) list;
+  galg_constructors : (UserWarn.t option * uid * int glb_typexpr list) list;
   (** Constructors of the algebraic type *)
   galg_nconst : int;
   (** Number of constant constructors *)

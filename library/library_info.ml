@@ -16,33 +16,20 @@ open Names
 
 type t = UserWarn.t
 
-let warn_library_deprecated =
-  Deprecation.create_warning ~object_name:"Library File"
-    ~warning_name_if_no_since:"deprecated-library-file"
+let warn_library =
+  UserWarn.create_depr_and_user_warnings
+    ~object_name:"Library File"
+    ~warning_name_base:"library-file"
     (fun dp -> DirPath.print dp)
+    ()
 
-let warn_library_warn =
-  UserWarn.create_warning ~warning_name_if_no_cats:"warn-library-file" ()
-
-let warn_library_deprecated_transitive =
-  Deprecation.create_warning ~object_name:"Library File (transitively required)"
-    ~warning_name_if_no_since:"deprecated-transitive-library-file"
+let warn_library_transitive =
+  UserWarn.create_depr_and_user_warnings ~object_name:"Library File (transitively required)"
+    ~warning_name_base:"transitive-library-file"
     ~default:CWarnings.Disabled
-   (fun dp -> DirPath.print dp)
-
-let warn_library_warn_transitive =
-  UserWarn.create_warning
-    ~warning_name_if_no_cats:"warn-transitive-library-file"
-    ~default:CWarnings.Disabled ()
+    (fun dp -> DirPath.print dp)
+    ()
 
 let warn_library_info ?loc ?(transitive=false) dp infos =
-  let open UserWarn in
-  if transitive then begin
-    Option.iter (fun depr ->
-        warn_library_deprecated_transitive ?loc (dp, depr)) infos.depr;
-    List.iter (fun warn -> warn_library_warn_transitive ?loc warn) infos.warn
-  end else begin
-    Option.iter (fun depr ->
-        warn_library_deprecated ?loc (dp, depr)) infos.depr;
-    List.iter (fun warn -> warn_library_warn ?loc warn) infos.warn
-  end
+  if transitive then warn_library_transitive ?loc dp infos
+  else warn_library ?loc dp infos

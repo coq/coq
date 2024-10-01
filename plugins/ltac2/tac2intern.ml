@@ -195,7 +195,9 @@ let get_constructor env var = match var with
 | RelId qid ->
   let c = try Some (Tac2env.locate_constructor qid) with Not_found -> None in
   begin match c with
-  | Some knc -> Other knc
+  | Some knc ->
+    Tac2env.constructor_user_warn knc ;
+    Other knc
   | None ->
     CErrors.user_err ?loc:qid.CAst.loc (str "Unbound constructor " ++ pr_qualid qid)
   end
@@ -537,9 +539,9 @@ let make_ctor ctyp tdata is_const n =
   let cnargs = if is_const then 0 else
       let rec find n = function
         | [] -> assert false
-        | (_, []) :: rem ->
+        | (_, _, []) :: rem ->
           find n rem
-        | (_, argtys) :: rem ->
+        | (_, _, argtys) :: rem ->
           if Int.equal n 0 then List.length argtys
           else find (pred n) rem
       in
@@ -644,13 +646,13 @@ let specialized_types env ts ctor = match ts with
           let () = unify env t ans in
           types
         | GTydAlg tdata ->
-          let ctors = List.filter (fun (_,argts) ->
+          let ctors = List.filter (fun (_, _,argts) ->
               if cnargs = 0
               then List.is_empty argts
               else not (List.is_empty argts))
               tdata.galg_constructors
           in
-          let _, argts = List.nth ctors i in
+          let _, _, argts = List.nth ctors i in
           let subst = Array.init ntargs (fun _ -> fresh_id env) in
           let substf i = GTypVar subst.(i) in
           let types = List.map (fun t -> subst_type substf t) argts in
@@ -949,7 +951,7 @@ let to_simple_case env ?loc (e,t) pl =
         | GTydRec _ -> raise HardCase
         | _ -> assert false
       in
-      let arities = List.map (fun (_, args) -> List.length args) galg.galg_constructors in
+      let arities = List.map (fun (_, _, args) -> List.length args) galg.galg_constructors in
       galg.galg_nconst, galg.galg_nnonconst, arities
     in
     let const = Array.make nconst None in
@@ -1585,9 +1587,13 @@ let intern_typedef self (ids, t) : glb_quant_typedef =
   | CTydDef None -> (count, GTydDef None)
   | CTydDef (Some t) -> (count, GTydDef (Some (intern t)))
   | CTydAlg constrs ->
-    let map (c, t) = (c, List.map intern t) in
+    let map (atts, c, t) =
+      let warn = Attributes.parse Attributes.user_warns atts in
+      let t = List.map intern t in
+      (warn, c, t)
+    in
     let constrs = List.map map constrs in
-    let getn (const, nonconst) (c, args) = match args with
+    let getn (const, nonconst) (_, c, args) = match args with
     | [] -> (succ const, nonconst)
     | _ :: _ -> (const, succ nonconst)
     in
@@ -1896,9 +1902,9 @@ let subst_typedef subst e = match e with
   let t' = Option.Smart.map (fun t -> subst_type subst t) t in
   if t' == t then e else GTydDef t'
 | GTydAlg galg ->
-  let map (c, tl as p) =
+  let map (warn, c, tl as p) =
     let tl' = List.Smart.map (fun t -> subst_type subst t) tl in
-    if tl' == tl then p else (c, tl')
+    if tl' == tl then p else (warn, c, tl')
   in
   let constrs' = List.Smart.map map galg.galg_constructors in
   if constrs' == galg.galg_constructors then e

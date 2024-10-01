@@ -26,3 +26,8 @@ val make_warn : note:string -> ?cats:string -> unit -> warn
 
 val create_warning : ?default:CWarnings.status -> warning_name_if_no_cats:string ->
   unit -> ?loc:Loc.t -> warn -> unit
+
+val create_depr_and_user_warnings : ?default:CWarnings.status ->
+  object_name:string -> warning_name_base:string ->
+  ('a -> Pp.t) -> unit ->
+  ?loc:Loc.t -> 'a -> t -> unit

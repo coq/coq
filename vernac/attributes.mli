@@ -57,17 +57,23 @@ val template : bool option attribute
 val unfold_fix : bool attribute
 val locality : bool option attribute
 val option_locality : Goptions.option_locality attribute
-val deprecation : Deprecation.t option attribute
-val deprecation_with_use_globref_instead : Globnames.extended_global_reference Deprecation.with_qf option attribute
-val user_warn_warn : UserWarn.warn list attribute
-val user_warns : UserWarn.t option attribute
-val user_warns_with_use_globref_instead : Globnames.extended_global_reference UserWarn.with_qf option attribute
 val reversible : bool option attribute
 val canonical_field : bool attribute
 val canonical_instance : bool attribute
 val using : string option attribute
 val explicit_hint_locality : Hints.hint_locality option attribute
 val bind_scope_where : Notation.add_scope_where option attribute
+
+(** "deprecated" *)
+val deprecation : Deprecation.t option attribute
+val deprecation_with_use_globref_instead : Globnames.extended_global_reference Deprecation.with_qf option attribute
+
+(** Just the "warn" attribute *)
+val user_warn_warn : UserWarn.warn list attribute
+
+(** "warn" and "deprecated" *)
+val user_warns : UserWarn.t option attribute
+val user_warns_with_use_globref_instead : Globnames.extended_global_reference UserWarn.with_qf option attribute
 
 (** Default: if sections are opened then Local otherwise Export.
     Although this is named and uses the type [hint_locality]

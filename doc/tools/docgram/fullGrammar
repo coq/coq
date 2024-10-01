@@ -2884,8 +2884,8 @@ tac2alg_constructors: [
 ]
 
 tac2alg_constructor: [
-| Prim.ident      (* ltac2 plugin *)
-| Prim.ident "(" LIST0 ltac2_type5 SEP "," ")"      (* ltac2 plugin *)
+| quoted_attributes Prim.ident      (* ltac2 plugin *)
+| quoted_attributes Prim.ident "(" LIST0 ltac2_type5 SEP "," ")"      (* ltac2 plugin *)
 ]
 
 tac2rec_fields: [

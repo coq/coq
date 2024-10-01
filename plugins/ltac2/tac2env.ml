@@ -43,6 +43,7 @@ type alias_data = {
 
 type ltac_state = {
   ltac_tactics : global_data KNmap.t;
+  constructors_warn : UserWarn.t KNmap.t;
   ltac_constructors : constructor_data KNmap.t;
   ltac_projections : projection_data KNmap.t;
   ltac_types : glb_quant_typedef KNmap.t;
@@ -51,6 +52,7 @@ type ltac_state = {
 
 let empty_state = {
   ltac_tactics = KNmap.empty;
+  constructors_warn = KNmap.empty;
   ltac_constructors = KNmap.empty;
   ltac_projections = KNmap.empty;
   ltac_types = KNmap.empty;
@@ -92,9 +94,16 @@ let get_compiled_global kn = KNmap.find_opt kn !compiled_tacs
 
 let globals () = (!ltac_state).ltac_tactics
 
-let define_constructor kn t =
+let define_constructor ?warn kn t =
   let state = !ltac_state in
-  ltac_state := { state with ltac_constructors = KNmap.add kn t state.ltac_constructors }
+  ltac_state := {
+    state with
+    ltac_constructors = KNmap.add kn t state.ltac_constructors;
+    constructors_warn = Option.fold_left (fun ctorwarn warn ->
+        KNmap.add kn warn ctorwarn)
+        state.constructors_warn
+        warn;
+  }
 
 let interp_constructor kn = KNmap.find kn ltac_state.contents.ltac_constructors
 
@@ -244,6 +253,17 @@ let shortest_qualid_of_constructor kn =
   let tab = !nametab in
   let sp = KNmap.find kn tab.tab_cstr_rev in
   KnTab.shortest_qualid Id.Set.empty sp tab.tab_cstr
+
+let constructor_user_warning =
+  UserWarn.create_depr_and_user_warnings
+    ~object_name:"Ltac2 constructor"
+    ~warning_name_base:"ltac2-constructor"
+    (fun kn -> pr_qualid (shortest_qualid_of_constructor kn))
+    ()
+
+let constructor_user_warn ?loc kn =
+  let warn = KNmap.find_opt kn (!ltac_state).constructors_warn in
+  Option.iter (constructor_user_warning ?loc kn) warn
 
 let push_type vis sp kn =
   let tab = !nametab in
