@@ -247,7 +247,7 @@ let occur_rigidly flags env evd (evk,_) t =
     | Normal b -> b
     | Reducible -> false
 
-type hook = Environ.env -> Evd.evar_map -> ((Names.Constant.t * EConstr.EInstance.t) * EConstr.t list * EConstr.t) -> (EConstr.t * EConstr.t list) -> (Evd.evar_map * Structures.CanonicalSolution.t) option
+type hook = Environ.env -> Evd.evar_map -> ((Names.Constant.t * EConstr.EInstance.t) * EConstr.t list option * EConstr.t) -> (EConstr.t * EConstr.t list) -> (Evd.evar_map * Structures.CanonicalSolution.t) option
 
 let all_hooks = ref (CString.Map.empty : hook CString.Map.t)
 
@@ -308,13 +308,16 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
       let ty =
         try Retyping.get_type_of ~lax:true env sigma c with
         | Retyping.RetypeError _ -> raise Not_found
-      in let (i, u), ind_args =
-        (* Are we sure that ty is not an evar? *)
-        Inductiveops.find_mrectype env sigma ty
-      in ind_args, c, sk1
+      in
+      let ind_args =
+        try
+          Some (Inductiveops.find_mrectype env sigma ty |> snd)
+        with Not_found -> None
+      in
+      ind_args, c, sk1
     | None ->
       match Reductionops.Stack.strip_n_app structure.nparams sk1 with
-      | Some (params1, c1, extra_args1) -> (Option.get @@ Reductionops.Stack.list_of_app_stack params1), c1, extra_args1
+      | Some (params1, c1, extra_args1) -> (Reductionops.Stack.list_of_app_stack params1), c1, extra_args1
       | _ -> raise Not_found in
   let h2, sk2' = decompose_app sigma (shrink_eta sigma t2) in
   let sk2 = Stack.append_app sk2' sk2 in
@@ -1299,20 +1302,24 @@ and conv_record flags env (evd,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2),c
         (evd,[],List.length bs,fun i -> Success i) bs
     in
     let app = mkApp (c, Array.rev_of_list ks) in
-    ise_and evd'
-      [(fun i ->
-        ise_list2 i
-          (fun i' x1 x -> evar_conv_x flags env i' CONV x1 (substl ks x))
-          params1 params);
-       (fun i ->
-         ise_list2 i
+    let unif_params =
+      match params1 with
+      | None -> []
+      | Some params1 ->
+        [(fun i ->
+          ise_list2 i
+            (fun i' x1 x -> evar_conv_x flags env i' CONV x1 (substl ks x))
+            params1 params)] in
+    ise_and evd' (
+        unif_params @
+       [(fun i -> ise_list2 i
            (fun i' u1 u -> evar_conv_x flags env i' CONV u1 (substl ks u))
            us2 us);
        (fun i -> evar_conv_x flags env i CONV c1 app);
        (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2);
        test;
        (fun i -> evar_conv_x flags env i CONV h2
-         (fst (decompose_app i (substl ks h))))]
+         (fst (decompose_app i (substl ks h))))])
   else UnifFailure(evd,(*dummy*)NotSameHead)
 
 and eta_constructor flags env evd ((ind, i), u) sk1 (term2,sk2) =
