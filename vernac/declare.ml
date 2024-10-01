@@ -566,6 +566,7 @@ let is_unsafe_typing_flags flags =
   not (flags.check_universes && flags.check_guarded && flags.check_positive)
 
 let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typing_flags ?user_warns cd =
+  let before_univs = Global.universes () in
   let make_constant = function
   (* Logically define the constant and its subproofs, no libobject tampering *)
     | DefinitionEntry de ->
@@ -647,7 +648,15 @@ let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typi
   let () = check_exists name in
   let decl, unsafe, ubinders, delayed, ctx = make_constant cd in
   let kn = Global.add_constant ?typing_flags name decl in
-  let () = DeclareUniv.add_constraint_source (ConstRef kn) ctx in
+  let () =
+    let is_new_constraint (u,_,v as c) =
+      match UGraph.check_declared_universes before_univs Univ.Level.Set.(add u (add v empty)) with
+      | Ok () -> not (UGraph.check_constraint before_univs c)
+      | Error _ -> true
+    in
+    let ctx = on_snd (Univ.Constraints.filter is_new_constraint) ctx in
+    DeclareUniv.add_constraint_source (ConstRef kn) ctx
+  in
   let () = DeclareUniv.declare_univ_binders (GlobRef.ConstRef kn) ubinders in
   let () = declare_opaque kn delayed in
   let () = register_constant kn kind local ?user_warns in
