@@ -38,13 +38,13 @@ Class Setoid A := {
 
 (** Shortcuts to make proof search easier. *)
 
-Definition setoid_refl `(sa : Setoid A) : Reflexive equiv.
+Lemma setoid_refl `(sa : Setoid A) : Reflexive equiv.
 Proof. typeclasses eauto. Qed.
 
-Definition setoid_sym `(sa : Setoid A) : Symmetric equiv.
+Lemma setoid_sym `(sa : Setoid A) : Symmetric equiv.
 Proof. typeclasses eauto. Qed.
 
-Definition setoid_trans `(sa : Setoid A) : Transitive equiv.
+Lemma setoid_trans `(sa : Setoid A) : Transitive equiv.
 Proof. typeclasses eauto. Qed.
 
 #[global]

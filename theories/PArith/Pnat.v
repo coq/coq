@@ -471,7 +471,7 @@ Lemma nat_of_P_lt_Lt_compare_complement_morphism p q :
  Pos.to_nat p < Pos.to_nat q -> Pos.compare_cont Eq p q = Lt.
 Proof (proj2 (Pos2Nat.inj_lt p q)).
 
-Definition nat_of_P_gt_Gt_compare_complement_morphism p q :
+Lemma nat_of_P_gt_Gt_compare_complement_morphism p q :
  Pos.to_nat p > Pos.to_nat q -> Pos.compare_cont Eq p q = Gt.
 Proof (proj2 (Pos2Nat.inj_gt p q)).
 

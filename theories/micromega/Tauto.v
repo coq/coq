@@ -702,7 +702,7 @@ Section S.
         | _   => None
         end.
 
-      Definition is_X_inv : forall (k: kind) (f: TFormula TX AF k) x,
+      Lemma is_X_inv : forall (k: kind) (f: TFormula TX AF k) x,
           is_X f = Some x -> f = X k x.
       Proof.
         intros k f; destruct f ; simpl ; try congruence.

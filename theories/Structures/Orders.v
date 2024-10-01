@@ -356,7 +356,7 @@ Module TTLB_to_OTF (Import O : TotalTransitiveLeBool') <: OrderedTypeFull.
    apply leb_trans with y'; auto.
  Qed.
 
- Definition le_lteq : forall x y, le x y <-> lt x y \/ eq x y.
+ Lemma le_lteq : forall x y, le x y <-> lt x y \/ eq x y.
  Proof.
  intros x y.
  unfold lt, eq, le.
