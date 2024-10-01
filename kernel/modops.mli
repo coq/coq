@@ -35,7 +35,8 @@ val check_modpath_equiv : env -> ModPath.t -> ModPath.t -> unit
 val implem_smart_map :
   (structure_body -> structure_body) ->
   (module_expression -> module_expression) ->
-  (module_implementation -> module_implementation)
+  ('a, module_implementation) when_mod_body ->
+  ('a, module_implementation) when_mod_body
 
 val annotate_module_expression : module_expression -> module_signature ->
   (module_type_body, (constr * UVars.AbstractContext.t option) module_alg_expr) functorize
@@ -62,7 +63,7 @@ val add_linked_module : module_body -> link_info -> env -> env
 (** same, for a module type *)
 val add_module_type : ModPath.t -> module_type_body -> env -> env
 
-val add_retroknowledge : module_implementation module_retroknowledge -> env -> env
+val add_retroknowledge : mod_body module_retroknowledge -> env -> env
 
 (** {6 Strengthening } *)
 

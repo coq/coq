@@ -196,11 +196,11 @@ let lookup_module mp env =
 
 let mk_mtb mp sign delta =
   { mod_mp = mp;
-    mod_expr = ();
+    mod_expr = ModTypeNul;
     mod_type = sign;
     mod_type_alg = None;
     mod_delta = delta;
-    mod_retroknowledge = ModTypeRK; }
+    mod_retroknowledge = ModTypeNul; }
 
 let rec collect_constants_without_body sign mp accu =
   let collect_field s lab = function
@@ -243,7 +243,7 @@ let rec check_module env opac mp mb opacify =
   let opac =
     check_signature env opac mb.mod_type mb.mod_mp mb.mod_delta opacify
   in
-  let optsign, opac = match mb.mod_expr with
+  let optsign, opac = match Declareops.mod_expr mb with
     | Struct sign_struct ->
       let opacify = collect_constants_without_body mb.mod_type mb.mod_mp opacify in
       (* TODO: a bit wasteful, we recheck the types of parameters twice *)

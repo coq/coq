@@ -1381,11 +1381,11 @@ let declare_one_include_core (me,base,kind,inl) =
   let () = assert (ModPath.equal cur_mp (Global.current_modpath ())) in
   (* Include Self support  *)
   let mb = { mod_mp = cur_mp;
-  mod_expr = ();
+  mod_expr = ModTypeNul;
   mod_type = RawModOps.Interp.current_struct ();
   mod_type_alg = None;
   mod_delta = RawModOps.Interp.current_modresolver ();
-  mod_retroknowledge = ModTypeRK }
+  mod_retroknowledge = ModTypeNul }
   in
   let rec compute_sign sign =
     match sign with

@@ -362,7 +362,15 @@ let subst_rewrite_rules subst ({ rewrules_rules } as rules) =
   if rewrules_rules == body' then rules else
     { rewrules_rules = body' }
 
+let mod_expr { mod_expr = ModBodyVal v; _ } = v
+
 (** Hashconsing of modules *)
+
+let hcons_when_mod_body (type a b) (f : b -> b) : (a, b) when_mod_body -> (a, b) when_mod_body = function
+| ModBodyVal v as arg ->
+  let v' = f v in
+  if v == v' then arg else ModBodyVal v'
+| ModTypeNul -> ModTypeNul
 
 let hcons_functorize hty he hself f = match f with
 | NoFunctor e ->
@@ -394,10 +402,10 @@ let rec hcons_structure_field_body sb = match sb with
   let mib' = hcons_mind mib in
   if mib == mib' then sb else SFBmind mib'
 | SFBmodule mb ->
-  let mb' = hcons_module_body mb in
+  let mb' = hcons_generic_module_body mb in
   if mb == mb' then sb else SFBmodule mb'
 | SFBmodtype mb ->
-  let mb' = hcons_module_type mb in
+  let mb' = hcons_generic_module_body mb in
   if mb == mb' then sb else SFBmodtype mb'
 | SFBrules _ -> sb (* TODO? *)
 
@@ -411,7 +419,7 @@ and hcons_structure_body sb =
   List.Smart.map map sb
 
 and hcons_module_signature ms =
-  hcons_functorize hcons_module_type hcons_structure_body hcons_module_signature ms
+  hcons_functorize hcons_generic_module_body hcons_structure_body hcons_module_signature ms
 
 and hcons_module_implementation mip = match mip with
 | Abstract -> Abstract
@@ -424,10 +432,10 @@ and hcons_module_implementation mip = match mip with
 | FullStruct -> FullStruct
 
 and hcons_generic_module_body :
-  'a. ('a -> 'a) -> 'a generic_module_body -> 'a generic_module_body =
-  fun hcons_impl mb ->
+  'a. 'a generic_module_body -> 'a generic_module_body =
+  fun mb ->
   let mp' = mb.mod_mp in
-  let expr' = hcons_impl mb.mod_expr in
+  let expr' = hcons_when_mod_body hcons_module_implementation mb.mod_expr in
   let type' = hcons_module_signature mb.mod_type in
   let type_alg' = mb.mod_type_alg in
   let delta' = mb.mod_delta in
@@ -450,8 +458,8 @@ and hcons_generic_module_body :
     mod_retroknowledge = retroknowledge';
   }
 
-and hcons_module_body mb =
-  hcons_generic_module_body hcons_module_implementation mb
+let hcons_module_body =
+  hcons_generic_module_body
 
-and hcons_module_type mb =
-  hcons_generic_module_body (fun () -> ()) mb
+let hcons_module_type =
+  hcons_generic_module_body

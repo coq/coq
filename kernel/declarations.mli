@@ -342,6 +342,13 @@ type rewrite_rules_body = {
 
 (** {6 Module declarations } *)
 
+type mod_body = [ `ModBody ]
+type mod_type = [ `ModType ]
+
+type (_, 'v) when_mod_body =
+| ModBodyVal : 'v -> (mod_body, 'v) when_mod_body
+| ModTypeNul : (mod_type, 'v) when_mod_body
+
 (** Functor expressions are forced to be on top of other expressions *)
 
 type ('ty,'a) functorize =
@@ -400,12 +407,12 @@ and module_implementation =
 
 and 'a generic_module_body =
   { mod_mp : ModPath.t; (** absolute path of the module *)
-    mod_expr : 'a; (** implementation *)
+    mod_expr : ('a, module_implementation) when_mod_body; (** implementation *)
     mod_type : module_signature; (** expanded type *)
     mod_type_alg : module_expression option; (** algebraic type *)
     mod_delta : Mod_subst.delta_resolver; (**
       quotiented set of equivalent constants and inductive names *)
-    mod_retroknowledge : 'a module_retroknowledge }
+    mod_retroknowledge : ('a, Retroknowledge.action list) when_mod_body }
 
 (** For a module, there are five possible situations:
     - [Declare Module M : T] then [mod_expr = Abstract; mod_type_alg = Some T]
@@ -415,19 +422,16 @@ and 'a generic_module_body =
     - [Module M : T. ... End M] then [mod_expr = Struct; mod_type_alg = Some T]
     And of course, all these situations may be functors or not. *)
 
-and module_body = module_implementation generic_module_body
+and module_body = mod_body generic_module_body
 
 (** A [module_type_body] is just a [module_body] with no implementation and
     also an empty [mod_retroknowledge]. Its [mod_type_alg] contains
     the algebraic definition of this module type, or [None]
     if it has been built interactively. *)
 
-and module_type_body = unit generic_module_body
+and module_type_body = mod_type generic_module_body
 
-and _ module_retroknowledge =
-| ModBodyRK :
-  Retroknowledge.action list -> module_implementation module_retroknowledge
-| ModTypeRK : unit module_retroknowledge
+type 'a module_retroknowledge = ('a, Retroknowledge.action list) when_mod_body
 
 (** Extra invariants :
 
