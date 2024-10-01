@@ -643,7 +643,7 @@ Lemma Equal_trans : forall (elt:Type)(m m' m'' : t elt),
  Equal m m' -> Equal m' m'' -> Equal m m''.
 Proof. unfold Equal; congruence. Qed.
 
-Definition Equal_ST : forall elt:Type, Equivalence (@Equal elt).
+Lemma Equal_ST : forall elt:Type, Equivalence (@Equal elt).
 Proof.
 constructor; red; [apply Equal_refl | apply Equal_sym | apply Equal_trans].
 Qed.

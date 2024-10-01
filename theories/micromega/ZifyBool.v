@@ -36,7 +36,7 @@ Instance Op_implb : BinOp implb :=
   { TBOp := implb; TBOpInj _ _ := eq_refl }.
 Add Zify BinOp Op_implb.
 
-Definition xorb_eq b1 b2 : xorb b1 b2 = andb (orb b1 b2) (negb (eqb b1 b2)).
+Lemma xorb_eq b1 b2 : xorb b1 b2 = andb (orb b1 b2) (negb (eqb b1 b2)).
 Proof.
   destruct b1, b2 ; reflexivity.
 Qed.
