@@ -696,7 +696,8 @@ let vernac_start_proof ~atts kind l =
         { fname; binders; rtype; body_def = None; univs; notations = []}) l in
     let pm, proof =
       ComFixpoint.do_mutually_recursive ~program_mode ~use_inference_hook:program_mode
-        ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using (CUnknownRecOrder, fix) in
+        ~scope ?clearbody ~kind:(Decls.IsProof kind) ~poly ?typing_flags
+        ?user_warns ?using (CUnknownRecOrder, fix) in
     assert (Option.is_empty pm);
     Option.get proof
 
@@ -1061,7 +1062,7 @@ let vernac_fixpoint ~atts ~pm (rec_order,fixl) =
       let opens = List.exists (fun { body_def } -> Option.is_empty body_def) fixl in
       if opens then CErrors.user_err Pp.(str"Program Fixpoint requires a body.") in
   with_obligations program_mode
-    (fun pm -> ComFixpoint.do_mutually_recursive ?pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using (CFixRecOrder rec_order, fixl))
+    (fun pm -> ComFixpoint.do_mutually_recursive ?pm ~scope ?clearbody ~kind:(IsDefinition Fixpoint) ~poly ?typing_flags ?user_warns ?using (CFixRecOrder rec_order, fixl))
     pm
 
 let vernac_cofixpoint_common ~atts l =
@@ -1082,7 +1083,7 @@ let vernac_cofixpoint ~pm ~atts cofixl =
       if opens then
         CErrors.user_err Pp.(str"Program CoFixpoint requires a body.") in
   with_obligations program_mode
-    (fun pm -> ComFixpoint.do_mutually_recursive ?pm ~scope ?clearbody ~poly ?typing_flags ?user_warns ?using (CCoFixRecOrder, cofixl))
+    (fun pm -> ComFixpoint.do_mutually_recursive ?pm ~scope ?clearbody ~kind:(IsDefinition CoFixpoint) ~poly ?typing_flags ?user_warns ?using (CCoFixRecOrder, cofixl))
     pm
 
 let vernac_scheme l =
