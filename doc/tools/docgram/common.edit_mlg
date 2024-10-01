@@ -1577,6 +1577,8 @@ vernac_control: [
 | WITH "Time" sentence
 | REPLACE "Instructions" vernac_control
 | WITH "Instructions" sentence
+| REPLACE "Profile" OPT STRING vernac_control
+| WITH "Profile" OPT STRING sentence
 | REPLACE "Redirect" ne_string vernac_control
 | WITH "Redirect" ne_string sentence
 | REPLACE "Timeout" natural vernac_control

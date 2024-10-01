@@ -8,6 +8,20 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+type 'e profile_state_gen = {
+  events : 'e;
+  sums : NewProfile.sums;
+  counters : NewProfile.Counters.t;
+}
+
+type profile_state = NewProfile.MiniJson.t list list profile_state_gen
+
+let empty_profstate = {
+  events = [];
+  sums = NewProfile.empty_sums;
+  counters = NewProfile.Counters.zero;
+}
+
 (** Partially interpreted control flags.
 
     [ControlTime {duration}] means "Time" where the
@@ -27,6 +41,7 @@
 type 'state control_entry =
   | ControlTime of { duration: System.duration }
   | ControlInstructions of { instructions: System.instruction_count }
+  | ControlProfile of { to_file : string option; profstate : profile_state }
   | ControlRedirect of { fname : string; truncate : bool}
   | ControlTimeout of { remaining : float }
   | ControlFail of { st : 'state }
@@ -49,6 +64,67 @@ let with_measure measure add fmt flag init f =
     Feedback.msg_notice @@ fmt result;
     Exninfo.iraise e
   end
+
+let measure_profile f () =
+  let start_cnt = NewProfile.Counters.get() in
+  let events, sums, v = NewProfile.with_profiling (fun () ->
+      try Ok (f ())
+      with e -> Error (Exninfo.capture e))
+  in
+  let counters = NewProfile.Counters.(get() - start_cnt) in
+  let prof = { events=events; sums; counters } in
+  match v with
+  | Ok v -> Ok (v,prof)
+  | Error e -> Error (e, prof)
+
+let add_profile a b = {
+  events = if CList.is_empty b.events then a.events else b.events :: a.events;
+  sums = NewProfile.sums_union a.sums b.sums;
+  counters = NewProfile.Counters.(a.counters + b.counters);
+}
+
+let fmt_profiling counters (sums:NewProfile.sums) =
+  let open Pp in
+  let sums = CString.Map.bindings sums in
+  let sums = List.sort (fun (_,(t1,_)) (_,(t2,_)) -> Float.compare t2 t1) sums in
+  let longest = List.fold_left (fun longest (name,_) -> max longest (String.length name)) 0 sums in
+  let pr_one (name,(time,cnt)) =
+    hov 1
+      (str name ++ str ":" ++ brk (1 + longest - String.length name, 0) ++
+       str (Format.asprintf "%a" NewProfile.pptime time) ++
+       pr_comma () ++ int cnt ++ str " calls")
+  in
+  v 0 (
+  NewProfile.Counters.print counters ++ spc() ++ spc() ++
+  prlist_with_sep spc pr_one sums)
+
+(* Output comma and newline separated events given as a list of nonempty lists.
+   The last event is not followed by a comma. *)
+let rec output_events fmt = function
+  | [] -> ()
+  | [[last]] -> Format.fprintf fmt "%a\n" NewProfile.MiniJson.pr last
+  | [] :: rest -> assert false
+  | (current :: next) :: rest ->
+    Format.fprintf fmt "%a,\n" NewProfile.MiniJson.pr current;
+    match next with
+    | [] -> output_events fmt rest
+    | _::_ -> output_events fmt (next :: rest)
+
+let fmt_profile to_file v =
+  let {events;sums;counters} = match v with
+    | Ok (_,x) -> x
+    | Error (_,x) -> x
+  in
+  to_file |> Option.iter (fun to_file ->
+      let to_file = System.get_output_path (to_file ^ ".json") in
+      let f = open_out to_file in
+      let fmt = Format.formatter_of_out_channel f in
+      NewProfile.format_header fmt;
+      output_events fmt events;
+      NewProfile.format_footer fmt;
+      close_out f
+    );
+  fmt_profiling counters sums
 
 let with_timeout ~timeout:n f =
   check_timeout_f n;
@@ -110,6 +186,11 @@ let under_one_control ~loc ~with_local_state control f =
       (fun instructions -> ControlInstructions {instructions})
       instructions
       f
+  | ControlProfile {to_file; profstate} ->
+    with_measure measure_profile add_profile (fun v -> fmt_profile to_file v)
+      (fun profstate -> ControlProfile {to_file; profstate})
+      profstate
+      f
   | ControlRedirect { fname; truncate } ->
     let v = Topfmt.with_output_to_file ~truncate fname f () in
     Some (ControlRedirect {fname; truncate=false}, v)
@@ -142,6 +223,9 @@ let rec after_last_phase ~loc = function
         noop
       | ControlInstructions {instructions} ->
         Feedback.msg_notice @@ System.fmt_instructions_result (Ok ((),instructions));
+        noop
+      | ControlProfile {to_file; profstate} ->
+        Feedback.msg_notice @@ fmt_profile to_file (Ok ((),profstate));
         noop
       | ControlRedirect _ -> noop
       | ControlTimeout _ -> noop
@@ -178,6 +262,7 @@ let add_default_timeout control =
 let from_syntax_one : Vernacexpr.control_flag -> unit control_entry = function
   | ControlTime -> ControlTime { duration = System.empty_duration }
   | ControlInstructions -> ControlInstructions { instructions = Ok 0L }
+  | ControlProfile to_file -> ControlProfile {to_file; profstate = empty_profstate}
   | ControlRedirect s -> ControlRedirect { fname = s; truncate = true }
   | ControlTimeout timeout ->
     (* don't check_timeout here as the error won't be caught by surrounding Fail *)

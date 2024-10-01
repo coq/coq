@@ -16,6 +16,22 @@ module MiniJson : sig
     | `Assoc of (string * t) list
     | `List of t list
   ]
+
+  val pr : Format.formatter -> t -> unit
+end
+
+module Counters : sig
+  type t
+
+  val get : unit -> t
+
+  val zero : t
+
+  val (+) : t -> t -> t
+
+  val (-) : t -> t -> t
+
+  val print : t -> Pp.t
 end
 
 val profile : string -> ?args:(unit -> (string * MiniJson.t) list) -> (unit -> 'a) -> unit -> 'a
@@ -51,8 +67,12 @@ val resume : accu -> unit
 (** Profiling must not be active.
     Activates profiling with the given state. *)
 
-type sums
-(** Timings for sub-events *)
+type sums = (float * int) CString.Map.t
+(** Timings for sub-events: for each event, how long it took and how many times it was called. *)
+
+val empty_sums : sums
+
+val sums_union : sums -> sums -> sums
 
 val with_profiling : (unit -> 'a) -> MiniJson.t list * sums * 'a
 (** Runs the given function with profiling active and returns the
@@ -61,3 +81,14 @@ val with_profiling : (unit -> 'a) -> MiniJson.t list * sums * 'a
 val insert_results : MiniJson.t list -> sums -> unit
 (** Profiling must be active.
     Outputs the given events and includes the sum times in the current event. *)
+
+val pptime : Format.formatter -> float -> unit
+(** Pretty print a time given in seconds using smaller units as needed. *)
+
+(** Custom outputs *)
+
+val format_header : Format.formatter -> unit
+(** Output header for profile files *)
+
+val format_footer : Format.formatter -> unit
+(** Output footer for profile files and flushes the formatter. *)
