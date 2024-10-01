@@ -656,6 +656,16 @@ let print_universes ~sort ~subgraph dst =
   | Some s -> dump_universes_gen (fun u -> Pp.string_of_ppcmds (prl u)) univ s
   end
 
+let print_constraint_sources () =
+  let srcs = DeclareUniv.constraint_sources() in
+  let prl = UnivNames.pr_level_with_global_universes in
+  let pr_one_ref (r,csts) =
+    hov 2 (pr_global r ++ str":" ++ spc() ++
+           Univ.Constraints.pr prl csts)
+
+  in
+  prlist_with_sep fnl pr_one_ref srcs
+
 (*********************)
 (* "Locate" commands *)
 
@@ -2171,6 +2181,7 @@ let vernac_print =
     Prettyp.print_canonical_projections env sigma grefs
   | PrintUniverses (sort, subgraph, dst) -> no_state @@ fun ()->
     print_universes ~sort ~subgraph dst
+  | PrintConstraintSources -> no_state print_constraint_sources
   | PrintHint r -> with_proof_env @@ fun env sigma ->
     Hints.pr_hint_ref env sigma (smart_global r)
   | PrintHintGoal -> with_pstate @@ fun ~pstate ->
