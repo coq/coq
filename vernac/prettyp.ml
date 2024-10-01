@@ -172,7 +172,7 @@ let print_opacity env ref =
     | Some s ->
        [pr_global ref ++ str " is " ++
         match s with
-          | FullyOpaque -> str "opaque"
+          | FullyOpaque -> str "sealed"
           | TransparentMaybeOpacified Conv_oracle.Opaque ->
               str "basically transparent but considered opaque for reduction"
           | TransparentMaybeOpacified lev when Conv_oracle.is_transparent lev ->

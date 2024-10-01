@@ -47,7 +47,7 @@ plus_n_O : forall n : nat, n = n + 0
 
 plus_n_O is not universe polymorphic
 Arguments plus_n_O n%nat_scope
-plus_n_O is opaque
+plus_n_O is sealed
 Expands to: Constant Stdlib.Init.Peano.plus_n_O
 Inductive le (n : nat) : nat -> Prop :=
     le_n : n <= n | le_S : forall m : nat, n <= m -> n <= S m.
