@@ -163,9 +163,8 @@ Top-level definitions of corecursive functions
    and :g:`tl`):
 
    This command accepts the :attr:`program`,
-   :attr:`bypass_check(universes)`, and :attr:`bypass_check(guard)` attributes.
-   It also accepts the :attr:`sealed` attribute placed just before the
-   name (or names) defined by the cofixpoint.
+   :attr:`bypass_check(universes)`, :attr:`bypass_check(guard)` and :attr:`sealed`
+   attributes.
 
    .. coqtop:: all
 

@@ -100,10 +100,8 @@ Section :ref:`typing-rules`.
    If :n:`@reduce` is present then :n:`@ident` is bound to the result of the specified
    computation on :n:`@term`.
 
-   Even though a definition is a priori intended to be unfoldable, it
-   is sometimes better to keep it abstract and to prevent its
-   reduction. This is done by adding the attribute :attr:`sealed`.
-
+   Use the :attr:`sealed` attribute to prevent unfolding the definition.
+   The default is unfoldable.
    These commands also support the :attr:`universes(polymorphic)`,
    :attr:`program` (see :ref:`program_definition`), :attr:`canonical`,
    :attr:`bypass_check(universes)`, :attr:`bypass_check(guard)`, :attr:`deprecated`,
@@ -178,7 +176,7 @@ The basic assertion command is:
 
    These commands accept the :attr:`universes(polymorphic)`,
    :attr:`program` (see :ref:`program_lemma`), :attr:`canonical`, :attr:`bypass_check(universes)`,
-   :attr:`bypass_check(guard)`, :attr:`deprecated`, :attr:`warn`, and :attr:`using` attributes.
+   :attr:`bypass_check(guard)`, :attr:`deprecated`, :attr:`warn` and :attr:`using` attributes.
 
    .. exn:: The term @term has type @type which should be Set, Prop or Type.
       :undocumented:
@@ -203,12 +201,12 @@ commands to manage the proof mode (see :ref:`proofhandling`).
 
 When the proof is complete, use the :cmd:`Qed` command so the kernel verifies
 the proof and adds it to the global environment. By default, proofs
-ended by :cmd:`Qed` are sealed, that is that their content cannot
+that end with :cmd:`Qed` are sealed, that is that their content cannot
 be unfolded (see :ref:`applyingconversionrules`), thus realizing some
-form of *proof-irrelevance*. Proofs can be made unfoldable, like
-definitions are, by using the attribute :attr:`defined` or by ending
-the proof with :cmd:`Defined` in place of :cmd:`Qed`. Using the
-attribute is however recommended.
+form of *proof-irrelevance*. Proofs can be made unfoldable, as
+definitions are, with the :attr:`defined` attribute or by ending
+the proof with :cmd:`Defined` in place of :cmd:`Qed`. We
+recommend using the attribute.
 
 .. note::
 
@@ -236,8 +234,8 @@ the case of a definition (or assimilated, like :cmd:`Fixpoint` or
 type is the type of the body. In the case of a theorem (or
 assimilated), the term is the proof and the type is the statement.
 
-By default, a definition is unfoldable while the proof of a theorem is
-not, but this can be changed using attributes.
+By default, definitions are unfoldable while the proofs of theorems are
+not.  You can change this using these attributes:
 
 .. attr:: sealed
 
@@ -246,7 +244,6 @@ not, but this can be changed using attributes.
 
 .. attr:: defined
 
-   This attribute tells to make the proof of a theorem unfoldable, as
-   if it were a definition.
+   Makes the proof of a theorem unfoldable, as if it were a definition.
 
    .. seealso:: :cmd:`Opaque`, :cmd:`Transparent`, :tacn:`unfold`.
