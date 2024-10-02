@@ -302,7 +302,7 @@ Section ALMOST_RING.
 
  Hypothesis morph_req : forall x y, (reqb x y) = true -> x == y.
 
- Definition SRIDmorph : ring_morph 0 1 radd rmul SRsub SRopp req
+ Lemma SRIDmorph : ring_morph 0 1 radd rmul SRsub SRopp req
                             0 1 radd rmul SRsub SRopp reqb (@IDphi R).
  Proof.
   now apply mkmorph.

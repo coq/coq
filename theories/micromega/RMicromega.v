@@ -25,7 +25,7 @@ Require Import DeclConstant.
 
 Require Setoid.
 
-Definition Rsrt : ring_theory R0 R1 Rplus Rmult Rminus Ropp (@eq R).
+Lemma Rsrt : ring_theory R0 R1 Rplus Rmult Rminus Ropp (@eq R).
 Proof.
   constructor.
   - exact Rplus_0_l.
