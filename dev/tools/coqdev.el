@@ -35,12 +35,17 @@
 (require 'seq)
 (require 'subr-x)
 
+;; locate-dominating-file would call tramp handlers which call
+;; hack-local-variables-hook which call this recursively
+;; a proper fix would use some hook other than hack-local-variables
+;; for now just return nil for remote files
 (defun coqdev-default-directory ()
   "Return the Coq repository containing `default-directory'."
-  (let ((dir (seq-some
-              (lambda (f) (locate-dominating-file default-directory f))
-              '("META.coq" "META.coq.in" "META.coq-core.in" "coqpp"))))
-    (when dir (expand-file-name dir))))
+  (unless (file-remote-p default-directory)
+    (let ((dir (seq-some
+                (lambda (f) (locate-dominating-file default-directory f))
+                '("META.coq" "META.coq.in" "META.coq-core.in" "coqpp"))))
+      (when dir (expand-file-name dir)))))
 
 (defun coqdev-setup-compile-command ()
   "Setup `compile-command' for Coq development."
