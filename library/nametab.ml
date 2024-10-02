@@ -108,13 +108,24 @@ let coq_id = Id.of_string "Coq"
 let stdlib_id = Id.of_string "Stdlib"
 
 let warn_deprecated_dirpath_Coq =
-  CWarnings.create ~name:"deprecated-dirpath-Coq"
+  CWarnings.create_with_quickfix ~name:"deprecated-dirpath-Coq"
     ~category:Deprecation.Version.v8_21
-    (fun (l, id) ->
-      let l' = List.rev (stdlib_id :: List.tl (List.rev l)) in
-      Pp.(DirPath.(print (make l)) ++ str "." ++ Id.print id ++ spc ()
-          ++ str "has been replaced by" ++ spc ()
-          ++ DirPath.(print (make l')) ++ str "." ++ Id.print id ++ str "."))
+    (fun (old_id, new_id) ->
+      Pp.(old_id ++ spc () ++ str "has been replaced by" ++ spc () ++ new_id ++ str "."))
+
+(* We shadow as to create the quickfix and message at the same time *)
+let fix_coq_id l =
+  (match l with
+   | _coq_id :: l -> stdlib_id :: l
+   | _ -> l)
+
+(* [l] is reversed, thus [Coq.ssr.bool] for example *)
+let warn_deprecated_dirpath_Coq ?loc (l, id) =
+  let dp l = DirPath.make (List.rev l) in
+  let old_id = pr_qualid @@ Libnames.make_qualid (DirPath.make l) id in
+  let new_id = pr_qualid @@ Libnames.make_qualid (dp @@ fix_coq_id (List.rev l)) id in
+  let quickfix = Option.map (fun loc -> [ Quickfix.make ~loc new_id ]) loc in
+  warn_deprecated_dirpath_Coq ?loc ?quickfix (old_id, new_id)
 
 module Make (U : UserName) (E : EqualityType) : NAMETREE
   with type user_name = U.t and type elt = E.t =
@@ -286,14 +297,15 @@ let rec search tree = function
      | Some modid -> search modid path end
   | [] -> false, Some tree.path
 
-let search id tree dir =
+let search ?loc id tree dir =
   let warn, p = search tree dir in
-  if warn then warn_deprecated_dirpath_Coq (dir,id);
+  if warn then warn_deprecated_dirpath_Coq ?loc (dir, id);
   match p with Some p -> p | None -> raise Not_found
 
 let find_node qid tab =
+  let loc = qid.CAst.loc in
   let (dir,id) = repr_qualid qid in
-    search id (Id.Map.find id tab) (DirPath.repr dir)
+  search ?loc id (Id.Map.find id tab) (DirPath.repr dir)
 
 let locate qid tab =
   let o = match find_node qid tab with
