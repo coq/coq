@@ -142,8 +142,11 @@ or :term:`constants <constant>` defined in the :term:`global environment` with t
    E[Γ] ⊢ c~\triangleright_δ~t
 
 :term:`Delta-reduction <delta-reduction>` only unfolds :term:`constants <constant>` that are
-marked :gdef:`transparent`.  :gdef:`Opaque <opaque>` is the opposite of
-transparent; :term:`delta-reduction` doesn't unfold opaque constants.
+marked :gdef:`transparent`. A constant that is not transparent is
+either :gdef:`sealed`, meaning that it is never unfolded, or
+:gdef:`opaque` meaning that it is transparent for the purpose
+of validating the correctness of proofs and types but non-unfoldable
+for the purpose of tactics and unification.
 
 ι-reduction
 ~~~~~~~~~~~

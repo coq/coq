@@ -125,7 +125,8 @@ Section :ref:`typing-rules`.
    The attributes :attr:`local`, :attr:`universes(polymorphic)`,
    :attr:`program` (see :ref:`program_definition`), :attr:`canonical`,
    :attr:`bypass_check(universes)`, :attr:`bypass_check(guard)`, :attr:`deprecated`,
-   :attr:`warn` and :attr:`using` are accepted.
+   :attr:`warn` and :attr:`using`, as well as the exclusive attributes :attr:`sealed` and
+   :attr:`defined` are accepted.
 
    .. seealso:: :cmd:`Opaque`, :cmd:`Transparent`, :tacn:`unfold`.
 
@@ -212,11 +213,13 @@ commands to manage the proof mode (see :ref:`proofhandling`).
 
 When the proof is complete, use the :cmd:`Qed` command so the kernel verifies
 the proof and adds it to the global environment. By default, proofs
-that end with :cmd:`Qed` are :term:`opaque`, that is that their content cannot
+that end with :cmd:`Qed` are sealed, that is that their content cannot
 be unfolded (see :ref:`applyingconversionrules`), thus realizing
 *proof irrelevance*, that is that only provability matters,
 and not the exact proof. Proofs can be made unfoldable, as
-definitions are, by ending the proof with :cmd:`Defined` in place of :cmd:`Qed`.
+definitions are, with the :attr:`defined` attribute or by ending
+the proof with :cmd:`Defined` in place of :cmd:`Qed`. We
+recommend using the attribute.
 
 .. note::
 
@@ -234,3 +237,19 @@ definitions are, by ending the proof with :cmd:`Defined` in place of :cmd:`Qed`.
 
    #. One can also use :cmd:`Admitted` in place of :cmd:`Qed` to turn the
       current asserted statement into an axiom and exit proof mode.
+
+Sealing and transparency
+------------------------
+
+By default, definitions are unfoldable while the proofs of theorems are
+not.  You can change this using these attributes:
+
+.. attr:: sealed
+
+   Prevents the unfoldability of the definition, so it behaves like an abstract definition.
+
+.. attr:: defined
+
+   Makes the proof of a theorem unfoldable, as if it were a definition.
+
+   .. seealso:: :cmd:`Opaque`, :cmd:`Transparent`, :tacn:`unfold`.
