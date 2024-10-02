@@ -538,6 +538,7 @@ Add Field Qcfield : Qcft.
 
 (** A field tactic for rational numbers *)
 
+#[sealed]
 Example test_field : (forall x y : Qc, y<>0 -> (x/y)*y = x)%Qc.
 Proof.
 intros.
