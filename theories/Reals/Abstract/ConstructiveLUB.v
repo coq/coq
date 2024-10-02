@@ -204,7 +204,7 @@ Proof.
     + exact H.
 Qed.
 
-Fixpoint DDcut_limit_fix (upcut : DedekindDecCut) (r : Q) (n : nat) :
+Fixpoint #[sealed] DDcut_limit_fix (upcut : DedekindDecCut) (r : Q) (n : nat) :
   Qlt 0 r
   -> (DDupcut upcut (DDlow upcut + (Z.of_nat n#1) * r))
   -> { q : Q | DDupcut upcut q /\ ~DDupcut upcut (q - r) }.
