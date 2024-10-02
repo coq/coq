@@ -841,8 +841,9 @@ let vernac_definition_interactive ~atts (discharge, kind) (lid, udecl) bl t =
   let canonical_instance, reversible = atts.canonical_instance, atts.reversible in
   let hook = vernac_definition_hook ~canonical_instance ~local ~poly ~reversible kind in
   let name = vernac_definition_name lid scope in
+  let kind = Decls.(match lid.v with Anonymous -> (* Goal *) IsProof Theorem | _ -> IsDefinition kind) in
   ComDefinition.do_definition_interactive ~typing_flags ~program_mode ~name ~poly ~scope ~opaque ?clearbody:atts.clearbody
-    ~kind:(Decls.IsDefinition kind) ?user_warns ?using:atts.using ?hook udecl bl t
+    ~kind ?user_warns ?using:atts.using ?hook udecl bl t
 
 let vernac_definition ~atts ~pm (discharge, kind) (lid, udecl) bl red_option c typ_opt =
   let open DefAttributes in
