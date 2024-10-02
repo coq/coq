@@ -67,6 +67,7 @@ Qed.
 
 (* Sharpen the archimedean property : constructive versions of
    the usual floor and ceiling functions. *)
+#[sealed]
 Definition Rfloor (a : CReal)
   : { p : Z  &  inject_Q (p#1) < a < inject_Q (p#1) + 2 }.
 Proof.
@@ -81,7 +82,7 @@ Proof.
     + rewrite inject_Q_plus, (opp_inject_Q 2).
       ring_simplify. exact H.
     + rewrite Qinv_plus_distr. reflexivity.
-Qed.
+Defined.
 
 (* ToDo: Move to ConstructiveCauchyAbs.v *)
 Lemma Qabs_Rabs : forall q : Q,

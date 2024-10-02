@@ -29,6 +29,7 @@ Require Export Ranalysis4.
 Require Export Rpower.
 Local Open Scope R_scope.
 
+#[sealed]
 Definition AppVar : R.
 Proof.
 exact R0.

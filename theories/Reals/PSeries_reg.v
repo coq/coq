@@ -32,6 +32,7 @@ apply Rabs_def2 in b_y; apply Rabs_def1;
   apply Rlt_le_trans with (x - c);[|apply Rplus_le_compat_r]];tauto.
 Qed.
 
+#[sealed]
 Definition boule_of_interval x y (h : x < y) :
   {c :R & {r : posreal | c - r = x /\ c + r = y}}.
 Proof.
@@ -42,8 +43,9 @@ assert (radius : 0 < (y - x)/2).
   + now apply Rinv_0_lt_compat, Rlt_0_2.
 - exists (mkposreal _ radius).
   simpl; split; unfold Rdiv; field.
-Qed.
+Defined.
 
+#[sealed]
 Definition boule_in_interval x y z (h : x < z < y) :
   {c : R & {r | Boule c r z /\  x < c - r /\ c + r < y}}.
 Proof.
@@ -69,7 +71,7 @@ exists c, r; split.
     apply Rplus_lt_compat_l, Rmult_lt_compat_r;assumption.
   + replace y with (y * / 2 + y * /2) by field; rewrite P2.
     apply Rplus_lt_compat_r, Rmult_lt_compat_r;assumption.
-Qed.
+Defined.
 
 Lemma Ball_in_inter : forall c1 c2 r1 r2 x,
   Boule c1 r1 x -> Boule c2 r2 x ->

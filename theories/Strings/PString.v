@@ -648,6 +648,7 @@ Module OT <: OrderedType.OrderedType with Definition t := string.
   Hint Immediate eq_sym : core.
   Hint Resolve eq_refl eq_trans lt_not_eq lt_trans : core.
 
+  #[sealed]
   Definition eq_dec (s1 s2 : t) : {eq s1 s2} + {~ eq s1 s2}.
   Proof.
     unfold eq.
@@ -655,5 +656,5 @@ Module OT <: OrderedType.OrderedType with Definition t := string.
     - left. reflexivity.
     - right. discriminate.
     - right. discriminate.
-  Qed.
+  Defined.
 End OT.

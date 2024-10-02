@@ -984,6 +984,7 @@ Proof.
   - rewrite q. apply Qle_refl.
 Qed.
 
+#[sealed]
 Definition CR_Q_limit {R : ConstructiveReals} (x : CRcarrier R) (n:nat)
   : { q:Q  &  x < CR_of_Q R q < x + CR_of_Q R (1 # Pos.of_nat n) }.
 Proof.
@@ -991,7 +992,7 @@ Proof.
   rewrite <- (CRplus_0_r x). rewrite CRplus_assoc.
   apply CRplus_lt_compat_l. rewrite CRplus_0_l. apply CR_of_Q_pos.
   reflexivity.
-Qed.
+Defined.
 
 Lemma CR_Q_limit_cv : forall {R : ConstructiveReals} (x : CRcarrier R),
     CR_cv R (fun n => CR_of_Q R (let (q,_) := CR_Q_limit x n in q)) x.

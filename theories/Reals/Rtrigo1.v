@@ -191,6 +191,7 @@ rewrite <- !mult_IZR.
 apply IZR_lt; reflexivity.
 Qed.
 
+#[sealed]
 Definition PI_2_aux : {z | 7/8 <= z <= 7/4 /\ -cos z = 0}.
 assert (cc : continuity (fun r =>- cos r)). {
   apply continuity_opp, continuity_cos.
@@ -212,7 +213,7 @@ assert (cun : cos (7/4) < 0). {
  - apply Rlt_le; apply Rlt_trans with (1 := cvp); exact sin_gt_cos_7_8.
 }
 apply IVT; auto; lra.
-Qed.
+Defined.
 
 Definition PI2 := proj1_sig PI_2_aux.
 
