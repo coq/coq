@@ -2061,15 +2061,31 @@ let control_only_guard { proof; pinfo } =
       raise (NotGuarded (env, sigma, cofix_error, fix_errors, rec_declaration))
     with Exit -> ()
 
- (* Ignoring Qed/Defined keyword *)
+let warn_use_sealed =
+  CWarnings.create ~name:"sealed" ~category:CWarnings.CoreCategories.vernacular
+    (function
+      | (id, true) -> Pp.strbrk "Use attribute \"sealed\" rather than \"Qed\" proof terminator to declare " ++ Id.print id ++ strbrk " sealed."
+      | (id, false) -> Pp.strbrk "Use attribute \"defined\" to declare " ++ Id.print id ++ strbrk " transparent.")
+
+let set_proof_opacity ending kind cinfo opaque_ending =
+  let idl = List.filter_map (function CInfo.{ name; opaque = None } -> Some name | _ -> None) cinfo in
+  let ending = CEphemeron.default ending Proof_ending.Regular in
+  match kind, opaque_ending with
+  | Decls.IsDefinition d, Vernacexpr.Opaque ->
+    (* A definition ended with Qed: warn if there is no attribute *)
+    (match d, ending, idl with
+     | (Definition | Fixpoint | CoFixpoint), Proof_ending.Regular, id::_ -> warn_use_sealed (id, true)
+     | _ -> ()); true
+  | IsDefinition _, Vernacexpr.Transparent -> false
+  | IsProof _, Vernacexpr.Opaque -> true
+  | IsProof _, Vernacexpr.Transparent -> false
+  | (Decls.IsPrimitive | IsSymbol | IsAssumption _), _ -> false (* Irrelevant *)
 
 let return_proof p = (prepare_proof p : closed_proof_output)
 
 let close_proof ?warn_incomplete ~opaque ~keep_body_ucst_separate (proof : t) : Proof_object.t =
   NewProfile.profile "close_proof" (fun () ->
-  let opaque = match opaque with
-  | Vernacexpr.Opaque -> true
-  | Vernacexpr.Transparent -> false in
+  let opaque = set_proof_opacity proof.pinfo.proof_ending proof.pinfo.info.kind proof.pinfo.cinfo opaque in
   let keep_body_ucst_separate = if keep_body_ucst_separate then Some proof.initial_euctx else None in
   { Proof_object.proof_object =
       DefaultProof { proof = prepare_proof ?warn_incomplete proof; opaque; using = proof.using; keep_body_ucst_separate }
