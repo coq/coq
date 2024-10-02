@@ -510,7 +510,7 @@ Proof.
   intros _ H; inversion H.
 Qed.
 
-Definition Qcrt : ring_theory 0 1 Qcplus Qcmult Qcminus Qcopp (eq(A:=Qc)).
+Lemma Qcrt : ring_theory 0 1 Qcplus Qcmult Qcminus Qcopp (eq(A:=Qc)).
 Proof.
   constructor.
   - exact Qcplus_0_l.
@@ -524,7 +524,7 @@ Proof.
   - exact Qcplus_opp_r.
 Qed.
 
-Definition Qcft :
+Lemma Qcft :
   field_theory 0%Qc 1%Qc Qcplus Qcmult Qcminus Qcopp Qcdiv Qcinv (eq(A:=Qc)).
 Proof.
   constructor.
