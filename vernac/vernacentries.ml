@@ -506,6 +506,8 @@ let sort_universes g =
   in
   Level.Map.fold fold g ans
 
+type constraint_source = GlobRef of GlobRef.t | Library of DirPath.t
+
 (* The [edges] fields give the edges of the graph.
    For [u <= v] and [u < v] we have [u |-> v |-> gref, k],
    for [u = v] we have both directions.
@@ -514,20 +516,21 @@ let sort_universes g =
    same univs (eg [u < v] and [u <= v]) we keep the strictest one
    (either [<] or [=], NB we can't get both at the same time).
 *)
-type cst_sources = {
-  edges : (GlobRef.t * Univ.constraint_type) Univ.Level.Map.t Univ.Level.Map.t;
+type constraint_sources = {
+  edges : (constraint_source * Univ.constraint_type) Univ.Level.Map.t Univ.Level.Map.t;
 }
 
-let mk_sources srcs =
+let mk_sources () =
   let open Univ in
+  let srcs = DeclareUniv.constraint_sources () in
   let pick_stricter_constraint (_,k as v) (_,k' as v') =
     match k, k' with
     | Le, Lt | Le, Eq -> v'
     | Lt, Le | Eq, Le -> v
     | Le, Le | Lt, Lt | Eq, Eq ->
-      (* same: prefer previous to avoid reallocating the map
-         (they are in arbitrary order) *)
-      v'
+      (* same: prefer [v]
+         (the older refs are encountered last, and fallback libraries first) *)
+      v
     | Lt, Eq | Eq, Lt ->
       (* XXX don't assert in case of type in type? *)
       assert false
@@ -541,20 +544,30 @@ let mk_sources srcs =
             uedges))
       edges
   in
+  let add_edge (u,k,v as cst) ref edges =
+    let edges = add_edge_unidirectional cst ref edges in
+    if k = Eq then add_edge_unidirectional (v,k,u) ref edges else edges
+  in
+  let edges = Level.Map.empty in
+  let edges =
+    let libs = Library.loaded_libraries () in
+    List.fold_left (fun edges dp ->
+        let _, csts = Safe_typing.univs_of_library @@ Library.library_compiled dp in
+        Constraints.fold (fun cst edges -> add_edge cst (Library dp) edges)
+          csts edges)
+      edges libs
+  in
   let edges =
     List.fold_left (fun edges (ref,csts) ->
-        Constraints.fold (fun (u,k,v as cst) edges ->
-            let edges = add_edge_unidirectional cst ref edges in
-            if k = Eq then add_edge_unidirectional (v,k,u) ref edges else edges)
+        Constraints.fold (fun cst edges -> add_edge cst (GlobRef ref) edges)
           csts edges)
-      Level.Map.empty
-      srcs
+      edges srcs
   in
   {
     edges;
   }
 
-exception Found of (Univ.constraint_type * Univ.Level.t * GlobRef.t) list
+exception Found of (Univ.constraint_type * Univ.Level.t * constraint_source) list
 
 (* We are looking for a path from [source] to [target].
    If [k] is [Lt] the path must contain at least one [Lt].
@@ -618,14 +631,18 @@ let find_source (u,k,v as cst) src =
   if Univ.Level.is_set u && k = Univ.Lt then []
   else Option.default [] (search src cst)
 
-let pr_source prl u src =
+let pr_constraint_source = function
+  | GlobRef ref -> pr_global ref
+  | Library dp -> str "library " ++ pr_qualid (Nametab.shortest_qualid_of_module (MPfile dp))
+
+let pr_source_path prl u src =
   if CList.is_empty src then mt()
   else
     let pr_rel = function
       | Univ.Eq -> str"=" | Lt -> str"<" | Le -> str"<="
     in
     let pr_one (k,v,ref) =
-      spc() ++ h (pr_rel k ++ surround (pr_global ref) ++ spc() ++ prl v)
+      spc() ++ h (pr_rel k ++ surround (pr_constraint_source ref) ++ spc() ++ prl v)
     in
     spc() ++ surround (prl u ++ prlist_with_sep mt pr_one src)
 
@@ -643,12 +660,12 @@ let pr_arc srcs prl = let open Pp in
         (pr_pmap spc (fun (v, strict) ->
              let k = if strict then Univ.Lt else Univ.Le in
              let src = find_source (u,k,v) srcs in
-             hov 2 ((if strict then str "< " else str "<= ") ++ prl v ++ pr_source prl u src))
+             hov 2 ((if strict then str "< " else str "<= ") ++ prl v ++ pr_source_path prl u src))
             ltle) ++
       fnl ()
   | u, UGraph.Alias v ->
     let src = find_source (u,Eq,v) srcs in
-    prl u  ++ str " = " ++ prl v ++ pr_source prl u src ++ fnl ()
+    prl u  ++ str " = " ++ prl v ++ pr_source_path prl u src ++ fnl ()
 
 let pr_universes srcs prl g = pr_pmap Pp.mt (pr_arc srcs prl) g
 
@@ -667,8 +684,7 @@ let print_universes ~sort ~subgraph dst =
   let prl = UnivNames.pr_level_with_global_universes in
   begin match dst with
   | None ->
-    let srcs = DeclareUniv.constraint_sources () in
-    let srcs = mk_sources srcs in
+    let srcs = mk_sources () in
     pr_universes srcs prl univ ++ pr_remaining
   | Some s -> dump_universes_gen (fun u -> Pp.string_of_ppcmds (prl u)) univ s
   end
