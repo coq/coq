@@ -30,6 +30,7 @@ Section Sec.
   Qed.
 
   (* Having a [Proof using] disables the suggestion message. *)
+  #[sealed]
   Definition bar : Type.
   Proof using A.
     exact A.
