@@ -433,6 +433,7 @@ let get_section = function
 let push_context_set ~strict cst senv =
   if Univ.ContextSet.is_empty cst then senv
   else
+    let cst = on_snd (fun cst -> Univ.Constraints.diff cst (snd senv.univ)) cst in
     let sections = Option.map (Section.push_constraints cst) senv.sections
     in
     { senv with
