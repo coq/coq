@@ -1,5 +1,5 @@
-Definitions
-===========
+Definitions and theorems
+========================
 
 .. index:: let ... := ... (term)
 
@@ -100,6 +100,10 @@ Section :ref:`typing-rules`.
    If :n:`@reduce` is present then :n:`@ident` is bound to the result of the specified
    computation on :n:`@term`.
 
+   Even though a definition is a priori intended to be unfoldable, it
+   is sometimes better to keep it abstract and to prevent its
+   reduction. This is done by adding the attribute :attr:`sealed`.
+
    These commands also support the :attr:`universes(polymorphic)`,
    :attr:`program` (see :ref:`program_definition`), :attr:`canonical`,
    :attr:`bypass_check(universes)`, :attr:`bypass_check(guard)`, :attr:`deprecated`,
@@ -107,8 +111,7 @@ Section :ref:`typing-rules`.
 
    If :n:`@term` is omitted, :n:`@type` is required and Coq enters proof mode.
    This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
-   In this case, the proof should be terminated with :cmd:`Defined` in order to define a :term:`constant`
-   for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.
+   In this case, the proof should normally be terminated with :cmd:`Defined`. See :ref:`proof-editing-mode`.
 
    The form :n:`Definition @ident : @type := @term` checks that the type of :n:`@term`
    is definitionally equal to :n:`@type`, and registers :n:`@ident` as being of type
@@ -199,7 +202,13 @@ tactics (see :ref:`writing-proofs`). The user may also enter
 commands to manage the proof mode (see :ref:`proofhandling`).
 
 When the proof is complete, use the :cmd:`Qed` command so the kernel verifies
-the proof and adds it to the global environment.
+the proof and adds it to the global environment. By default, proofs
+ended by :cmd:`Qed` are sealed, that is that their content cannot
+be unfolded (see :ref:`applyingconversionrules`), thus realizing some
+form of *proof-irrelevance*. Proofs can be made unfoldable, like
+definitions are, by using the attribute :attr:`defined` or by ending
+the proof with :cmd:`Defined` in place of :cmd:`Qed`. Using the
+attribute is however recommended.
 
 .. note::
 
@@ -212,13 +221,32 @@ the proof and adds it to the global environment.
       statements still to be proved. Nonetheless, this practice is discouraged
       and may stop working in future versions.
 
-   #. Proofs ended by :cmd:`Qed` are declared :term:`opaque`. Their content cannot be
-      unfolded (see :ref:`applyingconversionrules`), thus
-      realizing some form of *proof-irrelevance*.
-      Proofs that end with :cmd:`Defined` can be unfolded.
-
    #. :cmd:`Proof` is recommended but can currently be omitted. On the opposite
       side, :cmd:`Qed` (or :cmd:`Defined`) is mandatory to validate a proof.
 
    #. One can also use :cmd:`Admitted` in place of :cmd:`Qed` to turn the
       current asserted statement into an axiom and exit proof mode.
+
+Sealedness and transparency
+---------------------------
+
+Definitions and theorems associate terms of some type to a name. In
+the case of a definition (or assimilated, like :cmd:`Fixpoint` or
+:cmd:`CoFixpoint`), the term is the body of the definition and the
+type is the type of the body. In the case of a theorem (or
+assimilated), the term is the proof and the type is the statement.
+
+By default, a definition is unfoldable while the proof of a theorem is
+not, but this can be changed using attributes.
+
+.. attr:: sealed
+
+   This attribute tells to prevent the unfoldability of a definition,
+   so that the definition behaves like an abstract definition.
+
+.. attr:: defined
+
+   This attribute tells to make the proof of a theorem unfoldable, as
+   if it were a definition.
+
+   .. seealso:: :cmd:`Opaque`, :cmd:`Transparent`, :tacn:`unfold`.

@@ -475,6 +475,8 @@ constructions.
 
    This command accepts the :attr:`program`,
    :attr:`bypass_check(universes)`, and :attr:`bypass_check(guard)` attributes.
+   It also accepts the :attr:`sealed` attribute placed just before the
+   name (or names) defined by the fixpoint.
 
    To be accepted, a :cmd:`Fixpoint` definition has to satisfy syntactical
    constraints on a special argument called the decreasing argument. They

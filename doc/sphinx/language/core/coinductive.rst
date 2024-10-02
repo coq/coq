@@ -162,6 +162,11 @@ Top-level definitions of corecursive functions
    Section :ref:`coinductive-types` for the definition of :g:`Stream`, :g:`hd`
    and :g:`tl`):
 
+   This command accepts the :attr:`program`,
+   :attr:`bypass_check(universes)`, and :attr:`bypass_check(guard)` attributes.
+   It also accepts the :attr:`sealed` attribute placed just before the
+   name (or names) defined by the cofixpoint.
+
    .. coqtop:: all
 
       CoFixpoint from (n:nat) : Stream := Seq n (from (S n)).
