@@ -1539,16 +1539,16 @@ let declare_include me_asts =
     user_err Pp.(str "Include is not allowed inside sections.");
   RawIncludeOps.Interp.declare_include me_asts
 
-(** For the native compiler, we cache the library values *)
 let register_library dir cenv (objs:library_objects) digest vmtab =
   let mp = MPfile dir in
   let () =
     try
-      (* Is this library already loaded ? *)
+      (* If the library was loaded inside a module or section, the
+         end_segment will replay the library object for non-kernel
+         effects but the kernel did not forget the library. *)
       ignore(Global.lookup_module mp);
     with Not_found ->
       begin
-      (* If not, let's do it now ... *)
       let mp' = Global.import cenv vmtab digest in
       if not (ModPath.equal mp mp') then
         anomaly (Pp.str "Unexpected disk module name.")
