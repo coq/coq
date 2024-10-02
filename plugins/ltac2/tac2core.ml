@@ -1133,6 +1133,15 @@ let () =
     (str "Hypothesis " ++ quote (Id.print id) ++ str " not found") (* FIXME: Do something more sensible *)
 
 let () =
+  define "hyp_value" (ident @-> tac (option constr)) @@ fun id ->
+  pf_apply @@ fun env _ ->
+  match EConstr.lookup_named id env with
+  | d -> return (Context.Named.Declaration.get_value d)
+  | exception Not_found ->
+    Tacticals.tclZEROMSG
+    (str "Hypothesis " ++ quote (Id.print id) ++ str " not found") (* FIXME: Do something more sensible *)
+
+let () =
   define "hyps" (unit @-> tac valexpr) @@ fun _ ->
   pf_apply @@ fun env _ ->
   let open Context in

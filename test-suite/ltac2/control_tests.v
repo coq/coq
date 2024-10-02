@@ -136,6 +136,9 @@ Goal 3 = 3 -> 1 = 1 /\ 2 = 2.
   pose (X := 2).
   if Constr.equal (hyp @X) '&X then () else throw Error.
 
+  if Option.equal Constr.equal (hyp_value @H) None then () else throw Error.
+  if Option.equal Constr.equal (hyp_value @X) (Some '2) then () else throw Error.
+
   Ltac2 Eval hyps().
   match hyps () with
   | [ (h, None, hty); (x, Some xbdy, xty) ] =>
