@@ -1278,6 +1278,7 @@ Qed.
 
 Ltac cmp_solve := unfold eq, lt; simpl; try Raw.MX.elim_comp; auto with ordered_type.
 
+#[sealed]
 Definition compare : forall m1 m2, Compare lt eq m1 m2.
 Proof.
  intros (m1,Hm1); induction m1;
@@ -1294,6 +1295,6 @@ Proof.
    { inversion_clear Hm2; auto. }
    destruct (IHm1 Hm11 (Build_slist Hm22));
      [ apply LT | apply EQ | apply GT ]; cmp_solve.
-Qed.
+Defined.
 
 End Make_ord.
