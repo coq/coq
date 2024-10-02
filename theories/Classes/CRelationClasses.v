@@ -82,6 +82,7 @@ Section Defs.
     #[global] StrictOrder_Transitive :: Transitive R }.
 
   (** By definition, a strict order is also asymmetric *)
+  #[sealed]
   Global Instance StrictOrder_Asymmetric `(StrictOrder R) : Asymmetric R.
   Proof. firstorder. Qed.
 
@@ -348,7 +349,8 @@ Section Binary.
     - firstorder.
     - intros x y z X X0 x0 y0. specialize (X x0 y0). specialize (X0 x0 y0). firstorder.
   Qed.
-    
+
+  #[sealed]
   Global Instance relation_implication_preorder : PreOrder (@subrelation A).
   Proof. firstorder. Qed.
 
@@ -364,6 +366,7 @@ Section Binary.
    morphism for equivalence (see Morphisms).  It is also sufficient to
    show that [R] is antisymmetric w.r.t. [eqA] *)
 
+  #[sealed]
   Global Instance partial_order_antisym `(PartialOrder eqA R) : Antisymmetric eqA R.
   Proof with auto.
     reduce_goal.
