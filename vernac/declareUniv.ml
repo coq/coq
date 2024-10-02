@@ -185,6 +185,8 @@ let constraint_obj =
     ~subst:None
     ~discharge:(fun x -> Some x)
 
+(* XXX this seems like it could be merged with declare_univ_binders
+   main issue is the filtering or redundant constraints (needed for perf / smaller vo file sizes) *)
 let add_constraint_source x ctx =
   let _, csts = ctx in
   if Univ.Constraints.is_empty csts then ()

@@ -170,6 +170,11 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typi
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
   let mind, prim = declare_mind ?typing_flags mie in
   if primitive_expected && not prim then warn_non_primitive_record (mind,0);
+  let () = match fst ubinders with
+    | UState.Polymorphic_entry _ -> ()
+    | UState.Monomorphic_entry ctx ->
+      DeclareUniv.add_constraint_source (IndRef (mind,0)) ctx
+  in
   DeclareUniv.declare_univ_binders (GlobRef.IndRef (mind,0)) ubinders;
   List.iteri (fun i (indimpls, constrimpls) ->
       let ind = (mind,i) in
