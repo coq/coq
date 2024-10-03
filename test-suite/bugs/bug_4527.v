@@ -257,7 +257,7 @@ Section Reflective_Subuniverse.
     Definition inO_paths@{i | Oa <= i} (S : Type@{i}) {S_inO : In@{Ou Oa i} O S} (x y :
 S)    : In@{Ou Oa i} O (x=y).
     Proof.
-      simple refine (inO_to_O_retract@{i i} _ _ _); intro u.
+      simple refine (inO_to_O_retract@{i i i} _ _ _); intro u.
       -
  assert (p : (fun _ : O (x=y) => x) == (fun _=> y)).
         {
