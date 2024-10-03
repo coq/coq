@@ -20,6 +20,8 @@ open EConstr
 open Vars
 open Context.Rel.Declaration
 
+let debug = CDebug.create ~name:"reductionops" ()
+
 exception Elimconst
 
 (** This module implements a call by name reduction used by (at
@@ -1277,14 +1279,12 @@ let sigma_compare_sorts env pb s0 s1 sigma =
     end
 
 let sigma_compare_instances ~flex i0 i1 sigma =
-  Feedback.msg_debug Pp.(str "sigma_compare_instances");
   match Evd.set_eq_instances ~flex sigma i0 i1 with
   | sigma -> Result.Ok sigma
   | exception Evd.UniversesDiffer -> Result.Error None
   | exception UGraph.UniverseInconsistency err -> Result.Error (Some err)
 
 let sigma_check_inductive_instances ~flex cv_pb variance u1 u2 sigma =
-  Feedback.msg_debug Pp.(str "sigma_check_inductive_instances");
   match Evarutil.compare_cumulative_instances cv_pb variance u1 u2 sigma with
   | Inl sigma -> Result.Ok sigma
   | Inr err -> Result.Error (Some err)
@@ -1302,11 +1302,9 @@ let univproblem_compare_sorts env pb s0 s1 uset =
   | Conversion.CUMUL -> Result.Ok (UnivProblem.Set.add (ULe (s0, s1)) uset)
 
 let univproblem_compare_instances ~flex i0 i1 uset =
-  Feedback.msg_debug Pp.(str "univproblem_compare_instances");
   Result.Ok (UnivProblem.enforce_eq_instances_univs flex i0 i1 uset)
 
 let univproblem_check_cumul_instances ~flex cv_pb variance u1 u2 sigma =
-  Feedback.msg_debug Pp.(str "univproblem_compare_cumul_instances");
   Result.Ok (UnivProblem.compare_cumulative_instances cv_pb variance u1 u2 sigma)
 
 let univproblem_univ_state =
@@ -1332,7 +1330,7 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Conversion.CUMUL)
       let ans = match ans with
       | None -> None
       | Some cstr ->
-        Feedback.msg_debug Pp.(str"From infer_conv_gen: adding FO constraints, pb = " ++ if pb = Conversion.CUMUL then str"cumul" else str"conv");
+        debug Pp.(fun () -> str"From infer_conv_gen: adding FO constraints, pb = " ++ if pb = Conversion.CUMUL then str"cumul" else str"conv");
         try Some (Evd.add_universe_constraints sigma cstr)
         with UGraph.UniverseInconsistency _ | Evd.UniversesDiffer -> None
       in
