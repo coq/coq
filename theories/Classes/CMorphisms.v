@@ -34,11 +34,15 @@ Set Universe Polymorphism.
    The relation [R] will be instantiated by [respectful] and [A] by an arrow
    type for usual morphisms. *)
 
-Section Proper.
-  Context {A : Type}.
+Class Proper@{*a *ra} {A : Type@{a}} (R : crelation@{a ra} A) (m : A) :=
+  proper_prf : R m m.
 
-  Class Proper (R : crelation A) (m : A) :=
-    proper_prf : R m m.
+Class ProperProxy@{*a *ra} {A : Type@{a}} (R : crelation@{a ra} A) (m : A) :=
+  proper_proxy : R m m.
+
+Section Proper.
+  Universe a.
+  Context (A : Type@{a}).
 
   (** Every element in the carrier of a reflexive relation is a morphism
    for this relation.  We use a proxy class for this case which is used
@@ -49,16 +53,13 @@ Section Proper.
    priorities in different hint bases and select a particular hint
    database for resolution of a type class constraint. *)
 
-  Class ProperProxy (R : crelation A) (m : A) :=
-    proper_proxy : R m m.
-
   Lemma eq_proper_proxy (x : A) : ProperProxy (@eq A) x.
   Proof. firstorder. Qed.
   
   Lemma reflexive_proper_proxy `(Reflexive A R) (x : A) : ProperProxy R x.
   Proof. firstorder. Qed.
 
-  Lemma proper_proper_proxy x `(Proper R x) : ProperProxy R x.
+  Lemma proper_proper_proxy x `(Proper A R x) : ProperProxy R x.
   Proof. firstorder. Qed.
 
   (** Respectful morphisms. *)
@@ -187,7 +188,7 @@ Section Relations.
     (RB : crelation@{b rb} B) (RB' : crelation@{b rb'} B)
     (subl : subrelation@{a ra' ra} RA' RA)
     (subr : subrelation@{b rb rb'} RB RB') :
-    subrelation (RA ==> RB) (RA' ==> RB').
+    subrelation@{max(a,b) max(a,ra,rb) max(a,ra',rb')} (RA ==> RB) (RA' ==> RB').
   Proof. intros f g rfg x y rxy. apply subr. apply rfg. apply subl. exact rxy. Qed.
 
   (** And of course it is reflexive. *)
@@ -442,7 +443,7 @@ Section GenericInstances.
   (** [R] is Reflexive, hence we can build the needed proof. *)
 
   Lemma Reflexive_partial_app_morphism@{a b ra rb} {A : Type@{a}} {B : Type@{b}}
-    {R : crelation@{a ra} A} {R' : crelation@{b rb} B} {m : A -> B} (pm : Proper (R ==> R') m) {x} (pr : ProperProxy R x) :
+    {R : crelation@{a ra} A} {R' : crelation@{b rb} B} {m : A -> B} (pm : Proper@{max(a,b) max(a,ra,rb)} (R ==> R') m) {x} (pr : ProperProxy R x) :
     Proper R' (m x).
   Proof. simpl_crelation. Qed.
   

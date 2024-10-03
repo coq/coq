@@ -22,7 +22,25 @@ Definition RRTa : crelation Type := arrow.
 Definition RRTb : crelation Type := Basics.arrow.
 
 Parameter f: A -> B.
-#[universes(polymorphic), local] Instance f_Ri@{u v?|?}: Proper@{u v} (R ==> Ri) f. Admitted.
+
+#[local] Instance f_Ri: Proper (R ==> Ri) f. Admitted.
+#[local] Instance f_Ra: Proper (R ==> Ra) f. Admitted.
+#[local] Instance f_Rb: Proper (R ==> Rb) f. Admitted.
+#[local] Instance f_RBi: Proper (R ==> RBi) f. Admitted.
+#[local] Instance f_RBa: Proper (R ==> RBa) f. Admitted.
+#[local] Instance f_RBb: Proper (R ==> RBb) f. Admitted.
+#[local] Instance f_RTi: Proper (R ==> RTi) f. Admitted.
+#[local] Instance f_RTa: Proper (R ==> RTa) f. Admitted.
+#[local] Instance f_RTb: Proper (R ==> RTb) f. Admitted.
+#[local] Instance f_RRBi: Proper (R ==> RRBi) f. Admitted.
+#[local] Instance f_RRBa: Proper (R ==> RRBa) f. Admitted.
+#[local] Instance f_RRBb: Proper (R ==> RRBb) f. Admitted.
+#[local] Instance f_RRTi: Proper (R ==> RRTi) f. Admitted.
+#[local] Instance f_RRTa: Proper (R ==> RRTa) f. Admitted.
+#[local] Instance f_RRTb: Proper (R ==> RRTb) f. Admitted.
+
+
+(*#[universes(polymorphic), local] Instance f_Ri@{u v?|?}: Proper@{u v} (R ==> Ri) f. Admitted.
 #[universes(polymorphic), local] Instance f_Ra@{u v?}: Proper@{u v} (R ==> Ra) f. Admitted.
 #[local,universes(polymorphic)] Instance f_Rb@{u v?}: Proper@{u v} (R ==> Rb) f. Admitted.
 #[local,universes(polymorphic)] Instance f_RBi@{u v?}: Proper@{u v} (R ==> RBi) f. Admitted.
@@ -30,34 +48,13 @@ Parameter f: A -> B.
 #[local,universes(polymorphic)] Instance f_RBb@{u v?}: Proper@{u v} (R ==> RBb) f. Admitted.
 #[local,universes(polymorphic)] Instance f_RTi@{u v?}: Proper@{u v} (R ==> RTi) f. Admitted.
 #[local,universes(polymorphic)] Instance f_RTa@{u v?}: Proper@{u v} (R ==> RTa) f. Admitted.
-
-(*
-*** [ f_RTa@{u v u0 u1 u2 u3} :
-Proper@{u v} (R ==> RTa) f ]
-(* u v u0 u1 u2 u3 |= A.u0 <= u
-                          A.u0 <= u0
-                      R.u0 <= u1
-                      RTa.u2 <= u3
-                      u <= max(u0, u2)
-                      v <= max(u0, u1, u3)
-                      u0 <= u
-                      u0 <= v
-                      u1 <= v
-                      u2 <= u
-                      u3 <= v
-                      B.u0+1 <= u
-                      B.u0+1 <= u2
-                      RTa.u1 = B.u0
-                      RTa.u1 = RTa.u0 *)
-*)
-
 #[local,universes(polymorphic)] Instance f_RTb@{u v?}: Proper@{u v} (R ==> RTb) f. Admitted.
 #[local,universes(polymorphic)] Instance f_RRBi@{u v?}: Proper@{u v} (R ==> RRBi) f. Admitted.
 #[local,universes(polymorphic)] Instance f_RRBa@{u v?}: Proper@{u v} (R ==> RRBa) f. Admitted.
 #[local,universes(polymorphic)] Instance f_RRBb@{u v?}: Proper@{u v} (R ==> RRBb) f. Admitted.
 #[local,universes(polymorphic)] Instance f_RRTi@{u v?}: Proper@{u v} (R ==> RRTi) f. Admitted.
 #[local,universes(polymorphic)] Instance f_RRTa@{u v?}: @Proper@{u v} (A -> B) (R ==> RRTa) f. Admitted.
-#[local,universes(polymorphic)] Instance f_RRTb@{u v?}: Proper@{u v} (R ==> RRTb) f. Admitted.
+#[local,universes(polymorphic)] Instance f_RRTb@{u v?}: Proper@{u v} (R ==> RRTb) f. Admitted.*)
 
 
 
@@ -81,16 +78,15 @@ Print Universes.
 
 Goal True.
 Proof.
-(* test Ra   true  true  true  true.  *)
-Show Universes.
- (* test Rb   false false false false.  *)
-(* test RBa  true  true  true  true.  *)
-(* test RBb  false false false false. *)
-(* test RTa  true  true  true  true. *)
-(* test RTb  false false false false. *)
-(* test RRBa true  true  true  true. *)
-(* test RRBb false false false false. *)
-test RRTa true  true  true  true. *)
+test Ra   true  true  true  true.
+test Rb   false false false false.
+test RBa  true  true  true  true.
+test RBb  false false false false.
+test RTa  true  true  true  true.
+test RTb  false false false false.
+test RRBa true  true  true  true.
+test RRBb false false false false.
+test RRTa true  true  true  true.
 test RRTb false false false false.
 apply I.
 Qed.

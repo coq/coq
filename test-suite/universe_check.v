@@ -184,7 +184,7 @@ Module max_union_find.
 
   Fail Check Constraint u = x.
   Fail Check Constraint u = y.
-(* Set Debug "loop-checking-find-to-merge". *)
+  Set Debug "loop-checking-find-to-merge-global".
   Constraint x <= y.
   Fail Check Constraint u = x.
   Check Constraint u = y.
@@ -197,13 +197,8 @@ Module max_union_find2.
   Universes x y z w.
   Constraint y <= w, z <= w, w <= x.
   Fail Check Constraint x <= max(y, z).
-  Set Debug "loop-checking-find-to-merge".
 
   Constraint x <= max(y, z).
- (* 57 => x
-    58 => y
-    59 => z
-    60 => w *)
   Check Constraint x = w.
   Fail Check Constraint x = z.
   Fail Check Constraint x = y.
