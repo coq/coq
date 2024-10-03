@@ -1442,8 +1442,13 @@ printable: [
 | "Registered" "Schemes"
 ]
 
+debug_univ_name: [
+| reference
+| STRING
+]
+
 printunivs_subgraph: [
-| "Subgraph" "(" LIST0 reference ")"
+| "Subgraph" "(" LIST0 debug_univ_name ")"
 ]
 
 coercion_class: [

@@ -590,15 +590,28 @@ Printing universes
    terms apparently identical but internally different in the Calculus of Inductive
    Constructions.
 
-.. cmd:: Print {? Sorted } Universes {? Subgraph ( {* @qualid } ) } {? @string }
+.. cmd:: Print {? Sorted } Universes {? Subgraph ( {* @debug_univ_name } ) } {? @string }
    :name: Print Universes
+
+   .. insertprodn debug_univ_name debug_univ_name
+
+   .. prodn::
+      debug_univ_name ::= @qualid
+      | @string
 
    This command can be used to print the constraints on the internal level
    of the occurrences of :math:`\Type` (see :ref:`Sorts`).
 
-   The :n:`Subgraph` clause limits the printed graph to the requested names (adjusting
-   constraints to preserve the implied transitive constraints between
-   kept universes).
+   The :n:`Subgraph` clause limits the printed graph to the requested
+   names (adjusting constraints to preserve the implied transitive
+   constraints between kept universes). :n:`@debug_univ_name` is
+   `:n:`@qualid` for named universes (e.g. `eq.u0`), and :n:`@string`
+   for raw universe expressions (e.g. `"Stdlib.Init.Logic.1"`).
+
+   .. note::
+
+      The integer in raw universe expressions is extremely unstable,
+      so raw universe expressions should not be used outside debugging sessions.
 
    The :n:`Sorted` clause makes each universe
    equivalent to a numbered label reflecting its level (with a linear

@@ -1182,8 +1182,13 @@ GRAMMAR EXTEND Gram
       | IDENT "Registered"; IDENT "Schemes" -> { PrintRegisteredSchemes }
     ] ]
   ;
+  debug_univ_name:
+    [ [ x = reference -> { NamedUniv x }
+      | x = STRING -> { RawUniv (CAst.make ~loc x) }
+    ] ]
+  ;
   printunivs_subgraph:
-    [ [ IDENT "Subgraph"; "("; l = LIST0 reference; ")" -> { l } ] ]
+    [ [ IDENT "Subgraph"; "("; l = LIST0 debug_univ_name; ")" -> { l } ] ]
   ;
   coercion_class:
     [ [ IDENT "Funclass" -> { FunClass }
