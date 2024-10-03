@@ -20,6 +20,7 @@ let _debug_loop_checking_set, _debug_set = CDebug.create_full ~name:"loop-checki
 let _debug_loop_checking_global_flag, debug_global = CDebug.create_full ~name:"loop-checking-global" ()
 
 let _debug_enforce_eq, debug_enforce_eq = CDebug.create_full ~name:"loop-checking-enforce-eq" ()
+let _debug_find_to_merge_global_flag, debug_find_to_merge_global = CDebug.create_full ~name:"loop-checking-find-to-merge-global" ()
 
 let _debug_find_to_merge_flag, debug_find_to_merge = CDebug.create_full ~name:"loop-checking-find-to-merge" ()
 let debug_switch_union_upto, _debug_switch_union_upto = CDebug.create_full ~name:"loop-checking-switch-union-upto" ()
@@ -1746,6 +1747,9 @@ let enforce_eq_can model (canu, ku as _u) (canv, kv as _v) : (canonical_node * i
         -> l = Set + (k - k') *)
       (assert (kv <= ku);
        (canu, ku, canv, ku - kv, enter_equiv model canv.canon canu.canon (ku - kv)))
+    else if Level.is_set (Index.repr canv.canon model.table) then
+      (assert (ku <= kv);
+       (canv, kv, canu, kv - ku, enter_equiv model canu.canon canv.canon (kv - ku)))
     else if Int.equal ku kv then
       (* This heuristic choice has real performance impact in e.g. math_classes/dyadics.v *)
       if ForwardClauses.cardinal canu.clauses_fwd <= ForwardClauses.cardinal canv.clauses_fwd then
@@ -1865,7 +1869,7 @@ module Status = struct
 
   type status =
     | Processing
-    (* | Merged of PathSet.t *)
+    | Merged of PathSet.t
     | NonMerged
 
   type t = status M.t
@@ -1997,11 +2001,11 @@ let pr_paths model paths =
   if PathSet.is_empty paths then str"∅"
   else str"{ " ++ Pp.prlist_with_sep (fun () -> Pp.str ", ") (pr_path model) (PathSet.elements paths) ++ str" }"
 
-let pr_status _model s =
+let pr_status model s =
   let open Pp in
   match s with
   | Status.Processing -> str "being processed"
-  (* | Status.Merged ps -> str "merged with paths: " ++ pr_paths model ps *)
+  | Status.Merged ps -> str "merged with paths: " ++ pr_paths model ps
   | Status.NonMerged -> str "not merged"
 
 let find_loop can path =
@@ -2015,6 +2019,11 @@ let find_loop can path =
         | Some p -> Some (hd :: p)
   in aux path
 
+let _find_first prems path =
+  let rec aux = function
+    | [] -> []
+    | hd :: tl -> if NeList.exists (fun cank -> eq_can_expr cank hd) prems then [hd] else hd :: aux tl
+  in aux path
 
 let intersect_psets p p' =
   let fold path acc =
@@ -2027,24 +2036,55 @@ let intersect_psets p p' =
   in
   PathSet.fold fold p PathSet.empty
 
+let chop_at can path =
+  let rec aux = function
+    | [] -> None
+    | hd :: tl ->
+      if eq_can_expr can hd then Some ([hd], tl)
+      else match aux tl with
+      | Some (pref, suff) -> Some (hd :: pref, suff)
+      | None -> None
+  in aux path
+
+let replace_path_prefix can newp oldp =
+  match chop_at can oldp with
+  | None -> None
+  | Some (pref, suff) ->
+    let newsuff = CList.intersect eq_can_expr newp suff in
+    Some (pref @ newsuff)
+
+let replace_prefix_if_included can path ps =
+  let filter path' = replace_path_prefix can path path' in
+  PathSet.filter_map filter ps
+
 (** [find_to_merge_bwd model status u v] Search for an equivalence class of universes backward from u to v.
   @assumes u -> v is consistent *)
 let find_to_merge_bwd model (status : Status.t) prems (canv, kv) =
   (* let nb_univs = ref 0 and nb_cstrs = ref 0 in *)
-  debug_find_to_merge Pp.(fun () -> str"Searching from " ++ Premises.pr (pr_can_expr model) prems ++ str" to " ++
+  debug_find_to_merge_global Pp.(fun () -> str"Searching from " ++ Premises.pr (pr_can_expr model) prems ++ str" to " ++
     pr_can_expr model (canv, kv));
   let canvalue = defined_expr_value model (canv, kv) in
   let rec backward status path (can, k) : Status.t * PathSet.t =
-    debug_find_to_merge Pp.(fun () -> str"visiting " ++ pr_can model can ++ str" from path " ++ pr_path model path);
+    debug_find_to_merge Pp.(fun () -> str"visiting " ++ pr_can_expr model (can, k) ++ str" from path " ++ pr_path model path);
     match Status.find status can with
     | cstatus ->
-      debug_find_to_merge Pp.(fun () -> str"Found " ++ pr_can model can ++ str" to be " ++
+      debug_find_to_merge Pp.(fun () -> str"Found " ++ pr_can_expr model (can, k) ++ str" to be " ++
         pr_status model cstatus);
       (match cstatus with
       | Status.Processing ->
         (match find_loop can path with
         | Some path -> status, PathSet.singleton path
         | None -> status, PathSet.empty)
+      | Status.Merged ps ->
+        (** This level was previously merged coming from a potentially different path, e.g.
+            With constraints (canv <= ) x <= prefix <= u <= ... <= canv  /\ y <= prefix' <= u
+            Searching from max(x,y) to canv
+            When we find u from y :: prefix' we can reuse the paths merged through u that are
+            included in prefix'
+            *)
+        let merged = replace_prefix_if_included (can,k) path ps in
+        let status = Status.(replace status can (Merged merged)) in
+        status, merged
       | Status.NonMerged -> status, PathSet.empty)
     | exception Not_found ->
       let isv = can == canv && Int.equal k kv in
@@ -2055,7 +2095,7 @@ let find_to_merge_bwd model (status : Status.t) prems (canv, kv) =
       let status = Status.replace status can Status.Processing in
       (* let () = incr nb_univs in *)
       let cls = can.clauses_bwd in
-      debug_find_to_merge Pp.(fun () -> if domerge then pr_can model can ++ str " is marked as merged already" else str" is not merged yet");
+      debug_find_to_merge Pp.(fun () -> if domerge then pr_can_expr model (can,k) ++ str " is marked as merged already" else str" is not merged yet");
       if ClausesOf.is_empty cls then status, merge else begin
         debug_find_to_merge Pp.(fun () -> str"Searching through " ++ int (ClausesOf.cardinal cls) ++ str" backward clauses of " ++ pr_can model can);
           (* str " Canonical: " ++ int (PSet.cardinal (clauses_bwd_univs model cls))); *)
@@ -2071,7 +2111,7 @@ let find_to_merge_bwd model (status : Status.t) prems (canv, kv) =
         if PathSet.is_empty merge then
           Status.add can Status.NonMerged status, merge
         else
-          let status = Status.remove can status in
+          let status = Status.add can (Status.Merged merge) status in
           status, merge
       end
   and backward_premises k clk prems (status, path) =
@@ -2087,7 +2127,7 @@ let find_to_merge_bwd model (status : Status.t) prems (canv, kv) =
     in
     let merge_prem status p =
       let status, merge = merge_prem status p in
-      debug_find_to_merge Pp.(fun () -> str"Paths from premise " ++ pr_can model (fst p) ++ str" = " ++
+      debug_find_to_merge Pp.(fun () -> str"Paths to premise " ++ pr_can_expr model p ++ str" = " ++
         pr_paths model merge);
       status, merge
     in
@@ -2095,12 +2135,11 @@ let find_to_merge_bwd model (status : Status.t) prems (canv, kv) =
     match prems with
     | NeList.Tip p ->
       let status, mergep = merge_prem status p in
-      debug_find_to_merge Pp.(fun () -> str"Paths from premises " ++ Premises.pr (pr_can_expr model) prems ++ str" are " ++
+      debug_find_to_merge Pp.(fun () -> str"Paths to premises " ++ Premises.pr (pr_can_expr model) prems ++ str" are " ++
         pr_paths model mergep);
       status, mergep
-    | NeList.Cons (_, _ ) ->
-      status, PathSet.empty
-      (* (* Multiple premises: we will merge the intersection of merged universes in each possible path,
+    | NeList.Cons (p, ps) ->
+      (* Multiple premises: we will merge the intersection of merged universes in each possible path,
          if all premises are mergeable. *)
       let fold prem (status, merge) =
         if not (PathSet.is_empty merge) then
@@ -2115,10 +2154,10 @@ let find_to_merge_bwd model (status : Status.t) prems (canv, kv) =
       let status', mergemax = NeList.fold fold ps (merge_prem status p) in
       debug_find_to_merge Pp.(fun () -> str"Paths from premises " ++ Premises.pr (pr_can_expr model) prems ++ str" are " ++
         pr_paths model mergemax);
-      status', mergemax *)
+      status', mergemax
   in
   let _status, merge = backward_premises 0 0 prems (status, []) in
-  debug_find_to_merge Pp.(fun () -> str"Backward search terminated with paths " ++ pr_paths model merge);
+  debug_find_to_merge_global Pp.(fun () -> str"Backward search terminated with paths " ++ pr_paths model merge);
   if PathSet.is_empty merge then [] else
     let merge_fn p acc = if List.length p > 1 then p :: acc else acc in
     PathSet.fold merge_fn merge []
@@ -2144,6 +2183,7 @@ let get_explanation model prems (canv, kv) =
         (match find_loop can path with
         | Some path -> status, PathSet.singleton path
         | None -> status, PathSet.empty)
+      | Status.Merged _ -> assert false (* No merging in get_explanation *)
       | Status.NonMerged -> status, PathSet.empty)
     | exception Not_found ->
       let isv = can == canv && k <= kv in
@@ -2518,7 +2558,8 @@ let check_constraint (m : t) u k u' =
 let check_leq m u v = check_constraint m u Le v
 let check_eq m u v =
   match Universe.repr u, Universe.repr v with
-  | [ur], [vr] -> check_eq_level_expr ur vr m || check_constraint m u Eq v
+  | [ur], [vr] -> check_eq_level_expr ur vr m
+   (* || check_constraint m u Eq v *)
   | _, _ -> check_constraint m u Eq v
 
 let enforce_constraint (u, k, v) (m : t) = enforce u k v m
