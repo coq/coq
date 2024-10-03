@@ -195,7 +195,7 @@ struct
 
   let pr prq prl ?variance (q,u) =
     let ppu i u =
-      let v = Option.map (fun v -> v.(i)) variance in
+      let v = Option.map (fun v -> if i < Array.length v then v.(i) else Variance.Invariant (* TODO fix: bad caller somewhere *)) variance in
       pr_opt_no_spc Variance.pr v ++ prl u
     in
     (if Array.is_empty q then mt() else prvect_with_sep spc (Quality.pr prq) q ++ strbrk " | ")

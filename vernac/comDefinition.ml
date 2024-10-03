@@ -119,6 +119,7 @@ let interp_statement ~program_mode env evd ~flags ~scope name bl typ  =
 
 let variance_of_entry arr =
   if Array.is_empty arr then None
+  else if Array.for_all Option.is_empty arr then None
   else Some (Array.map (function None -> UVars.Variance.Invariant | Some v -> v) arr)
 
 let do_definition ?loc ?hook ~name ?scope ?clearbody ~poly ?typing_flags ~kind ?using ?user_warns udecl bl red_option c ctypopt =

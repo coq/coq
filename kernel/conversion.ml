@@ -947,7 +947,8 @@ let get_global_variance env ~nargs gr =
   | ConstructRef cstr ->
     let cstr = Environ.lookup_mind (fst (fst cstr)) env in  *)
 
-let to_bool = function Result.Ok _ -> true | Result.Error () -> false
+let to_bool = function
+  Result.Ok _ -> true | Result.Error () -> false
 
 let conv_inst u1 u2 univs = if UGraph.check_eq_instances univs u1 u2 then Result.Ok univs else Result.Error ()
 let cumul_inst cv_pb variances u1 u2 univs =
@@ -956,14 +957,15 @@ let cumul_inst cv_pb variances u1 u2 univs =
 let cumul_head_instances env univs cv_pb head u1 u2 =
   match head with
   | Some (gr, nargs) ->
-    (match gr with
+    (try match gr with
     | GlobRef.ConstRef cst ->
       to_bool @@ UCompare.convert_constants_gen conv_inst cumul_inst env cv_pb cst ~nargs u1 u2 univs
     | GlobRef.IndRef ind ->
       to_bool @@ UCompare.convert_inductives_gen conv_inst cumul_inst env cv_pb ind ~nargs u1 u2 univs
     | GlobRef.ConstructRef cst ->
       to_bool @@ UCompare.convert_constructors_gen conv_inst cumul_inst env cst ~nargs u1 u2 univs
-    | GlobRef.VarRef _ -> UGraph.check_eq_instances univs u1 u2)
+    | GlobRef.VarRef _ -> UGraph.check_eq_instances univs u1 u2
+    with UCompare.MustExpand -> false)
   | None -> UGraph.check_eq_instances univs u1 u2
 
 let eq_existential eq (evk1, args1) (evk2, args2) =

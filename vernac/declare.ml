@@ -262,10 +262,25 @@ let make_univs_immediate ~poly ?keep_body_ucst_separate ~opaque ~uctx ~udecl ~ef
   then make_univs_immediate_private_poly ~uctx ~udecl ~eff ~used_univs body typ
   else make_univs_immediate_default ~poly ~opaque ~uctx ~udecl ~eff ~used_univs body typ
 
+let extend_variances (univs, _) variances =
+  match univs with
+  | UState.Monomorphic_entry _ ->
+    if Option.is_empty variances then variances
+    else CErrors.user_err Pp.(str"Variance annotations on global universes are not allowed")
+  | UState.Polymorphic_entry uctx ->
+    let _, ulen = UVars.UContext.size uctx in
+    let extend vars =
+      if Array.length vars = ulen then vars
+      else if Array.length vars > ulen then CErrors.user_err Pp.(str"More variance annotations than bound universes")
+      else Array.append vars (Array.make (ulen - Array.length vars) UVars.Variance.Invariant)
+    in
+    Option.map extend variances
+
 (** [univsbody] are universe-constraints attached to the body-only,
    used in vio-delayed opaque constants and private poly universes *)
 let definition_entry_core ?using ?(inline=false) ?types
     ?(univs=default_named_univ_entry) ?variances body =
+  let variances = extend_variances univs variances in
   { proof_entry_body = body;
     proof_entry_secctx = using;
     proof_entry_type = types;
