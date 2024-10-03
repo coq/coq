@@ -13,38 +13,15 @@ Section relation_irrel.
   Constraint a <= a'.
   Variable A : Type@{a}.
   Variable R : relation@{a' ra} A.
-
-  Set Debug "loop-checking-global".
-  (* Set Debug "loop-checking-enforce-eq". *)
-  Set Debug "ustate".
-  Set Debug "univMinim".
-  (* Unset Cumulativity Weak Constraints. *)
   Definition test := (R : relation@{a ra} A).
   Print Universes Subgraph (a a' ra).
 
   Context (m : A -> A).
 
   Context (p : Proper (respectful R R) m).
-  Set Debug "backtrace".
   Lemma foo : { R : relation A & Proper (respectful R R) m }.
     eexists.
     apply p.
   Defined.
 
-
-
-
-
-    Lemma proper_m@{a ra} () : Proper R m.
-
-
-  Constraint b < a.
-  Constraint c <= d.
-  Fail Constraint d < c.
-End test_loop.
-
-Section funext.
-  Universes a b c d.
-
-  Constraint Set < a.
-  Constraint b < a.
+End relation_irrel.

@@ -383,8 +383,8 @@ Section GenericInstances.
   (** Every Transitive crelation induces a morphism by "pushing" an [R x y] on the left of an [R x z] proof to get an [R y z] goal. *)
 
   Global Program 
-  Instance trans_co_eq_inv_arrow_morphism
-  `(Transitive A R) : Proper (R ==> (@eq A) ==> flip arrow) R | 2.
+  Instance trans_co_eq_inv_arrow_morphism@{a ra ?} {A : Type@{a}}
+  `(Transitive@{a ra} A R) : Proper@{max(a,ra+1) max(a,ra)} (R ==> (respectful@{a 0 ra+1 max(a,ra)} (@eq A) (flip arrow))) R | 2.
 
   Next Obligation.
   Proof with auto.
