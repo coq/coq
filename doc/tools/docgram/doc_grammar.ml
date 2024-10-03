@@ -1409,7 +1409,11 @@ let finish_with_file old_file args =
   else if args.verify then begin
     if not (files_eq old_file temp_file) then begin
       error "%s is not current\n" old_file;
-      ignore (CUnix.sys_command "diff" [ old_file ; old_file ^ ".new"])
+       ignore (CUnix.sys_command "diff" [ old_file ; old_file ^ ".new"]);
+       ignore (CUnix.sys_command "echo" [ "OLD FILE"]);
+       ignore (CUnix.sys_command "cat" ["-n"; old_file]);
+       ignore (CUnix.sys_command "echo" [ "NEW FILE"]);
+       ignore (CUnix.sys_command "cat" ["-n";old_file ^ ".new"])
     end;
     Sys.remove temp_file
   end else if args.update then

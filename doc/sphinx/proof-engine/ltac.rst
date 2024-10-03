@@ -425,6 +425,8 @@ Selectors can also be used nested within a tactic expression with the
    .. prodn::
       goal_selector ::= {+, @range_selector }
       | [ @ident ]
+      debug_univ_name ::= @qualid
+      | @string
       range_selector ::= @natural
       | @natural - @natural
 
