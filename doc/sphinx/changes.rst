@@ -443,7 +443,7 @@ Ltac2 language
   (`#18411 <https://github.com/coq/coq/pull/18411>`_,
   by Gaëtan Gilbert).
 - **Changed:**
-  Ltac2 are typechecked at declaration time by default.
+  Ltac2 notations are typechecked at declaration time by default.
   This should produce better errors when a notation argument does not have the expected type
   (e.g. wrong branch type in `match! goal`).
   In the previous behaviour of typechecking, only the expansion result can be
