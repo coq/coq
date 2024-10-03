@@ -67,7 +67,8 @@ let print_ref env reduce ref udecl =
   let impargs = select_stronger_impargs (implicits_of_global ref) in
   let impargs = List.map binding_kind_of_status impargs in
   let variance = let open GlobRef in match ref with
-    | VarRef _ | ConstRef _ -> None
+    | VarRef _ -> None
+    | ConstRef cst -> let cb = Environ.lookup_constant cst env in cb.Declarations.const_variance
     | IndRef (ind,_) | ConstructRef ((ind,_),_) ->
       let mind = Environ.lookup_mind ind env in
       mind.Declarations.mind_variance

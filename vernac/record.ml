@@ -845,10 +845,14 @@ let get_class_params : Data.t list -> Data.t = function
   | _ ->
     CErrors.user_err (str "Mutual definitional classes are not supported.")
 
+let fix_variances v =
+  if Array.for_all Option.is_empty v then None
+  else Some (Array.map (function None -> UVars.Variance.Invariant | Some v -> v) v)
+
 (* declare definitional class (typeclasses that are not record) *)
 (* [data] is a list with a single [Data.t] with a single field (in [Data.rdata])
    and [Data.is_coercion] must be [NoCoercion] *)
-let declare_class_constant ~univs paramimpls params data =
+let declare_class_constant ~univs ~variances paramimpls params data =
   let {Data.id; rdata; is_coercion; proj_flags; inhabitant_id} = get_class_params data in
   assert (not is_coercion);  (* should be ensured by caller *)
   let implfs = rdata.DataR.implfs in
@@ -860,8 +864,9 @@ let declare_class_constant ~univs paramimpls params data =
     | _ -> assert false in  (* should be ensured by caller *)
   let class_body = it_mkLambda_or_LetIn field params in
   let class_type = it_mkProd_or_LetIn rdata.DataR.arity params in
+  let variances = fix_variances variances in
   let class_entry =
-    Declare.definition_entry ~types:class_type ~univs class_body in
+    Declare.definition_entry ~types:class_type ~univs ?variances class_body in
   let cst = Declare.declare_constant ~name:id
       (Declare.DefinitionEntry class_entry) ~kind:Decls.(IsDefinition Definition)
   in
@@ -1056,7 +1061,7 @@ let definition_structure ~flags udecl kind ~primitive_proj (records : Ast.t list
     pre_process_structure ~auto_prop_lowering udecl kind ~poly records
   in
   let inds, def = match kind_class kind with
-    | DefClass -> declare_class_constant ~univs impargs params data
+    | DefClass -> declare_class_constant ~univs ~variances impargs params data
     | RecordClass | NotClass ->
       let structure =
         interp_structure_core

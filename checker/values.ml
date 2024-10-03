@@ -198,7 +198,7 @@ let v_cstrs =
        (v_tuple "univ_constraint"
           [|v_univ;v_enum "order_request" 2;v_univ|]))
 
-let v_variance = v_enum "variance" 3
+let v_variance = v_enum "variance" 4
 
 let v_level_instance = v_annot_c ("level_instance", v_pair (v_array v_quality) (v_array v_level))
 let v_univ_instance = v_annot_c ("instance", v_pair (v_array v_quality) (v_array v_univ))
@@ -403,6 +403,7 @@ let v_cb = v_tuple "constant_body"
     v_relevance;
     v_opt v_vm_indirect_code;
     v_univs;
+    Opt (Array v_variance);
     v_bool;
     v_typing_flags|]
 

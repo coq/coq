@@ -18,7 +18,6 @@ let pr_conv_pb = function
   | CUMUL -> Pp.str"≤"
   | CONV -> Pp.str"="
 
-
 type ('a, 'err) convert_instances = UVars.Instance.t -> UVars.Instance.t -> 'a -> ('a, 'err) Result.t
 type ('a, 'err) convert_instances_cumul = conv_pb -> UVars.Variance.t array -> UVars.Instance.t -> UVars.Instance.t -> 'a -> ('a, 'err) Result.t
 
@@ -30,6 +29,7 @@ type ('a, 'err) universe_compare = {
 
 type ('a, 'err) universe_state = 'a * ('a, 'err) universe_compare
 
+let debug = CDebug.create ~name:"uCompare" ()
 
 let sort_cmp_universes env pb s0 s1 (u, check) =
   (check.compare_sorts env pb s0 s1 u, check)
@@ -104,7 +104,7 @@ let convert_constants_gen cmp_instances cmp_cumul env cv_pb cst ~nargs u1 u2 s =
   | Some variance ->
     let _foo = nargs in (* FIXME check nargs/variance compatibility *)
     let pri = UVars.Instance.pr Sorts.QVar.raw_pr (Univ.Universe.pr Univ.Level.raw_pr) in
-    Feedback.msg_debug Pp.(str"conv_table_key: " ++ pri u1 ++ spc () ++ pr_conv_pb cv_pb ++ spc () ++ pri u2 ++ str" variances: " ++ UVars.pr_variances variance);
+    debug Pp.(fun () -> str"conv_table_key: " ++ pri u1 ++ spc () ++ pr_conv_pb cv_pb ++ spc () ++ pri u2 ++ str" variances: " ++ UVars.pr_variances variance);
     cmp_cumul cv_pb variance u1 u2 s)
 
 let convert_constants env cv_pb cst ~flex ~nargs u1 u2 (s, check) =
