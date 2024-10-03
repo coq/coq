@@ -281,7 +281,7 @@ Instance peq_left {A : Type} {B : Type} {R : crelation B} (f : A -> B) `{Reflexi
 Admitted.
 
 #[universes(polymorphic), export]
-Instance reflexive_eq_dom_reflexive@{i j jr}
+Instance reflexive_eq_dom_reflexive@{i j jr ?}
  {A : Type@{i}} {B : Type@{j}} (R : crelation@{j jr} B) :
   Reflexive@{j jr} R ->
   Reflexive (respectful (@peq A) R)%signatureT.
