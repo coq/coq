@@ -1461,7 +1461,7 @@ Proof. reflexivity. Qed.
 Lemma inj_gcd p q : Z.pos (Pos.gcd p q) = Z.gcd (Z.pos p) (Z.pos q).
 Proof. reflexivity. Qed.
 
-Definition inj_divide p q : (Z.pos p|Z.pos q) <-> (p|q)%positive.
+Lemma inj_divide p q : (Z.pos p|Z.pos q) <-> (p|q)%positive.
 Proof. apply Z.divide_Zpos. Qed.
 
 Lemma inj_testbit a n : 0<=n ->

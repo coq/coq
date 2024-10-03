@@ -198,7 +198,7 @@ Proof. reflexivity. Qed.
 Lemma two_succ : 2 = succ 1.
 Proof. reflexivity. Qed.
 
-Definition pred_0 : pred 0 = 0.
+Lemma pred_0 : pred 0 = 0.
 Proof. reflexivity. Qed.
 
 (** Properties of mixed successor and predecessor. *)
@@ -591,7 +591,7 @@ Proof.
   unfold div, modulo. now destruct div_eucl.
 Qed.
 
-Definition div_mod a b : b<>0 -> a = b * (a/b) + (a mod b).
+Theorem div_mod a b : b<>0 -> a = b * (a/b) + (a mod b).
 Proof.
  intros _. apply div_mod'.
 Qed.
@@ -812,7 +812,7 @@ Proof.
      now rewrite succ_pos_pred.
 Qed.
 
-Definition div2_spec a : div2 a = shiftr a 1.
+Lemma div2_spec a : div2 a = shiftr a 1.
 Proof.
  reflexivity.
 Qed.

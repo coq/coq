@@ -60,7 +60,7 @@ Section Characterisation_wf_relations.
 
   Definition B (a:A) := {x : A | leA x a}.
 
-  Definition wof : well_founded leA -> A -> WO A B.
+  Theorem wof : well_founded leA -> A -> WO A B.
   Proof.
     intros.
     apply (well_founded_induction_type H (fun a:A => WO A B)); auto.
@@ -69,6 +69,6 @@ Section Characterisation_wf_relations.
     unfold B at 1.
     destruct 1 as [x0].
     apply (H1 x0); auto.
-Qed.
+  Qed.
 
 End Characterisation_wf_relations.

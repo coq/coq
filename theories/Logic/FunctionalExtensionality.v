@@ -101,7 +101,7 @@ Definition forall_eq_rect
   : P g H
   := @forall_sig_eq_rect A B f (fun g => P (proj1_sig g) (proj2_sig g)) k (exist _ g H).
 
-Definition forall_eq_rect_comp {A B} f P k
+Theorem forall_eq_rect_comp {A B} f P k
   : @forall_eq_rect A B f P k f (fun _ => eq_refl) = k.
 Proof.
   unfold forall_eq_rect, forall_sig_eq_rect; simpl.
