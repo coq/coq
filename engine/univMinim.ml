@@ -93,15 +93,15 @@ let compute_lbound left =
   in
     List.fold_left (fun lbound (k, l) -> sup (Universe.addn l k) lbound) None left
 
-let instantiate_with_lbound u lbound lower ~enforce (ctx, us, insts, cstrs) =
+let instantiate_with_lbound u lbound lower ~enforce (ctx, us, seen, insts, cstrs) =
   if enforce then
     let inst = Universe.make u in
     let cstrs' = enforce_leq lbound inst cstrs in
-      (ctx, us, LBMap.add u {enforce;lbound;lower} insts, cstrs'),
+      (ctx, us, seen, LBMap.add u {enforce;lbound;lower} insts, cstrs'),
       {enforce; lbound=inst; lower}
   else (* Actually instantiate *)
     (debug Pp.(fun () -> str"Instantiating " ++ Level.raw_pr u ++ str" with " ++ Universe.pr Level.raw_pr lbound);
-    (Level.Set.remove u ctx, UnivFlex.define u lbound us,
+    (Level.Set.remove u ctx, UnivFlex.define u lbound us, seen,
      LBMap.add u {enforce;lbound;lower} insts, cstrs),
     {enforce; lbound; lower})
 
@@ -160,7 +160,7 @@ let minimize_univ_variables ctx us left right cstrs =
         in (Level.Map.remove r left, lbounds))
       left (left, LBMap.empty)
   in
-  let rec instance (ctx, us, insts, cstrs as acc) u =
+  let rec instance (ctx, us, seen, insts, cstrs as acc) u =
     let acc, left, lower =
       match Level.Map.find u left with
       | exception Not_found -> acc, [], Level.Map.empty
@@ -188,13 +188,13 @@ let minimize_univ_variables ctx us left right cstrs =
         let lower = Level.Set.fold Level.Map.remove (Universe.levels lbound) lower in
         instantiate_with_lbound u lbound lower ~enforce:false acc
     in
-    let enforce_uppers ((ctx,us,insts,cstrs), b as acc) =
+    let enforce_uppers ((ctx,us,seen,insts,cstrs), b as acc) =
       match Level.Map.find u right with
       | exception Not_found -> acc
       | upper ->
         let upper = List.filter (fun (d, r) -> not (UnivFlex.mem r us)) upper in
         let cstrs = enforce_uppers upper b.lbound cstrs in
-        (ctx, us, insts, cstrs), b
+        (ctx, us, seen, insts, cstrs), b
     in
     if not (Level.Set.mem u ctx)
     then enforce_uppers (acc, {enforce=true; lbound=Universe.make u; lower})
@@ -205,15 +205,20 @@ let minimize_univ_variables ctx us left right cstrs =
         enforce_uppers (acc, {enforce=true; lbound=Universe.make u; lower})
       | Some lbound ->
         enforce_uppers (instantiate_lbound lbound)
-  and aux (ctx, us, seen, cstrs as acc) u =
+  and aux (ctx, us, seen, insts, cstrs as acc) u =
     debug Pp.(fun () -> str"Calling minim on " ++ Level.raw_pr u);
-    try acc, Level.Map.find u seen.LBMap.lbmap
-    with Not_found -> instance acc u
+    try acc, Level.Map.find u insts.LBMap.lbmap
+    with Not_found ->
+      if Level.Set.mem u seen then
+        (* Loop in the contraints *)
+        let bnd = {enforce=true; lbound=Universe.make u; lower = Level.Map.empty} in
+        acc, bnd
+      else instance (ctx, us, Level.Set.add u seen, insts, cstrs) u
   in
-    UnivFlex.fold (fun u ~is_defined (ctx, us, seen, cstrs as acc) ->
+    UnivFlex.fold (fun u ~is_defined (ctx, us, seen, insts, cstrs as acc) ->
       if not is_defined then fst (aux acc u)
-      else Level.Set.remove u ctx, us, seen, cstrs)
-      us (ctx, us, lbounds, cstrs)
+      else Level.Set.remove u ctx, us, seen, insts, cstrs)
+      us (ctx, us, Level.Set.empty, lbounds, cstrs)
 
 module UPairs = OrderedType.UnorderedPair(Universe)
 module UPairSet = Set.Make (UPairs)
@@ -421,7 +426,7 @@ let normalize_context_set ~lbound g ctx (us:UnivFlex.t) ?binders {weak_constrain
   (* Now we construct the instantiation of each variable. *)
   debug Pp.(fun () -> str "Starting minimization with: " ++ pr_universe_context_set prl (ctx, noneqs) ++
     UnivFlex.pr Level.raw_pr us);
-  let ctx', us, inst, noneqs =
+  let ctx', us, seen, inst, noneqs =
     minimize_univ_variables ctx us ucstrsr ucstrsl noneqs
   in
   let us = UnivFlex.normalize us in
