@@ -110,6 +110,6 @@ type tacvalue =
       Name.t list * Tacexpr.glob_tactic_expr
   | VRec of Val.t Id.Map.t ref * Tacexpr.glob_tactic_expr
 
-val wit_tacvalue : (Empty.t, tacvalue, tacvalue) Genarg.genarg_type
+val wit_tacvalue : (Empty.t, Empty.t, tacvalue) Genarg.genarg_type
 
 val pr_value : (Environ.env * Evd.evar_map) option -> Geninterp.Val.t -> Pp.t
