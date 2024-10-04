@@ -474,10 +474,10 @@ and progress_utf8 loc last nj last_is_letter tt cs l =
   with Not_found ->
     last
 
-let blank_or_eof cs =
+let blank_or_eof_or_digit cs =
   match Stream.peek () cs with
     | None -> true
-    | Some (' ' | '\t' | '\n' |'\r') -> true
+    | Some (' ' | '\t' | '\n' | '\r' | '0'..'9') -> true
     | _ -> false
 
 type marker = Delimited of int * char list * char list | ImmediateAsciiIdent
@@ -532,7 +532,7 @@ let parse_quotation loc bp s =
               quotation loc depth
         | '.' :: _ ->
               commit1 '.';
-              if not dot_gobbling && blank_or_eof s then raise Stream.Failure;
+              if not dot_gobbling && blank_or_eof_or_digit s then raise Stream.Failure;
               quotation loc depth
         | c :: cs ->
               commit1 c;
@@ -643,10 +643,11 @@ let rec next_token ~diff_mode ttree loc s =
       in
       between_commands := false;
       (* We enforce that "." should either be part of a larger keyword,
-         for instance ".(", or followed by a blank or eof. *)
+         for instance ".(", or followed by a blank or eof or digit
+         (for universe names). *)
       let () = match t with
         | KEYWORD ("." | "...") ->
-          if not (blank_or_eof s) then begin
+          if not (blank_or_eof_or_digit s) then begin
             let ep = Stream.count s in
             err (set_loc_pos loc bp (ep+1)) Undefined_token
           end;

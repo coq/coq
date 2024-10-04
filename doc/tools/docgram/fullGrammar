@@ -1442,9 +1442,15 @@ printable: [
 | "Registered" "Schemes"
 ]
 
+debug_univ_fields: [
+| FIELD debug_univ_fields
+| FIELD
+| "." NUMBER
+]
+
 debug_univ_name: [
-| reference
-| STRING
+| IDENT debug_univ_fields
+| IDENT
 ]
 
 printunivs_subgraph: [

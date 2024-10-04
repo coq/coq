@@ -2292,14 +2292,20 @@ goal_selector: [
 | "[" ident "]"
 ]
 
-debug_univ_name: [
-| qualid
-| string
-]
-
 range_selector: [
 | natural
 | natural "-" natural
+]
+
+debug_univ_name: [
+| ident debug_univ_fields
+| ident
+]
+
+debug_univ_fields: [
+| FIELD debug_univ_fields
+| FIELD
+| "." number
 ]
 
 match_key: [

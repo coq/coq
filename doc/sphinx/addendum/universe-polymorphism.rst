@@ -593,11 +593,14 @@ Printing universes
 .. cmd:: Print {? Sorted } Universes {? Subgraph ( {* @debug_univ_name } ) } {? @string }
    :name: Print Universes
 
-   .. insertprodn debug_univ_name debug_univ_name
+   .. insertprodn debug_univ_name debug_univ_fields
 
    .. prodn::
-      debug_univ_name ::= @qualid
-      | @string
+      debug_univ_name ::= @ident @debug_univ_fields
+      | @ident
+      debug_univ_fields ::= @FIELD @debug_univ_fields
+      | @FIELD
+      | . @number
 
    This command can be used to print the constraints on the internal level
    of the occurrences of :math:`\Type` (see :ref:`Sorts`).
