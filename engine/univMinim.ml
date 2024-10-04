@@ -147,7 +147,7 @@ let is_set_increment u =
   | [(l, k)] -> Level.is_set l
   | _ -> false
 
-let minimize_univ_variables ctx us left right cstrs =
+let minimize_univ_variables ctx us variances left right cstrs =
   let left, lbounds =
     Level.Map.fold (fun r lower (left, lbounds as acc)  ->
       if UnivFlex.mem r us || not (Level.Set.mem r ctx) then acc
@@ -179,10 +179,15 @@ let minimize_univ_variables ctx us left right cstrs =
         let left = CList.uniquize (List.filter (not_lower lower) left) in
         (acc, left, Level.Map.lunion newlow lower)
     in
+    let variance =
+      match Level.Map.find_opt u variances with
+      | None -> UVars.Variance.Invariant
+      | Some v -> v
+    in
     let instantiate_lbound lbound =
       if is_set_increment lbound && not (get_set_minimization()) then
         (* Minim to Set disabled, do not instantiate with Set *)
-        instantiate_with_lbound u lbound lower ~enforce:true acc
+        instantiate_with_lbound u lbound lower ~enforce:(variance <> Irrelevant) acc
       else (* u is algebraic: we instantiate it with its lower bound, if any,
               or enforce the constraints if it is bounded from the top. *)
         let lower = Level.Set.fold Level.Map.remove (Universe.levels lbound) lower in
@@ -201,8 +206,12 @@ let minimize_univ_variables ctx us left right cstrs =
     else
       let lbound = compute_lbound left in
       match lbound with
-      | None -> (* Nothing to do *)
-        enforce_uppers (acc, {enforce=true; lbound=Universe.make u; lower})
+      | None ->
+        let open UVars.Variance in
+        (match variance with
+        | Contravariant | Invariant -> enforce_uppers (acc, {enforce=true; lbound=Universe.make u; lower})
+        | Irrelevant | Covariant -> (* This keeps principal typings, as instantiating to Set in a covariant position allows to use Set <= i for any i *)
+          enforce_uppers (instantiate_lbound Universe.type0))
       | Some lbound ->
         enforce_uppers (instantiate_lbound lbound)
   and aux (ctx, us, seen, insts, cstrs as acc) u =
@@ -266,10 +275,15 @@ let decompose_constraints cstrs =
 let simplify_cstr (l, d, r) =
   (Universe.unrepr (Universe.repr l), d, Universe.unrepr (Universe.repr r))
 
-let normalize_context_set ~lbound g ctx (us:UnivFlex.t) ?binders {weak_constraints=weak;above_prop} =
+type level_variances = UVars.Variance.t Univ.Level.Map.t
+let pr_variances prl variances =
+  Univ.Level.Map.pr prl UVars.Variance.pr variances
+
+let normalize_context_set ~lbound ~variances g ctx (us:UnivFlex.t) ?binders {weak_constraints=weak;above_prop} =
   let prl = UnivNames.pr_level_with_global_universes ?binders in
   debug Pp.(fun () -> str "Minimizing context: " ++ pr_universe_context_set prl ctx ++ spc () ++
-    UnivFlex.pr Level.raw_pr us ++
+    UnivFlex.pr Level.raw_pr us ++ fnl () ++
+    str"Variances: " ++ pr_variances prl variances ++ fnl () ++
     str"Weak constraints " ++
     prlist_with_sep spc (fun (u,v) -> Universe.pr Level.raw_pr u ++ str" ~ " ++ Universe.pr Level.raw_pr v)
      (UPairSet.elements weak));
@@ -427,7 +441,7 @@ let normalize_context_set ~lbound g ctx (us:UnivFlex.t) ?binders {weak_constrain
   debug Pp.(fun () -> str "Starting minimization with: " ++ pr_universe_context_set prl (ctx, noneqs) ++
     UnivFlex.pr Level.raw_pr us);
   let ctx', us, seen, inst, noneqs =
-    minimize_univ_variables ctx us ucstrsr ucstrsl noneqs
+    minimize_univ_variables ctx us variances ucstrsr ucstrsl noneqs
   in
   let us = UnivFlex.normalize us in
   let noneqs = UnivSubst.subst_univs_constraints (UnivFlex.normalize_univ_variable us) noneqs in

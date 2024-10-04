@@ -1066,7 +1066,9 @@ let prepare_definition ~info ~opaque ?using ~name ~body ~typ sigma =
   let env = Global.env () in
   Option.iter (check_evars_are_solved env sigma) typ;
   check_evars_are_solved env sigma body;
-  let sigma = Evd.minimize_universes sigma in
+  let inferred_variances = UnivVariances.universe_variances env sigma (Option.cata (fun typ -> [typ;body]) [body] typ) in
+  let sigma = Evd.minimize_universes ~variances:inferred_variances sigma in
+  let uctx = Evd.ustate sigma in
   let using =
     let f (name, body, typ) =
       name, Option.List.flatten [ Some body; typ ] in
@@ -1074,7 +1076,6 @@ let prepare_definition ~info ~opaque ?using ~name ~body ~typ sigma =
   in
   let body = EConstr.to_constr sigma body in
   let typ = Option.map (EConstr.to_constr sigma) typ in
-  let uctx = Evd.ustate sigma in
   let uctx, univs, body = make_univs_immediate ~poly ~opaque ~uctx ~udecl ~eff:Evd.empty_side_effects body typ in
   let entry = definition_entry_core ?using ~inline ?types:typ ~univs ?variances body in
   entry, uctx
