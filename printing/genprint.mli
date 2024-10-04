@@ -43,6 +43,10 @@ val top_print : ('raw, 'glb, 'top) genarg_type -> 'top top_printer
 
 val register_print0 : ('raw, 'glb, 'top) genarg_type ->
   'raw printer -> 'glb printer -> 'top top_printer -> unit
+(** The genarg must be registered in [Geninterp.register_val0] *)
+
+val register_noval_print0 : ('raw, 'glb, Util.Empty.t) genarg_type ->
+  'raw printer -> 'glb printer -> unit
 val register_val_print0 : 'top Geninterp.Val.typ ->
   'top top_printer -> unit
 val register_vernac_print0 : 'raw vernac_genarg_type ->

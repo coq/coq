@@ -1876,8 +1876,7 @@ let () =
         | PatternVar -> str "pattern:"
       in
       str "$" ++ ppkind ++ Id.print id) in
-  let pr_top x = Util.Empty.abort x in
-  Genprint.register_print0 wit_ltac2_var_quotation pr_raw pr_glb pr_top
+  Genprint.register_noval_print0 wit_ltac2_var_quotation pr_raw pr_glb
 
 let warn_missing_notation_variable =
   CWarnings.create ~name:"ltac2-missing-notation-var" ~category:CWarnings.CoreCategories.ltac2
@@ -1928,8 +1927,7 @@ let () =
     in
     Genprint.PrinterBasic Pp.(fun _env _sigma -> ids ++ Tac2print.pr_glbexpr ~avoid:Id.Set.empty e)
   in
-  let pr_top x = Util.Empty.abort x in
-  Genprint.register_print0 wit_ltac2in1 pr_raw pr_glb pr_top
+  Genprint.register_noval_print0 wit_ltac2in1 pr_raw pr_glb
 
 let () =
   let pr_raw e = Genprint.PrinterBasic (fun _env _sigma ->
@@ -1951,8 +1949,7 @@ let () =
     *)
     Genprint.PrinterBasic Pp.(fun _env _sigma -> ids ++ Tac2print.pr_glbexpr ~avoid:Id.Set.empty e)
   in
-  let pr_top e = Util.Empty.abort e in
-  Genprint.register_print0 wit_ltac2_constr pr_raw pr_glb pr_top
+  Genprint.register_noval_print0 wit_ltac2_constr pr_raw pr_glb
 
 (** Built-in notation scopes *)
 
