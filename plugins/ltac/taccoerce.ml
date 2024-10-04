@@ -431,7 +431,7 @@ type tacvalue =
       Tacexpr.glob_tactic_expr (* body *)
   | VRec of Val.t Id.Map.t ref * Tacexpr.glob_tactic_expr
 
-let (wit_tacvalue : (Empty.t, tacvalue, tacvalue) Genarg.genarg_type) =
+let (wit_tacvalue : (Empty.t, Empty.t, tacvalue) Genarg.genarg_type) =
   let wit = Genarg.create_arg "tacvalue" in
   let () = register_val0 wit None in
   let pr = function

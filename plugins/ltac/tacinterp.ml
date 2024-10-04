@@ -2137,7 +2137,6 @@ let () =
   register_interp0 wit_simple_intropattern (lift interp_intro_pattern);
   register_interp0 wit_clause_dft_concl (lift interp_clause);
   register_interp0 wit_constr (lifts interp_constr);
-  register_interp0 wit_tacvalue (fun ist v -> Ftactic.return v);
   register_interp0 Redexpr.wit_red_expr (lifts interp_red_expr);
   register_interp0 wit_quant_hyp (lift interp_declared_or_quantified_hypothesis);
   register_interp0 wit_open_constr (lifts interp_open_constr);
