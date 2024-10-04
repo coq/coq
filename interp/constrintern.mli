@@ -211,7 +211,7 @@ val check_duplicate : ?loc:Loc.t -> (qualid * constr_expr) list -> unit
 
 val interp_univ_constraint
   : Evd.evar_map
-  -> sort_name_expr * Univ.constraint_type * sort_name_expr
+  -> universe_expr * (Univ.constraint_type * bool) * universe_expr
   -> Univ.univ_constraint
 
 (** Local universe and constraint declarations. *)
@@ -226,7 +226,7 @@ val interp_cumul_univ_decl_opt : Environ.env -> cumul_univ_decl_expr option ->
 (** BEWARE the variance entry needs to be adjusted by
    [ComInductive.variance_of_entry] if the instance is extensible. *)
 
-val interp_mutual_univ_decl_opt : Environ.env -> universe_decl_expr option list ->
-  Evd.evar_map * UState.universe_decl
+val interp_mutual_univ_decl_opt : Environ.env -> cumul_univ_decl_expr option list ->
+  Evd.evar_map * UState.universe_decl * Entries.variance_entry
 (** Check that all defined udecls of a list of udecls associated to a mutual definition
     are the same and interpret this common udecl *)

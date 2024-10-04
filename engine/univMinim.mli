@@ -11,7 +11,7 @@
 open Univ
 
 (** Unordered pairs of universe levels (ie (u,v) = (v,u)) *)
-module UPairSet : CSet.S with type elt = (Level.t * Level.t)
+module UPairSet : CSet.S with type elt = (Universe.t * Universe.t)
 
 type extra = {
   weak_constraints : UPairSet.t; (* weak equality constraints *)
@@ -21,6 +21,9 @@ type extra = {
 val empty_extra : extra
 
 val extra_union : extra -> extra -> extra
+
+type level_variances = UVars.Variance.t Univ.Level.Map.t
+val pr_variances : (Univ.Level.t -> Pp.t) -> level_variances -> Pp.t
 
 (** Simplification and pruning of constraints:
     [normalize_context_set ctx us]
@@ -33,7 +36,8 @@ val extra_union : extra -> extra -> extra
     (a global one if there is one) and transitively saturate
     the constraints w.r.t to the equalities. *)
 
-val normalize_context_set : lbound:UGraph.Bound.t -> UGraph.t -> ContextSet.t ->
+val normalize_context_set : lbound:UGraph.Bound.t -> variances:UVars.Variance.t Level.Map.t -> UGraph.t -> ContextSet.t ->
   UnivFlex.t (* The defined and undefined variables *) ->
+  ?binders:UnivNames.universe_binders ->
   extra ->
   UnivFlex.t in_universe_context_set

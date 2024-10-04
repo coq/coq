@@ -106,7 +106,7 @@ let process_universes env = function
     let env = Environ.push_context ~strict:false uctx env in
     let inst, auctx = UVars.abstract_universes uctx in
     let usubst = UVars.make_instance_subst inst in
-    env, usubst, inst, Polymorphic auctx
+    env, usubst, UVars.Instance.of_level_instance inst, Polymorphic auctx
 
 let check_primitive_type env op_t u t =
   let inft = Typeops.type_of_prim_or_type env u op_t in
@@ -136,7 +136,7 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
   let univs, typ =
     match utyp with
     | None ->
-      let u = UContext.instance (AbstractContext.repr auctx) in
+      let u = Instance.of_level_instance (UContext.instance (AbstractContext.repr auctx)) in
       let typ = Typeops.type_of_prim_or_type env u p in
       let univs = if AbstractContext.is_empty auctx then Monomorphic
         else Polymorphic auctx
@@ -160,11 +160,12 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
   assert (List.is_empty (named_context env));
   {
     const_hyps = [];
-    const_univ_hyps = Instance.empty;
+    const_univ_hyps = LevelInstance.empty;
     const_body = body;
     const_type = typ;
     const_body_code = ();
     const_universes = univs;
+    const_variance = None; (* FIXME *)
     const_relevance = Sorts.Relevant;
     const_inline_code = false;
     const_typing_flags = Environ.typing_flags env;
@@ -177,11 +178,12 @@ let infer_symbol env { symb_entry_universes; symb_entry_unfold_fix; symb_entry_t
   let t = Vars.subst_univs_level_constr usubst j.uj_val in
   {
     const_hyps = [];
-    const_univ_hyps = Instance.empty;
+    const_univ_hyps = LevelInstance.empty;
     const_body = Symbol symb_entry_unfold_fix;
     const_type = t;
     const_body_code = ();
     const_universes = univs;
+    const_variance = None; (* FIXME *)
     const_relevance = UVars.subst_sort_level_relevance usubst r;
     const_inline_code = false;
     const_typing_flags = Environ.typing_flags env;
@@ -189,7 +191,7 @@ let infer_symbol env { symb_entry_universes; symb_entry_unfold_fix; symb_entry_t
 
 
 let make_univ_hyps = function
-  | None -> Instance.empty
+  | None -> LevelInstance.empty
   | Some us -> us
 
 let infer_parameter ~sec_univs env entry =
@@ -206,6 +208,7 @@ let infer_parameter ~sec_univs env entry =
     const_type = typ;
     const_body_code = ();
     const_universes = univs;
+    const_variance = None; (* FIXME *)
     const_relevance = UVars.subst_sort_level_relevance usubst r;
     const_inline_code = false;
     const_typing_flags = Environ.typing_flags env;
@@ -227,6 +230,7 @@ let infer_definition ~sec_univs env entry =
   let hbody = if body == j.uj_val then Some hbody else None in
   let def = Def body in
   let hyps = used_section_variables env entry.definition_entry_secctx (Some body) typ in
+  (* TODO check variance *)
   hbody, {
     const_hyps = hyps;
     const_univ_hyps = make_univ_hyps sec_univs;
@@ -234,6 +238,7 @@ let infer_definition ~sec_univs env entry =
     const_type = typ;
     const_body_code = ();
     const_universes = univs;
+    const_variance = entry.definition_entry_variance;
     const_relevance = Relevanceops.relevance_of_term env body;
     const_inline_code = entry.definition_entry_inline_code;
     const_typing_flags = Environ.typing_flags env;
@@ -254,6 +259,7 @@ let infer_opaque ~sec_univs env entry =
     const_type = typ;
     const_body_code = ();
     const_universes = univs;
+    const_variance = None;
     const_relevance = UVars.subst_sort_level_relevance usubst @@ Sorts.relevance_of_sort typj.utj_type;
     const_inline_code = false;
     const_typing_flags = Environ.typing_flags env;

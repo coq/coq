@@ -20,12 +20,12 @@ module NamedDecl = Context.Named.Declaration
 
 let lift_univs info univ_hyps = function
   | Monomorphic ->
-    assert (UVars.Instance.is_empty univ_hyps);
+    assert (UVars.LevelInstance.is_empty univ_hyps);
     info, univ_hyps, Monomorphic
   | Polymorphic auctx ->
     let info, (qn, un), auctx = lift_poly_univs info auctx in
     let univ_hyps =
-      let open UVars.Instance in
+      let open UVars.LevelInstance in
       let qs, us = to_array univ_hyps in
       let qs = Array.sub qs 0 (Array.length qs - qn) in
       let us = Array.sub us 0 (Array.length us - un) in
@@ -78,6 +78,7 @@ let cook_constant _env info cb =
     const_type = typ;
     const_body_code = ();
     const_universes = univs;
+    const_variance = cb.const_variance; (* FIXME *)
     const_relevance = cb.const_relevance;
     const_inline_code = cb.const_inline_code;
     const_typing_flags = cb.const_typing_flags;

@@ -20,9 +20,10 @@ Definition dtree4 : option decision_tree :=
   with
   | Some _ => admit
   | None => admit
-  end
-.
-Definition dtree'' := Eval vm_compute in dtree4. (* segfault *)
+  end.
+
+Definition foo := dtree4@{Set}.
+Definition dtree4'@{} := Eval vm_compute in foo.
 
 End Segfault.
 

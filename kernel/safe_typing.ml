@@ -819,6 +819,7 @@ let constant_entry_of_side_effect eff =
     definition_entry_secctx = Some (Context.Named.to_vars cb.const_hyps);
     definition_entry_type = Some cb.const_type;
     definition_entry_universes = univs;
+    definition_entry_variance = None;
     definition_entry_inline_code = cb.const_inline_code }
 
 let export_eff eff =

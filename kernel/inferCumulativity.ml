@@ -35,7 +35,7 @@ module Inf : sig
   val start : (Level.t * Variance.t option) array -> variances
   val finish : variances -> Variance.t array
 end = struct
-  type inferred = IrrelevantI | CovariantI
+  type inferred = IrrelevantI | CovariantI | ContravariantI
   type mode = Check | Infer
 
   (**
@@ -56,6 +56,7 @@ end = struct
   let to_variance = function
     | IrrelevantI -> Irrelevant
     | CovariantI -> Covariant
+    | ContravariantI -> Contravariant
 
   let to_variance_opt o = Option.cata to_variance Invariant o
 
@@ -77,6 +78,7 @@ end = struct
       Level.Map.update u (function
           | None -> None
           | Some (_,CovariantI) as x -> x
+          | Some (_,ContravariantI) as x -> x
           | Some (Infer,IrrelevantI) ->
             if not variances.infer_mode then raise NotInferring;
             Some (Infer,CovariantI)
@@ -92,7 +94,8 @@ end = struct
         | None -> Level.Map.add u (Infer,IrrelevantI) univs
         | Some Invariant -> univs
         | Some Covariant -> Level.Map.add u (Check,CovariantI) univs
-        | Some Irrelevant -> Level.Map.add u (Check,IrrelevantI) univs)
+        | Some Irrelevant -> Level.Map.add u (Check,IrrelevantI) univs
+        | Some Contravariant -> Level.Map.add u (Check,ContravariantI) univs)
         Level.Map.empty us
     in
     if Level.Map.is_empty univs then raise TrivialVariance;
@@ -107,18 +110,19 @@ end
 open Inf
 
 let infer_generic_instance_eq variances u =
-  Array.fold_left (fun variances u -> infer_level_eq u variances)
-    variances
-    u
+  Array.fold_left (fun variances u ->
+    Level.Set.fold infer_level_eq (Universe.levels u) variances)
+    variances u
 
 (* no variance for qualities *)
+let level_instance_univs u = snd (Instance.to_array (Instance.of_level_instance u))
 let instance_univs u = snd (Instance.to_array u)
 
 let extend_con_instance cb u =
-  (Array.append (instance_univs cb.const_univ_hyps) (instance_univs u))
+  (Array.append (level_instance_univs cb.const_univ_hyps) (instance_univs u))
 
 let extend_ind_instance mib u =
-  (Array.append (instance_univs mib.mind_univ_hyps) (instance_univs u))
+  (Array.append (level_instance_univs mib.mind_univ_hyps) (instance_univs u))
 
 let extended_mind_variance mind =
   match mind.mind_variance, mind.mind_sec_variance with
@@ -127,12 +131,14 @@ let extended_mind_variance mind =
   | None, Some _ -> assert false
   | Some variance, Some sec_variance -> Some (Array.append sec_variance variance)
 
+(* todo check correctness. MS *)
 let infer_cumulative_ind_instance cv_pb mind_variance variances u =
   Array.fold_left2 (fun variances varu u ->
-      match cv_pb, varu with
-      | _, Irrelevant -> variances
-      | _, Invariant | CONV, Covariant -> infer_level_eq u variances
-      | CUMUL, Covariant -> infer_level_leq u variances)
+      match cv_pb, varu, Universe.level u with
+      | _, Irrelevant, _ -> variances
+      | _, Invariant, Some u | CONV, Covariant, Some u -> infer_level_eq u variances
+      | CUMUL, Covariant, Some u -> infer_level_leq u variances
+      | _, _, _ -> variances)
     variances
     mind_variance
     u
@@ -143,7 +149,7 @@ let infer_inductive_instance cv_pb env variances ind nargs u =
   match extended_mind_variance mind with
   | None -> infer_generic_instance_eq variances u
   | Some mind_variance ->
-    if not (Int.equal (inductive_cumulativity_arguments (mind,snd ind)) nargs)
+    if not (Int.equal (UCompare.inductive_cumulativity_arguments (mind,snd ind)) nargs)
     then infer_generic_instance_eq variances u
     else infer_cumulative_ind_instance cv_pb mind_variance variances u
 
@@ -153,7 +159,7 @@ let infer_constructor_instance_eq env variances ((mi,ind),ctor) nargs u =
   match extended_mind_variance mind with
   | None -> infer_generic_instance_eq variances u
   | Some _ ->
-    if not (Int.equal (constructor_cumulativity_arguments (mind,ind,ctor)) nargs)
+    if not (Int.equal (UCompare.constructor_cumulativity_arguments (mind,ind,ctor)) nargs)
     then infer_generic_instance_eq variances u
     else variances (* constructors are convertible at common supertype *)
 

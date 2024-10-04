@@ -29,35 +29,35 @@ Proof.
 Defined.
 
 Module Type TypeM.
-  Parameter m : Type2.
+  Parameter m@{i} : Type2@{i}.
 End TypeM.
 
 Module ProdM (XM : TypeM) (YM : TypeM) <: TypeM.
-  Definition m := XM.m * YM.m.
+  Definition m@{i} := XM.m@{i} * YM.m@{i}.
 End ProdM.
 
 Module Type FunctionM (XM YM : TypeM).
-  Parameter m : XM.m -> YM.m.
+  Parameter m@{i} : XM.m@{i} -> YM.m@{i}.
 End FunctionM.
 
 Module IdmapM (XM : TypeM) <: FunctionM XM XM.
-  Definition m := (fun x => x) : XM.m -> XM.m.
+  Definition m@{i} := (fun x => x) : XM.m@{i} -> XM.m.
 End IdmapM.
 
 Module Type HomotopyM (XM YM : TypeM) (fM gM : FunctionM XM YM).
-  Parameter m : forall x, fM.m x = gM.m x.
+  Parameter m@{i} : forall x, fM.m@{i} x = gM.m x.
 End HomotopyM.
 
 Module ComposeM (XM YM ZM : TypeM)
        (gM : FunctionM YM ZM) (fM : FunctionM XM YM)
        <: FunctionM XM ZM.
-  Definition m := (fun x => gM.m (fM.m x)).
+  Definition m@{i} := (fun x => gM.m@{i} (fM.m@{i} x)).
 End ComposeM.
 
 Module Type CorecM (YM ZM : TypeM) (fM : FunctionM YM ZM)
        (XM : TypeM) (gM : FunctionM XM ZM).
-  Parameter m : XM.m -> YM.m.
-  Parameter m_beta : forall x, fM.m (m x) = gM.m x.
+  Parameter m@{i} : XM.m@{i} -> YM.m@{i}.
+  Parameter m_beta@{i} : forall x, fM.m@{i} (m@{i} x) = gM.m x.
 End CorecM.
 
 Module Type CoindpathsM (YM ZM : TypeM) (fM : FunctionM YM ZM)
@@ -69,13 +69,13 @@ Module Type CoindpathsM (YM ZM : TypeM) (fM : FunctionM YM ZM)
 End CoindpathsM.
 
 Module Type Comodality (XM : TypeM).
-  Parameter m : Type2.
+  Parameter m@{i} : Type2@{i}.
   Module mM <: TypeM.
-    Definition m := m.
+    Definition m@{i} := m@{i}.
   End mM.
-  Parameter from : m -> XM.m.
+  Parameter from@{i} : m@{i} -> XM.m@{i}.
   Module fromM <: FunctionM mM XM.
-    Definition m := from.
+    Definition m@{i} := from@{i}.
   End fromM.
   Declare Module corecM : CorecM mM XM fromM.
   Declare Module coindpathsM : CoindpathsM mM XM fromM.
@@ -86,10 +86,10 @@ Module Comodality_Theory (F : Comodality).
   Module F_functor_M (XM YM : TypeM) (fM : FunctionM XM YM)
          (FXM : Comodality XM) (FYM : Comodality YM).
     Module f_o_from_M <: FunctionM FXM.mM YM.
-      Definition m := fun x => fM.m (FXM.from x).
+      Definition m@{i} := fun x => fM.m@{i} (FXM.from x).
     End f_o_from_M.
     Module mM := FYM.corecM FXM.mM f_o_from_M.
-    Definition m := mM.m.
+    Definition m@{i} := mM.m@{i}.
   End F_functor_M.
 
   Module F_prod_cmp_M (XM YM : TypeM)
@@ -97,15 +97,15 @@ Module Comodality_Theory (F : Comodality).
     Module PM := ProdM XM YM.
     Module PFM := ProdM FXM FYM.
     Module fstM <: FunctionM PM XM.
-      Definition m := @fst XM.m YM.m.
+      Definition m@{i} := @fst XM.m@{i} YM.m@{i}.
     End fstM.
     Module sndM <: FunctionM PM YM.
-      Definition m := @snd XM.m YM.m.
+      Definition m@{i} := @snd XM.m@{i} YM.m@{i}.
     End sndM.
     Module FPM := F PM.
     Module FfstM := F_functor_M PM XM fstM FPM FXM.
     Module FsndM := F_functor_M PM YM sndM FPM FYM.
-    Definition m : FPM.m -> PFM.m
+    Definition m@{i} : FPM.m@{i} -> PFM.m@{i}
       := fun z => (FfstM.m z , FsndM.m z).
   End F_prod_cmp_M.
 
@@ -117,7 +117,7 @@ Module Comodality_Theory (F : Comodality).
     Module FPM := cmpM.FPM.
     (** We construct an inverse to it using corecursion. *)
     Module prod_from_M <: FunctionM cmpM.PFM cmpM.PM.
-      Definition m : cmpM.PFM.m -> cmpM.PM.m
+      Definition m@{i} : cmpM.PFM.m@{i} -> cmpM.PM.m@{i}
         := fun z => ( FXM.from (fst z) , FYM.from (snd z) ).
     End prod_from_M.
     Module cmpinvM <: FunctionM cmpM.PFM FPM
@@ -129,11 +129,11 @@ Module Comodality_Theory (F : Comodality).
       := IdmapM FPM.
     Module cip_FPM := FPM.coindpathsM FPM cmpinv_o_cmp_M idmap_FPM.
     Module cip_FPHM <: HomotopyM FPM cmpM.PM cip_FPM.fhM cip_FPM.fkM.
-      Definition m : forall x, cip_FPM.fhM.m x = cip_FPM.fkM.m x.
+      Definition m@{i} : forall x, cip_FPM.fhM.m@{i} x = cip_FPM.fkM.m@{i} x.
       Proof.
         intros x.
         refine (concat (cmpinvM.m_beta (cmpM.m x)) _).
-        apply path_prod@{i i i}; simpl.
+        apply path_prod@{i i}; simpl.
         - exact (cmpM.FfstM.mM.m_beta x).
         - exact (cmpM.FsndM.mM.m_beta x).
       Defined.

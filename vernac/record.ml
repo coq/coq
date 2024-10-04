@@ -166,12 +166,12 @@ let is_sort_variable sigma s =
 
 let build_type_telescope ~unconstrained_sorts newps env0 sigma { DataI.arity; _ } = match arity with
   | None ->
-    let sigma, s = Evd.new_sort_variable Evd.univ_flexible_alg sigma in
+    let sigma, s = Evd.new_sort_variable Evd.univ_flexible sigma in
     sigma, (EConstr.mkSort s, s)
   | Some { CAst.v = CSort s; loc } when Constrexpr_ops.(sort_expr_eq expr_Type_sort s) ->
     (* special case: the user wrote ": Type". We want to allow it to become algebraic
        (and Prop but that may change in the future) *)
-    let sigma, s = Evd.new_sort_variable ?loc UState.univ_flexible_alg sigma in
+    let sigma, s = Evd.new_sort_variable ?loc UState.univ_flexible sigma in
     sigma, (EConstr.mkSort s, s)
   | Some t ->
     let env = EConstr.push_rel_context newps env0 in
@@ -501,7 +501,7 @@ let declare_projections indsp univs ?(kind=Decls.StructureComponent) inhabitant_
   let (mib,mip) = Global.lookup_inductive indsp in
   let poly = Declareops.inductive_is_polymorphic mib in
   let uinstance = match fst univs with
-    | Polymorphic_entry uctx -> UVars.UContext.instance uctx
+    | Polymorphic_entry uctx -> UVars.Instance.of_level_instance @@ UVars.UContext.instance uctx
     | Monomorphic_entry -> UVars.Instance.empty
   in
   let paramdecls = Inductive.inductive_paramdecls (mib, uinstance) in
@@ -842,10 +842,14 @@ let get_class_params : Data.t list -> Data.t = function
   | _ ->
     CErrors.user_err (str "Mutual definitional classes are not supported.")
 
+let fix_variances v =
+  if Array.for_all Option.is_empty v then None
+  else Some (Array.map (function None -> UVars.Variance.Invariant | Some v -> v) v)
+
 (* declare definitional class (typeclasses that are not record) *)
 (* [data] is a list with a single [Data.t] with a single field (in [Data.rdata])
    and [Data.is_coercion] must be [NoCoercion] *)
-let declare_class_constant ~univs paramimpls params data =
+let declare_class_constant ~univs ~variances paramimpls params data =
   let {Data.id; rdata; is_coercion; proj_flags; inhabitant_id} = get_class_params data in
   assert (not is_coercion);  (* should be ensured by caller *)
   let implfs = rdata.DataR.implfs in
@@ -857,8 +861,9 @@ let declare_class_constant ~univs paramimpls params data =
     | _ -> assert false in  (* should be ensured by caller *)
   let class_body = it_mkLambda_or_LetIn field params in
   let class_type = it_mkProd_or_LetIn rdata.DataR.arity params in
+  let variances = fix_variances variances in
   let class_entry =
-    Declare.definition_entry ~types:class_type ~univs class_body in
+    Declare.definition_entry ~types:class_type ~univs ?variances class_body in
   let cst = Declare.declare_constant ~name:id
       (Declare.DefinitionEntry class_entry) ~kind:Decls.(IsDefinition Definition)
   in
@@ -866,7 +871,7 @@ let declare_class_constant ~univs paramimpls params data =
     | UState.Monomorphic_entry _, ubinders ->
       UVars.Instance.empty, (UState.Monomorphic_entry Univ.ContextSet.empty, ubinders)
     | UState.Polymorphic_entry uctx, _ ->
-      UVars.UContext.instance uctx, univs
+      UVars.Instance.of_level_instance (UVars.UContext.instance uctx), univs
   in
   let cstu = (cst, inst) in
   let inst_type = appvectc (mkConstU cstu) (Context.Rel.instance mkRel 0 params) in
@@ -1053,7 +1058,7 @@ let definition_structure ~flags udecl kind ~primitive_proj (records : Ast.t list
     pre_process_structure ~auto_prop_lowering udecl kind ~poly records
   in
   let inds, def = match kind_class kind with
-    | DefClass -> declare_class_constant ~univs impargs params data
+    | DefClass -> declare_class_constant ~univs ~variances impargs params data
     | RecordClass | NotClass ->
       let structure =
         interp_structure_core

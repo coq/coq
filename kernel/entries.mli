@@ -72,6 +72,7 @@ type definition_entry = {
   definition_entry_secctx : Id.Set.t option;
   definition_entry_type : types option;
   definition_entry_universes : universes_entry;
+  definition_entry_variance : Declarations.variances option;
   definition_entry_inline_code : bool;
 }
 

@@ -106,7 +106,7 @@ let subst_const_def subst def = match def with
 
 let subst_const_body subst cb =
   (* we're outside sections *)
-  assert (List.is_empty cb.const_hyps && UVars.Instance.is_empty cb.const_univ_hyps);
+  assert (List.is_empty cb.const_hyps && UVars.LevelInstance.is_empty cb.const_univ_hyps);
   if is_empty_subst subst then cb
   else
     let body' = subst_const_def subst cb.const_body in
@@ -115,12 +115,13 @@ let subst_const_body subst cb =
     then cb
     else
       { const_hyps = [];
-        const_univ_hyps = UVars.Instance.empty;
+        const_univ_hyps = UVars.LevelInstance.empty;
         const_body = body';
         const_type = type';
         const_body_code =
           Option.map (Vmemitcodes.subst_body_code subst) cb.const_body_code;
         const_universes = cb.const_universes;
+        const_variance = cb.const_variance;
         const_relevance = cb.const_relevance;
         const_inline_code = cb.const_inline_code;
         const_typing_flags = cb.const_typing_flags }
@@ -265,12 +266,12 @@ let subst_mind_record subst r = match r with
 
 let subst_mind_body subst mib =
   (* we're outside sections *)
-  assert (List.is_empty mib.mind_hyps && UVars.Instance.is_empty mib.mind_univ_hyps);
+  assert (List.is_empty mib.mind_hyps && UVars.LevelInstance.is_empty mib.mind_univ_hyps);
   { mind_record = subst_mind_record subst mib.mind_record ;
     mind_finite = mib.mind_finite ;
     mind_ntypes = mib.mind_ntypes ;
     mind_hyps = [];
-    mind_univ_hyps = UVars.Instance.empty;
+    mind_univ_hyps = UVars.LevelInstance.empty;
     mind_nparams = mib.mind_nparams;
     mind_nparams_rec = mib.mind_nparams_rec;
     mind_params_ctxt =

@@ -929,7 +929,6 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq_evars eq le
     Projection.CanOrd.equal p1 p2 && eq 0 c1 c2
   | Evar (e1,l1), Evar (e2,l2) -> eq_evars (e1, l1) (e2, l2)
   | Const (c1,u1), Const (c2,u2) ->
-    (* The args length currently isn't used but may as well pass it. *)
     Constant.CanOrd.equal c1 c2 && leq_universes (Some (GlobRef.ConstRef c1, nargs)) u1 u2
   | Ind (c1,u1), Ind (c2,u2) -> Ind.CanOrd.equal c1 c2 && leq_universes (Some (GlobRef.IndRef c1, nargs)) u1 u2
   | Construct (c1,u1), Construct (c2,u2) ->
@@ -1549,7 +1548,7 @@ let debug_print_fix pr_constr ((t,i),(lna,tl,bl)) =
 
 let pr_puniverses p u =
   if UVars.Instance.is_empty u then p
-  else Pp.(p ++ str"(*" ++ UVars.Instance.pr Sorts.QVar.raw_pr Univ.Level.raw_pr u ++ str"*)")
+  else Pp.(p ++ str"(*" ++ UVars.Instance.pr Sorts.QVar.raw_pr (Univ.Universe.pr Univ.Level.raw_pr) u ++ str"*)")
 
 let rec debug_print c =
   let open Pp in
@@ -1612,7 +1611,7 @@ let rec debug_print c =
   | String s -> str"String("++str (Printf.sprintf "%S" (Pstring.to_string s)) ++ str")"
   | Array(u,t,def,ty) -> str"Array(" ++ prlist_with_sep pr_comma debug_print (Array.to_list t) ++ str" | "
       ++ debug_print def ++ str " : " ++ debug_print ty
-      ++ str")@{" ++ UVars.Instance.pr Sorts.QVar.raw_pr Univ.Level.raw_pr u ++ str"}"
+      ++ str")@{" ++ UVars.Instance.pr Sorts.QVar.raw_pr (Univ.Universe.pr Univ.Level.raw_pr) u ++ str"}"
 
 and debug_invert = let open Pp in function
   | NoInvert -> mt()

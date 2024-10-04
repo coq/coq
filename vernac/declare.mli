@@ -104,6 +104,7 @@ module Info : sig
     -> ?kind : Decls.logical_kind
     (** Theorem, etc... *)
     -> ?udecl : UState.universe_decl
+    -> ?variances : Declarations.variances
     -> ?scope : Locality.definition_scope
     (** locality  *)
     -> ?clearbody:bool
@@ -356,6 +357,7 @@ val definition_entry
   -> ?inline:bool
   -> ?types:Constr.types
   -> ?univs:UState.named_universes_entry
+  -> ?variances:Declarations.variances
   -> Constr.constr
   -> proof_entry
 

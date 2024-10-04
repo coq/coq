@@ -8,7 +8,7 @@ Constraint u = u0.
 Fail Check idu1 Type@{u}.
 (* The command has indeed failed with message:
 The term "Type" has type "Type@{u+1}" while it is expected to have type
-"Type@{u1}" (universe inconsistency: Cannot enforce u < u1 because u1 <= u0 = u).
+"Type@{u1}" (universe inconsistency: Cannot enforce u < u1 because u1 < u1+1 = u+1).
  *)
 
 (* kernel error *)
@@ -18,7 +18,7 @@ Illegal application:
 The term "idu1" of type "Type -> Type"
 cannot be applied to the term
  "Type" : "Type"
-This term has type "Type@{u+1}" which should be coercible to
+This term has type "Type@{u+1}" which should be a subtype of
 "Type@{u1}".
 *)
 

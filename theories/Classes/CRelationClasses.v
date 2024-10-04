@@ -25,15 +25,29 @@ Generalizable Variables A B C D R S T U l eqA eqB eqC eqD.
 
 Set Universe Polymorphism.
 
-Definition crelation (A : Type) := A -> A -> Type.
+Definition crelation@{*a +ra} (A : Type@{a}) := A -> A -> Type@{ra}.
 
-Definition arrow (A B : Type) := A -> B.
+Definition arrow@{*a *b} (A : Type@{a}) (B : Type@{b}) := A -> B.
 
-Definition flip {A B C : Type} (f : A -> B -> C) := fun x y => f y x.
+Definition flip@{*a *b *c} {A : Type@{a}} {B : Type@{b}} {C : Type@{c}} (f : A -> B -> C) := fun x y => f y x.
 
-Definition iffT (A B : Type) := ((A -> B) * (B -> A))%type.
+Class subrelation@{*a *ra *ra'} {A : Type@{a}} (R : crelation@{a ra} A) (R' : crelation@{a ra'} A) :=
+  is_subrelation : forall {x y}, R x y -> R' x y.
 
-Global Typeclasses Opaque flip arrow iffT.
+Module Import TypeProduct.
+
+Cumulative Record prodT A B :=
+ { fst : A; snd : B }.
+Arguments fst {A B}.
+Arguments snd {A B}.
+
+End TypeProduct.
+
+Definition iffT@{*a *b} (A : Type@{a}) (B : Type@{b}) := (prodT@{max(a,b) max(a,b)} (A -> B) (B -> A))%type.
+
+Cumulative Inductive sumT A B :=
+| inlt : A -> sumT A B
+| inrt : B -> sumT A B.
 
 (** We allow to unfold the [crelation] definition while doing morphism search. *)
 
@@ -67,17 +81,19 @@ Section Defs.
   Class Transitive (R : crelation A) :=
     transitivity : forall {x y z}, R x y -> R y z -> R x z.
 
+  Arguments transitivity {R Transitive x} y {z}.
+
   (** Various combinations of reflexivity, symmetry and transitivity. *)
   
   (** A [PreOrder] is both Reflexive and Transitive. *)
 
-  Class PreOrder (R : crelation A)  := {
+  Cumulative Class PreOrder (R : crelation A)  := {
     #[global] PreOrder_Reflexive :: Reflexive R | 2 ;
     #[global] PreOrder_Transitive :: Transitive R | 2 }.
 
   (** A [StrictOrder] is both Irreflexive and Transitive. *)
 
-  Class StrictOrder (R : crelation A)  := {
+  Cumulative Class StrictOrder (R : crelation A)  := {
     #[global] StrictOrder_Irreflexive :: Irreflexive R ;
     #[global] StrictOrder_Transitive :: Transitive R }.
 
@@ -87,13 +103,13 @@ Section Defs.
 
   (** A partial equivalence crelation is Symmetric and Transitive. *)
   
-  Class PER (R : crelation A)  := {
+  Cumulative Class PER (R : crelation A)  := {
     #[global] PER_Symmetric :: Symmetric R | 3 ;
     #[global] PER_Transitive :: Transitive R | 3 }.
 
   (** Equivalence crelations. *)
 
-  Class Equivalence (R : crelation A)  := {
+  Cumulative Class Equivalence (R : crelation A)  := {
     #[global] Equivalence_Reflexive :: Reflexive R ;
     #[global] Equivalence_Symmetric :: Symmetric R ;
     #[global] Equivalence_Transitive :: Transitive R }.
@@ -108,9 +124,6 @@ Section Defs.
   
   Class Antisymmetric eqA `{equ : Equivalence eqA} (R : crelation A) :=
     antisymmetry : forall {x y}, R x y -> R y x -> eqA x y.
-
-  Class subrelation (R R' : crelation A) :=
-    is_subrelation : forall {x y}, R x y -> R' x y.
   
   (** Any symmetric crelation is equal to its inverse. *)
   
@@ -132,7 +145,7 @@ Section Defs.
       fun x y H H' => asymmetry (R:=R) H H'.
     
     Program Definition flip_Transitive `(Transitive R) : Transitive (flip R) :=
-      fun x y z H H' => transitivity (R:=R) H' H.
+      fun x y z H H' => transitivity (R:=R) _ H' H.
 
     Program Lemma flip_Antisymmetric `(Antisymmetric eqA R) :
       Antisymmetric eqA (flip R).
@@ -195,6 +208,8 @@ Section Defs.
   End Leibniz.
   
 End Defs.
+
+Global Arguments transitivity {A R Transitive x} y {z}.
 
 (** Default rewrite crelations handled by [setoid_rewrite]. *)
 #[global]
@@ -333,10 +348,10 @@ Section Binary.
   Defined.
 
   Definition relation_conjunction (R : crelation A) (R' : crelation A) : crelation A :=
-    fun x y => prod (R x y) (R' x y).
+    fun x y => prodT (R x y) (R' x y).
 
   Definition relation_disjunction (R : crelation A) (R' : crelation A) : crelation A :=
-    fun x y => sum (R x y) (R' x y).
+    fun x y => sumT (R x y) (R' x y).
   
   (** Relation equivalence is an equivalence, and subrelation defines a partial order. *)
 

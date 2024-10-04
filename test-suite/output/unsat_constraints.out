@@ -1,5 +1,5 @@
 File "./output/unsat_constraints.v", line 22, characters 2-15:
 The command has indeed failed with message:
-Unsatisfied constraints: v < w
-                         u <= w
+Unsatisfied constraints: u <= w
+                         v+1 <= w
 (maybe a bugged tactic).

@@ -15,7 +15,7 @@ Fixpoint In (a : A) (s : set) {struct s} : Prop :=
   | Add b s' => a = b \/ In a s'
   end.
 
-Definition same (s t : set) : Prop := forall a : A, In a s <-> In a t.
+Definition same (s t : set) : Prop := forall a : A, iff (In a s) (In a t).
 
 Lemma setoid_set : Setoid_Theory set same.
 
@@ -230,7 +230,7 @@ End InType.
 
 Module Polymorphism.
 Require Import CRelationClasses CMorphisms.
-
+Set Universe Polymorphism.
 #[universes(polymorphic, cumulative)]
 Inductive plist@{i} (A : Type@{i}) : Type@{i} :=
 | pnil : plist A
@@ -280,11 +280,14 @@ Axiom add_0_r_peq : forall x : nat, peq (x + 0)%nat x.
 Instance peq_left {A : Type} {B : Type} {R : crelation B} (f : A -> B) `{Reflexive B R} : Proper (peq ==> R) f.
 Admitted.
 
-#[export] Instance reflexive_eq_dom_reflexive@{i j jr mij mijr} {A : Type@{i}} {B : Type@{j}} (R : crelation@{j jr} B) :
+#[universes(polymorphic), export]
+Instance reflexive_eq_dom_reflexive@{i j jr ?}
+ {A : Type@{i}} {B : Type@{j}} (R : crelation@{j jr} B) :
   Reflexive@{j jr} R ->
-  Reflexive@{mij mijr} (@peq A ==> R)%signatureT.
+  Reflexive (respectful (@peq A) R)%signatureT.
 Proof.
   intros hr x ? ? e. destruct e. apply hr.
+  Show Proof.
 Qed.
 
 #[universes(polymorphic), export]
@@ -321,6 +324,7 @@ Proof.
   setoid_rewrite add_0_r_peq in a.
   exact a.
 Qed.
+Check rewrite_all_in@{Set}.
 
 Lemma rewrite_all_in2 {l : plist nat} (Q : nat -> Type) (R : nat -> Type) :
   All (fun x => pprod (Q (x + 0)%nat) (R x))%type l ->
@@ -330,4 +334,6 @@ Proof.
   setoid_rewrite add_0_r_peq in a.
   exact a.
 Qed.
+Check rewrite_all_in2@{0 0}.
+
 End Polymorphism.

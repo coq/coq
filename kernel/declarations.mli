@@ -58,6 +58,8 @@ type universes =
   | Monomorphic
   | Polymorphic of UVars.AbstractContext.t
 
+type variances = UVars.Variance.t array
+
 (** The [typing_flags] are instructions to the type-checker which
     modify its behaviour. The typing flags used in the type-checking
     of a constant are tracked in their {!constant_body} so that they
@@ -106,13 +108,14 @@ type typing_flags = {
  * the OpaqueDef *)
 type ('opaque, 'bytecode) pconstant_body = {
     const_hyps : Constr.named_context; (** younger hyp at top *)
-    const_univ_hyps : UVars.Instance.t;
+    const_univ_hyps : UVars.LevelInstance.t;
     const_body : (Constr.t, 'opaque, bool) constant_def;
                     (** [bool] is for [unfold_fix] in symbols *)
     const_type : types;
     const_relevance : Sorts.relevance;
     const_body_code : 'bytecode;
     const_universes : universes;
+    const_variance : variances option;
     const_inline_code : bool;
     const_typing_flags : typing_flags; (** The typing options which
                                            were used for
@@ -263,7 +266,7 @@ type mutual_inductive_body = {
 
     mind_hyps : Constr.named_context;  (** Section hypotheses on which the block depends *)
 
-    mind_univ_hyps : UVars.Instance.t; (** Section polymorphic universes. *)
+    mind_univ_hyps : UVars.LevelInstance.t; (** Section polymorphic universes. *)
 
     mind_nparams : int;  (** Number of expected parameters including non-uniform ones (i.e. length of mind_params_ctxt w/o let-in) *)
 
@@ -275,9 +278,9 @@ type mutual_inductive_body = {
 
     mind_template : template_universes option;
 
-    mind_variance : UVars.Variance.t array option; (** Variance info, [None] when non-cumulative. *)
+    mind_variance : variances option; (** Variance info, [None] when non-cumulative. *)
 
-    mind_sec_variance : UVars.Variance.t array option;
+    mind_sec_variance : variances option;
     (** Variance info for section polymorphic universes. [None]
        outside sections. The final variance once all sections are
        discharged is [mind_sec_variance ++ mind_variance]. *)

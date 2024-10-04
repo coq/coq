@@ -65,7 +65,7 @@ Module Bad.
   Include PointwiseCore.
   Definition functor_uncurried `{Funext} (P : PreCategory -> Type)
              (has_functor_categories : forall C D : sub_pre_cat P, P (C -> D))
-  : object (((sub_pre_cat P)^op * (sub_pre_cat P)) -> (sub_pre_cat P))
+  : object (((sub_pre_cat P)^op * (sub_pre_cat P)) -> (sub_pre_cat@{_ _ _ _ 0} P))
     := Eval cbv zeta in
         let object_of := (fun CD => (((fst CD) -> (snd CD))))
         in Build_Functor

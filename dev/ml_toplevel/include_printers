@@ -38,6 +38,7 @@
 #install_printer (* qvar set *) Top_printers.ppqvarset;;
 #install_printer (* univ set *) Top_printers.ppuniverse_set;;
 #install_printer (* univ instance *) Top_printers.ppuniverse_instance;;
+#install_printer (* univ level instance *) Top_printers.ppuniverse_level_instance;;
 #install_printer (* univ subst *) Top_printers.ppuniverse_subst;;
 #install_printer (* univ full subst *) Top_printers.ppuniverse_level_subst;;
 #install_printer Top_printers.ppqvar_subst;;

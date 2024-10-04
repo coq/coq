@@ -151,7 +151,9 @@ module Prim :
     val name : lname Entry.t
     val identref : lident Entry.t
     val univ_decl : universe_decl_expr Entry.t
+    val cumul_univ_decl : cumul_univ_decl_expr Entry.t
     val ident_decl : ident_decl Entry.t
+    val cumul_ident_decl : cumul_ident_decl Entry.t
     val pattern_ident : lident Entry.t
     val base_ident : Id.t Entry.t
     val bignat : string Entry.t
@@ -185,6 +187,7 @@ module Constr :
     val ident : Id.t Entry.t
     val global : qualid Entry.t
     val universe_name : sort_name_expr Entry.t
+    val universe : universe_expr Entry.t
     val sort : sort_expr Entry.t
     val sort_family : Sorts.family Entry.t
     val pattern : cases_pattern_expr Entry.t

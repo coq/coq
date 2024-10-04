@@ -79,6 +79,7 @@ module Info = struct
     ; inline : bool
     ; kind : Decls.logical_kind
     ; udecl : UState.universe_decl
+    ; variances : Declarations.variances option
     ; scope : Locality.definition_scope
     ; clearbody : bool (* always false for non Discharge scope *)
     ; hook : Hook.t option
@@ -90,9 +91,9 @@ module Info = struct
   (** Note that [opaque] doesn't appear here as it is not known at the
      start of the proof in the interactive case. *)
   let make ?(poly=false) ?(inline=false) ?(kind=Decls.(IsDefinition Definition))
-      ?(udecl=UState.default_univ_decl) ?(scope=Locality.default_scope)
+      ?(udecl=UState.default_univ_decl) ?variances ?(scope=Locality.default_scope)
       ?(clearbody=false) ?hook ?typing_flags ?user_warns ?(ntns=[]) () =
-    { poly; inline; kind; udecl; scope; hook; typing_flags; clearbody; user_warns; ntns }
+    { poly; inline; kind; udecl; variances; scope; hook; typing_flags; clearbody; user_warns; ntns }
 
 end
 
@@ -136,6 +137,7 @@ type 'body pproof_entry = {
      - the initial uctx if opaque deferred;
      - the uctx of type only if opaque private;
      - the full uctx otherwise *)
+  proof_entry_variances   : Declarations.variances option;
   proof_entry_inline_code : bool;
 }
 
@@ -169,7 +171,7 @@ let extract_monomorphic = function
 
 let instance_of_univs = function
   | UState.Monomorphic_entry _, _ -> UVars.Instance.empty
-  | UState.Polymorphic_entry uctx, _ -> UVars.UContext.instance uctx
+  | UState.Polymorphic_entry uctx, _ -> UVars.Instance.of_level_instance (UVars.UContext.instance uctx)
 
 let add_mono_univ_uctx_for_derived ctx' = function
   | UState.Monomorphic_entry ctx, ubinders -> UState.Monomorphic_entry (Univ.ContextSet.union ctx ctx'), ubinders
@@ -264,25 +266,41 @@ let make_univs_immediate ~poly ?keep_body_ucst_separate ~opaque ~uctx ~udecl ~ef
   then make_univs_immediate_private_poly ~uctx ~udecl ~eff body typ
   else make_univs_immediate_default ~poly ~opaque ~uctx ~udecl ~eff body typ
 
+let extend_variances (univs, _) variances =
+  match univs with
+  | UState.Monomorphic_entry _ ->
+    if Option.is_empty variances then variances
+    else CErrors.user_err Pp.(str"Variance annotations on global universes are not allowed")
+  | UState.Polymorphic_entry uctx ->
+    let _, ulen = UVars.UContext.size uctx in
+    let extend vars =
+      if Array.length vars = ulen then vars
+      else if Array.length vars > ulen then CErrors.user_err Pp.(str"More variance annotations than bound universes")
+      else Array.append vars (Array.make (ulen - Array.length vars) UVars.Variance.Invariant)
+    in
+    Option.map extend variances
+
 (** [univsbody] are universe-constraints attached to the body-only,
    used in vio-delayed opaque constants and private poly universes *)
 let definition_entry_core ?using ?(inline=false) ?types
-    ?(univs=default_named_univ_entry) body =
+    ?(univs=default_named_univ_entry) ?variances body =
+  let variances = extend_variances univs variances in
   { proof_entry_body = body;
     proof_entry_secctx = using;
     proof_entry_type = types;
     proof_entry_universes = univs;
+    proof_entry_variances = variances;
     proof_entry_inline_code = inline}
 
-let pure_definition_entry ?(opaque=Transparent) ?using ?inline ?types ?univs body =
-  definition_entry_core ?using ?inline ?types ?univs body
+let pure_definition_entry ?(opaque=Transparent) ?using ?inline ?types ?univs ?variances body =
+  definition_entry_core ?using ?inline ?types ?univs ?variances body
 
-let definition_entry ?(opaque=false) ?using ?inline ?types ?univs body =
+let definition_entry ?(opaque=false) ?using ?inline ?types ?univs ?variances body =
   let opaque = if opaque then Opaque Univ.ContextSet.empty else Transparent in
-  definition_entry_core ?using ?inline ?types ?univs (Default { body = (body, Evd.empty_side_effects); opaque })
+  definition_entry_core ?using ?inline ?types ?univs ?variances (Default { body = (body, Evd.empty_side_effects); opaque })
 
-let delayed_definition_entry ?feedback_id ?using ~univs ?types body =
-  definition_entry_core ?using ?types ~univs (DeferredOpaque { body; feedback_id })
+let delayed_definition_entry ?feedback_id ?using ~univs ?variances ?types body =
+  definition_entry_core ?using ?types ~univs ?variances (DeferredOpaque { body; feedback_id })
 
 let parameter_entry ?inline ?(univs=default_named_univ_entry) typ = {
   parameter_entry_secctx = None;
@@ -503,6 +521,7 @@ let cast_pure_proof_entry (e : Constr.constr pproof_entry) =
     definition_entry_secctx = e.proof_entry_secctx;
     definition_entry_type = e.proof_entry_type;
     definition_entry_universes = univ_entry;
+    definition_entry_variance = e.proof_entry_variances;
     definition_entry_inline_code = e.proof_entry_inline_code;
   },
   ctx
@@ -722,7 +741,7 @@ let declare_variable ~name ~kind ~typing_flags d =
         | UState.Polymorphic_entry uctx ->
           Global.push_section_context uctx;
           let mk_anon_names u =
-            let qs, us = UVars.Instance.to_array u in
+            let qs, us = UVars.LevelInstance.to_array u in
             Array.make (Array.length qs) Anonymous, Array.make (Array.length us) Anonymous
           in
           Global.push_section_context
@@ -737,6 +756,7 @@ let declare_variable ~name ~kind ~typing_flags d =
             proof_entry_secctx = None; (* de.proof_entry_secctx is NOT respected *)
             proof_entry_type = de.proof_entry_type;
             proof_entry_universes = univs;
+            proof_entry_variances = de.proof_entry_variances; (* FIXME can it have variance?? *)
             proof_entry_inline_code = de.proof_entry_inline_code;
           }
           in
@@ -1042,11 +1062,13 @@ let check_evars_are_solved env sigma t =
   if not (Evar.Set.is_empty evars) then error_unresolved_evars env sigma t evars
 
 let prepare_definition ~info ~opaque ?using ~name ~body ~typ sigma =
-  let { Info.poly; udecl; inline; _ } = info in
+  let { Info.poly; udecl; inline; variances; _ } = info in
   let env = Global.env () in
   Option.iter (check_evars_are_solved env sigma) typ;
   check_evars_are_solved env sigma body;
-  let sigma = Evd.minimize_universes sigma in
+  let inferred_variances = UnivVariances.universe_variances env sigma (Option.cata (fun typ -> [typ;body]) [body] typ) in
+  let sigma = Evd.minimize_universes ~variances:inferred_variances sigma in
+  let uctx = Evd.ustate sigma in
   let using =
     let f (name, body, typ) =
       name, Option.List.flatten [ Some body; typ ] in
@@ -1054,9 +1076,8 @@ let prepare_definition ~info ~opaque ?using ~name ~body ~typ sigma =
   in
   let body = EConstr.to_constr sigma body in
   let typ = Option.map (EConstr.to_constr sigma) typ in
-  let uctx = Evd.ustate sigma in
   let uctx, univs, body = make_univs_immediate ~poly ~opaque ~uctx ~udecl ~eff:Evd.empty_side_effects body typ in
-  let entry = definition_entry_core ?using ~inline ?types:typ ~univs body in
+  let entry = definition_entry_core ?using ~inline ?types:typ ~univs ?variances body in
   entry, uctx
 
 let declare_definition_core ~info ~cinfo ~opaque ~obls ~body ?using sigma =
@@ -1173,14 +1194,13 @@ module ProgramDecl = struct
             obls
         , b )
     in
-    let prg_uctx = UState.make_flexible_nonalgebraic uctx in
     { prg_cinfo = { cinfo with CInfo.typ = reduce cinfo.CInfo.typ }
     ; prg_info = info
     ; prg_using = using
     ; prg_hook = obl_hook
     ; prg_opaque = opaque
     ; prg_body = body
-    ; prg_uctx
+    ; prg_uctx = uctx
     ; prg_obligations = {obls = obls'; remaining = Array.length obls'}
     ; prg_deps = deps
     ; prg_possible_guard = possible_guard
