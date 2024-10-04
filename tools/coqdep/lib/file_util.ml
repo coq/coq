@@ -10,8 +10,9 @@
 
 let to_relative_path : string -> string = fun full_path ->
   if Filename.is_relative full_path then full_path else
-  let cwd  = String.split_on_char '/' (Sys.getcwd ()) in
-  let path = String.split_on_char '/' full_path in
+  let re_delim = if Sys.win32 then "[/\\]" else "/" in
+  let cwd = Str.split_delim (Str.regexp re_delim) (Sys.getcwd ()) in
+  let path = Str.split_delim (Str.regexp re_delim) full_path in
   let rec remove_common_prefix l1 l2 =
     match (l1, l2) with
     | (x1 :: l1, x2 :: l2) when x1 = x2 -> remove_common_prefix l1 l2
