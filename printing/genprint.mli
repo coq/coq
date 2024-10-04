@@ -45,7 +45,7 @@ val register_print0 : ('raw, 'glb, 'top) genarg_type ->
   'raw printer -> 'glb printer -> 'top top_printer -> unit
 val register_val_print0 : 'top Geninterp.Val.typ ->
   'top top_printer -> unit
-val register_vernac_print0 : ('raw, 'glb, 'top) genarg_type ->
+val register_vernac_print0 : 'raw vernac_genarg_type ->
   'raw printer -> unit
 
 val generic_raw_print : rlevel generic_argument printer
