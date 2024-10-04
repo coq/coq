@@ -1861,7 +1861,17 @@ struct
     CList.compare compare_can_expr x y
 end
 
-module PathSet = Set.Make(Path)
+module PathSet =
+struct
+  include Set.Make(Path)
+
+  let filter_map p l =
+    fold (fun x acc ->
+      match p x with
+      | None -> remove x acc
+      | Some x' -> if x' == x then acc else add x' (remove x acc)) l l
+
+end
 
 module Status = struct
   (* module Internal = Hashtbl.Make(CN) *)
