@@ -23,27 +23,31 @@ Set Firstorder Depth 2.
 Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
   Local Ltac Tauto.intuition_solver ::= auto with bool set.
 
+  #[sealed]
   Definition empty : {s : t | Empty s}.
   Proof.
     exists empty; auto with set.
-  Qed.
+  Defined.
 
+  #[sealed]
   Definition is_empty : forall s : t, {Empty s} + {~ Empty s}.
   Proof.
     intros; generalize (is_empty_1 (s:=s)) (is_empty_2 (s:=s)).
     case (is_empty s); intuition.
-  Qed.
+  Defined.
 
 
+  #[sealed]
   Definition mem : forall (x : elt) (s : t), {In x s} + {~ In x s}.
   Proof.
     intros; generalize (mem_1 (s:=s) (x:=x)) (mem_2 (s:=s) (x:=x)).
     case (mem x s); intuition.
-  Qed.
+  Defined.
 
   Definition Add (x : elt) (s s' : t) :=
     forall y : elt, In y s' <-> E.eq x y \/ In y s.
 
+  #[sealed]
   Definition add : forall (x : elt) (s : t), {s' : t | Add x s s'}.
   Proof.
     intros; exists (add x s); auto.
@@ -51,14 +55,16 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
     elim (E.eq_dec x y); auto.
     intros; right.
     eapply add_3; eauto.
-  Qed.
+  Defined.
 
+  #[sealed]
   Definition singleton :
     forall x : elt, {s : t | forall y : elt, In y s <-> E.eq x y}.
   Proof.
     intros; exists (singleton x); intuition.
-  Qed.
+  Defined.
 
+  #[sealed]
   Definition remove :
     forall (x : elt) (s : t),
     {s' : t | forall y : elt, In y s' <-> ~ E.eq x y /\ In y s}.
@@ -70,40 +76,45 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
       + absurd (In x (remove x s)); auto with set ordered_type.
         apply In_1 with y; auto with ordered_type.
       + eauto with set.
-  Qed.
+  Defined.
 
+  #[sealed]
   Definition union :
     forall s s' : t, {s'' : t | forall x : elt, In x s'' <-> In x s \/ In x s'}.
   Proof.
     intros; exists (union s s'); intuition.
-  Qed.
+  Defined.
 
+  #[sealed]
   Definition inter :
     forall s s' : t, {s'' : t | forall x : elt, In x s'' <-> In x s /\ In x s'}.
   Proof.
     intros; exists (inter s s'); intuition; eauto with set.
-  Qed.
+  Defined.
 
+  #[sealed]
   Definition diff :
     forall s s' : t, {s'' : t | forall x : elt, In x s'' <-> In x s /\ ~ In x s'}.
   Proof.
     intros; exists (diff s s'); intuition; eauto with set.
     absurd (In x s'); eauto with set.
-  Qed.
+  Defined.
 
+  #[sealed]
   Definition equal : forall s s' : t, {Equal s s'} + {~ Equal s s'}.
   Proof.
     intros.
     generalize (equal_1 (s:=s) (s':=s')) (equal_2 (s:=s) (s':=s')).
     case (equal s s'); intuition.
-  Qed.
+  Defined.
 
+  #[sealed]
   Definition subset : forall s s' : t, {Subset s s'} + {~Subset s s'}.
   Proof.
     intros.
     generalize (subset_1 (s:=s) (s':=s')) (subset_2 (s:=s) (s':=s')).
     case (subset s s'); intuition.
-  Qed.
+  Defined.
 
   Definition elements :
     forall s : t,
@@ -112,20 +123,22 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
      intros; exists (elements s); intuition.
    Defined.
 
+  #[sealed]
   Definition fold :
     forall (A : Type) (f : elt -> A -> A) (s : t) (i : A),
     {r : A |   let (l,_) := elements s in
                   r = fold_left (fun a e => f e a) l i}.
   Proof.
   intros; exists (fold (A:=A) f s i); exact (fold_1 s i f).
-  Qed.
+  Defined.
 
+  #[sealed]
   Definition cardinal :
       forall s : t,
       {r : nat | let (l,_) := elements s in r = length l }.
   Proof.
     intros; exists (cardinal s); exact (cardinal_1 s).
-  Qed.
+  Defined.
 
   Definition fdec (P : elt -> Prop) (Pdec : forall x : elt, {P x} + {~ P x})
     (x : elt) := if Pdec x then true else false.
@@ -141,6 +154,7 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
   #[global]
   Hint Resolve compat_P_aux : core.
 
+  #[sealed]
   Definition filter :
     forall (P : elt -> Prop) (Pdec : forall x : elt, {P x} + {~ P x}) (s : t),
     {s' : t | compat_P E.eq P -> forall x : elt, In x s' <-> In x s /\ P x}.
@@ -157,8 +171,9 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
     - apply filter_3; auto.
       unfold fdec; simpl.
       case (Pdec x); intuition.
-  Qed.
+  Defined.
 
+  #[sealed]
   Definition for_all :
     forall (P : elt -> Prop) (Pdec : forall x : elt, {P x} + {~ P x}) (s : t),
     {compat_P E.eq P -> For_all P s} + {compat_P E.eq P -> ~ For_all P s}.
@@ -178,8 +193,9 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
       intro.
       unfold fdec.
       case (Pdec x); intuition.
-  Qed.
+  Defined.
 
+  #[sealed]
   Definition exists_ :
     forall (P : elt -> Prop) (Pdec : forall x : elt, {P x} + {~ P x}) (s : t),
     {compat_P E.eq P -> Exists P s} + {compat_P E.eq P -> ~ Exists P s}.
@@ -201,8 +217,9 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
       exists x; intuition.
       unfold fdec.
       case (Pdec x); intuition.
-  Qed.
+  Defined.
 
+  #[sealed]
   Definition partition :
     forall (P : elt -> Prop) (Pdec : forall x : elt, {P x} + {~ P x}) (s : t),
     {partition : t * t |
@@ -245,15 +262,16 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
     - eapply (filter_1 (s:=s) (x:=x) H2); elim (H4 x); intros B _; apply B;
         auto.
     - eapply (filter_1 (s:=s) (x:=x) H3); elim (H x); intros B _; apply B; auto.
-  Qed.
+  Defined.
 
+  #[sealed]
   Definition choose_aux: forall s : t,
     { x : elt | M.choose s = Some x } + { M.choose s = None }.
   Proof.
    intros.
    destruct (M.choose s); [left | right]; auto.
    exists e; auto.
-  Qed.
+  Defined.
 
   Definition choose : forall s : t, {x : elt | In x s} + {Empty s}.
   Proof.
@@ -306,6 +324,7 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
    - apply Hx with x'; unfold Equal in H; rewrite H; auto.
   Qed.
 
+  #[sealed]
   Definition min_elt :
     forall s : t,
     {x : elt | In x s /\ For_all (fun y => ~ E.lt y x) s} + {Empty s}.
@@ -314,8 +333,9 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
      generalize (min_elt_1 (s:=s)) (min_elt_2 (s:=s)) (min_elt_3 (s:=s)).
     case (min_elt s); [ left | right ]; auto.
     exists e; unfold For_all; eauto.
-  Qed.
+  Defined.
 
+  #[sealed]
   Definition max_elt :
     forall s : t,
     {x : elt | In x s /\ For_all (fun y => ~ E.lt x y) s} + {Empty s}.
@@ -324,7 +344,7 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
      generalize (max_elt_1 (s:=s)) (max_elt_2 (s:=s)) (max_elt_3 (s:=s)).
     case (max_elt s); [ left | right ]; auto.
     exists e; unfold For_all; eauto.
-  Qed.
+  Defined.
 
   Definition elt := elt.
   Definition t := t.

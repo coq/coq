@@ -69,7 +69,12 @@ let rec partial_order cmp = function
       in link y
     in browse (partial_order cmp rest) [] xge
 
-let non_full_mutual_message x xge y yge isfix rest =
+let string_of_kind = function
+  | Decls.IsDefinition Fixpoint -> "fixpoint"
+  | IsDefinition CoFixpoint -> "cofixpoint"
+  | _ -> "declaration"
+
+let non_full_mutual_message x xge y yge kind rest =
   let reason =
     if Id.List.mem x yge then
       Id.print y ++ str " depends on " ++ Id.print x ++ strbrk " but not conversely"
@@ -78,26 +83,24 @@ let non_full_mutual_message x xge y yge isfix rest =
     else
       Id.print y ++ str " and " ++ Id.print x ++ strbrk " are not mutually dependent" in
   let e = if List.is_empty rest then reason else strbrk "e.g., " ++ reason in
-  let k = Decls.(match isfix with Fixpoint -> "defined fixpoint" | CoFixpoint -> "defined cofixpoint" | _ -> "dependent definition") in
   let w =
-    if isfix <> Decls.CoFixpoint
+    if kind <> Decls.IsDefinition CoFixpoint
     then strbrk "Well-foundedness check may fail unexpectedly." ++ fnl()
     else mt () in
-  strbrk "Not a fully mutually " ++ str k ++ fnl () ++
+  strbrk "Not a fully mutually defined " ++ str (string_of_kind kind) ++ fnl () ++
   str "(" ++ e ++ str ")." ++ fnl () ++ w
 
 let warn_non_full_mutual =
   CWarnings.create ~name:"non-full-mutual" ~category:CWarnings.CoreCategories.fixpoints
-         (fun (x,xge,y,yge,isfix,rest) ->
-          non_full_mutual_message x xge y yge isfix rest)
+         (fun (x,xge,y,yge,kind,rest) ->
+          non_full_mutual_message x xge y yge kind rest)
 
 let warn_non_recursive =
   CWarnings.create ~name:"non-recursive" ~category:CWarnings.CoreCategories.fixpoints
-         (fun (x,isfix) ->
-          let k = Decls.(match isfix with Fixpoint -> "fixpoint" | CoFixpoint -> "cofixpoint" | _ -> "definition") in
-          strbrk "Not a truly recursive " ++ str k ++ str ".")
+         (fun (x,kind) ->
+          strbrk "Not a truly recursive " ++ str (string_of_kind kind) ++ str ".")
 
-let check_true_recursivity env evd ~isfix fixl =
+let check_true_recursivity env evd ~kind fixl =
   let names = List.map fst fixl in
   let preorder =
     List.map (fun (id,def) ->
@@ -106,10 +109,10 @@ let check_true_recursivity env evd ~isfix fixl =
   let po = partial_order Id.equal preorder in
   match List.filter (function (_,Inr _) -> true | _ -> false) po with
     | (x,Inr xge)::(y,Inr yge)::rest ->
-       warn_non_full_mutual (x,xge,y,yge,isfix,rest)
+       warn_non_full_mutual (x,xge,y,yge,kind,rest)
     | _ ->
   match po with
-    | [x,Inr []] -> warn_non_recursive (x,isfix)
+    | [x,Inr []] -> warn_non_recursive (x,kind)
     | _ -> ()
 
 (*****************************************************)
@@ -328,9 +331,9 @@ let interp_rec_annot ~program_mode ~function_mode env sigma fixl ctxl ccll rec_o
        fixpoints ?) *)
     | CFixRecOrder fix_orders ->
       let fixwf, possible_guard = List.split (List.map4 (find_rec_annot ~program_mode ~function_mode env sigma) fixl ctxl ccll fix_orders) in
-      Decls.Fixpoint, fixwf, {possibly_cofix = false; possible_fix_indices = possible_guard}
-    | CCoFixRecOrder -> Decls.CoFixpoint, nowf (), {possibly_cofix = true; possible_fix_indices = List.map (fun _ -> []) fixl}
-    | CUnknownRecOrder -> Decls.Definition, nowf (), RecLemmas.find_mutually_recursive_statements sigma ctxl ccll
+      fixwf, {possibly_cofix = false; possible_fix_indices = possible_guard}
+    | CCoFixRecOrder -> nowf (), {possibly_cofix = true; possible_fix_indices = List.map (fun _ -> []) fixl}
+    | CUnknownRecOrder -> nowf (), RecLemmas.find_mutually_recursive_statements sigma ctxl ccll
 
 let interp_fix_context ~program_mode env sigma {Vernacexpr.binders} =
   let sigma, (impl_env, ((env', ctx), imps)) = interp_context_evars ~program_mode env sigma binders in
@@ -382,6 +385,7 @@ type ('constr, 'relevance) fix_data = {
   fiximps  : (Names.Name.t * bool) option CAst.t list list;
   fixntns  : Metasyntax.notation_interpretation_decl list;
   fixwfs   : (rel_declaration * EConstr.t * EConstr.t * EConstr.t) option list;
+  fixopaques : bool option list;
 }
 
 let interp_wf ~program_mode env sigma recname ctx ccl = function
@@ -423,7 +427,7 @@ let interp_mutual_definition env ~program_mode ~function_mode rec_order fixl =
   let sigma, (fixccls,fixrs,fixcclimps) =
     on_snd List.split3 @@
       List.fold_left3_map (interp_fix_ccl ~program_mode) sigma fixctximpenvs fixenv fixl in
-  let fixkind, fixwfs, possible_guard = interp_rec_annot ~program_mode ~function_mode env sigma fixl fixctxs fixccls rec_order in
+  let fixwfs, possible_guard = interp_rec_annot ~program_mode ~function_mode env sigma fixl fixctxs fixccls rec_order in
   let sigma, (fixextras, fixwfs, fixwfimps) =
     on_snd List.split3 @@ (List.fold_left4_map (interp_wf ~program_mode env) sigma fixnames fixctxs fixccls fixwfs) in
   let fixtypes = List.map3 (build_fix_type sigma) fixctxs fixccls fixextras in
@@ -458,39 +462,40 @@ let interp_mutual_definition env ~program_mode ~function_mode rec_order fixl =
   (* Instantiate evars and check all are resolved *)
   let sigma = Evarconv.solve_unif_constraints_with_heuristics env sigma in
   let sigma = Evd.minimize_universes sigma in
+  let fixopaques = List.map (fun { Vernacexpr.fix_attrs } -> Attributes.(parse opacity fix_attrs)) fixl in
 
   (* Build the fix declaration block *)
-  let fix = {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs} in
-  (env, rec_sign, sigma), (fix, fixkind, possible_guard, decl)
+  let fix = {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs;fixopaques} in
+  (env, rec_sign, sigma), (fix, possible_guard, decl)
 
-let check_recursive ~isfix env evd {fixnames;fixdefs;fixwfs} =
+let check_recursive ~kind env evd {fixnames;fixdefs;fixwfs} =
   (* TO MOVE AT FINAL DEFINITION TIME? *)
   if List.for_all Option.has_some fixdefs && List.for_all Option.is_empty fixwfs then begin
     let fixdefs = List.map Option.get fixdefs in
-    check_true_recursivity env evd ~isfix (List.combine fixnames fixdefs)
+    check_true_recursivity env evd ~kind (List.combine fixnames fixdefs)
   end
 
-let ground_fixpoint env evd {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs} =
+let ground_fixpoint env evd {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs;fixopaques} =
   Pretyping.check_evars_are_solved ~program_mode:false env evd;
   let fixrs = List.map (fun r -> EConstr.ERelevance.kind evd r) fixrs in
   let fixdefs = List.map (fun c -> Option.map EConstr.(to_constr evd) c) fixdefs in
   let fixtypes = List.map EConstr.(to_constr evd) fixtypes in
-  {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs}
+  {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs;fixopaques}
 
 (** For Funind *)
 
 let interp_fixpoint_short rec_order fixpoint_exprl =
   let env = Global.env () in
-  let (_, _, sigma),(fix, _, _, _) = interp_mutual_definition ~program_mode:false ~function_mode:true env (CFixRecOrder rec_order) fixpoint_exprl in
+  let (_, _, sigma),(fix, _, _) = interp_mutual_definition ~program_mode:false ~function_mode:true env (CFixRecOrder rec_order) fixpoint_exprl in
   let sigma = Pretyping.(solve_remaining_evars all_no_fail_flags env sigma) in
   let typel = (ground_fixpoint env sigma fix).fixtypes in
   typel, sigma
 
-let build_recthms {fixnames;fixtypes;fixctxs;fiximps} =
-  List.map4 (fun name typ ctx impargs ->
+let build_recthms {fixnames;fixtypes;fixctxs;fiximps;fixopaques} =
+  List.map5 (fun name typ ctx impargs opaque ->
       let args = List.map Context.Rel.Declaration.get_name ctx in
-      Declare.CInfo.make ~name ~typ ~args ~impargs ()
-    ) fixnames fixtypes fixctxs fiximps
+      Declare.CInfo.make ~name ~typ ~args ~impargs ~opaque ()
+    ) fixnames fixtypes fixctxs fiximps fixopaques
 
 let collect_evars_of_term evd c ty =
   Evar.Set.union (Evd.evars_of_term evd c) (Evd.evars_of_term evd ty)
@@ -525,28 +530,27 @@ let build_program_fixpoint env sigma rec_sign possible_guard fixnames fixrs fixd
   List.split3 (List.map3 (collect_evars env sigma rec_sign) fixnames fixdefs fixtypes)
 
 let finish_obligations env sigma rec_sign possible_guard poly udecl = function
-  | {fixnames=[recname];fixrs;fixdefs=[body];fixtypes=[ccl];fixctxs=[ctx];fiximps=[imps];fixntns;fixwfs=[Some wf]} ->
+  | {fixnames=[recname];fixrs;fixdefs=[body];fixtypes=[ccl];fixctxs=[ctx];fiximps=[imps];fixntns;fixwfs=[Some wf];fixopaques} ->
     let sigma = Evarutil.nf_evar_map sigma in (* use nf_evar_map_undefined?? *)
     let sigma, recname, body, ccl, impls, obls, hook = build_wellfounded env sigma poly udecl recname ctx (Option.get body) ccl imps wf in
     let fixrs = List.map (EConstr.ERelevance.kind sigma) fixrs in
-    sigma, {fixnames=[recname];fixrs;fixdefs=[Some body];fixtypes=[ccl];fixctxs=[ctx];fiximps=[impls];fixntns;fixwfs=[Some wf]}, [obls], hook
-  | {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs} ->
+    sigma, {fixnames=[recname];fixrs;fixdefs=[Some body];fixtypes=[ccl];fixctxs=[ctx];fiximps=[impls];fixntns;fixwfs=[Some wf];fixopaques}, [obls], hook
+  | {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs;fixopaques} ->
     let fixdefs, fixtypes, obls = build_program_fixpoint env sigma rec_sign possible_guard fixnames fixrs fixdefs fixtypes fixwfs in
     let fixrs = List.map (EConstr.ERelevance.kind sigma) fixrs in
-    sigma, {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs}, obls, None
+    sigma, {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs;fixopaques}, obls, None
 
 let finish_regular env sigma use_inference_hook fix =
   let inference_hook = if use_inference_hook then Some Declare.Obls.program_inference_hook else None in
   let sigma = Pretyping.(solve_remaining_evars ?hook:inference_hook all_no_fail_flags env sigma) in
   sigma, ground_fixpoint env sigma fix, [], None
 
-let do_mutually_recursive ?pm ~program_mode ?(use_inference_hook=false) ?scope ?clearbody ~poly ?typing_flags ?user_warns ?using (rec_order, fixl)
+let do_mutually_recursive ?pm ~program_mode ?(use_inference_hook=false) ?scope ?clearbody ~kind ~poly ?typing_flags ?user_warns ?using (rec_order, fixl)
   : Declare.OblState.t option * Declare.Proof.t option =
   let env = Global.env () in
   let env = Environ.update_typing_flags ?typing_flags env in
-  let (env,rec_sign,sigma),(fix,isfix,possible_guard,udecl) = interp_mutual_definition env ~program_mode ~function_mode:false rec_order fixl in
-  check_recursive ~isfix env sigma fix;
-  let kind = Decls.IsDefinition isfix in
+  let (env,rec_sign,sigma),(fix,possible_guard,udecl) = interp_mutual_definition env ~program_mode ~function_mode:false rec_order fixl in
+  check_recursive ~kind env sigma fix;
   let sigma, ({fixdefs=bodies;fixrs;fixtypes;fixwfs} as fix), obls, hook =
     match pm with
     | Some pm -> finish_obligations env sigma rec_sign possible_guard poly udecl fix
@@ -563,11 +567,11 @@ let do_mutually_recursive ?pm ~program_mode ?(use_inference_hook=false) ?scope ?
     (match fixwfs, bodies, cinfo, obls with
     | [Some _], [body], [cinfo], [obls] ->
       (* Program Fixpoint wf/measure *)
-      let pm, _ = Declare.Obls.add_definition ~pm ~cinfo ~info ~opaque:false ~body ~uctx ?using obls in
+      let pm, _ = Declare.Obls.add_definition ~pm ~cinfo ~info ~body ~uctx ?using obls in
       Some pm, None
     | _ ->
       let possible_guard = (possible_guard, fixrs) in
-      Some (Declare.Obls.add_mutual_definitions ~pm ~cinfo ~info ~opaque:false ~uctx ~bodies ~possible_guard ?using obls), None)
+      Some (Declare.Obls.add_mutual_definitions ~pm ~cinfo ~info ~uctx ~bodies ~possible_guard ?using obls), None)
   | None ->
     try
       let bodies = List.map Option.get bodies in
@@ -575,7 +579,7 @@ let do_mutually_recursive ?pm ~program_mode ?(use_inference_hook=false) ?scope ?
       (* All bodies are defined *)
       let possible_guard = (possible_guard, fixrs) in
       let _ : GlobRef.t list =
-        Declare.declare_mutual_definitions ~cinfo ~info ~opaque:false ~uctx ~possible_guard ~bodies ?using ()
+        Declare.declare_mutual_definitions ~cinfo ~info ~uctx ~possible_guard ~bodies ?using ()
       in
       None, None
     with Option.IsNone ->

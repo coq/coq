@@ -29,6 +29,8 @@ val do_mutually_recursive
      (* Local or Global visibility *)
   -> ?clearbody:bool
      (* Hide body if in sections *)
+  -> kind:Decls.logical_kind
+     (* Hide body if in sections *)
   -> poly:bool
      (* Use universe polymorphism *)
   -> ?typing_flags:Declarations.typing_flags

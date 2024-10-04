@@ -154,13 +154,17 @@ Top-level definitions of corecursive functions
    .. insertprodn cofix_definition cofix_definition
 
    .. prodn::
-      cofix_definition ::= @ident_decl {* @binder } {? : @type } {? := @term } {? @decl_notations }
+      cofix_definition ::= {* #[ {+, @attribute } ] } @ident_decl {* @binder } {? : @type } {? := @term } {? @decl_notations }
 
    This command introduces a method for constructing an infinite object of a
    coinductive type. For example, the stream containing all natural numbers can
    be introduced by applying the following method to the number :g:`O` (see
    Section :ref:`coinductive-types` for the definition of :g:`Stream`, :g:`hd`
    and :g:`tl`):
+
+   This command accepts the :attr:`program`,
+   :attr:`bypass_check(universes)`, :attr:`bypass_check(guard)` and :attr:`sealed`
+   attributes.
 
    .. coqtop:: all
 

@@ -14,7 +14,7 @@ Require Import NArithRing.
 
 (** * field and ring tactics for rational numbers *)
 
-Definition Qsrt : ring_theory 0 1 Qplus Qmult Qminus Qopp Qeq.
+Lemma Qsrt : ring_theory 0 1 Qplus Qmult Qminus Qopp Qeq.
 Proof.
   constructor.
   - exact Qplus_0_l.
@@ -28,7 +28,7 @@ Proof.
   - exact Qplus_opp_r.
 Qed.
 
-Definition Qsft : field_theory 0 1 Qplus Qmult Qminus Qopp Qdiv Qinv Qeq.
+Lemma Qsft : field_theory 0 1 Qplus Qmult Qminus Qopp Qdiv Qinv Qeq.
 Proof.
   constructor.
   - exact Qsrt.
