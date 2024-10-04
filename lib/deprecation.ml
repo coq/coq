@@ -93,6 +93,6 @@ module Version = struct
   let v8_18 = get_generic_cat "8.18"
   let v8_19 = get_generic_cat "8.19"
   let v8_20 = get_generic_cat "8.20"
-  let v8_21 = get_generic_cat "8.21"
+  let v9_0 = get_generic_cat "9.0"
 
 end

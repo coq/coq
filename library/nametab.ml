@@ -109,7 +109,7 @@ let stdlib_id = Id.of_string "Stdlib"
 
 let warn_deprecated_dirpath_Coq =
   CWarnings.create_with_quickfix ~name:"deprecated-dirpath-Coq"
-    ~category:Deprecation.Version.v8_21
+    ~category:Deprecation.Version.v9_0
     (fun (old_id, new_id) ->
       Pp.(old_id ++ spc () ++ str "has been replaced by" ++ spc () ++ new_id ++ str "."))
 

@@ -8,4 +8,4 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Compatibility file for making Coq act similar to Coq v8.21 *)
+(** Compatibility file for making Coq act similar to Coq v9.0 *)

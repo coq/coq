@@ -1,16 +1,16 @@
 File "./output/Qf_stdlib.v", line 8, characters 15-30:
 Warning: Coq.ssr.ssrbool has been replaced by Stdlib.ssr.ssrbool.
-[deprecated-dirpath-Coq,deprecated-since-8.21,deprecated,default]
+[deprecated-dirpath-Coq,deprecated-since-9.0,deprecated,default]
 Quickfix:
 Replace File "./output/Qf_stdlib.v", line 8, characters 15-30 with Stdlib.ssr.ssrbool
 File "./output/Qf_stdlib.v", line 9, characters 0-42:
 Warning: "From Coq" has been replaced by "From Stdlib".
-[deprecated-from-Coq,deprecated-since-8.21,deprecated,default]
+[deprecated-from-Coq,deprecated-since-9.0,deprecated,default]
 Quickfix:
 Replace File "./output/Qf_stdlib.v", line 9, characters 5-8 with Stdlib
 File "./output/Qf_stdlib.v", line 12, characters 6-22:
 Warning: Coq.Init.Nat.add has been replaced by Stdlib.Init.Nat.add.
-[deprecated-dirpath-Coq,deprecated-since-8.21,deprecated,default]
+[deprecated-dirpath-Coq,deprecated-since-9.0,deprecated,default]
 Quickfix:
 Replace File "./output/Qf_stdlib.v", line 12, characters 6-22 with Stdlib.Init.Nat.add
 Nat.add : nat -> nat -> nat
@@ -21,7 +21,7 @@ Nat.add is transparent
 Expands to: Constant Stdlib.Init.Nat.add
 File "./output/Qf_stdlib.v", line 13, characters 6-22:
 Warning: Coq.Init.Nat.add has been replaced by Stdlib.Init.Nat.add.
-[deprecated-dirpath-Coq,deprecated-since-8.21,deprecated,default]
+[deprecated-dirpath-Coq,deprecated-since-9.0,deprecated,default]
 Quickfix:
 Replace File "./output/Qf_stdlib.v", line 13, characters 6-22 with Stdlib.Init.Nat.add
 Nat.add

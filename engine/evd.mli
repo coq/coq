@@ -662,7 +662,7 @@ val check_qconstraints : evar_map -> Sorts.QConstraints.t -> bool
 val check_quconstraints : evar_map -> Sorts.QUConstraints.t -> bool
 
 val ustate : evar_map -> UState.t
-val evar_universe_context : evar_map -> UState.t [@@deprecated "(8.21) Use [Evd.ustate]"]
+val evar_universe_context : evar_map -> UState.t [@@deprecated "(9.0) Use [Evd.ustate]"]
 
 val universe_context_set : evar_map -> Univ.ContextSet.t
 val sort_context_set : evar_map -> UnivGen.sort_context_set
