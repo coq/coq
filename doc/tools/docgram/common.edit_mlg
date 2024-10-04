@@ -119,7 +119,6 @@ RENAME: [
 | Prim.qualid qualid
 | Prim.natural natural
 | Pvernac.Vernac_.main_entry vernac_control
-| Tactic.tactic tactic
 | Pltac.ltac_expr ltac_expr5
 
 (*

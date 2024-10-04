@@ -46,24 +46,18 @@ let with_tac f tac =
  * Subtac. These entries are named Subtac.<foo>
  *)
 
-module Tactic = Pltac
+let pr_withtac env sigma = function
+  | None -> Pp.mt ()
+  | Some tac -> Pp.(str "with" ++ spc () ++ Pptactic.pr_raw_tactic env sigma tac)
 
-let wit_withtac : Tacexpr.raw_tactic_expr option Genarg.uniform_genarg_type =
-  Genarg.create_arg "withtac"
-
-let withtac = Pcoq.create_generic_entry2 "withtac" (Genarg.rawwit wit_withtac)
+let tactic = Pltac.tactic
 
 }
 
-GRAMMAR EXTEND Gram
-  GLOBAL: withtac;
-
-  withtac:
-    [ [ "with"; t = Tactic.tactic -> { Some t }
-      | -> { None } ] ]
-  ;
-
-  END
+VERNAC ARGUMENT EXTEND withtac PRINTED BY { pr_withtac env sigma }
+| [ ] -> { None }
+| [ "with" tactic(tac) ] -> { Some tac }
+END
 
 {
 
@@ -144,15 +138,3 @@ VERNAC COMMAND EXTEND Show_Preterm CLASSIFIED AS QUERY STATE read_program
 | [ "Preterm" "of" identref(name) ] -> { fun ~pm -> Feedback.msg_notice (show_term ~pm (Some name.CAst.v)) }
 | [ "Preterm" ] -> { fun ~pm -> Feedback.msg_notice (show_term ~pm None) }
 END
-
-{
-
-(* Declare a printer for the content of Program tactics *)
-let () =
-  let printer tacopt = Genprint.PrinterBasic (fun env sigma -> match tacopt with
-  | None -> mt ()
-  | Some tac -> str "with" ++ spc () ++ Pptactic.pr_raw_tactic env sigma tac)
-  in
-  Genprint.register_vernac_print0 wit_withtac printer
-
-}

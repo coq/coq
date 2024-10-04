@@ -2364,8 +2364,8 @@ ltac_tacdef_body: [
 ]
 
 withtac: [
-| "with" Tactic.tactic
 |
+| "with" tactic
 ]
 
 glob_constr_with_bindings: [
