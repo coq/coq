@@ -1601,20 +1601,33 @@ let to_lvar ist =
 
 let gtypref kn = GTypRef (Other kn, [])
 
-let intern_constr ist c =
-  let (_, (c, _)) = Genintern.intern Stdarg.wit_constr ist c in
-  let v = match DAst.get c with
-    | GGenarg (GenArg (Glbwit tag, v)) ->
-      begin match genarg_type_eq tag wit_ltac2_var_quotation with
-      | Some Refl ->
-        begin match (fst v) with
-        | ConstrVar -> GlbTacexpr (GTacVar (snd v))
-        | _ -> GlbVal c
-        end
-      | None -> GlbVal c
+let of_glob_constr (c:Glob_term.glob_constr) =
+  match DAst.get c with
+  | GGenarg (GenArg (Glbwit tag, v)) ->
+    begin match genarg_type_eq tag wit_ltac2_var_quotation with
+    | Some Refl ->
+      begin match (fst v) with
+      | ConstrVar -> GlbTacexpr (GTacVar (snd v))
+      | _ -> GlbVal c
       end
-    | _ -> GlbVal c
-  in
+    | None -> GlbVal c
+    end
+  | _ -> GlbVal c
+
+let intern_constr ist c =
+  let {Genintern.ltacvars=lfun; genv=env; extra; intern_sign; strict_check} = ist in
+  let scope = Pretyping.WithoutTypeConstraint in
+  let ltacvars = {
+    Constrintern.ltac_vars = lfun;
+    ltac_bound = Id.Set.empty;
+    ltac_extra = extra;
+  } in
+  let c' = Constrintern.intern_core scope ~strict_check ~ltacvars env (Evd.from_env env) intern_sign c in
+  c'
+
+let intern_constr_tacexpr ist c =
+  let c = intern_constr ist c in
+  let v = of_glob_constr c in
   (v, gtypref t_constr)
 
 let interp_constr flags ist c =
@@ -1628,7 +1641,7 @@ let interp_constr flags ist c =
   end
 
 let () =
-  let intern = intern_constr in
+  let intern = intern_constr_tacexpr in
   let interp ist c = interp_constr constr_flags ist c in
   let print env sigma c = str "constr:(" ++ Printer.pr_lglob_constr_env env sigma c ++ str ")" in
   let raw_print env sigma c = str "constr:(" ++ Ppconstr.pr_constr_expr env sigma c ++ str ")" in
@@ -1643,7 +1656,7 @@ let () =
   define_ml_object Tac2quote.wit_constr obj
 
 let () =
-  let intern = intern_constr in
+  let intern = intern_constr_tacexpr in
   let interp ist c = interp_constr open_constr_no_classes_flags ist c in
   let print env sigma c = str "open_constr:(" ++ Printer.pr_lglob_constr_env env sigma c ++ str ")" in
   let raw_print env sigma c = str "open_constr:(" ++ Ppconstr.pr_constr_expr env sigma c ++ str ")" in
@@ -1706,7 +1719,7 @@ let () =
 
 let () =
   let intern ist c =
-    let (_, (c, _)) = Genintern.intern Stdarg.wit_constr ist c in
+    let c = intern_constr ist c in
     (GlbVal (Id.Set.empty,c), gtypref t_preterm)
   in
   let interp env (ids,c) =
