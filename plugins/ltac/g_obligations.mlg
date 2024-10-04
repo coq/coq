@@ -16,8 +16,6 @@ DECLARE PLUGIN "coq-core.plugins.ltac"
 
 {
 
-open Constrexpr
-open Constrexpr_ops
 open Stdarg
 open Tacarg
 open Extraargs
@@ -50,10 +48,6 @@ let with_tac f tac =
 
 module Tactic = Pltac
 
-open Pcoq
-
-let sigref loc = mkRefC (Libnames.qualid_of_string ~loc "Stdlib.Init.Specif.sig")
-
 let wit_withtac : Tacexpr.raw_tactic_expr option Genarg.uniform_genarg_type =
   Genarg.create_arg "withtac"
 
@@ -68,12 +62,6 @@ GRAMMAR EXTEND Gram
     [ [ "with"; t = Tactic.tactic -> { Some t }
       | -> { None } ] ]
   ;
-
-  Constr.closed_binder: TOP
-    [[ "("; id=Prim.name; ":"; t=Constr.lconstr; "|"; c=Constr.lconstr; ")" -> {
-          let typ = mkAppC (sigref loc, [mkLambdaC ([id], default_binder_kind, t, c)]) in
-          [CLocalAssum ([id], None, default_binder_kind, typ)] }
-    ] ];
 
   END
 

@@ -328,6 +328,7 @@ closed_binder: [
 | "(" name ":" lconstr ")"
 | "(" name ":=" lconstr ")"
 | "(" name ":" lconstr ":=" lconstr ")"
+| "(" name ":" lconstr "|" lconstr ")"
 | "{" name "}"
 | "{" name LIST1 name ":" lconstr "}"
 | "{" name ":" lconstr "}"
@@ -2365,10 +2366,6 @@ ltac_tacdef_body: [
 withtac: [
 | "with" Tactic.tactic
 |
-]
-
-Constr.closed_binder: [
-| "(" Prim.name ":" Constr.lconstr "|" Constr.lconstr ")"
 ]
 
 glob_constr_with_bindings: [
