@@ -176,7 +176,6 @@ let mk_auto_dbg debug =
 let incr_dbg = function (dbg,whatfor,depth,trace) -> (dbg,whatfor,depth+1,trace)
 
 (** A tracing tactic for debug/info trivial/auto *)
-
 let tclLOG (dbg,_,depth,trace) pp tac =
   match dbg with
     | Off -> tac
@@ -197,37 +196,54 @@ let tclLOG (dbg,_,depth,trace) pp tac =
              tclZERO ~info exn))
     | Info ->
       (* For "info (trivial/auto)", we store a log trace *)
+      let from_gls = ref [] in
+      let goals_to_ints gls =
+        List.map (fun gl -> Evar.repr (Proofview.Goal.goal gl)) gls
+      in
       Proofview.(tclIFCATCH (
+          Proofview.Goal.goals >>=
+          fun gl -> Monad.List.map (fun x -> x) gl >>= fun goals ->
+            from_gls := goals_to_ints goals;
           tac >>= fun v ->
-          trace := (depth, Some pp) :: !trace;
-          tclUNIT v
+          Proofview.Goal.goals >>=
+          fun gl -> Monad.List.map (fun x -> x) gl >>= fun goals ->
+            trace := (depth, Some pp, !from_gls, goals_to_ints goals) :: !trace;
+            tclUNIT v
         ) Proofview.tclUNIT
           (fun (exn, info) ->
-             trace := (depth, None) :: !trace;
              tclZERO ~info exn))
 
-(** For info, from the linear trace information, we reconstitute the part
-    of the proof tree we're interested in. The last executed tactic
-    comes first in the trace (and it should be a successful one).
-    [depth] is the root depth of the tree fragment we're visiting.
-    [keep] means we're in a successful tree fragment (the very last
-    tactic has been successful). *)
+let format_trace ?(indent=0) env sigma trace =
+  (* A goal may appear in from_gls for multiple trace entries.
+     Use the last entry in the map. *)
+  let map = List.fold_left (fun map (_,pp,from_gls,to_gls) ->
+      match pp with
+      | None -> map
+      | Some pp ->
+        List.fold_left (fun map from_gl ->
+            Int.Map.add from_gl (to_gls,pp) map
+          ) map from_gls
+    ) Int.Map.empty trace
+  in
 
-let rec cleanup_info_trace depth acc = function
-  | [] -> acc
-  | (d,Some pp) :: l -> cleanup_info_trace d ((d,pp)::acc) l
-  | l -> cleanup_info_trace depth acc (erase_subtree depth l)
+  (* I tried to include bullets and { ... } in the output, but braces work strangely.
+     This version works in any context; if there are bullets it is context dependent.
+   *)
+  let rec dfs indent from_gl =
+    let to_gls,pp = Int.Map.find from_gl map in
+    Feedback.msg_notice (str (String.make indent ' ') ++ pp env sigma);
+    let indent = if List.length to_gls > 1 then indent + 2 else indent in
+    List.iter (fun to_gl -> dfs indent to_gl) to_gls;
+  in
+  match trace with
+  (* should always be a single item in from_gls *)
+  | (_,_,[from_gl],_) :: _ -> dfs indent from_gl
+  | _ -> failwith "format_trace"
 
-and erase_subtree depth = function
-  | [] -> []
-  | (d,_) :: l -> if Int.equal d depth then l else erase_subtree depth l
-
-let pr_info_atom env sigma (d,pp) =
-  str (String.make d ' ') ++ pp env sigma ++ str "."
-
-let pr_info_trace env sigma = function
-  | (Info,_,_,{contents=(d,Some pp)::l}) ->
-    Feedback.msg_notice (prlist_with_sep fnl (pr_info_atom env sigma) (cleanup_info_trace d [(d,pp)] l))
+let pr_info_trace env sigma trace =
+  match trace with
+  | (Info,_,_,{contents}) ->
+    format_trace env sigma (List.rev contents)
   | _ -> ()
 
 let pr_info_nop = function
@@ -278,8 +294,11 @@ let exists_evaluable_reference env = function
   | Evaluable.EvalProjectionRef _ -> true
   | Evaluable.EvalVarRef v -> try ignore(Environ.lookup_named v env); true with Not_found -> false
 
-let dbg_intro dbg = tclLOG dbg (fun _ _ -> str "intro") intro
-let dbg_assumption dbg = tclLOG dbg (fun _ _ -> str "assumption") assumption
+let as_tac (lev,_,_,_) =
+  if lev = Info then str "." else mt ()
+
+let dbg_intro dbg = tclLOG dbg (fun _ _ -> str "intro" ++ (as_tac dbg)) intro
+let dbg_assumption dbg = tclLOG dbg (fun _ _ -> str "assumption" ++ (as_tac dbg)) assumption
 
 let intro_register dbg kont db =
   Proofview.tclTHEN (dbg_intro dbg) @@
@@ -343,7 +362,9 @@ and tac_of_hint dbg db_list local_db concl =
     | None -> mt ()
     | Some n -> str " (in " ++ str n ++ str ")"
     in
-    FullHint.print env sigma h ++ origin
+    let (lev,_,_,_) = dbg in
+    let taconly = lev = Info in
+    FullHint.print ~taconly env sigma h ++ (if taconly then str "." else origin)
   in
   fun h -> tclLOG dbg (pr_hint h) (FullHint.run h tactic)
 
