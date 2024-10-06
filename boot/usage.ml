@@ -31,10 +31,12 @@ let print_usage_common co command =
 \n  -coqlib dir            set the coq standard library directory\
 \n  -exclude-dir f         exclude subdirectories named f for option -R\
 \n\
-\n  -boot                  don't bind the `Coq.` prefix to the default -coqlib dir\
-\n  -noinit                don't load Coq.Init.Prelude on start \
+\n  -boot                  don't bind the `Stdlib.` prefix to the default -coqlib dir\
+\n  -noinit                don't load Stdlib.Init.Prelude on start\
 \n  -nois                  (idem)\
-\n  -compat X.Y            provides compatibility support for Coq version X.Y\
+\n  -compat X.Y            same as -compat-from Stdlib CoqXY\
+\n  -compat-from root lib  same as -require-import-from root lib, except that\
+\n                         a non existing file only produces a warning\
 \n\
 \n  -load-vernac-source f  load Coq file f.v (Load \"f\".)\
 \n  -l f                   (idem)\
