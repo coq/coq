@@ -812,6 +812,7 @@ library:ci-itree:
     - library:ci-ext_lib
     - library:ci-paco
   stage: build-2
+  allow_failure: true # C.f. https://github.com/coq/coq/pull/19627#issuecomment-2396237050
 
 library:ci-itree_io:
   extends: .ci-template-flambda
