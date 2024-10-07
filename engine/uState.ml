@@ -1282,8 +1282,8 @@ let pr ctx =
       (str"UNIVERSES:"++brk(0,1)++
        h (Univ.pr_universe_context_set prl (context_set ctx)) ++ fnl () ++
        UnivFlex.pr prl (subst ctx) ++ fnl() ++
-       str"GRAPH:" ++ brk(0,1) ++
-       h (UGraph.pr_universes prl (UGraph.repr (ugraph ctx))) ++ fnl () ++
+       (* str"GRAPH:" ++ brk(0,1) ++
+       h (UGraph.pr_universes prl (UGraph.repr (ugraph ctx))) ++ fnl () ++ *)
        str"SORTS:"++brk(0,1)++
        h (pr_sort_opt_subst ctx) ++ fnl() ++
        str "WEAK CONSTRAINTS:"++brk(0,1)++
