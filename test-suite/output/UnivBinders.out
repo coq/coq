@@ -75,9 +75,9 @@ File "./output/UnivBinders.v", line 70, characters 0-52:
 The command has indeed failed with message:
 Universe uu already exists.
 bobmorane =
-let tt := Type@{UnivBinders.32} in
-let ff := Type@{UnivBinders.34} in tt -> ff
-     : Type@{max(UnivBinders.31,UnivBinders.33)}
+let tt := Type@{UnivBinders.52} in
+let ff := Type@{UnivBinders.54} in tt -> ff
+     : Type@{max(UnivBinders.51,UnivBinders.53)}
 File "./output/UnivBinders.v", line 85, characters 23-25:
 The command has indeed failed with message:
 Universe uu already bound.
@@ -199,9 +199,9 @@ block).
 foo@{i} = Type@{M.i} -> Type@{i}
      : Type@{max(M.i+1,i+1)}
 (* i |=  *)
-Type@{u0} -> Type@{UnivBinders.65}
-     : Type@{max(u0+1,UnivBinders.65+1)}
-(* {UnivBinders.65} |=  *)
+Type@{u0} -> Type@{UnivBinders.85}
+     : Type@{max(u0+1,UnivBinders.85+1)}
+(* {UnivBinders.85} |=  *)
 bind_univs.mono = Type@{bind_univs.mono.u}
      : Type@{bind_univs.mono.u+1}
 bind_univs.poly@{u} = Type@{u}

@@ -34,6 +34,7 @@ type meta_arg = {
   marg_meta : metavariable;
   marg_chain : metavariable list option;
   marg_dep : bool;
+  marg_templ : (rel_context * Univ.Level.t) option;
 }
 (* List of clenv meta arguments with the submetas of the clenv it has been
    possibly chained with. We never need to chain more than two clenvs, so there
@@ -52,7 +53,24 @@ let mk_clausenv env evd metas templval metaset templtyp = {
   env; evd; metas; templval; metaset; templtyp;
 }
 
+let merge_fsorts evd clenv =
+  let usubst = Evd.universe_subst evd in
+  (* Hackish check: the level is considered to be already fresh when it is not
+     part of the evarmap substitution. Other heuristics are more broken because
+     some parts of the UState API are not very clear about their invariants and
+     this is relied upon by e.g. Program. *)
+  let filter l = not (UnivFlex.mem l usubst) in
+  let fold accu marg = match marg.marg_templ with
+  | None -> accu
+  | Some (ctx, l) -> Univ.Level.Set.add l accu
+  in
+  let fsorts = List.fold_left fold Univ.Level.Set.empty clenv.metas in
+  let fsorts = Univ.Level.Set.filter filter fsorts in
+  let uctx = (fsorts, Univ.Constraints.empty) in
+  Evd.merge_context_set Evd.univ_flexible evd uctx
+
 let update_clenv_evd clenv evd =
+  let evd = merge_fsorts evd clenv in
   mk_clausenv clenv.env evd clenv.metas clenv.templval clenv.metaset clenv.templtyp
 
 let strip_params env sigma c =
@@ -76,6 +94,30 @@ let clenv_strip_proj_params clenv =
   let templval = strip_params clenv.env clenv.evd clenv.templval in
   mk_clausenv clenv.env clenv.evd clenv.metas templval clenv.metaset clenv.templtyp
 
+let get_template env sigma c =
+  let (hd, args) = EConstr.decompose_app sigma c in
+  match EConstr.destRef sigma hd with
+  | ConstructRef (ind, i), u when Environ.template_polymorphic_ind ind env ->
+    let (mib, mip) = Inductive.lookup_mind_specif env ind in
+    let templ = match mib.Declarations.mind_template with
+    | None -> assert false
+    | Some t -> t.template_param_arguments
+    in
+    Some (ind, List.skipn_at_best (Array.length args) templ)
+  | _ -> None
+  | exception DestKO -> None
+
+let refresh_template_constraints env sigma ind c =
+  let (mib, _) as spec = Inductive.lookup_mind_specif env ind in
+  let (_, cstrs0) = (Option.get mib.mind_template).template_context in
+  if Univ.Constraints.is_empty cstrs0 then sigma
+  else
+    let _, allargs = decompose_app sigma c in
+    let allargs = Array.map (fun c -> Retyping.get_judgment_of env sigma c) allargs in
+    let sigma, univs = Typing.get_template_parameters env sigma ind allargs in
+    let cstrs, _, _ = Inductive.instantiate_template_universes spec univs in
+    Evd.add_constraints sigma cstrs
+
 let clenv_refresh env sigma ctx clenv =
   let evd = Evd.meta_merge (Evd.meta_list clenv.evd) (Evd.clear_metas sigma) in
   match ctx with
@@ -89,7 +131,24 @@ let clenv_refresh env sigma ctx clenv =
       clenv.metaset
       (Evd.map_fl emap clenv.templtyp)
   | None ->
-    mk_clausenv env evd clenv.metas clenv.templval clenv.metaset clenv.templtyp
+    (* We also refresh template arguments. This assumes that callers of
+       {!clenv_refresh} use a freshly minted clenv, but this is the case as this
+       function is only used by auto-like tactics for hint refresh. *)
+    let fold sigma marg = match marg.marg_templ with
+    | None -> sigma, marg
+    | Some (decls, _) ->
+      let sigma, s = Evd.new_univ_level_variable Evd.univ_flexible_alg sigma in
+      let t = it_mkProd_or_LetIn (mkType (Univ.Universe.make s)) decls in
+      let name = meta_name sigma marg.marg_meta in
+      let sigma = meta_declare marg.marg_meta t ~name sigma in
+      sigma, { marg with marg_templ = Some (decls, s) }
+    in
+    let evd, metas = List.fold_left_map fold evd clenv.metas in
+    let evd = match get_template env sigma clenv.templval with
+    | None -> evd
+    | Some (ind, _) -> refresh_template_constraints env evd ind clenv.templval
+    in
+    mk_clausenv env evd metas clenv.templval clenv.metaset clenv.templtyp
 
 let clenv_evd ce =  ce.evd
 let clenv_arguments c = List.map (fun arg -> arg.marg_meta) c.metas
@@ -118,6 +177,7 @@ let clenv_push_prod cl =
           marg_meta = mv;
           marg_chain = None;
           marg_dep = dep;
+          marg_templ = None; (* We could refresh here but probably not worth it *)
         } in
         Some (mv, dep, { templval; metaset;
           templtyp = mk_freelisted concl;
@@ -140,37 +200,53 @@ let clenv_push_prod cl =
    [ccl] is [Meta n1=Meta n2]; if [n] is [Some 1], [lmetas] is [Meta n1]
    and [ccl] is [forall y, Meta n1=y -> y=Meta n1] *)
 
-let clenv_environments evd bound t =
+let clenv_environments env sigma template bound t =
   let open EConstr in
   let open Vars in
-  let rec clrec (e,metas) n t =
-    match n, EConstr.kind evd t with
-      | (Some 0, _) -> (e, List.rev metas, t)
-      | (n, Cast (t,_,_)) -> clrec (e,metas) n t
+  let rec clrec templ sigma metas n t =
+    match n, EConstr.kind sigma t with
+      | (Some 0, _) -> (sigma, List.rev metas, t)
+      | (n, Cast (t,_,_)) -> clrec templ sigma metas n t
       | (n, Prod (na,t1,t2)) ->
           let mv = new_meta () in
-          let dep = not (noccurn evd 1 t2) in
+          let dep = not (noccurn sigma 1 t2) in
           let na' = if dep then na.binder_name else Anonymous in
-          let e' = meta_declare mv t1 ~name:na' e in
-          clrec (e', (mv, dep)::metas) (Option.map ((+) (-1)) n)
-            (if dep then (subst1 (mkMeta mv) t2) else t2)
-      | (n, LetIn (na,b,_,t)) -> clrec (e,metas) n (subst1 b t)
-      | (n, _) -> (e, List.rev metas, t)
+          let sigma, t1, templ, tmpl = match templ with
+          | [] -> sigma, t1, templ, None
+          | false :: templ -> sigma, t1, templ, None
+          | true :: templ ->
+            let decls, _ = Reductionops.dest_arity env sigma t1 in
+            let sigma, s = Evd.new_univ_level_variable Evd.univ_flexible_alg sigma in
+            let t1 = EConstr.it_mkProd_or_LetIn (EConstr.mkType (Univ.Universe.make s)) decls in
+            sigma, t1, templ, Some (decls, s)
+          in
+          let sigma = meta_declare mv t1 ~name:na' sigma in
+          let t2 = if dep then (subst1 (mkMeta mv) t2) else t2 in
+          clrec templ sigma ((mv, dep, tmpl) :: metas) (Option.map ((+) (-1)) n) t2
+      | (n, LetIn (na,b,_,t)) -> clrec templ sigma metas n (subst1 b t)
+      | (n, _) -> (sigma, List.rev metas, t)
   in
-  clrec (evd,[]) bound t
+  clrec template sigma [] bound t
 
 let mk_clenv_from_env env sigma n (c,cty) =
   let evd = clear_metas sigma in
-  let (evd,args,concl) = clenv_environments evd n cty in
-  let map (mv, _) = mkMeta mv in
+  let template = get_template env sigma c in
+  let template_args = match template with Some (_, args) -> args | None -> [] in
+  let (evd, args, concl) = clenv_environments env evd template_args n cty in
+  let map (mv, _, _) = mkMeta mv in
   let templval = mkApp (c, Array.map_of_list map args) in
-  let metaset = Metaset.of_list (List.map fst args) in
-  let map (mv, dep) = { marg_meta = mv; marg_chain = None; marg_dep = dep } in
+  let evd = match template with
+  | None -> evd
+  | Some (ind, _) -> refresh_template_constraints env evd ind templval
+  in
+  let metaset = Metaset.of_list (List.map pi1 args) in
+  let map (mv, dep, tmpl) = { marg_meta = mv; marg_chain = None; marg_dep = dep; marg_templ = tmpl } in
   { templval; metaset;
     templtyp = mk_freelisted concl;
     evd = evd;
     env = env;
-    metas = List.map map args; }
+    metas = List.map map args;
+  }
 
 let mk_clenv_from env sigma c = mk_clenv_from_env env sigma None c
 let mk_clenv_from_n env sigma n c = mk_clenv_from_env env sigma (Some n) c

@@ -77,3 +77,7 @@ type ('constr,'types,'r) bad_relevance =
 | BadRelevanceCase of 'r * 'constr
 
 val bad_relevance_msg : (Environ.env * evar_map * (constr, types, ERelevance.t) bad_relevance) CWarnings.msg
+
+(** Template typing *)
+
+val get_template_parameters : env -> evar_map -> inductive -> unsafe_judgment array -> evar_map * Inductive.param_univs
