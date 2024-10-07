@@ -24,6 +24,8 @@ let domain {subst} = Level.Map.domain subst
 
 let mem l {subst} = Level.Map.mem l subst
 
+let is_defined l {subst} = Option.has_some (Level.Map.find l subst)
+
 let fold f {subst} acc =
   Level.Map.fold (fun l v acc -> f l ~is_defined:(Option.has_some v) acc)
     subst acc

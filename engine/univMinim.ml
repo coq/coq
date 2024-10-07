@@ -94,7 +94,8 @@ let compute_lbound left =
     List.fold_left (fun lbound (k, l) -> sup (Universe.addn l k) lbound) None left
 
 let instantiate_with_lbound u lbound lower ~enforce (ctx, us, seen, insts, cstrs) =
-  if enforce then
+  let flexible = try not (UnivFlex.is_defined u us) with Not_found -> false in
+  if enforce || not flexible then
     let inst = Universe.make u in
     let cstrs' = enforce_leq lbound inst cstrs in
       (ctx, us, seen, LBMap.add u {enforce;lbound;lower} insts, cstrs'),

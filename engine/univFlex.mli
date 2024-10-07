@@ -28,6 +28,10 @@ val fold : (Level.t -> is_defined:bool -> 'a -> 'a) -> t -> 'a -> 'a
 val mem : Level.t -> t -> bool
 (** Returns [true] for both defined and undefined flexible levels. *)
 
+val is_defined : Level.t -> t -> bool
+(** Returns [true] for defined flexible levels.
+    @raises Not_found if not a flexible level *)
+
 val remove : Level.t -> t -> t
 (** Remove a variable from the flexible set (must not be defined). *)
 
