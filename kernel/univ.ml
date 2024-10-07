@@ -317,6 +317,8 @@ struct
   let super (u,n) (v,n') =
     let cmp = Level.compare u v in
       if Int.equal cmp 0 then SuperSame (n < n')
+      (* else if Level.is_zero u && n <= n' then SuperSame true
+      else if Level.is_zero v && n' <= n then SuperSame false *)
       else SuperDiff cmp
 
   let pr f (l,n) =
