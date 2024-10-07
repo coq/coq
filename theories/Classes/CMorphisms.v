@@ -61,12 +61,13 @@ Section Proper.
 
   Lemma proper_proper_proxy x `(Proper A R x) : ProperProxy R x.
   Proof. firstorder. Qed.
+End Proper.
 
-  (** Respectful morphisms. *)
-  
-  (** The fully dependent version, not used yet. *)
-  
-  Definition respectful_hetero
+(** Respectful morphisms. *)
+
+(** The fully dependent version, not used yet. *)
+
+Definition respectful_hetero
   (A B : Type)
   (C : A -> Type) (D : B -> Type)
   (R : A -> B -> Type)
@@ -74,11 +75,10 @@ Section Proper.
     (forall x : A, C x) -> (forall x : B, D x) -> Type :=
     fun f g => forall x y, R x y -> R' x y (f x) (g y).
 
-  (** The non-dependent version is an instance where we forget dependencies. *)
+(** The non-dependent version is an instance where we forget dependencies. *)
   
-  Definition respectful {B} (R : crelation A) (R' : crelation B) : crelation (A -> B) :=
+Definition respectful@{*a *ra *b *rb} {A : Type@{a}} {B : Type@{b}} (R : crelation@{a ra} A) (R' : crelation@{b rb} B) : crelation (A -> B) :=
     fun f g => forall x y, R x y -> R' (f x) (g y).
-End Proper.
 
 (** We favor the use of Leibniz equality or a declared reflexive crelation 
   when resolving [ProperProxy], otherwise, if the crelation is given (not an evar),
