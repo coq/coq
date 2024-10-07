@@ -18,6 +18,8 @@ let _debug_loop_checking_check, _debug_check = CDebug.create_full ~name:"loop-ch
 let _debug_loop_checking_set, _debug_set = CDebug.create_full ~name:"loop-checking-set" ()
 
 let _debug_loop_checking_global_flag, debug_global = CDebug.create_full ~name:"loop-checking-global" ()
+let _debug_loop_checking_constraints_for_flag, debug_constraints_for =
+  CDebug.create_full ~name:"loop-checking-constraints-for" ()
 
 let _debug_enforce_eq, debug_enforce_eq = CDebug.create_full ~name:"loop-checking-enforce-eq" ()
 let _debug_find_to_merge_global_flag, debug_find_to_merge_global = CDebug.create_full ~name:"loop-checking-find-to-merge-global" ()
@@ -1503,7 +1505,7 @@ let pr_clauses m =
   PMap.fold (fun p e acc ->
     match e with
     | Equiv (p', k) ->
-      Pp.(pr_index_point m (p, 0) ++ str " = " ++ pr_index_point m (p', k) ++ acc)
+      Pp.(pr_raw_index_point m p ++ str " = " ++ pr_index_point m (p', k) ++ fnl () ++ acc)
     | Canonical can ->
       let bwd = can.clauses_bwd in
       Pp.(pr_clauses_of m can.canon bwd ++ fnl () ++ acc)) m.entries (Pp.mt ())
@@ -2918,7 +2920,7 @@ let constraints_for ~(kept:Level.Set.t) model (fold : 'a constraint_fold) (accu 
   let add_cst u knd v (cst : 'a) : 'a =
     fold (interp_univ model u, knd, interp_univ model v) cst
   in
-  (* debug_global Pp.(fun () -> str"constraints_for kept: " ++ Level.Set.pr debug_pr_level kept ++ pr_clauses model); *)
+  debug_constraints_for Pp.(fun () -> str"constraints_for kept: " ++ Level.Set.pr debug_pr_level kept ++ pr_clauses model);
   let keptp = Level.Set.fold (fun u accu -> PSet.add (Index.find u model.table) accu) kept PSet.empty in
   (* rmap: partial map from canonical points to kept points *)
   let rmap, csts = PSet.fold (fun u (rmap,csts) ->
@@ -2953,6 +2955,7 @@ let constraints_for ~(kept:Level.Set.t) model (fold : 'a constraint_fold) (accu 
                 PSet.add can.canon removed)
     model.entries PSet.empty
   in
+  debug_constraints_for Pp.(fun () -> str"constraints_for removed: " ++ _pr_w model removed);
   let remove_can idx model =
     let can, k = repr model idx in
     assert (Int.equal k 0 && Index.equal can.canon idx);
@@ -2967,11 +2970,11 @@ let constraints_for ~(kept:Level.Set.t) model (fold : 'a constraint_fold) (accu 
           (* premsbwd -> can + cank *)
           let premsfwd = (cons_opt_nelist (can.canon, kprem) premsfwd) in
           let cl = merge_clauses premsbwd can.canon cank premsfwd concl.canon conclk in
-          let model =
-            match add_can_clause_model model (repr_clause model cl) with
-            | Some (_, m) -> m
-            | None -> model
-          in model)
+          let cl = (repr_clause model cl) in
+          debug_constraints_for Pp.(fun () -> str"constraints_for adding: " ++ pr_can_clause model cl);
+          match add_can_clause_model model cl with
+          | Some (_, m) -> m
+          | None -> model)
         bwd model)
       fwd model)
     fwd model
@@ -2985,19 +2988,19 @@ let constraints_for ~(kept:Level.Set.t) model (fold : 'a constraint_fold) (accu 
     | exception Not_found -> assert false
   in
   let can_prem_to_prem l = NeList.map (fun (x, k) -> (canon_repr x, k)) l in
-  let rec add_from u csts todo = match todo with
-    | [] -> csts
-    | (prems,k)::todo ->
-      let cprems = canonical_premises model prems in
-      if not (NeList.exists (fun (v, _) -> PSet.mem v.canon removed) cprems) then
-        let csts = add_cst (NeList.tip (canon_repr u, k)) Le (can_prem_to_prem cprems) csts in
-        add_from u csts todo
-      else add_from u csts todo
+  let add_from uprev u csts prems k =
+    let cprems = canonical_premises model prems in
+    if not (NeList.exists (fun (v, _) -> PSet.mem v.canon removed) cprems) then
+      (let cl = (prems, (u.canon,k)) in
+      debug_constraints_for Pp.(fun () -> str"constraints_for adding (from " ++ pr_raw_index_point model uprev ++ str"): " ++ pr_clause (pr_index_point model) cl);
+       add_cst (NeList.tip (canon_repr u, k)) Le (can_prem_to_prem cprems) csts)
+    else csts
   in
   let fold u acc =
     let arc, uk = repr model u in
+    if not (Index.equal arc.canon u) then acc else
     let cls = arc.clauses_bwd in
-    ClausesOf.fold (fun (k, prems) csts -> add_from arc csts [prems,k + uk]) cls acc
+    ClausesOf.fold (fun (k, prems) csts -> add_from u arc csts prems (k + uk)) cls acc
   in
   PSet.fold fold keptp csts
 
