@@ -10,7 +10,6 @@
 
 open Univ
 open UVars
-open EConstr
 open UnivMinim
 
 let debug = CDebug.create ~name:"UnivVariances" ()
@@ -70,17 +69,16 @@ let compute_variances env sigma status position variance c =
       update_instance_variances position inst status
   in
   let rec aux status position variance c =
-    match kind sigma c with
+    let open Constr in
+    match kind c with
     | Sort u ->
-      let es = ESorts.kind sigma u in
-      let levels = Sorts.levels es in
+      let levels = Sorts.levels u in
       update_variances position variance levels status
     | Prod (na, dom, codom) ->
       let status = aux status position (variance_opp variance) dom in
       aux status position variance codom
     | Const _ | Ind _ | Construct _ ->
-      let gr, u = EConstr.destRef sigma c in
-      let u = EInstance.kind sigma u in
+      let gr, u = Constr.destRef c in
       let gvariance = Environ.variance env gr in
       (match gvariance with
       | None -> update_instance_variances position u status
@@ -89,9 +87,10 @@ let compute_variances env sigma status position variance c =
       let status = aux status position (variance_opp variance) dom in
       aux status position variance codom
     | LetIn (na, b, dom, codom) ->
-        aux status position variance (Vars.subst1 b codom)
-    | _ -> Termops.fold_constr_with_full_binders env sigma (fun rel acc -> acc) (fun ctx status c -> aux status position variance c) () status c
+      aux status position variance (Vars.subst1 b codom)
+    | _ -> fold_constr_with_binders (fun acc -> acc) (fun ctx status c -> aux status position variance c) () status c
   in
+  let c = EConstr.to_constr ~abort_on_undefined_evars:false sigma c in
   aux status position variance c
 
 let compute_variances_context env sigma ?(variance=Variance.Contravariant) status ctx =
@@ -104,12 +103,12 @@ let compute_variances_context env sigma ?(variance=Variance.Contravariant) statu
   variances
 
 let compute_variances_body env sigma status c =
-  let ctx, c = decompose_lambda_decls sigma c in
+  let ctx, c = EConstr.decompose_lambda_decls sigma c in
   let status = compute_variances_context env sigma status ctx in
   compute_variances env sigma status InTerm Variance.Covariant c
 
 let compute_variances_type env sigma status c =
-  let ctx, c = decompose_prod_decls sigma c in
+  let ctx, c = EConstr.decompose_prod_decls sigma c in
   let status = compute_variances_context env sigma status ctx in
  compute_variances env sigma status InType Variance.Covariant c
 
