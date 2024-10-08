@@ -22,7 +22,7 @@ We highlight some of the most impactful changes here:
 
   - :ref:`rewrite_rules`
 
-  - :ref:`primitive strings <pstring_library>`
+  - `primitive strings <https://github.com/coq/coq/pull/18973>`_
 
   - A lot of work went into reducing the size of the bytecode segment,
     which in turn means that .vo files might now be considerably
@@ -6093,7 +6093,7 @@ Notations
   (`#12979 <https://github.com/coq/coq/pull/12979>`_,
   by Pierre Roux).
 - **Added:**
-  :flag:`Printing Float` flag to print primitive floats as hexadecimal
+  ``Printing Float`` flag to print primitive floats as hexadecimal
   instead of decimal values. This is included in the :flag:`Printing All` flag
   (`#11986 <https://github.com/coq/coq/pull/11986>`_,
   by Pierre Roux).

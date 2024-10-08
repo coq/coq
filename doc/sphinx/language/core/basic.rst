@@ -153,20 +153,21 @@ Numbers
   this is a convenient representation for doing proofs, computing with large
   :n:`nat`\s can lead to stack overflows or running out of memory.  You can
   explicitly specify a different interpretation to avoid this problem.  For
-  example, :n:`1000000%Z` is a more efficient binary representation of
-  that number as an integer.  See :ref:`Scopes` and :n:`@term_scope`.
+  example, the Stdlib library enables to write :n:`1000000%Z` for a more
+  efficient binary representation of that number as an integer.
+  See :ref:`Scopes` and :n:`@term_scope` for the ``%`` notation.
 
    .. example:: Stack overflow with :n:`nat`
 
-      .. coqtop:: all reset
+      .. coqtop:: all reset extra
 
          Fail Eval compute in 100000 + 100000.  (* gives a stack overflow (not shown) *)
 
-      .. coqtop:: in
+      .. coqtop:: in extra
 
-         Require Import ZArith.  (* for definition of Z *)
+         From Stdlib Require Import ZArith.  (* for definition of Z *)
 
-      .. coqtop:: all
+      .. coqtop:: all extra
 
          Eval compute in (1000000000000000000000000000000000 + 1)%Z.
 

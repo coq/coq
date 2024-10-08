@@ -189,7 +189,9 @@ Rewriting with Leibniz and setoid equality
 
       .. coqtop:: none
 
-         Require Import Arith.
+         From Stdlib Require Import Setoid.
+
+         Axiom add_comm : forall n m, n + m = m + n.
 
       .. coqtop:: out
 
@@ -197,14 +199,14 @@ Rewriting with Leibniz and setoid equality
 
       .. coqtop:: all fail
 
-         rewrite Nat.add_comm at 2.
+         rewrite add_comm at 2.
 
       One can explicitly specify how some variables are bound to match
       a different subterm:
 
       .. coqtop:: all abort
 
-         rewrite Nat.add_comm with (m := x).
+         rewrite add_comm with (m := x).
 
       Note that the more advanced :tacn:`setoid_rewrite` tactic
       behaves differently, and thus the number of occurrences
@@ -796,8 +798,14 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
 
       .. coqtop:: none
 
-         Require Import Stdlib.Lists.List.
+         Require Import ListDef.
          Local Open Scope list_scope.
+
+         Definition fold_right [A B] (f : B -> A -> A) (a0 : A) :=
+           fix fold_right (l : list B) : A := match l with
+                                              | nil => a0
+                                              | b :: t => f b (fold_right t)
+                                              end.
 
       .. coqtop:: all abort
 

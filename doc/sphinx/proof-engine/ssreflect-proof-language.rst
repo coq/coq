@@ -1987,7 +1987,7 @@ be substituted.
 
       .. coqtop:: all
 
-         Require Import List.
+         From Stdlib Require Import ListDef.
          Section LastCases.
          Variable A : Type.
          Implicit Type l : list A.
@@ -2631,18 +2631,19 @@ term for the intermediate lemma, using tactics of the form:
 
 After the :token:`i_pattern`, a list of binders is allowed.
 
+The following example requires the mathcomp and mczify libraries.
 
 .. example::
 
-  .. coqtop:: reset none
+  .. coqtop:: reset none warn extra
 
-     From Stdlib Require Import ssreflect.
-     From Stdlib Require Import ZArith Lia.
+     From mathcomp Require Import ssreflect ssrfun ssrbool ssrnat zify.
+
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
 
-  .. coqtop:: all
+  .. coqtop:: all extra
 
      Lemma test : True.
      have H x (y : nat) : 2 * x + y = x + x + y by lia.
@@ -2653,7 +2654,7 @@ Since the :token:`i_pattern` can be omitted, to avoid ambiguity,
 bound variables can be surrounded
 with parentheses even if no type is specified:
 
-.. coqtop:: all restart
+.. coqtop:: all restart extra
 
    have (x) : 2 * x = x + x by lia.
 
@@ -2667,7 +2668,7 @@ copying the goal itself.
 
 .. example::
 
-  .. coqtop:: all restart abort
+  .. coqtop:: all restart abort extra
 
      have suff H : 2 + 2 = 3; last first.
 
@@ -2691,7 +2692,7 @@ context entry name.
 
      Set Printing Depth 15.
 
-  .. coqtop:: all abort
+  .. coqtop:: all abort extra
 
      Inductive Ord n := Sub x of x < n.
      Notation "'I_ n" := (Ord n) (at level 8, n at level 2, format "''I_' n").
@@ -2707,7 +2708,7 @@ For this purpose the ``[: name]`` intro pattern and the tactic
 
 .. example::
 
-  .. coqtop:: all abort
+  .. coqtop:: all abort extra
 
      Lemma test n m (H : m + 1 < n) : True.
      have [:pm] @i : 'I_n by apply: (Sub m); abstract: pm; lia.
@@ -2720,7 +2721,7 @@ with`` have`` and an explicit term, they must be used as follows:
 
 .. example::
 
-  .. coqtop:: all abort
+  .. coqtop:: all abort extra
 
      Lemma test n m (H : m + 1 < n) : True.
      have [:pm] @i : 'I_n := Sub m pm.
@@ -2739,7 +2740,7 @@ makes use of it).
 
 .. example::
 
-  .. coqtop:: all abort
+  .. coqtop:: all abort extra
 
      Lemma test n m (H : m + 1 < n) : True.
      have [:pm] @i k : 'I_(n+k) by apply: (Sub m); abstract: pm k; lia.
@@ -2754,7 +2755,9 @@ The have tactic and typeclass resolution
 Since |SSR| 1.5, the ``have`` tactic behaves as follows with respect to
 typeclass inference.
 
-  .. coqtop:: none
+  .. coqtop:: reset none
+
+     From Stdlib Require Import ssreflect.
 
      Axiom ty : Type.
      Axiom t : ty.
@@ -2899,14 +2902,20 @@ simplifies a proof. Here is an example showing the beginning of the
 proof that quotient and reminder of natural number euclidean division
 are unique.
 
+The following example requires the mathcomp and mczify libraries.
+
 .. example::
 
-  .. coqtop:: all
+  .. coqtop:: reset none warn extra
+
+     From mathcomp Require Import ssreflect ssrfun ssrbool ssrnat.
+
+  .. coqtop:: all extra
 
      Lemma quo_rem_unicity d q1 q2 r1 r2 :
        q1*d + r1 = q2*d + r2 -> r1 < d -> r2 < d -> (q1, r1) = (q2, r2).
      wlog: q1 q2 r1 r2 / q1 <= q2.
-       by case (le_gt_dec q1 q2)=> H; last symmetry; eauto with arith.
+       by case: (leqP q1 q2); last symmetry; eauto.
 
 The ``wlog suff`` variant is simpler, since it cuts ``wlog_statement`` instead
 of ``wlog_statement -> G``. It thus opens the goals
@@ -2993,7 +3002,7 @@ illustrated in the following example.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect Lia.
+     From Stdlib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -3982,7 +3991,7 @@ selective rewriting, blocking on the fly the reduction in the term ``t``.
   .. coqtop:: reset none
 
      From Stdlib Require Import ssreflect ssrfun ssrbool.
-     From Stdlib Require Import List.
+     From Stdlib Require Import ListDef.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -4572,7 +4581,7 @@ generation (see Section :ref:`generation_of_equations_ssr`).
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect List.
+     From Stdlib Require Import ssreflect ListDef.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -4647,15 +4656,25 @@ Here is an example of a regular, but nontrivial, eliminator.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect FunInd.
+     From Stdlib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
+
+     Lemma plus_ind :
+       forall [m : nat] [P : nat -> nat -> Prop],
+       (forall n p : nat, n = S p -> P p (plus m p) -> P (S p) (S (plus m p))) ->
+       (forall n _x : nat, n = _x -> match _x with
+                                     | 0 => True
+                                     | S _ => False
+                                     end -> P _x m) -> forall n : nat, P n (plus m n).
+     Admitted.
+
      Section Test.
 
   .. coqtop:: all
 
-     Function plus (m n : nat) {struct n} : nat :=
+     Fixpoint plus (m n : nat) {struct n} : nat :=
        if n is S p then S (plus m p) else m.
 
      About plus_ind.
@@ -4674,16 +4693,22 @@ Here is an example of a regular, but nontrivial, eliminator.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect FunInd.
+     From Stdlib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
      Section Test.
 
-     Function plus (m n : nat) {struct n} : nat :=
+     Fixpoint plus (m n : nat) {struct n} : nat :=
        if n is S p then S (plus m p) else m.
 
-     About plus_ind.
+     Axiom plus_ind :
+       forall [m : nat] [P : nat -> nat -> Prop],
+       (forall n p : nat, n = S p -> P p (plus m p) -> P (S p) (S (plus m p))) ->
+       (forall n _x : nat, n = _x -> match _x with
+                                     | 0 => True
+                                     | S _ => False
+                                     end -> P _x m) -> forall n : nat, P n (plus m n).
 
      Lemma test x y z : plus (plus x y) z = plus x (plus y z).
 
@@ -4699,16 +4724,22 @@ Here is an example of a regular, but nontrivial, eliminator.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect FunInd.
+     From Stdlib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
      Section Test.
 
-     Function plus (m n : nat) {struct n} : nat :=
+     Fixpoint plus (m n : nat) {struct n} : nat :=
        if n is S p then S (plus m p) else m.
 
-     About plus_ind.
+     Axiom plus_ind :
+       forall [m : nat] [P : nat -> nat -> Prop],
+       (forall n p : nat, n = S p -> P p (plus m p) -> P (S p) (S (plus m p))) ->
+       (forall n _x : nat, n = _x -> match _x with
+                                     | 0 => True
+                                     | S _ => False
+                                     end -> P _x m) -> forall n : nat, P n (plus m n).
 
      Lemma test x y z : plus (plus x y) z = plus x (plus y z).
 
@@ -4729,7 +4760,7 @@ Here is an example of a truncated eliminator:
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect FunInd.
+     From Stdlib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.

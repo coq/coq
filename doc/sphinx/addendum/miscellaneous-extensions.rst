@@ -30,10 +30,15 @@ it provides the following command:
 
 .. example::
 
+  .. coqtop:: none
+
+     Module Nat.
+     Axiom mul_add_distr_l : forall n m p : nat, n * (m + p) = n * m + n * p.
+     End Nat.
+
   .. coqtop:: all
 
      Require Stdlib.derive.Derive.
-     Require Import PeanoNat.
 
      Section P.
 

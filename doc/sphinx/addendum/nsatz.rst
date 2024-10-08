@@ -5,6 +5,8 @@ Nsatz: a solver for equalities in integral domains
 
 :Author: Loïc Pottier
 
+.. note::
+   The tactics described in this chapter require the Stdlib library.
 
 To use the tactics described in this section, load the ``Nsatz`` module with the
 command ``Require Import Nsatz``.  Alternatively, if you prefer not to transitively depend on the
