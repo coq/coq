@@ -244,7 +244,7 @@ and print_symbols ~norec fmt = function
 | [] -> fprintf fmt "Pcoq.Rule.stop"
 | tkn :: tkns ->
   let c = if norec then "Pcoq.Rule.next_norec" else "Pcoq.Rule.next" in
-  fprintf fmt "%s @[(%a)@ (%a)@]" c (print_symbols ~norec) tkns print_symbol tkn
+  fprintf fmt "@[%s@ (%a)@ (%a)@]" c (print_symbols ~norec) tkns print_symbol tkn
 
 and print_symbol fmt tkn = match tkn with
 | SymbToken (t, s) ->
@@ -319,7 +319,7 @@ let print_entry fmt e = match e.gentry_rules with
     pr_check () (grammar_extend ()) e.gentry_name print_position pos print_rules rules
 
 let print_ast fmt ext =
-  let () = fprintf fmt "let _ = @[" in
+  let () = fprintf fmt "@[<2>let _ =@ " in
   let () = fprintf fmt "@[<v>%a@]" print_local ext in
   let () = List.iter (fun e -> print_entry fmt e) ext.gramext_entries in
   let () = fprintf fmt "()@]@\n" in
@@ -421,27 +421,27 @@ let print_body_state state fmt r =
 let print_body_fun state fmt r =
   match r.vernac_synterp with
   | None ->
-    fprintf fmt "let coqpp_body %a%a = @[%a@] in "
+    fprintf fmt "let coqpp_body %a%a =@ @[%a@] in@ "
       print_binders r.vernac_toks print_atts_left r.vernac_atts (print_body_state state) r
   | Some (id,pe) ->
-    fprintf fmt "let coqpp_body %a%a = @[(let %s = %a in %a)@] in "
+    fprintf fmt "let coqpp_body %a%a =@ @[(let %s = %a in %a)@] in@ "
       print_binders r.vernac_toks print_atts_left r.vernac_atts id print_code pe  (print_body_state state) r
 
 let print_body state fmt r =
-  fprintf fmt "@[(%afun %a?loc ~atts ()@ -> coqpp_body %a%a)@]"
+  fprintf fmt "@[<2>(%a@[<2>fun %a?loc ~atts () ->@]@ @[<2>coqpp_body@ %a%a@])@]"
     (print_body_fun state) r print_binders r.vernac_toks
     print_binders r.vernac_toks print_atts_right r.vernac_atts
 
 let rec print_sig fmt = function
 | [] -> fprintf fmt "@[Vernacextend.TyNil@]"
 | ExtTerminal s :: rem ->
-  fprintf fmt "@[Vernacextend.TyTerminal (\"%s\", %a)@]" s print_sig rem
+  fprintf fmt "@[Vernacextend.TyTerminal@ @[<1>(\"%s\",@ %a)@]@]" s print_sig rem
 | ExtNonTerminal (symb, _) :: rem ->
-  fprintf fmt "@[Vernacextend.TyNonTerminal (%a, %a)@]"
+  fprintf fmt "@[Vernacextend.TyNonTerminal (%a,@ %a)@]"
     print_symbol symb print_sig rem
 
 let print_rule state fmt r =
-  fprintf fmt "Vernacextend.TyML (%b, %a, %a, %a)"
+  fprintf fmt "Vernacextend.TyML@ @[<v1>(%b,@ %a,@ %a,@ %a)@]"
     r.vernac_depr print_sig r.vernac_toks (print_body state) r print_rule_classifier r
 
 let print_rules state fmt rules =
@@ -562,8 +562,8 @@ let print_rules fmt (name, rules) =
        factorization of parsing rules. It allows to recognize rules of the
        form [ entry(x) ] -> [ x ] so as not to generate a proxy entry and
        reuse the same entry directly. *)
-    fprintf fmt "@[Vernacextend.Arg_alias (%s)@]" e
-  | _ -> fprintf fmt "@[Vernacextend.Arg_rules (%a)@]" pr rules
+    fprintf fmt "@[Vernacextend.Arg_alias@ @[<2>(%s)@]@]" e
+  | _ -> fprintf fmt "@[Vernacextend.Arg_rules@ @[<2>(%a)@]@]" pr rules
 
 let print_printer fmt = function
 | None -> fprintf fmt "@[fun _ -> Pp.str \"missing printer\"@]"
@@ -572,14 +572,14 @@ let print_printer fmt = function
 let print_ast fmt arg =
   let name = arg.vernacargext_name in
   let pr fmt () =
-    fprintf fmt "Vernacextend.vernac_argument_extend ~plugin:\"%s\" ~name:%a @[{@\n\
-      Vernacextend.arg_parsing = %a;@\n\
-      Vernacextend.arg_printer = fun env sigma -> %a;@\n}@]"
+    fprintf fmt "Vernacextend.vernac_argument_extend ~plugin:\"%s\" ~name:%a @[<2>{@\n\
+      Vernacextend.arg_parsing =@ %a;@\n\
+      Vernacextend.arg_printer = fun env sigma ->@ %a;@\n}@]"
       (force_is_plugin ~what:"VERNAC ARGUMENT EXTEND" ())
       print_string name print_rules (name, arg.vernacargext_rules)
       print_printer arg.vernacargext_printer
   in
-  fprintf fmt "let (wit_%s, %s) = @[%a@]@\nlet _ = (wit_%s, %s)@\n"
+  fprintf fmt "@[<2>let (wit_%s, %s) =@ @[%a@]@]@\nlet _ = (wit_%s, %s)@\n"
     name name pr () name name
 
 end
