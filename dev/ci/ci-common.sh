@@ -6,14 +6,7 @@ set -xe
 : "${NJOBS:=1}"
 export NJOBS
 
-# We add $PWD/_install_ci/lib unconditionally due to a hack in the
-# ci-menhir script, which will install some OCaml libraries outside
-# our docker-opam / Nix setup; we have to do this for all the 3 cases
-# below; would we fix ci-menhir, then we just do this for the first
-# branch [ci case]
 if which cygpath >/dev/null 2>&1; then OCAMLFINDSEP=\;; else OCAMLFINDSEP=:; fi
-export OCAMLPATH="$PWD/_install_ci/lib$OCAMLFINDSEP$OCAMLPATH"
-export PATH="$PWD/_install_ci/bin:$PATH"
 
 # We can remove setting COQLIB and COQCORELIB from here, but better to
 # wait until we have merged the coq.boot patch so we can do this in a
@@ -22,6 +15,8 @@ if [ -n "${GITLAB_CI}" ];
 then
     # Gitlab build, Coq installed into `_install_ci`
     export COQBIN="$PWD/_install_ci/bin"
+    export OCAMLPATH="$PWD/_install_ci/lib$OCAMLFINDSEP$OCAMLPATH"
+    export PATH="$PWD/_install_ci/bin:$PATH"
 
     # Where we install external binaries and ocaml libraries
     # also generally used for dune install --prefix so needs to match coq's expected user-contrib path
