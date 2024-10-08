@@ -218,24 +218,45 @@ induction p as [n|n p IH].
 - intros ?. now apply IH, FS_inj.
 Qed.
 
-Lemma case_L_R' {n m} (P : t (n + m) -> Type) (p : t (n + m)) :
-  (forall q, P (L m q)) -> (forall q, P (R n q)) -> P p.
+Fixpoint case_L_R' {n m} : forall (P : t (n + m) -> Type) (p : t (n + m)),
+  (forall q, P (L m q)) -> (forall q, P (R n q)) -> P p :=
+match n with
+| 0 => fun P p HL HR => HR p
+| S n' => fun P p HL HR => Fin.caseS' p P
+    (HL Fin.F1)
+    (fun p' => case_L_R' (fun q => P (Fin.FS q)) p' (fun q => HL (Fin.FS q)) HR)
+end.
+
+Definition case_L_R (P : forall n m, t (n + m) -> Type) {n m} (p : t (n + m)) :
+  (forall n m (q : t n), P n m (L m q)) -> (forall n m (q : t m), P n m (R n q)) -> P n m p :=
+fun HL HR => case_L_R' _ p (HL _ _) (HR _ _).
+
+Lemma case_L_R'_L {n m : nat} (P : Fin.t (n + m) -> Type) (p : Fin.t n) HL HR :
+  case_L_R' P (Fin.L m p) HL HR = HL p.
 Proof.
-induction n as [|n IH]; intros IHL IHR.
-- apply IHR.
-- apply caseS'.
-  + apply (IHL F1).
-  + intros p'. apply (IH (fun _ => _) p'); intros q.
-    * apply (IHL (FS q)).
-    * apply (IHR q).
+  induction p as [|? ? IH]; cbn.
+  - reflexivity.
+  - now rewrite IH.
 Qed.
 
-Lemma case_L_R (P : forall n m, t (n + m) -> Type) {n m} (p : t (n + m)) :
-  (forall n m (q : t n), P n m (L m q)) -> (forall n m (q : t m), P n m (R n q)) -> P n m p.
+Lemma case_L_R'_R {n m : nat} (P : Fin.t (n + m) -> Type) (p : Fin.t m) HL HR :
+  case_L_R' P (Fin.R n p) HL HR = HR p.
 Proof.
-intros HL HR. apply case_L_R'; intros q.
-- apply HL.
-- apply HR.
+  induction n as [|? IH]; cbn.
+  - reflexivity.
+  - now rewrite IH.
+Qed.
+
+Lemma case_L_R_L (P : forall n m, t (n + m) -> Type) {n m} (p : Fin.t n) HL HR :
+  case_L_R P (Fin.L m p) HL HR = HL _ _ p.
+Proof.
+  apply case_L_R'_L.
+Qed.
+
+Lemma case_L_R_R (P : forall n m, t (n + m) -> Type) {n m} (p : Fin.t m) HL HR :
+  case_L_R P (Fin.R n p) HL HR = HR _ _ p.
+Proof.
+  apply case_L_R'_R.
 Qed.
 
 Fixpoint depair {m n} (o : t m) (p : t n) : t (m * n) :=
