@@ -770,12 +770,16 @@ let branches_specif renv c_spec ci =
     let (_,mip) = lookup_mind_specif renv.env ci.ci_ind in
     let v = dest_subterms mip.mind_recargs in
       Array.map List.length v in
+  let subterms = lazy begin match Lazy.force c_spec with
+  | Subterm (_, _, t) -> dest_subterms t
+  | Dead_code | Internally_bound_subterm _ | Not_subterm -> assert false
+  end in
   Array.mapi
       (fun i nca -> (* i+1-th cstructor has arity nca *)
          let lvra = lazy
            (match Lazy.force c_spec with
                 Subterm (_,_,t) when match_inductive ci.ci_ind (dest_recarg t) ->
-                  let vra = Array.of_list (dest_subterms t).(i) in
+                  let vra = Array.of_list (Lazy.force subterms).(i) in
                   assert (Int.equal nca (Array.length vra));
                   Array.map spec_of_tree vra
               | Dead_code -> Array.make nca Dead_code
