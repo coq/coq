@@ -97,15 +97,18 @@ the last one should be accepted
 *)
 
 (* Tree destructors, expanding loops when necessary *)
-let dest_var t =
-  match expand t with
-      Var (i,j) -> (i,j)
-    | _ -> failwith "Rtree.dest_var"
+let dest_var t = match expand0 (Esubst.subs_id 0) t with
+| ExpVar (i, j) -> (i, j)
+| _ -> failwith "Rtree.dest_var"
 
 let dest_node t =
   match expand t with
       Node (l,sons) -> (l,sons)
     | _ -> failwith "Rtree.dest_node"
+
+let dest_head t = match expand0 (Esubst.subs_id 0) t with
+| ExpVar _ -> failwith "Rtree.dest_head"
+| ExpNode (l, _, _) -> l
 
 let is_node t =
   match expand t with

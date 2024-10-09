@@ -54,6 +54,9 @@ val is_node : 'a t -> bool
 (** Destructors (recursive calls are expanded) *)
 val dest_node  : 'a t -> 'a * 'a t array array
 
+(** First projection of {!dest_node} *)
+val dest_head : 'a t -> 'a
+
 (** dest_var is not needed for closed trees (i.e. with no free variable) *)
 val dest_var : 'a t -> int * int
 
