@@ -508,7 +508,7 @@ is equivalent to an instance declaration:
      [Equivalence_Transitive := trans].
 
 The declaration itself amounts to the definition of an object of the record type
-``Coq.Classes.RelationClasses.Equivalence`` and a hint added to the
+``Stdlib.Classes.RelationClasses.Equivalence`` and a hint added to the
 of a typeclass named ``Proper``` defined in ``Classes.Morphisms``. See the
 documentation on :ref:`typeclasses` and the theories files in Classes for
 further explanations.

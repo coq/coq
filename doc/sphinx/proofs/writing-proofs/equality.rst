@@ -62,7 +62,7 @@ Tactics for simple equalities
    form `R t u` where `R` is a reflexive relation registered with the `Equivalence`
    or `Reflexive` typeclasses.  See :cmd:`Class` and :cmd:`Instance`.
 
-   .. exn:: The relation @ident is not a declared reflexive relation. Maybe you need to require the Coq.Classes.RelationClasses library
+   .. exn:: The relation @ident is not a declared reflexive relation. Maybe you need to require the Stdlib.Classes.RelationClasses library
       :undocumented:
 
 .. tacn:: symmetry {? @simple_occurrences }
@@ -76,7 +76,7 @@ Tactics for simple equalities
    `R` is a symmetric relation registered with the `Equivalence` or `Symmetric`
    typeclasses.  See :cmd:`Class` and :cmd:`Instance`.
 
-   .. exn:: The relation @ident is not a declared symmetric relation. Maybe you need to require the Coq.Classes.RelationClasses library
+   .. exn:: The relation @ident is not a declared symmetric relation. Maybe you need to require the Stdlib.Classes.RelationClasses library
       :undocumented:
 
 .. tacn:: transitivity @one_term
@@ -95,7 +95,7 @@ Tactics for simple equalities
       This tactic behaves like :tacn:`transitivity`, using a fresh evar instead of
       a concrete :token:`one_term`.
 
-   .. exn:: The relation @ident is not a declared transitive relation. Maybe you need to require the Coq.Classes.RelationClasses library
+   .. exn:: The relation @ident is not a declared transitive relation. Maybe you need to require the Stdlib.Classes.RelationClasses library
       :undocumented:
 
 .. tacn:: f_equal
