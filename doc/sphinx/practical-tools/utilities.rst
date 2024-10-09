@@ -221,16 +221,16 @@ For example, you may see::
   Bignums /home/jef/coq/lib/coq/user-contrib/Bignums
   Bignums.BigZ /home/jef/coq/lib/coq/user-contrib/Bignums/BigZ
   Ltac2 /home/jef/coq/lib/coq/user-contrib/Ltac2
-  Coq /home/jef/coq/lib/coq/theories
-  Coq.Numbers /home/jef/coq/lib/coq/theories/Numbers
-  Coq.Numbers.Natural /home/jef/coq/lib/coq/theories/Numbers/Natural
-  Coq.Numbers.Natural.Binary /home/jef/coq/lib/coq/theories/Numbers/Natural/Binary
-  Coq.Numbers.Integer /home/jef/coq/lib/coq/theories/Numbers/Integer
-  Coq.Arith /home/jef/coq/lib/coq/theories/Arith
+  Stdlib /home/jef/coq/lib/coq/theories
+  Stdlib.Numbers /home/jef/coq/lib/coq/theories/Numbers
+  Stdlib.Numbers.Natural /home/jef/coq/lib/coq/theories/Numbers/Natural
+  Stdlib.Numbers.Natural.Binary /home/jef/coq/lib/coq/theories/Numbers/Natural/Binary
+  Stdlib.Numbers.Integer /home/jef/coq/lib/coq/theories/Numbers/Integer
+  Stdlib.Arith /home/jef/coq/lib/coq/theories/Arith
   <> /home/jef/myproj
 
 The components of each pair share suffixes, e.g. `Bignums.BigZ` and `Bignums/BigZ` or
-`Coq.Numbers.Natural` and `Numbers/Natural`.  Physical pathnames should
+`Stdlib.Numbers.Natural` and `Numbers/Natural`.  Physical pathnames should
 always use `/` rather than `\\`, even when running on Windows.
 Packages with a physical path containing `user-contrib` were installed
 with the Coq binaries (e.g. `Ltac2`), with the Coq Platform or with opam (e.g. `Bignums`)
