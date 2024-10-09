@@ -2165,6 +2165,17 @@ Section Cutting.
   Lemma firstn_S_cons n a l: firstn (S n) (a::l) = a :: (firstn n l).
   Proof. now simpl. Qed.
 
+  Lemma unfold_firstn n l :
+    firstn n l =
+    match n with
+      | 0 => nil
+      | S n0 => match l with
+                  | nil => nil
+                  | a :: l0 => a :: firstn n0 l0
+                end
+    end.
+  Proof. now destruct n. Qed.
+
   Lemma nth_error_firstn n l i
     : nth_error (firstn n l) i = if i <? n then nth_error l i else None.
   Proof.
@@ -2332,6 +2343,17 @@ Section Cutting.
                  | a::l => skipn n l
                end
     end.
+
+  Lemma unfold_skipn n l :
+    skipn n l =
+    match n with
+      | 0 => l
+      | S n => match l with
+                 | nil => nil
+                 | a::l => skipn n l
+               end
+    end.
+  Proof. now destruct n. Qed.
 
   Lemma nth_error_skipn n l i : nth_error (skipn n l) i = nth_error l (n + i).
   Proof.
