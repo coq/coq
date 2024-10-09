@@ -128,8 +128,6 @@ RENAME: [
 | Prim.natural natural
 *)
 | Vernac.fix_definition fix_definition
-(* todo: hmm, rename adds 1 prodn to closed_binder?? *)
-| Constr.closed_binder closed_binder
 ]
 
 (* written in OCaml *)
@@ -471,8 +469,8 @@ closed_binder: [
 | DELETE "[" name ":" lconstr  "]"
 | MOVETO implicit_binders "[" LIST1 name type_cstr "]"
 
-| REPLACE "(" Prim.name ":" lconstr "|" lconstr ")"
-| WITH "(" Prim.name ":" type "|" lconstr ")"
+| REPLACE "(" name ":" lconstr "|" lconstr ")"
+| WITH "(" name ":" type "|" lconstr ")"
 
 | MOVETO generalizing_binder "`(" LIST1 typeclass_constraint SEP "," ")"
 | MOVETO generalizing_binder "`{" LIST1 typeclass_constraint SEP "," "}"

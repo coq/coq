@@ -38,6 +38,13 @@ variable can be introduced at the same time. It is also possible to give
 the type of the variable as follows:
 :n:`(@ident : @type := @term)`.
 
+`(x : T | P)` is syntactic sugar for `(x : Stdlib.Init.Specif.sig (fun x : T => P))`,
+which would more typically be written `(x : {x : T | P})`.
+Since `(x : T | P)` uses `sig` directly,
+changing the notation `{x : T | P}`
+will not change the meaning of `(x : T | P)`, while
+changing the implicit arguments of `sig` will break `(x : T | P)`).
+
 Lists of :n:`@binder`\s are allowed. In the case of :g:`fun` and :g:`forall`,
 it is intended that at least one binder of the list is an assumption otherwise
 fun and forall gets identical. Moreover, parentheses can be omitted in

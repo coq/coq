@@ -105,6 +105,10 @@ let force_quality ?loc = function
   | Anon loc -> CQualVar (CQAnon (Some loc))
   | Global qid -> CQualVar (CQVar qid)
 
+(* XXX use registered ref? but currently constrexpr doesn't have a node for registered refs
+   and we can't do [Coqlib.lib_ref] at parsing time, it's only available in the interp phase. *)
+let sigref loc = mkRefC (Libnames.qualid_of_string ~loc "Stdlib.Init.Specif.sig")
+
 }
 
 GRAMMAR EXTEND Gram
@@ -463,6 +467,9 @@ GRAMMAR EXTEND Gram
           | _ -> [CLocalDef (id,None,c,None)] }
       | "("; id = name; ":"; t = lconstr; ":="; c = lconstr; ")" ->
         { [CLocalDef (id,None,c,Some t)] }
+      | "("; id=name; ":"; t=lconstr; "|"; c=lconstr; ")" ->
+        { let typ = mkAppC (sigref loc, [mkLambdaC ([id], default_binder_kind, t, c)]) in
+          [CLocalAssum ([id], None, default_binder_kind, typ)] }
       | "{"; id = name; "}" ->
         { [CLocalAssum ([id], None, Default MaxImplicit, CAst.make ~loc @@ CHole (None))] }
       | "{"; id = name; idl = LIST1 name; ":"; c = lconstr; "}" ->
