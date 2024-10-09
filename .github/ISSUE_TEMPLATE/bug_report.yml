@@ -16,7 +16,7 @@ body:
     placeholder: What happens and what you would have expected instead.
 - type: textarea
   attributes:
-    label: Small Coq file to reproduce the bug
+    label: Small Rocq / Coq file to reproduce the bug
     placeholder: |
       Goal True.
         ok tactic.
@@ -25,12 +25,12 @@ body:
     render: coq
 - type: input
   attributes:
-    label: Version of Coq where this bug occurs
+    label: Version of Rocq / Coq where this bug occurs
     description: |
       You can get this information by running `coqtop -v`.
-      Feel free to provide a comma-separated list or a range of versions if you can reproduce the bug on several versions of Coq.
-    placeholder: 8.X.Y
+      Feel free to provide a comma-separated list or a range of versions if you can reproduce the bug on several versions of Rocq / Coq.
+    placeholder: X.Y.Z
 - type: input
   attributes:
-    label: Last version of Coq where the bug did not occur
-    description: You can fill this optional field if the bug is a regression compared to a previous version of Coq.
+    label: Last version of Rocq / Coq where the bug did not occur
+    description: You can fill this optional field if the bug is a regression compared to a previous version of Rocq / Coq.
