@@ -1,7 +1,7 @@
 Program derivation
 ==================
 
-Coq comes with an extension called ``Derive``, which supports program
+Rocq comes with an extension called ``Derive``, which supports program
 derivation. Typically in the style of Bird and Meertens formalism or derivations
 of program refinements. To use the Derive extension it must first be
 required with ``Require Stdlib.derive.Derive``. When the extension is loaded,
@@ -18,7 +18,7 @@ it provides the following command:
    existential variables are shelved goals, as
    described in :tacn:`shelve`).
 
-   When the proof is complete, Coq defines :term:`constants <constant>`
+   When the proof is complete, Rocq defines :term:`constants <constant>`
    for each :n:`@ident__i` and for :n:`@ident`:
 
    + The first ones, named :n:`@ident__i`, are defined as the proof of the

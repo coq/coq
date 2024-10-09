@@ -105,7 +105,7 @@ Section :ref:`typing-rules`.
    :attr:`bypass_check(universes)`, :attr:`bypass_check(guard)`, :attr:`deprecated`,
    :attr:`warn` and :attr:`using` attributes.
 
-   If :n:`@term` is omitted, :n:`@type` is required and Coq enters proof mode.
+   If :n:`@term` is omitted, :n:`@type` is required and Rocq enters proof mode.
    This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
    In this case, the proof should be terminated with :cmd:`Defined` in order to define a :term:`constant`
    for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.
@@ -133,7 +133,7 @@ Assertions and proofs
 
 An assertion states a proposition (or a type) for which the proof (or an
 inhabitant of the type) is interactively built using :term:`tactics <tactic>`.
-Assertions cause Coq to enter :term:`proof mode` (see :ref:`proofhandling`).
+Assertions cause Rocq to enter :term:`proof mode` (see :ref:`proofhandling`).
 Common tactics are described in the :ref:`writing-proofs` chapter.
 The basic assertion command is:
 
@@ -151,7 +151,7 @@ The basic assertion command is:
       | Proposition
       | Property
 
-   After the statement is asserted, Coq needs a proof. Once a proof of
+   After the statement is asserted, Rocq needs a proof. Once a proof of
    :n:`@type` under the assumptions represented by :n:`@binder`\s is given and
    validated, the proof is generalized into a proof of :n:`forall {* @binder }, @type` and
    the theorem is bound to the name :n:`@ident` in the global environment.
@@ -194,7 +194,7 @@ The basic assertion command is:
       This feature, called nested proofs, is disabled by default.
       To activate it, turn the :flag:`Nested Proofs Allowed` flag on.
 
-Proofs start with the keyword :cmd:`Proof`. Then Coq enters the proof mode
+Proofs start with the keyword :cmd:`Proof`. Then Rocq enters the proof mode
 until the proof is completed. In proof mode, the user primarily enters
 tactics (see :ref:`writing-proofs`). The user may also enter
 commands to manage the proof mode (see :ref:`proofhandling`).

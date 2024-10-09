@@ -18,7 +18,7 @@ In :gdef:`backward reasoning`, the proof begins with the theorem statement
 as the goal, which is then gradually transformed until every subgoal generated
 along the way has been proven.  In this case, the proof of `A /\\ B` begins
 with that formula as the goal.  This can be transformed into two subgoals,
-`A` and `B`, followed by the proofs of `A` and `B`.  Coq and its tactics
+`A` and `B`, followed by the proofs of `A` and `B`.  Rocq and its tactics
 primarily use backward reasoning.
 
 A tactic may fully prove a goal, in which case the goal is removed
@@ -193,11 +193,11 @@ The :n:`eqn:` construct in various tactics uses :n:`@naming_intropattern`.
 Use these elementary patterns to specify a name:
 
 * :n:`@ident` — use the specified name
-* :n:`?` — let Coq generate a fresh name
+* :n:`?` — let Rocq generate a fresh name
 * :n:`?@ident` — generate a name that begins with :n:`@ident`
 * :n:`_` — discard the matched part (unless it is required for another
   hypothesis)
-* if a disjunction pattern omits a name, such as :g:`[|H2]`, Coq will choose a name
+* if a disjunction pattern omits a name, such as :g:`[|H2]`, Rocq will choose a name
 
 **Splitting patterns**
 
@@ -979,7 +979,7 @@ Applying theorems
 
       Behaves like :tacn:`apply`, but creates
       :ref:`existential variables <Existential-Variables>`
-      when Coq is unable to deduce instantiations for variables, rather than failing.
+      when Rocq is unable to deduce instantiations for variables, rather than failing.
 
    .. tacn:: rapply @one_term
 
@@ -1112,7 +1112,7 @@ Managing the local context
    introduced in the context by removing certain constructs in the goal.
    If no item is found, the tactic fails.  The name used is
    :n:`@ident` (if specified) or from the construct, except that if the name from the
-   construct already exists in the :term:`local context`, Coq uses a fresh name
+   construct already exists in the :term:`local context`, Rocq uses a fresh name
    instead.  The constructs have these forms:
    (See examples :ref:`here <intro_examples>`.)
 
@@ -1131,7 +1131,7 @@ Managing the local context
 
    We recommend always specifying :n:`@ident` so that the names of hypotheses don't
    change as the proof is updated, making your proof easier to maintain.  For example,
-   if H exists in the context, Coq will consider using `H0`, `H1`, ... until it finds an
+   if H exists in the context, Rocq will consider using `H0`, `H1`, ... until it finds an
    unused name.  Modifications to a proof can change automatically assigned names
    that subsequent tactics likely refer to, making the proofs harder to maintain.  The
    :flag:`Mangle Names` flag gives some control over how fresh names are generated (see
@@ -1141,9 +1141,9 @@ Managing the local context
    the context with a single tactic.
 
    :n:`@ident`
-     The name to give to the introduced item.  If not given, Coq uses the
+     The name to give to the introduced item.  If not given, Rocq uses the
      variable name from the :n:`forall` or `H` for premises.
-     If a name such as `H` is already in use, Coq will consider using `H0`,
+     If a name such as `H` is already in use, Rocq will consider using `H0`,
      `H1`, ... until it finds a fresh name.
 
      .. note::
@@ -1528,7 +1528,7 @@ Controlling the proof flow
    with the added hypothesis (and otherwise fails).
 
    In the second form, if :n:`@as_ipat` isn't specified, the tactic adds a new
-   hypothesis :n:`@one_type` with a name chosen by Coq.  Otherwise, it transforms
+   hypothesis :n:`@one_type` with a name chosen by Rocq.  Otherwise, it transforms
    :n:`@one_type` as specified by :n:`@as_ipat` and adds the resulting new hypotheses.
    The :n:`@as_ipat` may also expand the current subgoal into multiple subgoals.
    Then, if :n:`@ltac_expr3` is specified, it is applied to and must succeed on all
@@ -1696,7 +1696,7 @@ Controlling the proof flow
    The :n:`evar` tactic creates a new :term:`local definition <context-local definition>`
    named :n:`@ident` with type :n:`@type` or :n:`@one_type` in the context.
    The body of this binding is a fresh existential variable.  If the second
-   form is used, Coq chooses the name.
+   form is used, Rocq chooses the name.
 
 .. tacn:: instantiate ( @ident := @term )
           instantiate ( @natural := @term ) {? @hloc }
@@ -1718,7 +1718,7 @@ Controlling the proof flow
              must have given the name explicitly (see :ref:`Existential-Variables`).
 
    .. note:: When you are referring to hypotheses which you did not name
-             explicitly, be aware that Coq may make a different decision on how to
+             explicitly, be aware that Rocq may make a different decision on how to
              name the variable in the current goal and in the context of the
              existential variable. This can lead to surprising behaviors.
 

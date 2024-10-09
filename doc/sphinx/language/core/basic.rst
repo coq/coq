@@ -10,7 +10,7 @@ manual.  Then, we present the essential vocabulary necessary to read
 the rest of the manual.  Other terms are defined throughout the manual.
 The reader may refer to the :ref:`glossary index <glossary_index>`
 for a complete list of defined terms.  Finally, we describe the various types of
-settings that Coq provides.
+settings that Rocq provides.
 
 Syntax and lexical conventions
 ------------------------------
@@ -21,7 +21,7 @@ Syntax conventions
 ~~~~~~~~~~~~~~~~~~
 
 The syntax described in this documentation is equivalent to that
-accepted by the Coq parser, but the grammar has been edited
+accepted by the Rocq parser, but the grammar has been edited
 to improve readability and presentation.
 
 In the grammar presented in this manual, the terminal symbols are
@@ -49,13 +49,13 @@ graphically using the following kinds of blocks:
 
 `Precedence levels
 <https://en.wikipedia.org/wiki/Order_of_operations>`_ that are
-implemented in the Coq parser are shown in the documentation by
+implemented in the Rocq parser are shown in the documentation by
 appending the level to the nonterminal name (as in :n:`@term100` or
 :n:`@ltac_expr3`).
 
 .. note::
 
-   Coq uses an extensible parser.  Plugins and the :ref:`notation
+   Rocq uses an extensible parser.  Plugins and the :ref:`notation
    system <syntax-extensions-and-notation-scopes>` can extend the
    syntax at run time.  Some notations are defined in the :term:`prelude`,
    which is loaded by default.  The documented grammar doesn't include
@@ -71,9 +71,9 @@ appending the level to the nonterminal name (as in :n:`@term100` or
 
    Given the complexity of these parsing rules, it would be extremely
    difficult to create an external program that can properly parse a
-   Coq document.  Therefore, tool writers are advised to delegate
-   parsing to Coq, by communicating with it, for instance through
-   `SerAPI <https://github.com/ejgallego/coq-serapi>`_.
+   Rocq document.  Therefore, tool writers are advised to delegate
+   parsing to Rocq, by communicating with it, for instance through
+   `coq-lsp <https://github.com/ejgallego/coq-lsp>`_.
 
 .. seealso:: :cmd:`Print Grammar`
 
@@ -182,8 +182,8 @@ Strings
 .. _keywords:
 
 Keywords
-  The following character sequences are keywords defined in the main Coq grammar
-  that cannot be used as identifiers (even when starting Coq with the `-noinit`
+  The following character sequences are keywords defined in the main Rocq grammar
+  that cannot be used as identifiers (even when starting Rocq with the `-noinit`
   command-line flag)::
 
     _ Axiom CoFixpoint Definition Fixpoint Hypothesis Parameter Prop
@@ -200,8 +200,8 @@ Keywords
   :cmd:`Print Keywords` can be used to print the current keywords and tokens.
 
 Other tokens
-  The following character sequences are tokens defined in the main Coq grammar
-  (even when starting Coq with the `-noinit` command-line flag)::
+  The following character sequences are tokens defined in the main Rocq grammar
+  (even when starting Rocq with the `-noinit` command-line flag)::
 
     ! #[ % & ' ( () ) * + , - ->
     . .( .. ... / : ::= := :> ; < <+ <- <:
@@ -236,7 +236,7 @@ Essential vocabulary
 --------------------
 
 This section presents the most essential notions to understand the
-rest of the Coq manual: :term:`terms <term>` and :term:`types
+rest of the Rocq Prover manual: :term:`terms <term>` and :term:`types
 <type>` on the one hand, :term:`commands <command>` and :term:`tactics
 <tactic>` on the other hand.
 
@@ -244,14 +244,14 @@ rest of the Coq manual: :term:`terms <term>` and :term:`types
 
    term
 
-     Terms are the basic expressions of Coq.  Terms can represent
+     Terms are the basic expressions of Rocq.  Terms can represent
      mathematical expressions, propositions and proofs, but also
      executable programs and program types.
 
      Here is the top-level syntax of terms.  Each of the listed
      constructs is presented in a dedicated section.  Some of these
      constructs (like :n:`@term_forall_or_fun`) are part of the core
-     language that the kernel of Coq understands and are therefore
+     language that the kernel of Rocq understands and are therefore
      described in :ref:`this chapter <core-language>`, while
      others (like :n:`@term_if`) are language extensions that are
      presented in :ref:`the next chapter <extensions>`.
@@ -297,18 +297,18 @@ rest of the Coq manual: :term:`terms <term>` and :term:`types
 
    type
 
-     To be valid and accepted by the Coq kernel, a term needs an
+     To be valid and accepted by the Rocq kernel, a term needs an
      associated type.  We express this relationship by “:math:`x` *of
      type* :math:`T`”, which we write as “:math:`x:T`”.  Informally,
      “:math:`x:T`” can be thought as “:math:`x` *belongs to*
      :math:`T`”.
 
-     The Coq kernel is a type checker: it verifies that a term has
+     The Rocq kernel is a type checker: it verifies that a term has
      the expected type by applying a set of typing rules (see
      :ref:`Typing-rules`).  If that's indeed the case, we say that the
      term is :gdef:`well-typed`.
 
-     A special feature of the Coq language is that types can depend
+     A special feature of the Rocq language is that types can depend
      on terms (we say that the language is `dependently-typed
      <https://en.wikipedia.org/wiki/Dependent_type>`_).  Because of
      this, types and terms share a common syntax.  All types are :term:`terms <term>`,
@@ -333,13 +333,13 @@ rest of the Coq manual: :term:`terms <term>` and :term:`types
      mathematics alternative to the standard `"set theory"
      <https://en.wikipedia.org/wiki/Set_theory>`_: we call such
      logical foundations `"type theories"
-     <https://en.wikipedia.org/wiki/Type_theory>`_.  Coq is based on
+     <https://en.wikipedia.org/wiki/Type_theory>`_.  The Rocq Prover is based on
      the Calculus of Inductive Constructions, which is a particular
      instance of type theory.
 
    sentence
 
-     Coq documents are made of a series of sentences that contain
+     Rocq documents are made of a series of sentences that contain
      :term:`commands <command>` or :term:`tactics <tactic>`, generally
      terminated with a period and optionally decorated with
      :term:`attributes <attribute>`.
@@ -359,7 +359,7 @@ rest of the Coq manual: :term:`terms <term>` and :term:`types
 
    command
 
-     A :production:`command` can be used to modify the state of a Coq
+     A :production:`command` can be used to modify the state of a Rocq
      document, for instance by declaring a new object, or to get
      information about the current state.
 
@@ -378,7 +378,7 @@ rest of the Coq manual: :term:`terms <term>` and :term:`types
 
      A :production:`tactic` specifies how to transform the current proof state as a
      step in creating a proof.  They are syntactically valid only when
-     Coq is in :term:`proof mode`, such as after a :cmd:`Theorem` command
+     Rocq is in :term:`proof mode`, such as after a :cmd:`Theorem` command
      and before any subsequent proof-terminating command such as
      :cmd:`Qed`.  See :ref:`proofhandling` for more on proof mode.
 
@@ -390,11 +390,11 @@ rest of the Coq manual: :term:`terms <term>` and :term:`types
 Settings
 --------
 
-There are several mechanisms for changing the behavior of Coq.  The
+There are several mechanisms for changing the behavior of Rocq.  The
 :term:`attribute` mechanism is used to modify the default behavior of a
-:term:`sentence` or to attach information to Coq objects.
+:term:`sentence` or to attach information to Rocq objects.
 The :term:`flag`, :term:`option` and :term:`table`
-mechanisms are used to modify the behavior of Coq more globally in a
+mechanisms are used to modify the behavior of Rocq more globally in a
 document or project.
 
 .. _attributes:
@@ -403,7 +403,7 @@ Attributes
 ~~~~~~~~~~
 
 An :gdef:`attribute` is used to modify the default behavior of a
-sentence or to attach information to a Coq object.
+sentence or to attach information to a Rocq object.
 Syntactically, most commands and tactics can be decorated with
 attributes (cf. :n:`@sentence`), but attributes not supported by the
 command or tactic will trigger :warn:`This command does not support
@@ -520,7 +520,7 @@ Document-level attributes
 Flags, Options and Tables
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following types of settings can be used to change the behavior of Coq in
+The following types of settings can be used to change the behavior of Rocq in
 subsequent commands and tactics (see :ref:`set_unset_scope_qualifiers` for a
 more precise description of the scope of these settings):
 
@@ -562,10 +562,10 @@ they appear after a boldface label.  They are listed in the
       This warning message can be raised by :cmd:`Set` and
       :cmd:`Unset` when :n:`@setting_name` is unknown.  It is a
       warning rather than an error because this helps library authors
-      produce Coq code that is compatible with several Coq versions.
+      produce Rocq code that is compatible with several Rocq versions.
       To preserve the same behavior, they may need to set some
       compatibility flags or options that did not exist in previous
-      Coq versions.
+      Rocq versions.
 
 .. cmd:: Unset @setting_name
 

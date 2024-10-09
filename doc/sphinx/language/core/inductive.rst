@@ -9,7 +9,7 @@ Inductive types include natural numbers,
 lists and well-founded trees. Inhabitants of inductive types can
 recursively nest only a finite number of constructors. So, they are
 well-founded. This distinguishes them from :cmd:`CoInductive` types,
-such as streams, whose constructors can be infinitely nested. In Coq,
+such as streams, whose constructors can be infinitely nested. In Rocq,
 :cmd:`Variant` types thus correspond to the common subset of inductive
 and coinductive types that are non-recursive.
 
@@ -33,7 +33,7 @@ Inductive types
       constructor ::= {* #[ {+, @attribute } ] } @ident {* @binder } {? @of_type_inst }
 
    Defines one or more
-   inductive types and its constructors.  Coq generates
+   inductive types and its constructors.  Rocq generates
    :gdef:`induction principles <induction principle>`
    depending on the universe that the inductive type belongs to.
 
@@ -493,7 +493,7 @@ constructions.
    It is especially useful when defining functions over mutually defined
    inductive types.  Example: :ref:`Mutual Fixpoints<example_mutual_fixpoints>`.
 
-   If :n:`@term` is omitted, :n:`@type` is required and Coq enters proof mode.
+   If :n:`@term` is omitted, :n:`@type` is required and Rocq enters proof mode.
    This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
    In this case, the proof should be terminated with :cmd:`Defined` in order to define a :term:`constant`
    for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.
@@ -658,7 +658,7 @@ the sort of the inductive type :math:`t` (not to be confused with :math:`\Sort` 
       \end{array}
       \right]}
 
-   which corresponds to the result of the Coq declaration:
+   which corresponds to the result of the Rocq declaration:
 
    .. coqtop:: in reset
 
@@ -679,7 +679,7 @@ the sort of the inductive type :math:`t` (not to be confused with :math:`\Sort` 
                 \consf &:& \tree → \forest → \forest\\
                           \end{array}\right]}
 
-   which corresponds to the result of the Coq declaration:
+   which corresponds to the result of the Rocq declaration:
 
    .. coqtop:: in
 
@@ -702,7 +702,7 @@ the sort of the inductive type :math:`t` (not to be confused with :math:`\Sort` 
                 \oddS &:& ∀ n,~\even~n → \odd~(\nS~n)
                           \end{array}\right]}
 
-   which corresponds to the result of the Coq declaration:
+   which corresponds to the result of the Rocq declaration:
 
    .. coqtop:: in
 
@@ -1214,7 +1214,7 @@ Conversion is preserved as any (partial) instance :math:`I_j~q_1 … q_r` or
    inductive type to be template polymorphic, even if the :flag:`Auto
    Template Polymorphism` flag is on.
 
-In practice, the rule **Ind-Family** is used by Coq only when there is only one
+In practice, the rule **Ind-Family** is used by Rocq only when there is only one
 inductive type in the inductive definition and it is declared with an arity
 whose sort is in the Type hierarchy. Then, the polymorphism is over
 the parameters whose type is an arity of sort in the Type hierarchy.
@@ -1351,8 +1351,8 @@ the logical level it is a proof of the usual induction principle and
 at the computational level it implements a generic operator for doing
 primitive recursion over the structure.
 
-But this operator is rather tedious to implement and use. We choose in
-this version of Coq to factorize the operator for primitive recursion
+But this operator is rather tedious to implement and use. We choose
+to factorize the operator for primitive recursion
 into two more primitive operations as was first suggested by Th.
 Coquand in :cite:`Coq92`. One is the definition by pattern matching. The
 second one is a definition by guarded fixpoints.
@@ -1367,7 +1367,7 @@ The basic idea of this operator is that we have an object :math:`m` in an
 inductive type :math:`I` and we want to prove a property which possibly
 depends on :math:`m`. For this, it is enough to prove the property for
 :math:`m = (c_i~u_1 … u_{p_i} )` for each constructor of :math:`I`.
-The Coq term for this proof
+The Rocq term for this proof
 will be written:
 
 .. math::
@@ -1382,7 +1382,7 @@ Actually, for type checking a :math:`\Match…\with…\kwend` expression we also
 to know the predicate :math:`P` to be proved by case analysis. In the general
 case where :math:`I` is an inductively defined :math:`n`-ary relation, :math:`P` is a predicate
 over :math:`n+1` arguments: the :math:`n` first ones correspond to the arguments of :math:`I`
-(parameters excluded), and the last one corresponds to object :math:`m`. Coq
+(parameters excluded), and the last one corresponds to object :math:`m`. Rocq
 can sometimes infer this predicate but sometimes not. The concrete
 syntax for describing this predicate uses the :math:`\as…\In…\return`
 construction. For instance, let us assume that :math:`I` is an unary predicate

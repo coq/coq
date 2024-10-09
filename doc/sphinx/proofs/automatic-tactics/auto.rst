@@ -335,14 +335,14 @@ and `Constants`, while implicitly created databases have the `Opaque` setting.
 
    By default, hint databases are undiscriminated.
 
-Hint databases defined in the Coq standard library
-``````````````````````````````````````````````````
+Hint databases defined in the Rocq standard library
+```````````````````````````````````````````````````
 
-Several hint databases are defined in the Coq standard library. The
+Several hint databases are defined in the Rocq standard library. The
 database contains all hints declared
 to belong to it in the currently loaded modules.
 In particular, requiring new modules may extend the database.
-At Coq startup, only the core database is nonempty and ready to be used immediately.
+At Rocq startup, only the core database is nonempty and ready to be used immediately.
 
 :core: This special database is automatically used by ``auto``, except when
        pseudo-database ``nocore`` is given to ``auto``. The core database

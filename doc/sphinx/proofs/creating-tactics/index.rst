@@ -18,22 +18,22 @@ new tactics:
 
 - `Mtac2 <https://github.com/Mtac2/Mtac2>`_ is an external plugin
   which provides another typed tactic language.  While Ltac2 belongs
-  to the ML language family, Mtac2 reuses the language of Coq itself
-  as the language to build Coq tactics.
+  to the ML language family, Mtac2 reuses the language of Rocq itself
+  as the language to build Rocq tactics.
 
 - `Coq-Elpi <https://github.com/LPCIC/coq-elpi>`_ is an external plugin
   which provides an extension language based on λProlog, a programming
   language well suited to write code which manipulates syntax trees with
-  binders such as Coq terms.
+  binders such as Rocq terms.
   Elpi provides an extensive set of APIs to create commands (i.e. script
   the vernacular language) and tactics.
 
 - The most traditional way of building new complex tactics is to write
-  a Coq plugin in OCaml. Beware that this requires much more
-  effort. Furthermore, Coq's OCaml API can change from release
+  a Rocq plugin in OCaml. Beware that this requires much more
+  effort. Furthermore, Rocq's OCaml API can change from release
   to release without backward compatibility support, which can cause
   a significant ongoing maintenance burden.
-  A tutorial for writing Coq plugins is available in the Coq
+  A tutorial for writing Rocq plugins is available in the Rocq
   repository in `doc/plugin_tutorial
   <https://github.com/coq/coq/tree/master/doc/plugin_tutorial>`_.
 

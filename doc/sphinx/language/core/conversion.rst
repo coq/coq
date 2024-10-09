@@ -3,7 +3,7 @@
 Conversion rules
 ----------------
 
-Coq has conversion rules that can be used to determine if two
+The Rocq Prover has conversion rules that can be used to determine if two
 terms are equal by definition in |CiC|, or :term:`convertible`.
 Conversion rules consist of reduction rules and expansion rules.
 Equality is determined by
@@ -85,7 +85,7 @@ to other changes to the proof state.)
 Two terms are :gdef:`α-convertible <alpha-convertible>` if they are syntactically
 equal ignoring differences in the names of variables bound within the expression.
 For example `forall x, x + 0 = x` is α-convertible with `forall y, y + 0 = y`.
-(Internally, Coq represents these two terms using de Bruijn indices,
+(Internally, Rocq represents these two terms using de Bruijn indices,
 so explicit α-conversion is not necessary.)
 
 β-reduction

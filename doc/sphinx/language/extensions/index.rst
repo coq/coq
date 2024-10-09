@@ -4,7 +4,7 @@
 Language extensions
 ===================
 
-Elaboration extends the language accepted by the Coq kernel to make it
+Elaboration extends the language accepted by the Rocq kernel to make it
 easier to use.  For example, this lets the user omit most type
 annotations because they can be inferred, call functions with implicit
 arguments which will be inferred as well, extend the syntax with

@@ -10,13 +10,13 @@ SProp (proof irrelevant propositions)
    In particular, conversion checking through bytecode or native code
    compilation currently does not understand proof irrelevance.
 
-This section describes the extension of Coq with definitionally
+This section describes the extension of Rocq with definitionally
 proof irrelevant propositions (types in the sort :math:`\SProp`, also
 known as strict propositions) as described in
 :cite:`Gilbert:POPL2019`.
 
 Use of |SProp| may be disabled by passing ``-disallow-sprop`` to the
-Coq program or by turning the :flag:`Allow StrictProp` flag off.
+Rocq program or by turning the :flag:`Allow StrictProp` flag off.
 
 .. flag:: Allow StrictProp
 
@@ -256,7 +256,7 @@ proof relevant.
 
   This is a developer warning, which is treated as an error by default. It is
   emitted by the kernel when it is passed a term with incorrect relevance marks.
-  This is always caused by a bug in Coq (or a plugin), which should thus be reported and
+  This is always caused by a bug in Rocq (or a plugin), which should thus be reported and
   fixed. In order to allow the user to work around such bugs, we leave the
   ability to unset the ``bad-relevance`` warning for the time being, so that the
   kernel will silently repair the proof term instead of failing.

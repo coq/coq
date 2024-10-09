@@ -67,7 +67,7 @@ usable outside the section as shown in this :ref:`example <section_local_declara
    will be wrapped with a :n:`@term_let` with the same declaration.
 
    As for :cmd:`Definition`, :cmd:`Fixpoint` and :cmd:`CoFixpoint`,
-   if :n:`@term` is omitted, :n:`@type` is required and Coq enters proof mode.
+   if :n:`@term` is omitted, :n:`@type` is required and Rocq enters proof mode.
    This can be used to define a term incrementally,
    in particular by relying on the :tacn:`refine` tactic.
    See :ref:`proof-editing-mode`.

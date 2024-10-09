@@ -312,7 +312,7 @@ proof by abstracting monomials by variables.
    that might miss a refutation.
 
    To illustrate the working of the tactic, consider we wish to prove the
-   following Coq goal:
+   following goal:
 
 .. needs csdp
 .. coqdoc::

@@ -5,15 +5,15 @@ Proof mode
 ----------
 
 :gdef:`Proof mode <proof mode>` is used to prove theorems.
-Coq enters proof mode when you begin a proof,
+Rocq enters proof mode when you begin a proof,
 such as with the :cmd:`Theorem` command.  It exits proof mode when
 you complete a proof, such as with the :cmd:`Qed` command.  Tactics,
 which are available only in proof mode, incrementally transform incomplete
 proofs to eventually generate a complete proof.
 
-When you run Coq interactively, such as through CoqIDE, Proof General or
-coqtop, Coq shows the current proof state (the incomplete proof) as you
-enter tactics.  This information isn't shown when you run Coq in batch
+When you run Rocq interactively, such as through CoqIDE, Proof General or
+coqtop, Rocq shows the current proof state (the incomplete proof) as you
+enter tactics.  This information isn't shown when you run Rocq in batch
 mode with `coqc`.
 
 Proof State
@@ -137,13 +137,13 @@ to make them visible.  Other tactics may automatically resolve these goals
 user usually doesn't need to think about.  See :ref:`existential-variables`
 and :ref:`this example <automatic-evar-resolution>`.
 
-Coq's kernel verifies the correctness of proof terms when it exits
+Rocq's kernel verifies the correctness of proof terms when it exits
 proof mode by checking that the proof term is :term:`well-typed` and
 that its type is the same as the theorem statement.
 
 After a proof is completed, :cmd:`Print` `<theorem_name>`
 shows the proof term and its type.  The type appears after
-the colon (`forall ...`), as for this theorem from Coq's standard library:
+the colon (`forall ...`), as for this theorem from Rocq's standard library:
 
 .. coqtop:: all
 
@@ -165,8 +165,8 @@ the colon (`forall ...`), as for this theorem from Coq's standard library:
 Entering and exiting proof mode
 -------------------------------
 
-Coq enters :term:`proof mode` when you begin a proof through
-commands such as :cmd:`Theorem` or :cmd:`Goal`.  Coq user interfaces
+Rocq enters :term:`proof mode` when you begin a proof through
+commands such as :cmd:`Theorem` or :cmd:`Goal`.  Rocq user interfaces
 usually have a way to indicate that you're in proof mode.
 
 :term:`Tactics <tactic>` are available only in proof mode (currently they give syntax
@@ -186,7 +186,7 @@ When the proof is completed, you can exit proof mode with commands such as
 
 .. cmd:: Qed
 
-   Passes a completed :term:`proof term` to Coq's kernel
+   Passes a completed :term:`proof term` to Rocq's kernel
    to check that the proof term is :term:`well-typed` and
    to verify that its type matches the theorem statement.  If it's verified, the
    proof term is added to the global environment as an :term:`opaque` constant
@@ -489,8 +489,8 @@ Proof modes
 -----------
 
 When entering proof mode through commands such as :cmd:`Goal` and :cmd:`Proof`,
-Coq picks by default the |Ltac| mode. Nonetheless, there exist other proof modes
-shipped in the standard Coq installation, and furthermore some plugins define
+Rocq picks by default the |Ltac| mode. Nonetheless, there exist other proof modes
+shipped in the standard Rocq installation, and furthermore some plugins define
 their own proof modes. The default proof mode used when opening a proof can
 be changed using the following option.
 
@@ -656,12 +656,12 @@ is made from ``-``, ``+`` or ``*`` characters (with no spaces and no period afte
    :undocumented:
    :name: bullet (- + *)
 
-When a focused goal is proved, Coq displays a message suggesting use of
+When a focused goal is proved, Rocq displays a message suggesting use of
 ``}`` or the correct matching bullet to unfocus the goal or focus the next subgoal.
 
 .. note::
 
-   In Proof General (``Emacs`` interface to Coq), you must use
+   In Proof General (``Emacs`` interface to Rocq), you must use
    bullets with the priority ordering shown above to have correct
    indentation. For example ``-`` must be the outer bullet and ``+`` the inner
    one in the example below.
@@ -1032,8 +1032,8 @@ Requesting information
 Showing differences between proof steps
 ---------------------------------------
 
-Coq can automatically highlight the differences between successive proof steps
-and between values in some error messages.  Coq can also highlight differences
+Rocq can automatically highlight the differences between successive proof steps
+and between values in some error messages.  Rocq can also highlight differences
 in the proof term.
 For example, the following screenshots of CoqIDE and coqtop show the application
 of the same :tacn:`intros` tactic.  The tactic creates two new hypotheses, highlighted in green.
@@ -1092,7 +1092,7 @@ How to enable diffs
 
 For coqtop, showing diffs can be enabled when starting coqtop with the
 ``-diffs on|off|removed`` command-line option or by setting the :opt:`Diffs` option
-within Coq.  You will need to provide the ``-color on|auto`` command-line option when
+within Rocq.  You will need to provide the ``-color on|auto`` command-line option when
 you start coqtop in either case.
 
 Colors for coqtop can be configured by setting the ``COQ_COLORS`` environment
@@ -1106,7 +1106,7 @@ command in CoqIDE.  You can change the background colors shown for diffs from th
 lets you control other attributes of the highlights, such as the foreground
 color, bold, italic, underline and strikeout.
 
-Proof General, VsCoq and Coqtail can also display Coq-generated proof diffs automatically.
+Proof General, VsCoq and Coqtail can also display Rocq-generated proof diffs automatically.
 Please see the PG documentation section
 `"Showing Proof Diffs" <https://proofgeneral.github.io/doc/master/userman/Coq-Proof-General#Showing-Proof-Diffs>`_
 and Coqtail's `"Proof Diffs" <https://github.com/whonore/Coqtail#proof-diffs>`_
@@ -1232,14 +1232,14 @@ Proof maintenance
 
 *Experimental.*  Many tactics, such as :tacn:`intros`, can automatically generate names, such
 as "H0" or "H1" for a new hypothesis introduced from a goal.  Subsequent proof steps
-may explicitly refer to these names.  However, future versions of Coq may not assign
+may explicitly refer to these names.  However, future versions of Rocq may not assign
 names exactly the same way, which could cause the proof to fail because the
 new names don't match the explicit references in the proof.
 
 The following :flag:`Mangle Names` settings let users find all the
 places where proofs rely on automatically generated names, which can
 then be named explicitly to avoid any incompatibility.  These
-settings cause Coq to generate different names, producing errors for
+settings cause Rocq to generate different names, producing errors for
 references to automatically generated names.
 
 .. flag:: Mangle Names
@@ -1275,10 +1275,10 @@ Controlling proof mode
 
    When turned on (it is off by default), this :term:`flag` enables support for nested
    proofs: a new assertion command can be inserted before the current proof is
-   finished, in which case Coq will temporarily switch to the proof of this
+   finished, in which case Rocq will temporarily switch to the proof of this
    *nested lemma*. When the proof of the nested lemma is finished (with :cmd:`Qed`
    or :cmd:`Defined`), its statement will be made available (as if it had been
-   proved before starting the previous proof) and Coq will switch back to the
+   proved before starting the previous proof) and Rocq will switch back to the
    proof of the previous assertion.
 
 .. flag:: Printing Goal Names
@@ -1304,7 +1304,7 @@ Controlling memory usage
    Words are 8 bytes or 4 bytes, respectively, for 64- and 32-bit executables.
 
 When experiencing high memory usage the following commands can be used
-to force Coq to optimize some of its internal data structures.
+to force Rocq to optimize some of its internal data structures.
 
 .. cmd:: Optimize Proof
 

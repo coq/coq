@@ -3,7 +3,7 @@
 Syntax extensions and notation scopes
 =====================================
 
-In this chapter, we introduce advanced commands to modify the way Coq
+In this chapter, we introduce advanced commands to modify the way Rocq
 parses and prints objects, i.e. the translations between the concrete
 and internal representations of terms and commands.
 
@@ -13,7 +13,7 @@ The main commands to provide custom symbolic notations for terms are
 variant of :cmd:`Notation` which does not modify the parser; this provides a
 form of :ref:`abbreviation <Abbreviations>`. It is
 sometimes expected that the same symbolic notation has different meanings in
-different contexts; to achieve this form of overloading, Coq offers a notion
+different contexts; to achieve this form of overloading, Rocq offers a notion
 of :ref:`notation scopes <Scopes>`.
 The main command to provide custom notations for tactics is :cmd:`Tactic Notation`.
 
@@ -92,7 +92,7 @@ symbol starts with a double quote, it must be surrounded with single
 quotes to prevent confusion with the beginning of a string symbol.
 
 A notation binds a syntactic expression to a term, called its :gdef:`interpretation`. Unless the parser
-and pretty-printer of Coq already know how to deal with the syntactic
+and pretty-printer of Rocq already know how to deal with the syntactic
 expression (such as through :cmd:`Reserved Notation` or for notations
 that contain only literals), explicit precedences and
 associativity rules have to be given.
@@ -123,7 +123,7 @@ Precedences and associativity
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Mixing different symbolic notations in the same text may cause serious
-parsing ambiguity. To deal with the ambiguity of notations, Coq uses
+parsing ambiguity. To deal with the ambiguity of notations, Rocq uses
 precedence levels ranging from 0 to 100 (plus one extra level numbered
 200) and associativity rules.
 
@@ -134,7 +134,7 @@ Consider for example the new notation
    Notation "A \/ B" := (or A B).
 
 Clearly, an expression such as :g:`forall A:Prop, True /\ A \/ A \/ False`
-is ambiguous. To tell the Coq parser how to interpret the
+is ambiguous. To tell the Rocq parser how to interpret the
 expression, a priority between the symbols ``/\`` and ``\/`` has to be
 given. Assume for instance that we want conjunction to bind more than
 disjunction. This is expressed by assigning a precedence level to each
@@ -152,7 +152,7 @@ defaults to :g:`True /\ (False /\ False)` (right associativity) or to
 expression is not well-formed and that parentheses are mandatory (this is a “no
 associativity”) [#no_associativity]_. We do not know of a special convention for
 the associativity of disjunction and conjunction, so let us apply
-right associativity (which is the choice of Coq).
+right associativity (which is the choice of Rocq).
 
 Precedence levels and associativity rules of notations are specified with a list of
 parenthesized :n:`@syntax_modifier`\s.  Here is how the previous examples refine:
@@ -220,7 +220,7 @@ left. See the next section for more about factorization.
 Simple factorization rules
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Coq extensible parsing is performed by *Camlp5* which is essentially a LL1
+Rocq extensible parsing is performed by *Camlp5* which is essentially a LL1
 parser: it decides which notation to parse by looking at tokens from left to right.
 Hence, some care has to be taken not to hide already existing rules by new
 rules. Indeed notations with a common prefix but different levels can
@@ -254,10 +254,10 @@ Or better yet, simply let the defaults ensure the best factorization.
    Reserved Notation "x << y << z".
    Print Notation "_ << _ << _".
 
-For the sake of factorization with Coq predefined rules, simple rules
+For the sake of factorization with Rocq predefined rules, simple rules
 have to be observed for notations starting with a symbol, e.g., rules
 starting with “\ ``{``\ ” or “\ ``(``\ ” should be put at level 0. The list
-of Coq predefined notations can be found in the chapter on :ref:`thecoqlibrary`.
+of Rocq predefined notations can be found in the chapter on :ref:`thecoqlibrary`.
 
 .. warn:: Closed notations (i.e. starting and ending with a terminal symbol) should usually be at level 0 (default).
    :name: closed-notation-not-level-0
@@ -274,8 +274,8 @@ of Coq predefined notations can be found in the chapter on :ref:`thecoqlibrary`.
 Use of notations for printing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The command :cmd:`Notation` has an effect both on the Coq parser and on the
-Coq printer. For example:
+The command :cmd:`Notation` has an effect both on the Rocq parser and on the
+Rocq printer. For example:
 
 .. coqtop:: all
 
@@ -283,7 +283,7 @@ Coq printer. For example:
 
 However, printing, especially pretty-printing, also requires some
 care. We may want specific indentations, line breaks, alignment if on
-several lines, etc. For pretty-printing, Coq relies on OCaml
+several lines, etc. For pretty-printing, Rocq relies on OCaml
 formatting library, which provides indentation and automatic line
 breaks depending on page width by means of *formatting boxes*.
 
@@ -433,12 +433,12 @@ Reserving notations
 
 .. cmd:: Reserved Notation @string {? ( {+, @syntax_modifier } ) }
 
-   A given notation may be used in different contexts. Coq expects all
+   A given notation may be used in different contexts. Rocq expects all
    uses of the notation to be defined at the same precedence and with the
    same associativity. To avoid giving the precedence and associativity
    every time, this command declares a parsing rule (:token:`string`) in advance
    without giving its interpretation. Here is an example from the initial
-   state of Coq.
+   state of Rocq.
 
    .. coqtop:: in
 
@@ -734,7 +734,7 @@ Displaying information about notations
    definition where the nonterminal was referenced.  This command shows the original grammar,
    so it won't exactly match the documentation.
 
-   The Coq parser is based on Camlp5.  The documentation for
+   The Rocq parser is based on Camlp5.  The documentation for
    `Extensible grammars <http://camlp5.github.io/doc/htmlc/grammars.html>`_ is the
    most relevant but it assumes considerable knowledge.  Here are the essentials:
 
@@ -800,7 +800,7 @@ Displaying information about notations
    The file
    `doc/tools/docgram/fullGrammar <http://github.com/coq/coq/blob/master/doc/tools/docgram/fullGrammar>`_
    in the source tree extracts the full grammar for
-   Coq (not including notations and tactic notations defined in `*.v` files nor some optionally-loaded plugins)
+   Rocq (not including notations and tactic notations defined in `*.v` files nor some optionally-loaded plugins)
    in a single file with minor changes to handle nonterminals using multiple levels (described in
    `doc/tools/docgram/README.md <http://github.com/coq/coq/blob/master/doc/tools/docgram/README.md>`_).
    This is complete and much easier to read than the grammar source files.
@@ -975,7 +975,7 @@ in binding position and parsed as terms to be ``as name``.
 Binders bound in the notation and parsed as general binders
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-It is also possible to rely on Coq's syntax of binders using the
+It is also possible to rely on Rocq's syntax of binders using the
 `binder` modifier as follows:
 
 .. coqtop:: in
@@ -1069,7 +1069,7 @@ recursive patterns. The basic example is:
    Notation "[ x ; .. ; y ]" := (cons x .. (cons y nil) ..).
 
 On the right-hand side, an extra construction of the form ``.. t ..`` can
-be used. Notice that ``..`` is part of the Coq syntax and it must not be
+be used. Notice that ``..`` is part of the Rocq syntax and it must not be
 confused with the three-dots notation “``…``” used in this manual to denote
 a sequence of arbitrary size.
 
@@ -1272,7 +1272,7 @@ Custom entries
 Custom entries have levels, like the main grammar of terms and grammar
 of patterns have. The lower level is 0 and this is the level used by
 default to put rules delimited with tokens on both ends. The level is
-left to be inferred by Coq when using :n:`in custom @ident`. The
+left to be inferred by Rocq when using :n:`in custom @ident`. The
 level is otherwise given explicitly by using the syntax
 :n:`in custom @ident at level @natural`, where :n:`@natural` refers to the level.
 
@@ -1326,7 +1326,7 @@ associated with the custom entry ``expr``. The level can be omitted, as in
 
    Notation "[ e ]" := e (e custom expr).
 
-in which case Coq infer it. If the sub-expression is at a border of
+in which case Rocq infer it. If the sub-expression is at a border of
 the notation (as e.g. ``x`` and ``y`` in ``x + y``), the level is
 determined by the associativity. If the sub-expression is not at the
 border of the notation (as e.g. ``e`` in ``"[ e ]``), the level is
@@ -1453,7 +1453,7 @@ Note that `_` by itself is a valid :n:`@name` but is not a valid :n:`@ident`.
           time. Type checking is done only at the time of use of the notation.
 
 .. note:: Some examples of Notation may be found in the files composing
-          the initial state of Coq (see directory :file:`$COQLIB/theories/Init`).
+          the initial state of Rocq (see directory :file:`$COQLIB/theories/Init`).
 
 .. note:: The notation ``"{ x }"`` has a special status in the main grammars of
           terms and patterns so that
@@ -1478,7 +1478,7 @@ Note that `_` by itself is a valid :n:`@name` but is not a valid :n:`@ident`.
           .. warn:: Use of @string Notation is deprecated as it is inconsistent with pattern syntax.
 
              This warning is disabled by default to avoid spurious diagnostics
-             due to legacy notation in the Coq standard library.
+             due to legacy notation in the Rocq standard library.
              It can be turned on with the ``-w disj-pattern-notation`` flag.
 
 .. exn:: Unknown custom entry: @ident.
@@ -1516,7 +1516,7 @@ Most commands use :token:`scope_name`; :token:`scope_key`\s are used within :tok
 .. cmd:: Declare Scope @scope_name
 
    Declares a new notation scope. Note that the initial
-   state of Coq declares the following notation scopes:
+   state of Rocq declares the following notation scopes:
 
    ``bool_scope``, ``byte_scope``, ``core_scope``, ``dec_int_scope``,
    ``dec_uint_scope``, ``function_scope``, ``hex_int_scope``, ``hex_nat_scope``,
@@ -1533,7 +1533,7 @@ Global interpretation rules for notations
 
 At any time, the interpretation of a notation for a term is done within
 a *stack* of notation scopes and :term:`lonely notations <lonely notation>`. If a
-notation is defined in multiple scopes, Coq uses the interpretation from
+notation is defined in multiple scopes, Rocq uses the interpretation from
 the most recently opened notation scope or declared lonely notation.
 
 Note that "stack" is a misleading name.  Each scope or lonely notation can only appear in
@@ -1544,7 +1544,7 @@ stack, rather than through "pop" operations.
 
 Use the :cmd:`Print Visibility` command to display the current notation scope stack.
 
-The initial state of Coq has the following scopes opened: ``core_scope``,
+The initial state of Rocq has the following scopes opened: ``core_scope``,
 ``function_scope``, ``type_scope`` and ``nat_scope``, ``nat_scope`` being the
 top of the scopes stack.
 
@@ -1759,10 +1759,10 @@ recognized to be a ``Funclass`` instance, i.e., of type :g:`forall x:A, B` or
 
 .. _notation-scopes:
 
-Notation scopes used in the standard library of Coq
+Notation scopes used in the standard library of Rocq
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We give an overview of the scopes used in the standard library of Coq.
+We give an overview of the scopes used in the standard library of Rocq.
 For a complete list of notations in each scope, use the commands :cmd:`Print
 Scopes` or :cmd:`Print Scope`.
 
@@ -1828,7 +1828,7 @@ Scopes` or :cmd:`Print Scope`.
 
 ``string_scope``
   This scope includes notation for strings as elements of the type string.
-  Special characters and escaping follow Coq conventions on strings (see
+  Special characters and escaping follow Rocq conventions on strings (see
   :ref:`lexical-conventions`). Especially, there is no convention to visualize non
   printable characters of a string. The file :file:`String.v` shows an example
   that contains quotes, a newline and a beep (i.e. the ASCII character
@@ -1933,7 +1933,7 @@ Abbreviations
 
    An abbreviation expects no precedence nor associativity, since it
    is parsed as an usual application. Abbreviations are used as
-   much as possible by the Coq printers unless the modifier ``(only
+   much as possible by the Rocq printers unless the modifier ``(only
    parsing)`` is given.
 
    An abbreviation is bound to an absolute name as an ordinary definition is
@@ -2743,9 +2743,9 @@ Tactic notations allow customizing the syntax of tactics.
 .. rubric:: Footnotes
 
 .. [#and_or_levels] which are the levels effectively chosen in the current
-   implementation of Coq
+   implementation of Rocq
 
-.. [#no_associativity] Coq accepts notations declared as nonassociative but the parser on
-   which Coq is built, namely Camlp5, currently does not implement ``no associativity`` and
-   replaces it with ``left associativity``; hence it is the same for Coq: ``no associativity``
+.. [#no_associativity] Rocq accepts notations declared as nonassociative but the parser on
+   which Rocq is built, namely Camlp5, currently does not implement ``no associativity`` and
+   replaces it with ``left associativity``; hence it is the same for Rocq: ``no associativity``
    is in fact ``left associativity`` for the purposes of parsing

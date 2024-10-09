@@ -1,9 +1,9 @@
-Writing Coq libraries and plugins
+Writing Rocq libraries and plugins
 ===================================
 
-This section presents the part of the Coq language that is useful only
-to library and plugin authors.  A tutorial for writing Coq plugins is
-available in the Coq repository in `doc/plugin_tutorial
+This section presents the part of the Rocq language that is useful only
+to library and plugin authors.  A tutorial for writing Rocq plugins is
+available in the Rocq repository in `doc/plugin_tutorial
 <https://github.com/coq/coq/tree/master/doc/plugin_tutorial>`_.
 
 Deprecating library objects, tactics or library files
@@ -60,12 +60,12 @@ deprecated compatibility alias using :cmd:`Notation (abbreviation)`
 
 .. note::
 
-   Coq and its standard library follow this deprecation policy:
+   Rocq and its standard library follow this deprecation policy:
 
-   * it should always be possible for a project written in Coq to be
+   * it should always be possible for a project written in Rocq to be
      compatible with two successive major versions,
    * features must be deprecated in one major version before removal,
-   * Coq developers should provide an estimate of the required effort
+   * Rocq developers should provide an estimate of the required effort
      to fix a project with respect to a given change,
    * breaking changes should be clearly documented in the public
      release notes, along with recommendations on how to fix a project

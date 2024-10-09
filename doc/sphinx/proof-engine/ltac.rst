@@ -6,7 +6,7 @@ Ltac
 .. note::
 
    Writing automation using Ltac is discouraged.
-   Many alternatives are available as part of the Coq standard library
+   Many alternatives are available as part of the Rocq standard library
    or the `Coq Platform <https://github.com/coq/platform>`_, and some
    demonstration of their respective power is performed in the
    `metaprogramming Rosetta stone project <https://github.com/coq-community/metaprogramming-rosetta-stone>`_.
@@ -15,7 +15,7 @@ Ltac
    encourage users to use Ltac2 (or other alternatives) instead of Ltac
    for new projects and new automation code in existing projects.
    Reports about hindrances in using Ltac2 for writing automation are
-   welcome as issues on the `Coq bug tracker <https://github.com/coq/coq/issues>`_
+   welcome as issues on the `Rocq bug tracker <https://github.com/coq/coq/issues>`_
    or as discussions on the `Ltac2 Zulip stream <https://coq.zulipchat.com/#narrow/stream/278935-Ltac2>`_.
 
 This chapter documents the tactic language |Ltac|.
@@ -23,7 +23,7 @@ This chapter documents the tactic language |Ltac|.
 We start by giving the syntax followed by the informal
 semantics. To learn more about the language and
 especially about its foundations, please refer to :cite:`Del00`.
-(Note the examples in the paper won't work as-is; Coq has evolved
+(Note the examples in the paper won't work as-is; Rocq has evolved
 since the paper was written.)
 
 .. example:: Basic tactic macros
@@ -45,7 +45,7 @@ Defects
 -------
 
 The |Ltac| tactic language is probably one of the ingredients of the success of
-Coq, yet it is at the same time its Achilles' heel. Indeed, |Ltac|:
+Rocq, yet it is at the same time its Achilles' heel. Indeed, |Ltac|:
 
 - has often unclear semantics
 - is very non-uniform due to organic growth
@@ -83,7 +83,7 @@ higher precedence than `+`.  Usually `a/b/c` is given the :gdef:`left associativ
 interpretation `(a/b)/c` rather than the :gdef:`right associative` interpretation
 `a/(b/c)`.
 
-In Coq, the expression :n:`try repeat @tactic__1 || @tactic__2; @tactic__3; @tactic__4`
+In Rocq, the expression :n:`try repeat @tactic__1 || @tactic__2; @tactic__3; @tactic__4`
 is interpreted as :n:`(try (repeat (@tactic__1 || @tactic__2)); @tactic__3); @tactic__4`
 because `||` is part of :token:`ltac_expr2`, which has higher precedence than
 :tacn:`try` and :tacn:`repeat` (at the level of :token:`ltac_expr3`), which
@@ -409,7 +409,7 @@ behavior.)
       The number of workers can be controlled via the command line option
       :n:`-async-proofs-tac-j @natural` to specify the desired number of workers.
       In the special case where :n:`@natural` is 0, this completely prevents
-      Coq from spawning any new process, and `par` blocks are treated as a
+      Rocq from spawning any new process, and `par` blocks are treated as a
       variant of `all` that additionally checks that each subgoal is solved.
       Limitations: ``par:`` only works on goals that don't contain existential
       variables.  :n:`@ltac_expr` must either solve the goal completely or do
@@ -559,7 +559,7 @@ A sequence is an expression of the following form:
    :n:`v__2` is applied to all the goals produced by the prior
    application. Sequence is associative.
 
-   This construct uses backtracking: if :n:`@ltac_expr3__2` fails, Coq will
+   This construct uses backtracking: if :n:`@ltac_expr3__2` fails, Rocq will
    try each alternative success (if any) for :n:`@ltac_expr3__1`, retrying
    :n:`@ltac_expr3__2` for each until both tactics succeed or all alternatives
    have failed.  See :ref:`branching_and_backtracking`.
@@ -859,7 +859,7 @@ Success and failure
 Checking for success: assert_succeeds
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Coq defines an |Ltac| tactic in `Init.Tactics` to check that a tactic has *at least one*
+Rocq defines an |Ltac| tactic in `Init.Tactics` to check that a tactic has *at least one*
 success:
 
 .. tacn:: assert_succeeds @ltac_expr3
@@ -870,7 +870,7 @@ success:
 Checking for failure: assert_fails
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Coq defines an |Ltac| tactic in `Init.Tactics` to check that a tactic *fails*:
+Rocq defines an |Ltac| tactic in `Init.Tactics` to check that a tactic *fails*:
 
 .. tacn:: assert_fails @ltac_expr3
 
@@ -930,7 +930,7 @@ Failing
 
    See the example for a comparison of the two constructs.
 
-   Note that if Coq terms have to be
+   Note that if Rocq terms have to be
    printed as part of the failure, term construction always forces the
    tactic into the goals, meaning that if there are no goals when it is
    evaluated, a tactic call like :tacn:`let` :n:`x := H in` :tacn:`fail` `0 x` will succeed.
@@ -1015,7 +1015,7 @@ single success:
 Checking for a single success: exactly_once
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Coq provides an experimental way to check that a tactic has *exactly
+Rocq provides an experimental way to check that a tactic has *exactly
 one* success:
 
 .. tacn:: exactly_once @ltac_expr3
@@ -1075,7 +1075,7 @@ Pattern matching on terms: match
    then the :token:`ltac_expr` can't use `S` to refer to the constructor of `nat`
    without qualifying the constructor as `Datatypes.S`.
 
-   .. todo how does this differ from the 1-2 other unification routines elsewhere in Coq?
+   .. todo how does this differ from the 1-2 other unification routines elsewhere in Rocq?
       Does it use constr_eq or eq_constr_nounivs?
 
    Matching is non-linear: if a
@@ -1456,7 +1456,7 @@ produce subgoals but generates a term to be used in tactic expressions:
 Generating fresh hypothesis names
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Tactics sometimes need to generate new names for hypothesis.  Letting Coq
+Tactics sometimes need to generate new names for hypothesis.  Letting Rocq
 choose a name with the intro tactic is not so good since it is
 very awkward to retrieve that name. The following
 expression returns an identifier:
@@ -2030,7 +2030,7 @@ Proving that a list is a permutation of a second list
    From Section :ref:`ltac-syntax` we know that Ltac has a primitive
    notion of integers, but they are only used as arguments for
    primitive tactics and we cannot make computations with them. Thus,
-   instead, we use Coq's natural number type :g:`nat`.
+   instead, we use Rocq's natural number type :g:`nat`.
 
    .. coqtop:: in
 

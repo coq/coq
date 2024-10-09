@@ -25,7 +25,7 @@ Contents
    proofs/creating-tactics/index
 
 .. toctree::
-   :caption: Using Coq
+   :caption: Using the Rocq Prover
 
    using/libraries/index
    using/tools/index

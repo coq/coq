@@ -205,7 +205,7 @@ Solvers for logic and equality
    .. exn:: I don’t know how to handle dependent equality.
 
       The decision procedure managed to find a proof of the goal or of a
-      discriminable equality but this proof could not be built in Coq because of
+      discriminable equality but this proof could not be built in Rocq because of
       dependently-typed functions.
 
    .. exn:: Goal is solvable by congruence but some arguments are missing. Try congruence with {+ @term}, replacing metavariables by arbitrary terms.

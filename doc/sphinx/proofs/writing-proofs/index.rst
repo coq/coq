@@ -4,7 +4,7 @@
 Basic proof writing
 ===================
 
-Coq is an interactive theorem prover, or proof assistant, which means
+The Rocq Prover is a proof assistant (or interactive theorem prover), which means
 that proofs can be constructed interactively through a dialog between
 the user and the assistant.  The building blocks for this dialog are
 tactics which the user will use to represent steps in the proof of a

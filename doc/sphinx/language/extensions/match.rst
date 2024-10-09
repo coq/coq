@@ -5,7 +5,7 @@ Extended pattern matching
 
 :Authors: Cristina Cornes and Hugo Herbelin
 
-This section describes the full form of pattern matching in Coq terms.
+This section describes the full form of pattern matching in Rocq terms.
 
 .. |rhs| replace:: right hand sides
 
@@ -196,8 +196,8 @@ Printing nested patterns
 
    When this :term:`flag` is on (default), Coq’s printer tries to do such
    limited re-factorization.
-   Turning it off tells Coq to print only simple pattern matching problems
-   in the same way as the Coq kernel handles them.
+   Turning it off tells Rocq to print only simple pattern matching problems
+   in the same way as the Rocq kernel handles them.
 
 
 Factorization of clauses with same right-hand side
@@ -207,7 +207,7 @@ Factorization of clauses with same right-hand side
 
    When several patterns share the same right-hand side, it is additionally
    possible to share the clauses using disjunctive patterns. Assuming that the
-   printing matching mode is on, this :term:`flag` (on by default) tells Coq's
+   printing matching mode is on, this :term:`flag` (on by default) tells Rocq's
    printer to try to do this kind of factorization.
 
 Use of a default clause
@@ -219,7 +219,7 @@ Use of a default clause
    arguments of the patterns, yet an extra factorization is possible: the
    disjunction of patterns can be replaced with a `_` default clause. Assuming that
    the printing matching mode and the factorization mode are on, this :term:`flag` (on by
-   default) tells Coq's printer to use a default clause when relevant.
+   default) tells Rocq's printer to use a default clause when relevant.
 
 Printing of wildcard patterns
 ++++++++++++++++++++++++++++++
@@ -241,7 +241,7 @@ Printing of the elimination predicate
    In most of the cases, the type of the result of a matched term is
    mechanically synthesizable. Especially, if the result type does not
    depend of the matched term. When this :term:`flag` is on (default),
-   the result type is not printed when Coq knows that it can re-
+   the result type is not printed when Rocq knows that it can re-
    synthesize it.
 
 Printing of hidden subterms
@@ -707,7 +707,7 @@ Dependent pattern matching
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The examples given so far do not need an explicit elimination
-predicate because all the |rhs| have the same type and Coq
+predicate because all the |rhs| have the same type and Rocq
 succeeds to synthesize it. Unfortunately when dealing with dependent
 patterns it often happens that we need to write cases where the types
 of the |rhs| are different instances of the elimination predicate. The

@@ -16,7 +16,7 @@ values.
    | ?[ ?@ident ]
    | ?@ident {? @%{ {+; @ident := @term } %} }
 
-Coq terms can include existential variables that represent unknown
+Rocq terms can include existential variables that represent unknown
 subterms that are eventually replaced with actual subterms.
 
 Existential variables are generated in place of unsolved implicit
@@ -83,7 +83,7 @@ Inferable subterms
 
    :n:`@term`\s may use :gdef:`holes <hole>`, denoted by :n:`_`, for purposes such as:
 
-   * Omitting redundant subterms.  Redundant subterms that Coq is able to infer can
+   * Omitting redundant subterms.  Redundant subterms that Rocq is able to infer can
      be replaced with :n:`_`.  For example HELP ME HERE.
    * Indicating where existential variables should be created in e* tactics such as
      :tacn:`assert`.
@@ -91,7 +91,7 @@ Inferable subterms
    is it possible to see holes in the context for any of these?
 
 Expressions often contain redundant pieces of information. Subterms that can be
-automatically inferred by Coq can be replaced by the symbol ``_`` and Coq will
+automatically inferred by Rocq can be replaced by the symbol ``_`` and Rocq will
 guess the missing piece of information.
 
 e* tactics that can create existential variables

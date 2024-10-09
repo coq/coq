@@ -41,7 +41,7 @@ Defining record types
    See :ref:`proofschemes-induction-principles`.
 
    The :cmd:`Class` command can be used to define records that are also
-   :ref:`typeclasses`, which permit Coq to automatically infer the inhabitants of
+   :ref:`typeclasses`, which permit Rocq to automatically infer the inhabitants of
    the record.
 
    :n:`{? > }`

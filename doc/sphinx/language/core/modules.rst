@@ -557,15 +557,15 @@ as :n:`Coq.Init.Logic`, in which:
 - :n:`{* @ident__logical }`, the :gdef:`logical name`, maps to one or more
   directories (or :gdef:`physical paths <physical path>`) in the user's file system.
   The logical name
-  is used so that Coq scripts don't depend on where files are installed.
-  For example, the directory associated with :n:`Coq` contains Coq's standard library.
+  is used so that Rocq scripts don't depend on where files are installed.
+  For example, the directory associated with :n:`Stdlib` contains Rocq's standard library.
   The logical name is generally a single :n:`@ident`.
 
 - :n:`{+ @ident__file }` corresponds to the file system path of the file relative
   to the directory that contains it.  For example, :n:`Init.Logic`
   corresponds to the file system path :n:`Init/Logic.v` on Linux)
 
-When Coq is processing a script that hasn't been saved in a file, such as a new
+When Rocq is processing a script that hasn't been saved in a file, such as a new
 buffer in CoqIDE or anything in coqtop, definitions in the script are associated
 with the logical name :n:`Top` and there is no associated file system path.
 
@@ -580,7 +580,7 @@ with the logical name :n:`Top` and there is no associated file system path.
   in `Coq.Init.Logic` is the base name for `Coq.Init.Logic.eq`, the standard library
   definition of :term:`Leibniz equality`.
 
-If :n:`@qualid` is the fully qualified name of an item, Coq
+If :n:`@qualid` is the fully qualified name of an item, Rocq
 always interprets :n:`@qualid` as a reference to that item.  If :n:`@qualid` is also a
 partially qualified name for another item, then you must provide a more-qualified
 name to uniquely identify that other item.  For example, if there are two

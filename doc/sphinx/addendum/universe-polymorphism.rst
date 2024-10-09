@@ -12,7 +12,7 @@ General Presentation
 
    The status of Universe Polymorphism is experimental.
 
-This section describes the universe polymorphic extension of Coq.
+This section describes the universe polymorphic extension of Rocq.
 Universe polymorphism makes it possible to write generic definitions
 making use of universes and reuse them at different and sometimes
 incompatible universe levels.
@@ -260,7 +260,7 @@ constraints by prefixing the level names with symbols.
 Because inductive subtypings are only produced by comparing inductives
 to themselves with universes changed, they amount to variance
 information: each universe is either invariant, covariant or
-irrelevant (there are no contravariant subtypings in Coq),
+irrelevant (there are no contravariant subtypings in Rocq),
 respectively represented by the symbols `=`, `+` and `*`.
 
 Here we see that :g:`list` binds an irrelevant universe, so any two
@@ -635,7 +635,7 @@ mode, introduced universe names can be referred to in terms. Note that
 local universe names shadow global universe names. During a proof, one
 can use :cmd:`Show Universes` to display the current context of universes.
 
-It is possible to provide only some universe levels and let Coq infer the others
+It is possible to provide only some universe levels and let Rocq infer the others
 by adding a :g:`+` in the list of bound universe levels:
 
 .. coqtop:: all
