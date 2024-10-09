@@ -65,6 +65,8 @@ module type ExtS = sig
 
   val fold_left : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   val fold_right : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+  val fold_left_map : (key -> 'a -> 'b -> 'b * 'c) -> 'a t -> 'b -> 'b * 'c t
+  val fold_right_map : (key -> 'a -> 'b -> 'b * 'c) -> 'a t -> 'b -> 'b * 'c t
 end
 
 module MapExt (M : Map.OrderedType) :
@@ -77,6 +79,8 @@ sig
   val bind : (M.t -> 'a) -> Set.Make(M).t -> 'a map
   val fold_left : (M.t -> 'a -> 'b -> 'b) -> 'a map -> 'b -> 'b
   val fold_right : (M.t -> 'a -> 'b -> 'b) -> 'a map -> 'b -> 'b
+  val fold_left_map : (M.t -> 'a -> 'b -> 'b * 'c) -> 'a map -> 'b -> 'b * 'c map
+  val fold_right_map : (M.t -> 'a -> 'b -> 'b * 'c) -> 'a map -> 'b -> 'b * 'c map
   val height : 'a map -> int
   val filter_range : (M.t -> int) -> 'a map -> 'a map
   val filter_map: (M.t -> 'a -> 'b option) -> 'a map -> 'b map (* in OCaml 4.11 *)
@@ -189,6 +193,22 @@ struct
   | MNode {l; v=k; d=v; r; h} ->
     let accu = f k v (fold_right f r accu) in
     fold_right f l accu
+
+  let rec fold_left_map f (s : 'a map) accu = match map_prj s with
+  | MEmpty -> accu, map_inj MEmpty
+  | MNode {l; v=k; d=v; r; h} ->
+    let accu, l = fold_left_map f l accu in
+    let accu, v = f k v accu in
+    let accu, r = fold_left_map f r accu in
+    accu, map_inj (MNode {l; v=k; d=v; r; h})
+
+  let rec fold_right_map f (s : 'a map) accu = match map_prj s with
+  | MEmpty -> accu, map_inj MEmpty
+  | MNode {l; v=k; d=v; r; h} ->
+    let accu, r = fold_right_map f r accu in
+    let accu, v = f k v accu in
+    let accu, l = fold_right_map f l accu in
+    accu, map_inj (MNode {l; v=k; d=v; r; h})
 
   let height s = match map_prj s with
   | MEmpty -> 0
