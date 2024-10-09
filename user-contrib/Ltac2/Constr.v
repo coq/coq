@@ -109,12 +109,22 @@ Ltac2 @ external closedn : int -> constr -> bool := "coq-core.plugins.ltac2" "co
 Ltac2 is_closed (c : constr) : bool := closedn 0 c.
 (** [is_closed c] is true iff [c] is a closed term (contains no [Rel]s) *)
 
-Ltac2 @ external occur_between : int -> int -> constr -> bool := "coq-core.plugins.ltac2" "constr_occur_between".
-(** [occur_between n m c] returns true iff [Rel p] occurs in term [c]
+Ltac2 @ external noccur_between : int -> int -> constr -> bool := "coq-core.plugins.ltac2" "constr_noccur_between".
+(** [noccur_between n m c] returns true iff [Rel p] does not occur in term [c]
   for [n <= p < n+m] *)
 
-Ltac2 occurn (n : int) (c : constr) : bool := occur_between n 1 c.
-(** [occurn n c] returns true iff [Rel n] occurs in term [c] *)
+#[deprecated(since="8.21", note="occur_between currently behaves as noccur_between.
+Use noccur_between instead if you want [true] for variables which do not occur in the term
+and its negation if you want [false].")]
+Ltac2 occur_between := noccur_between.
+
+Ltac2 noccurn (n : int) (c : constr) : bool := noccur_between n 1 c.
+(** [noccurn n c] returns true iff [Rel n] does not occur in term [c] *)
+
+#[deprecated(since="8.21", note="occurn currently behaves as noccurn.
+Use noccurn instead if you want [true] for variables which do not occur in the term
+and its negation if you want [false].")]
+Ltac2 occurn (n : int) (c : constr) : bool := noccur_between n 1 c.
 
 Ltac2 @ external case : inductive -> case := "coq-core.plugins.ltac2" "constr_case".
 (** Generate the case information for a given inductive type. *)
