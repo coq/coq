@@ -241,6 +241,8 @@ The term :g:`c (top -> top) (fun x => x) c` infinitely reduces to itself.
 Debugging |SProp| issues
 ------------------------
 
+.. _relevancemarks:
+
 Every binder in a term (such as `fun x` or `forall x`) caches
 information called the :gdef:`relevance mark` indicating whether its type is
 in |SProp| or not. This is used to efficiently implement proof

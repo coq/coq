@@ -190,8 +190,8 @@ open UVars
 
 (** Level substitutions for polymorphism. *)
 
-val subst_univs_level_constr : sort_level_subst -> constr -> constr
-val subst_univs_level_context : sort_level_subst -> Constr.rel_context -> Constr.rel_context
+val subst_univs_level_constr : ?subst_rel:(Sorts.relevance -> Sorts.relevance) -> sort_level_subst -> constr -> constr
+val subst_univs_level_context : ?subst_rel:(Sorts.relevance -> Sorts.relevance) -> sort_level_subst -> Constr.rel_context -> Constr.rel_context
 
 (** Instance substitution for polymorphism. *)
 val subst_instance_constr : Instance.t -> constr -> constr
@@ -217,6 +217,9 @@ val visit_kind_univs : ('acc, 'sort, 'instance, 'relevance) univ_visitor ->
   'acc ->
   (_, _, 'sort, 'instance, 'relevance) Constr.kind_of_term ->
   'acc
+
+val test_sort_and_universes :
+  (rel:bool -> Sorts.QVar.t -> unit) -> (sort:bool -> Univ.Level.t -> unit) -> types -> unit
 
 (** {3 Low-level cached lift type} *)
 
