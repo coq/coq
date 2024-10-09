@@ -52,12 +52,12 @@ applications of these primitive operations.
 
 The extraction of these primitives can be customized similarly to the extraction
 of regular axioms (see :ref:`extraction`). Nonetheless, the :g:`ExtrOCamlInt63`
-module can be used when extracting to OCaml: it maps the Coq primitives to types
+module can be used when extracting to OCaml: it maps the Rocq primitives to types
 and functions of a :g:`Uint63` module (including signed functions for
 :g:`Sint63` despite the name). That OCaml module is not produced by extraction.
 Instead, it has to be provided by the user (if they want to compile or execute
 the extracted code). For instance, an implementation of this module can be taken
-from the kernel of Coq.
+from the kernel of Rocq.
 
 Literal values (at type :g:`Uint63.int`) are extracted to literal OCaml values
 wrapped into the :g:`Uint63.of_int` (resp. :g:`Uint63.of_int64`) constructor on
@@ -102,11 +102,11 @@ to comply with the IEEE 754 standard for floating-point arithmetic.
 
 The extraction of these primitives can be customized similarly to the extraction
 of regular axioms (see :ref:`extraction`). Nonetheless, the :g:`ExtrOCamlFloats`
-module can be used when extracting to OCaml: it maps the Coq primitives to types
+module can be used when extracting to OCaml: it maps the Rocq primitives to types
 and functions of a :g:`Float64` module. Said OCaml module is not produced by
 extraction. Instead, it has to be provided by the user (if they want to compile
 or execute the extracted code). For instance, an implementation of this module
-can be taken from the kernel of Coq.
+can be taken from the kernel of Rocq.
 
 Literal values (of type :g:`Float64.t`) are extracted to literal OCaml
 values (of type :g:`float`) written in hexadecimal notation and
@@ -152,17 +152,17 @@ operations.
 
 The extraction of these primitives can be customized similarly to the extraction
 of regular axioms (see :ref:`extraction`). Nonetheless, the :g:`ExtrOCamlPArray`
-module can be used when extracting to OCaml: it maps the Coq primitives to types
+module can be used when extracting to OCaml: it maps the Rocq primitives to types
 and functions of a :g:`Parray` module. Said OCaml module is not produced by
 extraction. Instead, it has to be provided by the user (if they want to compile
 or execute the extracted code). For instance, an implementation of this module
-can be taken from the kernel of Coq (see ``kernel/parray.ml``).
+can be taken from the kernel of Rocq (see ``kernel/parray.ml``).
 
-Coq's primitive arrays are persistent data structures. Semantically, a set operation
+Rocq's primitive arrays are persistent data structures. Semantically, a set operation
 ``t.[i <- a]`` represents a new array that has the same values as ``t``, except
 at position ``i`` where its value is ``a``. The array ``t`` still exists, can
 still be used and its values were not modified. Operationally, the implementation
-of Coq's primitive arrays is optimized so that the new array ``t.[i <- a]`` does not
+of Rocq's primitive arrays is optimized so that the new array ``t.[i <- a]`` does not
 copy all of ``t``. The details are in section 2.3 of :cite:`ConchonFilliatre07wml`.
 In short, the implementation keeps one version of ``t`` as an OCaml native array and
 other versions as lists of modifications to ``t``. Accesses to the native array
@@ -208,11 +208,11 @@ operations.
 
 The extraction of these primitives can be customized similarly to the extraction
 of regular axioms (see :ref:`extraction`). Nonetheless, the :g:`ExtrOCamlPString`
-module can be used when extracting to OCaml: it maps the Coq primitives to types
+module can be used when extracting to OCaml: it maps the Rocq primitives to types
 and functions of a :g:`Pstring` module. Said OCaml module is not produced by
 extraction. Instead, it has to be provided by the user (if they want to compile
 or execute the extracted code). For instance, an implementation of this module
-can be taken from the kernel of Coq (see ``kernel/pstring.ml``).
+can be taken from the kernel of Rocq (see ``kernel/pstring.ml``).
 
 Literal values (of type :g:`Pstring.t`, or equivalently :g:`string`) are extracted
 to literal OCaml values (of type :g:`string`).

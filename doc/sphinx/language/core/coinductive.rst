@@ -198,7 +198,7 @@ Top-level definitions of corecursive functions
    As in the :cmd:`Fixpoint` command, the :n:`with` clause allows simultaneously
    defining several mutual cofixpoints.
 
-   If :n:`@term` is omitted, :n:`@type` is required and Coq enters proof mode.
+   If :n:`@term` is omitted, :n:`@type` is required and Rocq enters proof mode.
    This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
    In this case, the proof should be terminated with :cmd:`Defined` in order to define a :term:`constant`
    for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.

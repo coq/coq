@@ -4,6 +4,8 @@
 Early history of Coq
 ----------------------
 
+The Rocq Prover is the successor of Coq, whose history, up to version 7, is presented here.
+
 Historical roots
 ----------------
 

@@ -1,7 +1,7 @@
 Typing rules
 ====================================
 
-The underlying formal language of Coq is a
+The underlying formal language of the Rocq Prover is a
 :gdef:`Calculus of Inductive Constructions` (|Cic|) whose inference rules
 are presented in this
 chapter. The history of this formalism as well as pointers to related
@@ -34,7 +34,7 @@ the following rules.
 #. variables, hereafter ranged over by letters :math:`x`, :math:`y`, etc., are terms
 #. constants, hereafter ranged over by letters :math:`c`, :math:`d`, etc., are terms.
 #. if :math:`x` is a variable and :math:`T`, :math:`U` are terms then
-   :math:`∀ x:T,~U` (:g:`forall x:T, U`   in Coq concrete syntax) is a term.
+   :math:`∀ x:T,~U` (:g:`forall x:T, U`   in Rocq concrete syntax) is a term.
    If :math:`x` occurs in :math:`U`, :math:`∀ x:T,~U` reads as
    “for all :math:`x` of type :math:`T`, :math:`U`”.
    As :math:`U` depends on :math:`x`, one says that :math:`∀ x:T,~U` is
@@ -44,11 +44,11 @@ the following rules.
    written: :math:`T \rightarrow U`.
 #. if :math:`x` is a variable and :math:`T`, :math:`u` are terms then
    :math:`λ x:T .~u` (:g:`fun x:T => u`
-   in Coq concrete syntax) is a term. This is a notation for the
+   in Rocq concrete syntax) is a term. This is a notation for the
    λ-abstraction of λ-calculus :cite:`Bar81`. The term :math:`λ x:T .~u` is a function
    which maps elements of :math:`T` to the expression :math:`u`.
 #. if :math:`t` and :math:`u` are terms then :math:`(t~u)` is a term
-   (:g:`t u` in Coq concrete
+   (:g:`t u` in Rocq concrete
    syntax). The term :math:`(t~u)` reads as “:math:`t` applied to :math:`u`”.
 #. if :math:`x` is a variable, and :math:`t`, :math:`T` and :math:`u` are
    terms then :math:`\letin{x}{t:T}{u}` is
@@ -92,10 +92,10 @@ Let us assume that ``mult`` is a function of type :math:`\nat→\nat→\nat` and
 predicate of type :math:`\nat→\nat→ \Prop`. The λ-abstraction can serve to build
 “ordinary” functions as in :math:`λ x:\nat.~(\kw{mult}~x~x)` (i.e.
 :g:`fun x:nat => mult x x`
-in Coq notation) but may build also predicates over the natural
+in Rocq notation) but may build also predicates over the natural
 numbers. For instance :math:`λ x:\nat.~(\kw{eqnat}~x~0)`
 (i.e. :g:`fun x:nat => eqnat x 0`
-in Coq notation) will represent the predicate of one variable :math:`x` which
+in Rocq notation) will represent the predicate of one variable :math:`x` which
 asserts the equality of :math:`x` with :math:`0`. This predicate has type
 :math:`\nat → \Prop`
 and it can be applied to any expression of type :math:`\nat`, say :math:`t`, to give an
@@ -429,7 +429,7 @@ and ζ reductions or any combination of those can also be defined.
 The Calculus of Inductive Constructions with impredicative Set
 -----------------------------------------------------------------
 
-Coq can be used as a type checker for the Calculus of Inductive
+The Rocq Prover can be used as a type checker for the Calculus of Inductive
 Constructions with an impredicative sort :math:`\Set` by using the compiler
 option ``-impredicative-set``. For example, using the ordinary `coqtop`
 command, the following is rejected,

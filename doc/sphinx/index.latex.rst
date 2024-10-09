@@ -1,6 +1,6 @@
-==========================
- The Coq Reference Manual
-==========================
+==================================
+ The Rocq Prover Reference Manual
+==================================
 
 ------------
 Introduction
@@ -29,9 +29,9 @@ Proofs
    proofs/automatic-tactics/index
    proofs/creating-tactics/index
 
----------
-Using Coq
----------
+---------------------
+Using the Rocq Prover
+---------------------
 
 .. toctree::
 

@@ -8,7 +8,7 @@ Implicit Coercions
 General Presentation
 ---------------------
 
-This section describes the inheritance mechanism of Coq. In Coq with
+This section describes one inheritance mechanism of the Rocq Prover. With
 inheritance, we are not interested in adding any expressive power to
 our theory, but only convenience. Given a term, possibly not typable,
 we are interested in the problem of determining if it can be well
@@ -73,7 +73,7 @@ We then write :g:`f : C >-> D`.
 .. _ambiguous-paths:
 
 When you declare a new coercion (e.g. with :cmd:`Coercion`), new coercion
-paths with the same classes as existing ones are ignored. Coq will generate
+paths with the same classes as existing ones are ignored. Rocq will generate
 a warning when the two paths may be non convertible. When the :g:`x₁..xₖ` are exactly
 the :g:`v₁..vₙ` (in the same order), the coercion is said to satisfy
 the :gdef:`uniform inheritance condition`. When possible, we recommend
@@ -90,24 +90,24 @@ then an object of ``D``.
 Reversible Coercions
 --------------------
 
-When a term cannot be coerced (directly) to its expected type, Coq tries to
+When a term cannot be coerced (directly) to its expected type, Rocq tries to
 use a :gdef:`reversible coercion` (see the :attr:`reversible` attribute). Intuitively,
-Coq synthesizes a new term of the right type that can be coerced
+Rocq synthesizes a new term of the right type that can be coerced
 to the original one. The new term is obtained by reversing the coercion, that
 is guessing its input given the output.
 
-More precisely, in order to coerce a term :g:`a : A` to type :g:`B`, Coq
+More precisely, in order to coerce a term :g:`a : A` to type :g:`B`, Rocq
 finds a reversible coercion :g:`f : B >-> A`, then synthesizes some :g:`?x : B`
 such that :g:`f ?x = a` (typically through :ref:`canonicalstructures` or
 :ref:`typeclasses`) and finally replaces :g:`a` with the value of :g:`?x`.
 
-If Coq doesn't find a reversible coercion :g:`f : B >-> A`, then it
+If Rocq doesn't find a reversible coercion :g:`f : B >-> A`, then it
 looks for a coercion class :g:`C` equipped with an incoming reversible coercion
 :g:`g : B >-> C` and a coercion :g:`h : A >-> C` (not necessarily reversible),
 then synthesizes some :g:`?x : B` such that :g:`g ?x = h a`, and finally
 replaces :g:`a` with the value of :g:`?x`.
 If there's another class :g:`D` with a coercion from :g:`C` to :g:`D` and
-incoming coercions from :g:`A` and :g:`B`, Coq tries :g:`C` before :g:`D`.
+incoming coercions from :g:`A` and :g:`B`, Rocq tries :g:`C` before :g:`D`.
 This ordering is well defined only if the coercion graph happens to be a semi
 lattice.  The intuition behind this ordering is that since coercions forget
 information, :g:`D` has less information that :g:`C`, and hence
@@ -194,7 +194,7 @@ Coercion Classes
 
   .. exn:: Cannot find the source class of @qualid.
 
-     Coq can not infer a valid source class.
+     Rocq can not infer a valid source class.
 
   .. exn:: Cannot recognize @coercion_class as a source class of @qualid.
 

@@ -3,7 +3,7 @@
 Typeclasses
 ===========
 
-Typeclasses are types whose values Coq can automatically infer by using user
+Typeclasses are types whose values Rocq can automatically infer by using user
 declared instances. It allows for a form of programmatic proof or term search.
 
 This chapter presents a quick reference of the commands related to typeclasses.
@@ -15,7 +15,7 @@ Typeclass and instance declarations
 -----------------------------------
 
 The syntax for typeclasses and instance declarations is the same as the record
-syntax of Coq:
+syntax:
 
 .. coqdoc::
 
@@ -63,7 +63,7 @@ Note that if you finish the proof with :cmd:`Qed` the entire instance
 will be opaque, including the fields given in the initial term.
 
 Alternatively, in :flag:`Program Mode` if one does not give all the
-members in the Instance declaration, Coq generates obligations for the
+members in the Instance declaration, Rocq generates obligations for the
 remaining fields, e.g.:
 
 .. coqtop:: in
@@ -242,7 +242,7 @@ modifier before typeclass binders. For example:
 
    Definition lt `{eqa : EqDec A, !Ord eqa} (x y : A) := andb (le x y) (neqb x y).
 
-The ``!`` modifier switches how Coq interprets a binder. In particular, it uses
+The ``!`` modifier switches how Rocq interprets a binder. In particular, it uses
 the implicit arguments mechanism if available, as shown in the example.
 
 Substructures

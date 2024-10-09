@@ -91,7 +91,7 @@ These terms are also useful:
 
 * `n : nat` is a :gdef:`dependent premise` of `forall n:nat, n + 0 = n` because
   `n` appears both in the binder of the `forall` and in the quantified statement
-  `n + 0 = n`.  Note that if `n` isn't used in the statement, Coq considers it
+  `n + 0 = n`.  Note that if `n` isn't used in the statement, Rocq considers it
   a non-dependent premise.  Similarly, :n:`let n := ... in @term` is a
   dependent premise only if `n` is used in :n:`@term`.
 
@@ -145,7 +145,7 @@ Assumptions
 
 Assumptions extend the global environment with axioms, parameters, hypotheses
 or variables. An assumption binds an :n:`@ident` to a :n:`@type`. It is accepted
-by Coq only if :n:`@type` is a correct type in the global environment
+by Rocq only if :n:`@type` is a correct type in the global environment
 before the declaration and if :n:`@ident` was not previously defined in
 the same module. This :n:`@type` is considered to be the type (or
 specification, or statement) assumed by :n:`@ident` and we say that :n:`@ident`

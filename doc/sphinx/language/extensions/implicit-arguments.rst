@@ -115,7 +115,7 @@ application will include that argument.  Otherwise, the argument is
 *non-maximally inserted* and the partial application will not include that argument.
 
 Each implicit argument can be declared to be inserted maximally or non
-maximally. In Coq, maximally inserted implicit arguments are written between curly braces
+maximally. In Rocq, maximally inserted implicit arguments are written between curly braces
 "{ }" and non-maximally inserted implicit arguments are written in square brackets "[ ]".
 
 .. seealso:: :flag:`Maximal Implicit Insertion`
@@ -146,7 +146,7 @@ by replacing it with `_`.
 .. exn:: Cannot infer a term for this placeholder.
    :name: Cannot infer a term for this placeholder. (Casual use of implicit arguments)
 
-   Coq was not able to deduce an instantiation of a “_”.
+   Rocq was not able to deduce an instantiation of a “_”.
 
 .. _declare-implicit-args:
 
@@ -291,8 +291,8 @@ Controlling contextual implicit arguments
 
 .. flag:: Contextual Implicit
 
-   By default, Coq does not automatically set implicit the contextual
-   implicit arguments. You can turn this :term:`flag` on to tell Coq to also
+   By default, Rocq does not automatically set implicit the contextual
+   implicit arguments. You can turn this :term:`flag` on to tell Rocq to also
    infer contextual implicit argument.
 
 .. _controlling-rev-pattern-implicit-args:
@@ -302,8 +302,8 @@ Controlling reversible-pattern implicit arguments
 
 .. flag:: Reversible Pattern Implicit
 
-   By default, Coq does not automatically set implicit the reversible-pattern
-   implicit arguments. You can turn this :term:`flag` on to tell Coq to also infer
+   By default, Rocq does not automatically set implicit the reversible-pattern
+   implicit arguments. You can turn this :term:`flag` on to tell Rocq to also infer
    reversible-pattern implicit argument.
 
 .. _controlling-insertion-implicit-args:

@@ -5,9 +5,9 @@ Program extraction
 
 :Authors: Jean-Christophe Filliâtre and Pierre Letouzey
 
-We present here the Coq extraction commands, used to build certified
+We present here the Rocq extraction commands, used to build certified
 and relatively efficient functional programs, extracting them from
-either Coq functions or Coq proofs of specifications. The
+either Rocq functions or Rocq proofs of specifications. The
 functional languages available as output are currently OCaml, Haskell
 and Scheme. In the following, "ML" will be used (abusively) to refer
 to any of the three.
@@ -29,15 +29,14 @@ Generating ML Code
 .. note::
 
   In the following, a qualified identifier :token:`qualid`
-  can be used to refer to any kind of Coq global "object" : :term:`constant`,
+  can be used to refer to any kind of global "object" : :term:`constant`,
   inductive type, inductive constructor or module name.
 
 .. cmd:: Extraction @qualid
          Recursive Extraction {+ @qualid }
          Extraction @string {+ @qualid }
 
-   The first two forms display the extracted term(s) in Coq as a convenient preview
-   of the extracted term(s):
+   The first two forms display the extracted term(s) as a convenient preview:
 
    - the first form extracts :n:`@qualid` and displays the resulting term;
    - the second form extracts the listed :n:`@qualid`\s and all their
@@ -57,14 +56,14 @@ the command :cmd:`Cd`.
   
 .. cmd:: Extraction Library @ident
 
-   Extraction of the whole Coq library :n:`@ident.v` to an ML module
+   Extraction of the whole Rocq library :n:`@ident.v` to an ML module
    :n:`@ident.ml`. In case of name clash, identifiers are here renamed
    using prefixes ``coq_``  or ``Coq_`` to ensure a session-independent
    renaming.
 
 .. cmd:: Recursive Extraction Library @ident
 
-   Extraction of the Coq library :n:`@ident.v` and all other modules
+   Extraction of the Rocq library :n:`@ident.v` and all other modules
    :n:`@ident.v` depends on.
 
 .. cmd:: Separate Extraction {+ @qualid }
@@ -72,24 +71,24 @@ the command :cmd:`Cd`.
    Recursive extraction of all the mentioned objects and all
    their dependencies, just as :n:`Extraction @string {+ @qualid }`,
    but instead of producing one monolithic file, this command splits
-   the produced code in separate ML files, one per corresponding Coq
+   the produced code in separate ML files, one per corresponding
    ``.v`` file. This command is hence quite similar to
    :cmd:`Recursive Extraction Library`, except that only the needed
-   parts of Coq libraries are extracted instead of the whole.
+   parts of Rocq libraries are extracted instead of the whole.
    The naming convention in case of name clash is the same one as
    :cmd:`Extraction Library`: identifiers are here renamed using prefixes
    ``coq_``  or ``Coq_``.
 
 The following command is meant to help automatic testing of
 the extraction, see for instance the ``test-suite`` directory
-in the Coq sources.
+in the Rocq sources.
 
 .. cmd:: Extraction TestCompile {+ @qualid }
 
    All the mentioned objects and all their dependencies are extracted
    to a temporary OCaml file, just as in ``Extraction "file"``. Then
    this temporary file and its signature are compiled with the same
-   OCaml compiler used to built Coq. This command succeeds only
+   OCaml compiler used to built Rocq. This command succeeds only
    if the extraction and the OCaml compilation succeed. It fails
    if the current target language of the extraction is not OCaml.
 
@@ -157,7 +156,7 @@ Concerning Haskell, type-preserving optimizations are less useful
 because of laziness. We still make some optimizations, for example in
 order to produce more readable code.
 
-The type-preserving optimizations are controlled by the following Coq flags
+The type-preserving optimizations are controlled by the following flags
 and commands:
 
 .. flag:: Extraction Optimize
@@ -165,7 +164,7 @@ and commands:
    Default is on. This :term:`flag` controls all type-preserving optimizations made on
    the ML terms (mostly reduction of dummy beta/iota redexes, but also
    simplifications on Cases, etc). Turn this flag off if you want a
-   ML term as close as possible to the Coq term.
+   ML term as close as possible to the Rocq term.
 
 .. flag:: Extraction Conservative Types
 
@@ -221,7 +220,7 @@ The user can explicitly ask for a :term:`constant` to be extracted by two means:
 
   * by mentioning it on the extraction command line
 
-  * by extracting the whole Coq module of this :term:`constant`.
+  * by extracting the whole Rocq module of this :term:`constant`.
 
 In both cases, the declaration of this :term:`constant` will be present in the
 produced file. But this same :term:`constant` may or may not be inlined in
@@ -352,7 +351,7 @@ Realizing inductive types
 
 The system also provides a mechanism to specify ML terms for inductive
 types and constructors. For instance, the user may want to use the ML
-native boolean type instead of the Coq one. The syntax is the following:
+native boolean type instead of the Rocq one. The syntax is the following:
 
 .. cmd:: Extract Inductive @qualid => {| @ident | @string } [ {* {| @ident | @string } } ] {? @string__match }
 
@@ -541,11 +540,11 @@ Avoiding conflicts with existing filenames
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When using :cmd:`Extraction Library`, the names of the extracted files
-directly depend on the names of the Coq files. It may happen that
+directly depend on the names of the Rocq files. It may happen that
 these filenames are in conflict with already existing files, 
 either in the standard library of the target language or in other
 code that is meant to be linked with the extracted code. 
-For instance the module ``List`` exists both in Coq and in OCaml.
+For instance the module ``List`` exists both in Rocq and in OCaml.
 It is possible to instruct the extraction not to use particular filenames.
 
 .. cmd:: Extraction Blacklist {+ @ident }
@@ -576,7 +575,7 @@ Additional settings
 
    This :term:`option` controls which optimizations are used during extraction, providing a finer-grained
    control than :flag:`Extraction Optimize`.  The bits of :token:`natural` are used as a bit mask.
-   Keeping an option off keeps the extracted ML more similar to the Coq term.
+   Keeping an option off keeps the extracted ML more similar to the Rocq term.
    Values are:
 
    +-----+-------+----------------------------------------------------------------+
@@ -607,7 +606,7 @@ Additional settings
 
 .. flag:: Extraction TypeExpand
 
-   If this :term:`flag` is set, fully expand Coq types in ML.  See the Coq source code to learn more.
+   If this :term:`flag` is set, fully expand Rocq types in ML.  See the Rocq source code to learn more.
 
 .. opt:: Extraction Output Directory @string
 
@@ -616,10 +615,10 @@ Additional settings
    option :n:`-output-directory`, if set (see :ref:`command-line-options`) and
    otherwise, the current directory.  Use :cmd:`Pwd` to display the current directory.
 
-Differences between Coq and ML type systems
+Differences between Rocq and ML type systems
 ----------------------------------------------
 
-Due to differences between Coq and ML type systems,
+Due to differences between Rocq and ML type systems,
 some extracted programs are not directly typable in ML. 
 We now solve this problem (at least in OCaml) by adding
 when needed some unsafe casting ``Obj.magic``, which give
@@ -649,7 +648,7 @@ We now produce the following correct version::
 
    let dp x y f = Pair ((Obj.magic f () x), (Obj.magic f () y))
 
-Secondly, some Coq definitions may have no counterpart in ML. This
+Secondly, some Rocq definitions may have no counterpart in ML. This
 happens when there is a quantification over types inside the type
 of a constructor; for example:
 
@@ -664,23 +663,23 @@ In OCaml, we must cast any argument of the constructor dummy
 Even with those unsafe castings, you should never get error like
 ``segmentation fault``. In fact even if your program may seem
 ill-typed to the OCaml type checker, it can't go wrong : it comes
-from a Coq well-typed terms, so for example inductive types will always
+from a Rocq well-typed terms, so for example inductive types will always
 have the correct number of arguments, etc. Of course, when launching
 manually some extracted function, you should apply it to arguments
-of the right shape (from the Coq point-of-view).
+of the right shape (from the Rocq point-of-view).
 
 More details about the correctness of the extracted programs can be 
 found in :cite:`Let02`.
 
 We have to say, though, that in most "realistic" programs, these problems do not
-occur. For example all the programs of Coq library are accepted by the OCaml
+occur. For example all the programs of the Rocq Stdlib are accepted by the OCaml
 type checker without any ``Obj.magic`` (see examples below).
 
 Some examples
 -------------
 
 We present here two examples of extraction, taken from the
-Coq Standard Library. We choose OCaml as the target language,
+Rocq Stdlib. We choose OCaml as the target language,
 but everything, with slight modifications, can also be done in the
 other languages supported by extraction.
 We then indicate where to find other examples and tests of extraction.
@@ -709,7 +708,7 @@ We can now extract this program to OCaml:
 The inlining of ``gt_wf_rec`` and others is not
 mandatory. It only enhances readability of extracted code.
 You can then copy-paste the output to a file ``euclid.ml`` or let 
-Coq do it for you with the following command::
+Rocq do it for you with the following command::
 
    Extraction "euclid" eucl_dev.
 
@@ -753,16 +752,16 @@ Extraction's horror museum
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Some pathological examples of extraction are grouped in the file
-``test-suite/success/extraction.v`` of the sources of Coq.
+``test-suite/success/extraction.v`` of the sources of Rocq.
 
 Users' Contributions
 ~~~~~~~~~~~~~~~~~~~~
 
-Several of the Coq Users' Contributions use extraction to produce
+Several of user contributions use extraction to produce
 certified programs. In particular the following ones have an automatic
 extraction test:
 
- * ``additions`` : https://github.com/coq-contribs/additions
+ * ``additions-chains`` : https://github.com/coq-community/hydra-battles
  * ``bdds`` : https://github.com/coq-contribs/bdds
  * ``canon-bdds`` : https://github.com/coq-contribs/canon-bdds
  * ``chinese`` : https://github.com/coq-contribs/chinese
@@ -777,7 +776,7 @@ extraction test:
  * ``hardware`` : https://github.com/coq-contribs/hardware
  * ``multiplier`` : https://github.com/coq-contribs/multiplier
  * ``search-trees`` : https://github.com/coq-contribs/search-trees
- * ``stalmarck`` : https://github.com/coq-contribs/stalmarck
+ * ``stalmarck`` : https://github.com/coq-community/stalmarck
 
 Note that ``continuations`` and ``multiplier`` are a bit particular. They are
 examples of developments where ``Obj.magic`` is needed. This is

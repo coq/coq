@@ -13,12 +13,12 @@ User-defined rewrite rules
    and manipulating these will most often result in inconsistencies and anomalies.
 
 
-This section describes the extension of Coq's reduction mechanisms with user-defined rewrite rules,
+This section describes the extension of Rocq's reduction mechanisms with user-defined rewrite rules,
 as a means to extend definitional equality. It should not be confused with the :ref:`rewrite tactic <rewritingexpressions>`
-or :ref:`setoid rewriting <generalizedrewriting>` which operate on propositional equality and other relations which are defined in Coq.
+or :ref:`setoid rewriting <generalizedrewriting>` which operate on propositional equality and other relations which are defined in Rocq.
 
 Rewrite rules need to be enabled by passing the option ``-allow-rewrite-rules``
-to the Coq program.
+to the Rocq program.
 
    .. exn:: Rewrite rule declaration requires passing the flag "-allow-rewrite-rules".
       :undocumented:

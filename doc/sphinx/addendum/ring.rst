@@ -102,7 +102,7 @@ Yes, building the variables map and doing the substitution after
 normalizing is automatically done by the tactic. So you can just
 forget this paragraph and use the tactic according to your intuition.
 
-Concrete usage in Coq
+Concrete usage
 --------------------------
 
 .. tacn:: ring {? [ {+ @one_term } ] }
@@ -436,10 +436,10 @@ How does it work?
 
 The code of ``ring`` is a good example of a tactic written using *reflection*.
 What is reflection? Basically, using it means that a part of a tactic is written
-in Gallina, Coq's language of terms, rather than |Ltac| or OCaml. From the
+in Gallina, Rocq's language of terms, rather than |Ltac| or OCaml. From the
 philosophical point of view, reflection is using the ability of the Calculus of
 Constructions to speak and reason about itself. For the ``ring`` tactic we used
-Coq as a programming language and also as a proof environment to build a tactic
+Rocq as a programming language and also as a proof environment to build a tactic
 and to prove its correctness.
 
 The interested reader is strongly advised to have a look at the
@@ -765,12 +765,12 @@ tactics using reflection.
 
 Another idea suggested by Benjamin Werner: reflection could be used to
 couple an external tool (a rewriting program or a model checker)
-with Coq. We define (in Coq) a type of terms, a type of *traces*, and
+with Rocq. We define (in Rocq) a type of terms, a type of *traces*, and
 prove a correctness theorem that states that *replaying traces* is safe
 with respect to some interpretation. Then we let the external tool do every
 computation (using side-effects, backtracking, exception, or others
 features that are not available in pure lambda calculus) to produce
-the trace. Now we can check in Coq that the trace has the expected
+the trace. Now we can check in Rocq that the trace has the expected
 semantics by applying the correctness theorem.
 
 

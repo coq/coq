@@ -166,7 +166,7 @@ analysis on inductive or coinductive objects (see :ref:`variants`).
       the variables and hypotheses introduced in each new subgoal.  The
       :token:`or_and_intropattern` must have one :n:`{* @intropattern }`
       for each constructor, given in the order in which the constructors are
-      defined.  If there are not enough names, Coq picks fresh names.
+      defined.  If there are not enough names, Rocq picks fresh names.
       Inner :n:`intropattern`\s can also split introduced hypotheses into
       multiple hypotheses or subgoals.
 
@@ -495,7 +495,7 @@ Induction
      are the names of the induction hypotheses. The identifiers
      :n:`@name` (in the `{ struct ... }` clauses) are the respective names of
      the premises on which the induction
-     is performed in the statements to be proved (if not given, Coq
+     is performed in the statements to be proved (if not given, Rocq
      guesses what they are).
 
 .. tacn:: cofix @ident {? with {+ ( @ident {* @simple_binder } : @type ) } }
@@ -809,7 +809,7 @@ This section describes some special purpose tactics to work with
      :token:`or_and_intropattern` must have one :n:`{* @intropattern }`
      for each constructor of the (co)inductive predicate, given in the order
      in which the constructors are defined.
-     If there are not enough names, Coq picks fresh names.
+     If there are not enough names, Rocq picks fresh names.
 
      If an equation splits into several
      equations (because ``inversion`` applies ``injection`` on the equalities it
@@ -824,7 +824,7 @@ This section describes some special purpose tactics to work with
       ``inversion`` generally behaves in a slightly more expected way than
       ``inversion`` (no artificial duplication of some hypotheses referring to
       other hypotheses). To take advantage of these improvements, it is enough to use
-      ``inversion … as []``, letting Coq choose fresh names.
+      ``inversion … as []``, letting Rocq choose fresh names.
 
    .. note::
       As ``inversion`` proofs may be large, we recommend
@@ -1265,7 +1265,7 @@ Automatic declaration of schemes
 
 .. warning::
 
-   You have to be careful with these flags since Coq may now reject well-defined
+   You have to be careful with these flags since Rocq may now reject well-defined
    inductive types because it cannot compute a Boolean equality for them.
 
 .. flag:: Rewriting Schemes
@@ -1384,8 +1384,6 @@ Generation of inversion principles with ``Derive`` ``Inversion``
     Check leminv.
 
   Then we can use the proven inversion lemma:
-
-  .. the original LaTeX did not have any Coq code to setup the goal
 
   .. coqtop:: none
 

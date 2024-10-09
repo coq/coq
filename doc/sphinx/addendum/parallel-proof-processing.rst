@@ -6,8 +6,8 @@ Asynchronous and Parallel Proof Processing
 :Author: Enrico Tassi
 
 This chapter explains how proofs can be asynchronously processed by
-Coq. This feature improves the reactivity of the system when used in
-interactive mode via CoqIDE. In addition, it allows Coq to take
+Rocq. This feature improves the reactivity of the system when used in
+interactive mode via CoqIDE. In addition, it allows Rocq to take
 advantage of parallel hardware when used as a batch compiler by
 decoupling the checking of statements and definitions from the
 construction and checking of proofs objects.
@@ -20,7 +20,7 @@ This feature has some technical limitations that may make it
 unsuitable for some use cases.
 
 For example, in interactive mode, some errors coming from the kernel
-of Coq are signaled late. The type of errors belonging to this
+of Rocq are signaled late. The type of errors belonging to this
 category are universe inconsistencies.
 
 At the time of writing, only opaque proofs (ending with :cmd:`Qed` or
@@ -36,12 +36,12 @@ though doing so is not recommended.
 Proof annotations
 ----------------------
 
-To process a proof asynchronously Coq needs to know the precise
+To process a proof asynchronously Rocq needs to know the precise
 statement of the theorem without looking at the proof. This requires
 some annotations if the theorem is proved inside a Section (see
 Section :ref:`section-mechanism`).
 
-When a :ref:`section <section-mechanism>` ends, Coq looks at the proof object to decide which
+When a :ref:`section <section-mechanism>` ends, Rocq looks at the proof object to decide which
 section variables are actually used and hence have to be quantified in
 the statement of the theorem. To avoid making the construction of
 proofs mandatory when ending a section, one can start each proof with
@@ -87,7 +87,7 @@ an incorrect annotation.
 Automatic suggestion of proof annotations
 `````````````````````````````````````````
 
-The :flag:`Suggest Proof Using` flag makes Coq suggest, when a :cmd:`Qed`
+The :flag:`Suggest Proof Using` flag makes Rocq suggest, when a :cmd:`Qed`
 command is processed, a correct proof annotation. It is up to the user
 to modify the proof script accordingly.
 
@@ -96,16 +96,16 @@ Proof blocks and error resilience
 --------------------------------------
 
 In interactive
-mode Coq is able to completely check a document containing errors
+mode Rocq is able to completely check a document containing errors
 instead of bailing out at the first failure.
 
 Two kind of errors are handled: errors occurring in
 commands and errors occurring in proofs.
 
-To properly recover from a failing tactic, Coq needs to recognize the
+To properly recover from a failing tactic, Rocq needs to recognize the
 structure of the proof in order to confine the error to a sub proof.
 Proof block detection is performed by looking at the syntax of the
-proof script (i.e. also looking at indentation). Coq comes with four
+proof script (i.e. also looking at indentation). Rocq comes with four
 kind of proof blocks, and an ML API to add new ones.
 
 :curly: blocks are delimited by { and }, see Chapter :ref:`proofhandling`
@@ -145,7 +145,7 @@ Interactive mode
 
 CoqIDE and VsCoq support asynchronous proof processing.
 
-When CoqIDE is started and async mode is enabled, two or more Coq processes
+When CoqIDE is started and async mode is enabled, two or more Rocq processes
 are created. The master one
 follows the user, giving feedback as soon as possible by skipping
 proofs, which are delegated to the worker processes. The worker processes

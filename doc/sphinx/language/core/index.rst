@@ -4,7 +4,7 @@
 Core language
 =============
 
-At the heart of the Coq proof assistant is the Coq kernel.  While
+At the heart of the Rocq Prover is the Rocq kernel.  While
 users have access to a language with many convenient features such as
 :ref:`notations <syntax-extensions-and-notation-scopes>`,
 :ref:`implicit arguments <ImplicitArguments>`, etc.  (presented in the

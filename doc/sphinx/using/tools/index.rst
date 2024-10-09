@@ -5,10 +5,10 @@ Command-line and graphical tools
 ================================
 
 This chapter presents the command-line tools that users will need to
-build their Coq project, the documentation of the CoqIDE graphical
+build their Rocq project, the documentation of the CoqIDE graphical
 user interface and the documentation of the parallel proof processing
 feature that is supported by CoqIDE and several other GUIs.
-A list of available user interfaces to interact with Coq is available
+A list of available user interfaces to interact with Rocq is available
 on the `Coq website <https://coq.inria.fr/user-interfaces.html>`_.
 
 .. toctree::

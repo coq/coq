@@ -2,10 +2,10 @@
 Reasoning with equalities
 =========================
 
-There are multiple notions of :gdef:`equality` in Coq:
+There are multiple notions of :gdef:`equality` in Rocq:
 
 - :gdef:`Leibniz equality` is the standard
-  way to define equality in Coq and the Calculus of Inductive Constructions,
+  way to define equality in Rocq and the Calculus of Inductive Constructions,
   which is in terms of a binary relation, i.e. a binary function that returns
   a `Prop`.  The standard library
   defines `eq` similar to this:
@@ -21,13 +21,13 @@ There are multiple notions of :gdef:`equality` in Coq:
   relation.  A :gdef:`setoid` is a set that is equipped with an equivalence relation
   (see https://en.wikipedia.org/wiki/Setoid).  These are needed to form a :gdef:`quotient set`
   or :gdef:`quotient`
-  (see https://en.wikipedia.org/wiki/Equivalence_class).  In Coq, users generally work
+  (see https://en.wikipedia.org/wiki/Equivalence_class).  In Rocq, users generally work
   with setoids rather than constructing quotients, for which there is no specific support.
 
 - :gdef:`Definitional equality <definitional equality>` is equality based on the
-  :ref:`conversion rules <Conversion-rules>`, which Coq can determine automatically.
+  :ref:`conversion rules <Conversion-rules>`, which Rocq can determine automatically.
   Two terms are definitionally equal when they reduce to syntactically identical terms
-  using the conversion rules.  When two terms are definitionally equal, Coq knows it can
+  using the conversion rules.  When two terms are definitionally equal, Rocq knows it can
   replace one with the other, such as with :tacn:`change` `X with Y`, among many
   other advantages.  ":term:`Convertible <convertible>`" is another way of saying that
   two terms are definitionally equal.
@@ -417,7 +417,7 @@ Rewriting with definitional equality
    it skips checking that :n:`@one_term__to` is convertible with the goal or
    :n:`@one_term__from`.
 
-   Recall that the Coq kernel typechecks proofs again when they are concluded to
+   Recall that the Rocq kernel typechecks proofs again when they are concluded to
    ensure correctness. Hence, using :tacn:`change` checks convertibility twice
    overall, while :tacn:`change_no_check` can produce ill-typed terms,
    but checks convertibility only once.
@@ -837,7 +837,7 @@ representation used in the ZINC virtual machine :cite:`Leroy90`. It is
 especially useful for intensive computation of algebraic values, such
 as numbers, and for reflection-based tactics.
 
-:tacn:`native_compute` is based on on converting the Coq code to OCaml.
+:tacn:`native_compute` is based on on converting the Rocq code to OCaml.
 
 Note that both these tactics ignore :cmd:`Opaque` markings
 (see issue `#4776 <https://github.com/coq/coq/issues/4776>`_), nor do they
@@ -845,7 +845,7 @@ apply unfolding strategies such as from :cmd:`Strategy`.
 
 :tacn:`native_compute` is typically two to five
 times faster than :tacn:`vm_compute` at applying conversion rules
-when Coq is running native code, but :tacn:`native_compute` requires
+when Rocq is running native code, but :tacn:`native_compute` requires
 considerably more overhead.  We recommend using :tacn:`native_compute`
 when all of the following are true (otherwise use :tacn:`vm_compute`):
 
@@ -985,7 +985,7 @@ which supports additional fine-tuning.
    This command accepts the :attr:`global` attribute.  By default, the scope
    of :cmd:`Opaque` is limited to the current section or module.
 
-   :cmd:`Opaque` also affects Coq's conversion algorithm, causing
+   :cmd:`Opaque` also affects Rocq's conversion algorithm, causing
    it to delay unfolding the specified constants as much as possible when it
    has to check that two distinct applied constants are convertible.
    See Section :ref:`conversion-rules`.
@@ -1134,7 +1134,7 @@ which supports additional fine-tuning.
 
       If we try to prove :g:`id (fact n) = fact n` by
       :tacn:`reflexivity`, it will now take time proportional to
-      :math:`n!`, because Coq will keep unfolding :g:`fact` and
+      :math:`n!`, because Rocq will keep unfolding :g:`fact` and
       :g:`*` and :g:`+` before it unfolds :g:`id`, resulting in a full
       computation of :g:`fact n` (in unary, because we are using
       :g:`nat`), which takes time :math:`n!`.  We can see this cross
@@ -1178,7 +1178,7 @@ which supports additional fine-tuning.
          Time Defined.
 
       On small examples this sort of behavior doesn't matter, but
-      because Coq is a super-linear performance domain in so many
+      because Rocq is a super-linear performance domain in so many
       places, unless great care is taken, tactic automation using
       :tacn:`with_strategy` may not be robustly performant when
       scaling the size of the input.

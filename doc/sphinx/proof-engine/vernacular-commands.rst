@@ -408,7 +408,7 @@ Requests to the environment
       reference ::= @qualid
       | @string {? % @scope_key }
 
-   Displays the full name of objects from Coq's various qualified namespaces
+   Displays the full name of objects from Rocq's various qualified namespaces
    such as terms, modules and Ltac, thereby showing the module they are defined
    in.  It also displays notation definitions.
 
@@ -480,7 +480,7 @@ Printing flags
 
 .. flag:: Fast Name Printing
 
-   When this :term:`flag` is turned on, Coq uses an asymptotically faster algorithm for the
+   When this :term:`flag` is turned on, Rocq uses an asymptotically faster algorithm for the
    generation of unambiguous names of bound variables while printing terms.
    While faster, it is also less clever and results in a typically less elegant
    display, e.g. it will generate more names rather than reusing certain names
@@ -493,12 +493,12 @@ Printing flags
 Loading files
 -----------------
 
-Coq offers the possibility of loading different parts of a whole
+Rocq offers the possibility of loading different parts of a whole
 development stored in separate files. Their contents will be loaded as
 if they were entered from the keyboard. This means that the loaded
-files are text files containing sequences of commands for Coq’s
-toplevel. This kind of file is called a *script* for Coq. The standard
-(and default) extension of Coq’s script files is .v.
+files are text files containing sequences of commands for Rocq's
+toplevel. This kind of file is called a *script* for Rocq. The standard
+(and default) extension of Rocq's script files is .v.
 
 
 .. cmd:: Load {? Verbose } {| @string | @ident }
@@ -510,7 +510,7 @@ toplevel. This kind of file is called a *script* for Coq. The standard
 
    If :n:`@string` is specified, it must specify a complete filename.
    `~` and .. abbreviations are
-   allowed as well as shell variables. If no extension is specified, Coq
+   allowed as well as shell variables. If no extension is specified, Rocq
    will use the default extension ``.v``.
 
    Files loaded this way can't leave proofs open, nor can :cmd:`Load`
@@ -520,7 +520,7 @@ toplevel. This kind of file is called a *script* for Coq. The standard
    :cmd:`Require` loads `.vo` files that were previously
    compiled from `.v` files.
 
-   :n:`Verbose` displays the Coq output for each command and tactic
+   :n:`Verbose` displays the Rocq output for each command and tactic
    in the loaded file, as if the commands and tactics were entered interactively.
 
    .. exn:: Can’t find file @ident on loadpath.
@@ -549,7 +549,7 @@ file is a particular case of a module called a *library file*.
    .. prodn::
       dirpath ::= {* @ident . } @ident
 
-   Loads compiled files into the Coq environment. For the first
+   Loads compiled files into the Rocq environment. For the first
    :n:`@qualid` in each :n:`@filtered_import`, the command looks in the
    :term:`load path` for a compiled file :n:`@ident.vo` whose
    :term:`logical name` has the form :n:`@dirpath.{* @ident__implicit. }@qualid`
@@ -562,7 +562,7 @@ file is a particular case of a module called a *library file*.
    If a file is found, its logical name must be the same as the one
    used to compile the file. Then the file is loaded as well as all
    the files it depends on (recursively). All the files must have
-   been compiled with the same version of Coq.
+   been compiled with the same version of Rocq.
 
    * :n:`Import` - additionally does an :cmd:`Import` on the loaded module,
      making components defined in the module available by their short names
@@ -623,15 +623,15 @@ file is a particular case of a module called a *library file*.
 
       The command tried to load library file :n:`@ident`.vo that
       depends on some specific version of library :n:`@qualid` which is not the
-      one already loaded in the current Coq session. Probably :n:`@ident.v` was
+      one already loaded in the current Rocq session. Probably :n:`@ident.v` was
       not properly recompiled with the last version of the file containing
       module :token:`qualid`.
 
    .. exn:: Bad magic number.
 
       The file :n:`@ident.vo` was found but either it is not a
-      Coq compiled module, or it was compiled with an incompatible
-      version of Coq.
+      Rocq compiled module, or it was compiled with an incompatible
+      version of Rocq.
 
    .. exn:: The file @ident.vo contains library @qualid__1 and not library @qualid__2.
 
@@ -650,7 +650,7 @@ file is a particular case of a module called a *library file*.
 .. cmd:: Print Libraries
 
    This command displays the list of library files loaded in the
-   current Coq session.
+   current Rocq session.
 
 .. cmd:: Declare ML Module {+ @string }
 
@@ -679,7 +679,7 @@ file is a particular case of a module called a *library file*.
    helpers to do this: see :ref:`here for coq_makefile <coq_makefile>`,
    and :ref:`here for Dune <building_dune>`.
 
-   Note that the plugin loading system for Coq changed in 8.16 to use
+   Note that the plugin loading system for Rocq changed in 8.16 to use
    findlib. Previous Coq versions loaded OCaml dynamic objects by
    first locating the object file from ``-I`` directives, then
    directly invoking ``Dynlink.loadfile``. For compatibility purposes,
@@ -724,13 +724,13 @@ Load paths
 
 .. versionchanged:: 8.18
 
-   Commands to manage :term:`load paths <load path>` within Coq have been
-   removed. Load paths can be managed using Coq command line options or
+   Commands to manage :term:`load paths <load path>` within Rocq have been
+   removed. Load paths can be managed using Rocq command line options or
    enviroment variables (see :ref:`logical-paths-load-path`).
 
 .. cmd:: Print LoadPath {? @dirpath }
 
-   Displays the current Coq :term:`load path`.  If :n:`@dirpath` is specified,
+   Displays the current Rocq :term:`load path`.  If :n:`@dirpath` is specified,
    displays only the paths that extend that prefix.  In the output,
    the logical path `<>` represents an empty logical path.
 
@@ -756,7 +756,7 @@ follows:
    The file name :n:`@string` must exist relative to one of the top directories
    associated with :n:`@dirpath`.  :n:`@string` can include directory separators
    (``/``) to select a file in a subdirectory.
-   Path elements in :n:`@string` must be valid Coq identifiers, e.g. they cannot
+   Path elements in :n:`@string` must be valid Rocq identifiers, e.g. they cannot
    contain characters such as ``-`` or ``,``.  See :ref:`lexical-conventions`.
 
 When :n:`@ident` is provided, that name can be used by OCaml code, typically
@@ -775,7 +775,7 @@ Backtracking
 ------------
 
 The backtracking commands described in this section can only be used
-interactively, they cannot be part of a Coq file loaded via
+interactively, they cannot be part of a Rocq file loaded via
 ``Load`` or compiled by ``coqc``.
 
 
@@ -824,13 +824,13 @@ Quitting and debugging
 
 .. cmd:: Quit
 
-   Causes Coq to exit.  Valid only in coqtop.
+   Causes Rocq to exit.  Valid only in coqtop.
 
 
 .. cmd:: Drop
 
    This command temporarily enters the OCaml toplevel.
-   It is a debug facility used by Coq’s implementers.  Valid only in the
+   It is a debug facility used by Rocq's implementers.  Valid only in the
    bytecode version of coqtop.
    The OCaml command:
 
@@ -839,10 +839,10 @@ Quitting and debugging
       #use "include";;
 
    adds the right loadpaths and loads some toplevel printers for all
-   abstract types of Coq- section_path, identifiers, terms, judgments, ….
+   abstract types of Rocq- section_path, identifiers, terms, judgments, ….
    You can also use the file base_include instead, that loads only the
    pretty-printers for section_paths and identifiers. You can return back
-   to Coq with the command:
+   to Rocq with the command:
 
    ::
 
@@ -850,9 +850,9 @@ Quitting and debugging
 
    .. warning::
 
-      #. It only works with the bytecode version of Coq (i.e. `coqtop.byte`,
+      #. It only works with the bytecode version of Rocq (i.e. `coqtop.byte`,
          see Section `interactive-use`).
-      #. You must have compiled Coq from the source package and set the
+      #. You must have compiled Rocq from the source package and set the
          environment variable COQTOP to the root of your copy of the sources
          (see Section `customization-by-environment-variables`).
 
@@ -957,7 +957,7 @@ Controlling display
    multiple categories. The special category `all` contains all warnings, and
    the special category `default` contains the warnings enabled by default.
 
-   Coq defines a set of core warning categories, which may be extended by
+   Rocq defines a set of core warning categories, which may be extended by
    plugins, so this list is not exhaustive. The core categories are:
    `automation`,
    `bytecode-compiler`,
@@ -1228,8 +1228,8 @@ Registering primitive operations
 .. cmd:: Primitive @ident_decl {? : @term } := #@ident
 
    Makes the primitive type or primitive operator :n:`#@ident` defined in OCaml
-   accessible in Coq commands and tactics.
-   For internal use by implementors of Coq's standard library or standard library
+   accessible in Rocq commands and tactics.
+   For internal use by implementors of Rocq's standard library or standard library
    replacements.  No space is allowed after the `#`.  Invalid values give a syntax
    error.
 

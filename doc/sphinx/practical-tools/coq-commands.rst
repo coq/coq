@@ -1,7 +1,7 @@
 .. _thecoqcommands:
 
-Coq commands
-====================
+The Rocq Prover commands
+========================
 
 There are several Coq commands:
 
