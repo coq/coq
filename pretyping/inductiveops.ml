@@ -106,10 +106,20 @@ let relevance_of_inductive_type env (IndType (indf, _)) =
 let mkAppliedInd (IndType ((ind,params), realargs)) =
   applist (mkIndU ind, params @ realargs)
 
+let dest_recarg p = match Rtree.Kind.kind p with
+| Rtree.Kind.Node (ra, _) -> ra
+| Rtree.Kind.Var _ -> assert false
+
+let dest_subterms p = match Rtree.Kind.kind p with
+| Rtree.Kind.Node (ra, cstrs) ->
+  let () = assert (match ra with Norec -> false | _ -> true) in
+  cstrs
+| Rtree.Kind.Var _ -> assert false
+
 (* Does not consider imbricated or mutually recursive types *)
 let mis_is_recursive_subset listind rarg =
   let one_is_rec rvec =
-    List.exists
+    Array.exists
       (fun ra ->
         match dest_recarg ra with
           | Mrec (RecArgInd ind) -> List.exists (Names.Ind.CanOrd.equal ind) listind
@@ -119,7 +129,7 @@ let mis_is_recursive_subset listind rarg =
 
 let mis_is_recursive ((ind,_),mib,mip) =
   mis_is_recursive_subset (List.init mib.mind_ntypes (fun i -> (ind,i)))
-    mip.mind_recargs
+    (Rtree.Kind.make mip.mind_recargs)
 
 let mis_nf_constructor_type ((_,j),u) (mib,mip) =
   let nconstr = Array.length mip.mind_consnames in

@@ -96,3 +96,16 @@ sig
   val map : ('a -> 'a) -> 'a t -> 'a t
 
 end
+
+module Kind :
+sig
+
+type 'a rtree = 'a t
+type 'a t
+type 'a kind = Var of int * int | Node of 'a * 'a t array array
+
+val make : 'a rtree -> 'a t
+val kind : 'a t -> 'a kind
+val repr : 'a t -> 'a rtree
+
+end

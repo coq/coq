@@ -136,6 +136,36 @@ struct
 
 end
 
+module Kind =
+struct
+
+type 'a rtree = 'a t
+type 'a t = { node : 'a rtree; subs : 'a clos Esubst.subs }
+
+let var i j = Var (i, j)
+let node l sons = Node (l, sons)
+
+type 'a kind = Var of int * int | Node of 'a * 'a t array array
+
+let make t = { node = t; subs = Esubst.subs_id 0 }
+
+let kind t : 'a kind = match expand0 t.subs t.node with
+| ExpVar (i, j) -> Var (i, j)
+| ExpNode (l, subs, sons) ->
+  let map node = { node; subs } in
+  let sons = Array.map (fun v -> Array.map map v) sons in
+  Node (l, sons)
+
+let repr t = match expand0 t.subs t.node with
+| ExpVar (i, j) -> var i j
+| ExpNode (l, subs, sons) ->
+  let rec mk k j (Clos (v, sub)) = subst mk (Esubst.subs_shft (k, sub)) (Rec (j, v)) in
+  let map t = subst mk subs t in
+  let sons = Array.map (fun v -> Array.map map v) sons in
+  node l sons
+
+end
+
 (** Structural equality test, parametrized by an equality on elements *)
 
 let rec raw_eq cmp t t' = match t, t' with

@@ -768,8 +768,11 @@ let branches_specif renv c_spec ci =
        Note that c_spec might be more precise than [v] below, because of
        nested inductive types. *)
     let (_,mip) = lookup_mind_specif renv.env ci.ci_ind in
-    let v = dest_subterms mip.mind_recargs in
-      Array.map List.length v in
+    let tree = Rtree.Kind.make mip.mind_recargs in
+    match Rtree.Kind.kind tree with
+    | Rtree.Kind.Node (_, v) -> Array.map Array.length v
+    | Rtree.Kind.Var _ -> assert false
+  in
   let subterms = lazy begin match Lazy.force c_spec with
   | Subterm (_, _, t) -> dest_subterms t
   | Dead_code | Internally_bound_subterm _ | Not_subterm -> assert false
