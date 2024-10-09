@@ -821,6 +821,7 @@ library:ci-itree_io:
     - library:ci-simple_io
     - library:ci-itree
   stage: build-3+
+  allow_failure: true # C.f. https://github.com/coq/coq/pull/19627#issuecomment-2396237050
 
 library:ci-simple_io:
   extends: .ci-template-flambda
@@ -887,6 +888,7 @@ library:ci-http:
   - library:ci-itree_io
   - plugin:ci-quickchick
   stage: build-3+
+  allow_failure: true # C.f. https://github.com/coq/coq/pull/19627#issuecomment-2396237050
 
 library:ci-trakt:
   extends: .ci-template-flambda
