@@ -771,7 +771,16 @@ let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
     let keep =
       if keep_head_inductive sigma ty1 then true
       else
-        let s = get_sort_family_of env sigma ty1 in
+        let s = get_sort_of env sigma ty1 in
+        let s = match ESorts.kind sigma s with
+          | QSort (q,_) ->
+            (* XXX should this be done in get_sort_family_of? *)
+            if Evd.check_qconstraints sigma
+                (Sorts.QConstraints.singleton (QConstant QProp, Leq, QVar q))
+            then InType
+            else InQSort
+          | s -> Sorts.family s
+        in
         List.mem_f Sorts.family_equal s sorts
     in
     if keep then [(List.rev posn,t1,t2)] else []

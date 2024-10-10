@@ -641,7 +641,7 @@ let interp_constr_gen kind ist env sigma c =
 
 let interp_constr = interp_constr_gen WithoutTypeConstraint
 
-let interp_type = interp_constr_gen IsType
+let interp_type = interp_constr_gen is_type
 
 let open_constr_use_classes_flags () = {
   use_coercions = true;
@@ -1758,7 +1758,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let sigma = project gl in
         let (sigma,c) =
           let expected_type =
-            if Option.is_empty t then WithoutTypeConstraint else IsType in
+            if Option.is_empty t then WithoutTypeConstraint else is_type in
           let flags = open_constr_use_classes_flags () in
           interp_open_constr ~expected_type ~flags ist env sigma c
         in
@@ -2180,10 +2180,7 @@ let _ =
        poly seems like enough to get reasonable behavior in practice
      *)
     let name = Id.of_string "ltac_gen" in
-    let sigma, ty = match tycon with
-    | Some ty -> sigma, ty
-    | None -> GlobEnv.new_type_evar env sigma ~src:(loc,Evar_kinds.InternalHole)
-    in
+    let sigma, ty = GlobEnv.tycon_to_type ?loc env sigma tycon in
     let (c, sigma) = Proof.refine_by_tactic ~name ~poly (GlobEnv.renamed_env env) sigma ty tac in
     let j = { Environ.uj_val = c; uj_type = ty } in
     (j, sigma)

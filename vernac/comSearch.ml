@@ -70,7 +70,7 @@ let interp_constr_pattern env sigma ?(expected_type=Pretyping.WithoutTypeConstra
 let interp_search_item env sigma =
   function
   | SearchSubPattern ((where,head),pat) ->
-      let expected_type = Pretyping.(if head then IsType else WithoutTypeConstraint) in
+      let expected_type = Pretyping.(if head then is_type else WithoutTypeConstraint) in
       let pat =
         try interp_constr_pattern env sigma ~expected_type pat
         with e when CErrors.noncritical e ->
