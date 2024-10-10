@@ -621,7 +621,6 @@ module Projection : sig
   val arg : t -> int
   val label : t -> Label.t
   val unfolded : t -> bool
-  val unfold : t -> t
 
   val equal : t -> t -> bool
   [@@ocaml.deprecated "(8.13) Use QProjection.equal"]

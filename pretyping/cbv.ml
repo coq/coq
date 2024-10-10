@@ -525,13 +525,7 @@ let rec norm_head info env t stack =
   | Case (ci,u,pms,p,iv,c,v) -> norm_head info env c (CASE(u,pms,p,v,iv,ci,env,stack))
   | Cast (ct,_,_) -> norm_head info env ct stack
 
-  | Proj (p, r, c) ->
-    let p' =
-      if red_set info.reds (fPROJ (Projection.repr p))
-      then Projection.unfold p
-      else p
-    in
-      norm_head info env c (PROJ (p', r, stack))
+  | Proj (p, r, c) -> norm_head info env c (PROJ (p, r, stack))
 
   (* constants, axioms
    * the first pattern is CRUCIAL, n=0 happens very often:

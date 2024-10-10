@@ -309,6 +309,9 @@ exception PatternFailure
 val apply_rules : (state -> state) -> env -> evar_map -> EInstance.t ->
   Declarations.rewrite_rule list -> Stack.t -> econstr * Stack.t
 
+val whd_betaiotazeta_proj :
+  reduction_function
+
 val is_head_evar : env -> evar_map -> constr -> bool
 
 (** {6 Meta-related reduction functions } *)
