@@ -650,6 +650,7 @@ let pr_printable = function
     in
     let pr_subgraph = prlist_with_sep spc pr_qualid in
     keyword cmd ++ pr_opt pr_subgraph g ++ pr_opt str fopt
+  | PrintConstraintSources -> keyword "Print Constraint Sources"
   | PrintName (qid,udecl) ->
     keyword "Print" ++ spc()  ++ pr_smart_global qid ++ pr_full_univ_name_list udecl
   | PrintModuleType qid ->

@@ -171,3 +171,25 @@ let do_constraint ~poly l =
         (UVars.Instance.empty,constraints)
     in
     Global.push_section_context uctx
+
+let constraint_sources = Summary.ref ~name:"univ constraint sources" []
+
+let cache_constraint_source x = constraint_sources := x :: !constraint_sources
+
+let constraint_sources () = !constraint_sources
+
+let constraint_obj =
+  Libobject.declare_object @@
+  Libobject.superglobal_object "univ constraint sources"
+    ~cache:cache_constraint_source
+    ~subst:None
+    ~discharge:(fun x -> Some x)
+
+(* XXX this seems like it could be merged with declare_univ_binders
+   main issue is the filtering or redundant constraints (needed for perf / smaller vo file sizes) *)
+let add_constraint_source x ctx =
+  let _, csts = ctx in
+  if Univ.Constraints.is_empty csts then ()
+  else
+    let v = x, csts in
+    Lib.add_leaf (constraint_obj v)
