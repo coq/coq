@@ -88,7 +88,7 @@ val intern_term :
   Tacinterp.interp_sign -> env ->
     ssrterm -> Glob_term.glob_constr
 
-val interp_term :
+val interp_term : ?expected_type:Pretyping.typing_constraint ->
   Environ.env -> Evd.evar_map ->
   Tacinterp.interp_sign ->
     ssrterm -> evar_map * EConstr.t
@@ -100,7 +100,7 @@ val interp_refine :
   Environ.env -> Evd.evar_map -> Tacinterp.interp_sign -> concl:EConstr.constr ->
     Glob_term.glob_constr -> evar_map * EConstr.constr
 
-val interp_open_constr :
+val interp_open_constr : ?expected_type:Pretyping.typing_constraint ->
   Environ.env -> Evd.evar_map ->
   Tacinterp.interp_sign ->
     Genintern.glob_constr_and_expr -> evar_map * EConstr.t

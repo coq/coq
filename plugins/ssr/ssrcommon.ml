@@ -186,11 +186,11 @@ let interp_refine env sigma ist ~concl rc =
   (sigma, c)
 
 
-let interp_open_constr env sigma ist gc =
-  let (sigma, (c, _)) = Tacinterp.interp_open_constr_with_bindings ist env sigma (gc, Tactypes.NoBindings) in
+let interp_open_constr ?expected_type env sigma ist gc =
+  let (sigma, (c, _)) = Tacinterp.interp_open_constr_with_bindings ?expected_type ist env sigma (gc, Tactypes.NoBindings) in
   (sigma, c)
 
-let interp_term env sigma ist (_, c) = interp_open_constr env sigma ist c
+let interp_term ?expected_type env sigma ist (_, c) = interp_open_constr ?expected_type env sigma ist c
 
 let interp_hyp ist env sigma (SsrHyp (loc, id)) =
   let id' = Tacinterp.interp_hyp ist env sigma CAst.(make ?loc id) in
@@ -729,31 +729,7 @@ let rec isCHoles = function { CAst.v = CHole _ } :: cl -> isCHoles cl | cl -> cl
 let rec isCxHoles = function ({ CAst.v = CHole _ }, None) :: ch -> isCxHoles ch | _ -> false
 
 let pf_interp_ty ?(resolve_typeclasses=false) env sigma0 ist ty =
-   let n_binders = ref 0 in
-   let ty = match ty with
-   | a, (t, None) ->
-    let rec force_type ty = DAst.(map (function
-     | GProd (x, r, k, s, t) -> incr n_binders; GProd (x, r, k, s, force_type t)
-     | GLetIn (x, r, v, oty, t) -> incr n_binders; GLetIn (x, r, v, oty, force_type t)
-     | _ -> DAst.get (mkRCast ty mkRType))) ty in
-     a, (force_type t, None)
-   | _, (_, Some ty) ->
-    let rec force_type ty = CAst.(map (function
-     | CProdN (abs, t) ->
-       n_binders := !n_binders + List.length (List.flatten (List.map (function CLocalAssum (nal,_,_,_) -> nal | CLocalDef (na,_,_,_) -> [na] | CLocalPattern _ -> (* We count a 'pat for 1; TO BE CHECKED *) [CAst.make Name.Anonymous]) abs));
-       CProdN (abs, force_type t)
-     | CLetIn (n, v, oty, t) -> incr n_binders; CLetIn (n, v, oty, force_type t)
-     | _ -> (mkCCast ty (mkCType None)).v)) ty in
-     mk_term NoFlag (force_type ty) in
-   let strip_cast (sigma, t) =
-     let open EConstr in
-     let rec aux t = match kind_of_type sigma t with
-     | CastType (t, ty) when !n_binders = 0 && isSort sigma ty -> t
-     | ProdType(n,s,t) -> decr n_binders; mkProd (n, s, aux t)
-     | LetInType(n,v,ty,t) -> decr n_binders; mkLetIn (n, v, ty, aux t)
-     | _ -> anomaly "pf_interp_ty: ssr Type cast deleted by typecheck" in
-     sigma, aux t in
-   let sigma, cty as ty = strip_cast (interp_term env sigma0 ist ty) in
+   let sigma, cty as ty = interp_term ~expected_type:IsType env sigma0 ist ty in
    let ty =
      if not resolve_typeclasses then ty
      else
