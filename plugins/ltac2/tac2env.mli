@@ -157,7 +157,7 @@ type environment = {
 }
 
 type ('a, 'b) ml_object = {
-  ml_intern : 'r. (raw_tacexpr, glb_tacexpr, 'r) intern_fun -> ('a, 'b or_glb_tacexpr, 'r) intern_fun;
+  ml_intern : 'r. ('a, 'b or_glb_tacexpr, 'r) intern_fun;
   ml_subst : Mod_subst.substitution -> 'b -> 'b;
   ml_interp : environment -> 'b -> valexpr Proofview.tactic;
   ml_print : Environ.env -> Evd.evar_map -> 'b -> Pp.t;

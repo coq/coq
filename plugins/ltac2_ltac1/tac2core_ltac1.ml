@@ -126,7 +126,7 @@ let ltac1_core n = core_prefix Tac2env.ltac1_prefix n
 let t_ltac1 = ltac1_core "t"
 
 let () =
-  let intern self ist (ids, tac) =
+  let intern ist (ids, tac) =
     let map { CAst.v = id } = id in
     let ids = List.map map ids in
     (* Prevent inner calls to Ltac2 values *)
@@ -185,7 +185,7 @@ let () =
 
 let () =
   let open Ltac_plugin in
-  let intern self ist (ids, tac) =
+  let intern ist (ids, tac) =
     let map { CAst.v = id } = id in
     let ids = List.map map ids in
     (* Prevent inner calls to Ltac2 values *)
