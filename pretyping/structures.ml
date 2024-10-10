@@ -391,15 +391,20 @@ let rec decompose_projection sigma c args =
      c
   | _ -> raise Not_found
 
+let is_head_constructor env sigma c =
+  let flags = RedFlags.all in
+  let infos = Evarutil.create_clos_infos env sigma flags in
+  let tab = CClosure.create_tab () in
+  let c = CClosure.inject (EConstr.Unsafe.to_constr c) in
+  let (hd, _) = CClosure.whd_stack infos tab c [] in
+  match CClosure.fterm_of hd with
+  | CClosure.FConstruct _ -> true
+  | _ -> false
+
 let is_open_canonical_projection env sigma c =
-  let open EConstr in
   try
     let arg = decompose_projection sigma c [] in
-    try
-      let arg = whd_all env sigma arg in
-      let hd = match EConstr.kind sigma arg with App (hd, _) -> hd | _ -> arg in
-      not (isConstruct sigma hd)
-    with Failure _ -> false
+    not (is_head_constructor env sigma arg)
   with Not_found -> false
 
 let print env sigma s =
