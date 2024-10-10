@@ -62,6 +62,13 @@ Ltac2 @ external hyp : ident -> constr := "coq-core.plugins.ltac2" "hyp".
     goal under focus, looks for the section variable with the given name.
     If there is one, looks for the hypothesis with the given name. *)
 
+Ltac2 @ external hyp_value : ident -> constr option := "coq-core.plugins.ltac2" "hyp_value".
+(** Panics if there is more than one goal under focus. If there is no
+    goal under focus, looks for the section variable with the given
+    name and return its value ("v" in "H := v") if there is one. If
+    there is one, looks for the hypothesis with the given name and
+    return its value if there is one. *)
+
 Ltac2 @ external hyps : unit -> (ident * constr option * constr) list := "coq-core.plugins.ltac2" "hyps".
 (** Panics if there is more than one goal under focus. If there is no
     goal under focus, returns the list of section variables.
