@@ -40,7 +40,7 @@ type option_command =
   | OptionUnset
   | OptionAppend of string
 
-type require_injection = { lib: string; prefix: string option; export: Lib.export_flag option; }
+type require_injection = { lib: string; prefix: string option; export: Lib.export_flag option; allow_failure: bool }
 
 type injection_command =
   | OptionInjection of (Goptions.option_name * option_command)
@@ -167,8 +167,8 @@ let add_vo_include opts unix_path coq_path implicit =
   { opts with pre = { opts.pre with vo_includes = {
         unix_path; coq_path; has_ml = false; implicit; recursive = true } :: opts.pre.vo_includes }}
 
-let add_vo_require opts d p export =
-  { opts with pre = { opts.pre with injections = RequireInjection {lib=d; prefix=p; export} :: opts.pre.injections }}
+let add_vo_require opts d ?(allow_failure=false) p export =
+  { opts with pre = { opts.pre with injections = RequireInjection {lib=d; prefix=p; export; allow_failure} :: opts.pre.injections }}
 
 let add_load_vernacular opts verb s =
     { opts with pre = { opts.pre with load_vernacular_list = (CUnix.make_suffix s ".v",verb) :: opts.pre.load_vernacular_list }}
@@ -229,26 +229,6 @@ let set_option = let open Goptions in function
   | opt, OptionSet None -> set_bool_option_value_gen ~locality:OptLocal opt true
   | opt, OptionSet (Some v) -> set_option_value ~locality:OptLocal (interp_set_option opt) opt v
   | opt, OptionAppend v -> set_string_option_append_value_gen ~locality:OptLocal opt v
-
-let get_compat_file = function
-  | "9.0" -> "Stdlib.Compat.Coq90"
-  | "8.20" -> "Stdlib.Compat.Coq820"
-  | "8.19" -> "Stdlib.Compat.Coq819"
-  | "8.18" -> "Stdlib.Compat.Coq818"
-  | ("8.17" | "8.16" | "8.15" | "8.14" | "8.13" | "8.12" | "8.11" | "8.10" | "8.9" | "8.8" | "8.7" | "8.6" | "8.5" | "8.4" | "8.3" | "8.2" | "8.1" | "8.0") as s ->
-    CErrors.user_err
-      Pp.(str "Compatibility with version " ++ str s ++ str " not supported.")
-  | s ->
-    CErrors.user_err
-      Pp.(str "Unknown compatibility version \"" ++ str s ++ str "\".")
-
-(* Workaround for the OCaml parser using regex in update-compat.py *)
-let get_compat_files v =
-  let coq_compat = get_compat_file v in
-  match v with
-  | "8.19" -> coq_compat :: ["Ltac2.Compat.Coq819"]
-  | "8.18" | "8.17" -> coq_compat :: ["Ltac2.Compat.Coq818"]
-  | _ -> [coq_compat]
 
 let to_opt_key = Str.(split (regexp " +"))
 
@@ -314,8 +294,8 @@ let parse_args ~usage ~init arglist : t * string list =
       }}
 
     |"-compat" ->
-      get_compat_files (next ()) |>
-      List.fold_left (fun oval lib -> add_vo_require oval lib None (Some Lib.Import)) oval
+      let xy = String.(concat "" ("Coq" :: split_on_char '.' (next ()))) in
+      add_vo_require oval xy ~allow_failure:true (Some "Stdlib") (Some Lib.Import)
 
     |"-exclude-dir" ->
       System.exclude_directory (next ()); oval
@@ -346,6 +326,9 @@ let parse_args ~usage ~init arglist : t * string list =
 
     |"-require-from"|"-rfrom" ->
       let from = next () in add_vo_require oval (next ()) (Some from) None
+
+    |"-compat-from" ->
+      let from = next () in add_vo_require oval (next ()) ~allow_failure:true (Some from) (Some Lib.Import)
 
     |"-require-import-from" | "-rifrom" ->
       let from = next () in add_vo_require oval (next ()) (Some from) (Some Lib.Import)
@@ -468,7 +451,7 @@ let parse_args ~usage ~init args =
 (******************************************************************************)
 
 (* prelude_data == From Coq Require Import Prelude. *)
-let prelude_data = RequireInjection { lib = "Prelude"; prefix = Some "Stdlib"; export = Some Lib.Import; }
+let prelude_data = RequireInjection { lib = "Prelude"; prefix = Some "Stdlib"; export = Some Lib.Import; allow_failure = false }
 
 let injection_commands opts =
   if opts.pre.load_init then prelude_data :: opts.pre.injections else opts.pre.injections

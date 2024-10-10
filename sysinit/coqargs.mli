@@ -20,7 +20,7 @@ type option_command =
   | OptionUnset
   | OptionAppend of string
 
-type require_injection = { lib: string; prefix: string option; export: Lib.export_flag option; }
+type require_injection = { lib: string; prefix: string option; export: Lib.export_flag option; allow_failure: bool }
 (** Parameters follow [Library], that is to say, [lib,prefix,export]
     means require library [lib] from optional [prefix] and import or
     export if [export] is [Some Lib.Import]/[Some Lib.Export]. *)

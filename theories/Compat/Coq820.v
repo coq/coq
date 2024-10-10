@@ -10,4 +10,4 @@
 
 (** Compatibility file for making Coq act similar to Coq v8.20 *)
 
-Require Export Stdlib.Compat.Coq90.
+#[export] Set Warnings "-deprecated-since-8.21".

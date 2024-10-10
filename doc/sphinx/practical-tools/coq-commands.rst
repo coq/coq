@@ -419,11 +419,13 @@ and ``coqtop``, unless stated otherwise:
   *string* must be :n:`"@setting_name"`.
   See the :ref:`note above <interleave-command-line>` regarding the order
   of command-line options.
-:-compat *version*: Load a file that sets a few options to maintain
-  partial backward-compatibility with a previous version.  This is
-  equivalent to :cmd:`Require Import` `Stdlib.Compat.CoqXXX` with `XXX`
-  one of the last three released versions (including the current
-  version).  Note that the :ref:`explanations above
+:-compat *version*: same as ``-compat-from Stdlib Coq<version>``
+:-compat-from *root* *library*: Loads a file that sets a few options to maintain
+  partial backward-compatibility with a previous version. This is
+  equivalent to ``-require-import-from <root> <library>``
+  except that a non existing file only produces a warning (so that the option can
+  be uniformly used on older versions that didn't offer the compat file yet).
+  Note that the :ref:`explanations above
   <interleave-command-line>` regarding the order of command-line
   options apply, and this could be relevant if you are resetting some
   of the compatibility options.

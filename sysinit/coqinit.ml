@@ -182,11 +182,22 @@ let init_runtime opts =
   | Coqargs.Run ->
       injection_commands opts
 
-let require_file ~intern ~prefix ~lib ~export =
+let warn_require_not_found =
+  CWarnings.create ~name:"compatibility-module-not-found"
+    ~category:CWarnings.CoreCategories.filesystem
+    Pp.(fun (prefix, lib) ->
+        strbrk "Did not find compatibility module " ++ Libnames.pr_qualid lib ++
+        pr_opt (fun prefix -> str "with prefix " ++ Libnames.pr_qualid prefix)
+          prefix ++ str ".")
+
+let require_file ~intern ~prefix ~lib ~export ~allow_failure =
   let mp = Libnames.qualid_of_string lib in
   let mfrom = Option.map Libnames.qualid_of_string prefix in
   let exp = Option.map (fun e -> e, None) export in
-  Flags.silently (Vernacentries.vernac_require ~intern mfrom exp) [mp,Vernacexpr.ImportAll]
+  try
+    Flags.silently (Vernacentries.vernac_require ~intern mfrom exp) [mp,Vernacexpr.ImportAll]
+  with (Synterp.UnmappedLibrary _ | Synterp.NotFoundLibrary _) when allow_failure ->
+    warn_require_not_found (mfrom, mp)
 
 let warn_no_native_compiler =
   CWarnings.create_in Nativeconv.w_native_disabled
@@ -201,7 +212,7 @@ let warn_deprecated_native_compiler =
           files ahead of time, use the coqnative binary instead.")
 
 let handle_injection ~intern = let open Coqargs in function
-  | RequireInjection {lib;prefix;export} -> require_file ~intern ~lib ~prefix ~export
+  | RequireInjection {lib;prefix;export;allow_failure} -> require_file ~intern ~lib ~prefix ~export ~allow_failure
   | OptionInjection o -> set_option o
   | WarnNoNative s -> warn_no_native_compiler s
   | WarnNativeDeprecated -> warn_deprecated_native_compiler ()

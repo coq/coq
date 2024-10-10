@@ -12,6 +12,8 @@
 
 Require Export Stdlib.Compat.Coq819.
 
+#[export] Set Warnings "-deprecated-since-8.19".
+
 (* Restore broken behavior of [zify] reported in COQBUG(https://github.com/coq/coq/issues/17936) *)
 From Stdlib Require Import Arith BinInt BinNat Znat Nnat PreOmega.
 
