@@ -5,7 +5,8 @@ You are encouraged to consider submitting your project for addition to
 Coq's CI. This means that:
 
 - Any time that a proposed change is breaking your project, Coq
-  developers and contributors will send you patches to adapt it or
+  developers and contributors will send you patches to adapt it
+  (systematically only for plugins) or
   will explain how to adapt it and work with you to ensure that you
   manage to do it.
 
@@ -17,10 +18,9 @@ On the condition that:
 - Your project is publicly available in a git repository and we can easily
   send patches to you (e.g. through pull / merge requests).
 
-- You react in a timely manner to discuss / integrate those patches.
-  When seeking your help for preparing such patches, we will accept
-  that it takes longer than when we are just requesting to integrate a
-  simple (and already fully prepared) patch.
+- You react in a timely manner to adapt to the few requested changes
+  required by Coq developers or to integrate their patches (in a 7 days timeframe,
+  extensions can be requested for exceptionally complex changes).
 
 - You do not push, to the branch that we test, commits that haven't been
   first tested to compile with the corresponding branch of Coq.
