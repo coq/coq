@@ -222,12 +222,9 @@ let unfreeze fkm =
   notations_key_table := fkm
 
 let with_notation_uninterpretation_protection f x =
-  let fs = freeze () in
-  try let a = f x in unfreeze fs; a
-  with reraise ->
-    let reraise = Exninfo.capture reraise in
-    let () = unfreeze fs in
-    Exninfo.iraise reraise
+  let open Memprof_coq.Resource_bind in
+  let& () = Util.protect_state ~freeze ~unfreeze in
+  f x
 
 (** Miscellaneous *)
 type notation_use =
