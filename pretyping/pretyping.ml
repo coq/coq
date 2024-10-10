@@ -22,6 +22,7 @@
 (* Structural maintainer: Hugo Herbelin *)
 (* Secondary maintenance: collective *)
 
+module CVars = Vars
 
 open Pp
 open CErrors
@@ -917,8 +918,248 @@ struct
     let sigma, j = pretype_sort ?loc ~flags sigma s in
     discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma j tycon
 
+  (* in simple_arg, the [types] have unbound variables for the previous arguments
+     For instance [@paths _ x y] produces
+     [[
+     {
+       head = IndRef eq;
+       args = [TypeHole; Arg (x, Rel 1); Arg (y, Rel 2)];
+     }
+     ]]
+  *)
+  type simple_arg =
+    | TypeHole
+    | ArgInHole of glob_constr * int (* Rel *) * int option (* univ of the hole, None for template *)
+    | Arg of glob_constr * Constr.types
+
+  type simple_app = { head : GlobRef.t Loc.located; nunivs : int; args : simple_arg list }
+
+  type pre_arg =
+    | PTypeHole of int option (* univ of the hole (None for template) *) * bool ref (* seen as the exact type of a following arg *)
+    | PArgInHole of glob_constr * int * int option
+    | PArg of glob_constr * Constr.types
+
+  let use_simple_app = Goptions.declare_bool_option_and_ref ~key:["Simple";"App"] ~value:true ()
+
+  let get_simple_app env f args =
+    let floc = f.CAst.loc in
+    if not @@ use_simple_app.get () then None else
+      let simple_head = match DAst.get f with
+        | GRef (f,(None|Some ([],[]))) when Option.is_empty (get_bidirectionality_hint f) ->
+          let t, auctx = Typeops.type_of_global_in_context env f in
+          if is_template_polymorphic env f then begin
+            let mind = match f with IndRef (mind,_) | ConstructRef ((mind,_),_) -> mind | _ -> assert false in
+            let mb = lookup_mind mind env in
+            let template = Option.get mb.mind_template in
+            if not @@ Univ.Constraints.is_empty (Univ.ContextSet.constraints template.template_context) then None
+            else
+              Some (f,t,0,Some template.template_param_arguments)
+          end
+          else
+            let has_constraints =
+              let uctx = UVars.AbstractContext.repr auctx in
+              not @@ Univ.Constraints.is_empty (UVars.UContext.constraints uctx)
+            in
+            let qsize, usize = UVars.AbstractContext.size auctx in
+            if has_constraints || qsize <> 0 || usize = 0 then None
+            else Some (f,t,usize,None)
+        | _ -> None
+      in
+      match simple_head with
+      | None -> None
+      | Some (f,t,usize,template) ->
+        let seen_univs = Array.make usize false in
+        let exception Stop in
+        let visit_unbound_univs =
+          {
+            CVars.visit_sort = (fun () -> function
+                | Sorts.Type u | QSort (_,u) ->
+                  List.iter (fun (u,_) ->
+                      if Option.has_some @@ Univ.Level.var_index u then raise Stop)
+                    (Univ.Universe.repr u)
+                | SProp | Prop | Set -> ());
+            visit_instance = (fun () u ->
+                let _, us = UVars.Instance.to_array u in
+                Array.iter (fun u -> if Option.has_some @@ Univ.Level.var_index u then raise Stop) us);
+            visit_relevance = (fun () _ -> ());
+          }
+        in
+        let check_arg_unbound acc a =
+          let rec check k a =
+            match Constr.kind a with
+            | Rel i when i >= k -> begin match Range.get acc (i-k) with
+                | PTypeHole (_,seen) -> if not !seen then raise Stop
+                | _ -> ()
+              end
+            | _ ->
+              let () = if Option.is_empty template then CVars.visit_kind_univs visit_unbound_univs () (Constr.kind a) in
+              Constr.iter_with_binders succ check k a
+          in
+          check 1 a
+        in
+        let check_arg_type acc a =
+          match Constr.kind a with
+          | Rel i -> begin match Range.get acc (i-1) with
+              | PTypeHole (u,seen) when not !seen ->
+                seen := true;
+                Some (i,u)
+              | _ -> None
+            end
+          | _ -> check_arg_unbound acc a; None
+        in
+        let rec fold acc t args template =
+          match Constr.kind t, args with
+          | _, [] -> acc
+          | Prod (_,a,b), arg::args ->
+            begin match Constr.kind a, DAst.get arg, template with
+            | Sort (Type u), GHole k, None when
+                (match Univ.Universe.level u with
+                 | None -> false
+                 | Some u -> match Univ.Level.var_index u with
+                   | None -> false
+                   | Some _ -> true) &&
+                naming_of_glob_kind k = IntroAnonymous
+              ->
+              let u = Option.get (Univ.Level.var_index (Option.get (Univ.Universe.level u))) in
+              if seen_univs.(u) then raise Stop;
+              Array.set seen_univs u true;
+              fold (Range.cons (PTypeHole (Some u,ref false)) acc) b args None
+            | Sort (Type u), GHole k, Some (true::template) when
+                naming_of_glob_kind k = IntroAnonymous
+              ->
+              fold (Range.cons (PTypeHole (None,ref false)) acc) b args (Some template)
+            | _, _, Some (true::_) -> raise Stop
+            | _, _, (None|Some ([] | false::_)) ->
+              let acc = match check_arg_type acc a with
+                | Some (i,u) -> Range.cons (PArgInHole (arg,i,u)) acc
+                | None -> Range.cons (PArg (arg,a)) acc
+              in
+              let template = Option.map (function [] -> [] | _::tl -> tl) template in
+              fold acc b args template
+            end
+          | _, _::_ -> raise Stop
+        in
+        begin match fold Range.empty t args template with
+        | exception Stop -> None
+        | args ->
+          if not (Array.for_all (fun x -> x) seen_univs) then None
+          else
+            (* [fold_left cons] reverses *)
+            begin match Range.fold_left (fun acc x ->
+                let x = match x with
+                  | PTypeHole (u,seen) ->
+                    if !seen then TypeHole
+                    else raise Stop
+                  | PArgInHole (c,i,u) -> ArgInHole (c,i,u)
+                  | PArg (c,t) -> Arg (c,t)
+                in
+                x :: acc) [] args with
+            | exception Stop -> None
+            | args ->
+              Some { head = (floc,f); nunivs = usize; args }
+            end
+        end
+
+
+  let dummy_univ =
+    Univ.Level.make (Univ.UGlobal.make DirPath.empty "dummy" (-42))
+
+  (* like [substn_many [rev (sub lamv 0 depth)] 0 c] *)
+  let simple_subst lv lamv c =
+    if Int.equal lv 0 then c
+    else
+      let rec substrec depth c = match Constr.kind c with
+        | Constr.Rel k     ->
+          if k<=depth then c
+          else if k-depth <= lv
+          then CVars.lift_substituend depth (Array.get lamv (lv - (k-depth)))
+          else Constr.mkRel (k-lv)
+        | _ -> Constr.map_with_binders succ substrec depth c in
+      substrec 0 c
+
+  let dbg = CDebug.create ~name:"simple-app" ()
+
+  let pretype_simple_app self { head = (floc,f); nunivs; args } =
+    fun ?loc ~flags tycon env sigma ->
+    let pretype tycon env sigma c = eval_pretyper self ~flags tycon env sigma c in
+    dbg (fun () -> GlobRef.print f);
+    let () =
+      (* XXX why does check_hyps_inclusion take hyps instead of getting them from the env?? *)
+      let hyps = match f with
+        | VarRef _ -> assert false
+        | ConstRef c -> (lookup_constant c !!env).const_hyps
+        | IndRef (mind,_) | ConstructRef ((mind,_),_) -> (lookup_mind mind !!env).mind_hyps
+      in
+      Reductionops.check_hyps_inclusion !!env sigma f hyps
+    in
+    let univs = Array.make nunivs dummy_univ in
+    let dummy = CVars.make_substituend Constr.mkProp in
+    let vs = Array.make (List.length args) dummy in
+    let rec fold_args depth sigma = function
+      | [] -> sigma
+      | TypeHole :: args -> fold_args (depth+1) sigma args
+      | ArgInHole (arg,i,u) :: args ->
+        assert ((match u with Some u -> univs.(u) == dummy_univ | None -> true) && vs.(depth - i)  == dummy);
+        let sigma, {uj_val=arg; uj_type=argt} = pretype empty_tycon env sigma arg in
+        let argt = whd_betaiota !!env sigma argt in
+        (* refresh like unifying with an evar would *)
+        (* with onlyalg and univ_flexible, setoid_test fails.
+           with only_alg or univ_flexible, bug 5208 fails (but maybe not in a bad way) *)
+        let sigma, argt = Evarsolve.refresh_universes (Some false) !!env sigma argt in
+        let sigma = match u with
+          | None -> (* template *) sigma
+          | Some u ->
+            let s = Retyping.get_sort_of !!env sigma argt in
+            match ESorts.kind sigma s with
+            | SProp -> CErrors.user_err Pp.(str "sprop not allowed here")
+            | Prop | Set -> Array.set univs u Univ.Level.set; sigma
+            | Type u' -> begin match Univ.Universe.level u' with
+                | Some u' -> Array.set univs u u'; Evd.make_nonalgebraic_variable sigma u'
+                | None ->
+                  let sigma, u' = Evd.new_univ_level_variable ?loc:floc Evd.univ_flexible sigma in
+                  let sigma = Evd.set_leq_sort !!env sigma s
+                      (ESorts.make (Sorts.sort_of_univ (Univ.Universe.make u')))
+                  in
+                  Array.set univs u u';
+                  sigma
+              end
+            | QSort (q,u') ->
+              let sigma, u' = match Univ.Universe.level u' with
+                | Some u' -> Evd.make_nonalgebraic_variable sigma u', u'
+                | None -> Evd.new_univ_level_variable ?loc:floc Evd.univ_flexible sigma
+              in
+              let sigma, u'' = Evd.new_univ_level_variable ?loc:floc Evd.univ_flexible sigma in
+              let sigma = Evd.set_leq_sort !!env sigma s
+                  (ESorts.make (Sorts.sort_of_univ (Univ.Universe.make u'')))
+              in
+              Array.set univs u u'';
+              sigma
+        in
+        Array.set vs (depth - i) (CVars.make_substituend (EConstr.Unsafe.to_constr argt));
+        Array.set vs depth (CVars.make_substituend (EConstr.Unsafe.to_constr arg));
+        fold_args (depth+1) sigma args
+      | Arg (arg,t) :: args ->
+        let t = EConstr.of_constr @@ simple_subst depth vs t in
+        let sigma, arg = pretype (mk_tycon t) env sigma arg in
+        Array.set vs depth (CVars.make_substituend (EConstr.Unsafe.to_constr arg.uj_val));
+        fold_args (depth+1) sigma args
+    in
+    let sigma = fold_args 0 sigma args in
+    assert (Array.for_all (fun u -> u != dummy_univ) univs
+            && Array.for_all (fun c -> c != dummy) vs);
+    let u = UVars.Instance.of_array ([||],univs) in
+    let args = Array.map (fun c -> EConstr.of_constr @@ CVars.lift_substituend 0 c) vs in
+    let j = Retyping.get_judgment_of !!env sigma (mkApp (mkRef (f,EInstance.make u), args)) in
+    discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma j tycon
+
   let pretype_app self (f, args) =
     fun ?loc ~flags tycon env sigma ->
+    let simple = if flags.program_mode then None
+      else get_simple_app !!env f args
+    in
+    match simple with
+    | Some simple -> pretype_simple_app self simple ?loc ~flags tycon env sigma
+    | None ->
     let pretype tycon env sigma c = eval_pretyper self ~flags tycon env sigma c in
     let sigma, fj = pretype empty_tycon env sigma f in
     let floc = loc_of_glob_constr f in

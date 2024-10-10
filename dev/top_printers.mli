@@ -46,6 +46,8 @@ val ppevar : Evar.t -> unit
 val ppconstr : Constr.t -> unit (* by Termops printer *)
 val ppconstr_univ : Constr.t -> unit
 
+val ppsubstituend : Vars.substituend -> unit
+
 val pp_constr_parray : Constr.t Parray.t -> unit
 val pp_fconstr_parray : CClosure.fconstr Parray.t -> unit
 

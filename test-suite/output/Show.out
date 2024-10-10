@@ -1,10 +1,10 @@
-3 goals (ID 27)
+3 goals (ID 25)
   
   H : 0 = 0
   ============================
   1 = 1
 
-goal 2 (ID 31) is:
+goal 2 (ID 29) is:
  1 = S (S m')
-goal 3 (ID 18) is:
+goal 3 (ID 16) is:
  S (S n') = S m
