@@ -1,7 +1,7 @@
 Require Import TestSuite.admit.
 (* test with Coq 8.3rc1 *)
 
-Require Import Program.
+From Stdlib.Program Require Import Basics Tactics.
 
 Inductive Unit: Set := unit: Unit.
 
@@ -502,7 +502,7 @@ Proof.
   rewrite (not_compat _ _ _ (H x)); auto.
 Qed.
 
-Require Export Stdlib.Logic.FunctionalExtensionality.
+Require Export TestSuite.funext.
 Print PLanguage.
 
 Program Definition PTransfo l1 l2 (tr: Transformation l1 l2) (h: isSharedTransfo l1 l2 tr):

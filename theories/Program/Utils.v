@@ -33,8 +33,6 @@ Notation " `  t " := (proj1_sig t) (at level 10, t at next level) : program_scop
 
 (** Coerces objects to their support before comparing them. *)
 
-Require Import Stdlib.Bool.Sumbool.
-
 (** Construct a dependent disjunction from a boolean. *)
 
 Notation dec := sumbool_of_bool.

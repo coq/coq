@@ -295,12 +295,12 @@ def update_test_suite(new_versions, assert_unchanged=False, test_suite_paths=TES
 
 def update_doc_index(new_versions, **args):
     contents = get_file(DOC_INDEX_PATH)
-    firstline = '    theories/Compat/AdmitAxiom.v'
+    lastline = '    user-contrib/Ltac2/Compat/' + version_name_to_compat_name(new_versions[0])
     new_contents = ''.join(DOC_INDEX_LINES)
-    if firstline not in new_contents:
-        raise Exception("Could not find line '%s' in %s" % (firstline, os.path.relpath(DOC_INDEX_PATH, ROOT_PATH)))
+    if lastline not in new_contents:
+        raise Exception("Could not find line '%s' in %s" % (lastline, os.path.relpath(DOC_INDEX_PATH, ROOT_PATH)))
     extra_lines = ['    theories/Compat/%s' % version_name_to_compat_name(v) for v in new_versions]
-    new_contents = new_contents.replace(firstline, '\n'.join([firstline] + extra_lines))
+    new_contents = new_contents.replace(lastline, '\n'.join(extra_lines + [lastline]))
     update_if_changed(contents, new_contents, DOC_INDEX_PATH, **args)
 
 def update_test_suite_run(**args):

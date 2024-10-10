@@ -7,10 +7,6 @@
 - ".." should be rendered correctly
 *)
 
-Require Import String.
-
-Definition g := "dfjkh""sdfhj forall <> * ~"%string.
-
 Definition a (b: nat) := b.
 
 Definition f := forall C:Prop, C.

@@ -1860,7 +1860,6 @@ ltac_defined_tactics: [
 | "classical_left"
 | "classical_right"
 | "contradict" ident
-| "discrR"
 | "easy"
 | "inversion_sigma" OPT ( ident OPT ( "as" simple_intropattern ) )
 | "lia"
@@ -1869,8 +1868,6 @@ ltac_defined_tactics: [
 | "now_show" one_type
 | "nra"
 | "rapply" constr
-| "split_Rabs"
-| "split_Rmult"
 | "tauto"
 | "time_constr" ltac_expr5
 | "zify"

@@ -1,4 +1,4 @@
-From Stdlib Require Import Uint63 PArray.
+From Stdlib Require Import PrimInt63 PrimArray.
 
 Definition t : array nat := [| 1; 3; 2 | 4 |].
 Definition foo1 := (eq_refl : default t = 4).

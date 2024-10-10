@@ -1,4 +1,4 @@
-Require Import Stdlib.Program.Program.
+Require Import Program.Basics Program.Tactics.
 (* Set Universe Polymorphism. *)
 Set Printing Universes.
 

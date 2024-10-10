@@ -1,4 +1,4 @@
-From Stdlib Require Import Uint63 PArray.
+From Stdlib Require Import PrimInt63 PrimArray.
 
 Open Scope array_scope.
 
@@ -56,14 +56,14 @@ Check check_const_eq compute_accu_set (fun v => [| 1; v; 2 | 4 |]).
 Check check_const_eq cbn_accu_set (fun v => [| 1; v; 2 | 4 |]).
 
 (* Under-application *)
-Definition lazy_set := Eval lazy in @PArray.set.
-Definition vm_set := Eval vm_compute in @PArray.set.
-Definition native_set := Eval native_compute in @PArray.set.
-Definition compute_set := Eval compute in @PArray.set.
-Definition cbn_set := Eval cbn in @PArray.set.
+Definition lazy_set := Eval lazy in @PrimArray.set.
+Definition vm_set := Eval vm_compute in @PrimArray.set.
+Definition native_set := Eval native_compute in @PrimArray.set.
+Definition compute_set := Eval compute in @PrimArray.set.
+Definition cbn_set := Eval cbn in @PrimArray.set.
 
-Check check_const_eq lazy_set (@PArray.set).
+Check check_const_eq lazy_set (@PrimArray.set).
 Check check_const_eq vm_set (fun A (t : array A) i v => t.[i <- v]).
 Check check_const_eq native_set (fun A (t : array A) i v => t.[i <- v]).
-Check check_const_eq compute_set (@PArray.set).
-Check check_const_eq cbn_set (@PArray.set).
+Check check_const_eq compute_set (@PrimArray.set).
+Check check_const_eq cbn_set (@PrimArray.set).

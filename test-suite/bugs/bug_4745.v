@@ -1,7 +1,7 @@
 (*I get an Anomaly in the following code.
 
 ```*)
-Require Vector.
+Require Import TestSuite.vector.
 
 Module M.
   Lemma Vector_map_map :

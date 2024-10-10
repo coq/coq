@@ -526,6 +526,13 @@ project stalmarck "https://github.com/coq-community/stalmarck" "master"
 # Contact @palmskog on github
 
 ########################################################################
+# Stdlib
+########################################################################
+project stdlib "https://github.com/coq-community/stdlib-test" "master"
+# TODO change the url before merging
+# Contact TODO on github
+
+########################################################################
 # Tactician
 ########################################################################
 project tactician "https://github.com/coq-tactician/coq-tactician" "coqdev"

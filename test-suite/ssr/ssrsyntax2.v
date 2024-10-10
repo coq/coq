@@ -11,10 +11,9 @@
 (* (c) Copyright 2006-2016 Microsoft Corporation and Inria.                  *)
 
 Require Import TestSuite.ssr_ssrsyntax1.
-Require Import Arith.
 
 Goal (forall a b, a + b = b + a).
 intros.
-rewrite Nat.add_comm, Nat.add_comm.
+rewrite add_comm, add_comm.
 split.
 Qed.

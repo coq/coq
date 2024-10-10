@@ -58,7 +58,7 @@
      : nat -> nat
      = 4%uint63
      : int
-     = (2 + x)%uint63
+     = add 2 x
      : int
      = 1%float
      : float

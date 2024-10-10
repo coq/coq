@@ -1,5 +1,5 @@
-Require Import List.
-Require Import Program.
+Require Import ListDef.
+Require Import Program.Tactics.
 
 Inductive Tree : Set :=
 | Br : Tree -> Tree -> Tree
