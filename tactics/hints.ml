@@ -1628,7 +1628,7 @@ let pr_id_hint env sigma (id, v) =
   | Some (ConstrPattern p | SyntacticPattern p) -> str", pattern " ++ pr_lconstr_pattern_env env sigma p
   | Some DefaultPattern -> str", pattern " ++ pr_leconstr_env env sigma (get_default_pattern v.code.obj)
   in
-  (pr_hint env sigma v.code ++ str" (level " ++ int v.pri ++ pr_pat v
+  (pr_hint env sigma v.code ++ str" (cost " ++ int v.pri ++ pr_pat v
    ++ str", id " ++ int id ++ str ")")
 
 let pr_hint_list env sigma hintlist =
@@ -1722,7 +1722,11 @@ let pr_hint_db_env env sigma db =
       | None -> str "For any goal"
       | Some head -> str "For " ++ pr_global head ++ pr_modes modes
       in
-      let hints = pr_hint_list env sigma (List.map (fun x -> (0, x)) hintlist) in
+      (* sort because db.hintdb_nopat isn't kept in priority sorted order;
+         "auto" sorts on priority before using the hintdb *)
+      let sorted = List.stable_sort (fun a b -> Int.compare a.pri b.pri) hintlist in
+      (* always prints "id 0" in Print HintDb *)
+      let hints = pr_hint_list env sigma (List.map (fun x -> (0, x)) sorted) in
       hov 0 (goal_descr ++ str " -> " ++ hints)
     in
     let hints =
