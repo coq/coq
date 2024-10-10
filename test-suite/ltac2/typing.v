@@ -70,3 +70,10 @@ Print Ltac2 tuple0.
 Fail Ltac2 not_a_value := { contents := 0 }.
 Fail Ltac2 not_a_value := "nope".
 Fail Ltac2 not_a_value := list_length [].
+
+(** Warning when defining Named type variables. *)
+
+Set Warnings "+ltac2-defined-named-type-variable".
+
+Fail Ltac2 foo (x:'a) : 'b := x.
+Fail Ltac2 foo (x:'a) : int := x.
