@@ -67,7 +67,7 @@ type solver = { solver :
   unique:bool ->
   best_effort:bool ->
   goals:Evar.t list ->
-  (bool * Evd.evar_map)
+  ((bool * Evd.evar_map),exn) Util.union
 }
 
 
