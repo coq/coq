@@ -393,9 +393,11 @@ let detype_sort sigma = function
        then None, detype_universe sigma u
        else glob_Type_sort)
   | QSort (q, u) ->
-    if !print_universes then
+    if !print_universes || print_sort_quality ()
+    then
+      let u = if !print_universes then detype_universe sigma u else UNamed [] in
       let q = if print_sort_quality () then Some (detype_qvar sigma q) else None in
-      q, detype_universe sigma u
+      q, u
     else glob_Type_sort
 
 let detype_relevance_info sigma na =

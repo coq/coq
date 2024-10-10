@@ -119,6 +119,7 @@ type compiled_library = {
   comp_name : DirPath.t;
   comp_mod : module_body;
   comp_univs : Univ.ContextSet.t;
+  comp_qualities : Sorts.QVar.Set.t;
   comp_deps : library_info array;
   comp_flags : permanent_flags;
 }
@@ -168,6 +169,7 @@ type safe_environment =
     modlabels : Label.Set.t;
     objlabels : Label.Set.t;
     univ : Univ.ContextSet.t;
+    qualities : Sorts.QVar.Set.t ;
     future_cst : (Constant_typing.typing_context * safe_environment * Nonce.t) HandleMap.t;
     required : required_lib DPmap.t;
     loads : (ModPath.t * module_body) list;
@@ -199,6 +201,7 @@ let empty_environment =
     sections = None;
     future_cst = HandleMap.empty;
     univ = Univ.ContextSet.empty;
+    qualities = Sorts.QVar.Set.empty ;
     required = DPmap.empty;
     loads = [];
     local_retroknowledge = [];
@@ -443,6 +446,17 @@ let push_context_set ~strict cst senv =
 let add_constraints cst senv =
   push_context_set ~strict:true cst senv
 
+let push_quality_set qs senv =
+  if Sorts.QVar.Set.is_empty qs then senv
+  else
+    let sections = Option.map (Section.push_mono_qualities qs) senv.sections
+    in
+    { senv with
+      env = Environ.push_quality_set qs senv.env ;
+      qualities = Sorts.QVar.Set.union qs senv.qualities ;
+      sections
+    }
+
 let is_curmod_library senv =
   match senv.modvariant with LIBRARY -> true | _ -> false
 
@@ -559,11 +573,30 @@ let push_section_context uctx senv =
   let sections = Section.push_local_universe_context uctx sections in
   let senv = { senv with sections=Some sections } in
   let qualities, ctx = UVars.UContext.to_context_set uctx in
-  assert (Sorts.Quality.Set.is_empty qualities);
+  let qvars =
+    let to_qvar q qs =
+      match q with
+      | Sorts.Quality.QVar v -> Sorts.QVar.Set.add v qs
+      | _ -> assert false
+    in
+    Sorts.Quality.Set.fold to_qvar qualities Sorts.QVar.Set.empty
+  in
   (* push_context checks freshness *)
   { senv with
     env = Environ.push_context ~strict:false uctx senv.env;
-    univ = Univ.ContextSet.union ctx senv.univ }
+    univ = Univ.ContextSet.union ctx senv.univ ;
+    qualities = Sorts.QVar.Set.union qvars senv.qualities }
+
+(* let push_section_qualities qs senv =
+  let sections = get_section senv.sections in
+  let sections = Section.push_local_quality_context qs sections in
+  let senv = { senv with sections=Some sections } in
+  (* let qualities, ctx = UVars.UContext.to_context_set uctx in *)
+  (* assert (Sorts.Quality.Set.is_empty qualities); *)
+  (* push_context checks freshness *)
+  { senv with
+    env = Environ.push_quality_set qs senv.env;
+    qualities = Sorts.QVar.Set.union qs senv.qualities } *)
 
 (** {6 Insertion of new declarations to current environment } *)
 
@@ -1161,6 +1194,7 @@ let start_mod_modtype ~istype l senv =
     modresolver = Mod_subst.empty_delta_resolver;
     paramresolver = Mod_subst.add_delta_resolver senv.modresolver senv.paramresolver;
     univ = senv.univ;
+    qualities = senv.qualities;
     required = senv.required;
     opaquetab = senv.opaquetab;
     sections = None; (* checked in check_empty_context *)
@@ -1265,6 +1299,7 @@ let propagate_senv newdef newenv newresolver senv oldsenv =
     revstruct = newdef::oldsenv.revstruct;
     modlabels = Label.Set.add (fst newdef) oldsenv.modlabels;
     univ = senv.univ;
+    qualities = senv.qualities ;
     future_cst = senv.future_cst;
     required = senv.required;
     loads = senv.loads@oldsenv.loads;
@@ -1281,6 +1316,7 @@ let end_module l restype senv =
   let mbids = List.rev_map fst params in
   let mb = build_module_body params restype senv in
   let newenv = Environ.set_universes (Environ.universes senv.env) oldsenv.env in
+  let newenv = Environ.set_qualities (Environ.qualities senv.env) newenv in
   let newenv = if Environ.rewrite_rules_allowed senv.env then Environ.allow_rewrite_rules newenv else newenv in
   let newenv = Environ.set_vm_library (Environ.vm_library senv.env) newenv in
   let senv' = propagate_loads { senv with env = newenv } in
@@ -1394,6 +1430,7 @@ let start_library dir senv =
     sections = None;
     future_cst = HandleMap.empty;
     univ = Univ.ContextSet.empty;
+    qualities = Sorts.QVar.Set.empty;
     loads = [];
     local_retroknowledge = [];
     opaquetab = Opaqueproof.empty_opaquetab;
@@ -1401,8 +1438,6 @@ let start_library dir senv =
 
 let export ~output_native_objects senv dir =
   let () = check_current_library dir senv in
-  (* qualities are in the senv only during sections *)
-  let () = assert (Sorts.QVar.Set.is_empty senv.env.Environ.env_qualities) in
   let mp = senv.modpath in
   let str = NoFunctor (List.rev senv.revstruct) in
   let mb =
@@ -1430,6 +1465,7 @@ let export ~output_native_objects senv dir =
     comp_name = dir;
     comp_mod = mb;
     comp_univs = senv.univ;
+    comp_qualities = senv.env.Environ.env_qualities ;
     comp_deps = Array.of_list comp_deps;
     comp_flags = permanent_flags
   } in
@@ -1447,6 +1483,7 @@ let import lib vmtab vodigest senv =
   let mb = lib.comp_mod in
   let env = Environ.push_context_set ~strict:true lib.comp_univs senv.env in
   let env = Environ.link_vm_library vmtab env in
+  let env = Environ.push_quality_set lib.comp_qualities env in
   let env =
     let linkinfo = Nativecode.link_info_of_dirpath lib.comp_name in
     Modops.add_linked_module mb linkinfo env
@@ -1491,7 +1528,7 @@ let close_section senv =
   let sections0 = get_section senv.sections in
   let env0 = senv.env in
   (* First phase: revert the declarations added in the section *)
-  let sections, entries, cstrs, revert = Section.close_section sections0 in
+  let sections, entries, cstrs, qs, revert = Section.close_section sections0 in
   (* Don't revert the delayed constraints (future_cst). If some delayed constraints
      were forced inside the section, they have been turned into global monomorphic
      that are going to be replayed. Those that are not forced are not readded
@@ -1506,6 +1543,7 @@ let close_section senv =
   in
   (* Third phase: replay the discharged section contents *)
   let senv = push_context_set ~strict:true cstrs senv in
+  let senv = push_quality_set qs senv in
   let fold entry senv =
     match entry with
   | SecDefinition kn ->
