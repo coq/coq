@@ -411,7 +411,7 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) mind f cstr recargs =
     | _,[] | [],_ -> anomaly (Pp.str "process_constr.")
 
   in
-  process_constr env 0 f (List.rev cstr.cs_args, recargs)
+  process_constr env 0 f (List.rev cstr.cs_args, Array.to_list recargs)
 
 (* Main function *)
 let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
@@ -435,10 +435,10 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
     in
       assign nrec listdepkind in
   let recargsvec =
-    Array.map (fun mip -> mip.mind_recargs) mib.mind_packets in
+    Array.map (fun mip -> Rtree.Kind.make mip.mind_recargs) mib.mind_packets in
   (* recarg information for non recursive parameters *)
   let rec recargparn l n =
-    if Int.equal n 0 then l else recargparn (mk_norec::l) (n-1) in
+    if Int.equal n 0 then l else recargparn (Rtree.Kind.make mk_norec::l) (n-1) in
   let recargpar = recargparn [] (nparams-nparrec) in
   let make_one_rec p =
     let makefix nbconstruct =
@@ -554,7 +554,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
             if Int.equal j nconstr then
               make_branch env (i+j) rest
             else
-              let recarg = (dest_subterms recargsvec.(tyi)).(j) in
+              let recarg = Array.to_list (dest_subterms recargsvec.(tyi)).(j) in
               let recarg = recargpar@recarg in
               let vargs = Context.Rel.instance_list mkRel (nrec+i+j) lnamesparrec in
               let cs = get_constructor ((indi,u),mibi,mipi,vargs) (j+1) in
@@ -586,7 +586,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
 
       if force_mutual || (mis_is_recursive_subset
         (List.map (fun ((indi,u),_,_,_,_) -> indi) listdepkind)
-        mipi.mind_recargs)
+        (Rtree.Kind.make mipi.mind_recargs))
       then
         let env' = RelEnv.push_rel_context lnamesparrec env in
           it_mkLambda_or_LetIn_name env (put_arity env' 0 listdepkind)

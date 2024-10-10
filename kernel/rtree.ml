@@ -39,25 +39,42 @@ let rec lift_rtree_rec depth n = function
 
 let lift n t = if Int.equal n 0 then t else lift_rtree_rec 0 n t
 
-(* The usual subst operation *)
-let rec subst_rtree_rec depth sub = function
-    Var (i,j) as t ->
-      if i < depth then t
-      else if i = depth then
-        lift depth (Rec (j, sub))
-      else Var (i - 1, j)
-  | Node (l,sons) -> Node (l,Array.map (Array.map (subst_rtree_rec depth sub)) sons)
-  | Rec(j,defs) ->
-      Rec(j, Array.map (subst_rtree_rec (depth+1) sub) defs)
+let rec subst mk sub = function
+| Var (i, j) ->
+  begin match Esubst.expand_rel (i + 1) sub with
+  | Util.Inl (k, v) -> mk k j v
+  | Util.Inr (m, _) -> Var (m - 1, j)
+  end
+| Node (l,sons) -> Node (l,Array.map (Array.map (subst mk sub)) sons)
+| Rec(j, defs) ->
+  Rec(j, Array.map (subst mk (Esubst.subs_lift sub)) defs)
 
-let subst_rtree sub t = subst_rtree_rec 0 sub t
+type 'a clos = Clos of 'a t array * 'a clos Esubst.subs
+
+type 'a expansion = ExpVar of int * int | ExpNode of 'a * 'a clos Esubst.subs * 'a t array array
 
 (* To avoid looping, we must check that every body introduces a node
    or a parameter *)
-let rec expand = function
-  | Rec(j,defs) ->
-      expand (subst_rtree defs defs.(j))
-  | t -> t
+let rec expand0 sub = function
+| Var (i, j) ->
+  begin match Esubst.expand_rel (i + 1) sub with
+  | Util.Inl (k, v) ->
+    let Clos (v, sub) = v in
+    expand0 (Esubst.subs_shft (k, sub)) (Rec (j, v))
+  | Util.Inr (m, _) -> ExpVar (m - 1, j)
+  end
+| Rec (j, defs) ->
+  let sub = Esubst.subs_cons (Clos (defs, sub)) sub in
+  expand0 sub defs.(j)
+| Node (l, sons) -> ExpNode (l, sub, sons)
+
+let expand t = match expand0 (Esubst.subs_id 0) t with
+| ExpVar (i, j) -> Var (i, j)
+| ExpNode (l, sub, sons) ->
+  let rec mk k j (Clos (v, sub)) = subst mk (Esubst.subs_shft (k, sub)) (Rec (j, v)) in
+  let map t = subst mk sub t in
+  let sons = Array.map (fun v -> Array.map map v) sons in
+  Node (l, sons)
 
 (* Given a vector of n bodies, builds the n mutual recursive trees.
    Recursive calls are made with parameters (0,0) to (0,n-1). We check
@@ -80,15 +97,18 @@ the last one should be accepted
 *)
 
 (* Tree destructors, expanding loops when necessary *)
-let dest_var t =
-  match expand t with
-      Var (i,j) -> (i,j)
-    | _ -> failwith "Rtree.dest_var"
+let dest_var t = match expand0 (Esubst.subs_id 0) t with
+| ExpVar (i, j) -> (i, j)
+| _ -> failwith "Rtree.dest_var"
 
 let dest_node t =
   match expand t with
       Node (l,sons) -> (l,sons)
     | _ -> failwith "Rtree.dest_node"
+
+let dest_head t = match expand0 (Esubst.subs_id 0) t with
+| ExpVar _ -> failwith "Rtree.dest_head"
+| ExpNode (l, _, _) -> l
 
 let is_node t =
   match expand t with
@@ -113,6 +133,36 @@ struct
         let defs' = Array.Smart.map (map f) defs in
         if defs'==defs then t
         else Rec(j,defs')
+
+end
+
+module Kind =
+struct
+
+type 'a rtree = 'a t
+type 'a t = { node : 'a rtree; subs : 'a clos Esubst.subs }
+
+let var i j = Var (i, j)
+let node l sons = Node (l, sons)
+
+type 'a kind = Var of int * int | Node of 'a * 'a t array array
+
+let make t = { node = t; subs = Esubst.subs_id 0 }
+
+let kind t : 'a kind = match expand0 t.subs t.node with
+| ExpVar (i, j) -> Var (i, j)
+| ExpNode (l, subs, sons) ->
+  let map node = { node; subs } in
+  let sons = Array.map (fun v -> Array.map map v) sons in
+  Node (l, sons)
+
+let repr t = match expand0 t.subs t.node with
+| ExpVar (i, j) -> var i j
+| ExpNode (l, subs, sons) ->
+  let rec mk k j (Clos (v, sub)) = subst mk (Esubst.subs_shft (k, sub)) (Rec (j, v)) in
+  let map t = subst mk subs t in
+  let sons = Array.map (fun v -> Array.map map v) sons in
+  node l sons
 
 end
 

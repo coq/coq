@@ -89,7 +89,7 @@ let optimize_non_type_induction_scheme kind dep sort env _handle ind =
     let npars =
       (* if a constructor of [ind] contains a recursive call, the scheme
          is generalized only wrt recursively uniform parameters *)
-      if (Inductiveops.mis_is_recursive_subset [ind] mip.mind_recargs)
+      if (Inductiveops.mis_is_recursive_subset [ind] (Rtree.Kind.make mip.mind_recargs))
       then
         mib.mind_nparams_rec
       else
