@@ -143,7 +143,7 @@ val get_typeclasses_unique_solutions : unit -> bool
 
 (* Deprecated *)
 val resolve_one_typeclass : ?unique:bool -> env -> evar_map -> EConstr.types -> evar_map * EConstr.constr
-[@@deprecated "(8.21) Use Class_tactics.resolve_one_typeclass (\"unique\" argument was ignored)"]
+[@@deprecated "(9.0) Use Class_tactics.resolve_one_typeclass (\"unique\" argument was ignored)"]
 
 val set_solve_one_instance : (env -> evar_map -> EConstr.types -> evar_map * EConstr.constr) -> unit
-[@@deprecated "(8.21) For internal use only"]
+[@@deprecated "(9.0) For internal use only"]

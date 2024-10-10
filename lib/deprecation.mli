@@ -35,5 +35,5 @@ module Version : sig
   val v8_18 : CWarnings.category
   val v8_19 : CWarnings.category
   val v8_20 : CWarnings.category
-  val v8_21 : CWarnings.category
+  val v9_0 : CWarnings.category
 end

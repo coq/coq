@@ -278,7 +278,7 @@ end
 
 let warn_deprecated_from_Coq =
   CWarnings.create_with_quickfix ~name:"deprecated-from-Coq"
-    ~category:Deprecation.Version.v8_21
+    ~category:Deprecation.Version.v9_0
     (fun () -> strbrk
         "\"From Coq\" has been replaced by \"From Stdlib\".")
 
