@@ -1182,8 +1182,26 @@ GRAMMAR EXTEND Gram
       | IDENT "Registered"; IDENT "Schemes" -> { PrintRegisteredSchemes }
     ] ]
   ;
+  debug_univ_fields:
+    [ [ id = FIELD; f = debug_univ_fields -> { let (l,id') = f in (l@[id],id') }
+      | s = FIELD -> { ([],s) }
+      | "."; s = NUMBER -> { ([],NumTok.Unsigned.sprint s) } ] ]
+  ;
+  debug_univ_name:
+    [ [ id = IDENT; f = debug_univ_fields -> {
+        let (l,id') = f in
+        if NumTok.Unsigned.parse_string id' <> None then
+          RawUniv (CAst.make ~loc (String.concat "." (id :: List.rev l @ [id'])))
+        else
+          let l = List.map Id.of_string (l @ [id]) in
+          let id' = Id.of_string id' in
+          NamedUniv (G_prim.local_make_qualid loc l id') }
+      | id = IDENT -> {
+          NamedUniv (Libnames.qualid_of_ident ~loc (Id.of_string id)) }
+      ] ]
+  ;
   printunivs_subgraph:
-    [ [ IDENT "Subgraph"; "("; l = LIST0 reference; ")" -> { l } ] ]
+    [ [ IDENT "Subgraph"; "("; l = LIST0 debug_univ_name; ")" -> { l } ] ]
   ;
   coercion_class:
     [ [ IDENT "Funclass" -> { FunClass }

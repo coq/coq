@@ -8,5 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open Names
+
+val local_make_qualid : Loc.t -> Id.t list -> Id.t -> Libnames.qualid
 val test_pipe_closedcurly : unit Pcoq.Entry.t
 val test_minus_nat : unit Pcoq.Entry.t

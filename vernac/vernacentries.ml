@@ -423,10 +423,27 @@ let dump_universes_gen prl g s =
 
 let universe_subgraph kept univ =
   let open Univ in
-  let parse q =
-    try Level.make (Nametab.locate_universe q)
-    with Not_found ->
-      CErrors.user_err ?loc:q.loc Pp.(str "Undeclared universe " ++ pr_qualid q ++ str".")
+  let parse = function
+    | NamedUniv q ->
+      begin try Level.make (Nametab.locate_universe q)
+      with Not_found ->
+        CErrors.user_err ?loc:q.loc Pp.(str "Undeclared universe " ++ pr_qualid q ++ str".")
+      end
+    | RawUniv { CAst.v = s; loc } ->
+      let parts = String.split_on_char '.' s in
+      let () = if CList.is_empty parts then CErrors.user_err ?loc Pp.(str "Invalid raw universe.") in
+      let i, dp = List.sep_last parts in
+      let dp = Libnames.dirpath_of_string (String.concat "." dp) in
+      let i = match int_of_string_opt i with
+        | Some i -> i
+        | None -> CErrors.user_err ?loc Pp.(str "Invalid raw universe.")
+      in
+      let u = UGlobal.make dp "" i in
+      let u = Level.make u in
+      begin match UGraph.check_declared_universes univ (Level.Set.singleton u) with
+      | Ok () -> u
+      | Error _ -> CErrors.user_err ?loc Pp.(str "Undeclared universe " ++ Level.raw_pr u ++ str".")
+      end
   in
   let kept = List.fold_left (fun kept q -> Level.Set.add (parse q) kept) Level.Set.empty kept in
   let csts = UGraph.constraints_for ~kept univ in

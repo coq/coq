@@ -1443,8 +1443,19 @@ printable: [
 | "Registered" "Schemes"
 ]
 
+debug_univ_fields: [
+| FIELD debug_univ_fields
+| FIELD
+| "." NUMBER
+]
+
+debug_univ_name: [
+| IDENT debug_univ_fields
+| IDENT
+]
+
 printunivs_subgraph: [
-| "Subgraph" "(" LIST0 reference ")"
+| "Subgraph" "(" LIST0 debug_univ_name ")"
 ]
 
 coercion_class: [
