@@ -384,23 +384,30 @@ let do_profile_gen pp_call call_trace ?(count_call=true) tac =
   Proofview.tclLIFT (Proofview.NonLogical.make (fun () -> !is_profiling)) >>= function
   | false -> tac
   | true ->
-    tclWRAPFINALLY
-      (Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
-             match pp_call call_trace, !stack with
-             | Some c, parent :: rest ->
-               let name = string_of_call c in
-               let node = get_child name parent in
-               stack := node :: parent :: rest;
-               Some (name, time ())
-             | Some _, [] -> assert false
-             | _ -> None
-           )))
-      tac
-      (function
-        | Some (name, start_time) ->
+    let name = Option.map string_of_call @@ pp_call call_trace in
+    match name with
+    | None -> tac
+    | Some name ->
+      let shortname = if String.length name <= 40 then name else String.sub name 0 40 in
+      match NewProfile.profile_pair ("tactic."^shortname) () with
+      | Some (ProfPair {enter;leave}) ->
+        tclWRAPFINALLY (Proofview.tclLIFT @@ Proofview.NonLogical.make enter)
+          tac
+          (fun start -> Proofview.tclLIFT @@ Proofview.NonLogical.make (fun () -> leave start))
+      | None ->
+        tclWRAPFINALLY
           (Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
-               exit_tactic ~count_call start_time name)))
-        | None -> Proofview.tclUNIT ())
+               match !stack with
+               | parent :: rest ->
+                 let node = get_child name parent in
+                 stack := node :: parent :: rest;
+                 time ()
+               | [] -> assert false
+             )))
+          tac
+          (fun start_time ->
+             Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
+                 exit_tactic ~count_call start_time name)))
 
 (* ************** Accumulation of data from workers ************************* *)
 
