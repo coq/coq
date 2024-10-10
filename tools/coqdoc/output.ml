@@ -13,11 +13,16 @@ open Index
 
 (*s Low level output *)
 
-let output_char c = output_char !out_channel c
+let on_channel f =
+  match !out_channel with
+  | Some b -> f b
+  | None -> failwith "channel not set"
 
-let output_string s = output_string !out_channel s
+let output_char c = on_channel Buffer.add_char c
 
-let printf s = Printf.fprintf !out_channel s
+let output_string s = on_channel Buffer.add_string s
+
+let printf s = on_channel Printf.bprintf s
 
 let sprintf = Printf.sprintf
 
@@ -515,7 +520,9 @@ module Latex = struct
 
   let make_index () = ()
 
-  let make_toc () = printf "\\tableofcontents\n"
+  let make_local_toc () = printf "\\tableofcontents\n"
+
+  let make_global_toc () = printf "%% TOC TODO\n"
 
 end
 
@@ -941,16 +948,19 @@ module Html = struct
           printf "<hr/>"; print_table ()
         end
 
-    let make_toc () =
+    let make_toc global =
         let ln = !prefs.lib_name in
       let make_toc_entry = function
         | Toc_library (m,sub) ->
+            if global then
+              begin
                 stop_item ();
                 let ms = match sub with | None -> m | Some s -> m ^ ": " ^ s in
               if ln = "" then
                   printf "<h2><a href=\"%s.html\">%s</a></h2>\n" m ms
               else
                   printf "<h2><a href=\"%s.html\">%s %s</a></h2>\n" m ln ms
+              end
         | Toc_section (n, f, r) ->
                 item n;
                 printf "<a href=\"%s\">" r; f (); printf "</a>\n"
@@ -959,6 +969,9 @@ module Html = struct
         Queue.iter make_toc_entry toc_q;
         stop_item ();
         printf "</div>\n"
+
+    let make_local_toc local = make_toc false
+    let make_global_toc local = make_toc true
 
 end
 
@@ -1111,7 +1124,8 @@ module TeXmacs = struct
 
   let make_index () = ()
 
-  let make_toc () = ()
+  let make_local_toc () = ()
+  let make_global_toc () = ()
 
 end
 
@@ -1215,7 +1229,8 @@ module Raw = struct
 
   let make_multi_index () = ()
   let make_index () = ()
-  let make_toc () = ()
+  let make_local_toc () = ()
+  let make_global_toc () = ()
 
 end
 
@@ -1331,4 +1346,5 @@ let inf_rule = select inf_rule_dumb Html.inf_rule inf_rule_dumb inf_rule_dumb
 
 let make_multi_index = select Latex.make_multi_index Html.make_multi_index TeXmacs.make_multi_index Raw.make_multi_index
 let make_index = select Latex.make_index Html.make_index TeXmacs.make_index Raw.make_index
-let make_toc = select Latex.make_toc Html.make_toc TeXmacs.make_toc Raw.make_toc
+let make_local_toc = select Latex.make_local_toc Html.make_local_toc TeXmacs.make_local_toc Raw.make_local_toc
+let make_global_toc = select Latex.make_global_toc Html.make_global_toc TeXmacs.make_global_toc Raw.make_global_toc
