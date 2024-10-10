@@ -9,7 +9,7 @@
 ##         #     (see LICENSE file for the text of the license)         ##
 ##########################################################################
 #
-# Coq documentation build configuration file, created by
+# Rocq documentation build configuration file, created by
 # sphinx-quickstart on Wed May 11 11:23:13 2016.
 #
 # This file is execfile()d with the current directory set to its
@@ -111,9 +111,9 @@ def setup(app):
 master_doc = "index"
 
 # General information about the project.
-project = 'Coq'
-copyright = '1999-2021, Inria, CNRS and contributors'
-author = 'The Coq Development Team'
+project = 'The Rocq Prover'
+copyright = '1999-2024, Inria, CNRS and contributors'
+author = 'The Rocq Development Team'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
