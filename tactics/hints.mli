@@ -60,7 +60,7 @@ sig
   val database : t -> string option
   val run : t -> (hint hint_ast -> 'r Proofview.tactic) -> 'r Proofview.tactic
   val name : t -> GlobRef.t option
-  val print : env -> evar_map -> t -> Pp.t
+  val print : ?taconly:bool -> env -> evar_map -> t -> Pp.t
   val subgoals : t -> int option
 
   (** This function is for backward compatibility only, not to use in newly
