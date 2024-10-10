@@ -142,9 +142,14 @@ let register_print0 wit raw glb top =
      (* An alias, thus no primitive printer attached *)
      ()
 
+let register_noval_print0 wit raw glb =
+  let top = Util.Empty.abort in
+  let printer = { raw; glb; top; } in
+  Print.register0 wit printer
+
 let register_vernac_print0 wit raw =
-  let glb _ = CErrors.anomaly (Pp.str "vernac argument needs not globwit printer.") in
-  let top _ = CErrors.anomaly (Pp.str "vernac argument needs not wit printer.") in
+  let glb = Util.Empty.abort in
+  let top = Util.Empty.abort in
   let printer = { raw; glb; top; } in
   Print.register0 wit printer
 

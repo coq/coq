@@ -237,13 +237,13 @@ END
 type binders_argtype = local_binder_expr list
 
 let wit_binders =
- (Genarg.create_arg "binders" : binders_argtype Genarg.uniform_genarg_type)
+ (Genarg.create_arg "binders" : binders_argtype Genarg.vernac_genarg_type)
 
 let binders = Pcoq.create_generic_entry2 "binders" (Genarg.rawwit wit_binders)
 
 let () =
-  let raw_printer env sigma _ _ _ l = Pp.pr_non_empty_arg (Ppconstr.pr_binders env sigma) l in
-  Pptactic.declare_extra_vernac_genarg_pprule wit_binders raw_printer
+  let raw_printer l = Genprint.PrinterBasic (fun env sigma -> Pp.pr_non_empty_arg (Ppconstr.pr_binders env sigma) l) in
+  Genprint.register_vernac_print0 wit_binders raw_printer
 
 }
 

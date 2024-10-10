@@ -34,6 +34,6 @@ val rewstrategy : Tacexpr.raw_strategy Pcoq.Entry.t
 
 type binders_argtype = Constrexpr.local_binder_expr list
 
-val wit_binders : binders_argtype Genarg.uniform_genarg_type
+val wit_binders : binders_argtype Genarg.vernac_genarg_type
 
 val binders : binders_argtype Pcoq.Entry.t

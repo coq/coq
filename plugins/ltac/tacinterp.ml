@@ -113,8 +113,8 @@ let combine_appl appl1 appl2 =
   | UnnamedAppl,a | a,UnnamedAppl -> a
   | GlbAppl l1 , GlbAppl l2 -> GlbAppl (l2@l1)
 
-let of_tacvalue v = in_gen (topwit wit_tacvalue) v
-let to_tacvalue v = out_gen (topwit wit_tacvalue) v
+let of_tacvalue = Value.of_tacvalue
+let to_tacvalue = Value.to_tacvalue
 
 (* Debug reference *)
 let debug = ref DebugOff
@@ -132,10 +132,11 @@ let is_traced () =
 
 (** More naming applications *)
 let name_vfun appl vle =
-  if is_traced () && has_type vle (topwit wit_tacvalue) then
+  if is_traced () then
     match to_tacvalue vle with
-    | VFun (appl0,trace,loc,lfun,vars,t) -> of_tacvalue (VFun (combine_appl appl0 appl,trace,loc,lfun,vars,t))
-    | _ -> vle
+    | Some (VFun (appl0,trace,loc,lfun,vars,t)) ->
+      of_tacvalue (VFun (combine_appl appl0 appl,trace,loc,lfun,vars,t))
+    | Some (VRec _) | None -> vle
   else vle
 
 module TacStore = Geninterp.TacStore
@@ -248,14 +249,13 @@ let pr_closure env ist body =
 let pr_inspect env expr result =
   let pp_expr = Pptactic.pr_glob_tactic env expr in
   let pp_result =
-    if has_type result (topwit wit_tacvalue) then
     match to_tacvalue result with
-    | VFun (_, _, _, ist, ul, b) ->
+    | Some (VFun (_, _, _, ist, ul, b)) ->
       let body = if List.is_empty ul then b else CAst.make (TacFun (ul, b)) in
       str "a closure with body " ++ fnl() ++ pr_closure env ist body
-    | VRec (ist, body) ->
+    | Some (VRec (ist, body)) ->
       str "a recursive closure" ++ fnl () ++ pr_closure env !ist body
-    else
+    | None ->
       let pp_type = pr_argument_type result in
       str "an object of type" ++ spc () ++ pp_type
   in
@@ -274,40 +274,35 @@ let push_trace call ist =
   else [],[]
 
 let propagate_trace ist loc id v =
-  if has_type v (topwit wit_tacvalue) then
-    let tacv = to_tacvalue v in
+  match to_tacvalue v with
+  | None ->  Proofview.tclUNIT v
+  | Some tacv ->
     match tacv with
     | VFun (appl,_,_,lfun,it,b) ->
-        let kn =
-          match appl with
-          | GlbAppl ((kn, _) :: _) -> Some kn
-          | _ -> None
-        in
-        let t = if List.is_empty it then b else CAst.make (TacFun (it,b)) in
-        let trace = push_trace(loc,LtacVarCall (kn,id,t)) ist in
-        let ans = VFun (appl,trace,loc,lfun,it,b) in
-        Proofview.tclUNIT (of_tacvalue ans)
-    | _ ->  Proofview.tclUNIT v
-  else Proofview.tclUNIT v
+      let kn =
+        match appl with
+        | GlbAppl ((kn, _) :: _) -> Some kn
+        | _ -> None
+      in
+      let t = if List.is_empty it then b else CAst.make (TacFun (it,b)) in
+      let trace = push_trace(loc,LtacVarCall (kn,id,t)) ist in
+      let ans = VFun (appl,trace,loc,lfun,it,b) in
+      Proofview.tclUNIT (of_tacvalue ans)
+    | VRec _ ->  Proofview.tclUNIT v
 
 let append_trace trace v =
-  if has_type v (topwit wit_tacvalue) then
-    match to_tacvalue v with
-    | VFun (appl,trace',loc,lfun,it,b) -> of_tacvalue (VFun (appl,trace',loc,lfun,it,b))
-    | _ -> v
-  else v
+  match to_tacvalue v with
+  | Some (VFun (appl,trace',loc,lfun,it,b)) -> of_tacvalue (VFun (appl,trace',loc,lfun,it,b))
+  | _ -> v
 
 (* Dynamically check that an argument is a tactic *)
 let coerce_to_tactic loc id v =
   let fail () = user_err ?loc
     (str "Variable " ++ Id.print id ++ str " should be bound to a tactic.")
   in
-  if has_type v (topwit wit_tacvalue) then
-    let tacv = to_tacvalue v in
-    match tacv with
-    | VFun (appl,trace,_,lfun,it,b) -> of_tacvalue (VFun (appl,trace,loc,lfun,it,b))
-    | _ -> fail ()
-  else fail ()
+  match to_tacvalue v with
+  | Some (VFun (appl,trace,_,lfun,it,b)) -> of_tacvalue (VFun (appl,trace,loc,lfun,it,b))
+  | _ -> fail ()
 
 let intro_pattern_of_ident id = CAst.make @@ IntroNaming (IntroIdentifier id)
 let value_of_ident id =
@@ -318,7 +313,7 @@ let (+++) lfun1 lfun2 = Id.Map.fold Id.Map.add lfun1 lfun2
 let extend_values_with_bindings (ln,lm) lfun =
   let of_cub c = match c with
   | [], c -> Value.of_constr c
-  | _ -> in_gen (topwit wit_constr_under_binders) c
+  | _ -> Value.of_constr_under_binders c
   in
   (* For compatibility, bound variables are visible only if no other
      binding of the same name exists *)
@@ -1033,10 +1028,6 @@ let head_with_value (lvar,lval) =
   in
   head_with_value_rec [] (lvar,lval)
 
-(** [interp_context ctxt] interprets a context (as in
-    {!Matching.matching_result}) into a context value of Ltac.  *)
-let interp_context ctxt = in_gen (topwit wit_constr_context) ctxt
-
 let eval_pattern lfun ist env sigma (bvars, _, pat) =
   (bvars,Constr_matching.instantiate_pattern env sigma lfun pat)
 
@@ -1242,12 +1233,9 @@ and eval_tactic_ist ist tac : unit Proofview.tactic =
       Ftactic.run args tac
 
 and force_vrec ist v : Val.t Ftactic.t =
-  if has_type v (topwit wit_tacvalue) then
-    let v = to_tacvalue v in
-    match v with
-    | VRec (lfun,body) -> val_interp {ist with lfun = !lfun} body
-    | v -> Ftactic.return (of_tacvalue v)
-  else Ftactic.return v
+  match to_tacvalue v with
+  | Some (VRec (lfun,body)) -> val_interp {ist with lfun = !lfun} body
+  | _ -> Ftactic.return v
 
 and interp_ltac_reference ?loc' mustbetac ist r : Val.t Ftactic.t =
   match r with
@@ -1323,74 +1311,68 @@ and interp_tacarg ist arg : Val.t Ftactic.t =
 and interp_app loc ist fv largs : Val.t Ftactic.t =
   Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (_name, poly) ->
   let (>>=) = Ftactic.bind in
-  let fail ~info = Tacticals.tclZEROMSG ~info (str "Illegal tactic application.") in
-  if has_type fv (topwit wit_tacvalue) then
   match to_tacvalue fv with
-     (* if var=[] and body has been delayed by val_interp, then body
-         is not a tactic that expects arguments.
-         Otherwise Ltac goes into an infinite loop (val_interp puts
-         a VFun back on body, and then interp_app is called again...) *)
-    | (VFun(appl,trace,_,olfun,(_::_ as var),body)
-      |VFun(appl,trace,_,olfun,([] as var),
-          (   {CAst.v=(TacFun _)}
-            | {CAst.v=(TacLetIn _)}
-            | {CAst.v=(TacMatchGoal _)}
-            | {CAst.v=(TacMatch _)}
-            | {CAst.v=(TacArg _)} as body))) ->
-        let (extfun,lvar,lval)=head_with_value (var,largs) in
-        let fold accu (id, v) = Id.Map.add id v accu in
-        let newlfun = List.fold_left fold olfun extfun in
-      if List.is_empty lvar then
-        begin wrap_error
-            begin
-              let ist =
-                { lfun = newlfun
-                ; poly
-                ; extra = TacStore.set ist.extra f_trace trace
-                } in
-              let (stack, _) = trace in
-              do_profile stack ~count_call:false
-                (catch_error_tac_loc loc stack (val_interp (ensure_loc loc ist) body)) >>= fun v ->
-              Ftactic.return (name_vfun (push_appl appl largs) v)
-            end
-            begin fun (e, info) ->
-              Proofview.tclLIFT (debugging_exception_step ist false e (fun () -> str "evaluation")) <*>
-              Proofview.tclZERO ~info e
-            end
-        end >>= fun v ->
-        (* No errors happened, we propagate the trace *)
-        let v = append_trace trace v in
-        let call_debug env =
-          Proofview.tclLIFT (debugging_step ist (fun () -> str"evaluation returns"++fnl()++pr_value env v)) in
-        begin
-          let open Genprint in
-          match generic_val_print v with
-          | TopPrinterBasic _ -> call_debug None
-          | TopPrinterNeedsContext _ | TopPrinterNeedsContextAndLevel _ ->
-             Proofview.Goal.enter (fun gl -> call_debug (Some (pf_env gl,project gl)))
-        end <*>
-        if List.is_empty lval then Ftactic.return v else interp_app loc ist v lval
-      else
-        Ftactic.return (of_tacvalue (VFun(push_appl appl largs,trace,loc,newlfun,lvar,body)))
-    | (VFun(appl,trace,_,olfun,[],body)) ->
-      let extra_args = List.length largs in
-      let info = Exninfo.reify () in
-      Tacticals.tclZEROMSG ~info
-        (str "Illegal tactic application: got " ++
-         str (string_of_int extra_args) ++
-         str " extra " ++ str (String.plural extra_args "argument") ++
-         str ".")
-    | VRec(_,_) ->
-      let info = Exninfo.reify () in
-      fail ~info
-  else
+  | None | Some (VRec _) -> Tacticals.tclZEROMSG (str "Illegal tactic application.")
+  (* if var=[] and body has been delayed by val_interp, then body
+      is not a tactic that expects arguments.
+      Otherwise Ltac goes into an infinite loop (val_interp puts
+      a VFun back on body, and then interp_app is called again...) *)
+  | Some (VFun(appl,trace,_,olfun,(_::_ as var),body)
+         |VFun(appl,trace,_,olfun,([] as var),
+               ( {CAst.v=(TacFun _)}
+               | {CAst.v=(TacLetIn _)}
+               | {CAst.v=(TacMatchGoal _)}
+               | {CAst.v=(TacMatch _)}
+               | {CAst.v=(TacArg _)} as body))) ->
+    let (extfun,lvar,lval)=head_with_value (var,largs) in
+    let fold accu (id, v) = Id.Map.add id v accu in
+    let newlfun = List.fold_left fold olfun extfun in
+    if List.is_empty lvar then
+      begin wrap_error
+          begin
+            let ist =
+              { lfun = newlfun
+              ; poly
+              ; extra = TacStore.set ist.extra f_trace trace
+              } in
+            let (stack, _) = trace in
+            do_profile stack ~count_call:false
+              (catch_error_tac_loc loc stack (val_interp (ensure_loc loc ist) body)) >>= fun v ->
+            Ftactic.return (name_vfun (push_appl appl largs) v)
+          end
+          begin fun (e, info) ->
+            Proofview.tclLIFT (debugging_exception_step ist false e (fun () -> str "evaluation")) <*>
+            Proofview.tclZERO ~info e
+          end
+      end >>= fun v ->
+      (* No errors happened, we propagate the trace *)
+      let v = append_trace trace v in
+      let call_debug env =
+        Proofview.tclLIFT (debugging_step ist (fun () -> str"evaluation returns"++fnl()++pr_value env v)) in
+      begin
+        let open Genprint in
+        match generic_val_print v with
+        | TopPrinterBasic _ -> call_debug None
+        | TopPrinterNeedsContext _ | TopPrinterNeedsContextAndLevel _ ->
+          Proofview.Goal.enter (fun gl -> call_debug (Some (pf_env gl,project gl)))
+      end <*>
+      if List.is_empty lval then Ftactic.return v else interp_app loc ist v lval
+    else
+      Ftactic.return (of_tacvalue (VFun(push_appl appl largs,trace,loc,newlfun,lvar,body)))
+  | Some (VFun(appl,trace,_,olfun,[],body)) ->
+    let extra_args = List.length largs in
     let info = Exninfo.reify () in
-    fail ~info
+    Tacticals.tclZEROMSG ~info
+      (str "Illegal tactic application: got " ++
+       str (string_of_int extra_args) ++
+       str " extra " ++ str (String.plural extra_args "argument") ++
+       str ".")
 
 (* Gives the tactic corresponding to the tactic value *)
 and tactic_of_value ist vle =
-  if has_type vle (topwit wit_tacvalue) then
   match to_tacvalue vle with
+  | Some vle ->
+  begin match vle with
   | VFun (appl,trace,loc,lfun,[],t) ->
     Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (_name, poly) ->
       let ist = {
@@ -1436,7 +1418,9 @@ and tactic_of_value ist vle =
   | VRec _ ->
     let info = Exninfo.reify () in
     Tacticals.tclZEROMSG ~info (str "A fully applied tactic is expected.")
-  else if has_type vle (topwit wit_tactic) then
+  end
+  | None ->
+  if has_type vle (topwit wit_tactic) then
     let tac = out_gen (topwit wit_tactic) vle in
     tactic_of_value ist tac
   else
@@ -1477,13 +1461,13 @@ and interp_letin ist llc u =
 and interp_match_success ist { Tactic_matching.subst ; context ; terms ; lhs } =
   Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (_name, poly) ->
   let (>>=) = Ftactic.bind in
-  let lctxt = Id.Map.map interp_context context in
+  let lctxt = Id.Map.map Value.of_constr_context context in
   let hyp_subst = Id.Map.map Value.of_constr terms in
   let lfun = extend_values_with_bindings subst (lctxt +++ hyp_subst +++ ist.lfun) in
   let ist = { ist with lfun } in
   val_interp ist lhs >>= fun v ->
-  if has_type v (topwit wit_tacvalue) then match to_tacvalue v with
-  | VFun (appl,trace,loc,lfun,[],t) ->
+  match to_tacvalue v with
+  | Some (VFun (appl,trace,loc,lfun,[],t)) ->
       let ist =
         { lfun = lfun
         ; poly
@@ -1495,7 +1479,6 @@ and interp_match_success ist { Tactic_matching.subst ; context ; terms ; lhs } =
       let (stack, _) = trace in
       catch_error_tac stack (tac <*> Ftactic.return (of_tacvalue dummy))
   | _ -> Ftactic.return v
-  else Ftactic.return v
 
 
 (** [interp_match_successes lz ist s] interprets the stream of
@@ -2137,7 +2120,6 @@ let () =
   register_interp0 wit_simple_intropattern (lift interp_intro_pattern);
   register_interp0 wit_clause_dft_concl (lift interp_clause);
   register_interp0 wit_constr (lifts interp_constr);
-  register_interp0 wit_tacvalue (fun ist v -> Ftactic.return v);
   register_interp0 Redexpr.wit_red_expr (lifts interp_red_expr);
   register_interp0 wit_quant_hyp (lift interp_declared_or_quantified_hypothesis);
   register_interp0 wit_open_constr (lifts interp_open_constr);

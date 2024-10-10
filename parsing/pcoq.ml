@@ -546,21 +546,3 @@ let with_grammar_rule_protection f x =
     let reraise = Exninfo.capture reraise in
     let () = unfreeze fs in
     Exninfo.iraise reraise
-
-(** Registering grammar of generic arguments *)
-
-let () =
-  let open Stdarg in
-  Grammar.register0 wit_nat (Prim.natural);
-  Grammar.register0 wit_int (Prim.integer);
-  Grammar.register0 wit_string (Prim.string);
-  Grammar.register0 wit_pre_ident (Prim.preident);
-  Grammar.register0 wit_identref (Prim.identref);
-  Grammar.register0 wit_ident (Prim.ident);
-  Grammar.register0 wit_hyp (Prim.hyp);
-  Grammar.register0 wit_ref (Prim.reference);
-  Grammar.register0 wit_smart_global (Prim.smart_global);
-  Grammar.register0 wit_sort_family (Constr.sort_family);
-  Grammar.register0 wit_constr (Constr.constr);
-  Grammar.register0 wit_open_binders (Constr.open_binders);
-  ()
