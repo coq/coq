@@ -143,6 +143,7 @@ Qed.
 Lemma clt_morph : forall x y : Z, (x < y)%Z -> [x] < [y].
 Proof.
 intros x y H.
+unfold gen_order_phi_Z.
 do 2 rewrite (same_genZ (SORsetoid sor) ring_ops_wd (SORrt sor));
 destruct x; destruct y; simpl in *; try discriminate.
 - apply phi_pos1_pos.

@@ -293,13 +293,13 @@ Module Update_WSets
   Declare Equivalent Keys In M.In.
 
   Lemma add_spec : In y (add x s) <-> E.eq y x \/ In y s.
-  Proof. intros. rewrite MF.add_iff. intuition. Qed.
+  Proof. intros. unfold In,add. rewrite MF.add_iff. intuition. Qed.
 
   Lemma remove_spec : In y (remove x s) <-> In y s /\ ~E.eq y x.
-  Proof. intros. rewrite MF.remove_iff. intuition. Qed.
+  Proof. intros. unfold In,remove; rewrite MF.remove_iff. intuition. Qed.
 
   Lemma singleton_spec : In y (singleton x) <-> E.eq y x.
-  Proof. intros; rewrite MF.singleton_iff. intuition. Qed.
+  Proof. intros; unfold In, singleton; rewrite MF.singleton_iff. intuition. Qed.
 
   Definition union_spec : In x (union s s') <-> In x s \/ In x s'
    := @MF.union_iff s s' x.

@@ -221,7 +221,8 @@ Global Instance gen_phiZ_morph :
 - apply gen_phiZ_add.
 - intros. rewrite ring_sub_def.
   replace (x-y)%Z with (x + (-y))%Z.
-  + now rewrite gen_phiZ_add, gen_phiZ_opp, ring_sub_def.
+  + unfold bracket,addition,add_notation,opp_notation,opposite.
+    now rewrite gen_phiZ_add, gen_phiZ_opp, ring_sub_def.
   + reflexivity.
 - apply gen_phiZ_mul.
 - apply gen_phiZ_opp.

@@ -126,9 +126,17 @@ Section Respecting.
   Solve Obligations with unfold respecting in * ; simpl_crelation ; program_simpl.
 
   Next Obligation.
+  Proof.
+    intros. unfold respecting. simpl_crelation.
+    unfold respectful in *.
+    program_simpl.
+  Qed.
+
+  Next Obligation.
   Proof. 
     intros. intros f g h H H' x y Rxy.
-    unfold respecting in *. program_simpl. transitivity (g y); auto. firstorder.
+    unfold respecting in *. program_simpl. unfold respectful in *.
+    transitivity (g y); firstorder.
   Qed.
 
 End Respecting.

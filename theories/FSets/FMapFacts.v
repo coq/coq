@@ -898,7 +898,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   Lemma of_list_2 : forall l, NoDupA eqk l ->
     equivlistA eqke l (to_list (of_list l)).
   Proof.
-  intros l Hnodup (k,e).
+  intros l Hnodup (k,e). unfold to_list.
   rewrite <- elements_mapsto_iff, of_list_1; intuition.
   Qed.
 

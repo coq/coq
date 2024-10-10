@@ -473,14 +473,14 @@ Proof.
                         Er Erproper sig_forall_dec sig_not_dec Einhab Ebound).
   exists (Rabst x). split.
   - intros y Ey. apply Rrepr_le. rewrite Rquot2.
-    unfold CRealLe. apply a.
+    unfold CRealLe. unfold CRis_upper_bound in a. simpl in a. apply a.
     unfold Er. replace (Rabst (Rrepr y)) with y.
     + exact Ey.
     + apply Rquot1. rewrite Rquot2. reflexivity.
   - intros. destruct a. apply Rrepr_le. rewrite Rquot2.
-    unfold CRealLe. apply H3. intros y Ey.
+    unfold CRealLe. simpl in H3. apply H3. intros y Ey.
     intros. rewrite <- (Rquot2 y) in H4.
-    apply Rrepr_le in H4.
+    simpl in H4. apply Rrepr_le in H4.
     + exact H4.
     + apply H1, Ey.
 Qed.

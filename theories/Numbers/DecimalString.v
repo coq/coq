@@ -197,6 +197,7 @@ Lemma sus s d :
   uint_of_string s = Some d -> string_of_uint d = s.
 Proof.
   destruct s; [intros [=] | intros H].
+  unfold uint_of_string in H.
   apply NilEmpty.sus in H. now destruct d.
 Qed.
 

@@ -992,6 +992,7 @@ Proof.
  - intros s (s1 & s2 & B1 & B2 & E1 & E2 & L).
    assert (eqlistA X.eq (elements s1) (elements s2)).
    + apply SortA_equivlistA_eqlistA with (ltA:=X.lt); auto with *.
+     change (equivlistA X.eq) with L.eq.
      rewrite <- eq_Leq. transitivity s; auto. symmetry; auto.
    + rewrite H in L.
      apply (StrictOrder_Irreflexive (elements s2)); auto.
@@ -1000,6 +1001,7 @@ Proof.
    exists s1', s3'; do 4 (split; trivial).
    assert (eqlistA X.eq (elements s2') (elements s2'')).
    + apply SortA_equivlistA_eqlistA with (ltA:=X.lt); auto with *.
+     change (equivlistA X.eq) with L.eq.
      rewrite <- eq_Leq. transitivity s2; auto. symmetry; auto.
    + transitivity (elements s2'); auto.
      rewrite H; auto.
@@ -1070,7 +1072,7 @@ Lemma compare_cont_Cmp : forall s1 cont e2 l,
  (forall e, Cmp (cont e) l (flatten_e e)) ->
  Cmp (compare_cont s1 cont e2) (elements s1 ++ l) (flatten_e e2).
 Proof.
- induction s1 as [|c1 l1 Hl1 x1 r1 Hr1]; intros; auto.
+ induction s1 as [|c1 l1 Hl1 x1 r1 Hr1]; intros; simpl; auto.
  rewrite elements_node, <- app_assoc; simpl.
  apply Hl1; auto. clear e2. intros [|x2 r2 e2].
  - simpl; auto.
