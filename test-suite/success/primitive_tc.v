@@ -79,3 +79,30 @@ Module Sections.
     typeclasses eauto with test. (* This will fail if [Hint Transparent v] is improperly discharged. *)
   Qed.
 End Sections.
+
+Module HintExtern.
+  #[projections(primitive)]
+  Record bi (x : True) : Type := BI {car : Type; foo : car}.
+  Axiom x : True.
+  Axiom PROP:bi x.
+  Inductive Fwd (P : car x PROP) : Prop := MKFWD.
+  Create HintDb db discriminated.
+  #[local] Hint Opaque foo : test.
+  Module ConstantPattern.
+    #[local] Hint Extern 0 (Fwd (@foo x PROP)) => constructor : test.
+    Goal Fwd (@foo x PROP).
+    Proof.
+      intros.
+      typeclasses eauto with test.
+    Qed.
+  End ConstantPattern.
+
+  Module ProjPattern.
+    #[local] Hint Extern 0 (Fwd (PROP.(@foo x))) => constructor : test.
+    Goal Fwd (@foo x PROP).
+    Proof.
+      intros.
+      typeclasses eauto with test.
+    Qed.
+  End ProjPattern.
+End HintExtern.
