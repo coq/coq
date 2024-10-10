@@ -84,7 +84,7 @@ let push_named_assum a = globalize0 (Safe_typing.push_named_assum a)
 let push_named_def d = globalize0 (Safe_typing.push_named_def d)
 let push_section_context c = globalize0 (Safe_typing.push_section_context c)
 let add_constraints c = globalize0 (Safe_typing.add_constraints c)
-let push_context_set ~strict c = globalize0 (Safe_typing.push_context_set ~strict c)
+let push_context_set c = globalize0 (Safe_typing.push_context_set ~strict:true c)
 
 let set_impredicative_set c = globalize0 (Safe_typing.set_impredicative_set c)
 let set_indices_matter b = globalize0 (Safe_typing.set_indices_matter b)
@@ -203,7 +203,7 @@ let current_dirpath () =
 
 let with_global f =
   let (a, ctx) = f (env ()) (current_dirpath ()) in
-  push_context_set ~strict:true ctx; a
+  push_context_set ctx; a
 
 let register_inline c = globalize0 (Safe_typing.register_inline c)
 let register_inductive c r = globalize0 (Safe_typing.register_inductive c r)

@@ -114,7 +114,7 @@ let interp_hints ~poly h =
       let c =
         if poly then (c, Some (UState.sort_context_set uctx))
         else
-          let () = Global.push_context_set ~strict:true (UState.context_set uctx) in
+          let () = Global.push_context_set (UState.context_set uctx) in
           (c, None)
       in
       (Hints.hint_constr c) [@ocaml.warning "-3"]

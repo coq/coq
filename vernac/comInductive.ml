@@ -858,7 +858,7 @@ let do_mutual_inductive ~flags ?typing_flags udecl indl ~private_ind ~uniform =
   | Polymorphic_ind_entry uctx -> (UState.Polymorphic_entry uctx, UnivNames.empty_binders)
   in
   (* Declare the global universes *)
-  Global.push_context_set ~strict:true uctx;
+  Global.push_context_set uctx;
   (* Declare the mutual inductive block with its associated schemes *)
   ignore (DeclareInd.declare_mutual_inductive_with_eliminations ~default_dep_elim ?typing_flags ~indlocs mie binders implicits);
   (* Declare the possible notations of inductive types *)

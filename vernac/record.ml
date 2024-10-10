@@ -821,7 +821,7 @@ let interp_structure ~flags udecl kind ~primitive_proj records =
   interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind ~indlocs data
 
 let declare_structure { Record_decl.mie; default_dep_elim; primitive_proj; impls; globnames; global_univ_decls; projunivs; ubinders; projections_kind; poly; records; indlocs } =
-  Option.iter (Global.push_context_set ~strict:true) global_univ_decls;
+  Option.iter Global.push_context_set global_univ_decls;
   let kn = DeclareInd.declare_mutual_inductive_with_eliminations mie globnames impls
       ~primitive_expected:primitive_proj ~indlocs ~default_dep_elim
   in
