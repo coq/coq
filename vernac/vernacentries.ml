@@ -1542,7 +1542,7 @@ let vernac_reserve bl =
     let t,ctx = Constrintern.interp_type env sigma c in
     let t = Flags.without_option Detyping.print_universes (fun () ->
         Detyping.detype Detyping.Now env (Evd.from_ctx ctx) t)
-        ()
+        () [@ocaml.warning "-3"]
     in
     let t,_ = Notation_ops.notation_constr_of_glob_constr (default_env ()) t in
     Reserve.declare_reserved_type idl t)

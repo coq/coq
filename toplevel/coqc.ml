@@ -45,6 +45,7 @@ let coqc_main ((copts,_),stm_opts) injections ~opts =
     let access = Library.indirect_accessor[@@warning "-3"] in
     Feedback.msg_notice Pp.(Flags.(with_option raw_print (fun () ->
         Prettyp.print_full_pure_context access env sigma) ()) ++ fnl ())
+    [@ocaml.warning "-3"]
   end;
   ()
 
