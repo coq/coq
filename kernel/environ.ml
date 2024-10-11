@@ -706,6 +706,8 @@ let is_array_type env c =
   | None -> false
   | Some c' -> Constant.CanOrd.equal c c'
 
+let array_variances = UVars.(Variances.make 1 (VariancePos.make Variance.Irrelevant (Position.InBinder 0)))
+
 let is_primitive_type env c =
   (* dummy match to force an update if we add a primitive type *)
   let _ =

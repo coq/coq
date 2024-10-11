@@ -32,7 +32,7 @@ struct
     | Irrelevant, Irrelevant | Covariant, Covariant | Contravariant, Contravariant | Invariant, Invariant -> true
     | (Irrelevant | Covariant | Contravariant | Invariant), _ -> false
 
-  let check_subtype x y = match x, y with
+  let le x y = match x, y with
   | (Irrelevant | Covariant | Contravariant | Invariant), Irrelevant -> true
   | Irrelevant, (Covariant | Contravariant) -> false
   | (Covariant | Invariant), Covariant -> true
@@ -67,29 +67,58 @@ let is_applied o n = match o with FullyApplied -> true | NumArgs m -> Int.equal 
 
 let is_applied_enough o n = match o with FullyApplied -> true | NumArgs m -> n < m
 
+module Position =
+struct
+  type t =
+  | InBinder of int
+  | InTerm | InType
+
+  let equal x y =
+    match x, y with
+    | InBinder i, InBinder i' -> Int.equal i i'
+    | InTerm, InTerm | InType, InType -> true
+    | _, _ -> false
+
+  let le x y =
+    match x, y with
+    | InBinder i, InBinder i' -> i <= i'
+    | InBinder _, (InTerm | InType) -> true
+    | (InTerm | InType), InBinder _ -> false
+    | InTerm, InTerm -> true
+    | InType, InType -> true
+    | InTerm, InType -> true
+    | InType, InTerm -> false
+
+  let pr pos =
+    match pos with
+    | InTerm ->  str"(in term)"
+    | InType ->  str"(in type)"
+    | InBinder i -> str"(" ++ pr_nth (i + 1) ++ str")"
+end
+
 module VariancePos =
 struct
-  type t = Variance.t * int option
+  type t = Variance.t * Position.t
 
-  let make v = (v, None)
+  let make v pos = (v, pos)
 
   let equal (v, pos) (v', pos') =
-    Variance.equal v v' && Option.equal Int.equal pos pos'
+    Variance.equal v v' && Position.equal pos pos'
 
-  let le_pos x y =
-    match x, y with
-    | Some i, Some i' -> i <= i'
-    | Some _, None -> true
-    | None, Some _ -> false
-    | None, None -> true
-
-  let check_subtype (v, pos) (v', pos') =
-    Variance.check_subtype v v' && le_pos pos pos'
+  let le (v, pos) (v', pos') =
+    Variance.le v v' && Position.le pos pos'
 
   let variance nargs (v, pos) =
+    let open Position in
     match pos with
-    | None -> v
-    | Some binder ->
+    | InTerm -> v
+    | InType ->
+      let open Variance in
+      (match v with
+      | Irrelevant | Covariant ->
+        Irrelevant (* A universe which only appears covariantly in the type *)
+      | Contravariant | Invariant -> v)
+    | InBinder binder ->
       if is_applied_enough nargs binder then
         let open Variance in
         (match v with
@@ -105,9 +134,7 @@ struct
     Variance.leq_constraint csts (variance nargs vp)
 
   let pr (v, pos) =
-    match pos with
-    | None -> Variance.pr v
-    | Some i -> Variance.pr v ++ str"(" ++ pr_nth (i + 1) ++ str")"
+    Variance.pr v ++ Position.pr pos
 
 end
 
@@ -128,13 +155,13 @@ struct
   let equal vs vs' =
     Array.equal VariancePos.equal vs vs'
 
-  let check_subtype inf exp =
-    Array.equal VariancePos.check_subtype inf exp
+  let le inf exp =
+    Array.equal VariancePos.le inf exp
 
   let eq_sizes v v' = Int.equal (Array.length v) (Array.length v')
 
   let make n default : t =
-    Array.make n (VariancePos.make default)
+    Array.make n default
 
   let leq_constraints ~nargs variances u u' csts =
     let len = Array.length u in
@@ -272,7 +299,7 @@ struct
   let pr prq prl ?variances (q,u) =
     let variances = Option.map Variances.repr variances in
     let ppu i u =
-      let v = Option.map (fun v -> if i < Array.length v then v.(i) else (Variance.Invariant, None) (* TODO fix: bad caller somewhere *)) variances in
+      let v = Option.map (fun v -> if i < Array.length v then v.(i) else VariancePos.make Variance.Invariant Position.InTerm (* TODO fix: bad caller somewhere *)) variances in
       pr_opt_no_spc VariancePos.pr v ++ prl u
     in
     (if Array.is_empty q then mt() else prvect_with_sep spc (Quality.pr prq) q ++ strbrk " | ")

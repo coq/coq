@@ -788,7 +788,7 @@ let eq_universes env sigma cstrs cv_pb refargs l l' =
     let open UnivProblem in
     match refargs with
     | Some (ConstRef c, 1) when Environ.is_array_type env c ->
-      cstrs := compare_cumulative_instances ~nargs:(NumArgs 1) cv_pb (UVars.Variances.make 1 UVars.Variance.Irrelevant) l l' !cstrs;
+      cstrs := compare_cumulative_instances ~nargs:(NumArgs 1) cv_pb Environ.array_variances l l' !cstrs;
       true
     | Some (ConstRef c, n) ->
       let cb = Environ.lookup_constant c env in

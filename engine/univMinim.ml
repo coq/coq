@@ -22,10 +22,6 @@ let { Goptions.get = get_set_minimization } =
 
 (** Level variances *)
 
-type position =
-  | InBinder of int
-  | InTerm | InType
-
 type variance_occurrence =
   { in_binder : (int * UVars.Variance.t) option;
     in_term : UVars.Variance.t option;
@@ -61,7 +57,7 @@ let min_pos_variance { in_binder; in_term; in_type } =
     | None, Some v -> y
     | Some v, Some v' -> Some (UVars.Variance.sup v v')
   in
-  sup_opt in_binder (sup_opt in_type in_term)
+  sup_opt in_binder in_term, in_type
 
 let pr_variances prl variances =
   Univ.Level.Map.pr prl pr_variance_occurrence variances
@@ -227,18 +223,19 @@ let minimize_univ_variables ctx us variances left right cstrs =
         let left = CList.uniquize (List.filter (not_lower lower) left) in
         (acc, left, Level.Map.lunion newlow lower)
     in
-    let variance =
+    let term_variance, type_variance =
+      let open UVars.Variance in
       match Level.Map.find_opt u variances with
-      | None -> if UnivFlex.mem u us then UVars.Variance.Irrelevant else UVars.Variance.Invariant
+      | None -> if UnivFlex.mem u us then Irrelevant, Irrelevant else Invariant, Invariant
       | Some pos ->
-        match min_pos_variance pos with
-        | Some v -> v
-        | None -> (* No recorded variance for this universe *) UVars.Variance.Irrelevant
+        let termv, typev = min_pos_variance pos in
+        (* No recorded variance for this universe *)
+         Option.default Irrelevant termv, Option.default Irrelevant typev
     in
     let instantiate_lbound lbound =
       if is_set_increment lbound && not (get_set_minimization()) then
         (* Minim to Set disabled, do not instantiate with Set *)
-        instantiate_with_lbound u lbound lower ~enforce:(variance <> Irrelevant) acc
+        instantiate_with_lbound u lbound lower ~enforce:(term_variance <> Irrelevant) acc
       else (* u is algebraic: we instantiate it with its lower bound, if any,
               or enforce the constraints if it is bounded from the top. *)
         let lower = Level.Set.fold Level.Map.remove (Universe.levels lbound) lower in
@@ -258,12 +255,13 @@ let minimize_univ_variables ctx us variances left right cstrs =
       let lbound = match compute_lbound left with None -> Universe.type0 | Some lbound -> lbound in
       debug Pp.(fun () -> str"Lower bound of " ++ Level.raw_pr u ++ str":" ++ Universe.pr Level.raw_pr lbound);
       let open UVars.Variance in
-      match variance with
-      | Contravariant | Invariant ->
+      match term_variance, type_variance with
+      | Irrelevant, (Irrelevant | Covariant) ->
+        (* This keeps principal typings, as instantiating to e.g. Set in a covariant position allows to use Set <= i for any i *)
+        enforce_uppers (instantiate_lbound lbound)
+      | _, _ ->
         if Universe.is_type0 lbound then enforce_uppers (acc, {enforce = true; lbound = Universe.make u; lower})
         else enforce_uppers (instantiate_with_lbound u lbound lower ~enforce:true acc)
-      | Irrelevant | Covariant -> (* This keeps principal typings, as instantiating to e.g. Set in a covariant position allows to use Set <= i for any i *)
-        enforce_uppers (instantiate_lbound lbound)
   and aux (ctx, us, seen, insts, cstrs as acc) u =
     debug Pp.(fun () -> str"Calling minim on " ++ Level.raw_pr u);
     try let lbound = Level.Map.find u insts.LBMap.lbmap in

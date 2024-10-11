@@ -36,6 +36,7 @@ val universe_variances_of_proofs :
 
 val universe_variances_of_named_context :
   Environ.env -> Evd.evar_map ->
+  as_types:bool ->
   ?variance:UVars.Variance.t ->
   (* The variance with which to analyze each binding in the context *)
   EConstr.named_context ->

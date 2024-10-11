@@ -545,7 +545,7 @@ let variance_of_entry ~cumulative ctx variances =
       let lvs = Array.length variances in
       let _, lus = UVars.UContext.size ctx in
       assert (lvs <= lus);
-      Some (UVars.Variances.of_array (Array.append variances (Array.make (lus - lvs) (UVars.Variance.Invariant, None))))
+      Some (UVars.Variances.of_array (Array.append variances (Array.make (lus - lvs) UVars.(VariancePos.make Variance.Invariant Position.InTerm))))
 
 let interp_mutual_inductive_constr ~sigma ~flags ~udecl ~ctx_params ~indnames ~arities_explicit ~arities ~template_syntax ~constructors ~env_ar_params ~private_ind =
   let {

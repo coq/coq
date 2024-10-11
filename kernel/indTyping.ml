@@ -373,7 +373,7 @@ let get_template univs ~env_params ~env_ar_par ~params entries data =
     in
     let () = List.iter check_bound plevels in
     (* We reuse the same code as the one for variance inference. *)
-    let init_variance = Array.map_of_list (fun l -> l, Some (Variance.Irrelevant, None)) plevels in
+    let init_variance = Array.map_of_list (fun l -> l, Some (VariancePos.make Variance.Irrelevant Position.InTerm)) plevels in
     let _variance = InferCumulativity.infer_inductive ~env_params ~env_ar_par init_variance
         ~arities:[entry.mind_entry_arity]
         ~ctors:[entry.mind_entry_lc]

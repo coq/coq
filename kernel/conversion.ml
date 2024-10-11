@@ -671,8 +671,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     | FArray (u1,t1,ty1), FArray (u2,t2,ty2) ->
       let len = Parray.length_int t1 in
       if not (Int.equal len (Parray.length_int t2)) then raise NotConvertible;
-      let variances = UVars.Variances.make 1 UVars.Variance.Irrelevant in
-      let cuniv = fail_check infos @@ convert_instances_cumul ~flex:false CONV ~nargs:(UVars.NumArgs 1) variances u1 u2 cuniv in
+            let cuniv = fail_check infos @@ convert_instances_cumul ~flex:false CONV ~nargs:(UVars.NumArgs 1) Environ.array_variances u1 u2 cuniv in
       let el1 = el_stack lft1 v1 in
       let el2 = el_stack lft2 v2 in
       let cuniv = ccnv CONV l2r infos el1 el2 ty1 ty2 cuniv in

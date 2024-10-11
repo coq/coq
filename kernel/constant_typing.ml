@@ -114,7 +114,8 @@ let process_universes env ?sec_univs = function
       | Some variances ->
       (* no variance for qualities *)
         let _, sec_univs = UVars.LevelInstance.to_array sec_univs in
-        let sec_variances = UVars.Variances.of_array (Array.map (fun _ -> UVars.Variance.Invariant, None) sec_univs) in
+        (* FIXME: The universe variances should be none here, we don't know where they appear *)
+        let sec_variances = UVars.Variances.of_array (Array.map (fun _ -> UVars.(VariancePos.make Variance.Invariant Position.InTerm)) sec_univs) in
         Some (UVars.Variances.append sec_variances variances)
     in
     env, usubst, UVars.Instance.of_level_instance inst, Polymorphic (auctx, variances)

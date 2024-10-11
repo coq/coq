@@ -935,19 +935,19 @@ let extend_variances inst variances =
   else Array.append variances (Array.make (ulen - vlen) None)
 
 let occurrence_to_variance UnivMinim.{ in_binder; in_term; in_type } =
-  let open UVars.Variance in
+  let open Variance in
   match in_binder, in_term, in_type with
   | None, None, None -> assert false
-  | Some (i, Contravariant), (Some (Covariant | Irrelevant) | None), _ -> Contravariant, Some i
-  | Some (i, variance), None, _ -> (variance, Some i)
-  | None, Some variance, _ -> (variance, None)
-  | Some (i, variance), Some variance', _ -> (sup variance variance', None)
-  | None, None, Some in_type -> (in_type, None)
+  | Some (i, Contravariant), (Some (Covariant | Irrelevant) | None), _ -> Contravariant, Position.InBinder i
+  | Some (i, variance), None, _ -> (variance, InBinder i)
+  | None, Some variance, _ -> (variance, InTerm)
+  | Some (i, variance), Some variance', _ -> (sup variance variance', InTerm)
+  | None, None, Some in_type -> (in_type, InType)
 
 let computed_variances ivariances inst =
   let infered_variance level =
     match Level.Map.find_opt level ivariances with
-    | None -> UVars.Variance.Invariant, None
+    | None -> VariancePos.make Variance.Invariant Position.InTerm
     | Some o -> occurrence_to_variance o
   in
   UVars.Variances.of_array (Array.map infered_variance (snd (LevelInstance.to_array inst)))
@@ -975,7 +975,7 @@ let check_variances ~cumulative names ivariances inst variances =
         match variance with
         | None -> (variance', position)
         | Some variance ->
-          if UVars.Variance.check_subtype variance variance' then (variance, position)
+          if UVars.Variance.le variance variance' then (variance, position)
           else CErrors.user_err Pp.(str"Variance annotation " ++ UVars.Variance.pr variance ++ str" for universe binder " ++
             (pr_uctx_level_names names level) ++ str" is incorrect, inferred variance is " ++ UVars.Variance.pr variance')
     in

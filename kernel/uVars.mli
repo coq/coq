@@ -19,8 +19,8 @@ sig
      inductive or definition can be the following. *)
   type t = Irrelevant | Covariant | Contravariant | Invariant
 
-  (** [check_subtype x y] holds if variance [y] is also an instance of [x] *)
-  val check_subtype : t -> t -> bool
+  (** [le x y] holds if variance [y] is also an instance of [x] *)
+  val le : t -> t -> bool
 
   val sup : t -> t -> t
 
@@ -34,13 +34,26 @@ type application = FullyApplied | NumArgs of int
 val is_applied : application -> int -> bool
 val is_applied_enough : application -> int -> bool
 
-module VariancePos :
+module Position :
 sig
-  type t = Variance.t * int option
+  type t =
+  | InBinder of int
+  | InTerm | InType
+
+  val equal : t -> t -> bool
+  val le : t -> t -> bool
 
   val pr : t -> Pp.t
+end
+
+module VariancePos :
+sig
+  type t = Variance.t * Position.t
+
+  val make : Variance.t -> Position.t -> t
+  val pr : t -> Pp.t
   val equal : t -> t -> bool
-  val check_subtype : t -> t -> bool
+  val le : t -> t -> bool
 
   val variance : application -> t -> Variance.t
 end
@@ -52,12 +65,12 @@ sig
   val length : t -> int
   val pr : t -> Pp.t
   val equal : t -> t -> bool
-  val check_subtype : t -> t -> bool
+  val le : t -> t -> bool
 
   val eq_sizes : t -> t -> bool
 
   (* Invariant variances *)
-  val make : int -> Variance.t -> t
+  val make : int -> VariancePos.t -> t
 
   val of_array : VariancePos.t array -> t
   val repr : t -> VariancePos.t array

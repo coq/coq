@@ -94,7 +94,7 @@ let convert_constructors_gen cmp_instances cmp_cumul env ((mind, ind), cns) ~nar
       (** By invariant, both constructors have a common supertype,
           so they are convertible _at that type_. *)
       (* NB: no variance for qualities *)
-      let variance = UVars.Variances.make (snd (UVars.Instance.length u1)) UVars.Variance.Irrelevant in
+      let variance = UVars.Variances.make (snd (UVars.Instance.length u1)) UVars.(VariancePos.make Variance.Irrelevant Position.InTerm) in
       cmp_cumul ~nargs CONV variance u1 u2 s
 
 let convert_constructors env (ctor : Names.constructor) ~nargs u1 u2 (s, check) =

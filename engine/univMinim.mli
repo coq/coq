@@ -22,10 +22,6 @@ val empty_extra : extra
 
 val extra_union : extra -> extra -> extra
 
-type position =
-  | InBinder of int
-  | InTerm | InType
-
 type variance_occurrence =
   { in_binder : (int * UVars.Variance.t) option;
     in_term : UVars.Variance.t option;

@@ -462,7 +462,7 @@ let compare_heads pbty env evd ~nargs term term' =
     if UVars.is_applied nargs 1 && Environ.is_array_type env c
     then
       let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
-      compare_cumulative_instances pbty evd ~nargs:(NumArgs 1) (UVars.Variances.make 1 UVars.Variance.Irrelevant) u u'
+      compare_cumulative_instances pbty evd ~nargs:(NumArgs 1) Environ.array_variances u u'
     else
       let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
       let cst = lookup_constant c env in
