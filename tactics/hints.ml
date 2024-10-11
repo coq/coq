@@ -1611,7 +1611,7 @@ let push_resolve_hyp env sigma decl db =
 
 let pr_hint_elt env sigma h = pr_econstr_env env sigma h.hint_term
 
-let pr_hint ?(taconly=false) env sigma h = match h.obj with
+let pr_hint ?(forinfo=false) env sigma h = match h.obj with
   | Res_pf c -> (str"simple apply " ++ pr_hint_elt env sigma c)
   | ERes_pf c -> (str"simple eapply " ++ pr_hint_elt env sigma c)
   | Give_exact c -> (str"exact " ++ pr_hint_elt env sigma c)
@@ -1620,7 +1620,7 @@ let pr_hint ?(taconly=false) env sigma h = match h.obj with
   | Unfold_nth c ->
     str"unfold " ++  pr_evaluable_reference c
   | Extern (_, tac) ->
-    (if taconly then mt () else str "(*external*) ") ++
+    (if forinfo then mt () else str "(*external*) ") ++
       Pputils.pr_glb_generic env sigma tac
 
 let pr_id_hint env sigma (id, v) =
@@ -1853,7 +1853,7 @@ struct
   | Some (ConstrPattern p | SyntacticPattern p) -> Some p
   | Some DefaultPattern -> None
   let run (h : t) k = run_hint h.code k
-  let print ?(taconly=false) env sigma (h : t) = pr_hint ~taconly env sigma h.code
+  let print ?(forinfo=false) env sigma (h : t) = pr_hint ~forinfo env sigma h.code
   let name (h : t) = h.name
 
   let subgoals (h : t) = match h.code.obj with

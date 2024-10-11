@@ -213,7 +213,7 @@ let tclLOG (dbg,_,depth,trace) pp tac =
           (fun (exn, info) ->
              tclZERO ~info exn))
 
-let format_trace ?(indent=0) env sigma trace =
+let format_trace ?(indent=0) ?(bullets=[]) env sigma trace =
   (* A goal may appear in from_gls for multiple trace entries.
      Use the last entry in the map. *)
   let map = List.fold_left (fun map (_,pp,from_gls,to_gls) ->
@@ -226,14 +226,41 @@ let format_trace ?(indent=0) env sigma trace =
     ) Int.Map.empty trace
   in
 
-  (* I tried to include bullets and { ... } in the output, but braces work strangely.
-     This version works in any context; if there are bullets it is context dependent.
-   *)
-  let rec dfs indent from_gl =
+  let rec dfs indent ?(bulletnum=(1,3,0)) ?(bulletmap=Int.Map.empty) from_gl =
+    (* get the next bullet that's not in bullets *)
+    let next_bullet (dig,lim,n) =
+      let rec int_to_bullet ?(rv=[]) (dig,lim,n) =
+        if dig = 0 then String.concat "" rv
+        else
+          let rv = String.make 1 ("-+*".[n - 3*(n/3)]) :: rv in
+          int_to_bullet (dig-1,lim,n/3) ~rv
+      in
+      let next (dig,lim,n) =
+        let n = n + 1 in
+        if lim = n then dig+1,lim*3,0
+        else dig,lim,n
+      in
+      let rec aux n =
+        let bullet = int_to_bullet n in
+        if List.mem bullet bullets then aux (next n) else bullet ^ " ", (next n)
+      in
+      aux bulletnum
+    in
     let to_gls,pp = Int.Map.find from_gl map in
-    Feedback.msg_notice (str (String.make indent ' ') ++ pp env sigma);
-    let indent = if List.length to_gls > 1 then indent + 2 else indent in
-    List.iter (fun to_gl -> dfs indent to_gl) to_gls;
+    let bullet = try (Int.Map.find from_gl bulletmap) with Not_found -> "" in
+    let nindent = if bullet <> "" then indent + 2 else indent in
+    let nindent, bulletnum, bulletmap =
+      match List.length to_gls with
+      | 0 -> nindent-2, bulletnum, bulletmap
+      | 1 -> nindent, bulletnum, bulletmap
+      | _ ->
+        let nbullet, bulletnum = next_bullet bulletnum in
+        nindent, bulletnum, List.fold_left (fun acc to_gl -> Int.Map.add to_gl nbullet acc) bulletmap to_gls
+    in
+
+    let indentstr = (String.make indent ' ') in
+    Feedback.msg_notice (str indentstr ++ str bullet ++ pp env sigma);
+    List.iter (fun to_gl -> dfs nindent ~bulletnum ~bulletmap to_gl) to_gls;
   in
   match trace with
   (* should always be a single item in from_gls *)
@@ -363,8 +390,8 @@ and tac_of_hint dbg db_list local_db concl =
     | Some n -> str " (in " ++ str n ++ str ")"
     in
     let (lev,_,_,_) = dbg in
-    let taconly = lev = Info in
-    FullHint.print ~taconly env sigma h ++ (if taconly then str "." else origin)
+    let forinfo = lev = Info in
+    FullHint.print ~forinfo env sigma h ++ (if forinfo then str "." else origin)
   in
   fun h -> tclLOG dbg (pr_hint h) (FullHint.run h tactic)
 
