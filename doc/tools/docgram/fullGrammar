@@ -625,9 +625,7 @@ command: [
 | "Locate" "Ltac" reference
 | "Ltac" LIST1 ltac_tacdef_body SEP "with"
 | "Print" "Ltac" "Signatures"
-| "Obligation" natural "of" identref ":" lglob withtac
 | "Obligation" natural "of" identref withtac
-| "Obligation" natural ":" lglob withtac
 | "Obligation" natural withtac
 | "Next" "Obligation" "of" identref withtac
 | "Next" "Obligation" withtac

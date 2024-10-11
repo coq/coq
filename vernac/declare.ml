@@ -2588,8 +2588,8 @@ let solve_all_obligations ~pm tac =
 let try_solve_obligations ~pm name tac =
   solve_obligations ~pm name tac |> fst
 
-(** Implements [Obligation n of name : typ with tac] *)
-let obligation (user_num, name, typ) ~pm tac =
+(** Implements [Obligation n of name with tac] *)
+let obligation (user_num, name) ~pm tac =
   let num = pred user_num in
   let prg = get_unique_prog ~pm name in
   let { obls; remaining } = Internal.get_obligations prg in

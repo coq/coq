@@ -18,7 +18,6 @@ DECLARE PLUGIN "coq-core.plugins.ltac"
 
 open Stdarg
 open Tacarg
-open Extraargs
 
 let (set_default_tactic, get_default_tactic, print_default_tactic) =
   Tactic_option.declare_tactic_option "Program tactic"
@@ -71,14 +70,10 @@ let classify_obbl _ = Vernacextend.(VtStartProof (Doesn'tGuaranteeOpacity,[]))
 }
 
 VERNAC COMMAND EXTEND Obligations CLASSIFIED BY { classify_obbl } STATE declare_program
-| [ "Obligation" natural(num) "of" identref(name) ":" lglob(t) withtac(tac) ] ->
-    { obligation (num, Some name.CAst.v, Some t) tac }
 | [ "Obligation" natural(num) "of" identref(name) withtac(tac) ] ->
-    { obligation (num, Some name.CAst.v, None) tac }
-| [ "Obligation" natural(num) ":" lglob(t) withtac(tac) ] ->
-    { obligation (num, None, Some t) tac }
+    { obligation (num, Some name.CAst.v) tac }
 | [ "Obligation" natural(num) withtac(tac) ] ->
-    { obligation (num, None, None) tac }
+    { obligation (num, None) tac }
 | [ "Next" "Obligation" "of" identref(name) withtac(tac) ] ->
     { next_obligation (Some name.CAst.v) tac }
 | [ "Next" "Obligation" withtac(tac) ] -> { next_obligation None tac }
