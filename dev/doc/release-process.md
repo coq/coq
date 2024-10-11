@@ -10,11 +10,8 @@
 
 - [ ] Create both the upcoming final release (`X.X.0`) and the following major release (`Y.Y+rc1`) milestones if they do not already exist.
 - [ ] Send an announcement of the upcoming branching date on Coqdev + the Coq development category on Discourse (coqdev@inria.fr + coq+coq-development@discoursemail.com) and ask people to remove from the `X.X+rc1` milestone any feature and clean up PRs that they already know won't be ready on time.
-- [ ] In a PR on `master`, call [`dev/tools/update-compat.py`](../tools/update-compat.py) with the `--release` flag; this sets up Coq to support three `-compat` flag arguments including the upcoming one (instead of four).  To ensure that CI passes, you will have to decide what to do about all test-suite files that mention `-compat U.U` or `Coq.Compat.CoqUU` (which is no longer valid, since we only keep compatibility against the two previous versions), and you may have to ping maintainers of projects that are still relying on the old compatibility flag so that they fix this.
 - [ ] Make sure that this change is merged in time for the branching date.
 - [ ] Prepare a PR on `master` (not yet to be merged) changing the version name to the next major version and both magic numbers in [`tools/configure/configure.ml`](../../tools/configure/configure.ml). For example, for `8.5`, the version name will be `8.5+alpha` while the magic numbers will end with `80490`.
-  Additionally, in the same commit, update the compatibility infrastructure, which consists of invoking [`dev/tools/update-compat.py`](../tools/update-compat.py) with the `--master` flag.
-  Note that the `update-compat.py` script must be run twice: once in preparation of the release with the `--release` flag (see earlier in this section) and once on the branching date with the `--master` flag to mark the start of the next version.
   This PR should be opened before the branching date to have time to deal with CI issues, but should not be merged until branching.
 
 ## On the branching date ##

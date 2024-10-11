@@ -279,9 +279,6 @@
 
 /dev/tools/ @coq/dev-tools-maintainers
 
-/dev/tools/update-compat.py      @coq/compat-maintainers
-/test-suite/tools/update-compat/ @coq/compat-maintainers
-
 ########## Dune  ##########
 
 /.ocamlinit  @coq/build-maintainers

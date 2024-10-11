@@ -135,7 +135,7 @@ module Make(T : Task) () = struct
           | "-async-proofs-worker-priority" | "-worker-id") :: _ :: tl ->
           set_slave_opt tl
         (* Options to discard: 2 arguments *)
-        | ( "-rifrom" | "-refrom" | "-rfrom"
+        | ( "-compat-from" | "-rifrom" | "-refrom" | "-rfrom"
           | "-require-import-from" | "-require-export-from") :: _ :: _ :: tl ->
            set_slave_opt tl
         (* We need to pass some options with one argument *)
