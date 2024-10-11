@@ -54,6 +54,9 @@ val is_node : 'a t -> bool
 (** Destructors (recursive calls are expanded) *)
 val dest_node  : 'a t -> 'a * 'a t array array
 
+(** First projection of {!dest_node} *)
+val dest_head : 'a t -> 'a
+
 (** dest_var is not needed for closed trees (i.e. with no free variable) *)
 val dest_var : 'a t -> int * int
 
@@ -91,5 +94,18 @@ sig
 
   (** [(Smart.map f t) == t] if [(f a) ==a ] for all nodes *)
   val map : ('a -> 'a) -> 'a t -> 'a t
+
+end
+
+module Kind :
+sig
+
+type 'a rtree = 'a t
+type 'a t
+type 'a kind = Var of int * int | Node of 'a * 'a t array array
+
+val make : 'a rtree -> 'a t
+val kind : 'a t -> 'a kind
+val repr : 'a t -> 'a rtree
 
 end

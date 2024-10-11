@@ -202,7 +202,7 @@ let mk_paths r recargs =
   Rtree.mk_node r
     (Array.map Array.of_list recargs)
 
-let dest_recarg p = fst (Rtree.dest_node p)
+let dest_recarg p = Rtree.dest_head p
 
 (* dest_subterms returns the sizes of each argument of each constructor of
    an inductive object of size [p]. This should never be done for Norec,
