@@ -49,9 +49,49 @@ for more details.
 
 ### Breaking changes
 
-When your PR breaks an external project we test in our CI, you must
-prepare a patch (or ask someone—possibly the project author—to
-prepare a patch) to fix the project. There is experimental support for
+When your PR breaks external projects we test in our CI, you must:
+
+1. Assess the breakage.
+   * If it is a bug your PR introduces, it should be fixed.
+   * Otherwise, you must assess the impact of the breakage and porting
+     effort required on a few CI entries that exercise the
+     functionality being changed.
+2. Some breakages can be accepted, for instance to remove something
+   already deprecated for long. Less obvious cases are to be
+   determined with the PR assignee and reviewers, or discussed
+   during a [weekly Call](https://github.com/coq/coq/wiki/Coq-Calls)
+   when doubts remain.
+3. For intentional breakages, you must then write porting instructions
+   (typically the PR changelog), based on your previous assesment.
+   For instance something like "ensuring compilation with Coq X.Y and
+   option -w +thing-we-are-removing-deprecated". You can also offer a
+   script to help porting if you wish.
+4. The PR assignee will finally ask the project maintainers to prepare
+   a patch. For plugins, you must prepare yourself an overlay (you can
+   ask the CI project maintainer for help). Ultimately, for
+   non-plugin CI projects, the responsibility of preparing a patch
+   falls on the project maintainer, but PR writers are encouraged to
+   be helpful and may prepare patches themselves to facilitate a
+   smooth process of adaptation. To ask project maintainers to adapt
+   their development, the PR assignee can use the following template
+
+   > @maintainer please update <dev>. You can do so by <instructions on how
+   > to update, typically the PR changelog entry>
+   > If <dev> is not updated in 7 days from now, it will be disabled in Coq CI
+   > so as to not further delay the current PR (the project can be reenabled
+   > later, once fixed). In case you encounter
+   > unanticipated difficulties, please come back to us (for instance below)
+   > and feel free to request an extension.
+
+   You can find the maintainers to ping in [ci-basic.sh](./ci-basic.sh).
+
+   Of course, it's not in the interest of any developer to disable
+   large spans of the CI, so best efforts will be made, in
+   collaboration with the respective project maintainers to not
+   disable some projects, considered flagship projects, particularly
+   towards the base of the hierarchy.
+
+There is experimental support for
 an improved workflow, see [the next
 section](#experimental-automatic-overlay-creation-and-building), below
 are the steps to manually prepare a patch:
