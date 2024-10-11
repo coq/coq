@@ -1601,7 +1601,7 @@ let to_lvar ist =
 
 let gtypref kn = GTypRef (Other kn, [])
 
-let intern_constr self ist c =
+let intern_constr ist c =
   let (_, (c, _)) = Genintern.intern Stdarg.wit_constr ist c in
   let v = match DAst.get c with
     | GGenarg (GenArg (Glbwit tag, v)) ->
@@ -1661,7 +1661,7 @@ let () =
   let interp _ id = return (Tac2ffi.of_ident id) in
   let print _ _ id = str "ident:(" ++ Id.print id ++ str ")" in
   let obj = {
-    ml_intern = (fun _ _ id -> GlbVal id, gtypref t_ident);
+    ml_intern = (fun _ id -> GlbVal id, gtypref t_ident);
     ml_interp = interp;
     ml_subst = (fun _ id -> id);
     ml_print = print;
@@ -1670,7 +1670,7 @@ let () =
   define_ml_object Tac2quote.wit_ident obj
 
 let () =
-  let intern self {Genintern.ltacvars=lfun; genv=env; extra; intern_sign=_; strict_check} c =
+  let intern {Genintern.ltacvars=lfun; genv=env; extra; intern_sign=_; strict_check} c =
     let sigma = Evd.from_env env in
     let ltacvars = {
       Constrintern.ltac_vars = lfun;
@@ -1705,7 +1705,7 @@ let () =
   define_ml_object Tac2quote.wit_pattern obj
 
 let () =
-  let intern self ist c =
+  let intern ist c =
     let (_, (c, _)) = Genintern.intern Stdarg.wit_constr ist c in
     (GlbVal (Id.Set.empty,c), gtypref t_preterm)
   in
@@ -1746,7 +1746,7 @@ let () =
   define_ml_object Tac2quote.wit_preterm obj
 
 let () =
-  let intern self ist ref = match ref.CAst.v with
+  let intern ist ref = match ref.CAst.v with
   | Tac2qexpr.QHypothesis id ->
     GlbVal (GlobRef.VarRef id), gtypref t_reference
   | Tac2qexpr.QReference qid ->

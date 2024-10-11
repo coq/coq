@@ -1344,20 +1344,13 @@ let rec intern_rec env tycon {loc;v=e} =
   check (GTacSet (pinfo.pdata_type, e, pinfo.pdata_indx, r), GTypRef (Tuple 0, []))
 | CTacExt (tag, arg) ->
   let open Genintern in
-  let self ist e =
-    let env = match Store.get ist.extra ltac2_env with
-    | None -> empty_env ()
-    | Some env -> env
-    in
-    intern_rec env None e
-  in
   let obj = interp_ml_object tag in
   (* External objects do not have access to the named context because this is
      not stable by dynamic semantics. *)
   let genv = Global.env_of_context Environ.empty_named_context_val in
   let ist = empty_glob_sign ~strict:(env_strict env) genv in
   let ist = { ist with extra = Store.set ist.extra ltac2_env env } in
-  let arg, tpe = obj.ml_intern self ist arg in
+  let arg, tpe = obj.ml_intern ist arg in
   let e = match arg with
   | GlbVal arg -> GTacExt (tag, arg)
   | GlbTacexpr e -> e
