@@ -1611,17 +1611,26 @@ let push_resolve_hyp env sigma decl db =
 
 let pr_hint_elt env sigma h = pr_econstr_env env sigma h.hint_term
 
-let pr_hint ?(forinfo=false) env sigma h = match h.obj with
-  | Res_pf c -> (str"simple apply " ++ pr_hint_elt env sigma c)
-  | ERes_pf c -> (str"simple eapply " ++ pr_hint_elt env sigma c)
-  | Give_exact c -> (str"exact " ++ pr_hint_elt env sigma c)
+let pr_hint ?(forinfo=false) env sigma h =
+  let period = if forinfo then str "." else mt () in
+  match h.obj with
+  | Res_pf c -> (str"simple apply " ++ pr_hint_elt env sigma c) ++ period
+  | ERes_pf c -> (str"simple eapply " ++ pr_hint_elt env sigma c) ++ period
+  | Give_exact c -> (str"exact " ++ pr_hint_elt env sigma c) ++ period
   | Res_pf_THEN_trivial_fail c ->
-      (str"simple apply " ++ pr_hint_elt env sigma c ++ str" ; trivial")
+      (str"simple apply " ++ pr_hint_elt env sigma c ++ str" ; trivial") ++ period
   | Unfold_nth c ->
     str"unfold " ++  pr_evaluable_reference c
   | Extern (_, tac) ->
-    (if forinfo then mt () else str "(*external*) ") ++
-      Pputils.pr_glb_generic env sigma tac
+    let drop_parens s =
+      let len = String.length s in
+      if s.[0] = '(' && s.[len-1] = ')' then
+        String.sub s 1 (len-2) else s
+    in
+    let cmdpp = Pputils.pr_glb_generic env sigma tac in
+    let cmd = str (drop_parens (Pp.string_of_ppcmds cmdpp)) in
+    if forinfo then cmd ++ str ".  (*external*)"
+      else str "(*external*) " ++ cmd
 
 let pr_id_hint env sigma (id, v) =
   let pr_pat p = match p.pat with
