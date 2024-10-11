@@ -70,11 +70,11 @@ End down.
 
 Record Arrow@{i j} := { arrow : Type@{i} -> Type@{j} }.
 
-Fail Definition arrow_lift@{i i' j j' | i' < i, j < j'}
+Definition arrow_lift@{i i' j j' | i' < i, j < j'}
   : Arrow@{i j} -> Arrow@{i' j'}
   := fun x => x.
 
-Definition arrow_lift@{i i' j j' | i' = i, j <= j'}
+Definition arrow_lift_inv@{i i' j j' | i' = i, j <= j'}
   : Arrow@{i j} -> Arrow@{i' j'}
   := fun x => x.
 
@@ -87,6 +87,7 @@ with Mut2 A :=
 
 (* If we don't reduce T while inferring cumulativity for the
    constructor we will see a Rel and believe i is irrelevant. *)
+
 Inductive withparams@{i j} (T:=Type@{i}:Type@{j}) := mkwithparams : T -> withparams.
 
 Definition withparams_co@{i i' j|i < i', i' < j} : withparams@{i j} -> withparams@{i' j}
@@ -120,6 +121,9 @@ Fail Definition checkcumul' :=
 Inductive foo@{i} : Type@{i} := mkfoo { }.
 
 Definition bar := foo.
+
+Set Debug "UnivVariances".
+Set Debug "univMinim".
 
 (* The universe on mkfoo is flexible and should be unified with i. *)
 Definition foo1@{i} : foo@{i} := let x := mkfoo in x. (* fast path for conversion *)
