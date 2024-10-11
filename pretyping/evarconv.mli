@@ -156,7 +156,7 @@ val evar_unify : Evarsolve.unifier
 
 (**/**)
 (* For debugging *)
-val evar_eqappr_x : ?rhs_is_already_stuck:bool -> int -> unify_flags ->
+val evar_eqappr_x : ?rhs_is_already_stuck:bool -> unify_flags ->
   env -> evar_map -> conv_pb ->
   state Names.GlobRef.Map.t -> state Names.GlobRef.Map.t ->
   Names.GlobRef.t Queue.t -> Names.GlobRef.t Queue.t ->
