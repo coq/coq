@@ -23,4 +23,3 @@ induction n.
 Defined.
 
 End S.
-
