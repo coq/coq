@@ -8,5 +8,5 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require extraction.
+From Stdlib Require Extraction.
 Declare ML Module "funind_plugin:coq-core.plugins.funind".
