@@ -322,7 +322,7 @@ build:base:dev:dune:
     - cp theories/dune.disabled theories/dune
     - cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
     - dune build -p coq-core,coq-stdlib,coq,coqide-server
-    - ls _build/install/default/lib/coq/theories/Reals/Reals.vo
+    - ls _build/install/default/lib/coq/theories/Init/Prelude.vo
     - ls _build/install/default/lib/coq/user-contrib/Ltac2/Ltac2.vo
   only: *full-ci
 
