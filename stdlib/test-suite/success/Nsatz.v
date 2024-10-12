@@ -54,9 +54,9 @@ Qed.
 End test.
 
 Section Geometry.
-(* See the interactive pictures of Laurent Théry 
-   on http://www-sop.inria.fr/marelle/CertiGeo/ 
-   and research paper on 
+(* See the interactive pictures of Laurent Théry
+   on http://www-sop.inria.fr/marelle/CertiGeo/
+   and research paper on
    https://docs.google.com/fileview?id=0ByhB3nPmbnjTYzFiZmIyNGMtYTkwNC00NWFiLWJiNzEtODM4NmVkYTc2NTVk&hl=fr
 *)
 
@@ -142,7 +142,7 @@ with cnf f :=
          constr:(c1 /\ c2)
    | _ => f
   end.
-      
+
 Ltac scnf :=
   match goal with
     | |- ?f => let c := cnf f in
@@ -161,7 +161,7 @@ Qed.
 
 Ltac fastnsatz:=
   try trivial; try apply fastnsatz1; try trivial; nsatz.
-  
+
 Ltac proof_pol_disj :=
   match goal with
    | |- ?g => let p := disj_to_pol g in
@@ -173,9 +173,9 @@ Ltac proof_pol_disj :=
   end
 with prod_disj h p :=
   match goal with
-   | |- ?a = ?b \/ ?g => 
+   | |- ?a = ?b \/ ?g =>
         match p with
-          | ?q * ?p1 => 
+          | ?q * ?p1 =>
         let h0 := fresh "hp" in
         let h1 := fresh "hp" in
         let h2 := fresh "hp" in
@@ -221,10 +221,10 @@ Ltac geo_begin:=
 (* Examples *)
 
 Lemma medians: forall A B C A1 B1 C1 H:point,
-  middle B C A1 ->  
-  middle A C B1 -> 
-  middle A B C1 -> 
-  collinear A A1 H -> collinear B B1 H -> 
+  middle B C A1 ->
+  middle A C B1 ->
+  middle A B C1 ->
+  collinear A A1 H -> collinear B B1 H ->
   collinear C C1 H
   \/ collinear A B C.
 Proof. geo_begin.
@@ -237,7 +237,7 @@ Lemma Pythagore: forall A B C:point,
   orthogonal A B A C ->
   distance2 A C + distance2 A B = distance2 B C.
 Proof. geo_begin.
-idtac "Pythagore". 
+idtac "Pythagore".
 Time nsatz.
 (*Finished transaction in 0. secs (0.354946u,0.s)
 *) Qed.
@@ -262,8 +262,8 @@ Lemma segments_of_chords: forall A B C D M O:point,
   collinear C D M ->
   (distance2 M A) * (distance2 M B) = (distance2 M C) * (distance2 M D)
   \/ parallel A B C D.
-Proof. 
-geo_begin. 
+Proof.
+geo_begin.
 idtac "segments_of_chords".
 Time nsatz.
 (*Finished transaction in 3. secs (2.704589u,0.s)
@@ -274,12 +274,12 @@ Lemma isoceles: forall A B C:point,
   equaltangente A B C B C A ->
   distance2 A B = distance2 A C
   \/ collinear A B C.
-Proof. geo_begin.  Time nsatz. 
+Proof. geo_begin.  Time nsatz.
 (*Finished transaction in 1. secs (1.140827u,0.s)*) Qed.
 
 Lemma minh: forall A B C D O E H I:point,
   X A = 0 -> Y A = 0 -> Y O = 0 ->
-  equaldistance O A O B -> 
+  equaldistance O A O B ->
   equaldistance O A O C ->
   equaldistance O A O D ->
   orthogonal A C B D ->
@@ -294,7 +294,7 @@ Lemma minh: forall A B C D O E H I:point,
      * (X C - 2%Z * X O)^3%Z * (-2%Z * X O + X B)=0
   \/  parallel A C B D.
 Proof. geo_begin.
-idtac "minh". 
+idtac "minh".
 Time nsatz with radicalmax :=1%N strategy:=1%Z
   parameters:=[X O; X B; X C]
   variables:= (@nil R).
@@ -303,12 +303,12 @@ Time nsatz with radicalmax :=1%N strategy:=1%Z
 Qed.
 
 Lemma Pappus: forall A B C A1 B1 C1 P Q S:point,
-  X A = 0 -> Y A = 0 -> Y B = 0 -> Y C = 0 -> 
+  X A = 0 -> Y A = 0 -> Y B = 0 -> Y C = 0 ->
   collinear A1 B1 C1 ->
   collinear A B1 P -> collinear A1 B P ->
   collinear A C1 Q -> collinear A1 C Q ->
   collinear B C1 S -> collinear B1 C S ->
-  collinear P Q S 
+  collinear P Q S
   \/ (Y A1 - Y B1)^2%Z=0 \/ (X A = X B1)
   \/ (X A1 = X C) \/ (X C = X B1)
   \/ parallel A B1 A1 B \/ parallel A C1 A1 C \/ parallel B C1 B1 C.
@@ -330,7 +330,7 @@ Time nsatz with radicalmax :=1%N strategy:=0%Z
 Qed.
 
 Lemma Simson: forall A B C O D E F G:point,
-  X A = 0 -> Y A = 0 -> 
+  X A = 0 -> Y A = 0 ->
   equaldistance O A O B ->
   equaldistance O A O C ->
   equaldistance O A O D ->
@@ -342,7 +342,7 @@ Lemma Simson: forall A B C O D E F G:point,
   collinear A B G ->
   collinear E F G
   \/ (X C)^2%Z = 0 \/ (Y C)^2%Z = 0 \/ (X B)^2%Z = 0 \/ (Y B)^2%Z = 0 \/ (Y C - Y B)^2%Z = 0
-  \/ equal3 B A 
+  \/ equal3 B A
   \/ equal3 A C \/ (X C - X B)^2%Z = 0
   \/ equal3 B C.
 Proof.
@@ -358,28 +358,28 @@ Qed.
 Lemma threepoints: forall A B C A1 B1 A2 B2 H1 H2 H3:point,
   (* H1 intersection of bisections *)
   middle B C A1 ->  orthogonal H1 A1 B C ->
-  middle A C B1 -> orthogonal H1 B1 A C -> 
+  middle A C B1 -> orthogonal H1 B1 A C ->
   (* H2 intersection of medians *)
-  collinear A A1 H2 -> collinear B B1 H2 -> 
+  collinear A A1 H2 -> collinear B B1 H2 ->
   (* H3 intersection of altitudes *)
   collinear B C A2 ->  orthogonal A A2 B C ->
   collinear A C B2 -> orthogonal B B2 A C ->
-  collinear A A1 H3 -> collinear B B1 H3 -> 
+  collinear A A1 H3 -> collinear B B1 H3 ->
   collinear H1 H2 H3
   \/ collinear A B C.
-Proof. geo_begin. 
+Proof. geo_begin.
 idtac "threepoints".
-Time nsatz. 
+Time nsatz.
 (*Finished transaction in 7. secs (6.282045u,0.s)
 *) Qed.
 
-Lemma Feuerbach:  forall A B C A1 B1 C1 O A2 B2 C2 O2:point, 
+Lemma Feuerbach:  forall A B C A1 B1 C1 O A2 B2 C2 O2:point,
   forall r r2:R,
   X A = 0 -> Y A =  0 -> X B = 1 -> Y B =  0->
   middle A B C1 -> middle B C A1 -> middle C A B1 ->
   distance2 O A1 = distance2 O B1 ->
   distance2 O A1 = distance2 O C1 ->
-  collinear A B C2 -> orthogonal A B O2 C2 -> 
+  collinear A B C2 -> orthogonal A B O2 C2 ->
   collinear B C A2 -> orthogonal B C O2 A2 ->
   collinear A C B2 -> orthogonal A C O2 B2 ->
   distance2 O2 A2 = distance2 O2 B2 ->
@@ -389,9 +389,9 @@ Lemma Feuerbach:  forall A B C A1 B1 C1 O A2 B2 C2 O2:point,
   distance2 O O2 = (r + r2)^2%Z
   \/ distance2 O O2 = (r - r2)^2%Z
   \/ collinear A B C.
-Proof. geo_begin. 
+Proof. geo_begin.
 idtac "Feuerbach".
-Time nsatz. 
+Time nsatz.
 (*Finished transaction in 21. secs (19.021109u,0.s)*)
 Qed.
 
@@ -409,13 +409,13 @@ Lemma Euler_circle: forall A B C A1 B1 C1 A2 B2 C2 O:point,
    /\distance2 O B2 = distance2 O A1
    /\distance2 O C2 = distance2 O A1)
   \/ collinear A B C.
-Proof. geo_begin. 
+Proof. geo_begin.
 idtac "Euler_circle 3 goals".
-Time nsatz. 
+Time nsatz.
 (*Finished transaction in 13. secs (11.208296u,0.124981s)*)
-Time nsatz.  
-(*Finished transaction in 10. secs (8.846655u,0.s)*) 
-Time nsatz. 
+Time nsatz.
+(*Finished transaction in 10. secs (8.846655u,0.s)*)
+Time nsatz.
 (*Finished transaction in 11. secs (9.186603u,0.s)*)
 Qed.
 
@@ -425,7 +425,7 @@ Lemma Desargues: forall A B C A1 B1 C1 P Q T S:point,
   X S = 0 -> Y S = 0 -> Y A = 0 ->
   collinear A S A1 -> collinear B S B1 -> collinear C S C1 ->
   collinear B1 C1 P -> collinear B C P ->
-  collinear A1 C1 Q -> collinear A C Q -> 
+  collinear A1 C1 Q -> collinear A C Q ->
   collinear A1 B1 T -> collinear A B T ->
   collinear P Q T
   \/ X A = X B \/ X A = X C \/ X B = X C  \/ X A = 0 \/ Y B = 0 \/ Y C = 0
@@ -433,7 +433,7 @@ Lemma Desargues: forall A B C A1 B1 C1 P Q T S:point,
 Proof.
 geo_begin.
 idtac "Desargues".
-Time 
+Time
 let lv := rev [X A;
     X B;
       Y B;
@@ -458,9 +458,9 @@ Lemma chords: forall O A B C D M:point,
   collinear A B M -> collinear C D M ->
   scalarproduct A M B = scalarproduct C M D
   \/ parallel A B C D.
-Proof. geo_begin. 
+Proof. geo_begin.
 idtac "chords".
- Time nsatz. 
+ Time nsatz.
 (*Finished transaction in 4. secs (3.959398u,0.s)*)
 Qed.
 
@@ -470,7 +470,7 @@ Lemma Ceva: forall A B C D E F M:point,
   (distance2 D B) * (distance2 E C) * (distance2 F A) =
   (distance2 D C) * (distance2 E A) * (distance2 F B)
   \/ collinear A B C.
-Proof. geo_begin. 
+Proof. geo_begin.
 idtac "Ceva".
 Time nsatz.
 (*Finished transaction in 105. secs (104.121171u,0.474928s)*)
@@ -481,7 +481,7 @@ Lemma bissectrices: forall A B C M:point,
   equaltangente A B M M B C ->
   equaltangente B C M M C A
   \/ equal3 A B.
-Proof. geo_begin. 
+Proof. geo_begin.
 idtac "bissectrices".
 Time nsatz.
 (*Finished transaction in 2. secs (1.937705u,0.s)*)
@@ -489,20 +489,20 @@ Qed.
 
 Lemma bisections: forall A B C A1 B1 C1 H:point,
   middle B C A1 ->  orthogonal H A1 B C ->
-  middle A C B1 -> orthogonal H B1 A C -> 
-  middle A B C1 -> 
-  orthogonal H C1 A B 
+  middle A C B1 -> orthogonal H B1 A C ->
+  middle A B C1 ->
+  orthogonal H C1 A B
   \/ collinear A B C.
 Proof. geo_begin.
-idtac "bisections". 
+idtac "bisections".
 Time nsatz. (*Finished transaction in 2. secs (2.024692u,0.002s)*)
 Qed.
 
 Lemma altitudes: forall A B C A1 B1 C1 H:point,
   collinear B C A1 ->  orthogonal A A1 B C ->
-  collinear A C B1 -> orthogonal B B1 A C -> 
+  collinear A C B1 -> orthogonal B B1 A C ->
   collinear A B C1 -> orthogonal C C1 A B ->
-  collinear A A1 H -> collinear B B1 H -> 
+  collinear A A1 H -> collinear B B1 H ->
   collinear C C1 H
   \/ equal2 A B
   \/ collinear A B C.
@@ -514,16 +514,16 @@ Qed.
 
 Lemma hauteurs:forall A B C A1 B1 C1 H:point,
   collinear B C A1 ->  orthogonal A A1 B C ->
-  collinear A C B1 -> orthogonal B B1 A C -> 
+  collinear A C B1 -> orthogonal B B1 A C ->
   collinear A B C1 -> orthogonal C C1 A B ->
-  collinear A A1 H -> collinear B B1 H -> 
-  
+  collinear A A1 H -> collinear B B1 H ->
+
   collinear C C1 H
   \/ collinear A B C.
 
 geo_begin.
 idtac "hauteurs".
-Time 
+Time
  let lv := constr:([Y A1;
  X A1; Y B1; X B1; Y A; Y B; X B; X A; X H; Y C;
  Y C1; Y H; X C1; X C]) in
