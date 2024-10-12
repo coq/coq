@@ -95,3 +95,5 @@
 
 (documentation
  (package coq))
+
+(dirs :standard \ stdlib)

@@ -8,8 +8,20 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Compatibility file for making Coq act similar to Coq v8.18 *)
+Require Export Cring.
+Require Export Integral_domain.
+Require Export Ncring_initial.
 
-Require Export Stdlib.Compat.Coq819.
+#[global]
+Instance Zcri: (Cring (Rr:=Zr)).
+red. exact Z.mul_comm. Defined.
 
-#[export] Set Warnings "-deprecated-since-8.19".
+Lemma Z_one_zero: 1%Z <> 0%Z.
+Proof. discriminate. Qed.
+
+#[global]
+Instance Zdi : (Integral_domain (Rcr:=Zcri)).
+constructor.
+- exact Zmult_integral.
+- exact Z_one_zero.
+Defined.
