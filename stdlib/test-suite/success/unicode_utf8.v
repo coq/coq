@@ -100,6 +100,3 @@ exists x; auto.
 Defined.
 
 Print pred.
-
-
-
