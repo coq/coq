@@ -143,7 +143,3 @@ Lemma test_romega_8b : forall x y:Z, x*x<y*y-> ~ y*y <= x*x.
 intros x y.
 lia.
 Qed.
-
-
-
-

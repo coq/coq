@@ -62,9 +62,9 @@ Lemma merge_unfold n m : merge n m =
     | 0 => 0
     | S n' => merge n' m
   end.
-Proof. intros. unfold merge at 1. unfold merge_func. 
+Proof. intros. unfold merge at 1. unfold merge_func.
   unfold_sub merge (merge n m).
-  simpl. destruct n ; reflexivity. 
+  simpl. destruct n ; reflexivity.
 Qed.
 
 Print merge.
