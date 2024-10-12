@@ -7,9 +7,19 @@
 (*         *     GNU Lesser General Public License Version 2.1          *)
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
+(*                      Evgeny Makarov, INRIA, 2007                     *)
+(************************************************************************)
 
-(** Compatibility file for making Coq act similar to Coq v8.18 *)
+Require Export Setoid Morphisms Morphisms_Prop.
 
-Require Export Stdlib.Compat.Coq819.
+Set Implicit Arguments.
 
-#[export] Set Warnings "-deprecated-since-8.19".
+(* The following tactic uses solve_proper to solve the goals
+relating to well-definedness that are produced by applying induction.
+We declare it to take the tactic that applies the induction theorem
+and not the induction theorem itself because the tactic may, for
+example, supply additional arguments, as does NZinduct_center in
+NZBase.v *)
+
+Ltac induction_maker n t :=
+  try intros until n; pattern n; t; clear n; [solve_proper | ..].
