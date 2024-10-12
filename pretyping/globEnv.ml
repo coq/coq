@@ -142,14 +142,14 @@ let invert_ltac_bound_name env id0 id =
 
 let interp_ltac_variable ?loc typing_fun env sigma id : Evd.evar_map * unsafe_judgment =
   (* Check if [id] is an ltac variable *)
-  try
-    let (ids,c) = Id.Map.find id env.lvar.ltac_constrs in
+  match Id.Map.find_opt id env.lvar.ltac_constrs with
+  | Some (ids, c) ->
     let subst = List.map (invert_ltac_bound_name env id) ids in
     let c = substl subst c in
     sigma, { uj_val = c; uj_type = Retyping.reinterpret_get_type_of ~src:id env.renamed_env sigma c }
-  with Not_found ->
-  try
-    let {closure;term} = Id.Map.find id env.lvar.ltac_uconstrs in
+  | None ->
+  match Id.Map.find_opt id env.lvar.ltac_uconstrs with
+  | Some {closure;term} ->
     let lvar = {
       ltac_constrs = closure.typed;
       ltac_uconstrs = closure.untyped;
@@ -161,20 +161,20 @@ let interp_ltac_variable ?loc typing_fun env sigma id : Evd.evar_map * unsafe_ju
        inside the try but I want to avoid refactoring this function
        too much for now. *)
     typing_fun {env with lvar; static_env = env.renamed_env} term
-  with Not_found ->
+  | None ->
   (* Check if [id] is a ltac variable not bound to a term *)
   (* and build a nice error message *)
-  if Id.Map.mem id env.lvar.ltac_genargs then begin
-    let Geninterp.Val.Dyn (typ, _) = Id.Map.find id env.lvar.ltac_genargs in
-    user_err ?loc
-     (str "Variable " ++ Id.print id ++ str " should be bound to a term but is \
-      bound to a " ++ Geninterp.Val.pr typ ++ str ".")
-  end;
   if Id.Map.mem id env.lvar.ltac_idents then begin
     let bnd = Id.Map.find id env.lvar.ltac_idents in
     user_err ?loc
      (str "Variable " ++ Id.print id ++ str " should be bound to a term but is \
       bound to the identifier " ++ quote (Id.print bnd) ++ str ".")
+  end;
+  if Id.Map.mem id env.lvar.ltac_genargs then begin
+    let Geninterp.Val.Dyn (typ, _) = Id.Map.find id env.lvar.ltac_genargs in
+    user_err ?loc
+     (str "Variable " ++ Id.print id ++ str " should be bound to a term but is \
+      bound to a " ++ Geninterp.Val.pr typ ++ str ".")
   end;
   raise Not_found
 
