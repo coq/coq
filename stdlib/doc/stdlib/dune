@@ -42,4 +42,4 @@
 (install
  (dirs (html as html/stdlib))
  (section doc)
- (package coq-doc))
+ (package coq-stdlib-doc))

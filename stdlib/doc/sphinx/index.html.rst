@@ -12,33 +12,13 @@ Contents
    self
 
 .. toctree::
-   :caption: Specification language
+   :caption: Overview
 
-   language/core/index
-   language/extensions/index
-
-.. toctree::
-   :caption: Proofs
-
-   proofs/writing-proofs/index
-   proofs/automatic-tactics/index
-   proofs/creating-tactics/index
-
-.. toctree::
-   :caption: Using the Rocq Prover
-
-   using/libraries/index
-   using/tools/index
+   language/coq-library
 
 .. toctree::
    :caption: Appendix
 
-   appendix/history-and-changes/index
-   appendix/indexes/index
    zebibliography
-
-.. No entries yet
-  * :index:`thmindex`
-
 
 .. include:: license.rst
