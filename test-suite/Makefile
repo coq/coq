@@ -168,7 +168,7 @@ COMPLEXITY := $(if $(bogomips),complexity)
 INTERACTIVE := interactive
 UNIT_TESTS := unit-tests
 VSUBSYSTEMS := prerequisite success failure bugs bugs-nocoqchk output output-coqtop \
-  output-modulo-time $(INTERACTIVE) micromega $(COMPLEXITY) modules stm \
+  output-modulo-time $(INTERACTIVE) $(COMPLEXITY) modules stm \
   coqdoc ssr $(wildcard primitive/*) ltac2 coqchk
 
 # All subsystems
@@ -257,7 +257,6 @@ summary:
 	  $(call summary_dir, "Output tests with coqtop", output-coqtop); \
 	  $(call summary_dir, "Output (modulo time changes) tests", output-modulo-time); \
 	  $(call summary_dir, "Interactive tests", interactive); \
-	  $(call summary_dir, "Micromega tests", micromega); \
 	  $(call summary_dir, "Miscellaneous tests", misc); \
 	  $(call summary_dir, "Complexity tests", complexity); \
 	  $(call summary_dir, "Module tests", modules); \
@@ -366,7 +365,7 @@ $(addsuffix .log,$(wildcard prerequisite/*.v)): %.v.log: %.v
 	} > "$@"
 	$(HIDE)$(call REPORT_TIMER,$@)
 
-$(addsuffix .log,$(wildcard bugs/*.v ssr/*.v success/*.v failure/*.v stm/*.v micromega/*.v modules/*.v primitive/*/*.v ltac2/*.v coqchk/*.v)): %.v.log: %.v $(PREREQUISITELOG)
+$(addsuffix .log,$(wildcard bugs/*.v ssr/*.v success/*.v failure/*.v stm/*.v modules/*.v primitive/*/*.v ltac2/*.v coqchk/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  opts="$(if $(findstring modules/,$<),-R modules Mods)"; \
