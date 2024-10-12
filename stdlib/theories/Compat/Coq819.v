@@ -8,8 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Compatibility file for making Coq act similar to Coq v8.18 *)
+(** Compatibility file for making Coq act similar to Coq v8.19 *)
 
-Require Export Stdlib.Compat.Coq819.
+Require Export Stdlib.Compat.Coq820.
 
-#[export] Set Warnings "-deprecated-since-8.19".
+#[export] Set Warnings "-deprecated-since-8.20".

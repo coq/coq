@@ -1,0 +1,737 @@
+
+<h1>The Coq Standard Library</h1>
+
+<p>Here is a short description of the Coq standard library, which is
+distributed with the system.
+It provides a set of modules directly available
+through the <tt>Require Import</tt> command.</p>
+
+<p>The standard library is composed of the following subdirectories:</p>
+
+<dl>
+  <dt> <b>Init</b>:
+    The core library (automatically loaded when starting Coq)
+  </dt>
+  <dd>
+    theories/Init/Ltac.v
+    theories/Init/Notations.v
+    theories/Init/Datatypes.v
+    theories/Init/Logic.v
+    theories/Init/Byte.v
+    theories/Init/Nat.v
+    theories/Init/Decimal.v
+    theories/Init/Hexadecimal.v
+    theories/Init/Number.v
+    theories/Init/Peano.v
+    theories/Init/Specif.v
+    theories/Init/Sumbool.v
+    theories/Init/Tactics.v
+    theories/Init/Tauto.v
+    theories/Init/Wf.v
+    (theories/Init/Prelude.v)
+  </dd>
+
+  <dt> <b>Logic</b>:
+      Classical logic, dependent equality, extensionality, choice axioms
+  </dt>
+  <dd>
+    theories/Logic/SetIsType.v
+    theories/Logic/StrictProp.v
+    theories/Logic/Classical_Pred_Type.v
+    theories/Logic/Classical_Prop.v
+    (theories/Logic/Classical.v)
+    theories/Logic/ClassicalFacts.v
+    theories/Logic/Decidable.v
+    theories/Logic/Eqdep_dec.v
+    theories/Logic/EqdepFacts.v
+    theories/Logic/Eqdep.v
+    theories/Logic/JMeq.v
+    theories/Logic/ChoiceFacts.v
+    theories/Logic/RelationalChoice.v
+    theories/Logic/ClassicalChoice.v
+    theories/Logic/ClassicalDescription.v
+    theories/Logic/ClassicalEpsilon.v
+    theories/Logic/ClassicalUniqueChoice.v
+    theories/Logic/SetoidChoice.v
+    theories/Logic/Berardi.v
+    theories/Logic/Diaconescu.v
+    theories/Logic/Hurkens.v
+    theories/Logic/ProofIrrelevance.v
+    theories/Logic/ProofIrrelevanceFacts.v
+    theories/Logic/ConstructiveEpsilon.v
+    theories/Logic/Description.v
+    theories/Logic/Epsilon.v
+    theories/Logic/IndefiniteDescription.v
+    theories/Logic/PropExtensionality.v
+    theories/Logic/PropExtensionalityFacts.v
+    theories/Logic/FunctionalExtensionality.v
+    theories/Logic/ExtensionalFunctionRepresentative.v
+    theories/Logic/ExtensionalityFacts.v
+    theories/Logic/WeakFan.v
+    theories/Logic/WKL.v
+    theories/Logic/FinFun.v
+    theories/Logic/PropFacts.v
+    theories/Logic/HLevels.v
+    theories/Logic/Adjointification.v
+  </dd>
+
+  <dt> <b>Structures</b>:
+       Algebraic structures (types with equality, with order, ...).
+       DecidableType* and OrderedType* are there only for compatibility.
+  </dt>
+  <dd>
+    theories/Structures/Equalities.v
+    theories/Structures/EqualitiesFacts.v
+    theories/Structures/Orders.v
+    theories/Structures/OrdersTac.v
+    theories/Structures/OrdersAlt.v
+    theories/Structures/OrdersEx.v
+    theories/Structures/OrdersFacts.v
+    theories/Structures/OrdersLists.v
+    theories/Structures/GenericMinMax.v
+    theories/Structures/DecidableType.v
+    theories/Structures/DecidableTypeEx.v
+    theories/Structures/OrderedType.v
+    theories/Structures/OrderedTypeAlt.v
+    theories/Structures/OrderedTypeEx.v
+  </dd>
+
+  <dt> <b>Bool</b>:
+       Booleans (basic functions and results)
+  </dt>
+  <dd>
+    theories/Bool/Bool.v
+    theories/Bool/BoolEq.v
+    theories/Bool/BoolOrder.v
+    theories/Bool/DecBool.v
+    theories/Bool/IfProp.v
+    theories/Bool/Zerob.v
+    theories/Bool/Bvector.v
+  </dd>
+
+  <dt> <b>Arith</b>:
+    Basic Peano arithmetic
+  </dt>
+  <dd>
+    theories/Arith/PeanoNat.v
+    theories/Arith/Between.v
+    theories/Arith/Peano_dec.v
+    theories/Arith/Compare_dec.v
+    (theories/Arith/Arith_base.v)
+    (theories/Arith/Arith.v)
+    theories/Arith/Compare.v
+    theories/Arith/EqNat.v
+    theories/Arith/Euclid.v
+    theories/Arith/Factorial.v
+    theories/Arith/Wf_nat.v
+    theories/Arith/Cantor.v
+  </dd>
+
+  <dt> <b>PArith</b>:
+    Binary positive integers
+  </dt>
+  <dd>
+    theories/PArith/BinPosDef.v
+    theories/PArith/BinPos.v
+    theories/PArith/Pnat.v
+    theories/PArith/POrderedType.v
+    (theories/PArith/PArith.v)
+  </dd>
+
+  <dt> <b>NArith</b>:
+    Binary natural numbers
+  </dt>
+  <dd>
+    theories/NArith/BinNatDef.v
+    theories/NArith/BinNat.v
+    theories/NArith/Nnat.v
+    theories/NArith/Ndec.v
+    theories/NArith/Ndiv_def.v
+    theories/NArith/Ngcd_def.v
+    theories/NArith/Nsqrt_def.v
+    (theories/NArith/NArith.v)
+  </dd>
+
+  <dt> <b>ZArith</b>:
+       Binary integers
+  </dt>
+  <dd>
+    theories/ZArith/BinIntDef.v
+    theories/ZArith/BinInt.v
+    theories/ZArith/Zorder.v
+    theories/ZArith/Zcompare.v
+    theories/ZArith/Znat.v
+    theories/ZArith/Zmin.v
+    theories/ZArith/Zmax.v
+    theories/ZArith/Zminmax.v
+    theories/ZArith/Zabs.v
+    theories/ZArith/Zeven.v
+    theories/ZArith/auxiliary.v
+    theories/ZArith/ZArith_dec.v
+    theories/ZArith/Zbool.v
+    theories/ZArith/Zmisc.v
+    theories/ZArith/Wf_Z.v
+    theories/ZArith/Zhints.v
+    (theories/ZArith/ZArith_base.v)
+    theories/ZArith/Zcomplements.v
+    theories/ZArith/Zpow_def.v
+    theories/ZArith/Zpow_alt.v
+    theories/ZArith/Zpower.v
+    theories/ZArith/Zdiv.v
+    theories/ZArith/Zquot.v
+    (theories/ZArith/ZArith.v)
+    theories/ZArith/Zgcd_alt.v
+    theories/ZArith/Zwf.v
+    theories/ZArith/Znumtheory.v
+    theories/ZArith/Int.v
+    theories/ZArith/Zpow_facts.v
+    theories/ZArith/Zdiv_facts.v
+    theories/ZArith/Zbitwise.v
+  </dd>
+
+  <dt> <b>QArith</b>:
+    Rational numbers
+  </dt>
+  <dd>
+    theories/QArith/QArith_base.v
+    theories/QArith/Qabs.v
+    theories/QArith/Qpower.v
+    theories/QArith/Qreduction.v
+    theories/QArith/Qring.v
+    theories/QArith/Qfield.v
+    (theories/QArith/QArith.v)
+    theories/QArith/Qreals.v
+    theories/QArith/Qcanon.v
+    theories/QArith/Qcabs.v
+    theories/QArith/Qround.v
+    theories/QArith/QOrderedType.v
+    theories/QArith/Qminmax.v
+  </dd>
+
+  <dt> <b>Numbers</b>:
+    An experimental modular architecture for arithmetic
+  </dt>
+  <dd>
+    <dl>
+    <dt> <b>&nbsp;&nbsp;Prelude</b>:
+    </dt>
+    <dd>
+    theories/Numbers/BinNums.v
+    theories/BinNums/PosDef.v
+    theories/BinNums/NatDef.v
+    theories/BinNums/IntDef.v
+    theories/Numbers/NumPrelude.v
+    theories/Numbers/NaryFunctions.v
+    theories/Numbers/AltBinNotations.v
+    theories/Numbers/DecimalFacts.v
+    theories/Numbers/DecimalNat.v
+    theories/Numbers/DecimalPos.v
+    theories/Numbers/DecimalN.v
+    theories/Numbers/DecimalZ.v
+    theories/Numbers/DecimalQ.v
+    theories/Numbers/DecimalR.v
+    theories/Numbers/DecimalString.v
+    theories/Numbers/HexadecimalFacts.v
+    theories/Numbers/HexadecimalNat.v
+    theories/Numbers/HexadecimalPos.v
+    theories/Numbers/HexadecimalN.v
+    theories/Numbers/HexadecimalZ.v
+    theories/Numbers/HexadecimalQ.v
+    theories/Numbers/HexadecimalR.v
+    theories/Numbers/HexadecimalString.v
+    </dd>
+
+    <dt> <b>&nbsp;&nbsp;NatInt</b>:
+       Abstract mixed natural/integer/cyclic arithmetic
+    </dt>
+    <dd>
+    theories/Numbers/NatInt/NZAdd.v
+    theories/Numbers/NatInt/NZAddOrder.v
+    theories/Numbers/NatInt/NZAxioms.v
+    theories/Numbers/NatInt/NZBase.v
+    theories/Numbers/NatInt/NZMul.v
+    theories/Numbers/NatInt/NZDiv.v
+    theories/Numbers/NatInt/NZMulOrder.v
+    theories/Numbers/NatInt/NZOrder.v
+    theories/Numbers/NatInt/NZParity.v
+    theories/Numbers/NatInt/NZPow.v
+    theories/Numbers/NatInt/NZSqrt.v
+    theories/Numbers/NatInt/NZLog.v
+    theories/Numbers/NatInt/NZGcd.v
+    theories/Numbers/NatInt/NZBits.v
+    </dd>
+
+    <dt> <b>&nbsp;&nbsp;Cyclic</b>:
+       Abstract and 63-bits-based cyclic arithmetic
+    </dt>
+    <dd>
+    theories/Numbers/Cyclic/Abstract/CyclicAxioms.v
+    theories/Numbers/Cyclic/Abstract/NZCyclic.v
+    theories/Numbers/Cyclic/Abstract/DoubleType.v
+    theories/Numbers/Cyclic/Int63/CarryType.v
+    theories/Numbers/Cyclic/Int63/Cyclic63.v
+    theories/Numbers/Cyclic/Int63/PrimInt63.v
+    theories/Numbers/Cyclic/Int63/Uint63Axioms.v
+    theories/Numbers/Cyclic/Int63/Uint63.v
+    theories/Numbers/Cyclic/Int63/Sint63Axioms.v
+    theories/Numbers/Cyclic/Int63/Sint63.v
+    theories/Numbers/Cyclic/Int63/Ring63.v
+    </dd>
+
+    <dt> <b>&nbsp;&nbsp;Natural</b>:
+       Abstract and 63-bits-words-based natural arithmetic
+    </dt>
+    <dd>
+    theories/Numbers/Natural/Abstract/NAdd.v
+    theories/Numbers/Natural/Abstract/NAddOrder.v
+    theories/Numbers/Natural/Abstract/NAxioms.v
+    theories/Numbers/Natural/Abstract/NBase.v
+    theories/Numbers/Natural/Abstract/NMulOrder.v
+    theories/Numbers/Natural/Abstract/NOrder.v
+    theories/Numbers/Natural/Abstract/NStrongRec.v
+    theories/Numbers/Natural/Abstract/NSub.v
+    theories/Numbers/Natural/Abstract/NDiv.v
+    theories/Numbers/Natural/Abstract/NDiv0.v
+    theories/Numbers/Natural/Abstract/NMaxMin.v
+    theories/Numbers/Natural/Abstract/NParity.v
+    theories/Numbers/Natural/Abstract/NPow.v
+    theories/Numbers/Natural/Abstract/NSqrt.v
+    theories/Numbers/Natural/Abstract/NLog.v
+    theories/Numbers/Natural/Abstract/NGcd.v
+    theories/Numbers/Natural/Abstract/NLcm.v
+    theories/Numbers/Natural/Abstract/NLcm0.v
+    theories/Numbers/Natural/Abstract/NBits.v
+    theories/Numbers/Natural/Abstract/NProperties.v
+    </dd>
+
+    <dt> <b>&nbsp;&nbsp;Integer</b>:
+       Abstract and concrete (especially 63-bits-words-based) integer
+       arithmetic
+    </dt>
+    <dd>
+    theories/Numbers/Integer/Abstract/ZAdd.v
+    theories/Numbers/Integer/Abstract/ZAddOrder.v
+    theories/Numbers/Integer/Abstract/ZAxioms.v
+    theories/Numbers/Integer/Abstract/ZBase.v
+    theories/Numbers/Integer/Abstract/ZLt.v
+    theories/Numbers/Integer/Abstract/ZMul.v
+    theories/Numbers/Integer/Abstract/ZMulOrder.v
+    theories/Numbers/Integer/Abstract/ZSgnAbs.v
+    theories/Numbers/Integer/Abstract/ZMaxMin.v
+    theories/Numbers/Integer/Abstract/ZParity.v
+    theories/Numbers/Integer/Abstract/ZPow.v
+    theories/Numbers/Integer/Abstract/ZGcd.v
+    theories/Numbers/Integer/Abstract/ZLcm.v
+    theories/Numbers/Integer/Abstract/ZBits.v
+    theories/Numbers/Integer/Abstract/ZProperties.v
+    theories/Numbers/Integer/Abstract/ZDivFloor.v
+    theories/Numbers/Integer/Abstract/ZDivTrunc.v
+    </dd>
+
+    <dt> <b>&nbsp;&nbsp;Floats</b>:
+       Floating-point arithmetic
+    </dt>
+    <dd>
+    theories/Floats/FloatClass.v
+    theories/Floats/PrimFloat.v
+    theories/Floats/SpecFloat.v
+    theories/Floats/FloatOps.v
+    theories/Floats/FloatAxioms.v
+    theories/Floats/FloatLemmas.v
+    (theories/Floats/Floats.v)
+    </dd>
+    </dl>
+  </dd>
+
+  <dt> <b>Relations</b>:
+       Relations (definitions and basic results)
+  </dt>
+  <dd>
+    theories/Relations/Relation_Definitions.v
+    theories/Relations/Relation_Operators.v
+    theories/Relations/Relations.v
+    theories/Relations/Operators_Properties.v
+  </dd>
+
+  <dt> <b>Sets</b>:
+       Sets (classical, constructive, finite, infinite, powerset, etc.)
+  </dt>
+  <dd>
+    theories/Sets/Classical_sets.v
+    theories/Sets/Constructive_sets.v
+    theories/Sets/Cpo.v
+    theories/Sets/Ensembles.v
+    theories/Sets/Finite_sets_facts.v
+    theories/Sets/Finite_sets.v
+    theories/Sets/Image.v
+    theories/Sets/Infinite_sets.v
+    theories/Sets/Integers.v
+    theories/Sets/Multiset.v
+    theories/Sets/Partial_Order.v
+    theories/Sets/Permut.v
+    theories/Sets/Powerset_Classical_facts.v
+    theories/Sets/Powerset_facts.v
+    theories/Sets/Powerset.v
+    theories/Sets/Relations_1_facts.v
+    theories/Sets/Relations_1.v
+    theories/Sets/Relations_2_facts.v
+    theories/Sets/Relations_2.v
+    theories/Sets/Relations_3_facts.v
+    theories/Sets/Relations_3.v
+    theories/Sets/Uniset.v
+  </dd>
+
+  <dt> <b>Classes</b>:
+  </dt>
+  <dd>
+    theories/Classes/Init.v
+    theories/Classes/RelationClasses.v
+    theories/Classes/Morphisms.v
+    theories/Classes/Morphisms_Prop.v
+    theories/Classes/Morphisms_Relations.v
+    theories/Classes/Equivalence.v
+    theories/Classes/CRelationClasses.v
+    theories/Classes/CMorphisms.v
+    theories/Classes/CEquivalence.v
+    theories/Classes/EquivDec.v
+    theories/Classes/SetoidTactics.v
+    theories/Classes/SetoidClass.v
+    theories/Classes/SetoidDec.v
+    theories/Classes/RelationPairs.v
+    theories/Classes/DecidableClass.v
+  </dd>
+
+  <dt> <b>Setoids</b>:
+  </dt>
+  <dd>
+    theories/Setoids/Setoid.v
+  </dd>
+
+  <dt> <b>Lists</b>:
+    Polymorphic lists, Streams (infinite sequences)
+  </dt>
+  <dd>
+    theories/Lists/ListDef.v
+    theories/Lists/List.v
+    theories/Lists/ListDec.v
+    theories/Lists/ListSet.v
+    theories/Lists/SetoidList.v
+    theories/Lists/SetoidPermutation.v
+    theories/Lists/Streams.v
+    theories/Lists/StreamMemo.v
+    theories/Lists/ListTactics.v
+  </dd>
+
+  <dt> <b>Vectors</b>:
+    Dependent datastructures storing their length
+  </dt>
+  <dd>
+    theories/Vectors/Fin.v
+    theories/Vectors/VectorDef.v
+    theories/Vectors/VectorSpec.v
+    theories/Vectors/VectorEq.v
+    (theories/Vectors/Vector.v)
+  </dd>
+
+  <dt> <b>Sorting</b>:
+    Axiomatizations of sorts
+  </dt>
+  <dd>
+    theories/Sorting/Heap.v
+    theories/Sorting/Permutation.v
+    theories/Sorting/Sorting.v
+    theories/Sorting/PermutEq.v
+    theories/Sorting/PermutSetoid.v
+    theories/Sorting/Mergesort.v
+    theories/Sorting/Sorted.v
+    theories/Sorting/CPermutation.v
+  </dd>
+
+  <dt> <b>Wellfounded</b>:
+       Well-founded Relations
+  </dt>
+  <dd>
+    theories/Wellfounded/Disjoint_Union.v
+    theories/Wellfounded/Inclusion.v
+    theories/Wellfounded/Inverse_Image.v
+    theories/Wellfounded/Lexicographic_Exponentiation.v
+    theories/Wellfounded/Lexicographic_Product.v
+    theories/Wellfounded/List_Extension.v
+    theories/Wellfounded/Transitive_Closure.v
+    theories/Wellfounded/Union.v
+    theories/Wellfounded/Wellfounded.v
+    theories/Wellfounded/Well_Ordering.v
+  </dd>
+
+  <dt> <b>MSets</b>:
+    Modular implementation of finite sets using lists or
+    efficient trees. This is a modernization of FSets.
+  </dt>
+  <dd>
+    theories/MSets/MSetInterface.v
+    theories/MSets/MSetFacts.v
+    theories/MSets/MSetDecide.v
+    theories/MSets/MSetProperties.v
+    theories/MSets/MSetEqProperties.v
+    theories/MSets/MSetWeakList.v
+    theories/MSets/MSetList.v
+    theories/MSets/MSetGenTree.v
+    theories/MSets/MSetAVL.v
+    theories/MSets/MSetRBT.v
+    theories/MSets/MSetPositive.v
+    theories/MSets/MSetToFiniteSet.v
+    (theories/MSets/MSets.v)
+  </dd>
+
+  <dt> <b>FSets</b>:
+    Modular implementation of finite sets/maps using lists or
+    efficient trees. For sets, please consider the more
+    modern MSets.
+  </dt>
+  <dd>
+    theories/FSets/FSetInterface.v
+    theories/FSets/FSetBridge.v
+    theories/FSets/FSetFacts.v
+    theories/FSets/FSetDecide.v
+    theories/FSets/FSetProperties.v
+    theories/FSets/FSetEqProperties.v
+    theories/FSets/FSetList.v
+    theories/FSets/FSetWeakList.v
+    theories/FSets/FSetCompat.v
+    theories/FSets/FSetAVL.v
+    theories/FSets/FSetPositive.v
+    (theories/FSets/FSets.v)
+    theories/FSets/FSetToFiniteSet.v
+    theories/FSets/FMapInterface.v
+    theories/FSets/FMapWeakList.v
+    theories/FSets/FMapList.v
+    theories/FSets/FMapPositive.v
+    theories/FSets/FMapFacts.v
+    (theories/FSets/FMaps.v)
+    theories/FSets/FMapAVL.v
+    theories/FSets/FMapFullAVL.v
+  </dd>
+
+  <dt> <b>Strings</b>
+    Implementation of string as list of ascii characters
+  </dt>
+  <dd>
+    theories/Strings/Byte.v
+    theories/Strings/Ascii.v
+    theories/Strings/String.v
+    theories/Strings/BinaryString.v
+    theories/Strings/HexString.v
+    theories/Strings/OctalString.v
+  </dd>
+
+  <dt> <b>Reals</b>:
+    Formalization of real numbers
+  </dt>
+  <dd>
+    <dl> 
+  <dt> <b>Classical Reals</b>:
+    Real numbers with excluded middle, total order and least upper bounds
+  </dt>
+  <dd>
+    theories/Reals/Rdefinitions.v
+    theories/Reals/ClassicalDedekindReals.v
+    theories/Reals/ClassicalConstructiveReals.v
+    theories/Reals/Raxioms.v
+    theories/Reals/RIneq.v
+    theories/Reals/DiscrR.v
+    theories/Reals/ROrderedType.v
+    theories/Reals/Rminmax.v
+    (theories/Reals/Rbase.v)
+    theories/Reals/RList.v
+    theories/Reals/Ranalysis.v
+    theories/Reals/Rbasic_fun.v
+    theories/Reals/Rderiv.v
+    theories/Reals/Rfunctions.v
+    theories/Reals/Rgeom.v
+    theories/Reals/R_Ifp.v
+    theories/Reals/Rlimit.v
+    theories/Reals/Rseries.v
+    theories/Reals/Rsigma.v
+    theories/Reals/R_sqr.v
+    theories/Reals/Rtrigo_fun.v
+    theories/Reals/Rtrigo1.v
+    theories/Reals/Rtrigo.v
+    theories/Reals/Rtrigo_facts.v
+    theories/Reals/Ratan.v
+    theories/Reals/Machin.v
+    theories/Reals/SplitAbsolu.v
+    theories/Reals/SplitRmult.v
+    theories/Reals/Alembert.v
+    theories/Reals/AltSeries.v
+    theories/Reals/ArithProp.v
+    theories/Reals/Binomial.v
+    theories/Reals/Cauchy_prod.v
+    theories/Reals/Cos_plus.v
+    theories/Reals/Cos_rel.v
+    theories/Reals/Exp_prop.v
+    theories/Reals/Integration.v
+    theories/Reals/MVT.v
+    theories/Reals/NewtonInt.v
+    theories/Reals/PSeries_reg.v
+    theories/Reals/PartSum.v
+    theories/Reals/R_sqrt.v
+    theories/Reals/Ranalysis1.v
+    theories/Reals/Ranalysis2.v
+    theories/Reals/Ranalysis3.v
+    theories/Reals/Ranalysis4.v
+    theories/Reals/Ranalysis5.v
+    theories/Reals/Ranalysis_reg.v
+    theories/Reals/Rcomplete.v
+    theories/Reals/RiemannInt.v
+    theories/Reals/RiemannInt_SF.v
+    theories/Reals/Rpow_def.v
+    theories/Reals/Rpower.v
+    theories/Reals/Rprod.v
+    theories/Reals/Rsqrt_def.v
+    theories/Reals/Rtopology.v
+    theories/Reals/Rtrigo_alt.v
+    theories/Reals/Rtrigo_calc.v
+    theories/Reals/Rtrigo_def.v
+    theories/Reals/Rtrigo_reg.v
+    theories/Reals/SeqProp.v
+    theories/Reals/SeqSeries.v
+    theories/Reals/Sqrt_reg.v
+    theories/Reals/Rlogic.v
+    theories/Reals/Rregisternames.v
+    (theories/Reals/Reals.v)
+    theories/Reals/Runcountable.v
+  </dd>
+  <dt> <b>Abstract Constructive Reals</b>:
+    Interface of constructive reals, proof of equivalence of all implementations. EXPERIMENTAL 
+  </dt>
+  <dd>
+    theories/Reals/Abstract/ConstructiveReals.v
+    theories/Reals/Abstract/ConstructiveRealsMorphisms.v
+    theories/Reals/Abstract/ConstructiveLUB.v
+    theories/Reals/Abstract/ConstructiveAbs.v
+    theories/Reals/Abstract/ConstructiveLimits.v
+    theories/Reals/Abstract/ConstructiveMinMax.v
+    theories/Reals/Abstract/ConstructivePower.v
+    theories/Reals/Abstract/ConstructiveSum.v 
+  </dd>
+  <dt> <b>Constructive Cauchy Reals</b>:
+    Cauchy sequences of rational numbers, implementation of the interface. EXPERIMENTAL
+  </dt>
+  <dd>
+    theories/Reals/Cauchy/ConstructiveRcomplete.v
+    theories/Reals/Cauchy/ConstructiveCauchyReals.v
+    theories/Reals/Cauchy/ConstructiveCauchyRealsMult.v
+    theories/Reals/Cauchy/ConstructiveCauchyAbs.v
+  </dd>
+
+  </dl>
+  </dd>
+
+  <dt> <b>Program</b>:
+    Support for dependently-typed programming
+  </dt>
+  <dd>
+    theories/Program/Basics.v
+    theories/Program/Wf.v
+    theories/Program/WfExtensionality.v
+    theories/Program/Subset.v
+    theories/Program/Equality.v
+    theories/Program/Tactics.v
+    theories/Program/Utils.v
+    theories/Program/Syntax.v
+    theories/Program/Program.v
+    theories/Program/Combinators.v
+  </dd>
+
+  <dt> <b>SSReflect</b>:
+    Base libraries for the SSReflect proof language and the
+    small scale reflection formalization technique
+  </dt>
+  <dd>
+    theories/ssrmatching/ssrmatching.v
+    theories/ssr/ssrclasses.v
+    theories/ssr/ssreflect.v
+    theories/ssr/ssrbool.v
+    theories/ssr/ssrfun.v
+  </dd>
+
+  <dt> <b>Ltac2</b>:
+    The Ltac2 tactic programming language
+  </dt>
+  <dd>
+    user-contrib/Ltac2/Ltac2.v
+    user-contrib/Ltac2/Array.v
+    user-contrib/Ltac2/Bool.v
+    user-contrib/Ltac2/Char.v
+    user-contrib/Ltac2/Constant.v
+    user-contrib/Ltac2/Constr.v
+    user-contrib/Ltac2/Constructor.v
+    user-contrib/Ltac2/Control.v
+    user-contrib/Ltac2/Env.v
+    user-contrib/Ltac2/Evar.v
+    user-contrib/Ltac2/Float.v
+    user-contrib/Ltac2/FMap.v
+    user-contrib/Ltac2/FSet.v
+    user-contrib/Ltac2/Fresh.v
+    user-contrib/Ltac2/Ident.v
+    user-contrib/Ltac2/Ind.v
+    user-contrib/Ltac2/Init.v
+    user-contrib/Ltac2/Int.v
+    user-contrib/Ltac2/Lazy.v
+    user-contrib/Ltac2/List.v
+    user-contrib/Ltac2/Ltac1.v
+    user-contrib/Ltac2/Message.v
+    user-contrib/Ltac2/Meta.v
+    user-contrib/Ltac2/Notations.v
+    user-contrib/Ltac2/Option.v
+    user-contrib/Ltac2/Pattern.v
+    user-contrib/Ltac2/Printf.v
+    user-contrib/Ltac2/Proj.v
+    user-contrib/Ltac2/Pstring.v
+    user-contrib/Ltac2/RedFlags.v
+    user-contrib/Ltac2/Ref.v
+    user-contrib/Ltac2/Std.v
+    user-contrib/Ltac2/String.v
+    user-contrib/Ltac2/TransparentState.v
+    user-contrib/Ltac2/Uint63.v
+    user-contrib/Ltac2/Unification.v
+  </dd>
+
+  <dt> <b>Unicode</b>:
+    Unicode-based notations
+  </dt>
+  <dd>
+    theories/Unicode/Utf8_core.v
+    theories/Unicode/Utf8.v
+  </dd>
+
+  <dt> <b>Compat</b>:
+    Compatibility wrappers for previous versions of Coq
+  </dt>
+  <dd>
+    theories/Compat/AdmitAxiom.v
+    theories/Compat/Coq818.v
+    theories/Compat/Coq819.v
+    theories/Compat/Coq820.v
+    user-contrib/Ltac2/Compat/Coq818.v
+    user-contrib/Ltac2/Compat/Coq819.v
+  </dd>
+
+  <dt> <b>Array</b>:
+    Persistent native arrays
+  </dt>
+  <dd>
+    theories/Array/PrimArray.v
+    theories/Array/ArrayAxioms.v
+    theories/Array/PArray.v
+  </dd>
+
+  <dt> <b>Primitive strings</b>
+    Native string type
+  </dt>
+  <dd>
+    theories/Strings/PrimString.v
+    theories/Strings/PrimStringAxioms.v
+    theories/Strings/PString.v
+  </dd>
+</dl>
