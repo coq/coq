@@ -10,3 +10,6 @@ theories/%.vo:
 
 refman-html:
 	dune build --root . --no-buffer @refman-html
+
+stdlib-html:
+	dune build --root . @stdlib-html
