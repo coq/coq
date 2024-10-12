@@ -2,10 +2,14 @@ Require Import ZArith Nnat Lia.
 Open Scope Z_scope.
 
 (** Test of the zify preprocessor for (R)Omega *)
-(* Starting from Coq 8.9 (late 2018), `romega` tactics are deprecated.
-   The tests in this file remain but now call the `lia` tactic. *)
 
 (* More details in file PreOmega.v
+
+   (r)omega with Z        : starts with zify_op
+   (r)omega with nat      : starts with zify_nat
+   (r)omega with positive : starts with zify_positive
+   (r)omega with N        : starts with uses zify_N
+   (r)omega with *        : starts zify (a saturation of the others)
 *)
 
 (* zify_op *)
@@ -118,5 +122,3 @@ Goal forall p, Z.of_N (N.of_nat (N.to_nat (Npos p))) = Zpos p.
 intros.
 lia.
 Qed.
-
-
