@@ -61,7 +61,7 @@ Proof.
 Qed.
 
 Goal forall x : Q, x * x >= 0.
-  intro; nra. 
+  intro; nra.
 Qed.
 
 Goal forall x, -x^2 >= 0 -> x - 1 >= 0 -> False.
@@ -74,6 +74,3 @@ Lemma motzkin' : forall x y, (x^2+y^2+1)*(x^2*y^4 + x^4*y^2 + 1 - (3 # 1) *x^2*y
 Proof.
   intros ; psatz Q 3.
 Qed.
-
-
-
