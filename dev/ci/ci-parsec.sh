@@ -10,6 +10,6 @@ git_download parsec
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 ( cd "${CI_BUILD_DIR}/parsec"
-  make
-  make install
+  dune build -p coq-parsec @install
+  dune install -p coq-parsec --prefix=$CI_INSTALL_DIR
 )
