@@ -1,10 +1,1 @@
 (dirs :standard _static _templates)
-
-(rule
- (targets README.gen.rst)
- (deps (source_tree ../tools/coqrst) README.template.rst)
- (action (run ../tools/coqrst/regen_readme.py %{targets})))
-
-(rule
- (alias refman-html)
- (action (diff README.rst README.gen.rst)))

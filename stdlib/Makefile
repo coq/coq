@@ -7,3 +7,6 @@ install:
 # Make of individual .vo
 theories/%.vo:
 	dune build $@
+
+refman-html:
+	dune build --root . --no-buffer @refman-html
