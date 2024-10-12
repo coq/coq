@@ -10,6 +10,6 @@ git_download json
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 ( cd "${CI_BUILD_DIR}/json"
-  make MENHIRFLAGS="--coq --coq-no-version-check"
-  make install
+  dune build -p coq-json @install
+  dune install -p coq-json --prefix=$CI_INSTALL_DIR
 )
