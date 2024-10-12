@@ -8,8 +8,16 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Compatibility file for making Coq act similar to Coq v8.18 *)
+(** This module states propositional extensionality and draws
+    consequences of it *)
 
-Require Export Stdlib.Compat.Coq819.
+Axiom propositional_extensionality :
+  forall (P Q : Prop), (P <-> Q) -> P = Q.
 
-#[export] Set Warnings "-deprecated-since-8.19".
+Require Import ClassicalFacts.
+
+Theorem proof_irrelevance : forall (P:Prop) (p1 p2:P), p1 = p2.
+Proof.
+  apply ext_prop_dep_proof_irrel_cic.
+  exact propositional_extensionality.
+Qed.

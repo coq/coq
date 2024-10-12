@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+# Instantiate links to library files in index template
+
+set -e
+
+FILE=$1
+HIDDEN=$2
+tmp=$(mktemp)
+tmp2=$(mktemp)
+
+cp -f "$FILE.template" "$tmp"
+echo -n "Building file index-list.prehtml... "
+
+LIBDIRS=$(find theories/* user-contrib/* -type d ! -name .coq-native)
+
+for k in $LIBDIRS; do
+    if [[ $k =~ "user-contrib" ]]; then
+        BASE_PREFIX=""
+    else
+        BASE_PREFIX="Coq."
+    fi
+    d=$(basename "$k")
+    for j in "$k"/*.v; do
+        if ! [ -e "$j" ]; then break; fi
+        b=$(basename "$j" .v)
+
+        a=0; grep -q "$k/$b.v" "$tmp" || a=$?
+        h=0; grep -q "$k/$b.v" "$HIDDEN" || h=$?
+        if [ $a = 0 ]; then
+            if [ $h = 0 ]; then
+                echo "Error: $FILE and $HIDDEN both mention $k/$b.v" >&2
+                exit 1
+            else
+                p=$(echo "$k" | sed 's:^[^/]*/::' | sed 's:/:.:g')
+                sed -e "s:$k/$b.v:<a href=\"$BASE_PREFIX$p.$b.html\">$b</a>:g" "$tmp" > "$tmp2"
+                mv -f "$tmp2" "$tmp"
+            fi
+        else
+            if [ $h = 0 ]; then
+                # Skipping file from the index
+                :
+            else
+                echo "Error: none of $FILE and $HIDDEN mention $k/$b.v" >&2
+                exit 1
+            fi
+
+        fi
+    done
+    sed -e "s/#$d#//" "$tmp" > "$tmp2"
+    mv -f "$tmp2" "$tmp"
+done
+
+if a=$(grep theories "$tmp"); then echo Error: extra files: >&2; echo "$a" >&2; exit 1; fi
+mv "$tmp" "$FILE"
+echo Done
