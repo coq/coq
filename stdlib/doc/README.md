@@ -1,10 +1,10 @@
-The Coq documentation
-=====================
+The Stdlib documentation
+========================
 
-The Coq documentation includes
+The Stdlib documentation includes
 
 - A Reference Manual
-- A document presenting the Coq standard library
+- A document presenting the standard library
 
 The documentation of the latest released version is available on the Coq
 web site at [coq.inria.fr/documentation](http://coq.inria.fr/documentation).
@@ -89,14 +89,8 @@ The current documentation targets are:
 - `make refman-html`
   Build the reference manual in HTML form into `_build/default/doc/refman-html`
 
-- `make refman-pdf`
-  Build the reference manual in PDF form into `_build/default/doc/refman-pdf`
-
 - `make stdlib-html`
-  Build Coq's standard library documentation into `_build/default/doc/stdlib/html`
-
-- `make apidoc`
-  Build the ML API's documentation into `_build/default/_doc/_html`
+  Build the standard library documentation into `_build/default/doc/stdlib/html`
 
 To build the Sphinx documentation without stopping at the first
 warning, change the value of the `SPHINXWARNOPT` variable (default is
@@ -116,13 +110,3 @@ with:
 ```
 cd _build/default/doc/refman-html/ && python3 -m http.server
 ```
-
-Installation
-------------
-
-The produced documents are stored in the described directories above,
-you can install them just by copying the contents to the desired
-directory.
-
-In the future, the `coq-doc` and `rocq-init` opam packages will
-install the documentation automatically.
