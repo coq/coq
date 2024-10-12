@@ -1,36 +1,13 @@
 
 <h1>The Coq Standard Library</h1>
 
-<p>Here is a short description of the Coq standard library, which is
-distributed with the system.
+<p>Here is a short description of the Coq standard library.
 It provides a set of modules directly available
 through the <tt>Require Import</tt> command.</p>
 
 <p>The standard library is composed of the following subdirectories:</p>
 
 <dl>
-  <dt> <b>Init</b>:
-    The core library (automatically loaded when starting Coq)
-  </dt>
-  <dd>
-    theories/Init/Ltac.v
-    theories/Init/Notations.v
-    theories/Init/Datatypes.v
-    theories/Init/Logic.v
-    theories/Init/Byte.v
-    theories/Init/Nat.v
-    theories/Init/Decimal.v
-    theories/Init/Hexadecimal.v
-    theories/Init/Number.v
-    theories/Init/Peano.v
-    theories/Init/Specif.v
-    theories/Init/Sumbool.v
-    theories/Init/Tactics.v
-    theories/Init/Tauto.v
-    theories/Init/Wf.v
-    (theories/Init/Prelude.v)
-  </dd>
-
   <dt> <b>Logic</b>:
       Classical logic, dependent equality, extensionality, choice axioms
   </dt>
@@ -216,10 +193,6 @@ through the <tt>Require Import</tt> command.</p>
     <dt> <b>&nbsp;&nbsp;Prelude</b>:
     </dt>
     <dd>
-    theories/Numbers/BinNums.v
-    theories/BinNums/PosDef.v
-    theories/BinNums/NatDef.v
-    theories/BinNums/IntDef.v
     theories/Numbers/NumPrelude.v
     theories/Numbers/NaryFunctions.v
     theories/Numbers/AltBinNotations.v
@@ -268,12 +241,8 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/Cyclic/Abstract/CyclicAxioms.v
     theories/Numbers/Cyclic/Abstract/NZCyclic.v
     theories/Numbers/Cyclic/Abstract/DoubleType.v
-    theories/Numbers/Cyclic/Int63/CarryType.v
     theories/Numbers/Cyclic/Int63/Cyclic63.v
-    theories/Numbers/Cyclic/Int63/PrimInt63.v
-    theories/Numbers/Cyclic/Int63/Uint63Axioms.v
     theories/Numbers/Cyclic/Int63/Uint63.v
-    theories/Numbers/Cyclic/Int63/Sint63Axioms.v
     theories/Numbers/Cyclic/Int63/Sint63.v
     theories/Numbers/Cyclic/Int63/Ring63.v
     </dd>
@@ -332,11 +301,6 @@ through the <tt>Require Import</tt> command.</p>
        Floating-point arithmetic
     </dt>
     <dd>
-    theories/Floats/FloatClass.v
-    theories/Floats/PrimFloat.v
-    theories/Floats/SpecFloat.v
-    theories/Floats/FloatOps.v
-    theories/Floats/FloatAxioms.v
     theories/Floats/FloatLemmas.v
     (theories/Floats/Floats.v)
     </dd>
@@ -347,7 +311,6 @@ through the <tt>Require Import</tt> command.</p>
        Relations (definitions and basic results)
   </dt>
   <dd>
-    theories/Relations/Relation_Definitions.v
     theories/Relations/Relation_Operators.v
     theories/Relations/Relations.v
     theories/Relations/Operators_Properties.v
@@ -384,34 +347,19 @@ through the <tt>Require Import</tt> command.</p>
   <dt> <b>Classes</b>:
   </dt>
   <dd>
-    theories/Classes/Init.v
-    theories/Classes/RelationClasses.v
-    theories/Classes/Morphisms.v
-    theories/Classes/Morphisms_Prop.v
     theories/Classes/Morphisms_Relations.v
-    theories/Classes/Equivalence.v
-    theories/Classes/CRelationClasses.v
-    theories/Classes/CMorphisms.v
     theories/Classes/CEquivalence.v
     theories/Classes/EquivDec.v
-    theories/Classes/SetoidTactics.v
     theories/Classes/SetoidClass.v
     theories/Classes/SetoidDec.v
     theories/Classes/RelationPairs.v
     theories/Classes/DecidableClass.v
   </dd>
 
-  <dt> <b>Setoids</b>:
-  </dt>
-  <dd>
-    theories/Setoids/Setoid.v
-  </dd>
-
   <dt> <b>Lists</b>:
     Polymorphic lists, Streams (infinite sequences)
   </dt>
   <dd>
-    theories/Lists/ListDef.v
     theories/Lists/List.v
     theories/Lists/ListDec.v
     theories/Lists/ListSet.v
@@ -631,70 +579,12 @@ through the <tt>Require Import</tt> command.</p>
     Support for dependently-typed programming
   </dt>
   <dd>
-    theories/Program/Basics.v
-    theories/Program/Wf.v
-    theories/Program/WfExtensionality.v
     theories/Program/Subset.v
     theories/Program/Equality.v
-    theories/Program/Tactics.v
-    theories/Program/Utils.v
     theories/Program/Syntax.v
+    theories/Program/WfExtensionality.v
     theories/Program/Program.v
     theories/Program/Combinators.v
-  </dd>
-
-  <dt> <b>SSReflect</b>:
-    Base libraries for the SSReflect proof language and the
-    small scale reflection formalization technique
-  </dt>
-  <dd>
-    theories/ssrmatching/ssrmatching.v
-    theories/ssr/ssrclasses.v
-    theories/ssr/ssreflect.v
-    theories/ssr/ssrbool.v
-    theories/ssr/ssrfun.v
-  </dd>
-
-  <dt> <b>Ltac2</b>:
-    The Ltac2 tactic programming language
-  </dt>
-  <dd>
-    user-contrib/Ltac2/Ltac2.v
-    user-contrib/Ltac2/Array.v
-    user-contrib/Ltac2/Bool.v
-    user-contrib/Ltac2/Char.v
-    user-contrib/Ltac2/Constant.v
-    user-contrib/Ltac2/Constr.v
-    user-contrib/Ltac2/Constructor.v
-    user-contrib/Ltac2/Control.v
-    user-contrib/Ltac2/Env.v
-    user-contrib/Ltac2/Evar.v
-    user-contrib/Ltac2/Float.v
-    user-contrib/Ltac2/FMap.v
-    user-contrib/Ltac2/FSet.v
-    user-contrib/Ltac2/Fresh.v
-    user-contrib/Ltac2/Ident.v
-    user-contrib/Ltac2/Ind.v
-    user-contrib/Ltac2/Init.v
-    user-contrib/Ltac2/Int.v
-    user-contrib/Ltac2/Lazy.v
-    user-contrib/Ltac2/List.v
-    user-contrib/Ltac2/Ltac1.v
-    user-contrib/Ltac2/Message.v
-    user-contrib/Ltac2/Meta.v
-    user-contrib/Ltac2/Notations.v
-    user-contrib/Ltac2/Option.v
-    user-contrib/Ltac2/Pattern.v
-    user-contrib/Ltac2/Printf.v
-    user-contrib/Ltac2/Proj.v
-    user-contrib/Ltac2/Pstring.v
-    user-contrib/Ltac2/RedFlags.v
-    user-contrib/Ltac2/Ref.v
-    user-contrib/Ltac2/Std.v
-    user-contrib/Ltac2/String.v
-    user-contrib/Ltac2/TransparentState.v
-    user-contrib/Ltac2/Uint63.v
-    user-contrib/Ltac2/Unification.v
   </dd>
 
   <dt> <b>Unicode</b>:
@@ -710,19 +600,13 @@ through the <tt>Require Import</tt> command.</p>
   </dt>
   <dd>
     theories/Compat/AdmitAxiom.v
-    theories/Compat/Coq818.v
-    theories/Compat/Coq819.v
-    theories/Compat/Coq820.v
-    user-contrib/Ltac2/Compat/Coq818.v
-    user-contrib/Ltac2/Compat/Coq819.v
+    theories/Compat/Stdlib818.v
   </dd>
 
   <dt> <b>Array</b>:
     Persistent native arrays
   </dt>
   <dd>
-    theories/Array/PrimArray.v
-    theories/Array/ArrayAxioms.v
     theories/Array/PArray.v
   </dd>
 
@@ -730,8 +614,6 @@ through the <tt>Require Import</tt> command.</p>
     Native string type
   </dt>
   <dd>
-    theories/Strings/PrimString.v
-    theories/Strings/PrimStringAxioms.v
     theories/Strings/PString.v
   </dd>
 </dl>

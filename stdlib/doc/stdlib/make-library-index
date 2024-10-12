@@ -12,14 +12,10 @@ tmp2=$(mktemp)
 cp -f "$FILE.template" "$tmp"
 echo -n "Building file index-list.prehtml... "
 
-LIBDIRS=$(find theories/* user-contrib/* -type d ! -name .coq-native)
+LIBDIRS=$(find theories/* -type d ! -name .coq-native)
 
 for k in $LIBDIRS; do
-    if [[ $k =~ "user-contrib" ]]; then
-        BASE_PREFIX=""
-    else
-        BASE_PREFIX="Coq."
-    fi
+    BASE_PREFIX="Stdlib."
     d=$(basename "$k")
     for j in "$k"/*.v; do
         if ! [ -e "$j" ]; then break; fi
