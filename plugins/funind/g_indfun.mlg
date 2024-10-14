@@ -148,7 +148,7 @@ END
 
 module Vernac = Pvernac.Vernac_
 
-let (wit_function_fix_definition : Vernacexpr.fixpoint_expr Loc.located Genarg.uniform_genarg_type) =
+let (wit_function_fix_definition : Vernacexpr.fixpoint_expr Loc.located Genarg.vernac_genarg_type) =
   Genarg.create_arg "function_fix_definition"
 
 let function_fix_definition =
@@ -168,8 +168,8 @@ END
 {
 
 let () =
-  let raw_printer env sigma _ _ _ (loc,body) = Ppvernac.pr_rec_definition body in
-  Pptactic.declare_extra_vernac_genarg_pprule wit_function_fix_definition raw_printer
+  let raw_printer (_loc,body) = Genprint.PrinterBasic (fun env sigma -> Ppvernac.pr_rec_definition body) in
+  Genprint.register_vernac_print0 wit_function_fix_definition raw_printer
 
 let is_proof_termination_interactively_checked recsl =
   List.exists (function

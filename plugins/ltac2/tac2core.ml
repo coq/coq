@@ -1601,20 +1601,33 @@ let to_lvar ist =
 
 let gtypref kn = GTypRef (Other kn, [])
 
-let intern_constr ist c =
-  let (_, (c, _)) = Genintern.intern Stdarg.wit_constr ist c in
-  let v = match DAst.get c with
-    | GGenarg (GenArg (Glbwit tag, v)) ->
-      begin match genarg_type_eq tag wit_ltac2_var_quotation with
-      | Some Refl ->
-        begin match (fst v) with
-        | ConstrVar -> GlbTacexpr (GTacVar (snd v))
-        | _ -> GlbVal c
-        end
-      | None -> GlbVal c
+let of_glob_constr (c:Glob_term.glob_constr) =
+  match DAst.get c with
+  | GGenarg (GenArg (Glbwit tag, v)) ->
+    begin match genarg_type_eq tag wit_ltac2_var_quotation with
+    | Some Refl ->
+      begin match (fst v) with
+      | ConstrVar -> GlbTacexpr (GTacVar (snd v))
+      | _ -> GlbVal c
       end
-    | _ -> GlbVal c
-  in
+    | None -> GlbVal c
+    end
+  | _ -> GlbVal c
+
+let intern_constr ist c =
+  let {Genintern.ltacvars=lfun; genv=env; extra; intern_sign; strict_check} = ist in
+  let scope = Pretyping.WithoutTypeConstraint in
+  let ltacvars = {
+    Constrintern.ltac_vars = lfun;
+    ltac_bound = Id.Set.empty;
+    ltac_extra = extra;
+  } in
+  let c' = Constrintern.intern_core scope ~strict_check ~ltacvars env (Evd.from_env env) intern_sign c in
+  c'
+
+let intern_constr_tacexpr ist c =
+  let c = intern_constr ist c in
+  let v = of_glob_constr c in
   (v, gtypref t_constr)
 
 let interp_constr flags ist c =
@@ -1628,7 +1641,7 @@ let interp_constr flags ist c =
   end
 
 let () =
-  let intern = intern_constr in
+  let intern = intern_constr_tacexpr in
   let interp ist c = interp_constr constr_flags ist c in
   let print env sigma c = str "constr:(" ++ Printer.pr_lglob_constr_env env sigma c ++ str ")" in
   let raw_print env sigma c = str "constr:(" ++ Ppconstr.pr_constr_expr env sigma c ++ str ")" in
@@ -1643,7 +1656,7 @@ let () =
   define_ml_object Tac2quote.wit_constr obj
 
 let () =
-  let intern = intern_constr in
+  let intern = intern_constr_tacexpr in
   let interp ist c = interp_constr open_constr_no_classes_flags ist c in
   let print env sigma c = str "open_constr:(" ++ Printer.pr_lglob_constr_env env sigma c ++ str ")" in
   let raw_print env sigma c = str "open_constr:(" ++ Ppconstr.pr_constr_expr env sigma c ++ str ")" in
@@ -1706,7 +1719,7 @@ let () =
 
 let () =
   let intern ist c =
-    let (_, (c, _)) = Genintern.intern Stdarg.wit_constr ist c in
+    let c = intern_constr ist c in
     (GlbVal (Id.Set.empty,c), gtypref t_preterm)
   in
   let interp env (ids,c) =
@@ -1876,8 +1889,7 @@ let () =
         | PatternVar -> str "pattern:"
       in
       str "$" ++ ppkind ++ Id.print id) in
-  let pr_top x = Util.Empty.abort x in
-  Genprint.register_print0 wit_ltac2_var_quotation pr_raw pr_glb pr_top
+  Genprint.register_noval_print0 wit_ltac2_var_quotation pr_raw pr_glb
 
 let warn_missing_notation_variable =
   CWarnings.create ~name:"ltac2-missing-notation-var" ~category:CWarnings.CoreCategories.ltac2
@@ -1928,8 +1940,7 @@ let () =
     in
     Genprint.PrinterBasic Pp.(fun _env _sigma -> ids ++ Tac2print.pr_glbexpr ~avoid:Id.Set.empty e)
   in
-  let pr_top x = Util.Empty.abort x in
-  Genprint.register_print0 wit_ltac2in1 pr_raw pr_glb pr_top
+  Genprint.register_noval_print0 wit_ltac2in1 pr_raw pr_glb
 
 let () =
   let pr_raw e = Genprint.PrinterBasic (fun _env _sigma ->
@@ -1951,8 +1962,7 @@ let () =
     *)
     Genprint.PrinterBasic Pp.(fun _env _sigma -> ids ++ Tac2print.pr_glbexpr ~avoid:Id.Set.empty e)
   in
-  let pr_top e = Util.Empty.abort e in
-  Genprint.register_print0 wit_ltac2_constr pr_raw pr_glb pr_top
+  Genprint.register_noval_print0 wit_ltac2_constr pr_raw pr_glb
 
 (** Built-in notation scopes *)
 

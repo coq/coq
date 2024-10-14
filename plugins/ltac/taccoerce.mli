@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Util
 open Names
 open EConstr
 open Genarg
@@ -22,6 +21,17 @@ open Tactypes
 exception CannotCoerceTo of string
 (** Exception raised whenever a coercion failed. *)
 
+(** Abstract application, to print ltac functions *)
+type appl =
+  | UnnamedAppl (** For generic applications: nothing is printed *)
+  | GlbAppl of (Names.KerName.t * Val.t list) list
+       (** For calls to global constants, some may alias other. *)
+
+type tacvalue =
+  | VFun of appl * Tacexpr.ltac_trace * Loc.t option * Val.t Id.Map.t *
+      Name.t list * Tacexpr.glob_tactic_expr
+  | VRec of Val.t Id.Map.t ref * Tacexpr.glob_tactic_expr
+
 (** {5 High-level access to values}
 
   The [of_*] functions cast a given argument into a value. The [to_*] do the
@@ -33,10 +43,14 @@ module Value :
 sig
   type t = Val.t
 
+  val of_tacvalue : tacvalue -> t
+  val to_tacvalue : t -> tacvalue option
   val of_constr : constr -> t
   val to_constr : t -> constr option
   val of_uconstr : Ltac_pretype.closed_glob_constr -> t
   val to_uconstr : t -> Ltac_pretype.closed_glob_constr option
+  val of_constr_context : Constr_matching.context -> t
+  val to_constr_context : t -> Constr_matching.context option
   val of_int : int -> t
   val to_int : t -> int option
   val of_ident : Id.t -> t
@@ -45,6 +59,9 @@ sig
   val to_option : t -> t option option
   val to_pair : t -> (t * t) option
   val cast : 'a typed_abstract_argument_type -> Geninterp.Val.t -> 'a
+
+  val of_constr_under_binders : Ltac_pretype.constr_under_binders -> t
+  (* No [to_constr_under_binders], use [coerce_to_constr] instead *)
 end
 
 (** {5 Coercion functions} *)
@@ -90,26 +107,7 @@ val coerce_to_decl_or_quant_hyp : Evd.evar_map -> Value.t -> quantified_hypothes
 
 val coerce_to_int_list : Value.t -> int list
 
-(** {5 Missing generic arguments} *)
-
-val wit_constr_context : (Empty.t, Empty.t, Constr_matching.context) genarg_type
-
-val wit_constr_under_binders : (Empty.t, Empty.t, Ltac_pretype.constr_under_binders) genarg_type
-
 val error_ltac_variable : ?loc:Loc.t -> Id.t ->
   (Environ.env * Evd.evar_map) option -> Value.t -> string -> 'a
-
-(** Abstract application, to print ltac functions *)
-type appl =
-  | UnnamedAppl (** For generic applications: nothing is printed *)
-  | GlbAppl of (Names.KerName.t * Val.t list) list
-       (** For calls to global constants, some may alias other. *)
-
-type tacvalue =
-  | VFun of appl * Tacexpr.ltac_trace * Loc.t option * Val.t Id.Map.t *
-      Name.t list * Tacexpr.glob_tactic_expr
-  | VRec of Val.t Id.Map.t ref * Tacexpr.glob_tactic_expr
-
-val wit_tacvalue : (Empty.t, tacvalue, tacvalue) Genarg.genarg_type
 
 val pr_value : (Environ.env * Evd.evar_map) option -> Geninterp.Val.t -> Pp.t
