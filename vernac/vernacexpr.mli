@@ -371,7 +371,7 @@ type hints_expr =
   | HintsTransparency of Libnames.qualid Hints.hints_transparency_target * bool
   | HintsMode of Libnames.qualid * Hints.hint_mode list
   | HintsConstructors of Libnames.qualid list
-  | HintsExtern of int * Constrexpr.constr_expr option * Genarg.raw_generic_argument
+  | HintsExtern of int * Constrexpr.constr_expr option * Gentactic.raw_generic_tactic
 
 (** [synterp_vernac_expr] describes the AST of commands which have effects on
     parsing or parsing extensions *)
@@ -513,7 +513,7 @@ type nonrec synpure_vernac_expr =
   | VernacShow of showable
   | VernacCheckGuard
   | VernacValidateProof
-  | VernacProof of Genarg.raw_generic_argument option * section_subset_expr option
+  | VernacProof of Gentactic.raw_generic_tactic option * section_subset_expr option
 
   | VernacAddOption of Goptions.option_name * Goptions.table_value list
   | VernacRemoveOption of Goptions.option_name * Goptions.table_value list

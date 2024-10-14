@@ -31,24 +31,12 @@ let () =
   Declare.Obls.default_tactic := tac
 
 let with_tac f tac =
-  let tac = match tac with
-  | None -> None
-  | Some tac ->
-    let env = Genintern.empty_glob_sign ~strict:true (Global.env ()) in
-    let _, tac = Genintern.generic_intern env tac in
-    Some tac
-  in
+  let tac = Option.map (fun tac -> Gentactic.intern (Global.env()) tac) tac in
   f tac
 
 let interp_gen tac =
-  let env = Genintern.empty_glob_sign ~strict:true (Global.env ()) in
-  let _, tac = Genintern.generic_intern env tac in
-  let open Proofview in
-  tclBIND (tclProofInfo[@ocaml.warning"-3"]) (fun (_name,poly) ->
-  let ist = { Geninterp.lfun = Names.Id.Map.empty; poly; extra = Geninterp.TacStore.empty } in
-  let Genarg.GenArg (Glbwit tag, tac) = tac in
-  let tac = Geninterp.interp tag ist tac in
-  Ftactic.run tac (fun _ -> tclUNIT ()))
+  let tac = Gentactic.intern (Global.env()) tac in
+  Gentactic.interp tac
 
 (* We define new entries for programs, with the use of this module
  * Subtac. These entries are named Subtac.<foo>
@@ -56,7 +44,7 @@ let interp_gen tac =
 
 let pr_withtac env sigma = let open Pp in function
   | None -> mt ()
-  | Some tac -> str "with" ++ spc () ++ Pputils.pr_raw_generic env sigma tac
+  | Some tac -> str "with" ++ spc () ++ Gentactic.print_raw env sigma tac
 
 let generic_tactic = Pvernac.Vernac_.generic_tactic
 

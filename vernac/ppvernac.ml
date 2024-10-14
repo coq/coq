@@ -45,6 +45,7 @@ let pr_constr_pattern_expr = pr_in_global_env pr_constr_pattern_expr
 (* In principle this may use the env/sigma, in practice not sure if it
    does except through pr_constr_expr in beautify mode. *)
 let pr_gen = pr_in_global_env (Pputils.pr_raw_generic ?level:None)
+let pr_gentac = pr_in_global_env (Gentactic.print_raw ?level:None)
 
 (* No direct Global.env or pr_in_global_env use after this *)
 
@@ -342,7 +343,7 @@ let pr_hints db h pr_c pr_pat =
     | HintsExtern (n,c,tac) ->
       let pat = match c with None -> mt () | Some pat -> pr_pat pat in
       keyword "Extern" ++ spc() ++ int n ++ spc() ++ pat ++ str" =>" ++
-      spc() ++ pr_gen tac
+      spc() ++ pr_gentac tac
   in
   hov 2 (keyword "Hint "++ pph ++ opth)
 
@@ -1281,12 +1282,12 @@ let pr_synpure_vernac_expr v =
     return (keyword "Proof " ++ spc () ++
             keyword "using" ++ spc() ++ pr_using e)
   | VernacProof (Some te, None) ->
-    return (keyword "Proof with" ++ spc() ++ pr_gen te)
+    return (keyword "Proof with" ++ spc() ++ pr_gentac te)
   | VernacProof (Some te, Some e) ->
     return (
       keyword "Proof" ++ spc () ++
       keyword "using" ++ spc() ++ pr_using e ++ spc() ++
-      keyword "with" ++ spc() ++ pr_gen te
+      keyword "with" ++ spc() ++ pr_gentac te
     )
   | VernacBullet b ->
     (* XXX: Redundant with Proof_bullet.print *)
