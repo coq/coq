@@ -417,6 +417,13 @@ project verdi_raft "https://github.com/uwplse/verdi-raft" "master"
 # Contact @palmskog on github
 
 ########################################################################
+# Stdlib
+########################################################################
+project stdlib "https://github.com/coq/stdlib-test" "master"
+# TODO replace temporary test repo by actual one
+# Contact TODO on github
+
+########################################################################
 # argosy
 ########################################################################
 project argosy "https://github.com/mit-pdos/argosy" "master"

@@ -7,6 +7,6 @@ ci_dir="$(dirname "$0")"
 
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
-( cd "stdlib/test-suite"
+( cd "${CI_BUILD_DIR}/stdlib/test-suite"
   make
 )

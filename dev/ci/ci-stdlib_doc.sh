@@ -7,7 +7,7 @@ ci_dir="$(dirname "$0")"
 
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
-( cd "stdlib"
+( cd "${CI_BUILD_DIR}/stdlib"
   make refman-html
   make stdlib-html
 )

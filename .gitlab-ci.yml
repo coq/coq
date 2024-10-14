@@ -242,7 +242,6 @@ before_script:
     - if [ "$COQ_CI_NATIVE" = true ]; then opam install -y coq-native; fi
     - opam pin add --kind=path rocq-runtime.dev .
     - opam pin add --kind=path rocq-core.dev .
-    - opam pin add --kind=path coq-stdlib.dev stdlib/
     - if command -v coqc; then exit 1; fi # coq-core didn't get autoinstalled
     - opam pin add --kind=path coqide-server.dev .
     - opam pin add --kind=path coqide.dev .
