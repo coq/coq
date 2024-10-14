@@ -257,16 +257,31 @@ let wit_ltac2in1 : (Id.t CAst.t list * raw_tacexpr, Id.t list * glb_tacexpr, Uti
 let wit_ltac2in1_val : (Id.t CAst.t list * raw_tacexpr, glb_tacexpr, Util.Empty.t) genarg_type
   = Genarg.make0 "ltac2in1val"
 
+let pr_ltac2in1_ids ids =
+  if List.is_empty ids then mt ()
+  else hov 0 (pr_sequence Id.print ids ++ str " |- ")
+
 let () =
-  let pr_raw _ = Genprint.PrinterBasic (fun _env _sigma -> Pp.str "<not implemented printer for ltac2 in ltac1>") in
+  let pr_raw (ids, e) = Genprint.PrinterBasic (fun _env _sigma ->
+      let ids = List.map (fun v -> v.CAst.v) ids in
+      pr_ltac2in1_ids ids ++ Tac2print.pr_rawexpr_gen E5 ~avoid:(Id.Set.of_list ids) e)
+  in
   let pr_glb (ids, e) =
-    let ids =
-      if List.is_empty ids then mt ()
-      else hov 0 (pr_sequence Id.print ids ++ str " |- ")
-    in
-    Genprint.PrinterBasic Pp.(fun _env _sigma -> ids ++ Tac2print.pr_glbexpr ~avoid:Id.Set.empty e)
+    Genprint.PrinterBasic Pp.(fun _env _sigma ->
+        pr_ltac2in1_ids ids ++ Tac2print.pr_glbexpr ~avoid:(Id.Set.of_list ids) e)
   in
   Genprint.register_noval_print0 wit_ltac2in1 pr_raw pr_glb
+
+let () =
+  let pr_raw (ids, e) = Genprint.PrinterBasic (fun _env _sigma ->
+      let ids = List.map (fun v -> v.CAst.v) ids in
+      pr_ltac2in1_ids ids ++ Tac2print.pr_rawexpr_gen E5 ~avoid:(Id.Set.of_list ids) e)
+  in
+  let pr_glb e =
+    Genprint.PrinterBasic (fun _env _sigma ->
+        Tac2print.pr_glbexpr ~avoid:Id.Set.empty e)
+  in
+  Genprint.register_noval_print0 wit_ltac2in1_val pr_raw pr_glb
 
 let () =
   let open Tac2typing_env in
