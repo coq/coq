@@ -1330,7 +1330,7 @@ command: [
 | DELETE "Remove" IDENT LIST1 table_value
 
 (* hide special case command that looks like a "Set" command *)
-| DELETE "Set" "Firstorder" "Solver" tactic
+| DELETE "Set" "Firstorder" "Solver" generic_tactic
 
 | DELETE "Show"
 | DELETE "Show" natural

@@ -63,6 +63,8 @@ val wit_clause_dft_concl :  (lident Locus.clause_expr, lident Locus.clause_expr,
 
 val wit_open_binders : local_binder_expr list uniform_genarg_type
 
+val wit_generic_tactic : Gentactic.raw_generic_tactic vernac_genarg_type
+
 (** Aliases for compatibility *)
 
 val wit_natural : int uniform_genarg_type
