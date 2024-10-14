@@ -272,7 +272,7 @@ When the proof is completed, you can exit proof mode with commands such as
 
    .. seealso:: :cmd:`Proof with`
 
-.. cmd:: Proof using @section_var_expr {? with @ltac_expr }
+.. cmd:: Proof using @section_var_expr {? with @generic_tactic }
 
    .. insertprodn section_var_expr starred_ident_ref
 
