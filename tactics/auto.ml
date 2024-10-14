@@ -110,17 +110,10 @@ let conclPattern concl pat tac =
      let env = Proofview.Goal.env gl in
      let sigma = Proofview.Goal.sigma gl in
      constr_bindings env sigma >>= fun constr_bindings ->
-     Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (_name, poly) ->
-     let open Genarg in
-     let open Geninterp in
-     let inj c = Geninterp.Val.inject (val_tag (topwit Stdarg.wit_constr)) c in
+     let inj c = Geninterp.Val.inject (Geninterp.val_tag (Genarg.topwit Stdarg.wit_constr)) c in
      let fold id c accu = Id.Map.add id (inj c) accu in
      let lfun = Id.Map.fold fold constr_bindings Id.Map.empty in
-     let ist = { lfun
-               ; poly
-               ; extra = TacStore.empty }
-     in
-     Ftactic.run (Geninterp.generic_interp ist tac) (fun _ -> Proofview.tclUNIT ())
+     Gentactic.interp ~lfun tac
   end
 
 (***********************************************************)

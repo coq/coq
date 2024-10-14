@@ -30,7 +30,7 @@ val unify_resolve : Unification.unify_flags -> hint -> unit Proofview.tactic
    [Pattern.somatches], then replace [?1] [?2] metavars in tacast by the
    right values to build a tactic *)
 
-val conclPattern : constr -> constr_pattern option -> Genarg.glob_generic_argument -> unit Proofview.tactic
+val conclPattern : constr -> constr_pattern option -> Gentactic.glob_generic_tactic -> unit Proofview.tactic
 
 (** The Auto tactic *)
 

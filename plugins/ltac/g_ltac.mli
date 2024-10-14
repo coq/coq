@@ -19,10 +19,6 @@ val genarg_of_ipattern :
 val genarg_of_uconstr :
   Constrexpr.constr_expr -> Genarg.rlevel Genarg.generic_argument
 
-val in_tac :
-  Tacexpr.raw_tactic_expr ->
-  Genarg.rlevel Genarg.generic_argument
-
 val tactic_mode : Vernacexpr.vernac_expr Procq.Entry.t
 
 val tacdef_body : Tacexpr.tacdef_body Procq.Entry.t

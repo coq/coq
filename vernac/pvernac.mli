@@ -25,7 +25,7 @@ module Vernac_ :
     val fix_definition : fixpoint_expr Entry.t
     val noedit_mode : vernac_expr Entry.t
     val command_entry : vernac_expr Entry.t
-    val generic_tactic : Genarg.raw_generic_argument Entry.t
+    val generic_tactic : Gentactic.raw_generic_tactic Entry.t
     val main_entry : vernac_control option Entry.t
     val red_expr : raw_red_expr Entry.t
     val hint_info : hint_info_expr Entry.t
