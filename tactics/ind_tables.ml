@@ -127,6 +127,7 @@ let define ?loc internal role id c poly uctx =
   let uctx = UState.collapse_above_prop_sort_variables ~to_prop:true uctx in
   let uctx = UState.minimize uctx in
   let c = UState.nf_universes uctx c in
+  let uctx = UState.restrict uctx (Vars.universes_of_constr c) in
   let univs = UState.univ_entry ~poly uctx in
   !declare_definition_scheme ~internal ~univs ~role ~name:id ?loc c
 
