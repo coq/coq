@@ -857,9 +857,29 @@ type change_arg = Ltac_pretype.patvar_map -> env -> evar_map -> evar_map * ECons
 
 let make_change_arg c pats env sigma = (sigma, replace_vars sigma (Id.Map.bindings pats) c)
 
+let is_partial_template_head env sigma c =
+  let (hd, args) = decompose_app sigma c in
+  match destRef sigma hd with
+  | (ConstructRef (ind, _) | IndRef ind), _ ->
+    let (mib, _) = Inductive.lookup_mind_specif env ind in
+    begin match mib.mind_template with
+    | None -> false
+    | Some _ -> Array.length args < mib.mind_nparams
+    end
+  | (VarRef _ | ConstRef _), _ -> false
+  | exception DestKO -> false
+
 let check_types env sigma mayneedglobalcheck deep newc origc =
   let t1 = Retyping.get_type_of env sigma newc in
   if deep then begin
+    let () =
+      (* When changing a partially applied template term in a context, one must
+         be careful to resynthetize the constraints as the implicit levels from
+         the arguments are not written in the term. *)
+      if is_partial_template_head env sigma newc ||
+        is_partial_template_head env sigma origc then
+        mayneedglobalcheck := true
+    in
     let t2 = Retyping.get_type_of env sigma origc in
     let sigma, t2 = Evarsolve.refresh_universes
                       ~onlyalg:true (Some false) env sigma t2 in
