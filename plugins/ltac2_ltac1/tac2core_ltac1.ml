@@ -124,6 +124,7 @@ open Tac2core.Core
 let core_prefix path n = KerName.make path (Label.of_id (Id.of_string_soft n))
 let ltac1_core n = core_prefix Tac2env.ltac1_prefix n
 let t_ltac1 = ltac1_core "t"
+let ltac1_lambda = ltac1_core "lambda"
 
 let () =
   let intern ist (ids, tac) =
@@ -241,6 +242,59 @@ let () =
   define_ml_object Tac2quote_ltac1.wit_ltac1val obj
 
 (** Ltac2 in Ltac1 *)
+
+(** Embedding Ltac2 closures of type [Ltac1.t -> Ltac1.t] inside Ltac1. There is
+    no relevant data because arguments are passed by conventional names. *)
+let wit_ltac2_val : (Util.Empty.t, unit, Util.Empty.t) genarg_type =
+  Genarg.make0 "ltac2:Ltac1.lambda"
+
+(** Ltac2 quotations in Ltac1 code *)
+let wit_ltac2in1 : (Id.t CAst.t list * raw_tacexpr, Id.t list * glb_tacexpr, Util.Empty.t) genarg_type
+  = Genarg.make0 "ltac2in1"
+
+(** Ltac2 quotations in Ltac1 returning Ltac1 values.
+    When ids are bound interning turns them into Ltac1.lambda. *)
+let wit_ltac2in1_val : (Id.t CAst.t list * raw_tacexpr, glb_tacexpr, Util.Empty.t) genarg_type
+  = Genarg.make0 "ltac2in1val"
+
+let () =
+  let pr_raw _ = Genprint.PrinterBasic (fun _env _sigma -> Pp.str "<not implemented printer for ltac2 in ltac1>") in
+  let pr_glb (ids, e) =
+    let ids =
+      if List.is_empty ids then mt ()
+      else hov 0 (pr_sequence Id.print ids ++ str " |- ")
+    in
+    Genprint.PrinterBasic Pp.(fun _env _sigma -> ids ++ Tac2print.pr_glbexpr ~avoid:Id.Set.empty e)
+  in
+  Genprint.register_noval_print0 wit_ltac2in1 pr_raw pr_glb
+
+let () =
+  let open Tac2typing_env in
+  let intern ist (ids, tac) =
+    let t_ltac1 = monomorphic (GTypRef (Other t_ltac1, [])) in
+    let bnd = List.map (fun id -> Name id.CAst.v, t_ltac1) ids in
+    let tac = Tac2intern.genintern_warn_not_unit ist bnd tac in
+    (ist, (List.map (fun id -> id.CAst.v) ids, tac))
+  in
+  Genintern.register_intern0 wit_ltac2in1 intern
+
+let () =
+  let add_lambda id tac =
+    let pat = CAst.make ?loc:id.CAst.loc (CPatVar (Name id.v)) in
+    let loc = tac.CAst.loc in
+    let mk v = CAst.make ?loc v in
+    let lam = mk @@ CTacFun ([pat], tac) in
+    mk @@ CTacApp (mk @@ CTacRef (AbsKn (TacConstant ltac1_lambda)), [lam])
+  in
+  let intern ist (bnd,tac) =
+    let tac = List.fold_right add_lambda bnd tac in
+    let tac = Tac2intern.genintern ist [] (GTypRef (Other t_ltac1, [])) tac in
+    ist, tac
+  in
+  Genintern.register_intern0 wit_ltac2in1_val intern
+
+let () = Gensubst.register_subst0 wit_ltac2in1 (fun s (ids, e) -> ids, Tac2intern.subst_expr s e)
+let () = Gensubst.register_subst0 wit_ltac2in1_val Tac2intern.subst_expr
 
 let () =
   let create name wit =
