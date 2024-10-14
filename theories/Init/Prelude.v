@@ -32,6 +32,8 @@ Declare ML Module "rocq-runtime.plugins.cc".
 Declare ML Module "rocq-runtime.plugins.firstorder_core".
 Declare ML Module "rocq-runtime.plugins.firstorder".
 
+Global Set Firstorder Solver auto.
+
 (* Parsing / printing of hexadecimal numbers *)
 Arguments Nat.of_hex_uint d%_hex_uint_scope.
 Arguments Nat.of_hex_int d%_hex_int_scope.
