@@ -885,8 +885,8 @@ command: [
 | "Typeclasses" "Transparent" LIST1 qualid
 | "Typeclasses" "Opaque" LIST1 qualid
 | "Typeclasses" "eauto" ":=" OPT "debug" OPT ( "(" [ "bfs" | "dfs" ] ")" ) OPT natural
-| "Proof" "with" ltac_expr OPT [ "using" section_var_expr ]
-| "Proof" "using" section_var_expr OPT [ "with" ltac_expr ]
+| "Proof" "with" generic_tactic OPT [ "using" section_var_expr ]
+| "Proof" "using" section_var_expr OPT [ "with" generic_tactic ]
 | "Tactic" "Notation" OPT ( "(" "at" "level" natural ")" ) LIST1 ltac_production_item ":=" ltac_expr
 | "Print" "Rewrite" "HintDb" ident
 | "Print" "Ltac" qualid
@@ -2124,6 +2124,9 @@ ltac2_quotations: [
 ltac1_expr_in_env: [
 | ltac_expr      (* ltac2_ltac1 plugin *)
 | LIST0 ident "|-" ltac_expr      (* ltac2_ltac1 plugin *)
+]
+
+generic_tactic: [
 ]
 
 ltac2_branches: [

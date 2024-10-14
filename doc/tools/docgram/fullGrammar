@@ -496,6 +496,8 @@ command: [
 | "Goal" lconstr
 | "Proof"
 | "Proof" "using" G_vernac.section_subset_expr
+| "Proof" "with" generic_tactic OPT [ "using" G_vernac.section_subset_expr ]
+| "Proof" "using" G_vernac.section_subset_expr "with" generic_tactic
 | "Proof" "Mode" string
 | "Proof" lconstr
 | "Abort"
@@ -634,8 +636,6 @@ command: [
 | "Typeclasses" "Transparent" LIST1 reference
 | "Typeclasses" "Opaque" LIST1 reference
 | "Typeclasses" "eauto" ":=" debug eauto_search_strategy OPT natural
-| "Proof" "with" Pltac.tactic OPT [ "using" G_vernac.section_subset_expr ]
-| "Proof" "using" G_vernac.section_subset_expr "with" Pltac.tactic
 | "Tactic" "Notation" OPT ltac_tactic_level LIST1 ltac_production_item ":=" tactic
 | "Print" "Ltac" reference
 | "Locate" "Ltac" reference

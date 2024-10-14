@@ -758,7 +758,7 @@ of where these hints are used:
 Setting implicit automation tactics
 -----------------------------------
 
-.. cmd:: Proof with @ltac_expr {? using @section_var_expr }
+.. cmd:: Proof with @generic_tactic {? using @section_var_expr }
 
    Starts a proof in which :token:`ltac_expr` is applied to the active goals
    after each tactic that ends with `...` instead of the usual single period.

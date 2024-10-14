@@ -138,6 +138,8 @@ lpar_id_coloneq: [
 | "(" ident; ":="
 ]
 
+generic_tactic: [ ]
+
 (* lookahead symbols *)
 DELETE: [
 | check_for_coloneq
@@ -1320,8 +1322,8 @@ command: [
 | REPLACE "Preterm" "of" identref
 | WITH "Preterm" OPT ( "of" identref )
 | DELETE "Preterm"
-| REPLACE "Proof" "using" section_var_expr "with" Pltac.tactic
-| WITH "Proof" "using" section_subset_expr OPT [ "with" ltac_expr5 ]
+| REPLACE "Proof" "using" section_var_expr "with" generic_tactic
+| WITH "Proof" "using" section_subset_expr OPT [ "with" generic_tactic ]
 | DELETE "Proof" "using" section_var_expr
 
 (* hide the fact that table names are limited to 2 IDENTs *)
@@ -2468,7 +2470,6 @@ RENAME: [
 (*
 | searchabout_query search_item
 *)
-| Pltac.tactic ltac_expr  (* many uses in EXTENDs *)
 | ltac2_type5 ltac2_type
 | ltac2_expr6 ltac2_expr
 | starredidentref starred_ident_ref
