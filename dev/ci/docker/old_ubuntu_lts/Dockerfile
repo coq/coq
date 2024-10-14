@@ -42,6 +42,8 @@ ENV NJOBS="2" \
     OPAMROOTISOK="true" \
     OPAMYES="true"
 
+RUN mkdir -p ~/.config/dune && printf '(lang dune 2.1)\n(jobs %s)\n' $NJOBS > ~/.config/dune/config
+
 # Base opam is the set of base packages required by Coq
 ENV COMPILER="4.09.0"
 
