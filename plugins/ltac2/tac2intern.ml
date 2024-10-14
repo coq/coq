@@ -23,13 +23,10 @@ open Tac2typing_env
 (** Hardwired types and constants *)
 
 let rocq_type n = KerName.make Tac2env.rocq_prefix (Label.make n)
-let ltac1_kn n = KerName.make Tac2env.ltac1_prefix (Label.make n)
 
 let t_int = rocq_type "int"
 let t_string = rocq_type "string"
 let t_constr = rocq_type "constr"
-let t_ltac1 = ltac1_kn "t"
-let ltac1_lamdba = ltac1_kn "lambda"
 let t_preterm = rocq_type "preterm"
 let t_pattern = rocq_type "pattern"
 let t_bool = rocq_type "bool"
@@ -2059,78 +2056,45 @@ let rec subst_rawexpr subst ({loc;v=tr} as t) = match tr with
 
 (** Registering *)
 
-let () =
+let genintern_core ?(check_unused=true) ist locals expected v =
   let open Genintern in
-  let intern ist (ids, tac) =
-    let ids = List.map (fun { CAst.v = id } -> id) ids in
-    let env = match Genintern.Store.get ist.extra ltac2_env with
+  let env = match Genintern.Store.get ist.extra ltac2_env with
     | None ->
       (* Only happens when Ltac2 is called from a toplevel ltac1 quotation *)
       empty_env ~strict:ist.strict_check ()
     | Some env -> env
-    in
-    let fold env id =
-      push_name (Name id) (monomorphic (GTypRef (Other t_ltac1, []))) env
-    in
-    let env = List.fold_left fold env ids in
-    let loc = tac.loc in
-    let (tac, t) = intern_rec env None tac in
-    let () = check_unused_variables ?loc env (List.map (fun x -> Name x) ids) in
-    let () = check_elt_unit loc env t in
-    (ist, (ids, tac))
   in
-  Genintern.register_intern0 wit_ltac2in1 intern
+  let env = List.fold_left (fun env (na,t) -> push_name na t env) env locals in
+  let loc = v.CAst.loc in
+  let v, t = intern_rec env expected v in
+  let () = if check_unused then check_unused_variables ?loc env (List.map fst locals) in
+  env, v, t
 
-let () =
-  let open Genintern in
-  let add_lambda id tac =
-    let pat = CAst.make ?loc:id.CAst.loc (CPatVar (Name id.v)) in
-    let loc = tac.CAst.loc in
-    let mk v = CAst.make ?loc v in
-    let lam = mk @@ CTacFun ([pat], tac) in
-    mk @@ CTacApp (mk @@ CTacRef (AbsKn (TacConstant ltac1_lamdba)), [lam])
-  in
-  let intern ist (bnd,tac) =
-    let env = match Genintern.Store.get ist.extra ltac2_env with
-    | None ->
-      (* Only happens when Ltac2 is called from a toplevel ltac1 quotation *)
-      empty_env ~strict:ist.strict_check ()
-    | Some env -> env
-    in
-    let tac = List.fold_right add_lambda bnd tac in
-    let tac = intern_rec_with_constraint env tac (GTypRef (Other t_ltac1, [])) in
-    (ist, tac)
-  in
-  Genintern.register_intern0 wit_ltac2in1_val intern
+let genintern_warn_not_unit ?check_unused ist locals ({CAst.loc} as v) =
+  let env, v, t = genintern_core ?check_unused ist locals None v in
+  let () = check_elt_unit loc env t in
+  v
+
+let genintern ?check_unused ist locals expected v =
+  let _, v, _ = genintern_core ?check_unused ist locals (Some expected) v in
+  v
 
 let () =
   let open Genintern in
   let intern ist tac =
-    let env = match Genintern.Store.get ist.extra ltac2_env with
-    | None ->
-      (* Only happens when Ltac2 is called from a constr quotation *)
-      empty_env ~strict:ist.strict_check ()
-    | Some env -> env
-    in
-    (* Special handling of notation variables *)
-    let fold id _ (ids, env) =
-      let () = assert (not @@ mem_var id env) in
-      let t = monomorphic (GTypRef (Other t_preterm, [])) in
-      let env = push_name (Name id) t env in
-      (Id.Set.add id ids, env)
-    in
+    let t_preterm = monomorphic (GTypRef (Other t_preterm, [])) in
     let ntn_vars = ist.intern_sign.notation_variable_status in
-    let ids, env = Id.Map.fold fold ntn_vars (Id.Set.empty, env) in
-    let loc = tac.loc in
-    let (tac, t) = intern_rec env None tac in
-    (* no check_unused_variables for notation variables *)
-    let () = check_elt_unit loc env t in
-    (ist, (ids, tac))
+    let locals =
+      Id.Map.fold (fun id _ acc -> (Name id, t_preterm) :: acc) ntn_vars []
+    in
+    (* don't check unused variables: we may be in the case of
+       eg "Notation foo x := (ltac2:(tac) + x)" which shouldn't call x unused *)
+    let v = genintern_warn_not_unit ~check_unused:false ist locals tac in
+    let ids = Id.Map.domain ntn_vars in
+    (ist, (ids, v))
   in
   Genintern.register_intern0 wit_ltac2_constr intern
 
-let () = Gensubst.register_subst0 wit_ltac2in1 (fun s (ids, e) -> ids, subst_expr s e)
-let () = Gensubst.register_subst0 wit_ltac2in1_val subst_expr
 let () = Gensubst.register_subst0 wit_ltac2_constr (fun s (ids, e) -> ids, subst_expr s e)
 
 let intern_var_quotation_gen ~ispat ist (kind, { CAst.v = id; loc }) =
