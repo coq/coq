@@ -417,6 +417,13 @@ project verdi_raft "https://github.com/uwplse/verdi-raft" "master"
 # Contact @palmskog on github
 
 ########################################################################
+# Stdlib
+########################################################################
+project stdlib "https://github.com/coq-community/stdlib-test" "master"
+# TODO replace temporary test repo by actual one
+# Contact TODO on github
+
+########################################################################
 # stdlib2
 ########################################################################
 project stdlib2 "https://github.com/coq/stdlib2" "master"
