@@ -12,7 +12,7 @@ type tac_option_locality
 
 val tac_option_locality : tac_option_locality Attributes.attribute
 
-val declare_tactic_option : ?default:Tacexpr.glob_tactic_expr -> string ->
-  (* put *) (?loc:Loc.t -> tac_option_locality -> Tacexpr.glob_tactic_expr -> unit) *
+val declare_tactic_option : ?default:Gentactic.glob_generic_tactic -> string ->
+  (* put *) (?loc:Loc.t -> tac_option_locality -> Gentactic.glob_generic_tactic -> unit) *
   (* get *) (unit -> unit Proofview.tactic) *
   (* print *) (unit -> Pp.t)

@@ -14,7 +14,9 @@ type raw_generic_tactic = Genarg.raw_generic_argument
 
 type glob_generic_tactic = Genarg.glob_generic_argument
 
-let of_genarg x = x
+let of_raw_genarg x = x
+
+let of_glob_genarg x = x
 
 let print_raw = Pputils.pr_raw_generic
 
@@ -35,3 +37,9 @@ let interp ?(lfun=Id.Map.empty) v =
   let Genarg.GenArg (Glbwit tag, v) = v in
   let v = Geninterp.interp tag ist v in
   Ftactic.run v (fun _ -> Proofview.tclUNIT ())
+
+let wit_generic_tactic = Genarg.make0 "generic_tactic"
+
+let () =
+  let mkprint f v = Genprint.PrinterBasic (fun env sigma -> f env sigma v) in
+  Genprint.register_vernac_print0 wit_generic_tactic (mkprint (print_raw ?level:None));

@@ -79,6 +79,8 @@ let wit_reference = wit_ref
 let wit_global = wit_ref
 let wit_clause = wit_clause_dft_concl
 
+let wit_generic_tactic = Gentactic.wit_generic_tactic
+
 (** Registering grammar of generic arguments *)
 
 let () =
