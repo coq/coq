@@ -589,7 +589,7 @@ command: [
 | "Extract" "Inlined" "Constant" global "=>" mlname      (* extraction plugin *)
 | "Extract" "Inductive" global "=>" mlname "[" LIST0 mlname "]" OPT string      (* extraction plugin *)
 | "Show" "Extraction"      (* extraction plugin *)
-| "Set" "Firstorder" "Solver" tactic
+| "Set" "Firstorder" "Solver" generic_tactic
 | "Print" "Firstorder" "Solver"
 | "Function" LIST1 function_fix_definition SEP "with"      (* funind plugin *)
 | "Functional" "Scheme" LIST1 fun_scheme_arg SEP "with"      (* funind plugin *)
@@ -635,7 +635,7 @@ command: [
 | "Solve" "All" "Obligations" withtac
 | "Admit" "Obligations" "of" identref
 | "Admit" "Obligations"
-| "Obligation" "Tactic" ":=" tactic
+| "Obligation" "Tactic" ":=" generic_tactic
 | "Show" "Obligation" "Tactic"
 | "Obligations" "of" identref
 | "Obligations"

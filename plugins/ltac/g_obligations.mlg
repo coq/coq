@@ -17,7 +17,6 @@ DECLARE PLUGIN "rocq-runtime.plugins.ltac"
 {
 
 open Stdarg
-open Tacarg
 
 let (set_default_tactic, get_default_tactic, print_default_tactic) =
   Tactic_option.declare_tactic_option "Program tactic"
@@ -97,10 +96,10 @@ VERNAC COMMAND EXTEND Admit_Obligations CLASSIFIED AS SIDEFF STATE program
 END
 
 VERNAC COMMAND EXTEND Set_Solver CLASSIFIED AS SIDEFF
-| #[ locality = Tactic_option.tac_option_locality; ] [ "Obligation" "Tactic" ":=" tactic(t) ] -> {
+| #[ locality = Tactic_option.tac_option_locality; ] [ "Obligation" "Tactic" ":=" generic_tactic(t) ] -> {
         set_default_tactic
           locality
-          (Tacintern.glob_tactic t);
+          (Gentactic.intern (Global.env()) t);
   }
 END
 
