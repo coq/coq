@@ -96,5 +96,3 @@
   (source_tree plugins)))
 
 ; (dirs (:standard _build_ci))
-
-(dirs :standard \ stdlib)

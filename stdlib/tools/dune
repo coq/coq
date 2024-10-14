@@ -1,3 +1,0 @@
-(executable
- (name gen_all)
- (libraries unix))
