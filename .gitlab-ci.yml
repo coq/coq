@@ -886,7 +886,6 @@ library:ci-http:
   - library:ci-itree_io
   - plugin:ci-quickchick
   stage: build-3+
-  allow_failure: true # C.f. https://github.com/coq/coq/pull/19672
 
 library:ci-trakt:
   extends: .ci-template-flambda
