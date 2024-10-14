@@ -1726,7 +1726,7 @@ type nonrec closed_proof_output = closed_proof_output
 type proof_object = Proof_object.t
 
 type t =
-  { endline_tactic : Genarg.glob_generic_argument option
+  { endline_tactic : Gentactic.glob_generic_tactic option
   ; using : Id.Set.t option
   ; proof : Proof.t
   ; initial_euctx : UState.t
@@ -1747,13 +1747,7 @@ let map_fold_endline ~f ps =
   let et =
     match ps.endline_tactic with
     | None -> Proofview.tclUNIT ()
-    | Some tac ->
-      let open Geninterp in
-      let {Proof.poly} = Proof.data ps.proof in
-      let ist = { lfun = Id.Map.empty; poly; extra = TacStore.empty } in
-      let Genarg.GenArg (Genarg.Glbwit tag, tac) = tac in
-      let tac = Geninterp.interp tag ist tac in
-      Ftactic.run tac (fun _ -> Proofview.tclUNIT ())
+    | Some tac -> Gentactic.interp tac
   in
   let (newpr,ret) = f et ps.proof in
   let ps = { ps with proof = newpr } in
