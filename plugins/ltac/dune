@@ -13,4 +13,4 @@
  (modules tauto)
  (libraries coq-core.plugins.ltac))
 
-(coq.pp (modules extratactics g_tactic  g_rewrite g_eqdecide g_auto g_obligations g_ltac profile_ltac_tactics coretactics g_class extraargs))
+(coq.pp (modules extratactics g_tactic  g_rewrite g_eqdecide g_auto g_ltac profile_ltac_tactics coretactics g_class extraargs))
