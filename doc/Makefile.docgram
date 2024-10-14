@@ -14,7 +14,7 @@ endif
 DOC_MLGS := \
 	parsing/g_constr.mlg parsing/g_prim.mlg \
 	toplevel/g_toplevel.mlg \
-	vernac/g_proofs.mlg vernac/g_redexpr.mlg vernac/g_vernac.mlg \
+	vernac/g_proofs.mlg vernac/g_redexpr.mlg vernac/g_vernac.mlg vernac/g_obligations.mlg \
 	plugins/btauto/g_btauto.mlg \
 	plugins/cc/g_congruence.mlg \
 	plugins/derive/g_derive.mlg \
@@ -23,7 +23,7 @@ DOC_MLGS := \
 	plugins/funind/g_indfun.mlg \
 	plugins/ltac/coretactics.mlg plugins/ltac/extraargs.mlg plugins/ltac/extratactics.mlg \
 	plugins/ltac/g_auto.mlg plugins/ltac/g_class.mlg plugins/ltac/g_eqdecide.mlg \
-	plugins/ltac/g_ltac.mlg plugins/ltac/g_obligations.mlg plugins/ltac/g_rewrite.mlg \
+	plugins/ltac/g_ltac.mlg plugins/ltac/g_rewrite.mlg \
 	plugins/ltac/g_tactic.mlg plugins/ltac/profile_ltac_tactics.mlg \
 	plugins/micromega/g_micromega.mlg  plugins/micromega/g_zify.mlg \
 	plugins/nsatz/g_nsatz.mlg \

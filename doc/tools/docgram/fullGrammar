@@ -562,6 +562,23 @@ command: [
 | "Debug" "Off"
 | "Declare" "Reduction" IDENT; ":=" red_expr
 | "Declare" "Custom" "Entry" IDENT
+| "Obligation" natural "of" identref withtac
+| "Obligation" natural withtac
+| "Next" "Obligation" "of" identref withtac
+| "Next" "Obligation" withtac
+| "Final" "Obligation" "of" identref withtac
+| "Final" "Obligation" withtac
+| "Solve" "Obligations" "of" identref withtac
+| "Solve" "Obligations" withtac
+| "Solve" "All" "Obligations" withtac
+| "Admit" "Obligations" "of" identref
+| "Admit" "Obligations"
+| "Obligation" "Tactic" ":=" generic_tactic
+| "Show" "Obligation" "Tactic"
+| "Obligations" "of" identref
+| "Obligations"
+| "Preterm" "of" identref
+| "Preterm"
 | "Derive" open_binders "SuchThat" constr "As" identref      (* derive plugin *)
 | "Derive" open_binders "in" constr "as" identref      (* derive plugin *)
 | "Extraction" global      (* extraction plugin *)
@@ -624,23 +641,6 @@ command: [
 | "Locate" "Ltac" reference
 | "Ltac" LIST1 ltac_tacdef_body SEP "with"
 | "Print" "Ltac" "Signatures"
-| "Obligation" natural "of" identref withtac
-| "Obligation" natural withtac
-| "Next" "Obligation" "of" identref withtac
-| "Next" "Obligation" withtac
-| "Final" "Obligation" "of" identref withtac
-| "Final" "Obligation" withtac
-| "Solve" "Obligations" "of" identref withtac
-| "Solve" "Obligations" withtac
-| "Solve" "All" "Obligations" withtac
-| "Admit" "Obligations" "of" identref
-| "Admit" "Obligations"
-| "Obligation" "Tactic" ":=" generic_tactic
-| "Show" "Obligation" "Tactic"
-| "Obligations" "of" identref
-| "Obligations"
-| "Preterm" "of" identref
-| "Preterm"
 | "Add" "Relation" constr constr "reflexivity" "proved" "by" constr "symmetry" "proved" "by" constr "as" identref
 | "Add" "Relation" constr constr "reflexivity" "proved" "by" constr "as" identref
 | "Add" "Relation" constr constr "as" identref
@@ -1653,6 +1653,11 @@ binder_interp: [
 | "as" "strict" "pattern"
 ]
 
+withtac: [
+|
+| "with" generic_tactic
+]
+
 simple_tactic: [
 | "btauto"
 | "congruence" OPT natural
@@ -2343,11 +2348,6 @@ ltac_production_item: [
 
 ltac_tacdef_body: [
 | tacdef_body
-]
-
-withtac: [
-|
-| "with" generic_tactic
 ]
 
 glob_constr_with_bindings: [
