@@ -1,6 +1,0 @@
-File "./output/DependentInductionErrors.v", line 3, characters 7-30:
-The command has indeed failed with message:
-Tactic failure: To use dependent destruction, first [Require Import Stdlib.Program.Equality.].
-File "./output/DependentInductionErrors.v", line 4, characters 7-28:
-The command has indeed failed with message:
-Tactic failure: To use dependent induction, first [Require Import Stdlib.Program.Equality.].
