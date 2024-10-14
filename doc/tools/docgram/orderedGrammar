@@ -856,7 +856,7 @@ command: [
 | "Solve" "Obligations" OPT ( "of" ident ) OPT ( "with" ltac_expr )
 | "Solve" "All" "Obligations" OPT ( "with" ltac_expr )
 | "Admit" "Obligations" OPT ( "of" ident )
-| "Obligation" "Tactic" ":=" ltac_expr
+| "Obligation" "Tactic" ":=" generic_tactic
 | "Show" "Obligation" "Tactic"
 | "Obligations" OPT ( "of" ident )
 | "Preterm" OPT ( "of" ident )
