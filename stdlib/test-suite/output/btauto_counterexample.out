@@ -1,3 +1,0 @@
-File "./output/btauto_counterexample.v", line 12, characters 7-13:
-The command has indeed failed with message:
-Tactic failure: Not a tautology: [combine := true].
