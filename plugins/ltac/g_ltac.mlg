@@ -36,7 +36,6 @@ let genarg_of_unit () = in_gen (rawwit Stdarg.wit_unit) ()
 let genarg_of_int n = in_gen (rawwit Stdarg.wit_int) n
 let genarg_of_ipattern pat = in_gen (rawwit Tacarg.wit_simple_intropattern) pat
 let genarg_of_uconstr c = in_gen (rawwit Stdarg.wit_uconstr) c
-let in_tac tac = Gentactic.of_raw_genarg @@ in_gen (rawwit Tacarg.wit_ltac) tac
 
 let reference_to_id qid =
   if Libnames.qualid_is_ident qid then
@@ -288,11 +287,6 @@ GRAMMAR EXTEND Gram
     [ [ p = subprf -> { Vernacexpr.VernacSynPure p }
       | g = OPT toplevel_selector; p = subprf_with_selector -> { Vernacexpr.VernacSynPure (p g) }
       ] ]
-  ;
-  hint: TOP
-    [ [ IDENT "Extern"; n = natural; c = OPT Constr.constr_pattern ; "=>";
-        tac = Pltac.tactic ->
-        { Vernacexpr.HintsExtern (n,c, in_tac tac) } ] ]
   ;
   term: LEVEL "0"
     [ [ IDENT "ltac"; ":"; "("; tac = Pltac.ltac_expr; ")" ->

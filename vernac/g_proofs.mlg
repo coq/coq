@@ -134,7 +134,11 @@ GRAMMAR EXTEND Gram
       | IDENT "Opaque"; lc = LIST1 global -> { HintsTransparency (HintsReferences lc, false) }
       | IDENT "Mode"; l = global; m = mode -> { HintsMode (l, m) }
       | IDENT "Unfold"; lqid = LIST1 global -> { HintsUnfold lqid }
-      | IDENT "Constructors"; lc = LIST1 global -> { HintsConstructors lc } ] ]
+      | IDENT "Constructors"; lc = LIST1 global -> { HintsConstructors lc }
+      | IDENT "Extern"; n = natural; c = OPT Constr.constr_pattern ; "=>";
+        tac = generic_tactic ->
+        { Vernacexpr.HintsExtern (n,c, tac) }
+  ] ]
     ;
   constr_body:
     [ [ ":="; c = lconstr -> { c }

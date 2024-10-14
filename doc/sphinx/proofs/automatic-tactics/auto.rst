@@ -518,7 +518,7 @@ Creating Hints
       These flags affect the unification of hints in the database.
       We advise using this just after a :cmd:`Create HintDb` command.
 
-   .. cmd:: Hint Extern @natural {? @one_pattern } => @ltac_expr {? : {+ @ident } }
+   .. cmd:: Hint Extern @natural {? @one_pattern } => @generic_tactic {? : {+ @ident } }
 
       Extends :tacn:`auto` with tactics other than :tacn:`apply` and
       :tacn:`unfold`. :n:`@natural` is the cost, :n:`@one_pattern` is the pattern
