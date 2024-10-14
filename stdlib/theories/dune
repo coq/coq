@@ -1,9 +1,0 @@
-(include_subdirs qualified)
-(coq.theory
- (name Stdlib)
- (package coq-stdlib))
-
-(env
- (dev
-  (coq
-   (flags :standard -w +default))))
