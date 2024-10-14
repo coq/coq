@@ -265,7 +265,7 @@ optional identifier is used when multiple functions have unsolved
 obligations (e.g. when defining mutually recursive blocks). The
 optional tactic is replaced by the default one if not specified.
 
-.. cmd:: Obligation Tactic := @ltac_expr
+.. cmd:: Obligation Tactic := @generic_tactic
 
    Sets the default obligation solving tactic applied to all obligations
    automatically, whether to solve them or when starting to prove one,
