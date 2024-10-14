@@ -725,7 +725,7 @@ hint: [
 | "Mode" global mode
 | "Unfold" LIST1 global
 | "Constructors" LIST1 global
-| "Extern" natural OPT Constr.constr_pattern "=>" Pltac.tactic
+| "Extern" natural OPT Constr.constr_pattern "=>" generic_tactic
 ]
 
 constr_body: [
