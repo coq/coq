@@ -98,25 +98,16 @@ let classify =
         Unicodetable.nd;           (* Number, decimal digits.           *)
         Unicodetable.nl;           (* Number, letter.                   *)
         Unicodetable.no;           (* Number, other.                    *)
+        Unicodetable.mn;           (* Non-spacing marks.                *)
       ];
 
-    (* Workaround. Some characters seems to be missing in
-       Camomile's category tables. We add them manually. *)
-    mk_lookup_table_from_unicode_tables_for Letter
-      [
-        [(0x01D00, 0x01D7F)];      (* Phonetic Extensions.              *)
-        [(0x01D80, 0x01DBF)];      (* Phonetic Extensions Suppl.        *)
-        [(0x01DC0, 0x01DFF)];      (* Combining Diacritical Marks Suppl.*)
-      ];
-
-    (* Exceptions (from a previous version of this function).           *)
+    (* Exceptions from Number, other.                                   *)
     mk_lookup_table_from_unicode_tables_for Symbol
       [
         [(0x000B2, 0x000B3)];      (* Superscript 2-3.                  *)
         single 0x000B9;            (* Superscript 1.                    *)
         single 0x02070;            (* Superscript 0.                    *)
         [(0x02074, 0x02079)];      (* Superscript 4-9.                  *)
-        single 0x0002E;            (* Dot.                              *)
       ];
     mk_lookup_table_from_unicode_tables_for Separator
       [
