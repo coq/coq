@@ -37,10 +37,10 @@ open Context.Rel.Declaration
 
 (* Ugly things which should not be here *)
 
-let coq_constant s =
+let rocq_constant s =
   EConstr.of_constr @@ UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Coqlib.lib_ref s
 
-let coq_init_constant s =
+let rocq_init_constant s =
   EConstr.of_constr (UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Coqlib.lib_ref s)
 
 let find_reference sl s =
@@ -108,10 +108,10 @@ let v_id = Id.of_string "v"
 let def_id = Id.of_string "def"
 let p_id = Id.of_string "p"
 let rec_res_id = Id.of_string "rec_res"
-let lt = function () -> coq_init_constant "num.nat.lt"
+let lt = function () -> rocq_init_constant "num.nat.lt"
 let le = function () -> Coqlib.lib_ref "num.nat.le"
-let ex = function () -> coq_init_constant "core.ex.type"
-let nat = function () -> coq_init_constant "num.nat.type"
+let ex = function () -> rocq_init_constant "core.ex.type"
+let nat = function () -> rocq_init_constant "num.nat.type"
 
 let iter_ref () =
   try find_reference ["Recdef"] "iter"
@@ -120,29 +120,29 @@ let iter_ref () =
 let iter_rd = function
   | () -> constr_of_monomorphic_global (Global.env ()) (delayed_force iter_ref)
 
-let eq = function () -> coq_init_constant "core.eq.type"
+let eq = function () -> rocq_init_constant "core.eq.type"
 let le_lt_SS = function () -> constant ["Recdef"] "le_lt_SS"
-let le_lt_n_Sm = function () -> coq_constant "num.nat.le_lt_n_Sm"
-let le_trans = function () -> coq_constant "num.nat.le_trans"
-let le_lt_trans = function () -> coq_constant "num.nat.le_lt_trans"
-let lt_S_n = function () -> coq_constant "num.nat.lt_S_n"
-let le_n = function () -> coq_init_constant "num.nat.le_n"
+let le_lt_n_Sm = function () -> rocq_constant "num.nat.le_lt_n_Sm"
+let le_trans = function () -> rocq_constant "num.nat.le_trans"
+let le_lt_trans = function () -> rocq_constant "num.nat.le_lt_trans"
+let lt_S_n = function () -> rocq_constant "num.nat.lt_S_n"
+let le_n = function () -> rocq_init_constant "num.nat.le_n"
 
-let coq_sig_ref = function
+let rocq_sig_ref = function
   | () -> find_reference ["Stdlib"; "Init"; "Specif"] "sig"
 
-let coq_proj1_sig = lazy (Coqlib.build_sigma ()).proj1
+let rocq_proj1_sig = lazy (Coqlib.build_sigma ()).proj1
 
-let coq_O = function () -> coq_init_constant "num.nat.O"
-let coq_S = function () -> coq_init_constant "num.nat.S"
-let lt_n_O = function () -> coq_constant "num.nat.nlt_0_r"
+let rocq_O = function () -> rocq_init_constant "num.nat.O"
+let rocq_S = function () -> rocq_init_constant "num.nat.S"
+let lt_n_O = function () -> rocq_constant "num.nat.nlt_0_r"
 let max_ref = function () -> find_reference ["Recdef"] "max"
 
 let max_constr = function
   | () ->
     EConstr.of_constr (constr_of_monomorphic_global (Global.env ()) (delayed_force max_ref))
 
-let f_S t = mkApp (delayed_force coq_S, [|t|])
+let f_S t = mkApp (delayed_force rocq_S, [|t|])
 
 let rec n_x_id ids n =
   if Int.equal n 0 then []
@@ -170,7 +170,7 @@ let (value_f : Constr.rel_context -> GlobRef.t -> Constr.t) =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let env = Environ.push_rel_context context env in
-  let proj = Globnames.destConstRef (Lazy.force coq_proj1_sig) in
+  let proj = Globnames.destConstRef (Lazy.force rocq_proj1_sig) in
   let proj_body = constant_value_in env (proj, UVars.Instance.empty) in (* Why not to keep it named? *)
   let arg = mkApp (mkRef (fterm, EInstance.empty), Context.Rel.instance mkRel 0 context) in
   let t, p = Hipattern.match_sigma env sigma (Retyping.get_type_of env sigma arg) in
@@ -541,7 +541,7 @@ let rec destruct_bounds_aux infos (bound, hyple, rechyps) lbounds =
       match lbounds with
       | [] ->
         let ids = Tacmach.pf_ids_of_hyps g in
-        let s_max = mkApp (delayed_force coq_S, [|bound|]) in
+        let s_max = mkApp (delayed_force rocq_S, [|bound|]) in
         let k = next_ident_away_in_goal k_id ids in
         let ids = k :: ids in
         let h' = next_ident_away_in_goal h'_id ids in
@@ -620,7 +620,7 @@ let rec destruct_bounds_aux infos (bound, hyple, rechyps) lbounds =
 
 let destruct_bounds infos =
   destruct_bounds_aux infos
-    (delayed_force coq_O, [], [])
+    (delayed_force rocq_O, [], [])
     infos.values_and_bounds
 
 let terminate_app f_and_args expr_info continuation_tac infos =
@@ -1093,7 +1093,7 @@ let equation_app_rec (f, args) expr_info continuation_tac info =
             ; continuation_tac
                 { expr_info with
                   args_assoc =
-                    (args, delayed_force coq_O) :: expr_info.args_assoc }
+                    (args, delayed_force rocq_O) :: expr_info.args_assoc }
             ; observe_tac
                 (fun _ _ -> str "app_rec intros_values_eq")
                 (intros_values_eq expr_info []) ]
@@ -1106,7 +1106,7 @@ let equation_app_rec (f, args) expr_info continuation_tac info =
                 (continuation_tac
                    { expr_info with
                      args_assoc =
-                       (args, delayed_force coq_O) :: expr_info.args_assoc }) ])
+                       (args, delayed_force rocq_O) :: expr_info.args_assoc }) ])
 
 let equation_info =
   { message = "prove_equation with term "
@@ -1160,7 +1160,7 @@ let compute_terminate_type nb_args func =
   in
   let value =
     mkApp
-      ( constr_of_monomorphic_global (Global.env ()) (Util.delayed_force coq_sig_ref)
+      ( constr_of_monomorphic_global (Global.env ()) (Util.delayed_force rocq_sig_ref)
       , [|b; mkLambda (make_annot (Name v_id) Sorts.Relevant, b, nb_iter)|] )
   in
   compose_prod rev_args value
@@ -1275,7 +1275,7 @@ let whole_start concl_tac nb_args is_mes func input_type relation rec_arg_num :
             ; (* we are on the main branche (i.e. still on a match ... with .... end *)
               is_final = true
             ; (* and on leaf (more or less) *)
-              f_terminate = delayed_force coq_O
+              f_terminate = delayed_force rocq_O
             ; nb_arg = nb_args
             ; concl_tac
             ; rec_arg_id

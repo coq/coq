@@ -228,8 +228,8 @@ let mk_result ctxt value avoid =
   Some functions to deal with overlapping patterns
 **************************************************)
 
-let coq_True_ref = lazy (Coqlib.lib_ref "core.True.type")
-let coq_False_ref = lazy (Coqlib.lib_ref "core.False.type")
+let rocq_True_ref = lazy (Coqlib.lib_ref "core.True.type")
+let rocq_False_ref = lazy (Coqlib.lib_ref "core.False.type")
 
 (*
   [make_discr_match_el \[e1,...en\]] builds match e1,...,en with
@@ -254,8 +254,8 @@ let make_discr_match_brl i =
     (fun j {CAst.v = idl, patl, _} ->
       CAst.make
       @@
-      if Int.equal j i then (idl, patl, mkGRef (Lazy.force coq_True_ref))
-      else (idl, patl, mkGRef (Lazy.force coq_False_ref)))
+      if Int.equal j i then (idl, patl, mkGRef (Lazy.force rocq_True_ref))
+      else (idl, patl, mkGRef (Lazy.force rocq_False_ref)))
     0
 
 (*

@@ -335,15 +335,15 @@ let rewrite_until_var arg_num eq_ids : unit Proofview.tactic =
 let rec_pte_id = Id.of_string "Hrec"
 
 let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
-  let coq_False =
+  let rocq_False =
     EConstr.of_constr
       (UnivGen.constr_of_monomorphic_global env @@ Coqlib.lib_ref "core.False.type")
   in
-  let coq_True =
+  let rocq_True =
     EConstr.of_constr
       (UnivGen.constr_of_monomorphic_global env @@ Coqlib.lib_ref "core.True.type")
   in
-  let coq_I =
+  let rocq_I =
     EConstr.of_constr
       (UnivGen.constr_of_monomorphic_global env @@ Coqlib.lib_ref "core.True.I")
   in
@@ -401,7 +401,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
             change_hyp_with_using "rec_hyp_tac" hyp_id real_type_of_hyp
               prove_new_type_of_hyp
           ; scan_type context popped_t' ]
-      else if eq_constr sigma t_x coq_False then
+      else if eq_constr sigma t_x rocq_False then
         (*          observe (str "Removing : "++ Ppconstr.pr_id hyp_id++  *)
         (*                     str " since it has False in its preconds " *)
         (*                  ); *)
@@ -409,7 +409,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
       else if is_incompatible_eq env sigma t_x then raise TOREMOVE
         (* t_x := C1 ... =  C2 ... *)
       else if
-        eq_constr sigma t_x coq_True (* Trivial => we remove this precons *)
+        eq_constr sigma t_x rocq_True (* Trivial => we remove this precons *)
       then
         (*          observe (str "In "++Ppconstr.pr_id hyp_id++  *)
         (*                     str " removing useless precond True" *)
@@ -430,7 +430,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
                   let to_refine =
                     applist
                       ( mkVar hyp_id
-                      , List.rev (coq_I :: List.map mkVar context_hyps) )
+                      , List.rev (rocq_I :: List.map mkVar context_hyps) )
                   in
                   Tactics.exact_check to_refine) ]
         in
