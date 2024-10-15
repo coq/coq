@@ -30,7 +30,8 @@ val print_glob : Environ.env -> Evd.evar_map -> glob_generic_tactic -> Pp.t
 
 val subst : Mod_subst.substitution -> glob_generic_tactic -> glob_generic_tactic
 
-val intern : Environ.env -> ?ltacvars:Id.Set.t -> raw_generic_tactic -> glob_generic_tactic
+val intern : ?strict:bool -> Environ.env -> ?ltacvars:Id.Set.t -> raw_generic_tactic -> glob_generic_tactic
+(** [strict] is default true *)
 
 val interp : ?lfun:Geninterp.Val.t Id.Map.t -> glob_generic_tactic -> unit Proofview.tactic
 
