@@ -236,13 +236,13 @@ let exec_tactic env sigma n f args =
 let gen_constant n = lazy (EConstr.of_constr (UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref n)))
 let gen_reference n = lazy (Coqlib.lib_ref n)
 
-let coq_mk_Setoid = gen_constant "plugins.ring.Build_Setoid_Theory"
-let coq_None = gen_reference "core.option.None"
-let coq_Some = gen_reference "core.option.Some"
-let coq_eq = gen_constant "core.eq.type"
+let rocq_mk_Setoid = gen_constant "plugins.ring.Build_Setoid_Theory"
+let rocq_None = gen_reference "core.option.None"
+let rocq_Some = gen_reference "core.option.Some"
+let rocq_eq = gen_constant "core.eq.type"
 
-let coq_cons = gen_reference "core.list.cons"
-let coq_nil = gen_reference "core.list.nil"
+let rocq_cons = gen_reference "core.list.cons"
+let rocq_nil = gen_reference "core.list.nil"
 
 let lapp f args = mkApp(Lazy.force f,args)
 
@@ -280,31 +280,31 @@ let pol_cst s = mk_cst [plugin_dir;"Ring_polynom"] s
 (* Ring theory *)
 
 (* almost_ring defs *)
-let coq_almost_ring_theory = my_constant "almost_ring_theory"
+let rocq_almost_ring_theory = my_constant "almost_ring_theory"
 
 (* setoid and morphism utilities *)
-let coq_eq_setoid = my_reference "Eqsth"
-let coq_eq_morph = my_reference "Eq_ext"
-let coq_eq_smorph = my_reference "Eq_s_ext"
+let rocq_eq_setoid = my_reference "Eqsth"
+let rocq_eq_morph = my_reference "Eq_ext"
+let rocq_eq_smorph = my_reference "Eq_s_ext"
 
 (* ring -> almost_ring utilities *)
-let coq_ring_theory = my_constant "ring_theory"
-let coq_mk_reqe = my_constant "mk_reqe"
+let rocq_ring_theory = my_constant "ring_theory"
+let rocq_mk_reqe = my_constant "mk_reqe"
 
 (* semi_ring -> almost_ring utilities *)
-let coq_semi_ring_theory = my_constant "semi_ring_theory"
-let coq_mk_seqe = my_constant "mk_seqe"
+let rocq_semi_ring_theory = my_constant "semi_ring_theory"
+let rocq_mk_seqe = my_constant "mk_seqe"
 
-let coq_abstract = my_constant"Abstract"
-let coq_comp = my_constant"Computational"
-let coq_morph = my_constant"Morphism"
+let rocq_abstract = my_constant"Abstract"
+let rocq_comp = my_constant"Computational"
+let rocq_morph = my_constant"Morphism"
 
 (* power function *)
 let ltac_inv_morph_nothing = zltac"inv_morph_nothing"
 
 (* hypothesis *)
-let coq_mkhypo = my_reference "mkhypo"
-let coq_hypo = my_reference "hypo"
+let rocq_mkhypo = my_reference "mkhypo"
+let rocq_hypo = my_reference "hypo"
 
 (* Equality: do not evaluate but make recursive call on both sides *)
 let map_with_eq arg_map =
@@ -314,8 +314,8 @@ let map_without_eq arg_map =
   { with_eq = false; arguments = arg_map }
 
 let base_red = [
-  coq_cons, Arg (function 2->Rec|_->Prot);
-  coq_nil, Arg (function _ -> Prot);
+  rocq_cons, Arg (function 2->Rec|_->Prot);
+  rocq_nil, Arg (function _ -> Prot);
   my_reference "IDphi", Full;
   my_reference "gen_phiZ", Full;
 ]
@@ -430,24 +430,24 @@ let setoid_of_relation env sigma a r =
     let sigma, refl = Rewrite.get_reflexive_proof env sigma a r in
     let sigma, sym = Rewrite.get_symmetric_proof env sigma a r in
     let sigma, trans = Rewrite.get_transitive_proof env sigma a r in
-    sigma, lapp coq_mk_Setoid [|a ; r ; refl; sym; trans |]
+    sigma, lapp rocq_mk_Setoid [|a ; r ; refl; sym; trans |]
   with Not_found ->
     CErrors.user_err (str "Cannot find a setoid structure for relation " ++ pr_econstr_env env sigma r ++ str ".")
 
 let op_morph r add mul opp req m1 m2 m3 =
-  lapp coq_mk_reqe [| r; add; mul; opp; req; m1; m2; m3 |]
+  lapp rocq_mk_reqe [| r; add; mul; opp; req; m1; m2; m3 |]
 
 let op_smorph r add mul req m1 m2 =
-  lapp coq_mk_seqe [| r; add; mul; req; m1; m2 |]
+  lapp rocq_mk_seqe [| r; add; mul; req; m1; m2 |]
 
 let ring_equality env sigma (r,add,mul,opp,req) =
   match EConstr.kind sigma req with
-    | App (f, [| _ |]) when eq_constr_nounivs sigma f (Lazy.force coq_eq) ->
-        let sigma, setoid = plapp sigma coq_eq_setoid [|r|] in
+    | App (f, [| _ |]) when eq_constr_nounivs sigma f (Lazy.force rocq_eq) ->
+        let sigma, setoid = plapp sigma rocq_eq_setoid [|r|] in
         let sigma, op_morph =
           match opp with
-              Some opp -> plapp sigma coq_eq_morph [|r;add;mul;opp|]
-          | None -> plapp sigma coq_eq_smorph [|r;add;mul|] in
+              Some opp -> plapp sigma rocq_eq_morph [|r;add;mul;opp|]
+          | None -> plapp sigma rocq_eq_smorph [|r;add;mul|] in
         let sigma, setoid = Typing.solve_evars env sigma setoid in
         let sigma, op_morph = Typing.solve_evars env sigma op_morph in
         (setoid,op_morph)
@@ -498,13 +498,13 @@ let dest_ring env sigma th_spec =
   let th_typ = Retyping.get_type_of env sigma th_spec in
   match EConstr.kind sigma th_typ with
       App(f,[|r;zero;one;add;mul;sub;opp;req|])
-        when eq_constr_nounivs sigma f (Lazy.force coq_almost_ring_theory) ->
+        when eq_constr_nounivs sigma f (Lazy.force rocq_almost_ring_theory) ->
           (None,r,zero,one,add,mul,Some sub,Some opp,req)
     | App(f,[|r;zero;one;add;mul;req|])
-        when eq_constr_nounivs sigma f (Lazy.force coq_semi_ring_theory) ->
+        when eq_constr_nounivs sigma f (Lazy.force rocq_semi_ring_theory) ->
         (Some true,r,zero,one,add,mul,None,None,req)
     | App(f,[|r;zero;one;add;mul;sub;opp;req|])
-        when eq_constr_nounivs sigma f (Lazy.force coq_ring_theory) ->
+        when eq_constr_nounivs sigma f (Lazy.force rocq_ring_theory) ->
         (Some false,r,zero,one,add,mul,Some sub,Some opp,req)
     | _ -> error "bad ring structure"
 
@@ -512,9 +512,9 @@ let dest_ring env sigma th_spec =
 let reflect_coeff rkind =
   (* We build an ill-typed terms on purpose... *)
   match rkind with
-      Abstract -> Lazy.force coq_abstract
-    | Computational c -> lapp coq_comp [|c|]
-    | Morphism m -> lapp coq_morph [|m|]
+      Abstract -> Lazy.force rocq_abstract
+    | Computational c -> lapp rocq_comp [|c|]
+    | Morphism m -> lapp rocq_morph [|m|]
 
 let interp_cst_tac env sigma rk kind (zero,one,add,mul,opp) cst_tac =
   match cst_tac with
@@ -527,26 +527,26 @@ let interp_cst_tac env sigma rk kind (zero,one,add,mul,opp) cst_tac =
 
 let make_hyp env sigma c =
   let t = Retyping.get_type_of env sigma c in
-  plapp sigma coq_mkhypo [|t;c|]
+  plapp sigma rocq_mkhypo [|t;c|]
 
 let make_hyp_list env sigma lH =
-  let sigma, carrier = Evd.fresh_global env sigma (Lazy.force coq_hypo) in
+  let sigma, carrier = Evd.fresh_global env sigma (Lazy.force rocq_hypo) in
   let sigma, l =
     List.fold_right
       (fun c (sigma,l) ->
         let sigma, c = make_hyp env sigma c in
-        plapp sigma coq_cons [|carrier; c; l|]) lH
-        (plapp sigma coq_nil [|carrier|])
+        plapp sigma rocq_cons [|carrier; c; l|]) lH
+        (plapp sigma rocq_nil [|carrier|])
   in
   let sigma, l' = Typing.solve_evars env sigma l in
   sigma, l'
 
 let interp_power env sigma pow =
-  let sigma, carrier = Evd.fresh_global env sigma (Lazy.force coq_hypo) in
+  let sigma, carrier = Evd.fresh_global env sigma (Lazy.force rocq_hypo) in
   match pow with
   | None ->
       let t = ArgArg(Loc.tag (Lazy.force ltac_inv_morph_nothing)) in
-      let sigma, c = plapp sigma coq_None [|carrier|] in
+      let sigma, c = plapp sigma rocq_None [|carrier|] in
       sigma, (CAst.make (TacArg (TacCall (CAst.make (t,[])))), c)
   | Some (tac, spec) ->
       let tac =
@@ -556,25 +556,25 @@ let interp_power env sigma pow =
             closed_term_ast (List.map Smartlocate.global_with_alias lc) in
       let spec = ic_unsafe env sigma spec in
       let sigma, spec = make_hyp env sigma spec in
-      let sigma, pow = plapp sigma coq_Some [|carrier; spec|] in
+      let sigma, pow = plapp sigma rocq_Some [|carrier; spec|] in
       sigma, (tac, pow)
 
 let interp_sign env sigma sign =
-  let sigma, carrier = Evd.fresh_global env sigma (Lazy.force coq_hypo) in
+  let sigma, carrier = Evd.fresh_global env sigma (Lazy.force rocq_hypo) in
   match sign with
-  | None -> plapp sigma coq_None [|carrier|]
+  | None -> plapp sigma rocq_None [|carrier|]
   | Some spec ->
       let sigma, spec = make_hyp env sigma (ic_unsafe env sigma spec) in
-      plapp sigma coq_Some [|carrier;spec|]
+      plapp sigma rocq_Some [|carrier;spec|]
        (* Same remark on ill-typed terms ... *)
 
 let interp_div env sigma div =
-  let sigma, carrier = Evd.fresh_global env sigma (Lazy.force coq_hypo) in
+  let sigma, carrier = Evd.fresh_global env sigma (Lazy.force rocq_hypo) in
   match div with
-  | None -> plapp sigma coq_None [|carrier|]
+  | None -> plapp sigma rocq_None [|carrier|]
   | Some spec ->
       let sigma, spec = make_hyp env sigma (ic_unsafe env sigma spec) in
-      plapp sigma coq_Some [|carrier;spec|]
+      plapp sigma rocq_Some [|carrier;spec|]
        (* Same remark on ill-typed terms ... *)
 
 let add_theory0 env sigma name rth eqth morphth cst_tac (pre,post) power sign div =
@@ -674,8 +674,8 @@ let make_args_list sigma rl t =
 
 let make_term_list env sigma carrier rl =
   let sigma, l = List.fold_right
-    (fun x (sigma,l) -> plapp sigma coq_cons [|carrier;x;l|]) rl
-    (plapp sigma coq_nil [|carrier|])
+    (fun x (sigma,l) -> plapp sigma rocq_cons [|carrier;x;l|]) rl
+    (plapp sigma rocq_nil [|carrier|])
   in
   Typing.solve_evars env sigma l
 
@@ -857,7 +857,7 @@ let ftheory_to_obj : field_info -> obj =
 
 let field_equality env sigma r inv req =
   match EConstr.kind sigma req with
-    | App (f, [| _ |]) when eq_constr_nounivs sigma f (Lazy.force coq_eq) ->
+    | App (f, [| _ |]) when eq_constr_nounivs sigma f (Lazy.force rocq_eq) ->
         let c = UnivGen.constr_of_monomorphic_global (Global.env ()) Coqlib.(lib_ref "core.eq.congr") in
         let c = EConstr.of_constr c in
         mkApp(c,[|r;r;inv|])
