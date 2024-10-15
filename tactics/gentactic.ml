@@ -16,6 +16,8 @@ type glob_generic_tactic = Genarg.glob_generic_argument
 
 let of_raw_genarg x = x
 
+let to_raw_genarg x = x
+
 let of_glob_genarg x = x
 
 let print_raw = Pputils.pr_raw_generic
