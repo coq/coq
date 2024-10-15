@@ -124,6 +124,7 @@ very specific to Coq (not so similar to Camlp5):
 
   ```
   ARGUMENT EXTEND ast_closure_term
+       TYPED AS type_info
        PRINTED BY { pp_ast_closure_term }
        INTERPRETED BY { interp_ast_closure_term }
        GLOBALIZED BY { glob_ast_closure_term }
