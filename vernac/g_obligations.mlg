@@ -34,8 +34,10 @@ let with_tac f tac =
   f tac
 
 let interp_gen tac =
-  let tac = Gentactic.intern (Global.env()) tac in
+  Proofview.Goal.enter begin fun gl ->
+  let tac = Gentactic.intern ~strict:false (Proofview.Goal.env gl) tac in
   Gentactic.interp tac
+  end
 
 (* We define new entries for programs, with the use of this module
  * Subtac. These entries are named Subtac.<foo>

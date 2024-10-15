@@ -24,8 +24,8 @@ let print_glob = Pputils.pr_glb_generic
 
 let subst = Gensubst.generic_substitute
 
-let intern env ?(ltacvars=Id.Set.empty) v =
-  let ist = { (Genintern.empty_glob_sign ~strict:true env) with ltacvars } in
+let intern ?(strict=true) env ?(ltacvars=Id.Set.empty) v =
+  let ist = { (Genintern.empty_glob_sign ~strict env) with ltacvars } in
   let _, v = Genintern.generic_intern ist v in
   v
 
