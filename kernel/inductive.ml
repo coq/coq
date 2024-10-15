@@ -1394,7 +1394,7 @@ let check_one_fix ?evars renv recpos trees def =
                 let fix_stack = if Int.equal i j then stack_this else stack_others in
                 check_nested_fix_body illformed renv' (recindx+1) fix_stack rs' body) rs' recindxs bodies in
             let needreduce_fix, rs = List.sep_first rs' in
-            let non_absorbed_stack = List.skipn nuniformparams stack in
+            let absorbed_stack, non_absorbed_stack = List.chop nuniformparams stack in
             check_rec_call_state renv needreduce_fix non_absorbed_stack rs (fun () ->
               (* we try hard to reduce the fix away by looking for a
                  constructor in [decrArg] (we unfold definitions too) *)
@@ -1405,7 +1405,7 @@ let check_one_fix ?evars renv recpos trees def =
               let c = whd_all ?evars renv.env (lift n recArg) in
               let hd, _ = decompose_app_list c in
               match kind hd with
-              | Construct _ -> Some (contract_fix fix, stack)
+              | Construct _ -> Some (contract_fix fix, absorbed_stack)
               | CoFix _ | Ind _ | Lambda _ | Prod _ | LetIn _
               | Sort _ | Int _ | Float _ | String _
               | Array _ -> assert false
