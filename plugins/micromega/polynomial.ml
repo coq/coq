@@ -420,7 +420,7 @@ module LinPoly = struct
       (fun p vr n -> Poly.add (MonT.retrieve vr) n p)
       (Poly.constant Q.zero) v
 
-  let coq_poly_of_linpol cst p =
+  let rocq_poly_of_linpol cst p =
     let pol_of_mon m =
       Monomial.fold
         (fun x v p ->
@@ -968,9 +968,9 @@ module ProofFormat = struct
       | AddPrf (p1, p2) -> Mc.PsatzAdd (cmpl env p1, cmpl env p2)
       | LetPrf (p1, p2) -> Mc.PsatzLet (cmpl env p1, cmpl (Env.push_ref env) p2)
       | MulC (lp, p) ->
-        let lp = norm (LinPoly.coq_poly_of_linpol cst lp) in
+        let lp = norm (LinPoly.rocq_poly_of_linpol cst lp) in
         Mc.PsatzMulC (lp, cmpl env p)
-      | Square lp -> Mc.PsatzSquare (norm (LinPoly.coq_poly_of_linpol cst lp))
+      | Square lp -> Mc.PsatzSquare (norm (LinPoly.rocq_poly_of_linpol cst lp))
       | _ -> failwith "Cuts should already be compiled"
     in
     cmpl env prf
@@ -981,7 +981,7 @@ module ProofFormat = struct
   let cmpl_pol_z lp =
     try
       let cst x = CamlToCoq.bigint (Q.num x) in
-      Mc.normZ (LinPoly.coq_poly_of_linpol cst lp)
+      Mc.normZ (LinPoly.rocq_poly_of_linpol cst lp)
     with x ->
       Printf.printf "cmpl_pol_z %s %a\n" (Printexc.to_string x) LinPoly.pp lp;
       raise x

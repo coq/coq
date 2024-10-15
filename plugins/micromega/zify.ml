@@ -26,17 +26,17 @@ let zify str =
        (Coqlib.lib_ref ("ZifyClasses." ^ str)))
 
 (** classes *)
-let coq_InjTyp = lazy (Coqlib.lib_ref "ZifyClasses.InjTyp")
+let rocq_InjTyp = lazy (Coqlib.lib_ref "ZifyClasses.InjTyp")
 
-let coq_BinOp = lazy (Coqlib.lib_ref "ZifyClasses.BinOp")
-let coq_UnOp = lazy (Coqlib.lib_ref "ZifyClasses.UnOp")
-let coq_CstOp = lazy (Coqlib.lib_ref "ZifyClasses.CstOp")
-let coq_BinRel = lazy (Coqlib.lib_ref "ZifyClasses.BinRel")
-let coq_PropBinOp = lazy (Coqlib.lib_ref "ZifyClasses.PropBinOp")
-let coq_PropUOp = lazy (Coqlib.lib_ref "ZifyClasses.PropUOp")
-let coq_BinOpSpec = lazy (Coqlib.lib_ref "ZifyClasses.BinOpSpec")
-let coq_UnOpSpec = lazy (Coqlib.lib_ref "ZifyClasses.UnOpSpec")
-let coq_Saturate = lazy (Coqlib.lib_ref "ZifyClasses.Saturate")
+let rocq_BinOp = lazy (Coqlib.lib_ref "ZifyClasses.BinOp")
+let rocq_UnOp = lazy (Coqlib.lib_ref "ZifyClasses.UnOp")
+let rocq_CstOp = lazy (Coqlib.lib_ref "ZifyClasses.CstOp")
+let rocq_BinRel = lazy (Coqlib.lib_ref "ZifyClasses.BinRel")
+let rocq_PropBinOp = lazy (Coqlib.lib_ref "ZifyClasses.PropBinOp")
+let rocq_PropUOp = lazy (Coqlib.lib_ref "ZifyClasses.PropUOp")
+let rocq_BinOpSpec = lazy (Coqlib.lib_ref "ZifyClasses.BinOpSpec")
+let rocq_UnOpSpec = lazy (Coqlib.lib_ref "ZifyClasses.UnOpSpec")
+let rocq_Saturate = lazy (Coqlib.lib_ref "ZifyClasses.Saturate")
 
 (* morphism like lemma *)
 
@@ -405,7 +405,7 @@ module EInj = struct
   type elt = EInjT.t
 
   let name = "EInj"
-  let gref = coq_InjTyp
+  let gref = rocq_InjTyp
   let table = table
   let cast x = InjTyp x
   let dest = function InjTyp x -> Some x | _ -> None
@@ -459,7 +459,7 @@ module EBinOp = struct
   open EBinOpT
 
   let name = "BinOp"
-  let gref = coq_BinOp
+  let gref = rocq_BinOp
   let table = table
 
   let mk_elt evd i a =
@@ -501,7 +501,7 @@ module ECstOp = struct
   open ECstOpT
 
   let name = "CstOp"
-  let gref = coq_CstOp
+  let gref = rocq_CstOp
   let table = table
   let cast x = CstOp x
   let dest = function CstOp x -> Some x | _ -> None
@@ -528,7 +528,7 @@ module EUnOp = struct
   open EUnOpT
 
   let name = "UnOp"
-  let gref = coq_UnOp
+  let gref = rocq_UnOp
   let table = table
   let cast x = UnOp x
   let dest = function UnOp x -> Some x | _ -> None
@@ -561,7 +561,7 @@ module EBinRel = struct
   open EBinRelT
 
   let name = "BinRel"
-  let gref = coq_BinRel
+  let gref = rocq_BinRel
   let table = table
   let cast x = BinRel x
   let dest = function BinRel x -> Some x | _ -> None
@@ -588,7 +588,7 @@ module EPropBinOp = struct
   open EPropBinOpT
 
   let name = "PropBinOp"
-  let gref = coq_PropBinOp
+  let gref = rocq_PropBinOp
   let table = table
   let cast x = PropOp x
   let dest = function PropOp x -> Some x | _ -> None
@@ -602,7 +602,7 @@ module EPropUnOp = struct
   open EPropUnOpT
 
   let name = "PropUOp"
-  let gref = coq_PropUOp
+  let gref = rocq_PropUOp
   let table = table
   let cast x = PropUnOp x
   let dest = function PropUnOp x -> Some x | _ -> None
@@ -719,7 +719,7 @@ module ESat = struct
   open ESatT
 
   let name = "Saturate"
-  let gref = coq_Saturate
+  let gref = rocq_Saturate
   let table = saturate
   let cast x = Saturate x
   let dest = function Saturate x -> Some x | _ -> None
@@ -733,7 +733,7 @@ module EUnopSpec = struct
   type elt = ESpecT.t
 
   let name = "UnopSpec"
-  let gref = coq_UnOpSpec
+  let gref = rocq_UnOpSpec
   let table = specs
   let cast x = UnOpSpec x
   let dest = function UnOpSpec x -> Some x | _ -> None
@@ -747,7 +747,7 @@ module EBinOpSpec = struct
   type elt = ESpecT.t
 
   let name = "BinOpSpec"
-  let gref = coq_BinOpSpec
+  let gref = rocq_BinOpSpec
   let table = specs
   let cast x = BinOpSpec x
   let dest = function BinOpSpec x -> Some x | _ -> None
