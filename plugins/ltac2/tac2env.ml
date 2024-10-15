@@ -344,8 +344,10 @@ let interp_ml_object t =
 
 (** Absolute paths *)
 
-let coq_prefix =
+let rocq_prefix =
   MPfile (DirPath.make (List.map Id.of_string ["Init"; "Ltac2"]))
+
+let coq_prefix = rocq_prefix
 
 let std_prefix =
   MPfile (DirPath.make (List.map Id.of_string ["Std"; "Ltac2"]))
