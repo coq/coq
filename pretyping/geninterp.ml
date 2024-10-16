@@ -100,4 +100,6 @@ module Interp = Register(InterpObj)
 
 let interp = Interp.obj
 
+let generic_interp ist (GenArg (Glbwit wit, v)) = interp wit ist v
+
 let register_interp0 = Interp.register0
