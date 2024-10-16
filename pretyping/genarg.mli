@@ -250,7 +250,7 @@ sig
   val name : string
   (** A name for such kind of manipulation, e.g. [interp]. *)
 
-  val default : ('raw, 'glb, 'top) genarg_type -> ('raw, 'glb, 'top) obj option
+  val default : ('raw, 'glb, 'top) ArgT.tag -> ('raw, 'glb, 'top) obj option
   (** A generic object when there is no registered object for this type. *)
 end
 
@@ -261,13 +261,13 @@ sig
 
   val register0 : ('raw, 'glb, 'top) genarg_type ->
     ('raw, 'glb, 'top) M.obj -> unit
-  (** Register a ground type manipulation function. *)
+  (** Register a ground type manipulation function. Must be [ExtraArg]. *)
 
   val obj : ('raw, 'glb, 'top) genarg_type -> ('raw, 'glb, 'top) M.obj
-  (** Recover a manipulation function at a given type. *)
+  (** Recover a manipulation function at a given type. Must be [ExtraArg]. *)
 
   val mem : _ genarg_type -> bool
-  (** Is this type registered? *)
+  (** Is this type registered? (must be [ExtraArg]) *)
 
   val fold_keys : (ArgT.any -> 'acc -> 'acc) -> 'acc -> 'acc
   (** Fold over the registered keys. *)

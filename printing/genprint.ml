@@ -118,8 +118,7 @@ module PrintObj =
 struct
   type ('raw, 'glb, 'top) obj = ('raw, 'glb, 'top) genprinter
   let name = "printer"
-  let default wit = match wit with
-  | ExtraArg tag ->
+  let default tag =
     let name = try ArgT.repr tag with Assert_failure _ when !Flags.in_debugger -> "UNKNOWN" in
     let printer = {
       raw = (fun _ -> PrinterBasic (fun env sigma -> str "<genarg:" ++ str name ++ str ">"));
@@ -127,7 +126,6 @@ struct
       top = (fun _ -> TopPrinterBasic (fun () -> str "<genarg:" ++ str name ++ str ">"));
     } in
     Some printer
-  | _ -> assert false
 end
 
 module Print = Register (PrintObj)

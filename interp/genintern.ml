@@ -82,7 +82,7 @@ module InternPatObj = struct
   let name = "intern_pat"
   let default tag =
     Some (fun ?loc ->
-        let name = Genarg.(ArgT.repr (get_arg_tag tag)) in
+        let name = Genarg.(ArgT.repr tag) in
         CErrors.user_err ?loc Pp.(str "This quotation is not supported in tactic patterns (" ++ str name ++ str ")"))
 end
 

@@ -174,7 +174,7 @@ module type GenObj =
 sig
   type ('raw, 'glb, 'top) obj
   val name : string
-  val default : ('raw, 'glb, 'top) genarg_type -> ('raw, 'glb, 'top) obj option
+  val default : ('raw, 'glb, 'top) ArgT.tag -> ('raw, 'glb, 'top) obj option
 end
 
 let get_arg_tag = function
@@ -199,7 +199,7 @@ struct
     try
       let GenMap.Pack obj = GenMap.find name !arg0_map in obj
     with Not_found ->
-      match M.default (ExtraArg name) with
+      match M.default name with
       | None ->
         CErrors.anomaly (str M.name ++ str " function not found: " ++ str (ArgT.repr name) ++ str ".")
       | Some obj -> obj
