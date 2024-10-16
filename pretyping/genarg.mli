@@ -274,18 +274,6 @@ sig
 
 end
 
-(** {5 Substitution functions} *)
-
-type 'glb subst_fun = Mod_subst.substitution -> 'glb -> 'glb
-(** The type of functions used for substituting generic arguments. *)
-
-val substitute : ('raw, 'glb, 'top) genarg_type -> 'glb subst_fun
-
-val generic_substitute : glob_generic_argument subst_fun
-
-val register_subst0 : ('raw, 'glb, 'top) genarg_type ->
-  'glb subst_fun -> unit
-
 (** {5 Compatibility layer}
 
 The functions below are aliases for generic_type constructors.

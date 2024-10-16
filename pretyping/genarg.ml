@@ -217,21 +217,3 @@ struct
   let fold_keys f acc = GenMap.fold (fun (Any (tag,Pack _)) acc -> f (ArgT.Any tag) acc) !arg0_map acc
 
 end
-
-(** Substitution functions *)
-type 'glb subst_fun = Mod_subst.substitution -> 'glb -> 'glb
-
-module SubstObj =
-struct
-  type ('raw, 'glb, 'top) obj = 'glb subst_fun
-  let name = "subst"
-  let default _ = None
-end
-
-module Subst = Register (SubstObj)
-
-let substitute = Subst.obj
-let register_subst0 = Subst.register0
-
-let generic_substitute subs (GenArg (Glbwit wit, v)) =
-  in_gen (glbwit wit) (substitute wit subs v)
