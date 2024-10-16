@@ -43,7 +43,7 @@ open Libobject
 
 (** Ssreflect load check. *)
 
-(* To allow ssrcoq to be fully compatible with the "plain" Coq, we only *)
+(* To allow ssrcoq to be fully compatible with the "plain" Rocq, we only *)
 (* turn on its incompatible features (the new rewrite syntax, and the   *)
 (* reserved identifiers) when the theory library (ssreflect.v) has      *)
 (* has actually been required, or is being defined. Because this check  *)
@@ -1006,7 +1006,7 @@ let pr_ssrfwdidx _ _ _ = pr_ssrfwdid
 }
 
 (* We use a primitive parser for the head identifier of forward *)
-(* tactis to avoid syntactic conflicts with basic Coq tactics. *)
+(* tactis to avoid syntactic conflicts with basic Rocq tactics. *)
 ARGUMENT EXTEND ssrfwdid TYPED AS ident PRINTED BY { pr_ssrfwdidx }
 END
 
@@ -1632,7 +1632,7 @@ let ltac_expr = Pltac.ltac_expr
 
 (** Name generation *)
 
-(* Since Coq now does repeated internal checks of its external lexical *)
+(* Since Rocq now does repeated internal checks of its external lexical *)
 (* rules, we now need to carve ssreflect reserved identifiers out of   *)
 (* out of the user namespace. We use identifiers of the form _id_ for  *)
 (* this purpose, e.g., we "anonymize" an identifier id as _id_, adding *)

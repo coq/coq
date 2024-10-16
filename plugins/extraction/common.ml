@@ -502,7 +502,7 @@ let opened_libraries () =
    otherwise it contains the label of the reference to print.
    [rls] is the string list giving the qualified name, short name at the end. *)
 
-(* In Coq, we can qualify [M.t] even if we are inside [M], but in Ocaml we
+(* In Rocq, we can qualify [M.t] even if we are inside [M], but in Ocaml we
    cannot do that. So, if [t] gets hidden and we need a long name for it,
    we duplicate the _definition_ of t in a Coq__XXX module, and similarly
    for a sub-module [M.N] *)
@@ -696,7 +696,7 @@ let check_extract_string () =
     String.equal (find_custom @@ string_type_ref ()) string_type
   with Not_found -> false
 
-(* The argument is known to be of type Coq.Strings.String.string.
+(* The argument is known to be of type Strings.String.string.
    Check that it is built from constructors EmptyString and String
    with constant ascii arguments. *)
 

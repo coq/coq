@@ -62,7 +62,7 @@ let () = Mltop.add_init_function "coq-core.plugins.ssreflect" (fun () ->
 (* in b       (*^--ALTERNATIVE INNER LET--------^ *)              *)
 
 (* Caveat : There is no pretty-printing support, since this would *)
-(* require a modification to the Coq kernel (adding a new match   *)
+(* require a modification to the Rocq kernel (adding a new match  *)
 (* display style -- why aren't these strings?); also, the v8.1    *)
 (* pretty-printer only allows extension hooks for printing        *)
 (* integer or string literals.                                    *)
@@ -325,9 +325,9 @@ END
 (* Coq v8.1 notation uses "by" and "of" quasi-keywords, i.e., reserved *)
 (* identifiers used as keywords. This is incompatible with ssreflect.v *)
 (* which makes "by" and "of" true keywords, because of technicalities  *)
-(* in the internal lexer-parser API of Coq. We patch this here by      *)
+(* in the internal lexer-parser API of Rocq. We patch this here by     *)
 (* adding new parsing rules that recognize the new keywords.           *)
-(*   To make matters worse, the Coq grammar for tactics fails to       *)
+(*   To make matters worse, the Rocq grammar for tactics fails to      *)
 (* export the non-terminals we need to patch. Fortunately, the CamlP5  *)
 (* API provides a backdoor access (with loads of Obj.magic trickery).  *)
 

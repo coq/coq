@@ -1010,7 +1010,7 @@ let pr_frame = function
 
 let () = register_handler begin function
 | Tac2interp.LtacError (kn, args) ->
-  let t_exn = KerName.make Tac2env.coq_prefix (Label.make "exn") in
+  let t_exn = KerName.make Tac2env.rocq_prefix (Label.make "exn") in
   let v = Tac2ffi.of_open (kn, args) in
   let t = GTypRef (Other t_exn, []) in
   let c = Tac2print.pr_valexpr (Global.env ()) Evd.empty v t in
@@ -1247,7 +1247,7 @@ let call ~pstate g ~with_end_tac tac =
 let call_par ~pstate ~with_end_tac tac =
   ComTactic.solve_parallel ~pstate ~info:None (ltac2_interp tac) ~abstract:false ~with_end_tac
 
-(** Primitive algebraic types than can't be defined Coq-side *)
+(** Primitive algebraic types than can't be defined Rocq-side *)
 
 let register_prim_alg name params def =
   let id = Id.of_string name in
@@ -1266,7 +1266,7 @@ let register_prim_alg name params def =
   let def = { typdef_local = false; typdef_abstract = false; typdef_expr = def } in
   Lib.add_leaf (inTypDef id def)
 
-let coq_def n = KerName.make Tac2env.coq_prefix (Label.make n)
+let rocq_def n = KerName.make Tac2env.rocq_prefix (Label.make n)
 
 let def_unit = {
   typdef_local = false;
@@ -1274,7 +1274,7 @@ let def_unit = {
   typdef_expr = 0, GTydDef (Some (GTypRef (Tuple 0, [])));
 }
 
-let t_list = coq_def "list"
+let t_list = rocq_def "list"
 
 let () = Mltop.declare_cache_obj begin fun () ->
   let unit = Id.of_string "unit" in

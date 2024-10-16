@@ -1,7 +1,7 @@
 (library
  (name extraction_plugin)
  (public_name coq-core.plugins.extraction)
- (synopsis "Coq's extraction plugin")
+ (synopsis "Rocq's extraction plugin")
  (libraries coq-core.vernac))
 
 (coq.pp (modules g_extraction))

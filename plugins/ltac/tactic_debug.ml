@@ -82,7 +82,6 @@ let update_bpt fname offset opt =
 let upd_bpts updates =
   List.iter (fun op ->
     let ((file, offset), opt) = op in
-(*    Printf.printf "Coq upd_bpts %s %d %b\n%!" file offset opt;*)
     update_bpt file offset opt;
   ) updates
 

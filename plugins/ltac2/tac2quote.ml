@@ -38,7 +38,7 @@ let format_prefix = MPdot (prefix_gen "Message", Label.make "Format")
 
 let kername prefix n = KerName.make prefix (Label.of_id (Id.of_string_soft n))
 let std_core n = kername Tac2env.std_prefix n
-let coq_core n = kername Tac2env.coq_prefix n
+let rocq_core n = kername Tac2env.rocq_prefix n
 let control_core n = kername control_prefix n
 let pattern_core n = kername pattern_prefix n
 
@@ -64,7 +64,7 @@ let std_proj ?loc name =
   AbsKn (std_core name)
 
 let thunk e =
-  let t_unit = coq_core "unit" in
+  let t_unit = rocq_core "unit" in
   let loc = e.loc in
   let ty = CAst.make?loc @@ CTypRef (AbsKn (Other t_unit), []) in
   let pat = CAst.make ?loc @@ CPatVar (Anonymous) in
@@ -89,8 +89,8 @@ let of_int {loc;v=n} =
   CAst.make ?loc @@ CTacAtm (AtmInt n)
 
 let of_option ?loc f opt = match opt with
-| None -> constructor ?loc (coq_core "None") []
-| Some e -> constructor ?loc (coq_core "Some") [f e]
+| None -> constructor ?loc (rocq_core "None") []
+| Some e -> constructor ?loc (rocq_core "Some") [f e]
 
 let inj_wit ?loc wit x =
   CAst.make ?loc @@ CTacExt (wit, x)
@@ -152,13 +152,13 @@ let of_open_constr_expected_istype ?delimiters c =
       c])
 
 let of_bool ?loc b =
-  let c = if b then coq_core "true" else coq_core "false" in
+  let c = if b then rocq_core "true" else rocq_core "false" in
   constructor ?loc c []
 
 let rec of_list ?loc f = function
-| [] -> constructor (coq_core "[]") []
+| [] -> constructor (rocq_core "[]") []
 | e :: l ->
-  constructor ?loc (coq_core "::") [f e; of_list ?loc f l]
+  constructor ?loc (rocq_core "::") [f e; of_list ?loc f l]
 
 let array_literal ?loc a =
   if CList.is_empty a then global_ref ?loc (kername array_prefix "empty")
@@ -314,7 +314,7 @@ let abstract_vars loc ?typ vars tac =
   let pat = match typ with
   | None -> pat
   | Some typ ->
-    let t_array = coq_core "array" in
+    let t_array = rocq_core "array" in
     let typ = CAst.make ?loc @@ CTypRef (AbsKn (Other t_array), [typ]) in
     CAst.make ?loc @@ CPatCnv (pat, typ)
   in
@@ -471,7 +471,7 @@ let of_constr_matching {loc;v=m} =
     let vars = List.map (fun (id, loc) -> CAst.make ?loc (Name id)) vars in
     (* Annotate the bound array variable with constr type *)
     let typ =
-      let t_constr = coq_core "constr" in
+      let t_constr = rocq_core "constr" in
       CAst.make ?loc @@ CTypRef (AbsKn (Other t_constr), [])
     in
     let e = abstract_vars loc ~typ vars tac in

@@ -189,13 +189,13 @@ let unif_HO_args env ise0 pa i ca =
     if j = n then ise else loop (unif_HO env ise pa.(j) (ca.(i + j))) (j + 1) in
   loop ise0 0
 
-(* FO unification should boil down to calling w_unify with no_delta, but  *)
-(* alas things are not so simple: w_unify does partial type-checking,     *)
-(* which breaks down when the no-delta flag is on (as the Coq type system *)
-(* requires full convertibility. The workaround here is to convert all    *)
-(* evars into metas, since 8.2 does not TC metas. This means some lossage *)
-(* for HO evars, though hopefully Miller patterns can pick up some of     *)
-(* those cases, and HO matching will mop up the rest.                     *)
+(* FO unification should boil down to calling w_unify with no_delta, but   *)
+(* alas things are not so simple: w_unify does partial type-checking,      *)
+(* which breaks down when the no-delta flag is on (as the Rocq type system *)
+(* requires full convertibility. The workaround here is to convert all     *)
+(* evars into metas, since 8.2 does not TC metas. This means some lossage  *)
+(* for HO evars, though hopefully Miller patterns can pick up some of      *)
+(* those cases, and HO matching will mop up the rest.                      *)
 let flags_FO env =
   let oracle = Environ.oracle env in
   let ts = Conv_oracle.get_transp_state oracle in

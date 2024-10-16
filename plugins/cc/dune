@@ -1,14 +1,14 @@
 (library
  (name cc_core_plugin)
  (public_name coq-core.plugins.cc_core)
- (synopsis "Coq's congruence closure plugin")
+ (synopsis "Rocq's congruence closure plugin")
  (modules (:standard \ g_congruence))
  (libraries coq-core.vernac))
 
 (library
  (name cc_plugin)
  (public_name coq-core.plugins.cc)
- (synopsis "Coq's congruence closure plugin (Ltac1 syntax)")
+ (synopsis "Rocq's congruence closure plugin (Ltac1 syntax)")
  (modules g_congruence)
  (flags :standard -open Cc_core_plugin)
  (libraries coq-core.plugins.ltac coq-core.plugins.cc_core))

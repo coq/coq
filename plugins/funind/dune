@@ -1,7 +1,7 @@
 (library
  (name funind_plugin)
  (public_name coq-core.plugins.funind)
- (synopsis "Coq's functional induction plugin")
+ (synopsis "Rocq's functional induction plugin")
  (libraries coq-core.plugins.ltac coq-core.plugins.extraction))
 
 (coq.pp (modules g_indfun))

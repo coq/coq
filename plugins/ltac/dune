@@ -1,7 +1,7 @@
 (library
  (name ltac_plugin)
  (public_name coq-core.plugins.ltac)
- (synopsis "Coq's LTAC tactic language")
+ (synopsis "Rocq's LTAC tactic language")
  (modules :standard \ tauto)
  (modules_without_implementation tacexpr)
  (libraries coq-core.vernac))
@@ -9,7 +9,7 @@
 (library
  (name tauto_plugin)
  (public_name coq-core.plugins.tauto)
- (synopsis "Coq's tauto tactic")
+ (synopsis "Rocq's tauto tactic")
  (modules tauto)
  (libraries coq-core.plugins.ltac))
 

@@ -74,34 +74,34 @@ let format = repr_ext val_format
 let core_prefix path n = KerName.make path (Label.of_id (Id.of_string_soft n))
 
 let std_core n = core_prefix Tac2env.std_prefix n
-let coq_core n = core_prefix Tac2env.coq_prefix n
+let rocq_core n = core_prefix Tac2env.rocq_prefix n
 
 module Core =
 struct
 
-let t_unit = coq_core "unit"
+let t_unit = rocq_core "unit"
 let v_unit = Tac2ffi.of_unit ()
 
-let t_int = coq_core "int"
-let t_string = coq_core "string"
-let t_array = coq_core "array"
-let t_list = coq_core "list"
-let t_constr = coq_core "constr"
-let t_preterm = coq_core "preterm"
-let t_pattern = coq_core "pattern"
-let t_ident = coq_core "ident"
-let t_option = coq_core "option"
-let t_exn = coq_core "exn"
+let t_int = rocq_core "int"
+let t_string = rocq_core "string"
+let t_array = rocq_core "array"
+let t_list = rocq_core "list"
+let t_constr = rocq_core "constr"
+let t_preterm = rocq_core "preterm"
+let t_pattern = rocq_core "pattern"
+let t_ident = rocq_core "ident"
+let t_option = rocq_core "option"
+let t_exn = rocq_core "exn"
 let t_reference = std_core "reference"
 
-let c_nil = coq_core "[]"
-let c_cons = coq_core "::"
+let c_nil = rocq_core "[]"
+let c_cons = rocq_core "::"
 
-let c_none = coq_core "None"
-let c_some = coq_core "Some"
+let c_none = rocq_core "None"
+let c_some = rocq_core "Some"
 
-let c_true = coq_core "true"
-let c_false = coq_core "false"
+let c_true = rocq_core "true"
+let c_false = rocq_core "false"
 
 end
 
@@ -166,19 +166,19 @@ let projection = repr_ext val_projection
 (** Stdlib exceptions *)
 
 let err_notfocussed =
-  Tac2interp.LtacError (coq_core "Not_focussed", [||])
+  Tac2interp.LtacError (rocq_core "Not_focussed", [||])
 
 let err_outofbounds =
-  Tac2interp.LtacError (coq_core "Out_of_bounds", [||])
+  Tac2interp.LtacError (rocq_core "Out_of_bounds", [||])
 
 let err_notfound =
-  Tac2interp.LtacError (coq_core "Not_found", [||])
+  Tac2interp.LtacError (rocq_core "Not_found", [||])
 
 let err_matchfailure =
-  Tac2interp.LtacError (coq_core "Match_failure", [||])
+  Tac2interp.LtacError (rocq_core "Match_failure", [||])
 
 let err_division_by_zero =
-  Tac2interp.LtacError (coq_core "Division_by_zero", [||])
+  Tac2interp.LtacError (rocq_core "Division_by_zero", [||])
 
 (** Helper functions *)
 

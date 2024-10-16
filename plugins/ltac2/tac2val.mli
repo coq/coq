@@ -18,7 +18,7 @@ open Names
     immediate integers (integers, constructors without arguments) and structured
     blocks (tuples, arrays, constructors with arguments), as well as a few other
     base cases, namely closures, strings, named constructors, and dynamic type
-    coming from the Coq implementation. *)
+    coming from the Rocq implementation. *)
 
 type tag = int
 

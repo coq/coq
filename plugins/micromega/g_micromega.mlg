@@ -10,9 +10,9 @@
 (*                                                                      *)
 (* Micromega: A reflexive tactic using the Positivstellensatz           *)
 (*                                                                      *)
-(* * Mappings from Coq tactics to Caml function calls                   *)
+(* * Mappings from Rocq tactics to Caml function calls                  *)
 (*                                                                      *)
-(*  Frédéric Besson (Irisa/Inria) 2006-2008			        *)
+(*  Frédéric Besson (Irisa/Inria) 2006-2008			                    *)
 (*                                                                      *)
 (************************************************************************)
 

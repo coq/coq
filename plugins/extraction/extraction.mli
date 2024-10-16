@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(*s Extraction from Coq terms to Miniml. *)
+(*s Extraction from Rocq terms to Miniml. *)
 
 open Names
 open Declarations

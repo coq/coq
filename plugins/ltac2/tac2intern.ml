@@ -22,17 +22,17 @@ open Tac2typing_env
 
 (** Hardwired types and constants *)
 
-let coq_type n = KerName.make Tac2env.coq_prefix (Label.make n)
+let rocq_type n = KerName.make Tac2env.rocq_prefix (Label.make n)
 let ltac1_kn n = KerName.make Tac2env.ltac1_prefix (Label.make n)
 
-let t_int = coq_type "int"
-let t_string = coq_type "string"
-let t_constr = coq_type "constr"
+let t_int = rocq_type "int"
+let t_string = rocq_type "string"
+let t_constr = rocq_type "constr"
 let t_ltac1 = ltac1_kn "t"
 let ltac1_lamdba = ltac1_kn "lambda"
-let t_preterm = coq_type "preterm"
-let t_pattern = coq_type "pattern"
-let t_bool = coq_type "bool"
+let t_preterm = rocq_type "preterm"
+let t_pattern = rocq_type "pattern"
+let t_bool = rocq_type "bool"
 
 let ltac2_env : Tac2typing_env.t Genintern.Store.field =
   Genintern.Store.field "ltac2_env"

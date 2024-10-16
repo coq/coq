@@ -797,7 +797,7 @@ let saturate ?(beta=false) ?(bi_types=false) env sigma c ?(ty=Retyping.get_type_
 let dependent_apply_error =
   CErrors.UserError (Pp.str "Could not fill dependent hole in \"apply\"")
 
-(* TASSI: Sometimes Coq's apply fails. According to my experience it may be
+(* TASSI: Sometimes Rocq's apply fails. According to my experience it may be
  * related to goals that are products and with beta redexes. In that case it
  * guesses the wrong number of implicit arguments for your lemma. What follows
  * is just like apply, but with a user-provided number n of implicits.

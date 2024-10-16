@@ -169,7 +169,10 @@ val interp_ml_object : ('a, 'b) Tac2dyn.Arg.tag -> ('a, 'b) ml_object
 
 (** {5 Absolute paths} *)
 
-val coq_prefix : ModPath.t
+val rocq_prefix : ModPath.t
+(** Path where primitive datatypes are defined in Ltac2 plugin. *)
+
+val coq_prefix : ModPath.t [@@ocaml.deprecated "(9.0) Use rocq_prefix"]
 (** Path where primitive datatypes are defined in Ltac2 plugin. *)
 
 val std_prefix : ModPath.t

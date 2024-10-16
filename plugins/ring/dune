@@ -1,7 +1,7 @@
 (library
  (name ring_plugin)
  (public_name coq-core.plugins.ring)
- (synopsis "Coq's ring plugin")
+ (synopsis "Rocq's ring plugin")
  (libraries coq-core.plugins.ltac))
 
 (coq.pp (modules g_ring))
