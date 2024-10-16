@@ -250,14 +250,6 @@ let make_prb gls depth additional_terms b =
 let fresh_id env id =
   Namegen.next_ident_away id (Environ.ids_of_named_context_val @@ Environ.named_context_val env)
 
-let build_projection env sigma intype (cstr : pconstructor) special default =
-  let ci = (snd (fst cstr)) in
-  let body = Combinators.make_selector env sigma ~pos:ci ~special ~default (mkRel 1) intype in
-  let id = fresh_id env (Id.of_string "t") in
-  sigma, mkLambda (make_annot (Name id) ERelevance.relevant, intype, body)
-
-(* generate an adhoc tactic following the proof tree  *)
-
 let app_global f args k =
   Tacticals.pf_constr_of_global (Lazy.force f) >>= fun fc -> k (mkApp (fc, args))
 
@@ -351,7 +343,7 @@ let rec proof_term env sigma (typ, lhs, rhs) p = match p.p_rule with
   let default = constr_of_term p.p_lhs in
   let special = mkRel (1 + nargs - argind) in
   let sigma, argty = type_and_refresh_ env sigma ti in
-  let sigma, proj = build_projection env sigma argty cstr special default in
+  let sigma, proj = Ccprojectability.build_projection env sigma cstr argind typ default special argty in
   let sigma, prf = proof_term env sigma (argty, ti, tj) prf in
   app_global_ env sigma _f_equal [|argty; typ; proj; ti; tj; prf|]
 
