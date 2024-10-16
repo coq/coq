@@ -159,9 +159,9 @@ let constr_pat_discr_syntactic env p =
       let ref = Environ.QGlobRef.canonize env ref in
       Some (GRLabel ref, stack)
     | PRef ((VarRef _) as ref) -> Some (GRLabel ref, stack)
-    | PRef ((ConstRef _) as ref) ->
-      let ref = Environ.QGlobRef.canonize env ref in
-      Some (GRLabel ref, stack)
+    | PRef (ConstRef c) ->
+      let c = Environ.QConstant.canonize env c in
+      Some (label_of_opaque_constant c stack)
     | PVar v -> Some (GRLabel (VarRef v), stack)
     | PProd (_,d,c) when stack = [] -> Some (ProdLabel, [d ; c])
     | PSort s when stack = [] -> Some (SortLabel, [])
