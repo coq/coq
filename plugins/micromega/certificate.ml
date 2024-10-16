@@ -1010,7 +1010,7 @@ let nlia prfdepth sys =
     let sys3 = nlinear_preprocess (rev_concat [bnd1; sys1; sys2]) in
     xlia env sys3
 
-(* For regression testing, if bench = true generate a Coq goal *)
+(* For regression testing, if bench = true generate a Rocq goal *)
 
 let lia  prfdepth sys = gen_bench ("lia", lia)  prfdepth sys
 let nlia  prfdepth sys = gen_bench ("nia", nlia)  prfdepth sys

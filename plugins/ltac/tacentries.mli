@@ -89,7 +89,7 @@ val ml_tactic_extend : plugin:string -> name:string -> local:locality_flag ->
   ?deprecation:Deprecation.t -> ('r, unit Proofview.tactic) ml_ty_sig -> 'r -> unit
 (** Helper function to define directly an Ltac function in OCaml without any
     associated parsing rule nor further shenanigans. The Ltac function will be
-    defined as [name] in the Coq file that loads the ML plugin where this
+    defined as [name] in the Rocq file that loads the ML plugin where this
     function is called. It will have the arity given by the [ml_ty_sig]
     argument. *)
 

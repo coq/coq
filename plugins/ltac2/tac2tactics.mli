@@ -15,7 +15,7 @@ open Genredexpr
 open Tac2types
 open Proofview
 
-(** Local reimplementations of tactics variants from Coq *)
+(** Local reimplementations of tactics variants from Rocq *)
 
 val intros_patterns : evars_flag -> intro_pattern list -> unit tactic
 

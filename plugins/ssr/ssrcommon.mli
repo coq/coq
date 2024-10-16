@@ -236,7 +236,7 @@ val resolve_typeclasses :
   where:EConstr.t ->
   fail:bool -> Evd.evar_map
 
-(*********************** Wrapped Coq  tactics *****************************)
+(*********************** Wrapped Rocq tactics *****************************)
 
 val rewritetac : ?under:bool -> ssrdir -> EConstr.t -> unit Proofview.tactic
 

@@ -1,7 +1,7 @@
 (library
  (name rtauto_plugin)
  (public_name coq-core.plugins.rtauto)
- (synopsis "Coq's rtauto plugin")
+ (synopsis "Rocq's rtauto plugin")
  (libraries coq-core.plugins.ltac))
 
 (coq.pp (modules g_rtauto))

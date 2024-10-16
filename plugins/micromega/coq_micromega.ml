@@ -152,9 +152,9 @@ let selecti s m =
   xselecti 0 m
 
 (**
-  * MODULE: Mapping of the Coq data-strustures into Caml and Caml extracted
-  * code. This includes initializing Caml variables based on Coq terms, parsing
-  * various Coq expressions into Caml, and dumping Caml expressions into Coq.
+  * MODULE: Mapping of the Rocq data-strustures into Caml and Caml extracted
+  * code. This includes initializing Caml variables based on Rocq terms, parsing
+  * various Rocq expressions into Caml, and dumping Caml expressions into Rocq.
   *
   * Opened here and in csdpcert.ml.
   *)
@@ -317,13 +317,13 @@ let rocq_Build = lazy (constr_of_ref "micromega.Formula.Build_Formula")
 let rocq_Cstr = lazy (constr_of_ref "micromega.Formula.type")
 
 (**
-    * Parsing and dumping : transformation functions between Caml and Coq
+    * Parsing and dumping : transformation functions between Caml and Rocq
     * data-structures.
     *
-    * dump_*    functions go from Micromega to Coq terms
-    * undump_*  functions go from Coq to Micromega terms (reverse of dump_)
-    * parse_*   functions go from Coq to Micromega terms
-    * pp_*      functions pretty-print Coq terms.
+    * dump_*    functions go from Micromega to Rocq terms
+    * undump_*  functions go from Rocq to Micromega terms (reverse of dump_)
+    * parse_*   functions go from Rocq to Micromega terms
+    * pp_*      functions pretty-print Rocq terms.
     *)
 
 exception ParseError
@@ -1526,7 +1526,7 @@ let max_tag f =
    x <= y or (x and y are incomparable) *)
 
 (**
-  * Instantiate the current Coq goal with a Micromega formula, a varmap, and a
+  * Instantiate the current Rocq goal with a Micromega formula, a varmap, and a
   * witness.
   *)
 
@@ -1769,7 +1769,7 @@ let rec abstract_wrt_formula f1 f2 =
     | _ -> failwith "abstract_wrt_formula")
 
 (**
-  * This exception is raised by really_call_csdpcert if Coq's configure didn't
+  * This exception is raised by really_call_csdpcert if Rocq's configure didn't
   * find a CSDP executable.
   *)
 
@@ -2187,7 +2187,7 @@ end)
 (**
   * Build the command to call csdpcert, and launch it. This in turn will call
   * the sos driver to the csdp executable.
-  * Throw CsdpNotFound if Coq isn't aware of any csdp executable.
+  * Throw CsdpNotFound if Rocq isn't aware of any csdp executable.
   *)
 
 let require_csdp =

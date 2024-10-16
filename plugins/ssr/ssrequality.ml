@@ -355,7 +355,7 @@ let converse_dir = function L2R -> R2L | R2L -> L2R
 
 let rw_progress rhs lhs ise = not (EConstr.eq_constr ise lhs (Evarutil.nf_evar ise rhs))
 
-(* Coq has a more general form of "equation" (any type with a single *)
+(* Rocq has a more general form of "equation" (any type with a single *)
 (* constructor with no arguments with_rect_r elimination lemmas).    *)
 (* However there is no clear way of determining the LHS and RHS of   *)
 (* such a generic Leibniz equation -- short of inspecting the type   *)

@@ -738,7 +738,7 @@ let tclLAST_GEN ~to_ind ((oclr, occ), t) conclusion = tclINDEPENDENTL begin
   let sigma, c, cl = Ssrmatching.fill_rel_occ_pattern env sigma cl pat occ in
   let clr =
     Ssrcommon.interp_clr sigma (oclr, (Ssrmatching.tag_of_cpattern t,c)) in
-  (* Historically in Coq, and hence in ssr, [case t] accepts [t] of type
+  (* Historically in Rocq, and hence in ssr, [case t] accepts [t] of type
      [A.. -> Ind] and opens new goals for [A..] as well as for the branches
      of [Ind], see the [~to_ind] argument *)
   if not(Termops.occur_existential sigma c) then

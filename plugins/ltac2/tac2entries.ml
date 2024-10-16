@@ -1247,7 +1247,7 @@ let call ~pstate g ~with_end_tac tac =
 let call_par ~pstate ~with_end_tac tac =
   ComTactic.solve_parallel ~pstate ~info:None (ltac2_interp tac) ~abstract:false ~with_end_tac
 
-(** Primitive algebraic types than can't be defined Coq-side *)
+(** Primitive algebraic types than can't be defined Rocq-side *)
 
 let register_prim_alg name params def =
   let id = Id.of_string name in

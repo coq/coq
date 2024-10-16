@@ -247,7 +247,7 @@ let pp_mon o (m, i) =
 module Poly : (* A polynomial is a map of monomials *)
               (*
     This is probably a naive implementation
-    (expected to be fast enough - Coq is probably the bottleneck)
+    (expected to be fast enough - Rocq is probably the bottleneck)
     *The new ring contribution is using a sparse Horner representation.
     *)
 sig
@@ -679,7 +679,7 @@ module ProofFormat = struct
       max (max (max i j) k) (proof_max_def prf)
 
   (** [pr_rule_def_cut id pr] gives an explicit [id] to cut rules.
-      This is because the Coq proof format only accept they as a proof-step *)
+      This is because the Rocq proof format only accept they as a proof-step *)
   let pr_rule_def_cut m id p =
     let rec pr_rule_def_cut m id = function
       | Annot (_, p) -> pr_rule_def_cut m id p

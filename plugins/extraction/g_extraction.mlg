@@ -71,7 +71,7 @@ END
 (* Extraction commands *)
 
 VERNAC COMMAND EXTEND Extraction CLASSIFIED AS QUERY STATE opaque_access
-(* Extraction in the Coq toplevel *)
+(* Extraction in the Rocq toplevel *)
 | [ "Extraction" global(x) ] -> { simple_extraction x }
 | [ "Recursive" "Extraction" ne_global_list(l) ] -> { full_extraction None l }
 
@@ -90,7 +90,7 @@ VERNAC COMMAND EXTEND SeparateExtraction CLASSIFIED AS QUERY STATE opaque_access
   -> { separate_extraction l }
 END
 
-(* Modular extraction (one Coq library = one ML module) *)
+(* Modular extraction (one Rocq library = one ML module) *)
 VERNAC COMMAND EXTEND ExtractionLibrary CLASSIFIED AS QUERY STATE opaque_access
 | [ "Extraction" "Library" identref(m) ]
   -> { extraction_library false m }
@@ -152,7 +152,7 @@ END
 
 (* Commands for setting, printing and resetting callbacks extraction. *)
 
-(* Defining a Coq object as ML callback for FFI call target from C *)
+(* Defining a Rocq object as ML callback for FFI call target from C *)
 VERNAC COMMAND EXTEND ExtractionCallback CLASSIFIED AS SIDEFF
 | [ "Extract" "Callback" string_opt(o) global(x) ]
   -> { extract_callback o x }
@@ -181,13 +181,13 @@ VERNAC COMMAND EXTEND ResetExtractionForeign CLASSIFIED AS SIDEFF
 END
 *)
 
-(* Overriding of a Coq object by an ML one *)
+(* Overriding of a Rocq object by an ML one *)
 VERNAC COMMAND EXTEND ExtractionConstant CLASSIFIED AS SIDEFF
 | [ "Extract" "Constant" global(x) string_list(idl) "=>" mlname(y) ]
   -> { extract_constant_inline false x idl y }
 END
 
-(* Overriding of a Coq object by an ML one that will be a FFI call to C *)
+(* Overriding of a Rocq object by an ML one that will be a FFI call to C *)
 VERNAC COMMAND EXTEND ExtractionForeignConstant CLASSIFIED AS SIDEFF
 | [ "Extract" "Foreign" "Constant" global(x) "=>" string(y) ]
   -> { extract_constant_foreign x y }

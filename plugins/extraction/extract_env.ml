@@ -22,9 +22,9 @@ open Extraction
 open Modutil
 open Common
 
-(***************************************)
-(*S Part I: computing Coq environment. *)
-(***************************************)
+(****************************************)
+(*S Part I: computing Rocq environment. *)
+(****************************************)
 
 let toplevel_env () =
   let mp, struc = Safe_typing.flatten_env (Global.safe_env ()) in
@@ -573,7 +573,7 @@ let print_structure_to_file (fn,si,mo) dry struc =
        end;
        info_file si)
     (if dry then None else si);
-  (* Print the buffer content via Coq standard formatter (ok with coqide). *)
+  (* Print the buffer content via Rocq standard formatter (ok with coqide). *)
   if not (Int.equal (Buffer.length buf) 0) then begin
     Feedback.msg_notice (str (Buffer.contents buf));
     Buffer.reset buf
@@ -620,7 +620,7 @@ let rec locate_ref = function
            warning_ambiguous_name ?loc:qid.CAst.loc (qid,mp,r);
            let refs,mps = locate_ref l in refs,mp::mps
 
-(*s Recursive extraction in the Coq toplevel. The vernacular command is
+(*s Recursive extraction in the Rocq toplevel. The vernacular command is
     \verb!Recursive Extraction! [qualid1] ... [qualidn]. Also used when
     extracting to a file with the command:
     \verb!Extraction "file"! [qualid1] ... [qualidn]. *)
@@ -637,7 +637,7 @@ let full_extraction ~opaque_access f lr =
   full_extr opaque_access f (locate_ref lr)
 
 (*s Separate extraction is similar to recursive extraction, with the output
-   decomposed in many files, one per Coq .v file *)
+   decomposed in many files, one per Rocq .v file *)
 
 let separate_extraction ~opaque_access lr =
   init true false;
@@ -658,7 +658,7 @@ let separate_extraction ~opaque_access lr =
   List.iter print struc;
   reset ()
 
-(*s Simple extraction in the Coq toplevel. The vernacular command
+(*s Simple extraction in the Rocq toplevel. The vernacular command
     is \verb!Extraction! [qualid]. *)
 
 let simple_extraction ~opaque_access r =

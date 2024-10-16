@@ -1,14 +1,14 @@
 (library
  (name nsatz_core_plugin)
  (public_name coq-core.plugins.nsatz_core)
- (synopsis "Coq's nsatz solver plugin")
+ (synopsis "Rocq's nsatz solver plugin")
  (modules (:standard \ g_nsatz))
  (libraries coq-core.tactics))
 
 (library
  (name nsatz_plugin)
  (public_name coq-core.plugins.nsatz)
- (synopsis "Coq's nsatz solver plugin (Ltac1 syntax)")
+ (synopsis "Rocq's nsatz solver plugin (Ltac1 syntax)")
  (modules g_nsatz)
  (flags :standard -open Nsatz_core_plugin)
  (libraries coq-core.plugins.nsatz_core coq-core.plugins.ltac))

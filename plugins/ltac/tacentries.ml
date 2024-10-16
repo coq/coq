@@ -106,7 +106,7 @@ let interp_entry_name interp symb =
   eval symb
 
 (**********************************************************************)
-(** Grammar declaration for Tactic Notation (Coq level)               *)
+(** Grammar declaration for Tactic Notation (Rocq level)               *)
 
 let get_tactic_entry n =
   if Int.equal n 0 then

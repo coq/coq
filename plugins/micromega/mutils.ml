@@ -119,7 +119,7 @@ let rec app_funs l x =
   | f :: fl -> ( match f x with None -> app_funs fl x | Some x' -> Some x' )
 
 (**
-  * MODULE: Coq to Caml data-structure mappings
+  * MODULE: Rocq to Caml data-structure mappings
   *)
 
 module CoqToCaml = struct
@@ -159,7 +159,7 @@ module CoqToCaml = struct
 end
 
 (**
-  * MODULE: Caml to Coq data-structure mappings
+  * MODULE: Caml to Rocq data-structure mappings
   *)
 
 module CamlToCoq = struct
@@ -236,7 +236,7 @@ end
 (**
   * MODULE: Labels for atoms in propositional formulas.
   * Tags are used to identify unused atoms in CNFs, and propagate them back to
-  * the original formula. The translation back to Coq then ignores these
+  * the original formula. The translation back to Rocq then ignores these
   * superfluous items, which speeds the translation up a bit.
   *)
 

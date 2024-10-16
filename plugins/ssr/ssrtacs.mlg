@@ -374,7 +374,7 @@ END
 (* Since all bookkeeping ssr commands have the same discharge-intro    *)
 (* argument format we use a single grammar entry point to parse them.  *)
 (* the entry point parses only non-empty arguments to avoid conflicts  *)
-(* with the basic Coq tactics.                                         *)
+(* with the basic Rocq tactics.                                         *)
 
 {
 
@@ -607,7 +607,7 @@ END
 
 (** 7. Rewriting tactics (rewrite, unlock) *)
 
-(** Coq rewrite compatibility flag *)
+(** Rocq rewrite compatibility flag *)
 
 (** Rewrite clear/occ switches *)
 

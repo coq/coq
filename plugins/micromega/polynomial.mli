@@ -202,13 +202,13 @@ module LinPoly : sig
   (** [pp o p] pretty-prints a polynomial. *)
   val pp : out_channel -> t -> unit
 
-  (** [pp_goal typ o l] pretty-prints the list of constraints as a Coq goal. *)
+  (** [pp_goal typ o l] pretty-prints the list of constraints as a Rocq goal. *)
   val pp_goal : string -> out_channel -> (t * op) list -> unit
 end
 
 module ProofFormat : sig
   (** Proof format used by the proof-generating procedures.
-      It is fairly close to Coq format but a bit more liberal.
+      It is fairly close to Rocq format but a bit more liberal.
 
       It is used for proofs over Z, Q, R.
       However, certain constructions e.g. [CutPrf] are only relevant for Z.
@@ -340,7 +340,7 @@ module WithProof : sig
   (** [sort sys] sorts constraints according to the lexicographic order (number of variables, size of the smallest coefficient *)
   val sort : t list -> ((int * (Q.t * var)) * t) list
 
-  (** [subst sys] performs the equivalent of the 'subst' tactic of Coq.
+  (** [subst sys] performs the equivalent of the 'subst' tactic of Rocq.
     For every p=0 \in sys such that p is linear in x with coefficient +/- 1
                                i.e. p = 0 <-> x = e and x \notin e.
     Replace x by e in sys
@@ -351,7 +351,7 @@ module WithProof : sig
 
   val subst : t list -> t list
 
-  (** [subst_constant b sys] performs the equivalent of the 'subst' tactic of Coq
+  (** [subst_constant b sys] performs the equivalent of the 'subst' tactic of Rocq
       only if there is an equation a.x = c for a,c a constant and a divides c if b= true*)
   val subst_constant : bool -> t list -> t list
 

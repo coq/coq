@@ -413,7 +413,7 @@ let error_nb_cons () =
   err (str "Not the right number of constructors.")
 
 let error_module_clash mp1 mp2 =
-  err (str "The Coq modules " ++ pr_long_mp mp1 ++ str " and " ++
+  err (str "The Rocq modules " ++ pr_long_mp mp1 ++ str " and " ++
        pr_long_mp mp2 ++ str " have the same ML name.\n" ++
        str "This is not supported yet. Please do some renaming first.")
 

@@ -59,7 +59,7 @@ let partition_expr l =
         (* e > 0 == e >= 0 /\ e <> 0 *)
         (eq, (e, Axiom_lt i) :: ge, (e, Axiom_lt i) :: neq)
       | Mc.NonEqual -> (eq, ge, (e, Axiom_eq i) :: neq) )
-    (* Not quite sure -- Coq interface has changed *)
+    (* Not quite sure -- Rocq interface has changed *)
   in
   f 0 l
 

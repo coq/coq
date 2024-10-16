@@ -14,10 +14,10 @@ type ('prf, 'model) res = Prf of 'prf | Model of 'model | Unknown
 type zres = (Mc.zArithProof, int * Mc.z list) res
 type qres = (Mc.q Mc.psatz, int * Mc.q list) res
 
-(** [q_cert_of_pos prf] converts a Sos proof into a rational Coq proof *)
+(** [q_cert_of_pos prf] converts a Sos proof into a rational Rocq proof *)
 val q_cert_of_pos : Sos_types.positivstellensatz -> Mc.q Mc.psatz
 
-(** [z_cert_of_pos prf] converts a Sos proof into an integer Coq proof *)
+(** [z_cert_of_pos prf] converts a Sos proof into an integer Rocq proof *)
 val z_cert_of_pos : Sos_types.positivstellensatz -> Mc.z Mc.psatz
 
 (** [lia depth sys] generates an unsat proof for the linear constraints in [sys]. *)

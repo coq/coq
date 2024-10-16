@@ -37,7 +37,7 @@ val replace_term : Geninterp.interp_sign -> bool option -> closed_glob_constr ->
 
 val discrHyp : Names.Id.t -> unit tactic
 val injHyp : Names.Id.t -> unit tactic
-(* TODO: remove these, they are not used from within Coq *)
+(* TODO: remove these, they are not used from within Rocq *)
 
 val refine_tac : Tacinterp.interp_sign -> simple:bool -> with_classes:bool ->
   closed_glob_constr -> unit tactic

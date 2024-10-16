@@ -15,7 +15,7 @@
 (************************************************************************)
 
 (** Last PR that requires the regeneration of caches.
-    It is stored and checked after the Coq magic number.
+    It is stored and checked after the Rocq magic number.
     Incompatible caches are thrown away.
 *)
 let pcache_version = 15584l

@@ -45,14 +45,14 @@ val interp_alias : alias -> alias_tactic
 val check_alias : alias -> bool
 (** Returns [true] if an alias is defined, false otherwise. *)
 
-(** {5 Coq tactic definitions} *)
+(** {5 Rocq tactic definitions} *)
 
 val register_ltac : bool -> bool -> ?deprecation:Deprecation.t -> Id.t ->
   glob_tactic_expr -> unit
 (** Register a new Ltac with the given name and body.
 
     The first boolean indicates whether this is done from ML side, rather than
-    Coq side. If the second boolean flag is set to true, then this is a local
+    Rocq side. If the second boolean flag is set to true, then this is a local
     definition. It also puts the Ltac name in the nametab, so that it can be
     used unqualified. *)
 
