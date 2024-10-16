@@ -87,6 +87,12 @@ let { Goptions.get = use_nra_cache } =
     ~value:true
     ()
 
+let { Goptions.get = show_used_hyps } =
+  declare_bool_option_and_ref
+    ~key:["Info";"Micromega"]
+    ~value:false
+    ()
+
 let use_csdp_cache () = true
 
 (**
@@ -1464,7 +1470,7 @@ let pp_q o q =
   Printf.fprintf o "%a/%a" pp_z q.Micromega.qnum pp_positive q.Micromega.qden
 
 
-let rec parse_hyps (genv, sigma) parse_arith env tg hyps =
+let rec parse_hyps (genv, sigma) parse_arith env tg (hyps:(Names.Id.t * EConstr.types) list) =
   match hyps with
   | [] -> ([], env, tg)
   | (i, t) :: l ->
@@ -1476,7 +1482,7 @@ let rec parse_hyps (genv, sigma) parse_arith env tg hyps =
       with ParseError -> (lhyps, env, tg)
     else (lhyps, env, tg)
 
-let parse_goal gl parse_arith (env : Env.t) hyps term =
+let parse_goal gl parse_arith (env : Env.t) (hyps:(Names.Id.t * EConstr.types) list) term =
   let f, env, tg = parse_formula gl parse_arith env (Tag.from 0) term in
   let lhyps, env, tg = parse_hyps gl parse_arith env tg hyps in
   (lhyps, f, env)
@@ -1875,6 +1881,8 @@ let micromega_tauto ?(abstract=true) pre_process cnf spec prover
     let res' = compact_proofs prover spec.coeff_eq cnf_ff res cnf_ff' in
     let ff', res', ids = (ff', res', Mc.ids_of_formula Mc.IsProp ff') in
     let res' = dump_list spec.proof_typ spec.dump_proof res' in
+    if show_used_hyps ()
+    then Feedback.msg_info Pp.(str "Micromega used hypotheses: "++pr_enum Names.Id.print ids);
     Prf (ids, ff', res')
 
 let micromega_tauto ?abstract pre_process cnf spec prover
