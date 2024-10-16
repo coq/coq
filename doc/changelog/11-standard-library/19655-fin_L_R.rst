@@ -1,5 +1,0 @@
-- **Added:**
-  Lemmas to ``Fin``: ``case_L_R'_L``, ``case_L_R'_R``, ``case_L_R_L``, ``case_L_R_R``;
-  and changed corresponding ``case_L_R'`` and ``case_L_R`` into transparent definitions.
-  (`#19655 <https://github.com/coq/coq/pull/19655>`_,
-  by Andrej Dudenhefner).
