@@ -138,7 +138,7 @@ let rec make_anonymous_conclusion_flexible ind =
 type syntax_allows_template_poly = SyntaxAllowsTemplatePoly | SyntaxNoTemplatePoly
 
 let intern_ind_arity env sigma ind =
-  let c = intern_gen IsType env sigma ind.ind_arity in
+  let c = intern_gen is_type env sigma ind.ind_arity in
   let impls = Implicit_quantifiers.implicits_of_glob_constr ~with_products:true c in
   let pseudo_poly, c = match make_anonymous_conclusion_flexible c with
     | None -> check_type_conclusion c, c
@@ -149,7 +149,7 @@ let intern_ind_arity env sigma ind =
 
 let pretype_ind_arity ~unconstrained_sorts env sigma (loc, c, impls, template_syntax) =
   let flags = { Pretyping.all_no_fail_flags with unconstrained_sorts } in
-  let sigma,t = understand_tcc ~flags env sigma ~expected_type:IsType c in
+  let sigma,t = understand_tcc ~flags env sigma ~expected_type:is_type c in
   match Reductionops.sort_of_arity env sigma t with
   | exception Reduction.NotArity ->
     user_err ?loc (str "Not an arity")

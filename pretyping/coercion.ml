@@ -611,24 +611,26 @@ let type_judgment env sigma j =
 let inh_tosort_force ?loc env sigma ?(flags=default_flags_of env) ({ uj_val; uj_type } as j) =
   try
     let p = lookup_path_to_sort_from env sigma uj_type in
-    let sigma, uj_val, uj_type,_trace = apply_coercion env sigma p uj_val uj_type in
+    let sigma, uj_val, uj_type,trace = apply_coercion env sigma p uj_val uj_type in
     let j2 = Environ.on_judgment_type (whd_evar sigma) { uj_val ; uj_type } in
-      (sigma, type_judgment env sigma j2)
-  with Not_found | NoCoercion -> match apply_hooks env sigma ~flags uj_val ~inferred:uj_type ~expected:Sort with
-    | Some (sigma, r, typ) -> let j2 = Environ.on_judgment_type (whd_evar sigma) { uj_val = r ; uj_type = typ } in
-      (sigma, type_judgment env sigma j2)
-    | None -> error_not_a_type ?loc env sigma j
+    (sigma, type_judgment env sigma j2, trace)
+  with Not_found | NoCoercion ->
+  match apply_hooks env sigma ~flags uj_val ~inferred:uj_type ~expected:Sort with
+  | Some (sigma, r, typ) ->
+    let j2 = Environ.on_judgment_type (whd_evar sigma) { uj_val = r ; uj_type = typ } in
+    (sigma, type_judgment env sigma j2, ReplaceCoe r)
+  | None -> error_not_a_type ?loc env sigma j
 
-let inh_coerce_to_sort ?loc ?(use_coercions=true) env sigma j =
+let inh_coerce_to_sort ?loc ?(use_coercions=true) ?flags env sigma j =
   let typ = whd_all env sigma j.uj_type in
-    match EConstr.kind sigma typ with
-    | Sort s -> (sigma,{ utj_val = j.uj_val; utj_type = s })
-    | Evar ev ->
-        let (sigma,s) = Evardefine.define_evar_as_sort env sigma ev in
-          (sigma,{ utj_val = j.uj_val; utj_type = s })
-    | _ ->
-        if use_coercions then inh_tosort_force ?loc env sigma j
-        else error_not_a_type ?loc env sigma j
+  match EConstr.kind sigma typ with
+  | Sort s -> (sigma,{ utj_val = j.uj_val; utj_type = s }, empty_coercion_trace)
+  | Evar ev ->
+    let (sigma,s) = Evardefine.define_evar_as_sort env sigma ev in
+    (sigma,{ utj_val = j.uj_val; utj_type = s }, empty_coercion_trace)
+  | _ ->
+    if use_coercions then inh_tosort_force ?loc ?flags env sigma j
+    else error_not_a_type ?loc env sigma j
 
 let inh_coerce_to_base ?loc ~program_mode env sigma j =
   if program_mode then
@@ -806,5 +808,36 @@ let inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions ?patvar
 
 let inh_conv_coerce_to ?loc ~program_mode ~resolve_tc ?use_coercions ?patvars_abstract env sigma ?flags =
   inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions ?patvars_abstract false ?flags env sigma
+
 let inh_conv_coerce_rigid_to ?loc ~program_mode ~resolve_tc ?use_coercions ?patvars_abstract env sigma ?flags =
   inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions ?patvars_abstract true ?flags env sigma
+
+let inh_conv_coerce_to_tycon ?loc ~program_mode ~resolve_tc ?use_coercions ?patvars_abstract env sigma ?flags j tycon =
+  match tycon with
+  | Evardefine.WithoutTypeConstraint ->
+    sigma, j, Some empty_coercion_trace
+  | OfArity [] ->
+    let sigma, j, trace = inh_coerce_to_sort ?loc ?use_coercions ?flags env sigma j in
+    sigma, make_judge j.utj_val (mkSort j.utj_type), Some trace
+  | OfArity _ | OfType _ ->
+    let sigma, tycon = match tycon with
+      | WithoutTypeConstraint -> sigma, None
+      | OfType t -> sigma, Some t
+      | OfArity ctx ->
+        let sigma, s =
+          match dest_arity env sigma j.uj_type with
+          | exception Reduction.NotArity ->
+            Evd.new_sort_variable ?loc Evd.univ_flexible_alg sigma
+          | _, s ->
+            (* We check that the context matches the expected one in the next step *)
+            sigma, s
+        in
+        let t = mkArity (ctx, s) in
+        sigma, Some t
+    in
+    match tycon with
+    | None ->
+      sigma, j, Some empty_coercion_trace
+    | Some t ->
+      inh_conv_coerce_to ?loc ~program_mode ~resolve_tc ?use_coercions ?patvars_abstract ?flags
+        env sigma j t

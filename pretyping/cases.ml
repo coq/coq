@@ -2144,7 +2144,7 @@ let prepare_predicate ?loc ~program_mode typing_fun env sigma tomatchs arsign ty
       let hypnaming = RenameExistingBut (VarSet.variables (Global.env ())) in
       let building_arsign,envar = List.fold_right_map (push_rel_context ~hypnaming sigma) arsign env in
       let sigma, rtnsort = Evd.new_sort_variable univ_flexible sigma in
-      let sigma, predcclj = typing_fun (Some (mkSort rtnsort)) envar sigma rtntyp in
+      let sigma, predcclj = typing_fun (OfType (mkSort rtnsort)) envar sigma rtntyp in
       let check_elim_sort sigma squash =
         try Inductiveops.squash_elim_sort !!env sigma squash rtnsort
         with UGraph.UniverseInconsistency _ ->
@@ -2677,7 +2677,6 @@ let compile_program_cases ?loc style (typing_function, sigma) tycon env
   (* We build the vector of terms to match consistently with the *)
   (* constructors found in patterns *)
   let env, sigma, tomatchs = coerce_to_indtype ~program_mode:true typing_function env sigma matx tomatchl in
-  let tycon = valcon_of_tycon tycon in
   let tomatchs, tomatchs_lets, tycon' = abstract_tomatch env sigma tomatchs tycon in
   let _,env = push_rel_context ~hypnaming sigma tomatchs_lets env in
   let len = List.length eqns in
