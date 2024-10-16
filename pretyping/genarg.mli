@@ -30,6 +30,21 @@
       - [Genintern.register_ntn_subst0] to be used in notations
         (eg [Notation "foo" := ltac2:(foo)]).
 
+      NB: only the base [ExtraArg] is allowed here.
+
+    - tactic arguments to commands defined without depending on ltac_plugin
+      (VernacProof, HintsExtern, Hint Rewrite, etc).
+
+      Must be registered with [Genintern.register_intern0] and
+      [Genintern.register_interp0].
+
+      The glob level can be kept (currently with Hint Extern and Hint
+      Rewrite) so [Gensubst.register_subst0] is also needed.
+
+      Currently AFAICT this is just [Tacarg.wit_ltac].
+
+      NB: only the base [ExtraArg] is allowed here.
+
     - vernac arguments, used by vernac extend. Usually declared in mlg
       using VERNAC ARGUMENT EXTEND then used in VERNAC EXTEND.
 
@@ -43,17 +58,6 @@
 
       Unless combined with some other use, the glob and top levels will be empty
       (as in [vernac_genarg_type]).
-
-    - tactic arguments to commands defined without depending on ltac_plugin
-      (VernacProof, HintsExtern, Hint Rewrite, etc).
-
-      Must be registered with [Genintern.register_intern0] and
-      [Genintern.register_interp0].
-
-      The glob level can be kept (currently with Hint Extern and Hint
-      Rewrite) so [Gensubst.register_subst0] is also needed.
-
-      Currently AFAICT this is just [Tacarg.wit_ltac].
 
     - Ltac tactic_extend arguments. Usually declared in mlg using ARGUMENT EXTEND
       then used in TACTIC EXTEND.
