@@ -629,9 +629,8 @@ let solve_remaining_by env sigma holes by =
     let ist = { Geninterp.lfun = Id.Map.empty
               ; poly = false
               ; extra = Geninterp.TacStore.empty } in
-    let solve_tac = match tac with
-    | Genarg.GenArg (Genarg.Glbwit tag, tac) ->
-      Ftactic.run (Geninterp.interp tag ist tac) (fun _ -> Proofview.tclUNIT ())
+    let solve_tac =
+      Ftactic.run (Geninterp.generic_interp ist tac) (fun _ -> Proofview.tclUNIT ())
     in
     let solve_tac = tclCOMPLETE solve_tac in
     let solve sigma evk =

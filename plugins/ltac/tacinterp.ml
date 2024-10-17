@@ -1549,7 +1549,7 @@ and interp_genarg ist x : Val.t Ftactic.t =
     else if argument_type_eq tag (unquote (topwit (wit_list wit_constr))) then
       interp_genarg_constr_list ist x
     else
-    let GenArg (Glbwit wit, x) = x in
+    let GenArg (Glbwit wit, x) as x0 = x in
     match wit with
     | ListArg wit ->
       let map x = interp_genarg ist (Genarg.in_gen (glbwit wit) x) in
@@ -1568,7 +1568,7 @@ and interp_genarg ist x : Val.t Ftactic.t =
       interp_genarg ist (Genarg.in_gen (glbwit wit2) q) >>= fun q ->
       Ftactic.return (Val.Dyn (Val.typ_pair, (p, q)))
     | ExtraArg s ->
-      Geninterp.interp wit ist x
+      Geninterp.generic_interp ist x0
 
 (** returns [true] for genargs which have the same meaning
     independently of goals. *)

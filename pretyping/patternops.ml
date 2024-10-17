@@ -294,7 +294,7 @@ let rec subst_pattern
   | PInt _
   | PFloat _
   | PString _ -> pat
-  | PUninstantiated (PGenarg g) -> PUninstantiated (PGenarg (Genarg.generic_substitute subst g))
+  | PUninstantiated (PGenarg g) -> PUninstantiated (PGenarg (Gensubst.generic_substitute subst g))
   | PProj (p,c) ->
       let p' = Projection.map (subst_mind subst) p in
       let c' = subst_pattern env sigma subst c in
