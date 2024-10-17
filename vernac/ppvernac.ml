@@ -1292,10 +1292,12 @@ let pr_synpure_vernac_expr v =
         | Star n -> str (String.make n '*')
         | Plus n -> str (String.make n '+')
       end)
-  | VernacSubproof None ->
+  | VernacSubproof (GoalSubproof None) ->
     return (str "{")
-  | VernacSubproof (Some i) ->
+  | VernacSubproof (GoalSubproof (Some i)) ->
     return (Goal_select.pr_goal_selector i ++ str ":" ++ spc () ++ str "{")
+  | VernacSubproof AbstractSubproof ->
+    return (str "abstract:" ++ spc() ++ str "{")
   | VernacEndSubproof ->
     return (str "}")
 
