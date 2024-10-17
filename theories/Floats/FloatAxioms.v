@@ -20,6 +20,7 @@ Definition SF64add := SFadd prec emax.
 Definition SF64sub := SFsub prec emax.
 Definition SF64div := SFdiv prec emax.
 Definition SF64sqrt := SFsqrt prec emax.
+Definition SF64fma := SFfma prec emax.
 Definition SF64succ := SFsucc prec emax.
 Definition SF64pred := SFpred prec emax.
 
@@ -61,6 +62,7 @@ Axiom add_spec : forall x y, Prim2SF (x + y)%float = SF64add (Prim2SF x) (Prim2S
 Axiom sub_spec : forall x y, Prim2SF (x - y)%float = SF64sub (Prim2SF x) (Prim2SF y).
 Axiom div_spec : forall x y, Prim2SF (x / y)%float = SF64div (Prim2SF x) (Prim2SF y).
 Axiom sqrt_spec : forall x, Prim2SF (sqrt x) = SF64sqrt (Prim2SF x).
+Axiom fma_spec : forall x y z, Prim2SF (fma x y z) = SF64fma (Prim2SF x) (Prim2SF y) (Prim2SF z).
 
 Axiom of_uint63_spec : forall n, Prim2SF (of_uint63 n) = binary_normalize prec emax (to_Z n) 0%Z false.
 Axiom normfr_mantissa_spec : forall f, to_Z (normfr_mantissa f) = Z.of_N (SFnormfr_mantissa prec (Prim2SF f)).

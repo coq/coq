@@ -341,6 +341,32 @@ Section FloatOps.
       binary_round_aux (xorb sx sy) mz ez lz
     end.
 
+  Definition SFfma x y z :=
+    match x, y, z with
+    | S754_nan, _, _
+    | _, S754_nan, _
+    | _, _, S754_nan
+      => S754_nan
+    | S754_infinity _, _, _
+    | _, S754_infinity _, _
+      => SFadd (SFmul x y) z
+    | _, _, S754_infinity _
+      => z
+    | S754_zero _, _, _
+    | _, S754_zero _, _
+      => SFadd (SFmul x y) z
+    | _, _, S754_zero _
+      (* in most cases, we could do [SFadd (SFmul x y) z] here too,
+      but in the case where [x] and [y] are subnormal, [x * y]
+      underflows to [-0] in [SFmul], and [z] is [+0], we should keep
+      the sign of [x * y] rather than re-rounding by adding with
+      [z] *)
+      => SFmul x y
+    | S754_finite sx mx ex, S754_finite sy my ey, S754_finite sz mz ez
+      => let xy := S754_finite (xorb sx sy) (mx * my) (ex + ey) (* no rounding *) in
+         SFadd xy z
+    end.
+
   Definition SFsqrt_core_binary m e :=
     let d := Zdigits2 m in
     let e' := Z.min (fexp (Z.div2 (d + e + 1))) (Z.div2 e) in

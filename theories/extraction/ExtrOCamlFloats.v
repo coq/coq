@@ -54,6 +54,7 @@ Extract Constant PrimFloat.mul => "Float64.mul".
 Extract Constant PrimFloat.add => "Float64.add".
 Extract Constant PrimFloat.sub => "Float64.sub".
 Extract Constant PrimFloat.div => "Float64.div".
+Extract Constant PrimFloat.fma => "Float64.fma".
 Extract Constant PrimFloat.of_uint63 => "Float64.of_uint63".
 Extract Constant PrimFloat.normfr_mantissa => "Float64.normfr_mantissa".
 Extract Constant PrimFloat.frshiftexp => "Float64.frshiftexp".
