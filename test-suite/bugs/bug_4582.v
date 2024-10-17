@@ -1,5 +1,5 @@
-Require List.
-Import List.ListNotations.
+Require TestSuite.list.
+Import list.ListNotations.
 
 Parameter Foo : nat -> nat.
 

@@ -1,4 +1,4 @@
-From Stdlib Require BinNat.
+From Stdlib Require NatDef.
 From Stdlib Require Extraction.
 
 (* Define axiomatic functions. *)

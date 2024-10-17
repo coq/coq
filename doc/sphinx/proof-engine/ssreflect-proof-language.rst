@@ -1987,7 +1987,7 @@ be substituted.
 
       .. coqtop:: all
 
-         Require Import List.
+         From Stdlib Require Import ListDef.
          Section LastCases.
          Variable A : Type.
          Implicit Type l : list A.
@@ -2636,16 +2636,20 @@ After the :token:`i_pattern`, a list of binders is allowed.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
-     From Stdlib Require Import ZArith Lia.
+     From Stdlib Require Import ssreflect ssrfun ssrbool.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
 
+     Lemma addn0 n : n + 0 = n. Proof. by elim: n. Qed.
+     Lemma ltnW m n : m < n -> m <= n. Admitted.
+     Lemma addn1 n : n + 1 = S n. Admitted.
+     Lemma ltn_addr m n p : m < n -> m < n + p. Admitted.
+
   .. coqtop:: all
 
      Lemma test : True.
-     have H x (y : nat) : 2 * x + y = x + x + y by lia.
+     have H x (y : nat) : 2 * x + y = x + x + y by rewrite /= addn0.
 
 A proof term provided after ``:=`` can mention these bound variables
 (that are automatically introduced with the given names).
@@ -2655,7 +2659,7 @@ with parentheses even if no type is specified:
 
 .. coqtop:: all restart
 
-   have (x) : 2 * x = x + x by lia.
+   have (x) : 2 * x = x + x by rewrite /= addn0.
 
 The :token:`i_item` and :token:`s_item` can be used to interpret the asserted
 hypothesis with views (see Section :ref:`views_and_reflection_ssr`) or simplify the resulting
@@ -2698,9 +2702,10 @@ context entry name.
      Arguments Sub {_} _ _.
 
      Lemma test n m (H : m + 1 < n) : True.
-     have @i : 'I_n by apply: (Sub m); lia.
+     have @i : 'I_n by apply/(Sub m)/ltnW; rewrite -addn1.
 
-Note that the subterm produced by :tacn:`lia` is in general huge and
+Note that the subterm produced by automatic tactics
+that one could use to prove such side goals can be huge and
 uninteresting, and hence one may want to hide it.
 For this purpose the ``[: name]`` intro pattern and the tactic
 ``abstract`` (see :ref:`abstract_ssr`) are provided.
@@ -2710,7 +2715,8 @@ For this purpose the ``[: name]`` intro pattern and the tactic
   .. coqtop:: all abort
 
      Lemma test n m (H : m + 1 < n) : True.
-     have [:pm] @i : 'I_n by apply: (Sub m); abstract: pm; lia.
+     have [:pm] @i : 'I_n.
+       by apply: (Sub m); abstract: pm; apply: ltnW; rewrite -addn1.
 
   The type of ``pm`` can be cleaned up by its annotation ``(*1*)`` by just
   simplifying it. The annotations are there for technical reasons only.
@@ -2724,7 +2730,7 @@ with`` have`` and an explicit term, they must be used as follows:
 
      Lemma test n m (H : m + 1 < n) : True.
      have [:pm] @i : 'I_n := Sub m pm.
-       by lia.
+       by apply: ltnW; rewrite -addn1.
 
 In this case, the abstract constant ``pm`` is assigned by using it in
 the term that follows ``:=`` and its corresponding goal is left to be
@@ -2742,7 +2748,8 @@ makes use of it).
   .. coqtop:: all abort
 
      Lemma test n m (H : m + 1 < n) : True.
-     have [:pm] @i k : 'I_(n+k) by apply: (Sub m); abstract: pm k; lia.
+     have [:pm] @i k : 'I_(n+k).
+       by apply: (Sub m); abstract: pm k; apply/ltn_addr/ltnW; rewrite -addn1.
 
 Last, notice that the use of intro patterns for abstract constants is
 orthogonal to the transparent flag ``@`` for ``have``.
@@ -2901,12 +2908,20 @@ are unique.
 
 .. example::
 
+  .. coqtop:: none
+
+     Lemma le_gt_dec : forall n m, {n <= m} + {n > m}. Admitted.
+
   .. coqtop:: all
+
+     About lt_gt_dec.
 
      Lemma quo_rem_unicity d q1 q2 r1 r2 :
        q1*d + r1 = q2*d + r2 -> r1 < d -> r2 < d -> (q1, r1) = (q2, r2).
      wlog: q1 q2 r1 r2 / q1 <= q2.
-       by case (le_gt_dec q1 q2)=> H; last symmetry; eauto with arith.
+       case: (le_gt_dec q1 q2) => [q1_le_q2 | q1_gt_q2 g ? ? ?].
+       - by apply.
+       - by apply/esym/g => //; apply: ltnW.
 
 The ``wlog suff`` variant is simpler, since it cuts ``wlog_statement`` instead
 of ``wlog_statement -> G``. It thus opens the goals
@@ -2993,7 +3008,7 @@ illustrated in the following example.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect Lia.
+     From Stdlib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -3981,8 +3996,8 @@ selective rewriting, blocking on the fly the reduction in the term ``t``.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect ssrfun ssrbool.
-     From Stdlib Require Import List.
+     Require Import ssreflect ssrfun ssrbool.
+     Require Import ListDef.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -4572,7 +4587,7 @@ generation (see Section :ref:`generation_of_equations_ssr`).
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect List.
+     From Stdlib Require Import ssreflect ListDef.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -4647,15 +4662,25 @@ Here is an example of a regular, but nontrivial, eliminator.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect FunInd.
+     From Stdlib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
+
+     Lemma plus_ind :
+       forall [m : nat] [P : nat -> nat -> Prop],
+       (forall n p : nat, n = S p -> P p (plus m p) -> P (S p) (S (plus m p))) ->
+       (forall n _x : nat, n = _x -> match _x with
+                                     | 0 => True
+                                     | S _ => False
+                                     end -> P _x m) -> forall n : nat, P n (plus m n).
+     Admitted.
+
      Section Test.
 
   .. coqtop:: all
 
-     Function plus (m n : nat) {struct n} : nat :=
+     Fixpoint plus (m n : nat) {struct n} : nat :=
        if n is S p then S (plus m p) else m.
 
      About plus_ind.
@@ -4674,16 +4699,22 @@ Here is an example of a regular, but nontrivial, eliminator.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect FunInd.
+     From Stdlib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
      Section Test.
 
-     Function plus (m n : nat) {struct n} : nat :=
+     Fixpoint plus (m n : nat) {struct n} : nat :=
        if n is S p then S (plus m p) else m.
 
-     About plus_ind.
+     Axiom plus_ind :
+       forall [m : nat] [P : nat -> nat -> Prop],
+       (forall n p : nat, n = S p -> P p (plus m p) -> P (S p) (S (plus m p))) ->
+       (forall n _x : nat, n = _x -> match _x with
+                                     | 0 => True
+                                     | S _ => False
+                                     end -> P _x m) -> forall n : nat, P n (plus m n).
 
      Lemma test x y z : plus (plus x y) z = plus x (plus y z).
 
@@ -4699,16 +4730,22 @@ Here is an example of a regular, but nontrivial, eliminator.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect FunInd.
+     From Stdlib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
      Section Test.
 
-     Function plus (m n : nat) {struct n} : nat :=
+     Fixpoint plus (m n : nat) {struct n} : nat :=
        if n is S p then S (plus m p) else m.
 
-     About plus_ind.
+     Axiom plus_ind :
+       forall [m : nat] [P : nat -> nat -> Prop],
+       (forall n p : nat, n = S p -> P p (plus m p) -> P (S p) (S (plus m p))) ->
+       (forall n _x : nat, n = _x -> match _x with
+                                     | 0 => True
+                                     | S _ => False
+                                     end -> P _x m) -> forall n : nat, P n (plus m n).
 
      Lemma test x y z : plus (plus x y) z = plus x (plus y z).
 
@@ -4729,7 +4766,7 @@ Here is an example of a truncated eliminator:
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect FunInd.
+     From Stdlib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
