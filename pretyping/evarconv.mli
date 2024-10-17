@@ -90,10 +90,16 @@ val activate_hook : name:CString.Map.key -> unit
 
 val apply_hooks : hook
 
-(** Check if a canonical structure is applicable *)
+(** Check if a canonical structure is applicable, raises [No_cs b] if the LHS is not an irreducible applied projection. b is true whenever the LHS is an applied projection, but reduces. *)
 
+exception No_cs of bool
+
+val decompose_proj : env -> evar_map -> state -> (Names.Constant.t * EConstr.EInstance.t) *
+            (EConstr.t list option * EConstr.t * Reductionops.Stack.t)
 val check_conv_record : env -> evar_map ->
-  state -> state ->
+  (Names.Constant.t * EConstr.EInstance.t) *
+            (EConstr.t list option * EConstr.t * Reductionops.Stack.t) ->
+  state ->
   evar_map * (constr * constr)
   * constr * constr list * (EConstr.t list * EConstr.t list option) *
     (EConstr.t list * EConstr.t list) *
@@ -151,8 +157,10 @@ val evar_unify : Evarsolve.unifier
 (**/**)
 (* For debugging *)
 val evar_eqappr_x : ?rhs_is_already_stuck:bool -> unify_flags ->
-  env -> evar_map ->
-    conv_pb -> state -> state ->
+  env -> evar_map -> conv_pb ->
+  state Names.GlobRef.Map.t -> state Names.GlobRef.Map.t ->
+  Names.GlobRef.t Queue.t -> Names.GlobRef.t Queue.t ->
+  bool option -> state -> state ->
       Evarsolve.unification_result
 
 val occur_rigidly : Evarsolve.unify_flags ->
