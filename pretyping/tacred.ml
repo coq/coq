@@ -619,10 +619,6 @@ let match_eval_ref_value env sigma constr stack =
       Some (EConstr.of_constr (constant_value_in env (sp, u)))
     else
       None
-  | Proj (p, r, c) when not (Projection.unfolded p) ->
-     if is_evaluable env (EvalProjectionRef (Projection.repr p)) then
-       Some (mkProj (Projection.unfold p, r, c))
-     else None
   | Var id when is_evaluable env (EvalVarRef id) ->
      env |> lookup_named id |> NamedDecl.get_value
   | Rel n ->
