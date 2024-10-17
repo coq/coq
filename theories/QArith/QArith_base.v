@@ -1511,6 +1511,9 @@ Definition Qpower (q:Q) (z:Z) :=
 
 Notation " q ^ z " := (Qpower q z) : Q_scope.
 
+Notation " q ^ - z " := (q ^ (- z))
+  (only parsing, at level 30, z at level 35) : Q_scope.
+
 Register Qpower as  rat.Q.Qpower.
 
 #[global]
