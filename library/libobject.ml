@@ -87,7 +87,7 @@ let default_object ?(stage=Summary.Stage.Interp) s = {
   subst_function = (fun _ ->
     CErrors.anomaly Pp.(str "The object " ++ str s
       ++ str " does not know how to substitute!"));
-  classify_function = (fun _ -> Keep);
+  classify_function = (fun _ -> CErrors.anomaly Pp.(str "no classify function for " ++ str s));
   discharge_function = (fun _ -> None);
   rebuild_function = (fun x -> x);
 }
