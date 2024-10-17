@@ -13,7 +13,61 @@ open Names
 open Constr
 open Context
 
-(* TODO explain how this works *)
+(** Provide caching and hashconsing dependent on the local context used by a term.
+
+    We want to cache the results of typechecking a term (at constant
+    global environment).
+
+    To do this, we need a map [constr -> result of typechecking], and
+
+    - it must distinguish alpha equal terms (to get the desired names
+      in the result of checking "fun x:nat => eq_refl x" and
+      "fun y:nat => eq_refl y").
+
+    - it must distinguish terms which only differ in "cached" data
+      like relevance marks (if we typecheck "fun x :(*Relevant*) nat => x",
+      cache the result then check "fun x :(*Irrelevant*) nat => x" we must fail).
+
+    - actually the map should be [(rel_context * constr) -> result] as
+      the result of checking a bound variable depends on the context.
+
+      To be more precise we only need to depend on the minimal context
+      needed for the term, ie the context filtered to only the
+      variables which appear in the term and recursively in the types
+      and bodies of needed variables.
+
+      Also note that we don't care about the names of local variables
+      here, they only appear in error messages and since we stop at
+      the first error there is no caching issue.
+
+      (NB we need bodies as while the result of checking [Rel 1] does
+      not depend on the body of rel 1, checking [eq_refl (Rel 1) : Rel 1 = 0]
+      does need the body.)
+
+    - the map should be fast.
+
+    The first 2 points just mean we need a sufficiently precise equality test.
+
+    To distinguish terms according to their context, we annotate each
+    [Rel] subterm with their corresponding (recursively annotated)
+    binder (ignoring the name).
+
+    In practice we have an indirection such that each annotated binder
+    is associated with a unique [int]. It's not clear how useful this
+    is vs annotating with the actual binder data but it does allow
+    handling unknow binders by just generating a fresh int (cf [push_unknown_rel]).
+
+    While annotating [Rel]s we also share identical (for our equality)
+    subterms and annotate each subterm with its hash, ie we hashcons
+    according to our finer-than-[Constr.equal] equality. This means we
+    can lookup by hash, and since identical subterms are shared we can
+    compare them by [(==)] (in practice [hasheq_kind] which does
+    [(==)] on immediate subterms) instead of structural equality
+    (which would be O(size of term)).
+
+    Finally we keep a reference count so that we can avoid caching
+    subterms which aren't repeated.
+*)
 
 module Self = struct
 
@@ -25,6 +79,8 @@ type t = {
   mutable refcount : int;
 }
 
+(* XXX possibly should be just physical equality since we use
+   [raw_equal] on not-yet-hashconsed terms *)
 let equal a b =
   a.isRel == b.isRel
   && hasheq_kind a.kind b.kind
