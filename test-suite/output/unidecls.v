@@ -1,5 +1,10 @@
-(* -*- coq-prog-args: ("-top" "unidecls"); -*- *)
+(* -*- coq-prog-args: ("-noinit" "-top" "unidecls"); -*- *)
+Require Import Notations Ltac.
+Notation "a -> b" := (forall _:a, b).
+
 Set Printing Universes.
+
+Inductive nat := O | S : nat -> nat.
 
 Module decls.
   Universes a b.
@@ -27,7 +32,7 @@ Module Foo.
   Universe bar.
 
   Check Type@{Foo.foo}.
-  Definition bar := 0.
+  Definition bar := O.
 End Foo.
 
 (** Already declared in the module *)
@@ -79,7 +84,7 @@ Module ArgImpl : Arg.
 End ArgImpl.
 
 Module ArgImpl2 : Arg.
-  Definition T := bool.
+  Definition T := nat.
 End ArgImpl2.
 
 (** Two applications of the functor result in the exact same universes *)
@@ -107,5 +112,6 @@ End PS.
 (** The universe is polymorphic and discharged, does not persist *)
 Fail Check Type@{poly}.
 
+Print Universes.
 Check id nat.
 Check id@{Set}.
