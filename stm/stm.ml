@@ -562,8 +562,7 @@ end = struct (* {{{ *)
   let reachable id = reachable !vcs id
   let mk_branch_name { expr = x } = Branch.make
     (match x.CAst.v.Vernacexpr.expr with
-    | VernacSynPure (VernacDefinition (_,({CAst.v=Name i},_),_)) -> Id.to_string i
-    | VernacSynPure (VernacStartTheoremProof (_,[({CAst.v=i},_),_])) -> Id.to_string i
+    | VernacSynPure (VernacDefinition (_,[(_,{fname={CAst.v=i}})])) -> Id.to_string i
     | VernacSynPure (VernacInstance (({CAst.v=Name i},_),_,_,_,_)) -> Id.to_string i
     | _ -> "branch")
   let edit_branch = Branch.make "edit"
@@ -2523,7 +2522,7 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ()) x c =
               (* We can't replay a Definition since universes may be differently
                * inferred.  This holds in Coq >= 8.5 *)
               let action = match x.expr.CAst.v.expr with
-                | VernacSynPure (VernacDefinition(_, _, DefineBody _)) -> CherryPickEnv
+                | VernacSynPure (VernacDefinition(_, [_,{body_def=DefineBody _}])) -> CherryPickEnv
                 | _ -> ReplayCommand x in
               VCS.propagate_sideff ~action
           in
