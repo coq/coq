@@ -1302,7 +1302,12 @@ let discharge_autohint obj =
         let filter e = match e with
         | Evaluable.EvalConstRef c -> Some e
         | Evaluable.EvalProjectionRef p ->
-          let p = Lib.discharge_proj_repr p in
+          let p =
+            if Lib.is_in_section (Names.GlobRef.IndRef (Names.Projection.Repr.inductive p)) then
+              Lib.discharge_proj_repr p
+            else
+              p
+          in
           Some (Evaluable.EvalProjectionRef p)
         | Evaluable.EvalVarRef id ->
           if Lib.is_in_section (GlobRef.VarRef id) then None else Some e
