@@ -1730,8 +1730,20 @@ let pr_hint_db_env env sigma db =
       hov 0 (goal_descr ++ str " -> " ++ hints)
     in
     let hints =
+      let str h = Pp.string_of_ppcmds (pr_global h) in
+      let regex = Str.regexp {|[^\.]+$|} in
+      let last s =
+        ignore @@ Str.search_forward regex s 0;
+        Str.matched_string s
+      in
       let order (h1, _, _) (h2, _, _) =
-        Option.compare GlobRef.UserOrd.compare h1 h2 in
+        Option.compare (fun a b ->
+            let a = str a in
+            let b = str b in
+            let rv = String.compare (last a) (last b) in
+            if rv <> 0 then rv else
+              String.compare a b
+          ) h1 h2 in
       let hints = Hint_db.fold (fun h m hl l -> (h, m, hl) :: l) db [] in
       List.stable_sort order hints in
     Pp.prlist pr_one hints
