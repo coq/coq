@@ -40,7 +40,9 @@ About f.
 End S1.
 About f.
 Eval cbn in forall v, f 0 0 5 v 3 = 2.
+Eval kred in forall v, f 0 0 5 v 3 = 2.
 Eval cbn in f 0 0 5 tt 3 = 2.
+Eval kred in f 0 0 5 tt 3 = 2.
 Arguments f : clear implicits and scopes.
 About f.
 Record r := { pi :> nat -> bool -> unit }.
