@@ -1730,8 +1730,15 @@ let pr_hint_db_env env sigma db =
       hov 0 (goal_descr ++ str " -> " ++ hints)
     in
     let hints =
+      let name x = Nametab.shortest_qualid_of_global Id.Set.empty x in
       let order (h1, _, _) (h2, _, _) =
-        Option.compare GlobRef.UserOrd.compare h1 h2 in
+        Option.compare (fun a b ->
+            let a = name a and b = name b in
+            let rv = Id.compare (qualid_basename a) (qualid_basename b) in
+            if rv <> 0 then rv else
+              String.compare (string_of_qualid a) (string_of_qualid b))
+          h1 h2
+      in
       let hints = Hint_db.fold (fun h m hl l -> (h, m, hl) :: l) db [] in
       List.stable_sort order hints in
     Pp.prlist pr_one hints
