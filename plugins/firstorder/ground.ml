@@ -15,14 +15,14 @@ open Instances
 open Tacmach
 open Tacticals
 
-let get_flags qflag =
+let get_flags () =
   let open TransparentState in
   let f accu coe = match coe.Coercionops.coe_value with
     | Names.GlobRef.ConstRef kn -> { accu with tr_cst = Names.Cpred.remove kn accu.tr_cst }
     | _ -> accu
   in
   let flags = List.fold_left f TransparentState.full (Coercionops.coercions ()) in
-  { Formula.reds = RedFlags.red_add_transparent RedFlags.all flags; qflag }
+  { Formula.reds = RedFlags.red_add_transparent RedFlags.all flags }
 
 let get_id hd = match hd.id with FormulaId id -> id
 
@@ -46,10 +46,8 @@ let ground_tac ~flags solver startseq =
                           and_tac ~flags backtrack continue (re_add seq1)
                       | Rforall->
                           let backtrack1=
-                            if flags.qflag then
-                              tclFAIL (Pp.str "reversible in 1st order mode")
-                            else
-                              backtrack in
+                            tclFAIL (Pp.str "reversible in 1st order mode")
+                          in
                             forall_tac ~flags backtrack1 continue (re_add seq1)
                       | Rarrow->
                           arrow_tac ~flags backtrack continue (re_add seq1)
@@ -59,7 +57,7 @@ let ground_tac ~flags solver startseq =
                       | Rexists(i,dom,triv)->
                           let (lfp, seq2) = collect_quantified (pf_env gl) (project gl) seq in
                           let backtrack2=toptac (lfp@skipped) seq2 in
-                            if flags.qflag && Sequent.has_fuel seq then
+                            if Sequent.has_fuel seq then
                               quantified_tac ~flags lfp backtrack2
                                 continue (re_add seq)
                             else
@@ -79,16 +77,14 @@ let ground_tac ~flags solver startseq =
                       | Lforall (_,_,_)->
                           let (lfp, seq2) = collect_quantified (pf_env gl) (project gl) seq in
                           let backtrack2=toptac (lfp@skipped) seq2 in
-                            if flags.qflag && Sequent.has_fuel seq then
+                            if Sequent.has_fuel seq then
                               quantified_tac ~flags lfp backtrack2
                                 continue (re_add seq)
                             else
                               backtrack2 (* need special backtracking *)
                       | Lexists ind ->
-                          if flags.qflag then
-                            left_exists_tac ~flags ind backtrack (get_id hd)
-                              continue (re_add seq1)
-                          else backtrack
+                          left_exists_tac ~flags ind backtrack (get_id hd)
+                            continue (re_add seq1)
                       | LA (typ,lap)->
                           let la_tac=
                             begin
@@ -99,16 +95,13 @@ let ground_tac ~flags solver startseq =
                                     (ll_ind_tac ~flags ind largs backtrack
                                        (get_id hd) continue (re_add seq1))
                                 | LLforall p ->
-                                    if Sequent.has_fuel seq && flags.qflag then
+                                    if Sequent.has_fuel seq then
                                       (ll_forall_tac ~flags p backtrack
                                          (get_id hd) continue (re_add seq1))
                                     else backtrack
                                 | LLexists (ind,l) ->
-                                    if flags.qflag then
-                                      ll_ind_tac ~flags ind l backtrack
-                                        (get_id hd) continue (re_add seq1)
-                                    else
-                                      backtrack
+                                    ll_ind_tac ~flags ind l backtrack
+                                      (get_id hd) continue (re_add seq1)
                                 | LLarrow (a,b,c) ->
                                     (ll_arrow_tac ~flags a b c backtrack
                                        (get_id hd) continue (re_add seq1))
