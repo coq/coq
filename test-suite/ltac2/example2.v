@@ -212,7 +212,7 @@ Qed.
 
 Goal exists x y : nat, x = y.
 Proof.
-refine '(let x := 0 in _).
+refine (let x := 0 in _).
 eexists; exists &x; reflexivity.
 Qed.
 
