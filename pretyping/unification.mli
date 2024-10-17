@@ -23,6 +23,7 @@ type core_unify_flags = {
   use_meta_bound_pattern_unification : bool;
   allowed_evars : Evarsolve.AllowedEvars.t;
   restrict_conv_on_strict_subterms : bool;
+  firstorder_function_conversion : bool;
   modulo_betaiota : bool;
   modulo_eta : bool;
 }
@@ -45,6 +46,8 @@ val elim_flags : unit -> unify_flags
 val elim_no_delta_flags : unit -> unify_flags
 
 val is_keyed_unification : unit -> bool
+
+val firstorder_function_conversion : unit -> bool
 
 (** The "unique" unification function *)
 val w_unify :

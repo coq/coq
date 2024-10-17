@@ -1140,7 +1140,7 @@ Lemma bal_in : forall l x e r y,
  In y (bal l x e r) <-> X.eq y x \/ In y l \/ In y r.
 Proof.
  intros l x e r; induction elt, l, x, e, r, (bal l x e r) using bal_ind; subst; intros; clearf;
- rewrite !create_in; intuition_in.
+ unfold assert_false; rewrite !create_in; intuition_in.
 Qed.
 
 Lemma bal_mapsto : forall l x e r y e',
@@ -1796,7 +1796,7 @@ Lemma equal_cont_IfEq : forall m1 cont e2 l,
   (forall e, IfEq (cont e) l (flatten_e e)) ->
   IfEq (equal_cont cmp m1 cont e2) (elements m1 ++ l) (flatten_e e2).
 Proof.
- induction m1 as [|l1 Hl1 x1 d1 r1 Hr1 h1]; intros; auto.
+ induction m1 as [|l1 Hl1 x1 d1 r1 Hr1 h1]; intros; simpl; auto.
  rewrite <- elements_node; simpl.
  apply Hl1; auto.
  clear e2; intros [|x2 d2 r2 e2].
@@ -2407,7 +2407,7 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
    (forall e, Cmp (cont e) l (P.flatten_e e)) ->
    Cmp (compare_cont s1 cont e2) (R.elements s1 ++ l) (P.flatten_e e2).
   Proof.
-   induction s1 as [|l1 Hl1 x1 d1 r1 Hr1 h1]; intros; auto.
+   induction s1 as [|l1 Hl1 x1 d1 r1 Hr1 h1]; intros; simpl; auto.
    rewrite <- P.elements_node; simpl.
    apply Hl1; auto. clear e2. intros [|x2 d2 r2 e2].
    - simpl; auto.
