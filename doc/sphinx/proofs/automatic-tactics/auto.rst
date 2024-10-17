@@ -724,7 +724,8 @@ Creating Hints
 
    This command displays all hints from database :n:`@ident`.  Hints
    in each group ("For ... ->") are shown in the order in which they will be tried
-   (first to last).  Note that hints with the same cost are tried in
+   (first to last).  The groups are shown ordered alphabetically on the last component of
+   the symbol name.  Note that hints with the same cost are tried in
    reverse of the order they're defined in, i.e., last to first.
 
 Hint locality
