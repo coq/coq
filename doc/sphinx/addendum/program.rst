@@ -292,7 +292,7 @@ optional tactic is replaced by the default one if not specified.
 
    Displays all remaining obligations.
 
-.. cmd:: Obligation @natural {? of @ident } {? : @type {? with @ltac_expr } }
+.. cmd:: Obligation @natural {? of @ident } {? with @ltac_expr }
 
    Start the proof of obligation :token:`natural`.
 

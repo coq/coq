@@ -1317,10 +1317,8 @@ command: [
 | REPLACE "Final" "Obligation" "of" identref withtac
 | WITH "Final" "Obligation" OPT ( "of" identref ) withtac
 | DELETE "Final" "Obligation" withtac
-| REPLACE "Obligation" natural "of" identref ":" lglob withtac
-| WITH "Obligation" natural OPT ( "of" identref ) OPT ( ":" type withtac )
-| DELETE "Obligation" natural "of" identref withtac
-| DELETE "Obligation" natural ":" lglob withtac
+| REPLACE "Obligation" natural "of" identref withtac
+| WITH "Obligation" natural OPT ( "of" identref ) withtac
 | DELETE "Obligation" natural withtac
 | REPLACE "Obligations" "of" identref
 | WITH "Obligations" OPT ( "of" identref )
