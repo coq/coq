@@ -184,7 +184,7 @@ let declare_projection name instance_id r =
   let kind = Decls.(IsDefinition Definition) in
   let impargs, udecl = [], UState.default_univ_decl in
   let cinfo = Declare.CInfo.make ~name ~impargs ~typ:types () in
-  let info = Declare.Info.make ~kind ~udecl ~poly () in
+  let info = Declare.Info.make ~loc:None ~kind ~udecl ~poly () in
   let _r : GlobRef.t =
     Declare.declare_definition ~cinfo ~info ~opaque:false ~body sigma
   in ()
@@ -236,7 +236,7 @@ let add_morphism_interactive atts ~tactic m n : Declare.Proof.t =
   Flags.silently
     (fun () ->
        let cinfo = Declare.CInfo.make ~name:instance_id ~typ:morph () in
-       let info = Declare.Info.make ~poly ~hook ~kind () in
+       let info = Declare.Info.make ~loc:None ~poly ~hook ~kind () in
        let lemma = Declare.Proof.start ~cinfo ~info evd in
        fst (Declare.Proof.by tactic lemma)) ()
 
