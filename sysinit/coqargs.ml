@@ -294,7 +294,10 @@ let parse_args ~usage ~init arglist : t * string list =
       }}
 
     |"-compat" ->
-      let xy = String.(concat "" ("Coq" :: split_on_char '.' (next ()))) in
+      let arg = String.split_on_char '.' (next ()) in
+      let rocq_name = match arg with "8" :: _ -> "Coq" | _ -> "Rocq" in
+      (* remove the above and replace by "Rocq" once theories/Compat/Coq820.v is removed *)
+      let xy = String.concat "" (rocq_name :: arg) in
       add_vo_require oval xy ~allow_failure:true (Some "Stdlib") (Some Lib.Import)
 
     |"-exclude-dir" ->

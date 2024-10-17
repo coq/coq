@@ -1,7 +1,7 @@
 - **Added:**
   :ref:`command line option <command-line-options>` ``-compat-from``
   to enable writing compatibility files for libraries similarly to the
-  ``-compat`` option for Coq
+  ``-compat`` option for Rocq
   (`#19370 <https://github.com/coq/coq/pull/19370>`_,
   by Pierre Roux).
 - **Added:**

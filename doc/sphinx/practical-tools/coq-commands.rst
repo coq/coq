@@ -419,7 +419,8 @@ and ``coqtop``, unless stated otherwise:
   *string* must be :n:`"@setting_name"`.
   See the :ref:`note above <interleave-command-line>` regarding the order
   of command-line options.
-:-compat *version*: same as ``-compat-from Stdlib Coq<version>``
+:-compat *version*: same as ``-compat-from Stdlib Rocq<version>``
+  (or ``Coq`` when version is ``8.*``)
 :-compat-from *root* *library*: Loads a file that sets a few options to maintain
   partial backward-compatibility with a previous version. This is
   equivalent to ``-require-import-from <root> <library>``

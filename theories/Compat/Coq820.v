@@ -10,4 +10,7 @@
 
 (** Compatibility file for making Coq act similar to Coq v8.20 *)
 
+(** When removing this file, please cleanup the "-compat" option code
+    in sysinit/coqargs.ml *)
+
 #[export] Set Warnings "-deprecated-since-8.21".
