@@ -7,7 +7,7 @@ Print mult_n_Sm.
 
 End Test1.
 
-Require Import List.
+Require Import TestSuite.list.
 
 Module Test2.
 

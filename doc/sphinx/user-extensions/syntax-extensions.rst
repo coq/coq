@@ -1902,8 +1902,7 @@ Abbreviations
 
    .. coqtop:: none
 
-      Require Import List.
-      Require Import Relations.
+      Require Import ListDef.
       Set Printing Notations.
 
    .. coqtop:: in
@@ -2486,8 +2485,11 @@ The following errors apply to both string and number notations:
 
    .. coqtop:: all reset warn
 
-      Require Import Vector.
-      Print Fin.t.
+      Module Fin.
+      Inductive t : nat -> Set :=  F1 : forall n, t (S n) | FS : forall n, t n -> t (S n).
+      End Fin.
+      Arguments Fin.F1 {_}.
+      Arguments Fin.FS {_}.
 
    Note the implicit arguments of :g:`Fin.F1` and :g:`Fin.FS`,
    which won't appear in the corresponding inductive type.

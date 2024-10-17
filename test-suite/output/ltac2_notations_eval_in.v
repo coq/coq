@@ -1,5 +1,5 @@
 From Ltac2 Require Import Ltac2.
-From Stdlib Require Import ZArith.
+From Stdlib Require Import BinNums PosDef IntDef.
 
 (** * Test eval ... in / reduction tactics *)
 

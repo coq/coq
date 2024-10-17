@@ -1,4 +1,4 @@
-Require Import FunctionalExtensionality.
+Require Import TestSuite.funext.
 
 Goal forall y, @f_equal = y.
   intro.

@@ -14,6 +14,6 @@ End M.
 
 Module N := F(M).
 
-Require Import Hurkens.
+Require Import TestSuite.hurkens.
 
 Fail Definition eqU@{i j} : @eq Type@{j} N.X@{i Set} Type@{i} := eq_refl.

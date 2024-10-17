@@ -1716,9 +1716,9 @@ succeeds, and results in an error otherwise.
 
       .. coqtop:: reset in
 
-         Require Import Stdlib.Lists.Streams.
+         CoInductive Stream (A : Type) : Type :=  Cons : A -> Stream A -> Stream A.
          Goal True.
-         let c := constr:(cofix f : Stream unit := Cons tt f) in
+         let c := constr:(cofix f : Stream unit := Cons _ tt f) in
            is_cofix c.
 
 .. tacn:: is_constructor @one_term
@@ -2011,7 +2011,7 @@ Proving that a list is a permutation of a second list
 
    .. coqtop:: none
 
-      Require Import List.
+      Require Import ListDef.
 
 
    Next we define an auxiliary tactic :g:`perm_aux` which takes an
@@ -2482,16 +2482,13 @@ performance issue.
 
 .. coqtop:: reset in
 
-   Require Import Lia.
-
    Ltac mytauto := tauto.
-   Ltac tac := intros; repeat split; lia || mytauto.
+   Ltac tac := intros; repeat split; exact I || mytauto.
 
    Notation max x y := (x + (y - x)) (only parsing).
 
-   Goal forall x y z A B C D E F G H I J K L M N O P Q R S T U V W X Y Z,
-       max x (max y z) = max (max x y) z /\ max x (max y z) = max (max x y) z
-       /\
+   Goal forall A B C D E F G H I J K L M N O P Q R S T U V W X Y Z,
+       (True /\ True) /\
        (A /\ B /\ C /\ D /\ E /\ F /\ G /\ H /\ I /\ J /\ K /\ L /\ M /\
         N /\ O /\ P /\ Q /\ R /\ S /\ T /\ U /\ V /\ W /\ X /\ Y /\ Z
         ->
@@ -2504,7 +2501,7 @@ performance issue.
    Set Ltac Profiling.
    tac.
    Show Ltac Profile.
-   Show Ltac Profile "lia".
+   Show Ltac Profile "intro".
 
 .. coqtop:: in
 

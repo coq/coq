@@ -1,6 +1,6 @@
-Require Import ZArith Floats.
+Require Import FloatClass PrimFloat.
 
-Definition epsilon := Eval compute in Z.ldexp one (-1024)%Z.
+Definition epsilon := 0x0.4p-1022%float.  (* Z.ldexp_one (-1024)%Z *)
 
 Check (eq_refl : classify one = PNormal).
 Check (eq_refl : classify (- one)%float = NNormal).
