@@ -1,7 +1,7 @@
 File "./output/sort_poly_elim_error.v", line 8, characters 0-108:
 The command has indeed failed with message:
 Incorrect elimination of "p" in the inductive type
-"sum@{Prop | sort_poly_elim_error.3 sort_poly_elim_error.4}":
+"sum@{Prop | sort_poly_elim_error.23 sort_poly_elim_error.24}":
 the return type has sort "Type" while it should be SProp or Prop.
 Elimination of an inductive object of sort Prop
 is not allowed on a predicate in sort "Type"

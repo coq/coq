@@ -12,13 +12,13 @@ end
 Arguments eqT_rect A%type_scope a P%function_scope f a0 e
 seq_rect =
 fun (A : Type@{seq.u0}) (a : A)
-  (P : forall a0 : A, seq a a0 -> Type@{PrintMatch.10}) 
+  (P : forall a0 : A, seq a a0 -> Type@{PrintMatch.30}) 
   (f : P a (srefl a)) (a0 : A) (s : seq a a0) =>
 match s :> seq a a0 as s0 in (seq _ a1) return (P a1 s0) with
 | srefl _ => f
 end
      : forall (A : Type@{seq.u0}) (a : A)
-         (P : forall a0 : A, seq a a0 -> Type@{PrintMatch.10}),
+         (P : forall a0 : A, seq a a0 -> Type@{PrintMatch.30}),
        P a (srefl a) -> forall (a0 : A) (s : seq a a0), P a0 s
 
 Arguments seq_rect A%type_scope a P%function_scope f a0 s
