@@ -82,4 +82,3 @@ val synterp_control :
 
 (** Default proof mode set by `start_proof` *)
 val get_default_proof_mode : unit -> Pvernac.proof_mode
-val proof_mode_opt_name : string list

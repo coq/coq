@@ -1726,7 +1726,7 @@ type nonrec closed_proof_output = closed_proof_output
 type proof_object = Proof_object.t
 
 type t =
-  { endline_tactic : Genarg.glob_generic_argument option
+  { endline_tactic : Gentactic.glob_generic_tactic option
   ; using : Id.Set.t option
   ; proof : Proof.t
   ; initial_euctx : UState.t
@@ -1747,13 +1747,7 @@ let map_fold_endline ~f ps =
   let et =
     match ps.endline_tactic with
     | None -> Proofview.tclUNIT ()
-    | Some tac ->
-      let open Geninterp in
-      let {Proof.poly} = Proof.data ps.proof in
-      let ist = { lfun = Id.Map.empty; poly; extra = TacStore.empty } in
-      let Genarg.GenArg (Genarg.Glbwit tag, tac) = tac in
-      let tac = Geninterp.interp tag ist tac in
-      Ftactic.run tac (fun _ -> Proofview.tclUNIT ())
+    | Some tac -> Gentactic.interp tac
   in
   let (newpr,ret) = f et ps.proof in
   let ps = { ps with proof = newpr } in
@@ -2588,8 +2582,8 @@ let solve_all_obligations ~pm tac =
 let try_solve_obligations ~pm name tac =
   solve_obligations ~pm name tac |> fst
 
-(** Implements [Obligation n of name : typ with tac] *)
-let obligation (user_num, name, typ) ~pm tac =
+(** Implements [Obligation n of name with tac] *)
+let obligation (user_num, name) ~pm tac =
   let num = pred user_num in
   let prg = get_unique_prog ~pm name in
   let { obls; remaining } = Internal.get_obligations prg in
