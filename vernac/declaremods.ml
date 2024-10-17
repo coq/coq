@@ -405,7 +405,7 @@ and load_keep i ((sp,kn),kobjs) =
   assert Nametab.(eq_op modobjs.module_prefix prefix);
   assert (List.is_empty modobjs.module_keep_objects);
   ModObjs.set obj_mp { modobjs with module_keep_objects = kobjs };
-  load_objects i prefix kobjs
+  load_objects (i+1) prefix kobjs
 
 and load_module i obj_dir obj_mp sobjs kobjs =
   let prefix = Nametab.{ obj_dir ; obj_mp; } in
@@ -526,7 +526,7 @@ and open_export f i mpl =
 and open_keep f i ((sp,kn),kobjs) =
   let obj_dir = dir_of_sp sp and obj_mp = mp_of_kn kn in
   let prefix = Nametab.{ obj_dir; obj_mp; } in
-  open_objects f i prefix kobjs
+  open_objects f (i+1) prefix kobjs
 
 let cache_include (prefix, aobjs) =
   let o = expand_aobjs aobjs in
