@@ -442,17 +442,17 @@ let generate_correction_proof_wf f_ref tcc_lemma_ref is_mes functional_ref
    res = fv \rightarrow graph\ x_1\ldots x_n\ res\] decomposed as the context and the conclusion
 *)
 
-let generate_type evd g_to_f f graph =
+let generate_type env evd g_to_f f graph =
   let open Context.Rel.Declaration in
   let open EConstr in
   let open EConstr.Vars in
   (*i we deduce the number of arguments of the function and its returned type from the graph i*)
   let evd', graph =
-    Evd.fresh_global (Global.env ()) !evd
+    Evd.fresh_global env !evd
       (GlobRef.IndRef (fst (destInd !evd graph)))
   in
   evd := evd';
-  let sigma, graph_arity = Typing.type_of (Global.env ()) !evd graph in
+  let sigma, graph_arity = Typing.type_of env !evd graph in
   evd := sigma;
   let ctxt, _ = decompose_prod_decls !evd graph_arity in
   let fun_ctxt, res_type =
@@ -473,10 +473,10 @@ let generate_type evd g_to_f f graph =
   in
   let named_ctxt = Id.Set.of_list (List.map_filter filter fun_ctxt) in
   let res_id =
-    Namegen.next_ident_away_in_goal (Global.env ()) (Id.of_string "_res") named_ctxt
+    Namegen.next_ident_away_in_goal env (Id.of_string "_res") named_ctxt
   in
   let fv_id =
-    Namegen.next_ident_away_in_goal (Global.env ()) (Id.of_string "fv")
+    Namegen.next_ident_away_in_goal env (Id.of_string "fv")
       (Id.Set.add res_id named_ctxt)
   in
   (*i we can then type the argument to be applied to the function [f] i*)
@@ -524,7 +524,7 @@ let generate_type evd g_to_f f graph =
 
    WARNING: while convertible, [type_of body] and [type] can be non equal
 *)
-let find_induction_principle evd f =
+let find_induction_principle env evd f =
   let f_as_constant, _u =
     match EConstr.kind !evd f with
     | Constr.Const c' -> c'
@@ -537,10 +537,10 @@ let find_induction_principle evd f =
     | None -> raise Not_found
     | Some rect_lemma ->
       let evd', rect_lemma =
-        Evd.fresh_global (Global.env ()) !evd (GlobRef.ConstRef rect_lemma)
+        Evd.fresh_global env !evd (GlobRef.ConstRef rect_lemma)
       in
       let evd', typ =
-        Typing.type_of ~refresh:true (Global.env ()) evd' rect_lemma
+        Typing.type_of ~refresh:true env evd' rect_lemma
       in
       evd := evd';
       (rect_lemma, typ) )
@@ -1438,22 +1438,22 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
         Util.Array.map2_i
           (fun i f_constr graph ->
             let type_of_lemma_ctxt, type_of_lemma_concl, graph =
-              generate_type evd false f_constr graph
+              generate_type env evd false f_constr graph
             in
             let type_info = (type_of_lemma_ctxt, type_of_lemma_concl) in
             graphs_constr.(i) <- graph;
             let type_of_lemma =
               EConstr.it_mkProd_or_LetIn type_of_lemma_concl type_of_lemma_ctxt
             in
-            let sigma, _ = Typing.type_of (Global.env ()) !evd type_of_lemma in
+            let sigma, _ = Typing.type_of env !evd type_of_lemma in
             evd := sigma;
             let type_of_lemma =
-              Reductionops.nf_zeta (Global.env ()) !evd type_of_lemma
+              Reductionops.nf_zeta env !evd type_of_lemma
             in
             observe
               Pp.(
                 str "type_of_lemma := "
-                ++ Printer.pr_leconstr_env (Global.env ()) !evd type_of_lemma);
+                ++ Printer.pr_leconstr_env env !evd type_of_lemma);
             (type_of_lemma, type_info))
           funs_constr graphs_constr
       in
@@ -1463,7 +1463,7 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
         *)
         try
           if not (Int.equal (Array.length funs_constr) 1) then raise Not_found;
-          [|find_induction_principle evd funs_constr.(0)|]
+          [|find_induction_principle env evd funs_constr.(0)|]
         with Not_found ->
           Array.of_list
             (List.map
@@ -1504,11 +1504,12 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
           let lem_cst, _ = EConstr.destConst !evd lem_cst_constr in
           update_Function {finfo with correctness_lemma = Some lem_cst})
         funs;
+      let env = Global.env () in
       let lemmas_types_infos =
         Util.Array.map2_i
           (fun i f_constr graph ->
             let type_of_lemma_ctxt, type_of_lemma_concl, graph =
-              generate_type evd true f_constr graph
+              generate_type env evd true f_constr graph
             in
             let type_info = (type_of_lemma_ctxt, type_of_lemma_concl) in
             graphs_constr.(i) <- graph;
@@ -1524,7 +1525,7 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
           funs_constr graphs_constr
       in
       let ((kn, _) as graph_ind), u = destInd !evd graphs_constr.(0) in
-      let mib, _mip = Global.lookup_inductive graph_ind in
+      let mib, _mip = Inductive.lookup_mind_specif env graph_ind in
       let sigma, scheme =
         let sigma, inds = CArray.fold_left_map_i (fun i sigma _ ->
             let sigma, s = Evd.fresh_sort_in_family ~rigid:UnivRigid sigma InType in
@@ -1532,7 +1533,7 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
             !evd
             mib.mind_packets
         in
-        Indrec.build_mutual_induction_scheme (Global.env ()) sigma
+        Indrec.build_mutual_induction_scheme env sigma
           (Array.to_list inds)
       in
       let schemes = Array.map_of_list EConstr.Unsafe.to_constr scheme in
@@ -1585,15 +1586,15 @@ let warn_funind_cannot_build_inversion =
         strbrk "Cannot build inversion information"
         ++ if do_observe () then fnl () ++ CErrors.print e' else mt ())
 
-let derive_inversion fix_names =
+let derive_inversion env fix_names =
   try
-    let evd' = Evd.from_env (Global.env ()) in
+    let evd' = Evd.from_env env in
     (* we first transform the fix_names identifier into their corresponding constant *)
     let evd', fix_names_as_constant =
       List.fold_right
         (fun id (evd, l) ->
           let evd, c =
-            Evd.fresh_global (Global.env ()) evd
+            Evd.fresh_global env evd
               (Option.get (Constrintern.locate_reference (Libnames.qualid_of_ident id)))
           in
           let cst, u = EConstr.destConst evd c in
@@ -1613,7 +1614,7 @@ let derive_inversion fix_names =
         List.fold_right
           (fun id (evd, l) ->
             let evd, id =
-              Evd.fresh_global (Global.env ()) evd
+              Evd.fresh_global env evd
                 (Option.get (Constrintern.locate_reference
                    (Libnames.qualid_of_ident (mk_rel_id id))))
             in
@@ -1658,7 +1659,7 @@ let register_wf interactive_proof ?(is_mes = false) fname rec_impls wf_rel_expr
       pre_hook [fconst]
         (generate_correction_proof_wf f_ref tcc_lemma_ref is_mes functional_ref
            eq_ref rec_arg_num rec_arg_type relation);
-      derive_inversion [fname]
+      derive_inversion (Global.env ()) [fname]
     with e when CErrors.noncritical e -> (* No proof done *)
                                          ()
   in
@@ -1825,7 +1826,7 @@ let do_generate_principle_aux pconstants on_error register_built
         fixpoint_exprl recdefs
         (Functional_principles_proofs.prove_princ_for_struct evd
            interactive_proof);
-      if register_built then derive_inversion fix_names;
+      if register_built then derive_inversion (Global.env ()) fix_names;
       (lemma, true)
   in
   lemma
@@ -2035,7 +2036,7 @@ let make_graph (f_ref : GlobRef.t) =
   let c, c_body =
     match f_ref with
     | GlobRef.ConstRef c ->
-      if Environ.mem_constant c (Global.env ()) then (c, Global.lookup_constant c) else
+      if Environ.mem_constant c env then (c, Environ.lookup_constant c env) else
         CErrors.user_err
           Pp.(
             str "Cannot find "
@@ -2045,7 +2046,6 @@ let make_graph (f_ref : GlobRef.t) =
   match c_body.Declarations.const_body with
   | Undef _ | Primitive _ | Symbol _ | OpaqueDef _ -> CErrors.user_err (Pp.str "Cannot build a graph over an axiom!")
   | Def body ->
-    let env = Global.env () in
     let extern_body, extern_type =
       with_full_print
         (fun () ->
@@ -2133,7 +2133,8 @@ let do_generate_principle fixl : unit =
   | None -> ()
 
 let build_scheme fas =
-  let evd = ref (Evd.from_env (Global.env ())) in
+  let env = Global.env () in
+  let evd = ref (Evd.from_env env) in
   let pconstants =
     List.map
       (fun (_, f, sort) ->
@@ -2143,16 +2144,16 @@ let build_scheme fas =
             CErrors.user_err
               Pp.(str "Cannot find " ++ Libnames.pr_qualid f ++ str ".")
         in
-        let evd', f = Evd.fresh_global (Global.env ()) !evd f_as_constant in
+        let evd', f = Evd.fresh_global env !evd f_as_constant in
         let _ = evd := evd' in
-        let sigma, _ = Typing.type_of ~refresh:true (Global.env ()) !evd f in
+        let sigma, _ = Typing.type_of ~refresh:true env !evd f in
         evd := sigma;
         let c, u =
           try EConstr.destConst !evd f
           with Constr.DestKO ->
             CErrors.user_err
               Pp.(
-                Printer.pr_econstr_env (Global.env ()) !evd f
+                Printer.pr_econstr_env env !evd f
                 ++ spc ()
                 ++ str "should be the named of a globally defined function")
         in
@@ -2173,7 +2174,8 @@ let build_scheme fas =
     fas bodies_types
 
 let build_case_scheme fa =
-  let env = Global.env () and sigma = Evd.from_env (Global.env ()) in
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
   (*   let id_to_constr id =  *)
   (*     Constrintern.global_reference  id *)
   (*   in  *)
