@@ -31,6 +31,13 @@ or only for reals by ``Require Import Lra``.
   generates a *proof cache* which makes it possible to rerun scripts
   even without CSDP.
 
+.. flag:: Info Micromega
+
+   This :term:`flag` (unset by default) instructs the tactics :tacn:`lia`,
+   :tacn:`nia`, :tacn:`lra`, :tacn:`nra` and :tacn:`psatz` to print the
+   list of hypotheses needed by the proof.
+
+
 .. opt:: Dump Arith
 
    This :term:`option` (unset by default) may be set to a file path where
