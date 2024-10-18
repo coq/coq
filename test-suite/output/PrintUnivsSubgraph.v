@@ -7,3 +7,7 @@ Definition baz : Type@{k} := Type@{l}.
 
 Print Universes Subgraph(i j).
 (* should print [i < j], not [l < k] (and not prelude universes) *)
+
+Definition connect : Type@{l} := Type@{j}.
+
+Print Universes Subgraph (i k).

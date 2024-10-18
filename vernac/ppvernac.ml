@@ -643,7 +643,7 @@ let pr_printable = function
     keyword "Print Hint *"
   | PrintHintDbName s ->
     keyword "Print HintDb" ++ spc () ++ str s
-  | PrintUniverses (b, g, fopt) ->
+  | PrintUniverses {sort=b; subgraph=g; with_sources; file=fopt;} ->
     let cmd =
       if b then "Print Sorted Universes"
       else "Print Universes"
@@ -653,7 +653,10 @@ let pr_printable = function
       | RawUniv { CAst.v = x } -> qstring x
     in
     let pr_subgraph = prlist_with_sep spc pr_debug_univ_name in
-    keyword cmd ++ pr_opt pr_subgraph g ++ pr_opt str fopt
+    let pr_with_src b = if b then str "With Constraint Sources"
+      else str "Without Constraint Sources"
+    in
+    keyword cmd ++ pr_opt pr_subgraph g ++ pr_opt pr_with_src with_sources ++ pr_opt str fopt
   | PrintName (qid,udecl) ->
     keyword "Print" ++ spc()  ++ pr_smart_global qid ++ pr_full_univ_name_list udecl
   | PrintModuleType qid ->
