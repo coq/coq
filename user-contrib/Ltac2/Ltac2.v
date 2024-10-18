@@ -19,6 +19,7 @@ Require Ltac2.Constructor.
 Require Ltac2.Control.
 Require Ltac2.Env.
 Require Ltac2.Evar.
+Require Ltac2.Failf.
 Require Ltac2.Float.
 Require Ltac2.Fresh.
 Require Ltac2.Ident.
