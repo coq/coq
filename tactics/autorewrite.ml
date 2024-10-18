@@ -383,11 +383,11 @@ let one_base where conds tac_main bas =
   let eval h =
     let tac = match h.rew_tac with
     | None -> Proofview.tclUNIT ()
-    | Some (Genarg.GenArg (Genarg.Glbwit wit, tac)) ->
+    | Some tac ->
       let ist = { Geninterp.lfun = Id.Map.empty
                 ; poly
                 ; extra = Geninterp.TacStore.empty } in
-      Ftactic.run (Geninterp.interp wit ist tac) (fun _ -> Proofview.tclUNIT ())
+      Ftactic.run (Geninterp.generic_interp ist tac) (fun _ -> Proofview.tclUNIT ())
     in
     Tacticals.tclREPEAT_MAIN (Tacticals.tclTHENFIRST (try_rewrite h tac) tac_main)
   in

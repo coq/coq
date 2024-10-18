@@ -30,6 +30,21 @@
       - [Genintern.register_ntn_subst0] to be used in notations
         (eg [Notation "foo" := ltac2:(foo)]).
 
+      NB: only the base [ExtraArg] is allowed here.
+
+    - tactic arguments to commands defined without depending on ltac_plugin
+      (VernacProof, HintsExtern, Hint Rewrite, etc).
+
+      Must be registered with [Genintern.register_intern0] and
+      [Genintern.register_interp0].
+
+      The glob level can be kept (currently with Hint Extern and Hint
+      Rewrite) so [Gensubst.register_subst0] is also needed.
+
+      Currently AFAICT this is just [Tacarg.wit_ltac].
+
+      NB: only the base [ExtraArg] is allowed here.
+
     - vernac arguments, used by vernac extend. Usually declared in mlg
       using VERNAC ARGUMENT EXTEND then used in VERNAC EXTEND.
 
@@ -43,17 +58,6 @@
 
       Unless combined with some other use, the glob and top levels will be empty
       (as in [vernac_genarg_type]).
-
-    - tactic arguments to commands defined without depending on ltac_plugin
-      (VernacProof, HintsExtern, Hint Rewrite, etc).
-
-      Must be registered with [Genintern.register_intern0] and
-      [Genintern.register_interp0].
-
-      The glob level can be kept (currently with Hint Extern and Hint
-      Rewrite) so [Gensubst.register_subst0] is also needed.
-
-      Currently AFAICT this is just [Tacarg.wit_ltac].
 
     - Ltac tactic_extend arguments. Usually declared in mlg using ARGUMENT EXTEND
       then used in TACTIC EXTEND.
@@ -246,7 +250,7 @@ sig
   val name : string
   (** A name for such kind of manipulation, e.g. [interp]. *)
 
-  val default : ('raw, 'glb, 'top) genarg_type -> ('raw, 'glb, 'top) obj option
+  val default : ('raw, 'glb, 'top) ArgT.tag -> ('raw, 'glb, 'top) obj option
   (** A generic object when there is no registered object for this type. *)
 end
 
@@ -257,30 +261,18 @@ sig
 
   val register0 : ('raw, 'glb, 'top) genarg_type ->
     ('raw, 'glb, 'top) M.obj -> unit
-  (** Register a ground type manipulation function. *)
+  (** Register a ground type manipulation function. Must be [ExtraArg]. *)
 
   val obj : ('raw, 'glb, 'top) genarg_type -> ('raw, 'glb, 'top) M.obj
-  (** Recover a manipulation function at a given type. *)
+  (** Recover a manipulation function at a given type. Must be [ExtraArg]. *)
 
   val mem : _ genarg_type -> bool
-  (** Is this type registered? *)
+  (** Is this type registered? (must be [ExtraArg]) *)
 
   val fold_keys : (ArgT.any -> 'acc -> 'acc) -> 'acc -> 'acc
   (** Fold over the registered keys. *)
 
 end
-
-(** {5 Substitution functions} *)
-
-type 'glb subst_fun = Mod_subst.substitution -> 'glb -> 'glb
-(** The type of functions used for substituting generic arguments. *)
-
-val substitute : ('raw, 'glb, 'top) genarg_type -> 'glb subst_fun
-
-val generic_substitute : glob_generic_argument subst_fun
-
-val register_subst0 : ('raw, 'glb, 'top) genarg_type ->
-  'glb subst_fun -> unit
 
 (** {5 Compatibility layer}
 
