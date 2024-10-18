@@ -1,5 +1,10 @@
-(* -*- coq-prog-args: ("-top" "unidecls"); -*- *)
+(* -*- coq-prog-args: ("-noinit" "-top" "unidecls"); -*- *)
+Require Import Notations Ltac.
+Notation "a -> b" := (forall _:a, b).
+
 Set Printing Universes.
+
+Inductive nat := O | S : nat -> nat.
 
 Module decls.
   Universes a b.
@@ -27,7 +32,7 @@ Module Foo.
   Universe bar.
 
   Check Type@{Foo.foo}.
-  Definition bar := 0.
+  Definition bar := O.
 End Foo.
 
 (** Already declared in the module *)
@@ -63,13 +68,15 @@ End Arg.
 Module Fn(A : Arg).
   Universes v.
 
-  Check Type@{A.u}.
-  Constraint A.u < v.
+  (* univ names are not substitutive *)
+  Fail Check Type@{A.u}.
+  Check Type@{Arg.u}.
+  Constraint Arg.u < v.
 
   Definition foo : Type@{v} := nat.
-  Definition bar : Type@{A.u} := nat.
+  Definition bar : Type@{Arg.u} := nat.
 
-  Fail Definition foo(A : Type@{v}) : Type@{A.u} := A.
+  Definition foo'(A : Type@{v}) : Type@{Arg.u}. Fail exact A. Abort.
 End Fn.
 
 Module ArgImpl : Arg.
@@ -77,35 +84,23 @@ Module ArgImpl : Arg.
 End ArgImpl.
 
 Module ArgImpl2 : Arg.
-  Definition T := bool.
+  Definition T := nat.
 End ArgImpl2.
 
 (** Two applications of the functor result in the exact same universes *)
 Module FnApp := Fn(ArgImpl).
 
-Check Type@{FnApp.v}.
+Fail Check Type@{FnApp.v}.
+Check Type@{Fn.v}.
 Check FnApp.foo.
 Check FnApp.bar.
 
-Check (eq_refl : Type@{ArgImpl.u} = Type@{ArgImpl2.u}).
+(* "module M : T" does not produce a universe M.u from T.u *)
+Fail Check Type@{ArgImpl.u}.
 
 Module FnApp2 := Fn(ArgImpl).
-Check Type@{FnApp2.v}.
 Check FnApp2.foo.
 Check FnApp2.bar.
-
-Import ArgImpl2.
-(** Now u refers to ArgImpl.u and ArgImpl2.u *)
-Check FnApp2.bar.
-
-(** It can be shadowed *)
-Universe u.
-
-(** This refers to the qualified name *)
-Check FnApp2.bar.
-
-Constraint u = ArgImpl.u.
-Print Universes.
 
 Set Universe Polymorphism.
 
