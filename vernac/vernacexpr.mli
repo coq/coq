@@ -29,6 +29,13 @@ type debug_univ_name =
   | NamedUniv of qualid
   | RawUniv of lstring
 
+type print_universes = {
+  sort : bool;
+  subgraph : debug_univ_name list option;
+  with_sources : bool option;
+  file : string option;
+}
+
 type printable =
   | PrintTypingFlags
   | PrintTables
@@ -54,7 +61,7 @@ type printable =
   | PrintCoercions
   | PrintCoercionPaths of coercion_class * coercion_class
   | PrintCanonicalConversions of qualid or_by_notation list
-  | PrintUniverses of bool * debug_univ_name list option * string option
+  | PrintUniverses of print_universes
   | PrintHint of qualid or_by_notation
   | PrintHintGoal
   | PrintHintDbName of string

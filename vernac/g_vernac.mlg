@@ -1170,8 +1170,12 @@ GRAMMAR EXTEND Gram
       | IDENT "Visibility"; s = OPT IDENT -> { PrintVisibility s }
       | IDENT "Implicit"; qid = smart_global -> { PrintImplicit qid }
       | b = [ IDENT "Sorted" -> { true } | -> { false } ]; IDENT "Universes";
-        g = OPT printunivs_subgraph; fopt = OPT ne_string ->
-        { PrintUniverses (b, g, fopt) }
+        g = OPT printunivs_subgraph;
+        with_sources = OPT [
+          b = [ IDENT "With" -> { true } | IDENT "Without" -> { false } ];
+          IDENT "Constraint"; IDENT "Sources" -> { b } ];
+        fopt = OPT ne_string ->
+        { PrintUniverses {sort=b; subgraph=g; with_sources; file=fopt;} }
       | IDENT "Assumptions"; qid = smart_global -> { PrintAssumptions (false, false, qid) }
       | IDENT "Opaque"; IDENT "Dependencies"; qid = smart_global -> { PrintAssumptions (true, false, qid) }
       | IDENT "Transparent"; IDENT "Dependencies"; qid = smart_global -> { PrintAssumptions (false, true, qid) }
