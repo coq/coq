@@ -56,43 +56,8 @@ Check forall n n0:nat, ### (n=n0).
 End B.
 
 (**********************************************************************)
-(* Conflict between notation and notation below coercions             *)
-
-(* Case of a printer conflict *)
-
-Require Import BinInt.
-Coercion Zpos : positive >-> Z.
-Open Scope Z_scope.
-
-  (* Check that (Zpos 3) is better printed by the printer for Z than
-     by the printer for positive *)
-
-Check (3 + Zpos 3).
-
-(* Case of a num printer only below coercion (submitted by Georges Gonthier) *)
-
-Open Scope nat_scope.
-
-Inductive znat : Set := Zpos (n : nat) | Zneg (m : nat).
-Coercion Zpos: nat >-> znat.
-
-Declare Scope znat_scope.
-Delimit Scope znat_scope with znat.
-Open Scope znat_scope.
-
-Parameter addz : znat -> znat -> znat.
-Notation "z1 + z2" := (addz z1 z2) : znat_scope.
-
-  (* Check that "3+3", where 3 is in nat and the coercion to znat is implicit,
-     is printed the same way, and not "S 2 + S 2" as if numeral printing was
-     only tested with coercion still present *)
-
-Check (3+3).
-
-(**********************************************************************)
 (* Check recursive notations                                          *)
 
-Require Import List.
 Notation "[ x ; .. ; y ]" := (cons x .. (cons y nil) ..).
 Check [1;2;4].
 
@@ -124,13 +89,6 @@ End C.
 
 Notation "1 -" := true (at level 0).
 Check 1-.
-
-(* This is another aspect of bug #1179 (raises anomaly in 8.1) *)
-
-Require Import ZArith.
-Open Scope Z_scope.
-Notation "- 4" := (-2 + -2).
-Check -4.
 
 (**********************************************************************)
 (* Check ill-formed recursive notations *)
@@ -202,8 +160,6 @@ Check (false && I 3)%bool /\ I 6.
 (**********************************************************************)
 (* Check notations with several recursive patterns                    *)
 
-Open Scope Z_scope.
-
 Notation "[| x , y , .. , z ; a , b , .. , c |]" :=
   (pair (pair .. (pair x y) .. z) (pair .. (pair a b) .. c)).
 Check [|1,2,3;4,5,6|].
@@ -223,7 +179,7 @@ Notation "{| f ; x ; .. ; y |}" := ( .. (f x) .. y).
 
 (* Application to a variable *)
 
-Check fun f => {| f; 0; 1; 2 |} : Z.
+Check fun f => {| f; 0; 1; 2 |} : nat.
 
 (* Application to a fun *)
 
@@ -231,37 +187,16 @@ Check {| (fun x => x+x); 0 |}.
 
 (* Application to a reference *)
 
-Axiom op : Z -> Z -> Z.
+Axiom op : nat -> nat -> nat.
 Check {| op; 0; 1 |}.
 
 (* Interaction with coercion *)
 
-Axiom c : Z -> bool.
-Coercion c : Z >-> bool.
+Axiom c : nat -> bool.
+Coercion c : nat >-> bool.
 Check false = {| c; 0 |}.
 
 End Application.
-
-(**********************************************************************)
-(* Check printing of notations from other modules *)
-
-(* 1- Non imported case *)
-
-Require make_notation.
-
-Check plus.
-Check S.
-Check mult.
-Check le.
-
-(* 2- Imported case *)
-
-Import make_notation.
-
-Check plus.
-Check S.
-Check mult.
-Check le.
 
 (* Check notations in cases patterns *)
 

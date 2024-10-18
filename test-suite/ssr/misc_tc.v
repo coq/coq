@@ -1,4 +1,4 @@
-Require Import ssreflect List.
+Require Import ssreflect.
 
 Generalizable Variables A B.
 
@@ -10,7 +10,7 @@ Proof.
 move =>> H. (* introduces [H:x=arbitrary] because first non dependent hypothesis *)
 Abort.
 
-Lemma test_intro_typeclass_2 : forall A `{Inhab A} (l1 l2:list A), l2 = nil -> l1 ++ l2 = l1.
+Lemma test_intro_typeclass_2 : forall A `{Inhab A} (l1 l2:list A), l2 = nil -> app l1 l2 = l1.
 Proof.
 move =>> H. (* introduces [Inhab A] automatically because it is a typeclass instance *)
 Abort.

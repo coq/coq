@@ -1,12 +1,12 @@
-Require Import Uint63 ZArith Floats.
+Require Import PrimInt63 PrimFloat.
 
-Definition half := Z.ldexp one (-1)%Z.
-Definition three_quarters := (half + (Z.ldexp one (-2)%Z))%float.
+Definition half := 0x1p-1%float.
+Definition three_quarters := (half + 0x1p-2)%float.
 
 Check (eq_refl : normfr_mantissa one = 0%uint63).
-Check (eq_refl : normfr_mantissa half = (1 << 52)%uint63).
-Check (eq_refl : normfr_mantissa (-half) = (1 << 52)%uint63).
+Check (eq_refl : normfr_mantissa half = (lsl 1 52)%uint63).
+Check (eq_refl : normfr_mantissa (-half) = (lsl 1 52)%uint63).
 Check (eq_refl : normfr_mantissa (-one) = 0%uint63).
 Check (eq_refl : normfr_mantissa zero = 0%uint63).
 Check (eq_refl : normfr_mantissa nan = 0%uint63).
-Check (eq_refl : normfr_mantissa three_quarters = (3 << 51)%uint63).
+Check (eq_refl : normfr_mantissa three_quarters = (lsl 3 51)%uint63).

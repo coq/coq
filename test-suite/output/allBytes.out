@@ -1,4 +1,0 @@
-File "./output/allBytes.v", line 23, characters 0-44:
-Warning: Lonely notation "" was already defined with a different format.
-[notation-incompatible-format,parsing,default]
- !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~ 

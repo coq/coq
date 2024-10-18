@@ -18,10 +18,6 @@ forall n n0 : nat, ## (n = n0)
      : Prop
 forall n n0 : nat, ### (n = n0)
      : Prop
-3 + 3
-     : Z
-3 + 3
-     : znat
 [1; 2; 4]
      : list nat
 (1; 2, 4)
@@ -38,47 +34,45 @@ fun x : nat => ifn x is succ n then n else 0
      : nat -> nat
 1 -
      : bool
--4
-     : Z
-File "./output/Notations.v", line 139, characters 46-62:
+File "./output/Notations.v", line 97, characters 46-62:
 The command has indeed failed with message:
 Cannot find where the recursive pattern starts.
-File "./output/Notations.v", line 142, characters 0-58:
+File "./output/Notations.v", line 100, characters 0-58:
 The command has indeed failed with message:
 in the right-hand side, y and z should appear in
 term position as part of a recursive pattern.
-File "./output/Notations.v", line 145, characters 57-58:
+File "./output/Notations.v", line 103, characters 57-58:
 The command has indeed failed with message:
 The reference w was not found in the current environment.
-File "./output/Notations.v", line 151, characters 0-78:
+File "./output/Notations.v", line 109, characters 0-78:
 The command has indeed failed with message:
 in the right-hand side, y and z should appear in
 term position as part of a recursive pattern.
-File "./output/Notations.v", line 152, characters 56-57:
+File "./output/Notations.v", line 110, characters 56-57:
 The command has indeed failed with message:
 z is expected to occur in binding position in the right-hand side.
-File "./output/Notations.v", line 156, characters 0-102:
+File "./output/Notations.v", line 114, characters 0-102:
 The command has indeed failed with message:
 as y is a non-closed binder, no such "," is allowed to occur.
-File "./output/Notations.v", line 160, characters 46-69:
+File "./output/Notations.v", line 118, characters 46-69:
 The command has indeed failed with message:
 Cannot find where the recursive pattern starts.
-File "./output/Notations.v", line 161, characters 46-62:
+File "./output/Notations.v", line 119, characters 46-62:
 The command has indeed failed with message:
 Cannot find where the recursive pattern starts.
-File "./output/Notations.v", line 162, characters 49-63:
+File "./output/Notations.v", line 120, characters 49-63:
 The command has indeed failed with message:
 Cannot find where the recursive pattern starts.
-File "./output/Notations.v", line 163, characters 50-64:
+File "./output/Notations.v", line 121, characters 50-64:
 The command has indeed failed with message:
 Cannot find where the recursive pattern starts.
-File "./output/Notations.v", line 166, characters 0-73:
+File "./output/Notations.v", line 124, characters 0-73:
 The command has indeed failed with message:
 Both ends of the recursive pattern are the same.
 SUM (nat * nat) nat
      : Set
 FST (0; 1)
-     : Z
+     : nat
 Nil
      : forall A : Type, list A
 NIL : list nat
@@ -86,8 +80,8 @@ NIL : list nat
 (false && I 3)%bool /\ I 6
      : Prop
 [|1, 2, 3; 4, 5, 6|]
-     : Z * Z * Z * (Z * Z * Z)
-File "./output/Notations.v", line 211, characters 0-210:
+     : nat * nat * nat * (nat * nat * nat)
+File "./output/Notations.v", line 167, characters 0-210:
 Warning: Notations "[| _ , _ , .. , _ ; _ , _ , .. , _ |]" defined at level 0
 with arguments constr
 and "[| _ * ( _ , _ , .. , _ ) ; ( _ , _ , .. , _ ) * _ |]"
@@ -95,46 +89,35 @@ defined at level 0 with arguments constr at level 39
 have incompatible prefixes. One of them will likely not work.
 [notation-incompatible-prefix,parsing,default]
 [|0 * (1, 2, 3); (4, 5, 6) * false|]
-     : Z * Z * (Z * Z) * (Z * Z) * (Z * bool * (Z * bool) * (Z * bool))
-fun f : Z -> Z -> Z -> Z => {|f; 0; 1; 2|} : Z
-     : (Z -> Z -> Z -> Z) -> Z
-{|fun x : Z => x + x; 0|}
-     : Z
+     : nat * nat * (nat * nat) * (nat * nat) *
+       (nat * bool * (nat * bool) * (nat * bool))
+fun f : nat -> nat -> nat -> nat => {|f; 0; 1; 2|} : nat
+     : (nat -> nat -> nat -> nat) -> nat
+{|fun x : nat => x + x; 0|}
+     : nat
 {|op; 0; 1|}
-     : Z
+     : nat
+File "./output/Notations.v", line 196, characters 0-26:
+Warning:
+New coercion path [c] : nat >-> bool is ambiguous with existing 
+[of_nat] : nat >-> bool. [ambiguous-paths,coercions,default]
 false = 0
      : Prop
-Init.Nat.add
-     : nat -> nat -> nat
-S
-     : nat -> nat
-Init.Nat.mul
-     : nat -> nat -> nat
-le
-     : nat -> nat -> Prop
-plus
-     : nat -> nat -> nat
-succ
-     : nat -> nat
-Init.Nat.mul
-     : nat -> nat -> nat
-le
-     : nat -> nat -> Prop
-fun x : option Z => match x with
-                    | SOME x0 => x0
-                    | NONE => 0
-                    end
-     : option Z -> Z
-fun x : option Z => match x with
-                    | SOME2 x0 => x0
-                    | NONE2 => 0
-                    end
-     : option Z -> Z
-fun x : option Z => match x with
-                    | SOME3 _ x0 => x0
-                    | NONE3 _ => 0
-                    end
-     : option Z -> Z
+fun x : option nat => match x with
+                      | SOME x0 => x0
+                      | NONE => 0
+                      end
+     : option nat -> nat
+fun x : option nat => match x with
+                      | SOME2 x0 => x0
+                      | NONE2 => 0
+                      end
+     : option nat -> nat
+fun x : option nat => match x with
+                      | SOME3 _ x0 => x0
+                      | NONE3 _ => 0
+                      end
+     : option nat -> nat
 fun x : list ?T =>
 match x with
 | NIL => NONE3 (list ?T)

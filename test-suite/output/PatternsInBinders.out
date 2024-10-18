@@ -32,9 +32,9 @@ exists '(x, y), swap (x, y) = (y, x)
      : Prop
 exists '(x, y) '(z, w), swap (x, y) = (z, w)
      : Prop
-λ '(x, y), (y, x)
-     : A * B → B * A
-∀ '(x, y), swap (x, y) = (y, x)
+fun '(x, y) => (y, x)
+     : A * B -> B * A
+forall '(x, y), swap (x, y) = (y, x)
      : Prop
 both_z =
 fun pat : nat * nat => let '(n, p) as x := pat return (F x) in (Z n, Z p)

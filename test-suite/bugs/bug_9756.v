@@ -3,7 +3,7 @@ Module Bad.
 
 Record box (A : Set) : Prop := Box { _ : A }.
 Record foo@{i} (A:Type@{i}) := Foo { _ : Set:Type@{i} }.
-Require Import Hurkens.
+Require Import TestSuite.hurkens.
 Fail Definition bad : False := NoRetractFromSmallPropositionToProp.paradox
   _ _ (fun '(Foo _ x) => box x) (fun _ '(Box _ x) => x) Box _.
 (* Error: Anomaly "Bad recursive type." Please report at http://coq.inria.fr/bugs/. *)

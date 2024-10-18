@@ -1,7 +1,7 @@
 (* Example taken from RelationAlgebra *)
 (* Was failing from r16205 up to now *)
 
-Require Import BinNums.
+Require Import TestSuite.binpos.
 
 Section A.
 
