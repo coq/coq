@@ -184,7 +184,7 @@ let pp_rocq_instruct_h fmt =
 let pp_rocq_jumptbl_h fmt =
   pp_header false fmt;
   Array.iter (fun (name, _) ->
-      Format.fprintf fmt "  &&coq_lbl_%s,@." name
+      Format.fprintf fmt "  &&rocq_lbl_%s,@." name
     ) opcodes
 
 let pp_rocq_arity_h fmt =

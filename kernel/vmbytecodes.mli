@@ -39,11 +39,11 @@ type caml_prim =
 type instruction =
   | Klabel of Label.t
   | Kacc of int                         (** accu = sp[n] *)
-  | Kenvacc of int                      (** accu = coq_env[n] *)
-  | Koffsetclosure of int               (** accu = &coq_env[n] *)
+  | Kenvacc of int                      (** accu = rocq_env[n] *)
+  | Koffsetclosure of int               (** accu = &rocq_env[n] *)
   | Kpush                               (** sp = accu :: sp *)
   | Kpop of int                         (** sp = skipn n sp *)
-  | Kpush_retaddr of Label.t            (** sp = pc :: coq_env :: coq_extra_args :: sp ; coq_extra_args = 0 *)
+  | Kpush_retaddr of Label.t            (** sp = pc :: rocq_env :: rocq_extra_args :: sp ; rocq_extra_args = 0 *)
   | Kshort_apply of int                 (** number of arguments (arguments on top of stack) *)
   | Kapply of int                       (** number of arguments (arguments on top of stack) *)
   | Kappterm of int * int               (** number of arguments, slot size *)

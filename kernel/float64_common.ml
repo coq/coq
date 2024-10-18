@@ -116,10 +116,10 @@ let frshiftexp f =
 let ldshiftexp f e = ldexp f (Uint63.to_int_min e (2 * eshift) - eshift)
 [@@ocaml.inline always]
 
-external next_up : float -> float = "coq_next_up_byte" "coq_next_up"
+external next_up : float -> float = "rocq_next_up_byte" "rocq_next_up"
 [@@unboxed] [@@noalloc]
 
-external next_down : float -> float = "coq_next_down_byte" "coq_next_down"
+external next_down : float -> float = "rocq_next_down_byte" "rocq_next_down"
 [@@unboxed] [@@noalloc]
 
 let equal f1 f2 =

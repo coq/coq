@@ -121,7 +121,7 @@ let ret_accu = Obj.repr (ref ())
 
 type accu_val = { mutable acc_atm : atom; acc_arg : t list }
 
-external set_tag : Obj.t -> int -> unit = "coq_obj_set_tag"
+external set_tag : Obj.t -> int -> unit = "rocq_obj_set_tag"
 
 let mk_accu (a : atom) : t =
   let rec accumulate data x =
@@ -610,7 +610,7 @@ let print x =
 
 (** Support for machine floating point values *)
 
-external is_float : t -> bool = "coq_is_double"
+external is_float : t -> bool = "rocq_is_double"
 [@@noalloc]
 
 let to_float (x:t) = (Obj.magic x : Float64.t)

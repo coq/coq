@@ -10,19 +10,19 @@
 
 include Float64_common
 
-external mul : float -> float -> float = "coq_fmul_byte" "coq_fmul"
+external mul : float -> float -> float = "rocq_fmul_byte" "rocq_fmul"
 [@@unboxed] [@@noalloc]
 
-external add : float -> float -> float = "coq_fadd_byte" "coq_fadd"
+external add : float -> float -> float = "rocq_fadd_byte" "rocq_fadd"
 [@@unboxed] [@@noalloc]
 
-external sub : float -> float -> float = "coq_fsub_byte" "coq_fsub"
+external sub : float -> float -> float = "rocq_fsub_byte" "rocq_fsub"
 [@@unboxed] [@@noalloc]
 
-external div : float -> float -> float = "coq_fdiv_byte" "coq_fdiv"
+external div : float -> float -> float = "rocq_fdiv_byte" "rocq_fdiv"
 [@@unboxed] [@@noalloc]
 
-external sqrt : float -> float = "coq_fsqrt_byte" "coq_fsqrt"
+external sqrt : float -> float = "rocq_fsqrt_byte" "rocq_fsqrt"
 [@@unboxed] [@@noalloc]
 
 (*** Test at runtime that no harmful double rounding seems to

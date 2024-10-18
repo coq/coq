@@ -21,7 +21,7 @@ open CPrimitives
 
 type emitcodes = String.t
 
-external tcode_of_code : Bytes.t -> Vmvalues.tcode = "coq_tcode_of_code"
+external tcode_of_code : Bytes.t -> Vmvalues.tcode = "rocq_tcode_of_code"
 
 (* Relocation information *)
 type reloc_info =

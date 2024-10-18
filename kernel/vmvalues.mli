@@ -85,7 +85,7 @@ type vswitch = {
     sw_env : vm_env
   }
 
-external mkAccuCode : int -> tcode = "coq_makeaccu"
+external mkAccuCode : int -> tcode = "rocq_makeaccu"
 
 val fun_code : vfun -> tcode
 val fix_code : vfix -> tcode
@@ -159,7 +159,7 @@ val dom : vprod -> values
 val codom : vprod -> vfun
 
 (** Fun *)
-external closure_arity : vfun -> int = "coq_closure_arity"
+external closure_arity : vfun -> int = "rocq_closure_arity"
 
 (** Fix *)
 

@@ -11,7 +11,7 @@
 open Values
 open Vmvalues
 
-external mkPopStopCode : int -> tcode = "coq_pushpop"
+external mkPopStopCode : int -> tcode = "rocq_pushpop"
 
 let popstop_tbl =  ref (Array.init 30 mkPopStopCode)
 
@@ -33,10 +33,10 @@ let stop = popstop_code 0
 (************************************************)
 
 (* gestion de la pile *)
-external push_ra : tcode -> unit = "coq_push_ra"
-external push_val : values -> unit = "coq_push_val"
-external push_arguments : arguments -> unit = "coq_push_arguments"
-external push_vstack : vstack -> int -> unit = "coq_push_vstack"
+external push_ra : tcode -> unit = "rocq_push_ra"
+external push_val : values -> unit = "rocq_push_val"
+external push_arguments : arguments -> unit = "rocq_push_arguments"
+external push_vstack : vstack -> int -> unit = "rocq_push_vstack"
 
 let interprete = Vmsymtable.vm_interp
 

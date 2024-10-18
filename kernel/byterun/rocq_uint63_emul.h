@@ -183,7 +183,7 @@ DECLARE_UNOP(to_float)
 
 DECLARE_UNOP(of_float)
 #define Uint63_of_double(f) do{ \
-  Coq_copy_double(f); \
+  Rocq_copy_double(f); \
   CALL_UNOP(of_float, accu); \
   }while(0)
 

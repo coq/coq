@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Coq Compiler                              */
+/*                          Rocq Compiler                              */
 /*                                                                     */
 /*        Benjamin Gregoire, projets Logical and Cristal               */
 /*                        INRIA Rocquencourt                           */
@@ -9,23 +9,23 @@
 /***********************************************************************/
 
 
-#ifndef _COQ_FIX_CODE_
-#define _COQ_FIX_CODE_
+#ifndef _ROCQ_FIX_CODE_
+#define _ROCQ_FIX_CODE_
 
 #include <caml/mlvalues.h>
-void * coq_stat_alloc (asize_t sz);
+void * rocq_stat_alloc (asize_t sz);
 
 #ifdef THREADED_CODE
-void coq_init_thread_code(void ** instr_table, void * instr_base);
+void rocq_init_thread_code(void ** instr_table, void * instr_base);
 #endif /*  THREADED_CODE */
 
 extern code_t accumulate;
 
-int coq_is_instruction(opcode_t, opcode_t);
-value coq_tcode_of_code(value code);
-value coq_accumulate(value);
-value coq_makeaccu (value i);
-value coq_pushpop (value i);
-value coq_accucond (value i);
+int rocq_is_instruction(opcode_t, opcode_t);
+value rocq_tcode_of_code(value code);
+value rocq_accumulate(value);
+value rocq_makeaccu (value i);
+value rocq_pushpop (value i);
+value rocq_accucond (value i);
 
-#endif /* _COQ_FIX_CODE_ */
+#endif /* _ROCQ_FIX_CODE_ */

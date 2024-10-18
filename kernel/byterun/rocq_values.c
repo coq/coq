@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Coq Compiler                              */
+/*                          Rocq Compiler                              */
 /*                                                                     */
 /*        Benjamin Gregoire, projets Logical and Cristal               */
 /*                        INRIA Rocquencourt                           */
@@ -21,9 +21,9 @@
 #define Setup_for_gc
 #define Restore_after_gc
 
-#define Is_instruction(c, i) coq_is_instruction(*c, i)
+#define Is_instruction(c, i) rocq_is_instruction(*c, i)
 
-value coq_kind_of_closure(value v) {
+value rocq_kind_of_closure(value v) {
   opcode_t * c;
   int is_app = 0;
   c = Code_val(v);
@@ -34,7 +34,7 @@ value coq_kind_of_closure(value v) {
   return Val_int(0);
 }
 
-value coq_is_accumulate_code(value code)
+value rocq_is_accumulate_code(value code)
 {
   code_t q = Code_val(code);
   int res;
@@ -44,13 +44,13 @@ value coq_is_accumulate_code(value code)
 
 /* DESTRUCT ACCU */
 
-value coq_closure_arity(value clos) {
+value rocq_closure_arity(value clos) {
   opcode_t * c = Code_val(clos);
   if (Is_instruction(c,RESTART)) {
     c++;
     if (Is_instruction(c,GRAB)) return Val_int(4 + c[1] - Wosize_val(clos));
     else {
-      if (Wosize_val(clos) != 3) caml_failwith("Coq Values : coq_closure_arity");
+      if (Wosize_val(clos) != 3) caml_failwith("Rocq Values : rocq_closure_arity");
       return Val_int(1);
     }
   }
@@ -60,26 +60,26 @@ value coq_closure_arity(value clos) {
 
 /* Fonction sur les  fix */
 
-value coq_current_fix(value v) {
+value rocq_current_fix(value v) {
   if (Tag_val(v) == Closure_tag) return Val_int(0);
   else return Val_long(Wsize_bsize(Infix_offset_val(v)) / 3);
 }
 
-value coq_shift_fix(value v, value offset) {
+value rocq_shift_fix(value v, value offset) {
   return v + Int_val(offset) * 3 * sizeof(value);
 }
 
-value coq_last_fix(value v) {
+value rocq_last_fix(value v) {
   return v + (Int_val(Field(v, 1)) - 2) * sizeof(value);
 }
 
-value coq_set_bytecode_field(value v, value i, value code) {
+value rocq_set_bytecode_field(value v, value i, value code) {
   // No write barrier because the bytecode does not live on the OCaml heap
   Field(v, Long_val(i)) = (value) Code_val(code);
   return Val_unit;
 }
 
-value coq_offset_tcode(value code,value offset){
+value rocq_offset_tcode(value code,value offset){
   CAMLparam1(code);
   CAMLlocal1(res);
   res = caml_alloc_small(1, Abstract_tag);
@@ -87,12 +87,12 @@ value coq_offset_tcode(value code,value offset){
   CAMLreturn(res);
 }
 
-value coq_int_tcode(value pc, value offset) {
+value rocq_int_tcode(value pc, value offset) {
   code_t code = Code_val(pc);
   return Val_int(*((code_t) code + Int_val(offset)));
 }
 
-value coq_tcode_array(value tcodes) {
+value rocq_tcode_array(value tcodes) {
   CAMLparam1(tcodes);
   CAMLlocal2(res, tmp);
   int i;
@@ -107,7 +107,7 @@ value coq_tcode_array(value tcodes) {
   CAMLreturn(res);
 }
 
-CAMLprim value coq_obj_set_tag (value arg, value new_tag)
+CAMLprim value rocq_obj_set_tag (value arg, value new_tag)
 {
 #if OCAML_VERSION >= 50000
 // Placeholder used by native_compute
