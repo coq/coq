@@ -1527,6 +1527,7 @@ Qed.
 Lemma size_le p : 2^(size p) <= p~0.
 Proof.
  induction p as [p IHp|p IHp|]; simpl; try rewrite pow_succ_r; try easy.
+ change (p~1~0) with (2 * p~1).
  apply mul_le_mono_l.
  apply le_lteq; left. rewrite xI_succ_xO. apply lt_succ_r, IHp.
 Qed.
@@ -1712,7 +1713,8 @@ Lemma sqrtrem_spec p : SqrtSpec (sqrtrem p) p.
 Proof.
 revert p. fix sqrtrem_spec 1.
  intro p; destruct p as [p|p|]; try destruct p; try (constructor; easy);
-  apply sqrtrem_step_spec; auto.
+  simpl; apply sqrtrem_step_spec; auto.
+ (* simpl prevents unification from leaving a raw "fix sqrtrem" *)
 Qed.
 
 Lemma sqrt_spec p :
