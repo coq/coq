@@ -19,7 +19,7 @@ Definition test_fix n := (refl_equal _ : W (my_getp _)  = W (n + 1)).
 Definition pred n := match n with 0 => 0 | S m => m end.
 Canonical Structure predSS n := mkP (pred n).
 Definition test_case x := (refl_equal _ : W (my_getp _)  = W (pred x)).
-Fail Definition test_case' := (refl_equal _ : W (my_getp _)  = W (pred 0)).
+Definition test_case' := (refl_equal _ : W (my_getp _)  = W (pred 0)).
 
 Canonical Structure letPnat' := mkP 0.
 Definition letin := (let n := 0 in n).
