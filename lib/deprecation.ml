@@ -96,6 +96,6 @@ module Version = struct
   let v9_0 = get_generic_cat "9.0"
   (* When adding a new version here, please also add
      #[export] Set Warnings "-deprecated-since-X.Y".
-     in theories/Compat/CoqX{Y-1}.v *)
+     in theories/Compat/RocqX{Y-1}.v *)
 
 end
