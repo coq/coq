@@ -408,9 +408,10 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   let env_univs =
     match mie.mind_entry_universes with
     | Template_ind_entry ctx ->
-        (* For that particular case, we typecheck the inductive in an environment
-           where the universes introduced by the definition are only [>= Prop] *)
-        Environ.push_floating_context_set ctx env
+      (* For that particular case, we typecheck the inductive in an environment
+         where the universes introduced by the definition are only [>= Prop] *)
+      if env.env_typing_flags.cumulative_prop then Environ.push_floating_context_set ctx env
+      else push_context_set ~strict:false ctx env
     | Monomorphic_ind_entry -> env
     | Polymorphic_ind_entry ctx -> push_context ctx env
   in
