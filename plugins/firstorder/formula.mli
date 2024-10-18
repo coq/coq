@@ -13,7 +13,6 @@ open Constr
 open EConstr
 
 type flags = {
-  qflag : bool;
   reds : RedFlags.reds;
 }
 
