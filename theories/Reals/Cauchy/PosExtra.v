@@ -9,8 +9,10 @@ Proof.
   assert (forall q:positive, Pos.iter id 1 q = 1)%positive as H1.
   { intros q; apply Pos.iter_invariant; tauto. }
   induction p.
-  - cbn; rewrite IHp, H1; reflexivity.
-  - cbn; rewrite IHp, H1; reflexivity.
+  - cbn; fold (Pos.mul 1) (Pos.pow 1 p).
+    rewrite IHp, H1; reflexivity.
+  - cbn; fold (Pos.mul 1) (Pos.pow 1 p).
+    rewrite IHp, H1; reflexivity.
   - reflexivity.
 Qed.
 
