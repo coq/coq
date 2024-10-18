@@ -15,7 +15,7 @@ open Values
 (* Necessary for [relaccu_tbl]              *)
 (********************************************)
 
-external init_vm : unit -> unit = "init_coq_vm"
+external init_vm : unit -> unit = "init_rocq_vm"
 
 let _ = init_vm ()
 
@@ -60,7 +60,7 @@ type structured_constant =
 
 type reloc_table = (tag * int) array
 
-(** When changing this, adapt Is_tailrec_switch in coq_values.h accordingly *)
+(** When changing this, adapt Is_tailrec_switch in rocq_values.h accordingly *)
 type annot_switch =
    { rtbl : reloc_table; tailcall : bool; max_stack_size : int }
 
@@ -192,8 +192,8 @@ type tcode
 
 type tcode_array
 
-external mkAccuCode : int -> tcode = "coq_makeaccu"
-external offset_tcode : tcode -> int -> tcode = "coq_offset_tcode"
+external mkAccuCode : int -> tcode = "rocq_makeaccu"
+external offset_tcode : tcode -> int -> tcode = "rocq_offset_tcode"
 
 let fun_code v = (Obj.magic v : tcode)
 let fix_code = fun_code
@@ -251,7 +251,7 @@ type vswitch = {
 (*          tag[ _ | _ |v1|... | vn]                                      *)
 (* Generally the first field is a code pointer.                           *)
 
-(* Do not edit this type without editing C code, especially "coq_values.h" *)
+(* Do not edit this type without editing C code, especially "rocq_values.h" *)
 
 type id_key =
 | ConstKey of Constant.t
@@ -359,11 +359,11 @@ type vm_closure_kind =
   | VCaccu (** accumulator *)
 [@@@warning "+37"]
 
-external kind_of_closure : Obj.t -> vm_closure_kind = "coq_kind_of_closure"
-external is_accumulate : tcode -> bool = "coq_is_accumulate_code"
-external int_tcode : tcode -> int -> int = "coq_int_tcode"
-external accumulate : unit -> tcode = "coq_accumulate"
-external set_bytecode_field : Obj.t -> int -> tcode -> unit = "coq_set_bytecode_field"
+external kind_of_closure : Obj.t -> vm_closure_kind = "rocq_kind_of_closure"
+external is_accumulate : tcode -> bool = "rocq_is_accumulate_code"
+external int_tcode : tcode -> int -> int = "rocq_int_tcode"
+external accumulate : unit -> tcode = "rocq_accumulate"
+external set_bytecode_field : Obj.t -> int -> tcode -> unit = "rocq_set_bytecode_field"
 let accumulate = accumulate ()
 
 let whd_val (v: values) =
@@ -487,14 +487,14 @@ let codom : vprod -> vfun = fun p -> (Obj.obj (Obj.field (Obj.repr p) 1))
 
 (* Functions over vfun *)
 
-external closure_arity : vfun -> int = "coq_closure_arity"
+external closure_arity : vfun -> int = "rocq_closure_arity"
 
 (* Functions over fixpoint *)
 
-external current_fix : vfix -> int = "coq_current_fix"
-external shift_fix : vfix -> int -> vfix = "coq_shift_fix"
-external last_fix : vfix -> vfix = "coq_last_fix"
-external tcode_array : tcode_array -> tcode array = "coq_tcode_array"
+external current_fix : vfix -> int = "rocq_current_fix"
+external shift_fix : vfix -> int -> vfix = "rocq_shift_fix"
+external last_fix : vfix -> vfix = "rocq_last_fix"
+external tcode_array : tcode_array -> tcode array = "rocq_tcode_array"
 
 let first_fix o = shift_fix o (- current_fix o)
 let fix_env v = (Obj.magic (last_fix v) : vm_env)

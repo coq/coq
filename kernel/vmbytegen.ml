@@ -149,7 +149,7 @@ let push_fun env c =
   env.fun_code <- Ksequence c :: env.fun_code
 
 module Config = struct
-  let stack_threshold = 256 (* see byterun/coq_memory.h *)
+  let stack_threshold = 256 (* see byterun/rocq_memory.h *)
   let stack_safety_margin = 15
 end
 
@@ -866,10 +866,10 @@ and compile_constant env cenv kn u args sz cont =
     comp_app (fun _ _ _ cont -> Kgetglobal kn :: cont)
       compile_arg cenv () all sz cont
 
-let coq_subst_instance : UVars.Instance.t -> UVars.Instance.t -> UVars.Instance.t =
+let rocq_subst_instance : UVars.Instance.t -> UVars.Instance.t -> UVars.Instance.t =
   UVars.subst_instance_instance
 
-let () = Callback.register "coq_subst_instance" coq_subst_instance
+let () = Callback.register "rocq_subst_instance" rocq_subst_instance
 
 let is_univ_copy (maxq,maxu) u =
   let qs,us = UVars.Instance.to_array u in

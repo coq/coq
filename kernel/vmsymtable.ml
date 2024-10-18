@@ -29,8 +29,8 @@ module RelDecl = Context.Rel.Declaration
 type vm_global = values array
 
 (* interpreter *)
-external coq_interprete : tcode -> values -> atom array -> vm_global -> Vmvalues.vm_env -> int -> values =
-  "coq_interprete_byte" "coq_interprete_ml"
+external rocq_interprete : tcode -> values -> atom array -> vm_global -> Vmvalues.vm_env -> int -> values =
+  "rocq_interprete_byte" "rocq_interprete_ml"
 
 (* table for structured constants and switch annotations *)
 
@@ -333,7 +333,7 @@ and eval_to_patch env sigma code envcache table =
     a
   in
   let global = get_global_data !table in
-  let v = coq_interprete tc crazy_val (get_atom_rel ()) global (inj_env vm_env) 0 in
+  let v = rocq_interprete tc crazy_val (get_atom_rel ()) global (inj_env vm_env) 0 in
   v
 
 and val_of_constr env sigma c envcache table =
@@ -362,4 +362,4 @@ let val_of_constr env sigma c =
   v
 
 let vm_interp code v env k =
-  coq_interprete code v (get_atom_rel ()) (get_global_data !global_table) env k
+  rocq_interprete code v (get_atom_rel ()) (get_global_data !global_table) env k

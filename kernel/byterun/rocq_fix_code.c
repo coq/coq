@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Coq Compiler                              */
+/*                          Rocq Compiler                              */
 /*                                                                     */
 /*        Benjamin Gregoire, projets Logical and Cristal               */
 /*                        INRIA Rocquencourt                           */
@@ -20,32 +20,32 @@
 #include <caml/fail.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
-#include "coq_instruct.h"
-#include "coq_arity.h"
-#include "coq_fix_code.h"
+#include "rocq_instruct.h"
+#include "rocq_arity.h"
+#include "rocq_fix_code.h"
 
 #ifdef THREADED_CODE
 
-static char ** coq_instr_table;
-static char * coq_instr_base;
-#define VALINSTR(instr) ((opcode_t)(coq_instr_table[instr] - coq_instr_base))
+static char ** rocq_instr_table;
+static char * rocq_instr_base;
+#define VALINSTR(instr) ((opcode_t)(rocq_instr_table[instr] - rocq_instr_base))
 
-void coq_init_thread_code(void ** instr_table, void * instr_base)
+void rocq_init_thread_code(void ** instr_table, void * instr_base)
 {
-  coq_instr_table = (char **) instr_table;
-  coq_instr_base = (char *) instr_base;
+  rocq_instr_table = (char **) instr_table;
+  rocq_instr_base = (char *) instr_base;
 }
 
 #else
 #define VALINSTR(instr) instr
 #endif /*  THREADED_CODE */
 
-int coq_is_instruction(opcode_t instr1, opcode_t instr2)
+int rocq_is_instruction(opcode_t instr1, opcode_t instr2)
 {
   return instr1 == VALINSTR(instr2);
 }
 
-void * coq_stat_alloc (asize_t sz)
+void * rocq_stat_alloc (asize_t sz)
 {
   void * result = malloc (sz);
   if (result == NULL) caml_raise_out_of_memory ();
@@ -55,7 +55,7 @@ void * coq_stat_alloc (asize_t sz)
 static opcode_t accu_instr;
 code_t accumulate = &accu_instr;
 
-value coq_accumulate(value unit)
+value rocq_accumulate(value unit)
 {
   CAMLparam1(unit);
   CAMLlocal1(res);
@@ -65,10 +65,10 @@ value coq_accumulate(value unit)
   CAMLreturn(res);
 }
 
-value coq_makeaccu (value i) {
+value rocq_makeaccu (value i) {
   CAMLparam1(i);
   CAMLlocal1(res);
-  code_t q = coq_stat_alloc(2 * sizeof(opcode_t));
+  code_t q = rocq_stat_alloc(2 * sizeof(opcode_t));
   res = caml_alloc_small(1, Abstract_tag);
   Code_val(res) = q;
   *q++ = VALINSTR(MAKEACCU);
@@ -76,20 +76,20 @@ value coq_makeaccu (value i) {
   CAMLreturn(res);
 }
 
-value coq_pushpop (value i) {
+value rocq_pushpop (value i) {
   CAMLparam1(i);
   CAMLlocal1(res);
   code_t q;
   res = caml_alloc_small(1, Abstract_tag);
   int n = Int_val(i);
   if (n == 0) {
-    q = coq_stat_alloc(sizeof(opcode_t));
+    q = rocq_stat_alloc(sizeof(opcode_t));
     Code_val(res) = q;
     *q = VALINSTR(STOP);
     CAMLreturn(res);
   }
   else {
-    q = coq_stat_alloc(3 * sizeof(opcode_t));
+    q = rocq_stat_alloc(3 * sizeof(opcode_t));
     Code_val(res) = q;
     *q++ = VALINSTR(POP);
     *q++ = (opcode_t)n;
@@ -116,13 +116,13 @@ value coq_pushpop (value i) {
 #define COPY32(dst,src) (*dst=*src)
 #endif /* ARCH_BIG_ENDIAN */
 
-value coq_tcode_of_code (value code) {
+value rocq_tcode_of_code (value code) {
   CAMLparam1 (code);
   CAMLlocal1 (res);
   code_t p, q;
   asize_t len = (asize_t) caml_string_length(code);
   res = caml_alloc_small(1, Abstract_tag);
-  q = coq_stat_alloc(len);
+  q = rocq_stat_alloc(len);
   Code_val(res) = q;
   len /= sizeof(opcode_t);
   for (p = (code_t)code; p < (code_t)code + len; /*nothing*/) {

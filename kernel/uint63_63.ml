@@ -31,7 +31,7 @@ let to_int64 = to_uint64
 let of_float = int_of_float
 
 external to_float : int -> (float [@unboxed])
-  = "coq_uint63_to_float_byte" "coq_uint63_to_float"
+  = "rocq_uint63_to_float_byte" "rocq_uint63_to_float"
 [@@noalloc]
 
 let hash i = i
