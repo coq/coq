@@ -52,6 +52,7 @@ type t =
   | Float64mul
   | Float64div
   | Float64sqrt
+  | Float64fma
   | Float64ofUint63
   | Float64normfr_mantissa
   | Float64frshiftexp

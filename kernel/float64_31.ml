@@ -25,6 +25,9 @@ external div : float -> float -> float = "coq_fdiv_byte" "coq_fdiv"
 external sqrt : float -> float = "coq_fsqrt_byte" "coq_fsqrt"
 [@@unboxed] [@@noalloc]
 
+external fma : float -> float -> float -> float = "coq_fma_byte" "coq_fma"
+[@@unboxed] [@@noalloc]
+
 (*** Test at runtime that no harmful double rounding seems to
    be performed with an intermediate 80 bits representation (x87). *)
 let () =
