@@ -264,17 +264,6 @@ Qed.
 
 (** * Extended Euclid algorithm. *)
 
-Lemma deprecated_Zis_gcd_for_euclid :
-  forall a b d q:Z, Zis_gcd b (a - q * b) d -> Zis_gcd a b d.
-Proof.
-  intros a b d q; simple induction 1; constructor; intuition.
-  replace a with (a - q * b + q * b).
-  - auto with zarith.
-  - ring.
-Qed.
-#[deprecated(since="8.17")]
-Notation Zis_gcd_for_euclid := deprecated_Zis_gcd_for_euclid (only parsing).
-
 (* this lemma is still used below and in Zgcd_alt *)
 Lemma Zis_gcd_for_euclid2 :
   forall b d q r:Z, Zis_gcd r b d -> Zis_gcd b (b * q + r) d.
@@ -330,32 +319,7 @@ Section extended_euclid_algorithm.
   Lemma extgcd_correct [u v d] : extgcd = (u, v, d) -> u * a + v * b = d /\ d = Z.gcd a b.
   Proof. cbv [extgcd proj1_sig]. case extgcd_rec as (([],?),?). intuition congruence. Qed.
 
-  Inductive deprecated_Euclid : Set :=
-    deprecated_Euclid_intro :
-    forall u v d:Z, u * a + v * b = d -> Zis_gcd a b d -> deprecated_Euclid.
-
-  Lemma deprecated_euclid : deprecated_Euclid.
-  Proof. case extgcd as [[]?] eqn:H; case (extgcd_correct H); esplit; subst; eauto using Zgcd_is_gcd. Qed.
-
-  Lemma deprecated_euclid_rec :
-    forall v3:Z,
-      0 <= v3 ->
-      forall u1 u2 u3 v1 v2:Z,
-       u1 * a + u2 * b = u3 ->
-       v1 * a + v2 * b = v3 ->
-       (forall d:Z, Zis_gcd u3 v3 d -> Zis_gcd a b d) -> deprecated_Euclid.
-  Proof. intros; apply deprecated_euclid. Qed.
-
 End extended_euclid_algorithm.
-
-#[deprecated(since="8.17", note="Use Coq.ZArith.Znumtheory.extgcd")]
-Notation Euclid := deprecated_Euclid (only parsing).
-#[deprecated(since="8.17", note="Use Coq.ZArith.Znumtheory.extgcd")]
-Notation Euclid_intro := deprecated_Euclid_intro (only parsing).
-#[deprecated(since="8.17", note="Use Coq.ZArith.Znumtheory.extgcd")]
-Notation euclid := deprecated_euclid (only parsing).
-#[deprecated(since="8.17", note="Use Coq.ZArith.Znumtheory.extgcd")]
-Notation euclid_rec := deprecated_euclid_rec (only parsing).
 
 Theorem Zis_gcd_uniqueness_apart_sign :
   forall a b d d':Z, Zis_gcd a b d -> Zis_gcd a b d' -> d = d' \/ d = - d'.
