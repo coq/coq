@@ -24,10 +24,10 @@
 #include <caml/version.h>
 #include <caml/callback.h>
 
-#include "coq_instruct.h"
-#include "coq_fix_code.h"
-#include "coq_memory.h"
-#include "coq_values.h"
+#include "rocq_instruct.h"
+#include "rocq_fix_code.h"
+#include "rocq_memory.h"
+#include "rocq_values.h"
 
 #if OCAML_VERSION < 41000
 extern void caml_minor_collection(void);
@@ -48,9 +48,9 @@ extern void caml_minor_collection(void);
 #endif
 
 #ifdef ARCH_SIXTYFOUR
-#include "coq_uint63_native.h"
+#include "rocq_uint63_native.h"
 #else
-#include "coq_uint63_emul.h"
+#include "rocq_uint63_emul.h"
 #endif
 
 
@@ -309,7 +309,7 @@ value coq_interprete
 #endif
 #ifdef THREADED_CODE
   static void * coq_jumptable[] = {
-#    include "coq_jumptbl.h"
+#    include "rocq_jumptbl.h"
   };
 #else
   opcode_t curr_instr;

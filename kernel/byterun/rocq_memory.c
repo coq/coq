@@ -21,10 +21,10 @@
 #include <caml/shared_heap.h>
 #endif
 
-#include "coq_instruct.h"
-#include "coq_fix_code.h"
-#include "coq_memory.h"
-#include "coq_interp.h"
+#include "rocq_instruct.h"
+#include "rocq_fix_code.h"
+#include "rocq_memory.h"
+#include "rocq_interp.h"
 
 /* stack */
 

@@ -4,17 +4,17 @@
  (public_name coq-core.vm)
  (foreign_stubs
   (language c)
-  (names coq_fix_code coq_float64 coq_memory coq_values coq_interp)
+  (names rocq_fix_code rocq_float64 rocq_memory rocq_values rocq_interp)
   (flags :standard (:include %{project_root}/config/dune.c_flags))))
 
 (rule
- (targets coq_instruct.h)
+ (targets rocq_instruct.h)
  (action (with-stdout-to %{targets} (run ../genOpcodeFiles.exe enum))))
 
 (rule
- (targets coq_jumptbl.h)
+ (targets rocq_jumptbl.h)
  (action (with-stdout-to %{targets} (run ../genOpcodeFiles.exe jump))))
 
 (rule
- (targets coq_arity.h)
+ (targets rocq_arity.h)
  (action (with-stdout-to %{targets} (run ../genOpcodeFiles.exe arity))))

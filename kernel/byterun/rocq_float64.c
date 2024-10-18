@@ -14,7 +14,7 @@
 #define CAML_INTERNALS
 #include <caml/alloc.h>
 
-#include "coq_values.h"
+#include "rocq_values.h"
 
 union double_bits {
   double d;

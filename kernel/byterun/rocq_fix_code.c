@@ -20,9 +20,9 @@
 #include <caml/fail.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
-#include "coq_instruct.h"
-#include "coq_arity.h"
-#include "coq_fix_code.h"
+#include "rocq_instruct.h"
+#include "rocq_arity.h"
+#include "rocq_fix_code.h"
 
 #ifdef THREADED_CODE
 

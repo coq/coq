@@ -11,10 +11,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <caml/memory.h>
-#include "coq_fix_code.h"
-#include "coq_instruct.h"
-#include "coq_memory.h"
-#include "coq_values.h"
+#include "rocq_fix_code.h"
+#include "rocq_instruct.h"
+#include "rocq_memory.h"
+#include "rocq_values.h"
 #include <memory.h>
 /* KIND OF VALUES */
 
