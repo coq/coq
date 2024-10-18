@@ -1197,8 +1197,8 @@ struct
         Exninfo.iraise (e, info) in
       discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma resj tycon
 
-  let pretype_letin self (name, c1, t, c2) =
-    fun ?loc ~flags tycon env sigma ->
+  let pretype_letin_context self (name, c1, t) =
+    fun ?loc ~flags env sigma ->
     let open Context.Rel.Declaration in
     let pretype tycon env sigma c = eval_pretyper self ~flags tycon env sigma c in
     let pretype_type tycon env sigma c = eval_type_pretyper self ~flags tycon env sigma c in
@@ -1214,14 +1214,20 @@ struct
       ~onlyalg:true ~status:Evd.univ_flexible (Some false) !!env sigma j.uj_type in
     let r = Retyping.relevance_of_term !!env sigma j.uj_val in
     let var = LocalDef (make_annot name r, j.uj_val, t) in
-    let tycon = lift_tycon 1 tycon in
     let vars = VarSet.variables (Global.env ()) in
     let hypnaming = if flags.program_mode then ProgramNaming vars else RenameExistingBut vars in
     let var, env = push_rel ~hypnaming sigma var env in
-    let sigma, j' = pretype tycon env sigma c2 in
     let name = get_name var in
-    sigma, { uj_val = mkLetIn (make_annot name r, j.uj_val, t, j'.uj_val) ;
-             uj_type = subst1 j.uj_val j'.uj_type }
+    env, sigma, make_annot name r, j.uj_val, t
+
+  let pretype_letin self (name, c1, t, c2) =
+    fun ?loc ~flags tycon env sigma ->
+    let pretype tycon env sigma c = eval_pretyper self ~flags tycon env sigma c in
+    let env, sigma, name, c1, t = pretype_letin_context self (name, c1, t) ?loc ~flags env sigma in
+    let tycon = lift_tycon 1 tycon in
+    let sigma, j' = pretype tycon env sigma c2 in
+    sigma, { uj_val = mkLetIn (name, c1, t, j'.uj_val) ;
+             uj_type = subst1 c1 j'.uj_type }
 
   let pretype_lettuple self (nal, (na, po), c, d) =
     fun ?loc ~flags tycon env sigma ->
@@ -1428,6 +1434,17 @@ struct
       sigma, { uj_val = v; uj_type = tval }
     in discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma cj tycon
 
+let unify_to_valcon env sigma ~valcon ~cloc tj =
+  match valcon with
+  | None -> sigma, tj
+  | Some v ->
+    begin match Evarconv.unify_leq_delay !!env sigma v tj.utj_val with
+    | sigma -> sigma, tj
+    | exception Evarconv.UnableToUnify (sigma,e) ->
+      error_unexpected_type
+        ?loc:cloc !!env sigma tj.utj_val v e
+    end
+
 (* [pretype_type valcon env sigma c] coerces [c] into a type *)
 let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.get c with
   | GHole knd ->
@@ -1457,21 +1474,21 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
          let sigma, utj_val = new_evar env sigma ~src:(loc, knd) ~naming (mkSort s) in
          let sigma = if flags.program_mode then mark_obligation_evar sigma knd utj_val else sigma in
          sigma, { utj_val; utj_type = s})
+  | GLetIn (name, _, c1, t, c2) ->
+    let env', sigma, name, c1, t = pretype_letin_context self (name, c1, t)
+        ?loc:(loc_of_glob_constr c) ~flags env sigma
+    in
+    let sigma, j = eval_type_pretyper self ~flags empty_valcon env' sigma c2 in
+    let j = { utj_val = mkLetIn (name, c1, t, j.utj_val); utj_type = j.utj_type } in
+    (* we could also pass the lifted valcon to the recursive pretype call *)
+    unify_to_valcon env sigma ~valcon ~cloc:(loc_of_glob_constr c) j
   | _ ->
       let sigma, j = eval_pretyper self ~flags empty_tycon env sigma c in
       let loc = loc_of_glob_constr c in
       let sigma, tj =
         let use_coercions = flags.use_coercions in
         Coercion.inh_coerce_to_sort ?loc ~use_coercions !!env sigma j in
-      match valcon with
-      | None -> sigma, tj
-      | Some v ->
-        begin match Evarconv.unify_leq_delay !!env sigma v tj.utj_val with
-        | sigma -> sigma, tj
-        | exception Evarconv.UnableToUnify (sigma,e) ->
-          error_unexpected_type
-            ?loc:(loc_of_glob_constr c) !!env sigma tj.utj_val v e
-        end
+      unify_to_valcon env sigma ~valcon ~cloc:(loc_of_glob_constr c) tj
 
   let pretype_int self i =
     fun ?loc ~flags tycon env sigma ->
