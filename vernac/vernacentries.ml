@@ -520,6 +520,8 @@ type constraint_sources = {
   edges : (constraint_source * Univ.constraint_type) Univ.Level.Map.t Univ.Level.Map.t;
 }
 
+let empty_sources = { edges = Univ.Level.Map.empty }
+
 let mk_sources () =
   let open Univ in
   let srcs = DeclareUniv.constraint_sources () in
@@ -669,7 +671,7 @@ let pr_arc srcs prl = let open Pp in
 
 let pr_universes srcs prl g = pr_pmap Pp.mt (pr_arc srcs prl) g
 
-let print_universes ~sort ~subgraph dst =
+let print_universes { sort; subgraph; with_sources; file; } =
   let univ = Global.universes () in
   let univ = match subgraph with
     | None -> univ
@@ -682,9 +684,14 @@ let print_universes ~sort ~subgraph dst =
     else str"There may remain asynchronous universe constraints"
   in
   let prl = UnivNames.pr_level_with_global_universes in
-  begin match dst with
+  begin match file with
   | None ->
-    let srcs = mk_sources () in
+    let with_sources = match with_sources, subgraph with
+      | Some b, _ -> b
+      | _, None -> false
+      | _, Some _ -> true
+    in
+    let srcs = if with_sources then mk_sources () else empty_sources in
     pr_universes srcs prl univ ++ pr_remaining
   | Some s -> dump_universes_gen (fun u -> Pp.string_of_ppcmds (prl u)) univ s
   end
@@ -2203,8 +2210,8 @@ let vernac_print =
   | PrintCanonicalConversions qids -> with_proof_env @@ fun env sigma ->
     let grefs = List.map Smartlocate.smart_global qids in
     Prettyp.print_canonical_projections env sigma grefs
-  | PrintUniverses (sort, subgraph, dst) -> no_state @@ fun ()->
-    print_universes ~sort ~subgraph dst
+  | PrintUniverses prunivs -> no_state @@ fun ()->
+    print_universes prunivs
   | PrintHint r -> with_proof_env @@ fun env sigma ->
     Hints.pr_hint_ref env sigma (smart_global r)
   | PrintHintGoal -> with_pstate @@ fun ~pstate ->
