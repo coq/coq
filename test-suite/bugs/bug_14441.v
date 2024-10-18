@@ -1,15 +1,13 @@
-Require Import Utf8 Relation_Definitions.
-
-Class Equiv A := equiv: relation A.
+Class Equiv A := equiv: A -> A -> Prop.
 #[export] Hint Mode Equiv ! : typeclass_instances.
 
-Class Lookup (K A M : Type) := lookup: K → M → option A.
+Class Lookup (K A M : Type) := lookup: K -> M -> option A.
 #[export] Hint Mode Lookup ! - - : typeclass_instances.
 #[export] Hint Mode Lookup - - ! : typeclass_instances.
 
-Parameter list_equiv : ∀ A, Equiv A → Equiv (list A).
-Parameter option_equiv : ∀ A, Equiv A → Equiv (option A).
-Parameter list_lookup : ∀ A, Lookup nat A (list A).
+Parameter list_equiv : forall A, Equiv A -> Equiv (list A).
+Parameter option_equiv : forall A, Equiv A -> Equiv (option A).
+Parameter list_lookup : forall A, Lookup nat A (list A).
 
 #[export] Existing Instance list_equiv.
 #[export] Existing Instance option_equiv.
@@ -18,7 +16,7 @@ Parameter list_lookup : ∀ A, Lookup nat A (list A).
 Set Typeclasses Debug.
 (* fails *)
 Lemma list_equiv_lookup {A} `{Equiv A} (l k : list A) :
-  equiv l k ↔ ∀ i, equiv (lookup i l) (lookup i k).
+  equiv l k <-> forall i, equiv (lookup i l) (lookup i k).
 Admitted.
 (*
 ?Equiv : "Equiv (option ?A)"

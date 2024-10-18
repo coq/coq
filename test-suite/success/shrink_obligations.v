@@ -1,4 +1,4 @@
-Require Program.
+Require Program.Basics Program.Tactics.
 
 Obligation Tactic := idtac.
 

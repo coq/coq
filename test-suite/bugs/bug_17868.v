@@ -1,4 +1,4 @@
-From Stdlib Require Import Uint63 PArray.
+From Stdlib Require Import PrimInt63 PrimArray.
 
 Class pointed T := point : T.
 

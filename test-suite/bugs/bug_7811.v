@@ -5,8 +5,6 @@
 
 (* This was triggering a "Not_found" at the time of printing/showing the goal *)
 
-Require Stdlib.Unicode.Utf8.
-
 Notation "t $ r" := (t r)
   (at level 65, right associativity, only parsing).
 
@@ -35,23 +33,22 @@ Inductive val :=
   | InjRV (v : val).
 Axiom coPset : Set.
 Axiom atomic_update : forall {PROP : Type} {TA TB : tele}, coPset -> coPset -> (TA -> PROP) -> (TA -> TB -> PROP) -> (TA -> TB -> PROP) -> PROP.
-Import Stdlib.Unicode.Utf8.
 Notation "'AU' '<<' ∀ x1 .. xn , α '>>' @ Eo , Ei '<<' β , 'COMM' Φ '>>'" :=
-  (atomic_update (TA:=TeleS (λ x1, .. (TeleS (λ xn, TeleO)) .. ))
+  (atomic_update (TA:=TeleS (fun x1 => .. (TeleS (fun xn => TeleO)) .. ))
                  (TB:=TeleO)
                  Eo Ei
-                 (tele_app (TT:=TeleS (λ x1, .. (TeleS (λ xn, TeleO)) .. )) $
-                       λ x1, .. (λ xn, α) ..)
-                 (tele_app (TT:=TeleS (λ x1, .. (TeleS (λ xn, TeleO)) .. )) $
-                       λ x1, .. (λ xn, tele_app (TT:=TeleO) β) .. )
-                 (tele_app (TT:=TeleS (λ x1, .. (TeleS (λ xn, TeleO)) .. )) $
-                       λ x1, .. (λ xn, tele_app (TT:=TeleO) Φ) .. )
+                 (tele_app (TT:=TeleS (fun x1 => .. (TeleS (fun xn => TeleO)) .. )) $
+                       fun x1 => .. (fun xn => α) ..)
+                 (tele_app (TT:=TeleS (fun x1 => .. (TeleS (fun xn => TeleO)) .. )) $
+                       fun x1 => .. (fun xn => tele_app (TT:=TeleO) β) .. )
+                 (tele_app (TT:=TeleS (fun x1 => .. (TeleS (fun xn => TeleO)) .. )) $
+                       fun x1 => .. (fun xn => tele_app (TT:=TeleO) Φ) .. )
   )
   (at level 20, Eo, Ei, α, β, Φ at level 200, x1 binder, xn binder,
    format "'[   ' 'AU'  '<<'  ∀  x1  ..  xn ,  α  '>>'  '/' @  Eo ,  Ei  '/' '[   ' '<<'  β ,  '/' COMM  Φ  '>>' ']' ']'") : bi_scope.
 
 Axiom ident : Set.
-Inductive env (A : Type) : Type :=  Enil : env A | Esnoc : env A → ident → A → env A.
+Inductive env (A : Type) : Type :=  Enil : env A | Esnoc : env A -> ident -> A -> env A.
 Record envs (PROP : Type) : Type
   := Envs { env_spatial : env PROP }.
 Axiom positive : Set.

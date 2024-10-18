@@ -452,7 +452,7 @@ OCaml code with C code, the linker needs to know
    .. coqtop:: in
 
       Require Extraction.
-      Require Stdlib.extraction.ExtrOcamlNatInt.
+      Extract Inductive nat => int [ "0" "Stdlib.Int.succ" ].
       Axiom f : nat -> nat -> nat.
       Extract Foreign Constant f => "f_impl".
 
@@ -698,7 +698,7 @@ where ``diveucl`` is a type for the pair of the quotient and the
 modulo, plus some logical assertions that disappear during extraction.
 We can now extract this program to OCaml:
 
-.. coqtop:: reset all
+.. coqdoc::
 
    Require Extraction.
    Require Import Euclid Wf_nat.

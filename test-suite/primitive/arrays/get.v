@@ -1,4 +1,4 @@
-From Stdlib Require Import Uint63 PArray.
+From Stdlib Require Import PrimInt63 PrimArray.
 
 Open Scope array_scope.
 
@@ -73,14 +73,14 @@ Check check_const_eq compute_stuck_get (fun A (t : array A) => t.[0]).
 Check check_const_eq cbn_stuck_get (fun A (t : array A) => t.[0]).
 
 (* Under-application *)
-Definition lazy_get := Eval lazy in @PArray.get.
-Definition vm_get := Eval vm_compute in @PArray.get.
-Definition native_get := Eval native_compute in @PArray.get.
-Definition compute_get := Eval compute in @PArray.get.
-Definition cbn_get := Eval cbn in @PArray.get.
+Definition lazy_get := Eval lazy in @PrimArray.get.
+Definition vm_get := Eval vm_compute in @PrimArray.get.
+Definition native_get := Eval native_compute in @PrimArray.get.
+Definition compute_get := Eval compute in @PrimArray.get.
+Definition cbn_get := Eval cbn in @PrimArray.get.
 
-Check check_const_eq lazy_get (@PArray.get).
+Check check_const_eq lazy_get (@PrimArray.get).
 Check check_const_eq vm_get (fun A (t : array A) i => t.[i]).
 Check check_const_eq native_get (fun A (t : array A) i => t.[i]).
-Check check_const_eq compute_get (@PArray.get).
-Check check_const_eq cbn_get (@PArray.get).
+Check check_const_eq compute_get (@PrimArray.get).
+Check check_const_eq cbn_get (@PrimArray.get).

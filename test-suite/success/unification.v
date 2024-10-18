@@ -68,7 +68,7 @@ Check (f (fun x : unit + unit =>
 
 (* Test patterns unification in apply *)
 
-Require Import Arith.
+Require Import TestSuite.arith.
 Parameter x y : nat.
 Parameter G:x=y->x=y->Prop.
 Parameter K:x<>y->x<>y->Prop.

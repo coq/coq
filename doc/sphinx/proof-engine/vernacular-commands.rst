@@ -214,16 +214,20 @@ described elsewhere
 
    .. example:: Searching for a pattern
 
-      .. coqtop:: none reset
-
-         Require Import PeanoNat.
-
       We can repeat meta-variables to narrow down the search.  Here,
       we are looking for commutativity lemmas.
 
+      .. coqtop:: none reset
+
+         Lemma plus_assoc n m p : n + (m + p) = n + m + p. Admitted.
+         Lemma plus_comm n m : n + m = m + n. Admitted.
+
       .. coqtop:: all
 
-         Search (_ ?n ?m = _ ?m ?n).
+         Check plus_assoc.
+         Check plus_comm.
+
+         Search (_ ?x ?y = _ ?y ?x).
 
    .. _search-part-ident:
 
@@ -247,7 +251,8 @@ described elsewhere
 
       .. coqtop:: none reset
 
-         Require Import PeanoNat.
+         Require Import Nat.
+         Axiom div_exact : forall a b : nat, a = b * (a / b) <-> a mod b = 0.
 
       In this example, we show two ways of searching for all the
       objects whose type contains `Nat.modulo` but which do not
@@ -324,15 +329,15 @@ described elsewhere
 
    .. example:: :cmd:`SearchPattern` examples
 
-      .. coqtop:: in
+      .. coqtop:: none
 
-         Require Import Arith.
+         Axiom add_comm: forall n m, n + m = m + n.
 
       .. coqtop:: all
 
          SearchPattern (_ + _ = _ + _).
          SearchPattern (nat -> bool).
-         SearchPattern (forall l : list _, _ l l).
+         SearchPattern (forall n : nat, _ n n).
 
       .. coqtop:: all
 
@@ -349,9 +354,9 @@ described elsewhere
 
    .. example:: :cmd:`SearchRewrite` examples
 
-      .. coqtop:: in
+      .. coqtop:: none
 
-         Require Import Arith.
+         Axiom add_assoc: forall n m p, n + (m + p) = n + m + p.
 
       .. coqtop:: all
 

@@ -1,4 +1,4 @@
-Require Import BinPos.
+Require Import TestSuite.binpos.
 
 Definition P := (fun x : positive => x = xH).
 

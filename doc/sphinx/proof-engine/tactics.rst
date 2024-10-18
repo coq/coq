@@ -453,9 +453,11 @@ Examples:
 
       .. coqtop:: reset none
 
-         Require Import Stdlib.Lists.List.
+         Require Import ListDef.
          Section IntroPatterns.
          Variables (A : Type) (xs ys : list A).
+         Axiom length_zero_iff_nil :
+           forall [A] (l : list A), length l = 0 <-> l = nil.
 
       .. coqtop:: out
 
@@ -868,11 +870,9 @@ Applying theorems
       to, repectively, `n` and `p` in theorem (backward reasoning).
       The `with` clause provides the binding for `m`:
 
-      .. coqtop:: reset in
+      .. coqtop:: reset none
 
-         Require Import PeanoNat.
-
-      .. coqtop:: none
+         Axiom le_trans : forall n m p, n <= m -> m <= p -> n <= p.
 
          Goal forall (x y : nat), x <= y -> x * x <= y * y.
 
@@ -882,7 +882,7 @@ Applying theorems
 
       .. coqtop:: all
 
-         apply Nat.le_trans with (y * x).
+         apply le_trans with (y * x).
 
    .. _apply_with_binding_hyp:
    .. example:: Apply a theorem with a binding in a hypothesis
@@ -900,11 +900,9 @@ Applying theorems
       by name (as shown) or values for all the variables can be given
       positionally, i.e. `apply Nat.le_trans with (x * x) (y * y) (y * x) in H.`
 
-      .. coqtop:: reset in
+      .. coqtop:: reset none
 
-         Require Import PeanoNat.
-
-      .. coqtop:: none
+         Axiom le_trans : forall n m p, n <= m -> m <= p -> n <= p.
 
          Goal forall (x y : nat), x * x <= y * y -> x <= y.
 
@@ -914,7 +912,7 @@ Applying theorems
 
       .. coqtop:: all
 
-         apply Nat.le_trans with (p := y * x) in H.
+         apply le_trans with (p := y * x) in H.
 
    .. _apply_with_iff:
    .. example:: Applying theorems with `<->`
@@ -1818,16 +1816,18 @@ Controlling the proof flow
 
    Apply a fact from the standard library:
 
-   .. coqtop:: in
+   .. coqtop:: none
 
-      Require Import Arith.
+      Axiom lt_irrefl : forall x, ~ (x < x).
+
+   .. coqtop:: in
 
       Goal forall (A : Prop), 0 < 0 -> A.
 
    .. coqtop:: all
 
       intros.
-      contradiction (Nat.lt_irrefl 0).
+      contradiction (lt_irrefl 0).
       Qed.
 
 .. tacn:: contradict @ident

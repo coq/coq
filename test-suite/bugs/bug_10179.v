@@ -1,6 +1,5 @@
 From Stdlib Require Import ssreflect ssrbool.
-From Stdlib Require Import Lists.List.
-Import ListNotations.
+From Stdlib Require Import ListDef.
 
 Fixpoint contains {X: Type} (eqt: X -> X -> bool) (l: list X) (x: X): bool := true.
 
