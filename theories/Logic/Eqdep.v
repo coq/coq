@@ -22,11 +22,12 @@
 *)
 
 Require Export EqdepFacts.
+Import EqNotations.
 
 Module Eq_rect_eq.
 
 Axiom eq_rect_eq :
-  forall (U:Type) (p:U) (Q:U -> Type) (x:Q p) (h:p = p), x = eq_rect p Q x p h.
+  forall (A:Type) (x:A) (P:A -> Type) (p:P x) (e:x = x), p = rew [P] e in p.
 
 End Eq_rect_eq.
 
