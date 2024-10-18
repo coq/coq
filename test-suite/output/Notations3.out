@@ -151,11 +151,6 @@ exists_true (x : nat) (A : Type) (R : A -> A -> Prop)
      : Prop * Prop * Prop
 {{D 1, 2}}
      : nat * nat * (nat * nat * (nat * nat))
-File "./output/Notations3.v", line 236, characters 0-104:
-Warning: Notations "! _ .. _ , _" defined at level 200 with arguments binder,
-constr at next level and "! _ .. _ # _ #" defined at level 200 with arguments
-binder, constr have incompatible prefixes. One of them will likely not work.
-[notation-incompatible-prefix,parsing,default]
 ! a b : nat # True #
      : Prop * (Prop * Prop)
 {{forall x : nat, x = 0, nat}}

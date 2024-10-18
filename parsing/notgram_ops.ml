@@ -28,18 +28,20 @@ let grammar_of_notation ntn =
   NotationMap.find ntn !notation_grammar_map
 
 let list_prefixes ntn =
-  let rec aux = function
+  let rec aux inrec = function
     | [] -> []
     | s :: symbols ->
-       let nt = match s with
-         | NonTerminal _ -> 1
-         | Terminal _ | SProdList _ | Break _ -> 0 in
-       ([s], nt) :: List.map (fun (l, k) -> s :: l, k + nt) (aux symbols) in
+       let nt, inrec = match s with
+         | NonTerminal _ -> (if inrec then 0 else 1), false
+         | Terminal s when String.equal s (Names.Id.to_string Notation_ops.ldots_var) -> 0, true
+           (* the above is horribly hackish but we plan to rewrite recursive notations soon anyway *)
+         | Terminal _ | SProdList _ | Break _ -> 0, inrec in
+       ([s], nt) :: List.map (fun (l, k) -> s :: l, k + nt) (aux inrec symbols) in
   let entry, symbols = decompose_notation_key ntn in
   let symbols = match symbols with
     (* don't consider notations "{ _ ..." that have a special treatment *)
     | Terminal "{" :: NonTerminal _ :: _ -> [] | _ -> symbols in
-  aux symbols
+  aux false symbols
   (* considering "_" as a prefix would make all infix notations incompatible *)
   |> List.filter (function [NonTerminal _], _ -> false | _ -> true)
   |> List.map (fun (l, k) -> make_notation_key entry l, k)
