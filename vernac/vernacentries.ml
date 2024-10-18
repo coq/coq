@@ -1240,7 +1240,7 @@ let interp_import_cats cats =
 let import_module_with_filter ~export cats m f =
   match f with
   | ImportAll ->
-    Declaremods.import_module cats ~export m
+    Declaremods.Interp.import_module cats ~export m
   | ImportNames ns -> import_names ~export m ns
 
 let check_no_filter_when_using_cats l =
