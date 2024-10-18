@@ -314,7 +314,7 @@ let instance_hook info global ?hook cst =
 let declare_instance_constant iinfo global impargs ?hook name udecl poly sigma term termtype =
   let kind = Decls.(IsDefinition Instance) in
   let cinfo = Declare.CInfo.make ~name ~impargs ~typ:(Some termtype) () in
-  let info = Declare.Info.make ~kind ~poly ~udecl () in
+  let info = Declare.Info.make ~loc:None ~kind ~poly ~udecl () in
   let kn = Declare.declare_definition ~cinfo ~info ~opaque:false ~body:term sigma in
   instance_hook iinfo global ?hook kn
 
@@ -345,7 +345,7 @@ let declare_instance_program pm env sigma ~locality ~poly name pri impargs udecl
   let uctx = Evd.ustate sigma in
   let kind = Decls.IsDefinition Decls.Instance in
   let cinfo = Declare.CInfo.make ~name ~typ ~impargs () in
-  let info = Declare.Info.make  ~udecl ~poly ~kind ~hook () in
+  let info = Declare.Info.make ~loc:None ~udecl ~poly ~kind ~hook () in
   let pm, _ =
     Declare.Obls.add_definition ~pm ~info ~cinfo ~opaque:false ~uctx ~body obls
   in pm
@@ -360,7 +360,7 @@ let declare_instance_open sigma ?hook ~tac ~locality ~poly id pri impargs udecl 
   let sigma = Evd.push_future_goals sigma in
   let kind = Decls.(IsDefinition Instance) in
   let hook = Declare.Hook.(make (fun { S.dref ; _ } -> instance_hook pri locality ?hook dref)) in
-  let info = Declare.Info.make ~hook ~kind ~udecl ~poly () in
+  let info = Declare.Info.make ~loc:None ~hook ~kind ~udecl ~poly () in
   (* XXX: We need to normalize the type, otherwise Admitted / Qed will fails!
      This is due to a bug in proof_global :( *)
   let termtype = Evarutil.nf_evar sigma termtype in

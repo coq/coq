@@ -386,7 +386,7 @@ let register_struct is_rec (rec_order, fixpoint_exprl) =
         CErrors.user_err
           Pp.(str "Body of Function must be given.")
     in
-    ComDefinition.do_definition ~name:fname.CAst.v ~poly:false
+    ComDefinition.do_definition ~loc:None ~name:fname.CAst.v ~poly:false
       ~kind:Decls.Definition univs binders None body (Some rtype);
     let evd, rev_pconstants =
       List.fold_left
@@ -1483,7 +1483,7 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
             i*)
           let lem_id = mk_correct_id f_id in
           let typ, _ = lemmas_types_infos.(i) in
-          let info = Declare.Info.make () in
+          let info = Declare.Info.make ~loc:None () in
           let cinfo = Declare.CInfo.make ~name:lem_id ~typ () in
           let lemma = Declare.Proof.start ~cinfo ~info !evd in
           let lemma = fst @@ Declare.Proof.by (proving_tac i) lemma in
@@ -1547,7 +1547,7 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
               Ensures by: obvious
             i*)
           let lem_id = mk_complete_id f_id in
-          let info = Declare.Info.make () in
+          let info = Declare.Info.make ~loc:None () in
           let cinfo =
             Declare.CInfo.make ~name:lem_id ~typ:(fst lemmas_types_infos.(i)) ()
           in
