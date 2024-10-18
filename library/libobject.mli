@@ -47,7 +47,7 @@ open Mod_subst
        the substitution function is called on the object to update the module name.
      Keep       - the object is kept at the end of the module.
        When the module is cloned the object is not cloned with it.
-       This means that Keep objects in a module type or functor are dropped.
+       Keep objects in a module type or functor are still in effect outside it.
      Anticipate - this is for objects that have to be explicitly managed
        by the [end_module] function (currently only Require).
 
