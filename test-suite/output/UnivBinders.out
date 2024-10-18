@@ -254,3 +254,9 @@ Arguments C2' A%type_scope p2
 File "./output/UnivBinders.v", line 207, characters 0-33:
 The command has indeed failed with message:
 Universe inconsistency. Cannot enforce a < a because a = a.
+JMeq :
+forall [A : Type@{JMeq.u0}], A -> forall [B : Type@{JMeq.u1}], B -> Prop
+
+JMeq is template universe polymorphic on JMeq.u0
+Arguments JMeq [A]%type_scope x [B]%type_scope _
+Expands to: Inductive UnivBinders.PartialTemplate.JMeq

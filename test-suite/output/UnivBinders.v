@@ -207,3 +207,16 @@ Definition g@{a b} := Type@{a} : Type@{b}.
 Fail Definition h@{a} := g@{a a}.
 
 End Inconsistency.
+
+Module PartialTemplate.
+
+Set Implicit Arguments.
+Unset Elimination Schemes.
+Unset Universe Polymorphism.
+
+Inductive JMeq (A:Type) (x:A) : forall B:Type, B -> Prop :=
+    JMeq_refl : JMeq x x.
+
+About JMeq.
+
+End PartialTemplate.

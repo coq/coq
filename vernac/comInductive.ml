@@ -854,7 +854,7 @@ let do_mutual_inductive ~flags ?typing_flags udecl indl ~private_ind ~uniform =
   (* Slightly hackish global universe declaration due to template types. *)
   let binders = match mie.mind_entry_universes with
   | Monomorphic_ind_entry -> (UState.Monomorphic_entry uctx, univ_binders)
-  | Template_ind_entry ctx -> (UState.Monomorphic_entry ctx, univ_binders)
+  | Template_ind_entry ctx -> (UState.Monomorphic_entry (Univ.ContextSet.union uctx ctx), univ_binders)
   | Polymorphic_ind_entry uctx -> (UState.Polymorphic_entry uctx, UnivNames.empty_binders)
   in
   (* Declare the global universes *)
