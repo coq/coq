@@ -120,32 +120,6 @@ END
 
 {
 
-let pr_constr_comma_sequence env sigma prc _ _ = prlist_with_sep pr_comma (prc env sigma)
-
-}
-
-ARGUMENT EXTEND constr_comma_sequence'
-  TYPED AS constr list
-  PRINTED BY { pr_constr_comma_sequence env sigma }
-| [ constr(c) "," constr_comma_sequence'(l) ] -> { c::l }
-| [ constr(c) ] -> { [c] }
-END
-
-{
-
-let pr_auto_using env sigma prc _prlc _prt = Pptactic.pr_auto_using (prc env sigma)
-
-}
-
-ARGUMENT EXTEND auto_using'
-  TYPED AS constr list
-  PRINTED BY { pr_auto_using env sigma }
-| [ "using" constr_comma_sequence'(l) ] -> { l }
-| [ ] -> { [] }
-END
-
-{
-
 module Vernac = Pvernac.Vernac_
 
 let (wit_function_fix_definition : Vernacexpr.fixpoint_expr Loc.located Genarg.vernac_genarg_type) =

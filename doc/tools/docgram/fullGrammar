@@ -2009,16 +2009,6 @@ with_names: [
 |      (* funind plugin *)
 ]
 
-constr_comma_sequence': [
-| constr "," constr_comma_sequence'      (* funind plugin *)
-| constr      (* funind plugin *)
-]
-
-auto_using': [
-| "using" constr_comma_sequence'      (* funind plugin *)
-|      (* funind plugin *)
-]
-
 function_fix_definition: [
 | Vernac.fix_definition      (* funind plugin *)
 ]
@@ -2246,11 +2236,6 @@ constr_eval: [
 | "eval" red_expr "in" Constr.constr
 | "context" identref "[" Constr.lconstr "]"
 | "type" "of" Constr.constr
-]
-
-constr_may_eval: [
-| constr_eval
-| Constr.constr
 ]
 
 tactic_atom: [

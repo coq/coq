@@ -190,10 +190,6 @@ GRAMMAR EXTEND Gram
       | IDENT "type"; IDENT "of"; c = Constr.constr ->
           { ConstrTypeOf c } ] ]
   ;
-  constr_may_eval: (* For extensions *)
-    [ [ c = constr_eval -> { c }
-      | c = Constr.constr -> { ConstrTerm c } ] ]
-  ;
   tactic_atom:
     [ [ n = integer -> { TacGeneric (None, genarg_of_int n) }
       | r = reference -> { TacCall (CAst.make ~loc (r,[])) }

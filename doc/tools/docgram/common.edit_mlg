@@ -162,11 +162,6 @@ DELETE: [
 | test_qualid_with_or_lpar_or_rbrac
 | test_leftsquarebracket_equal
 | test_sort_qvar
-
-(* unused *)
-| constr_comma_sequence'
-| auto_using'
-| constr_may_eval
 ]
 
 (* additional nts to be spliced *)
