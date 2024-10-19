@@ -412,10 +412,6 @@ Creating Hints
    + :attr:`global` hints are visible from other modules when they :cmd:`Import` or
      :cmd:`Require` the current module.
 
-   .. versionadded:: 8.14
-
-      The :cmd:`Hint Rewrite` now supports locality attributes like other `Hint` commands.
-
    .. versionchanged:: 8.18
 
       The default value for hint locality outside sections is
@@ -526,11 +522,13 @@ Creating Hints
       :tacn:`unfold`. :n:`@natural` is the cost, :n:`@one_pattern` is the pattern
       to match and :n:`@ltac_expr` is the action to apply.
 
-      .. note::
+      **Usage tip**: tactics that can succeed even if they don't change the context,
+      such as most of the :ref:`conversion tactics <applyingconversionrules>`, should
+      be prefaced with :tacn:`progress` to avoid needless repetition of the tactic.
 
-         Use a :cmd:`Hint Extern` with no pattern to do
-         pattern matching on hypotheses using ``match goal with``
-         inside the tactic.
+      **Usage tip**: Use a :cmd:`Hint Extern` with no pattern to do
+      pattern matching on hypotheses using ``match goal with``
+      inside the tactic.
 
       .. example::
 
