@@ -1,0 +1,94 @@
+Set < nat_rect.u0
+    < decls.a
+    < decls.b
+    < a
+a < decls.a
+
+Type@{a}
+     : Type@{a+1}
+Type@{decls.a}
+     : Type@{decls.a+1}
+Type@{decls.b}
+     : Type@{decls.b+1}
+File "./output/unidecls.v", line 25, characters 17-24:
+The command has indeed failed with message:
+Undeclared universe decls.c.
+File "./output/unidecls.v", line 27, characters 17-18:
+The command has indeed failed with message:
+Undeclared universe: i.
+Type@{foo}
+     : Type@{foo+1}
+Type@{bar}
+     : Type@{bar+1}
+Type@{Foo.bar}
+     : Type@{Foo.bar+1}
+Type@{Foo.foo}
+     : Type@{Foo.foo+1}
+Type@{foo}
+     : Type@{foo+1}
+Type@{foo}
+     : Type@{foo+1}
+File "./output/unidecls.v", line 52, characters 2-23:
+The command has indeed failed with message:
+Universe secfoo already exists.
+File "./output/unidecls.v", line 54, characters 19-31:
+The command has indeed failed with message:
+Undeclared universe Foo'.secfoo2.
+Type@{secfoo2}
+     : Type@{secfoo2+1}
+Type@{secfoo2}
+     : Type@{secfoo2+1}
+File "./output/unidecls.v", line 60, characters 21-46:
+The command has indeed failed with message:
+Unknown interpretation for notation "_ = _".
+File "./output/unidecls.v", line 72, characters 19-22:
+The command has indeed failed with message:
+Undeclared universe A.u.
+Type@{Arg.u}
+     : Type@{Arg.u+1}
+File "./output/unidecls.v", line 79, characters 59-60:
+The command has indeed failed with message:
+In environment
+A : Type@{v}
+The term "A" has type "Type@{v}" while it is expected to have type
+ "Type@{Arg.u}"
+(universe inconsistency: Cannot enforce v <= Arg.u because Arg.u < v).
+File "./output/unidecls.v", line 93, characters 17-24:
+The command has indeed failed with message:
+Undeclared universe FnApp.v.
+Type@{Fn.v}
+     : Type@{Fn.v+1}
+FnApp.foo
+     : Type@{Fn.v}
+FnApp.bar
+     : Type@{Arg.u}
+File "./output/unidecls.v", line 99, characters 17-26:
+The command has indeed failed with message:
+Undeclared universe ArgImpl.u.
+FnApp2.foo
+     : Type@{Fn.v}
+FnApp2.bar
+     : Type@{Arg.u}
+File "./output/unidecls.v", line 113, characters 17-21:
+The command has indeed failed with message:
+Undeclared universe: poly.
+Set < nat_rect.u0
+    < decls.a
+    < decls.b
+    < a
+    < foo
+    < Foo.foo
+    < Foo.bar
+    < bar
+    < secfoo
+    < secfoo2
+    < Arg.u
+    < Fn.v
+a < decls.a
+secfoo2 < a
+Arg.u < Fn.v
+
+id@{Set} nat
+     : nat -> nat
+id@{Set}
+     : forall A : Set, A -> A
