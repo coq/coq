@@ -128,7 +128,7 @@ let get_debug () = if Flags.async_proofs_is_worker () then DebugOff else !debug
 let log_trace = ref false
 
 let is_traced () =
-  !log_trace || !debug <> DebugOff || !Flags.profile_ltac
+  !log_trace || !debug <> DebugOff || Profile_tactic.get_profiling()
 
 (** More naming applications *)
 let name_vfun appl vle =
@@ -1381,7 +1381,7 @@ and tactic_of_value ist vle =
         (* todo: debug stack needs "trace" but that gives incorrect results for profiling
            Couldn't figure out how to make them play together.  Currently no way both can
            be enabled. Perhaps profiling should be redesigned as suggested in profile_ltac.mli *)
-        extra = TacStore.set ist.extra f_trace (if !Flags.profile_ltac then ([],[]) else trace); } in
+        extra = TacStore.set ist.extra f_trace (if Profile_tactic.get_profiling() then ([],[]) else trace); } in
       let tac = name_if_glob appl (eval_tactic_ist ist t) in
       let (stack, _) = trace in
       do_profile stack (catch_error_tac_loc loc stack tac)

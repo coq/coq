@@ -47,8 +47,10 @@ val do_profile_gen :
 
 val set_profiling : bool -> unit
 
+val get_profiling : unit -> bool
+
 (* Cut off results < than specified cutoff *)
-val print_results : cutoff:float -> unit
+val print_results : cutoff:float option -> unit
 
 val print_results_tactic : string -> unit
 
