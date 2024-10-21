@@ -21,7 +21,7 @@ let fatal_error info anomaly =
   flush_all (); Format.eprintf "@[Fatal Error: @[%a@]@]@\n%!" Pp.pp_with info; flush_all ();
   exit (if anomaly then 129 else 1)
 
-let coq_root = Id.of_string "Stdlib"
+let rocq_root = Id.of_string "Stdlib"
 let parse_dir s =
   let len = String.length s in
   let rec decoupe_dirs dirs n =
@@ -59,12 +59,12 @@ let get_version () =
 let print_header () =
   Printf.printf "Welcome to Chicken %s\n%!" (get_version ())
 
-(* Adding files to Coq loadpath *)
+(* Adding files to Rocq loadpath *)
 
-let add_path ~unix_path:dir ~coq_root:coq_dirpath =
+let add_path ~unix_path:dir ~rocq_root:rocq_dirpath =
   if exists_dir dir then
     begin
-      CheckLibrary.add_load_path (dir,coq_dirpath)
+      CheckLibrary.add_load_path (dir,rocq_dirpath)
     end
   else
     Feedback.msg_warning (str "Cannot open " ++ str dir)
@@ -73,13 +73,13 @@ let convert_string d =
   try Id.of_string d
   with CErrors.UserError _ ->
     Flags.if_verbose Feedback.msg_warning
-      (str "Directory " ++ str d ++ str " cannot be used as a Coq identifier (skipped)");
+      (str "Directory " ++ str d ++ str " cannot be used as a Rocq identifier (skipped)");
     raise_notrace Exit
 
-let add_rec_path ~unix_path ~coq_root =
+let add_rec_path ~unix_path ~rocq_root =
   if exists_dir unix_path then
     let dirs = all_subdirs ~unix_path in
-    let prefix = DirPath.repr coq_root in
+    let prefix = DirPath.repr rocq_root in
     let convert_dirs (lp, cp) =
       try
         let path = List.rev_map convert_string cp @ prefix in
@@ -88,7 +88,7 @@ let add_rec_path ~unix_path ~coq_root =
     in
     let dirs = List.map_filter convert_dirs dirs in
     List.iter CheckLibrary.add_load_path dirs;
-    CheckLibrary.add_load_path (unix_path, coq_root)
+    CheckLibrary.add_load_path (unix_path, rocq_root)
   else
     Feedback.msg_warning (str "Cannot open " ++ str unix_path)
 
@@ -103,29 +103,29 @@ let set_include d p =
 
 (* Initializes the LoadPath *)
 let init_load_path () =
-  let coqenv = Boot.Env.init () in
+  let rocqenv = Boot.Env.init () in
   (* the to_string casting won't be necessary once Boot handles
      include paths *)
-  let plugins = Boot.Env.plugins coqenv |> Boot.Path.to_string in
-  let theories = Boot.Env.stdlib coqenv |> Boot.Path.to_string in
-  let user_contrib = Boot.Env.user_contrib coqenv |> Boot.Path.to_string in
+  let plugins = Boot.Env.plugins rocqenv |> Boot.Path.to_string in
+  let theories = Boot.Env.stdlib rocqenv |> Boot.Path.to_string in
+  let user_contrib = Boot.Env.user_contrib rocqenv |> Boot.Path.to_string in
   let xdg_dirs = Envars.xdg_dirs in
-  let coqpath = Envars.coqpath in
+  let rocqpath = Envars.coqpath in
   (* NOTE: These directories are searched from last to first *)
   (* first standard library *)
-  add_rec_path ~unix_path:theories ~coq_root:(Names.DirPath.make[coq_root]);
+  add_rec_path ~unix_path:theories ~rocq_root:(Names.DirPath.make[rocq_root]);
   (* then plugins *)
-  add_rec_path ~unix_path:plugins ~coq_root:(Names.DirPath.make [coq_root]);
+  add_rec_path ~unix_path:plugins ~rocq_root:(Names.DirPath.make [rocq_root]);
   (* then user-contrib *)
   if Sys.file_exists user_contrib then
-    add_rec_path ~unix_path:user_contrib ~coq_root:CheckLibrary.default_root_prefix;
+    add_rec_path ~unix_path:user_contrib ~rocq_root:CheckLibrary.default_root_prefix;
   (* then directories in XDG_DATA_DIRS and XDG_DATA_HOME *)
-  List.iter (fun s -> add_rec_path ~unix_path:s ~coq_root:CheckLibrary.default_root_prefix)
+  List.iter (fun s -> add_rec_path ~unix_path:s ~rocq_root:CheckLibrary.default_root_prefix)
     (xdg_dirs ~warn:(fun x -> Feedback.msg_warning (str x)));
   (* then directories in COQPATH *)
-  List.iter (fun s -> add_rec_path ~unix_path:s ~coq_root:CheckLibrary.default_root_prefix) coqpath;
+  List.iter (fun s -> add_rec_path ~unix_path:s ~rocq_root:CheckLibrary.default_root_prefix) rocqpath;
   (* then current directory *)
-  add_path ~unix_path:"." ~coq_root:CheckLibrary.default_root_prefix
+  add_path ~unix_path:"." ~rocq_root:CheckLibrary.default_root_prefix
 
 let init_load_path () : unit =
   NewProfile.profile "init_load_path"
@@ -173,7 +173,7 @@ let compile_files senv =
     ~check:(List.rev !compile_list)
 
 let version () =
-  Printf.printf "The Coq Proof Checker, version %s\n" Coq_config.version;
+  Printf.printf "The Rocq Proof Checker, version %s\n" Coq_config.version;
   exit 0
 
 (* print the usage of coqtop (or coqc) on channel co *)
@@ -212,11 +212,11 @@ let print_usage_channel co command =
 
 let print_usage = print_usage_channel stderr
 
-let print_usage_coqtop () =
+let print_usage_rocqtop () =
   print_usage "Usage: coqchk <options> modules\n\n"
 
 let usage exitcode =
-  print_usage_coqtop ();
+  print_usage_rocqtop ();
   flush stderr;
   exit exitcode
 
@@ -371,8 +371,8 @@ let parse_args argv =
 
     | "-where" :: _ ->
       let env = Boot.Env.init () in
-      let coqlib = Boot.Env.coqlib env |> Boot.Path.to_string in
-      print_endline coqlib;
+      let rocqlib = Boot.Env.coqlib env |> Boot.Path.to_string in
+      print_endline rocqlib;
       exit 0
 
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage 0
@@ -418,7 +418,7 @@ let init_with_argv argv =
     (* additional loadpath, given with -R/-Q options *)
     NewProfile.profile "add_load_paths" (fun () ->
         List.iter
-          (fun (unix_path, coq_root) -> add_rec_path ~unix_path ~coq_root)
+          (fun (unix_path, rocq_root) -> add_rec_path ~unix_path ~rocq_root)
           (List.rev !includes))
       ();
     includes := [];

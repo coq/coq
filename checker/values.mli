@@ -33,7 +33,7 @@ type value =
   (** Adds a debug note to the inner value *)
 
   | Dyn
-  (** Coq's Dyn.t *)
+  (** Rocq's Dyn.t *)
 
   | Proxy of value ref
   (** Same as the inner value, used to define recursive types *)
