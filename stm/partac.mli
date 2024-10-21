@@ -8,6 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val enable_par : nworkers:int -> unit
+val enable_par : spawn_args:string list -> nworkers:int -> unit
 
 module TacTask : AsyncTaskQueue.Task

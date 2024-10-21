@@ -22,6 +22,8 @@ module AsyncOpts : sig
   type tac_error_filter = FNone | FOnly of string list | FAll
 
   type stm_opt = {
+    spawn_args : string list;
+
     async_proofs_n_workers : int;
     async_proofs_n_tacworkers : int;
 
@@ -38,7 +40,7 @@ module AsyncOpts : sig
     async_proofs_worker_priority : CoqworkmgrApi.priority;
   }
 
-  val default_opts : stm_opt
+  val default_opts : spawn_args:string list -> stm_opt
 
 end
 

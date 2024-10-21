@@ -39,6 +39,8 @@ module AsyncOpts = struct
   type tac_error_filter = FNone | FOnly of string list | FAll
 
   type stm_opt = {
+    spawn_args : string list;
+
     async_proofs_n_workers : int;
     async_proofs_n_tacworkers : int;
 
@@ -55,7 +57,9 @@ module AsyncOpts = struct
     async_proofs_worker_priority : CoqworkmgrApi.priority;
   }
 
-  let default_opts = {
+  let default_opts ~spawn_args = {
+    spawn_args;
+
     async_proofs_n_workers = 1;
     async_proofs_n_tacworkers = 2;
 
@@ -1588,7 +1592,7 @@ and Slaves : sig
   val wait_all_done : unit -> unit
 
   (* initialize the whole machinery (optional) *)
-  val init : CoqworkmgrApi.priority -> unit
+  val init : spawn_args:string list -> CoqworkmgrApi.priority -> unit
 
   type 'a tasks = (('a,VCS.vcs) Stateid.request * bool) list
   val dump_snapshot : unit -> Future.UUID.t tasks
@@ -1602,11 +1606,11 @@ end = struct (* {{{ *)
   module TaskQueue = AsyncTaskQueue.MakeQueue(ProofTask) ()
 
   let queue = ref None
-  let init priority =
+  let init ~spawn_args priority =
     if async_proofs_is_master (cur_opt()) then
-      queue := Some (TaskQueue.create (cur_opt()).async_proofs_n_workers priority)
+      queue := Some (TaskQueue.create ~spawn_args (cur_opt()).async_proofs_n_workers priority)
     else
-      queue := Some (TaskQueue.create 0 priority)
+      queue := Some (TaskQueue.create ~spawn_args 0 priority)
 
   let build_proof ~doc ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name:pname () =
     let cancel_switch = ref false in
@@ -2227,7 +2231,7 @@ let init_process stm_flags =
   CoqworkmgrApi.(init stm_flags.AsyncOpts.async_proofs_worker_priority);
   if (cur_opt()).async_proofs_mode = APon then Control.enable_thread_delay := true;
   if !Flags.async_proofs_worker_id = "master" && (cur_opt()).async_proofs_n_tacworkers > 0 then
-    Partac.enable_par ~nworkers:(cur_opt()).async_proofs_n_tacworkers
+    Partac.enable_par ~spawn_args:stm_flags.spawn_args ~nworkers:(cur_opt()).async_proofs_n_tacworkers
 
 let init_core () =
   State.register_root_state ()
@@ -2268,7 +2272,7 @@ let new_doc { doc_type ; injections } =
   (* We record the state at this point! *)
   State.define ~doc ~cache:true ~redefine:true (fun () -> ()) Stateid.initial;
   Backtrack.record ();
-  Slaves.init (cur_opt()).async_proofs_worker_priority;
+  Slaves.init ~spawn_args:((cur_opt()).spawn_args) (cur_opt()).async_proofs_worker_priority;
   if async_proofs_is_master (cur_opt()) then begin
     stm_prerr_endline (fun () -> "Initializing workers");
     Query.init (cur_opt()).async_proofs_worker_priority;
