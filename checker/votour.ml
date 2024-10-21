@@ -452,7 +452,7 @@ end
 
 let visit_vo f =
   Printf.printf "\nWelcome to votour !\n";
-  Printf.printf "Enjoy your guided tour of a Coq .vo or .vi file\n";
+  Printf.printf "Enjoy your guided tour of a Rocq .vo or .vi file\n";
   Printf.printf "Object sizes are in words (%d bits)\n" Sys.word_size;
   Printf.printf "Input h for help\n\n%!";
   let known_segments = [
@@ -496,5 +496,5 @@ let visit_vo f =
 let () =
   if not !Sys.interactive then
     Arg.parse [] visit_vo
-      ("votour: guided tour of a Coq .vo or .vi file\n"^
+      ("votour: guided tour of a Rocq .vo or .vi file\n"^
        "Usage: votour file.v[oi]")
