@@ -151,7 +151,6 @@ Register not_lt as num.nat.not_lt.
 Register not_ge as num.nat.not_ge.
 Register not_gt as num.nat.not_gt.
 
-
 (** A ternary comparison function in the spirit of [Z.compare].
     See now [Nat.compare] and its properties.
     In scope [nat_scope], the notation for [Nat.compare] is "?=" *)
@@ -211,6 +210,42 @@ Proof.
   - now apply Nat.compare_lt_iff.
   - now apply Nat.compare_eq_iff.
   - now apply Nat.compare_gt_iff.
+Qed.
+
+(** Decidability of divisibility *)
+
+Lemma pointwise_bounded_dec_ex_dec (P: nat -> Prop) bound:
+  (forall x, decidable (P x)) ->
+  (forall x, P x -> x <= bound) ->
+  decidable (exists x, P x).
+Proof.
+  intros Hdec Hbound. induction bound as [|bound IH].
+  - destruct (Hdec 0).
+    + left. exists 0. assumption.
+    + right. intros [x E]. specialize (Hbound x E).
+      apply Nat.le_0_r in Hbound. rewrite Hbound in E.
+      contradiction.
+  - destruct (Hdec (S bound)).
+    + left. exists (S bound). assumption.
+    + destruct IH.
+      * intros x Hx. specialize (Hbound x Hx).
+        destruct (le_lt_eq_dec _ _ Hbound).
+        -- apply Nat.succ_le_mono. assumption.
+        -- subst x. contradiction.
+      * left. assumption.
+      * right. assumption.
+Qed.
+
+Corollary divide_dec a b:
+  decidable (Nat.divide a b).
+Proof.
+  destruct (Nat.eq_decidable b 0) as [|Hb].
+  - left. subst b. apply Nat.divide_0_r.
+  - apply (pointwise_bounded_dec_ex_dec _ b).
+    + intro. apply Nat.eq_decidable.
+    + intros x Hx. apply Nat.divide_pos_le.
+      * apply Nat.neq_0_lt_0. exact Hb.
+      * exists a. subst b. apply Nat.mul_comm.
 Qed.
 
 (** A boolean version of [le] over [nat].
