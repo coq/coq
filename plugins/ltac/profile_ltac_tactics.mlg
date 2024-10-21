@@ -54,8 +54,8 @@ TACTIC EXTEND reset_ltac_profile
 END
 
 TACTIC EXTEND show_ltac_profile
-| [ "show" "ltac" "profile" ] -> { tclSHOW_PROFILE ~cutoff:!Flags.profile_ltac_cutoff }
-| [ "show" "ltac" "profile" "cutoff" integer(n) ] -> { tclSHOW_PROFILE ~cutoff:(float_of_int n) }
+| [ "show" "ltac" "profile" ] -> { tclSHOW_PROFILE ~cutoff:None }
+| [ "show" "ltac" "profile" "cutoff" integer(n) ] -> { tclSHOW_PROFILE ~cutoff:(Some (float_of_int n)) }
 | [ "show" "ltac" "profile" string(s) ] -> { tclSHOW_PROFILE_TACTIC s }
 END
 
@@ -73,8 +73,8 @@ VERNAC COMMAND EXTEND ResetLtacProfiling CLASSIFIED AS SIDEFF
 END
 
 VERNAC COMMAND EXTEND ShowLtacProfile CLASSIFIED AS QUERY
-| [ "Show" "Ltac" "Profile" ] -> { print_results ~cutoff:!Flags.profile_ltac_cutoff }
-| [ "Show" "Ltac" "Profile" "CutOff" integer(n) ] -> { print_results ~cutoff:(float_of_int n) }
+| [ "Show" "Ltac" "Profile" ] -> { print_results ~cutoff:None }
+| [ "Show" "Ltac" "Profile" "CutOff" integer(n) ] -> { print_results ~cutoff:(Some (float_of_int n)) }
 END
 
 VERNAC COMMAND EXTEND ShowLtacProfileTactic CLASSIFIED AS QUERY
