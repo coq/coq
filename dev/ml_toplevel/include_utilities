@@ -2,9 +2,9 @@
 
 (* parsing of terms *)
 
-let parse_constr = Pcoq.parse_string Pcoq.Constr.constr
-let parse_vernac = Pcoq.parse_string Pvernac.Vernac_.vernac_control
-let parse_tac    = Pcoq.parse_string Ltac_plugin.Pltac.tactic
+let parse_constr = Procq.parse_string Procq.Constr.constr
+let parse_vernac = Procq.parse_string Pvernac.Vernac_.vernac_control
+let parse_tac    = Procq.parse_string Ltac_plugin.Pltac.tactic
 
 (* build a term of type glob_constr without type-checking or resolution of 
    implicit syntax *)

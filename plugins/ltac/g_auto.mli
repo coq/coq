@@ -12,22 +12,22 @@ val wit_hintbases :
   (string list option, string list option, string list option)
   Genarg.genarg_type
 
-val hintbases : string list option Pcoq.Entry.t
+val hintbases : string list option Procq.Entry.t
 
 val wit_auto_using :
   (Constrexpr.constr_expr list, Genintern.glob_constr_and_expr list,
    Ltac_pretype.closed_glob_constr list)
   Genarg.genarg_type
 
-val auto_using : Constrexpr.constr_expr list Pcoq.Entry.t
+val auto_using : Constrexpr.constr_expr list Procq.Entry.t
 
 val wit_hints_path :
   Libnames.qualid Hints.hints_path_gen Genarg.vernac_genarg_type
 
-val hints_path : Libnames.qualid Hints.hints_path_gen Pcoq.Entry.t
+val hints_path : Libnames.qualid Hints.hints_path_gen Procq.Entry.t
 
 val wit_opthints :
   (string list option, string list option, string list option)
   Genarg.genarg_type
 
-val opthints : string list option Pcoq.Entry.t
+val opthints : string list option Procq.Entry.t

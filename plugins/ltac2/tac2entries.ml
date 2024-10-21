@@ -24,37 +24,37 @@ open Tac2intern
 
 module Pltac =
 struct
-let ltac2_expr = Pcoq.Entry.make "ltac2_expr"
-let tac2expr_in_env = Pcoq.Entry.make "tac2expr_in_env"
+let ltac2_expr = Procq.Entry.make "ltac2_expr"
+let tac2expr_in_env = Procq.Entry.make "tac2expr_in_env"
 
-let q_ident = Pcoq.Entry.make "q_ident"
-let q_bindings = Pcoq.Entry.make "q_bindings"
-let q_with_bindings = Pcoq.Entry.make "q_with_bindings"
-let q_intropattern = Pcoq.Entry.make "q_intropattern"
-let q_intropatterns = Pcoq.Entry.make "q_intropatterns"
-let q_destruction_arg = Pcoq.Entry.make "q_destruction_arg"
-let q_induction_clause = Pcoq.Entry.make "q_induction_clause"
-let q_conversion = Pcoq.Entry.make "q_conversion"
-let q_orient = Pcoq.Entry.make "q_orient"
-let q_rewriting = Pcoq.Entry.make "q_rewriting"
-let q_clause = Pcoq.Entry.make "q_clause"
-let q_dispatch = Pcoq.Entry.make "q_dispatch"
-let q_occurrences = Pcoq.Entry.make "q_occurrences"
-let q_reference = Pcoq.Entry.make "q_reference"
-let q_strategy_flag = Pcoq.Entry.make "q_strategy_flag"
-let q_constr_matching = Pcoq.Entry.make "q_constr_matching"
-let q_goal_matching = Pcoq.Entry.make "q_goal_matching"
-let q_hintdb = Pcoq.Entry.make "q_hintdb"
-let q_move_location = Pcoq.Entry.make "q_move_location"
-let q_pose = Pcoq.Entry.make "q_pose"
-let q_assert = Pcoq.Entry.make "q_assert"
+let q_ident = Procq.Entry.make "q_ident"
+let q_bindings = Procq.Entry.make "q_bindings"
+let q_with_bindings = Procq.Entry.make "q_with_bindings"
+let q_intropattern = Procq.Entry.make "q_intropattern"
+let q_intropatterns = Procq.Entry.make "q_intropatterns"
+let q_destruction_arg = Procq.Entry.make "q_destruction_arg"
+let q_induction_clause = Procq.Entry.make "q_induction_clause"
+let q_conversion = Procq.Entry.make "q_conversion"
+let q_orient = Procq.Entry.make "q_orient"
+let q_rewriting = Procq.Entry.make "q_rewriting"
+let q_clause = Procq.Entry.make "q_clause"
+let q_dispatch = Procq.Entry.make "q_dispatch"
+let q_occurrences = Procq.Entry.make "q_occurrences"
+let q_reference = Procq.Entry.make "q_reference"
+let q_strategy_flag = Procq.Entry.make "q_strategy_flag"
+let q_constr_matching = Procq.Entry.make "q_constr_matching"
+let q_goal_matching = Procq.Entry.make "q_goal_matching"
+let q_hintdb = Procq.Entry.make "q_hintdb"
+let q_move_location = Procq.Entry.make "q_move_location"
+let q_pose = Procq.Entry.make "q_pose"
+let q_assert = Procq.Entry.make "q_assert"
 end
 
 let () =
   let entries = [
-    Pcoq.Entry.Any Pltac.ltac2_expr;
+    Procq.Entry.Any Pltac.ltac2_expr;
   ] in
-  Pcoq.register_grammars_by_name "ltac2" entries
+  Procq.register_grammars_by_name "ltac2" entries
 
 (** Tactic definition *)
 
@@ -581,7 +581,7 @@ type 'a token =
 | TacNonTerm of Name.t * 'a
 
 type scope_rule =
-| ScopeRule : (raw_tacexpr, _, 'a) Pcoq.Symbol.t * ('a -> raw_tacexpr) -> scope_rule
+| ScopeRule : (raw_tacexpr, _, 'a) Procq.Symbol.t * ('a -> raw_tacexpr) -> scope_rule
 
 type scope_interpretation = sexpr list -> scope_rule
 
@@ -606,7 +606,7 @@ let parse_scope = function
     CErrors.user_err ?loc (str "Unknown scope" ++ spc () ++ Names.Id.print id)
 | SexprStr {v=str} ->
   let v_unit = CAst.make @@ CTacCst (AbsKn (Tuple 0)) in
-  ScopeRule (Pcoq.Symbol.token (Tok.PIDENT (Some str)), (fun _ -> v_unit))
+  ScopeRule (Procq.Symbol.token (Tok.PIDENT (Some str)), (fun _ -> v_unit))
 | tok ->
   let loc = loc_of_token tok in
   CErrors.user_err ?loc (str "Invalid parsing token")
@@ -652,19 +652,19 @@ type synext = {
 
 type krule =
 | KRule :
-  (raw_tacexpr, _, 'act, Loc.t -> raw_tacexpr) Pcoq.Rule.t *
+  (raw_tacexpr, _, 'act, Loc.t -> raw_tacexpr) Procq.Rule.t *
   ((Loc.t -> (Name.t * raw_tacexpr) list -> raw_tacexpr) -> 'act) -> krule
 
 let rec get_rule (tok : scope_rule token list) : krule = match tok with
-| [] -> KRule (Pcoq.Rule.stop, fun k loc -> k loc [])
+| [] -> KRule (Procq.Rule.stop, fun k loc -> k loc [])
 | TacNonTerm (na, ScopeRule (scope, inj)) :: tok ->
   let KRule (rule, act) = get_rule tok in
-  let rule = Pcoq.Rule.next rule scope in
+  let rule = Procq.Rule.next rule scope in
   let act k e = act (fun loc acc -> k loc ((na, inj e) :: acc)) in
   KRule (rule, act)
 | TacTerm t :: tok ->
   let KRule (rule, act) = get_rule tok in
-  let rule = Pcoq.(Rule.next rule (Symbol.token (Pcoq.terminal t))) in
+  let rule = Procq.(Rule.next rule (Symbol.token (Procq.terminal t))) in
   let act k _ = act k in
   KRule (rule, act)
 
@@ -676,7 +676,7 @@ let deprecated_ltac2_notation =
 
 (* This is a hack to preserve the level 4 entry which is initially empty. The
    grammar engine has the great idea to silently delete empty levels on rule
-   removal, so we have to work around this using the Pcoq API.
+   removal, so we have to work around this using the Procq API.
    FIXME: we should really keep those levels around instead. *)
 let get_reinit = function
 | 4 -> Some (Gramlib.Gramext.LeftA, Gramlib.Gramext.After "5")
@@ -696,23 +696,23 @@ let perform_notation syn st =
     let bnd = List.map map args in
     CAst.make ~loc @@ CTacSyn (bnd, syn.synext_kn)
   in
-  let rule = Pcoq.Production.make rule (act mk) in
+  let rule = Procq.Production.make rule (act mk) in
   let pos = Some (string_of_int syn.synext_lev) in
-  let rule = Pcoq.Reuse (pos, [rule]) in
+  let rule = Procq.Reuse (pos, [rule]) in
   match get_reinit syn.synext_lev with
   | None ->
-    ([Pcoq.ExtendRule (Pltac.ltac2_expr, rule)], st)
+    ([Procq.ExtendRule (Pltac.ltac2_expr, rule)], st)
   | Some reinit ->
-    ([Pcoq.ExtendRuleReinit (Pltac.ltac2_expr, reinit, rule)], st)
+    ([Procq.ExtendRuleReinit (Pltac.ltac2_expr, reinit, rule)], st)
 
 let ltac2_notation =
-  Pcoq.create_grammar_command "ltac2-notation" { gext_fun = perform_notation; gext_eq = (==) (* FIXME *) }
+  Procq.create_grammar_command "ltac2-notation" { gext_fun = perform_notation; gext_eq = (==) (* FIXME *) }
 
 let cache_synext syn =
-  Pcoq.extend_grammar_command ltac2_notation syn
+  Procq.extend_grammar_command ltac2_notation syn
 
 let open_synext i syn =
-  if Int.equal i 1 then Pcoq.extend_grammar_command ltac2_notation syn
+  if Int.equal i 1 then Procq.extend_grammar_command ltac2_notation syn
 
 let subst_synext (subst, syn) =
   let kn = Mod_subst.subst_kn subst syn.synext_kn in

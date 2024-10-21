@@ -191,9 +191,9 @@ let mkTransCmd cast cids ceff cqueue =
 
 type cached_state =
   | EmptyState
-  | ParsingState of Pcoq.frozen_t
+  | ParsingState of Procq.frozen_t
   | FullState of Vernacstate.t
-  | ErrorState of Pcoq.frozen_t option * Exninfo.iexn
+  | ErrorState of Procq.frozen_t option * Exninfo.iexn
 type branch = Vcs_.Branch.t * Vcs_.branch_info
 type backup = { mine : branch; others : branch list }
 
@@ -309,7 +309,7 @@ module VCS : sig
     mutable vcs_backup : vcs option * backup option;
   }
 
-  val init : stm_doc_type -> id -> Pcoq.frozen_t -> doc
+  val init : stm_doc_type -> id -> Procq.frozen_t -> doc
   (* val get_type : unit -> stm_doc_type *)
   val set_ldir : Names.DirPath.t -> unit
   val get_ldir : unit -> Names.DirPath.t
@@ -339,8 +339,8 @@ module VCS : sig
   val goals : id -> int -> unit
   val set_state : id -> cached_state -> unit
   val get_state : id -> cached_state
-  val set_parsing_state : id -> Pcoq.frozen_t -> unit
-  val get_parsing_state : id -> Pcoq.frozen_t option
+  val set_parsing_state : id -> Procq.frozen_t -> unit
+  val get_parsing_state : id -> Procq.frozen_t option
   val get_proof_mode : id -> Pvernac.proof_mode option
 
   (* cuts from start -> stop, raising Expired if some nodes are not there *)
@@ -2238,7 +2238,7 @@ let new_doc { doc_type ; injections } =
   State.restore_root_state ();
 
   let doc =
-    let ps = Pcoq.freeze () in
+    let ps = Procq.freeze () in
     VCS.init doc_type Stateid.initial ps
   in
 
@@ -2534,7 +2534,7 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ()) x c =
               | VtNow ->
                 (* We need to execute to get the new parsing state *)
                 let () = observe ~doc:dummy_doc (VCS.get_branch_pos (VCS.current_branch ())) in
-                let parsing = Pcoq.freeze () in
+                let parsing = Procq.freeze () in
                 (* If execution has not been put in cache, we need to save the parsing state *)
                 if (VCS.get_info id).state == EmptyState then VCS.set_parsing_state id parsing;
                 parsing
@@ -2579,8 +2579,8 @@ let stop_worker n = Slaves.cancel_worker n
 let parse_sentence ~doc sid ~entry pa =
   let ps = Option.get @@ VCS.get_parsing_state sid in
   let proof_mode = VCS.get_proof_mode sid in
-  Pcoq.unfreeze ps;
-  Pcoq.Entry.parse (entry proof_mode) pa
+  Procq.unfreeze ps;
+  Procq.Entry.parse (entry proof_mode) pa
 
 (* You may need to know the len + indentation of previous command to compute
  * the indentation of the current one.

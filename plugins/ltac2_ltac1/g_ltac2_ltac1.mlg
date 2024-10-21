@@ -12,7 +12,7 @@ DECLARE PLUGIN "coq-core.plugins.ltac2_ltac1"
 
 {
 
-open Pcoq.Prim
+open Procq.Prim
 open Ltac2_plugin
 open Tac2expr
 open Ltac_plugin

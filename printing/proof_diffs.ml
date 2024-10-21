@@ -90,7 +90,7 @@ let tokenize_string s =
   (* todo: cLexer changes buff as it proceeds.  Seems like that should be saved, too.
      But I don't understand how it's used--it looks like things get appended to it but
      it never gets cleared. *)
-  let kwstate = Pcoq.get_keyword_state() in
+  let kwstate = Procq.get_keyword_state() in
   let rec stream_tok acc str =
     let e = Gramlib.LStream.next kwstate str in
     if Tok.(equal e EOI) then

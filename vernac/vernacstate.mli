@@ -17,7 +17,7 @@ module Synterp : sig
   val init : unit -> t
   val freeze : unit -> t
   val unfreeze : t -> unit
-  val parsing : t -> Pcoq.frozen_t
+  val parsing : t -> Procq.frozen_t
 end
 
 module System : sig

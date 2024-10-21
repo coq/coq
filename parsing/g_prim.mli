@@ -8,5 +8,5 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val test_pipe_closedcurly : unit Pcoq.Entry.t
-val test_minus_nat : unit Pcoq.Entry.t
+val test_pipe_closedcurly : unit Procq.Entry.t
+val test_minus_nat : unit Procq.Entry.t

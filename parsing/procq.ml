@@ -209,7 +209,7 @@ let grammar_extend_sync_reinit e reinit ext =
 let rec remove_grammars n =
   if n>0 then
     match !camlp5_state with
-       | [] -> anomaly ~label:"Pcoq.remove_grammars" (Pp.str "too many rules to remove.")
+       | [] -> anomaly ~label:"Procq.remove_grammars" (Pp.str "too many rules to remove.")
        | ByGrammar (ExtendRuleReinit (g, reinit, ext)) :: t ->
            grammar_delete_reinit g reinit ext;
            camlp5_state := t;

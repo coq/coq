@@ -50,7 +50,7 @@ EXTRAARGS_lconstr:  [ | DELETENT ]
 EXTRAARGS_strategy_level: [ | DELETENT ]
 
 binders: [
-| DELETE Pcoq.Constr.binders
+| DELETE Procq.Constr.binders
 ]
 
 G_TACTIC_in_clause: [

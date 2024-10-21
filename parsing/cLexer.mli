@@ -56,11 +56,11 @@ val terminal_number : string -> NumTok.Unsigned.t Tok.p
 (** [after loc] Will advance a lexing location as the lexer does; this
     can be used to implement parsing resumption from a given position:
 {[
-  let loc = Pcoq.Parsable.loc pa |> after in
+  let loc = Procq.Parsable.loc pa |> after in
   let str = Gramlib.Stream.of_string text in
   (* Stream.count being correct is critical for Coq's lexer *)
   Gramlib.Stream.njunk loc.ep str;
-  let pa = Pcoq.Parsable.make ~loc str in
+  let pa = Procq.Parsable.make ~loc str in
   (* ready to resume parsing *)
 ]}
 *)

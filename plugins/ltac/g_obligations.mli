@@ -11,4 +11,4 @@
 val wit_withtac :
   Tacexpr.raw_tactic_expr option Genarg.vernac_genarg_type
 
-val withtac : Tacexpr.raw_tactic_expr option Pcoq.Entry.t
+val withtac : Tacexpr.raw_tactic_expr option Procq.Entry.t

@@ -12,8 +12,8 @@
 
 open Pp
 open Stdarg
-open Pcoq.Prim
-open Pcoq.Constr
+open Procq.Prim
+open Procq.Constr
 open Pltac
 open Hints
 
