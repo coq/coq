@@ -20,7 +20,6 @@ Require Export Ncring.
 Require Import Ncring_polynom.
 Require Import Ncring_initial.
 
-
 Set Implicit Arguments.
 
 Ltac reify_as_var_aux n lvar term :=

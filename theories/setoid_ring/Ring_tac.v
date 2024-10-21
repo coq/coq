@@ -17,7 +17,6 @@ Require Export ListTactics.
 Require Import InitialRing.
 Declare ML Module "ring_plugin:coq-core.plugins.ring".
 
-
 (* adds a definition t' on the normal form of t and an hypothesis id
    stating that t = t' (tries to produces a proof as small as possible) *)
 Ltac compute_assertion eqn t' t :=

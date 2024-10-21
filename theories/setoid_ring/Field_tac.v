@@ -582,3 +582,18 @@ Ltac field_lemmas set ext inv_m fspec pspec sspec dspec rk :=
        end
      | _ => fail 1 "field internal error : field_lemmas, please report"
      end).
+
+(** Registering for the ML plugin *)
+
+Register display_linear as plugins.field.display_linear.
+Register display_pow_linear as plugins.field.display_pow_linear.
+Register FEeval as plugins.field.FEeval.
+Register PCond as plugins.field.PCond.
+
+Register almost_field_theory as plugins.field.almost_field_theory.
+Register semi_field_theory as plugins.field.semi_field_theory.
+Register field_theory as plugins.field.field_theory.
+
+Register AF_AR as plugins.field.AF_AR.
+Register SF_SR as plugins.field.SF_SR.
+Register F_R as plugins.field.F_R.

@@ -47,23 +47,12 @@ let rewrite_attributes =
 
 (** Utility functions *)
 
-let find_reference dir s =
-  Coqlib.find_reference "generalized rewriting" dir s
-[@@warning "-3"]
-
-let lazy_find_reference dir s =
-  let gr = lazy (find_reference dir s) in
-  fun () -> Lazy.force gr
-
 module PropGlobal = struct
 
-  let morphisms = ["Stdlib"; "Classes"; "Morphisms"]
-
-  let respectful_ref = lazy_find_reference morphisms "respectful"
+  let respectful_ref () = Coqlib.lib_ref "rewrite.prop.respectful"
 
   let proper_class =
-    let r = lazy (find_reference morphisms "Proper") in
-    fun () -> Option.get (TC.class_info (Lazy.force r))
+    fun () -> Option.get (TC.class_info (Coqlib.lib_ref "rewrite.prop.Proper"))
 
   let proper_proj () =
     UnsafeMonomorphic.mkConst (Option.get (List.hd (proper_class ()).TC.cl_projs).TC.meth_const)
