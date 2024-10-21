@@ -29,6 +29,7 @@ let declare_counter : int -> Libobject.obj =
       (default_object "COUNTER") with
       cache_function = cache_count;
       load_function = (fun _ -> cache_count);
+      classify_function = (fun _ -> Keep);
     }
 (*
  * See Libobject for more information on what other information you
