@@ -320,7 +320,7 @@ Module Test16.
   Fail Check let v := 0%test16 in v : Foo.
 End Test16.
 
-Require Import Stdlib.Numbers.Cyclic.Int63.Uint63.
+Require Import PrimInt63.
 Module Test17.
   (** Test uint63 *)
   Declare Scope test17_scope.
@@ -373,15 +373,27 @@ Module Test18.
   Compute let v := 4%Q in (num v, den v).
 End Test18.
 
-Require Import Stdlib.Lists.List.
-Require Import Stdlib.ZArith.ZArith.
+Require Import Stdlib.Lists.ListDef.
+Require Import BinNums IntDef.
 Module Test19.
   (** Test another thing related to https://github.com/coq/coq/issues/9840 *)
   Record Zlike := { summands : list Z }.
   Declare Scope Zlike_scope.
   Delimit Scope Zlike_scope with Zlike.
 
-  Definition Z_of_Zlike (x : Zlike) := List.fold_right Z.add 0%Z (summands x).
+  Section Fold_Right_Recursor.
+    Variables (A : Type) (B : Type).
+    Variable f : B -> A -> A.
+    Variable a0 : A.
+
+    Fixpoint fold_right (l:list B) : A :=
+      match l with
+      | nil => a0
+      | cons b t => f b (fold_right t)
+      end.
+    End Fold_Right_Recursor.
+
+  Definition Z_of_Zlike (x : Zlike) := fold_right _ _ Z.add Z0 (summands x).
   Definition Zlike_of_Z (x : Z) := {| summands := cons x nil |}.
 
   Number Notation Zlike Zlike_of_Z Z_of_Zlike : Zlike_scope.
@@ -392,7 +404,7 @@ Module Test19.
   Check let v := 2%Zlike in v : Zlike.
   Check let v := 3%Zlike in v : Zlike.
   Check let v := 4%Zlike in v : Zlike.
-  Check {| summands := (cons 1 (cons 2 (cons (-1) nil)))%Z |}.
+  Check {| summands := cons (Zpos xH) (cons (Zpos (xO xH)) (cons (Zneg xH) nil)) |}.
   Check {| summands := nil |}.
 End Test19.
 
@@ -467,7 +479,7 @@ End Test20.
 Module Test21.
 
   Check 00001.
-  Check (-1_000)%Z.
+  Check 1_000.
 
 End Test21.
 
@@ -633,10 +645,7 @@ Number Notation foo'' foo''_of_uint foo''_to_uint (via foo'' mapping [bar'' => b
 End Test23.
 
 (* Test the via ... mapping ... option with implicit arguments *)
-Require Vector.
 Module Test24.
-
-Import Vector.
 
 Inductive I :=
 | I1 : I
@@ -659,6 +668,12 @@ Definition to_uint (x : I) : Number.uint :=
   Nat.to_num_uint (f x).
 
 Local Open Scope type_scope.
+
+Module Fin.
+Inductive t : nat -> Set :=
+|F1 : forall {n}, t (S n)
+|FS : forall {n}, t n -> t (S n).
+End Fin.
 
 (* ignoring implicit arguments doesn't work *)
 Number Notation Fin.t of_uint to_uint (via I
@@ -983,7 +998,7 @@ Unset Printing All.
 
 End Test28.
 
-Require Import Floats.
+Require Import PrimFloat.
 
 Module Test29.
 

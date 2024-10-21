@@ -1,4 +1,4 @@
-Require Import Stdlib.Arith.PeanoNat.
+Require Import TestSuite.arith.
 
 Goal
   forall A m pf1 pf2

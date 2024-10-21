@@ -201,14 +201,9 @@ conditional rewriting. The second one ( *Mac Carthy function*)
 involves conditional rewritings and shows how to deal with them using
 the optional tactic of the ``Hint Rewrite`` command.
 
-
 .. example:: Ackermann function
 
    .. coqtop:: in reset
-
-      Require Import Arith.
-
-   .. coqtop:: in
 
       Parameter Ack : nat -> nat -> nat.
 
@@ -232,49 +227,93 @@ the optional tactic of the ``Hint Rewrite`` command.
 
 .. example:: MacCarthy function
 
-   .. coqtop:: in reset
+   .. FIXME was
+      coqtop:: in reset
+      before Stdlib repo
 
-      Require Import Lia.
+   .. coqdoc::
 
-   .. coqtop:: in
+      Require Import Arith Lia.
+
+   .. FIXME was
+      coqtop:: in
+      before Stdlib repo
+
+   .. coqdoc::
 
       Parameter g : nat -> nat -> nat.
 
-   .. coqtop:: in
+   .. FIXME was
+      coqtop:: in
+      before Stdlib repo
+
+   .. coqdoc::
 
       Axiom g0 : forall m:nat, g 0 m = m.
       Axiom g1 : forall n m:nat, (n > 0) -> (m > 100) -> g n m = g (pred n) (m - 10).
       Axiom g2 : forall n m:nat, (n > 0) -> (m <= 100) -> g n m = g (S n) (m + 11).
 
-   .. coqtop:: in
+   .. FIXME was
+      coqtop:: in
+      before Stdlib repo
+
+   .. coqdoc::
 
       Global Hint Rewrite g0 g1 g2 using lia : base1.
 
-   .. coqtop:: in
+   .. FIXME was
+      coqtop:: in
+      before Stdlib repo
+
+   .. coqdoc::
 
       Lemma Resg0 : g 1 110 = 100.
 
-   .. coqtop:: out
+   .. FIXME was
+      coqtop:: out
+      before Stdlib repo
+
+   .. coqdoc::
 
       Show.
 
-   .. coqtop:: all
+   .. FIXME was
+      coqtop:: all
+      before Stdlib repo
+
+   .. coqdoc::
 
       autorewrite with base1 using reflexivity || simpl.
 
-   .. coqtop:: none
+   .. FIXME was
+      coqtop:: none
+      before Stdlib repo
+
+   .. coqdoc::
 
       Qed.
 
-   .. coqtop:: all
+   .. FIXME was
+      coqtop:: all
+      before Stdlib repo
+
+   .. coqdoc::
 
       Lemma Resg1 : g 1 95 = 91.
 
-   .. coqtop:: all
+   .. FIXME was
+      coqtop:: all
+      before Stdlib repo
+
+   .. coqdoc::
 
       autorewrite with base1 using reflexivity || simpl.
 
-   .. coqtop:: none
+   .. FIXME was
+      coqtop:: none
+      before Stdlib repo
+
+   .. coqdoc::
 
       Qed.
 
@@ -550,7 +589,7 @@ Creating Hints
 
          .. coqtop:: reset all
 
-            Require Import List.
+            Require Import ListDef.
             Hint Extern 5 ({?X1 = ?X2} + {?X1 <> ?X2}) =>
               generalize  X1, X2; decide equality : eqdec.
             Goal forall a b:list (nat * nat), {a = b} + {a <> b}.

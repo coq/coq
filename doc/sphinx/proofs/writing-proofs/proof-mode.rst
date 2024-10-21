@@ -381,10 +381,9 @@ When the proof is completed, you can exit proof mode with commands such as
 
       .. coqtop :: in
 
-         Require Import ZArith.
          Section bar.
-           Variable radix : Z.
-           Hypothesis radixNotZero : (0 < radix)%Z.
+           Variable radix : nat.
+           Hypothesis radixNotZero : 0 < radix.
 
            Lemma foo : 0 = 0.
            Proof. reflexivity. Qed.

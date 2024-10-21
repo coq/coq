@@ -1,4 +1,4 @@
-Require Import Peano_dec.
+Require Import TestSuite.arith.
 
 Definition fact_F :
   forall (n:nat),

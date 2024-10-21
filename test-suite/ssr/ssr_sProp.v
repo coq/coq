@@ -1,4 +1,6 @@
-Require Import ssreflect StrictProp.
+Require Import ssreflect.
+
+Inductive sEmpty : SProp :=.
 
 Goal True.
 have h := (fun x : sEmpty => x).

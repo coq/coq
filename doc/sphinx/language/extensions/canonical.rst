@@ -103,9 +103,7 @@ in :ref:`canonicalstructures`; here only a simple example is given.
 
       .. coqtop:: all reset
 
-         Require Import Relations.
-
-         Require Import EqNat.
+         Require Import Relation_Definitions.
 
          Set Implicit Arguments.
 
@@ -116,6 +114,7 @@ in :ref:`canonicalstructures`; here only a simple example is given.
 
          Definition is_law (A B:Setoid) (f:A -> B) := forall x y:A, Equal x y -> Equal (f x) (f y).
 
+         Parameter eq_nat : relation nat.
          Axiom eq_nat_equiv : equivalence nat eq_nat.
 
          Definition nat_setoid : Setoid := Build_Setoid eq_nat_equiv.
@@ -524,13 +523,16 @@ We need some infrastructure for that.
 
 .. coqtop:: all
 
-  Require Import Strings.String.
-
   Module infrastructure.
 
     Inductive phantom {T : Type} (t : T) := Phantom.
 
-    Definition unify {T1 T2} (t1 : T1) (t2 : T2) (s : option string) :=
+    Variant err :=
+      | Is_not_an_EQ_type
+      | Is_not_an_LE_type
+      | Is_not_the_right_mixin.
+
+    Definition unify {T1 T2} (t1 : T1) (t2 : T2) (s : option err) :=
       phantom t1 -> phantom t2.
 
     Definition id {T} {t : T} (x : phantom t) := x.
@@ -544,12 +546,10 @@ We need some infrastructure for that.
     Notation "'Error : t : s" := (unify _ t (Some s))
       (at level 50, format "''Error' : t : s").
 
-    Open Scope string_scope.
-
   End infrastructure.
 
 To explain the notation ``[find v | t1 ~ t2]`` let us pick one of its
-instances: ``[find e | EQ.obj e ~ T | "is not an EQ.type" ]``. It should be
+instances: ``[find e | EQ.obj e ~ T | Is_not_an_EQ_type ]``. It should be
 read as: “find a class e such that its objects have type T or fail
 with message "T is not an EQ.type"”.
 
@@ -565,11 +565,11 @@ instances of the ``LEQ`` class.
   Import infrastructure.
 
   Definition packager T e0 le0 (m0 : LEQ.mixin e0 le0) :=
-    [find e | EQ.obj e ~ T | "is not an EQ.type" ]
-    [find o | LE.obj o ~ T | "is not an LE.type" ]
+    [find e | EQ.obj e ~ T | Is_not_an_EQ_type ]
+    [find o | LE.obj o ~ T | Is_not_an_LE_type ]
     [find ce | EQ.class_of e ~ ce ]
     [find co | LE.class_of o ~ co ]
-    [find m | m ~ m0 | "is not the right mixin" ]
+    [find m | m ~ m0 | Is_not_the_right_mixin ]
     LEQ._Pack T (LEQ.Class ce co m).
 
    Notation Pack T m := (packager T _ _ m _ id _ id _ id _ id _ id).

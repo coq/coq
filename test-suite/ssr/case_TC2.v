@@ -1,4 +1,4 @@
-From Stdlib Require Import Bool ssreflect.
+From Stdlib Require Import ssreflect.
 
 Set Printing All.
 Set Debug Ssreflect.
