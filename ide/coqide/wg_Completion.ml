@@ -37,7 +37,7 @@ let get_syntactic_completion (buffer : GText.buffer) pattern accu =
   in
   get_aux accu buffer#start_iter
 
-(** Retrieve completion proposals in Coq libraries *)
+(** Retrieve completion proposals in Rocq libraries *)
 let get_semantic_completion pattern accu =
   let flags = [Interface.Name_Pattern ("^" ^ pattern), true] in
   (* Only get the last part of the qualified name *)
@@ -50,10 +50,10 @@ let get_semantic_completion pattern accu =
   | Interface.Good l ->
     let fold accu elt = last accu elt.Interface.coq_object_qualid in
     let ans = List.fold_left fold accu l in
-    Coq.return ans
-  | _ -> Coq.return accu
+    Rocq.return ans
+  | _ -> Rocq.return accu
   in
-  Coq.bind (Coq.search flags) next
+  Rocq.bind (Rocq.search flags) next
 
 let is_substring s1 s2 =
   let s1 = Glib.Utf8.to_unistring s1 in
@@ -124,12 +124,12 @@ class completion_provider buffer coqtop =
         (* Then semantic *)
         let next props =
           update props;
-          Coq.return ()
+          Rocq.return ()
         in
-        let query = Coq.bind (get_semantic_completion w synt) next in
+        let query = Rocq.bind (get_semantic_completion w synt) next in
         (* If coqtop is computing, do the syntactic completion altogether *)
         let occupied () = update synt in
-        ignore @@ Coq.try_grab coqtop query occupied
+        ignore @@ Rocq.try_grab coqtop query occupied
 
     method matched ctx = !active
 

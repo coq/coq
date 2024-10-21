@@ -29,7 +29,7 @@ type jobpage = string CString.Map.t page
 
 type breakpoint = {
   mark_id : string;
-  mutable prev_byte_offset : int; (* UTF-8 byte offset for Coq *)
+  mutable prev_byte_offset : int; (* UTF-8 byte offset for Rocq *)
   mutable prev_uni_offset : int;  (* unicode offset for GTK *)
 }
 
@@ -41,7 +41,7 @@ type session = {
   segment : Wg_Segment.segment;
   fileops : FileOps.ops;
   coqops : CoqOps.ops;
-  coqtop : Coq.coqtop;
+  coqtop : Rocq.coqtop;
   command : Wg_Command.command_window;
   finder : Wg_Find.finder;
   debugger : Wg_Debugger.debugger_view;

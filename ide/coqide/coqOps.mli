@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Coq
+open Rocq
 open Interface
 
 class type ops =

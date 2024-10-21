@@ -56,9 +56,9 @@ let () =
   load_prefs ();
   let argl = List.tl (Array.to_list Sys.argv) in
   let argl = Coqide.read_coqide_args argl in
-  let files = Coq.filter_coq_opts argl in
+  let files = Rocq.filter_coq_opts argl in
   let args = List.filter (fun x -> not (List.mem x files)) argl in
-  Coq.check_connection args;
+  Rocq.check_connection args;
   Coqide.sup_args := args;
   let w = Coqide.main files in
   Coqide.set_signal_handlers ~parent:w ();

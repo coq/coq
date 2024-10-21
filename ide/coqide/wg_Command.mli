@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-class command_window : string -> Coq.coqtop -> CoqOps.coqops ->
+class command_window : string -> Rocq.coqtop -> CoqOps.coqops ->
     Wg_RoutedMessageViews.message_views_router -> int ->
   object
     method new_query : ?command:string -> ?term:string -> unit -> unit

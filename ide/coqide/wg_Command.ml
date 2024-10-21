@@ -34,7 +34,7 @@ object(self)
 
   (* We need access to coqops in order to place queries in the proper
      document stint. This should remove access from this module to the
-     low-level Coq one. *)
+     low-level Rocq one. *)
   val coqops = coqops
 
   method pack_in (f : GObj.widget -> unit) = f frame#coerce
@@ -121,15 +121,15 @@ object(self)
             let err = Ideutils.validate err in
             result#set err;
             notebook#set_page ~tab_label:(new_tab_lbl "Error") frame#coerce;
-            Coq.return ()
+            Rocq.return ()
         | Interface.Good () ->
             notebook#set_page ~tab_label:(new_tab_lbl arg) frame#coerce;
-            Coq.return ()
+            Rocq.return ()
         in
         coqops#raw_coq_query ~route_id ~next phrase
       in
       result#set (Pp.str ("Result for command " ^ phrase ^ ":\n"));
-      ignore @@ Coq.try_grab coqtop process ignore
+      ignore @@ Rocq.try_grab coqtop process ignore
     in
     ignore (combo#entry#connect#activate ~callback);
     ignore (ok_b#connect#clicked ~callback);

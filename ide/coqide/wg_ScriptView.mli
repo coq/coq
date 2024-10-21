@@ -12,7 +12,7 @@
 
 type source_view = [ Gtk.text_view | `sourceview ] Gtk.obj
 
-class script_view : source_view -> Coq.coqtop ->
+class script_view : source_view -> Rocq.coqtop ->
 object
   inherit GSourceView3.source_view
   method undo : unit -> unit
@@ -34,7 +34,7 @@ object
   method clear_debugging_highlight : int -> int -> unit
 end
 
-val script_view : Coq.coqtop ->
+val script_view : Rocq.coqtop ->
   ?source_buffer:GSourceView3.source_buffer ->
   ?draw_spaces:SourceView3Enums.source_draw_spaces_flags list ->
   ?auto_indent:bool ->

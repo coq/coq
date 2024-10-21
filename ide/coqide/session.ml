@@ -30,7 +30,7 @@ type errpage = (int * string) list page
 type jobpage = string CString.Map.t page
 type breakpoint = {
   mark_id : string;
-  mutable prev_byte_offset : int; (* UTF-8 byte offset for Coq *)
+  mutable prev_byte_offset : int; (* UTF-8 byte offset for Rocq *)
   (* prev_uni_offset may differ from mark#offset as the script is edited *)
   mutable prev_uni_offset : int;  (* unicode offset for GTK *)
 }
@@ -43,7 +43,7 @@ type session = {
   segment : Wg_Segment.segment; (* color coded status bar near bottom of the screen *)
   fileops : FileOps.ops;
   coqops : CoqOps.ops;
-  coqtop : Coq.coqtop;
+  coqtop : Rocq.coqtop;
   command : Wg_Command.command_window; (* aka the Query Pane *)
   finder : Wg_Find.finder; (* Find / Replace panel *)
   debugger : Wg_Debugger.debugger_view;
@@ -127,7 +127,7 @@ let call_coq_or_cancel_action coqtop coqops (buffer : GText.buffer) it =
   let () = try buffer#delete_mark (`NAME "target") with GText.No_such_mark _ -> () in
   let mark = buffer#create_mark ~name:"target" it in
   let action = coqops#go_to_mark (`MARK mark) in
-  ignore @@ Coq.try_grab coqtop action (fun () -> ())
+  ignore @@ Rocq.try_grab coqtop action (fun () -> ())
 
 let init_user_action (stack : action_stack ref) = match !stack with
 | None -> stack := Some []
@@ -235,9 +235,9 @@ let set_buffer_handlers
       let () = List.iter (fun mark ->
         try match mark with
         | Mark mark -> buffer#delete_mark (`MARK mark)
-        | Begin -> let action = Coq.seq (coqops#backtrack_to_begin ())
-                                (Coq.lift (fun () -> Sentence.tag_on_insert buffer)) in
-          ignore @@ Coq.try_grab coqtop action (fun () -> ())
+        | Begin -> let action = Rocq.seq (coqops#backtrack_to_begin ())
+                                (Rocq.lift (fun () -> Sentence.tag_on_insert buffer)) in
+          ignore @@ Rocq.try_grab coqtop action (fun () -> ())
         with GText.No_such_mark _ -> ()) marks in
       call_coq_or_cancel_action coqtop coqops buffer iter
   in
@@ -262,7 +262,7 @@ let set_buffer_handlers
     List.iter (fun tag -> tag#set_property prop) tags
   in
   (* Pluging callbacks *)
-  let () = Coq.setup_script_editable coqtop set_busy in
+  let () = Rocq.setup_script_editable coqtop set_busy in
   let _ = buffer#connect#insert_text ~callback:insert_cb in
   let _ = buffer#connect#delete_range ~callback:delete_cb in
   let _ = buffer#connect#begin_user_action ~callback:begin_action_cb in
@@ -369,7 +369,7 @@ let create_jobpage coqtop coqops : jobpage =
         let row = store#get_iter tp in
         let w = store#get ~row ~column:(find_string_col "Worker" columns) in
         let info () = Minilib.log ("Coq busy, discarding query") in
-        ignore @@ Coq.try_grab coqtop (coqops#stop_worker w) info
+        ignore @@ Rocq.try_grab coqtop (coqops#stop_worker w) info
       ) in
   let tip = GMisc.label ~text:"Double click to interrupt worker" () in
   let box = GPack.vbox ~homogeneous:false () in
@@ -423,8 +423,8 @@ let create file coqtop_args =
     | Some f -> (Glib.Convert.filename_to_utf8 Filename.(remove_extension (basename f)),
         Some (to_abs_file_name f))
   in
-  let coqtop = Coq.spawn_coqtop basename coqtop_args in
-  let reset () = Coq.reset_coqtop coqtop in
+  let coqtop = Rocq.spawn_coqtop basename coqtop_args in
+  let reset () = Rocq.reset_coqtop coqtop in
   let buffer = create_buffer () in
   let script = create_script coqtop buffer in
   let proof = create_proof () in
@@ -448,8 +448,8 @@ let create file coqtop_args =
   let warnpage = create_errpage ~kind:"Warning" script in
   let jobpage = create_jobpage coqtop cops in
   let _ = set_buffer_handlers (buffer :> GText.buffer) script cops coqtop in
-  let _ = Coq.set_reset_handler coqtop cops#handle_reset_initial in
-  let _ = Coq.init_coqtop coqtop cops#initialize in
+  let _ = Rocq.set_reset_handler coqtop cops#handle_reset_initial in
+  let _ = Rocq.init_coqtop coqtop cops#initialize in
   let tab_label = GMisc.label ~text:basename () in
 (*  todo: ugly custom tooltips...*)
 (*
@@ -494,7 +494,7 @@ let kill (sn:session) =
      In a more modern lablgtk, rather use the page-removed signal ? *)
   sn.coqops#destroy ();
   sn.script#destroy ();
-  Coq.close_coqtop sn.coqtop
+  Rocq.close_coqtop sn.coqtop
 
 let window_size = ref (window_width#get, window_height#get)
 
