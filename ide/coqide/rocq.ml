@@ -292,7 +292,7 @@ let handle_ltac_debug ltac_debug_processor xml =
   ltac_debug_processor ~tag msg
 
 let handle_final_answer handle xml =
-  let () = Minilib.log "Handling coqtop answer" in
+  let () = Minilib.log "Handling rocqtop answer" in
   let ccb = match handle.db_waiting_for, handle.waiting_for with
   | None, None -> raise (AnswerWithoutRequest (Xml_printer.to_string_fmt xml))
   | Some c, _ -> handle.db_waiting_for <- None; c
@@ -354,7 +354,7 @@ let input_watch handle respawner processors =
     else
       try unsafe_handle_input h processors state conds ~read_all; true
       with e ->
-        Minilib.log ("Coqtop reader failed, resetting: "^print_exception e);
+        Minilib.log ("Rocqtop reader failed, resetting: "^print_exception e);
         respawner ();
         false)
 
@@ -541,7 +541,7 @@ let process_task ?(db=false) rocqtop task =
   end;
   try ignore (task rocqtop.handle (mkready rocqtop db))
   with e ->
-    Minilib.log ("Coqtop writer failed, resetting: " ^ Printexc.to_string e);
+    Minilib.log ("Rocqtop writer failed, resetting: " ^ Printexc.to_string e);
     if rocqtop.status <> Closed then respawn_rocqtop rocqtop
 
 (* todo: logic for functions such as "forward one" should not rely on try_grab
@@ -702,7 +702,7 @@ struct
 
   (** Transmitting options to rocqtop *)
 
-  (* todo: if Coq hasn't processed any statements since the last enforce,
+  (* todo: if Rocq hasn't processed any statements since the last enforce,
      it's unnecessary to send another.  In particular, "goals" and "evars"
      below are generally called one after the other. *)
   let enforce h k =
@@ -713,7 +713,7 @@ struct
     eval_call (Xmlprotocol.set_options opts) h
       (function
         | Interface.Good () -> k ()
-        | _ -> failwith "Cannot set options. Resetting coqtop")
+        | _ -> failwith "Cannot set options. Resetting rocqtop")
 
 end
 

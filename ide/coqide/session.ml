@@ -368,7 +368,7 @@ let create_jobpage rocqtop rocqops : jobpage =
       (fun columns store tp vc ->
         let row = store#get_iter tp in
         let w = store#get ~row ~column:(find_string_col "Worker" columns) in
-        let info () = Minilib.log ("Coq busy, discarding query") in
+        let info () = Minilib.log ("Rocq busy, discarding query") in
         ignore @@ Rocq.try_grab rocqtop (rocqops#stop_worker w) info
       ) in
   let tip = GMisc.label ~text:"Double click to interrupt worker" () in

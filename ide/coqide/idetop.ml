@@ -617,7 +617,7 @@ let loop ( { Coqtop.run_mode; color_mode },_) ~opts:_ state =
         pr_error ("Expected XML node: " ^ msg);
         pr_error ("XML tree received: " ^ Xml_printer.to_string_fmt node)
       | any ->
-        pr_debug ("Fatal exception in coqtop:\n" ^ Printexc.to_string any);
+        pr_debug ("Fatal exception in rocqtop:\n" ^ Printexc.to_string any);
         exit 1
   in
 

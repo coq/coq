@@ -171,7 +171,7 @@ let find_secondary_sn sn =
 let db_cmd sn cmd =
   ignore @@ Rocq.try_grab ~db:true sn.rocqtop
       (sn.rocqops#process_db_cmd cmd ~next:(function | _ -> Rocq.return ()))
-      (fun () -> Minilib.log "Coq busy, discarding db_cmd")
+      (fun () -> Minilib.log "Rocq busy, discarding db_cmd")
 
 let forward_db_stack = ref ((fun _ -> failwith "forward_db_stack")
                      : session -> unit -> unit)
@@ -213,7 +213,7 @@ let db_upd_bpts ?(next=Rocq.return) updates sn =
   if updates <> [] then
     ignore @@ Rocq.try_grab ~db:true sn.rocqtop
       (sn.rocqops#process_db_upd_bpts updates ~next:(function | _ -> next ()))
-      (fun () -> Minilib.log "Coq busy, discarding db_upd_bpts")
+      (fun () -> Minilib.log "Rocq busy, discarding db_upd_bpts")
 
 let get_updates sn =
   (* breakpoints in this buffer *)
@@ -245,7 +245,7 @@ let () = forward_init_db := fun sn ->
   let send_configd () =
     ignore @@ Rocq.try_grab ~db:true sn.rocqtop
       (sn.rocqops#process_db_configd () ~next:(function | _ -> Rocq.return ()))
-      (fun () -> Minilib.log "Coq busy, discarding db_configd")
+      (fun () -> Minilib.log "Rocq busy, discarding db_configd")
   in
   if updates = [] then
     send_configd ()
@@ -735,7 +735,7 @@ let find_next_occurrence ~backward sn =
     |Some(where, _) -> b#place_cursor ~where; sn.script#recenter_insert
 
 let send_to_rocq_aux f sn =
-  let info () = Minilib.log "Coq busy, discarding query" in
+  let info () = Minilib.log "Rocq busy, discarding query" in
   let f = Rocq.seq (f sn) (update_status sn) in
   ignore @@ Rocq.try_grab sn.rocqtop f info
 
@@ -744,7 +744,7 @@ let send_to_rocq f = on_current_term (send_to_rocq_aux f)
 let db_continue opt sn =
   Rocq.try_grab ~db:true sn.rocqtop (sn.rocqops#process_db_continue opt
     ~next:(function | _ -> Rocq.return ()))
-    (fun () -> Minilib.log "Coq busy, discarding db_continue")
+    (fun () -> Minilib.log "Rocq busy, discarding db_continue")
 
 (* find the session identified by sid.  If not specified and the current term
    is the stopping point for another session, direct actions to that term *)
@@ -952,7 +952,7 @@ let match_callback sn =
   let rocqtop = sn.rocqtop in
   let query = Rocq.bind (Rocq.mkcases w) (display_match sn) in
   ignore @@ Rocq.try_grab rocqtop query
-    (fun () -> Minilib.log "Coq busy, discarding mkcases")
+    (fun () -> Minilib.log "Rocq busy, discarding mkcases")
 
 let match_callback = cb_on_current_term match_callback
 
@@ -969,7 +969,7 @@ let doquery query sn =
             sn.messages#default_route#add err;
             Rocq.return ()
         | Interface.Good () -> Rocq.return ()))
-    (fun () -> Minilib.log "Coq busy, discarding raw_coq_query")
+    (fun () -> Minilib.log "Rocq busy, discarding raw_rocq_query")
 
 let queryif command sn =
   Option.iter (fun query -> doquery (query ^ ".") sn)
@@ -1032,7 +1032,7 @@ let show_proof_diff where sn =
         | Interface.Good diff ->
             sn.messages#default_route#add diff;
             Rocq.return ()))
-      (fun () -> Minilib.log "Coq busy, discarding raw_coq_query")
+      (fun () -> Minilib.log "Rocq busy, discarding raw_rocq_query")
 
 let show_proof_diffs _ = cb_on_current_term (show_proof_diff `INSERT) ()
 
@@ -1074,7 +1074,7 @@ let db_stack sn _ =
           | Interface.Fail _ ->
             Rocq.return ()
           ))
-      (fun () -> Minilib.log "Coq busy, discarding db_stack")
+      (fun () -> Minilib.log "Rocq busy, discarding db_stack")
   )
 
 let _ = forward_db_stack := db_stack
@@ -1089,7 +1089,7 @@ let db_vars sn line =
           | Interface.Fail _ ->
             Rocq.return ()
           ))
-      (fun () -> Minilib.log "Coq busy, discarding db_vars")
+      (fun () -> Minilib.log "Rocq busy, discarding db_vars")
   )
 
 let _ = forward_db_vars := db_vars

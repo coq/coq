@@ -129,7 +129,6 @@ let message_view sid : message_view =
     buffer#move_mark `INSERT ~where:buffer#end_iter;
     let ins = buffer#get_iter_at_mark `INSERT in
     buffer#select_range ins ins;  (* avoid highlighting *)
-(*    Ideutils.push_info "Coq is stopped in the debugger"; needs work *)
     lines
   in
 
