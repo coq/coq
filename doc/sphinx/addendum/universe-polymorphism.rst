@@ -590,7 +590,7 @@ Printing universes
    terms apparently identical but internally different in the Calculus of Inductive
    Constructions.
 
-.. cmd:: Print {? Sorted } Universes {? Subgraph ( {* @debug_univ_name } ) } {? @string }
+.. cmd:: Print {? Sorted } Universes {? Subgraph ( {* @debug_univ_name } ) } {? {| With | Without } Constraint Sources } {? @string }
    :name: Print Universes
 
    .. insertprodn debug_univ_name debug_univ_name
@@ -607,6 +607,21 @@ Printing universes
    constraints between kept universes). :n:`@debug_univ_name` is
    `:n:`@qualid` for named universes (e.g. `eq.u0`), and :n:`@string`
    for raw universe expressions (e.g. `"Stdlib.Init.Logic.1"`).
+
+   By default when printing a subgraph `Print Universes` attempts to
+   find and print the source of the constraints. This can be
+   controlled by providing `With Constraint Sources` or `Without
+   Constraint Sources`.
+
+   .. coqtop:: in
+
+      Monomorphic Universes a b c.
+      Monomorphic Definition make_b_lt_c : Type@{c} := Type@{b}.
+      Monomorphic Definition make_a_le_b (F:Type@{b} -> Prop) (X:Type@{a}) := F X.
+
+   .. coqtop:: all
+
+      Print Universes Subgraph (a c).
 
    .. note::
 

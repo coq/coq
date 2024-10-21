@@ -469,16 +469,12 @@ let template_polymorphism_candidate uctx params entry template_syntax = match te
   univs
 
 let split_universe_context subset (univs, csts) =
+  let rem = Univ.Level.Set.diff univs subset in
   let subfilter (l, _, r) =
     let () = assert (not @@ Univ.Level.Set.mem r subset) in
     Univ.Level.Set.mem l subset
   in
-  let subcst = Univ.Constraints.filter subfilter csts in
-  let rem = Univ.Level.Set.diff univs subset in
-  let remfilter (l, _, r) =
-    not (Univ.Level.Set.mem l subset) && not (Univ.Level.Set.mem r subset)
-  in
-  let remcst = Univ.Constraints.filter remfilter csts in
+  let subcst, remcst = Univ.Constraints.partition subfilter csts in
   (subset, subcst), (rem, remcst)
 
 let warn_no_template_universe =
