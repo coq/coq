@@ -123,6 +123,27 @@ val map_constr_expr_with_binders :
   (Id.t -> 'a -> 'a) -> ('a -> constr_expr -> constr_expr) ->
       'a -> constr_expr -> constr_expr
 
+val notation_arg_type_fold_map :
+  ('a -> 'b -> 'a * 'c) ->  (* constr_expr *)
+  ('a -> 'd -> 'a * 'e) ->  (* cases_pattern_expr *)
+  ('a -> 'f -> 'a * 'g) ->  (* local_binder_expr list *)
+  'a ->
+  ('b, 'd * 'h, 'f) Constrexpr.notation_arg_type ->
+  'a * ('c, 'e * 'h, 'g) Constrexpr.notation_arg_type
+
+val notation_arg_type_fold :
+  ('a -> 'b -> 'a) ->  (* constr_expr *)
+  ('a -> 'c -> 'a) ->  (* cases_pattern_expr *)
+  ('a -> 'd -> 'a) ->  (* local_binder_expr list *)
+  'a -> ('b, 'c * 'e, 'd) Constrexpr.notation_arg_type -> 'a
+
+val notation_arg_type_map :
+  ('a -> 'b) ->  (* constr_expr *)
+  ('c -> 'd) ->  (* cases_pattern_expr *)
+  ('e -> 'f) ->  (* local_binder_expr list *)
+  ('a, 'c * 'g, 'e) Constrexpr.notation_arg_type ->
+  ('b, 'd * 'g, 'f) Constrexpr.notation_arg_type
+
 (** {6 Printers}*)
 
 val pr_scope_delimiter : scope_delimiter -> Pp.t
@@ -147,22 +168,3 @@ val isCSort : constr_expr -> bool
 
 (** For cases pattern parsing errors *)
 val error_invalid_pattern_notation : ?loc:Loc.t -> unit -> 'a
-
-val notation_arg_type_fold_map :
-  ('a -> 'b -> 'a * 'c) ->
-  ('a -> 'd -> 'a * 'e) ->
-  ('a -> 'f -> 'a * 'g) ->
-  'a ->
-  ('b, 'd * 'h, 'f) Constrexpr.notation_arg_type ->
-  'a * ('c, 'e * 'h, 'g) Constrexpr.notation_arg_type
-val notation_arg_type_fold :
-  ('a -> 'b -> 'a) ->
-  ('a -> 'c -> 'a) ->
-  ('a -> 'd -> 'a) ->
-  'a -> ('b, 'c * 'e, 'd) Constrexpr.notation_arg_type -> 'a
-val notation_arg_type_map :
-  ('a -> 'b) ->
-  ('c -> 'd) ->
-  ('e -> 'f) ->
-  ('a, 'c * 'g, 'e) Constrexpr.notation_arg_type ->
-  ('b, 'd * 'g, 'f) Constrexpr.notation_arg_type
