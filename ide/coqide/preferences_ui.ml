@@ -620,12 +620,12 @@ let configure ?(apply = fun () -> ()) parent =
   let externals_cmds =
     create_pref_box ~in_grid:true "Commands for external programs" [
         ptextexpr "coqidetop:"
-          (match cmd_coqtop#get with | None -> "AUTO" | Some x -> x)
-          (fun s -> cmd_coqtop#set (if s = "AUTO" then None else Some s));
-        pstring "coqc:" cmd_coqc;
+          (match cmd_rocqtop#get with | None -> "AUTO" | Some x -> x)
+          (fun s -> cmd_rocqtop#set (if s = "AUTO" then None else Some s));
+        pstring "coqc:" cmd_rocqc;
         pstring "make:" cmd_make;
-        pstring "coqmakefile:" cmd_coqmakefile;
-        pstring "coqdoc:" cmd_coqdoc;
+        pstring "coqmakefile:" cmd_rocqmakefile;
+        pstring "coqdoc:" cmd_rocqdoc;
         pstring "Print ps:" cmd_print;
         cmd_editor;
         cmd_browse;

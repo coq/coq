@@ -8,39 +8,39 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Coq : Interaction with the Coq toplevel *)
+(** Rocq : Interaction with the Rocq toplevel *)
 
 (** {5 General structures} *)
 
-type coqtop
-(** The structure describing a coqtop sub-process .
+type rocqtop
+(** The structure describing a rocqtop sub-process .
 
-    Liveness management of coqtop is automatic. Whenever a coqtop dies abruptly,
+    Liveness management of rocqtop is automatic. Whenever a rocqtop dies abruptly,
     this module is responsible for relaunching the whole process. The reset
     handler set through [set_reset_handler] will be called after such an
-    abrupt failure. It is also called when explicitly requesting coqtop to
+    abrupt failure. It is also called when explicitly requesting rocqtop to
     reset. *)
 
 type status = New | Ready | Busy | Closed
-(** Coqtop process status :
-  - New    : a process has been spawned, but not initialized via [init_coqtop].
+(** Rocqtop process status :
+  - New    : a process has been spawned, but not initialized via [init_rocqtop].
              It will reject tasks given via [try_grab].
   - Ready  : no current task, accepts new tasks via [try_grab].
-  - Busy   : has accepted a task via [init_coqtop] or [try_grab],
+  - Busy   : has accepted a task via [init_rocqtop] or [try_grab],
   - Closed : the coqide buffer has been closed, we discard any further task.
 *)
 
 type 'a task
-(** Coqtop tasks.
+(** Rocqtop tasks.
 
-    A task is a group of sequential calls to be performed on a coqtop process,
+    A task is a group of sequential calls to be performed on a rocqtop process,
     that ultimately return some content.
 
-    If a task is already sent to coqtop, it is considered busy
+    If a task is already sent to rocqtop, it is considered busy
     ([is_computing] will answer [true]), and any other task submission
     will be rejected by [try_grab].
 
-    Any exception occurring within the task will trigger a coqtop reset.
+    Any exception occurring within the task will trigger a rocqtop reset.
 
     Beware, because of the GTK scheduler, you never know when a task will
     actually be executed. If you need to sequentialize imperative actions, you
@@ -59,80 +59,80 @@ val lift : (unit -> 'a) -> 'a task
 val seq : unit task -> 'a task -> 'a task
 (** Sequential composition *)
 
-(** {5 Coqtop process management} *)
+(** {5 Rocqtop process management} *)
 
 type reset_kind = Planned | Unexpected
 (** A reset may occur accidentally or voluntarily, so we discriminate between
     these. *)
 
-val is_computing : coqtop -> bool
-(** Check if coqtop is computing, i.e. already has a current task *)
+val is_computing : rocqtop -> bool
+(** Check if rocqtop is computing, i.e. already has a current task *)
 
-val is_stopped_in_debugger : coqtop -> bool
-(** Returns true if coqtop is stopped in the debugger *)
+val is_stopped_in_debugger : rocqtop -> bool
+(** Returns true if rocqtop is stopped in the debugger *)
 
-val is_ready_or_stopped_in_debugger : coqtop -> bool
-(** Check if coqtop is Ready or stopped in the debugger *)
+val is_ready_or_stopped_in_debugger : rocqtop -> bool
+(** Check if rocqtop is Ready or stopped in the debugger *)
 
-val set_stopped_in_debugger : coqtop -> bool -> unit
-(** Records whether coqtop is stopped in the debugger *)
+val set_stopped_in_debugger : rocqtop -> bool -> unit
+(** Records whether rocqtop is stopped in the debugger *)
 
-val spawn_coqtop : string -> string list -> coqtop
-(** Create a coqtop process with some command-line arguments. *)
+val spawn_rocqtop : string -> string list -> rocqtop
+(** Create a rocqtop process with some command-line arguments. *)
 
-val set_restore_bpts : coqtop -> (unit -> unit) -> unit
+val set_restore_bpts : rocqtop -> (unit -> unit) -> unit
 (** Register callback to restore breakpoints after a session has been reset *)
 
-val set_reset_handler : coqtop -> unit task -> unit
-(** Register a handler called when a coqtop dies (badly or on purpose) *)
+val set_reset_handler : rocqtop -> unit task -> unit
+(** Register a handler called when a rocqtop dies (badly or on purpose) *)
 
-val set_feedback_handler : coqtop -> (Feedback.feedback -> unit) -> unit
-(** Register a handler called when coqtop sends a feedback message *)
+val set_feedback_handler : rocqtop -> (Feedback.feedback -> unit) -> unit
+(** Register a handler called when rocqtop sends a feedback message *)
 
-val set_debug_prompt_handler : coqtop -> (tag:string -> Pp.t -> unit) -> unit
+val set_debug_prompt_handler : rocqtop -> (tag:string -> Pp.t -> unit) -> unit
 (** Register a handler called when the Ltac debugger sends a feedback message *)
 
-val add_do_when_ready : coqtop -> (unit -> unit) -> unit
-(** Register a function to be called when coqtop becomes Ready *)
+val add_do_when_ready : rocqtop -> (unit -> unit) -> unit
+(** Register a function to be called when rocqtop becomes Ready *)
 
-val setup_script_editable : coqtop -> (bool -> unit) -> unit
+val setup_script_editable : rocqtop -> (bool -> unit) -> unit
 (** Register setter function to make proof script panel editable or not,
     e.g. to disable editing while any non-debugger message is being processed *)
 
-val init_coqtop : coqtop -> unit task -> unit
-(** Finish initializing a freshly spawned coqtop, by running a first task on it.
+val init_rocqtop : rocqtop -> unit task -> unit
+(** Finish initializing a freshly spawned rocqtop, by running a first task on it.
     The task should run its inner continuation at the end. *)
 
-val interrupt_coqtop : coqtop -> string list -> unit
-(** Terminate the current computation of coqtop or the worker if coqtop is not running. *)
+val interrupt_rocqtop : rocqtop -> string list -> unit
+(** Terminate the current computation of rocqtop or the worker if rocqtop is not running. *)
 
-val close_coqtop : coqtop -> unit
-(** Close coqtop. Subsequent requests will be discarded. Hook ignored. *)
+val close_rocqtop : rocqtop -> unit
+(** Close rocqtop. Subsequent requests will be discarded. Hook ignored. *)
 
-val reset_coqtop : coqtop -> unit
-(** Reset coqtop. Pending requests will be discarded. The reset handler
-    of coqtop will be called with [Planned] as first argument *)
+val reset_rocqtop : rocqtop -> unit
+(** Reset rocqtop. Pending requests will be discarded. The reset handler
+    of rocqtop will be called with [Planned] as first argument *)
 
-val get_arguments : coqtop -> string list
-(** Get the current arguments used by coqtop. *)
+val get_arguments : rocqtop -> string list
+(** Get the current arguments used by rocqtop. *)
 
-val set_arguments : coqtop -> string list -> unit
+val set_arguments : rocqtop -> string list -> unit
 (** Set process arguments. This also forces a planned reset. *)
 
 (** {5 Task processing} *)
 
-val try_grab : ?db:bool -> coqtop -> unit task -> (unit -> unit) -> bool
-(** Try to schedule a task on a coqtop. If coqtop is available, the task
+val try_grab : ?db:bool -> rocqtop -> unit task -> (unit -> unit) -> bool
+(** Try to schedule a task on a rocqtop. If rocqtop is available, the task
     callback is run (asynchronously), otherwise the [(unit->unit)] callback
     is triggered.  Returns true if the task is run.
-    - If coqtop ever dies during the computation, this function restarts coqtop
-      and calls the restart hook with the fresh coqtop.
-    - If the argument function raises an exception, a coqtop reset occurs.
-    - The task may be discarded if a [close_coqtop] or [reset_coqtop] occurs
+    - If rocqtop ever dies during the computation, this function restarts rocqtop
+      and calls the restart hook with the fresh rocqtop.
+    - If the argument function raises an exception, a rocqtop reset occurs.
+    - The task may be discarded if a [close_rocqtop] or [reset_rocqtop] occurs
       before its completion.
     - The task callback should run its inner continuation at the end. *)
 
-(** {5 Atomic calls to coqtop} *)
+(** {5 Atomic calls to rocqtop} *)
 
 (**
   These atomic calls can be combined to form arbitrary multi-call tasks.
@@ -143,7 +143,7 @@ val try_grab : ?db:bool -> coqtop -> unit task -> (unit -> unit) -> bool
   Except for interp, we use the default logger for any call. *)
 
 type 'a query = 'a Interface.value task
-(** A type abbreviation for coqtop specific answers *)
+(** A type abbreviation for rocqtop specific answers *)
 
 val add        : Interface.add_sty        -> Interface.add_rty query
 val edit_at    : Interface.edit_at_sty    -> Interface.edit_at_rty query
@@ -186,7 +186,7 @@ sig
 
   val printing_unfocused: unit -> bool
 
-  (** [enforce] transmits to coq the current option values.
+  (** [enforce] transmits to rocq the current option values.
       It is also called by [goals] and [evars] above. *)
 
   val enforce : unit task
@@ -195,29 +195,29 @@ end
 (** {5 Miscellaneous} *)
 
 val short_version : unit -> string
-(** Return a short phrase identifying coqtop version and date of compilation, as
+(** Return a short phrase identifying rocqtop version and date of compilation, as
     given by the [configure] script. *)
 
 val version : unit -> string
 (** More verbose description, including details about libraries and
     architecture. *)
 
-val filter_coq_opts : string list -> string list
-(** * Launch a test coqtop processes, ask for a correct coqtop if it fails.
-    @return the list of arguments that coqtop did not understand
+val filter_rocq_opts : string list -> string list
+(** * Launch a test rocqtop processes, ask for a correct rocqtop if it fails.
+    @return the list of arguments that rocqtop did not understand
     (the files probably ..). This command may terminate coqide in
     case of trouble.  *)
 
 val check_connection : string list -> unit
-(** Launch a coqtop with the user args in order to be sure that it works,
+(** Launch a rocqtop with the user args in order to be sure that it works,
     checking in particular that Prelude.vo is found. This command
     may terminate coqide in case of trouble *)
 
 val interrupter : (int -> unit) ref
 val breaker : (int -> unit) ref
-val send_break : coqtop -> unit
+val send_break : rocqtop -> unit
 
 val save_all : (unit -> unit) ref
 
 (* Flags to be used for ideslave *)
-val ideslave_coqtop_flags : string option ref
+val ideslave_rocqtop_flags : string option ref

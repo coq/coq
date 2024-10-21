@@ -48,7 +48,7 @@ let load_files filenames =
   let add f =
     selected_filenames := f::!selected_filenames in
   let warn_default_not_found () =
-    let dirs = Minilib.coqide_data_dirs () in
+    let dirs = Minilib.rocqide_data_dirs () in
     Ideutils.warning Format.(
         asprintf
           "@[Warning: the file 'ide/default.bindings' was not found in:@\n @[<v>%a@]@]."

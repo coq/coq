@@ -9,7 +9,7 @@
 (************************************************************************)
 
 (** A session is a script buffer + proof + messages,
-    interacting with a coqtop, and a few other elements around *)
+    interacting with a rocqtop, and a few other elements around *)
 
 class type ['a] page =
   object
@@ -40,8 +40,8 @@ type session = {
   messages : Wg_RoutedMessageViews.message_views_router;
   segment : Wg_Segment.segment;
   fileops : FileOps.ops;
-  coqops : RocqOps.ops;
-  coqtop : Rocq.coqtop;
+  rocqops : RocqOps.ops;
+  rocqtop : Rocq.rocqtop;
   command : Wg_Command.command_window;
   finder : Wg_Find.finder;
   debugger : Wg_Debugger.debugger_view;
@@ -58,7 +58,7 @@ type session = {
   mutable last_db_goals : Pp.t
 }
 
-(** [create filename coqtop_args] *)
+(** [create filename rocqtop_args] *)
 val create : string option -> string list -> session
 
 val to_abs_file_name : string -> string

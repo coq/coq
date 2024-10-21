@@ -42,12 +42,12 @@ val stock_to_widget :
   ?size:[`CUSTOM of int * int | Gtk.Tags.icon_size] ->
     GtkStock.id -> GObj.widget
 
-val custom_coqtop : string option ref
-(* @return command to call coqtop
-   - custom_coqtop if set
+val custom_rocqtop : string option ref
+(* @return command to call rocqtop
+   - custom_rocqtop if set
    - from the prefs is set
    - try to infer it else *)
-val coqtop_path : unit -> string
+val rocqtop_path : unit -> string
 
 
 val status : GMisc.statusbar

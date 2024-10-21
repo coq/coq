@@ -10,7 +10,7 @@
 
 module Proposals : sig type t end
 
-class completion_provider : GText.buffer -> Rocq.coqtop ->
+class completion_provider : GText.buffer -> Rocq.rocqtop ->
 object
   inherit GSourceView3.source_completion_provider
   method active : bool

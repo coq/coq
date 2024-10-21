@@ -55,8 +55,8 @@ let () =
   Ideutils.push_info ("Ready"^ if Preferences.microPG#get then ", [μPG]" else "");
   load_prefs ();
   let argl = List.tl (Array.to_list Sys.argv) in
-  let argl = Coqide.read_coqide_args argl in
-  let files = Rocq.filter_coq_opts argl in
+  let argl = Coqide.read_rocqide_args argl in
+  let files = Rocq.filter_rocq_opts argl in
   let args = List.filter (fun x -> not (List.mem x files)) argl in
   Rocq.check_connection args;
   Coqide.sup_args := args;

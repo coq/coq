@@ -10,10 +10,10 @@
 
 let lang_manager = GSourceView3.source_language_manager ~default:true
 let () = lang_manager#set_search_path
-  ((Minilib.coqide_data_dirs ())@lang_manager#search_path)
+  ((Minilib.rocqide_data_dirs ())@lang_manager#search_path)
 let style_manager = GSourceView3.source_style_scheme_manager ~default:true
 let () = style_manager#set_search_path
-  ((Minilib.coqide_data_dirs ())@style_manager#search_path)
+  ((Minilib.rocqide_data_dirs ())@style_manager#search_path)
 
 type tag = {
   tag_fg_color : string option;
@@ -249,32 +249,32 @@ let get_config_file dirs name =
   Filename.concat config_dir name
 
 let get_unicode_bindings_local_file () =
-  try Some (get_config_file [Minilib.coqide_config_home ()] "coqide.bindings")
+  try Some (get_config_file [Minilib.rocqide_config_home ()] "coqide.bindings")
   with Not_found -> None
 
 let get_unicode_bindings_default_file () =
   let name = "default.bindings" in
   let chk d = Sys.file_exists (Filename.concat d name) in
   try
-    let dir = List.find chk (Minilib.coqide_data_dirs ()) in
+    let dir = List.find chk (Minilib.rocqide_data_dirs ()) in
     Some (Filename.concat dir name)
   with Not_found -> None
 
 (** Hooks *)
 
-let cmd_coqtop =
+let cmd_rocqtop =
   new preference ~name:["cmd_coqtop"] ~init:None ~repr:Repr.(option string)
 
-let cmd_coqc =
+let cmd_rocqc =
   new preference ~name:["cmd_coqc"] ~init:"coqc" ~repr:Repr.(string)
 
 let cmd_make =
   new preference ~name:["cmd_make"] ~init:"make" ~repr:Repr.(string)
 
-let cmd_coqmakefile =
+let cmd_rocqmakefile =
   new preference ~name:["cmd_coqmakefile"] ~init:"coq_makefile -o makefile *.v" ~repr:Repr.(string)
 
-let cmd_coqdoc =
+let cmd_rocqdoc =
   new preference ~name:["cmd_coqdoc"] ~init:"coqdoc -q -g" ~repr:Repr.(string)
 
 let source_language =
@@ -373,8 +373,8 @@ let modifiers_valid =
 
 let browser_cmd_fmt =
  try
-  let coq_netscape_remote_var = "COQREMOTEBROWSER" in
-  Sys.getenv coq_netscape_remote_var
+  let rocq_netscape_remote_var = "COQREMOTEBROWSER" in
+  Sys.getenv rocq_netscape_remote_var
  with
   Not_found -> Coq_config.browser
 
@@ -605,8 +605,8 @@ let diffs =
 
 (** Loading/saving preferences *)
 
-let pref_file = Filename.concat (Minilib.coqide_config_home ()) "coqiderc"
-let accel_file = Filename.concat (Minilib.coqide_config_home ()) "coqide.keys"
+let pref_file = Filename.concat (Minilib.rocqide_config_home ()) "coqiderc"
+let accel_file = Filename.concat (Minilib.rocqide_config_home ()) "coqide.keys"
 
 let accel_regex = Str.regexp {|\(; \|\)(gtk_accel_path "\([^""]*\)"|}
 
@@ -624,7 +624,7 @@ let rec mkdir_p path perms =
   else ()
 
 let save_accel_pref () =
-  mkdir_p (Minilib.coqide_config_home ()) 0o700;
+  mkdir_p (Minilib.rocqide_config_home ()) 0o700;
   let tmp_file, fd = Filename.open_temp_file ?perms:(Some 0o644)
     ?temp_dir:(Some (Filename.dirname accel_file))
     "coqide.keys_" "" in
@@ -661,7 +661,7 @@ let save_accel_pref () =
   Sys.rename tmp_file accel_file
 
 let save_rc_pref () =
-  mkdir_p (Minilib.coqide_config_home ()) 0o700;
+  mkdir_p (Minilib.rocqide_config_home ()) 0o700;
   let add = Util.String.Map.add in
   let fold key obj accu = add key (obj.get ()) accu in
   let prefs = Util.String.Map.fold fold !preferences Util.String.Map.empty in
@@ -680,12 +680,12 @@ let try_load_pref_file loader warn file =
 
 let load_pref_file loader warn name =
   try
-    let user_file = get_config_file [Minilib.coqide_config_home ()] name in
+    let user_file = get_config_file [Minilib.rocqide_config_home ()] name in
     warn ~delay:2000 ("Loading " ^ user_file);
     try_load_pref_file loader warn user_file
   with Not_found ->
   try
-    let system_wide_file = get_config_file (Minilib.coqide_system_config_dirs ()) name in
+    let system_wide_file = get_config_file (Minilib.rocqide_system_config_dirs ()) name in
     warn ~delay:5000 ("No user " ^ name ^ ", using system wide configuration");
     try_load_pref_file loader warn system_wide_file
   with Not_found ->

@@ -10,7 +10,7 @@
 
 open Preferences
 
-class command_window name coqtop coqops router sid =
+class command_window name rocqtop rocqops router sid =
   let frame = Wg_Detachable.detachable
     ~title:(Printf.sprintf "Query pane (%s)" name) () in
   let _ = frame#hide in
@@ -32,10 +32,10 @@ object(self)
 
   val notebook = notebook
 
-  (* We need access to coqops in order to place queries in the proper
+  (* We need access to rocqops in order to place queries in the proper
      document stint. This should remove access from this module to the
      low-level Rocq one. *)
-  val coqops = coqops
+  val rocqops = rocqops
 
   method pack_in (f : GObj.widget -> unit) = f frame#coerce
 
@@ -126,10 +126,10 @@ object(self)
             notebook#set_page ~tab_label:(new_tab_lbl arg) frame#coerce;
             Rocq.return ()
         in
-        coqops#raw_coq_query ~route_id ~next phrase
+        rocqops#raw_rocq_query ~route_id ~next phrase
       in
       result#set (Pp.str ("Result for command " ^ phrase ^ ":\n"));
-      ignore @@ Rocq.try_grab coqtop process ignore
+      ignore @@ Rocq.try_grab rocqtop process ignore
     in
     ignore (combo#entry#connect#activate ~callback);
     ignore (ok_b#connect#clicked ~callback);

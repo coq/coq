@@ -69,7 +69,7 @@ let is_substring s1 s2 =
   if !break then len2 - len1
   else -1
 
-class completion_provider buffer coqtop =
+class completion_provider buffer rocqtop =
   let self_provider = ref None in
   let active = ref true in
   let provider = object (self)
@@ -127,9 +127,9 @@ class completion_provider buffer coqtop =
           Rocq.return ()
         in
         let query = Rocq.bind (get_semantic_completion w synt) next in
-        (* If coqtop is computing, do the syntactic completion altogether *)
+        (* If rocqtop is computing, do the syntactic completion altogether *)
         let occupied () = update synt in
-        ignore @@ Rocq.try_grab coqtop query occupied
+        ignore @@ Rocq.try_grab rocqtop query occupied
 
     method matched ctx = !active
 

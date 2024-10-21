@@ -29,17 +29,17 @@ val log    : ?level:level -> string        -> unit
 
 (* The directory where user config files are conventionally *)
 (* installed on the current platform (as given by Glib) *)
-val coqide_config_home : unit -> string
+val rocqide_config_home : unit -> string
 
 (* The directories where system-wide config files are conventionally *)
 (* installed on the current platform (as given by Glib) *)
-val coqide_system_config_dirs : unit -> string list
+val rocqide_system_config_dirs : unit -> string list
 
 (* The directory where default config files are installed at installation time *)
-val coqide_default_config_dir : unit -> string
+val rocqide_default_config_dir : unit -> string
 
 (* The ordered list of directories where a config file is searched by default *)
-val coqide_config_dirs : unit -> string list
+val rocqide_config_dirs : unit -> string list
 
 (* The ordered list of directories where a data file is searched by default *)
-val coqide_data_dirs : unit -> string list
+val rocqide_data_dirs : unit -> string list

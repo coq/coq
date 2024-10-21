@@ -160,7 +160,7 @@ open SentenceId
 
 (* Given a Rocq loc, convert it to a pair of iterators start / end in
    the buffer. *)
-let coq_loc_to_gtk_offset ?(line_drift=0) (buffer : GText.buffer) loc =
+let rocq_loc_to_gtk_offset ?(line_drift=0) (buffer : GText.buffer) loc =
   Ideutils.get_iter_at_byte buffer ~line:(loc.Loc.line_nb - 1 + line_drift) (loc.bp - loc.bol_pos),
   Ideutils.get_iter_at_byte buffer ~line:(loc.Loc.line_nb_last - 1 + line_drift) (loc.ep - loc.bol_pos_last)
 
@@ -194,7 +194,7 @@ let c2b (buffer : GText.buffer) (s_byte, s_uni) uni_off =
    the same point. Thus, we need to perform potentially very costly
    char to offset conversion, for that we need the whole buffer.
 *)
-let coq_loc_from_gtk_offset cached buffer sentence =
+let rocq_loc_from_gtk_offset cached buffer sentence =
   let start = start_iter buffer sentence in
   (* This is in chars not in bytes, thus needs conversion *)
   let bp = c2b buffer cached start#offset in
@@ -228,7 +228,7 @@ object
     next:(Interface.db_vars_rty Interface.value -> unit task) -> unit task
   method process_until_end_or_error : unit task
   method handle_reset_initial : unit task
-  method raw_coq_query :
+  method raw_rocq_query :
     route_id:int -> next:(query_rty value -> unit task) -> string -> unit task
   method proof_diff : GText.mark -> next:(Pp.t value -> unit task) -> unit task
   method show_goals : unit task
@@ -320,12 +320,12 @@ let rec flatten = function
   let inner = flatten l in
   List.rev_append lg inner @ rg
 
-class coqops
+class rocqops
   (_script:Wg_ScriptView.script_view)
   (_pv:Wg_ProofView.proof_view)
   (_mv:Wg_RoutedMessageViews.message_views_router)
   (_sg:Wg_Segment.segment)
-  (_ct:Rocq.coqtop)
+  (_ct:Rocq.rocqtop)
   get_filename =
 object(self)
   val script = _script
@@ -502,11 +502,11 @@ object(self)
   method show_goals = self#show_goals_aux ()
 
   (* This method is intended to perform stateless commands *)
-  method raw_coq_query ~route_id ~next phrase : unit Rocq.task =
+  method raw_rocq_query ~route_id ~next phrase : unit Rocq.task =
     let sid = try Document.tip document
               with Document.Empty -> Stateid.initial
     in
-    let action = log "raw_coq_query starting now" in
+    let action = log "raw_rocq_query starting now" in
     let query = Rocq.query (route_id,(phrase,sid)) in
     Rocq.bind (Rocq.seq action query) next
 
@@ -569,7 +569,7 @@ object(self)
       | None ->
         start_stop_iters buffer sentence
       | Some loc ->
-        coq_loc_to_gtk_offset ~line_drift buffer loc
+        rocq_loc_to_gtk_offset ~line_drift buffer loc
     in
     let markup = Glib.Markup.escape_text text in
     buffer#apply_tag Tags.Script.tooltip ~start ~stop;
@@ -706,7 +706,7 @@ object(self)
       buffer#apply_tag tag ~start ~stop
     | Some loc ->
       let _offset, line_drift = offset_compensation buffer sentence in
-      let start, stop = coq_loc_to_gtk_offset ~line_drift buffer loc in
+      let start, stop = rocq_loc_to_gtk_offset ~line_drift buffer loc in
       buffer#apply_tag tag ~start ~stop
 
   method private process_interp_error ?loc queue sentence msg tip id =
@@ -814,9 +814,9 @@ object(self)
             (* When we retract, the cached offsets are invalid, thus we need to reset the cache *)
             let start = start_iter buffer sentence in
             let cached_offset = if start#offset > (snd last_offsets) then last_offsets else (0,0) in
-            let bp, line_nb, bol_pos, new_cached = coq_loc_from_gtk_offset cached_offset buffer sentence in
+            let bp, line_nb, bol_pos, new_cached = rocq_loc_from_gtk_offset cached_offset buffer sentence in
             last_offsets <- new_cached;
-            let coq_query = Rocq.add ((((phrase,edit_id),(tip,verbose)),bp),(line_nb,bol_pos)) in
+            let rocq_query = Rocq.add ((((phrase,edit_id),(tip,verbose)),bp),(line_nb,bol_pos)) in
             Doc.set_errors document [];
             let handle_answer = function
               | Good (id, Util.Inl (* NewTip *) ()) ->
@@ -835,7 +835,7 @@ object(self)
                   let sentence = Doc.pop document in
                   Doc.set_errors document [Pp.string_of_ppcmds msg];
                   self#process_interp_error ?loc queue sentence msg tip id in
-            Rocq.bind coq_query handle_answer
+            Rocq.bind rocq_query handle_answer
       in
       let tip =
         try Doc.tip document
@@ -868,7 +868,7 @@ object(self)
       | Some (loc, msg) ->
         let iter = match loc with
         | None -> buffer#get_iter_at_mark s.start
-        | Some loc -> fst (coq_loc_to_gtk_offset buffer loc)
+        | Some loc -> fst (rocq_loc_to_gtk_offset buffer loc)
         in
         Some (iter#line + 1, msg)
       in
@@ -1023,7 +1023,7 @@ object(self)
     try
       let tgt = Doc.before_tip document in
       self#backtrack_to_id tgt
-    with Not_found -> Rocq.return (Rocq.reset_coqtop _ct)
+    with Not_found -> Rocq.return (Rocq.reset_rocqtop _ct)
 
   method go_to_insert =
     Rocq.bind (Rocq.return ()) (fun () ->
@@ -1066,7 +1066,7 @@ object(self)
       processed <- 0;
       to_process <- 0;
       Ideutils.push_info "Restarted";
-      (* apply the initial commands to coq *)
+      (* apply the initial commands to rocq *)
     in
     Rocq.seq (Rocq.lift action) self#initialize
 

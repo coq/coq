@@ -60,11 +60,11 @@ val printopts_item_names : string list ref
 
 val select_arch : 'a -> 'a -> 'a
 
-val cmd_coqtop : string option preference
-val cmd_coqc : string preference
+val cmd_rocqtop : string option preference
+val cmd_rocqc : string preference
 val cmd_make : string preference
-val cmd_coqmakefile : string preference
-val cmd_coqdoc : string preference
+val cmd_rocqmakefile : string preference
+val cmd_rocqdoc : string preference
 val source_language : string preference
 val source_style : string preference
 val global_auto_reload : bool preference
