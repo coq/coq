@@ -311,10 +311,16 @@ let library_part = function
   | GlobRef.VarRef id -> library_dp ()
   | ref -> ModPath.dp (mp_of_global ref)
 
-let discharge_proj_repr p =
+let discharge_section_proj_repr p =
   let ind = Projection.Repr.inductive p in
   let sec = section_segment_of_reference (GlobRef.IndRef ind) in
   Cooking.discharge_proj_repr sec p
+
+let discharge_proj_repr p =
+    if is_in_section (Names.GlobRef.IndRef (Names.Projection.Repr.inductive p)) then
+      discharge_section_proj_repr p
+    else
+      p
 
 (** The [LibActions] abstraction represent the set of operations on the Lib
     structure that is specific to a given stage. Two instances are defined below,

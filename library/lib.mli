@@ -175,6 +175,9 @@ val is_in_section : GlobRef.t -> bool
 
 (** {6 Discharge: decrease the section level if in the current section } *)
 
+(** [discharge_proj_repr p] discharges projection [p] if the associated record
+    was defined in the current section. If that is not the case, it returns [p]
+    unchanged. *)
 val discharge_proj_repr : Projection.Repr.t -> Projection.Repr.t
 
 (** Compatibility layer *)
