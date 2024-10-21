@@ -31,7 +31,7 @@ val init_ocaml : unit -> unit
 
     [parse_extra] and [usage] can be used to parse/document more options. *)
 val parse_arguments :
-  parse_extra:(string list -> 'a * string list) ->
+  parse_extra:(Coqargs.t -> string list -> 'a * string list) ->
   usage:Boot.Usage.specific_usage ->
   ?initial_args:Coqargs.t ->
   unit ->

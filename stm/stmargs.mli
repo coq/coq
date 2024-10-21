@@ -8,6 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val parse_args : init:Stm.AsyncOpts.stm_opt -> string list -> Stm.AsyncOpts.stm_opt * string list
+val parse_args : Coqargs.t -> string list -> Stm.AsyncOpts.stm_opt * string list
 
 val usage : string

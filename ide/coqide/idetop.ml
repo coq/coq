@@ -687,9 +687,9 @@ coqidetop specific options:\n\
 \n  --help-XML-protocol    print documentation of the Coq XML protocol\n"
 }
 
-let islave_parse extra_args =
+let islave_parse opts extra_args =
   let open Coqtop in
-  let ({ run_mode; color_mode }, stm_opts), extra_args = coqtop_toplevel.parse_extra extra_args in
+  let ({ run_mode; color_mode }, stm_opts), extra_args = coqtop_toplevel.parse_extra opts extra_args in
   let extra_args = parse extra_args in
   (* One of the role of coqidetop is to find the name of buffers to open *)
   (* in the command line; Coqide is waiting these names on stdout *)

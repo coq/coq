@@ -71,7 +71,6 @@ let set_color = function
 let parse_extra_colors extras =
   let rec parse_extra color_mode = function
   | "-color" :: next :: rest -> parse_extra (set_color next) rest
-  | "-list-tags" :: rest -> parse_extra color_mode rest
   | x :: rest ->
     let color_mode, rest = parse_extra color_mode rest in color_mode, x :: rest
   | [] -> color_mode, [] in
