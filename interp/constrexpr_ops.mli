@@ -49,6 +49,9 @@ val local_binders_loc : local_binder_expr list -> Loc.t option
 
 (** {6 Constructors} *)
 
+val mk_ntn : notation_entry -> notation_key -> notation
+val mk_ntn_in_constr : notation_key -> notation
+
 (** {7 Term constructors} *)
 
 (** Basic form of the corresponding constructors *)
@@ -119,6 +122,27 @@ val map_constr_expr_with_binders :
   (Id.t -> 'a -> 'a) -> ('a -> constr_expr -> constr_expr) ->
       'a -> constr_expr -> constr_expr
 
+val notation_arg_type_fold_map :
+  ('a -> 'b -> 'a * 'c) ->  (* constr_expr *)
+  ('a -> 'd -> 'a * 'e) ->  (* cases_pattern_expr *)
+  ('a -> 'f -> 'a * 'g) ->  (* local_binder_expr list *)
+  'a ->
+  ('b, 'd * 'h, 'f) Constrexpr.notation_arg_type ->
+  'a * ('c, 'e * 'h, 'g) Constrexpr.notation_arg_type
+
+val notation_arg_type_fold :
+  ('a -> 'b -> 'a) ->  (* constr_expr *)
+  ('a -> 'c -> 'a) ->  (* cases_pattern_expr *)
+  ('a -> 'd -> 'a) ->  (* local_binder_expr list *)
+  'a -> ('b, 'c * 'e, 'd) Constrexpr.notation_arg_type -> 'a
+
+val notation_arg_type_map :
+  ('a -> 'b) ->  (* constr_expr *)
+  ('c -> 'd) ->  (* cases_pattern_expr *)
+  ('e -> 'f) ->  (* local_binder_expr list *)
+  ('a, 'c * 'g, 'e) Constrexpr.notation_arg_type ->
+  ('b, 'd * 'g, 'f) Constrexpr.notation_arg_type
+
 (** {6 Miscellaneous}*)
 
 val replace_vars_constr_expr :
@@ -127,11 +151,13 @@ val replace_vars_constr_expr :
 val free_vars_of_constr_expr : constr_expr -> Id.Set.t
 val occur_var_constr_expr : Id.t -> constr_expr -> bool
 
+val free_vars_of_cases_pattern_expr : cases_pattern_expr -> Id.Set.t
+val free_vars_of_local_binders : local_binder_expr list -> Id.Set.t
+
 (** Return all (non-qualified) names treating binders as names *)
 val names_of_constr_expr : constr_expr -> Id.Set.t
 
-val ntn_loc : ?loc:Loc.t -> constr_notation_substitution -> notation -> (int * int) list
-val patntn_loc : ?loc:Loc.t -> cases_pattern_notation_substitution -> notation -> (int * int) list
+val ntn_loc : ?loc:Loc.t -> notation_substitution -> notation -> (int * int) list
 
 val isCSort : constr_expr -> bool
 

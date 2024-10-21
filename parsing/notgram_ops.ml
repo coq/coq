@@ -54,6 +54,8 @@ let declare_prefixes ntn =
 
 let notation_non_terminals_map = Summary.ref ~stage:Summary.Stage.Synterp ~name:"notation_non_terminals_map" NotationMap.empty
 
+type entry_types = Extend.constr_entry_key list
+
 let declare_notation_non_terminals ntn entries =
   try
     let _ = NotationMap.find ntn !notation_grammar_map in
