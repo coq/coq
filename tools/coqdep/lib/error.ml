@@ -8,6 +8,13 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(* This distinction is not so important *)
+type what = Library | External
+let str_of_what = function Library -> "library" | External -> "external file"
+
+exception MlNotFound of string * string
+exception FileNotFound of string * what * string option * string
+
 exception CannotParseFile of string * (int * int)
 exception CannotParseProjectFile of string * string
 
@@ -16,7 +23,16 @@ exception CannotOpenProjectFile of string
 
 exception InvalidFindlibPluginName of string * string
 
-let () = CErrors.register_handler @@ function
+let _ = CErrors.register_handler @@ function
+  | MlNotFound(file,ml_mod) ->
+    Some Pp.(str "in file " ++ str file ++ str " declared ML module " ++ str ml_mod ++ str " has not been found!")
+
+  | FileNotFound(file,what,from,coq_mod) ->
+    let what = Pp.str (str_of_what what) in
+    let root = Option.cata (fun pth -> Pp.(str " from root " ++ str pth)) (Pp.mt ()) from in
+    Some Pp.(str "in file " ++ str file ++ spc () ++ what ++ spc () ++ str coq_mod ++
+             str " is required" ++ root ++ spc () ++ str "and has not been found in the loadpath!")
+
   | CannotParseFile (s,(i,j)) ->
     Some Pp.(str "File \"" ++ str s ++ str "\"," ++ str "characters" ++ spc ()
       ++ int i ++ str "-" ++ int j ++ str ":" ++ spc () ++ str "Syntax error")
@@ -44,6 +60,13 @@ let () = CErrors.register_handler @@ function
       ++ str "      Declare ML Module \"foo_plugin:package-name.foo\".")
 
   | _ -> None
+
+let mlnotfound file ml_mod = raise @@ MlNotFound(file,ml_mod)
+
+let filenotfound file what from coq_mod =
+  let from = Option.map (String.concat ".") from in
+  let coq_mod = String.concat "." coq_mod in
+  raise @@ FileNotFound(file,what,from,coq_mod)
 
 let cannot_parse s ij = raise @@ CannotParseFile (s, ij)
 let cannot_open_project_file msg = raise @@ CannotOpenProjectFile msg
