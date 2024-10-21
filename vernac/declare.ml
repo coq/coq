@@ -2129,7 +2129,11 @@ let build_by_tactic env ~uctx ~poly ~typ tac =
   let body, _uctx = inline_private_constants ~uctx env ((body, Univ.ContextSet.empty), effs) in
   body, ce.proof_entry_type, ce.proof_entry_universes, status, uctx
 
-let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma concl =
+let declare_abstract ~name ~poly ~sign ~secsign ~opaque ~solve_tac sigma concl =
+  let kind = if opaque
+    then Decls.(IsProof Lemma)
+    else Decls.(IsDefinition Definition)
+  in
   let (const, safe, sigma') =
     try build_constant_by_tactic ~warn_incomplete:false ~name ~poly ~sigma ~sign:secsign concl solve_tac
     with Logic_monad.TacticFailure e as src ->
