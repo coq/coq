@@ -1,7 +1,7 @@
 DECLARE PLUGIN "coq-test-suite.quotation"
 
 {
-open Pcoq.Constr
+open Procq.Constr
 }
 GRAMMAR EXTEND Gram
   GLOBAL: term;

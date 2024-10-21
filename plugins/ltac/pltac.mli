@@ -10,7 +10,7 @@
 
 (** Ltac parsing entries *)
 
-open Pcoq
+open Procq
 open Libnames
 open Constrexpr
 open Tacexpr

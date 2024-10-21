@@ -23,8 +23,8 @@ open Rewrite
 open ComRewrite
 open Stdarg
 open Tactypes
-open Pcoq.Prim
-open Pcoq.Constr
+open Procq.Prim
+open Procq.Constr
 open Pvernac.Vernac_
 open Pltac
 open Vernacextend
@@ -239,7 +239,7 @@ type binders_argtype = local_binder_expr list
 let wit_binders =
  (Genarg.create_arg "binders" : binders_argtype Genarg.vernac_genarg_type)
 
-let binders = Pcoq.create_generic_entry2 "binders" (Genarg.rawwit wit_binders)
+let binders = Procq.create_generic_entry2 "binders" (Genarg.rawwit wit_binders)
 
 let () =
   let raw_printer l = Genprint.PrinterBasic (fun env sigma -> Pp.pr_non_empty_arg (Ppconstr.pr_binders env sigma) l) in
@@ -250,7 +250,7 @@ let () =
 GRAMMAR EXTEND Gram
   GLOBAL: binders;
     binders:
-    [ [ b = Pcoq.Constr.binders -> { b } ] ];
+    [ [ b = Procq.Constr.binders -> { b } ] ];
 END
 
 VERNAC COMMAND EXTEND AddParametricRelation CLASSIFIED AS SIDEFF

@@ -20,8 +20,8 @@ open Stdarg
 open Tacarg
 open Extraargs
 open Tactypes
-open Pcoq.Prim
-open Pcoq.Constr
+open Procq.Prim
+open Procq.Constr
 open Pltac
 
 }
@@ -126,7 +126,7 @@ let (wit_function_fix_definition : Vernacexpr.fixpoint_expr Loc.located Genarg.v
   Genarg.create_arg "function_fix_definition"
 
 let function_fix_definition =
-  Pcoq.create_generic_entry2 "function_fix_definition" (Genarg.rawwit wit_function_fix_definition)
+  Procq.create_generic_entry2 "function_fix_definition" (Genarg.rawwit wit_function_fix_definition)
 
 }
 

@@ -51,7 +51,7 @@
       With VERNAC ARGUMENT EXTEND the raw level printer is registered
       by including PRINTED BY.
 
-      Must be registered with [Pcoq.register_grammar] (handled by
+      Must be registered with [Procq.register_grammar] (handled by
       VERNAC ARGUMENT EXTEND when declared that way) as vernac extend
       only gets the genarg as argument so must get the grammar from
       the registration.
@@ -65,7 +65,7 @@
       Must be registered with [Genintern.register_intern0],
       [Gensubst.register_subst0] and [Genintern.register_interp0].
 
-      Must be registered with [Pcoq.register_grammar] as tactic extend
+      Must be registered with [Procq.register_grammar] as tactic extend
       only gets the genarg as argument so must get the grammar from
       the registration.
 

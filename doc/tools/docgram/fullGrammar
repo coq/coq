@@ -315,7 +315,7 @@ open_binders: [
 
 binders: [
 | LIST0 binder
-| Pcoq.Constr.binders
+| Procq.Constr.binders
 ]
 
 binder: [

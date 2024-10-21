@@ -12,12 +12,12 @@
 
 open Ltac_plugin
 
-val ssrtacarg : Tacexpr.raw_tactic_expr Pcoq.Entry.t
+val ssrtacarg : Tacexpr.raw_tactic_expr Procq.Entry.t
 val wit_ssrtacarg : (Tacexpr.raw_tactic_expr, Tacexpr.glob_tactic_expr, Geninterp.Val.t) Genarg.genarg_type
 val pr_ssrtacarg : Environ.env -> Evd.evar_map -> 'a -> 'b ->
   (Environ.env -> Evd.evar_map -> Constrexpr.entry_relative_level -> 'c) -> 'c
 
-val ssrtclarg : Tacexpr.raw_tactic_expr Pcoq.Entry.t
+val ssrtclarg : Tacexpr.raw_tactic_expr Procq.Entry.t
 val wit_ssrtclarg : (Tacexpr.raw_tactic_expr, Tacexpr.glob_tactic_expr, Geninterp.Val.t) Genarg.genarg_type
 val pr_ssrtclarg : Environ.env -> Evd.evar_map -> 'a -> 'b ->
   (Environ.env -> Evd.evar_map -> Constrexpr.entry_relative_level -> 'c -> 'd) -> 'c -> 'd
@@ -69,7 +69,7 @@ val wit_ssrhint :
    Tacexpr.glob_tactic_expr ssrhint,
    Tacinterp.Value.t ssrhint) Genarg.genarg_type
 
-val ssrhpats : ssrhpats Pcoq.Entry.t
+val ssrhpats : ssrhpats Procq.Entry.t
 val wit_ssrhpats : ssrhpats Genarg.uniform_genarg_type
 val wit_ssrhpats_nobs : ssrhpats Genarg.uniform_genarg_type
 val wit_ssrhpats_wtransp : ssrhpats_wtransp Genarg.uniform_genarg_type
@@ -98,58 +98,58 @@ val wit_ssrdir : ssrdir Genarg.uniform_genarg_type
 
 val wit_ssrclear : (ssrhyps, ssrclear, ssrclear) Genarg.genarg_type
 
-val ssrortacarg : Tacexpr.raw_tactic_expr ssrhint Pcoq.Entry.t
+val ssrortacarg : Tacexpr.raw_tactic_expr ssrhint Procq.Entry.t
 
-val ssrhint : Tacexpr.raw_tactic_expr ssrhint Pcoq.Entry.t
-val ssrhintarg : Tacexpr.raw_tactic_expr ssrhint Pcoq.Entry.t
+val ssrhint : Tacexpr.raw_tactic_expr ssrhint Procq.Entry.t
+val ssrhintarg : Tacexpr.raw_tactic_expr ssrhint Procq.Entry.t
 
-val ssrmmod : ssrmmod Pcoq.Entry.t
+val ssrmmod : ssrmmod Procq.Entry.t
 
-val ssrclauses : clauses Pcoq.Entry.t
+val ssrclauses : clauses Procq.Entry.t
 
-val ssrintros_ne : ssripats Pcoq.Entry.t
+val ssrintros_ne : ssripats Procq.Entry.t
 
-val ssrorelse : Tacexpr.raw_tactic_expr Pcoq.Entry.t
+val ssrorelse : Tacexpr.raw_tactic_expr Procq.Entry.t
 
-val ssrseqarg : Tacexpr.raw_tactic_expr ssrseqarg Pcoq.Entry.t
+val ssrseqarg : Tacexpr.raw_tactic_expr ssrseqarg Procq.Entry.t
 
-val ssrdocc : ssrdocc Pcoq.Entry.t
+val ssrdocc : ssrdocc Procq.Entry.t
 val wit_ssrdocc : ssrdocc Genarg.uniform_genarg_type
 
-val ssrocc : ssrocc Pcoq.Entry.t
+val ssrocc : ssrocc Procq.Entry.t
 val wit_ssrocc : ssrocc Genarg.uniform_genarg_type
 
-val ssrhyp : ssrhyp Pcoq.Entry.t
+val ssrhyp : ssrhyp Procq.Entry.t
 
 type ssripatrep = ssripat
 
-val ssrclear_ne : ssrhyps Pcoq.Entry.t
-val ssrclear : ssrhyps Pcoq.Entry.t
+val ssrclear_ne : ssrhyps Procq.Entry.t
+val ssrclear : ssrhyps Procq.Entry.t
 
-val ssrintros : ssripats Pcoq.Entry.t
+val ssrintros : ssripats Procq.Entry.t
 val wit_ssrintros : ssripats Genarg.uniform_genarg_type
 
-val ssrfwdview : ast_closure_term list Pcoq.Entry.t
+val ssrfwdview : ast_closure_term list Procq.Entry.t
 val wit_ssrfwdview : ast_closure_term list Genarg.uniform_genarg_type
 
-val ssrbwdview : ssrterm list Pcoq.Entry.t
+val ssrbwdview : ssrterm list Procq.Entry.t
 val wit_ssrbwdview : ssrterm list Genarg.uniform_genarg_type
 
-val ssrterm : ssrterm Pcoq.Entry.t
+val ssrterm : ssrterm Procq.Entry.t
 
-val ssrsimpl_ne : ssrsimpl Pcoq.Entry.t
+val ssrsimpl_ne : ssrsimpl Procq.Entry.t
 
-val test_not_ssrslashnum : unit Pcoq.Entry.t
+val test_not_ssrslashnum : unit Procq.Entry.t
 
-val ssrmult : ssrmult Pcoq.Entry.t
+val ssrmult : ssrmult Procq.Entry.t
 val wit_ssrmult : ssrmult Genarg.uniform_genarg_type
-val ssrmult_ne : ssrmult Pcoq.Entry.t
+val ssrmult_ne : ssrmult Procq.Entry.t
 
-val ssrbinder : (Ssrast.ssrfwdfmt * Constrexpr.constr_expr) Pcoq.Entry.t
+val ssrbinder : (Ssrast.ssrfwdfmt * Constrexpr.constr_expr) Procq.Entry.t
 
-val ast_closure_lterm : ast_closure_term Pcoq.Entry.t
+val ast_closure_lterm : ast_closure_term Procq.Entry.t
 
-val ssrwgen : wgen Pcoq.Entry.t
+val ssrwgen : wgen Procq.Entry.t
 
 type ssreqid = ssripat option
 type ssrarg = ssrfwdview * (ssreqid * (cpattern ssragens * ssripats))

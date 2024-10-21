@@ -20,9 +20,9 @@ open Constrexpr
 open Constrexpr_ops
 open Util
 
-open Pcoq
-open Pcoq.Prim
-open Pcoq.Constr
+open Procq
+open Procq.Prim
+open Procq.Constr
 
 (* TODO: avoid this redefinition without an extra dep to Notation_ops *)
 let ldots_var = Id.of_string ".."
@@ -41,7 +41,7 @@ let pat_of_name CAst.{loc;v} = match v with
 (* Hack to parse "(x:=t)" as an explicit argument without conflicts with the *)
 (* admissible notation "(x t)" *)
 let test_lpar_id_coloneq =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_lpar_id_coloneq" begin
     lk_kw "(" >> lk_ident >> lk_kw ":="
   end
@@ -49,19 +49,19 @@ let test_lpar_id_coloneq =
 (* Hack to parse "(n:=t)" as an explicit argument without conflicts with the *)
 (* syntax "(n t)" *)
 let test_lpar_nat_coloneq =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_lpar_id_coloneq" begin
     lk_kw "(" >> lk_nat >> lk_kw ":="
   end
 
 let ensure_fixannot =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "check_fixannot" begin
     lk_kw "{" >> lk_kws ["wf"; "struct"; "measure"]
   end
 
 let test_name_colon =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_name_colon" begin
     lk_name >> lk_kw ":"
   end
@@ -69,19 +69,19 @@ let test_name_colon =
 let aliasvar = function { CAst.v = CPatAlias (_, na) } -> Some na | _ -> None
 
 let test_array_opening =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_array_opening" begin
     lk_kw "[" >> lk_kw "|" >> check_no_space
   end
 
 let test_array_closing =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_array_closing" begin
     lk_kw "|" >> lk_kw "]" >> check_no_space
   end
 
 let test_sort_qvar =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_sort_qvar" begin
     lk_ident >> lk_list lk_field >> lk_kw "|"
   end

@@ -15,88 +15,88 @@ DECLARE PLUGIN "coq-core.plugins.ltac2"
 open Pp
 open Util
 open Names
-open Pcoq
-open Pcoq.Prim
+open Procq
+open Procq.Prim
 open Attributes
 open Constrexpr
 open Tac2expr
 open Tac2qexpr
 
 let lk_ident_or_anti =
-  Pcoq.Lookahead.(lk_ident <+> (lk_kw "$" >> lk_ident >> check_no_space))
+  Procq.Lookahead.(lk_ident <+> (lk_kw "$" >> lk_ident >> check_no_space))
 
 (* lookahead for (x:=t), (?x:=t) and (1:=t) *)
 let test_lpar_idnum_coloneq =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_lpar_idnum_coloneq" begin
     lk_kw "(" >> (lk_ident_or_anti <+> lk_nat) >> lk_kw ":="
   end
 
 (* lookahead for (x:t), (?x:t) *)
 let test_lpar_id_colon =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_lpar_id_colon" begin
     lk_kw "(" >> lk_ident_or_anti >> lk_kw ":"
   end
 
 (* Hack to recognize "(x := t)" and "($x := t)" *)
 let test_lpar_id_coloneq =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_lpar_id_coloneq" begin
     lk_kw "(" >> lk_ident_or_anti >> lk_kw ":="
   end
 
 (* Hack to recognize "(x)" *)
 let test_lpar_id_rpar =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_lpar_id_rpar" begin
     lk_kw "(" >> lk_ident >> lk_kw ")"
   end
 
 let test_ampersand_ident =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_ampersand_ident" begin
     lk_kw "&" >> lk_ident >> check_no_space
   end
 
 let test_dollar_ident =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_dollar_ident" begin
     lk_kw "$" >> lk_ident >> check_no_space
   end
 
 let test_dollar_ident_colon_ident =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_dollar_ident_colon_ident" begin
     lk_kw "$" >> lk_ident >> lk_kw ":" >> lk_ident >> check_no_space
   end
 
 let test_ltac1_env =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_ltac1_env" begin
     lk_ident_list >> lk_kw "|-"
   end
 
 let test_qualid_with_or_lpar_or_rbrac =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_qualid_with_or_lpar_or_rbrac" begin
     (lk_qualid >> lk_kw "with") <+> lk_kw "(" <+> lk_kw "{"
   end
 
 let test_array_opening =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_array_opening" begin
     lk_kw "[" >> lk_kw "|" >> check_no_space
   end
 
 let test_array_closing =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_array_closing" begin
     lk_kw "|" >> lk_kw "]" >> check_no_space
   end
 
 let test_leftsquarebracket_equal =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_leftsquarebracket_equal" begin
     lk_kw "[" >> lk_kw "=" >> check_no_space
   end
@@ -908,7 +908,7 @@ END
 
 (*
 GRAMMAR EXTEND Gram
-  Pcoq.Constr.term: LEVEL "0"
+  Procq.Constr.term: LEVEL "0"
     [ [ IDENT "ltac2"; ":"; "("; tac = ltac2_expr; ")" ->
       { let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_constr) tac in
         CAst.make ~loc (CGenarg arg) }
@@ -929,9 +929,9 @@ END
 let () =
 
 let open Tok in
-let (++) r s = Pcoq.Rule.next r s in
+let (++) r s = Procq.Rule.next r s in
 let rules = [
-  Pcoq.(
+  Procq.(
     Production.make
       (Rule.stop ++ Symbol.nterm test_dollar_ident ++ Symbol.token (PKEYWORD "$") ++ Symbol.nterm Prim.ident)
     begin fun id _ _ loc ->
@@ -941,7 +941,7 @@ let rules = [
     end
   );
 
-  Pcoq.(
+  Procq.(
     Production.make
       (Rule.stop ++ Symbol.nterm test_dollar_ident_colon_ident ++
        Symbol.token (PKEYWORD "$") ++ Symbol.nterm Prim.identref ++
@@ -952,7 +952,7 @@ let rules = [
     end
   );
 
-  Pcoq.(
+  Procq.(
     Production.make
       (Rule.stop ++ Symbol.nterm test_ampersand_ident ++ Symbol.token (PKEYWORD "&") ++ Symbol.nterm Prim.ident)
     begin fun id _ _ loc ->
@@ -962,7 +962,7 @@ let rules = [
     end
   );
 
-  Pcoq.(
+  Procq.(
     Production.make
       (Rule.stop ++ Symbol.token (PIDENT (Some "ltac2")) ++ Symbol.token (PKEYWORD ":") ++
        Symbol.token (PKEYWORD "(") ++ Symbol.nterm ltac2_expr ++ Symbol.token (PKEYWORD ")"))
@@ -974,7 +974,7 @@ let rules = [
 ] in
 
   Egramml.grammar_extend ~plugin_uid:("coq-core.plugins.ltac2", "g_ltac2.mlg:adhoc1")
-    Pcoq.Constr.term (Pcoq.Reuse (Some"0", rules))
+    Procq.Constr.term (Procq.Reuse (Some"0", rules))
 
 
 }

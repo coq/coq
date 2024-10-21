@@ -8,9 +8,9 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val test_lpar_id_coloneq : unit Pcoq.Entry.t
-val test_lpar_nat_coloneq : unit Pcoq.Entry.t
-val ensure_fixannot : unit Pcoq.Entry.t
-val test_name_colon : unit Pcoq.Entry.t
-val test_array_opening : unit Pcoq.Entry.t
-val test_array_closing : unit Pcoq.Entry.t
+val test_lpar_id_coloneq : unit Procq.Entry.t
+val test_lpar_nat_coloneq : unit Procq.Entry.t
+val ensure_fixannot : unit Procq.Entry.t
+val test_name_colon : unit Procq.Entry.t
+val test_array_opening : unit Procq.Entry.t
+val test_array_closing : unit Procq.Entry.t

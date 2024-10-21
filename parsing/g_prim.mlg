@@ -15,7 +15,7 @@ DECLARE GLOBAL PLUGIN
 open Names
 open Libnames
 
-open Pcoq.Prim
+open Procq.Prim
 
 let deprecated_Coq loc l id = match List.rev l with
   | [] -> make_qualid ~loc DirPath.empty id
@@ -44,13 +44,13 @@ let my_to_nat_string ?loc s =
     CErrors.user_err ?loc Pp.(str "This number is not an integer.")
 
 let test_pipe_closedcurly =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_pipe_closedcurly" begin
     lk_kw "|" >> lk_kw "}" >> check_no_space
   end
 
 let test_minus_nat =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_minus_nat" begin
     lk_kw "-" >> lk_nat >> check_no_space
   end

@@ -137,7 +137,7 @@ let print_local fmt ext =
   match locals with
   | [] -> ()
   | e :: locals ->
-    let mk_e fmt e = fprintf fmt "Pcoq.Entry.make \"%s\"" e in
+    let mk_e fmt e = fprintf fmt "Procq.Entry.make \"%s\"" e in
     let () = fprintf fmt "@[<hv 2>let %s =@ @[%a@]@]@ " e mk_e e in
     let iter e = fprintf fmt "@[<hv 2>and %s =@ @[%a@]@]@ " e mk_e e in
     let () = List.iter iter locals in
@@ -238,49 +238,49 @@ let rec print_prod fmt p =
 
 and print_extrule fmt (tkn, vars, body) =
   let tkn = List.rev tkn in
-  fprintf fmt "@[Pcoq.Production.make@ @[(%a)@]@ @[(%a)@]@]" (print_symbols ~norec:false) tkn print_fun (vars, body)
+  fprintf fmt "@[Procq.Production.make@ @[(%a)@]@ @[(%a)@]@]" (print_symbols ~norec:false) tkn print_fun (vars, body)
 
 and print_symbols ~norec fmt = function
-| [] -> fprintf fmt "Pcoq.Rule.stop"
+| [] -> fprintf fmt "Procq.Rule.stop"
 | tkn :: tkns ->
-  let c = if norec then "Pcoq.Rule.next_norec" else "Pcoq.Rule.next" in
+  let c = if norec then "Procq.Rule.next_norec" else "Procq.Rule.next" in
   fprintf fmt "@[%s@ (%a)@ (%a)@]" c (print_symbols ~norec) tkns print_symbol tkn
 
 and print_symbol fmt tkn = match tkn with
 | SymbToken (t, s) ->
-  fprintf fmt "(Pcoq.Symbol.token (%a))" print_tok (t, s)
+  fprintf fmt "(Procq.Symbol.token (%a))" print_tok (t, s)
 | SymbEntry (e, None) ->
-  fprintf fmt "(Pcoq.Symbol.nterm %s)" e
+  fprintf fmt "(Procq.Symbol.nterm %s)" e
 | SymbEntry (e, Some l) ->
-  fprintf fmt "(Pcoq.Symbol.nterml %s (%a))" e print_string l
+  fprintf fmt "(Procq.Symbol.nterml %s (%a))" e print_string l
 | SymbSelf ->
-  fprintf fmt "Pcoq.Symbol.self"
+  fprintf fmt "Procq.Symbol.self"
 | SymbNext ->
-  fprintf fmt "Pcoq.Symbol.next"
+  fprintf fmt "Procq.Symbol.next"
 | SymbList0 (s, None) ->
-  fprintf fmt "(Pcoq.Symbol.list0 %a)" print_symbol s
+  fprintf fmt "(Procq.Symbol.list0 %a)" print_symbol s
 | SymbList0 (s, Some sep) ->
-  fprintf fmt "(Pcoq.Symbol.list0sep (%a) (%a) false)" print_symbol s print_anonymized_symbol sep
+  fprintf fmt "(Procq.Symbol.list0sep (%a) (%a) false)" print_symbol s print_anonymized_symbol sep
 | SymbList1 (s, None) ->
-  fprintf fmt "(Pcoq.Symbol.list1 (%a))" print_symbol s
+  fprintf fmt "(Procq.Symbol.list1 (%a))" print_symbol s
 | SymbList1 (s, Some sep) ->
-  fprintf fmt "(Pcoq.Symbol.list1sep (%a) (%a) false)" print_symbol s print_anonymized_symbol sep
+  fprintf fmt "(Procq.Symbol.list1sep (%a) (%a) false)" print_symbol s print_anonymized_symbol sep
 | SymbOpt s ->
-  fprintf fmt "(Pcoq.Symbol.opt %a)" print_symbol s
+  fprintf fmt "(Procq.Symbol.opt %a)" print_symbol s
 | SymbRules rules ->
   let pr fmt (r, body) =
     let (vars, tkn) = List.split r in
     let tkn = List.rev tkn in
-    fprintf fmt "Pcoq.Rules.make @[(%a)@ (%a)@]" (print_symbols ~norec:true) tkn print_fun (vars, body)
+    fprintf fmt "Procq.Rules.make @[(%a)@ (%a)@]" (print_symbols ~norec:true) tkn print_fun (vars, body)
   in
   let pr fmt rules = print_list fmt pr rules in
-  fprintf fmt "(Pcoq.Symbol.rules %a)" pr (List.rev rules)
+  fprintf fmt "(Procq.Symbol.rules %a)" pr (List.rev rules)
 | SymbQuote c ->
   fprintf fmt "(%s)" c
 
 and print_anonymized_symbol fmt tkn = match tkn with
 | SymbToken (t, s) ->
-  fprintf fmt "(Pcoq.Symbol.tokens [Pcoq.TPattern (%a)])" print_tok (t, s)
+  fprintf fmt "(Procq.Symbol.tokens [Procq.TPattern (%a)])" print_tok (t, s)
 | _ -> print_symbol fmt (SymbRules [[None, tkn], mk_code "()"])
 
 let print_rule fmt r =
@@ -299,23 +299,23 @@ let gramext_plugin_uid name =
 let grammar_extend () =
   match check_is_plugin ~what:"GRAMMAR EXTEND" () with
   | Some name -> "Egramml.grammar_extend"^gramext_plugin_uid name
-  | None -> "Pcoq.grammar_extend"
+  | None -> "Procq.grammar_extend"
 
 let print_entry fmt e = match e.gentry_rules with
 | GDataReuse (pos, r) ->
   let rules = List.rev r in
   let pr_pos fmt pos = print_opt fmt print_string pos in
   let pr_prd fmt prd = print_list fmt print_prod prd in
-  fprintf fmt "let () =@ @[%s@ %s@ @[(Pcoq.Reuse (%a, %a))@]@]@ in@ "
+  fprintf fmt "let () =@ @[%s@ %s@ @[(Procq.Reuse (%a, %a))@]@]@ in@ "
     (grammar_extend ()) e.gentry_name pr_pos pos pr_prd rules
 | GDataFresh (pos, rules) ->
   let print_rules fmt rules = print_list fmt print_rule rules in
   let pr_check fmt () = match pos with
-  | None -> fprintf fmt "let () =@ @[assert@ (Pcoq.Entry.is_empty@ %s)@]@ in@\n" e.gentry_name
+  | None -> fprintf fmt "let () =@ @[assert@ (Procq.Entry.is_empty@ %s)@]@ in@\n" e.gentry_name
   | Some _ -> fprintf fmt ""
   in
   let pos = match pos with None -> First | Some pos -> pos in
-  fprintf fmt "%alet () =@ @[%s@ %s@ @[(Pcoq.Fresh@ (%a, %a))@]@]@ in@ "
+  fprintf fmt "%alet () =@ @[%s@ %s@ @[(Procq.Fresh@ (%a, %a))@]@]@ in@ "
     pr_check () (grammar_extend ()) e.gentry_name print_position pos print_rules rules
 
 let print_ast fmt ext =
@@ -525,8 +525,8 @@ struct
 let terminal s =
   let p =
     if s <> "" && s.[0] >= '0' && s.[0] <= '9' then "CLexer.terminal_number"
-    else "Pcoq.terminal" in
-  let c = Printf.sprintf "Pcoq.Symbol.token (%s \"%s\")" p s in
+    else "Procq.terminal" in
+  let c = Printf.sprintf "Procq.Symbol.token (%s \"%s\")" p s in
   SymbQuote c
 
 let rec parse_symb self = function

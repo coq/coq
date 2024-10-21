@@ -81,10 +81,10 @@ val new_doc  : stm_init_options -> doc * Stateid.t
     be the case if an error was raised at parsing time). *)
 val parse_sentence :
   doc:doc -> Stateid.t ->
-  entry:(Pvernac.proof_mode option -> 'a Pcoq.Entry.t) -> Pcoq.Parsable.t -> 'a
+  entry:(Pvernac.proof_mode option -> 'a Procq.Entry.t) -> Procq.Parsable.t -> 'a
 
 (* Reminder: A parsable [pa] is constructed using
-   [Pcoq.Parsable.t stream], where [stream : char Stream.t]. *)
+   [Procq.Parsable.t stream], where [stream : char Stream.t]. *)
 
 type add_focus = NewAddTip | Unfocus of Stateid.t
 
@@ -109,7 +109,7 @@ val get_proof : doc:doc -> Stateid.t -> Proof.t option
    throwing away side effects except messages. Feedback will
    be sent with [report_with], which defaults to the dummy state id *)
 val query : doc:doc ->
-  at:Stateid.t -> route:Feedback.route_id -> Pcoq.Parsable.t -> unit
+  at:Stateid.t -> route:Feedback.route_id -> Procq.Parsable.t -> unit
 
 (* [edit_at id] is issued to change the editing zone.  [NewTip] is returned if
    the requested id is the new document tip hence the document portion following

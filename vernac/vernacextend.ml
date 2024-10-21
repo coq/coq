@@ -162,15 +162,15 @@ let rec untype_command : type r s. (r, s) ty_sig -> r -> plugin_args -> vernac_c
     | Some Refl -> untype_command ty (f v) args
   end
 
-let rec untype_user_symbol : type s a b c. (a, b, c) Extend.ty_user_symbol -> (s, Gramlib.Grammar.norec, a) Pcoq.Symbol.t =
+let rec untype_user_symbol : type s a b c. (a, b, c) Extend.ty_user_symbol -> (s, Gramlib.Grammar.norec, a) Procq.Symbol.t =
   let open Extend in function
-  | TUlist1 l -> Pcoq.Symbol.list1 (untype_user_symbol l)
-  | TUlist1sep (l, s) -> Pcoq.Symbol.list1sep (untype_user_symbol l) (Pcoq.Symbol.tokens [Pcoq.TPattern (Pcoq.terminal s)]) false
-  | TUlist0 l -> Pcoq.Symbol.list0 (untype_user_symbol l)
-  | TUlist0sep (l, s) -> Pcoq.Symbol.list0sep (untype_user_symbol l) (Pcoq.Symbol.tokens [Pcoq.TPattern (Pcoq.terminal s)]) false
-  | TUopt o -> Pcoq.Symbol.opt (untype_user_symbol o)
-  | TUentry a -> Pcoq.Symbol.nterm (Pcoq.genarg_grammar (Genarg.ExtraArg a))
-  | TUentryl (a, i) -> Pcoq.Symbol.nterml (Pcoq.genarg_grammar (Genarg.ExtraArg a)) (string_of_int i)
+  | TUlist1 l -> Procq.Symbol.list1 (untype_user_symbol l)
+  | TUlist1sep (l, s) -> Procq.Symbol.list1sep (untype_user_symbol l) (Procq.Symbol.tokens [Procq.TPattern (Procq.terminal s)]) false
+  | TUlist0 l -> Procq.Symbol.list0 (untype_user_symbol l)
+  | TUlist0sep (l, s) -> Procq.Symbol.list0sep (untype_user_symbol l) (Procq.Symbol.tokens [Procq.TPattern (Procq.terminal s)]) false
+  | TUopt o -> Procq.Symbol.opt (untype_user_symbol o)
+  | TUentry a -> Procq.Symbol.nterm (Procq.genarg_grammar (Genarg.ExtraArg a))
+  | TUentryl (a, i) -> Procq.Symbol.nterml (Procq.genarg_grammar (Genarg.ExtraArg a)) (string_of_int i)
 
 let rec untype_grammar : type r s. (r, s) ty_sig -> 'a Egramml.grammar_prod_item list = function
 | TyNil -> []
@@ -203,7 +203,7 @@ let static_vernac_extend ~plugin ~command ?classifier ?entry ext =
     | None ->
       let e = match entry with
       | None -> "COMMAND"
-      | Some e -> Pcoq.Entry.name e
+      | Some e -> Procq.Entry.name e
       in
       let msg = Printf.sprintf "\
         Vernac entry \"%s\" misses a classifier. \
@@ -254,8 +254,8 @@ let static_vernac_extend ~plugin ~command ?classifier ?entry ext =
 (** VERNAC ARGUMENT EXTEND registering *)
 
 type 'a argument_rule =
-| Arg_alias of 'a Pcoq.Entry.t
-| Arg_rules of 'a Pcoq.Production.t list
+| Arg_alias of 'a Procq.Entry.t
+| Arg_rules of 'a Procq.Production.t list
 
 type 'a vernac_argument = {
   arg_printer : Environ.env -> Evd.evar_map -> 'a -> Pp.t;
@@ -266,13 +266,13 @@ let vernac_argument_extend ~plugin ~name arg =
   let wit = Genarg.create_arg name in
   let entry = match arg.arg_parsing with
   | Arg_alias e ->
-    let () = Pcoq.register_grammar wit e in
+    let () = Procq.register_grammar wit e in
     e
   | Arg_rules rules ->
-    let e = Pcoq.create_generic_entry2 name (Genarg.rawwit wit) in
+    let e = Procq.create_generic_entry2 name (Genarg.rawwit wit) in
     let plugin_uid = (plugin, "vernacargextend:"^name) in
     let () = Egramml.grammar_extend ~plugin_uid e
-        (Pcoq.Fresh (Gramlib.Gramext.First, [None, None, rules]))
+        (Procq.Fresh (Gramlib.Gramext.First, [None, None, rules]))
     in
     e
   in

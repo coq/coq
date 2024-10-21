@@ -15,7 +15,7 @@
 let vmCast = Constr.VMcast
 open Names
 open Pp
-open Pcoq
+open Procq
 open Ltac_plugin
 open Stdarg
 open Libnames
@@ -52,9 +52,9 @@ DECLARE PLUGIN "coq-core.plugins.ssreflect"
 
 (* Defining grammar rules with "xx" in it automatically declares keywords too,
  * we thus save the lexer to restore it at the end of the file *)
-let frozen_lexer = ref (Pcoq.get_keyword_state ()) ;;
+let frozen_lexer = ref (Procq.get_keyword_state ()) ;;
 let () = Mltop.add_init_function "coq-core.plugins.ssreflect" (fun () ->
-    frozen_lexer := Pcoq.get_keyword_state ())
+    frozen_lexer := Procq.get_keyword_state ())
 
 }
 
@@ -338,7 +338,7 @@ END
 {
 
 let test_ssreqid =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_ssreqid" begin
     ((lk_ident <+> lk_kws ["_"; "?"; "->"; "<-"]) >> lk_kw ":") <+> lk_kw ":"
   end
@@ -580,8 +580,8 @@ let pr_ssrcongrarg _ _ _ ((n, f), dgens) =
   (if n <= 0 then mt () else str " " ++ int n) ++
   pr_term f ++ pr_dgens pr_gen dgens
 
-open Pcoq.Constr
-open Pcoq.Prim
+open Procq.Constr
+open Procq.Prim
 
 }
 
@@ -762,7 +762,7 @@ let test_ssr_rw_syntax =
     match LStream.peek_nth kwstate 0 strm with
     | Tok.KEYWORD key when List.mem key.[0] [lbrace; '['; '/'] -> ()
     | _ -> raise Stream.Failure in
-  Pcoq.Entry.(of_parser "test_ssr_rw_syntax" { parser_fun = test })
+  Procq.Entry.(of_parser "test_ssr_rw_syntax" { parser_fun = test })
 
 }
 
@@ -984,7 +984,7 @@ END
 {
 
 let test_idcomma =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_idcomma" begin
     (lk_ident <+> lk_kw "_") >> lk_kw ","
   end
@@ -1058,7 +1058,7 @@ END
 (* and Import ssreflect.SsrSyntax to obtain these keywords and as a         *)
 (* consequence the extended ssreflect grammar.                             *)
 let () = Mltop.add_init_function "coq-core.plugins.ssreflect" (fun () ->
-      Pcoq.set_keyword_state !frozen_lexer) ;;
+      Procq.set_keyword_state !frozen_lexer) ;;
 
 }
 

@@ -32,7 +32,7 @@ module type S = sig
   type ty_pattern = TPattern : 'a pattern -> ty_pattern
 
   (** Type combinators to factor the module type between explicit
-      state passing in Grammar and global state in Pcoq *)
+      state passing in Grammar and global state in Procq *)
 
   type 'a with_gstate
   (** Reader of grammar state *)

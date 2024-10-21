@@ -10,7 +10,7 @@
 
 {
 
-open Pcoq.Prim
+open Procq.Prim
 
 }
 

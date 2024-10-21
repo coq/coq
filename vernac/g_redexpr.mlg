@@ -11,9 +11,9 @@
 DECLARE GLOBAL PLUGIN
 
 {
-open Pcoq
-open Pcoq.Prim
-open Pcoq.Constr
+open Procq
+open Procq.Prim
+open Procq.Constr
 open Pvernac.Vernac_
 
 open Util

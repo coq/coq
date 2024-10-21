@@ -17,7 +17,7 @@ open Ring_ast
 open Ring
 open Stdarg
 open Tacarg
-open Pcoq.Constr
+open Procq.Constr
 open Pltac
 
 }

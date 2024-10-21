@@ -20,7 +20,7 @@ module Synterp = struct
     Summary.Synterp.unfreeze_summaries fs
 
   let parsing (_fl, fs) =
-    Summary.Synterp.project_from_summary fs Pcoq.parser_summary_tag
+    Summary.Synterp.project_from_summary fs Procq.parser_summary_tag
 
   let init () = freeze ()
 

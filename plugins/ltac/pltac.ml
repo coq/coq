@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Pcoq
+open Procq
 
 (* Main entry for extensions *)
 let simple_tactic = Entry.make "simple_tactic"

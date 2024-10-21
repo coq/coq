@@ -14,7 +14,7 @@ let parse pa n =
   let entry = Pvernac.Vernac_.main_entry in
   let rec loop res n =
     if n = 0 then res else
-      match Pcoq.Entry.parse entry pa with
+      match Procq.Entry.parse entry pa with
       | None -> res
       | Some r -> loop (r :: res) (n-1)
   in
@@ -30,28 +30,28 @@ let print_locs fmt { CAst.loc; _ } =
 
 let parse_whole () =
   let text = doc in
-  let pa = Pcoq.Parsable.make (Gramlib.Stream.of_string text) in
+  let pa = Procq.Parsable.make (Gramlib.Stream.of_string text) in
   parse pa 10
 
 (* Use junk *)
 let parse_n n =
-  let pa = Pcoq.Parsable.make (Gramlib.Stream.of_string doc) in
+  let pa = Procq.Parsable.make (Gramlib.Stream.of_string doc) in
   let res1 = parse pa n in
-  let loc = Pcoq.Parsable.loc pa |> CLexer.after in
+  let loc = Procq.Parsable.loc pa |> CLexer.after in
   let str = Gramlib.Stream.of_string doc in
   Gramlib.Stream.njunk () loc.bp str;
-  let pa = Pcoq.Parsable.make ~loc str in
+  let pa = Procq.Parsable.make ~loc str in
   let res2 = parse pa 10 in
   res1 @ res2
 
 (* Use offset to set count and avoid the junk *)
 let parse_n_offset n =
-  let pa = Pcoq.Parsable.make (Gramlib.Stream.of_string doc) in
+  let pa = Procq.Parsable.make (Gramlib.Stream.of_string doc) in
   let res1 = parse pa n in
-  let loc = Pcoq.Parsable.loc pa |> CLexer.after in
+  let loc = Procq.Parsable.loc pa |> CLexer.after in
   let doc = String.sub doc loc.bp (String.length doc - loc.bp) in
   let str = Gramlib.Stream.of_string ~offset:loc.bp doc in
-  let pa = Pcoq.Parsable.make ~loc str in
+  let pa = Procq.Parsable.make ~loc str in
   let res2 = parse pa 10 in
   res1 @ res2
 
