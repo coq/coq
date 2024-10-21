@@ -118,6 +118,11 @@ type notation_var_internalization_type =
 (** This characterizes to what a notation is interpreted to *)
 type 'a interpretation_gen = (Id.t * 'a) list * notation_constr
 type interpretation = notation_var_type interpretation_gen
+  (* (var_types, n) is a pair with a notation n and the type of its
+     non terminals, var_types is a list giving a name and a type to
+     each non terminal. Type invariant: the length of var_types is the
+     number of non terminals appearing in n, as given by the function
+     TODO *)
 
 type forgetfulness = { forget_ltac : bool; forget_volatile_cast : bool }
 
