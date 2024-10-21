@@ -15,3 +15,18 @@ fourth
 third
 fifth, different hintDb
 idtac.
+(* info eauto: *)
+second
+first
+fifth, different hintDb
+fourth
+third
+idtac.
+second
+first
+fifth, different hintDb
+fourth
+third
+File "./output/auto_order.v", line 16, characters 5-45:
+The command has indeed failed with message:
+Tactic failure: Proof search failed.
