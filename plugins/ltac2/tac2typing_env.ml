@@ -21,10 +21,10 @@ type elt
 type 'a t
 val equal : elt -> elt -> bool
 val create : unit -> 'a t
-val fresh : 'a t -> elt
+val fresh : rigid:bool -> 'a t -> elt
 val find : elt -> 'a t -> (elt * 'a option)
-val union : elt -> elt -> 'a t -> unit
-val set : elt -> 'a -> 'a t -> unit
+val union : elt -> elt -> 'a t -> bool (* first arg is the one that got defined *) * bool (* defined a rigid *)
+val set : elt -> 'a -> 'a t -> bool (* defined a rigid *)
 module Map : CSig.MapS with type key = elt
 end
 =
@@ -33,8 +33,13 @@ type elt = int
 let equal = Int.equal
 module Map = Int.Map
 
+type 'a value =
+| Unset
+| Set of 'a
+| Rigid
+
 type 'a node =
-| Canon of int * 'a option
+| Canon of int * 'a value
 | Equiv of elt
 
 type 'a t = {
@@ -52,10 +57,10 @@ let resize p =
 
 let create () = { uf_data = [||]; uf_size = 0 }
 
-let fresh p =
+let fresh ~rigid p =
   resize p;
   let n = p.uf_size in
-  p.uf_data.(n) <- (Canon (1, None));
+  p.uf_data.(n) <- (Canon (1, if rigid then Rigid else Unset));
   p.uf_size <- n + 1;
   n
 
@@ -69,7 +74,9 @@ let rec lookup n p =
     res
 
 let find n p =
-  let (x, _, v) = lookup n p in (x, v)
+  let (x, _, v) = lookup n p in
+  let v = match v with Rigid | Unset -> None | Set v -> Some v in
+  (x, v)
 
 let union x y p =
   let ((x, size1, _) as xcan) = lookup x p in
@@ -77,15 +84,23 @@ let union x y p =
   let xcan, ycan = if size1 < size2 then xcan, ycan else ycan, xcan in
   let x, _, xnode = xcan in
   let y, _, ynode = ycan in
-  assert (Option.is_empty xnode);
-  assert (Option.is_empty ynode);
+  let defined_rigid, rigid  =
+    match xnode, ynode with
+    | Set _, _ | _, Set _ -> assert false
+    | Rigid, Rigid -> true, Rigid
+    | Unset, node | node, Unset -> false, node
+  in
   p.uf_data.(x) <- Equiv y;
-  p.uf_data.(y) <- Canon (size1 + size2, None)
+  p.uf_data.(y) <- Canon (size1 + size2, rigid);
+  size1 < size2, defined_rigid
 
 let set x v p =
   let (x, s, v') = lookup x p in
-  assert (Option.is_empty v');
-  p.uf_data.(x) <- Canon (s, Some v)
+  p.uf_data.(x) <- Canon (s, Set v);
+  match v' with
+  | Set _ -> assert false
+  | Rigid -> true
+  | Unset -> false
 
 end
 
@@ -194,13 +209,13 @@ let env_name env =
       let () = vars := UF.Map.add n ans !vars in
       ans
 
-let fresh_id env = UF.fresh env.env_cst
+let fresh_id env = UF.fresh ~rigid:false env.env_cst
 
 let get_alias {CAst.loc;v=id} env =
   try Id.Map.find id env.env_als.contents
   with Not_found ->
     if env.env_opn then
-      let n = fresh_id env in
+      let n = UF.fresh ~rigid:true env.env_cst in
       let () = env.env_als := Id.Map.add id n env.env_als.contents in
       n
     else CErrors.user_err ?loc Pp.(str "Unbound type parameter " ++ Id.print id)
@@ -297,15 +312,31 @@ let rec occur_check env id t = match kind env t with
 | GTypRef (kn, tl) ->
   List.iter (fun t -> occur_check env id t) tl
 
+let warn_define_named_variable =
+  CWarnings.create ~name:"ltac2-defined-named-type-variable" ~category:CWarnings.CoreCategories.ltac2
+    Pp.(fun (env,var,body) ->
+        (* var is defined in env *)
+        let body = nf env body in
+        let name = env_name env in
+        let var = name var in
+        str "Defined rigid type variable '" ++ str var ++ spc() ++
+        str "to " ++ Tac2print.pr_glbtype name body)
+
 exception CannotUnify of TVar.t glb_typexpr * TVar.t glb_typexpr
 
 let unify_var env id t = match kind env t with
 | GTypVar id' ->
-  if not (TVar.equal id id') then UF.union id id' env.env_cst
+  if not (TVar.equal id id') then begin
+    let left_defined, defined_rigid = UF.union id id' env.env_cst in
+    if defined_rigid then begin
+      let id, t = if left_defined then id,t else id', GTypVar id in
+      warn_define_named_variable (env,id,t)
+    end
+  end
 | GTypArrow _ | GTypRef _ ->
   try
     let () = occur_check env id t in
-    UF.set id t env.env_cst
+    if UF.set id t env.env_cst then warn_define_named_variable (env,id,t)
   with Occur -> raise (CannotUnify (GTypVar id, t))
 
 let eq_or_tuple eq t1 t2 = match t1, t2 with
