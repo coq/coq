@@ -897,7 +897,7 @@ command: [
 | "Functional" "Scheme" func_scheme_def LIST0 ( "with" func_scheme_def )
 | "Functional" "Case" func_scheme_def      (* funind plugin *)
 | "Generate" "graph" "for" qualid      (* funind plugin *)
-| "Hint" "Rewrite" OPT [ "->" | "<-" ] LIST1 one_term OPT ( "using" ltac_expr ) OPT ( ":" LIST0 ident )
+| "Hint" "Rewrite" OPT [ "->" | "<-" ] LIST1 one_term OPT ( "using" ltac_expr ) OPT ( ":" LIST1 ident )
 | "Derive" "Inversion_clear" ident "with" one_term OPT ( "Sort" sort_family )
 | "Derive" "Inversion" ident "with" one_term OPT ( "Sort" sort_family )
 | "Derive" "Dependent" "Inversion" ident "with" one_term "Sort" sort_family
