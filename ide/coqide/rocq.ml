@@ -172,7 +172,7 @@ type ccb = { open_ccb : 't. 't scoped_ccb -> 't }
 let mk_ccb poly = { open_ccb = fun scope -> scope.bind_ccb poly }
 let with_ccb ccb e = ccb.open_ccb e
 
-(* overridden on Windows; see file coqide_WIN32.c.in *)
+(* overridden on Windows; see file rocqide_WIN32.c.in *)
 let interrupter = ref (fun pid -> Unix.kill pid Sys.sigint)
 
 (* todo: does not work on windows (sigusr1 not supported) *)

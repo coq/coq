@@ -30,7 +30,7 @@
     shared shared_os_specific))
  (foreign_stubs
   (language c)
-  (names coqide_os_stubs))
+  (names rocqide_os_stubs))
  (libraries coqide-server.protocol coqide-server.core lablgtk3-sourceview3 platform_specific))
 
 (library
@@ -52,16 +52,16 @@
  (action (run ./gen_gtk_platform.exe)))
 
 (rule
- (targets coqide_os_specific.ml)
- (action (copy# coqide_%{read:gtk_platform.conf}.ml.in %{targets})))
+ (targets rocqide_os_specific.ml)
+ (action (copy# rocqide_%{read:gtk_platform.conf}.ml.in %{targets})))
 
 (rule
  (targets shared_os_specific.ml)
  (action (copy# shared_%{read:gtk_platform.conf}.ml.in %{targets})))
 
 (rule
- (targets coqide_os_stubs.c)
- (action (copy coqide_%{read:gtk_platform.conf}.c.in %{targets})))
+ (targets rocqide_os_stubs.c)
+ (action (copy rocqide_%{read:gtk_platform.conf}.c.in %{targets})))
 
 (rule
  (targets shared_os_stubs.c)
