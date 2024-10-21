@@ -1,8 +1,8 @@
 Set < i
     < j
-i < j (i <(foo) j)
+i < j (because i <(from foo) j)
 
 Set < i
     < k
-i < k (i <(foo) j <(connect) l <(baz) k)
+i < k (because i <(from foo) j <(from connect) l <(from baz) k)
 

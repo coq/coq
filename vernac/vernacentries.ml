@@ -644,9 +644,11 @@ let pr_source_path prl u src =
       | Univ.Eq -> str"=" | Lt -> str"<" | Le -> str"<="
     in
     let pr_one (k,v,ref) =
-      spc() ++ h (pr_rel k ++ surround (pr_constraint_source ref) ++ spc() ++ prl v)
+      spc() ++
+      h (pr_rel k ++ surround (str "from " ++ pr_constraint_source ref) ++
+         spc() ++ prl v)
     in
-    spc() ++ surround (prl u ++ prlist_with_sep mt pr_one src)
+    spc() ++ surround (str"because" ++ spc() ++ prl u ++ prlist_with_sep mt pr_one src)
 
 let pr_pmap sep pr map =
   let cmp (u,_) (v,_) = Univ.Level.compare u v in
