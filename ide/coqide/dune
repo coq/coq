@@ -26,7 +26,7 @@
 (library
  (name coqide_gui)
  (wrapped false)
- (modules (:standard \ document idetop coqide_main default_bindings_src gen_gtk_platform
+ (modules (:standard \ document idetop rocqide_main default_bindings_src gen_gtk_platform
     shared shared_os_specific))
  (foreign_stubs
   (language c)
@@ -68,10 +68,10 @@
  (action (copy shared_%{read:gtk_platform.conf}.c.in %{targets})))
 
 (executable
- (name coqide_main)
+ (name rocqide_main)
  (public_name coqide)
  (package coqide)
- (modules coqide_main)
+ (modules rocqide_main)
  (modes exe byte)
  (libraries coqide_gui))
 
