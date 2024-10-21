@@ -1473,8 +1473,10 @@ and st_subtitle = parse
     let lb = { lb with lex_curr_p = { lb.lex_curr_p with pos_fname = f };
                        lex_start_p = { lb.lex_start_p with pos_fname = f } } in
       (Index.current_library := m;
+       Common.set_header_output ();
        Output.initialize ();
        Output.start_module ();
+       Common.set_main_output ();
        Output.start_coq (); coq_bol' f lb; Output.end_coq ();
        close_in c)
 
