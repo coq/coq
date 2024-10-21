@@ -13,7 +13,7 @@ open Vernacexpr
 (** Mapping of grammar productions to camlp5 actions. *)
 
 (** This is the part specific to vernac extensions.
-    For the Coq-level Notation and Tactic Notation, see Egramcoq. *)
+    For the Rocq-level Notation and Tactic Notation, see Egramrocq. *)
 
 type 's grammar_prod_item =
   | GramTerminal of string
@@ -36,7 +36,7 @@ val get_extend_vernac_rule : extend_name -> vernac_expr grammar_prod_item list
 
 val proj_symbol : ('a, 'b, 'c) Extend.ty_user_symbol -> ('a, 'b, 'c) Genarg.genarg_type
 
-(** Utility function reused in Egramcoq : *)
+(** Utility function reused in Egramrocq : *)
 
 val make_rule :
   (Loc.t -> Genarg.raw_generic_argument list -> 'a) ->

@@ -577,7 +577,7 @@ let interp_enable_notation_rule on ntn interp flags scope =
   let rec parse_notation_enable_flags all query = function
     | [] -> all, query
     | EnableNotationEntry CAst.{loc;v=entry} :: flags ->
-      (match entry with InCustomEntry s when not (Egramcoq.exists_custom_entry s) -> user_err ?loc (str "Unknown custom entry.") | _ -> ());
+      (match entry with InCustomEntry s when not (Egramrocq.exists_custom_entry s) -> user_err ?loc (str "Unknown custom entry.") | _ -> ());
       parse_notation_enable_flags all { query with notation_entry_pattern = entry :: query.notation_entry_pattern } flags
     | EnableNotationOnly use :: flags ->
       parse_notation_enable_flags all { query with use_pattern = use } flags

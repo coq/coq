@@ -894,7 +894,7 @@ let check_and_extend_constr_grammar ntn rule =
       error_parsing_incompatible_level ntn ntn_for_grammar oldprec oldtyps prec typs;
     if oldparsing = None then raise Not_found
   with Not_found ->
-    Egramcoq.extend_constr_grammar rule
+    Egramrocq.extend_constr_grammar rule
 
 let warn_prefix_incompatible_level =
   CWarnings.create ~name:"notation-incompatible-prefix"
@@ -1011,7 +1011,7 @@ let () = CErrors.register_handler @@ function
   | _ -> None
 
 let check_custom_entry entry =
-  if not (Egramcoq.exists_custom_entry entry) then
+  if not (Egramrocq.exists_custom_entry entry) then
     raise @@ UnknownCustomEntry entry
 
 let check_entry_type = function
@@ -1470,7 +1470,7 @@ let check_locality_compatibility local custom i_typs =
     let subcustom = List.map_filter (function _,ETConstr (InCustomEntry s,_,_) -> Some s | _ -> None) i_typs in
     let allcustoms = match custom with InCustomEntry s -> s::subcustom | _ -> subcustom in
     List.iter (fun s ->
-        if Egramcoq.locality_of_custom_entry s then
+        if Egramrocq.locality_of_custom_entry s then
           user_err (strbrk "Notation has to be declared local as it depends on custom entry " ++ str s ++
                     strbrk " which is local."))
       (List.uniquize allcustoms)
@@ -2099,8 +2099,8 @@ let warn_custom_entry =
           strbrk "Custom entry " ++ str s ++ strbrk " has been overridden.")
 
 let load_custom_entry _ (local,s) =
-  if Egramcoq.exists_custom_entry s then warn_custom_entry s
-  else Egramcoq.create_custom_entry ~local s
+  if Egramrocq.exists_custom_entry s then warn_custom_entry s
+  else Egramrocq.create_custom_entry ~local s
 
 let cache_custom_entry o = load_custom_entry 1 o
 
@@ -2118,7 +2118,7 @@ let inCustomEntry : locality_flag * string -> obj =
       classify_function = classify_custom_entry}
 
 let declare_custom_entry local s =
-  if Egramcoq.exists_custom_entry s then
+  if Egramrocq.exists_custom_entry s then
     user_err Pp.(str "Custom entry " ++ str s ++ str " already exists.")
   else
     Lib.add_leaf (inCustomEntry (local,s))
