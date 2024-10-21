@@ -30,19 +30,19 @@ let remove_load_path dir =
   let physical, logical = !load_paths in
   load_paths := List.filter2 (fun p d -> p <> dir) physical logical
 
-let add_load_path (phys_path,coq_path) =
+let add_load_path (phys_path,rocq_path) =
   if CDebug.(get_flag misc) then
-    Feedback.msg_notice (str "path: " ++ pr_dirpath coq_path ++ str " ->" ++ spc() ++
+    Feedback.msg_notice (str "path: " ++ pr_dirpath rocq_path ++ str " ->" ++ spc() ++
            str phys_path);
   let phys_path = CUnix.canonical_path_name phys_path in
   let physical, logical = !load_paths in
     match List.filter2 (fun p d -> p = phys_path) physical logical with
       | _,[dir] ->
-          if coq_path <> dir
+          if rocq_path <> dir
             (* If this is not the default -I . to coqtop *)
             && not
             (phys_path = CUnix.canonical_path_name Filename.current_dir_name
-                && coq_path = default_root_prefix)
+                && rocq_path = default_root_prefix)
           then
             begin
               (* Assume the user is concerned by library naming *)
@@ -50,12 +50,12 @@ let add_load_path (phys_path,coq_path) =
                 Feedback.msg_warning
                   (str phys_path ++ strbrk " was previously bound to " ++
                    pr_dirpath dir ++ strbrk "; it is remapped to " ++
-                   pr_dirpath coq_path);
+                   pr_dirpath rocq_path);
               remove_load_path phys_path;
-              load_paths := (phys_path::fst !load_paths, coq_path::snd !load_paths)
+              load_paths := (phys_path::fst !load_paths, rocq_path::snd !load_paths)
             end
       | _,[] ->
-          load_paths := (phys_path :: fst !load_paths, coq_path :: snd !load_paths)
+          load_paths := (phys_path :: fst !load_paths, rocq_path :: snd !load_paths)
       | _ -> anomaly (Pp.str ("Two logical paths are associated to "^phys_path^"."))
 
 let load_paths_of_dir_path dir =
@@ -195,11 +195,11 @@ let get_used_load_paths () =
 let _ = Nativelib.get_load_paths := get_used_load_paths
 end
 
-let add_path ~unix_path:dir ~coq_root:coq_dirpath =
+let add_path ~unix_path:dir ~rocq_root:rocq_dirpath =
   let open System in
   if exists_dir dir then
     begin
-      Loadpath.add_load_path (dir,coq_dirpath)
+      Loadpath.add_load_path (dir,rocq_dirpath)
     end
   else
     Feedback.msg_warning (str "Cannot open " ++ str dir)
@@ -211,13 +211,13 @@ let convert_string d =
       (str "Directory " ++ str d ++ str " cannot be used as a Coq identifier (skipped)");
     raise_notrace Exit
 
-let coq_root = Id.of_string "Stdlib"
+let rocq_root = Id.of_string "Stdlib"
 
-let add_rec_path ~unix_path ~coq_root =
+let add_rec_path ~unix_path ~rocq_root =
   let open System in
   if exists_dir unix_path then
     let dirs = all_subdirs ~unix_path in
-    let prefix = DirPath.repr coq_root in
+    let prefix = DirPath.repr rocq_root in
     let convert_dirs (lp, cp) =
       try
         let path = List.rev_map convert_string cp @ prefix in
@@ -226,7 +226,7 @@ let add_rec_path ~unix_path ~coq_root =
     in
     let dirs = List.map_filter convert_dirs dirs in
     List.iter Loadpath.add_load_path dirs;
-    Loadpath.add_load_path (unix_path, coq_root)
+    Loadpath.add_load_path (unix_path, rocq_root)
   else
     Feedback.msg_warning (str "Cannot open " ++ str unix_path)
 
@@ -235,26 +235,26 @@ let init_load_path_std () =
   let stdlib = Boot.Env.stdlib env |> Boot.Path.to_string in
   let user_contrib = Boot.Env.user_contrib env |> Boot.Path.to_string in
   let xdg_dirs = Envars.xdg_dirs in
-  let coqpath = Envars.coqpath in
+  let rocqpath = Envars.coqpath in
   (* NOTE: These directories are searched from last to first *)
   (* first standard library *)
-  add_rec_path ~unix_path:stdlib ~coq_root:(Names.DirPath.make[coq_root]);
+  add_rec_path ~unix_path:stdlib ~rocq_root:(Names.DirPath.make[rocq_root]);
   (* then user-contrib *)
   if Sys.file_exists user_contrib then
-    add_rec_path ~unix_path:user_contrib ~coq_root:Loadpath.default_root_prefix;
+    add_rec_path ~unix_path:user_contrib ~rocq_root:Loadpath.default_root_prefix;
   (* then directories in XDG_DATA_DIRS and XDG_DATA_HOME *)
-  List.iter (fun s -> add_rec_path ~unix_path:s ~coq_root:Loadpath.default_root_prefix)
+  List.iter (fun s -> add_rec_path ~unix_path:s ~rocq_root:Loadpath.default_root_prefix)
     (xdg_dirs ~warn:(fun x -> Feedback.msg_warning (str x)));
   (* then directories in COQPATH *)
-  List.iter (fun s -> add_rec_path ~unix_path:s ~coq_root:Loadpath.default_root_prefix) coqpath
+  List.iter (fun s -> add_rec_path ~unix_path:s ~rocq_root:Loadpath.default_root_prefix) rocqpath
 
 let init_load_path ~boot ~vo_path =
   if not boot then init_load_path_std ();
   (* always add current directory *)
-  add_path ~unix_path:"." ~coq_root:Loadpath.default_root_prefix;
+  add_path ~unix_path:"." ~rocq_root:Loadpath.default_root_prefix;
   (* additional loadpath, given with -R/-Q options *)
   List.iter
-    (fun (unix_path, coq_root) -> add_rec_path ~unix_path ~coq_root)
+    (fun (unix_path, rocq_root) -> add_rec_path ~unix_path ~rocq_root)
     (List.rev vo_path)
 
 let fb_handler = function
@@ -264,7 +264,7 @@ let fb_handler = function
       Format.printf "%s@\n%!" Pp.(string_of_ppcmds msg)
     | _ -> ()
 
-let init_coq () =
+let init_rocq () =
   let senv = Safe_typing.empty_environment in
   let senv = Safe_typing.set_native_compiler true senv in
   let () = Safe_typing.allow_delayed_constants := false in
@@ -367,7 +367,7 @@ let () =
     let opts, in_file = parse_args (List.tl @@ Array.to_list Sys.argv) opts in
     let () = init_load_path ~boot:opts.boot ~vo_path:(List.rev opts.vo_path) in
     let () = Nativelib.include_dirs := List.rev opts.ml_path in
-    let senv = init_coq () in
+    let senv = init_rocq () in
     compile senv ~in_file
   with exn ->
     Format.eprintf "Error: @[%a@]@\n%!" Pp.pp_with (CErrors.print exn);

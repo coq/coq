@@ -52,10 +52,10 @@ let bind_global lib s =
 
 (** Global constants. *)
 
-let coq_eq_ref  () = Coqlib.lib_ref    "core.eq.type"
-let coq_eq      = bind_global "core.eq" "type"
-let coq_f_equal = bind_global "core.eq" "congr"
-let coq_all     = bind_global "core" "all"
+let rocq_eq_ref  () = Coqlib.lib_ref    "core.eq.type"
+let rocq_eq      = bind_global "core.eq" "type"
+let rocq_f_equal = bind_global "core.eq" "congr"
+let rocq_all     = bind_global "core" "all"
 let impl        = bind_global "core" "impl"
 
 let default_relation = bind_global "rewrite" "DefaultRelation"
@@ -231,7 +231,7 @@ end) = struct
 
   let respectful = bind_rewrite "respectful"
 
-  let coq_forall = bind_rewrite "forall_def"
+  let rocq_forall = bind_rewrite "forall_def"
 
   let subrelation = bind_rewrite "subrelation"
   let do_subrelation = bind_rewrite "do_subrelation"
@@ -331,7 +331,7 @@ end) = struct
 
   let unfold_all sigma t =
     match EConstr.kind sigma t with
-    | App (id, [| a; b |]) (* when eq_constr id (Lazy.force coq_all) *) ->
+    | App (id, [| a; b |]) (* when eq_constr id (Lazy.force rocq_all) *) ->
       (match EConstr.kind sigma b with
       | Lambda (n, ty, b) -> mkProd (n, ty, b)
       | _ -> assert false)
@@ -339,7 +339,7 @@ end) = struct
 
   let unfold_forall sigma t =
     match EConstr.kind sigma t with
-    | App (id, [| a; b |]) (* when eq_constr id (Lazy.force coq_all) *) ->
+    | App (id, [| a; b |]) (* when eq_constr id (Lazy.force rocq_all) *) ->
       (match EConstr.kind sigma b with
       | Lambda (n, ty, b) -> mkProd (n, ty, b)
       | _ -> assert false)
@@ -352,7 +352,7 @@ end) = struct
         (app_poly env evd arrow [| a; b |]), unfold_impl n
         (* (evd, mkProd (Anonymous, a, b)), (fun x -> x) *)
       else if bp then (* Dummy forall *)
-        (app_poly env evd coq_all [| a; mkLambda (make_annot n ERelevance.relevant, a, lift 1 b) |]), unfold_forall
+        (app_poly env evd rocq_all [| a; mkLambda (make_annot n ERelevance.relevant, a, lift 1 b) |]), unfold_forall
       else (* None in Prop, use arrow *)
         (app_poly env evd arrow [| a; b |]), unfold_impl n
 
@@ -438,7 +438,7 @@ end) = struct
     match EConstr.kind sigma t with
     | App (c, args) when Array.length args >= 2 ->
       let head = if isApp sigma c then fst (destApp sigma c) else c in
-        if isRefX env sigma (coq_eq_ref ()) head then None
+        if isRefX env sigma (rocq_eq_ref ()) head then None
         else
           (try
             let env' = push_rel_context rels env in
@@ -471,7 +471,7 @@ module PropGlobal = struct
     let prefix = "rewrite.prop"
     let app_poly = app_poly_nocheck
     let arrow = bind_global "core" "arrow"
-    let coq_inverse = bind_global "core" "flip"
+    let rocq_inverse = bind_global "core" "flip"
   end
 
   module G = GlobalBindings(Consts)
@@ -479,8 +479,8 @@ module PropGlobal = struct
   include G
   include Consts
   let inverse env evd car rel =
-    type_app_poly env env evd coq_inverse [| car ; car; mkProp; rel |]
-      (* app_poly env evd coq_inverse [| car ; car; mkProp; rel |] *)
+    type_app_poly env env evd rocq_inverse [| car ; car; mkProp; rel |]
+      (* app_poly env evd rocq_inverse [| car ; car; mkProp; rel |] *)
 
 end
 
@@ -490,7 +490,7 @@ module TypeGlobal = struct
       let prefix = "rewrite.type"
       let app_poly = app_poly_check
       let arrow = bind_global prefix "arrow"
-      let coq_inverse = bind_global prefix "flip"
+      let rocq_inverse = bind_global prefix "flip"
     end
 
   module G = GlobalBindings(Consts)
@@ -501,7 +501,7 @@ module TypeGlobal = struct
   let inverse env (evd,cstrs) car rel =
     let evd, car = Evarsolve.refresh_universes ~onlyalg:true (Some false) env evd car in
     let (evd, sort) = Evarutil.new_Type ~rigid:Evd.univ_flexible evd in
-      app_poly_check env (evd,cstrs) coq_inverse [| car ; car; sort; rel |]
+      app_poly_check env (evd,cstrs) rocq_inverse [| car ; car; sort; rel |]
 
 end
 
@@ -912,9 +912,9 @@ let make_leibniz_proof env c ty r =
   let prf =
     match r.rew_prf with
     | RewPrf (rel, prf) ->
-        let rel = e_app_poly env evars coq_eq [| ty |] in
+        let rel = e_app_poly env evars rocq_eq [| ty |] in
         let prf =
-          e_app_poly env evars coq_f_equal
+          e_app_poly env evars rocq_f_equal
                 [| r.rew_car; ty;
                    mkLambda (make_annot Anonymous ERelevance.relevant, r.rew_car, c);
                    r.rew_from; r.rew_to; prf |]
@@ -1105,9 +1105,9 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
           let lam = mkLambda (n, dom, codom) in
           let (evars', app), unfold =
             if eq_constr (fst evars) ty mkProp then
-              (app_poly_sort prop env evars coq_all [| dom; lam |]), TypeGlobal.unfold_all
+              (app_poly_sort prop env evars rocq_all [| dom; lam |]), TypeGlobal.unfold_all
             else
-              let forall = if prop then PropGlobal.coq_forall else TypeGlobal.coq_forall in
+              let forall = if prop then PropGlobal.rocq_forall else TypeGlobal.rocq_forall in
                 (app_poly_sort prop env evars forall [| dom; lam |]), TypeGlobal.unfold_forall
           in
           let state, res = aux { state ; env ; unfresh ;
@@ -1169,7 +1169,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
       | Case (ci, u, pms, p, iv, c, brs) ->
         let (ci, (p,rp), iv, c, brs) = EConstr.expand_case env (goalevars evars) (ci, u, pms, p, iv, c, brs) in
         let cty = Retyping.get_type_of env (goalevars evars) c in
-        let evars', eqty = app_poly_sort prop env evars coq_eq [| cty |] in
+        let evars', eqty = app_poly_sort prop env evars rocq_eq [| cty |] in
         let cstr' = Some eqty in
         let state, c' = s.strategy { state ; env ; unfresh ;
                                      term1 = c ; ty1 = cty ;
@@ -1182,7 +1182,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
               state, Success (coerce env (prop,cstr) res)
           | Fail | Identity ->
             if Array.for_all (Int.equal 0) ci.ci_cstr_ndecls then
-              let evars', eqty = app_poly_sort prop env evars coq_eq [| ty |] in
+              let evars', eqty = app_poly_sort prop env evars rocq_eq [| ty |] in
               let cstr = Some eqty in
               let state, found, brs' = Array.fold_left
                 (fun (state, found, acc) br ->

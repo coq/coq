@@ -929,9 +929,9 @@ let descend_then env sigma head dirn =
 
  *)
 
-let build_coq_False () = pf_constr_of_global (lib_ref "core.False.type")
-let build_coq_True () = pf_constr_of_global (lib_ref "core.True.type")
-let build_coq_I () = pf_constr_of_global (lib_ref "core.True.I")
+let build_rocq_False () = pf_constr_of_global (lib_ref "core.False.type")
+let build_rocq_True () = pf_constr_of_global (lib_ref "core.True.type")
+let build_rocq_I () = pf_constr_of_global (lib_ref "core.True.I")
 
 let rec build_discriminator env sigma true_0 false_0 pos c = function
   | [] ->
@@ -981,7 +981,7 @@ let ind_scheme_of_eq lbeq to_kind =
 
 
 let discrimination_pf e (t,t1,t2) discriminator lbeq to_kind =
-  build_coq_I () >>= fun i ->
+  build_rocq_I () >>= fun i ->
   ind_scheme_of_eq lbeq to_kind >>= fun eq_elim ->
     pf_constr_of_global eq_elim >>= fun eq_elim ->
     Proofview.tclEVARMAP >>= fun sigma ->
@@ -1000,8 +1000,8 @@ type equality = {
 let eq_baseid = Id.of_string "e"
 
 let discr_positions env sigma { eq_data = (lbeq,(t,t1,t2)); eq_term = v; eq_evar = evs } cpath dirn =
-  build_coq_True () >>= fun true_0 ->
-  build_coq_False () >>= fun false_0 ->
+  build_rocq_True () >>= fun true_0 ->
+  build_rocq_False () >>= fun false_0 ->
   let false_ty = Retyping.get_type_of env sigma false_0 in
   let false_kind = Retyping.get_sort_family_of env sigma false_0 in
   let e = next_ident_away eq_baseid (vars_of_env env) in

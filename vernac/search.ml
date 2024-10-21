@@ -52,7 +52,7 @@ module SearchBlacklist =
      end)
 
 (* The functions iter_constructors and iter_declarations implement the behavior
-   needed for the Coq searching commands.
+   needed for the Rocq searching commands.
    These functions take as first argument the procedure
    that will be called to treat each entry.  This procedure receives the name
    of the object, the assumptions that will make it possible to print its type,

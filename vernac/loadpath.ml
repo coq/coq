@@ -89,16 +89,16 @@ let remove_load_path dir =
 
 let warn_overriding_logical_loadpath =
   CWarnings.create ~name:"overriding-logical-loadpath" ~category:CWarnings.CoreCategories.filesystem
-    (fun (phys_path, old_path, coq_path) ->
+    (fun (phys_path, old_path, rocq_path) ->
        Pp.(seq [str phys_path; strbrk " was previously bound to "
                ; DP.print old_path; strbrk "; it is remapped to "
-               ; DP.print coq_path]))
+               ; DP.print rocq_path]))
 
-let add_load_path root phys_path coq_path ~implicit =
+let add_load_path root phys_path rocq_path ~implicit =
   let phys_path = CUnix.canonical_path_name phys_path in
   let filter p = String.equal p.path_physical phys_path in
   let binding = {
-    path_logical = coq_path;
+    path_logical = rocq_path;
     path_physical = phys_path;
     path_implicit = implicit;
     path_root = root;
@@ -108,13 +108,13 @@ let add_load_path root phys_path coq_path ~implicit =
     load_paths := binding :: !load_paths
   | [{ path_logical = old_path; path_implicit = old_implicit }] ->
     let replace =
-      if DP.equal coq_path old_path then
+      if DP.equal rocq_path old_path then
         implicit <> old_implicit
       else
         let () =
           (* Do not warn when overriding the default "-I ." path *)
           if not (DP.equal old_path Libnames.default_root_prefix) then
-          warn_overriding_logical_loadpath (phys_path, old_path, coq_path)
+          warn_overriding_logical_loadpath (phys_path, old_path, rocq_path)
         in
         true in
     if replace then

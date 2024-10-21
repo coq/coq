@@ -257,28 +257,28 @@ let quantify lconstr =
    tclIDTAC
 *)
 
-let coq_eq env sigma       = Evd.fresh_global env sigma Coqlib.(lib_ref "core.eq.type")
-let coq_eq_refl env sigma  = Evd.fresh_global env sigma Coqlib.(lib_ref "core.eq.refl")
+let rocq_eq env sigma       = Evd.fresh_global env sigma Coqlib.(lib_ref "core.eq.type")
+let rocq_eq_refl env sigma  = Evd.fresh_global env sigma Coqlib.(lib_ref "core.eq.refl")
 
-let coq_heq_ref        = lazy (Coqlib.lib_ref "core.JMeq.type")
-let coq_heq env sigma      = Evd.fresh_global env sigma (Lazy.force coq_heq_ref)
-let coq_heq_refl env sigma = Evd.fresh_global env sigma (Coqlib.lib_ref "core.JMeq.refl")
-(* let coq_heq_refl = lazy (glob (lib_ref "core.JMeq.refl")) *)
+let rocq_heq_ref        = lazy (Coqlib.lib_ref "core.JMeq.type")
+let rocq_heq env sigma      = Evd.fresh_global env sigma (Lazy.force rocq_heq_ref)
+let rocq_heq_refl env sigma = Evd.fresh_global env sigma (Coqlib.lib_ref "core.JMeq.refl")
+(* let rocq_heq_refl = lazy (glob (lib_ref "core.JMeq.refl")) *)
 
 let mkEq env sigma t x y =
-  let sigma, eq = coq_eq env sigma in
+  let sigma, eq = rocq_eq env sigma in
   sigma, mkApp (eq, [| t; x; y |])
 
 let mkRefl env sigma t x =
-  let sigma, refl = coq_eq_refl env sigma in
+  let sigma, refl = rocq_eq_refl env sigma in
   sigma, mkApp (refl, [| t; x |])
 
 let mkHEq env sigma t x u y =
-  let sigma, c = coq_heq env sigma in
+  let sigma, c = rocq_heq env sigma in
   sigma, mkApp (c,[| t; x; u; y |])
 
 let mkHRefl env sigma t x =
-  let sigma, c = coq_heq_refl env sigma in
+  let sigma, c = rocq_heq_refl env sigma in
   sigma, mkApp (c, [| t; x |])
 
 let lift_togethern n l =

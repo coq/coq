@@ -159,7 +159,7 @@ sig
   (** Hashconsing of directory paths. *)
 
   val to_string : t -> string
-  (** Print non-empty directory paths as ["coq_root.module.submodule"] *)
+  (** Print non-empty directory paths as ["root.module.submodule"] *)
 
   val print : t -> Pp.t
 end

@@ -47,7 +47,7 @@ val dirpath : full_path -> DirPath.t
 val basename : full_path -> Id.t
 val full_path_is_ident : full_path -> bool
 
-(** Parsing and printing of section path as ["coq_root.module.id"] *)
+(** Parsing and printing of section path as ["root.module.id"] *)
 val path_of_string : string -> full_path
 val string_of_path : full_path -> string
 val pr_path : full_path -> Pp.t

@@ -500,7 +500,7 @@ module PrimTokenNotation = struct
 
     At least [c] is known to be evar-free, since it comes from
     our own ad-hoc [constr_of_glob] or from conversions such
-    as [coqint_of_rawnum].
+    as [rocqint_of_rawnum].
 
     It is important to fully normalize the term, *including inductive
     parameters of constructors*; see
@@ -803,7 +803,7 @@ let char_of_digit n =
   if n <= 11 then Char.chr (n-2 + Char.code '0')
   else Char.chr (n-12 + Char.code 'a')
 
-let coquint_of_rawnum esig inds c n =
+let rocquint_of_rawnum esig inds c n =
   let uint = match c with CDec -> inds.dec_uint | CHex -> inds.hex_uint in
   let nil = mkConstruct esig (uint,1) in
   match n with None -> nil | Some n ->
@@ -819,43 +819,43 @@ let coquint_of_rawnum esig inds c n =
   in
   do_chars str (String.length str - 1) nil
 
-let coqint_of_rawnum esig inds c (sign,n) =
+let rocqint_of_rawnum esig inds c (sign,n) =
   let ind = match c with CDec -> inds.dec_int | CHex -> inds.hex_int in
-  let uint = coquint_of_rawnum esig inds c (Some n) in
+  let uint = rocquint_of_rawnum esig inds c (Some n) in
   let pos_neg = match sign with SPlus -> 1 | SMinus -> 2 in
   mkApp (mkConstruct esig (ind, pos_neg), [|uint|])
 
-let coqnumber_of_rawnum esig inds c n =
+let rocqnumber_of_rawnum esig inds c n =
   let ind = match c with CDec -> inds.decimal | CHex -> inds.hexadecimal in
   let i, f, e = NumTok.Signed.to_int_frac_and_exponent n in
-  let i = coqint_of_rawnum esig inds.int c i in
-  let f = coquint_of_rawnum esig inds.int c f in
+  let i = rocqint_of_rawnum esig inds.int c i in
+  let f = rocquint_of_rawnum esig inds.int c f in
   match e with
   | None -> mkApp (mkConstruct esig (ind, 1), [|i; f|])  (* (D|Hexad)ecimal *)
   | Some e ->
-    let e = coqint_of_rawnum esig inds.int CDec e in
+    let e = rocqint_of_rawnum esig inds.int CDec e in
     mkApp (mkConstruct esig (ind, 2), [|i; f; e|])  (* (D|Hexad)ecimalExp *)
 
 let mkDecHex esig ind c n = match c with
   | CDec -> mkApp (mkConstruct esig (ind, 1), [|n|])  (* (UInt|Int|)Decimal *)
   | CHex -> mkApp (mkConstruct esig (ind, 2), [|n|])  (* (UInt|Int|)Hexadecimal *)
 
-let coqnumber_of_rawnum esig inds n =
+let rocqnumber_of_rawnum esig inds n =
   let c = NumTok.Signed.classify n in
-  let n = coqnumber_of_rawnum esig inds c n in
+  let n = rocqnumber_of_rawnum esig inds c n in
   mkDecHex esig inds.number c n
 
-let coquint_of_rawnum esig inds n =
+let rocquint_of_rawnum esig inds n =
   let c = NumTok.UnsignedNat.classify n in
-  let n = coquint_of_rawnum esig inds c (Some n) in
+  let n = rocquint_of_rawnum esig inds c (Some n) in
   mkDecHex esig inds.uint c n
 
-let coqint_of_rawnum esig inds n =
+let rocqint_of_rawnum esig inds n =
   let c = NumTok.SignedNat.classify n in
-  let n = coqint_of_rawnum esig inds c n in
+  let n = rocqint_of_rawnum esig inds c n in
   mkDecHex esig inds.int c n
 
-let rawnum_of_coquint cl c =
+let rawnum_of_rocquint cl c =
   let rec of_uint_loop c buf =
     match TokenValue.kind c with
     | TConstruct ((_, 1), _) (* Nil *) -> ()
@@ -873,17 +873,17 @@ let rawnum_of_coquint cl c =
     raise NotAValidPrimToken
   else NumTok.UnsignedNat.of_string (Buffer.contents buf)
 
-let rawnum_of_coqint cl c =
+let rawnum_of_rocqint cl c =
   match TokenValue.kind c with
-  | TConstruct ((_, 1), [c']) (* Pos *) -> (SPlus, rawnum_of_coquint cl c')
-  | TConstruct ((_, 2), [c']) (* Neg *) -> (SMinus, rawnum_of_coquint cl c')
+  | TConstruct ((_, 1), [c']) (* Pos *) -> (SPlus, rawnum_of_rocquint cl c')
+  | TConstruct ((_, 2), [c']) (* Neg *) -> (SMinus, rawnum_of_rocquint cl c')
   | _ -> raise NotAValidPrimToken
 
-let rawnum_of_coqnumber cl c =
+let rawnum_of_rocqnumber cl c =
   let of_ife i f e =
-    let n = rawnum_of_coqint cl i in
-    let f = try Some (rawnum_of_coquint cl f) with NotAValidPrimToken -> None in
-    let e = match e with None -> None | Some e -> Some (rawnum_of_coqint CDec e) in
+    let n = rawnum_of_rocqint cl i in
+    let f = try Some (rawnum_of_rocquint cl f) with NotAValidPrimToken -> None in
+    let e = match e with None -> None | Some e -> Some (rawnum_of_rocqint CDec e) in
     NumTok.Signed.of_int_frac_and_exponent n f e in
   match TokenValue.kind c with
   | TConstruct (_, [i; f]) -> of_ife i f None
@@ -895,17 +895,17 @@ let destDecHex c = match TokenValue.kind c with
   | TConstruct ((_, 2), [c']) (* (UInt|Int|)Hexadecimal *) -> CHex, c'
   | _ -> raise NotAValidPrimToken
 
-let rawnum_of_coqnumber c =
+let rawnum_of_rocqnumber c =
   let cl, c = destDecHex c in
-  rawnum_of_coqnumber cl c
+  rawnum_of_rocqnumber cl c
 
-let rawnum_of_coquint c =
+let rawnum_of_rocquint c =
   let cl, c = destDecHex c in
-  rawnum_of_coquint cl c
+  rawnum_of_rocquint cl c
 
-let rawnum_of_coqint c =
+let rawnum_of_rocqint c =
   let cl, c = destDecHex c in
-  rawnum_of_coqint cl c
+  rawnum_of_rocqint cl c
 
 (***********************************************************************)
 
@@ -959,7 +959,7 @@ let error_overflow ?loc n =
   CErrors.user_err ?loc Pp.(str "Overflow in int63 literal: " ++ str (Z.to_string n)
     ++ str ".")
 
-let coqpos_neg_int63_of_bigint ?loc esig ind (sign,n) =
+let rocqpos_neg_int63_of_bigint ?loc esig ind (sign,n) =
   let uint = int63_of_pos_bigint ?loc n in
   let pos_neg = match sign with SPlus -> 1 | SMinus -> 2 in
   mkApp (mkConstruct esig (ind, pos_neg), [|uint|])
@@ -968,7 +968,7 @@ let interp_int63 ?loc esig ind n =
   let sign = if Z.(compare n zero >= 0) then SPlus else SMinus in
   let an = Z.abs n in
   if Z.(lt an (pow z_two 63))
-  then coqpos_neg_int63_of_bigint ?loc esig ind (sign,an)
+  then rocqpos_neg_int63_of_bigint ?loc esig ind (sign,an)
   else error_overflow ?loc n
 
 let warn_inexact_float =
@@ -1027,7 +1027,7 @@ let bigint_of_int63 c = match TokenValue.kind c with
 | TInt i -> Z.of_int64 (Uint63.to_int64 i)
 | _ -> raise NotAValidPrimToken
 
-let bigint_of_coqpos_neg_int63 c = match TokenValue.kind c with
+let bigint_of_rocqpos_neg_int63 c = match TokenValue.kind c with
 | TConstruct ((_, 1), [c']) (* Pos *) -> bigint_of_int63 c'
 | TConstruct ((_, 2), [c']) (* Neg *) -> Z.neg (bigint_of_int63 c')
 | _ -> raise NotAValidPrimToken
@@ -1055,9 +1055,9 @@ let interp o ?loc n =
   let esig = env, sigma in
   let c = match fst o.to_kind, NumTok.Signed.to_int n with
     | Int int_ty, Some n ->
-       coqint_of_rawnum esig int_ty n
+       rocqint_of_rawnum esig int_ty n
     | UInt int_ty, Some (SPlus, n) ->
-       coquint_of_rawnum esig int_ty n
+       rocquint_of_rawnum esig int_ty n
     | Z z_pos_ty, Some n ->
        z_of_bigint esig z_pos_ty (NumTok.SignedNat.to_bigint n)
     | Int63 pos_neg_int63_ty, Some n ->
@@ -1065,7 +1065,7 @@ let interp o ?loc n =
     | (Int _ | UInt _ | Z _ | Int63 _), _ ->
        no_such_prim_token "number" ?loc o.ty_name
     | Float64, _ -> interp_float64 ?loc n
-    | Number number_ty, _ -> coqnumber_of_rawnum esig number_ty n
+    | Number number_ty, _ -> rocqnumber_of_rawnum esig number_ty n
   in
   let sigma = !sigma in
   let sigma,to_ty = Evd.fresh_global env sigma o.to_ty in
@@ -1084,12 +1084,12 @@ let interp o ?loc n =
 let uninterp o n =
   PrimTokenNotation.uninterp
     begin function
-      | (Int _, c) -> NumTok.Signed.of_int (rawnum_of_coqint c)
-      | (UInt _, c) -> NumTok.Signed.of_nat (rawnum_of_coquint c)
+      | (Int _, c) -> NumTok.Signed.of_int (rawnum_of_rocqint c)
+      | (UInt _, c) -> NumTok.Signed.of_nat (rawnum_of_rocquint c)
       | (Z _, c) -> NumTok.Signed.of_bigint CDec (bigint_of_z c)
-      | (Int63 _, c) -> NumTok.Signed.of_bigint CDec (bigint_of_coqpos_neg_int63 c)
+      | (Int63 _, c) -> NumTok.Signed.of_bigint CDec (bigint_of_rocqpos_neg_int63 c)
       | (Float64, c) -> uninterp_float64 c
-      | (Number _, c) -> rawnum_of_coqnumber c
+      | (Number _, c) -> rawnum_of_rocqnumber c
     end o n
 end
 
@@ -1115,10 +1115,10 @@ let locate_byte () = unsafe_locate_ind (q_byte ())
 
 (** ** Conversion between Coq [list Byte.byte] and internal raw string *)
 
-let coqbyte_of_char_code esig byte c =
+let rocqbyte_of_char_code esig byte c =
   mkConstruct esig (byte, 1 + c)
 
-let coqbyte_of_string ?loc esig byte s =
+let rocqbyte_of_string ?loc esig byte s =
   let p =
     if Int.equal (String.length s) 1 then int_of_char s.[0]
     else
@@ -1128,9 +1128,9 @@ let coqbyte_of_string ?loc esig byte s =
       if n < 256 then n else
        user_err ?loc
          (str "Expects a single character or a three-digit ASCII code.") in
-  coqbyte_of_char_code esig byte p
+  rocqbyte_of_char_code esig byte p
 
-let coqbyte_of_char esig byte c = coqbyte_of_char_code esig byte (Char.code c)
+let rocqbyte_of_char esig byte c = rocqbyte_of_char_code esig byte (Char.code c)
 
 let pstring_of_string ?loc s =
   match Pstring.of_string s with
@@ -1141,41 +1141,41 @@ let make_ascii_string n =
   if n>=32 && n<=126 then String.make 1 (char_of_int n)
   else Printf.sprintf "%03d" n
 
-let char_code_of_coqbyte c = match TokenValue.kind c with
+let char_code_of_rocqbyte c = match TokenValue.kind c with
 | TConstruct ((_,c), []) -> c - 1
 | _ -> raise NotAValidPrimToken
 
-let string_of_coqbyte c = make_ascii_string (char_code_of_coqbyte c)
+let string_of_rocqbyte c = make_ascii_string (char_code_of_rocqbyte c)
 
 let string_of_pstring c =
   match TokenValue.kind c with
   | TString s -> Pstring.to_string s
   | _ -> raise NotAValidPrimToken
 
-let coqlist_byte_of_string esig byte_ty list_ty str =
+let rocqlist_byte_of_string esig byte_ty list_ty str =
   let cbyte = mkInd esig byte_ty in
   let nil = mkApp (mkConstruct esig (list_ty, 1), [|cbyte|]) in
   let cons x xs = mkApp (mkConstruct esig (list_ty, 2), [|cbyte; x; xs|]) in
   let rec do_chars s i acc =
     if i < 0 then acc
     else
-      let b = coqbyte_of_char esig byte_ty s.[i] in
+      let b = rocqbyte_of_char esig byte_ty s.[i] in
       do_chars s (i-1) (cons b acc)
   in
   do_chars str (String.length str - 1) nil
 
 (* N.B. We rely on the fact that [nil] is the first constructor and [cons] is the second constructor, for [list] *)
-let string_of_coqlist_byte c =
-  let rec of_coqlist_byte_loop c buf =
+let string_of_rocqlist_byte c =
+  let rec of_rocqlist_byte_loop c buf =
     match TokenValue.kind c with
     | TConstruct (_nil, [_ty]) -> ()
     | TConstruct (_cons, [_ty;b;c]) ->
-      let () = Buffer.add_char buf (Char.chr (char_code_of_coqbyte b)) in
-      of_coqlist_byte_loop c buf
+      let () = Buffer.add_char buf (Char.chr (char_code_of_rocqbyte b)) in
+      of_rocqlist_byte_loop c buf
     | _ -> raise NotAValidPrimToken
   in
   let buf = Buffer.create 64 in
-  let () = of_coqlist_byte_loop c buf in
+  let () = of_rocqlist_byte_loop c buf in
   Buffer.contents buf
 
 let interp o ?loc n =
@@ -1185,8 +1185,8 @@ let interp o ?loc n =
   let sigma = ref (Evd.from_env env) in
   let esig = env, sigma in
   let c = match fst o.to_kind with
-    | ListByte -> coqlist_byte_of_string esig byte_ty list_ty n
-    | Byte -> coqbyte_of_string ?loc esig byte_ty n
+    | ListByte -> rocqlist_byte_of_string esig byte_ty list_ty n
+    | Byte -> rocqbyte_of_string ?loc esig byte_ty n
     | PString -> pstring_of_string ?loc n
   in
   let sigma = !sigma in
@@ -1200,8 +1200,8 @@ let interp o ?loc n =
 let uninterp o n =
   PrimTokenNotation.uninterp
     begin function
-      | (ListByte, c) -> string_of_coqlist_byte c
-      | (Byte, c) -> string_of_coqbyte c
+      | (ListByte, c) -> string_of_rocqlist_byte c
+      | (Byte, c) -> string_of_rocqbyte c
       | (PString, c) -> string_of_pstring c
     end o n
 end

@@ -12,9 +12,9 @@ open Util
 open Pp
 
 (* Recursively puts `.v` files in the LoadPath *)
-let build_stdlib_vo_path ~unix_path ~coq_path =
+let build_stdlib_vo_path ~unix_path ~rocq_path =
   let open Loadpath in
-  { unix_path; coq_path ; has_ml = false; implicit = true; recursive = true }
+  { unix_path; coq_path = rocq_path; has_ml = false; implicit = true; recursive = true }
 
 (* Note we don't use has_ml=true due to #12771 , we need to see if we
    should just remove that option *)
@@ -48,8 +48,8 @@ let init_load_path ~coqenv =
   let open Loadpath in
   let user_contrib = Boot.Env.user_contrib coqenv |> Boot.Path.to_string in
   let xdg_dirs = Envars.xdg_dirs ~warn:(fun x -> Feedback.msg_warning (str x)) in
-  let coqpath = Envars.coqpath in
-  let coq_path = Names.DirPath.make [Libnames.coq_root] in
+  let rocqpath = Envars.coqpath in
+  let rocq_path = Names.DirPath.make [Libnames.coq_root] in
   (* ML includes *)
   let core_dir = Boot.Env.corelib coqenv in
 
@@ -67,7 +67,7 @@ let init_load_path ~coqenv =
   let contrib_ml, contrib_vo = build_userlib_path ~unix_path:user_contrib in
 
   let misc_ml, misc_vo =
-    List.map (fun s -> build_userlib_path ~unix_path:s) (xdg_dirs @ coqpath) |> List.split in
+    List.map (fun s -> build_userlib_path ~unix_path:s) (xdg_dirs @ rocqpath) |> List.split in
 
   let ml_loadpath = plugins_dirs @ meta_dir @ contrib_ml @ List.concat misc_ml in
   let vo_loadpath =
@@ -80,7 +80,7 @@ let init_load_path ~coqenv =
       } ] @
 
     (* then standard library *)
-    [build_stdlib_vo_path ~unix_path:stdlib ~coq_path] @
+    [build_stdlib_vo_path ~unix_path:stdlib ~rocq_path] @
 
     (* then user-contrib *)
     contrib_vo @

@@ -439,12 +439,12 @@ let l_or accu x y =
   else apply2 accu x y
 
 [@@@ocaml.warning "-37"]
-type coq_carry =
+type rocq_carry =
   | Caccu of t
   | C0 of t
   | C1 of t
 
-type coq_pair =
+type rocq_pair =
   | Paccu of t
   | PPair of t * t
 
@@ -532,12 +532,12 @@ let addMulDiv accu x y z =
   else apply3 accu x y z
 
 [@@@ocaml.warning "-34"]
-type coq_bool =
+type rocq_bool =
   | Baccu of t
   | Btrue
   | Bfalse
 
-type coq_cmp =
+type rocq_cmp =
   | CmpAccu of t
   | CmpEq
   | CmpLt
@@ -656,7 +656,7 @@ let fle accu x y =
   if is_float x && is_float y then no_check_fle x y
   else apply2 accu x y
 
-type coq_fcmp =
+type rocq_fcmp =
   | CFcmpAccu of t
   | CFcmpEq
   | CFcmpLt
@@ -680,7 +680,7 @@ let fequal accu x y =
   if is_float x && is_float y then no_check_fequal x y
   else apply2 accu x y
 
-type coq_fclass =
+type rocq_fclass =
   | CFclassAccu of t
   | CFclassPNormal
   | CFclassNNormal

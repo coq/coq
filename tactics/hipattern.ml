@@ -265,16 +265,16 @@ let mkPRef r = PRef (lib_ref r)
 let mkPAppRef r args = mkPApp (mkPRef r) args
 
 (** forall x : _, _ x x *)
-let coq_refl_leibniz1_pattern =
+let rocq_refl_leibniz1_pattern =
   mkPProd "x" mkPHole (mkPApp mkPHole [mkPRel 1; mkPRel 1])
 
 (** forall A:_, forall x:A, _ A x x *)
-let coq_refl_leibniz2_pattern =
+let rocq_refl_leibniz2_pattern =
   mkPProd "A" mkPHole (mkPProd "x" (mkPRel 1)
     (mkPApp mkPHole [mkPRel 2; mkPRel 1; mkPRel 1]))
 
 (** forall A:_, forall x:A, _ A x A x *)
-let coq_refl_jm_pattern       =
+let rocq_refl_jm_pattern       =
   mkPProd "A" mkPHole (mkPProd "x" (mkPRel 1)
     (mkPApp mkPHole [mkPRel 2; mkPRel 1; mkPRel 2; mkPRel 1]))
 
@@ -301,11 +301,11 @@ let match_with_equation env sigma t =
          if Int.equal nconstr 1 then
            let (ctx, cty) = constr_types.(0) in
            let cty = EConstr.of_constr (Term.it_mkProd_or_LetIn cty ctx) in
-           if is_matching env sigma coq_refl_leibniz1_pattern cty then
+           if is_matching env sigma rocq_refl_leibniz1_pattern cty then
              None, hdapp, MonomorphicLeibnizEq(args.(0),args.(1))
-           else if is_matching env sigma coq_refl_leibniz2_pattern cty then
+           else if is_matching env sigma rocq_refl_leibniz2_pattern cty then
              None, hdapp, PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
-           else if is_matching env sigma coq_refl_jm_pattern cty then
+           else if is_matching env sigma rocq_refl_jm_pattern cty then
              None, hdapp, HeterogenousEq(args.(0),args.(1),args.(2),args.(3))
            else raise NoEquationFound
          else raise NoEquationFound
@@ -334,10 +334,10 @@ let is_equality_type env sigma t = Option.has_some (match_with_equality_type env
 (* Arrows/Implication/Negation *)
 
 (** X1 -> X2 **)
-let coq_arrow_pattern = mkPArrow (mkPPatVar "X1") (mkPPatVar "X2")
+let rocq_arrow_pattern = mkPArrow (mkPPatVar "X1") (mkPPatVar "X2")
 
 let match_arrow_pattern env sigma t =
-  let result = matches env sigma coq_arrow_pattern t in
+  let result = matches env sigma rocq_arrow_pattern t in
   match Id.Map.bindings result with
     | [(m1,arg);(m2,mind)] ->
       assert (Id.equal m1 meta1 && Id.equal m2 meta2); (arg, mind)
@@ -482,15 +482,15 @@ let find_sigma_data_decompose env ex = (* fails with PatternMatchingFailure *)
   match_sigma_data env ex
 
 (* Pattern "(sig ?1 ?2)" *)
-let coq_sig_pattern =
+let rocq_sig_pattern =
   lazy (mkPAppRef "core.sig.type" [mkPPatVar "X1"; mkPPatVar "X2"])
 
 let match_sigma env sigma t =
-  match Id.Map.bindings (matches env sigma (Lazy.force coq_sig_pattern) t) with
+  match Id.Map.bindings (matches env sigma (Lazy.force rocq_sig_pattern) t) with
     | [(_,a); (_,p)] -> (a,p)
     | _ -> anomaly (Pp.str "Unexpected pattern.")
 
-let is_matching_sigma env sigma t = is_matching env sigma (Lazy.force coq_sig_pattern) t
+let is_matching_sigma env sigma t = is_matching env sigma (Lazy.force rocq_sig_pattern) t
 
 (*** Decidable equalities *)
 
@@ -499,7 +499,7 @@ let is_matching_sigma env sigma t = is_matching env sigma (Lazy.force coq_sig_pa
 (* Pattern "{<?1>x=y}+{~(<?1>x=y)}" *)
 (* i.e. "(sumbool (eq ?1 x y) ~(eq ?1 x y))" *)
 
-let coq_eqdec ~sum ~rev =
+let rocq_eqdec ~sum ~rev =
   lazy (
     let eqn = mkPAppRef "core.eq.type" (List.map mkPPatVar ["X1"; "X2"; "X3"]) in
     let args = [eqn; mkPAppRef "core.not.type" [eqn]] in
@@ -511,37 +511,37 @@ let sumbool_type = "core.sumbool.type"
 let or_type = "core.or.type"
 
 (** [{ ?X2 = ?X3 :> ?X1 } + { ~ ?X2 = ?X3 :> ?X1 }] *)
-let coq_eqdec_inf_pattern = coq_eqdec ~sum:sumbool_type ~rev:false
+let rocq_eqdec_inf_pattern = rocq_eqdec ~sum:sumbool_type ~rev:false
 
 (** [{ ~ ?X2 = ?X3 :> ?X1 } + { ?X2 = ?X3 :> ?X1 }] *)
-let coq_eqdec_inf_rev_pattern = coq_eqdec ~sum:sumbool_type ~rev:true
+let rocq_eqdec_inf_rev_pattern = rocq_eqdec ~sum:sumbool_type ~rev:true
 
-(** %coq_or_ref (?X2 = ?X3 :> ?X1) (~ ?X2 = ?X3 :> ?X1) *)
-let coq_eqdec_pattern = coq_eqdec ~sum:or_type ~rev:false
+(** %rocq_or_ref (?X2 = ?X3 :> ?X1) (~ ?X2 = ?X3 :> ?X1) *)
+let rocq_eqdec_pattern = rocq_eqdec ~sum:or_type ~rev:false
 
-(** %coq_or_ref (~ ?X2 = ?X3 :> ?X1) (?X2 = ?X3 :> ?X1) *)
-let coq_eqdec_rev_pattern = coq_eqdec ~sum:or_type ~rev:true
+(** %rocq_or_ref (~ ?X2 = ?X3 :> ?X1) (?X2 = ?X3 :> ?X1) *)
+let rocq_eqdec_rev_pattern = rocq_eqdec ~sum:or_type ~rev:true
 
 let match_eqdec env sigma t =
   let eqonleft,op,subst =
-    try true,sumbool_type,matches env sigma (Lazy.force coq_eqdec_inf_pattern) t
+    try true,sumbool_type,matches env sigma (Lazy.force rocq_eqdec_inf_pattern) t
     with PatternMatchingFailure ->
-    try false,sumbool_type,matches env sigma (Lazy.force coq_eqdec_inf_rev_pattern) t
+    try false,sumbool_type,matches env sigma (Lazy.force rocq_eqdec_inf_rev_pattern) t
     with PatternMatchingFailure ->
-    try true,or_type,matches env sigma (Lazy.force coq_eqdec_pattern) t
+    try true,or_type,matches env sigma (Lazy.force rocq_eqdec_pattern) t
     with PatternMatchingFailure ->
-        false,or_type,matches env sigma (Lazy.force coq_eqdec_rev_pattern) t in
+        false,or_type,matches env sigma (Lazy.force rocq_eqdec_rev_pattern) t in
   match Id.Map.bindings subst with
   | [(_,typ);(_,c1);(_,c2)] ->
       eqonleft, lib_ref op, c1, c2, typ
   | _ -> anomaly (Pp.str "Unexpected pattern.")
 
 (* Patterns "~ ?" and "? -> False" *)
-let coq_not_pattern = lazy (mkPAppRef "core.not.type" [mkPHole])
-let coq_imp_False_pattern = lazy (mkPArrow mkPHole (mkPRef "core.False.type"))
+let rocq_not_pattern = lazy (mkPAppRef "core.not.type" [mkPHole])
+let rocq_imp_False_pattern = lazy (mkPArrow mkPHole (mkPRef "core.False.type"))
 
-let is_matching_not env sigma t = is_matching env sigma (Lazy.force coq_not_pattern) t
-let is_matching_imp_False env sigma t = is_matching env sigma (Lazy.force coq_imp_False_pattern) t
+let is_matching_not env sigma t = is_matching env sigma (Lazy.force rocq_not_pattern) t
+let is_matching_imp_False env sigma t = is_matching env sigma (Lazy.force rocq_imp_False_pattern) t
 
 (* Remark: patterns that have references to the standard library must
    be evaluated lazily (i.e. at the time they are used, not a the time
