@@ -131,9 +131,12 @@ type cases_pattern_expr_r =
   | CPatAtom of qualid option
   | CPatOr   of cases_pattern_expr list
   | CPatNotation of notation_with_optional_scope option * notation * notation_substitution
-    * cases_pattern_expr list (** CPatNotation (_, n, l1 ,l2) represents
-                                  (notation n applied with substitution l1)
-                                  applied to arguments l2 *)
+    * cases_pattern_expr list
+    (** CPatNotation (s, n, l1 ,l2) represents (notation n applied
+        with substitution l1) applied to arguments l2. In some
+        functions (typically for parsing) s is unused (None), in
+        others (typically for printing) it is used to indicate the
+        scope of the notation (Some _). *)
   | CPatPrim   of prim_token
   | CPatRecord of (qualid * cases_pattern_expr) list
   | CPatDelimiters of delimiter_depth * string * cases_pattern_expr
@@ -176,6 +179,7 @@ and constr_expr_r =
   | CSort   of sort_expr
   | CCast   of constr_expr * Constr.cast_kind option * constr_expr
   | CNotation of notation_with_optional_scope option * notation * notation_substitution
+    (** See CPatNotation *)
   | CGeneralization of Glob_term.binding_kind * constr_expr
   | CPrim of prim_token
   | CDelimiters of delimiter_depth * string * constr_expr
