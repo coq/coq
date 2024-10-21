@@ -245,10 +245,10 @@ let classify_hint _ = VtSideff ([], VtLater)
 }
 
 VERNAC COMMAND EXTEND HintRewrite CLASSIFIED BY { classify_hint }
-| #[ polymorphic; locality = hint_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ":" preident_list(bl) ] ->
+| #[ polymorphic; locality = hint_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ":" ne_preident_list(bl) ] ->
   { add_rewrite_hint ~locality ~poly:polymorphic bl o None l }
 | #[ polymorphic; locality = hint_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t)
-    ":" preident_list(bl) ] ->
+    ":" ne_preident_list(bl) ] ->
   { add_rewrite_hint ~locality ~poly:polymorphic bl o (Some t) l }
 | #[ polymorphic; locality = hint_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ] ->
   { add_rewrite_hint ~locality ~poly:polymorphic ["core"] o None l }

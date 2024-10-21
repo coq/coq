@@ -596,8 +596,8 @@ command: [
 | "Functional" "Scheme" LIST1 fun_scheme_arg SEP "with"      (* funind plugin *)
 | "Functional" "Case" fun_scheme_arg      (* funind plugin *)
 | "Generate" "graph" "for" reference      (* funind plugin *)
-| "Hint" "Rewrite" orient LIST1 constr ":" LIST0 preident
-| "Hint" "Rewrite" orient LIST1 constr "using" tactic ":" LIST0 preident
+| "Hint" "Rewrite" orient LIST1 constr ":" LIST1 preident
+| "Hint" "Rewrite" orient LIST1 constr "using" tactic ":" LIST1 preident
 | "Hint" "Rewrite" orient LIST1 constr
 | "Hint" "Rewrite" orient LIST1 constr "using" tactic
 | "Derive" "Inversion_clear" ident "with" constr "Sort" sort_family

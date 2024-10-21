@@ -1301,9 +1301,9 @@ command: [
 | WITH "Derive" "Inversion_clear" ident "with" constr OPT ( "Sort" sort_family )
 | DELETE "Derive" "Inversion_clear" ident "with" constr
 | EDIT "Focus" ADD_OPT natural
-| DELETE "Hint" "Rewrite" orient LIST1 constr ":" LIST0 preident
-| REPLACE "Hint" "Rewrite" orient LIST1 constr "using" tactic ":" LIST0 preident
-| WITH "Hint" "Rewrite" orient LIST1 constr OPT ( "using" tactic ) OPT ( ":" LIST0 preident )
+| DELETE "Hint" "Rewrite" orient LIST1 constr ":" LIST1 preident
+| REPLACE "Hint" "Rewrite" orient LIST1 constr "using" tactic ":" LIST1 preident
+| WITH "Hint" "Rewrite" orient LIST1 constr OPT ( "using" tactic ) OPT ( ":" LIST1 preident )
 | DELETE "Hint" "Rewrite" orient LIST1 constr
 | DELETE "Hint" "Rewrite" orient LIST1 constr "using" tactic
 | REPLACE "Next" "Obligation" "of" identref withtac
