@@ -24,14 +24,14 @@ let () =
 let init () =
   let () = GtkosxApplication.Application.set_menu_bar osx#as_osxapplication
     (GtkMenu.MenuShell.cast
-       (Coqide_ui.ui_m#get_widget "/CoqIDE MenuBar")#as_widget)
+       (Rocqide_ui.ui_m#get_widget "/CoqIDE MenuBar")#as_widget)
   in
   let () = GtkosxApplication.Application.insert_app_menu_item
     osx#as_osxapplication
-    (Coqide_ui.ui_m#get_widget "/CoqIDE MenuBar/Edit/Prefs")#as_widget 1
+    (Rocqide_ui.ui_m#get_widget "/CoqIDE MenuBar/Edit/Prefs")#as_widget 1
   in
   let () = GtkosxApplication.Application.set_help_menu osx#as_osxapplication
     (Some (GtkMenu.MenuItem.cast
-             (Coqide_ui.ui_m#get_widget "/CoqIDE MenuBar/Help")#as_widget))
+             (Rocqide_ui.ui_m#get_widget "/CoqIDE MenuBar/Help")#as_widget))
   in
   osx#ready ()

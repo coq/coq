@@ -1639,33 +1639,33 @@ let build_ui () =
       ~callback:MiscMenu.about
   ];
 
-  Coqide_ui.init ();
-  Coqide_ui.ui_m#insert_action_group file_menu 0;
-  Coqide_ui.ui_m#insert_action_group export_menu 0;
-  Coqide_ui.ui_m#insert_action_group edit_menu 0;
-  Coqide_ui.ui_m#insert_action_group view_menu 0;
-  Coqide_ui.ui_m#insert_action_group navigation_menu 0;
-  Coqide_ui.ui_m#insert_action_group templates_menu 0;
-  Coqide_ui.ui_m#insert_action_group tools_menu 0;
-  Coqide_ui.ui_m#insert_action_group queries_menu 0;
-  Coqide_ui.ui_m#insert_action_group compile_menu 0;
-  Coqide_ui.ui_m#insert_action_group debug_menu 0;
-  Coqide_ui.ui_m#insert_action_group windows_menu 0;
-  Coqide_ui.ui_m#insert_action_group help_menu 0;
-  w#add_accel_group Coqide_ui.ui_m#get_accel_group ;
+  Rocqide_ui.init ();
+  Rocqide_ui.ui_m#insert_action_group file_menu 0;
+  Rocqide_ui.ui_m#insert_action_group export_menu 0;
+  Rocqide_ui.ui_m#insert_action_group edit_menu 0;
+  Rocqide_ui.ui_m#insert_action_group view_menu 0;
+  Rocqide_ui.ui_m#insert_action_group navigation_menu 0;
+  Rocqide_ui.ui_m#insert_action_group templates_menu 0;
+  Rocqide_ui.ui_m#insert_action_group tools_menu 0;
+  Rocqide_ui.ui_m#insert_action_group queries_menu 0;
+  Rocqide_ui.ui_m#insert_action_group compile_menu 0;
+  Rocqide_ui.ui_m#insert_action_group debug_menu 0;
+  Rocqide_ui.ui_m#insert_action_group windows_menu 0;
+  Rocqide_ui.ui_m#insert_action_group help_menu 0;
+  w#add_accel_group Rocqide_ui.ui_m#get_accel_group ;
   GtkMain.Rc.parse_string "gtk-can-change-accels = 1";
   if Config.gtk_platform <> `QUARTZ
-  then vbox#pack (Coqide_ui.ui_m#get_widget "/CoqIDE MenuBar");
+  then vbox#pack (Rocqide_ui.ui_m#get_widget "/CoqIDE MenuBar");
 
   (* Connect some specific actions *)
-  let unicode = Coqide_ui.ui_m#get_action "ui/CoqIDE MenuBar/Tools/LaTeX-to-unicode" in
+  let unicode = Rocqide_ui.ui_m#get_action "ui/CoqIDE MenuBar/Tools/LaTeX-to-unicode" in
   let callback b = unicode#set_sensitive b in
   let () = callback unicode_binding#get in
   let _ = unicode_binding#connect#changed ~callback in
 
   (* Toolbar *)
   let tbar = GtkButton.Toolbar.cast
-      ((Coqide_ui.ui_m#get_widget "/CoqIDE ToolBar")#as_widget)
+      ((Rocqide_ui.ui_m#get_widget "/CoqIDE ToolBar")#as_widget)
   in
   let () = GtkButton.Toolbar.set
     ~orientation:`HORIZONTAL ~style:`ICONS tbar
