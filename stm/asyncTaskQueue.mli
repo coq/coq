@@ -147,7 +147,7 @@ module MakeQueue(T : Task) () : sig
   (** [create n pri] will initialize the queue with [n] workers having
       priority [pri]. If [n] is 0, the queue won't spawn any process,
       working in a lazy local manner. [not imposed by the this API] *)
-  val create : int -> CoqworkmgrApi.priority -> queue
+  val create : spawn_args:string list -> int -> CoqworkmgrApi.priority -> queue
 
   (** [destroy q] Deallocates [q], cancelling all pending tasks. *)
   val destroy : queue -> unit
@@ -205,7 +205,7 @@ module MakeQueue(T : Task) () : sig
 
   (** [with_n_workers n pri f] creates a queue, runs the function, destroys
       the queue. The user should call join *)
-  val with_n_workers : int -> CoqworkmgrApi.priority -> (queue -> 'a) -> 'a
+  val with_n_workers : spawn_args:string list -> int -> CoqworkmgrApi.priority -> (queue -> 'a) -> 'a
 
 end
 

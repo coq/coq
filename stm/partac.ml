@@ -189,11 +189,11 @@ let get_results res =
        str (CString.plural (List.length missing) "goal") ++
        spc () ++ prlist_with_sep spc int missing ++ str ")")
 
-let enable_par ~nworkers = ComTactic.set_par_implementation
+let enable_par ~spawn_args ~nworkers = ComTactic.set_par_implementation
   (fun ~pstate ~info t_ast ~abstract ~with_end_tac ->
     let t_state = Vernacstate.freeze_full_state () in
     let t_state = Vernacstate.Stm.make_shallow t_state in
-    TaskQueue.with_n_workers nworkers CoqworkmgrApi.High (fun queue ->
+    TaskQueue.with_n_workers ~spawn_args nworkers CoqworkmgrApi.High (fun queue ->
     Declare.Proof.map pstate ~f:(fun p ->
     let open TacTask in
     let results = (Proof.data p).Proof.goals |> CList.map_i (fun i g ->

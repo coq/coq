@@ -100,7 +100,7 @@ let parse_arguments ~parse_extra ~usage ?(initial_args=Coqargs.default) () =
   let opts, extras =
     Coqargs.parse_args ~usage ~init:initial_args
       (List.tl (Array.to_list Sys.argv)) in
-  let customopts, extras = parse_extra extras in
+  let customopts, extras = parse_extra opts extras in
   if not (CList.is_empty extras) then begin
     prerr_endline ("Don't know what to do with "^String.concat " " extras);
     prerr_endline "See -help for the list of supported options";

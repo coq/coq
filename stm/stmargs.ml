@@ -47,7 +47,24 @@ let get_cache opt = function
   | _ ->
     Coqargs.error_wrong_arg ("Error: force expected after "^opt)
 
-let parse_args ~init arglist : Stm.AsyncOpts.stm_opt * string list =
+let spawn_args (opts:Coqargs.t) =
+  (* Coqargs whose effect is not in the summary and matters for workers:
+
+     Flags.output_directory
+     native output dir, native includes
+
+     AFAICT that's all *)
+  let output_dir = match opts.config.output_directory with
+    | None -> []
+    | Some dir -> ["-output-directory";dir]
+  in
+  let native_include ni = ["-nI";ni] in
+  output_dir @
+  "-native-output-dir" :: opts.config.native_output_dir ::
+  List.concat_map native_include opts.config.native_include_dirs
+
+let parse_args opts arglist : Stm.AsyncOpts.stm_opt * string list =
+  let init = Stm.AsyncOpts.default_opts ~spawn_args:(spawn_args opts) in
   let args = ref arglist in
   let extras = ref [] in
   let rec parse oval = match !args with
@@ -111,19 +128,24 @@ let parse_args ~init arglist : Stm.AsyncOpts.stm_opt * string list =
     |"-worker-id" -> set_worker_id opt (next ()); oval
 
     |"-main-channel" ->
-      Spawned.main_channel := get_host_port opt (next()); oval
+      let ch = next () in
+      Spawned.main_channel := get_host_port opt ch;
+      { oval with spawn_args = opt :: ch :: oval.spawn_args }
 
     |"-control-channel" ->
-      Spawned.control_channel := get_host_port opt (next()); oval
+      let ch = next () in
+      Spawned.control_channel := get_host_port opt ch;
+      { oval with spawn_args = opt :: ch :: oval.spawn_args }
 
     (* Options with zero arg *)
     |"-async-queries-always-delegate"
     |"-async-proofs-always-delegate"
     |"-async-proofs-never-reopen-branch" ->
       { oval with
-        Stm.AsyncOpts.async_proofs_never_reopen_branch = true
+        Stm.AsyncOpts.async_proofs_never_reopen_branch = true;
+        spawn_args = opt :: oval.spawn_args;
       }
-    |"-stm-debug" -> Stm.stm_debug := true; oval
+    |"-stm-debug" -> Stm.stm_debug := true; { oval with spawn_args = opt :: oval.spawn_args }
     (* Unknown option *)
     | s ->
       extras := s :: !extras;
