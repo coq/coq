@@ -1782,7 +1782,7 @@ let main files =
   notebook#goto_page 0;
   MiscMenu.initial_about ();
   on_current_term (fun t -> t.script#misc#grab_focus ());
-  Minilib.log "End of Coqide.main";
+  Minilib.log "End of Rocqide.main";
   w
 
 (** {2 Argument parsing } *)

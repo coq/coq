@@ -11,7 +11,7 @@
    the strange behavior described in #13550.
    
    This code signals all processes in the process group (multiple coqidetops) and coqide.
-   because the console is shared.  Coqide.win_interrupt is used to ignore the signal sent
+   because the console is shared. Rocqide.win_interrupt is used to ignore the signal sent
    to CoqIDE. */
 
 CAMLprim value win32_interrupt(value pseudopid) {

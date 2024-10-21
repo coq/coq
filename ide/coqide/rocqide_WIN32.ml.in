@@ -28,7 +28,7 @@ let reroute_stdout_stderr () =
   let out_descr =
     if debug then
       let (name,chan) = Filename.open_temp_file "coqide_" ".log" in
-      Coqide.logfile := Some name;
+      Rocqide.logfile := Some name;
       Unix.descr_of_out_channel chan
     else
       snd (Unix.pipe ())

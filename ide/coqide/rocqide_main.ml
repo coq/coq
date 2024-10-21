@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-let _ = Coqide.set_signal_handlers ()
+let _ = Rocqide.set_signal_handlers ()
 
 (* We handle Gtk warning messages ourselves :
    - on win32, we don't want them to end on a non-existing console
@@ -33,7 +33,7 @@ let catch_gtk_messages () =
     match log_level level with
       |`FATAL ->
         let () = GToolbox.message_box ~title:"Error" (header ^ msg) in
-        Coqide.crash_save 1
+        Rocqide.crash_save 1
       |`ERROR ->
         if CDebug.(get_flag misc) then GToolbox.message_box ~title:"Error" (header ^ msg)
         else Printf.eprintf "%s\n" (header ^ msg)
@@ -55,13 +55,13 @@ let () =
   Ideutils.push_info ("Ready"^ if Preferences.microPG#get then ", [μPG]" else "");
   load_prefs ();
   let argl = List.tl (Array.to_list Sys.argv) in
-  let argl = Coqide.read_rocqide_args argl in
+  let argl = Rocqide.read_rocqide_args argl in
   let files = Rocq.filter_rocq_opts argl in
   let args = List.filter (fun x -> not (List.mem x files)) argl in
   Rocq.check_connection args;
-  Coqide.sup_args := args;
-  let w = Coqide.main files in
-  Coqide.set_signal_handlers ~parent:w ();
+  Rocqide.sup_args := args;
+  let w = Rocqide.main files in
+  Rocqide.set_signal_handlers ~parent:w ();
   Rocqide_os_specific.init ();
   Shared_os_specific.init ();
   try
@@ -69,4 +69,4 @@ let () =
     failwith "Gtk loop ended"
   with e ->
     Minilib.log ("CoqIDE unexpected error: " ^ Printexc.to_string e);
-    Coqide.crash_save 127
+    Rocqide.crash_save 127

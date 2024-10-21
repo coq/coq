@@ -12,13 +12,13 @@ let osx = GosxApplication.osxapplication ()
 
 let () =
   let _ = osx#connect#ns_application_open_file
-    ~callback:(fun x -> Coqide.do_load x; true)
+    ~callback:(fun x -> Rocqide.do_load x; true)
   in
   let _ = osx#connect#ns_application_block_termination
-    ~callback:Coqide.forbid_quit
+    ~callback:Rocqide.forbid_quit
   in
   let _ = osx#connect#ns_application_will_terminate
-    ~callback:Coqide.close_and_quit
+    ~callback:Rocqide.close_and_quit
   in ()
 
 let init () =
