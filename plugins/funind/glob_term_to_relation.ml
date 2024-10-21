@@ -272,8 +272,8 @@ let make_discr_match brl el i =
 (**********************************************************************)
 
 (* [build_constructors_of_type] construct the array of pattern of its inductive argument*)
-let build_constructors_of_type ind' argl =
-  let mib, ind = Inductive.lookup_mind_specif (Global.env ()) ind' in
+let build_constructors_of_type env ind' argl =
+  let mib, ind = Inductive.lookup_mind_specif env ind' in
   let npar = mib.Declarations.mind_nparams in
   Array.mapi
     (fun i _ ->
@@ -283,7 +283,7 @@ let build_constructors_of_type ind' argl =
         Impargs.implicits_of_global constructref
       in
       let cst_narg =
-        Inductiveops.constructor_nallargs (Global.env ()) construct
+        Inductiveops.constructor_nallargs env construct
       in
       let argl =
         if List.is_empty argl then List.make cst_narg (mkGHole ())
@@ -292,7 +292,7 @@ let build_constructors_of_type ind' argl =
       let pat_as_term =
         mkGApp (mkGRef (GlobRef.ConstructRef (ind', i + 1)), argl)
       in
-      cases_pattern_of_glob_constr (Global.env ()) Anonymous pat_as_term)
+      cases_pattern_of_glob_constr env Anonymous pat_as_term)
     ind.Declarations.mind_consnames
 
 (******************)
@@ -393,7 +393,7 @@ let rec pattern_to_term_and_type env typ =
     | PatVar Anonymous -> assert false
     | PatVar (Name id) -> mkGVar id
     | PatCstr (constr, patternl, _) ->
-      let cst_narg = Inductiveops.constructor_nallargs (Global.env ()) constr in
+      let cst_narg = Inductiveops.constructor_nallargs env constr in
       let (Inductiveops.IndType (indf, indargs)) =
         try
           Inductiveops.find_rectype env (Evd.from_env env)
@@ -662,7 +662,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
           ++ pr_glob_constr_env env b ++ str " in " ++ pr_glob_constr_env env rt
           ++ str ". try again with a cast" )
     in
-    let case_pats = build_constructors_of_type (fst ind) [] in
+    let case_pats = build_constructors_of_type env (fst ind) [] in
     assert (Int.equal (Array.length case_pats) 2);
     let brl =
       List.map_i (fun i x -> CAst.make ([], [case_pats.(i)], x)) 0 [lhs; rhs]
@@ -684,7 +684,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
           ++ pr_glob_constr_env env b ++ str " in " ++ pr_glob_constr_env env rt
           ++ str ". try again with a cast" )
     in
-    let case_pats = build_constructors_of_type (fst ind) nal_as_glob_constr in
+    let case_pats = build_constructors_of_type env (fst ind) nal_as_glob_constr in
     assert (Int.equal (Array.length case_pats) 1);
     let br = CAst.make ([], [case_pats.(0)], e) in
     let match_expr = mkGCases (None, [(b, (Anonymous, None))], [br]) in
@@ -969,7 +969,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
         let ind, args' =
           Inductiveops.find_inductive env Evd.(from_env env) ty'
         in
-        let mib, _ = Global.lookup_inductive (fst ind) in
+        let mib, _ = Inductive.lookup_mind_specif env (fst ind) in
         let nparam = mib.Declarations.mind_nparams in
         let params, arg' = Util.List.chop nparam args' in
         let rt_typ =
