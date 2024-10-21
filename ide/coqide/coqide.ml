@@ -1562,7 +1562,7 @@ let build_ui () =
     item "match" ~label:"match ..." ~accel:(modifier_for_templates#get^"M")
       ~callback:match_callback
   ];
-  alpha_items templates_menu "Template" Coq_commands.commands;
+  alpha_items templates_menu "Template" Rocq_commands.commands;
 
   let qitem s sc =
     let query = s ^ "..." in

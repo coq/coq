@@ -81,7 +81,7 @@ object(self)
         item#add w#coerce;
         bar#insert item in
       let combo, _ =
-        GEdit.combo_box_entry_text ~strings:Coq_commands.state_preserving () in
+        GEdit.combo_box_entry_text ~strings:Rocq_commands.state_preserving () in
       combo#entry#set_text "Search";
       let entry = GEdit.entry () in
       entry#misc#set_can_default true;
