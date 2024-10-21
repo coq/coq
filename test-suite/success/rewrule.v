@@ -261,7 +261,7 @@ Check U : U.
 Definition id'@{i} : Type@{i} -> Type@{u} := fun (t: Type@{i}) => t.
 Fail Definition U' : Type@{u} := id' Type@{u}.
 
-Require Import Stdlib.Logic.Hurkens.
+Require Import TestSuite.hurkens.
 Goal False.
   apply (TypeNeqSmallType.paradox U eq_refl).
 Defined.

@@ -33,8 +33,8 @@ In both v8.4 And v8.5, the goal is unchanged.
 *)
 Admitted.
 
-Require Import List.
-Lemma foo n (l k : list nat) : k ++ skipn n l = skipn n l.
+Require Import TestSuite.list.
+Lemma foo n (l k : list nat) : app k (skipn n l) = skipn n l.
 Proof. f_equal.
 (*
   8.4: leaves the goal unchanged, i.e. k ++ skipn n l = skipn n l
@@ -43,7 +43,6 @@ Proof. f_equal.
 *)
 Abort.
 
-Require Import List.
 Fixpoint replicate {A} (n : nat) (x : A) : list A :=
   match n with 0 => nil | S n => x :: replicate n x end.
 Lemma bar {A} n m (x : A) :
