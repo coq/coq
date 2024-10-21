@@ -317,8 +317,8 @@ let parse_args ~usage ~init arglist : t * string list =
       add_set_option oval ["Mangle"; "Names"; "Prefix"] (OptionSet(Some(next ())))
 
     |"-profile-ltac-cutoff" ->
-      Flags.profile_ltac_cutoff := get_float ~opt (next ());
-      add_set_option oval ["Ltac"; "Profiling"] (OptionSet None)
+      let oval = add_set_option oval ["Ltac"; "Profiling"] (OptionSet None) in
+      add_set_option oval ["Ltac"; "Profiling"; "Cutoff"] (OptionSet (Some (next ())))
 
     |"-load-vernac-object"|"-require" ->
       add_vo_require oval (next ()) None None
@@ -408,7 +408,7 @@ let parse_args ~usage ~init arglist : t * string list =
     |"-m"|"--memory" -> { oval with post = { memory_stat = true }}
     |"-noinit"|"-nois" -> { oval with pre = { oval.pre with load_init = false }}
     |"-boot" -> { oval with pre = { oval.pre with boot = true }}
-    |"-profile-ltac" -> Flags.profile_ltac := true; oval
+    |"-profile-ltac" -> add_set_option oval ["Ltac"; "Profiling"] (OptionSet None)
     |"-q" -> { oval with pre = { oval.pre with load_rcfile = false; }}
     |"-quiet"|"-silent" ->
       Flags.quiet := true;

@@ -14,15 +14,23 @@ open Util
 
 module M = CString.Map
 
+let profile_ltac = ref false
+let profile_ltac_cutoff = ref 2.0
+
 (** [is_profiling] and the profiling info ([stack]) should be synchronized with
     the document; the rest of the ref cells are either local to individual
     tactic invocations, or global flags, and need not be synchronized, since no
     document-level backtracking happens within tactics. We synchronize
     is_profiling via an option. *)
-let is_profiling = Flags.profile_ltac
+let is_profiling = profile_ltac
 
 let set_profiling b = is_profiling := b
 let get_profiling () = !is_profiling
+
+let get_profiling_cutoff () = string_of_float !profile_ltac_cutoff
+let set_profiling_cutoff s =
+  try profile_ltac_cutoff := float_of_string s
+  with Failure _ -> CErrors.user_err Pp.(str "Ltac Profiling Cutoff must be interpretable as a float.")
 
 let encountered_invalid_stack_no_self = ref false
 
@@ -461,6 +469,7 @@ let finish_timing ~prefix name =
 (* ******************** *)
 
 let print_results_filter ~cutoff ~filter =
+  let cutoff = Option.default !profile_ltac_cutoff cutoff in
   data := SM.filter (fun (doc,id) _ -> Stateid.is_valid ~doc id) !data;
   let results =
     SM.fold (fun _ -> merge_roots ~disjoint:true) !data (empty_treenode root) in
@@ -472,11 +481,11 @@ let print_results ~cutoff =
   print_results_filter ~cutoff ~filter:(fun _ -> true)
 
 let print_results_tactic tactic =
-  print_results_filter ~cutoff:!Flags.profile_ltac_cutoff ~filter:(fun s ->
+  print_results_filter ~cutoff:None ~filter:(fun s ->
     String.(equal tactic (sub (s ^ ".") 0 (min (1+length s) (length tactic)))))
 
 let do_print_results_at_close () =
-  if get_profiling () then print_results ~cutoff:!Flags.profile_ltac_cutoff
+  if get_profiling () then print_results ~cutoff:None
 
 let () =
   let open Goptions in
@@ -486,3 +495,12 @@ let () =
       optkey   = ["Ltac"; "Profiling"];
       optread  = get_profiling;
       optwrite = set_profiling }
+
+let () =
+  let open Goptions in
+  declare_string_option
+    { optstage = Summary.Stage.Interp;
+      optdepr  = None;
+      optkey   = ["Ltac"; "Profiling"; "Cutoff"];
+      optread  = get_profiling_cutoff;
+      optwrite = set_profiling_cutoff }
