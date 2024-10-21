@@ -1,5 +1,5 @@
 ; IDE Server
-(ocamllex utf8_convert config_lexer coq_lex)
+(ocamllex utf8_convert config_lexer rocq_lex)
 
 (library
  (name core)
