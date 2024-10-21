@@ -161,11 +161,11 @@ let default = {
 let add_ml_include opts s =
   { opts with pre = { opts.pre with ml_includes = s :: opts.pre.ml_includes }}
 
-let add_vo_include opts unix_path coq_path implicit =
+let add_vo_include opts unix_path rocq_path implicit =
   let open Loadpath in
-  let coq_path = Libnames.dirpath_of_string coq_path in
+  let rocq_path = Libnames.dirpath_of_string rocq_path in
   { opts with pre = { opts.pre with vo_includes = {
-        unix_path; coq_path; has_ml = false; implicit; recursive = true } :: opts.pre.vo_includes }}
+        unix_path; coq_path = rocq_path; has_ml = false; implicit; recursive = true } :: opts.pre.vo_includes }}
 
 let add_vo_require opts d ?(allow_failure=false) p export =
   { opts with pre = { opts.pre with injections = RequireInjection {lib=d; prefix=p; export; allow_failure} :: opts.pre.injections }}

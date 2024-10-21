@@ -37,7 +37,7 @@ module RocqPositive = struct
   let _xO = bt_lib_constr "num.pos.xO"
   let _xI = bt_lib_constr "num.pos.xI"
 
-  (* A coq nat from an int *)
+  (* A Rocq nat from an int *)
   let rec of_int n =
     if n <= 1 then Lazy.force _xH
     else

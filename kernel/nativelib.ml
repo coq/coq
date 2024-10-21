@@ -75,7 +75,7 @@ let get_include_dirs () =
   then (Lazy.force my_temp_dir) :: base
   else base
 
-(* Pointer to the function linking an ML object into coq's toplevel *)
+(* Pointer to the function linking an ML object into Rocq's toplevel *)
 let load_obj = ref (fun _x -> () : string -> unit)
 
 let rt1 = ref (dummy_value ())

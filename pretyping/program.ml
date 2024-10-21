@@ -47,9 +47,6 @@ let coq_JMeq_ind  () =
     user_err (Pp.str "cannot find Stdlib.Logic.JMeq.JMeq; maybe library Stdlib.Logic.JMeq has to be required first.")
 let coq_JMeq_refl () = Coqlib.lib_ref "core.JMeq.refl"
 
-(* let coq_not () = Universes.constr_of_global @@ Coqlib.lib_ref "core.not.type" *)
-(* let coq_and () = Universes.constr_of_global @@ Coqlib.lib_ref "core.and.type" *)
-
 let unsafe_fold_right f = function
     hd :: tl -> List.fold_right f tl hd
   | [] -> invalid_arg "unsafe_fold_right"

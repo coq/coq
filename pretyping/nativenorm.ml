@@ -433,7 +433,7 @@ let evars_of_evar_map sigma =
 
 (* fork perf process, return profiler's process id *)
 let start_profiler_linux profile_fn =
-  let coq_pid = Unix.getpid () in (* pass pid of running coqtop *)
+  let rocq_pid = Unix.getpid () in (* pass pid of running coqtop *)
   (* we don't want to see perf's console output *)
   let dev_null = Unix.descr_of_out_channel (open_out_bin "/dev/null") in
   let _ = Feedback.msg_info (Pp.str ("Profiling to file " ^ profile_fn)) in
@@ -441,7 +441,7 @@ let start_profiler_linux profile_fn =
   let profiler_pid =
     Unix.create_process
       perf
-      [|perf; "record"; "-g"; "-o"; profile_fn; "-p"; string_of_int coq_pid |]
+      [|perf; "record"; "-g"; "-o"; profile_fn; "-p"; string_of_int rocq_pid |]
       Unix.stdin dev_null dev_null
   in
   (* doesn't seem to be a way to test whether process creation succeeded

@@ -76,7 +76,7 @@ type condition = (Environ.env -> Evd.evar_map -> Evar.Set.t -> bool)
 
 (**
   A tc_solver is made of a solver and a condition telling when the
-  the solver should be executed instead of coq's one
+  the solver should be executed instead of Rocq's one
 *)
 type tc_solver = solver * condition
 

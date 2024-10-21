@@ -99,7 +99,7 @@ let my_it_mkLambda_or_LetIn_name env s c =
   let mkLambda_or_LetIn_name d b = mkLambda_or_LetIn (name_assumption env d) b in
   List.fold_left (fun c d -> mkLambda_or_LetIn_name d c) c s
 
-let get_coq_eq env ctx =
+let get_rocq_eq env ctx =
   let eq = Globnames.destIndRef (Coqlib.lib_ref "core.eq.type") in
   let eq, ctx = with_context_set ctx
       (UnivGen.fresh_inductive_instance env eq) in
@@ -260,7 +260,7 @@ let build_sym_involutive_scheme env handle ind =
   let (ind,u as indu), ctx = UnivGen.fresh_inductive_instance env ind in
   let (mib,mip as specif),nrealargs,realsign,paramsctxt,paramsctxt1 =
     get_sym_eq_data env indu in
-  let eq,eqrefl,ctx = get_coq_eq env ctx in
+  let eq,eqrefl,ctx = get_rocq_eq env ctx in
   let sym, ctx = const_of_scheme sym_scheme_kind env handle ind ctx in
   let cstr n = mkApp (mkConstructUi (indu,1),Context.Rel.instance mkRel n paramsctxt) in
   let inds = Indrec.pseudo_sort_family_for_elim ind mip in
@@ -374,7 +374,7 @@ let build_l2r_rew_scheme dep env handle ind kind =
     get_sym_eq_data env indu in
   let sym, ctx = const_of_scheme sym_scheme_kind env handle ind ctx in
   let sym_involutive, ctx = const_of_scheme sym_involutive_scheme_kind env handle ind ctx in
-  let eq,eqrefl,ctx = get_coq_eq env ctx in
+  let eq,eqrefl,ctx = get_rocq_eq env ctx in
   let cstr n p =
     mkApp (mkConstructUi(indu,1),
       Array.concat [Context.Rel.instance mkRel n paramsctxt1;
@@ -853,4 +853,4 @@ let build_congr env (eq,refl,ctx) ind =
 let congr_scheme_kind = declare_individual_scheme_object "congr"
   (fun env _ ind ->
      (* May fail if equality is not defined *)
-   build_congr env (get_coq_eq env UnivGen.empty_sort_context) ind)
+   build_congr env (get_rocq_eq env UnivGen.empty_sort_context) ind)

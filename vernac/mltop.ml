@@ -30,11 +30,11 @@ open Pp
 
 
 (* This path is where we look for .cmo/.cmxs using the legacy method *)
-let coq_mlpath_copy = ref [Sys.getcwd ()]
+let rocq_mlpath_copy = ref [Sys.getcwd ()]
 let keep_copy_mlpath path =
   let cpath = CUnix.canonical_path_name path in
   let filter path' = not (String.equal cpath path') in
-  coq_mlpath_copy := cpath :: List.filter filter !coq_mlpath_copy
+  rocq_mlpath_copy := cpath :: List.filter filter !rocq_mlpath_copy
 
 module Fl_internals = struct
 
@@ -156,7 +156,7 @@ end = struct
     then base ^ ".cmxs"
     else
       let name = base ^ ".cmo" in
-      if System.is_in_path !coq_mlpath_copy name
+      if System.is_in_path !rocq_mlpath_copy name
       then name else base ^ ".cma"
 
   let load = function
@@ -164,7 +164,7 @@ end = struct
       Fl_dynload.load_packages [lib]
     | { file = Some file; lib } ->
       let file = select_plugin_version file in
-      let _, gname = System.find_file_in_path ~warn:false !coq_mlpath_copy file in
+      let _, gname = System.find_file_in_path ~warn:false !rocq_mlpath_copy file in
       Dynlink.loadfile gname;
       Findlib.(record_package Record_load) lib
 
@@ -172,7 +172,7 @@ end = struct
     match s with
     | { file = Some file; _ } ->
       let file = select_plugin_version file in
-      let _, gname = System.find_file_in_path ~warn:false !coq_mlpath_copy file in
+      let _, gname = System.find_file_in_path ~warn:false !rocq_mlpath_copy file in
       [Digest.file gname]
     | { file = None; lib } ->
       let plugins = Fl_internals.fl_find_plugins lib in
@@ -446,7 +446,7 @@ let declare_ml_modules local l =
   cache_ml_objects mnames
 
 let print_ml_path () =
-  let l = !coq_mlpath_copy in
+  let l = !rocq_mlpath_copy in
   str"ML Load Path:" ++ fnl () ++ str"  " ++
           hv 0 (prlist_with_sep fnl str l)
 

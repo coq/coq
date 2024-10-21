@@ -45,5 +45,5 @@ val retrieve_obligations :
     [fs] is the number of function prototypes to try to clear from
    evars contexts. [evnames, evmap] is the list of names /
    substitution functions used to program with holes. This is not used
-   in Coq, but in the equations plugin; [evnames] is actually
+   in Rocq, but in the equations plugin; [evnames] is actually
    redundant with the information contained in [obls] *)
