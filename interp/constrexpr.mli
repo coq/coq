@@ -90,15 +90,15 @@ type 'a or_by_notation_r =
 
 type 'a or_by_notation = 'a or_by_notation_r CAst.t
 
-type ('a,'b,'c) notation_arg_kind =
-  | NtnTypeArgConstr of 'a
-  | NtnTypeArgPattern of 'b
-  | NtnTypeArgBinders of 'c
+type ('constr,'pattern,'binder) notation_arg_kind =
+  | NtnTypeArgConstr of 'constr
+  | NtnTypeArgPattern of 'pattern
+  | NtnTypeArgBinders of 'binder
 
-type ('a,'b,'c) notation_arg_type =
-  | NtnTypeArg of ('a,'b,'c) notation_arg_kind
-  | NtnTypeArgList of ('a,'b,'c) notation_arg_type list (* all elements assumed of same type *)
-  | NtnTypeArgTuple of ('a,'b,'c) notation_arg_type list
+type ('constr,'pattern,'binder) notation_arg_type =
+  | NtnTypeArg of ('constr,'pattern,'binder) notation_arg_kind
+  | NtnTypeArgList of ('constr,'pattern,'binder) notation_arg_type list (* all elements assumed of same type *)
+  | NtnTypeArgTuple of ('constr,'pattern,'binder) notation_arg_type list
 
 (* NB: the last string in [ByNotation] is actually a [Notation.delimiters],
    but this formulation avoids a useless dependency. *)
