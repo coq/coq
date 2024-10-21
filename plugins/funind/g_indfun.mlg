@@ -134,7 +134,7 @@ GRAMMAR EXTEND Gram
   GLOBAL: function_fix_definition ;
 
   function_fix_definition:
-    [ [ g = Vernac.fix_definition -> { Loc.tag ~loc g } ]]
+    [ [ g = Vernac.definition_bodies -> { Loc.tag ~loc g } ]]
     ;
 
 END
@@ -152,7 +152,7 @@ let is_proof_termination_interactively_checked recsl =
 
 let classify_as_Fixpoint recsl =
  Vernac_classifier.classify_vernac
-    (Vernacexpr.(CAst.make @@ { control = []; attrs = []; expr = VernacSynPure (VernacFixpoint(NoDischarge, List.split (List.map snd recsl)))}))
+    (Vernacexpr.(CAst.make @@ { control = []; attrs = []; expr = VernacSynPure (VernacDefinition((NoDischarge, IsDefinitionKind Fixpoint), List.map snd recsl))}))
 
 let classify_funind recsl =
   match classify_as_Fixpoint recsl with
