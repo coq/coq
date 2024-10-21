@@ -11,7 +11,7 @@ let parse pa n =
   let entry = Pvernac.Vernac_.main_entry in
   let rec loop res n =
     if n = 0 then res else
-      match Pcoq.Entry.parse entry pa with
+      match Procq.Entry.parse entry pa with
       | None -> res
       | Some r -> loop (r :: res) (n-1)
   in
@@ -27,7 +27,7 @@ let print_locs fmt { CAst.loc; _ } =
 
 let setup_pa () =
   let text = doc in
-  Pcoq.Parsable.make (Gramlib.Stream.of_string text)
+  Procq.Parsable.make (Gramlib.Stream.of_string text)
 
 let parse_whole pa =
   parse pa 10
@@ -40,17 +40,17 @@ let main () =
   let res, loc =
     try
       let _ = parse_whole pa in
-      false, Pcoq.Parsable.loc pa
+      false, Procq.Parsable.loc pa
     with
     (* should be `E Undefined_token` but type is private *)
     | CLexer.Error.E _ ->
       (* We now consume a single token and check that the location is
          correct for "A" *)
-      let () = Pcoq.Parsable.consume pa 1 in
-      let loc = Pcoq.Parsable.loc pa in
+      let () = Procq.Parsable.consume pa 1 in
+      let loc = Procq.Parsable.loc pa in
       let res = (loc.line_nb = 2) && (loc.bol_pos = 52) && (loc.bp = 58) && (loc.ep = 59) in
       res, loc
-    | _ -> false, Pcoq.Parsable.loc pa
+    | _ -> false, Procq.Parsable.loc pa
   in
   let oc = Stdlib.open_out log_file in
   let outf = Format.formatter_of_out_channel oc in

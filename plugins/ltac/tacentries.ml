@@ -15,7 +15,7 @@ open Names
 open Libobject
 open Genarg
 open Extend
-open Pcoq
+open Procq
 open Egramml
 open Vernacexpr
 open Libnames
@@ -32,10 +32,10 @@ type argument = Genarg.ArgT.any Extend.user_symbol
 (* Interpret entry names of the form "ne_constr_list" as entry keys   *)
 
 let atactic n =
-  Pcoq.Symbol.nterml Pltac.ltac_expr (string_of_int n)
+  Procq.Symbol.nterml Pltac.ltac_expr (string_of_int n)
 
 type entry_name = EntryName :
-  'a raw_abstract_argument_type * (Tacexpr.raw_tactic_expr, _, 'a) Pcoq.Symbol.t -> entry_name
+  'a raw_abstract_argument_type * (Tacexpr.raw_tactic_expr, _, 'a) Procq.Symbol.t -> entry_name
 
 (** Quite ad-hoc *)
 let get_tacentry n m =
@@ -43,8 +43,8 @@ let get_tacentry n m =
     Int.equal m n
     && not (Int.equal m 0) (* Because tactic0 is at simple_tactic *)
   in
-  if check_lvl n then EntryName (rawwit Tacarg.wit_tactic, Pcoq.Symbol.self)
-  else if check_lvl (n + 1) then EntryName (rawwit Tacarg.wit_tactic, Pcoq.Symbol.next)
+  if check_lvl n then EntryName (rawwit Tacarg.wit_tactic, Procq.Symbol.self)
+  else if check_lvl (n + 1) then EntryName (rawwit Tacarg.wit_tactic, Procq.Symbol.next)
   else EntryName (rawwit Tacarg.wit_tactic, atactic n)
 
 let get_separator = function
@@ -133,23 +133,23 @@ let head_is_ident tg = match tg.tacgram_prods with
 let rec prod_item_of_symbol lev = function
 | Extend.Ulist1 s ->
   let EntryName (Rawwit typ, e) = prod_item_of_symbol lev s in
-  EntryName (Rawwit (ListArg typ), Pcoq.Symbol.list1 e)
+  EntryName (Rawwit (ListArg typ), Procq.Symbol.list1 e)
 | Extend.Ulist0 s ->
   let EntryName (Rawwit typ, e) = prod_item_of_symbol lev s in
-  EntryName (Rawwit (ListArg typ), Pcoq.Symbol.list0 e)
+  EntryName (Rawwit (ListArg typ), Procq.Symbol.list0 e)
 | Extend.Ulist1sep (s, sep) ->
   let EntryName (Rawwit typ, e) = prod_item_of_symbol lev s in
-  EntryName (Rawwit (ListArg typ), Pcoq.Symbol.list1sep e (Pcoq.Symbol.tokens [Pcoq.TPattern (Pcoq.terminal sep)]) false)
+  EntryName (Rawwit (ListArg typ), Procq.Symbol.list1sep e (Procq.Symbol.tokens [Procq.TPattern (Procq.terminal sep)]) false)
 | Extend.Ulist0sep (s, sep) ->
   let EntryName (Rawwit typ, e) = prod_item_of_symbol lev s in
-  EntryName (Rawwit (ListArg typ), Pcoq.Symbol.list0sep e (Pcoq.Symbol.tokens [Pcoq.TPattern (Pcoq.terminal sep)]) false)
+  EntryName (Rawwit (ListArg typ), Procq.Symbol.list0sep e (Procq.Symbol.tokens [Procq.TPattern (Procq.terminal sep)]) false)
 | Extend.Uopt s ->
   let EntryName (Rawwit typ, e) = prod_item_of_symbol lev s in
-  EntryName (Rawwit (OptArg typ), Pcoq.Symbol.opt e)
+  EntryName (Rawwit (OptArg typ), Procq.Symbol.opt e)
 | Extend.Uentry arg ->
   let ArgT.Any tag = arg in
   let wit = ExtraArg tag in
-  EntryName (Rawwit wit, Pcoq.Symbol.nterm (genarg_grammar wit))
+  EntryName (Rawwit wit, Procq.Symbol.nterm (genarg_grammar wit))
 | Extend.Uentryl (s, n) ->
   let ArgT.Any tag = s in
   assert (CString.is_suffix "tactic" (ArgT.repr tag));
@@ -184,7 +184,7 @@ let add_tactic_entry (kn, ml, tg) state =
   in
   let prods = List.map map tg.tacgram_prods in
   let rules = make_rule mkact prods in
-  let r = ExtendRule (entry, Pcoq.Reuse (pos, [rules])) in
+  let r = ExtendRule (entry, Procq.Reuse (pos, [rules])) in
   ([r], state)
 
 let tactic_grammar =
@@ -428,27 +428,27 @@ let create_ltac_quotation ~plugin name cast (e, l) =
   in
   let () = ltac_quotations := String.Set.add name !ltac_quotations in
   let entry = match l with
-  | None -> Pcoq.Symbol.nterm e
-  | Some l -> Pcoq.Symbol.nterml e (string_of_int l)
+  | None -> Procq.Symbol.nterm e
+  | Some l -> Procq.Symbol.nterml e (string_of_int l)
   in
   let rule =
-    Pcoq.(
+    Procq.(
       Rule.next
         (Rule.next
            (Rule.next
               (Rule.next
                  (Rule.next
                     Rule.stop
-                    (Symbol.token (Pcoq.terminal name)))
-                 (Symbol.token (Pcoq.terminal ":")))
-              (Symbol.token (Pcoq.terminal "(")))
+                    (Symbol.token (Procq.terminal name)))
+                 (Symbol.token (Procq.terminal ":")))
+              (Symbol.token (Procq.terminal "(")))
            entry)
-        (Symbol.token (Pcoq.terminal ")")))
+        (Symbol.token (Procq.terminal ")")))
   in
   let action _ v _ _ _ loc = cast (Some loc, v) in
-  let gram = [Pcoq.Production.make rule action] in
+  let gram = [Procq.Production.make rule action] in
   let plugin_uid = (plugin, "tacquot:"^name) in
-  Egramml.grammar_extend ~plugin_uid Pltac.tactic_value (Pcoq.Reuse (None, gram))
+  Egramml.grammar_extend ~plugin_uid Pltac.tactic_value (Procq.Reuse (None, gram))
 
 (** Command *)
 
@@ -477,7 +477,7 @@ let register_ltac local ?deprecation tacl =
         in
         let is_shadowed =
           try
-            match Pcoq.parse_string Pltac.tactic (Id.to_string id) with
+            match Procq.parse_string Pltac.tactic (Id.to_string id) with
             | { CAst.v=(Tacexpr.TacArg _) } -> false
             | _ -> true (* most probably TacAtom, i.e. a primitive tactic ident *)
           with e when CErrors.noncritical e -> true (* prim tactics with args, e.g. "apply" *)
@@ -617,7 +617,7 @@ let print_ltac id =
 (** Grammar *)
 
 let () =
-  let open Pcoq.Entry in
+  let open Procq.Entry in
   let entries = [
     Any Pltac.ltac_expr;
     Any Pltac.simple_tactic;
@@ -930,12 +930,12 @@ let argument_extend (type a b c) ~plugin ~name (arg : (a, b, c) tactic_argument)
   let () = register_interp0 wit (interp_fun name arg tag) in
   let entry = match arg.arg_parsing with
   | Vernacextend.Arg_alias e ->
-    let () = Pcoq.register_grammar wit e in
+    let () = Procq.register_grammar wit e in
     e
   | Vernacextend.Arg_rules rules ->
-    let e = Pcoq.create_generic_entry2 name (Genarg.rawwit wit) in
+    let e = Procq.create_generic_entry2 name (Genarg.rawwit wit) in
     let plugin_uid = (plugin, "argextend:"^name) in
-    let () = Egramml.grammar_extend ~plugin_uid e (Pcoq.Fresh (Gramlib.Gramext.First, [None, None, rules])) in
+    let () = Egramml.grammar_extend ~plugin_uid e (Procq.Fresh (Gramlib.Gramext.First, [None, None, rules])) in
     e
   in
   let (rpr, gpr, tpr) = arg.arg_printer in

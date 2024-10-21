@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Pcoq
+open Procq
 open Genredexpr
 open Vernacexpr
 

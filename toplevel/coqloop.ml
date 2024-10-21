@@ -24,7 +24,7 @@ type input_buffer = {
   mutable len : int;    (* number of chars in the buffer *)
   mutable bols : int list; (* offsets in str of beginning of lines *)
   mutable stream : (unit,char) Gramlib.Stream.t; (* stream of chars *)
-  mutable tokens : Pcoq.Parsable.t; (* stream of tokens *)
+  mutable tokens : Procq.Parsable.t; (* stream of tokens *)
   mutable start : int } (* stream count of the first char of the buffer *)
 
 (* Double the size of the buffer. *)
@@ -241,7 +241,7 @@ let top_buffer =
     len = 0;
     bols = [];
     stream;
-    tokens = Pcoq.Parsable.make stream;
+    tokens = Procq.Parsable.make stream;
     start = 0 }
 
 (* Intialize or reinitialize the char stream *)
@@ -251,7 +251,7 @@ let reset_input_buffer ~state =
   top_buffer.len <- 0;
   top_buffer.bols <- [];
   top_buffer.stream <- stream;
-  top_buffer.tokens <- Pcoq.Parsable.make stream;
+  top_buffer.tokens <- Procq.Parsable.make stream;
   top_buffer.start <- 0
 
 let set_prompt prompt =
@@ -268,7 +268,7 @@ let parse_to_dot =
     | Tok.EOI -> ()
     | _ -> dot kwstate st
   in
-  Pcoq.Entry.(of_parser "Coqtoplevel.dot" { parser_fun = dot })
+  Procq.Entry.(of_parser "Coqtoplevel.dot" { parser_fun = dot })
 
 (* If an error occurred while parsing, we try to read the input until a dot
    token is encountered.
@@ -276,7 +276,7 @@ let parse_to_dot =
 
 let rec discard_to_dot () =
   try
-    Pcoq.Entry.parse parse_to_dot top_buffer.tokens
+    Procq.Entry.parse parse_to_dot top_buffer.tokens
   with
     | CLexer.Error.E _ -> (* Lexer failed *) discard_to_dot ()
     | e when CErrors.noncritical e -> ()

@@ -8,6 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val thm_token : Decls.theorem_kind Pcoq.Entry.t
+val thm_token : Decls.theorem_kind Procq.Entry.t
 
-val hint : Vernacexpr.hints_expr Pcoq.Entry.t
+val hint : Vernacexpr.hints_expr Procq.Entry.t

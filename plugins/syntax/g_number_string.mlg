@@ -16,7 +16,7 @@ open Notation
 open Number_string
 open Pp
 open Stdarg
-open Pcoq.Prim
+open Procq.Prim
 
 let pr_number_after = function
   | Nop -> mt ()

@@ -13,15 +13,15 @@
 {
 
 open Ltac_plugin
-open Pcoq.Constr
+open Procq.Constr
 open Ssrmatching
 open Ssrmatching.Internal
 
 (* Defining grammar rules with "xx" in it automatically declares keywords too,
  * we thus save the lexer to restore it at the end of the file *)
-let frozen_lexer = ref (Pcoq.get_keyword_state ()) ;;
+let frozen_lexer = ref (Procq.get_keyword_state ()) ;;
 let () = Mltop.add_init_function "coq-core.plugins.ssreflect" (fun () ->
-    frozen_lexer := Pcoq.get_keyword_state ())
+    frozen_lexer := Procq.get_keyword_state ())
 
 }
 
@@ -72,7 +72,7 @@ let input_ssrtermkind kwstate strm = match Gramlib.LStream.peek_nth kwstate 0 st
   | Tok.KEYWORD "(" -> InParens
   | Tok.KEYWORD "@" -> WithAt
   | _ -> NoFlag
-let ssrtermkind = Pcoq.Entry.(of_parser "ssrtermkind" { parser_fun = input_ssrtermkind })
+let ssrtermkind = Procq.Entry.(of_parser "ssrtermkind" { parser_fun = input_ssrtermkind })
 
 }
 
@@ -119,6 +119,6 @@ END
 (* and Import ssreflect.SsrSyntax to obtain these keywords and as a         *)
 (* consequence the extended ssreflect grammar.                             *)
 let () = Mltop.add_init_function "coq-core.plugins.ssreflect" (fun () ->
-      Pcoq.set_keyword_state !frozen_lexer) ;;
+      Procq.set_keyword_state !frozen_lexer) ;;
 
 }

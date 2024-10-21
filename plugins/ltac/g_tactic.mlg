@@ -28,7 +28,7 @@ open Inv
 open Locus
 open G_redexpr
 
-open Pcoq
+open Procq
 
 
 let all_with ~head delta =
@@ -40,27 +40,27 @@ let err () = raise Gramlib.Stream.Failure
 (* Hack to parse "(x:=t)" as an explicit argument without conflicts with the *)
 (* admissible notation "(x t)" *)
 let test_lpar_id_coloneq =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "lpar_id_coloneq" begin
     lk_kw "(" >> lk_ident >> lk_kw ":="
   end
 
 (* Hack to recognize "(x)" *)
 let test_lpar_id_rpar =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "lpar_id_coloneq" begin
     lk_kw "(" >> lk_ident >> lk_kw ")"
   end
 
 (* idem for (x:=t) and (1:=t) *)
 let test_lpar_idnum_coloneq =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_lpar_idnum_coloneq" begin
     lk_kw "(" >> (lk_ident <+> lk_nat) >> lk_kw ":="
   end
 
 let test_leftsquarebracket_equal =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_leftsquarebracket_equal" begin
     lk_kw "[" >> lk_kw "=" >> check_no_space
   end
@@ -70,7 +70,7 @@ open Extraargs
 
 (* idem for (x1..xn:t) [n^2 complexity but exceptional use] *)
 let check_for_coloneq =
-  Pcoq.Entry.(of_parser "lpar_id_colon"
+  Procq.Entry.(of_parser "lpar_id_colon"
     { parser_fun = fun kwstate strm ->
       let rec skip_to_rpar p n =
         match List.last (Gramlib.LStream.npeek kwstate n strm) with
@@ -94,7 +94,7 @@ let check_for_coloneq =
       | _ -> err () })
 
 let lookup_at_as_comma =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "lookup_at_as_comma" begin
     lk_kws [",";"at";"as"]
   end

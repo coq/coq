@@ -82,7 +82,7 @@ let wit_clause = wit_clause_dft_concl
 (** Registering grammar of generic arguments *)
 
 let () =
-  let open Pcoq in
+  let open Procq in
   register_grammar wit_nat Prim.natural;
   register_grammar wit_int Prim.integer;
   register_grammar wit_string Prim.string;

@@ -15,7 +15,7 @@
 let defaultCast = Constr.DEFAULTcast
 open Names
 open Pp
-open Pcoq
+open Procq
 open Ltac_plugin
 open Stdarg
 open Tacarg
@@ -54,7 +54,7 @@ open Libobject
 let ssr_loaded = Summary.ref ~name:"SSR:loaded" false
 let is_ssr_loaded () =
   !ssr_loaded ||
-  (if CLexer.is_keyword (Pcoq.get_keyword_state()) "SsrSyntax_is_Imported" then ssr_loaded:=true;
+  (if CLexer.is_keyword (Procq.get_keyword_state()) "SsrSyntax_is_Imported" then ssr_loaded:=true;
    !ssr_loaded)
 let () = Pptactic.ssr_loaded_hook is_ssr_loaded
 
@@ -116,9 +116,9 @@ let cast_arg wit v = Taccoerce.Value.cast (Genarg.topwit wit) v
 
 (* Defining grammar rules with "xx" in it automatically declares keywords too,
  * we thus save the lexer to restore it at the end of the file *)
-let frozen_lexer = ref (Pcoq.get_keyword_state ()) ;;
+let frozen_lexer = ref (Procq.get_keyword_state ()) ;;
 let () = Mltop.add_init_function "coq-core.plugins.ssreflect" (fun () ->
-    frozen_lexer := Pcoq.get_keyword_state ())
+    frozen_lexer := Procq.get_keyword_state ())
 
 let tacltop = (LevelLe 5)
 
@@ -189,7 +189,7 @@ let intern_hyp ist (SsrHyp (loc, id) as hyp) =
   if not_section_id id then hyp else
   hyp_err ?loc "Can't clear section hypothesis " id
 
-open Pcoq.Prim
+open Procq.Prim
 
 }
 
@@ -291,16 +291,16 @@ let negate_parser f x y =
   | Some _ -> raise Stream.Failure
 
 let test_not_ssrslashnum =
-  Pcoq.Entry.(of_parser
+  Procq.Entry.(of_parser
     "test_not_ssrslashnum" { parser_fun = negate_parser test_ssrslashnum10 })
 let test_ssrslashnum00 =
-  Pcoq.Entry.(of_parser "test_ssrslashnum01" { parser_fun = test_ssrslashnum00 })
+  Procq.Entry.(of_parser "test_ssrslashnum01" { parser_fun = test_ssrslashnum00 })
 let test_ssrslashnum10 =
-  Pcoq.Entry.(of_parser "test_ssrslashnum10" { parser_fun = test_ssrslashnum10 })
+  Procq.Entry.(of_parser "test_ssrslashnum10" { parser_fun = test_ssrslashnum10 })
 let test_ssrslashnum11 =
-  Pcoq.Entry.(of_parser "test_ssrslashnum11" { parser_fun = test_ssrslashnum11 })
+  Procq.Entry.(of_parser "test_ssrslashnum11" { parser_fun = test_ssrslashnum11 })
 let test_ssrslashnum01 =
-  Pcoq.Entry.(of_parser "test_ssrslashnum01" { parser_fun = test_ssrslashnum01 })
+  Procq.Entry.(of_parser "test_ssrslashnum01" { parser_fun = test_ssrslashnum01 })
 
 }
 
@@ -309,7 +309,7 @@ ARGUMENT EXTEND ssrsimpl_ne TYPED AS ssrsimplrep PRINTED BY { pr_ssrsimpl }
 | [ "/=" ] -> { Simpl ~-1 }
 END
 
-(* Pcoq.Prim. *)
+(* Procq.Prim. *)
 GRAMMAR EXTEND Gram
   GLOBAL: ssrsimpl_ne;
   ssrsimpl_ne: TOP [
@@ -411,7 +411,7 @@ END
 
 let pr_ssrocc _ _ _ = pr_occ
 
-open Pcoq.Prim
+open Procq.Prim
 
 }
 
@@ -430,7 +430,7 @@ END
 let pr_mmod = function May -> str "?" | Must -> str "!" | Once -> mt ()
 
 let wit_ssrmmod = add_genarg "ssrmmod" (fun env sigma -> pr_mmod)
-let ssrmmod = Pcoq.create_generic_entry2 "ssrmmod" (Genarg.rawwit wit_ssrmmod);;
+let ssrmmod = Procq.create_generic_entry2 "ssrmmod" (Genarg.rawwit wit_ssrmmod);;
 
 }
 
@@ -486,7 +486,7 @@ let input_ssrtermkind kwstate strm = match LStream.peek_nth kwstate 0 strm with
   | Tok.KEYWORD "@" -> WithAt
   | _ -> NoFlag
 
-let ssrtermkind = Pcoq.Entry.(of_parser "ssrtermkind" { parser_fun = input_ssrtermkind })
+let ssrtermkind = Procq.Entry.(of_parser "ssrtermkind" { parser_fun = input_ssrtermkind })
 
 (* New kinds of terms *)
 
@@ -497,7 +497,7 @@ let input_term_annotation kwstate strm =
   | Tok.KEYWORD "@" :: _ -> `At
   | _ -> `None
 let term_annotation =
-  Pcoq.Entry.(of_parser "term_annotation" { parser_fun = input_term_annotation })
+  Procq.Entry.(of_parser "term_annotation" { parser_fun = input_term_annotation })
 
 (* terms *)
 
@@ -519,7 +519,7 @@ let glob_ssrterm gs = function
 let subst_ssrterm s (k, c) = k, Tacsubst.subst_glob_constr_and_expr s c
 let interp_ssrterm _ _ _ t = t
 
-open Pcoq.Constr
+open Procq.Constr
 
 }
 
@@ -533,7 +533,7 @@ END
 
 GRAMMAR EXTEND Gram
   GLOBAL: ssrterm;
-  ssrterm: TOP [[ k = ssrtermkind; c = Pcoq.Constr.constr -> { mk_term k c } ]];
+  ssrterm: TOP [[ k = ssrtermkind; c = Procq.Constr.constr -> { mk_term k c } ]];
 END
 
 (* New terms *)
@@ -577,12 +577,12 @@ ARGUMENT EXTEND ssrbwdview TYPED AS ssrterm list
    PRINTED BY { pr_ssrbwdview }
 END
 
-(* Pcoq *)
+(* Procq *)
 GRAMMAR EXTEND Gram
   GLOBAL: ssrbwdview;
   ssrbwdview: TOP [
-    [  test_not_ssrslashnum; "/"; c = Pcoq.Constr.constr -> { [mk_term NoFlag c] }
-    |  test_not_ssrslashnum; "/"; c = Pcoq.Constr.constr; w = ssrbwdview -> {
+    [  test_not_ssrslashnum; "/"; c = Procq.Constr.constr -> { [mk_term NoFlag c] }
+    |  test_not_ssrslashnum; "/"; c = Procq.Constr.constr; w = ssrbwdview -> {
                     (mk_term NoFlag c) :: w } ]];
 END
 
@@ -600,7 +600,7 @@ ARGUMENT EXTEND ssrfwdview TYPED AS ast_closure_term list
    PRINTED BY { pr_ssrfwdview }
 END
 
-(* Pcoq *)
+(* Procq *)
 GRAMMAR EXTEND Gram
   GLOBAL: ssrfwdview;
   ssrfwdview: TOP [
@@ -756,7 +756,7 @@ let pushIPatNoop = function
   | [] -> []
 
 let test_ident_no_do =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_ident_no_do" begin
     lk_ident_except ["do"]
   end
@@ -832,7 +832,7 @@ END
 {
 
 let test_leftsquarebracket_equal =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_leftsquarebracket_equal" begin
     lk_kw "[" >> lk_kw "=" >> check_no_space
   end
@@ -845,7 +845,7 @@ let reject_ssrhid kwstate strm =
       | _ -> ())
   | _ -> ()
 
-let test_nohidden = Pcoq.Entry.(of_parser "test_ssrhid" { parser_fun = reject_ssrhid })
+let test_nohidden = Procq.Entry.(of_parser "test_ssrhid" { parser_fun = reject_ssrhid })
 
 let rec reject_binder crossed_paren k kwstate s =
   match
@@ -859,7 +859,7 @@ let rec reject_binder crossed_paren k kwstate s =
   | Some (Tok.KEYWORD ")") when crossed_paren -> raise Stream.Failure
   | _ -> if crossed_paren then () else raise Stream.Failure
 
-let _test_nobinder = Pcoq.Entry.(of_parser "test_nobinder" { parser_fun = reject_binder false 0 })
+let _test_nobinder = Procq.Entry.(of_parser "test_nobinder" { parser_fun = reject_binder false 0 })
 
 }
 
@@ -869,7 +869,7 @@ ARGUMENT EXTEND ssrcpat TYPED AS ssripatrep PRINTED BY { pr_ssripat }
 
 END
 
-(* Pcoq *)
+(* Procq *)
 GRAMMAR EXTEND Gram
   GLOBAL: ssrcpat;
   hat: [
@@ -1013,7 +1013,7 @@ END
 {
 
 let test_ssrfwdid =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_ssrfwdid" begin
     lk_ident >> (lk_ident <+> lk_kws [":"; ":="; "("])
   end
@@ -1595,7 +1595,7 @@ let sq_brace_tacnames =
    (* "by" is a keyword *)
 
 let test_ssrseqvar =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_ssrseqvar" begin
     lk_ident_except sq_brace_tacnames >> (lk_kws ["[";"first";"last"])
   end
@@ -1660,7 +1660,7 @@ let ssr_id_of_string loc s =
   ^ "Scripts with explicit references to anonymous variables are fragile."))
     end; Id.of_string s
 
-let ssr_null_entry = Pcoq.Entry.(of_parser "ssr_null" { parser_fun = fun _ _ -> () })
+let ssr_null_entry = Procq.Entry.(of_parser "ssr_null" { parser_fun = fun _ _ -> () })
 
 }
 
@@ -1746,7 +1746,7 @@ type ssrarg = ssrfwdview * (ssreqid * (cpattern ssragens * ssripats))
 (* and Import ssreflect.SsrSyntax to obtain these keywords and as a         *)
 (* consequence the extended ssreflect grammar.                             *)
 let () = Mltop.add_init_function "coq-core.plugins.ssreflect" (fun () ->
-      Pcoq.set_keyword_state !frozen_lexer) ;;
+      Procq.set_keyword_state !frozen_lexer) ;;
 
 module Internal = struct
   let register_ssrtac = register_ssrtac

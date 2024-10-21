@@ -8,14 +8,14 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val test_lpar_id_coloneq : unit Pcoq.Entry.t
+val test_lpar_id_coloneq : unit Procq.Entry.t
 
-val test_lpar_id_rpar : unit Pcoq.Entry.t
+val test_lpar_id_rpar : unit Procq.Entry.t
 
-val test_lpar_idnum_coloneq : unit Pcoq.Entry.t
+val test_lpar_idnum_coloneq : unit Procq.Entry.t
 
-val test_leftsquarebracket_equal : unit Pcoq.Entry.t
+val test_leftsquarebracket_equal : unit Procq.Entry.t
 
-val check_for_coloneq : unit Pcoq.Entry.t
+val check_for_coloneq : unit Procq.Entry.t
 
-val lookup_at_as_comma : unit Pcoq.Entry.t
+val lookup_at_as_comma : unit Procq.Entry.t

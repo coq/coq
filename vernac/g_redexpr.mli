@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Pcoq
+open Procq
 open Genredexpr
 
 val int_or_var : int Locus.or_var Entry.t
