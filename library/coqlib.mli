@@ -93,27 +93,3 @@ val logic_module_name : string list
 
 (* Used by tactics *)
 val jmeq_module_name : string list
-
-
-(*************************************************************************)
-(** {2 DEPRECATED}                                                            *)
-(*************************************************************************)
-
-(** All the functions below are deprecated and should go away in the
-    next coq version ... *)
-
-(** [find_reference caller_message [dir;subdir;...] s] returns a global
-   reference to the name dir.subdir.(...).s; the corresponding module
-   must have been required or in the process of being compiled so that
-   it must be used lazily; it raises an anomaly with the given message
-   if not found *)
-val find_reference : string -> string list -> string -> GlobRef.t
-[@@ocaml.deprecated "(8.10) Please use Coqlib.lib_ref"]
-
-(** This just prefixes find_reference with Stdlib... *)
-val coq_reference  : string -> string list -> string -> GlobRef.t
-[@@ocaml.deprecated "(8.10) Please use Coqlib.lib_ref"]
-
-(** Search in several modules (not prefixed by "Stdlib") *)
-val gen_reference_in_modules : string->string list list-> string -> GlobRef.t
-[@@ocaml.deprecated "(8.10) Please use Coqlib.lib_ref"]
