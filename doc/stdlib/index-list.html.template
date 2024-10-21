@@ -34,6 +34,7 @@ through the <tt>Require Import</tt> command.</p>
       Classical logic, dependent equality, extensionality, choice axioms
   </dt>
   <dd>
+    theories/Logic/LogicalPrinciples.v
     theories/Logic/SetIsType.v
     theories/Logic/StrictProp.v
     theories/Logic/Classical_Pred_Type.v
