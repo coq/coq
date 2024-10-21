@@ -136,7 +136,9 @@ type cases_pattern_expr_r =
         with substitution l1) applied to arguments l2. In some
         functions (typically for parsing) s is unused (None), in
         others (typically for printing) it is used to indicate the
-        scope of the notation (Some _). *)
+        scope of the notation (Some _). Type invariant: the length of
+        list l1 is equal to the number of non terminals in n, as given
+        by function TODO (which one?) *)
   | CPatPrim   of prim_token
   | CPatRecord of (qualid * cases_pattern_expr) list
   | CPatDelimiters of delimiter_depth * string * cases_pattern_expr
@@ -218,6 +220,7 @@ and notation_arg_type_expr =
   (constr_expr, kinded_cases_pattern_expr, local_binder_expr list) notation_arg_type
 
 and notation_substitution =
+  (* List of substitutions for each non terminal in a notation. *)
   notation_arg_type_expr list
 
 type constr_pattern_expr = constr_expr
