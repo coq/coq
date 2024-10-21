@@ -42,7 +42,7 @@ type session = {
   messages : Wg_RoutedMessageViews.message_views_router;
   segment : Wg_Segment.segment; (* color coded status bar near bottom of the screen *)
   fileops : FileOps.ops;
-  coqops : CoqOps.ops;
+  coqops : RocqOps.ops;
   coqtop : Rocq.coqtop;
   command : Wg_Command.command_window; (* aka the Query Pane *)
   finder : Wg_Find.finder; (* Find / Replace panel *)
@@ -153,7 +153,7 @@ let handle_iter coqtop coqops (buffer : GText.buffer) it (stack : action_stack r
       call_coq_or_cancel_action coqtop coqops buffer it
 
 let set_buffer_handlers
-  (buffer : GText.buffer) script (coqops : CoqOps.ops) coqtop
+  (buffer : GText.buffer) script (coqops : RocqOps.ops) coqtop
 =
   let action_stack : action_stack ref = ref None in
   let get_start () = buffer#get_iter_at_mark (`NAME "start_of_input") in
@@ -442,7 +442,7 @@ let create file coqtop_args =
   let fops = new FileOps.fileops (buffer :> GText.buffer) file reset in
   let _ = fops#update_stats in
   let cops =
-    new CoqOps.coqops script proof messages segment coqtop (fun () -> fops#filename) in
+    new RocqOps.coqops script proof messages segment coqtop (fun () -> fops#filename) in
   let command = new Wg_Command.command_window basename coqtop cops messages sid in
   let errpage = create_errpage ~kind:"Error" script in
   let warnpage = create_errpage ~kind:"Warning" script in

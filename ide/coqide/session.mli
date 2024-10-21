@@ -40,7 +40,7 @@ type session = {
   messages : Wg_RoutedMessageViews.message_views_router;
   segment : Wg_Segment.segment;
   fileops : FileOps.ops;
-  coqops : CoqOps.ops;
+  coqops : RocqOps.ops;
   coqtop : Rocq.coqtop;
   command : Wg_Command.command_window;
   finder : Wg_Find.finder;
