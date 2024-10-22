@@ -8,35 +8,36 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type value = private
+type 'v kind = private
   | Any
   (** A value that we won't check, *)
 
   | Fail of string
   (** A value that shouldn't be there at all, *)
 
-  | Tuple of string * value array
+  | Tuple of string * 'v array
   (** A debug name and sub-values in this block *)
 
-  | Sum of string * int * value array array
+  | Sum of string * int * 'v array array
   (** A debug name, a number of constant constructors, and sub-values
      at each position of each possible constructed variant *)
 
-  | Array of value
-  | List of value
-  | Opt of value
+  | Array of 'v
+  | List of 'v
+  | Opt of 'v
   | Int
   | String
   (** Builtin Ocaml types. *)
 
-  | Annot of string * value
+  | Annot of string * 'v
   (** Adds a debug note to the inner value *)
-
-  | Proxy of value ref
-  (** Same as the inner value, used to define recursive types *)
 
   | Int64
   | Float64
+
+type value
+
+val kind : value -> value kind
 
 val v_any : value
 

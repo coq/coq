@@ -165,7 +165,7 @@ struct
 
 (** Name of a value *)
 
-let rec get_name ?(extra=false) = function
+let rec get_name ?(extra=false) v = match kind v with
   |Any -> "?"
   |Fail s -> "Invalid node: "^s
   |Tuple (name,_) -> name
@@ -176,7 +176,6 @@ let rec get_name ?(extra=false) = function
   |Int -> "int"
   |String -> "string"
   |Annot (s,v) -> s^"/"^get_name ~extra v
-  | Proxy v -> get_name ~extra !v
   | Int64 -> "Int64"
   | Float64 -> "Float64"
 
@@ -198,7 +197,7 @@ let get_string_in_tuple o =
 
 (** Some details : tags, integer value for non-block, etc etc *)
 
-let rec get_details v o = match v, Repr.repr o with
+let rec get_details v o = match kind v, Repr.repr o with
   | (String | Any), STRING s ->
     let len = min max_string_length (String.length s) in
     Printf.sprintf " [%s]" (String.escaped (String.sub s 0 len))
@@ -242,7 +241,7 @@ let access_block o = match Repr.repr o with
 
 (** raises Exit if the object has not the expected structure *)
 exception Forbidden
-let rec get_children v o pos = match v with
+let rec get_children v o pos = match kind v with
   |Tuple (_, v) ->
     let (_, os) = access_block o in
     access_children v os pos
@@ -275,7 +274,6 @@ let rec get_children v o pos = match v with
   |Annot (s,v) -> get_children v o pos
   |Any -> raise_notrace Exit
   | Fail s -> raise Forbidden
-  | Proxy v -> get_children !v o pos
   | Int64 -> raise_notrace Exit
   | Float64 -> raise_notrace Exit
 

@@ -140,7 +140,7 @@ let rec val_gen v mem ctx o = match o with
     end
   | Int _ | Atm _ | Fun _ -> val_gen_aux v mem ctx o
 
-and val_gen_aux v mem ctx o = match v with
+and val_gen_aux v mem ctx o = match kind v with
   | Tuple (name,vs) -> val_tuple ~name vs mem ctx o
   | Sum (name,cc,vv) -> val_sum name cc vv mem ctx o
   | Array v -> val_array v mem ctx o
@@ -153,7 +153,6 @@ and val_gen_aux v mem ctx o = match v with
   | Any -> ()
   | Fail s -> fail mem ctx o ("unexpected object " ^ s)
   | Annot (s,v) -> val_gen v mem (ctx/CtxAnnot s) o
-  | Proxy { contents = v } -> val_gen v mem ctx o
   | Int64 -> val_int64 mem ctx o
   | Float64 -> val_float64 mem ctx o
 
