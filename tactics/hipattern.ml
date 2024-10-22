@@ -286,13 +286,13 @@ let match_with_equation env sigma t =
     (try
       let gr = GlobRef.IndRef ind in
        if Rocqlib.check_ref "core.eq.type" gr then
-         Some (build_coq_eq_data()),hdapp,
+         Some (build_rocq_eq_data()),hdapp,
          PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
        else if Rocqlib.check_ref "core.identity.type" gr then
-         Some (build_coq_identity_data()),hdapp,
+         Some (build_rocq_identity_data()),hdapp,
          PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
        else if Rocqlib.check_ref "core.JMeq.type" gr then
-         Some (build_coq_jmeq_data()),hdapp,
+         Some (build_rocq_jmeq_data()),hdapp,
          HeterogenousEq(args.(0),args.(1),args.(2),args.(3))
        else
          let (mib,mip) = Inductive.lookup_mind_specif env ind in
@@ -435,9 +435,9 @@ let no_check () = true
 let check_jmeq_loaded () = has_ref "core.JMeq.type"
 
 let equalities =
-  [(lazy(lib_ref "core.eq.type"), false), no_check, build_coq_eq_data;
-   (lazy(lib_ref "core.JMeq.type"), true), check_jmeq_loaded, build_coq_jmeq_data;
-   (lazy(lib_ref "core.identity.type"), false), no_check, build_coq_identity_data]
+  [(lazy(lib_ref "core.eq.type"), false), no_check, build_rocq_eq_data;
+   (lazy(lib_ref "core.JMeq.type"), true), check_jmeq_loaded, build_rocq_jmeq_data;
+   (lazy(lib_ref "core.identity.type"), false), no_check, build_rocq_identity_data]
 
 let find_eq_data env sigma eqn = (* fails with PatternMatchingFailure *)
   let d,k = first_match (match_eq env sigma eqn) equalities in

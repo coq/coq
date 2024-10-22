@@ -343,7 +343,7 @@ val subst_one :
   (bool -> Id.t -> Id.t * constr * bool -> unit Proofview.tactic) Hook.t
 
 val declare_intro_decomp_eq :
-  ((int -> unit Proofview.tactic) -> Rocqlib.coq_eq_data * types *
+  ((int -> unit Proofview.tactic) -> Rocqlib.rocq_eq_data * types *
    (types * constr * constr) ->
    constr * types -> unit Proofview.tactic) -> unit
 

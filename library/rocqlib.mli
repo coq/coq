@@ -57,18 +57,18 @@ val get_lib_refs : unit -> (string * GlobRef.t) list
 
 (** {2 For Equality tactics} *)
 
-type coq_sigma_data = {
+type rocq_sigma_data = {
   proj1 : GlobRef.t;
   proj2 : GlobRef.t;
   elim  : GlobRef.t;
   intro : GlobRef.t;
   typ   : GlobRef.t }
 
-val build_sigma_type : coq_sigma_data delayed
-val build_sigma : coq_sigma_data delayed
-val build_prod : coq_sigma_data delayed
+val build_sigma_type : rocq_sigma_data delayed
+val build_sigma : rocq_sigma_data delayed
+val build_prod : rocq_sigma_data delayed
 
-type coq_eq_data = {
+type rocq_eq_data = {
   eq   : GlobRef.t;
   ind  : GlobRef.t;
   refl : GlobRef.t;
@@ -76,9 +76,9 @@ type coq_eq_data = {
   trans: GlobRef.t;
   congr: GlobRef.t }
 
-val build_coq_eq_data : coq_eq_data delayed
-val build_coq_identity_data : coq_eq_data delayed
-val build_coq_jmeq_data : coq_eq_data delayed
+val build_rocq_eq_data : rocq_eq_data delayed
+val build_rocq_identity_data : rocq_eq_data delayed
+val build_rocq_jmeq_data : rocq_eq_data delayed
 
 (* XXX: Some tactics special case JMeq, they should instead check for
    the constant, not the module *)

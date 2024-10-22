@@ -14,7 +14,7 @@ open Names
 let make_dir l = DirPath.make (List.rev_map Id.of_string l)
 
 (************************************************************************)
-(* Coq reference API                                                    *)
+(* Rocq reference API                                                   *)
 (************************************************************************)
 let coq = Libnames.coq_string (* "Stdlib" *)
 
@@ -23,7 +23,7 @@ let init_dir = [ coq; "Init"]
 let jmeq_module_name = [coq;"Logic";"JMeq"]
 
 let table : GlobRef.t CString.Map.t ref =
-  Summary.ref ~name:"coqlib_registered" CString.Map.empty
+  Summary.ref ~name:"rocqlib_registered" CString.Map.empty
 
 let get_lib_refs () =
   CString.Map.bindings !table
@@ -55,7 +55,7 @@ let add_ref s c =
 let cache_ref (s,c) =
   add_ref s c
 
-let (inCoqlibRef : Libobject.locality * (string * GlobRef.t) -> Libobject.obj) =
+let (inRocqlibRef : Libobject.locality * (string * GlobRef.t) -> Libobject.obj) =
   let open Libobject in
   declare_object @@ object_with_locality "COQLIBREF"
     ~cache:cache_ref
@@ -64,10 +64,10 @@ let (inCoqlibRef : Libobject.locality * (string * GlobRef.t) -> Libobject.obj) =
 
 (** Replaces a binding ! *)
 let register_ref local s c =
-  Lib.add_leaf @@ inCoqlibRef (local,(s,c))
+  Lib.add_leaf @@ inRocqlibRef (local,(s,c))
 
 (************************************************************************)
-(* Generic functions to find Coq objects *)
+(* Generic functions to find Rocq objects *)
 
 (* For tactics/commands requiring vernacular libraries *)
 
@@ -86,7 +86,7 @@ let check_required_library d =
         ++ str " has to be required first.")
 
 (************************************************************************)
-(* Specific Coq objects                                                 *)
+(* Specific Rocq objects                                                *)
 (************************************************************************)
 
 let logic_module_name = init_dir@["Logic"]
@@ -96,7 +96,7 @@ let datatypes_module_name = init_dir@["Datatypes"]
 (** Identity *)
 
 (* Sigma data *)
-type coq_sigma_data = {
+type rocq_sigma_data = {
   proj1 : GlobRef.t;
   proj2 : GlobRef.t;
   elim  : GlobRef.t;
@@ -116,7 +116,7 @@ let build_sigma      () = build_sigma_gen "sig"
 let build_sigma_type () = build_sigma_gen "sigT"
 
 (* Equalities *)
-type coq_eq_data = {
+type rocq_eq_data = {
   eq   : GlobRef.t;
   ind  : GlobRef.t;
   refl : GlobRef.t;
@@ -135,6 +135,6 @@ let build_eqdata_gen str = {
   congr = lib_ref ("core." ^ str ^ ".congr");
   }
 
-let build_coq_eq_data       () = build_eqdata_gen "eq"
-let build_coq_jmeq_data     () = build_eqdata_gen "JMeq"
-let build_coq_identity_data () = build_eqdata_gen "identity"
+let build_rocq_eq_data       () = build_eqdata_gen "eq"
+let build_rocq_jmeq_data     () = build_eqdata_gen "JMeq"
+let build_rocq_identity_data () = build_eqdata_gen "identity"

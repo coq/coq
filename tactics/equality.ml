@@ -989,7 +989,7 @@ let discrimination_pf e (t,t1,t2) discriminator lbeq to_kind =
        (applist (eq_elim, [t;t1;mkNamedLambda sigma (make_annot e ERelevance.relevant) t discriminator;i;t2]))
 
 type equality = {
-  eq_data  : (coq_eq_data * (EConstr.t * EConstr.t * EConstr.t));
+  eq_data  : (rocq_eq_data * (EConstr.t * EConstr.t * EConstr.t));
   (* equality data + A : Type, t1 : A, t2 : A *)
   eq_term : EConstr.t;
   (* term [M : R A t1 t2] where [R] is the equality from above *)

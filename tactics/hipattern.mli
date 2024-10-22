@@ -116,26 +116,26 @@ type equation_kind =
 exception NoEquationFound
 
 val match_with_equation:
-  Environ.env -> evar_map -> constr -> coq_eq_data option * constr * equation_kind
+  Environ.env -> evar_map -> constr -> rocq_eq_data option * constr * equation_kind
 
 (***** Destructing patterns bound to some theory *)
 
 (** Match terms [eq A t u], [identity A t u] or [JMeq A t A u]
    Returns associated lemmas and [A,t,u] or fails PatternMatchingFailure *)
 val find_eq_data_decompose : Environ.env -> evar_map -> constr ->
-      coq_eq_data * EInstance.t * (types * constr * constr)
+      rocq_eq_data * EInstance.t * (types * constr * constr)
 
 (** Idem but fails with an error message instead of PatternMatchingFailure *)
 val find_this_eq_data_decompose : Environ.env -> evar_map -> constr ->
-      coq_eq_data * EInstance.t * (types * constr * constr)
+      rocq_eq_data * EInstance.t * (types * constr * constr)
 
 (** A variant that returns more informative structure on the equality found *)
-val find_eq_data : Environ.env -> evar_map -> constr -> coq_eq_data * EInstance.t * equation_kind
+val find_eq_data : Environ.env -> evar_map -> constr -> rocq_eq_data * EInstance.t * equation_kind
 
 (** Match a term of the form [(existT A P t p)]
    Returns associated lemmas and [A,P,t,p] *)
 val find_sigma_data_decompose : Environ.env -> evar_map -> constr ->
-  coq_sigma_data * (EInstance.t * constr * constr * constr * constr)
+  rocq_sigma_data * (EInstance.t * constr * constr * constr * constr)
 
 (** Match a term of the form [{x:A|P}], returns [A] and [P] *)
 val match_sigma : Environ.env -> evar_map -> constr -> constr * constr

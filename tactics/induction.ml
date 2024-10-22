@@ -244,7 +244,7 @@ let mkletin_goal env sigma with_eq dep (id,lastlhyp,ccl,c) ty =
   in
   match with_eq with
   | Some (lr,heq) ->
-      let eqdata = build_coq_eq_data () in
+      let eqdata = build_rocq_eq_data () in
       let args = if lr then [mkVar id;c] else [c;mkVar id]in
       let (sigma, eq) = Evd.fresh_global env sigma eqdata.eq in
       let refl = mkRef (eqdata.refl, snd (destRef sigma eq)) in
