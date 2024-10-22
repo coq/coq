@@ -48,23 +48,23 @@ let log_pp ?(level = `DEBUG) msg =
 
 let log ?level str = log_pp ?level (Pp.str str)
 
-let coqify d = Filename.concat d "coq"
+let rocqify d = Filename.concat d "coq"
 
-let coqide_config_home () =
-  coqify (Glib.get_user_config_dir ())
+let rocqide_config_home () =
+  rocqify (Glib.get_user_config_dir ())
 
-let coqide_data_dirs () =
-  coqify (Glib.get_user_data_dir ())
-  :: List.map coqify (Glib.get_system_data_dirs ())
+let rocqide_data_dirs () =
+  rocqify (Glib.get_user_data_dir ())
+  :: List.map rocqify (Glib.get_system_data_dirs ())
   @ [Envars.datadir ()]
 
-let coqide_system_config_dirs () =
-  List.map coqify (Glib.get_system_config_dirs ())
+let rocqide_system_config_dirs () =
+  List.map rocqify (Glib.get_system_config_dirs ())
 
-let coqide_default_config_dir () =
+let rocqide_default_config_dir () =
   Envars.configdir ()
 
-let coqide_config_dirs () =
-  coqide_config_home () ::
-  coqide_system_config_dirs () @
-  [coqide_default_config_dir ()]
+let rocqide_config_dirs () =
+  rocqide_config_home () ::
+  rocqide_system_config_dirs () @
+  [rocqide_default_config_dir ()]

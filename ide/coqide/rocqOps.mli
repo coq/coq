@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Coq
+open Rocq
 open Interface
 
 class type ops =
@@ -30,7 +30,7 @@ object
     next:(Interface.db_vars_rty Interface.value -> unit task) -> unit task
   method process_until_end_or_error : unit task
   method handle_reset_initial : unit task
-  method raw_coq_query :
+  method raw_rocq_query :
     route_id:int -> next:(query_rty value -> unit task) -> string -> unit task
   method proof_diff : GText.mark -> next:(Pp.t value -> unit task) -> unit task
   method show_goals : unit task
@@ -54,11 +54,11 @@ object
   method set_debug_goal : Pp.t -> unit
 end
 
-class coqops :
+class rocqops :
   Wg_ScriptView.script_view ->
   Wg_ProofView.proof_view ->
   Wg_RoutedMessageViews.message_views_router ->
   Wg_Segment.segment ->
-  coqtop ->
+  rocqtop ->
   (unit -> string option) ->
   ops

@@ -35,16 +35,16 @@ let dot_sep = '.' (space | eof)
 
 let utf8_extra_byte = [ '\x80' - '\xBF' ]
 
-rule coq_string = parse
-  | "\"\"" { coq_string lexbuf }
+rule rocq_string = parse
+  | "\"\"" { rocq_string lexbuf }
   | "\"" { () }
   | eof { () }
-  | utf8_extra_byte { incr utf8_adjust; coq_string lexbuf }
-  | _ { coq_string lexbuf }
+  | utf8_extra_byte { incr utf8_adjust; rocq_string lexbuf }
+  | _ { rocq_string lexbuf }
 
 and comment = parse
   | "(*" { let _  = comment lexbuf in comment lexbuf }
-  | "\"" { let () = coq_string lexbuf in comment lexbuf }
+  | "\"" { let () = rocq_string lexbuf in comment lexbuf }
   | "*)" { Some (utf8_lexeme_start lexbuf) }
   | eof { None }
   | utf8_extra_byte { incr utf8_adjust; comment lexbuf }
@@ -96,15 +96,15 @@ and sentence initial stamp = parse
           sentence initial stamp lexbuf
     }
   | "\"" {
-      let () = coq_string lexbuf in
+      let () = rocq_string lexbuf in
       sentence false stamp lexbuf
     }
   | ".." {
       (* We must have a particular rule for parsing "..", where no dot
-	 is a terminator, even if we have a blank afterwards
-	 (cf. for instance the syntax for recursive notation).
-	 This rule and the following one also allow to treat the "..."
-	 special case, where the third dot is a terminator. *)
+         is a terminator, even if we have a blank afterwards
+         (cf. for instance the syntax for recursive notation).
+         This rule and the following one also allow to treat the "..."
+         special case, where the third dot is a terminator. *)
       sentence false stamp lexbuf
     }
   | dot_sep {
@@ -114,7 +114,7 @@ and sentence initial stamp = parse
     }
   | (vernac_control space+)* undotted_sep {
       (* Separators like { or } and bullets * - + are only active
-	 at the start of a sentence *)
+         at the start of a sentence *)
       if initial then stamp (utf8_lexeme_start lexbuf + String.length (Lexing.lexeme lexbuf) - 1) Tags.Script.sentence;
       sentence initial stamp lexbuf
     }

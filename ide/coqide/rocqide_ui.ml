@@ -181,7 +181,7 @@ let init () =
 \n</toolbar>\
 \n</ui>"
     (if Config.gtk_platform <> `QUARTZ then "<menuitem action='Quit' />" else "")
-    (Buffer.contents (list_items "Template" Coq_commands.commands))
+    (Buffer.contents (list_items "Template" Rocq_commands.commands))
     (Buffer.contents (list_queries "User-Query" Preferences.user_queries#get))
  in
   ignore (ui_m#add_ui_from_string theui);

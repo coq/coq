@@ -9,7 +9,7 @@
 (************************************************************************)
 
 open Util
-open Coq
+open Rocq
 open Interface
 open Feedback
 
@@ -65,7 +65,7 @@ module SentenceId : sig
 
   (** [offset_compensation] Drift of a sentence over its original
       location, as an [(offset, line)] pair. Needed to repair outdated
-      Coq locations *)
+      Rocq locations *)
   val offset_compensation : GText.buffer -> sentence -> int * int
 
   val phrase : GText.buffer -> sentence -> string
@@ -158,9 +158,9 @@ end = struct
 end
 open SentenceId
 
-(* Given a Coq loc, convert it to a pair of iterators start / end in
+(* Given a Rocq loc, convert it to a pair of iterators start / end in
    the buffer. *)
-let coq_loc_to_gtk_offset ?(line_drift=0) (buffer : GText.buffer) loc =
+let rocq_loc_to_gtk_offset ?(line_drift=0) (buffer : GText.buffer) loc =
   Ideutils.get_iter_at_byte buffer ~line:(loc.Loc.line_nb - 1 + line_drift) (loc.bp - loc.bol_pos),
   Ideutils.get_iter_at_byte buffer ~line:(loc.Loc.line_nb_last - 1 + line_drift) (loc.ep - loc.bol_pos_last)
 
@@ -183,7 +183,7 @@ let c2b (buffer : GText.buffer) (s_byte, s_uni) uni_off =
    the line number for the start of sentence and [bol] is the line
    ofsset of [sentence] in _bytes_.
 
-   This is meant to be used in the resumption of parsing, to tell Coq
+   This is meant to be used in the resumption of parsing, to tell Rocq
    where the input stream was left at. In this case, these 3 points
    uniquely determine the position where to restart
    from. [CLexer.after] can compute this from the position of the last
@@ -194,11 +194,11 @@ let c2b (buffer : GText.buffer) (s_byte, s_uni) uni_off =
    the same point. Thus, we need to perform potentially very costly
    char to offset conversion, for that we need the whole buffer.
 *)
-let coq_loc_from_gtk_offset cached buffer sentence =
+let rocq_loc_from_gtk_offset cached buffer sentence =
   let start = start_iter buffer sentence in
   (* This is in chars not in bytes, thus needs conversion *)
   let bp = c2b buffer cached start#offset in
-  (* Coq lines start at 1, GTK lines at 0 *)
+  (* Rocq lines start at 1, GTK lines at 0 *)
   let line = start#line + 1 in
   (* [line_index] already returns byte offsets *)
   let bol_pos = bp - start#line_index in
@@ -207,7 +207,7 @@ let coq_loc_from_gtk_offset cached buffer sentence =
   bp, line, bol_pos, new_cached
 
 let log msg : unit task =
-  Coq.lift (fun () -> Minilib.log msg)
+  Rocq.lift (fun () -> Minilib.log msg)
 
 class type ops =
 object
@@ -228,7 +228,7 @@ object
     next:(Interface.db_vars_rty Interface.value -> unit task) -> unit task
   method process_until_end_or_error : unit task
   method handle_reset_initial : unit task
-  method raw_coq_query :
+  method raw_rocq_query :
     route_id:int -> next:(query_rty value -> unit task) -> string -> unit task
   method proof_diff : GText.mark -> next:(Pp.t value -> unit task) -> unit task
   method show_goals : unit task
@@ -320,12 +320,12 @@ let rec flatten = function
   let inner = flatten l in
   List.rev_append lg inner @ rg
 
-class coqops
+class rocqops
   (_script:Wg_ScriptView.script_view)
   (_pv:Wg_ProofView.proof_view)
   (_mv:Wg_RoutedMessageViews.message_views_router)
   (_sg:Wg_Segment.segment)
-  (_ct:Coq.coqtop)
+  (_ct:Rocq.rocqtop)
   get_filename =
 object(self)
   val script = _script
@@ -355,9 +355,9 @@ object(self)
   val mutable forward_init_db = ((fun x -> failwith "forward_init_db")
                   : unit -> unit)
   initializer
-    Coq.set_feedback_handler _ct
+    Rocq.set_feedback_handler _ct
         (fun msg -> self#process_feedback (MsgFeedback msg));
-    Coq.set_debug_prompt_handler _ct
+    Rocq.set_debug_prompt_handler _ct
         (fun ~tag msg -> self#process_feedback (MsgDebug (tag, msg)));
     script#misc#set_has_tooltip true;
     ignore(script#misc#connect#query_tooltip ~callback:self#tooltip_callback);
@@ -469,20 +469,20 @@ object(self)
       end
     end;
     let flags = { gf_mode = "full"; gf_fg = true; gf_bg = true; gf_shelved = false; gf_given_up = false } in
-    let return x = Coq.return (Good x) in
-    let (>>=) m f = Coq.bind m (function
-    | Fail x -> Coq.return (Fail x)
+    let return x = Rocq.return (Good x) in
+    let (>>=) m f = Rocq.bind m (function
+    | Fail x -> Rocq.return (Fail x)
     | Good v -> f v)
     in
     let call =
-      Coq.subgoals flags >>= begin function
+      Rocq.subgoals flags >>= begin function
       | None -> return Wg_ProofView.NoGoals
       | Some { fg_goals = ((_ :: _) as fg); bg_goals = bg } ->
         let bg = flatten (List.rev bg) in
         return (Wg_ProofView.FocusGoals { fg; bg; })
       | Some { fg_goals = []; bg_goals = bg } ->
         let flags = { gf_mode = "short"; gf_fg = false; gf_bg = false; gf_shelved = true; gf_given_up = true } in
-        Coq.subgoals flags >>= fun rem ->
+        Rocq.subgoals flags >>= fun rem ->
         let bg = flatten (List.rev bg) in
         let shelved, given_up = match rem with
         | None -> [], []
@@ -491,26 +491,26 @@ object(self)
         return (Wg_ProofView.NoFocusGoals { bg; shelved; given_up })
       end
     in
-    Coq.bind call begin function
+    Rocq.bind call begin function
     | Fail x -> self#handle_failure_aux ~move_insert x
     | Good goals ->
       proof#set_goals goals;
       proof#refresh ~force:true;
-      Coq.return ()
+      Rocq.return ()
     end
 
   method show_goals = self#show_goals_aux ()
 
   (* This method is intended to perform stateless commands *)
-  method raw_coq_query ~route_id ~next phrase : unit Coq.task =
+  method raw_rocq_query ~route_id ~next phrase : unit Rocq.task =
     let sid = try Document.tip document
               with Document.Empty -> Stateid.initial
     in
-    let action = log "raw_coq_query starting now" in
-    let query = Coq.query (route_id,(phrase,sid)) in
-    Coq.bind (Coq.seq action query) next
+    let action = log "raw_rocq_query starting now" in
+    let query = Rocq.query (route_id,(phrase,sid)) in
+    Rocq.bind (Rocq.seq action query) next
 
-  method proof_diff where ~next : unit Coq.task =
+  method proof_diff where ~next : unit Rocq.task =
     (* todo: would be nice to ignore comments, too *)
     let rec back iter =
       if iter#is_start then iter
@@ -525,11 +525,11 @@ object(self)
       (buffer#get_iter_at_mark stop)#compare where >= 0 &&
       (buffer#get_iter_at_mark start)#compare where <= 0 in
     let state_id = fst @@ self#find_id until in
-      let diff_opt = Interface.(match Coq.PrintOpt.(get diff) with
+      let diff_opt = Interface.(match Rocq.PrintOpt.(get diff) with
         | StringValue diffs -> diffs
         | _ -> "off") in
-      let proof_diff = Coq.proof_diff (diff_opt, state_id) in
-      Coq.bind proof_diff next
+      let proof_diff = Rocq.proof_diff (diff_opt, state_id) in
+      Rocq.bind proof_diff next
 
   method private still_valid { edit_id = id } =
     try ignore(Doc.find_id document (fun _ { edit_id = id1 } -> id = id1)); true
@@ -559,7 +559,7 @@ object(self)
     List.iter (fun t -> buffer#apply_tag t ~start ~stop) tags
    end
 
-  (* Invariant, we store the tooltips with "original" Coq locations,
+  (* Invariant, we store the tooltips with "original" Rocq locations,
      that means we must correct the offset even the Some case will get
      the actual offset, beware this is a big fragile, but kinda
      inherent to the model *)
@@ -569,7 +569,7 @@ object(self)
       | None ->
         start_stop_iters buffer sentence
       | Some loc ->
-        coq_loc_to_gtk_offset ~line_drift buffer loc
+        rocq_loc_to_gtk_offset ~line_drift buffer loc
     in
     let markup = Glib.Markup.escape_text text in
     buffer#apply_tag Tags.Script.tooltip ~start ~stop;
@@ -685,7 +685,7 @@ object(self)
       | MsgFeedback msg2 -> pr_feedback msg2
       | MsgDebug (tag, msg2) ->
         if tag = "prompt" then
-          Coq.set_stopped_in_debugger _ct true;
+          Rocq.set_stopped_in_debugger _ct true;
         self#debug_prompt ~tag msg2
     with e -> (Printf.printf "Exception: %s\n%!" (Printexc.to_string e);
         flush stdout;
@@ -706,11 +706,11 @@ object(self)
       buffer#apply_tag tag ~start ~stop
     | Some loc ->
       let _offset, line_drift = offset_compensation buffer sentence in
-      let start, stop = coq_loc_to_gtk_offset ~line_drift buffer loc in
+      let start, stop = rocq_loc_to_gtk_offset ~line_drift buffer loc in
       buffer#apply_tag tag ~start ~stop
 
   method private process_interp_error ?loc queue sentence msg tip id =
-    Coq.bind (Coq.return ()) (function () ->
+    Rocq.bind (Rocq.return ()) (function () ->
     let start, stop = start_stop_iters buffer sentence in
     buffer#remove_tag Tags.Script.to_process ~start ~stop;
     self#discard_command_queue queue;
@@ -776,7 +776,7 @@ object(self)
   (** Compute the phrases until [until] returns [true]. *)
   method private process_until ?move_insert until verbose =
     let logger lvl msg = if verbose then messages#default_route#push lvl msg in
-    let fill_queue = Coq.lift (fun () ->
+    let fill_queue = Rocq.lift (fun () ->
       let queue = Queue.create () in
       (* Lock everything and fill the waiting queue *)
       Ideutils.push_info "Coq is computing";
@@ -814,9 +814,9 @@ object(self)
             (* When we retract, the cached offsets are invalid, thus we need to reset the cache *)
             let start = start_iter buffer sentence in
             let cached_offset = if start#offset > (snd last_offsets) then last_offsets else (0,0) in
-            let bp, line_nb, bol_pos, new_cached = coq_loc_from_gtk_offset cached_offset buffer sentence in
+            let bp, line_nb, bol_pos, new_cached = rocq_loc_from_gtk_offset cached_offset buffer sentence in
             last_offsets <- new_cached;
-            let coq_query = Coq.add ((((phrase,edit_id),(tip,verbose)),bp),(line_nb,bol_pos)) in
+            let rocq_query = Rocq.add ((((phrase,edit_id),(tip,verbose)),bp),(line_nb,bol_pos)) in
             Doc.set_errors document [];
             let handle_answer = function
               | Good (id, Util.Inl (* NewTip *) ()) ->
@@ -835,13 +835,13 @@ object(self)
                   let sentence = Doc.pop document in
                   Doc.set_errors document [Pp.string_of_ppcmds msg];
                   self#process_interp_error ?loc queue sentence msg tip id in
-            Coq.bind coq_query handle_answer
+            Rocq.bind rocq_query handle_answer
       in
       let tip =
         try Doc.tip document
         with Doc.Empty -> initial_state | Invalid_argument _ -> assert false in
       loop tip [] in
-    Coq.bind fill_queue process_queue
+    Rocq.bind fill_queue process_queue
 
   method join_document =
    let next = function
@@ -849,12 +849,12 @@ object(self)
          messages#default_route#clear;
          messages#default_route#push
            Feedback.Info (Pp.str "All proof terms checked by the kernel");
-         Coq.return ()
+         Rocq.return ()
      | Fail x -> self#handle_failure x in
-   Coq.bind (Coq.status true) next
+   Rocq.bind (Rocq.status true) next
 
   method stop_worker n =
-    Coq.bind (Coq.stop_worker n) (fun _ -> Coq.return ())
+    Rocq.bind (Rocq.stop_worker n) (fun _ -> Rocq.return ())
 
   method get_slaves_status = processed, to_process, slaves_status
 
@@ -868,7 +868,7 @@ object(self)
       | Some (loc, msg) ->
         let iter = match loc with
         | None -> buffer#get_iter_at_mark s.start
-        | Some loc -> fst (coq_loc_to_gtk_offset buffer loc)
+        | Some loc -> fst (rocq_loc_to_gtk_offset buffer loc)
         in
         Some (iter#line + 1, msg)
       in
@@ -894,29 +894,29 @@ object(self)
     let until n _ _ = n >= 1 in
     self#process_until ~move_insert:true until true
 
-  method process_db_cmd cmd ~next : unit Coq.task =
-    let db_cmd = Coq.db_cmd cmd in
-    Coq.bind db_cmd next
+  method process_db_cmd cmd ~next : unit Rocq.task =
+    let db_cmd = Rocq.db_cmd cmd in
+    Rocq.bind db_cmd next
 
-  method process_db_configd cmd ~next : unit Coq.task =
-    let db_configd = Coq.db_configd cmd in
-    Coq.bind db_configd next
+  method process_db_configd cmd ~next : unit Rocq.task =
+    let db_configd = Rocq.db_configd cmd in
+    Rocq.bind db_configd next
 
-  method process_db_upd_bpts updates ~next : unit Coq.task =
-    let db_upd_bpts = Coq.db_upd_bpts updates in
-    Coq.bind db_upd_bpts next
+  method process_db_upd_bpts updates ~next : unit Rocq.task =
+    let db_upd_bpts = Rocq.db_upd_bpts updates in
+    Rocq.bind db_upd_bpts next
 
-  method process_db_continue opt ~next : unit Coq.task =
-    let db_continue = Coq.db_continue opt in
-    Coq.bind db_continue next
+  method process_db_continue opt ~next : unit Rocq.task =
+    let db_continue = Rocq.db_continue opt in
+    Rocq.bind db_continue next
 
-  method process_db_stack ~next : unit Coq.task =
-    let db_stack = Coq.db_stack () in
-    Coq.bind db_stack next
+  method process_db_stack ~next : unit Rocq.task =
+    let db_stack = Rocq.db_stack () in
+    Rocq.bind db_stack next
 
-  method process_db_vars framenum ~next : unit Coq.task =
-    let db_vars = Coq.db_vars framenum in
-    Coq.bind db_vars next
+  method process_db_vars framenum ~next : unit Rocq.task =
+    let db_vars = Rocq.db_vars framenum in
+    Rocq.bind db_vars next
 
   method private process_until_iter iter =
     let until _ start stop =
@@ -972,9 +972,9 @@ object(self)
       buffer#remove_tag Tags.Script.to_process ~start ~stop;
       buffer#remove_tag Tags.Script.unjustified ~start ~stop;
       self#show_goals in
-    Coq.bind (Coq.lift opening) (fun () ->
+    Rocq.bind (Rocq.lift opening) (fun () ->
     let rec undo to_id unfocus_needed =
-      Coq.bind (Coq.edit_at to_id) (function
+      Rocq.bind (Rocq.edit_at to_id) (function
       | Good (CSig.Inl (* NewTip *) ()) ->
           if unfocus_needed then self#exit_focus;
           self#cleanup (Doc.cut_at document to_id);
@@ -1009,12 +1009,12 @@ object(self)
     ?(move_insert=false) (safe_id, (loc : Interface.location), msg)
   =
     messages#default_route#push Feedback.Error msg;
-    if Stateid.equal safe_id Stateid.dummy then Coq.lift (fun () -> ())
+    if Stateid.equal safe_id Stateid.dummy then Rocq.lift (fun () -> ())
     else
-      Coq.seq
+      Rocq.seq
         (self#backtrack_until ~move_insert
           (fun id _ _ -> id = Some safe_id))
-        (Coq.lift (fun () -> script#recenter_insert))
+        (Rocq.lift (fun () -> script#recenter_insert))
 
   method handle_failure f = self#handle_failure_aux f
 
@@ -1023,10 +1023,10 @@ object(self)
     try
       let tgt = Doc.before_tip document in
       self#backtrack_to_id tgt
-    with Not_found -> Coq.return (Coq.reset_coqtop _ct)
+    with Not_found -> Rocq.return (Rocq.reset_rocqtop _ct)
 
   method go_to_insert =
-    Coq.bind (Coq.return ()) (fun () ->
+    Rocq.bind (Rocq.return ()) (fun () ->
     messages#default_route#clear;
     let point = self#get_insert in
     if point#compare self#get_start_of_input >= 0
@@ -1034,14 +1034,14 @@ object(self)
     else self#backtrack_to_iter ~move_insert:false point)
 
   method go_to_mark m =
-    Coq.bind (Coq.return ()) (fun () ->
+    Rocq.bind (Rocq.return ()) (fun () ->
     messages#default_route#clear;
     let point = buffer#get_iter_at_mark m in
     if point#compare self#get_start_of_input >= 0
-    then Coq.seq (self#process_until_iter point)
-          (Coq.lift (fun () -> Sentence.tag_on_insert buffer))
-    else Coq.seq (self#backtrack_to_iter ~move_insert:false point)
-          (Coq.lift (fun () -> Sentence.tag_on_insert buffer)))
+    then Rocq.seq (self#process_until_iter point)
+          (Rocq.lift (fun () -> Sentence.tag_on_insert buffer))
+    else Rocq.seq (self#backtrack_to_iter ~move_insert:false point)
+          (Rocq.lift (fun () -> Sentence.tag_on_insert buffer)))
 
   method handle_reset_initial =
     let action () =
@@ -1066,9 +1066,9 @@ object(self)
       processed <- 0;
       to_process <- 0;
       Ideutils.push_info "Restarted";
-      (* apply the initial commands to coq *)
+      (* apply the initial commands to rocq *)
     in
-    Coq.seq (Coq.lift action) self#initialize
+    Rocq.seq (Rocq.lift action) self#initialize
 
   method initialize =
     let get_initial_state =
@@ -1077,8 +1077,8 @@ object(self)
         let message = "Couldn't initialize coqtop\n\n" ^ (Pp.string_of_ppcmds message) in
         let popup = GWindow.message_dialog ~buttons:GWindow.Buttons.ok ~message_type:`ERROR ~message () in
         ignore (popup#run ()); exit 1
-      | Good id -> initial_state <- id; Coq.return () in
-      Coq.bind (Coq.init (get_filename ())) next in
-    Coq.seq get_initial_state Coq.PrintOpt.enforce
+      | Good id -> initial_state <- id; Rocq.return () in
+      Rocq.bind (Rocq.init (get_filename ())) next in
+    Rocq.seq get_initial_state Rocq.PrintOpt.enforce
 
 end

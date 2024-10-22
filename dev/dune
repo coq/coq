@@ -24,7 +24,7 @@
     ../checker/coqchk.bc
     ../topbin/coqc_byte_bin.bc
     ../topbin/coqnative_bin.bc
-    ../ide/coqide/coqide_main.bc
+    ../ide/coqide/rocqide_main.bc
     ../tools/coqdep/coqdep.bc
     ; We require all the OCaml libs to be in place and searchable
     ; by OCamlfind, this is a bit of a hack but until Dune gets

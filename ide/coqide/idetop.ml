@@ -54,7 +54,7 @@ let pr_debug_answer q r =
 
 (** Categories of commands *)
 
-let coqide_known_option table = List.mem table [
+let rocqide_known_option table = List.mem table [
   ["Printing";"Implicit"];
   ["Printing";"Coercions"];
   ["Printing";"Matching"];
@@ -72,7 +72,7 @@ let coqide_known_option table = List.mem table [
 let is_known_option cmd = match cmd with
   VernacSynterp (VernacSetOption (_, o, OptionSetTrue)
     | VernacSetOption (_, o, OptionSetString _)
-    | VernacSetOption (_, o, OptionUnset)) -> coqide_known_option o
+    | VernacSetOption (_, o, OptionUnset)) -> rocqide_known_option o
   | _ -> false
 
 let ide_cmd_warns ~id { CAst.loc; v } =
@@ -331,7 +331,7 @@ let status force =
   }
   [@@ocaml.warning "-3"]
 
-let export_coq_object t = {
+let export_rocq_object t = {
   Interface.coq_object_prefix = t.Search.coq_object_prefix;
   Interface.coq_object_qualid = t.Search.coq_object_qualid;
   Interface.coq_object_object =
@@ -373,7 +373,7 @@ let search flags =
   let sigma, env = match pstate with
   | None -> let env = Global.env () in Evd.(from_env env, env)
   | Some p -> Declare.Proof.get_goal_context p 1 in
-  List.map export_coq_object (Search.interface_search env sigma (
+  List.map export_rocq_object (Search.interface_search env sigma (
     List.map (fun (c, b) -> (import_search_constraint c, b)) flags)
   )
   [@@ocaml.warning "-3"]
@@ -617,7 +617,7 @@ let loop ( { Coqtop.run_mode; color_mode },_) ~opts:_ state =
         pr_error ("Expected XML node: " ^ msg);
         pr_error ("XML tree received: " ^ Xml_printer.to_string_fmt node)
       | any ->
-        pr_debug ("Fatal exception in coqtop:\n" ^ Printexc.to_string any);
+        pr_debug ("Fatal exception in rocqtop:\n" ^ Printexc.to_string any);
         exit 1
   in
 
@@ -677,7 +677,7 @@ let rec parse = function
        x :: parse rest
   | [] -> []
 
-let coqidetop_specific_usage = Boot.Usage.{
+let rocqidetop_specific_usage = Boot.Usage.{
   executable_name = "coqidetop";
   extra_args = "";
   extra_options = "\n\
@@ -693,7 +693,7 @@ let islave_parse extra_args =
   let extra_args = parse extra_args in
   (* One of the role of coqidetop is to find the name of buffers to open *)
   (* in the command line; Coqide is waiting these names on stdout *)
-  (* (see filter_coq_opts in coq.ml), so we send them now *)
+  (* (see filter_rocq_opts in rocq.ml), so we send them now *)
   print_string (String.concat "\n" extra_args);
   ( { Coqtop.run_mode; color_mode }, stm_opts), []
 
@@ -708,7 +708,7 @@ let () =
   Shared_os_specific.init ();
   let custom = {
       parse_extra = islave_parse ;
-      usage = coqidetop_specific_usage;
+      usage = rocqidetop_specific_usage;
       init_extra = islave_init;
       run = loop;
       initial_args = islave_default_opts } in

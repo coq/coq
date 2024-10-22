@@ -28,7 +28,7 @@ let reroute_stdout_stderr () =
   let out_descr =
     if debug then
       let (name,chan) = Filename.open_temp_file "coqide_" ".log" in
-      Coqide.logfile := Some name;
+      Rocqide.logfile := Some name;
       Unix.descr_of_out_channel chan
     else
       snd (Unix.pipe ())
@@ -49,7 +49,7 @@ let interrupter pid =
       
 let () =
   set_win32_path ();
-  Coq.interrupter := interrupter;
+  Rocq.interrupter := interrupter;
   reroute_stdout_stderr ();
   try ignore (Unix.getenv "GTK_CSD") with Not_found -> Unix.putenv "GTK_CSD" "0"
 

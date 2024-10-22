@@ -127,7 +127,7 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals ~unfoc_goals hints = mat
       let () = Util.List.fold_left_i (fold_goal ~shownum:true) 2 () rem_goals in
       (* show unfocused goal if option set *)
       (* Insert remaining goals (no hypotheses) *)
-      if Coq.PrintOpt.printing_unfocused () then
+      if Rocq.PrintOpt.printing_unfocused () then
         begin
           ignore(proof#buffer#place_cursor ~where:(proof#buffer#end_iter));
           if unfoc_goals<>[] then

@@ -10,7 +10,7 @@
 
 (** * The CoqIDE main module *)
 
-(** The arguments that will be passed to coqtop. No quoting here, since
+(** The arguments that will be passed to rocqtop. No quoting here, since
     no /bin/sh when using create_process instead of open_process. *)
 val sup_args : string list ref
 
@@ -18,13 +18,13 @@ val sup_args : string list ref
 val logfile : string option ref
 
 (** Filter the argv from coqide specific options, and set
-    Minilib.coqtop_path accordingly *)
-val read_coqide_args : string list -> string list
+    Minilib.rocqtop_path accordingly *)
+val read_rocqide_args : string list -> string list
 
 (** Prepare the widgets, load the given files in tabs *)
 val main : string list -> GWindow.window
 
-(** Terminate coqide after closing all coqtops and waiting
+(** Terminate coqide after closing all rocqtops and waiting
     for their death *)
 val close_and_quit : unit -> unit
 

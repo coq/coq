@@ -46,7 +46,7 @@ open Session
 
 (** {2 Some static elements } *)
 
-(** The arguments that will be passed to coqtop. No quoting here, since
+(** The arguments that will be passed to rocqtop. No quoting here, since
     no /bin/sh when using create_process instead of open_process. *)
 let custom_project_file = ref None
 let sup_args = ref []
@@ -83,7 +83,7 @@ let pr_exit_status = function
   | Unix.WEXITED 0 -> " succeeded"
   | _ -> " failed"
 
-let make_coqtop_args fname =
+let make_rocqtop_args fname =
   let open CoqProject_file in
   let base_args = match read_project#get with
     | Ignore_args -> !sup_args
@@ -114,7 +114,7 @@ let make_coqtop_args fname =
       else
         (* We basically copy the code of Names.check_valid since it is not exported *)
         (* to coqide. This is to prevent a possible failure of parsing  "-topfile"  *)
-        (* at initialization of coqtop (see #10286) *)
+        (* at initialization of rocqtop (see #10286) *)
         (* If the file name is a valid identifier, use it as toplevel name; *)
         (* otherwise the default “Top” will be used. *)
         try
@@ -169,9 +169,9 @@ let find_secondary_sn sn =
   in find notebook#pages
 
 let db_cmd sn cmd =
-  ignore @@ Coq.try_grab ~db:true sn.coqtop
-      (sn.coqops#process_db_cmd cmd ~next:(function | _ -> Coq.return ()))
-      (fun () -> Minilib.log "Coq busy, discarding db_cmd")
+  ignore @@ Rocq.try_grab ~db:true sn.rocqtop
+      (sn.rocqops#process_db_cmd cmd ~next:(function | _ -> Rocq.return ()))
+      (fun () -> Minilib.log "Rocq busy, discarding db_cmd")
 
 let forward_db_stack = ref ((fun _ -> failwith "forward_db_stack")
                      : session -> unit -> unit)
@@ -185,35 +185,35 @@ let forward_init_db = ref ((fun _ -> failwith "forward_init_db")
                      : session -> unit)
 
 let create_session f =
-  let project_file, args = make_coqtop_args f in
+  let project_file, args = make_rocqtop_args f in
   if project_file <> "" then
     flash_info (Printf.sprintf "Reading options from %s" project_file);
   let sn = Session.create f args in
   sn.debugger#set_forward_get_basename (fun _ -> sn.basename);
-  Coq.set_restore_bpts sn.coqtop (fun _ -> !forward_restore_bpts sn);
+  Rocq.set_restore_bpts sn.rocqtop (fun _ -> !forward_restore_bpts sn);
   (sn.messages#route 0)#set_forward_send_db_cmd (db_cmd sn);
   (sn.messages#route 0)#set_forward_send_db_stack (!forward_db_stack sn);
   sn.debugger#set_forward_highlight_code (!forward_highlight_code sn);
   sn.debugger#set_forward_clear_db_highlight (clear_db_highlight sn);
   sn.debugger#set_forward_db_vars (!forward_db_vars sn);
-  sn.coqops#set_forward_clear_db_highlight (clear_db_highlight ~retn:true sn);
-  sn.coqops#set_forward_set_goals_of_dbg_session
+  sn.rocqops#set_forward_clear_db_highlight (clear_db_highlight ~retn:true sn);
+  sn.rocqops#set_forward_set_goals_of_dbg_session
     (fun msg ->
-      sn.coqops#set_debug_goal msg;
+      sn.rocqops#set_debug_goal msg;
       sn.last_db_goals <- msg;
       let osn = (find_secondary_sn sn) in
-      osn.coqops#set_debug_goal msg;
+      osn.rocqops#set_debug_goal msg;
       osn.last_db_goals <- msg);
-  sn.coqops#set_forward_init_db (fun () -> !forward_init_db sn);
+  sn.rocqops#set_forward_init_db (fun () -> !forward_init_db sn);
   let _ = set_drag sn.script#drag in
   sn
 
 
-let db_upd_bpts ?(next=Coq.return) updates sn =
+let db_upd_bpts ?(next=Rocq.return) updates sn =
   if updates <> [] then
-    ignore @@ Coq.try_grab ~db:true sn.coqtop
-      (sn.coqops#process_db_upd_bpts updates ~next:(function | _ -> next ()))
-      (fun () -> Minilib.log "Coq busy, discarding db_upd_bpts")
+    ignore @@ Rocq.try_grab ~db:true sn.rocqtop
+      (sn.rocqops#process_db_upd_bpts updates ~next:(function | _ -> next ()))
+      (fun () -> Minilib.log "Rocq busy, discarding db_upd_bpts")
 
 let get_updates sn =
   (* breakpoints in this buffer *)
@@ -235,7 +235,7 @@ let get_updates sn =
 
 (* init breakpoints for new session or re-init after reset *)
 let init_bpts sn =
-  Coq.add_do_when_ready sn.coqtop (fun _ ->
+  Rocq.add_do_when_ready sn.rocqtop (fun _ ->
       let upds = get_updates sn in
       db_upd_bpts upds sn)
 
@@ -243,14 +243,14 @@ let init_bpts sn =
 let () = forward_init_db := fun sn ->
   let updates = get_updates sn in
   let send_configd () =
-    ignore @@ Coq.try_grab ~db:true sn.coqtop
-      (sn.coqops#process_db_configd () ~next:(function | _ -> Coq.return ()))
-      (fun () -> Minilib.log "Coq busy, discarding db_configd")
+    ignore @@ Rocq.try_grab ~db:true sn.rocqtop
+      (sn.rocqops#process_db_configd () ~next:(function | _ -> Rocq.return ()))
+      (fun () -> Minilib.log "Rocq busy, discarding db_configd")
   in
   if updates = [] then
     send_configd ()
   else
-    db_upd_bpts updates sn ~next:(fun () -> send_configd (); Coq.return ())
+    db_upd_bpts updates sn ~next:(fun () -> send_configd (); Rocq.return ())
 
 let restore_bpts sn =
   init_bpts sn;
@@ -354,11 +354,11 @@ let check_quit ?parent saveall =
       | 2 -> ()
       | _ -> in_quit_dialog := false; raise DontQuit
   end;
-  List.iter (fun sn -> Coq.close_coqtop sn.coqtop) notebook#pages
+  List.iter (fun sn -> Rocq.close_rocqtop sn.rocqtop) notebook#pages
 
-(* For MacOS, just to be sure, we close all coqtops (again?) *)
+(* For MacOS, just to be sure, we close all rocqtops (again?) *)
 let close_and_quit () =
-  List.iter (fun sn -> Coq.close_coqtop sn.coqtop) notebook#pages;
+  List.iter (fun sn -> Rocq.close_rocqtop sn.rocqtop) notebook#pages;
   exit 0
 
 (* Work around a deadlock due to OCaml exit cleanup. The standard [exit]
@@ -434,7 +434,7 @@ let saveall _ =
       | Some f -> ignore (sn.fileops#save f))
     notebook#pages
 
-let () = Coq.save_all := saveall
+let () = Rocq.save_all := saveall
 
 let reload_all ?parent _ =
   List.iter
@@ -466,7 +466,7 @@ let close_buffer ?parent sn =
               let upds = List.fold_left (fun upds bp ->
                   ((file, bp.prev_byte_offset), false) :: upds)
                 [] sn.breakpoints in
-              Coq.add_do_when_ready osn.coqtop (fun _ -> db_upd_bpts upds osn)
+              Rocq.add_do_when_ready osn.rocqtop (fun _ -> db_upd_bpts upds osn)
             end
           ) notebook#pages
   in
@@ -501,7 +501,7 @@ let export kind sn =
           | _ -> assert false
       in
       let cmd =
-        local_cd f ^ cmd_coqdoc#get ^ " --" ^ kind ^ " -o " ^
+        local_cd f ^ cmd_rocqdoc#get ^ " --" ^ kind ^ " -o " ^
         (Filename.quote output) ^ " " ^ (Filename.quote basef) ^ " 2>&1"
       in
       sn.messages#default_route#set (Pp.str ("Running: "^cmd));
@@ -516,7 +516,7 @@ let print sn =
     |None -> flash_info "Cannot print: this buffer has no name"
     |Some f_name ->
       let cmd =
-        local_cd f_name ^ cmd_coqdoc#get ^ " -ps " ^
+        local_cd f_name ^ cmd_rocqdoc#get ^ " -ps " ^
         Filename.quote (Filename.basename f_name) ^ " | " ^ cmd_print#get
       in
       let w = GWindow.window ~title:"Print" ~modal:true
@@ -582,16 +582,16 @@ let do_load f = FileAux.load_file f
 
 module External = struct
 
-let coq_makefile sn =
+let rocq_makefile sn =
   match sn.fileops#filename with
     |None -> flash_info "Cannot make makefile: this buffer has no name"
     |Some f ->
-      let cmd = local_cd f ^ cmd_coqmakefile#get in
-      let finally st = flash_info (cmd_coqmakefile#get ^ pr_exit_status st)
+      let cmd = local_cd f ^ cmd_rocqmakefile#get in
+      let finally st = flash_info (cmd_rocqmakefile#get ^ pr_exit_status st)
       in
       run_command ignore finally cmd
 
-let coq_makefile = cb_on_current_term coq_makefile
+let rocq_makefile = cb_on_current_term rocq_makefile
 
 let editor ?parent sn =
   match sn.fileops#filename with
@@ -609,8 +609,8 @@ let compile sn =
   match sn.fileops#filename with
     |None -> flash_info "Active buffer has no name"
     |Some f ->
-      let args = Coq.get_arguments sn.coqtop in
-      let cmd = cmd_coqc#get
+      let args = Rocq.get_arguments sn.rocqtop in
+      let cmd = cmd_rocqc#get
         ^ " " ^ String.concat " " (List.map Filename.quote args)
         ^ " " ^ (Filename.quote f) ^ " 2>&1"
       in
@@ -707,7 +707,7 @@ end
 let update_status sn =
   let display msg = pop_info (); push_info msg in
   let next = function
-  | Interface.Fail x -> sn.coqops#handle_failure x
+  | Interface.Fail x -> sn.rocqops#handle_failure x
   | Interface.Good status ->
     let path = match status.Interface.status_path with
       | [] | _ :: [] -> "" (* Drop the topmost level, usually "Top" *)
@@ -718,9 +718,9 @@ let update_status sn =
       | Some n -> ", proving " ^ n
     in
     display ("Ready"^ (if microPG#get then ", [μPG]" else "") ^ path ^ name);
-    Coq.return ()
+    Rocq.return ()
   in
-  Coq.bind (Coq.status false) next
+  Rocq.bind (Rocq.status false) next
 
 let find_next_occurrence ~backward sn =
   (* go to the next occurrence of the current word, forward or backward *)
@@ -734,17 +734,17 @@ let find_next_occurrence ~backward sn =
     |None -> ()
     |Some(where, _) -> b#place_cursor ~where; sn.script#recenter_insert
 
-let send_to_coq_aux f sn =
-  let info () = Minilib.log "Coq busy, discarding query" in
-  let f = Coq.seq (f sn) (update_status sn) in
-  ignore @@ Coq.try_grab sn.coqtop f info
+let send_to_rocq_aux f sn =
+  let info () = Minilib.log "Rocq busy, discarding query" in
+  let f = Rocq.seq (f sn) (update_status sn) in
+  ignore @@ Rocq.try_grab sn.rocqtop f info
 
-let send_to_coq f = on_current_term (send_to_coq_aux f)
+let send_to_rocq f = on_current_term (send_to_rocq_aux f)
 
 let db_continue opt sn =
-  Coq.try_grab ~db:true sn.coqtop (sn.coqops#process_db_continue opt
-    ~next:(function | _ -> Coq.return ()))
-    (fun () -> Minilib.log "Coq busy, discarding db_continue")
+  Rocq.try_grab ~db:true sn.rocqtop (sn.rocqops#process_db_continue opt
+    ~next:(function | _ -> Rocq.return ()))
+    (fun () -> Minilib.log "Rocq busy, discarding db_continue")
 
 (* find the session identified by sid.  If not specified and the current term
    is the stopping point for another session, direct actions to that term *)
@@ -765,8 +765,8 @@ let resume_debugger ?sid opt =
   match term with
   | None -> false
   | Some t ->
-    if Coq.is_stopped_in_debugger t.coqtop && db_continue opt t then begin
-      Coq.set_stopped_in_debugger t.coqtop false;
+    if Rocq.is_stopped_in_debugger t.rocqtop && db_continue opt t then begin
+      Rocq.set_stopped_in_debugger t.rocqtop false;
       clear_db_highlight t ();
       t.debugger#set_stack [];
       t.debugger#set_vars [];
@@ -814,30 +814,30 @@ let maybe_update_breakpoints () =
           | None -> []
         ) notebook#pages) in
       if sn_upds <> [] then
-        Coq.add_do_when_ready sn.coqtop (fun _ -> db_upd_bpts sn_upds sn)
+        Rocq.add_do_when_ready sn.rocqtop (fun _ -> db_upd_bpts sn_upds sn)
     ) notebook#pages upds
 
 module Nav = struct
   let forward_one_sid ?sid _ =
     maybe_update_breakpoints ();
     if not (resume_debugger ?sid Interface.StepOver) then
-      send_to_coq (fun sn -> sn.coqops#process_next_phrase)
+      send_to_rocq (fun sn -> sn.rocqops#process_next_phrase)
   let forward_one x = forward_one_sid x
   let continue ?sid _ = maybe_update_breakpoints ();
     if not (resume_debugger ?sid Interface.Continue) then
-      send_to_coq (fun sn -> sn.coqops#process_until_end_or_error)
+      send_to_rocq (fun sn -> sn.rocqops#process_until_end_or_error)
   let step_in ?sid _ = maybe_update_breakpoints ();
     if not (resume_debugger ?sid Interface.StepIn) then
-      send_to_coq (fun sn -> sn.coqops#process_next_phrase)
+      send_to_rocq (fun sn -> sn.rocqops#process_next_phrase)
   let step_out ?sid _ = maybe_update_breakpoints ();
     if not (resume_debugger ?sid Interface.StepOut) then
-      send_to_coq (fun sn -> sn.coqops#process_next_phrase)
+      send_to_rocq (fun sn -> sn.rocqops#process_next_phrase)
   let backward_one _ = maybe_update_breakpoints ();
-    send_to_coq (fun sn -> init_bpts sn; sn.coqops#backtrack_last_phrase)
+    send_to_rocq (fun sn -> init_bpts sn; sn.rocqops#backtrack_last_phrase)
   let run_to_cursor _ = maybe_update_breakpoints ();
-    send_to_coq (fun sn -> sn.coqops#go_to_insert)
+    send_to_rocq (fun sn -> sn.rocqops#go_to_insert)
   let run_to_end _ = maybe_update_breakpoints ();
-    send_to_coq (fun sn -> sn.coqops#process_until_end_or_error)
+    send_to_rocq (fun sn -> sn.rocqops#process_until_end_or_error)
   let previous_occ = cb_on_current_term (find_next_occurrence ~backward:true)
   let next_occ = cb_on_current_term (find_next_occurrence ~backward:false)
   let restart _ =
@@ -845,24 +845,24 @@ module Nav = struct
     maybe_update_breakpoints ();
     if notebook#pages <> [] then begin
       let sn = notebook#current_term in
-      Coq.reset_coqtop sn.coqtop (* calls init_bpts *)
+      Rocq.reset_rocqtop sn.rocqtop (* calls init_bpts *)
     end
   let interrupt _ =  (* terminate computation *)
     if Sys.os_type = "Win32" then File.win_interrupt := true;
     Minilib.log "User interrupt received";
     if not (resume_debugger Interface.Interrupt) && notebook#pages <> [] then begin
       let osn = (find_db_sn ()) in
-      Coq.interrupt_coqtop osn.coqtop CString.(Set.elements (Map.domain osn.jobpage#data))
+      Rocq.interrupt_rocqtop osn.rocqtop CString.(Set.elements (Map.domain osn.jobpage#data))
     end
   let break ?sid _ =  (* stop at the next possible stopping point *)
     if notebook#pages <> [] then begin
-      let ocoqtop = (find_db_sn ?sid ()).coqtop in
-      if not (Coq.is_stopped_in_debugger ocoqtop) then
-        Coq.send_break ocoqtop
+      let orocqtop = (find_db_sn ?sid ()).rocqtop in
+      if not (Rocq.is_stopped_in_debugger orocqtop) then
+        Rocq.send_break orocqtop
     end
   let show_debugger _ =
     on_current_term (fun sn -> sn.debugger#show ())
-  let join_document _ = send_to_coq (fun sn -> sn.coqops#join_document)
+  let join_document _ = send_to_rocq (fun sn -> sn.rocqops#join_document)
 end
 
 let f9       = GtkData.AccelGroup.parse "F9"
@@ -889,8 +889,8 @@ let _ = Wg_Debugger.forward_keystroke := forward_keystroke
 
 let printopts_callback opts v =
   let b = v#get_active in
-  let () = List.iter (fun o -> Coq.PrintOpt.set o b) opts in
-  send_to_coq (fun sn -> sn.coqops#show_goals)
+  let () = List.iter (fun o -> Rocq.PrintOpt.set o b) opts in
+  send_to_rocq (fun sn -> sn.rocqops#show_goals)
 
 (** Templates menu *)
 
@@ -927,7 +927,7 @@ let print_branches c cases =
 
 let display_match sn = function
   |Interface.Fail _ ->
-    flash_info "Not an inductive type"; Coq.return ()
+    flash_info "Not an inductive type"; Rocq.return ()
   |Interface.Good cases ->
     let text =
       let buf = Buffer.create 1024 in
@@ -945,14 +945,14 @@ let display_match sn = function
       b#move_mark ~where:(i#backward_chars 3) `SEL_BOUND
     end;
     b#delete_mark (`MARK m);
-    Coq.return ()
+    Rocq.return ()
 
 let match_callback sn =
   let w = get_current_word sn in
-  let coqtop = sn.coqtop in
-  let query = Coq.bind (Coq.mkcases w) (display_match sn) in
-  ignore @@ Coq.try_grab coqtop query
-    (fun () -> Minilib.log "Coq busy, discarding mkcases")
+  let rocqtop = sn.rocqtop in
+  let query = Rocq.bind (Rocq.mkcases w) (display_match sn) in
+  ignore @@ Rocq.try_grab rocqtop query
+    (fun () -> Minilib.log "Rocq busy, discarding mkcases")
 
 let match_callback = cb_on_current_term match_callback
 
@@ -962,14 +962,14 @@ module Query = struct
 
 let doquery query sn =
   sn.messages#default_route#clear;
-  ignore @@ Coq.try_grab sn.coqtop (sn.coqops#raw_coq_query query ~route_id:0
+  ignore @@ Rocq.try_grab sn.rocqtop (sn.rocqops#raw_rocq_query query ~route_id:0
     ~next:(function
         | Interface.Fail (_, _, err) ->
             let err = Ideutils.validate err in
             sn.messages#default_route#add err;
-            Coq.return ()
-        | Interface.Good () -> Coq.return ()))
-    (fun () -> Minilib.log "Coq busy, discarding raw_coq_query")
+            Rocq.return ()
+        | Interface.Good () -> Rocq.return ()))
+    (fun () -> Minilib.log "Rocq busy, discarding raw_rocq_query")
 
 let queryif command sn =
   Option.iter (fun query -> doquery (query ^ ".") sn)
@@ -1002,25 +1002,25 @@ let initial_about () =
   let initial_string =
     "Welcome to CoqIDE, an Integrated Development Environment for Coq"
   in
-  let coq_version = Coq.short_version () in
+  let rocq_version = Rocq.short_version () in
   let version_info =
-    if Glib.Utf8.validate coq_version then
-      "\nYou are running " ^ coq_version
+    if Glib.Utf8.validate rocq_version then
+      "\nYou are running " ^ rocq_version
     else ""
   in
   let msg = initial_string ^ version_info ^ log_file_message () in
   on_current_term (fun term -> term.messages#default_route#add_string msg)
 
-let coq_icon () =
+let rocq_icon () =
   (* May raise Nof_found *)
   let name = "coq.png" in
   let chk d = Sys.file_exists (Filename.concat d name) in
-  let dir = List.find chk (Minilib.coqide_data_dirs ()) in
+  let dir = List.find chk (Minilib.rocqide_data_dirs ()) in
   Filename.concat dir name
 
 let show_proof_diff where sn =
   sn.messages#default_route#clear;
-  ignore @@ Coq.try_grab sn.coqtop (sn.coqops#proof_diff where
+  ignore @@ Rocq.try_grab sn.rocqtop (sn.rocqops#proof_diff where
     ~next:(function
         | Interface.Fail (_, _, err) ->
             let err = if (Pp.string_of_ppcmds err) <> "No proofs to diff." then err else
@@ -1028,11 +1028,11 @@ let show_proof_diff where sn =
             in
             let err = Ideutils.validate err in
             sn.messages#default_route#add err;
-            Coq.return ()
+            Rocq.return ()
         | Interface.Good diff ->
             sn.messages#default_route#add diff;
-            Coq.return ()))
-      (fun () -> Minilib.log "Coq busy, discarding raw_coq_query")
+            Rocq.return ()))
+      (fun () -> Minilib.log "Rocq busy, discarding raw_rocq_query")
 
 let show_proof_diffs _ = cb_on_current_term (show_proof_diff `INSERT) ()
 
@@ -1043,7 +1043,7 @@ let highlight_code sn loc =
     notebook#current_term.script#set_debugging_highlight bp ep;
     sn.debug_stop_pt <- Some (notebook#current_term, bp, ep);
     (* also show goal in secondary script goal panel *)
-    notebook#current_term.coqops#set_debug_goal sn.last_db_goals
+    notebook#current_term.rocqops#set_debug_goal sn.last_db_goals
   in
   if file = "ToplevelInput" then begin
     notebook#goto_term sn;
@@ -1065,31 +1065,31 @@ let highlight_code sn loc =
 let _ = forward_highlight_code := highlight_code
 
 let db_stack sn _ =
-  Coq.add_do_when_ready sn.coqtop (fun _ ->
-    ignore @@ Coq.try_grab ~db:true sn.coqtop (sn.coqops#process_db_stack
+  Rocq.add_do_when_ready sn.rocqtop (fun _ ->
+    ignore @@ Rocq.try_grab ~db:true sn.rocqtop (sn.rocqops#process_db_stack
       ~next:(function
           | Interface.Good stack ->
             sn.debugger#set_stack stack;
-            Coq.return ()
+            Rocq.return ()
           | Interface.Fail _ ->
-            Coq.return ()
+            Rocq.return ()
           ))
-      (fun () -> Minilib.log "Coq busy, discarding db_stack")
+      (fun () -> Minilib.log "Rocq busy, discarding db_stack")
   )
 
 let _ = forward_db_stack := db_stack
 
 let db_vars sn line =
-  Coq.add_do_when_ready sn.coqtop (fun _ ->
-    ignore @@ Coq.try_grab ~db:true sn.coqtop (sn.coqops#process_db_vars line
+  Rocq.add_do_when_ready sn.rocqtop (fun _ ->
+    ignore @@ Rocq.try_grab ~db:true sn.rocqtop (sn.rocqops#process_db_vars line
       ~next:(function
           | Interface.Good vars ->
             sn.debugger#set_vars vars;
-            Coq.return ()
+            Rocq.return ()
           | Interface.Fail _ ->
-            Coq.return ()
+            Rocq.return ()
           ))
-      (fun () -> Minilib.log "Coq busy, discarding db_vars")
+      (fun () -> Minilib.log "Rocq busy, discarding db_vars")
   )
 
 let _ = forward_db_vars := db_vars
@@ -1139,12 +1139,12 @@ let toggle_breakpoint_i sn =
       ) upd in
     List.iter (fun osn ->
         if osn != sn then
-          Coq.add_do_when_ready osn.coqtop (fun _ -> db_upd_bpts upd2 osn)
+          Rocq.add_do_when_ready osn.rocqtop (fun _ -> db_upd_bpts upd2 osn)
       ) notebook#pages
   | None -> ()
 
 let all_sessions_ready _ =
-  List.fold_left (fun rdy sn -> rdy && Coq.is_ready_or_stopped_in_debugger sn.coqtop)
+  List.fold_left (fun rdy sn -> rdy && Rocq.is_ready_or_stopped_in_debugger sn.rocqtop)
       true notebook#pages
 
 let toggle_breakpoint _ =
@@ -1155,7 +1155,7 @@ let about _ =
   let dialog = GWindow.about_dialog () in
   let _ = dialog#connect#response ~callback:(fun _ -> dialog#destroy ()) in
   let _ =
-    try dialog#set_logo (GdkPixbuf.from_file (coq_icon ()))
+    try dialog#set_logo (GdkPixbuf.from_file (rocq_icon ()))
     with _ -> ()
   in
   let copyright =
@@ -1186,12 +1186,12 @@ let apply_unicode_binding =
   cb_on_current_term (fun t ->
     t.script#apply_unicode_binding())
 
-let coqtop_arguments sn =
+let rocqtop_arguments sn =
   init_bpts sn;
   let dialog = GWindow.dialog ~title:"Coqtop arguments" () in
-  let coqtop = sn.coqtop in
+  let rocqtop = sn.rocqtop in
   (* Text entry *)
-  let text = Ideutils.encode_string_list (Coq.get_arguments coqtop) in
+  let text = Ideutils.encode_string_list (Rocq.get_arguments rocqtop) in
   let entry = GEdit.entry ~text ~packing:dialog#vbox#add () in
   (* Buttons *)
   let box = dialog#action_area in
@@ -1206,10 +1206,10 @@ let coqtop_arguments sn =
       match try Util.Inr (Ideutils.decode_string_list ntext) with Failure s -> Util.Inl s with
       | Util.Inl s -> fail s
       | Util.Inr nargs ->
-      let failed = Coq.filter_coq_opts nargs in
+      let failed = Rocq.filter_rocq_opts nargs in
       match failed with
       | [] ->
-        let () = Coq.set_arguments coqtop nargs in
+        let () = Rocq.set_arguments rocqtop nargs in
         dialog#destroy ()
       | args ->
         fail (String.concat " " args)
@@ -1222,7 +1222,7 @@ let coqtop_arguments sn =
   let _ = cancel#connect#clicked ~callback:cancel_cb in
   dialog#show ()
 
-let coqtop_arguments = cb_on_current_term coqtop_arguments
+let rocqtop_arguments = cb_on_current_term rocqtop_arguments
 
 let show_hide_query_pane sn =
   let ccw = sn.command in
@@ -1277,7 +1277,7 @@ let get_shortcut s =
     Some k, s'
   with _ -> None,s
 
-module Opt = Coq.PrintOpt
+module Opt = Rocq.PrintOpt
 
 let printopts_items menu_name l =
   let f Opt.{ label; init; opts } =
@@ -1386,7 +1386,7 @@ let build_ui () =
     ~title:"CoqIDE" ()
   in
   let () =
-    try w#set_icon (Some (GdkPixbuf.from_file (MiscMenu.coq_icon ())))
+    try w#set_icon (Some (GdkPixbuf.from_file (MiscMenu.rocq_icon ())))
     with _ -> ()
   in
   let _ = w#event#connect#delete ~callback:(fun _ -> File.quit ~parent:w (); true) in
@@ -1513,7 +1513,7 @@ let build_ui () =
         | 1 -> List.iter (fun o -> Opt.set o "on"; diffs#set "on") Opt.diff_item.Opt.opts
         | 2 -> List.iter (fun o -> Opt.set o "removed"; diffs#set "removed") Opt.diff_item.Opt.opts
         | _ -> assert false);
-        send_to_coq (fun sn -> sn.coqops#show_goals)
+        send_to_rocq (fun sn -> sn.rocqops#show_goals)
         end
       [
         radio "Unset diff" 0 ~label:"_Don't show diffs";
@@ -1523,7 +1523,7 @@ let build_ui () =
     item "Show Proof Diffs" ~label:"_Show Proof (with diffs, if set)" ~accel:"<Shift>F2"
       ~callback:MiscMenu.show_proof_diffs;
   ];
-  printopts_items view_menu Coq.PrintOpt.bool_items;
+  printopts_items view_menu Rocq.PrintOpt.bool_items;
 
   let navitem (text, label, stock, callback, tooltip, accel) =
     let accel = modifier_for_navigation#get ^ accel in
@@ -1562,7 +1562,7 @@ let build_ui () =
     item "match" ~label:"match ..." ~accel:(modifier_for_templates#get^"M")
       ~callback:match_callback
   ];
-  alpha_items templates_menu "Template" Coq_commands.commands;
+  alpha_items templates_menu "Template" Rocq_commands.commands;
 
   let qitem s sc =
     let query = s ^ "..." in
@@ -1588,7 +1588,7 @@ let build_ui () =
     item "Uncomment" ~label:"_Uncomment" ~accel:"<Primary><Shift>D"
       ~callback:(cb_on_current_term (fun t -> t.script#uncomment ()));
     item "Coqtop arguments" ~label:"Coqtop _arguments"
-      ~callback:MiscMenu.coqtop_arguments;
+      ~callback:MiscMenu.rocqtop_arguments;
     item "LaTeX-to-unicode" ~label:"_LaTeX-to-unicode" ~accel:"<Shift>space"
       ~callback:MiscMenu.apply_unicode_binding;
   ];
@@ -1600,7 +1600,7 @@ let build_ui () =
       ~callback:External.make;
     item "Next error" ~label:"_Next error" ~accel:"F7"
       ~callback:External.next_error;
-    item "Make makefile" ~label:"Make makefile" ~callback:External.coq_makefile;
+    item "Make makefile" ~label:"Make makefile" ~callback:External.rocq_makefile;
   ];
 
   menu debug_menu [
@@ -1639,33 +1639,33 @@ let build_ui () =
       ~callback:MiscMenu.about
   ];
 
-  Coqide_ui.init ();
-  Coqide_ui.ui_m#insert_action_group file_menu 0;
-  Coqide_ui.ui_m#insert_action_group export_menu 0;
-  Coqide_ui.ui_m#insert_action_group edit_menu 0;
-  Coqide_ui.ui_m#insert_action_group view_menu 0;
-  Coqide_ui.ui_m#insert_action_group navigation_menu 0;
-  Coqide_ui.ui_m#insert_action_group templates_menu 0;
-  Coqide_ui.ui_m#insert_action_group tools_menu 0;
-  Coqide_ui.ui_m#insert_action_group queries_menu 0;
-  Coqide_ui.ui_m#insert_action_group compile_menu 0;
-  Coqide_ui.ui_m#insert_action_group debug_menu 0;
-  Coqide_ui.ui_m#insert_action_group windows_menu 0;
-  Coqide_ui.ui_m#insert_action_group help_menu 0;
-  w#add_accel_group Coqide_ui.ui_m#get_accel_group ;
+  Rocqide_ui.init ();
+  Rocqide_ui.ui_m#insert_action_group file_menu 0;
+  Rocqide_ui.ui_m#insert_action_group export_menu 0;
+  Rocqide_ui.ui_m#insert_action_group edit_menu 0;
+  Rocqide_ui.ui_m#insert_action_group view_menu 0;
+  Rocqide_ui.ui_m#insert_action_group navigation_menu 0;
+  Rocqide_ui.ui_m#insert_action_group templates_menu 0;
+  Rocqide_ui.ui_m#insert_action_group tools_menu 0;
+  Rocqide_ui.ui_m#insert_action_group queries_menu 0;
+  Rocqide_ui.ui_m#insert_action_group compile_menu 0;
+  Rocqide_ui.ui_m#insert_action_group debug_menu 0;
+  Rocqide_ui.ui_m#insert_action_group windows_menu 0;
+  Rocqide_ui.ui_m#insert_action_group help_menu 0;
+  w#add_accel_group Rocqide_ui.ui_m#get_accel_group ;
   GtkMain.Rc.parse_string "gtk-can-change-accels = 1";
   if Config.gtk_platform <> `QUARTZ
-  then vbox#pack (Coqide_ui.ui_m#get_widget "/CoqIDE MenuBar");
+  then vbox#pack (Rocqide_ui.ui_m#get_widget "/CoqIDE MenuBar");
 
   (* Connect some specific actions *)
-  let unicode = Coqide_ui.ui_m#get_action "ui/CoqIDE MenuBar/Tools/LaTeX-to-unicode" in
+  let unicode = Rocqide_ui.ui_m#get_action "ui/CoqIDE MenuBar/Tools/LaTeX-to-unicode" in
   let callback b = unicode#set_sensitive b in
   let () = callback unicode_binding#get in
   let _ = unicode_binding#connect#changed ~callback in
 
   (* Toolbar *)
   let tbar = GtkButton.Toolbar.cast
-      ((Coqide_ui.ui_m#get_widget "/CoqIDE ToolBar")#as_widget)
+      ((Rocqide_ui.ui_m#get_widget "/CoqIDE ToolBar")#as_widget)
   in
   let () = GtkButton.Toolbar.set
     ~orientation:`HORIZONTAL ~style:`ICONS tbar
@@ -1705,9 +1705,9 @@ let build_ui () =
   let () = lower_hbox#pack pbar#coerce in
   let ready () = pbar#set_fraction 0.0 in
   let pulse sn =
-    if Coq.is_stopped_in_debugger sn.coqtop then
+    if Rocq.is_stopped_in_debugger sn.rocqtop then
       (pbar#set_pulse_step 0.0; pbar#pulse ())  (* stops slider at left end, not ideal *)
-    else if Coq.is_computing sn.coqtop then
+    else if Rocq.is_computing sn.rocqtop then
       (pbar#set_pulse_step 0.1; pbar#pulse ())
     else ready () in
   let callback () = on_current_term pulse; true in
@@ -1720,18 +1720,18 @@ let build_ui () =
   let () = slaveinfo#misc#set_tooltip_markup
     "Proofs to be checked / Errors" in
   let update sn =
-    let processed, to_process, jobs = sn.coqops#get_slaves_status in
+    let processed, to_process, jobs = sn.rocqops#get_slaves_status in
     let missing = to_process - processed in
-    let n_err = sn.coqops#get_n_errors in
+    let n_err = sn.rocqops#get_n_errors in
     if n_err > 0 then
       slaveinfo#set_text (Printf.sprintf
         "%d / <span foreground=\"#FF0000\">%d</span>" missing n_err)
     else
       slaveinfo#set_text (Printf.sprintf "%d / %d" missing n_err);
     slaveinfo#set_use_markup true;
-    sn.warnpage#update sn.coqops#get_warnings;
-    sn.errpage#update sn.coqops#get_errors;
-    sn.jobpage#update (Util.pi3 sn.coqops#get_slaves_status) in
+    sn.warnpage#update sn.rocqops#get_warnings;
+    sn.errpage#update sn.rocqops#get_errors;
+    sn.jobpage#update (Util.pi3 sn.rocqops#get_slaves_status) in
   let callback () = on_current_term update; true in
   let _ = Glib.Timeout.add ~ms:300 ~callback in
 
@@ -1782,19 +1782,19 @@ let main files =
   notebook#goto_page 0;
   MiscMenu.initial_about ();
   on_current_term (fun t -> t.script#misc#grab_focus ());
-  Minilib.log "End of Coqide.main";
+  Minilib.log "End of Rocqide.main";
   w
 
 (** {2 Argument parsing } *)
 
-(** By default, the coqtop we try to launch is exactly the current coqide
+(** By default, the rocqtop we try to launch is exactly the current coqide
     full name, with the last occurrence of "coqide" replaced by "coqtop".
     This should correctly handle the ".opt", ".byte", ".exe" situations.
     If the replacement fails, we default to "coqtop", hoping it's somewhere
     in the path. Note that the -coqtop option to coqide overrides
     this default coqtop path *)
 
-let coqide_specific_usage = Boot.Usage.{
+let rocqide_specific_usage = Boot.Usage.{
   executable_name = "coqide";
   extra_args = "";
   extra_options = "\n\
@@ -1808,18 +1808,18 @@ CoqIDE specific options:\
 \n"
 }
 
-let read_coqide_args argv =
+let read_rocqide_args argv =
   let set_debug () =
     CDebug.set_debug_all true;
 (*    CDebug.(set_flag misc false)*)
     Minilib.debug := true;
   in
-  let rec filter_coqtop coqtop project_files bindings_files out = function
+  let rec filter_rocqtop rocqtop project_files bindings_files out = function
     |"-unicode-bindings" :: sfilenames :: args ->
       let filenames = Str.split (Str.regexp ",") sfilenames in
-      filter_coqtop coqtop project_files (filenames @ bindings_files) out args
+      filter_rocqtop rocqtop project_files (filenames @ bindings_files) out args
     |"-coqtop" :: prog :: args ->
-      if coqtop = None then filter_coqtop (Some prog) project_files bindings_files out args
+      if rocqtop = None then filter_rocqtop (Some prog) project_files bindings_files out args
       else (output_string stderr "Error: multiple -coqtop options"; exit 1)
     |"-coqtop" :: [] ->
       output_string stderr "Error: missing argument after -coqtop"; exit 1
@@ -1829,35 +1829,35 @@ let read_coqide_args argv =
       let d = CUnix.canonical_path_name (Filename.dirname file) in
       let warning_fn x = Format.eprintf "%s@\n%!" x in
       let p = CoqProject_file.read_project_file ~warning_fn file in
-      filter_coqtop coqtop (Some (d,p)) bindings_files out args
+      filter_rocqtop rocqtop (Some (d,p)) bindings_files out args
     |"-f" :: [] ->
       output_string stderr "Error: missing project file name"; exit 1
     |"-debug"::args ->
       set_debug ();
-      filter_coqtop coqtop project_files bindings_files out args
+      filter_rocqtop rocqtop project_files bindings_files out args
     |"-xml-debug"::args ->
       set_debug ();
       Flags.xml_debug := true;
-      filter_coqtop coqtop project_files bindings_files ("-xml-debug"::out) args
+      filter_rocqtop rocqtop project_files bindings_files ("-xml-debug"::out) args
     |"-coqtop-flags" :: flags :: args->
-      Coq.ideslave_coqtop_flags := Some flags;
-      filter_coqtop coqtop project_files bindings_files out args
+      Rocq.ideslave_rocqtop_flags := Some flags;
+      filter_rocqtop rocqtop project_files bindings_files out args
     | ("-v" | "--version") :: _ ->
       (* This does the same thing as Usage.version () but printed differently *)
       Printf.printf "CoqIDE, version %s\n" Coq_config.version;
-      (* Unlike coqtop we don't accumulate queries so we exit immediately *)
+      (* Unlike rocqtop we don't accumulate queries so we exit immediately *)
       exit 0
     | ("-h"|"-H"|"-?"|"-help"|"--help") :: _ ->
-      Boot.Usage.print_usage stderr coqide_specific_usage;
+      Boot.Usage.print_usage stderr rocqide_specific_usage;
       exit 0
     | arg::args when out = [] && CString.is_prefix "-psn_" arg ->
       (* argument added by MacOS during .app launch *)
-      filter_coqtop coqtop project_files bindings_files out args
-    | arg::args -> filter_coqtop coqtop project_files bindings_files (arg::out) args
-    |[] -> (coqtop,project_files,bindings_files,List.rev out)
+      filter_rocqtop rocqtop project_files bindings_files out args
+    | arg::args -> filter_rocqtop rocqtop project_files bindings_files (arg::out) args
+    |[] -> (rocqtop,project_files,bindings_files,List.rev out)
   in
-  let coqtop,project_files,bindings_files,argv = filter_coqtop None None [] [] argv in
-  Ideutils.custom_coqtop := coqtop;
+  let rocqtop,project_files,bindings_files,argv = filter_rocqtop None None [] [] argv in
+  Ideutils.custom_rocqtop := rocqtop;
   custom_project_file := project_files;
   Unicode_bindings.load_files bindings_files;
   argv

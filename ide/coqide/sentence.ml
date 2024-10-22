@@ -12,7 +12,7 @@
 
 (** Cut a part of the buffer in sentences and tag them.
     Invariant: either this slice ends the buffer, or it ends with ".".
-    May raise [Coq_lex.Unterminated] when the zone ends with
+    May raise [Rocq_lex.Unterminated] when the zone ends with
     an unterminated sentence. *)
 
 let split_slice_lax (buffer:GText.buffer) start stop =
@@ -22,11 +22,11 @@ let split_slice_lax (buffer:GText.buffer) start stop =
   buffer#remove_tag ~start ~stop Tags.Script.error_bg;
   let slice = buffer#get_text ~start ~stop () in
   let apply_tag off tag =
-    (* off is now a utf8-compliant char offset, cf Coq_lex.utf8_adjust *)
+    (* off is now a utf8-compliant char offset, cf Rocq_lex.utf8_adjust *)
     let iter = start#forward_chars off in
     buffer#apply_tag ~start:iter ~stop:iter#forward_char tag
   in
-  Coq_lex.delimit_sentences apply_tag slice
+  Rocq_lex.delimit_sentences apply_tag slice
 
 (** Searching forward and backward a position fulfilling some condition *)
 
@@ -95,7 +95,7 @@ let tag_on_insert buffer =
        We retag up to the next "." instead. *)
     let stop = grab_ending_dot insert in
     try split_slice_lax buffer start#backward_char stop
-    with Coq_lex.Unterminated ->
+    with Rocq_lex.Unterminated ->
       (* This shouldn't happen frequently. Either:
          - we are at eof, with indeed an unfinished sentence.
          - we have just inserted an opening of comment or string.
@@ -105,7 +105,7 @@ let tag_on_insert buffer =
       if not stop#is_end then
         let eoi = buffer#get_iter_at_mark (`NAME "stop_of_input") in
         try split_slice_lax buffer start eoi
-        with Coq_lex.Unterminated -> ()
+        with Rocq_lex.Unterminated -> ()
   with StartError ->
     buffer#apply_tag ~start:soi ~stop:soi#forward_char Tags.Script.error
 
@@ -113,7 +113,7 @@ let tag_all buffer =
   let soi = buffer#get_iter_at_mark (`NAME "start_of_input") in
   let eoi = buffer#get_iter_at_mark (`NAME "stop_of_input") in
   try split_slice_lax buffer soi eoi
-  with Coq_lex.Unterminated -> ()
+  with Rocq_lex.Unterminated -> ()
 
 (** Search a sentence around some position *)
 
