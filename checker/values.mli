@@ -40,8 +40,20 @@ type value
 val kind : value -> value kind
 
 val v_any : value
-
+val v_fail : string -> value
+val v_tuple : string -> value array -> value
+val v_sum : string -> int -> value array array -> value
+val v_array : value -> value
 val v_list : value -> value
+val v_opt : value -> value
+val v_int : value
+val v_string : value
+val v_annot : string -> value -> value
+val v_int64 : value
+val v_float64 : value
+
+(** Define a recursive value. [fix (fun v -> v)] is invalid. *)
+val fix : (value -> value) -> value
 
 val v_libsum : value
 val v_lib : value
