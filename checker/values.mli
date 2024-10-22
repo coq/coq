@@ -41,9 +41,6 @@ type value =
   | Int64
   | Float64
 
-(** NB: List and Opt have their own constructors to make it easy to
-   define eg [let rec foo = List foo]. *)
-
 val v_libsum : value
 val v_lib : value
 val v_opaquetable : value

@@ -37,11 +37,54 @@ type value =
   | Int64
   | Float64
 
-let _fix (f : value -> value) : value =
-  let self = ref Any in
-  let ans = f (Proxy self) in
-  let () = self := ans in
+module MFix = struct
+
+type ('a,_) vector =
+  | [] : ('a, [`O]) vector
+  | (::) : 'a * ('a, 's) vector -> ('a, [`S of 's]) vector
+
+type 'n size = (unit,'n) vector
+
+let rec vmap : 'n 'a 'b. ('a -> 'b) -> ('a,'n) vector -> ('b, 'n) vector =
+  fun (type n) f (v:(_,n) vector) : (_,n) vector ->
+  match v with
+  | [] -> []
+  | x :: tl ->
+    let x = f x in
+    x :: vmap f tl
+
+let rec viter2 : 'n 'a 'b. ('a -> 'b -> unit) -> ('a,'n) vector -> ('b,'n) vector -> unit =
+  fun (type n) f (v1:(_,n) vector) (v2:(_,n) vector) ->
+  match v1, v2 with
+  | [], []-> ()
+  | x1 :: tl1, x2 :: tl2 ->
+    let () = f x1 x2 in
+    viter2 f tl1 tl2
+
+let rec check_productive = function
+  | Proxy _ -> assert false
+  | Annot (_,v) -> check_productive v
+  | _ -> ()
+
+let mfix (type n) (n:n size) (f : (value,n) vector -> (value,n) vector) : (value,n) vector =
+  let self = vmap (fun () -> Proxy (ref Any)) n in
+  let ans = f self in
+  let () = viter2 (fun self ans ->
+      check_productive ans;
+      match self with
+      | Proxy self -> self := ans
+      | _ -> assert false)
+      self ans
+  in
   ans
+
+end
+
+let mfix = MFix.mfix
+
+let fix f =
+  let [v] : _ MFix.vector = mfix [()] (fun [v] -> [f v]) in
+  v
 
 (** Some pseudo-constructors *)
 
@@ -56,14 +99,14 @@ let v_bool = v_enum "bool" 2
 let v_unit = v_enum "unit" 1
 
 let v_set v =
-  let rec s = Sum ("Set.t",1,
-    [|[|s; Annot("elem",v); s; Annot("bal",Int)|]|])
-  in s
+  fix (fun s ->
+      Sum ("Set.t",1,
+           [|[|s; Annot("elem",v); s; Annot("bal",Int)|]|]))
 
 let v_map vk vd =
-  let rec m = Sum ("Map.t",1,
-    [|[|m; Annot("key",vk); Annot("data",vd); m; Annot("bal",Int)|]|])
-  in m
+  fix (fun m ->
+      Sum ("Map.t",1,
+           [|[|m; Annot("key",vk); Annot("data",vd); m; Annot("bal",Int)|]|]))
 
 let v_hset v = v_map Int (v_set v)
 let v_hmap vk vd = v_map Int (v_map vk vd)
@@ -76,10 +119,12 @@ let v_id = String
 let v_dp = Annot ("dirpath", List v_id)
 let v_name = v_sum "name" 1 [|[|v_id|]|]
 let v_uid = v_tuple "uniq_ident" [|Int;String;v_dp|]
-let rec v_mp = Sum("module_path",0,
-  [|[|v_dp|];
-    [|v_uid|];
-    [|v_mp;v_id|]|])
+let v_mp =
+  fix (fun v_mp ->
+      Sum("module_path",0,
+          [|[|v_dp|];
+            [|v_uid|];
+            [|v_mp;v_id|]|]))
 let v_kn = v_tuple "kernel_name" [|v_mp;v_id;Int|]
 let v_cst = v_sum "cst|mind" 0 [|[|v_kn|];[|v_kn;v_kn|]|]
 let v_ind = v_tuple "inductive" [|v_cst;Int|]
@@ -135,7 +180,17 @@ let v_proj = v_tuple "projection" [|v_proj_repr; v_bool|]
 let v_uint63 =
   if Sys.word_size == 64 then Int else Int64
 
-let rec v_constr =
+let v_constr =
+  fix (fun v_constr ->
+let v_prec =
+  Tuple ("prec_declaration",
+         [|Array (v_binder_annot v_name); Array v_constr; Array v_constr|])
+in
+let v_fix = Tuple ("pfixpoint", [|Tuple ("fix2",[|Array Int;Int|]);v_prec|]) in
+let v_cofix = Tuple ("pcofixpoint",[|Int;v_prec|]) in
+let v_case_invert = Sum ("case_inversion", 1, [|[|Array v_constr|]|]) in
+let v_case_branch = Tuple ("case_branch", [|Array (v_binder_annot v_name); v_constr|]) in
+let v_case_return = Tuple ("case_return", [|Tuple ("case_return'", [|Array (v_binder_annot v_name); v_constr|]); v_relevance|]) in
   Sum ("constr",0,[|
     [|Int|]; (* Rel *)
     [|v_id|]; (* Var *)
@@ -158,17 +213,7 @@ let rec v_constr =
     [|Float64|]; (* Float *)
     [|String|]; (* String *)
     [|v_instance;Array v_constr;v_constr;v_constr|] (* Array *)
-  |])
-
-and v_prec = Tuple ("prec_declaration",
-                    [|Array (v_binder_annot v_name); Array v_constr; Array v_constr|])
-and v_fix = Tuple ("pfixpoint", [|Tuple ("fix2",[|Array Int;Int|]);v_prec|])
-and v_cofix = Tuple ("pcofixpoint",[|Int;v_prec|])
-and v_case_invert = Sum ("case_inversion", 1, [|[|Array v_constr|]|])
-
-and v_case_branch = Tuple ("case_branch", [|Array (v_binder_annot v_name); v_constr|])
-
-and v_case_return = Tuple ("case_return", [|Tuple ("case_return'", [|Array (v_binder_annot v_name); v_constr|]); v_relevance|])
+  |]))
 
 let v_rdecl = v_sum "rel_declaration" 0
     [| [|v_binder_annot v_name; v_constr|];               (* LocalAssum *)
@@ -320,11 +365,13 @@ let v_recarg_type = v_sum "recarg_type" 0
 let v_recarg = v_sum "recarg" 1 (* Norec *)
   [|[|v_recarg_type|] (* Mrec *)|]
 
-let rec v_wfp = Sum ("wf_paths",0,
+let v_wfp =
+  fix (fun v_wfp ->
+  Sum ("wf_paths",0,
     [|[|Int;Int|]; (* Rtree.Param *)
       [|v_recarg;Array (Array v_wfp)|]; (* Rtree.Node *)
       [|Int;Array v_wfp|] (* Rtree.Rec *)
-    |])
+    |]))
 
 let v_mono_ind_arity =
   v_tuple "monomorphic_inductive_arity" [|v_constr;v_sort|]
@@ -402,31 +449,38 @@ let v_sort_pattern = Sum ("sort_pattern", 3,
     [|v_pqvar; v_puniv|] (* PSQSort *)
   |])
 
-let rec v_hpattern = Sum ("head_pattern", 0,
-  [|[|Int|];                      (* PHRel *)
-    [|v_sort_pattern|];           (* PHSort *)
-    [|v_cst; v_instance_mask|];   (* PHSymbol *)
-    [|v_ind; v_instance_mask|];   (* PHInd *)
-    [|v_cons; v_instance_mask|];  (* PHConstr *)
-    [|v_uint63|];                 (* PHInt *)
-    [|Float64|];                  (* PHFloat *)
-    [|String|];                   (* PHString *)
-    [|Array v_patarg; v_patarg|]; (* PHLambda *)
-    [|Array v_patarg; v_patarg|]; (* PHProd *)
-  |])
+let [_v_hpattern;v_elimination;_v_head_elim;_v_patarg] : _ MFix.vector =
+  mfix [();();();()] (fun [v_hpattern;v_elimination;v_head_elim;v_patarg] ->
+  let v_hpattern =
+    Sum ("head_pattern", 0,
+         [|[|Int|];                      (* PHRel *)
+           [|v_sort_pattern|];           (* PHSort *)
+           [|v_cst; v_instance_mask|];   (* PHSymbol *)
+           [|v_ind; v_instance_mask|];   (* PHInd *)
+           [|v_cons; v_instance_mask|];  (* PHConstr *)
+           [|v_uint63|];                 (* PHInt *)
+           [|Float64|];                  (* PHFloat *)
+           [|String|];                   (* PHString *)
+           [|Array v_patarg; v_patarg|]; (* PHLambda *)
+           [|Array v_patarg; v_patarg|]; (* PHProd *)
+         |])
 
-and v_elimination = Sum ("pattern_elimination", 0,
-  [|[|Array v_patarg|];                                   (* PEApp *)
-    [|v_ind; v_instance_mask; v_patarg; Array v_patarg|]; (* PECase *)
-    [|v_proj|];                                           (* PEProj *)
-  |])
+  and v_elimination =
+    Sum ("pattern_elimination", 0,
+         [|[|Array v_patarg|];                                   (* PEApp *)
+           [|v_ind; v_instance_mask; v_patarg; Array v_patarg|]; (* PECase *)
+           [|v_proj|];                                           (* PEProj *)
+         |])
 
-and v_head_elim = Tuple ("head*elims", [|v_hpattern; List v_elimination|])
+  and v_head_elim = Tuple ("head*elims", [|v_hpattern; List v_elimination|])
 
-and v_patarg = Sum ("pattern_argument", 1,
-  [|[|Int|];         (* EHole *)
-    [|v_head_elim|]; (* ERigid *)
-  |])
+  and v_patarg =
+    Sum ("pattern_argument", 1,
+         [|[|Int|];         (* EHole *)
+           [|v_head_elim|]; (* ERigid *)
+         |])
+  in
+  [v_hpattern;v_elimination;v_head_elim;v_patarg])
 
 let v_rewrule = v_tuple "rewrite_rule"
   [| v_tuple "nvars" [| Int; Int; Int |]; v_pair v_instance_mask (List v_elimination); v_constr |]
@@ -438,41 +492,46 @@ let v_module_with_decl = v_sum "with_declaration" 0 [|
     [|List v_id; v_pair v_constr (Opt v_abs_context)|];
   |]
 
-let rec v_mae =
+let v_mae =
+  fix (fun v_mae ->
   Sum ("module_alg_expr",0,
   [|[|v_mp|];         (* SEBident *)
     [|v_mae;v_mp|];   (* SEBapply *)
     [|v_mae; v_module_with_decl|]  (* SEBwith *)
-  |])
+  |]))
 
-let rec v_sfb =
-  Sum ("struct_field_body",0,
-  [|[|v_cb|];       (* SFBconst *)
-    [|v_ind_pack|]; (* SFBmind *)
-    [|v_rrb|];      (* SFBrules *)
-    [|v_module|];   (* SFBmodule *)
-    [|v_modtype|]   (* SFBmodtype *)
-  |])
-and v_struc = List (Tuple ("label*sfb",[|v_id;v_sfb|]))
-and v_sign =
-  Sum ("module_sign",0,
-  [|[|v_struc|];                   (* NoFunctor *)
-    [|v_uid;v_modtype;v_sign|]|])  (* MoreFunctor *)
-and v_mexpr =
-  Sum ("module_expr",0,
-  [|[|v_mae|];                     (* MENoFunctor *)
-    [|v_mexpr|]|])                 (* MEMoreFunctor *)
-and v_impl =
-  Sum ("module_impl",2, (* Abstract, FullStruct *)
-  [|[|v_mexpr|];  (* Algebraic *)
-    [|v_struc|]|])  (* Struct *)
-and v_noimpl = v_unit
-and v_module =
-  Tuple ("module_body",
-         [|v_mp;v_impl;v_sign;Opt v_mexpr;v_resolver;v_retroknowledge|])
-and v_modtype =
-  Tuple ("module_type_body",
-         [|v_mp;v_noimpl;v_sign;Opt v_mexpr;v_resolver;v_unit|])
+let [_v_sfb;_v_struc;_v_sign;_v_mexpr;_v_impl;v_module;_v_modtype] : _ MFix.vector =
+  mfix [();();();();();();()] (fun [v_sfb;v_struc;v_sign;v_mexpr;v_impl;v_module;v_modtype] ->
+  let v_noimpl = v_unit in
+  let v_sfb =
+    Sum ("struct_field_body",0,
+         [|[|v_cb|];       (* SFBconst *)
+           [|v_ind_pack|]; (* SFBmind *)
+           [|v_rrb|];      (* SFBrules *)
+           [|v_module|];   (* SFBmodule *)
+           [|v_modtype|]   (* SFBmodtype *)
+         |])
+  and v_struc = List (Tuple ("label*sfb",[|v_id;v_sfb|]))
+  and v_sign =
+    Sum ("module_sign",0,
+         [|[|v_struc|];                   (* NoFunctor *)
+           [|v_uid;v_modtype;v_sign|]|])  (* MoreFunctor *)
+  and v_mexpr =
+    Sum ("module_expr",0,
+         [|[|v_mae|];                     (* MENoFunctor *)
+           [|v_mexpr|]|])                 (* MEMoreFunctor *)
+  and v_impl =
+    Sum ("module_impl",2, (* Abstract, FullStruct *)
+         [|[|v_mexpr|];  (* Algebraic *)
+           [|v_struc|]|])  (* Struct *)
+  and v_module =
+    Tuple ("module_body",
+           [|v_mp;v_impl;v_sign;Opt v_mexpr;v_resolver;v_retroknowledge|])
+  and v_modtype =
+    Tuple ("module_type_body",
+           [|v_mp;v_noimpl;v_sign;Opt v_mexpr;v_resolver;v_unit|])
+  in
+  [v_sfb;v_struc;v_sign;v_mexpr;v_impl;v_module;v_modtype])
 
 (** kernel/safe_typing *)
 
