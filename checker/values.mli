@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type value =
+type value = private
   | Any
   (** A value that we won't check, *)
 
@@ -32,14 +32,15 @@ type value =
   | Annot of string * value
   (** Adds a debug note to the inner value *)
 
-  | Dyn
-  (** Rocq's Dyn.t *)
-
   | Proxy of value ref
   (** Same as the inner value, used to define recursive types *)
 
   | Int64
   | Float64
+
+val v_any : value
+
+val v_list : value -> value
 
 val v_libsum : value
 val v_lib : value

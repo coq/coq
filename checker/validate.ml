@@ -121,13 +121,6 @@ let val_block mem ctx o =
       fail mem ctx o "block: found no scan tag")
   else fail mem ctx o "expected block obj"
 
-let val_dyn mem ctx o =
-  let fail () = fail mem ctx o "expected a Dyn.t" in
-  if not (is_block mem o) then fail ()
-  else if not (size mem o = 2) then fail ()
-  else if not (tag mem (field mem o 0) = Obj.int_tag) then fail ()
-  else ()
-
 open Values
 
 type memory = {
@@ -151,7 +144,7 @@ and val_gen_aux v mem ctx o = match v with
   | Tuple (name,vs) -> val_tuple ~name vs mem ctx o
   | Sum (name,cc,vv) -> val_sum name cc vv mem ctx o
   | Array v -> val_array v mem ctx o
-  | List v0 -> val_sum "list" 1 [|[|Annot ("elem",v0);v|]|] mem ctx o
+  | List v0 -> val_sum "list" 1 [|[|v0;v|]|] mem ctx o
   | Opt v -> val_sum "option" 1 [|[|v|]|] mem ctx o
   | Int -> if not (is_int mem o) then fail mem ctx o "expected an int"
   | String ->
@@ -160,7 +153,6 @@ and val_gen_aux v mem ctx o = match v with
   | Any -> ()
   | Fail s -> fail mem ctx o ("unexpected object " ^ s)
   | Annot (s,v) -> val_gen v mem (ctx/CtxAnnot s) o
-  | Dyn -> val_dyn mem.mem ctx o
   | Proxy { contents = v } -> val_gen v mem ctx o
   | Int64 -> val_int64 mem ctx o
   | Float64 -> val_float64 mem ctx o

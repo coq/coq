@@ -31,11 +31,14 @@ type value =
   | Int
   | String
   | Annot of string * value
-  | Dyn
 
   | Proxy of value ref
   | Int64
   | Float64
+
+let v_any = Any
+
+let v_list v = List v
 
 module MFix = struct
 

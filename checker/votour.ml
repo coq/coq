@@ -176,7 +176,6 @@ let rec get_name ?(extra=false) = function
   |Int -> "int"
   |String -> "string"
   |Annot (s,v) -> s^"/"^get_name ~extra v
-  |Dyn -> "<dynamic>"
   | Proxy v -> get_name ~extra !v
   | Int64 -> "Int64"
   | Float64 -> "Float64"
@@ -275,13 +274,6 @@ let rec get_children v o pos = match v with
     end
   |Annot (s,v) -> get_children v o pos
   |Any -> raise_notrace Exit
-  |Dyn ->
-    begin match Repr.repr o with
-    | BLOCK (0, [|id; o|]) ->
-      let tpe = Any in
-      [|(Int, id, 0 :: pos); (tpe, o, 1 :: pos)|]
-    | _ -> raise_notrace Exit
-    end
   | Fail s -> raise Forbidden
   | Proxy v -> get_children !v o pos
   | Int64 -> raise_notrace Exit
@@ -290,7 +282,7 @@ let rec get_children v o pos = match v with
 let get_children v o pos =
   try get_children v o pos
   with Exit -> match Repr.repr o with
-  | BLOCK (_, os) -> Array.mapi (fun i o -> Any, o, i :: pos) os
+  | BLOCK (_, os) -> Array.mapi (fun i o -> v_any, o, i :: pos) os
   | _ -> [||]
 
 type info = {
@@ -349,7 +341,7 @@ and read_command v o pos children =
       let () = Array.sort sort sorted in
       let () = print_state v o pos sorted in
       read_command v o pos children
-    | CmdList -> visit (List Any) o pos
+    | CmdList -> visit (v_list v_any) o pos
     | CmdHelp ->
       let () = help () in
       read_command v o pos children
@@ -484,7 +476,7 @@ let visit_vo f =
        LargeFile.seek_in ch seg.pos;
        let o = Repr.input ch in
        let () = Visit.init () in
-       let typ = try List.assoc seg.name known_segments with Not_found -> Any in
+       let typ = try List.assoc seg.name known_segments with Not_found -> v_any in
        Visit.visit typ o []
     | CmdParent | CmdSort | CmdList -> ()
     | CmdHelp ->
