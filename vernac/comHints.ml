@@ -16,7 +16,7 @@ open Names
 
 let project_hint ~poly pri l2r r =
   let open EConstr in
-  let open Coqlib in
+  let open Rocqlib in
   let gr = Smartlocate.global_with_alias r in
   let env = Global.env () in
   let sigma = Evd.from_env env in

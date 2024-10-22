@@ -309,7 +309,7 @@ let declare_congr_scheme ?loc ind =
   let env = Global.env () in
   if Hipattern.is_inductive_equality env ind then begin
     if
-      try Coqlib.check_required_library Coqlib.logic_module_name; true
+      try Rocqlib.check_required_library Rocqlib.logic_module_name; true
       with e when CErrors.noncritical e -> false
     then
       define_individual_scheme ?loc congr_scheme_kind None ind
@@ -466,11 +466,11 @@ let fold_left' f = function
     [] -> invalid_arg "fold_left'"
   | hd :: tl -> List.fold_left f hd tl
 
-let mk_rocq_and sigma = Evd.fresh_global (Global.env ()) sigma (Coqlib.lib_ref "core.and.type")
-let mk_rocq_conj sigma = Evd.fresh_global (Global.env ()) sigma (Coqlib.lib_ref "core.and.conj")
+let mk_rocq_and sigma = Evd.fresh_global (Global.env ()) sigma (Rocqlib.lib_ref "core.and.type")
+let mk_rocq_conj sigma = Evd.fresh_global (Global.env ()) sigma (Rocqlib.lib_ref "core.and.conj")
 
-let mk_rocq_prod sigma = Evd.fresh_global (Global.env ()) sigma (Coqlib.lib_ref "core.prod.type")
-let mk_rocq_pair sigma = Evd.fresh_global (Global.env ()) sigma (Coqlib.lib_ref "core.prod.intro")
+let mk_rocq_prod sigma = Evd.fresh_global (Global.env ()) sigma (Rocqlib.lib_ref "core.prod.type")
+let mk_rocq_pair sigma = Evd.fresh_global (Global.env ()) sigma (Rocqlib.lib_ref "core.prod.intro")
 
 let build_combined_scheme env schemes =
   let sigma = Evd.from_env env in

@@ -954,7 +954,7 @@ and intros_with_rewrite_aux () : unit Proofview.tactic =
           when EConstr.eq_constr sigma t
                  (EConstr.of_constr
                     ( UnivGen.constr_of_monomorphic_global (Global.env ())
-                    @@ Coqlib.lib_ref "core.False.type" )) ->
+                    @@ Rocqlib.lib_ref "core.False.type" )) ->
           tauto
         | Case (_, _, _, _, _, v, _) ->
           tclTHENLIST [simplest_case v; intros_with_rewrite ()]

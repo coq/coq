@@ -355,7 +355,7 @@ let print_registered () =
   let pr_lib_ref (s,r) =
     pr_global r ++ str " registered as " ++ str s
   in
-  hov 0 (prlist_with_sep fnl pr_lib_ref @@ Coqlib.get_lib_refs ())
+  hov 0 (prlist_with_sep fnl pr_lib_ref @@ Rocqlib.get_lib_refs ())
 
 let print_registered_schemes () =
   let schemes = DeclareScheme.all_schemes() in
@@ -2313,7 +2313,7 @@ let vernac_register ~atts qid r =
     end
     else
       let local = Attributes.parse hint_locality_default_superglobal atts in
-      Coqlib.register_ref local (Libnames.string_of_qualid n) gr
+      Rocqlib.register_ref local (Libnames.string_of_qualid n) gr
   | RegisterScheme { inductive; scheme_kind } ->
     let local = Attributes.parse hint_locality_default_superglobal atts in
     let gr = match gr with

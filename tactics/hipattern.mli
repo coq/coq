@@ -11,7 +11,7 @@
 open Names
 open Evd
 open EConstr
-open Coqlib
+open Rocqlib
 
 (** High-order patterns *)
 

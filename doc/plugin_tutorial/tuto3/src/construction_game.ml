@@ -12,9 +12,9 @@ let example_sort sigma =
 let c_one env sigma =
 (* In the general case, global references may refer to universe polymorphic
    objects, and their universe has to be made afresh when creating an instance. *)
-  let gr_S = Coqlib.lib_ref "num.nat.S" in
+  let gr_S = Rocqlib.lib_ref "num.nat.S" in
   (* the long name of "S" was found with the command "Print Registered." *)
-  let gr_O = Coqlib.lib_ref "num.nat.O" in
+  let gr_O = Rocqlib.lib_ref "num.nat.O" in
   let sigma, c_O = Evd.fresh_global env sigma gr_O in
   let sigma, c_S = Evd.fresh_global env sigma gr_S in
 (* Here is the construction of a new term by applying functions to argument. *)
@@ -62,43 +62,43 @@ let example_sort_app_lambda () =
 
 
 let c_S env sigma =
-  let gr = Coqlib.lib_ref "num.nat.S" in
+  let gr = Rocqlib.lib_ref "num.nat.S" in
   Evd.fresh_global env sigma gr
 
 let c_O env sigma =
-  let gr = Coqlib.lib_ref "num.nat.O" in
+  let gr = Rocqlib.lib_ref "num.nat.O" in
   Evd.fresh_global env sigma gr
 
 let c_E env sigma =
-  let gr = Coqlib.lib_ref "Tuto3.EvenNat" in
+  let gr = Rocqlib.lib_ref "Tuto3.EvenNat" in
   Evd.fresh_global env sigma gr
 
 let c_D env sigma =
-  let gr = Coqlib.lib_ref "Tuto3.tuto_div2" in
+  let gr = Rocqlib.lib_ref "Tuto3.tuto_div2" in
   Evd.fresh_global env sigma gr
 
 let c_Q env sigma =
-  let gr = Coqlib.lib_ref "core.eq.type" in
+  let gr = Rocqlib.lib_ref "core.eq.type" in
   Evd.fresh_global env sigma gr
 
 let c_R env sigma =
-  let gr = Coqlib.lib_ref "core.eq.eq_refl" in
+  let gr = Rocqlib.lib_ref "core.eq.eq_refl" in
   Evd.fresh_global env sigma gr
 
 let c_N env sigma =
-  let gr = Coqlib.lib_ref "num.nat.type" in
+  let gr = Rocqlib.lib_ref "num.nat.type" in
   Evd.fresh_global env sigma gr
 
 let c_C env sigma =
-  let gr = Coqlib.lib_ref "Tuto3.C" in
+  let gr = Rocqlib.lib_ref "Tuto3.C" in
   Evd.fresh_global env sigma gr
 
 let c_F env sigma =
-  let gr = Coqlib.lib_ref "Tuto3.S_ev" in
+  let gr = Rocqlib.lib_ref "Tuto3.S_ev" in
   Evd.fresh_global env sigma gr
 
 let c_P env sigma =
-  let gr = Coqlib.lib_ref "Tuto3.s_half_proof" in
+  let gr = Rocqlib.lib_ref "Tuto3.s_half_proof" in
   Evd.fresh_global env sigma gr
 
 (* If c_S was universe polymorphic, we should have created a new constant

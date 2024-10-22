@@ -23,20 +23,20 @@ let debug_zify = CDebug.create ~name:"zify" ()
 let zify str =
   EConstr.of_constr
     (UnivGen.constr_of_monomorphic_global (Global.env ())
-       (Coqlib.lib_ref ("ZifyClasses." ^ str)))
+       (Rocqlib.lib_ref ("ZifyClasses." ^ str)))
 
 (** classes *)
-let rocq_InjTyp = lazy (Coqlib.lib_ref "ZifyClasses.InjTyp")
+let rocq_InjTyp = lazy (Rocqlib.lib_ref "ZifyClasses.InjTyp")
 
-let rocq_BinOp = lazy (Coqlib.lib_ref "ZifyClasses.BinOp")
-let rocq_UnOp = lazy (Coqlib.lib_ref "ZifyClasses.UnOp")
-let rocq_CstOp = lazy (Coqlib.lib_ref "ZifyClasses.CstOp")
-let rocq_BinRel = lazy (Coqlib.lib_ref "ZifyClasses.BinRel")
-let rocq_PropBinOp = lazy (Coqlib.lib_ref "ZifyClasses.PropBinOp")
-let rocq_PropUOp = lazy (Coqlib.lib_ref "ZifyClasses.PropUOp")
-let rocq_BinOpSpec = lazy (Coqlib.lib_ref "ZifyClasses.BinOpSpec")
-let rocq_UnOpSpec = lazy (Coqlib.lib_ref "ZifyClasses.UnOpSpec")
-let rocq_Saturate = lazy (Coqlib.lib_ref "ZifyClasses.Saturate")
+let rocq_BinOp = lazy (Rocqlib.lib_ref "ZifyClasses.BinOp")
+let rocq_UnOp = lazy (Rocqlib.lib_ref "ZifyClasses.UnOp")
+let rocq_CstOp = lazy (Rocqlib.lib_ref "ZifyClasses.CstOp")
+let rocq_BinRel = lazy (Rocqlib.lib_ref "ZifyClasses.BinRel")
+let rocq_PropBinOp = lazy (Rocqlib.lib_ref "ZifyClasses.PropBinOp")
+let rocq_PropUOp = lazy (Rocqlib.lib_ref "ZifyClasses.PropUOp")
+let rocq_BinOpSpec = lazy (Rocqlib.lib_ref "ZifyClasses.BinOpSpec")
+let rocq_UnOpSpec = lazy (Rocqlib.lib_ref "ZifyClasses.UnOpSpec")
+let rocq_Saturate = lazy (Rocqlib.lib_ref "ZifyClasses.Saturate")
 
 (* morphism like lemma *)
 
@@ -1438,8 +1438,8 @@ let elim_let = iter_let_aux elim_binding
 
 let zify_tac =
   Proofview.Goal.enter (fun gl ->
-      Coqlib.check_required_library ["Stdlib"; "micromega"; "ZifyClasses"];
-      Coqlib.check_required_library ["Stdlib"; "micromega"; "ZifyInst"];
+      Rocqlib.check_required_library ["Stdlib"; "micromega"; "ZifyClasses"];
+      Rocqlib.check_required_library ["Stdlib"; "micromega"; "ZifyInst"];
       init_cache ();
       let evd = Tacmach.project gl in
       let env = Tacmach.pf_env gl in

@@ -301,7 +301,7 @@ let decideEquality rectype ops =
 (* The tactic Compare *)
 
 let compare c1 c2 =
-  let open Coqlib in
+  let open Rocqlib in
   pf_constr_of_global (lib_ref "core.sumbool.type") >>= fun opc ->
   pf_constr_of_global (lib_ref "core.eq.type") >>= fun eqc ->
   pf_constr_of_global (lib_ref "core.not.type") >>= fun notc ->

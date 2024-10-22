@@ -181,7 +181,7 @@ let evalglobref_of_globref =
   | GlobRef.IndRef _ | GlobRef.ConstructRef _ -> assert false
 
 let make_unfold name =
-  let const = evalglobref_of_globref (Coqlib.lib_ref name) in
+  let const = evalglobref_of_globref (Rocqlib.lib_ref name) in
   Locus.(AllOccurrences, ArgArg (const, None))
 
 let reduction_not_iff _ ist =
@@ -197,8 +197,8 @@ let apply_nnpp _ ist =
   Proofview.tclBIND
     (Proofview.tclUNIT ())
     begin fun () ->
-      if Coqlib.has_ref nnpp
-      then Tacticals.pf_constr_of_global (Coqlib.lib_ref nnpp) >>= apply
+      if Rocqlib.has_ref nnpp
+      then Tacticals.pf_constr_of_global (Rocqlib.lib_ref nnpp) >>= apply
       else tclFAIL (Pp.mt ())
     end
 

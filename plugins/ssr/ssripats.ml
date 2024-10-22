@@ -371,7 +371,7 @@ end end
 
 (*** [=> [: id]] ************************************************************)
 let mk_abstract_id =
-  let open Coqlib in
+  let open Rocqlib in
   let ssr_abstract_id = Summary.ref ~name:"SSR:abstractid" 0 in
 begin fun env sigma ->
   let sigma, zero = EConstr.fresh_global env sigma (lib_ref "num.nat.O") in
@@ -630,12 +630,12 @@ let with_dgens { dgens; gens; clr } maintac = match gens with
       Ssrcommon.genstac (gens, clr) <*> maintac dgens gen
 
 let mkCoqEq env sigma =
-  let eq = Coqlib.((build_coq_eq_data ()).eq) in
+  let eq = Rocqlib.((build_coq_eq_data ()).eq) in
   let sigma, eq = EConstr.fresh_global env sigma eq in
   eq, sigma
 
 let mkCoqRefl t c env sigma =
-  let refl = Coqlib.((build_coq_eq_data()).refl) in
+  let refl = Rocqlib.((build_coq_eq_data()).refl) in
   let sigma, refl = EConstr.fresh_global env sigma refl in
   EConstr.mkApp (refl, [|t; c|]), sigma
 
@@ -674,7 +674,7 @@ let elim_intro_tac ipats ?seed what eqid ssrelim is_rec clr =
        let rec gen_eq_tac () = Goal.enter begin fun g ->
          let sigma, env, concl = Goal.(sigma g, env g, concl g) in
          let sigma, eq =
-           EConstr.fresh_global env sigma (Coqlib.lib_ref "core.eq.type") in
+           EConstr.fresh_global env sigma (Rocqlib.lib_ref "core.eq.type") in
          let ctx, last = EConstr.decompose_prod_decls sigma concl in
          let open EConstr in
          let args = match kind_of_type sigma last with

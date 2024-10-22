@@ -165,7 +165,7 @@ let selecti s m =
     *)
 
 let constr_of_ref str =
-  EConstr.of_constr (UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref str))
+  EConstr.of_constr (UnivGen.constr_of_monomorphic_global (Global.env ()) (Rocqlib.lib_ref str))
 
 let rocq_and = lazy (constr_of_ref "core.and.type")
 let rocq_or = lazy (constr_of_ref "core.or.type")

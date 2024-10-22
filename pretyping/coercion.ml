@@ -673,7 +673,7 @@ let lookup_reversible_path_to_common_point env sigma ~src_expected ~src_inferred
     aux r
 
 let add_reverse_coercion env sigma v'_ty v_ty v' v =
-  match Coqlib.lib_ref_opt "core.coercion.reverse_coercion" with
+  match Rocqlib.lib_ref_opt "core.coercion.reverse_coercion" with
   | None -> sigma, v'
   | Some reverse_coercion ->
      let sigma, v'_ty =

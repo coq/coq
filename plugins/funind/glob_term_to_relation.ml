@@ -228,8 +228,8 @@ let mk_result ctxt value avoid =
   Some functions to deal with overlapping patterns
 **************************************************)
 
-let rocq_True_ref = lazy (Coqlib.lib_ref "core.True.type")
-let rocq_False_ref = lazy (Coqlib.lib_ref "core.False.type")
+let rocq_True_ref = lazy (Rocqlib.lib_ref "core.True.type")
+let rocq_False_ref = lazy (Rocqlib.lib_ref "core.False.type")
 
 (*
   [make_discr_match_el \[e1,...en\]] builds match e1,...,en with
@@ -935,7 +935,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
         assert false )
     | GApp (eq_as_ref, [ty; id; rt])
       when is_gvar id
-           && is_gr env eq_as_ref Coqlib.(lib_ref "core.eq.type")
+           && is_gr env eq_as_ref Rocqlib.(lib_ref "core.eq.type")
            && n == Anonymous -> (
       let loc1 = rt.CAst.loc in
       let loc2 = eq_as_ref.CAst.loc in
@@ -1054,7 +1054,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
          else new_b, Id.Set.add id id_to_exclude
       *) )
     | GApp (eq_as_ref, [ty; rt1; rt2])
-      when is_gr env eq_as_ref Coqlib.(lib_ref "core.eq.type") && n == Anonymous
+      when is_gr env eq_as_ref Rocqlib.(lib_ref "core.eq.type") && n == Anonymous
       -> (
       try
         let l = decompose_raw_eq env rt1 rt2 in
@@ -1065,7 +1065,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
                 mkGProd
                   ( Anonymous
                   , mkGApp
-                      ( mkGRef Coqlib.(lib_ref "core.eq.type")
+                      ( mkGRef Rocqlib.(lib_ref "core.eq.type")
                       , [mkGHole (); lhs; rhs] )
                   , acc ))
               b l

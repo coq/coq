@@ -118,7 +118,7 @@ let check_true_recursivity env evd ~kind fixl =
 (*****************************************************)
 (* Utilities for Program Fixpoint with wf or measure *)
 
-open Coqlib
+open Rocqlib
 let init_constant sigma rf = Evd.fresh_global sigma rf
 let fix_sub_ref () = lib_ref "program.wf.fix_sub"
 let measure_on_R_ref () = lib_ref "program.wf.mr"
@@ -178,7 +178,7 @@ let encapsulate_Fix_sub env sigma recname ctx body ccl (extradecl, rel, relargty
     let sigma, ss_term = mkSubset sigma (Name argid') tuple_type (make_applied_rel (mkRel 1) (mkRel 2)) in
     sigma, RelDecl.LocalAssum (make_annot (Name argid') ERelevance.relevant, ss_term) in
   let sigma, fix_sub_F_sub_ctx =
-    let sigma, proj = Evd.fresh_global (Global.env ()) sigma (delayed_force build_sigma).Coqlib.proj1 in
+    let sigma, proj = Evd.fresh_global (Global.env ()) sigma (delayed_force build_sigma).Rocqlib.proj1 in
     let wfargpred = mkLambda (make_annot (Name argid') ERelevance.relevant, tuple_type, make_applied_rel (mkRel 1) (mkRel 3)) in
     let projection = (* in wfarg :: arg :: before *)
       mkApp (proj, [| tuple_type ; wfargpred ; mkRel 1 |])
@@ -197,7 +197,7 @@ let encapsulate_Fix_sub env sigma recname ctx body ccl (extradecl, rel, relargty
        [fun ctx (recproof : rel (measure ctx) (measure tupled_context)) => argid' (tuple_value,recproof)]
        of type
        [forall ctx (recproof : rel (measure ctx) (measure tupled_context)) => ccl] *)
-    let sigma, intro = Evd.fresh_global (Global.env ()) sigma (delayed_force build_sigma).Coqlib.intro in
+    let sigma, intro = Evd.fresh_global (Global.env ()) sigma (delayed_force build_sigma).Rocqlib.intro in
     let app =
       let wfpred = mkLambda (make_annot (Name argid') ERelevance.relevant, tuple_type, make_applied_rel (mkRel 1) (mkRel (2 * len + 4))) in
       (* Build the sig pair [exist _ tuple_value recproof] *)
@@ -366,7 +366,7 @@ let build_dummy_fix_type sigma ctx ccl (_, extradecl) =
 let encapsulate env sigma r t =
   (* Would probably be overkill to use a specific fix_proto in SProp when in SProp?? *)
   let fix_proto sigma =
-    Evd.fresh_global (Global.env ()) sigma (Coqlib.lib_ref "program.tactic.fix_proto") in
+    Evd.fresh_global (Global.env ()) sigma (Rocqlib.lib_ref "program.tactic.fix_proto") in
   let fix_proto_relevance = EConstr.ERelevance.relevant in
   let sigma, sort = Typing.type_of ~refresh:true env sigma t in
   try

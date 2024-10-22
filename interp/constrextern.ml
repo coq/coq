@@ -845,7 +845,7 @@ let extended_glob_local_binder_of_decl ?loc u = DAst.make ?loc (extended_glob_lo
 
 (* this helper function is copied from notation.ml as it's not exported *)
 let qualid_of_ref n =
-  n |> Coqlib.lib_ref |> Nametab.shortest_qualid_of_global Id.Set.empty
+  n |> Rocqlib.lib_ref |> Nametab.shortest_qualid_of_global Id.Set.empty
 
 let q_infinity () = qualid_of_ref "num.float.infinity"
 let q_neg_infinity () = qualid_of_ref "num.float.neg_infinity"
@@ -944,11 +944,11 @@ let rec extern inctx scopes vars r =
   | None ->
 
   let r' = match DAst.get r with
-    | GInt i when Coqlib.has_ref "num.int63.wrap_int" ->
-       let wrap = Coqlib.lib_ref "num.int63.wrap_int" in
+    | GInt i when Rocqlib.has_ref "num.int63.wrap_int" ->
+       let wrap = Rocqlib.lib_ref "num.int63.wrap_int" in
        DAst.make (GApp (DAst.make (GRef (wrap, None)), [r]))
-    | GFloat f when Coqlib.has_ref "num.float.wrap_float" ->
-       let wrap = Coqlib.lib_ref "num.float.wrap_float" in
+    | GFloat f when Rocqlib.has_ref "num.float.wrap_float" ->
+       let wrap = Rocqlib.lib_ref "num.float.wrap_float" in
        DAst.make (GApp (DAst.make (GRef (wrap, None)), [r]))
     | _ -> r in
 

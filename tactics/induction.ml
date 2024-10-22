@@ -30,7 +30,7 @@ open Tacmach
 open Logic
 open Clenv
 open Tacticals
-open Coqlib
+open Rocqlib
 open Evarutil
 open Indrec
 open Unification

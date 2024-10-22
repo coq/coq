@@ -130,8 +130,8 @@ let mkRInd mind = DAst.make @@ GRef (GlobRef.IndRef mind,None)
 let mkRLambda n s t = DAst.make @@ GLambda (n, None, Explicit, s, t)
 
 let rec mkRnat n =
-  if n <= 0 then DAst.make @@ GRef (Coqlib.lib_ref "num.nat.O", None) else
-  mkRApp (DAst.make @@ GRef (Coqlib.lib_ref "num.nat.S", None)) [mkRnat (n - 1)]
+  if n <= 0 then DAst.make @@ GRef (Rocqlib.lib_ref "num.nat.O", None) else
+  mkRApp (DAst.make @@ GRef (Rocqlib.lib_ref "num.nat.S", None)) [mkRnat (n - 1)]
 
 let glob_constr ist genv = function
   | _, Some ce ->
@@ -619,7 +619,7 @@ let ssrdirpath = DirPath.make [Id.of_string "ssreflect"]
 let ssrqid name = Libnames.make_qualid ssrdirpath (Id.of_string name)
 let mkSsrRef name =
   let qn = Format.sprintf "plugins.ssreflect.%s" name in
-  if Coqlib.has_ref qn then Coqlib.lib_ref qn else
+  if Rocqlib.has_ref qn then Rocqlib.lib_ref qn else
   CErrors.user_err Pp.(str "Small scale reflection library not loaded (" ++ str name ++ str ")")
 let mkSsrRRef name = (DAst.make @@ GRef (mkSsrRef name,None)), None
 let mkSsrConst env sigma name =
@@ -638,7 +638,7 @@ let mkEtaApp c n imin =
   mkApp (c, Array.init nargs mkarg)
 
 let mkRefl env sigma t c =
-  let (sigma, refl) = EConstr.fresh_global env sigma Coqlib.(lib_ref "core.eq.refl") in
+  let (sigma, refl) = EConstr.fresh_global env sigma Rocqlib.(lib_ref "core.eq.refl") in
   sigma, EConstr.mkApp (refl, [|t; c|])
 
 let discharge_hyp (id', (id, mode)) =
@@ -1308,7 +1308,7 @@ let tclOPTION o d =
 let tacIS_INJECTION_CASE ?ty t = begin
   tclOPTION ty (tacTYPEOF t) >>= fun ty ->
   tacEVAL_TO_QUANTIFIED_IND ty >>= fun (mind,_) ->
-  tclUNIT (Coqlib.check_ref "core.eq.type" (GlobRef.IndRef mind))
+  tclUNIT (Rocqlib.check_ref "core.eq.type" (GlobRef.IndRef mind))
 end
 
 let tclWITHTOP tac = Goal.enter begin fun gl ->

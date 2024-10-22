@@ -243,7 +243,7 @@ let find_scheme kind (mind,i as ind) =
         let eff = List.fold_left (fun eff dep -> declare_scheme_dependence eff dep) Evd.empty_side_effects deps in
         let ca, eff = define_mutual_scheme_base kind s f ~internal:true [] mind eff in
         Proofview.tclEFFECTS eff <*> Proofview.tclUNIT ca.(i)
-    with Coqlib.NotFoundRef _ as e ->
+    with Rocqlib.NotFoundRef _ as e ->
       let e, info = Exninfo.capture e in
       Proofview.tclZERO ~info e
 

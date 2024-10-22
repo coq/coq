@@ -17,7 +17,7 @@ open Termops
 open EConstr
 open Inductiveops
 open Constr_matching
-open Coqlib
+open Rocqlib
 open Declarations
 open Context.Rel.Declaration
 
@@ -285,13 +285,13 @@ let match_with_equation env sigma t =
   | Ind (ind,u) ->
     (try
       let gr = GlobRef.IndRef ind in
-       if Coqlib.check_ref "core.eq.type" gr then
+       if Rocqlib.check_ref "core.eq.type" gr then
          Some (build_coq_eq_data()),hdapp,
          PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
-       else if Coqlib.check_ref "core.identity.type" gr then
+       else if Rocqlib.check_ref "core.identity.type" gr then
          Some (build_coq_identity_data()),hdapp,
          PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
-       else if Coqlib.check_ref "core.JMeq.type" gr then
+       else if Rocqlib.check_ref "core.JMeq.type" gr then
          Some (build_coq_jmeq_data()),hdapp,
          HeterogenousEq(args.(0),args.(1),args.(2),args.(3))
        else

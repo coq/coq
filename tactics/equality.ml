@@ -33,7 +33,7 @@ open Hipattern
 open Tacticals
 open Tactics
 open Tacred
-open Coqlib
+open Rocqlib
 open Declarations
 open Indrec
 open Ind_tables
@@ -333,7 +333,7 @@ let eq_elimination_ref l2r sort =
       | InSProp -> "core.eq.sind"
       | InSet | InType | InQSort -> "core.eq.rect"
   in
-  Coqlib.lib_ref_opt name
+  Rocqlib.lib_ref_opt name
 
 (* find_elim determines which elimination principle is necessary to
    eliminate lbeq on sort_of_gl. *)
@@ -342,7 +342,7 @@ let find_elim lft2rgt dep cls ((_, hdcncl, _) as t) =
   Proofview.Goal.enter_one begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = project gl in
-  let is_global_exists gr c = match Coqlib.lib_ref_opt gr with
+  let is_global_exists gr c = match Rocqlib.lib_ref_opt gr with
     | Some gr -> isRefX env sigma gr c
     | None -> false
   in
@@ -1177,8 +1177,8 @@ let inject_if_homogenous_dependent_pair ty =
     let sigma = Tacmach.project gl in
     let eq,u,(t,t1,t2) = pf_apply find_this_eq_data_decompose gl ty in
     (* fetch the informations of the  pair *)
-    let sigTconstr   = Coqlib.(lib_ref "core.sigT.type") in
-    let existTconstr = Coqlib.lib_ref    "core.sigT.intro" in
+    let sigTconstr   = Rocqlib.(lib_ref "core.sigT.type") in
+    let existTconstr = Rocqlib.lib_ref    "core.sigT.intro" in
     (* check whether the equality deals with dep pairs or not *)
     let eqTypeDest = fst (decompose_app sigma t) in
     if not (isRefX env sigma sigTconstr eqTypeDest) then raise_notrace Exit;
@@ -1210,7 +1210,7 @@ let inject_if_homogenous_dependent_pair ty =
       [
        intro;
        onLastHyp (fun hyp ->
-        Tacticals.pf_constr_of_global Coqlib.(lib_ref "core.eq.type") >>= fun ceq ->
+        Tacticals.pf_constr_of_global Rocqlib.(lib_ref "core.eq.type") >>= fun ceq ->
         tclTHENS (cut (mkApp (ceq,new_eq_args)))
           [clear [destVar sigma hyp];
            Tacticals.pf_constr_of_global inj2 >>= fun inj2 ->
@@ -1552,7 +1552,7 @@ user = raise user error specific to rewrite
 (* Substitutions tactics (JCF) *)
 
 let restrict_to_eq_and_identity env eq = (* compatibility *)
-  let is_ref b = match Coqlib.lib_ref_opt b with
+  let is_ref b = match Rocqlib.lib_ref_opt b with
     | None -> false
     | Some b -> Environ.QGlobRef.equal env eq b
   in

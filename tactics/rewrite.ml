@@ -37,13 +37,13 @@ module TC = Typeclasses
 (** Constants used by the tactic. *)
 
 let bind_global_ref lib s =
-  let gr = lazy (Coqlib.lib_ref (lib ^ "." ^ s)) in
+  let gr = lazy (Rocqlib.lib_ref (lib ^ "." ^ s)) in
   fun () -> Lazy.force gr
 
 type evars = evar_map * Evar.Set.t (* goal evars, constraint evars *)
 
 let bind_global lib s =
-  let gr = lazy (Coqlib.lib_ref (lib ^ "." ^ s)) in
+  let gr = lazy (Rocqlib.lib_ref (lib ^ "." ^ s)) in
     fun env (evd,cstrs) ->
       let (evd, c) = Evd.fresh_global env evd (Lazy.force gr) in
         (evd, cstrs), c
@@ -52,7 +52,7 @@ let bind_global lib s =
 
 (** Global constants. *)
 
-let rocq_eq_ref  () = Coqlib.lib_ref    "core.eq.type"
+let rocq_eq_ref  () = Rocqlib.lib_ref    "core.eq.type"
 let rocq_eq      = bind_global "core.eq" "type"
 let rocq_f_equal = bind_global "core.eq" "congr"
 let rocq_all     = bind_global "core" "all"
@@ -507,12 +507,12 @@ end
 
 (* Check that relation constants have been registered *)
 let init_relation_classes () =
-  if Coqlib.has_ref "rewrite.prop.relation" || Coqlib.has_ref "rewrite.type.relation" then ()
+  if Rocqlib.has_ref "rewrite.prop.relation" || Rocqlib.has_ref "rewrite.type.relation" then ()
   else CErrors.user_err
     (Pp.str "No bindings have been registered for relation classes in Prop or Type, maybe you need to require Stdlib.Classes.(C)RelationClasses.")
 
 let init_rewrite () =
-  if Coqlib.has_ref "rewrite.prop.Proper" || Coqlib.has_ref "rewrite.type.Proper" then ()
+  if Rocqlib.has_ref "rewrite.prop.Proper" || Rocqlib.has_ref "rewrite.type.Proper" then ()
   else CErrors.user_err
     (Pp.str "No bindings have been registered for morphisms in Prop or Type, maybe you need to require Stdlib.Classes.(C)Morphisms.")
 
@@ -762,9 +762,9 @@ let new_global env (evars, cstrs) gr =
   (sigma, cstrs), c
 
 let make_eq env sigma =
-  new_global env sigma Coqlib.(lib_ref "core.eq.type")
+  new_global env sigma Rocqlib.(lib_ref "core.eq.type")
 let make_eq_refl env sigma =
-  new_global env sigma Coqlib.(lib_ref "core.eq.refl")
+  new_global env sigma Rocqlib.(lib_ref "core.eq.refl")
 
 let get_rew_prf env evars r = match r.rew_prf with
   | RewPrf (rel, prf) -> evars, (rel, prf)
