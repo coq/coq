@@ -1430,7 +1430,7 @@ printable: [
 | "Scope" IDENT
 | "Visibility" OPT IDENT
 | "Implicit" smart_global
-| [ "Sorted" | ] "Universes" OPT printunivs_subgraph OPT ne_string
+| [ "Sorted" | ] "Universes" OPT printunivs_subgraph OPT [ [ "With" | "Without" ] "Constraint" "Sources" ] OPT ne_string
 | "Assumptions" smart_global
 | "Opaque" "Dependencies" smart_global
 | "Transparent" "Dependencies" smart_global

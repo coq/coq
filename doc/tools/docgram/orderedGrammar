@@ -770,7 +770,7 @@ command: [
 | "Print" "Scope" scope_name
 | "Print" "Visibility" OPT scope_name
 | "Print" "Implicit" reference
-| "Print" OPT "Sorted" "Universes" OPT ( "Subgraph" "(" LIST0 debug_univ_name ")" ) OPT string
+| "Print" OPT "Sorted" "Universes" OPT ( "Subgraph" "(" LIST0 debug_univ_name ")" ) OPT [ [ "With" | "Without" ] "Constraint" "Sources" ] OPT string
 | "Print" "Assumptions" reference
 | "Print" "Opaque" "Dependencies" reference
 | "Print" "Transparent" "Dependencies" reference

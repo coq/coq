@@ -506,7 +506,174 @@ let sort_universes g =
   in
   Level.Map.fold fold g ans
 
-let print_universes ~sort ~subgraph dst =
+type constraint_source = GlobRef of GlobRef.t | Library of DirPath.t
+
+(* The [edges] fields give the edges of the graph.
+   For [u <= v] and [u < v] we have [u |-> v |-> gref, k],
+   for [u = v] we have both directions.
+
+   When there are edges with different constraint types between the
+   same univs (eg [u < v] and [u <= v]) we keep the strictest one
+   (either [<] or [=], NB we can't get both at the same time).
+*)
+type constraint_sources = {
+  edges : (constraint_source * Univ.constraint_type) Univ.Level.Map.t Univ.Level.Map.t;
+}
+
+let empty_sources = { edges = Univ.Level.Map.empty }
+
+let mk_sources () =
+  let open Univ in
+  let srcs = DeclareUniv.constraint_sources () in
+  let pick_stricter_constraint (_,k as v) (_,k' as v') =
+    match k, k' with
+    | Le, Lt | Le, Eq -> v'
+    | Lt, Le | Eq, Le -> v
+    | Le, Le | Lt, Lt | Eq, Eq ->
+      (* same: prefer [v]
+         (the older refs are encountered last, and fallback libraries first) *)
+      v
+    | Lt, Eq | Eq, Lt ->
+      (* XXX don't assert in case of type in type? *)
+      assert false
+  in
+  let add_edge_unidirectional (u,k,v) ref edges =
+    Level.Map.update u (fun uedges ->
+        let uedges = Option.default Level.Map.empty uedges in
+        Some (Level.Map.update v (function
+            | None -> Some (ref, k)
+            | Some v' -> Some (pick_stricter_constraint (ref, k) v'))
+            uedges))
+      edges
+  in
+  let add_edge (u,k,v as cst) ref edges =
+    let edges = add_edge_unidirectional cst ref edges in
+    if k = Eq then add_edge_unidirectional (v,k,u) ref edges else edges
+  in
+  let edges = Level.Map.empty in
+  let edges =
+    let libs = Library.loaded_libraries () in
+    List.fold_left (fun edges dp ->
+        let _, csts = Safe_typing.univs_of_library @@ Library.library_compiled dp in
+        Constraints.fold (fun cst edges -> add_edge cst (Library dp) edges)
+          csts edges)
+      edges libs
+  in
+  let edges =
+    List.fold_left (fun edges (ref,csts) ->
+        Constraints.fold (fun cst edges -> add_edge cst (GlobRef ref) edges)
+          csts edges)
+      edges srcs
+  in
+  {
+    edges;
+  }
+
+exception Found of (Univ.constraint_type * Univ.Level.t * constraint_source) list
+
+(* We are looking for a path from [source] to [target].
+   If [k] is [Lt] the path must contain at least one [Lt].
+   If [k] is [Eq] the path must contain no [Lt].
+
+   [visited] is a map which for each level we have visited says if the
+   path had enough [Lt] (always true if the original [k] is [Le] or [Eq]).
+*)
+let search src ~target k ~source =
+  let module UMap = Univ.Level.Map in
+  let rec loop visited todo next_todo =
+    match todo, next_todo with
+    | [], [] -> ()
+    | _, _ :: _ -> loop visited next_todo []
+    | (source,k,revpath)::todo, _ ->
+      let is_visited = match UMap.find_opt source visited with
+        | None -> false
+        | Some has_enough_lt ->
+          if has_enough_lt then true
+          else (* original k was [Lt], if current k is also [Lt] we have no new info on this path *)
+            k = Univ.Lt
+      in
+      if is_visited then loop visited todo next_todo
+      else
+        let visited = UMap.add source (k <> Univ.Lt) visited in
+        let visited, next_todo =
+          UMap.fold (fun u (ref,k') (visited,next_todo) ->
+              if k = Univ.Eq && k' = Univ.Lt then
+                (* no point searching for a loop involving [u]  *)
+                (UMap.add u true visited, next_todo)
+              else
+                let next_k = if k = Univ.Lt && k' = Univ.Lt then Univ.Le
+                  else k
+                in
+                let revpath = (k',u,ref) :: revpath in
+                if Univ.Level.equal u target && next_k <> Univ.Lt
+                then raise (Found revpath)
+                else (visited, (u, next_k, revpath) :: next_todo))
+            (Option.default UMap.empty (UMap.find_opt source src.edges))
+            (visited,next_todo)
+        in
+        loop visited todo next_todo
+  in
+  try loop UMap.empty [source,k,[]] []; None
+  with Found l -> Some (List.rev l)
+
+let search src (u,k,v) =
+  let path = search src ~source:u k ~target:v in
+  match path with
+  | None -> None
+  | Some path ->
+    if k = Univ.Eq && not (List.for_all (fun (k',_,_) -> k' = Univ.Eq) path) then
+      let path' = search src ~source:v k ~target:u in
+      begin match path' with
+      | None -> None
+      | Some path' -> Some (path @ path')
+      end
+    else Some path
+
+let find_source (u,k,v as cst) src =
+  if Univ.Level.is_set u && k = Univ.Lt then []
+  else Option.default [] (search src cst)
+
+let pr_constraint_source = function
+  | GlobRef ref -> pr_global ref
+  | Library dp -> str "library " ++ pr_qualid (Nametab.shortest_qualid_of_module (MPfile dp))
+
+let pr_source_path prl u src =
+  if CList.is_empty src then mt()
+  else
+    let pr_rel = function
+      | Univ.Eq -> str"=" | Lt -> str"<" | Le -> str"<="
+    in
+    let pr_one (k,v,ref) =
+      spc() ++
+      h (pr_rel k ++ surround (str "from " ++ pr_constraint_source ref) ++
+         spc() ++ prl v)
+    in
+    spc() ++ surround (str"because" ++ spc() ++ prl u ++ prlist_with_sep mt pr_one src)
+
+let pr_pmap sep pr map =
+  let cmp (u,_) (v,_) = Univ.Level.compare u v in
+  Pp.prlist_with_sep sep pr (List.sort cmp (Univ.Level.Map.bindings map))
+
+let pr_arc srcs prl = let open Pp in
+  function
+  | u, UGraph.Node ltle ->
+    if Univ.Level.Map.is_empty ltle then mt ()
+    else
+      prl u ++ str " " ++
+      v 0
+        (pr_pmap spc (fun (v, strict) ->
+             let k = if strict then Univ.Lt else Univ.Le in
+             let src = find_source (u,k,v) srcs in
+             hov 2 ((if strict then str "< " else str "<= ") ++ prl v ++ pr_source_path prl u src))
+            ltle) ++
+      fnl ()
+  | u, UGraph.Alias v ->
+    let src = find_source (u,Eq,v) srcs in
+    prl u  ++ str " = " ++ prl v ++ pr_source_path prl u src ++ fnl ()
+
+let pr_universes srcs prl g = pr_pmap Pp.mt (pr_arc srcs prl) g
+
+let print_universes { sort; subgraph; with_sources; file; } =
   let univ = Global.universes () in
   let univ = match subgraph with
     | None -> univ
@@ -519,9 +686,16 @@ let print_universes ~sort ~subgraph dst =
     else str"There may remain asynchronous universe constraints"
   in
   let prl = UnivNames.pr_level_with_global_universes in
-  begin match dst with
-    | None -> UGraph.pr_universes prl univ ++ pr_remaining
-    | Some s -> dump_universes_gen (fun u -> Pp.string_of_ppcmds (prl u)) univ s
+  begin match file with
+  | None ->
+    let with_sources = match with_sources, subgraph with
+      | Some b, _ -> b
+      | _, None -> false
+      | _, Some _ -> true
+    in
+    let srcs = if with_sources then mk_sources () else empty_sources in
+    pr_universes srcs prl univ ++ pr_remaining
+  | Some s -> dump_universes_gen (fun u -> Pp.string_of_ppcmds (prl u)) univ s
   end
 
 (*********************)
@@ -2038,8 +2212,8 @@ let vernac_print =
   | PrintCanonicalConversions qids -> with_proof_env @@ fun env sigma ->
     let grefs = List.map Smartlocate.smart_global qids in
     Prettyp.print_canonical_projections env sigma grefs
-  | PrintUniverses (sort, subgraph, dst) -> no_state @@ fun ()->
-    print_universes ~sort ~subgraph dst
+  | PrintUniverses prunivs -> no_state @@ fun ()->
+    print_universes prunivs
   | PrintHint r -> with_proof_env @@ fun env sigma ->
     Hints.pr_hint_ref env sigma (smart_global r)
   | PrintHintGoal -> with_pstate @@ fun ~pstate ->

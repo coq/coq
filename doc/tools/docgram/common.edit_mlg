@@ -1215,8 +1215,8 @@ printable: [
 | WITH "Scope" scope_name
 | REPLACE "Visibility" OPT IDENT
 | WITH "Visibility" OPT scope_name
-| REPLACE [ "Sorted" | ] "Universes" OPT printunivs_subgraph OPT ne_string
-| WITH OPT "Sorted" "Universes" OPT printunivs_subgraph OPT ne_string
+| REPLACE [ "Sorted" | ] "Universes" OPT printunivs_subgraph OPT [ [ "With" | "Without" ] "Constraint" "Sources" ] OPT ne_string
+| WITH OPT "Sorted" "Universes" OPT printunivs_subgraph OPT [ [ "With" | "Without" ] "Constraint" "Sources" ] OPT ne_string
 | DELETE "Term" smart_global OPT univ_name_list  (* readded in commands *)
 | REPLACE "Hint"
 | WITH "Hint" OPT [ "*" | smart_global ]

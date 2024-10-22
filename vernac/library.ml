@@ -105,14 +105,8 @@ type library_t = {
   library_vm : Vmlibrary.on_disk;
 }
 
-type library_summary = {
-  libsum_name : compilation_unit_name;
-  libsum_digests : Safe_typing.vodigest;
-  libsum_info : Library_info.t;
-}
-
 (* This is a map from names to loaded libraries *)
-let libraries_table : library_summary DPmap.t ref =
+let libraries_table : library_t DPmap.t ref =
   Summary.ref DPmap.empty ~stage:Summary.Stage.Synterp ~name:"LIBRARY"
 
 (* This is the map of loaded libraries filename *)
@@ -138,6 +132,10 @@ let try_find_library dir =
     user_err
       (str "Unknown library " ++ DirPath.print dir ++ str ".")
 
+let library_compiled dir =
+  let lib = Option.get @@ find_library dir in
+  lib.library_data.md_compiled
+
 let register_library_filename dir f =
   (* Not synchronized: overwrite the previous binding if one existed *)
   (* from a previous play of the session *)
@@ -156,7 +154,7 @@ let library_is_loaded dir =
      be performed first, thus the libraries_loaded_list ... *)
 
 let register_loaded_library ~root m =
-  let libname = m.libsum_name in
+  let libname = m.library_name in
   let rec aux = function
     | [] -> [root, libname]
     | (_, m') ::_ as l when DirPath.equal m' libname -> l
@@ -172,7 +170,7 @@ let register_native_library libname =
       Nativelib.enable_library dirname libname
   end
 
-  let loaded_libraries () = List.map snd !libraries_loaded_list
+let loaded_libraries () = List.map snd !libraries_loaded_list
 
 (** Delayed / available tables of opaque terms *)
 
@@ -243,12 +241,6 @@ let mk_library sd md digests vm =
     library_vm = vm;
   }
 
-let mk_summary m = {
-  libsum_name = m.library_name;
-  libsum_digests = m.library_digests;
-  libsum_info = m.library_info;
-}
-
 let mk_intern_library sum lib digest_lib proofs vm =
   add_opaque_table sum.md_name (ToFetch proofs);
   let open Safe_typing in
@@ -318,13 +310,13 @@ let rec intern_library ~root ~intern (needed, contents as acc) dir =
     (* Look if already listed in the accumulator *)
     match DPmap.find_opt dir contents with
     | Some interned_lib ->
-      mk_summary interned_lib, acc
+      interned_lib, acc
     | None ->
       (* We intern the library, and then intern the deps *)
       match intern dir with
       | Ok m, provenance ->
         check_library_expected_name ~provenance dir m.library_name;
-        mk_summary m, intern_library_deps ~root ~intern acc dir m
+        m, intern_library_deps ~root ~intern acc dir m
       | Error iexn, provenance ->
         error_in_intern provenance dir iexn
 
@@ -336,7 +328,7 @@ and intern_library_deps ~root ~intern libs dir m =
 
 and intern_mandatory_library ~intern caller libs (dir,d) =
   let m, libs = intern_library ~root:false ~intern libs dir in
-  let digest = m.libsum_digests in
+  let digest = m.library_digests in
   let () = if not (Safe_typing.digest_match ~actual:digest ~required:d) then
     let from = library_full_filename caller in
     user_err
@@ -349,7 +341,7 @@ and intern_mandatory_library ~intern caller libs (dir,d) =
 
 let rec_intern_library ~intern libs (loc, dir) =
   let m, libs = intern_library ~root:true ~intern libs dir in
-  Library_info.warn_library_info m.libsum_name m.libsum_info;
+  Library_info.warn_library_info m.library_name m.library_info;
   libs
 
 let native_name_from_filename f =
@@ -390,7 +382,7 @@ let register_library_syntax (root, m) =
   Declaremods.Synterp.register_library
     m.library_name
     l.md_syntax_objects;
-  register_loaded_library ~root (mk_summary m)
+  register_loaded_library ~root m
 
 (* Follow the semantics of Anticipate object:
    - called at module or module type closing when a Require occurs in
@@ -466,7 +458,7 @@ let current_deps () =
   let map (root, m) =
     if root then
       let m = try_find_library m in
-      Some (m.libsum_name, m.libsum_digests)
+      Some (m.library_name, m.library_digests)
     else None
   in
   List.map_filter map !libraries_loaded_list

@@ -566,7 +566,8 @@ let is_unsafe_typing_flags flags =
   not (flags.check_universes && flags.check_guarded && flags.check_positive)
 
 let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typing_flags ?user_warns cd =
-  let make_constant ~name ~typing_flags = function
+  let before_univs = Global.universes () in
+  let make_constant = function
   (* Logically define the constant and its subproofs, no libobject tampering *)
     | DefinitionEntry de ->
       (* We deal with side effects *)
@@ -581,14 +582,14 @@ let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typi
         (* We register the global universes after exporting side-effects, since
            the latter depend on the former. *)
         let () = Global.push_context_set ctx in
-        Entries.DefinitionEntry e, false, ubinders, None
+        Entries.DefinitionEntry e, false, ubinders, None, ctx
       | Default { body = (body, eff); opaque = Opaque body_uctx } ->
         let body = ((body, body_uctx), eff.Evd.seff_private) in
         let de = { de with proof_entry_body = body } in
         let cd, ctx = cast_opaque_proof_entry ImmediateEffectEntry de in
         let ubinders = make_ubinders ctx de.proof_entry_universes in
         let () = Global.push_context_set ctx in
-        Entries.OpaqueEntry cd, false, ubinders, Some (Future.from_val body, None)
+        Entries.OpaqueEntry cd, false, ubinders, Some (Future.from_val body, None), ctx
       | DeferredOpaque { body; feedback_id } ->
         let map (body, eff) = body, eff.Evd.seff_private in
         let body = Future.chain body map in
@@ -596,7 +597,7 @@ let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typi
         let cd, ctx = cast_opaque_proof_entry DeferredEffectEntry de in
         let ubinders = make_ubinders ctx de.proof_entry_universes in
         let () = Global.push_context_set ctx in
-        Entries.OpaqueEntry cd, false, ubinders, Some (body, feedback_id))
+        Entries.OpaqueEntry cd, false, ubinders, Some (body, feedback_id), ctx)
     | ParameterEntry e ->
       let univ_entry, ctx = extract_monomorphic (fst e.parameter_entry_universes) in
       let ubinders = make_ubinders ctx e.parameter_entry_universes in
@@ -607,7 +608,7 @@ let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typi
         Entries.parameter_entry_universes = univ_entry;
         Entries.parameter_entry_inline_code = e.parameter_entry_inline_code;
       } in
-      Entries.ParameterEntry e, not (Lib.is_modtype_strict()), ubinders, None
+      Entries.ParameterEntry e, not (Lib.is_modtype_strict()), ubinders, None, ctx
     | PrimitiveEntry e ->
       let typ, univ_entry, ctx = match e.prim_entry_type with
       | None ->
@@ -622,7 +623,7 @@ let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typi
         Entries.prim_entry_content = e.prim_entry_content;
       } in
       let ubinders = make_ubinders ctx univ_entry in
-      Entries.PrimitiveEntry e, false, ubinders, None
+      Entries.PrimitiveEntry e, false, ubinders, None, ctx
     | SymbolEntry { symb_entry_type=typ; symb_entry_unfold_fix=un_fix; symb_entry_universes=entry_univs } ->
       let univ_entry, ctx = extract_monomorphic (fst entry_univs) in
       let () = Global.push_context_set ctx in
@@ -632,7 +633,7 @@ let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typi
         Entries.symb_entry_universes = univ_entry;
       } in
       let ubinders = make_ubinders ctx entry_univs in
-      Entries.SymbolEntry e, false, ubinders, None
+      Entries.SymbolEntry e, false, ubinders, None, ctx
   in
   let declare_opaque kn = function
     | None -> ()
@@ -645,8 +646,17 @@ let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typi
       | Def _ | Undef _ | Primitive _ | Symbol _ -> assert false
   in
   let () = check_exists name in
-  let decl, unsafe, ubinders, delayed = make_constant ~name ~typing_flags cd in
+  let decl, unsafe, ubinders, delayed, ctx = make_constant cd in
   let kn = Global.add_constant ?typing_flags name decl in
+  let () =
+    let is_new_constraint (u,_,v as c) =
+      match UGraph.check_declared_universes before_univs Univ.Level.Set.(add u (add v empty)) with
+      | Ok () -> not (UGraph.check_constraint before_univs c)
+      | Error _ -> true
+    in
+    let ctx = on_snd (Univ.Constraints.filter is_new_constraint) ctx in
+    DeclareUniv.add_constraint_source (ConstRef kn) ctx
+  in
   let () = DeclareUniv.declare_univ_binders (GlobRef.ConstRef kn) ubinders in
   let () = declare_opaque kn delayed in
   let () = register_constant kn kind local ?user_warns in
