@@ -535,10 +535,8 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
        unfolding is applied to all constants that are not listed.
        Notice that the ``delta`` doesn't apply to variables bound by a let-in
        construction inside the term itself (use ``zeta`` to inline these).
-       Opaque constants are never unfolded except by :tacn:`vm_compute` and
-       :tacn:`native_compute`
-       (see `#4476 <https://github.com/coq/coq/issues/4476>`_ and
-       :ref:`controlling-the-reduction-strategies`).
+       Opaque constants are not unfolded by most tactics
+       (see :ref:`controlling-the-reduction-strategies`).
 
    `iota`
      :term:`iota-reduction` of pattern matching (`match`) over a constructed term and reduction
@@ -985,13 +983,28 @@ The commands to fine-tune the reduction strategies and the lazy conversion
 algorithm are described in this section.  Also see :ref:`Args_effect_on_unfolding`,
 which supports additional fine-tuning.
 
+:gdef:`Opaqueness <opaque>` is used to control whether constants can be
+:term:`unfolded <unfold>` with :term:`delta-reduction`.  Opaque means not to
+do unfolding is some cases, while :gdef:`Transparent <transparent>` permits
+unfolding.  Rocq has multiple notions of opaque:
+
+- **Sealed.**  Theorems ending with :cmd:`Qed` are permanently
+  marked `opaque`.  These are never unfolded and they can't be made transparent.
+- **Changeably opaque or transparent.**  Theorems ending with :cmd:`Defined`
+  and constants default to `transparent` (unfoldable).  "Constants" include items defined by
+  commands such as :cmd:`Definition`, :cmd:`Let` (with an explicit body),
+  :cmd:`Fixpoint`, :cmd:`CoFixpoint` and :cmd:`Function`.  Their opacity can
+  be changed at any time with the :cmd:`Opaque` and :cmd:`Transparent` commands.
+  Conversion tactics such as :tacn:`simpl` and :tacn:`unfold` only unfold transparent
+  constants.  Tactics that
+  use unification, such as :tacn:`reflexivity` and :tacn:`apply` may unfold
+  changeably opaque constants, as can :tacn:`vm_compute` and :tacn:`native_compute`
+  (see `#4476 <https://github.com/coq/coq/issues/4476>`_).
+- The :cmd:`Strategy` command provides some additional refinements (all changeable).
+
 .. cmd:: Opaque {? ! } {+ @reference }
 
-   Marks the specified constants as :term:`opaque` so tactics won't :term:`unfold` them
-   with :term:`delta-reduction`.
-   "Constants" are items defined by commands such as :cmd:`Definition`,
-   :cmd:`Let` (with an explicit body), :cmd:`Fixpoint`, :cmd:`CoFixpoint`
-   and :cmd:`Function`.
+   Marks the specified constants as changeably opaque.
 
    This command accepts the :attr:`global` attribute.  By default, the scope
    of :cmd:`Opaque` is limited to the current section or module.

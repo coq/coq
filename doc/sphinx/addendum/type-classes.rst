@@ -435,7 +435,7 @@ Command summary
      instead of failing like :tacn:`eauto`, the goal is suspended and
      resolution proceeds on the remaining goals.
      If after one run of resolution, there remain suspended goals,
-     resolution is launched against on them, until it reaches a fixed
+     resolution is launched again on them, until it reaches a fixed
      point when the set of remaining suspended goals does not change.
      Using `solve [typeclasses eauto]` can be used to ensure that
      no suspended goals remain.
@@ -492,9 +492,17 @@ Command summary
      to remain at any point during search.
 
      When :n:`with` is not specified, :tacn:`typeclasses eauto` uses
-     the ``typeclass_instances`` database by default (instead of ``core``).
+     the ``typeclass_instances`` database by default.  (If `with` is provided,
+     you must explicitly specify `typeclass_instances` to use it.)
+     Unlike :tacn:`auto` and :tacn:`eauto`, `core` is not automatically included.
      Dependent subgoals are automatically shelved, and shelved goals can
      remain after resolution ends (following the behavior of Coq 8.5).
+
+     .. comment
+        if `with` given then typeclases_eauto must be explicit:
+          Tac2tactics.typeclasses_eauto (read code)
+          and Class_tactics.e_my_find_search (with debugger)
+        core not automatically included: test-suite/success/tceauto_nocore.v
 
      .. note::
         ``all:once (typeclasses eauto)`` faithfully
