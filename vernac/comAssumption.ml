@@ -185,9 +185,10 @@ let find_binding_kind id impls =
   Option.default Explicit (CList.find_map find impls)
 
 let interp_context_gen ~program_mode ~kind ~autoimp_enable ~coercions env sigma l =
+  let initial = sigma in
   let sigma, (ienv, ((env, ctx), impls)) = interp_named_context_evars ~program_mode ~autoimp_enable env sigma l in
   (* Note, we must use the normalized evar from now on! *)
-  let sigma = solve_remaining_evars all_and_fail_flags env sigma in
+  let sigma = solve_remaining_evars all_and_fail_flags env ~initial sigma in
   let sigma, ctx = Evarutil.finalize sigma @@ fun nf ->
     List.map (NamedDecl.map_constr_het (fun x -> x) nf) ctx
   in
