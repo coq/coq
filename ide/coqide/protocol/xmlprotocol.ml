@@ -17,7 +17,7 @@ let protocol_version = "20240517"
 type msg_format = Richpp of { width : int; depth : int } | Ppcmds
 let msg_format = ref (Richpp { width = 72; depth = max_int })
 
-(** * Interface of calls to Coq by CoqIDE *)
+(** * Interface of calls to Rocq by CoqIDE *)
 
 open Util
 open Interface
@@ -46,13 +46,13 @@ let to_search_cst = do_match "search_cst" (fun s args -> match s with
   | "include_blacklist" -> empty args; Include_Blacklist
   | x -> raise (Marshal_error("search",PCData x)))
 
-let of_coq_object f ans =
+let of_rocq_object f ans =
   let prefix = of_list of_string ans.coq_object_prefix in
   let qualid = of_list of_string ans.coq_object_qualid in
   let obj = f ans.coq_object_object in
   Element ("coq_object", [], [prefix; qualid; obj])
 
-let to_coq_object f = function
+let to_rocq_object f = function
 | Element ("coq_object", [], [prefix; qualid; obj]) ->
   let prefix = to_list to_string prefix in
   let qualid = to_list to_string qualid in
@@ -263,13 +263,13 @@ let to_goal_flags = function
       gf_given_up = to_bool given_up }
   | x -> raise (Marshal_error("goal_flags", x))
 
-let of_coq_info info =
+let of_rocq_info info =
   let version = of_string info.coqtop_version in
   let protocol = of_string info.protocol_version in
   let release = of_string info.release_date in
   let compile = of_string info.compile_date in
   Element ("coq_info", [], [version; protocol; release; compile])
-let to_coq_info = function
+let to_rocq_info = function
   | Element ("coq_info", [], [version; protocol; release; compile]) -> {
       coqtop_version = to_string version;
       protocol_version = to_string protocol;
@@ -303,8 +303,8 @@ module ReifType : sig
   val state_t        : status val_t
   val option_state_t : option_state val_t
   val option_value_t : option_value val_t
-  val coq_info_t     : coq_info val_t
-  val coq_object_t   : 'a val_t -> 'a coq_object val_t
+  val rocq_info_t     : coq_info val_t
+  val rocq_object_t   : 'a val_t -> 'a coq_object val_t
   val state_id_t     : state_id val_t
   val route_id_t     : route_id val_t
   val search_cst_t   : search_constraint val_t
@@ -342,8 +342,8 @@ end = struct
     | State : status val_t
     | Option_state : option_state val_t
     | Option_value : option_value val_t
-    | Coq_info : coq_info val_t
-    | Coq_object : 'a val_t -> 'a coq_object val_t
+    | Rocq_info : coq_info val_t
+    | Rocq_object : 'a val_t -> 'a coq_object val_t
     | State_id : state_id val_t
     | Route_id : route_id val_t
     | Search_cst : search_constraint val_t
@@ -371,8 +371,8 @@ end = struct
   let state_t        = State
   let option_state_t = Option_state
   let option_value_t = Option_value
-  let coq_info_t     = Coq_info
-  let coq_object_t x = Coq_object x
+  let rocq_info_t    = Rocq_info
+  let rocq_object_t x = Rocq_object x
   let state_id_t     = State_id
   let route_id_t     = Route_id
   let search_cst_t   = Search_cst
@@ -389,13 +389,13 @@ end = struct
       | State         -> of_status
       | Option_state  -> of_option_state
       | Option_value  -> of_option_value
-      | Coq_info      -> of_coq_info
+      | Rocq_info      -> of_rocq_info
       | Goals         -> of_goals
       | Goal_flags    -> of_goal_flags
       | Evar          -> of_evar
       | List t        -> (of_list (convert t))
       | Option t      -> (of_option (convert t))
-      | Coq_object t  -> (of_coq_object (convert t))
+      | Rocq_object t  -> (of_rocq_object (convert t))
       | Pair (t1,t2)  -> (of_pair (convert t1) (convert t2))
       | Union (t1,t2) -> (of_union (convert t1) (convert t2))
       | State_id      -> of_stateid
@@ -416,13 +416,13 @@ end = struct
       | State         -> to_status
       | Option_state  -> to_option_state
       | Option_value  -> to_option_value
-      | Coq_info      -> to_coq_info
+      | Rocq_info      -> to_rocq_info
       | Goals         -> to_goals
       | Goal_flags    -> to_goal_flags
       | Evar          -> to_evar
       | List t        -> (to_list (convert t))
       | Option t      -> (to_option (convert t))
-      | Coq_object t  -> (to_coq_object (convert t))
+      | Rocq_object t  -> (to_rocq_object (convert t))
       | Pair (t1,t2)  -> (to_pair (convert t1) (convert t2))
       | Union (t1,t2) -> (to_union (convert t1) (convert t2))
       | State_id      -> to_stateid
@@ -465,7 +465,7 @@ end = struct
       | None -> "no proof;"
       | Some n -> "proof = " ^ n ^ ";" in
     "Status: " ^ path ^ name
-  let pr_coq_info (i : coq_info) = "FIXME"
+  let pr_rocq_info (i : coq_info) = "FIXME"
   let pr_option_value = function
     | IntValue None -> "none"
     | IntValue (Some i) -> string_of_int i
@@ -478,7 +478,7 @@ end = struct
       s.opt_sync s.opt_depr (pr_option_value s.opt_value)
   let pr_list pr l = "["^String.concat ";" (List.map pr l)^"]"
   let pr_option pr = function None -> "None" | Some x -> "Some("^pr x^")"
-  let pr_coq_object (o : 'a coq_object) = "FIXME"
+  let pr_rocq_object (o : 'a coq_object) = "FIXME"
   let pr_pair pr1 pr2 (a,b) = "("^pr1 a^","^pr2 b^")"
   let pr_union pr1 pr2 = function Inl x -> "Inl "^pr1 x | Inr x -> "Inr "^pr2 x
   let pr_state_id = Stateid.to_string
@@ -508,13 +508,13 @@ end = struct
   | Option_state  -> pr_option_state
   | Option_value  -> pr_option_value
   | Search_cst    -> pr_search_cst
-  | Coq_info      -> pr_coq_info
+  | Rocq_info      -> pr_rocq_info
   | Goals         -> pr_goal
   | Goal_flags    -> pr_goal_flags
   | Evar          -> pr_evar
   | List t        -> (pr_list (print t))
   | Option t      -> (pr_option (print t))
-  | Coq_object t  -> pr_coq_object
+  | Rocq_object t  -> pr_rocq_object
   | Pair (t1,t2)  -> (pr_pair (print t1) (print t2))
   | Union (t1,t2) -> (pr_union (print t1) (print t2))
   | State_id      -> pr_state_id
@@ -535,13 +535,13 @@ end = struct
   | Option_state  -> assert(true : option_state exists); "Interface.option_state"
   | Option_value  -> assert(true : option_value exists); "Interface.option_value"
   | Search_cst    -> assert(true : search_constraint exists); "Interface.search_constraint"
-  | Coq_info      -> assert(true : coq_info exists); "Interface.coq_info"
+  | Rocq_info      -> assert(true : coq_info exists); "Interface.coq_info"
   | Goals         -> assert(true : goals exists); "Interface.goals"
   | Goal_flags    -> assert(true : goal_flags exists); "Interface.goal_flags"
   | Evar          -> assert(true : evar exists); "Interface.evar"
   | List t        -> Printf.sprintf "(%s list)" (print_val_t t)
   | Option t      -> Printf.sprintf "(%s option)" (print_val_t t)
-  | Coq_object t  -> assert(true : 'a coq_object exists);
+  | Rocq_object t  -> assert(true : 'a coq_object exists);
                      Printf.sprintf "(%s Interface.coq_object)" (print_val_t t)
   | Pair (t1,t2)  -> Printf.sprintf "(%s * %s)" (print_val_t t1) (print_val_t t2)
   | Union (t1,t2) -> assert(true : ('a,'b) CSig.union exists);
@@ -623,14 +623,14 @@ let hints_rty_t : hints_rty val_t =
   let hint = list_t (pair_t string_t string_t) in
   option_t (pair_t (list_t hint) hint)
 let status_rty_t : status_rty val_t = state_t
-let search_rty_t : search_rty val_t = list_t (coq_object_t string_t)
+let search_rty_t : search_rty val_t = list_t (rocq_object_t string_t)
 let get_options_rty_t : get_options_rty val_t =
   list_t (pair_t (list_t string_t) option_state_t)
 let set_options_rty_t : set_options_rty val_t = unit_t
 let mkcases_rty_t : mkcases_rty val_t = list_t (list_t string_t)
 let quit_rty_t : quit_rty val_t = unit_t
 let wait_rty_t : wait_rty val_t = unit_t
-let about_rty_t : about_rty val_t = coq_info_t
+let about_rty_t : about_rty val_t = rocq_info_t
 let init_rty_t : init_rty val_t = state_id_t
 let interp_rty_t : interp_rty val_t = pair_t state_id_t (union_t string_t string_t)
 let stop_worker_rty_t : stop_worker_rty val_t = unit_t
