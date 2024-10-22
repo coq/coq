@@ -1,0 +1,134 @@
+(* debug auto: *)
+* assumption. (*fail*)
+* intro. (*fail*)
+* exact bar2 (in db). (*fail*)
+File "./output/disc_with_transparent.v", line 18, characters 0-40:
+The command has indeed failed with message:
+Failed to progress.
+Debug:
+Starting resolution with 1 goal(s) under focus and 0 shelved goal(s) in regular mode, unbounded
+Debug: Launching resolution fixpoint on 1 goals: ?X6 : (two + 1 + 1 = 5)
+Debug:
+Calling fixpoint on : 1 initial goals, 0 stuck goals and 0 non-stuck failures kept with no progress made in this run.
+Stuck: 
+Failed: 
+Initial: Goal 1 evar: ?X6 status: initial
+Debug: considering goal 1 of status initial
+Debug: 1: looking for (two + 1 + 1 = 5) without backtracking
+Debug: 1.1: exact bar2 on (two + 1 + 1 = 5) failed with: Unable to unify
+ "3 + 1 + 1 = 5"
+with "two + 1 + 1 = 5".
+Debug: 1: no match for (two + 1 + 1 = 5), 1 possibilities
+Debug:
+Goal 1 has no more solutions, returning exception: Proof-search failed.
+File "./output/disc_with_transparent.v", line 19, characters 5-37:
+The command has indeed failed with message:
+Tactic failure: Proof search failed.
+(* debug auto: *)
+* assumption. (*fail*)
+* intro. (*fail*)
+* exact bar (in db). (*fail*)
+File "./output/disc_with_transparent.v", line 24, characters 0-40:
+The command has indeed failed with message:
+Failed to progress.
+Debug:
+Starting resolution with 1 goal(s) under focus and 0 shelved goal(s) in regular mode, unbounded
+Debug: Launching resolution fixpoint on 1 goals: ?X8 : (1 + 1 + 1 = one)
+Debug:
+Calling fixpoint on : 1 initial goals, 0 stuck goals and 0 non-stuck failures kept with no progress made in this run.
+Stuck: 
+Failed: 
+Initial: Goal 1 evar: ?X8 status: initial
+Debug: considering goal 1 of status initial
+Debug: 1: looking for (1 + 1 + 1 = one) without backtracking
+Debug: 1.1: exact bar on (1 + 1 + 1 = one) failed with: Unable to unify
+ "1 + 1 + 1 = 3"
+with "1 + 1 + 1 = one".
+Debug: 1: no match for (1 + 1 + 1 = one), 1 possibilities
+Debug:
+Goal 1 has no more solutions, returning exception: Proof-search failed.
+File "./output/disc_with_transparent.v", line 25, characters 5-37:
+The command has indeed failed with message:
+Tactic failure: Proof search failed.
+(* debug auto: *)
+* assumption. (*fail*)
+* intro. (*fail*)
+* exact bar2 (in db). (*fail*)
+* exact bar (in db). (*fail*)
+File "./output/disc_with_transparent.v", line 30, characters 0-40:
+The command has indeed failed with message:
+Failed to progress.
+Debug:
+Starting resolution with 1 goal(s) under focus and 0 shelved goal(s) in regular mode, unbounded
+Debug: Launching resolution fixpoint on 1 goals: ?X10 : (two + 1 + 1 = one)
+Debug:
+Calling fixpoint on : 1 initial goals, 0 stuck goals and 0 non-stuck failures kept with no progress made in this run.
+Stuck: 
+Failed: 
+Initial: Goal 1 evar: ?X10 status: initial
+Debug: considering goal 1 of status initial
+Debug: 1: looking for (two + 1 + 1 = one) without backtracking
+Debug: 1.1: exact bar2 on (two + 1 + 1 = one) failed with: Unable to unify
+ "3 + 1 + 1 = 5"
+with "two + 1 + 1 = one".
+Debug: 1.1: exact bar on (two + 1 + 1 = one) failed with: Unable to unify
+ "1 + 1 + 1 = 3"
+with "two + 1 + 1 = one".
+Debug: 1: no match for (two + 1 + 1 = one), 2 possibilities
+Debug:
+Goal 1 has no more solutions, returning exception: Proof-search failed.
+File "./output/disc_with_transparent.v", line 31, characters 5-37:
+The command has indeed failed with message:
+Tactic failure: Proof search failed.
+(* debug auto: *)
+* assumption. (*fail*)
+* intro. (*fail*)
+File "./output/disc_with_transparent.v", line 36, characters 0-40:
+The command has indeed failed with message:
+Failed to progress.
+Debug:
+Starting resolution with 1 goal(s) under focus and 0 shelved goal(s) in regular mode, unbounded
+Debug: Launching resolution fixpoint on 1 goals:
+?X12 : (1 + 1 + 1 = 1 + 1 + 1)
+Debug:
+Calling fixpoint on : 1 initial goals, 0 stuck goals and 0 non-stuck failures kept with no progress made in this run.
+Stuck: 
+Failed: 
+Initial: Goal 1 evar: ?X12 status: initial
+Debug: considering goal 1 of status initial
+Debug: 1: looking for (1 + 1 + 1 = 1 + 1 + 1) without backtracking
+Debug: 1: no match for (1 + 1 + 1 = 1 + 1 + 1), 0 possibilities
+Debug:
+Goal 1 has no more solutions, returning exception: Proof-search failed.
+File "./output/disc_with_transparent.v", line 37, characters 5-37:
+The command has indeed failed with message:
+Tactic failure: Proof search failed.
+(* debug auto: *)
+* assumption. (*fail*)
+* intro. (*fail*)
+* exact bar (in db). (*success*)
+File "./output/disc_with_transparent.v", line 46, characters 5-26:
+The command has indeed failed with message:
+Unable to unify "1 + 1 + 1 = 3" with "1 + 1 + 1 = one_plus_one_plus_one".
+Debug:
+Starting resolution with 1 goal(s) under focus and 0 shelved goal(s) in regular mode, unbounded
+Debug: Launching resolution fixpoint on 1 goals:
+?X14 : (1 + 1 + 1 = one_plus_one_plus_one)
+Debug:
+Calling fixpoint on : 1 initial goals, 0 stuck goals and 0 non-stuck failures kept with no progress made in this run.
+Stuck: 
+Failed: 
+Initial: Goal 1 evar: ?X14 status: initial
+Debug: considering goal 1 of status initial
+Debug:
+1: looking for (1 + 1 + 1 = one_plus_one_plus_one) without backtracking
+Debug: 1.1: exact bar on
+(1 + 1 + 1 = one_plus_one_plus_one) failed with: Unable to unify
+ "1 + 1 + 1 = 3"
+with "1 + 1 + 1 = one_plus_one_plus_one".
+Debug: 1: no match for (1 + 1 + 1 = one_plus_one_plus_one), 1 possibilities
+Debug:
+Goal 1 has no more solutions, returning exception: Proof-search failed.
+File "./output/disc_with_transparent.v", line 50, characters 5-37:
+The command has indeed failed with message:
+Tactic failure: Proof search failed.

@@ -1,0 +1,35 @@
+(* debug auto: *)
+* assumption. (*fail*)
+* intro. (*fail*)
+2
+* (*external*) (idtac "2"; fail) (in db). (*fail*)
+1
+* (*external*) (idtac "1"; fail) (in db). (*fail*)
+* (*external*) (apply bar) (in db). (*success*)
+Debug:
+Starting resolution with 1 goal(s) under focus and 0 shelved goal(s) in regular mode, unbounded
+Debug: Launching resolution fixpoint on 1 goals: ?X4 : (3 = 3)
+Debug:
+Calling fixpoint on : 1 initial goals, 0 stuck goals and 0 non-stuck failures kept with no progress made in this run.
+Stuck: 
+Failed: 
+Initial: Goal 1 evar: ?X4 status: initial
+Debug: considering goal 1 of status initial
+Debug: 1: looking for (3 = 3) without backtracking
+2
+Debug: 1.1: (*external*) (idtac "2"; fail) on
+(3 = 3) failed with: Tactic failure.
+1
+Debug: 1.1: (*external*) (idtac "1"; fail) on
+(3 = 3) failed with: Tactic failure.
+Debug: 1.1: (*external*) (apply bar) on (3 = 3), 0 subgoal(s)
+Debug:
+1.1: after (*external*) (apply bar) finished, 0 goals are shelved and unsolved ( )
+Debug: Goal 1 has a success, continuing resolution
+Debug:
+Calling fixpoint on : 0 initial goals, 0 stuck goals and 0 non-stuck failures kept with progress made in this run.
+Stuck: 
+Failed: 
+Initial: 
+Debug: Result goals after fixpoint: 0 goals: 
+Debug: after eauto_tac_stuck: 0 goals: 
