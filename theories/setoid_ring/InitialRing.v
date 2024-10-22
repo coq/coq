@@ -911,3 +911,39 @@ Ltac isZcst t :=
   (* *)
   | _ => constr:(false)
   end.
+
+(** Registering for the ML plugin *)
+
+Register PExpr as plugins.ring.pexpr.
+Register PEc as plugins.ring.const.
+Register PEX as plugins.ring.var.
+Register PEadd as plugins.ring.add.
+Register PEsub as plugins.ring.sub.
+Register PEmul as plugins.ring.mul.
+Register PEopp as plugins.ring.opp.
+Register PEpow as plugins.ring.pow.
+Register PEeval as plugins.ring.eval.
+
+Register almost_ring_theory as plugins.ring.almost_ring_theory.
+Register semi_ring_theory as plugins.ring.semi_ring_theory.
+Register ring_theory as plugins.ring.ring_theory.
+
+Register Eqsth as plugins.ring.Eqsth.
+Register Eq_ext as plugins.ring.Eq_ext.
+Register Eq_s_ext as plugins.ring.Eq_s_ext.
+
+Register Abstract as plugins.ring.Abstract.
+Register Computational as plugins.ring.Computational.
+Register Morphism as plugins.ring.Morphism.
+
+Register IDphi as plugins.ring.IDphi.
+Register gen_phiZ as plugins.ring.gen_phiZ.
+
+Register Pphi_dev as plugins.ring.Pphi_dev.
+Register Pphi_pow as plugins.ring.Pphi_pow.
+
+Register mk_reqe as plugins.ring.mk_reqe.
+Register mk_seqe as plugins.ring.mk_seqe.
+
+Register mkhypo as plugins.ring.mkhypo.
+Register hypo as plugins.ring.hypo.

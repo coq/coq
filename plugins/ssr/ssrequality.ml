@@ -537,14 +537,13 @@ let rwcltac ?under ?map_redex cl rdx dir (sigma, r) =
   end
 
 let lz_setoid_relation =
-  let sdir = ["Classes"; "RelationClasses"] in
   let last_srel = ref None in
   fun env -> match !last_srel with
   | Some (env', srel) when env' == env -> srel
   | _ ->
     let srel =
        try Some (UnivGen.constr_of_monomorphic_global (Global.env ()) @@
-                 Coqlib.find_reference "Class_setoid" ("Stdlib"::sdir) "RewriteRelation" [@ocaml.warning "-3"])
+                 Coqlib.lib_ref "rewrite.prop.RewriteRelation")
        with e when CErrors.noncritical e -> None in
     last_srel := Some (env, srel); srel
 

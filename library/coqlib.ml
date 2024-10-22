@@ -22,13 +22,6 @@ let init_dir = [ coq; "Init"]
 
 let jmeq_module_name = [coq;"Logic";"JMeq"]
 
-let find_reference locstr dir s =
-  let dp = make_dir dir in
-  let sp = Libnames.make_path dp (Id.of_string s) in
-  Nametab.global_of_path sp
-
-let coq_reference locstr dir s = find_reference locstr (coq::dir) s
-
 let table : GlobRef.t CString.Map.t ref =
   Summary.ref ~name:"coqlib_registered" CString.Map.empty
 
@@ -75,30 +68,6 @@ let register_ref local s c =
 
 (************************************************************************)
 (* Generic functions to find Coq objects *)
-
-let has_suffix_in_dirs dirs ref =
-  let dir = Libnames.dirpath (Nametab.path_of_global ref) in
-  List.exists (fun d -> Libnames.is_dirpath_prefix_of d dir) dirs
-
-let gen_reference_in_modules locstr dirs s =
-  let dirs = List.map make_dir dirs in
-  let qualid = Libnames.qualid_of_string s in
-  let all = Nametab.locate_all qualid in
-  let all = List.sort_uniquize GlobRef.UserOrd.compare all in
-  let these = List.filter (has_suffix_in_dirs dirs) all in
-  match these with
-    | [x] -> x
-    | [] ->
-      CErrors.anomaly ~label:locstr Pp.(str "cannot find " ++ str s
-        ++ str " in module" ++ str (if List.length dirs > 1 then "s " else " ")
-        ++ prlist_with_sep pr_comma DirPath.print dirs ++ str ".")
-    | l ->
-      CErrors.anomaly ~label:locstr
-        Pp.(str "ambiguous name " ++ str s ++ str " can represent "
-          ++ prlist_with_sep pr_comma (fun x ->
-            Libnames.pr_path (Nametab.path_of_global x)) l ++ str " in module"
-          ++ str (if List.length dirs > 1 then "s " else " ")
-          ++ prlist_with_sep pr_comma DirPath.print dirs ++ str ".")
 
 (* For tactics/commands requiring vernacular libraries *)
 
