@@ -68,3 +68,5 @@ val wit_ltac2_expr : Tac2expr.raw_tacexpr Genarg.vernac_genarg_type
 val ltac2_expr : Tac2expr.raw_tacexpr Pcoq.Entry.t
 
 val ltac2_atom : Tac2expr.raw_tacexpr Pcoq.Entry.t
+
+val ltac2_scope : Tac2expr.sexpr Pcoq.Entry.t
