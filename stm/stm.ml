@@ -520,7 +520,7 @@ end = struct (* {{{ *)
 
   let vcs : vcs ref = ref (empty Stateid.dummy)
 
-  let doc_type = ref (Interactive (Coqargs.TopLogical (Names.DirPath.make [])))
+  let doc_type = ref (Interactive (Coqargs.TopLogical ""))
   let ldir = ref Names.DirPath.empty
 
   let init dt id ps =
@@ -2236,6 +2236,22 @@ let init_process stm_flags =
 let init_core () =
   State.register_root_state ()
 
+let dirpath_of_file f =
+  let ldir0 =
+    try
+      let lp = Loadpath.find_load_path (Filename.dirname f) in
+      Loadpath.logical lp
+    with Not_found -> Libnames.default_root_prefix
+  in
+  let f = try Filename.chop_extension (Filename.basename f) with Invalid_argument _ -> f in
+  let id = Names.Id.of_string f in
+  let ldir = Libnames.add_dirpath_suffix ldir0 id in
+  ldir
+
+let dirpath_of_top = function
+  | Coqargs.TopPhysical f -> dirpath_of_file f
+  | TopLogical dp -> Libnames.dirpath_of_string dp
+
 let new_doc { doc_type ; injections } =
 
   (* We must reset the whole state before creating a document! *)
@@ -2250,7 +2266,7 @@ let new_doc { doc_type ; injections } =
 
   let top =
     match doc_type with
-    | Interactive top -> Coqargs.dirpath_of_top top
+    | Interactive top -> dirpath_of_top top
 
     | VoDoc f ->
       let ldir = Coqargs.(dirpath_of_top (TopPhysical f)) in

@@ -8,11 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-let fatal_error exn =
-  Topfmt.(in_phase ~phase:ParsingCommandLine print_err_exn exn);
-  let exit_code = if (CErrors.is_anomaly exn) then 129 else 1 in
-  exit exit_code
-
 let error_wrong_arg msg =
   prerr_endline msg; exit 1
 
@@ -33,17 +28,19 @@ let error_debug () =
 type native_compiler = Coq_config.native_compiler =
   NativeOff | NativeOn of { ondemand : bool }
 
-type top = TopLogical of Names.DirPath.t | TopPhysical of string
+type top = TopLogical of string | TopPhysical of string
 
 type option_command =
   | OptionSet of string option
   | OptionUnset
   | OptionAppend of string
 
-type require_injection = { lib: string; prefix: string option; export: Lib.export_flag option; allow_failure: bool }
+type export_flag = Export | Import
+
+type require_injection = { lib: string; prefix: string option; export: export_flag option; allow_failure: bool }
 
 type injection_command =
-  | OptionInjection of (Goptions.option_name * option_command)
+  | OptionInjection of (string list * option_command)
   | RequireInjection of require_injection
   | WarnNoNative of string
   | WarnNativeDeprecated
@@ -67,10 +64,19 @@ type coqargs_config = {
   native_output_dir : CUnix.physical_path;
   native_include_dirs : CUnix.physical_path list;
   output_directory : CUnix.physical_path option;
+  exclude_dirs : CUnix.physical_path list;
+  beautify : bool;
+  quiet : bool;
   time : time_config option;
   test_mode : bool;
   profile : string option;
   print_emacs : bool;
+}
+
+type vo_path = {
+  implicit : bool;
+  unix_path : string;
+  rocq_path : string;
 }
 
 type coqargs_pre = {
@@ -79,7 +85,7 @@ type coqargs_pre = {
   load_rcfile : bool;
 
   ml_includes : string list;
-  vo_includes : Loadpath.vo_path list;
+  vo_includes : vo_path list;
 
   load_vernacular_list : (string * bool) list;
   injections  : injection_command list;
@@ -88,7 +94,7 @@ type coqargs_pre = {
 type coqargs_query =
   | PrintWhere | PrintConfig
   | PrintVersion | PrintMachineReadableVersion
-  | PrintHelp of Boot.Usage.specific_usage
+  | PrintHelp
 
 type coqargs_main =
   | Queries of coqargs_query list
@@ -105,7 +111,7 @@ type t = {
   post : coqargs_post;
 }
 
-let default_toplevel = Names.(DirPath.make [Id.of_string "Top"])
+let default_toplevel = "Top"
 
 let default_native = Coq_config.native_compiler
 
@@ -126,6 +132,9 @@ let default_config = {
   native_output_dir = ".coq-native";
   native_include_dirs = [];
   output_directory = None;
+  exclude_dirs = [];
+  beautify = false;
+  quiet = false;
   time = None;
   test_mode = false;
   profile = None;
@@ -164,10 +173,8 @@ let add_ml_include opts s =
   { opts with pre = { opts.pre with ml_includes = s :: opts.pre.ml_includes }}
 
 let add_vo_include opts unix_path rocq_path implicit =
-  let open Loadpath in
-  let rocq_path = Libnames.dirpath_of_string rocq_path in
-  { opts with pre = { opts.pre with vo_includes = {
-        unix_path; coq_path = rocq_path; has_ml = false; implicit; recursive = true } :: opts.pre.vo_includes }}
+  let v = { unix_path; rocq_path; implicit; } in
+  { opts with pre = { opts.pre with vo_includes = v :: opts.pre.vo_includes }}
 
 let add_vo_require opts d ?(allow_failure=false) p export =
   { opts with pre = { opts.pre with injections = RequireInjection {lib=d; prefix=p; export; allow_failure} :: opts.pre.injections }}
@@ -183,7 +190,7 @@ let add_set_debug opts flags =
 
 (** Options for proof general *)
 let set_emacs opts =
-  let opts = add_set_option opts Printer.print_goal_tag_opt_name (OptionSet None) in
+  let opts = add_set_option opts ["Printing";"Goal";"Tags"] (OptionSet None) in
   { opts with config = { opts.config with print_emacs = true }}
 
 let set_logic f oval =
@@ -217,21 +224,6 @@ let get_float ~opt n =
   with Failure _ ->
     error_wrong_arg ("Error: float expected after option "^opt^".")
 
-let interp_set_option opt v old =
-  let open Goptions in
-  let opt = String.concat " " opt in
-  match old with
-  | BoolValue _ -> BoolValue (get_bool ~opt v)
-  | IntValue _ -> IntValue (get_int_opt ~opt v)
-  | StringValue _ -> StringValue v
-  | StringOptValue _ -> StringOptValue (Some v)
-
-let set_option = let open Goptions in function
-  | opt, OptionUnset -> unset_option_value_gen ~locality:OptLocal opt
-  | opt, OptionSet None -> set_bool_option_value_gen ~locality:OptLocal opt true
-  | opt, OptionSet (Some v) -> set_option_value ~locality:OptLocal (interp_set_option opt) opt v
-  | opt, OptionAppend v -> set_string_option_append_value_gen ~locality:OptLocal opt v
-
 let to_opt_key = Str.(split (regexp " +"))
 
 let parse_option_set opt =
@@ -263,7 +255,7 @@ let get_native_compiler s =
 (* Main parsing routine *)
 (*s Parsing of the command line *)
 
-let parse_args ~usage ~init arglist : t * string list =
+let parse_args ~init arglist : t * string list =
   let args = ref arglist in
   let extras = ref [] in
   let rec parse oval = match !args with
@@ -300,10 +292,10 @@ let parse_args ~usage ~init arglist : t * string list =
       let rocq_name = match arg with "8" :: _ -> "Coq" | _ -> "Rocq" in
       (* remove the above and replace by "Rocq" once theories/Compat/Coq820.v is removed *)
       let xy = String.concat "" (rocq_name :: arg) in
-      add_vo_require oval xy ~allow_failure:true (Some "Stdlib") (Some Lib.Import)
+      add_vo_require oval xy ~allow_failure:true (Some "Stdlib") (Some Import)
 
     |"-exclude-dir" ->
-      System.exclude_directory (next ()); oval
+      { oval with config = { oval.config with exclude_dirs = next() :: oval.config.exclude_dirs } }
 
     |"-init-file" ->
       { oval with config = { oval.config with rcfile = Some (next ()); }}
@@ -325,27 +317,32 @@ let parse_args ~usage ~init arglist : t * string list =
     |"-load-vernac-object"|"-require" ->
       add_vo_require oval (next ()) None None
 
-    |"-require-import" | "-ri" -> add_vo_require oval (next ()) None (Some Lib.Import)
+    |"-require-import" | "-ri" -> add_vo_require oval (next ()) None (Some Import)
 
-    |"-require-export" | "-re" -> add_vo_require oval (next ()) None (Some Lib.Export)
+    |"-require-export" | "-re" -> add_vo_require oval (next ()) None (Some Export)
 
     |"-require-from"|"-rfrom" ->
       let from = next () in add_vo_require oval (next ()) (Some from) None
 
     |"-compat-from" ->
-      let from = next () in add_vo_require oval (next ()) ~allow_failure:true (Some from) (Some Lib.Import)
+      let from = next () in add_vo_require oval (next ()) ~allow_failure:true (Some from) (Some Import)
 
     |"-require-import-from" | "-rifrom" ->
-      let from = next () in add_vo_require oval (next ()) (Some from) (Some Lib.Import)
+      let from = next () in add_vo_require oval (next ()) (Some from) (Some Import)
 
     |"-require-export-from" | "-refrom" ->
-      let from = next () in add_vo_require oval (next ()) (Some from) (Some Lib.Export)
+      let from = next () in add_vo_require oval (next ()) (Some from) (Some Export)
 
     |"-top" ->
-      let topname = Libnames.dirpath_of_string (next ()) in
-      if Names.DirPath.is_empty topname then
-        CErrors.user_err Pp.(str "Need a non empty toplevel module name.");
-      { oval with config = { oval.config with logic = { oval.config.logic with toplevel_name = TopLogical topname }}}
+      let topname = next () in
+      if CString.is_empty topname then
+        error_wrong_arg  "Need a non empty toplevel module name.";
+      { oval with
+        config = {
+          oval.config with
+          logic = {
+            oval.config.logic with
+            toplevel_name = TopLogical topname }}}
 
     |"-topfile" ->
       { oval with config = { oval.config with logic = { oval.config.logic with toplevel_name = TopPhysical (next()) }}}
@@ -385,7 +382,7 @@ let parse_args ~usage ~init arglist : t * string list =
 
     (* Options with zero arg *)
     |"-test-mode" -> { oval with config = { oval.config with test_mode = true } }
-    |"-beautify" -> Flags.beautify := true; Flags.record_comments := true; oval
+    |"-beautify" -> { oval with config = { oval.config with beautify = true } }
     |"-config"|"--config" -> set_query oval PrintConfig
 
     |"-bt" -> add_set_debug oval "backtrace"
@@ -393,18 +390,15 @@ let parse_args ~usage ~init arglist : t * string list =
     |"-debug" -> error_debug ()
     |"-d" | "-D" -> add_set_debug oval (next())
 
-    (* -xml-debug implies -debug. TODO don't be imperative here. *)
-    |"-xml-debug" -> Flags.xml_debug := true; add_set_debug oval "all"
-
     |"-diffs" ->
-      add_set_option oval Proof_diffs.opt_name @@ OptionSet (Some (next ()))
+      add_set_option oval ["Diffs"] @@ OptionSet (Some (next ()))
     |"-emacs" -> set_emacs oval
     |"-impredicative-set" ->
       set_logic (fun o -> { o with impredicative_set = true }) oval
     |"-allow-sprop" ->
-      add_set_option oval Vernacentries.allow_sprop_opt_name (OptionSet None)
+      add_set_option oval ["Allow"; "StrictProp"] (OptionSet None)
     |"-disallow-sprop" ->
-      add_set_option oval Vernacentries.allow_sprop_opt_name OptionUnset
+      add_set_option oval ["Allow"; "StrictProp"] OptionUnset
     |"-allow-rewrite-rules" -> set_logic (fun o -> { o with rewrite_rules = true }) oval
     |"-indices-matter" -> set_logic (fun o -> { o with indices_matter = true }) oval
     |"-m"|"--memory" -> { oval with post = { memory_stat = true }}
@@ -412,17 +406,14 @@ let parse_args ~usage ~init arglist : t * string list =
     |"-boot" -> { oval with pre = { oval.pre with boot = true }}
     |"-profile-ltac" -> add_set_option oval ["Ltac"; "Profiling"] (OptionSet None)
     |"-q" -> { oval with pre = { oval.pre with load_rcfile = false; }}
-    |"-quiet"|"-silent" ->
-      Flags.quiet := true;
-      Flags.make_warn false;
-      oval
+    |"-quiet"|"-silent" -> { oval with config = { oval.config with quiet = true } }
     |"-time" -> { oval with config = { oval.config with time = Some ToFeedback }}
     |"-time-file" -> { oval with config = { oval.config with time = Some (ToFile (next())) }}
     | "-profile" -> { oval with config = { oval.config with profile = Some (next()) } }
     |"-type-in-type" -> set_logic (fun o -> { o with type_in_type = true }) oval
-    |"-unicode" -> add_vo_require oval "Utf8_core" None (Some Lib.Import)
+    |"-unicode" -> add_vo_require oval "Utf8_core" None (Some Import)
     |"-where" -> set_query oval PrintWhere
-    |"-h"|"-H"|"-?"|"-help"|"--help" -> set_query oval (PrintHelp usage)
+    |"-h"|"-H"|"-?"|"-help"|"--help" -> set_query oval PrintHelp
     |"-v"|"--version" -> set_query oval PrintVersion
     |"-print-version"|"--print-version" -> set_query oval PrintMachineReadableVersion
 
@@ -433,13 +424,11 @@ let parse_args ~usage ~init arglist : t * string list =
     end in
     parse noval
   in
-  try
-    parse init
-  with any -> fatal_error any
+  parse init
 
 (* We need to reverse a few lists *)
-let parse_args ~usage ~init args =
-  let opts, extra = parse_args ~usage ~init args in
+let parse_args ~init args =
+  let opts, extra = parse_args ~init args in
   let opts =
     { opts with
       pre = { opts.pre with
@@ -456,23 +445,7 @@ let parse_args ~usage ~init args =
 (******************************************************************************)
 
 (* prelude_data == From Coq Require Import Prelude. *)
-let prelude_data = RequireInjection { lib = "Prelude"; prefix = Some "Stdlib"; export = Some Lib.Import; allow_failure = false }
+let prelude_data = RequireInjection { lib = "Prelude"; prefix = Some "Stdlib"; export = Some Import; allow_failure = false }
 
 let injection_commands opts =
   if opts.pre.load_init then prelude_data :: opts.pre.injections else opts.pre.injections
-
-let dirpath_of_file f =
-  let ldir0 =
-    try
-      let lp = Loadpath.find_load_path (Filename.dirname f) in
-      Loadpath.logical lp
-    with Not_found -> Libnames.default_root_prefix
-  in
-  let f = try Filename.chop_extension (Filename.basename f) with Invalid_argument _ -> f in
-  let id = Names.Id.of_string f in
-  let ldir = Libnames.add_dirpath_suffix ldir0 id in
-  ldir
-
-let dirpath_of_top = function
-  | TopPhysical f -> dirpath_of_file f
-  | TopLogical dp -> dp

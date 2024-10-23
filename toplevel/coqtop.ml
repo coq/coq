@@ -58,9 +58,9 @@ type ('a,'b) custom_toplevel =
 (** Main init routine *)
 let init_toplevel { parse_extra; init_extra; usage; initial_args } =
   Coqinit.init_ocaml ();
-  let opts, customopts = Coqinit.parse_arguments ~parse_extra ~usage ~initial_args () in
+  let opts, customopts = Coqinit.parse_arguments ~parse_extra ~initial_args () in
   Stm.init_process (snd customopts);
-  let injections = Coqinit.init_runtime opts in
+  let injections = Coqinit.init_runtime ~usage opts in
   (* This state will be shared by all the documents *)
   Stm.init_core ();
   let customstate = init_extra ~opts customopts injections in
