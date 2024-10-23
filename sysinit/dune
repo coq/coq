@@ -1,6 +1,16 @@
 (library
+ (name coqargs)
+ (public_name coq-core.coqargs)
+ (synopsis "Coq command line argument parsing")
+ (modules coqargs)
+ (wrapped false)
+ ; don't depend on coq-core.lib -> impossible to imperatively set random flags
+ (libraries coq-core.config coq-core.clib))
+
+(library
  (name sysinit)
  (public_name coq-core.sysinit)
  (synopsis "Coq's initialization")
  (wrapped false)
- (libraries coq-core.boot coq-core.vernac findlib))
+ (modules :standard \ coqargs)
+ (libraries coq-core.boot coq-core.vernac coqargs findlib))

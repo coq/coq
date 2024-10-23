@@ -22,6 +22,8 @@
     This API should be called up very early, or not at all. *)
 val init_ocaml : unit -> unit
 
+val dirpath_of_top : Coqargs.top -> Names.DirPath.t
+
 (** 2 parsing of Sys.argv
 
     This API parses command line options which are known by Coq components.
@@ -32,7 +34,6 @@ val init_ocaml : unit -> unit
     [parse_extra] and [usage] can be used to parse/document more options. *)
 val parse_arguments :
   parse_extra:(Coqargs.t -> string list -> 'a * string list) ->
-  usage:Boot.Usage.specific_usage ->
   ?initial_args:Coqargs.t ->
   unit ->
   Coqargs.t * 'a
@@ -48,7 +49,7 @@ val parse_arguments :
     The prelude is one of these (unless "-nois" is passed).
 
     This API must be called, typically jsut after parsing arguments. *)
-val init_runtime : Coqargs.t -> Coqargs.injection_command list
+val init_runtime : usage:Boot.Usage.specific_usage -> Coqargs.t -> Coqargs.injection_command list
 
 (** 4 Start a library (sets options and loads objects like the prelude)
 

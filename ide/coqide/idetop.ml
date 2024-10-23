@@ -670,6 +670,8 @@ let rec parse = function
         Xmlprotocol.document Xml_printer.to_string_fmt; exit 0
   | "--xml_format=Ppcmds" :: rest ->
         msg_format := (fun () -> Xmlprotocol.Ppcmds); parse rest
+  | "-xml-debug" :: rest ->
+    Flags.xml_debug := true; parse rest
   | x :: rest ->
      if String.length x > 0 && x.[0] = '-' then
        (prerr_endline ("Unknown option " ^ x); exit 1)
@@ -699,6 +701,11 @@ let islave_parse opts extra_args =
 
 let islave_init ( { Coqtop.run_mode; color_mode }, stm_opts) injections ~opts =
   if run_mode = Coqtop.Batch then Flags.quiet := true;
+  (* -xml-debug implies -debug. *)
+  let injections = if !Flags.xml_debug
+    then Coqargs.OptionInjection (["Debug"], OptionAppend "all") :: injections
+    else injections
+  in
   Coqtop.init_toploop opts stm_opts injections
 
 let islave_default_opts = Coqargs.default
