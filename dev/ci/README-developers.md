@@ -98,6 +98,14 @@ are the steps to manually prepare a patch:
 
 1. Fork the external project, create a new branch, push a commit adapting
    the project to your changes.
+
+   We recommend that the commit message mention your PR's number and a
+   short explanation of what changed, eg
+   `Adapt to coq/coq#XXXXX (changed order of arguments of foo)`.
+
+   The explanation makes it possible to understand what's going on
+   without having to dereference github PR numbers.
+
 2. Test your pull request with your adapted version of the external project by
    adding an overlay file to your pull request (cf.
    [`dev/ci/user-overlays/README.md`](user-overlays/README.md)).
