@@ -136,7 +136,7 @@ let init_toploop opts stm_opts injections =
 
 let coqtop_init ({ run_mode; color_mode }, async_opts) injections ~opts =
   if run_mode != Interactive then Flags.quiet := true;
-  Colors.init_color (if opts.config.print_emacs then `EMACS else color_mode);
+  Colors.init_color color_mode;
   Flags.if_verbose (print_header ~boot:opts.pre.boot) ();
   DebugHook.Intf.(set
     { read_cmd = ltac_debug_parse
@@ -154,7 +154,7 @@ let coqtop_parse_extra opts extras =
     let run_mode, rest = parse_extra run_mode rest in run_mode, x :: rest
   | [] -> run_mode, [] in
   let run_mode, extras = parse_extra Interactive extras in
-  let color_mode, extras = Colors.parse_extra_colors extras in
+  let color_mode, extras = Colors.parse_extra_colors ~emacs:opts.config.print_emacs extras in
   let async_opts, extras = Stmargs.parse_args opts extras in
   ({ run_mode; color_mode}, async_opts), extras
 

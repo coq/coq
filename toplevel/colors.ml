@@ -68,10 +68,14 @@ let set_color = function
     Coqargs.error_wrong_arg ("Error: on/off/auto expected after option color")
 
 
-let parse_extra_colors extras =
+let parse_extra_colors ~emacs extras =
   let rec parse_extra color_mode = function
   | "-color" :: next :: rest -> parse_extra (set_color next) rest
   | x :: rest ->
     let color_mode, rest = parse_extra color_mode rest in color_mode, x :: rest
   | [] -> color_mode, [] in
-  parse_extra `AUTO extras
+  let c, extras = parse_extra `AUTO extras in
+  (* we parse -color but ignore it when -emacs
+     maybe should be the other way (ignore -emacs for color printing if -color is given)? *)
+  let c = if emacs then `EMACS else c in
+  c, extras
