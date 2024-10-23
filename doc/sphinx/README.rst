@@ -256,6 +256,10 @@ In addition to the objects above, the ``coqrst`` Sphinx plugin defines the follo
       - ``warn``: Don't die if a command emits a warning
       - ``restart``: Send a ``Restart`` command before running this block (only works in proof mode)
       - ``abort``: Send an ``Abort All`` command after running this block (leaves all pending proofs if any)
+      - ``extra``: if environment variable 'COQRST_EXTRA' is set (to anything else than '0') this is ignored, otherwise behaves as ``fail``
+        This is typically used to showcase examples of things outside coq-core or rocq-init.
+        Be careful when using it to surround the code block with a sentence explaining what
+        extra requirement is needed to compile it.
 
     ``coqtop``\ 's state is preserved across consecutive ``.. coqtop::`` blocks
     of the same document (``coqrst`` creates a single ``coqtop`` process per

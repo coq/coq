@@ -715,6 +715,10 @@ class CoqtopDirective(Directive):
       - ``warn``: Don't die if a command emits a warning
       - ``restart``: Send a ``Restart`` command before running this block (only works in proof mode)
       - ``abort``: Send an ``Abort All`` command after running this block (leaves all pending proofs if any)
+      - ``extra``: if environment variable 'COQRST_EXTRA' is set (to anything else than '0') this is ignored, otherwise behaves as ``fail``
+        This is typically used to showcase examples of things outside coq-core or rocq-init.
+        Be careful when using it to surround the code block with a sentence explaining what
+        extra requirement is needed to compile it.
 
     ``coqtop``\ 's state is preserved across consecutive ``.. coqtop::`` blocks
     of the same document (``coqrst`` creates a single ``coqtop`` process per
@@ -1005,7 +1009,8 @@ class CoqtopBlocksTransform(Transform):
         opt_warn = 'warn' in options
         opt_restart = 'restart' in options
         opt_abort = 'abort' in options
-        options = options - {'reset', 'fail', 'warn', 'restart', 'abort'}
+        opt_extra = 'extra' in options
+        options = options - {'reset', 'fail', 'warn', 'restart', 'abort', 'extra'}
 
         unexpected_options = list(options - {'all', 'none', 'in', 'out'})
         if unexpected_options:
@@ -1020,6 +1025,10 @@ class CoqtopBlocksTransform(Transform):
         opt_all = 'all' in options
         opt_input = 'in' in options
         opt_output = 'out' in options
+
+        # if 'extra' is given and env variable 'COQRST_EXTRA' is not set,
+        # allow errors
+        opt_fail = opt_fail or (opt_extra and os.environ.get('COQRST_EXTRA', '0') == '0')
 
         return {
             'reset': opt_reset,

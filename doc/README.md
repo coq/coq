@@ -81,6 +81,17 @@ for a Docker build with `ENV LANG C.UTF-8`.  (Python may look at other
 environment variables to determine the locale; see the
 [Python documentation](https://docs.python.org/3/library/locale.html#locale.getdefaultlocale)).
 
+### Libraries
+
+Most of the refman compiles with only the coq-core and rocq-init
+packages. However, in order to showcase some nice advertising
+examples with some external libraries included in Coq CI, a few code
+blocks in the refman depend on those libraries. These blocks are
+marked with the `extra` parameter (see
+[`sphinx/README.rst`](sphinx/README.rst) for more details). The
+targets below make those blocks optional but their correct compilation
+is checked in the CI target `doc:ci-refman`.
+
 Compilation
 -----------
 
