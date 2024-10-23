@@ -38,38 +38,43 @@ type 'summary library_segment = ('summary node * Libobject.t list) list
 let module_kind is_type =
   if is_type then "module type" else "module"
 
-(*let load_and_subst_objects i prefix subst seg =
-  List.rev (List.fold_left (fun seg (id,obj as node) ->
-    let obj' =  subst_object (make_oname prefix id, subst, obj) in
-    let node = if obj == obj' then node else (id, obj') in
-    load_object i (make_oname prefix id, obj');
-    node :: seg) [] seg)
-*)
+type classified_objects = {
+  substobjs : Libobject.t list;
+  keepobjs : Libobject.t list;
+  escapeobjs : Libobject.t list;
+  anticipateobjs : Libobject.t list;
+}
+
+let empty_classified = {
+  substobjs = [];
+  keepobjs = [];
+  escapeobjs = [];
+  anticipateobjs = [];
+}
+
+let classify_object : Libobject.t -> Libobject.substitutivity = function
+  | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ | ExportObject _ -> Substitute
+  | KeepObject _ -> Keep
+  | EscapeObject _ -> Escape
+  | AtomicObject o -> Libobject.classify_object o
+
 let classify_segment seg =
-  let rec clean ((substl,keepl,anticipl) as acc) = function
+  let rec clean acc = function
     | [] -> acc
     | o :: stk ->
-      let open Libobject in
-      begin match o with
-        | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ ->
-          clean (o::substl, keepl, anticipl) stk
-        | KeepObject _ ->
-          clean (substl, o::keepl, anticipl) stk
-        | ExportObject _ ->
-          clean (o::substl, keepl, anticipl) stk
-        | AtomicObject obj as o ->
-          begin match classify_object obj with
-            | Dispose -> clean acc stk
-            | Keep ->
-              clean (substl, o::keepl, anticipl) stk
-            | Substitute ->
-              clean (o::substl, keepl, anticipl) stk
-            | Anticipate ->
-              clean (substl, keepl, o::anticipl) stk
-          end
+      begin match classify_object o with
+      | Dispose -> clean acc stk
+      | Substitute ->
+        clean {acc with substobjs = o :: acc.substobjs} stk
+      | Keep ->
+        clean {acc with keepobjs = o :: acc.keepobjs} stk
+      | Escape ->
+        clean {acc with escapeobjs = o :: acc.escapeobjs} stk
+      | Anticipate ->
+        clean {acc with anticipateobjs = o :: acc.anticipateobjs} stk
       end
   in
-  clean ([],[],[]) (List.rev seg)
+  clean empty_classified (List.rev seg)
 
 let find_entries_p p stk =
   let rec find = function
@@ -292,7 +297,8 @@ type discharged_item =
   | DischargedLeaf of Libobject.discharged_obj
 
 let discharge_item = Libobject.(function
-  | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ | KeepObject _ -> assert false
+  | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ | KeepObject _ | EscapeObject _ ->
+    assert false
   | ExportObject o -> Some (DischargedExport o)
   | AtomicObject obj ->
     let obj = discharge_object obj in
@@ -550,13 +556,6 @@ module type StagedLibS = sig
 
   type summary
 
-  type classified_objects = {
-    substobjs : Libobject.t list;
-    keepobjs : Libobject.t list;
-    anticipateobjs : Libobject.t list;
-  }
-  val classify_segment : Libobject.t list -> classified_objects
-
   val find_opening_node : ?loc:Loc.t -> Id.t -> summary node
 
   val add_entry : summary node -> unit
@@ -600,16 +599,6 @@ end
 module StagedLib(Actions : LibActions) : StagedLibS with type summary = Actions.summary = struct
 
 type summary = Actions.summary
-
-type classified_objects = {
-  substobjs : Libobject.t list;
-  keepobjs : Libobject.t list;
-  anticipateobjs : Libobject.t list;
-}
-
-let classify_segment seg =
-  let substobjs, keepobjs, anticipateobjs = classify_segment seg in
-  { substobjs; keepobjs; anticipateobjs; }
 
 let add_entry node = Actions.add_entry node
 let add_leaf_entry obj = Actions.add_leaf_entry obj
@@ -691,6 +680,12 @@ end
 module Synterp : StagedLibS with type summary = Summary.Synterp.frozen = StagedLib(SynterpActions)
 module Interp : StagedLibS with type summary = Summary.Interp.frozen = StagedLib(InterpActions)
 
+type compilation_result = {
+  info : Library_info.t;
+  synterp_objects : classified_objects;
+  interp_objects : classified_objects;
+}
+
 let end_compilation dir =
   end_compilation_checks dir;
   let (syntax_after,_,syntax_before) = split_lib_at_opening !synterp_state.lib_stk in
@@ -698,9 +693,9 @@ let end_compilation dir =
   assert (List.is_empty syntax_before);
   assert (List.is_empty before);
   synterp_state := { !synterp_state with comp_name = None };
-  let syntax_after = Synterp.classify_segment syntax_after in
-  let after = Interp.classify_segment after in
-  !synterp_state.path_prefix, !library_info, after, syntax_after
+  let syntax_after = classify_segment syntax_after in
+  let after = classify_segment after in
+  { info = !library_info; interp_objects = after; synterp_objects = syntax_after; }
 
 (** Compatibility layer *)
 let init () =
