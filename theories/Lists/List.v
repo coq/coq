@@ -1284,8 +1284,7 @@ Section FlatMap.
 
     (** [flat_map] *)
 
-    Definition flat_map :=
-      fix flat_map (l:list A) : list B :=
+    Fixpoint flat_map (l:list A) : list B :=
       match l with
         | [] => []
         | x :: l => f x ++ flat_map l
