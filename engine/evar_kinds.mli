@@ -19,7 +19,7 @@ type obligation_definition_status = Define of bool | Expand
 
 type matching_var_kind = FirstOrderPatVar of Id.t | SecondOrderPatVar of Id.t
 
-type subevar_kind = Domain | Codomain | Body
+type subevar_kind = Domain | Codomain | Body | EtaExpansion
 
 (* maybe this should be a Projection.t *)
 (* Represents missing record field *)
