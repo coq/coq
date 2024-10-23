@@ -40,7 +40,7 @@ variables:
   # echo $(md5sum dev/ci/docker/old_ubuntu_lts/Dockerfile | head -c 10)
   # echo $(md5sum dev/ci/docker/edge_ubuntu/Dockerfile | head -c 10)
   BASE_CACHEKEY: "old_ubuntu_lts-V2024-10-11-f72b1aa7c6"
-  EDGE_CACHEKEY: "edge_ubuntu-V2024-11-29-b19bb2b798"
+  EDGE_CACHEKEY: "edge_ubuntu-V2024-12-02-8a4b2ae476"
   BASE_IMAGE: "$CI_REGISTRY_IMAGE:$BASE_CACHEKEY"
   EDGE_IMAGE: "$CI_REGISTRY_IMAGE:$EDGE_CACHEKEY"
 
@@ -452,7 +452,7 @@ doc:refman:deploy:
       - $DOCUMENTATION_DEPLOY_KEY
   needs:
     - doc:ml-api:odoc
-    - doc:refman
+    - doc:ci-refman
     - doc:init
     - library:ci-stdlib_doc
   script:
@@ -624,10 +624,10 @@ library:ci-bedrock2_examples:
   timeout: 2h
 
 library:ci-category_theory:
-  extends: .ci-template
+  extends: .ci-template-flambda
   needs:
-  - build:base
-  - library:ci-stdlib
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
   - plugin:ci-equations
   stage: build-2
 
@@ -791,7 +791,7 @@ library:ci-corn:
   stage: build-3+
 
 library:ci-hott:
-  extends: .ci-template
+  extends: .ci-template-flambda
 
 library:ci-iris:
   extends: .ci-template-flambda
@@ -1019,10 +1019,10 @@ plugin:ci-autosubst_ocaml:
   - library:ci-stdlib+flambda
 
 plugin:ci-itauto:
-  extends: .ci-template
+  extends: .ci-template-flambda
   needs:
-  - build:base
-  - library:ci-stdlib
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
 
 plugin:ci-bignums:
   extends: .ci-template-flambda
@@ -1037,10 +1037,10 @@ plugin:ci-coinduction:
   - library:ci-stdlib+flambda
 
 plugin:ci-coq_dpdgraph:
-  extends: .ci-template
+  extends: .ci-template-flambda
   needs:
-  - build:base
-  - library:ci-stdlib
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
 
 plugin:ci-coqhammer:
   extends: .ci-template-flambda
@@ -1071,16 +1071,16 @@ plugin:ci-hb_test:
   stage: build-2
 
 plugin:ci-equations:
-  extends: .ci-template
+  extends: .ci-template-flambda
   needs:
-  - build:base
-  - library:ci-stdlib
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
 
 plugin:ci-equations_test:
-  extends: .ci-template
+  extends: .ci-template-flambda
   needs:
-  - build:base
-  - library:ci-stdlib
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
   - plugin:ci-equations
   stage: build-2
 
@@ -1097,25 +1097,25 @@ plugin:ci-ltac2_compiler:
   extends: .ci-template
 
 plugin:ci-metacoq:
-  extends: .ci-template
+  extends: .ci-template-flambda
   needs:
-  - build:base
-  - library:ci-stdlib
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
   - plugin:ci-equations
   stage: build-2
   timeout: 1h 30min
 
 plugin:ci-mtac2:
-  extends: .ci-template
+  extends: .ci-template-flambda
   needs:
-  - build:base
-  - library:ci-stdlib
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
 
 plugin:ci-paramcoq:
-  extends: .ci-template
+  extends: .ci-template-flambda
   needs:
-  - build:base
-  - library:ci-stdlib
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
 
 plugin:ci-perennial:
   extends: .ci-template-flambda
@@ -1150,7 +1150,7 @@ plugin:ci-quickchick_test:
   stage: build-3+
 
 plugin:ci-reduction_effects:
-  extends: .ci-template
+  extends: .ci-template-flambda
 
 plugin:ci-relation_algebra:
   extends: .ci-template-flambda
@@ -1221,3 +1221,43 @@ plugin:ci-waterproof:
   needs:
   - build:edge+flambda
   - library:ci-stdlib+flambda
+
+doc:ci-refman:
+  extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
+  - plugin:ci-itauto
+  - plugin:ci-aac_tactics
+  - plugin:ci-bignums
+  - plugin:ci-coq_dpdgraph
+  - library:ci-coquelicot
+  - library:ci-corn
+  - library:ci-coqprime
+  - plugin:ci-elpi_hb
+  - library:ci-ext_lib
+  - plugin:ci-equations
+  - library:ci-flocq
+  - plugin:ci-coqhammer
+  - library:ci-hott
+  - library:ci-iris
+  - library:ci-math_classes
+  - library:ci-mathcomp
+  - library:ci-mathcomp_word
+  - library:ci-mczify
+  - library:ci-finmap
+  - library:ci-bigenough
+  - library:ci-analysis
+  - library:ci-menhir
+  - plugin:ci-mtac2
+  - plugin:ci-paramcoq
+  - plugin:ci-quickchick
+  - plugin:ci-reduction_effects
+  - plugin:ci-relation_algebra
+  - library:ci-simple_io
+  stage: build-3+
+  artifacts:
+    paths:
+      - _build/log
+      - _build/default/doc/refman-html
+      - _build/default/doc/refman-pdf

@@ -18,7 +18,8 @@
   (source_tree sphinx)
   (source_tree tools/coqrst)
   unreleased.rst
-  (env_var SPHINXWARNOPT)))
+  (env_var SPHINXWARNOPT)
+  (env_var COQRST_EXTRA)))
 
 (rule
  (targets
@@ -35,7 +36,8 @@
   (source_tree tools/coqrst)
   ../config/coq_config.py
   unreleased.rst
-  (env_var SPHINXWARNOPT))
+  (env_var SPHINXWARNOPT)
+  (env_var COQRST_EXTRA))
  (action
   (run env sphinx-build -q %{env:SPHINXWARNOPT=-W} -b html sphinx %{targets})))
 
@@ -52,8 +54,10 @@
   (package rocq-core)
   (source_tree sphinx)
   (source_tree tools/coqrst)
+  ../config/coq_config.py
   unreleased.rst
-  (env_var SPHINXWARNOPT))
+  (env_var SPHINXWARNOPT)
+  (env_var COQRST_EXTRA))
  (action
   (progn
    (run env sphinx-build -q %{env:SPHINXWARNOPT=-W} -b latex sphinx %{targets})
