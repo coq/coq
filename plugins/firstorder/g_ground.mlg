@@ -19,7 +19,7 @@ open Tacticals
 open Tacinterp
 open Stdarg
 open Tacarg
-open Pcoq.Prim
+open Procq.Prim
 
 }
 

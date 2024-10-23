@@ -10,7 +10,7 @@
 
 open Util
 open Extend
-open Pcoq
+open Procq
 open Genarg
 open Vernacexpr
 
@@ -35,7 +35,7 @@ let rec ty_rule_of_gram = function
 | [] -> AnyTyRule TyStop
 | GramTerminal s :: rem ->
   let AnyTyRule rem = ty_rule_of_gram rem in
-  let tok = Pcoq.Symbol.token (Pcoq.terminal s) in
+  let tok = Procq.Symbol.token (Procq.terminal s) in
   let r = TyNext (rem, tok, None) in
   AnyTyRule r
 | GramNonTerminal (_, (t, tok)) :: rem ->
@@ -44,9 +44,9 @@ let rec ty_rule_of_gram = function
   let r = TyNext (rem, tok, inj) in
   AnyTyRule r
 
-let rec ty_erase : type s tr a r. (s, tr, a, r) ty_rule -> (s, tr, a, r) Pcoq.Rule.t = function
-| TyStop -> Pcoq.Rule.stop
-| TyNext (rem, tok, _) -> Pcoq.Rule.next (ty_erase rem) tok
+let rec ty_erase : type s tr a r. (s, tr, a, r) ty_rule -> (s, tr, a, r) Procq.Rule.t = function
+| TyStop -> Procq.Rule.stop
+| TyNext (rem, tok, _) -> Procq.Rule.next (ty_erase rem) tok
 
 type 'r gen_eval = Loc.t -> raw_generic_argument list -> 'r
 
@@ -62,7 +62,7 @@ let make_rule f prod =
   let symb = ty_erase ty_rule in
   let f loc l = f loc (List.rev l) in
   let act = ty_eval ty_rule f in
-  Pcoq.Production.make symb act
+  Procq.Production.make symb act
 
 let rec proj_symbol : type a b c. (a, b, c) ty_user_symbol -> (a, b, c) genarg_type = function
 | TUentry a -> ExtraArg a
@@ -93,21 +93,21 @@ let extend_vernac_command_grammar s =
   let nt, gl = Hashtbl.find vernac_exts s in
   let mkact loc l = VernacSynterp (VernacExtend (s, l)) in
   let rules = [make_rule mkact gl] in
-  if Pcoq.Entry.is_empty nt then
+  if Procq.Entry.is_empty nt then
     (* Small hack to tolerate empty entries in VERNAC { ... } EXTEND *)
-    Extend (nt, (Pcoq.Fresh (Gramlib.Gramext.First, [None, None, rules])))
+    Extend (nt, (Procq.Fresh (Gramlib.Gramext.First, [None, None, rules])))
   else
-    Extend (nt, (Pcoq.Reuse (None, rules)))
+    Extend (nt, (Procq.Reuse (None, rules)))
 
 let to_extend_rules (Extend (nt, r)) = [ExtendRule (nt,r)]
 
-let extend_vernac = Pcoq.create_grammar_command "VernacExtend" {
+let extend_vernac = Procq.create_grammar_command "VernacExtend" {
     gext_fun = (fun s st -> to_extend_rules @@ extend_vernac_command_grammar s, st);
     gext_eq = (==); (* FIXME *)
   }
 
 let extend_vernac_command_grammar ~undoable s =
-  if undoable then Pcoq.extend_grammar_command extend_vernac s
+  if undoable then Procq.extend_grammar_command extend_vernac s
   else
     let Extend (nt, r) = extend_vernac_command_grammar s in
     grammar_extend nt r
@@ -120,16 +120,16 @@ let declare_grammar_ext ~uid e =
   in
   Hashtbl.add grammar_exts uid e
 
-let extend_grammar = Pcoq.create_grammar_command "GrammarExtend" {
+let extend_grammar = Procq.create_grammar_command "GrammarExtend" {
     gext_fun = (fun s st -> to_extend_rules @@ Hashtbl.find grammar_exts s, st);
     gext_eq = (==); (* FIXME *)
   }
 
 let grammar_extend ?plugin_uid nt r = match plugin_uid with
   | None ->
-    Pcoq.grammar_extend nt r
+    Procq.grammar_extend nt r
   | Some (plugin,uid) ->
     let uid = plugin^":"^uid in
     declare_grammar_ext ~uid (Extend (nt, r));
     Mltop.add_init_function plugin (fun () ->
-        Pcoq.extend_grammar_command extend_grammar uid)
+        Procq.extend_grammar_command extend_grammar uid)

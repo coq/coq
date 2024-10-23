@@ -35,19 +35,19 @@ let entry_buf = Buffer.create 64
 let pr_entry e =
   let () = Buffer.clear entry_buf in
   let ft = Format.formatter_of_buffer entry_buf in
-  let () = Pcoq.Entry.print ft e in
+  let () = Procq.Entry.print ft e in
   str (Buffer.contents entry_buf)
 
 let error_unknown_entry ?loc name =
   user_err ?loc Pp.(str "Unknown or unprintable grammar entry " ++ str name ++ str".")
 
 let pr_registered_grammar name =
-  let gram = Pcoq.find_grammars_by_name name in
+  let gram = Procq.find_grammars_by_name name in
   match gram with
   | [] -> error_unknown_entry name
   | entries ->
-    let pr_one (Pcoq.Entry.Any e) =
-      str "Entry " ++ str (Pcoq.Entry.name e) ++ str " is" ++ fnl () ++
+    let pr_one (Procq.Entry.Any e) =
+      str "Entry " ++ str (Procq.Entry.name e) ++ str " is" ++ fnl () ++
       pr_entry e
     in
     prlist pr_one entries
@@ -58,19 +58,19 @@ let pr_grammar_subset grammar =
       | entries ->
         str "Entry " ++ str name ++ str " is" ++ fnl() ++
         prlist_with_sep (fun () -> str "or" ++ fnl())
-          (fun (Pcoq.Entry.Any e) -> pr_entry e)
+          (fun (Procq.Entry.Any e) -> pr_entry e)
           entries)
       grammar
   in
   let pp = CString.Map.bindings pp in
   prlist_with_sep fnl (fun (_,pp) -> pp) pp
 
-let is_known = let open Pcoq.Entry in function
+let is_known = let open Procq.Entry in function
   | "constr" | "term" | "binder_constr" ->
-    Some [ Any Pcoq.Constr.constr;
-      Any Pcoq.Constr.lconstr;
-      Any Pcoq.Constr.binder_constr;
-      Any Pcoq.Constr.term;
+    Some [ Any Procq.Constr.constr;
+      Any Procq.Constr.lconstr;
+      Any Procq.Constr.binder_constr;
+      Any Procq.Constr.term;
     ]
   | "vernac" ->
     Some Pvernac.Vernac_.[
@@ -83,21 +83,21 @@ let is_known = let open Pcoq.Entry in function
         Any gallina_ext;
     ]
   | name ->
-    let gram = Pcoq.find_grammars_by_name name in
+    let gram = Procq.find_grammars_by_name name in
     match gram with
     | [] -> None
     | entries -> Some entries
 
 let full_grammar () =
   let open Pvernac.Vernac_ in
-  let open Pcoq.Entry in
+  let open Procq.Entry in
   let proof_modes = List.map (fun (_,e) -> Any e)
       (CString.Map.bindings (Pvernac.list_proof_modes()))
   in
   let entries = (Any vernac_control) :: (Any noedit_mode) :: proof_modes in
-  Pcoq.Entry.accumulate_in entries
+  Procq.Entry.accumulate_in entries
 
-let same_entry (Pcoq.Entry.Any e) (Pcoq.Entry.Any e') = (Obj.magic e) == (Obj.magic e')
+let same_entry (Procq.Entry.Any e) (Procq.Entry.Any e') = (Obj.magic e) == (Obj.magic e')
 
 let pr_grammar = function
   | [] ->
@@ -119,8 +119,8 @@ let pr_grammar = function
     in
     let other = String.Set.of_list other in
     let grammar = String.Map.filter (fun name _ -> String.Set.mem name other) grammar in
-    let grammar = List.fold_left (fun grammar (Pcoq.Entry.Any e as any) ->
-        String.Map.update (Pcoq.Entry.name e) (function
+    let grammar = List.fold_left (fun grammar (Procq.Entry.Any e as any) ->
+        String.Map.update (Procq.Entry.name e) (function
             | None -> Some [any]
             | Some vl as v ->
               if List.mem_f same_entry any vl
@@ -133,7 +133,7 @@ let pr_grammar = function
 let pr_custom_grammar name = pr_registered_grammar ("custom:"^name)
 
 let pr_keywords () =
-  Pp.prlist_with_sep Pp.fnl Pp.str (CString.Set.elements (CLexer.keywords (Pcoq.get_keyword_state())))
+  Pp.prlist_with_sep Pp.fnl Pp.str (CString.Set.elements (CLexer.keywords (Procq.get_keyword_state())))
 
 (** **************************************************************** **)
 (** Parse a format (every terminal starting with a letter or a single
@@ -718,7 +718,7 @@ let prod_entry_type = function
 
 let keyword_needed need s =
   (* Ensure that IDENT articulation terminal symbols are keywords *)
-  match Pcoq.terminal s with
+  match Procq.terminal s with
   | Tok.PIDENT (Some k) ->
     if need then
       Flags.if_verbose Feedback.msg_info (str "Identifier '" ++ str k ++ str "' now a keyword");
@@ -1675,7 +1675,7 @@ let with_lib_stk_protection f x =
 
 let with_syntax_protection f x =
   with_lib_stk_protection
-    (Pcoq.with_grammar_rule_protection
+    (Procq.with_grammar_rule_protection
        (with_notation_protection f)) x
 
 (** **************************************************************** **)

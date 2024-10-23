@@ -9,7 +9,7 @@ type vernac_toplevel =
 
 val err : unit -> 'a
 
-val test_show_goal : unit Pcoq.Entry.t
+val test_show_goal : unit Procq.Entry.t
 
 val vernac_toplevel :
-  Pvernac.proof_mode option -> vernac_toplevel option Pcoq.Entry.t
+  Pvernac.proof_mode option -> vernac_toplevel option Procq.Entry.t

@@ -16,7 +16,7 @@ open Constrexpr
 open Extend
 open Notationextern
 open Notation_gram
-open Pcoq
+open Procq
 
 (**********************************************************************)
 (* This determines (depending on the associativity of the current
@@ -346,7 +346,7 @@ let make_pattern (keyword,s) =
      | None -> TPattern (Tok.PIDENT (Some s))
 
 let make_sep_rules tkl =
-  Pcoq.Symbol.tokens (List.map make_pattern tkl)
+  Procq.Symbol.tokens (List.map make_pattern tkl)
 
 type ('s, 'a) mayrec_symbol =
 | MayRecNo : ('s, Gramlib.Grammar.norec, 'a) Symbol.t -> ('s, 'a) mayrec_symbol
@@ -356,45 +356,45 @@ let symbol_of_target : type s. _ -> _ -> _ -> _ -> s target -> (s, s) mayrec_sym
   if is_binder_level custom from p
   then
     (* Prevent self *)
-    MayRecNo (Pcoq.Symbol.nterml (target_entry custom forpat) "200")
-  else if is_self custom from p then MayRecMay Pcoq.Symbol.self
+    MayRecNo (Procq.Symbol.nterml (target_entry custom forpat) "200")
+  else if is_self custom from p then MayRecMay Procq.Symbol.self
   else
     let g = target_entry custom forpat in
     let lev = adjust_level custom assoc from p in
     begin match lev with
-    | DefaultLevel -> MayRecNo (Pcoq.Symbol.nterm g)
-    | NextLevel -> MayRecMay Pcoq.Symbol.next
-    | NumLevel lev -> MayRecNo (Pcoq.Symbol.nterml g (string_of_int lev))
+    | DefaultLevel -> MayRecNo (Procq.Symbol.nterm g)
+    | NextLevel -> MayRecMay Procq.Symbol.next
+    | NumLevel lev -> MayRecNo (Procq.Symbol.nterml g (string_of_int lev))
     end
 
 let rec symbol_of_entry : type s r. _ -> _ -> (s, r) entry -> (s, r) mayrec_symbol = fun assoc from typ -> match typ with
 | TTConstr (s, p, forpat) -> symbol_of_target s p assoc from forpat
 | TTConstrList (s, typ', [], forpat) ->
   begin match symbol_of_target s typ' assoc from forpat with
-  | MayRecNo s -> MayRecNo (Pcoq.Symbol.list1 s)
-  | MayRecMay s -> MayRecMay (Pcoq.Symbol.list1 s) end
+  | MayRecNo s -> MayRecNo (Procq.Symbol.list1 s)
+  | MayRecMay s -> MayRecMay (Procq.Symbol.list1 s) end
 | TTConstrList (s, typ', tkl, forpat) ->
   begin match symbol_of_target s typ' assoc from forpat with
-  | MayRecNo s -> MayRecNo (Pcoq.Symbol.list1sep s (make_sep_rules tkl) false)
-  | MayRecMay s -> MayRecMay (Pcoq.Symbol.list1sep s (make_sep_rules tkl) false) end
-| TTPattern p -> MayRecNo (Pcoq.Symbol.nterml Constr.pattern (string_of_int p))
-| TTOpenBinderList -> MayRecNo (Pcoq.Symbol.nterm Constr.open_binders)
-| TTClosedBinderListPure [] -> MayRecNo (Pcoq.Symbol.list1 (Pcoq.Symbol.nterm Constr.binder))
-| TTClosedBinderListPure tkl -> MayRecNo (Pcoq.Symbol.list1sep (Pcoq.Symbol.nterm Constr.binder) (make_sep_rules tkl) false)
+  | MayRecNo s -> MayRecNo (Procq.Symbol.list1sep s (make_sep_rules tkl) false)
+  | MayRecMay s -> MayRecMay (Procq.Symbol.list1sep s (make_sep_rules tkl) false) end
+| TTPattern p -> MayRecNo (Procq.Symbol.nterml Constr.pattern (string_of_int p))
+| TTOpenBinderList -> MayRecNo (Procq.Symbol.nterm Constr.open_binders)
+| TTClosedBinderListPure [] -> MayRecNo (Procq.Symbol.list1 (Procq.Symbol.nterm Constr.binder))
+| TTClosedBinderListPure tkl -> MayRecNo (Procq.Symbol.list1sep (Procq.Symbol.nterm Constr.binder) (make_sep_rules tkl) false)
 | TTClosedBinderListOther (typ,[]) ->
   begin match symbol_of_entry assoc from typ with
-  | MayRecNo s -> MayRecNo (Pcoq.Symbol.list1 s)
-  | MayRecMay s -> MayRecMay (Pcoq.Symbol.list1 s) end
+  | MayRecNo s -> MayRecNo (Procq.Symbol.list1 s)
+  | MayRecMay s -> MayRecMay (Procq.Symbol.list1 s) end
 | TTClosedBinderListOther (typ,tkl) ->
   begin match symbol_of_entry assoc from typ with
-  | MayRecNo s -> MayRecNo (Pcoq.Symbol.list1sep s (make_sep_rules tkl) false)
-  | MayRecMay s -> MayRecMay (Pcoq.Symbol.list1sep s (make_sep_rules tkl) false) end
-| TTIdent -> MayRecNo (Pcoq.Symbol.nterm Prim.identref)
-| TTName -> MayRecNo (Pcoq.Symbol.nterm Prim.name)
-| TTBinder true -> MayRecNo (Pcoq.Symbol.nterm Constr.one_open_binder)
-| TTBinder false -> MayRecNo (Pcoq.Symbol.nterm Constr.one_closed_binder)
-| TTBigint -> MayRecNo (Pcoq.Symbol.nterm Prim.bignat)
-| TTGlobal -> MayRecNo (Pcoq.Symbol.nterm Constr.global)
+  | MayRecNo s -> MayRecNo (Procq.Symbol.list1sep s (make_sep_rules tkl) false)
+  | MayRecMay s -> MayRecMay (Procq.Symbol.list1sep s (make_sep_rules tkl) false) end
+| TTIdent -> MayRecNo (Procq.Symbol.nterm Prim.identref)
+| TTName -> MayRecNo (Procq.Symbol.nterm Prim.name)
+| TTBinder true -> MayRecNo (Procq.Symbol.nterm Constr.one_open_binder)
+| TTBinder false -> MayRecNo (Procq.Symbol.nterm Constr.one_closed_binder)
+| TTBigint -> MayRecNo (Procq.Symbol.nterm Prim.bignat)
+| TTGlobal -> MayRecNo (Procq.Symbol.nterm Constr.global)
 
 let rec interp_entry forpat e = match e with
 | ETProdIdent -> TTAny TTIdent
@@ -536,10 +536,10 @@ let target_to_bool : type r. r target -> bool = function
 
 let prepare_empty_levels forpat (where,(pos,p4assoc,name,reinit)) =
   let empty = match pos with
-  | ReuseFirst -> Pcoq.Reuse (None, [])
-  | ReuseLevel n -> Pcoq.Reuse (Some (constr_level n), [])
-  | NewFirst -> Pcoq.Fresh (Gramlib.Gramext.First, [(name, p4assoc, [])])
-  | NewAfter n -> Pcoq.Fresh (Gramlib.Gramext.After (constr_level n), [(name, p4assoc, [])])
+  | ReuseFirst -> Procq.Reuse (None, [])
+  | ReuseLevel n -> Procq.Reuse (Some (constr_level n), [])
+  | NewFirst -> Procq.Fresh (Gramlib.Gramext.First, [(name, p4assoc, [])])
+  | NewAfter n -> Procq.Fresh (Gramlib.Gramext.After (constr_level n), [(name, p4assoc, [])])
   in
   match reinit with
   | None ->
@@ -561,7 +561,7 @@ let rec pure_sublevels' assoc from forpat level = function
    let push where p rem =
      match symbol_of_target where p assoc from forpat with
      | MayRecNo sym ->
-       (match Pcoq.level_of_nonterm sym with
+       (match Procq.level_of_nonterm sym with
         | None -> rem
         | Some i ->
           if different_levels (from.notation_entry,level) (where,i) then
@@ -597,15 +597,15 @@ let extend_constr state forpat ng =
     let act = ty_eval r (make_act forpat ng.notgram_notation) empty in
     let rule =
       let r = match ty_erase r with
-        | MayRecRNo symbs -> Pcoq.Production.make symbs act
-        | MayRecRMay symbs -> Pcoq.Production.make symbs act
+        | MayRecRNo symbs -> Procq.Production.make symbs act
+        | MayRecRMay symbs -> Procq.Production.make symbs act
       in
       let rule = name, p4assoc, [r] in
       match pos with
-      | NewFirst -> Pcoq.Fresh (Gramlib.Gramext.First, [rule])
-      | NewAfter n -> Pcoq.Fresh (Gramlib.Gramext.After (constr_level n), [rule])
-      | ReuseFirst -> Pcoq.Reuse (None, [r])
-      | ReuseLevel n -> Pcoq.Reuse (Some (constr_level n), [r])
+      | NewFirst -> Procq.Fresh (Gramlib.Gramext.First, [rule])
+      | NewAfter n -> Procq.Fresh (Gramlib.Gramext.After (constr_level n), [rule])
+      | ReuseFirst -> Procq.Reuse (None, [r])
+      | ReuseLevel n -> Procq.Reuse (Some (constr_level n), [r])
     in
     let r = match reinit with
       | None ->

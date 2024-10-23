@@ -1997,7 +1997,7 @@ let q_unit = CAst.make @@ CTacCst (AbsKn (Tuple 0))
 let add_generic_scope s entry arg =
   let parse = function
   | [] ->
-    let scope = Pcoq.Symbol.nterm entry in
+    let scope = Procq.Symbol.nterm entry in
     let act x = CAst.make @@ CTacExt (arg, x) in
     Tac2entries.ScopeRule (scope, act)
   | arg -> scope_fail s arg
@@ -2008,14 +2008,14 @@ open CAst
 
 let () = add_scope "keyword" begin function
 | [SexprStr {loc;v=s}] ->
-  let scope = Pcoq.Symbol.token (Tok.PKEYWORD s) in
+  let scope = Procq.Symbol.token (Tok.PKEYWORD s) in
   Tac2entries.ScopeRule (scope, (fun _ -> q_unit))
 | arg -> scope_fail "keyword" arg
 end
 
 let () = add_scope "terminal" begin function
 | [SexprStr {loc;v=s}] ->
-  let scope = Pcoq.Symbol.token (Pcoq.terminal s) in
+  let scope = Procq.Symbol.token (Procq.terminal s) in
   Tac2entries.ScopeRule (scope, (fun _ -> q_unit))
 | arg -> scope_fail "terminal" arg
 end
@@ -2023,13 +2023,13 @@ end
 let () = add_scope "list0" begin function
 | [tok] ->
   let Tac2entries.ScopeRule (scope, act) = Tac2entries.parse_scope tok in
-  let scope = Pcoq.Symbol.list0 scope in
+  let scope = Procq.Symbol.list0 scope in
   let act l = Tac2quote.of_list act l in
   Tac2entries.ScopeRule (scope, act)
 | [tok; SexprStr {v=str}] ->
   let Tac2entries.ScopeRule (scope, act) = Tac2entries.parse_scope tok in
-  let sep = Pcoq.Symbol.tokens [Pcoq.TPattern (Pcoq.terminal str)] in
-  let scope = Pcoq.Symbol.list0sep scope sep false in
+  let sep = Procq.Symbol.tokens [Procq.TPattern (Procq.terminal str)] in
+  let scope = Procq.Symbol.list0sep scope sep false in
   let act l = Tac2quote.of_list act l in
   Tac2entries.ScopeRule (scope, act)
 | arg -> scope_fail "list0" arg
@@ -2038,13 +2038,13 @@ end
 let () = add_scope "list1" begin function
 | [tok] ->
   let Tac2entries.ScopeRule (scope, act) = Tac2entries.parse_scope tok in
-  let scope = Pcoq.Symbol.list1 scope in
+  let scope = Procq.Symbol.list1 scope in
   let act l = Tac2quote.of_list act l in
   Tac2entries.ScopeRule (scope, act)
 | [tok; SexprStr {v=str}] ->
   let Tac2entries.ScopeRule (scope, act) = Tac2entries.parse_scope tok in
-  let sep = Pcoq.Symbol.tokens [Pcoq.TPattern (Pcoq.terminal str)] in
-  let scope = Pcoq.Symbol.list1sep scope sep false in
+  let sep = Procq.Symbol.tokens [Procq.TPattern (Procq.terminal str)] in
+  let scope = Procq.Symbol.list1sep scope sep false in
   let act l = Tac2quote.of_list act l in
   Tac2entries.ScopeRule (scope, act)
 | arg -> scope_fail "list1" arg
@@ -2053,7 +2053,7 @@ end
 let () = add_scope "opt" begin function
 | [tok] ->
   let Tac2entries.ScopeRule (scope, act) = Tac2entries.parse_scope tok in
-  let scope = Pcoq.Symbol.opt scope in
+  let scope = Procq.Symbol.opt scope in
   let act opt = match opt with
   | None ->
     CAst.make @@ CTacCst (AbsKn (Other Core.c_none))
@@ -2066,7 +2066,7 @@ end
 
 let () = add_scope "self" begin function
 | [] ->
-  let scope = Pcoq.Symbol.self in
+  let scope = Procq.Symbol.self in
   let act tac = tac in
   Tac2entries.ScopeRule (scope, act)
 | arg -> scope_fail "self" arg
@@ -2074,7 +2074,7 @@ end
 
 let () = add_scope "next" begin function
 | [] ->
-  let scope = Pcoq.Symbol.next in
+  let scope = Procq.Symbol.next in
   let act tac = tac in
   Tac2entries.ScopeRule (scope, act)
 | arg -> scope_fail "next" arg
@@ -2083,12 +2083,12 @@ end
 let () = add_scope "tactic" begin function
 | [] ->
   (* Default to level 5 parsing *)
-  let scope = Pcoq.Symbol.nterml ltac2_expr "5" in
+  let scope = Procq.Symbol.nterml ltac2_expr "5" in
   let act tac = tac in
   Tac2entries.ScopeRule (scope, act)
 | [SexprInt {loc;v=n}] as arg ->
   let () = if n < 0 || n > 6 then scope_fail "tactic" arg in
-  let scope = Pcoq.Symbol.nterml ltac2_expr (string_of_int n) in
+  let scope = Procq.Symbol.nterml ltac2_expr (string_of_int n) in
   let act tac = tac in
   Tac2entries.ScopeRule (scope, act)
 | arg -> scope_fail "tactic" arg
@@ -2109,7 +2109,7 @@ let () = add_scope "constr" (fun arg ->
         arg
     in
     let act e = Tac2quote.of_constr ~delimiters e in
-    Tac2entries.ScopeRule (Pcoq.Symbol.nterm Pcoq.Constr.constr, act)
+    Tac2entries.ScopeRule (Procq.Symbol.nterm Procq.Constr.constr, act)
   )
 
 let () = add_scope "open_constr" (fun arg ->
@@ -2119,7 +2119,7 @@ let () = add_scope "open_constr" (fun arg ->
         arg
     in
     let act e = Tac2quote.of_open_constr ~delimiters e in
-    Tac2entries.ScopeRule (Pcoq.Symbol.nterm Pcoq.Constr.constr, act)
+    Tac2entries.ScopeRule (Procq.Symbol.nterm Procq.Constr.constr, act)
   )
 
 let () = add_scope "preterm" (fun arg ->
@@ -2129,12 +2129,12 @@ let () = add_scope "preterm" (fun arg ->
         arg
     in
     let act e = Tac2quote.of_preterm ~delimiters e in
-    Tac2entries.ScopeRule (Pcoq.Symbol.nterm Pcoq.Constr.constr, act)
+    Tac2entries.ScopeRule (Procq.Symbol.nterm Procq.Constr.constr, act)
   )
 
 let add_expr_scope name entry f =
   add_scope name begin function
-  | [] -> Tac2entries.ScopeRule (Pcoq.Symbol.nterm entry, f)
+  | [] -> Tac2entries.ScopeRule (Procq.Symbol.nterm entry, f)
   | arg -> scope_fail name arg
   end
 
@@ -2159,13 +2159,13 @@ let () = add_expr_scope "pose" q_pose Tac2quote.of_pose
 let () = add_expr_scope "assert" q_assert Tac2quote.of_assertion
 let () = add_expr_scope "constr_matching" q_constr_matching Tac2quote.of_constr_matching
 let () = add_expr_scope "goal_matching" q_goal_matching Tac2quote.of_goal_matching
-let () = add_expr_scope "format" Pcoq.Prim.lstring Tac2quote.of_format
+let () = add_expr_scope "format" Procq.Prim.lstring Tac2quote.of_format
 
-let () = add_generic_scope "pattern" Pcoq.Constr.constr Tac2quote.wit_pattern
+let () = add_generic_scope "pattern" Procq.Constr.constr Tac2quote.wit_pattern
 
 (** seq scope, a bit hairy *)
 
-open Pcoq
+open Procq
 
 type _ converter =
 | CvNil : (Loc.t -> raw_tacexpr) converter
@@ -2181,17 +2181,17 @@ type seqrule =
 
 let rec make_seq_rule = function
 | [] ->
-  Seqrule (Pcoq.Rule.stop, CvNil)
+  Seqrule (Procq.Rule.stop, CvNil)
 | tok :: rem ->
   let Tac2entries.ScopeRule (scope, f) = Tac2entries.parse_scope tok in
   let scope =
-    match Pcoq.generalize_symbol scope with
+    match Procq.generalize_symbol scope with
     | None ->
       CErrors.user_err (str "Recursive symbols (self / next) are not allowed in local rules")
     | Some scope -> scope
   in
   let Seqrule (r, c) = make_seq_rule rem in
-  let r = Pcoq.Rule.next_norec r scope in
+  let r = Procq.Rule.next_norec r scope in
   let f = match tok with
   | SexprStr _ -> None (* Leave out mere strings *)
   | _ -> Some f
@@ -2201,7 +2201,7 @@ let rec make_seq_rule = function
 let () = add_scope "seq" begin fun toks ->
   let scope =
     let Seqrule (r, c) = make_seq_rule (List.rev toks) in
-    Pcoq.(Symbol.rules [Rules.make r (apply c [])])
+    Procq.(Symbol.rules [Rules.make r (apply c [])])
   in
   Tac2entries.ScopeRule (scope, (fun e -> e))
 end

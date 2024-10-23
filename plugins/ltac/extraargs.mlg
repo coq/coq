@@ -15,8 +15,8 @@ DECLARE PLUGIN "coq-core.plugins.ltac"
 open Pp
 open Stdarg
 open Tacarg
-open Pcoq.Prim
-open Pcoq.Constr
+open Procq.Prim
+open Procq.Constr
 open Names
 open Taccoerce
 open Tacinterp
@@ -31,17 +31,17 @@ let create_generic_quotation name e wit =
   let inject (loc, v) = Tacexpr.TacGeneric (Some name, Genarg.in_gen (Genarg.rawwit wit) v) in
   Tacentries.create_ltac_quotation ~plugin:"coq-core.plugins.ltac" name inject (e, None)
 
-let () = create_generic_quotation "integer" Pcoq.Prim.integer Stdarg.wit_int
-let () = create_generic_quotation "string" Pcoq.Prim.string Stdarg.wit_string
+let () = create_generic_quotation "integer" Procq.Prim.integer Stdarg.wit_int
+let () = create_generic_quotation "string" Procq.Prim.string Stdarg.wit_string
 
-let () = create_generic_quotation "smart_global" Pcoq.Prim.smart_global Stdarg.wit_smart_global
+let () = create_generic_quotation "smart_global" Procq.Prim.smart_global Stdarg.wit_smart_global
 
-let () = create_generic_quotation "ident" Pcoq.Prim.ident Stdarg.wit_ident
-let () = create_generic_quotation "reference" Pcoq.Prim.reference Stdarg.wit_ref
-let () = create_generic_quotation "uconstr" Pcoq.Constr.lconstr Stdarg.wit_uconstr
-let () = create_generic_quotation "constr" Pcoq.Constr.lconstr Stdarg.wit_constr
+let () = create_generic_quotation "ident" Procq.Prim.ident Stdarg.wit_ident
+let () = create_generic_quotation "reference" Procq.Prim.reference Stdarg.wit_ref
+let () = create_generic_quotation "uconstr" Procq.Constr.lconstr Stdarg.wit_uconstr
+let () = create_generic_quotation "constr" Procq.Constr.lconstr Stdarg.wit_constr
 let () = create_generic_quotation "ipattern" Pltac.simple_intropattern wit_simple_intropattern
-let () = create_generic_quotation "open_constr" Pcoq.Constr.lconstr Stdarg.wit_open_constr
+let () = create_generic_quotation "open_constr" Procq.Constr.lconstr Stdarg.wit_open_constr
 let () =
   let inject (loc, v) = Tacexpr.Tacexp v in
   Tacentries.create_ltac_quotation ~plugin:"coq-core.plugins.ltac" "ltac" inject (Pltac.ltac_expr, Some 5)
@@ -74,7 +74,7 @@ END
 
 let pr_int _ _ _ i = Pp.int i
 
-let _natural = Pcoq.Prim.natural
+let _natural = Procq.Prim.natural
 
 }
 
@@ -171,7 +171,7 @@ END
 
 {
 
-let l_constr = Pcoq.Constr.lconstr
+let l_constr = Procq.Constr.lconstr
 
 }
 
@@ -296,7 +296,7 @@ END
 {
 
 let local_test_lpar_id_colon =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "lpar_id_colon" begin
     lk_kw "(" >> lk_ident >> lk_kw ":"
   end
@@ -312,7 +312,7 @@ END
 {
 
 (* Work around a limitation of the macro system *)
-let strategy_level0 = Pcoq.Prim.strategy_level
+let strategy_level0 = Procq.Prim.strategy_level
 
 let pr_strategy _ _ _ v = Conv_oracle.pr_level v
 

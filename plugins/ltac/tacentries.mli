@@ -63,7 +63,7 @@ val add_ml_tactic_notation : ml_tactic_name -> level:int -> ?deprecation:Depreca
 (** {5 Tactic Quotations} *)
 
 val create_ltac_quotation : plugin:string -> string ->
-  ('grm Loc.located -> raw_tactic_arg) -> ('grm Pcoq.Entry.t * int option) -> unit
+  ('grm Loc.located -> raw_tactic_arg) -> ('grm Procq.Entry.t * int option) -> unit
 (** [create_ltac_quotation name f e] adds a quotation rule to Ltac, that is,
     Ltac grammar now accepts arguments of the form ["name" ":" "(" <e> ")"], and
     generates an argument using [f] on the entry parsed by [e]. *)
@@ -176,4 +176,4 @@ type ('a, 'b, 'c) tactic_argument = {
 }
 
 val argument_extend : plugin:string -> name:string -> ('a, 'b, 'c) tactic_argument ->
-  ('a, 'b, 'c) Genarg.genarg_type * 'a Pcoq.Entry.t
+  ('a, 'b, 'c) Genarg.genarg_type * 'a Procq.Entry.t

@@ -74,7 +74,7 @@ very specific to Coq (not so similar to Camlp5):
   ```
 
   Global nonterminals are declared in `pcoq.ml`, e.g. `let bignat = Entry.create "bignat"`.
-  All the `*.mlg` files include `open Pcoq` and often its modules, e.g. `open Pcoq.Prim`.
+  All the `*.mlg` files include `open Pcoq` and often its modules, e.g. `open Procq.Prim`.
 
   `GRAMMAR EXTEND` should be used only for large syntax additions.  To add new commands
   and tactics, use these instead:
@@ -376,7 +376,7 @@ the next 3 tokens are `"("` `ident` and `":"` without consuming any input:
 
   ```
   let local_test_lpar_id_colon =
-    let open Pcoq.Lookahead in
+    let open Procq.Lookahead in
     to_entry "lpar_id_colon" begin
       lk_kw "(" >> lk_ident >> lk_kw ":"
     end
@@ -389,7 +389,7 @@ would break existing code with "[|]":
 
   ```
   let test_array_opening =
-    let open Pcoq.Lookahead in
+    let open Procq.Lookahead in
     to_entry "test_array_opening" begin
       lk_kw "[" >> lk_kw "|" >> check_no_space
     end

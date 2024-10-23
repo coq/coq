@@ -15,7 +15,7 @@ val wit_fun_ind_using :
   Genarg.genarg_type
 
 val fun_ind_using :
-  Constrexpr.constr_expr Tactypes.with_bindings option Pcoq.Entry.t
+  Constrexpr.constr_expr Tactypes.with_bindings option Procq.Entry.t
 
 val wit_with_names :
   (Constrexpr.constr_expr Tactypes.intro_pattern_expr CAst.t option,
@@ -25,16 +25,16 @@ val wit_with_names :
 
 val with_names :
   Constrexpr.constr_expr Tactypes.intro_pattern_expr CAst.t option
-  Pcoq.Entry.t
+  Procq.Entry.t
 
 val wit_function_fix_definition :
   Vernacexpr.fixpoint_expr Loc.located Genarg.vernac_genarg_type
 
 val function_fix_definition :
-  Vernacexpr.fixpoint_expr Loc.located Pcoq.Entry.t
+  Vernacexpr.fixpoint_expr Loc.located Procq.Entry.t
 
 val wit_fun_scheme_arg :
   (Names.Id.t * Libnames.qualid * Sorts.family) Genarg.vernac_genarg_type
 
 val fun_scheme_arg :
-  (Names.Id.t * Libnames.qualid * Sorts.family) Pcoq.Entry.t
+  (Names.Id.t * Libnames.qualid * Sorts.family) Procq.Entry.t

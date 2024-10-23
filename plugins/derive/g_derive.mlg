@@ -22,7 +22,7 @@ let classify_derive_command _ = Vernacextend.(VtStartProof (Doesn'tGuaranteeOpac
 
 let () =
    Mltop.add_init_function "coq-core.plugins.derive" (fun () ->
-     Pcoq.(set_keyword_state (CLexer.add_keyword_tok (get_keyword_state ()) (Tok.PKEYWORD "SuchThat"))))
+     Procq.(set_keyword_state (CLexer.add_keyword_tok (get_keyword_state ()) (Tok.PKEYWORD "SuchThat"))))
 
 let warn_deprecated_derive_suchthat =
    CWarnings.create ~name:"deprecated-derive-suchthat" ~category:Deprecation.Version.v9_0

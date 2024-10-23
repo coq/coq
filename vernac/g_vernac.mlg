@@ -25,10 +25,10 @@ open Declaremods
 
 module C = Constr
 
-open Pcoq
-open Pcoq.Prim
-open Pcoq.Constr
-open Pcoq.Module
+open Procq
+open Procq.Prim
+open Procq.Constr
+open Procq.Module
 open Pvernac.Vernac_
 open Attributes
 
@@ -79,13 +79,13 @@ let add_control_flag ~loc ~flag { CAst.v = cmd } =
   CAst.make ~loc { cmd with control = flag :: cmd.control }
 
 let test_hash_ident =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_hash_ident" begin
     lk_kw "#" >> lk_ident >> check_no_space
   end
 
 let test_id_colon =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_id_colon" begin
     lk_ident >> lk_kw ":"
   end
@@ -222,17 +222,17 @@ let name_of_ident_decl : ident_decl -> name_decl =
   on_fst lname_of_lident
 
 let test_variance_ident =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_variance_ident" begin
     lk_kws ["=";"+";"*"] >> lk_ident
   end
 
 let test_univ_decl =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_univ_decl" (lk_ident_list >> lk_kw "|" >> lk_ident_list >> (lk_kw "+" <+> lk_empty) >> (lk_kw "|" <+> lk_kw "|}"))
 
 let test_cumul_univ_decl =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   let lk_list_variance_ident = lk_list (lk_kw "+" <+> lk_kw "*" <+> lk_kw "=" <+> lk_ident) in
   to_entry "test_cumul_univ_decl" (lk_ident_list >> lk_kw "|" >> lk_list_variance_ident >> (lk_kw "+" <+> lk_empty) >> (lk_kw "|" <+> lk_kw "|}"))
 
@@ -628,7 +628,7 @@ END
 {
 
 let test_only_starredidentrefs =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_only_starredidentrefs" begin
     lk_list (lk_ident <+> lk_kws ["Type"; "*"]) >> (lk_kws [".";")"])
   end
@@ -992,7 +992,7 @@ END
 
 (* Hack to parse "[ id" without dropping [ *)
 let test_bracket_ident =
-  let open Pcoq.Lookahead in
+  let open Procq.Lookahead in
   to_entry "test_bracket_ident" begin
     lk_kw "[" >> lk_ident
   end

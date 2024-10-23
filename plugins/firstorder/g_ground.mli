@@ -13,4 +13,4 @@ val wit_firstorder_using :
    Names.GlobRef.t list)
   Genarg.genarg_type
 
-val firstorder_using : Libnames.qualid list Pcoq.Entry.t
+val firstorder_using : Libnames.qualid list Procq.Entry.t

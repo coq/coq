@@ -19,7 +19,7 @@ When you try to print values belonging to abstract data types:
   val sigma : Evd.evar_map = <abstr>
   val env : Environ.env = <abstr>
 
-  # Typeops.infer env (snd (Pretyping.understand_tcc env sigma (Constrintern.intern_constr env (Pcoq.parse_string Pcoq.Constr.lconstr "plus"))));;
+  # Typeops.infer env (snd (Pretyping.understand_tcc env sigma (Constrintern.intern_constr env (Procq.parse_string Procq.Constr.lconstr "plus"))));;
 
   - : Environ.unsafe_judgment = {Environ.uj_val = <abstr>; uj_type = <abstr>}
 
@@ -31,7 +31,7 @@ One way how to deal with that is to load the corresponding printers:
 
 Consequently, the result of:
 
-  # Typeops.infer env (snd (Pretyping.understand_tcc env sigma (Constrintern.intern_constr env (Pcoq.parse_string Pcoq.Constr.lconstr "plus"))));;
+  # Typeops.infer env (snd (Pretyping.understand_tcc env sigma (Constrintern.intern_constr env (Procq.parse_string Procq.Constr.lconstr "plus"))));;
 
 will be printed as:
 

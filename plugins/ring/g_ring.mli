@@ -12,22 +12,22 @@ val wit_ring_mod :
   Constrexpr.constr_expr Ring_ast.ring_mod Genarg.vernac_genarg_type
 
 val ring_mod :
-  Constrexpr.constr_expr Ring_ast.ring_mod Pcoq.Entry.t
+  Constrexpr.constr_expr Ring_ast.ring_mod Procq.Entry.t
 
 val wit_ring_mods :
   Constrexpr.constr_expr Ring_ast.ring_mod list Genarg.vernac_genarg_type
 
 val ring_mods :
-  Constrexpr.constr_expr Ring_ast.ring_mod list Pcoq.Entry.t
+  Constrexpr.constr_expr Ring_ast.ring_mod list Procq.Entry.t
 
 val wit_field_mod :
   Constrexpr.constr_expr Ring_ast.field_mod Genarg.vernac_genarg_type
 
 val field_mod :
-  Constrexpr.constr_expr Ring_ast.field_mod Pcoq.Entry.t
+  Constrexpr.constr_expr Ring_ast.field_mod Procq.Entry.t
 
 val wit_field_mods :
   Constrexpr.constr_expr Ring_ast.field_mod list Genarg.vernac_genarg_type
 
 val field_mods :
-  Constrexpr.constr_expr Ring_ast.field_mod list Pcoq.Entry.t
+  Constrexpr.constr_expr Ring_ast.field_mod list Procq.Entry.t
