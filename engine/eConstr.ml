@@ -266,7 +266,7 @@ let isRefX env sigma x c =
   | _ -> false
 
 let is_lib_ref env sigma x c =
-  match Coqlib.lib_ref_opt x with
+  match Rocqlib.lib_ref_opt x with
   | Some x -> isRefX env sigma x c
   | None -> false
 

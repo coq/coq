@@ -117,10 +117,10 @@ let make_inv_predicate env evd indf realargs id status concl =
      push <Ai>(mkRel k)=ai (when   Ai is closed).
    In any case, we carry along the rest of pairs *)
   let eq_term, refl_term =
-    try Coqlib.lib_ref "core.eq.type", Coqlib.lib_ref "core.eq.refl"
-    with Coqlib.NotFoundRef _ ->
-    try Coqlib.lib_ref "core.identity.type", Coqlib.lib_ref "core.identity.refl"
-    with Coqlib.NotFoundRef _ ->
+    try Rocqlib.lib_ref "core.eq.type", Rocqlib.lib_ref "core.eq.refl"
+    with Rocqlib.NotFoundRef _ ->
+    try Rocqlib.lib_ref "core.identity.type", Rocqlib.lib_ref "core.identity.refl"
+    with Rocqlib.NotFoundRef _ ->
       user_err (str "No registered equality" ++ spc() ++
                 hov 1
                   (str "(needs \"core.eq.type\" and \"core.eq.refl\"" ++ spc() ++
@@ -364,7 +364,7 @@ let remember_first_eq id x = if !x == Logic.MoveLast then x := Logic.MoveAfter i
 let dest_nf_eq env sigma t = match EConstr.kind sigma t with
 | App (r, [| t; x; y |]) ->
   let open Reductionops in
-  let is_global_exists gr c = match Coqlib.lib_ref_opt gr with
+  let is_global_exists gr c = match Rocqlib.lib_ref_opt gr with
     | Some gr -> isRefX env sigma gr c
     | None -> false
   in

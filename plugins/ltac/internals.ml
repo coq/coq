@@ -136,7 +136,7 @@ let rewrite_except h =
   end
 
 
-let refl_equal () = Coqlib.lib_ref "core.eq.type"
+let refl_equal () = Rocqlib.lib_ref "core.eq.type"
 
 (* This is simply an implementation of the case_eq tactic.  this code
   should be replaced by a call to the tactic but I don't know how to

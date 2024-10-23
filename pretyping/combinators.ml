@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Coqlib
+open Rocqlib
 open CErrors
 open Util
 open Termops

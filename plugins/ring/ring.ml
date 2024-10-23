@@ -21,7 +21,7 @@ open Environ
 open Glob_term
 open Locus
 open Tacexpr
-open Coqlib
+open Rocqlib
 open Mod_subst
 open Tacinterp
 open Libobject
@@ -233,8 +233,8 @@ let exec_tactic env sigma n f args =
   let nf c = constr_of sigma c in
   Array.map nf !tactic_res, Evd.universe_context_set sigma
 
-let gen_constant n = (); fun () -> (EConstr.of_constr (UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref n)))
-let gen_reference n = (); fun () -> (Coqlib.lib_ref n)
+let gen_constant n = (); fun () -> (EConstr.of_constr (UnivGen.constr_of_monomorphic_global (Global.env ()) (Rocqlib.lib_ref n)))
+let gen_reference n = (); fun () -> (Rocqlib.lib_ref n)
 
 let rocq_mk_Setoid = gen_constant "plugins.ring.Build_Setoid_Theory"
 let rocq_None = gen_reference "core.option.None"
@@ -843,7 +843,7 @@ let ftheory_to_obj : field_info -> obj =
 let field_equality env sigma r inv req =
   match EConstr.kind sigma req with
     | App (f, [| _ |]) when isRefX env sigma (rocq_eq ()) f ->
-        let c = UnivGen.constr_of_monomorphic_global (Global.env ()) Coqlib.(lib_ref "core.eq.congr") in
+        let c = UnivGen.constr_of_monomorphic_global (Global.env ()) Rocqlib.(lib_ref "core.eq.congr") in
         let c = EConstr.of_constr c in
         mkApp(c,[|r;r;inv|])
     | _ ->

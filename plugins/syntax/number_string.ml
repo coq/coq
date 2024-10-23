@@ -45,7 +45,7 @@ let get_constructors ind =
   Array.to_list
     (Array.mapi (fun j c -> GlobRef.ConstructRef (ind, j + 1)) mc)
 
-let q_option () = Coqlib.lib_ref "core.option.type"
+let q_option () = Rocqlib.lib_ref "core.option.type"
 
 let unsafe_ref_ind q =
   match q with
@@ -55,8 +55,8 @@ let unsafe_ref_ind q =
 let locate_z () =
   let zn = "num.Z.type" in
   let pn = "num.pos.type" in
-  match Coqlib.lib_ref zn, Coqlib.lib_ref pn with
-  | exception Coqlib.NotFoundRef _ -> None
+  match Rocqlib.lib_ref zn, Rocqlib.lib_ref pn with
+  | exception Rocqlib.NotFoundRef _ -> None
   | q_z, q_pos ->
     Some ({
         z_ty = unsafe_ref_ind q_z;
@@ -73,11 +73,11 @@ let locate_number () =
   let int = "num.num_int.type" in
   let uint = "num.num_uint.type" in
   let num = "num.number.type" in
-  match Coqlib.lib_ref dint, Coqlib.lib_ref duint, Coqlib.lib_ref dec
-        , Coqlib.lib_ref hint, Coqlib.lib_ref huint, Coqlib.lib_ref hex
-        , Coqlib.lib_ref int, Coqlib.lib_ref uint, Coqlib.lib_ref num
+  match Rocqlib.lib_ref dint, Rocqlib.lib_ref duint, Rocqlib.lib_ref dec
+        , Rocqlib.lib_ref hint, Rocqlib.lib_ref huint, Rocqlib.lib_ref hex
+        , Rocqlib.lib_ref int, Rocqlib.lib_ref uint, Rocqlib.lib_ref num
   with
-  | exception Coqlib.NotFoundRef _ -> None
+  | exception Rocqlib.NotFoundRef _ -> None
   | q_dint, q_duint, q_dec, q_hint, q_huint, q_hex, q_int, q_uint, q_num ->
     let int_ty = {
       dec_int = unsafe_ref_ind q_dint;
@@ -98,8 +98,8 @@ let locate_number () =
 
 let locate_int63 () =
   let pos_neg_int63n = "num.int63.pos_neg_int63" in
-  match Coqlib.lib_ref pos_neg_int63n with
-  | exception Coqlib.NotFoundRef _ -> None
+  match Rocqlib.lib_ref pos_neg_int63n with
+  | exception Rocqlib.NotFoundRef _ -> None
   | pos_neg_int63 ->
     Some ({pos_neg_int63_ty = unsafe_ref_ind pos_neg_int63},
           gref pos_neg_int63)
@@ -107,8 +107,8 @@ let locate_int63 () =
 
 let locate_float () =
   let floatn = "num.float.type" in
-  match Coqlib.lib_ref floatn with
-  | exception Coqlib.NotFoundRef _ -> None
+  match Rocqlib.lib_ref floatn with
+  | exception Rocqlib.NotFoundRef _ -> None
   | q_float -> Some (gref q_float)
 
 let has_type env sigma f ty =
@@ -408,14 +408,14 @@ let locate_global_inductive_or_int63_or_float env allow_params qid =
     let floatn = "num.float.type" in
     let floatc = "num.float.wrap_float" in
     let floatw = "num.float.float_wrapper" in
-    if allow_params && Coqlib.has_ref int63n
-       && Environ.QGlobRef.equal env (Smartlocate.global_with_alias qid) (Coqlib.lib_ref int63n)
-    then TargetPrim (Coqlib.lib_ref int63w, [Coqlib.lib_ref int63c],
-                     (Nametab.path_of_global (Coqlib.lib_ref int63n), []))
-    else if allow_params && Coqlib.has_ref floatn
-       && Environ.QGlobRef.equal env (Smartlocate.global_with_alias qid) (Coqlib.lib_ref floatn)
-    then TargetPrim (Coqlib.lib_ref floatw, [Coqlib.lib_ref floatc],
-                     (Nametab.path_of_global (Coqlib.lib_ref floatn), []))
+    if allow_params && Rocqlib.has_ref int63n
+       && Environ.QGlobRef.equal env (Smartlocate.global_with_alias qid) (Rocqlib.lib_ref int63n)
+    then TargetPrim (Rocqlib.lib_ref int63w, [Rocqlib.lib_ref int63c],
+                     (Nametab.path_of_global (Rocqlib.lib_ref int63n), []))
+    else if allow_params && Rocqlib.has_ref floatn
+       && Environ.QGlobRef.equal env (Smartlocate.global_with_alias qid) (Rocqlib.lib_ref floatn)
+    then TargetPrim (Rocqlib.lib_ref floatw, [Rocqlib.lib_ref floatc],
+                     (Nametab.path_of_global (Rocqlib.lib_ref floatn), []))
     else TargetInd (Smartlocate.global_inductive_with_alias qid, [])
 
 let intern_cref env sigma r =
@@ -536,17 +536,17 @@ let locate_global_inductive_or_pstring env allow_params qid =
     let pstringn = "strings.pstring.type" in
     let pstringc = "strings.pstring.wrap_string" in
     let pstringw = "strings.pstring.string_wrapper" in
-    if allow_params && Coqlib.has_ref pstringn
-       && Environ.QGlobRef.equal env (Smartlocate.global_with_alias qid) (Coqlib.lib_ref pstringn)
-    then TargetPrim (Coqlib.lib_ref pstringw, [Coqlib.lib_ref pstringc],
-                     (Nametab.path_of_global (Coqlib.lib_ref pstringn), []))
+    if allow_params && Rocqlib.has_ref pstringn
+       && Environ.QGlobRef.equal env (Smartlocate.global_with_alias qid) (Rocqlib.lib_ref pstringn)
+    then TargetPrim (Rocqlib.lib_ref pstringw, [Rocqlib.lib_ref pstringc],
+                     (Nametab.path_of_global (Rocqlib.lib_ref pstringn), []))
     else TargetInd (Smartlocate.global_inductive_with_alias qid, [])
 
-let q_list () = Coqlib.lib_ref "core.list.type"
-let q_byte () = Coqlib.lib_ref "core.byte.type"
+let q_list () = Rocqlib.lib_ref "core.list.type"
+let q_byte () = Rocqlib.lib_ref "core.byte.type"
 
 let locate_pstring () =
-  Option.map gref (Coqlib.lib_ref_opt "strings.pstring.type")
+  Option.map gref (Rocqlib.lib_ref_opt "strings.pstring.type")
 
 let type_error_to f ty =
   CErrors.user_err

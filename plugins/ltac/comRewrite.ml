@@ -30,7 +30,7 @@ let classes_dirpath =
 
 let init_setoid () =
   if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
-  else Coqlib.check_required_library ["Stdlib";"Setoids";"Setoid"]
+  else Rocqlib.check_required_library ["Stdlib";"Setoids";"Setoid"]
 
 type rewrite_attributes = {
   polymorphic : bool;
@@ -49,10 +49,10 @@ let rewrite_attributes =
 
 module PropGlobal = struct
 
-  let respectful_ref () = Coqlib.lib_ref "rewrite.prop.respectful"
+  let respectful_ref () = Rocqlib.lib_ref "rewrite.prop.respectful"
 
   let proper_class =
-    fun () -> Option.get (TC.class_info (Coqlib.lib_ref "rewrite.prop.Proper"))
+    fun () -> Option.get (TC.class_info (Rocqlib.lib_ref "rewrite.prop.Proper"))
 
   let proper_proj () =
     UnsafeMonomorphic.mkConst (Option.get (List.hd (proper_class ()).TC.cl_projs).TC.meth_const)

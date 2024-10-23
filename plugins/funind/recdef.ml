@@ -38,10 +38,10 @@ open Context.Rel.Declaration
 (* Ugly things which should not be here *)
 
 let rocq_constant s =
-  EConstr.of_constr @@ UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Coqlib.lib_ref s
+  EConstr.of_constr @@ UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Rocqlib.lib_ref s
 
 let rocq_init_constant s =
-  EConstr.of_constr (UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Coqlib.lib_ref s)
+  EConstr.of_constr (UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Rocqlib.lib_ref s)
 
 let find_reference sl s =
   let dp = Names.DirPath.make (List.rev_map Id.of_string sl) in
@@ -109,7 +109,7 @@ let def_id = Id.of_string "def"
 let p_id = Id.of_string "p"
 let rec_res_id = Id.of_string "rec_res"
 let lt = function () -> rocq_init_constant "num.nat.lt"
-let le = function () -> Coqlib.lib_ref "num.nat.le"
+let le = function () -> Rocqlib.lib_ref "num.nat.le"
 let ex = function () -> rocq_init_constant "core.ex.type"
 let nat = function () -> rocq_init_constant "num.nat.type"
 
@@ -131,7 +131,7 @@ let le_n = function () -> rocq_init_constant "num.nat.le_n"
 let rocq_sig_ref = function
   | () -> find_reference ["Stdlib"; "Init"; "Specif"] "sig"
 
-let rocq_proj1_sig = lazy (Coqlib.build_sigma ()).proj1
+let rocq_proj1_sig = lazy (Rocqlib.build_sigma ()).proj1
 
 let rocq_O = function () -> rocq_init_constant "num.nat.O"
 let rocq_S = function () -> rocq_init_constant "num.nat.S"
@@ -1319,9 +1319,9 @@ exception EmptySubgoals
 
 let build_and_l sigma l =
   let and_constr =
-    UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Coqlib.lib_ref "core.and.type"
+    UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Rocqlib.lib_ref "core.and.type"
   in
-  let conj_constr = Coqlib.lib_ref "core.and.conj" in
+  let conj_constr = Rocqlib.lib_ref "core.and.conj" in
   let mk_and p1 p2 = mkApp (EConstr.of_constr and_constr, [|p1; p2|]) in
   let rec is_well_founded t =
     match EConstr.kind sigma t with

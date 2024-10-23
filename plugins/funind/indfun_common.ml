@@ -72,7 +72,7 @@ let list_union_eq eq_fun l1 l2 =
   urec l1
 
 let list_add_set_eq eq_fun x l = if List.exists (eq_fun x) l then l else x :: l
-let rocq_constant s = UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Coqlib.lib_ref s
+let rocq_constant s = UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Rocqlib.lib_ref s
 
 let find_reference sl s =
   let dp = Names.DirPath.make (List.rev_map Id.of_string sl) in
@@ -366,16 +366,16 @@ exception ToShow of exn
 
 let jmeq () =
   try
-    Coqlib.check_required_library Coqlib.jmeq_module_name;
+    Rocqlib.check_required_library Rocqlib.jmeq_module_name;
     EConstr.of_constr @@ UnivGen.constr_of_monomorphic_global (Global.env ())
-    @@ Coqlib.lib_ref "core.JMeq.type"
+    @@ Rocqlib.lib_ref "core.JMeq.type"
   with e when CErrors.noncritical e -> raise (ToShow e)
 
 let jmeq_refl () =
   try
-    Coqlib.check_required_library Coqlib.jmeq_module_name;
+    Rocqlib.check_required_library Rocqlib.jmeq_module_name;
     EConstr.of_constr @@ UnivGen.constr_of_monomorphic_global (Global.env ())
-    @@ Coqlib.lib_ref "core.JMeq.refl"
+    @@ Rocqlib.lib_ref "core.JMeq.refl"
   with e when CErrors.noncritical e -> raise (ToShow e)
 
 let h_intros l = Tacticals.tclMAP (fun x -> Tactics.Simple.intro x) l
@@ -398,7 +398,7 @@ let ltof_ref = function () -> find_reference ["Stdlib"; "Arith"; "Wf_nat"] "ltof
 let make_eq () =
   try
     EConstr.of_constr
-      (UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref "core.eq.type"))
+      (UnivGen.constr_of_monomorphic_global (Global.env ()) (Rocqlib.lib_ref "core.eq.type"))
   with e when CErrors.noncritical e -> assert false
 
 let evaluable_of_global_reference r =

@@ -133,7 +133,7 @@ let basecuttac k c =
           let qc,qg = ESorts.quality sigma sc, ESorts.quality sigma sg in
           match qc, qg with
           | Sorts.Quality.(QConstant QProp), Sorts.Quality.(QConstant QProp) ->
-          let f = Coqlib.lib_ref ("plugins.ssreflect.ssr_have") in
+          let f = Rocqlib.lib_ref ("plugins.ssreflect.ssr_have") in
           let sigma, f = EConstr.fresh_global env sigma f in
           let sigma, step = Evarutil.new_evar env sigma c in
           let stepg = Proofview_monad.with_empty_state (fst @@ destEvar sigma step) in
@@ -143,7 +143,7 @@ let basecuttac k c =
           let f = EConstr.mkApp (f, [|c;concl;step;rest|]) in
           false, sigma, f, glf
           | _ ->
-          let f = Coqlib.lib_ref ("plugins.ssreflect.ssr_have_upoly") in
+          let f = Rocqlib.lib_ref ("plugins.ssreflect.ssr_have_upoly") in
           let sigma, uc = match qc with
             | QConstant (QSProp | QProp) -> sigma, Univ.Level.set
             | _ -> Evd.new_univ_level_variable Evd.univ_flexible sigma in
@@ -488,14 +488,14 @@ let intro_lock ipats =
             ||
             (* if this is not the case, the tactic can still succeed
             when the considered relation is [Coq.Init.Logic.iff] *)
-            Ssrcommon.is_const_ref env sigma hd (Coqlib.lib_ref "core.iff.type") &&
+            Ssrcommon.is_const_ref env sigma hd (Rocqlib.lib_ref "core.iff.type") &&
             Array.length args = 2 && is_app_evar sigma args.(1) ->
           protect_subgoal env sigma hd args
         | _ ->
         let t = Reductionops.whd_all env sigma c in
         match kind_of_type sigma t with
         | AtomicType(hd, args) when
-            Ssrcommon.is_ind_ref env sigma hd (Coqlib.lib_ref "core.eq.type") &&
+            Ssrcommon.is_ind_ref env sigma hd (Rocqlib.lib_ref "core.eq.type") &&
             Array.length args = 3 && is_app_evar sigma args.(2) ->
           protect_subgoal env sigma hd args
         | _ ->

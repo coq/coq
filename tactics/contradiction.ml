@@ -20,7 +20,7 @@ module NamedDecl = Context.Named.Declaration
 (* Absurd *)
 
 let mk_absurd_proof env r t =
-  Tacticals.pf_constr_of_global (Coqlib.(lib_ref "core.not.type")) >>= fun rocq_not ->
+  Tacticals.pf_constr_of_global (Rocqlib.(lib_ref "core.not.type")) >>= fun rocq_not ->
   Refine.refine ~typecheck:true begin fun sigma ->
     let sigma, negev = Evarutil.new_evar env sigma (mkApp (rocq_not, [|t|])) in
     let sigma, ev = Evarutil.new_evar ~relevance:r env sigma t in

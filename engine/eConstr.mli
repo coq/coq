@@ -276,7 +276,7 @@ val isVarId  : Evd.evar_map -> Id.t -> t -> bool
 val isRelN : Evd.evar_map -> int -> t -> bool
 val isRefX : Environ.env -> Evd.evar_map -> GlobRef.t -> t -> bool
 
-(** The string is interpreted by [Coqlib.lib_ref]. If it is not registered, return [false]. *)
+(** The string is interpreted by [Rocqlib.lib_ref]. If it is not registered, return [false]. *)
 val is_lib_ref : Environ.env -> Evd.evar_map -> string -> t -> bool
 
 val destRel : Evd.evar_map -> t -> int

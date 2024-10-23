@@ -1098,7 +1098,7 @@ module Strings = struct
 open PrimTokenNotation
 
 let qualid_of_ref n =
-  n |> Coqlib.lib_ref |> Nametab.shortest_qualid_of_global Id.Set.empty
+  n |> Rocqlib.lib_ref |> Nametab.shortest_qualid_of_global Id.Set.empty
 
 let q_list () = qualid_of_ref "core.list.type"
 let q_byte () = qualid_of_ref "core.byte.type"

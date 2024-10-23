@@ -240,7 +240,7 @@ let search_pattern env sigma pat mods pr_search =
 
 (** SearchRewrite *)
 
-let eq () = Coqlib.(lib_ref "core.eq.type")
+let eq () = Rocqlib.(lib_ref "core.eq.type")
 
 let rewrite_pat1 pat =
   PApp (PRef (eq ()), [| PMeta None; pat; PMeta None |])

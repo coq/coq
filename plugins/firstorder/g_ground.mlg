@@ -93,7 +93,7 @@ let gen_ground_tac ist taco ids bases =
 
 (* special for compatibility with Intuition
 
-let constant str = Coqlib.get_constr str
+let constant str = Rocqlib.get_constr str
 
 let defined_connectives=lazy
   [[],EvalConstRef (destConst (constant "core.not.type"));

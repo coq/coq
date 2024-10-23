@@ -57,11 +57,11 @@ let step_count = ref 0
 
 let node_count = ref 0
 
-let li_False = lazy (destInd (UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Coqlib.lib_ref "core.False.type"))
-let li_and   = lazy (destInd (UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Coqlib.lib_ref "core.and.type"))
-let li_or    = lazy (destInd (UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Coqlib.lib_ref "core.or.type"))
+let li_False = lazy (destInd (UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Rocqlib.lib_ref "core.False.type"))
+let li_and   = lazy (destInd (UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Rocqlib.lib_ref "core.and.type"))
+let li_or    = lazy (destInd (UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Rocqlib.lib_ref "core.or.type"))
 
-let gen_constant n = lazy (UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref n))
+let gen_constant n = lazy (UnivGen.constr_of_monomorphic_global (Global.env ()) (Rocqlib.lib_ref n))
 
 let l_xI = gen_constant "num.pos.xI"
 let l_xO = gen_constant "num.pos.xO"
@@ -272,7 +272,7 @@ let rtauto_tac =
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
-    Coqlib.check_required_library ["Stdlib";"rtauto";"Rtauto"];
+    Rocqlib.check_required_library ["Stdlib";"rtauto";"Rtauto"];
     let gamma={next=1;env=[]} in
     let () =
       if Retyping.get_sort_family_of env sigma concl != InProp

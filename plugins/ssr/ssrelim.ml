@@ -102,7 +102,7 @@ let subgoals_tys sigma (relctx, concl) =
  *    by eqid *)
 
 let get_eq_type env sigma =
-  Evd.fresh_global env sigma Coqlib.(lib_ref "core.eq.type")
+  Evd.fresh_global env sigma Rocqlib.(lib_ref "core.eq.type")
 
 type elim_what =
 | EConstr of
@@ -573,7 +573,7 @@ let injectl2rtac sigma c = match EConstr.kind sigma c with
 let is_injection_case env sigma c =
   let sigma, cty = Typing.type_of env sigma c in
   let (mind,_) = Tacred.eval_to_quantified_ind env sigma cty in
-  Coqlib.check_ref "core.eq.type" (GlobRef.IndRef mind)
+  Rocqlib.check_ref "core.eq.type" (GlobRef.IndRef mind)
 
 let perform_injection c =
   let open Proofview.Notations in

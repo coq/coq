@@ -153,7 +153,7 @@ let newssrcongrtac arg ist =
   (* utils *)
   let fs sigma t = Reductionops.nf_evar sigma t in
   let ssr_congr lr = EConstr.mkApp (arr, lr) in
-  let sigma, eq = Evd.fresh_global env sigma Coqlib.(lib_ref "core.eq.type") in
+  let sigma, eq = Evd.fresh_global env sigma Rocqlib.(lib_ref "core.eq.type") in
   (* here the two cases: simple equality or arrow *)
   let equality, _, eq_args, sigma' = saturate env sigma eq 3 in
   Proofview.Unsafe.tclEVARS sigma <*>
@@ -483,7 +483,7 @@ let rwcltac ?under ?map_redex cl rdx dir (sigma, r) =
   let () = debug_ssr (fun () -> Pp.(str"r@rwcltac=" ++ pr_econstr_env env sigma r)) in
   let cvtac, rwtac, sigma0 =
     if EConstr.Vars.closed0 sigma0 r' then
-      let c_eq = Coqlib.(lib_ref "core.eq.type") in
+      let c_eq = Rocqlib.(lib_ref "core.eq.type") in
       let sigma, c_ty = Typing.type_of env sigma r in
       let () = debug_ssr (fun () -> Pp.(str"c_ty@rwcltac=" ++ pr_econstr_env env sigma c_ty)) in
       let open EConstr in
@@ -543,7 +543,7 @@ let lz_setoid_relation =
   | _ ->
     let srel =
        try Some (UnivGen.constr_of_monomorphic_global (Global.env ()) @@
-                 Coqlib.lib_ref "rewrite.prop.RewriteRelation")
+                 Rocqlib.lib_ref "rewrite.prop.RewriteRelation")
        with e when CErrors.noncritical e -> None in
     last_srel := Some (env, srel); srel
 
@@ -563,10 +563,10 @@ let dir_org = function L2R -> 1 | R2L -> 2
 
 let rwprocess_rule env dir rule =
   let is_setoid = ssr_is_setoid env in
-  let prod_type = Coqlib.lib_ref "core.prod.type" in
-  let prod_intro = Coqlib.lib_ref "core.prod.intro" in
-  let prod_proj1 = Coqlib.lib_ref "core.prod.proj1" in
-  let prod_proj2 = Coqlib.lib_ref "core.prod.proj2" in
+  let prod_type = Rocqlib.lib_ref "core.prod.type" in
+  let prod_intro = Rocqlib.lib_ref "core.prod.intro" in
+  let prod_proj1 = Rocqlib.lib_ref "core.prod.proj1" in
+  let prod_proj2 = Rocqlib.lib_ref "core.prod.proj2" in
   let r_sigma, rules =
     let rec loop d sigma r t0 rs red =
       let t =

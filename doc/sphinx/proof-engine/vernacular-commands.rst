@@ -1175,7 +1175,7 @@ Exposing constants to OCaml libraries
    Makes the constant :n:`@qualid__1` accessible to OCaml libraries under
    the name :n:`@qualid__2`.  The constant can then be dynamically located
    in OCaml code by
-   calling :n:`Coqlib.lib_ref "@qualid__2"`.  The OCaml code doesn't need
+   calling :n:`Rocqlib.lib_ref "@qualid__2"`.  The OCaml code doesn't need
    to know where the constant is defined (what file, module, library, etc.).
 
    As a special case, when the first segment of :n:`@qualid__2` is :g:`kernel`,

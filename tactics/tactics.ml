@@ -30,7 +30,7 @@ open Logic
 open Clenv
 open Tacticals
 open Hipattern
-open Coqlib
+open Rocqlib
 open Evarutil
 open Indrec
 open Pretype_errors
@@ -2723,7 +2723,7 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
             | IntroAnonymous -> new_fresh_id (Id.Set.singleton id) (add_prefix "Heq" id) gl
             | IntroFresh heq_base -> new_fresh_id (Id.Set.singleton id) heq_base gl
             | IntroIdentifier id -> id in
-          let eqdata = build_coq_eq_data () in
+          let eqdata = build_rocq_eq_data () in
           let args = if lr then [mkVar id;c] else [c;mkVar id]in
           let (sigma, eq) = Evd.fresh_global env sigma eqdata.eq in
           let refl = mkRef (eqdata.refl, snd @@ destRef sigma eq) in
@@ -3081,7 +3081,7 @@ let unfold_body x =
 let dest_intro_patterns with_evars avoid thin dest pat tac =
   intro_patterns_core with_evars avoid [] thin dest None 0 tac pat
 
-let rocq_heq_ref        = lazy (Coqlib.lib_ref "core.JMeq.type")
+let rocq_heq_ref        = lazy (Rocqlib.lib_ref "core.JMeq.type")
 
 let compare_upto_variables sigma x y =
   let rec compare x y =
@@ -3161,7 +3161,7 @@ let exfalso =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
-    let (sigma, f) = Evd.fresh_global env sigma (Coqlib.lib_ref "core.False.type") in
+    let (sigma, f) = Evd.fresh_global env sigma (Rocqlib.lib_ref "core.False.type") in
     let (ind, _) = reduce_to_atomic_ind env sigma f in
     let s = Retyping.get_sort_family_of env sigma (Proofview.Goal.concl gl) in
     let sigma, elimc = find_ind_eliminator env sigma (fst ind) s in
