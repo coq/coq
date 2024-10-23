@@ -384,6 +384,11 @@ Definition iter (n:N) {A} (f:A->A) (x:A) : A :=
     | pos p => Pos.iter f x p
   end.
 
+(** Iteration of an associative operator *)
+
+Definition iter_op {A} (op : A -> A -> A) (z x : A) (n : N) :=
+  match n with N0 => z | Npos p => Pos.iter_op op p x end.
+
 (** Conversion with a decimal representation for printing/parsing *)
 
 Definition of_uint (d:Decimal.uint) := Pos.of_uint d.
