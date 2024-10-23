@@ -816,14 +816,6 @@ let end_module_core id (m_info : current_module_syntax_info) objects fs =
   (* We add the keep objects, if any, and if this isn't a functor *)
   let keep = if not (CList.is_empty m_info.cur_mbids) then [] else keep_objects id keep in
   let objects = special@[node]@keep in
-  (* Name consistency check : start_ vs. end_module *)
-  (*
-  Printf.eprintf "newoname=%s, oldoname=%s\n" (string_of_path (fst newoname)) (string_of_path (fst oldoname));
-  assert (DirPath.equal (Lib.prefix()).Nametab.obj_dir olddp);
-  assert (ModPath.equal oldprefix.Nametab.obj_mp mp);
-  *)
-  (* Printf.eprintf "newoname=%s, oldoname=%s\n" (string_of_path (fst newoname)) (string_of_path (fst oldoname)); *)
-  (* Printf.eprintf "newoname=%s, cur_mp=%s\n" (ModPath.debug_to_string (mp_of_kn (snd newoname))) (ModPath.debug_to_string m_info.cur_mp); *)
 
   m_info.cur_mp, objects
 
@@ -835,8 +827,6 @@ let end_module () =
 
   let () = SynterpVisitor.add_leaves objects in
 
-  (* Name consistency check : kernel vs. library *)
-  (* CDebug.debug_synterp (fun () -> Pp.(str"prefix=" ++ DirPath.print ((Lib.prefix()).Nametab.obj_dir) ++ str", olddp=" ++ DirPath.print olddp)); *)
   assert (DirPath.equal (Lib.prefix()).Nametab.obj_dir olddp);
   mp
 
