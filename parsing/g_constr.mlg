@@ -57,7 +57,9 @@ let test_lpar_nat_coloneq =
 let ensure_fixannot =
   let open Procq.Lookahead in
   to_entry "check_fixannot" begin
-    lk_kw "{" >> lk_kws ["wf"; "struct"; "measure"]
+    lk_kw "{" >> lk_kws ["wf"; "struct"; "measure"] >> lk_not_kw [":"; "}"]
+    (* This is only an approximation, for instance "{struct foo bar}"
+       can only be interpreted as binders but is not recognized as such *)
   end
 
 let test_name_colon =

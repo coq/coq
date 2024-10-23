@@ -82,6 +82,10 @@ struct
   | Tok.KEYWORD kw' | Tok.IDENT kw' -> if String.equal kw kw' then Some (n + 1) else None
   | _ -> None
 
+  let lk_not_kw kws n kwstate strm = match LStream.peek_nth kwstate n strm with
+  | Tok.KEYWORD kw | Tok.IDENT kw -> if List.exists (String.equal kw) kws then None else Some (n + 1)
+  | _ -> Some (n + 1)
+
   let lk_kws kws n kwstate strm = match LStream.peek_nth kwstate n strm with
   | Tok.KEYWORD kw | Tok.IDENT kw -> if List.mem_f String.equal kw kws then Some (n + 1) else None
   | _ -> None
