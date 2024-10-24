@@ -29,3 +29,5 @@ val pr_using : Vernacexpr.section_subset_expr -> Pp.t
 
 (** Prints a vernac expression and closes it with a dot. *)
 val pr_vernac : Vernacexpr.vernac_control -> Pp.t
+
+val string_of_theorem_kind : Decls.theorem_kind -> string

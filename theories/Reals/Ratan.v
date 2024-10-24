@@ -451,6 +451,7 @@ Proof.
   lra.
 Qed.
 
+#[sealed]
 Definition frame_tan y : {x | 0 < x < PI/2 /\ Rabs y < tan x}.
 Proof.
 destruct (total_order_T (Rabs y) 1) as [Hs|Hgt].
@@ -519,7 +520,7 @@ apply Rlt_trans with (/2 * / cos(PI / 2 - u)).
   + assert (t := PI2_1); lra.
   + lra.
   + assumption.
-Qed.
+Defined.
 
 Lemma ub_opp : forall x, x < PI/2 -> -PI/2 < -x.
 Proof.
@@ -534,6 +535,7 @@ Proof.
 intros; rewrite tan_neg; assumption.
 Qed.
 
+#[sealed]
 Definition pre_atan (y : R) : {x : R | -PI/2 < x < PI/2 /\ tan x = y}.
 Proof.
 destruct (frame_tan y) as [ub [[ub0 ubpi2] Ptan_ub]].
@@ -543,7 +545,7 @@ destruct (exists_atan_in_frame (-ub) ub y (pos_opp_lt _ ub0) (ub_opp _ ubpi2)
              ubpi2 pr) as [v [[vl vu] vq]].
 exists v; clear pr.
 split;[rewrite Rdiv_opp_l; split; lra | assumption].
-Qed.
+Defined.
 
 Definition atan x := let (v, _) := pre_atan x in v.
 
@@ -910,6 +912,7 @@ rewrite scal_sum; apply sum_eq; intros i _; unfold tg_alt.
 rewrite Ratan_seq_opp; ring.
 Qed.
 
+#[sealed]
 Definition ps_atan_exists_1 (x : R) (Hx : -1 <= x <= 1) :
    {l : R | Un_cv (fun N : nat => sum_f_R0 (tg_alt (Ratan_seq x)) N) l}.
 Proof.
@@ -924,8 +927,9 @@ apply (Un_cv_ext (fun n => (- 1) * sum_f_R0 (tg_alt (Ratan_seq (- x))) n)).
 replace (-v) with (-1 * v) by ring.
 apply CV_mult;[ | assumption].
 solve[intros; exists 0%nat; intros; rewrite Rdist_eq; auto].
-Qed.
+Defined.
 
+#[sealed]
 Definition in_int (x : R) : {-1 <= x <= 1}+{~ -1 <= x <= 1}.
 Proof.
 destruct (Rle_lt_dec x 1).
@@ -933,7 +937,7 @@ destruct (Rle_lt_dec x 1).
 - left;split; auto.
 - right;intros [a1 a2]; lra.
 - right;intros [a1 a2]; lra.
-Qed.
+Defined.
 
 Definition ps_atan (x : R) : R :=
  match in_int x with

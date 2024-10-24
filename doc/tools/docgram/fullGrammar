@@ -1058,11 +1058,11 @@ opt_coercion: [
 ]
 
 fix_definition: [
-| ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notations
+| quoted_attributes ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notations
 ]
 
 cofix_definition: [
-| ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notations
+| quoted_attributes ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notations
 ]
 
 rw_pattern: [

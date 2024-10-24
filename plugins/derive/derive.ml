@@ -40,8 +40,8 @@ let rec fill_assumptions env sigma = function
     and [lemma] as the proof. *)
 let start_deriving ~atts bl suchthat name : Declare.Proof.t =
 
-  let scope, _local, poly, program_mode, user_warns, typing_flags, using, clearbody =
-    atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
+  let scope, _local, poly, program_mode, user_warns, typing_flags, using, clearbody, opaque =
+    atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody, atts.opacity in
   if program_mode then CErrors.user_err (Pp.str "Program mode not supported.");
 
   let env = Global.env () in
@@ -71,8 +71,8 @@ let start_deriving ~atts bl suchthat name : Declare.Proof.t =
         let name = get_id d in
         let impargs = Constrintern.implicits_of_decl_in_internalization_env name impls_env in
         let impargs = List.map CAst.make (List.map extract_manual impargs) in
-        make ~name ~typ:() ~impargs ()) ctx' @
-    [make ~name ~typ:() ~impargs ()] in
+        make ~name ~typ:() ~impargs ~opaque:(Some false) ()) ctx' @
+    [make ~name ~typ:() ~impargs ~opaque ()] in
   let lemma = Declare.Proof.start_derive ~name ~info ~cinfo goals in
   Declare.Proof.map lemma ~f:(fun p ->
       Util.pi1 @@ Proof.run_tactic env Proofview.(tclFOCUS 1 1 shelve) p)

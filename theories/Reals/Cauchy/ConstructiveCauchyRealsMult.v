@@ -996,6 +996,7 @@ Proof.
     pose proof Qpower_pos 2 n ltac:(lra). rewrite Z.abs_0, Qreduce_zero. lra.
 Qed.
 
+#[sealed]
 Definition CRealQ_dense (a b : CReal)
   : a < b -> { q : Q  &  a < inject_Q q < b }.
 Proof.
@@ -1016,7 +1017,7 @@ Proof.
     destruct b as [bseq]; simpl in pmaj |- *.
     unfold CReal_opp_seq; rewrite CReal_red_seq.
     lra.
-Qed.
+Defined.
 
 Lemma inject_Q_mult : forall q r : Q,
     inject_Q (q * r) == inject_Q q * inject_Q r.
@@ -1030,6 +1031,7 @@ Proof.
     pose proof Qpower_0_lt 2 n; lra.
 Qed.
 
+#[sealed]
 Definition Rup_nat (x : CReal)
   : { n : nat & x < inject_Q (Z.of_nat n #1) }.
 Proof.
@@ -1040,7 +1042,7 @@ Proof.
   - exists O. apply (CReal_lt_trans _ (inject_Q (Z.neg p # 1))).
     + apply maj.
     + apply inject_Q_lt. reflexivity.
-Qed.
+Defined.
 
 Lemma CReal_mult_le_0_compat : forall (a b : CReal),
     0 <= a -> 0 <= b -> 0 <= a * b.

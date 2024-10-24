@@ -70,6 +70,7 @@ Section Defs.
     #[global] StrictOrder_Transitive :: Transitive R }.
 
   (** By definition, a strict order is also asymmetric *)
+  #[sealed]
   Global Instance StrictOrder_Asymmetric `(StrictOrder R) : Asymmetric R.
   Proof. firstorder. Qed.
 
@@ -481,10 +482,12 @@ Section Binary.
   
   (** Relation equivalence is an equivalence, and subrelation defines a partial order. *)
 
+  #[sealed]
   Global Instance relation_equivalence_equivalence :
     Equivalence relation_equivalence.
   Proof. exact (@predicate_equivalence_equivalence (A::A::Tnil)). Qed.
   
+  #[sealed]
   Global Instance relation_implication_preorder : PreOrder (@subrelation A).
   Proof. exact (@predicate_implication_preorder (A::A::Tnil)). Qed.
 
@@ -500,6 +503,7 @@ Section Binary.
    morphism for equivalence (see Morphisms).  It is also sufficient to
    show that [R] is antisymmetric w.r.t. [eqA] *)
 
+  #[sealed]
   Global Instance partial_order_antisym `(PartialOrder eqA R) : Antisymmetric A eqA R.
   Proof with auto.
     reduce_goal.

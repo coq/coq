@@ -1,5 +1,20 @@
-Definitions
-===========
+Definitions and theorems
+========================
+
+A definition can be seen as a way to give a meaning to a name or as a
+way to abbreviate a term of some type. In any case, the name can later
+be replaced at any time by its definition.
+
+On its side, a theorem is a statement with a proof and one can view
+the name of a theorem as a way to abbreviate the given proof, in the
+same way as the name of a definition abbreviates a term. That is, in
+the case of definitions (and related forms such as :cmd:`Fixpoint` or
+:cmd:`CoFixpoint`), the term is the body of the definition and the
+type is the type of the body. In the case of a theorem, lemma,
+corollary, etc.  the term is the proof and the type is the statement.
+
+Moreover, definitions can be local (defined with :g:`let`) or global
+(defined at top-level).
 
 .. index:: let ... := ... (term)
 
@@ -66,10 +81,7 @@ If a scope is :ref:`bound <LocalInterpretationRulesForNotations>` to
 Top-level definitions
 ---------------------
 
-Definitions extend the global environment by associating names to terms.
-A definition can be seen as a way to give a meaning to a name or as a
-way to abbreviate a term. In any case, the name can later be replaced at
-any time by its definition.
+Top-level definitions extend the global environment by associating names to terms.
 
 The operation of unfolding a name into its definition is called
 :term:`delta-reduction`.
@@ -100,6 +112,8 @@ Section :ref:`typing-rules`.
    If :n:`@reduce` is present then :n:`@ident` is bound to the result of the specified
    computation on :n:`@term`.
 
+   Use the :attr:`sealed` attribute to prevent unfolding the definition.
+   The default is :attr:`defined`.
    These commands also support the :attr:`universes(polymorphic)`,
    :attr:`program` (see :ref:`program_definition`), :attr:`canonical`,
    :attr:`bypass_check(universes)`, :attr:`bypass_check(guard)`, :attr:`deprecated`,
@@ -107,8 +121,7 @@ Section :ref:`typing-rules`.
 
    If :n:`@term` is omitted, :n:`@type` is required and Rocq enters proof mode.
    This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
-   In this case, the proof should be terminated with :cmd:`Defined` in order to define a :term:`constant`
-   for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.
+   In this case, the proof should normally be terminated with :cmd:`Defined`. See :ref:`proof-editing-mode`.
 
    The form :n:`Definition @ident : @type := @term` checks that the type of :n:`@term`
    is definitionally equal to :n:`@type`, and registers :n:`@ident` as being of type
@@ -128,8 +141,8 @@ Section :ref:`typing-rules`.
 
 .. _Assertions:
 
-Assertions and proofs
----------------------
+Theorems and proofs
+-------------------
 
 An assertion states a proposition (or a type) for which the proof (or an
 inhabitant of the type) is interactively built using :term:`tactics <tactic>`.
@@ -156,8 +169,6 @@ The basic assertion command is:
    validated, the proof is generalized into a proof of :n:`forall {* @binder }, @type` and
    the theorem is bound to the name :n:`@ident` in the global environment.
 
-   These commands accept the :attr:`program` attribute.  See :ref:`program_lemma`.
-
    Forms using the :n:`with` clause are useful for theorems that are proved by simultaneous induction
    over a mutually inductive assumption, or that assert mutually dependent
    statements in some mutual coinductive type. It is equivalent to
@@ -175,8 +186,9 @@ The basic assertion command is:
    correct at some time of the interactive development of a proof, use the
    command :cmd:`Guarded`.
 
-   This command accepts the :attr:`bypass_check(universes)`,
-   :attr:`bypass_check(guard)`, :attr:`deprecated`, :attr:`warn`, and :attr:`using` attributes.
+   These commands accept the :attr:`universes(polymorphic)`,
+   :attr:`program` (see :ref:`program_lemma`), :attr:`canonical`, :attr:`bypass_check(universes)`,
+   :attr:`bypass_check(guard)`, :attr:`deprecated`, :attr:`warn` and :attr:`using` attributes.
 
    .. exn:: The term @term has type @type which should be Set, Prop or Type.
       :undocumented:
@@ -200,7 +212,14 @@ tactics (see :ref:`writing-proofs`). The user may also enter
 commands to manage the proof mode (see :ref:`proofhandling`).
 
 When the proof is complete, use the :cmd:`Qed` command so the kernel verifies
-the proof and adds it to the global environment.
+the proof and adds it to the global environment. By default, proofs
+that end with :cmd:`Qed` are sealed, that is that their content cannot
+be unfolded (see :ref:`applyingconversionrules`), thus realizing
+*proof irrelevance*, that is that only provability matters,
+and not the exact proof. Proofs can be made unfoldable, as
+definitions are, with the :attr:`defined` attribute or by ending
+the proof with :cmd:`Defined` in place of :cmd:`Qed`. We
+recommend using the attribute.
 
 .. note::
 
@@ -213,13 +232,24 @@ the proof and adds it to the global environment.
       statements still to be proved. Nonetheless, this practice is discouraged
       and may stop working in future versions.
 
-   #. Proofs ended by :cmd:`Qed` are declared :term:`opaque`. Their content cannot be
-      unfolded (see :ref:`applyingconversionrules`), thus
-      realizing some form of *proof-irrelevance*.
-      Proofs that end with :cmd:`Defined` can be unfolded.
-
    #. :cmd:`Proof` is recommended but can currently be omitted. On the opposite
       side, :cmd:`Qed` (or :cmd:`Defined`) is mandatory to validate a proof.
 
    #. One can also use :cmd:`Admitted` in place of :cmd:`Qed` to turn the
       current asserted statement into an axiom and exit proof mode.
+
+Sealing and transparency
+------------------------
+
+By default, definitions are unfoldable while the proofs of theorems are
+not.  You can change this using these attributes:
+
+.. attr:: sealed
+
+   Prevents the unfoldability of the definition, so it behaves like an abstract definition.
+
+.. attr:: defined
+
+   Makes the proof of a theorem unfoldable, as if it were a definition.
+
+   .. seealso:: :cmd:`Opaque`, :cmd:`Transparent`, :tacn:`unfold`.

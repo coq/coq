@@ -400,6 +400,7 @@ Proof.
     + apply H1.
 Qed.
 
+#[sealed]
 Definition series_cv_abs {R : ConstructiveReals} (u : nat -> CRcarrier R)
   : CR_cauchy R (CRsum (fun n => CRabs R (u n)))
     -> { l : CRcarrier R & series_cv u l }.
@@ -409,7 +410,7 @@ Proof.
   - intro n. apply CRle_refl.
   - assumption.
   - exists x0. apply p.
-Qed.
+Defined.
 
 Lemma series_cv_unique :
   forall {R : ConstructiveReals} (Un:nat -> CRcarrier R) (l1 l2:CRcarrier R),

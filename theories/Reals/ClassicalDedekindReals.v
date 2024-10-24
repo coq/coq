@@ -215,7 +215,7 @@ Definition DReal : Set
 
 (** ** Induction principle *)
 
-Fixpoint DRealQlim_rec (f : Q -> bool) (low : isLowerCut f) (n p : nat) { struct p }
+Fixpoint #[sealed] DRealQlim_rec (f : Q -> bool) (low : isLowerCut f) (n p : nat) { struct p }
   : f (proj1_sig (lowerCutBelow f low) + (Z.of_nat p # Pos.of_nat (S n)))%Q = false
     -> { q : Q | f q = true /\ f (q + (1 # Pos.of_nat (S n)))%Q = false }.
 Proof.
@@ -345,6 +345,7 @@ Defined.
 
 (** *** Conversion from DReal to CReal *)
 
+#[sealed]
 Definition DRealQlim (x : DReal) (n : nat)
   : { q : Q | proj1_sig x q = true /\ proj1_sig x (q + (1# Pos.of_nat (S n)))%Q = false }.
 Proof.
@@ -369,8 +370,9 @@ Proof.
         -- apply f_equal.
            apply Pos.succ_of_nat. discriminate.
   - exact des.
-Qed.
+Defined.
 
+#[sealed]
 Definition DRealQlimExp2 (x : DReal) (n : nat)
   : { q : Q | proj1_sig x q = true /\ proj1_sig x (q + (1#(Pos.of_nat (2^n)%nat)))%Q = false }.
 Proof.
@@ -379,7 +381,7 @@ Proof.
   rewrite Nat.succ_pred_pos in qmaj.
     2: apply Nat.neq_0_lt_0, Nat.pow_nonzero; intros contra; inversion contra.
   exact qmaj.
-Qed.
+Defined.
 
 Definition CReal_of_DReal_seq (x : DReal) (n : Z) :=
     proj1_sig (DRealQlimExp2 x (Z.to_nat (-n))).

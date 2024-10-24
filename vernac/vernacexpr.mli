@@ -192,6 +192,7 @@ type recursive_expr_gen =
   ; rtype : constr_expr
   ; body_def : constr_expr option
   ; notations : notation_declaration list
+  ; fix_attrs : Attributes.vernac_flags
   }
 
 type fixpoint_expr = fixpoint_order_expr option * recursive_expr_gen
