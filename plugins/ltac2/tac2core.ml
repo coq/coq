@@ -1941,17 +1941,6 @@ let () =
   Genintern.register_ntn_subst0 wit_ltac2_constr subs
 
 let () =
-  let pr_raw _ = Genprint.PrinterBasic (fun _env _sigma -> assert false) in
-  let pr_glb (ids, e) =
-    let ids =
-      if List.is_empty ids then mt ()
-      else hov 0 (pr_sequence Id.print ids ++ str " |- ")
-    in
-    Genprint.PrinterBasic Pp.(fun _env _sigma -> ids ++ Tac2print.pr_glbexpr ~avoid:Id.Set.empty e)
-  in
-  Genprint.register_noval_print0 wit_ltac2in1 pr_raw pr_glb
-
-let () =
   let pr_raw e = Genprint.PrinterBasic (fun _env _sigma ->
       let avoid = Id.Set.empty in
       (* FIXME avoid set, same as pr_glb *)

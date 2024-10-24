@@ -362,11 +362,8 @@ type var_quotation_kind =
   | PretermVar
   | PatternVar
 
-let wit_ltac2in1 = Genarg.make0 "ltac2in1"
-let wit_ltac2in1_val = Genarg.make0 "ltac2in1val"
 let wit_ltac2_constr = Genarg.make0 "ltac2:in-constr"
 let wit_ltac2_var_quotation = Genarg.make0 "ltac2:quotation"
-let wit_ltac2_val = Genarg.make0 "ltac2:value"
 
 let is_constructor_id id =
   let id = Id.to_string id in
