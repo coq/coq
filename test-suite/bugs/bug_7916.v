@@ -28,7 +28,7 @@ Module MathComp.
    Export Stdlib.ssr.ssreflect.
    Global Set Asymmetric Patterns.
    Require Stdlib.ssr.ssrbool.
-   Require Stdlib.NArith.BinNat.
+   Require BinNums NatDef.
    Export Stdlib.ssr.ssrfun.
    Export Stdlib.ssr.ssrbool.
 
@@ -141,14 +141,12 @@ Module Iris.
    Axiom proof_admitted : False.
    Tactic Notation "admit" := abstract case proof_admitted.
    Require Stdlib.ssr.ssreflect.
-   Require Stdlib.Lists.List.
-   Require Stdlib.Unicode.Utf8.
+   Require Stdlib.Lists.ListDef.
    Module Export stdpp_DOT_base.
    Module Export stdpp.
    Module Export base.
    Export Stdlib.Classes.Morphisms.
    Export Stdlib.Setoids.Setoid.
-   Export Stdlib.Unicode.Utf8.
 
    Global Generalizable All Variables.
 
@@ -162,17 +160,17 @@ Module Iris.
 
    Infix "≡" := equiv (at level 70, no associativity) : stdpp_scope.
 
-   Class Decision (P : Prop) := decide : {P} + {¬P}.
+   Class Decision (P : Prop) := decide : {P} + {~ P}.
    Global Arguments decide _ {_} : simpl never, assert.
 
-   Class RelDecision {A B} (R : A → B → Prop) :=
+   Class RelDecision {A B} (R : A -> B -> Prop) :=
      decide_rel x y :: Decision (R x y).
    Notation EqDecision A := (RelDecision (=@{A})).
 
-   Class Inj {A B} (R : relation A) (S : relation B) (f : A → B) : Prop :=
-     inj x y : S (f x) (f y) → R x y.
+   Class Inj {A B} (R : relation A) (S : relation B) (f : A -> B) : Prop :=
+     inj x y : S (f x) (f y) -> R x y.
 
-   Lemma not_symmetry `{R : relation A, !Symmetric R} x y : ¬R x y → ¬R y x.
+   Lemma not_symmetry `{R : relation A, !Symmetric R} x y : ~R x y -> ~R y x.
    admit.
    Defined.
    End base.
@@ -185,8 +183,8 @@ Module Iris.
    Module Export decidable.
    Notation cast_if S := (if S then left _ else right _).
 
-   Program Definition inj_eq_dec `{EqDecision A} {B} (f : B → A)
-     `{!Inj (=) (=) f} : EqDecision B := λ x y, cast_if (decide (f x = f y)).
+   Program Definition inj_eq_dec `{EqDecision A} {B} (f : B -> A)
+     `{!Inj (=) (=) f} : EqDecision B := fun x y => cast_if (decide (f x = f y)).
    Solve Obligations with firstorder congruence.
 
    End decidable.
@@ -217,7 +215,7 @@ Module Iris.
        | discriminate
        | contradiction
        | split
-       | match goal with H : ¬_ |- _ => case H; clear H; fast_done end ]
+       | match goal with H : ~_ |- _ => case H; clear H; fast_done end ]
      ].
 
    End tactics.
@@ -234,15 +232,15 @@ Module Iris.
    Export stdpp.prelude.
    Set Primitive Projections.
 
-   Class Dist A := dist : nat → relation A.
+   Class Dist A := dist : nat -> relation A.
    Notation "x ≡{ n }≡ y" := (dist n x y)
      (at level 70, n at next level, format "x  ≡{ n }≡  y").
-   Notation NonExpansive f := (∀ n, Proper (dist n ==> dist n) f).
+   Notation NonExpansive f := (forall n, Proper (dist n ==> dist n) f).
 
    Record OfeMixin A `{Equiv A, Dist A} := {
-     mixin_equiv_dist (x y : A) : x ≡ y ↔ ∀ n, x ≡{n}≡ y;
+     mixin_equiv_dist (x y : A) : x ≡ y <-> forall n, x ≡{n}≡ y;
      mixin_dist_equivalence n : Equivalence (@dist A _ n);
-     mixin_dist_S n (x y : A) : x ≡{S n}≡ y → x ≡{n}≡ y
+     mixin_dist_S n (x y : A) : x ≡{S n}≡ y -> x ≡{n}≡ y
    }.
 
    Structure ofe := Ofe {
@@ -257,7 +255,7 @@ Module Iris.
    Section ofe_mixin.
      Context {A : ofe}.
      Implicit Types x y : A.
-     Lemma equiv_dist x y : x ≡ y ↔ ∀ n, x ≡{n}≡ y.
+     Lemma equiv_dist x y : x ≡ y <-> forall n, x ≡{n}≡ y.
    admit.
    Defined.
      Global Instance dist_equivalence n : Equivalence (@dist A _ n).
@@ -266,24 +264,24 @@ Module Iris.
    End ofe_mixin.
 
    Record chain (A : ofe) := {
-     chain_car :> nat → A;
-     chain_cauchy n i : n ≤ i → chain_car i ≡{n}≡ chain_car n
+     chain_car :> nat -> A;
+     chain_cauchy n i : n <= i -> chain_car i ≡{n}≡ chain_car n
    }.
 
-   Program Definition chain_map {A B : ofe} (f : A → B)
+   Program Definition chain_map {A B : ofe} (f : A -> B)
        `{!NonExpansive f} (c : chain A) : chain B :=
      {| chain_car n := f (c n) |}.
    Next Obligation.
    admit.
    Defined.
 
-   Notation Compl A := (chain A%type → A).
+   Notation Compl A := (chain A%type -> A).
    Class Cofe (A : ofe) := {
      compl : Compl A;
      conv_compl n c : compl c ≡{n}≡ c n;
    }.
 
-   Lemma compl_chain_map `{Cofe A, Cofe B} (f : A → B) c `(NonExpansive f) :
+   Lemma compl_chain_map `{Cofe A, Cofe B} (f : A -> B) c `(NonExpansive f) :
      compl (chain_map f c) ≡ f (compl c).
    Proof.
    apply equiv_dist=>n.
@@ -303,7 +301,7 @@ Module SSr.
    Require Stdlib.ssr.ssreflect.
 
    Export Stdlib.ssr.ssreflect.
-   Require Stdlib.NArith.BinNat.
+   Require BinNums NatDef.
 
    Set Implicit Arguments.
    Unset Strict Implicit.

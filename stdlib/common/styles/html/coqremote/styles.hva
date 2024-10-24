@@ -1,0 +1,81 @@
+\renewcommand{\@meta}{
+\begin{rawhtml}
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+<link type="text/css" rel="stylesheet" media="all" href="/modules/node/node.css" />
+<link type="text/css" rel="stylesheet" media="all" href="/modules/system/defaults.css" />
+<link type="text/css" rel="stylesheet" media="all" href="/modules/system/system.css" />
+<link type="text/css" rel="stylesheet" media="all" href="/modules/user/user.css" />
+<link type="text/css" rel="stylesheet" media="all" href="/sites/all/themes/coq/style.css" />
+<link type="text/css" rel="stylesheet" media="all" href="/sites/all/themes/coq/coqdoc.css" />
+\end{rawhtml}}
+
+% for HeVeA
+
+\htmlhead{\begin{rawhtml}
+<div id="container">
+
+<div id="headertop">
+<div id="nav">
+  <ul class="links-menu">
+    <li><a href="/" class="active">Home</a></li>
+    <li><a href="/about-coq" title="More about coq">About Coq</a></li>
+    <li><a href="/download">Get Coq</a></li>
+    <li><a href="/documentation">Documentation</a></li>
+    <li><a href="/community">Community</a></li>
+  </ul>
+</div>
+</div>
+
+<div id="header">
+<div id="logoWrapper">
+  <div id="logo"><a href="/" title="Home"><img src="/files/barron_logo.png" alt="Home" /></a>
+  </div>
+  <div id="siteName"><a href="/" title="Home">The Coq Proof Assistant</a>
+  </div>
+</div>
+</div>
+
+<div id="content">
+
+\end{rawhtml}}
+
+\htmlfoot{\begin{rawhtml}
+<div id="sidebarWrapper">
+  <div id="sidebar">
+    <div class="block">
+      <h2 class="title">Navigation</h2>
+      <div class="content">
+        <ul class="menu">
+          <li class="leaf"><a href="index.html">Cover</a></li>
+          <li class="leaf"><a href="toc.html">Table of contents</a></li>
+          <li class="leaf">Index
+            <ul class="menu">
+              <li><a href="general-index.html">General</a></li>
+              <li><a href="command-index.html">Commands</a></li>
+              <li><a href="option-index.html">Options</a></li>
+              <li><a href="tactic-index.html">Tactics</a></li>
+              <li><a href="error-index.html">Errors</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div id="footer">
+<div id="nav-footer">
+  <ul class="links-menu-footer">
+    <li><a href="mailto:coq-www_@_inria.fr">webmaster</a></li>
+    <li><a href="http://validator.w3.org/">xhtml valid</a></li>
+    <li><a href="http://jigsaw.w3.org/css-validator/">CSS valid</a></li>
+  </ul>
+
+</div>
+</div>
+
+</div>
+\end{rawhtml}}

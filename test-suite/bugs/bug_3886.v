@@ -1,4 +1,4 @@
-Require Import Program.
+Require Import Program.Basics Program.Tactics.
 
 Inductive Even : nat -> Prop :=
 | evenO : Even O

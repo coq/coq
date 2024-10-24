@@ -1,7 +1,7 @@
 Axiom proof_admitted : False.
 Tactic Notation "admit" := abstract case proof_admitted.
-Require Stdlib.Program.Program.
-Export Stdlib.Program.Program.
+Require Stdlib.Program.Basics Stdlib.Program.Tactics.
+Export Stdlib.Program.Basics Stdlib.Program.Tactics.
 Set Primitive Projections.
 Set Universe Polymorphism.
 

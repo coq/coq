@@ -11,11 +11,12 @@
 (* (c) Copyright 2006-2016 Microsoft Corporation and Inria.                  *)
 
 Require ssreflect.
-Require Import Arith.
+
+Axiom add_comm : forall a b, a + b = b + a.
 
 Goal (forall a b, a + b = b + a).
 intros.
-rewrite Nat.add_comm, Nat.add_comm.
+rewrite add_comm, add_comm.
 split.
 Abort.
 
@@ -24,13 +25,13 @@ Import ssreflect.
 
 Goal (forall a b, a + b = b + a).
 intros.
-rewrite 2![_ + _]Nat.add_comm.
+rewrite 2![_ + _]add_comm.
 split.
 Abort.
 End Foo.
 
 Goal (forall a b, a + b = b + a).
 intros.
-rewrite Nat.add_comm, Nat.add_comm.
+rewrite add_comm, add_comm.
 split.
 Abort.

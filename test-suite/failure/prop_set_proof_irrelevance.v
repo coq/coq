@@ -1,4 +1,4 @@
-Require Import ProofIrrelevance.
+Require Import TestSuite.proof_irrelevance.
 
 Lemma proof_irrelevance_set : forall (P : Set) (p1 p2 : P), p1 = p2.
   Fail exact proof_irrelevance.

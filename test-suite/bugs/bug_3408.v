@@ -1,4 +1,4 @@
-Require Import BinPos.
+Require Import BinNums PosDef.
 
 Inductive expr : Type :=
   Var : nat -> expr
@@ -134,9 +134,9 @@ refine
        (fun _ => positive)
        (fun e =>
           match e as e return (forall l, expr_acc l e -> positive) -> positive with
-            | Var _ => fun _ => 1
-            | App l r => fun rec => @rec l _ + @rec r _
-            | Abs _ e => fun rec => 1 + @rec e _
+            | Var _ => fun _ => xH
+            | App l r => fun rec => Pos.add (@rec l _) (@rec r _)
+            | Abs _ e => fun rec => Pos.add xH (@rec e _)
           end%positive)).
 eapply acc_App_l.
 eapply acc_App_r.
@@ -151,8 +151,8 @@ refine
        (fun e =>
           match e as e return (forall l, expr_acc l e -> positive) -> positive with
             | Var _ => fun _ => 1
-            | App l r => fun rec => @rec l _ + @rec r _
-            | Abs _ e => fun rec => 1 + @rec e _
+            | App l r => fun rec => Pos.add (@rec l _) (@rec r _)
+            | Abs _ e => fun rec => Pos.add xH (@rec e _)
           end%positive)).
 eapply acc_App_l.
 eapply acc_App_r.

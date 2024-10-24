@@ -18,16 +18,14 @@ Save test3.
 
 (* Example submitted by Yves on coqdev *)
 
-Require Import List.
-
 Goal forall l : list nat, l = l.
 Proof.
  refine
  (fun l =>
   match l return (l = l) with
   | nil => _
-  | O :: l0 => _
-  | S _ :: l0 => _
+  | cons O l0 => _
+  | cons (S _) l0 => _
   end).
 Abort.
 
@@ -103,7 +101,7 @@ Abort.
 (* Use to fail because let-in with metas in the body where rejected
    because a priori considered as dependent *)
 
-Require Import Peano_dec.
+Require Import TestSuite.arith.
 
 Definition fact_F :
   forall (n:nat),

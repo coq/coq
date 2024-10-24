@@ -1716,9 +1716,9 @@ succeeds, and results in an error otherwise.
 
       .. coqtop:: reset in
 
-         Require Import Stdlib.Lists.Streams.
+         CoInductive Stream (A : Type) : Type :=  Cons : A -> Stream A -> Stream A.
          Goal True.
-         let c := constr:(cofix f : Stream unit := Cons tt f) in
+         let c := constr:(cofix f : Stream unit := Cons _ tt f) in
            is_cofix c.
 
 .. tacn:: is_constructor @one_term
@@ -2011,7 +2011,7 @@ Proving that a list is a permutation of a second list
 
    .. coqtop:: none
 
-      Require Import List.
+      Require Import ListDef.
 
 
    Next we define an auxiliary tactic :g:`perm_aux` which takes an
@@ -2480,9 +2480,11 @@ performance issue.
 
       Backtracking across a :cmd:`Reset Ltac Profile` will not restore the information.
 
-.. coqtop:: reset in
+The following example requires the Stdlib library to use the :tacn:`lia` tactic.
 
-   Require Import Lia.
+.. coqtop:: reset in extra
+
+   From Stdlib Require Import Lia.
 
    Ltac mytauto := tauto.
    Ltac tac := intros; repeat split; lia || mytauto.
@@ -2499,14 +2501,14 @@ performance issue.
         M /\ L /\ K /\ J /\ I /\ H /\ G /\ F /\ E /\ D /\ C /\ B /\ A).
    Proof.
 
-.. coqtop:: all
+.. coqtop:: all extra
 
    Set Ltac Profiling.
    tac.
    Show Ltac Profile.
    Show Ltac Profile "lia".
 
-.. coqtop:: in
+.. coqtop:: in extra
 
    Abort.
    Unset Ltac Profiling.

@@ -1,7 +1,7 @@
 Definition idw (A : Type) := A.
 Lemma foobar : unit.
 Proof.
-  Require Import Program.
+  Require Import Program.Basics Program.Tactics.
   apply (const tt tt).
 Qed.
 

@@ -1,6 +1,4 @@
-Require Export Stdlib.Program.Utils.
 Require Export Stdlib.Program.Basics.
-Require Export Stdlib.Program.Syntax.
 Require Setoid.
 
 Require Export Stdlib.Classes.CMorphisms.

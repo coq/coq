@@ -1,5 +1,4 @@
-Require Import Uint63.
-Require Import PrimString.
+Require Import PrimInt63 PrimString.
 
 Check "hello"%pstring.
 Check ""%pstring.

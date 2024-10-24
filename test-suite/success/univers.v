@@ -29,7 +29,7 @@ Inductive dep_eq : forall X : Type, X -> X -> Prop :=
       let T := forall x : A, B x in
       forall (f g : T) (x : A), dep_eq (B x) (f x) (g x) -> dep_eq T f g.
 
-Require Import Relations.
+Require Import TestSuite.relationclasses.
 
 Theorem dep_eq_trans : forall X : Type, transitive X (dep_eq X).
 Proof.
