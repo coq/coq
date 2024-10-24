@@ -37,6 +37,8 @@ type 'v kind = private
 
 type value
 
+val equal : value -> value -> bool
+
 val kind : value -> value kind
 
 val v_any : value

@@ -62,6 +62,8 @@ end
 module Internal : sig
   type value
 
+  val equal : value -> value -> bool
+
   val kind : value -> value kind
 
   val of_kind : value kind -> value
@@ -75,6 +77,9 @@ type value =
 let kind = function
   | V v -> v
   | Proxy v -> !v
+
+(* Proxy is equal to its contents *)
+let equal a b = kind a == kind b
 
 let of_kind v = V v
 
@@ -98,6 +103,8 @@ let mfix (type n) (n:n Vector.size) (f : (value,n) Vector.t -> (value,n) Vector.
 end
 
 type nonrec value = Internal.value
+
+let equal = Internal.equal
 
 let kind = Internal.kind
 

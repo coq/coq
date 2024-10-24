@@ -131,7 +131,7 @@ type memory = {
 let rec val_gen v mem ctx o = match o with
   | Ptr p ->
     let seen = LargeArray.get mem.seen p in
-    if List.exists (fun v' -> v' == v) seen then ()
+    if List.exists (fun v' -> Values.equal v' v) seen then ()
     else begin
       (* Setting before we recurse means we allow recursive values.
          Do we care? *)
