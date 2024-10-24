@@ -412,14 +412,14 @@ Creating Hints
    + :attr:`global` hints are visible from other modules when they :cmd:`Import` or
      :cmd:`Require` the current module.
 
-   .. versionadded:: 8.14
-
-      The :cmd:`Hint Rewrite` now supports locality attributes like other `Hint` commands.
-
    .. versionchanged:: 8.18
 
       The default value for hint locality outside sections is
       now :attr:`export`. It used to be :attr:`global`.
+
+   **Usage tip**: tactics that can succeed even if they don't change the context, such as
+   most of the :ref:`conversion tactics <applying-conversion-rules>`, should
+   be prefaced with :tacn:`progress` to avoid needless repetition of the tactic.
 
    The `Hint` commands are:
 
