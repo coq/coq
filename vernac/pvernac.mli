@@ -22,7 +22,7 @@ module Vernac_ :
     val syntax : vernac_expr Entry.t
     val vernac_control : vernac_control Entry.t
     val inductive_or_record_definition : (inductive_expr * notation_declaration list) Entry.t
-    val fix_definition : fixpoint_expr Entry.t
+    val definition_bodies : fixpoint_expr Entry.t
     val noedit_mode : vernac_expr Entry.t
     val command_entry : vernac_expr Entry.t
     val main_entry : vernac_control option Entry.t

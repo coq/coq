@@ -149,10 +149,9 @@ type option_setting =
 
 (** Identifier and optional list of bound universes and constraints. *)
 
-type definition_expr =
-  | ProveBody of local_binder_expr list * constr_expr
-  | DefineBody of local_binder_expr list * Genredexpr.raw_red_expr option * constr_expr
-      * constr_expr option
+type body_expr =
+  | ProveBody of constr_expr
+  | DefineBody of Genredexpr.raw_red_expr option * constr_expr * constr_expr option
 
 type notation_format =
   | TextFormat of lstring
@@ -185,19 +184,18 @@ type recursion_order_expr =
   | CCoFixRecOrder
   | CUnknownRecOrder
 
-type recursive_expr_gen =
+type definition_expr =
   { fname : lident
   ; univs : universe_decl_expr option
   ; binders : local_binder_expr list
-  ; rtype : constr_expr
-  ; body_def : constr_expr option
+  ; body_def : body_expr
   ; notations : notation_declaration list
   }
 
-type fixpoint_expr = fixpoint_order_expr option * recursive_expr_gen
-type fixpoints_expr = fixpoint_order_expr option list * recursive_expr_gen list
-type cofixpoints_expr = recursive_expr_gen list
-type recursives_expr = recursion_order_expr * recursive_expr_gen list
+type fixpoint_expr = fixpoint_order_expr option * definition_expr
+type fixpoints_expr = fixpoint_order_expr option list * definition_expr list
+type cofixpoints_expr = definition_expr list
+type recursives_expr = recursion_order_expr * definition_expr list
 
 type local_decl_expr =
   | AssumExpr of lname * local_binder_expr list * constr_expr
@@ -243,9 +241,6 @@ type one_inductive_expr =
 
 type typeclass_constraint = name_decl * Glob_term.binding_kind * constr_expr
 and typeclass_context = typeclass_constraint list
-
-type proof_expr =
-  ident_decl * (local_binder_expr list * constr_expr)
 
 type opacity_flag = Opaque | Transparent
 
@@ -419,16 +414,14 @@ type nonrec synpure_vernac_expr =
   | VernacEnableNotation of bool * (string, Id.t list * qualid) Util.union option * constr_expr option * notation_enable_modifier list * notation_with_optional_scope option
 
   (* Gallina *)
-  | VernacDefinition of (discharge * Decls.definition_object_kind) * name_decl * definition_expr
-  | VernacStartTheoremProof of Decls.theorem_kind * proof_expr list
+  | VernacGoal of constr_expr
+  | VernacDefinition of (discharge * Decls.defined_logical_kind) * (fixpoint_order_expr option * definition_expr) list
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
   | VernacAssumption of (discharge * Decls.assumption_object_kind) *
       Declaremods.inline * (ident_decl list * constr_expr) with_coercion list
   | VernacSymbol of (ident_decl list * constr_expr) with_coercion list
   | VernacInductive of inductive_kind * (inductive_expr * notation_declaration list) list
-  | VernacFixpoint of discharge * fixpoints_expr
-  | VernacCoFixpoint of discharge * cofixpoints_expr
   | VernacScheme of (lident option * scheme) list
   | VernacSchemeEquality of equality_scheme_type * Libnames.qualid Constrexpr.or_by_notation
   | VernacCombinedScheme of lident * lident list
