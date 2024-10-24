@@ -70,7 +70,7 @@ type pretype_error =
   | CantApplyBadTypeExplained of (constr,types) pcant_apply_bad_type * unification_error
   | CannotUnifyOccurrences of subterm_unification_error
   | UnsatisfiableConstraints of
-    (Evar.t * Evar_kinds.t) option * Evar.Set.t
+    (Evar.t * Evar_kinds.t) option * Evar.Set.t * exn option
     (** unresolvable evar, connex component *)
   | DisallowedSProp
 
@@ -174,7 +174,7 @@ val error_disallowed_sprop : env -> Evd.evar_map -> 'a
 (** {6 Typeclass errors } *)
 
 val unsatisfiable_constraints : env -> Evd.evar_map -> Evar.t option ->
-  Evar.Set.t -> 'a
+  ?err:exn -> Evar.Set.t -> 'a
 
 val unsatisfiable_exception : exn -> bool
 
