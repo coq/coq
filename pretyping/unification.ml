@@ -485,32 +485,6 @@ let use_metas_pattern_unification sigma flags nb l =
      Array.for_all (fun c -> isRel sigma c && destRel sigma c <= nb) l
 
 
-(* [unfold_projection_under_eta env ts n c] checks if [c] is the eta
-   expanded, folded primitive projection of name [n] and unfolds the primitive
-   projection. It respects projection transparency of [ts]. *)
-let unfold_projection_under_eta env ts n c =
-  let unfold_projection env ts p r c =
-    if TransparentState.is_transparent_projection ts (Projection.repr p) then
-      Some (Constr.mkProj (Projection.unfold p, r, c))
-    else None
-  in
-  let rec go c lams =
-    match Constr.kind c with
-    | Lambda (b, t, c) -> go c ((b,t)::lams)
-    | Proj (p, r, c) when QConstant.equal env n (Projection.constant p) ->
-      let c = unfold_projection env ts p r c in
-      begin
-        match c with
-        | None -> None
-        | Some c ->
-          let f c (b,t) = Constr.mkLambda (b,t,c) in
-          Some (List.fold_left f c lams)
-      end
-    | _ -> None
-  in
-  go c []
-
-
 type key =
   | IsKey of CClosure.table_key
   | IsProj of Projection.t * ERelevance.t * EConstr.constr
@@ -523,9 +497,7 @@ let expand_table_key ts env sigma args = function
             unfolded primitive projection directly since we would like to pretend
             that the compatibility constant itself does not count as an unfolding
             (delta) step. *)
-        | def ->
-        let unf = unfold_projection_under_eta env ts c def in
-        Some (EConstr.of_constr @@ Option.default def unf, args)
+        | def -> Some (EConstr.of_constr def, args)
         | exception NotEvaluableConst (HasRules (u, b, r)) ->
         begin try
           let sk = Stack.( append_app args empty ) in
@@ -1027,7 +999,10 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
         | App (f',l') ->
           if dir then unify_app curenvnb pb opt substn cM f1 l1 t f' l'
           else unify_app curenvnb pb opt substn t f' l' cN f2 l2
-        | Proj _ -> unify_app curenvnb pb opt substn cM f1 l1 cN f2 l2
+        | Proj (p,_,t) ->
+          if Array.length l1 > Projection.npars p + 1 then
+            error_cannot_unify (fst curenvnb) sigma (cM,cN);
+          unify_app curenvnb pb opt substn cM f1 l1 cN f2 l2
         | _ ->
           (* XXX nargs could be better? *)
           unify_not_same_head curenvnb pb opt substn ~nargs:0 cM cN)
@@ -1037,24 +1012,24 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
   and unify_app (curenv, nb as curenvnb) pb opt (substn : subst0) cM f1 l1 cN f2 l2 =
     let sigma = substn.subst_sigma in
     try
-      let needs_expansion p c' =
+      let needs_expansion p c' l' n =
         match EConstr.kind sigma c' with
         | Meta _ -> true
         | Evar _ -> true
-        | Const (c, u) -> Environ.QConstant.equal env c (Projection.constant p)
+        | Const (c, u) -> Environ.QConstant.equal env c (Projection.constant p) && Array.length l' = n + 1
         | _ -> false
       in
-      let expand_proj c c' l =
+      let expand_proj c c' l l' =
         match EConstr.kind sigma c with
-        | Proj (p, _, t) when not (Projection.unfolded p) && needs_expansion p c' ->
+        | Proj (p, _, t) when not (Projection.unfolded p) && needs_expansion p c' l' (Projection.npars p) ->
           (try destApp sigma (Retyping.expand_projection curenv sigma p t (Array.to_list l))
            with RetypeError _ -> (* Unification can be called on ill-typed terms, due
                                      to FO and eta in particular, fail gracefully in that case *)
              (c, l))
         | _ -> (c, l)
       in
-      let f1, l1 = expand_proj f1 f2 l1 in
-      let f2, l2 = expand_proj f2 f1 l2 in
+      let f1, l1 = expand_proj f1 f2 l1 l2 in
+      let f2, l2 = expand_proj f2 f1 l2 l1 in
       let opta = {opt with at_top = true; with_types = false} in
       let optf = {opt with at_top = true; with_types = true} in
       let (f1,l1,f2,l2) = adjust_app_array_size f1 l1 f2 l2 in
@@ -1170,24 +1145,24 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
             (match expand_key flags.modulo_delta curenv sigma l1 cf1 with
             | Some c_l1 ->
                 unirec_rec curenvnb pb opt substn
-                  (whd_betaiotazeta curenv sigma (mkApp c_l1)) cN
+                  (whd_betaiotazeta_proj curenv sigma (mkApp c_l1)) cN
             | None ->
                 (match expand_key flags.modulo_delta curenv sigma l2 cf2 with
                 | Some c_l2 ->
                     unirec_rec curenvnb pb opt substn cM
-                      (whd_betaiotazeta curenv sigma (mkApp c_l2))
+                      (whd_betaiotazeta_proj curenv sigma (mkApp c_l2))
                 | None ->
                     error_cannot_unify curenv sigma (cM,cN)))
         | Some false ->
             (match expand_key flags.modulo_delta curenv sigma l2 cf2 with
             | Some c_l2 ->
                 unirec_rec curenvnb pb opt substn cM
-                  (whd_betaiotazeta curenv sigma (mkApp c_l2))
+                  (whd_betaiotazeta_proj curenv sigma (mkApp c_l2))
             | None ->
                 (match expand_key flags.modulo_delta curenv sigma l1 cf1 with
                 | Some c_l1 ->
                     unirec_rec curenvnb pb opt substn
-                      (whd_betaiotazeta curenv sigma (mkApp c_l1)) cN
+                      (whd_betaiotazeta_proj curenv sigma (mkApp c_l1)) cN
                 | None ->
                     error_cannot_unify curenv sigma (cM,cN)))
 
