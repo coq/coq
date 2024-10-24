@@ -139,12 +139,18 @@ let type_of_constant env sigma (c,u) =
   let ty = CVars.subst_instance_constr (EConstr.Unsafe.to_instance u) cb.const_type in
   EConstr.of_constr (rename_type ty (GlobRef.ConstRef c))
 
-let retype ?(polyprop=true) sigma =
+let safe_meta_type metas n = match metas with
+| None -> assert false (* missing meta handler *)
+| Some f -> f n
+
+let retype ?metas ?(polyprop=true) sigma =
   let rec type_of env cstr =
     match EConstr.kind sigma cstr with
     | Meta n ->
-      (try strip_outer_cast sigma (Evd.Meta.meta_ftype sigma n).Evd.rebus
-       with Not_found -> retype_error (BadMeta n))
+      begin match safe_meta_type metas n with
+      | None -> retype_error (BadMeta n)
+      | Some ty -> strip_outer_cast sigma ty
+      end
     | Rel n ->
       let ty = try RelDecl.get_type (lookup_rel n env)
         with Not_found -> retype_error BadRel
@@ -302,8 +308,8 @@ let type_of_global_reference_knowing_conclusion env sigma c conclty =
     | Construct (cstr, u) -> sigma, type_of_constructor env (cstr, u)
     | _ -> assert false
 
-let get_type_of ?(polyprop=true) ?(lax=false) env sigma c =
-  let f,_,_ = retype ~polyprop sigma in
+let get_type_of ?metas ?(polyprop=true) ?(lax=false) env sigma c =
+  let f,_,_ = retype ?metas ~polyprop sigma in
     if lax then f env c else anomaly_on_error (f env) c
 
 let rec check_named env sigma c =

@@ -28,6 +28,7 @@ type retype_error
 exception RetypeError of retype_error
 
 val get_type_of :
+  ?metas:(Constr.metavariable -> types option) ->
   ?polyprop:bool -> ?lax:bool -> env -> evar_map -> constr -> types
 
 (** No-evar version of [get_type_of] *)

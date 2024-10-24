@@ -292,7 +292,7 @@ let apply_hooks env sigma proj pat =
    object c in structure R (since, if c1 were not an evar, the
    projection would have been reduced) *)
 
-let check_conv_record env sigma (t1,sk1) (t2,sk2) =
+let check_conv_record ?metas env sigma (t1,sk1) (t2,sk2) =
    (* I only recognize ConstRef projections since these are the only ones for which
       I know how to obtain the number of parameters. *)
   let (proji, u), arg =
@@ -305,8 +305,15 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
   let params1, c1, extra_args1 =
     match arg with
     | Some c -> (* A primitive projection applied to c *)
+      let meta_type mv = match metas with
+      | None -> None
+      | Some metas ->
+        match Metamap.find mv metas with
+        | Cltyp (_, b) -> Some b.Evd.rebus
+        | Clval (_, _, b) -> Some b.Evd.rebus
+      in
       let ty =
-        try Retyping.get_type_of ~lax:true env sigma c with
+        try Retyping.get_type_of ~metas:meta_type ~lax:true env sigma c with
         | Retyping.RetypeError _ -> raise Not_found
       in
       let ind_args =

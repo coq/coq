@@ -114,13 +114,21 @@ let get_template env sigma c =
   | _ -> None
   | exception DestKO -> None
 
+let get_type_of_with_metas env sigma c =
+  let metas n =
+    try Some (Evd.Meta.meta_ftype sigma n).Evd.rebus
+    with Not_found -> None
+  in
+  Retyping.get_type_of ~metas env sigma c
+
 let refresh_template_constraints env sigma ind c =
   let (mib, _) as spec = Inductive.lookup_mind_specif env ind in
   let (_, cstrs0) = (Option.get mib.mind_template).template_context in
   if Univ.Constraints.is_empty cstrs0 then sigma
   else
     let _, allargs = decompose_app sigma c in
-    let allargs = Array.map (fun c -> Retyping.get_judgment_of env sigma c) allargs in
+    let map c = { uj_val = c; uj_type = get_type_of_with_metas env sigma c } in
+    let allargs = Array.map map allargs in
     let sigma, univs = Typing.get_template_parameters env sigma ind allargs in
     let cstrs, _, _ = Inductive.instantiate_template_universes spec univs in
     Evd.add_constraints sigma cstrs

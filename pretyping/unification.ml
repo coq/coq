@@ -857,6 +857,22 @@ let eta_constructor_app env sigma f l1 term =
       | _ -> assert false)
   | _ -> assert false
 
+let get_type_of_with_metas ?lax env sigma c =
+  let metas n =
+    try Some (Evd.Meta.meta_ftype sigma n).Evd.rebus
+    with Not_found -> None
+  in
+  Retyping.get_type_of ~metas ?lax env sigma c
+
+let expand_projection_with_metas env sigma pr c args =
+  let ty = get_type_of_with_metas ~lax:true env sigma c in
+  let (i,u), ind_args =
+    try Inductiveops.find_mrectype env sigma ty
+    with Not_found -> error_disallowed_sprop env sigma (* dummy, caught immediately *)
+  in
+    mkApp (mkConstU (Projection.constant pr,u),
+           Array.of_list (ind_args @ (c :: args)))
+
 (* If the terms are irrelevant, check that they have the same type. *)
 let careful_infer_conv ~pb ~ts env sigma m n =
   if Retyping.is_term_irrelevant env sigma m &&
@@ -913,7 +929,7 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
               if opt.with_types && flags.check_applied_meta_types then
                 (try
                    let tyM = meta_type curenv sigma k in
-                   let tyN = get_type_of curenv ~lax:true sigma cN in
+                   let tyN = get_type_of_with_metas curenv ~lax:true sigma cN in
                      check_compatibility curenv CUMUL flags substn tyN tyM
                  with RetypeError _ ->
                    (* Renounce, maybe metas/evars prevents typing *) sigma)
@@ -931,7 +947,7 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
           let sigma =
             if opt.with_types && flags.check_applied_meta_types then
               (try
-                 let tyM = get_type_of curenv ~lax:true sigma cM in
+                 let tyM = get_type_of_with_metas curenv ~lax:true sigma cM in
                  let tyN = meta_type curenv sigma k in
                    check_compatibility curenv CUMUL flags substn tyM tyN
                with RetypeError _ ->
@@ -1106,7 +1122,7 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
     let fail () =
       error_cannot_unify env sigma (other, term)
     in
-    let tterm = try Retyping.get_type_of ~lax:true env sigma term
+    let tterm = try get_type_of_with_metas ~lax:true env sigma term
       with RetypeError _ -> fail ()
     in
     let metas = meta_handler sigma in
@@ -1114,7 +1130,7 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
      match EConstr.kind sigma (fst (decompose_app sigma tterm')) with
       | Ind (ind',_) when QInd.equal env ind ind' -> substn
       | _ ->
-        let tother = try Retyping.get_type_of ~lax:true env sigma other
+        let tother = try get_type_of_with_metas ~lax:true env sigma other
           with RetypeError _ ->
             fail ()
         in
@@ -1149,7 +1165,7 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
       let expand_proj c c' l =
         match EConstr.kind sigma c with
         | Proj (p, _, t) when not (Projection.unfolded p) && needs_expansion p c' ->
-          (try destApp sigma (Retyping.expand_projection curenv sigma p t (Array.to_list l))
+          (try destApp sigma (expand_projection_with_metas curenv sigma p t (Array.to_list l))
            with RetypeError _ -> (* Unification can be called on ill-typed terms, due
                                      to FO and eta in particular, fail gracefully in that case *)
              (c, l))
@@ -1174,8 +1190,8 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
   and unify_same_proj (curenv, nb as curenvnb) cv_pb opt substn c1 c2 =
     let substn = unirec_rec curenvnb CONV opt substn c1 c2 in
       try (* Force unification of the types to fill in parameters *)
-        let ty1 = get_type_of curenv ~lax:true substn.subst_sigma c1 in
-        let ty2 = get_type_of curenv ~lax:true substn.subst_sigma c2 in
+        let ty1 = get_type_of_with_metas curenv ~lax:true substn.subst_sigma c1 in
+        let ty2 = get_type_of_with_metas curenv ~lax:true substn.subst_sigma c2 in
           unify_0_with_initial_metas substn true curenv cv_pb
             { flags with modulo_conv_on_closed_terms = Some TransparentState.full;
               modulo_delta = TransparentState.full;
@@ -1324,7 +1340,8 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
     let f1l1 = whd_nored_state ~metas (fst curenvnb) sigma (cM,Stack.empty) in
     let f2l2 = whd_nored_state ~metas (fst curenvnb) sigma (cN,Stack.empty) in
     let (sigma,t,c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
-      try Evarconv.check_conv_record (fst curenvnb) sigma f1l1 f2l2
+      let metas = Evd.Meta.meta_list sigma in
+      try Evarconv.check_conv_record ~metas (fst curenvnb) sigma f1l1 f2l2
       with Not_found -> error_cannot_unify (fst curenvnb) sigma (cM,cN)
     in
     if Reductionops.Stack.compare_shape ts ts1 then
@@ -1566,7 +1583,7 @@ let nf_meta env sigma c =
 
 let unify_to_type env sigma flags c status u =
   let sigma, c = refresh_universes ~status:Evd.univ_flexible ~onlyalg:true (Some false) env sigma c in
-  let t = get_type_of env sigma (nf_meta env sigma c) in
+  let t = get_type_of_with_metas env sigma (nf_meta env sigma c) in
   let t = nf_betaiota env sigma (nf_meta env sigma t) in
     unify_0 env sigma CUMUL flags t u
 
@@ -1748,13 +1765,13 @@ let check_types env flags subst m n =
   if isEvar_or_Meta sigma (head_app env sigma m) then
     unify_0_with_initial_metas subst true env CUMUL
       flags
-      (get_type_of env sigma n, Unknown)
-      (get_type_of env sigma m, Unknown)
+      (get_type_of_with_metas env sigma n, Unknown)
+      (get_type_of_with_metas env sigma m, Unknown)
   else if isEvar_or_Meta sigma (head_app env sigma n) then
     unify_0_with_initial_metas subst true env CUMUL
       flags
-      (get_type_of env sigma m, Unknown)
-      (get_type_of env sigma n, Unknown)
+      (get_type_of_with_metas env sigma m, Unknown)
+      (get_type_of_with_metas env sigma n, Unknown)
   else subst
 
 let try_resolve_typeclasses env evd flag m n =
