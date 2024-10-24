@@ -70,7 +70,7 @@ let cmi_of_dep ~tname dep =
   let open Coqdeplib.Dep_info in
   let file = match dep with
     | Dep.Require dep ->
-      Some (translate_to_native ~tname dep)
+      Some (translate_to_native ~tname  dep)
     | Dep.Ml _dep-> None
     | Dep.Other _ -> None
   in
@@ -171,11 +171,6 @@ module Context = struct
 
 end
 
-(* Super hack, to be removed *)
-let fixup_install_locations file =
-  Str.replace_first (Str.regexp {|\(\.\./\)*../install|})
-    "%{project_root}/_build/install" file
-
 (* Return flags and deps to inject *)
 let prelude_path = "Init/Prelude.vo"
 
@@ -214,7 +209,6 @@ let module_rule ~(cctx : Context.t) coq_module =
   let lvl = cctx.root_lvl + (Coq_module.prefix coq_module |> List.length) in
   let flags = (* flags are relative to the root path *) Arg.List.to_string (flags @ timeflags) in
   let deps = List.map (Path.adjust ~lvl) vfile_deps |> List.map Path.to_string in
-  let deps = List.map fixup_install_locations deps in
   (* Depend on the workers if async *)
   let deps = cctx.async_deps @ deps in
   (* Build rule *)
