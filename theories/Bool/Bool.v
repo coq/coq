@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+Require Import Stdlib.Logic.HLevelsBase.
 Require Import DecidableClass.
 
 (** The type [bool] is defined in the prelude as
@@ -29,6 +30,18 @@ Definition Is_true (b:bool) :=
   match b with
     | true => True
     | false => False
+  end.
+
+Definition transparent_true (b : bool) : (True -> Is_true b) -> Is_true b :=
+  match b with
+  | true => fun _ => I
+  | false => fun H => False_rect _ (H I)
+  end.
+
+Definition Is_true_hprop b : IsHProp (Is_true b) :=
+  match b with
+  | true => true_hprop
+  | false => false_hprop
   end.
 
 (*******************)

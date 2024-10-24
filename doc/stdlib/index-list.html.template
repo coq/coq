@@ -70,6 +70,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Logic/WKL.v
     theories/Logic/FinFun.v
     theories/Logic/PropFacts.v
+    theories/Logic/HLevelsBase.v
     theories/Logic/HLevels.v
     theories/Logic/Adjointification.v
   </dd>
