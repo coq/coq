@@ -79,6 +79,14 @@ Proof.
  rewrite in_map_iff. intros (y & E & Y). apply Ij in E. now subst.
 Qed.
 
+Lemma Injective_map_NoDup_in A B (f:A->B) (l:list A) :
+  (forall x y, In x l -> In y l -> f x = f y -> x = y) -> NoDup l -> NoDup (map f l).
+Proof.
+ pose proof @in_cons. pose proof @in_eq.
+ intros Ij N; revert Ij; induction N; cbn [map]; constructor; auto.
+ rewrite in_map_iff. intros (y & E & Y). apply Ij in E; auto; congruence.
+Qed.
+
 Lemma Injective_list_carac A B (d:decidable_eq A)(f:A->B) :
   Injective f <-> (forall l, NoDup l -> NoDup (map f l)).
 Proof.
