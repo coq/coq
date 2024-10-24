@@ -78,9 +78,9 @@ let fix_stm_opts opts stm_opts = match opts.Coqcargs.compilation_mode with
 
 let custom_coqc : ((Coqcargs.t * Colors.color) * Stm.AsyncOpts.stm_opt, 'b) Coqtop.custom_toplevel
  = Coqtop.{
-  parse_extra = (fun extras ->
+  parse_extra = (fun opts extras ->
     let color_mode, extras = Colors.parse_extra_colors extras in
-    let stm_opts, extras = Stmargs.parse_args ~init:Stm.AsyncOpts.default_opts extras in
+    let stm_opts, extras = Stmargs.parse_args opts extras in
     let coqc_opts = Coqcargs.parse extras in
     let stm_opts = fix_stm_opts coqc_opts stm_opts in
     ((coqc_opts, color_mode), stm_opts), []);

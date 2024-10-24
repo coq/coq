@@ -100,7 +100,7 @@ let parse_arguments ~parse_extra ~usage ?(initial_args=Coqargs.default) () =
   let opts, extras =
     Coqargs.parse_args ~usage ~init:initial_args
       (List.tl (Array.to_list Sys.argv)) in
-  let customopts, extras = parse_extra extras in
+  let customopts, extras = parse_extra opts extras in
   if not (CList.is_empty extras) then begin
     prerr_endline ("Don't know what to do with "^String.concat " " extras);
     prerr_endline "See -help for the list of supported options";
@@ -159,7 +159,7 @@ let init_runtime opts =
   init_coqlib opts;
   if opts.post.memory_stat then at_exit print_memory_stat;
 
-  (* Configuration *)
+  (* Kernel configuration *)
   Global.set_impredicative_set opts.config.logic.impredicative_set;
   Global.set_indices_matter opts.config.logic.indices_matter;
   Global.set_check_universes (not opts.config.logic.type_in_type);
@@ -173,6 +173,9 @@ let init_runtime opts =
 
   (* Default output dir *)
   Flags.output_directory := opts.config.output_directory;
+
+  (* Test mode *)
+  Flags.test_mode := opts.config.test_mode;
 
   (* Paths for loading stuff *)
   init_load_paths opts;

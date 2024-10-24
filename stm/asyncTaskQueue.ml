@@ -109,56 +109,20 @@ module Make(T : Task) () = struct
 
   let uid = ref 0
 
-  let spawn id priority =
+  let spawn ~spawn_args id priority =
     let name = Printf.sprintf "%s:%d:%d" T.name id !uid in
     incr uid;
     let proc, ic, oc =
       (* Filter arguments for slaves. *)
-      let rec set_slave_opt = function
-        | [] -> !async_proofs_flags_for_workers @
-                ["-worker-id"; name;
-                 "-async-proofs-worker-priority";
-                 CoqworkmgrApi.(string_of_priority priority)]
-        (* Options to discard: 0 arguments *)
-        | ("-emacs" | "--xml_format=Ppcmds" | "-batch" | "-vok" | "-vos") :: tl  ->
-          set_slave_opt tl
-        (* Options to discard: 1 argument *)
-        | ( "-async-proofs" | "-o"
-          | "-load-vernac-source" | "-l" | "-load-vernac-source-verbose" | "-lv"
-          | "-require-import" | "-require-export" | "-ri" | "-re"
-          | "-load-vernac-object"
-          | "-time-file" | "-profile"
-          | "-set" | "-unset" | "-compat" | "-mangle-names" | "-diffs"
-          | "-async-proofs-cache" | "-async-proofs-j" | "-async-proofs-tac-j"
-          | "-async-proofs-private-flags" | "-async-proofs-tactic-error-resilience"
-          | "-async-proofs-command-error-resilience" | "-async-proofs-delegation-threshold"
-          | "-async-proofs-worker-priority" | "-worker-id") :: _ :: tl ->
-          set_slave_opt tl
-        (* Options to discard: 2 arguments *)
-        | ( "-compat-from" | "-rifrom" | "-refrom" | "-rfrom"
-          | "-require-import-from" | "-require-export-from") :: _ :: _ :: tl ->
-           set_slave_opt tl
-        (* We need to pass some options with one argument *)
-        | ( "-I" | "-nI" | "-include" | "-top" | "-topfile" | "-coqlib" | "-exclude-dir"
-          | "-color" | "-init-file"
-          | "-profile-ltac-cutoff" | "-main-channel" | "-control-channel"
-          | "-native-output-dir" | "-w"
-          | "-dump-glob" | "-bytecode-compiler" | "-native-compiler" as x) :: a :: tl ->
-          x :: a :: set_slave_opt tl
-        (* We need to pass some options with two arguments *)
-        | ( "-R" | "-Q" as x) :: a1 :: a2 :: tl ->
-          let a2 = if String.equal a2 "Coq" then "Stdlib" else a2 in
-          x :: a1 :: a2 :: set_slave_opt tl
-        (* Finally we pass all options starting in '-'; check this is safe w.r.t the weird vio* option set *)
-        | x :: tl when x.[0] = '-' ->
-          x :: set_slave_opt tl
-        (* We assume this is a file, filter out *)
-        | _ :: tl ->
-          set_slave_opt tl
-      in
       let args =
         let wselect = "--kind=" ^ T.name in
-        Array.of_list (wselect :: set_slave_opt (List.tl (Array.to_list Sys.argv))) in
+        let worker_opts =
+          !async_proofs_flags_for_workers @
+          ["-worker-id"; name;
+           "-async-proofs-worker-priority";
+           CoqworkmgrApi.(string_of_priority priority)]
+        in
+        Array.of_list (wselect :: spawn_args @ worker_opts) in
       let env = Array.append (T.extra_env ()) (Unix.environment ()) in
       let worker_name = System.get_toplevel_path ("coqworker") in
       Worker.spawn ~env worker_name args in
@@ -263,7 +227,7 @@ module Make(T : Task) () = struct
     cleaner : Thread.t option;
   }
 
-  let create size priority =
+  let create ~spawn_args size priority =
     let cleaner queue =
       while true do
         try ignore(TQueue.pop ~picky:(fun (_,cancelled) -> !cancelled) queue)
@@ -271,7 +235,7 @@ module Make(T : Task) () = struct
       done in
     let queue = TQueue.create () in
     {
-      active = Pool.create queue ~size priority;
+      active = Pool.create ~spawn_args queue ~size priority;
       queue;
       cleaner = if size > 0 then Some (CThread.create cleaner queue) else None;
     }
@@ -358,8 +322,8 @@ module Make(T : Task) () = struct
      (TQueue.wait_until_n_are_waiting_then_snapshot
        (Pool.n_workers active) queue)
 
-  let with_n_workers n priority f =
-    let q = create n priority in
+  let with_n_workers ~spawn_args n priority f =
+    let q = create ~spawn_args n priority in
     try let rc = f q in destroy q; rc
     with e -> let e = Exninfo.capture e in destroy q; Exninfo.iraise e
 

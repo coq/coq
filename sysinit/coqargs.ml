@@ -67,7 +67,8 @@ type coqargs_config = {
   native_output_dir : CUnix.physical_path;
   native_include_dirs : CUnix.physical_path list;
   output_directory : CUnix.physical_path option;
-  time        : time_config option;
+  time : time_config option;
+  test_mode : bool;
   profile : string option;
   print_emacs : bool;
 }
@@ -125,7 +126,8 @@ let default_config = {
   native_output_dir = ".coq-native";
   native_include_dirs = [];
   output_directory = None;
-  time         = None;
+  time = None;
+  test_mode = false;
   profile = None;
   print_emacs  = false;
 
@@ -382,7 +384,7 @@ let parse_args ~usage ~init arglist : t * string list =
       { oval with config = {oval.config with native_include_dirs = include_dir :: oval.config.native_include_dirs } }
 
     (* Options with zero arg *)
-    |"-test-mode" -> Flags.test_mode := true; oval
+    |"-test-mode" -> { oval with config = { oval.config with test_mode = true } }
     |"-beautify" -> Flags.beautify := true; Flags.record_comments := true; oval
     |"-config"|"--config" -> set_query oval PrintConfig
 

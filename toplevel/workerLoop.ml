@@ -12,8 +12,8 @@ let kind_filter str =
   let kinds = [ "--kind=proof"; "--kind=tactic"; "--kind=query" ] in
   not (List.exists (String.equal str) kinds)
 
-let worker_parse_extra extra_args =
-  let stm_opts, extra_args = Stmargs.parse_args ~init:Stm.AsyncOpts.default_opts extra_args in
+let worker_parse_extra opts extra_args =
+  let stm_opts, extra_args = Stmargs.parse_args opts extra_args in
   let extra_args = List.filter kind_filter extra_args in
   ((),stm_opts), extra_args
 
