@@ -10,7 +10,25 @@ type t = Rel of string | Abs of string
 
 let to_string = function Rel p -> p | Abs p -> p
 
-let make path = if Filename.is_relative path then Rel path else Abs path
+let make path =
+  if Filename.is_relative path then
+    (* when called by dune, the cmxs and META files are in
+       ../install/... relative to cwd (= _build/default)
+       but the generated dune file will be moved to ../theories
+       so adjusting the path to be relative to the .v won't work
+
+       (it would be relative to the .v in
+       project_root/_build/default/theories but dune would read it as
+       relative to the .v in project_root/theories, the number of ..
+       to insert to get to project_root doesn't match) *)
+    if CString.is_prefix ".." path then
+      Abs (Filename.concat "%{project_root}" @@
+           Filename.concat "_build" @@
+           String.sub path 3 (String.length path - 3))
+    else
+      Rel path
+  else
+    Abs path
 
 let map ~f = function Rel p -> Rel (f p) | Abs p -> Abs (f p)
 

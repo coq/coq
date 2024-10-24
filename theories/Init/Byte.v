@@ -16,7 +16,7 @@ Require Import Stdlib.Init.Logic.
 Require Import Stdlib.Init.Specif.
 Require Stdlib.Init.Nat.
 
-Declare ML Module "number_string_notation_plugin:coq-core.plugins.number_string_notation".
+Declare ML Module "coq-core.plugins.number_string_notation".
 
 (** We define an inductive for use with the [String Notation] command
     which contains all ascii characters.  We use 256 constructors for
