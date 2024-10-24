@@ -136,6 +136,7 @@ let auto_core_unif_flags st allowed_evars = {
   use_meta_bound_pattern_unification = true;
   allowed_evars;
   restrict_conv_on_strict_subterms = false; (* ? *)
+  firstorder_function_conversion = Unification.firstorder_function_conversion ();
   modulo_betaiota = true;
   modulo_eta = false;
 }

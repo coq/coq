@@ -324,7 +324,8 @@ Module Ascii_as_OT <: UsualOrderedType.
   Definition eq_sym := @eq_sym t.
   Definition eq_trans := @eq_trans t.
 
-  Definition cmp : ascii -> ascii -> comparison := Ascii.compare.
+  Section Cmp.
+  Notation cmp := Ascii.compare.
 
   Lemma cmp_eq (a b : ascii):
     cmp a b = Eq  <->  a = b.
@@ -387,6 +388,9 @@ Module Ascii_as_OT <: UsualOrderedType.
     | Gt => fun E => GT (compare_helper_gt E)
     | Eq => fun E => EQ (compare_helper_eq E)
     end Logic.eq_refl.
+
+  End Cmp.
+  Definition cmp : ascii -> ascii -> comparison := Ascii.compare.
 
   Definition eq_dec (x y : ascii): {x = y} + { ~ (x = y)} := ascii_dec x y.
 End Ascii_as_OT.
@@ -462,7 +466,7 @@ Module String_as_OT <: UsualOrderedType.
     cbn.
     remember (Ascii.compare _ _) as c eqn:Heqc. symmetry in Heqc.
     destruct c; split; try discriminate;
-      try rewrite Ascii_as_OT.cmp_eq in Heqc; try subst;
+      try rewrite Ascii_as_OT.cmp_eq in Heqc; subst;
       try rewrite IHa; intro H.
     { now subst. }
     { now inversion H. }
@@ -478,7 +482,7 @@ Module String_as_OT <: UsualOrderedType.
     cbn. rewrite IHa. clear IHa.
     remember (Ascii.compare _ _) as c eqn:Heqc. symmetry in Heqc.
     destruct c; rewrite Ascii_as_OT.cmp_antisym in Heqc;
-      destruct Ascii_as_OT.cmp; cbn in *; easy.
+      destruct Ascii.compare; cbn in *; easy.
   Qed.
 
   Lemma cmp_lt (a b : string):

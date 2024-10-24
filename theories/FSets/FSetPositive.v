@@ -1077,7 +1077,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
 
     - destruct s' as [|l' o' r'].
       + generalize (Node l o r) as s. simpl. intros. apply choose_empty.
-        rewrite <- equal_spec in H. apply eq_sym in H. rewrite equal_spec in H.
+        rewrite <- equal_spec in H. apply eq_sym in H. unfold eq in H; rewrite equal_spec in H.
         assumption.
 
       + simpl. rewrite <- 2andb_lazy_alt, 2andb_true_iff, eqb_true_iff.
