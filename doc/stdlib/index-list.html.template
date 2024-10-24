@@ -185,7 +185,9 @@ through the <tt>Require Import</tt> command.</p>
     theories/ZArith/Znumtheory.v
     theories/ZArith/Int.v
     theories/ZArith/Zpow_facts.v
+    theories/ZArith/Zdiv_facts.v
     theories/ZArith/Zbitwise.v
+    theories/ZArith/ZModOffset.v
   </dd>
 
   <dt> <b>QArith</b>:

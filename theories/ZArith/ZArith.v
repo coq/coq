@@ -24,6 +24,8 @@ Require Export ZArith_hints.
 Require Export Zcomplements.
 Require Export Zpower.
 Require Export Zdiv.
+Require Export Zdiv_facts.
 Require Export Zbitwise.
+Require Export ZModOffset.
 
 Export ZArithRing.
