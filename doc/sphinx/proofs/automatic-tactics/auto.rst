@@ -21,8 +21,13 @@ Tactics
    tactic, then it reduces the goal to an atomic one using :tacn:`intros` and
    introduces the newly generated hypotheses as hints. Then it looks at
    the list of tactics associated with the head symbol of the goal and
-   tries to apply one of them.  Lower cost tactics are tried before higher-cost
-   tactics.  This process is recursively applied to the generated subgoals.
+   tries to apply one of them.  This process is recursively applied to the
+   generated subgoals.
+
+   Within each hintbase, lower cost tactics are tried before higher-cost
+   tactics.  When multiple hintbases are specified, all hints in the
+   first database are tried before any in the second database (and so forth)
+   regardless of their cost (unlike :tacn:`eauto` and :tacn:`typeclasses eauto`).
 
    :n:`@nat_or_var`
      Specifies the maximum search depth.  The default is 5.
@@ -391,9 +396,7 @@ Creating Hints
    Hints in hint databases are ordered, which is the order in which they're
    tried, as shown by the :cmd:`Print HintDb` command.
    Hints with lower costs are tried first.  Hints with the same cost are tried
-   in reverse of their order of definition, i.e., last to first.  When multiple hint
-   databases are specified in search tactics, all hints in the first database are
-   tried before any in the second database (and so forth).
+   in reverse of their order of definition, i.e., last to first.
 
    Outside of sections, these commands support the :attr:`local`, :attr:`export`
    and :attr:`global` attributes. :attr:`export` is the default.
