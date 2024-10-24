@@ -291,6 +291,18 @@ Lemma inj_testbit a n :
  Z.testbit (Z.of_N a) (Z.of_N n) = N.testbit a n.
 Proof. apply Z.testbit_of_N. Qed.
 
+Lemma inj_lxor n m : Z.of_N (N.lxor n m) = Z.lxor (Z.of_N n) (Z.of_N m).
+Proof. destruct n, m; reflexivity. Qed.
+
+Lemma inj_land n m : Z.of_N (N.land n m) = Z.land (Z.of_N n) (Z.of_N m).
+Proof. destruct n, m; reflexivity. Qed.
+
+Lemma inj_lor n m : Z.of_N (N.lor n m) = Z.lor (Z.of_N n) (Z.of_N m).
+Proof. destruct n, m; reflexivity. Qed.
+
+Lemma inj_ldiff n m : Z.of_N (N.ldiff n m) = Z.ldiff (Z.of_N n) (Z.of_N m).
+Proof. destruct n, m; reflexivity. Qed.
+
 End N2Z.
 
 Module Z2N.
@@ -446,6 +458,47 @@ Lemma inj_testbit a n : 0<=n ->
 Proof. apply Z.testbit_of_N'. Qed.
 
 End Z2N.
+
+Module Export MoreN2Z.
+Module N2Z.
+
+Lemma inj_shiftl: forall x y, Z.of_N (N.shiftl x y) = Z.shiftl (Z.of_N x) (Z.of_N y).
+Proof.
+  intros x y.
+  apply Z.bits_inj_iff'; intros k Hpos.
+  rewrite Z2N.inj_testbit; [|assumption].
+  rewrite Z.shiftl_spec; [|assumption].
+
+  assert ((Z.to_N k) >= y \/ (Z.to_N k) < y)%N as g by (
+      unfold N.ge, N.lt; induction (N.compare (Z.to_N k) y); [left|auto|left];
+      intro H; inversion H).
+
+  destruct g as [g|g];
+  [ rewrite N.shiftl_spec_high; [|apply N2Z.inj_le; rewrite Z2N.id|apply N.ge_le]
+  | rewrite N.shiftl_spec_low]; try assumption.
+
+  - rewrite <- N2Z.inj_testbit; f_equal.
+      rewrite N2Z.inj_sub, Z2N.id; [reflexivity|assumption|apply N.ge_le; assumption].
+
+  - apply N2Z.inj_lt in g.
+      rewrite Z2N.id in g; [symmetry|assumption].
+      apply Z.testbit_neg_r, Z.lt_sub_0, g.
+Qed.
+
+Lemma inj_shiftr: forall x y, Z.of_N (N.shiftr x y) = Z.shiftr (Z.of_N x) (Z.of_N y).
+Proof.
+  intros.
+  apply Z.bits_inj_iff'; intros k Hpos.
+  rewrite Z2N.inj_testbit; [|assumption].
+  rewrite Z.shiftr_spec, N.shiftr_spec; [|apply N2Z.inj_le; rewrite Z2N.id|]; try assumption.
+  rewrite <- N2Z.inj_testbit; f_equal.
+  rewrite N2Z.inj_add; f_equal.
+  apply Z2N.id; assumption.
+Qed.
+
+End N2Z.
+End MoreN2Z.
+
 
 Module Zabs2N.
 
