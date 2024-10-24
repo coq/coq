@@ -713,7 +713,7 @@ let print_library_leaf env sigma ~with_values mp lobj =
     Some (Printmod.print_module ~with_body:(Option.has_some with_values) (MPdot (mp,Label.of_id id)))
   | ModuleTypeObject (id,_) ->
     Some (print_modtype (MPdot (mp, Label.of_id id)))
-  | IncludeObject _ | KeepObject _ | ExportObject _ -> None
+  | IncludeObject _ | KeepObject _ | EscapeObject _ | ExportObject _ -> None
 
 let decr = Option.map ((+) (-1))
 

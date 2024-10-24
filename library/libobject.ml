@@ -10,7 +10,7 @@
 
 module Dyn = Dyn.Make ()
 
-type substitutivity = Dispose | Substitute | Keep | Anticipate
+type substitutivity = Dispose | Substitute | Keep | Escape | Anticipate
 
 type object_name = Libnames.full_path * Names.KerName.t
 
@@ -132,6 +132,7 @@ and t =
   | ModuleTypeObject of Names.Id.t * substitutive_objects
   | IncludeObject of algebraic_objects
   | KeepObject of Names.Id.t * t list
+  | EscapeObject of Names.Id.t * t list
   | ExportObject of ExportObj.t
   | AtomicObject of obj
 
@@ -211,11 +212,7 @@ let subst_object (subs, Dyn.Dyn (tag, v)) =
 
 let classify_object (Dyn.Dyn (tag, v)) =
   let O decl = DynMap.find tag !cache_tab in
-  match decl.classify_function v with
-  | Dispose -> Dispose
-  | Substitute -> Substitute
-  | Keep -> Keep
-  | Anticipate -> Anticipate
+  decl.classify_function v
 
 type discharged_obj = Discharged : 'a Dyn.tag * 'd * ('d -> 'a) -> discharged_obj
 

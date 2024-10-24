@@ -71,13 +71,15 @@ Fail Monomorphic Definition mono2@{uu} := Type@{uu}.
 
 Module SecLet.
   Unset Universe Polymorphism.
-  Section foo.
+  Section fooS.
     (* Fail Let foo@{} := Type@{uu}. (* doesn't parse: Let foo@{...} doesn't exist *) *)
+
     Unset Strict Universe Declaration.
-    Let tt : Type@{uu} := Type@{v}. (* names disappear in the ether *)
-    #[clearbody] Let ff : Type@{uu}. Proof. exact Type@{v}. Defined. (* names disappear into space *)
+    (* the names used disappear, and fresh names are generated instead of exposing raw ints *)
+    Let tt : Type@{uu} := Type@{v}.
+    #[clearbody] Let ff : Type@{uu}. Proof. exact Type@{v}. Defined.
     Definition bobmorane := tt -> ff.
-  End foo.
+  End fooS.
   Print bobmorane.
 End SecLet.
 
@@ -220,3 +222,30 @@ Inductive JMeq (A:Type) (x:A) : forall B:Type, B -> Prop :=
 About JMeq.
 
 End PartialTemplate.
+
+Module Collision.
+  Unset Universe Polymorphism.
+
+  Module x.
+    Universe u0.
+    Definition a := Type@{u0}.
+  End x.
+
+  Fail Definition x@{u0} := Type@{u0}.
+  Definition x := Type.
+
+  Goal True.
+    Fail
+      let a := eval cbv in x.a in
+      let b := eval cbv in x in
+      constr_eq_strict a b.
+
+    let a := eval cbv in Type@{x.u1} in
+    let b := eval cbv in x in
+    constr_eq_strict a b.
+  Abort.
+End Collision.
+
+Module Schemes.
+  Check eq_rect.
+End Schemes.
