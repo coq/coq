@@ -1,17 +1,14 @@
 (* There used to be an evar leak in the to_nat example *)
 
-Require Import Stdlib.Lists.List.
-Import ListNotations.
-
 Fixpoint Idx {A:Type} (l:list A) : Type :=
   match l with
-  | [] => False
-  | _::l => True + Idx l
+  | nil => False
+  | cons _ l => True + Idx l
   end.
 
 Fixpoint to_nat {A:Type} (l:list A) (i:Idx l) : nat :=
   match l,i with
-  |  [] , i => match i with end
-  | _::_, inl _ => 0
-  | _::l, inr i => S (to_nat l i)
+  | nil , i => match i with end
+  | cons _ _, inl _ => 0
+  | cons _ l, inr i => S (to_nat l i)
   end.

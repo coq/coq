@@ -5,7 +5,7 @@ Module Type T.
 End T.
 
 Module M : T.
-  Require Import FunctionalExtensionality.
+  Require Import TestSuite.funext.
   Definition f := @functional_extensionality_dep.
 End M.
 

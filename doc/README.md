@@ -124,5 +124,5 @@ The produced documents are stored in the described directories above,
 you can install them just by copying the contents to the desired
 directory.
 
-In the future, the `coq-doc` and `coq-stdlib` opam packages will
+In the future, the `coq-doc` and `rocq-init` opam packages will
 install the documentation automatically.

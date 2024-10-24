@@ -1,14 +1,7 @@
-"foo"
-     : string
 1234
      : nat
 Nat.add 1 2
      : nat
-match "a" with
-| "a" => true
-| _ => false
-end
-     : bool
 match 1 with
 | 1 => true
 | _ => false
@@ -16,11 +9,6 @@ end
      : bool
 {| field := 7 |}
      : test
-String (Ascii.Ascii false true true false false true true false)
-  (String (Ascii.Ascii true true true true false true true false)
-     (String (Ascii.Ascii true true true true false true true false)
-        EmptyString))
-     : string
 S
   (S
      (S
@@ -43,15 +31,6 @@ S
      : nat
 Nat.add (S O) (S (S O))
      : nat
-match
-  String (Ascii.Ascii true false false false false true true false)
-    EmptyString
-with
-| String (Ascii.Ascii true false false false false true true false)
-  EmptyString => true
-| _ => false
-end
-     : bool
 match S O with
 | S O => true
 | _ => false

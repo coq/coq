@@ -1,3 +1,0 @@
-File "./output/Function.v", line 28, characters 4-5:
-Warning: Unused variable n might be a misspelled constructor. Use _ or _n to
-silence this warning. [unused-pattern-matching-variable,default]

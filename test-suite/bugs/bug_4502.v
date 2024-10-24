@@ -1,4 +1,4 @@
-Require Import FunInd.
+Require Import TestSuite.funind.
 
 Set Universe Polymorphism.
 Set Primitive Projections.

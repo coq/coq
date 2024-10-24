@@ -1,5 +1,3 @@
-Require Import List.
-
 Set Implicit Arguments.
 
 Definition err : Type := unit.
@@ -36,7 +34,7 @@ Fixpoint tc_wf_type (ftype: ftyp) {struct ftype}: res unit :=
        ((fix tc_wf_types (ftypes: list ftyp){struct ftypes}: res unit :=
            match ftypes with
              | nil => OK tt
-             | t::ts =>
+             | cons t ts =>
                  match tc_wf_type t with
                    | OK tt => tc_wf_types ts
                    | Error m => Error m
@@ -65,7 +63,7 @@ Fixpoint tc_wf_type' (ftype: ftyp) {struct ftype}: res unit :=
        ((fix tc_wf_types (ftypes: list ftyp){struct ftypes}: res unit :=
            match ftypes with
              | nil => OK tt
-             | t::ts =>
+             | cons t ts =>
                  match tc_wf_type' t with
                    | OK tt => tc_wf_types ts
                    | Error m => Error m

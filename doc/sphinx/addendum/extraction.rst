@@ -452,7 +452,7 @@ OCaml code with C code, the linker needs to know
    .. coqtop:: in
 
       Require Extraction.
-      Require Stdlib.extraction.ExtrOcamlNatInt.
+      Extract Inductive nat => int [ "0" "Stdlib.Int.succ" ].
       Axiom f : nat -> nat -> nat.
       Extract Foreign Constant f => "f_impl".
 
@@ -687,7 +687,8 @@ We then indicate where to find other examples and tests of extraction.
 A detailed example: Euclidean division
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The file ``Euclid`` contains the proof of Euclidean division.
+This example requires the Stdlib library.
+Its file ``Euclid`` contains the proof of Euclidean division.
 The natural numbers used here are unary, represented by the type ``nat``,
 which is defined by two constructors ``O`` and ``S``.
 This module contains a theorem ``eucl_dev``, whose type is::
@@ -698,10 +699,10 @@ where ``diveucl`` is a type for the pair of the quotient and the
 modulo, plus some logical assertions that disappear during extraction.
 We can now extract this program to OCaml:
 
-.. coqtop:: reset all
+.. coqtop:: reset all extra
 
-   Require Extraction.
-   Require Import Euclid Wf_nat.
+   From Stdlib Require Extraction.
+   From Stdlib Require Import Euclid Wf_nat.
    Extraction Inline gt_wf_rec lt_wf_rec induction_ltof2.
    Recursive Extraction eucl_dev.
 

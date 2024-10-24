@@ -1,4 +1,4 @@
-Require Import Uint63 PrimString.
+Require Import PrimInt63 PrimString.
 
 Open Scope uint63_scope.
 Open Scope pstring_scope.
@@ -6,7 +6,7 @@ Open Scope pstring_scope.
 Check (eq_refl : length (make 0              "a") = 0         ).
 Check (eq_refl : length (make 42             "a") = 42        ).
 Check (eq_refl : length (make max_length     "a") = max_length).
-Check (eq_refl : length (make (max_length+1) "a") = max_length).
+Check (eq_refl : length (make (PrimInt63.add max_length 1) "a") = max_length).
 
 Check (eq_refl : make 0 "a" = "").
 Check (eq_refl : make 5 "a" = "aaaaa").
