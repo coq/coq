@@ -22,7 +22,7 @@
   (deps
     dune-dbg.in
     ../checker/coqchk.bc
-    ../topbin/coqc_byte_bin.bc
+    ../topbin/coqworker_byte_bin.bc
     ../topbin/coqnative_bin.bc
     ../ide/coqide/rocqide_main.bc
     ../tools/coqdep/coqdep.bc

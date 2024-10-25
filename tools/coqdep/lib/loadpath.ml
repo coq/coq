@@ -151,16 +151,26 @@ module State = struct
     ; coqlib : (dirpath * dirpath, result) Hashtbl.t
     ; other : (dirpath * dirpath, result) Hashtbl.t
     ; boot : bool
+    ; mutable worker : string option
     }
 
-  let make ~boot =
+  let make ~worker ~boot =
     { vfiles = Hashtbl.create 4101
     ; coqlib = Hashtbl.create 19
     ; other = Hashtbl.create 17317
     ; boot
+    ; worker
     }
 
 end
+
+let get_worker_path st =
+  match st.State.worker with
+  | Some w -> w
+  | None ->
+    let w = Fl.Internal.get_worker_path () in
+    st.worker <- Some w;
+    w
 
 let add_set f l = f :: CList.remove equal_file f l
 

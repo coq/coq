@@ -1,8 +1,8 @@
-Theory3/File2.vo Theory3/File2.glob Theory3/File2.v.beautified Theory3/File2.required_vo: Theory3/File2.v Theory3/Subtheory1/File1.vo Theory3/Subtheory1/Subsubtheory1/File1.vo Theory3/Subtheory1/Subsubtheory2/File1.vo Theory3/Subtheory2/File1.vo
-Theory3/Subtheory1/File1.vo Theory3/Subtheory1/File1.glob Theory3/Subtheory1/File1.v.beautified Theory3/Subtheory1/File1.required_vo: Theory3/Subtheory1/File1.v 
-Theory3/Subtheory1/Subsubtheory1/File1.vo Theory3/Subtheory1/Subsubtheory1/File1.glob Theory3/Subtheory1/Subsubtheory1/File1.v.beautified Theory3/Subtheory1/Subsubtheory1/File1.required_vo: Theory3/Subtheory1/Subsubtheory1/File1.v 
-Theory3/Subtheory1/Subsubtheory2/File1.vo Theory3/Subtheory1/Subsubtheory2/File1.glob Theory3/Subtheory1/Subsubtheory2/File1.v.beautified Theory3/Subtheory1/Subsubtheory2/File1.required_vo: Theory3/Subtheory1/Subsubtheory2/File1.v 
-Theory3/Subtheory2/File1.vo Theory3/Subtheory2/File1.glob Theory3/Subtheory2/File1.v.beautified Theory3/Subtheory2/File1.required_vo: Theory3/Subtheory2/File1.v 
+Theory3/File2.vo Theory3/File2.glob Theory3/File2.v.beautified Theory3/File2.required_vo: Theory3/File2.v Theory3/Subtheory1/File1.vo Theory3/Subtheory1/Subsubtheory1/File1.vo Theory3/Subtheory1/Subsubtheory2/File1.vo Theory3/Subtheory2/File1.vo @COQWORKER@
+Theory3/Subtheory1/File1.vo Theory3/Subtheory1/File1.glob Theory3/Subtheory1/File1.v.beautified Theory3/Subtheory1/File1.required_vo: Theory3/Subtheory1/File1.v @COQWORKER@
+Theory3/Subtheory1/Subsubtheory1/File1.vo Theory3/Subtheory1/Subsubtheory1/File1.glob Theory3/Subtheory1/Subsubtheory1/File1.v.beautified Theory3/Subtheory1/Subsubtheory1/File1.required_vo: Theory3/Subtheory1/Subsubtheory1/File1.v @COQWORKER@
+Theory3/Subtheory1/Subsubtheory2/File1.vo Theory3/Subtheory1/Subsubtheory2/File1.glob Theory3/Subtheory1/Subsubtheory2/File1.v.beautified Theory3/Subtheory1/Subsubtheory2/File1.required_vo: Theory3/Subtheory1/Subsubtheory2/File1.v @COQWORKER@
+Theory3/Subtheory2/File1.vo Theory3/Subtheory2/File1.glob Theory3/Subtheory2/File1.v.beautified Theory3/Subtheory2/File1.required_vo: Theory3/Subtheory2/File1.v @COQWORKER@
 *** Warning: in file Theory3/File2.v, 
     required library File1 matches several files in path
     (found File1.v in Theory3/Subtheory2, Theory3/Subtheory1/Subsubtheory2, Theory3/Subtheory1/Subsubtheory1 and Theory3/Subtheory1; Require will fail).

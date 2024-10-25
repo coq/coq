@@ -8,6 +8,4 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* Main coqc initialization *)
-let () =
-  Coqc.main (List.tl (Array.to_list Sys.argv))
+(** No exported APIs *)

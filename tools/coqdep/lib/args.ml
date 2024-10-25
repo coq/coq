@@ -16,6 +16,7 @@ type t =
   ; ml_path : string list
   ; vo_path : (bool * string * string) list
   ; dyndep : string
+  ; worker : string option
   ; files : string list
   }
 
@@ -27,6 +28,7 @@ let make () =
   ; ml_path = []
   ; vo_path = []
   ; dyndep = "both"
+  ; worker = None
   ; files = []
   }
 
@@ -51,7 +53,9 @@ let usage () =
   eprintf "  -exclude-dir dir : skip subdirectories named 'dir' during -R/-Q search\n";
   eprintf "  -coqlib dir : set the coq standard library directory\n";
   eprintf "  -dyndep (opt|byte|both|no|var) : set how dependencies over ML modules are printed\n";
+  eprintf "  -worker WORKER : output WORKER instead of the coqworker path\n";
   eprintf "  -w (w1,..,wn) : configure display of warnings\n";
+  eprintf "%!"; (* flush *)
   exit 1
 
 let warn_project_file =
@@ -100,6 +104,7 @@ let parse st args =
     | "-coqlib" :: r :: ll -> Boot.Env.set_coqlib r; parse st ll
     | "-coqlib" :: [] -> usage ()
     | "-dyndep" :: dyndep :: ll -> parse { st with dyndep } ll
+    | "-worker" :: w :: ll -> parse { st with worker = Some w } ll
     | "-w" :: w :: ll ->
       let w = if w = "none" then w else CWarnings.get_flags() ^ "," ^ w in
       CWarnings.set_flags w;
