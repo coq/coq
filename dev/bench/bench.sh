@@ -378,10 +378,14 @@ create_opam() {
 
     if [[ $USE_FLAMBDA = 1 ]];
     then flambda=--packages=ocaml-variants.${OCAML_VER}+options,ocaml-option-flambda
-    else flambda=
+    else flambda=$OPAM_COMP
     fi
 
-    opam switch create -qy -j$number_of_processors "ocaml-$RUNNER" "$OPAM_COMP" $flambda
+    if [ "$RUNNER" = NEW ]; then
+      flambda=--packages=ocaml-variants.${OCAML_VER}+options,ocaml-option-32bit
+    fi
+
+    opam switch create -qy -j$number_of_processors "ocaml-$RUNNER" $flambda
     eval $(opam env)
 
     # For some reason opam guesses an incorrect upper bound on the
