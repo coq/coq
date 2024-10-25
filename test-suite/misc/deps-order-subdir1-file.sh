@@ -3,7 +3,7 @@
 # the logical path (if any)
 rm -f misc/deps/Theory1/*.vo misc/deps/Theory1/Subtheory?/*.vo misc/deps/Theory1/Subtheory?/Subsubtheory?/*.vo
 output=misc/deps/Theory1Deps.real
-(cd misc/deps; $coqdep -f _CoqTheory1Project) > "$output" 2>&1
+(cd misc/deps; $coqdep -worker @COQWORKER@ -f _CoqTheory1Project) > "$output" 2>&1
 diff -u --strip-trailing-cr misc/deps/Theory1Deps.out "$output"
 R=$?
 times
