@@ -25,8 +25,11 @@ type ('a,'b) custom_toplevel =
    print the banner, initialize the load path, load the input state,
    load the files given on the command line, load the resource file,
    produce the output state if any, and finally will launch
-   [custom.run]. *)
-val start_coq : ('a * Stm.AsyncOpts.stm_opt,'b) custom_toplevel -> unit
+   [custom.run].
+
+    The [string list] argument is typically [List.tl (Array.to_list Sys.argv)].
+*)
+val start_coq : ('a * Stm.AsyncOpts.stm_opt,'b) custom_toplevel -> string list -> unit
 
 (** Prepare state for interactive loop *)
 

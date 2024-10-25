@@ -29,7 +29,7 @@ let usage = Boot.Usage.{
 \n  --xml_format=Ppcmds    serialize pretty printing messages using the std_ppcmds format\n");
 }
 
-let start ~init ~loop =
+let start ~init ~loop args =
   let open Coqtop in
   let custom = {
     parse_extra = worker_parse_extra;
@@ -40,4 +40,4 @@ let start ~init ~loop =
       (* the state is not used since the worker will receive one from master *)
       loop ());
   } in
-  start_coq custom
+  start_coq custom args

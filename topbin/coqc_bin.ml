@@ -10,4 +10,4 @@
 
 (* Main coqc initialization *)
 let () =
-  Coqc.main ()
+  Coqc.main (List.tl (Array.to_list Sys.argv))

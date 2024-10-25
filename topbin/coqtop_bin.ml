@@ -9,4 +9,4 @@
 (************************************************************************)
 
 (* Main coqtop entry point *)
-let () = Coqtop.(start_coq coqtop_toplevel)
+let () = Coqtop.(start_coq coqtop_toplevel (List.tl (Array.to_list Sys.argv)))

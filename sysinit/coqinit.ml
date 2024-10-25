@@ -112,10 +112,8 @@ let dirpath_of_top = function
   | Coqargs.TopPhysical f -> dirpath_of_file f
   | TopLogical dp -> Libnames.dirpath_of_string dp
 
-let parse_arguments ~parse_extra ?(initial_args=Coqargs.default) () =
-  let opts, extras =
-    Coqargs.parse_args ~init:initial_args
-      (List.tl (Array.to_list Sys.argv)) in
+let parse_arguments ~parse_extra ?(initial_args=Coqargs.default) args =
+  let opts, extras = Coqargs.parse_args ~init:initial_args args in
   let customopts, extras = parse_extra opts extras in
   if not (CList.is_empty extras) then begin
     prerr_endline ("Don't know what to do with "^String.concat " " extras);

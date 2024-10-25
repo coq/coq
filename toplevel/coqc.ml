@@ -90,6 +90,6 @@ let custom_coqc : ((Coqcargs.t * Colors.color) * Stm.AsyncOpts.stm_opt, 'b) Coqt
   initial_args = Coqargs.default;
 }
 
-let main () =
+let main args =
   let () = Memtrace_init.init () in
-  Coqtop.start_coq custom_coqc
+  Coqtop.start_coq custom_coqc args

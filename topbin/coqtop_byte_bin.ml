@@ -56,4 +56,4 @@ let drop_setup () =
 (* Main coqtop initialization *)
 let _ =
   drop_setup ();
-  Coqtop.(start_coq coqtop_toplevel)
+  Coqtop.(start_coq coqtop_toplevel (List.tl (Array.to_list Sys.argv)))

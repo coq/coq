@@ -27,4 +27,4 @@ let () =
       | "--kind=tactic" -> WTactic.init_stdout, WTactic.main_loop
       | s -> error s ()
     in
-    WorkerLoop.start ~init ~loop
+    WorkerLoop.start ~init ~loop (List.tl (Array.to_list Sys.argv))
