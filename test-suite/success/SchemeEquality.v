@@ -322,6 +322,6 @@ Inductive bintree :=
 
 Scheme Equality for bintree.
 
-Check eq_refl : (if bintree_eq_dec (Node (Node Leaf Leaf) Leaf) (Node (Node Leaf Leaf) Leaf) then 0 else 1) = 0.
+Check eq_refl : bintree_eq_dec (Node (Node Leaf Leaf) Leaf) (Node (Node Leaf Leaf) Leaf) = left eq_refl.
 
 End ComputableDecidableEquality.
