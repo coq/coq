@@ -54,15 +54,15 @@ Section Lists.
 
   Definition tl (l:list A) :=
     match l with
-      | [] => nil
-      | a :: m => m
+      | [] => []
+      | _ :: l' => l'
     end.
 
   (** The [In] predicate *)
   Fixpoint In (a:A) (l:list A) : Prop :=
     match l with
       | [] => False
-      | b :: m => b = a \/ In a m
+      | b :: l' => b = a \/ In a l'
     end.
 
 End Lists.
@@ -97,7 +97,7 @@ Section Facts.
     - now intros [= -> ->].
   Qed.
 
-  Lemma hd_error_some_nil l (a:A) : hd_error l = Some a -> l <> nil.
+  Lemma hd_error_some_nil l (a:A) : hd_error l = Some a -> l <> [].
   Proof. unfold hd_error. destruct l; now discriminate. Qed.
 
   Theorem length_zero_iff_nil (l : list A):
@@ -173,7 +173,7 @@ Section Facts.
   Qed.
 
   Lemma app_eq_cons x y z (a : A):
-    x ++ y = a :: z -> (x = nil /\ y = a :: z) \/ exists x', x = a :: x' /\ z = x' ++ y.
+    x ++ y = a :: z -> (x = [] /\ y = a :: z) \/ exists x', x = a :: x' /\ z = x' ++ y.
   Proof.
     intro H. destruct x as [|b x].
     - now left.
@@ -222,12 +222,22 @@ Section Facts.
 
   (** Compatibility with other operations *)
 
+  Lemma length_nil : length (@nil A) = 0.
+  Proof.
+    reflexivity.
+  Qed.
+
+  Lemma length_cons : forall (l : list A) a, length (a :: l) = S (length l).
+  Proof.
+    reflexivity.
+  Qed.
+
   Lemma length_app : forall l l' : list A, length (l++l') = length l + length l'.
   Proof.
     intro l; induction l; simpl; auto.
   Qed.
 
-  Lemma last_length : forall (l : list A) a, length (l ++ a :: nil) = S (length l).
+  Lemma last_length : forall (l : list A) a, length (l ++ [a]) = S (length l).
   Proof.
     intros ; rewrite length_app ; simpl.
     rewrite Nat.add_succ_r, Nat.add_0_r; reflexivity.
@@ -395,7 +405,7 @@ Section Elts.
       | O, x :: l' => x
       | O, [] => default
       | S m, [] => default
-      | S m, x :: t => nth m t default
+      | S m, x :: l' => nth m l' default
     end.
 
   Fixpoint nth_ok (n:nat) (l:list A) (default:A) {struct l} : bool :=
@@ -403,7 +413,7 @@ Section Elts.
       | O, x :: l' => true
       | O, [] => false
       | S m, [] => false
-      | S m, x :: t => nth_ok m t default
+      | S m, x :: l' => nth_ok m l' default
     end.
 
   Lemma nth_in_or_default :
@@ -426,7 +436,7 @@ Section Elts.
   Fixpoint nth_error (l:list A) (n:nat) {struct n} : option A :=
     match n, l with
       | O, x :: _ => Some x
-      | S n, _ :: l => nth_error l n
+      | S n, _ :: l' => nth_error l' n
       | _, _ => None
     end.
 
@@ -632,12 +642,12 @@ Section Elts.
     : nth_error l n
       = match n, l with
         | O, x :: _ => Some x
-        | S n, _ :: l => nth_error l n
+        | S n, _ :: l' => nth_error l' n
         | _, _ => None
         end.
   Proof. destruct n; reflexivity. Qed.
 
-  Lemma nth_error_nil n : nth_error nil n = None.
+  Lemma nth_error_nil n : nth_error [] n = None.
   Proof. destruct n; reflexivity. Qed.
 
   Lemma nth_error_cons x xs n
@@ -648,7 +658,7 @@ Section Elts.
         end.
   Proof. apply unfold_nth_error. Qed.
 
-  Lemma nth_error_O l
+  Lemma nth_error_0 l
     : nth_error l O = hd_error l.
   Proof. destruct l; reflexivity. Qed.
 
@@ -700,7 +710,7 @@ Section Elts.
   match l with
     | [] => d
     | [a] => a
-    | a :: l => last l d
+    | a :: l' => last l' d
   end.
 
   Lemma last_last : forall l a d, last (l ++ [a]) d = a.
@@ -716,7 +726,7 @@ Section Elts.
     match l with
       | [] =>  []
       | [a] => []
-      | a :: l => a :: removelast l
+      | a :: l' => a :: removelast l'
     end.
 
   Lemma app_removelast_last :
@@ -767,7 +777,7 @@ Section Elts.
   Fixpoint remove (x : A) (l : list A) : list A :=
     match l with
       | [] => []
-      | y::tl => if (eq_dec x y) then remove x tl else y::(remove x tl)
+      | y::tl => if (eq_dec x y) then remove x tl else y :: remove x tl
     end.
 
   Lemma remove_cons : forall x l, remove x (x :: l) = remove x l.
@@ -1058,7 +1068,7 @@ Section ListOps.
   Fixpoint rev_append (l l': list A) : list A :=
     match l with
       | [] => l'
-      | a::l => rev_append l (a::l')
+      | a :: l => rev_append l (a::l')
     end.
 
   Definition rev' l : list A := rev_append l [].
@@ -1080,12 +1090,12 @@ Section ListOps.
   (*************************)
 
   Fixpoint concat (l : list (list A)) : list A :=
-  match l with
-  | nil => nil
-  | cons x l => x ++ concat l
-  end.
+    match l with
+     | [] => []
+     | x :: l => x ++ concat l
+    end.
 
-  Lemma concat_nil : concat nil = nil.
+  Lemma concat_nil : concat [] = [].
   Proof.
   reflexivity.
   Qed.
@@ -1153,7 +1163,7 @@ Section Map.
   Fixpoint map (l:list A) : list B :=
     match l with
       | [] => []
-      | a :: t => (f a) :: (map t)
+      | a :: l => (f a) :: (map l)
     end.
 
   Lemma map_cons (x:A)(l:list A) : map (x::l) = (f x) :: (map l).
@@ -1274,11 +1284,10 @@ Section FlatMap.
 
     (** [flat_map] *)
 
-    Definition flat_map :=
-      fix flat_map (l:list A) : list B :=
+    Fixpoint flat_map (l:list A) : list B :=
       match l with
-        | nil => nil
-        | cons x t => (f x)++(flat_map t)
+        | [] => []
+        | x :: l => f x ++ flat_map l
       end.
 
     Lemma flat_map_concat_map l :
@@ -1389,8 +1398,8 @@ Section Fold_Left_Recursor.
 
   Fixpoint fold_left (l:list B) (a0:A) : A :=
     match l with
-      | nil => a0
-      | cons b t => fold_left t (f a0 b)
+      | [] => a0
+      | b :: l => fold_left l (f a0 b)
     end.
 
   Lemma fold_left_app : forall (l l':list B)(i:A),
@@ -1401,7 +1410,7 @@ Section Fold_Left_Recursor.
 
 End Fold_Left_Recursor.
 
-Lemma fold_left_S_O :
+Lemma fold_left_S_0 :
   forall (A:Type)(l:list A), fold_left (fun x _ => S x) l 0 = length l.
 Proof.
   intros A l. induction l as [|? ? IH] using rev_ind; [reflexivity|].
@@ -1419,8 +1428,8 @@ Section Fold_Right_Recursor.
 
   Fixpoint fold_right (l:list B) : A :=
     match l with
-      | nil => a0
-      | cons b t => f b (fold_right t)
+      | [] => a0
+      | b :: l => f b (fold_right l)
     end.
 
 End Fold_Right_Recursor.
@@ -1463,10 +1472,10 @@ End Fold_Right_Recursor.
   Fixpoint list_power (A B:Type)(l:list A) (l':list B) :
     list (list (A * B)) :=
     match l with
-      | nil => cons nil nil
-      | cons x t =>
-        flat_map (fun f:list (A * B) => map (fun y:B => cons (x, y) f) l')
-        (list_power t l')
+      | [] => [[]]
+      | x :: l =>
+        flat_map (fun f:list (A * B) => map (fun y:B => (x, y) :: f) l')
+        (list_power l l')
     end.
 
 
@@ -1483,8 +1492,8 @@ End Fold_Right_Recursor.
 
     Fixpoint existsb (l:list A) : bool :=
       match l with
-      | nil => false
-      | a::l => f a || existsb l
+        | [] => false
+        | a :: l => f a || existsb l
       end.
 
     Lemma existsb_exists :
@@ -1523,7 +1532,7 @@ End Fold_Right_Recursor.
 
     Fixpoint forallb (l:list A) : bool :=
       match l with
-      | nil => true
+      | [] => true
       | a::l => f a && forallb l
       end.
 
@@ -1551,7 +1560,7 @@ End Fold_Right_Recursor.
 
     Fixpoint filter (l:list A) : list A :=
       match l with
-      | nil => nil
+      | [] => []
       | x :: l => if f x then x::(filter l) else filter l
       end.
 
@@ -1597,7 +1606,7 @@ End Fold_Right_Recursor.
 
     Fixpoint find (l:list A) : option A :=
       match l with
-      | nil => None
+      | [] => None
       | x :: tl => if f x then Some x else find tl
       end.
 
@@ -1620,7 +1629,7 @@ End Fold_Right_Recursor.
 
     Fixpoint partition (l:list A) : list A * list A :=
       match l with
-      | nil => (nil, nil)
+      | [] => ([], [])
       | x :: tl => let (g,d) := partition tl in
                    if f x then (x::g,d) else (g,x::d)
       end.
@@ -1836,7 +1845,7 @@ End Fold_Right_Recursor.
     Fixpoint combine (l : list A) (l' : list B) : list (A*B) :=
       match l,l' with
       | x::tl, y::tl' => (x,y)::(combine tl tl')
-      | _, _ => nil
+      | _, _ => []
       end.
 
     Lemma split_combine : forall (l: list (A*B)),
@@ -1905,8 +1914,8 @@ End Fold_Right_Recursor.
     Fixpoint list_prod (l:list A) (l':list B) :
       list (A * B) :=
       match l with
-      | nil => nil
-      | cons x t => (map (fun y:B => (x, y)) l')++(list_prod t l')
+      | [] => []
+      | x :: t => (map (fun y:B => (x, y)) l')++(list_prod t l')
       end.
 
     Lemma in_prod_aux :
@@ -1995,7 +2004,7 @@ Section length_order.
     intros. now apply Nat.succ_le_mono.
   Qed.
 
-  Lemma lel_nil : forall l':list A, lel l' nil -> nil = l'.
+  Lemma lel_nil : forall l':list A, lel l' [] -> [] = l'.
   Proof.
     intro l'; elim l'; [now intros|].
     now intros a' y H H0 %Nat.nle_succ_0.
@@ -2019,12 +2028,12 @@ Section SetIncl.
   #[local]
   Hint Unfold incl : core.
 
-  Lemma incl_nil_l : forall l, incl nil l.
+  Lemma incl_nil_l : forall l, incl [] l.
   Proof.
     intros l a Hin; inversion Hin.
   Qed.
 
-  Lemma incl_l_nil : forall l, incl l nil -> l = nil.
+  Lemma incl_l_nil : forall l, incl l [] -> l = [].
   Proof.
     intro l; destruct l as [|a l]; intros Hincl.
     - reflexivity.
@@ -2141,11 +2150,11 @@ Section Cutting.
 
   Variable A : Type.
 
-  Fixpoint firstn (n:nat)(l:list A) : list A :=
+  Fixpoint firstn (n:nat) (l:list A) : list A :=
     match n with
-      | 0 => nil
+      | 0 => []
       | S n => match l with
-                 | nil => nil
+                 | [] => []
                  | a::l => a::(firstn n l)
                end
     end.
@@ -2182,7 +2191,7 @@ Section Cutting.
       * simpl. intro H. f_equal. apply iHk. now apply Nat.succ_le_mono.
   Qed.
 
-  Lemma firstn_O l: firstn 0 l = [].
+  Lemma firstn_0 l: firstn 0 l = [].
   Proof. now simpl. Qed.
 
   Lemma firstn_le_length n: forall l:list A, length (firstn n l) <= n.
@@ -2240,7 +2249,7 @@ Section Cutting.
     match n with
       | 0 => l
       | S n => match l with
-                 | nil => nil
+                 | [] => []
                  | a::l => skipn n l
                end
     end.
@@ -2258,7 +2267,7 @@ Section Cutting.
   Qed.
 
   Lemma hd_error_skipn n l : hd_error (skipn n l) = nth_error l n.
-  Proof. rewrite <-nth_error_O, nth_error_skipn, Nat.add_0_r; trivial. Qed.
+  Proof. rewrite <-nth_error_0, nth_error_skipn, Nat.add_0_r; trivial. Qed.
 
   Lemma firstn_skipn_comm : forall m n l,
   firstn m (skipn n l) = skipn n (firstn (n + m) l).
@@ -2268,7 +2277,7 @@ Section Cutting.
   skipn m (firstn n l) = firstn (n - m) (skipn m l).
   Proof. now intro m; induction m; intros [] []; simpl; rewrite ?firstn_nil. Qed.
 
-  Lemma skipn_O : forall l, skipn 0 l = l.
+  Lemma skipn_0 : forall l, skipn 0 l = l.
   Proof. reflexivity. Qed.
 
   Lemma skipn_nil : forall n, skipn n ([] : list A) = [].
@@ -2277,7 +2286,7 @@ Section Cutting.
   Lemma skipn_cons n a l: skipn (S n) (a::l) = skipn n l.
   Proof. reflexivity. Qed.
 
-  Lemma skipn_all : forall l, skipn (length l) l = nil.
+  Lemma skipn_all : forall l, skipn (length l) l = [].
   Proof. now intro l; induction l. Qed.
 
   Lemma skipn_all2 n: forall l, length l <= n -> skipn n l = [].
@@ -2286,7 +2295,7 @@ Section Cutting.
     now rewrite skipn_firstn_comm, L.
   Qed.
 
-  Lemma skipn_all_iff n l : length l <= n <-> skipn n l = nil.
+  Lemma skipn_all_iff n l : length l <= n <-> skipn n l = [].
   Proof.
     split; [apply skipn_all2|].
     revert l; induction n as [|n IH]; intros l.
@@ -2526,7 +2535,7 @@ Section ReDun.
   Variable A : Type.
 
   Inductive NoDup : list A -> Prop :=
-    | NoDup_nil : NoDup nil
+    | NoDup_nil : NoDup []
     | NoDup_cons : forall x l, ~ In x l -> NoDup l -> NoDup (x::l).
 
   Lemma NoDup_Add a l l' : Add a l l' -> (NoDup l' <-> NoDup l /\ ~In a l).
@@ -2805,7 +2814,7 @@ Section NatSeq.
 
   Fixpoint seq (start len:nat) : list nat :=
     match len with
-      | 0 => nil
+      | 0 => []
       | S len => start :: seq (S start) len
     end.
 
@@ -2901,9 +2910,9 @@ Section Compare.
 
   Fixpoint list_compare (xs ys : list A) : comparison :=
     match xs, ys with
-    | nil   , nil    => Eq
-    | nil   , _      => Lt
-    | _     , nil    => Gt
+    | []    , []     => Eq
+    | []    , _      => Lt
+    | _     , []     => Gt
     | x :: xs, y :: ys =>
         match cmp x y with
         | Eq => list_compare xs ys
@@ -3018,8 +3027,8 @@ Section Compare.
     Lemma list_compareP (xs ys : list A) :
       ListCompareSpec xs ys (list_compare xs ys).
     Proof.
-      assert (xs = nil ++ xs) as Hxs by reflexivity.
-      assert (ys = nil ++ ys) as Hys by reflexivity.
+      assert (xs = [] ++ xs) as Hxs by reflexivity.
+      assert (ys = [] ++ ys) as Hys by reflexivity.
       revert Hxs Hys.
       generalize (@nil A) as prefix.
       generalize ys at 2 4.
@@ -3127,7 +3136,7 @@ Section Exists_Forall.
         + assumption.
     Qed.
 
-    Lemma Exists_nil : Exists nil <-> False.
+    Lemma Exists_nil : Exists [] <-> False.
     Proof. split; inversion 1. Qed.
 
     Lemma Exists_cons x l:
@@ -3176,7 +3185,7 @@ Section Exists_Forall.
     Qed.
 
     Inductive Forall : list A -> Prop :=
-      | Forall_nil : Forall nil
+      | Forall_nil : Forall []
       | Forall_cons : forall x l, P x -> Forall l -> Forall (x::l).
 
     #[local]
@@ -3448,7 +3457,7 @@ Proof.
 Qed.
 
 Lemma concat_nil_Forall A : forall (l : list (list A)),
-  concat l = nil <-> Forall (fun x => x = nil) l.
+  concat l = [] <-> Forall (fun x => x = []) l.
 Proof.
   intro l; induction l as [|a l IHl]; simpl; split; intros Hc; auto.
   - apply app_eq_nil in Hc.
@@ -3489,7 +3498,7 @@ Section Forall2.
 
   (* NB: when deprecation phase ends, instead of removing prove "Reflexive R -> Reflexive Forall2"
      and close #6131 *)
-  #[deprecated(since = "8.18", note = "Use Forall2_nil instead.")]
+  #[deprecated(since = "8.18", use = Forall2_nil)]
   Theorem Forall2_refl : Forall2 [] [].
   Proof. intros; apply Forall2_nil. Qed.
 
@@ -3579,7 +3588,7 @@ Section ForallPairs.
      of elements of a list, but now the order of elements matters. *)
 
   Inductive ForallOrdPairs : list A -> Prop :=
-    | FOP_nil : ForallOrdPairs nil
+    | FOP_nil : ForallOrdPairs []
     | FOP_cons : forall a l,
       Forall (R a) l -> ForallOrdPairs l -> ForallOrdPairs (a::l).
 
@@ -3683,7 +3692,7 @@ Section Repeat.
   Qed.
 
   Lemma repeat_cons n a :
-    a :: repeat a n = repeat a n ++ (a :: nil).
+    a :: repeat a n = repeat a n ++ [a].
   Proof.
     induction n as [|n IHn]; simpl.
     - reflexivity.
@@ -3765,7 +3774,7 @@ Section Repeat.
     apply Hocc, count_occ_not_In in Hneq; intuition.
   Qed.
 
-  Lemma count_occ_sgt l x : l = x :: nil <->
+  Lemma count_occ_sgt l x : l = [x] <->
     count_occ decA l x = 1 /\ forall y, y <> x -> count_occ decA l y = 0.
   Proof.
     split.
@@ -3893,7 +3902,7 @@ Proof.
   - now rewrite Forall_cons_iff, <- IHl, Nat.max_lub_iff.
 Qed.
 
-Lemma list_max_lt : forall l n, l <> nil ->
+Lemma list_max_lt : forall l n, l <> [] ->
   list_max l < n <-> Forall (fun k => k < n) l.
 Proof.
 intro l; induction l as [|a l IHl]; simpl; intros n Hnil; split; intros H; intuition.
@@ -3914,8 +3923,8 @@ Qed.
 
 Ltac is_list_constr c :=
  match c with
-  | nil => idtac
-  | (_::_) => idtac
+  | [] => idtac
+  | _ :: _ => idtac
   | _ => fail
  end.
 
@@ -3963,9 +3972,9 @@ Notation tail := tl (only parsing).
 Notation head := hd_error (only parsing).
 Notation head_nil := hd_error_nil (only parsing).
 Notation head_cons := hd_error_cons (only parsing).
-#[deprecated(since = "8.18", note = "Use app_assoc instead.")]
+#[deprecated(since = "8.18", use = app_assoc)]
 Notation ass_app := app_assoc (only parsing).
-#[deprecated(since = "8.18", note = "Use app_assoc instead.")]
+#[deprecated(since = "8.18", use = app_assoc)]
 Notation app_ass := app_assoc_reverse_deprecated (only parsing).
 Notation In_split := in_split (only parsing).
 Notation In_rev := in_rev (only parsing).
@@ -3975,43 +3984,46 @@ Notation rev_acc := rev_append (only parsing).
 Notation rev_acc_rev := rev_append_rev (only parsing).
 Notation AllS := Forall (only parsing). (* was formerly in TheoryList *)
 
-#[deprecated(since = "8.18", note = "Use app_nil_r instead.")]
+#[deprecated(since = "8.18", use = app_nil_r)]
 Notation app_nil_end := app_nil_end_deprecated (only parsing).
-#[deprecated(since = "8.18", note = "Use app_assoc instead.")]
+#[deprecated(since = "8.18", use = app_assoc)]
 Notation app_assoc_reverse := app_assoc_reverse_deprecated (only parsing).
-#[deprecated(since = "8.20", note = "Use nth_error_cons_succ instead.")]
+#[deprecated(since = "8.20", use = nth_error_cons_succ)]
 Notation nth_error_cons_S := nth_error_cons_succ.
 
 #[global]
 Hint Resolve app_nil_end_deprecated : datatypes.
 
-#[deprecated(since = "8.20", note = "Use length_app instead.")]
+#[deprecated(since = "8.20", use = length_app)]
 Notation app_length := length_app (only parsing).
-#[deprecated(since = "8.20", note = "Use length_rev instead.")]
+#[deprecated(since = "8.20", use = length_rev)]
 Notation rev_length := length_rev (only parsing).
-#[deprecated(since = "8.20", note = "Use length_map instead.")]
+#[deprecated(since = "8.20", use = length_map)]
 Notation map_length := length_map (only parsing).
-#[deprecated(since = "8.20", note = "Use fold_left_S_O instead.")]
-Notation fold_left_length := fold_left_S_O (only parsing).
-#[deprecated(since = "8.20", note = "Use length_fst_split instead.")]
+#[deprecated(since = "8.20", use = fold_left_S_0)]
+Notation fold_left_length := fold_left_S_0 (only parsing).
+#[deprecated(since = "8.20", use = length_fst_split)]
 Notation split_length_l := length_fst_split (only parsing).
-#[deprecated(since = "8.20", note = "Use length_snd_split instead.")]
+#[deprecated(since = "8.20", use = length_snd_split)]
 Notation split_length_r := length_snd_split (only parsing).
-#[deprecated(since = "8.20", note = "Use length_combine instead.")]
+#[deprecated(since = "8.20", use = length_combine)]
 Notation combine_length := length_combine (only parsing).
-#[deprecated(since = "8.20", note = "Use length_prod instead.")]
+#[deprecated(since = "8.20", use = length_prod)]
 Notation prod_length := length_prod (only parsing).
-#[deprecated(since = "8.20", note = "Use length_firstn instead.")]
+#[deprecated(since = "8.20", use = length_firstn)]
 Notation firstn_length := length_firstn (only parsing).
-#[deprecated(since = "8.20", note = "Use length_skipn instead.")]
+#[deprecated(since = "8.20", use = length_skipn)]
 Notation skipn_length := length_skipn (only parsing).
-#[deprecated(since = "8.20", note = "Use length_seq instead.")]
+#[deprecated(since = "8.20", use = length_seq)]
 Notation seq_length := length_seq (only parsing).
-#[deprecated(since = "8.20", note = "Use length_concat instead.")]
+#[deprecated(since = "8.20", use = length_concat)]
 Notation concat_length := length_concat (only parsing).
-#[deprecated(since = "8.20", note = "Use length_flat_map instead.")]
+#[deprecated(since = "8.20", use = length_flat_map)]
 Notation flat_map_length := length_flat_map (only parsing).
-#[deprecated(since = "8.20", note = "Use length_list_power instead.")]
+#[deprecated(since = "8.20", use = length_list_power)]
+Notation nth_error_O := nth_error_0 (only parsing).
+Notation firstn_O := firstn_0 (only parsing).
+Notation skipn_O := skipn_0 (only parsing).
 Notation list_power_length := length_list_power (only parsing).
 (* end hide *)
 
