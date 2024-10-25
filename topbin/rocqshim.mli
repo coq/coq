@@ -8,19 +8,22 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** [findlib_resolve ~file ~package ~plugin_name] tries to locate
-    a [.cmxs] for a given [package.plugin_name].
+type worker = {
+  package : string;
+  basename : string;
+}
 
-    If a [META] file for [package] is found, it will try to use it to resolve
-    the path to the [.cmxs], and return a relative path to both. If not, it
-    errors. *)
-val findlib_resolve
-  :  file:string
-  -> package:string
-  -> plugin_name:string list
-  -> string * string
+(** Find the executable for the given worker. [init] must have been called.
+    [byte] defaults to whether the current executable is byte compiled. *)
+val get_worker_path : worker -> string
 
-module Internal : sig
-  (** Call Loadpath.get_worker_path instead *)
-  val get_worker_path : unit -> string
-end
+type opts = { debug_shim : bool }
+
+(** Initialize environment and search paths, returning the arguments
+    not consumed to produce the [opts]. *)
+val init : string list -> opts * string list
+
+(** On windows [Unix.execv] creates a new process and exits this one.
+    This confuses dune into thinking we are done,
+    so instead we create_process and wait for it. *)
+val exec_or_create_process : string -> string array -> 'a

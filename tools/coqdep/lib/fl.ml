@@ -114,3 +114,15 @@ let findlib_resolve ~file ~package ~plugin_name =
     normalize_path (Filename.concat meta_dir cmxs_file)
   in
   (meta_file, cmxs_file)
+
+module Internal = struct
+  let get_worker_path () =
+    let top = "coqworker" in
+    let dir = Findlib.package_directory "coq-core" in
+    let exe = if Sys.(os_type = "Win32" || os_type = "Cygwin") then ".exe" else "" in
+    let file = Filename.concat dir (top^exe) in
+    match Sys.getenv_opt "DUNE_SOURCEROOT" with
+    | Some dune when CString.is_prefix dune file ->
+      normalize_path (to_relative_path file)
+    | _ -> normalize_path file
+end
