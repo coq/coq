@@ -1,4 +1,4 @@
 Warning: in file misc/external-deps/file2.v, external file d1 is required
          from root foo.bar and has not been found in the loadpath!
          [module-not-found,filesystem,default]
-misc/external-deps/file2.vo misc/external-deps/file2.glob misc/external-deps/file2.v.beautified misc/external-deps/file2.required_vo: misc/external-deps/file2.v 
+misc/external-deps/file2.vo misc/external-deps/file2.glob misc/external-deps/file2.v.beautified misc/external-deps/file2.required_vo: misc/external-deps/file2.v @COQWORKER@

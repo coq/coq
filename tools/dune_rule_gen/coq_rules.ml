@@ -227,7 +227,7 @@ let module_rule ~(cctx : Context.t) coq_module =
   let deps = cctx.async_deps @ deps in
   (* Build rule *)
   let updir = Path.(to_string (adjust ~lvl (make "."))) in
-  let action = Format.asprintf "(chdir %s (run coqc %s %%{dep:%s}))" updir flags vfile_base in
+  let action = Format.asprintf "(chdir %s (run rocq c %s %%{dep:%s}))" updir flags vfile_base in
   let targets = Coq_module.obj_files ~tname ~rule coq_module in
   let alias = None in
   { Dune_file.Rule.targets; deps; action; alias }

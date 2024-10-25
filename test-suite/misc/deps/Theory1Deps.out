@@ -1,8 +1,8 @@
-Theory1/File1.vo Theory1/File1.glob Theory1/File1.v.beautified Theory1/File1.required_vo: Theory1/File1.v 
-Theory1/File2.vo Theory1/File2.glob Theory1/File2.v.beautified Theory1/File2.required_vo: Theory1/File2.v Theory1/File1.vo
-Theory1/Subtheory1/File1.vo Theory1/Subtheory1/File1.glob Theory1/Subtheory1/File1.v.beautified Theory1/Subtheory1/File1.required_vo: Theory1/Subtheory1/File1.v 
-Theory1/Subtheory1/Subsubtheory1/File1.vo Theory1/Subtheory1/Subsubtheory1/File1.glob Theory1/Subtheory1/Subsubtheory1/File1.v.beautified Theory1/Subtheory1/Subsubtheory1/File1.required_vo: Theory1/Subtheory1/Subsubtheory1/File1.v 
-Theory1/Subtheory1/Subsubtheory2/File1.vo Theory1/Subtheory1/Subsubtheory2/File1.glob Theory1/Subtheory1/Subsubtheory2/File1.v.beautified Theory1/Subtheory1/Subsubtheory2/File1.required_vo: Theory1/Subtheory1/Subsubtheory2/File1.v 
-Theory1/Subtheory2/File1.vo Theory1/Subtheory2/File1.glob Theory1/Subtheory2/File1.v.beautified Theory1/Subtheory2/File1.required_vo: Theory1/Subtheory2/File1.v 
-Theory1/Subtheory2/Subsubtheory1/File1.vo Theory1/Subtheory2/Subsubtheory1/File1.glob Theory1/Subtheory2/Subsubtheory1/File1.v.beautified Theory1/Subtheory2/Subsubtheory1/File1.required_vo: Theory1/Subtheory2/Subsubtheory1/File1.v 
-Theory1/Subtheory2/Subsubtheory2/File1.vo Theory1/Subtheory2/Subsubtheory2/File1.glob Theory1/Subtheory2/Subsubtheory2/File1.v.beautified Theory1/Subtheory2/Subsubtheory2/File1.required_vo: Theory1/Subtheory2/Subsubtheory2/File1.v 
+Theory1/File1.vo Theory1/File1.glob Theory1/File1.v.beautified Theory1/File1.required_vo: Theory1/File1.v @COQWORKER@
+Theory1/File2.vo Theory1/File2.glob Theory1/File2.v.beautified Theory1/File2.required_vo: Theory1/File2.v @COQWORKER@ Theory1/File1.vo
+Theory1/Subtheory1/File1.vo Theory1/Subtheory1/File1.glob Theory1/Subtheory1/File1.v.beautified Theory1/Subtheory1/File1.required_vo: Theory1/Subtheory1/File1.v @COQWORKER@
+Theory1/Subtheory1/Subsubtheory1/File1.vo Theory1/Subtheory1/Subsubtheory1/File1.glob Theory1/Subtheory1/Subsubtheory1/File1.v.beautified Theory1/Subtheory1/Subsubtheory1/File1.required_vo: Theory1/Subtheory1/Subsubtheory1/File1.v @COQWORKER@
+Theory1/Subtheory1/Subsubtheory2/File1.vo Theory1/Subtheory1/Subsubtheory2/File1.glob Theory1/Subtheory1/Subsubtheory2/File1.v.beautified Theory1/Subtheory1/Subsubtheory2/File1.required_vo: Theory1/Subtheory1/Subsubtheory2/File1.v @COQWORKER@
+Theory1/Subtheory2/File1.vo Theory1/Subtheory2/File1.glob Theory1/Subtheory2/File1.v.beautified Theory1/Subtheory2/File1.required_vo: Theory1/Subtheory2/File1.v @COQWORKER@
+Theory1/Subtheory2/Subsubtheory1/File1.vo Theory1/Subtheory2/Subsubtheory1/File1.glob Theory1/Subtheory2/Subsubtheory1/File1.v.beautified Theory1/Subtheory2/Subsubtheory1/File1.required_vo: Theory1/Subtheory2/Subsubtheory1/File1.v @COQWORKER@
+Theory1/Subtheory2/Subsubtheory2/File1.vo Theory1/Subtheory2/Subsubtheory2/File1.glob Theory1/Subtheory2/Subsubtheory2/File1.v.beautified Theory1/Subtheory2/Subsubtheory2/File1.required_vo: Theory1/Subtheory2/Subsubtheory2/File1.v @COQWORKER@
