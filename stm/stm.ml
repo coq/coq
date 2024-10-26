@@ -1487,7 +1487,7 @@ end = struct (* {{{ *)
             PG_compat.close_future_proof ~feedback_id:stop (Future.from_val proof) in
 
           let st = Vernacstate.freeze_full_state () in
-          let opaque = Opaque in
+          let opaque = Vernacexpr.Qed in
           try
             let _pstate =
               stm_qed_delay_proof ~st ~id:stop
@@ -1774,7 +1774,7 @@ let collect_proof keep cur hd brkind id =
    | id :: _ -> Names.Id.to_string id in
  let loc = (snd cur).expr.CAst.loc in
  let is_defined_expr = function
-   | VernacSynPure (VernacEndProof (Proved (Transparent,_))) -> true
+   | VernacSynPure (VernacEndProof (Proved (Defined,_))) -> true
    | _ -> false in
  let is_defined = function
    | _, { expr = e } -> is_defined_expr e.CAst.v.expr
@@ -2141,7 +2141,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                       qed.fproof <- Some (None, ref false); None
                   | VtKeep opaque ->
                     let opaque = match opaque with
-                      | VtKeepOpaque -> Opaque | VtKeepDefined -> Transparent
+                      | VtKeepOpaque -> Vernacexpr.Qed | VtKeepDefined -> Defined
                       | VtKeepAxiom -> assert false
                     in
                     let control, pe = extract_pe x in

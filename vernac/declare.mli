@@ -206,14 +206,14 @@ module Proof : sig
   val save
     : pm:OblState.t
     -> proof:t
-    -> opaque:Vernacexpr.opacity_flag
+    -> opaque:Vernacexpr.proof_opacity
     -> idopt:Names.lident option
     -> OblState.t * GlobRef.t list
 
   (** For proofs known to have [Regular] ending, no need to touch program state. *)
   val save_regular
     : proof:t
-    -> opaque:Vernacexpr.opacity_flag
+    -> opaque:Vernacexpr.proof_opacity
     -> idopt:Names.lident option
     -> GlobRef.t list
 
@@ -291,7 +291,7 @@ module Proof : sig
       instead *)
   type proof_object
 
-  val close_proof : ?warn_incomplete:bool -> opaque:Vernacexpr.opacity_flag -> keep_body_ucst_separate:bool -> t -> proof_object
+  val close_proof : ?warn_incomplete:bool -> opaque:Vernacexpr.proof_opacity -> keep_body_ucst_separate:bool -> t -> proof_object
   val close_future_proof : feedback_id:Stateid.t -> t -> closed_proof_output Future.computation -> proof_object
 
   (** Special cases for delayed proofs, in this case we must provide the

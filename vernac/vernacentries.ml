@@ -907,7 +907,7 @@ let vernac_exact_proof ~lemma ~pm c =
   (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
      called only at the beginning of a proof. *)
   let lemma, status = Declare.Proof.by (Tactics.exact_proof c) lemma in
-  let pm, _ = Declare.Proof.save ~pm ~proof:lemma ~opaque:Opaque ~idopt:None in
+  let pm, _ = Declare.Proof.save ~pm ~proof:lemma ~opaque:Qed ~idopt:None in
   if not status then Feedback.feedback Feedback.AddedAxiom;
   pm
 

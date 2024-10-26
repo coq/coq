@@ -1335,11 +1335,11 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : _ list =
       | Some finfos -> finfos
     in
     match finfos.equation_lemma with
-    | None -> Vernacexpr.Transparent (* non recursive definition *)
+    | None -> Vernacexpr.Defined (* non recursive definition *)
     | Some equation ->
       if Declareops.is_opaque (Global.lookup_constant equation) then
-        Vernacexpr.Opaque
-      else Vernacexpr.Transparent
+        Vernacexpr.Qed
+      else Vernacexpr.Defined
   in
   let body, typ, univs, _hook, sigma0 =
     try
@@ -1489,7 +1489,7 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
           let lemma = fst @@ Declare.Proof.by (proving_tac i) lemma in
           let (_ : _ list) =
             Declare.Proof.save_regular ~proof:lemma
-              ~opaque:Vernacexpr.Transparent ~idopt:None
+              ~opaque:Vernacexpr.Defined ~idopt:None
           in
           let finfo =
             match find_Function_infos (fst f_as_constant) with
@@ -1563,7 +1563,7 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
           in
           let (_ : _ list) =
             Declare.Proof.save_regular ~proof:lemma
-              ~opaque:Vernacexpr.Transparent ~idopt:None
+              ~opaque:Vernacexpr.Defined ~idopt:None
           in
           let finfo =
             match find_Function_infos (fst f_as_constant) with
@@ -2166,7 +2166,7 @@ let build_scheme fas =
   List.iter2
     (fun (princ_id, _, _) (body, types, univs, opaque) ->
       let (_ : Constant.t) =
-        let opaque = if opaque = Vernacexpr.Opaque then true else false in
+        let opaque = if opaque = Vernacexpr.Qed then true else false in
         let def_entry = Declare.definition_entry ~univs ~opaque ?types body in
         Declare.declare_constant ~name:princ_id
           ~kind:Decls.(IsProof Theorem)

@@ -65,12 +65,12 @@ GRAMMAR EXTEND Gram
       | IDENT "Abort" -> { VernacSynPure VernacAbort }
       | IDENT "Abort"; IDENT "All" -> { VernacSynPure VernacAbortAll }
       | IDENT "Admitted" -> { VernacSynPure (VernacEndProof Admitted) }
-      | IDENT "Qed" -> { VernacSynPure (VernacEndProof (Proved (Opaque,None))) }
+      | IDENT "Qed" -> { VernacSynPure (VernacEndProof (Proved (Qed,None))) }
       | IDENT "Save"; id = identref ->
-          { VernacSynPure (VernacEndProof (Proved (Opaque, Some id))) }
-      | IDENT "Defined" -> { VernacSynPure (VernacEndProof (Proved (Transparent,None))) }
+          { VernacSynPure (VernacEndProof (Proved (Qed, Some id))) }
+      | IDENT "Defined" -> { VernacSynPure (VernacEndProof (Proved (Defined,None))) }
       |	IDENT "Defined"; id=identref ->
-          { VernacSynPure (VernacEndProof (Proved (Transparent,Some id))) }
+          { VernacSynPure (VernacEndProof (Proved (Defined,Some id))) }
       | IDENT "Restart" -> { VernacSynPure VernacRestart }
       | IDENT "Undo" -> { VernacSynPure (VernacUndo 1) }
       | IDENT "Undo"; n = natural -> { VernacSynPure (VernacUndo n) }

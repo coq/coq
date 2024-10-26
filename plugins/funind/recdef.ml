@@ -54,7 +54,7 @@ let declare_fun name kind ?univs value =
 
 let defined lemma =
   let (_ : _ list) =
-    Declare.Proof.save_regular ~proof:lemma ~opaque:Vernacexpr.Transparent
+    Declare.Proof.save_regular ~proof:lemma ~opaque:Vernacexpr.Defined
       ~idopt:None
   in
   ()
@@ -1382,11 +1382,11 @@ let is_opaque_constant c =
   let cb = Global.lookup_constant c in
   let open Vernacexpr in
   match cb.Declarations.const_body with
-  | Declarations.OpaqueDef _ -> Opaque
-  | Declarations.Undef _ -> Opaque
-  | Declarations.Def _ -> Transparent
-  | Declarations.Primitive _ -> Opaque
-  | Declarations.Symbol _ -> Opaque
+  | Declarations.OpaqueDef _ -> Vernacexpr.Qed
+  | Declarations.Undef _ -> Vernacexpr.Qed
+  | Declarations.Def _ -> Defined
+  | Declarations.Primitive _ -> Vernacexpr.Qed
+  | Declarations.Symbol _ -> Vernacexpr.Qed
 
 let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
     (gls_type, decompose_and_tac, nb_goal) =
@@ -1568,7 +1568,7 @@ let com_eqn uctx nb_arg eq_name functional_ref f_ref terminate_ref
   let cinfo =
     Declare.CInfo.make ~name:eq_name
       ~typ:(EConstr.of_constr equation_lemma_type)
-      ~opaque:(Some (opacity == Opaque)) ()
+      ~opaque:(Some (opacity == Qed)) ()
   in
   let lemma = Declare.Proof.start ~cinfo evd ~info in
   let lemma =

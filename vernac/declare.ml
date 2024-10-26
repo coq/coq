@@ -2071,14 +2071,14 @@ let set_proof_opacity ending kind cinfo opaque_ending =
   let idl = List.filter_map (function CInfo.{ name; opaque = None } -> Some name | _ -> None) cinfo in
   let ending = CEphemeron.default ending Proof_ending.Regular in
   match kind, opaque_ending with
-  | Decls.IsDefinition d, Vernacexpr.Opaque ->
+  | Decls.IsDefinition d, Vernacexpr.Qed ->
     (* A definition ended with Qed: warn if there is no attribute *)
     (match d, ending, idl with
      | (Definition | Fixpoint | CoFixpoint), Proof_ending.Regular, id::_ -> warn_use_sealed (id, true)
      | _ -> ()); true
-  | IsDefinition _, Vernacexpr.Transparent -> false
-  | IsProof _, Vernacexpr.Opaque -> true
-  | IsProof _, Vernacexpr.Transparent -> false
+  | IsDefinition _, Vernacexpr.Defined -> false
+  | IsProof _, Vernacexpr.Qed -> true
+  | IsProof _, Vernacexpr.Defined -> false
   | (Decls.IsPrimitive | IsSymbol | IsAssumption _), _ -> false (* Irrelevant *)
 
 let return_proof p = (prepare_proof p : closed_proof_output)
@@ -2115,7 +2115,7 @@ let build_constant_by_tactic ~name ?warn_incomplete ~sigma ~sign ~poly (typ : EC
   let pinfo = Proof_info.make ~cinfo ~info () in
   let pf = start_proof_core ~name ~pinfo sigma [Some sign, typ] in
   let pf, status = by tac pf in
-  let proof = close_proof ?warn_incomplete ~keep_body_ucst_separate:false ~opaque:Vernacexpr.Transparent pf in
+  let proof = close_proof ?warn_incomplete ~keep_body_ucst_separate:false ~opaque:Vernacexpr.Defined pf in
   let entries = process_proof ~info ~cinfo proof.proof_object in
   let { Proof.sigma } = Proof.data pf.proof in
   let sigma = Evd.set_universe_context sigma (ustate_of_proof proof.proof_object) in
