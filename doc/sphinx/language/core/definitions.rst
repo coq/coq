@@ -1,5 +1,22 @@
-Definitions
-===========
+Definitions and theorems
+========================
+
+Definitions associate a specified term with a given name. The name can later
+be replaced with its definition through :term:`δ-reduction <delta-reduction>`.
+Definitions can be local (defined with :g:`let`) or global
+(e.g. defined with :cmd:`Definition` and related forms such as :cmd:`Fixpoint`
+and :cmd:`CoFixpoint`).
+
+On its side, a theorem is a statement with a proof. One can view
+the name of a theorem as a way to abbreviate the given proof, in the
+same way as the name of a definition abbreviates a term. That is, in
+the case of definitions (and related forms such as :cmd:`Fixpoint` or
+:cmd:`CoFixpoint`), the term is the body of the definition and the
+type is the type of the body. In the case of a theorem, lemma,
+corollary, etc. the term is the proof and the type is the statement.
+
+Moreover, definitions can be local (defined with :g:`let`) or global
+(defined at top-level).
 
 .. index:: let ... := ... (term)
 
@@ -66,10 +83,7 @@ If a scope is :ref:`bound <LocalInterpretationRulesForNotations>` to
 Top-level definitions
 ---------------------
 
-Definitions extend the global environment by associating names to terms.
-A definition can be seen as a way to give a meaning to a name or as a
-way to abbreviate a term. In any case, the name can later be replaced at
-any time by its definition.
+Top-level definitions extend the global environment by associating names with terms.
 
 The operation of unfolding a name into its definition is called
 :term:`delta-reduction`.
@@ -106,8 +120,7 @@ Section :ref:`typing-rules`.
 
    If :n:`@term` is omitted, :n:`@type` is required and Rocq enters proof mode.
    This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
-   In this case, the proof should be terminated with :cmd:`Defined` in order to define a :term:`constant`
-   for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.
+   In this case, the proof should normally be terminated with :cmd:`Defined`. See :ref:`proof-editing-mode`.
 
    The attributes :attr:`local`, :attr:`universes(polymorphic)`,
    :attr:`program` (see :ref:`program_definition`), :attr:`canonical`,
@@ -125,10 +138,10 @@ Section :ref:`typing-rules`.
 
 .. _Assertions:
 
-Assertions and proofs
----------------------
+Theorems and proofs
+-------------------
 
-An assertion states a proposition (or a type) for which the proof (or an
+Assertions, such as :cmd:`Theorem`s, state a proposition (or a type) for which the proof (or an
 inhabitant of the type) is interactively built using :term:`tactics <tactic>`.
 Assertions cause Rocq to enter :term:`proof mode` (see :ref:`proofhandling`).
 Common tactics are described in the :ref:`writing-proofs` chapter.
@@ -198,7 +211,12 @@ tactics (see :ref:`writing-proofs`). The user may also enter
 commands to manage the proof mode (see :ref:`proofhandling`).
 
 When the proof is complete, use the :cmd:`Qed` command so the kernel verifies
-the proof and adds it to the global environment.
+the proof and adds it to the global environment. By default, proofs
+that end with :cmd:`Qed` are :term:`opaque`, that is that their content cannot
+be unfolded (see :ref:`applyingconversionrules`), thus realizing
+*proof irrelevance*, that is that only provability matters,
+and not the exact proof. Proofs can be made unfoldable, as
+definitions are, by ending the proof with :cmd:`Defined` in place of :cmd:`Qed`.
 
 .. note::
 
@@ -210,11 +228,6 @@ the proof and adds it to the global environment.
       command is understood as if it would have been given before the
       statements still to be proved. Nonetheless, this practice is discouraged
       and may stop working in future versions.
-
-   #. Proofs ended by :cmd:`Qed` are declared :term:`opaque`. Their content cannot be
-      unfolded (see :ref:`applyingconversionrules`), thus
-      realizing some form of *proof-irrelevance*.
-      Proofs that end with :cmd:`Defined` can be unfolded.
 
    #. :cmd:`Proof` is recommended but can currently be omitted. On the opposite
       side, :cmd:`Qed` (or :cmd:`Defined`) is mandatory to validate a proof.
