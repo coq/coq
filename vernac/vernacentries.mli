@@ -85,7 +85,7 @@ type t = {
   using : Vernacexpr.section_subset_expr option;
   reversible : bool;
   clearbody: bool option;
-  opacity: bool option;
+  opacity: Attributes.opacity option;
 }
 
 val def_attributes : t Attributes.attribute

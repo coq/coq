@@ -265,11 +265,16 @@ let locality =
     ("global", single_key_parser ~name ~key:"global" false);
   ]
 
+type opacity =
+  | Sealed
+  | Defined of Conv_oracle.level
+
 let opacity =
   let name = "Opacity" in
   attribute_of_list [
-    ("sealed", single_key_parser ~name ~key:"sealed" true);
-    ("defined", single_key_parser ~name ~key:"defined" false);
+    ("sealed", single_key_parser ~name ~key:"sealed" Sealed);
+    ("opaque", single_key_parser ~name ~key:"opaque" (Defined Conv_oracle.Opaque));
+    ("transparent", single_key_parser ~name ~key:"transparent" (Defined Conv_oracle.transparent));
   ]
 
 let ukey = "universes"

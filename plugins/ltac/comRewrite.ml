@@ -35,7 +35,7 @@ let init_setoid () =
 type rewrite_attributes = {
   polymorphic : bool;
   locality : Hints.hint_locality;
-  opaque : bool option;
+  opaque : Attributes.opacity option;
 }
 
 let rewrite_attributes =
@@ -173,7 +173,7 @@ let declare_projection name instance_id r =
   let types = Some (it_mkProd_or_LetIn typ ctx) in
   let kind = Decls.(IsDefinition Definition) in
   let impargs, udecl = [], UState.default_univ_decl in
-  let cinfo = Declare.CInfo.make ~name ~impargs ~typ:types ~opaque:(Some false) () in
+  let cinfo = Declare.CInfo.make ~name ~impargs ~typ:types ~opaque:(Some (Attributes.Defined Conv_oracle.transparent)) () in
   let info = Declare.Info.make ~kind ~udecl ~poly () in
   let _r : GlobRef.t =
     Declare.declare_definition ~cinfo ~info ~body sigma

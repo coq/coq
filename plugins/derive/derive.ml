@@ -71,7 +71,7 @@ let start_deriving ~atts bl suchthat name : Declare.Proof.t =
         let name = get_id d in
         let impargs = Constrintern.implicits_of_decl_in_internalization_env name impls_env in
         let impargs = List.map CAst.make (List.map extract_manual impargs) in
-        make ~name ~typ:() ~impargs ~opaque:(Some false) ()) ctx' @
+        make ~name ~typ:() ~impargs ~opaque:(Some (Attributes.Defined Conv_oracle.transparent)) ()) ctx' @
     [make ~name ~typ:() ~impargs ~opaque ()] in
   let lemma = Declare.Proof.start_derive ~name ~info ~cinfo goals in
   Declare.Proof.map lemma ~f:(fun p ->

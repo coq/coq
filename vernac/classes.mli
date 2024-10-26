@@ -26,7 +26,7 @@ val existing_instance : ?loc:Loc.t -> Hints.hint_locality -> GlobRef.t -> Vernac
 
 val new_instance_interactive
   : locality:Hints.hint_locality
-  -> opaque:bool option
+  -> opaque:Attributes.opacity option
   -> poly:bool
   -> name_decl
   -> local_binder_expr list
@@ -39,7 +39,7 @@ val new_instance_interactive
 
 val new_instance
   : locality:Hints.hint_locality
-  -> opaque:bool option
+  -> opaque:Attributes.opacity option
   -> poly:bool
   -> name_decl
   -> local_binder_expr list
@@ -52,7 +52,7 @@ val new_instance
 val new_instance_program
   : locality:Hints.hint_locality
   -> pm:Declare.OblState.t
-  -> opaque:bool option
+  -> opaque:Attributes.opacity option
   -> poly:bool
   -> name_decl
   -> local_binder_expr list

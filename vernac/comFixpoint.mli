@@ -27,7 +27,7 @@ val do_mutually_recursive
      (* Tell to try the obligation tactic to solve evars *)
   -> ?scope:Locality.definition_scope
      (* Local or Global visibility *)
-  -> ?opaque:bool
+  -> ?opaque:Attributes.opacity
      (* Global opacity attribute if any *)
   -> ?clearbody:bool
      (* Hide body if in sections *)

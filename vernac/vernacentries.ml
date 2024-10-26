@@ -60,7 +60,7 @@ module DefAttributes = struct
     using : Vernacexpr.section_subset_expr option;
     reversible : bool;
     clearbody: bool option;
-    opacity: bool option;
+    opacity: Attributes.opacity option;
   }
   (* [locality] is used for [vernac_definition_hook],
      the raw Local/Global attribute is also used to generate [scope].

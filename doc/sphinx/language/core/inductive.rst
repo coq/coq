@@ -486,8 +486,8 @@ constructions.
 
    This command accepts the :attr:`local`, :attr:`universes(polymorphic)`, :attr:`program`,
    :attr:`bypass_check(universes)`, :attr:`bypass_check(guard)`, :attr:`deprecated`,
-   :attr:`warn` and :attr:`using` attributes, as well as the exclusive attributes :attr:`sealed`
-   and :attr:`defined`. The :attr:`program` attribute is needed
+   :attr:`warn` and :attr:`using` attributes, as well as the exclusive attributes :attr:`sealed`,
+   :attr:`opaque` and :attr:`transparent`. The :attr:`program` attribute is needed
    so that the :n:`wf` or :n:`measure` clauses of :n:`@fixannot` are
    supported. See :ref:`program_fixpoint`.
 

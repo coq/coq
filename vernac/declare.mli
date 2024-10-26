@@ -79,7 +79,7 @@ module CInfo : sig
     -> typ:'constr
     -> ?args:Name.t list
     -> ?impargs:Impargs.manual_implicits
-    -> opaque : bool option
+    -> opaque : Attributes.opacity option
     -> unit
     -> 'constr t
 

@@ -231,7 +231,7 @@ let inversion_scheme ~name ~poly env sigma t sort dep_option inv_op =
 
 let add_inversion_lemma ~poly ~opaque name env sigma t sort dep inv_op =
   let invProof, sigma = inversion_scheme ~name ~poly env sigma t sort dep inv_op in
-  let opaque = Some (Option.default false opaque) in
+  let opaque = Some (Option.default (Attributes.Defined Conv_oracle.transparent) opaque) in
   let cinfo = Declare.CInfo.make ~name ~typ:None ~opaque () in
   let info = Declare.Info.make ~poly ~kind:Decls.(IsProof Lemma) () in
   let _ : Names.GlobRef.t =

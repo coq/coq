@@ -125,8 +125,8 @@ Section :ref:`typing-rules`.
    The attributes :attr:`local`, :attr:`universes(polymorphic)`,
    :attr:`program` (see :ref:`program_definition`), :attr:`canonical`,
    :attr:`bypass_check(universes)`, :attr:`bypass_check(guard)`, :attr:`deprecated`,
-   :attr:`warn` and :attr:`using`, as well as the exclusive attributes :attr:`sealed` and
-   :attr:`defined` are accepted.
+   :attr:`warn` and :attr:`using` as well as the exclusive attributes :attr:`sealed`,
+   :attr:`opaque` and :attr:`transparent`.
 
    .. seealso:: :cmd:`Opaque`, :cmd:`Transparent`, :tacn:`unfold`.
 
@@ -217,7 +217,7 @@ that end with :cmd:`Qed` are sealed, that is that their content cannot
 be unfolded (see :ref:`applyingconversionrules`), thus realizing
 *proof irrelevance*, that is that only provability matters,
 and not the exact proof. Proofs can be made unfoldable, as
-definitions are, with the :attr:`defined` attribute or by ending
+definitions are, by using the :attr:`transparent` attribute or by ending
 the proof with :cmd:`Defined` in place of :cmd:`Qed`. We
 recommend using the attribute.
 
@@ -238,18 +238,34 @@ recommend using the attribute.
    #. One can also use :cmd:`Admitted` in place of :cmd:`Qed` to turn the
       current asserted statement into an axiom and exit proof mode.
 
-Sealing and transparency
-------------------------
+Sealing, transparency and opacity
+---------------------------------
 
-By default, definitions are unfoldable while the proofs of theorems are
-not.  You can change this using these attributes:
+Definitions and theorems can be sealed, transparent or opaque. Sealed
+means that the body of the definition or the proof of the theorem are
+abstract and cannot be unfolded. Transparent means that it can be
+freely unfolded. Opaque means that it is unfoldable for type-checking
+but kept abstract for reduction (see
+e.g. :tacn:`unfold`). Transparency and opacity can be changed at any
+time using the commands :cmd:`Transparent` and :cmd:`Opaque`. On the
+other side, a sealed constant cannot be changed later to transparent
+or opaque, nor a transparent or opaque constant be changed to sealed.
+
+By default, definitions not built by tactics are
+transparent. Definitions built interactively and ended with
+:n:`Defined` are transparent. Theorems built interactively and ended
+with :n:`Qed` are sealed. In the other cases, one of the following
+attribute is expected:
 
 .. attr:: sealed
 
-   Prevents the unfoldability of the definition, so it behaves like an abstract definition.
+.. attr:: transparent
 
-.. attr:: defined
+.. attr:: opaque
 
-   Makes the proof of a theorem unfoldable, as if it were a definition.
-
-   .. seealso:: :cmd:`Opaque`, :cmd:`Transparent`, :tacn:`unfold`.
+Note that these attributes can be added either before the declaration
+(e.g. :n:`#[sealed] Definition @ident := @term`) or before the name of
+the constant (e.g. :n:`Definition #[sealed] @ident := @term`). When
+several constants are declared at once (using :n:`with`), the
+attribute given before the declaration is used as the default for all
+names not themselves prefixed by an attribute.

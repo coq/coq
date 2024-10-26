@@ -385,7 +385,7 @@ type ('constr, 'relevance) fix_data = {
   fiximps  : (Names.Name.t * bool) option CAst.t list list;
   fixntns  : Metasyntax.notation_interpretation_decl list;
   fixwfs   : (rel_declaration * EConstr.t * EConstr.t * EConstr.t) option list;
-  fixopaques : bool option list;
+  fixopaques : Attributes.opacity option list;
 }
 
 let interp_wf ~program_mode env sigma recname ctx ccl = function

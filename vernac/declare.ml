@@ -57,7 +57,7 @@ module CInfo = struct
     (** Names to pre-introduce  *)
     ; impargs : Impargs.manual_implicits
     (** Explicitily declared implicit arguments  *)
-    ; opaque : bool option
+    ; opaque : Attributes.opacity option
     }
 
 
@@ -106,7 +106,7 @@ type 'eff deferred_opaque_proof_body = {
 
 (* Opacity of default proofs, possibly with private universes *)
 type default_body_opacity =
-  | Transparent
+  | Transparent of Conv_oracle.level
     (* udecl is for body+type; all universes are in proof_entry_universes  *)
   | Opaque of Univ.ContextSet.t
     (* if poly, the private uctx, udecl excludes the private uctx *)
@@ -250,7 +250,7 @@ let make_univs_immediate_default ~poly ~opaque ~uctx ~udecl ~eff ~used_univs bod
          when monomorphic it shouldn't really matter. *)
       Monomorphic_entry (Univ.ContextSet.union uctx (Safe_typing.universes_of_private eff.Evd.seff_private)), snd utyp
   in
-  uctx, utyp, used_univs, Default { body = (body, eff); opaque = if opaque then Opaque Univ.ContextSet.empty else Transparent }
+  uctx, utyp, used_univs, Default { body = (body, eff); opaque = Attributes.(match opaque with Sealed -> Opaque Univ.ContextSet.empty | Defined tr -> Transparent tr)}
 
 let make_univs_immediate ~poly ?keep_body_ucst_separate ~opaque ~uctx ~udecl ~eff ~used_univs body typ =
   (* allow_deferred case *)
@@ -258,7 +258,7 @@ let make_univs_immediate ~poly ?keep_body_ucst_separate ~opaque ~uctx ~udecl ~ef
   | Some initial_euctx when not poly -> make_univs_immediate_private_mono ~initial_euctx ~uctx ~udecl ~eff ~used_univs body typ
   | _ ->
   (* private_poly_univs case *)
-  if poly && opaque && private_poly_univs ()
+  if poly && opaque == Attributes.Sealed && private_poly_univs ()
   then make_univs_immediate_private_poly ~uctx ~udecl ~eff ~used_univs body typ
   else make_univs_immediate_default ~poly ~opaque ~uctx ~udecl ~eff ~used_univs body typ
 
@@ -272,11 +272,11 @@ let definition_entry_core ?using ?(inline=false) ?types
     proof_entry_universes = univs;
     proof_entry_inline_code = inline}
 
-let pure_definition_entry ?(opaque=Transparent) ?using ?inline ?types ?univs body =
+let pure_definition_entry ?(opaque=Transparent Conv_oracle.transparent) ?using ?inline ?types ?univs body =
   definition_entry_core ?using ?inline ?types ?univs body
 
 let definition_entry ?(opaque=false) ?using ?inline ?types ?univs body =
-  let opaque = if opaque then Opaque Univ.ContextSet.empty else Transparent in
+  let opaque = if opaque then Opaque Univ.ContextSet.empty else Transparent Conv_oracle.transparent in
   definition_entry_core ?using ?inline ?types ?univs (Default { body = (body, Evd.empty_side_effects); opaque })
 
 let delayed_definition_entry ?feedback_id ?using ~univs ?types body =
@@ -322,7 +322,7 @@ module ProofEntry = struct
 
   let get_opacity entry =
     match entry.proof_entry_body with
-    | Default { body; opaque = Transparent } -> false
+    | Default { body; opaque = Transparent _ } -> false
     | Default { body; opaque = Opaque _ } -> true
     | DeferredOpaque _ -> true
 
@@ -336,7 +336,7 @@ module ProofEntry = struct
 
   let force_extract_body entry =
     match entry.proof_entry_body with
-    | Default { body = (body, eff); opaque = Transparent } -> ((body, Univ.ContextSet.empty), eff), false, None
+    | Default { body = (body, eff); opaque = Transparent _ } -> ((body, Univ.ContextSet.empty), eff), false, None
     | Default { body = (body, eff); opaque = Opaque uctx } -> ((body, uctx), eff), true, None
     | DeferredOpaque { body; feedback_id } -> Future.force body, true, feedback_id
 
@@ -344,17 +344,17 @@ module ProofEntry = struct
     let (body, eff), opaque = force_entry_body entry in
     let uctx = match opaque with
       | Opaque uctx -> uctx
-      | Transparent -> Univ.ContextSet.empty
+      | Transparent _ -> Univ.ContextSet.empty
     in
     (body, uctx), eff
 
   let set_transparent_for_derived entry =
     let body, opaque = force_entry_body entry in
     match opaque with
-    | Transparent -> { entry with proof_entry_body = Default { body; opaque } }
+    | Transparent _ -> { entry with proof_entry_body = Default { body; opaque } }
     | Opaque uctx ->
       { entry with
-        proof_entry_body = Default { body; opaque = Transparent };
+        proof_entry_body = Default { body; opaque = Transparent Conv_oracle.transparent };
         proof_entry_universes = add_mono_univ_uctx_for_derived uctx entry.proof_entry_universes }
 
   let rec shrink ctx sign c t accu =
@@ -451,14 +451,15 @@ let (objConstant : (Id.t * constant_obj) Libobject.Dyn.tag) =
 let inConstant v = Libobject.Dyn.Easy.inj v objConstant
 
 (* Register the libobjects attached to the constants *)
-let register_constant cst kind ?user_warns local =
+let register_constant cst kind ?user_warns ?transparency local =
   (* Register the declaration *)
   let id = Label.to_id (Constant.label cst) in
   let o = inConstant (id, { cst_kind = kind; cst_locl = local; cst_warn = user_warns }) in
   let () = Lib.add_leaf o in
   (* Register associated data *)
   Impargs.declare_constant_implicits cst;
-  Notation.declare_ref_arguments_scope (GlobRef.ConstRef cst)
+  Notation.declare_ref_arguments_scope (GlobRef.ConstRef cst);
+  Option.iter (fun b -> Redexpr.set_strategy false [b,[Evaluable.EvalConstRef cst]]) transparency
 
 let register_side_effect (c, body, role) =
   (* Register the body in the opaque table *)
@@ -578,7 +579,7 @@ let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typi
     | DefinitionEntry de ->
       (* We deal with side effects *)
       (match de.proof_entry_body with
-      | Default { body = (body, eff); opaque = Transparent } ->
+      | Default { body = (body, eff); opaque = Transparent transparency } ->
         (* This globally defines the side-effects in the environment
            and registers their libobjects. *)
         let () = export_side_effects eff in
@@ -588,14 +589,14 @@ let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typi
         (* We register the global universes after exporting side-effects, since
            the latter depend on the former. *)
         let () = Global.push_context_set ctx in
-        Entries.DefinitionEntry e, false, ubinders, None, ctx
+        Entries.DefinitionEntry e, false, ubinders, None, ctx, Some transparency
       | Default { body = (body, eff); opaque = Opaque body_uctx } ->
         let body = ((body, body_uctx), eff.Evd.seff_private) in
         let de = { de with proof_entry_body = body } in
         let cd, ctx = cast_opaque_proof_entry ImmediateEffectEntry de in
         let ubinders = make_ubinders ctx de.proof_entry_universes in
         let () = Global.push_context_set ctx in
-        Entries.OpaqueEntry cd, false, ubinders, Some (Future.from_val body, None), ctx
+        Entries.OpaqueEntry cd, false, ubinders, Some (Future.from_val body, None), ctx, None
       | DeferredOpaque { body; feedback_id } ->
         let map (body, eff) = body, eff.Evd.seff_private in
         let body = Future.chain body map in
@@ -603,7 +604,7 @@ let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typi
         let cd, ctx = cast_opaque_proof_entry DeferredEffectEntry de in
         let ubinders = make_ubinders ctx de.proof_entry_universes in
         let () = Global.push_context_set ctx in
-        Entries.OpaqueEntry cd, false, ubinders, Some (body, feedback_id), ctx)
+        Entries.OpaqueEntry cd, false, ubinders, Some (body, feedback_id), ctx, None)
     | ParameterEntry e ->
       let univ_entry, ctx = extract_monomorphic (fst e.parameter_entry_universes) in
       let ubinders = make_ubinders ctx e.parameter_entry_universes in
@@ -614,7 +615,7 @@ let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typi
         Entries.parameter_entry_universes = univ_entry;
         Entries.parameter_entry_inline_code = e.parameter_entry_inline_code;
       } in
-      Entries.ParameterEntry e, not (Lib.is_modtype_strict()), ubinders, None, ctx
+      Entries.ParameterEntry e, not (Lib.is_modtype_strict()), ubinders, None, ctx, None
     | PrimitiveEntry e ->
       let typ, univ_entry, ctx = match e.prim_entry_type with
       | None ->
@@ -629,7 +630,7 @@ let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typi
         Entries.prim_entry_content = e.prim_entry_content;
       } in
       let ubinders = make_ubinders ctx univ_entry in
-      Entries.PrimitiveEntry e, false, ubinders, None, ctx
+      Entries.PrimitiveEntry e, false, ubinders, None, ctx, None
     | SymbolEntry { symb_entry_type=typ; symb_entry_unfold_fix=un_fix; symb_entry_universes=entry_univs } ->
       let univ_entry, ctx = extract_monomorphic (fst entry_univs) in
       let () = Global.push_context_set ctx in
@@ -639,7 +640,7 @@ let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typi
         Entries.symb_entry_universes = univ_entry;
       } in
       let ubinders = make_ubinders ctx entry_univs in
-      Entries.SymbolEntry e, false, ubinders, None, ctx
+      Entries.SymbolEntry e, false, ubinders, None, ctx, None
   in
   let declare_opaque kn = function
     | None -> ()
@@ -652,7 +653,7 @@ let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typi
       | Def _ | Undef _ | Primitive _ | Symbol _ -> assert false
   in
   let () = check_exists name in
-  let decl, unsafe, ubinders, delayed, ctx = make_constant cd in
+  let decl, unsafe, ubinders, delayed, ctx, transparency = make_constant cd in
   let kn = Global.add_constant ?typing_flags name decl in
   let () =
     let is_new_constraint (u,_,v as c) =
@@ -665,7 +666,7 @@ let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typi
   in
   let () = DeclareUniv.declare_univ_binders (GlobRef.ConstRef kn) ubinders in
   let () = declare_opaque kn delayed in
-  let () = register_constant kn kind local ?user_warns in
+  let () = register_constant kn kind ?transparency local ?user_warns in
   if unsafe || is_unsafe_typing_flags typing_flags then feedback_axiom();
   kn
 
@@ -853,7 +854,7 @@ type proof_object =
 let set_opacity default_proof_opacity sealed =
   match sealed with
   | Some sealed -> (* Attribute takes precedence on proof ending *) sealed
-  | None -> Vernacexpr.(match default_proof_opacity with Qed -> true | Defined -> false)
+  | None -> match default_proof_opacity with Vernacexpr.Qed -> Attributes.Sealed | Defined -> Attributes.Defined Conv_oracle.transparent
 
 let future_map2_pair_list_distribute p l f =
   List.map_i (fun i c -> f (Future.chain p (fun (a, b) -> (List.nth a i, b))) c) 0 l
@@ -2125,7 +2126,7 @@ let build_constant_by_tactic ~name ?warn_incomplete ~sigma ~sign ~poly (typ : EC
   let { Proof.sigma } = Proof.data pf.proof in
   let sigma = Evd.set_universe_context sigma (ustate_of_proof proof.proof_object) in
   match entries with
-  | [ { proof_entry_body = Default { body; opaque = Transparent } } as entry, _] ->
+  | [ { proof_entry_body = Default { body; opaque = Transparent _ } } as entry, _] ->
     { entry with proof_entry_body = body }, status, sigma
   | _ ->
     CErrors.anomaly Pp.(str "[build_constant_by_tactic] close_proof returned more than one proof term, or a non transparent one.")
