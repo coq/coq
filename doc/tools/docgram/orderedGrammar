@@ -970,9 +970,9 @@ command: [
 | "Delimit" "Scope" scope_name "with" scope_key
 | "Undelimit" "Scope" scope_name
 | "Bind" "Scope" scope_name "with" LIST1 coercion_class
-| "Infix" notation_declaration
+| "Infix" decl_notation
 | "Notation" ident LIST0 ident ":=" one_term OPT ( "(" LIST1 syntax_modifier SEP "," ")" )
-| "Notation" notation_declaration
+| "Notation" decl_notation
 | "Reserved" "Infix" string OPT ( "(" LIST1 syntax_modifier SEP "," ")" )
 | "Reserved" "Notation" string OPT ( "(" LIST1 syntax_modifier SEP "," ")" )
 | [ "Enable" | "Disable" ] "Notation" OPT [ string | qualid LIST0 ident ] OPT ( ":=" one_term ) OPT ( "(" LIST1 enable_notation_flag SEP "," ")" ) OPT [ ":" scope_name | ":" "no" "scope" ]
@@ -1343,10 +1343,10 @@ level: [
 ]
 
 decl_notations: [
-| "where" notation_declaration LIST0 ( "and" notation_declaration )
+| "where" decl_notation LIST0 ( "and" decl_notation )
 ]
 
-notation_declaration: [
+decl_notation: [
 | string ":=" one_term OPT ( "(" LIST1 syntax_modifier SEP "," ")" ) OPT [ ":" scope_name ]
 ]
 

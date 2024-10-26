@@ -1655,8 +1655,8 @@ ltac2_in_clause: [
 ]
 
 decl_notations: [
-| REPLACE "where" LIST1 notation_declaration SEP decl_sep
-| WITH "where" notation_declaration LIST0 (decl_sep notation_declaration )
+| REPLACE "where" LIST1 decl_notation SEP decl_sep
+| WITH "where" decl_notation LIST0 (decl_sep decl_notation )
 ]
 
 module_expr: [
@@ -1713,7 +1713,7 @@ by_notation: [
 | WITH ne_string OPT [ "%" scope_key ]
 ]
 
-notation_declaration: [
+decl_notation: [
 | REPLACE lstring ":=" constr syntax_modifiers OPT [ ":" IDENT ]
 | WITH lstring ":=" constr syntax_modifiers OPT [ ":" scope_name ]
 ]

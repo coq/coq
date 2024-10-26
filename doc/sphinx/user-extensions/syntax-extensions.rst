@@ -31,12 +31,12 @@ Notations
 Basic notations
 ~~~~~~~~~~~~~~~
 
-.. cmd:: Notation @notation_declaration
+.. cmd:: Notation @decl_notation
 
-   .. insertprodn notation_declaration notation_declaration
+   .. insertprodn decl_notation decl_notation
 
    .. prodn::
-      notation_declaration ::= @string := @one_term {? ( {+, @syntax_modifier } ) } {? : @scope_name }
+      decl_notation ::= @string := @one_term {? ( {+, @syntax_modifier } ) } {? : @scope_name }
 
    Defines a *notation*, an alternate syntax for entering or displaying
    a specific term or term pattern.
@@ -409,7 +409,7 @@ The Infix command
 The :cmd:`Infix` command is a shortcut for declaring notations for infix
 symbols.
 
-.. cmd:: Infix @notation_declaration
+.. cmd:: Infix @decl_notation
 
    The command
 
@@ -483,7 +483,7 @@ changing a parsing rule are accepted.
    .. insertprodn decl_notations decl_notations
 
    .. prodn::
-      decl_notations ::= where @notation_declaration {* and @notation_declaration }
+      decl_notations ::= where @decl_notation {* and @decl_notation }
 
 Here are examples:
 

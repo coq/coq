@@ -50,7 +50,8 @@ let thm_token = Entry.make "thm_token"
 let def_token = Entry.make "def_token"
 let assumption_token = Entry.make "assumption_token"
 let def_body = Entry.make "def_body"
-let notation_declaration = Entry.make "notation_declaration"
+let decl_notation = Entry.make "decl_notation"
+let notation_declaration = decl_notation
 let decl_notations = Entry.make "decl_notations"
 let record_field = Entry.make "record_field"
 let of_type = Entry.make "of_type"
@@ -242,7 +243,7 @@ let test_cumul_univ_decl =
 (* Gallina declarations *)
 GRAMMAR EXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_token assumption_token def_body of_type of_type_inst
-    record_field notation_declaration decl_notations fix_definition ident_decl univ_decl inductive_or_record_definition;
+    record_field decl_notation decl_notations fix_definition ident_decl univ_decl inductive_or_record_definition;
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
@@ -443,7 +444,7 @@ GRAMMAR EXTEND Gram
     [ [ IDENT "Eval"; r = red_expr; "in" -> { Some r }
       | -> { None } ] ]
   ;
-  notation_declaration:
+  decl_notation:
     [ [ ntn = lstring; ":="; c = constr;
         modl = syntax_modifiers;
         scopt = OPT [ ":"; sc = IDENT -> { sc } ] ->
@@ -456,7 +457,7 @@ GRAMMAR EXTEND Gram
     [ [ IDENT "and" -> { () } ] ]
   ;
   decl_notations:
-    [ [ "where"; l = LIST1 notation_declaration SEP decl_sep -> { l }
+    [ [ "where"; l = LIST1 decl_notation SEP decl_sep -> { l }
     | -> { [] } ] ]
   ;
   (* Inductives and records *)
@@ -1343,12 +1344,12 @@ GRAMMAR EXTEND Gram
      | IDENT "Bind"; IDENT "Scope"; sc = IDENT; "with";
        refl = LIST1 coercion_class -> { VernacSynPure (VernacBindScope (sc,refl)) }
 
-     | IDENT "Infix"; ntn_decl = notation_declaration ->
+     | IDENT "Infix"; ntn_decl = decl_notation ->
          { VernacSynterp (VernacNotation (true,ntn_decl)) }
      | IDENT "Notation"; id = identref; idl = LIST0 ident;
          ":="; c = constr; modl = syntax_modifiers ->
            { VernacSynPure (VernacSyntacticDefinition (id,(idl,c), modl)) }
-     | IDENT "Notation"; ntn_decl = notation_declaration ->
+     | IDENT "Notation"; ntn_decl = decl_notation ->
            { VernacSynterp (VernacNotation (false,ntn_decl)) }
 
      | IDENT "Reserved"; IDENT "Infix"; s = ne_lstring; l = syntax_modifiers ->
