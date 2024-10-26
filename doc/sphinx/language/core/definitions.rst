@@ -92,30 +92,27 @@ Section :ref:`typing-rules`.
       | {* @binder } : @type
       reduce ::= Eval @red_expr in
 
-   These commands bind :n:`@term` to the name :n:`@ident` in the global environment,
-   provided that :n:`@term` is well-typed.  They can take the :attr:`local` :term:`attribute`,
-   which makes the defined :n:`@ident` accessible only through their fully
-   qualified names, even if :cmd:`Import` or its variants has been used on the
-   current :cmd:`Module`.
+   This binds :n:`@term` to the name :n:`@ident` in the global environment,
+   provided that :n:`@term` is well-typed.
+
+   If :n:`@type` is specified, the command checks that the type of :n:`@term`
+   is definitionally equal to :n:`@type`.
+
+   If :n:`@binder` is specified, it distributes over :n:`@term` and :n:`@type` as if they had
+   respectively been :n:`fun {* @binder } => @term` and :n:`forall {* @binder }, @type`.
+
    If :n:`@reduce` is present then :n:`@ident` is bound to the result of the specified
    computation on :n:`@term`.
-
-   These commands also support the :attr:`universes(polymorphic)`,
-   :attr:`program` (see :ref:`program_definition`), :attr:`canonical`,
-   :attr:`bypass_check(universes)`, :attr:`bypass_check(guard)`, :attr:`deprecated`,
-   :attr:`warn` and :attr:`using` attributes.
 
    If :n:`@term` is omitted, :n:`@type` is required and Rocq enters proof mode.
    This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
    In this case, the proof should be terminated with :cmd:`Defined` in order to define a :term:`constant`
    for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.
 
-   The form :n:`Definition @ident : @type := @term` checks that the type of :n:`@term`
-   is definitionally equal to :n:`@type`, and registers :n:`@ident` as being of type
-   :n:`@type`, and bound to value :n:`@term`.
-
-   The form :n:`Definition @ident {* @binder } : @type := @term` is equivalent to
-   :n:`Definition @ident : forall {* @binder }, @type := fun {* @binder } => @term`.
+   The attributes :attr:`local`, :attr:`universes(polymorphic)`,
+   :attr:`program` (see :ref:`program_definition`), :attr:`canonical`,
+   :attr:`bypass_check(universes)`, :attr:`bypass_check(guard)`, :attr:`deprecated`,
+   :attr:`warn` and :attr:`using` are accepted.
 
    .. seealso:: :cmd:`Opaque`, :cmd:`Transparent`, :tacn:`unfold`.
 
@@ -152,20 +149,19 @@ The basic assertion command is:
       | Property
 
    After the statement is asserted, Rocq needs a proof. Once a proof of
-   :n:`@type` under the assumptions represented by :n:`@binder`\s is given and
-   validated, the proof is generalized into a proof of :n:`forall {* @binder }, @type` and
+   :n:`@type` is given,
    the theorem is bound to the name :n:`@ident` in the global environment.
 
-   These commands accept the :attr:`program` attribute.  See :ref:`program_lemma`.
+   If :n:`@binder` is specified, this behaves as if :n:`@type` had been
+   :n:`forall {* @binder }, @type` and the proof starts in the context :n:`{* @binder }`.
 
    Forms using the :n:`with` clause are useful for theorems that are proved by simultaneous induction
-   over a mutually inductive assumption, or that assert mutually dependent
-   statements in some mutual coinductive type. It is equivalent to
+   over a mutually inductive assumption, or that assert mutually dependent coinductive
+   statements. It is equivalent to
    :cmd:`Fixpoint` or :cmd:`CoFixpoint` but using tactics to build the proof of
    the statements (or the :term:`body` of the specification, depending on the point of
    view). The inductive or coinductive types on which the induction or
-   coinduction has to be done is assumed to be unambiguous and is guessed by
-   the system.
+   coinduction has to be done is guessed by the system.
 
    Like in a :cmd:`Fixpoint` or :cmd:`CoFixpoint` definition, the induction hypotheses
    have to be used on *structurally smaller* arguments (for a :cmd:`Fixpoint`) or
@@ -175,8 +171,10 @@ The basic assertion command is:
    correct at some time of the interactive development of a proof, use the
    command :cmd:`Guarded`.
 
-   This command accepts the :attr:`bypass_check(universes)`,
-   :attr:`bypass_check(guard)`, :attr:`deprecated`, :attr:`warn`, and :attr:`using` attributes.
+   The attributes :attr:`local`, :attr:`universes(polymorphic)`,
+   :attr:`program` (see :ref:`program_lemma`),
+   :attr:`bypass_check(universes)`, :attr:`bypass_check(guard)`, :attr:`deprecated`,
+   :attr:`warn` and :attr:`using` are accepted.
 
    .. exn:: The term @term has type @type which should be Set, Prop or Type.
       :undocumented:
