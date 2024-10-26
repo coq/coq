@@ -838,7 +838,7 @@ type closed_proof_output = ((Constr.t * Evd.side_effects) * Constr.t option) lis
 type proof_object =
   | DefaultProof of
       { proof : closed_proof_output
-      ; opaque : bool
+      ; default_proof_opacity : Vernacexpr.proof_opacity
       ; using : Names.Id.Set.t option
       ; keep_body_ucst_separate : UState.t option
       }
@@ -850,19 +850,19 @@ type proof_object =
       ; initial_euctx : UState.t
       }
 
-let check_opacity opaque sealed =
+let set_opacity default_proof_opacity sealed =
   match sealed with
-  | Some sealed -> (* Attribute takes precedence *) sealed
-  | None -> opaque
+  | Some sealed -> (* Attribute takes precedence on proof ending *) sealed
+  | None -> Vernacexpr.(match default_proof_opacity with Qed -> true | Defined -> false)
 
 let future_map2_pair_list_distribute p l f =
   List.map_i (fun i c -> f (Future.chain p (fun (a, b) -> (List.nth a i, b))) c) 0 l
 
 let process_proof ~info:Info.({ udecl; poly; kind }) ~cinfo = function
-  | DefaultProof { proof = (entries, uctx); opaque; using; keep_body_ucst_separate } ->
+  | DefaultProof { proof = (entries, uctx); default_proof_opacity; using; keep_body_ucst_separate } ->
     (* Force transparency for Derive-like dependent statements *)
     snd (List.fold_left2_map (fun used_univs ((body, eff), typ) CInfo.{ opaque = sealed } ->
-        let opaque = check_opacity opaque sealed in
+        let opaque = set_opacity default_proof_opacity sealed in
         let uctx, univs, used_univs, body =
           make_univs_immediate ~poly ?keep_body_ucst_separate ~opaque ~uctx ~udecl ~eff ~used_univs body typ in
         (used_univs, (definition_entry_core ?using ~univs ?types:typ body, uctx))) Univ.Level.Set.empty entries cinfo)
@@ -1022,18 +1022,21 @@ let prepare_recursive_edeclaration sigma cinfo fixtypes fixrs fixdefs =
   (Array.of_list names, Array.of_list fixtypes, Array.of_list defs)
 
 let default_kind_opacity_immediate = function
-  | Decls.IsPrimitive | IsSymbol | IsAssumption _ -> true (* Irrelevant *)
-  | IsDefinition _ -> false
-  | IsProof _ -> true
+  | Decls.IsPrimitive | IsSymbol | IsAssumption _ -> assert false (* not built interactively *)
+  | IsDefinition _ -> Vernacexpr.Defined
+  | IsProof _ -> Vernacexpr.Qed
 
-let set_immediate_opacity kind cinfo =
+let check_immediate_theorem kind cinfo =
   if List.exists (fun CInfo.{opaque} -> Option.is_empty opaque) cinfo then
     begin
       match kind with
       | Decls.IsProof p -> CErrors.user_err (str (Ppvernac.string_of_theorem_kind p) ++ str " declared with \":=\" requires sealed/defined attributes.")
 
       | _ -> ()
-    end;
+    end
+
+let set_default_proof_opacity_immediate kind cinfo =
+  check_immediate_theorem kind cinfo;
   default_kind_opacity_immediate kind
 
 let declare_mutual_definitions ~info ~cinfo ~uctx ~bodies ~possible_guard ?using () =
@@ -1047,8 +1050,8 @@ let declare_mutual_definitions ~info ~cinfo ~uctx ~bodies ~possible_guard ?using
   let entries = List.map (fun (body, typ) -> ((body, Evd.empty_side_effects), Some typ)) bodies_types in
   let entries_for_using = List.map (fun (body, typ) -> (body, Some typ)) bodies_types in
   let using = interp_mutual_using env cinfo entries_for_using using in
-  let opaque = set_immediate_opacity kind cinfo in
-  let obj = DefaultProof { proof = (entries, uctx); opaque; using; keep_body_ucst_separate = None } in
+  let default_proof_opacity = set_default_proof_opacity_immediate kind cinfo in
+  let obj = DefaultProof { proof = (entries, uctx); default_proof_opacity; using; keep_body_ucst_separate = None } in
   let refs = declare_possibly_mutual_definitions ~info ~cinfo ~obls:[] obj in
   let fixnames = List.map (fun { CInfo.name } -> name) cinfo in
   recursive_message indexes fixnames;
@@ -1081,9 +1084,9 @@ let declare_definition ~info ~cinfo ~obls ~body ?using sigma =
   let body = EConstr.to_constr sigma body in
   let typ = Option.map (EConstr.to_constr sigma) typ in
   let uctx = Evd.ustate sigma in
-  let opaque = set_immediate_opacity info.Info.kind [cinfo] in
+  let default_proof_opacity = set_default_proof_opacity_immediate info.Info.kind [cinfo] in
   let using = interp_mutual_using env [cinfo] [body,typ] using in
-  let obj = DefaultProof { proof = ([((body,Evd.empty_side_effects),typ)], uctx); opaque; using; keep_body_ucst_separate = None } in
+  let obj = DefaultProof { proof = ([((body,Evd.empty_side_effects),typ)], uctx); default_proof_opacity; using; keep_body_ucst_separate = None } in
   let gref = List.hd (declare_possibly_mutual_definitions ~info ~cinfo:[cinfo] ~obls obj) in
   gref, uctx
 
@@ -2067,28 +2070,30 @@ let warn_use_sealed =
       | (id, true) -> Pp.strbrk "Use attribute \"sealed\" rather than \"Qed\" proof terminator to declare " ++ Id.print id ++ strbrk " sealed."
       | (id, false) -> Pp.strbrk "Use attribute \"defined\" to declare " ++ Id.print id ++ strbrk " transparent.")
 
-let set_proof_opacity ending kind cinfo opaque_ending =
-  let idl = List.filter_map (function CInfo.{ name; opaque = None } -> Some name | _ -> None) cinfo in
-  let ending = CEphemeron.default ending Proof_ending.Regular in
+let check_proof_opacity_compatibility ending kind cinfo opaque_ending =
   match kind, opaque_ending with
   | Decls.IsDefinition d, Vernacexpr.Qed ->
     (* A definition ended with Qed: warn if there is no attribute *)
+    let ending = CEphemeron.default ending Proof_ending.Regular in
+    let idl = List.filter_map (function CInfo.{ name; opaque = None } -> Some name | _ -> None) cinfo in
     (match d, ending, idl with
      | (Definition | Fixpoint | CoFixpoint), Proof_ending.Regular, id::_ -> warn_use_sealed (id, true)
-     | _ -> ()); true
-  | IsDefinition _, Vernacexpr.Defined -> false
-  | IsProof _, Vernacexpr.Qed -> true
-  | IsProof _, Vernacexpr.Defined -> false
-  | (Decls.IsPrimitive | IsSymbol | IsAssumption _), _ -> false (* Irrelevant *)
+     | _ -> ())
+  | (IsDefinition _ | IsProof _), _ -> ()
+  | (Decls.IsPrimitive | IsSymbol | IsAssumption _), _ -> assert false (* not built interactively *)
+
+let set_proof_opacity ending kind cinfo opaque_ending =
+  check_proof_opacity_compatibility ending kind cinfo opaque_ending;
+  opaque_ending
 
 let return_proof p = (prepare_proof p : closed_proof_output)
 
 let close_proof ?warn_incomplete ~opaque ~keep_body_ucst_separate (proof : t) : Proof_object.t =
   NewProfile.profile "close_proof" (fun () ->
-  let opaque = set_proof_opacity proof.pinfo.proof_ending proof.pinfo.info.kind proof.pinfo.cinfo opaque in
+  let default_proof_opacity = set_proof_opacity proof.pinfo.proof_ending proof.pinfo.info.kind proof.pinfo.cinfo opaque in
   let keep_body_ucst_separate = if keep_body_ucst_separate then Some proof.initial_euctx else None in
   { Proof_object.proof_object =
-      DefaultProof { proof = prepare_proof ?warn_incomplete proof; opaque; using = proof.using; keep_body_ucst_separate }
+      DefaultProof { proof = prepare_proof ?warn_incomplete proof; default_proof_opacity; using = proof.using; keep_body_ucst_separate }
   ; pinfo = proof.pinfo
   }) ()
 
