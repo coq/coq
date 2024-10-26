@@ -102,12 +102,12 @@ Section :ref:`typing-rules`.
    .. insertprodn declaration_body reduce
 
    .. prodn::
-      declaration_body ::= @ident_decl {* @binder } {? @fixannot } @decl_body {? @decl_notations }
+      declaration_body ::= @decl_ident {* @binder } {? @fixannot } @decl_body {? @decl_notations }
       decl_body ::= {? : @type } := {? @reduce } @term
       | : @type
       reduce ::= Eval @red_expr in
 
-   This binds each :n:`@term` in :n:`decl_body` to the respective name :n:`@ident_decl`
+   This binds each :n:`@term` in :n:`decl_body` to the respective name :n:`@decl_ident`
    in the global environment, provided that :n:`@term` is well-typed.
 
    If :n:`@type` is specified, the command checks that the type of :n:`@term`

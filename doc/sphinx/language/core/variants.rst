@@ -25,9 +25,9 @@ the type becomes recursive, in which case it can be either
 is reserved for non-recursive types. Natural numbers, lists or streams cannot
 be defined using :cmd:`Variant`.
 
-.. cmd:: Variant @ident_decl {* @binder } {? %| {* @binder } } {? : @type } := {? %| } {+| @constructor } {? @decl_notations }
+.. cmd:: Variant @decl_ident {* @binder } {? %| {* @binder } } {? : @type } := {? %| } {+| @constructor } {? @decl_notations }
 
-   Defines a variant type named :n:`@ident` (in :n:`@ident_decl`)
+   Defines a variant type named :n:`@ident` (in :n:`@decl_ident`)
    with the given list of constructors.
    No induction scheme is generated for
    this variant, unless the :flag:`Nonrecursive Elimination Schemes` flag is on.

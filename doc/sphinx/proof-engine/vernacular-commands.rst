@@ -1225,7 +1225,7 @@ Inlining hints for the fast reduction machines
 Registering primitive operations
 ````````````````````````````````
 
-.. cmd:: Primitive @ident_decl {? : @term } := #@ident
+.. cmd:: Primitive @decl_ident {? : @term } := #@ident
 
    Makes the primitive type or primitive operator :n:`#@ident` defined in OCaml
    accessible in Rocq commands and tactics.

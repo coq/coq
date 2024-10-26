@@ -318,7 +318,7 @@ module Prim =
     let name = Entry.make "name"
     let identref = Entry.make "identref"
     let univ_decl = Entry.make "univ_decl"
-    let ident_decl = Entry.make "ident_decl"
+    let decl_ident = Entry.make "decl_ident"
     let pattern_ident = Entry.make "pattern_ident"
 
     (* A synonym of ident - maybe ident will be located one day *)

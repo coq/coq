@@ -238,7 +238,7 @@ let test_cumul_univ_decl =
 (* Gallina declarations *)
 GRAMMAR EXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_token assumption_token decl_body of_type of_type_inst
-    record_field decl_notation decl_notations declaration_body ident_decl univ_decl inductive_or_record_definition;
+    record_field decl_notation decl_notations declaration_body decl_ident univ_decl inductive_or_record_definition;
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
@@ -273,7 +273,7 @@ GRAMMAR EXTEND Gram
         { VernacRegister(g, RegisterScheme {inductive = g'; scheme_kind = qid}) }
       | IDENT "Register"; IDENT "Inline"; g = global ->
           { VernacRegister(g, RegisterInline) }
-      | IDENT "Primitive"; id = ident_decl; typopt = OPT [ ":"; typ = lconstr -> { typ } ]; ":="; r = register_token ->
+      | IDENT "Primitive"; id = decl_ident; typopt = OPT [ ":"; typ = lconstr -> { typ } ]; ":="; r = register_token ->
           { VernacPrimitive(id, r, typopt) }
       | IDENT "Universe"; l = LIST1 identref -> { VernacUniverse l }
       | IDENT "Universes"; l = LIST1 identref -> { VernacUniverse l }
@@ -401,11 +401,11 @@ GRAMMAR EXTEND Gram
            univdecl_extensible_constraints = snd cs } }
     ] ]
   ;
-  ident_decl:
+  decl_ident:
     [ [ i = identref; l = OPT univ_decl -> { (i, l) }
   ] ]
   ;
-  cumul_ident_decl:
+  decl_ident_cumul:
     [ [ i = identref; l = OPT cumul_univ_decl -> { (i, l) }
   ] ]
   ;
@@ -421,7 +421,7 @@ GRAMMAR EXTEND Gram
   ;
   (* Declarations *)
   declaration_body:
-    [ [ id_decl = ident_decl;
+    [ [ id_decl = decl_ident;
         bl = binders_fixannot;
         body_def = decl_body;
         notations = decl_notations ->
@@ -467,7 +467,7 @@ GRAMMAR EXTEND Gram
       | -> { RecordDecl (None, [], None) } ] ]
   ;
   inductive_or_record_definition:
-    [ [ oc = opt_coercion; id = cumul_ident_decl; indpar = binders;
+    [ [ oc = opt_coercion; id = decl_ident_cumul; indpar = binders;
         extrapar = OPT [ "|"; p = binders -> { p } ];
         c = OPT [ ":"; c = lconstr -> { c } ];
         lc=opt_constructors_or_fields; ntn = decl_notations ->
@@ -578,7 +578,7 @@ GRAMMAR EXTEND Gram
     [ [ "("; a = assumpt; ")" -> { a } ] ]
   ;
   assumpt:
-    [ [ idl = LIST1 ident_decl; oc = of_type; c = lconstr ->
+    [ [ idl = LIST1 decl_ident; oc = of_type; c = lconstr ->
         { (oc,(idl,c)) } ] ]
   ;
 
@@ -956,7 +956,7 @@ GRAMMAR EXTEND Gram
     ]
   ];
   instance_name:
-    [ [ name = ident_decl; bl = binders ->
+    [ [ name = decl_ident; bl = binders ->
           { (CAst.map (fun id -> Name id) (fst name), snd name), bl }
       | -> { ((CAst.make ~loc Anonymous), None), []  } ] ]
   ;
@@ -1033,7 +1033,7 @@ GRAMMAR EXTEND Gram
         { VernacSynPure (VernacAttributes attr) }
 
       (* Hack! Should be in grammar_ext, but camlp5 factorizes badly *)
-      | IDENT "Declare"; IDENT "Instance"; id = ident_decl; bl = binders; ":";
+      | IDENT "Declare"; IDENT "Instance"; id = decl_ident; bl = binders; ":";
          t = term LEVEL "200";
          info = hint_info ->
            { VernacSynPure (VernacDeclareInstance (id, bl, t, info)) }

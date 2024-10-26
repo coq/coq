@@ -232,7 +232,7 @@ type inductive_params_expr = local_binder_expr list * local_binder_expr list opt
 (** If the option is nonempty the "|" marker was used *)
 
 type inductive_expr =
-  cumul_ident_decl with_coercion
+  decl_ident_cumul with_coercion
   * inductive_params_expr * constr_expr option
   * constructor_list_or_record_decl_expr
 
@@ -419,8 +419,8 @@ type nonrec synpure_vernac_expr =
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
   | VernacAssumption of (discharge * Decls.assumption_object_kind) *
-      Declaremods.inline * (ident_decl list * constr_expr) with_coercion list
-  | VernacSymbol of (ident_decl list * constr_expr) with_coercion list
+      Declaremods.inline * (decl_ident list * constr_expr) with_coercion list
+  | VernacSymbol of (decl_ident list * constr_expr) with_coercion list
   | VernacInductive of inductive_kind * (inductive_expr * notation_declaration list) list
   | VernacScheme of (lident option * scheme) list
   | VernacSchemeEquality of equality_scheme_type * Libnames.qualid Constrexpr.or_by_notation
@@ -445,7 +445,7 @@ type nonrec synpure_vernac_expr =
       hint_info_expr
 
   | VernacDeclareInstance of
-      ident_decl * (* name *)
+      decl_ident * (* name *)
       local_binder_expr list * (* binders *)
       constr_expr * (* type *)
       hint_info_expr
@@ -487,7 +487,7 @@ type nonrec synpure_vernac_expr =
   | VernacSearch of searchable * Goal_select.t option * qualid list search_restriction
   | VernacLocate of locatable
   | VernacRegister of qualid * register_kind
-  | VernacPrimitive of ident_decl * CPrimitives.op_or_type * constr_expr option
+  | VernacPrimitive of decl_ident * CPrimitives.op_or_type * constr_expr option
   | VernacComments of comment list
   | VernacAttributes of Attributes.vernac_flags
 

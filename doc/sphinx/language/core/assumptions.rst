@@ -171,8 +171,7 @@ has type :n:`@type`.
       | {| Parameter | Parameters }
       | {| Hypothesis | Hypotheses }
       | {| Variable | Variables }
-      assumpt ::= {+ @ident_decl } @of_type
-      ident_decl ::= @ident {? @univ_decl }
+      assumpt ::= {+ @decl_ident } @of_type
       of_type ::= {| : | :> } @type
 
    These commands bind one or more :n:`@ident`\(s) to specified :n:`@type`\(s) as their specifications in
@@ -196,7 +195,7 @@ has type :n:`@type`.
    parameterized (i.e., the variables are *discharged*).  See Section :ref:`section-mechanism`.
 
    :n:`:>`
-     If specified, :token:`ident_decl` is automatically
+     If specified, :token:`decl_ident` is automatically
      declared as a coercion to the class of its type.  See :ref:`coercions`.
 
    The :n:`Inline` clause is only relevant inside functors.  See :cmd:`Module`.

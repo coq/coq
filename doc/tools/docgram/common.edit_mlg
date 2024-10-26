@@ -539,23 +539,23 @@ eqn: [
 
 (* No constructor syntax, OPT [ "|" binders ] is not supported for Record *)
 record_definition: [
-| opt_coercion ident_decl binders OPT [ ":" sort ] OPT ( ":=" OPT [ identref ] "{" record_fields "}" OPT [ "as" identref ] )
+| opt_coercion decl_ident binders OPT [ ":" sort ] OPT ( ":=" OPT [ identref ] "{" record_fields "}" OPT [ "as" identref ] )
 ]
 
 (* No mixed inductive-record definitions, opt_coercion is meaningless for Inductive *)
 inductive_definition: [
-| cumul_ident_decl binders OPT [ "|" binders ] OPT [ ":" type ] ":=" OPT "|" LIST1 constructor SEP "|" decl_notations
+| decl_ident_cumul binders OPT [ "|" binders ] OPT [ ":" type ] ":=" OPT "|" LIST1 constructor SEP "|" decl_notations
 ]
 
 (* No mutual recursion, no inductive classes, type must be a sort *)
 (* constructor is optional but "Class record_definition" covers that case *)
 singleton_class_definition: [
-| ident_decl binders OPT [ ":" sort ] ":=" constructor
+| decl_ident binders OPT [ ":" sort ] ":=" constructor
 ]
 
 (* No record syntax, opt_coercion not supported for Variant, := ... required *)
 variant_definition: [
-| ident_decl binders OPT [ "|" binders ] OPT [ ":" type ] ":=" OPT "|" LIST1 constructor SEP "|" decl_notations
+| decl_ident binders OPT [ "|" binders ] OPT [ ":" type ] ":=" OPT "|" LIST1 constructor SEP "|" decl_notations
 ]
 
 gallina: [
@@ -721,10 +721,10 @@ gallina_ext: [
 
 (* Per @Zimmi48, the global (qualid) must be a simple identifier if decl_body is present
    Note that smart_global is "qualid | by_notation" and that
-   ident_decl is "ident OPT univ_decl"; move
+   decl_ident is "ident OPT univ_decl"; move
  *)
 | REPLACE "Canonical" OPT "Structure" global OPT [ OPT univ_decl binders decl_body ]
-| WITH "Canonical" OPT "Structure" ident_decl binders decl_body
+| WITH "Canonical" OPT "Structure" decl_ident binders decl_body
 | REPLACE "Canonical" OPT "Structure" by_notation
 | WITH "Canonical" OPT "Structure" smart_global
 
@@ -733,9 +733,9 @@ gallina_ext: [
 | WITH "Coercion" smart_global OPT [ ":" coercion_class ">->" coercion_class ]
 
 (* semantically restricted per https://github.com/coq/coq/pull/12936#discussion_r492705820 *)
-(* global OPT univ_decl is just ident_decl, the first OPT is moved to the rule above *)
+(* global OPT univ_decl is just decl_ident, the first OPT is moved to the rule above *)
 | REPLACE "Coercion" global OPT [ OPT univ_decl binders decl_body ]
-| WITH "Coercion" ident_decl binders decl_body
+| WITH "Coercion" decl_ident binders decl_body
 
 | REPLACE "Include" "Type" module_type_inl LIST0 ext_module_type
 | WITH "Include" "Type" LIST1 module_type_inl SEP "<+"
@@ -1244,7 +1244,7 @@ command: [
 | WITH printable
 | REPLACE "Hint" hint opt_hintbases
 | WITH hint
-| "SubClass" ident_decl decl_body
+| "SubClass" decl_ident decl_body
 | REPLACE "Ltac" LIST1 ltac_tacdef_body SEP "with"
 | WITH "Ltac" ltac_tacdef_body LIST0 ( "with" ltac_tacdef_body )
 | REPLACE "Function" LIST1 function_fix_definition SEP "with"      (* funind plugin *)
@@ -1457,8 +1457,8 @@ assum_list: [
 ]
 
 assumpt: [
-| REPLACE LIST1 ident_decl of_type lconstr
-| WITH LIST1 ident_decl of_type
+| REPLACE LIST1 decl_ident of_type lconstr
+| WITH LIST1 decl_ident of_type
 ]
 
 constructor_type: [
@@ -2416,7 +2416,7 @@ SPLICE: [
 | firstorder_rhs
 | firstorder_using
 | ref_or_pattern_occ
-| cumul_ident_decl
+| decl_ident_cumul
 | variance
 | variance_identref
 | rewriter

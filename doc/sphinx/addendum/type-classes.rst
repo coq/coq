@@ -289,7 +289,7 @@ Command summary
 ---------------
 
 .. cmd:: Class @record_definition
-         Class @ident_decl {* @binder } {? : @sort } := @constructor
+         Class @decl_ident {* @binder } {? : @sort } := @constructor
 
    The first form declares a record and makes the record a typeclass with parameters
    :n:`{* @binder }` and the listed record fields.
@@ -344,9 +344,9 @@ Command summary
       or :n:`@constructor` with a right-hand-side that
       is not itself a Class has no effect (apart from emitting this warning).
 
-.. cmd:: Instance {? @ident_decl {* @binder } } : @type {? @hint_info } {? {| := %{ {* @field_val } %} | := @term } }
+.. cmd:: Instance {? @decl_ident {* @binder } } : @type {? @hint_info } {? {| := %{ {* @field_val } %} | := @term } }
 
-   Declares a typeclass instance named :token:`ident_decl` of the typeclass
+   Declares a typeclass instance named :token:`decl_ident` of the typeclass
    :n:`@type` with the specified parameters and with
    fields defined by :token:`field_val`, where each field must be a declared field of
    the typeclass.
@@ -380,7 +380,7 @@ Command summary
       to fill them.  It works exactly as if no :term:`body` had been given and
       the :tacn:`refine` tactic has been used first.
 
-   .. cmd:: Declare Instance @ident_decl {* @binder } : @term {? @hint_info }
+   .. cmd:: Declare Instance @decl_ident {* @binder } : @term {? @hint_info }
 
       In a :cmd:`Module Type`, declares that a corresponding concrete
       instance should exist in any implementation of this :cmd:`Module Type`. This

@@ -47,9 +47,15 @@ type universe_decl_expr = (lident list, lident list, univ_constraint_expr list) 
 type cumul_univ_decl_expr =
   (lident list, (lident * UVars.Variance.t option) list, univ_constraint_expr list) UState.gen_universe_decl
 
-type ident_decl = lident * universe_decl_expr option
-type cumul_ident_decl = lident * cumul_univ_decl_expr option
+type decl_ident = lident * universe_decl_expr option
+type decl_ident_cumul = lident * cumul_univ_decl_expr option
 type name_decl = lname * universe_decl_expr option
+
+type ident_decl = decl_ident
+[@@ocaml.deprecated "(9.0) Use [decl_ident]"]
+
+type cumul_ident_decl = decl_ident_cumul
+[@@ocaml.deprecated "(9.0) Use [decl_ident_cumul]"]
 
 type notation_with_optional_scope = LastLonelyNotation | NotationInScope of string
 

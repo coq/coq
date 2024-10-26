@@ -531,7 +531,7 @@ command: [
 | "Hint" hint opt_hintbases
 | "Comments" LIST0 comment
 | "Attributes" attribute_list
-| "Declare" "Instance" ident_decl binders ":" term200 hint_info
+| "Declare" "Instance" decl_ident binders ":" term200 hint_info
 | "Declare" "Scope" IDENT
 | "Pwd"
 | "Cd"
@@ -899,7 +899,7 @@ gallina: [
 | "Register" global "as" qualid
 | "Register" "Scheme" global "as" qualid "for" global
 | "Register" "Inline" global
-| "Primitive" ident_decl OPT [ ":" lconstr ] ":=" register_token
+| "Primitive" decl_ident OPT [ ":" lconstr ] ":=" register_token
 | "Universe" LIST1 identref
 | "Universes" LIST1 identref
 | "Constraint" LIST1 univ_constraint SEP ","
@@ -989,11 +989,11 @@ cumul_univ_decl: [
 | "@{" LIST0 variance_identref [ "+" | ] univ_decl_constraints
 ]
 
-ident_decl: [
+decl_ident: [
 | identref OPT univ_decl
 ]
 
-cumul_ident_decl: [
+decl_ident_cumul: [
 | identref OPT cumul_univ_decl
 ]
 
@@ -1010,7 +1010,7 @@ finite_token: [
 ]
 
 declaration_body: [
-| ident_decl binders_fixannot decl_body decl_notations
+| decl_ident binders_fixannot decl_body decl_notations
 ]
 
 decl_body: [
@@ -1044,7 +1044,7 @@ opt_constructors_or_fields: [
 ]
 
 inductive_or_record_definition: [
-| opt_coercion cumul_ident_decl binders OPT [ "|" binders ] OPT [ ":" lconstr ] opt_constructors_or_fields decl_notations
+| opt_coercion decl_ident_cumul binders OPT [ "|" binders ] OPT [ ":" lconstr ] opt_constructors_or_fields decl_notations
 ]
 
 constructors_or_record: [
@@ -1120,7 +1120,7 @@ assum_coe: [
 ]
 
 assumpt: [
-| LIST1 ident_decl of_type lconstr
+| LIST1 decl_ident of_type lconstr
 ]
 
 constructor_type: [
@@ -1345,7 +1345,7 @@ implicits_alt: [
 ]
 
 instance_name: [
-| ident_decl binders
+| decl_ident binders
 |
 ]
 
