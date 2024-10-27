@@ -2207,8 +2207,9 @@ let hole na = DAst.make @@
       Evar_kinds.qm_record_field=None})
 
 let constr_of_pat env sigma arsign pat avoid =
-  let rec typ env sigma (ty, realargs) pat avoid =
+  let rec typ env sigma decl realargs pat avoid =
     let loc = pat.CAst.loc in
+    let ty = RelDecl.get_type decl in
     match DAst.get pat with
     | PatVar name ->
         let name, avoid = match name with
@@ -2218,8 +2219,7 @@ let constr_of_pat env sigma arsign pat avoid =
                 Name id, Id.Set.add id avoid
         in
         let realargs = List.map (map_name (fun _ -> Anonymous)) realargs in (* Hack to force their instantiation as evars *)
-        let r = ERelevance.relevant in (* TODO relevance *)
-          (sigma, (DAst.make ?loc @@ PatVar name), [LocalAssum (make_annot name r, ty)] @ realargs, mkRel 1, lift 1 ty,
+          (sigma, (DAst.make ?loc @@ PatVar name), [Rel.Declaration.set_name name decl] @ realargs, mkRel 1, lift 1 ty,
            rel_list 1 (List.length realargs), 1, avoid)
     | PatCstr (((_, i) as cstr),patargs,alias) ->
         let cind = inductive_of_constructor cstr in
@@ -2234,18 +2234,20 @@ let constr_of_pat env sigma arsign pat avoid =
         let ci = cstrs.(i-1) in
         let nb_args_constr = ci.cs_nargs in
         assert (Int.equal nb_args_constr (List.length patargs));
-        let sigma, patargs, args, sign, env, n, m, avoid =
+        let sigma, patargs, args, _, sign, env, n, m, avoid =
           List.fold_right2
-            (fun decl pat (sigma, patargs, pats_c, sign, env, n, m, avoid)  ->
-               let t = RelDecl.get_type decl in
+            (fun decl pat (sigma, patargs, args, pats_c, sign, env, n, m, avoid)  ->
                let sigma, patarg', sign', pat_c', typ', argtypargs, n', avoid =
-                 let liftt = liftn (List.length sign) (succ (List.length pats_c)) t in
-                   typ env sigma (substl pats_c liftt, []) pat avoid
+                 let decl = Rel.Declaration.map_constr (fun c -> substl pats_c (liftn (List.length sign) (succ (List.length pats_c)) c)) decl in
+                   typ env sigma decl [] pat avoid
                in
+               let args = match decl with
+                 | LocalAssum _ -> pat_c' :: List.map (lift n') args
+                 | LocalDef _ -> List.map (lift n') args in
                let pats_c = pat_c' :: List.map (lift n') pats_c in
                let env' = EConstr.push_rel_context sign' env in
-                 (sigma, patarg' :: patargs, pats_c, sign' @ sign, env', n' + n, succ m, avoid))
-            ci.cs_args (List.rev patargs) (sigma, [], [], [], env, 0, 0, avoid)
+                 (sigma, patarg' :: patargs, args, pats_c, sign' @ sign, env', n' + n, succ m, avoid))
+            ci.cs_args (List.rev patargs) (sigma, [], [], [], [], env, 0, 0, avoid)
         in
         let args = List.rev args in
         let patargs = List.rev patargs in
@@ -2279,7 +2281,7 @@ let constr_of_pat env sigma arsign pat avoid =
                   (* Mark the equality as a hole *)
                   sigma, pat', sign, lift i app, lift i apptype, realargs, n + i, avoid
   in
-  let sigma, pat', sign, patc, patty, args, z, avoid = typ env sigma (RelDecl.get_type (List.hd arsign), List.tl arsign) pat avoid in
+  let sigma, pat', sign, patc, patty, args, z, avoid = typ env sigma (List.hd arsign) (List.tl arsign) pat avoid in
     sigma, pat', (sign, patc, (patty, args), pat'), avoid
 
 
@@ -2310,7 +2312,8 @@ let vars_of_ctx sigma ctx =
             (DAst.make @@ GApp (
                 (DAst.make @@ GRef (delayed_force coq_eq_refl_ref, None)),
                    [hole na.binder_name; DAst.make @@ GVar prev])) :: vars
-        | _ ->
+        | LocalDef _ -> prev, vars
+        | LocalAssum _ ->
             match RelDecl.get_name decl with
                 Anonymous -> prev, (DAst.make @@ GHole GInternalHole) :: vars (* Hack, see constr_of_pat *)
               | Name n -> n, (DAst.make @@ GVar n) :: vars)
