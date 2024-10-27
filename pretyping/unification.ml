@@ -1846,7 +1846,7 @@ let w_merge env with_types flags (substn : subst0) =
                 in
                 w_merge_rec metas0 evd' metas evars' eqns
           | _ ->
-              let evd', metas0, rhs'' = pose_all_metas_as_evars ~metas:metas0 curenv evd rhs' in
+              let evd', metas0, rhs'' = pose_all_metas_as_evars ~metas:metas0 env evd rhs' in
               let evd' =
                 try solve_simple_evar_eqn eflags curenv evd' ev rhs''
                 with Retyping.RetypeError _ -> error_cannot_unify curenv evd' (mkEvar ev, rhs'')
