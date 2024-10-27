@@ -2207,7 +2207,7 @@ let hole na = DAst.make @@
       Evar_kinds.qm_record_field=None})
 
 let constr_of_pat env sigma arsign pat avoid =
-  let rec typ env sigma decl realargs pat avoid =
+  let rec typ env sigma decl realdecls pat avoid =
     let loc = pat.CAst.loc in
     let ty = RelDecl.get_type decl in
     match DAst.get pat with
@@ -2218,13 +2218,13 @@ let constr_of_pat env sigma arsign pat avoid =
               let id = next_ident_away wildcard_id avoid in
                 Name id, Id.Set.add id avoid
         in
-        let realargs = List.map (map_name (fun _ -> Anonymous)) realargs in (* Hack to force their instantiation as evars *)
+        let realargs = List.map (map_name (fun _ -> Anonymous)) realdecls in (* Hack to force their instantiation as evars *)
           (sigma, (DAst.make ?loc @@ PatVar name), [Rel.Declaration.set_name name decl] @ realargs, mkRel 1, lift 1 ty,
-           rel_list 1 (List.length realargs), 1, avoid)
+           List.rev (rel_list 1 (List.length realargs)), 1, avoid)
     | PatCstr (((_, i) as cstr),patargs,alias) ->
         let cind = inductive_of_constructor cstr in
         let IndType (indf, _) =
-          try find_rectype env sigma (lift (-(List.length realargs)) ty)
+          try find_rectype env sigma (lift (-(List.length realdecls)) ty)
           with Not_found -> error_case_not_inductive env sigma
             {uj_val = ty; uj_type = Retyping.get_type_of env sigma ty}
         in
@@ -2256,10 +2256,12 @@ let constr_of_pat env sigma arsign pat avoid =
         let app = applist (cstr, List.map (lift (List.length sign)) params) in
         let app = applist (app, args) in
         let apptype = Retyping.get_type_of env sigma app in
-        let IndType (indf, realargs) = find_rectype env sigma apptype in
+        let IndType (indf, realargs) as ind = find_rectype env sigma apptype in
+        let subst = Vars.subst_of_rel_context_instance_list realdecls realargs in
+        let apptype = mkAppliedInd ind (* this absorbs trailing let-ins *) in
           match alias with
               Anonymous ->
-                sigma, pat', sign, app, apptype, realargs, n, avoid
+                sigma, pat', sign, app, apptype, subst, n, avoid
             | Name id ->
                 let r = Inductiveops.relevance_of_inductive_family env indf in
                 let sign = LocalAssum (make_annot alias r, lift m ty) :: sign in
@@ -2279,7 +2281,7 @@ let constr_of_pat env sigma arsign pat avoid =
                   with Evarconv.UnableToUnify _ -> sigma, sign, 1, avoid
                 in
                   (* Mark the equality as a hole *)
-                  sigma, pat', sign, lift i app, lift i apptype, realargs, n + i, avoid
+                  sigma, pat', sign, lift i app, lift i apptype, subst, n + i, avoid
   in
   let sigma, pat', sign, patc, patty, args, z, avoid = typ env sigma (List.hd arsign) (List.tl arsign) pat avoid in
     sigma, pat', (sign, patc, (patty, args), pat'), avoid
@@ -2414,14 +2416,14 @@ let constrs_of_pats typing_fun env sigma eqns tomatchs sign neqs arity =
             [env] extended with the type of realargs *)
          let rhs_rels, pats, signlen =
            List.fold_left
-             (fun (renv, pats, n) (sign, pat_c, (ty, args), pat) ->
+             (fun (renv, pats, n) (sign, pat_c, (ty, subst), pat) ->
                (* Recombine signatures and terms of all of the row's patterns *)
                let sign' = lift_rel_context n sign in
                let len = List.length sign' in
                  (sign' @ renv,
                  (* lift to get outside of previous pattern's signatures. *)
                  (sign', liftn n (succ len) pat_c,
-                  (liftn n (succ len) ty, List.map (liftn n (succ len)) args), pat) :: pats,
+                  (liftn n (succ len) ty, List.map (liftn n (succ len)) subst), pat) :: pats,
                  len + n))
              ([], [], 0) opats in
          (* Below, [pats] is a list of [(sign, pat_c, (ty, args), pat)];
@@ -2430,22 +2432,21 @@ let constrs_of_pats typing_fun env sigma eqns tomatchs sign neqs arity =
             of [env] extended with all [sign] *)
          let pats, _ = List.fold_left
            (* lift to get outside of past patterns to get terms in the combined environment. *)
-           (fun (pats, n) (sign, pat_c, (ty, args), pat) ->
+           (fun (pats, n) (sign, pat_c, (ty, subst), pat) ->
              let len = List.length sign in
                ((rels_of_patsign sigma sign, lift n pat_c,
-                 (lift n ty, List.map (lift n) args), pat) :: pats, len + n))
+                 (lift n ty, List.map (lift n) subst), pat) :: pats, len + n))
            ([], 0) pats
          in
          let sigma, ineqs = build_ineqs !!env sigma prevpatterns pats signlen in
          let rhs_rels' = rels_of_patsign sigma rhs_rels in
          let arity =
-           let args, nargs =
-             List.fold_right (fun (sign, pat_c, (_, args), _) (allargs,n) ->
-               (args @ pat_c :: allargs, List.length args + succ n))
+           let subst, nsubst =
+             List.fold_right (fun (sign, pat_c, (_, subst), _) (allsubst,n) ->
+               (allsubst @ pat_c :: subst, List.length subst + succ n))
                pats ([], 0)
            in
-           let args = List.rev args in
-             substl args (liftn signlen (succ nargs) arity)
+             substl subst (liftn signlen (succ nsubst) arity)
          in
          let r = ERelevance.relevant in (* TODO relevance *)
          let rhs_rels', tycon =
@@ -2545,12 +2546,11 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
             new arity signatures
          *)
          match ty with
-         | IsInd (ty, IndType (indf, args), _) when List.length args > 0 ->
+         | IsInd (ty, IndType (indf, realargs), _) when List.length realargs > 0 ->
              (* Build the arity signature following the names in matched terms
                 as much as possible *)
              let argsign = List.tl arsign in (* arguments in inverse application order *)
              let app_decl = List.hd arsign in (* The matched argument *)
-             let argsign = List.rev argsign in (* arguments in application order *)
              (* We are working on the i-th inductive type of the arity. It satisfies
                 [env |- tm_i : indf_i args_i : Type] with [args_i:argts_i] and we want to build
                 [env, arsign |- eqs_i : ((names_i,appn_i : argsign_i,appt_i) = (args_i,tm_i : argts_i,indf args_i))]
@@ -2570,9 +2570,10 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
                 [env, arsign, names'_i |- appn_i:appt_i] as terms, where the [names_i] refer to
                 the [names_i] in [argsign]; we obtain it by first lifting the whole context
                 [(names_i:argsign_i),(appn_i:appt_i)] (argsign') *)
+             let subst = Vars.subst_of_rel_context_instance_list argsign realargs in
              let sigma, env', nargeqs, argeqs, refl_args, slift, argsign' =
-               List.fold_left2
-                 (fun (sigma, env, nargeqs, argeqs, refl_args, slift, argsign') arg decl ->
+               List.fold_right2
+                 (fun arg decl (sigma, env, nargeqs, argeqs, refl_args, slift, argsign') ->
                     let name = RelDecl.get_name decl in
                     let t = liftn neqs (succ nargeqs) (RelDecl.get_type decl) in
                     let argt = Retyping.get_type_of env sigma arg in
@@ -2613,7 +2614,7 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
                        refl_arg :: refl_args,
                        pred slift,
                        RelDecl.set_name (Name id) decl :: argsign'))
-                 (sigma, env, 0, [], [], slift, []) args argsign
+                 subst argsign (sigma, env, 0, [], [], slift, [])
              in
              assert (neqs + nargeqs + slift = nar);
              let appn = RelDecl.get_name app_decl in
@@ -2634,12 +2635,14 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
                 ((RelDecl.set_name (Name id) app_decl :: argsign') :: arsigns))
 
          | _ -> (* Non dependent inductive or not inductive, just use a regular equality *)
-             let decl = match arsign with [x] -> x | _ -> assert(false) in
+             let decl = List.hd arsign in (* The matched argument *)
+             let argsign = List.tl arsign in (* rest of signature (necessarily only letins) *)
              let name = RelDecl.get_name decl in
              let previd, id = make_prime avoid name in
-             let arsign' = RelDecl.set_name (Name id) decl in
+             let arsign' = RelDecl.set_name (Name id) decl :: argsign in
              let tomatch_ty = type_of_tomatch ty in
             assert (neqs + slift = nar);
+            let slift = slift - List.length argsign in
             let sigma, eq =
               mk_eq env sigma
                 (lift nar tomatch_ty)
@@ -2648,10 +2651,11 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
             in
             let sigma, refl = mk_eq_refl env sigma tomatch_ty tm in
             let na = make_annot (Name (eq_id avoid previd)) ERelevance.relevant in
+            let nar' = List.length arsign' in
             (sigma,
-            [LocalAssum (na, eq)] :: eqs, succ neqs,
+            [LocalAssum (na, eq)] :: eqs, neqs + nar',
             refl :: refls,
-            pred slift, (arsign' :: []) :: arsigns))
+            pred slift, arsign' :: arsigns))
       (sigma, [], 0, [], nar, []) tomatchs arsign
   in
   assert (Int.equal slift 0); (* we must have folded over all elements of the arity signature *)
