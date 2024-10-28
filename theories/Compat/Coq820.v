@@ -13,4 +13,4 @@
 (** When removing this file, please cleanup the "-compat" option code
     in sysinit/coqargs.ml *)
 
-#[export] Set Warnings "-deprecated-since-8.21".
+#[export] Set Warnings "-deprecated-since-9.0".

@@ -113,7 +113,7 @@ Ltac2 @ external noccur_between : int -> int -> constr -> bool := "coq-core.plug
 (** [noccur_between n m c] returns true iff [Rel p] does not occur in term [c]
   for [n <= p < n+m] *)
 
-#[deprecated(since="8.21", note="occur_between currently behaves as noccur_between.
+#[deprecated(since="9.0", note="occur_between currently behaves as noccur_between.
 Use noccur_between instead if you want [true] for variables which do not occur in the term
 and its negation if you want [false].")]
 Ltac2 occur_between := noccur_between.
@@ -121,7 +121,7 @@ Ltac2 occur_between := noccur_between.
 Ltac2 noccurn (n : int) (c : constr) : bool := noccur_between n 1 c.
 (** [noccurn n c] returns true iff [Rel n] does not occur in term [c] *)
 
-#[deprecated(since="8.21", note="occurn currently behaves as noccurn.
+#[deprecated(since="9.0", note="occurn currently behaves as noccurn.
 Use noccurn instead if you want [true] for variables which do not occur in the term
 and its negation if you want [false].")]
 Ltac2 occurn (n : int) (c : constr) : bool := noccur_between n 1 c.
