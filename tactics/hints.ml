@@ -155,14 +155,14 @@ type hint_pattern =
 | ConstrPattern of constr_pattern
 | SyntacticPattern of constr_pattern
 
-type 'a with_metadata =
+type ('a,'db) with_metadata =
   { pri     : int
   (** A number lower is higher priority *)
   ; pat     : hint_pattern option
   (** A pattern for the concl of the Goal *)
   ; name    : GlobRef.t option
   (** A potential name to refer to the hint *)
-  ; db : string option
+  ; db : 'db
   (** The database from which the hint comes *)
   ; secvars : Id.Pred.t
   (** The set of section variables the hint depends on *)
@@ -170,10 +170,13 @@ type 'a with_metadata =
   (** the tactic to apply when the concl matches pat *)
   }
 
-type full_hint = hint hint_ast with_uid with_metadata
+type hint_db_name = string
+
+(* db = None for local database (ie built from goal hyps) *)
+type full_hint = (hint hint_ast with_uid, hint_db_name option) with_metadata
 
 type hint_entry = GlobRef.t option *
-  raw_hint hint_ast with_uid with_metadata
+  (raw_hint hint_ast with_uid, unit) with_metadata
 
 type hint_mode =
   | ModeInput (* No evars *)
@@ -589,8 +592,6 @@ let rec subst_hints_path subst hp =
       if p' == p && q' == q then hp else PathOr (p', q')
   | _ -> hp
 
-type hint_db_name = string
-
 type mode_match =
   | NoMode
   | WithMode of hint_mode array
@@ -889,7 +890,7 @@ let make_exact_entry env sigma info ?name (c, cty, ctx) =
         let h = { rhint_term = c; rhint_type = cty; rhint_uctx = ctx; rhint_arty = 0 } in
         (Some hd,
          { pri; pat = Some pat; name;
-           db = None; secvars;
+           db = (); secvars;
            code = with_uid (Give_exact h); })
 
 let name_of_hint = function
@@ -919,13 +920,13 @@ let make_apply_entry env sigma hnf info ?name (c, cty, ctx) =
     if Int.equal nmiss 0 then
       (Some hd,
        { pri; pat = Some pat; name;
-         db = None;
+         db = ();
          secvars;
          code = with_uid (Res_pf h); })
     else
       (Some hd,
        { pri; pat = Some pat; name;
-         db = None; secvars;
+         db = (); secvars;
          code = with_uid (ERes_pf h); })
   | _ -> failwith "make_apply_entry"
 
@@ -983,7 +984,7 @@ let make_unfold eref =
    { pri = 4;
      pat = None;
      name = Some g;
-     db = None;
+     db = ();
      secvars = secvars_of_global (Global.env ()) g;
      code = with_uid (Unfold_nth eref) })
 
@@ -1000,7 +1001,7 @@ let make_extern pri pat tacast =
    { pri = pri;
      pat = Option.map (fun p -> SyntacticPattern p) pat;
      name = None;
-     db = None;
+     db = ();
      secvars = Id.Pred.empty; (* Approximation *)
      code = with_uid (Extern (pat, tacast)) })
 
@@ -1027,7 +1028,7 @@ let make_trivial env sigma r =
    { pri=1;
      pat = Some DefaultPattern;
      name = name;
-     db = None;
+     db = ();
      secvars = secvars_of_constr env sigma c;
      code= with_uid (Res_pf_THEN_trivial_fail h) })
 
