@@ -68,21 +68,14 @@ type instance = {
 }
 
 let add_instance_base inst =
-  let locality = match inst.locality with
-  | Local -> Local
-  | SuperGlobal ->
-    (* i.e. in a section, declare the hint as local since discharge is managed
-       by rebuild_instance which calls again add_instance_hint; don't ask hints
-       to take discharge into account itself *)
+  let locality =
+    (* in a section, declare the hint as local
+       since cache_instance will call add_instance_hint again;
+       don't ask hints to take discharge into account itself *)
     if Global.sections_are_opened () then Local
-    else SuperGlobal
-  | Export ->
-    (* Same as above for export *)
-    if Global.sections_are_opened () then Local
-    else Export
+    else inst.locality
   in
-  add_instance_hint inst.instance ~locality
-    inst.info
+  add_instance_hint inst.instance ~locality inst.info
 
 (*
  * instances persistent object
