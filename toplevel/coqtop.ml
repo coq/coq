@@ -148,7 +148,7 @@ let coqtop_init ({ run_mode; color_mode }, async_opts) injections ~opts =
 let coqtop_parse_extra opts extras =
   let rec parse_extra run_mode  = function
   | "-batch" :: rest -> parse_extra Batch  rest
-  | "list-tags" :: rest -> Query PrintTags, []
+  | "-list-tags" :: rest -> Query PrintTags, []
   | "-print-mod-uid" :: rest -> Query (PrintModUid rest), []
   |   x :: rest ->
     let run_mode, rest = parse_extra run_mode rest in run_mode, x :: rest
