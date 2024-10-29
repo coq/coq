@@ -171,13 +171,6 @@ let instance_of_univs = function
   | UState.Monomorphic_entry _, _ -> UVars.Instance.empty
   | UState.Polymorphic_entry uctx, _ -> UVars.UContext.instance uctx
 
-let add_mono_univ_uctx_for_derived ctx' = function
-  | UState.Monomorphic_entry ctx, ubinders -> UState.Monomorphic_entry (Univ.ContextSet.union ctx ctx'), ubinders
-  | UState.Polymorphic_entry ctx, ubinders as x ->
-    if not (Univ.ContextSet.is_empty ctx') then
-      CErrors.anomaly (Pp.str "Transparent component with private polymorphism in Derive.");
-    x
-
 let add_mono_uctx uctx = function
   | UState.Monomorphic_entry ctx, ubinders -> UState.Monomorphic_entry (Univ.ContextSet.union (UState.context_set uctx) ctx), ubinders
   | UState.Polymorphic_entry _, _ as x -> assert (Univ.ContextSet.is_empty (UState.context_set uctx)); x
@@ -315,11 +308,10 @@ module ProofEntry = struct
       let body = Future.chain body (fun ((b,c),eff) -> let b, eff = f (b,eff) in ((b,c),eff)) in
       DeferredOpaque { body; feedback_id }
 
-  let map_proof_entry ~f entry =
-    { entry with proof_entry_body = map_entry_body ~f entry.proof_entry_body }
-
-  let map_entry_type ~f entry =
-    { entry with proof_entry_type = f entry.proof_entry_type }
+  let map_entry ~f entry =
+    { entry with
+      proof_entry_body = map_entry_body ~f:(on_fst f) entry.proof_entry_body;
+      proof_entry_type = Option.map f entry.proof_entry_type }
 
   let get_opacity entry =
     match entry.proof_entry_body with
@@ -348,15 +340,6 @@ module ProofEntry = struct
       | Transparent -> Univ.ContextSet.empty
     in
     (body, uctx), eff
-
-  let set_transparent_for_derived entry =
-    let body, opaque = force_entry_body entry in
-    match opaque with
-    | Transparent -> { entry with proof_entry_body = Default { body; opaque } }
-    | Opaque uctx ->
-      { entry with
-        proof_entry_body = Default { body; opaque = Transparent };
-        proof_entry_universes = add_mono_univ_uctx_for_derived uctx entry.proof_entry_universes }
 
   let rec shrink ctx sign c t accu =
     let open Constr in
@@ -965,11 +948,16 @@ let interp_mutual_using env cinfo bodies_types using =
       interp_proof_using_gen f env evd cinfos using)
     using
 
-let declare_possibly_mutual_definitions ~info ~cinfo ~obls obj =
-  let entries = process_proof ~info obj in
+let declare_possibly_mutual_definitions ~info ~cinfo ~obls ?(is_telescope=false) obj =
+  let entries = process_proof ~info ~is_telescope obj in
   let { Info.hook; scope; clearbody; kind; typing_flags; user_warns; ntns; _ } = info in
-  let refs = List.map2 (fun CInfo.{name; impargs} (entry, uctx) ->
-      declare_entry ~name ~scope ~clearbody ~kind ?hook ~impargs ~typing_flags ~user_warns ~obls ~uctx entry) cinfo entries in
+  let _, refs = List.fold_left2_map (fun subst CInfo.{name; impargs} (entry, uctx) ->
+      (* replacing matters for Derive-like statement but it does not hurt otherwise *)
+      let entry = ProofEntry.map_entry entry ~f:(Vars.replace_vars subst) in
+      let gref = declare_entry ~name ~scope ~clearbody ~kind ?hook ~impargs ~typing_flags ~user_warns ~obls ~uctx entry in
+      let inst = instance_of_univs entry.proof_entry_universes in
+      let const = Constr.mkRef (gref, inst) in
+      ((name, const) :: subst, gref)) [] cinfo entries in
   let () =
     (* For the recursive case, we override the temporary notations used while proving, now using the global names *)
     let local = info.scope=Locality.Discharge in
@@ -1686,7 +1674,6 @@ module Proof_ending = struct
   type t =
     | Regular
     | End_obligation of Obls_.obligation_qed_info
-    | End_derive
     | End_equations of
         { hook : pm:Obls_.State.t -> Constant.t list -> Evd.evar_map -> Obls_.State.t
         ; i : Id.t
@@ -1825,7 +1812,7 @@ let start_dependent ~info ~cinfo ~name ~proof_ending goals =
   }
 
 let start_derive ~name ~info ~cinfo goals =
-  let proof_ending = Proof_ending.End_derive in
+  let proof_ending = Proof_ending.Regular in
   start_dependent ~info ~cinfo ~name ~proof_ending goals
 
 let start_equations ~name ~info ~hook ~types sigma goals =
@@ -2262,28 +2249,6 @@ let save_admitted ~pm ~proof =
 (* Saving a lemma-like constant                                         *)
 (************************************************************************)
 
-let finish_derived pinfo entries =
-  let n = List.length entries in
-  let { Proof_info.info = { Info.hook; scope; clearbody; kind; typing_flags; user_warns; poly; udecl; _ } } = pinfo in
-  let _, _, refs, _ =
-    List.fold_left2 (fun (i, subst, refs, used_univs) CInfo.{name; impargs} (entry, uctx) ->
-      (* The opacity of the specification is adjusted to be [false], as it must.*)
-      let entry = if i < n-1 then ProofEntry.set_transparent_for_derived entry else entry in
-      let f c = UState.nf_universes uctx (Vars.replace_vars subst c) in
-      let entry = ProofEntry.map_entry_type entry ~f:(Option.map f) in
-      let entry = ProofEntry.map_proof_entry entry ~f:(fun (b,fx) -> (f b, fx)) in
-      let used_univs_body = Vars.universes_of_constr (fst (fst (ProofEntry.get_entry_body entry))) (* Currently assume not delayed *) in
-      let used_univs_typ = Option.cata Vars.universes_of_constr Univ.Level.Set.empty entry.proof_entry_type in
-      let used_univs = Univ.Level.Set.union used_univs (Univ.Level.Set.union used_univs_body used_univs_typ) in
-      let uctx' = UState.restrict uctx used_univs in
-      let entry = { entry with proof_entry_universes = UState.check_univ_decl ~poly uctx' udecl } in
-      let gref = declare_entry ~name ~scope ~clearbody ~kind ?hook ~impargs ~typing_flags ~user_warns ~uctx entry in
-      let cst = match gref with ConstRef cst -> cst | _ -> assert false in
-      let inst = instance_of_univs entry.proof_entry_universes in
-      (i+1, (name, Constr.mkConstU (cst,inst))::subst, gref::refs, used_univs))
-      (0, [], [], Univ.Level.Set.empty) pinfo.Proof_info.cinfo entries in
-  refs
-
 let finish_proved_equations ~pm ~kind ~hook i entries types sigma0 =
 
   let obls = ref 1 in
@@ -2317,14 +2282,14 @@ let finish_proof ~pm proof_obj proof_info =
   let { Proof_info.info; cinfo; possible_guard } = proof_info in
   match CEphemeron.default proof_info.Proof_info.proof_ending Regular with
   | Regular ->
-    pm, declare_possibly_mutual_definitions ~info ~cinfo ~obls:[] proof_obj
+    (* Unless this is a block of mutual fixpoint, we assume the
+       statements, if more than one, to form a telescope, as in Derive *)
+    let is_telescope = Option.is_empty proof_info.possible_guard in
+    pm, declare_possibly_mutual_definitions ~info ~cinfo ~obls:[] ~is_telescope proof_obj
   | End_obligation oinfo ->
     let entries = process_proof ~info proof_obj in
     let entry, uctx = check_single_entry entries "Obligation.save" in
     Obls_.obligation_terminator ~pm ~entry ~uctx ~oinfo
-  | End_derive ->
-    let entries = process_proof ~info ~is_telescope:true proof_obj in
-    pm, finish_derived proof_info entries
   | End_equations { hook; i; types; sigma } ->
     let kind = info.Info.kind in
     let entries = process_proof ~info proof_obj in
