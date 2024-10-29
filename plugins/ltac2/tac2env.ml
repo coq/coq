@@ -182,11 +182,15 @@ let compare r1 r2 = match r1, r2 with
 
 let equal r1 r2 = compare r1 r2 == 0
 
+let hash = function
+  | TacConstant c -> Hashset.Combine.combinesmall 1 (KerName.hash c)
+  | TacAlias c -> Hashset.Combine.combinesmall 2 (KerName.hash c)
+
 end
 
 module KnTab = Nametab.Make(FullPath)(KerName)
 module RfTab = Nametab.Make(FullPath)(TacRef)
-module RfMap = Map.Make(TacRef)
+module RfMap = HMap.Make(TacRef)
 
 type nametab = {
   tab_ltac : RfTab.t;
