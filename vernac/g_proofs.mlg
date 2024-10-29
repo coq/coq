@@ -44,6 +44,10 @@ let warn_deprecated_unfocus =
   CWarnings.create ~name:"deprecated-unfocus" ~category:Deprecation.Version.v8_8
          (fun () -> Pp.strbrk "The Unfocus command is deprecated")
 
+let warn_deprecated_hint_resolve_pattern =
+  CWarnings.create ~name:"deprecated-resolve" ~category:Deprecation.Version.v8_8
+         (fun () -> Pp.strbrk "Providing an explicit pattern on Hint Resolve is deprecated")
+
 }
 
 (* Proof commands *)
@@ -112,7 +116,9 @@ GRAMMAR EXTEND Gram
   ;
   hint:
     [ [ IDENT "Resolve"; lc = LIST1 reference_or_constr; info = hint_info ->
-          { HintsResolve (List.map (fun x -> (info, true, x)) lc) }
+          { if info.hint_pattern <> None then
+              warn_deprecated_hint_resolve_pattern ~loc ();
+            HintsResolve (List.map (fun x -> (info, true, x)) lc) }
       | IDENT "Resolve"; "->"; lc = LIST1 global; n = OPT natural ->
           { HintsResolveIFF (true, lc, n) }
       | IDENT "Resolve"; "<-"; lc = LIST1 global; n = OPT natural ->
