@@ -58,7 +58,7 @@ val constr_of_pat :
            Names.Id.Set.t ->
            Evd.evar_map * Glob_term.cases_pattern *
            (rel_context * constr *
-            (types * constr list) * Glob_term.cases_pattern) *
+            (types * Vars.substl) * Glob_term.cases_pattern) *
            Names.Id.Set.t
 
 type 'a rhs =
