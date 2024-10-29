@@ -611,7 +611,7 @@ $coq_opam_package (dependency install failed in $RUNNER)"
                 # "opam install" failed.
                 echo $_RES > $log_dir/$coq_opam_package.$RUNNER.opam_install.$iteration.exit_status
                 failed_packages="$failed_packages
-$coq_opam_package"
+$coq_opam_package (in $RUNNER)"
                 continue 3
             fi
         done
