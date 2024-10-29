@@ -138,6 +138,9 @@ val shortest_qualid_of_projection : ltac_projection -> qualid
 
 (** {5 Toplevel definitions of ML tactics} *)
 
+val ml_tactic_name : plugin:string -> string -> ml_tactic_name
+(** Generates the hash *)
+
 (** This state is not part of the summary, contrarily to the ones above. It is
     intended to be used from ML plugins to register ML-side functions. *)
 

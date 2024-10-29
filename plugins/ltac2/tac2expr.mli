@@ -37,6 +37,7 @@ type 'a or_relid =
 type ml_tactic_name = {
   mltac_plugin : string;
   mltac_tactic : string;
+  mltac_hash : int;
 }
 
 type 'a or_tuple =

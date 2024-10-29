@@ -134,6 +134,12 @@ let define_notation kn tac =
 
 let interp_notation kn = KNmap.find kn !ltac_notations
 
+let ml_tactic_name ~plugin tactic = {
+  mltac_plugin = plugin;
+  mltac_tactic = tactic;
+  mltac_hash = Hashset.Combine.combine (CString.hash plugin) (CString.hash tactic);
+}
+
 module ML =
 struct
   type t = ml_tactic_name
@@ -141,9 +147,11 @@ struct
     let c = String.compare n1.mltac_plugin n2.mltac_plugin in
     if Int.equal c 0 then String.compare n1.mltac_tactic n2.mltac_tactic
     else c
+
+  let hash n = n.mltac_hash
 end
 
-module MLMap = Map.Make(ML)
+module MLMap = HMap.Make(ML)
 
 let primitive_map = ref MLMap.empty
 

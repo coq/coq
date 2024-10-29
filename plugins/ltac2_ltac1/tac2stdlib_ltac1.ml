@@ -14,13 +14,12 @@ open Geninterp
 open Ltac2_plugin
 open Tac2val
 open Tac2ffi
-open Tac2expr
 open Proofview.Notations
 open Tac2externals
 
 let ltac2_ltac1_plugin = "coq-core.plugins.ltac2_ltac1"
 
-let pname ?(plugin=ltac2_ltac1_plugin) s = { mltac_plugin = plugin; mltac_tactic = s }
+let pname ?(plugin=ltac2_ltac1_plugin) s = Tac2env.ml_tactic_name ~plugin s
 
 let define ?plugin s = define (pname ?plugin s)
 

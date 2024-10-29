@@ -10,7 +10,6 @@
 
 open Names
 open Genredexpr
-open Tac2expr
 open Tac2val
 open Tac2ffi
 open Tac2types
@@ -247,7 +246,7 @@ let generalize_arg = make_to_repr to_generalize_arg
 open Tac2externals
 
 let define s =
-  define { mltac_plugin = "coq-core.plugins.ltac2"; mltac_tactic = s }
+  define (Tac2env.ml_tactic_name ~plugin:"coq-core.plugins.ltac2" s)
 
 (** Tactics from Tacexpr *)
 

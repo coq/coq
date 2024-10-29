@@ -206,7 +206,7 @@ let fail ?(info = Exninfo.null) e =
   Proofview.tclZERO ~info e
 
 let return x = Proofview.tclUNIT x
-let pname ?(plugin=ltac2_plugin) s = { mltac_plugin = plugin; mltac_tactic = s }
+let pname ?(plugin=ltac2_plugin) s = Tac2env.ml_tactic_name ~plugin s
 
 let catchable_exception = function
   | Logic_monad.Exception _ -> false

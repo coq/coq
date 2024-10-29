@@ -437,7 +437,7 @@ GRAMMAR EXTEND Gram
   tac2def_ext:
     [ [ "@"; IDENT "external"; id = identref; ":"; t = ltac2_type LEVEL "5"; ":=";
         plugin = Prim.string; name = Prim.string ->
-      { let ml = { mltac_plugin = plugin; mltac_tactic = name } in
+        { let ml = Tac2env.ml_tactic_name ~plugin name in
         StrPrm (id, t, ml) }
     ] ]
   ;
