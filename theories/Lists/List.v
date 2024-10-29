@@ -370,6 +370,8 @@ Section Facts.
       right; unfold not; intros [Hc1| Hc2]; auto.
   Defined.
 
+  Lemma length_tl l : length (@tl A l) = length l - 1.
+  Proof. case l; cbn [length tl Nat.sub]; auto using Nat.sub_0_r. Qed.
 End Facts.
 
 #[global]
@@ -1207,6 +1209,9 @@ Section Map.
     intros n l d H. now rewrite nth_error_map, H.
   Qed.
 
+  Lemma tl_map l : tl (map l) = map (tl l).
+  Proof. case l; trivial. Qed.
+
   Lemma map_app : forall l l',
     map (l++l') = (map l)++(map l').
   Proof.
@@ -1625,6 +1630,13 @@ End Fold_Right_Recursor.
      destruct IN as [<-|IN]; auto.
     Qed.
 
+    Lemma filter_rev (l : list A) : filter (rev l) = rev (filter l).
+    Proof.
+      induction l; cbn [rev]; trivial.
+      rewrite filter_app, IHl; cbn [filter].
+      case f; cbn [app]; auto using app_nil_r.
+    Qed.
+
   (** [partition] *)
 
     Fixpoint partition (l:list A) : list A * list A :=
@@ -1689,7 +1701,18 @@ End Fold_Right_Recursor.
   (*******************************)
 
   Section Filtering.
+
+    Lemma filter_map_swap A B f g l :
+      filter f (@map A B g l) = @map A B g (filter (fun a => f (g a)) l).
+    Proof. induction l; cbn [map filter]; auto. rewrite IHl; case f; auto. Qed.
+
     Variables (A : Type).
+
+    Lemma filter_true l : filter (fun _ : A => true) l = l.
+    Proof. induction l; cbn [filter]; congruence. Qed.
+
+    Lemma filter_false l : filter (fun _ : A => false) l = nil.
+    Proof. induction l; cbn [filter]; congruence. Qed.
 
     Lemma filter_ext_in : forall (f g : A -> bool) (l : list A),
       (forall a, In a l -> f a = g a) -> filter f l = filter g l.
@@ -1954,6 +1977,9 @@ End Fold_Right_Recursor.
       intros. now rewrite length_app, length_map, IHl.
     Qed.
 
+    Lemma list_prod_as_flat_map : forall l l',
+      list_prod l l' = flat_map (fun a => map (pair a) l') l.
+    Proof. induction l; intros; cbn; rewrite ?IHl; trivial. Qed.
   End ListPairs.
 
 
@@ -2884,6 +2910,12 @@ Section NatSeq.
    change [start + len] with (seq (start + len) 1).
    rewrite <- seq_app.
    rewrite Nat.add_succ_r, Nat.add_0_r; reflexivity.
+  Qed.
+
+  Lemma skipn_seq n start len : skipn n (seq start len) = seq (start+n) (len-n).
+  Proof.
+    revert len; revert start; induction n, len;
+      cbn [skipn seq]; rewrite ?Nat.add_0_r, ?IHn; cbn [Nat.add]; auto.
   Qed.
 
   Lemma nth_error_seq start len n :
@@ -3829,6 +3861,10 @@ Proof.
   - cbn. f_equal. exact IHn.
 Qed.
 
+Lemma map_const (A B : Type) (b : B) (l : list A) :
+  map (fun _ => b) l = repeat b (length l).
+Proof. induction l; cbn [repeat map length]; congruence. Qed.
+
 Lemma rev_repeat A n (a:A):
   rev (repeat a n) = repeat a n.
 Proof.
@@ -3836,6 +3872,24 @@ Proof.
   - reflexivity.
   - cbn. rewrite IHn. symmetry. apply repeat_cons.
 Qed.
+
+Lemma fst_list_prod [A B] l l' : map fst (@list_prod A B l l') =
+  flat_map (fun a => repeat a (length l')) l.
+Proof.
+  revert l'; induction l; intros; trivial. cbn.
+  erewrite map_app, map_map, map_ext, map_const; eauto using f_equal2.
+Qed.
+#[deprecated(use = fst_list_prod)]
+Notation map_fst_list_prod := fst_list_prod (only parsing).
+
+Lemma snd_list_prod [A B] l l' : map snd (@list_prod A B l l') =
+  concat (repeat l' (length l)).
+Proof.
+  revert l'; induction l; intros; trivial. cbn.
+  erewrite map_app, map_map, map_ext, map_id; eauto using f_equal2.
+Qed.
+#[deprecated(use = snd_list_prod)]
+Notation map_snd_list_prod := snd_list_prod (only parsing).
 
 (** Sum of elements of a list of [nat]: [list_sum] *)
 
