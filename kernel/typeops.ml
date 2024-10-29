@@ -619,7 +619,7 @@ let push_rec_types (lna,typarray,_) env =
 
 (* The typing machine. *)
 let rec execute tbl env cstr =
-  if Int.equal (HConstr.refcount cstr) 1 then execute_aux tbl env cstr
+  if HConstr.refcount cstr <= 1 then execute_aux tbl env cstr
   else begin match HConstr.Tbl.find_opt tbl cstr with
     | Some v -> v
     | None ->

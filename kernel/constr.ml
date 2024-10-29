@@ -1466,7 +1466,7 @@ and sh_rec_main t =
 
 and sh_rec t =
   incr steps;
-  if refcount t = 1 then sh_rec_main t
+  if refcount t <= 1 then sh_rec_main t
   else match Tbl.find_opt t with
     | Some res -> res
     | None ->

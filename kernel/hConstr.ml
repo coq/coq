@@ -166,9 +166,20 @@ module Tbl = struct
       !tbl
       empty_stats
 
+  let fold f tbl acc =
+    Int.Map.fold (fun _ l acc ->
+        List.fold_left (fun acc (k,v) -> f k v acc)
+          acc
+          l)
+      !tbl
+      acc
+
 end
 
 type henv = {
+  (* currently reading a term reachable from the original one
+     (false when rebuilding binder types) *)
+  reachable : bool;
   (* only used for globals, rel context is not correct *)
   globals : Environ.env;
   (* table of reified terms *)
@@ -187,6 +198,7 @@ type henv = {
 }
 
 let empty_env env = {
+  reachable = true;
   globals = env;
   tbl = Tbl.create ();
   steps = ref 0;
@@ -358,12 +370,12 @@ let rec of_constr henv c =
       | _ -> 0, hash
     in
     match Tbl.raw_find henv.tbl hash (fun c' -> raw_equal c' ~isRel ~kind) with
-    | Some c' -> c'.refcount <- c'.refcount + 1; c'
+    | Some c' -> let () = if henv.reachable then c'.refcount <- c'.refcount + 1 in c'
     | None ->
       let c =
         let self = kind_to_constr kind in
         let self = if hasheq_kind (Constr.kind self) (Constr.kind c) then c else self in
-        { self; kind; hash; isRel; refcount = 1 }
+        { self; kind; hash; isRel; refcount = if henv.reachable then 1 else 0 }
       in
     Tbl.add henv.tbl c c; c
 
@@ -423,7 +435,7 @@ and of_constr_aux henv c =
     in
     let of_ctx (bnd, c) bnd' =
       let () = hcons_inplace hcons_annot bnd in
-      let henv = push_rel_context henv bnd' in
+      let henv = push_rel_context {henv with reachable=false} bnd' in
       let c = of_constr henv c in
       bnd, c
     in
@@ -479,20 +491,65 @@ let tree_size c =
   in
   aux 0 c
 
+let fold f acc c = match c.kind with
+  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
+    | Construct _ | Int _ | Float _ | String _) -> acc
+  | Cast (c,_,t) -> f (f acc c) t
+  | Prod (_,t,c) -> f (f acc t) c
+  | Lambda (_,t,c) -> f (f acc t) c
+  | LetIn (_,b,t,c) -> f (f (f acc b) t) c
+  | App (c,l) -> Array.fold_left f (f acc c) l
+  | Proj (_p,_r,c) -> f acc c
+  | Evar (_,l) -> SList.Skip.fold f acc l
+  | Case (_,_,pms,((_,p),_),iv,c,bl) ->
+    Array.fold_left (fun acc (_, b) -> f acc b) (f (fold_invert f (f (Array.fold_left f acc pms) p) iv) c) bl
+  | Fix (_,(_lna,tl,bl)) ->
+    Array.fold_left2 (fun acc t b -> f (f acc t) b) acc tl bl
+  | CoFix (_,(_lna,tl,bl)) ->
+    Array.fold_left2 (fun acc t b -> f (f acc t) b) acc tl bl
+  | Array(_u,t,def,ty) ->
+    f (f (Array.fold_left f acc t) def) ty
+
+let graph_size c =
+  let tbl = Tbl.create () in
+  let rec aux size c =
+    match Tbl.find_opt tbl c with
+    | Some () -> size
+    | None ->
+      let () = Tbl.add tbl c () in
+      (* not sure this is the right way to count *)
+      fold aux (size + c.refcount) c
+  in
+  aux 0 c
+
 let of_constr env c =
   let henv = empty_env env in
   let henv = iterate push_unknown_rel (Environ.nb_rel env) henv in
   let c = NewProfile.profile "HConstr.of_constr" (fun () -> of_constr henv c) () in
   dbg Pp.(fun () ->
       let stats = Tbl.stats henv.tbl in
+      let unreachable, singletons, shared =
+        Tbl.fold (fun c _also_c (unreachable, singletons, shared) ->
+            match c.refcount with
+            | 0 -> unreachable+1, singletons, shared
+            | 1 -> unreachable, singletons+1, shared
+            | _ -> unreachable, singletons, shared+1)
+          henv.tbl
+          (0,0,0)
+      in
       let tree_size = tree_size (self c) in
+      let graph_size = graph_size c in
       v 0 (
         str "steps = " ++ int !(henv.steps) ++ spc() ++
         str "rel cnt = " ++ int !(henv.binder_cnt) ++ spc() ++
         str "unknwown rels = " ++ int !(henv.unknown_cnt) ++ spc() ++
         str "hashes = " ++ int stats.Tbl.hashes ++ spc() ++
         str "bindings = " ++ int stats.Tbl.bindings ++ spc() ++
+        str "unreachable = " ++ int unreachable ++ spc() ++
+        str "singletons = " ++ int singletons ++ spc() ++
+        str "shared = " ++ int shared ++ spc() ++
         str "tree size = " ++ int tree_size ++ spc() ++
+        str "graph size = " ++ int graph_size ++ spc() ++
         str "most_collisions = " ++ int stats.Tbl.most_collisions
     )
     );
