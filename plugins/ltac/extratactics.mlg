@@ -303,39 +303,39 @@ let seff id = VtSideff ([id], VtLater)
 END*)
 
 VERNAC COMMAND EXTEND DeriveInversionClear
-| #[ polymorphic; ] [ "Derive" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort_family(s) ]
+| #[ polymorphic; opacity ] [ "Derive" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => { seff na }
   -> {
-      add_inversion_lemma_exn ~poly:polymorphic na c s false inv_clear_tac }
+      add_inversion_lemma_exn ~poly:polymorphic ~opaque:opacity na c s false inv_clear_tac }
 
-| #[ polymorphic; ] [ "Derive" "Inversion_clear" ident(na) "with" constr(c) ] => { seff na }
+| #[ polymorphic; opacity ] [ "Derive" "Inversion_clear" ident(na) "with" constr(c) ] => { seff na }
   -> {
-      add_inversion_lemma_exn ~poly:polymorphic na c Sorts.InProp false inv_clear_tac }
+      add_inversion_lemma_exn ~poly:polymorphic ~opaque:opacity na c Sorts.InProp false inv_clear_tac }
 END
 
 VERNAC COMMAND EXTEND DeriveInversion
-| #[ polymorphic; ] [ "Derive" "Inversion" ident(na) "with" constr(c) "Sort" sort_family(s) ]
+| #[ polymorphic; opacity ] [ "Derive" "Inversion" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => { seff na }
   -> {
-      add_inversion_lemma_exn ~poly:polymorphic na c s false inv_tac }
+      add_inversion_lemma_exn ~poly:polymorphic ~opaque:opacity na c s false inv_tac }
 
-| #[ polymorphic; ] [ "Derive" "Inversion" ident(na) "with" constr(c) ] => { seff na }
+| #[ polymorphic; opacity ] [ "Derive" "Inversion" ident(na) "with" constr(c) ] => { seff na }
   -> {
-      add_inversion_lemma_exn ~poly:polymorphic na c Sorts.InProp false inv_tac }
+      add_inversion_lemma_exn ~poly:polymorphic ~opaque:opacity na c Sorts.InProp false inv_tac }
 END
 
 VERNAC COMMAND EXTEND DeriveDependentInversion
-| #[ polymorphic; ] [ "Derive" "Dependent" "Inversion" ident(na) "with" constr(c) "Sort" sort_family(s) ]
+| #[ polymorphic; opacity ] [ "Derive" "Dependent" "Inversion" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => { seff na }
   -> {
-      add_inversion_lemma_exn ~poly:polymorphic na c s true dinv_tac }
+      add_inversion_lemma_exn ~poly:polymorphic ~opaque:opacity na c s true dinv_tac }
 END
 
 VERNAC COMMAND EXTEND DeriveDependentInversionClear
-| #[ polymorphic; ] [ "Derive" "Dependent" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort_family(s) ]
+| #[ polymorphic; opacity ] [ "Derive" "Dependent" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => { seff na }
   -> {
-      add_inversion_lemma_exn ~poly:polymorphic na c s true dinv_clear_tac }
+      add_inversion_lemma_exn ~poly:polymorphic ~opaque:opacity na c s true dinv_clear_tac }
 END
 
 (**********************************************************************)

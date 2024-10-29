@@ -154,7 +154,7 @@ Top-level definitions of corecursive functions
    .. insertprodn cofix_definition cofix_definition
 
    .. prodn::
-      cofix_definition ::= @ident_decl {* @binder } {? : @type } {? := @term } {? @decl_notations }
+      cofix_definition ::= {* #[ {+, @attribute } ] } @ident_decl {* @binder } {? : @type } {? := @term } {? @decl_notations }
 
    This command introduces a method for constructing an infinite object of a
    coinductive type. For example, the stream containing all natural numbers can

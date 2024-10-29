@@ -386,7 +386,7 @@ let register_struct is_rec (rec_order, fixpoint_exprl) =
         CErrors.user_err
           Pp.(str "Body of Function must be given.")
     in
-    ComDefinition.do_definition ~name:fname.CAst.v ~poly:false
+    ComDefinition.do_definition ~name:fname.CAst.v ~opaque:(Some (Attributes.Defined Conv_oracle.transparent)) ~poly:false
       ~kind:Decls.Definition univs binders None body (Some rtype);
     let evd, rev_pconstants =
       List.fold_left
@@ -1335,11 +1335,11 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : _ list =
       | Some finfos -> finfos
     in
     match finfos.equation_lemma with
-    | None -> Vernacexpr.Transparent (* non recursive definition *)
+    | None -> Vernacexpr.Defined (* non recursive definition *)
     | Some equation ->
       if Declareops.is_opaque (Global.lookup_constant equation) then
-        Vernacexpr.Opaque
-      else Vernacexpr.Transparent
+        Vernacexpr.Qed
+      else Vernacexpr.Defined
   in
   let body, typ, univs, _hook, sigma0 =
     try
@@ -1484,12 +1484,12 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
           let lem_id = mk_correct_id f_id in
           let typ, _ = lemmas_types_infos.(i) in
           let info = Declare.Info.make () in
-          let cinfo = Declare.CInfo.make ~name:lem_id ~typ () in
+          let cinfo = Declare.CInfo.make ~name:lem_id ~typ ~opaque:(Some (Attributes.Defined Conv_oracle.transparent)) () in
           let lemma = Declare.Proof.start ~cinfo ~info !evd in
           let lemma = fst @@ Declare.Proof.by (proving_tac i) lemma in
           let (_ : _ list) =
             Declare.Proof.save_regular ~proof:lemma
-              ~opaque:Vernacexpr.Transparent ~idopt:None
+              ~opaque:Vernacexpr.Defined ~idopt:None
           in
           let finfo =
             match find_Function_infos (fst f_as_constant) with
@@ -1548,9 +1548,9 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
               Ensures by: obvious
             i*)
           let lem_id = mk_complete_id f_id in
-          let info = Declare.Info.make () in
+          let info = Declare.Info.make() in
           let cinfo =
-            Declare.CInfo.make ~name:lem_id ~typ:(fst lemmas_types_infos.(i)) ()
+            Declare.CInfo.make ~name:lem_id ~typ:(fst lemmas_types_infos.(i)) ~opaque:(Some (Attributes.Defined Conv_oracle.transparent)) ()
           in
           let lemma = Declare.Proof.start ~cinfo sigma ~info in
           let lemma =
@@ -1563,7 +1563,7 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
           in
           let (_ : _ list) =
             Declare.Proof.save_regular ~proof:lemma
-              ~opaque:Vernacexpr.Transparent ~idopt:None
+              ~opaque:Vernacexpr.Defined ~idopt:None
           in
           let finfo =
             match find_Function_infos (fst f_as_constant) with
@@ -2091,7 +2091,8 @@ let make_graph (f_ref : GlobRef.t) =
               ; binders = nal_tas @ bl
               ; rtype = t
               ; body_def = Some b'
-              ; notations = [] })
+              ; notations = []
+              ; fix_attrs = [] })
             fixexprl
         in
         l
@@ -2102,7 +2103,8 @@ let make_graph (f_ref : GlobRef.t) =
           ; binders = nal_tas
           ; rtype = t
           ; body_def = Some b
-          ; notations = [] } ]
+          ; notations = []
+          ; fix_attrs = [] } ]
     in
     let mp = Constant.modpath c in
     let expr_list = List.split expr_list in
@@ -2164,7 +2166,7 @@ let build_scheme fas =
   List.iter2
     (fun (princ_id, _, _) (body, types, univs, opaque) ->
       let (_ : Constant.t) =
-        let opaque = if opaque = Vernacexpr.Opaque then true else false in
+        let opaque = if opaque = Vernacexpr.Qed then true else false in
         let def_entry = Declare.definition_entry ~univs ~opaque ?types body in
         Declare.declare_constant ~name:princ_id
           ~kind:Decls.(IsProof Theorem)

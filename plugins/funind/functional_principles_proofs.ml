@@ -884,12 +884,12 @@ let generate_equation_lemma env evd fnames f fun_num nb_params nb_args rec_args_
      constructing the lemma Ensures by: obvious i*)
   let info = Declare.Info.make () in
   let cinfo =
-    Declare.CInfo.make ~name:(mk_equation_id f_id) ~typ:lemma_type ()
+    Declare.CInfo.make ~name:(mk_equation_id f_id) ~typ:lemma_type ~opaque:(Some (Attributes.Defined Conv_oracle.transparent)) ()
   in
   let lemma = Declare.Proof.start ~cinfo ~info evd in
   let lemma, _ = Declare.Proof.by prove_replacement lemma in
   let (_ : _ list) =
-    Declare.Proof.save_regular ~proof:lemma ~opaque:Vernacexpr.Transparent
+    Declare.Proof.save_regular ~proof:lemma ~opaque:Vernacexpr.Defined
       ~idopt:None
   in
   evd

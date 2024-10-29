@@ -277,6 +277,7 @@ Module PositiveOrderedTypeBits <: UsualOrderedType.
   exact (bits_lt_antirefl x H).
   Qed.
 
+  #[sealed]
   Definition compare : forall x y : t, Compare lt eq x y.
   Proof.
   induction x; destruct y.
@@ -304,7 +305,7 @@ Module PositiveOrderedTypeBits <: UsualOrderedType.
     apply GT; simpl; auto.
   + (* H H *)
     apply EQ; red; auto.
-  Qed.
+  Defined.
 
   Lemma eq_dec (x y: positive): {x = y} + {x <> y}.
   Proof.

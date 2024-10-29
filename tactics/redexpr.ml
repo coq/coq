@@ -56,16 +56,7 @@ let { Goptions.get = simplIsCbn } =
     ()
 
 let set_strategy_one ref l =
-  Global.set_strategy (Evaluable.to_kevaluable ref) l;
-  match ref, l with
-  | Evaluable.EvalConstRef sp, Conv_oracle.Opaque -> ()
-  | Evaluable.EvalConstRef sp, _ ->
-    if Declareops.is_opaque (Global.lookup_constant sp) then
-      user_err
-        (str "Cannot make" ++ spc () ++
-            Nametab.pr_global_env Id.Set.empty (GlobRef.ConstRef sp) ++
-            spc () ++ str "transparent because it was declared opaque.")
-  | _ -> ()
+  Global.set_strategy (Evaluable.to_kevaluable ref) l
 
 let cache_strategy (_,str) =
   List.iter
@@ -119,8 +110,19 @@ let inStrategy : strategy_obj -> obj =
      classify_function = classify_strategy;
     }
 
+let check_not_fully_opaque l ref =
+  match ref, l with
+  | Evaluable.EvalConstRef sp, Conv_oracle.Opaque -> ()
+  | Evaluable.EvalConstRef sp, _ ->
+    if Declareops.is_opaque (Global.lookup_constant sp) then
+      user_err
+        (str "Cannot make" ++ spc () ++
+            Nametab.pr_global_env Id.Set.empty (GlobRef.ConstRef sp) ++
+            spc () ++ str "transparent because it was declared opaque.")
+  | _ -> ()
 
 let set_strategy local str =
+  List.iter (fun (l,refs) -> List.iter (check_not_fully_opaque l) refs) str;
   Lib.add_leaf (inStrategy (local,str))
 
 (* Generic reduction: reduction functions used in reduction tactics *)

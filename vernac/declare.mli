@@ -79,6 +79,7 @@ module CInfo : sig
     -> typ:'constr
     -> ?args:Name.t list
     -> ?impargs:Impargs.manual_implicits
+    -> opaque : Attributes.opacity option
     -> unit
     -> 'constr t
 
@@ -125,7 +126,6 @@ end
 val declare_definition
   :  info:Info.t
   -> cinfo:EConstr.t option CInfo.t
-  -> opaque:bool
   -> body:EConstr.t
   -> ?using:Vernacexpr.section_subset_expr
   -> Evd.evar_map
@@ -134,7 +134,6 @@ val declare_definition
 val declare_mutual_definitions
   :  info:Info.t
   -> cinfo: Constr.t CInfo.t list
-  -> opaque:bool
   -> uctx:UState.t
   -> bodies:Constr.t list
   -> possible_guard:Pretyping.possible_guard * Sorts.relevance list
@@ -150,25 +149,6 @@ module OblState : sig
 
   type t
   val empty : t
-
-  module View : sig
-    module Obl : sig
-      type t = private
-        { name : Id.t
-        ; loc : Loc.t option
-        ; status : bool * Evar_kinds.obligation_definition_status
-        ; solved : bool
-        }
-    end
-
-    type t = private
-      { opaque : bool
-      ; remaining : int
-      ; obligations : Obl.t array
-      }
-  end
-
-  val view : t -> View.t Id.Map.t
 
 end
 
@@ -226,14 +206,14 @@ module Proof : sig
   val save
     : pm:OblState.t
     -> proof:t
-    -> opaque:Vernacexpr.opacity_flag
+    -> opaque:Vernacexpr.proof_opacity
     -> idopt:Names.lident option
     -> OblState.t * GlobRef.t list
 
   (** For proofs known to have [Regular] ending, no need to touch program state. *)
   val save_regular
     : proof:t
-    -> opaque:Vernacexpr.opacity_flag
+    -> opaque:Vernacexpr.proof_opacity
     -> idopt:Names.lident option
     -> GlobRef.t list
 
@@ -311,7 +291,7 @@ module Proof : sig
       instead *)
   type proof_object
 
-  val close_proof : ?warn_incomplete:bool -> opaque:Vernacexpr.opacity_flag -> keep_body_ucst_separate:bool -> t -> proof_object
+  val close_proof : ?warn_incomplete:bool -> opaque:Vernacexpr.proof_opacity -> keep_body_ucst_separate:bool -> t -> proof_object
   val close_future_proof : feedback_id:Stateid.t -> t -> closed_proof_output Future.computation -> proof_object
 
   (** Special cases for delayed proofs, in this case we must provide the
@@ -450,7 +430,6 @@ val declare_constant
 val declare_definition_full
   :  info:Info.t
   -> cinfo:EConstr.t option CInfo.t
-  -> opaque:bool
   -> body:EConstr.t
   -> ?using:Vernacexpr.section_subset_expr
   -> Evd.evar_map
@@ -557,7 +536,6 @@ val add_definition :
      pm:OblState.t
   -> info:Info.t
   -> cinfo:Constr.types CInfo.t
-  -> opaque:bool
   -> uctx:UState.t
   -> ?body:Constr.t
   -> ?tactic:unit Proofview.tactic
@@ -575,7 +553,6 @@ val add_mutual_definitions :
      pm:OblState.t
   -> info:Info.t
   -> cinfo:Constr.types CInfo.t list
-  -> opaque:bool
   -> uctx:UState.t
   -> bodies:Constr.t list
   -> possible_guard:(Pretyping.possible_guard * Sorts.relevance list)

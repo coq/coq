@@ -119,7 +119,7 @@ module Declare : sig
     -> Declare.Proof.proof_object
 
   val close_proof
-    : opaque:Vernacexpr.opacity_flag
+    : opaque:Vernacexpr.proof_opacity
     -> keep_body_ucst_separate:bool
     -> Declare.Proof.proof_object
 

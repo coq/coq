@@ -54,7 +54,7 @@ let declare_fun name kind ?univs value =
 
 let defined lemma =
   let (_ : _ list) =
-    Declare.Proof.save_regular ~proof:lemma ~opaque:Vernacexpr.Transparent
+    Declare.Proof.save_regular ~proof:lemma ~opaque:Vernacexpr.Defined
       ~idopt:None
   in
   ()
@@ -1382,11 +1382,11 @@ let is_opaque_constant c =
   let cb = Global.lookup_constant c in
   let open Vernacexpr in
   match cb.Declarations.const_body with
-  | Declarations.OpaqueDef _ -> Opaque
-  | Declarations.Undef _ -> Opaque
-  | Declarations.Def _ -> Transparent
-  | Declarations.Primitive _ -> Opaque
-  | Declarations.Symbol _ -> Opaque
+  | Declarations.OpaqueDef _ -> Vernacexpr.Qed
+  | Declarations.Undef _ -> Vernacexpr.Qed
+  | Declarations.Def _ -> Defined
+  | Declarations.Primitive _ -> Vernacexpr.Qed
+  | Declarations.Symbol _ -> Vernacexpr.Qed
 
 let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
     (gls_type, decompose_and_tac, nb_goal) =
@@ -1463,7 +1463,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
     ()
   in
   let info = Declare.Info.make ~hook:(Declare.Hook.make hook) () in
-  let cinfo = Declare.CInfo.make ~name:na ~typ:gls_type () in
+  let cinfo = Declare.CInfo.make ~name:na ~typ:gls_type ~opaque:(Some (Attributes.Defined Conv_oracle.transparent) (* as in "defined" *)) () in
   let lemma = Declare.Proof.start ~cinfo ~info sigma in
   let lemma =
     if Indfun_common.is_strict_tcc () then
@@ -1496,7 +1496,7 @@ let com_terminate interactive_proof tcc_lemma_name tcc_lemma_ref is_mes
     let cinfo =
       Declare.CInfo.make ~name:thm_name
         ~typ:(EConstr.of_constr (compute_terminate_type nb_args fonctional_ref))
-        ()
+        ~opaque:(Some (Attributes.Defined Conv_oracle.transparent)) ()
     in
     let info = Declare.Info.make ~hook () in
     let lemma = Declare.Proof.start ~cinfo ~info ctx in
@@ -1568,7 +1568,7 @@ let com_eqn uctx nb_arg eq_name functional_ref f_ref terminate_ref
   let cinfo =
     Declare.CInfo.make ~name:eq_name
       ~typ:(EConstr.of_constr equation_lemma_type)
-      ()
+      ~opaque:(Some (match opacity with Vernacexpr.Qed -> Attributes.Sealed | Vernacexpr.Defined -> Attributes.Defined Conv_oracle.transparent)) ()
   in
   let lemma = Declare.Proof.start ~cinfo evd ~info in
   let lemma =

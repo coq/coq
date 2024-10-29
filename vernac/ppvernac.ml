@@ -876,9 +876,9 @@ let pr_synpure_vernac_expr v =
   | VernacEndProof (Proved (opac,o)) -> return (
       match o with
       | None -> (match opac with
-          | Transparent -> keyword "Defined"
-          | Opaque      -> keyword "Qed")
-      | Some id -> (if opac <> Transparent then keyword "Save" else keyword "Defined") ++ spc() ++ pr_lident id
+          | Defined -> keyword "Defined"
+          | Qed     -> keyword "Qed")
+      | Some id -> (if opac <> Defined then keyword "Save" else keyword "Defined") ++ spc() ++ pr_lident id
     )
   | VernacExactProof c ->
     return (hov 2 (keyword "Proof" ++ pr_lconstrarg c))

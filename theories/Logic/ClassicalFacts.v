@@ -826,6 +826,7 @@ Section Example_of_undecidable_predicate_with_the_minimization_property.
 
   Let P n := exists k, n<=k /\ s k = true.
 
+  #[sealed]
   Example undecidable_predicate_with_the_minimization_property : 
     Minimization_Property P.
   Proof.

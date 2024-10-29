@@ -32,8 +32,8 @@ let string_of_vernac_classification = function
   | VtProofMode _ -> "Proof Mode"
 
 let vtkeep_of_opaque = function
-  | Opaque -> VtKeepOpaque
-  | Transparent -> VtKeepDefined
+  | Qed -> VtKeepOpaque
+  | Defined -> VtKeepDefined
 
 let idents_of_name : Names.Name.t -> Names.Id.t list =
   function

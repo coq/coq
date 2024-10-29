@@ -282,6 +282,7 @@ Qed.
 
 (** As an equivalence relation compatible with some operations,
 [CPermutation] can be used through [rewrite]. *)
+#[sealed]
 Example CPermutation_rewrite_rev A (l1 l2 l3: list A) :
   CPermutation l1 l2 ->
   CPermutation (rev l1) l3 -> CPermutation l3 (rev l2).

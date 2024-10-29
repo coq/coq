@@ -1152,13 +1152,15 @@ Proof.
   - exact H.
 Qed.
 
+#[sealed]
 Definition CRup_nat {R : ConstructiveReals} (x : CRcarrier R)
   : { n : nat  &  x < CR_of_Q R (Z.of_nat n #1) }.
 Proof.
   destruct (CR_archimedean R x). exists (Pos.to_nat x0).
   rewrite positive_nat_Z. exact c.
-Qed.
+Defined.
 
+#[sealed]
 Definition CRfloor {R : ConstructiveReals} (a : CRcarrier R)
   : { p : Z  &  prod (CR_of_Q R (p#1) < a)
                      (a < CR_of_Q R (p#1) + CR_of_Q R 2) }.
@@ -1180,7 +1182,7 @@ Proof.
         -- apply CR_of_Q_le.
            rewrite Qinv_plus_distr. apply Qlt_le_weak, Qlt_floor.
         -- apply CR_of_Q_le. discriminate.
-Qed.
+Defined.
 
 Lemma CRplus_appart_reg_l : forall {R : ConstructiveReals} (r r1 r2 : CRcarrier R),
     (r + r1) ≶ (r + r2) -> r1 ≶ r2.
