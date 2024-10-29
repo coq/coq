@@ -78,17 +78,22 @@ type env = {
   env_globals       : Globals.t;
   env_named_context : named_context_val; (* section variables *)
   env_rel_context   : rel_context_val;
-  env_nb_rel        : int;
   env_universes : UGraph.t;
   env_qualities : Sorts.QVar.Set.t;
-  irr_constants : Sorts.relevance Cmap_env.t;
-  irr_inds : Sorts.relevance Indmap_env.t;
-  symb_pats: rewrite_rule list Cmap_env.t;
+  symb_pats : rewrite_rule list Cmap_env.t;
   env_typing_flags  : typing_flags;
   vm_library : Vmlibrary.t;
   retroknowledge : Retroknowledge.retroknowledge;
-  rewrite_rules_allowed: bool;
+  rewrite_rules_allowed : bool;
+
+  (* caches *)
+  env_nb_rel        : int;
+  irr_constants : Sorts.relevance Cmap_env.t;
+  irr_inds : Sorts.relevance Indmap_env.t;
+  constant_hyps : Id.Set.t Cmap_env.t;
+  inductive_hyps : Id.Set.t Mindmap_env.t;
 }
+
 type rewrule_not_allowed = Symb | Rule
 exception RewriteRulesNotAllowed of rewrule_not_allowed
 
@@ -110,6 +115,8 @@ let empty_env = {
     ; modules = MPmap.empty
     ; modtypes = MPmap.empty
     };
+  constant_hyps = Cmap_env.empty;
+  inductive_hyps = Mindmap_env.empty;
   env_named_context = empty_named_context_val;
   env_rel_context = empty_rel_context_val;
   env_nb_rel = 0;
@@ -204,6 +211,10 @@ let lookup_named id env =
 
 let lookup_named_ctxt id ctxt =
   Id.Map.find id ctxt.env_named_map
+
+let record_global_hyps add kn hyps acc =
+  if CList.is_empty hyps then acc
+  else add kn (Context.Named.to_vars hyps) acc
 
 let fold_constants f env acc =
   Cmap_env.fold (fun c (body,_) acc -> f c body acc) env.env_globals.Globals.constants acc
@@ -575,6 +586,7 @@ let add_constant_key kn cb linkinfo env =
     then Cmap_env.add kn cb.const_relevance env.irr_constants
     else env.irr_constants
   in
+  let constant_hyps = record_global_hyps Cmap_env.add kn cb.const_hyps env.constant_hyps in
   let symb_pats =
     match cb.const_body with
     | Symbol _ ->
@@ -582,7 +594,7 @@ let add_constant_key kn cb linkinfo env =
       Cmap_env.add kn [] env.symb_pats
     | _ -> env.symb_pats
   in
-  { env with irr_constants; symb_pats; env_globals = new_globals }
+  { env with constant_hyps; irr_constants; symb_pats; env_globals = new_globals }
 
 let add_constant kn cb env =
   add_constant_key kn cb no_link_info env
@@ -758,7 +770,8 @@ let add_mind_key kn (mind, _ as mind_key) env =
       then Indmap_env.add (kn, i) mip.mind_relevance irr_inds
       else irr_inds) env.irr_inds mind.mind_packets
   in
-  { env with irr_inds; env_globals = new_globals }
+  let inductive_hyps = record_global_hyps Mindmap_env.add kn mind.mind_hyps env.inductive_hyps in
+  { env with inductive_hyps; irr_inds; env_globals = new_globals }
 
 let add_mind kn mib env =
   let li = ref no_link_info in add_mind_key kn (mib, li) env
@@ -766,12 +779,10 @@ let add_mind kn mib env =
 (* Lookup of section variables *)
 
 let lookup_constant_variables c env =
-  let cmap = lookup_constant c env in
-  Context.Named.to_vars cmap.const_hyps
+  Option.default Id.Set.empty (Cmap_env.find_opt c env.constant_hyps)
 
 let lookup_inductive_variables (kn,_i) env =
-  let mis = lookup_mind kn env in
-  Context.Named.to_vars mis.mind_hyps
+  Option.default Id.Set.empty (Mindmap_env.find_opt kn env.inductive_hyps)
 
 let lookup_constructor_variables (ind,_) env =
   lookup_inductive_variables ind env
