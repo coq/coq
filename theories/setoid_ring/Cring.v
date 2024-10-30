@@ -13,12 +13,12 @@ Require Import Setoid.
 Require Import BinPos.
 Require Import BinList.
 Require Export Morphisms Setoid Bool.
-Require Import ZArith_base.
 Require Export Algebra_syntax.
 Require Export Ncring.
 Require Export Ncring_initial.
 Require Export Ncring_tac.
 Require Import InitialRing.
+Require Import BinInt.
 
 Class Cring {R:Type}`{Rr:Ring R} := 
  cring_mul_comm: forall x y:R, x * y == y * x.
@@ -67,7 +67,7 @@ Defined.
 
 Lemma cring_morph:
   ring_morph  zero one _+_ _*_ _-_ -_ _==_
-             0%Z 1%Z Z.add Z.mul Z.sub Z.opp Zeq_bool
+             0%Z 1%Z Z.add Z.mul Z.sub Z.opp Z.eqb
              Ncring_initial.gen_phiZ.
 intros. apply mkmorph ; intros; simpl; try reflexivity.
 - rewrite Ncring_initial.gen_phiZ_add; reflexivity.
@@ -75,7 +75,7 @@ intros. apply mkmorph ; intros; simpl; try reflexivity.
   rewrite Ncring_initial.gen_phiZ_opp; reflexivity.
 - rewrite Ncring_initial.gen_phiZ_mul; reflexivity.
 - rewrite Ncring_initial.gen_phiZ_opp; reflexivity.
-- rewrite (Zeqb_ok x y H). reflexivity.
+- apply Z.eqb_eq in H. rewrite H. reflexivity.
 Defined.
 
 Lemma cring_power_theory : 
@@ -108,7 +108,7 @@ Ltac cring_gen :=
                         ring_setoid
                         cring_eq_ext
                         cring_almost_ring_theory
-                        Z 0%Z 1%Z Z.add Z.mul Z.sub Z.opp Zeq_bool
+                        Z 0%Z 1%Z Z.add Z.mul Z.sub Z.opp Z.eqb
                         Ncring_initial.gen_phiZ
                         cring_morph
                         N
@@ -143,12 +143,12 @@ Ltac cring_simplify_aux lterm fv lexpr hyp :=
     match lexpr with
       | ?e::?le =>
         let t := constr:(@Ring_polynom.norm_subst
-          Z 0%Z 1%Z Z.add Z.mul Z.sub Z.opp Zeq_bool Z.quotrem O nil e) in
+          Z 0%Z 1%Z Z.add Z.mul Z.sub Z.opp Z.eqb Z.quotrem O nil e) in
         let te := 
           constr:(@Ring_polynom.Pphi_dev
             _ 0 1 _+_ _*_ _-_ -_ 
             
-            Z 0%Z 1%Z Zeq_bool
+            Z 0%Z 1%Z Z.eqb
             Ncring_initial.gen_phiZ
             get_signZ fv t) in
         let eq1 := fresh "ring" in
@@ -166,7 +166,7 @@ Ltac cring_simplify_aux lterm fv lexpr hyp :=
             ring_setoid
             cring_eq_ext
             cring_almost_ring_theory
-            Z 0%Z 1%Z Z.add Z.mul Z.sub Z.opp Zeq_bool
+            Z 0%Z 1%Z Z.add Z.mul Z.sub Z.opp Z.eqb
             Ncring_initial.gen_phiZ
             cring_morph
             N
@@ -189,7 +189,7 @@ Ltac cring_simplify_aux lterm fv lexpr hyp :=
             pattern (@Ring_polynom.Pphi_dev
             _ 0 1 _+_ _*_ _-_ -_ 
             
-            Z 0%Z 1%Z Zeq_bool
+            Z 0%Z 1%Z Z.eqb
             Ncring_initial.gen_phiZ
             get_signZ fv t');
             match goal with
@@ -205,7 +205,7 @@ Ltac cring_simplify_aux lterm fv lexpr hyp :=
                pattern (@Ring_polynom.Pphi_dev
             _ 0 1 _+_ _*_ _-_ -_ 
             
-            Z 0%Z 1%Z Zeq_bool
+            Z 0%Z 1%Z Z.eqb
             Ncring_initial.gen_phiZ
             get_signZ fv t') in H; 
                match type of H with
