@@ -88,7 +88,7 @@ intros [xn xd] [yn yd].
 unfold Qplus.
 unfold Qle.
 simpl.
-apply Z.mul_le_mono_nonneg_r;auto with *.
+apply Z.mul_le_mono_nonneg_r; auto using Pos2Z.is_nonneg.
 change (Zpos yd)%Z with (Z.abs (Zpos yd)).
 change (Zpos xd)%Z with (Z.abs (Zpos xd)).
 repeat rewrite <- Z.abs_mul.

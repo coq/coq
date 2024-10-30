@@ -73,6 +73,17 @@ Open Scope Z_scope.
 
  (** 1) We prove a weaker & easier bound. *)
 
+ Local Lemma Private_Zis_gcd_for_euclid2 :
+  forall b d q r:Z, Zis_gcd r b d -> Zis_gcd b (b * q + r) d.
+ Proof.
+   intros b d q r; destruct 1 as [? ? H]; constructor;
+     intuition auto using Z.divide_add_r, Z.divide_mul_l.
+   apply H; auto.
+   replace r with (b * q + r - b * q).
+   - auto with zarith.
+   - ring.
+ Qed.
+
  Lemma Zgcdn_linear_bound : forall n a b,
    Z.abs a < Z.of_nat n -> Zis_gcd a b (Zgcdn n a b).
  Proof.
@@ -89,9 +100,9 @@ Open Scope Z_scope.
        assert (IH:=IHn r (Zpos p) H2); clear IHn;
        simpl in IH |- *;
        rewrite H0.
-     + apply Zis_gcd_for_euclid2; auto.
+     + apply Private_Zis_gcd_for_euclid2; auto.
      + apply Zis_gcd_minus; apply Zis_gcd_sym.
-       apply Zis_gcd_for_euclid2; auto.
+       apply Private_Zis_gcd_for_euclid2; auto.
  Qed.
 
  (** 2) For Euclid's algorithm, the worst-case situation corresponds
@@ -155,7 +166,7 @@ Open Scope Z_scope.
        * assert (EQ' : r = Zpos a * (-q) + b) by (rewrite EQ; ring).
          rewrite EQ' at 1.
          apply Zis_gcd_sym.
-         apply Zis_gcd_for_euclid2; auto.
+         apply Private_Zis_gcd_for_euclid2; auto.
          apply Zis_gcd_sym; auto.
        * split.
          -- auto.
@@ -246,7 +257,7 @@ Open Scope Z_scope.
   generalize (Z_div_mod b (Zpos a) (eq_refl Gt)).
   destruct (Z.div_eucl b (Zpos a)) as (q,r).
   intros (->,(H1,H2)) H3.
-  apply Zis_gcd_for_euclid2.
+  apply Private_Zis_gcd_for_euclid2.
   Z.le_elim H1.
   + apply Zgcdn_ok_before_fibonacci; auto.
     apply Z.lt_le_trans with (fibonacci (S m));

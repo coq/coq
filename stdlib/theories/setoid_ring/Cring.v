@@ -12,7 +12,6 @@ Require Export List.
 Require Import Setoid.
 Require Import BinPos.
 Require Import BinList.
-Require Import Znumtheory.
 Require Export Morphisms Setoid Bool.
 Require Import BinInt.
 Require Export Algebra_syntax.

@@ -9,7 +9,7 @@
 (************************************************************************)
 
 Require Import QArith.
-Import Zdiv.
+Require Import Zdiv.
 
 (************)
 
@@ -78,7 +78,7 @@ replace (n / Zpos d * Zpos d + Zpos d)%Z with
   ((Zpos d * (n / Zpos d) + n mod Zpos  d) + Zpos  d - n mod Zpos d)%Z by ring.
 rewrite <- Z_div_mod_eq_full.
 rewrite <- Z.lt_add_lt_sub_r.
-destruct (Z_mod_lt n (Zpos d)); auto with *.
+apply Z.add_lt_mono_l, Z.mod_pos_bound, eq_refl.
 Qed.
 
 #[global]
@@ -92,7 +92,7 @@ replace (- Qfloor (- x) - 1)%Z with (-(Qfloor (-x) + 1))%Z by ring.
 change ((- (Qfloor (- x) + 1))%Z:Q) with (-(Qfloor (- x) + 1)%Z).
 apply Qlt_le_trans with (- - x); auto with *.
 rewrite Qopp_involutive.
-auto with *.
+apply Qle_refl.
 Qed.
 
 #[global]
@@ -106,7 +106,7 @@ simpl in *.
 rewrite <- (Zdiv_mult_cancel_r xn (Zpos xd) (Zpos yd)); auto with *.
 rewrite <- (Zdiv_mult_cancel_r yn (Zpos yd) (Zpos xd)); auto with *.
 rewrite (Z.mul_comm (Zpos yd) (Zpos xd)).
-apply Z_div_le; auto with *.
+apply Z.div_le_mono, Hxy; apply eq_refl.
 Qed.
 
 #[global]

@@ -13,7 +13,11 @@ Require Import ZArith_base.
 Require Import ZArithRing.
 Require Import Zcomplements.
 Require Import Zdiv.
+Require Import Zdivisibility.
 Require Import Wf_nat.
+Require Import Lia Cring Ncring_tac.
+
+Local Set Warnings "-deprecated".
 
 (** For compatibility reasons, this Open Scope isn't local as it should *)
 
@@ -35,36 +39,53 @@ Local Ltac Tauto.intuition_solver ::= auto with zarith.
 
 (** Its former constructor is now a pseudo-constructor. *)
 
+#[deprecated(use=ex_intro, since="9.0")]
 Definition Zdivide_intro a b q (H:b=q*a) : Z.divide a b := ex_intro _ q H.
 
 (** Results concerning divisibility*)
 
+#[deprecated(use=Z.divide_1_l, since="9.0")]
 Notation Zone_divide := Z.divide_1_l (only parsing).
+#[deprecated(use=Z.divide_0_r, since="9.0")]
 Notation Zdivide_0 := Z.divide_0_r (only parsing).
+#[deprecated(use=Z.mul_divide_mono_l, since="9.0")]
 Notation Zmult_divide_compat_l := Z.mul_divide_mono_l (only parsing).
+#[deprecated(use=Z.mul_divide_mono_r, since="9.0")]
 Notation Zmult_divide_compat_r := Z.mul_divide_mono_r (only parsing).
+#[deprecated(use=Z.divide_add_r, since="9.0")]
 Notation Zdivide_plus_r := Z.divide_add_r (only parsing).
+#[deprecated(use=Z.divide_sub_r, since="9.0")]
 Notation Zdivide_minus_l := Z.divide_sub_r (only parsing).
+#[deprecated(use=Z.divide_mul_l, since="9.0")]
 Notation Zdivide_mult_l := Z.divide_mul_l (only parsing).
+#[deprecated(use=Z.divide_mul_r, since="9.0")]
 Notation Zdivide_mult_r := Z.divide_mul_r (only parsing).
+#[deprecated(use=Z.divide_factor_l, since="9.0")]
 Notation Zdivide_factor_r := Z.divide_factor_l (only parsing).
+#[deprecated(use=Z.divide_factor_r, since="9.0")]
 Notation Zdivide_factor_l := Z.divide_factor_r (only parsing).
 
+#[deprecated(use=Z.divide_opp_r, since="9.0")]
 Lemma Zdivide_opp_r a b : (a | b) -> (a | - b).
 Proof. apply Z.divide_opp_r. Qed.
 
+#[deprecated(use=Z.divide_opp_r, since="9.0")]
 Lemma Zdivide_opp_r_rev a b : (a | - b) -> (a | b).
 Proof. apply Z.divide_opp_r. Qed.
 
+#[deprecated(use=Z.divide_opp_l, since="9.0")]
 Lemma Zdivide_opp_l a b : (a | b) -> (- a | b).
 Proof. apply Z.divide_opp_l. Qed.
 
+#[deprecated(use=Z.divide_opp_l, since="9.0")]
 Lemma Zdivide_opp_l_rev a b : (- a | b) -> (a | b).
 Proof. apply Z.divide_opp_l. Qed.
 
+#[deprecated(use=Z.divide_abs_l, since="9.0")]
 Theorem Zdivide_Zabs_l a b : (Z.abs a | b) -> (a | b).
 Proof. apply Z.divide_abs_l. Qed.
 
+#[deprecated(use=Z.divide_abs_l, since="9.0")]
 Theorem Zdivide_Zabs_inv_l a b : (a | b) -> (Z.abs a | b).
 Proof. apply Z.divide_abs_l. Qed.
 
@@ -79,6 +100,7 @@ Hint Resolve Z.divide_add_r Zdivide_opp_r Zdivide_opp_r_rev Zdivide_opp_l
 
 (** Auxiliary result. *)
 
+#[deprecated(use=Z.eq_mul_1_nonneg, since="9.0")]
 Lemma Zmult_one x y : x >= 0 -> x * y = 1 -> x = 1.
 Proof.
  Z.swap_greater. apply Z.eq_mul_1_nonneg.
@@ -86,32 +108,30 @@ Qed.
 
 (** Only [1] and [-1] divide [1]. *)
 
+#[deprecated(use=Z.divide_1_r, since="9.0")]
 Notation Zdivide_1 := Z.divide_1_r (only parsing).
 
 (** If [a] divides [b] and [b<>0] then [|a| <= |b|]. *)
 
-Lemma Zdivide_bounds a b : (a | b) -> b <> 0 -> Z.abs a <= Z.abs b.
-Proof.
- intros H Hb.
- rewrite <- Z.divide_abs_l, <- Z.divide_abs_r in H.
- apply Z.abs_pos in Hb.
- now apply Z.divide_pos_le.
-Qed.
+#[deprecated(use=Z.absle_divide, since="9.0")]
+Notation Zdivide_bounds := Z.absle_divide (only parsing).
 
 (** [Z.divide] can be expressed using [Z.modulo]. *)
 
+#[deprecated(use=Z.mod0_divide, since="9.0")]
 Lemma Zmod_divide : forall a b, b<>0 -> a mod b = 0 -> (b | a).
 Proof.
  apply Z.mod_divide.
 Qed.
 
+#[deprecated(use=Z.mod0_divide, since="9.0")]
 Lemma Zdivide_mod : forall a b, (b | a) -> a mod b = 0.
 Proof.
  intros a b (c,->); apply Z_mod_mult.
 Qed.
 
 (** [Z.divide] is hence decidable *)
-
+#[deprecated(use=Z.BoolSpec_divide, since="9.0")]
 Lemma Zdivide_dec a b : {(a | b)} + {~ (a | b)}.
 Proof.
  destruct (Z.eq_dec a 0) as [Ha|Ha].
@@ -123,6 +143,7 @@ Proof.
    + right. now rewrite <- Z.mod_divide.
 Defined.
 
+#[deprecated(use=Z.lt_neq, since="9.0")]
 Lemma Z_lt_neq {x y: Z} : x < y -> y <> x.
 Proof. auto using Z.lt_neq, Z.neq_sym. Qed.
 
@@ -142,6 +163,7 @@ Proof.
  + auto with zarith.
 Qed.
 
+#[deprecated(use=Z.divide_pos_le, since="9.0")]
 Theorem Zdivide_le: forall a b : Z,
  0 <= a -> 0 < b -> (a | b) ->  a <= b.
 Proof.
@@ -159,6 +181,7 @@ Proof.
   + now apply Z.div_lt.
 Qed.
 
+#[deprecated(use=Z.mod_mod_divide, since="9.0")]
 Lemma Zmod_div_mod n m a:
  0 < n -> 0 < m -> (n | m) -> a mod n = (a mod m) mod n.
 Proof with auto using Z_lt_neq.
@@ -203,6 +226,7 @@ Inductive Zis_gcd (a b g:Z) : Prop :=
   (forall x, (x | a) -> (x | b) -> (x | g)) ->
   Zis_gcd a b g.
 
+#[deprecated(use=Z.gcd, since="9.0")]
 Lemma Zgcd_is_gcd : forall a b, Zis_gcd a b (Z.gcd a b).
 Proof.
  constructor.
@@ -223,11 +247,13 @@ Proof.
   constructor; auto with zarith.
 Qed.
 
+#[deprecated(use=Z.gcd_1_r, since="9.0")]
 Lemma Zis_gcd_1 : forall a, Zis_gcd a 1 1.
 Proof.
   constructor; auto with zarith.
 Qed.
 
+#[deprecated(use=Z.gcd_diag, since="9.0")]
 Lemma Zis_gcd_refl : forall a, Zis_gcd a a a.
 Proof.
   constructor; auto with zarith.
@@ -238,6 +264,7 @@ Proof.
   induction 1; constructor; intuition.
 Qed.
 
+#[deprecated(note="Z.cd is always non-negative", since="9.0")]
 Lemma Zis_gcd_opp : forall a b d, Zis_gcd a b d -> Zis_gcd b a (- d).
 Proof.
   induction 1; constructor; intuition.
@@ -253,6 +280,7 @@ Qed.
 #[global]
 Hint Resolve Zis_gcd_sym Zis_gcd_0 Zis_gcd_minus Zis_gcd_opp: zarith.
 
+#[deprecated(use=f_equal, note="Use Z.gcd", since="9.0")]
 Theorem Zis_gcd_unique: forall a b c d : Z,
  Zis_gcd a b c -> Zis_gcd a b d ->  c = d \/ c = (- d).
 Proof.
@@ -277,6 +305,7 @@ Qed.
 Notation Zis_gcd_for_euclid := deprecated_Zis_gcd_for_euclid (only parsing).
 
 (* this lemma is still used below and in Zgcd_alt *)
+#[deprecated(since="9.0")]
 Lemma Zis_gcd_for_euclid2 :
   forall b d q r:Z, Zis_gcd r b d -> Zis_gcd b (b * q + r) d.
 Proof.
@@ -287,56 +316,22 @@ Proof.
   - ring.
 Qed.
 
-(** We implement the extended version of Euclid's algorithm,
-    i.e. the one computing Bezout's coefficients as it computes
-    the [gcd]. We follow the algorithm given in Knuth's
-    "Art of Computer Programming", vol 2, page 325. *)
+#[deprecated(use=Z.extgcd, since="9.0")]
+Notation extgcd := Z.extgcd (only parsing).
+
+#[deprecated(use=Z.extgcd_correct, since="9.0")]
+Notation extgcd_correct := Z.extgcd_correct (only parsing).
 
 Section extended_euclid_algorithm.
 
   Variables a b : Z.
-
-  Local Lemma extgcd_rec_helper r1 r2 q :
-    Z.gcd r1 r2 = Z.gcd a b -> Z.gcd (r2 - q * r1) r1 = Z.gcd a b.
-  Proof.
-    intros H; rewrite <-H, Z.gcd_comm.
-    rewrite <-(Z.gcd_add_mult_diag_r r1 r2 (-q)). f_equal; ring.
-  Qed.
-
-  Let f := S(S(Z.to_nat(Z.log2_up(Z.log2_up(Z.abs(a*b)))))). (* log2(fuel) *)
-
-  Local Definition extgcd_rec : forall r1 u1 v1 r2 u2 v2,
-    (True -> 0 <= r1 /\ 0 <= r2 /\ r1 = u1 * a + v1 * b /\ r2 = u2 * a + v2 * b /\
-        Z.gcd r1 r2 = Z.gcd a b)
-     -> { '(u, v, d) | True -> u * a + v * b = d /\ d = Z.gcd a b}.
-  Proof.
-    refine (Fix (Acc_intro_generator f (Z.lt_wf 0)) _ (fun r1 rec u1 v1  r2 u2 v2 H =>
-      if Z.eq_dec r1 0
-      then exist (fun '(u, v, d) => _) (u2, v2, r2) (fun _ => _)
-      else let q := r2 / r1 in
-           rec (r2 - q * r1) _ (u2 - q * u1) (v2 - q * v1) r1 u1 v1 (fun _ => _))).
-    all : abstract (intuition (solve
-      [ subst; rewrite ?Z.gcd_0_l_nonneg in *; auto using extgcd_rec_helper; ring
-      | subst q; rewrite <-Zmod_eq_full by trivial;
-        apply Z.mod_pos_bound, Z.le_neq; intuition congruence ])).
-  Defined.
-
-  Definition extgcd : Z*Z*Z.
-  Proof.
-    refine (proj1_sig (extgcd_rec (Z.abs a) (Z.sgn a) 0 (Z.abs b) 0 (Z.sgn b) _)).
-    abstract (intuition (trivial using Z.abs_nonneg;
-      rewrite ?Z.gcd_abs_r, ?Z.gcd_abs_l, <-?Z.sgn_abs; ring)).
-  Defined.
-
-  Lemma extgcd_correct [u v d] : extgcd = (u, v, d) -> u * a + v * b = d /\ d = Z.gcd a b.
-  Proof. cbv [extgcd proj1_sig]. case extgcd_rec as (([],?),?). intuition congruence. Qed.
 
   Inductive deprecated_Euclid : Set :=
     deprecated_Euclid_intro :
     forall u v d:Z, u * a + v * b = d -> Zis_gcd a b d -> deprecated_Euclid.
 
   Lemma deprecated_euclid : deprecated_Euclid.
-  Proof. case extgcd as [[]?] eqn:H; case (extgcd_correct H); esplit; subst; eauto using Zgcd_is_gcd. Qed.
+  Proof. case (extgcd a b) as [[]?] eqn:H; case (Z.extgcd_correct a b H); esplit; subst; eauto using Zgcd_is_gcd. Qed.
 
   Lemma deprecated_euclid_rec :
     forall v3:Z,
@@ -358,6 +353,7 @@ Notation euclid := deprecated_euclid (only parsing).
 #[deprecated(since="8.17", note="Use Coq.ZArith.Znumtheory.extgcd")]
 Notation euclid_rec := deprecated_euclid_rec (only parsing).
 
+#[deprecated(use=Z.gcd_unique, since="9.0")]
 Theorem Zis_gcd_uniqueness_apart_sign :
   forall a b d d':Z, Zis_gcd a b d -> Zis_gcd a b d' -> d = d' \/ d = - d'.
 Proof.
@@ -370,11 +366,16 @@ Qed.
 
 (** * Bezout's coefficients *)
 
-Inductive Bezout (a b d:Z) : Prop :=
-  Bezout_intro : forall u v:Z, u * a + v * b = d -> Bezout a b d.
+Inductive Bezout_deprecated (a b d:Z) : Prop :=
+  Bezout_deprecated_intro : forall u v:Z, u * a + v * b = d -> Bezout_deprecated a b d.
+
+#[deprecated(use=Z.Bezout, since="9.0")]
+Notation Bezout := Bezout_deprecated (only parsing).
+#[deprecated(use=ex_intro, since="9.0")]
+Notation Bezout_intro := Bezout_deprecated_intro (only parsing).
 
 (** Existence of Bezout's coefficients for the [gcd] of [a] and [b] *)
-
+#[deprecated(use=Z.Bezout_coprime_iff, since="9.0")]
 Lemma Zis_gcd_bezout : forall a b d:Z, Zis_gcd a b d -> Bezout a b d.
 Proof.
   intros a b d Hgcd.
@@ -385,6 +386,7 @@ Qed.
 
 (** gcd of [ca] and [cb] is [c gcd(a,b)]. *)
 
+#[deprecated(use=Z.gcd_mul_mono_l, since="9.0")]
 Lemma Zis_gcd_mult :
   forall a b c d:Z, Zis_gcd a b d -> Zis_gcd (c * a) (c * b) (c * d).
 Proof.
@@ -405,14 +407,27 @@ Qed.
 
 Definition rel_prime (a b:Z) : Prop := Zis_gcd a b 1.
 
+Lemma rel_prime_iff_coprime  a b : rel_prime a b <-> Z.coprime a b.
+Proof.
+  symmetry; unfold rel_prime; split; intros H.
+  - rewrite <- H; apply Zgcd_is_gcd.
+  - case (Zis_gcd_unique a b (Z.gcd a b) 1); auto.
+    + apply Zgcd_is_gcd.
+    + intros H2; absurd (0 <= Z.gcd a b); auto with zarith.
+      * rewrite H2; red; auto.
+      * generalize (Z.gcd_nonneg a b); auto with zarith.
+Qed.
+
 (** Bezout's theorem: [a] and [b] are relatively prime if and
     only if there exist [u] and [v] such that [ua+vb = 1]. *)
 
+#[deprecated(use=Z.Bezout_coprime, since="9.0")]
 Lemma rel_prime_bezout : forall a b:Z, rel_prime a b -> Bezout a b 1.
 Proof.
   intros a b; exact (Zis_gcd_bezout a b 1).
 Qed.
 
+#[deprecated(use=Z.coprime_Bezout, since="9.0")]
 Lemma bezout_rel_prime : forall a b:Z, Bezout a b 1 -> rel_prime a b.
 Proof.
   simple induction 1; intros ? ? H0; constructor; auto with zarith.
@@ -422,6 +437,7 @@ Qed.
 (** Gauss's theorem: if [a] divides [bc] and if [a] and [b] are
     relatively prime, then [a] divides [c]. *)
 
+#[deprecated(use=Z.gauss, since="9.0")]
 Theorem Gauss : forall a b c:Z, (a | b * c) -> rel_prime a b -> (a | c).
 Proof.
   intros a b c H H0. elim (rel_prime_bezout a b H0); intros u v H1.
@@ -433,21 +449,12 @@ Qed.
 
 (** If [a] is relatively prime to [b] and [c], then it is to [bc] *)
 
+#[deprecated(use=Z.coprime_mul_r, since="9.0")]
 Lemma rel_prime_mult :
   forall a b c:Z, rel_prime a b -> rel_prime a c -> rel_prime a (b * c).
-Proof.
-  intros a b c Hb Hc.
-  elim (rel_prime_bezout a b Hb); intros u v H.
-  elim (rel_prime_bezout a c Hc); intros u0 v0 H0.
-  apply bezout_rel_prime.
-  apply (Bezout_intro _ _ _
-    (u * u0 * a + v0 * c * u + u0 * v * b) (v * v0)).
-  rewrite <- H.
-  replace (u * a + v * b) with ((u * a + v * b) * 1); [ idtac | ring ].
-  rewrite <- H0.
-  ring.
-Qed.
+Proof. setoid_rewrite rel_prime_iff_coprime; apply Z.coprime_mul_r. Qed.
 
+#[deprecated(note="Consider Z.gcd instead", since="9.0")]
 Lemma rel_prime_cross_prod :
   forall a b c d:Z,
     rel_prime a b ->
@@ -475,6 +482,7 @@ Qed.
 
 (** After factorization by a gcd, the original numbers are relatively prime. *)
 
+#[deprecated(use=Z.gcd_div_gcd, since="9.0")]
 Lemma Zis_gcd_rel_prime :
   forall a b g:Z,
     b > 0 -> g >= 0 -> Zis_gcd a b g -> rel_prime (a / g) (b / g).
@@ -510,6 +518,7 @@ Proof.
       exists x'; auto with zarith.
 Qed.
 
+#[deprecated(use=Z.Symmetric_coprime, since="9.0")]
 Theorem rel_prime_sym: forall a b, rel_prime a b -> rel_prime b a.
 Proof.
   intros a b H; auto with zarith.
@@ -526,6 +535,7 @@ Proof.
   apply Z.divide_mul_r; auto.
 Qed.
 
+#[deprecated(use=Z.coprime_1_l, since="9.0")]
 Theorem rel_prime_1: forall n, rel_prime 1 n.
 Proof.
   intros n; red; apply Zis_gcd_intro; auto.
@@ -533,6 +543,7 @@ Proof.
   - exists n; rewrite Z.mul_1_r; reflexivity.
 Qed.
 
+#[deprecated(use=Z.coprime_0_l_iff, since="9.0")]
 Theorem not_rel_prime_0: forall n, 1 < n -> ~ rel_prime 0 n.
 Proof.
   intros n H H1; absurd (n = 1 \/ n = -1).
@@ -543,6 +554,7 @@ Proof.
     + exists 1; rewrite Z.mul_1_l; reflexivity.
 Qed.
 
+#[deprecated(use=Z.coprime_mod_l_iff, since="9.0")]
 Theorem rel_prime_mod: forall p q, 0 < q ->
  rel_prime p q -> rel_prime (p mod q) q.
 Proof.
@@ -556,6 +568,7 @@ Proof.
     pattern p at 3; rewrite (Z_div_mod_eq_full p q); ring.
 Qed.
 
+#[deprecated(use=Z.coprime_mod_l_iff, since="9.0")]
 Theorem rel_prime_mod_rev: forall p q, 0 < q ->
  rel_prime (p mod q) q -> rel_prime p q.
 Proof.
@@ -564,6 +577,7 @@ Proof.
   apply Zis_gcd_sym; apply Zis_gcd_for_euclid2; auto.
 Qed.
 
+#[deprecated(note="unfold Z.coprime", since="9.0")]
 Theorem Zrel_prime_neq_mod_0: forall a b, 1 < b -> rel_prime a b -> a mod b <> 0.
 Proof.
   intros a b H H1 H2.
@@ -575,6 +589,7 @@ Qed.
 
 (** * Primality *)
 
+(** Note: prefer Z.prime *)
 Inductive prime (p:Z) : Prop :=
   prime_intro :
     1 < p -> (forall n:Z, 1 <= n < p -> rel_prime n p) -> prime p.
@@ -687,11 +702,13 @@ Proof.
   right; apply Gauss with a; auto with zarith.
 Qed.
 
+#[deprecated(use=Z.not_prime_0, since="9.0")]
 Lemma not_prime_0: ~ prime 0.
 Proof.
   intros H1; case (prime_divisors _ H1 2); auto with zarith; intuition; discriminate.
 Qed.
 
+#[deprecated(use=Z.not_prime_1, since="9.0")]
 Lemma not_prime_1: ~ prime 1.
 Proof.
   intros H1; absurd (1 < 1).
@@ -709,6 +726,7 @@ Proof.
     + subst n. constructor; auto with zarith.
 Qed.
 
+#[deprecated(use=Z.prime_3, since="9.0")]
 Theorem prime_3: prime 3.
 Proof.
   apply prime_intro; auto with zarith.
@@ -730,15 +748,17 @@ Proof.
   now intros (Hp,_); apply (Zlt_le_succ 1).
 Qed.
 
-Definition prime' p := 1<p /\ (forall n, 1<n<p -> ~ (n|p)).
+#[deprecated(use=Z.prime, since="9.0")]
+Notation prime' := Z.prime (only parsing).
 
+#[deprecated(note="Use lia", since="9.0")]
 Lemma Z_0_1_more x : 0<=x -> x=0 \/ x=1 \/ 1<x.
 Proof.
  intros H. Z.le_elim H; auto.
  apply Z.le_succ_l in H. change (1 <= x) in H. Z.le_elim H; auto.
 Qed.
 
-Theorem prime_alt p : prime' p <-> prime p.
+Theorem prime_alt p : Z.prime p <-> prime p.
 Proof.
   split; intros (Hp,H).
   - (* prime -> prime' *)
@@ -798,20 +818,24 @@ Proof.
       now rewrite Z.opp_involutive; apply Z.lt_le_incl.
 Qed.
 
+#[deprecated(use=Z.gcd_nonneg , since="9.0")]
 Notation Zgcd_is_pos := Z.gcd_nonneg (only parsing).
 
+#[deprecated(since="9.0")]
 Theorem Zgcd_spec : forall x y : Z, {z : Z | Zis_gcd x y z /\ 0 <= z}.
 Proof.
   intros x y; exists (Z.gcd x y).
   split; [apply Zgcd_is_gcd  | apply Z.gcd_nonneg].
 Qed.
 
+#[deprecated(use=Z.gcd_greatest, since="9.0")]
 Theorem Zdivide_Zgcd: forall p q r : Z,
  (p | q) -> (p | r) -> (p | Z.gcd q r).
 Proof.
  intros. now apply Z.gcd_greatest.
 Qed.
 
+#[deprecated(use=Z.gcd, since="9.0")]
 Theorem Zis_gcd_gcd: forall a b c : Z,
  0 <= c ->  Zis_gcd a b c -> Z.gcd a b = c.
 Proof.
@@ -826,9 +850,12 @@ Proof.
     + subst. now case (Z.gcd a b).
 Qed.
 
+#[deprecated(use=Z.gcd_eq_0_l , since="9.0")]
 Notation Zgcd_inv_0_l := Z.gcd_eq_0_l (only parsing).
+#[deprecated(use=Z.gcd_eq_0_r , since="9.0")]
 Notation Zgcd_inv_0_r := Z.gcd_eq_0_r (only parsing).
 
+#[deprecated(use=Z.gcd_div_swap, since="9.0")]
 Theorem Zgcd_div_swap0 : forall a b : Z,
  0 < Z.gcd a b ->
  0 < b ->
@@ -842,6 +869,7 @@ Proof.
   rewrite <- Zdivide_Zdiv_eq; auto.
 Qed.
 
+#[deprecated(use=Z.gcd_div_swap, since="9.0")]
 Theorem Zgcd_div_swap : forall a b c : Z,
  0 < Z.gcd a b ->
  0 < b ->
@@ -857,18 +885,23 @@ Proof.
   rewrite <- Zdivide_Zdiv_eq; auto.
 Qed.
 
+#[deprecated(use=Z.gcd_assoc, since="9.0")]
 Lemma Zgcd_ass a b c : Z.gcd (Z.gcd a b) c = Z.gcd a (Z.gcd b c).
 Proof.
  symmetry. apply Z.gcd_assoc.
 Qed.
 
+#[deprecated(use=Z.gcd_abs_l, since="9.0")]
 Notation Zgcd_Zabs := Z.gcd_abs_l (only parsing).
+#[deprecated(use=Z.gcd_0_r, since="9.0")]
 Notation Zgcd_0 := Z.gcd_0_r (only parsing).
+#[deprecated(use=Z.gcd_1_r, since="9.0")]
 Notation Zgcd_1 := Z.gcd_1_r (only parsing).
 
 #[global]
 Hint Resolve Z.gcd_0_r Z.gcd_1_r : zarith.
 
+#[deprecated(note="Use Z.gcd_greatest, Z.gcd_divide_l, or Z.gcd_divide_r", since="9.0")]
 Theorem Zgcd_1_rel_prime : forall a b,
  Z.gcd a b = 1 <-> rel_prime a b.
 Proof.
@@ -881,6 +914,7 @@ Proof.
       * generalize (Z.gcd_nonneg a b); auto with zarith.
 Qed.
 
+#[deprecated(use=Z.BoolSpec_coprime, since="9.0")]
 Definition rel_prime_dec: forall a b,
  { rel_prime a b }+{ ~ rel_prime a b }.
 Proof.
@@ -889,6 +923,7 @@ Proof.
   - right; contradict H1; apply <- Zgcd_1_rel_prime; auto.
 Defined.
 
+#[deprecated(since="9.0")]
 Definition prime_dec_aux:
  forall p m,
   { forall n, 1 < n < m -> rel_prime n p } +

@@ -543,10 +543,7 @@ Lemma eqm_sub x y : x ≡ y → x - y ≡ 0.
 Proof. intros h; unfold eqm; rewrite Zminus_mod, h, Z.sub_diag; reflexivity. Qed.
 
 Lemma eqmE x y : x ≡ y → ∃ k, x - y = k * wB.
-Proof.
-  intros h.
-  exact (Zmod_divide (x - y) wB (λ e, let 'eq_refl := e in I) (eqm_sub _ _ h)).
-Qed.
+Proof. intros h%Z.cong_iff_ex; trivial. Qed.
 
 Lemma eqm_subE x y : x ≡ y ↔ x - y ≡ 0.
 Proof.
@@ -963,11 +960,13 @@ Proof.
        assert (F2: 0 < wB) by (apply refl_equal).
        assert (F3: φ (bit x 0 + bit y 0) mod 2 = φ (bit x 0 || bit y 0) mod 2). {
          apply trans_equal with ((φ ((x>>1 + y>>1) << 1) + φ (bit x 0 + bit y 0)) mod 2).
-         - rewrite lsl_spec, Zplus_mod, <-Zmod_div_mod; auto with zarith.
+         - rewrite lsl_spec, Zplus_mod, Z.mod_mod_divide; auto with zarith.
            rewrite Z.pow_1_r, Z_mod_mult, Zplus_0_l, Zmod_mod; auto with zarith.
-         - rewrite (Zmod_div_mod 2 wB), <-add_spec, Heq; auto with zarith.
-           rewrite add_spec, <-Zmod_div_mod; auto with zarith.
-           rewrite lsl_spec, Zplus_mod, <-Zmod_div_mod; auto with zarith.
+         - assert (forall a, a mod 2 = (a mod wB) mod 2) as ->.
+           { intros. rewrite Z.mod_mod_divide; trivial. }
+           rewrite <-add_spec, Heq; auto with zarith.
+           rewrite add_spec, Z.mod_mod_divide; auto with zarith.
+           rewrite lsl_spec, Zplus_mod, Z.mod_mod_divide; auto with zarith.
            rewrite Z.pow_1_r, Z_mod_mult, Zplus_0_l, Zmod_mod; auto with zarith.
        }
        generalize F3; do 2 case bit; try discriminate; auto.

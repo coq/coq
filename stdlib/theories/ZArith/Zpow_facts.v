@@ -8,8 +8,9 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import BinInt Znat ZArithRing Lia Wf_Z Zcomplements Zdiv Znumtheory.
+Require Import BinInt Znat ZArithRing Lia Wf_Z Zcomplements Zdiv Zdivisibility.
 Require Export Zpower.
+Require Znumtheory.
 Local Open Scope Z_scope.
 
 (** Properties of the power function over [Z] *)
@@ -169,22 +170,23 @@ Proof.
   rewrite Z.mul_comm, <- Z.pow_succ_r by lia; f_equal; lia.
 Qed.
 
+#[deprecated(use=Z.coprime_pow_r, since="9.0")]
 Theorem rel_prime_Zpower_r i p q :
- 0 <= i -> rel_prime p q -> rel_prime p (q^i).
+ 0 <= i -> Znumtheory.rel_prime p q -> Znumtheory.rel_prime p (q^i).
 Proof.
-  intros Hi Hpq; pattern i; apply natlike_ind; auto with zarith.
-  - simpl. apply rel_prime_sym, rel_prime_1.
-  - clear i Hi. intros i Hi Rec; rewrite Z.pow_succ_r; auto.
-    apply rel_prime_mult; auto.
+  setoid_rewrite Znumtheory.rel_prime_iff_coprime.
+  apply Z.coprime_pow_r.
 Qed.
 
+#[deprecated(use=Z.coprime_pow_l, since="9.0")]
 Theorem rel_prime_Zpower i j p q :
- 0 <= i ->  0 <= j -> rel_prime p q -> rel_prime (p^i) (q^j).
+ 0 <= i ->  0 <= j -> Znumtheory.rel_prime p q -> Znumtheory.rel_prime (p^i) (q^j).
 Proof.
- intros Hi Hj H. apply rel_prime_Zpower_r; trivial.
- apply rel_prime_sym. apply rel_prime_Zpower_r; trivial.
- now apply rel_prime_sym.
+  setoid_rewrite Znumtheory.rel_prime_iff_coprime.
+  intros. apply Z.coprime_pow_l; try apply Z.coprime_pow_r; trivial.
 Qed.
+
+Import Znumtheory.
 
 Theorem prime_power_prime p q n :
  0 <= n -> prime p -> prime q -> (p | q^n) -> p = q.
@@ -237,5 +239,7 @@ Qed.
 
 (** * Z.square: a direct definition of [z^2] *)
 
+#[deprecated(use=Pos.square_spec, since="9.0")]
 Notation Psquare_correct := Pos.square_spec (only parsing).
+#[deprecated(use=Z.square_spec, since="9.0")]
 Notation Zsquare_correct := Z.square_spec (only parsing).

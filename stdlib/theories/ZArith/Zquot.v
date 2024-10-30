@@ -162,13 +162,7 @@ Definition Remainder_alt a b r :=
 Lemma Remainder_equiv : forall a b r,
  Remainder a b r <-> Remainder_alt a b r.
 Proof.
-  unfold Remainder, Remainder_alt; intuition auto with zarith.
-  - lia.
-  - lia.
-  - rewrite <-(Z.mul_opp_opp). apply Z.mul_nonneg_nonneg; lia.
-  - assert (0 <= Z.sgn r * Z.sgn a).
-    { rewrite <-Z.sgn_mul, Z.sgn_nonneg; auto. }
-    destruct r; simpl Z.sgn in *; lia.
+  unfold Remainder, Remainder_alt; lia.
 Qed.
 
 Theorem Zquot_mod_unique_full a b q r :
@@ -367,9 +361,9 @@ Lemma Zrem_divides : forall a b,
  Z.rem a b = 0 <-> exists c, a = b*c.
 Proof.
  intros. zero_or_not b.
- - firstorder.
+ - firstorder idtac.
  - rewrite Z.rem_divide; trivial.
-   split; intros (c,Hc); exists c; subst; auto with zarith.
+   split; intros (c,Hc); exists c; lia.
 Qed.
 
 (** Particular case : dividing by 2 is related with parity *)
@@ -377,11 +371,7 @@ Qed.
 Lemma Zquot2_odd_remainder : forall a,
  Remainder a 2 (if Z.odd a then Z.sgn a else 0).
 Proof.
- intros [ |p|p].
- - simpl.
-   left. simpl. auto with zarith.
- - left. destruct p; simpl; lia.
- - right. destruct p; simpl; split; now auto with zarith.
+  intros [ |[]|[]]; cbn; (left + right); lia.
 Qed.
 
 Lemma Zrem_odd : forall a, Z.rem a 2 = if Z.odd a then Z.sgn a else 0.

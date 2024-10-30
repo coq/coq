@@ -159,6 +159,7 @@ through the <tt>Require Import</tt> command.</p>
     (theories/ZArith/ZArith.v)
     theories/ZArith/Zgcd_alt.v
     theories/ZArith/Zwf.v
+    theories/ZArith/Zdivisibility.v
     theories/ZArith/Znumtheory.v
     theories/ZArith/Int.v
     theories/ZArith/Zpow_facts.v

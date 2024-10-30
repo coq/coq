@@ -11,10 +11,11 @@
 (** Normalisation functions for rational numbers. *)
 
 Require Export QArith_base.
-Require Import Znumtheory.
 
 Notation Z2P := Z.to_pos (only parsing).
 Notation Z2P_correct := Z2Pos.id (only parsing).
+
+Local Coercion Z.pos : positive >-> Z.
 
 (** Simplification of fractions using [Z.gcd].
   This version can compute within Coq. *)
@@ -40,60 +41,37 @@ Proof.
     Close Scope Z_scope.
 Qed.
 
+Lemma Qeq_Qred_iff q q' : Qred q == Qred q' <-> q == q'.
+Proof. rewrite 2Qred_correct; reflexivity. Qed.
+
+Lemma gcd_Qred q : Z.gcd (Qnum (Qred q)) (Qden (Qred q)) = 1%Z.
+Proof.
+  case q as [a b]; cbv [Qred Qnum Qden].
+  pose proof Z.ggcd_correct_divisors a b as Hg.
+  pose proof Z.ggcd_gcd a b as Hgg.
+  destruct (Z.ggcd a b) as (g&a'&b'); cbn [fst snd] in *; subst g; case Hg as [Ha Hb].
+  assert (Z.gcd a b <> 0)%Z by (rewrite Z.gcd_eq_0; intros []; discriminate).
+
+  erewrite <-(Z.gcd_div_gcd a b); trivial; trivial.
+  rewrite Ha, Z.mul_comm, Z.div_mul at 1; trivial.
+  rewrite Hb, Z.mul_comm, Z.div_mul at 1; trivial.
+  rewrite Z2Pos.id; trivial.
+  eapply Z.mul_pos_cancel_l; try rewrite <-Hb; trivial using Pos2Z.is_pos.
+  pose proof Z.gcd_nonneg a b as HH; apply Z.le_lteq in HH; intuition congruence.
+Qed.
+
 Lemma Qred_complete : forall p q,  p==q -> Qred p = Qred q.
 Proof.
-  intros (a,b) (c,d).
-  unfold Qred, Qeq in *; simpl in *.
-  Open Scope Z_scope.
-  intros H.
-  generalize (Z.ggcd_gcd a (Zpos b)) (Zgcd_is_gcd a (Zpos b))
-    (Z.gcd_nonneg a (Zpos b)) (Z.ggcd_correct_divisors a (Zpos b)).
-  destruct (Z.ggcd a (Zpos b)) as (g,(aa,bb)).
-  simpl. intros <- Hg1 Hg2 (Hg3,Hg4).
-  assert (Hg0 : g <> 0) by (intro; now subst g).
-  generalize (Z.ggcd_gcd c (Zpos d)) (Zgcd_is_gcd c (Zpos d))
-    (Z.gcd_nonneg c (Zpos d)) (Z.ggcd_correct_divisors c (Zpos d)).
-  destruct (Z.ggcd c (Zpos d)) as (g',(cc,dd)).
-  simpl. intros <- Hg'1 Hg'2 (Hg'3,Hg'4).
-  assert (Hg'0 : g' <> 0) by (intro; now subst g').
+  setoid_rewrite <-Qeq_Qred_iff.
+  intros a b; specialize (gcd_Qred a); specialize (gcd_Qred b).
+  destruct (Qred a) as [p q]; destruct (Qred b) as [p' q'].
+  cbv [Qred Qeq Qnum Qden]; intros H H' Hcross.
 
-  elim (rel_prime_cross_prod aa bb cc dd).
-  - congruence.
-  - (*rel_prime*)
-    constructor.
-    * exists aa; auto using Z.mul_1_r.
-    * exists bb; auto using Z.mul_1_r.
-    * intros x Ha Hb.
-      destruct Hg1 as (Hg11,Hg12,Hg13).
-      destruct (Hg13 (g*x)) as (x',Hx).
-      { rewrite Hg3.
-        destruct Ha as (xa,Hxa); exists xa; rewrite Hxa; ring. }
-      { rewrite Hg4.
-        destruct Hb as (xb,Hxb); exists xb; rewrite Hxb; ring. }
-      exists x'.
-      apply Z.mul_reg_l with g; auto. rewrite Hx at 1; ring.
-  - (* rel_prime *)
-    constructor.
-    * exists cc; auto using Z.mul_1_r.
-    * exists dd; auto using Z.mul_1_r.
-    * intros x Hc Hd.
-      inversion Hg'1 as (Hg'11,Hg'12,Hg'13).
-      destruct (Hg'13 (g'*x)) as (x',Hx).
-      { rewrite Hg'3.
-        destruct Hc as (xc,Hxc); exists xc; rewrite Hxc; ring. }
-      { rewrite Hg'4.
-        destruct Hd as (xd,Hxd); exists xd; rewrite Hxd; ring. }
-      exists x'.
-      apply Z.mul_reg_l with g'; auto. rewrite Hx at 1; ring.
-  - apply Z.lt_gt.
-    rewrite <- (Z.mul_pos_cancel_l g); [ now rewrite <- Hg4 |  apply Z.le_neq; intuition ].
-  - apply Z.lt_gt.
-    rewrite <- (Z.mul_pos_cancel_l g'); [now rewrite <- Hg'4 | apply Z.le_neq; intuition ].
-  - apply Z.mul_reg_l with (g*g').
-    * rewrite Z.mul_eq_0. now destruct 1.
-    * rewrite Z.mul_shuffle1, <- Hg3, <- Hg'4.
-      now rewrite Z.mul_shuffle1, <- Hg'3, <- Hg4, H, Z.mul_comm.
-  Close Scope Z_scope.
+  pose proof Z.gauss q' p' q ltac:(exists p; ring [Hcross]) ltac:(rewrite Z.gcd_comm; trivial).
+  pose proof Z.gauss q p q' ltac:(exists p'; ring [Hcross]) ltac:(rewrite Z.gcd_comm; trivial).
+  pose proof Pos2Z.is_nonneg.
+  pose proof Z.divide_antisym_nonneg q q' ltac:(trivial) ltac:(trivial) ltac:(trivial) ltac:(trivial) as q'q.
+  injection q'q as <-; f_equal. eapply Z.mul_cancel_r with (p:=q); trivial. inversion 1.
 Qed.
 
 Lemma Qred_eq_iff q q' : Qred q = Qred q' <-> q == q'.
