@@ -520,7 +520,7 @@ end = struct (* {{{ *)
 
   let vcs : vcs ref = ref (empty Stateid.dummy)
 
-  let doc_type = ref (Interactive (Coqargs.TopLogical (Names.DirPath.make [])))
+  let doc_type = ref (Interactive (Coqargs.TopLogical ""))
   let ldir = ref Names.DirPath.empty
 
   let init dt id ps =
@@ -2250,16 +2250,16 @@ let new_doc { doc_type ; injections } =
 
   let top =
     match doc_type with
-    | Interactive top -> Coqargs.dirpath_of_top top
+    | Interactive top -> Coqinit.dirpath_of_top top
 
     | VoDoc f ->
-      let ldir = Coqargs.(dirpath_of_top (TopPhysical f)) in
+      let ldir = Coqargs.(Coqinit.dirpath_of_top (TopPhysical f)) in
       VCS.set_ldir ldir;
       set_compilation_hints f;
       ldir
 
     | VosDoc f ->
-      let ldir = Coqargs.(dirpath_of_top (TopPhysical f)) in
+      let ldir = Coqargs.(Coqinit.dirpath_of_top (TopPhysical f)) in
       VCS.set_ldir ldir;
       set_compilation_hints f;
       ldir
