@@ -73,7 +73,6 @@ let exact h =
     let sigma, t = Typing.type_of env sigma c in
     let concl = Proofview.Goal.concl gl in
     if occur_existential sigma t || occur_existential sigma concl then
-      let sigma = Evd.clear_metas sigma in
       try
         let sigma = Unification.w_unify env sigma CONV ~flags:auto_unif_flags concl t in
         Proofview.Unsafe.tclEVARSADVANCE sigma <*>
