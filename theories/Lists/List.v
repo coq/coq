@@ -9,6 +9,7 @@
 (************************************************************************)
 
 Require Import PeanoNat.
+Require Import Morphisms.
 
 Set Implicit Arguments.
 (* Set Universe Polymorphism. *)
@@ -1373,6 +1374,10 @@ Lemma map_ext :
 Proof.
   intros; apply map_ext_in; auto.
 Qed.
+
+Global Instance Proper_map {A B} :
+  Proper (pointwise_relation _ eq ==> eq ==> eq) (@map A B).
+Proof. repeat intro; subst; auto using map_ext. Qed.
 
 Lemma flat_map_ext : forall (A B : Type)(f g : A -> list B),
   (forall a, f a = g a) -> forall l, flat_map f l = flat_map g l.
