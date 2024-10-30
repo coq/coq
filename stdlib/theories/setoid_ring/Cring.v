@@ -19,6 +19,7 @@ Require Export Ncring.
 Require Export Ncring_initial.
 Require Export Ncring_tac.
 Require Import InitialRing.
+Require Import BinInt.
 
 Class Cring {R:Type}`{Rr:Ring R} :=
  cring_mul_comm: forall x y:R, x * y == y * x.
@@ -187,7 +188,6 @@ Ltac cring_simplify_aux lterm fv lexpr hyp :=
             rewrite eq1;
             pattern (@Ring_polynom.Pphi_dev
             _ 0 1 _+_ _*_ _-_ -_
-
             Z 0%Z 1%Z Z.eqb
             Ncring_initial.gen_phiZ
             get_signZ fv t');

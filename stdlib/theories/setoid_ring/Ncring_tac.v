@@ -18,6 +18,7 @@ Require Import Algebra_syntax.
 Require Export Ncring.
 Require Import Ncring_polynom.
 Require Import Ncring_initial.
+Require Import BinInt.
 
 Set Implicit Arguments.
 
@@ -207,6 +208,16 @@ Lemma comm: forall (R:Type)`{Ring R}(c : Z) (x : R),
     + simpl.  gen_rewrite.
 Qed.
 
+Local Definition Private_ring_correct_Z :=
+  @ring_correct Z _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+    (@gen_phiZ _ _ _ _ _ _ _ _ _) _
+    (@comm _ _ _ _ _ _ _ _ _ _)
+    Z.eqb
+    ltac:(apply Z.eqb_eq)
+    N
+    (fun n:N => n)
+    (@pow_N _ _ _ _ _ _ _ _ _).
+
 Ltac ring_gen :=
    match goal with
      |- ?g =>
@@ -233,6 +244,12 @@ Ltac ring_gen :=
 Ltac non_commutative_ring:=
   intros;
   ring_gen.
+
+Local Definition Private_polynom_norm_subst_ok_Z :=
+(@Ncring_polynom.norm_subst_ok
+          Z _ 0%Z 1%Z Z.add Z.mul Z.sub Z.opp (@eq Z)
+          _ _ 0 1 _+_ _*_ _-_ -_ _==_ _ _ Ncring_initial.gen_phiZ _
+          (@comm _ 0 1 _+_ _*_ _-_ -_ _==_ _ _) _ ltac:(apply Z.eqb_eq)).
 
 (* simplification *)
 

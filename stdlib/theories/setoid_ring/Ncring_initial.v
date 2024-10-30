@@ -9,19 +9,8 @@
 (************************************************************************)
 
 Require Import BinInt.
-Require Import Zpow_def.
-Require Import BinInt.
-Require Import BinNat.
-Require Import Setoid.
-Require Import BinList.
-Require Import BinPos.
-Require Import BinNat.
-Require Import BinInt.
-Require Import Setoid.
 Require Export Ncring.
 Require Export Ncring_polynom.
-
-Require Zbool.
 
 Set Implicit Arguments.
 

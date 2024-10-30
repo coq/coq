@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+Require Import BinNatDef.
 Require Export Cring.
 Import BinNat.
 
