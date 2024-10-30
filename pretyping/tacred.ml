@@ -678,10 +678,7 @@ let whd_nothing_for_iota env sigma s =
           (match lookup_named id env with
              | LocalDef (_,body,_) -> whrec (body, stack)
              | _ -> s)
-      | Evar ev -> s
-      | Meta ev ->
-        (try whrec (Evd.meta_value sigma ev, stack)
-        with Not_found -> s)
+      | Evar _ | Meta _ -> s
       | Const (const, u) ->
           let u = EInstance.kind sigma u in
           (match constant_opt_value_in env (const, u) with
