@@ -1,4 +1,6 @@
 From Stdlib Require Import Nsatz.
+From Stdlib Require Import BinNat.
+
 Goal False.
 
   (* the first (succeeding) goal was reached by clearing one hypothesis in the second goal which overflows 6GB of stack space *)

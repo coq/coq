@@ -352,7 +352,7 @@ Proof.
       * rewrite andb_false_iff in C.
         destruct C.
         -- simpl. apply Z.ltb_ge in H.
-           right. Ztac.normZ. Ztac.slia H H0.
+           auto using Z.le_ge.
         -- left ; apply Qeq_bool_neq; auto.
     + simpl.
       rewrite <- IHc.

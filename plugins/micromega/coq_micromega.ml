@@ -1509,7 +1509,7 @@ let zz_domain_spec =
     ; undump_coeff = parse_z
     ; proof_typ = Lazy.force rocq_proofTerm
     ; dump_proof = dump_proof_term
-    ; coeff_eq = Mc.zeq_bool }
+    ; coeff_eq = Mc.Z.eqb }
 
 let qq_domain_spec =
   lazy
