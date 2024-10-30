@@ -9,7 +9,7 @@
 (************************************************************************)
 
 Require Import QArith.
-Import Zdiv.
+Require Import Zdiv.
 
 (************)
 

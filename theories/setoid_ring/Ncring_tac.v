@@ -12,9 +12,8 @@ Require Import List.
 Require Import Setoid.
 Require Import BinPos.
 Require Import BinList.
-Require Import Znumtheory.
 Require Export Morphisms Setoid Bool.
-Require Import ZArith.
+Require Import ZArith_base.
 Require Import Algebra_syntax.
 Require Export Ncring.
 Require Import Ncring_polynom.
