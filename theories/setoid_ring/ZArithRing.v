@@ -9,7 +9,7 @@
 (************************************************************************)
 
 Require Export Ring.
-Require Import ZArith_base.
+Require Import BinInt.
 Require Import Zpow_def.
 
 Import InitialRing.
@@ -47,12 +47,13 @@ Ltac Zpower_neg :=
     end
   end.
 
+Local Lemma Private_proj1_eqb_eq x y : Z.eqb x y = true -> x = y.
+Proof. apply Z.eqb_eq. Qed.
+
 Add Ring Zr : Zth
-  (decidable Zeq_bool_eq, constants [Zcst], preprocess [Zpower_neg;unfold Z.succ],
+  (decidable Private_proj1_eqb_eq, constants [Zcst], preprocess [Zpower_neg;unfold Z.succ],
    power_tac Zpower_theory [Zpow_tac],
     (* The following two options are not needed; they are the default choice
        when the set of coefficient is the usual ring Z *)
     div (InitialRing.Ztriv_div_th (@Eqsth Z) (@IDphi Z)),
    sign get_signZ_th).
-
-

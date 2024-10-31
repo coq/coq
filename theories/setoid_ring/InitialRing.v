@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Zbool.
 Require Import BinInt.
 Require Import BinNat.
 Require Import Setoid.
@@ -108,12 +107,12 @@ Section ZMORPHISM.
   | _ => None
   end.
 
- Lemma get_signZ_th : sign_theory Z.opp Zeq_bool get_signZ.
+ Lemma get_signZ_th : sign_theory Z.opp Z.eqb get_signZ.
  Proof.
   constructor.
   intros c;destruct c;intros ? H;try discriminate.
   injection H as [= <-].
-  simpl. unfold Zeq_bool. rewrite Z.compare_refl. trivial.
+  simpl. apply Pos.eqb_refl.
  Qed.
 
 
@@ -181,12 +180,8 @@ Section ZMORPHISM.
  Qed.
 
  Lemma gen_Zeqb_ok : forall x y,
-   Zeq_bool x y = true -> [x] == [y].
- Proof.
-  intros x y H.
-  assert (H1 := Zeq_bool_eq x y H);unfold IDphi in H1.
-  rewrite H1;rrefl.
- Qed.
+   Z.eqb x y = true -> [x] == [y].
+ Proof. intros x y ->%Z.eqb_eq; reflexivity. Qed.
 
  Lemma gen_phiZ1_pos_sub : forall x y,
  gen_phiZ1 (Z.pos_sub x y) == gen_phiPOS1 x + -gen_phiPOS1 y.
@@ -227,10 +222,10 @@ Section ZMORPHISM.
 (*proof that [.] satisfies morphism specifications*)
  Lemma gen_phiZ_morph :
   ring_morph 0 1 radd rmul rsub ropp req Z0 (Zpos xH)
-   Z.add Z.mul Z.sub Z.opp Zeq_bool gen_phiZ.
+   Z.add Z.mul Z.sub Z.opp Z.eqb gen_phiZ.
  Proof.
   assert ( SRmorph : semi_morph 0 1 radd rmul req Z0 (Zpos xH)
-                  Z.add Z.mul Zeq_bool gen_phiZ).
+                  Z.add Z.mul Z.eqb gen_phiZ).
   - apply mkRmorph;simpl;try rrefl.
     + apply gen_phiZ_add.
     + apply gen_phiZ_mul.

@@ -10,6 +10,7 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
+Require Import PeanoNat.
 Require Import NArith.
 Require Import Relation_Definitions.
 Require Import Setoid.
@@ -499,8 +500,8 @@ Lemma ge_bool_cases : forall n m,
  (if ge_bool n m then n >= m else n < m)%nat.
 Proof.
   intros n; induction n as [|n IHn];
-   intros m; destruct m as [|m]; simpl; auto with arith.
-  specialize (IHn m). destruct (ge_bool); auto with arith.
+   intros m; destruct m as [|m]; simpl; auto using Nat.le_add_r, Nat.le_0_l.
+  specialize (IHn m). destruct (ge_bool); auto using le_n_S.
 Qed.
 
 

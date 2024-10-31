@@ -10,7 +10,7 @@
 
 Require Ring.
 Import Ring_polynom Ring_tac Ring_theory InitialRing Setoid List Morphisms.
-Require Import ZArith_base.
+Require Import BinNat BinInt.
 Set Implicit Arguments.
 (* Set Universe Polymorphism. *)
 
@@ -915,7 +915,8 @@ induction e2 as [| |?|?|? IHe1 ? IHe2|? IHe1 ? IHe2|? IHe2_1 ? IHe2_2|? IHe|? IH
     destruct isIn as [([|p'],e')|].
     * destruct IHe2_1 as (IH1,GT1).
       destruct IHe2_2 as (IH2,GT2).
-      split; [|simpl; apply Zgt_trans with (Z.pos p); trivial].
+      split; cycle 1.
+      { rewrite Z.gt_lt_iff in *; eauto 1 using Z.lt_trans. }
       npe_simpl. rewrite IH1, IH2. simpl. simpl_pos_sub. simpl.
       replace (N.pos p1) with (N.pos p + N.pos (p1 - p))%N.
       { rewrite PEpow_add_r; npe_ring. }
@@ -925,7 +926,7 @@ induction e2 as [| |?|?|? IHe1 ? IHe2|? IHe1 ? IHe2|? IHe2_1 ? IHe2_2|? IHe|? IH
       }
     * destruct IHe2_1 as (IH1,GT1).
       destruct IHe2_2 as (IH2,GT2).
-      assert (Z.pos p1 > Z.pos p')%Z by (now apply Zgt_trans with (Zpos p)).
+      assert (Z.pos p1 > Z.pos p')%Z by (rewrite Z.gt_lt_iff in *; eauto 2 using Z.lt_trans).
       split; [|simpl; trivial].
       npe_simpl. rewrite IH1, IH2. simpl. simpl_pos_sub. simpl.
       replace (N.pos (p1 - p')) with (N.pos (p1 - p) + N.pos (p - p'))%N.
@@ -1813,12 +1814,11 @@ Qed.
 
 Lemma gen_phiZ_complete x y :
   gen_phiZ rO rI radd rmul ropp x == gen_phiZ rO rI radd rmul ropp y ->
-  Zeq_bool x y = true.
+  Z.eqb x y = true.
 Proof.
 intros.
  replace y with x.
-- unfold Zeq_bool.
-  rewrite Z.compare_refl; trivial.
+- apply Z.eqb_refl.
 - apply gen_phiZ_inj; trivial.
 Qed.
 
