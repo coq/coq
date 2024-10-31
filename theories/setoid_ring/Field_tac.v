@@ -259,8 +259,22 @@ Ltac Field_norm_gen f n FLD lH rl :=
   ReflexiveRewriteTactic mkFFV mkFE lemma_tac main_tac fv0 rl;
   try simpl_PCond FLD.
 
+(* This is duplicated from Ring_tac mutatis mutandi. but the simplification
+  lemma is computed in Field_norm_gen, while the ring infrastructure does
+  it in Ring_simplify_gen. *)
 Ltac Field_simplify_gen f FLD lH rl :=
+  let l := fresh "to_rewrite" in
+  pose (l:= rl);
+  generalize (eq_refl l);
+  unfold l at 2;
   get_FldPre FLD ();
+  let rl :=
+    match goal with
+    | [|- l = ?RL -> _ ] => RL
+    | _ => fail 1 "ring_simplify anomaly: bad goal after pre"
+    end in
+  let Heq := fresh "Heq" in
+  intros Heq;clear Heq l;
   Field_norm_gen f ring_subst_niter FLD lH rl;
   get_FldPost FLD ().
 
