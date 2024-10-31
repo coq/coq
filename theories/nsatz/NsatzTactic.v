@@ -70,15 +70,15 @@ Definition PEZ := PExpr Z.
 Definition P0Z : PolZ := P0 (C:=Z) 0%Z.
 
 Definition PolZadd : PolZ -> PolZ -> PolZ :=
-  @Padd  Z 0%Z Z.add Zeq_bool.
+  @Padd  Z 0%Z Z.add Z.eqb.
 
 Definition PolZmul : PolZ -> PolZ -> PolZ :=
-  @Pmul  Z 0%Z 1%Z Z.add Z.mul Zeq_bool.
+  @Pmul  Z 0%Z 1%Z Z.add Z.mul Z.eqb.
 
-Definition PolZeq := @Peq Z Zeq_bool.
+Definition PolZeq := @Peq Z Z.eqb.
 
 Definition norm :=
-  @norm_aux Z 0%Z 1%Z Z.add Z.mul Z.sub Z.opp Zeq_bool.
+  @norm_aux Z 0%Z 1%Z Z.add Z.mul Z.sub Z.opp Z.eqb.
 
 Fixpoint mult_l (la : list PEZ) (lp: list PolZ) : PolZ :=
  match la, lp with
