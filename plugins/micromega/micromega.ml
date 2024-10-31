@@ -609,13 +609,6 @@ module Z =
        | Zneg b0 -> Zpos (Coq_Pos.gcd a0 b0))
  end
 
-(** val zeq_bool : z -> z -> bool **)
-
-let zeq_bool x y =
-  match Z.compare x y with
-  | Eq -> true
-  | _ -> false
-
 type 'c pExpr =
 | PEc of 'c
 | PEX of positive
@@ -2067,6 +2060,13 @@ let simpl_cone cO cI ctimes ceqb e = match e with
            | PsatzZ -> t1
            | _ -> PsatzAdd (t1, t2)))
 | _ -> e
+
+(** val zeq_bool : z -> z -> bool **)
+
+let zeq_bool x y =
+  match Z.compare x y with
+  | Eq -> true
+  | _ -> false
 
 type q = { qnum : z; qden : positive }
 
