@@ -151,6 +151,7 @@ Instance list_eqdec `(eqa : EqDec A eq) : EqDec (list A) eq.
   all : abstract (cbv [complement equiv] in *; congruence).
 Defined.
 
+Local Set Warnings "-deprecated".
 Require Import Stdlib.Program.Program. (* for compat *)
 #[global] Obligation Tactic := unfold complement, equiv ; program_simpl.
 #[export] Obligation Tactic := unfold complement, equiv ; program_simpl.

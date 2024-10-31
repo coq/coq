@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Bool Basics OrdersTac.
+Require Import Bool Init.Basics OrdersTac.
 Require Export Orders.
 
 Set Implicit Arguments.

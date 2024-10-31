@@ -18,8 +18,10 @@
 *)
 
 Require Export Stdlib.Classes.Init.
-Require Import Stdlib.Program.Basics.
+Require Import Stdlib.Init.Basics.
+Local Set Warnings "-deprecated".
 Require Import Stdlib.Program.Tactics.
+Local Set Warnings "+deprecated".
 Require Import Stdlib.Relations.Relation_Definitions.
 
 Generalizable Variables A B C D R S T U l eqA eqB eqC eqD.

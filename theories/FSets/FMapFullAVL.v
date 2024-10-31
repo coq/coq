@@ -28,7 +28,7 @@
 *)
 
 Require Import FMapInterface FMapList ZArith Int FMapAVL Lia.
-Require Program.Wf.
+Require Init.Wf.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -688,7 +688,7 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
 
   Definition compare_aux : Raw.enumeration D.t * Raw.enumeration D.t -> comparison.
   Proof.
-    refine (@Init.Wf.Fix _ (Program.Wf.MR lt (cardinal_e_2 )) _ _
+    refine (@Init.Wf.Fix _ (Wf.MR lt (cardinal_e_2 )) _ _
       (fun ee (compare_aux : forall ee', cardinal_e_2 ee' < _ -> _) =>
       (let (e, e0) as ee' return (ee' = ee -> _) := ee in
       match e with
@@ -740,7 +740,7 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
   Lemma compare_aux_Cmp : forall e,
    Cmp (compare_aux e) (flatten_e (fst e)) (flatten_e (snd e)).
   Proof.
-    induction e as [[]IH] using (well_founded_induction (Program.Wf.measure_wf Nat.lt_wf_0 cardinal_e_2));
+    induction e as [[]IH] using (well_founded_induction (Wf.measure_wf Nat.lt_wf_0 cardinal_e_2));
     cbv [compare_aux]; rewrite Fix_eq by (intros; repeat caseq; congruence).
     repeat caseq; simpl; try MX.elim_comp; auto.
     apply cons_Cmp; eauto.
@@ -850,4 +850,5 @@ Module Make_ord (X: OrderedType)(D: OrderedType)
             with Module MapS.E := X
  :=IntMake_ord(Z_as_Int)(X)(D).
 
+Local Set Warnings "-deprecated".
 Require Program. (* for compat *)

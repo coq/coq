@@ -18,7 +18,7 @@
 *)
 
 Require Export Stdlib.Classes.Init.
-Require Import Stdlib.Program.Basics.
+Require Import Stdlib.Init.Basics.
 
 Generalizable Variables A B C D R S T U l eqA eqB eqC eqD.
 
@@ -273,7 +273,9 @@ Tactic Notation "apply" "*" constr(t) :=
   first [ refine t | refine (t _) | refine (t _ _) | refine (t _ _ _) | refine (t _ _ _ _) |
     refine (t _ _ _ _ _) | refine (t _ _ _ _ _ _) | refine (t _ _ _ _ _ _ _) ].
 
+Local Set Warnings "-deprecated".
 Require Import Stdlib.Program.Tactics.
+Local Set Warnings "+deprecated".
 
 Ltac simpl_crelation :=
   unfold flip, impl, arrow ; try reduce ; program_simpl ;

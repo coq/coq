@@ -17,7 +17,7 @@
 Require Stdlib.Classes.CRelationClasses Stdlib.Classes.CMorphisms.
 Require Import Stdlib.Classes.Morphisms Stdlib.Classes.Morphisms_Prop.
 Require Export Stdlib.Classes.RelationClasses Stdlib.Relations.Relation_Definitions.
-Require Import Stdlib.Classes.Equivalence Stdlib.Program.Basics.
+Require Import Stdlib.Classes.Equivalence Stdlib.Init.Basics.
 
 Generalizable Variables A R.
 
@@ -152,7 +152,9 @@ Tactic Notation "setoid_replace" constr(x) "with" constr(y)
    [respectful] calls and substitute leibniz equalities. One can
    redefine it using [Ltac add_morphism_tactic ::= t]. *)
 
+Local Set Warnings "-deprecated".
 Require Import Stdlib.Program.Tactics.
+Local Set Warnings "+deprecated".
 
 Local Open Scope signature_scope.
 

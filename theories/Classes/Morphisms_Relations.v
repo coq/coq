@@ -16,7 +16,7 @@
 
 Require Import Relation_Definitions.
 Require Import Stdlib.Classes.Morphisms.
-Require Import Stdlib.Program.Basics.
+Require Import Stdlib.Init.Basics.
 
 Generalizable Variables A l.
 
@@ -60,4 +60,5 @@ Lemma flip_pointwise_relation A (R : relation A) :
   relation_equivalence (pointwise_relation A (flip R)) (flip (pointwise_relation A R)).
 Proof. intros. split; firstorder. Qed.
 
+Local Set Warnings "-deprecated".
 Require Stdlib.Program.Program. (* for compat *)

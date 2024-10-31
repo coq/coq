@@ -10,7 +10,7 @@
 
 Require Export List.
 Require Export Sorted.
-Require Export Setoid Basics Morphisms.
+Require Export Setoid Init.Basics Morphisms.
 Set Implicit Arguments.
 Unset Strict Implicit.
 (* Set Universe Polymorphism. *)

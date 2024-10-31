@@ -14,8 +14,10 @@
    Institution: LRI, CNRS UMR 8623 - University Paris Sud
 *)
 
-Require Import Stdlib.Program.Basics.
+Require Import Stdlib.Init.Basics.
+Local Set Warnings "-deprecated".
 Require Import Stdlib.Program.Tactics.
+Local Set Warnings "+deprecated".
 
 Require Import Stdlib.Classes.Init.
 Require Import Relation_Definitions.

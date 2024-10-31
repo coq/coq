@@ -14,7 +14,7 @@
    Institution: LRI, CNRS UMR 8623 - University Paris Sud
 *)
 
-Require Import Stdlib.Program.Basics.
+Require Import Stdlib.Init.Basics.
 Require Import Stdlib.Relations.Relation_Definitions.
 Require Export Stdlib.Classes.RelationClasses.
 
@@ -781,4 +781,5 @@ Register RewriteRelation as rewrite.prop.RewriteRelation.
 Register Proper as rewrite.prop.Proper.
 Register ProperProxy as rewrite.prop.ProperProxy.
 
+Local Set Warnings "-deprecated".
 Require Stdlib.Program.Tactics. (* for compat *)

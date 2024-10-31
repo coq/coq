@@ -133,4 +133,5 @@ Proof.
   abstract (extensionality x; destruct x; auto).
 Defined.
 
+Local Set Warnings "-deprecated".
 Require Stdlib.Program.Program. (* for compat *)

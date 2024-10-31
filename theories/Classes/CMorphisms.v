@@ -14,8 +14,10 @@
    Institution: LRI, CNRS UMR 8623 - University Paris Sud
 *)
 
-Require Import Stdlib.Program.Basics.
+Require Import Stdlib.Init.Basics.
+Local Set Warnings "-deprecated".
 Require Import Stdlib.Program.Tactics.
+Local Set Warnings "+deprecated".
 Require Export Stdlib.Classes.CRelationClasses.
 
 Generalizable Variables A eqA B C D R RA RB RC m f x y.

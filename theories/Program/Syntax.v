@@ -14,6 +14,7 @@
 *)
 
 (** Haskell-style notations for the unit type and value. *)
+Attributes deprecated(since="9.0").
 
 Notation " () " := Datatypes.unit : type_scope.
 Notation " () " := tt.

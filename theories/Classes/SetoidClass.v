@@ -139,7 +139,8 @@ Class PartialSetoid (A : Type) :=
 
 Infix "=~=" := pequiv (at level 70, no associativity) : type_scope.
 
-Require Stdlib.Program.Program. (* for compat *)
+Local Set Warnings "-deprecated".
+Require Stdlib.Program.Program.
 (** Reset the default Program tactic. *)
 #[global] Obligation Tactic := Program.Tactics.program_simpl.
 #[export] Obligation Tactic := Program.Tactics.program_simpl.

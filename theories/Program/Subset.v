@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 (** Tactics related to subsets and proof irrelevance. *)
+Attributes deprecated(since="9.0").
+Local Set Warnings "-deprecated".
 
 Require Import Stdlib.Program.Utils.
 Require Import Stdlib.Program.Equality.

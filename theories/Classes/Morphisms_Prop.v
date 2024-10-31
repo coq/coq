@@ -15,7 +15,7 @@
 *)
 
 Require Import Stdlib.Classes.Morphisms.
-Require Import Stdlib.Program.Basics.
+Require Import Stdlib.Init.Basics.
 
 (** Standard instances for [not], [iff] and [impl]. *)
 
