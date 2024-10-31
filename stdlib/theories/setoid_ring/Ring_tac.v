@@ -9,10 +9,7 @@
 (************************************************************************)
 
 Set Implicit Arguments.
-Require Import Setoid.
-Require Import BinPos.
 Require Import Ring_polynom.
-Require Import BinList.
 Require Export ListTactics.
 Require Import InitialRing.
 Declare ML Module "rocq-runtime.plugins.ring".
