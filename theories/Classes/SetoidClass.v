@@ -19,8 +19,6 @@ Unset Strict Implicit.
 
 Generalizable Variables A.
 
-Require Import Stdlib.Program.Program.
-
 Require Import Relation_Definitions.
 Require Export Stdlib.Classes.RelationClasses.
 Require Export Stdlib.Classes.Morphisms.
@@ -32,7 +30,7 @@ Class Setoid A := {
   #[global] setoid_equiv :: Equivalence equiv }.
 
 (* Too dangerous instance *)
-(* Program Instance [ eqa : Equivalence A eqA ] =>  *)
+(* Instance [ eqa : Equivalence A eqA ] =>  *)
 (*   equivalence_setoid : Setoid A := *)
 (*   equiv := eqA ; setoid_equiv := eqa. *)
 
@@ -56,11 +54,11 @@ Existing Instance setoid_trans.
 
 (** Standard setoids. *)
 
-(* Program Instance eq_setoid : Setoid A := *)
+(* Instance eq_setoid : Setoid A := *)
 (*   equiv := eq ; setoid_equiv := eq_equivalence. *)
 
 #[global]
-Program Instance iff_setoid : Setoid Prop :=
+Instance iff_setoid : Setoid Prop :=
   { equiv := iff ; setoid_equiv := iff_equivalence }.
 
 (** Overloaded notations for setoid equivalence and inequivalence. Not to be confused with [eq] and [=]. *)
@@ -125,11 +123,11 @@ Ltac setoidify := repeat setoidify_tac.
 (** Every setoid relation gives rise to a morphism, in fact every partial setoid does. *)
 
 #[global]
-Program Instance setoid_morphism `(sa : Setoid A) : Proper (equiv ++> equiv ++> iff) equiv :=
+Instance setoid_morphism `(sa : Setoid A) : Proper (equiv ++> equiv ++> iff) equiv :=
   proper_prf.
 
 #[global]
-Program Instance setoid_partial_app_morphism `(sa : Setoid A) (x : A) : Proper (equiv ++> iff) (equiv x) :=
+Instance setoid_partial_app_morphism `(sa : Setoid A) (x : A) : Proper (equiv ++> iff) (equiv x) :=
   proper_prf.
 
 (** Partial setoids don't require reflexivity so we can build a partial setoid on the function space. *)
@@ -141,7 +139,7 @@ Class PartialSetoid (A : Type) :=
 
 Infix "=~=" := pequiv (at level 70, no associativity) : type_scope.
 
+Require Stdlib.Program.Program. (* for compat *)
 (** Reset the default Program tactic. *)
-
-#[global] Obligation Tactic := program_simpl.
-#[export] Obligation Tactic := program_simpl.
+#[global] Obligation Tactic := Program.Tactics.program_simpl.
+#[export] Obligation Tactic := Program.Tactics.program_simpl.

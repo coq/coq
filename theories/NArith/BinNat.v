@@ -70,17 +70,16 @@ Definition Odd n := exists m, n = 2*m+1.
 
 (** Proofs of morphisms, obvious since eq is Leibniz *)
 
-Local Obligation Tactic := simpl_relation.
-Program Definition succ_wd : Proper (eq==>eq) succ := _.
-Program Definition pred_wd : Proper (eq==>eq) pred := _.
-Program Definition add_wd : Proper (eq==>eq==>eq) add := _.
-Program Definition sub_wd : Proper (eq==>eq==>eq) sub := _.
-Program Definition mul_wd : Proper (eq==>eq==>eq) mul := _.
-Program Definition lt_wd : Proper (eq==>eq==>iff) lt := _.
-Program Definition div_wd : Proper (eq==>eq==>eq) div := _.
-Program Definition mod_wd : Proper (eq==>eq==>eq) modulo := _.
-Program Definition pow_wd : Proper (eq==>eq==>eq) pow := _.
-Program Definition testbit_wd : Proper (eq==>eq==>Logic.eq) testbit := _.
+Definition succ_wd : Proper (eq==>eq) succ := _.
+Definition pred_wd : Proper (eq==>eq) pred := _.
+Definition add_wd : Proper (eq==>eq==>eq) add := _.
+Definition sub_wd : Proper (eq==>eq==>eq) sub := _.
+Definition mul_wd : Proper (eq==>eq==>eq) mul := _.
+Definition lt_wd : Proper (eq==>eq==>iff) lt := _.
+Definition div_wd : Proper (eq==>eq==>eq) div := _.
+Definition mod_wd : Proper (eq==>eq==>eq) modulo := _.
+Definition pow_wd : Proper (eq==>eq==>eq) pow := _.
+Definition testbit_wd : Proper (eq==>eq==>Logic.eq) testbit := _.
 
 (** Decidability of equality. *)
 

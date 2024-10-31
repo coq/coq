@@ -234,7 +234,7 @@ Module WfExtensionality.
 
   (** For a function defined with Program using a well-founded order. *)
 
-  Program Lemma fix_sub_eq_ext :
+  Lemma fix_sub_eq_ext :
     forall (A : Type) (R : A -> A -> Prop) (Rwf : well_founded R)
       (P : A -> Type)
       (F_sub : forall x : A, (forall y:{y : A | R y x}, P (` y)) -> P x),

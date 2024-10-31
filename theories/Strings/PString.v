@@ -634,16 +634,18 @@ Module OT <: OrderedType.OrderedType with Definition t := string.
   Lemma lt_not_eq (s1 s2 : t) : lt s1 s2 -> not (eq s1 s2).
   Proof. unfold lt, eq. intros ->. discriminate. Qed.
 
-  #[program]
-  Definition compare (s1 s2 : t) : OrderedType.Compare lt eq s1 s2 :=
-    match compare s1 s2 with
-    | Eq => OrderedType.EQ _
-    | Lt => OrderedType.LT _
-    | Gt => OrderedType.GT _
-    end.
-  Next Obligation. symmetry. assumption. Defined.
-  Next Obligation. symmetry. assumption. Defined.
-  Next Obligation. unfold lt. rewrite compare_antisym, <-Heq_anonymous. reflexivity. Defined.
+  Definition compare (s1 s2 : t) : OrderedType.Compare lt eq s1 s2.
+  Proof.
+    refine (
+    match compare s1 s2 as c return c = _ -> _ with
+    | Eq => fun H => OrderedType.EQ _
+    | Lt => fun H => OrderedType.LT _
+    | Gt => fun H => OrderedType.GT _
+    end Logic.eq_refl).
+    { abstract (symmetry; assumption). }
+    { abstract (symmetry; assumption). }
+    { abstract (unfold lt; rewrite compare_antisym, <-H; reflexivity). }
+  Defined.
 
   Hint Immediate eq_sym : core.
   Hint Resolve eq_refl eq_trans lt_not_eq lt_trans : core.

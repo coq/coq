@@ -128,23 +128,23 @@ End Definitions.
 
 Section Computational.
 
-Program Instance Decidable_PosEq : forall (p q : positive), Decidable (p = q) :=
-  { Decidable_witness := Pos.eqb p q }.
-Next Obligation.
-apply Pos.eqb_eq.
-Qed.
+Instance Decidable_PosEq : forall (p q : positive), Decidable (p = q).
+Proof.
+  intros; refine  {| Decidable_witness := Pos.eqb p q |}.
+  apply Pos.eqb_eq.
+Defined.
 
-Program Instance Decidable_PosLt : forall p q, Decidable (Pos.lt p q) :=
-  { Decidable_witness := Pos.ltb p q }.
-Next Obligation.
-apply Pos.ltb_lt.
-Qed.
+Instance Decidable_PosLt : forall p q, Decidable (Pos.lt p q).
+Proof.
+  intros; refine {| Decidable_witness := Pos.ltb p q |}.
+  apply Pos.ltb_lt.
+Defined.
 
-Program Instance Decidable_PosLe : forall p q, Decidable (Pos.le p q) :=
-  { Decidable_witness := Pos.leb p q }.
-Next Obligation.
-apply Pos.leb_le.
-Qed.
+Instance Decidable_PosLe : forall p q, Decidable (Pos.le p q).
+Proof.
+  intros; refine {| Decidable_witness := Pos.leb p q |}.
+  apply Pos.leb_le.
+Defined.
 
 (** * The core reflexive part. *)
 
@@ -167,26 +167,23 @@ match pl with
 end.
 
 (* We could do that with [decide equality] but dependency in proofs is heavy *)
-Program Instance Decidable_eq_poly : forall (p q : poly), Decidable (eq p q) := {
-  Decidable_witness := beq_poly p q
-}.
+Instance Decidable_eq_poly : forall (p q : poly), Decidable (eq p q).
+Proof.
+  intros; refine {| Decidable_witness := beq_poly p q |}.
+  abstract (split; [
+  revert q; induction p; intros [] ?; simpl in *; bool; try_decide;
+    f_equal; first [intuition congruence|auto]
+| revert q; induction p; intros [] Heq; simpl in *; bool; try_decide; intuition;
+    try injection Heq; first[congruence|intuition] ]).
+Defined.
 
-Next Obligation.
-split.
-- revert q; induction p; intros [] ?; simpl in *; bool; try_decide;
-    f_equal; first [intuition congruence|auto].
-- revert q; induction p; intros [] Heq; simpl in *; bool; try_decide; intuition;
-    try injection Heq; first[congruence|intuition].
-Qed.
-
-Program Instance Decidable_null : forall p, Decidable (null p) := {
-  Decidable_witness := match p with Cst false => true | _ => false end
-}.
-Next Obligation.
-split.
-- destruct p as [[]|]; first [discriminate|constructor].
-- inversion 1; trivial.
-Qed.
+Instance Decidable_null : forall p, Decidable (null p).
+Proof.
+  intros; refine {| Decidable_witness := match p with Cst false => true | _ => false end |}.
+  abstract ( split; [
+  destruct p as [[]|]; first [discriminate|constructor]
+| inversion 1; trivial ] ).
+Defined.
 
 Definition list_nth {A} p (l : list A) def :=
   Pos.peano_rect (fun _ => list A -> A)
@@ -209,14 +206,13 @@ match p with
     valid_dec i p && valid_dec (Pos.succ i) q
 end.
 
-Program Instance Decidable_valid : forall n p, Decidable (valid n p) := {
-  Decidable_witness := valid_dec n p
-}.
-Next Obligation.
-split.
-- revert n; induction p; unfold valid_dec in *; intuition; bool; try_decide; auto.
-- intros H; induction H; unfold valid_dec in *; bool; try_decide; auto.
-Qed.
+Instance Decidable_valid : forall n p, Decidable (valid n p).
+Proof.
+  intros; refine {| Decidable_witness := valid_dec n p |}.
+  abstract (split; [
+  revert n; induction p; unfold valid_dec in *; intuition; bool; try_decide; auto
+| intros H; induction H; unfold valid_dec in *; bool; try_decide; auto ] ).
+Defined.
 
 (** Basic algebra *)
 

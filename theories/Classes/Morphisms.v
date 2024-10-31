@@ -15,12 +15,10 @@
 *)
 
 Require Import Stdlib.Program.Basics.
-Require Import Stdlib.Program.Tactics.
 Require Import Stdlib.Relations.Relation_Definitions.
 Require Export Stdlib.Classes.RelationClasses.
 
 Generalizable Variables A eqA B C D R RA RB RC m f x y.
-Local Obligation Tactic := try solve [ simpl_relation ].
 
 (** * Morphisms.
 
@@ -337,11 +335,10 @@ Section GenericInstances.
   (** We can build a PER on the Coq function space if we have PERs on the domain and
    codomain. *)
   
-  Program Instance respectful_per `(PER A R, PER B R') : PER (R ==> R').
-
-  Next Obligation.
+  Instance respectful_per `(PER A R, PER B R') : PER (R ==> R').
   Proof with auto.
-    intros R H R' H0 x y z H1 H2 x0 y0 H3.
+    split. { simpl_relation. }
+    intros x y z H1 H2 x0 y0 H3.
     assert(R x0 x0).
     - transitivity y0... symmetry...
     - transitivity (y x0)...
@@ -349,91 +346,75 @@ Section GenericInstances.
 
   (** The complement of a relation conserves its proper elements. *)
   
-  Program Definition complement_proper
+  Definition complement_proper
           `(mR : Proper (A -> A -> Prop) (RA ==> RA ==> iff) R) :
-    Proper (RA ==> RA ==> iff) (complement R) := _.
-  
-  Next Obligation.
+    Proper (RA ==> RA ==> iff) (complement R).
   Proof.
-    intros RA R mR x y H x0 y0 H0.
+    intros x y H x0 y0 H0.
     unfold complement.
     pose (mR x y H x0 y0 H0).
-    intuition.
+    intuition idtac.
   Qed.
  
   (** The [flip] too, actually the [flip] instance is a bit more general. *)
 
-  Program Definition flip_proper
+  Definition flip_proper
           `(mor : Proper (A -> B -> C) (RA ==> RB ==> RC) f) :
-    Proper (RB ==> RA ==> RC) (flip f) := _.
-  
-  Next Obligation.
+    Proper (RB ==> RA ==> RC) (flip f).
   Proof.
-    intros RA RB RC f mor x y H x0 y0 H0; apply mor ; auto.
+    intros x y H x0 y0 H0; apply mor ; auto.
   Qed.
 
 
   (** Every Transitive relation gives rise to a binary morphism on [impl],
    contravariant in the first argument, covariant in the second. *)
   
-  Global Program 
+  Global
   Instance trans_contra_co_morphism
     `(Transitive A R) : Proper (R --> R ++> impl) R.
-  
-  Next Obligation.
   Proof with auto.
-    intros R H x y H0 x0 y0 H1 H2.
+    intros x y H0 x0 y0 H1 H2.
     transitivity x...
     transitivity x0...
   Qed.
 
   (** Proper declarations for partial applications. *)
 
-  Global Program 
+  Global
   Instance trans_contra_inv_impl_morphism
   `(Transitive A R) {x} : Proper (R --> flip impl) (R x) | 3.
-
-  Next Obligation.
   Proof with auto.
-    intros R H x x0 y H0 H1.
+    intros x0 y H0 H1.
     transitivity y...
   Qed.
 
-  Global Program 
+  Global
   Instance trans_co_impl_morphism
     `(Transitive A R) {x} : Proper (R ++> impl) (R x) | 3.
-
-  Next Obligation.
   Proof with auto.
-    intros R H x x0 y H0 H1.
+    intros x0 y H0 H1.
     transitivity x0...
   Qed.
 
-  Global Program 
+  Global
   Instance trans_sym_co_inv_impl_morphism
     `(PER A R) {x} : Proper (R ++> flip impl) (R x) | 3.
-
-  Next Obligation.
   Proof with auto.
-    intros R H x x0 y H0 H1.
+    intros x0 y H0 H1.
     transitivity y... symmetry...
   Qed.
 
-  Global Program Instance trans_sym_contra_impl_morphism
+  Global Instance trans_sym_contra_impl_morphism
     `(PER A R) {x} : Proper (R --> impl) (R x) | 3.
-
-  Next Obligation.
   Proof with auto.
-    intros R H x x0 y H0 H1.
+    intros x0 y H0 H1.
     transitivity x0... symmetry...
   Qed.
 
-  Global Program Instance per_partial_app_morphism
+  Global Instance per_partial_app_morphism
   `(PER A R) {x} : Proper (R ==> iff) (R x) | 2.
-
-  Next Obligation.
   Proof with auto.
-    intros R H x x0 y H0.
+    intros x0 y H0.
     split.
     - intros ; transitivity x0...
     - intros.
@@ -443,24 +424,20 @@ Section GenericInstances.
 
   (** Every Transitive relation induces a morphism by "pushing" an [R x y] on the left of an [R x z] proof to get an [R y z] goal. *)
 
-  Global Program 
+  Global
   Instance trans_co_eq_inv_impl_morphism
   `(Transitive A R) : Proper (R ==> (@eq A) ==> flip impl) R | 2.
-
-  Next Obligation.
   Proof with auto.
-    intros R H x y H0 y0 y1 e H2; destruct e.
+    intros x y H0 y0 y1 e H2; destruct e.
     transitivity y...
   Qed.
 
   (** Every Symmetric and Transitive relation gives rise to an equivariant morphism. *)
 
-  Global Program 
+  Global
   Instance PER_morphism `(PER A R) : Proper (R ==> R ==> iff) R | 1.
-
-  Next Obligation.
   Proof with auto.
-    intros R H x y H0 x0 y0 H1.
+    intros x y H0 x0 y0 H1.
     split ; intros.
     - transitivity x0... transitivity x... symmetry...
 
@@ -470,12 +447,10 @@ Section GenericInstances.
   Lemma symmetric_equiv_flip `(Symmetric A R) : relation_equivalence R (flip R).
   Proof. firstorder. Qed.
 
-  Global Program Instance compose_proper RA RB RC :
+  Global Instance compose_proper RA RB RC :
     Proper ((RB ==> RC) ==> (RA ==> RB) ==> (RA ==> RC)) (@compose A B C).
-
-  Next Obligation.
   Proof.
-    intros RA RB RC x y H x0 y0 H0 x1 y1 H1.
+    intros x y H x0 y0 H0 x1 y1 H1.
     unfold compose. apply H. apply H0. apply H1.
   Qed.
 
@@ -805,3 +780,5 @@ Register apply_subrelation as rewrite.prop.apply_subrelation.
 Register RewriteRelation as rewrite.prop.RewriteRelation.
 Register Proper as rewrite.prop.Proper.
 Register ProperProxy as rewrite.prop.ProperProxy.
+
+Require Stdlib.Program.Tactics. (* for compat *)

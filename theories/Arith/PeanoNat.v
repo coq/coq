@@ -31,17 +31,16 @@ Set Inline Level 50.
 (** All operations are well-defined (trivial here since eq is Leibniz) *)
 
 Definition eq_equiv : Equivalence (@eq nat) := eq_equivalence.
-Local Obligation Tactic := simpl_relation.
-#[global] Program Instance succ_wd : Proper (eq==>eq) S.
-#[global] Program Instance pred_wd : Proper (eq==>eq) pred.
-#[global] Program Instance add_wd : Proper (eq==>eq==>eq) plus.
-#[global] Program Instance sub_wd : Proper (eq==>eq==>eq) minus.
-#[global] Program Instance mul_wd : Proper (eq==>eq==>eq) mult.
-#[global] Program Instance pow_wd : Proper (eq==>eq==>eq) pow.
-#[global] Program Instance div_wd : Proper (eq==>eq==>eq) div.
-#[global] Program Instance mod_wd : Proper (eq==>eq==>eq) modulo.
-#[global] Program Instance lt_wd : Proper (eq==>eq==>iff) lt.
-#[global] Program Instance testbit_wd : Proper (eq==>eq==>eq) testbit.
+#[global] Instance succ_wd : Proper (eq==>eq) S := _.
+#[global] Instance pred_wd : Proper (eq==>eq) pred := _.
+#[global] Instance add_wd : Proper (eq==>eq==>eq) plus := _.
+#[global] Instance sub_wd : Proper (eq==>eq==>eq) minus := _.
+#[global] Instance mul_wd : Proper (eq==>eq==>eq) mult := _.
+#[global] Instance pow_wd : Proper (eq==>eq==>eq) pow := _.
+#[global] Instance div_wd : Proper (eq==>eq==>eq) div := _.
+#[global] Instance mod_wd : Proper (eq==>eq==>eq) modulo := _.
+#[global] Instance lt_wd : Proper (eq==>eq==>iff) lt := _.
+#[global] Instance testbit_wd : Proper (eq==>eq==>eq) testbit := _.
 
 (** Bi-directional induction. *)
 

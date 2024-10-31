@@ -16,7 +16,7 @@
 
 Require Import Relation_Definitions.
 Require Import Stdlib.Classes.Morphisms.
-Require Import Stdlib.Program.Program.
+Require Import Stdlib.Program.Basics.
 
 Generalizable Variables A l.
 
@@ -59,3 +59,5 @@ Proof. intro. apply (predicate_implication_pointwise (Tcons A (Tcons A Tnil))). 
 Lemma flip_pointwise_relation A (R : relation A) :
   relation_equivalence (pointwise_relation A (flip R)) (flip (pointwise_relation A R)).
 Proof. intros. split; firstorder. Qed.
+
+Require Stdlib.Program.Program. (* for compat *)

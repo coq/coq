@@ -19,7 +19,6 @@
 
 Require Export Stdlib.Classes.Init.
 Require Import Stdlib.Program.Basics.
-Require Import Stdlib.Program.Tactics.
 
 Generalizable Variables A B C D R S T U l eqA eqB eqC eqD.
 
@@ -122,19 +121,19 @@ Section Defs.
     Lemma flip_Reflexive `{Reflexive R} : Reflexive (flip R).
     Proof. tauto. Qed.
     
-    Program Definition flip_Irreflexive `(Irreflexive R) : Irreflexive (flip R) :=
+    Definition flip_Irreflexive `(Irreflexive R) : Irreflexive (flip R) :=
       irreflexivity (R:=R).
     
-    Program Definition flip_Symmetric `(Symmetric R) : Symmetric (flip R) :=
+    Definition flip_Symmetric `(Symmetric R) : Symmetric (flip R) :=
       fun x y H => symmetry (R:=R) H.
     
-    Program Definition flip_Asymmetric `(Asymmetric R) : Asymmetric (flip R) :=
+    Definition flip_Asymmetric `(Asymmetric R) : Asymmetric (flip R) :=
       fun x y H H' => asymmetry (R:=R) H H'.
     
-    Program Definition flip_Transitive `(Transitive R) : Transitive (flip R) :=
+    Definition flip_Transitive `(Transitive R) : Transitive (flip R) :=
       fun x y z H H' => transitivity (R:=R) H' H.
 
-    Program Lemma flip_Antisymmetric `(Antisymmetric eqA R) :
+    Lemma flip_Antisymmetric `(Antisymmetric eqA R) :
       Antisymmetric eqA (flip R).
     Proof. firstorder. Qed.
 
@@ -191,7 +190,8 @@ Section Defs.
         The instance has low priority as it is always applicable
         if only the type is constrained. *)
     
-    Global Program Instance eq_equivalence : Equivalence (@eq A) | 10.
+    Global Instance eq_equivalence : Equivalence (@eq A) | 10.
+    Proof. split; exact _. Qed.
   End Leibniz.
   
 End Defs.
@@ -273,18 +273,18 @@ Tactic Notation "apply" "*" constr(t) :=
   first [ refine t | refine (t _) | refine (t _ _) | refine (t _ _ _) | refine (t _ _ _ _) |
     refine (t _ _ _ _ _) | refine (t _ _ _ _ _ _) | refine (t _ _ _ _ _ _ _) ].
 
+Require Import Stdlib.Program.Tactics.
+
 Ltac simpl_crelation :=
   unfold flip, impl, arrow ; try reduce ; program_simpl ;
     try ( solve [ dintuition auto with crelations ]).
 
-Local Obligation Tactic := simpl_crelation.
-
 (** Logical implication. *)
 
 #[global]
-Program Instance impl_Reflexive : Reflexive impl.
+Instance impl_Reflexive : Reflexive impl. Proof. simpl_crelation. Qed.
 #[global]
-Program Instance impl_Transitive : Transitive impl.
+Instance impl_Transitive : Transitive impl. Proof. simpl_crelation. Qed.
 
 (** Logical equivalence. *)
 
@@ -298,11 +298,11 @@ Instance iff_Transitive : Transitive iff := iff_trans.
 (** Logical equivalence [iff] is an equivalence crelation. *)
 
 #[global]
-Program Instance iff_equivalence : Equivalence iff. 
+Instance iff_equivalence : Equivalence iff. Proof. split; simpl_crelation. Qed.
 #[global]
-Program Instance arrow_Reflexive : Reflexive arrow.
+Instance arrow_Reflexive : Reflexive arrow. Proof. simpl_crelation. Qed.
 #[global]
-Program Instance arrow_Transitive : Transitive arrow.
+Instance arrow_Transitive : Transitive arrow. Proof. simpl_crelation. Qed.
 
 #[global]
 Instance iffT_Reflexive : Reflexive iffT. 
