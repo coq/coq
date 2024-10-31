@@ -20,11 +20,14 @@ let () =
   if Array.length Sys.argv < 2
   then error "no argument" ()
   else
+    let argv = List.tl (Array.to_list Sys.argv) in
+    let kind = List.hd argv in
+    let argv = List.tl argv in
     let init, loop =
-      match Sys.argv.(1) with
+      match kind with
       | "--kind=proof" -> WProof.init_stdout, WProof.main_loop
       | "--kind=query" -> WQuery.init_stdout, WQuery.main_loop
       | "--kind=tactic" -> WTactic.init_stdout, WTactic.main_loop
       | s -> error s ()
     in
-    WorkerLoop.start ~init ~loop
+    WorkerLoop.start ~init ~loop argv

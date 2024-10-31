@@ -31,11 +31,13 @@ val dirpath_of_top : Coqargs.top -> Names.DirPath.t
     on the spot instead of being represented as "injection commands" (a field
     of Coqargs.t).
 
+    The [string list] argument is typically [List.tl (Array.to_list Sys.argv)].
+
     [parse_extra] and [usage] can be used to parse/document more options. *)
 val parse_arguments :
   parse_extra:(Coqargs.t -> string list -> 'a * string list) ->
   ?initial_args:Coqargs.t ->
-  unit ->
+  string list ->
   Coqargs.t * 'a
 
 (** 3 initialization of global runtime data

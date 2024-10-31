@@ -719,4 +719,4 @@ let () =
       init_extra = islave_init;
       run = loop;
       initial_args = islave_default_opts } in
-  start_coq custom
+  start_coq custom (List.tl (Array.to_list Sys.argv))

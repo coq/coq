@@ -56,9 +56,9 @@ type ('a,'b) custom_toplevel =
   }
 
 (** Main init routine *)
-let init_toplevel { parse_extra; init_extra; usage; initial_args } =
+let init_toplevel { parse_extra; init_extra; usage; initial_args } args =
   Coqinit.init_ocaml ();
-  let opts, customopts = Coqinit.parse_arguments ~parse_extra ~initial_args () in
+  let opts, customopts = Coqinit.parse_arguments ~parse_extra ~initial_args args in
   Stm.init_process (snd customopts);
   let injections = Coqinit.init_runtime ~usage opts in
   (* This state will be shared by all the documents *)
@@ -66,11 +66,11 @@ let init_toplevel { parse_extra; init_extra; usage; initial_args } =
   let customstate = init_extra ~opts customopts injections in
   opts, customopts, customstate
 
-let start_coq custom =
+let start_coq custom args =
   let init_feeder = Feedback.add_feeder Coqloop.coqloop_feed in
   (* Init phase *)
   let opts, custom_opts, state =
-    try init_toplevel custom
+    try init_toplevel custom args
     with any ->
       flush_all();
       fatal_error_exn any in

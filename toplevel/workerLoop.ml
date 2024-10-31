@@ -8,13 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-let kind_filter str =
-  let kinds = [ "--kind=proof"; "--kind=tactic"; "--kind=query" ] in
-  not (List.exists (String.equal str) kinds)
-
 let worker_parse_extra opts extra_args =
   let stm_opts, extra_args = Stmargs.parse_args opts extra_args in
-  let extra_args = List.filter kind_filter extra_args in
   ((),stm_opts), extra_args
 
 let worker_init init ((),stm_opts)  injections ~opts : Vernac.State.t =
@@ -29,7 +24,7 @@ let usage = Boot.Usage.{
 \n  --xml_format=Ppcmds    serialize pretty printing messages using the std_ppcmds format\n");
 }
 
-let start ~init ~loop =
+let start ~init ~loop args =
   let open Coqtop in
   let custom = {
     parse_extra = worker_parse_extra;
@@ -40,4 +35,4 @@ let start ~init ~loop =
       (* the state is not used since the worker will receive one from master *)
       loop ());
   } in
-  start_coq custom
+  start_coq custom args
