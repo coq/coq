@@ -883,10 +883,12 @@ let res_pf ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
     let sigma = pose_dependent_evars ~with_evars clenv.env clenv.evd (clenv_type clenv) in
     let sigma =
       if with_classes then
+        let metas = Evd.Meta.meta_list sigma in
         let sigma =
           Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars
-            ~fail:(not with_evars) clenv.env sigma
+            ~fail:(not with_evars) clenv.env (Evd.Meta.clear_metas sigma)
         in
+        let sigma = Evd.Meta.set_metas sigma metas in
         (* After an apply, all the subgoals including those dependent shelved ones are in
           the hands of the user and resolution won't be called implicitely on them. *)
         Typeclasses.make_unresolvables (fun x -> true) sigma
