@@ -159,6 +159,8 @@ let abstract_list_all_with_dependencies env evd typ c l =
   let () = assert (n <= SList.length (snd ev')) in
   let argoccs = set_occurrences_of_last_arg n in
   let evd,b =
+    if occur_meta evd c then evd, false
+    else
     Evarconv.second_order_matching
       (Evarconv.default_flags_of TransparentState.empty)
       env evd ev' (occurrence_test, argoccs) c in

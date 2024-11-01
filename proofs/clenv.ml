@@ -152,6 +152,7 @@ let clenv_refresh env sigma ctx clenv =
 
 let clenv_evd ce =  ce.evd
 let clenv_arguments c = List.map (fun arg -> arg.marg_meta) c.metas
+let clenv_meta_list c = Evd.meta_list c.evd
 
 let clenv_meta_type env sigma mv =
   let ty =

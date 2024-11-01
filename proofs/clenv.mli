@@ -23,6 +23,7 @@ open Tactypes
 type clausenv
 
 val clenv_evd : clausenv -> Evd.evar_map
+val clenv_meta_list : clausenv -> clbinding Metamap.t
 
 (* Ad-hoc primitives *)
 val update_clenv_evd : clausenv -> evar_map -> clausenv

@@ -403,10 +403,6 @@ end
 (*** Reduction Functions Operators ***)
 (*************************************)
 
-let safe_meta_value sigma ev =
-  try Some (Evd.meta_value sigma ev)
-  with Not_found -> None
-
 (*************************************)
 (*** Reduction using bindingss ***)
 (*************************************)
@@ -709,11 +705,7 @@ let whd_state_gen ?csts flags env sigma =
       | LocalDef (_,body,_) ->
         whrec (Cst_stack.add_cst (mkVar id) cst_l) (body, stack)
       | _ -> fold ())
-    | Evar ev -> fold ()
-    | Meta ev ->
-      (match safe_meta_value sigma ev with
-      | Some body -> whrec cst_l (body, stack)
-      | None -> fold ())
+    | Evar _ | Meta _ -> fold ()
     | Const (c,u as const) ->
       Reductionops.reduction_effect_hook env sigma c
          (lazy (EConstr.to_constr sigma (Stack.zip sigma (x,fst (Stack.strip_app stack)))));

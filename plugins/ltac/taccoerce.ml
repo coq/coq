@@ -237,9 +237,6 @@ let coerce_var_to_ident fresh env sigma v =
    be fresh but suitable to be given to the fresh tactic. Works for
    vars, constants, inductive, constructors and sorts. *)
 let coerce_to_ident_not_fresh sigma v =
-let id_of_name = function
-  | Name.Anonymous -> Id.of_string "x"
-  | Name.Name x -> x in
   let fail () = raise (CannotCoerceTo "an identifier") in
   match is_intro_pattern v with
   | Some (IntroNaming (IntroIdentifier id)) -> id
@@ -253,7 +250,7 @@ let id_of_name = function
     | Some c ->
        match EConstr.kind sigma c with
        | Var id -> id
-       | Meta m -> id_of_name (Evd.meta_name sigma m)
+       | Meta m -> Id.of_string "x"
        | Evar (kn,_) ->
         begin match Evd.evar_ident kn sigma with
         | None -> fail ()
