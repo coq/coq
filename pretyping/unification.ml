@@ -2305,7 +2305,10 @@ let w_unify_to_subterm_list env evd flags hdmeta oplist t =
       let op = whd_meta evd op in
       if isMeta evd op then
         if flags.allow_K_in_toplevel_higher_order_unification then (evd,op::l)
-        else error_abstraction_over_meta env evd hdmeta (destMeta evd op)
+        else
+          let hdname = Evd.Meta.meta_name evd hdmeta in
+          let argname = Evd.Meta.meta_name evd (destMeta evd op) in
+          error_abstraction_over_meta env evd hdname argname
       else
         let allow_K = flags.allow_K_in_toplevel_higher_order_unification in
         let flags =
@@ -2339,7 +2342,9 @@ let w_unify_to_subterm_list env evd flags hdmeta oplist t =
           if not allow_K &&
             (* ensure we found a different instance *)
             List.exists (fun op -> EConstr.eq_constr evd' op cl) l
-          then error_non_linear_unification env evd hdmeta cl
+          then
+            let hdname = Evd.Meta.meta_name evd hdmeta in
+            error_non_linear_unification env evd hdname cl
           else (evd',cl::l))
     oplist
     (evd,[])

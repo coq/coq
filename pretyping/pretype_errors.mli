@@ -147,10 +147,10 @@ val error_wrong_abstraction_type :  env -> Evd.evar_map ->
       Name.t -> constr -> types -> types -> 'b
 
 val error_abstraction_over_meta : env -> Evd.evar_map ->
-  metavariable -> metavariable -> 'b
+  Name.t -> Name.t -> 'b
 
 val error_non_linear_unification : env -> Evd.evar_map ->
-  metavariable -> constr -> 'b
+  Name.t -> constr -> 'b
 
 (** {6 Ml Case errors } *)
 
