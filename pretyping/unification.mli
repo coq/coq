@@ -91,7 +91,7 @@ type 'r abstraction_result =
 val make_abstraction : env -> evar_map -> constr ->
   abstraction_request -> 'r abstraction_result
 
-val pose_all_metas_as_evars : env -> evar_map -> constr -> evar_map * constr
+val pose_all_metas_as_evars : metas:clbinding Metamap.t -> env -> evar_map -> constr -> evar_map * clbinding Metamap.t * constr
 
 (*i This should be in another module i*)
 

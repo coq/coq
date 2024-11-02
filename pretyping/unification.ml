@@ -2468,3 +2468,9 @@ let w_unify_meta_types ?metas env ?flags evd =
 let w_coerce_to_type ?metas env evd c cty mvty =
   let evd = set_metas metas evd in
   w_coerce_to_type env evd c cty mvty
+
+let pose_all_metas_as_evars ~metas env evd ty =
+  let evd = Evd.Meta.set_metas evd metas in
+  let sigma, c = pose_all_metas_as_evars env evd ty in
+  let metas = Evd.Meta.meta_list sigma in
+  Evd.Meta.clear_metas sigma, metas, c

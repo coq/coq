@@ -1297,8 +1297,9 @@ let use_bindings env sigma elim must_be_closed (c,lbind) typ =
       if must_be_closed && occur_meta (clenv_evd indclause) (clenv_value indclause) then
         error NeedFullyAppliedArgument;
       (* We lose the possibility of coercions in with-bindings *)
-      let sigma, term = pose_all_metas_as_evars env (clenv_evd indclause) (clenv_value indclause) in
-      let sigma, typ = pose_all_metas_as_evars env sigma (clenv_type indclause) in
+      let metas = Clenv.clenv_meta_list indclause in
+      let sigma, metas, term = pose_all_metas_as_evars ~metas env (clenv_evd indclause) (clenv_value indclause) in
+      let sigma, metas, typ = pose_all_metas_as_evars ~metas env sigma (clenv_type indclause) in
       sigma, term, typ
     with e when noncritical e ->
     match red_product env sigma typ with
