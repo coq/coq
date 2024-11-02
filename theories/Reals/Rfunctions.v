@@ -26,6 +26,8 @@ Require Export SplitAbsolu.
 Require Export SplitRmult.
 Require Export ArithProp.
 Require Import Zpower.
+Require Import Znat.
+Require Import Arith.Factorial.
 Local Open Scope nat_scope.
 Local Open Scope R_scope.
 

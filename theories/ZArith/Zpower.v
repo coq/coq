@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Wf_nat ZArith_base Zcomplements.
+Require Import Wf_nat BinInt Zcomplements Znat.
 Require Export Zpow_def.
 Local Open Scope Z_scope.
 
@@ -276,11 +276,11 @@ Section power_div_with_rest.
    assert (H1 : 0 < d) by now apply Z.le_lt_trans with (1 := H1').
    assert (H2 : 0 <= d + r) by now apply Z.add_nonneg_nonneg; auto; apply Z.lt_le_incl.
    assert (H3 : d + r < 2 * d)
-     by now rewrite <-Z.add_diag; apply Zplus_lt_compat_l.
+     by now rewrite <-Z.add_diag; apply Z.add_lt_mono_l.
    assert (H4 : r < 2 * d) by now
      apply Z.lt_le_trans with (1 * d); [
        rewrite Z.mul_1_l; auto |
-       apply Zmult_le_compat_r; try discriminate;
+       apply Z.mul_le_mono_nonneg_r; try discriminate;
        now apply Z.lt_le_incl].
   destruct q as [ |[q|q| ]|[q|q| ]].
    - repeat split; auto.

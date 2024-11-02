@@ -15,7 +15,7 @@
 (*                                                                      *)
 (************************************************************************)
 
-Require Import ZArith_base.
+Require Import BinInt.
 Require Import List.
 Set Implicit Arguments.
 

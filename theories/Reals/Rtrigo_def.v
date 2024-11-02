@@ -9,6 +9,7 @@
 (************************************************************************)
 
 Require Import Rbase Rfunctions SeqSeries Rtrigo_fun.
+Require Import Arith.Factorial.
 Require Import Lra Lia.
 Local Open Scope R_scope.
 

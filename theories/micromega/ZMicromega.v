@@ -751,22 +751,22 @@ Proof.
     case_eq (Zgcd_pol p1) ; case_eq (Zgcd_pol p3) ; intros z z0 H z1 z2 H0 H1.
     inv H1.
     unfold ZgcdM at 1.
-    destruct (Zmax_spec (Z.gcd (ZgcdM z1 z2) z) 1) as [HH1 | HH1];
+    destruct (Z.max_spec (Z.gcd (ZgcdM z1 z2) z) 1) as [HH1 | HH1]; cycle 1;
       destruct HH1 as [HH1 HH1'] ; rewrite HH1'.
     + constructor.
       * apply (Zdivide_pol_Zdivide _ (ZgcdM z1 z2)).
         -- unfold ZgcdM.
-           destruct (Zmax_spec  (Z.gcd z1 z2)  1) as [HH2 | HH2].
+           destruct (Z.max_spec  (Z.gcd z1 z2)  1) as [HH2 | HH2]; cycle 1.
            ++ destruct HH2 as [H1 H2].
               rewrite H2.
               apply Zdivide_pol_sub ; auto.
               apply Z.lt_le_trans with 1.
               ** reflexivity.
-              ** now apply Z.ge_le.
+              ** trivial.
            ++ destruct HH2 as [H1 H2]. rewrite H2.
               apply Zdivide_pol_one.
         -- unfold ZgcdM in HH1. unfold ZgcdM.
-           destruct (Zmax_spec  (Z.gcd z1 z2)  1) as [HH2 | HH2].
+           destruct (Z.max_spec  (Z.gcd z1 z2)  1) as [HH2 | HH2]; cycle 1.
            ++ destruct HH2 as [H1 H2]. rewrite H2 in *.
               destruct (Zgcd_is_gcd (Z.gcd z1 z2) z); auto.
            ++ destruct HH2 as [H1 H2]. rewrite H2.
@@ -1082,7 +1082,7 @@ Fixpoint bdepth (pf : ZArithProof) : nat :=
     | ExProof _ p   => S (bdepth p)
   end.
 
-Require Import Wf_nat.
+Require Import PeanoNat Wf_nat.
 
 Lemma in_bdepth : forall l a b  y, In y l ->  ltof ZArithProof bdepth y (EnumProof a b  l).
 Proof.
@@ -1159,13 +1159,13 @@ Proof.
   unfold makeCuttingPlane in H0.
   revert H0.
   case_eq (Zgcd_pol e) ; intros g c0.
-  generalize (Zgt_cases g 0) ; destruct (Z.gtb g 0).
+  case Z.gtb_spec.
   - intros H0 H1 H2.
     inv H2.
     change (RingMicromega.eval_pol Z.add Z.mul (fun x : Z => x)) with eval_pol in *.
     apply (Zgcd_pol_correct_lt _ env) in H1. 2: auto using Z.gt_lt.
     apply Z.le_add_le_sub_l, Z.ge_le; rewrite Z.add_0_r.
-    apply (narrow_interval_lower_bound g (- c0) (eval_pol env (Zdiv_pol (PsubC Z.sub e c0) g)) H0).
+    apply (narrow_interval_lower_bound g (- c0) (eval_pol env (Zdiv_pol (PsubC Z.sub e c0) g))); auto using Z.lt_gt.
     apply Z.le_ge.
     rewrite <- Z.sub_0_l.
     apply Z.le_sub_le_add_r.
@@ -1196,7 +1196,7 @@ Proof.
     change (eval_pol env e = 0) in H2.
     case_eq (Z.gtb g 0).
     + intros H H3.
-      rewrite <- Zgt_is_gt_bool in H.
+      rewrite Z.gtb_lt in H.
       rewrite Zgcd_pol_correct_lt with (1:= H1)  in H2. 2: auto using Z.gt_lt.
       unfold nformula_of_cutting_plane.
       change (eval_pol env (padd e' (Pc z)) = 0).
@@ -1206,7 +1206,7 @@ Proof.
       simpl.
       rewrite andb_false_iff in H0.
       destruct H0 as [H0|H0].
-      * rewrite Zgt_is_gt_bool in H ; congruence.
+      * rewrite <-Z.gtb_lt in H ; congruence.
       * rewrite andb_false_iff in H0.
         destruct H0 as [H0|H0].
         -- rewrite negb_false_iff in H0.
@@ -1272,7 +1272,7 @@ Proof.
       match goal with [ H' : negb (Z.eqb (Z.gcd g c) g) = true |- ?G ] => rename H' into H5 end.
       rewrite negb_true_iff in H5.
       apply Z.eqb_neq in H5.
-      rewrite <- Zgt_is_gt_bool in H3.
+      rewrite Z.gtb_lt in H3.
       rewrite negb_true_iff in H.
       apply Z.eqb_neq in H.
       change (eval_pol env p = 0) in H2.
@@ -1280,7 +1280,7 @@ Proof.
       set (x:=eval_pol env (Zdiv_pol (PsubC Z.sub p c) g)) in *; clearbody x.
       contradict H5.
       apply Zis_gcd_gcd.
-      * apply Z.lt_le_incl, Z.gt_lt; assumption.
+      * apply Z.lt_le_incl; assumption.
       * constructor; auto with zarith.
         exists (-x).
         rewrite Z.mul_opp_l, Z.mul_comm.
@@ -1611,11 +1611,11 @@ Proof.
              revert z1 z2.
              induction pf as [|a pf IHpf];simpl ;intros z1 z2 Hfix x **.
              - revert Hfix.
-               now case (Z.gtb_spec); [ | easy ]; intros LT; elim (Zlt_not_le _ _ LT); transitivity x.
+               now case (Z.gtb_spec); [ | easy ]; intros LT; elim (Zorder.Zlt_not_le _ _ LT); transitivity x.
              - flatten_bool.
                match goal with [ H' : _ <= x <= _ |- _ ] => rename H' into H0 end.
                match goal with [ H' : FF pf (z1 + 1) z2 = true |- _ ] => rename H' into H2 end.
-               destruct (Z_le_lt_eq_dec _ _ (proj1 H0)) as [ LT | -> ].
+               destruct (ZArith_dec.Z_le_lt_eq_dec _ _ (proj1 H0)) as [ LT | -> ].
                2: exists a; auto.
                rewrite <- Z.le_succ_l in LT.
                assert (LE: (Z.succ z1 <= x <= z2)%Z) by intuition.

@@ -54,10 +54,10 @@ Section FloatOps.
 
   Section ValidBinary.
     Definition canonical_mantissa m e :=
-      Zeq_bool (fexp (Zpos (digits2_pos m) + e)) e.
+      Z.eqb (fexp (Zpos (digits2_pos m) + e)) e.
 
     Definition bounded m e :=
-      andb (canonical_mantissa m e) (Zle_bool e (emax - prec)).
+      andb (canonical_mantissa m e) (Z.leb e (emax - prec)).
 
     Definition valid_binary x :=
       match x with
@@ -134,7 +134,7 @@ Section FloatOps.
       let '(mrs'', e'') := shr_fexp (round_nearest_even (shr_m mrs') (loc_of_shr_record mrs')) e' loc_Exact in
       match shr_m mrs'' with
       | Z0 => S754_zero sx
-      | Zpos m => if Zle_bool e'' (emax - prec) then S754_finite sx m e'' else S754_infinity sx
+      | Zpos m => if Z.leb e'' (emax - prec) then S754_finite sx m e'' else S754_infinity sx
       | _ => S754_nan
       end.
 
@@ -295,11 +295,11 @@ Section FloatOps.
     end.
 
   Definition new_location_even nb_steps k :=
-    if Zeq_bool k 0 then loc_Exact
+    if Z.eqb k 0 then loc_Exact
     else loc_Inexact (Z.compare (2 * k) nb_steps).
 
   Definition new_location_odd nb_steps k :=
-    if Zeq_bool k 0 then loc_Exact
+    if Z.eqb k 0 then loc_Exact
     else
       loc_Inexact
       match Z.compare (2 * k + 1) nb_steps with
@@ -353,8 +353,8 @@ Section FloatOps.
       end in
     let (q, r) := Z.sqrtrem m' in
     let l :=
-      if Zeq_bool r 0 then loc_Exact
-      else loc_Inexact (if Zle_bool r q then Lt else Gt) in
+      if Z.eqb r 0 then loc_Exact
+      else loc_Inexact (if Z.leb r q then Lt else Gt) in
     (q, e', l).
 
   Definition SFsqrt x :=

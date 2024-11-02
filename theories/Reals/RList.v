@@ -9,6 +9,7 @@
 (************************************************************************)
 
 Require Import List.
+Require Import Compare_dec.
 Require Import Rbase.
 Require Import Rfunctions.
 Local Open Scope R_scope.
