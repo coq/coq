@@ -9,6 +9,7 @@
 (************************************************************************)
 (************************************************************************)
 
+Require Import PeanoNat.
 Require Import QArith_base.
 Require Import Qabs.
 Require Import ConstructiveReals.
@@ -215,7 +216,7 @@ Proof.
   destruct (xcau (4 * p)%positive) as [i imaj],
   (xcau (4 * q)%positive) as [j jmaj].
   assert (CReal_abs (xn i - xn j) <= inject_Q (1 # 4 * n)).
-  { destruct (le_lt_dec i j).
+  { destruct (Nat.leb_spec i j) as [l|l].
     - apply (CReal_le_trans _ _ _ (imaj i j (Nat.le_refl _) l)).
       apply inject_Q_le. unfold Qle, Qnum, Qden.
       rewrite Z.mul_1_l, Z.mul_1_l. apply Pos2Z.pos_le_pos.
@@ -296,8 +297,7 @@ Proof.
   destruct (xcau (4 * 2^p')%positive) as [i imaj].
   destruct (xcau (4 * 2^q')%positive) as [j jmaj].
   assert (CReal_abs (xn i - xn j) <= inject_Q (1 # 4 * 2^n')).
-  {
-    destruct (le_lt_dec i j).
+  { destruct (Nat.leb_spec i j) as [l|l].
     - apply (CReal_le_trans _ _ _ (imaj i j (Nat.le_refl _) l)).
       apply inject_Q_le. unfold Qle, Qnum, Qden.
       rewrite Z.mul_1_l, Z.mul_1_l. apply Pos2Z.pos_le_pos.
@@ -510,7 +510,7 @@ Proof.
 
   assert (CReal_abs (xn i' - xn j') <= inject_Q (1#4)) as Hxij.
     {
-    destruct (le_lt_dec i' j').
+    destruct (Nat.leb_spec i' j') as [l|l].
     - apply (CReal_le_trans _ _ _ (imaj i' j' (Nat.le_refl _) l)).
       apply inject_Q_le; unfold Qle, Qnum, Qden; ring_simplify.
       apply Pos2Z_pos_is_pos.

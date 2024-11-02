@@ -16,7 +16,7 @@ Require Export Rtrigo_def.
 Require Export Rtrigo_alt.
 Require Export Cos_rel.
 Require Export Cos_plus.
-Require Import ZArith_base.
+Require Import BinInt.
 Require Import Zcomplements.
 Require Import Lra.
 Require Import Ranalysis1.

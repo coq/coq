@@ -13,8 +13,8 @@
 
 (** Initial Contribution by Claude Marché and Xavier Urbain *)
 
-Require Export ZArith_base.
-Require Import Zbool ZArithRing Zcomplements Setoid Morphisms.
+Require Export BinInt.
+Require Import Wf_Z Zbool ZArithRing Zcomplements Setoid Morphisms.
 Local Open Scope Z_scope.
 
 (** The definition of the division is now in [BinIntDef], the initial
@@ -227,7 +227,7 @@ Lemma Z_mod_same_full : forall a, a mod a = 0.
 Proof. intros a. zero_or_not a. apply Z.mod_same; auto. Qed.
 
 Lemma Z_mod_mult : forall a b, (a*b) mod b = 0.
-Proof. intros a b. zero_or_not b. now apply Z.mod_mul. Qed.
+Proof. intros a b. zero_or_not b. apply Z.mul_0_r. now apply Z.mod_mul. Qed.
 
 Lemma Z_div_mult_full : forall a b:Z, b <> 0 -> (a*b)/b = a.
 Proof Z.div_mul.
@@ -340,8 +340,8 @@ Proof.
   destruct Z.pos_div_eucl as (q,r); destruct r;
   rewrite ?Z.mul_1_r, <-?Z.opp_eq_mul_m1, ?Z.sgn_opp, ?Z.opp_involutive;
   match goal with [|- (_ -> _ -> ?P) -> _] =>
-     intros HH; assert (HH1 : P); auto with zarith
-  end; apply Z.sgn_nonneg; auto with zarith.
+     intros HH; assert (HH1 : P); auto using Pos2Z.is_pos, Pos2Z.is_nonneg
+  end; apply Z.sgn_nonneg; auto using Z.add_nonneg_nonneg, Z.le_succ_diag_r.
 Qed.
 
 (** * Relations between usual operations and Z.modulo and Z.div *)
@@ -565,7 +565,7 @@ Qed.
 Theorem Zdiv_mult_le:
  forall a b c, 0<=a -> 0<=b -> 0<=c -> c*(a/b) <= (c*a)/b.
 Proof.
-  intros a b c ? ? ?. zero_or_not b.
+  intros a b c ? ? ?. zero_or_not b; rewrite ?Z.mul_0_r; trivial.
   apply Z.div_mul_le; auto.
   apply Z.le_neq; auto.
 Qed.
@@ -576,7 +576,7 @@ Lemma Zmod_divides : forall a b, b<>0 ->
  (a mod b = 0 <-> exists c, a = b*c).
 Proof.
  intros. rewrite Z.mod_divide; trivial.
- split; intros (c,Hc); exists c; subst; auto with zarith.
+ split; intros (c,Hc); exists c; subst; auto using Z.mul_comm.
 Qed.
 
 (** Particular case : dividing by 2 is related with parity *)
@@ -591,15 +591,15 @@ Qed.
 
 Lemma Zmod_even : forall a, a mod 2 = if Z.even a then 0 else 1.
 Proof.
- intros a. rewrite Zmod_odd, Zodd_even_bool. now destruct Z.even.
+ intros a. rewrite Zmod_odd, <-Z.negb_even; now destruct Z.even.
 Qed.
 
-Lemma Zodd_mod : forall a, Z.odd a = Zeq_bool (a mod 2) 1.
+Lemma Zodd_mod : forall a, Z.odd a = Z.eqb (a mod 2) 1.
 Proof.
  intros a. rewrite Zmod_odd. now destruct Z.odd.
 Qed.
 
-Lemma Zeven_mod : forall a, Z.even a = Zeq_bool (a mod 2) 0.
+Lemma Zeven_mod : forall a, Z.even a = Z.eqb (a mod 2) 0.
 Proof.
  intros a. rewrite Zmod_even. now destruct Z.even.
 Qed.
@@ -721,16 +721,16 @@ Theorem Zdiv_eucl_extended :
       {qr : Z * Z | let (q, r) := qr in a = b * q + r /\ 0 <= r < Z.abs b}.
 Proof.
   intros b Hb a.
-  destruct (Z_le_gt_dec 0 b) as [Hb'|Hb'].
+  destruct (Z.leb 0 b) eqn:Hb'; [ apply Z.leb_le in Hb' | apply Z.leb_gt in Hb'].
   - assert (Hb'' : b > 0) by (apply Z.lt_gt, Z.le_neq; auto).
     rewrite Z.abs_eq; [ apply Zdiv_eucl_exist; assumption | assumption ].
   - assert (Hb'' : - b > 0).
-    { now apply Z.lt_gt, Z.opp_lt_mono; rewrite Z.opp_involutive; apply Z.gt_lt. }
+    { apply Z.lt_gt, Z.opp_lt_mono; rewrite Z.opp_involutive. apply Hb'. }
     destruct (Zdiv_eucl_exist Hb'' a) as ((q,r),[]).
     exists (- q, r).
     split.
     + rewrite <- Z.mul_opp_comm; assumption.
-    + rewrite Z.abs_neq; [ assumption | apply Z.lt_le_incl, Z.gt_lt; auto ].
+    + rewrite Z.abs_neq; [ assumption | apply Z.lt_le_incl; auto ].
 Qed.
 
 Arguments Zdiv_eucl_extended : default implicits.
@@ -752,7 +752,7 @@ Lemma mod_pow_l a b c : (a mod c)^b mod c = ((a ^ b) mod c).
 Proof.
   destruct (Z.ltb_spec b 0) as [|Hb]. { rewrite !Z.pow_neg_r; trivial. }
   destruct (Z.eqb_spec c 0) as [|Hc]. { subst. rewrite !Zmod_0_r; trivial. }
-  generalize dependent b; eapply natlike_ind; trivial; intros x Hx IH.
+  generalize dependent b; eapply Wf_Z.natlike_ind; trivial; intros x Hx IH.
   rewrite !Z.pow_succ_r, <-Z.mul_mod_idemp_r, IH, Z.mul_mod_idemp_l, Z.mul_mod_idemp_r; trivial.
 Qed.
 

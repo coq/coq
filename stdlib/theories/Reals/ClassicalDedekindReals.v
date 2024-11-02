@@ -19,6 +19,8 @@ Require Import Lia.
 Require Import Lqa.
 Require Import Qpower.
 Require Import QExtra.
+Require Import Znat.
+Require Import ZArith_dec.
 Require CMorphisms.
 
 (*****************************************************************************)

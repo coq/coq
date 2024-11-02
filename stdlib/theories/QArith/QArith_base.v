@@ -8,10 +8,13 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Export ZArith_base.
+Require Export BinInt.
 Require Export ZArithRing.
 Require Export ZArith.BinInt.
 Require Export Morphisms Setoid Bool.
+
+Require ZArith.Zcompare.
+Require ZArith_dec.
 
 (** * Definition of [Q] and basic properties *)
 
@@ -175,15 +178,13 @@ Proof.
 Defined.
 
 Definition Qeq_bool x y :=
-  (Zeq_bool (Qnum x * QDen y) (Qnum y * QDen x))%Z.
+  (Z.eqb (Qnum x * QDen y) (Qnum y * QDen x))%Z.
 
 Definition Qle_bool x y :=
   (Z.leb (Qnum x * QDen y) (Qnum y * QDen x))%Z.
 
 Lemma Qeq_bool_iff x y : Qeq_bool x y = true <-> x == y.
-Proof.
-  symmetry; apply Zeq_is_eq_bool.
-Qed.
+Proof. apply Z.eqb_eq. Qed.
 
 Lemma Qeq_bool_eq x y : Qeq_bool x y = true -> x == y.
 Proof.
@@ -201,9 +202,7 @@ Proof.
 Qed.
 
 Lemma Qle_bool_iff x y : Qle_bool x y = true <-> x <= y.
-Proof.
-  symmetry; apply Zle_is_le_bool.
-Qed.
+Proof. apply Z.leb_le. Qed.
 
 Lemma Qle_bool_imp_le x y : Qle_bool x y = true -> x <= y.
 Proof.
@@ -540,8 +539,8 @@ Proof.
   unfold Qeq, Qcompare.
   Open Scope Z_scope.
   intros (p1,p2) (q1,q2) H (r1,r2) (s1,s2) H'; simpl in *.
-  rewrite <- (Zcompare_mult_compat (q2*s2) (p1*Zpos r2)).
-  rewrite <- (Zcompare_mult_compat (p2*r2) (q1*Zpos s2)).
+  rewrite <- (Zcompare.Zcompare_mult_compat (q2*s2) (p1*Zpos r2)).
+  rewrite <- (Zcompare.Zcompare_mult_compat (p2*r2) (q1*Zpos s2)).
   change (Zpos (q2*s2)) with (Zpos q2 * Zpos s2).
   change (Zpos (p2*r2)) with (Zpos p2 * Zpos r2).
   replace (Zpos q2 * Zpos s2 * (p1*Zpos r2)) with ((p1*Zpos q2)*Zpos r2*Zpos s2) by ring.
@@ -937,7 +936,7 @@ Qed.
 
 Lemma Qle_refl x : x<=x.
 Proof.
-  unfold Qle; auto with zarith.
+  unfold Qle; reflexivity.
 Qed.
 
 Lemma Qle_antisym x y : x<=y -> y<=x -> x==y.
@@ -1076,13 +1075,13 @@ Hint Resolve Qle_not_lt Qlt_not_le Qnot_le_lt Qnot_lt_le
 Lemma Q_dec : forall x y, {x<y} + {y<x} + {x==y}.
 Proof.
   unfold Qlt, Qle, Qeq; intros x y.
-  exact (Z_dec' (Qnum x * QDen y) (Qnum y * QDen x)).
+  exact (ZArith_dec.Z_dec' (Qnum x * QDen y) (Qnum y * QDen x)).
 Defined.
 
 Lemma Qlt_le_dec : forall x y, {x<y} + {y<=x}.
 Proof.
   unfold Qlt, Qle; intros x y.
-  exact (Z_lt_le_dec (Qnum x * QDen y) (Qnum y * QDen x)).
+  exact (ZArith_dec.Z_lt_le_dec (Qnum x * QDen y) (Qnum y * QDen x)).
 Defined.
 
 Lemma Qarchimedean : forall q : Q, { p : positive | q < Z.pos p # 1 }.
@@ -1097,13 +1096,7 @@ Proof.
       * discriminate.
       * rewrite Zmult_1_r. apply Z.le_refl.
       * discriminate.
-      * apply Z2Nat.inj_le.
-        -- discriminate.
-        -- apply Pos2Z.is_nonneg.
-        -- apply Nat.le_succ_l. apply Nat2Z.inj_lt.
-           rewrite Z2Nat.id.
-           ++ apply Pos2Z.is_pos.
-           ++ apply Pos2Z.is_nonneg.
+      * apply Pos2Z.pos_le_pos, Pos.le_1_l.
   - exists xH. reflexivity.
 Defined.
 
@@ -1149,9 +1142,9 @@ Proof.
   rewrite Z.add_comm.
   apply Z.add_le_mono.
   - match goal with |- ?a <= ?b => ring_simplify z1 t1 (Zpos z2) (Zpos t2) a b end.
-    auto with zarith.
+    auto using Z.mul_le_mono_nonneg_r, Pos2Z.is_nonneg.
   - match goal with |- ?a <= ?b => ring_simplify x1 y1 (Zpos x2) (Zpos y2) a b end.
-    auto with zarith.
+    auto using Z.mul_le_mono_nonneg_r, Pos2Z.is_nonneg.
     Close Scope Z_scope.
 Qed.
 
@@ -1166,7 +1159,7 @@ Proof.
   rewrite Z.add_comm.
   apply Z.add_le_lt_mono.
   - match goal with |- ?a <= ?b => ring_simplify z1 t1 (Zpos z2) (Zpos t2) a b end.
-    auto with zarith.
+    auto using Z.mul_le_mono_nonneg_r, Pos2Z.is_nonneg.
   - match goal with |- ?a < ?b => ring_simplify x1 y1 (Zpos x2) (Zpos y2) a b end.
     do 2 (apply Z.mul_lt_mono_pos_r;try easy).
     Close Scope Z_scope.
@@ -1289,7 +1282,7 @@ intros a b Ha Hb.
 unfold Qle in *.
 simpl in *.
 rewrite Z.mul_1_r in *.
-auto with *.
+auto using Z.mul_nonneg_nonneg.
 Qed.
 
 Lemma Qmult_lt_0_compat : forall a b : Q, 0 < a -> 0 < b -> 0 < a * b.
@@ -1345,7 +1338,7 @@ Proof.
   do 2 rewrite Pos2Z.inj_mul.
   setoid_replace (xn * zn * (Z.pos yd * Z.pos td))%Z with ((xn * Z.pos yd) * (zn * Z.pos td))%Z by ring.
   setoid_replace (yn * tn * (Z.pos xd * Z.pos zd))%Z with ((yn * Z.pos xd) * (tn * Z.pos zd))%Z by ring.
-  apply Zmult_lt_compat2; split.
+  apply Zorder.Zmult_lt_compat2; split.
   2,4 : assumption.
   1,2 : rewrite <- (Z.mul_0_l 0); apply Z.mul_lt_mono_nonneg;
           [reflexivity|assumption|reflexivity|apply Pos2Z.is_pos].

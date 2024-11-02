@@ -10,7 +10,7 @@
 
 (* This module gathers the necessary base to build an instance of the
    ring tactic. Abstract rings need more theory, depending on
-   ZArith_base. *)
+   BinInt. *)
 
 Declare ML Module "rocq-runtime.plugins.ring".
 Require Export Ring_theory.

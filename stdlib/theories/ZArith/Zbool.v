@@ -17,44 +17,6 @@ Require Import Sumbool.
 
 Local Open Scope Z_scope.
 
-(** * Boolean operations from decidability of order *)
-(** The decidability of equality and order relations over
-    type [Z] gives some boolean functions with the adequate specification. *)
-
-Definition Z_lt_ge_bool (x y:Z) := bool_of_sumbool (Z_lt_ge_dec x y).
-Definition Z_ge_lt_bool (x y:Z) := bool_of_sumbool (Z_ge_lt_dec x y).
-
-Definition Z_le_gt_bool (x y:Z) := bool_of_sumbool (Z_le_gt_dec x y).
-Definition Z_gt_le_bool (x y:Z) := bool_of_sumbool (Z_gt_le_dec x y).
-
-Definition Z_eq_bool (x y:Z) := bool_of_sumbool (Z.eq_dec x y).
-Definition Z_noteq_bool (x y:Z) := bool_of_sumbool (Z_noteq_dec x y).
-
-Definition Zeven_odd_bool (x:Z) := bool_of_sumbool (Zeven_odd_dec x).
-
-(**********************************************************************)
-(** * Boolean comparisons of binary integers *)
-
-Notation Zle_bool := Z.leb (only parsing).
-Notation Zge_bool := Z.geb (only parsing).
-Notation Zlt_bool := Z.ltb (only parsing).
-Notation Zgt_bool := Z.gtb (only parsing).
-
-(** We now provide a direct [Z.eqb] that doesn't refer to [Z.compare].
-   The old [Zeq_bool] is kept for compatibility. *)
-
-Definition Zeq_bool (x y:Z) :=
-  match x ?= y with
-    | Eq => true
-    | _ => false
-  end.
-
-Definition Zneq_bool (x y:Z) :=
-  match x ?= y with
-    | Eq => false
-    | _ => true
-  end.
-
 (** Properties in term of [if ... then ... else ...] *)
 
 Lemma Zle_cases n m : if n <=? m then n <= m else n > m.
@@ -161,24 +123,72 @@ Proof.
  Z.swap_greater. rewrite Z.leb_le. apply Z.lt_le_pred.
 Qed.
 
+Local Set Warnings "-deprecated".
+
 (** Properties of the deprecated [Zeq_bool] *)
 
+(** * Boolean operations from decidability of order *)
+(** The decidability of equality and order relations over
+    type [Z] gives some boolean functions with the adequate specification. *)
+
+#[deprecated(use=Z.eqb, since="9.0")]
+Definition Z_lt_ge_bool (x y:Z) := bool_of_sumbool (Z_lt_ge_dec x y).
+#[deprecated(use=Z.eqb, since="9.0")]
+Definition Z_ge_lt_bool (x y:Z) := bool_of_sumbool (Z_ge_lt_dec x y).
+
+#[deprecated(use=Z.eqb, since="9.0")]
+Definition Z_le_gt_bool (x y:Z) := bool_of_sumbool (Z_le_gt_dec x y).
+#[deprecated(use=Z.eqb, since="9.0")]
+Definition Z_gt_le_bool (x y:Z) := bool_of_sumbool (Z_gt_le_dec x y).
+
+#[deprecated(use=Z.eqb, since="9.0")]
+Definition Z_eq_bool (x y:Z) := bool_of_sumbool (Z.eq_dec x y).
+#[deprecated(use=Z.eqb, since="9.0")]
+Definition Z_noteq_bool (x y:Z) := bool_of_sumbool (Z_noteq_dec x y).
+
+#[deprecated(use=Z.eqb, since="9.0")]
+Definition Zeven_odd_bool (x:Z) := bool_of_sumbool (Zeven_odd_dec x).
+
+(**********************************************************************)
+(** * Boolean comparisons of binary integers *)
+
+#[deprecated(use=Z.eqb, since="9.0")]
+Notation Zle_bool := Z.leb (only parsing).
+#[deprecated(use=Z.eqb, since="9.0")]
+Notation Zge_bool := Z.geb (only parsing).
+#[deprecated(use=Z.eqb, since="9.0")]
+Notation Zlt_bool := Z.ltb (only parsing).
+#[deprecated(use=Z.eqb, since="9.0")]
+Notation Zgt_bool := Z.gtb (only parsing).
+
+(** We now provide a direct [Z.eqb] that doesn't refer to [Z.compare].
+   The old [Zeq_bool] is kept for compatibility. *)
+
+#[deprecated(use=Z.eqb, since="9.0")]
+Notation Zeq_bool := Z.eqb.
+
+#[deprecated(use=Z.eqb_eq, since="9.0")]
 Lemma Zeq_is_eq_bool x y : x = y <-> Zeq_bool x y = true.
-Proof.
- unfold Zeq_bool.
- rewrite <- Z.compare_eq_iff. destruct Z.compare; now split.
-Qed.
+Proof. symmetry; apply Z.eqb_eq. Qed.
 
+#[deprecated(use=Z.eqb_eq, since="9.0")]
 Lemma Zeq_bool_eq x y : Zeq_bool x y = true -> x = y.
-Proof.
- apply Zeq_is_eq_bool.
-Qed.
+Proof. apply Z.eqb_eq. Qed.
 
+#[deprecated(use=Z.eqb, since="9.0")]
+Definition Zneq_bool (x y:Z) :=
+  match x ?= y with
+    | Eq => false
+    | _ => true
+  end.
+
+#[deprecated(use=Z.eqb_eq, since="9.0")]
 Lemma Zeq_bool_neq x y : Zeq_bool x y = false -> x <> y.
 Proof.
  rewrite Zeq_is_eq_bool; now destruct Zeq_bool.
 Qed.
 
+#[deprecated(use=Z.eqb_eq, since="9.0")]
 Lemma Zeq_bool_if x y : if Zeq_bool x y then x=y else x<>y.
 Proof.
  generalize (Zeq_bool_eq x y) (Zeq_bool_neq x y).

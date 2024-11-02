@@ -30,6 +30,7 @@
 
 Require Import QArith.
 Require Import Qabs.
+Require Import Znat.
 Require Import ConstructiveReals.
 Require Import ConstructiveLimits.
 Require Import ConstructiveAbs.

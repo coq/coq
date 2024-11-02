@@ -12,7 +12,7 @@
 
 Require Import OrderedRing.
 Require Import RingMicromega.
-Require Import ZArith_base.
+Require Import BinInt.
 Require Import InitialRing.
 Require Import Setoid.
 Require Import ZArithRing.
@@ -164,13 +164,11 @@ case_eq (x ?= y)%Z; intro H1; rewrite H1 in H.
 - discriminate.
 Qed.
 
-Lemma Zcneqb_morph : forall x y : Z, Zeq_bool x y = false -> [x] ~= [y].
+Lemma Zcneqb_morph : forall x y : Z, Z.eqb x y = false -> [x] ~= [y].
 Proof.
-intros x y H. unfold Zeq_bool in H.
-case_eq (Z.compare x y); intro H1; rewrite H1 in *; (discriminate || clear H).
+intros x y []%Z.eqb_neq%Z.lt_gt_cases.
 - apply (Rlt_neq sor). now apply clt_morph.
-- fold (x > y)%Z in H1. rewrite Z.gt_lt_iff in H1.
-  apply (Rneq_symm sor). apply (Rlt_neq sor). now apply clt_morph.
+- apply (Rneq_symm sor). apply (Rlt_neq sor). now apply clt_morph.
 Qed.
 
 End InitialMorphism.
