@@ -403,10 +403,12 @@ let clenv_missing ce =
 (******************************************************************)
 
 let clenv_unify ?(flags=default_unify_flags ()) cv_pb t1 t2 clenv =
-  update_clenv_evd clenv (w_unify ~flags clenv.env clenv.evd cv_pb t1 t2)
+  let metas = Evd.Meta.meta_list clenv.evd in
+  update_clenv_evd clenv (w_unify ~metas ~flags clenv.env clenv.evd cv_pb t1 t2)
 
 let clenv_unify_meta_types ?(flags=default_unify_flags ()) clenv =
-  update_clenv_evd clenv (w_unify_meta_types ~flags:flags clenv.env clenv.evd)
+  let metas = Evd.Meta.meta_list clenv.evd in
+  update_clenv_evd clenv (w_unify_meta_types ~metas ~flags:flags clenv.env clenv.evd)
 
 let clenv_unique_resolver ?(flags=default_unify_flags ()) clenv concl =
   let metas = meta_handler clenv.evd in
@@ -623,7 +625,8 @@ let clenv_unify_binding_type env sigma c t u =
   else
     (* Enough information so as to try a coercion now *)
     try
-      let sigma, c = w_coerce_to_type env sigma c t u in
+      let metas = Evd.Meta.meta_list sigma in
+      let sigma, c = w_coerce_to_type ~metas env sigma c t u in
       TypeProcessed, sigma, c
     with
       | PretypeError (_,_,ActualTypeNotCoercible (_,_,
@@ -989,8 +992,10 @@ let case_pf ?(with_evars=false) ~dep (indarg, typ) =
   let depargs = Array.append indices [|indarg|] in
   let templtyp = if dep then mkApp (mkMeta mvP, depargs) else mkApp (mkMeta mvP, indices) in
   let flags = elim_flags () in
-  let sigma = w_unify_meta_types ~flags env sigma in
-  let sigma = w_unify ~flags env sigma CUMUL templtyp concl in
+  let metas = Evd.Meta.meta_list sigma in
+  let sigma = w_unify_meta_types ~metas ~flags env sigma in
+  let metas = Evd.Meta.meta_list sigma in
+  let sigma = w_unify ~metas ~flags env sigma CUMUL templtyp concl in
   let pred = meta_instance env sigma (mk_freelisted (mkMeta mvP)) in
 
   (* Create the branch types *)

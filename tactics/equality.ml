@@ -137,7 +137,8 @@ let instantiate_lemma_all env flags eqclause l2r concl =
   let () = if arglen < 2 then user_err Pp.(str "The term provided is not an applied relation.") in
   let c1 = args.(arglen - 2) in
   let c2 = args.(arglen - 1) in
-  w_unify_to_subterm_all ~flags env (Clenv.clenv_evd eqclause)
+  let metas = Clenv.clenv_meta_list eqclause in
+  w_unify_to_subterm_all ~metas ~flags env (Clenv.clenv_evd eqclause)
     ((if l2r then c1 else c2),concl)
 
 let rewrite_conv_closed_core_unif_flags = {

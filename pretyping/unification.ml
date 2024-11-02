@@ -2445,10 +2445,26 @@ let w_unify env evd cv_pb ?(flags=default_unify_flags ()) ty1 ty2 =
       (* General case: try first order *)
       | _ -> w_typed_unify env evd cv_pb flags (ty1, Unknown) (ty2, Unknown)
 
-(* Profiling *)
+let set_metas metas evd = match metas with
+| Some metas -> Evd.Meta.set_metas evd metas
+| None -> Evd.Meta.clear_metas evd
 
-let w_unify env evd cv_pb flags ty1 ty2 =
-  w_unify env evd cv_pb ~flags:flags ty1 ty2
+let w_unify ?metas env evd cv_pb ?(flags=default_unify_flags ()) ty1 ty2 =
+  let evd = set_metas metas evd in
+  w_unify env evd cv_pb ~flags ty1 ty2
 
-let w_unify env evd cv_pb ?(flags=default_unify_flags ()) ty1 ty2 =
-  w_unify env evd cv_pb flags ty1 ty2
+let w_unify_to_subterm ?metas env evd ?flags arg =
+  let evd = set_metas metas evd in
+  w_unify_to_subterm env evd ?flags arg
+
+let w_unify_to_subterm_all ?metas env evd ?flags arg =
+  let evd = set_metas metas evd in
+  w_unify_to_subterm_all env evd ?flags arg
+
+let w_unify_meta_types ?metas env ?flags evd =
+  let evd = set_metas metas evd in
+  w_unify_meta_types env ?flags evd
+
+let w_coerce_to_type ?metas env evd c cty mvty =
+  let evd = set_metas metas evd in
+  w_coerce_to_type env evd c cty mvty
