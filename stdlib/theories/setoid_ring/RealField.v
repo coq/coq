@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+Require Import PeanoNat.
+Require Import BinNat.
 Require Import Nnat.
 Require Import ArithRing.
 Require Export Ring Field.

@@ -2,6 +2,7 @@ Require Import QArith.
 Require Import Qpower.
 Require Import Qabs.
 Require Import Qround.
+Require Import Zorder.
 Require Import Lia.
 Require Import Lqa. (* This is only used in a few places and could be avoided *)
 Require Import PosExtra.
@@ -86,7 +87,7 @@ Proof.
       pose proof Pos_log2ceil_plus1_spec p as Hnom.
       pose proof Pos_log2floor_plus1_spec den as Hden.
 
-      apply (Zmult_le_reg_r _ _ 2).
+      apply (Zorder.Zmult_le_reg_r _ _ 2).
       * lia.
       * replace (Z.pos p * 2 ^ Z.pos (Pos_log2floor_plus1 den) * 2)%Z
           with ((Z.pos p * 2) * 2 ^ Z.pos (Pos_log2floor_plus1 den))%Z by ring.

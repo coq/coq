@@ -14,6 +14,7 @@ Require Import SeqSeries.
 Require Import Rtrigo_def.
 Require Import Cos_rel.
 Require Import Lia Lra.
+Require Import Arith.Factorial.
 Local Open Scope nat_scope.
 Local Open Scope R_scope.
 

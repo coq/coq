@@ -11,6 +11,7 @@
 Require Import Rbase.
 Require Import Rfunctions.
 Require Import PartSum.
+Require Import Arith.Factorial.
 Local Open Scope R_scope.
 
 Definition C (n p:nat) : R :=

@@ -13,6 +13,7 @@
     Proofs that conversions between hexadecimal numbers and [R]
     are bijections. *)
 
+Require Import PeanoNat.
 Require Import Decimal DecimalFacts.
 Require Import Hexadecimal HexadecimalFacts HexadecimalPos HexadecimalZ.
 Require Import HexadecimalQ Rdefinitions.

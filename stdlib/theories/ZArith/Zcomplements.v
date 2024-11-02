@@ -9,14 +9,18 @@
 (************************************************************************)
 
 Require Import ZArithRing.
-Require Import ZArith_base.
+Require Import BinInt.
+Require Import Znat.
 Require Import Wf_nat.
 Local Open Scope Z_scope.
+Require Zabs Wf_Z.
+Require Zeven.
 
 (**********************************************************************)
 (** About parity *)
 
-Notation two_or_two_plus_one := Z_modulo_2 (only parsing).
+#[deprecated(since="9.0")]
+Notation two_or_two_plus_one := Zeven.Z_modulo_2 (only parsing).
 
 (**********************************************************************)
 (** The biggest power of 2 that is stricly less than [a]
@@ -41,15 +45,15 @@ Proof.
  unfold floor. intros p; induction p as [p [IH1p IH2p]|p [IH1p IH2]|]; simpl.
  - rewrite !Pos2Z.inj_xI, (Pos2Z.inj_xO (xO _)), Pos2Z.inj_xO.
    split.
-   + apply Z.le_trans with (2 * Z.pos p); auto with zarith.
+   + apply Z.le_trans with (2 * Z.pos p); auto using Z.le_succ_diag_r.
    + apply Z.lt_le_trans with (2 * (Z.pos p + 1)).
      * rewrite Z.mul_add_distr_l, Z.mul_1_r.
-       apply Zplus_lt_compat_l; red; auto with zarith.
-     * apply Z.mul_le_mono_nonneg_l; auto with zarith.
-       rewrite Z.add_1_r; apply Zlt_le_succ; auto.
+       apply Z.add_lt_mono_l; reflexivity.
+     * apply Z.mul_le_mono_nonneg_l; trivial using Z.le_0_2.
+       rewrite Z.add_1_r. apply Z.le_succ_l. trivial.
  - rewrite (Pos2Z.inj_xO (xO _)), (Pos2Z.inj_xO p), Pos2Z.inj_xO.
    split; auto with zarith.
- - split; auto with zarith; red; auto.
+ - split; auto using Z.le_refl, Z.lt_1_2.
 Qed.
 
 (**********************************************************************)
@@ -63,16 +67,16 @@ Proof.
   intros P HP p.
   set (Q := fun z => 0 <= z -> P z * P (- z)).
   enough (H:Q (Z.abs p)) by
-    (destruct (Zabs_dec p) as [-> | ->]; elim H; auto with zarith).
-  apply (Z_lt_rec Q); auto with zarith.
+    (destruct (Zabs.Zabs_dec p) as [-> | ->]; elim H; auto using Z.abs_nonneg ).
+  apply (Wf_Z.Z_lt_rec Q); auto using Z.abs_nonneg.
   subst Q; intros x H.
   split; apply HP.
   - rewrite Z.abs_eq; auto; intros m ?.
-    destruct (H (Z.abs m)); auto with zarith.
-    destruct (Zabs_dec m) as [-> | ->]; trivial.
+    destruct (H (Z.abs m)); auto using Z.abs_nonneg.
+    destruct (Zabs.Zabs_dec m) as [-> | ->]; trivial.
   - rewrite Z.abs_neq, Z.opp_involutive; [intros m ?|].
-    + destruct (H (Z.abs m)); auto with zarith.
-      destruct (Zabs_dec m) as [-> | ->]; trivial.
+    + destruct (H (Z.abs m)); auto using Z.abs_nonneg.
+      destruct (Zabs.Zabs_dec m) as [-> | ->]; trivial.
     + apply Z.opp_le_mono; rewrite Z.opp_involutive; auto.
 Qed.
 
@@ -84,16 +88,16 @@ Proof.
   intros P HP p.
   set (Q := fun z => 0 <= z -> P z /\ P (- z)) in *.
   enough (Q (Z.abs p)) as H by
-    (destruct (Zabs_dec p) as [-> | ->]; elim H; auto with zarith).
-  apply (Z_lt_induction Q); auto with zarith.
+    (destruct (Zabs.Zabs_dec p) as [-> | ->]; elim H; auto using Z.abs_nonneg).
+  apply (Wf_Z.Z_lt_induction Q); auto using Z.abs_nonneg.
   subst Q; intros ? H.
   split; apply HP.
   - rewrite Z.abs_eq; auto; intros m ?.
-    elim (H (Z.abs m)); intros; auto with zarith.
-    elim (Zabs_dec m); intro eq; rewrite eq; trivial.
+    elim (H (Z.abs m)); intros; auto using Z.abs_nonneg.
+    elim (Zabs.Zabs_dec m); intro eq; rewrite eq; trivial.
   - rewrite Z.abs_neq, Z.opp_involutive; [intros m ?|].
-    + destruct (H (Z.abs m)); auto with zarith.
-      destruct (Zabs_dec m) as [-> | ->]; trivial.
+    + destruct (H (Z.abs m)); auto using Z.abs_nonneg.
+      destruct (Zabs.Zabs_dec m) as [-> | ->]; trivial.
     + apply Z.opp_le_mono; rewrite Z.opp_involutive; auto.
 Qed.
 
@@ -135,9 +139,9 @@ Section Zlength_properties.
   Proof.
     assert (H : forall l acc, Zlength_aux acc A l = acc + Z.of_nat (length l)).
     - clear l. intros l; induction l as [|? ? IHl].
-      + auto with zarith.
+      + auto using Z.add_0_r.
       + intros. simpl length; simpl Zlength_aux.
-        rewrite IHl, Nat2Z.inj_succ, Z.add_succ_comm; auto.
+        rewrite IHl, Znat.Nat2Z.inj_succ, Z.add_succ_comm; auto.
     - unfold Zlength. now rewrite H.
   Qed.
 

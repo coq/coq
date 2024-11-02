@@ -9,6 +9,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+Require Import Peano_dec.
+Require Import Compare_dec.
 Require Import Rbase.
 Require Import Rfunctions.
 Require Import Rseries.

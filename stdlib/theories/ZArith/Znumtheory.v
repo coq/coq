@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+Local Set Warnings "-deprecated".
 Require Import ZArith_base.
 Require Import ZArithRing.
 Require Import Zcomplements.

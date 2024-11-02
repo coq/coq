@@ -2624,8 +2624,10 @@ Hint Extern 0 (IZR _ >= IZR _) => apply Rle_ge, IZR_le, Zle_bool_imp_le, eq_refl
 Hint Extern 0 (IZR _ <  IZR _) => apply IZR_lt, eq_refl : real.
 #[global]
 Hint Extern 0 (IZR _ >  IZR _) => apply IZR_lt, eq_refl : real.
+Lemma Private_Zeq_bool_neq : forall x y : Z, (x =? y) = false -> x <> y.
+Proof. intros. rewrite <-Z.eqb_eq. congruence. Qed.
 #[global]
-Hint Extern 0 (IZR _ <> IZR _) => apply eq_IZR_contrapositive, Zeq_bool_neq, eq_refl : real.
+Hint Extern 0 (IZR _ <> IZR _) => apply eq_IZR_contrapositive, Private_Zeq_bool_neq, eq_refl : real.
 
 Lemma one_IZR_lt1 : forall n:Z, -1 < IZR n < 1 -> n = 0%Z.
 Proof.
@@ -2683,8 +2685,9 @@ Proof.
 Qed.
 
 (* NOTE: keeping inconsistent variable names for backward compatibility. *)
-Lemma Zeq_bool_IZR : forall x y:Z, IZR x = IZR y -> Zeq_bool x y = true.
-Proof. now intros n m H; apply Zeq_is_eq_bool, eq_IZR. Qed.
+#[deprecated(use=Z.eqb_eq, since="9.0")]
+Lemma Zeq_bool_IZR : forall x y:Z, IZR x = IZR y -> Z.eqb x y = true.
+Proof. now intros n m H; apply Z.eqb_eq, eq_IZR. Qed.
 
 Local Lemma Private_Zeqb_IZR : forall x y:Z, IZR x = IZR y -> Z.eqb x y = true.
 Proof. intros. apply Z.eqb_eq, eq_IZR; trivial. Qed.

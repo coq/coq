@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import ZArith_base ZArithRing Lia Zcomplements Zdiv Znumtheory.
+Require Import BinInt Znat ZArithRing Lia Wf_Z Zcomplements Zdiv Znumtheory.
 Require Export Zpower.
 Local Open Scope Z_scope.
 
@@ -104,7 +104,7 @@ Theorem Zpower_mod p q n :
   0 < n -> (p^q) mod n = ((p mod n)^q) mod n.
 Proof.
   intros Hn; destruct (Z.le_gt_cases 0 q) as [H1|H1].
-  - pattern q; apply natlike_ind; trivial.
+  - pattern q; apply Wf_Z.natlike_ind; trivial.
     clear q H1. intros q Hq Rec. rewrite !Z.pow_succ_r; trivial.
     rewrite Z.mul_mod_idemp_l by lia.
     rewrite Z.mul_mod, Rec, <- Z.mul_mod by lia. reflexivity.

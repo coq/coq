@@ -13,6 +13,7 @@ Require Import Rfunctions.
 Require Import SeqSeries.
 Require Import Rtrigo_def.
 Require Import Lia Lra.
+Require Import Arith.Factorial.
 Local Open Scope R_scope.
 
 (***************************************************************)
