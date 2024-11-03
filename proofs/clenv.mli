@@ -26,7 +26,7 @@ val clenv_evd : clausenv -> Evd.evar_map
 val clenv_meta_list : clausenv -> clbinding Metamap.t
 
 (* Ad-hoc primitives *)
-val update_clenv_evd : clausenv -> evar_map -> clausenv
+val update_clenv_evd : clausenv -> evar_map -> clbinding Metamap.t -> clausenv
 val clenv_strip_proj_params : clausenv -> clausenv
 val clenv_refresh : env -> evar_map -> UnivGen.sort_context_set option -> clausenv -> clausenv
 val clenv_arguments : clausenv -> metavariable list

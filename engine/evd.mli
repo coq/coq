@@ -564,29 +564,24 @@ val evars_of_filtered_evar_info : evar_map -> 'a evar_info -> Evar.Set.t
 module Meta :
 sig
 
-val meta_list : evar_map -> clbinding Metamap.t
+type t = clbinding Metamap.t
 
-val meta_value     : evar_map -> metavariable -> econstr
+val meta_value     : t -> metavariable -> econstr
 (** [meta_fvalue] raises [Not_found] if meta not in map or [Anomaly] if
    meta has no value *)
 
-val meta_opt_fvalue : evar_map -> metavariable -> (econstr freelisted * instance_status) option
-val meta_ftype     : evar_map -> metavariable -> etypes freelisted
-val meta_name      : evar_map -> metavariable -> Name.t
-val meta_declare   :
-  metavariable -> etypes -> ?name:Name.t -> evar_map -> evar_map
-val meta_assign    : metavariable -> econstr * instance_status -> evar_map -> evar_map
-
-val clear_metas : evar_map -> evar_map
+val meta_opt_fvalue : t -> metavariable -> (econstr freelisted * instance_status) option
+val meta_ftype     : t -> metavariable -> etypes freelisted
+val meta_name      : t -> metavariable -> Name.t
+val meta_declare   : metavariable -> etypes -> ?name:Name.t -> t -> t
+val meta_assign    : metavariable -> econstr * instance_status -> t -> evar_map -> evar_map * t
 
 (** [meta_merge evd1 evd2] returns [evd2] extended with the metas of [evd1] *)
-val meta_merge : clbinding Metamap.t -> evar_map -> evar_map
+val meta_merge : t -> t -> t
 
-val map_metas : (econstr -> econstr) -> evar_map -> evar_map
+val map_metas : (econstr -> econstr) -> t -> t
 
-val evar_source_of_meta : metavariable -> evar_map -> Evar_kinds.t located
-
-val set_metas : evar_map -> clbinding Metamap.t -> evar_map
+val evar_source_of_meta : metavariable -> t -> Evar_kinds.t located
 
 end
 

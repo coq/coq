@@ -713,7 +713,7 @@ let symmetry env sort rew =
 let unify_eqn (car, rel, prf, c1, c2, holes, sort) l2r flags env (sigma, cstrs) by t =
   try
     let left = if l2r then c1 else c2 in
-    let sigma = Unification.w_unify ~flags env sigma CONV left t in
+    let _, sigma = Unification.w_unify ~flags env sigma CONV left t in
     let sigma = TC.resolve_typeclasses ~filter:(no_constraints cstrs)
       ~fail:true env sigma in
     let sigma = solve_remaining_by env sigma holes by in
@@ -742,7 +742,7 @@ let unify_abs (car, rel, prf, c1, c2) l2r sort env (sigma, cstrs) t =
        basically an eq_constr, except when preexisting evars occur in
        either the lemma or the goal, in which case the eq_constr also
        solved this evars *)
-    let sigma = Unification.w_unify ~flags:rewrite_unif_flags env sigma CONV left t in
+    let _, sigma = Unification.w_unify ~flags:rewrite_unif_flags env sigma CONV left t in
     let rew_evars = sigma, cstrs in
     let rew_prf = RewPrf (rel, prf) in
     let rew = { rew_car = car; rew_from = c1; rew_to = c2; rew_prf; rew_evars; } in
@@ -1414,7 +1414,7 @@ module Strategies =
         | Some c -> c
         in
           try
-            let sigma = Unification.w_unify env sigma CONV ~flags:(Unification.elim_flags ()) unfolded t in
+            let _, sigma = Unification.w_unify env sigma CONV ~flags:(Unification.elim_flags ()) unfolded t in
             let c' = Reductionops.nf_evar sigma c in
               state, Success { rew_car = ty; rew_from = t; rew_to = c';
                                   rew_prf = RewCast DEFAULTcast;
@@ -1828,7 +1828,7 @@ let default_morphism env sigma sign m =
 
 (* Find a subterm which matches the pattern to rewrite for "rewrite" *)
 let unification_rewrite l2r c1 c2 sigma prf car rel but env =
-  let (sigma,c') =
+  let ((_, sigma), c') =
     try
       (* ~flags:(false,true) to allow to mark occurrences that must not be
          rewritten simply by replacing them with let-defined definitions

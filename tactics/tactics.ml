@@ -1473,12 +1473,12 @@ let do_replace id = function
 let clenv_refine_in with_evars targetid replace env sigma0 clenv =
   let clenv = Clenv.clenv_pose_dependent_evars ~with_evars clenv in
   let evd = Typeclasses.resolve_typeclasses ~fail:(not with_evars) env (clenv_evd clenv) in
-  let clenv = Clenv.update_clenv_evd clenv evd in
+  let clenv = Clenv.update_clenv_evd clenv evd (Clenv.clenv_meta_list clenv) in
   let new_hyp_typ = clenv_type clenv in
   if not with_evars then check_unresolved_evars_of_metas sigma0 clenv;
   let [@ocaml.warning "-3"] exact_tac = Clenv.Internal.refiner clenv in
   let naming = NamingMustBe (CAst.make targetid) in
-  Proofview.Unsafe.tclEVARS (Meta.clear_metas evd) <*>
+  Proofview.Unsafe.tclEVARS evd <*>
   Proofview.Goal.enter begin fun gl ->
     let id = find_name replace (LocalAssum (make_annot Anonymous Sorts.Relevant, new_hyp_typ)) naming gl in
     Tacticals.tclTHENLAST (internal_cut replace id new_hyp_typ <*> Proofview.cycle 1) exact_tac
@@ -1586,7 +1586,7 @@ let general_elim with_evars clear_flag (c, lbindc) elim =
   let flags = elim_flags () in
   let metas = clenv_meta_list indclause in
   let submetas = List.map (fun mv -> mv, Metamap.find mv metas) (clenv_arguments indclause) in
-  Proofview.Unsafe.tclEVARS (Evd.Meta.clear_metas (clenv_evd indclause)) <*>
+  Proofview.Unsafe.tclEVARS (clenv_evd indclause) <*>
   Tacticals.tclTHEN
     (general_elim_clause0 with_evars flags (submetas, c, clenv_type indclause) elim)
     (apply_clear_request clear_flag (use_clear_hyp_by_default ()) id)
@@ -1625,13 +1625,13 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
     let (sigma, ev) = Evarutil.new_evar env sigma argtype in
     let _, sigma = Evd.pop_future_goals sigma in
     let evk, _ = destEvar sigma ev in
-    let indclause = Clenv.update_clenv_evd indclause (Meta.meta_merge (Clenv.clenv_meta_list indclause) sigma) in
+    let indclause = Clenv.update_clenv_evd indclause sigma (Clenv.clenv_meta_list indclause) in
     Proofview.Unsafe.tclEVARS sigma <*>
     Proofview.Unsafe.tclNEWGOALS ~before:true [Proofview.goal_with_state evk state] <*>
     Proofview.tclDISPATCH [Clenv.res_pf ~with_evars:true indclause; tclIDTAC] <*>
     Proofview.tclEXTEND [] tclIDTAC [Clenv.case_pf ~with_evars ~dep (ev, argtype)]
   in
-  let sigma = Evd.Meta.clear_metas (clenv_evd indclause) in
+  let sigma = clenv_evd indclause in
   Tacticals.tclTHENLIST [
     Tacticals.tclWITHHOLES with_evars tac sigma;
     apply_clear_request clear_flag (use_clear_hyp_by_default ()) id;
@@ -3413,7 +3413,7 @@ let unify ?(state=TransparentState.full) x y =
       merge_unify_flags = core_flags;
       subterm_unify_flags = { core_flags with modulo_delta = TransparentState.empty } }
     in
-    let sigma = w_unify (Tacmach.pf_env gl) sigma Conversion.CONV ~flags x y in
+    let _, sigma = w_unify (Tacmach.pf_env gl) sigma Conversion.CONV ~flags x y in
     Proofview.Unsafe.tclEVARS sigma
   with e when noncritical e ->
     let e, info = Exninfo.capture e in

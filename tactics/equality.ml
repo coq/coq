@@ -267,7 +267,7 @@ let general_elim_clause with_evars frzevars tac cls c (ctx, eqn, args) l l2r eli
       general_elim_clause with_evars flags cls (submetas, c, Clenv.clenv_type rew) elim
       end
     in
-    Proofview.Unsafe.tclEVARS (Evd.Meta.clear_metas (Clenv.clenv_evd rew)) <*>
+    Proofview.Unsafe.tclEVARS (Clenv.clenv_evd rew) <*>
     elim_wrapper cls rewrite_elim
   in
   let strat, tac =
@@ -286,8 +286,8 @@ let general_elim_clause with_evars frzevars tac cls c (ctx, eqn, args) l l2r eli
     in
     let ty = it_mkProd_or_LetIn (applist (eqn, args)) ctx in
     let eqclause = Clenv.make_clenv_binding env sigma (c, ty) l in
-    let try_clause evd' =
-      let clenv = Clenv.update_clenv_evd eqclause evd' in
+    let try_clause (metas, evd') =
+      let clenv = Clenv.update_clenv_evd eqclause evd' metas in
       let clenv = Clenv.clenv_pose_dependent_evars ~with_evars:true clenv in
       side_tac (general_elim_clause0 clenv) tac
     in

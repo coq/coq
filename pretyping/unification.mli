@@ -49,29 +49,29 @@ val is_keyed_unification : unit -> bool
 (** The "unique" unification function *)
 val w_unify :
   ?metas:clbinding Metamap.t ->
-  env -> evar_map -> conv_pb -> ?flags:unify_flags -> constr -> constr -> evar_map
+  env -> evar_map -> conv_pb -> ?flags:unify_flags -> constr -> constr -> clbinding Metamap.t * evar_map
 
 (** [w_unify_to_subterm env m (c,t)] performs unification of [c] with a
    subterm of [t]. Constraints are added to [m] and the matched
    subterm of [t] is also returned. *)
 val w_unify_to_subterm :
   ?metas:clbinding Metamap.t ->
-  env -> evar_map -> ?flags:unify_flags -> constr * constr -> evar_map * constr
+  env -> evar_map -> ?flags:unify_flags -> constr * constr -> (clbinding Metamap.t * evar_map) * constr
 
 val w_unify_to_subterm_all :
   ?metas:clbinding Metamap.t ->
-  env -> evar_map -> ?flags:unify_flags -> constr * constr -> evar_map list
+  env -> evar_map -> ?flags:unify_flags -> constr * constr -> (clbinding Metamap.t * evar_map) list
 
 val w_unify_meta_types :
   ?metas:clbinding Metamap.t ->
-  env -> ?flags:unify_flags -> evar_map -> evar_map
+  env -> ?flags:unify_flags -> evar_map -> clbinding Metamap.t * evar_map
 
 (** [w_coerce_to_type env evd c ctyp typ] tries to coerce [c] of type
    [ctyp] so that its gets type [typ]; [typ] may contain metavariables *)
 val w_coerce_to_type :
   ?metas:clbinding Metamap.t ->
   env -> evar_map -> constr -> types -> types ->
-  evar_map * constr
+  evar_map * clbinding Metamap.t * constr
 
 (* Looking for subterms in contexts at some occurrences, possibly with pattern*)
 
@@ -103,5 +103,5 @@ val abstract_list_all :
 
 (** {5 Meta-related functions} *)
 
-val meta_type : env -> evar_map -> Constr.metavariable -> types
-val meta_instance : env -> evar_map -> constr freelisted -> constr
+val meta_type : metas:clbinding Metamap.t -> env -> evar_map -> Constr.metavariable -> types
+val meta_instance : metas:clbinding Metamap.t -> env -> evar_map -> constr freelisted -> constr

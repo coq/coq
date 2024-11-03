@@ -216,9 +216,8 @@ let flags_FO env =
   }
 
 let unif_FO env ise metas p c =
-  let ise = Metamap.fold (fun mv t accu -> Evd.Meta.meta_declare mv t accu) metas ise in
-  let metas = Evd.Meta.meta_list ise in
-  let _ : Evd.evar_map = Unification.w_unify ~metas env ise Conversion.CONV ~flags:(flags_FO env) p c in
+  let metas = Metamap.fold (fun mv t accu -> Evd.Meta.meta_declare mv t accu) metas Metamap.empty in
+  let _ : _ * Evd.evar_map = Unification.w_unify ~metas env ise Conversion.CONV ~flags:(flags_FO env) p c in
   ()
 
 (* Perform evar substitution in main term and prune substitution. *)

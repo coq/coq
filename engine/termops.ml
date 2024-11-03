@@ -152,7 +152,7 @@ let pr_instance_status (sc,typ) =
   | TypeProcessed -> str " [type is checked]"
   end
 
-let pr_meta_map env sigma =
+let pr_metamap env sigma metas =
   let open Evd in
   let print_constr = Internal.print_kconstr in
   let pr_name = function
@@ -170,7 +170,7 @@ let pr_meta_map env sigma =
            str " : " ++ print_constr env sigma t.rebus ++
            spc () ++ pr_instance_status s ++ fnl ())
   in
-  prlist pr_meta_binding (Evd.Metamap.bindings (Meta.meta_list sigma))
+  prlist pr_meta_binding (Evd.Metamap.bindings metas)
 
 let pr_decl env sigma (decl,ok) =
   let open NamedDecl in
@@ -360,16 +360,12 @@ let pr_evar_map_gen with_univs pr_evars env sigma =
     else
       str "OBLIGATIONS:" ++ brk (0, 1) ++
       prlist_with_sep spc Evar.print (Evar.Set.elements evars) ++ fnl ()
-  and metas =
-    if Evd.Metamap.is_empty (Evd.Meta.meta_list sigma) then mt ()
-    else
-      str "METAS:" ++ brk (0, 1) ++ pr_meta_map env sigma
   and shelf =
     str "SHELF:" ++ brk (0, 1) ++ Evd.pr_shelf sigma ++ fnl ()
   and future_goals =
     str "FUTURE GOALS STACK:" ++ brk (0, 1) ++ Evd.pr_future_goals_stack sigma ++ fnl ()
   in
-  evs ++ svs ++ cstrs ++ typeclasses ++ obligations ++ metas ++ shelf ++ future_goals
+  evs ++ svs ++ cstrs ++ typeclasses ++ obligations ++ shelf ++ future_goals
 
 let pr_evar_list env sigma l =
   let open Evd in
