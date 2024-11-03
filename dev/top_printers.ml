@@ -219,6 +219,10 @@ let pp_state_t n = pp (Reductionops.pr_state Global.(env()) Evd.empty n)
 (* proof printers *)
 let pr_evar ev = Pp.int (Evar.repr ev)
 let ppmetas metas = pp(Termops.pr_metaset metas)
+let ppmetamap metas =
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  pp (Termops.pr_metamap env sigma metas)
 let ppevm evd = pp(Termops.pr_evar_map ~with_univs:!Detyping.print_universes (Some 2) (Global.env ()) evd)
 let ppevmall evd = pp(Termops.pr_evar_map ~with_univs:!Detyping.print_universes None (Global.env ()) evd)
 let pr_existentialset evars =

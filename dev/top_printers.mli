@@ -125,6 +125,7 @@ val pp_estack_t : Reductionops.Stack.t -> unit
 val pp_state_t : Reductionops.state -> unit
 
 val ppmetas : Evd.Metaset.t -> unit
+val ppmetamap : Evd.clbinding Evd.Metamap.t -> unit
 val ppevm : Evd.evar_map -> unit
 val ppevmall : Evd.evar_map -> unit
 
