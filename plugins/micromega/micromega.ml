@@ -2061,19 +2061,12 @@ let simpl_cone cO cI ctimes ceqb e = match e with
            | _ -> PsatzAdd (t1, t2)))
 | _ -> e
 
-(** val zeq_bool : z -> z -> bool **)
-
-let zeq_bool x y =
-  match Z.compare x y with
-  | Eq -> true
-  | _ -> false
-
 type q = { qnum : z; qden : positive }
 
 (** val qeq_bool : q -> q -> bool **)
 
 let qeq_bool x y =
-  zeq_bool (Z.mul x.qnum (Zpos y.qden)) (Z.mul y.qnum (Zpos x.qden))
+  Z.eqb (Z.mul x.qnum (Zpos y.qden)) (Z.mul y.qnum (Zpos x.qden))
 
 (** val qle_bool : q -> q -> bool **)
 

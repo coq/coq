@@ -143,6 +143,8 @@ module Z :
 
   val compare : z -> z -> comparison
 
+  val eqb : z -> z -> bool
+
   val leb : z -> z -> bool
 
   val ltb : z -> z -> bool
@@ -167,8 +169,6 @@ module Z :
 
   val gcd : z -> z -> z
  end
-
-val zeq_bool : z -> z -> bool
 
 type 'c pExpr =
 | PEc of 'c
