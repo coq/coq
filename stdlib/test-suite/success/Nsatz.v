@@ -1,5 +1,6 @@
 
 (* compile en user    3m39.915s sur cachalot *)
+From Stdlib Require Import BinNat.
 From Stdlib Require Import Nsatz.
 From Stdlib Require List.
 Import List.ListNotations.
