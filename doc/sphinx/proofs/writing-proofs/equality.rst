@@ -999,6 +999,8 @@ which supports additional fine-tuning.
    constants always remain transparent. This mechanism is only intended for
    debugging purposes.
 
+   Use the :cmd:`About` command to see if a symbol is transparent or opaque.
+
 .. cmd:: Transparent {? ! } {+ @reference }
 
    The opposite of :cmd:`Opaque`, it marks the specified constants

@@ -174,13 +174,13 @@ let print_opacity env ref =
         match s with
           | FullyOpaque -> str "opaque"
           | TransparentMaybeOpacified Conv_oracle.Opaque ->
-              str "basically transparent but considered opaque for reduction"
+              str "opaque but may be made transparent"
           | TransparentMaybeOpacified lev when Conv_oracle.is_transparent lev ->
               str "transparent"
           | TransparentMaybeOpacified (Conv_oracle.Level n) ->
-              str "transparent (with expansion weight " ++ int n ++ str ")"
+              str "transparent (level " ++ int n ++ str ")"
           | TransparentMaybeOpacified Conv_oracle.Expand ->
-              str "transparent (with minimal expansion weight)"]
+              str "transparent (expand)"]
 
 (** Printing coercion status *)
 

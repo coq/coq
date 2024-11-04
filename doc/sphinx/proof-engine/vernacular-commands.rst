@@ -70,13 +70,18 @@ described elsewhere
 
 .. cmd:: About @reference {? @univ_name_list }
 
-   Displays information about the :n:`@reference` object, which,
-   if a proof is open,  may be a hypothesis of the selected goal,
-   or an accessible theorem, axiom, etc.:
-   its kind (module, constant, assumption, inductive,
-   constructor, abbreviation, …), long name, type, implicit arguments and
+   Displays information about the :n:`@reference` object, which may be the
+   name of any accessible defined symbol, such as a theorem, constructor,
+   fixpoint or module.  If a proof is open, :n:`@reference` may refer to a
+   hypothesis of the selected goal.  The information includes:
+   the kind of the object (module, constant, assumption, inductive,
+   constructor, abbreviation, projection, coercion,  …), long name, type,
+   opacity/transparency, implicit arguments, argument names and
    argument scopes (as set in the definition of :token:`reference` or
-   subsequently with the :cmd:`Arguments` command). It does not print the body of definitions or proofs.
+   subsequently with the :cmd:`Arguments` command). It does not print the
+   body of definitions or proofs.
+
+   See :cmd:`Strategy` for details on opacity.
 
 .. cmd:: Check @term
 
