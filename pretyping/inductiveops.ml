@@ -490,6 +490,8 @@ let make_project env sigma ind pred c branches ps =
       | exception Failure _ -> None
       | ctx -> match ctx with
         | [] -> None
+        | LocalDef (_, def, _) :: _ when isProj sigma def ->
+           let (p, _, _) = destProj sigma def in Some (mkProj (Projection.arg p) c)
         | LocalDef _ :: _ ->
           (* XXX Maybe we should produce the applied constant for this letin pseudoprojection?
              We would have to get the params etc*)
@@ -502,16 +504,17 @@ let make_project env sigma ind pred c branches ps =
   match proj with
   | Some proj -> proj
   | None ->
+  let (_, cstr_types) = List.chop mib.mind_nparams (fst mip.mind_nf_lc.(0)) in
   let n, len, ctx =
-    List.fold_right
-      (fun decl (i, j, ctx) ->
-         match decl with
-         | LocalAssum (na, ty) ->
+    List.fold_right2
+      (fun decl cstr (i, j, ctx) ->
+        match cstr with
+        | LocalAssum _ ->
            let t = mkProj i (mkRel j) in
-           (i + 1, j + 1, LocalDef (na, t, Vars.liftn 1 j ty) :: ctx)
-         | LocalDef (na, b, ty) ->
-           (i, j + 1, LocalDef (na, Vars.liftn 1 j b, Vars.liftn 1 j ty) :: ctx))
-      ctx (0, 1, [])
+           (i + 1, j + 1, LocalDef (na, t, Vars.liftn 1 j (get_type decl)) :: ctx)
+        | LocalDef _ ->
+           (i, j + 1, map_constr (Vars.liftn 1 j) decl :: ctx))
+      ctx cstr_types (0, 1, [])
   in
   mkLetIn (na, c, ty, it_mkLambda_or_LetIn (Vars.liftn 1 (mip.mind_consnrealdecls.(0) + 1) br) ctx)
 
