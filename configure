@@ -11,4 +11,11 @@ then
     exit 1
 fi
 
-dune exec --root . -- $configure "$@"
+if [ "x$1" = 'x-release' ]; then
+  shift 1
+  dune_release='--profile=release'
+else
+  dune_release=''
+fi
+
+dune exec $dune_release --root . -- $configure "$@"
