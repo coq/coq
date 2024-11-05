@@ -1101,8 +1101,17 @@ type db_obj = {
   db_ts : TransparentState.t;
 }
 
-let cache_db {db_name=name; db_use_dn=b; db_ts=ts} =
-  searchtable_add (name, Hint_db.empty ~name ts b)
+let warn_mismatch_create_hintdb = CWarnings.create ~name:"mismatched-hint-db" ~category:CWarnings.CoreCategories.automation
+    Pp.(fun {db_name;db_use_dn} ->
+        str "Hint Db " ++ str db_name ++ str " already exists and " ++
+        (if db_use_dn then str "is not" else str "is") ++ str " discriminated.")
+
+let cache_db ({db_name=name; db_use_dn=b; db_ts=ts} as o) =
+  match searchtable_map name with
+  | exception Not_found -> searchtable_add (name, Hint_db.empty ~name ts b)
+  | db ->
+    (* AFAICT all DBs start with full transparent state so nothing to do with it *)
+    if Hint_db.use_dn db <> b then warn_mismatch_create_hintdb o
 
 let load_db _ x = cache_db x
 
