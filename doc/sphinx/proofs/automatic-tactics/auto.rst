@@ -320,7 +320,8 @@ and `Constants`, while implicitly created databases have the `Opaque` setting.
 
 .. cmd:: Create HintDb @ident {? discriminated }
 
-   Creates a new hint database named :n:`@ident`. The database is
+   If there is no hint database named :n:`@name`, creates a new hint database
+   with that name.  Otherwise, does nothing.  The database is
    implemented by a Discrimination Tree (DT) that serves as a filter to select
    the lemmas that will be applied. When discriminated, the DT uses
    transparency information to decide if a constant should considered rigid for
@@ -330,6 +331,13 @@ and `Constants`, while implicitly created databases have the `Opaque` setting.
    unification.
 
    By default, hint databases are undiscriminated.
+
+   .. warn:: @ident already exists and is {? not } discriminated
+      :name: mismatched-hint-db
+
+      `Create HintDb` will not change whether a pre-existing database
+      is discriminated.
+
 
 Hint databases defined in the Rocq standard library
 ```````````````````````````````````````````````````
