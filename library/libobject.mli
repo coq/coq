@@ -48,6 +48,8 @@ open Mod_subst
      Keep       - the object is kept at the end of the module.
        When the module is cloned the object is not cloned with it.
        This means that Keep objects in a module type or functor are dropped.
+     Escape     - like Keep, but also escapes module types, functors and opaque modules.
+       Monomorphic universes and universe constraints behave like this.
      Anticipate - this is for objects that have to be explicitly managed
        by the [end_module] function (currently only Require).
 
@@ -74,7 +76,7 @@ open Mod_subst
 
 *)
 
-type substitutivity = Dispose | Substitute | Keep | Anticipate
+type substitutivity = Dispose | Substitute | Keep | Escape | Anticipate
 
 (** Both names are passed to objects: a "semantic" [kernel_name], which
    can be substituted and a "syntactic" [full_path] which can be printed
@@ -126,13 +128,14 @@ val filter_and : open_filter -> open_filter -> open_filter option
 
 val filter_or :  open_filter -> open_filter -> open_filter
 
-(** The default object is a "Keep" object with empty methods.
+(** The default object has empty methods.
    Object creators are advised to use the construction
    [{(default_object "MY_OBJECT") with
       cache_function = ...
    }]
    and specify only these functions which are not empty/meaningless
 
+    The classify_function must be specified.
 *)
 
 val default_object : ?stage:Summary.Stage.t -> string -> ('a,'b,'a) object_declaration
@@ -157,11 +160,16 @@ type algebraic_objects =
   | Objs of t list
   | Ref of ModPath.t * Mod_subst.substitution
 
+(* there are some extra invariants we could try to enforce by typing:
+   - substitutive_objects do not contain KeepObject and EscapeObject
+   - KeepObject only contains itself and atoms
+   - EscapeObject only contains itself and atoms *)
 and t =
   | ModuleObject of Id.t * substitutive_objects
   | ModuleTypeObject of Id.t * substitutive_objects
   | IncludeObject of algebraic_objects
   | KeepObject of Id.t * t list
+  | EscapeObject of Id.t * t list
   | ExportObject of ExportObj.t
   | AtomicObject of obj
 

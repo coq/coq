@@ -24,14 +24,10 @@ let _ = CErrors.register_handler (function
 
 type universe_source =
   | BoundUniv (* polymorphic universe, bound in a function (this will go away someday) *)
-  | QualifiedUniv of Id.t (* global universe introduced by some global value *)
-  | UnqualifiedUniv (* other global universe *)
+  | QualifiedUniv of Id.t list (* global universe introduced by some global value *)
+  | UnqualifiedUniv (* other global universe, todo merge with [QualifiedUniv []] *)
 
-type universe_name_decl = {
-  udecl_src : universe_source;
-  udecl_named : (Id.t * UGlobal.t) list;
-  udecl_anon : UGlobal.t list;
-}
+type universe_name_decl = universe_source * (Id.t * UGlobal.t) list
 
 let check_exists_universe sp =
   if Nametab.exists_universe sp then
@@ -44,45 +40,27 @@ let qualify_univ i dp src id =
     i,  Libnames.make_path dp id
   | QualifiedUniv l ->
     let dp = DirPath.repr dp in
-    Nametab.map_visibility succ i, Libnames.make_path (DirPath.make (l::dp)) id
+    Nametab.map_visibility (fun n -> n + List.length l) i, Libnames.make_path (DirPath.make (List.append l dp)) id
 
 let do_univ_name ~check i dp src (id,univ) =
   let i, sp = qualify_univ i dp src id in
   if check then check_exists_universe sp;
   Nametab.push_universe i sp univ
 
-let get_names decl =
-  let fold accu (id, _) = Id.Set.add id accu in
-  let names = List.fold_left fold Id.Set.empty decl.udecl_named in
-  (* create fresh names for anonymous universes *)
-  let fold u ((names, cnt), accu) =
-    let rec aux i =
-      let na = Id.of_string ("u"^(string_of_int i)) in
-      if Id.Set.mem na names then aux (i+1) else (na, i)
-    in
-    let (id, cnt) = aux cnt in
-    ((Id.Set.add id names, cnt + 1), ((id, u) :: accu))
-  in
-  let _, univs = List.fold_right fold decl.udecl_anon ((names, 0), decl.udecl_named) in
-  univs
-
-let cache_univ_names (prefix, decl) =
+let cache_univ_names (prefix, (src, univs)) =
   let depth = Lib.sections_depth () in
   let dp = Libnames.pop_dirpath_n depth prefix.Nametab.obj_dir in
-  let names = get_names decl in
-  List.iter (do_univ_name ~check:true (Nametab.Until 1) dp decl.udecl_src) names
+  List.iter (do_univ_name ~check:true (Nametab.Until 1) dp src) univs
 
-let load_univ_names i (prefix, decl) =
-  let names = get_names decl in
-  List.iter (do_univ_name ~check:false (Nametab.Until i) prefix.Nametab.obj_dir decl.udecl_src) names
+let load_univ_names i (prefix, (src, univs)) =
+  List.iter (do_univ_name ~check:false (Nametab.Until i) prefix.Nametab.obj_dir src) univs
 
-let open_univ_names i (prefix, decl) =
-  let names = get_names decl in
-  List.iter (do_univ_name ~check:false (Nametab.Exactly i) prefix.Nametab.obj_dir decl.udecl_src) names
+let open_univ_names i (prefix, (src, univs)) =
+  List.iter (do_univ_name ~check:false (Nametab.Exactly i) prefix.Nametab.obj_dir src) univs
 
-let discharge_univ_names decl = match decl.udecl_src with
-  | BoundUniv -> None
-  | (QualifiedUniv _ | UnqualifiedUniv) -> Some decl
+let discharge_univ_names = function
+  | BoundUniv, _ -> None
+  | (QualifiedUniv _ | UnqualifiedUniv), _ as x -> Some x
 
 let input_univ_names : universe_name_decl -> Libobject.obj =
   let open Libobject in
@@ -92,12 +70,20 @@ let input_univ_names : universe_name_decl -> Libobject.obj =
       load_function = load_univ_names;
       open_function = simple_open open_univ_names;
       discharge_function = discharge_univ_names;
-      subst_function = (fun (subst, a) -> (* Actually the name is generated once and for all. *) a);
-      classify_function = (fun a -> Substitute) }
+      classify_function = (fun _ -> Escape) }
 
-let input_univ_names (src, l, a) =
-  if CList.is_empty l && CList.is_empty a then ()
-  else Lib.add_leaf (input_univ_names { udecl_src = src; udecl_named = l; udecl_anon = a })
+let input_univ_names (src, l) =
+  if CList.is_empty l then ()
+  else Lib.add_leaf (input_univ_names (src, l))
+
+let invent_name prefix (named,cnt) u =
+  let rec aux i =
+    let na = Id.of_string ("u"^(string_of_int i)) in
+    let sp = Libnames.make_path prefix na in
+    if Id.Map.mem na named || Nametab.exists_universe sp then aux (i+1)
+    else na, (Id.Map.add na u named, i+1)
+  in
+  aux cnt
 
 let label_of = let open GlobRef in function
 | ConstRef c -> Label.to_id @@ Constant.label c
@@ -124,10 +110,28 @@ let declare_univ_binders gr (univs, pl) =
         named, univs)
         pl (Level.Set.empty,[])
     in
-    (* then keep the anonymous ones *)
-    let fold u accu = Option.get (Level.name u) :: accu in
-    let anonymous = Level.Set.fold fold (Level.Set.diff levels named) [] in
-    input_univ_names (QualifiedUniv l, univs, anonymous)
+    (* then invent names for the rest *)
+    let prefix = DirPath.make (l :: DirPath.repr (Lib.cwd_except_section())) in
+    let _, univs = Level.Set.fold (fun univ (aux,univs) ->
+        let id, aux = invent_name prefix aux univ in
+        let univ = Option.get (Level.name univ) in
+        aux, (id,univ) :: univs)
+        (Level.Set.diff levels named) ((pl,0),univs)
+    in
+    input_univ_names (QualifiedUniv [l], univs)
+
+let name_mono_section_univs univs =
+  if Level.Set.is_empty univs then ()
+  else
+  let prefix = Lib.cwd () in
+  let sections = DirPath.repr @@ Libnames.drop_dirpath_prefix (Lib.cwd_except_section()) prefix in
+  let _, univs = Level.Set.fold (fun univ (aux,univs) ->
+      let id, aux = invent_name prefix aux univ in
+      let univ = Option.get (Level.name univ) in
+      aux, (id,univ) :: univs)
+      univs ((Id.Map.empty, 0), [])
+  in
+  input_univ_names (QualifiedUniv sections, univs)
 
 let do_universe ~poly l =
   let in_section = Lib.sections_are_opened () in
@@ -138,7 +142,7 @@ let do_universe ~poly l =
   in
   let l = List.map (fun {CAst.v=id} -> (id, UnivGen.new_univ_global ())) l in
   let src = if poly then BoundUniv else UnqualifiedUniv in
-  let () = input_univ_names (src, l, []) in
+  let () = input_univ_names (src, l) in
   match poly with
   | false ->
     let ctx = List.fold_left (fun ctx (_,qid) -> Level.Set.add (Level.make qid) ctx)

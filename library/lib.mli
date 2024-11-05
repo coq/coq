@@ -95,18 +95,18 @@ type discharged_item =
   | DischargedExport of Libobject.ExportObj.t
   | DischargedLeaf of Libobject.discharged_obj
 
+type classified_objects = {
+  substobjs : Libobject.t list;
+  keepobjs : Libobject.t list;
+  escapeobjs : Libobject.t list;
+  anticipateobjs : Libobject.t list;
+}
+
 (** The [StagedLibS] abstraction describes operations and traversal for Lib at a
     given stage. *)
 module type StagedLibS = sig
 
   type summary
-
-  type classified_objects = {
-    substobjs : Libobject.t list;
-    keepobjs : Libobject.t list;
-    anticipateobjs : Libobject.t list;
-  }
-  val classify_segment : Libobject.t list -> classified_objects
 
   (** Returns the opening node of a given name *)
   val find_opening_node : ?loc:Loc.t -> Id.t -> summary node
@@ -162,9 +162,14 @@ module Interp : StagedLibS with type summary = Summary.Interp.frozen
 
 val start_compilation : DirPath.t -> ModPath.t -> unit
 
-(** Finalize the compilation of a library and return respectively the library
-    prefix, the regular objects, and the syntax-related objects. *)
-val end_compilation : DirPath.t -> Nametab.object_prefix * Library_info.t * Interp.classified_objects * Synterp.classified_objects
+type compilation_result = {
+  info : Library_info.t;
+  synterp_objects : classified_objects;
+  interp_objects : classified_objects;
+}
+
+(** Finalize the compilation of a library. *)
+val end_compilation : DirPath.t -> compilation_result
 
 (** The function [library_dp] returns the [DirPath.t] of the current
    compiling library (or [default_library]) *)
