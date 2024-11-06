@@ -30,6 +30,8 @@ type usubs = fconstr subs UVars.puniverses
 
 type table_key = Constant.t UVars.puniverses tableKey
 
+type current_context = GlobRef.t option
+
 (** Relevances (eg in binder_annot or case_info) have NOT been substituted
     when there is a usubs field *)
 type fterm =
@@ -64,8 +66,8 @@ type 'a next_native_args = (CPrimitives.arg_kind * 'a) list
 
 type stack_member =
   | Zapp of fconstr array
-  | ZcaseT of case_info * UVars.Instance.t * constr array * case_return * case_branch array * usubs
-  | Zproj of Projection.Repr.t * Sorts.relevance
+  | ZcaseT of current_context * case_info * UVars.Instance.t * constr array * case_return * case_branch array * usubs
+  | Zproj of current_context * Projection.Repr.t * Sorts.relevance
   | Zfix of fconstr * stack
   | Zprimitive of CPrimitives.t * pconstant * fconstr list * fconstr next_native_args
        (* operator, constr def, arguments already seen (in rev order), next arguments *)
@@ -105,16 +107,15 @@ val usubst_binder : _ UVars.puniverses -> 'a binder_annot -> 'a binder_annot
 
 val inject : constr -> fconstr
 
-val mk_clos      : usubs -> constr -> fconstr
-val mk_clos_vect : usubs -> constr array -> fconstr array
+val mk_clos      : current_context -> usubs -> constr -> fconstr
+val mk_clos_vect : current_context -> usubs -> constr array -> fconstr array
 
 val zip : fconstr -> stack -> fconstr
 
 val fterm_of : fconstr -> fterm
 val term_of_fconstr : fconstr -> constr
 val term_of_process : fconstr -> stack -> constr
-val destFLambda :
-  (usubs -> constr -> fconstr) -> fconstr -> Name.t binder_annot * fconstr * fconstr
+val destFLambda : fconstr -> Name.t binder_annot * fconstr * fconstr
 
 (** Global and local constant cache *)
 type clos_infos

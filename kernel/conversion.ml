@@ -54,7 +54,7 @@ let compare_stack_shape stk1 stk2 =
     | (_, Zapp l2::s2) -> compare_rec (bal-Array.length l2) stk1 s2
     | (Zproj _::s1, Zproj _::s2) ->
         Int.equal bal 0 && compare_rec 0 s1 s2
-    | (ZcaseT(_c1,_,_,_,_,_)::s1, ZcaseT(_c2,_,_,_,_,_)::s2) ->
+    | (ZcaseT(_,_c1,_,_,_,_,_)::s1, ZcaseT(_,_c2,_,_,_,_,_)::s2) ->
         Int.equal bal 0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
     | (Zfix(_,a1)::s1, Zfix(_,a2)::s2) ->
         Int.equal bal 0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
@@ -102,12 +102,12 @@ let pure_stack lfts stk =
             | (Zshift n,(l,pstk)) -> (el_shft n l, pstk)
             | (Zapp a, (l,pstk)) ->
                 (l,zlapp (map_lift l a) pstk)
-            | (Zproj (p,_), (l,pstk)) ->
+            | (Zproj (_,p,_), (l,pstk)) ->
                 (l, Zlproj (p,l)::pstk)
             | (Zfix(fx,a),(l,pstk)) ->
                 let (lfx,pa) = pure_rec l a in
                 (l, Zlfix((lfx,fx),pa)::pstk)
-            | (ZcaseT(ci,u,pms,p,br,e),(l,pstk)) ->
+            | (ZcaseT(_,ci,u,pms,p,br,e),(l,pstk)) ->
                 (l,Zlcase(ci,l,u,pms,p,br,e)::pstk)
             | (Zprimitive(op,c,rargs,kargs),(l,pstk)) ->
                 (l,Zlprimitive(op,c,List.map (fun t -> (l,t)) rargs,
@@ -291,7 +291,7 @@ let esubst_of_context ctx u args e =
   | None :: ctx -> aux (lft + 1) (usubs_lift e) (usubs_lift args) ctx
   | Some c :: ctx ->
     let c = Vars.subst_instance_constr u c in
-    let c = mk_clos args c in
+    let c = mk_clos None args c in
     aux lft (usubs_cons c e) (usubs_cons c args) ctx
   in
   aux 0 e args (List.rev ctx)
@@ -415,8 +415,8 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
           let el2 = el_stack lft2 v2 in
           let cuniv = convert_stacks l2r infos lft1 lft2 v1 v2 cuniv in
           convert_list l2r infos el1 el2
-            (List.map (mk_clos env1) args1)
-            (List.map (mk_clos env2) args2) cuniv
+            (List.map (mk_clos None env1) args1)
+            (List.map (mk_clos None env2) args2) cuniv
         else raise NotConvertible
 
     (* 2 index known to be bound to no constant *)
@@ -539,8 +539,8 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
            we throw them away *)
         if not (is_empty_stack v1 && is_empty_stack v2) then
           anomaly (Pp.str "conversion was given ill-typed terms (FLambda).");
-        let (x1,ty1,bd1) = destFLambda mk_clos hd1 in
-        let (_,ty2,bd2) = destFLambda mk_clos hd2 in
+        let (x1,ty1,bd1) = destFLambda hd1 in
+        let (_,ty2,bd2) = destFLambda hd2 in
         let el1 = el_stack lft1 v1 in
         let el2 = el_stack lft2 v2 in
         let cuniv = ccnv CONV l2r infos el1 el2 ty1 ty2 cuniv in
@@ -555,7 +555,8 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
         let el2 = el_stack lft2 v2 in
         let cuniv = ccnv CONV l2r infos el1 el2 c1 c'1 cuniv in
         let x1 = usubst_binder e x1 in
-        ccnv cv_pb l2r (push_relevance infos x1) (el_lift el1) (el_lift el2) (mk_clos (usubs_lift e) c2) (mk_clos (usubs_lift e') c'2) cuniv
+        (* TODO ctx *)
+        ccnv cv_pb l2r (push_relevance infos x1) (el_lift el1) (el_lift el2) (mk_clos None (usubs_lift e) c2) (mk_clos None (usubs_lift e') c'2) cuniv
 
     (* Eta-expansion on the fly *)
     | (FLambda _, _) ->
@@ -564,7 +565,7 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
         | _ ->
           anomaly (Pp.str "conversion was given unreduced term (FLambda).")
         in
-        let (x1,_ty1,bd1) = destFLambda mk_clos hd1 in
+        let (x1,_ty1,bd1) = destFLambda hd1 in
         let infos = push_relevance infos x1 in
         eqappr CONV l2r infos
           (el_lift lft1, (bd1, [])) (el_lift lft2, (hd2, eta_expand_stack infos.cnv_inf x1 v2)) cuniv
@@ -574,7 +575,7 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
         | _ ->
           anomaly (Pp.str "conversion was given unreduced term (FLambda).")
         in
-        let (x2,_ty2,bd2) = destFLambda mk_clos hd2 in
+        let (x2,_ty2,bd2) = destFLambda hd2 in
         let infos = push_relevance infos x2 in
         eqappr CONV l2r infos
           (el_lift lft1, (hd1, eta_expand_stack infos.cnv_inf x2 v1)) (el_lift lft2, (bd2, [])) cuniv
@@ -672,10 +673,11 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
         if Int.equal i1 i2 && Array.equal Int.equal op1 op2
         then
           let n = Array.length cl1 in
-          let fty1 = Array.map (mk_clos e1) tys1 in
-          let fty2 = Array.map (mk_clos e2) tys2 in
-          let fcl1 = Array.map (mk_clos (usubs_liftn n e1)) cl1 in
-          let fcl2 = Array.map (mk_clos (usubs_liftn n e2)) cl2 in
+          (* TODO ctx *)
+          let fty1 = Array.map (mk_clos None e1) tys1 in
+          let fty2 = Array.map (mk_clos None e2) tys2 in
+          let fcl1 = Array.map (mk_clos None (usubs_liftn n e1)) cl1 in
+          let fcl2 = Array.map (mk_clos None (usubs_liftn n e2)) cl2 in
           let el1 = el_stack lft1 v1 in
           let el2 = el_stack lft2 v2 in
           let cuniv = convert_vect l2r infos el1 el2 fty1 fty2 cuniv in
@@ -692,10 +694,11 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
         if Int.equal op1 op2
         then
           let n = Array.length cl1 in
-          let fty1 = Array.map (mk_clos e1) tys1 in
-          let fty2 = Array.map (mk_clos e2) tys2 in
-          let fcl1 = Array.map (mk_clos (usubs_liftn n e1)) cl1 in
-          let fcl2 = Array.map (mk_clos (usubs_liftn n e2)) cl2 in
+          (* TODO ctx *)
+          let fty1 = Array.map (mk_clos None e1) tys1 in
+          let fty2 = Array.map (mk_clos None e2) tys2 in
+          let fcl1 = Array.map (mk_clos None (usubs_liftn n e1)) cl1 in
+          let fcl2 = Array.map (mk_clos None (usubs_liftn n e2)) cl2 in
           let el1 = el_stack lft1 v1 in
           let el2 = el_stack lft2 v2 in
           let cuniv = convert_vect l2r infos el1 el2 fty1 fty2 cuniv in
@@ -734,8 +737,9 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
         let u2 = CClosure.usubst_instance e2 u2 in
         fail_check infos @@ convert_inductives CONV ind nargs u1 u2 cuniv
       in
-      let pms1 = mk_clos_vect e1 pms1 in
-      let pms2 = mk_clos_vect e2 pms2 in
+      (* TODO ctx *)
+      let pms1 = mk_clos_vect None e1 pms1 in
+      let pms2 = mk_clos_vect None e2 pms2 in
       let cuniv = Array.fold_right2 fold pms1 pms2 cuniv in
       let cuniv = Array.fold_right2 fold (get_invert iv1) (get_invert iv2) cuniv in
       let cuniv = convert_return_clause mind mip l2r infos e1 e2 el1 el2 u1 u2 pms1 pms2 p1 p2 cuniv in
@@ -829,8 +833,9 @@ and convert_stacks ?(mask = [||]) l2r infos lft1 lft2 stk1 stk2 cuniv =
                     | Some variances -> convert_instances_cumul CONV variances u1 u2 cu
                 in
                 let cu = fail_check infos cu in
-                let pms1 = mk_clos_vect e1 pms1 in
-                let pms2 = mk_clos_vect e2 pms2 in
+                (* TODO ctx *)
+                let pms1 = mk_clos_vect None e1 pms1 in
+                let pms2 = mk_clos_vect None e2 pms2 in
                 let fold_params c1 c2 accu = f (l1, c1) (l2, c2) accu in
                 let cu = Array.fold_right2 fold_params pms1 pms2 cu in
                 let cu = convert_return_clause mind mip l2r infos e1 e2 l1 l2 u1 u2 pms1 pms2 p1 p2 cu in
@@ -877,7 +882,7 @@ and convert_under_context l2r infos e1 e2 lft1 lft2 ctx (nas1, c1) (nas2, c2) cu
   let lft1 = el_liftn n lft1 in
   let lft2 = el_liftn n lft2 in
   let infos = push_relevances infos (Array.map (usubst_binder e1) nas1) in
-  ccnv CONV l2r infos lft1 lft2 (mk_clos e1 c1) (mk_clos e2 c2) cu
+  ccnv CONV l2r infos lft1 lft2 (mk_clos None e1 c1) (mk_clos None e2 c2) cu
 
 and convert_return_clause mib mip l2r infos e1 e2 l1 l2 u1 u2 pms1 pms2 p1 p2 cu =
   let ctx =
