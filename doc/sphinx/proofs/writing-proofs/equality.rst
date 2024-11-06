@@ -611,6 +611,35 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
 
       This command prints the definitional heights of all the constants in scope.
 
+   .. flag:: Lazy Profiling
+
+      Turning this flag on will print profiling information when the `lazy` strategy is used
+      (some internal uses may be omitted).
+
+      Additional output can be obtained with :opt:`Debug` `"lazy-trace"`.
+
+   .. flag:: Lazy Time Profiling
+
+      Turning this flag off will disable the time counters in :flag:`Lazy Profiling`.
+      This makes the output reproducible and may be faster.
+
+   .. flag:: Ccnv Profiling
+
+      Turning this flag on prints profiling information when kernel
+      conversion (based on the `lazy` reduction) is used.
+
+   .. opt:: Lazy Sample Rate
+
+      Set this option to use probabilistic sampling in :flag:`Lazy
+      Profiling` and :flag:`Ccnv Profiling`.
+
+      The default value `"1"` records every reduction step.
+      Lower values produce less precise and less reliable results but
+      have less profiling overhead.
+
+      Supported syntaxes are `"1"`, a percentage (eg `"1%"`), a fraction (eg "`5 / 1000`")
+      or a decimal (`"0.42"` or `".42"`).
+
    The call-by-value strategy is the one used in ML languages: the
    arguments of a function call are systematically weakly evaluated
    first. The lazy strategy is similar to how Haskell reduces terms.

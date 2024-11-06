@@ -1,0 +1,252 @@
+[lazy]
+  
+┌────────────────────────────────────────────────────────────────┐
+│                           individual                           │
+│                                                                │
+│         CTX           β          δ         ι         fix       │
+├────────────────────────────────────────────────────────────────┤
+│ main                 1     0%   1    0%   0     0%   0     0%  │
+│ f in main            1     0%   1    0%   0     0%   0     0%  │
+│ fib in f in main     1973  21%  1    0%   3569  32%  1973  21% │
+│ Nat.add in fib in f  7241  77%  986  97%  7241  65%  7241  77% │
+│   in main                                                      │
+│ g in main            1     0%   1    0%   0     0%   0     0%  │
+│ div2 in g in main    8     0%   1    0%   16    0%   8     0%  │
+│ fib in g in main     41    0%   1    0%   74    0%   41    0%  │
+│ Nat.add in fib in g  78    0%   20   1%   78    0%   78    0%  │
+│   in main                                                      │
+└────────────────────────────────────────────────────────────────┘
+  
+  
+┌──────────────────────────────────────────────────────────────────────┐
+│                              inherited                               │
+│                                                                      │
+│         CTX           β           δ            ι          fix        │
+├──────────────────────────────────────────────────────────────────────┤
+│ top                  9344  100%  1012  100%  10978  100%  9341  100% │
+│ main                 9344  100%  1012  100%  10978  100%  9341  100% │
+│ f in main            9215  98%   988   97%   10810  98%   9214  98%  │
+│ fib in f in main     9214  98%   987   97%   10810  98%   9214  98%  │
+│ Nat.add in fib in f  7241  77%   986   97%   7241   65%   7241  77%  │
+│   in main                                                            │
+│ g in main            128   1%    23    2%    168    1%    127   1%   │
+│ div2 in g in main    8     0%    1     0%    16     0%    8     0%   │
+│ fib in g in main     119   1%    21    2%    152    1%    119   1%   │
+│ Nat.add in fib in g  78    0%    20    1%    78     0%    78    0%   │
+│   in main                                                            │
+└──────────────────────────────────────────────────────────────────────┘
+     = (987, 21)
+     : nat * nat
+Debug: [lazy-trace] delta in DebugLazy.SimpleFib.main
+Debug: [lazy-trace] beta  in DebugLazy.SimpleFib.main
+Debug: [lazy-trace] delta in DebugLazy.SimpleFib.f, DebugLazy.SimpleFib.main
+Debug: [lazy-trace] beta  in DebugLazy.SimpleFib.f, DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  delta in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.f,
+    DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  fix   in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.f,
+    DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  beta  in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.f,
+    DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  match in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.f,
+    DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  match in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.f,
+    DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  delta in Corelib.Init.Nat.add, DebugLazy.SimpleFib.fib,
+    DebugLazy.SimpleFib.f, DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  fix   in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.f,
+    DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  beta  in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.f,
+    DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  match in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.f,
+    DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  match in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.f,
+    DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  fix   in Corelib.Init.Nat.add, DebugLazy.SimpleFib.fib,
+    DebugLazy.SimpleFib.f, DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  beta  in Corelib.Init.Nat.add, DebugLazy.SimpleFib.fib,
+    DebugLazy.SimpleFib.f, DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  match in Corelib.Init.Nat.add, DebugLazy.SimpleFib.fib,
+    DebugLazy.SimpleFib.f, DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  fix   in Corelib.Init.Nat.add, DebugLazy.SimpleFib.fib,
+    DebugLazy.SimpleFib.f, DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  beta  in Corelib.Init.Nat.add, DebugLazy.SimpleFib.fib,
+    DebugLazy.SimpleFib.f, DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  match in Corelib.Init.Nat.add, DebugLazy.SimpleFib.fib,
+    DebugLazy.SimpleFib.f, DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  fix   in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.f,
+    DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  beta  in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.f,
+    DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  match in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.f,
+    DebugLazy.SimpleFib.main
+Debug: [lazy-trace] delta in DebugLazy.SimpleFib.g, DebugLazy.SimpleFib.main
+Debug: [lazy-trace] beta  in DebugLazy.SimpleFib.g, DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  delta in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.g,
+    DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  delta in DebugLazy.SimpleFib.div2, DebugLazy.SimpleFib.g,
+    DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  fix   in DebugLazy.SimpleFib.div2, DebugLazy.SimpleFib.g,
+    DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  beta  in DebugLazy.SimpleFib.div2, DebugLazy.SimpleFib.g,
+    DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  match in DebugLazy.SimpleFib.div2, DebugLazy.SimpleFib.g,
+    DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  match in DebugLazy.SimpleFib.div2, DebugLazy.SimpleFib.g,
+    DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  fix   in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.g,
+    DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  beta  in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.g,
+    DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  match in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.g,
+    DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  fix   in DebugLazy.SimpleFib.div2, DebugLazy.SimpleFib.g,
+    DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  beta  in DebugLazy.SimpleFib.div2, DebugLazy.SimpleFib.g,
+    DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  match in DebugLazy.SimpleFib.div2, DebugLazy.SimpleFib.g,
+    DebugLazy.SimpleFib.main
+Debug:
+[lazy-trace]
+  match in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.g,
+    DebugLazy.SimpleFib.main
+[lazy]
+  
+┌───────────────────────────────────────────────────────┐
+│                      individual                       │
+│                                                       │
+│         CTX          β       δ       ι       fix      │
+├───────────────────────────────────────────────────────┤
+│ main                 1  9%   1  14%  0  0%   0    0%  │
+│ f in main            1  9%   1  14%  0  0%   0    0%  │
+│ fib in f in main     3  27%  1  14%  5  41%  3    37% │
+│ Nat.add in fib in f  2  18%  1  14%  2  16%  2    25% │
+│   in main                                             │
+│ g in main            1  9%   1  14%  0  0%   0    0%  │
+│ div2 in g in main    2  18%  1  14%  3  25%  2    25% │
+│ fib in g in main     1  9%   1  14%  2  16%  1    12% │
+└───────────────────────────────────────────────────────┘
+  
+  
+┌─────────────────────────────────────────────────────────────┐
+│                          inherited                          │
+│                                                             │
+│         CTX          β         δ        ι         fix       │
+├─────────────────────────────────────────────────────────────┤
+│ top                  11  100%  7  100%  12  100%  8    100% │
+│ main                 11  100%  7  100%  12  100%  8    100% │
+│ f in main            6   54%   3  42%   7   58%   5    62%  │
+│ fib in f in main     5   45%   2  28%   7   58%   5    62%  │
+│ Nat.add in fib in f  2   18%   1  14%   2   16%   2    25%  │
+│   in main                                                   │
+│ g in main            4   36%   3  42%   5   41%   3    37%  │
+│ div2 in g in main    2   18%   1  14%   3   25%   2    25%  │
+│ fib in g in main     1   9%    1  14%   2   16%   1    12%  │
+└─────────────────────────────────────────────────────────────┘
+     = (2, 1)
+     : nat * nat
+[lazy]
+  
+┌───────────────────────────────────────────────────────────────────┐
+│                            individual                             │
+│                                                                   │
+│           CTX             β         δ         ι         fix       │
+├───────────────────────────────────────────────────────────────────┤
+│ top                      0     0%   0   0%   1     0%   0     0%  │
+│ eat                      1013  24%  2   8%   1013  24%  1013  33% │
+│ myhead                   1     0%   1   4%   0     0%   0     0%  │
+│ f in myhead              1000  24%  1   4%   1000  24%  0     0%  │
+│ fold_right in myhead     1001  24%  1   4%   1001  24%  1001  32% │
+│ head in myhead           1     0%   1   4%   1     0%   0     0%  │
+│ mylast                   1     0%   1   4%   0     0%   0     0%  │
+│ f in mylast              10    0%   1   4%   10    0%   0     0%  │
+│ fold_right in mylast     11    0%   1   4%   11    0%   11    0%  │
+│ head in mylast           1     0%   1   4%   1     0%   0     0%  │
+│ rev in mylast            11    0%   1   4%   11    0%   11    0%  │
+│ append in rev in mylast  10    0%   10  43%  10    0%   10    0%  │
+│ seq                      1012  24%  2   8%   1012  24%  1012  33% │
+└───────────────────────────────────────────────────────────────────┘
+  
+  
+┌───────────────────────────────────────────────────────────────────────┐
+│                               inherited                               │
+│                                                                       │
+│           CTX             β          δ          ι          fix        │
+├───────────────────────────────────────────────────────────────────────┤
+│ top                      4072  100%  23  100%  4071  100%  3058  100% │
+│ eat                      1013  24%   2   8%    1013  24%   1013  33%  │
+│ myhead                   2003  49%   4   17%   2002  49%   1001  32%  │
+│ f in myhead              1000  24%   1   4%    1000  24%   0     0%   │
+│ fold_right in myhead     1001  24%   1   4%    1001  24%   1001  32%  │
+│ head in myhead           1     0%    1   4%    1     0%    0     0%   │
+│ mylast                   44    1%    15  65%   43    1%    32    1%   │
+│ f in mylast              10    0%    1   4%    10    0%    0     0%   │
+│ fold_right in mylast     11    0%    1   4%    11    0%    11    0%   │
+│ head in mylast           1     0%    1   4%    1     0%    0     0%   │
+│ rev in mylast            21    0%    11  47%   21    0%    21    0%   │
+│ append in rev in mylast  10    0%    10  43%   10    0%    10    0%   │
+│ seq                      1012  24%   2   8%    1012  24%   1012  33%  │
+└───────────────────────────────────────────────────────────────────────┘
+     = tt
+     : unit
