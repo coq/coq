@@ -160,10 +160,20 @@ let init_profile ~file =
       NewProfile.finish ();
       close_out ch)
 
+let init_profile_lazy () =
+  CClosure.RecordedSteps.globally_record_steps ();
+  at_exit (fun () ->
+      let steps = CClosure.RecordedSteps.get_global_steps () in
+      if CList.is_empty steps then ()
+      else
+        let pp = Reductionops.format_steps steps in
+        Feedback.msg_info pp)
+
 let init_runtime ~usage opts =
   let open Coqargs in
   Vernacextend.static_linking_done ();
   Option.iter (fun file -> init_profile ~file) opts.config.profile;
+  if opts.config.profile_lazy then init_profile_lazy ();
   Lib.init ();
   init_coqlib opts;
   if opts.post.memory_stat then at_exit print_memory_stat;

@@ -30,6 +30,8 @@ type usubs = fconstr subs UVars.puniverses
 
 type table_key = Constant.t UVars.puniverses tableKey
 
+type current_context = GlobRef.t list option
+
 (** Relevances (eg in binder_annot or case_info) have NOT been substituted
     when there is a usubs field *)
 type fterm =
@@ -64,10 +66,10 @@ type 'a next_native_args = (CPrimitives.arg_kind * 'a) list
 
 type stack_member =
   | Zapp of fconstr array
-  | ZcaseT of case_info * UVars.Instance.t * constr array * case_return * case_branch array * usubs
-  | Zproj of Projection.Repr.t * Sorts.relevance
+  | ZcaseT of current_context * case_info * UVars.Instance.t * constr array * case_return * case_branch array * usubs
+  | Zproj of current_context * Projection.Repr.t * Sorts.relevance
   | Zfix of fconstr * stack
-  | Zprimitive of CPrimitives.t * pconstant * fconstr list * fconstr next_native_args
+  | Zprimitive of current_context * CPrimitives.t * pconstant * fconstr list * fconstr next_native_args
        (* operator, constr def, arguments already seen (in rev order), next arguments *)
   | Zshift of int
   | Zupdate of fconstr
@@ -105,16 +107,15 @@ val usubst_binder : _ UVars.puniverses -> 'a binder_annot -> 'a binder_annot
 
 val inject : constr -> fconstr
 
-val mk_clos      : usubs -> constr -> fconstr
-val mk_clos_vect : usubs -> constr array -> fconstr array
+val mk_clos      : current_context -> usubs -> constr -> fconstr
+val mk_clos_vect : current_context -> usubs -> constr array -> fconstr array
 
 val zip : fconstr -> stack -> fconstr
 
 val fterm_of : fconstr -> fterm
 val term_of_fconstr : fconstr -> constr
 val term_of_process : fconstr -> stack -> constr
-val destFLambda :
-  (usubs -> constr -> fconstr) -> fconstr -> Name.t binder_annot * fconstr * fconstr
+val destFLambda : fconstr -> Name.t binder_annot * fconstr * fconstr
 
 (** Global and local constant cache *)
 type clos_infos
@@ -138,7 +139,34 @@ val create_clos_infos :
   ?univs:UGraph.t -> ?evars:evar_handler -> reds -> env -> clos_infos
 val oracle_of_infos : clos_infos -> Conv_oracle.oracle
 
-val create_tab : unit -> clos_tab
+type profile_mode = StepsOnly | StepsAndTime
+
+val create_tab : ?profiling:profile_mode -> unit -> clos_tab
+
+module RecordedSteps : sig
+
+  val sample_rate : (int * int) ref
+
+  type t = {
+    betas : int;
+    deltas : int;
+    matches : int;
+    fixpoints : int;
+    seconds : float;
+  }
+
+  val empty_steps : t
+
+  val add_steps : t -> t -> t
+
+  val has_recorded_steps : clos_tab -> bool
+
+  val get_recorded_steps : clos_tab -> (current_context * t) list
+
+  val globally_record_steps : unit -> unit
+
+  val get_global_steps : unit -> (current_context * t) list
+end
 
 val info_env : clos_infos -> env
 val info_flags: clos_infos -> reds
@@ -192,13 +220,17 @@ val eta_expand_ind_stack : env -> pinductive -> fconstr ->
     enough arguments, return [None]. Otherwise return [Some] with
     [ZPrimitive] added to the stack. Produces a [FIrrelevant] when the
     reference is irrelevant and the infos was created with
-    [create_conv_infos]. *)
+    [create_conv_infos].
+    The [fconstr] must be a FFlex.
+*)
 val unfold_ref_with_args
   : clos_infos
   -> clos_tab
-  -> table_key
+  -> fconstr
   -> stack
   -> (fconstr * stack) option
+
+val record_delta : clos_tab -> fconstr -> unit
 
 val get_ref_mask : clos_infos -> clos_tab -> table_key -> bool array
 
