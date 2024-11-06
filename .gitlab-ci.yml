@@ -79,7 +79,7 @@ before_script:
       - config/coq_config.ml
       - config/coq_byte_config.ml
       - config/dune.c_flags
-    expire_in: 1 month
+    expire_in: 1 week
   script:
     - PKGS=coq-core,coq-stdlib,coqide-server,coq
     - if [ "$COQIDE" != "no" ]; then PKGS=${PKGS},coqide; fi
@@ -119,7 +119,7 @@ before_script:
       - _build.tar.bz2
       - theories/dune
       - user-contrib/Ltac2/dune
-    expire_in: 1 month
+    expire_in: 1 week
 
 .doc-template:
   stage: build-1
@@ -157,8 +157,7 @@ before_script:
     when: on_failure
     paths:
       - test-suite/logs
-    # Gitlab doesn't support yet "expire_in: never" so we use the instance default
-    # expire_in: never
+    expire_in: 1 week
 
 # set "needs" when using
 .validate-template:
@@ -178,7 +177,7 @@ before_script:
     when: always
     paths:
       - coqchk.log
-    expire_in: 2 months
+    expire_in: 1 week
 
 # This template defaults to "needs: build:base"
 # Remember to include it as a transitive dependency if you want additional "needs:"
@@ -259,8 +258,7 @@ before_script:
     when: on_failure
     paths:
       - nix-build-coq.drv-0/*/test-suite/logs
-    # Gitlab doesn't support yet "expire_in: never" so we use the instance default
-    # expire_in: never
+    expire_in: 1 week
 
 ##############################################################################
 ########################## End of templates ##################################
@@ -516,8 +514,7 @@ test-suite:base:dev:
     when: on_failure
     paths:
       - _build/default/test-suite/logs
-    # Gitlab doesn't support yet "expire_in: never" so we use the instance default
-    # expire_in: never
+    expire_in: 1 week
 
 .test-suite:ocaml+beta+dune-template:
   stage: build-1 # even though it has no deps we put it with the other test suite jobs
@@ -540,7 +537,7 @@ test-suite:base:dev:
     paths:
       - _build/log
       - _build/default/test-suite/logs
-    expire_in: 2 week
+    expire_in: 1 week
   allow_failure: true
 
 test-suite:base+async:
