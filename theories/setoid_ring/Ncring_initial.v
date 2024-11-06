@@ -154,10 +154,10 @@ Ltac rsimpl := simpl.
  Qed.
 
  Lemma gen_Zeqb_ok : forall x y,
-   Zeq_bool x y = true -> [x] == [y].
+   Z.eqb x y = true -> [x] == [y].
  Proof.
   intros x y H7.
-  assert (H10 := Zeq_bool_eq x y H7);unfold IDphi in H10.
+  assert (H10 := proj1 (Z.eqb_eq x y) H7);unfold IDphi in H10.
   rewrite H10;reflexivity.
  Qed.
 

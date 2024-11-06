@@ -1813,12 +1813,11 @@ Qed.
 
 Lemma gen_phiZ_complete x y :
   gen_phiZ rO rI radd rmul ropp x == gen_phiZ rO rI radd rmul ropp y ->
-  Zeq_bool x y = true.
+  Z.eqb x y = true.
 Proof.
 intros.
  replace y with x.
-- unfold Zeq_bool.
-  rewrite Z.compare_refl; trivial.
+- rewrite Z.eqb_compare, Z.compare_refl; trivial.
 - apply gen_phiZ_inj; trivial.
 Qed.
 
