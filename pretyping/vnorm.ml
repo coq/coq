@@ -355,7 +355,7 @@ and nf_telescope env sigma len f typ =
       let arg = f i in
       let dom = term_of_fconstr dom in
       let arg = nf_val env sigma arg dom in
-      let () = t := mk_clos (CClosure.usubs_cons (inject arg) e) codom in
+      let () = t := mk_clos None (CClosure.usubs_cons (inject arg) e) codom in
       arg
     | _ -> assert false
   in

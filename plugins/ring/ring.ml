@@ -73,7 +73,7 @@ let rec mk_clos_but env sigma f_map n t =
   | None -> mk_atom t
 
 and tag_arg env sigma f_map n tag c = match tag with
-| Eval -> mk_clos (Esubst.subs_id n, UVars.Instance.empty) (EConstr.Unsafe.to_constr c)
+| Eval -> mk_clos None (Esubst.subs_id n, UVars.Instance.empty) (EConstr.Unsafe.to_constr c)
 | Prot -> mk_atom c
 | Rec -> mk_clos_but env sigma f_map n c
 
