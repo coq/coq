@@ -1496,7 +1496,6 @@ simple_tactic: [
 | "eauto" OPT nat_or_var OPT auto_using OPT hintbases
 | "debug" "eauto" OPT nat_or_var OPT auto_using OPT hintbases
 | "info_eauto" OPT nat_or_var OPT auto_using OPT hintbases
-| "dfs" "eauto" OPT nat_or_var OPT auto_using OPT hintbases
 | "autounfold" OPT hintbases OPT simple_occurrences
 | "autounfold_one" OPT hintbases OPT ( "in" ident )
 | "unify" one_term one_term OPT ( "with" ident )
