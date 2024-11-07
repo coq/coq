@@ -1836,17 +1836,29 @@ end
 
 type 'a depth = 'a RedPattern.patstate
 
+let dbg = CDebug.create ~name:"lazy" ()
+
+let dbg flag ctx = dbg Pp.(fun () ->
+    str flag ++ spc() ++
+    match ctx with
+    | None -> str "top"
+    | Some c -> GlobRef.print c)
+
 (* Computes a weak head normal form from the result of knh. *)
 let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
   fun info tab ~pat_state m stk ->
   match m.term with
   | FLambda(n,tys,f,e) when red_set info.i_flags fBETA ->
       (match get_args m.ctx n tys f e stk with
-          Inl e', s -> knit info tab ~pat_state e' m.ctx f s
+          Inl e', s ->
+          dbg "beta" m.ctx;
+          knit info tab ~pat_state e' m.ctx f s
         | Inr lam, s -> knr_ret info tab ~pat_state (lam,s))
   | FFlex fl when red_set info.i_flags fDELTA ->
       (match Table.lookup info tab fl with
-        | Def (v, _) -> kni info tab ~pat_state v stk
+        | Def (v, _) ->
+          dbg "delta" v.ctx;
+          kni info tab ~pat_state v stk
         | Primitive op ->
           if check_native_args op stk then
             let c = match fl with ConstKey c -> c | RelKey _ | VarKey _ -> assert false in
@@ -1871,11 +1883,13 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
         | (depth, args, ZcaseT(case_ctx,ci,_,pms,_,br,e)::s) when use_match ->
             assert (ci.ci_npar>=0);
             (* instance on the case and instance on the constructor are compatible by typing *)
+            dbg "match" case_ctx;
             let (br, e) = get_branch info depth ci pms c br e args in
             knit info tab ~pat_state e case_ctx br s
         | (_, cargs, Zfix(fx,par)::s) when use_fix ->
             let rarg = fapp_stack(m,cargs) in
             let stk' = par @ append_stack [|rarg|] s in
+            dbg "fix" fx.ctx;
             let (fxe,fxbd) = contract_fix_vect fx.ctx fx.term in
             knit info tab ~pat_state fxe fx.ctx fxbd stk'
         | (depth, args, Zproj (_,p,_)::s) when use_match ->
