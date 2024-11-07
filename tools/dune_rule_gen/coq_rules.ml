@@ -83,6 +83,20 @@ let path_of_dep ~vo_ext dep =
     | Dep.Ml (dep, _ext)-> dep ^ ".cmxs"
     | Dep.Other dep -> dep
   in
+  (* when called by dune, the cmxs and META files are in
+     ../install/... relative to cwd (= _build/default) but the
+     generated dune file will be moved to ../theories so adjusting the
+     path to be relative to the .v won't work
+
+     (it would be relative to the .v in
+     project_root/_build/default/theories but dune would read it as
+     relative to the .v in project_root/theories, the number of .. to
+     insert to get to project_root doesn't match) *)
+  let file = if CString.is_prefix ".." file then
+      (Filename.concat "%{project_root}" "_build")
+      ^ String.sub file 2 (String.length file - 2)
+    else file
+  in
   Path.make file
 
 (* dep to cmi, this is hacky, cleanup. A better way is to keep a
