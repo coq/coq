@@ -8,10 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-
-let debug_dependent_congruence = CDebug.create ~name:"dependent_congruence" ()
-
-
 let print env sigma t = Printer.pr_econstr_env env sigma t
 
 (*get the ith (1 based) argument in a series of prods*)
@@ -25,16 +21,6 @@ let is_field_i_dependent env sigma cnstr i : bool =
   let constructor_type = Inductiveops.e_type_of_constructor env sigma cnstr in
   let ind_n_params = Inductiveops.inductive_nparams env (fst (fst cnstr)) in
   let (field_rel_context,(_,field_type),_) = get_ith_arg sigma (i + ind_n_params) constructor_type in
-  debug_dependent_congruence (fun () -> Pp.(
-    str "++++++++++++++++++++++++" ++ str "\n" ++
-    str "+ IS FIELD I DEPENDENT +" ++ str "\n" ++
-    str "++++++++++++++++++++++++" ++ str "\n" ++
-    str "cnstr:\n" ++ Printer.pr_constructor env (fst cnstr) ++ str "\n" ++
-    str "i:\n" ++ int i ++ str "\n" ++
-    str "constructor_type:\n" ++ print env sigma constructor_type ++ str "\n" ++
-    str "ind_n_params:\n" ++ int ind_n_params ++ str "\n" ++
-    str "field_type:\n" ++ print (List.fold_left (fun env annot -> Termops.push_rel_assum annot env) env field_rel_context) sigma field_type ++ str "\n"
-    ));
   let rec is_field_i_dependent_rec i =
   (
     if i <= 0
@@ -63,7 +49,7 @@ type type_extraction =
 (* The rel term that is getting extracted, the rel term from wich its getting extracted, The constructor from which to extract, Type of the Cosntructor that is getting extracted, index (1 based) to extract from, further extraction *)
 | Extraction of (EConstr.t * EConstr.t * (Names.constructor * EConstr.EInstance.t) * EConstr.t * int * type_extraction)
 
-let pr_type_extraction env sigma ?(level="") (type_extraction:type_extraction) =
+let _pr_type_extraction env sigma ?(level="") (type_extraction:type_extraction) =
   let rec pr_type_extraction_rec type_extraction level =
     match type_extraction with
     | Id e -> Pp.(str level ++ str "Id: " ++ print env sigma e)
@@ -89,7 +75,7 @@ type type_composition =
 (* (env f type to compose, composition for f), array of (env arg type to compose, composition for arg)*)
 | Composition of (EConstr.t * type_composition) * (EConstr.t * type_composition) array
 
-let pr_type_composition env sigma ?(level="") type_composition  =
+let _pr_type_composition env sigma ?(level="") type_composition  =
   let rec pr_type_composition_rec type_composition level =
     match type_composition with
     | FromEnv e -> Pp.(str "From Env: " ++ print env sigma e)
@@ -98,14 +84,14 @@ let pr_type_composition env sigma ?(level="") type_composition  =
         str level ++ str "compose: " ++ print env sigma type_to_compose ++ str "\n" ++
         str level ++ str "from param: " ++ print env sigma type_to_compose_from ++ str "\n" ++
         str level ++ str "at: " ++ int index ++ str "\n" ++
-        str level ++ str "by: " ++ pr_type_extraction env sigma extraction ~level:(level ^"\t") ++ str "\n"
+        str level ++ str "by: " ++ _pr_type_extraction env sigma extraction ~level:(level ^"\t") ++ str "\n"
       )
     | FromIndex (type_to_compose, type_to_compose_from, index, extraction)->
       Pp.(
         str level ++ str "compose: " ++ print env sigma type_to_compose ++ str "\n" ++
         str level ++ str "from index: " ++ print env sigma type_to_compose_from ++ str "\n" ++
         str level ++ str "at: " ++ int index ++ str "\n" ++
-        str level ++ str "by:\n" ++ pr_type_extraction env sigma extraction ~level:(level ^ "\t") ++ str "\n"
+        str level ++ str "by:\n" ++ _pr_type_extraction env sigma extraction ~level:(level ^ "\t") ++ str "\n"
       )
     | Composition ((f,f_composition), args_compositions) ->
       Pp.(
@@ -129,33 +115,10 @@ let find_type_composition
   let env_ind_n_params = Array.length env_ind_params in
   let rel_type_of_constructor = Inductiveops.type_of_constructor env cnstr in
   let (rel_field_context, (rel_field_annot, rel_field_type), rel_field_rest) = get_ith_arg sigma (argindex+env_ind_n_params) rel_type_of_constructor in
-  let rel_field_rest_env = (List.fold_left (fun env annot -> Termops.push_rel_assum annot env) env (((rel_field_annot, rel_field_type)::rel_field_context))) in
   let (rel_target_context, rel_target_type) = EConstr.decompose_prod sigma rel_field_rest in
   let rel_field_type_lifted = EConstr.Vars.lift (List.length rel_target_context + 1) rel_field_type in
   let (_,rel_args) = EConstr.decompose_app sigma rel_target_type in
   let (rel_ind_params, rel_ind_args) = CArray.chop env_ind_n_params rel_args in
-  let rel_target_env = (List.fold_left (fun env annot -> Termops.push_rel_assum annot env) env (rel_target_context @ ((rel_field_annot, rel_field_type)::rel_field_context))) in
-  debug_dependent_congruence  ( fun () -> Pp.(
-    str "+++++++++++++++++++++++++" ++ str "\n" ++
-    str "+ FIND TYPE COMPOSITION +" ++ str "\n" ++
-    str "+++++++++++++++++++++++++" ++ str "\n" ++
-    str "cnstr:\n\t" ++ Printer.pr_constructor env (fst cnstr) ++ str "\n" ++
-    str "argindex:\n\t" ++ int argindex ++ str "\n" ++
-    str "env_field_type:\n\t" ++ print env sigma env_field_type ++ str "\n" ++
-    str "ind:\n\t" ++ Printer.pr_inductive env (fst ind) ++ str "\n" ++
-    str "ind_params:\n\t" ++ seq (List.map (fun e -> print env sigma e ++ str ", ") (Array.to_list env_ind_params)) ++ str "\n" ++
-    str "ind_args:\n\t" ++ seq (List.map (fun e -> print env sigma e ++ str ", ") (Array.to_list env_ind_args)) ++ str "\n" ++
-    str "rel_type_of_constructor:\n\t" ++ print env sigma rel_type_of_constructor ++ str "\n" ++
-    str "rel_field_type:\n\t" ++ print rel_target_env sigma rel_field_type_lifted ++ str "\n" ++
-    str "rel_field_rest:\n\t" ++ print rel_field_rest_env sigma rel_field_rest ++ str "\n" ++
-    str "rel_target_type:\n\t" ++ print rel_target_env sigma rel_target_type ++ str "\n" ++
-    str "rel_ind_params:\n\t" ++ seq (List.map (fun e -> print rel_target_env sigma e ++ str ", ") (Array.to_list rel_ind_params)) ++ str "\n" ++
-    str "rel_args:\n\t" ++ seq (List.map (fun e -> print rel_target_env sigma e ++ str ", ") (Array.to_list rel_args)) ++ str "\n" ++
-    str "rel_ind_args:\n\t" ++ seq (List.map (fun e -> print rel_target_env sigma e ++ str ", ") (Array.to_list rel_ind_args)) ++ str "\n" ++
-    str "env_ind_params:\n\t" ++ seq (List.map (fun e -> print env sigma e ++ str ", ") (Array.to_list env_ind_params)) ++ str "\n" ++
-    str "env_ind_args:\n\t" ++ seq (List.map (fun e -> print env sigma e ++ str ", ") (Array.to_list env_ind_args)) ++ str "\n"
-  ));
-
   let rec find_type_composition_rec env sigma (rel_term_to_compose:EConstr.t) (env_term_to_compose:EConstr.t)=
     let rel_term_to_compose_kind = EConstr.kind sigma rel_term_to_compose in
     match rel_term_to_compose_kind with
@@ -163,8 +126,6 @@ let find_type_composition
     | _ ->(
       match find_arg env sigma rel_term_to_compose rel_ind_params env_ind_params with
       | Some (i, rel_term_to_compose_from, extraction) ->
-        debug_dependent_congruence (fun () -> Pp.(str"FOUND " ++ int i));
-        debug_dependent_congruence (fun () -> Pp.(str"FOUND " ++ print env sigma env_ind_params.(i-1)));
         (sigma, Some (FromParameter (env_term_to_compose, env_ind_params.(i-1), i, extraction)))
       | None -> (
         match find_arg env sigma rel_term_to_compose rel_ind_args env_ind_args with
@@ -174,15 +135,6 @@ let find_type_composition
           | App (rel_f,rel_args) ->(
             let (env_f,env_args) = EConstr.decompose_app sigma env_term_to_compose in
             let (sigma, f_composition) = find_type_composition_rec env sigma rel_f env_f in
-            debug_dependent_congruence (fun () -> Pp.(
-              str "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"++
-              str "env_term_to_compose: " ++ print env sigma env_term_to_compose ++ str "\n" ++
-              str "rel_term_to_compose: " ++ print env sigma rel_term_to_compose ++ str "\n" ++
-              str "rel_f: " ++ print env sigma rel_f ++ str "\n" ++
-              str "env_f: " ++ print env sigma env_f ++ str "\n" ++
-              str "rel_args: " ++ seq (List.map ( fun e -> print env sigma e) (Array.to_list rel_args) ) ++ str "\n" ++
-              str "env_args: " ++ seq (List.map ( fun e -> print env sigma e) (Array.to_list env_args) ) ++ str "\n"
-            ));
             match f_composition with
             | Some f_composition ->(
               if Array.length env_args != Array.length rel_args then (sigma, None) else
@@ -192,10 +144,6 @@ let find_type_composition
                     let (sigma, args_compositions) =
                       CArray.fold_left_map_i
                         (fun i sigma rel_arg ->
-                          debug_dependent_congruence (fun () -> Pp.(str "!!!try!!!" ++ int i));
-                          debug_dependent_congruence (fun () -> Pp.(str "!!!with!!!" ++ print env sigma rel_arg));
-                          debug_dependent_congruence (fun () -> Pp.(str "!!!with!!!" ++ print env sigma env_args.(i)));
-
                           let (sigma, arg_composition) = find_type_composition_rec env sigma rel_arg env_args.(i) in
                           match arg_composition with
                           | Some arg_composition -> (sigma, (env_args.(i), arg_composition))
@@ -220,14 +168,6 @@ let find_type_composition
       )
     )
   and find_arg env sigma (term_to_extract:EConstr.t) (terms_to_extract_from:EConstr.t array) (env_types_of_fields:EConstr.t array): (int * EConstr.t * type_extraction) option =
-    debug_dependent_congruence (fun () -> Pp.(
-      str "++++++++++++" ++ str "\n" ++
-      str "+ FIND ARG +" ++ str "\n" ++
-      str "++++++++++++" ++ str "\n" ++
-      str "term_to_extract:\n\t" ++ print env sigma term_to_extract ++ str "\n" ++
-      str "terms_to_extract_from:\n\t" ++ seq (List.map (fun e -> print env sigma e ++ str ", ") (Array.to_list terms_to_extract_from)) ++ str "\n" ++
-      str "env_types_of_fields:\n\t" ++ seq (List.map (fun e -> print env sigma e ++ str ", ") (Array.to_list env_types_of_fields)) ++ str "\n"
-    ));
     let rec seq_find_map f xs =
       match xs() with
       | Seq.Nil -> None
@@ -238,21 +178,12 @@ let find_type_composition
     in
     seq_find_map
       (fun (i, term_to_extract_from) ->
-        debug_dependent_congruence (fun () -> Pp.(str "try i: " ++ int i));
         Option.map
           (fun r -> (i+1, term_to_extract_from, r))
           (find_extraction env sigma term_to_extract term_to_extract_from env_types_of_fields.(i))
       )
       (Array.to_seqi terms_to_extract_from)
   and find_extraction env sigma (term_to_extract:EConstr.t) (term_to_extract_from:EConstr.t) (type_of_term_to_extract_from:EConstr.t): type_extraction option =
-    debug_dependent_congruence (fun () -> Pp.(
-      str "+++++++++++++++++++" ++ str "\n" ++
-      str "+ FIND EXTRACTION +" ++ str "\n" ++
-      str "+++++++++++++++++++" ++ str "\n" ++
-      str "term_to_extract:\n\t" ++ print env sigma term_to_extract ++ str "\n" ++
-      str "term_to_extract_from:\n\t" ++ print env sigma term_to_extract_from ++ str "\n" ++
-      str "type_of_term_to_extract_from:\n\t" ++ print env sigma type_of_term_to_extract_from ++ str "\n"
-    ));
     if EConstr.eq_constr_nounivs sigma term_to_extract term_to_extract_from
     then(
       Some (Id term_to_extract)
@@ -282,26 +213,14 @@ let projectability_test
   : (Evd.evar_map * projection_type) =
   let dependent = is_field_i_dependent env sigma cnstr argindex in
   if dependent then (
-    debug_dependent_congruence (fun () -> Pp.(str "DEPENDENT"));
     let (sigma, composition) = find_type_composition env sigma cnstr argindex field_type ind ind_params ind_args in
     match composition with
     | Some composition -> (sigma, Dependent composition)
     | None -> (sigma, NotProjectable)
   )
-  else (
-    debug_dependent_congruence (fun () -> Pp.(str "SIMPLE"));
-    (sigma, Simple)
-  )
+  else (sigma, Simple)
 
 let rec build_extraction env sigma default rel_term_to_extract_from env_term_to_extract_from extraction =
-  debug_dependent_congruence (fun () -> Pp.(
-    str "++++++++++++++++++++" ++ str "\n" ++
-    str "+ BUILD EXTRACTION +" ++ str "\n" ++
-    str "++++++++++++++++++++" ++ str "\n" ++
-    str "extraction:\n\t" ++ pr_type_extraction env sigma extraction ++ str "\n" ++
-    str "rel_term_to_extract_from:\n\t" ++ print env sigma rel_term_to_extract_from ++ str "\n" ++
-    str "env_term_to_extract_from:\n\t" ++ print env sigma env_term_to_extract_from ++ str "\n"
-  ));
   match extraction with
   (* The term that is getting extracted *)
   | Id term_getting_extracted -> rel_term_to_extract_from
@@ -316,16 +235,6 @@ let rec build_extraction env sigma default rel_term_to_extract_from env_term_to_
 
 
 let rec build_type_composition env sigma type_composition ind_params n_ind_params ind_args n_ind_args =
-  debug_dependent_congruence (fun () -> Pp.(
-    str "+++++++++++++++++++++" ++ str "\n" ++
-    str "+ BUILD RETURN TYPE +" ++ str "\n" ++
-    str "+++++++++++++++++++++" ++ str "\n" ++
-    str "type_composition:\n\t" ++ pr_type_composition env sigma type_composition ++ str "\n" ++
-    str "ind_params:\n\t" ++ seq (List.map (fun e -> print env sigma e ++ str ", ") (Array.to_list ind_params)) ++ str "\n" ++
-    str "n_ind_params:\n\t" ++ int n_ind_params ++ str "\n" ++
-    str "ind_args:\n\t" ++ seq (List.map (fun e -> print env sigma e ++ str ", ") (Array.to_list ind_args)) ++ str "\n" ++
-    str "n_ind_args:\n\t" ++ int n_ind_args ++ str "\n"
-  ));
   match type_composition with
   (* type to compose *)
   | FromEnv env_type_to_compose -> env_type_to_compose
@@ -390,24 +299,15 @@ let make_selector_match_indices env sigma ~pos ~special c (ind_fam, ind_args) re
   Inductiveops.make_case_or_project env sigma indt ci (p, rci) c (Array.of_list brl)
 
 let build_dependent_projection env sigma cnstr default special argty type_composition ((ind, ind_params) as ind_fam) ind_args: (Evd.evar_map * EConstr.t) =
-  debug_dependent_congruence (fun () -> Pp.(
-    str "++++++++++++++++++++++++++++++" ++ str "\n" ++
-    str "+ BUILD DEPENDENT PROJECTION +" ++ str "\n" ++
-    str "++++++++++++++++++++++++++++++" ++ str "\n" ++
-    str "type_composition:\n\t" ++ pr_type_composition env sigma type_composition ++ str "\n"
-  ));
   let n_ind_params = List.length ind_params in
   let n_ind_args = List.length ind_args in
   let composition_type_template = build_type_composition env sigma type_composition (Array.of_list ind_params) n_ind_params (Array.of_list ind_args) n_ind_args in
-  debug_dependent_congruence (fun () -> Pp.(str "return_type_template: " ++ print env sigma composition_type_template));
   let return_type = EConstr.Vars.lift 1 (
     EConstr.mkProd (Context.make_annot Names.Name.Anonymous EConstr.ERelevance.relevant, composition_type_template, EConstr.Vars.lift 1 composition_type_template)
   ) in
-  debug_dependent_congruence (fun () -> Pp.(str "return_type: " ++ print env sigma return_type));
   let e_match = make_selector_match_indices  env sigma ~pos:(snd (fst cnstr)) ~special (EConstr.mkRel 1) (Inductiveops.make_ind_family ind_fam, ind_args) return_type composition_type_template in
   let match_default = EConstr.mkApp (e_match, [|default|]) in
   let proj = EConstr.mkLambda (make_annot_numbered "e" None EConstr.ERelevance.relevant, argty, match_default) in
-  debug_dependent_congruence (fun () -> Pp.(str "proj:\n" ++ print env sigma proj));
   (sigma, proj)
 
 let build_projection
@@ -429,19 +329,6 @@ let build_projection
         Pp.(str "Cannot discriminate on inductive constructors with \
                  dependent types.") in
   let (ind, ind_params) = Inductiveops.dest_ind_family ind_family in
-  debug_dependent_congruence (fun () -> Pp.(
-    str "++++++++++++++++++++" ++ str "\n" ++
-    str "+ BUILD PROJECTION +" ++ str "\n" ++
-    str "++++++++++++++++++++" ++ str "\n" ++
-    str "cnstr:\n\t" ++ Printer.pr_constructor env (fst cnstr) ++ str "\n" ++
-    str "argindex:\n\t" ++ int argindex ++ str "\n" ++
-    str "field_type:\n\t" ++ print env sigma field_type ++ str "\n" ++
-    str "default:\n\t" ++ print env sigma default ++ str "\n" ++
-    str "special:\n\t" ++ print Environ.empty_env sigma special ++ str "\n" ++
-    str "argty:\n\t" ++ print env sigma argty ++ str "\n" ++
-    str "ind_params:\n\t" ++ seq (List.map (fun e -> print env sigma e ++ str ", ") ind_params) ++ str "\n" ++
-    str "ind_args:\n\t" ++ seq (List.map (fun e -> print env sigma e ++ str ", ") ind_args) ++ str "\n"
-  ));
   let (cnstr : Names.constructor * EConstr.EInstance.t) =
     (fst cnstr, EConstr.EInstance.make (snd cnstr))
   in
