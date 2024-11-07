@@ -92,7 +92,7 @@ let strip_params env sigma c =
   | _ -> c
 
 let meta_handler sigma =
-  let meta_value mv = match Evd.Meta.meta_opt_fvalue sigma mv with
+  let meta_value mv = match Unification.Meta.meta_opt_fvalue sigma mv with
   | None -> None
   | Some (b, _) -> Some b.rebus
   in
@@ -117,7 +117,7 @@ let get_template env sigma c =
 
 let get_type_of_with_metas ~metas env sigma c =
   let metas n =
-    try Some (Evd.Meta.meta_ftype metas n).Evd.rebus
+    try Some (Unification.Meta.meta_ftype metas n).Unification.rebus
     with Not_found -> None
   in
   Retyping.get_type_of ~metas env sigma c
@@ -142,7 +142,7 @@ let clenv_refresh env sigma ctx clenv =
     let sigma = Evd.merge_sort_context_set Evd.univ_flexible sigma ctx in
     (* Only metas are mentioning the old universes. *)
     let map_fl cfl = { cfl with rebus = emap cfl.rebus } in
-    mk_clausenv env sigma (Evd.Meta.map_metas emap clenv.metam) clenv.metas
+    mk_clausenv env sigma (Unification.Meta.map_metas emap clenv.metam) clenv.metas
       (emap clenv.templval)
       clenv.metaset
       (map_fl clenv.templtyp)
@@ -172,7 +172,7 @@ let clenv_meta_list c = c.metam
 
 let clenv_meta_type ~metas env sigma mv =
   let ty =
-    try Evd.Meta.meta_ftype metas mv
+    try Unification.Meta.meta_ftype metas mv
     with Not_found -> anomaly Pp.(str "unknown meta ?" ++ str (Nameops.string_of_meta mv) ++ str ".") in
   meta_instance ~metas env sigma ty
 let clenv_value clenv = meta_instance ~metas:clenv.metam clenv.env clenv.evd { rebus = clenv.templval; freemetas = clenv.metaset }
@@ -399,7 +399,7 @@ let clenv_dependent_gen hyps_only ?(iter=true) ~metas env sigma concl =
 
 let clenv_missing ce =
   let miss = clenv_dependent_gen ~metas:ce.metam true ce.env ce.evd (clenv_type ce) in
-  let miss = List.map (Evd.Meta.meta_name ce.metam) miss in
+  let miss = List.map (Unification.Meta.meta_name ce.metam) miss in
   (miss, List.count (fun arg -> not arg.marg_dep) ce.metas)
 
 (******************************************************************)
@@ -439,7 +439,7 @@ let adjust_meta_source ~metas evd mv = function
           | None -> None)
         | _ -> None
       else None in
-    let id = Option.default id (List.find_map f (Evd.Metamap.bindings metas)) in
+    let id = Option.default id (List.find_map f (Unification.Metamap.bindings metas)) in
     loc,Evar_kinds.VarInstance id
   | src -> src
 
@@ -590,7 +590,7 @@ let meta_with_name metas ({CAst.v=id} as lid) =
     if Name.equal na na' then if def then (n::l1,l2) else (n::l1,n::l2)
     else l
   in
-  let (mvl, mvnodef) = Evd.Metamap.fold fold metas ([], []) in
+  let (mvl, mvnodef) = Unification.Metamap.fold fold metas ([], []) in
   match List.rev mvnodef, List.rev mvl with
     | _,[]  ->
       let fold n clb l =
@@ -600,7 +600,7 @@ let meta_with_name metas ({CAst.v=id} as lid) =
         in
         if na != Anonymous then Name.get_id na :: l else l
       in
-      let mvl = List.rev (Evd.Metamap.fold fold metas []) in
+      let mvl = List.rev (Unification.Metamap.fold fold metas []) in
       explain_no_such_bound_variable mvl lid
     | (n::_,_|_,n::_) ->
         n

@@ -92,7 +92,7 @@ val apply_hooks : hook
 
 (** Check if a canonical structure is applicable *)
 
-val check_conv_record : ?metas:clbinding Metamap.t -> env -> evar_map ->
+val check_conv_record : ?metas:(Constr.metavariable -> types option) -> env -> evar_map ->
   state -> state ->
   evar_map * (constr * constr)
   * constr * constr list * (EConstr.t list * EConstr.t list option) *

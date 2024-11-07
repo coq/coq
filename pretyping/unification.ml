@@ -32,8 +32,145 @@ open Locus
 open Locusops
 open Find_subterm
 
+(*******************************************************************)
+(* Metamaps *)
+
+(*******************************************************************)
+(*            Constraints for existential variables                *)
+(*******************************************************************)
+
+type 'a freelisted = {
+  rebus : 'a;
+  freemetas : Int.Set.t }
+
+(* Collects all metavars appearing in a constr *)
+let metavars_of c =
+  let rec collrec acc c =
+    match Constr.kind c with
+      | Meta mv -> Int.Set.add mv acc
+      | _         -> Constr.fold collrec acc c
+  in
+  collrec Int.Set.empty (EConstr.Unsafe.to_constr c)
+
+let mk_freelisted c =
+  { rebus = c; freemetas = metavars_of c }
+
+let map_fl f cfl = { cfl with rebus=f cfl.rebus }
+
+(* Status of an instance found by unification wrt to the meta it solves:
+  - a supertype of the meta (e.g. the solution to ?X <= T is a supertype of ?X)
+  - a subtype of the meta (e.g. the solution to T <= ?X is a supertype of ?X)
+  - a term that can be eta-expanded n times while still being a solution
+    (e.g. the solution [P] to [?X u v = P u v] can be eta-expanded twice)
+*)
+
+type instance_constraint = IsSuperType | IsSubType | Conv
+
+(* Status of the unification of the type of an instance against the type of
+     the meta it instantiates:
+   - CoerceToType means that the unification of types has not been done
+     and that a coercion can still be inserted: the meta should not be
+     substituted freely (this happens for instance given via the
+     "with" binding clause).
+   - TypeProcessed means that the information obtainable from the
+     unification of types has been extracted.
+   - TypeNotProcessed means that the unification of types has not been
+     done but it is known that no coercion may be inserted: the meta
+     can be substituted freely.
+*)
+
+type instance_typing_status =
+    CoerceToType | TypeNotProcessed | TypeProcessed
+
+(* Status of an instance together with the status of its type unification *)
+
+type instance_status = instance_constraint * instance_typing_status
+
+(* Clausal environments *)
+
+type clbinding =
+  | Cltyp of Name.t * constr freelisted
+  | Clval of Name.t * (constr freelisted * instance_status) * constr freelisted
+
+let map_clb f = function
+  | Cltyp (na,cfl) -> Cltyp (na,map_fl f cfl)
+  | Clval (na,(cfl1,pb),cfl2) -> Clval (na,(map_fl f cfl1,pb),map_fl f cfl2)
+
+(* name of defined is erased (but it is pretty-printed) *)
+let clb_name = function
+    Cltyp(na,_) -> (na,false)
+  | Clval (na,_,_) -> (na,true)
+
+(***********************)
+
+module Metaset = Int.Set
+
+module Metamap = Int.Map
+
+(**********************************************************)
+(* Accessing metas *)
+
 module Meta =
 struct
+
+type t = clbinding Metamap.t
+
+let map_metas f metas =
+  let map cl = map_clb f cl in
+  Metamap.Smart.map map metas
+
+let meta_opt_fvalue metas mv =
+  match Metamap.find mv metas with
+    | Clval(_,b,_) -> Some b
+    | Cltyp _ -> None
+
+let meta_value evd mv = match meta_opt_fvalue evd mv with
+| Some (body, _) -> body.rebus
+| None -> raise Not_found
+
+let meta_ftype metas mv =
+  match Metamap.find mv metas with
+    | Cltyp (_,b) -> b
+    | Clval(_,_,b) -> b
+
+let meta_declare mv v ?(name=Anonymous) metas =
+  let metas = Metamap.add mv (Cltyp(name,mk_freelisted v)) metas in
+  metas
+
+(* If the meta is defined then forget its name *)
+let meta_name metas mv =
+  try fst (clb_name (Metamap.find mv metas)) with Not_found -> Anonymous
+
+let evar_source_of_meta mv metas =
+  match meta_name metas mv with
+  | Anonymous -> Loc.tag Evar_kinds.GoalEvar
+  | Name id   -> Loc.tag @@ Evar_kinds.VarInstance id
+
+let use_meta_source metas evd mv v =
+  let v = EConstr.Unsafe.to_constr v in
+  match Constr.kind v with
+  | Evar (evk,_) ->
+    begin match Evd.find_undefined evd evk with
+    | evi ->
+      begin match evar_source evi with
+      | None, Evar_kinds.GoalEvar -> Evd.update_source evd evk (evar_source_of_meta mv metas)
+      | _ -> evd
+      end
+    | exception Not_found -> evd
+    end
+  | _ -> evd
+
+let meta_assign mv (v, pb) metas evd =
+  let modify _ = function
+  | Cltyp (na, ty) -> Clval (na, (mk_freelisted v, pb), ty)
+  | _ -> anomaly ~label:"meta_assign" (Pp.str "already defined.")
+  in
+  let metas = Metamap.modify mv modify metas in
+  let evd = use_meta_source metas evd mv v in
+  evd, metas
+
+let meta_merge metas sigma =
+  Metamap.fold Metamap.add metas sigma
 
 let meta_reassign mv (v, pb) metas =
   let modify _ = function
@@ -59,6 +196,42 @@ let retract_coercible_metas metas =
   in
   let metas = Metamap.Smart.mapi map metas in
   !mc, metas
+
+let pr_metaset metas =
+  let open Nameops in
+  str "[" ++ pr_sequence pr_meta (Metaset.elements metas) ++ str "]"
+
+let pr_instance_status (sc,typ) =
+  begin match sc with
+  | IsSubType -> str " [or a subtype of it]"
+  | IsSuperType -> str " [or a supertype of it]"
+  | Conv -> mt ()
+  end ++
+  begin match typ with
+  | CoerceToType -> str " [up to coercion]"
+  | TypeNotProcessed -> mt ()
+  | TypeProcessed -> str " [type is checked]"
+  end
+
+let pr_metamap env sigma metas =
+  let open Nameops in
+  let print_constr = Termops.Internal.print_kconstr in
+  let pr_name = function
+      Name id -> str"[" ++ Id.print id ++ str"]"
+    | _ -> mt() in
+  let pr_meta_binding = function
+    | (mv,Cltyp (na,b)) ->
+        hov 0
+          (pr_meta mv ++ pr_name na ++ str " : " ++
+           print_constr env sigma b.rebus ++ fnl ())
+    | (mv,Clval(na,(b,s),t)) ->
+        hov 0
+          (pr_meta mv ++ pr_name na ++ str " := " ++
+           print_constr env sigma b.rebus ++
+           str " : " ++ print_constr env sigma t.rebus ++
+           spc () ++ pr_instance_status s ++ fnl ())
+  in
+  prlist pr_meta_binding (Metamap.bindings metas)
 
 end
 
@@ -97,7 +270,7 @@ end
  *)
 
 let meta_handler metas =
-  let meta_value mv = match Evd.Meta.meta_opt_fvalue metas mv with
+  let meta_value mv = match Meta.meta_opt_fvalue metas mv with
   | None -> None
   | Some (b, _) -> Some b.rebus
   in
@@ -121,7 +294,7 @@ let meta_instance ~metas env sigma b =
 
 let meta_type ~metas env evd mv =
   let ty =
-    try Evd.Meta.meta_ftype metas mv
+    try Meta.meta_ftype metas mv
     with Not_found -> anomaly (str "unknown meta ?" ++ str (Nameops.string_of_meta mv) ++ str ".") in
   meta_instance ~metas env evd ty
 
@@ -182,7 +355,7 @@ let occur_meta_or_undefined_evar evd c =
 
 let whd_meta ~metas sigma c = match EConstr.kind sigma c with
   | Meta p ->
-    (try Evd.Meta.meta_value metas p with Not_found -> c)
+    (try Meta.meta_value metas p with Not_found -> c)
     (* Not recursive, for some reason *)
   | _ -> c
 
@@ -297,18 +470,18 @@ let pose_all_metas_as_evars ~metas env evd t =
   let metas = ref metas in
   let rec aux t = match EConstr.kind !evdref t with
   | Meta mv ->
-      (match Evd.Meta.meta_opt_fvalue !metas mv with
+      (match Meta.meta_opt_fvalue !metas mv with
        | Some ({rebus=c;freemetas=mvs},_) ->
-         let c = if Evd.Metaset.is_empty mvs then c else aux c in
+         let c = if Metaset.is_empty mvs then c else aux c in
          metas := Meta.meta_reassign mv (c,(Conv,TypeNotProcessed)) !metas;
          c
        | None ->
-        let {rebus=ty;freemetas=mvs} = Evd.Meta.meta_ftype !metas mv in
-        let ty = if Evd.Metaset.is_empty mvs then ty else aux ty in
+        let {rebus=ty;freemetas=mvs} = Meta.meta_ftype !metas mv in
+        let ty = if Metaset.is_empty mvs then ty else aux ty in
         let ty = nf_betaiota env !evdref ty in
-        let src = Evd.Meta.evar_source_of_meta mv !metas in
+        let src = Meta.evar_source_of_meta mv !metas in
         let evd, ev = Evarutil.new_evar env !evdref ~src ty in
-        let evd, nmetas = Evd.Meta.meta_assign mv (ev,(Conv,TypeNotProcessed)) !metas evd in
+        let evd, nmetas = Meta.meta_assign mv (ev,(Conv,TypeNotProcessed)) !metas evd in
         let () = evdref := evd in
         let () = metas := nmetas in
         ev)
@@ -866,7 +1039,7 @@ let eta_constructor_app env sigma f l1 term =
 
 let get_type_of_with_metas ~metas ?lax env sigma c =
   let metas n =
-    try Some (Evd.Meta.meta_ftype metas n).Evd.rebus
+    try Some (Meta.meta_ftype metas n).rebus
     with Not_found -> None
   in
   Retyping.get_type_of ~metas ?lax env sigma c
@@ -1353,6 +1526,11 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
     let f1l1 = whd_nored_state ~metas:(meta_handler metas) (fst curenvnb) sigma (cM,Stack.empty) in
     let f2l2 = whd_nored_state ~metas:(meta_handler metas) (fst curenvnb) sigma (cN,Stack.empty) in
     let (sigma,t,c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
+      let metas mv = match Metamap.find mv metas with
+      | Cltyp (_, b) -> Some b.rebus
+      | Clval (_, _, b) -> Some b.rebus
+      | exception Not_found -> None
+      in
       try Evarconv.check_conv_record ~metas (fst curenvnb) sigma f1l1 f2l2
       with Not_found -> error_cannot_unify (fst curenvnb) sigma (cM,cN)
     in
@@ -1364,7 +1542,7 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
                 (metas,t2::ks, m-1)
             else
               let mv = new_meta () in
-              let metas = Evd.Meta.meta_declare mv (substl ks b) metas in
+              let metas = Meta.meta_declare mv (substl ks b) metas in
               (metas, mkMeta mv :: ks, m - 1))
           (metas,[],List.length bs) bs
       in
@@ -1550,7 +1728,7 @@ let applyHead ~metas env evd c cl =
       | Prod ({binder_name},c1,c2) ->
         let src =
           match EConstr.kind evd a with
-          | Meta mv -> Evd.Meta.evar_source_of_meta mv metas
+          | Meta mv -> Meta.evar_source_of_meta mv metas
           | _ ->
             (* Does not matter, the evar will be later instantiated by [a] *)
             Loc.tag Evar_kinds.InternalHole in
@@ -1687,7 +1865,7 @@ let w_merge env with_types flags (substn : subst0) =
           else
             ((evd,metas0,c),([],[])),eqns
         in
-        begin match Evd.Meta.meta_opt_fvalue metas0 mv with
+        begin match Meta.meta_opt_fvalue metas0 mv with
         | Some ({ rebus = c' }, (status', _)) ->
             let (take_left, st, { subst_sigma = evd; subst_metas = metas'; subst_evars = evars'; subst_metam = metas0 }) =
               merge_instances ~metas:metas0 env evd flags status' status c' c
@@ -1704,7 +1882,7 @@ let w_merge env with_types flags (substn : subst0) =
                 if isMetaOf evd mv (whd_all ~metas env evd c) then evd, metas0
                 else error_cannot_unify env evd (mkMeta mv,c)
               else
-                Evd.Meta.meta_assign mv (c,(status,TypeProcessed)) metas0 evd
+                Meta.meta_assign mv (c,(status,TypeProcessed)) metas0 evd
             in
             w_merge_rec metas0 evd' (metas''@metas) evars'' eqns
         end
@@ -2321,8 +2499,8 @@ let w_unify_to_subterm_list ~metas env evd flags hdmeta oplist t =
       if isMeta evd op then
         if flags.allow_K_in_toplevel_higher_order_unification then (metas,evd,op::l)
         else
-          let hdname = Evd.Meta.meta_name metas hdmeta in
-          let argname = Evd.Meta.meta_name metas (destMeta evd op) in
+          let hdname = Meta.meta_name metas hdmeta in
+          let argname = Meta.meta_name metas (destMeta evd op) in
           error_abstraction_over_meta env evd hdname argname
       else
         let allow_K = flags.allow_K_in_toplevel_higher_order_unification in
@@ -2358,7 +2536,7 @@ let w_unify_to_subterm_list ~metas env evd flags hdmeta oplist t =
             (* ensure we found a different instance *)
             List.exists (fun op -> EConstr.eq_constr evd' op cl) l
           then
-            let hdname = Evd.Meta.meta_name metas' hdmeta in
+            let hdname = Meta.meta_name metas' hdmeta in
             error_non_linear_unification env evd hdname cl
           else (metas',evd',cl::l))
     oplist
@@ -2376,7 +2554,7 @@ let secondOrderAbstraction ~metas env evd flags typ (p, oplist) =
   match infer_conv ~pb:CUMUL env evd' predtyp typp with
   | None ->
     error_wrong_abstraction_type env evd'
-      (Evd.Meta.meta_name metas p) pred typp predtyp;
+      (Meta.meta_name metas p) pred typp predtyp;
   | Some evd' ->
   w_merge env false flags.merge_unify_flags
     { subst_sigma = evd'; subst_metas = [p,pred,(Conv,TypeProcessed)]; subst_evars = []; subst_metam = metas }

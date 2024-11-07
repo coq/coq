@@ -230,7 +230,7 @@ val apply_delayed_in :
 (** {6 Elimination tactics. } *)
 
 val general_elim_clause : evars_flag -> unify_flags -> Id.t option ->
-  ((metavariable * Evd.clbinding) list * EConstr.t * EConstr.types) -> Constant.t -> unit Proofview.tactic
+  ((metavariable * Unification.clbinding) list * EConstr.t * EConstr.types) -> Constant.t -> unit Proofview.tactic
 
 val default_elim  : evars_flag -> clear_flag -> constr with_bindings ->
   unit Proofview.tactic
