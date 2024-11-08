@@ -46,7 +46,7 @@ type fterm =
   | FCaseInvert of case_info * UVars.Instance.t * constr array * case_return * finvert * fconstr * case_branch array * usubs
   | FLambda of int * (Name.t binder_annot * constr) list * constr * usubs
   | FProd of Name.t binder_annot * fconstr * constr * usubs
-  | FLetIn of Name.t binder_annot * fconstr * fconstr * constr * usubs
+  | FLetIn of Name.t binder_annot * fconstr * constr * constr * usubs
   | FEvar of Evar.t * constr list * usubs * evar_repack
   | FInt of Uint63.t
   | FFloat of Float64.t

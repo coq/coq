@@ -94,7 +94,7 @@ and fterm =
   | FCaseInvert of case_info * UVars.Instance.t * constr array * case_return * finvert * fconstr * case_branch array * usubs
   | FLambda of int * (Name.t binder_annot * constr) list * constr * usubs
   | FProd of Name.t binder_annot * fconstr * constr * usubs
-  | FLetIn of Name.t binder_annot * fconstr * fconstr * constr * usubs
+  | FLetIn of Name.t binder_annot * fconstr * constr * constr * usubs
   | FEvar of Evar.t * constr list * usubs * evar_repack
   | FInt of Uint63.t
   | FFloat of Float64.t
@@ -549,10 +549,11 @@ let rec to_constr (lfts, usubst as ulfts) v =
                 to_constr ulfts t,
                 subst_constr (usubs_lift subs') c)
     | FLetIn (n,b,t,f,e) ->
+      let subs_t = comp_subs ulfts e in
       let subs = comp_subs (on_fst el_lift ulfts) (usubs_lift e) in
       mkLetIn (usubst_binder subs n,
                to_constr ulfts b,
-               to_constr ulfts t,
+               subst_constr subs_t t,
                subst_constr subs f)
     | FEvar (ev, args, env, repack) ->
       let subs = comp_subs ulfts env in
@@ -1400,7 +1401,7 @@ and knht info e t stk =
     | Prod (n, t, c) ->
       { mark = Ntrl; term = FProd (n, mk_clos e t, c, e) }, stk
     | LetIn (n,b,t,c) ->
-      { mark = Red; term = FLetIn (n, mk_clos e b, mk_clos e t, c, e) }, stk
+      { mark = Red; term = FLetIn (n, mk_clos e b, t, c, e) }, stk
     | Evar ev ->
       begin match info.i_cache.i_sigma.evar_expand ev with
       | EvarDefined c -> knht info e c stk
@@ -2077,8 +2078,9 @@ and norm_head info tab m =
         List.fold_left (fun b (na,ty) -> mkLambda(na,ty,b)) bd rvtys
       | FLetIn(na,a,b,f,e) ->
           let na = usubst_binder e na in
+          let b = klt info tab e b in
           let c = klt (push_relevance info na) tab (usubs_lift e) f in
-          mkLetIn(na, kl info tab a, kl info tab b, c)
+          mkLetIn(na, kl info tab a, b, c)
       | FProd(na,dom,rng,e) ->
         let na = usubst_binder e na in
         let rng = klt (push_relevance info na) tab (usubs_lift e) rng in
