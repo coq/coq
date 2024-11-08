@@ -1135,23 +1135,64 @@ let whd_zeta = red_of_state_red ~delta:false whd_zeta_state
 let whd_evar = Evarutil.whd_evar
 let nf_evar = Evarutil.nf_evar
 
+let record_steps_flag, print_recorded_steps = CDebug.create_full ~name:"lazy" ()
+
+let record_steps () = CDebug.get_flag record_steps_flag
+
+(* future work: print percentages, print step counts in children
+   nicer formatting (some kind of table?) *)
+let print_recorded_steps tab =
+  let steps = CClosure.get_recorded_steps tab in
+  if CList.is_empty steps then ()
+  else
+    print_recorded_steps Pp.(fun () ->
+        let steps = List.sort (fun (ctx1,_) (ctx2,_) ->
+            Option.compare (List.compare GlobRef.UserOrd.compare)
+              (Option.map List.rev ctx1) (Option.map List.rev ctx2))
+            steps
+        in
+        let pr_one (ctx, (steps:CClosure.recorded_steps)) =
+          let ppctx = match ctx with
+            | None -> str "top"
+            | Some ctx ->
+              h (prlist_with_sep (fun () -> str " in ") (Nametab.pr_global_env Id.Set.empty) ctx)
+          in
+          let ppsteps =
+            str "beta: " ++ int steps.betas ++ pr_comma () ++
+            str "delta: " ++ int steps.deltas ++ pr_comma () ++
+            str "match: " ++ int steps.matches ++ pr_comma () ++
+            str "fix: " ++ int steps.fixpoints
+          in
+          hov 2 (ppctx ++ str ":" ++ spc() ++ ppsteps)
+        in
+        v 0
+          (prlist_with_sep spc pr_one steps))
+
 (* lazy reduction functions. The infos must be created for each term *)
 (* Note by HH [oct 08] : why would it be the job of clos_norm_flags to add
    a [nf_evar] here *)
 let clos_norm_flags flgs env sigma t =
   try
-    EConstr.of_constr (CClosure.norm_term
+    let tab = CClosure.create_tab ~record_steps:(record_steps()) () in
+    let res = EConstr.of_constr (CClosure.norm_term
       (Evarutil.create_clos_infos env sigma flgs)
-      (CClosure.create_tab ())
+      tab
       (Esubst.subs_id 0, UVars.Instance.empty) (EConstr.Unsafe.to_constr t))
+    in
+    print_recorded_steps tab;
+    res
   with e when is_anomaly e -> user_err Pp.(str "Tried to normalize ill-typed term")
 
 let clos_whd_flags flgs env sigma t =
   try
-    EConstr.of_constr (CClosure.whd_val
+    let tab = CClosure.create_tab ~record_steps:(record_steps()) () in
+    let res = EConstr.of_constr (CClosure.whd_val
       (Evarutil.create_clos_infos env sigma flgs)
-      (CClosure.create_tab ())
+      tab
       (CClosure.inject (EConstr.Unsafe.to_constr t)))
+    in
+    print_recorded_steps tab;
+    res
   with e when is_anomaly e -> user_err Pp.(str "Tried to normalize ill-typed term")
 
 let nf_beta = clos_norm_flags RedFlags.beta

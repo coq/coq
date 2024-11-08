@@ -75,12 +75,12 @@ type table_key = Constant.t UVars.puniverses tableKey
 
 type evar_repack = Evar.t * constr list -> constr
 
-type current_context = GlobRef.t option
+type current_context = GlobRef.t list option
 
 type fconstr = {
   mutable mark : red_state;
   mutable term: fterm;
-  ctx : current_context;
+  mutable ctx : current_context;
   (* seems not to matter sometimes, particularly on FApp terms?
      seems to matter for flambda, zcase, zfix (or I guess the ffix in zfix)
 
@@ -370,11 +370,11 @@ end = struct
 
   let assoc_defined d =
     match d with
-    | NamedDecl.LocalDef (_, c, _) -> inject (Some (VarRef (NamedDecl.get_id d))) c
+    | NamedDecl.LocalDef (_, c, _) -> inject None c
     | NamedDecl.LocalAssum (_, _) -> raise Not_found
 
-  let constant_value_in kn u = function
-    | Def b -> injectu (Some (ConstRef kn)) b u
+  let constant_value_in u = function
+    | Def b -> injectu None b u
     | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
     | Undef _ -> raise (NotEvaluableConst NoBody)
     | Primitive p -> raise (NotEvaluableConst (IsPrimitive (u,p)))
@@ -417,7 +417,7 @@ end = struct
           | None | Some (Vmemitcodes.BCalias _ | Vmemitcodes.BCconstant) -> [||]
           | Some (Vmemitcodes.BCdefined (mask, _, _)) -> mask
           in
-          Def (constant_value_in cst u cb.const_body, mask)
+          Def (constant_value_in u cb.const_body, mask)
         | Symbol b ->
           let r = match Cmap_env.find_opt cst env.symb_pats with
           | None -> assert false
@@ -439,9 +439,56 @@ end = struct
     Table.add tab ref v; v
 end
 
-type clos_tab = Table.t
+type step_kind = Beta | Delta | Match | Fix
 
-let create_tab = Table.create
+module RedContext = struct
+  type t = current_context
+
+  let equal (a:t) (b:t) = Option.equal (List.equal GlobRef.UserOrd.equal) a b
+
+  let rec hash_list subhash acc = function
+    | [] -> acc
+    | x :: tl -> hash_list subhash (Hashset.Combine.combine acc (subhash x)) tl
+
+  let hash (a:t) = Option.hash (hash_list GlobRef.UserOrd.hash 0) a
+end
+
+module RedContextTbl = Hashtbl.Make(RedContext)
+
+type recorded_steps = {
+  mutable betas : int;
+  mutable deltas : int;
+  mutable matches : int;
+  mutable fixpoints : int;
+}
+
+let empty_recorded_steps () = {
+  betas = 0;
+  deltas = 0;
+  matches = 0;
+  fixpoints = 0;
+}
+
+let add_step record : step_kind -> unit = function
+  | Beta -> record.betas <- 1 + record.betas
+  | Delta -> record.deltas <- 1 + record.deltas
+  | Match -> record.matches <- 1 + record.matches
+  | Fix -> record.fixpoints <- 1 + record.fixpoints
+
+type clos_tab = {
+  tab : Table.t;
+  recorded_steps : recorded_steps RedContextTbl.t option;
+}
+
+let create_tab ?(record_steps=false) () = {
+  tab = Table.create ();
+  recorded_steps = if record_steps then Some (RedContextTbl.create 17) else None;
+}
+
+let get_recorded_steps tab =
+  match tab.recorded_steps with
+  | None -> []
+  | Some record -> RedContextTbl.to_seq record |> List.of_seq
 
 (************************************************************************)
 
@@ -1434,9 +1481,9 @@ let conv : (clos_infos -> clos_tab -> fconstr -> fconstr -> bool) ref
 let set_conv f = conv := f
 
 type ('a, 'b) reduction = {
-  red_ret : clos_infos -> Table.t -> pat_state:'b -> ?failed:bool -> (fconstr * stack) -> 'a;
-  red_kni : clos_infos -> Table.t -> pat_state:'b -> fconstr -> stack -> 'a;
-  red_knit : clos_infos -> Table.t -> pat_state:'b -> usubs -> current_context -> Constr.t -> stack -> 'a;
+  red_ret : clos_infos -> clos_tab -> pat_state:'b -> ?failed:bool -> (fconstr * stack) -> 'a;
+  red_kni : clos_infos -> clos_tab -> pat_state:'b -> fconstr -> stack -> 'a;
+  red_knit : clos_infos -> clos_tab -> pat_state:'b -> usubs -> current_context -> Constr.t -> stack -> 'a;
 }
 
 type (_, _) escape =
@@ -1454,10 +1501,10 @@ type ('constr, 'stack, 'context, _) depth =
 
 type 'a patstate = (fconstr, stack, rel_context, 'a) depth
 
-val match_symbol : ('a, 'a patstate) reduction -> clos_infos -> Table.t ->
+val match_symbol : ('a, 'a patstate) reduction -> clos_infos -> clos_tab ->
   pat_state:(fconstr, stack, rel_context, 'a) depth -> table_key -> UVars.Instance.t * bool * rewrite_rule list -> stack -> 'a
 
-val match_head : ('a, 'a patstate) reduction -> clos_infos -> Table.t ->
+val match_head : ('a, 'a patstate) reduction -> clos_infos -> clos_tab ->
   pat_state:(fconstr, stack, rel_context, 'a) depth -> (fconstr, stack, rel_context) resume_state -> fconstr -> stack -> 'a
 
 end =
@@ -1839,13 +1886,55 @@ end
 
 type 'a depth = 'a RedPattern.patstate
 
-let dbg = CDebug.create ~name:"lazy" ()
+let lazy_trace_flag, lazy_trace = CDebug.create_full ~name:"lazy-trace" ()
 
-let dbg flag ctx = dbg Pp.(fun () ->
-    str flag ++ spc() ++
-    match ctx with
-    | None -> str "top"
-    | Some c -> GlobRef.print c)
+let pr_step = function
+  | Beta  -> "beta "
+  | Delta -> "delta"
+  | Match -> "match"
+  | Fix   -> "fix  "
+
+let lazy_trace flag ctx = lazy_trace Pp.(fun () ->
+  str (pr_step flag) ++ str " in" ++ spc() ++
+  match ctx with
+  | None | Some [] -> str "top"
+  | Some kns -> prlist_with_sep pr_comma GlobRef.print kns)
+
+let record_step tab flag ctx =
+  let () = match tab.recorded_steps with
+    | None -> ()
+    | Some records ->
+      let record = match RedContextTbl.find_opt records ctx with
+        | Some record -> record
+        | None ->
+          let record = empty_recorded_steps () in
+          RedContextTbl.add records ctx record;
+          record
+      in
+      add_step record flag
+  in
+  lazy_trace flag ctx
+
+let push_context fl ctx v =
+  let kn = let open GlobRef in
+    match fl with
+    | ConstKey (kn,_) -> Some (ConstRef kn)
+    | VarKey id -> Some (VarRef id)
+    | RelKey _ -> None
+  in
+  match kn with
+  | None -> ()
+  | Some kn ->
+    let ctx = match ctx with
+      | None -> Some [kn]
+      | Some ctx -> Some (kn::ctx)
+    in
+    v.ctx <- ctx
+
+let push_context tab fl ctx v =
+  if Option.is_empty tab.recorded_steps && not (CDebug.get_flag lazy_trace_flag)
+  then ()
+  else push_context fl ctx v
 
 (* Computes a weak head normal form from the result of knh. *)
 let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
@@ -1854,13 +1943,14 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
   | FLambda(n,tys,f,e) when red_set info.i_flags fBETA ->
       (match get_args m.ctx n tys f e stk with
           Inl e', s ->
-          dbg "beta" m.ctx;
+          record_step tab Beta m.ctx;
           knit info tab ~pat_state e' m.ctx f s
         | Inr lam, s -> knr_ret info tab ~pat_state (lam,s))
   | FFlex fl when red_set info.i_flags fDELTA ->
-      (match Table.lookup info tab fl with
+      (match Table.lookup info tab.tab fl with
         | Def (v, _) ->
-          dbg "delta" v.ctx;
+          record_step tab Delta m.ctx;
+          push_context tab fl m.ctx v;
           kni info tab ~pat_state v stk
         | Primitive op ->
           if check_native_args op stk then
@@ -1886,18 +1976,19 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
         | (depth, args, ZcaseT(case_ctx,ci,_,pms,_,br,e)::s) when use_match ->
             assert (ci.ci_npar>=0);
             (* instance on the case and instance on the constructor are compatible by typing *)
-            dbg "match" case_ctx;
+            record_step tab Match case_ctx;
             let (br, e) = get_branch info depth ci pms c br e args in
             knit info tab ~pat_state e case_ctx br s
         | (_, cargs, Zfix(fx,par)::s) when use_fix ->
             let rarg = fapp_stack(m,cargs) in
             let stk' = par @ append_stack [|rarg|] s in
-            dbg "fix" fx.ctx;
+            record_step tab Fix fx.ctx;
             let (fxe,fxbd) = contract_fix_vect fx.ctx fx.term in
             knit info tab ~pat_state fxe fx.ctx fxbd stk'
-        | (depth, args, Zproj (_,p,_)::s) when use_match ->
+        | (depth, args, Zproj (proj_ctx,p,_)::s) when use_match ->
             let rargs = drop_parameters depth (Projection.Repr.npars p) args in
             let rarg = project_nth_arg (Projection.Repr.arg p) rargs in
+            record_step tab Match proj_ctx;
             kni info tab ~pat_state rarg s
         | (_,args,s) ->
           if is_irrelevant_constructor info c then
@@ -1995,7 +2086,9 @@ and case_inversion info tab ci u params indices v = match v with
     (* indtyping enforces 1 ctor with no letins in the context *)
     let _, expect = mip.mind_nf_lc.(0) in
     let _ind, expect_args = destApp expect in
-    let tab = if info.i_cache.i_mode == Conversion then tab else Table.create () in
+    let tab = if info.i_cache.i_mode == Conversion then tab
+      else { tab = Table.create (); recorded_steps = tab.recorded_steps }
+    in
     let info = {info with i_cache = { info.i_cache with i_mode = Conversion}; i_flags=all} in
     let check_index i index =
       let expected = expect_args.(ci.ci_npar + i) in
@@ -2204,7 +2297,7 @@ let infos_with_reds infos reds =
   { infos with i_flags = reds }
 
 let unfold_ref_with_args infos tab fl v =
-  match Table.lookup infos tab fl with
+  match Table.lookup infos tab.tab fl with
   | Def (def, _) -> Some (def, v)
   | Primitive op when check_native_args op v ->
     let c = match [@ocaml.warning "-4"] fl with ConstKey c -> c | _ -> assert false in
@@ -2214,7 +2307,7 @@ let unfold_ref_with_args infos tab fl v =
     RedPattern.match_symbol knred (infos_with_reds infos all) tab ~pat_state:(RedPattern.Nil Yes) fl (u, b, r) v
   | Undef _ | OpaqueDef _ | Primitive _ -> None
 
-let get_ref_mask info tab fl = match Table.lookup info tab fl with
+let get_ref_mask info tab fl = match Table.lookup info tab.tab fl with
 | Def (_, mask) -> mask
 | Primitive _ | Symbol _ | Undef _ | OpaqueDef _ -> [||]
 
