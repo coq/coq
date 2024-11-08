@@ -119,13 +119,17 @@ let map_metas f metas =
   let map cl = map_clb f cl in
   Metamap.Smart.map map metas
 
-let meta_opt_fvalue metas mv =
+let meta_opt_fvalue0 metas mv =
   match Metamap.find mv metas with
     | Clval(_,b,_) -> Some b
     | Cltyp _ -> None
 
+let meta_opt_fvalue metas mv = match meta_opt_fvalue0 metas mv with
+| None -> None
+| Some (b, _) -> Some b
+
 let meta_value evd mv = match meta_opt_fvalue evd mv with
-| Some (body, _) -> body.rebus
+| Some body -> body.rebus
 | None -> raise Not_found
 
 let meta_ftype metas mv =
@@ -272,7 +276,7 @@ end
 let meta_handler metas =
   let meta_value mv = match Meta.meta_opt_fvalue metas mv with
   | None -> None
-  | Some (b, _) -> Some b.rebus
+  | Some b -> Some b.rebus
   in
   { Reductionops.meta_value }
 
@@ -471,7 +475,7 @@ let pose_all_metas_as_evars ~metas env evd t =
   let rec aux t = match EConstr.kind !evdref t with
   | Meta mv ->
       (match Meta.meta_opt_fvalue !metas mv with
-       | Some ({rebus=c;freemetas=mvs},_) ->
+       | Some {rebus=c;freemetas=mvs} ->
          let c = if Metaset.is_empty mvs then c else aux c in
          metas := Meta.meta_reassign mv (c,(Conv,TypeNotProcessed)) !metas;
          c
@@ -1865,7 +1869,7 @@ let w_merge env with_types flags (substn : subst0) =
           else
             ((evd,metas0,c),([],[])),eqns
         in
-        begin match Meta.meta_opt_fvalue metas0 mv with
+        begin match Meta.meta_opt_fvalue0 metas0 mv with
         | Some ({ rebus = c' }, (status', _)) ->
             let (take_left, st, { subst_sigma = evd; subst_metas = metas'; subst_evars = evars'; subst_metam = metas0 }) =
               merge_instances ~metas:metas0 env evd flags status' status c' c

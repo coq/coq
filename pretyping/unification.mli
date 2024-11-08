@@ -73,7 +73,7 @@ val meta_value     : t -> metavariable -> econstr
 (** [meta_fvalue] raises [Not_found] if meta not in map or [Anomaly] if
    meta has no value *)
 
-val meta_opt_fvalue : t -> metavariable -> (econstr freelisted * instance_status) option
+val meta_opt_fvalue : t -> metavariable -> econstr freelisted option
 val meta_ftype     : t -> metavariable -> etypes freelisted
 val meta_name      : t -> metavariable -> Name.t
 val meta_declare   : metavariable -> etypes -> ?name:Name.t -> t -> t

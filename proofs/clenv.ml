@@ -94,7 +94,7 @@ let strip_params env sigma c =
 let meta_handler sigma =
   let meta_value mv = match Unification.Meta.meta_opt_fvalue sigma mv with
   | None -> None
-  | Some (b, _) -> Some b.rebus
+  | Some b -> Some b.rebus
   in
   { Reductionops.meta_value }
 
@@ -282,7 +282,7 @@ let mentions sigma mv0 =
     Int.equal mv0 mv1 ||
     let mlist =
       try match Meta.meta_opt_fvalue sigma mv1 with
-      | Some (b,_) -> b.freemetas
+      | Some b -> b.freemetas
       | None -> Metaset.empty
       with Not_found -> Metaset.empty in
     Metaset.exists menrec mlist
@@ -305,7 +305,7 @@ let clenv_assign ~metas env sigma mv rhs =
     user_err Pp.(str "clenv_assign: circularity in unification");
   try
     begin match Meta.meta_opt_fvalue metas mv with
-    | Some (body, _) ->
+    | Some body ->
       if not (EConstr.eq_constr sigma body.rebus rhs) then
         error_incompatible_inst metas mv
       else
@@ -436,7 +436,7 @@ let adjust_meta_source ~metas evd mv = function
         match EConstr.kind evd f with
         | Meta mv'' ->
           (match Meta.meta_opt_fvalue metas mv'' with
-          | Some (c,_) -> match_name c.rebus l
+          | Some c -> match_name c.rebus l
           | None -> None)
         | _ -> None
       else None in
@@ -651,7 +651,7 @@ let clenv_match_args bl clenv =
       (fun clenv {CAst.loc;v=(b,c)} ->
         let k = meta_of_binder clenv loc mvs b in
         match Meta.meta_opt_fvalue clenv.metam k with
-        | Some (body, _) ->
+        | Some body ->
           if EConstr.eq_constr clenv.evd body.rebus c then clenv
           else error_already_defined b
         | None ->
