@@ -10,7 +10,12 @@ type t = Rel of string | Abs of string
 
 let to_string = function Rel p -> p | Abs p -> p
 
-let make path = if Filename.is_relative path then Rel path else Abs path
+(* paths which begin with a dune variable are considered absolute
+   (eg %{project_root}/bla) *)
+let is_relative path =
+  not (CString.is_prefix "%{" path) && Filename.is_relative path
+
+let make path = if is_relative path then Rel path else Abs path
 
 let map ~f = function Rel p -> Rel (f p) | Abs p -> Abs (f p)
 
