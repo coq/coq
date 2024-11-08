@@ -2195,7 +2195,9 @@ let vernac_print =
   | PrintModule qid -> no_state @@ fun () -> print_module qid
   | PrintModuleType qid -> no_state @@ fun () -> print_modtype qid
   | PrintNamespace ns -> with_pstate @@ print_namespace ns
-  | PrintMLLoadPath -> no_state @@ fun () -> Pp.mt ()
+  | PrintMLLoadPath -> no_state @@ fun () ->
+    let paths = Findlib.search_path () in
+    v 0 (prlist_with_sep cut str paths )
   | PrintMLModules -> no_state Mltop.print_ml_modules
   | PrintDebugGC -> no_state Mltop.print_gc
   | PrintName (qid,udecl) -> with_proof_env_and_opaques @@ fun ~opaque_access env sigma ->
