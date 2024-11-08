@@ -30,7 +30,7 @@ type usubs = fconstr subs UVars.puniverses
 
 type table_key = Constant.t UVars.puniverses tableKey
 
-type current_context = GlobRef.t option
+type current_context = GlobRef.t list option
 
 (** Relevances (eg in binder_annot or case_info) have NOT been substituted
     when there is a usubs field *)
@@ -139,7 +139,16 @@ val create_clos_infos :
   ?univs:UGraph.t -> ?evars:evar_handler -> reds -> env -> clos_infos
 val oracle_of_infos : clos_infos -> Conv_oracle.oracle
 
-val create_tab : unit -> clos_tab
+val create_tab : ?record_steps:bool -> unit -> clos_tab
+
+type recorded_steps = {
+  mutable betas : int;
+  mutable deltas : int;
+  mutable matches : int;
+  mutable fixpoints : int;
+}
+
+val get_recorded_steps : clos_tab -> (current_context * recorded_steps) list
 
 val info_env : clos_infos -> env
 val info_flags: clos_infos -> reds
