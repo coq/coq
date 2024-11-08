@@ -138,12 +138,6 @@ Tactics
       Behaves like :tacn:`eauto` but shows the tactics it tries to solve the goal,
       including failing paths.
 
-   .. tacn:: dfs eauto {? @nat_or_var } {? @auto_using } {? @hintbases }
-
-      .. deprecated:: 8.16
-
-      An alias for :tacn:`eauto`.
-
 .. tacn:: autounfold {? @hintbases } {? @simple_occurrences }
 
    Unfolds constants that were declared through a :cmd:`Hint Unfold`
