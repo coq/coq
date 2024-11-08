@@ -1620,16 +1620,9 @@ let check_relation_type env evd relation =
   let evd, t = Typing.type_of env evd relation in
   let open Reductionops in
   match EConstr.kind evd (whd_all env evd t) with
-  | Prod (_,t,u) ->
-    (match EConstr.kind evd (whd_all env evd u) with
-     | Prod (_,u,v) ->
-       (match EConstr.kind evd (whd_all env evd v) with
-        | Sort s ->
-          (match ESorts.kind evd s with
-           | Prop -> ()
-           | _ -> err ())
-        | _ -> err ())
-     | _ -> err ())
+  | Prod (_, typ, _) ->
+    let rel = mkArrowR typ (mkArrowR (Vars.lift 1 typ) mkProp) in
+    if not (is_conv env evd rel t) then err ()
   | _ -> err ()
 
 (*      Pp.msgnl (fun _ _ -> str "eqn finished"); *)
@@ -1706,7 +1699,7 @@ let recursive_definition ~interactive_proof ~is_mes function_name rec_impls
       env
   in
   let relation, evuctx = interp_constr env_with_pre_rec_args evd r in
-  check_relation_type env_with_pre_rec_args evd relation;
+  let () = check_relation_type env_with_pre_rec_args evd relation in
   let evd = Evd.from_ctx evuctx in
   let tcc_lemma_name = add_suffix function_name "_tcc" in
   let tcc_lemma_constr = ref Undefined in
