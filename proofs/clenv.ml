@@ -47,7 +47,7 @@ type clausenv = {
   metas    : meta_arg list;
   templval : constr;
   metaset : Metaset.t;
-  templtyp : constr freelisted;
+  templtyp : (constr * Metaset.t);
 }
 
 let mk_clausenv env evd metam metas templval metaset templtyp = {
@@ -141,11 +141,10 @@ let clenv_refresh env sigma ctx clenv =
     let emap c = Vars.subst_univs_level_constr subst c in
     let sigma = Evd.merge_sort_context_set Evd.univ_flexible sigma ctx in
     (* Only metas are mentioning the old universes. *)
-    let map_fl cfl = { cfl with rebus = emap cfl.rebus } in
     mk_clausenv env sigma (Unification.Meta.map_metas emap clenv.metam) clenv.metas
       (emap clenv.templval)
       clenv.metaset
-      (map_fl clenv.templtyp)
+      (emap (fst clenv.templtyp), snd clenv.templtyp)
   | None ->
     (* We also refresh template arguments. This assumes that callers of
        {!clenv_refresh} use a freshly minted clenv, but this is the case as this
@@ -179,8 +178,8 @@ let clenv_value clenv =
   if Metaset.is_empty clenv.metaset then clenv.templval
   else meta_instance ~metas:clenv.metam clenv.env clenv.evd clenv.templval
 let clenv_type clenv =
-  if Metaset.is_empty clenv.templtyp.freemetas then clenv.templtyp.rebus
-  else meta_instance ~metas:clenv.metam clenv.env clenv.evd clenv.templtyp.rebus
+  if Metaset.is_empty (snd clenv.templtyp) then fst clenv.templtyp
+  else meta_instance ~metas:clenv.metam clenv.env clenv.evd (fst clenv.templtyp)
 
 let clenv_push_prod cl =
   let metas = meta_handler cl.metam in
@@ -202,7 +201,7 @@ let clenv_push_prod cl =
           marg_templ = None; (* We could refresh here but probably not worth it *)
         } in
         Some (mv, dep, { templval; metaset;
-          templtyp = mk_freelisted concl;
+          templtyp = (concl, metavars_of concl);
           evd = cl.evd;
           metam = e';
           env = cl.env;
@@ -265,7 +264,7 @@ let mk_clenv_from_env env sigma n (c,cty) =
   let metaset = Metaset.of_list (List.map pi1 args) in
   let map (mv, dep, tmpl) = { marg_meta = mv; marg_chain = None; marg_dep = dep; marg_templ = tmpl } in
   { templval; metaset;
-    templtyp = mk_freelisted concl;
+    templtyp = (concl, metavars_of concl);
     metam = metas;
     evd = evd;
     env = env;
@@ -304,8 +303,8 @@ let error_incompatible_inst sigma mv  =
 
 (* TODO: replace by clenv_unify (mkMeta mv) rhs ? *)
 let clenv_assign ~metas env sigma mv rhs =
-  let rhs_fls = mk_freelisted rhs in
-  if Metaset.exists (mentions metas mv) rhs_fls.freemetas then
+  let rhs_metas = metavars_of rhs in
+  if Metaset.exists (mentions metas mv) rhs_metas then
     user_err Pp.(str "clenv_assign: circularity in unification");
   try
     begin match Meta.meta_opt_fvalue metas mv with
@@ -315,7 +314,7 @@ let clenv_assign ~metas env sigma mv rhs =
       else
         sigma, metas
     | None ->
-      Meta.meta_assign mv (rhs_fls.rebus, TypeNotProcessed) metas sigma
+      Meta.meta_assign mv (rhs, TypeNotProcessed) metas sigma
     end
   with Not_found ->
     user_err Pp.(str "clenv_assign: undefined meta")
@@ -363,7 +362,7 @@ let clenv_assign ~metas env sigma mv rhs =
 let clenv_metas_in_type_of_meta ~metas env sigma mv =
   let typ = Meta.meta_ftype metas mv in
   let typ = if Metaset.is_empty typ.freemetas then typ.rebus else meta_instance ~metas env sigma typ.rebus in
-  (mk_freelisted typ).freemetas
+  metavars_of typ
 
 let dependent_in_type_of_metas ~metas env sigma mvs =
   List.fold_right
@@ -389,7 +388,7 @@ let undefined_metas metas =
 
 let clenv_dependent_gen hyps_only ?(iter=true) ~metas env sigma concl =
   let all_undefined = undefined_metas metas in
-  let deps_in_concl = (mk_freelisted concl).freemetas in
+  let deps_in_concl = metavars_of concl in
   let deps_in_hyps = dependent_in_type_of_metas ~metas env sigma all_undefined in
   let deps_in_concl =
     if hyps_only && iter then dependent_closure ~metas env sigma deps_in_concl
@@ -421,7 +420,7 @@ let clenv_unify_meta_types ?(flags=default_unify_flags ()) clenv =
 
 let clenv_unique_resolver ?(flags=default_unify_flags ()) clenv concl =
   let metas = meta_handler clenv.metam in
-  let (hd, _) = decompose_app clenv.evd (whd_nored ~metas clenv.env clenv.evd clenv.templtyp.rebus) in
+  let (hd, _) = decompose_app clenv.evd (whd_nored ~metas clenv.env clenv.evd (fst clenv.templtyp)) in
   let clenv = if isMeta clenv.evd hd then clenv_unify_meta_types ~flags clenv else clenv in
   clenv_unify CUMUL ~flags (clenv_type clenv) concl clenv
 
@@ -556,7 +555,7 @@ let clenv_instantiate ?(flags=fchain_flags ()) ?submetas mv clenv (c, ty) =
 
 let clenv_independent clenv =
   let mvs = collect_metas clenv.evd (clenv_value clenv) in
-  let ctyp_mvs = (mk_freelisted (clenv_type clenv)).freemetas in
+  let ctyp_mvs = metavars_of (clenv_type clenv) in
   let deps = Metaset.union (dependent_in_type_of_metas ~metas:clenv.metam clenv.env clenv.evd mvs) ctyp_mvs in
   List.filter (fun mv -> not (Metaset.mem mv deps)) mvs
 
@@ -1102,5 +1101,5 @@ let make_clenv_binding env sigma = make_clenv_binding_gen false None env sigma
 let pr_clenv clenv =
   let prc = Termops.Internal.print_constr_env clenv.env clenv.evd in
   Pp.(h (str"TEMPL: " ++ prc clenv.templval ++
-         str" : " ++ prc clenv.templtyp.rebus ++ fnl () ++
+         str" : " ++ prc (fst clenv.templtyp) ++ fnl () ++
          pr_evar_map (Some 2) clenv.env clenv.evd))

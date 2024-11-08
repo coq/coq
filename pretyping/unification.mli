@@ -25,11 +25,11 @@ open Evd
 module Metaset : Set.S with type elt = metavariable
 module Metamap : Map.ExtS with type key = metavariable and module Set := Metaset
 
-type 'a freelisted = {
+type 'a freelisted = private {
   rebus : 'a;
   freemetas : Metaset.t }
 
-val mk_freelisted : econstr -> econstr freelisted
+val metavars_of : econstr -> Metaset.t
 
 (** Status of the unification of the type of an instance against the type of
      the meta it instantiates:
