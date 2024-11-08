@@ -1943,10 +1943,14 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
   | FLambda(n,tys,f,e) when red_set info.i_flags fBETA ->
       (match get_args m.ctx n tys f e stk with
           Inl e', s ->
+          (* XXX should we count 1 step or length(args) steps? *)
           record_step tab Beta m.ctx;
           knit info tab ~pat_state e' m.ctx f s
-        | Inr lam, s -> knr_ret info tab ~pat_state (lam,s))
+        | Inr lam, s ->
+          (* XXX if we count length(args) above we should do so here too *)
+          knr_ret info tab ~pat_state (lam,s))
   | FFlex fl when red_set info.i_flags fDELTA ->
+      (* TODO missing record_step for non-Def definitions *)
       (match Table.lookup info tab.tab fl with
         | Def (v, _) ->
           record_step tab Delta m.ctx;
@@ -2006,11 +2010,13 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
       (match strip_update_shift_app m stk with
         | (_, args, (((ZcaseT _|Zproj _)::_) as stk')) ->
             let (fxe,fxbd) = contract_fix_vect m.ctx m.term in
+            (* TODO record_step *)
             knit info tab ~pat_state fxe m.ctx fxbd (args@stk')
         | (_,args, ((Zapp _ | Zfix _ | Zshift _ | Zupdate _ | Zprimitive _) :: _ | [] as s)) ->
             knr_ret info tab ~pat_state (m,args@s))
     else knr_ret info tab ~pat_state (m, stk)
   | FLetIn (_,v,_,bd,e) when red_set info.i_flags fZETA ->
+      (* TODO record_step *)
       knit info tab ~pat_state (on_fst (subs_cons v) e) m.ctx bd stk
   | FInt _ | FFloat _ | FString _ | FArray _ ->
     (match [@ocaml.warning "-4"] strip_update_shift_app m stk with
@@ -2019,6 +2025,7 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
        begin match nargs with
          | [] ->
            let args = Array.of_list (List.rev rargs) in
+           (* XXX record_step? *)
            begin match FredNative.red_prim (info_env info) () op u args with
             | Some m -> kni info tab ~pat_state m s
             | None -> assert false
@@ -2031,6 +2038,7 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
   | FCaseInvert (ci, u, pms, _p,iv,_c,v,env) when red_set info.i_flags fMATCH ->
     let pms = mk_clos_vect m.ctx env pms in
     let u = usubst_instance env u in
+    (* TODO record_step *)
     begin match case_inversion info tab ci u pms iv v with
       | Some c -> knit info tab ~pat_state env m.ctx c stk
       | None -> knr_ret info tab ~pat_state (m, stk)
