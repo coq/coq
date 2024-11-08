@@ -659,9 +659,14 @@ file is a particular case of a module called a *library file*.
 
 .. cmd:: Declare ML Module {+ @string }
 
-   Loads an OCaml plugin and its dependencies dynamically.  The :n:`@string`
-   argument must be a valid `findlib <http://projects.camlcity.org/projects/findlib.html>`_
-   plugin name, for example ``coq-core.plugins.ltac``.
+   Loads OCaml plugins and their dependencies dynamically.  The :n:`@string`
+   arguments must be valid `findlib <http://projects.camlcity.org/projects/findlib.html>`_
+   plugin names, for example ``coq-core.plugins.ltac``.
+   They must also contain a `.` to disambiguate against the removed non-findlib loading method.
+
+   Effects (such as adding new commands) from the explicitly requested
+   plugin are activated, but effects from implicitly loaded
+   dependencies are not activated.
 
    The first component of the plugin name is a package name that has to
    be in scope of ``findlib``'s' search path. One can see the paths
