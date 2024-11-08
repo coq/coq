@@ -1450,9 +1450,9 @@ let check_unresolved_evars_of_metas sigma clenv =
   (* This checks that Metas turned into Evars by *)
   (* Refiner.pose_all_metas_as_evars are resolved *)
   let metas = clenv_meta_list clenv in
-  let iter mv () = match Unification.Meta.meta_value metas mv with
-  | c ->
-    begin match Constr.kind (EConstr.Unsafe.to_constr c) with
+  let iter mv () = match Unification.Meta.meta_opt_fvalue metas mv with
+  | Some c ->
+    begin match Constr.kind (EConstr.Unsafe.to_constr c.rebus) with
     | Evar (evk,_) when Evd.is_undefined (clenv_evd clenv) evk
                      && not (Evd.mem sigma evk) ->
       let na = Unification.Meta.meta_name metas mv in
@@ -1460,7 +1460,7 @@ let check_unresolved_evars_of_metas sigma clenv =
       error (CannotFindInstance id)
     | _ -> ()
     end
-  | exception Not_found -> ()
+  | None -> ()
   in
   Unification.Meta.fold iter metas ()
 

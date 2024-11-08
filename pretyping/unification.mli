@@ -29,7 +29,6 @@ type 'a freelisted = {
   rebus : 'a;
   freemetas : Metaset.t }
 
-val metavars_of : econstr -> Metaset.t
 val mk_freelisted : econstr -> econstr freelisted
 
 (** Status of the unification of the type of an instance against the type of
@@ -55,10 +54,6 @@ sig
 type t
 
 val empty : t
-
-val meta_value     : t -> metavariable -> econstr
-(** [meta_fvalue] raises [Not_found] if meta not in map or [Anomaly] if
-   meta has no value *)
 
 val meta_opt_fvalue : t -> metavariable -> econstr freelisted option
 val meta_ftype     : t -> metavariable -> etypes freelisted
