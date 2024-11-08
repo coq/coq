@@ -1449,16 +1449,20 @@ let cut c =
 let check_unresolved_evars_of_metas sigma clenv =
   (* This checks that Metas turned into Evars by *)
   (* Refiner.pose_all_metas_as_evars are resolved *)
-  Metamap.iter (fun mv b -> match b with
-  | Clval (na, (c, _), _) ->
-    (match Constr.kind (EConstr.Unsafe.to_constr c.rebus) with
+  let metas = clenv_meta_list clenv in
+  let iter mv _ = match Unification.Meta.meta_value metas mv with
+  | c ->
+    begin match Constr.kind (EConstr.Unsafe.to_constr c) with
     | Evar (evk,_) when Evd.is_undefined (clenv_evd clenv) evk
                      && not (Evd.mem sigma evk) ->
+      let na = Unification.Meta.meta_name metas mv in
       let id = match na with Name id -> id | _ -> anomaly (Pp.str "unnamed dependent meta.") in
       error (CannotFindInstance id)
-    | _ -> ())
-  | _ -> ())
-  (clenv_meta_list clenv)
+    | _ -> ()
+    end
+  | exception Not_found -> ()
+  in
+  Unification.Metamap.iter iter metas
 
 let do_replace id = function
   | NamingMustBe {CAst.v=id'} when Option.equal Id.equal id (Some id') -> true
