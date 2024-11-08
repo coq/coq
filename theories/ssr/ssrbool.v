@@ -466,9 +466,8 @@ Reserved Notation "[ ==> b1 , b2 , .. , bn => c ]" (at level 0, format
   "'[hv' [ ==> '['  b1 , '/'  b2 , '/'  .. , '/'  bn ']' '/'  =>  c ] ']'").
 
 (**  Shorter delimiter  **)
-#[export] Set Warnings "-overwriting-delimiting-key".
+#[warning="-overwriting-delimiting-key"]
 Delimit Scope bool_scope with B.
-#[export] Set Warnings "overwriting-delimiting-key".
 Open Scope bool_scope.
 
 (**  An alternative to xorb that behaves somewhat better wrt simplification. **)
@@ -1278,9 +1277,8 @@ Definition clone_pred T U :=
 Notation "[ 'predType' 'of' T ]" := (@clone_pred _ T _ id _ id) : form_scope.
 
 Canonical predPredType T := PredType (@id (pred T)).
-Set Warnings "-redundant-canonical-projection".
+#[warning="-redundant-canonical-projection"]
 Canonical boolfunPredType T := PredType (@id (T -> bool)).
-Set Warnings "redundant-canonical-projection".
 
 (** The type of abstract collective predicates.
  While {pred T} is convertible to pred T, it presents the pred_sort coercion
