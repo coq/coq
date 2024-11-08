@@ -288,7 +288,7 @@ let meta_handler metas =
   in
   { Reductionops.meta_value }
 
-let instance ~metas env sigma c =
+let meta_instance ~metas env sigma c =
   (* if s = [] then c else *)
   (* No need to compute contexts under binders as whd_betaiota is local *)
   let metas = meta_handler metas in
@@ -298,17 +298,12 @@ let instance ~metas env sigma c =
 (*************************************)
 (* Metas *)
 
-let meta_instance ~metas env sigma b =
-  let fm = b.freemetas in
-  if Metaset.is_empty fm then b.rebus
-  else
-    instance ~metas env sigma b.rebus
-
 let meta_type ~metas env evd mv =
   let ty =
     try Meta.meta_ftype metas mv
     with Not_found -> anomaly (str "unknown meta ?" ++ str (Nameops.string_of_meta mv) ++ str ".") in
-  meta_instance ~metas env evd ty
+  if Metaset.is_empty ty.freemetas then ty.rebus
+  else meta_instance ~metas env evd ty.rebus
 
 type metabinding = (metavariable * EConstr.constr * (instance_constraint * instance_typing_status))
 
@@ -1780,9 +1775,9 @@ let w_coerce ~metas env evd mv c =
   let mvty = meta_type ~metas env evd mv in
   w_coerce_to_type ~metas env evd c cty mvty
 
-let nf_meta env sigma c =
-  let cl = mk_freelisted c in
-  meta_instance env sigma { cl with rebus = cl.rebus }
+let nf_meta ~metas env sigma c =
+  let freemetas = metavars_of c in
+  if Metaset.is_empty freemetas then c else meta_instance ~metas env sigma c
 
 let unify_to_type ~metas env sigma flags c status u =
   let sigma, c = refresh_universes ~status:Evd.univ_flexible ~onlyalg:true (Some false) env sigma c in

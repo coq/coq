@@ -174,9 +174,13 @@ let clenv_meta_type ~metas env sigma mv =
   let ty =
     try Unification.Meta.meta_ftype metas mv
     with Not_found -> anomaly Pp.(str "unknown meta ?" ++ str (Nameops.string_of_meta mv) ++ str ".") in
-  meta_instance ~metas env sigma ty
-let clenv_value clenv = meta_instance ~metas:clenv.metam clenv.env clenv.evd { rebus = clenv.templval; freemetas = clenv.metaset }
-let clenv_type clenv = meta_instance ~metas:clenv.metam clenv.env clenv.evd clenv.templtyp
+  if Metaset.is_empty ty.freemetas then ty.rebus else meta_instance ~metas env sigma ty.rebus
+let clenv_value clenv =
+  if Metaset.is_empty clenv.metaset then clenv.templval
+  else meta_instance ~metas:clenv.metam clenv.env clenv.evd clenv.templval
+let clenv_type clenv =
+  if Metaset.is_empty clenv.templtyp.freemetas then clenv.templtyp.rebus
+  else meta_instance ~metas:clenv.metam clenv.env clenv.evd clenv.templtyp.rebus
 
 let clenv_push_prod cl =
   let metas = meta_handler cl.metam in
@@ -357,7 +361,9 @@ let clenv_assign ~metas env sigma mv rhs =
 *)
 
 let clenv_metas_in_type_of_meta ~metas env sigma mv =
-  (mk_freelisted (meta_instance ~metas env sigma (Meta.meta_ftype metas mv))).freemetas
+  let typ = Meta.meta_ftype metas mv in
+  let typ = if Metaset.is_empty typ.freemetas then typ.rebus else meta_instance ~metas env sigma typ.rebus in
+  (mk_freelisted typ).freemetas
 
 let dependent_in_type_of_metas ~metas env sigma mvs =
   List.fold_right
@@ -985,7 +991,7 @@ let case_pf ?(with_evars=false) ~dep (indarg, typ) =
   let flags = elim_flags () in
   let metas, sigma = w_unify_meta_types ~metas ~flags env sigma in
   let metas, sigma = w_unify ~metas ~flags env sigma CUMUL templtyp concl in
-  let pred = meta_instance ~metas env sigma (mk_freelisted (mkMeta mvP)) in
+  let pred = meta_instance ~metas env sigma (mkMeta mvP) in
 
   (* Create the branch types *)
   let branches =

@@ -169,4 +169,4 @@ val abstract_list_all :
 (** {5 Meta-related functions} *)
 
 val meta_type : metas:Meta.t -> env -> evar_map -> Constr.metavariable -> types
-val meta_instance : metas:Meta.t -> env -> evar_map -> constr freelisted -> constr
+val meta_instance : metas:Meta.t -> env -> evar_map -> constr -> constr
