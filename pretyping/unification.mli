@@ -61,11 +61,7 @@ type instance_typing_status =
 
 type instance_status = instance_constraint * instance_typing_status
 
-(** Clausal environments *)
-
-type clbinding =
-  | Cltyp of Name.t * econstr freelisted
-  | Clval of Name.t * (econstr freelisted * instance_status) * econstr freelisted
+type clbinding
 
 (** Metas *)
 module Meta :

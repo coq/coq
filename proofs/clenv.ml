@@ -375,9 +375,9 @@ let dependent_closure ~metas env sigma mvs =
   aux mvs mvs
 
 let undefined_metas metas =
-  let fold n b accu = match b with
-  | Clval(_,_,typ) -> accu
-  | Cltyp (_,typ)  -> n :: accu
+  let fold n _ accu = match Unification.Meta.meta_opt_fvalue metas n with
+  | Some _ -> accu
+  | None -> n :: accu
   in
   let m = Metamap.fold fold metas [] in
   List.sort Int.compare m
@@ -429,7 +429,8 @@ let adjust_meta_source ~metas evd mv = function
       | _ -> None in
     (* This is very ad hoc code so that an evar inherits the name of the binder
        in situations like "ex_intro (fun x => P) ?ev p" *)
-    let f = function (mv',(Cltyp (_,t) | Clval (_,_,t))) ->
+    let f = function (mv', _) ->
+      let t = Unification.Meta.meta_ftype metas mv' in
       if Metaset.mem mv t.freemetas then
         let f,l = decompose_app_list evd t.rebus in
         match EConstr.kind evd f with
@@ -582,22 +583,17 @@ let explain_no_such_bound_variable mvl {CAst.v=id;loc} =
 
 let meta_with_name metas ({CAst.v=id} as lid) =
   let na = Name id in
-  let fold n clb (l1, l2 as l) =
-    let (na',def) = match clb with
-    | Cltyp (na, _) -> (na, false)
-    | Clval (na, _, _) -> (na, true)
-    in
+  let fold n _ (l1, l2 as l) =
+    let na' = Unification.Meta.meta_name metas n in
+    let def = Option.has_some (Unification.Meta.meta_opt_fvalue metas n) in
     if Name.equal na na' then if def then (n::l1,l2) else (n::l1,n::l2)
     else l
   in
   let (mvl, mvnodef) = Unification.Metamap.fold fold metas ([], []) in
   match List.rev mvnodef, List.rev mvl with
     | _,[]  ->
-      let fold n clb l =
-        let na = match clb with
-          | Cltyp (na, _) -> na
-          | Clval (na, _, _) -> na
-        in
+      let fold n _ l =
+        let na = Unification.Meta.meta_name metas n in
         if na != Anonymous then Name.get_id na :: l else l
       in
       let mvl = List.rev (Unification.Metamap.fold fold metas []) in
