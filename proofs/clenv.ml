@@ -311,8 +311,7 @@ let clenv_assign ~metas env sigma mv rhs =
       else
         sigma, metas
     | None ->
-      let st = (Conv,TypeNotProcessed) in
-      Meta.meta_assign mv (rhs_fls.rebus, st) metas sigma
+      Meta.meta_assign mv (rhs_fls.rebus, TypeNotProcessed) metas sigma
     end
   with Not_found ->
     user_err Pp.(str "clenv_assign: undefined meta")
@@ -638,7 +637,7 @@ let clenv_assign_binding clenv k c =
   let k_typ = hnf_constr clenv.env clenv.evd (clenv_meta_type ~metas:clenv.metam clenv.env clenv.evd k) in
   let c_typ = nf_betaiota clenv.env clenv.evd (Retyping.get_type_of clenv.env clenv.evd c) in
   let status, metas, sigma, c = clenv_unify_binding_type ~metas:clenv.metam clenv.env clenv.evd c c_typ k_typ in
-  let sigma, metas = Meta.meta_assign k (c, (Conv, status)) metas sigma in
+  let sigma, metas = Meta.meta_assign k (c, status) metas sigma in
   update_clenv_evd clenv sigma metas
 
 let clenv_match_args bl clenv =

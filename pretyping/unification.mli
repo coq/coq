@@ -32,15 +32,6 @@ type 'a freelisted = {
 val metavars_of : econstr -> Metaset.t
 val mk_freelisted : econstr -> econstr freelisted
 
-(** Status of an instance found by unification wrt to the meta it solves:
-  - a supertype of the meta (e.g. the solution to ?X <= T is a supertype of ?X)
-  - a subtype of the meta (e.g. the solution to T <= ?X is a supertype of ?X)
-  - a term that can be eta-expanded n times while still being a solution
-    (e.g. the solution [P] to [?X u v = P u v] can be eta-expanded twice)
-*)
-
-type instance_constraint = IsSuperType | IsSubType | Conv
-
 (** Status of the unification of the type of an instance against the type of
      the meta it instantiates:
    - CoerceToType means that the unification of types has not been done
@@ -56,10 +47,6 @@ type instance_constraint = IsSuperType | IsSubType | Conv
 
 type instance_typing_status =
     CoerceToType | TypeNotProcessed | TypeProcessed
-
-(** Status of an instance together with the status of its type unification *)
-
-type instance_status = instance_constraint * instance_typing_status
 
 type clbinding
 
@@ -77,7 +64,7 @@ val meta_opt_fvalue : t -> metavariable -> econstr freelisted option
 val meta_ftype     : t -> metavariable -> etypes freelisted
 val meta_name      : t -> metavariable -> Name.t
 val meta_declare   : metavariable -> etypes -> ?name:Name.t -> t -> t
-val meta_assign    : metavariable -> econstr * instance_status -> t -> evar_map -> evar_map * t
+val meta_assign    : metavariable -> econstr * instance_typing_status -> t -> evar_map -> evar_map * t
 
 (** [meta_merge evd1 evd2] returns [evd2] extended with the metas of [evd1] *)
 val meta_merge : t -> t -> t

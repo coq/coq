@@ -164,7 +164,7 @@ let use_meta_source metas evd mv v =
     end
   | _ -> evd
 
-let meta_assign mv (v, pb) metas evd =
+let meta_assign0 mv (v, pb) metas evd =
   let modify _ = function
   | Cltyp (na, ty) -> Clval (na, (mk_freelisted v, pb), ty)
   | _ -> anomaly ~label:"meta_assign" (Pp.str "already defined.")
@@ -172,6 +172,9 @@ let meta_assign mv (v, pb) metas evd =
   let metas = Metamap.modify mv modify metas in
   let evd = use_meta_source metas evd mv v in
   evd, metas
+
+let meta_assign mv (v, pb) metas evd =
+  meta_assign0 mv (v, (Conv, pb)) metas evd
 
 let meta_merge metas sigma =
   Metamap.fold Metamap.add metas sigma
@@ -485,7 +488,7 @@ let pose_all_metas_as_evars ~metas env evd t =
         let ty = nf_betaiota env !evdref ty in
         let src = Meta.evar_source_of_meta mv !metas in
         let evd, ev = Evarutil.new_evar env !evdref ~src ty in
-        let evd, nmetas = Meta.meta_assign mv (ev,(Conv,TypeNotProcessed)) !metas evd in
+        let evd, nmetas = Meta.meta_assign mv (ev, TypeNotProcessed) !metas evd in
         let () = evdref := evd in
         let () = metas := nmetas in
         ev)
@@ -1886,7 +1889,7 @@ let w_merge env with_types flags (substn : subst0) =
                 if isMetaOf evd mv (whd_all ~metas env evd c) then evd, metas0
                 else error_cannot_unify env evd (mkMeta mv,c)
               else
-                Meta.meta_assign mv (c,(status,TypeProcessed)) metas0 evd
+                Meta.meta_assign0 mv (c,(status,TypeProcessed)) metas0 evd
             in
             w_merge_rec metas0 evd' (metas''@metas) evars'' eqns
         end
