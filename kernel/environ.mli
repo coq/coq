@@ -70,20 +70,26 @@ type env = private {
   env_globals       : Globals.t;
   env_named_context : named_context_val; (* section variables *)
   env_rel_context   : rel_context_val;
-  env_nb_rel        : int;
   env_universes : UGraph.t;
   env_qualities : Sorts.QVar.Set.t;
-  irr_constants : Sorts.relevance Cmap_env.t
-(** [irr_constants] is a cache of the relevances which are not Relevant.
-    In other words, [const_relevance == Option.default Relevant (find_opt con irr_constants)]. *);
-  irr_inds : Sorts.relevance Indmap_env.t
-(** [irr_inds] is a cache of the relevances which are not Relevant. cf [irr_constants]. *);
   symb_pats : rewrite_rule list Cmap_env.t;
   env_typing_flags  : typing_flags;
   vm_library : Vmlibrary.t;
   retroknowledge : Retroknowledge.retroknowledge;
   rewrite_rules_allowed : bool;
   (** Allow rewrite rules (breaks e.g. SR) *)
+
+  (** caches *)
+  env_nb_rel        : int;
+  irr_constants : Sorts.relevance Cmap_env.t
+(** [irr_constants] is a cache of the relevances which are not Relevant.
+    In other words, [const_relevance == Option.default Relevant (find_opt con irr_constants)]. *);
+  irr_inds : Sorts.relevance Indmap_env.t
+(** [irr_inds] is a cache of the relevances which are not Relevant. cf [irr_constants]. *);
+  constant_hyps : Names.Id.Set.t Names.Cmap_env.t
+(** Cache section variables depended on by each constant. Not present -> depends on nothing. *);
+  inductive_hyps : Names.Id.Set.t Names.Mindmap_env.t
+(** Cache section variables depended on by each inductive. Not present -> depends on nothing. *);
 }
 
 type rewrule_not_allowed = Symb | Rule
