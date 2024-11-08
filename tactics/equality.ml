@@ -263,7 +263,7 @@ let general_elim_clause with_evars frzevars tac cls c (ctx, eqn, args) l l2r eli
       let newevars = lazy (Evarutil.undefined_evars_of_term sigma (Clenv.clenv_type rew)) in
       let flags = make_flags frzevars sigma flags newevars in
       let metas = Clenv.clenv_meta_list rew in
-      let submetas = List.map (fun mv -> mv, Unification.Metamap.find mv metas) (Clenv.clenv_arguments rew) in
+      let submetas = (Clenv.clenv_arguments rew, metas) in
       general_elim_clause with_evars flags cls (submetas, c, Clenv.clenv_type rew) elim
       end
     in

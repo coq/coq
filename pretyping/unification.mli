@@ -48,13 +48,13 @@ val mk_freelisted : econstr -> econstr freelisted
 type instance_typing_status =
     CoerceToType | TypeNotProcessed | TypeProcessed
 
-type clbinding
-
 (** Metas *)
 module Meta :
 sig
 
-type t = clbinding Metamap.t
+type t
+
+val empty : t
 
 val meta_value     : t -> metavariable -> econstr
 (** [meta_fvalue] raises [Not_found] if meta not in map or [Anomaly] if
@@ -72,6 +72,8 @@ val meta_merge : t -> t -> t
 val map_metas : (econstr -> econstr) -> t -> t
 
 val evar_source_of_meta : metavariable -> t -> Evar_kinds.t Loc.located
+
+val fold : (metavariable -> 'a -> 'a) -> t -> 'a -> 'a
 
 val pr_metaset : Metaset.t -> Pp.t
 val pr_metamap : env -> evar_map -> t -> Pp.t
@@ -116,30 +118,30 @@ val is_keyed_unification : unit -> bool
 
 (** The "unique" unification function *)
 val w_unify :
-  ?metas:clbinding Metamap.t ->
-  env -> evar_map -> conv_pb -> ?flags:unify_flags -> constr -> constr -> clbinding Metamap.t * evar_map
+  ?metas:Meta.t ->
+  env -> evar_map -> conv_pb -> ?flags:unify_flags -> constr -> constr -> Meta.t * evar_map
 
 (** [w_unify_to_subterm env m (c,t)] performs unification of [c] with a
    subterm of [t]. Constraints are added to [m] and the matched
    subterm of [t] is also returned. *)
 val w_unify_to_subterm :
-  ?metas:clbinding Metamap.t ->
-  env -> evar_map -> ?flags:unify_flags -> constr * constr -> (clbinding Metamap.t * evar_map) * constr
+  ?metas:Meta.t ->
+  env -> evar_map -> ?flags:unify_flags -> constr * constr -> (Meta.t * evar_map) * constr
 
 val w_unify_to_subterm_all :
-  ?metas:clbinding Metamap.t ->
-  env -> evar_map -> ?flags:unify_flags -> constr * constr -> (clbinding Metamap.t * evar_map) list
+  ?metas:Meta.t ->
+  env -> evar_map -> ?flags:unify_flags -> constr * constr -> (Meta.t * evar_map) list
 
 val w_unify_meta_types :
-  ?metas:clbinding Metamap.t ->
-  env -> ?flags:unify_flags -> evar_map -> clbinding Metamap.t * evar_map
+  ?metas:Meta.t ->
+  env -> ?flags:unify_flags -> evar_map -> Meta.t * evar_map
 
 (** [w_coerce_to_type env evd c ctyp typ] tries to coerce [c] of type
    [ctyp] so that its gets type [typ]; [typ] may contain metavariables *)
 val w_coerce_to_type :
-  ?metas:clbinding Metamap.t ->
+  ?metas:Meta.t ->
   env -> evar_map -> constr -> types -> types ->
-  evar_map * clbinding Metamap.t * constr
+  evar_map * Meta.t * constr
 
 (* Looking for subterms in contexts at some occurrences, possibly with pattern*)
 
@@ -159,7 +161,7 @@ type 'r abstraction_result =
 val make_abstraction : env -> evar_map -> constr ->
   abstraction_request -> 'r abstraction_result
 
-val pose_all_metas_as_evars : metas:clbinding Metamap.t -> env -> evar_map -> constr -> evar_map * clbinding Metamap.t * constr
+val pose_all_metas_as_evars : metas:Meta.t -> env -> evar_map -> constr -> evar_map * Meta.t * constr
 
 (*i This should be in another module i*)
 
@@ -171,5 +173,5 @@ val abstract_list_all :
 
 (** {5 Meta-related functions} *)
 
-val meta_type : metas:clbinding Metamap.t -> env -> evar_map -> Constr.metavariable -> types
-val meta_instance : metas:clbinding Metamap.t -> env -> evar_map -> constr freelisted -> constr
+val meta_type : metas:Meta.t -> env -> evar_map -> Constr.metavariable -> types
+val meta_instance : metas:Meta.t -> env -> evar_map -> constr freelisted -> constr

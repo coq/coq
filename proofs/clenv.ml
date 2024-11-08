@@ -43,7 +43,7 @@ type meta_arg = {
 type clausenv = {
   env      : env;
   evd      : evar_map;
-  metam    : clbinding Metamap.t;
+  metam    : Unification.Meta.t;
   metas    : meta_arg list;
   templval : constr;
   metaset : Metaset.t;
@@ -245,7 +245,7 @@ let clenv_environments env sigma template bound t =
       | (n, LetIn (na,b,_,t)) -> clrec templ sigma metam metas n (subst1 b t)
       | (n, _) -> (metam, sigma, List.rev metas, t)
   in
-  clrec template sigma Metamap.empty [] bound t
+  clrec template sigma Meta.empty [] bound t
 
 let mk_clenv_from_env env sigma n (c,cty) =
   let evd = sigma in
@@ -374,11 +374,11 @@ let dependent_closure ~metas env sigma mvs =
   aux mvs mvs
 
 let undefined_metas metas =
-  let fold n _ accu = match Unification.Meta.meta_opt_fvalue metas n with
+  let fold n accu = match Unification.Meta.meta_opt_fvalue metas n with
   | Some _ -> accu
   | None -> n :: accu
   in
-  let m = Metamap.fold fold metas [] in
+  let m = Unification.Meta.fold fold metas [] in
   List.sort Int.compare m
 
 let clenv_dependent_gen hyps_only ?(iter=true) ~metas env sigma concl =
@@ -428,7 +428,7 @@ let adjust_meta_source ~metas evd mv = function
       | _ -> None in
     (* This is very ad hoc code so that an evar inherits the name of the binder
        in situations like "ex_intro (fun x => P) ?ev p" *)
-    let f = function (mv', _) ->
+    let f mv' =
       let t = Unification.Meta.meta_ftype metas mv' in
       if Metaset.mem mv t.freemetas then
         let f,l = decompose_app_list evd t.rebus in
@@ -439,7 +439,8 @@ let adjust_meta_source ~metas evd mv = function
           | None -> None)
         | _ -> None
       else None in
-    let id = Option.default id (List.find_map f (Unification.Metamap.bindings metas)) in
+    let metas = List.rev @@ Unification.Meta.fold (fun mv accu -> mv :: accu) metas [] in
+    let id = Option.default id (List.find_map f metas) in
     loc,Evar_kinds.VarInstance id
   | src -> src
 
@@ -519,16 +520,15 @@ let fchain_flags () =
 let clenv_instantiate ?(flags=fchain_flags ()) ?submetas mv clenv (c, ty) =
   let clenv, c = match submetas with
   | None -> clenv, c
-  | Some metas ->
-    let fold accu (mv, cl) = Metamap.add mv cl accu in
-    let metam = List.fold_left fold clenv.metam metas in
+  | Some (metas, metam) ->
+    let metam = Unification.Meta.meta_merge metam clenv.metam in
     let clenv = update_clenv_evd clenv clenv.evd metam in
-    let c = applist (c, List.map (fun (mv, _) -> mkMeta mv) metas) in
+    let c = applist (c, List.map mkMeta metas) in
     let map arg =
       if Int.equal mv arg.marg_meta then
         (* we never chain more than 2 clenvs *)
         let () = assert (Option.is_empty arg.marg_chain) in
-        { arg with marg_chain = Some (List.map fst metas) }
+        { arg with marg_chain = Some metas }
       else arg
     in
     let metas = List.map map clenv.metas in
@@ -582,20 +582,20 @@ let explain_no_such_bound_variable mvl {CAst.v=id;loc} =
 
 let meta_with_name metas ({CAst.v=id} as lid) =
   let na = Name id in
-  let fold n _ (l1, l2 as l) =
+  let fold n (l1, l2 as l) =
     let na' = Unification.Meta.meta_name metas n in
     let def = Option.has_some (Unification.Meta.meta_opt_fvalue metas n) in
     if Name.equal na na' then if def then (n::l1,l2) else (n::l1,n::l2)
     else l
   in
-  let (mvl, mvnodef) = Unification.Metamap.fold fold metas ([], []) in
+  let (mvl, mvnodef) = Unification.Meta.fold fold metas ([], []) in
   match List.rev mvnodef, List.rev mvl with
     | _,[]  ->
-      let fold n _ l =
+      let fold n l =
         let na = Unification.Meta.meta_name metas n in
         if na != Anonymous then Name.get_id na :: l else l
       in
-      let mvl = List.rev (Unification.Metamap.fold fold metas []) in
+      let mvl = List.rev (Unification.Meta.fold fold metas []) in
       explain_no_such_bound_variable mvl lid
     | (n::_,_|_,n::_) ->
         n
@@ -833,7 +833,7 @@ let std_refine ~metas env sigma cl r =
    and Inversion (case_then_using et case_nodep_then_using) tactics. *)
 
 type refiner_kind =
-| Std of clbinding Metamap.t * EConstr.t
+| Std of Meta.t * EConstr.t
 | Case of case_node * (EConstr.rel_context * EConstr.t) array
 
 let refiner_gen is_case =
@@ -979,7 +979,7 @@ let case_pf ?(with_evars=false) ~dep (indarg, typ) =
   (* Extract the return clause using unification with the conclusion *)
   let typP = Inductiveops.make_arity env sigma dep indf s in
   let mvP = new_meta () in
-  let metas = Meta.meta_declare mvP typP Metamap.empty in
+  let metas = Meta.meta_declare mvP typP Meta.empty in
   let depargs = Array.append indices [|indarg|] in
   let templtyp = if dep then mkApp (mkMeta mvP, depargs) else mkApp (mkMeta mvP, indices) in
   let flags = elim_flags () in
@@ -1068,7 +1068,7 @@ let unify ?(flags=fail_quick_unif_flags) ~cv_pb m =
     let sigma = Proofview.Goal.sigma gl in
     let n = Tacmach.pf_concl gl in
     try
-      let _, sigma = w_unify ~metas:Metamap.empty env sigma cv_pb ~flags m n in
+      let _, sigma = w_unify ~metas:Meta.empty env sigma cv_pb ~flags m n in
       Proofview.Unsafe.tclEVARSADVANCE sigma
     with e when CErrors.noncritical e ->
       let info = Exninfo.reify () in

@@ -216,7 +216,7 @@ let flags_FO env =
   }
 
 let unif_FO env ise metas p c =
-  let metas = Unification.Metamap.fold (fun mv t accu -> Unification.Meta.meta_declare mv t accu) metas Unification.Metamap.empty in
+  let metas = Unification.Metamap.fold (fun mv t accu -> Unification.Meta.meta_declare mv t accu) metas Unification.Meta.empty in
   let _ : _ * Evd.evar_map = Unification.w_unify ~metas env ise Conversion.CONV ~flags:(flags_FO env) p c in
   ()
 

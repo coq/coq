@@ -115,6 +115,11 @@ struct
 
 type t = clbinding Metamap.t
 
+let empty = Metamap.empty
+
+let fold f map accu =
+  Metamap.fold (fun mv _ accu -> f mv accu) map accu
+
 let map_metas f metas =
   let map cl = map_clb f cl in
   Metamap.Smart.map map metas
