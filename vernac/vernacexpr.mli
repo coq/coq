@@ -371,7 +371,7 @@ type hints_expr =
   | HintsTransparency of Libnames.qualid Hints.hints_transparency_target * bool
   | HintsMode of Libnames.qualid * Hints.hint_mode list
   | HintsConstructors of Libnames.qualid list
-  | HintsExtern of int * Constrexpr.constr_expr option * Genarg.raw_generic_argument
+  | HintsExtern of int * Constrexpr.constr_expr option * Genarg.raw_generic_argument * Libnames.qualid option
 
 (** [synterp_vernac_expr] describes the AST of commands which have effects on
     parsing or parsing extensions *)

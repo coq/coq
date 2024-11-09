@@ -513,11 +513,12 @@ Creating Hints
       These flags affect the unification of hints in the database.
       We advise using this just after a :cmd:`Create HintDb` command.
 
-   .. cmd:: Hint Extern @natural {? @one_pattern } => @ltac_expr {? : {+ @ident } }
+   .. cmd:: Hint Extern @natural {? @one_pattern } {? as @qualid } => @ltac_expr {? : {+ @ident } }
 
       Extends :tacn:`auto` with tactics other than :tacn:`apply` and
       :tacn:`unfold`. :n:`@natural` is the cost, :n:`@one_pattern` is the pattern
-      to match and :n:`@ltac_expr` is the action to apply.
+      to match, :n:`@qualid` is an existing name to associate with the hint (e.g.
+      for use in :cmd:`Remove Hints`) and :n:`@ltac_expr` is the action to apply.
 
       **Usage tip**: tactics that can succeed even if they don't change the context,
       such as most of the :ref:`conversion tactics <applyingconversionrules>`, should
@@ -722,6 +723,8 @@ Creating Hints
    (first to last).  The groups are shown ordered alphabetically on the last component of
    the symbol name.  Note that hints with the same cost are tried in
    reverse of the order they're defined in, i.e., last to first.
+
+   .. todo describe name for Extern
 
 Hint locality
 `````````````

@@ -1,0 +1,16 @@
+Non-discriminated database
+Unfoldable variable definitions: none
+Unfoldable constant definitions: none
+Unfoldable projection definitions: none
+Cut: emp
+For any goal ->   
+For True ->   (*external*) idtac "x" (cost 1, pattern True, id 0, name Nat.t)
+
+Non-discriminated database
+Unfoldable variable definitions: none
+Unfoldable constant definitions: none
+Unfoldable projection definitions: none
+Cut: emp
+For any goal ->   
+For True ->   
+
