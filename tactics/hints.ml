@@ -625,6 +625,7 @@ val add_modes : hint_mode array list GlobRef.Map.t -> t -> t
 val modes : t -> hint_mode array list GlobRef.Map.t
 val fold : (GlobRef.t option -> hint_mode array list -> full_hint list -> 'a -> 'a) ->
   t -> 'a -> 'a
+val name : t -> string option
 end =
 struct
 
@@ -830,6 +831,7 @@ struct
   let modes db = GlobRef.Map.map (fun se -> se.sentry_mode) db.hintdb_map
 
   let use_dn db = db.use_dn
+  let name db = db.hintdb_name
 
 end
 
@@ -1612,16 +1614,31 @@ let push_resolve_hyp env sigma decl db =
 
 let pr_hint_elt env sigma h = pr_econstr_env env sigma h.hint_term
 
-let pr_hint env sigma h = match h.obj with
+let with_db dbname = match dbname with | Some n -> str " with " ++ str n | None -> mt ()
+let with_dblist dblist =
+  if dblist = [] then mt ()
+  else str " with" ++ (List.fold_left (fun acc db -> acc ++ str " " ++ str db) (mt ())) dblist
+
+let pr_hint env sigma ?dbname ?(dblist=[]) h = match h.obj with
   | Res_pf c -> (str"simple apply " ++ pr_hint_elt env sigma c)
   | ERes_pf c -> (str"simple eapply " ++ pr_hint_elt env sigma c)
   | Give_exact c -> (str"exact " ++ pr_hint_elt env sigma c)
   | Res_pf_THEN_trivial_fail c ->
-      (str"simple apply " ++ pr_hint_elt env sigma c ++ str" ; trivial")
+      (str"simple apply " ++ pr_hint_elt env sigma c ++ str"; trivial" ++ with_dblist dblist)
   | Unfold_nth c ->
     str"unfold " ++  pr_evaluable_reference c
   | Extern (_, tac) ->
     str "(*external*) " ++ Pputils.pr_glb_generic env sigma tac
+
+let pr_hint_tceauto env sigma ?dbname ?(dblist=[]) h =
+  match h.obj with
+  | Res_pf c
+  | ERes_pf c when dbname <> None ->
+    (str"autoapply " ++ pr_hint_elt env sigma c ++ with_db dbname)
+  | Res_pf_THEN_trivial_fail c ->
+    (str"autoapply " ++ pr_hint_elt env sigma c ++ with_db dbname ++
+     str"; trivial" ++ with_dblist dblist)
+  | _ -> pr_hint env sigma ?dbname ~dblist h
 
 let pr_id_hint env sigma (id, v) =
   let pr_pat p = match p.pat with
@@ -1864,7 +1881,9 @@ struct
   | Some (ConstrPattern p | SyntacticPattern p) -> Some p
   | Some DefaultPattern -> None
   let run (h : t) k = run_hint h.code k
-  let print env sigma (h : t) = pr_hint env sigma h.code
+    let print env sigma ?(tce=false) ?dbname ?dblist (h : t) =
+    let pr = if tce then pr_hint_tceauto else pr_hint in
+      pr env sigma ?dbname ?dblist h.code
   let name (h : t) = h.name
 
   let subgoals (h : t) = match h.code.obj with
@@ -1900,3 +1919,14 @@ let hint_res_pf ?with_evars ?with_classes ?flags h =
     let clenv = connect_hint_clenv h gl in
     Clenv.res_pf ?with_evars ?with_classes ?flags clenv
   end
+
+let format_db_info tceauto h db_list =
+  let n = FullHint.database h in
+  let dbname = if n = Some "core" && (not tceauto) then None else n in
+  let dblist = List.rev (List.fold_left (fun acc db ->
+      let n = Hint_db.name db in
+      match n with
+      | Some n when n <> "core" || tceauto -> n :: acc
+      | _ -> acc
+    ) [] db_list) in
+  dbname, dblist

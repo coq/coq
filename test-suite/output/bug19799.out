@@ -1,0 +1,11 @@
+(* info auto: *)
+intro.
+intro.
+simple apply eq_sym; trivial with zarith (in core).
+(* info eauto: *)
+intro.
+intro.
+simple apply eq_sym; trivial with zarith.
+File "./output/bug19799.v", line 8, characters 2-52:
+The command has indeed failed with message:
+No applicable tactic.

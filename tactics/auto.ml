@@ -334,11 +334,12 @@ and tac_of_hint dbg db_list local_db concl =
       conclPattern concl p tacast
   in
   let pr_hint h env sigma =
+    let dbname, dblist = format_db_info false h db_list in
     let origin = match FullHint.database h with
     | None -> mt ()
     | Some n -> str " (in " ++ str n ++ str ")"
     in
-    FullHint.print env sigma h ++ origin
+    FullHint.print env sigma ?dbname ~dblist h ++ origin
   in
   fun h -> tclLOG dbg (pr_hint h) (FullHint.run h tactic)
 

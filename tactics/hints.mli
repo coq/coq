@@ -60,7 +60,8 @@ sig
   val database : t -> string option
   val run : t -> (hint hint_ast -> 'r Proofview.tactic) -> 'r Proofview.tactic
   val name : t -> GlobRef.t option
-  val print : env -> evar_map -> t -> Pp.t
+  val print : env -> evar_map -> ?tce:bool -> ?dbname:string ->
+        ?dblist:string list -> t -> Pp.t
   val subgoals : t -> int option
 
   (** This function is for backward compatibility only, not to use in newly
@@ -152,6 +153,7 @@ module Hint_db :
 
     val add_modes : hint_mode array list GlobRef.Map.t -> t -> t
     val modes : t -> hint_mode array list GlobRef.Map.t
+    val name : t -> string option
   end
 
 type hint_db = Hint_db.t
@@ -242,3 +244,5 @@ val pr_applicable_hint : Proof.t -> Pp.t
 val pr_hint_ref : env -> evar_map -> GlobRef.t -> Pp.t
 val pr_hint_db_by_name : env -> evar_map -> hint_db_name -> Pp.t
 val pr_hint_db_env : env -> evar_map -> Hint_db.t -> Pp.t
+
+val format_db_info : bool -> FullHint.t -> Hint_db.t list -> string option * string list
