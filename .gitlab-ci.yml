@@ -1026,13 +1026,6 @@ library:ci-rupicola:
 plugin:ci-coq_lsp:
   extends: .ci-template-flambda
 
-plugin:ci-serapi:
-  extends: .ci-template-flambda
-  needs:
-  - build:edge+flambda
-  - plugin:ci-coq_lsp
-  stage: build-2
-
 plugin:ci-vscoq:
   extends: .ci-template-flambda
 
