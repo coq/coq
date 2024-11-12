@@ -662,7 +662,6 @@ file is a particular case of a module called a *library file*.
    Loads OCaml plugins and their dependencies dynamically.  The :n:`@string`
    arguments must be valid `findlib <http://projects.camlcity.org/projects/findlib.html>`_
    plugin names, for example ``coq-core.plugins.ltac``.
-   They must also contain a `.` to disambiguate against the removed non-findlib loading method.
 
    Effects (such as adding new commands) from the explicitly requested
    plugin are activated, but effects from implicitly loaded
