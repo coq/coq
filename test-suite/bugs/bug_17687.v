@@ -1,6 +1,6 @@
 (* -*- coq-prog-args: ("-noinit"); -*- *)
 
-Declare ML Module "ltac_plugin".
+Declare ML Module "coq-core.plugins.ltac".
 Global Set Default Proof Mode "Classic".
 
 Inductive paths {A : Type} (a : A) : forall _:A, Type := idpath : paths a a.

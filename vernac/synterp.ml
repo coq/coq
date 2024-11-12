@@ -321,8 +321,29 @@ let synterp_require ~intern from export qidl =
 let expand filename =
   Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) filename
 
+let warn_legacy_loading =
+  let name = "legacy-loading-removed" in
+  CWarnings.create ~name (fun name ->
+      Pp.(str "Legacy loading plugin method has been removed from Coq, \
+               and the `:` syntax is deprecated, and its first \
+               argument ignored; please remove \"" ++
+          str name ++ str ":\" from your Declare ML"))
+
+let inspect_legacy_decl l =
+  match String.split_on_char ':' l with
+  | [lib] -> lib
+  | [cmxs; lib] ->
+    warn_legacy_loading cmxs;
+    lib
+  | bad ->
+    let bad = String.concat ":" bad in
+    CErrors.user_err Pp.(str "bad package name: " ++ str bad ++ str " .")
+
+let remove_legacy_decls = List.map inspect_legacy_decl
+
 let synterp_declare_ml_module ~local l =
   let local = Option.default false local in
+  let l = remove_legacy_decls l in
   let l = List.map expand l in
   Mltop.declare_ml_modules local l
 

@@ -1,7 +1,7 @@
 build: [
   ["dune" "subst"] {dev}
   # We tell dunestrap to use coq-config from coq-core
-  [ make "dunestrap" "COQ_DUNE_EXTRA_OPT=-split" "DUNESTRAPOPT=-p coq-stdlib"]
+  [ make "dunestrap" "COQ_SPLIT=1" "DUNESTRAPOPT=-p coq-stdlib"]
   [
     "dune"
     "build"

@@ -10,12 +10,6 @@
 
 module StrSet = Set.Make(String)
 
-(** [basename_noext] removes both the directory part and the extension
-    (if necessary) of a filename *)
-let basename_noext filename =
-  let fn = Filename.basename filename in
-  try Filename.chop_extension fn with Invalid_argument _ -> fn
-
 (** Coq files specifies on the command line:
     - first string is the full filename, with only its extension removed
     - second string is the absolute version of the previous (via getcwd)
@@ -53,15 +47,6 @@ let warning_module_notfound =
     str " and has not been found in the loadpath!"
   in
   CWarnings.create ~name:"module-not-found"
-    ~category:CWarnings.CoreCategories.filesystem warn
-
-let warning_declare =
-  let warn (f, s) =
-    let open Pp in
-    str "in file " ++ str f ++ str ", declared ML module " ++ str s ++
-    str " has not been found!"
-  in
-  CWarnings.create ~name:"declared-module-not-found"
     ~category:CWarnings.CoreCategories.filesystem warn
 
 let warn_if_clash ?(what=Library) exact file dir f1 = let open Format in function
@@ -126,30 +111,30 @@ module VCache = Set.Make(VData)
     (those loaded by [Require]) from other dependencies, e.g. dependencies
     on ".v" files (for [Load]) or ".cmx", ".cmo", etc... (for [Declare]). *)
 
-let legacy_mapping = Core_plugins_findlib_compat.legacy_to_findlib
+let warn_legacy_loading =
+  let name = "legacy-loading-removed-coqdep" in
+  CWarnings.create ~name (fun name ->
+      Pp.(str "Legacy loading plugin method has been removed from Coq, \
+               and the `:` syntax is deprecated, and its first \
+               argument ignored; please remove \"" ++
+          str name ++ str ":\" from your Declare ML"))
 
 let meta_files = ref []
 
 (* Transform "Declare ML %DECL" to a pair of (meta, cmxs). Something
    very similar is in ML top *)
-let declare_ml_to_file file decl =
-  let decl = String.split_on_char ':' decl in
-  let decl = List.map (String.split_on_char '.') decl in
+let declare_ml_to_file file (decl : string) =
+  let legacy_decl = String.split_on_char ':' decl in
+  let legacy_decl = List.map (String.split_on_char '.') legacy_decl in
   let meta_files = !meta_files in
-  match decl with
-  | [[x]] when List.mem_assoc x legacy_mapping ->
-    None, x                     (* This case only exists for 3rd party packages, should remove in 8.17 *)
-  | [[x]] ->
-    Error.findlib_name file x
-  | [[legacy]; package :: plugin_name] ->
-    None, legacy
+  match legacy_decl with
   | [package :: plugin_name] ->
-    let meta, cmxs = Fl.findlib_resolve ~meta_files ~file ~package ~plugin_name in
-    Some meta, cmxs
-  | plist ->
-    CErrors.user_err
-      Pp.(str "Failed to resolve plugin " ++
-          pr_sequence (pr_sequence str) plist)
+    Fl.findlib_resolve ~meta_files ~file ~package ~plugin_name
+  | [[cmxs]; (package :: plugin_name)] ->
+    warn_legacy_loading cmxs;
+    Fl.findlib_resolve ~meta_files ~file ~package ~plugin_name
+  | bad_pkg ->
+    CErrors.user_err Pp.(str "Failed to resolve plugin: " ++ str decl)
 
 let coq_to_stdlib from strl =
   let tr_qualid = function
@@ -201,27 +186,14 @@ let rec find_dependencies st basename =
           in
           List.iter decl strl
         | Declare sl ->
+          (* We resolve "pkg_name" to a .cma file, using the META *)
           let sl = List.map (declare_ml_to_file f) sl in
-          let declare suff dir s =
-            let base = file_name s dir in
-            add_dep (Dep_info.Dep.Ml (base,suff))
-          in
-          let decl (meta_file,str) =
-            Option.iter add_dep_other meta_file;
-            let s = basename_noext str in
-            if not (StrSet.mem s !visited_ml) then begin
-                visited_ml := StrSet.add s !visited_ml;
-                let pick_mldir mldir =
-                  match meta_file with
-                  | None -> mldir
-                  | Some _ -> Some(Filename.dirname str)
-                in
-                match Loadpath.search_mllib_known st s with
-                | Some mldir -> declare ".cma" (pick_mldir mldir) s
-                | None ->
-                  match Loadpath.search_mlpack_known st s with
-                  | Some mldir -> declare ".cmo" (pick_mldir mldir) s
-                  | None -> warning_declare (f,str)
+          let decl (meta_file, str) =
+            add_dep_other meta_file;
+            let plugin_file = Filename.chop_extension str in
+            if not (StrSet.mem plugin_file !visited_ml) then begin
+                visited_ml := StrSet.add plugin_file !visited_ml;
+                add_dep (Dep_info.Dep.Ml plugin_file)
               end
           in
           List.iter decl sl
@@ -355,7 +327,8 @@ let treat_coqproject st f =
     | Parsing_error msg -> Error.cannot_parse_project_file f msg
     | UnableToOpenProjectFile msg -> Error.cannot_open_project_file msg
   in
-  iter_sourced (fun { path } -> Loadpath.add_caml_dir st path) project.ml_includes;
+  (* EJGA: This should add to findlib search path *)
+  (* iter_sourced (fun { path } -> Loadpath.add_caml_dir st path) project.ml_includes; *)
   iter_sourced (fun ({ path }, l) -> Loadpath.add_q_include st path l) project.q_includes;
   iter_sourced (fun ({ path }, l) -> Loadpath.add_r_include st path l) project.r_includes;
   iter_sourced (fun f' -> treat_file_coq_project f f') (all_files project)
@@ -366,6 +339,16 @@ let add_include st (rc, r, ln) =
   else
     Loadpath.add_q_include st r ln
 
+let add_findlib_dir dirs =
+  let env_ocamlpath =
+    try [Sys.getenv "OCAMLPATH"]
+    with Not_found -> []
+  in
+  let env_ocamlpath = dirs @ env_ocamlpath in
+  let ocamlpathsep = if Sys.unix then ":" else ";" in
+  let env_ocamlpath = String.concat ocamlpathsep env_ocamlpath in
+  Findlib.init ~env_ocamlpath ()
+
 let init ~make_separator_hack args =
   separator_hack := make_separator_hack;
   vAccu := [];
@@ -374,7 +357,8 @@ let init ~make_separator_hack args =
   Makefile.set_write_vos args.Args.vos;
   Makefile.set_noglob args.Args.noglob;
   Option.iter (treat_coqproject st) args.Args.coqproject;
-  List.iter (Loadpath.add_caml_dir st) args.Args.ml_path;
+  (* Add to the findlib search path, common with sysinit/coqinit *)
+  add_findlib_dir args.Args.ml_path;
   List.iter (add_include st) args.Args.vo_path;
   Makefile.set_dyndep args.Args.dyndep;
   meta_files := args.Args.meta_files;

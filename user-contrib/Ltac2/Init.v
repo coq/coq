@@ -8,8 +8,9 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Declare ML Module "ltac2_plugin:coq-core.plugins.ltac2".
-Declare ML Module "ltac2_ltac1_plugin:coq-core.plugins.ltac2_ltac1".
+(* EJGA: Seems that Coq's findlib loader is not loading this correctly? *)
+Declare ML Module "coq-core.plugins.ltac2".
+Declare ML Module "coq-core.plugins.ltac2_ltac1".
 
 #[export] Set Default Proof Mode "Ltac2".
 

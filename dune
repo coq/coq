@@ -38,8 +38,10 @@
 (rule
  (targets theories_dune)
  (deps
+  (source_tree plugins)
   (source_tree theories)
-  (source_tree plugins))
+  (source_tree user-contrib)
+  %{project_root}/_build/install/%{context_name}/lib/coq-core/META)
  (action
   (with-stdout-to %{targets}
    (run tools/dune_rule_gen/gen_rules.exe Stdlib theories %{env:COQ_DUNE_EXTRA_OPT=}))))
@@ -47,12 +49,33 @@
 (rule
  (targets ltac2_dune)
  (deps
-  (source_tree theories)
   (source_tree plugins)
-  (source_tree user-contrib/Ltac2))
+  (source_tree theories)
+  (source_tree user-contrib)
+  %{project_root}/_build/install/%{context_name}/lib/coq-core/META)
  (action
   (with-stdout-to %{targets}
    (run tools/dune_rule_gen/gen_rules.exe Ltac2 user-contrib/Ltac2 %{env:COQ_DUNE_EXTRA_OPT=}))))
+
+(rule
+ (targets theories_dune_split)
+ (deps
+  (source_tree plugins)
+  (source_tree theories)
+  (source_tree user-contrib))
+ (action
+  (with-stdout-to %{targets}
+   (run tools/dune_rule_gen/gen_rules.exe Stdlib theories -split %{env:COQ_DUNE_EXTRA_OPT=}))))
+
+(rule
+ (targets ltac2_dune_split)
+ (deps
+  (source_tree plugins)
+  (source_tree theories)
+  (source_tree user-contrib))
+ (action
+  (with-stdout-to %{targets}
+   (run tools/dune_rule_gen/gen_rules.exe Ltac2 user-contrib/Ltac2 -split %{env:COQ_DUNE_EXTRA_OPT=}))))
 
 ; Use summary.log as the target
 (alias

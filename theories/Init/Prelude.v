@@ -26,10 +26,10 @@ Require Export Stdlib.Init.Tauto.
    - ltac_plugin (in Ltac)
    - tauto_plugin (in Tauto).
 *)
-Declare ML Module "cc_core_plugin:coq-core.plugins.cc_core".
-Declare ML Module "cc_plugin:coq-core.plugins.cc".
-Declare ML Module "firstorder_core_plugin:coq-core.plugins.firstorder_core".
-Declare ML Module "firstorder_plugin:coq-core.plugins.firstorder".
+Declare ML Module "coq-core.plugins.cc_core".
+Declare ML Module "coq-core.plugins.cc".
+Declare ML Module "coq-core.plugins.firstorder_core".
+Declare ML Module "coq-core.plugins.firstorder".
 
 (* Parsing / printing of hexadecimal numbers *)
 Arguments Nat.of_hex_uint d%_hex_uint_scope.

@@ -659,12 +659,14 @@ file is a particular case of a module called a *library file*.
 
 .. cmd:: Declare ML Module {+ @string }
 
-   Loads an OCaml plugin and its dependencies dynamically.  The :n:`@string`
-   argument must be a valid `findlib <http://projects.camlcity.org/projects/findlib.html>`_
-   plugin name, for example ``coq-core.plugins.ltac``. As of Coq 8.16,
-   the command also supports a legacy
-   syntax compatible with the plugin loading system used in Coq
-   8.0-8.15, see below.
+   Loads OCaml plugins and their dependencies dynamically.  The :n:`@string`
+   arguments must be valid `findlib <http://projects.camlcity.org/projects/findlib.html>`_
+   plugin names, for example ``coq-core.plugins.ltac``.
+   They must also contain a `.` to disambiguate against the removed non-findlib loading method.
+
+   Effects (such as adding new commands) from the explicitly requested
+   plugin are activated, but effects from implicitly loaded
+   dependencies are not activated.
 
    The first component of the plugin name is a package name that has to
    be in scope of ``findlib``'s' search path. One can see the paths
@@ -683,17 +685,6 @@ file is a particular case of a module called a *library file*.
    ``findlib`` can see it. Different build systems provide different
    helpers to do this: see :ref:`here for coq_makefile <coq_makefile>`,
    and :ref:`here for Dune <building_dune>`.
-
-   Note that the plugin loading system for Rocq changed in 8.16 to use
-   findlib. Previous Coq versions loaded OCaml dynamic objects by
-   first locating the object file from ``-I`` directives, then
-   directly invoking ``Dynlink.loadfile``. For compatibility purposes,
-   8.16 still supports this legacy method, with the syntax being
-   ``Declare ML Module "my_package_plugin:pkg.plugin.my-package".``, where
-   ``my_package_plugin`` is the name of the OCaml object file.
-
-   This is useful if you are still using a third party build system
-   such as Dune or your own.
 
    This command supports the :attr:`local` attribute.  If present,
    the listed files are not exported, even if they're outside a section.
