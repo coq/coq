@@ -319,7 +319,10 @@ following rules.
    :math:`((λ x:T.~u)~t)` well-typed (where :math:`T` is a type of
    :math:`t`). This is because the value :math:`t` associated with
    :math:`x` may be used in a conversion rule
-   (see Section :ref:`Conversion-rules`).
+   (see Section :ref:`Conversion-rules`). For example
+   :g:`let A := True in (fun a : A => 42) I` is well-typed and
+   reduces to :g:`42`, while :g:`(fun A => (fun a : A => 42) I) True`
+   is ill-typed.
 
 .. _subtyping-rules:
 
