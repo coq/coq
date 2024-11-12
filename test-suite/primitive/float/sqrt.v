@@ -1,4 +1,4 @@
-Require Import ZArith Uint63 Floats.
+Require Import PrimInt63 PrimFloat.
 
 Open Scope float_scope.
 

@@ -1,4 +1,3 @@
-Require Import Program.
 Axiom bogus : Type.
 
 Section A.
@@ -25,10 +24,10 @@ Definition c4 : bool. Proof. exact true. Qed.
 #[using="All"]
 Fixpoint c5 (n : nat) {struct n} : bool. Proof. destruct n as [|p]. exact true. exact (c5 p). Qed.
 
-#[using="All", program]
+#[using="All"]
 Definition c6 : bool. Proof. exact true. Qed.
 
-#[using="All", program]
+#[using="All"]
 Fixpoint c7 (n : nat) {struct n} : bool :=
   match n with
   | O => true

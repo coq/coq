@@ -71,9 +71,6 @@ Section Well_founded.
 
 End Well_founded.
 
-Require Stdlib.extraction.Extraction.
-Extraction Inline Fix_F_sub Fix_sub.
-
 Set Implicit Arguments.
 
 (** Reasoning about well-founded fixpoints on measures. *)
@@ -222,37 +219,3 @@ Ltac fold_sub f :=
           change app
       end
   end.
-
-(** This module provides the fixpoint equation provided one assumes
-   functional extensionality. *)
-Require Import FunctionalExtensionality.
-
-Module WfExtensionality.
-
-  (** The two following lemmas allow to unfold a well-founded fixpoint definition without
-     restriction using the functional extensionality axiom. *)
-
-  (** For a function defined with Program using a well-founded order. *)
-
-  Program Lemma fix_sub_eq_ext :
-    forall (A : Type) (R : A -> A -> Prop) (Rwf : well_founded R)
-      (P : A -> Type)
-      (F_sub : forall x : A, (forall y:{y : A | R y x}, P (` y)) -> P x),
-      forall x : A,
-        Fix_sub A R Rwf P F_sub x =
-          F_sub x (fun y:{y : A | R y x} => Fix_sub A R Rwf P F_sub (` y)).
-  Proof.
-    intros A R Rwf P F_sub x; apply Fix_eq ; auto.
-    intros ? f g H.
-    assert(f = g) as H0.
-    - extensionality y ; apply H.
-    - rewrite H0 ; auto.
-  Qed.
-
-  (** Tactic to unfold once a definition based on [Fix_sub]. *)
-
-  Ltac unfold_sub f fargs :=
-    set (call:=fargs) ; unfold f in call ; unfold call ; clear call ;
-      rewrite fix_sub_eq_ext ; repeat fold_sub f ; simpl proj1_sig.
-
-End WfExtensionality.

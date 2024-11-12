@@ -219,12 +219,13 @@ described elsewhere
 
    .. example:: Searching for a pattern
 
-      .. coqtop:: none reset
+      .. coqtop:: none reset extra
 
-         Require Import PeanoNat.
+         From Stdlib Require Import PeanoNat.
 
       We can repeat meta-variables to narrow down the search.  Here,
       we are looking for commutativity lemmas.
+      The following example requires the Stdlib library.
 
       .. coqtop:: all
 
@@ -250,15 +251,17 @@ described elsewhere
 
    .. example:: Disambiguating between part of identifier and notation
 
-      .. coqtop:: none reset
+      The following example requires the Stdlib library.
 
-         Require Import PeanoNat.
+      .. coqtop:: none reset extra
+
+         From Stdlib Require Import PeanoNat.
 
       In this example, we show two ways of searching for all the
       objects whose type contains `Nat.modulo` but which do not
       contain the substring "mod".
 
-      .. coqtop:: all
+      .. coqtop:: all extra
 
          Search "'mod'" -"mod".
          Search "mod"%nat -"mod".
@@ -329,17 +332,19 @@ described elsewhere
 
    .. example:: :cmd:`SearchPattern` examples
 
-      .. coqtop:: in
+      The following example requires the Stdlib library.
 
-         Require Import Arith.
+      .. coqtop:: in reset extra
 
-      .. coqtop:: all
+         From Stdlib Require Import Arith.
+
+      .. coqtop:: all extra
 
          SearchPattern (_ + _ = _ + _).
          SearchPattern (nat -> bool).
          SearchPattern (forall l : list _, _ l l).
 
-      .. coqtop:: all
+      .. coqtop:: all extra
 
          SearchPattern (?X1 + _ = _ + ?X1).
 
@@ -354,11 +359,13 @@ described elsewhere
 
    .. example:: :cmd:`SearchRewrite` examples
 
-      .. coqtop:: in
+      The following example requires the Stdlib library.
 
-         Require Import Arith.
+      .. coqtop:: in reset extra
 
-      .. coqtop:: all
+         From Stdlib Require Import Arith.
+
+      .. coqtop:: all extra
 
          SearchRewrite (_ + _ + _).
 

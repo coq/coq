@@ -1,8 +1,9 @@
-
+Module ListTest.
 (* The "?" of cons and eq should be inferred *)
 Parameter list : Set -> Set.
 Parameter cons : forall T : Set, T -> list T -> list T.
 Check (forall n : list nat, exists l : _, (exists x : _, n = cons _ x l)).
+End ListTest.
 
 (* Examples provided by Eduardo Gimenez *)
 
@@ -10,7 +11,7 @@ Definition c A (Q : (nat * A -> Prop) -> Prop) P :=
   Q (fun p : nat * A => let (i, v) := p in P i v).
 
 (* What does this test ? *)
-Require Import List.
+Require Import TestSuite.list.
 Definition list_forall_bool (A : Set) (p : A -> bool)
   (l : list A) : bool :=
   fold_right (fun a r => if p a then r else false) true l.
@@ -24,7 +25,6 @@ Definition f1 frm0 a1 : B := f frm0 a1.
 Definition f2 frm0 a1 : B := f frm0 a1.
 
 (* Checks that sorts that are evars are handled correctly (BZ#705) *)
-Require Import List.
 
 Fixpoint build (nl : list nat) :
  match nl with
@@ -36,7 +36,7 @@ Fixpoint build (nl : list nat) :
                    | _ => False
                    end -> unit) with
   | nil => fun _ => tt
-  | n :: rest =>
+  | cons n rest =>
       match n with
       | O => fun _ => tt
       | S m => fun a => build rest (False_ind _ a)
@@ -123,9 +123,8 @@ Unset Implicit Arguments.
 (* An example from Lexicographic_Exponentiation that tests the
    contraction of reducible fixpoints in type inference *)
 
-Require Import List.
 Check (fun (A:Set) (a b x:A) (l:list A)
-  (H : l ++ cons x nil = cons b (cons a nil)) =>
+  (H : app l (cons x nil) = cons b (cons a nil)) =>
   app_inj_tail l (cons b nil) _ _ H).
 
 (* An example from NMake (simplified), that uses restriction in solve_refl *)
@@ -137,7 +136,7 @@ Fixpoint G p cont {struct p} :=
 (* An example from Bordeaux/Cantor that applies evar restriction
    below  a binder *)
 
-Require Import Relations.
+Require Import TestSuite.relationclasses.
 Parameter lex : forall (A B : Set), (forall (a1 a2:A), {a1=a2}+{a1<>a2})
 -> relation A -> relation B -> A * B -> A * B -> Prop.
 Check
@@ -147,7 +146,6 @@ Check
 
 (* Another example from Julien Forest that tests unification below binders *)
 
-Require Import List.
 Set Implicit Arguments.
 Parameter
  merge : forall (A B : Set) (eqA : forall (a1 a2 : A), {a1=a2}+{a1<>a2})
@@ -204,7 +202,7 @@ Abort.
 Fixpoint filter (A:nat->Set) (l:list (sigT A)) : list (sigT A) :=
   match l with
   | nil => nil
-  | (existT _ k v)::l' => (existT _ k v):: (filter A l')
+  | cons (existT _ k v) l' => (existT _ k v):: (filter A l')
   end.
 
 (* BZ#2000: used to raise Out of memory in 8.2 while it should fail by

@@ -1,6 +1,4 @@
-Require Import Relations.
-
-Record Poset{A:Type}(Le : relation A) : Type :=
+Record Poset{A:Type}(Le : A -> A -> Prop) : Type :=
   Build_Poset
   {
     Le_refl : forall x : A, Le x x;

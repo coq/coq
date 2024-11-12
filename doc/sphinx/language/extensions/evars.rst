@@ -106,22 +106,21 @@ it will create new existential variable(s) when :tacn:`apply` would fail.
 
    .. example:: apply vs eapply
 
-      Both tactics unify the goal with :n:`n < p` in the theorem.  :n:`m` is
+      Both tactics unify the goal with :n:`x = z` in the theorem.  :n:`y` is
       unspecified.  This makes :tacn:`apply` fail, while :tacn:`eapply`
-      creates a new existential variable :n:`?m`.
+      creates a new existential variable :n:`?y`.
 
       .. coqtop:: none reset
 
-         Require Import Arith.
-         Goal forall i j, i < j.
+         Goal forall i j : nat, i = j.
          intros.
 
       .. coqtop:: all
 
-         (* Theorem lt_trans : forall n m p, n < m -> m < p -> n < p. *)
+         (* Theorem eq_trans : forall (A : Type) (x y z : A), x = y -> y = z -> x = z. *)
 
-         Fail apply Nat.lt_trans.
-         eapply Nat.lt_trans.
+         Fail apply eq_trans.
+         eapply eq_trans.
 
 The :n:`e*` tactics include:
 
@@ -170,38 +169,36 @@ automatically as a side effect of other tactics.
 
 .. example:: Automatic resolution of existential variables
 
-   :n:`?x` and :n:`?m` are used in other goals.  The :tacn:`exact`
-   shown below determines the values of these variables by unification,
-   which resolves them.
+   :n:`?y` is used in other goals.  The :tacn:`exact`
+   shown below determines the value of this variable by unification,
+   which resolves it.
 
    .. coqtop:: reset in
 
-      Require Import Arith.
       Set Printing Goal Names.
-      Goal forall n m, n <= m -> ~ m < n.
+
+      Goal forall p n m : nat, n = p -> p = m -> n = m.
 
    .. coqtop:: all
 
-      intros x y H1 H2.
-      eapply Nat.lt_irrefl. (* creates ?x : nat as a shelved goal *)
-      eapply Nat.le_lt_trans. (* creates ?m : nat as a shelved goal *)
+      intros x y z H1 H2.
+      eapply eq_trans. (* creates ?y : nat as a shelved goal *)
       Unshelve. (* moves the shelved goals into focus--not needed and usually not done *)
-      exact H1. (* resolves the first goal and by side effect ?x and ?m *)
+      exact H1. (* resolves the first goal and by side effect ?y *)
 
-   The :n:`?x` and :n:`?m` goals ask for proof that :n:`nat` has an
+   The :n:`?y` goal asks for proof that :n:`nat` has an
    :term:`inhabitant`, i.e. it is not an empty type.  This can be proved directly
-   by applying a constructor of :n:`nat`, which assigns values for :n:`?x` and
-   :n:`?m`.  However if you choose poorly, you can end up with unprovable goals
-   (in this case :n:`0 < 0`).  Like this:
+   by applying a constructor of :n:`nat`, which assigns values for :n:`?y`.
+   However if you choose poorly, you can end up with unprovable goals
+   (in this case :n:`x = 0`).  Like this:
 
    .. coqtop:: reset none
 
-      Require Import Arith.
       Set Printing Goal Names.
-      Goal forall n m, n <= m -> ~ m < n.
-      intros x y H1 H2.
-      eapply Nat.lt_irrefl. (* creates ?x : nat as a shelved goal *)
-      eapply Nat.le_lt_trans. (* creates ?m : nat as a shelved goal *)
+
+      Goal forall p n m : nat, n = p -> p = m -> n = m.
+      intros x y z H1 H2.
+      eapply eq_trans. (* creates ?y : nat as a shelved goal *)
 
    .. coqtop:: out
 
@@ -209,7 +206,7 @@ automatically as a side effect of other tactics.
 
    .. coqtop:: all
 
-      3-4: apply 0.  (* assigns values to ?x and ?m *)
+      3: apply 0.  (* assigns value to ?y *)
 
 .. extracted from Gallina extensions chapter
 

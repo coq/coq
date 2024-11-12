@@ -1,4 +1,4 @@
-From Stdlib Require Import Uint63 PArray.
+From Stdlib Require Import PrimInt63 PrimArray.
 
 Open Scope array_scope.
 
@@ -19,7 +19,7 @@ Fixpoint f2 (x : foo) {struct x} : False :=
 
 Fixpoint f3 (x : foo) {struct x} : False :=
   match x with
-  | C t => f3 (PArray.default t)
+  | C t => f3 (PrimArray.default t)
   end.
 
 End OneLevel.
@@ -41,7 +41,7 @@ Fixpoint f2 (x : foo) {struct x} : False :=
 
 Fixpoint f3 (x : foo) {struct x} : False :=
   match x with
-  | C t => f3 (PArray.default (PArray.default t))
+  | C t => f3 (PrimArray.default (PrimArray.default t))
   end.
 
 End TwoLevels.
