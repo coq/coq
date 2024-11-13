@@ -2,36 +2,44 @@ Foo0 : Type
 
 Foo0 is not universe polymorphic
 Expands to: Inductive PrimitiveProjectionsAttribute.Foo0
+Declared in library PrimitiveProjectionsAttribute, line 3, characters 7-11
 Foo1 : Type
 
 Foo1 is not universe polymorphic
 Foo1 has primitive projections with eta conversion.
 Expands to: Inductive PrimitiveProjectionsAttribute.Foo1
+Declared in library PrimitiveProjectionsAttribute, line 10, characters 7-11
 Foo2 : Type
 
 Foo2 is not universe polymorphic
 Foo2 has primitive projections with eta conversion.
 Expands to: Inductive PrimitiveProjectionsAttribute.Foo2
+Declared in library PrimitiveProjectionsAttribute, line 17, characters 7-11
 Foo3 : Type
 
 Foo3 is not universe polymorphic
 Expands to: Inductive PrimitiveProjectionsAttribute.Foo3
+Declared in library PrimitiveProjectionsAttribute, line 24, characters 7-11
 Foo4 : Type
 
 Foo4 is not universe polymorphic
 Foo4 has primitive projections with eta conversion.
 Expands to: Inductive PrimitiveProjectionsAttribute.Foo4
+Declared in library PrimitiveProjectionsAttribute, line 32, characters 7-11
 Foo5 : Type
 
 Foo5 is not universe polymorphic
 Foo5 has primitive projections with eta conversion.
 Expands to: Inductive PrimitiveProjectionsAttribute.Foo5
+Declared in library PrimitiveProjectionsAttribute, line 39, characters 7-11
 Foo6 : Type
 
 Foo6 is not universe polymorphic
 Foo6 has primitive projections with eta conversion.
 Expands to: Inductive PrimitiveProjectionsAttribute.Foo6
+Declared in library PrimitiveProjectionsAttribute, line 46, characters 7-11
 Foo7 : Type
 
 Foo7 is not universe polymorphic
 Expands to: Inductive PrimitiveProjectionsAttribute.Foo7
+Declared in library PrimitiveProjectionsAttribute, line 53, characters 7-11

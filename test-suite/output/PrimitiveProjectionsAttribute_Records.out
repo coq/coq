@@ -3,14 +3,20 @@ B : Set
 B is not universe polymorphic
 B has primitive projections with eta conversion.
 Expands to: Inductive PrimitiveProjectionsAttribute_Records.B
+Declared in
+library PrimitiveProjectionsAttribute_Records, line 5, characters 6-7
 C : Set
 
 C is not universe polymorphic
 C has primitive projections with eta conversion.
 Expands to: Inductive PrimitiveProjectionsAttribute_Records.C
+Declared in
+library PrimitiveProjectionsAttribute_Records, line 10, characters 10-11
 G : Prop
 
 G is not universe polymorphic
 G is in Prop but its eliminators are declared dependent by default
 G has primitive projections without eta conversion.
 Expands to: Inductive PrimitiveProjectionsAttribute_Records.G
+Declared in
+library PrimitiveProjectionsAttribute_Records, line 15, characters 12-13

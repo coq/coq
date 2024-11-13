@@ -3,6 +3,7 @@ existT : forall [A : Type] (P : A -> Type) (x : A), P x -> {x : A & P x}
 existT is template universe polymorphic
 Arguments existT [A]%type_scope P%function_scope x _
 Expands to: Constructor Stdlib.Init.Specif.existT
+Declared in library Stdlib.Init.Specif, line 45, characters 4-10
 Inductive sigT (A : Type) (P : A -> Type) : Type :=
     existT : forall x : A, P x -> {x : A & P x}.
 
@@ -20,6 +21,7 @@ eq_refl : forall {A : Type} {x : A}, x = x
 eq_refl is template universe polymorphic
 Arguments eq_refl {A}%type_scope {x}, [_] _
 Expands to: Constructor Stdlib.Init.Logic.eq_refl
+Declared in library Stdlib.Init.Logic, line 379, characters 4-11
 eq_refl : forall {A : Type} {x : A}, x = x
 
 When applied to no arguments:
@@ -61,6 +63,7 @@ comparison : Set
 
 comparison is not universe polymorphic
 Expands to: Inductive Stdlib.Init.Datatypes.comparison
+Declared in library Stdlib.Init.Datatypes, line 333, characters 10-20
 Inductive comparison : Set :=
     Eq : comparison | Lt : comparison | Gt : comparison.
 bar : foo
@@ -111,12 +114,14 @@ Alias.eq is template universe polymorphic
 Arguments Alias.eq {A}%type_scope x _
 Expands to: Inductive PrintInfos.Alias.eq (syntactically equal to
             Stdlib.Init.Logic.eq)
+Declared in library Stdlib.Init.Logic, line 378, characters 10-12
 Alias.eq_refl : forall {A : Type} {x : A}, x = x
 
 Alias.eq_refl is template universe polymorphic
 Arguments Alias.eq_refl {A}%type_scope {x}, [_] _
 Expands to: Constructor PrintInfos.Alias.eq_refl (syntactically equal to
             Stdlib.Init.Logic.eq_refl)
+Declared in library Stdlib.Init.Logic, line 379, characters 4-11
 Alias.eq_ind :
 forall [A : Type] (x : A) (P : A -> Prop), P x -> forall y : A, x = y -> P y
 

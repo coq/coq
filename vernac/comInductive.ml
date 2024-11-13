@@ -814,7 +814,7 @@ type t = {
   uctx : Univ.ContextSet.t;
   where_notations : Metasyntax.notation_interpretation_decl list;
   coercions : Libnames.qualid list;
-  indlocs : Loc.t option list;
+  indlocs : DeclareInd.indlocs;
 }
 
 end
@@ -827,7 +827,11 @@ let rec count_binder_expr = function
     Loc.raise ?loc (Gramlib.Grammar.Error "pattern with quote not allowed here")
 
 let interp_mutual_inductive ~env ~flags ?typing_flags udecl indl ~private_ind ~uniform =
-  let indlocs = List.map (fun ((n,_,_,_),_) -> n.CAst.loc) indl in
+  let indlocs = List.map (fun ((n,_,_,constructors),_) ->
+      let conslocs = List.map (fun (_,(c,_)) -> c.CAst.loc) constructors in
+      n.CAst.loc, conslocs)
+      indl
+  in
   let (params,indl),coercions,ntns = extract_mutual_inductive_declaration_components indl in
   let where_notations = List.map Metasyntax.prepare_where_notation ntns in
   (* Interpret the types *)

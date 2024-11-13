@@ -17,11 +17,13 @@ option : Type -> Type
 option is template universe polymorphic
 Arguments option A%type_scope
 Expands to: Inductive Stdlib.Init.Datatypes.option
+Declared in library Stdlib.Init.Datatypes, line 184, characters 10-16
 option : Type@{option.u0} -> Type@{max(Set,option.u0)}
 
 option is template universe polymorphic on option.u0
 Arguments option A%type_scope
 Expands to: Inductive Stdlib.Init.Datatypes.option
+Declared in library Stdlib.Init.Datatypes, line 184, characters 10-16
 File "./output/Inductive.v", line 27, characters 4-13:
 The command has indeed failed with message:
 Parameters should be syntactically the same for each inductive type.
@@ -38,11 +40,13 @@ or is not universe polymorphic
 or may only be eliminated to produce values whose type is SProp or Prop.
 Arguments or (A B)%type_scope
 Expands to: Inductive Stdlib.Init.Logic.or
+Declared in library Stdlib.Init.Logic, line 89, characters 10-12
 sunit : SProp
 
 sunit is not universe polymorphic
 sunit may only be eliminated to produce values whose type is SProp.
 Expands to: Inductive Inductive.sunit
+Declared in library Inductive, line 38, characters 10-15
 sempty@{q | } : Type@{q | Set}
 (* q |  |=  *)
 
@@ -53,6 +57,7 @@ sempty@{q | } may only be eliminated to produce values whose type is in sort qua
   (SProp <= Prop <= Type, and all variables <= Type)
   than the instantiation of q.
 Expands to: Inductive Inductive.sempty
+Declared in library Inductive, line 44, characters 22-28
 ssig@{q1 q2 q3 | a b} :
 forall A : Type@{q1 | a}, (A -> Type@{q2 | b}) -> Type@{q3 | max(a,b)}
 (* q1 q2 q3 | a b |=  *)
@@ -65,6 +70,7 @@ ssig@{q1 q2 q3 | a b} may only be eliminated to produce values whose type is in 
   than the instantiation of q3.
 Arguments ssig A%type_scope B%function_scope
 Expands to: Inductive Inductive.ssig
+Declared in library Inductive, line 48, characters 22-26
 BoxP@{q | a} : Type@{q | a} -> Prop
 (* q | a |=  *)
 
@@ -73,3 +79,4 @@ BoxP@{q | a} may only be eliminated to produce values whose type is SProp or Pro
   unless instantiated such that the quality q is SProp or Prop.
 Arguments BoxP A%type_scope
 Expands to: Inductive Inductive.BoxP
+Declared in library Inductive, line 56, characters 22-26

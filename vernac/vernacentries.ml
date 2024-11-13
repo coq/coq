@@ -974,8 +974,8 @@ let should_treat_as_uniform () =
 let vernac_record ~template udecl ~cumulative k ~poly ?typing_flags ~primitive_proj finite ?mode records =
   let map ((is_coercion, name), binders, sort, nameopt, cfs, ido) =
     let idbuild = match nameopt with
-    | None -> Nameops.add_prefix "Build_" name.v
-    | Some lid -> lid.v
+    | None -> CAst.map (Nameops.add_prefix "Build_") name
+    | Some lid -> lid
     in
     let default_inhabitant_id = Option.map (fun CAst.{v=id} -> id) ido in
     Record.Ast.{ name; is_coercion; binders; cfs; idbuild; sort; default_inhabitant_id }

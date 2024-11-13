@@ -19,7 +19,7 @@ module Ast : sig
     ; is_coercion : coercion_flag
     ; binders: local_binder_expr list
     ; cfs : (local_decl_expr * record_field_attr) list
-    ; idbuild : Id.t
+    ; idbuild : lident
     ; sort : constr_expr option
     ; default_inhabitant_id : Id.t option
     }
@@ -68,7 +68,7 @@ val definition_structure
       ubinders : UnivNames.universe_binders;
       projections_kind : Decls.definition_object_kind;
       poly : bool;
-      indlocs : Loc.t option list;
+      indlocs : DeclareInd.indlocs;
     }
 end
 
