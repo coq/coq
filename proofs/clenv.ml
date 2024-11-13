@@ -173,13 +173,13 @@ let clenv_meta_type ~metas env sigma mv =
   let ty =
     try Unification.Meta.meta_ftype metas mv
     with Not_found -> anomaly Pp.(str "unknown meta ?" ++ str (Nameops.string_of_meta mv) ++ str ".") in
-  if Metaset.is_empty ty.freemetas then ty.rebus else meta_instance ~metas env sigma ty.rebus
+  if Metaset.is_empty ty.freemetas then ty.rebus else Meta.meta_instance metas env sigma ty.rebus
 let clenv_value clenv =
   if Metaset.is_empty clenv.metaset then clenv.templval
-  else meta_instance ~metas:clenv.metam clenv.env clenv.evd clenv.templval
+  else Meta.meta_instance clenv.metam clenv.env clenv.evd clenv.templval
 let clenv_type clenv =
   if Metaset.is_empty (snd clenv.templtyp) then fst clenv.templtyp
-  else meta_instance ~metas:clenv.metam clenv.env clenv.evd (fst clenv.templtyp)
+  else Meta.meta_instance clenv.metam clenv.env clenv.evd (fst clenv.templtyp)
 
 let clenv_push_prod cl =
   let metas = meta_handler cl.metam in
@@ -314,7 +314,7 @@ let clenv_assign ~metas env sigma mv rhs =
       else
         sigma, metas
     | None ->
-      Meta.meta_assign mv (rhs, TypeNotProcessed) metas sigma
+      Meta.meta_assign mv (rhs, Meta.TypeNotProcessed) metas sigma
     end
   with Not_found ->
     user_err Pp.(str "clenv_assign: undefined meta")
@@ -361,7 +361,7 @@ let clenv_assign ~metas env sigma mv rhs =
 
 let clenv_metas_in_type_of_meta ~metas env sigma mv =
   let typ = Meta.meta_ftype metas mv in
-  let typ = if Metaset.is_empty typ.freemetas then typ.rebus else meta_instance ~metas env sigma typ.rebus in
+  let typ = if Metaset.is_empty typ.freemetas then typ.rebus else Meta.meta_instance metas env sigma typ.rebus in
   metavars_of typ
 
 let dependent_in_type_of_metas ~metas env sigma mvs =
@@ -625,18 +625,18 @@ let error_already_defined b =
 let clenv_unify_binding_type ~metas env sigma c t u =
   if isMeta sigma (fst (decompose_app sigma (whd_nored ~metas:(meta_handler metas) env sigma u))) then
     (* Not enough information to know if some subtyping is needed *)
-    CoerceToType, metas, sigma, c
+    Meta.CoerceToType, metas, sigma, c
   else
     (* Enough information so as to try a coercion now *)
     try
       let sigma, metas, c = w_coerce_to_type ~metas env sigma c t u in
-      TypeProcessed, metas, sigma, c
+      Meta.TypeProcessed, metas, sigma, c
     with
       | PretypeError (_,_,ActualTypeNotCoercible (_,_,
           (NotClean _ | ConversionFailed _))) as e ->
           raise e
       | e when precatchable_exception e ->
-          TypeNotProcessed, metas, sigma, c
+          Meta.TypeNotProcessed, metas, sigma, c
 
 let clenv_assign_binding clenv k c =
   let k_typ = hnf_constr clenv.env clenv.evd (clenv_meta_type ~metas:clenv.metam clenv.env clenv.evd k) in
@@ -773,7 +773,7 @@ let rec mk_refgoals ~metas env sigma goalacc conclty trm = match trm with
   (goalacc, ty, sigma, trm)
 | RfHole mv ->
   let conclty = match conclty with
-  | None -> Unification.meta_type ~metas env sigma mv
+  | None -> Unification.Meta.meta_type metas env sigma mv
   | Some conclty -> conclty
   in
   let conclty = nf_betaiota env sigma conclty in
@@ -990,7 +990,7 @@ let case_pf ?(with_evars=false) ~dep (indarg, typ) =
   let flags = elim_flags () in
   let metas, sigma = w_unify_meta_types ~metas ~flags env sigma in
   let metas, sigma = w_unify ~metas ~flags env sigma CUMUL templtyp concl in
-  let pred = meta_instance ~metas env sigma (mkMeta mvP) in
+  let pred = Meta.meta_instance metas env sigma (mkMeta mvP) in
 
   (* Create the branch types *)
   let branches =

@@ -114,6 +114,8 @@ module Meta =
 struct
 
 type t = clbinding Metamap.t
+type nonrec instance_typing_status = instance_typing_status =
+    CoerceToType | TypeNotProcessed | TypeProcessed
 
 let empty = Metamap.empty
 
@@ -141,6 +143,61 @@ let meta_ftype metas mv =
   match Metamap.find mv metas with
     | Cltyp (_,b) -> b
     | Clval(_,_,b) -> b
+
+let meta_handler metas =
+  let meta_value mv = match meta_opt_fvalue metas mv with
+  | None -> None
+  | Some b -> Some b.rebus
+  in
+  { Reductionops.meta_value }
+
+(* [instance] is used for [res_pf]; the call to [local_strong whd_betaiota]
+   has (unfortunately) different subtle side effects:
+
+   - ** Order of subgoals **
+     If the lemma is a case analysis with parameters, it will move the
+     parameters as first subgoals (e.g. "case H" applied on
+     "H:D->A/\B|-C" will present the subgoal |-D first while w/o
+     betaiota the subgoal |-D would have come last).
+
+   - ** Betaiota-contraction in statement **
+     If the lemma has a parameter which is a function and this
+     function is applied in the lemma, then the _strong_ betaiota will
+     contract the application of the function to its argument (e.g.
+     "apply (H (fun x => x))" in "H:forall f, f 0 = 0 |- 0=0" will
+     result in applying the lemma 0=0 in which "(fun x => x) 0" has
+     been contracted). A goal to rewrite may then fail or succeed
+     differently.
+
+   - ** Naming of hypotheses **
+     If a lemma is a function of the form "fun H:(forall a:A, P a)
+     => .. F H .." where the expected type of H is "forall b:A, P b",
+     then, without reduction, the application of the lemma will
+     generate a subgoal "forall a:A, P a" (and intro will use name
+     "a"), while with reduction, it will generate a subgoal "forall
+     b:A, P b" (and intro will use name "b").
+
+   - ** First-order pattern-matching **
+     If a lemma has the type "(fun x => p) t" then rewriting t may fail
+     if the type of the lemma is first beta-reduced (this typically happens
+     when rewriting a single variable and the type of the lemma is obtained
+     by meta_instance (with empty map) which itself calls instance with this
+     empty map).
+ *)
+
+let meta_instance metas env sigma c =
+  (* if s = [] then c else *)
+  (* No need to compute contexts under binders as whd_betaiota is local *)
+  let metas = meta_handler metas in
+  let rec strongrec t = EConstr.map sigma strongrec (whd_betaiota ~metas env sigma t) in
+  strongrec c
+
+let meta_type metas env evd mv =
+  let ty =
+    try meta_ftype metas mv
+    with Not_found -> anomaly (str "unknown meta ?" ++ str (Nameops.string_of_meta mv) ++ str ".") in
+  if Metaset.is_empty ty.freemetas then ty.rebus
+  else meta_instance metas env evd ty.rebus
 
 let meta_declare mv v ?(name=Anonymous) metas =
   let metas = Metamap.add mv (Cltyp(name,mk_freelisted v)) metas in
@@ -246,64 +303,6 @@ let pr_metamap env sigma metas =
   prlist pr_meta_binding (Metamap.bindings metas)
 
 end
-
-(* [instance] is used for [res_pf]; the call to [local_strong whd_betaiota]
-   has (unfortunately) different subtle side effects:
-
-   - ** Order of subgoals **
-     If the lemma is a case analysis with parameters, it will move the
-     parameters as first subgoals (e.g. "case H" applied on
-     "H:D->A/\B|-C" will present the subgoal |-D first while w/o
-     betaiota the subgoal |-D would have come last).
-
-   - ** Betaiota-contraction in statement **
-     If the lemma has a parameter which is a function and this
-     function is applied in the lemma, then the _strong_ betaiota will
-     contract the application of the function to its argument (e.g.
-     "apply (H (fun x => x))" in "H:forall f, f 0 = 0 |- 0=0" will
-     result in applying the lemma 0=0 in which "(fun x => x) 0" has
-     been contracted). A goal to rewrite may then fail or succeed
-     differently.
-
-   - ** Naming of hypotheses **
-     If a lemma is a function of the form "fun H:(forall a:A, P a)
-     => .. F H .." where the expected type of H is "forall b:A, P b",
-     then, without reduction, the application of the lemma will
-     generate a subgoal "forall a:A, P a" (and intro will use name
-     "a"), while with reduction, it will generate a subgoal "forall
-     b:A, P b" (and intro will use name "b").
-
-   - ** First-order pattern-matching **
-     If a lemma has the type "(fun x => p) t" then rewriting t may fail
-     if the type of the lemma is first beta-reduced (this typically happens
-     when rewriting a single variable and the type of the lemma is obtained
-     by meta_instance (with empty map) which itself calls instance with this
-     empty map).
- *)
-
-let meta_handler metas =
-  let meta_value mv = match Meta.meta_opt_fvalue metas mv with
-  | None -> None
-  | Some b -> Some b.rebus
-  in
-  { Reductionops.meta_value }
-
-let meta_instance ~metas env sigma c =
-  (* if s = [] then c else *)
-  (* No need to compute contexts under binders as whd_betaiota is local *)
-  let metas = meta_handler metas in
-  let rec strongrec t = EConstr.map sigma strongrec (whd_betaiota ~metas env sigma t) in
-  strongrec c
-
-(*************************************)
-(* Metas *)
-
-let meta_type ~metas env evd mv =
-  let ty =
-    try Meta.meta_ftype metas mv
-    with Not_found -> anomaly (str "unknown meta ?" ++ str (Nameops.string_of_meta mv) ++ str ".") in
-  if Metaset.is_empty ty.freemetas then ty.rebus
-  else meta_instance ~metas env evd ty.rebus
 
 type metabinding = (metavariable * EConstr.constr * (instance_constraint * instance_typing_status))
 
@@ -813,7 +812,7 @@ let expand_table_key ~metas ts env sigma args = function
         Some (EConstr.of_constr @@ Option.default def unf, args)
         | exception NotEvaluableConst (HasRules (u, b, r)) ->
         begin try
-          let metas = meta_handler metas in
+          let metas = Meta.meta_handler metas in
           let sk = Stack.( append_app args empty ) in
           let rhs, stack = Reductionops.apply_rules
             (whd_betaiota_deltazeta_for_iota_state ts ~metas env sigma) env sigma (EInstance.make u) r sk
@@ -837,7 +836,7 @@ let unfold_projection env p r stk =
 let expand_key ~metas ts env sigma args = function
   | Some (IsKey k) -> (expand_table_key ~metas ts env sigma args k)
   | Some (IsProj (p, r, c)) ->
-    let metas = meta_handler metas in
+    let metas = Meta.meta_handler metas in
     let red = Stack.zip sigma (whd_betaiota_deltazeta_for_iota_state ts ~metas env sigma
                                (c, unfold_projection env p r []))
     in if EConstr.eq_constr sigma (EConstr.mkProj (p, r, c)) red then None else Some (red, args)
@@ -934,7 +933,7 @@ let constr_cmp pb env sigma flags ?nargs t u =
     None
 
 let do_reduce ~metas ts (env, nb) sigma c =
-  let metas = meta_handler metas in
+  let metas = Meta.meta_handler metas in
   Stack.zip sigma (whd_betaiota_deltazeta_for_iota_state ~metas
                   ts env sigma (c, Stack.empty))
 
@@ -1102,8 +1101,8 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
             let stM,stN = extract_instance_status pb in
             let sigma =
               if opt.with_types && flags.check_applied_meta_types then
-                let tyM = meta_type ~metas:substn.subst_metam curenv sigma k1 in
-                let tyN = meta_type ~metas:substn.subst_metam curenv sigma k2 in
+                let tyM = Meta.meta_type substn.subst_metam curenv sigma k1 in
+                let tyN = Meta.meta_type substn.subst_metam curenv sigma k2 in
                 let l, r = if k2 < k1 then tyN, tyM else tyM, tyN in
                   check_compatibility curenv CUMUL flags substn l r
               else sigma
@@ -1115,7 +1114,7 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
             let sigma =
               if opt.with_types && flags.check_applied_meta_types then
                 (try
-                   let tyM = meta_type ~metas:substn.subst_metam curenv sigma k in
+                   let tyM = Meta.meta_type substn.subst_metam curenv sigma k in
                    let tyN = get_type_of_with_metas ~metas:substn.subst_metam curenv ~lax:true sigma cN in
                      check_compatibility curenv CUMUL flags substn tyN tyM
                  with RetypeError _ ->
@@ -1135,7 +1134,7 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
             if opt.with_types && flags.check_applied_meta_types then
               (try
                  let tyM = get_type_of_with_metas ~metas:substn.subst_metam curenv ~lax:true sigma cM in
-                 let tyN = meta_type ~metas:substn.subst_metam curenv sigma k in
+                 let tyN = Meta.meta_type substn.subst_metam curenv sigma k in
                    check_compatibility curenv CUMUL flags substn tyM tyN
                with RetypeError _ ->
                  (* Renounce, maybe metas/evars prevents typing *) sigma)
@@ -1313,7 +1312,7 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
     let tterm = try get_type_of_with_metas ~metas ~lax:true env sigma term
       with RetypeError _ -> fail ()
     in
-    let tterm' = Reductionops.whd_all ~metas:(meta_handler metas) env sigma tterm in
+    let tterm' = Reductionops.whd_all ~metas:(Meta.meta_handler metas) env sigma tterm in
      match EConstr.kind sigma (fst (decompose_app sigma tterm')) with
       | Ind (ind',_) when QInd.equal env ind ind' -> substn
       | _ ->
@@ -1477,13 +1476,13 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
         | Some true ->
             (match expand_key ~metas flags.modulo_delta curenv sigma l1 cf1 with
             | Some c_l1 ->
-              let metas = meta_handler metas in
+              let metas = Meta.meta_handler metas in
                 unirec_rec curenvnb pb opt substn
                   (whd_betaiotazeta ~metas curenv sigma (mkApp c_l1)) cN
             | None ->
                 (match expand_key ~metas flags.modulo_delta curenv sigma l2 cf2 with
                 | Some c_l2 ->
-                  let metas = meta_handler metas in
+                  let metas = Meta.meta_handler metas in
                     unirec_rec curenvnb pb opt substn cM
                       (whd_betaiotazeta ~metas curenv sigma (mkApp c_l2))
                 | None ->
@@ -1491,13 +1490,13 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
         | Some false ->
             (match expand_key ~metas flags.modulo_delta curenv sigma l2 cf2 with
             | Some c_l2 ->
-              let metas = meta_handler metas in
+              let metas = Meta.meta_handler metas in
                 unirec_rec curenvnb pb opt substn cM
                   (whd_betaiotazeta ~metas curenv sigma (mkApp c_l2))
             | None ->
                 (match expand_key ~metas flags.modulo_delta curenv sigma l1 cf1 with
                 | Some c_l1 ->
-                  let metas = meta_handler metas in
+                  let metas = Meta.meta_handler metas in
                     unirec_rec curenvnb pb opt substn
                       (whd_betaiotazeta ~metas curenv sigma (mkApp c_l1)) cN
                 | None ->
@@ -1508,7 +1507,7 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
     let metas = substn.subst_metam in
     let f1 () =
       if isApp_or_Proj sigma cM then
-          if CanonicalSolution.is_open_canonical_projection ~metas:(meta_handler metas) curenv sigma cM then
+          if CanonicalSolution.is_open_canonical_projection ~metas:(Meta.meta_handler metas) curenv sigma cM then
             solve_canonical_projection curenvnb pb opt cM cN substn
           else error_cannot_unify (fst curenvnb) sigma (cM,cN)
       else error_cannot_unify (fst curenvnb) sigma (cM,cN)
@@ -1522,7 +1521,7 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
       else
         try f1 () with e when precatchable_exception e ->
           if isApp_or_Proj sigma cN then
-              if CanonicalSolution.is_open_canonical_projection ~metas:(meta_handler metas) curenv sigma cN then
+              if CanonicalSolution.is_open_canonical_projection ~metas:(Meta.meta_handler metas) curenv sigma cN then
                 solve_canonical_projection curenvnb pb opt cN cM substn
               else error_cannot_unify (fst curenvnb) sigma (cM,cN)
           else error_cannot_unify (fst curenvnb) sigma (cM,cN)
@@ -1530,8 +1529,8 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
   and solve_canonical_projection curenvnb pb opt cM cN substn =
     let sigma = substn.subst_sigma in
     let metas = substn.subst_metam in
-    let f1l1 = whd_nored_state ~metas:(meta_handler metas) (fst curenvnb) sigma (cM,Stack.empty) in
-    let f2l2 = whd_nored_state ~metas:(meta_handler metas) (fst curenvnb) sigma (cN,Stack.empty) in
+    let f1l1 = whd_nored_state ~metas:(Meta.meta_handler metas) (fst curenvnb) sigma (cM,Stack.empty) in
+    let f2l2 = whd_nored_state ~metas:(Meta.meta_handler metas) (fst curenvnb) sigma (cN,Stack.empty) in
     let (sigma,t,c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
       let metas mv = match Metamap.find mv metas with
       | Cltyp (_, b) -> Some b.rebus
@@ -1731,7 +1730,7 @@ let applyHead ~metas env evd c cl =
     match cl with
     | [] -> (evd, c)
     | a::cl ->
-      match EConstr.kind evd (whd_all ~metas:(meta_handler metas) env evd cty) with
+      match EConstr.kind evd (whd_all ~metas:(Meta.meta_handler metas) env evd cty) with
       | Prod ({binder_name},c1,c2) ->
         let src =
           match EConstr.kind evd a with
@@ -1772,12 +1771,12 @@ let w_coerce_to_type ~metas env evd c cty mvty =
 
 let w_coerce ~metas env evd mv c =
   let cty = get_type_of env evd c in
-  let mvty = meta_type ~metas env evd mv in
+  let mvty = Meta.meta_type metas env evd mv in
   w_coerce_to_type ~metas env evd c cty mvty
 
 let nf_meta ~metas env sigma c =
   let freemetas = metavars_of c in
-  if Metaset.is_empty freemetas then c else meta_instance ~metas env sigma c
+  if Metaset.is_empty freemetas then c else Meta.meta_instance metas env sigma c
 
 let unify_to_type ~metas env sigma flags c status u =
   let sigma, c = refresh_universes ~status:Evd.univ_flexible ~onlyalg:true (Some false) env sigma c in
@@ -1786,7 +1785,7 @@ let unify_to_type ~metas env sigma flags c status u =
   unify_0 ~metas env sigma CUMUL flags t u
 
 let unify_type ~metas env sigma flags mv status c =
-  let mvty = meta_type ~metas env sigma mv in
+  let mvty = Meta.meta_type metas env sigma mv in
   let mvty = nf_meta ~metas env sigma mvty in
   unify_to_type ~metas env sigma
       (set_flags_for_type flags)
@@ -1885,7 +1884,7 @@ let w_merge env with_types flags (substn : subst0) =
         | None ->
             let evd', metas0 =
               if occur_meta_evd ~metas:metas0 evd mv c then
-                let metas = meta_handler metas0 in
+                let metas = Meta.meta_handler metas0 in
                 if isMetaOf evd mv (whd_all ~metas env evd c) then evd, metas0
                 else error_cannot_unify env evd (mkMeta mv,c)
               else
@@ -1953,7 +1952,7 @@ let w_unify_meta_types ~metas env ?(flags=default_unify_flags ()) evd =
    types of metavars are unifiable with the types of their instances    *)
 
 let head_app ~metas env sigma m =
-  let metas = meta_handler metas in
+  let metas = Meta.meta_handler metas in
   fst (whd_nored_state ~metas env sigma (m, Stack.empty))
 
 let isEvar_or_Meta sigma c = match EConstr.kind sigma c with
@@ -2556,7 +2555,7 @@ let secondOrderAbstraction ~metas env evd flags typ (p, oplist) =
   (* Remove delta when looking for a subterm *)
   let flags = { flags with core_unify_flags = flags.subterm_unify_flags } in
   let (metas,evd',cllist) = w_unify_to_subterm_list ~metas env evd flags p oplist typ in
-  let typp = meta_type ~metas env evd' p in
+  let typp = Meta.meta_type metas env evd' p in
   let evd',(pred,predtyp) = abstract_list_all env evd' typp typ cllist in
   match infer_conv ~pb:CUMUL env evd' predtyp typp with
   | None ->
@@ -2567,7 +2566,7 @@ let secondOrderAbstraction ~metas env evd flags typ (p, oplist) =
     { subst_sigma = evd'; subst_metas = [p,pred,(Conv,TypeProcessed)]; subst_evars = []; subst_metam = metas }
 
 let secondOrderDependentAbstraction ~metas env evd flags typ (p, oplist) =
-  let typp = meta_type ~metas env evd p in
+  let typp = Meta.meta_type metas env evd p in
   let evd, pred = abstract_list_all_with_dependencies env evd typp typ oplist in
   w_merge env false flags.merge_unify_flags
     { subst_sigma = evd; subst_metas = [p,pred,(Conv,TypeProcessed)]; subst_evars = []; subst_metam = metas }
@@ -2577,8 +2576,8 @@ let secondOrderAbstractionAlgo dep =
   if dep then secondOrderDependentAbstraction else secondOrderAbstraction
 
 let w_unify2 ~metas env evd flags dep cv_pb ty1 ty2 =
-  let c1, oplist1 = whd_nored_stack ~metas:(meta_handler metas) env evd ty1 in
-  let c2, oplist2 = whd_nored_stack ~metas:(meta_handler metas) env evd ty2 in
+  let c1, oplist1 = whd_nored_stack ~metas:(Meta.meta_handler metas) env evd ty1 in
+  let c2, oplist2 = whd_nored_stack ~metas:(Meta.meta_handler metas) env evd ty2 in
   match EConstr.kind evd c1, EConstr.kind evd c2 with
     | Meta p1, _ ->
         (* Find the predicate *)
@@ -2609,8 +2608,8 @@ let w_unify2 ~metas env evd flags dep cv_pb ty1 ty2 =
    convertible and first-order otherwise. But if failed if e.g. the type of
    Meta(1) had meta-variables in it. *)
 let w_unify ~metas env evd cv_pb ?(flags=default_unify_flags ()) ty1 ty2 =
-  let hd1,l1 = decompose_app evd (whd_nored ~metas:(meta_handler metas) env evd ty1) in
-  let hd2,l2 = decompose_app evd (whd_nored ~metas:(meta_handler metas) env evd ty2) in
+  let hd1,l1 = decompose_app evd (whd_nored ~metas:(Meta.meta_handler metas) env evd ty1) in
+  let hd2,l2 = decompose_app evd (whd_nored ~metas:(Meta.meta_handler metas) env evd ty2) in
   let is_empty1 = Array.is_empty l1 in
   let is_empty2 = Array.is_empty l2 in
     match EConstr.kind evd hd1, not is_empty1, EConstr.kind evd hd2, not is_empty2 with

@@ -31,27 +31,12 @@ type 'a freelisted = private {
 
 val metavars_of : econstr -> Metaset.t
 
-(** Status of the unification of the type of an instance against the type of
-     the meta it instantiates:
-   - CoerceToType means that the unification of types has not been done
-     and that a coercion can still be inserted: the meta should not be
-     substituted freely (this happens for instance given via the
-     "with" binding clause).
-   - TypeProcessed means that the information obtainable from the
-     unification of types has been extracted.
-   - TypeNotProcessed means that the unification of types has not been
-     done but it is known that no coercion may be inserted: the meta
-     can be substituted freely.
-*)
-
-type instance_typing_status =
-    CoerceToType | TypeNotProcessed | TypeProcessed
-
 (** Metas *)
 module Meta :
 sig
 
 type t
+type instance_typing_status = CoerceToType | TypeNotProcessed | TypeProcessed
 
 val empty : t
 
@@ -60,6 +45,8 @@ val meta_ftype     : t -> metavariable -> etypes freelisted
 val meta_name      : t -> metavariable -> Name.t
 val meta_declare   : metavariable -> etypes -> ?name:Name.t -> t -> t
 val meta_assign    : metavariable -> econstr * instance_typing_status -> t -> evar_map -> evar_map * t
+val meta_type      : t -> env -> evar_map -> metavariable -> types
+val meta_instance  : t -> env -> evar_map -> constr -> constr
 
 (** [meta_merge evd1 evd2] returns [evd2] extended with the metas of [evd1] *)
 val meta_merge : t -> t -> t
@@ -165,8 +152,3 @@ val pose_all_metas_as_evars : metas:Meta.t -> env -> evar_map -> constr -> evar_
    (exported for inv.ml) *)
 val abstract_list_all :
   env -> evar_map -> constr -> constr -> constr list -> evar_map * (constr * types)
-
-(** {5 Meta-related functions} *)
-
-val meta_type : metas:Meta.t -> env -> evar_map -> Constr.metavariable -> types
-val meta_instance : metas:Meta.t -> env -> evar_map -> constr -> constr
