@@ -107,13 +107,12 @@ let declare_mind ?typing_flags mie =
   List.iter (fun (typ, cons) ->
       Declare.check_exists typ;
       List.iter Declare.check_exists cons) names;
-  let mind = Global.add_mind ?typing_flags id mie in
+  let mind, why_not_prim_record = Global.add_mind ?typing_flags id mie in
   let () = Lib.add_leaf (inInductive (id, { ind_names = names })) in
   if is_unsafe_typing_flags() then feedback_axiom ();
-  let isprim = Inductive.is_primitive_record (Inductive.lookup_mind_specif (Global.env()) (mind,0)) in
   Impargs.declare_mib_implicits mind;
   declare_inductive_argument_scopes mind mie;
-  mind, isprim
+  mind, why_not_prim_record
 
 let is_recursive mie =
   let open Constr in
@@ -129,11 +128,22 @@ let is_recursive mie =
   let nparams = List.length mie.mind_entry_params in
   List.exists (fun ind -> List.exists (fun t -> is_recursive_constructor (nparams+1) nind t) ind.mind_entry_lc) mie.mind_entry_inds
 
+let explain_not_prim_record reason =
+  let open IndTyping.NotPrimRecordReason in
+  let open Pp in
+  match reason with
+  | MustNotBeSquashed -> strbrk "it is squashed"
+  | MustHaveRelevantProj -> strbrk "it is not in SProp but all projections may be irrelevant"
+  | MustHaveProj -> strbrk "it has no projections"
+  | MustNotHaveAnonProj -> strbrk "it has an anonymous projection"
+
 let warn_non_primitive_record =
   CWarnings.create ~name:"non-primitive-record" ~category:CWarnings.CoreCategories.records
-    (fun indsp ->
-       Pp.(hov 0 (str "The record " ++ Nametab.pr_global_env Id.Set.empty (GlobRef.IndRef indsp) ++
-                  strbrk" could not be defined as a primitive record.")))
+    Pp.(fun (mind,why_not_prim_record) ->
+        hov 0
+          (str "The record " ++ Nametab.pr_global_env Id.Set.empty (GlobRef.IndRef (mind,0)) ++
+           strbrk" could not be defined as a primitive record because " ++
+           explain_not_prim_record why_not_prim_record ++ str "."))
 
 let minductive_message = function
   | []  -> CErrors.user_err Pp.(str "No inductive definition.")
@@ -168,8 +178,9 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typi
     | _ -> ()
   end;
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
-  let mind, prim = declare_mind ?typing_flags mie in
-  if primitive_expected && not prim then warn_non_primitive_record (mind,0);
+  let mind, why_not_prim_record = declare_mind ?typing_flags mie in
+  why_not_prim_record |> Option.iter (fun why_not_prim_record ->
+      warn_non_primitive_record (mind,why_not_prim_record));
   let () = match fst ubinders with
     | UState.Polymorphic_entry _ -> ()
     | UState.Monomorphic_entry ctx ->

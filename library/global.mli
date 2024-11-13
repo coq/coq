@@ -59,7 +59,8 @@ val add_private_constant :
 val add_rewrite_rules : Id.t -> rewrite_rules_body -> unit
 val add_mind :
   ?typing_flags:typing_flags ->
-  Id.t -> Entries.mutual_inductive_entry -> MutInd.t
+  Id.t -> Entries.mutual_inductive_entry ->
+  MutInd.t * IndTyping.NotPrimRecordReason.t option
 
 (** Extra universe constraints *)
 val add_constraints : Univ.Constraints.t -> unit

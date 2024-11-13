@@ -15,4 +15,5 @@ open Entries
 
 (** Check an inductive. *)
 val check_inductive : env -> sec_univs:UVars.Instance.t option
-  -> MutInd.t -> mutual_inductive_entry -> mutual_inductive_body
+  -> MutInd.t -> mutual_inductive_entry
+  -> mutual_inductive_body * IndTyping.NotPrimRecordReason.t option

@@ -588,7 +588,7 @@ let build_inductive env ~sec_univs names prv univs template variance
 
 let check_inductive env ~sec_univs kn mie =
   (* First type-check the inductive definition *)
-  let (env_ar_par, univs, template, variance, record, paramsctxt, inds) =
+  let (env_ar_par, univs, template, variance, record, why_not_prim_record, paramsctxt, inds) =
     IndTyping.typecheck_inductive env ~sec_univs mie
   in
   (* Then check positivity conditions *)
@@ -601,6 +601,9 @@ let check_inductive env ~sec_univs kn mie =
       (Array.map (fun ((_,lc),(indices,_),_) -> Context.Rel.nhyps indices,lc) inds)
   in
   (* Build the inductive packets *)
+  let mib =
     build_inductive env ~sec_univs names mie.mind_entry_private univs template variance
       paramsctxt kn record mie.mind_entry_finite
       inds nmr recargs
+  in
+  mib, why_not_prim_record

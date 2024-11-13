@@ -133,7 +133,7 @@ val add_rewrite_rules : Label.t -> Declarations.rewrite_rules_body -> safe_envir
 val add_mind :
   ?typing_flags:Declarations.typing_flags ->
   Label.t -> Entries.mutual_inductive_entry ->
-    MutInd.t safe_transformer
+  (MutInd.t * IndTyping.NotPrimRecordReason.t option) safe_transformer
 
 (** Adding a module or a module type *)
 

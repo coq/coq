@@ -190,7 +190,9 @@ let check_inductive env mind mb =
     =
     (* Locally set typing flags for further typechecking *)
     let env = CheckFlags.set_local_flags mb.mind_typing_flags env in
-    Indtypes.check_inductive env ~sec_univs:None mind entry
+    let mib, not_prim_record = Indtypes.check_inductive env ~sec_univs:None mind entry in
+    assert (Option.is_empty not_prim_record);
+    mib
   in
   let check = check mind in
 
