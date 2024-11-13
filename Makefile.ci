@@ -126,7 +126,7 @@ ci-coquelicot: ci-mathcomp
 ci-deriving: ci-mathcomp
 ci-math_classes: ci-bignums
 
-ci-corn: ci-math_classes
+ci-corn: ci-math_classes ci-elpi
 
 ci-mtac2: ci-unicoq
 
