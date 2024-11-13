@@ -468,9 +468,11 @@ let pr_state env sigma (tm,sk) =
 (*** Reduction Functions Operators ***)
 (*************************************)
 
-let safe_meta_value sigma ev =
-  try Some (Evd.meta_value sigma ev)
-  with Not_found -> None
+type meta_handler = { meta_value : metavariable -> EConstr.t option }
+
+let safe_meta_value metas ev = match metas with
+| None -> None
+| Some f -> f.meta_value ev
 
 (*************************************)
 (*** Reduction using bindingss ***)
@@ -817,7 +819,7 @@ let rec apply_rules whrec env sigma u r stk =
       (rhs', stk)
     with PatternFailure -> apply_rules whrec env sigma u rs stk
 
-let whd_state_gen flags env sigma =
+let whd_state_gen flags ?metas env sigma =
   let open Context.Named.Declaration in
   let rec whrec (x, stack) : state =
     let () =
@@ -846,7 +848,7 @@ let whd_state_gen flags env sigma =
       | _ -> fold ())
     | Evar ev -> fold ()
     | Meta ev ->
-      (match safe_meta_value sigma ev with
+      (match safe_meta_value metas ev with
       | Some body -> whrec (body, stack)
       | None -> fold ())
     | Const (c,u as const) ->
@@ -963,7 +965,7 @@ let whd_state_gen flags env sigma =
   whrec
 
 (** reduction machine without global env and refold machinery *)
-let local_whd_state_gen flags env sigma =
+let local_whd_state_gen flags ?metas env sigma =
   let rec whrec (x, stack) =
     let c0 = EConstr.kind sigma x in
     let s = (EConstr.of_kind c0, stack) in
@@ -991,7 +993,7 @@ let local_whd_state_gen flags env sigma =
 
     | Evar ev -> s
     | Meta ev ->
-      (match safe_meta_value sigma ev with
+      (match safe_meta_value metas ev with
         Some c -> whrec (c,stack)
       | None -> s)
 
@@ -1026,11 +1028,11 @@ let local_whd_state_gen flags env sigma =
   in
   whrec
 
-let stack_red_of_state_red f =
-  let f env sigma x = EConstr.decompose_app_list sigma (Stack.zip sigma (f env sigma (x, Stack.empty))) in
+let stack_red_of_state_red f ?metas =
+  let f env sigma x = EConstr.decompose_app_list sigma (Stack.zip sigma (f ?metas env sigma (x, Stack.empty))) in
   f
 
-let red_of_state_red ~delta f env sigma x =
+let red_of_state_red ?metas ~delta f env sigma x =
   let rec is_whnf c = match Constr.kind c with
     | Const _ | Var _ -> not delta
     | Construct _ | Ind _ | Int _ | Float _ | String _
@@ -1042,13 +1044,13 @@ let red_of_state_red ~delta f env sigma x =
      not sure if anything relies on reduction unfolding head evars
      for now use Unsafe.to_constr to keep such unfolds *)
   if is_whnf (EConstr.Unsafe.to_constr x) then x
-  else Stack.zip sigma (f env sigma (x,Stack.empty))
+  else Stack.zip sigma (f ?metas env sigma (x,Stack.empty))
 
 (* 0. No Reduction Functions *)
 
 let whd_nored_state = local_whd_state_gen RedFlags.nored
 let whd_nored_stack = stack_red_of_state_red whd_nored_state
-let whd_nored = red_of_state_red ~delta:false whd_nored_state
+let whd_nored ?metas = red_of_state_red ?metas ~delta:false whd_nored_state
 
 (* 1. Beta Reduction Functions *)
 
@@ -1063,9 +1065,9 @@ let whd_betalet = red_of_state_red ~delta:false whd_betalet_state
 (* 2. Delta Reduction Functions *)
 
 let whd_const_state c e = whd_state_gen RedFlags.(mkflags [fCONST c]) e
-let whd_const c = red_of_state_red ~delta:true (whd_const_state c)
+let whd_const c = red_of_state_red ~delta:true (fun ?metas -> whd_const_state c)
 
-let whd_delta_state e = whd_state_gen RedFlags.delta e
+let whd_delta_state = whd_state_gen RedFlags.delta
 let whd_delta_stack = stack_red_of_state_red whd_delta_state
 let whd_delta = red_of_state_red ~delta:true whd_delta_state
 
@@ -1077,15 +1079,15 @@ let whd_betadeltazeta = red_of_state_red ~delta:true whd_betadeltazeta_state
 
 let whd_betaiota_state = local_whd_state_gen RedFlags.betaiota
 let whd_betaiota_stack = stack_red_of_state_red whd_betaiota_state
-let whd_betaiota = red_of_state_red ~delta:false whd_betaiota_state
+let whd_betaiota ?metas = red_of_state_red ?metas ~delta:false whd_betaiota_state
 
 let whd_betaiotazeta_state = local_whd_state_gen RedFlags.betaiotazeta
 let whd_betaiotazeta_stack = stack_red_of_state_red whd_betaiotazeta_state
-let whd_betaiotazeta = red_of_state_red ~delta:false whd_betaiotazeta_state
+let whd_betaiotazeta ?metas = red_of_state_red ?metas ~delta:false whd_betaiotazeta_state
 
 let whd_all_state = whd_state_gen RedFlags.all
 let whd_all_stack = stack_red_of_state_red whd_all_state
-let whd_all = red_of_state_red ~delta:true whd_all_state
+let whd_all ?metas = red_of_state_red ?metas ~delta:true whd_all_state
 
 let whd_allnolet_state = whd_state_gen RedFlags.allnolet
 let whd_allnolet_stack = stack_red_of_state_red whd_allnolet_state
@@ -1114,11 +1116,7 @@ let shrink_eta sigma c =
           if noccurn sigma 1 u then pop u else x
         | _ -> x
       else x
-    | Meta ev ->
-      (match safe_meta_value sigma ev with
-        Some c -> whrec c
-      | None -> x)
-    | App _ | Case _ | Fix _ | Construct _ | CoFix _ | Evar _ | Rel _ | Var _ | Sort _ | Prod _
+    | Meta _ | App _ | Case _ | Fix _ | Construct _ | CoFix _ | Evar _ | Rel _ | Var _ | Sort _ | Prod _
     | LetIn _ | Const _  | Ind _ | Proj _ | Int _ | Float _ | String _ | Array _ -> x
   in
   whrec c
@@ -1421,46 +1419,6 @@ let check_hyps_inclusion env sigma x hyps =
 (*             Special-Purpose Reduction                            *)
 (********************************************************************)
 
-(* [instance] is used for [res_pf]; the call to [local_strong whd_betaiota]
-   has (unfortunately) different subtle side effects:
-
-   - ** Order of subgoals **
-     If the lemma is a case analysis with parameters, it will move the
-     parameters as first subgoals (e.g. "case H" applied on
-     "H:D->A/\B|-C" will present the subgoal |-D first while w/o
-     betaiota the subgoal |-D would have come last).
-
-   - ** Betaiota-contraction in statement **
-     If the lemma has a parameter which is a function and this
-     function is applied in the lemma, then the _strong_ betaiota will
-     contract the application of the function to its argument (e.g.
-     "apply (H (fun x => x))" in "H:forall f, f 0 = 0 |- 0=0" will
-     result in applying the lemma 0=0 in which "(fun x => x) 0" has
-     been contracted). A goal to rewrite may then fail or succeed
-     differently.
-
-   - ** Naming of hypotheses **
-     If a lemma is a function of the form "fun H:(forall a:A, P a)
-     => .. F H .." where the expected type of H is "forall b:A, P b",
-     then, without reduction, the application of the lemma will
-     generate a subgoal "forall a:A, P a" (and intro will use name
-     "a"), while with reduction, it will generate a subgoal "forall
-     b:A, P b" (and intro will use name "b").
-
-   - ** First-order pattern-matching **
-     If a lemma has the type "(fun x => p) t" then rewriting t may fail
-     if the type of the lemma is first beta-reduced (this typically happens
-     when rewriting a single variable and the type of the lemma is obtained
-     by meta_instance (with empty map) which itself calls instance with this
-     empty map).
- *)
-
-let instance env sigma c =
-  (* if s = [] then c else *)
-  (* No need to compute contexts under binders as whd_betaiota is local *)
-  let rec strongrec t = EConstr.map sigma strongrec (whd_betaiota env sigma t) in
-  strongrec c
-
 (* pseudo-reduction rule:
  * [hnf_prod_app env s (Prod(_,B)) N --> B[N]
  * with an HNF on the first argument to produce a product.
@@ -1651,7 +1609,7 @@ let is_sort env sigma t =
 (* reduction to head-normal-form allowing delta/zeta only in argument
    of case/fix (heuristic used by evar_conv) *)
 
-let whd_betaiota_deltazeta_for_iota_state ts env sigma s =
+let whd_betaiota_deltazeta_for_iota_state ts ?metas env sigma s =
   let all' = RedFlags.red_add_transparent RedFlags.all ts in
   (* Unset the sharing flag to get a call-by-name reduction. This matters for
      the shape of the generated term. *)
@@ -1670,7 +1628,7 @@ let whd_betaiota_deltazeta_for_iota_state ts env sigma s =
     | _ -> None
   in
   let rec whrec s =
-    let (t, stack as s) = whd_state_gen RedFlags.betaiota env sigma s in
+    let (t, stack as s) = whd_state_gen RedFlags.betaiota ?metas env sigma s in
     let rewrite_step =
       match kind sigma t with
       | Const (cst, u) when Environ.is_symbol env cst ->
@@ -1719,15 +1677,6 @@ let is_arity env sigma c =
   match find_conclusion env sigma c with
     | Sort _ -> true
     | _ -> false
-
-(*************************************)
-(* Metas *)
-
-let meta_instance env sigma b =
-  let fm = b.freemetas in
-  if Metaset.is_empty fm then b.rebus
-  else
-    instance env sigma b.rebus
 
 module Infer = struct
 

@@ -1004,7 +1004,7 @@ module Search = struct
     in
     let evm = Evd.set_typeclass_evars evm Evar.Set.empty in
     let evm = Evd.push_future_goals evm in
-    evm, Evd.meta_list evm, sorted_goals
+    evm, sorted_goals
 
 
   let run_on_goals env evm tac ~goals =
@@ -1036,7 +1036,7 @@ module Search = struct
     let evm' = Proofview.return pv' in
     (finished, evm')
 
-  let post_process_goals ~goals ~nongoals ~old_metas ~sigma ~finished =
+  let post_process_goals ~goals ~nongoals ~sigma ~finished =
     let _, sigma = Evd.pop_future_goals sigma in
     let tc_evars = Evd.get_typeclass_evars sigma in
     let () = ppdebug 1 (fun () ->
@@ -1054,9 +1054,6 @@ module Search = struct
           | Some ev -> Evar.Set.add ev acc
           | None -> acc) (Evar.Set.union goals nongoals) tc_evars
     in
-    (* FIXME: the need to merge metas seems to come from this being called
-       internally from Unification. It should be handled there instead. *)
-    let sigma = Evd.meta_merge old_metas (Evd.clear_metas sigma) in
     let sigma = Evd.set_typeclass_evars sigma nongoals in
     let () = ppdebug 1 (fun () ->
         str"New typeclass evars are: " ++
@@ -1230,9 +1227,9 @@ let resolve_all_evars depth unique env p oevd fail =
           match evars_to_goals p evd with
           | Some (goals, nongoals) ->
             let solver = find_solver env evd comp in
-            let evd, old_metas, sorted_goals = Search.preprocess_goals evd goals in
+            let evd, sorted_goals = Search.preprocess_goals evd goals in
             let finished, evd = solver.solver env evd ~goals:sorted_goals ~best_effort:true ~depth ~unique in
-            let evd = Search.post_process_goals ~goals ~nongoals ~old_metas ~sigma:evd ~finished in
+            let evd = Search.post_process_goals ~goals ~nongoals ~sigma:evd ~finished in
             if has_undefined p oevd evd then
               let () = if finished then ppdebug 1 (fun () ->
                   str"Proof is finished but there remain undefined evars: " ++

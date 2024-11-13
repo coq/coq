@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Constr
 open Environ
 open EConstr
 open Evd
@@ -29,9 +28,6 @@ val check : env -> evar_map -> constr -> types -> evar_map
 
 (** Type of a variable. *)
 val type_of_variable : env -> variable -> types
-
-(** Returns the instantiated type of a metavariable *)
-val meta_type : env -> evar_map -> metavariable -> types
 
 (** Solve existential variables using typing *)
 val solve_evars : env -> evar_map -> constr -> evar_map * constr

@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Pp
 open CErrors
 open Util
 open Term
@@ -25,12 +24,6 @@ open Pretype_errors
 open Context.Rel.Declaration
 
 module GR = Names.GlobRef
-
-let meta_type env evd mv =
-  let ty =
-    try Evd.meta_ftype evd mv
-    with Not_found -> anomaly (str "unknown meta ?" ++ str (Nameops.string_of_meta mv) ++ str ".") in
-  meta_instance env evd ty
 
 let fresh_template_context env0 sigma ind (mib, mip as spec) args =
   let templ = match mib.Declarations.mind_template with

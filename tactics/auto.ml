@@ -74,7 +74,7 @@ let exact h =
     let concl = Proofview.Goal.concl gl in
     if occur_existential sigma t || occur_existential sigma concl then
       try
-        let sigma = Unification.w_unify env sigma CONV ~flags:auto_unif_flags concl t in
+        let _, sigma = Unification.w_unify env sigma CONV ~flags:auto_unif_flags concl t in
         Proofview.Unsafe.tclEVARSADVANCE sigma <*>
         exact_no_check c
       with e when CErrors.noncritical e -> Proofview.tclZERO e

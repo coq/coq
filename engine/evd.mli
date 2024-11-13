@@ -373,8 +373,6 @@ val evar_key : Id.t -> evar_map -> Evar.t
 
 val evar_names : evar_map -> Nameops.Fresh.t
 
-val evar_source_of_meta : metavariable -> evar_map -> Evar_kinds.t located
-
 val dependent_evar_ident : Evar.t -> evar_map -> Id.t
 
 (** {5 Side-effects} *)
@@ -497,7 +495,6 @@ type 'a freelisted = {
 
 val metavars_of : econstr -> Metaset.t
 val mk_freelisted : econstr -> econstr freelisted
-val map_fl : ('a -> 'b) -> 'a freelisted -> 'b freelisted
 
 (** Status of an instance found by unification wrt to the meta it solves:
   - a supertype of the meta (e.g. the solution to ?X <= T is a supertype of ?X)
@@ -507,9 +504,6 @@ val map_fl : ('a -> 'b) -> 'a freelisted -> 'b freelisted
 *)
 
 type instance_constraint = IsSuperType | IsSubType | Conv
-
-val eq_instance_constraint :
-  instance_constraint -> instance_constraint -> bool
 
 (** Status of the unification of the type of an instance against the type of
      the meta it instantiates:
@@ -567,31 +561,29 @@ val evars_of_named_context : evar_map -> (econstr, etypes, erelevance) Context.N
 val evars_of_filtered_evar_info : evar_map -> 'a evar_info -> Evar.Set.t
 
 (** Metas *)
-val meta_list : evar_map -> clbinding Metamap.t
+module Meta :
+sig
 
-val meta_value     : evar_map -> metavariable -> econstr
+type t = clbinding Metamap.t
+
+val meta_value     : t -> metavariable -> econstr
 (** [meta_fvalue] raises [Not_found] if meta not in map or [Anomaly] if
    meta has no value *)
 
-val meta_opt_fvalue : evar_map -> metavariable -> (econstr freelisted * instance_status) option
-val meta_ftype     : evar_map -> metavariable -> etypes freelisted
-val meta_name      : evar_map -> metavariable -> Name.t
-val meta_declare   :
-  metavariable -> etypes -> ?name:Name.t -> evar_map -> evar_map
-val meta_assign    : metavariable -> econstr * instance_status -> evar_map -> evar_map
-val meta_reassign  : metavariable -> econstr * instance_status -> evar_map -> evar_map
-
-val clear_metas : evar_map -> evar_map
+val meta_opt_fvalue : t -> metavariable -> (econstr freelisted * instance_status) option
+val meta_ftype     : t -> metavariable -> etypes freelisted
+val meta_name      : t -> metavariable -> Name.t
+val meta_declare   : metavariable -> etypes -> ?name:Name.t -> t -> t
+val meta_assign    : metavariable -> econstr * instance_status -> t -> evar_map -> evar_map * t
 
 (** [meta_merge evd1 evd2] returns [evd2] extended with the metas of [evd1] *)
-val meta_merge : clbinding Metamap.t -> evar_map -> evar_map
+val meta_merge : t -> t -> t
 
-val map_metas_fvalue : (econstr -> econstr) -> evar_map -> evar_map
-val map_metas : (econstr -> econstr) -> evar_map -> evar_map
+val map_metas : (econstr -> econstr) -> t -> t
 
-type metabinding = metavariable * econstr * instance_status
+val evar_source_of_meta : metavariable -> t -> Evar_kinds.t located
 
-val retract_coercible_metas : evar_map -> metabinding list * evar_map
+end
 
 (** {5 FIXME: Nothing to do here} *)
 
