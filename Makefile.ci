@@ -86,8 +86,6 @@ CI_TARGETS= \
     ci-rewriter \
     ci-riscv_coq \
     ci-rupicola \
-    ci-serapi \
-    ci-serapi_test \
     ci-sf \
     ci-simple_io \
     ci-smtcoq \
@@ -178,8 +176,6 @@ ci-vst: ci-compcert
 ci-compcert: ci-menhir ci-flocq
 
 ci-relation_algebra: ci-aac_tactics ci-mathcomp
-
-ci-serapi: ci-coq_lsp
 
 ci-smtcoq_trakt: ci-trakt
 

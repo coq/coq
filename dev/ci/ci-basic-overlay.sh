@@ -505,12 +505,6 @@ project lean_importer "https://github.com/SkySkimmer/coq-lean-import" "master"
 # Contact @SkySkimmer on github
 
 ########################################################################
-# SerAPI
-########################################################################
-project serapi "https://github.com/ejgallego/coq-serapi" "main"
-# Contact @ejgallego on github
-
-########################################################################
 # SMTCoq
 ########################################################################
 project smtcoq "https://github.com/smtcoq/smtcoq" "coq-master"
