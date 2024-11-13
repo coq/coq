@@ -11,10 +11,18 @@
 open Univ
 open UVars
 
+type mode = Check | Infer
+
+(** Not the same as Type_errors.BadVariance because we don't have the env where we raise. *)
+exception BadVariance of Level.t * VariancePos.t * VariancePos.t
+
 type variance_occurrence =
   { in_binder : (int * UVars.Variance.t) option;
     in_term : UVars.Variance.t option;
     in_type : UVars.Variance.t option }
+
+val default_occ : variance_occurrence
+val make_occ : Variance.t -> Position.t -> variance_occurrence
 
 val pr_variance_occurrence : variance_occurrence -> Pp.t
 
@@ -42,6 +50,7 @@ module Inf : sig
 
   val set_position : Position.t -> variances -> variances
 
+  val start_map : (mode * variance_occurrence) Level.Map.t -> Position.t -> variances
   val start : (Level.t * VariancePos.t option) array -> Position.t -> variances
 
   val start_inference : Level.Set.t -> Position.t -> variances

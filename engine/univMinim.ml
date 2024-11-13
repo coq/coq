@@ -339,7 +339,7 @@ let simplify_variables partial ctx us variances graph =
         Level.Set.fold fold (Universe.levels lbound) variances
       in
       (Level.Set.remove u ctx, UnivFlex.define u lbound us, variances, graph)
-    | None -> (ctx, UnivFlex.remove u us, variances, graph)
+    | None -> (ctx, us, variances, graph)
   in
   let arbitrary u acc = minimize u acc in
   let simplify u (ctx, us, variances, graph as acc) =
@@ -411,6 +411,72 @@ let partition_to_constraints partition cstrs =
     let rest = LevelExpr.Set.remove canon eqs in
     LevelExpr.Set.fold (fold canon) rest cstrs) cstrs partition
 
+
+let minimize_weak us weak (smallles, csts, g, variances) =
+  UPairSet.fold (fun (u,v) (smallles, csts, g, variances as acc) ->
+    let norm = Universe.subst_fn (level_subst_of (UnivFlex.normalize_univ_variable us)) in
+    let u = norm u and v = norm v in
+    if (Universe.is_type0 u || Universe.is_type0 v) then begin
+      if get_set_minimization() then begin
+        if Universe.is_type0 u then (Constraints.add (u,Le,v) smallles,csts,g,variances)
+        else (Constraints.add (v,Le,u) smallles,csts,g,variances)
+      end else acc
+    end else
+      let set_to a b =
+        let levels = Level.Set.add a (Universe.levels b) in
+        let max_variance = max_variance variances levels in
+        match InferCumulativity.term_type_variances max_variance with
+        | (None | Some UVars.Variance.Irrelevant), (None | Some UVars.Variance.Irrelevant) -> (* Irrelevant *)
+          (smallles,
+          Constraints.add (Universe.make a,Eq,b) csts,
+          UGraph.enforce_constraint (Universe.make a,Eq,b) g,
+          Level.Set.fold (fun bl variances -> set_variance variances bl max_variance) levels variances)
+        | _, _ -> (* One universe is not irrelevant *)
+          (smallles, csts, g, variances)
+      in
+      let check_le a b = UGraph.check_constraint g (a,Le,b) in
+      if check_le u v || check_le v u
+      then acc
+      else match Universe.level u with
+      | Some u when UnivFlex.mem u us -> set_to u v
+      | _ ->
+        match Universe.level v with
+        | Some v when UnivFlex.mem v us -> set_to v u
+        | _ -> acc)
+    weak (smallles, csts, g, variances)
+
+let new_minimize_weak ctx us weak (g, variances) =
+  UPairSet.fold (fun (u,v) (ctx, us, g, variances as acc) ->
+    let norm = Universe.subst_fn (level_subst_of (UnivFlex.normalize_univ_variable us)) in
+    let u = norm u and v = norm v in
+    if (Universe.is_type0 u || Universe.is_type0 v) then begin
+      if get_set_minimization() then begin
+        if Universe.is_type0 u then (ctx,us,g,variances)
+        else (ctx,us,g,variances)
+      end else acc
+    end else
+      let set_to a b =
+        let levels = Level.Set.add a (Universe.levels b) in
+        let max_variance = max_variance variances levels in
+        match InferCumulativity.term_type_variances max_variance with
+        | (None | Some UVars.Variance.Irrelevant), (None | Some UVars.Variance.Irrelevant) -> (* Irrelevant *)
+          (Level.Set.remove a ctx, UnivFlex.define a b us, UGraph.set a b g,
+          Level.Set.fold (fun bl variances -> set_variance variances bl max_variance) levels variances)
+        | _, _ -> (* One universe is not irrelevant *)
+          (ctx,us, g, variances)
+      in
+      let check_le a b = UGraph.check_constraint g (a,Le,b) in
+      if check_le u v || check_le v u
+      then acc
+      else match Universe.level u with
+      | Some u when UnivFlex.mem u us -> set_to u v
+      | _ ->
+        match Universe.level v with
+        | Some v when UnivFlex.mem v us -> set_to v u
+        | _ -> acc)
+    weak (ctx, us, g, variances)
+
+
 let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?binders {weak_constraints=weak;above_prop} =
   let prl = UnivNames.pr_level_with_global_universes ?binders in
   debug Pp.(fun () -> str "Minimizing context: " ++ pr_universe_context_set prl ctx ++ spc () ++
@@ -432,37 +498,7 @@ let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?bin
      universes are unrelated unify them. *)
   let smallles, csts, g, variances =
     if not (CDebug.get_flag switch_minim) then
-      UPairSet.fold (fun (u,v) (smallles, csts, g, variances as acc) ->
-      let norm = Universe.subst_fn (level_subst_of (UnivFlex.normalize_univ_variable us)) in
-      let u = norm u and v = norm v in
-      if (Universe.is_type0 u || Universe.is_type0 v) then begin
-        if get_set_minimization() then begin
-          if Universe.is_type0 u then (Constraints.add (u,Le,v) smallles,csts,g,variances)
-          else (Constraints.add (v,Le,u) smallles,csts,g,variances)
-        end else acc
-      end else
-        let set_to a b =
-          let levels = Level.Set.add a (Universe.levels b) in
-          let max_variance = max_variance variances levels in
-          match InferCumulativity.term_type_variances max_variance with
-          | None, None | Some UVars.Variance.Irrelevant, Some UVars.Variance.Irrelevant -> (* Irrelevant *)
-            (smallles,
-            Constraints.add (Universe.make a,Eq,b) csts,
-            UGraph.enforce_constraint (Universe.make a,Eq,b) g,
-            Level.Set.fold (fun bl variances -> set_variance variances bl max_variance) levels variances)
-          | _, _ -> (* One universe is not irrelevant *)
-            (smallles, csts, g, variances)
-        in
-        let check_le a b = UGraph.check_constraint g (a,Le,b) in
-        if check_le u v || check_le v u
-        then acc
-        else match Universe.level u with
-        | Some u when UnivFlex.mem u us -> set_to u v
-        | _ ->
-          match Universe.level v with
-          | Some v when UnivFlex.mem v us -> set_to v u
-          | _ -> acc)
-      weak (smallles, csts, g, variances)
+      minimize_weak us weak (smallles, csts, g, variances)
     else (smallles, csts, g, variances)
   in
   let smallles = match (lbound : UGraph.Bound.t) with
@@ -610,7 +646,8 @@ let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?bin
       in
       (* debug Pp.(fun () -> str"Model after removal: " ++ UGraph.pr_model graph); *)
       let ctx', us, variances, graph = simplify_variables partial ctx us variances graph in
-      debug Pp.(fun () -> str"Model after simplification: " ++ UGraph.pr_model graph ++ fnl () ++ str"FLEXIBLES: " ++ UnivFlex.pr Level.raw_pr us);
+      debug Pp.(fun () -> str"Model after simplification: " ++ UGraph.pr_model graph ++ fnl () ++ UnivFlex.pr Level.raw_pr us);
+      let ctx', us, graph, variances = new_minimize_weak ctx' us weak (graph, variances) in
       let cstrs, partition = UGraph.constraints_of_universes graph in
       let cstrs = partition_to_constraints partition cstrs in
       let cstrs =

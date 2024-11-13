@@ -54,6 +54,20 @@ let pr_variance_occurrence { in_binder; in_term; in_type } =
   | None -> pr_in_type
   | Some variance -> pr_in_type ++ (if Option.is_empty in_binder && Option.is_empty in_type then str": " else str", ") ++ UVars.Variance.pr variance ++ str " in term"
 
+let default_occ =
+  { in_binder = None; in_term = None; in_type = None }
+
+let make_occ variance position =
+  let open Position in
+  match position with
+  | InBinder i ->
+    { in_binder = Some (i, variance); in_term = None; in_type = None }
+  | InTerm ->
+    { in_binder = Some (-1, variance); in_term = Some variance; in_type = None }
+  | InType ->
+    { in_binder = Some (-1, variance); in_term = Some variance; in_type = Some variance }
+
+
 (** Level variances *)
 
 (* The position records the last position in the term where the variable was used relevantly. *)
@@ -154,6 +168,8 @@ module Inf : sig
 
   val set_position : Position.t -> variances -> variances
 
+  val start_map : (mode * variance_occurrence) Level.Map.t -> Position.t -> variances
+
   val start : (Level.t * VariancePos.t option) array -> Position.t -> variances
   val start_inference : Level.Set.t -> Position.t -> variances
 
@@ -219,18 +235,8 @@ end = struct
     in
     if univs == variances.univs then variances else {variances with univs}
 
-  let default_occ =
-    { in_binder = None; in_term = None; in_type = None }
-
-  let make_occ variance position =
-    let open Position in
-    match position with
-    | InBinder i ->
-      { in_binder = Some (i, variance); in_term = None; in_type = None }
-    | InTerm ->
-      { in_binder = Some (-1, variance); in_term = Some variance; in_type = None }
-    | InType ->
-      { in_binder = Some (-1, variance); in_term = Some variance; in_type = Some variance }
+  let start_map univs position =
+    { univs; orig_array = [| |]; infer_mode = true; position}
 
   let start us position =
     let univs = Array.fold_left (fun univs (u,variance) ->
@@ -376,11 +382,13 @@ let infer_sort cv_pb variances s =
   | InvCumul ->
     Level.Set.fold infer_level_geq (Sorts.levels s) variances
 
-let infer_constant cv_pb env nargs variances (con,u) =
+let infer_constant cv_pb env nargs variances has_def (con,u) =
   let cb = Environ.lookup_constant con env in
   let u = extend_con_instance cb u in
   match extended_const_variance cb with
-  | None -> infer_generic_instance_eq variances u
+  | None ->
+    let variances = if has_def then set_infer_mode false variances else variances in
+    infer_generic_instance_eq variances u
   | Some cst_variance -> infer_cumulative_instance cv_pb nargs cst_variance variances u
 
 let whd_stack (infos, tab) hd stk = CClosure.whd_stack infos tab hd stk
@@ -427,9 +435,8 @@ let rec infer_fterm cv_pb infos variances hd stk =
       let def = unfold_ref_with_args (fst infos) (snd infos) fl stk in
       try
         let infer_mode = get_infer_mode variances in
-        (* let variances = if Option.has_some def then set_infer_mode false variances else variances in *)
         let nargs = stack_args_size stk in
-        let variances = infer_constant cv_pb (info_env (fst infos)) nargs variances con in
+        let variances = infer_constant cv_pb (info_env (fst infos)) nargs variances (Option.has_some def) con in
         let variances = infer_stack infos variances stk in
         set_infer_mode infer_mode variances
       with BadVariance _ | NotInferring as e ->

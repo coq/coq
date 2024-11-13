@@ -46,7 +46,11 @@ let _occurrence_of (position, variance) =
 
 let compute_variances_constr env ~evars status position cv_pb c =
   let status = Inf.set_position position status in
-  infer_term cv_pb env ~evars status c
+  try infer_term cv_pb env ~evars status c
+  with
+  | InferCumulativity.BadVariance (lev, expected, actual) ->
+    Type_errors.error_bad_variance env ~lev ~expected ~actual
+
 
 let compute_variances_constr env sigma status position variance c =
   let status = compute_variances_constr env ~evars:(Evd.evar_handler sigma) status position variance c in
@@ -93,10 +97,29 @@ let compute_variances_type env sigma ?(position=Position.InType) ?(ctx_position 
   compute_variances_type_constr env sigma status ~position ~ctx_position ~ctx_cumul_pb
     (EConstr.to_constr ~abort_on_undefined_evars:false sigma c)
 
-let init_status ?(position=Position.InType) sigma =
+let init_status ?(position=Position.InType) ?(udecl : UState.universe_decl option) sigma =
   let ustate = Evd.ustate sigma in
   let ctx = UState.context_set ustate in
-  Inf.start_inference (ContextSet.levels ctx) position
+  match udecl with
+  | None -> Inf.start_inference (ContextSet.levels ctx) position
+  | Some udecl ->
+    let levels = ContextSet.levels ctx in
+    let us = udecl.UState.univdecl_instance and variances = udecl.UState.univdecl_variances in
+    match variances with
+    | None -> Inf.start_inference levels position
+    | Some vs ->
+      assert (Int.equal (Array.length vs) (List.length us));
+      let comp = CList.combine us (Array.to_list vs) in
+      let map = Level.Set.fold (fun l m ->
+        try
+          let open InferCumulativity in
+          let (_, v) = List.find (fun (l', _) -> Level.equal l l') comp in
+          (match v with
+          | None -> Level.Map.add l (Infer, default_occ) m
+          | Some v -> Level.Map.add l (Check, make_occ v UVars.Position.InType) m)
+        with Not_found -> Level.Map.add l (Infer, default_occ) m)
+        levels Level.Map.empty
+      in Inf.start_map map position
 
 let universe_variances_body_ty env sigma status ?typ body =
   let status = Option.fold_left (compute_variances_type env sigma) status typ in
@@ -123,8 +146,8 @@ let universe_variances_of_type env sigma typ =
     str "Computed from type " ++ Termops.Internal.print_constr_env env sigma typ);
   Inf.inferred status
 
-let universe_variances_of_inductive env sigma ~params ~arities ~constructors =
-  let status = init_status sigma in
+let universe_variances_of_inductive env sigma ~udecl ~params ~arities ~constructors =
+  let status = init_status ~udecl sigma in
   let params = EConstr.Vars.smash_rel_context params in
   let status = compute_variances_context env sigma status params in
   let paramlen = Context.Rel.length params in

@@ -14,6 +14,7 @@ val universe_variances_constr : Environ.env -> Evd.evar_map -> ?typ:Constr.t -> 
 val universe_variances_of_type : Environ.env -> Evd.evar_map -> EConstr.t -> InferCumulativity.level_variances
 
 val universe_variances_of_inductive : Environ.env -> Evd.evar_map ->
+  udecl:UState.universe_decl ->
   params:EConstr.rel_context ->
   arities:EConstr.t list ->
   constructors:(Names.Id.t list * EConstr.t list) list -> InferCumulativity.level_variances
