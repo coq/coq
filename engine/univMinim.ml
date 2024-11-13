@@ -287,7 +287,7 @@ let minimize_univ_variables partial ctx us variances left right cstrs =
       if not is_defined then maximize_contravariant acc u
       else acc) us (ctx, us, cstrs)
 
-let warn_not_minimizable u =
+let _warn_not_minimizable u =
   Feedback.msg_notice Pp.(str"Universe " ++ Level.raw_pr u ++ str" is not mimimizable as its lower bound \
        is not expressible in terms of other universes")
 
@@ -339,7 +339,7 @@ let simplify_variables partial ctx us variances graph =
         Level.Set.fold fold (Universe.levels lbound) variances
       in
       (Level.Set.remove u ctx, UnivFlex.define u lbound us, variances, graph)
-    | None -> warn_not_minimizable u; (ctx, UnivFlex.remove u us, variances, graph)
+    | None -> (ctx, UnivFlex.remove u us, variances, graph)
   in
   let arbitrary u acc = minimize u acc in
   let simplify u (ctx, us, variances, graph as acc) =
