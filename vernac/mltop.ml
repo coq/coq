@@ -31,9 +31,6 @@ open Pp
 
 module Fl_internals = struct
 
-  (* Check that [m] is a findlib library name *)
-  let validate_lib_name m = String.index_opt m '.' <> None
-
   (* Fl_split.in_words is not exported *)
   let fl_split_in_words s =
     (* splits s in words separated by commas and/or whitespace *)
@@ -106,13 +103,6 @@ end = struct
 
   module Errors = struct
 
-    let plugin_name_should_contain_dot m =
-      CErrors.user_err
-        Pp.(str Format.(asprintf "%s is not a valid plugin name anymore." m) ++ spc() ++
-            str "Plugins should be loaded using their public name" ++ spc () ++
-            str "according to findlib, for example package-name.foo and not " ++
-            str "foo_plugin.")
-
     let plugin_name_invalid_format m =
       CErrors.user_err
         Pp.(str Format.(asprintf "%s is not a valid plugin name." m) ++ spc () ++
@@ -125,8 +115,6 @@ end = struct
   let of_package m =
     match String.split_on_char ':' m with
     | [ lib ] ->
-      if not (Fl_internals.validate_lib_name lib)
-      then Errors.plugin_name_should_contain_dot lib;
       { lib }
     | ([] | _ :: _) ->
       Errors.plugin_name_invalid_format m
@@ -392,8 +380,28 @@ let inMLModule : ml_module_object -> Libobject.obj =
       subst_function = (fun (_,o) -> o);
       classify_function = classify_ml_objects }
 
+let warn_legacy_loading =
+  let name = "legacy-loading-removed" in
+  CWarnings.create ~name (fun name ->
+      Pp.(str "Legacy loading plugin method has been removed from Coq, \
+               and the `:` syntax is deprecated, and its first \
+               argument ignored; please remove \"" ++
+          str name ++ str ":\" from your Declare ML"))
+
+let inspect_legacy_decl l =
+  match String.split_on_char ':' l with
+  | [lib] -> lib
+  | [cmxs; lib] ->
+    warn_legacy_loading cmxs;
+    lib
+  | bad ->
+    let bad = String.concat ":" bad in
+    CErrors.user_err Pp.(str "bad package name: " ++ str bad ++ str " .")
+
+let remove_legacy_decls = List.map inspect_legacy_decl
 
 let declare_ml_modules local l =
+  let l = remove_legacy_decls l in
   let mnames = List.map PluginSpec.of_package l in
   if Lib.sections_are_opened()
   then CErrors.user_err Pp.(str "Cannot Declare ML Module while sections are opened.");
