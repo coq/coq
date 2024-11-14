@@ -20,6 +20,7 @@ module G = Loop_checking
 
 type t = {
   graph: G.t;
+  locality: G.locality; (* Default for addition of universes and constraints *)
   type_in_type : bool;
 }
 
@@ -58,22 +59,26 @@ let check_leq g u u' =
 let check_eq g u v =
   type_in_type g || Universe.equal u v || graph_check_eq g u v
 
-let empty_universes = {graph=G.empty; type_in_type=false}
+let empty_universes = {graph=G.empty; type_in_type=false; locality=G.Global}
 
 let initial_universes =
   let big_rank = 1000000 in
   let g = G.empty in
-  let g = G.add ~rank:big_rank Level.set g in
-  {empty_universes with graph=g}
+  let g = G.add ~rank:big_rank G.Local Level.set g in
+  {empty_universes with graph=g; locality = G.Global }
+
+let set_local g =
+  assert (g.locality == G.Global);
+  { g with locality = G.Local }
 
 let clear_constraints g = {g with graph=G.clear_constraints g.graph}
 
 let enforce_constraint (u,d,v) g =
   match d with
-  | Le -> G.enforce_leq u v g
-  | Eq -> G.enforce_eq u v g
+  | Le -> G.enforce_leq g.locality u v g.graph
+  | Eq -> G.enforce_eq g.locality u v g.graph
 
-let enforce_constraint0 cst g = match enforce_constraint cst g.graph with
+let enforce_constraint0 cst g = match enforce_constraint cst g with
 | None -> None
 | Some g' ->
   if g' == g.graph then Some g
@@ -91,7 +96,7 @@ let enforce_constraint cst g = match enforce_constraint0 cst g with
 
 let merge_constraints csts g = Constraints.fold enforce_constraint csts g
 
-let check_constraint { graph = g; type_in_type } (u,d,v) =
+let check_constraint { graph = g; type_in_type; locality = _ } (u,d,v) =
   type_in_type
   || match d with
   | Le -> G.check_leq g u v
@@ -111,12 +116,12 @@ end
 exception AlreadyDeclared = G.AlreadyDeclared
 let add_universe u ~lbound ~strict g = match lbound with
 | Bound.Set ->
-  let graph = G.add u g.graph in
+  let graph = G.add g.locality u g.graph in
   let b = if strict then Universe.type1 else Universe.type0 in
   enforce_constraint (b, Le, Universe.make u) { g with graph }
 | Bound.Prop ->
   (* Do not actually add any constraint. This is a hack for template. *)
-  { g with graph = G.add u g.graph }
+  { g with graph = G.add g.locality u g.graph }
 
 let check_declared_universes g l =
   G.check_declared g.graph l
@@ -137,9 +142,9 @@ let remove_set_clauses l g =
 
 let pr_model g = G.pr_model g.graph
 
-let constraints_of_universes g =
+let constraints_of_universes ?(only_local=false) g =
   let add cst accu = Constraints.add cst accu in
-  G.constraints_of g.graph add Constraints.empty
+  G.constraints_of g.graph ~only_local add Constraints.empty
 let constraints_for ~kept g =
   let add cst accu = Constraints.add cst accu in
   G.constraints_for ~kept g.graph add Constraints.empty

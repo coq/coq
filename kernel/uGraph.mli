@@ -31,6 +31,10 @@ val check_eq : Universe.t check_function
 (** The initial graph of universes: Prop < Set *)
 val initial_universes : t
 
+(** In the resulting graph, additions of universes and constraints are considered local,
+   and they can be retrieved using the only_local option of constraints. *)
+val set_local : t -> t
+
 (** Initial universes, but keeping options such as type in type from the argument. *)
 val clear_constraints : t -> t
 
@@ -90,11 +94,13 @@ val check_declared_universes : t -> Univ.Level.Set.t -> (unit, Univ.Level.Set.t)
 (** The empty graph of universes *)
 val empty_universes : t
 
-(** [constraints_of_universes g] returns [csts] and [partition] where
+(** [constraints_of_universes only_local g] returns [csts] and [partition] where
    [csts] are the non-Eq constraints and [partition] is the partition
    of the universes into equivalence classes mapping a level to its equivalent
-   level expressions (i.e. l = l' + k). *)
-val constraints_of_universes : t -> Constraints.t * LevelExpr.Set.t list
+   level expressions (i.e. l = l' + k).
+   The [only_local] option only returns the constraints added since [set_local] was performed
+   on the graph. *)
+val constraints_of_universes : ?only_local:bool -> t -> Constraints.t * LevelExpr.Set.t list
 
 val choose : (Level.t -> bool) -> t -> Level.t -> Level.t option
 (** [choose p g u] picks a universe verifying [p] and equal
