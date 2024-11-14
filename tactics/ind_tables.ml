@@ -178,12 +178,12 @@ let rec define_individual_scheme_base ?loc kind suff f ~internal idopt (mind,i a
   let eff = Evd.concat_side_effects neff eff in
   const, eff
 
-and define_individual_scheme ?loc kind ~internal names (mind,i as ind) =
+and define_individual_scheme ?loc kind ~internal names (mind,i as ind) eff =
   match Hashtbl.find scheme_object_table kind with
   | _,MutualSchemeFunction _ -> assert false
   | s,IndividualSchemeFunction (f, deps) ->
     let deps = match deps with None -> [] | Some deps -> deps (Global.env ()) ind in
-    let eff = List.fold_left (fun eff dep -> declare_scheme_dependence eff dep) Evd.empty_side_effects deps in
+    let eff = List.fold_left (fun eff dep -> declare_scheme_dependence eff dep) eff deps in
     define_individual_scheme_base ?loc kind s f ~internal names ind eff
 
 (* Assumes that dependencies are already defined *)
@@ -203,12 +203,12 @@ and define_mutual_scheme_base ?(locmap=Locmap.default None) kind suff f ~interna
   let (eff, consts) = Array.fold_left2_map_i fold eff ids cl in
   consts, eff
 
-and define_mutual_scheme ?locmap kind ~internal names mind =
+and define_mutual_scheme ?locmap kind ~internal names mind eff =
   match Hashtbl.find scheme_object_table kind with
   | _,IndividualSchemeFunction _ -> assert false
   | s,MutualSchemeFunction (f, deps) ->
     let deps = match deps with None -> [] | Some deps -> deps (Global.env ()) mind in
-    let eff = List.fold_left (fun eff dep -> declare_scheme_dependence eff dep) Evd.empty_side_effects deps in
+    let eff = List.fold_left (fun eff dep -> declare_scheme_dependence eff dep) eff deps in
     define_mutual_scheme_base ?locmap kind s f ~internal names mind eff
 
 and declare_scheme_dependence eff sd =
@@ -216,12 +216,12 @@ match sd with
 | SchemeIndividualDep (ind, kind) ->
   if local_check_scheme kind ind eff then eff
   else
-    let _, eff' = define_individual_scheme kind ~internal:true None ind in
+    let _, eff' = define_individual_scheme kind ~internal:true None ind eff in
     Evd.concat_side_effects eff' eff
 | SchemeMutualDep (mind, kind) ->
   if local_check_scheme kind (mind, 0) eff then eff
   else
-    let _, eff' = define_mutual_scheme kind ~internal:true [] mind in
+    let _, eff' = define_mutual_scheme kind ~internal:true [] mind eff in
     Evd.concat_side_effects eff' eff
 
 let find_scheme kind (mind,i as ind) =
@@ -248,9 +248,9 @@ let find_scheme kind (mind,i as ind) =
       Proofview.tclZERO ~info e
 
 let define_individual_scheme ?loc kind names ind =
-  let _ , eff = define_individual_scheme ?loc kind ~internal:false names ind in
+  let _ , eff = define_individual_scheme ?loc kind ~internal:false names ind Evd.empty_side_effects in
   redeclare_schemes eff
 
 let define_mutual_scheme ?locmap kind names mind =
-  let _, eff = define_mutual_scheme ?locmap kind ~internal:false names mind in
+  let _, eff = define_mutual_scheme ?locmap kind ~internal:false names mind Evd.empty_side_effects in
   redeclare_schemes eff

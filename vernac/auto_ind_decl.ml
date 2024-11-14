@@ -1521,7 +1521,7 @@ let make_eq_decidability env handle mind =
 
 let eq_dec_scheme_kind =
   Ind_tables.declare_mutual_scheme_object "eq_dec"
-  ~deps:(fun _ ind -> [SchemeMutualDep (ind, bl_scheme_kind); SchemeMutualDep (ind, lb_scheme_kind)])
+  ~deps:(fun _ ind -> [SchemeMutualDep (ind, beq_scheme_kind); SchemeMutualDep (ind, bl_scheme_kind); SchemeMutualDep (ind, lb_scheme_kind)])
   make_eq_decidability
 
 (* The eq_dec_scheme proofs depend on the equality and discr tactics
