@@ -729,6 +729,7 @@ library:ci-corn:
   needs:
   - build:edge+flambda
   - plugin:ci-bignums
+  - plugin:ci-elpi_hb # CoRN uses elpi only (not HB) - depending on ci-elpi_hb reduces CI package count
   - library:ci-math_classes
   stage: build-3+
 
