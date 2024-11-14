@@ -166,6 +166,7 @@ module Inf : sig
   val get_infer_mode : variances -> bool
   val set_infer_mode : bool -> variances -> variances
 
+  val get_position : variances -> Position.t
   val set_position : Position.t -> variances -> variances
 
   val start_map : (mode * variance_occurrence) Level.Map.t -> Position.t -> variances
@@ -193,6 +194,7 @@ end = struct
   let get_infer_mode v = v.infer_mode
   let set_infer_mode b v = if v.infer_mode == b then v else {v with infer_mode=b}
 
+  let get_position v = v.position
   let set_position p v = if v.position == p then v else {v with position=p}
 
   let to_variance_pos position vocc =
@@ -492,7 +494,14 @@ let rec infer_fterm cv_pb infos variances hd stk =
     in
     debug Pp.(fun () -> str"computing variance of case with conv_pb = " ++ pr_cumul_pb cv_pb);
     let infer cv_pb c variances = infer_fterm cv_pb infos variances (mk_clos e c) [] in
-    let variances = infer cv_pb p variances in
+    let orig_pos = get_position variances in
+    let variances =
+      if cv_pb == Cumul && orig_pos == Position.InTerm then
+        set_position Position.InType variances
+      else variances
+    in
+    let variances = infer_fterm cv_pb infos variances (mk_clos e p) [] in
+    let variances = set_position orig_pos variances in
     Array.fold_right (infer cv_pb) br variances
 
   (* Removed by whnf *)

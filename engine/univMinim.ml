@@ -330,6 +330,7 @@ let max_variance variances ls =
 
 let simplify_variables partial ctx us variances graph =
   let dom = UnivFlex.domain us in
+  debug_each Pp.(fun () -> str"Simplifying variables with " ++ (if partial then str"partial" else str"non-partial") ++ str" information about the definition");
   let minimize u (ctx, us, variances, graph) =
     match UGraph.minimize u graph with
     | Some (graph, lbound) ->
@@ -342,7 +343,18 @@ let simplify_variables partial ctx us variances graph =
     | None -> (ctx, us, variances, graph)
   in
   let arbitrary u acc = minimize u acc in
-  let simplify u (ctx, us, variances, graph as acc) =
+  let maximize u (ctx, us, variances, graph as acc) =
+    match UGraph.maximize u graph with
+    | Some (graph, ubound) ->
+      debug_each Pp.(fun () -> str"Maximizing " ++ Level.raw_pr u ++ str" resulted in ubound: " ++ Universe.pr Level.raw_pr ubound ++ str" and graph " ++ UGraph.pr_model graph);
+      let variances =
+        let fold l variances = update_variance variances u l in
+        Level.Set.fold fold (Universe.levels ubound) variances
+      in
+      (Level.Set.remove u ctx, UnivFlex.define u ubound us, variances, graph)
+    | None -> acc
+  in
+  let simplify_min u (ctx, us, variances, graph as acc) =
     (* u is an undefined flexible variable, lookup its variance information *)
     let term_variance, type_variance = term_type_variances u us variances in
     let open UVars.Variance in
@@ -351,11 +363,25 @@ let simplify_variables partial ctx us variances graph =
     | (Covariant | Irrelevant), Covariant when not partial -> minimize u acc
     | _, _ -> acc
   in
-  let fold u (ctx, us, variances, graph as acc) =
+  let fold_min u (ctx, us, variances, graph as acc) =
     if UnivFlex.is_defined u us then acc
-    else simplify u acc
+    else simplify_min u acc
   in
-  Level.Set.fold fold dom (ctx, us, variances, graph)
+  let acc = Level.Set.fold fold_min dom (ctx, us, variances, graph) in
+  let simplify_max u (ctx, us, variances, graph as acc) =
+    (* u is an undefined flexible variable, lookup its variance information *)
+    let term_variance, type_variance = term_type_variances u us variances in
+    let open UVars.Variance in
+    match term_variance, type_variance with
+    | (Covariant | Irrelevant), Contravariant when not partial -> maximize u acc
+    | _, _ -> acc
+  in
+  let fold_max u (ctx, us, variances, graph as acc) =
+    if UnivFlex.is_defined u us then acc
+    else simplify_max u acc
+  in
+  Level.Set.fold fold_max dom acc
+
 
 module UPairs = OrderedType.UnorderedPair(Universe)
 module UPairSet = Set.Make (UPairs)
@@ -662,5 +688,6 @@ let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?bin
   let noneqs = UnivSubst.subst_univs_constraints (UnivFlex.normalize_univ_variable us) noneqs in
   let ctx = (ctx', Constraints.union noneqs eqs) in
   debug Pp.(fun () -> str "After minimization: " ++ pr_universe_context_set prl ctx ++ fnl () ++
-    UnivFlex.pr Level.raw_pr us);
+    UnivFlex.pr Level.raw_pr us ++ fnl () ++
+    str"VARIANCES: " ++ InferCumulativity.pr_variances Level.raw_pr variances);
   (us, variances), ctx

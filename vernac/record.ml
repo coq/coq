@@ -261,7 +261,7 @@ let typecheck_params_and_fields ~auto_prop_lowering def ~poly ~cumulative udecl 
   in
   (* TODO: Have this use Declaredef.prepare_definition *)
   let lbound = if unconstrained_sorts then UGraph.Bound.Prop else UGraph.Bound.Set in
-  let ivariances = UnivVariances.universe_variances_of_record env0 sigma ~params:newps ~fields:(List.map snd data) ~types:(List.map snd typs) in
+  let ivariances = UnivVariances.universe_variances_of_record env0 sigma ~env_ar_pars:env_ar ~params:newps ~fields:(List.map snd data) ~types:(List.map snd typs) in
   let sigma, (newps, ans) =
     (* too complex for Evarutil.finalize as we normalize non-constr *)
     let sigma, ivariances = Evd.minimize_universes ~lbound ~variances:ivariances sigma in
@@ -409,6 +409,29 @@ let declare_proj_coercion_instance ~flags ref from =
     Classes.declare_instance ~warn:true env sigma (Some info) local ref
   end
 
+let make_projection_variances i variances =
+  match variances with
+  | None -> None
+  | Some v ->
+    let arr = UVars.Variances.repr v in
+    let map (var, pos as vpos) =
+      let open UVars.Position in
+      match pos with
+      | InBinder _ -> vpos (* A parameter universe of the record, appearing in a binder *)
+      | InType -> (UVars.Variance.Irrelevant, InType)
+      | InTerm -> (* The universe appears in the type of a field of the record,
+        it can only appear in the binder for the record itself in a projection *)
+        let open UVars.Variance in
+        let v = match var with
+          | Covariant -> Contravariant
+          | Contravariant -> Covariant
+          | Invariant -> Invariant
+          | Irrelevant -> Irrelevant
+        in
+        (v, InBinder i)
+    in
+    Some (UVars.Variances.of_array (Array.map map arr))
+
 (* TODO: refactor the declaration part here; this requires some
    surgery as Evarutil.finalize is called too early in the path *)
 (** This builds and _declares_ a named projection, the code looks
@@ -443,7 +466,10 @@ let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramde
   | Entries.Monomorphic_entry ->
     UState.{ universes_entry_universes = UState.Monomorphic_entry Univ.ContextSet.empty;
       universes_entry_binders = snd univs }
-  | Entries.Polymorphic_entry (uctx, variances) -> UState.{ universes_entry_universes = UState.Polymorphic_entry (uctx, variances); universes_entry_binders = snd univs }
+  | Entries.Polymorphic_entry (uctx, variances) ->
+    let variances = make_projection_variances (Context.Rel.nhyps paramdecls) variances in
+    UState.{ universes_entry_universes = UState.Polymorphic_entry (uctx, variances);
+      universes_entry_binders = snd univs }
   in
   let entry = Declare.definition_entry ~univs ~types:projtyp proj in
   let kind = Decls.IsDefinition kind in

@@ -66,6 +66,7 @@ val domain : t -> Level.Set.t
 val choose : (Level.t -> bool) -> t -> Level.t -> Level.t option
 
 val minimize : Level.t -> t -> (t * Universe.t) option
+val maximize : Level.t -> t -> (t * Universe.t) option
 
 (* Hack for template-polymorphism. [remove_set_clauses u m] removes all [u -> Set+0] clauses from the model  *)
 val remove_set_clauses : Level.t -> t -> t

@@ -126,6 +126,11 @@ let minimize l g =
   | Some (graph, lbound) -> Some ({ g with graph }, lbound)
   | None -> None
 
+let maximize l g =
+  match G.maximize l g.graph with
+  | Some (graph, lbound) -> Some ({ g with graph }, lbound)
+  | None -> None
+
 let remove_set_clauses l g =
   let graph = G.remove_set_clauses l g.graph in
   { g with graph }

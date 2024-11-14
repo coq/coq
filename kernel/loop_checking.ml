@@ -431,6 +431,7 @@ struct
     let l, r = S.partition f s.set in
     { set = l; cardinal = !left }, { set = r; cardinal = !right }
 
+  let choose s = S.choose s.set
 end
 
 module type TypeWithCardinal =
@@ -648,6 +649,8 @@ module ClausesOf = struct
     if exists (fun cl' -> ClauseInfo.subsumes cl' cl) cls then cls
     else SWC.add cl cls
 
+  let choose cls = SWC.choose cls
+
 end
 
 type clause = Index.t * ClausesOf.t
@@ -840,6 +843,7 @@ let empty_model = {
   table = Index.empty
 }
 
+let empty = empty_model
 module CN = struct
   type t = canonical_node
   (* let equal x y = x == y *)
@@ -1818,7 +1822,6 @@ let infer_clauses_extension cans m =
     Some model
 
 (* let infer_clauses_extension ?w = time2 Pp.(str"infer_clauses_extension") (infer_clauses_extension ?w) *)
-let empty = empty_model
 
 let pr_incr pr (x, k) =
   Pp.(pr x ++ if k == 0 then mt() else str"+" ++ int k)
@@ -2674,7 +2677,6 @@ let add_model u { entries; table; values; canonical; canentries } =
     let can = Canonical { canon = idx; value = 0;
       clauses_fwd = ForwardClauses.empty; clauses_bwd = ClausesOf.empty } in
     let entries = PMap.add idx can entries in
-    (*let values = PMap.add idx 0 values in *)
     idx, { entries; table; values; canonical = canonical + 1; canentries = PSet.add idx canentries }
 
 let add ?(rank:int option) u model =
@@ -2867,8 +2869,61 @@ let remove_bwd_clauses_from model prem target =
   in
   change_node model { can with clauses_bwd = bwd' }
 
-
+let clauses_of_univ_constraint u v cls =
+  NeList.fold (fun e cls -> (u, e) :: cls) v cls
 let unrepr_univ model u = Universe.unrepr (List.map (to_expr model) u)
+let repr_univ model u = List.map (repr_node_expr model) (Universe.repr u)
+
+exception InconsistentEquality
+
+(** [set idx u model] substitutes universe [u] for all occurrences of [idx] in model, resulting
+  in a set of constraints that no longer mentions [idx]. This is a stronger than [enforce_eq idx u],
+  as the [idx] universe is dropped from the constraints altogether.
+
+  @raises InconsistentEquality if one of the constraints involving [idx] cannot be satisfied when substituting [idx] with [u]. *)
+
+let set_can can k u model =
+  let u =
+    if Int.equal k 0 then u
+    else
+      if NeList.for_all (fun (_, k') -> k' >= k) u then
+        NeList.map (fun (x, k') -> (x, k' - k)) u
+      else raise InconsistentEquality
+  in
+  let fwd = can.clauses_fwd in
+  let bwd = can.clauses_bwd in
+  let modelfwd =
+     ForwardClauses.fold (fun ~kprem ~concl ~prems model ->
+      let concl, k = repr model concl in
+      let fwd = PartialClausesOf.shift k prems in
+      PartialClausesOf.fold (fun (conclk, premsfwd) model ->
+        (* premsfwd, can + kprem -> concl + conclk *)
+        let premsrepr = Option.map (repr_premises model) premsfwd in
+        let conclk = repr_can_expr model (concl, conclk) in
+        let premsfwd = (app_opt_nelist (shift_prems kprem (repr_can_premises model u)) premsrepr) in
+        match enforce_leq_can conclk premsfwd model with
+        | Some model -> remove_all_bwd_clauses_from model concl.canon can.canon
+        | None -> raise InconsistentEquality)
+        fwd model)
+      fwd model
+  in
+  let modelbwd =
+    ClausesOf.fold (fun (cank, premsbwd) model ->
+      (* premsbwd -> can + cank *)
+      let premsrepr = repr_premises model premsbwd in
+      let u' = shift_prems cank (repr_can_premises model u) in
+      let cls = clauses_of_univ_constraint premsrepr u' [] in
+      match enforce_can_constraints cls model with
+      | Some model -> remove_fwd_clauses_to model premsbwd can.canon
+      | None -> raise InconsistentEquality)
+    bwd modelfwd
+  in _remove_node modelbwd can
+
+let set lvl u model =
+  _debug_set Pp.(fun () -> str"Setting " ++ debug_pr_level lvl ++ str" := " ++ Universe.pr debug_pr_level u);
+  let can, k = repr_node model lvl in
+  let u = NeList.of_list (repr_univ model u) in
+  set_can can k u model
 
 (** [minimize idx model] returns a new model where the universe level idx has been removed and
   the new constraints are enough to derive the previous ones on all other universes.
@@ -2936,10 +2991,23 @@ let minimize level model =
   | exception Not_found -> None
   | (can, k) -> minimize_can can k model
 
-let repr_univ model u = List.map (repr_node_expr model) (Universe.repr u)
+let maximize_can can _k model =
+  let bwd = can.clauses_bwd in
+  _debug_minim Pp.(fun () -> str"Maximizing " ++ pr_can model can ++ str" in graph: " ++ pr_clauses_all model);
+  if not (Int.equal (ClausesOf.cardinal bwd) 1) then None
+  else
+    let cank, premsbwd = ClausesOf.choose bwd in
+    let ubound = NeList.map (repr_expr_can model) premsbwd in
+    if NeList.for_all (fun (_, k) -> cank <= k) ubound then
+      let ubound = NeList.map (fun (can, k) -> (can, k - cank)) ubound in
+      try Some (set_can can _k ubound model, unrepr_univ model (NeList.to_list ubound))
+      with InconsistentEquality -> None
+  else None
 
-let clauses_of_univ_constraint u v cls =
-  NeList.fold (fun e cls -> (u, e) :: cls) v cls
+let maximize level model =
+  match repr model (Index.find level model.table) with
+  | exception Not_found -> None
+  | (can, k) -> maximize_can can k model
 
 let remove_set_clauses_can can model =
   let setidx = Index.find Level.set model.table in
@@ -2964,53 +3032,6 @@ let remove_set_clauses l model =
   match repr model (Index.find l model.table) with
   | exception Not_found -> model
   | (can, _k) -> remove_set_clauses_can can model
-
-exception InconsistentEquality
-
-(** [set idx u model] substitutes universe [u] for all occurrences of [idx] in model, resulting
-  in a set of constraints that no longer mentions [idx]. This is a stronger than [enforce_eq idx u],
-  as the [idx] universe is dropped from the constraints altogether.
-
-  @raises InconsistentEquality if one of the constraints involving [idx] cannot be satisfied when substituting [idx] with [u]. *)
-let set lvl u model =
-  _debug_set Pp.(fun () -> str"Setting " ++ debug_pr_level lvl ++ str" := " ++ Universe.pr debug_pr_level u);
-  let can, k = repr_node model lvl in
-  let u = NeList.of_list (repr_univ model u) in
-  let u =
-    if Int.equal k 0 then u
-    else
-      if NeList.for_all (fun (_, k') -> k' >= k) u then
-        NeList.map (fun (x, k') -> (x, k' - k)) u
-      else raise InconsistentEquality
-  in
-  let fwd = can.clauses_fwd in
-  let bwd = can.clauses_bwd in
-  let modelfwd =
-     ForwardClauses.fold (fun ~kprem ~concl ~prems model ->
-      let concl, k = repr model concl in
-      let fwd = PartialClausesOf.shift k prems in
-      PartialClausesOf.fold (fun (conclk, premsfwd) model ->
-        (* premsfwd, can + kprem -> concl + conclk *)
-        let premsrepr = Option.map (repr_premises model) premsfwd in
-        let conclk = repr_can_expr model (concl, conclk) in
-        let premsfwd = (app_opt_nelist (shift_prems kprem (repr_can_premises model u)) premsrepr) in
-        match enforce_leq_can conclk premsfwd model with
-        | Some model -> remove_all_bwd_clauses_from model concl.canon can.canon
-        | None -> raise InconsistentEquality)
-        fwd model)
-      fwd model
-  in
-  let modelbwd =
-    ClausesOf.fold (fun (cank, premsbwd) model ->
-      (* premsbwd -> can + cank *)
-      let premsrepr = repr_premises model premsbwd in
-      let u' = shift_prems cank (repr_can_premises model u) in
-      let cls = clauses_of_univ_constraint premsrepr u' [] in
-      match enforce_can_constraints cls model with
-      | Some model -> remove_fwd_clauses_to model premsbwd can.canon
-      | None -> raise InconsistentEquality)
-    bwd modelfwd
-  in modelbwd
 
 let pr_constraint_type k =
   let open Pp in

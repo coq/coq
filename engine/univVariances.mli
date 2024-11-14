@@ -19,7 +19,7 @@ val universe_variances_of_inductive : Environ.env -> Evd.evar_map ->
   arities:EConstr.t list ->
   constructors:(Names.Id.t list * EConstr.t list) list -> InferCumulativity.level_variances
 
-val universe_variances_of_record : Environ.env -> Evd.evar_map ->
+val universe_variances_of_record : Environ.env -> Evd.evar_map -> env_ar_pars:Environ.env ->
   params:EConstr.rel_context ->
   fields:EConstr.rel_context list ->
   types:EConstr.t list -> InferCumulativity.level_variances
