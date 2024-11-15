@@ -32,16 +32,6 @@ let build_userlib_path ~unix_path =
     ml_path, [vo_path]
   else [], []
 
-let legacy_plugin_paths coredir =
-  let open Boot in
-  let unix_path = Path.relative coredir "plugins" in
-  (* BOOTCOQC doesn't pass -boot to coqc, so this is too strong!
-     Reinstate when moving to coq_dune *)
-  (* if not (Path.exists unix_path) then
-   *   CErrors.user_err (Pp.str "Cannot find plugins directory"); *)
-  let unix_path = Path.to_string unix_path in
-  System.all_subdirs ~unix_path |> List.map fst
-
 (* LoadPath for Coq user libraries *)
 let init_load_path ~coqenv =
 
@@ -52,11 +42,6 @@ let init_load_path ~coqenv =
   let rocq_path = Names.DirPath.make [Libnames.coq_root] in
   (* ML includes *)
   let core_dir = Boot.Env.corelib coqenv in
-
-  (* EJGA: We can clean this up when we the build systems do send the
-     right -I for us. Dune already does this, not sure about Coq
-     Makefile / findlib setup *)
-  let plugins_dirs = legacy_plugin_paths core_dir in
 
   (* EJGA: this needs clenaup, we must be deterministic *)
   let meta_dir = if Boot.Env.Path.(exists (relative core_dir "META"))
@@ -69,7 +54,7 @@ let init_load_path ~coqenv =
   let misc_ml, misc_vo =
     List.map (fun s -> build_userlib_path ~unix_path:s) (xdg_dirs @ rocqpath) |> List.split in
 
-  let ml_loadpath = plugins_dirs @ meta_dir @ contrib_ml @ List.concat misc_ml in
+  let ml_loadpath = meta_dir @ contrib_ml @ List.concat misc_ml in
   let vo_loadpath =
     (* current directory (not recursively!) *)
     [ { unix_path = "."
