@@ -14,10 +14,8 @@ open Pp
 (* Recursively puts `.v` files in the LoadPath *)
 let build_stdlib_vo_path ~unix_path ~rocq_path =
   let open Loadpath in
-  { unix_path; coq_path = rocq_path; has_ml = false; implicit = true; recursive = true }
+  { unix_path; coq_path = rocq_path; implicit = true; recursive = true }
 
-(* Note we don't use has_ml=true due to #12771 , we need to see if we
-   should just remove that option *)
 let build_userlib_path ~unix_path =
   let open Loadpath in
   if Sys.file_exists unix_path then
@@ -25,7 +23,6 @@ let build_userlib_path ~unix_path =
     let vo_path =
       { unix_path
       ; coq_path = Libnames.default_root_prefix
-      ; has_ml = false
       ; implicit = false
       ; recursive = true
       } in
@@ -75,7 +72,6 @@ let init_load_path ~coqenv =
     [ { unix_path = "."
       ; coq_path = Libnames.default_root_prefix
       ; implicit = false
-      ; has_ml = true
       ; recursive = false
       } ] @
 
