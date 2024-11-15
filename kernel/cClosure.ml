@@ -482,10 +482,47 @@ let create_tab ?(record_steps=false) () = {
   recorded_steps = if record_steps then Some (RedContextTbl.create 17) else None;
 }
 
-let get_recorded_steps tab =
-  match tab.recorded_steps with
-  | None -> []
-  | Some record -> RedContextTbl.to_seq record |> List.of_seq
+module RecordedSteps = struct
+  (* immutable version for the API *)
+  type t = {
+    betas : int;
+    deltas : int;
+    matches : int;
+    fixpoints : int;
+  }
+
+  let copy (steps:recorded_steps) : t = {
+    betas = steps.betas;
+    deltas = steps.deltas;
+    matches = steps.matches;
+    fixpoints = steps.fixpoints;
+  }
+
+  let empty_steps : t = {
+    betas = 0;
+    deltas = 0;
+    matches = 0;
+    fixpoints = 0;
+  }
+
+  let add_steps (a:t) (b:t) : t = {
+    betas = a.betas + b.betas;
+    deltas = a.deltas + b.deltas;
+    matches = a.matches + b.matches;
+    fixpoints = a.fixpoints + b.fixpoints;
+  }
+
+  let has_recorded_steps tab =
+    match tab.recorded_steps with
+    | None -> false
+    | Some record -> RedContextTbl.length record > 0
+
+  let get_recorded_steps tab =
+    match tab.recorded_steps with
+    | None -> []
+    | Some record -> RedContextTbl.to_seq record |> Seq.map (on_snd copy) |> List.of_seq
+
+end
 
 (************************************************************************)
 

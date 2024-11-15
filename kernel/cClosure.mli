@@ -141,14 +141,24 @@ val oracle_of_infos : clos_infos -> Conv_oracle.oracle
 
 val create_tab : ?record_steps:bool -> unit -> clos_tab
 
-type recorded_steps = {
-  mutable betas : int;
-  mutable deltas : int;
-  mutable matches : int;
-  mutable fixpoints : int;
-}
+module RecordedSteps : sig
 
-val get_recorded_steps : clos_tab -> (current_context * recorded_steps) list
+  type t = {
+    betas : int;
+    deltas : int;
+    matches : int;
+    fixpoints : int;
+  }
+
+  val empty_steps : t
+
+  val add_steps : t -> t -> t
+
+  val has_recorded_steps : clos_tab -> bool
+
+  val get_recorded_steps : clos_tab -> (current_context * t) list
+
+end
 
 val info_env : clos_infos -> env
 val info_flags: clos_infos -> reds
