@@ -1139,34 +1139,149 @@ let record_steps_flag, print_recorded_steps = CDebug.create_full ~name:"lazy" ()
 
 let record_steps () = CDebug.get_flag record_steps_flag
 
+module RedContext = struct
+  (* deepest last means eg mul calling add is [mul; add]
+     then the order puts [mul] before [mul; add] and [top] before everything *)
+  type t = {
+    deepest_last : GlobRef.t list option;
+    deepest_first : GlobRef.t list option;
+  }
+
+  (* cclosure current_context come out as deepest_first *)
+  let make deepest_first = {
+    deepest_last = Option.map List.rev deepest_first;
+    deepest_first;
+  }
+
+  let compare (a:t) (b:t) =
+    Option.compare (List.compare GlobRef.UserOrd.compare) a.deepest_last b.deepest_last
+
+  let fold_parents f acc ctx =
+    let rec aux acc = function
+      | [] -> f acc (make None)
+      | _ :: rest as ctx ->
+        let acc = f acc (make (Some ctx)) in
+        aux acc rest
+    in
+    match ctx.deepest_first with
+    | None -> acc
+    | Some [] -> assert false
+    | Some (_ :: parent) -> aux acc parent
+
+end
+
+module RedContextMap = Map.Make(RedContext)
+
+let inherit_steps steps =
+  let add_inherited ctx steps acc =
+    RedContextMap.update ctx (function
+        | None -> Some steps
+        | Some steps' -> Some (CClosure.RecordedSteps.add_steps steps steps'))
+      acc
+  in
+  let acc = RedContextMap.empty in
+  let acc =
+    RedContextMap.fold (fun ctx steps acc ->
+        let acc = add_inherited ctx steps acc in
+        RedContext.fold_parents (fun acc parent -> add_inherited parent steps acc) acc ctx)
+      steps
+      acc
+  in
+  acc
+
+let pp_table title top (table:Pp.t list list) =
+  let sized_str str = { Table.str; Table.size = Unicode.utf8_length str } in
+  let empty = sized_str "" in
+  let fmt = Format.str_formatter in
+  let old_margin = Format.pp_get_margin fmt () in
+  let table () = CList.concat_map (fun row ->
+      (* we need to split the row into multiple rows according to how
+         many lines it uses *)
+      let max_lines = ref 1 in
+      let subrows = row |> List.map (fun pp ->
+          let s = Pp.string_of_ppcmds pp in
+          let s = String.split_on_char '\n' s in
+          max_lines := max !max_lines (List.length s);
+          List.map sized_str s)
+      in
+      (* subrows is the list of columns, each containing a list of lines
+         We want to produce the list of lines each containing a list of columns *)
+      List.init !max_lines (fun i ->
+          (* NB: the columns are not subdivided so we have a 1-element list *)
+          [subrows |> List.map (fun column ->
+               Option.default empty (List.nth_opt column i))]))
+      table
+  in
+  let table =
+    Util.try_finally (fun () ->
+        (* we don't want to do [/ (number of columns)] as we expect
+           the first column to be the only long column. [/ 3] is
+           chosen arbitrarily.
+
+           We could also expect that we don't want to break in the
+           other columns so print them first, then use the remaining
+           margin for the first column. *)
+        Format.pp_set_margin fmt (old_margin / 3);
+        table())
+      ()
+      (fun () -> Format.pp_set_margin fmt old_margin) ()
+  in
+  let header = [sized_str title] in
+  let top = [List.map sized_str top] in
+  let align_rows = List.hd table |> List.map (List.map (fun _ -> Table.Align.Left)) in
+  let table = Table.print ~align_rows header top table () in
+  (* without the "\n" indentation in msg_debug messes up the table *)
+  Pp.(str "\n" ++ str table)
+
 (* future work: print percentages, print step counts in children
    nicer formatting (some kind of table?) *)
 let print_recorded_steps tab =
-  let steps = CClosure.get_recorded_steps tab in
-  if CList.is_empty steps then ()
+  let open CClosure.RecordedSteps in
+  if not @@ has_recorded_steps tab then ()
   else
-    print_recorded_steps Pp.(fun () ->
-        let steps = List.sort (fun (ctx1,_) (ctx2,_) ->
-            Option.compare (List.compare GlobRef.UserOrd.compare)
-              (Option.map List.rev ctx1) (Option.map List.rev ctx2))
-            steps
+    print_recorded_steps @@ fun () ->
+    let open Pp in
+    let steps = get_recorded_steps tab in
+    let steps = List.map (fun (ctx,v) -> RedContext.make ctx, v) steps in
+    let steps = RedContextMap.of_list steps in
+    let inherited = inherit_steps steps in
+    let total = RedContextMap.get (RedContext.make None) inherited in
+    (* [bindings] orders the steps *)
+    let steps = RedContextMap.bindings steps in
+    let inherited = RedContextMap.bindings inherited in
+    let pr_row (ctx, (steps:CClosure.RecordedSteps.t)) =
+      let ppctx = match ctx.RedContext.deepest_first with
+        | None -> str "top"
+        | Some ctx ->
+          hov 2
+            (prlist_with_sep (fun () -> spc() ++ str "in ")
+               (Nametab.pr_global_env Id.Set.empty)
+               ctx)
+      in
+      let pp_flag get =
+        let v = get steps in
+        let total = get total in
+        let percentage = if total = 0 then begin
+            assert (v = 0);
+            int 0
+          end
+          else int ((v * 100) / total)
         in
-        let pr_one (ctx, (steps:CClosure.recorded_steps)) =
-          let ppctx = match ctx with
-            | None -> str "top"
-            | Some ctx ->
-              h (prlist_with_sep (fun () -> str " in ") (Nametab.pr_global_env Id.Set.empty) ctx)
-          in
-          let ppsteps =
-            str "beta: " ++ int steps.betas ++ pr_comma () ++
-            str "delta: " ++ int steps.deltas ++ pr_comma () ++
-            str "match: " ++ int steps.matches ++ pr_comma () ++
-            str "fix: " ++ int steps.fixpoints
-          in
-          hov 2 (ppctx ++ str ":" ++ spc() ++ ppsteps)
-        in
-        v 0
-          (prlist_with_sep spc pr_one steps))
+        [int v; percentage ++ str "%"]
+      in
+      let ppsteps = List.concat [
+        pp_flag (fun v -> v.betas);
+        pp_flag (fun v -> v.deltas);
+        pp_flag (fun v -> v.matches);
+        pp_flag (fun v -> v.fixpoints);
+      ]
+      in
+      ppctx :: ppsteps
+    in
+    let top = ["CTX"; "β"; ""; "δ"; ""; "ι"; ""; "fix"; ""] in
+    pp_table "individual" top (List.map pr_row steps) ++ fnl() ++
+    fnl() ++
+    pp_table "inherited" top (List.map pr_row inherited)
 
 (* lazy reduction functions. The infos must be created for each term *)
 (* Note by HH [oct 08] : why would it be the job of clos_norm_flags to add
