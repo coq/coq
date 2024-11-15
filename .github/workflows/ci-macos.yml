@@ -14,11 +14,13 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          brew install gnu-time opam gtksourceview3 adwaita-icon-theme expat libxml2 pkg-config
+          brew unlink pkg-config
+          brew install gnu-time opam gtksourceview3 adwaita-icon-theme expat libxml2 pkgconf
+          brew unlink pkgconf
+          brew link pkg-config
 
       - name: Install OCaml dependencies
         run: |
-          export PKG_CONFIG_PATH=/usr/local/opt/libffi/lib/pkgconfig
           opam init -a -j "$NJOBS" --compiler=ocaml-base-compiler.$COMPILER
           opam switch set ocaml-base-compiler.$COMPILER
           eval $(opam env)
