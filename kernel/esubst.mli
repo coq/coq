@@ -76,7 +76,8 @@ type lift = private
 (** For arbitrary Γ: Γ ⊢ el_id : Γ *)
 val el_id : lift
 
-(** Assuming Γ ⊢ σ : Δ₁, Δ₂ and |Δ₂| = n, then Γ ⊢ el_shft n σ : Δ₁ *)
+(** Assuming Γ ⊢ σ : Δ₁, Δ₂ and |Δ₂| = n, then Γ ⊢ el_shft n σ : Δ₁
+    Requires [n >= 0]. *)
 val el_shft : int -> lift -> lift
 
 (** Assuming Γ ⊢ σ : Δ and |Ξ| = n, then Γ, Ξ ⊢ el_liftn n σ : Δ, Ξ *)
@@ -88,6 +89,9 @@ val el_lift : lift -> lift
 (** Assuming Γ₁, A, Γ₂ ⊢ σ : Δ₁, A, Δ₂ and Δ₁, A, Δ₂ ⊢ n : A,
     then Γ₁, A, Γ₂ ⊢ reloc_rel n σ : A *)
 val reloc_rel : int -> lift -> int
+
+(** Verifies [undo_reloc_rel (reloc_rel n el) el = n]. *)
+val undo_reloc_rel : int -> lift -> int
 
 val is_lift_id : lift -> bool
 
@@ -102,6 +106,8 @@ val lift_subst : (lift -> 'a -> 'b) -> lift -> 'a subs -> 'b subs
 
 val eq_lift : lift -> lift -> bool
 (** Equality for lifts *)
+
+module LiftMap : CSig.MapS with type key = lift
 
 (** Debugging utilities *)
 module Internal :

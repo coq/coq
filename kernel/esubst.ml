@@ -19,8 +19,12 @@ open Util
 (*********************)
 
 (* Explicit lifts and basic operations *)
-(* Invariant to preserve in this module: no lift contains two consecutive
-    [ELSHFT] nor two consecutive [ELLFT]. *)
+(* Invariants to preserve in this module:
+
+   - for efficiency: no lift contains two consecutive
+     [ELSHFT] nor two consecutive [ELLFT].
+   - for [is_lift_id]: [ELSHFT] is always nonzero.
+*)
 
 (* Terminology comes from substitution calculi (see e.g. Hardin et al.).
    That is, what is called a lift in Coq is made of what is called in
@@ -43,11 +47,28 @@ let rec eq_lift a b = match a, b with
   | ELLFT (i, a), ELLFT (j, b) -> Int.equal i j && eq_lift a b
   | ELLFT _, (ELID | ELSHFT _) -> false
 
+module Lift = struct
+  type t = lift
+  let rec compare a b = match a, b with
+    | ELID, ELID -> 0
+    | ELID, _ -> -1
+    | _, ELID -> 1
+    | ELSHFT (a,k1), ELSHFT (b,k2)
+    | ELLFT (k1, a), ELLFT (k2, b) ->
+      let c = Int.compare k1 k2 in
+      if c <> 0 then c else compare a b
+    | ELSHFT _, _ -> -1
+    | _, ELSHFT _ -> 1
+end
+
+module LiftMap = CMap.Make(Lift)
+
 (* compose a relocation of magnitude n *)
 let el_shft_rec n = function
   | ELSHFT(el,k) -> ELSHFT(el,k+n)
   | el           -> ELSHFT(el,n)
-let el_shft n el = if Int.equal n 0 then el else el_shft_rec n el
+let el_shft n el =
+  if Int.equal n 0 then el else el_shft_rec n el
 
 (* cross n binders *)
 let el_liftn_rec n = function
@@ -65,9 +86,18 @@ let rec reloc_rel n = function
       if n <= k then n else (reloc_rel (n-k) el) + k
   | ELSHFT(el,k) -> (reloc_rel (n+k) el)
 
+let rec undo_reloc_rel n = function
+  | ELID -> n
+  | ELLFT(k,el) ->
+    if n <= k then n else (undo_reloc_rel (n-k) el) + k
+  | ELSHFT(el,k) ->
+    (* doesn't work otherwise *)
+    assert (k >= 0);
+    undo_reloc_rel n el - k
+
 let rec is_lift_id = function
   | ELID -> true
-  | ELSHFT(e,n) -> Int.equal n 0 && is_lift_id e
+  | ELSHFT _ -> false
   | ELLFT (_,e) -> is_lift_id e
 
 (*********************)
