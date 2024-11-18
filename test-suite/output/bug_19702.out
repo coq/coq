@@ -1,0 +1,18 @@
+f1 : ∀ {n1 : nat} (n2 : nat), T n2 → T n1
+
+f1 is not universe polymorphic
+Arguments f1 {n1}%nat_scope n2%nat_scope w
+f1 is transparent
+Expands to: Constant bug_19702.f1
+f1 : ∀ {n1 : nat} [n2 : nat], T n2 → T n1
+
+f1 is not universe polymorphic
+Arguments f1 {n1}%nat_scope [n2]%nat_scope w
+f1 is transparent
+Expands to: Constant bug_19702.f1
+f1 : ∀ {n1 n2 : nat}, T n2 → T n1
+
+f1 is not universe polymorphic
+Arguments f1 {n1 n2}%nat_scope w
+f1 is transparent
+Expands to: Constant bug_19702.f1
