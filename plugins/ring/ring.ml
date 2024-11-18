@@ -863,7 +863,7 @@ let add_field_theory0 env sigma name fth eqth morphth cst_tac inj (pre,post) pow
     dest_field env sigma fth in
   let (sth,ext) = build_setoid_params env sigma r add mul opp req eqth in
   let eqth = Some(sth,ext) in
-  let _ = add_theory0 env sigma name rth eqth morphth cst_tac (None,None) power sign odiv in
+  let _ = add_theory0 env sigma name rth eqth morphth cst_tac (pre,post) power sign odiv in
   let sigma, (pow_tac, pspec) = interp_power env sigma power in
   let sigma, sspec = interp_sign env sigma sign in
   let sigma, dspec = interp_div env sigma odiv in

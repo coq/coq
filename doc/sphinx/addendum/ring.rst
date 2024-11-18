@@ -368,9 +368,11 @@ The syntax for adding a new ring is
 
    :n:`preprocess [ @ltac_expr ]`
       specifies a tactic :n:`@ltac_expr` that is applied as a
-      preliminary step for :tacn:`ring` and :tacn:`ring_simplify`. It can be used to
+      preliminary step for :tacn:`ring` and :tacn:`ring_simplify`.
+      It can be used to
       transform a goal so that it is better recognized. For instance, ``S n``
-      can be changed to ``plus 1 n``.
+      can be changed to ``plus 1 n``.  For :tacn:`ring_simplify`, the terms
+      given as arguments are also modified by this tactic.
 
    :n:`postprocess [ @ltac_expr ]`
       specifies a tactic :n:`@ltac_expr` that is applied as a final
@@ -693,6 +695,14 @@ The syntax for adding a new field is
       :g:`forall x y, [x] == [y] ->  x ?=! y = true`,
       which is the completeness of equality on coefficients
       w.r.t. the field equality.
+
+   When :cmd:`Add Field` is called, a call to :cmd:`Add Ring` is performed with
+   all modifiers of the form :n:`@ring_mod`.  As a result, any previous ring
+   declaration for the type is replaced by the one that uses the same modifiers
+   as the :cmd:`Add Field` command.  In the case where it
+   is desired to have different modifiers for the field and the ring structure,
+   a new call to :cmd:`Add Ring` can be performed after this command, to set
+   different values of certain modifiers.
 
 .. cmd:: Print Fields
    :undocumented:

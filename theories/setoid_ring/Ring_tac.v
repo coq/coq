@@ -401,6 +401,8 @@ Tactic Notation (at level 0) "ring" "[" constr_list(lH) "]" :=
   ring_lookup (PackRing Ring_gen) [lH] G.
 
 (* Simplification *)
+(* This code is duplicated in Field_tac.  Any correction to this code should *)
+(* be ported there too. *)
 
 Ltac Ring_simplify_gen f RNG lH rl :=
   let lemma := get_SimplifyLemma RNG in
