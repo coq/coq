@@ -154,7 +154,6 @@ let init_load_paths opts =
   let ml_path = opts.pre.ml_includes @ boot_ml_path in
   List.iter Mltop.add_ml_dir (List.rev ml_path);
   List.iter Loadpath.add_vo_path boot_vo_path;
-  List.iter (fun x -> Loadpath.add_vo_path @@ to_vo_path x) opts.pre.vo_includes;
   let env_ocamlpath =
     try [Sys.getenv "OCAMLPATH"]
     with Not_found -> []
@@ -183,6 +182,21 @@ let init_runtime ~usage opts =
   (* excluded directories *)
   List.iter System.exclude_directory opts.config.exclude_dirs;
 
+  (* Paths for loading stuff *)
+  init_load_paths opts;
+
+  match opts.Coqargs.main with
+  | Coqargs.Queries q -> List.iter (print_query ~usage) q; exit 0
+  | Coqargs.Run -> ()
+
+let init_document opts =
+  let open Coqargs in
+
+  (* this isn't in init_load_paths because processes (typically
+     vscoqtop) are allowed to have states with differing vo paths (but
+     not with differing -boot or ml paths) *)
+  List.iter (fun x -> Loadpath.add_vo_path @@ to_vo_path x) opts.pre.vo_includes;
+
   (* Kernel configuration *)
   Global.set_impredicative_set opts.config.logic.impredicative_set;
   Global.set_indices_matter opts.config.logic.indices_matter;
@@ -191,6 +205,7 @@ let init_runtime ~usage opts =
   Global.set_native_compiler (match opts.config.native_compiler with NativeOff -> false | NativeOn _ -> true);
   Global.set_rewrite_rules_allowed opts.config.logic.rewrite_rules;
 
+  (* XXX these flags should probably be in the summary *)
   (* Native output dir *)
   Nativelib.output_dir := opts.config.native_output_dir;
   Nativelib.include_dirs := opts.config.native_include_dirs;
@@ -212,13 +227,7 @@ let init_runtime ~usage opts =
     Flags.make_warn false;
   end;
 
-  (* Paths for loading stuff *)
-  init_load_paths opts;
-
-  match opts.Coqargs.main with
-  | Coqargs.Queries q -> List.iter (print_query ~usage) q; exit 0
-  | Coqargs.Run ->
-      injection_commands opts
+  ()
 
 let warn_require_not_found =
   CWarnings.create ~name:"compatibility-module-not-found"

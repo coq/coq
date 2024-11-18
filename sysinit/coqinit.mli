@@ -46,12 +46,10 @@ val parse_arguments :
     compilation. If Coq is used to process multiple libraries, what is set up
     here is really global and common to all of them.
 
-    The returned injections are options (as in "Set This Thing" or "Require
-    that") as specified on the command line.
-    The prelude is one of these (unless "-nois" is passed).
-
     This API must be called, typically jsut after parsing arguments. *)
-val init_runtime : usage:Boot.Usage.specific_usage -> Coqargs.t -> Coqargs.injection_command list
+val init_runtime : usage:Boot.Usage.specific_usage -> Coqargs.t -> unit
+
+val init_document : Coqargs.t -> unit
 
 (** 4 Start a library (sets options and loads objects like the prelude)
 
