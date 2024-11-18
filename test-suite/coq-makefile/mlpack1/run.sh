@@ -19,7 +19,6 @@ sort > desired <<EOT
 ./test/test.glob
 ./test/test.v
 ./test/test.vo
-./test/test_plugin.cmxs
 EOT
 (coqc -config | grep -q "NATIVE_COMPILER_DEFAULT=yes") || sed -i.bak '/\.coq-native/d' desired
 diff -u desired actual

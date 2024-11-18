@@ -27,7 +27,6 @@ sort > desired <<EOT
 ./test/test.glob
 ./test/test.v
 ./test/test.vo
-./test/test_plugin.cmxs
 ./test2
 ./test2/.coq-native
 ./test2/.coq-native/Ntest2_test.cmi
