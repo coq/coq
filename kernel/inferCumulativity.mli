@@ -19,33 +19,33 @@ val mode_sup : mode -> mode -> mode
 (** Not the same as Type_errors.BadVariance because we don't have the env where we raise. *)
 exception BadVariance of Level.t * VariancePos.t * VariancePos.t
 
-type variance_occurrence =
-  { in_binder : (int * UVars.Variance.t) option;
-    in_term : UVars.Variance.t option;
-    in_type : UVars.Variance.t option }
+type infer_binders = (mode * (int * Variance.t) list)
 
-val default_occ : variance_occurrence
-val make_occ : VariancePos.t -> variance_occurrence
+type infer_variance_occurrence = (infer_binders, mode * UVars.Variance.t) gen_variance_occurrence
+
+val default_occ : infer_variance_occurrence
+val make_occ : VariancePos.t -> infer_variance_occurrence
 
 type pre_variances =
   (Univ.Level.t * VariancePos.t option) array
 
-type variance_occurrences = variance_occurrence array
+type infer_variance_occurrences = infer_variance_occurrence array
 
-val pr_variance_occurrence : variance_occurrence -> Pp.t
+val pr_variance_occurrence : infer_variance_occurrence -> Pp.t
 
 (* The position records the last position in the term where the variable was used relevantly. *)
-type variances = (mode * variance_occurrence) Univ.Level.Map.t
 
-val pr_variances : (Univ.Level.t -> Pp.t) -> variances -> Pp.t
+type variances = infer_variance_occurrence Univ.Level.Map.t
 
 val empty_variances : variances
 val is_empty_variances : variances -> bool
 
+val pr_variances : (Univ.Level.t -> Pp.t) -> variances -> Pp.t
+
 val union_variances : variances -> variances -> variances
 
 (* Compute the variance in the binders and term and separately, the variance in the type *)
-val term_type_variances : variance_occurrence -> Variance.t option * Variance.t option
+val term_type_variances : infer_variance_occurrence -> Variance.t option * Variance.t option
 
 module Inf : sig
   type status
@@ -67,7 +67,7 @@ module Inf : sig
   val start_inference : Level.Set.t -> Position.t -> status
 
   val inferred : status -> variances
-  val finish : status -> Variances.t
+  val finish : Environ.env -> status -> Variances.t
 
 end
 

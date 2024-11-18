@@ -99,6 +99,39 @@ end
 
 type variances = Variances.t
 
+(** {6 Variance occurrences} *)
+
+type ('a, 'b) gen_variance_occurrence =
+  { in_binders : 'a;
+    in_term : 'b option;
+    in_type : 'b option }
+
+val pr_variance_occurrence : ('a -> Pp.t list) -> ('b -> Pp.t) -> ('a, 'b) gen_variance_occurrence -> Pp.t
+
+val default_occ : 'a -> ('a, 'b) gen_variance_occurrence
+
+module VarianceOccurrence :
+sig
+  type t = ((int * Variance.t) list, Variance.t) gen_variance_occurrence
+  val default_occ : t
+
+  val lift : int -> t -> t
+  (** [lift n occ] Lifts the [InBinder] annotation in [occ] by [n] *)
+
+  val pr : t -> Pp.t
+end
+
+module VarianceOccurrences :
+sig
+  type t = VarianceOccurrence.t array
+
+  val split : int -> t -> t * t
+  val append : t -> t -> t
+
+  val pr : t -> Pp.t
+
+end
+
 (** {6 Universe instances} *)
 
 module LevelInstance :

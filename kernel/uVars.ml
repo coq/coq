@@ -194,6 +194,57 @@ end
 
 type variances = Variances.t
 
+(** {6 Variance occurrences} *)
+
+type ('a, 'b) gen_variance_occurrence =
+  { in_binders : 'a;
+    in_term : 'b option;
+    in_type : 'b option }
+
+let pr_variance_occurrence fa fb { in_binders; in_term; in_type } =
+  let open Pp in
+  let pr_binders = fa in_binders in
+  let pr_in_type =
+    match in_type with
+    | None -> []
+    | Some ty -> [fb ty ++ str" type"]
+  in
+  let pr_in_term = match in_term with
+    | None -> []
+    | Some term -> [fb term ++ str" term"]
+  in prlist_with_sep pr_comma identity (List.append pr_binders (List.append pr_in_term pr_in_type))
+
+let default_occ =
+  { in_binders = []; in_term = None; in_type = None }
+
+module VarianceOccurrence =
+struct
+  type t = ((int * Variance.t) list, Variance.t) gen_variance_occurrence
+
+  let default_occ = default_occ
+
+  let lift n occ =
+    { occ with in_binders = List.map (fun (i, v) -> (i + n, v)) occ.in_binders }
+
+  let pr occ =
+    let pr_binders = List.map (fun (i, a) -> Variance.pr a ++ pr_nth (succ i)) in
+    pr_variance_occurrence pr_binders Variance.pr occ
+end
+
+module VarianceOccurrences =
+struct
+  type t = VarianceOccurrence.t array
+
+  let split n vs =
+    assert (n <= Array.length vs);
+    Array.chop n vs
+
+  let append vs vs' = Array.append vs vs'
+
+  let pr = prvect_with_sep spc VarianceOccurrence.pr
+end
+
+
 module LevelInstance : sig
     type t
 
