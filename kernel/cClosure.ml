@@ -522,6 +522,8 @@ module RecordedSteps = struct
     | None -> []
     | Some record -> RedContextTbl.to_seq record |> Seq.map (on_snd copy) |> List.of_seq
 
+  let sample_rate = ref (1,1)
+
 end
 
 (************************************************************************)
@@ -1938,14 +1940,18 @@ let record_step tab flag ctx =
   let () = match tab.recorded_steps with
     | None -> ()
     | Some records ->
-      let record = match RedContextTbl.find_opt records ctx with
-        | Some record -> record
-        | None ->
-          let record = empty_recorded_steps () in
-          RedContextTbl.add records ctx record;
-          record
-      in
-      add_step record flag
+      let num,denum = !RecordedSteps.sample_rate in
+      (* sample [num / denum] of the steps *)
+      if num = denum || Random.int denum < num then begin
+        let record = match RedContextTbl.find_opt records ctx with
+          | Some record -> record
+          | None ->
+            let record = empty_recorded_steps () in
+            RedContextTbl.add records ctx record;
+            record
+        in
+        add_step record flag
+      end
   in
   lazy_trace flag ctx
 

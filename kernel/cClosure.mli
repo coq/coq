@@ -143,6 +143,8 @@ val create_tab : ?record_steps:bool -> unit -> clos_tab
 
 module RecordedSteps : sig
 
+  val sample_rate : (int * int) ref
+
   type t = {
     betas : int;
     deltas : int;

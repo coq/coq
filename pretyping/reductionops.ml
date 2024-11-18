@@ -1135,6 +1135,65 @@ let whd_zeta = red_of_state_red ~delta:false whd_zeta_state
 let whd_evar = Evarutil.whd_evar
 let nf_evar = Evarutil.nf_evar
 
+let pp_sample_rate (num,denum) =
+  if num = denum then None
+  else if denum = 100 then Some (Printf.sprintf "%d%%" num)
+  else Some (Printf.sprintf "%d / %d" num denum)
+
+let () =
+  let optread () =
+    let rate = !CClosure.RecordedSteps.sample_rate in
+    pp_sample_rate rate
+  in
+  let optwrite s =
+    (* supported syntaxes:
+       - "1"
+       - "44%"
+       - "369 / 987"
+       - "0.42" and ".42" *)
+    let fail () = CErrors.user_err Pp.(str "Invalid sample rate.") in
+    let parse_int s =
+      let i = try int_of_string (CString.trim s)
+        with Failure _ -> fail ()
+      in
+      if i <= 0 then fail()
+      else i
+    in
+    let num, denum as rate = match s with
+      | None | Some "1" -> (1,1)
+      | Some s ->
+        if CString.is_suffix "%" s
+        then (parse_int (CString.sub s 0 (String.length s - 1)), 100)
+        else match CString.split_on_char '/' s with
+          | [num;denum] -> (parse_int num, parse_int denum)
+          | [_] -> begin match CString.split_on_char '.' s with
+              | [int;decimals] ->
+                let () = match CString.trim int with
+                  | "" -> ()
+                  | int -> match int_of_string int with
+                    | 0 -> ()
+                    | _ | exception Failure _ -> fail()
+                in
+                let decimals = String.trim decimals in
+                let num = parse_int decimals in
+                (* denum = pow 10 (String.length decimals), but we don't have [pow] *)
+                let denum = int_of_string ("1"^String.make (String.length decimals) '0') in
+                (num, denum)
+              | _ -> fail()
+            end
+          | _ -> fail ()
+    in
+    if num > denum then fail()
+    else CClosure.RecordedSteps.sample_rate := rate
+  in
+  Goptions.declare_stringopt_option {
+    optstage = Interp;
+    optdepr = None;
+    optkey = ["Lazy";"Sample";"Rate"];
+    optread;
+    optwrite;
+  }
+
 let record_steps_flag, print_recorded_steps = CDebug.create_full ~name:"lazy" ()
 
 let record_steps () = CDebug.get_flag record_steps_flag
@@ -1279,6 +1338,8 @@ let print_recorded_steps tab =
       ppctx :: ppsteps
     in
     let top = ["CTX"; "β"; ""; "δ"; ""; "ι"; ""; "fix"; ""] in
+    let rate = pp_sample_rate !CClosure.RecordedSteps.sample_rate in
+    pr_opt (fun rate -> str "sample rate: " ++ str rate) rate ++
     pp_table "individual" top (List.map pr_row steps) ++ fnl() ++
     fnl() ++
     pp_table "inherited" top (List.map pr_row inherited)
