@@ -224,10 +224,10 @@ let type_of_apply env func funt argsv argstv =
     if Int.equal i len then term_of_fconstr typ
     else
       let typ, stk = whd_stack infos tab typ [] in
-      (** The return stack is known to be empty *)
-      let () = assert (check_empty_stack stk) in
       match fterm_of typ with
       | FProd (_, c1, c2, e) ->
+        (** The return stack is known to be empty *)
+        let () = assert (check_empty_stack stk) in
         let arg = argsv.(i) in
         let argt = argstv.(i) in
         let c1 = term_of_fconstr c1 in
