@@ -1449,16 +1449,20 @@ let cut c =
 let check_unresolved_evars_of_metas sigma clenv =
   (* This checks that Metas turned into Evars by *)
   (* Refiner.pose_all_metas_as_evars are resolved *)
-  Metamap.iter (fun mv b -> match b with
-  | Clval (na, (c, _), _) ->
-    (match Constr.kind (EConstr.Unsafe.to_constr c.rebus) with
+  let metas = clenv_meta_list clenv in
+  let iter mv () = match Unification.Meta.meta_opt_fvalue metas mv with
+  | Some c ->
+    begin match Constr.kind (EConstr.Unsafe.to_constr c.rebus) with
     | Evar (evk,_) when Evd.is_undefined (clenv_evd clenv) evk
                      && not (Evd.mem sigma evk) ->
+      let na = Unification.Meta.meta_name metas mv in
       let id = match na with Name id -> id | _ -> anomaly (Pp.str "unnamed dependent meta.") in
       error (CannotFindInstance id)
-    | _ -> ())
-  | _ -> ())
-  (clenv_meta_list clenv)
+    | _ -> ()
+    end
+  | None -> ()
+  in
+  Unification.Meta.fold iter metas ()
 
 let do_replace id = function
   | NamingMustBe {CAst.v=id'} when Option.equal Id.equal id (Some id') -> true
@@ -1585,7 +1589,7 @@ let general_elim with_evars clear_flag (c, lbindc) elim =
   let indclause = make_clenv_binding env sigma (c, t) lbindc in
   let flags = elim_flags () in
   let metas = clenv_meta_list indclause in
-  let submetas = List.map (fun mv -> mv, Metamap.find mv metas) (clenv_arguments indclause) in
+  let submetas = (clenv_arguments indclause, metas) in
   Proofview.Unsafe.tclEVARS (clenv_evd indclause) <*>
   Tacticals.tclTHEN
     (general_elim_clause0 with_evars flags (submetas, c, clenv_type indclause) elim)
@@ -1947,7 +1951,7 @@ let progress_with_clause env flags (id, t) clause mvs =
   let f mv =
     let rec find innerclause =
       let metas = clenv_meta_list innerclause in
-      let submetas = List.map (fun mv -> mv, Metamap.find mv metas) (clenv_arguments innerclause) in
+      let submetas = (clenv_arguments innerclause, metas) in
       try
         Some (clenv_instantiate mv ~flags ~submetas clause (mkVar id, clenv_type innerclause))
       with e when noncritical e ->

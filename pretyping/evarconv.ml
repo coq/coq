@@ -307,10 +307,7 @@ let check_conv_record ?metas env sigma (t1,sk1) (t2,sk2) =
     | Some c -> (* A primitive projection applied to c *)
       let meta_type mv = match metas with
       | None -> None
-      | Some metas ->
-        match Metamap.find mv metas with
-        | Cltyp (_, b) -> Some b.Evd.rebus
-        | Clval (_, _, b) -> Some b.Evd.rebus
+      | Some metas -> metas mv
       in
       let ty =
         try Retyping.get_type_of ~metas:meta_type ~lax:true env sigma c with

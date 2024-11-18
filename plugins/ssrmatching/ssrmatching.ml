@@ -216,7 +216,7 @@ let flags_FO env =
   }
 
 let unif_FO env ise metas p c =
-  let metas = Metamap.fold (fun mv t accu -> Evd.Meta.meta_declare mv t accu) metas Metamap.empty in
+  let metas = Unification.Metamap.fold (fun mv t accu -> Unification.Meta.meta_declare mv t accu) metas Unification.Meta.empty in
   let _ : _ * Evd.evar_map = Unification.w_unify ~metas env ise Conversion.CONV ~flags:(flags_FO env) p c in
   ()
 
@@ -308,7 +308,7 @@ type pattern_class =
 
 type tpattern = {
   up_k : pattern_class;
-  up_FO : EConstr.t Metamap.t * EConstr.t;
+  up_FO : EConstr.t Unification.Metamap.t * EConstr.t;
   up_f : EConstr.t;
   up_a : EConstr.t array;
   up_t : EConstr.t;                      (* equation proof term or matched term *)
@@ -359,7 +359,7 @@ let pr_econstr_pat env sigma c0 =
 (* Turn (new) evars into metas *)
 let evars_for_FO ~hack ~rigid env (ise0:evar_map) c0 =
   let open EConstr in
-  let metas = ref Metamap.empty in
+  let metas = ref Unification.Metamap.empty in
   let sigma = ref ise0 in
   let nenv = env_size env + if hack then 1 else 0 in
   let rec put c = match EConstr.kind !sigma c with
@@ -376,7 +376,7 @@ let evars_for_FO ~hack ~rigid env (ise0:evar_map) c0 =
       Context.Named.fold_inside abs_dc ~init:([], put (Evd.evar_concl evi)) dc
     in
     let m = Evarutil.new_meta () in
-    let () = metas := Metamap.add m t !metas in
+    let () = metas := Unification.Metamap.add m t !metas in
     sigma := Evd.define k (applistc (mkMeta m) a) !sigma;
     put c
   | _ -> map !sigma put c in
@@ -423,7 +423,7 @@ let ungen_upat lhs (c, sigma, uc, t) u =
   | LetIn _ -> KpatLet
   | Lambda _ -> KpatLam
   | _ -> KpatRigid in
-  c, sigma, uc, {u with up_k = k; up_FO = (Metamap.empty, lhs); up_f = f; up_a = a; up_t = t}
+  c, sigma, uc, {u with up_k = k; up_FO = (Unification.Metamap.empty, lhs); up_f = f; up_a = a; up_t = t}
 
 let nb_cs_proj_args env ise pc f u =
   let open EConstr in

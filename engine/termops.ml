@@ -139,39 +139,6 @@ match evar_ident evk sigma with
 | Some id ->
   str "?" ++ Id.print id
 
-let pr_instance_status (sc,typ) =
-  let open Evd in
-  begin match sc with
-  | IsSubType -> str " [or a subtype of it]"
-  | IsSuperType -> str " [or a supertype of it]"
-  | Conv -> mt ()
-  end ++
-  begin match typ with
-  | CoerceToType -> str " [up to coercion]"
-  | TypeNotProcessed -> mt ()
-  | TypeProcessed -> str " [type is checked]"
-  end
-
-let pr_metamap env sigma metas =
-  let open Evd in
-  let print_constr = Internal.print_kconstr in
-  let pr_name = function
-      Name id -> str"[" ++ Id.print id ++ str"]"
-    | _ -> mt() in
-  let pr_meta_binding = function
-    | (mv,Cltyp (na,b)) ->
-        hov 0
-          (pr_meta mv ++ pr_name na ++ str " : " ++
-           print_constr env sigma b.rebus ++ fnl ())
-    | (mv,Clval(na,(b,s),t)) ->
-        hov 0
-          (pr_meta mv ++ pr_name na ++ str " := " ++
-           print_constr env sigma b.rebus ++
-           str " : " ++ print_constr env sigma t.rebus ++
-           spc () ++ pr_instance_status s ++ fnl ())
-  in
-  prlist pr_meta_binding (Evd.Metamap.bindings metas)
-
 let pr_decl env sigma (decl,ok) =
   let open NamedDecl in
   let print_constr = Internal.print_kconstr in
@@ -441,9 +408,6 @@ let pr_evar_map ?(with_univs=true) depth env sigma =
 
 let pr_evar_map_filter ?(with_univs=true) filter env sigma =
   pr_evar_map_gen with_univs (fun sigma -> pr_evar_by_filter filter env sigma) env sigma
-
-let pr_metaset metas =
-  str "[" ++ pr_sequence pr_meta (Evd.Metaset.elements metas) ++ str "]"
 
 (* [Rel (n+m);...;Rel(n+1)] *)
 let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i))
