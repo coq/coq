@@ -35,7 +35,7 @@ type t =
   | QUOTATION of string * string
   | EOI
 
-val equal_p : 'a p -> 'b p -> ('a, 'b) Util.eq option
+val equal_p : 'a p -> 'b p -> ('a, 'b) CSig.iseq
 
 val equal : t -> t -> bool
 (* pass true for diff_mode *)

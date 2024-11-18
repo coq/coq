@@ -58,23 +58,29 @@ type t =
   | QUOTATION of string * string
   | EOI
 
-let equal_p (type a b) (t1 : a p) (t2 : b p) : (a, b) Util.eq option =
-  let streq s1 s2 = match s1, s2 with None, None -> true
-    | Some s1, Some s2 -> string_equal s1 s2 | _ -> false in
+let stringeq (type a) s1 s2 : (a, a) CSig.iseq =
+  if string_equal s1 s2 then CSig.IsRefl else CSig.IsNone
+
+let streq (type a) s1 s2 : (a, a) CSig.iseq = match s1, s2 with
+| None, None -> CSig.IsRefl
+| Some s1, Some s2 -> stringeq s1 s2
+| None, Some _ | Some _, None -> CSig.IsNone
+
+let equal_p (type a b) (t1 : a p) (t2 : b p) : (a, b) CSig.iseq =
   match t1, t2 with
-  | PIDENT s1, PIDENT s2 when streq s1 s2 -> Some Util.Refl
-  | PKEYWORD s1, PKEYWORD s2 when string_equal s1 s2 -> Some Util.Refl
-  | PIDENT (Some s1), PKEYWORD s2 when string_equal s1 s2 -> Some Util.Refl
-  | PKEYWORD s1, PIDENT (Some s2) when string_equal s1 s2 -> Some Util.Refl
-  | PFIELD s1, PFIELD s2 when streq s1 s2 -> Some Util.Refl
-  | PNUMBER None, PNUMBER None -> Some Util.Refl
-  | PNUMBER (Some n1), PNUMBER (Some n2) when NumTok.Unsigned.equal n1 n2 -> Some Util.Refl
-  | PSTRING s1, PSTRING s2 when streq s1 s2 -> Some Util.Refl
-  | PLEFTQMARK, PLEFTQMARK -> Some Util.Refl
-  | PBULLET s1, PBULLET s2 when streq s1 s2 -> Some Util.Refl
-  | PQUOTATION s1, PQUOTATION s2 when string_equal s1 s2 -> Some Util.Refl
-  | PEOI, PEOI -> Some Util.Refl
-  | _ -> None
+  | PIDENT s1, PIDENT s2 -> streq s1 s2
+  | PKEYWORD s1, PKEYWORD s2 -> stringeq s1 s2
+  | PIDENT (Some s1), PKEYWORD s2 -> stringeq s1 s2
+  | PKEYWORD s1, PIDENT (Some s2) -> stringeq s1 s2
+  | PFIELD s1, PFIELD s2 -> streq s1 s2
+  | PNUMBER None, PNUMBER None -> CSig.IsRefl
+  | PNUMBER (Some n1), PNUMBER (Some n2) -> if NumTok.Unsigned.equal n1 n2 then CSig.IsRefl else CSig.IsNone
+  | PSTRING s1, PSTRING s2 -> streq s1 s2
+  | PLEFTQMARK, PLEFTQMARK -> CSig.IsRefl
+  | PBULLET s1, PBULLET s2 -> streq s1 s2
+  | PQUOTATION s1, PQUOTATION s2 -> stringeq s1 s2
+  | PEOI, PEOI -> CSig.IsRefl
+  | _ -> CSig.IsNone
 
 let equal t1 t2 = match t1, t2 with
   | IDENT s1, KEYWORD s2 -> string_equal s1 s2

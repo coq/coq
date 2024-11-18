@@ -293,46 +293,52 @@ and tree_derive_eps : type s tr a. (s, tr, a) ty_tree -> bool =
       derive_eps s && tree_derive_eps son || tree_derive_eps bro
   | DeadEnd -> false
 
-let eq_entry : type a1 a2. a1 ty_entry -> a2 ty_entry -> (a1, a2) eq option = fun e1 e2 ->
-  DMap.eq_onetag e1.etag (DMap.tag_of_onetag e2.etag)
+let eq_entry : type a1 a2. a1 ty_entry -> a2 ty_entry -> (a1, a2) CSig.iseq = fun e1 e2 ->
+match DMap.eq_onetag e1.etag (DMap.tag_of_onetag e2.etag) with
+| None -> CSig.IsNone
+| Some Refl -> CSig.IsRefl
+
+let iseq_eq (type a b) (p : (a, b) CSig.iseq) : bool = match p with
+| IsRefl -> true
+| IsNone -> false
 
 let tok_pattern_eq_list pl1 pl2 =
-  let f (TPattern p1) (TPattern p2) = Option.has_some (L.tok_pattern_eq p1 p2) in
-  if List.for_all2eq f pl1 pl2 then Some Refl else None
+  let f (TPattern p1) (TPattern p2) = iseq_eq (L.tok_pattern_eq p1 p2) in
+  if List.for_all2eq f pl1 pl2 then CSig.IsRefl else CSig.IsNone
 
-let rec eq_symbol : type s r1 r2 a1 a2. (s, r1, a1) ty_symbol -> (s, r2, a2) ty_symbol -> (a1, a2) eq option = fun s1 s2 ->
+let rec eq_symbol : type s r1 r2 a1 a2. (s, r1, a1) ty_symbol -> (s, r2, a2) ty_symbol -> (a1, a2) CSig.iseq = fun s1 s2 ->
   match s1, s2 with
     Snterm e1, Snterm e2 -> eq_entry e1 e2
   | Snterml (e1, l1), Snterml (e2, l2) ->
-    if String.equal l1 l2 then eq_entry e1 e2 else None
+    if String.equal l1 l2 then eq_entry e1 e2 else CSig.IsNone
   | Slist0 s1, Slist0 s2 ->
-    begin match eq_symbol s1 s2 with None -> None | Some Refl -> Some Refl end
+    begin match eq_symbol s1 s2 with CSig.IsNone -> CSig.IsNone | CSig.IsRefl -> CSig.IsRefl end
   | Slist0sep (s1, sep1, b1), Slist0sep (s2, sep2, b2) ->
     if b1 = b2 then match eq_symbol s1 s2 with
-    | None -> None
-    | Some Refl ->
+    | CSig.IsNone -> CSig.IsNone
+    | CSig.IsRefl ->
       match eq_symbol sep1 sep2 with
-      | None -> None
-      | Some Refl -> Some Refl
-    else None
+      | CSig.IsNone -> CSig.IsNone
+      | CSig.IsRefl -> CSig.IsRefl
+    else CSig.IsNone
   | Slist1 s1, Slist1 s2 ->
-    begin match eq_symbol s1 s2 with None -> None | Some Refl -> Some Refl end
+    begin match eq_symbol s1 s2 with CSig.IsNone -> CSig.IsNone | CSig.IsRefl -> CSig.IsRefl end
   | Slist1sep (s1, sep1, b1), Slist1sep (s2, sep2, b2) ->
     if b1 = b2 then match eq_symbol s1 s2 with
-    | None -> None
-    | Some Refl ->
+    | CSig.IsNone -> CSig.IsNone
+    | CSig.IsRefl ->
       match eq_symbol sep1 sep2 with
-      | None -> None
-      | Some Refl -> Some Refl
-    else None
+      | CSig.IsNone -> CSig.IsNone
+      | CSig.IsRefl -> CSig.IsRefl
+    else CSig.IsNone
   | Sopt s1, Sopt s2 ->
-    begin match eq_symbol s1 s2 with None -> None | Some Refl -> Some Refl end
-  | Stree _, Stree _ -> None
-  | Sself, Sself -> Some Refl
-  | Snext, Snext -> Some Refl
+    begin match eq_symbol s1 s2 with CSig.IsNone -> CSig.IsNone | CSig.IsRefl -> CSig.IsRefl end
+  | Stree _, Stree _ -> CSig.IsNone
+  | Sself, Sself -> CSig.IsRefl
+  | Snext, Snext -> CSig.IsRefl
   | Stoken p1, Stoken p2 -> L.tok_pattern_eq p1 p2
   | Stokens pl1, Stokens pl2 -> tok_pattern_eq_list pl1 pl2
-  | _ -> None
+  | _ -> CSig.IsNone
 
 let is_before : type s1 s2 r1 r2 a1 a2. (s1, r1, a1) ty_symbol -> (s2, r2, a2) ty_symbol -> bool = fun s1 s2 ->
   match s1, s2 with
@@ -473,7 +479,7 @@ let insert_tree (type s trs trt tr p k a) entry_name (ar : (trs, trt, tr) ty_and
       Node (arn, {node = symb1; son = son; brother = bro}) ->
         (* merging rule [symb; symbl -> action] in tree [symb1; son | bro] *)
         begin match eq_symbol symb symb1 with
-        | Some Refl ->
+        | CSig.IsRefl ->
           (* reducing merge of [symb; symbl -> action] with [symb1; son] to merge of [symbl -> action] with [son] *)
           let MayRecNR arss = and_symbols_tree symbl son in
           let son = insert arss symbl pf son action in
@@ -482,7 +488,7 @@ let insert_tree (type s trs trt tr p k a) entry_name (ar : (trs, trt, tr) ty_and
           begin match ar, ars, arn, arss with
           | MayRec2, _, _, _ -> Some (Node (MayRec3, node))
           | NoRec2, NoRec2, NoRec3, NR11 -> Some (Node (NoRec3, node)) end
-        | None ->
+        | CSig.IsNone ->
         let ar' = and_and_tree ar arn bro in
         if is_before symb1 symb || derive_eps symb && not (derive_eps symb1) then
           (* inserting new rule after current rule, i.e. in [bro] *)
@@ -648,8 +654,8 @@ let change_to_self0 (type s) (type trec) (type a) (entry : s ty_entry) : (s, tre
   function
   | Snterm e ->
       begin match eq_entry e entry with
-      | None -> MayRecSymbol (Snterm e)
-      | Some Refl -> MayRecSymbol (Sself)
+      | CSig.IsNone -> MayRecSymbol (Snterm e)
+      | CSig.IsRefl -> MayRecSymbol (Sself)
       end
   | x -> MayRecSymbol x
 
@@ -746,8 +752,8 @@ let logically_eq_symbols entry =
         eq_symbols s1 s2 && eq_symbols sep1 sep2 && b1 = b2
     | Sopt s1, Sopt s2 -> eq_symbols s1 s2
     | Stree t1, Stree t2 -> eq_trees t1 t2
-    | Stoken p1, Stoken p2 -> L.tok_pattern_eq p1 p2 <> None
-    | Stokens pl1, Stokens pl2 -> tok_pattern_eq_list pl1 pl2 <> None
+    | Stoken p1, Stoken p2 -> iseq_eq (L.tok_pattern_eq p1 p2)
+    | Stokens pl1, Stokens pl2 -> iseq_eq (tok_pattern_eq_list pl1 pl2)
     | Sself, Sself -> true
     | Snext, Snext -> true
     | _ -> false
@@ -858,8 +864,8 @@ let delete_rule_in_level_list (type s tr p) (entry : s ty_entry) (symbols : (s, 
     TCns (_, Sself, symbols) -> delete_rule_in_suffix entry symbols levs
   | TCns (_, Snterm e, symbols') ->
     begin match eq_entry e entry with
-    | None -> delete_rule_in_prefix entry symbols levs
-    | Some Refl ->
+    | CSig.IsNone -> delete_rule_in_prefix entry symbols levs
+    | CSig.IsRefl ->
       delete_rule_in_suffix entry symbols' levs
     end
   | _ -> delete_rule_in_prefix entry symbols levs
@@ -1772,7 +1778,7 @@ module Entry = struct
           List.iter (fun (ExS rule) -> iter_in_symbols f rule) rules)
         elev
 
-  let same_entry (Any e) (Any e') = Option.has_some (eq_entry e e')
+  let same_entry (Any e) (Any e') = iseq_eq (eq_entry e e')
 
   let accumulate_in initial estate =
     let add_visited visited (Any e as any) =

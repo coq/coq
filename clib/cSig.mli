@@ -18,6 +18,8 @@ type 'a until = Stop of 'a | Cont of 'a
 
 type (_, _) eq = Refl : ('a, 'a) eq
 
+type (_, _) iseq = IsRefl : ('a, 'a) iseq | IsNone : ('a, 'b) iseq
+
 module type USetS =
 sig
     type elt

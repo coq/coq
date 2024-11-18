@@ -16,7 +16,7 @@ module type S = sig
   type keyword_state
   type te
   type 'c pattern
-  val tok_pattern_eq : 'a pattern -> 'b pattern -> ('a, 'b) Util.eq option
+  val tok_pattern_eq : 'a pattern -> 'b pattern -> ('a, 'b) CSig.iseq
   val tok_has_payload : 'a pattern -> bool
   val tok_classify : 'a pattern -> classifier
 
