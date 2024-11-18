@@ -90,10 +90,14 @@ val activate_hook : name:CString.Map.key -> unit
 
 val apply_hooks : hook
 
-(** Check if a canonical structure is applicable *)
+(** Check if a canonical structure is applicable. *)
 
-val check_conv_record : ?metas:(Constr.metavariable -> types option) -> env -> evar_map ->
-  state -> state ->
+val decompose_proj : ?metas:(Constr.metavariable -> types option) -> env -> evar_map -> state -> (Names.Constant.t * EConstr.EInstance.t) *
+            (EConstr.t list option * EConstr.t * Reductionops.Stack.t)
+val check_conv_record : env -> evar_map ->
+  (Names.Constant.t * EConstr.EInstance.t) *
+            (EConstr.t list option * EConstr.t * Reductionops.Stack.t) ->
+  state ->
   evar_map * (constr * constr)
   * constr * constr list * (EConstr.t list * EConstr.t list option) *
     (EConstr.t list * EConstr.t list) *
@@ -150,9 +154,12 @@ val evar_unify : Evarsolve.unifier
 
 (**/**)
 (* For debugging *)
+module Cs_keys_cache : sig type t end
+
 val evar_eqappr_x : ?rhs_is_already_stuck:bool -> unify_flags ->
-  env -> evar_map ->
-    conv_pb -> state -> state ->
+  env -> evar_map -> conv_pb ->
+  Cs_keys_cache.t ->
+  bool option -> state -> state ->
       Evarsolve.unification_result
 
 val occur_rigidly : Evarsolve.unify_flags ->

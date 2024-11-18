@@ -1537,7 +1537,7 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
       | Clval (_, _, b) -> Some b.rebus
       | exception Not_found -> None
       in
-      try Evarconv.check_conv_record ~metas (fst curenvnb) sigma f1l1 f2l2
+      try Evarconv.check_conv_record (fst curenvnb) sigma (Evarconv.decompose_proj ~metas (fst curenvnb) sigma f1l1) f2l2
       with Not_found -> error_cannot_unify (fst curenvnb) sigma (cM,cN)
     in
     if Reductionops.Stack.compare_shape ts ts1 then

@@ -75,6 +75,7 @@ val whd_head_evar :  evar_map -> constr -> constr
 
 (* An over-approximation of [has_undefined (nf_evars evd c)] *)
 val has_undefined_evars : evar_map -> constr -> bool
+val has_undefined_evars_or_metas : evar_map -> constr -> bool
 
 val is_ground_term :  evar_map -> constr -> bool
 val is_ground_env  :  evar_map -> env -> bool
