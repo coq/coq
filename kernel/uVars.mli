@@ -37,6 +37,10 @@ sig
   (** [sup x y] computes the supremum of [x] and [y] for the order above *)
   val sup : t -> t -> t
 
+  val sup_variances : t list -> t option
+  (** [sup_variances l] computes the supremum of all the given variances, returning [None]
+    if the list is empty *)
+
   val pr : t -> Pp.t
 
   val equal : t -> t -> bool
@@ -75,7 +79,7 @@ sig
   val variance : application -> t -> Variance.t
 end
 
-module Variances :
+module ApplicationVariances :
 sig
   type t
 
@@ -97,8 +101,6 @@ sig
   val append : t -> t -> t
 end
 
-type variances = Variances.t
-
 (** {6 Variance occurrences} *)
 
 type ('a, 'b) gen_variance_occurrence =
@@ -119,18 +121,38 @@ sig
   (** [lift n occ] Lifts the [InBinder] annotation in [occ] by [n] *)
 
   val pr : t -> Pp.t
+
+  val le : t -> t -> bool
+  val equal : t -> t -> bool
+
+  val term_variance_pos : t -> VariancePos.t
 end
 
-module VarianceOccurrences :
+module Variances :
 sig
-  type t = VarianceOccurrence.t array
+  type t
+
+  val make : VarianceOccurrence.t array -> t
+
+  val make_full : VarianceOccurrence.t array -> ApplicationVariances.t -> t
+
+  val repr : t -> VarianceOccurrence.t array
+
+  val lift : int -> t -> t
 
   val split : int -> t -> t * t
   val append : t -> t -> t
 
   val pr : t -> Pp.t
 
+  val le : t -> t -> bool
+  val equal : t -> t -> bool
+  val eq_sizes : t -> t -> bool
+
+  val application_variances : t -> ApplicationVariances.t
 end
+
+type variances = Variances.t
 
 (** {6 Universe instances} *)
 
@@ -216,7 +238,7 @@ sig
   val share : t -> t * int
   (** Simultaneous hash-consing and hash-value computation *)
 
-  val pr : (QVar.t -> Pp.t) -> (Universe.t -> Pp.t) -> ?variances:variances -> t -> Pp.t
+  val pr : (QVar.t -> Pp.t) -> (Universe.t -> Pp.t) -> ?variances:ApplicationVariances.t -> t -> Pp.t
   (** Pretty-printing, no comments *)
 
   val levels : t -> Quality.Set.t * Level.Set.t
@@ -240,8 +262,8 @@ type 'a quconstraint_function = 'a -> 'a -> Sorts.QUConstraints.t -> Sorts.QUCon
 
 val enforce_eq_instances : Instance.t quconstraint_function
 
-val enforce_eq_variance_instances : nargs:application -> Variances.t -> Instance.t quconstraint_function
-val enforce_leq_variance_instances : nargs:application -> Variances.t -> Instance.t quconstraint_function
+val enforce_eq_variance_instances : nargs:application -> ApplicationVariances.t -> Instance.t quconstraint_function
+val enforce_leq_variance_instances : nargs:application -> ApplicationVariances.t -> Instance.t quconstraint_function
 
 type 'a puniverses = 'a * Instance.t
 val out_punivs : 'a puniverses -> 'a

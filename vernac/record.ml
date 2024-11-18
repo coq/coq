@@ -413,24 +413,26 @@ let make_projection_variances i variances =
   match variances with
   | None -> None
   | Some v ->
+    let open UVars in
     let arr = UVars.Variances.repr v in
-    let map (var, pos as vpos) =
-      let open UVars.Position in
-      match pos with
-      | InBinder _ -> vpos (* A parameter universe of the record, appearing in a binder *)
-      | InType -> (UVars.Variance.Irrelevant, InType)
-      | InTerm -> (* The universe appears in the type of a field of the record,
-        it can only appear in the binder for the record itself in a projection *)
+    let map occ =
+      match VarianceOccurrence.term_variance_pos occ with
+      | (_, InBinder _) -> { occ with in_type = None } (* A parameter universe of the record, appearing in a parameter binder *)
+      | (_, InType) -> (* A universe appearing only in the type of the record, we don't care *)
+        occ
+      | (var, InTerm) -> (* The universe appears in the type of a field of the record,
+          and possibly in a binder as well.
+          it can only appear in the binder for the record itself in a projection *)
         let open UVars.Variance in
-        let v = match var with
+        let ovar = match var with
           | Covariant -> Contravariant
           | Contravariant -> Covariant
           | Invariant -> Invariant
           | Irrelevant -> Irrelevant
         in
-        (v, InBinder i)
+        { in_binders = List.append occ.in_binders [(i, ovar)]; in_term = Some var; in_type = Some var }
     in
-    Some (UVars.Variances.of_array (Array.map map arr))
+    Some (UVars.Variances.make (Array.map map arr))
 
 (* TODO: refactor the declaration part here; this requires some
    surgery as Evarutil.finalize is called too early in the path *)

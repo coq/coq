@@ -528,7 +528,8 @@ let restrict_inductive_universes ~lbound sigma ctx_params arities constructors =
 let check_trivial_variances = function
   | None -> ()
   | Some variances ->
-    Array.iter (function
+    Array.iter (function occ ->
+      match UVars.VarianceOccurrence.term_variance_pos occ with
       | UVars.Variance.Invariant, _ -> ()
       | _ ->
         CErrors.user_err
@@ -538,14 +539,14 @@ let check_trivial_variances = function
 let variance_of_entry ~cumulative ctx variances =
   let ivariances = Option.map UVars.Variances.repr variances in
   if not cumulative then begin check_trivial_variances ivariances; variances end
-  else
-    match ivariances with
+  else variances
+    (* match ivariances with
     | None -> variances
     | Some variances ->
       let lvs = Array.length variances in
       let _, lus = UVars.UContext.size ctx in
       assert (lvs <= lus);
-      Some (UVars.Variances.of_array (Array.append variances (Array.make (lus - lvs) UVars.(VariancePos.make Variance.Invariant Position.InTerm))))
+      Some (UVars.Variances.of_array (Array.append variances (Array.make (lus - lvs) UVars.(VariancePos.make Variance.Invariant Position.InTerm)))) *)
 
 let interp_mutual_inductive_constr ~sigma ~flags ~udecl ~ctx_params ~indnames ~arities_explicit ~arities ~template_syntax ~constructors ~env_ar_params ~private_ind =
   let {

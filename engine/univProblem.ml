@@ -143,4 +143,4 @@ let compare_cumulative_instances cv_pb ~nargs variances u u' cstrs =
           | Conversion.CUMUL -> Set.add (ULe (make u', make u)) cstrs)
        | Invariant ->
          Set.add (UEq (make u, make u')) cstrs)
-    cstrs (UVars.Variances.repr variances) us us'
+    cstrs (UVars.ApplicationVariances.repr variances) us us'

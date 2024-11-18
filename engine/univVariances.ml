@@ -37,13 +37,6 @@ let _global_variances env gr =
     else let mib = lookup_mind (fst (fst cstr)) env in Declareops.universes_variances mib.mind_universes
   | VarRef _id -> None
 
-let _occurrence_of (position, variance) =
-  let open Position in
-  match position with
-  | InBinder i -> { in_binder = Some (i, variance); in_type = None; in_term = None}
-  | InType -> { in_binder = None; in_type = Some variance; in_term = None}
-  | InTerm -> { in_binder = None; in_type = None; in_term = Some variance}
-
 let compute_variances_constr env ~evars status position cv_pb c =
   let status = Inf.set_position position status in
   try infer_term cv_pb env ~evars status c
@@ -123,9 +116,9 @@ let init_status_ustate ?(position=Position.InType) ?(udecl : UState.universe_dec
             let open InferCumulativity in
             let (_, v) = List.find (fun (l', _) -> Level.equal l l') comp in
             (match v with
-            | None -> Level.Map.add l (Infer, default_occ) m
-            | Some v -> Level.Map.add l (Check, make_occ (v, InTerm)) m)
-          with Not_found -> Level.Map.add l (Infer, default_occ) m)
+            | None -> Level.Map.add l default_occ m
+            | Some v -> Level.Map.add l (make_infer_occ (v, InTerm)) m)
+          with Not_found -> Level.Map.add l default_occ m)
           levels Level.Map.empty
         in Inf.start_variances map position
 

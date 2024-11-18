@@ -24,14 +24,19 @@ type infer_binders = (mode * (int * Variance.t) list)
 type infer_variance_occurrence = (infer_binders, mode * UVars.Variance.t) gen_variance_occurrence
 
 val default_occ : infer_variance_occurrence
-val make_occ : VariancePos.t -> infer_variance_occurrence
+val make_infer_occ : VariancePos.t -> infer_variance_occurrence
 
-type pre_variances =
-  (Univ.Level.t * VariancePos.t option) array
+val sup_occs : infer_variance_occurrence -> infer_variance_occurrence -> infer_variance_occurrence
+
+val occurrence_to_variance_pos : infer_variance_occurrence -> VariancePos.t
+
+type pre_variances = (Univ.Level.t * VarianceOccurrence.t option) array
 
 type infer_variance_occurrences = infer_variance_occurrence array
 
 val pr_variance_occurrence : infer_variance_occurrence -> Pp.t
+
+val forget_infer_variance_occurrence : infer_variance_occurrence -> VarianceOccurrence.t
 
 (* The position records the last position in the term where the variable was used relevantly. *)
 
@@ -47,6 +52,8 @@ val union_variances : variances -> variances -> variances
 (* Compute the variance in the binders and term and separately, the variance in the type *)
 val term_type_variances : infer_variance_occurrence -> Variance.t option * Variance.t option
 
+val of_variance_occurrences : pre_variances -> variances
+
 module Inf : sig
   type status
 
@@ -61,14 +68,12 @@ module Inf : sig
 
   val set_position : Position.t -> status -> status
 
-  val start_variances : variances -> Position.t -> status
-  val start : (Level.t * VariancePos.t option) array -> Position.t -> status
-
+  val start : pre_variances -> Position.t -> status
   val start_inference : Level.Set.t -> Position.t -> status
+  val start_variances : variances -> Position.t -> status
 
   val inferred : status -> variances
-  val finish : Environ.env -> status -> Variances.t
-
+  val finish : Environ.env -> status -> UVars.variances
 end
 
 type cumul_pb =
@@ -107,6 +112,6 @@ val infer_inductive
   (** By default, CClosure.default_evar_handler *)
   -> arities : Constr.t list
   -> ctors : Constr.t list list
-  -> (Univ.Level.t * UVars.VariancePos.t option) array
+  -> pre_variances
   (** Universes whose cumulativity we want to infer or check. *)
   -> UVars.Variances.t

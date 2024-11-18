@@ -751,7 +751,7 @@ let compare_cumulative_instances cv_pb ~nargs variances u u' sigma =
       | Contravariant when cv_pb == Conversion.CUMUL ->
         Univ.Constraints.add (u',Univ.Le,u) cstrs, soft
       | Covariant | Contravariant | Invariant -> Univ.Constraints.add (u,Univ.Eq,u') cstrs, soft)
-      (cstrs,soft) (UVars.Variances.repr variances) us us'
+      (cstrs,soft) (UVars.ApplicationVariances.repr variances) us us'
   in
   match Evd.add_constraints sigma cstrs with
   | sigma ->

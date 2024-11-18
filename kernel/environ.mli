@@ -253,7 +253,6 @@ val is_primitive : env -> Constant.t -> bool
 val get_primitive : env -> Constant.t -> CPrimitives.t option
 
 val is_array_type : env -> Constant.t -> bool
-val array_variances : UVars.Variances.t
 val is_int63_type : env -> Constant.t -> bool
 val is_float64_type : env -> Constant.t -> bool
 val is_string_type : env -> Constant.t -> bool

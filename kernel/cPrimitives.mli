@@ -156,3 +156,5 @@ val types : t -> Constr.rel_context * ind_or_type list * ind_or_type
   like array are assumed to use universe 0). *)
 
 val body_of_prim_const : const -> Constr.t
+
+val array_variances : UVars.variances

@@ -671,7 +671,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     | FArray (u1,t1,ty1), FArray (u2,t2,ty2) ->
       let len = Parray.length_int t1 in
       if not (Int.equal len (Parray.length_int t2)) then raise NotConvertible;
-            let cuniv = fail_check infos @@ convert_instances_cumul ~flex:false CONV ~nargs:(UVars.NumArgs 1) Environ.array_variances u1 u2 cuniv in
+            let cuniv = fail_check infos @@ convert_instances_cumul ~flex:false CONV ~nargs:(UVars.NumArgs 1)
+               (UVars.Variances.application_variances CPrimitives.array_variances) u1 u2 cuniv in
       let el1 = el_stack lft1 v1 in
       let el2 = el_stack lft2 v2 in
       let cuniv = ccnv CONV l2r infos el1 el2 ty1 ty2 cuniv in
@@ -753,7 +754,9 @@ and convert_stacks ?(mask = [||]) l2r infos lft1 lft2 stk1 stk2 cuniv =
                     let u2 = CClosure.usubst_instance e2 u2 in
                     match Declareops.universes_variances mind.Declarations.mind_universes with
                     | None -> convert_instances ~flex:false u1 u2 cu
-                    | Some variances -> convert_instances_cumul ~flex:false CONV ~nargs:UVars.FullyApplied variances u1 u2 cu
+                    | Some variances ->
+                      let variances = UVars.Variances.application_variances variances in
+                      convert_instances_cumul ~flex:false CONV ~nargs:UVars.FullyApplied variances u1 u2 cu
                 in
                 let cu = fail_check infos cu in
                 let pms1 = mk_clos_vect e1 pms1 in

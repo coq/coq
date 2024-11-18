@@ -244,11 +244,8 @@ let split_sec_variances sec_univs (shift, univs) =
       | Some sec_univs ->
         (* no variance for qualities *)
         let _nsecq, nsecu = UVars.LevelInstance.length sec_univs in
-        let variance = UVars.Variances.repr variance in
-        let arr = Array.sub variance nsecu (Array.length variance - nsecu) in
-        let arr' = Array.sub variance 0 nsecu in
-        Polymorphic (auctx, Some (UVars.Variances.lift (-shift) (UVars.Variances.of_array arr))),
-         Some (UVars.Variances.of_array arr')
+        let variance', variance = UVars.Variances.split nsecu variance in
+        Polymorphic (auctx, Some (UVars.Variances.lift (-shift) variance)), Some variance'
 
 let infer_parameter ~sec_univs env entry =
   let env, usubst, _, univs = process_universes env ?sec_univs entry.parameter_entry_universes in

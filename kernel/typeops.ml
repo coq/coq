@@ -502,7 +502,7 @@ let type_case_scrutinee env (mib, _mip) (u', largs) u pms (pctx, p) c =
      flipped. It is relevant for performance eg in bedrock / Kami. *)
   let qcst, ucst = match mib.mind_universes with
   | Monomorphic | Polymorphic (_, None) -> UVars.enforce_eq_instances u u' Sorts.QUConstraints.empty
-  | Polymorphic (_, Some variance) -> UVars.enforce_leq_variance_instances ~nargs:UVars.FullyApplied variance u' u Sorts.QUConstraints.empty
+  | Polymorphic (_, Some variance) -> UVars.enforce_leq_variance_instances ~nargs:UVars.FullyApplied (UVars.Variances.application_variances variance) u' u Sorts.QUConstraints.empty
   in
   let () = check_qconstraints qcst env in
   let () = check_constraints ucst env in

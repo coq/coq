@@ -307,9 +307,11 @@ and ind_or_type =
   | PITT_type : 'a prim_type * 'a -> ind_or_type
   | PITT_param : int -> ind_or_type (* DeBruijn index referring to prenex type quantifiers *)
 
-let one_univ =
+let array_variances : UVars.variances = UVars.(Variances.make [| { in_binders = [0, Variance.Irrelevant]; in_term = None; in_type = None } |])
+
+let one_univ : AbstractContext.t * Variances.t option =
   AbstractContext.make ([||],Names.[|Name (Id.of_string "u")|]) Constraints.empty,
-  Some (UVars.Variances.of_array [|VariancePos.make Variance.Contravariant (Position.InBinder 0)|])
+  Some (Variances.make [| { in_binders = [0, Variance.Contravariant]; in_term = None; in_type = None } |])
 
 let typ_univs (type a) (t : a prim_type) = match t with
   | PT_int63 -> AbstractContext.empty, None

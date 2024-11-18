@@ -157,12 +157,12 @@ let is_set_increment u =
   | [(l, k)] -> Level.is_set l
   | _ -> false
 
-let term_type_variances_irrel u us variances =
+let term_type_variances_irrel u us (variances : InferCumulativity.variances) =
   let open UVars.Variance in
   match Level.Map.find_opt u variances with
   | None -> if UnivFlex.mem u us then Irrelevant, Irrelevant else Invariant, Invariant
-  | Some (_mode, pos) ->
-    let termv, typev = term_type_variances pos in
+  | Some occs ->
+    let termv, typev = term_type_variances occs in
     Option.default Irrelevant termv, Option.default Irrelevant typev
 
 (* let term_type_variances u us variances =
@@ -297,42 +297,24 @@ let _warn_not_minimizable u =
   Feedback.msg_notice Pp.(str"Universe " ++ Level.raw_pr u ++ str" is not mimimizable as its lower bound \
        is not expressible in terms of other universes")
 
-let sup_opt_variances x y =
-  match x, y with
-  | Some v, Some v' -> Some (UVars.Variance.sup v v')
-  | Some _, None -> x
-  | None, Some _ -> y
-  | None, None -> None
-
-let sup_opt_variances_int x y =
-  match x, y with
-  | Some (i, v), Some (i', v') -> Some (max i i', UVars.Variance.sup v v')
-  | Some _, None -> x
-  | None, Some _ -> y
-  | None, None -> None
-
-let sup_variance_occs { in_term; in_binder; in_type } { in_term = in_term'; in_binder = in_binder'; in_type = in_type' } =
-  { in_term = sup_opt_variances in_term in_term';
-    in_type = sup_opt_variances in_type in_type';
-    in_binder = sup_opt_variances_int in_binder in_binder'  }
-
-let update_variance variances l l' =
+let update_variance (variances : InferCumulativity.variances)  l l' =
   match Level.Map.find_opt l variances with
   | None -> variances
-  | Some (mode, v) ->
-    let upd = function None -> Some (mode, v) | Some (mode', v') -> Some (mode_sup mode mode', sup_variance_occs v v') in
+  | Some loccs ->
+    let upd = function None -> Some loccs | Some l'occs -> Some (sup_occs loccs l'occs) in
     Level.Map.update l' upd variances
 
-let set_variance variances l v =
+let set_variance (variances : InferCumulativity.variances) l v =
   Level.Map.add l v variances
 
-let max_variance variances ls =
-  let fold l (mode, v) =
+let sup_variances (variances : InferCumulativity.variances) ls =
+  let fold l acc =
     match Level.Map.find_opt l variances with
-    | None -> (mode, v)
-    | Some (mode', v') -> (mode_sup mode mode', sup_variance_occs v v')
+    | None -> acc
+    | Some occs -> sup_occs occs acc
   in
-  Level.Set.fold fold ls (Infer, { in_term = None; in_type = None; in_binder = None })
+  let def = try Level.Set.choose ls with Not_found -> assert false (* Would mean that no variances are declared *) in
+  Level.Set.fold fold ls (Option.get (Level.Map.find_opt def variances))
 
 let simplify_variables partial ctx us variances graph =
   let dom = UnivFlex.domain us in
@@ -474,13 +456,13 @@ let minimize_weak us weak (smallles, csts, g, variances) =
     end else
       let set_to a b =
         let levels = Level.Set.add a (Universe.levels b) in
-        let mode, max_variance = max_variance variances levels in
-        match InferCumulativity.term_type_variances max_variance with
+        let sup_variances = sup_variances variances levels in
+        match InferCumulativity.term_type_variances sup_variances with
         | (None | Some UVars.Variance.Irrelevant), (None | Some UVars.Variance.Irrelevant) -> (* Irrelevant *)
           (smallles,
           Constraints.add (Universe.make a,Eq,b) csts,
           UGraph.enforce_constraint (Universe.make a,Eq,b) g,
-          Level.Set.fold (fun bl variances -> set_variance variances bl (mode, max_variance)) levels variances)
+          Level.Set.fold (fun bl variances -> set_variance variances bl sup_variances) levels variances)
         | _, _ -> (* One universe is not irrelevant *)
           (smallles, csts, g, variances)
       in
@@ -519,11 +501,11 @@ let new_minimize_weak ctx us weak (g, variances) =
     end else
       let set_to a b =
         let levels = Level.Set.add a (Universe.levels b) in
-        let mode, max_variance = max_variance variances levels in
-        match InferCumulativity.term_type_variances max_variance with
+        let sup_variances = sup_variances variances levels in
+        match InferCumulativity.term_type_variances sup_variances with
         | (None | Some UVars.Variance.Irrelevant), (None | Some UVars.Variance.Irrelevant) -> (* Irrelevant *)
           let variances =
-            Level.Set.fold (fun bl variances -> set_variance variances bl (mode, max_variance)) levels variances
+            Level.Set.fold (fun bl variances -> set_variance variances bl sup_variances) levels variances
           in
           (Level.Set.remove a ctx, UnivFlex.define a b us, UGraph.set a b g, Level.Map.remove a variances)
         | _, _ -> (* One universe is not irrelevant *)

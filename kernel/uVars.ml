@@ -28,6 +28,10 @@ struct
     | Contravariant, Contravariant -> Contravariant
     | Covariant, Contravariant | Contravariant, Covariant -> Invariant
 
+  let sup_variances = function
+    | [] -> None
+    | v :: vs -> Some (List.fold_left sup v vs)
+
   let equal a b = match a,b with
     | Irrelevant, Irrelevant | Covariant, Covariant | Contravariant, Contravariant | Invariant, Invariant -> true
     | (Irrelevant | Covariant | Contravariant | Invariant), _ -> false
@@ -60,10 +64,9 @@ struct
     | Irrelevant -> csts
     | Covariant | Contravariant | Invariant -> enforce_eq u u' csts
 
-  let _is_irrelevant = function
+  let is_irrelevant = function
     | Irrelevant -> true
     | _ -> false
-
 end
 
 type application = FullyApplied | NumArgs of int
@@ -152,7 +155,7 @@ struct
 
 end
 
-module Variances =
+module ApplicationVariances =
 struct
   type t = VariancePos.t array
 
@@ -192,8 +195,6 @@ struct
 
 end
 
-type variances = Variances.t
-
 (** {6 Variance occurrences} *)
 
 type ('a, 'b) gen_variance_occurrence =
@@ -214,14 +215,14 @@ let pr_variance_occurrence fa fb { in_binders; in_term; in_type } =
     | Some term -> [fb term ++ str" term"]
   in prlist_with_sep pr_comma identity (List.append pr_binders (List.append pr_in_term pr_in_type))
 
-let default_occ =
-  { in_binders = []; in_term = None; in_type = None }
+let default_occ in_binders =
+  { in_binders; in_term = None; in_type = None }
 
 module VarianceOccurrence =
 struct
   type t = ((int * Variance.t) list, Variance.t) gen_variance_occurrence
 
-  let default_occ = default_occ
+  let default_occ = default_occ []
 
   let lift n occ =
     { occ with in_binders = List.map (fun (i, v) -> (i + n, v)) occ.in_binders }
@@ -229,21 +230,89 @@ struct
   let pr occ =
     let pr_binders = List.map (fun (i, a) -> Variance.pr a ++ pr_nth (succ i)) in
     pr_variance_occurrence pr_binders Variance.pr occ
+
+  let equal ({ in_binders; in_term; in_type } as x) ({ in_binders = in_binders'; in_term = in_term'; in_type = in_type' } as y) =
+    x == y ||
+    (List.equal (fun (x, y) (x', y') -> Int.equal x x' && Variance.equal y y')) in_binders in_binders' &&
+    Option.equal Variance.equal in_term in_term' &&
+    Option.equal Variance.equal in_type in_type'
+
+  let option_le le x y =
+    match x, y with
+    | None, Some _ -> true
+    | Some x, Some y -> le x y
+    | Some v, None -> Variance.is_irrelevant v
+    | None, None -> true
+
+  let le ({ in_binders; in_term; in_type } as x) ({ in_binders = in_binders'; in_term = in_term'; in_type = in_type' } as y) =
+    x == y ||
+    (List.equal (fun (x, y) (x', y') -> Int.equal x x' && Variance.le y y')) in_binders in_binders' &&
+    option_le Variance.le in_term in_term' &&
+    option_le Variance.equal in_type in_type'
+
+  (* let term_variance { in_binders; in_term; in_type = _ }  =
+    let in_binders = Variance.sup_variances (List.map snd in_binders) in
+    let sup_opt = Option.union Variance.sup in
+    sup_opt in_term in_binders
+   *)
+  let binders_variance = function
+    | [] -> None
+    | (i, v) :: vs ->
+      Some (List.fold_left (fun (i, v) (i', v') -> (max i i', Variance.sup v v')) (i, v) vs)
+
+  let term_variance_pos { in_binders; in_term; in_type = _ }  =
+    let in_binders = binders_variance in_binders in
+    let sup_opt = Option.union Variance.sup in
+    if Option.is_empty in_term then
+      Option.cata (fun (i, v) -> (v, Position.InBinder i)) (Variance.Irrelevant, Position.InTerm) in_binders
+    else
+      let v = sup_opt in_term (Option.map snd in_binders) in
+      Option.cata (fun v -> (v, Position.InTerm)) (Variance.Irrelevant, Position.InTerm) v
+
 end
 
-module VarianceOccurrences =
+module Variances =
 struct
-  type t = VarianceOccurrence.t array
+  type t = VarianceOccurrence.t array * ApplicationVariances.t
 
-  let split n vs =
+  let make_application_variances (vs : VarianceOccurrence.t array) : ApplicationVariances.t =
+    Array.map VarianceOccurrence.term_variance_pos vs
+
+  let application_variances (x : t) = snd x
+
+  let lift n (vs, apps as x : t) : t =
+    if Int.equal n 0 then x
+    else (Array.map (VarianceOccurrence.lift n) vs, Array.map (VariancePos.lift n) apps)
+
+  let make vocc : t = (vocc, make_application_variances vocc)
+
+  let make_full vocc apps = (vocc, apps)
+
+  let repr (vs : t) : VarianceOccurrence.t array = (fst vs)
+
+  let split n ((vs, apps) : t) : t * t =
     assert (n <= Array.length vs);
-    Array.chop n vs
+    let vs, vs' = Array.chop n vs in
+    let apps, apps' = Array.chop n apps in
+    (vs, apps), (vs', apps')
 
-  let append vs vs' = Array.append vs vs'
+  let append ((vs,apps) : t) ((vs', apps') : t) : t =
+    (Array.append vs vs', Array.append apps apps')
 
-  let pr = prvect_with_sep spc VarianceOccurrence.pr
+  let pr ((vs, _apps) : t) : Pp.t = prvect_with_sep spc VarianceOccurrence.pr vs
+
+  let equal (x : t) (y : t) : bool =
+    Array.equal VarianceOccurrence.equal (fst x) (fst y)
+
+  let eq_sizes x y =
+    Int.equal (Array.length (fst x)) (Array.length (fst y))
+
+  let le x y =
+    Array.equal VarianceOccurrence.le (fst x) (fst y)
+
 end
 
+type variances = Variances.t
 
 module LevelInstance : sig
     type t
@@ -267,7 +336,7 @@ module LevelInstance : sig
 
     val subst_fn : (Sorts.QVar.t -> Quality.t) * (Level.t -> Level.t) -> t -> t
 
-    val pr : (Sorts.QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variances:variances -> t -> Pp.t
+    val pr : (Sorts.QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variances:Variances.t -> t -> Pp.t
     val levels : t -> Quality.Set.t * Level.Set.t
 
     val lookup_quality : t -> int -> Quality.t
@@ -364,10 +433,11 @@ struct
     q, u
 
   let pr prq prl ?variances (q,u) =
-    let variances = Option.map Variances.repr variances in
     let ppu i u =
-      let v = Option.map (fun v -> if i < Array.length v then v.(i) else VariancePos.make Variance.Invariant Position.InTerm (* TODO fix: bad caller somewhere *)) variances in
-      pr_opt_no_spc VariancePos.pr v ++ prl u
+      let v = Option.map (fun v ->
+        let v = Variances.repr v in
+        if i < Array.length v then v.(i) else VarianceOccurrence.default_occ (* TODO fix: bad caller somewhere *)) variances in
+      pr_opt_no_spc VarianceOccurrence.pr v ++ prl u
     in
     (if Array.is_empty q then mt() else prvect_with_sep spc (Quality.pr prq) q ++ strbrk " | ")
     ++ prvecti_with_sep spc ppu u
@@ -404,7 +474,7 @@ module Instance : sig
 
   val subst_fn : (Sorts.QVar.t -> Quality.t) * (Level.t -> Universe.t) -> t -> t
 
-  val pr : (Sorts.QVar.t -> Pp.t) -> (Universe.t -> Pp.t) -> ?variances:variances -> t -> Pp.t
+  val pr : (Sorts.QVar.t -> Pp.t) -> (Universe.t -> Pp.t) -> ?variances:ApplicationVariances.t -> t -> Pp.t
   val levels : t -> Quality.Set.t * Level.Set.t
   type mask = Quality.pattern array * int option array
 
@@ -539,14 +609,14 @@ let enforce_eq_instances x y (qcs, ucs as orig) =
 let enforce_eq_variance_instances ~nargs variances x y (qcs,ucs as orig) =
   let xq, xu = Instance.to_array x and yq, yu = Instance.to_array y in
   let qcs' = CArray.fold_right2 Sorts.enforce_eq_quality xq yq qcs in
-  let ucs' = Variances.eq_constraints ~nargs variances xu yu ucs in
+  let ucs' = ApplicationVariances.eq_constraints ~nargs variances xu yu ucs in
   if qcs' == qcs && ucs' == ucs then orig else qcs', ucs'
 
 let enforce_leq_variance_instances ~nargs variances x y (qcs,ucs as orig) =
   let xq, xu = Instance.to_array x and yq, yu = Instance.to_array y in
   (* no variance for quality variables -> enforce_eq *)
   let qcs' = CArray.fold_right2 Sorts.enforce_eq_quality xq yq qcs in
-  let ucs' = Variances.leq_constraints ~nargs variances xu yu ucs in
+  let ucs' = ApplicationVariances.leq_constraints ~nargs variances xu yu ucs in
   if qcs' == qcs && ucs' == ucs then orig else qcs', ucs'
 
 let subst_instance_level s l =

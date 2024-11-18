@@ -56,7 +56,7 @@ type ('a, 'opaque, 'rules) constant_def =
 
 type universes =
   | Monomorphic
-  | Polymorphic of UVars.AbstractContext.t * UVars.variances option
+  | Polymorphic of UVars.AbstractContext.t * UVars.Variances.t option
 
 (** The [typing_flags] are instructions to the type-checker which
     modify its behaviour. The typing flags used in the type-checking

@@ -50,8 +50,8 @@ let lift_univs info univ_hyps univs sec_variance =
       in
       let newbinders = List.count NamedDecl.is_local_assum (Cooking.named_context_of_cooking_info info) in
       let variance = UVars.Variances.lift newbinders variance in
-      Some (UVars.Variances.of_array (Array.append newvariance (UVars.Variances.repr variance))),
-      Some (UVars.Variances.of_array sec_variance)
+      Some (UVars.Variances.make (Array.append newvariance (UVars.Variances.repr variance))),
+      Some (UVars.Variances.make sec_variance)
     in
     info, univ_hyps, Polymorphic (auctx, variances), sec_variances
 
