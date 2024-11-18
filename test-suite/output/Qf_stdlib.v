@@ -1,3 +1,7 @@
+(* -*- coq-prog-args: ("-async-proofs" "off"); -*- *)
+(* async proofs off because the output order ends up different with
+   and without async *)
+
 (* Example from coq-lsp: we need to test 3 methods where the quickfix
   can come from for the Coq -> Stdlib transition:
 

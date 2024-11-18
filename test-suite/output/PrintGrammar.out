@@ -140,8 +140,7 @@ Entry term is
   | NUMBER
   | atomic_constr
   | term_match
-  | ident; fields; univ_annot
-  | ident; univ_annot
+  | reference; univ_annot
   | string
   | test_array_opening; "["; "|"; array_elems; "|"; lconstr; type_cstr;
     test_array_closing; "|"; "]"; univ_annot ] ]
