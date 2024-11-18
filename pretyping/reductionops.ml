@@ -1609,23 +1609,33 @@ let is_sort env sigma t =
 (* reduction to head-normal-form allowing delta/zeta only in argument
    of case/fix (heuristic used by evar_conv) *)
 
+let is_applicative stk = List.for_all (function
+    | CClosure.Zapp _ | Zupdate _ | Zshift _ -> true
+    | ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ -> false)
+    stk
+
 let whd_betaiota_deltazeta_for_iota_state ts ?metas env sigma s =
   let all' = RedFlags.red_add_transparent RedFlags.all ts in
   (* Unset the sharing flag to get a call-by-name reduction. This matters for
      the shape of the generated term. *)
   let env' = Environ.set_typing_flags { (Environ.typing_flags env) with Declarations.share_reduction = false } env in
-  let whd_opt c =
+  let whd_opt ~allow_cofix c =
     let open CClosure in
     let infos = Evarutil.create_clos_infos env' sigma all' in
     let tab = create_tab () in
     let c = inject (EConstr.Unsafe.to_constr (Stack.zip sigma c)) in
     let (c, stk) = whd_stack infos tab c [] in
-    match fterm_of c with
-    | (FConstruct _ | FCoFix _) ->
+    let head_ok =
+      match fterm_of c with
+      | FConstruct _ -> true
+      | FCoFix _ -> allow_cofix
+      | _ -> false
+    in
+    if head_ok && is_applicative stk then
       (* Non-neutral normal, can trigger reduction below *)
       let c = EConstr.of_constr (term_of_process c stk) in
       Some (decompose_app sigma c)
-    | _ -> None
+    else None
   in
   let rec whrec s =
     let (t, stack as s) = whd_state_gen RedFlags.betaiota ?metas env sigma s in
@@ -1644,20 +1654,20 @@ let whd_betaiota_deltazeta_for_iota_state ts ?metas env sigma s =
     | None ->
     match Stack.strip_app stack with
       |args, (Stack.Case _ :: _ as stack') ->
-        begin match whd_opt (t, args) with
-        | Some (t_o, args) when reducible_mind_case sigma t_o -> whrec (t_o, Stack.append_app args stack')
-        | (Some _ | None) -> s
+        begin match whd_opt ~allow_cofix:true (t, args) with
+        | Some (t_o, args) -> whrec (t_o, Stack.append_app args stack')
+        | None -> s
         end
       |args, (Stack.Fix _ :: _ as stack') ->
-        begin match whd_opt (t, args) with
-        | Some (t_o, args) when isConstruct sigma t_o -> whrec (t_o, Stack.append_app args stack')
-        | (Some _ | None) -> s
+        begin match whd_opt ~allow_cofix:false (t, args) with
+        | Some (t_o, args) -> whrec (t_o, Stack.append_app args stack')
+        | None -> s
         end
       |args, (Stack.Proj (p,_) :: stack'') ->
-        begin match whd_opt (t, args) with
-        | Some (t_o, args) when isConstruct sigma t_o ->
+        begin match whd_opt ~allow_cofix:false (t, args) with
+        | Some (t_o, args) ->
           whrec (args.(Projection.npars p + Projection.arg p), stack'')
-        | (Some _ | None) -> s
+        | None -> s
         end
       |_, ((Stack.App _|Stack.Primitive _) :: _|[]) -> s
   in
