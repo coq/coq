@@ -220,7 +220,6 @@ let print_pat fmt = print_opt fmt print_string in
 function
 | "", Some s -> fprintf fmt "Tok.PKEYWORD (%a)" print_string s
 | "IDENT", s -> fprintf fmt "Tok.PIDENT (%a)" print_pat s
-| "PATTERNIDENT", s -> fprintf fmt "Tok.PPATTERNIDENT (%a)" print_pat s
 | "FIELD", s -> fprintf fmt "Tok.PFIELD (%a)" print_pat s
 | "NUMBER", None -> fprintf fmt "Tok.PNUMBER None"
 | "NUMBER", Some s -> fprintf fmt "Tok.PNUMBER (Some (NumTok.Unsigned.of_string %a))" print_string s

@@ -12,7 +12,6 @@
 
 type 'c p =
   | PKEYWORD : string -> string p
-  | PPATTERNIDENT : string option -> string p
   | PIDENT : string option -> string p
   | PFIELD : string option -> string p
   | PNUMBER : NumTok.Unsigned.t option -> NumTok.Unsigned.t p
@@ -26,7 +25,6 @@ val pattern_strings : 'c p -> string * string option
 
 type t =
   | KEYWORD of string
-  | PATTERNIDENT of string
   | IDENT of string
   | FIELD of string
   | NUMBER of NumTok.Unsigned.t
