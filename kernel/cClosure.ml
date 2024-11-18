@@ -453,7 +453,7 @@ let rec subst_constr (subst,usubst as e) c =
   match [@ocaml.warning "-4"] Constr.kind c with
 | Rel i ->
   begin match expand_rel i subst with
-  | Inl (k, lazy v) -> Vars.lift k v
+  | Inl (k, lazy v) -> Vars.lift_substituend k v
   | Inr (m, _) -> mkRel m
   end
 | Const _ | Ind _ | Construct _ | Sort _ -> subst_instance_constr usubst c
@@ -602,7 +602,7 @@ and to_constr_case lfts ci u pms (p,r) iv c ve env =
             Array.map f_ctx ve)
 
 and comp_subs el (s,u') =
-  Esubst.lift_subst (fun el c -> lazy (to_constr el c)) el s, u'
+  Esubst.lift_subst (fun el c -> lazy (Vars.make_substituend @@ to_constr el c)) el s, u'
 
 (* This function defines the correspondence between constr and
    fconstr. When we find a closure whose substitution is the identity,
