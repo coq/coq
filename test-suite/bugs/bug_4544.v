@@ -11,6 +11,7 @@ Require Stdlib.Init.Datatypes.
 Import Stdlib.Init.Notations.
 
 Global Set Universe Polymorphism.
+Set Polymorphic Inductive Cumulativity.
 
 Notation "A -> B" := (forall (_ : A), B) : type_scope.
 Global Set Primitive Projections.
@@ -109,14 +110,17 @@ Definition transport {A : Type} (P : A -> Type) {x y : A} (p : x = y) (u : P x) 
 
 Notation "p # x" := (transport _ p x) (right associativity, at level 65, only parsing) : path_scope.
 
+#[universes(cumulative)]
 Definition ap {A B:Type} (f:A -> B) {x y:A} (p:x = y) : f x = f y
   := match p with idpath => idpath end.
 
+#[universes(cumulative)]
 Definition pointwise_paths {A} {P:A->Type} (f g:forall x:A, P x)
   := forall x:A, f x = g x.
 
 Notation "f == g" := (pointwise_paths f g) (at level 70, no associativity) : type_scope.
 
+#[universes(polymorphic,cumulative)]
 Definition Sect {A B : Type} (s : A -> B) (r : B -> A) :=
   forall x : A, r (s x) = x.
 
@@ -158,13 +162,14 @@ Notation "-2" := minus_two (at level 0) : trunc_scope.
 Notation "-1" := (-2.+1) (at level 0) : trunc_scope.
 Notation "0" := (-1.+1) : trunc_scope.
 
-Fixpoint IsTrunc_internal (n : trunc_index) (A : Type) : Type :=
+#[universes(cumulative)]
+Fixpoint IsTrunc_internal (n : trunc_index) (A : Type) :=
   match n with
     | -2 => Contr_internal A
     | n'.+1 => forall (x y : A), IsTrunc_internal n' (x = y)
   end.
 
-Class IsTrunc (n : trunc_index) (A : Type) : Type :=
+Class IsTrunc (n : trunc_index) (A : Type@{i}) : Type@{i} :=
   Trunc_is_trunc : IsTrunc_internal n A.
 
 Global Instance istrunc_paths (A : Type) n `{H : IsTrunc n.+1 A} (x y : A)
@@ -181,7 +186,7 @@ Monomorphic Class Funext := { dummy_funext_value : dummy_funext_type }.
 
 Unset Universe Minimization ToSet.
 
-Inductive Unit : Type1 :=
+Inductive Unit@{l} : Type1@{l} :=
     tt : Unit.
 
 Class IsPointed (A : Type) := point : A.
@@ -309,10 +314,11 @@ admit.
 Defined.
 
 Section Adjointify.
-
-  Context {A B : Type} (f : A -> B) (g : B -> A).
+  Universes a b.
+  Context {A : Type@{a}} {B : Type@{b}} (f : A -> B) (g : B -> A).
   Context (isretr : Sect g f) (issect : Sect f g).
 
+  Set Debug "univMinim".
   Let issect' := fun x =>
     ap g (ap f (issect x)^)  @  ap g (isretr (f x))  @  issect x.
 
@@ -491,10 +497,9 @@ Module Type ReflectiveSubuniverses.
   Parameter to@{u a i} : forall (O : ReflectiveSubuniverse@{u a}) (T : Type@{i}),
                    T -> O_reflector@{u a i} O T.
 
-  Parameter inO_equiv_inO@{u a i j k} :
+  Parameter inO_equiv_inO@{u a i j k ?} :
       forall (O : ReflectiveSubuniverse@{u a}) (T : Type@{i}) (U : Type@{j})
              (T_inO : In@{u a i} O T) (f : T -> U) (feq : IsEquiv f),
-
         let gei := ((fun x => x) : Type@{i} -> Type@{k}) in
         let gej := ((fun x => x) : Type@{j} -> Type@{k}) in
         In@{u a j} O U.
@@ -740,16 +745,19 @@ Defined.
   : In@{u a i} O (O_reflector@{u a i} O A).
 admit.
 Defined.
+Set Debug "univMinim".
 
   Definition inO_equiv_inO@{u a i j k} (O : Modality@{u a}) (A : Type@{i}) (B : Type@{j})
     (A_inO : In@{u a i} O A) (f : A -> B) (feq : IsEquiv f)
   : In@{u a j} O B.
-  Proof.
-    simple refine (isequiv_commsq (to O A) (to O B) f
-             (O_ind_internal O A (fun _ => O_reflector O B) _ (fun a => to O B (f a))) _).
-    -
- intros; apply O_inO.
-    -
+  Proof. red.
+    simple refine (isequiv_commsq@{i i j j} (to O A) (to O B) f
+             (O_ind_internal@{u a i j k} O A (fun _ => O_reflector O B) _ (fun a => to O B (f a))) _).
+    - intros; apply O_inO.
+    - admit.
+    - admit.
+    - admit.
+    Defined.
  intros a; refine (O_ind_beta_internal@{u a i j k} O A (fun _ => O_reflector O B) _ _ a).
     -
  apply A_inO.
@@ -769,8 +777,9 @@ Defined.
  pattern x; refine (O_ind_internal O A _ _ _ x); intros.
         *
  apply minO_pathsO.
+
         *
- simpl; admit.
+    simpl; admit.
   Defined.
 
 End EasyModalities_to_Modalities.

@@ -39,12 +39,13 @@ Section Foo.
 
   Fail Definition x := Type.
   Fail Inductive x : Type := .
-  Polymorphic Definition x := Type.
+  Polymorphic Definition x@{=j} := Type@{j}.
   Polymorphic Inductive y : x := .
 
   Variable A : Type. (* adds a mono univ for the Type, which is unrelated to the others *)
 
-  Fail Variable B : (y : Type@{i}).
+  Polymorphic Universe j.
+  Fail Variable B : (y@{j} : Type@{i}).
   (* not allowed: mono constraint (about a fresh univ for y) regarding
   poly univ i *)
 
@@ -52,7 +53,7 @@ Section Foo.
 
   Variable C : Type@{i}. (* no new univs so no problems *)
 
-  Polymorphic Definition thing := bloo -> y -> A -> B.
+  Polymorphic Definition thing := bloo -> y@{j} -> A -> B.
 
 End Foo.
 Check bli@{_}.

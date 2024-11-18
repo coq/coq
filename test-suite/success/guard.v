@@ -16,7 +16,7 @@ Inductive foo : Type -> Type :=
 | End A : foo A
 | Next A : (A -> foo A) -> foo A.
 
-Definition nat : Type := nat.
+Definition nat : Type@{_} := nat.
 
 Fixpoint bar (A : Type) (e : nat = A) (f : foo A) {struct f} : nat :=
 match f with

@@ -1,5 +1,6 @@
 Require Import TestSuite.admit.
 Set Universe Polymorphism.
+Set Polymorphic Inductive Cumulativity.
 Class Funext := { }.
 Delimit Scope category_scope with category.
 Record PreCategory := { object :> Type ; morphism : object -> object -> Type }.

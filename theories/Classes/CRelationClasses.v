@@ -32,7 +32,7 @@ Definition arrow@{-a -b} (A : Type@{a}) (B : Type@{b}) := A -> B.
 
 Definition flip@{-a -b -c} {A : Type@{a}} {B : Type@{b}} {C : Type@{c}} (f : A -> B -> C) := fun x y => f y x.
 
-Class subrelation@{-a -ra -ra'} {A : Type@{a}} (R : crelation@{a ra} A) (R' : crelation@{a ra'} A) :=
+Class subrelation@{-a ra ra'} {A : Type@{a}} (R : crelation@{a ra} A) (R' : crelation@{a ra'} A) :=
   is_subrelation : forall {x y}, R x y -> R' x y.
 
 Module Import TypeProduct.

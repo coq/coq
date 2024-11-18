@@ -78,7 +78,7 @@ Definition respectful_hetero
     fun f g => forall x y, R x y -> R' x y (f x) (g y).
 
 (** The non-dependent version is an instance where we forget dependencies. *)
-  
+
 Definition respectful@{-a -ra -b -rb} {A : Type@{a}} {B : Type@{b}} (R : crelation@{a ra} A) (R' : crelation@{b rb} B) : crelation (A -> B) :=
     fun f g => forall x y, R x y -> R' (f x) (g y).
 
@@ -601,7 +601,7 @@ End Normalize.
 
 Lemma flip_arrow `(NA : Normalizes A R (flip R'''), NB : Normalizes B R' (flip R'')) :
   Normalizes (A -> B) (R ==> R') (flip (R''' ==> R'')%signatureT).
-Proof. 
+Proof.
   unfold Normalizes in *. intros.
   eapply transitivity; [|eapply symmetry, flip_respectful].
   now apply respectful_morphism.

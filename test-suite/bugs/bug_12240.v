@@ -18,10 +18,10 @@ Proof. intros x y z HR1 HR2; destruct HR1, HR2; auto. Qed.
 Goal forall (a b : nat), R a b -> R (id a) (id b).
 Proof. intros a b H.
   (** This still fails but should be fixed when #7675 is. *)
-  Fail rewrite H; reflexivity. (* does not fail with nat inlined in the definition of R *)
+  rewrite H; reflexivity. (* does not fail with nat inlined in the definition of R *)
     (* Fail 1 *)
     (* Tactic failure: setoid rewrite failed: ... *)
-Abort.
+Qed.
 
 Goal forall A (a b : A), R a b -> R (id a) (id b).
 Proof. intros A a b H.

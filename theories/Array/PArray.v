@@ -98,7 +98,7 @@ Proof.
 Qed.
 
 Lemma get_not_default_lt A (t:array A) x :
- t.[x] <> default t -> (x <? length t) = true.
+  t.[x] <> default t -> (x <? length t) = true.
 Proof.
  intros Hd.
  case_eq (x <? length t); intros Heq; [trivial | ].

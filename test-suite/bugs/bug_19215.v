@@ -1,5 +1,6 @@
 Set Implicit Arguments.
 Set Universe Polymorphism.
+(* Set Polymorphic Inductive Cumulativity. *)
 
 Require Export Notations.
 Require Import Ltac.

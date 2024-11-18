@@ -48,7 +48,7 @@ Record B (X : A) : Type := { b : X; }.
 NonCumulative Inductive NCList (A: Type)
   := ncnil | nccons : A -> NCList A -> NCList A.
 
-Fail Definition LiftNCL@{k i j|k <= i, k <= j} {A:Type@{k}}
+Definition LiftNCL@{k i j|k <= i, k <= j} {A:Type@{k}}
   : NCList@{i} A -> NCList@{j} A := fun x => x.
 
 Inductive eq@{i} {A : Type@{i}} (x : A) : A -> Type@{i} := eq_refl : eq x x.

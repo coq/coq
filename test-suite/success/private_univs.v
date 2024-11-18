@@ -2,13 +2,13 @@ Set Universe Polymorphism. Set Printing Universes.
 (* Deactivated for now *)
 
 Definition internal_defined@{i j | i < j ?} (A : Type@{i}) : Type@{j}.
-  pose(foo:=Type). (* 1 universe for the let body + 1 for the type *)
+  pose(foo:=Type@{_}). (* 1 universe for the let body + 1 for the type *)
   exact A.
   Fail Defined.
 Abort.
 
 Definition internal_defined@{i j ?} (A : Type@{i}) : Type@{j}.
-pose(foo:=Type).
+pose(foo:=Type@{_}).
 exact A.
 Defined.
 Check internal_defined@{_ _ _}.
@@ -16,7 +16,7 @@ Check internal_defined@{_ _ _}.
 Module M.
 Lemma internal_qed@{i j|i<=j} (A:Type@{i}) : Type@{j}.
 Proof.
-  pose (foo := Type).
+  pose (foo := Type@{_}).
   exact A.
 Qed.
 Check internal_qed@{_ _}.
@@ -27,7 +27,7 @@ Include M.
 Unset Strict Universe Declaration.
 Lemma private_transitivity@{i j} (A:Type@{i}) : Type@{j}.
 Proof.
-  pose (bar := Type : Type@{j}).
+  pose (bar := Type@{_} : Type@{j}).
   pose (foo := Type@{i} : bar).
   exact bar.
 Qed.
@@ -38,14 +38,14 @@ Fail Definition dummy@{i j|j <= i ?} := private_transitivity@{i j}.
 Unset Private Polymorphic Universes.
 Lemma internal_noprivate_qed@{i j|i<=j} (A:Type@{i}) : Type@{j}.
 Proof.
-  pose (foo := Type).
+  pose (foo := Type@{_}).
   exact A.
   Fail Qed.
 Abort.
 
 Lemma internal_noprivate_qed@{i j ?} (A:Type@{i}) : Type@{j}.
 Proof.
-  pose (foo := Type).
+  pose (foo := Type@{_}).
   exact A.
 Qed.
 Check internal_noprivate_qed@{_ _ _}.
