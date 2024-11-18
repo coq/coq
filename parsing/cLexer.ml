@@ -765,7 +765,7 @@ module MakeLexer (Diff : sig val mode : bool end)
   type te = Tok.t
   type 'c pattern = 'c Tok.p
   let tok_pattern_eq = Tok.equal_p
-  let tok_pattern_strings = Tok.pattern_strings
+  let tok_has_payload = Tok.has_payload
   let tok_func ?(loc=Loc.(initial ToplevelInput)) cs =
     let cur_loc = ref loc in
     Gramlib.LStream.from ~loc
@@ -785,6 +785,7 @@ module MakeLexer (Diff : sig val mode : bool end)
            Exninfo.iraise (exn, info))
   let tok_match = Tok.match_pattern
   let tok_text = Tok.token_text
+  let tok_classify = Tok.classify
 
   (* The state of the lexer visible from outside *)
   module State = struct

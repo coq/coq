@@ -8,6 +8,8 @@
    grammars (see module [Grammar]). It also provides some useful functions
    to create lexers. *)
 
+type classifier = Keyword of string | Other of string * string option
+
 (** Lexer type *)
 
 module type S = sig
@@ -15,7 +17,8 @@ module type S = sig
   type te
   type 'c pattern
   val tok_pattern_eq : 'a pattern -> 'b pattern -> ('a, 'b) Util.eq option
-  val tok_pattern_strings : 'c pattern -> string * string option
+  val tok_has_payload : 'a pattern -> bool
+  val tok_classify : 'a pattern -> classifier
 
   (** Returning a stream equipped with a location function *)
   val tok_func : ?loc:Loc.t -> (unit,char) Stream.t -> (keyword_state,te) LStream.t

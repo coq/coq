@@ -21,7 +21,8 @@ type 'c p =
   | PQUOTATION : string -> string p
   | PEOI : unit p
 
-val pattern_strings : 'c p -> string * string option
+val has_payload : 'c p -> bool
+val classify : 'a p -> Gramlib.Plexing.classifier
 
 type t =
   | KEYWORD of string

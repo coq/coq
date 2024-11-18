@@ -23,18 +23,29 @@ type 'c p =
   | PQUOTATION : string -> string p
   | PEOI : unit p
 
-let pattern_strings : type c. c p -> string * string option =
+let has_payload : type a. a p -> bool =
   function
-  | PKEYWORD s -> "", Some s
-  | PIDENT s -> "IDENT", s
-  | PFIELD s -> "FIELD", s
-  | PNUMBER None -> "NUMBER", None
-  | PNUMBER (Some n) -> "NUMBER", Some (NumTok.Unsigned.sprint n)
-  | PSTRING s -> "STRING", s
-  | PLEFTQMARK -> "LEFTQMARK", None
-  | PBULLET s -> "BULLET", s
-  | PQUOTATION lbl -> "QUOTATION", Some lbl
-  | PEOI -> "EOI", None
+  | PKEYWORD s -> true
+  | PIDENT s | PFIELD s | PSTRING s | PBULLET s ->
+    Option.has_some s
+  | PNUMBER s -> Option.has_some s
+  | PLEFTQMARK -> false
+  | PQUOTATION _ -> true
+  | PEOI -> false
+
+let classify : type a. a p -> Gramlib.Plexing.classifier =
+  let open Gramlib.Plexing in
+  function
+  | PKEYWORD s -> Keyword s
+  | PIDENT s -> Other ("IDENT", s)
+  | PFIELD s -> Other ("FIELD", s)
+  | PNUMBER None -> Other ("NUMBER", None)
+  | PNUMBER (Some n) -> Other ("NUMBER", Some (NumTok.Unsigned.sprint n))
+  | PSTRING s -> Other ("STRING", s)
+  | PLEFTQMARK -> Other ("LEFTQMARK", None)
+  | PBULLET s -> Other ("BULLET", s)
+  | PQUOTATION lbl -> Other ("QUOTATION", Some lbl)
+  | PEOI -> Other ("EOI", None)
 
 type t =
   | KEYWORD of string

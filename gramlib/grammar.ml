@@ -336,9 +336,7 @@ let rec eq_symbol : type s r1 r2 a1 a2. (s, r1, a1) ty_symbol -> (s, r2, a2) ty_
 
 let is_before : type s1 s2 r1 r2 a1 a2. (s1, r1, a1) ty_symbol -> (s2, r2, a2) ty_symbol -> bool = fun s1 s2 ->
   match s1, s2 with
-  | Stoken p1, Stoken p2 ->
-     snd (L.tok_pattern_strings p1) <> None
-     && snd (L.tok_pattern_strings p2) = None
+  | Stoken p1, Stoken p2 -> L.tok_has_payload p1 && not (L.tok_has_payload p2)
   | Stoken _, _ -> true
   | _ -> false
 
@@ -898,10 +896,10 @@ let string_escaped s = utf8_string_escaped s
 let print_str ppf s = fprintf ppf "\"%s\"" (string_escaped s)
 
 let print_token b ppf p =
-  match L.tok_pattern_strings p with
-  | "", Some s -> print_str ppf s
-  | con, Some prm -> if b then fprintf ppf "%s@ %a" con print_str prm else fprintf ppf "(%s@ %a)" con print_str prm
-  | con, None -> fprintf ppf "%s" con
+  match L.tok_classify p with
+  | Keyword s -> print_str ppf s
+  | Other (con, Some prm) -> if b then fprintf ppf "%s@ %a" con print_str prm else fprintf ppf "(%s@ %a)" con print_str prm
+  | Other (con, None) -> fprintf ppf "%s" con
 
 let print_tokens ppf = function
   | [] -> assert false
