@@ -765,15 +765,15 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   exists (add k2 e2 m1).
   split.
 
-  easy.
+  { easy. }
 
   unfold Add; intros.
   rewrite H1.
   destruct (E.eq_dec k1 y).
   - assert (~ E.eq k2 y).
-     contradict H.
-     apply E.eq_trans with (y:=y); auto.
-    now rewrite add_neq_o, add_eq_o, H0, add_eq_o by assumption.
+    + contradict H.
+      apply E.eq_trans with (y:=y); auto.
+    + now rewrite add_neq_o, add_eq_o, H0, add_eq_o by assumption.
   - destruct (E.eq_dec k2 y).
     + now rewrite add_eq_o, add_neq_o, add_eq_o by assumption.
     + now rewrite add_neq_o, H0, add_neq_o, add_neq_o, add_neq_o by assumption.
@@ -1276,24 +1276,25 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   intros.
   assert (Equal (remove x m) (remove x m')).
   { intros y. rewrite 2!F.remove_o.
-    destruct (F.eq_dec x y). reflexivity.
-    unfold Add in H0. rewrite H0.
-    rewrite F.add_neq_o by assumption. reflexivity.
+    destruct (F.eq_dec x y).
+    - reflexivity.
+    - unfold Add in H0. rewrite H0.
+      rewrite F.add_neq_o by assumption. reflexivity.
   }
   apply Equal_cardinal in H1.
   rewrite 2!cardinal_fold.
   destruct H as (e' & H).
   rewrite fold_Add with (eqA:=eq) (m1:=remove x m) (m2:=m) (k:=x) (e:=e');
   try now (compute; auto).
+  2:apply remove_1; reflexivity.
+  2:apply remove_In_Add; assumption.
   rewrite fold_Add with (eqA:=eq) (m1:=remove x m') (m2:=m') (k:=x) (e:=e);
   try now (compute; auto).
-  rewrite <- 2!cardinal_fold. congruence.
-  apply remove_1. reflexivity.
-  apply remove_In_Add.
-  apply find_2. unfold Add in H0. rewrite H0.
-  rewrite F.add_eq_o; reflexivity.
-  apply remove_1. reflexivity.
-  apply remove_In_Add. assumption.
+  - rewrite <- 2!cardinal_fold. congruence.
+  - apply remove_1. reflexivity.
+  - apply remove_In_Add.
+    apply find_2. unfold Add in H0. rewrite H0.
+    rewrite F.add_eq_o; reflexivity.
   Qed.
 
   Lemma cardinal_inv_1 : forall m : t elt,
