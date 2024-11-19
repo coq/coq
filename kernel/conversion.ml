@@ -447,8 +447,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
          in
          convert_stacks ~mask l2r infos lft1 lft2 v1 v2 cuniv
        with NotConvertible | NotConvertibleTrace _ ->
-        let r1 = unfold_ref_with_args infos.cnv_inf infos.lft_tab fl1 v1 in
-        let r2 = unfold_ref_with_args infos.cnv_inf infos.rgt_tab fl2 v2 in
+        let r1 = unfold_ref_with_args infos.cnv_inf infos.lft_tab hd1 v1 in
+        let r2 = unfold_ref_with_args infos.cnv_inf infos.rgt_tab hd2 v2 in
         match r1, r2 with
         | None, None -> raise NotConvertible
         | Some t1, Some t2 ->
@@ -460,15 +460,21 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
             | VarKey id -> Some (Conv_oracle.EvalVarRef id)
             | RelKey _ -> None
           in
-          if Conv_oracle.oracle_order oracle l2r (to_er fl1) (to_er fl2) then
+          if Conv_oracle.oracle_order oracle l2r (to_er fl1) (to_er fl2) then begin
+            record_delta infos.lft_tab hd1;
             eqappr cv_pb l2r infos (lft1, t1) appr2 cuniv
-          else
+          end
+          else begin
+            record_delta infos.rgt_tab hd2;
             eqappr cv_pb l2r infos appr1 (lft2, t2) cuniv
+          end
         | Some (t1, v1), None ->
+          record_delta infos.lft_tab hd1;
           let all = RedFlags.(red_add_transparent all (red_transparent (info_flags infos.cnv_inf))) in
           let t1 = whd_stack (infos_with_reds infos.cnv_inf all) infos.lft_tab t1 v1 in
           eqappr cv_pb l2r infos (lft1, t1) appr2 cuniv
         | None, Some (t2, v2) ->
+          record_delta infos.rgt_tab hd2;
           let all = RedFlags.(red_add_transparent all (red_transparent (info_flags infos.cnv_inf))) in
           let t2 = whd_stack (infos_with_reds infos.cnv_inf all) infos.rgt_tab t2 v2 in
           eqappr cv_pb l2r infos appr1 (lft2, t2) cuniv
@@ -501,9 +507,10 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
          eqappr cv_pb l2r infos (lft1, (c1, (s1 :: v1))) appr2 cuniv
        | None ->
          begin match t2 with
-          | FFlex fl2 ->
-            begin match unfold_ref_with_args infos.cnv_inf infos.rgt_tab fl2 v2 with
+          | FFlex _ ->
+            begin match unfold_ref_with_args infos.cnv_inf infos.rgt_tab hd2 v2 with
              | Some t2 ->
+               record_delta infos.rgt_tab hd2;
                eqappr cv_pb l2r infos appr1 (lft2, t2) cuniv
              | None -> raise NotConvertible
             end
@@ -517,9 +524,10 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
          eqappr cv_pb l2r infos appr1 (lft2, (c2, (s2 :: v2))) cuniv
        | None ->
          begin match t1 with
-          | FFlex fl1 ->
-            begin match unfold_ref_with_args infos.cnv_inf infos.lft_tab fl1 v1 with
+          | FFlex _ ->
+            begin match unfold_ref_with_args infos.cnv_inf infos.lft_tab hd1 v1 with
              | Some t1 ->
+               record_delta infos.lft_tab hd1;
                eqappr cv_pb l2r infos (lft1, t1) appr2 cuniv
              | None -> raise NotConvertible
             end
@@ -575,13 +583,14 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           (el_lift lft1, (hd1, eta_expand_stack infos.cnv_inf x2 v1)) (el_lift lft2, (bd2, [])) cuniv
 
     (* only one constant, defined var or defined rel *)
-    | (FFlex fl1, c2)      ->
-      begin match unfold_ref_with_args infos.cnv_inf infos.lft_tab fl1 v1 with
+    | (FFlex _, c2)      ->
+      begin match unfold_ref_with_args infos.cnv_inf infos.lft_tab hd1 v1 with
         | Some (def1,v1) ->
           (** By virtue of the previous case analyses, we know [c2] is rigid.
               Conversion check to rigid terms eventually implies full weak-head
               reduction, so instead of repeatedly performing small-step
               unfoldings, we perform reduction with all flags on. *)
+            record_delta infos.lft_tab hd1;
             let all = RedFlags.(red_add_transparent all (red_transparent (info_flags infos.cnv_inf))) in
             let r1 = whd_stack (infos_with_reds infos.cnv_inf all) infos.lft_tab def1 v1 in
             eqappr cv_pb l2r infos (lft1, r1) appr2 cuniv
@@ -596,10 +605,11 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
            | _ -> raise NotConvertible)
       end
 
-    | (c1, FFlex fl2)      ->
-       begin match unfold_ref_with_args infos.cnv_inf infos.rgt_tab fl2 v2 with
+    | (c1, FFlex _)      ->
+       begin match unfold_ref_with_args infos.cnv_inf infos.rgt_tab hd2 v2 with
         | Some (def2, v2) ->
           (** Symmetrical case of above. *)
+          record_delta infos.rgt_tab hd2;
           let all = RedFlags.(red_add_transparent all (red_transparent (info_flags infos.cnv_inf))) in
           let r2 = whd_stack (infos_with_reds infos.cnv_inf all) infos.rgt_tab def2 v2 in
           eqappr cv_pb l2r infos appr1 (lft2, r2) cuniv
@@ -916,24 +926,37 @@ and convert_list l2r infos lft1 lft2 v1 v2 cuniv = match v1, v2 with
   convert_list l2r infos lft1 lft2 v1 v2 cuniv
 | _, _ -> raise NotConvertible
 
+let dbg_flag, dbg_printer = CDebug.create_full ~name:"ccnv" ()
+
+let dbg_msg = ref Pp.(fun _ _ -> str "missing debug printer")
+
 let clos_gen_conv (type err) ~typed trans cv_pb l2r evars env graph univs t1 t2 =
   NewProfile.profile "Conversion" begin fun () ->
       let reds = RedFlags.red_add_transparent RedFlags.betaiotazeta trans in
       let infos = create_conv_infos ~univs:graph ~evars reds env in
       let module Error = struct type payload += Error of err end in
       let box e = Error.Error e in
+      let record_steps = CDebug.get_flag dbg_flag in
       let infos = {
         cnv_inf = infos;
         cnv_typ = typed;
-        lft_tab = create_tab ();
-        rgt_tab = create_tab ();
+        lft_tab = create_tab ~record_steps ();
+        rgt_tab = create_tab ~record_steps ();
         err_ret = box;
       } in
-      try Result.Ok (ccnv cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs)
+      let res = try Result.Ok (ccnv cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs)
       with
       | NotConvertible -> Result.Error None
       | NotConvertibleTrace (Error.Error e) -> Result.Error (Some e)
       | NotConvertibleTrace _ -> assert false
+      in
+      let () =
+        if RecordedSteps.has_recorded_steps infos.lft_tab || RecordedSteps.has_recorded_steps infos.rgt_tab then
+          dbg_printer (fun () ->
+              let get_steps = RecordedSteps.get_recorded_steps in
+              !dbg_msg (get_steps infos.lft_tab) (get_steps infos.rgt_tab))
+      in
+      res
   end ()
 
 let check_eq univs u u' =

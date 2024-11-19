@@ -63,3 +63,9 @@ val generic_conv : conv_pb -> l2r:bool
 
 val default_conv     : conv_pb -> types kernel_conversion_function
 val default_conv_leq : types kernel_conversion_function
+
+val dbg_msg :
+  ((CClosure.current_context * CClosure.RecordedSteps.t) list ->
+   (CClosure.current_context * CClosure.RecordedSteps.t) list ->
+   Pp.t)
+    ref
