@@ -128,7 +128,7 @@ Record hypo : Type := mkhypo {
  }.
 
 Definition typehypo (A : Type) : hypo := {| hypo_proof := A |}.
-Set Debug "inferCumul".
+
 #[universes(cumulative)] Polymorphic Record dyn : Type :=
   mkdyn {
       dyn_type : Type;
@@ -428,10 +428,6 @@ Module F.
 End F.
 
 Set Universe Polymorphism.
-Set Debug "univMinim".
-Set Debug "univMinim_each".
-Set Debug "UnivVariances".
-Set Debug "inferCumul".
 Cumulative Record box (X : Type) (T := Type) : Type := wrap { unwrap : T }.
 
 Section test_letin_subtyping.
