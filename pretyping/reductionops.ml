@@ -1292,6 +1292,68 @@ let pp_table title top (table:Pp.t list list) =
   (* without the "\n" indentation in msg_debug messes up the table *)
   Pp.(str "\n" ++ str table)
 
+let process_steps steps =
+  let steps = List.map (fun (ctx,v) -> RedContext.make ctx, v) steps in
+  let steps = RedContextMap.of_list steps in
+  let inherited = inherit_steps steps in
+  let total = RedContextMap.get (RedContext.make None) inherited in
+  (* [bindings] orders the steps *)
+  let steps = RedContextMap.bindings steps in
+  let inherited = RedContextMap.bindings inherited in
+  total, steps, inherited
+
+let to_table header total steps =
+  let open Pp in
+  let pr_row (ctx, (steps:CClosure.RecordedSteps.t)) =
+    let ppctx = match ctx.RedContext.deepest_first with
+      | None -> str "top"
+      | Some ctx ->
+        hov 2
+          (prlist_with_sep (fun () -> spc() ++ str "in ")
+             (Nametab.pr_global_env Id.Set.empty)
+             ctx)
+    in
+    let pp_flag get =
+      let v = get steps in
+      let total = get total in
+      let percentage = if total = 0 then begin
+          assert (v = 0);
+          int 0
+        end
+        else int ((v * 100) / total)
+      in
+      [int v; percentage ++ str "%"]
+    in
+    let ppsteps = List.concat [
+        pp_flag (fun v -> v.betas);
+        pp_flag (fun v -> v.deltas);
+        pp_flag (fun v -> v.matches);
+        pp_flag (fun v -> v.fixpoints);
+      ]
+    in
+    ppctx :: ppsteps
+  in
+  let top = ["CTX"; "β"; ""; "δ"; ""; "ι"; ""; "fix"; ""] in
+  pp_table header top (List.map pr_row steps)
+
+let print_conversion_steps left right =
+  let open Pp in
+  let one_side which steps =
+    if CList.is_empty steps then str which ++ str": nothing"
+    else
+      let total, steps, inherited = process_steps steps in
+      to_table ("individual ("^which^")")  total steps ++ fnl() ++
+      fnl() ++
+      to_table ("inherited ("^which^")") total inherited
+  in
+  let rate = pp_sample_rate !CClosure.RecordedSteps.sample_rate in
+  pr_opt (fun rate -> str "sample rate: " ++ str rate) rate ++
+  one_side "left" left ++ fnl() ++
+  fnl() ++
+  one_side "right" right
+
+let () = Conversion.dbg_msg := print_conversion_steps
+
 (* future work: print percentages, print step counts in children
    nicer formatting (some kind of table?) *)
 let print_recorded_steps tab =
@@ -1301,48 +1363,12 @@ let print_recorded_steps tab =
     print_recorded_steps @@ fun () ->
     let open Pp in
     let steps = get_recorded_steps tab in
-    let steps = List.map (fun (ctx,v) -> RedContext.make ctx, v) steps in
-    let steps = RedContextMap.of_list steps in
-    let inherited = inherit_steps steps in
-    let total = RedContextMap.get (RedContext.make None) inherited in
-    (* [bindings] orders the steps *)
-    let steps = RedContextMap.bindings steps in
-    let inherited = RedContextMap.bindings inherited in
-    let pr_row (ctx, (steps:CClosure.RecordedSteps.t)) =
-      let ppctx = match ctx.RedContext.deepest_first with
-        | None -> str "top"
-        | Some ctx ->
-          hov 2
-            (prlist_with_sep (fun () -> spc() ++ str "in ")
-               (Nametab.pr_global_env Id.Set.empty)
-               ctx)
-      in
-      let pp_flag get =
-        let v = get steps in
-        let total = get total in
-        let percentage = if total = 0 then begin
-            assert (v = 0);
-            int 0
-          end
-          else int ((v * 100) / total)
-        in
-        [int v; percentage ++ str "%"]
-      in
-      let ppsteps = List.concat [
-        pp_flag (fun v -> v.betas);
-        pp_flag (fun v -> v.deltas);
-        pp_flag (fun v -> v.matches);
-        pp_flag (fun v -> v.fixpoints);
-      ]
-      in
-      ppctx :: ppsteps
-    in
-    let top = ["CTX"; "β"; ""; "δ"; ""; "ι"; ""; "fix"; ""] in
+    let total, steps, inherited = process_steps steps in
     let rate = pp_sample_rate !CClosure.RecordedSteps.sample_rate in
     pr_opt (fun rate -> str "sample rate: " ++ str rate) rate ++
-    pp_table "individual" top (List.map pr_row steps) ++ fnl() ++
+    to_table "individual" total steps ++ fnl() ++
     fnl() ++
-    pp_table "inherited" top (List.map pr_row inherited)
+    to_table "inherited" total inherited
 
 (* lazy reduction functions. The infos must be created for each term *)
 (* Note by HH [oct 08] : why would it be the job of clos_norm_flags to add

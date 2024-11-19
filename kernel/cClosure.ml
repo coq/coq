@@ -2351,9 +2351,15 @@ let oracle_of_infos infos = Environ.oracle infos.i_cache.i_env
 let infos_with_reds infos reds =
   { infos with i_flags = reds }
 
-let unfold_ref_with_args infos tab fl v =
+let unfold_ref_with_args infos tab m v =
+  let fl = match[@warning "-4"] m.term with
+    | FFlex fl -> fl
+    | _ -> assert false
+  in
   match Table.lookup infos tab.tab fl with
-  | Def (def, _) -> Some (def, v)
+  | Def (def, _) ->
+    push_context tab fl m.ctx def;
+    Some (def, v)
   | Primitive op when check_native_args op v ->
     let c = match [@ocaml.warning "-4"] fl with ConstKey c -> c | _ -> assert false in
     let rargs, a, nargs, v = get_native_args1 op c v in
@@ -2369,3 +2375,5 @@ let get_ref_mask info tab fl = match Table.lookup info tab.tab fl with
 let inject c = inject None c
 
 let unfold_projection info p r = unfold_projection info None p r
+
+let record_delta tab m = record_step tab Delta m.ctx

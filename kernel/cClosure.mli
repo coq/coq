@@ -215,13 +215,17 @@ val eta_expand_ind_stack : env -> pinductive -> fconstr -> stack ->
     enough arguments, return [None]. Otherwise return [Some] with
     [ZPrimitive] added to the stack. Produces a [FIrrelevant] when the
     reference is irrelevant and the infos was created with
-    [create_conv_infos]. *)
+    [create_conv_infos].
+    The [fconstr] must be a FFlex.
+*)
 val unfold_ref_with_args
   : clos_infos
   -> clos_tab
-  -> table_key
+  -> fconstr
   -> stack
   -> (fconstr * stack) option
+
+val record_delta : clos_tab -> fconstr -> unit
 
 val get_ref_mask : clos_infos -> clos_tab -> table_key -> bool array
 
