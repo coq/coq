@@ -14,7 +14,6 @@ let string_equal (s1 : string) s2 = s1 = s2
 
 type 'c p =
   | PKEYWORD : string -> string p
-  | PPATTERNIDENT : string option -> string p
   | PIDENT : string option -> string p
   | PFIELD : string option -> string p
   | PNUMBER : NumTok.Unsigned.t option -> NumTok.Unsigned.t p
@@ -27,7 +26,6 @@ type 'c p =
 let pattern_strings : type c. c p -> string * string option =
   function
   | PKEYWORD s -> "", Some s
-  | PPATTERNIDENT s -> "PATTERNIDENT", s
   | PIDENT s -> "IDENT", s
   | PFIELD s -> "FIELD", s
   | PNUMBER None -> "NUMBER", None
@@ -40,7 +38,6 @@ let pattern_strings : type c. c p -> string * string option =
 
 type t =
   | KEYWORD of string
-  | PATTERNIDENT of string
   | IDENT of string
   | FIELD of string
   | NUMBER of NumTok.Unsigned.t
@@ -58,7 +55,6 @@ let equal_p (type a b) (t1 : a p) (t2 : b p) : (a, b) Util.eq option =
   | PKEYWORD s1, PKEYWORD s2 when string_equal s1 s2 -> Some Util.Refl
   | PIDENT (Some s1), PKEYWORD s2 when string_equal s1 s2 -> Some Util.Refl
   | PKEYWORD s1, PIDENT (Some s2) when string_equal s1 s2 -> Some Util.Refl
-  | PPATTERNIDENT s1, PPATTERNIDENT s2 when streq s1 s2 -> Some Util.Refl
   | PFIELD s1, PFIELD s2 when streq s1 s2 -> Some Util.Refl
   | PNUMBER None, PNUMBER None -> Some Util.Refl
   | PNUMBER (Some n1), PNUMBER (Some n2) when NumTok.Unsigned.equal n1 n2 -> Some Util.Refl
@@ -72,7 +68,6 @@ let equal_p (type a b) (t1 : a p) (t2 : b p) : (a, b) Util.eq option =
 let equal t1 t2 = match t1, t2 with
   | IDENT s1, KEYWORD s2 -> string_equal s1 s2
   | KEYWORD s1, KEYWORD s2 -> string_equal s1 s2
-  | PATTERNIDENT s1, PATTERNIDENT s2 -> string_equal s1 s2
   | IDENT s1, IDENT s2 -> string_equal s1 s2
   | FIELD s1, FIELD s2 -> string_equal s1 s2
   | NUMBER n1, NUMBER n2 -> NumTok.Unsigned.equal n1 n2
@@ -93,8 +88,6 @@ let token_text : type c. c p -> string = function
   | PSTRING (Some s) -> "STRING \"" ^ s ^ "\""
   | PLEFTQMARK -> "LEFTQMARK"
   | PEOI -> "end of input"
-  | PPATTERNIDENT None -> "PATTERNIDENT"
-  | PPATTERNIDENT (Some s) -> "PATTERNIDENT \"" ^ s ^ "\""
   | PFIELD None -> "FIELD"
   | PFIELD (Some s) -> "FIELD \"" ^ s ^ "\""
   | PBULLET None -> "BULLET"
@@ -118,7 +111,6 @@ let extract_string diff_mode = function
       in
       "\"" ^ (escape_quotes s) ^ "\""
     else s
-  | PATTERNIDENT s -> s
   | FIELD s -> if diff_mode then "." ^ s else s
   | NUMBER n -> NumTok.Unsigned.sprint n
   | LEFTQMARK -> "?"
@@ -150,8 +142,6 @@ let match_pattern (type c) (p : c p) : t -> c =
                           | _ -> err ())
   | PIDENT None -> (function IDENT s' -> s' | _ -> err ())
   | PIDENT (Some s) -> (function (IDENT s' | KEYWORD s') when seq s s' -> s' | _ -> err ())
-  | PPATTERNIDENT None -> (function PATTERNIDENT s -> s | _ -> err ())
-  | PPATTERNIDENT (Some s) -> (function PATTERNIDENT s' when seq s s' -> s' | _ -> err ())
   | PFIELD None -> (function FIELD s -> s | _ -> err ())
   | PFIELD (Some s) -> (function FIELD s' when seq s s' -> s' | _ -> err ())
   | PNUMBER None -> (function NUMBER s -> s | _ -> err ())
