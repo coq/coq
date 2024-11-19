@@ -677,6 +677,25 @@ let term_of_process c stk = term_of_fconstr (zip c stk)
    (strip_update_shift_app), a fix (get_nth_arg) or an abstraction
    (strip_update_shift, through get_arg). *)
 
+(* when we don't need to return the depth & initial part of the stack,
+   with only the rebuilt term sufficing
+   (typically head is a fconstruct so we return a fconstruct with added args) *)
+let strip_update_shift_app_constructor head stk =
+  let rec strip_rec h = function
+    | Zshift(k) :: s ->
+        strip_rec (lift_fconstr k h) s
+    | (Zapp args :: s) ->
+        strip_rec (mkFApp h args) s
+    | Zupdate(m)::s ->
+      (** The stack contains [Zupdate] marks only if in sharing mode *)
+        let () = update m h.mark h.term in
+        strip_rec m s
+    | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _) :: _ | []) as stk ->
+      (* depth and rstk only matter for cofix *)
+      (h, stk)
+  in
+  strip_rec head stk
+
 (* optimised for the case where there are no shifts... *)
 let strip_update_shift_app_red head stk =
   let rec strip_rec rstk h depth = function
@@ -898,7 +917,7 @@ let eta_expand_ind_stack env (ind,u) m s (f, s') =
            arg1..argn ~= (proj1 t...projn t) where t = zip (f,s') *)
     let pars = mib.Declarations.mind_nparams in
     let right = fapp_stack (f, s') in
-    let (_, m, _, _s) = strip_update_shift_app m s in
+    let (m, _s) = strip_update_shift_app_constructor m s in
     (** Try to drop the params, might fail on partially applied constructors. *)
     let argss = try_drop_parameters pars m in
     let hstack = Array.map (fun (p,r) ->
@@ -1550,7 +1569,7 @@ and match_endstack : 'a. ('a, 'a patstate) reduction -> _ -> _ -> pat_state:(_, 
 and try_unfoldfix : 'a. ('a, 'a patstate) reduction -> _ -> _ -> pat_state:(_, _, _, 'a) depth -> _ -> 'a =
   fun red info tab ~pat_state (b, m, stk) ->
   if not b then red.red_ret info tab ~pat_state ~failed:true (m, stk) else
-  let _, rarg, _, stack = strip_update_shift_app_red m stk in
+  let rarg, stack = strip_update_shift_app_constructor m stk in
   match [@ocaml.warning "-4"] stack with
   | Zfix (fx, par) :: s ->
     let stk' = par @ append_stack [|rarg|] s in
@@ -1831,21 +1850,21 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
      let use_match = red_set info.i_flags fMATCH in
      let use_fix = red_set info.i_flags fFIX in
      if use_match || use_fix then
-      (match [@ocaml.warning "-4"] strip_update_shift_app m stk with
-        | (_, c, _, ZcaseT(ci,_,pms,_,br,e)::s) when use_match ->
+      (match [@ocaml.warning "-4"] strip_update_shift_app_constructor m stk with
+        | (c, ZcaseT(ci,_,pms,_,br,e)::s) when use_match ->
             assert (ci.ci_npar>=0);
             (* instance on the case and instance on the constructor are compatible by typing *)
             let (br, e) = get_branch info ci pms c br e in
             knit info tab ~pat_state e br s
-        | (_, rarg, _, Zfix(fx,par)::s) when use_fix ->
+        | (rarg, Zfix(fx,par)::s) when use_fix ->
             let stk' = par @ append_stack [|rarg|] s in
             let (fxe,fxbd) = contract_fix_vect fx.term in
             knit info tab ~pat_state fxe fxbd stk'
-        | (_, m, _, Zproj (p,_)::s) when use_match ->
+        | (m, Zproj (p,_)::s) when use_match ->
             let rargs = drop_parameters (Projection.Repr.npars p) m in
             let rarg = rargs.(Projection.Repr.arg p) in
             kni info tab ~pat_state rarg s
-        | (_, m, _, s) ->
+        | (m, s) ->
           if is_irrelevant_constructor info c then
             knr_ret info tab ~pat_state (mk_irrelevant, skip_irrelevant_stack info stk)
           else
@@ -1868,8 +1887,8 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
   | FLetIn (_,v,_,bd,e) when red_set info.i_flags fZETA ->
       knit info tab ~pat_state (on_fst (subs_cons v) e) bd stk
   | FInt _ | FFloat _ | FString _ | FArray _ ->
-    (match [@ocaml.warning "-4"] strip_update_shift_app m stk with
-     | (_, _, _, Zprimitive(op,(_,u as c),rargs,nargs)::s) ->
+    (match [@ocaml.warning "-4"] strip_update_shift_app_constructor m stk with
+     | (_, Zprimitive(op,(_,u as c),rargs,nargs)::s) ->
        let (rargs, nargs) = skip_native_args (m::rargs) nargs in
        begin match nargs with
          | [] ->
@@ -1889,7 +1908,7 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
            assert (kd = CPrimitives.Kwhnf);
            kni info tab ~pat_state a (Zprimitive(op,c,rargs,nargs)::s)
              end
-     | (_, _, _, s) -> knr_ret info tab ~pat_state (m, s))
+     | mstk -> knr_ret info tab ~pat_state mstk)
   | FCaseInvert (ci, u, pms, _p,iv,_c,v,env) when red_set info.i_flags fMATCH ->
     let pms = mk_clos_vect env pms in
     let u = usubst_instance env u in
