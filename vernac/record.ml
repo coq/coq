@@ -430,7 +430,8 @@ let make_projection_variances i variances =
           | Invariant -> Invariant
           | Irrelevant -> Irrelevant
         in
-        { in_binders = List.append occ.in_binders [(i, ovar)]; in_term = Some var; in_type = Some var }
+        let binders, pos = occ.in_binders in
+        { in_binders = (Option.union Variance.sup binders (Some ovar), List.append pos [i]); in_term = Some var; in_type = Some var }
     in
     Some (UVars.Variances.make (Array.map map arr))
 

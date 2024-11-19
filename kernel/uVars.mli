@@ -105,16 +105,16 @@ end
 
 type ('a, 'b) gen_variance_occurrence =
   { in_binders : 'a;
-    in_term : 'b option;
-    in_type : 'b option }
+    in_term : 'b;
+    in_type : 'b }
 
-val pr_variance_occurrence : ('a -> Pp.t list) -> ('b -> Pp.t) -> ('a, 'b) gen_variance_occurrence -> Pp.t
-
-val default_occ : 'a -> ('a, 'b) gen_variance_occurrence
+val pr_variance_occurrence : ('a -> Pp.t list) -> ('b -> Pp.t list) ->
+  ('b -> Pp.t list) ->
+  ('a, 'b) gen_variance_occurrence -> Pp.t
 
 module VarianceOccurrence :
 sig
-  type t = ((int * Variance.t) list, Variance.t) gen_variance_occurrence
+  type t = (Variance.t option * int list, Variance.t option) gen_variance_occurrence
   val default_occ : t
 
   val lift : int -> t -> t

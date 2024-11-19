@@ -185,7 +185,8 @@ let register_universe_variances_of_record env sigma ~env_ar_pars ~params ~fields
 let register_universe_variances_of_fix env sigma types bodies =
   let status = init_status sigma in
   let status = List.fold_left2 (fun status typ body ->
-    let status = compute_variances_type env sigma status typ in
+    (* The types of fixpoints appear in the term, hence cannot be treated as types *)
+    let status = compute_variances_type ~ctx_position:(fun _i -> Position.InTerm) ~position:Position.InTerm env sigma status typ in
     Option.fold_left (compute_variances_body env sigma) status body) status types bodies in
   finalize sigma status
 

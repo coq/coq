@@ -19,16 +19,16 @@ val mode_sup : mode -> mode -> mode
 (** Not the same as Type_errors.BadVariance because we don't have the env where we raise. *)
 exception BadVariance of Level.t * VariancePos.t * VariancePos.t
 
-type infer_binders = (mode * (int * Variance.t) list)
+type infer_binders = (mode * (Variance.t option * int list))
 
-type infer_variance_occurrence = (infer_binders, mode * UVars.Variance.t) gen_variance_occurrence
+type infer_variance_occurrence = (infer_binders, mode * UVars.Variance.t option) gen_variance_occurrence
 
 val default_occ : infer_variance_occurrence
 val make_infer_occ : VariancePos.t -> infer_variance_occurrence
 
 val sup_occs : infer_variance_occurrence -> infer_variance_occurrence -> infer_variance_occurrence
 
-val occurrence_to_variance_pos : infer_variance_occurrence -> VariancePos.t
+val occurrence_to_variance_pos : infer_variance_occurrence -> mode * VariancePos.t
 
 type pre_variances = (Univ.Level.t * VarianceOccurrence.t option) array
 
@@ -52,7 +52,10 @@ val union_variances : variances -> variances -> variances
 (* Compute the variance in the binders and term and separately, the variance in the type *)
 val term_type_variances : infer_variance_occurrence -> Variance.t option * Variance.t option
 
-val of_variance_occurrences : pre_variances -> variances
+(* Compute the variance in the binders and term and separately, the variance in the type *)
+val binders_term_and_type_variances : infer_variance_occurrence -> Variance.t option * Variance.t option
+
+val of_variance_occurrences : infer_in_type:bool -> pre_variances -> variances
 
 module Inf : sig
   type status
@@ -68,7 +71,7 @@ module Inf : sig
 
   val set_position : Position.t -> status -> status
 
-  val start : pre_variances -> Position.t -> status
+  val start : infer_in_type:bool -> pre_variances -> Position.t -> status
   val start_inference : Level.Set.t -> Position.t -> status
   val start_variances : variances -> Position.t -> status
 
@@ -95,6 +98,8 @@ val infer_definition :
   (** Environment containing the polymorphic universes *)
   ?evars : CClosure.evar_handler ->
   (** By default, CClosure.default_evar_handler *)
+  ?infer_in_type : bool ->
+  (** Infer the universes in the type *)
   ?in_ctx:Constr.named_context ->
   (** The section context in which the definition is checked *)
   typ:Constr.t ->

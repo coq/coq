@@ -183,7 +183,7 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p } =
       let typ = Vars.subst_univs_level_constr usubst typ in
       let _shift, univs =
         on_variances (InferCumulativity.infer_definition env ?in_ctx:None (* No section possible *)
-          ~evars:(CClosure.default_evar_handler env)
+          ~evars:(CClosure.default_evar_handler env) ~infer_in_type:false
           ~typ ?body:None) univs
       in
       assert (Int.equal _shift 0);
@@ -215,7 +215,7 @@ let infer_symbol env { symb_entry_universes; symb_entry_unfold_fix; symb_entry_t
   let r = Typeops.assumption_of_judgment env j in
   let t = Vars.subst_univs_level_constr usubst j.uj_val in
   let shift, univs =
-    on_variances (InferCumulativity.infer_definition env ?in_ctx:None ?evars:None ~typ:t ?body:None) univs
+    on_variances (InferCumulativity.infer_definition env ?in_ctx:None ?evars:None ~infer_in_type:false ~typ:t ?body:None) univs
   in
   assert (Int.equal shift 0);
   {
@@ -256,7 +256,7 @@ let infer_parameter ~sec_univs env entry =
   let hyps = used_section_variables env entry.parameter_entry_secctx None typ in
   let univ_hyps = make_univ_hyps sec_univs in
   let univs = on_variances (InferCumulativity.infer_definition env ?evars:None
-    ~in_ctx:hyps ~typ ?body:None) univs in
+    ~infer_in_type:false ~in_ctx:hyps ~typ ?body:None) univs in
   let univs, sec_variances = split_sec_variances sec_univs univs in
   {
     const_hyps = hyps;
@@ -287,7 +287,8 @@ let infer_definition ~sec_univs env entry =
   let hbody = if body == j.uj_val then Some hbody else None in
   let def = Def body in
   let hyps = used_section_variables env entry.definition_entry_secctx (Some body) typ in
-  let univs = on_variances (InferCumulativity.infer_definition env ?evars:None ~in_ctx:hyps ~typ ~body) univs in
+  let univs = on_variances (InferCumulativity.infer_definition env ?evars:None
+    ~infer_in_type:(Option.is_empty entry.definition_entry_type) ~in_ctx:hyps ~typ ~body) univs in
   let univs, sec_variance = split_sec_variances sec_univs univs in
   hbody, {
     const_hyps = hyps;
@@ -308,7 +309,7 @@ let infer_opaque ~sec_univs env entry =
   let typj = Typeops.infer_type env entry.opaque_entry_type in
   let typ = Vars.subst_univs_level_constr usubst typj.utj_val in
   let hyps = used_section_variables env (Some entry.opaque_entry_secctx) None typ in
-  let univs = on_variances (InferCumulativity.infer_definition env ?evars:None ~in_ctx:hyps ~typ ?body:None) univs in
+  let univs = on_variances (InferCumulativity.infer_definition env ?evars:None ~infer_in_type:false ~in_ctx:hyps ~typ ?body:None) univs in
   let context = TyCtx (env, typj, entry.opaque_entry_secctx, usubst, snd univs) in
   let def = OpaqueDef () in
   let univs, sec_variance = split_sec_variances sec_univs univs in

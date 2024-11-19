@@ -199,43 +199,55 @@ end
 
 type ('a, 'b) gen_variance_occurrence =
   { in_binders : 'a;
-    in_term : 'b option;
-    in_type : 'b option }
+    in_term : 'b;
+    in_type : 'b }
 
-let pr_variance_occurrence fa fb { in_binders; in_term; in_type } =
+let pr_variance_occurrence fa fterm ftype { in_binders; in_term; in_type } =
   let open Pp in
   let pr_binders = fa in_binders in
-  let pr_in_type =
-    match in_type with
-    | None -> []
-    | Some ty -> [fb ty ++ str" type"]
-  in
-  let pr_in_term = match in_term with
-    | None -> []
-    | Some term -> [fb term ++ str" term"]
-  in prlist_with_sep pr_comma identity (List.append pr_binders (List.append pr_in_term pr_in_type))
+  let pr_in_term = fterm in_term in
+  let pr_in_type = ftype in_type in
+  let variances = List.append pr_binders (List.append pr_in_term pr_in_type) in
+  if List.is_empty variances then mt ()
+  else str"(" ++ prlist_with_sep pr_comma identity variances ++ str")"
 
 let default_occ in_binders =
   { in_binders; in_term = None; in_type = None }
 
 module VarianceOccurrence =
 struct
-  type t = ((int * Variance.t) list, Variance.t) gen_variance_occurrence
+  type t = (Variance.t option * int list, Variance.t option) gen_variance_occurrence
 
-  let default_occ = default_occ []
+  let default_occ = default_occ (None, [])
 
   let lift n occ =
-    { occ with in_binders = List.map (fun (i, v) -> (i + n, v)) occ.in_binders }
+    let v, pos = occ.in_binders in
+    { occ with in_binders = v, List.map (fun i -> (i + n)) pos }
 
   let pr occ =
-    let pr_binders = List.map (fun (i, a) -> Variance.pr a ++ pr_nth (succ i)) in
-    pr_variance_occurrence pr_binders Variance.pr occ
+    let pr_binders (bindersv, binders) =
+      match bindersv with
+      | None -> []
+      | Some b -> [Variance.pr b ++ str " in " ++ prlist_with_sep pr_comma (fun i -> pr_nth (succ i)) binders ++
+        str (String.plural (List.length binders) " binder")]
+    in
+    let pr_in_type = function
+      | None -> []
+      | Some ty -> [Variance.pr ty ++ str" in type"]
+    in
+    let pr_in_term = function
+    | None -> []
+    | Some term -> [Variance.pr term ++ str" in term"]
+    in
+    pr_variance_occurrence pr_binders pr_in_term pr_in_type occ
 
-  let equal ({ in_binders; in_term; in_type } as x) ({ in_binders = in_binders'; in_term = in_term'; in_type = in_type' } as y) =
+  let equal ({ in_binders = (bindersv, in_binders); in_term; in_type } as x)
+    ({ in_binders = (bindersv', in_binders'); in_term = in_term'; in_type = in_type' } as y) =
     x == y ||
-    (List.equal (fun (x, y) (x', y') -> Int.equal x x' && Variance.equal y y')) in_binders in_binders' &&
+    (Option.equal Variance.equal bindersv bindersv' &&
+    List.equal Int.equal in_binders in_binders' &&
     Option.equal Variance.equal in_term in_term' &&
-    Option.equal Variance.equal in_type in_type'
+    Option.equal Variance.equal in_type in_type')
 
   let option_le le x y =
     match x, y with
@@ -244,9 +256,10 @@ struct
     | Some v, None -> Variance.is_irrelevant v
     | None, None -> true
 
-  let le ({ in_binders; in_term; in_type } as x) ({ in_binders = in_binders'; in_term = in_term'; in_type = in_type' } as y) =
+  let le ({ in_binders = (in_binders, pos); in_term; in_type } as x)
+    ({ in_binders = (in_binders', pos'); in_term = in_term'; in_type = in_type' } as y) =
     x == y ||
-    (List.equal (fun (x, y) (x', y') -> Int.equal x x' && Variance.le y y')) in_binders in_binders' &&
+    (option_le Variance.le in_binders in_binders' && List.subset pos pos') &&
     option_le Variance.le in_term in_term' &&
     option_le Variance.equal in_type in_type'
 
@@ -255,18 +268,26 @@ struct
     let sup_opt = Option.union Variance.sup in
     sup_opt in_term in_binders
    *)
-  let binders_variance = function
+  let max_binder = function
     | [] -> None
-    | (i, v) :: vs ->
-      Some (List.fold_left (fun (i, v) (i', v') -> (max i i', Variance.sup v v')) (i, v) vs)
+    | i :: vs ->
+      Some (List.fold_left (fun i i' -> max i i') i vs)
+
+  let binders_variance (vopt, binders) =
+    match vopt with
+    | None -> None
+    | Some v -> let binder = max_binder binders in
+      match binder with
+      | None -> None
+      | Some i -> Some (v, Position.InBinder i)
 
   let term_variance_pos { in_binders; in_term; in_type = _ }  =
     let in_binders = binders_variance in_binders in
     let sup_opt = Option.union Variance.sup in
     if Option.is_empty in_term then
-      Option.cata (fun (i, v) -> (v, Position.InBinder i)) (Variance.Irrelevant, Position.InTerm) in_binders
+      Option.default (Variance.Irrelevant, Position.InTerm) in_binders
     else
-      let v = sup_opt in_term (Option.map snd in_binders) in
+      let v = sup_opt in_term (Option.map fst in_binders) in
       Option.cata (fun v -> (v, Position.InTerm)) (Variance.Irrelevant, Position.InTerm) v
 
 end
@@ -437,7 +458,7 @@ struct
       let v = Option.map (fun v ->
         let v = Variances.repr v in
         if i < Array.length v then v.(i) else VarianceOccurrence.default_occ (* TODO fix: bad caller somewhere *)) variances in
-      pr_opt_no_spc VarianceOccurrence.pr v ++ prl u
+      prl u ++ pr_opt_no_spc VarianceOccurrence.pr v
     in
     (if Array.is_empty q then mt() else prvect_with_sep spc (Quality.pr prq) q ++ strbrk " | ")
     ++ prvecti_with_sep spc ppu u

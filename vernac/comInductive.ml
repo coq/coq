@@ -530,7 +530,7 @@ let check_trivial_variances = function
   | Some variances ->
     Array.iter (function occ ->
       match UVars.VarianceOccurrence.term_variance_pos occ with
-      | UVars.Variance.Invariant, _ -> ()
+      | UVars.Variance.Irrelevant, _ | UVars.Variance.Invariant, _ -> ()
       | _ ->
         CErrors.user_err
           Pp.(strbrk "Universe variance was specified but this inductive will not be cumulative."))

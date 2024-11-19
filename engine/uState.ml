@@ -946,10 +946,10 @@ let extend_variances inst variances =
   else if vlen > ulen then CErrors.user_err Pp.(str"More variance annotations than bound universes")
   else Array.append variances (Array.make (ulen - vlen) None)
 
-let collapse_to_invariant { in_binders; in_term; in_type } =
+let collapse_to_invariant { in_binders = (bindersv, binderpos); in_term; in_type } =
   let open Variance in
   let collapse var = if var == Irrelevant then var else Invariant in
-  { in_binders = List.map (fun (i, v) -> (i, collapse v)) in_binders;
+  { in_binders = Option.map collapse bindersv, binderpos;
     in_term = Option.map collapse in_term;
     in_type = Option.map collapse in_type }
 
@@ -1000,7 +1000,7 @@ let check_variances ~cumulative names ivariances inst variances =
               match variance with
               | None -> InferCumulativity.forget_infer_variance_occurrence v'
               | Some variance ->
-                match InferCumulativity.term_type_variances v' with
+                match InferCumulativity.binders_term_and_type_variances v' with
                 | None, None -> InferCumulativity.forget_infer_variance_occurrence v'
                 | Some variance', _ | None, Some variance' ->
                 if UVars.Variance.le variance' variance then InferCumulativity.forget_infer_variance_occurrence v'
