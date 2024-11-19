@@ -37,7 +37,7 @@ type fterm =
   | FAtom of constr (** Metas and Sorts *)
   | FFlex of table_key
   | FInd of pinductive
-  | FConstruct of pconstructor
+  | FConstruct of pconstructor * fconstr array
   | FApp of fconstr * fconstr array
   | FProj of Projection.t * Sorts.relevance * fconstr
   | FFix of fixpoint * usubs
