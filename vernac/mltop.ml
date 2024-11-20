@@ -334,7 +334,7 @@ let if_verbose_load verb f name =
     or simulate its reload (i.e. doing nothing except maybe
     an initialization function). *)
 
-let trigger_ml_object ~verbose ~cache ~reinit plugin =
+let trigger_ml_object ~verbose ~reinit plugin =
   let () =
     if plugin_is_known plugin then
       (if reinit then init_ml_object plugin)
@@ -347,15 +347,14 @@ let trigger_ml_object ~verbose ~cache ~reinit plugin =
           if_verbose_load (verbose && not !Flags.quiet) load_ml_object plugin
       end
   in
-  add_loaded_module plugin;
-  if cache then perform_cache_obj plugin
+  add_loaded_module plugin
 
 let unfreeze_ml_modules x =
   reset_loaded_modules ();
   List.iter
     (fun name ->
        let name = PluginSpec.of_package name in
-       trigger_ml_object ~verbose:false ~cache:false ~reinit:false name) x
+       trigger_ml_object ~verbose:false ~reinit:false name) x
 
 let () =
   Summary.declare_ml_modules_summary
@@ -373,11 +372,14 @@ type ml_module_object =
   }
 
 let cache_ml_objects mnames =
-  let iter obj = trigger_ml_object ~verbose:true ~cache:true ~reinit:true obj in
+  let iter obj =
+    trigger_ml_object ~verbose:true ~reinit:true obj;
+    perform_cache_obj obj
+  in
   List.iter iter mnames
 
 let load_ml_objects _ {mnames; _} =
-  let iter obj = trigger_ml_object ~verbose:true ~cache:false ~reinit:true obj in
+  let iter obj = trigger_ml_object ~verbose:true ~reinit:true obj in
   List.iter iter mnames
 
 let classify_ml_objects {mlocal=mlocal} =
