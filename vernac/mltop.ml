@@ -329,11 +329,9 @@ let if_verbose_load verb f name =
       Feedback.msg_info (info ++ str " failed]");
       raise reraise
 
-(** Load a module for the first time (i.e. dynlink it)
-    or simulate its reload (i.e. doing nothing except maybe
-    an initialization function). *)
+(** Load a module for the first time (i.e. dynlink it) *)
 
-let trigger_ml_object ~verbose ~reinit plugin =
+let trigger_ml_object ~verbose plugin =
   let () =
     if not @@ plugin_is_known plugin then begin
       if not has_dynlink then
@@ -343,7 +341,6 @@ let trigger_ml_object ~verbose ~reinit plugin =
         if_verbose_load (verbose && not !Flags.quiet) load_ml_object plugin
     end
   in
-  let () = if reinit then init_ml_object plugin in
   add_loaded_module plugin
 
 let unfreeze_ml_modules x =
@@ -351,7 +348,7 @@ let unfreeze_ml_modules x =
   List.iter
     (fun name ->
        let name = PluginSpec.of_package name in
-       trigger_ml_object ~verbose:false ~reinit:false name) x
+       trigger_ml_object ~verbose:false name) x
 
 let () =
   Summary.declare_ml_modules_summary
@@ -370,13 +367,17 @@ type ml_module_object =
 
 let cache_ml_objects mnames =
   let iter obj =
-    trigger_ml_object ~verbose:true ~reinit:true obj;
+    trigger_ml_object ~verbose:true obj;
+    init_ml_object obj;
     perform_cache_obj obj
   in
   List.iter iter mnames
 
 let load_ml_objects _ {mnames; _} =
-  let iter obj = trigger_ml_object ~verbose:true ~reinit:true obj in
+  let iter obj =
+    trigger_ml_object ~verbose:true obj;
+    init_ml_object obj
+  in
   List.iter iter mnames
 
 let classify_ml_objects {mlocal=mlocal} =
