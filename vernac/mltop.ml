@@ -397,8 +397,7 @@ let declare_ml_modules local mnames =
   let mnames = List.map (PluginSpec.of_package ~usercode:true) mnames in
   if Lib.sections_are_opened()
   then CErrors.user_err Pp.(str "Cannot Declare ML Module while sections are opened.");
-  (* List.concat_map only available in 4.10 *)
-  let mdigests = List.map PluginSpec.digest mnames |> List.concat in
+  let mdigests = CList.concat_map PluginSpec.digest mnames in
   Lib.add_leaf (inMLModule {mlocal=local; mnames; mdigests});
   (* We can't put this in cache_function: it may declare other
      objects, and when the current module is required we want to run
