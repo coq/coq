@@ -79,3 +79,23 @@ fun x : R => 0
 File "./output/Record.v", line 85, characters 23-24:
 The command has indeed failed with message:
 Projection f expected 1 explicit parameter.
+File "./output/Record.v", line 93, characters 2-40:
+Warning:
+The record squashed could not be defined as a primitive record because it is
+squashed. [non-primitive-record,records,default]
+File "./output/Record.v", line 93, characters 2-40:
+Warning: x cannot be defined because it is informative and squashed is not.
+[cannot-define-projection,records,default]
+File "./output/Record.v", line 95, characters 2-31:
+Warning:
+The record noprojs could not be defined as a primitive record because it has
+no projections. [non-primitive-record,records,default]
+File "./output/Record.v", line 97, characters 2-48:
+Warning:
+The record norelevantprojs could not be defined as a primitive record because
+it is not in SProp but all projections may be irrelevant.
+[non-primitive-record,records,default]
+File "./output/Record.v", line 99, characters 2-33:
+Warning:
+The record anonproj could not be defined as a primitive record because it has
+an anonymous projection. [non-primitive-record,records,default]

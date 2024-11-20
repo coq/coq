@@ -1080,7 +1080,7 @@ let add_mind l mie senv =
   let () = check_mind mie l in
   let kn = MutInd.make2 senv.modpath l in
   let sec_univs = Option.map Section.all_poly_univs senv.sections in
-  let mib = Indtypes.check_inductive senv.env ~sec_univs kn mie in
+  let mib, why_not_prim_record = Indtypes.check_inductive senv.env ~sec_univs kn mie in
   (* We still have to add the template monomorphic constraints, and only those
      ones. In all other cases, they are already part of the environment at this
      point. *)
@@ -1088,7 +1088,7 @@ let add_mind l mie senv =
   | None -> senv
   | Some { template_context = ctx; _ } -> push_context_set ~strict:true ctx senv
   in
-  kn, add_checked_mind kn mib senv
+  (kn, why_not_prim_record), add_checked_mind kn mib senv
 
 let add_mind ?typing_flags l mie senv =
   with_typing_flags ?typing_flags senv ~f:(add_mind l mie)

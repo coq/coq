@@ -231,24 +231,45 @@ let check_constructors env_ar_par isrecord params lc (arity,indices,univ_info) =
   let lc = Array.map (fun c -> Term.it_mkProd_or_LetIn c params) lc in
   (arity, lc), (indices, splayed_lc), univ_info
 
+module NotPrimRecordReason = struct
+
+  type t =
+    | MustNotBeSquashed
+    | MustHaveRelevantProj
+    | MustHaveProj
+    | MustNotHaveAnonProj
+
+end
+
 let check_record data =
-  List.for_all (fun (_,(_,splayed_lc),info) ->
+  let open NotPrimRecordReason in
+  List.find_map (fun (_,(_,splayed_lc),info) ->
+      if Option.has_some info.ind_squashed
       (* records must have all projections definable -> equivalent to not being squashed *)
-      Option.is_empty info.ind_squashed
-      (* relevant records must have at least 1 relevant argument,
-         and we don't yet support variable relevance projections *)
-      && (match info.record_arg_info with
-          | HasRelevantArg -> true
-          | NoRelevantArg -> Sorts.is_sprop info.ind_univ)
-      && (match splayed_lc with
+      then Some MustNotBeSquashed
+      else
+        let res = match splayed_lc with
           (* records must have 1 constructor with at least 1 argument, and no anonymous fields *)
+          (* XXX MustHaveProj is redundant with MustHaveRelevantProj except for SProp records,
+             but the condition does not seem useful for SProp records.
+             Should we allow 0-projection SProp records? *)
+          (* XXX if we stop needing compatibility constants we could allow anonymous projections *)
           | [|ctx,_|] ->
             let module D = Context.Rel.Declaration in
-            List.exists D.is_local_assum ctx &&
-            List.for_all (fun d -> not (D.is_local_assum d)
-                                   || not (Name.is_anonymous (D.get_name d)))
-              ctx
-          | _ -> false))
+            if not @@ List.exists D.is_local_assum ctx
+            then Some MustHaveProj
+            else if List.exists (fun d -> D.is_local_assum d && Name.is_anonymous (D.get_name d)) ctx
+            then Some MustNotHaveAnonProj
+            else None
+          | _ -> CErrors.anomaly ~label:"Indtyping.check_record" Pp.(str "not 1 constructor")
+        in
+        if Option.has_some res then res
+        else (* relevant records must have at least 1 relevant argument *)
+        if (match info.record_arg_info with
+            | HasRelevantArg -> false
+            | NoRelevantArg -> not @@ Sorts.is_sprop info.ind_univ)
+        then Some MustHaveRelevantProj
+        else None)
     data
 
 (* For a level to be template polymorphic, it must be introduced
@@ -438,19 +459,19 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   in
 
   let record = mie.mind_entry_record in
-  let data, record = match record with
-    | None | Some None -> data, record
+  let data, record, why_not_prim_record = match record with
+    | None | Some None -> data, record, None
     | Some (Some _) ->
-      if check_record data then
-        data, record
-      else
+      match check_record data with
+      | None -> data, record, None
+      | Some _ as reason ->
         (* if someone tried to declare a record as SProp but it can't
            be primitive we must squash. *)
         let data = List.map (fun (a,b,univs) ->
             a,b,check_univ_leq env_ar_par Sorts.prop univs)
             data
         in
-        data, Some None
+        data, Some None, reason
   in
 
   let variance = match mie.mind_entry_variance with
@@ -500,4 +521,4 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
     Environ.push_rel_context ctx env
   in
 
-  env_ar_par, univs, template, variance, record, params, Array.of_list data
+  env_ar_par, univs, template, variance, record, why_not_prim_record, params, Array.of_list data

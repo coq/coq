@@ -85,3 +85,17 @@ Record R A := { f : A -> A }.
 Fail Check fun x => x.(f).
 
 End RecordImplicitParameters.
+
+Module WhyNotPrim.
+
+  Set Primitive Projections.
+
+  Record squashed : Prop := { x : nat }.
+
+  Record noprojs := { y := 0 }.
+
+  Record norelevantprojs (A:SProp) := { z : A }.
+
+  Record anonproj := { _ : nat }.
+
+End WhyNotPrim.

@@ -12,6 +12,18 @@ open Environ
 open Entries
 open Declarations
 
+
+module NotPrimRecordReason : sig
+
+  type t =
+    | MustNotBeSquashed
+    | MustHaveRelevantProj
+    | MustHaveProj
+    | MustNotHaveAnonProj
+
+end
+
+
 (** Type checking for some inductive entry.
     Returns:
     - environment with inductives + parameters in rel context
@@ -19,6 +31,7 @@ open Declarations
     - checked variance info
       (variance for section universes is at the beginning of the array)
     - record entry (checked to be OK)
+    - if primitive record was requested and not ok, the reason why it's not ok
     - parameters
     - for each inductive,
       (arity * constructors) (with params)
@@ -32,6 +45,7 @@ val typecheck_inductive : env -> sec_univs:UVars.Instance.t option
   * template_universes option
   * UVars.Variance.t array option
   * Names.Id.t array option option
+  * NotPrimRecordReason.t option
   * Constr.rel_context
   * ((inductive_arity * Constr.types array) *
      (Constr.rel_context * (Constr.rel_context * Constr.types) array) *

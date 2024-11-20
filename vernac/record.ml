@@ -777,10 +777,6 @@ let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj i
       | UState.Monomorphic_entry uctx -> Monomorphic_ind_entry, uctx
     end
   in
-  let primitive =
-    primitive_proj  &&
-    List.for_all (fun { Data.rdata = { DataR.fields; _ }; _ } -> List.exists is_local_assum fields) data
-  in
   let globnames, global_univ_decls = match ind_univs with
   | Monomorphic_ind_entry -> (univs, ubinders), Some global_univ_decls
   | Template_ind_entry _ -> (univs, ubinders), Some global_univ_decls
@@ -790,7 +786,7 @@ let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj i
   let variance = ComInductive.variance_of_entry ~cumulative ~variances univs in
   let mie =
     { mind_entry_params = params;
-      mind_entry_record = Some (if primitive then Some (Array.map_of_list (fun a -> a.Data.inhabitant_id) data) else None);
+      mind_entry_record = Some (if primitive_proj then Some (Array.map_of_list (fun a -> a.Data.inhabitant_id) data) else None);
       mind_entry_finite = finite;
       mind_entry_inds = blocks;
       mind_entry_private = None;
