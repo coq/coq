@@ -120,7 +120,5 @@ let () =
   let _ : int = Feedback.add_feeder pr_feedback in
   try main ()
   with exn ->
-    let bt = Printexc.get_backtrace () in
-    let exn = Printexc.to_string exn in
-    Format.eprintf "[gen_rules] Fatal error: %s@\n%s@\n%!" exn bt;
+    Format.eprintf "[gen_rules] Fatal error:@ @[<2>%a@]@\n%!" Pp.pp_with (CErrors.print exn);
     exit 1

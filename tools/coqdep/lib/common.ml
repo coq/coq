@@ -125,13 +125,12 @@ let warn_legacy_loading =
    very similar is in ML top *)
 let declare_ml_to_file file (decl : string) =
   let legacy_decl = String.split_on_char ':' decl in
-  let legacy_decl = List.map (String.split_on_char '.') legacy_decl in
   match legacy_decl with
-  | [package :: plugin_name] ->
-    Fl.findlib_resolve ~file ~package ~plugin_name
-  | [[cmxs]; (package :: plugin_name)] ->
+  | [package] ->
+    Fl.findlib_deep_resolve ~file ~package
+  | [cmxs; package] ->
     warn_legacy_loading cmxs;
-    Fl.findlib_resolve ~file ~package ~plugin_name
+    Fl.findlib_deep_resolve ~file ~package
   | bad_pkg ->
     CErrors.user_err Pp.(str "Failed to resolve plugin: " ++ str decl)
 
@@ -161,8 +160,9 @@ let rec find_dependencies st basename =
     end else false
   in
   (* Output: dependencies found *)
-  let dependencies = ref [] in
-  let add_dep dep = dependencies := dep :: !dependencies in
+  let module DepSet = Dep_info.Dep.Set in
+  let dependencies = ref DepSet.empty in
+  let add_dep dep = dependencies := DepSet.add dep !dependencies in
   let add_dep_other s = add_dep (Dep_info.Dep.Other s) in
 
   (* Reading file contents *)
@@ -173,7 +173,7 @@ let rec find_dependencies st basename =
   let rec loop () =
     match coq_action buf with
     | exception Fin_fichier ->
-      List.rev !dependencies
+      DepSet.elements !dependencies
     | exception Syntax_error (i,j) ->
       Error.cannot_parse f (i,j)
     | tok ->  match tok with
@@ -197,12 +197,13 @@ let rec find_dependencies st basename =
         (* We resolve "pkg_name" to a .cma file, using the META *)
         let sl = List.map (declare_ml_to_file f) sl in
         let decl (meta_file, str) =
-          add_dep_other meta_file;
+          List.iter add_dep_other meta_file;
+          str |> List.iter (fun str ->
           let plugin_file = Filename.chop_extension str in
           if not (StrSet.mem plugin_file !visited_ml) then begin
             visited_ml := StrSet.add plugin_file !visited_ml;
             add_dep (Dep_info.Dep.Ml plugin_file)
-          end
+          end)
         in
         List.iter decl sl;
         loop ()
@@ -246,7 +247,7 @@ end
 
 let compute_deps st =
   let mk_dep (name, _orig_path) = Dep_info.make ~name ~deps:(find_dependencies st name) in
-  !vAccu |> List.rev |> List.map mk_dep
+  !vAccu |> CList.rev_map mk_dep
 
 let rec treat_file old_dirname old_name =
   let name = Filename.basename old_name
