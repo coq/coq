@@ -96,6 +96,43 @@ Proof. intros. apply div_mul; auto'. Qed.
 Lemma mod_mul : forall a b, b~=0 -> (a*b) mod b == 0.
 Proof. intros. apply mod_mul; auto'. Qed.
 
+(* Error:
+    setoid rewrite failed: UNDEFINED EVARS:
+    ... *)
+Lemma add_div_base:
+  forall a b, b <> 0 -> (b + a) / b =  N.succ (a / b).
+Proof.
+  intros. rewrite (N.div_mod a b) at 1; try assumption. rewrite N.add_assoc.
+  rewrite <-(N.mul_1_r b) at 1. rewrite <-(N.mul_add_distr_l b 1 (a/b)).
+  rewrite N.add_1_l. rewrite <- N.div_unique with (q:=N.succ (a/b)) (r:=a mod b). reflexivity.
+  apply N.mod_upper_bound; assumption.
+  reflexivity.
+Qed.
+
+Lemma pred_mul_mod:
+  forall w q, 0 < w -> 0 < w * q -> N.pred (w * q) mod w = N.pred w.
+Proof.
+  intros. rewrite N.pred_sub. 
+  enough (Hhelp: exists q', q = N.succ q'); try destruct Hhelp.
+  rewrite H1, N.mul_succ_r, <-N.add_sub_assoc, <-N.Div0.add_mod_idemp_l.
+  rewrite N.mul_comm, N.Div0.mod_mul, N.add_0_l.
+  rewrite N.mod_small. all: try lia.
+  exists (N.pred q); try lia.
+Qed.
+
+Lemma succ_mod_swap:
+  forall c b, N.succ c mod b = N.succ (c mod b) mod b.
+Proof.
+  intros c b. destruct (N.eq_dec b 0) as [H | H].
+  subst. now repeat rewrite N.mod_0_r. remember H as NZ. clear HeqNZ.
+  apply (N.div_mod c (b)) in H.
+  remember (c / b) as q; remember (c mod b) as r.
+  destruct (N.lt_trichotomy (N.succ r) (b)) as [Lt | [Eq | Gt]].
+  1,2: rewrite H, <-N.add_succ_r, N.add_comm, N.mul_comm, N.Div0.mod_add; reflexivity.
+  assert (Help: c mod b < b) by (apply N.mod_upper_bound; lia). rewrite <-Heqr in Help.
+  lia.
+Qed.
+
 
 (** * Order results about mod and div *)
 

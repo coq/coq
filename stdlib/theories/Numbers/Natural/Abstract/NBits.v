@@ -1138,7 +1138,7 @@ Proof.
  - now rewrite !shiftl_spec_low.
 Qed.
 
-Lemma shiftr_lor : forall a b n,
+Lemma   shiftr_lor : forall a b n,
  (lor a b) >> n == lor (a >> n) (b >> n).
 Proof.
  intros. bitwise. now rewrite !shiftr_spec', lor_spec.
@@ -1171,6 +1171,224 @@ Lemma shiftr_upper_bound : forall a n, a >> n <= a.
 Proof.
   intros a n; rewrite shiftr_div_pow2, two_succ; apply div_le_upper_bound;
     [| apply le_mul_l]; apply pow_nonzero; exact (neq_succ_0 _).
+Qed.
+
+(* Reference N.peano_ind not found. What to do? *)
+Lemma shiftr_le_mono:
+  forall x1 x2 shift,
+  x1 <= x2 -> x1 >> shift <= x2 >> shift.
+Proof.
+  intros. generalize dependent x2. generalize dependent x1.
+  induction shift using N.peano_ind; intros; try assumption.
+  unfold N.shiftr. destruct (N.succ shift) eqn:Eqn. apply N.neq_succ_0 in Eqn; contradiction.
+  destruct shift. simpl in Eqn. destruct p eqn:Eqnp; try simpl in Eqn; try discriminate.
+  simpl; apply Ndiv2_mono; assumption.
+  rewrite <-Pos_N_succ_comm in Eqn. injection Eqn; intro Eqnp. subst p.
+  do 2 rewrite Pos.iter_succ_r.
+  unfold N.shiftr in IHshift. apply IHshift, Ndiv2_mono; assumption.
+Qed.
+
+Lemma shiftl_le_mono:
+  forall x1 x2 shift,
+  x1 <= x2 -> x1 << shift <= x2 << shift.
+Proof.
+  intros. generalize dependent x2; generalize dependent x1.
+  induction shift using N.peano_ind; intros; simpl; try reflexivity.
+  (* 0 *)
+  unfold N.shiftl. destruct x1 eqn:Eqx1, x2;
+    (reflexivity ||
+    apply N.le_0_l ||
+    (try  rewrite N.le_0_r in H; discriminate  ) ||
+    simpl; assumption) .
+  (* N.succ shift *)
+  unfold N.shiftl. destruct x1 eqn:Eqx1, x2;
+    try (reflexivity ||
+    apply N.le_0_l ||
+    (try  rewrite N.le_0_r in H; discriminate  )) .
+  unfold Pos.shiftl. destruct shift eqn:Eqshift. simpl.
+  apply N.double_le_mono in H. simpl in H. assumption.
+  simpl. unfold N.shiftl in IHshift; specialize (IHshift (N.pos p~0) (N.pos p0~0)); simpl in IHshift.
+  apply IHshift in H.
+  do 2 rewrite Pos.iter_succ_r; assumption.
+Qed.
+
+Lemma Nshiftl_mono_lt_iff:
+  forall x1 x2 shift,
+  x1 < x2 <-> N.shiftl x1 shift < N.shiftl x2 shift.
+Proof.
+  split.
+  (* -> *)
+  generalize dependent x2; generalize dependent x1.
+  induction shift using N.peano_ind; intros; simpl; try reflexivity.
+  (* 0 *)
+  unfold N.shiftl. destruct x1 eqn:Eqx1, x2;
+    (reflexivity ||
+    apply N.le_0_l ||
+    (try  rewrite N.le_0_r in H; discriminate  ) ||
+    simpl; assumption) .
+  (* N.succ shift *)
+  unfold N.shiftl. destruct x1 eqn:Eqx1, x2;
+    try (reflexivity ||
+    apply N.le_0_l ||
+    (try  rewrite N.le_0_r in H; discriminate  )) .
+  unfold Pos.shiftl. destruct shift eqn:Eqshift. simpl.
+  apply N.double_lt_mono in H. simpl in H. assumption.
+  simpl. unfold N.shiftl in IHshift; specialize (IHshift (N.pos p~0) (N.pos p0~0)); simpl in IHshift.
+  apply IHshift in H.
+  do 2 rewrite Pos.iter_succ_r; assumption.
+
+  (* <- *)
+  intro H.
+  generalize dependent x2. generalize dependent x1.
+  induction shift using N.peano_ind; intros.
+  - unfold N.shiftl in H; simpl in H.
+    destruct x1; destruct x2; try discriminate; try lia.
+  - destruct shift.
+    + (* shift = 0 *)
+      simpl in H. destruct x1; destruct x2; try discriminate; try lia.
+      unfold N.shiftl in H. unfold Pos.shiftl in H. simpl in H.
+      unfold N.lt, N.compare, Pos.compare, Pos.compare_cont in H |- *.
+      assumption.
+    + simpl in H; destruct x1; destruct x2; try discriminate; try lia.
+      assert (H2: forall p p2, N.shiftl (N.pos p) (N.pos (Pos.succ p2)) = N.shiftl (N.pos p~0) (N.pos p2)) by (
+        intros x shift; unfold N.shiftl, Pos.shiftl; simpl; now rewrite Pos.iter_succ_r).
+      rewrite H2 in H; rewrite H2 in H. now apply IHshift in H.
+Qed.
+
+(* `cond_mono` means conditional monotonicity. *)
+Theorem shiftr_lt_cond_mono:
+  forall x y shift,
+    x < y * 2 ^ shift -> x >> shift < (y * 2 ^ shift) >> shift.
+Proof.
+  assert (Nshiftr_mono_lt_helper: forall x p, N.pos (x * 2 ^ p)~0 < N.pos (x * 2 ^ p~0)~0).
+  {
+    assert (H1: forall p':positive, xO p' = (2*p')%positive) by reflexivity.
+    assert (H2: forall a b c : positive, N.pos (a * b ^ c)%positive =
+                                       (N.pos a) * (N.pos b) ^ (N.pos c))
+            by reflexivity.
+    assert (Pos_succ_mul: forall a b c, N.pos (a * (Pos.succ b * c)) = N.pos a * (N.pos c + N.pos b * N.pos c)) by
+      (intros; apply N.eq_stepl with (x:=N.pos a * (N.succ (N.pos b) * N.pos c)); try reflexivity;
+      assert (H: N.succ (N.pos b) * N.pos c = N.pos c + N.pos b * N.pos c) by lia;
+      rewrite H; reflexivity).
+    induction x using Pos.peano_ind; intros; simpl.
+    - rewrite H1, (H1 (2 ^ p~0)%positive).
+      rewrite H2. rewrite H2.
+      rewrite <-(N.mul_lt_mono_pos_l 2); try lia.
+      apply N.pow_lt_mono_r; try lia.
+    - assert (H3: forall p', N.pos (2^p') = N.pos 2 ^ N.pos p') by reflexivity.
+      rewrite H1, (H1 (Pos.succ x * 2 ^ p~0)%positive).
+      rewrite Pos_succ_mul, Pos_succ_mul.
+      rewrite <-N.mul_lt_mono_pos_l; try lia.
+      apply N.add_lt_mono.
+      rewrite H3, H3.
+      rewrite <-N.pow_lt_mono_r_iff; try lia.
+      rewrite <-N.mul_lt_mono_pos_l; try lia.
+      rewrite H3, H3, <-N.pow_lt_mono_r_iff; try lia.
+  }
+  intros. generalize dependent y. generalize dependent x.
+  induction shift using N.peano_ind; simpl; intros x y LT.
+  (* 0 *)
+  assumption.
+  (* N.succ shift *)
+  destruct shift as [|shiftp].
+    (* shift = 0 *)
+    -
+    simpl in *. rewrite N.mul_comm in *. simpl in *. destruct y; try now apply N.nlt_0_r in LT .
+    simpl.
+    destruct x. simpl; try lia.
+    simpl; destruct p0; try reflexivity.
+    apply (N.lt_trans (N.pos p0~0) (N.pos p0~1)) in LT; try lia.
+    now unfold N.lt, N.compare, Pos.compare, Pos.compare_cont in LT |- *.
+    (* shift = N.pos p *)
+    - (*-2--*)
+    assert (IHspec:= IHshift x (2*y)).
+    assert (H1: forall p', y * 2 ^ N.succ (N.pos p') = y * 2 * 2 ^ N.pos p') by
+      (intros; rewrite N.pow_succ_r'; rewrite N.mul_assoc; reflexivity);
+    remember LT as LTog; clear HeqLTog;
+    rewrite H1 in LT; rewrite (N.mul_comm y 2) in LT.
+    apply IHspec in LT.
+    unfold N.shiftr. destruct (N.succ (N.pos shiftp)) as [|shiftp_id] eqn:Eqp; try assumption.
+
+    (* p0 = shift + 1 (shiftp_id) *)
+    (* p0' = shift  (shiftp_pred) *)
+    remember (Pos.pred shiftp_id) as shiftp_pred.
+
+        assert (H2: forall n, N.div2 (2 * n) = n). {
+          intro. clear - n. unfold N.div2. unfold N.mul. destruct n; reflexivity.
+        }
+
+    destruct shiftp_id; try lia; apply Possucc_inj in Heqshiftp_pred; rewrite Pos.succ_pred in Heqshiftp_pred; try lia;
+    inversion Heqshiftp_pred;
+
+    rewrite <-Heqshiftp_pred in Eqp; rewrite Pos_N_succ_comm in Eqp;
+    apply N.succ_inj in Eqp; inversion Eqp as [Eqpp']; subst shiftp_pred;
+    rewrite Pos_N_succ_comm;
+
+    rewrite H1; rewrite (N.mul_comm y 2);
+    rewrite Pos.iter_succ_r, Pos.iter_succ_r;
+    rewrite <-N.mul_assoc.
+
+    + rewrite <-(Pos.succ_pred (shiftp_id~1)%positive) in H0; try lia.
+        rewrite <-Possucc_inj in H0. simpl in H0. subst shiftp.
+        clear Heqshiftp_pred Eqp.
+        rewrite H2 with (n:=y*2^N.pos shiftp_id~0).
+        apply IHshift.
+        rewrite Nshiftl_mono_lt_iff with (shift:=1).
+        assert (H3: y * 2 ^ N.pos shiftp_id~0 << 1 = y * 2 ^ N.pos shiftp_id~1). {
+         assert (HDoubleSucc: forall p, (2 * 2 ^ p = 2 ^ Pos.succ p)%positive). {
+            intros. unfold Pos.pow. rewrite Pos.iter_succ. reflexivity.
+          }
+          unfold N.shiftl. destruct (y) eqn:EQ; try (simpl in LTog; now apply N.nlt_0_r in LTog).
+          simpl.
+        assert (Hmul2: forall p, (2*p = p~0)%positive) by reflexivity.
+          rewrite <-Hmul2; clear Hmul2.
+          rewrite Pos.mul_assoc, (Pos.mul_comm 2%positive p), <-Pos.mul_assoc, HDoubleSucc.
+          simpl (Pos.succ shiftp_id~0). reflexivity.
+        }
+        rewrite H3. remember x as xog; remember y as yog; rewrite Heqxog, Heqyog in *.
+
+        clear IHshift IHspec H1 H2 H3.
+
+        destruct x as [|xp]; destruct y as [|yp]; simpl in *; try (discriminate || constructor).
+          destruct xp as [xp | xp |]; destruct yp as [yp | yp |];
+          try (apply N.lt_le_trans with (m:= N.pos xp~1); simpl (_ << _); lia);
+          simpl (_ << 1); try (apply N.lt_le_trans with (m:=1); lia).
+      + rewrite H2 with (n:=y*2^N.pos shiftp).
+        apply IHshift.
+        rewrite Nshiftl_mono_lt_iff with (shift:=1).
+        rewrite Pospred_inj, Pos.pred_succ in H0; try lia; subst shiftp.
+        clear - LT LTog IHshift.
+
+        assert (Hmul2: forall p, (2*p = p~0)%positive) by reflexivity.
+        assert (H: forall x shift, N.pos (x * 2 ^ shift~0) = N.pos (x * 2 ^ Pos.pred_double shift)~0). {
+          clear - Hmul2. intros. assert (H1:forall p, N.pos (2*p) = N.pos (p~0)%positive) by reflexivity.
+          rewrite <-H1. rewrite Pos.mul_assoc, (Pos.mul_comm 2 x).
+          assert (H2: forall p, (2 * 2 ^ p = 2 ^ Pos.succ p)%positive). {
+            intros. unfold Pos.pow. rewrite Pos.iter_succ.
+            now rewrite Hmul2.
+          }
+          rewrite <-Pos.mul_assoc.
+          rewrite H2 with (p:=Pos.pred_double shift).
+          rewrite Pos.succ_pred_double. reflexivity.
+        }
+        destruct x as [|xp]; destruct y as [|yp]; simpl in LTog |- *; try (discriminate || constructor).
+          destruct xp as [xp | xp |]; destruct yp as [yp | yp |];
+          try (apply N.lt_le_trans with (m:= N.pos xp~1); simpl (_ << _); lia);
+          simpl (_ << 1); try (apply N.lt_le_trans with (m:=1); lia).
+        all: try (apply N.lt_le_trans with (m:=N.pos xp~1); try lia;
+        rewrite <-H; now apply N.lt_le_incl).
+        all: try (rewrite <-H; assumption).
+Qed.
+
+Lemma shiftr_le_mono:
+  forall x y shift,
+    x <= y * 2 ^ shift -> x >> shift <= (y * 2 ^ shift) >> shift.
+Proof.
+  intros. destruct (N.lt_trichotomy (x) (y * 2 ^ shift)) as [LT|[EQ|GT]];
+    [ | | apply N.lt_gt in GT; unfold N.gt, N.le in * |-; contradiction].
+  clear H; apply N.lt_le_incl, Nshiftr_mono_lt; assumption.
+  clear H.
+  subst x; reflexivity.
 Qed.
 
 (** We cannot have a function complementing all bits of a number,
