@@ -173,10 +173,13 @@ let rec find_dependencies st basename =
   with_in_channel ~fname:f @@ fun chan ->
   let buf = Lexing.from_channel chan in
   let open Lexer in
-  try
-    while true do
-      let tok = coq_action buf in
-      match tok with
+  let rec loop () =
+    match coq_action buf with
+    | exception Fin_fichier ->
+      List.rev !dependencies
+    | exception Syntax_error (i,j) ->
+      Error.cannot_parse f (i,j)
+    | tok ->  match tok with
       | Require (from, strl) ->
         let from, strl = coq_to_stdlib from strl in
         let decl str =
@@ -191,7 +194,8 @@ let rec find_dependencies st basename =
                 warning_module_notfound (Library, from, f, str)
           end
         in
-        List.iter decl strl
+        List.iter decl strl;
+        loop ()
       | Declare sl ->
         (* We resolve "pkg_name" to a .cma file, using the META *)
         let sl = List.map (declare_ml_to_file f) sl in
@@ -203,7 +207,8 @@ let rec find_dependencies st basename =
             add_dep (Dep_info.Dep.Ml plugin_file)
           end
         in
-        List.iter decl sl
+        List.iter decl sl;
+        loop ()
       | Load file ->
         let canon =
           match file with
@@ -225,21 +230,17 @@ let rec find_dependencies st basename =
              let deps = find_dependencies st canon in
              List.iter add_dep deps
            in
-           List.iter decl l)
+           List.iter decl l);
+        loop ()
       | External(from,str) ->
         begin match safe_assoc st ~what:External (Some from) f [str] with
         | Some (file :: _) -> add_dep (Dep_info.Dep.Other (canonize file))
         | Some [] -> assert false
         | None -> warning_module_notfound (External, Some from, f, [str])
-        end
-    done;
-    List.rev !dependencies
-  with
-  | Fin_fichier ->
-    List.rev !dependencies
-  | Syntax_error (i,j) ->
-    Error.cannot_parse f (i,j)
-
+        end;
+        loop ()
+  in
+  loop ()
 
 module State = struct
   type t = Loadpath.State.t
