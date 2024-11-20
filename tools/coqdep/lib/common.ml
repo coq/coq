@@ -146,6 +146,7 @@ let coq_to_stdlib from strl =
   | Some from -> Some (tr_qualid from), strl
   | None -> None, List.map tr_qualid strl
 
+(* recursive because of Load *)
 let rec find_dependencies st basename =
   try
     (* Visited marks *)
