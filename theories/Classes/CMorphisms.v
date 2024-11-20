@@ -710,8 +710,9 @@ split.
 - intros x. right. apply reflexivity.
 - intros x y z [Hxy|Hxy] [Hyz|Hyz].
   + left. apply transitivity with y; auto.
-  + left. eapply H1; try eassumption. apply reflexivity.
-    now apply symmetry.
+  + left. eapply H1; try eassumption.
+    * apply reflexivity.
+    * now apply symmetry.
   + left. eapply H1; [eassumption|apply reflexivity|eassumption].
   + right. apply transitivity with y; auto.
 Qed.

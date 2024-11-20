@@ -34,7 +34,7 @@ Qed.
 Lemma eq_mod_abs m x y : x mod (Z.abs m) = y mod (Z.abs m) <-> x mod m = y mod m.
 Proof.
   case (Z.abs_eq_or_opp m) as [->| ->].
-  reflexivity.
-  apply eq_mod_opp.
+  - reflexivity.
+  - apply eq_mod_opp.
 Qed.
 End Z.
