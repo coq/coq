@@ -1138,7 +1138,7 @@ Proof.
  - now rewrite !shiftl_spec_low.
 Qed.
 
-Lemma   shiftr_lor : forall a b n,
+Lemma shiftr_lor : forall a b n,
  (lor a b) >> n == lor (a >> n) (b >> n).
 Proof.
  intros. bitwise. now rewrite !shiftr_spec', lor_spec.
