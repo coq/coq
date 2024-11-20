@@ -225,6 +225,11 @@ Proof.
  destruct p; simpl; trivial. f_equal. apply Pos.succ_pred_double.
 Qed.
 
+Lemma succ_comm p : N.pos (Pos.succ p) = succ (N.pos p).
+Proof.
+  now unfold succ.
+Qed.
+
 (** Properties of successor and predecessor *)
 
 Theorem pred_succ n : pred (succ n) = n.
