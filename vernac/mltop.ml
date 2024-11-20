@@ -291,8 +291,7 @@ let init_ml_object mname =
 
 let load_ml_object mname =
   ml_load mname;
-  add_known_module mname;
-  init_ml_object mname
+  add_known_module mname
 
 let add_known_module name =
   let name = PluginSpec.of_package name in
@@ -336,17 +335,15 @@ let if_verbose_load verb f name =
 
 let trigger_ml_object ~verbose ~reinit plugin =
   let () =
-    if plugin_is_known plugin then
-      (if reinit then init_ml_object plugin)
-    else
-      begin
-        if not has_dynlink then
-          CErrors.user_err
-            (str "Dynamic link not supported (module " ++ str (PluginSpec.pp plugin) ++ str ").")
-        else
-          if_verbose_load (verbose && not !Flags.quiet) load_ml_object plugin
-      end
+    if not @@ plugin_is_known plugin then begin
+      if not has_dynlink then
+        CErrors.user_err
+          (str "Dynamic link not supported (module " ++ str (PluginSpec.pp plugin) ++ str ").")
+      else
+        if_verbose_load (verbose && not !Flags.quiet) load_ml_object plugin
+    end
   in
+  let () = if reinit then init_ml_object plugin in
   add_loaded_module plugin
 
 let unfreeze_ml_modules x =
