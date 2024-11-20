@@ -79,8 +79,10 @@ module PluginSpec : sig
 
   type t
 
-  (* Main constructor, takes the format used in Declare ML Module *)
-  val of_package : string -> t
+  (* Main constructor, takes the format used in Declare ML Module.
+     With [usercode:true], warn instead of error on legacy syntax. *)
+  val of_package : ?usercode:bool -> string -> t
+
   val to_package : t -> string
 
   (* Load a plugin, low-level, that is to say, will directly call the
@@ -103,21 +105,32 @@ end = struct
 
   module Errors = struct
 
+    let warn_legacy_loading =
+      let name = "legacy-loading-removed" in
+      CWarnings.create ~name (fun name ->
+          Pp.(str "Legacy loading plugin method has been removed from Coq, \
+                   and the `:` syntax is deprecated, and its first \
+                   argument ignored; please remove \"" ++
+              str name ++ str ":\" from your Declare ML"))
+
     let plugin_name_invalid_format m =
       CErrors.user_err
         Pp.(str Format.(asprintf "%s is not a valid plugin name." m) ++ spc () ++
-            str "It should be a public findlib name, e.g. package-name.foo," ++ spc () ++
-            str "or a legacy name followed by a findlib public name, e.g. "++ spc () ++
-            str "legacy_plugin:package-name.plugin.")
+            str "It should be a public findlib name, e.g. package-name.foo." ++ spc () ++
+            str "Legacy names followed by a findlib public name, e.g. "++ spc () ++
+            str "legacy_plugin:package-name.plugin," ++ spc() ++
+            str "are not supported anymore.")
 
   end
 
-  let of_package m =
+  let of_package ?(usercode=false) m =
     match String.split_on_char ':' m with
     | [ lib ] ->
       { lib }
-    | ([] | _ :: _) ->
-      Errors.plugin_name_invalid_format m
+    | [cmxs; lib] when usercode ->
+      Errors.warn_legacy_loading cmxs;
+      { lib }
+    | _ -> Errors.plugin_name_invalid_format m
 
   let to_package { lib } = lib
 
@@ -380,29 +393,8 @@ let inMLModule : ml_module_object -> Libobject.obj =
       subst_function = (fun (_,o) -> o);
       classify_function = classify_ml_objects }
 
-let warn_legacy_loading =
-  let name = "legacy-loading-removed" in
-  CWarnings.create ~name (fun name ->
-      Pp.(str "Legacy loading plugin method has been removed from Coq, \
-               and the `:` syntax is deprecated, and its first \
-               argument ignored; please remove \"" ++
-          str name ++ str ":\" from your Declare ML"))
-
-let inspect_legacy_decl l =
-  match String.split_on_char ':' l with
-  | [lib] -> lib
-  | [cmxs; lib] ->
-    warn_legacy_loading cmxs;
-    lib
-  | bad ->
-    let bad = String.concat ":" bad in
-    CErrors.user_err Pp.(str "bad package name: " ++ str bad ++ str " .")
-
-let remove_legacy_decls = List.map inspect_legacy_decl
-
-let declare_ml_modules local l =
-  let l = remove_legacy_decls l in
-  let mnames = List.map PluginSpec.of_package l in
+let declare_ml_modules local mnames =
+  let mnames = List.map (PluginSpec.of_package ~usercode:true) mnames in
   if Lib.sections_are_opened()
   then CErrors.user_err Pp.(str "Cannot Declare ML Module while sections are opened.");
   (* List.concat_map only available in 4.10 *)
