@@ -1,5 +1,5 @@
 package "evil" (
-    directory = "src"
+    directory = "."
     version = "dev"
     description = "An evil test plugin"
     requires = "coq-core.plugins.ltac"
@@ -9,7 +9,7 @@ package "evil" (
     plugin(native) = "evil_plugin.cmxs"
 )
 package "good" (
-    directory = "src"
+    directory = "."
     version = "dev"
     description = "A good test plugin"
     requires = "coq-core.plugins.ltac"
