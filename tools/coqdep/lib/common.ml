@@ -119,20 +119,17 @@ let warn_legacy_loading =
                argument ignored; please remove \"" ++
           str name ++ str ":\" from your Declare ML"))
 
-let meta_files = ref []
-
 (* Transform "Declare ML %DECL" to a pair of (meta, cmxs). Something
    very similar is in ML top *)
 let declare_ml_to_file file (decl : string) =
   let legacy_decl = String.split_on_char ':' decl in
   let legacy_decl = List.map (String.split_on_char '.') legacy_decl in
-  let meta_files = !meta_files in
   match legacy_decl with
   | [package :: plugin_name] ->
-    Fl.findlib_resolve ~meta_files ~file ~package ~plugin_name
+    Fl.findlib_resolve ~file ~package ~plugin_name
   | [[cmxs]; (package :: plugin_name)] ->
     warn_legacy_loading cmxs;
-    Fl.findlib_resolve ~meta_files ~file ~package ~plugin_name
+    Fl.findlib_resolve ~file ~package ~plugin_name
   | bad_pkg ->
     CErrors.user_err Pp.(str "Failed to resolve plugin: " ++ str decl)
 
@@ -317,7 +314,7 @@ let add_include st (rc, r, ln) =
   else
     Loadpath.add_q_include st r ln
 
-let add_findlib_dir dirs =
+let findlib_init dirs =
   let env_ocamlpath =
     try [Sys.getenv "OCAMLPATH"]
     with Not_found -> []
@@ -335,8 +332,7 @@ let init ~make_separator_hack args =
   Makefile.set_write_vos args.Args.vos;
   Makefile.set_noglob args.Args.noglob;
   (* Add to the findlib search path, common with sysinit/coqinit *)
-  add_findlib_dir args.Args.ml_path;
+  findlib_init args.Args.ml_path;
   List.iter (add_include st) args.Args.vo_path;
   Makefile.set_dyndep args.Args.dyndep;
-  meta_files := args.Args.meta_files;
   st

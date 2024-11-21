@@ -16,7 +16,6 @@ type t =
   ; ml_path : string list
   ; vo_path : (bool * string * string) list
   ; dyndep : string
-  ; meta_files : string list
   ; files : string list
   }
 
@@ -28,7 +27,6 @@ let make () =
   ; ml_path = []
   ; vo_path = []
   ; dyndep = "both"
-  ; meta_files = []
   ; files = []
   }
 
@@ -53,7 +51,6 @@ let usage () =
   eprintf "  -exclude-dir dir : skip subdirectories named 'dir' during -R/-Q search\n";
   eprintf "  -coqlib dir : set the coq standard library directory\n";
   eprintf "  -dyndep (opt|byte|both|no|var) : set how dependencies over ML modules are printed\n";
-  eprintf "  -m META : resolve plugins names using the META file\n";
   eprintf "  -w (w1,..,wn) : configure display of warnings\n";
   exit 1
 
@@ -105,7 +102,6 @@ let parse st args =
     | "-coqlib" :: r :: ll -> Boot.Env.set_coqlib r; parse st ll
     | "-coqlib" :: [] -> usage ()
     | "-dyndep" :: dyndep :: ll -> parse { st with dyndep } ll
-    | "-m" :: m :: ll -> parse { st with meta_files = st.meta_files @ [m]} ll
     | "-w" :: w :: ll ->
       let w = if w = "none" then w else CWarnings.get_flags() ^ "," ^ w in
       CWarnings.set_flags w;
