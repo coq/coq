@@ -1,5 +1,5 @@
 (* discriminated database with transparent items in hints *)
-From Stdlib Require Import PeanoNat.
+From Corelib Require Import Nat.
 Theorem bar: 1+1+1=3.  reflexivity.  Qed.
 Theorem bar2: 3+1+1=5.  reflexivity.  Qed.
 

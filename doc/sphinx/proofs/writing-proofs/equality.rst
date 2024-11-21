@@ -117,15 +117,21 @@ Rewriting with Leibniz and setoid equality
    .. prodn::
       oriented_rewriter ::= {? {| -> | <- } } {? @natural } {? {| ? | ! } } @one_term_with_bindings
 
-   Replaces subterms with other subterms that have been proven to be equal.
-   The type of :n:`@one_term` must have the form:
+   Replaces subterms with other subterms that have been proven to be equal or logically
+   equivalent.  For equal terms, the type of :n:`@one_term` must have the form:
 
       :n:`{? forall @open_binders , } EQ @term__1 @term__2`
 
    where :g:`EQ` is the :term:`Leibniz equality` `eq` or a registered :term:`setoid equality`.
    Note that :n:`eq @term__1 @term__2` is typically written with the infix notation
-   :n:`@term__1 = @term__2`.  You must `Require Setoid` to use the tactic
-   with a setoid equality or with :ref:`setoid rewriting <generalizedrewriting>`.
+   :n:`@term__1 = @term__2`.
+
+   For logically equivalent terms, the type of :n:`@one_term` must have the form:
+
+     :n:`{? forall @open_binders , } @term__1 <-> @term__2`
+
+   You must `Require Setoid` to use the tactic with a setoid equality, logical
+   equivalence or with :ref:`setoid rewriting <generalizedrewriting>`.
 
    :n:`rewrite @one_term` finds subterms matching :n:`@term__1` in the goal,
    and replaces them with :n:`@term__2` (or the reverse if `<-` is given).

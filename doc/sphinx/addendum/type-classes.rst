@@ -517,10 +517,10 @@ Command summary
 
    The tactic ``autoapply`` applies :token:`one_term` using the transparency information
    of the hint database :token:`ident`, and does *no* typeclass resolution. This can
-   be used in :cmd:`Hint Extern`’s for typeclass instances (in the hint
-   database ``typeclass_instances``) to allow backtracking on the typeclass
+   be used in :cmd:`Hint Extern`\s for typeclass instances (in the hint
+   database `typeclass_instances`) to allow backtracking on the typeclass
    subgoals created by the lemma application, rather than doing typeclass
-   resolution locally at the hint application time.
+   resolution locally at hint application time.
 
 .. _TypeclassesTransparent:
 
@@ -664,6 +664,10 @@ Settings
    1 is the default level.  2 shows additional information such as tried tactics and shelving
    of goals.  Setting this :term:`option` to 1 or 2 turns on the :flag:`Typeclasses Debug` flag; setting this
    option to 0 turns that flag off.
+
+   Note that the tactics shown when :n:`@natural > 0`(after removing tactics that were
+   backtracked) may not always work as a replacement for the proof search
+   tactic.  See :ref:`here <info_auto_not_exact>`.
 
 Typeclasses eauto
 ~~~~~~~~~~~~~~~~~

@@ -85,6 +85,48 @@ Tactics
       variant is very useful for getting a better understanding of automation, or
       to know what lemmas/assumptions were used.
 
+.. _info_auto_not_exact:
+
+      The tactics shown in the info or debug output currently don't
+      correspond exactly to the variants that proof search tactics such
+      as :tacn:`auto` use, but they are close.
+
+      Occasionally the tactics shown (after removing tactics that were
+      backtracked) may not always work as a replacement for the proof search
+      tactic.  For example:
+
+      .. example:: `info_auto` output that isn't a valid proof
+
+         The output isn't accepted as a proof because the conversion
+         constraints are solved by default after every statement but
+         are not solved internally by :tacn:`auto` as it searches for
+         a proof.
+
+         .. rocqtop:: in
+
+            Create HintDb db.
+
+            Hint Resolve conj : db.
+            Hint Resolve eq_refl : db.
+
+            Goal forall n, n=1 -> exists x y : nat, x = y /\ x = 0.
+            intros.
+            do 2 eexists; subst.      (* Fix 2: replace with "eexists; subst." twice *)
+
+         .. rocqtop:: all
+
+            Succeed info_auto with nocore db.
+            simple apply conj.           (* from info_auto output *)
+              Fail simple apply @eq_refl.  (* Fix 1: change to "2: simple apply @eq_refl" *)
+              (* simple apply @eq_refl. *)
+
+         .. rocqtop:: none abort
+
+         One fix is to apply the tactics to the goals in a non-default
+         order.  Another would be to avoid using `do 2` by repeating the commands
+         that follow it, which gives a different result.  The fixes are shown inline
+         in the example.
+
    .. tacn:: debug auto {? @nat_or_var } {? @auto_using } {? @hintbases }
 
       Behaves like :tacn:`auto` but shows the tactics it tries to solve the goal,
@@ -130,6 +172,9 @@ Tactics
    .. tacn:: info_eauto {? @nat_or_var } {? @auto_using } {? @hintbases }
 
       The various options for :tacn:`info_eauto` are the same as for :tacn:`info_auto`.
+      Note that the tactics shown (after removing tactics that were
+      backtracked) may not always work as a replacement for the proof search
+      tactic.  See :ref:`here <info_auto_not_exact>`.
 
    :tacn:`eauto` uses the following flags:
 
@@ -579,7 +624,7 @@ Creating Hints
          in separate hint databases with distinct transparency settings and use
          :tacn:`typeclasses eauto`.  (This doesn't work for :tacn:`auto` or :tacn:`eauto`.):
 
-         .. coqtop:: in
+         .. rocqtop:: in reset
 
             Definition one := 1.
             Theorem thm : one = 1. reflexivity. Qed.
@@ -599,13 +644,13 @@ Creating Hints
             (* "one" is unfolded because it's transparent (by default) in db2 *)
             Succeed typeclasses eauto with db1 db2 nocore.
 
-         .. coqtop:: none
+         .. rocqtop:: none
 
             Abort.
 
       .. example:: Independence of Hint Opaque and Opaque
 
-         .. coqtop:: reset in
+         .. rocqtop:: reset in
 
             Definition one := 1.
             Opaque one.  (* not relevant to hint selection *)
@@ -624,7 +669,7 @@ Creating Hints
             Succeed typeclasses eauto with db nocore.  (* success: now bar is tried *)
             Fail unfold one.                           (* fail: one is still Opaque *)
 
-         .. coqtop:: none
+         .. rocqtop:: none
 
             Abort.
 
