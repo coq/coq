@@ -184,7 +184,6 @@ struct
 
   let leq_constraints ~nargs variances u u' csts =
     let len = Array.length u in
-
     assert (len = Array.length u' && len = Array.length variances);
     Array.fold_left3 (VariancePos.leq_constraint nargs) csts variances u u'
 
@@ -259,9 +258,9 @@ struct
   let le ({ in_binders = (in_binders, pos); in_term; in_type } as x)
     ({ in_binders = (in_binders', pos'); in_term = in_term'; in_type = in_type' } as y) =
     x == y ||
-    (option_le Variance.le in_binders in_binders' && List.subset pos pos') &&
+    (option_le Variance.le in_binders in_binders' && List.subset pos pos' &&
     option_le Variance.le in_term in_term' &&
-    option_le Variance.equal in_type in_type'
+    option_le Variance.le in_type in_type')
 
   (* let term_variance { in_binders; in_term; in_type = _ }  =
     let in_binders = Variance.sup_variances (List.map snd in_binders) in

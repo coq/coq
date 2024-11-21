@@ -48,11 +48,15 @@ val enforce_constraint : univ_constraint -> t -> t option
 
 exception InconsistentEquality
 
+exception OccurCheck
+
 (** [set idx u model] substitutes universe [u] for all occurrences of [idx] in model, resulting
 in a set of constraints that no longer mentions [idx]. This is a stronger than [enforce_eq idx u],
-as the [idx] universe is dropped from the constraints altogether.
-  @raise InconsistentEquality if setting [l = u] results in an unsatisfiable constraint *)
-val set : Level.t -> Universe.t -> t -> t
+as the [idx] universe is dropped from the constraints altogether. Returns a list of universes
+that are also made equal by the new constraint and are also substituted by [u] in the resulting graph.
+  @raise InconsistentEquality if setting [l = u] results in an unsatisfiable constraint
+  @raise OccurCheck if the universe contains the level, up to equivalence in the graph *)
+val set : Level.t -> Universe.t -> t -> t * Level.Set.t
 
 type extended_constraint_type =
   | ULe | ULt | UEq
@@ -81,7 +85,7 @@ val domain : t -> Level.Set.t
 val choose : (Level.t -> bool) -> t -> Level.t -> Level.t option
 
 type 'a simplification_result =
-  | HasSubst of 'a * Universe.t
+  | HasSubst of 'a * Level.Set.t * Universe.t
   | NoBound
   | CannotSimplify
 
@@ -101,8 +105,8 @@ type repr = node Level.Map.t
 
 val repr : t -> repr
 
-(* New functions *)
-val pr_model : t -> Pp.t
+(* Print the model. Optionally print only the local universes and constraints. *)
+val pr_model : ?local:bool -> t -> Pp.t
 
 val valuation : t -> int Level.Map.t
 

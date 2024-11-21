@@ -355,30 +355,34 @@ struct
     in aux l
 
   type cmp =
-    | Merge of bool
+    | Merge of bool (* false = use the left argument, true = use the right argument *)
     | Diff of int
 
-  let sort cmp l =
-    let rec aux a l =
+  let add cmp x l =
+    let rec aux l =
       match l with
-      | Tip b ->
-        (match cmp a b with
-        | Merge false -> Tip a
+      | Tip y ->
+        (match cmp x y with
+        | Merge false -> Tip x
         | Merge true -> l
         | Diff c ->
-          if c <= 0 then Cons (a, l)
-          else Cons (b, aux a l))
-      | Cons (b, l') ->
-        (match cmp a b with
-         | Merge false -> aux a l'
+          if c <= 0 then Cons (x, l)
+          else Cons (y, Tip x))
+      | Cons (y, l') ->
+        (match cmp x y with
+         | Merge false -> Cons (x, l')
          | Merge true -> l
          | Diff c ->
-            if c <= 0 then Cons (a, l)
-            else Cons (b, aux a l'))
-    in
+            if c <= 0 then Cons (x, l)
+            else let l'' = aux l' in
+              if l'' == l' then l
+              else Cons (y, l''))
+    in aux l
+
+  let sort cmp l =
     match l with
     | Tip _ -> l
-    | Cons (a, l') -> fold (fun a acc -> aux a acc) l' (Tip a)
+    | Cons (a, l') -> fold (fun a acc -> add cmp a acc) l' (Tip a)
 
 end
 
@@ -552,8 +556,9 @@ struct
       match Index.compare idx idx' with
       | 0 -> NeList.Merge (k <= k')
       | x -> NeList.Diff x
-
   end
+
+  open NeList
 
   type t = Premise.t NeList.t
 
@@ -577,12 +582,41 @@ struct
 
   let _map = NeList.map
 
-
   let pr pr_index_point prem =
     let open Pp in
     prlist_with_sep (fun () -> str ",") pr_index_point (to_list prem)
 
+  let add : Premise.t -> t -> t = NeList.add Premise.incl
+
+  let add_opt p o =
+    match o with
+    | None -> NeList.tip p
+    | Some l -> add p l
   let sort : t -> t = NeList.sort Premise.incl
+
+  let filter f l =
+    NeList.filter f l
+
+  let union (prems : t) (prems' : t) : t =
+    fold add prems prems'
+
+  let shift n p =
+    if Int.equal n 0 then p
+    else NeList.map (fun (x,k) -> (x, k + n)) p
+
+  let subst idx u prems =
+    let rec aux l =
+      match l with
+      | Tip (idx', k) ->
+        if Index.equal idx idx' then shift k u
+        else l
+      | Cons ((idx', k) as prem, prems) ->
+        if Index.equal idx idx' then union (shift k u) prems
+        else let prems' = aux prems in
+          if prems' == prems then l
+          else add prem prems'
+    in aux prems
+
 end
 
 let pr_with f (l, n) =
@@ -927,11 +961,17 @@ let change_node m n =
         | _ -> assert false)
       m.entries }
 
+exception Undeclared of Level.t
+
+(* let _ = CErrors.register_handler *)
+  (* (function Undeclared l -> Some Pp.(str"Undeclared universe level: " ++ Level.raw_pr l) | _ -> None) *)
+
 (* canonical representative : we follow the Equiv links *)
 let rec repr m u =
   match PMap.find u m.entries with
   | Equiv (_, v, k) -> let (can, k') = repr m v in (can, k' + k)
   | Canonical arc -> (arc, 0)
+  (* | exception Not_found -> raise (Undeclared (Index.repr u m.table)) *)
 
 let rec repr_expr m (u, k as x) =
   match PMap.find u m.entries with
@@ -940,6 +980,7 @@ let rec repr_expr m (u, k as x) =
 
 let rec repr_expr_can m (u, k) =
   match PMap.find u m.entries with
+  (* | exception Not_found -> raise (Undeclared (Index.repr u m.table)) *)
   | Equiv (_, v, k') -> repr_expr_can m (v, k' + k)
   | Canonical can -> (can, k)
 
@@ -977,15 +1018,17 @@ let repr_node m u =
     CErrors.anomaly ~label:"Univ.repr"
       Pp.(str"Universe " ++ debug_pr_level (Index.repr idx m.table) ++ str" undefined.") *)
 
-let _remove_node m n =
-  let entries =
-    PMap.filter (fun _ a ->
+let remove_node m n =
+  let (entries, equivs) =
+    PMap.fold (fun idx a (entries, equivs as acc) ->
       match a with
-      | Canonical _ -> true
-      | Equiv (_, idx, _) ->
-        not (Index.equal (fst (repr m idx)).canon n.canon)) m.entries in
+      | Canonical _ -> acc
+      | Equiv (_, idx', _) ->
+        if Index.equal (fst (repr m idx')).canon n.canon then
+          (PMap.remove idx entries, PSet.add idx equivs)
+        else acc) m.entries (m.entries, PSet.empty) in
   let entries = PMap.remove n.canon entries in
-  { m with entries }
+  { m with entries }, equivs
 
 let repr_node_expr m (u, k) =
   let (can, k') = repr_node m u in (can, k + k')
@@ -1026,7 +1069,10 @@ module PremisesRepr =
 struct
 
   let repr m (x : Premises.t) : Premises.t =
-    Premises.smart_map (repr_expr m) x
+    let x' = Premises.smart_map (repr_expr m) x in
+    if x' == x then x
+    else (* There was a change in the model *)
+      Premises.sort x'
 
   let premise_equal_upto m u v =
     eq_expr (repr_expr m u) (repr_expr m v)
@@ -1184,7 +1230,7 @@ let cons_opt_nelist tip rest =
   | None -> NeList.tip tip
   | Some l -> NeList.Cons (tip, l)
 
-let app_opt_nelist u rest =
+let _app_opt_nelist u rest =
   match rest with
   | None -> u
   | Some l -> NeList.append u l
@@ -1331,17 +1377,21 @@ let statistics model =
 let pr_can m can =
   debug_pr_level (Index.repr can.canon m.table)
 
-let pr_can_clauses m can =
-  Pp.(str"For " ++ pr_can m can ++ fnl () ++ pr_clauses_of m can.canon can.clauses_bwd ++ fnl () ++
-  str"Forward" ++ spc () ++ pr_fwd_clause m can.canon can.clauses_fwd ++ fnl ())
+let pr_can_clauses m ?(local=false) can =
+  if not local || (local && can.local == Local) then
+    Pp.(str"For " ++ pr_can m can ++ fnl () ++ pr_clauses_of m can.canon can.clauses_bwd ++ fnl () ++
+        str"Forward" ++ spc () ++ pr_fwd_clause m can.canon can.clauses_fwd ++ fnl ())
+  else Pp.mt ()
 
-let pr_clauses_all m =
+let pr_clauses_all ?(local=false) m =
   let open Pp in
   PMap.fold (fun p e acc ->
     match e with
-    | Equiv (local, p', k) ->
-      pr_raw_index_point m p ++ str " = " ++ pr_raw_index_point_expr m (p',k) ++ pr_local local ++ spc () ++ acc
-    | Canonical can -> pr_can_clauses m can ++ acc)
+    | Equiv (is_local, p', k) ->
+      if not local || (local && is_local == Local) then
+        pr_raw_index_point m p ++ str " = " ++ pr_raw_index_point_expr m (p',k) ++ pr_local is_local ++ spc () ++ acc
+      else acc
+    | Canonical can -> pr_can_clauses ~local m can ++ acc)
     m.entries (Pp.mt ())
 
 let debug_check_invariants m =
@@ -1354,8 +1404,6 @@ let debug_check_invariants m =
       raise e)
 
 (* PMaps are purely functional hashmaps *)
-
-exception Undeclared of Level.t
 
 let get_canonical_value m c =
   match m.values with
@@ -1763,9 +1811,9 @@ let pr_levelmap (m : model) : Pp.t =
     debug_pr_level point ++ str" -> " ++ pr_opt int value) (PMap.bindings m.entries))
   (* Level.Map.pr Pp.int m  *)
 
-let pr_model model =
+let pr_model ?(local=false) model =
   (* Pp.(str "model: " ++ pr_levelmap model) *)
-  Pp.(str"clauses: " ++ pr_clauses_all model)
+  Pp.(str"clauses: " ++ pr_clauses_all ~local model)
 
 let debug_model m =
   debug_model Pp.(fun () -> str"Model is " ++ pr_levelmap m)
@@ -2664,7 +2712,7 @@ let repr_can_clause m (prems, conclk) =
   let prems = repr_can_premises m prems in
   (prems, concl)
 
-let enforce_can_constraints cls m =
+let _enforce_can_constraints cls m =
   List.fold_left (fun m cl ->
     match m with
     | None -> None
@@ -2843,10 +2891,6 @@ let get_explanation ((l, k, r) : univ_constraint) model : explanation =
   | Le -> get_explanation_le l r
   | Eq -> if check_leq model l r then get_explanation_le r l else get_explanation_le l r
 
-let shift_prems n p =
-  if Int.equal n 0 then p
-  else NeList.map (fun (x,k) -> (x, k + n)) p
-
 (* Precondition: all mentionned universes are canonical *)
 let merge_clauses premsfwd can cank premsbwd concl conclk =
   (* New constraint: premsbwd[can + k := premsfwd + k'] -> concl + conclk']  *)
@@ -2856,9 +2900,9 @@ let merge_clauses premsfwd can cank premsbwd concl conclk =
     if bk <= cank then
       (* Shift the backwards clause *)
       let diff = cank - bk in
-      premsfwd, shift_prems diff premsbwd, conclk + diff
+      premsfwd, Premises.shift diff premsbwd, conclk + diff
     else
-      shift_prems (bk - cank) premsfwd, premsbwd, conclk
+      Premises.shift (bk - cank) premsfwd, premsbwd, conclk
   in
   let prems' = NeList.map_splice (fun (c, _) ->
     if Index.equal c can then Some premsfwd else None) premsbwd in
@@ -2900,10 +2944,10 @@ let remove_fwd_clauses_from model prems target =
       change_node model { can with clauses_fwd = fwd' })
       prems model
 
-let remove_all_bwd_clauses_from model prem target =
-  let can, _k = repr model prem in
+let remove_all_bwd_clauses_from model concl prem =
+  let can, _k = repr model concl in
   let bwd' = ClausesOf.filter_map (fun (_, _local, prems as cli) ->
-    if Premises._exists (fun (prem, _) -> let canprem, _ = repr model prem in Index.equal canprem.canon target) prems then
+    if Premises._exists (fun (prem', _) -> let canprem, _ = repr model prem' in Index.equal canprem.canon prem) prems then
       None
     else Some cli) can.clauses_bwd
   in
@@ -2923,6 +2967,36 @@ let clauses_of_univ_constraint u v cls =
 let unrepr_univ model u = Universe.unrepr (List.map (to_expr model) u)
 let repr_univ model u = List.map (repr_node_expr model) (Universe.repr u)
 
+(** Simplify u <= max (Set, v) clauses to u <= v and filter away u <= ... u + n , ... clauses, always valid *)
+let filter_trivial_clause m (prems, (concl, k as conclk)) =
+  (* Trivial ... u + k + n ... -> u + k clause *)
+  if NeList.exists (fun (prem, k') -> Index.equal prem concl && k' >= k) prems then None
+  else
+    let canset = Index.find Level.set m.table in
+    let filter (prem, _k') = not (Index.equal prem concl (* k' < k *)) in
+    match Premises.filter filter prems with
+    | None -> (* We removed the only trivial premise (concl, k') -> concl, k *) None
+    | Some prems ->
+      (* Filter out `Set` from max(Set, u) -> v constraints *)
+      let prems =
+        match NeList.filter (fun (prem, k) -> not (Index.equal prem canset && Int.equal k 0)) prems with
+        | Some prems -> prems (* There were at least two premises in the rule *)
+        | None -> prems
+      in
+      Some (prems, conclk)
+
+let can_clause_of_idx_clause m (prems, concl) =
+  let prems = NeList.map (repr_expr_can m) prems in
+  let concl = repr_expr_can m concl in
+  (prems, concl)
+
+let enforce_clause cl model =
+  let (prems, concl) = can_clause_of_idx_clause model cl in
+  enforce_leq_can concl prems model
+
+let pr_clause model cl =
+  pr_clause (pr_index_point model) cl
+
 exception InconsistentEquality
 
 (** [set idx u model] substitutes universe [u] for all occurrences of [idx] in model, resulting
@@ -2931,7 +3005,7 @@ exception InconsistentEquality
 
   @raises InconsistentEquality if one of the constraints involving [idx] cannot be satisfied when substituting [idx] with [u]. *)
 
-let set_can can k u model =
+let set_can (can,k) u model =
   let u =
     if Int.equal k 0 then u
     else
@@ -2941,41 +3015,81 @@ let set_can can k u model =
   in
   let fwd = can.clauses_fwd in
   let bwd = can.clauses_bwd in
-  let modelfwd =
-     ForwardClauses.fold (fun ~kprem ~concl ~prems model ->
-      let concl, k = repr model concl in
+  let uprems = NeList.map (fun (can, k) -> can.canon, k) u in
+  _debug_set Pp.(fun () ->
+    str"Looking at forward clauses " ++ pr_fwd_clause model can.canon fwd);
+  let model, newclauses =
+     ForwardClauses.fold (fun ~kprem ~concl ~prems (model, newclauses) ->
+      let concl, k = repr_expr model (concl, 0) in
       let fwd = PartialClausesOf.shift k prems in
-      PartialClausesOf.fold (fun (conclk, premsfwd) model ->
+      PartialClausesOf.fold (fun (conclk, premsfwd) (model, newclauses) ->
         (* premsfwd, can + kprem -> concl + conclk *)
-        let premsrepr = Option.map (repr_premises model) premsfwd in
-        let conclk = repr_can_expr model (concl, conclk) in
-        let premsfwd = (app_opt_nelist (shift_prems kprem (repr_can_premises model u)) premsrepr) in
-        match enforce_leq_can conclk premsfwd model with
-        | Some model -> remove_all_bwd_clauses_from model concl.canon can.canon
-        | None -> raise InconsistentEquality)
-        fwd model)
-      fwd model
+        (* Remove duplicate records of this constraint in premsfwd *)
+        let premsrepr = Option.map (PremisesRepr.repr model) premsfwd in
+        let model = remove_fwd_clauses_from model premsfwd can.canon in
+        let model = remove_all_bwd_clauses_from model concl can.canon in
+        let conclk = (concl, k + conclk) in
+        (* Ensure the clause is not already trivial (self-loops) *)
+        let precl = (Premises.add_opt (can.canon, kprem) premsrepr, conclk) in
+        match filter_trivial_clause model precl with
+        | None -> model, newclauses
+        | Some (prems', conclk) ->
+          _debug_set Pp.(fun () ->
+              str"filter_trivial_clause " ++ pr_clause model precl ++ str " = " ++ pr_clause model (prems', conclk));
+          let cl = (Premises.subst can.canon uprems prems', conclk) in
+          _debug_set Pp.(fun () ->
+            str"After substitution of " ++ pr_raw_index_point model can.canon ++ str" with " ++ pr_can_prems model u ++str " : " ++ pr_clause model cl);
+          model, cl :: newclauses)
+        fwd (model, newclauses))
+      fwd (model, [])
   in
-  let modelbwd =
-    ClausesOf.fold (fun (cank, _local, premsbwd) model ->
+  _debug_set Pp.(fun () ->
+    str"New clauses from forward: " ++ prlist_with_sep spc (pr_clause model) newclauses ++ fnl () ++
+    str"Looking at backward clauses " ++ pr_clauses_of model can.canon bwd);
+  let model, newclauses =
+    ClausesOf.fold (fun (cank, _local, premsbwd) (model, newclauses) ->
       (* premsbwd -> can + cank *)
-      let premsrepr = repr_premises model premsbwd in
-      let u' = shift_prems cank (repr_can_premises model u) in
-      let cls = clauses_of_univ_constraint premsrepr u' [] in
-      match enforce_can_constraints cls model with
-      | Some model -> remove_fwd_clauses_to model premsbwd can.canon
-      | None -> raise InconsistentEquality)
-    bwd modelfwd
-  in _remove_node modelbwd can
+      let premsbwd = PremisesRepr.repr model premsbwd in
+      let model = remove_fwd_clauses_to model premsbwd can.canon in
+      match filter_trivial_clause model (premsbwd, (can.canon, cank)) with
+      | None -> model, newclauses
+      | Some (prems', _conclk) ->
+        let u' = Premises.shift cank uprems in
+        let cls = clauses_of_univ_constraint prems' u' [] in
+        model, cls @ newclauses)
+    bwd (model, newclauses)
+  in
+  let model, equivs = remove_node model can in
+  _debug_set Pp.(fun () ->
+    str"After removals, model is " ++ pr_clauses_all ~local:true model ++
+    str"Adding constraints" ++ prlist_with_sep spc (pr_clause model) newclauses);
+  let enforce_clause model cl =
+    match enforce_clause cl model with
+    | Some model -> model
+    | None -> raise InconsistentEquality
+  in List.fold_left enforce_clause model newclauses, equivs
+
+exception OccurCheck
+
+let unrepr_indexes model idxs =
+  PSet.fold (fun idx -> Level.Set.add (Index.repr idx model.table)) idxs Level.Set.empty
 
 let set lvl u model =
   _debug_set Pp.(fun () -> str"Setting " ++ debug_pr_level lvl ++ str" := " ++ Universe.pr debug_pr_level u);
-  let can, k = repr_node model lvl in
+  let cank = repr_node model lvl in
   let u = NeList.of_list (repr_univ model u) in
-  set_can can k u model
+  _debug_set Pp.(fun () -> str"Canonical representatives: " ++ pr_can_expr model cank ++ str" = " ++ pr_can_prems model u);
+  if NeList.exists (fun (can', _k') -> fst cank == can') u then raise OccurCheck
+  else
+    let setidx = Index.find Level.set model.table in
+    if Index.equal (fst cank).canon setidx then raise InconsistentEquality
+    else
+      let model, equivs = set_can cank u model in
+      let equivs = unrepr_indexes model equivs in
+      model, equivs
 
 type 'a simplification_result =
-  | HasSubst of 'a * Universe.t
+  | HasSubst of 'a * Level.Set.t * Universe.t
   | NoBound
   | CannotSimplify
 
@@ -3033,10 +3147,10 @@ let minimize_can can k model =
     if Universe.for_all (fun (_, k) -> k >= 0) glb
     then
       (_debug_minim Pp.(fun () -> str"Removing: " ++ pr_can model can ++ str " in " ++ pr_clauses_all model);
-      let model = _remove_node model can in
+      let model, equivs = remove_node model can in
       debug_check_invariants model;
       _debug_minim Pp.(fun () -> str"Removed " ++ pr_can model can ++ str ", new model: " ++ pr_clauses_all model);
-      HasSubst (model, glb))
+      HasSubst (model, unrepr_indexes model equivs, glb))
     else CannotSimplify
 
 
@@ -3045,7 +3159,7 @@ let minimize level model =
   | exception Not_found -> CannotSimplify (* should rather raise the exception here *)
   | (can, k) -> minimize_can can k model
 
-let maximize_can can _k model =
+let maximize_can (can, k) model =
   let bwd = can.clauses_bwd in
   _debug_minim Pp.(fun () -> str"Maximizing " ++ pr_can model can ++ str" in graph: " ++ pr_clauses_all model);
   let card = ClausesOf.cardinal bwd in
@@ -3057,14 +3171,15 @@ let maximize_can can _k model =
     let ubound = NeList.map (repr_expr_can model) premsbwd in
     if NeList.for_all (fun (_, k) -> cank <= k) ubound then
       let ubound = NeList.map (fun (can, k) -> (can, k - cank)) ubound in
-      try HasSubst (set_can can _k ubound model, unrepr_univ model (NeList.to_list ubound))
+      let model, equivs = set_can (can, k) ubound model in
+      try HasSubst (model, unrepr_indexes model equivs, unrepr_univ model (NeList.to_list ubound))
       with InconsistentEquality -> CannotSimplify
     else CannotSimplify
 
 let maximize level model =
   match repr model (Index.find level model.table) with
   | exception Not_found -> CannotSimplify
-  | (can, k) -> maximize_can can k model
+  | can -> maximize_can can model
 
 let remove_set_clauses_can can model =
   let setidx = Index.find Level.set model.table in
@@ -3247,7 +3362,7 @@ let constraints_for ~(kept:Level.Set.t) model (fold : 'a constraint_fold) (accu 
     let cprems = canonical_premises model prems in
     if not (NeList.exists (fun (v, _) -> PSet.mem v.canon removed) cprems) then
       (let cl = (prems, (u.canon,k)) in
-      debug_constraints_for Pp.(fun () -> str"constraints_for adding (from " ++ pr_raw_index_point model uprev ++ str"): " ++ pr_clause (pr_index_point model) cl);
+      debug_constraints_for Pp.(fun () -> str"constraints_for adding (from " ++ pr_raw_index_point model uprev ++ str"): " ++ pr_clause model cl);
        add_cst (NeList.tip (canon_repr u, k)) Le (can_prem_to_prem cprems) csts)
     else csts
   in

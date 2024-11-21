@@ -68,12 +68,15 @@ val check_eq_sort : t -> Sorts.t  -> Sorts.t -> bool
 val check_leq_sort : t -> Sorts.t -> Sorts.t -> bool
 
 exception InconsistentEquality
+exception OccurCheck
 (** Sets a universe level equal to a universe in the graph.
    Stronger than enforcing an equality as the level disappears from the
-   graph in case of success.
+   graph in case of success. Returns a new graph + a list of universe levels
+   that are made equal due to the constraint and also disappear from the graph as a result.
    @raise InconsistentEquality if the equality cannot be enforced.
+   @raise OccurCheck if the level appears in the universe, up to equivalence in the graph
    *)
-val set : Level.t -> Universe.t -> t -> t
+val set : Level.t -> Universe.t -> t -> t * Level.Set.t
 
 (** Adds a universe to the graph, ensuring it is >= or > Set.
    @raise AlreadyDeclared if the level is already declared in the graph. *)
@@ -117,7 +120,8 @@ val maximize : Level.t -> t -> t Loop_checking.simplification_result
 (* Hack for template polymorphism *)
 val remove_set_clauses : Level.t -> t -> t
 
-val pr_model : t -> Pp.t
+(* Print the model. Optionally print only the local universes and constraints. *)
+val pr_model : ?local:bool -> t -> Pp.t
 
 val domain : t -> Level.Set.t
 (** Known universes *)

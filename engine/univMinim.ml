@@ -327,43 +327,49 @@ let sup_variances (variances : InferCumulativity.variances) ls =
   let def = Level.Set.choose ls in
   Level.Set.fold fold ls (Option.get (Level.Map.find_opt def variances))
 
+let on_graph_equivs (ctx, us, variances, graph) equivs b =
+  let us = Level.Set.fold (fun l -> UnivFlex.define l b) equivs us in
+  let ctx = Level.Set.fold Level.Set.remove equivs ctx in
+  let variances = Level.Set.fold (fun l variances -> Level.Map.remove l (update_variances variances l (Univ.Universe.levels b))) equivs variances in
+  (ctx, us, variances, graph)
+
+let instantiate_variable l (b : Universe.t) (ctx, us, variances, graph) =
+  debug Pp.(fun () -> str"Instantiating " ++ Level.raw_pr l ++ str " with " ++ Universe.pr Level.raw_pr b);
+  debug Pp.(fun () -> str"Context: " ++ Level.Set.pr Level.raw_pr ctx);
+  debug Pp.(fun () -> str"Model: " ++ UGraph.pr_model ~local:true graph);
+  let graph, equivs = UGraph.set l b graph in
+  debug Pp.(fun () -> str "Set affected also: " ++ prlist_with_sep spc Level.raw_pr (Level.Set.elements equivs));
+  debug Pp.(fun () -> str"Model after set: " ++ UGraph.pr_model ~local:true graph);
+  on_graph_equivs (ctx, us, variances, graph) (Level.Set.add l equivs) b
+
 let simplify_variables partial ctx us variances graph =
   let dom = UnivFlex.domain us in
   debug_each Pp.(fun () -> str"Simplifying variables with " ++ (if partial then str"partial" else str"non-partial") ++ str" information about the definition");
   let minimize u (ctx, us, variances, graph) =
     match UGraph.minimize u graph with
-    | HasSubst (graph, lbound) ->
+    | HasSubst (graph, equivs, lbound) ->
       debug_each Pp.(fun () -> str"Minimizing " ++ Level.raw_pr u ++ str" resulted in lbound: " ++ Universe.pr Level.raw_pr lbound ++ str" and graph " ++ UGraph.pr_model graph);
-      let variances = update_variances variances u (Universe.levels lbound) in
-      (Level.Set.remove u ctx, UnivFlex.define u lbound us,
-       Level.Map.remove u variances, graph)
+      on_graph_equivs (ctx, us, variances, graph) (Level.Set.add u equivs) lbound
     | NoBound | CannotSimplify -> (ctx, us, variances, graph)
   in
-  let collapse_to_set u (ctx, us, variances, graph as acc) =
-    try
-      let graph = UGraph.set u Universe.type0 graph in
-      (Level.Set.remove u ctx, UnivFlex.define u Universe.type0 us,
-       Level.Map.remove u variances, graph)
-    with UGraph.InconsistentEquality -> acc
+  let collapse_to_set u acc =
+    try instantiate_variable u Universe.type0 acc
+    with UGraph.InconsistentEquality | UGraph.OccurCheck -> acc
   in
   let arbitrary u (ctx, us, variances, graph as acc) =
     match UGraph.minimize u graph with
-    | HasSubst (graph, lbound) ->
+    | HasSubst (graph, equivs, lbound) ->
       debug_each Pp.(fun () -> str"Minimizing " ++ Level.raw_pr u ++ str" resulted in lbound: " ++ Universe.pr Level.raw_pr lbound ++ str" and graph " ++ UGraph.pr_model graph);
-      let variances = update_variances variances u (Universe.levels lbound) in
-      (Level.Set.remove u ctx, UnivFlex.define u lbound us,
-       Level.Map.remove u variances, graph)
+      on_graph_equivs (ctx, us, variances, graph) (Level.Set.add u equivs) lbound
     | NoBound -> (* Not bounded and not appearing anywhere: can collapse *)
       collapse_to_set u acc
     | CannotSimplify -> acc
   in
   let maximize u (ctx, us, variances, graph as acc) =
     match UGraph.maximize u graph with
-    | HasSubst (graph, ubound) ->
+    | HasSubst (graph, equivs, ubound) ->
       debug_each Pp.(fun () -> str"Maximizing " ++ Level.raw_pr u ++ str" resulted in ubound: " ++ Universe.pr Level.raw_pr ubound ++ str" and graph " ++ UGraph.pr_model graph);
-      let variances = update_variances variances u (Universe.levels ubound) in
-      (Level.Set.remove u ctx, UnivFlex.define u ubound us,
-       Level.Map.remove u variances, graph)
+      on_graph_equivs (ctx, us, variances, graph) (Level.Set.add u equivs) ubound
     | NoBound | CannotSimplify -> acc
   in
   let simplify_min u (ctx, us, variances, graph as acc) =
@@ -496,15 +502,11 @@ let new_minimize_weak_pre us weak smallles =
     weak smallles
 
 let new_minimize_weak ctx us weak (g, variances) =
-  UPairSet.fold (fun (u,v) (ctx, us, g, variances as acc) ->
+  UPairSet.fold (fun (u,v) (ctx, us, variances, g as acc) ->
     let norm = Universe.subst_fn (level_subst_of (UnivFlex.normalize_univ_variable us)) in
     let u = norm u and v = norm v in
-    if (Universe.is_type0 u || Universe.is_type0 v) then begin
-      if get_set_minimization() then begin
-        if Universe.is_type0 u then (ctx,us,g,variances)
-        else (ctx,us,g,variances)
-      end else acc
-    end else
+    if (Universe.is_type0 u || Universe.is_type0 v) then acc
+    else
       let set_to a b =
         debug Pp.(fun () -> str"Minimize_weak: setting " ++ Level.raw_pr a ++ str" to " ++ Universe.pr Level.raw_pr b);
         let levels = Universe.levels b in
@@ -514,9 +516,10 @@ let new_minimize_weak ctx us weak (g, variances) =
           let variances =
             Level.Set.fold (fun bl variances -> set_variance variances bl sup_variances) levels variances
           in
-          (Level.Set.remove a ctx, UnivFlex.define a b us, UGraph.set a b g, Level.Map.remove a variances)
+          let g, equivs = UGraph.set a b g in
+          on_graph_equivs (ctx, us, variances, g) (Level.Set.add a equivs) b
         | _, _ -> (* One universe is not irrelevant *)
-          (ctx,us, g, variances)
+          (ctx,us, variances, g)
       in
       let check_le a b = UGraph.check_constraint g (a,Le,b) in
       if check_le u v || check_le v u
@@ -527,7 +530,7 @@ let new_minimize_weak ctx us weak (g, variances) =
         match Universe.level v with
         | Some v when UnivFlex.mem v us -> set_to v u
         | _ -> acc)
-    weak (ctx, us, g, variances)
+    weak (ctx, us, variances, g)
 
 
 let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?binders {weak_constraints=weak;above_prop} =
@@ -704,7 +707,7 @@ let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?bin
       (* debug Pp.(fun () -> str"Model after removal: " ++ UGraph.pr_model graph); *)
       let ctx', us, variances, graph = simplify_variables partial ctx us variances graph in
       debug_graph Pp.(fun () -> str"Model after simplification: " ++ UGraph.pr_model graph ++ fnl () ++ UnivFlex.pr Level.raw_pr us);
-      let ctx', us, graph, variances = new_minimize_weak ctx' us weak (graph, variances) in
+      let ctx', us, variances, graph = new_minimize_weak ctx' us weak (graph, variances) in
       let locals, cstrs, partition = UGraph.constraints_of_universes ~only_local:true graph in
       let cstrs = partition_to_constraints partition cstrs in
       let cstrs =

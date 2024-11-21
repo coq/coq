@@ -903,7 +903,8 @@ let declare_class_constant ~univs paramimpls params data =
       UVars.Instance.empty,
       UState.{ univs with universes_entry_universes = UState.Monomorphic_entry Univ.ContextSet.empty }
     | UState.Polymorphic_entry (uctx, variances) ->
-      UVars.Instance.of_level_instance (UVars.UContext.instance uctx), univs
+      UVars.Instance.of_level_instance (UVars.UContext.instance uctx),
+      UState.{ univs with universes_entry_universes = Polymorphic_entry (uctx, None) }
   in
   let cstu = (cst, inst) in
   let inst_type = appvectc (mkConstU cstu) (Context.Rel.instance mkRel 0 params) in

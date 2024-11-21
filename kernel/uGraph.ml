@@ -103,8 +103,11 @@ let check_constraint { graph = g; type_in_type } (u,d,v) =
 let check_constraints csts g = Constraints.for_all (check_constraint g) csts
 
 exception InconsistentEquality = G.InconsistentEquality
+exception OccurCheck = G.OccurCheck
+
 let set l u g =
-  { g with graph = G.set l u g.graph }
+  let g', equivs = G.set l u g.graph in
+  { g with graph = g' }, equivs
 
 module Bound =
 struct
@@ -126,13 +129,13 @@ let check_declared_universes g l =
 
 let minimize l g =
   match G.minimize l g.graph with
-  | G.HasSubst (graph, lbound) -> G.HasSubst ({ g with graph }, lbound)
+  | G.HasSubst (graph, equivs, lbound) -> G.HasSubst ({ g with graph }, equivs, lbound)
   | G.NoBound -> G.NoBound
   | G.CannotSimplify -> G.CannotSimplify
 
 let maximize l g =
   match G.maximize l g.graph with
-  | G.HasSubst (graph, lbound) -> G.HasSubst ({ g with graph }, lbound)
+  | G.HasSubst (graph, equivs, lbound) -> G.HasSubst ({ g with graph }, equivs, lbound)
   | G.NoBound -> G.NoBound
   | G.CannotSimplify -> G.CannotSimplify
 
@@ -140,7 +143,7 @@ let remove_set_clauses l g =
   let graph = G.remove_set_clauses l g.graph in
   { g with graph }
 
-let pr_model g = G.pr_model g.graph
+let pr_model ?local g = G.pr_model ?local g.graph
 
 let constraints_of_universes ?(only_local=false) g =
   let add cst accu = Constraints.add cst accu in

@@ -630,6 +630,19 @@ let whd_decompose_lambda env ?(evars = CClosure.default_evar_handler env) c =
   in
   decrec env Context.Rel.empty c
 
+let whd_decompose_prod env ?(evars = CClosure.default_evar_handler env) c =
+    let open Context.Rel.Declaration in
+    let infos = infer_infos env ~evars in
+    let rec decrec env m c =
+      let t = CClosure.whd_val (fst infos) (snd infos) (CClosure.inject c) in
+      match kind t with
+        | Prod (n,a,c0) ->
+            let d = LocalAssum (n,a) in
+            decrec (Environ.push_rel d env) (Context.Rel.add d m) c0
+        | _ -> m,t
+    in
+    decrec env Context.Rel.empty c
+
 let infer_body env ~evars ~shift variances body =
   let ctx, body = whd_decompose_lambda ~evars env body in
   let env, variances = infer_context env ~evars ~shift variances ctx in
@@ -637,7 +650,7 @@ let infer_body env ~evars ~shift variances body =
   infer_term Cumul env ~evars variances body
 
 let infer_type env ~evars ?(shift = 0) variances arcn =
-  let ctx, codom = Reduction.whd_decompose_prod ~evars env arcn in
+  let ctx, codom = whd_decompose_prod ~evars env arcn in
   let env, variances = infer_context env ~evars ~shift variances ctx in
   let variances = Inf.set_position Position.InType variances in
   infer_term Cumul env ~evars variances codom
