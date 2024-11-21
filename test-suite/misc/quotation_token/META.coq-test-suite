@@ -1,7 +1,7 @@
 package "quotation" (
     directory = "src"
     version = "dev"
-    description = "An quotation test plugin"
+    description = "A quotation test plugin"
     requires = "coq-core.plugins.ltac"
     archive(byte) = "quotation_plugin.cma"
     archive(native) = "quotation_plugin.cmxa"
