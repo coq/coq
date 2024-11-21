@@ -395,8 +395,7 @@ FILESTOINSTALL = \
 	$(VOFILES) \
 	$(VFILES) \
 	$(GLOBFILES) \
-	$(NATIVEFILES) \
-	$(CMXSFILES)		# to be removed when we remove legacy loading
+	$(NATIVEFILES)
 FINDLIBFILESTOINSTALL = \
 	$(CMIFILESTOINSTALL)
 ifeq '$(HASNATDYNLINK)' 'true'
