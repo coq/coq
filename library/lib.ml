@@ -334,6 +334,20 @@ let discharge_proj_repr p =
     else
       p
 
+let debug_object_name = function
+  | Libobject.ModuleObject _ -> "ModuleObject"
+  | ModuleTypeObject  _-> "ModuleTypeObject"
+  | IncludeObject _ -> "IncludeObject"
+  | KeepObject _ -> "KeepObject"
+  | EscapeObject _ -> "EscapeObject"
+  | ExportObject _ -> "ExportObject"
+  | AtomicObject (Dyn (tag,_)) -> Libobject.Dyn.repr tag
+
+let anomaly_unitialized_add_leaf stage o =
+  CErrors.anomaly
+    Pp.(str "cannot add object (" ++ str (debug_object_name o) ++ pr_comma() ++
+        str "in " ++ str stage ++ str "): not initialized")
+
 (** The [LibActions] abstraction represent the set of operations on the Lib
     structure that is specific to a given stage. Two instances are defined below,
     for Synterp and Interp. *)
@@ -399,7 +413,7 @@ module SynterpActions : LibActions with type summary = Summary.Synterp.frozen = 
     let lib_stk = match !synterp_state.lib_stk with
       | [] ->
         (* top_printers does set_bool_option_value which adds a leaf *)
-        if !Flags.in_debugger then [dummylib, [leaf]] else assert false
+        if !Flags.in_debugger then [dummylib, [leaf]] else anomaly_unitialized_add_leaf "synterp" leaf
       | (node, leaves) :: rest -> (node, leaf :: leaves) :: rest
     in
     synterp_state := { !synterp_state with lib_stk }
@@ -485,7 +499,7 @@ module InterpActions : LibActions with type summary = Summary.Interp.frozen = st
     let lib_stk = match !interp_state with
       | [] ->
         (* top_printers does set_bool_option_value which adds a leaf *)
-        if !Flags.in_debugger then [dummylib, [leaf]] else assert false
+        if !Flags.in_debugger then [dummylib, [leaf]] else anomaly_unitialized_add_leaf "interp" leaf
       | (node, leaves) :: rest -> (node, leaf :: leaves) :: rest
     in
     interp_state := lib_stk
