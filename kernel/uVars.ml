@@ -282,13 +282,23 @@ struct
 
   let term_variance_pos { in_binders; in_term; in_type = _ }  =
     let in_binders = binders_variance in_binders in
-    let sup_opt = Option.union Variance.sup in
-    if Option.is_empty in_term then
+    match in_term with
+    | None ->
       Option.default (Variance.Irrelevant, Position.InType) in_binders
-    else
-      let v = sup_opt in_term (Option.map fst in_binders) in
-      Option.cata (fun v -> (v, Position.InTerm)) (Variance.Irrelevant, Position.InTerm) v
+    | Some vterm ->
+      match in_binders with
+      | None -> (vterm, Position.InTerm)
+      | Some (vb, bp)  -> (Variance.sup vterm vb, bp)
 
+  (* let term_variance_pos { in_binders; in_term; in_type }  =
+    let in_binders = binders_variance in_binders in
+    let open Variance in
+    let open Position in
+    match to_variance in_term, to_variance in_type, in_binders with
+    | Irrelevant, Irrelevant, inb -> inb
+    | Irrelevant, in_type, (bv, _) -> (Variance.sup in_type bv, InType)
+    | v, Irrelevant, (bv, bp) -> (Variance.sup v bv, bp)
+    | v, v', (bv, _) -> (Variance.sup v (Variance.sup v' bv), InTerm) *)
 end
 
 module Variances =

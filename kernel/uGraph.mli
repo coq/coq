@@ -58,7 +58,9 @@ type univ_inconsistency = univ_variable_printers option * (constraint_type * Sor
 
 exception UniverseInconsistency of univ_inconsistency
 
-val enforce_constraint : univ_constraint -> t -> t
+type level_equivalences = (Level.t * (Level.t * int)) list
+
+val enforce_constraint : univ_constraint -> t -> t * level_equivalences
 
 val merge_constraints : Constraints.t -> t -> t
 
@@ -76,7 +78,7 @@ exception OccurCheck
    @raise InconsistentEquality if the equality cannot be enforced.
    @raise OccurCheck if the level appears in the universe, up to equivalence in the graph
    *)
-val set : Level.t -> Universe.t -> t -> t * Level.Set.t
+val set : Level.t -> Universe.t -> t -> t * level_equivalences
 
 (** Adds a universe to the graph, ensuring it is >= or > Set.
    @raise AlreadyDeclared if the level is already declared in the graph. *)

@@ -1019,16 +1019,17 @@ let repr_node m u =
       Pp.(str"Universe " ++ debug_pr_level (Index.repr idx m.table) ++ str" undefined.") *)
 
 let remove_node m n =
-  let (entries, equivs) =
-    PMap.fold (fun idx a (entries, equivs as acc) ->
+  let entries =
+    PMap.fold (fun idx a entries ->
       match a with
-      | Canonical _ -> acc
-      | Equiv (_, idx', _) ->
-        if Index.equal (fst (repr m idx')).canon n.canon then
-          (PMap.remove idx entries, PSet.add idx equivs)
-        else acc) m.entries (m.entries, PSet.empty) in
+      | Canonical _ -> entries
+      | Equiv (_, idx', k) ->
+        let idx', _k = repr_expr m (idx', k) in
+        if Index.equal idx' n.canon then
+          PMap.remove idx entries
+        else entries) m.entries m.entries in
   let entries = PMap.remove n.canon entries in
-  { m with entries }, equivs
+  { m with entries }
 
 let repr_node_expr m (u, k) =
   let (can, k') = repr_node m u in (can, k + k')
@@ -1924,8 +1925,11 @@ let infer_clauses_extension cans m =
 let pr_incr pr (x, k) =
   Pp.(pr x ++ if k == 0 then mt() else str"+" ++ int k)
 
-(* Precondition: canu.value = canv.value, so no new model needs to be computed *)
-let enforce_eq_can model (canu, ku as _u) (canv, kv as _v) : (canonical_node * int) * t =
+(* Precondition: canu.value = canv.value, so no new model needs to be computed.
+  Returns the chosen (can + k') universe, the new [other = level + k] binding
+  and the new model
+*)
+let enforce_eq_can model (canu, ku as _u) (canv, kv as _v) : (canonical_node * int) * (Index.t * (Index.t * int)) * t =
   (* assert (expr_value model u = expr_value model v); *)
   (* assert (canu != canv); *)
   (* v := u or u := v, depending on Level.is_source (for Set) *)
@@ -1996,7 +2000,7 @@ let enforce_eq_can model (canu, ku as _u) (canv, kv as _v) : (canonical_node * i
     can, change_node model can
   in
   debug_check_invariants model;
-  (can, k), model
+  (can, k), (other.canon, (can.canon, diff)), model
 
 let enforce_eq_can = time3 (Pp.str"enforce_eq_can") enforce_eq_can
 
@@ -2005,11 +2009,12 @@ let _pr_can_constraints m can =
   pr_clauses_of m can.canon can.clauses_bwd ++ spc () ++
   str"Forward clauses: " ++ pr_fwd_clause m can.canon can.clauses_fwd
 
-let enforce_eq_can m can can' =
+let enforce_eq_can m can can' equivs =
   let can = repr_can_expr m can in
   let can' = repr_can_expr m can' in
-  if fst can == fst can' then (can, m)
-  else enforce_eq_can m can can'
+  if fst can == fst can' then (can, equivs, m)
+  else let can, other, m = enforce_eq_can m can can' in
+    (can, other :: equivs, m)
 
 let make_equiv m equiv =
   match equiv with
@@ -2020,13 +2025,13 @@ let make_equiv m equiv =
       they should hence have the same values *)
     if CDebug.(get_flag debug_loop_checking_invariants) then
       assert (List.for_all (fun x -> expr_value m x = expr_value m can) (can' :: tl));
-    let can, m =
-      List.fold_left (fun (can, m) can' -> enforce_eq_can m can can')
-        (enforce_eq_can m can can') tl
+    let can, equivs, m =
+      List.fold_left (fun (can, equivs, m) can' -> enforce_eq_can m can can' equivs)
+        (enforce_eq_can m can can' []) tl
     in
     debug_enforce_eq Pp.(fun () -> str"Chosen canonical universe: " ++ pr_incr (pr_can m) can);
-    m
-  | _ -> m
+    m, equivs
+  | _ -> m, []
 
 
 let make_equiv = time2 (Pp.str"make_equiv") make_equiv
@@ -2450,12 +2455,14 @@ let get_explanation model prems (canv, kv) =
     let merge_fn p acc = p :: acc in
     PathSet.fold merge_fn merge []
 
+type equivalences = (Index.t * (Index.t * int)) list
+
 (** [simplify_clauses_between model u v] Checks if [v <= u] holds, in which case it
   merges the equivalence classes of universes between [u] and [v]. If [v] is the lub
   of [v1..vn], they might not be merged while other universes between [u] and [v] are merged.
     @param model Assumes [u <= v] holds already
     @return a potentially modified model, without changing any values *)
-let simplify_clauses_between model (canu, _ as u) prems =
+let simplify_clauses_between model (canu, _ as u) prems : t * equivalences =
   let premsmax = (Premises._fold (fun u m -> max_opt (expr_value model u) m) prems None) in
   if not (Option.equal Int.equal premsmax (expr_value model u)) then
       (* We know v -> u and check for u -> v, this can only be true if both levels
@@ -2463,7 +2470,7 @@ let simplify_clauses_between model (canu, _ as u) prems =
     (debug_enforce_eq Pp.(fun () -> pr_can_prems model prems ++ str"'s value =  " ++
         pr_opt int premsmax ++ str" and " ++ pr_can model canu ++ str "'s value = "
       ++ pr_opt int (canonical_value model canu) ++ str", no simplification possible");
-      model)
+    model, [])
   else
     let status = Status.empty in
     let () = debug_enforce_eq Pp.(fun () -> str"simplify_clauses_between calling find_to_merge") in
@@ -2473,7 +2480,11 @@ let simplify_clauses_between model (canu, _ as u) prems =
       (* else  *)
         find_to_merge_bwd model status prems u
     in
-    List.fold_left make_equiv model equiv
+    let make_equiv (model, equivs) path =
+      let m, equivs' = make_equiv model path in
+      m, equivs' @ equivs
+    in
+    List.fold_left make_equiv (model,[]) equiv
 
 type nat = int
 type can_constraint = (canonical_node * nat) * (canonical_node * nat)
@@ -2628,7 +2639,7 @@ let enforce_leq_can u v m =
    (* ++ spc () ++
     pr_can_clauses m (fst vcan) ++ pr_can_clauses m (fst u)); *)
   if (match v with NeList.Tip v -> eq_can_expr u v | _ -> false) then
-    (debug_enforce_eq Pp.(fun () -> str"already equal"); Some m)
+    (debug_enforce_eq Pp.(fun () -> str"already equal"); Some (m, []))
   else
   match infer_clause_extension (v, u) m with
   | None -> None
@@ -2638,7 +2649,7 @@ let enforce_leq_can u v m =
       let u = repr_can_expr m' u in
       let v = repr_can_premises m' v in
       Some (simplify_clauses_between m' u v))
-    else Some m
+    else Some (m, [])
 
 let enforce_leq_level u v m =
   let m, canu = repr_compress_node m u in
@@ -2656,10 +2667,12 @@ let enforce_eq_level u v m =
   debug_enforce_eq Pp.(fun () -> str"enforce_eq: " ++ pr_can_expr m u ++ str" = " ++ pr_can_expr m (canv, kv));
   match enforce_leq_can v (NeList.Tip u) m with
   | None -> None
-  | Some m' ->
+  | Some (m', equivs) ->
     let canu' = repr_expr_can m' (canu.canon, ku) in
     let canv' = repr_expr_can m' (canv.canon, kv) in
-    enforce_leq_can canu' (NeList.Tip canv') m'
+    match enforce_leq_can canu' (NeList.Tip canv') m' with
+    | None -> None
+    | Some (m', equivs') -> Some (m', equivs @ equivs')
 
 let enforce_eq_level = time3 (Pp.str "enforce_eq_level") enforce_eq_level
 
@@ -2702,28 +2715,28 @@ let filter_trivial_can_clause m ((prems, (concl, k as conclk)) : can_clause) : c
     in
     Some (prems, conclk)
 
-let infer_extension_filter cl m =
+let infer_extension_filter cl (m, equivs as x) =
   match filter_trivial_can_clause m cl with
-  | None -> Some m
-  | Some cl -> infer_extension cl m
+  | None -> Some x
+  | Some cl ->
+    match infer_extension cl m with
+    | None -> None
+    | Some (m, equivs') -> Some (m, equivs @ equivs')
 
-let repr_can_clause m (prems, conclk) =
+let _repr_can_clause m (prems, conclk) =
   let concl = repr_can_expr m conclk in
   let prems = repr_can_premises m prems in
   (prems, concl)
 
-let _enforce_can_constraints cls m =
-  List.fold_left (fun m cl ->
-    match m with
-    | None -> None
-    | Some m -> infer_extension_filter (repr_can_clause m cl) m) (Some m) cls
+let unrepr_equivalences model (idxs : equivalences) =
+  List.map (fun (idx, (idx', k)) -> (Index.repr idx model.table, (Index.repr idx' model.table, k))) idxs
 
 let enforce_constraint u k v (m : t) =
   let cls = clauses_of_constraint u k v [] in
   List.fold_left (fun m cl ->
     match m with
     | None -> None
-    | Some m -> infer_extension_filter (can_clause_of_clause m cl) m) (Some m) cls
+    | Some (m, equivs) -> infer_extension_filter (can_clause_of_clause m cl) (m, equivs)) (Some (m, [])) cls
 
 let enforce u k v m =
   match Universe.repr u, k, Universe.repr v with
@@ -2731,13 +2744,17 @@ let enforce u k v m =
   | [(u, 0)], Le, [(v, 0)] -> enforce_leq_level u v m
   | _, _, _ -> enforce_constraint u k v m
 
+let enforce u k v m =
+  let res = enforce u k v m in
+  Option.map (fun (m, equivs) -> m, unrepr_equivalences m equivs) res
+
 let enforce_eq u v m =
   debug_enforce_eq (let vc = v in Pp.(fun () -> Universe.pr debug_pr_level u ++ str" = " ++ Universe.pr debug_pr_level vc ++ pr_local m.locality));
   enforce u Eq v m
 let enforce_leq u v m =
   debug_enforce_eq (let vc = v in Pp.(fun () -> Universe.pr debug_pr_level u ++ str" ≤ " ++ Universe.pr debug_pr_level vc ++ pr_local m.locality));
   enforce u Le v m
-let enforce_lt u v m = enforce_constraint (Universe.addn u 1) Le v m
+let enforce_lt u v m = enforce_leq (Universe.addn u 1) v m
 
 let check_clause model cl =
   match filter_trivial_can_clause model cl with
@@ -3059,20 +3076,17 @@ let set_can (can,k) u model =
         model, cls @ newclauses)
     bwd (model, newclauses)
   in
-  let model, equivs = remove_node model can in
+  let model = remove_node model can in
   _debug_set Pp.(fun () ->
     str"After removals, model is " ++ pr_clauses_all ~local:true model ++
     str"Adding constraints" ++ prlist_with_sep spc (pr_clause model) newclauses);
-  let enforce_clause model cl =
+  let enforce_clause (model, equivs) cl =
     match enforce_clause cl model with
-    | Some model -> model
+    | Some (model, equivs') -> (model, equivs' @ equivs)
     | None -> raise InconsistentEquality
-  in List.fold_left enforce_clause model newclauses, equivs
+  in List.fold_left enforce_clause (model, []) newclauses
 
 exception OccurCheck
-
-let unrepr_indexes model idxs =
-  PSet.fold (fun idx -> Level.Set.add (Index.repr idx model.table)) idxs Level.Set.empty
 
 let set lvl u model =
   _debug_set Pp.(fun () -> str"Setting " ++ debug_pr_level lvl ++ str" := " ++ Universe.pr debug_pr_level u);
@@ -3085,11 +3099,13 @@ let set lvl u model =
     if Index.equal (fst cank).canon setidx then raise InconsistentEquality
     else
       let model, equivs = set_can cank u model in
-      let equivs = unrepr_indexes model equivs in
+      let equivs = unrepr_equivalences model equivs in
       model, equivs
 
+type level_equivalences = (Level.t * (Level.t * int)) list
+
 type 'a simplification_result =
-  | HasSubst of 'a * Level.Set.t * Universe.t
+  | HasSubst of 'a * level_equivalences * Universe.t
   | NoBound
   | CannotSimplify
 
@@ -3147,10 +3163,10 @@ let minimize_can can k model =
     if Universe.for_all (fun (_, k) -> k >= 0) glb
     then
       (_debug_minim Pp.(fun () -> str"Removing: " ++ pr_can model can ++ str " in " ++ pr_clauses_all model);
-      let model, equivs = remove_node model can in
+      let model = remove_node model can in
       debug_check_invariants model;
       _debug_minim Pp.(fun () -> str"Removed " ++ pr_can model can ++ str ", new model: " ++ pr_clauses_all model);
-      HasSubst (model, unrepr_indexes model equivs, glb))
+      HasSubst (model, [], glb))
     else CannotSimplify
 
 
@@ -3172,7 +3188,7 @@ let maximize_can (can, k) model =
     if NeList.for_all (fun (_, k) -> cank <= k) ubound then
       let ubound = NeList.map (fun (can, k) -> (can, k - cank)) ubound in
       let model, equivs = set_can (can, k) ubound model in
-      try HasSubst (model, unrepr_indexes model equivs, unrepr_univ model (NeList.to_list ubound))
+      try HasSubst (model, unrepr_equivalences model equivs, unrepr_univ model (NeList.to_list ubound))
       with InconsistentEquality -> CannotSimplify
     else CannotSimplify
 

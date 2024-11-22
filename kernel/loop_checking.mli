@@ -41,10 +41,12 @@ type 'a check_function = t -> 'a -> 'a -> bool
 val check_eq : Universe.t check_function
 val check_leq : Universe.t check_function
 
-val enforce_eq : Universe.t -> Universe.t -> t -> t option
-val enforce_leq : Universe.t -> Universe.t -> t -> t option
-val enforce_lt : Universe.t -> Universe.t -> t -> t option
-val enforce_constraint : univ_constraint -> t -> t option
+type level_equivalences = (Level.t * (Level.t * int)) list
+
+val enforce_eq : Universe.t -> Universe.t -> t -> (t * level_equivalences) option
+val enforce_leq : Universe.t -> Universe.t -> t -> (t * level_equivalences) option
+val enforce_lt : Universe.t -> Universe.t -> t -> (t * level_equivalences) option
+val enforce_constraint : univ_constraint -> t -> (t * level_equivalences) option
 
 exception InconsistentEquality
 
@@ -56,7 +58,7 @@ as the [idx] universe is dropped from the constraints altogether. Returns a list
 that are also made equal by the new constraint and are also substituted by [u] in the resulting graph.
   @raise InconsistentEquality if setting [l = u] results in an unsatisfiable constraint
   @raise OccurCheck if the universe contains the level, up to equivalence in the graph *)
-val set : Level.t -> Universe.t -> t -> t * Level.Set.t
+val set : Level.t -> Universe.t -> t -> t * level_equivalences
 
 type extended_constraint_type =
   | ULe | ULt | UEq
@@ -85,7 +87,7 @@ val domain : t -> Level.Set.t
 val choose : (Level.t -> bool) -> t -> Level.t -> Level.t option
 
 type 'a simplification_result =
-  | HasSubst of 'a * Level.Set.t * Universe.t
+  | HasSubst of 'a * level_equivalences * Universe.t
   | NoBound
   | CannotSimplify
 

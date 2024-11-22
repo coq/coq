@@ -71,6 +71,8 @@ let set_local g =
 
 let clear_constraints g = {g with graph=G.clear_constraints g.graph}
 
+type level_equivalences = (Level.t * (Level.t * int)) list
+
 let enforce_constraint (u,d,v) g =
   match d with
   | Le -> G.enforce_leq u v g.graph
@@ -78,9 +80,9 @@ let enforce_constraint (u,d,v) g =
 
 let enforce_constraint0 cst g = match enforce_constraint cst g with
 | None -> None
-| Some g' ->
-  if g' == g.graph then Some g
-  else Some { g with graph = g' }
+| Some (g', equivs) ->
+  if g' == g.graph then Some (g, equivs)
+  else Some ({ g with graph = g' }, equivs)
 
 let enforce_constraint cst g = match enforce_constraint0 cst g with
 | None ->
@@ -89,10 +91,10 @@ let enforce_constraint cst g = match enforce_constraint0 cst g with
     let e = lazy (G.get_explanation cst g.graph) in
     let mk u = Sorts.sort_of_univ u in
     raise (UniverseInconsistency (None, (c, mk u, mk v, Some (Path e))))
-  else g
+  else g, []
 | Some g -> g
 
-let merge_constraints csts g = Constraints.fold enforce_constraint csts g
+let merge_constraints csts g = Constraints.fold (fun cst g -> fst (enforce_constraint cst g)) csts g
 
 let check_constraint { graph = g; type_in_type } (u,d,v) =
   type_in_type
@@ -119,7 +121,7 @@ let add_universe u ~lbound ~strict g = match lbound with
 | Bound.Set ->
   let graph = G.add u g.graph in
   let b = if strict then Universe.type1 else Universe.type0 in
-  enforce_constraint (b, Le, Universe.make u) { g with graph }
+  fst (enforce_constraint (b, Le, Universe.make u) { g with graph })
 | Bound.Prop ->
   (* Do not actually add any constraint. This is a hack for template. *)
   { g with graph = G.add u g.graph }
