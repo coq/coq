@@ -196,6 +196,7 @@ before_script:
       - _build_ci/**/.git # exclude .git directory itself as well
       - _build_ci/**/.git/**/*
     when: always
+    expire_in: 1 week
   needs:
     - build:base
   only: &full-ci
