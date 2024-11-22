@@ -382,8 +382,7 @@ term1: [
 ]
 
 term0: [
-| DELETE ident univ_annot
-| DELETE ident Prim.fields univ_annot
+| DELETE reference univ_annot
 | REPLACE "{|" record_declaration bar_cbrace
 | WITH "{|" LIST0 field_def SEP ";" OPT ";" bar_cbrace
 | MOVETO number_or_string NUMBER

@@ -211,10 +211,8 @@ GRAMMAR EXTEND Gram
     | "0"
       [ c = atomic_constr -> { c }
       | c = term_match -> { c }
-      | id = ident; f = Prim.fields; i = univ_annot ->
-        { let (l,id') = f in CAst.make ~loc @@ CRef (make_qualid ~loc (DirPath.make (l@[id])) id', i) }
-      | id = ident; i = univ_annot ->
-        { CAst.make ~loc @@ CRef (qualid_of_ident ~loc id, i) }
+      | id = reference; i = univ_annot ->
+        { CAst.make ~loc @@ CRef (id, i) }
       | n = NUMBER-> { CAst.make ~loc @@ CPrim (Number (NumTok.SPlus,n)) }
       | s = string -> { CAst.make ~loc @@ CPrim (String s) }
       | "("; c = term LEVEL "200"; ")" ->

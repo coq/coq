@@ -116,8 +116,7 @@ term1: [
 term0: [
 | atomic_constr
 | term_match
-| ident Prim.fields univ_annot
-| ident univ_annot
+| reference univ_annot
 | NUMBER
 | string
 | "(" term200 ")"
