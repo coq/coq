@@ -151,7 +151,7 @@ Local Ltac2 iter_invert (f : constr -> unit) (ci : case_invert) : unit :=
   | CaseInvert indices => Array.iter f indices
   end.
 
-(** [iter f c] iters [f] on the immediate subterms of [c]; it is
+(** [iter f c] iterates [f] on the immediate subterms of [c]; it is
    not recursive and the order with which subterms are processed is
    not specified *)
 Ltac2 iter (f : constr -> unit) (c : constr) : unit :=
@@ -180,7 +180,7 @@ Ltac2 iter (f : constr -> unit) (c : constr) : unit :=
       f ty; Array.iter f t; f def
   end.
 
-(** [iter_with_binders g f n c] iters [f n] on the immediate
+(** [iter_with_binders g f n c] iterates [f n] on the immediate
    subterms of [c]; it carries an extra data [n] (typically a lift
    index) which is processed by [g] (which typically add 1 to [n]) at
    each binder traversal; it is not recursive and the order with which
@@ -276,6 +276,64 @@ Ltac2 map (f : constr -> constr) (c : constr) : constr :=
       let ty := f ty
       with t := Array.map f t
       with def := f def in
+      make (Array u t def ty)
+  end.
+
+(** [map_with_binders g f n c] maps [f n] on the immediate subterms of [c];
+   it carries an extra data [n] (typically a lift index) which is processed by [g]
+   (which typically add 1 to [n]) at each binder traversal;
+   it is not recursive and the order with which subterms are processed is not specified. *)
+Ltac2 map_with_binders (lift : 'a -> binder -> 'a) (f : 'a -> constr -> constr) (n : 'a) (c : constr) : constr :=
+  match kind c with
+  | Rel _ | Meta _ | Var _ | Sort _ | Constant _ _ | Ind _ _
+  | Constructor _ _ | Uint63 _ | Float _ | String _ => c
+  | Cast c k t =>
+      let c := f n c
+      with t := f n t in
+      make (Cast c k t)
+  | Prod b c =>
+      let b := binder_map (f n) b
+      with c := f (lift n b) c in
+      make (Prod b c)
+  | Lambda b c =>
+      let b := binder_map (f n) b
+      with c := f (lift n b) c in
+      make (Lambda b c)
+  | LetIn b t c =>
+      let b := binder_map (f n) b
+      with t := f n t
+      with c := f (lift n b) c in
+      make (LetIn b t c)
+  | App c l =>
+      let c := f n c
+      with l := Array.map (f n) l in
+      make (App c l)
+  | Evar e l =>
+      let l := Array.map (f n) l in
+      make (Evar e l)
+  | Case info x iv y bl =>
+      let x := match x with (x,x') => (f n x, x') end
+      with iv := map_invert (f n) iv
+      with y := f n y
+      with bl := Array.map (f n) bl in
+      make (Case info x iv y bl)
+  | Proj p r c =>
+      let c := f n c in
+      make (Proj p r c)
+  | Fix structs which tl bl =>
+      let tl := Array.map (binder_map (f n)) tl in
+      let n_bl := Array.fold_left lift n tl in
+      let bl := Array.map (f n_bl) bl in
+      make (Fix structs which tl bl)
+  | CoFix which tl bl =>
+      let tl := Array.map (binder_map (f n)) tl in
+      let n_bl := Array.fold_left lift n tl in
+      let bl := Array.map (f n_bl) bl in
+      make (CoFix which tl bl)
+  | Array u t def ty =>
+      let ty := f n ty
+      with t := Array.map (f n) t
+      with def := f n def in
       make (Array u t def ty)
   end.
 
