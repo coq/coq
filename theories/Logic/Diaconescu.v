@@ -17,8 +17,7 @@
    Three variants of Diaconescu's result in type theory are shown below.
 
    A. A proof that the relational form of the Axiom of Choice +
-      Extensionality for Predicates entails Excluded-Middle (by Hugo
-      Herbelin)
+      Propositional Extensionality entails Excluded Middle
 
    B. A proof that the relational form of the Axiom of Choice + Proof
       Irrelevance entails Excluded-Middle for Equality Statements (by
@@ -47,115 +46,56 @@ Require ClassicalFacts ChoiceFacts.
 (**********************************************************************)
 (** * Pred. Ext. + Rel. Axiom of Choice -> Excluded-Middle       *)
 
-Section PredExt_RelChoice_imp_EM.
+Section PropExt_RelChoice_imp_EM.
 
-(** The axiom of extensionality for predicates *)
+Import ChoiceFacts ClassicalFacts.
 
-Definition PredicateExtensionality :=
-  forall P Q:bool -> Prop, (forall b:bool, P b <-> Q b) -> P = Q.
-
-(** From predicate extensionality we get propositional extensionality
-   hence proof-irrelevance *)
-
-Import ClassicalFacts.
-
-Variable pred_extensionality : PredicateExtensionality.
-
-Lemma prop_ext : forall A B:Prop, (A <-> B) -> A = B.
-Proof.
-  intros A B H.
-  change ((fun _ => A) true = (fun _ => B) true).
-  rewrite
-    pred_extensionality with (P := fun _:bool => A) (Q := fun _:bool => B).
-  - reflexivity.
-  - intros _; exact H.
-Qed.
-
-Lemma proof_irrel : forall (A:Prop) (a1 a2:A), a1 = a2.
-Proof.
-  apply (ext_prop_dep_proof_irrel_cic prop_ext).
-Qed.
-
-(** From proof-irrelevance and relational choice, we get guarded
-   relational choice *)
-
-Import ChoiceFacts.
-
+Variable prop_ext : prop_extensionality.
 Variable rel_choice : RelationalChoice.
+Definition proof_irrel : proof_irrelevance := ext_prop_dep_proof_irrel_cic prop_ext.
 
-Lemma guarded_rel_choice : GuardedRelationalChoice.
+Theorem prop_ext_and_rel_choice_imp_EM : forall P : Prop, P \/ ~ P.
 Proof.
- apply
-  (rel_choice_and_proof_irrel_imp_guarded_rel_choice rel_choice proof_irrel).
+  intros P.
+  set (S := fun (AB : Prop*Prop) => AB = (True, P) \/ AB = (P, True)).
+  set (either := fun (AB : Prop*Prop) => let (A, B) := AB in {A} + {B}).
+  assert (H : forall T : {AB | S AB}, exists T' : {AB & either AB},
+                let (AB, _) := T in let (AB', _) := T' in AB = AB').
+  {
+    intros [AB HAB]. destruct HAB; subst AB.
+    - exists (existT either (True, P) (left I)). tauto.
+    - exists (existT either (P, True) (right I)). tauto.
+  }
+  destruct (rel_choice _ _ _ H) as [R [R_subrelation R_functional]].
+  destruct (R_functional (exist S (True, P) (or_introl eq_refl)))
+    as [[[A1 B1] either1] [works1 unique1]].
+  assert (works1' := R_subrelation _ _ works1). simpl in works1'.
+  injection works1' as EA1 EA2. subst A1 B1.
+  destruct (R_functional (exist S (P, True) (or_intror eq_refl)))
+    as [[[A2 B2] either2] [works2 unique2]].
+  assert (works2' := R_subrelation _ _ works2). simpl in works2'.
+  injection works2' as EA1 EA2. subst A2 B2.
+  destruct either1 as [i | HP]; [|tauto].
+  destruct either2 as [HP | i']; [tauto|].
+  right. intros HP.
+  assert (E : P = True). { apply prop_ext. tauto. }
+  assert (E2 : forall p1 p2, exist S (True, P) p1 = exist S (P, True) p2). {
+    rewrite E. intros p1 p2. f_equal. apply proof_irrel.
+  }
+  specialize (E2 (or_introl eq_refl) (or_intror eq_refl)).
+  rewrite E2 in unique1.
+  assert (E3 := unique1 (existT either (P, True) (right i')) works2).
+  unshelve eset (which := fun (T : {AB & either AB}) => _ : bool). {
+    destruct T as [[A B] [a | b]]; [exact false|exact true].
+  }
+  assert (E4 : which (existT either (True, P) (left i))
+               = which (existT either (P, True) (right i'))). {
+    rewrite <- E3. reflexivity.
+  }
+  compute in E4. discriminate.
 Qed.
 
-(** The form of choice we need: there is a functional relation which chooses
-    an element in any non empty subset of bool *)
-
-Import Bool.
-
-Lemma AC_bool_subset_to_bool :
-  exists R : (bool -> Prop) -> bool -> Prop,
-   (forall P:bool -> Prop,
-      (exists b : bool, P b) ->
-       exists b : bool, P b /\ R P b /\ (forall b':bool, R P b' -> b = b')).
-Proof.
-  destruct (guarded_rel_choice _ _
-   (fun Q:bool -> Prop =>  exists y : _, Q y)
-   (fun (Q:bool -> Prop) (y:bool) => Q y)) as (R,(HRsub,HR)). 
-  - exact (fun _ H => H).
-  - exists R; intros P HP.
-    destruct (HR P HP) as (y,(Hy,Huni)).
-    exists y; firstorder.
-Qed.
-
-(** The proof of the excluded middle *)
-(** Remark: P could have been in Set or Type *)
-
-Theorem pred_ext_and_rel_choice_imp_EM : forall P:Prop, P \/ ~ P.
-Proof.
-intro P.
-
-(* first we exhibit the choice functional relation R *)
-destruct AC_bool_subset_to_bool as [R H].
-
-set (class_of_true := fun b => b = true \/ P).
-set (class_of_false := fun b => b = false \/ P).
-
-(* the actual "decision": is (R class_of_true) = true or false? *)
-destruct (H class_of_true) as [b0 [H0 [H0' H0'']]].
-- exists true; left; reflexivity.
-- destruct H0.
-
-  (* the actual "decision": is (R class_of_false) = true or false? *)
-  + destruct (H class_of_false) as [b1 [H1 [H1' H1'']]].
-    * exists false; left; reflexivity.
-    * destruct H1.
-
-      -- (* case where P is false: (R class_of_true)=true /\ (R class_of_false)=false *)
-        right.
-        intro HP.
-        assert (Hequiv : forall b:bool, class_of_true b <-> class_of_false b).
-        ++ intro b; split.
-           ** unfold class_of_false; right; assumption.
-           ** unfold class_of_true; right; assumption.
-        ++ assert (Heq : class_of_true = class_of_false).
-           ** apply pred_extensionality with (1 := Hequiv).
-           ** apply diff_true_false.
-              rewrite <- H0.
-              rewrite <- H1.
-              rewrite <- H0''.
-              { reflexivity. }
-              rewrite Heq.
-              assumption.
-
-      -- (* cases where P is true *)
-        left; assumption.
-  + left; assumption.
-
-Qed.
-
-End PredExt_RelChoice_imp_EM.
+End PropExt_RelChoice_imp_EM.
 
 (**********************************************************************)
 (** * Proof-Irrel. + Rel. Axiom of Choice -> Excl.-Middle for Equality *)
