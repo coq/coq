@@ -25,7 +25,8 @@ type infer_variance_occurrence =
   { infer_binders : infer_binders;
     infer_term : mode * UVars.Variance.t option;
     infer_type : mode * UVars.Variance.t option;
-    infer_principal : bool; }
+    infer_principal : bool;
+    infer_under_impred_qvars : impred_qvars }
 
 val default_occ : infer_variance_occurrence
 val make_infer_occ : VariancePos.t -> infer_variance_occurrence
@@ -69,9 +70,9 @@ module Inf : sig
 
   val pr : (Level.t -> Pp.t) -> status -> Pp.t
 
-  val infer_level_eq : principal:bool -> Level.t -> status -> status
-  val infer_level_leq : principal:bool -> Level.t -> status -> status
-  val infer_level_geq : principal:bool -> Level.t -> status -> status
+  val infer_level_eq : principal:bool -> impred_qvars -> Level.t -> status -> status
+  val infer_level_leq : principal:bool -> impred_qvars -> Level.t -> status -> status
+  val infer_level_geq : principal:bool -> impred_qvars -> Level.t -> status -> status
 
   val get_infer_mode : status -> bool
   val set_infer_mode : bool -> status -> status

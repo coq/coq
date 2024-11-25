@@ -47,13 +47,13 @@ let choose_canonical ctx flexible s =
           let canon = choose_expr flexible in
           canon, (global, rigid, LevelExpr.Set.remove canon flexible)
 
-let term_type_variances_irrel u us (variances : InferCumulativity.variances) =
+let variance_info u us (variances : InferCumulativity.variances) =
   let open UVars.Variance in
   match Level.Map.find_opt u variances with
-  | None -> if UnivFlex.mem u us then Irrelevant, Irrelevant, false else Invariant, Invariant, true
+  | None -> if UnivFlex.mem u us then Irrelevant, Irrelevant, false, None else Invariant, Invariant, true, None
   | Some occs ->
     let termv, typev, principal = term_type_variances occs in
-    Option.default Irrelevant termv, Option.default Irrelevant typev, principal
+    Option.default Irrelevant termv, Option.default Irrelevant typev, principal, occs.infer_under_impred_qvars
 
 let _warn_not_minimizable u =
   Feedback.msg_notice Pp.(str"Universe " ++ Level.raw_pr u ++ str" is not mimimizable as its lower bound \
@@ -128,7 +128,7 @@ let simplify_variables partial ctx us variances graph =
       update_equivs_bound (ctx, us, variances, graph) u lbound equivs
     | NoBound | CannotSimplify -> (ctx, us, variances, graph)
   in
-  let collapse_to_set u acc =
+  let collapse_to_zero u acc =
     try instantiate_variable u Universe.type0 acc
     with UGraph.InconsistentEquality | UGraph.OccurCheck -> acc
   in
@@ -138,7 +138,7 @@ let simplify_variables partial ctx us variances graph =
       debug_each Pp.(fun () -> str"Minimizing " ++ Level.raw_pr u ++ str" resulted in lbound: " ++ Universe.pr Level.raw_pr lbound ++ str" and graph " ++ UGraph.pr_model graph);
       update_equivs_bound (ctx, us, variances, graph) u lbound equivs
     | NoBound -> (* Not bounded and not appearing anywhere: can collapse *)
-      collapse_to_set u acc
+      collapse_to_zero u acc
     | CannotSimplify -> acc
   in
   let maximize u (ctx, us, variances, graph as acc) =
@@ -150,15 +150,20 @@ let simplify_variables partial ctx us variances graph =
   in
   let simplify_min u (ctx, us, variances, graph as acc) =
     (* u is an undefined flexible variable, lookup its variance information *)
-    let term_variance, type_variance, principal = term_type_variances_irrel u us variances in
+    let term_variance, type_variance, principal, impred = variance_info u us variances in
     let open UVars.Variance in
-    if not principal then (* The universe does not occur in the principal type, we can minimize it at will *)
+    if not principal then (* The universe does not occur in the principal type of the application where it appears, we can minimize it at will *)
       arbitrary u acc
     else
       match term_variance, type_variance with
       | Irrelevant, Irrelevant -> arbitrary u acc
       | (Covariant | Irrelevant), Covariant when not partial -> minimize u acc
-      | _, _ -> acc
+      | _, _ ->
+        match impred with
+        | None -> (* Used in some predicative contexts *) acc
+        | Some qs ->
+          if Sorts.QVar.Set.is_empty qs then collapse_to_zero u acc
+          else acc
   in
   let fold_min u (ctx, us, variances, graph as acc) =
     if UnivFlex.is_defined u us then acc
@@ -167,7 +172,7 @@ let simplify_variables partial ctx us variances graph =
   let acc = Level.Set.fold fold_min dom (ctx, us, variances, graph) in
   let simplify_max u (ctx, us, variances, graph as acc) =
     (* u is an undefined flexible variable, lookup its variance information *)
-    let term_variance, type_variance, principal = term_type_variances_irrel u us variances in
+    let term_variance, type_variance, principal, _impred_qvars = variance_info u us variances in
     if not principal then
       maximize u acc
     else

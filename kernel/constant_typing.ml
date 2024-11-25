@@ -117,7 +117,9 @@ let process_universes env ?sec_univs = function
           (* no variance for qualities *)
           let inst = UContext.instance (AbstractContext.repr auctx) in
           let _, inst = UVars.LevelInstance.to_array inst in
-          let univs = Array.map2 (fun a b -> a,Some b) inst (UVars.Variances.repr variances) in
+          let variances = UVars.subst_sort_level_variances usubst variances in
+          let univs = Array.map2 (fun a b -> a,Some b) inst
+             (UVars.Variances.repr variances) in
           let univs =
             match sec_univs with
             | None -> univs

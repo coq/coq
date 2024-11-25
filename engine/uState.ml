@@ -984,12 +984,13 @@ let extend_variances inst variances =
   else if vlen > ulen then CErrors.user_err Pp.(str"More variance annotations than bound universes")
   else Array.append variances (Array.make (ulen - vlen) None)
 
-let collapse_to_invariant { in_binders = (bindersv, binderpos); in_term; in_type } =
+let collapse_to_invariant { in_binders = (bindersv, binderpos); in_term; in_type; under_impred_qvars } =
   let open Variance in
   let collapse var = if var == Irrelevant then var else Invariant in
   { in_binders = Option.map collapse bindersv, binderpos;
     in_term = Option.map collapse in_term;
-    in_type = Option.map collapse in_type }
+    in_type = Option.map collapse in_type;
+    under_impred_qvars }
 
 let computed_variances cumulative ivariances inst =
   let inferred_variance level =
@@ -1345,12 +1346,23 @@ let warn_no_variances =
   CWarnings.create ~name:"minimization without variances" ~category:CWarnings.CoreCategories.universes ~default:CWarnings.Enabled
     Pp.(fun () -> str"Calling minimization without variance information is a noop, see dev/doc/changes.md for an explanation.")
 
+let update_variances_qvars qs variances =
+  let upd vocc =
+    match vocc.InferCumulativity.infer_under_impred_qvars with
+    | None -> vocc
+    | qvars ->
+      let upd qv = Some (QState.repr qv qs) in
+      { vocc with infer_under_impred_qvars = UVars.update_impred_qvars upd qvars }
+  in
+  Univ.Level.Map.Smart.map upd variances
+
 let minimize ?(lbound = UGraph.Bound.Set)
   ~partial uctx =
   let open UnivMinim in
   match uctx.variances with
   | None -> warn_no_variances (); uctx
   | Some variances ->
+    let variances = update_variances_qvars uctx.sort_variables variances in
     let (vars', variances), us' =
       normalize_context_set ~lbound ~variances ~partial uctx.universes
         uctx.local uctx.univ_variables ~binders:(fst uctx.names) uctx.minim_extra

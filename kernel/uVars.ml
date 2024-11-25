@@ -196,12 +196,44 @@ end
 
 (** {6 Variance occurrences} *)
 
+type impred_qvars = Sorts.QVar.Set.t option
+
 type ('a, 'b) gen_variance_occurrence =
   { in_binders : 'a;
     in_term : 'b;
-    in_type : 'b }
+    in_type : 'b;
+    under_impred_qvars : impred_qvars }
 
-let pr_variance_occurrence fa fterm ftype { in_binders; in_term; in_type } =
+let update_impred_qvars (f : Sorts.QVar.t -> Sorts.Quality.t option) vars =
+  match vars with
+  | None -> None
+  | Some vars ->
+    Sorts.QVar.Set.fold (fun qv impred ->
+      match impred with
+      | None -> None
+      | Some impred as acc ->
+        match f qv with
+        | None -> (* A unification variable, might become impredicative *)
+          Some (Sorts.QVar.Set.add qv impred)
+        | Some q ->
+          let open Sorts.Quality in
+          match q with
+          | QVar v -> Some (Sorts.QVar.Set.add v impred)
+          | QConstant (QProp | QSProp) -> acc
+          | QConstant QType -> None)
+      vars (Some Sorts.QVar.Set.empty)
+
+let pr_impred_qvars qvars =
+  Pp.(pr_opt (fun qvars -> prlist_with_sep spc Sorts.QVar.raw_pr (Sorts.QVar.Set.elements qvars)) qvars)
+
+let impred_qvars_of_quality q =
+  let open Sorts.Quality in
+  match q with
+  | QVar qv -> Some (Sorts.QVar.Set.singleton qv)
+  | QConstant (QProp | QSProp) -> Some Sorts.QVar.Set.empty
+  | QConstant QType -> None
+
+let pr_variance_occurrence fa fterm ftype { in_binders; in_term; in_type; under_impred_qvars = _ } =
   let open Pp in
   let pr_binders = fa in_binders in
   let pr_in_term = fterm in_term in
@@ -210,8 +242,14 @@ let pr_variance_occurrence fa fterm ftype { in_binders; in_term; in_type } =
   if List.is_empty variances then mt ()
   else str"(" ++ prlist_with_sep pr_comma identity variances ++ str")"
 
+let union_impred_qvars impred_qvars impred_qvars' =
+  match impred_qvars, impred_qvars' with
+  | None, _ -> None
+  | _, None -> None
+  | Some s, Some s' -> Some (Sorts.QVar.Set.union s s')
+
 let default_occ in_binders =
-  { in_binders; in_term = None; in_type = None }
+  { in_binders; in_term = None; in_type = None; under_impred_qvars = Some Sorts.QVar.Set.empty }
 
 module VarianceOccurrence =
 struct
@@ -240,13 +278,14 @@ struct
     in
     pr_variance_occurrence pr_binders pr_in_term pr_in_type occ
 
-  let equal ({ in_binders = (bindersv, in_binders); in_term; in_type } as x)
-    ({ in_binders = (bindersv', in_binders'); in_term = in_term'; in_type = in_type' } as y) =
+  let equal ({ in_binders = (bindersv, in_binders); in_term; in_type; under_impred_qvars } as x)
+    ({ in_binders = (bindersv', in_binders'); in_term = in_term'; in_type = in_type'; under_impred_qvars = under_impred_qvars' } as y) =
     x == y ||
     (Option.equal Variance.equal bindersv bindersv' &&
     List.equal Int.equal in_binders in_binders' &&
     Option.equal Variance.equal in_term in_term' &&
-    Option.equal Variance.equal in_type in_type')
+    Option.equal Variance.equal in_type in_type' &&
+    Option.equal Sorts.QVar.Set.equal under_impred_qvars under_impred_qvars')
 
   let option_le le x y =
     match x, y with
@@ -255,12 +294,14 @@ struct
     | Some v, None -> Variance.is_irrelevant v
     | None, None -> true
 
-  let le ({ in_binders = (in_binders, pos); in_term; in_type } as x)
-    ({ in_binders = (in_binders', pos'); in_term = in_term'; in_type = in_type' } as y) =
+  let le ({ in_binders = (in_binders, pos); in_term; in_type; under_impred_qvars } as x)
+    ({ in_binders = (in_binders', pos'); in_term = in_term'; in_type = in_type';
+       under_impred_qvars = under_impred_qvars' } as y) =
     x == y ||
     (option_le Variance.le in_binders in_binders' && List.subset pos pos' &&
     option_le Variance.le in_term in_term' &&
-    option_le Variance.le in_type in_type')
+    option_le Variance.le in_type in_type' &&
+    Option.equal Sorts.QVar.Set.equal under_impred_qvars under_impred_qvars')
 
   (* let term_variance { in_binders; in_term; in_type = _ }  =
     let in_binders = Variance.sup_variances (List.map snd in_binders) in
@@ -280,7 +321,7 @@ struct
       | None -> None
       | Some i -> Some (v, Position.InBinder i)
 
-  let term_variance_pos { in_binders; in_term; in_type = _ }  =
+  let term_variance_pos { in_binders; in_term; in_type = _; under_impred_qvars = _ }  =
     let in_binders = binders_variance in_binders in
     match in_term with
     | None ->
@@ -353,6 +394,9 @@ struct
     | Irrelevant, in_type, (bv, _) -> (Variance.sup in_type bv, InType)
     | v, Irrelevant, (bv, bp) -> (Variance.sup v bv, bp)
     | v, v', (bv, _) -> (Variance.sup v (Variance.sup v' bv), InTerm) *)
+
+  let under_impred_qvars vocc = vocc.under_impred_qvars
+
 end
 
 module Variances =
@@ -987,6 +1031,14 @@ let subst_sort_level_sort (_,usubst as subst) s =
 
 let subst_sort_level_relevance subst r =
   Sorts.relevance_subst_fn (subst_sort_level_qvar subst) r
+
+let subst_sort_level_variance_occurrence usubst b =
+  let upd qv = Some (subst_sort_level_qvar usubst qv) in
+  let under_impred_qvars = update_impred_qvars upd b.under_impred_qvars in
+  { b with under_impred_qvars }
+
+let subst_sort_level_variances usubst (vs, apps) =
+  Array.map (subst_sort_level_variance_occurrence usubst) vs, apps
 
 let make_instance_subst i =
   let qarr, uarr = LevelInstance.to_array i in

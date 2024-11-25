@@ -103,14 +103,24 @@ end
 
 (** {6 Variance occurrences} *)
 
+type impred_qvars = Sorts.QVar.Set.t option
+(** Set of potentially impredicative QVars under which the universe lives.
+  If there is an occurrence under a non-impredicative QVar somewhere, this is empty. *)
+
 type ('a, 'b) gen_variance_occurrence =
   { in_binders : 'a;
     in_term : 'b;
-    in_type : 'b }
+    in_type : 'b;
+    under_impred_qvars : impred_qvars }
 
 val pr_variance_occurrence : ('a -> Pp.t list) -> ('b -> Pp.t list) ->
   ('b -> Pp.t list) ->
   ('a, 'b) gen_variance_occurrence -> Pp.t
+
+val impred_qvars_of_quality : Sorts.Quality.t -> impred_qvars
+val update_impred_qvars : (Sorts.QVar.t -> Sorts.Quality.t option) -> impred_qvars -> impred_qvars
+val pr_impred_qvars : impred_qvars -> Pp.t
+val union_impred_qvars : impred_qvars -> impred_qvars -> impred_qvars
 
 module VarianceOccurrence :
 sig
@@ -132,6 +142,8 @@ sig
   val variance_and_principality_app : application -> t -> Variance.t * bool
 
   val variance_app : application -> t -> Variance.t
+
+  val under_impred_qvars : t -> Sorts.QVar.Set.t option
 
 end
 
@@ -393,6 +405,8 @@ val subst_sort_level_quality : sort_level_subst -> Sorts.Quality.t -> Sorts.Qual
 val subst_sort_level_sort : sort_level_subst -> Sorts.t -> Sorts.t
 
 val subst_sort_level_relevance : sort_level_subst -> Sorts.relevance -> Sorts.relevance
+
+val subst_sort_level_variances : sort_level_subst -> Variances.t -> Variances.t
 
 (** Substitution of instances *)
 val subst_instance_instance : Instance.t -> Instance.t -> Instance.t

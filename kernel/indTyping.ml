@@ -373,7 +373,7 @@ let get_template univs ~env_params ~env_ar_par ~params entries data =
     in
     let () = List.iter check_bound plevels in
     (* We reuse the same code as the one for variance inference. *)
-    let init_variance = Array.map_of_list (fun l -> l, Some ( ({ in_binders = Some Variance.Irrelevant, []; in_term = Some Variance.Irrelevant; in_type = Some Variance.Invariant } ))) plevels in
+    let init_variance = Array.map_of_list (fun l -> l, Some ( ({ in_binders = Some Variance.Irrelevant, []; in_term = Some Variance.Irrelevant; in_type = Some Variance.Invariant; under_impred_qvars = None } ))) plevels in
     let _variance = InferCumulativity.infer_inductive ~env_params ~env_ar_par init_variance
         ~arities:[entry.mind_entry_arity]
         ~ctors:[entry.mind_entry_lc]
@@ -504,6 +504,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
         (* Abstract universes *)
         let (inst, auctx) = UVars.abstract_universes uctx in
         let inst = UVars.make_instance_subst inst in
+        let variance = Option.map (UVars.subst_sort_level_variances inst) variance in
         (inst, Polymorphic (auctx, variance))
 
   in

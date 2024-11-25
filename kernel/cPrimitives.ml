@@ -308,11 +308,12 @@ and ind_or_type =
   | PITT_param : int -> ind_or_type (* DeBruijn index referring to prenex type quantifiers *)
 
 let array_variances : UVars.variances = UVars.(Variances.make
-  [| { in_binders = Some Variance.Irrelevant, [0]; in_term = None; in_type = None } |])
+  [| { in_binders = Some Variance.Irrelevant, [0]; in_term = None; in_type = None; under_impred_qvars = None } |])
 
 let array_univs : AbstractContext.t * Variances.t option =
   AbstractContext.make ([||],Names.[|Name (Id.of_string "u")|]) Constraints.empty,
-  Some (Variances.make [| { in_binders = Some Variance.Contravariant, [0]; in_term = None; in_type = Some Variance.Covariant } |])
+  Some (Variances.make [| { in_binders = Some Variance.Contravariant, [0]; in_term = None; in_type = Some Variance.Covariant;
+    under_impred_qvars = None } |])
 
 let typ_univs (type a) (t : a prim_type) = match t with
   | PT_int63 -> AbstractContext.empty, None
@@ -473,7 +474,8 @@ let nparams x = List.length (params x)
 
 let array_ops_univs : AbstractContext.t * Variances.t option =
   AbstractContext.make ([||],Names.[|Name (Id.of_string "u")|]) Constraints.empty,
-  Some (Variances.make [| { in_binders = Some Variance.Contravariant, [0]; in_term = None; in_type = None } |])
+  Some (Variances.make [| { in_binders = Some Variance.Contravariant, [0]; in_term = None; in_type = None;
+    under_impred_qvars = None } |])
 
 let univs = function
   | Int63head0
