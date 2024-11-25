@@ -14,7 +14,7 @@ at <https://coq.github.io/doc/master/refman/>, and the documentation of the
 standard library for the development version at
 <https://coq.github.io/doc/master/stdlib/>.
 
-The reference manual is written is reStructuredText and compiled
+The reference manual is written in reStructuredText and compiled
 using Sphinx. See [`sphinx/README.rst`](sphinx/README.rst)
 to learn more about the format that is used.
 
