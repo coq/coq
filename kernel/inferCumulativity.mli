@@ -25,7 +25,7 @@ type infer_variance_occurrence =
   { infer_binders : infer_binders;
     infer_term : mode * UVars.Variance.t option;
     infer_type : mode * UVars.Variance.t option;
-    infer_principal : bool }
+    infer_principal : bool; }
 
 val default_occ : infer_variance_occurrence
 val make_infer_occ : VariancePos.t -> infer_variance_occurrence

@@ -420,10 +420,13 @@ let infer_inductive_instance cv_pb env variances ind nargs u =
   let u = extend_ind_instance mind u in
   match extended_mind_variance mind with
   | None -> infer_generic_instance_eq variances u
-  | Some mind_variance ->
-    if not (Int.equal (UCompare.inductive_cumulativity_arguments (mind,snd ind)) nargs)
-    then infer_generic_instance_eq variances u
-    else infer_cumulative_instance cv_pb (UVars.NumArgs nargs) mind_variance variances u
+  | Some mind_variance -> infer_cumulative_instance cv_pb (UVars.NumArgs nargs) mind_variance variances u
+
+let constructor_variances _mind _ind _ctor variance =
+  (* let npars = mind.Declarations.mind_nparams in *)
+  (* let nargs = mind.Declarations.mind_packets.(ind).Declarations.mind_consnrealargs.(ctor - 1) in *)
+  let map vocc = { vocc with in_type = vocc.in_term; in_term = None } in
+  Variances.make (Array.map map (Variances.repr variance))
 
 let infer_constructor_instance_eq env variances ((mi,ind),ctor) nargs u =
   if not (Environ.mem_mind mi env) then
@@ -433,10 +436,13 @@ let infer_constructor_instance_eq env variances ((mi,ind),ctor) nargs u =
   let u = extend_ind_instance mind u in
   match extended_mind_variance mind with
   | None -> infer_generic_instance_eq variances u
-  | Some _ ->
-    if not (Int.equal (UCompare.constructor_cumulativity_arguments (mind, ind, ctor)) nargs)
+  | Some mind_variance ->
+    let cstr_variance = constructor_variances mind ind ctor mind_variance in
+    infer_cumulative_instance Cumul (UVars.NumArgs nargs) cstr_variance variances u
+
+    (*if not (Int.equal (UCompare.constructor_cumulativity_arguments (mind, ind, ctor)) nargs)
     then infer_generic_instance_eq variances u
-    else variances (* constructors are convertible at common supertype *)
+    else variances (* constructors are convertible at common supertype *) *)
 
 let infer_sort cv_pb variances s =
   match cv_pb with
