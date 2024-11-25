@@ -93,7 +93,7 @@ Qed.
 (* Example from Nicolas Tabareau on coq-club - Feb 2016. 
   Full backtracking on dependent subgoals.
  *)
-Require Import Stdlib.Classes.Init.
+Require Import Corelib.Classes.Init.
 
 Module NTabareau.
 

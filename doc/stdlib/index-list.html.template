@@ -1,16 +1,16 @@
 
-<h1>The Coq Prelude</h1>
+<h1>The Core Library</h1>
 
-<p>Here is a short description of the Coq Prelude, which is
+<p>Here is a short description of the core library, which is
 distributed with the system.
 It provides a set of modules directly available
 through the <tt>Require Import</tt> command.</p>
 
-<p>The prelude is composed of the following subdirectories:</p>
+<p>The core library is composed of the following subdirectories:</p>
 
 <dl>
   <dt> <b>Init</b>:
-    The core library (automatically loaded when starting Coq)
+    The prelude (automatically loaded when starting Coq)
   </dt>
   <dd>
     theories/Init/Ltac.v

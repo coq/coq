@@ -9,8 +9,8 @@
        Again on each float/int from the lists, each operator
        is evaluated in multiple evaluation mechanisms to check
        that their results agree with the one given by vm_compute. *)
-From Stdlib Require Import ListDef BinNums PrimInt63 Uint63Axioms.
-From Stdlib Require Import SpecFloat PrimFloat FloatOps FloatAxioms.
+From Corelib Require Import ListDef BinNums PrimInt63 Uint63Axioms.
+From Corelib Require Import SpecFloat PrimFloat FloatOps FloatAxioms.
 From Ltac2 Require Import Ltac2 Printf.
 
 Notation "[ x ; y ; .. ; z ]" :=  (cons x (cons y .. (cons z nil) ..))

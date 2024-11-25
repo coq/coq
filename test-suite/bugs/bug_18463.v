@@ -1,4 +1,4 @@
-From Stdlib Require Import Setoid.
+From Corelib Require Import Setoid.
 
 Module Type Nop. End Nop.
 Module nop. End nop.

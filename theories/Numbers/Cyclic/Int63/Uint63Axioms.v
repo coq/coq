@@ -10,8 +10,8 @@
 (*            Benjamin Gregoire, Laurent Thery, INRIA, 2007             *)
 (************************************************************************)
 
-From Stdlib Require Import BinNums PosDef IntDef.
-From Stdlib Require Export PrimInt63.
+From Corelib Require Import BinNums PosDef IntDef.
+From Corelib Require Export PrimInt63.
 
 Local Open Scope Z_scope.
 

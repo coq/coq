@@ -1,4 +1,4 @@
-From Stdlib Require Import PrimInt63.
+From Corelib Require Import PrimInt63.
 
 Set Universe Polymorphism.
 

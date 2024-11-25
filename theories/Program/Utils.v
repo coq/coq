@@ -10,7 +10,7 @@
 
 (** Various syntactic shorthands that are useful with [Program]. *)
 
-Require Export Stdlib.Program.Tactics.
+Require Export Corelib.Program.Tactics.
 
 Set Implicit Arguments.
 

@@ -1,4 +1,4 @@
-From Stdlib Require Program.Wf.
+From Corelib Require Program.Wf.
 
 Section Scope.
 

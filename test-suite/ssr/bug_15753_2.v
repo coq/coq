@@ -1,4 +1,4 @@
-Require Import Stdlib.ssr.ssreflect.
+Require Import Corelib.ssr.ssreflect.
 
 Class FromPureT (φ : Type) :=
   from_pureT : exists ψ : Prop, φ = ψ.

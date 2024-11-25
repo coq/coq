@@ -44,7 +44,7 @@ Qed.
 
 End Demo.
 
-From Stdlib Require Import Program.Tactics.
+From Corelib Require Import Program.Tactics.
 Obligation Tactic := idtac.
 Program Definition foo : nat -> nat * nat :=
   fix f (n : nat) := (0,_).

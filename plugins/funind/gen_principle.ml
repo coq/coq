@@ -846,7 +846,7 @@ let thin = Tactics.clear
 *)
 let tauto =
   let open Ltac_plugin in
-  let dp = List.map Id.of_string ["Tauto"; "Init"; "Stdlib"] in
+  let dp = List.map Id.of_string ["Tauto"; "Init"; "Corelib"] in
   let mp = ModPath.MPfile (DirPath.make dp) in
   let kn = KerName.make mp (Label.make "tauto") in
   Proofview.tclBIND (Proofview.tclUNIT ()) (fun () ->

@@ -70,16 +70,16 @@ let main () =
   let { tname; base_dir; async; rule; user_flags; split; dependencies } = parse_args () in
   let root_lvl = List.length (String.split_on_char '/' base_dir) in
 
-  let stdlib =
+  let init =
     let directory = Path.make "theories" in
-    Coq_rules.Theory.{ directory; dirname = ["Stdlib"]; implicit = true; deps = [] }
+    Coq_rules.Theory.{ directory; dirname = ["Corelib"]; implicit = true; deps = [] }
   in
 
   (* usually the else case here is Ltac2, but other libraries could be
      handled as well *)
-  let boot, implicit = if tname = ["Stdlib"]
-    then Coq_rules.Boot_type.Stdlib, true
-    else Coq_rules.Boot_type.Regular stdlib, false
+  let boot, implicit = if tname = ["Corelib"]
+    then Coq_rules.Boot_type.Corelib, true
+    else Coq_rules.Boot_type.Regular init, false
   in
 
   (* Rule generation *)

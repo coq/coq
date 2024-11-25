@@ -1,5 +1,5 @@
 Require Import TestSuite.funext.
-Require Import Stdlib.Program.Tactics.
+Require Import Corelib.Program.Tactics.
 
 Global Set Primitive Projections.
 

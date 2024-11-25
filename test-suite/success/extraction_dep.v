@@ -1,7 +1,7 @@
 
 (** Examples of code elimination inside modules during extraction *)
 
-Require Stdlib.extraction.Extraction.
+Require Corelib.extraction.Extraction.
 
 (** NB: we should someday check the produced code instead of
     extracting and just compiling. *)

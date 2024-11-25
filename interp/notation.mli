@@ -144,12 +144,12 @@ type pos_neg_int63_ty =
   { pos_neg_int63_ty : Names.inductive }
 
 type target_kind =
-  | Int of int_ty (* Stdlib.Init.Number.int + uint *)
-  | UInt of int_ty (* Stdlib.Init.Number.uint *)
-  | Z of z_pos_ty (* Stdlib.Numbers.BinNums.Z and positive *)
-  | Int63 of pos_neg_int63_ty (* Stdlib.Numbers.Cyclic.Int63.PrimInt63.pos_neg_int63 *)
-  | Float64 (* Stdlib.Floats.PrimFloat.float *)
-  | Number of number_ty (* Stdlib.Init.Number.number + uint + int *)
+  | Int of int_ty (* Corelib.Init.Number.int + uint *)
+  | UInt of int_ty (* Corelib.Init.Number.uint *)
+  | Z of z_pos_ty (* Corelib.Numbers.BinNums.Z and positive *)
+  | Int63 of pos_neg_int63_ty (* Corelib.Numbers.Cyclic.Int63.PrimInt63.pos_neg_int63 *)
+  | Float64 (* Corelib.Floats.PrimFloat.float *)
+  | Number of number_ty (* Corelib.Init.Number.number + uint + int *)
 
 type string_target_kind =
   | ListByte

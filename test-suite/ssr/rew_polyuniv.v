@@ -1,4 +1,4 @@
-From Stdlib Require Import Setoid ssreflect.
+From Corelib Require Import Setoid ssreflect.
 Set Default Proof Using "Type".
 
 Local Set Universe Polymorphism.

@@ -4,6 +4,6 @@ mimick some behaviors of older versions. For instance, this can
 disable warnings introduced in later versions.
 
 When adding a file in this directory, please name it `RocqXY.v` and
-prepend `From Stdlib Require Export RocqXY.` to the previous file.
+prepend `From Corelib Require Export CorelibXY.` to the previous file.
 When removing the last remaining content of some file, please also
 remove the file altogether.

@@ -9,7 +9,7 @@ revert b.
 cbn.
 Abort.
 
-Require Import Stdlib.Init.Number.
+Require Import Corelib.Init.Number.
 
 Goal int -> uint -> nat -> nat -> nat -> nat ->True.
   intros a b c.

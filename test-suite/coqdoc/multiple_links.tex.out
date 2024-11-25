@@ -20,7 +20,7 @@
 
 \begin{coqdoccode}
 \coqdocnoindent
-\coqdockw{Inductive} \coqdef{Coqdoc.multiple links.t}{t}{\coqdocinductive{t}} := \coqdef{Coqdoc.multiple links.X}{X}{\coqdocconstructor{X}} \ensuremath{|} \coqdef{Coqdoc.multiple links.T}{T}{\coqdocconstructor{T}} : \coqref{Coqdoc.multiple links.t:1}{\coqdocinductive{t}} \coqexternalref{::type scope:x '->' x}{http://coq.inria.fr/stdlib/Stdlib.Init.Logic}{\coqdocnotation{\ensuremath{\rightarrow}}} \coqref{Coqdoc.multiple links.t:1}{\coqdocinductive{t}}.\coqdoceol
+\coqdockw{Inductive} \coqdef{Coqdoc.multiple links.t}{t}{\coqdocinductive{t}} := \coqdef{Coqdoc.multiple links.X}{X}{\coqdocconstructor{X}} \ensuremath{|} \coqdef{Coqdoc.multiple links.T}{T}{\coqdocconstructor{T}} : \coqref{Coqdoc.multiple links.t:1}{\coqdocinductive{t}} \coqexternalref{::type scope:x '->' x}{http://coq.inria.fr/stdlib/Corelib.Init.Logic}{\coqdocnotation{\ensuremath{\rightarrow}}} \coqref{Coqdoc.multiple links.t:1}{\coqdocinductive{t}}.\coqdoceol
 \coqdocnoindent
 \coqdockw{Check} \coqref{Coqdoc.multiple links.X}{\coqdocconstructor{X}}.\coqdoceol
 \coqdocnoindent

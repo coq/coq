@@ -1,13 +1,13 @@
 Axiom proof_admitted : False.
 Tactic Notation "admit" := abstract case proof_admitted.
-Require Stdlib.Program.Basics Stdlib.Program.Tactics.
-Export Stdlib.Program.Basics Stdlib.Program.Tactics.
+Require Corelib.Program.Basics Corelib.Program.Tactics.
+Export Corelib.Program.Basics Corelib.Program.Tactics.
 Set Primitive Projections.
 Set Universe Polymorphism.
 
 Close Scope nat_scope.
 Require Setoid.
-Require Export Stdlib.Classes.CMorphisms.
+Require Export Corelib.Classes.CMorphisms.
 
 Notation "∀  x .. y , P" := (forall x, .. (forall y, P) ..)
   (at level 200, x binder, y binder, right associativity).

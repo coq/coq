@@ -1,4 +1,4 @@
-From Stdlib Require Export Morphisms Setoid.
+From Corelib Require Export Morphisms Setoid.
 
 Class Empty A := empty : A.
 

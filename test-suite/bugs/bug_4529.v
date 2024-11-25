@@ -1,8 +1,8 @@
 (* File reduced by coq-bug-finder from original input, then from 1334 lines to 1518 lines, then from 849 lines to 59 lines *)
 (* coqc version 8.5 (January 2016) compiled on Jan 22 2016 18:20:47 with OCaml 4.02.3
    coqtop version r-schnelltop:/home/r/src/coq/coq,(HEAD detached at V8.5) (5e23fb90b39dfa014ae5c4fb46eb713cca09dbff) *)
-Require Stdlib.Setoids.Setoid.
-Import Stdlib.Setoids.Setoid.
+Require Corelib.Setoids.Setoid.
+Import Corelib.Setoids.Setoid.
 
 Class Equiv A := equiv: relation A.
 Infix "≡" := equiv (at level 70, no associativity).

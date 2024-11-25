@@ -373,7 +373,7 @@ Module Test18.
   Compute let v := 4%Q in (num v, den v).
 End Test18.
 
-Require Import Stdlib.Lists.ListDef.
+Require Import Corelib.Lists.ListDef.
 Require Import BinNums IntDef.
 Module Test19.
   (** Test another thing related to https://github.com/coq/coq/issues/9840 *)

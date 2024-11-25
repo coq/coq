@@ -189,7 +189,7 @@ Rewriting with Leibniz and setoid equality
 
       .. coqtop:: none
 
-         From Stdlib Require Import Setoid.
+         From Corelib Require Import Setoid.
 
          Axiom add_comm : forall n m, n + m = m + n.
 

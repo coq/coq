@@ -107,6 +107,7 @@ let masking_absolute = CWarnings.create_warning
 
 let coq_id = Id.of_string "Coq"
 let stdlib_id = Id.of_string "Stdlib"
+let init_id = Id.of_string "Corelib"
 
 let warn_deprecated_dirpath_Coq =
   CWarnings.create_with_quickfix ~name:"deprecated-dirpath-Coq"
@@ -115,16 +116,16 @@ let warn_deprecated_dirpath_Coq =
       Pp.(old_id ++ spc () ++ str "has been replaced by" ++ spc () ++ new_id ++ str "."))
 
 (* We shadow as to create the quickfix and message at the same time *)
-let fix_coq_id l =
+let fix_coq_id coq_repl l =
   (match l with
-   | _coq_id :: l -> stdlib_id :: l
+   | _coq_id :: l -> coq_repl :: l
    | _ -> l)
 
 (* [l] is reversed, thus [Coq.ssr.bool] for example *)
-let warn_deprecated_dirpath_Coq ?loc (l, id) =
+let warn_deprecated_dirpath_Coq ?loc (coq_repl, l, id) =
   let dp l = DirPath.make (List.rev l) in
   let old_id = pr_qualid @@ Libnames.make_qualid (DirPath.make l) id in
-  let new_id = pr_qualid @@ Libnames.make_qualid (dp @@ fix_coq_id (List.rev l)) id in
+  let new_id = pr_qualid @@ Libnames.make_qualid (dp @@ fix_coq_id coq_repl (List.rev l)) id in
   let quickfix = Option.map (fun loc -> [ Quickfix.make ~loc new_id ]) loc in
   warn_deprecated_dirpath_Coq ?loc ?quickfix (old_id, new_id)
 
@@ -285,22 +286,25 @@ let remove uname tab =
   try Id.Map.modify id modify tab
   with Not_found -> tab
 
-let rec search tree = function
+let rec search coq_repl tree = function
   | [modid] when Id.equal modid coq_id ->
      let _warn, p =
-       match ModIdmap.find_opt stdlib_id tree.map with
-       | None -> true, None
-       | Some modid -> search modid [] in
-     true, p
+       match ModIdmap.find_opt coq_repl tree.map with
+       | None -> None, None
+       | Some modid -> search coq_repl modid [] in
+     Some coq_repl, p
   | modid :: path ->
      begin match ModIdmap.find_opt modid tree.map with
-     | None -> false, None
-     | Some modid -> search modid path end
-  | [] -> false, Some tree.path
+     | None -> None, None
+     | Some modid -> search coq_repl modid path end
+  | [] -> None, Some tree.path
 
 let search ?loc id tree dir =
-  let warn, p = search tree dir in
-  if warn then warn_deprecated_dirpath_Coq ?loc (dir, id);
+  let warn, p = search stdlib_id tree dir in
+  let warn, p =
+    match p with Some _ -> warn, p | None -> search init_id tree dir in
+  begin match warn with None -> () | Some coq_repl ->
+    warn_deprecated_dirpath_Coq ?loc (coq_repl, dir, id) end;
   match p with Some p -> p | None -> raise Not_found
 
 let find_node qid tab =

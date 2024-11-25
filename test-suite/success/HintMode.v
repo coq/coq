@@ -72,7 +72,7 @@ Module Plus.
   Hint Mode plus ! - - : plus.
   Hint Mode plus - ! - : plus.
 
-  Require Coq.derive.Derive.
+  Require Corelib.derive.Derive.
   Derive r SuchThat (plus 1 4 r) As r_proof.
   Proof.
     subst r. typeclasses eauto with plus.

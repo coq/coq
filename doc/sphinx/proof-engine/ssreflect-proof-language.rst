@@ -96,7 +96,7 @@ this corresponds to working in the following context:
 
 .. coqtop:: in
 
-   From Stdlib Require Import ssreflect ssrfun ssrbool.
+   From Corelib Require Import ssreflect ssrfun ssrbool.
    Set Implicit Arguments.
    Unset Strict Implicit.
    Unset Printing Implicit Defensive.
@@ -137,7 +137,7 @@ compatible with the rest of Rocq, up to a few discrepancies.
 
   .. coqtop:: in
 
-     From Stdlib Require ssreflect.
+     From Corelib Require ssreflect.
      Import ssreflect.SsrSyntax.
 
   Note that the full
@@ -217,7 +217,7 @@ construct differs from the latter as follows.
 
     .. coqtop:: reset none
 
-       From Stdlib Require Import ssreflect.
+       From Corelib Require Import ssreflect.
        Set Implicit Arguments.
        Unset Strict Implicit.
        Unset Printing Implicit Defensive.
@@ -277,7 +277,7 @@ example, the null and all list function(al)s can be defined as follows:
 
     .. coqtop:: reset none
 
-       From Stdlib Require Import ssreflect.
+       From Corelib Require Import ssreflect.
        Set Implicit Arguments.
        Unset Strict Implicit.
        Unset Printing Implicit Defensive.
@@ -378,7 +378,7 @@ expressions such as
 
    .. coqtop:: reset none
 
-      From Stdlib Require Import ssreflect.
+      From Corelib Require Import ssreflect.
       Set Implicit Arguments.
       Unset Strict Implicit.
       Unset Printing Implicit Defensive.
@@ -403,7 +403,7 @@ each point of use; e.g., the above definition can be written:
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -466,7 +466,7 @@ defined by the following declaration:
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -520,7 +520,7 @@ For example, the tactic :tacn:`pose (ssreflect)` supports parameters:
 
    .. coqtop:: reset none
 
-      From Stdlib Require Import ssreflect.
+      From Corelib Require Import ssreflect.
       Set Implicit Arguments.
       Unset Strict Implicit.
       Unset Printing Implicit Defensive.
@@ -641,7 +641,7 @@ The tactic:
 
    .. coqtop:: reset none
 
-      From Stdlib Require Import ssreflect.
+      From Corelib Require Import ssreflect.
       Set Implicit Arguments.
       Unset Strict Implicit.
       Unset Printing Implicit Defensive.
@@ -692,7 +692,7 @@ conditions.
 
    .. coqtop:: reset none
 
-      From Stdlib Require Import ssreflect.
+      From Corelib Require Import ssreflect.
       Set Implicit Arguments.
       Unset Strict Implicit.
       Unset Printing Implicit Defensive.
@@ -713,7 +713,7 @@ conditions.
 
      .. coqtop:: reset none
 
-        From Stdlib Require Import ssreflect.
+        From Corelib Require Import ssreflect.
         Set Implicit Arguments.
         Unset Strict Implicit.
         Unset Printing Implicit Defensive.
@@ -734,7 +734,7 @@ Moreover:
 
      .. coqtop:: reset none
 
-        From Stdlib Require Import ssreflect.
+        From Corelib Require Import ssreflect.
         Set Implicit Arguments.
         Unset Strict Implicit.
         Unset Printing Implicit Defensive.
@@ -754,7 +754,7 @@ Moreover:
 
      .. coqtop:: reset none
 
-        From Stdlib Require Import ssreflect.
+        From Corelib Require Import ssreflect.
         Set Implicit Arguments.
         Unset Strict Implicit.
         Unset Printing Implicit Defensive.
@@ -787,7 +787,7 @@ An *occurrence switch* can be:
 
      .. coqtop:: reset none
 
-        From Stdlib Require Import ssreflect.
+        From Corelib Require Import ssreflect.
         Set Implicit Arguments.
         Unset Strict Implicit.
         Unset Printing Implicit Defensive.
@@ -809,7 +809,7 @@ An *occurrence switch* can be:
 
      .. coqtop:: reset none
 
-        From Stdlib Require Import ssreflect.
+        From Corelib Require Import ssreflect.
         Set Implicit Arguments.
         Unset Strict Implicit.
         Unset Printing Implicit Defensive.
@@ -830,7 +830,7 @@ An *occurrence switch* can be:
 
      .. coqtop:: reset none
 
-        From Stdlib Require Import ssreflect.
+        From Corelib Require Import ssreflect.
         Set Implicit Arguments.
         Unset Strict Implicit.
         Unset Printing Implicit Defensive.
@@ -861,7 +861,7 @@ selection.
 
      .. coqtop:: reset none
 
-        From Stdlib Require Import ssreflect.
+        From Corelib Require Import ssreflect.
         Set Implicit Arguments.
         Unset Strict Implicit.
         Unset Printing Implicit Defensive.
@@ -878,7 +878,7 @@ only one occurrence of the selected term.
 
      .. coqtop:: reset none
 
-        From Stdlib Require Import ssreflect.
+        From Corelib Require Import ssreflect.
         Set Implicit Arguments.
         Unset Strict Implicit.
         Unset Printing Implicit Defensive.
@@ -909,7 +909,7 @@ context of a goal thanks to the ``in`` tactical.
 
      .. coqtop:: reset none
 
-        From Stdlib Require Import ssreflect.
+        From Corelib Require Import ssreflect.
 
      .. coqtop:: all
 
@@ -925,7 +925,7 @@ context of a goal thanks to the ``in`` tactical.
 
      .. coqtop:: reset none
 
-        From Stdlib Require Import ssreflect.
+        From Corelib Require Import ssreflect.
 
      .. coqtop:: all
 
@@ -1041,7 +1041,7 @@ constants to the goal.
 
    .. coqtop:: reset none
 
-      From Stdlib Require Import ssreflect.
+      From Corelib Require Import ssreflect.
       Set Implicit Arguments.
       Unset Strict Implicit.
       Unset Printing Implicit Defensive.
@@ -1103,7 +1103,7 @@ The ``:`` tactical is used to operate on an element in the context.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -1268,7 +1268,7 @@ The elim tactic
 
       .. coqtop:: reset none
 
-         From Stdlib Require Import ssreflect.
+         From Corelib Require Import ssreflect.
          Set Implicit Arguments.
          Unset Strict Implicit.
          Unset Printing Implicit Defensive.
@@ -1308,7 +1308,7 @@ existential metavariables of sort :g:`Prop`.
 
    .. coqtop:: reset none
 
-      From Stdlib Require Import ssreflect.
+      From Corelib Require Import ssreflect.
       Set Implicit Arguments.
       Unset Strict Implicit.
       Unset Printing Implicit Defensive.
@@ -1488,7 +1488,7 @@ context to interpret wildcards; in particular, it can accommodate the
 
    .. coqtop:: reset none
 
-      From Stdlib Require Import ssreflect.
+      From Corelib Require Import ssreflect.
       Set Implicit Arguments.
       Unset Strict Implicit.
       Unset Printing Implicit Defensive.
@@ -1780,7 +1780,7 @@ Clears are deferred until the end of the intro pattern.
 
    .. coqtop:: reset none
 
-      From Stdlib Require Import ssreflect ssrbool.
+      From Corelib Require Import ssreflect ssrbool.
       Set Implicit Arguments.
       Unset Strict Implicit.
       Unset Printing Implicit Defensive.
@@ -1841,7 +1841,7 @@ Block introduction
 
      .. coqtop:: reset none
 
-        From Stdlib Require Import ssreflect.
+        From Corelib Require Import ssreflect.
         Set Implicit Arguments.
         Unset Strict Implicit.
         Unset Printing Implicit Defensive.
@@ -1894,7 +1894,7 @@ deal with the possible parameters of the constants introduced.
 
    .. coqtop:: reset none
 
-      From Stdlib Require Import ssreflect.
+      From Corelib Require Import ssreflect.
       Set Implicit Arguments.
       Unset Strict Implicit.
       Unset Printing Implicit Defensive.
@@ -1913,7 +1913,7 @@ under fresh |SSR| names.
 
    .. coqtop:: reset none
 
-      From Stdlib Require Import ssreflect.
+      From Corelib Require Import ssreflect.
       Set Implicit Arguments.
       Unset Strict Implicit.
       Unset Printing Implicit Defensive.
@@ -1980,14 +1980,14 @@ be substituted.
 
       .. coqtop:: reset none
 
-         From Stdlib Require Import ssreflect.
+         From Corelib Require Import ssreflect.
          Set Implicit Arguments.
          Unset Strict Implicit.
          Unset Printing Implicit Defensive.
 
       .. coqtop:: all
 
-         From Stdlib Require Import ListDef.
+         From Corelib Require Import ListDef.
          Section LastCases.
          Variable A : Type.
          Implicit Type l : list A.
@@ -2281,7 +2281,7 @@ to the others.
 
    .. coqtop:: reset none
 
-      From Stdlib Require Import ssreflect.
+      From Corelib Require Import ssreflect.
       Set Implicit Arguments.
       Unset Strict Implicit.
       Unset Printing Implicit Defensive.
@@ -2400,7 +2400,7 @@ between standard Ltac ``in`` and the |SSR| tactical in.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -2475,7 +2475,7 @@ the holes are abstracted in term.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -2489,7 +2489,7 @@ the holes are abstracted in term.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -2507,7 +2507,7 @@ tactic:
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -2560,7 +2560,7 @@ the further use of the intermediate step. For instance,
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -2588,7 +2588,7 @@ destruction of existential assumptions like in the tactic:
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -2615,7 +2615,7 @@ term for the intermediate lemma, using tactics of the form:
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -2757,7 +2757,7 @@ typeclass inference.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
 
      Axiom ty : Type.
      Axiom t : ty.
@@ -2933,7 +2933,7 @@ pattern will be used to process its instance.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect ssrfun ssrbool.
+     From Corelib Require Import ssreflect ssrfun ssrbool.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -2983,7 +2983,7 @@ illustrated in the following example.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -3002,7 +3002,7 @@ illustrated in the following example.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -3136,7 +3136,7 @@ A :token:`r_item` can be one of the following.
 
      .. coqtop:: reset none
 
-        From Stdlib Require Import ssreflect.
+        From Corelib Require Import ssreflect.
         Set Implicit Arguments.
         Unset Strict Implicit.
         Unset Printing Implicit Defensive.
@@ -3255,7 +3255,7 @@ proof of basic results on natural numbers arithmetic.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -3291,7 +3291,7 @@ side of the equality the user wants to rewrite.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -3311,7 +3311,7 @@ the equality.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -3334,7 +3334,7 @@ Occurrence switches and redex switches
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -3363,7 +3363,7 @@ repetition.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -3393,7 +3393,7 @@ rewrite operations prescribed by the rules on the current goal.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -3527,7 +3527,7 @@ Anyway this tactic is *not* equivalent to
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -3577,7 +3577,7 @@ cases.
 
     .. coqtop:: reset none
 
-       From Stdlib Require Import ssreflect.
+       From Corelib Require Import ssreflect.
        Set Implicit Arguments.
        Unset Strict Implicit.
        Unset Printing Implicit Defensive.
@@ -3635,7 +3635,7 @@ corresponding new goals will be generated.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect ssrfun ssrbool.
+     From Corelib Require Import ssreflect ssrfun ssrbool.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -3692,7 +3692,7 @@ complete terms, as shown by the simple example below.
 
    .. coqtop:: reset none
 
-      From Stdlib Require Import ssreflect.
+      From Corelib Require Import ssreflect.
       Set Implicit Arguments.
       Unset Strict Implicit.
       Unset Printing Implicit Defensive.
@@ -3883,7 +3883,7 @@ Notes:
 
    .. coqtop:: reset none
 
-      From Stdlib Require Import ssreflect.
+      From Corelib Require Import ssreflect.
       Set Implicit Arguments.
       Unset Strict Implicit.
       Unset Printing Implicit Defensive.
@@ -3990,8 +3990,8 @@ selective rewriting, blocking on the fly the reduction in the term ``t``.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect ssrfun ssrbool.
-     From Stdlib Require Import ListDef.
+     From Corelib Require Import ssreflect ssrfun ssrbool.
+     From Corelib Require Import ListDef.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -4014,7 +4014,7 @@ definition.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -4127,7 +4127,7 @@ which the function is supplied:
 
       .. coqtop:: reset none
 
-         From Stdlib Require Import ssreflect.
+         From Corelib Require Import ssreflect.
          Set Implicit Arguments.
          Unset Strict Implicit.
          Unset Printing Implicit Defensive.
@@ -4154,7 +4154,7 @@ which the function is supplied:
 
       .. coqtop:: reset none
 
-         From Stdlib Require Import ssreflect.
+         From Corelib Require Import ssreflect.
          Set Implicit Arguments.
          Unset Strict Implicit.
          Unset Printing Implicit Defensive.
@@ -4177,7 +4177,7 @@ which the function is supplied:
 
       .. coqtop:: reset none
 
-         From Stdlib Require Import ssreflect.
+         From Corelib Require Import ssreflect.
          Set Implicit Arguments.
          Unset Strict Implicit.
          Unset Printing Implicit Defensive.
@@ -4198,7 +4198,7 @@ which the function is supplied:
 
       .. coqtop:: reset none
 
-         From Stdlib Require Import ssreflect.
+         From Corelib Require Import ssreflect.
          Set Implicit Arguments.
          Unset Strict Implicit.
          Unset Printing Implicit Defensive.
@@ -4378,7 +4378,7 @@ parentheses are required around more complex patterns.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -4417,7 +4417,7 @@ Contextual patterns in rewrite
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -4581,7 +4581,7 @@ generation (see Section :ref:`generation_of_equations_ssr`).
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect ListDef.
+     From Corelib Require Import ssreflect ListDef.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -4656,7 +4656,7 @@ Here is an example of a regular, but nontrivial, eliminator.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -4693,7 +4693,7 @@ Here is an example of a regular, but nontrivial, eliminator.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -4724,7 +4724,7 @@ Here is an example of a regular, but nontrivial, eliminator.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -4760,7 +4760,7 @@ Here is an example of a truncated eliminator:
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -4824,7 +4824,7 @@ disjunction.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -4845,7 +4845,7 @@ disjunction.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -4880,7 +4880,7 @@ equation-name generation mechanism (see Section :ref:`generation_of_equations_ss
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -4913,7 +4913,7 @@ relevant for the current goal.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -4957,7 +4957,7 @@ assumption to some given arguments.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -4986,7 +4986,7 @@ bookkeeping steps.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect ssrbool.
+     From Corelib Require Import ssreflect ssrbool.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -5042,7 +5042,7 @@ analysis:
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect.
+     From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -5059,7 +5059,7 @@ analysis
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect ssrbool.
+     From Corelib Require Import ssreflect ssrbool.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -5149,7 +5149,7 @@ Let us compare the respective behaviors of ``andE`` and ``andP``.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect ssrbool.
+     From Corelib Require Import ssreflect ssrbool.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -5190,7 +5190,7 @@ The view mechanism is compatible with reflect predicates.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect ssrbool.
+     From Corelib Require Import ssreflect ssrbool.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -5308,7 +5308,7 @@ but they also allow complex transformation, involving negations.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect ssrbool.
+     From Corelib Require Import ssreflect ssrbool.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -5341,7 +5341,7 @@ actually uses its propositional interpretation.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect ssrbool.
+     From Corelib Require Import ssreflect ssrbool.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -5404,7 +5404,7 @@ In this context, the identity view can be used when no view has to be applied:
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect ssrbool.
+     From Corelib Require Import ssreflect ssrbool.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -5420,7 +5420,7 @@ In this context, the identity view can be used when no view has to be applied:
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect ssrbool.
+     From Corelib Require Import ssreflect ssrbool.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -5496,7 +5496,7 @@ pass a given hypothesis to a lemma.
 
   .. coqtop:: reset none
 
-     From Stdlib Require Import ssreflect ssrbool.
+     From Corelib Require Import ssreflect ssrbool.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.

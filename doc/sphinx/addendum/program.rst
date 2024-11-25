@@ -123,7 +123,7 @@ use the :g:`dec` combinator to get the correct hypotheses as in:
 
 .. coqtop:: in
 
-   From Stdlib.Program Require Import Basics Tactics.
+   From Corelib.Program Require Import Basics Tactics.
 
 .. coqtop:: all
 
@@ -177,7 +177,7 @@ with mutually recursive definitions too.  For example:
 
 .. coqtop:: reset in
 
-   From Stdlib.Program Require Import Basics Tactics.
+   From Corelib.Program Require Import Basics Tactics.
 
 .. coqtop:: all
 
@@ -208,7 +208,7 @@ compilation algorithm).
 
 .. coqtop:: reset none
 
-   From Stdlib.Program Require Import Basics Tactics Wf.
+   From Corelib.Program Require Import Basics Tactics Wf.
 
 One can use a well-founded order or a measure as termination orders
 using the syntax:
@@ -334,7 +334,7 @@ optional tactic is replaced by the default one if not specified.
    (the default), or if the system should infer which obligations can be
    declared opaque.
 
-The module :g:`Stdlib.Program.Tactics` defines the default tactic for solving
+The module :g:`Corelib.Program.Tactics` defines the default tactic for solving
 obligations called :g:`program_simpl`. Importing :g:`Stdlib.Program.Program` also
 adds some useful notations, as documented in the file itself.
 

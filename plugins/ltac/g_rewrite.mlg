@@ -294,7 +294,7 @@ let add_setoid atts binders a aeq t n =
 
 let morphism_tactic =
   let open Tacexpr in
-  let name = "Stdlib.Classes.SetoidTactics.add_morphism_tactic" in
+  let name = "Corelib.Classes.SetoidTactics.add_morphism_tactic" in
   let tacqid = Libnames.qualid_of_string name in
   let tac = CAst.make @@ TacArg (TacCall (CAst.make (tacqid, []))) in
   Tacinterp.interp tac

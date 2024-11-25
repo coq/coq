@@ -3,8 +3,8 @@
 (* coqc version trunk (December 2014) compiled on Dec 23 2014 22:6:43 with OCaml 4.01.0
    coqtop version cagnode15:/afs/csail.mit.edu/u/j/jgross/coq-trunk,trunk (90ed6636dea41486ddf2cc0daead83f9f0788163) *)
 Generalizable All Variables.
-Require Import Stdlib.Init.Notations.
-Require Import Stdlib.Init.Ltac.
+Require Import Corelib.Init.Notations.
+Require Import Corelib.Init.Ltac.
 Reserved Notation "x -> y" (at level 99, right associativity, y at level 200).
 Notation "A -> B" := (forall (_ : A), B) : type_scope.
 Axiom admit : forall {T}, T.

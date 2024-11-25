@@ -17,9 +17,9 @@
    Institution: LRI, CNRS UMR 8623 - University Paris Sud
 *)
 
-Require Export Stdlib.Classes.Init.
-Require Import Stdlib.Program.Basics.
-Require Import Stdlib.Program.Tactics.
+Require Export Corelib.Classes.Init.
+Require Import Corelib.Program.Basics.
+Require Import Corelib.Program.Tactics.
 
 Generalizable Variables A B C D R S T U l eqA eqB eqC eqD.
 

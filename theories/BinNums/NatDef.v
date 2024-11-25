@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-From Stdlib Require Export BinNums PosDef.
+From Corelib Require Export BinNums PosDef.
 
 (**********************************************************************)
 (** * Binary natural numbers, definitions of operations *)

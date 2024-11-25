@@ -34,6 +34,6 @@ Check foo2' : True.
 Check foo3 : nat -> bool -> True.
 Check foo4 : nat -> bool -> True.
 
-Require Import Stdlib.ssr.ssreflect.
+Require Import Corelib.ssr.ssreflect.
 (* ssr makes "\*\)" parse differently so preprocessing has to make sure to insert a space *)
 Set Default Proof Using "Type*".

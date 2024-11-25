@@ -1,4 +1,4 @@
-From Stdlib Require Extraction.
+From Corelib Require Extraction.
 
 (** Testing extraction of stdlib Empty_set *)
 

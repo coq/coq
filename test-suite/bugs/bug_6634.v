@@ -1,4 +1,4 @@
-From Stdlib Require Import ssreflect.
+From Corelib Require Import ssreflect.
 
 Lemma normalizeP (p : tt = tt) : p = p.
 Proof.

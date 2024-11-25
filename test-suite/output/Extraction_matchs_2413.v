@@ -1,6 +1,6 @@
 (** Extraction : tests of optimizations of pattern matching *)
 
-Require Stdlib.extraction.Extraction.
+Require Corelib.extraction.Extraction.
 
 (** First, a few basic tests *)
 

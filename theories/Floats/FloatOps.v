@@ -8,8 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-From Stdlib Require Import BinNums PosDef IntDef Uint63Axioms.
-From Stdlib Require Import FloatClass SpecFloat PrimFloat.
+From Corelib Require Import BinNums PosDef IntDef Uint63Axioms.
+From Corelib Require Import FloatClass SpecFloat PrimFloat.
 
 (** * Derived operations and mapping between primitive [float]s and [spec_float]s *)
 

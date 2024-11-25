@@ -22,7 +22,7 @@
 \coqdocnoindent
 \coqdockw{Section} \coqdef{Coqdoc.Context.Sec}{Sec}{\coqdocsection{Sec}}.\coqdoceol
 \coqdocnoindent
-\coqdockw{Context} (\coqdef{Coqdoc.Context.Sec.foo}{foo}{\coqdocvariable{foo}} : \coqexternalref{nat}{http://coq.inria.fr/stdlib/Stdlib.Init.Datatypes}{\coqdocinductive{nat}}).\coqdoceol
+\coqdockw{Context} (\coqdef{Coqdoc.Context.Sec.foo}{foo}{\coqdocvariable{foo}} : \coqexternalref{nat}{http://coq.inria.fr/stdlib/Corelib.Init.Datatypes}{\coqdocinductive{nat}}).\coqdoceol
 \coqdocnoindent
 \coqdockw{Check} \coqref{Coqdoc.Context.Sec.foo}{\coqdocvariable{foo}}.\coqdoceol
 \coqdocnoindent

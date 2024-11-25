@@ -1,4 +1,4 @@
-From Stdlib Require Import Setoid Morphisms.
+From Corelib Require Import Setoid Morphisms.
 
 Axiom T : Type.
 Axiom Teq : relation T.

@@ -1,5 +1,5 @@
-From Stdlib Require Import ssreflect ssrbool ssrfun.
-From Stdlib Require Import ListDef.
+From Corelib Require Import ssreflect ssrbool ssrfun.
+From Corelib Require Import ListDef.
 
 Import Nat.
 

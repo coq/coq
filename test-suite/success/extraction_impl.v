@@ -4,7 +4,7 @@
 (** NB: we should someday check the produced code instead of
     extracting and just compiling. *)
 
-Require Stdlib.extraction.Extraction.
+Require Corelib.extraction.Extraction.
 
 (** Bug #4243, part 1 *)
 

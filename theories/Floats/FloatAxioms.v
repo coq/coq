@@ -8,8 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-From Stdlib Require Import BinNums IntDef Uint63Axioms.
-From Stdlib Require Import SpecFloat PrimFloat FloatOps.
+From Corelib Require Import BinNums IntDef Uint63Axioms.
+From Corelib Require Import SpecFloat PrimFloat FloatOps.
 
 (** * Properties of the primitive operators for the Binary64 format *)
 

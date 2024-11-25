@@ -4,8 +4,8 @@ Nat.sub is not universe polymorphic
 Arguments Nat.sub (n m)%nat_scope : simpl nomatch
 The reduction tactics unfold Nat.sub but avoid exposing match constructs
 Nat.sub is transparent
-Expands to: Constant Stdlib.Init.Nat.sub
-Declared in library Stdlib.Init.Nat, line 71, characters 0-120
+Expands to: Constant Corelib.Init.Nat.sub
+Declared in library Corelib.Init.Nat, line 71, characters 0-120
 Nat.sub : nat -> nat -> nat
 
 Nat.sub is not universe polymorphic
@@ -13,8 +13,8 @@ Arguments Nat.sub n%nat_scope / m%nat_scope : simpl nomatch
 The reduction tactics unfold Nat.sub when applied to 1 argument
   but avoid exposing match constructs
 Nat.sub is transparent
-Expands to: Constant Stdlib.Init.Nat.sub
-Declared in library Stdlib.Init.Nat, line 71, characters 0-120
+Expands to: Constant Corelib.Init.Nat.sub
+Declared in library Corelib.Init.Nat, line 71, characters 0-120
 Nat.sub : nat -> nat -> nat
 
 Nat.sub is not universe polymorphic
@@ -23,8 +23,8 @@ The reduction tactics unfold Nat.sub
   when the 1st argument evaluates to a constructor and
   when applied to 1 argument but avoid exposing match constructs
 Nat.sub is transparent
-Expands to: Constant Stdlib.Init.Nat.sub
-Declared in library Stdlib.Init.Nat, line 71, characters 0-120
+Expands to: Constant Corelib.Init.Nat.sub
+Declared in library Corelib.Init.Nat, line 71, characters 0-120
 Nat.sub : nat -> nat -> nat
 
 Nat.sub is not universe polymorphic
@@ -32,8 +32,8 @@ Arguments Nat.sub (!n !m)%nat_scope /
 The reduction tactics unfold Nat.sub when the 1st and
   2nd arguments evaluate to a constructor and when applied to 2 arguments
 Nat.sub is transparent
-Expands to: Constant Stdlib.Init.Nat.sub
-Declared in library Stdlib.Init.Nat, line 71, characters 0-120
+Expands to: Constant Corelib.Init.Nat.sub
+Declared in library Corelib.Init.Nat, line 71, characters 0-120
 Nat.sub : nat -> nat -> nat
 
 Nat.sub is not universe polymorphic
@@ -41,8 +41,8 @@ Arguments Nat.sub (!n !m)%nat_scope
 The reduction tactics unfold Nat.sub when the 1st and
   2nd arguments evaluate to a constructor
 Nat.sub is transparent
-Expands to: Constant Stdlib.Init.Nat.sub
-Declared in library Stdlib.Init.Nat, line 71, characters 0-120
+Expands to: Constant Corelib.Init.Nat.sub
+Declared in library Corelib.Init.Nat, line 71, characters 0-120
 pf :
 forall {D1 C1 : Type},
 (D1 -> C1) -> forall [D2 C2 : Type], (D2 -> C2) -> D1 * D2 -> C1 * C2

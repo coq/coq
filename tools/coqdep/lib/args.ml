@@ -61,7 +61,7 @@ let warn_project_file =
 let add_ml_path st f = { st with ml_path = f :: st.ml_path }
 
 let add_vo_path st (isr,path,logic) =
-  let logic = if String.equal logic "Coq" then "Stdlib" else logic in
+  let logic = if String.equal logic "Coq" then "Corelib" else logic in
   { st with vo_path = (isr,path,logic) :: st.vo_path }
 
 let add_file st f = { st with files = f :: st.files }
@@ -92,10 +92,8 @@ let parse st args =
     | "-f" :: f :: ll -> parse (add_from_coqproject st f) ll
     | "-I" :: r :: ll -> parse (add_ml_path st r) ll
     | "-I" :: [] -> usage ()
-    | "-R" :: r :: ln :: ll ->
-       parse (add_vo_path st (true, r, ln)) ll
-    | "-Q" :: r :: ln :: ll ->
-       parse (add_vo_path st (false, r, ln)) ll
+    | "-R" :: r :: ln :: ll -> parse (add_vo_path st (true, r, ln)) ll
+    | "-Q" :: r :: ln :: ll -> parse (add_vo_path st (false, r, ln)) ll
     | ("-Q"|"-R") :: ([] | [_]) -> usage ()
     | "-exclude-dir" :: r :: ll -> System.exclude_directory r; parse st ll
     | "-exclude-dir" :: [] -> usage ()

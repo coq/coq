@@ -1,4 +1,4 @@
-From Stdlib Require Import PrimArray.
+From Corelib Require Import PrimArray.
 
 Local Notation in_bounds i t := (PrimInt63.ltb i (length t)).
 

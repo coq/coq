@@ -1,5 +1,5 @@
-Require Import Stdlib.Lists.List.
-Require Import Stdlib.ZArith.ZArith.
+Require Import Corelib.Lists.List.
+Require Import Corelib.ZArith.ZArith.
 Goal True.
   exact I.
 Qed.

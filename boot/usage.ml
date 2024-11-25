@@ -31,10 +31,10 @@ let print_usage_common co command =
 \n  -coqlib dir            set the coq standard library directory\
 \n  -exclude-dir f         exclude subdirectories named f for option -R\
 \n\
-\n  -boot                  don't bind the `Stdlib.` prefix to the default -coqlib dir\
-\n  -noinit                don't load Stdlib.Init.Prelude on start\
+\n  -boot                  don't bind the `Corelib.` prefix to the default -coqlib dir\
+\n  -noinit                don't load Corelib.Init.Prelude on start\
 \n  -nois                  (idem)\
-\n  -compat X.Y            same as -compat-from Stdlib RocqXY (or CoqXY when X is 8)\
+\n  -compat X.Y            same as -compat-from Corelib RocqXY (or CoqXY when X is 8)\
 \n  -compat-from root lib  same as -require-import-from root lib, except that\
 \n                         a non existing file only produces a warning\
 \n\

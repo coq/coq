@@ -1,7 +1,7 @@
 Require Import TestSuite.admit.
 (* test with Coq 8.3rc1 *)
 
-From Stdlib.Program Require Import Basics Tactics.
+From Corelib.Program Require Import Basics Tactics.
 
 Inductive Unit: Set := unit: Unit.
 

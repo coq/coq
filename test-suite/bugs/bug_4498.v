@@ -1,6 +1,6 @@
-Require Export Stdlib.Classes.Morphisms.
-Require Export Stdlib.Relations.Relation_Definitions.
-Require Export Stdlib.Setoids.Setoid.
+Require Export Corelib.Classes.Morphisms.
+Require Export Corelib.Relations.Relation_Definitions.
+Require Export Corelib.Setoids.Setoid.
 
 Set Universe Polymorphism.
 

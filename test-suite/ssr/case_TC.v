@@ -1,5 +1,5 @@
-From Stdlib Require Import ssreflect.
-From Stdlib Require Import ssrbool.
+From Corelib Require Import ssreflect.
+From Corelib Require Import ssrbool.
 
 Set Printing All.
 Set Debug Ssreflect.

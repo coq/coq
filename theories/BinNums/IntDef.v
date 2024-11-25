@@ -1,4 +1,4 @@
-From Stdlib Require Import BinNums PosDef NatDef.
+From Corelib Require Import BinNums PosDef NatDef.
 
 Local Open Scope Z_scope.
 

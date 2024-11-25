@@ -1,4 +1,4 @@
-From Stdlib Require Import Setoid ssreflect.
+From Corelib Require Import Setoid ssreflect.
 
 Lemma test A (R : relation A) `{Equivalence _ R} (x y z : A) :
   R x y -> R y z -> R x z.

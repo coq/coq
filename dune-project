@@ -55,7 +55,7 @@ prelude, now living in the rocq-core package."))
  (depends
   (coq-core (= :version)))
  (depopts coq-native)
- (synopsis "The Coq Proof Assistant -- prelude")
+ (synopsis "The Coq Proof Assistant with its prelude")
  (description "Coq is a formal proof management system. It provides
 a formal language to write mathematical definitions, executable
 algorithms and theorems together with an environment for
@@ -67,10 +67,9 @@ project, or the Bedrock verified low-level programming library), the
 formalization of mathematics (e.g. the full formalization of the
 Feit-Thompson theorem or homotopy type theory) and teaching.
 
-This package includes the Coq prelude, that is to say,
-some of the modules usually bound to the Stdlib.* namespace
-and in particular, those that are loaded automatically by Coq
-in every .v file"))
+This package includes the Rocq prelude, that is loaded automatically
+by Rocq in every .v file, as well as other modules bound to the
+Corelib.* and Ltac2.* namespaces."))
 
 (package
  (name coqide-server)
@@ -130,7 +129,7 @@ This package provides the Coq Reference Manual."))
   (ounit2 :with-test)
   (conf-python-3 :with-test)
   (conf-time :with-test))
- (synopsis "The Coq Proof Assistant")
+ (synopsis "The Coq Proof Assistant with Stdlib")
  (description "Coq is a formal proof management system. It provides
 a formal language to write mathematical definitions, executable
 algorithms and theorems together with an environment for
@@ -140,4 +139,6 @@ Typical applications include the certification of properties of
 programming languages (e.g. the CompCert compiler certification
 project, or the Bedrock verified low-level programming library), the
 formalization of mathematics (e.g. the full formalization of the
-Feit-Thompson theorem or homotopy type theory) and teaching."))
+Feit-Thompson theorem or homotopy type theory) and teaching.
+
+This package is a virtual package gathering the rocq-core and coq-stdlib packages."))

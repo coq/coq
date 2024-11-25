@@ -16,12 +16,11 @@ to any of the three.
 
    Before using any of the commands or options described in this chapter,
    the extraction framework should first be loaded explicitly
-   via ``Require Extraction``, or via the more robust
-   ``From Stdlib Require Extraction``.
+   via ``From Corelib Require Extraction``.
 
 .. coqtop:: in
 
-   Require Extraction.
+   From Corelib Require Extraction.
 
 Generating ML Code
 -------------------
@@ -451,7 +450,7 @@ OCaml code with C code, the linker needs to know
 
    .. coqtop:: in
 
-      Require Extraction.
+      From Corelib Require Extraction.
       Extract Inductive nat => int [ "0" "Stdlib.Int.succ" ].
       Axiom f : nat -> nat -> nat.
       Extract Foreign Constant f => "f_impl".
@@ -701,7 +700,7 @@ We can now extract this program to OCaml:
 
 .. coqtop:: reset all extra
 
-   From Stdlib Require Extraction.
+   From Corelib Require Extraction.
    From Stdlib Require Import Euclid Wf_nat.
    Extraction Inline gt_wf_rec lt_wf_rec induction_ltof2.
    Recursive Extraction eucl_dev.
@@ -744,7 +743,7 @@ It is easier to test on OCaml integers::
    - : int * int = (11, 8)
 
 Note that these ``nat_of_int`` and ``int_of_nat`` are now
-available via a mere ``Require Import ExtrOcamlIntConv`` and then
+available via a mere ``From Stdlib Require Import ExtrOcamlIntConv`` and then
 adding these functions to the list of functions to extract. This file
 ``ExtrOcamlIntConv.v`` and some others in ``plugins/extraction/``
 are meant to help building concrete program via extraction.

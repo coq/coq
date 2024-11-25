@@ -1,6 +1,6 @@
 Require Import Setoid.
-Require Import Stdlib.Classes.CRelationClasses.
-Require Import Stdlib.Classes.CMorphisms.
+Require Import Corelib.Classes.CRelationClasses.
+Require Import Corelib.Classes.CMorphisms.
 
 Parameter B C : Type.
 Parameter P : Type -> Type -> Type.

@@ -238,7 +238,7 @@ Section cats.
 
   Notation "[ T ]" := (proj1 T).
 
-  From Stdlib.Program Require Import Basics Tactics Wf.
+  From Corelib.Program Require Import Basics Tactics Wf.
 
   Program Definition small_cat : cat Empty_set :=
     {| cat_hom x y := unit |}.

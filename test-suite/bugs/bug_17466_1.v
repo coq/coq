@@ -1,5 +1,5 @@
 
-Require Import Stdlib.Setoids.Setoid.
+Require Import Corelib.Setoids.Setoid.
 
 Set Implicit Arguments.
 

@@ -26,13 +26,13 @@ end
 module Boot_type : sig
 
   type t =
-      Stdlib
+      Corelib
     (** Standard library *)
     | NoInit
-    (** Standalone library (without Coq's stdlib, for example the prelude) *)
+    (** Standalone library (without Coq's core lib, for example the prelude) *)
     | Regular of Theory.t
     (** Regular library, qualified with -Q, path controls where the
-        Coq stdlib is *)
+        Coq init is *)
 
 end
 

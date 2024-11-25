@@ -1,4 +1,4 @@
-Require Export Stdlib.Program.Tactics Stdlib.Classes.SetoidTactics Stdlib.Classes.CMorphisms .
+Require Export Corelib.Program.Tactics Corelib.Classes.SetoidTactics Corelib.Classes.CMorphisms .
 
 Set Universe Polymorphism.
 

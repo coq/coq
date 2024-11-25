@@ -40,7 +40,7 @@ Fixpoint hlist@{i j k} (argts : list@{j} Type@{i}) : Type@{k} :=
   end.
 
 Definition tuple A n := hlist (repeat A n).
-  Notation byte := (Stdlib.Init.Byte.byte: Type).
+  Notation byte := (Corelib.Init.Byte.byte: Type).
 Import BinInt.
 Local Open Scope Z_scope.
 

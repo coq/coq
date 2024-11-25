@@ -1,4 +1,4 @@
-From Stdlib Require Import PrimInt63 PrimArray.
+From Corelib Require Import PrimInt63 PrimArray.
 
 Open Scope array_scope.
 

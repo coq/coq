@@ -1,4 +1,4 @@
-Require Stdlib.Program.Wf.
+Require Corelib.Program.Wf.
 
 Axiom proof_admitted : False.
 Tactic Notation "admit" := abstract case proof_admitted.

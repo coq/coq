@@ -17,8 +17,8 @@ let collect_constants () =
     in
     let gr_H = find_reference ["Tuto3"; "Data"] "pack" in
     let gr_M = find_reference ["Tuto3"; "Data"] "packer" in
-    let gr_R = find_reference ["Stdlib"; "Init"; "Datatypes"] "pair" in
-    let gr_P = find_reference ["Stdlib"; "Init"; "Datatypes"] "prod" in
+    let gr_R = find_reference ["Corelib"; "Init"; "Datatypes"] "pair" in
+    let gr_P = find_reference ["Corelib"; "Init"; "Datatypes"] "prod" in
     let gr_U = find_reference ["Tuto3"; "Data"] "uncover" in
     constants := List.map (fun x -> of_constr (constr_of_monomorphic_global (Global.env ()) x))
       [gr_H; gr_M; gr_R; gr_P; gr_U];

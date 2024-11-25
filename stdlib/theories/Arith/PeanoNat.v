@@ -22,7 +22,7 @@ Module Nat
 
 (** Operations over [nat] are defined in a separate module *)
 
-Include Stdlib.Init.Nat.
+Include Corelib.Init.Nat.
 
 (** When including property functors, inline t eq zero one two lt le succ *)
 

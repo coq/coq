@@ -39,7 +39,7 @@ These primitive declarations are regular axioms. As such, they must be trusted a
 
 .. coqtop:: in reset
 
-   From Stdlib Require Import PrimInt63 Uint63Axioms.
+   From Corelib Require Import PrimInt63 Uint63Axioms.
    Lemma one_minus_one_is_zero : (sub 1 1 = 0)%uint63.
    Proof. apply eqb_correct; vm_compute; reflexivity. Qed.
 

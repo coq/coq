@@ -129,7 +129,7 @@ let lt_S_n = function () -> rocq_constant "num.nat.lt_S_n"
 let le_n = function () -> rocq_init_constant "num.nat.le_n"
 
 let rocq_sig_ref = function
-  | () -> find_reference ["Stdlib"; "Init"; "Specif"] "sig"
+  | () -> find_reference ["Corelib"; "Init"; "Specif"] "sig"
 
 let rocq_proj1_sig = lazy (Rocqlib.build_sigma ()).proj1
 

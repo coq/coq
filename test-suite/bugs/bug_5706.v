@@ -1,5 +1,5 @@
-From Stdlib.ssr Require Import ssreflect.
-From Stdlib Require Import RelationClasses Relation_Definitions Setoid.
+From Corelib.ssr Require Import ssreflect.
+From Corelib Require Import RelationClasses Relation_Definitions Setoid.
 
 Parameter P : nat -> Prop.
 Parameter f : nat -> nat.

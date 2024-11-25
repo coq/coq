@@ -1,4 +1,4 @@
-Require Import Stdlib.Program.Tactics.
+Require Import Corelib.Program.Tactics.
 
 (** We make a version of [rapply] that takes [uconstr]; we do not
 currently test what scope [rapply] interprets terms in. *)

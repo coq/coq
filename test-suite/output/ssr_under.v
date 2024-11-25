@@ -1,4 +1,4 @@
-From Stdlib Require Import ssreflect.
+From Corelib Require Import ssreflect.
 
 Axiom subnn : forall n : nat, n - n = 0.
 Parameter G : (nat -> nat) -> nat -> nat.

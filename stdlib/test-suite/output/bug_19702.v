@@ -1,4 +1,4 @@
-Require Import Utf8.
+From Stdlib Require Import Utf8.
 
 Axiom T : nat -> Type.
 Axiom default : forall n, T n.

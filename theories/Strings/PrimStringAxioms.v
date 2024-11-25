@@ -1,6 +1,6 @@
-From Stdlib Require Import BinNums PosDef IntDef ListDef.
-From Stdlib Require Export PrimInt63 Uint63Axioms.
-From Stdlib Require Export PrimString.
+From Corelib Require Import BinNums PosDef IntDef ListDef.
+From Corelib Require Export PrimInt63 Uint63Axioms.
+From Corelib Require Export PrimString.
 
 Definition char63_valid (c : char63) :=
   PrimInt63.land c 255%uint63 = c.

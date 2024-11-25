@@ -1,5 +1,5 @@
 Require Import TestSuite.admit.
-Require Stdlib.Setoids.Setoid.
+Require Corelib.Setoids.Setoid.
 
 Axiom BITS : nat -> Set.
 Definition n7 := 7.
@@ -17,7 +17,7 @@ Ltac subst_body :=
   repeat match goal with
            | [ H := _ |- _ ] => subst H
          end.
-Import Stdlib.Setoids.Setoid.
+Import Corelib.Setoids.Setoid.
 Class Equiv (A : Type) := equiv : relation A.
 Infix "===" := equiv (at level 70, no associativity).
 Class type (A : Type) {e : Equiv A} := eq_equiv : Equivalence equiv.

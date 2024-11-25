@@ -10,6 +10,6 @@
 
 (** Compatibility file for making Coq act similar to Coq v8.19 *)
 
-Require Export Stdlib.Compat.Coq820.
+Require Export Corelib.Compat.Coq820.
 
 #[export] Set Warnings "-deprecated-since-8.20".

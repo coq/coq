@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-From Stdlib Require Import BinNums PosDef IntDef FloatClass.
+From Corelib Require Import BinNums PosDef IntDef FloatClass.
 
 (** * Specification of floating-point arithmetic
 

@@ -1,7 +1,7 @@
 (* Ensure that 'logical inductive' comments in extracted Haskell
  * do not get uncommented by line wrapping *)
 
-From Stdlib Require Import Extraction.
+From Corelib Require Import Extraction.
 
 Set Printing Width 60.
 

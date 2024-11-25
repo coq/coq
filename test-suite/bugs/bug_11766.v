@@ -14,7 +14,7 @@ Solve Obligations with let x := constr:(Type) in exact 0. (* was unbound univ *)
 
 End Bug11766.
 
-From Stdlib Require Import ssreflect.
+From Corelib Require Import ssreflect.
 
 Module Bug11988.
 

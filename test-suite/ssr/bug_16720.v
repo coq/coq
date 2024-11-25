@@ -1,4 +1,4 @@
-From Coq Require Import ssreflect.
+From Corelib Require Import ssreflect.
 Class Trivial := trivial {}.
 #[local] Existing Instance trivial.
 Goal Trivial.

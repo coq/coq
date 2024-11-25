@@ -18,7 +18,7 @@ Require Import Specif.
 (** Ex falso quodlibet : a tactic for proving False instead of the current goal.
     This is just a nicer name for tactics such as [cut False]. *)
 
-Ltac exfalso := Stdlib.Init.Ltac.exfalso.
+Ltac exfalso := Corelib.Init.Ltac.exfalso.
 
 (** A tactic for proof by contradiction. With contradict H,
     -   H:~A |-  B    gives       |-  A

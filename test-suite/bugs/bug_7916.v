@@ -1,4 +1,4 @@
-From Stdlib Require Import Setoid.
+From Corelib Require Import Setoid.
 
 Lemma test {A}
       (lookup : list A -> nat -> option A)
@@ -23,14 +23,14 @@ Module MathComp.
    coqtop version 8.14+alpha *)
    Axiom proof_admitted : False.
    Tactic Notation "admit" := abstract case proof_admitted.
-   Require Stdlib.ssr.ssreflect.
+   Require Corelib.ssr.ssreflect.
 
-   Export Stdlib.ssr.ssreflect.
+   Export Corelib.ssr.ssreflect.
    Global Set Asymmetric Patterns.
-   Require Stdlib.ssr.ssrbool.
+   Require Corelib.ssr.ssrbool.
    Require BinNums NatDef.
-   Export Stdlib.ssr.ssrfun.
-   Export Stdlib.ssr.ssrbool.
+   Export Corelib.ssr.ssrfun.
+   Export Corelib.ssr.ssrbool.
 
    Definition PredType : forall T pT, (pT -> pred T) -> predType T.
    exact PredType || exact mkPredType.
@@ -140,13 +140,13 @@ Module Iris.
    coqtop version 8.14+alpha *)
    Axiom proof_admitted : False.
    Tactic Notation "admit" := abstract case proof_admitted.
-   Require Stdlib.ssr.ssreflect.
-   Require Stdlib.Lists.ListDef.
+   Require Corelib.ssr.ssreflect.
+   Require Corelib.Lists.ListDef.
    Module Export stdpp_DOT_base.
    Module Export stdpp.
    Module Export base.
-   Export Stdlib.Classes.Morphisms.
-   Export Stdlib.Setoids.Setoid.
+   Export Corelib.Classes.Morphisms.
+   Export Corelib.Setoids.Setoid.
 
    Global Generalizable All Variables.
 
@@ -228,7 +228,7 @@ Module Iris.
    Export stdpp.tactics.
 
    End prelude.
-   Export Stdlib.ssr.ssreflect.
+   Export Corelib.ssr.ssreflect.
    Export stdpp.prelude.
    Set Primitive Projections.
 
@@ -298,9 +298,9 @@ Module SSr.
    coqtop version 8.14+alpha *)
    Axiom proof_admitted : False.
    Tactic Notation "admit" := abstract case proof_admitted.
-   Require Stdlib.ssr.ssreflect.
+   Require Corelib.ssr.ssreflect.
 
-   Export Stdlib.ssr.ssreflect.
+   Export Corelib.ssr.ssreflect.
    Require BinNums NatDef.
 
    Set Implicit Arguments.
@@ -408,7 +408,7 @@ Module SSr.
    Notation "x >= y" := (y <= x) (only parsing) : real_scope.
    Notation "x < y" := (~ (x >= y)) : real_scope.
    Notation "x <= y <= z" := (x <= y /\ y <= z) : real_scope.
-   Import Stdlib.Classes.Morphisms.
+   Import Corelib.Classes.Morphisms.
 
    Section RealLemmas.
 

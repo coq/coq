@@ -1,4 +1,4 @@
-From Stdlib Require Import ssreflect.
+From Corelib Require Import ssreflect.
 
 Axiom T : Type.
 Axiom R : T -> T -> Type.

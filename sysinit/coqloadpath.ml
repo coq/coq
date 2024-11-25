@@ -36,7 +36,7 @@ let init_load_path ~coqenv =
   let user_contrib = Boot.Env.user_contrib coqenv |> Boot.Path.to_string in
   let xdg_dirs = Envars.xdg_dirs ~warn:(fun x -> Feedback.msg_warning (str x)) in
   let rocqpath = Envars.coqpath in
-  let rocq_path = Names.DirPath.make [Libnames.coq_root] in
+  let rocq_path = Names.DirPath.make [Libnames.rocq_init_root] in
   (* ML includes *)
   let core_dir = Boot.Env.corelib coqenv in
 
