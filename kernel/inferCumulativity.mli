@@ -21,7 +21,11 @@ exception BadVariance of Level.t * VariancePos.t * VariancePos.t
 
 type infer_binders = (mode * (Variance.t option * int list))
 
-type infer_variance_occurrence = (infer_binders, mode * UVars.Variance.t option) gen_variance_occurrence
+type infer_variance_occurrence =
+  { infer_binders : infer_binders;
+    infer_term : mode * UVars.Variance.t option;
+    infer_type : mode * UVars.Variance.t option;
+    infer_principal : bool }
 
 val default_occ : infer_variance_occurrence
 val make_infer_occ : VariancePos.t -> infer_variance_occurrence
@@ -49,11 +53,14 @@ val pr_variances : (Univ.Level.t -> Pp.t) -> variances -> Pp.t
 
 val union_variances : variances -> variances -> variances
 
-(* Compute the variance in the binders and term and separately, the variance in the type *)
-val term_type_variances : infer_variance_occurrence -> Variance.t option * Variance.t option
+(* Compute the variance in the binders and term and separately, the variance in the type.
+   The boolean indicates if the universe appears in the principal type of any of the
+   subexpressions where it occurs. *)
+val term_type_variances : infer_variance_occurrence ->
+    Variance.t option * Variance.t option * bool
 
 (* Compute the variance in the binders and term and separately, the variance in the type *)
-val binders_term_and_type_variances : infer_variance_occurrence -> Variance.t option * Variance.t option
+val binders_term_and_type_variances : infer_variance_occurrence -> Variance.t option * Variance.t option * bool
 
 val of_variance_occurrences : infer_in_type:bool -> pre_variances -> variances
 
@@ -62,9 +69,9 @@ module Inf : sig
 
   val pr : (Level.t -> Pp.t) -> status -> Pp.t
 
-  val infer_level_eq : Level.t -> status -> status
-  val infer_level_leq : Level.t -> status -> status
-  val infer_level_geq : Level.t -> status -> status
+  val infer_level_eq : principal:bool -> Level.t -> status -> status
+  val infer_level_leq : principal:bool -> Level.t -> status -> status
+  val infer_level_geq : principal:bool -> Level.t -> status -> status
 
   val get_infer_mode : status -> bool
   val set_infer_mode : bool -> status -> status

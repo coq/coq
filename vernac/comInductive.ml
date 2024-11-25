@@ -566,7 +566,7 @@ let interp_mutual_inductive_constr ~sigma ~flags ~udecl ~ctx_params ~indnames ~a
   in
   let sigma, (default_dep_elim, arities) = inductive_levels ~auto_prop_lowering env_ar_params sigma ~poly ~indnames ~arities_explicit arities ctor_args in
   let lbound = if poly then UGraph.Bound.Set else UGraph.Bound.Prop in
-  let sigma = UnivVariances.register_universe_variances_of_inductive env_ar_params sigma ~udecl ~params:ctx_params ~arities ~constructors in
+  let sigma = UnivVariances.register_universe_variances_of_inductive ~cumulative env_ar_params sigma ~udecl ~params:ctx_params ~arities ~constructors in
   let sigma = Evd.minimize_universes ~lbound sigma in
   let arities = List.map EConstr.(to_constr sigma) arities in
   let constructors = List.map (on_snd (List.map (EConstr.to_constr sigma))) constructors in

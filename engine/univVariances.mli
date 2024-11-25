@@ -19,6 +19,7 @@ val register_universe_variances_of_type : Environ.env -> Evd.evar_map -> EConstr
 
 val register_universe_variances_of_inductive : Environ.env -> Evd.evar_map ->
   udecl:UState.universe_decl ->
+  cumulative:bool ->
   params:EConstr.rel_context ->
   arities:EConstr.t list ->
   constructors:(Names.Id.t list * EConstr.t list) list -> Evd.evar_map

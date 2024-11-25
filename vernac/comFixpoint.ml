@@ -461,7 +461,7 @@ let interp_mutual_definition env ~program_mode ~function_mode rec_order fixl =
   (* Instantiate evars and check all are resolved *)
   let sigma = Evarconv.solve_unif_constraints_with_heuristics env sigma in
   let sigma = UnivVariances.register_universe_variances_of_fix env sigma fixtypes fixdefs in
-  let sigma = Evd.minimize_universes sigma in
+  let sigma = Evd.minimize_universes ~partial:(List.exists Option.is_empty fixdefs) sigma in
 
   (* Build the fix declaration block *)
   let fix = {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs} in

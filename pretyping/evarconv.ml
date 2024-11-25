@@ -462,7 +462,7 @@ let compare_heads pbty env evd ~nargs term term' =
     if UVars.is_applied nargs 1 && Environ.is_array_type env c
     then
       let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
-      compare_cumulative_instances pbty evd ~nargs:(NumArgs 1) (UVars.Variances.application_variances CPrimitives.array_variances) u u'
+      compare_cumulative_instances pbty evd ~nargs:(NumArgs 1) CPrimitives.array_variances u u'
     else
       let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
       let cst = lookup_constant c env in
@@ -470,7 +470,7 @@ let compare_heads pbty env evd ~nargs term term' =
       | Some variance ->
         let prc = Termops.Internal.print_constr_env env evd in
         Feedback.msg_debug Pp.(str"Comparing instances cumulativity " ++  prc term ++ if pbty == CONV then str"=" else str"≤" ++ prc term');
-        compare_cumulative_instances pbty evd ~nargs (UVars.Variances.application_variances variance) u u'
+        compare_cumulative_instances pbty evd ~nargs variance u u'
       | None -> check_strict evd u u')
   | Const _, Const _ -> UnifFailure (evd, NotSameHead)
   | Ind ((mi,i) as ind , u), Ind (ind', u') when QInd.equal env ind ind' ->
@@ -485,8 +485,7 @@ let compare_heads pbty env evd ~nargs term term' =
           let needed = UCompare.inductive_cumulativity_arguments (mind,i) in
           if not (UVars.is_applied nargs needed)
           then check_strict evd u u'
-          else
-            compare_cumulative_instances pbty ~nargs evd (UVars.Variances.application_variances variances) u u'
+          else compare_cumulative_instances pbty ~nargs evd variances u u'
       end
   | Ind _, Ind _ -> UnifFailure (evd, NotSameHead)
   | Construct (((mi,ind),ctor as cons), u), Construct (cons', u')

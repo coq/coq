@@ -130,7 +130,7 @@ let compare_cumulative_instances cv_pb ~nargs variances u u' cstrs =
   CArray.fold_left3
     (fun cstrs v u u' ->
        let open UVars.Variance in
-       let v = UVars.VariancePos.variance nargs v in
+       let v = UVars.VarianceOccurrence.variance_app nargs v in
        match v with
        | Irrelevant -> Set.add (UWeak (u,u')) cstrs
        | Covariant ->
@@ -143,4 +143,4 @@ let compare_cumulative_instances cv_pb ~nargs variances u u' cstrs =
           | Conversion.CUMUL -> Set.add (ULe (make u', make u)) cstrs)
        | Invariant ->
          Set.add (UEq (make u, make u')) cstrs)
-    cstrs (UVars.ApplicationVariances.repr variances) us us'
+    cstrs (UVars.Variances.repr variances) us us'

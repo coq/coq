@@ -32,7 +32,10 @@ open Context.Named.Declaration
 
 module TC = Typeclasses
 
-let debug_rewrite_constraints, _ = CDebug.create_full ~name:"rewrite-constraints" ()
+let debug_rewrite_constraints, pr = CDebug.create_full ~name:"rewrite-constraints" ()
+
+let () = pr Pp.(fun () -> str "debug")
+
 
 (** Typeclass-based generalized rewriting. *)
 

@@ -160,10 +160,10 @@ let is_set_increment u =
 let term_type_variances_irrel u us (variances : InferCumulativity.variances) =
   let open UVars.Variance in
   match Level.Map.find_opt u variances with
-  | None -> if UnivFlex.mem u us then Irrelevant, Irrelevant else Invariant, Invariant
+  | None -> if UnivFlex.mem u us then Irrelevant, Irrelevant, false else Invariant, Invariant, true
   | Some occs ->
-    let termv, typev = term_type_variances occs in
-    Option.default Irrelevant termv, Option.default Irrelevant typev
+    let termv, typev, principal = term_type_variances occs in
+    Option.default Irrelevant termv, Option.default Irrelevant typev, principal
 
 (* let term_type_variances u us variances =
   match Level.Map.find_opt u variances with
@@ -202,7 +202,7 @@ let minimize_univ_variables partial ctx us variances left right cstrs =
         let left = CList.uniquize (List.filter (not_lower lower) left) in
         (acc, left, Level.Map.lunion newlow lower)
     in
-    let term_variance, type_variance = term_type_variances_irrel u us variances in
+    let term_variance, type_variance, principal = term_type_variances_irrel u us variances in
     let instantiate_lbound lbound =
       if is_set_increment lbound && not (get_set_minimization()) then
         (* Minim to Set disabled, do not instantiate with Set *)
@@ -282,7 +282,7 @@ let minimize_univ_variables partial ctx us variances left right cstrs =
     | _ ->  acc
   in
   let maximize_contravariant (ctx, us, cstrs as acc) u =
-    let term_variance, type_variance = term_type_variances_irrel u us variances in
+    let term_variance, type_variance, _ = term_type_variances_irrel u us variances in
     match term_variance, type_variance with
     | (Covariant | Irrelevant), Contravariant when not partial ->
       let ubound = Level.Map.find_opt u right in
@@ -330,7 +330,6 @@ let update_univ_subst (ctx, us, variances, graph) subst =
   let ctx = List.fold_right (fun (l, _) -> Level.Set.remove l) subst ctx in
   let variances = List.fold_right (fun (l, u) variances -> Level.Map.remove l (update_variances variances l (Univ.Universe.levels u))) subst variances in
   (ctx, us, variances, graph)
-
 
 let pr_subst =
   let open Pp in
@@ -389,12 +388,15 @@ let simplify_variables partial ctx us variances graph =
   in
   let simplify_min u (ctx, us, variances, graph as acc) =
     (* u is an undefined flexible variable, lookup its variance information *)
-    let term_variance, type_variance = term_type_variances_irrel u us variances in
+    let term_variance, type_variance, principal = term_type_variances_irrel u us variances in
     let open UVars.Variance in
-    match term_variance, type_variance with
-    | Irrelevant, Irrelevant -> arbitrary u acc
-    | (Covariant | Irrelevant), Covariant when not partial -> minimize u acc
-    | _, _ -> acc
+    if not principal then (* The universe does not occur in the principal type, we can minimize it at will *)
+      arbitrary u acc
+    else
+      match term_variance, type_variance with
+      | Irrelevant, Irrelevant -> arbitrary u acc
+      | (Covariant | Irrelevant), Covariant when not partial -> minimize u acc
+      | _, _ -> acc
   in
   let fold_min u (ctx, us, variances, graph as acc) =
     if UnivFlex.is_defined u us then acc
@@ -403,11 +405,14 @@ let simplify_variables partial ctx us variances graph =
   let acc = Level.Set.fold fold_min dom (ctx, us, variances, graph) in
   let simplify_max u (ctx, us, variances, graph as acc) =
     (* u is an undefined flexible variable, lookup its variance information *)
-    let term_variance, type_variance = term_type_variances_irrel u us variances in
-    let open UVars.Variance in
-    match term_variance, type_variance with
-    | (Covariant | Irrelevant), Contravariant when not partial -> maximize u acc
-    | _, _ -> acc
+    let term_variance, type_variance, principal = term_type_variances_irrel u us variances in
+    if not principal then
+      maximize u acc
+    else
+      let open UVars.Variance in
+      match term_variance, type_variance with
+      | (Covariant | Irrelevant), Contravariant when not partial -> maximize u acc
+      | _, _ -> acc
   in
   let fold_max u (ctx, us, variances, graph as acc) =
     if UnivFlex.is_defined u us then acc
@@ -484,12 +489,12 @@ let minimize_weak us weak (smallles, csts, g, variances) =
         let levels = Level.Set.add a (Universe.levels b) in
         let sup_variances = sup_variances variances levels in
         match InferCumulativity.term_type_variances sup_variances with
-        | (None | Some UVars.Variance.Irrelevant), (None | Some UVars.Variance.Irrelevant) -> (* Irrelevant *)
+        | (None | Some UVars.Variance.Irrelevant), (None | Some UVars.Variance.Irrelevant), false -> (* Irrelevant *)
           (smallles,
           Constraints.add (Universe.make a,Eq,b) csts,
           fst (UGraph.enforce_constraint (Universe.make a,Eq,b) g),
           Level.Set.fold (fun bl variances -> set_variance variances bl sup_variances) levels variances)
-        | _, _ -> (* One universe is not irrelevant *)
+        | _, _, _ -> (* One universe is not irrelevant *)
           (smallles, csts, g, variances)
       in
       let check_le a b = UGraph.check_constraint g (a,Le,b) in
@@ -526,14 +531,14 @@ let new_minimize_weak ctx us weak (g, variances) =
         let levels = Universe.levels b in
         let sup_variances = sup_variances variances (Level.Set.add a levels) in
         match InferCumulativity.term_type_variances sup_variances with
-        | (None | Some UVars.Variance.Irrelevant), (None | Some UVars.Variance.Irrelevant) -> (* Irrelevant *)
+        | (None | Some UVars.Variance.Irrelevant), (None | Some UVars.Variance.Irrelevant), false -> (* Irrelevant *)
           let variances =
             Level.Set.fold (fun bl variances -> set_variance variances bl sup_variances) levels variances
           in
           (try let g, equivs = UGraph.set a b g in
             update_equivs_bound (ctx, us, variances, g) a b equivs
           with UGraph.InconsistentEquality | UGraph.OccurCheck -> acc)
-        | _, _ -> (* One universe is not irrelevant *)
+        | _, _, _ -> (* One universe is not irrelevant *)
           (ctx,us, variances, g)
       in
       let check_le a b = UGraph.check_constraint g (a,Le,b) in

@@ -126,6 +126,13 @@ sig
   val equal : t -> t -> bool
 
   val term_variance_pos : t -> VariancePos.t
+
+  val variance_and_principality : nargs:int -> t -> Variance.t * bool
+
+  val variance_and_principality_app : application -> t -> Variance.t * bool
+
+  val variance_app : application -> t -> Variance.t
+
 end
 
 module Variances :
@@ -262,8 +269,8 @@ type 'a quconstraint_function = 'a -> 'a -> Sorts.QUConstraints.t -> Sorts.QUCon
 
 val enforce_eq_instances : Instance.t quconstraint_function
 
-val enforce_eq_variance_instances : nargs:application -> ApplicationVariances.t -> Instance.t quconstraint_function
-val enforce_leq_variance_instances : nargs:application -> ApplicationVariances.t -> Instance.t quconstraint_function
+val enforce_eq_variance_instances : nargs:application -> Variances.t -> Instance.t quconstraint_function
+val enforce_leq_variance_instances : nargs:application -> Variances.t -> Instance.t quconstraint_function
 
 type 'a puniverses = 'a * Instance.t
 val out_punivs : 'a puniverses -> 'a

@@ -320,6 +320,7 @@ let union uctx uctx' =
     let declarenew g =
       Level.Set.fold (fun u g -> UGraph.add_universe u ~lbound:UGraph.Bound.Set ~strict:false g) newus g
     in
+    let univ_variables = UnivFlex.biased_union uctx.univ_variables uctx'.univ_variables in
     let fail_union s q1 q2 =
       if UGraph.type_in_type uctx.universes then s
       else CErrors.user_err
@@ -328,14 +329,14 @@ let union uctx uctx' =
     in
       { names;
         local = local;
-        univ_variables =
-          UnivFlex.biased_union uctx.univ_variables uctx'.univ_variables;
+        univ_variables;
         sort_variables = QState.union ~fail:fail_union uctx.sort_variables uctx'.sort_variables;
         initial_universes = declarenew uctx.initial_universes;
         universes =
           (if local == uctx.local then uctx.universes
            else
              let cstrsr = ContextSet.constraints uctx'.local in
+             let cstrsr = UnivFlex.normalize_constraints univ_variables cstrsr in
              merge_constraints uctx cstrsr (declarenew uctx.universes));
         variances;
         minim_extra = extra}
@@ -548,7 +549,7 @@ let instantiate_variable l (b : Universe.t) us local =
   in
   let subst = (l, b) :: subst_of_equivalences us equivs in
   debug Pp.(fun () -> str"Model after set: " ++ UGraph.pr_model ~local:true local_univs ++ str " equivalent universes: " ++ pr_subst subst);
-  update_univ_subst us local subst
+  update_univ_subst us { local with local_univs } subst
 
 let get_constraint = function
 | Conversion.CONV -> Eq
@@ -1038,11 +1039,12 @@ let check_variances ~cumulative names ivariances inst variances =
               | None -> InferCumulativity.forget_infer_variance_occurrence v'
               | Some variance ->
                 match InferCumulativity.binders_term_and_type_variances v' with
-                | None, None -> InferCumulativity.forget_infer_variance_occurrence v'
-                | Some variance', _ | None, Some variance' ->
+                | None, None, _ -> InferCumulativity.forget_infer_variance_occurrence v'
+                | Some variance', _, principal | None, Some variance', principal ->
                 if UVars.Variance.le variance' variance then InferCumulativity.forget_infer_variance_occurrence v'
                 else CErrors.user_err Pp.(str"Variance annotation " ++ UVars.Variance.pr variance ++ str" for universe binder " ++
-                  (pr_uctx_level_names names level) ++ str" is incorrect, inferred variances are " ++ InferCumulativity.pr_variance_occurrence v')
+                  (pr_uctx_level_names names level) ++ str" is incorrect, inferred variances are " ++
+                   InferCumulativity.pr_variance_occurrence v')
         in
         Some (UVars.Variances.make (Array.map2 check_var (snd (LevelInstance.to_array inst)) variances))
 
@@ -1320,6 +1322,7 @@ let normalize_variables uctx =
     UnivFlex.normalize_univ_variables uctx.univ_variables
   in
   let uctx_local = subst_univs_context_with_def def subst uctx.local in
+  debug Pp.(fun () -> str"Merging constraints " ++ Constraints.pr Level.raw_pr (snd uctx_local));
   let univs = UGraph.merge_constraints (snd uctx_local) uctx.initial_universes in
   { uctx with
     local = uctx_local;

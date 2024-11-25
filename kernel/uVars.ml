@@ -182,12 +182,12 @@ struct
 
   let lift k = Array.map (VariancePos.lift k)
 
-  let leq_constraints ~nargs variances u u' csts =
+  let _leq_constraints ~nargs variances u u' csts =
     let len = Array.length u in
     assert (len = Array.length u' && len = Array.length variances);
     Array.fold_left3 (VariancePos.leq_constraint nargs) csts variances u u'
 
-  let eq_constraints ~nargs variances u u' csts =
+  let _eq_constraints ~nargs variances u u' csts =
     let len = Array.length u in
     assert (len = Array.length u' && len = Array.length variances);
     Array.fold_left3 (VariancePos.eq_constraint nargs) csts variances u u'
@@ -290,6 +290,60 @@ struct
       | None -> (vterm, Position.InTerm)
       | Some (vb, bp)  -> (Variance.sup vterm vb, bp)
 
+  let variance_app nargs vocc =
+    let open Variance in
+    let binderv =
+      match vocc.in_binders with
+      | None, _ -> Irrelevant
+      | Some v, li ->
+        match nargs with
+        | FullyApplied -> Irrelevant
+        | NumArgs nargs -> if List.exists (fun k -> k >= nargs) li then v else Irrelevant
+    in
+    match vocc.in_term with
+    | None -> binderv
+    | Some vterm -> Variance.sup binderv vterm
+
+  let variance_and_principality_app nargs vocc =
+    let open Variance in
+    let is_applied_enough, principal_in_binder =
+      match vocc.in_binders with
+      | None, _ -> false, false
+      | Some v, li ->
+        match nargs with
+        | FullyApplied -> true, false
+        | NumArgs nargs ->
+          if List.exists (fun k -> k >= nargs) li then false, v <> Irrelevant
+          else true, false
+    in
+    let principal =
+      match vocc.in_type with
+      | Some v -> if v == Irrelevant then principal_in_binder else true
+      | None -> principal_in_binder
+    in
+    let variance =
+      match fst vocc.in_binders, vocc.in_term with
+      | None, Some v -> v
+      | Some v, None ->
+        if is_applied_enough then Irrelevant
+        else v
+      | Some v, Some v' ->
+        if is_applied_enough then v'
+        else Variance.sup v v'
+      | None, None -> Irrelevant
+    in
+    variance, principal
+
+  let variance_and_principality ~nargs vocc = variance_and_principality_app (NumArgs nargs) vocc
+
+  let eq_constraint nargs csts vocc =
+    let variance = variance_app nargs vocc in
+    Variance.eq_constraint csts variance
+
+  let leq_constraint nargs csts vocc =
+    let variance = variance_app nargs vocc in
+    Variance.leq_constraint csts variance
+
   (* let term_variance_pos { in_binders; in_term; in_type }  =
     let in_binders = binders_variance in_binders in
     let open Variance in
@@ -339,6 +393,16 @@ struct
 
   let le x y =
     Array.equal VarianceOccurrence.le (fst x) (fst y)
+
+  let leq_constraints ~nargs (variances, _) u u' csts =
+    let len = Array.length u in
+    assert (len = Array.length u' && len = Array.length variances);
+    Array.fold_left3 (VarianceOccurrence.leq_constraint nargs) csts variances u u'
+
+  let eq_constraints ~nargs (variances, _) u u' csts =
+    let len = Array.length u in
+    assert (len = Array.length u' && len = Array.length variances);
+    Array.fold_left3 (VarianceOccurrence.eq_constraint nargs) csts variances u u'
 
 end
 
@@ -639,14 +703,14 @@ let enforce_eq_instances x y (qcs, ucs as orig) =
 let enforce_eq_variance_instances ~nargs variances x y (qcs,ucs as orig) =
   let xq, xu = Instance.to_array x and yq, yu = Instance.to_array y in
   let qcs' = CArray.fold_right2 Sorts.enforce_eq_quality xq yq qcs in
-  let ucs' = ApplicationVariances.eq_constraints ~nargs variances xu yu ucs in
+  let ucs' = Variances.eq_constraints ~nargs variances xu yu ucs in
   if qcs' == qcs && ucs' == ucs then orig else qcs', ucs'
 
 let enforce_leq_variance_instances ~nargs variances x y (qcs,ucs as orig) =
   let xq, xu = Instance.to_array x and yq, yu = Instance.to_array y in
   (* no variance for quality variables -> enforce_eq *)
   let qcs' = CArray.fold_right2 Sorts.enforce_eq_quality xq yq qcs in
-  let ucs' = ApplicationVariances.leq_constraints ~nargs variances xu yu ucs in
+  let ucs' = Variances.leq_constraints ~nargs variances xu yu ucs in
   if qcs' == qcs && ucs' == ucs then orig else qcs', ucs'
 
 let subst_instance_level s l =

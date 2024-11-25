@@ -127,6 +127,12 @@ let normalize_univ_variables ctx =
   let subst l = Level.Map.find_opt l subst in
   ctx, def, subst
 
+let normalize_constraints subst cstrs =
+  let norm_univ = normalize_universe subst in
+  let normalize_constraint (l, d, r) = (norm_univ l, d, norm_univ r) in
+  Constraints.fold (fun cstr acc -> Constraints.add (normalize_constraint cstr) acc)
+    cstrs Constraints.empty
+
 let pr prl {subst} =
   let open Pp in
   let ppsubst = Level.Map.pr prl (function
