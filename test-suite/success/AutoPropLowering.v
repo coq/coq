@@ -1,8 +1,3 @@
-Set Warnings "+automatic-prop-lowering".
-
-Fail Inductive foo : Type := .
-
-Unset Automatic Proposition Inductives.
 
 Inductive foo : Type := .
 

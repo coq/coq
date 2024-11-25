@@ -33,7 +33,6 @@ type flags = {
   poly : bool;
   cumulative : bool;
   template : bool option;
-  auto_prop_lowering : bool;
   finite : Declarations.recursivity_kind;
   mode : Hints.hint_mode list option;
 }
@@ -213,16 +212,6 @@ let compute_constructor_levels env evd sign =
           (s :: lev, EConstr.push_rel d env))
     sign ([],env))
 
-let warn_auto_prop_lowering =
-  CWarnings.create ~name:"automatic-prop-lowering" ~category:Deprecation.Version.v8_20
-    Pp.(fun na ->
-        strbrk "Automatically putting " ++ Id.print na ++ strbrk " in Prop" ++ spc() ++
-        strbrk "even though it was declared with Type." ++ fnl() ++
-        strbrk "Unset Automatic Proposition Inductives to prevent this" ++ spc() ++
-        strbrk "(it will become the default in a future version)." ++ fnl() ++
-        strbrk "If you instead put " ++ Id.print na ++ strbrk " explicitly in Prop," ++ spc() ++
-        strbrk "set Dependent Proposition Eliminators around the declaration for full backwards compatibility.")
-
 let is_flexible_sort evd s = match ESorts.kind evd s with
 | Set | Prop | SProp -> false
 | Type u | QSort (_, u) ->
@@ -230,7 +219,7 @@ let is_flexible_sort evd s = match ESorts.kind evd s with
   | Some l -> Evd.is_flexible_level evd l
   | None -> false
 
-let prop_lowering_candidates ~auto_prop_lowering evd ~arities_explicit inds =
+let prop_lowering_candidates evd ~arities_explicit inds =
   let less_than_2 = function [] | [_] -> true | _ :: _ :: _ -> false in
 
   (* handle automatic lowering to Prop
@@ -244,7 +233,7 @@ let prop_lowering_candidates ~auto_prop_lowering evd ~arities_explicit inds =
     && not (Evd.check_leq evd ESorts.set s)
   in
   let candidates = List.filter_map (fun (explicit,(_,(_,s),_,_ as ind)) ->
-      if (auto_prop_lowering || not explicit) && is_prop_candidate_arity ind
+      if (not explicit) && is_prop_candidate_arity ind
       then Some s else None)
       (List.combine arities_explicit inds)
   in
@@ -303,7 +292,7 @@ let include_constructor_argument env evd ~poly ~ctor_sort ~inductive_sort =
 
 type default_dep_elim = DeclareInd.default_dep_elim = DefaultElim | PropButDepElim
 
-let inductive_levels ~auto_prop_lowering env evd ~poly ~indnames ~arities_explicit arities ctors =
+let inductive_levels env evd ~poly ~indnames ~arities_explicit arities ctors =
   let inds = List.map2 (fun x ctors ->
       let ctx, s = Reductionops.dest_arity env evd x in
       x, (ctx, s), List.map (compute_constructor_levels env evd) ctors)
@@ -332,7 +321,7 @@ let inductive_levels ~auto_prop_lowering env evd ~poly ~indnames ~arities_explic
       inds
   in
 
-  let candidates = prop_lowering_candidates ~auto_prop_lowering evd ~arities_explicit inds in
+  let candidates = prop_lowering_candidates evd ~arities_explicit inds in
   (* Do the lowering. We forget about the generated universe for the
      lowered inductive and rely on universe restriction to get rid of
      it.
@@ -348,7 +337,6 @@ let inductive_levels ~auto_prop_lowering env evd ~poly ~indnames ~arities_explic
       if List.mem_f (ESorts.equal evd) s candidates then
         (* NB: is_prop_candidate requires is_flexible_sort
            so in this branch we know s <> Prop *)
-        let () = if explicit then warn_auto_prop_lowering na in
         ((PropButDepElim, mkArity (ctx, ESorts.prop)),ESorts.prop,indices,ctors)
       else ((DefaultElim, raw_arity), s, indices, ctors))
       indnames
@@ -545,7 +533,6 @@ let interp_mutual_inductive_constr ~sigma ~flags ~udecl ~variances ~ctx_params ~
     poly;
     cumulative;
     template;
-    auto_prop_lowering;
     finite;
   } = flags in
   (* Compute renewed arities *)
@@ -556,7 +543,7 @@ let interp_mutual_inductive_constr ~sigma ~flags ~udecl ~variances ~ctx_params ~
         tys)
       constructors
   in
-  let sigma, (default_dep_elim, arities) = inductive_levels ~auto_prop_lowering env_ar_params sigma ~poly ~indnames ~arities_explicit arities ctor_args in
+  let sigma, (default_dep_elim, arities) = inductive_levels env_ar_params sigma ~poly ~indnames ~arities_explicit arities ctor_args in
   let lbound = if poly then UGraph.Bound.Set else UGraph.Bound.Prop in
   let sigma = Evd.minimize_universes ~lbound sigma in
   let arities = List.map EConstr.(to_constr sigma) arities in
