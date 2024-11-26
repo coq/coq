@@ -3,6 +3,7 @@ existT : forall [A : Type] (P : A -> Type) (x : A), P x -> {x : A & P x}
 existT is template universe polymorphic
 Arguments existT [A]%type_scope P%function_scope x _
 Expands to: Constructor Stdlib.Init.Specif.existT
+Declared in library Stdlib.Init.Specif, line 45, characters 4-10
 Inductive sigT (A : Type) (P : A -> Type) : Type :=
     existT : forall x : A, P x -> {x : A & P x}.
 
@@ -20,6 +21,7 @@ eq_refl : forall {A : Type} {x : A}, x = x
 eq_refl is template universe polymorphic
 Arguments eq_refl {A}%type_scope {x}, [_] _
 Expands to: Constructor Stdlib.Init.Logic.eq_refl
+Declared in library Stdlib.Init.Logic, line 379, characters 4-11
 eq_refl : forall {A : Type} {x : A}, x = x
 
 When applied to no arguments:
@@ -41,6 +43,7 @@ Nat.add is not universe polymorphic
 Arguments Nat.add (n m)%nat_scope
 Nat.add is transparent
 Expands to: Constant Stdlib.Init.Nat.add
+Declared in library Stdlib.Init.Nat, line 47, characters 0-113
 Nat.add : nat -> nat -> nat
 
 plus_n_O : forall n : nat, n = n + 0
@@ -49,6 +52,7 @@ plus_n_O is not universe polymorphic
 Arguments plus_n_O n%nat_scope
 plus_n_O is opaque
 Expands to: Constant Stdlib.Init.Peano.plus_n_O
+Declared in library Stdlib.Init.Peano, line 99, characters 6-14
 Inductive le (n : nat) : nat -> Prop :=
     le_n : n <= n | le_S : forall m : nat, n <= m -> n <= S m.
 
@@ -59,6 +63,7 @@ comparison : Set
 
 comparison is not universe polymorphic
 Expands to: Inductive Stdlib.Init.Datatypes.comparison
+Declared in library Stdlib.Init.Datatypes, line 333, characters 10-20
 Inductive comparison : Set :=
     Eq : comparison | Lt : comparison | Gt : comparison.
 bar : foo
@@ -78,6 +83,7 @@ Arguments bar {x}
 Module Stdlib.Init.Peano
 Notation sym_eq := eq_sym
 Expands to: Notation Stdlib.Init.Logic.sym_eq
+Declared in library Stdlib.Init.Logic, line 757, characters 0-41
 
 eq_sym : forall [A : Type] [x y : A], x = y -> y = x
 
@@ -85,6 +91,7 @@ eq_sym is not universe polymorphic
 Arguments eq_sym [A]%type_scope [x y] _
 eq_sym is transparent
 Expands to: Constant Stdlib.Init.Logic.eq_sym
+Declared in library Stdlib.Init.Logic, line 419, characters 12-18
 Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x.
 
 Arguments eq {A}%type_scope x _
@@ -106,13 +113,15 @@ Alias.eq : forall {A : Type}, A -> A -> Prop
 Alias.eq is template universe polymorphic
 Arguments Alias.eq {A}%type_scope x _
 Expands to: Inductive PrintInfos.Alias.eq (syntactically equal to
-Stdlib.Init.Logic.eq)
+            Stdlib.Init.Logic.eq)
+Declared in library Stdlib.Init.Logic, line 378, characters 10-12
 Alias.eq_refl : forall {A : Type} {x : A}, x = x
 
 Alias.eq_refl is template universe polymorphic
 Arguments Alias.eq_refl {A}%type_scope {x}, [_] _
 Expands to: Constructor PrintInfos.Alias.eq_refl (syntactically equal to
-Stdlib.Init.Logic.eq_refl)
+            Stdlib.Init.Logic.eq_refl)
+Declared in library Stdlib.Init.Logic, line 379, characters 4-11
 Alias.eq_ind :
 forall [A : Type] (x : A) (P : A -> Prop), P x -> forall y : A, x = y -> P y
 
@@ -121,7 +130,8 @@ Arguments Alias.eq_ind [A]%type_scope x P%function_scope f y e
   (where some original arguments have been renamed)
 Alias.eq_ind is transparent
 Expands to: Constant PrintInfos.Alias.eq_ind (syntactically equal to
-Stdlib.Init.Logic.eq_ind)
+            Stdlib.Init.Logic.eq_ind)
+Declared in library Stdlib.Init.Logic, line 378, characters 0-115
 fst : forall A B : Type, prod A B -> A
 
 fst is not universe polymorphic

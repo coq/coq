@@ -114,3 +114,9 @@ let pr loc =
     (str"File " ++ str "\"" ++ str file ++ str "\"" ++
      str", line " ++ int loc.line_nb ++ str", characters " ++
      int (loc.bp-loc.bol_pos) ++ str"-" ++ int (loc.ep-loc.bol_pos))
+
+let current_command_loc = ref None
+
+let get_current_command_loc () = !current_command_loc
+
+let set_current_command_loc v = current_command_loc := v

@@ -23,6 +23,7 @@ eq_refl is template universe polymorphic
 Arguments eq_refl {B}%type_scope {y}, [_] _
   (where some original arguments have been renamed)
 Expands to: Constructor Stdlib.Init.Logic.eq_refl
+Declared in library Stdlib.Init.Logic, line 379, characters 4-11
 Inductive myEq (B : Type) (x : A) : A -> Prop :=  myrefl : B -> myEq B x x.
 
 Arguments myEq B%type_scope x _
@@ -35,6 +36,7 @@ Arguments myrefl {C}%type_scope x _
   (where some original arguments have been renamed)
 myrefl uses section variable A.
 Expands to: Constructor Arguments_renaming.Test1.myrefl
+Declared in library Arguments_renaming, line 25, characters 40-46
 myplus =
 fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
   match n with
@@ -54,6 +56,7 @@ The reduction tactics unfold myplus when the 2nd and
   3rd arguments evaluate to a constructor
 myplus is transparent
 Expands to: Constant Arguments_renaming.Test1.myplus
+Declared in library Arguments_renaming, line 31, characters 0-108
 @myplus
      : forall Z : Type, Z -> nat -> nat -> nat
 Inductive myEq (A B : Type) (x : A) : A -> Prop :=
@@ -68,6 +71,7 @@ myrefl is template universe polymorphic
 Arguments myrefl A%type_scope {C}%type_scope x _
   (where some original arguments have been renamed)
 Expands to: Constructor Arguments_renaming.myrefl
+Declared in library Arguments_renaming, line 25, characters 40-46
 myrefl
      : forall (A C : Type) (x : A), C -> myEq A C x x
 myplus =
@@ -89,6 +93,7 @@ The reduction tactics unfold myplus when the 2nd and
   3rd arguments evaluate to a constructor
 myplus is transparent
 Expands to: Constant Arguments_renaming.myplus
+Declared in library Arguments_renaming, line 31, characters 0-108
 @myplus
      : forall Z : Type, Z -> nat -> nat -> nat
 File "./output/Arguments_renaming.v", line 49, characters 0-36:

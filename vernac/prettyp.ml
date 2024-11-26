@@ -904,6 +904,23 @@ let canonical_info env ref =
     | path -> spc() ++ str "(syntactically equal to" ++ spc() ++ pr_path path ++ str ")"
     | exception Not_found -> spc() ++ str "(missing canonical, bug?)"
 
+let pr_loc_use_dp loc = match loc.Loc.fname with
+  | Loc.ToplevelInput ->
+    (* NB emacs mangles the message if it contains the capitalized "Toplevel input" of [Loc.pr] *)
+    str "toplevel input, characters " ++ int loc.bp ++ str "-" ++ int loc.ep
+  | InFile  { dirpath = None } -> Loc.pr loc
+  | InFile { dirpath = Some dp } ->
+    let f = str "library " ++ str dp in
+    (f ++
+     str", line " ++ int loc.line_nb ++ str", characters " ++
+     int (loc.bp-loc.bol_pos) ++ str"-" ++ int (loc.ep-loc.bol_pos))
+
+
+let loc_info gr =
+  match Nametab.cci_src_loc gr with
+  | None -> mt()
+  | Some loc -> cut() ++ hov 0 (str "Declared in" ++ spc() ++ pr_loc_use_dp loc)
+
 let pr_located_qualid env = function
   | Term ref ->
       let ref_str = let open GlobRef in match ref with
@@ -913,9 +930,9 @@ let pr_located_qualid env = function
         | VarRef _ -> "Variable"
       in
       let extra = canonical_info env ref in
-      str ref_str ++ spc () ++ pr_path (Nametab.path_of_global ref) ++ extra
+      v 0 (hov 0 (str ref_str ++ spc () ++ pr_path (Nametab.path_of_global ref) ++ extra))
   | Abbreviation kn ->
-      str "Notation" ++ spc () ++ pr_path (Nametab.path_of_abbreviation kn)
+    str "Notation" ++ spc () ++ pr_path (Nametab.path_of_abbreviation kn)
   | Dir dir ->
       let s,mp =
         let open Nametab in
@@ -1032,7 +1049,8 @@ let print_about_global_reference ?loc env ref udecl =
     print_reduction_behaviour ref @
     print_opacity env ref @
     print_bidi_hints ref @
-    [hov 0 (str "Expands to: " ++ pr_located_qualid env (Term ref))])
+    [hov 0 (str "Expands to: " ++ pr_located_qualid env (Term ref)) ++
+    loc_info (TrueGlobal ref)])
 
 let print_about_abbreviation env sigma kn =
   let (vars,c) = glob_constr_of_abbreviation kn in
@@ -1041,6 +1059,7 @@ let print_about_abbreviation env sigma kn =
   | _ -> [] in
   print_abbreviation_body env kn (vars,c) ++ fnl () ++
   hov 0 (str "Expands to: " ++ pr_located_qualid env (Abbreviation kn)) ++
+  loc_info (Abbrev kn) ++
   with_line_skip pp
 
 let print_about_any ?loc env sigma k udecl =

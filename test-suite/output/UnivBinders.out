@@ -259,6 +259,7 @@ forall [A : Type@{JMeq.u0}], A -> forall [B : Type@{JMeq.u1}], B -> Prop
 JMeq is template universe polymorphic on JMeq.u0
 Arguments JMeq [A]%type_scope x [B]%type_scope _
 Expands to: Inductive UnivBinders.PartialTemplate.JMeq
+Declared in library UnivBinders, line 219, characters 10-14
 File "./output/UnivBinders.v", line 234, characters 2-38:
 The command has indeed failed with message:
 Universe u0 already exists.

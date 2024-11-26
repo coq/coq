@@ -174,6 +174,11 @@ val exists_module : DirPath.t -> bool
 val exists_dir : DirPath.t -> bool
 val exists_universe : full_path -> bool
 
+(** {6 These functions declare (resp. return) the source location of the object if known } *)
+
+val set_cci_src_loc : Globnames.extended_global_reference -> Loc.t -> unit
+val cci_src_loc : Globnames.extended_global_reference -> Loc.t option
+
 (** {6 These functions locate qualids into full user names } *)
 
 val full_name_modtype : qualid -> full_path

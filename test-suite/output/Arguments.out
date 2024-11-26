@@ -5,6 +5,7 @@ Arguments Nat.sub (n m)%nat_scope : simpl nomatch
 The reduction tactics unfold Nat.sub but avoid exposing match constructs
 Nat.sub is transparent
 Expands to: Constant Stdlib.Init.Nat.sub
+Declared in library Stdlib.Init.Nat, line 71, characters 0-120
 Nat.sub : nat -> nat -> nat
 
 Nat.sub is not universe polymorphic
@@ -13,6 +14,7 @@ The reduction tactics unfold Nat.sub when applied to 1 argument
   but avoid exposing match constructs
 Nat.sub is transparent
 Expands to: Constant Stdlib.Init.Nat.sub
+Declared in library Stdlib.Init.Nat, line 71, characters 0-120
 Nat.sub : nat -> nat -> nat
 
 Nat.sub is not universe polymorphic
@@ -22,6 +24,7 @@ The reduction tactics unfold Nat.sub
   when applied to 1 argument but avoid exposing match constructs
 Nat.sub is transparent
 Expands to: Constant Stdlib.Init.Nat.sub
+Declared in library Stdlib.Init.Nat, line 71, characters 0-120
 Nat.sub : nat -> nat -> nat
 
 Nat.sub is not universe polymorphic
@@ -30,6 +33,7 @@ The reduction tactics unfold Nat.sub when the 1st and
   2nd arguments evaluate to a constructor and when applied to 2 arguments
 Nat.sub is transparent
 Expands to: Constant Stdlib.Init.Nat.sub
+Declared in library Stdlib.Init.Nat, line 71, characters 0-120
 Nat.sub : nat -> nat -> nat
 
 Nat.sub is not universe polymorphic
@@ -38,6 +42,7 @@ The reduction tactics unfold Nat.sub when the 1st and
   2nd arguments evaluate to a constructor
 Nat.sub is transparent
 Expands to: Constant Stdlib.Init.Nat.sub
+Declared in library Stdlib.Init.Nat, line 71, characters 0-120
 pf :
 forall {D1 C1 : Type},
 (D1 -> C1) -> forall [D2 C2 : Type], (D2 -> C2) -> D1 * D2 -> C1 * C2
@@ -47,6 +52,7 @@ Arguments pf {D1}%foo_scope {C1}%type_scope f [D2 C2] g x : simpl never
 The reduction tactics never unfold pf
 pf is transparent
 Expands to: Constant Arguments.pf
+Declared in library Arguments, line 12, characters 11-13
 fcomp : forall {A B C : Type}, (B -> C) -> (A -> B) -> A -> C
 
 fcomp is not universe polymorphic
@@ -54,6 +60,7 @@ Arguments fcomp {A B C}%type_scope f g x /
 The reduction tactics unfold fcomp when applied to 6 arguments
 fcomp is transparent
 Expands to: Constant Arguments.fcomp
+Declared in library Arguments, line 19, characters 11-16
 volatile : nat -> nat
 
 volatile is not universe polymorphic
@@ -61,6 +68,7 @@ Arguments volatile / x%nat_scope
 The reduction tactics always unfold volatile
 volatile is transparent
 Expands to: Constant Arguments.volatile
+Declared in library Arguments, line 22, characters 11-19
 f : T1 -> T2 -> nat -> unit -> nat -> nat
 
 f is not universe polymorphic
@@ -68,6 +76,7 @@ Arguments f x y n%nat_scope v m%nat_scope
 f uses section variables T1 T2.
 f is transparent
 Expands to: Constant Arguments.S1.S2.f
+Declared in library Arguments, line 30, characters 0-147
 f : T1 -> T2 -> nat -> unit -> nat -> nat
 
 f is not universe polymorphic
@@ -77,6 +86,7 @@ The reduction tactics unfold f when the 3rd, 4th and
   5th arguments evaluate to a constructor
 f is transparent
 Expands to: Constant Arguments.S1.S2.f
+Declared in library Arguments, line 30, characters 0-147
 f : forall [T2 : Type], T1 -> T2 -> nat -> unit -> nat -> nat
 
 f is not universe polymorphic
@@ -86,6 +96,7 @@ The reduction tactics unfold f when the 4th, 5th and
   6th arguments evaluate to a constructor
 f is transparent
 Expands to: Constant Arguments.S1.f
+Declared in library Arguments, line 30, characters 0-147
 f : forall [T1 T2 : Type], T1 -> T2 -> nat -> unit -> nat -> nat
 
 f is not universe polymorphic
@@ -94,6 +105,7 @@ The reduction tactics unfold f when the 5th, 6th and
   7th arguments evaluate to a constructor
 f is transparent
 Expands to: Constant Arguments.f
+Declared in library Arguments, line 30, characters 0-147
      = forall v : unit, f 0 0 5 v 3 = 2
      : Prop
      = 2 = 2
@@ -106,6 +118,7 @@ The reduction tactics unfold f when the 5th, 6th and
   7th arguments evaluate to a constructor
 f is transparent
 Expands to: Constant Arguments.f
+Declared in library Arguments, line 30, characters 0-147
 forall w : r, w 3 true = tt
      : Prop
 File "./output/Arguments.v", line 52, characters 28-29:
@@ -124,6 +137,7 @@ The reduction tactics always unfold volatilematch
   but avoid exposing match constructs
 volatilematch is transparent
 Expands to: Constant Arguments.volatilematch
+Declared in library Arguments, line 58, characters 11-24
      = fun n : nat => volatilematch n
      : nat -> nat
 *** [ f :

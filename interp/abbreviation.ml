@@ -24,6 +24,7 @@ type abbreviation =
     abbrev_onlyparsing : bool;
     abbrev_user_warns : Globnames.extended_global_reference UserWarn.with_qf option;
     abbrev_activated : bool; (* Not really necessary in practice *)
+    abbrev_src : Loc.t option;
   }
 
 let abbrev_table =
@@ -60,7 +61,8 @@ let load_abbreviation i ((sp,kn),(_local,abbrev)) =
     user_err
       (Id.print (basename sp) ++ str " already exists.");
   add_abbreviation kn sp abbrev;
-  Nametab.push_abbreviation ?user_warns:abbrev.abbrev_user_warns (Nametab.Until i) sp kn
+  Nametab.push_abbreviation ?user_warns:abbrev.abbrev_user_warns (Nametab.Until i) sp kn;
+  abbrev.abbrev_src |> Option.iter (fun loc -> Nametab.set_cci_src_loc (Abbrev kn) loc)
 
 let is_alias_of_already_visible_name sp = function
   | _,NRef (ref,None) ->
@@ -108,6 +110,7 @@ let declare_abbreviation ~local user_warns id ~onlyparsing pat =
       abbrev_onlyparsing = onlyparsing;
       abbrev_user_warns = user_warns;
       abbrev_activated = true;
+      abbrev_src = Loc.get_current_command_loc();
     }
   in
   add_leaf (inAbbreviation id (local,abbrev))

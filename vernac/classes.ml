@@ -338,7 +338,7 @@ let declare_instance_program pm env sigma ~locality ~poly name pri impargs udecl
   let uctx = Evd.ustate sigma in
   let kind = Decls.IsDefinition Decls.Instance in
   let cinfo = Declare.CInfo.make ~name ~typ ~impargs () in
-  let info = Declare.Info.make  ~udecl ~poly ~kind ~hook () in
+  let info = Declare.Info.make ~udecl ~poly ~kind ~hook () in
   let pm, _ =
     Declare.Obls.add_definition ~pm ~info ~cinfo ~opaque:false ~uctx ~body obls
   in pm

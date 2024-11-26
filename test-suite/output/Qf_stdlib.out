@@ -19,6 +19,7 @@ Nat.add is not universe polymorphic
 Arguments Nat.add (n m)%nat_scope
 Nat.add is transparent
 Expands to: Constant Stdlib.Init.Nat.add
+Declared in library Stdlib.Init.Nat, line 47, characters 0-113
 File "./output/Qf_stdlib.v", line 17, characters 6-22:
 Warning: Coq.Init.Nat.add has been replaced by Stdlib.Init.Nat.add.
 [deprecated-dirpath-Coq,deprecated-since-9.0,deprecated,default]

@@ -11,6 +11,8 @@
 open Names
 open Entries
 
+type indlocs = (Loc.t option * Loc.t option list) list
+
 (** Declaration of inductive blocks *)
 let declare_inductive_argument_scopes kn mie =
   List.iteri (fun i {mind_entry_consnames=lc} ->
@@ -20,7 +22,7 @@ let declare_inductive_argument_scopes kn mie =
     done) mie.mind_entry_inds
 
 type inductive_obj = {
-  ind_names : (Id.t * Id.t list) list
+  ind_names : (lident * lident list) list
   (* For each block, name of the type + name of constructors *)
 }
 
@@ -29,30 +31,34 @@ let inductive_names sp kn obj =
   let kn = Global.mind_of_delta_kn kn in
   let names, _ =
     List.fold_left
-      (fun (names, n) (typename, consnames) ->
+      (fun (names, n) ({CAst.v=typename; loc=typeloc}, consnames) ->
          let ind_p = (kn,n) in
          let names, _ =
            List.fold_left
-             (fun (names, p) l ->
+             (fun (names, p) {CAst.v=l; loc} ->
                 let sp = Libnames.make_path dp l in
-                ((sp, GlobRef.ConstructRef (ind_p,p)) :: names, p+1))
-             (names, 1) consnames in
+                ((loc, sp, GlobRef.ConstructRef (ind_p,p)) :: names, p+1))
+             (names, 1) consnames
+         in
          let sp = Libnames.make_path dp typename in
-         ((sp, GlobRef.IndRef ind_p) :: names, n+1))
+         ((typeloc, sp, GlobRef.IndRef ind_p) :: names, n+1))
       ([], 0) obj.ind_names
   in names
 
 let load_inductive i ((sp, kn), names) =
   let names = inductive_names sp kn names in
-  List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until i) sp ref ) names
+  List.iter (fun (loc, sp, ref) ->
+      Nametab.push (Nametab.Until i) sp ref;
+      Option.iter (Nametab.set_cci_src_loc (TrueGlobal ref)) loc)
+    names
 
 let open_inductive i ((sp, kn), names) =
   let names = inductive_names sp kn names in
-  List.iter (fun (sp, ref) -> Nametab.push (Nametab.Exactly i) sp ref) names
+  List.iter (fun (_, sp, ref) -> Nametab.push (Nametab.Exactly i) sp ref) names
 
-let cache_inductive ((sp, kn), names) =
-  let names = inductive_names sp kn names in
-  List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until 1) sp ref) names
+let cache_inductive o =
+  (* Until 1 and Exactly 1 are equivalent so no need to open_inductive *)
+  load_inductive 1 o
 
 let discharge_inductive names =
   Some names
@@ -98,15 +104,32 @@ let is_unsafe_typing_flags () =
   not (flags.check_universes && flags.check_guarded && flags.check_positive)
 
 (* for initial declaration *)
-let declare_mind ?typing_flags mie =
+let declare_mind ?typing_flags ~indlocs mie =
   let id = match mie.mind_entry_inds with
     | ind::_ -> ind.mind_entry_typename
     | [] -> CErrors.anomaly (Pp.str "cannot declare an empty list of inductives.") in
-  let map_names mip = (mip.mind_entry_typename, mip.mind_entry_consnames) in
-  let names = List.map map_names mie.mind_entry_inds in
-  List.iter (fun (typ, cons) ->
+  let indlocs = Array.of_list indlocs in
+  let map_names i mip =
+    let typloc, conslocs = if Array.length indlocs <= i then None, []
+      else indlocs.(i)
+    in
+    let typloc = if Option.has_some typloc then typloc else Loc.get_current_command_loc() in
+    let typ = CAst.make ?loc:typloc mip.mind_entry_typename in
+    let conslocs = Array.of_list conslocs in
+    let map_cons j na =
+      let consloc = if Array.length conslocs <= j then None
+        else conslocs.(j)
+      in
+      let consloc = if Option.has_some consloc then consloc else typloc in
+      CAst.make ?loc:consloc na
+    in
+    let consl = List.mapi map_cons mip.mind_entry_consnames in
+    (typ, consl)
+  in
+  let names = List.mapi map_names mie.mind_entry_inds in
+  List.iter (fun ({CAst.v=typ}, cons) ->
       Declare.check_exists typ;
-      List.iter Declare.check_exists cons) names;
+      List.iter (fun {CAst.v} -> Declare.check_exists v) cons) names;
   let mind, why_not_prim_record = Global.add_mind ?typing_flags id mie in
   let () = Lib.add_leaf (inInductive (id, { ind_names = names })) in
   if is_unsafe_typing_flags() then feedback_axiom ();
@@ -178,7 +201,7 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typi
     | _ -> ()
   end;
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
-  let mind, why_not_prim_record = declare_mind ?typing_flags mie in
+  let mind, why_not_prim_record = declare_mind ?typing_flags ~indlocs mie in
   why_not_prim_record |> Option.iter (fun why_not_prim_record ->
       warn_non_primitive_record (mind,why_not_prim_record));
   let () = match fst ubinders with
@@ -216,6 +239,7 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typi
         defaults
   in
   Flags.if_verbose Feedback.msg_info (minductive_message names);
+  let indlocs = List.map fst indlocs in
   let locmap = Ind_tables.Locmap.make mind indlocs in
   if mie.mind_entry_private == None
   then Indschemes.declare_default_schemes mind ~locmap;

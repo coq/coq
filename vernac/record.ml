@@ -446,6 +446,7 @@ let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramde
   let entry = Declare.definition_entry ~univs ~types:projtyp proj in
   let kind = Decls.IsDefinition kind in
   let kn =
+    (* XXX more precise loc *)
     try Declare.declare_constant ~name:fid ~kind (Declare.DefinitionEntry entry)
     with Type_errors.TypeError (ctx,te) as exn when not primitive ->
       let _, info = Exninfo.capture exn in
@@ -597,7 +598,7 @@ module Record_decl = struct
     ubinders : UnivNames.universe_binders;
     projections_kind : Decls.definition_object_kind;
     poly : bool;
-    indlocs : Loc.t option list;
+    indlocs : DeclareInd.indlocs;
   }
 end
 
@@ -608,7 +609,7 @@ module Ast = struct
     ; is_coercion : coercion_flag
     ; binders: local_binder_expr list
     ; cfs : (local_decl_expr * record_field_attr) list
-    ; idbuild : Id.t
+    ; idbuild : lident
     ; sort : constr_expr option
     ; default_inhabitant_id : Id.t option
     }
@@ -628,14 +629,20 @@ let check_unique_names records =
     | Vernacexpr.DefExpr ({CAst.v=Name id},_,_,_) -> id::acc
     | _ -> acc in
   let indlocs =
-    records |> List.map (fun { Ast.name; _ } -> name ) in
+    records |> List.map (fun { Ast.name; idbuild; _ } -> name, idbuild ) in
   let fields_names =
     records |> List.fold_left (fun acc { Ast.cfs; _ } ->
       List.fold_left extract_name acc cfs) [] in
   let allnames =
-    fields_names @ (indlocs |> List.map (fun x -> x.CAst.v)) in
+    (* XXX we don't check the name of the constructor ([idbuild])
+       because definitional classes ignore it so it being a duplicate must be allowed.
+
+       Maybe we will refactor this someday, or maybe we will remove
+       the early check and let declaration fail when there are duplicates. *)
+    fields_names @ (indlocs |> List.map (fun (x,_) -> x.CAst.v))
+  in
   match List.duplicates Id.equal allnames with
-  | [] -> List.map (fun x -> x.CAst.loc) indlocs
+  | [] -> List.map (fun (x,y) -> x.CAst.loc, [y.CAst.loc]) indlocs
   | id :: _ -> user_err (str "Two objects have the same name" ++ spc () ++ quote (Id.print id) ++ str ".")
 
 type kind_class = NotClass | RecordClass | DefClass
@@ -736,7 +743,7 @@ let pre_process_structure ~auto_prop_lowering udecl kind ~poly (records : Ast.t 
         Namegen.next_ident_away canonical_inhabitant_id (bound_names_rdata rdata)
     in
     let is_coercion = match is_coercion with AddCoercion -> true | NoCoercion -> false in
-    { Data.id = name.CAst.v; idbuild; rdata; is_coercion; proj_flags; inhabitant_id }
+    { Data.id = name.CAst.v; idbuild = idbuild.v; rdata; is_coercion; proj_flags; inhabitant_id }
   in
   let data = List.map2 map data records in
   let projections_kind =

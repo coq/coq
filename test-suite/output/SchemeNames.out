@@ -334,12 +334,14 @@ fooSet_beq is not universe polymorphic
 Arguments fooSet_beq X Y
 fooSet_beq is transparent
 Expands to: Constant SchemeNames.fooSet_beq
+Declared in library SchemeNames, line 160, characters 2-29
 fooSet_eq_dec : forall x y : fooSet, {x = y} + {x <> y}
 
 fooSet_eq_dec is not universe polymorphic
 Arguments fooSet_eq_dec x y
 fooSet_eq_dec is transparent
 Expands to: Constant SchemeNames.fooSet_eq_dec
+Declared in library SchemeNames, line 160, characters 2-29
 internal_fooSet_dec_bl :
 forall x : fooSet,
 (fun x0 : fooSet => forall y : fooSet, fooSet_beq x0 y = true -> x0 = y) x
@@ -348,6 +350,7 @@ internal_fooSet_dec_bl is not universe polymorphic
 Arguments internal_fooSet_dec_bl x y _
 internal_fooSet_dec_bl is transparent
 Expands to: Constant SchemeNames.internal_fooSet_dec_bl
+Declared in library SchemeNames, line 160, characters 2-29
 internal_fooSet_dec_lb :
 forall x : fooSet,
 (fun x0 : fooSet => forall y : fooSet, x0 = y -> fooSet_beq x0 y = true) x
@@ -356,6 +359,7 @@ internal_fooSet_dec_lb is not universe polymorphic
 Arguments internal_fooSet_dec_lb x y _
 internal_fooSet_dec_lb is transparent
 Expands to: Constant SchemeNames.internal_fooSet_dec_lb
+Declared in library SchemeNames, line 160, characters 2-29
 fooType_inds :
 forall P : fooType -> SProp, P aT -> P bT -> forall f1 : fooType, P f1
 
@@ -466,12 +470,14 @@ fooType_beq is not universe polymorphic
 Arguments fooType_beq X Y
 fooType_beq is transparent
 Expands to: Constant SchemeNames.fooType_beq
+Declared in library SchemeNames, line 226, characters 2-30
 fooType_eq_dec : forall x y : fooType, {x = y} + {x <> y}
 
 fooType_eq_dec is not universe polymorphic
 Arguments fooType_eq_dec x y
 fooType_eq_dec is transparent
 Expands to: Constant SchemeNames.fooType_eq_dec
+Declared in library SchemeNames, line 226, characters 2-30
 internal_fooType_dec_bl :
 forall x : fooType,
 (fun x0 : fooType => forall y : fooType, fooType_beq x0 y = true -> x0 = y) x
@@ -480,6 +486,7 @@ internal_fooType_dec_bl is not universe polymorphic
 Arguments internal_fooType_dec_bl x y _
 internal_fooType_dec_bl is transparent
 Expands to: Constant SchemeNames.internal_fooType_dec_bl
+Declared in library SchemeNames, line 226, characters 2-30
 internal_fooType_dec_lb :
 forall x : fooType,
 (fun x0 : fooType => forall y : fooType, x0 = y -> fooType_beq x0 y = true) x
@@ -488,6 +495,7 @@ internal_fooType_dec_lb is not universe polymorphic
 Arguments internal_fooType_dec_lb x y _
 internal_fooType_dec_lb is transparent
 Expands to: Constant SchemeNames.internal_fooType_dec_lb
+Declared in library SchemeNames, line 226, characters 2-30
 F_rect :
 forall (f : Type) (P : F f -> Type),
 (forall f0 : f, P (C f f0)) -> forall f1 : F f, P f1
@@ -496,6 +504,7 @@ F_rect is not universe polymorphic
 Arguments F_rect f%type_scope (P f0)%function_scope f1
 F_rect is transparent
 Expands to: Constant SchemeNames.F_rect
+Declared in library SchemeNames, line 235, characters 0-30
 PP_rect :
 forall (P : Type) (P0 : PP P -> Type),
 (forall p : P, P0 (D P p)) -> forall p : PP P, P0 p
@@ -504,3 +513,4 @@ PP_rect is not universe polymorphic
 Arguments PP_rect P%type_scope (P0 f)%function_scope p
 PP_rect is transparent
 Expands to: Constant SchemeNames.PP_rect
+Declared in library SchemeNames, line 238, characters 0-32
