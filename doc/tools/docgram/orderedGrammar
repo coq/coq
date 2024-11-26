@@ -104,11 +104,7 @@ assumption_token: [
 ]
 
 assumpt: [
-| LIST1 ident_decl of_type
-]
-
-ident_decl: [
-| ident OPT univ_decl
+| LIST1 decl_ident of_type
 ]
 
 of_type: [
@@ -320,6 +316,10 @@ cumul_univ_decl: [
 | "@{" OPT [ LIST0 ident "|" ] LIST0 ( OPT [ "+" | "=" | "*" ] ident ) OPT "+" OPT [ "|" LIST0 univ_constraint SEP "," OPT "+" ] "}"
 ]
 
+decl_ident: [
+| ident OPT univ_decl
+]
+
 univ_constraint: [
 | universe_name [ "<" | "=" | "<=" ] universe_name
 ]
@@ -461,10 +461,6 @@ pattern0: [
 | string
 ]
 
-fix_definition: [
-| ident_decl LIST0 binder OPT fixannot OPT ( ":" type ) OPT [ ":=" term ] OPT decl_notations
-]
-
 thm_token: [
 | "Theorem"
 | "Lemma"
@@ -475,9 +471,24 @@ thm_token: [
 | "Property"
 ]
 
-def_body: [
-| LIST0 binder OPT ( ":" type ) ":=" OPT reduce term
-| LIST0 binder ":" type
+logical_token: [
+| thm_token
+| "Definition"
+| "Example"
+| "Let"
+| "Fixpoint"
+| "CoFixpoint"
+| "Let" "Fixpoint"
+| "Let" "CoFixpoint"
+]
+
+declaration_body: [
+| decl_ident LIST0 binder OPT fixannot decl_body OPT decl_notations
+]
+
+decl_body: [
+| OPT ( ":" type ) ":=" OPT reduce term
+| ":" type
 ]
 
 reduce: [
@@ -529,7 +540,7 @@ pattern_occs: [
 ]
 
 record_definition: [
-| OPT ">" ident_decl LIST0 binder OPT [ ":" sort ] OPT ( ":=" OPT ident "{" LIST0 record_field SEP ";" OPT ";" "}" OPT [ "as" ident ] )
+| OPT ">" decl_ident LIST0 binder OPT [ ":" sort ] OPT ( ":=" OPT ident "{" LIST0 record_field SEP ";" OPT ";" "}" OPT [ "as" ident ] )
 ]
 
 record_field: [
@@ -568,10 +579,6 @@ import_categories: [
 
 filtered_import: [
 | qualid OPT [ "(" LIST1 ( qualid OPT [ "(" ".." ")" ] ) SEP "," ")" ]
-]
-
-cofix_definition: [
-| ident_decl LIST0 binder OPT ( ":" type ) OPT [ ":=" term ] OPT decl_notations
 ]
 
 rw_pattern: [
@@ -848,7 +855,7 @@ command: [
 | "Remove" "Hints" LIST1 qualid OPT ( ":" LIST1 ident )
 | "Comments" LIST0 [ one_term | string | natural ]
 | "Attributes" LIST1 attribute SEP ","
-| "Declare" "Instance" ident_decl LIST0 binder ":" term OPT hint_info
+| "Declare" "Instance" decl_ident LIST0 binder ":" term OPT hint_info
 | "Declare" "Scope" scope_name
 | "Obligation" natural OPT ( "of" ident ) OPT ( "with" ltac_expr )
 | "Next" "Obligation" OPT ( "of" ident ) OPT ( "with" ltac_expr )
@@ -893,7 +900,7 @@ command: [
 | "Ltac" tacdef_body LIST0 ( "with" tacdef_body )
 | "Print" "Ltac" "Signatures"
 | "Print" "Firstorder" "Solver"
-| "Function" fix_definition LIST0 ( "with" fix_definition )
+| "Function" declaration_body LIST0 ( "with" declaration_body )
 | "Functional" "Scheme" func_scheme_def LIST0 ( "with" func_scheme_def )
 | "Functional" "Case" func_scheme_def      (* funind plugin *)
 | "Generate" "graph" "for" qualid      (* funind plugin *)
@@ -906,35 +913,34 @@ command: [
 | "Declare" "Right" "Step" one_term
 | "Number" "Notation" qualid qualid qualid OPT ( "(" LIST1 number_modifier SEP "," ")" ) ":" scope_name
 | "String" "Notation" qualid qualid qualid OPT ( "(" number_string_via ")" ) ":" scope_name
-| "SubClass" ident_decl def_body
-| thm_token ident_decl LIST0 binder ":" type LIST0 [ "with" ident_decl LIST0 binder ":" type ]
 | assumption_token OPT ( "Inline" OPT ( "(" natural ")" ) ) [ assumpt | LIST1 ( "(" assumpt ")" ) ]
-| [ "Definition" | "Example" ] ident_decl def_body
 | [ "Symbol" | "Symbols" ] [ assumpt | LIST1 ( "(" assumpt ")" ) ]
-| "Let" ident_decl def_body
+| "Variant" decl_ident LIST0 binder OPT [ "|" LIST0 binder ] OPT [ ":" type ] ":=" OPT "|" LIST1 constructor SEP "|" OPT decl_notations
 | "Inductive" inductive_definition LIST0 ( "with" inductive_definition )
+| thm_token declaration_body LIST0 ( "with" declaration_body )
 | "Inductive" record_definition LIST0 ( "with" record_definition )
-| "Fixpoint" fix_definition LIST0 ( "with" fix_definition )
-| "Let" "Fixpoint" fix_definition LIST0 ( "with" fix_definition )
-| "CoFixpoint" cofix_definition LIST0 ( "with" cofix_definition )
-| "Let" "CoFixpoint" cofix_definition LIST0 ( "with" cofix_definition )
 | "Scheme" OPT ( ident ":=" ) scheme_kind LIST0 ( "with" OPT ( ident ":=" ) scheme_kind )
 | "Scheme" OPT "Boolean" "Equality" "for" reference
 | "Combined" "Scheme" ident "from" LIST1 ident SEP ","
 | "Register" qualid "as" qualid
 | "Register" "Scheme" qualid "as" qualid "for" qualid
 | "Register" "Inline" qualid
-| "Primitive" ident_decl OPT [ ":" term ] ":=" "#" ident
+| "Primitive" decl_ident OPT [ ":" term ] ":=" "#" ident
 | "Universe" LIST1 ident
 | "Universes" LIST1 ident
 | "Constraint" LIST1 univ_constraint SEP ","
 | "Rewrite" [ "Rule" | "Rules" ] ident ":=" OPT "|" LIST1 rewrite_rule SEP "|"
+| [ "Definition" | "Example" ] declaration_body LIST0 ( "with" declaration_body )
+| "Let" declaration_body LIST0 ( "with" declaration_body )
+| "Fixpoint" declaration_body LIST0 ( "with" declaration_body )
+| "CoFixpoint" declaration_body LIST0 ( "with" declaration_body )
+| "Let" "Fixpoint" declaration_body LIST0 ( "with" declaration_body )
+| "Let" "CoFixpoint" declaration_body LIST0 ( "with" declaration_body )
 | "CoInductive" inductive_definition LIST0 ( "with" inductive_definition )
 | "CoInductive" record_definition LIST0 ( "with" record_definition )
-| "Variant" ident_decl LIST0 binder OPT [ "|" LIST0 binder ] OPT [ ":" type ] ":=" OPT "|" LIST1 constructor SEP "|" OPT decl_notations
 | [ "Record" | "Structure" ] record_definition
 | "Class" record_definition
-| "Class" ident_decl LIST0 binder OPT [ ":" sort ] ":=" constructor
+| "Class" decl_ident LIST0 binder OPT [ ":" sort ] ":=" constructor
 | "Module" OPT ( [ "Import" | "Export" ] OPT import_categories ) ident LIST0 module_binder OPT of_module_type OPT ( ":=" LIST1 module_expr_inl SEP "<+" )
 | "Module" "Type" ident LIST0 module_binder LIST0 ( "<:" module_type_inl ) OPT ( ":=" LIST1 module_type_inl SEP "<+" )
 | "Declare" "Module" OPT ( [ "Import" | "Export" ] OPT import_categories ) ident LIST0 module_binder ":" module_type_inl
@@ -950,13 +956,13 @@ command: [
 | "Transparent" OPT "!" LIST1 reference
 | "Opaque" OPT "!" LIST1 reference
 | "Strategy" LIST1 [ strategy_level "[" LIST1 reference "]" ]
-| "Canonical" OPT "Structure" ident_decl def_body
+| "Canonical" OPT "Structure" decl_ident LIST0 binder decl_body
 | "Canonical" OPT "Structure" reference
-| "Coercion" ident_decl def_body
+| "Coercion" decl_ident LIST0 binder decl_body
 | "Identity" "Coercion" ident ":" coercion_class ">->" coercion_class
 | "Coercion" reference OPT [ ":" coercion_class ">->" coercion_class ]
 | "Context" LIST1 binder
-| "Instance" OPT ( ident_decl LIST0 binder ) ":" type OPT hint_info OPT [ ":=" "{" LIST0 field_val "}" | ":=" term ]
+| "Instance" OPT ( decl_ident LIST0 binder ) ":" type OPT hint_info OPT [ ":=" "{" LIST0 field_val "}" | ":=" term ]
 | "Existing" "Instance" qualid OPT hint_info
 | "Existing" "Instances" LIST1 qualid OPT [ "|" natural ]
 | "Existing" "Class" qualid
@@ -970,9 +976,9 @@ command: [
 | "Delimit" "Scope" scope_name "with" scope_key
 | "Undelimit" "Scope" scope_name
 | "Bind" "Scope" scope_name "with" LIST1 coercion_class
-| "Infix" notation_declaration
+| "Infix" decl_notation
 | "Notation" ident LIST0 ident ":=" one_term OPT ( "(" LIST1 syntax_modifier SEP "," ")" )
-| "Notation" notation_declaration
+| "Notation" decl_notation
 | "Reserved" "Infix" string OPT ( "(" LIST1 syntax_modifier SEP "," ")" )
 | "Reserved" "Notation" string OPT ( "(" LIST1 syntax_modifier SEP "," ")" )
 | [ "Enable" | "Disable" ] "Notation" OPT [ string | qualid LIST0 ident ] OPT ( ":=" one_term ) OPT ( "(" LIST1 enable_notation_flag SEP "," ")" ) OPT [ ":" scope_name | ":" "no" "scope" ]
@@ -996,6 +1002,7 @@ command: [
 | "Print" "Ltac2" "Signatures"      (* ltac2 plugin *)
 | "Ltac2" "Check" ltac2_expr      (* ltac2 plugin *)
 | "Ltac2" "Globalize" ltac2_expr      (* ltac2 plugin *)
+| "SubClass" decl_ident decl_body
 | "Hint" "Resolve" LIST1 [ qualid | one_term ] OPT hint_info OPT ( ":" LIST1 ident )
 | "Hint" "Resolve" [ "->" | "<-" ] LIST1 qualid OPT natural OPT ( ":" LIST1 ident )
 | "Hint" "Immediate" LIST1 [ qualid | one_term ] OPT ( ":" LIST1 ident )
@@ -1343,10 +1350,10 @@ level: [
 ]
 
 decl_notations: [
-| "where" notation_declaration LIST0 ( "and" notation_declaration )
+| "where" decl_notation LIST0 ( "and" decl_notation )
 ]
 
-notation_declaration: [
+decl_notation: [
 | string ":=" one_term OPT ( "(" LIST1 syntax_modifier SEP "," ")" ) OPT [ ":" scope_name ]
 ]
 

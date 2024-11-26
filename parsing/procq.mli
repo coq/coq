@@ -33,6 +33,7 @@ module Lookahead : sig
   val lk_list : t -> t
   val check_no_space : t
   val lk_kw : string -> t
+  val lk_not_kw : string list -> t
   val lk_kws : string list -> t
   val lk_nat : t
   val lk_ident : t
@@ -151,7 +152,7 @@ module Prim :
     val name : lname Entry.t
     val identref : lident Entry.t
     val univ_decl : universe_decl_expr Entry.t
-    val ident_decl : ident_decl Entry.t
+    val decl_ident : decl_ident Entry.t
     val pattern_ident : lident Entry.t
     val base_ident : Id.t Entry.t
     val bignat : string Entry.t

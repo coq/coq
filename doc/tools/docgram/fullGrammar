@@ -530,7 +530,7 @@ command: [
 | "Hint" hint opt_hintbases
 | "Comments" LIST0 comment
 | "Attributes" attribute_list
-| "Declare" "Instance" ident_decl binders ":" term200 hint_info
+| "Declare" "Instance" decl_ident binders ":" term200 hint_info
 | "Declare" "Scope" IDENT
 | "Pwd"
 | "Cd"
@@ -884,19 +884,13 @@ subprf_with_selector: [
 ]
 
 gallina: [
-| thm_token ident_decl binders ":" lconstr LIST0 [ "with" ident_decl binders ":" lconstr ]
 | assumption_token inline assum_list
 | assumptions_token inline assum_list
-| def_token ident_decl def_body
 | "Symbol" assum_list
 | "Symbols" assum_list
-| "Let" ident_decl def_body
 | finite_token inductive_or_record_definition
 | inductive_token LIST1 inductive_or_record_definition SEP "with"
-| "Fixpoint" LIST1 fix_definition SEP "with"
-| "Let" "Fixpoint" LIST1 fix_definition SEP "with"
-| "CoFixpoint" LIST1 cofix_definition SEP "with"
-| "Let" "CoFixpoint" LIST1 cofix_definition SEP "with"
+| logical_token LIST1 declaration_body SEP "with"
 | "Scheme" LIST1 scheme SEP "with"
 | "Scheme" "Equality" "for" smart_global
 | "Scheme" "Boolean" "Equality" "for" smart_global
@@ -904,7 +898,7 @@ gallina: [
 | "Register" global "as" qualid
 | "Register" "Scheme" global "as" qualid "for" global
 | "Register" "Inline" global
-| "Primitive" ident_decl OPT [ ":" lconstr ] ":=" register_token
+| "Primitive" decl_ident OPT [ ":" lconstr ] ":=" register_token
 | "Universe" LIST1 identref
 | "Universes" LIST1 identref
 | "Constraint" LIST1 univ_constraint SEP ","
@@ -930,6 +924,16 @@ def_token: [
 | "Definition"
 | "Example"
 | "SubClass"
+]
+
+logical_token: [
+| thm_token
+| def_token
+| "Let"
+| "Fixpoint"
+| "CoFixpoint"
+| "Let" "Fixpoint"
+| "Let" "CoFixpoint"
 ]
 
 assumption_token: [
@@ -984,11 +988,11 @@ cumul_univ_decl: [
 | "@{" LIST0 variance_identref [ "+" | ] univ_decl_constraints
 ]
 
-ident_decl: [
+decl_ident: [
 | identref OPT univ_decl
 ]
 
-cumul_ident_decl: [
+decl_ident_cumul: [
 | identref OPT cumul_univ_decl
 ]
 
@@ -1004,10 +1008,14 @@ finite_token: [
 | "Class"
 ]
 
-def_body: [
-| binders ":=" reduce lconstr
-| binders ":" lconstr ":=" reduce lconstr
-| binders ":" lconstr
+declaration_body: [
+| decl_ident binders_fixannot decl_body decl_notations
+]
+
+decl_body: [
+| ":=" reduce lconstr
+| ":" lconstr ":=" reduce lconstr
+| ":" lconstr
 ]
 
 reduce: [
@@ -1015,7 +1023,7 @@ reduce: [
 |
 ]
 
-notation_declaration: [
+decl_notation: [
 | lstring ":=" constr syntax_modifiers OPT [ ":" IDENT ]
 ]
 
@@ -1024,7 +1032,7 @@ decl_sep: [
 ]
 
 decl_notations: [
-| "where" LIST1 notation_declaration SEP decl_sep
+| "where" LIST1 decl_notation SEP decl_sep
 |
 ]
 
@@ -1035,7 +1043,7 @@ opt_constructors_or_fields: [
 ]
 
 inductive_or_record_definition: [
-| opt_coercion cumul_ident_decl binders OPT [ "|" binders ] OPT [ ":" lconstr ] opt_constructors_or_fields decl_notations
+| opt_coercion decl_ident_cumul binders OPT [ "|" binders ] OPT [ ":" lconstr ] opt_constructors_or_fields decl_notations
 ]
 
 constructors_or_record: [
@@ -1054,14 +1062,6 @@ default_inhabitant_ident: [
 opt_coercion: [
 | ">"
 |
-]
-
-fix_definition: [
-| ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notations
-]
-
-cofix_definition: [
-| ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notations
 ]
 
 rw_pattern: [
@@ -1119,7 +1119,7 @@ assum_coe: [
 ]
 
 assumpt: [
-| LIST1 ident_decl of_type lconstr
+| LIST1 decl_ident of_type lconstr
 ]
 
 constructor_type: [
@@ -1161,9 +1161,9 @@ gallina_ext: [
 | "Transparent" OPT "!" LIST1 smart_global
 | "Opaque" OPT "!" LIST1 smart_global
 | "Strategy" LIST1 [ strategy_level "[" LIST1 smart_global "]" ]
-| "Canonical" OPT "Structure" global OPT [ OPT univ_decl def_body ]
+| "Canonical" OPT "Structure" global OPT [ OPT univ_decl binders decl_body ]
 | "Canonical" OPT "Structure" by_notation
-| "Coercion" global OPT [ OPT univ_decl def_body ]
+| "Coercion" global OPT [ OPT univ_decl binders decl_body ]
 | "Identity" "Coercion" identref ":" coercion_class ">->" coercion_class
 | "Coercion" global ":" coercion_class ">->" coercion_class
 | "Coercion" by_notation ":" coercion_class ">->" coercion_class
@@ -1344,7 +1344,7 @@ implicits_alt: [
 ]
 
 instance_name: [
-| ident_decl binders
+| decl_ident binders
 |
 ]
 
@@ -1558,9 +1558,9 @@ syntax: [
 | "Delimit" "Scope" IDENT; "with" IDENT
 | "Undelimit" "Scope" IDENT
 | "Bind" "Scope" IDENT; "with" LIST1 coercion_class
-| "Infix" notation_declaration
+| "Infix" decl_notation
 | "Notation" identref LIST0 ident ":=" constr syntax_modifiers
-| "Notation" notation_declaration
+| "Notation" decl_notation
 | "Reserved" "Infix" ne_lstring syntax_modifiers
 | "Reserved" "Notation" ne_lstring syntax_modifiers
 | enable_enable_disable "Notation" enable_notation_rule enable_notation_interpretation enable_notation_flags opt_scope
@@ -2007,7 +2007,7 @@ with_names: [
 ]
 
 function_fix_definition: [
-| Vernac.fix_definition      (* funind plugin *)
+| Vernac.declaration_body      (* funind plugin *)
 ]
 
 fun_scheme_arg: [

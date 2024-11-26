@@ -32,9 +32,15 @@ val def_token :
 val assumption_token :
   (Vernacexpr.discharge * Decls.assumption_object_kind) Procq.Entry.t
 
-val def_body : Vernacexpr.definition_expr Procq.Entry.t
+val decl_body : Vernacexpr.body_expr Procq.Entry.t
+
+val def_body : Vernacexpr.body_expr Procq.Entry.t
+[@@ocaml.deprecated "(9.0) Use [decl_body]"]
+
+val decl_notation : Vernacexpr.notation_declaration Procq.Entry.t
 
 val notation_declaration : Vernacexpr.notation_declaration Procq.Entry.t
+[@@ocaml.deprecated "(9.0) Use [decl_notation]"]
 
 val decl_notations : Vernacexpr.notation_declaration list Procq.Entry.t
 

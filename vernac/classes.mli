@@ -63,7 +63,7 @@ val declare_new_instance
   : locality:Hints.hint_locality
   -> program_mode:bool
   -> poly:bool
-  -> ident_decl
+  -> decl_ident
   -> local_binder_expr list
   -> constr_expr
   -> Vernacexpr.hint_info_expr

@@ -19,7 +19,7 @@ Advanced recursive functions
 
 The following command is available when the ``FunInd`` library has been loaded via ``Require Import FunInd``:
 
-.. cmd:: Function @fix_definition {* with @fix_definition }
+.. cmd:: Function @declaration_body {* with @declaration_body }
 
    This command is a generalization of :cmd:`Fixpoint`. It is a wrapper
    for several ways of defining a function *and* other useful related

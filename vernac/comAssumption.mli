@@ -74,7 +74,7 @@ val do_assumptions
   -> kind:Decls.assumption_object_kind
   -> ?user_warns:Globnames.extended_global_reference UserWarn.with_qf
   -> inline:Declaremods.inline
-  -> (ident_decl list * constr_expr) with_coercion list
+  -> (decl_ident list * constr_expr) with_coercion list
   -> unit
 
 (** Interpret the command Context *)

@@ -21,7 +21,7 @@ Defining record types
    .. insertprodn record_definition of_type_inst
 
    .. prodn::
-      record_definition ::= {? > } @ident_decl {* @binder } {? : @sort } {? := {? @ident } %{ {*; @record_field } {? ; } %} {? as @ident } }
+      record_definition ::= {? > } @decl_ident {* @binder } {? : @sort } {? := {? @ident } %{ {*; @record_field } {? ; } %} {? as @ident } }
       record_field ::= {* #[ {+, @attribute } ] } @name {? @field_spec } {? %| @natural }
       field_spec ::= {* @binder } @of_type_inst
       | {* @binder } := @term
@@ -49,7 +49,7 @@ Defining record types
      a coercion from the class of the last field type to the record name.
      See :ref:`coercions`.
 
-   :n:`@ident_decl`
+   :n:`@decl_ident`
      The :n:`@ident` within is the record name.
 
    :n:`{* @binder }`

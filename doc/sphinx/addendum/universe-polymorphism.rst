@@ -539,6 +539,7 @@ Explicit Universes
    | @qualid
    univ_decl ::= @%{ {? {* @ident } %| } {* @ident } {? + } {? %| {*, @univ_constraint } {? + } } %}
    cumul_univ_decl ::= @%{ {? {* @ident } %| } {* {? {| + | = | * } } @ident } {? + } {? %| {*, @univ_constraint } {? + } } %}
+   decl_ident ::= @ident {? @univ_decl }
    univ_constraint ::= @universe_name {| < | = | <= } @universe_name
 
 The syntax has been extended to allow users to explicitly bind names

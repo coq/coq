@@ -151,7 +151,7 @@ the value term in Russell and generates proof
 obligations. Once solved using the commands shown below, it binds the
 final Rocq term to the name :n:`@ident` in the global environment.
 
-:n:`Program Definition @ident_decl : @type := @term`
+:n:`Program Definition @decl_ident : @type := @term`
 
 Interprets the type :n:`@type`, potentially generating proof
 obligations to be resolved. Once done with them, we have a Rocq
