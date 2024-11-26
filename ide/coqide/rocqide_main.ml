@@ -56,9 +56,9 @@ let () =
   load_prefs ();
   let argl = List.tl (Array.to_list Sys.argv) in
   let argl = Rocqide.read_rocqide_args argl in
-  let files = Rocq.filter_rocq_opts argl in
+  let files = RocqDriver.filter_rocq_opts argl in
   let args = List.filter (fun x -> not (List.mem x files)) argl in
-  Rocq.check_connection args;
+  RocqDriver.check_connection args;
   Rocqide.sup_args := args;
   let w = Rocqide.main files in
   Rocqide.set_signal_handlers ~parent:w ();

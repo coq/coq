@@ -43,7 +43,7 @@ type session = {
   segment : Wg_Segment.segment; (* color coded status bar near bottom of the screen *)
   fileops : FileOps.ops;
   rocqops : RocqOps.ops;
-  rocqtop : Rocq.rocqtop;
+  rocqtop : RocqDriver.rocqtop;
   command : Wg_Command.command_window; (* aka the Query Pane *)
   finder : Wg_Find.finder; (* Find / Replace panel *)
   debugger : Wg_Debugger.debugger_view;
@@ -127,7 +127,7 @@ let call_rocq_or_cancel_action rocqtop rocqops (buffer : GText.buffer) it =
   let () = try buffer#delete_mark (`NAME "target") with GText.No_such_mark _ -> () in
   let mark = buffer#create_mark ~name:"target" it in
   let action = rocqops#go_to_mark (`MARK mark) in
-  ignore @@ Rocq.try_grab rocqtop action (fun () -> ())
+  ignore @@ RocqDriver.try_grab rocqtop action (fun () -> ())
 
 let init_user_action (stack : action_stack ref) = match !stack with
 | None -> stack := Some []
@@ -225,7 +225,7 @@ let set_buffer_handlers
     else
       (* If Rocq was asked to backtrack, the cleanup must be done by the
          backtrack_until function, since it may move the stop_of_input
-         to a point indicated by Rocq. *)
+         to a point indicated by RocqDriver. *)
       let iters = List.map (fun mark ->
           match mark with
           | Mark mark -> buffer#get_iter_at_mark (`MARK mark)
@@ -235,9 +235,9 @@ let set_buffer_handlers
       let () = List.iter (fun mark ->
         try match mark with
         | Mark mark -> buffer#delete_mark (`MARK mark)
-        | Begin -> let action = Rocq.seq (rocqops#backtrack_to_begin ())
-                                (Rocq.lift (fun () -> Sentence.tag_on_insert buffer)) in
-          ignore @@ Rocq.try_grab rocqtop action (fun () -> ())
+        | Begin -> let action = RocqDriver.seq (rocqops#backtrack_to_begin ())
+                                (RocqDriver.lift (fun () -> Sentence.tag_on_insert buffer)) in
+          ignore @@ RocqDriver.try_grab rocqtop action (fun () -> ())
         with GText.No_such_mark _ -> ()) marks in
       call_rocq_or_cancel_action rocqtop rocqops buffer iter
   in
@@ -262,7 +262,7 @@ let set_buffer_handlers
     List.iter (fun tag -> tag#set_property prop) tags
   in
   (* Pluging callbacks *)
-  let () = Rocq.setup_script_editable rocqtop set_busy in
+  let () = RocqDriver.setup_script_editable rocqtop set_busy in
   let _ = buffer#connect#insert_text ~callback:insert_cb in
   let _ = buffer#connect#delete_range ~callback:delete_cb in
   let _ = buffer#connect#begin_user_action ~callback:begin_action_cb in
@@ -369,7 +369,7 @@ let create_jobpage rocqtop rocqops : jobpage =
         let row = store#get_iter tp in
         let w = store#get ~row ~column:(find_string_col "Worker" columns) in
         let info () = Minilib.log ("Rocq busy, discarding query") in
-        ignore @@ Rocq.try_grab rocqtop (rocqops#stop_worker w) info
+        ignore @@ RocqDriver.try_grab rocqtop (rocqops#stop_worker w) info
       ) in
   let tip = GMisc.label ~text:"Double click to interrupt worker" () in
   let box = GPack.vbox ~homogeneous:false () in
@@ -423,8 +423,8 @@ let create file rocqtop_args =
     | Some f -> (Glib.Convert.filename_to_utf8 Filename.(remove_extension (basename f)),
         Some (to_abs_file_name f))
   in
-  let rocqtop = Rocq.spawn_rocqtop basename rocqtop_args in
-  let reset () = Rocq.reset_rocqtop rocqtop in
+  let rocqtop = RocqDriver.spawn_rocqtop basename rocqtop_args in
+  let reset () = RocqDriver.reset_rocqtop rocqtop in
   let buffer = create_buffer () in
   let script = create_script rocqtop buffer in
   let proof = create_proof () in
@@ -448,8 +448,8 @@ let create file rocqtop_args =
   let warnpage = create_errpage ~kind:"Warning" script in
   let jobpage = create_jobpage rocqtop rops in
   let _ = set_buffer_handlers (buffer :> GText.buffer) script rops rocqtop in
-  let _ = Rocq.set_reset_handler rocqtop rops#handle_reset_initial in
-  let _ = Rocq.init_rocqtop rocqtop rops#initialize in
+  let _ = RocqDriver.set_reset_handler rocqtop rops#handle_reset_initial in
+  let _ = RocqDriver.init_rocqtop rocqtop rops#initialize in
   let tab_label = GMisc.label ~text:basename () in
 (*  todo: ugly custom tooltips...*)
 (*
@@ -494,7 +494,7 @@ let kill (sn:session) =
      In a more modern lablgtk, rather use the page-removed signal ? *)
   sn.rocqops#destroy ();
   sn.script#destroy ();
-  Rocq.close_rocqtop sn.rocqtop
+  RocqDriver.close_rocqtop sn.rocqtop
 
 let window_size = ref (window_width#get, window_height#get)
 

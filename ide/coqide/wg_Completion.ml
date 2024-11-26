@@ -50,10 +50,10 @@ let get_semantic_completion pattern accu =
   | Interface.Good l ->
     let fold accu elt = last accu elt.Interface.coq_object_qualid in
     let ans = List.fold_left fold accu l in
-    Rocq.return ans
-  | _ -> Rocq.return accu
+    RocqDriver.return ans
+  | _ -> RocqDriver.return accu
   in
-  Rocq.bind (Rocq.search flags) next
+  RocqDriver.bind (RocqDriver.search flags) next
 
 let is_substring s1 s2 =
   let s1 = Glib.Utf8.to_unistring s1 in
@@ -124,12 +124,12 @@ class completion_provider buffer rocqtop =
         (* Then semantic *)
         let next props =
           update props;
-          Rocq.return ()
+          RocqDriver.return ()
         in
-        let query = Rocq.bind (get_semantic_completion w synt) next in
+        let query = RocqDriver.bind (get_semantic_completion w synt) next in
         (* If rocqtop is computing, do the syntactic completion altogether *)
         let occupied () = update synt in
-        ignore @@ Rocq.try_grab rocqtop query occupied
+        ignore @@ RocqDriver.try_grab rocqtop query occupied
 
     method matched ctx = !active
 

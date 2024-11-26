@@ -9,7 +9,7 @@
 (************************************************************************)
 
 open Util
-open Rocq
+open RocqDriver
 open Interface
 open Feedback
 
@@ -207,7 +207,7 @@ let rocq_loc_from_gtk_offset cached buffer sentence =
   bp, line, bol_pos, new_cached
 
 let log msg : unit task =
-  Rocq.lift (fun () -> Minilib.log msg)
+  RocqDriver.lift (fun () -> Minilib.log msg)
 
 class type ops =
 object
@@ -325,7 +325,7 @@ class rocqops
   (_pv:Wg_ProofView.proof_view)
   (_mv:Wg_RoutedMessageViews.message_views_router)
   (_sg:Wg_Segment.segment)
-  (_ct:Rocq.rocqtop)
+  (_ct:RocqDriver.rocqtop)
   get_filename =
 object(self)
   val script = _script
@@ -355,9 +355,9 @@ object(self)
   val mutable forward_init_db = ((fun x -> failwith "forward_init_db")
                   : unit -> unit)
   initializer
-    Rocq.set_feedback_handler _ct
+    RocqDriver.set_feedback_handler _ct
         (fun msg -> self#process_feedback (MsgFeedback msg));
-    Rocq.set_debug_prompt_handler _ct
+    RocqDriver.set_debug_prompt_handler _ct
         (fun ~tag msg -> self#process_feedback (MsgDebug (tag, msg)));
     script#misc#set_has_tooltip true;
     ignore(script#misc#connect#query_tooltip ~callback:self#tooltip_callback);
@@ -469,20 +469,20 @@ object(self)
       end
     end;
     let flags = { gf_mode = "full"; gf_fg = true; gf_bg = true; gf_shelved = false; gf_given_up = false } in
-    let return x = Rocq.return (Good x) in
-    let (>>=) m f = Rocq.bind m (function
-    | Fail x -> Rocq.return (Fail x)
+    let return x = RocqDriver.return (Good x) in
+    let (>>=) m f = RocqDriver.bind m (function
+    | Fail x -> RocqDriver.return (Fail x)
     | Good v -> f v)
     in
     let call =
-      Rocq.subgoals flags >>= begin function
+      RocqDriver.subgoals flags >>= begin function
       | None -> return Wg_ProofView.NoGoals
       | Some { fg_goals = ((_ :: _) as fg); bg_goals = bg } ->
         let bg = flatten (List.rev bg) in
         return (Wg_ProofView.FocusGoals { fg; bg; })
       | Some { fg_goals = []; bg_goals = bg } ->
         let flags = { gf_mode = "short"; gf_fg = false; gf_bg = false; gf_shelved = true; gf_given_up = true } in
-        Rocq.subgoals flags >>= fun rem ->
+        RocqDriver.subgoals flags >>= fun rem ->
         let bg = flatten (List.rev bg) in
         let shelved, given_up = match rem with
         | None -> [], []
@@ -491,26 +491,26 @@ object(self)
         return (Wg_ProofView.NoFocusGoals { bg; shelved; given_up })
       end
     in
-    Rocq.bind call begin function
+    RocqDriver.bind call begin function
     | Fail x -> self#handle_failure_aux ~move_insert x
     | Good goals ->
       proof#set_goals goals;
       proof#refresh ~force:true;
-      Rocq.return ()
+      RocqDriver.return ()
     end
 
   method show_goals = self#show_goals_aux ()
 
   (* This method is intended to perform stateless commands *)
-  method raw_rocq_query ~route_id ~next phrase : unit Rocq.task =
+  method raw_rocq_query ~route_id ~next phrase : unit RocqDriver.task =
     let sid = try Document.tip document
               with Document.Empty -> Stateid.initial
     in
     let action = log "raw_rocq_query starting now" in
-    let query = Rocq.query (route_id,(phrase,sid)) in
-    Rocq.bind (Rocq.seq action query) next
+    let query = RocqDriver.query (route_id,(phrase,sid)) in
+    RocqDriver.bind (RocqDriver.seq action query) next
 
-  method proof_diff where ~next : unit Rocq.task =
+  method proof_diff where ~next : unit RocqDriver.task =
     (* todo: would be nice to ignore comments, too *)
     let rec back iter =
       if iter#is_start then iter
@@ -525,11 +525,11 @@ object(self)
       (buffer#get_iter_at_mark stop)#compare where >= 0 &&
       (buffer#get_iter_at_mark start)#compare where <= 0 in
     let state_id = fst @@ self#find_id until in
-      let diff_opt = Interface.(match Rocq.PrintOpt.(get diff) with
+      let diff_opt = Interface.(match RocqDriver.PrintOpt.(get diff) with
         | StringValue diffs -> diffs
         | _ -> "off") in
-      let proof_diff = Rocq.proof_diff (diff_opt, state_id) in
-      Rocq.bind proof_diff next
+      let proof_diff = RocqDriver.proof_diff (diff_opt, state_id) in
+      RocqDriver.bind proof_diff next
 
   method private still_valid { edit_id = id } =
     try ignore(Doc.find_id document (fun _ { edit_id = id1 } -> id = id1)); true
@@ -685,7 +685,7 @@ object(self)
       | MsgFeedback msg2 -> pr_feedback msg2
       | MsgDebug (tag, msg2) ->
         if tag = "prompt" then
-          Rocq.set_stopped_in_debugger _ct true;
+          RocqDriver.set_stopped_in_debugger _ct true;
         self#debug_prompt ~tag msg2
     with e -> (Printf.printf "Exception: %s\n%!" (Printexc.to_string e);
         flush stdout;
@@ -710,7 +710,7 @@ object(self)
       buffer#apply_tag tag ~start ~stop
 
   method private process_interp_error ?loc queue sentence msg tip id =
-    Rocq.bind (Rocq.return ()) (function () ->
+    RocqDriver.bind (RocqDriver.return ()) (function () ->
     let start, stop = start_stop_iters buffer sentence in
     buffer#remove_tag Tags.Script.to_process ~start ~stop;
     self#discard_command_queue queue;
@@ -776,7 +776,7 @@ object(self)
   (** Compute the phrases until [until] returns [true]. *)
   method private process_until ?move_insert until verbose =
     let logger lvl msg = if verbose then messages#default_route#push lvl msg in
-    let fill_queue = Rocq.lift (fun () ->
+    let fill_queue = RocqDriver.lift (fun () ->
       let queue = Queue.create () in
       (* Lock everything and fill the waiting queue *)
       Ideutils.push_info "Coq is computing";
@@ -816,7 +816,7 @@ object(self)
             let cached_offset = if start#offset > (snd last_offsets) then last_offsets else (0,0) in
             let bp, line_nb, bol_pos, new_cached = rocq_loc_from_gtk_offset cached_offset buffer sentence in
             last_offsets <- new_cached;
-            let rocq_query = Rocq.add ((((phrase,edit_id),(tip,verbose)),bp),(line_nb,bol_pos)) in
+            let rocq_query = RocqDriver.add ((((phrase,edit_id),(tip,verbose)),bp),(line_nb,bol_pos)) in
             Doc.set_errors document [];
             let handle_answer = function
               | Good (id, Util.Inl (* NewTip *) ()) ->
@@ -835,13 +835,13 @@ object(self)
                   let sentence = Doc.pop document in
                   Doc.set_errors document [Pp.string_of_ppcmds msg];
                   self#process_interp_error ?loc queue sentence msg tip id in
-            Rocq.bind rocq_query handle_answer
+            RocqDriver.bind rocq_query handle_answer
       in
       let tip =
         try Doc.tip document
         with Doc.Empty -> initial_state | Invalid_argument _ -> assert false in
       loop tip [] in
-    Rocq.bind fill_queue process_queue
+    RocqDriver.bind fill_queue process_queue
 
   method join_document =
    let next = function
@@ -849,12 +849,12 @@ object(self)
          messages#default_route#clear;
          messages#default_route#push
            Feedback.Info (Pp.str "All proof terms checked by the kernel");
-         Rocq.return ()
+         RocqDriver.return ()
      | Fail x -> self#handle_failure x in
-   Rocq.bind (Rocq.status true) next
+   RocqDriver.bind (RocqDriver.status true) next
 
   method stop_worker n =
-    Rocq.bind (Rocq.stop_worker n) (fun _ -> Rocq.return ())
+    RocqDriver.bind (RocqDriver.stop_worker n) (fun _ -> RocqDriver.return ())
 
   method get_slaves_status = processed, to_process, slaves_status
 
@@ -894,29 +894,29 @@ object(self)
     let until n _ _ = n >= 1 in
     self#process_until ~move_insert:true until true
 
-  method process_db_cmd cmd ~next : unit Rocq.task =
-    let db_cmd = Rocq.db_cmd cmd in
-    Rocq.bind db_cmd next
+  method process_db_cmd cmd ~next : unit RocqDriver.task =
+    let db_cmd = RocqDriver.db_cmd cmd in
+    RocqDriver.bind db_cmd next
 
-  method process_db_configd cmd ~next : unit Rocq.task =
-    let db_configd = Rocq.db_configd cmd in
-    Rocq.bind db_configd next
+  method process_db_configd cmd ~next : unit RocqDriver.task =
+    let db_configd = RocqDriver.db_configd cmd in
+    RocqDriver.bind db_configd next
 
-  method process_db_upd_bpts updates ~next : unit Rocq.task =
-    let db_upd_bpts = Rocq.db_upd_bpts updates in
-    Rocq.bind db_upd_bpts next
+  method process_db_upd_bpts updates ~next : unit RocqDriver.task =
+    let db_upd_bpts = RocqDriver.db_upd_bpts updates in
+    RocqDriver.bind db_upd_bpts next
 
-  method process_db_continue opt ~next : unit Rocq.task =
-    let db_continue = Rocq.db_continue opt in
-    Rocq.bind db_continue next
+  method process_db_continue opt ~next : unit RocqDriver.task =
+    let db_continue = RocqDriver.db_continue opt in
+    RocqDriver.bind db_continue next
 
-  method process_db_stack ~next : unit Rocq.task =
-    let db_stack = Rocq.db_stack () in
-    Rocq.bind db_stack next
+  method process_db_stack ~next : unit RocqDriver.task =
+    let db_stack = RocqDriver.db_stack () in
+    RocqDriver.bind db_stack next
 
-  method process_db_vars framenum ~next : unit Rocq.task =
-    let db_vars = Rocq.db_vars framenum in
-    Rocq.bind db_vars next
+  method process_db_vars framenum ~next : unit RocqDriver.task =
+    let db_vars = RocqDriver.db_vars framenum in
+    RocqDriver.bind db_vars next
 
   method private process_until_iter iter =
     let until _ start stop =
@@ -972,9 +972,9 @@ object(self)
       buffer#remove_tag Tags.Script.to_process ~start ~stop;
       buffer#remove_tag Tags.Script.unjustified ~start ~stop;
       self#show_goals in
-    Rocq.bind (Rocq.lift opening) (fun () ->
+    RocqDriver.bind (RocqDriver.lift opening) (fun () ->
     let rec undo to_id unfocus_needed =
-      Rocq.bind (Rocq.edit_at to_id) (function
+      RocqDriver.bind (RocqDriver.edit_at to_id) (function
       | Good (CSig.Inl (* NewTip *) ()) ->
           if unfocus_needed then self#exit_focus;
           self#cleanup (Doc.cut_at document to_id);
@@ -1009,12 +1009,12 @@ object(self)
     ?(move_insert=false) (safe_id, (loc : Interface.location), msg)
   =
     messages#default_route#push Feedback.Error msg;
-    if Stateid.equal safe_id Stateid.dummy then Rocq.lift (fun () -> ())
+    if Stateid.equal safe_id Stateid.dummy then RocqDriver.lift (fun () -> ())
     else
-      Rocq.seq
+      RocqDriver.seq
         (self#backtrack_until ~move_insert
           (fun id _ _ -> id = Some safe_id))
-        (Rocq.lift (fun () -> script#recenter_insert))
+        (RocqDriver.lift (fun () -> script#recenter_insert))
 
   method handle_failure f = self#handle_failure_aux f
 
@@ -1023,10 +1023,10 @@ object(self)
     try
       let tgt = Doc.before_tip document in
       self#backtrack_to_id tgt
-    with Not_found -> Rocq.return (Rocq.reset_rocqtop _ct)
+    with Not_found -> RocqDriver.return (RocqDriver.reset_rocqtop _ct)
 
   method go_to_insert =
-    Rocq.bind (Rocq.return ()) (fun () ->
+    RocqDriver.bind (RocqDriver.return ()) (fun () ->
     messages#default_route#clear;
     let point = self#get_insert in
     if point#compare self#get_start_of_input >= 0
@@ -1034,14 +1034,14 @@ object(self)
     else self#backtrack_to_iter ~move_insert:false point)
 
   method go_to_mark m =
-    Rocq.bind (Rocq.return ()) (fun () ->
+    RocqDriver.bind (RocqDriver.return ()) (fun () ->
     messages#default_route#clear;
     let point = buffer#get_iter_at_mark m in
     if point#compare self#get_start_of_input >= 0
-    then Rocq.seq (self#process_until_iter point)
-          (Rocq.lift (fun () -> Sentence.tag_on_insert buffer))
-    else Rocq.seq (self#backtrack_to_iter ~move_insert:false point)
-          (Rocq.lift (fun () -> Sentence.tag_on_insert buffer)))
+    then RocqDriver.seq (self#process_until_iter point)
+          (RocqDriver.lift (fun () -> Sentence.tag_on_insert buffer))
+    else RocqDriver.seq (self#backtrack_to_iter ~move_insert:false point)
+          (RocqDriver.lift (fun () -> Sentence.tag_on_insert buffer)))
 
   method handle_reset_initial =
     let action () =
@@ -1068,7 +1068,7 @@ object(self)
       Ideutils.push_info "Restarted";
       (* apply the initial commands to rocq *)
     in
-    Rocq.seq (Rocq.lift action) self#initialize
+    RocqDriver.seq (RocqDriver.lift action) self#initialize
 
   method initialize =
     let get_initial_state =
@@ -1077,8 +1077,8 @@ object(self)
         let message = "Couldn't initialize coqtop\n\n" ^ (Pp.string_of_ppcmds message) in
         let popup = GWindow.message_dialog ~buttons:GWindow.Buttons.ok ~message_type:`ERROR ~message () in
         ignore (popup#run ()); exit 1
-      | Good id -> initial_state <- id; Rocq.return () in
-      Rocq.bind (Rocq.init (get_filename ())) next in
-    Rocq.seq get_initial_state Rocq.PrintOpt.enforce
+      | Good id -> initial_state <- id; RocqDriver.return () in
+      RocqDriver.bind (RocqDriver.init (get_filename ())) next in
+    RocqDriver.seq get_initial_state RocqDriver.PrintOpt.enforce
 
 end

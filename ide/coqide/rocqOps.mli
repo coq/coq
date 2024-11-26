@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Rocq
+open RocqDriver
 open Interface
 
 class type ops =
