@@ -1,6 +1,6 @@
 # Update CACHEKEY in the .gitlab-ci.yml when modifying this file.
 
-FROM ubuntu:23.04
+FROM ubuntu:24.04
 LABEL maintainer="e@x80.org"
 
 ENV DEBIAN_FRONTEND="noninteractive"
