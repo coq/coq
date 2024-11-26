@@ -756,15 +756,77 @@ Subrelations are implemented in ``Classes.Morphisms`` and are a prime
 example of a mostly user-space extension of the algorithm.
 
 
-Constant unfolding
-~~~~~~~~~~~~~~~~~~
+Constant unfolding during rewriting
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The resolution tactic is based on typeclasses and hence regards user-defined
-:term:`constants <constant>` as transparent by default. This may slow down the
-resolution due to a lot of unifications (all the declared ``Proper``
-instances are tried at each node of the search tree). To speed it up,
-declare your constant as rigid for proof search using the command
-:cmd:`Typeclasses Opaque`.
+By default, :tacn:`setoid_rewrite` and :tacn:`rewrite_strat` unfold global
+definitions during rewrite rule matching, but do not unfold local
+definitions. Unfolding definitions may slow down matching, whereas keeping
+definitions opaque may cause matches to be missed.  This behavior is
+configurable using transparency hints in the hint database ``rewrite``:
+
+  :n:`Hint {| Variables | Constants } {| Opaque | Transparent } : rewrite.`
+
+  :n:`Hint {| Opaque | Transparent } {+ @qualid } : rewrite.`
+
+The effect of these commands on rewriting is similar to that of :cmd:`Hint
+Transparent` and :cmd:`Hint Variables` on unification used by :tacn:`eauto` and
+related tactics. Note that the transparency information from database `rewrite`
+is used even when rewriting with individual lemmas.
+
+.. example::
+
+   .. coqtop:: reset in
+
+      Require Setoid.
+      Definition f x y := 2*x + y.
+      Definition g x y := 2*x + y.
+
+      Goal forall
+        (double_f : forall x y, 2*f x y = f (2*x) y + y),
+        2 * g 1 8 = 20.
+      Proof.
+
+   .. coqtop:: all
+
+        intros. (* By default, this rewrite succeeds by unifying f with g. *)
+          assert_succeeds (setoid_rewrite double_f).
+          assert_succeeds (rewrite_strat bottomup double_f).
+        set (x := g _). (* Hide left-hand side behind local definition. *)
+          assert_fails (setoid_rewrite double_f).
+          assert_fails (rewrite_strat bottomup double_f).
+        Hint Variables Transparent : rewrite. (* Now rewriting unfolds x. *)
+          assert_succeeds (setoid_rewrite double_f).
+          assert_succeeds (rewrite_strat bottomup double_f).
+        Hint Constants Opaque : rewrite. (* Disallow unfolding f and g. *)
+          assert_fails (setoid_rewrite double_f).
+          assert_fails (rewrite_strat bottomup double_f).
+        subst x. (* With x substituted, f and g are still distinct. *)
+          assert_fails (setoid_rewrite double_f).
+          assert_fails (rewrite_strat bottomup double_f).
+        Hint Transparent f g : rewrite. (* Allow unfolding f and g only. *)
+          assert_succeeds (setoid_rewrite double_f).
+          assert_succeeds (rewrite_strat bottomup double_f).
+
+   .. coqtop:: none
+
+        exact eq_refl.
+      Qed.
+
+Constant unfolding during ``Proper``-instance search
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``Proper`` instances are resolved using typeclass search. By default, all
+constants are treated as transparent. This may slow down the resolution because
+:tacn:`typeclasses eauto` will do a lot of unifications (all the declared
+``Proper`` instances are tried at each node of the proof search tree).  To
+speed up the search, declare your non-abbreviation definitions as opaque in the
+hint database ``typeclass_instances``.
+
+  :n:`Hint {| Opaque | Transparent } {+ @qualid } : typeclass_instances.`
+
+For more information, see :cmd:`Typeclasses Opaque` and :tacn:`typeclasses
+eauto`.
 
 .. _strategies4rewriting:
 
