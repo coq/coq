@@ -49,7 +49,7 @@ let interrupter pid =
       
 let () =
   set_win32_path ();
-  Rocq.interrupter := interrupter;
+  RocqDriver.interrupter := interrupter;
   reroute_stdout_stderr ();
   try ignore (Unix.getenv "GTK_CSD") with Not_found -> Unix.putenv "GTK_CSD" "0"
 
