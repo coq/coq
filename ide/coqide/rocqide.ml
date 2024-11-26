@@ -169,8 +169,8 @@ let find_secondary_sn sn =
   in find notebook#pages
 
 let db_cmd sn cmd =
-  ignore @@ Rocq.try_grab ~db:true sn.rocqtop
-      (sn.rocqops#process_db_cmd cmd ~next:(function | _ -> Rocq.return ()))
+  ignore @@ RocqDriver.try_grab ~db:true sn.rocqtop
+      (sn.rocqops#process_db_cmd cmd ~next:(function | _ -> RocqDriver.return ()))
       (fun () -> Minilib.log "Rocq busy, discarding db_cmd")
 
 let forward_db_stack = ref ((fun _ -> failwith "forward_db_stack")
@@ -190,7 +190,7 @@ let create_session f =
     flash_info (Printf.sprintf "Reading options from %s" project_file);
   let sn = Session.create f args in
   sn.debugger#set_forward_get_basename (fun _ -> sn.basename);
-  Rocq.set_restore_bpts sn.rocqtop (fun _ -> !forward_restore_bpts sn);
+  RocqDriver.set_restore_bpts sn.rocqtop (fun _ -> !forward_restore_bpts sn);
   (sn.messages#route 0)#set_forward_send_db_cmd (db_cmd sn);
   (sn.messages#route 0)#set_forward_send_db_stack (!forward_db_stack sn);
   sn.debugger#set_forward_highlight_code (!forward_highlight_code sn);
@@ -209,9 +209,9 @@ let create_session f =
   sn
 
 
-let db_upd_bpts ?(next=Rocq.return) updates sn =
+let db_upd_bpts ?(next=RocqDriver.return) updates sn =
   if updates <> [] then
-    ignore @@ Rocq.try_grab ~db:true sn.rocqtop
+    ignore @@ RocqDriver.try_grab ~db:true sn.rocqtop
       (sn.rocqops#process_db_upd_bpts updates ~next:(function | _ -> next ()))
       (fun () -> Minilib.log "Rocq busy, discarding db_upd_bpts")
 
@@ -235,7 +235,7 @@ let get_updates sn =
 
 (* init breakpoints for new session or re-init after reset *)
 let init_bpts sn =
-  Rocq.add_do_when_ready sn.rocqtop (fun _ ->
+  RocqDriver.add_do_when_ready sn.rocqtop (fun _ ->
       let upds = get_updates sn in
       db_upd_bpts upds sn)
 
@@ -243,14 +243,14 @@ let init_bpts sn =
 let () = forward_init_db := fun sn ->
   let updates = get_updates sn in
   let send_configd () =
-    ignore @@ Rocq.try_grab ~db:true sn.rocqtop
-      (sn.rocqops#process_db_configd () ~next:(function | _ -> Rocq.return ()))
+    ignore @@ RocqDriver.try_grab ~db:true sn.rocqtop
+      (sn.rocqops#process_db_configd () ~next:(function | _ -> RocqDriver.return ()))
       (fun () -> Minilib.log "Rocq busy, discarding db_configd")
   in
   if updates = [] then
     send_configd ()
   else
-    db_upd_bpts updates sn ~next:(fun () -> send_configd (); Rocq.return ())
+    db_upd_bpts updates sn ~next:(fun () -> send_configd (); RocqDriver.return ())
 
 let restore_bpts sn =
   init_bpts sn;
@@ -354,11 +354,11 @@ let check_quit ?parent saveall =
       | 2 -> ()
       | _ -> in_quit_dialog := false; raise DontQuit
   end;
-  List.iter (fun sn -> Rocq.close_rocqtop sn.rocqtop) notebook#pages
+  List.iter (fun sn -> RocqDriver.close_rocqtop sn.rocqtop) notebook#pages
 
 (* For MacOS, just to be sure, we close all rocqtops (again?) *)
 let close_and_quit () =
-  List.iter (fun sn -> Rocq.close_rocqtop sn.rocqtop) notebook#pages;
+  List.iter (fun sn -> RocqDriver.close_rocqtop sn.rocqtop) notebook#pages;
   exit 0
 
 (* Work around a deadlock due to OCaml exit cleanup. The standard [exit]
@@ -434,7 +434,7 @@ let saveall _ =
       | Some f -> ignore (sn.fileops#save f))
     notebook#pages
 
-let () = Rocq.save_all := saveall
+let () = RocqDriver.save_all := saveall
 
 let reload_all ?parent _ =
   List.iter
@@ -466,7 +466,7 @@ let close_buffer ?parent sn =
               let upds = List.fold_left (fun upds bp ->
                   ((file, bp.prev_byte_offset), false) :: upds)
                 [] sn.breakpoints in
-              Rocq.add_do_when_ready osn.rocqtop (fun _ -> db_upd_bpts upds osn)
+              RocqDriver.add_do_when_ready osn.rocqtop (fun _ -> db_upd_bpts upds osn)
             end
           ) notebook#pages
   in
@@ -609,7 +609,7 @@ let compile sn =
   match sn.fileops#filename with
     |None -> flash_info "Active buffer has no name"
     |Some f ->
-      let args = Rocq.get_arguments sn.rocqtop in
+      let args = RocqDriver.get_arguments sn.rocqtop in
       let cmd = cmd_rocqc#get
         ^ " " ^ String.concat " " (List.map Filename.quote args)
         ^ " " ^ (Filename.quote f) ^ " 2>&1"
@@ -718,9 +718,9 @@ let update_status sn =
       | Some n -> ", proving " ^ n
     in
     display ("Ready"^ (if microPG#get then ", [μPG]" else "") ^ path ^ name);
-    Rocq.return ()
+    RocqDriver.return ()
   in
-  Rocq.bind (Rocq.status false) next
+  RocqDriver.bind (RocqDriver.status false) next
 
 let find_next_occurrence ~backward sn =
   (* go to the next occurrence of the current word, forward or backward *)
@@ -736,14 +736,14 @@ let find_next_occurrence ~backward sn =
 
 let send_to_rocq_aux f sn =
   let info () = Minilib.log "Rocq busy, discarding query" in
-  let f = Rocq.seq (f sn) (update_status sn) in
-  ignore @@ Rocq.try_grab sn.rocqtop f info
+  let f = RocqDriver.seq (f sn) (update_status sn) in
+  ignore @@ RocqDriver.try_grab sn.rocqtop f info
 
 let send_to_rocq f = on_current_term (send_to_rocq_aux f)
 
 let db_continue opt sn =
-  Rocq.try_grab ~db:true sn.rocqtop (sn.rocqops#process_db_continue opt
-    ~next:(function | _ -> Rocq.return ()))
+  RocqDriver.try_grab ~db:true sn.rocqtop (sn.rocqops#process_db_continue opt
+    ~next:(function | _ -> RocqDriver.return ()))
     (fun () -> Minilib.log "Rocq busy, discarding db_continue")
 
 (* find the session identified by sid.  If not specified and the current term
@@ -765,8 +765,8 @@ let resume_debugger ?sid opt =
   match term with
   | None -> false
   | Some t ->
-    if Rocq.is_stopped_in_debugger t.rocqtop && db_continue opt t then begin
-      Rocq.set_stopped_in_debugger t.rocqtop false;
+    if RocqDriver.is_stopped_in_debugger t.rocqtop && db_continue opt t then begin
+      RocqDriver.set_stopped_in_debugger t.rocqtop false;
       clear_db_highlight t ();
       t.debugger#set_stack [];
       t.debugger#set_vars [];
@@ -814,7 +814,7 @@ let maybe_update_breakpoints () =
           | None -> []
         ) notebook#pages) in
       if sn_upds <> [] then
-        Rocq.add_do_when_ready sn.rocqtop (fun _ -> db_upd_bpts sn_upds sn)
+        RocqDriver.add_do_when_ready sn.rocqtop (fun _ -> db_upd_bpts sn_upds sn)
     ) notebook#pages upds
 
 module Nav = struct
@@ -845,20 +845,20 @@ module Nav = struct
     maybe_update_breakpoints ();
     if notebook#pages <> [] then begin
       let sn = notebook#current_term in
-      Rocq.reset_rocqtop sn.rocqtop (* calls init_bpts *)
+      RocqDriver.reset_rocqtop sn.rocqtop (* calls init_bpts *)
     end
   let interrupt _ =  (* terminate computation *)
     if Sys.os_type = "Win32" then File.win_interrupt := true;
     Minilib.log "User interrupt received";
     if not (resume_debugger Interface.Interrupt) && notebook#pages <> [] then begin
       let osn = (find_db_sn ()) in
-      Rocq.interrupt_rocqtop osn.rocqtop CString.(Set.elements (Map.domain osn.jobpage#data))
+      RocqDriver.interrupt_rocqtop osn.rocqtop CString.(Set.elements (Map.domain osn.jobpage#data))
     end
   let break ?sid _ =  (* stop at the next possible stopping point *)
     if notebook#pages <> [] then begin
       let orocqtop = (find_db_sn ?sid ()).rocqtop in
-      if not (Rocq.is_stopped_in_debugger orocqtop) then
-        Rocq.send_break orocqtop
+      if not (RocqDriver.is_stopped_in_debugger orocqtop) then
+        RocqDriver.send_break orocqtop
     end
   let show_debugger _ =
     on_current_term (fun sn -> sn.debugger#show ())
@@ -889,7 +889,7 @@ let _ = Wg_Debugger.forward_keystroke := forward_keystroke
 
 let printopts_callback opts v =
   let b = v#get_active in
-  let () = List.iter (fun o -> Rocq.PrintOpt.set o b) opts in
+  let () = List.iter (fun o -> RocqDriver.PrintOpt.set o b) opts in
   send_to_rocq (fun sn -> sn.rocqops#show_goals)
 
 (** Templates menu *)
@@ -927,7 +927,7 @@ let print_branches c cases =
 
 let display_match sn = function
   |Interface.Fail _ ->
-    flash_info "Not an inductive type"; Rocq.return ()
+    flash_info "Not an inductive type"; RocqDriver.return ()
   |Interface.Good cases ->
     let text =
       let buf = Buffer.create 1024 in
@@ -945,13 +945,13 @@ let display_match sn = function
       b#move_mark ~where:(i#backward_chars 3) `SEL_BOUND
     end;
     b#delete_mark (`MARK m);
-    Rocq.return ()
+    RocqDriver.return ()
 
 let match_callback sn =
   let w = get_current_word sn in
   let rocqtop = sn.rocqtop in
-  let query = Rocq.bind (Rocq.mkcases w) (display_match sn) in
-  ignore @@ Rocq.try_grab rocqtop query
+  let query = RocqDriver.bind (RocqDriver.mkcases w) (display_match sn) in
+  ignore @@ RocqDriver.try_grab rocqtop query
     (fun () -> Minilib.log "Rocq busy, discarding mkcases")
 
 let match_callback = cb_on_current_term match_callback
@@ -962,13 +962,13 @@ module Query = struct
 
 let doquery query sn =
   sn.messages#default_route#clear;
-  ignore @@ Rocq.try_grab sn.rocqtop (sn.rocqops#raw_rocq_query query ~route_id:0
+  ignore @@ RocqDriver.try_grab sn.rocqtop (sn.rocqops#raw_rocq_query query ~route_id:0
     ~next:(function
         | Interface.Fail (_, _, err) ->
             let err = Ideutils.validate err in
             sn.messages#default_route#add err;
-            Rocq.return ()
-        | Interface.Good () -> Rocq.return ()))
+            RocqDriver.return ()
+        | Interface.Good () -> RocqDriver.return ()))
     (fun () -> Minilib.log "Rocq busy, discarding raw_rocq_query")
 
 let queryif command sn =
@@ -1002,7 +1002,7 @@ let initial_about () =
   let initial_string =
     "Welcome to CoqIDE, an Integrated Development Environment for Coq"
   in
-  let rocq_version = Rocq.short_version () in
+  let rocq_version = RocqDriver.short_version () in
   let version_info =
     if Glib.Utf8.validate rocq_version then
       "\nYou are running " ^ rocq_version
@@ -1020,7 +1020,7 @@ let rocq_icon () =
 
 let show_proof_diff where sn =
   sn.messages#default_route#clear;
-  ignore @@ Rocq.try_grab sn.rocqtop (sn.rocqops#proof_diff where
+  ignore @@ RocqDriver.try_grab sn.rocqtop (sn.rocqops#proof_diff where
     ~next:(function
         | Interface.Fail (_, _, err) ->
             let err = if (Pp.string_of_ppcmds err) <> "No proofs to diff." then err else
@@ -1028,10 +1028,10 @@ let show_proof_diff where sn =
             in
             let err = Ideutils.validate err in
             sn.messages#default_route#add err;
-            Rocq.return ()
+            RocqDriver.return ()
         | Interface.Good diff ->
             sn.messages#default_route#add diff;
-            Rocq.return ()))
+            RocqDriver.return ()))
       (fun () -> Minilib.log "Rocq busy, discarding raw_rocq_query")
 
 let show_proof_diffs _ = cb_on_current_term (show_proof_diff `INSERT) ()
@@ -1065,14 +1065,14 @@ let highlight_code sn loc =
 let _ = forward_highlight_code := highlight_code
 
 let db_stack sn _ =
-  Rocq.add_do_when_ready sn.rocqtop (fun _ ->
-    ignore @@ Rocq.try_grab ~db:true sn.rocqtop (sn.rocqops#process_db_stack
+  RocqDriver.add_do_when_ready sn.rocqtop (fun _ ->
+    ignore @@ RocqDriver.try_grab ~db:true sn.rocqtop (sn.rocqops#process_db_stack
       ~next:(function
           | Interface.Good stack ->
             sn.debugger#set_stack stack;
-            Rocq.return ()
+            RocqDriver.return ()
           | Interface.Fail _ ->
-            Rocq.return ()
+            RocqDriver.return ()
           ))
       (fun () -> Minilib.log "Rocq busy, discarding db_stack")
   )
@@ -1080,14 +1080,14 @@ let db_stack sn _ =
 let _ = forward_db_stack := db_stack
 
 let db_vars sn line =
-  Rocq.add_do_when_ready sn.rocqtop (fun _ ->
-    ignore @@ Rocq.try_grab ~db:true sn.rocqtop (sn.rocqops#process_db_vars line
+  RocqDriver.add_do_when_ready sn.rocqtop (fun _ ->
+    ignore @@ RocqDriver.try_grab ~db:true sn.rocqtop (sn.rocqops#process_db_vars line
       ~next:(function
           | Interface.Good vars ->
             sn.debugger#set_vars vars;
-            Rocq.return ()
+            RocqDriver.return ()
           | Interface.Fail _ ->
-            Rocq.return ()
+            RocqDriver.return ()
           ))
       (fun () -> Minilib.log "Rocq busy, discarding db_vars")
   )
@@ -1139,12 +1139,12 @@ let toggle_breakpoint_i sn =
       ) upd in
     List.iter (fun osn ->
         if osn != sn then
-          Rocq.add_do_when_ready osn.rocqtop (fun _ -> db_upd_bpts upd2 osn)
+          RocqDriver.add_do_when_ready osn.rocqtop (fun _ -> db_upd_bpts upd2 osn)
       ) notebook#pages
   | None -> ()
 
 let all_sessions_ready _ =
-  List.fold_left (fun rdy sn -> rdy && Rocq.is_ready_or_stopped_in_debugger sn.rocqtop)
+  List.fold_left (fun rdy sn -> rdy && RocqDriver.is_ready_or_stopped_in_debugger sn.rocqtop)
       true notebook#pages
 
 let toggle_breakpoint _ =
@@ -1191,7 +1191,7 @@ let rocqtop_arguments sn =
   let dialog = GWindow.dialog ~title:"Coqtop arguments" () in
   let rocqtop = sn.rocqtop in
   (* Text entry *)
-  let text = Ideutils.encode_string_list (Rocq.get_arguments rocqtop) in
+  let text = Ideutils.encode_string_list (RocqDriver.get_arguments rocqtop) in
   let entry = GEdit.entry ~text ~packing:dialog#vbox#add () in
   (* Buttons *)
   let box = dialog#action_area in
@@ -1206,10 +1206,10 @@ let rocqtop_arguments sn =
       match try Util.Inr (Ideutils.decode_string_list ntext) with Failure s -> Util.Inl s with
       | Util.Inl s -> fail s
       | Util.Inr nargs ->
-      let failed = Rocq.filter_rocq_opts nargs in
+      let failed = RocqDriver.filter_rocq_opts nargs in
       match failed with
       | [] ->
-        let () = Rocq.set_arguments rocqtop nargs in
+        let () = RocqDriver.set_arguments rocqtop nargs in
         dialog#destroy ()
       | args ->
         fail (String.concat " " args)
@@ -1277,7 +1277,7 @@ let get_shortcut s =
     Some k, s'
   with _ -> None,s
 
-module Opt = Rocq.PrintOpt
+module Opt = RocqDriver.PrintOpt
 
 let printopts_items menu_name l =
   let f Opt.{ label; init; opts } =
@@ -1523,7 +1523,7 @@ let build_ui () =
     item "Show Proof Diffs" ~label:"_Show Proof (with diffs, if set)" ~accel:"<Shift>F2"
       ~callback:MiscMenu.show_proof_diffs;
   ];
-  printopts_items view_menu Rocq.PrintOpt.bool_items;
+  printopts_items view_menu RocqDriver.PrintOpt.bool_items;
 
   let navitem (text, label, stock, callback, tooltip, accel) =
     let accel = modifier_for_navigation#get ^ accel in
@@ -1705,9 +1705,9 @@ let build_ui () =
   let () = lower_hbox#pack pbar#coerce in
   let ready () = pbar#set_fraction 0.0 in
   let pulse sn =
-    if Rocq.is_stopped_in_debugger sn.rocqtop then
+    if RocqDriver.is_stopped_in_debugger sn.rocqtop then
       (pbar#set_pulse_step 0.0; pbar#pulse ())  (* stops slider at left end, not ideal *)
-    else if Rocq.is_computing sn.rocqtop then
+    else if RocqDriver.is_computing sn.rocqtop then
       (pbar#set_pulse_step 0.1; pbar#pulse ())
     else ready () in
   let callback () = on_current_term pulse; true in
@@ -1840,7 +1840,7 @@ let read_rocqide_args argv =
       Flags.xml_debug := true;
       filter_rocqtop rocqtop project_files bindings_files ("-xml-debug"::out) args
     |"-coqtop-flags" :: flags :: args->
-      Rocq.ideslave_rocqtop_flags := Some flags;
+      RocqDriver.ideslave_rocqtop_flags := Some flags;
       filter_rocqtop rocqtop project_files bindings_files out args
     | ("-v" | "--version") :: _ ->
       (* This does the same thing as Usage.version () but printed differently *)
