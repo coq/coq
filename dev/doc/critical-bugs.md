@@ -689,6 +689,18 @@ For instance `α` and `__U03b1_` were the same in the native compiler.
 - GH issue number: coq/coq#13330
 - risk: unlikely to be exploited by mistake, requires the use of unsafe tactics
 
+#### Section variables used in side effects not checked by Proof using
+
+- component: side-effects / sections
+- introduced: 8.11
+- impacted released versions: from 8.11.0 to 8.20.0
+- impacted coqchk versions: none (no side-effects in the checker)
+- fixed in: V9.0 (coq/coq#19476)
+- found by: Pierre Courtieu
+- exploit: test-suite/output/bug_19861.v
+- GH issue number: coq/coq#19861
+- risk: requires incorrect `Proof using` and no use of coqchk
+
 ### Forgetting unsafe flags
 
 #### unsafe typing flags used inside a section would not be reported by Print Assumptions after closing the section
