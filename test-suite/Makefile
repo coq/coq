@@ -85,11 +85,7 @@ coqdoc := $(BIN)coqdoc
 coqtop := $(BIN)coqtop -q -test-mode -R prerequisite TestSuite
 coqtopbyte := $(BIN)coqtop.byte -q
 
-ifeq ($(BEST),opt)
-coqidetop := $(BIN)coqidetop.opt
-else
-coqidetop := $(BIN)coqidetop.byte
-endif
+coqidetop := $(BIN)coqidetop
 
 coqc_interactive := $(coqc) -test-mode
 coqdep := $(BIN)coqdep
