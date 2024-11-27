@@ -1040,9 +1040,7 @@ let force_variance ~force_in_term v (VarianceOccurrence.{ in_binders = (binder_m
   let bindersv = Option.map (fun _ -> v) binder_mode in
   let in_term =
     if force_in_term then Some v
-    else
-      if Option.is_empty bindersv then Some v
-      else Option.map (fun _ -> v) in_term
+    else Option.map (fun _ -> v) in_term
   in
   { vocc with in_binders = bindersv, occs; in_term; in_type = in_type }
 
