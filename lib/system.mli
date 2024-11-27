@@ -157,8 +157,7 @@ val fmt_instructions_result : 'a instructions_result -> Pp.t
    - locating the directory: we don't rely on PATH as to make calls to
    /foo/bin/coqtop chose the right /foo/bin/coqproofworker
 
-   - adding the proper suffixes: .opt/.byte depending on the current
-   mode, + .exe if in windows.
+   - adding the proper suffix: .exe if in windows.
 
  Note that this function doesn't check that the executable actually
  exists. This is left back to caller, as well as the choice of
@@ -167,4 +166,4 @@ val fmt_instructions_result : 'a instructions_result -> Pp.t
  the right name you want you execution to fail rather than fall into
  choosing some random binary from the system-wide installation of
  Coq. *)
-val get_toplevel_path : ?byte:bool -> string -> string
+val get_toplevel_path : string -> string
