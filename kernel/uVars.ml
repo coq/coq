@@ -196,42 +196,66 @@ end
 
 (** {6 Variance occurrences} *)
 
-type impred_qvars = Sorts.QVar.Set.t option
+type impred_qvars_status =
+  | Predicative
+  | Impredicative of Sorts.QVar.Set.t
+type impred_qvars = impred_qvars_status option
 
 let update_impred_qvars (f : Sorts.QVar.t -> Sorts.Quality.t option) vars =
   match vars with
   | None -> None
-  | Some vars ->
-    Sorts.QVar.Set.fold (fun qv impred ->
+  | Some Predicative -> Some Predicative
+  | Some (Impredicative vars) ->
+    let pred = Sorts.QVar.Set.fold (fun qv impred ->
       match impred with
-      | None -> None
-      | Some impred as acc ->
+      | Predicative -> impred
+      | Impredicative impred as acc ->
         match f qv with
         | None -> (* A unification variable, might become impredicative *)
-          Some (Sorts.QVar.Set.add qv impred)
+          Impredicative (Sorts.QVar.Set.add qv impred)
         | Some q ->
           let open Sorts.Quality in
           match q with
-          | QVar v -> Some (Sorts.QVar.Set.add v impred)
+          | QVar v -> Impredicative (Sorts.QVar.Set.add v impred)
           | QConstant (QProp | QSProp) -> acc
-          | QConstant QType -> None)
-      vars (Some Sorts.QVar.Set.empty)
+          | QConstant QType -> Predicative)
+      vars (Impredicative Sorts.QVar.Set.empty)
+    in Some pred
 
-let pr_impred_qvars qvars =
-  Pp.(pr_opt (fun qvars -> prlist_with_sep spc Sorts.QVar.raw_pr (Sorts.QVar.Set.elements qvars)) qvars)
+let pr_impred_qvars (qvars : impred_qvars) =
+  let open Pp in
+  let pr_pred = function
+  | Predicative -> str "predicative"
+  | Impredicative qvars ->
+    let elems = Sorts.QVar.Set.elements qvars in
+    if List.is_empty elems then str"impredicative"
+    else str"(im)predicative depending on " ++ prlist_with_sep spc Sorts.QVar.raw_pr elems
+  in Pp.(pr_opt pr_pred qvars)
 
 let impred_qvars_of_quality q =
   let open Sorts.Quality in
   match q with
-  | QVar qv -> Some (Sorts.QVar.Set.singleton qv)
-  | QConstant (QProp | QSProp) -> Some Sorts.QVar.Set.empty
-  | QConstant QType -> None
+  | QVar qv -> Impredicative (Sorts.QVar.Set.singleton qv)
+  | QConstant (QProp | QSProp) -> Impredicative Sorts.QVar.Set.empty
+  | QConstant QType -> Predicative
+
+let equal_qvars (x : impred_qvars) (y : impred_qvars) =
+  let eq_pred x y = match x, y with
+  | Predicative, Predicative -> true
+  | Impredicative qvars, Impredicative qvars' -> Sorts.QVar.Set.equal qvars qvars'
+  | _, _ -> false
+  in Option.equal eq_pred x y
 
 let union_impred_qvars impred_qvars impred_qvars' =
+  let union_pred x y =
+    match x, y with
+    | Predicative, _ | _, Predicative -> Predicative
+    | Impredicative s, Impredicative s' -> Impredicative (Sorts.QVar.Set.union s s')
+  in
   match impred_qvars, impred_qvars' with
-  | None, _ -> None
-  | _, None -> None
-  | Some s, Some s' -> Some (Sorts.QVar.Set.union s s')
+  | Some s, Some s' -> Some (union_pred s s')
+  | None, x -> x
+  | x, None -> x
 
 type assumption_or_definition =
   Assumption | Definition
@@ -244,7 +268,7 @@ struct
       in_type : Variance.t option;
       under_impred_qvars : impred_qvars }
   let default_occ =
-    { in_binders = None, []; in_term = None; in_type = None; under_impred_qvars = Some Sorts.QVar.Set.empty }
+    { in_binders = None, []; in_term = None; in_type = None; under_impred_qvars = None }
 
   let lift n occ =
     let v, pos = occ.in_binders in
@@ -287,7 +311,7 @@ struct
     List.equal Int.equal in_binders in_binders' &&
     Option.equal Variance.equal in_term in_term' &&
     Option.equal Variance.equal in_type in_type' &&
-    Option.equal Sorts.QVar.Set.equal under_impred_qvars under_impred_qvars')
+    equal_qvars under_impred_qvars under_impred_qvars')
 
   let option_le le x y =
     match x, y with

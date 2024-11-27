@@ -96,12 +96,17 @@ let check_conv_error error why state poly pb env a1 a2 =
 let clear_term_variances vs =
   let open VarianceOccurrence in
   UVars.Variances.(make (Array.map (fun vocc -> { vocc with in_term = None }) (repr vs)))
+let clear_type_variances vs =
+  let open VarianceOccurrence in
+  UVars.Variances.(make (Array.map (fun vocc -> { vocc with in_type = None }) (repr vs)))
 
 let check_variance error env ~term_variances v1 v2 =
   match v1, v2 with
   | None, None -> env
   | Some v1, Some v2 ->
     let v1 = if term_variances then v1 else clear_term_variances v1 in
+    (* We do not care about variances in the type, used only for type inference purposes *)
+    let v1 = clear_type_variances v1 and v2 = clear_type_variances v2 in
     if not (Variances.le v1 v2) then
       error (IncompatibleVariance { got = v1; expect = v2 })
     else env

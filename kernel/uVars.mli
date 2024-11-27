@@ -103,11 +103,15 @@ end
 
 (** {6 Variance occurrences} *)
 
-type impred_qvars = Sorts.QVar.Set.t option
+type impred_qvars_status =
+  | Predicative
+  | Impredicative of Sorts.QVar.Set.t
+type impred_qvars = impred_qvars_status option
+
 (** Set of potentially impredicative QVars under which the universe lives.
   If there is an occurrence under a non-impredicative QVar somewhere, this is empty. *)
 
-val impred_qvars_of_quality : Sorts.Quality.t -> impred_qvars
+val impred_qvars_of_quality : Sorts.Quality.t -> impred_qvars_status
 val update_impred_qvars : (Sorts.QVar.t -> Sorts.Quality.t option) -> impred_qvars -> impred_qvars
 val pr_impred_qvars : impred_qvars -> Pp.t
 val union_impred_qvars : impred_qvars -> impred_qvars -> impred_qvars
@@ -144,7 +148,7 @@ sig
 
   val variance_app : application -> t -> Variance.t
 
-  val under_impred_qvars : t -> Sorts.QVar.Set.t option
+  val under_impred_qvars : t -> impred_qvars
 
 end
 

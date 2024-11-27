@@ -165,6 +165,16 @@ let register_universe_variances_of_type env sigma typ =
     str "Computed from type " ++ Termops.Internal.print_constr_env env sigma typ);
   finalize sigma status
 
+let register_universe_variances_of_undefined env sigma =
+  let status = init_status sigma in
+  let fold ev evi status =
+    let env = Evd.evar_env env evi in
+    let ty = Evd.evar_concl evi in
+    compute_variances env sigma status Position.InType Conv ty
+  in
+  let status = Evd.fold_undefined fold sigma status in
+  finalize sigma status
+
 let register_universe_variances_of_inductive env sigma ~udecl ~cumulative ~params ~arities ~constructors =
   let status = init_status ~udecl sigma in
   let params = EConstr.Vars.smash_rel_context params in

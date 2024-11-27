@@ -409,33 +409,6 @@ let declare_proj_coercion_instance ~flags ref from =
     Classes.declare_instance ~warn:true env sigma (Some info) local ref
   end
 
-let _make_projection_variances i variances =
-  match variances with
-  | None -> None
-  | Some v ->
-    let open UVars in
-    let arr = UVars.Variances.repr v in
-    let map occ =
-      match VarianceOccurrence.term_variance_pos occ with
-      | (_, InBinder _) -> { occ with in_type = None } (* A parameter universe of the record, appearing in a parameter binder *)
-      | (_, InType) -> (* A universe appearing only in the type of the record, we don't care *)
-        occ
-      | (var, InTerm) -> (* The universe appears in the type of a field of the record,
-          and possibly in a binder as well.
-          it can only appear in the binder for the record itself in a projection *)
-        let open UVars.Variance in
-        let ovar = match var with
-          | Covariant -> Contravariant
-          | Contravariant -> Covariant
-          | Invariant -> Invariant
-          | Irrelevant -> Irrelevant
-        in
-        let binders, pos = occ.in_binders in
-        { in_binders = (Option.union Variance.sup binders (Some ovar), List.append pos [i]); in_term = Some var; in_type = Some var;
-          under_impred_qvars = None }
-    in
-    Some (UVars.Variances.make (Array.map map arr))
-
 (* TODO: refactor the declaration part here; this requires some
    surgery as Evarutil.finalize is called too early in the path *)
 (** This builds and _declares_ a named projection, the code looks

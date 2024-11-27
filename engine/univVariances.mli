@@ -15,6 +15,8 @@ val register_universe_variances_of_constr : Environ.env -> Evd.evar_map -> ?typ:
 
 val register_universe_variances_of : Environ.env -> Evd.evar_map -> ?typ:EConstr.t -> EConstr.t -> Evd.evar_map
 
+val register_universe_variances_of_undefined : Environ.env -> Evd.evar_map -> Evd.evar_map
+
 val register_universe_variances_of_type : Environ.env -> Evd.evar_map -> EConstr.t -> Evd.evar_map
 
 val register_universe_variances_of_inductive : Environ.env -> Evd.evar_map ->

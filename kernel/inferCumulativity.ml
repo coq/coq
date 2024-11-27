@@ -41,7 +41,7 @@ let pr_mode m =
 
 type infer_binders = (mode * (Variance.t option * int list))
 
-type impred_qvars = Sorts.QVar.Set.t option
+type impred_qvars = UVars.impred_qvars
 (** Set of potentially impredicative QVars under which the universe lives.
   If there is an occurrence under a non-impredicative QVar somewhere, this is empty. *)
 
@@ -58,7 +58,7 @@ let default_occ =
     infer_term = (Infer, None);
     infer_type = (Infer, None);
     infer_principal = false;
-    infer_under_impred_qvars = Some Sorts.QVar.Set.empty }
+    infer_under_impred_qvars = None }
 
 let make_checked_occ ~infer_in_type
   UVars.VarianceOccurrence.{ in_binders; in_term; in_type; under_impred_qvars } =
@@ -90,8 +90,8 @@ let pr_variance_occurrence (occ : infer_variance_occurrence) =
   let pr_principal = if occ.infer_principal then [str"in principal type"] else [] in
   let pr_impred =
     match occ.infer_under_impred_qvars with
+    | Some _ as x -> [UVars.pr_impred_qvars x]
     | None -> []
-    | set -> [str "only used impredicatively and in vars: " ++ UVars.pr_impred_qvars set]
   in
   let variances = pr_binders occ.infer_binders @ pr_term occ.infer_term @ pr_type occ.infer_type @ pr_principal @ pr_impred in
     if List.is_empty variances then mt ()
@@ -468,7 +468,7 @@ let infer_constructor_instance_eq env variances ((mi,ind),ctor) nargs u =
     else variances (* constructors are convertible at common supertype *) *)
 
 let infer_sort cv_pb variances s =
-  let impred_qvars = impred_qvars_of_quality (Sorts.quality s) in
+  let impred_qvars = Some (impred_qvars_of_quality (Sorts.quality s)) in
   let levels = Sorts.levels s in
   match cv_pb with
   | Conv ->

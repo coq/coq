@@ -165,8 +165,9 @@ let simplify_variables partial ctx us variances graph =
       | (Covariant | Irrelevant), Covariant when not partial -> minimize u acc
       | _, _ ->
         match impred with
-        | None -> (* Used in some predicative contexts *) acc
-        | Some qs ->
+        | None -> (* Unused variable *) minimize u acc
+        | Some Predicative -> (* Used in some predicative contexts *) acc
+        | Some (Impredicative qs) ->
           if Sorts.QVar.Set.is_empty qs then collapse_to_zero u acc
           else acc
   in
