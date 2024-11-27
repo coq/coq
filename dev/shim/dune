@@ -46,7 +46,7 @@
  (name coqc-prelude)
  (deps
   %{bin:coqc}
-  %{bin:coqworker.opt}
+  %{bin:coqworker}
   %{project_root}/theories/Init/Prelude.vo))
 
 (rule
@@ -111,7 +111,8 @@
   ; coqide from PATH instead of giving a nice error
   ; there is no problem with the other shims since they don't depend on optional build products
   %{project_root}/ide/coqide/rocqide_main.exe
-  %{bin:coqworker.opt}
+  %{bin:coqworker}
+  %{bin:coqidetop}
   %{project_root}/theories/Init/Prelude.vo
   %{project_root}/coqide-server.install
   %{project_root}/coqide.install))

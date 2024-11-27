@@ -420,10 +420,9 @@ let fmt_instructions_result r =
       str m ++ str "\"" ++ str status
 
 (* We use argv.[0] as we don't want to resolve symlinks *)
-let get_toplevel_path ?(byte=Sys.(backend_type = Bytecode)) top =
+let get_toplevel_path top =
   let open Filename in
   let dir = if String.equal (basename Sys.argv.(0)) Sys.argv.(0)
             then "" else dirname Sys.argv.(0) ^ dir_sep in
   let exe = if Sys.(os_type = "Win32" || os_type = "Cygwin") then ".exe" else "" in
-  let eff = if byte then ".byte" else ".opt" in
-  dir ^ top ^ eff ^ exe
+  dir ^ top ^ exe
