@@ -175,21 +175,28 @@ let find_implicits id ienv =
     List.map extract_manual_implicit impls
   with Not_found -> []
 
-let local_binders_of_decls ~poly l =
-  let coercions, l =
-    List.fold_left_map (fun coercions (is_coe,(idl,c)) ->
-      let coercions = match is_coe with
-        | Vernacexpr.NoCoercion -> coercions
-        | Vernacexpr.AddCoercion -> List.fold_right (fun id -> Id.Set.add id.CAst.v) idl coercions in
-      let make_name id = CAst.make ?loc:id.CAst.loc (Name id.CAst.v) in
-      let make_assum idl = Constrexpr.(CLocalAssum (List.map make_name idl,None,Default Glob_term.Explicit,c)) in
-      let decl = if poly then
-        (* Separate declarations so that A B : Type puts A and B in different levels. *)
-        List.map (fun id -> make_assum [id]) idl
-      else
-        [make_assum idl] in
-      (coercions,decl)) Id.Set.empty l in
-  coercions, List.flatten l
+let local_binders_of_decls ~poly ~scope l =
+  let interp (is_coe, (idl, c)) coercions =
+    let dcoercions = match is_coe with
+      | Vernacexpr.NoCoercion -> coercions
+      | Vernacexpr.AddCoercion -> List.fold_right (fun id -> Id.Set.add id.CAst.v) idl coercions in
+    let make_name id = CAst.make ?loc:id.CAst.loc (Name id.CAst.v) in
+    let make_assum idl = Constrexpr.(CLocalAssum (List.map make_name idl,None,Default Glob_term.Explicit,c)) in
+    let decl = if poly then
+      (* Separate declarations so that A B : Type puts A and B in different levels. *)
+      List.map (fun id -> make_assum [id]) idl
+    else
+      [make_assum idl] in
+    dcoercions, decl
+  in
+  match scope with
+  | Locality.Global _ when poly -> (* Polymorphic Parameter *)
+    List.fold_right (fun decl acc ->
+      let idecl = interp decl Id.Set.empty in idecl :: acc) l []
+  | _ ->
+    let fold coercions decl = interp decl coercions in
+    let coercions, l = List.fold_left_map fold Id.Set.empty l in
+    [coercions, List.flatten l]
 
 let find_binding_kind id impls =
   let open Glob_term in
@@ -233,15 +240,17 @@ let do_assumptions ~program_mode ~poly ~cumulative ~scope ~kind ?user_warns ~inl
       List.iter (fun (lid, _) ->
           let ty = if sec then "var" else "ax" in
           Dumpglob.dump_definition lid sec ty) idl) l end;
-  let env = Global.env () in
   let udecl, l = match scope with
     | Locality.Global import_behavior -> process_assumptions_udecls l
     | Locality.Discharge -> None, process_assumptions_no_udecls l in
-  let sigma, udecl = interp_cumul_univ_decl_opt env udecl in
-  let coercions, ctx = local_binders_of_decls ~poly l in
-  let sigma, ctx = interp_context_gen scope ~program_mode ~kind ~autoimp_enable:true ~coercions env sigma ctx in
-  let univs = Evd.check_univ_decl ~poly ~cumulative ~kind:UVars.Assumption sigma udecl in
-  declare_context ~try_global_assum_as_instance:false ~scope ~univs ?user_warns ~inline ctx
+  let ctxs = local_binders_of_decls ~poly ~scope l in
+  List.iter (fun (coercions, ctx) ->
+    let env = Global.env () in
+    let sigma, udecl = interp_cumul_univ_decl_opt env udecl in
+    let sigma, ctx = interp_context_gen scope ~program_mode ~kind ~autoimp_enable:true ~coercions env sigma ctx in
+    let univs = Evd.check_univ_decl ~poly ~cumulative ~kind:UVars.Assumption sigma udecl in
+    declare_context ~try_global_assum_as_instance:false ~scope ~univs ?user_warns ~inline ctx)
+    ctxs
 
 let warn_context_outside_section =
   CWarnings.create ~name:"context-outside-section"
