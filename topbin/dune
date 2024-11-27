@@ -42,7 +42,7 @@
 ; Workers
 (executable
  (name coqworker_bin)
- (public_name coqworker.opt)
+ (public_name coqworker)
  (package coq-core)
  (modules coqworker_bin)
  (libraries coq-core.toplevel))
