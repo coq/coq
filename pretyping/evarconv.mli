@@ -64,10 +64,11 @@ val unify : ?flags:unify_flags -> ?with_ho:bool ->
    The with_ho option tells if higher-order unification should be tried
    to resolve the constraints.
 
-    @raises a PretypeError if it fails to resolve some problem *)
+   The [best_effort] flag allows some or all problems to remain, otherwise
+   @raises a PretypeError if it fails to resolve one of the problems *)
 
 val solve_unif_constraints_with_heuristics :
-  env -> ?flags:unify_flags -> ?with_ho:bool -> evar_map -> evar_map
+  env -> ?flags:unify_flags -> ?with_ho:bool -> ?best_effort:bool -> evar_map -> evar_map
 
 (** Check all pending unification problems relative to a set of evars
     are solved and raise a PretypeError otherwise *)

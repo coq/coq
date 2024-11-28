@@ -1994,7 +1994,7 @@ let solve_unconstrained_impossible_cases env evd =
     evd
 
 let solve_unif_constraints_with_heuristics env
-    ?(flags=default_flags env) ?(with_ho=false) evd =
+    ?(flags=default_flags env) ?(with_ho=false) ?(best_effort=false) evd =
   let evd = solve_unconstrained_evars_with_candidates flags env evd in
   let rec aux evd pbs progress stuck =
     match pbs with
@@ -2016,18 +2016,23 @@ let solve_unif_constraints_with_heuristics env
            else aux evd [] false ((pb,reason) :: stuck))
     | _ ->
         if progress then aux evd (List.map fst stuck) false []
-        else
-          match stuck with
-          | [] -> (* We're finished *) evd
-          | ((pbty,env,t1,t2 as pb), reason) :: _ ->
-              (* There remains stuck problems *)
-              Pretype_errors.error_cannot_unify ?loc:(loc_of_conv_pb evd pb)
-                env evd ~reason (t1, t2)
+        else stuck, evd
   in
   let (evd,pbs) = extract_all_conv_pbs evd in
-  let heuristic_solved_evd = aux evd pbs false [] in
-  check_problems_are_solved env heuristic_solved_evd;
-  solve_unconstrained_impossible_cases env heuristic_solved_evd
+  let stuck, heuristic_solved_evd = aux evd pbs false [] in
+  match stuck with
+  | [] -> (* We're finished *)
+    check_problems_are_solved env heuristic_solved_evd;
+    solve_unconstrained_impossible_cases env heuristic_solved_evd
+  | (pb, reason) :: _ ->
+    (* There remains stuck problems *)
+    if best_effort then
+      List.fold_left (fun evd (pb, _) -> Evd.add_conv_pb pb evd) heuristic_solved_evd stuck
+    else
+      let pbty,env,t1,t2 = pb in
+       Pretype_errors.error_cannot_unify ?loc:(loc_of_conv_pb evd pb)
+        env evd ~reason (t1, t2)
+
 
 (* Main entry points *)
 
