@@ -1301,7 +1301,7 @@ Notations
 Abbreviations
 ~~~~~~~~~~~~~
 
-.. cmd:: Ltac2 Notation {| @string | @ident } := @ltac2_expr
+.. cmd:: Ltac2 Notation @ident := @ltac2_expr
    :name: Ltac2 Notation (abbreviation)
 
    Introduces a special kind of notation, called an abbreviation,
