@@ -64,6 +64,11 @@ struct
     | Irrelevant -> csts
     | Covariant | Contravariant | Invariant -> enforce_eq u u' csts
 
+  let opp = function
+    | Irrelevant | Invariant as x -> x
+    | Covariant -> Contravariant
+    | Contravariant -> Covariant
+
   let is_irrelevant = function
     | Irrelevant -> true
     | _ -> false
@@ -325,15 +330,12 @@ struct
        under_impred_qvars = _under_impred_qvars' } as y) =
     x == y ||
     (option_le Variance.le in_binders in_binders' && List.subset pos pos' &&
-    option_le Variance.le in_term in_term' &&
-    option_le Variance.le in_type in_type')
+     option_le Variance.le in_term in_term' &&
+     option_le Variance.le in_type in_type')
     (* Option.equal Sorts.QVar.Set.equal under_impred_qvars under_impred_qvars') Does not matter for subtyping *)
 
-  (* let term_variance { in_binders; in_term; in_type = _ }  =
-    let in_binders = Variance.sup_variances (List.map snd in_binders) in
-    let sup_opt = Option.union Variance.sup in
-    sup_opt in_term in_binders
-   *)
+  (* let sup_opt_variance x y = Option.default Variance.Irrelevant (Option.union Variance.sup x y) *)
+
   let max_binder = function
     | [] -> None
     | i :: vs ->
@@ -374,24 +376,25 @@ struct
     | None -> binderv
     | Some vterm -> Variance.sup binderv vterm
 
-  let variance_and_principality_app nargs vocc =
+  let typing_and_cumul_variance_app ?(with_type=true) nargs vocc =
     let open Variance in
-    let is_applied_enough, principal_in_binder =
+    let is_applied_enough, variance_in_binders =
       match vocc.in_binders with
-      | None, _ -> false, false
+      | None, _ -> false, Irrelevant
       | Some v, li ->
         match nargs with
-        | FullyApplied -> true, false
+        | FullyApplied -> true, Irrelevant
         | NumArgs nargs ->
-          if List.exists (fun k -> k >= nargs) li then false, v <> Irrelevant
-          else true, false
+          if List.exists (fun k -> k >= nargs) li then false, v
+          else true, Irrelevant
     in
-    let principal =
-      match vocc.in_type with
-      | Some v -> if v == Irrelevant then principal_in_binder else true
-      | None -> principal_in_binder
+    let binders_term_variance = Variance.sup variance_in_binders (Option.default Irrelevant vocc.in_term) in
+    let typing_variance =
+      if binders_term_variance == Irrelevant then Irrelevant
+      else if with_type then Variance.sup binders_term_variance (Option.default Irrelevant vocc.in_type)
+      else binders_term_variance
     in
-    let variance =
+    let cumul_variance =
       match fst vocc.in_binders, vocc.in_term with
       | None, Some v -> v
       | Some v, None ->
@@ -402,9 +405,9 @@ struct
         else Variance.sup v v'
       | None, None -> Irrelevant
     in
-    variance, principal
+    typing_variance, cumul_variance
 
-  let variance_and_principality ~nargs vocc = variance_and_principality_app (NumArgs nargs) vocc
+  let typing_and_cumul_variance ~nargs vocc = typing_and_cumul_variance_app (NumArgs nargs) vocc
 
   let eq_constraint nargs csts vocc =
     let variance = variance_app nargs vocc in

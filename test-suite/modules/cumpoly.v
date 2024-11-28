@@ -9,7 +9,7 @@ Set Universe Polymorphism.
 *)
 
 Module Type T.
-Parameter t@{+i|Set <= i} : Type@{i}.
+Cumulative Parameter t@{+i|Set <= i} : Type@{i}.
 Cumulative Inductive I@{+i|Set <= i} : Type@{i} := C : t@{i} -> I.
 End T.
 

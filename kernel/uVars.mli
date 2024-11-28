@@ -45,6 +45,8 @@ sig
 
   val equal : t -> t -> bool
 
+  val opp : t -> t
+  (** Flips Co and Contra variance, no-op on Invariant and Irrelevant *)
 end
 
 type application = FullyApplied | NumArgs of int
@@ -142,9 +144,9 @@ sig
 
   val term_variance_pos : t -> VariancePos.t
 
-  val variance_and_principality : nargs:int -> t -> Variance.t * bool
+  val typing_and_cumul_variance : nargs:int -> t -> Variance.t * Variance.t
 
-  val variance_and_principality_app : application -> t -> Variance.t * bool
+  val typing_and_cumul_variance_app : ?with_type:bool -> application -> t -> Variance.t * Variance.t
 
   val variance_app : application -> t -> Variance.t
 

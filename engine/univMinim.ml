@@ -50,7 +50,7 @@ let choose_canonical ctx flexible s =
 let variance_info u us (variances : InferCumulativity.variances) =
   let open UVars.Variance in
   match Level.Map.find_opt u variances with
-  | None -> if UnivFlex.mem u us then Irrelevant, Irrelevant, false, None else Invariant, Invariant, true, None
+  | None -> if UnivFlex.mem u us then Irrelevant, Irrelevant, Irrelevant, None else Invariant, Invariant, Invariant, None
   | Some occs ->
     let termv, typev, principal = term_type_variances occs in
     Option.default Irrelevant termv, Option.default Irrelevant typev, principal, occs.infer_under_impred_qvars
@@ -150,25 +150,31 @@ let simplify_variables partial ctx us variances graph =
   in
   let simplify_min u (ctx, us, variances, graph as acc) =
     (* u is an undefined flexible variable, lookup its variance information *)
-    let term_variance, type_variance, principal, impred = variance_info u us variances in
+    let term_variance, type_variance, typing_variance, impred = variance_info u us variances in
     let open UVars.Variance in
-    if not principal then
-      (* The universe does not occur in the principal type of the application where it appears *)
+    if typing_variance == Irrelevant then
+      (* The universe does not occur relevantly in the principal type of the expressions where it appears *)
       match type_variance with
       | Irrelevant -> arbitrary u acc
       | Covariant -> minimize u acc
-      | Contravariant -> maximize u acc
+      | Contravariant -> acc (* Do not maximize at first, as it would break the template hacks with max (0, ...) *)
       | Invariant -> acc
     else
-      match term_variance, type_variance with
+      match typing_variance with
+      | Covariant when not partial -> minimize u acc
+      | Contravariant when not partial ->
+        (* Do not maximize at first, as it would break template hacks with max(0,_) *) acc
+      | Invariant -> acc
+      | _ ->
+      (* match term_variance, type_variance with
       | Irrelevant, Irrelevant -> arbitrary u acc
       | (Covariant | Irrelevant), Covariant when not partial -> minimize u acc
-      | _, _ ->
+      | _, _ -> *)
         match impred with
         | None -> (* Unused variable *) minimize u acc
         | Some Predicative -> (* Used in some predicative contexts *) acc
         | Some (Impredicative qs) ->
-          if Sorts.QVar.Set.is_empty qs then collapse_to_zero u acc
+          if not partial && Sorts.QVar.Set.is_empty qs then collapse_to_zero u acc
           else acc
   in
   let fold_min u (ctx, us, variances, graph as acc) =
@@ -178,14 +184,14 @@ let simplify_variables partial ctx us variances graph =
   let acc = Level.Set.fold fold_min dom (ctx, us, variances, graph) in
   let simplify_max u (ctx, us, variances, graph as acc) =
     (* u is an undefined flexible variable, lookup its variance information *)
-    let term_variance, type_variance, principal, _impred_qvars = variance_info u us variances in
-    if not principal then
+    let term_variance, type_variance, typing_variance, _impred_qvars = variance_info u us variances in
+    if typing_variance == Irrelevant then
       maximize u acc
     else
       let open UVars.Variance in
-      match term_variance, type_variance with
-      | (Covariant | Irrelevant), Contravariant when not partial -> maximize u acc
-      | _, _ -> acc
+      match term_variance, type_variance, typing_variance with
+      | (Covariant | Irrelevant), Contravariant, (Irrelevant | Contravariant) when not partial -> maximize u acc
+      | _, _, _ -> acc
   in
   let fold_max u (ctx, us, variances, graph as acc) =
     if UnivFlex.is_defined u us then acc
@@ -264,7 +270,7 @@ let new_minimize_weak ctx us weak (g, variances) =
         let levels = Universe.levels b in
         let sup_variances = sup_variances variances (Level.Set.add a levels) in
         match InferCumulativity.term_type_variances sup_variances with
-        | (None | Some UVars.Variance.Irrelevant), (None | Some UVars.Variance.Irrelevant), false -> (* Irrelevant *)
+        | (None | Some UVars.Variance.Irrelevant), (None | Some UVars.Variance.Irrelevant), Irrelevant -> (* Irrelevant *)
           let variances =
             Level.Set.fold (fun bl variances -> set_variance variances bl sup_variances) levels variances
           in

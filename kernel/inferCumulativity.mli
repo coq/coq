@@ -25,7 +25,7 @@ type infer_variance_occurrence =
   { infer_binders : infer_binders;
     infer_term : mode * UVars.Variance.t option;
     infer_type : mode * UVars.Variance.t option;
-    infer_principal : bool;
+    infer_variance : Variance.t;
     infer_under_impred_qvars : impred_qvars }
 
 val default_occ : infer_variance_occurrence
@@ -55,10 +55,11 @@ val pr_variances : (Univ.Level.t -> Pp.t) -> variances -> Pp.t
 val union_variances : variances -> variances -> variances
 
 (* Compute the variance in the binders and term and separately, the variance in the type.
-   The boolean indicates if the universe appears in the principal type of any of the
-   subexpressions where it occurs. *)
+   The last variance represents the supremum of the variances associated to each occurrence
+   of the level within the term, useful for determining if a level can be minimized without
+  affecting the principal type of the subexpressions. *)
 val term_type_variances : infer_variance_occurrence ->
-    Variance.t option * Variance.t option * bool
+    Variance.t option * Variance.t option * Variance.t
 
 (* Compute the variance in the binders and term and separately, the variance in the type *)
 val binders_term_and_type_variances : infer_variance_occurrence -> Variance.t option * Variance.t option * bool
@@ -69,10 +70,6 @@ module Inf : sig
   type status
 
   val pr : (Level.t -> Pp.t) -> status -> Pp.t
-
-  val infer_level_eq : principal:bool -> impred_qvars -> Level.t -> status -> status
-  val infer_level_leq : principal:bool -> impred_qvars -> Level.t -> status -> status
-  val infer_level_geq : principal:bool -> impred_qvars -> Level.t -> status -> status
 
   val get_infer_mode : status -> bool
   val set_infer_mode : bool -> status -> status

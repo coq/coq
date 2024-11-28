@@ -49,7 +49,7 @@ type infer_variance_occurrence =
   { infer_binders : infer_binders;
     infer_term : mode * UVars.Variance.t option;
     infer_type : mode * UVars.Variance.t option;
-    infer_principal : bool;
+    infer_variance : Variance.t;
     infer_under_impred_qvars : impred_qvars }
 
 type variances = infer_variance_occurrence Univ.Level.Map.t
@@ -57,7 +57,7 @@ let default_occ =
   { infer_binders = (Infer, (None, []));
     infer_term = (Infer, None);
     infer_type = (Infer, None);
-    infer_principal = false;
+    infer_variance = Irrelevant;
     infer_under_impred_qvars = None }
 
 let make_checked_occ ~infer_in_type
@@ -65,13 +65,14 @@ let make_checked_occ ~infer_in_type
   { infer_binders = ((if infer_in_type then Infer else Check), in_binders);
     infer_term = Check, in_term;
     infer_type = (if infer_in_type then Infer else Check), in_type;
-    infer_principal = false (* ignored when checking *);
+    infer_variance = Irrelevant; (* ignored when checking *)
     infer_under_impred_qvars = under_impred_qvars }
 
 let forget_infer_variance_occurrence
-  { infer_binders; infer_term; infer_type; infer_principal = _; infer_under_impred_qvars = impred_qvars } =
+  { infer_binders; infer_term; infer_type;
+    infer_variance = _; infer_under_impred_qvars = impred_qvars } =
   UVars.VarianceOccurrence.{ in_binders = snd infer_binders;
-    in_term = snd infer_term;
+    in_term = (snd infer_term);
     in_type = snd infer_type;
     under_impred_qvars = impred_qvars }
 
@@ -87,13 +88,13 @@ let pr_variance_occurrence (occ : infer_variance_occurrence) =
       prlist_with_sep pr_comma (fun i -> pr_nth (succ i)) bs ++ str (String.plural (List.length bs) " binder")] in
   let pr_term (m, v) = [spc () ++ pr_mode m ++ str": " ++ pr_opt Variance.pr v ++ str" in term"] in
   let pr_type (m, v) = [spc () ++ pr_mode m ++ str": " ++ pr_opt Variance.pr v ++ str" in type"] in
-  let pr_principal = if occ.infer_principal then [str"in principal type"] else [] in
+  let pr_infer_variance = [str"in " ++ Variance.pr occ.infer_variance ++ str" position for typing"] in
   let pr_impred =
     match occ.infer_under_impred_qvars with
     | Some _ as x -> [UVars.pr_impred_qvars x]
     | None -> []
   in
-  let variances = pr_binders occ.infer_binders @ pr_term occ.infer_term @ pr_type occ.infer_type @ pr_principal @ pr_impred in
+  let variances = pr_infer_variance @ pr_binders occ.infer_binders @ pr_term occ.infer_term @ pr_type occ.infer_type @ pr_impred in
     if List.is_empty variances then mt ()
     else hov 0 (str"(" ++ prlist_with_sep pr_comma identity variances ++ str")")
 
@@ -135,17 +136,20 @@ let rec union_binders l1 l2 =
     then i1 :: union_binders t1 l2
     else i2 :: union_binders l1 t2
 
-let sup_occs { infer_binders = (mode, (bindersv, binders)); infer_term; infer_type; infer_principal; infer_under_impred_qvars }
+let sup_occs { infer_binders = (mode, (bindersv, binders)); infer_term; infer_type;
+   infer_variance; infer_under_impred_qvars }
   { infer_binders = (mode', (bindersv', binders')); infer_term = infer_term';
-    infer_type = infer_type'; infer_principal = infer_principal';
+    infer_type = infer_type';
+    infer_variance = infer_variance';
     infer_under_impred_qvars = infer_under_impred_qvars' } =
   let infer_binders = (mode_sup mode mode', (Option.union Variance.sup bindersv bindersv', union_binders binders binders')) in
   let mode_var_sup (mode, v) (mode', v') = (mode_sup mode mode', Option.union Variance.sup v v') in
   let infer_term = mode_var_sup infer_term infer_term' in
   let infer_type = mode_var_sup infer_type infer_type' in
-  let infer_principal = infer_principal || infer_principal' in
+  let infer_variance = Variance.sup infer_variance infer_variance' in
   let infer_under_impred_qvars = union_impred_qvars infer_under_impred_qvars infer_under_impred_qvars' in
-  { infer_binders; infer_term; infer_type; infer_principal; infer_under_impred_qvars }
+  { infer_binders; infer_term; infer_type;
+    infer_variance; infer_under_impred_qvars }
 
 let union_variances : variances -> variances -> variances =
   let union _ x y = Some (sup_occs x y) in
@@ -171,7 +175,7 @@ let binder_pos (infer_binders, pos) =
 
 let occurrence_to_variance_pos
   ({ infer_binders = (modeb, infer_binders); infer_term = (modet, infer_term);
-     infer_type = (modety, infer_type); infer_principal = _;
+     infer_type = (modety, infer_type); infer_variance = _;
      infer_under_impred_qvars = _ } : infer_variance_occurrence) =
   let open Position in
   let binders = binder_pos infer_binders in
@@ -183,7 +187,7 @@ let occurrence_to_variance_pos
 
 let term_type_variances
   ({ infer_binders = (_, (infer_binders, _)); infer_term = (_, infer_term); infer_type = (_, infer_type);
-     infer_principal; infer_under_impred_qvars = _ } : infer_variance_occurrence) =
+     infer_variance; infer_under_impred_qvars = _ } : infer_variance_occurrence) =
   let sup_opt x y =
     match x, y with
     | None, None -> x
@@ -191,10 +195,11 @@ let term_type_variances
     | None, Some _ -> y
     | Some v, Some v' -> Some (UVars.Variance.sup v v')
   in
-  infer_term, sup_opt infer_binders infer_type, infer_principal
+  infer_term, sup_opt infer_binders infer_type, infer_variance
 
 let binders_term_and_type_variances ({ infer_binders = (_, (infer_binders, _)); infer_term = (_, infer_term);
-  infer_type = (_, infer_type); infer_principal; infer_under_impred_qvars = _ } : infer_variance_occurrence) =
+  infer_type = (_, infer_type);
+  infer_variance; infer_under_impred_qvars = _ } : infer_variance_occurrence) =
   let sup_opt x y =
     match x, y with
     | None, None -> x
@@ -202,7 +207,7 @@ let binders_term_and_type_variances ({ infer_binders = (_, (infer_binders, _)); 
     | None, Some _ -> y
     | Some v, Some v' -> Some (UVars.Variance.sup v v')
   in
-  sup_opt infer_binders infer_term, infer_type, infer_principal
+  sup_opt infer_binders infer_term, infer_type, infer_variance != Irrelevant
 
 
 type pre_variances = (Univ.Level.t * VarianceOccurrence.t option) array
@@ -213,10 +218,10 @@ module Inf : sig
 
   val pr : (Level.t -> Pp.t) -> status -> Pp.t
 
-  val infer_level_eq : principal:bool -> impred_qvars -> Level.t -> status -> status
-  val infer_level_leq : principal:bool -> impred_qvars -> Level.t -> status -> status
-  val infer_level_geq : principal:bool -> impred_qvars -> Level.t -> status -> status
-  val infer_level_principal : impred_qvars -> Level.t -> status -> status
+  val infer_level_eq : typing_variance:Variance.t -> impred_qvars -> Level.t -> status -> status
+  val infer_level_leq : typing_variance:Variance.t -> impred_qvars -> Level.t -> status -> status
+  val infer_level_geq : typing_variance:Variance.t -> impred_qvars -> Level.t -> status -> status
+  val infer_level_typing_variance : typing_variance:Variance.t -> impred_qvars -> Level.t -> status -> status
 
   val get_infer_mode : status -> bool
   val set_infer_mode : bool -> status -> status
@@ -278,36 +283,30 @@ end = struct
         | _ -> i' :: aux binders'
     in (Some variance, aux binders)
 
-  let update_variance ~principal variances q u variance =
+  let update_variance ~typing_variance variances q u variance =
     let upd = function
       | None -> assert false
       | Some occs ->
         let open Position in
-        let infer_principal = principal || occs.infer_principal in
+        let infer_variance = Variance.sup typing_variance occs.infer_variance in
         let infer_under_impred_qvars = union_impred_qvars occs.infer_under_impred_qvars q in
         let occs' = match variances.position with
         | InBinder i ->
           let (mode, binders) = occs.infer_binders in
-          { occs with infer_binders = (mode, update_binder_variance binders i variance); infer_principal;
-            infer_under_impred_qvars }
+          { occs with infer_binders = (mode, update_binder_variance binders i variance);
+            infer_variance; infer_under_impred_qvars }
         | InTerm ->
           let (mode, _) = occs.infer_term in
-          { occs with infer_term = (mode, Some variance); infer_principal; infer_under_impred_qvars }
+          { occs with infer_term = (mode, Some variance);
+            infer_variance; infer_under_impred_qvars }
         | InType ->
           let (mode, _) = occs.infer_type in
-          { occs with infer_type = (mode, Some variance); infer_principal; infer_under_impred_qvars }
+          { occs with infer_type = (mode, Some variance);
+            infer_variance; infer_under_impred_qvars }
         in Some occs'
     in {variances with univs = Level.Map.update u upd variances.univs}
 
-
-  let set_principal q u variances =
-    let upd = function
-      | None -> None
-      | Some occ -> Some { occ with infer_principal = true; infer_under_impred_qvars = union_impred_qvars occ.infer_under_impred_qvars q }
-    in
-    { variances with univs = Level.Map.update u upd variances.univs }
-
-  let infer_level_cmp ~principal q variance u variances =
+  let infer_level_cmp ~typing_variance q variance u variances =
     match get_variance_at_position variances u with
     | None -> variances
     | Some (Check, expected) ->
@@ -315,12 +314,20 @@ end = struct
       else raise (BadVariance (u, (expected, variances.position), (variance, variances.position)))
     | Some (Infer, inferred) ->
       if not variances.infer_mode then raise NotInferring;
-      update_variance ~principal variances q u (Variance.sup inferred variance)
+      update_variance ~typing_variance variances q u (Variance.sup inferred variance)
 
-  let infer_level_eq ~principal q u variances = infer_level_cmp ~principal q Invariant u variances
-  let infer_level_leq ~principal q u variances = infer_level_cmp ~principal q Covariant u variances
-  let infer_level_geq ~principal q u variances = infer_level_cmp ~principal q Contravariant u variances
-  let infer_level_principal q u variances = set_principal q u variances
+  let infer_level_eq ~typing_variance q u variances = infer_level_cmp ~typing_variance q Invariant u variances
+  let infer_level_leq ~typing_variance q u variances = infer_level_cmp ~typing_variance q Covariant u variances
+  let infer_level_geq ~typing_variance q u variances = infer_level_cmp ~typing_variance q Contravariant u variances
+
+  let infer_level_typing_variance ~typing_variance q u variances =
+    let upd = function
+      | None -> None
+      | Some occ -> Some { occ with infer_variance = typing_variance;
+        infer_under_impred_qvars = union_impred_qvars occ.infer_under_impred_qvars q }
+    in
+    { variances with univs = Level.Map.update u upd variances.univs }
+
 
   let start ~infer_in_type univs position =
     { univs = of_variance_occurrences ~infer_in_type univs; orig_array = univs; infer_mode = true; position}
@@ -374,9 +381,11 @@ let variance_occurrence_to_variance_pos VarianceOccurrence.{ in_binders; in_term
 end
 open Inf
 
+type is_type = IsType | IsTerm
+
 let infer_generic_instance_eq variances u =
   Array.fold_left (fun variances u ->
-    Level.Set.fold (fun l -> infer_level_eq ~principal:true None l) (Universe.levels u) variances)
+    Level.Set.fold (fun l -> infer_level_eq ~typing_variance:Invariant None l) (Universe.levels u) variances)
     variances u
 
 let instance_univs u = snd (Instance.to_array u)
@@ -405,36 +414,38 @@ let compute_impred_qvars qs vocc =
   let vars = UVars.VarianceOccurrence.under_impred_qvars vocc in
   update_impred_qvars (fun qv -> Option.map (fun idx -> qs.(idx)) (Sorts.QVar.var_index qv)) vars
 
-let infer_cumulative_instance cv_pb nargs gvariances variances u =
+(** Compute variances from f@{u1 ... un} knowing f@{l1(vn) ... ln(vn)} variance information *)
+let infer_cumulative_instance cv_pb (is_type, _appvariance) nargs gvariances variances u =
   let qs, us = Instance.to_array u in
   debug_infer_term Pp.(fun () -> str"infer_cumulative_instance: " ++ Variances.pr gvariances);
   Array.fold_left2 (fun variances vocc u ->
-    let variance, principal = VarianceOccurrence.variance_and_principality_app nargs vocc in
+    let typing_variance, cumul_variance = VarianceOccurrence.typing_and_cumul_variance_app ~with_type:(is_type == IsTerm) nargs vocc in
     let q = compute_impred_qvars qs vocc in
-    match cv_pb, variance with
+    let typing_variance = match cv_pb with Conv | Cumul -> typing_variance | InvCumul -> Variance.opp typing_variance in
+    match cv_pb, cumul_variance with
     | _, Irrelevant ->
-      if principal then Level.Set.fold (infer_level_principal q) (Universe.levels u) variances else variances
+      if typing_variance != Irrelevant then Level.Set.fold (infer_level_typing_variance ~typing_variance q) (Universe.levels u) variances else variances
     | _, Invariant
     | Conv, (Covariant | Contravariant) ->
       (* Co/contravariant in invariant position, becomes invariant *)
-      Level.Set.fold (infer_level_eq ~principal q) (Universe.levels u) variances
+      Level.Set.fold (infer_level_eq ~typing_variance q) (Universe.levels u) variances
     | Cumul, Covariant ->
       (* Covariant in covariant position -> covariant *)
-      Level.Set.fold (infer_level_leq ~principal q) (Universe.levels u) variances
+      Level.Set.fold (infer_level_leq ~typing_variance q) (Universe.levels u) variances
     | Cumul, Contravariant ->
       (* Contravariant in covariant position -> contravariant *)
-      Level.Set.fold (infer_level_geq ~principal q) (Universe.levels u) variances
+      Level.Set.fold (infer_level_geq ~typing_variance q) (Universe.levels u) variances
     | InvCumul, Contravariant ->
       (* Contravariant in contravariant position -> covariant *)
-      Level.Set.fold (infer_level_leq ~principal q) (Universe.levels u) variances
+      Level.Set.fold (infer_level_leq ~typing_variance q) (Universe.levels u) variances
     | InvCumul, Covariant ->
       (* Covariant in contravariant position -> contravariant *)
-      Level.Set.fold (infer_level_geq ~principal q) (Universe.levels u) variances)
+      Level.Set.fold (infer_level_geq ~typing_variance q) (Universe.levels u) variances)
     variances
     (Variances.repr gvariances)
     us
 
-let infer_inductive_instance cv_pb env variances ind nargs u =
+let infer_inductive_instance cv_pb variance env variances ind nargs u =
   if not (Environ.mem_mind (fst ind) env) then
     infer_generic_instance_eq variances (instance_univs u)
   else
@@ -442,7 +453,7 @@ let infer_inductive_instance cv_pb env variances ind nargs u =
   let u = extend_ind_instance mind u in
   match extended_mind_variance mind with
   | None -> infer_generic_instance_eq variances (instance_univs u)
-  | Some mind_variance -> infer_cumulative_instance cv_pb (UVars.NumArgs nargs) mind_variance variances u
+  | Some mind_variance -> infer_cumulative_instance cv_pb variance (UVars.NumArgs nargs) mind_variance variances u
 
 let constructor_variances _mind _ind _ctor variance =
   (* let npars = mind.Declarations.mind_nparams in *)
@@ -451,7 +462,7 @@ let constructor_variances _mind _ind _ctor variance =
   let map vocc = { vocc with in_type = vocc.in_term; in_term = None } in
   Variances.make (Array.map map (Variances.repr variance))
 
-let infer_constructor_instance_eq env variances ((mi,ind),ctor) nargs u =
+let infer_constructor_instance_eq env variance variances ((mi,ind),ctor) nargs u =
   if not (Environ.mem_mind mi env) then
     infer_generic_instance_eq variances (instance_univs u)
   else
@@ -461,31 +472,31 @@ let infer_constructor_instance_eq env variances ((mi,ind),ctor) nargs u =
   | None -> infer_generic_instance_eq variances (instance_univs u)
   | Some mind_variance ->
     let cstr_variance = constructor_variances mind ind ctor mind_variance in
-    infer_cumulative_instance Cumul (UVars.NumArgs nargs) cstr_variance variances u
+    infer_cumulative_instance Cumul variance (UVars.NumArgs nargs) cstr_variance variances u
 
     (*if not (Int.equal (UCompare.constructor_cumulativity_arguments (mind, ind, ctor)) nargs)
     then infer_generic_instance_eq variances u
     else variances (* constructors are convertible at common supertype *) *)
 
-let infer_sort cv_pb variances s =
+let infer_sort cv_pb (_is_type, typing_variance) variances s =
   let impred_qvars = Some (impred_qvars_of_quality (Sorts.quality s)) in
   let levels = Sorts.levels s in
   match cv_pb with
   | Conv ->
-    Level.Set.fold (infer_level_eq ~principal:true impred_qvars) levels variances
+    Level.Set.fold (infer_level_eq ~typing_variance impred_qvars) levels variances
   | Cumul ->
-    Level.Set.fold (infer_level_leq ~principal:true impred_qvars) levels variances
+    Level.Set.fold (infer_level_leq ~typing_variance impred_qvars) levels variances
   | InvCumul ->
-    Level.Set.fold (infer_level_geq ~principal:true impred_qvars) levels variances
+    Level.Set.fold (infer_level_geq ~typing_variance impred_qvars) levels variances
 
-let infer_constant cv_pb env nargs variances has_def (con,u) =
+let infer_constant cv_pb variance env nargs variances has_def (con,u) =
   let cb = Environ.lookup_constant con env in
   let u = extend_con_instance cb u in
   match extended_const_variance cb with
   | None ->
     let variances = if has_def then set_infer_mode false variances else variances in
     infer_generic_instance_eq variances (instance_univs u)
-  | Some cst_variance -> infer_cumulative_instance cv_pb nargs cst_variance variances u
+  | Some cst_variance -> infer_cumulative_instance cv_pb variance nargs cst_variance variances u
 
 let whd_stack (infos, tab) hd stk = CClosure.whd_stack infos tab hd stk
 
@@ -494,103 +505,102 @@ let flip_pb = function
   | Cumul -> InvCumul
   | InvCumul -> Cumul
 
-let rec infer_fterm cv_pb infos variances hd stk =
+let rec infer_fterm cv_pb (variance : is_type * Variance.t) infos variances hd stk =
   Control.check_for_interrupt ();
   let hd,stk = whd_stack infos hd stk in
   let open CClosure in
-  debug_infer_term Pp.(fun () -> str"infer_fterm " ++ pr_mode (if Inf.get_infer_mode variances then Infer else Check) ++  Position.pr (Inf.get_position variances) ++ str", cv_pb = " ++ pr_cumul_pb cv_pb ++ str" term: " ++ Constr.debug_print (CClosure.term_of_fconstr hd));
   let push_relevance (infos, tab) n = (push_relevance infos n, tab) in
   let push_relevances (infos, tab) n = (push_relevances infos n, tab) in
   match fterm_of hd with
   | FAtom a ->
     begin match kind a with
-      | Sort s -> infer_sort cv_pb variances s
-      | Meta _ -> infer_stack infos variances stk
+      | Sort s -> infer_sort cv_pb variance variances s
+      | Meta _ -> infer_stack variance infos variances stk
       | _ -> assert false
     end
   | FEvar (_, _, usubs, _) ->
     let variances = infer_generic_instance_eq variances (instance_univs (snd usubs))in
-    infer_stack infos variances stk
-  | FRel _ -> infer_stack infos variances stk
-  | FInt _ -> infer_stack infos variances stk
-  | FFloat _ -> infer_stack infos variances stk
-  | FString _ -> infer_stack infos variances stk
+    infer_stack variance infos variances stk
+  | FRel _ -> infer_stack variance infos variances stk
+  | FInt _ -> infer_stack variance infos variances stk
+  | FFloat _ -> infer_stack variance infos variances stk
+  | FString _ -> infer_stack variance infos variances stk
   | FFlex Names.(RelKey _ | VarKey _ as fl) ->
     (* We could try to lazily unfold but then we have to analyse the
        universes in the bodies, not worth coding at least for now. *)
     begin match unfold_ref_with_args (fst infos) (snd infos) fl stk with
-    | Some (hd,stk) -> infer_fterm cv_pb infos variances hd stk
-    | None -> infer_stack infos variances stk
+    | Some (hd,stk) -> infer_fterm cv_pb variance infos variances hd stk
+    | None -> infer_stack variance infos variances stk
     end
   | FFlex (Names.ConstKey con as fl) ->
     begin
       if not (Environ.mem_constant (fst con) (info_env (fst infos))) then
         let variances = infer_generic_instance_eq variances (snd (Instance.to_array (snd con))) in
-        let variances = infer_stack infos variances stk in
+        let variances = infer_stack variance infos variances stk in
         variances
       else
       let def = unfold_ref_with_args (fst infos) (snd infos) fl stk in
       try
         let infer_mode = get_infer_mode variances in
         let nargs = stack_args_size stk in
-        let variances = infer_constant cv_pb (info_env (fst infos)) (UVars.NumArgs nargs) variances (Option.has_some def) con in
-        let variances = infer_stack infos variances stk in
+        let variances = infer_constant cv_pb variance (info_env (fst infos)) (UVars.NumArgs nargs) variances (Option.has_some def) con in
+        let variances = infer_stack variance infos variances stk in
         set_infer_mode infer_mode variances
       with BadVariance _ | NotInferring as e ->
       match def with
       | None -> raise e
       | Some (hd,stk) ->
         debug_infer_term Pp.(fun () -> str"expanding constant: " ++ Names.GlobRef.print (Names.GlobRef.ConstRef (fst con)));
-        infer_fterm cv_pb infos variances hd stk
+        infer_fterm cv_pb variance infos variances hd stk
     end
   | FProj (_,_,c) ->
-    let variances = infer_fterm Conv infos variances c [] in
-    infer_stack infos variances stk
+    let variances = infer_fterm Conv variance infos variances c [] in
+    infer_stack variance infos variances stk
   | FLambda _ ->
     let (na,ty,bd) = destFLambda mk_clos hd in
-    let variances = infer_fterm (flip_pb cv_pb) infos variances ty [] in
-    infer_fterm cv_pb (push_relevance infos na) variances bd []
+    let variances = infer_fterm (flip_pb cv_pb) (IsType, Variance.opp (snd variance)) infos variances ty [] in
+    infer_fterm cv_pb variance (push_relevance infos na) variances bd []
   | FProd (na,dom,codom,e) ->
     let na = usubst_binder e na in
-    let variances = infer_fterm (flip_pb cv_pb) infos variances dom [] in
-    infer_fterm cv_pb (push_relevance infos na) variances (mk_clos (CClosure.usubs_lift e) codom) []
+    let variances = infer_fterm (flip_pb cv_pb) (IsType, Variance.opp (snd variance)) infos variances dom [] in
+    infer_fterm cv_pb variance (push_relevance infos na) variances (mk_clos (CClosure.usubs_lift e) codom) []
   | FInd (ind, u) ->
     let variances =
       let nargs = stack_args_size stk in
-      infer_inductive_instance cv_pb (info_env (fst infos)) variances ind nargs u
+      infer_inductive_instance cv_pb variance (info_env (fst infos)) variances ind nargs u
     in
-    infer_stack infos variances stk
+    infer_stack variance infos variances stk
   | FConstruct (ctor,u) ->
     let variances =
       let nargs = stack_args_size stk in
-      infer_constructor_instance_eq (info_env (fst infos)) variances ctor nargs u
+      infer_constructor_instance_eq (info_env (fst infos)) variance variances ctor nargs u
     in
-    infer_stack infos variances stk
+    infer_stack variance infos variances stk
   | FFix ((_,(na,tys,cl)),e) | FCoFix ((_,(na,tys,cl)),e) ->
     let n = Array.length cl in
-    let variances = infer_vect infos variances Conv (Array.map (mk_clos e) tys) in
+    let variances = infer_vect Conv variance infos variances (Array.map (mk_clos e) tys) in
     let le = CClosure.usubs_liftn n e in
     let variances =
       let na = Array.map (usubst_binder e) na in
       let infos = push_relevances infos na in
-      infer_vect infos variances Conv (Array.map (mk_clos le) cl)
+      infer_vect  Conv variance infos variances (Array.map (mk_clos le) cl)
     in
-    infer_stack infos variances stk
+    infer_stack variance infos variances stk
   | FArray (u,elemsdef,ty) -> (* False? Not implemnting irrelevance *)
     let variances = infer_generic_instance_eq variances (instance_univs u) in
-    let variances = infer_fterm Conv infos variances ty [] in
+    let variances = infer_fterm Conv (IsType, snd variance) infos variances ty [] in
     let elems, def = Parray.to_array elemsdef in
-    let variances = infer_fterm Conv infos variances def [] in
-    let variances = infer_vect infos variances Conv elems in
-    infer_stack infos variances stk
+    let variances = infer_fterm Conv (IsTerm, Invariant) infos variances def [] in
+    let variances = infer_vect Conv (IsTerm, Invariant) infos variances elems in
+    infer_stack variance infos variances stk
 
   | FCaseInvert (_, _, _, p, _, _, br, e) ->
-    infer_case infos variances cv_pb p br e
+    infer_case cv_pb variance infos variances p br e
   (* Removed by whnf *)
   | FLOCKED | FCaseT _ | FLetIn _ | FApp _ | FLIFT _ | FCLOS _ -> assert false
   | FIrrelevant -> assert false (* TODO: use create_conv_infos below and use it? *)
 
-and infer_case infos variances cv_pb p br e =
+and infer_case cv_pb variance infos variances p br e =
   let open CClosure in
   let push_relevances (infos, tab) n = (push_relevances infos n, tab) in
   let orig_pos = get_position variances in
@@ -605,50 +615,62 @@ and infer_case infos variances cv_pb p br e =
     let ctx = Array.map (usubst_binder e) ctx in
     let infos = push_relevances infos ctx in
     let e = CClosure.usubs_liftn (Array.length ctx) e in
-    infer_fterm cv_pb infos variances (mk_clos e arity) [] in
+    infer_fterm cv_pb (IsType, Covariant) infos variances (mk_clos e arity) [] in
   let variances = set_position orig_pos variances in
   let infer_br br variances =
     let (ctx, body) = br in
     let ctx = Array.map (usubst_binder e) ctx in
     let infos = push_relevances infos ctx in
     let e = CClosure.usubs_liftn (Array.length ctx) e in
-    infer_fterm cv_pb infos variances (mk_clos e body) []
+    infer_fterm cv_pb variance infos variances (mk_clos e body) []
   in
   Array.fold_right infer_br br variances
 
-and infer_stack infos variances (stk:CClosure.stack) =
+and infer_stack variance infos variances (stk:CClosure.stack) =
   match stk with
   | [] -> variances
   | z :: stk ->
     let open CClosure in
     let variances = match z with
-      | Zapp v -> infer_vect infos variances Conv v
+      | Zapp v -> infer_vect Conv (IsTerm, Covariant) infos variances v
       | Zproj _ -> variances
-      | Zfix (fx,a) ->
-        let variances = infer_fterm Conv infos variances fx [] in
-        infer_stack infos variances a
+      | Zfix (fx,par) ->
+        let variances = infer_fterm Conv variance infos variances fx [] in
+        infer_stack (IsTerm, Covariant) infos variances par
       | ZcaseT (_,_,_,p,br,e) ->
-        infer_case infos variances Conv p br e
+        infer_case Conv variance infos variances p br e
       | Zshift _ -> variances
       | Zupdate _ -> variances
       | Zprimitive (_,_,rargs,kargs) ->
-        let variances = List.fold_left (fun variances c -> infer_fterm Conv infos variances c []) variances rargs in
-        let variances = List.fold_left (fun variances (_,c) -> infer_fterm Conv infos variances c []) variances kargs in
+        let variances = List.fold_left (fun variances c -> infer_fterm Conv (IsTerm, Covariant) infos variances c []) variances rargs in
+        let variances = List.fold_left (fun variances (_,c) -> infer_fterm Conv (IsTerm, Covariant) infos variances c []) variances kargs in
         variances
     in
-    infer_stack infos variances stk
+    infer_stack variance infos variances stk
 
-and infer_vect infos variances cv_pb v =
-  Array.fold_left (fun variances c -> infer_fterm cv_pb infos variances c []) variances v
+and infer_vect cv_pb variance infos variances v =
+  Array.fold_left (fun variances c -> infer_fterm cv_pb variance infos variances c []) variances v
 
 let infer_infos env ~evars =
   let open CClosure in
   let reds = RedFlags.red_add_transparent RedFlags.betaiotazeta TransparentState.full in
   (create_clos_infos reds ~evars env, create_tab ())
 
+let variance_of_cv_pb = function
+  | Conv -> Invariant
+  | Cumul -> Covariant
+  | InvCumul -> Contravariant
+
 let infer_term cv_pb env ~evars variances c =
   let infos = infer_infos env ~evars in
-  infer_fterm cv_pb infos variances (CClosure.inject c) []
+  let variance = variance_of_cv_pb cv_pb in
+  let is_type = if Inf.get_position variances == Position.InTerm then IsTerm else IsType in
+  let status = infer_fterm cv_pb (is_type, variance) infos variances (CClosure.inject c) [] in
+  debug_infer_term Pp.(fun () -> pr_mode (if Inf.get_infer_mode variances then Infer else Check) ++ spc () ++ str"at position " ++ Position.pr (Inf.get_position variances) ++ str", cv_pb = " ++ pr_cumul_pb cv_pb ++
+    str", variance = " ++ Variance.pr variance ++ spc () ++
+    str" term: " ++ Constr.debug_print c ++ fnl () ++
+    Inf.pr Level.raw_pr variances ++ fnl () ++ str" -> " ++ fnl () ++ Inf.pr Level.raw_pr status);
+  status
 
 let infer_named_context env ~evars variances ctx =
   let infer_typ typ (env, i, variances) =

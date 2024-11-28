@@ -1,7 +1,7 @@
 File "./output/bug_13266.v", line 17, characters 7-18:
 The command has indeed failed with message:
 Abstracting over the terms "S", "p" and "u" leads to a term
-fun (S0 : Set) (p0 : proc S0) (_ : S0) => p0 = Tick -> True
+fun (S0 : Type) (p0 : proc S0) (_ : S0) => p0 = Tick -> True
 which is ill-typed.
 Reason is: Illegal application: 
 The term "@eq" of type "forall A : Type, A -> A -> Prop"
