@@ -585,8 +585,3 @@ let f_equal =
         | e -> Proofview.tclZERO ~info e
       end
   end
-
-(* we need to be registered in case we are statically linked to avoid double loading
-   (in practice we are statically linked in coqtop.byte:
-    coqtop.byte -> coq-core.dev -> ltac2 -> cc_core) *)
-let () = Mltop.add_known_module "coq-core.plugins.cc_core"
