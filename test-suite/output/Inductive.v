@@ -17,7 +17,7 @@ Check unit ** bool.
 
 (* "option is template" *)
 About option.
-Set Printing Universes.
+Set Printing Universes. Unset Printing Universe Variances.
 About option.
 (* "option is template on xxx" *)
 
@@ -44,7 +44,6 @@ Set Universe Polymorphism.
 Polymorphic Inductive sempty@{q| |} : Type@{q|Set} := .
 
 About sempty.
-
 Polymorphic Inductive ssig@{q1 q2 q3|a b|}
   (A:Type@{q1|a})
   (B:A -> Type@{q2|b})
