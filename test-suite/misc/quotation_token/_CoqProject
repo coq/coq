@@ -1,5 +1,9 @@
 META.coq-test-suite
 -Q theories Quotation
+
+# we need -I . so coqdep can find the META
+# and -I src so ocamllibdep finds the contents
+-I .
 -I src
 
 src/quotation.mlg

@@ -119,20 +119,17 @@ let warn_legacy_loading =
                argument ignored; please remove \"" ++
           str name ++ str ":\" from your Declare ML"))
 
-let meta_files = ref []
-
 (* Transform "Declare ML %DECL" to a pair of (meta, cmxs). Something
    very similar is in ML top *)
 let declare_ml_to_file file (decl : string) =
   let legacy_decl = String.split_on_char ':' decl in
   let legacy_decl = List.map (String.split_on_char '.') legacy_decl in
-  let meta_files = !meta_files in
   match legacy_decl with
   | [package :: plugin_name] ->
-    Fl.findlib_resolve ~meta_files ~file ~package ~plugin_name
+    Fl.findlib_resolve ~file ~package ~plugin_name
   | [[cmxs]; (package :: plugin_name)] ->
     warn_legacy_loading cmxs;
-    Fl.findlib_resolve ~meta_files ~file ~package ~plugin_name
+    Fl.findlib_resolve ~file ~package ~plugin_name
   | bad_pkg ->
     CErrors.user_err Pp.(str "Failed to resolve plugin: " ++ str decl)
 
@@ -283,9 +280,6 @@ let rec treat_file old_dirname old_name =
 let treat_file_command_line old_name =
   treat_file None old_name
 
-let treat_file_coq_project where old_name =
-  treat_file None old_name
-
 (* "[sort]" outputs `.v` files required by others *)
 let sort st =
   let seen = Hashtbl.create 97 in
@@ -314,32 +308,13 @@ let sort st =
   in
   List.iter (fun (name, _) -> loop name) !vAccu
 
-let warn_project_file =
-  let category = CWarnings.CoreCategories.filesystem in
-  CWarnings.create ~name:"project-file" ~category Pp.str
-
-let treat_coqproject st f =
-  let open CoqProject_file in
-  let iter_sourced f = List.iter (fun {thing} -> f thing) in
-  let project =
-    try read_project_file ~warning_fn:warn_project_file f
-    with
-    | Parsing_error msg -> Error.cannot_parse_project_file f msg
-    | UnableToOpenProjectFile msg -> Error.cannot_open_project_file msg
-  in
-  (* EJGA: This should add to findlib search path *)
-  (* iter_sourced (fun { path } -> Loadpath.add_caml_dir st path) project.ml_includes; *)
-  iter_sourced (fun ({ path }, l) -> Loadpath.add_q_include st path l) project.q_includes;
-  iter_sourced (fun ({ path }, l) -> Loadpath.add_r_include st path l) project.r_includes;
-  iter_sourced (fun f' -> treat_file_coq_project f f') (all_files project)
-
 let add_include st (rc, r, ln) =
   if rc then
     Loadpath.add_r_include st r ln
   else
     Loadpath.add_q_include st r ln
 
-let add_findlib_dir dirs =
+let findlib_init dirs =
   let env_ocamlpath =
     try [Sys.getenv "OCAMLPATH"]
     with Not_found -> []
@@ -356,10 +331,8 @@ let init ~make_separator_hack args =
   let st = Loadpath.State.make ~boot:args.Args.boot in
   Makefile.set_write_vos args.Args.vos;
   Makefile.set_noglob args.Args.noglob;
-  Option.iter (treat_coqproject st) args.Args.coqproject;
   (* Add to the findlib search path, common with sysinit/coqinit *)
-  add_findlib_dir args.Args.ml_path;
+  findlib_init args.Args.ml_path;
   List.iter (add_include st) args.Args.vo_path;
   Makefile.set_dyndep args.Args.dyndep;
-  meta_files := args.Args.meta_files;
   st

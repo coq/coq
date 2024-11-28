@@ -53,17 +53,11 @@ let parse_META meta_file package =
      it without bumping our version requirements. TODO pass the message on once we bump. *)
   | _ -> Error.cannot_parse_meta_file package ""
 
-let rec find_parsable_META meta_files package =
-  match meta_files with
-  | [] ->
-    (try
-       let meta_file = Findlib.package_meta_file package in
-       Option.map (fun meta -> meta_file, meta) (parse_META meta_file package)
-     with Fl_package_base.No_such_package _ -> None)
-  | meta_file :: ms ->
-    if String.equal (Filename.extension meta_file) ("." ^ package)
-    then Option.map (fun meta -> meta_file, meta) (parse_META meta_file package)
-    else find_parsable_META ms package
+let find_parsable_META package =
+  (try
+     let meta_file = Findlib.package_meta_file package in
+     Option.map (fun meta -> meta_file, meta) (parse_META meta_file package)
+   with Fl_package_base.No_such_package _ -> None)
 
 let rec find_plugin_field_opt fld = function
   | [] ->
@@ -88,9 +82,9 @@ let rec find_plugin meta_file plugin_name path p { Fl_metascanner.pkg_defs ; pkg
     let path = path @ [find_plugin_field "directory" "." c.Fl_metascanner.pkg_defs] in
     find_plugin meta_file plugin_name path ps c
 
-let findlib_resolve ~meta_files ~file ~package ~plugin_name =
+let findlib_resolve ~file ~package ~plugin_name =
   let (meta_file, meta) =
-    match find_parsable_META meta_files package with
+    match find_parsable_META package with
     | None   -> Error.no_meta file package
     | Some v -> v
   in
