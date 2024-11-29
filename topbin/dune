@@ -51,8 +51,8 @@
 
 ; Workers
 (executable
- (name coqworker_bin)
- (modules coqworker_bin)
+ (name coqworker)
+ (modules coqworker)
  (modes exe byte)
  (libraries rocq-runtime.toplevel))
  ; Adding -ccopt -flto to links options could be interesting, however,
@@ -62,5 +62,5 @@
  (section libexec)
  (package rocq-runtime)
  (files
-  (coqworker_bin.exe as coqworker)
-  (coqworker_bin.bc as coqworker.byte)))
+  (coqworker.exe as coqworker)
+  (coqworker.bc as coqworker.byte)))
