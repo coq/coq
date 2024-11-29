@@ -60,12 +60,12 @@ let () = Pptactic.ssr_loaded_hook is_ssr_loaded
 
 }
 
-DECLARE PLUGIN "coq-core.plugins.ssreflect"
+DECLARE PLUGIN "rocq-runtime.plugins.ssreflect"
 
 {
 
 let ssrtac_name name = {
-  mltac_plugin = "coq-core.plugins.ssreflect";
+  mltac_plugin = "rocq-runtime.plugins.ssreflect";
   mltac_tactic = "ssr" ^ name;
 }
 
@@ -105,7 +105,7 @@ let register_ssrtac name f prods =
   } in
   let obj () =
     Lib.add_leaf (inSsrGrammar (key, body, parule)) in
-  Mltop.declare_cache_obj obj "coq-core.plugins.ssreflect";
+  Mltop.declare_cache_obj obj "rocq-runtime.plugins.ssreflect";
   key
 
 let cast_arg wit v = Taccoerce.Value.cast (Genarg.topwit wit) v
@@ -117,7 +117,7 @@ let cast_arg wit v = Taccoerce.Value.cast (Genarg.topwit wit) v
 (* Defining grammar rules with "xx" in it automatically declares keywords too,
  * we thus save the lexer to restore it at the end of the file *)
 let frozen_lexer = ref (Procq.get_keyword_state ()) ;;
-let () = Mltop.add_init_function "coq-core.plugins.ssreflect" (fun () ->
+let () = Mltop.add_init_function "rocq-runtime.plugins.ssreflect" (fun () ->
     frozen_lexer := Procq.get_keyword_state ())
 
 let tacltop = (LevelLe 5)
@@ -1745,7 +1745,7 @@ type ssrarg = ssrfwdview * (ssreqid * (cpattern ssragens * ssripats))
 (* The user is supposed to Require Import ssreflect or Require ssreflect   *)
 (* and Import ssreflect.SsrSyntax to obtain these keywords and as a         *)
 (* consequence the extended ssreflect grammar.                             *)
-let () = Mltop.add_init_function "coq-core.plugins.ssreflect" (fun () ->
+let () = Mltop.add_init_function "rocq-runtime.plugins.ssreflect" (fun () ->
       Procq.set_keyword_state !frozen_lexer) ;;
 
 module Internal = struct

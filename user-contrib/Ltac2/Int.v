@@ -12,26 +12,26 @@ Require Import Ltac2.Init.
 
 Ltac2 Type t := int.
 
-Ltac2 @ external equal : int -> int -> bool := "coq-core.plugins.ltac2" "int_equal".
-Ltac2 @ external compare : int -> int -> int := "coq-core.plugins.ltac2" "int_compare".
-Ltac2 @ external add : int -> int -> int := "coq-core.plugins.ltac2" "int_add".
-Ltac2 @ external sub : int -> int -> int := "coq-core.plugins.ltac2" "int_sub".
-Ltac2 @ external mul : int -> int -> int := "coq-core.plugins.ltac2" "int_mul".
+Ltac2 @ external equal : int -> int -> bool := "rocq-runtime.plugins.ltac2" "int_equal".
+Ltac2 @ external compare : int -> int -> int := "rocq-runtime.plugins.ltac2" "int_compare".
+Ltac2 @ external add : int -> int -> int := "rocq-runtime.plugins.ltac2" "int_add".
+Ltac2 @ external sub : int -> int -> int := "rocq-runtime.plugins.ltac2" "int_sub".
+Ltac2 @ external mul : int -> int -> int := "rocq-runtime.plugins.ltac2" "int_mul".
 
 (* Note: unlike Coq Z division, Ltac2 matches OCaml division and rounds towards 0, so 1/-2 = 0 *)
-Ltac2 @ external div : int -> int -> int := "coq-core.plugins.ltac2" "int_div".
+Ltac2 @ external div : int -> int -> int := "rocq-runtime.plugins.ltac2" "int_div".
 
-Ltac2 @ external mod : int -> int -> int := "coq-core.plugins.ltac2" "int_mod".
-Ltac2 @ external neg : int -> int := "coq-core.plugins.ltac2" "int_neg".
-Ltac2 @ external abs : int -> int := "coq-core.plugins.ltac2" "int_abs".
+Ltac2 @ external mod : int -> int -> int := "rocq-runtime.plugins.ltac2" "int_mod".
+Ltac2 @ external neg : int -> int := "rocq-runtime.plugins.ltac2" "int_neg".
+Ltac2 @ external abs : int -> int := "rocq-runtime.plugins.ltac2" "int_abs".
 
-Ltac2 @ external asr : int -> int -> int := "coq-core.plugins.ltac2" "int_asr".
-Ltac2 @ external lsl : int -> int -> int := "coq-core.plugins.ltac2" "int_lsl".
-Ltac2 @ external lsr : int -> int -> int := "coq-core.plugins.ltac2" "int_lsr".
-Ltac2 @ external land : int -> int -> int := "coq-core.plugins.ltac2" "int_land".
-Ltac2 @ external lor : int -> int -> int := "coq-core.plugins.ltac2" "int_lor".
-Ltac2 @ external lxor : int -> int -> int := "coq-core.plugins.ltac2" "int_lxor".
-Ltac2 @ external lnot : int -> int := "coq-core.plugins.ltac2" "int_lnot".
+Ltac2 @ external asr : int -> int -> int := "rocq-runtime.plugins.ltac2" "int_asr".
+Ltac2 @ external lsl : int -> int -> int := "rocq-runtime.plugins.ltac2" "int_lsl".
+Ltac2 @ external lsr : int -> int -> int := "rocq-runtime.plugins.ltac2" "int_lsr".
+Ltac2 @ external land : int -> int -> int := "rocq-runtime.plugins.ltac2" "int_land".
+Ltac2 @ external lor : int -> int -> int := "rocq-runtime.plugins.ltac2" "int_lor".
+Ltac2 @ external lxor : int -> int -> int := "rocq-runtime.plugins.ltac2" "int_lxor".
+Ltac2 @ external lnot : int -> int := "rocq-runtime.plugins.ltac2" "int_lnot".
 
 Ltac2 lt (x : int) (y : int) := equal (compare x y) -1.
 Ltac2 gt (x : int) (y : int) := equal (compare x y) 1.

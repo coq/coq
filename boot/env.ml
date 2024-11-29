@@ -18,7 +18,7 @@ module Path = struct
 
 end
 
-(* For now just a pointer to coq/lib (for .vo) and coq-core/lib (for plugins)  *)
+(* For now just a pointer to coq/lib (for .vo) and rocq-runtime/lib (for plugins)  *)
 type t =
   { core: Path.t
   ; lib : Path.t
@@ -52,7 +52,7 @@ let guess_coqlib () =
 let guess_coqcorelib lib =
   if Sys.file_exists (Path.relative lib plugins_dir)
   then lib
-  else Path.relative lib "../coq-core"
+  else Path.relative lib "../rocq-runtime"
 
 let fail_lib lib =
   let open Printf in
@@ -66,7 +66,7 @@ let fail_core plugin =
   let open Printf in
   eprintf "File not found: %s\n" plugin;
   eprintf "The path for Coq plugins is wrong.\n";
-  eprintf "Coq plugins are shipped in the coq-core package.\n";
+  eprintf "Coq plugins are shipped in the rocq-runtime package.\n";
   eprintf "Please check the COQCORELIB env variable.\n";
   exit 1
 

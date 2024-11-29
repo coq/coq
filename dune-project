@@ -1,5 +1,5 @@
 (lang dune 3.8)
-(name coq)
+(name rocq)
 
 ; We use directory targets in documentation
 (using directory-targets 0.1)
@@ -24,7 +24,7 @@
 ; Note that we use coq.opam.template to have dune add the correct opam
 ; prefix for configure
 (package
- (name coq-core)
+ (name rocq-runtime)
  (depends
   (ocaml (>= 4.09.0))
   (ocamlfind (>= 1.8.1))
@@ -51,9 +51,15 @@ Note that in this setup, Coq needs to be started with the -boot and
 prelude, now living in the rocq-core package."))
 
 (package
+ (name coq-core)
+ (depends
+  (rocq-runtime (= :version)))
+ (synopsis "Compatibility binaries for Coq after the Rocq renaming"))
+
+(package
  (name rocq-core)
  (depends
-  (coq-core (= :version)))
+  (rocq-runtime (= :version)))
  (depopts coq-native)
  (synopsis "The Coq Proof Assistant with its prelude")
  (description "Coq is a formal proof management system. It provides
@@ -74,7 +80,7 @@ Corelib.* and Ltac2.* namespaces."))
 (package
  (name coqide-server)
  (depends
-  (coq-core (= :version)))
+  (rocq-runtime (= :version)))
  (synopsis "The Coq Proof Assistant, XML protocol server")
  (description "Coq is a formal proof management system. It provides
 a formal language to write mathematical definitions, executable

@@ -82,7 +82,7 @@ dev-targets:
 	@echo "files that world will build. We provide some useful subtargets here:"
 	@echo ""
 	@echo "  - theories-foo: for each directory theories/Foo, build the vo files for it and set them up in _build/install/default."
-	@echo "    For instance the init target builds the prelude, combined with coq-core.install it produces a fully functional layout in _build/install/default."
+	@echo "    For instance the init target builds the prelude, combined with rocq-runtime.install it produces a fully functional layout in _build/install/default."
 
 help-install:
 	@echo ""
@@ -91,16 +91,18 @@ help-install:
 	@echo ""
 	@echo " $$ ./configure -prefix <install_prefix>"
 	@echo " $$ make dunestrap"
-	@echo " $$ dune build -p coq-core,rocq-core"
-	@echo " $$ dune install --prefix=<install_prefix> coq-core rocq-core"
+	@echo " $$ dune build -p rocq-runtime,coq-core,rocq-core"
+	@echo " $$ dune install --prefix=<install_prefix> rocq-runtime coq-core rocq-core"
 	@echo ""
 	@echo " Provided opam/dune packages are:"
 	@echo ""
-	@echo "  - coq-core: base Coq package, toplevel compilers, plugins, tools, no stdlib, no GTK"
+	@echo "  - rocq-runtime: base Rocq package, toplevel compilers, plugins, tools, no stdlib, no GTK"
+	@echo "  - coq-core: compat binaries (coqc instead of rocq compile, etc)"
 	@echo "  - rocq-core: Coq's prelude and basis of standard library"
 	@echo "  - coqide-server: XML protocol language server"
 	@echo "  - coqide: CoqIDE gtk application"
-	@echo "  - coq: meta package depending on coq-core rocq-core coq-stdlib"
+	@echo "  - coq: meta package depending on rocq-runtime coq-core rocq-core coq-stdlib"
+	@echo "    (also calls the test suite when using --with-test)"
 	@echo ""
 	@echo " To build a package, you can use:"
 	@echo ""
@@ -127,7 +129,7 @@ DUNESTRAPOPT=--root .
 
 # We regenerate always as to correctly track deps, can do better
 # We do a single call to dune as to avoid races and locking
-ifneq ($(COQ_SPLIT),) # avoid depending on local coq-core
+ifneq ($(COQ_SPLIT),) # avoid depending on local rocq-runtime
 _build/default/theories_dune_split _build/default/ltac2_dune_split .dune-stamp: FORCE
 	dune build $(DUNEOPT) $(DUNESTRAPOPT) theories_dune_split ltac2_dune_split
 	touch .dune-stamp
@@ -158,7 +160,7 @@ dunestrap: $(DUNE_FILES)
 states: dunestrap
 	dune build $(DUNEOPT) dev/shim/coqtop
 
-MAIN_TARGETS:=coq-core.install rocq-core.install coqide-server.install
+MAIN_TARGETS:=rocq-runtime.install coq-core.install rocq-core.install coqide-server.install
 
 world: dunestrap
 	dune build $(DUNEOPT) $(MAIN_TARGETS)
@@ -232,8 +234,8 @@ CONTEXT=_build/install/default
 # XXX: Port this to a dune alias so the build is hygienic!
 .PHONY: plugin-tutorial
 plugin-tutorial: dunestrap
-	dune build $(CONTEXT)/lib/coq-core/META coq-core.install theories/Init/Prelude.vo
-	+$(MAKE) OCAMLPATH=$(shell pwd)/$(CONTEXT)/lib/ COQBIN=$(shell pwd)/$(CONTEXT)/bin/ COQCORELIB=$(shell pwd)/$(CONTEXT)/lib/coq-core COQLIB=$(shell pwd)/_build/default/ -C doc/plugin_tutorial
+	dune build $(CONTEXT)/lib/rocq-runtime/META rocq-runtime.install theories/Init/Prelude.vo
+	+$(MAKE) OCAMLPATH=$(shell pwd)/$(CONTEXT)/lib/ COQBIN=$(shell pwd)/$(CONTEXT)/bin/ COQCORELIB=$(shell pwd)/$(CONTEXT)/lib/rocq-runtime COQLIB=$(shell pwd)/_build/default/ -C doc/plugin_tutorial
 
 # This is broken in a very weird way with a permission error... see
 # the rule in doc/plugin_tutorial/dune:
@@ -276,7 +278,7 @@ $(foreach subdir,$(wildcard theories/*/),$(eval $(call subtarget,$(subdir),$(she
 
 # Other common dev targets:
 #
-# dune build coq-core.install
+# dune build rocq-runtime.install
 # dune build coq.install
 # dune build coqide.install
 #

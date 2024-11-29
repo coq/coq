@@ -2,7 +2,7 @@
  (name coq_dune)
  (modules :standard \ gen_rules)
  (flags :standard -w +a-40-42)
- (libraries coq-core.coqdeplib findlib))
+ (libraries rocq-runtime.coqdeplib findlib))
 
 (executable
  (name gen_rules)

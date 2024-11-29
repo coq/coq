@@ -22,7 +22,7 @@ let () =
   match args with
   | "-v" :: _ | "--version" :: _ -> Boot.Usage.version ()
   | ("c" | "compile") :: args ->
-    let prog = Rocqshim.get_worker_path { package = "coq-core"; basename = "coqworker" } in
+    let prog = Rocqshim.get_worker_path { package = "rocq-runtime"; basename = "coqworker" } in
     let () = if debug_shim then Printf.eprintf "Using %s\n%!" prog in
     let argv = Array.of_list (prog :: "--kind=compile" :: args) in
     Rocqshim.exec_or_create_process prog argv

@@ -462,7 +462,7 @@ export PROFILING=1
 export COQ_PROFILE_COMPONENTS=command,parse_command,partac.perform
 
 # packages tied to the coq commit need to be pinned accordingly
-core_packages='coq-core rocq-core coq-stdlib coqide-server coq'
+core_packages='rocq-runtime coq-core rocq-core coq-stdlib coqide-server coq'
 
 for coq_opam_package in $core_packages $coq_opam_packages; do
 
@@ -509,7 +509,8 @@ $coq_opam_package (unknown package)"
 
         git checkout -q $COQ_HASH
 
-        if [ "$coq_opam_package" = rocq-core ] && ! [ -e $coq_opam_package.opam ]; then
+        if { [ "$coq_opam_package" = rocq-core ] || [ "$coq_opam_package" = rocq-runtime ]; } \
+             && ! [ -e $coq_opam_package.opam ]; then
           echo "Skipping $coq_opam_package for $RUNNER"
           continue 2
         fi

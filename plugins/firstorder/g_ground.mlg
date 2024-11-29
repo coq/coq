@@ -23,7 +23,7 @@ open Procq.Prim
 
 }
 
-DECLARE PLUGIN "coq-core.plugins.firstorder"
+DECLARE PLUGIN "rocq-runtime.plugins.firstorder"
 
 (* declaring search depth as a global option *)
 
@@ -37,7 +37,7 @@ let { Goptions.get = ground_depth } =
 
 let default_intuition_tac =
   let tac _ _ = Auto.gen_auto None [] (Some []) in
-  let name = { Tacexpr.mltac_plugin = "coq-core.plugins.firstorder"; mltac_tactic = "auto_with"; } in
+  let name = { Tacexpr.mltac_plugin = "rocq-runtime.plugins.firstorder"; mltac_tactic = "auto_with"; } in
   let entry = { Tacexpr.mltac_name = name; mltac_index = 0 } in
   Tacenv.register_ml_tactic name [| tac |];
   CAst.make (Tacexpr.TacML (entry, []))

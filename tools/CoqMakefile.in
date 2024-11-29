@@ -132,7 +132,7 @@ COQDEBUG ?=
 
 # Extra packages to be linked in (as in findlib -package)
 CAMLPKGS ?=
-FINDLIBPKGS = -package coq-core.plugins.ltac $(CAMLPKGS)
+FINDLIBPKGS = -package rocq-runtime.plugins.ltac $(CAMLPKGS)
 
 # Option for making timing files
 TIMING?=
