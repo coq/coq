@@ -1217,6 +1217,7 @@ Notations
    into the right-hand side.  In the following example, `x` is the formal parameter name and
    `constr` is its :ref:`syntactic class<syntactic_classes>`.  `print` and `of_constr` are
    functions provided by Rocq through `Message.v`.
+   (Also see :cmd:`Ltac2 Notation (abbreviation)`.)
 
    .. flag:: Ltac2 Typed Notations
 
@@ -1301,7 +1302,7 @@ Notations
 Abbreviations
 ~~~~~~~~~~~~~
 
-.. cmd:: Ltac2 Notation {| @string | @ident } := @ltac2_expr
+.. cmd:: Ltac2 Notation @ident := @ltac2_expr
    :name: Ltac2 Notation (abbreviation)
 
    Introduces a special kind of notation, called an abbreviation,
@@ -1310,6 +1311,7 @@ Abbreviations
    insofar as its main purpose is to give an
    absolute name to a piece of pure syntax, which can be transparently referred to
    by this name as if it were a proper definition.
+   (See :cmd:`Ltac2 Notation` for the general description of notations.)
 
    The abbreviation can then be manipulated just like a normal Ltac2 definition,
    except that it is expanded at internalization time into the given expression.

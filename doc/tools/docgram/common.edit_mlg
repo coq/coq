@@ -2050,7 +2050,7 @@ ltac2_entry: [
 | WITH "Ltac2" tac2def_val
 | REPLACE tac2def_ext     (* Ltac2 plugin *)
 | WITH "Ltac2" tac2def_ext
-| "Ltac2" "Notation" [ string | ident ] ":=" ltac2_expr6 TAG Ltac2  (* variant *)
+| "Ltac2" "Notation" ident ":=" ltac2_expr6 TAG Ltac2  (* variant *)
 | MOVEALLBUT command
 (* todo: MOVEALLBUT should ignore tag on "but" prodns *)
 ]
