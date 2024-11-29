@@ -119,6 +119,7 @@ let update_equivs_bound (_, us, _, _ as acc) l u equivs =
   update_univ_subst acc ((l, u) :: subst_of_equivalences us equivs)
 
 let simplify_variables partial ctx us variances graph =
+  let open UVars.Variance in
   let dom = UnivFlex.domain us in
   debug_each Pp.(fun () -> str"Simplifying variables with " ++ (if partial then str"partial" else str"non-partial") ++ str" information about the definition");
   let minimize u (ctx, us, variances, graph) =
@@ -148,10 +149,16 @@ let simplify_variables partial ctx us variances graph =
       update_equivs_bound (ctx, us, variances, graph) u ubound equivs
     | NoBound | CannotSimplify -> acc
   in
+  let simplify_impred u acc = function
+    | None -> (* Unused variable *) acc
+    | Some UVars.Predicative -> (* Used in some predicative contexts *) acc
+  |   Some (UVars.Impredicative qs) ->
+      if not partial && Sorts.QVar.Set.is_empty qs then collapse_to_zero u acc
+      else acc
+  in
   let simplify_min u (ctx, us, variances, graph as acc) =
     (* u is an undefined flexible variable, lookup its variance information *)
     let term_variance, type_variance, typing_variance, impred = variance_info u us variances in
-    let open UVars.Variance in
     if typing_variance == Irrelevant then
       (* The universe does not occur relevantly in the principal type of the expressions where it appears *)
       match type_variance with
@@ -163,19 +170,10 @@ let simplify_variables partial ctx us variances graph =
       match typing_variance with
       | Covariant when not partial -> minimize u acc
       | Contravariant when not partial ->
-        (* Do not maximize at first, as it would break template hacks with max(0,_) *) acc
-      | Invariant -> acc
-      | _ ->
-      (* match term_variance, type_variance with
-      | Irrelevant, Irrelevant -> arbitrary u acc
-      | (Covariant | Irrelevant), Covariant when not partial -> minimize u acc
-      | _, _ -> *)
-        match impred with
-        | None -> (* Unused variable *) minimize u acc
-        | Some Predicative -> (* Used in some predicative contexts *) acc
-        | Some (Impredicative qs) ->
-          if not partial && Sorts.QVar.Set.is_empty qs then collapse_to_zero u acc
-          else acc
+        (* Do not maximize at first, as it would break template hacks with max(0,_) *)
+        simplify_impred u acc impred
+      | _ -> simplify_impred u acc impred
+
   in
   let fold_min u (ctx, us, variances, graph as acc) =
     if UnivFlex.is_defined u us then acc
