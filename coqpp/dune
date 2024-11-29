@@ -4,12 +4,14 @@
 (library
  (name coqpp)
  (wrapped false)
- (modules coqpp_ast coqpp_lex coqpp_parse coqpp_parser)
+ (modules :standard \ coqpp)
  (modules_without_implementation coqpp_ast))
 
+; dune's coq.pp uses this,
+; so if we put it in coq-core we can't use coq.pp for rocq-runtime
 (executable
- (name coqpp_main)
  (public_name coqpp)
+ (empty_module_interface_if_absent)
  (package rocq-runtime)
  (libraries coqpp)
- (modules coqpp_main))
+ (modules coqpp))
