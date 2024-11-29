@@ -15,7 +15,7 @@
 module PluginSpec : sig
 
   (** A plugin is identified by its canonical library name,
-      such as [coq-core.plugins.ltac] *)
+      such as [rocq-runtime.plugins.ltac] *)
   type t
 
   (** [to_package p] returns the findlib name of the package *)

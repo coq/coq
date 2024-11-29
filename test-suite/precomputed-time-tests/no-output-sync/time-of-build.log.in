@@ -753,7 +753,7 @@ CONTRIBUTING.md
 CREDITS
 INSTALL.md
 LICENSE
-META.coq-core.in
+META.rocq-runtime.in
 Makefile
 Makefile.build
 Makefile.checker

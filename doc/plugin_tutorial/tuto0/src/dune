@@ -1,6 +1,6 @@
 (library
  (name tuto0_plugin)
- (public_name coq-core.plugins.tutorial.p0)
- (libraries coq-core.plugins.ltac))
+ (public_name rocq-runtime.plugins.tutorial.p0)
+ (libraries rocq-runtime.plugins.ltac))
 
 (coq.pp (modules g_tuto0))

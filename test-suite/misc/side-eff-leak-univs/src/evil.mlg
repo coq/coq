@@ -1,4 +1,4 @@
-DECLARE PLUGIN "coq-core.plugins.evil"
+DECLARE PLUGIN "rocq-runtime.plugins.evil"
 
 {
 open Ltac_plugin

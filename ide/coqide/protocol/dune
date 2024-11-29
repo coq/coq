@@ -3,6 +3,6 @@
  (public_name coqide-server.protocol)
  (wrapped false)
  (modules_without_implementation interface)
- (libraries coq-core.lib))
+ (libraries rocq-runtime.lib))
 
 (ocamllex xml_lexer)

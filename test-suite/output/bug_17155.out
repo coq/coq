@@ -7,7 +7,7 @@ Uncaught Ltac2 exception: Invalid_argument None
 Backtrace:
 Call M.g
 Call bug_17155.M.f (* local *)
-Prim <coq-core.plugins.ltac2:throw>
+Prim <rocq-runtime.plugins.ltac2:throw>
 
 Ltac2 M.g : unit -> 'a
       M.g := fun _ => bug_17155.M.f (* local *) ()

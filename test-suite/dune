@@ -24,6 +24,7 @@
    ; For the changelog test
    ../config/coq_config.py
    (source_tree doc/changelog)
+   (package rocq-runtime)
    (package coq-core)
    (package rocq-core)
    ; For fake_ide

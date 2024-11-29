@@ -118,7 +118,7 @@ let findlib_resolve ~file ~package ~plugin_name =
 module Internal = struct
   let get_worker_path () =
     let top = "coqworker" in
-    let dir = Findlib.package_directory "coq-core" in
+    let dir = Findlib.package_directory "rocq-runtime" in
     let exe = if Sys.(os_type = "Win32" || os_type = "Cygwin") then ".exe" else "" in
     let file = Filename.concat dir (top^exe) in
     match Sys.getenv_opt "DUNE_SOURCEROOT" with

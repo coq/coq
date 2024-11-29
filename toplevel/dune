@@ -1,14 +1,18 @@
 (library
  (name toplevel)
- (public_name coq-core.toplevel)
+ (public_name rocq-runtime.toplevel)
  (synopsis "Coq's Interactive Shell [terminal-based]")
  (wrapped false)
  ; until ocaml/dune#4892 fixed
  ; (private_modules g_toplevel)
- (libraries coq-core.stm
+ (libraries rocq-runtime.stm
   (select memtrace_init.ml from
    (memtrace -> memtrace_init.memtrace.ml)
    (!memtrace -> memtrace_init.default.ml))))
+
+(deprecated_library_name
+ (old_public_name coq-core.toplevel)
+ (new_public_name rocq-runtime.toplevel))
 
 ; Interp provides the `zarith` library to plugins, we could also use
 ; -linkall in the plugins file, to be discussed.
