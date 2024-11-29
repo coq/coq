@@ -25,5 +25,5 @@ val findlib_deep_resolve
 
 module Internal : sig
   (** Call Loadpath.get_worker_path instead *)
-  val get_worker_path : unit -> string
+  val get_worker_path : unit -> string list * string list
 end

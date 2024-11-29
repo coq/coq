@@ -8,5 +8,4 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Run a Rocq subcommand with the given arguments. *)
-val run : (string list -> unit) ref
+val static_loader_libs : string list

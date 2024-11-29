@@ -17,15 +17,13 @@ let () =
   if Array.length Sys.argv < 2 then error_usage ();
 
   let args = List.tl (Array.to_list Sys.argv) in
-  let {Rocqshim.debug_shim}, args = Rocqshim.init args in
+  let args = Rocqloader.init args in
 
   match args with
   | "-v" :: _ | "--version" :: _ -> Boot.Usage.version ()
   | ("c" | "compile") :: args ->
-    let prog = Rocqshim.get_worker_path { package = "coq-core"; basename = "coqworker" } in
-    let () = if debug_shim then Printf.eprintf "Using %s\n%!" prog in
-    let argv = Array.of_list (prog :: "--kind=compile" :: args) in
-    Rocqshim.exec_or_create_process prog argv
+    let argv = "--kind=compile" :: args in
+    Rocqloader.load_and_run "coq-core.rocqworker" argv
   | prog :: _ ->
     fatal_error "Unknown argument %s" prog
   | [] -> error_usage ()

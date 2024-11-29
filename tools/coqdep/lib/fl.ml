@@ -72,12 +72,12 @@ let findlib_resolve ~package =
   let cmxs_file = List.map relative_if_dune cmxss in
   (meta_file, cmxs_file)
 
-let static_libs = CString.Set.of_list Static_toplevel_libs.static_toplevel_libs
+let static_loader_libs = CString.Set.of_list Static_libs.static_loader_libs
 
 let findlib_deep_resolve ~package =
   let packages = Findlib.package_deep_ancestors coqc_predicates [package] in
   let packages = CList.filter (fun package ->
-      not (CString.Set.mem package static_libs))
+      not (CString.Set.mem package static_loader_libs))
       packages
   in
   List.fold_left (fun (metas,cmxss) package ->
@@ -93,12 +93,5 @@ let findlib_deep_resolve ~file ~package =
 
 module Internal = struct
   let get_worker_path () =
-    let top = "coqworker" in
-    let dir = Findlib.package_directory "coq-core" in
-    let exe = if Sys.(os_type = "Win32" || os_type = "Cygwin") then ".exe" else "" in
-    let file = Filename.concat dir (top^exe) in
-    match Sys.getenv_opt "DUNE_SOURCEROOT" with
-    | Some dune when CString.is_prefix dune file ->
-      normalize_path (to_relative_path file)
-    | _ -> normalize_path file
+    findlib_deep_resolve ~file:"N/A" ~package:"coq-core.rocqworker"
 end

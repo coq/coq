@@ -8,4 +8,12 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val static_toplevel_libs : string list
+(** Initialize environment and search paths, returning the arguments
+    not consumed to produce the [opts]. *)
+val init : string list -> string list
+
+(** Print a message to stderr if debugging the loader is on. *)
+val ppdebug : ('a, out_channel, unit) format -> 'a
+
+(** Load plugin given by the findlib name and run with given arguments. *)
+val load_and_run : string -> string list -> unit

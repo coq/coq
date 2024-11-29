@@ -1,17 +1,24 @@
 (library
  (name rocqshim)
  (public_name coq-core.rocqshim)
- (synopsis "Rocq support for finding and exec-ing subcommands")
- (wrapped false) ; no point repeating the Rocqshim name
  (modules rocqshim)
- (libraries boot unix findlib))
+ (wrapped false) ; no point repeating the rocqshim name
+ (synopsis "Rocq shim for dynlinked subcommands"))
+
+(library
+ (name rocqloader)
+ (public_name coq-core.rocqloader)
+ (synopsis "Rocq support for finding and dynlinking subcommands")
+ (wrapped false) ; no point repeating the Rocqloader name
+ (modules rocqloader)
+ (libraries boot unix findlib.dynload rocqshim))
 
 (executable
  (public_name rocq)
  (package coq-core)
  (modules rocq)
  (modes exe byte)
- (libraries rocqshim))
+ (libraries rocqloader))
 
 (install
  (section bin)
@@ -38,7 +45,7 @@
  (public_name coqc)
  (package coq-core)
  (modules coqc_bin)
- (libraries rocqshim))
+ (libraries rocqloader))
 
 (executable
  (name coqnative_bin)
@@ -49,12 +56,18 @@
  (modes exe byte)
  (link_flags -linkall))
 
+(library
+ (name rocqworker_lib)
+ (public_name coq-core.rocqworker)
+ (modules rocqworker_lib)
+ (libraries coq-core.toplevel rocqshim))
+
 ; Workers
 (executable
  (name coqworker_bin)
  (modules coqworker_bin)
  (modes exe byte)
- (libraries coq-core.toplevel))
+ (libraries rocqloader))
  ; Adding -ccopt -flto to links options could be interesting, however,
  ; it doesn't work on Windows
 

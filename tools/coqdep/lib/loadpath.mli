@@ -29,7 +29,7 @@ module State : sig
   val make : worker:string option -> boot:bool -> t
 end
 
-val get_worker_path : State.t -> string
+val get_worker_path : State.t -> string list * string list
 
 val search_v_known : State.t -> ?from:dirpath -> dirpath -> result option
 val search_other_known : State.t -> ?from:dirpath -> dirpath -> result option

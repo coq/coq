@@ -165,8 +165,19 @@ let rec find_dependencies st basename =
   let add_dep dep = dependencies := DepSet.add dep !dependencies in
   let add_dep_other s = add_dep (Dep_info.Dep.Other s) in
 
+  let add_dep_ml (meta_files, cmxss) =
+    List.iter add_dep_other meta_files;
+    List.iter (fun str ->
+        let plugin_file = Filename.chop_extension str in
+        if not (StrSet.mem plugin_file !visited_ml) then begin
+          visited_ml := StrSet.add plugin_file !visited_ml;
+          add_dep (Dep_info.Dep.Ml plugin_file)
+        end)
+      cmxss
+  in
+
   (* worker dep *)
-  let () = add_dep_other (Loadpath.get_worker_path st) in
+  let () = add_dep_ml (Loadpath.get_worker_path st) in
 
   (* Reading file contents *)
   let f = basename ^ ".v" in
@@ -199,16 +210,7 @@ let rec find_dependencies st basename =
       | Declare sl ->
         (* We resolve "pkg_name" to a .cma file, using the META *)
         let sl = List.map (declare_ml_to_file f) sl in
-        let decl (meta_file, str) =
-          List.iter add_dep_other meta_file;
-          str |> List.iter (fun str ->
-          let plugin_file = Filename.chop_extension str in
-          if not (StrSet.mem plugin_file !visited_ml) then begin
-            visited_ml := StrSet.add plugin_file !visited_ml;
-            add_dep (Dep_info.Dep.Ml plugin_file)
-          end)
-        in
-        List.iter decl sl;
+        List.iter add_dep_ml sl;
         loop ()
       | Load file ->
         let canon =

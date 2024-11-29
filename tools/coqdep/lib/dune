@@ -6,11 +6,11 @@
 (ocamllex lexer)
 
 (rule
- (targets static_toplevel_libs.ml)
+ (targets static_libs.ml)
  (deps %{project_root}/_build/install/%{context_name}/lib/coq-core/META)
  (action
   (with-stdout-to %{targets}
-   (run ocamlfind query -recursive -predicates native coq-core.toplevel
-        -prefix "let static_toplevel_libs = [\n"
-        -format "\"%p\";"
-        -suffix "\n]\n"))))
+    (run ocamlfind query -recursive -predicates native coq-core.rocqloader
+         -prefix "let static_loader_libs = [\n"
+         -format "\"%p\";"
+         -suffix "\n]\n"))))

@@ -151,7 +151,7 @@ module State = struct
     ; coqlib : (dirpath * dirpath, result) Hashtbl.t
     ; other : (dirpath * dirpath, result) Hashtbl.t
     ; boot : bool
-    ; mutable worker : string option
+    ; mutable worker : (string list * string list) option
     }
 
   let make ~worker ~boot =
@@ -159,7 +159,7 @@ module State = struct
     ; coqlib = Hashtbl.create 19
     ; other = Hashtbl.create 17317
     ; boot
-    ; worker
+    ; worker = Option.map (fun worker -> ([worker], [])) worker
     }
 
 end
