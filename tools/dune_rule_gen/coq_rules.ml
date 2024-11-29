@@ -24,7 +24,7 @@ module FlagUtil = struct
   (* Native flag *)
   let findlib_native_dir () =
     try
-      Findlib.package_directory ("coq-core.kernel") |> Path.make
+      Findlib.package_directory ("rocq-runtime.kernel") |> Path.make
     with
       Fl_package_base.No_such_package (p,_) ->
       raise (Invalid_argument ("failed to locate Coq kernel package in split build mode: " ^ p))
@@ -155,7 +155,7 @@ module Context = struct
           ]
 
   (* XXX: we could put the workers here, but they need a complete OCaml runtime so this is better *)
-  let build_async_deps = ["(package coq-core)"]
+  let build_async_deps = ["(package rocq-runtime)"]
 
   (* args are for coqdep *)
   let build_dep_info ~coqdep_args dir_info =

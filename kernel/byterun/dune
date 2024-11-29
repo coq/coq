@@ -1,11 +1,15 @@
 (library
  (name coqrun)
  (synopsis "Rocq's Kernel Abstract Reduction Machine [C implementation]")
- (public_name coq-core.vm)
+ (public_name rocq-runtime.vm)
  (foreign_stubs
   (language c)
   (names rocq_fix_code rocq_float64 rocq_memory rocq_values rocq_interp)
   (flags :standard (:include %{project_root}/config/dune.c_flags))))
+
+(deprecated_library_name
+ (old_public_name coq-core.vm)
+ (new_public_name rocq-runtime.vm))
 
 (rule
  (targets rocq_instruct.h)

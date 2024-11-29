@@ -2,7 +2,7 @@
 
 . ../template/init.sh
 
-sed -i.old 's/coq-core.plugins.ltac/coq-core.plugins.ltac,foo/' src/META.coq-test-suite
+sed -i.old 's/rocq-runtime.plugins.ltac/rocq-runtime.plugins.ltac,foo/' src/META.coq-test-suite
 
 echo "let () = Foolib.foo ();;" >> src/test_aux.ml
 if which cygpath 2>/dev/null; then

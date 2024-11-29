@@ -18,7 +18,7 @@ open Tac2expr
 open Proofview.Notations
 open Tac2externals
 
-let ltac2_ltac1_plugin = "coq-core.plugins.ltac2_ltac1"
+let ltac2_ltac1_plugin = "rocq-runtime.plugins.ltac2_ltac1"
 
 let pname ?(plugin=ltac2_ltac1_plugin) s = { mltac_plugin = plugin; mltac_tactic = s }
 

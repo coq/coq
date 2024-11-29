@@ -22,6 +22,7 @@
    (:header %{project_root}/doc/common/styles/html/coqremote/header.html)
    (:footer %{project_root}/doc/common/styles/html/coqremote/footer.html)
    ; For .glob files, should be gone when Coq Dune is smarter.
+   (package rocq-runtime)
    (package coq-core)
    (package rocq-core))
  (action

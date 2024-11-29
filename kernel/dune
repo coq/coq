@@ -1,11 +1,15 @@
 (library
  (name kernel)
  (synopsis "The Coq Kernel")
- (public_name coq-core.kernel)
+ (public_name rocq-runtime.kernel)
  (wrapped false)
  (modules_without_implementation values declarations entries)
  (modules (:standard \ genOpcodeFiles uint63_31 uint63_63 float64_31 float64_63))
  (libraries boot lib coqrun dynlink))
+
+(deprecated_library_name
+ (old_public_name coq-core.kernel)
+ (new_public_name rocq-runtime.kernel))
 
 (executable
   (name genOpcodeFiles)
@@ -30,7 +34,7 @@
  (action (copy# %{gen-file} %{targets})))
 
 (documentation
- (package coq-core))
+ (package rocq-runtime))
 
 ; In dev profile, we check the kernel against a more strict set of
 ; warnings.
@@ -39,4 +43,4 @@
 
 (deprecated_library_name
  (old_public_name coq.kernel)
- (new_public_name coq-core.kernel))
+ (new_public_name rocq-runtime.kernel))

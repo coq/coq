@@ -33,7 +33,7 @@ then
     export OCAMLPATH="$PWD/_build/install/default/lib/$OCAMLFINDSEP$OCAMLPATH"
     export COQBIN="$PWD/_build/install/default/bin"
     export COQLIB="$PWD/_build/install/default/lib/coq"
-    export COQCORELIB="$PWD/_build/install/default/lib/coq-core"
+    export COQCORELIB="$PWD/_build/install/default/lib/rocq-runtime"
 
     CI_INSTALL_DIR="$PWD/_build/install/default/"
 

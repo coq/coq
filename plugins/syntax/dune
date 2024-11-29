@@ -1,8 +1,12 @@
 (library
  (name number_string_notation_plugin)
- (public_name coq-core.plugins.number_string_notation)
+ (public_name rocq-runtime.plugins.number_string_notation)
  (synopsis "Rocq number and string notation plugin")
  (modules g_number_string number_string)
- (libraries coq-core.vernac))
+ (libraries rocq-runtime.vernac))
+
+(deprecated_library_name
+ (old_public_name coq-core.plugins.number_string_notation)
+ (new_public_name rocq-runtime.plugins.number_string_notation))
 
 (coq.pp (modules g_number_string))
