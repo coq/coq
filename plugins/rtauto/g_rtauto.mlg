@@ -14,7 +14,7 @@ open Ltac_plugin
 
 }
 
-DECLARE PLUGIN "coq-core.plugins.rtauto"
+DECLARE PLUGIN "rocq-runtime.plugins.rtauto"
 
 TACTIC EXTEND rtauto
 | [ "rtauto" ] -> { Refl_tauto.rtauto_tac }

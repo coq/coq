@@ -1,16 +1,16 @@
 (library
  (name coqdeplib)
- (public_name coq-core.coqdeplib)
- (libraries coq-core.boot coq-core.lib findlib.internal))
+ (public_name rocq-runtime.coqdeplib)
+ (libraries rocq-runtime.boot rocq-runtime.lib findlib.internal))
 
 (ocamllex lexer)
 
 (rule
  (targets static_toplevel_libs.ml)
- (deps %{workspace_root}/_build/install/%{context_name}/lib/coq-core/META)
+ (deps %{workspace_root}/_build/install/%{context_name}/lib/rocq-runtime/META)
  (action
   (with-stdout-to %{targets}
-   (run ocamlfind query -recursive -predicates native coq-core.toplevel
+   (run ocamlfind query -recursive -predicates native rocq-runtime.toplevel
         -prefix "let static_toplevel_libs = [\n"
         -format "\"%p\";"
         -suffix "\n]\n"))))

@@ -15,7 +15,7 @@ open Stdarg
 
 }
 
-DECLARE PLUGIN "coq-core.plugins.nsatz"
+DECLARE PLUGIN "rocq-runtime.plugins.nsatz"
 
 TACTIC EXTEND nsatz_compute
 | [ "nsatz_compute"  constr(lt) ] -> { Nsatz.nsatz_compute (EConstr.Unsafe.to_constr lt) }

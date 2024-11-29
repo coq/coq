@@ -66,30 +66,30 @@
  (deps
   %{project_root}/theories/Init/Prelude.vo
   %{bin:coqtop.byte}
-  %{lib:coq-core.config:config.cma}
-  %{lib:coq-core.clib:clib.cma}
-  %{lib:coq-core.lib:lib.cma}
-  %{lib:coq-core.kernel:kernel.cma}
-  %{lib:coq-core.vm:coqrun.cma}
-  %{lib:coq-core.vm:../../stublibs/dllcoqrun_stubs.so}
-  %{lib:coq-core.library:library.cma}
-  %{lib:coq-core.engine:engine.cma}
-  %{lib:coq-core.pretyping:pretyping.cma}
-  %{lib:coq-core.gramlib:gramlib.cma}
-  %{lib:coq-core.interp:interp.cma}
-  %{lib:coq-core.proofs:proofs.cma}
-  %{lib:coq-core.parsing:parsing.cma}
-  %{lib:coq-core.printing:printing.cma}
-  %{lib:coq-core.tactics:tactics.cma}
-  %{lib:coq-core.vernac:vernac.cma}
-  %{lib:coq-core.stm:stm.cma}
-  %{lib:coq-core.sysinit:sysinit.cma}
-  %{lib:coq-core.toplevel:toplevel.cma}
-  %{lib:coq-core.plugins.number_string_notation:number_string_notation_plugin.cma}
-  %{lib:coq-core.plugins.tauto:tauto_plugin.cma}
-  %{lib:coq-core.plugins.cc:cc_plugin.cma}
-  %{lib:coq-core.plugins.firstorder:firstorder_plugin.cma}
-  %{lib:coq-core.plugins.ltac:ltac_plugin.cma}
+  %{lib:rocq-runtime.config:config.cma}
+  %{lib:rocq-runtime.clib:clib.cma}
+  %{lib:rocq-runtime.lib:lib.cma}
+  %{lib:rocq-runtime.kernel:kernel.cma}
+  %{lib:rocq-runtime.vm:coqrun.cma}
+  %{lib:rocq-runtime.vm:../../stublibs/dllcoqrun_stubs.so}
+  %{lib:rocq-runtime.library:library.cma}
+  %{lib:rocq-runtime.engine:engine.cma}
+  %{lib:rocq-runtime.pretyping:pretyping.cma}
+  %{lib:rocq-runtime.gramlib:gramlib.cma}
+  %{lib:rocq-runtime.interp:interp.cma}
+  %{lib:rocq-runtime.proofs:proofs.cma}
+  %{lib:rocq-runtime.parsing:parsing.cma}
+  %{lib:rocq-runtime.printing:printing.cma}
+  %{lib:rocq-runtime.tactics:tactics.cma}
+  %{lib:rocq-runtime.vernac:vernac.cma}
+  %{lib:rocq-runtime.stm:stm.cma}
+  %{lib:rocq-runtime.sysinit:sysinit.cma}
+  %{lib:rocq-runtime.toplevel:toplevel.cma}
+  %{lib:rocq-runtime.plugins.number_string_notation:number_string_notation_plugin.cma}
+  %{lib:rocq-runtime.plugins.tauto:tauto_plugin.cma}
+  %{lib:rocq-runtime.plugins.cc:cc_plugin.cma}
+  %{lib:rocq-runtime.plugins.firstorder:firstorder_plugin.cma}
+  %{lib:rocq-runtime.plugins.ltac:ltac_plugin.cma}
   (alias %{project_root}/dev/ml_toplevel_files)))
 
 (rule

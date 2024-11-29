@@ -18,7 +18,7 @@ let locality = Zify.zify_register_locality
 
 }
 
-DECLARE PLUGIN "coq-core.plugins.zify"
+DECLARE PLUGIN "rocq-runtime.plugins.zify"
 
 VERNAC COMMAND EXTEND DECLAREINJECTION CLASSIFIED AS SIDEFF
 | #[ locality ] ["Add" "Zify" "InjTyp"   reference(t) ] -> { Zify.InjTable.register locality t }

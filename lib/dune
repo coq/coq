@@ -1,11 +1,15 @@
 (library
  (name lib)
  (synopsis "Coq's Utility Library [coq-specific]")
- (public_name coq-core.lib)
+ (public_name rocq-runtime.lib)
  (wrapped false)
  (modules_without_implementation xml_datatype)
  (libraries
-  coq-core.boot coq-core.clib coq-core.config
+  rocq-runtime.boot rocq-runtime.clib rocq-runtime.config
   (select instr.ml from
    (!coqperf -> instr.noperf.ml)
    (coqperf -> instr.perf.ml))))
+
+(deprecated_library_name
+ (old_public_name coq-core.lib)
+ (new_public_name rocq-runtime.lib))

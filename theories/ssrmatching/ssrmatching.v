@@ -10,7 +10,7 @@
 
 (* (c) Copyright 2006-2015 Microsoft Corporation and Inria.                  *)
 
-Declare ML Module "coq-core.plugins.ssrmatching".
+Declare ML Module "rocq-runtime.plugins.ssrmatching".
 
 Module SsrMatchingSyntax.
 

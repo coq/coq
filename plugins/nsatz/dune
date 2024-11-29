@@ -1,16 +1,24 @@
 (library
  (name nsatz_core_plugin)
- (public_name coq-core.plugins.nsatz_core)
+ (public_name rocq-runtime.plugins.nsatz_core)
  (synopsis "Rocq's nsatz solver plugin")
  (modules (:standard \ g_nsatz))
- (libraries coq-core.tactics))
+ (libraries rocq-runtime.tactics))
+
+(deprecated_library_name
+ (old_public_name coq-core.plugins.nsatz_core)
+ (new_public_name rocq-runtime.plugins.nsatz_core))
 
 (library
  (name nsatz_plugin)
- (public_name coq-core.plugins.nsatz)
+ (public_name rocq-runtime.plugins.nsatz)
  (synopsis "Rocq's nsatz solver plugin (Ltac1 syntax)")
  (modules g_nsatz)
  (flags :standard -open Nsatz_core_plugin)
- (libraries coq-core.plugins.nsatz_core coq-core.plugins.ltac))
+ (libraries rocq-runtime.plugins.nsatz_core rocq-runtime.plugins.ltac))
+
+(deprecated_library_name
+ (old_public_name coq-core.plugins.nsatz)
+ (new_public_name rocq-runtime.plugins.nsatz))
 
 (coq.pp (modules g_nsatz))

@@ -9,7 +9,7 @@ Unset Elimination Schemes.
 
 Set Universe Polymorphism.
 
-Declare ML Module "coq-core.plugins.ltac".
+Declare ML Module "rocq-runtime.plugins.ltac".
 
 Global Set Default Proof Mode "Classic".
 

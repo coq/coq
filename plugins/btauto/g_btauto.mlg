@@ -14,7 +14,7 @@ open Ltac_plugin
 
 }
 
-DECLARE PLUGIN "coq-core.plugins.btauto"
+DECLARE PLUGIN "rocq-runtime.plugins.btauto"
 
 TACTIC EXTEND btauto
 | [ "btauto" ] -> { Refl_btauto.Btauto.tac }

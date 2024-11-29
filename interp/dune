@@ -1,7 +1,11 @@
 (library
  (name interp)
  (synopsis "Coq's Syntactic Interpretation for AST [notations, implicits]")
- (public_name coq-core.interp)
+ (public_name rocq-runtime.interp)
  (wrapped false)
  (modules_without_implementation constrexpr notation_term)
  (libraries zarith pretyping gramlib))
+
+(deprecated_library_name
+ (old_public_name coq-core.interp)
+ (new_public_name rocq-runtime.interp))

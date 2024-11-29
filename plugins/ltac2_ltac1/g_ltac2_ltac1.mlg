@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-DECLARE PLUGIN "coq-core.plugins.ltac2_ltac1"
+DECLARE PLUGIN "rocq-runtime.plugins.ltac2_ltac1"
 
 {
 

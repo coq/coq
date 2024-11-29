@@ -68,7 +68,7 @@ tweak some low-level option.
 
 Dune is able to build all the OCaml parts of Coq in a pretty standard
 way, using its built-in rule generation for OCaml. Public tools
-written in OCaml are distributed in the `coq-core` package.
+written in OCaml are distributed in the `rocq-runtime` package.
 
 The set of public `.v` files present in this repository, usually
 referred as the "Coq prelude" are distributed in the
@@ -140,8 +140,8 @@ for example, to add plugins to be linked statically using the
 
 Note that Coq relies on a hidden Dune hack, which will add `-linkall`
 to binaries if they depend on the `findlib.dynload` library. As of
-today, `coq-core.vernac` uses `findlib.dynload`, so if your toplevel
-hooks at the `coq-core.vernac` or above level, you should be OK,
+today, `rocq-runtime.vernac` uses `findlib.dynload`, so if your toplevel
+hooks at the `rocq-runtime.vernac` or above level, you should be OK,
 otherwise add `-linkall` to Dune's `(link_flags ...)` field for your
 binary.
 
@@ -233,7 +233,7 @@ For running in emacs, use `coqdev-ocamldebug` from `coqdev.el`.
   depending on the error)
 
 - If there is a linking error (eg from "source db"), do a "dune
-  build coq-core.install" and try again.
+  build rocq-runtime.install" and try again.
 
 ## Dropping from coqtop:
 

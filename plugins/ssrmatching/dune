@@ -1,7 +1,11 @@
 (library
  (name ssrmatching_plugin)
- (public_name coq-core.plugins.ssrmatching)
+ (public_name rocq-runtime.plugins.ssrmatching)
  (synopsis "Rocq ssrmatching plugin")
- (libraries coq-core.plugins.ltac))
+ (libraries rocq-runtime.plugins.ltac))
+
+(deprecated_library_name
+ (old_public_name coq-core.plugins.ssrmatching)
+ (new_public_name rocq-runtime.plugins.ssrmatching))
 
 (coq.pp (modules g_ssrmatching))

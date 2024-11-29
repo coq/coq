@@ -22,7 +22,7 @@ open Logic
 
 }
 
-DECLARE PLUGIN "coq-core.plugins.ltac"
+DECLARE PLUGIN "rocq-runtime.plugins.ltac"
 
 (** Basic tactics *)
 
@@ -322,11 +322,11 @@ let initial_atomic () =
         "fresh", CAst.make @@ TacArg(TacFreshId [])
       ]
 
-let () = Mltop.declare_cache_obj initial_atomic "coq-core.plugins.ltac"
+let () = Mltop.declare_cache_obj initial_atomic "rocq-runtime.plugins.ltac"
 
 (* First-class Ltac access to primitive blocks *)
 
-let initial_name s = { mltac_plugin = "coq-core.plugins.ltac"; mltac_tactic = s; }
+let initial_name s = { mltac_plugin = "rocq-runtime.plugins.ltac"; mltac_tactic = s; }
 let initial_entry s = { mltac_name = initial_name s; mltac_index = 0; }
 
 let register_list_tactical name f =
@@ -356,6 +356,6 @@ let initial_tacticals () =
         ([Name (idn 0)], CAst.make (TacML (initial_entry "solve", [varn 0]))));
   ]
 
-let () = Mltop.declare_cache_obj initial_tacticals "coq-core.plugins.ltac"
+let () = Mltop.declare_cache_obj initial_tacticals "rocq-runtime.plugins.ltac"
 
 }

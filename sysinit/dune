@@ -1,16 +1,24 @@
 (library
  (name coqargs)
- (public_name coq-core.coqargs)
+ (public_name rocq-runtime.coqargs)
  (synopsis "Coq command line argument parsing")
  (modules coqargs)
  (wrapped false)
- ; don't depend on coq-core.lib -> impossible to imperatively set random flags
- (libraries coq-core.config coq-core.clib))
+ ; don't depend on rocq-runtime.lib -> impossible to imperatively set random flags
+ (libraries rocq-runtime.config rocq-runtime.clib))
+
+(deprecated_library_name
+ (old_public_name coq-core.coqargs)
+ (new_public_name rocq-runtime.coqargs))
 
 (library
  (name sysinit)
- (public_name coq-core.sysinit)
+ (public_name rocq-runtime.sysinit)
  (synopsis "Coq's initialization")
  (wrapped false)
  (modules :standard \ coqargs)
- (libraries coq-core.boot coq-core.vernac coqargs findlib))
+ (libraries rocq-runtime.boot rocq-runtime.vernac coqargs findlib))
+
+(deprecated_library_name
+ (old_public_name coq-core.sysinit)
+ (new_public_name rocq-runtime.sysinit))

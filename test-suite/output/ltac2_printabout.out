@@ -2,7 +2,7 @@ fst : 'a * 'b -> 'a
 snd : 'b * 'a -> 'a
 type : constr -> constr
 Ltac2 type : constr -> constr
-      type := @external "coq-core.plugins.ltac2" "constr_type"
+      type := @external "rocq-runtime.plugins.ltac2" "constr_type"
 Ltac2 ltac2_printabout.type
 Ltac2 type : constr -> constr
 None : 'a option

@@ -247,7 +247,7 @@ let generalize_arg = make_to_repr to_generalize_arg
 open Tac2externals
 
 let define s =
-  define { mltac_plugin = "coq-core.plugins.ltac2"; mltac_tactic = s }
+  define { mltac_plugin = "rocq-runtime.plugins.ltac2"; mltac_tactic = s }
 
 (** Tactics from Tacexpr *)
 
