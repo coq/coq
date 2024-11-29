@@ -13,6 +13,7 @@
   ;   + %{bin:coqdoc} etc...
   ;   + config/coq_config.py
   ;   + tools/coqdoc/coqdoc.css
+  (package rocq-runtime)
   (package coq-core)
   (package rocq-core)
   (source_tree sphinx)
@@ -30,6 +31,7 @@
  ; (deps (alias refman-deps))
  ; EJGA: note this should've been fixed in dune master as of 05/03/2021
  (deps
+  (package rocq-runtime)
   (package coq-core)
   (package rocq-core)
   (source_tree sphinx)
@@ -50,6 +52,7 @@
  ; (deps (alias refman-deps))
  ; EJGA: note this should've been fixed in dune master as of 05/03/2021
  (deps
+  (package rocq-runtime)
   (package coq-core)
   (package rocq-core)
   (source_tree sphinx)

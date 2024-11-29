@@ -1220,7 +1220,7 @@ The preferred method is to use ``dune``:
 
    (executable
     (name my_toplevel)
-    (libraries coq-core.toplevel))
+    (libraries rocq-runtime.toplevel))
 
 in a directory with `my_toplevel.ml` containing the main loop entry
 point `Coqc.main()` or `Coqtop.(start_coq coqtop_toplevel)` (depending
@@ -1232,7 +1232,7 @@ For example, to statically link |Ltac|, you can do:
 
    (executable
     (name my_toplevel)
-    (libraries coq-core.toplevel coq-core.plugins.ltac))
+    (libraries rocq-runtime.toplevel rocq-runtime.plugins.ltac))
 
 and similarly for other plugins.
 

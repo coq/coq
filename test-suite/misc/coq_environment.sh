@@ -21,7 +21,7 @@ EOT
 cp $BIN/coqc .
 cp $BIN/coq_makefile .
 mkdir -p overridden/tools/
-cp $COQLIB/../coq-core/tools/CoqMakefile.in overridden/tools/
+cp $COQLIB/../rocq-runtime/tools/CoqMakefile.in overridden/tools/
 
 unset COQLIB
 N=`./coqc -config | grep COQLIB | grep /overridden | wc -l`

@@ -2,7 +2,7 @@ package "tuto3" (
     directory = "."
     version = "dev"
     description = "A tuto3 plugin"
-    requires = "coq-core.plugins.ltac"
+    requires = "rocq-runtime.plugins.ltac"
     archive(byte) = "tuto3_plugin.cma"
     archive(native) = "tuto3_plugin.cmxa"
     plugin(byte) = "tuto3_plugin.cma"

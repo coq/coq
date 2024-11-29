@@ -1,6 +1,6 @@
 (library
  (name rocqshim)
- (public_name coq-core.rocqshim)
+ (public_name rocq-runtime.rocqshim)
  (synopsis "Rocq support for finding and exec-ing subcommands")
  (wrapped false) ; no point repeating the Rocqshim name
  (modules rocqshim)
@@ -8,44 +8,44 @@
 
 (executable
  (public_name rocq)
- (package coq-core)
+ (package rocq-runtime)
  (modules rocq)
  (modes exe byte)
  (libraries rocqshim))
 
 (install
  (section bin)
- (package coq-core)
+ (package rocq-runtime)
  (files (rocq.bc as rocq.byte)))
 
 (executable
  (name coqtop_bin)
  (public_name coqtop)
- (package coq-core)
+ (package rocq-runtime)
  (modules coqtop_bin)
- (libraries coq-core.toplevel))
+ (libraries rocq-runtime.toplevel))
 
 (executable
  (name coqtop_byte_bin)
  (public_name coqtop.byte)
- (package coq-core)
+ (package rocq-runtime)
  (modules coqtop_byte_bin)
- (libraries compiler-libs.toplevel coq-core.config.byte coq-core.toplevel coq-core.dev findlib.top)
+ (libraries compiler-libs.toplevel rocq-runtime.config.byte rocq-runtime.toplevel rocq-runtime.dev findlib.top)
  (modes byte))
 
 (executable
  (name coqc_bin)
  (public_name coqc)
- (package coq-core)
+ (package rocq-runtime)
  (modules coqc_bin)
  (libraries rocqshim))
 
 (executable
  (name coqnative_bin)
  (public_name coqnative)
- (package coq-core)
+ (package rocq-runtime)
  (modules coqnative_bin)
- (libraries coq-core.kernel)
+ (libraries rocq-runtime.kernel)
  (modes exe byte)
  (link_flags -linkall))
 
@@ -54,13 +54,13 @@
  (name coqworker_bin)
  (modules coqworker_bin)
  (modes exe byte)
- (libraries coq-core.toplevel))
+ (libraries rocq-runtime.toplevel))
  ; Adding -ccopt -flto to links options could be interesting, however,
  ; it doesn't work on Windows
 
 (install
  (section libexec)
- (package coq-core)
+ (package rocq-runtime)
  (files
   (coqworker_bin.exe as coqworker)
   (coqworker_bin.bc as coqworker.byte)))

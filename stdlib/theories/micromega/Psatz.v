@@ -27,7 +27,7 @@ Require Lia.
 Require Lra.
 Require Lqa.
 
-Declare ML Module "coq-core.plugins.micromega".
+Declare ML Module "rocq-runtime.plugins.micromega".
 
 Ltac lia := Lia.lia.
 

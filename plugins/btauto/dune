@@ -1,7 +1,11 @@
 (library
  (name btauto_plugin)
- (public_name coq-core.plugins.btauto)
+ (public_name rocq-runtime.plugins.btauto)
  (synopsis "Rocq's btauto plugin")
- (libraries coq-core.plugins.ltac))
+ (libraries rocq-runtime.plugins.ltac))
+
+(deprecated_library_name
+ (old_public_name coq-core.plugins.btauto)
+ (new_public_name rocq-runtime.plugins.btauto))
 
 (coq.pp (modules g_btauto))

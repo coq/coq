@@ -1,3 +1,3 @@
 (executable
  (name coq_config_to_make)
- (libraries coq-core.config))
+ (libraries rocq-runtime.config))

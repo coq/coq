@@ -1,6 +1,6 @@
 build: [
   ["dune" "subst"] {dev}
-  # We tell dunestrap to use coq-config from coq-core
+  # We tell dunestrap to use coq-config from rocq-runtime
   [ make "dunestrap" "COQ_SPLIT=1" "DUNESTRAPOPT=-p rocq-core"]
   [
     "dune"

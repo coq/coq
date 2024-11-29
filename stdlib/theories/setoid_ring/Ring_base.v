@@ -12,7 +12,7 @@
    ring tactic. Abstract rings need more theory, depending on
    ZArith_base. *)
 
-Declare ML Module "coq-core.plugins.ring".
+Declare ML Module "rocq-runtime.plugins.ring".
 Require Export Ring_theory.
 Require Export Ring_tac.
 Require Import InitialRing.

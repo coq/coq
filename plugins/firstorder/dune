@@ -1,16 +1,24 @@
 (library
  (name firstorder_core_plugin)
- (public_name coq-core.plugins.firstorder_core)
+ (public_name rocq-runtime.plugins.firstorder_core)
  (synopsis "Rocq's first order logic solver plugin")
  (modules (:standard \ g_ground))
- (libraries coq-core.tactics))
+ (libraries rocq-runtime.tactics))
+
+(deprecated_library_name
+ (old_public_name coq-core.plugins.firstorder_core)
+ (new_public_name rocq-runtime.plugins.firstorder_core))
 
 (library
  (name firstorder_plugin)
- (public_name coq-core.plugins.firstorder)
+ (public_name rocq-runtime.plugins.firstorder)
  (synopsis "Rocq's first order logic solver plugin (Ltac1 syntax)")
  (flags :standard -open Firstorder_core_plugin)
  (modules g_ground)
- (libraries coq-core.plugins.firstorder_core coq-core.plugins.ltac))
+ (libraries rocq-runtime.plugins.firstorder_core rocq-runtime.plugins.ltac))
+
+(deprecated_library_name
+ (old_public_name coq-core.plugins.firstorder)
+ (new_public_name rocq-runtime.plugins.firstorder))
 
 (coq.pp (modules g_ground))

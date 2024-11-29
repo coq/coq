@@ -15,7 +15,7 @@ Require Ltac2.TransparentState.
     may have the effect of instantiating evars. If the [c1] and [c2] cannot be
     unified, an [Internal] exception is raised. *)
 Ltac2 @ external unify : TransparentState.t -> constr -> constr -> unit :=
-  "coq-core.plugins.ltac2" "evarconv_unify".
+  "rocq-runtime.plugins.ltac2" "evarconv_unify".
 
 (** [unify_with_full_ts] is like [unify TransparentState.full]. *)
 Ltac2 unify_with_full_ts : constr -> constr -> unit := fun c1 c2 =>

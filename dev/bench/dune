@@ -21,6 +21,6 @@
 (executable
  (name timelog2html)
  (public_name coqtimelog2html)
- (package coq-core)
+ (package rocq-runtime)
  (modules timelog2html)
  (libraries benchlib))

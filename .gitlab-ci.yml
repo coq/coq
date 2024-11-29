@@ -81,7 +81,7 @@ before_script:
       - config/dune.c_flags
     expire_in: 1 week
   script:
-    - PKGS=coq-core,rocq-core,coqide-server
+    - PKGS=rocq-runtime,coq-core,rocq-core,coqide-server
     - if [ "$COQIDE" != "no" ]; then PKGS=${PKGS},coqide; fi
     - dev/ci/gitlab-section.sh start coq.clean coq.clean
     - make clean # ensure that `make clean` works on a fresh clone
@@ -231,6 +231,7 @@ before_script:
   # OPAM will build out-of-tree so no point in importing artifacts
   script:
     - if [ "$COQ_CI_NATIVE" = true ]; then opam install -y coq-native; fi
+    - opam pin add --kind=path rocq-runtime.dev .
     - opam pin add --kind=path coq-core.dev .
     - opam pin add --kind=path rocq-core.dev .
     - opam pin add --kind=path coq-stdlib.dev stdlib/
@@ -335,7 +336,7 @@ build:base:dev:dune:
   script:
     - cp theories/dune.disabled theories/dune
     - cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
-    - dune build -p coq-core,rocq-core,coqide-server
+    - dune build -p rocq-runtime,coq-core,rocq-core,coqide-server
     - ls _build/install/default/lib/coq/theories/Init/Prelude.vo
     - ls _build/install/default/lib/coq/user-contrib/Ltac2/Ltac2.vo
   only: *full-ci

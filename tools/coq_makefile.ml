@@ -154,7 +154,7 @@ let generate_meta_file p =
         let meta : _ format = {|
 package "plugin" (
   directory = "."
-  requires = "coq-core.plugins.ltac"
+  requires = "rocq-runtime.plugins.ltac"
   archive(byte) = "%s.cma"
   archive(native) = "%s.cmxa"
   plugin(byte) = "%s.cma"

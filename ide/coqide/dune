@@ -6,14 +6,14 @@
  (public_name coqide-server.core)
  (wrapped false)
  (modules document)
- (libraries coq-core.boot coq-core.lib))
+ (libraries rocq-runtime.boot rocq-runtime.lib))
 
 (executable
  (name idetop)
  (public_name coqidetop)
  (package coqide-server)
  (modules idetop)
- (libraries coq-core.toplevel coqide-server.protocol platform_specific)
+ (libraries rocq-runtime.toplevel coqide-server.protocol platform_specific)
  (link_flags -linkall))
 
 ; IDE Client, we may want to add the macos_prehook.ml conditionally.

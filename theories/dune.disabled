@@ -7,27 +7,27 @@
  ; (mode native)
  (boot)
  (plugins
-   coq-core.plugins.ltac
-   coq-core.plugins.tauto
+   rocq-runtime.plugins.ltac
+   rocq-runtime.plugins.tauto
 
-   coq-core.plugins.cc
-   coq-core.plugins.firstorder
+   rocq-runtime.plugins.cc
+   rocq-runtime.plugins.firstorder
 
-   coq-core.plugins.number_string_notation
+   rocq-runtime.plugins.number_string_notation
 
-   coq-core.plugins.btauto
-   coq-core.plugins.rtauto
+   rocq-runtime.plugins.btauto
+   rocq-runtime.plugins.rtauto
 
-   coq-core.plugins.ring
-   coq-core.plugins.nsatz
+   rocq-runtime.plugins.ring
+   rocq-runtime.plugins.nsatz
 
-   coq-core.plugins.zify
-   coq-core.plugins.micromega
+   rocq-runtime.plugins.zify
+   rocq-runtime.plugins.micromega
 
-   coq-core.plugins.funind
+   rocq-runtime.plugins.funind
 
-   coq-core.plugins.ssreflect
-   coq-core.plugins.derive))
+   rocq-runtime.plugins.ssreflect
+   rocq-runtime.plugins.derive))
 
 (include_subdirs qualified)
 

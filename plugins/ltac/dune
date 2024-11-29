@@ -1,16 +1,24 @@
 (library
  (name ltac_plugin)
- (public_name coq-core.plugins.ltac)
+ (public_name rocq-runtime.plugins.ltac)
  (synopsis "Rocq's LTAC tactic language")
  (modules :standard \ tauto)
  (modules_without_implementation tacexpr)
- (libraries coq-core.vernac))
+ (libraries rocq-runtime.vernac))
+
+(deprecated_library_name
+ (old_public_name coq-core.plugins.ltac)
+ (new_public_name rocq-runtime.plugins.ltac))
 
 (library
  (name tauto_plugin)
- (public_name coq-core.plugins.tauto)
+ (public_name rocq-runtime.plugins.tauto)
  (synopsis "Rocq's tauto tactic")
  (modules tauto)
- (libraries coq-core.plugins.ltac))
+ (libraries rocq-runtime.plugins.ltac))
+
+(deprecated_library_name
+ (old_public_name coq-core.plugins.tauto)
+ (new_public_name rocq-runtime.plugins.tauto))
 
 (coq.pp (modules extratactics g_tactic  g_rewrite g_eqdecide g_auto g_obligations g_ltac profile_ltac_tactics coretactics g_class extraargs))

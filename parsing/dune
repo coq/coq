@@ -1,8 +1,12 @@
 (library
  (name parsing)
- (public_name coq-core.parsing)
+ (public_name rocq-runtime.parsing)
  (wrapped false)
  (modules_without_implementation notation_gram)
- (libraries coq-core.gramlib interp))
+ (libraries rocq-runtime.gramlib interp))
+
+(deprecated_library_name
+ (old_public_name coq-core.parsing)
+ (new_public_name rocq-runtime.parsing))
 
 (coq.pp (modules g_prim g_constr))

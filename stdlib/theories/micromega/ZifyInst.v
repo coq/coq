@@ -14,7 +14,7 @@
 
 Require Import Arith BinInt BinNat Znat Nnat.
 Require Import ZifyClasses.
-Declare ML Module "coq-core.plugins.zify".
+Declare ML Module "rocq-runtime.plugins.zify".
 Local Open Scope Z_scope.
 
 Ltac refl :=
