@@ -36,7 +36,7 @@
 (executable
  (name coqc_bin)
  (public_name coqc)
- (package rocq-runtime)
+ (package coq-core)
  (modules coqc_bin)
  (libraries rocqshim))
 
