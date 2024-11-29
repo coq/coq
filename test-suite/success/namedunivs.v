@@ -52,7 +52,7 @@ Definition testm (A : Type@{i}) : Type@{max(i,j)} := A.
 (* Inductive paths {A : Type} : A -> A -> Type := *)
 (* | idpath (a : A) : paths a a. *)
 
-Inductive paths {A : Type@{i}} : A -> A -> Type@{i} :=
+Cumulative Inductive paths {A : Type@{i}} : A -> A -> Type@{i} :=
 | idpath (a : A) : paths a a.
 
 Definition Funext := 

@@ -267,7 +267,7 @@ Proof.
 Qed.
 Check pointwise_relation.
 
-#[universes(polymorphic)]
+#[universes(polymorphic, cumulative)]
 Inductive peq@{i} (A : Type@{i}) (a : A) : A -> Type@{i} :=
   peq_refl : peq A a a.
 
@@ -290,9 +290,9 @@ Proof.
   intros hr x ? ? e. destruct e. apply hr.
   Show Proof.
 Qed.
-
+Unset Strict Universe Declaration.
 #[universes(polymorphic), export]
-Instance All_proper {A} :
+Instance All_proper {A : Type@{a}} : (* FIXME: removing @{a} does the wrong minimization *)
   CMorphisms.Proper ((pointwise_relation A iffT) ==> peq ==> iffT) All.
 Proof.
   intros f g Hfg x y e. destruct e. split; apply All_impl, Hfg.

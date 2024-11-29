@@ -116,7 +116,7 @@ Section fully_faithful_helpers.
   Variables x y : hSet.
   Variable m : x -> y.
 
-  Fail Let isequiv_isepi_ismono_helper ua :=
+  Let isequiv_isepi_ismono_helper ua :=
     (@isequiv_isepi_ismono ua fs0 x y m : isepi m -> ismono m -> IsEquiv m).
 
   Goal True.

@@ -1,7 +1,8 @@
 Polymorphic Axiom inhabited@{u} : Type@{u} -> Prop.
 
 Polymorphic Axiom unit@{u} : Type@{u}.
-Polymorphic Axiom tt@{u} : inhabited unit@{u}.
+
+Polymorphic Axiom tt@{u} : inhabited@{u} unit@{u}.
 
 #[export] Polymorphic Hint Resolve tt : the_lemmas.
 Set Printing All.

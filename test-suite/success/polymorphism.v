@@ -457,13 +457,15 @@ Module ObligationRegression.
   (** Test for a regression encountered when fixing obligations for
       stronger restriction of universe context. *)
   Require Import CMorphisms.
-  Check trans_co_eq_inv_arrow_morphism@{_ _ _}.
+  Check trans_co_eq_inv_arrow_morphism@{_ _}.
 End ObligationRegression.
 
-Axiom poly@{-i} : forall(A : Type@{i}) (a : A), unit.
+Module PolyCumul.
+Cumulative Axiom poly@{i} : forall(A : Type@{i}) (a : A), unit.
 
 Definition nonpoly := @poly True Logic.I.
 Definition check := nonpoly@{}.
+End PolyCumul.
 
 Module ProgramFixpoint.
 

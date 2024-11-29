@@ -55,7 +55,7 @@ End Reduction.
 
 Module Conversion.
 
-  Inductive Box@{s|u|} (A:Type@{s|u}) := box (_:A).
+  Cumulative Inductive Box@{s|u|} (A:Type@{s|u}) := box (_:A).
 
   Definition t1@{s|u|} (A:Type@{s|u}) (x y : A) := box _ x.
   Definition t2@{s|u|} (A:Type@{s|u}) (x y : A) := box _ y.
@@ -224,7 +224,7 @@ Module Inductives.
   Check R7@{SProp|} : SProp -> Set.
   Check R7@{Type|} : Set -> Set.
 
-  Inductive sigma@{s|u v|} (A:Type@{s|u}) (B:A -> Type@{s|v}) : Type@{s|max(u,v)}
+  Cumulative Inductive sigma@{s|u v|} (A:Type@{s|u}) (B:A -> Type@{s|v}) : Type@{s|max(u,v)}
     := pair : forall x : A, B x -> sigma A B.
 
   Definition sigma_srect@{s|k ?|} A B
@@ -259,7 +259,7 @@ Module Inductives.
   Abort.
 
   (* sigma as a primitive record works better *)
-  Record Rsigma@{s|u v|} (A:Type@{s|u}) (B:A -> Type@{s|v}) : Type@{s|max(u,v)}
+  Cumulative Record Rsigma@{s|u v|} (A:Type@{s|u}) (B:A -> Type@{s|v}) : Type@{s|max(u,v)}
     := Rpair { Rpr1 : A; Rpr2 : B Rpr1 }.
 
   (* match desugared to primitive projections using definitional eta *)
@@ -278,7 +278,7 @@ Module Inductives.
   (* we can eliminate to Prop *)
   Check sexists_ind.
 
-  Inductive sigma3@{s s' s''|u v| } (A:Type@{s|u}) (P:A -> Type@{s'|v}) :
+  Cumulative Inductive sigma3@{s s' s''|u v| } (A:Type@{s|u}) (P:A -> Type@{s'|v}) :
     Type@{s''|max(u,v)} :=
     exist3 : forall x:A, P x -> sigma3 A P.
 

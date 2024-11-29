@@ -99,7 +99,7 @@ Polymorphic Fixpoint nat_max@{i} (a b : nat@{i}) : nat@{i} :=
 Polymorphic Fixpoint height@{i} {T : Type@{i}} (t : Tree@{i} T) : nat@{i} :=
   match t return nat@{i} with
   | Empty _ => O
-  | Branch _ ls => S@{i} (pfold@{i i} nat_max O (pmap height ls))
+  | Branch _ ls => S@{i} (pfold@{i i} nat_max@{i} O (pmap height ls))
   end.
 
 Polymorphic Fixpoint repeat@{i} {T : Type@{i}} (n : nat@{i}) (v : T) : plist@{i} T :=

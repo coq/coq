@@ -11,6 +11,8 @@ Require Stdlib.Init.Datatypes.
 Import Stdlib.Init.Notations.
 
 Global Set Universe Polymorphism.
+Set Polymorphic Definitions Cumulativity. (* Already implied *)
+Unset Polymorphic Assumptions Cumulativity. (* Already implied *)
 Set Polymorphic Inductive Cumulativity.
 
 Notation "A -> B" := (forall (_ : A), B) : type_scope.
@@ -318,7 +320,6 @@ Section Adjointify.
   Context {A : Type@{a}} {B : Type@{b}} (f : A -> B) (g : B -> A).
   Context (isretr : Sect g f) (issect : Sect f g).
 
-  Set Debug "univMinim".
   Let issect' := fun x =>
     ap g (ap f (issect x)^)  @  ap g (isretr (f x))  @  issect x.
 
@@ -326,7 +327,7 @@ Section Adjointify.
   Proof.
     unfold issect'.
     apply moveR_M1.
-    repeat rewrite ap_pp, concat_p_pp; rewrite <- ap_compose.
+    repeat rewrite ap_pp, concat_p_pp. rewrite <- ap_compose.
     rewrite (concat_pA1 (fun b => (isretr b)^) (ap f (issect a)^)).
     repeat rewrite concat_pp_p; rewrite ap_V; apply moveL_Vp; rewrite concat_p1.
     rewrite concat_p_pp, <- ap_compose.
@@ -482,7 +483,6 @@ Module Export Modalities.
 Module Export ReflectiveSubuniverse.
 
 Module Type ReflectiveSubuniverses.
-
   Parameter ReflectiveSubuniverse@{u a} : Type2@{u a}.
 
   Parameter O_reflector@{u a i} : forall (O : ReflectiveSubuniverse@{u a}),
@@ -497,7 +497,7 @@ Module Type ReflectiveSubuniverses.
   Parameter to@{u a i} : forall (O : ReflectiveSubuniverse@{u a}) (T : Type@{i}),
                    T -> O_reflector@{u a i} O T.
 
-  Parameter inO_equiv_inO@{u a i j k ?} :
+  Parameter inO_equiv_inO@{u a i j k} :
       forall (O : ReflectiveSubuniverse@{u a}) (T : Type@{i}) (U : Type@{j})
              (T_inO : In@{u a i} O T) (f : T -> U) (feq : IsEquiv f),
         let gei := ((fun x => x) : Type@{i} -> Type@{k}) in
@@ -506,7 +506,7 @@ Module Type ReflectiveSubuniverses.
 
   Parameter hprop_inO@{u a i}
   : Funext -> forall (O : ReflectiveSubuniverse@{u a}) (T : Type@{i}),
-                IsHProp (In@{u a i} O T).
+                IsHProp@{i} (In@{u a i} O T).
 
   Parameter extendable_to_O@{u a i j k}
   : forall (O : ReflectiveSubuniverse@{u a}) {P : Type2le@{i a}} {Q : Type2le@{j a}} {Q_inO : In@{u a j} O Q},
@@ -599,7 +599,7 @@ Defined.
 
   Definition hprop_inO@{u a i}
   : Funext -> forall (O : ReflectiveSubuniverse@{u a}) (T : Type@{i}),
-                IsHProp (In@{u a i} O T).
+                IsHProp@{i} (In@{u a i} O T).
 admit.
 Defined.
 
@@ -643,7 +643,7 @@ Module Type Modalities.
 
   Parameter hprop_inO@{u a i}
   : Funext -> forall (O : Modality@{u a}) (T : Type@{i}),
-                IsHProp (In@{u a i} O T).
+                IsHProp@{i} (In@{u a i} O T).
 
 End Modalities.
 
@@ -675,6 +675,7 @@ Defined.
              (T_inO : In@{u a i} O T) (f : T -> U) (feq : IsEquiv f),
         In@{u a j} O U
     := inO_equiv_inO@{u a i j k}.
+
   Definition hprop_inO@{u a i}
   : Funext -> forall (O : ReflectiveSubuniverse@{u a}) (T : Type@{i}),
                 IsHProp (In@{u a i} O T)
@@ -720,7 +721,7 @@ Module EasyModalities_to_Modalities (Os : EasyModalities)
 
   Definition hprop_inO@{u a i} `{Funext} (O : Modality@{u a})
              (T : Type@{i})
-  : IsHProp (In@{u a i} O T).
+  : IsHProp@{i} (In@{u a i} O T).
 admit.
 Defined.
 
@@ -729,7 +730,7 @@ Defined.
              (B_inO : forall oa, In@{u a j} O (B oa))
   : let gei := ((fun x => x) : Type@{i} -> Type@{k}) in
     let gej := ((fun x => x) : Type@{j} -> Type@{k}) in
-    (forall a, B (to O A a)) -> forall oa, B oa.
+    (forall a, B (to@{u a i} O A a)) -> forall oa, B oa.
 admit.
 Defined.
 
@@ -745,19 +746,17 @@ Defined.
   : In@{u a i} O (O_reflector@{u a i} O A).
 admit.
 Defined.
-Set Debug "univMinim".
 
   Definition inO_equiv_inO@{u a i j k} (O : Modality@{u a}) (A : Type@{i}) (B : Type@{j})
     (A_inO : In@{u a i} O A) (f : A -> B) (feq : IsEquiv f)
   : In@{u a j} O B.
-  Proof. red.
-    simple refine (isequiv_commsq@{i i j j} (to O A) (to O B) f
-             (O_ind_internal@{u a i j k} O A (fun _ => O_reflector O B) _ (fun a => to O B (f a))) _).
-    - intros; apply O_inO.
-    - admit.
-    - admit.
-    - admit.
-    Defined.
+  Proof.
+    simple refine (isequiv_commsq (to O A) (to O B) f
+             (O_ind_internal O A (fun _ => O_reflector O B) _ (fun a => to O B (f a))) _).
+    -
+ intros; apply O_inO.
+    -
+
  intros a; refine (O_ind_beta_internal@{u a i j k} O A (fun _ => O_reflector O B) _ _ a).
     -
  apply A_inO.
@@ -832,21 +831,21 @@ Module Truncation_Modalities <: Modalities.
 
   Definition In (n : Modality@{u u'}) A := IsTrunc n A.
 
-  Definition O_inO (n : Modality@{u u'}) A : In n (O_reflector n A).
-admit.
-Defined.
+  Definition O_inO (n : Modality@{u u'}) (A : Type@{a}) : In@{u u' a} n (O_reflector@{u u' a} n A).
+  Proof. admit.
+  Defined.
 
   Definition to (n : Modality@{u u'}) A := @tr n A.
 
-  Definition inO_equiv_inO (n : Modality@{u u'})
+  Definition inO_equiv_inO@{u a i j k} (n : Modality@{u a})
              (A : Type@{i}) (B : Type@{j}) Atr f feq
   : let gei := ((fun x => x) : Type@{i} -> Type@{k}) in
     let gej := ((fun x => x) : Type@{j} -> Type@{k}) in
-    In n B
-  := @trunc_equiv A B f n Atr feq.
+    In@{u a j} n B
+  := @trunc_equiv@{i j} A B f n Atr feq.
 
-  Definition hprop_inO `{Funext} (n : Modality@{u u'}) A
-  : IsHProp (In n A).
+  Definition hprop_inO@{u a i} `{Funext} (n : Modality@{u a}) (A : Type@{i})
+  : IsHProp@{i} (In n A).
 admit.
 Defined.
 

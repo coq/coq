@@ -23,7 +23,7 @@ Fail Definition LowerTp@{i j|j < i} : Tp@{i} -> Tp@{j} := fun x => x.
 
 Record Tp' := { tp' : Tp }.
 
-Definition CTp := Tp.
+Definition CTp@{u} := Tp@{u}. (* FIXME? *)
 (* here we have to reduce a constant to infer the correct subtyping. *)
 Record Tp''@{+u} := { tp'' : CTp@{u} }.
 

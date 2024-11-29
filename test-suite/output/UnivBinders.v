@@ -2,6 +2,7 @@
 
 Set Universe Polymorphism.
 Set Printing Universes.
+Unset Printing Universe Variances.
 (* Unset Strict Universe Declaration. *)
 
 (* universe binders on inductive types and record projections *)

@@ -14,7 +14,7 @@ Fixpoint first_satisfying_helper {A B} (f : A -> option B) (ls : list A) : optio
           end
      end.
 
-Axiom admit@{-u} : forall {T : Type@{u}}, T.
+Cumulative Axiom admit@{-u} : forall {T : Type@{u}}, T.
 
 Definition dtree4 : option decision_tree :=
   match first_satisfying_helper (fun pat : nat => Some pat) (cons 0 nil)

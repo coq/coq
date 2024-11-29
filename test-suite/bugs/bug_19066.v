@@ -3,7 +3,7 @@ Unset Strict Universe Declaration.
 Set Primitive Projections.
 
 Axiom Relation@{u} : Type@{u} -> Type@{u}.
-Inductive GraphQuotient {A : Type@{i}} (R : Relation A) : Type@{u} :=
+Inductive GraphQuotient {A : Type@{i}} (R : Relation@{i} A) : Type@{u} :=
 | gq : A -> GraphQuotient R.
 
 Arguments gq {A R} a.
