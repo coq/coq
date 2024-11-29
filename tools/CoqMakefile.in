@@ -98,6 +98,7 @@ COQBIN:=$(COQBIN)/
 endif
 
 # Coq binaries
+ROCQ     ?= "$(COQBIN)rocq"
 COQC     ?= "$(COQBIN)coqc"
 COQTOP   ?= "$(COQBIN)coqtop"
 COQCHK   ?= "$(COQBIN)coqchk"
@@ -275,7 +276,8 @@ COQDOCLIBS?=$(COQLIBS_NOML)
 
 # The version of Coq being run and the version of coq_makefile that
 # generated this makefile
-COQ_VERSION:=$(shell $(COQC) --print-version | cut -d " " -f 1)
+# NB --print-version is not in the rocq shim
+COQ_VERSION:=$(shell $(ROCQ) c --print-version | cut -d " " -f 1)
 COQMAKEFILE_VERSION:=@COQ_VERSION@
 
 # COQ_SRC_SUBDIRS is for user-overriding, usually to add
@@ -785,8 +787,8 @@ define globvorule=
 
 # take care to $$ variables using $< etc
   $(1).vo $(1).glob &: $(1).v | $$(VDFILE)
-	$$(SHOW)COQC $(1).v
-	$$(HIDE)$$(TIMER) $$(COQC) $$(COQDEBUG) $$(TIMING_ARG) $$(PROFILE_ARG) $$(COQFLAGS) $$(COQLIBS) $(1).v
+	$$(SHOW)ROCQ compile $(1).v
+	$$(HIDE)$$(TIMER) $$(ROCQ) compile $$(COQDEBUG) $$(TIMING_ARG) $$(PROFILE_ARG) $$(COQFLAGS) $$(COQLIBS) $(1).v
 	$$(HIDE)$$(PROFILE_ZIP)
 ifeq ($(COQDONATIVE), "yes")
 	$$(SHOW)COQNATIVE $(1).vo
@@ -797,8 +799,8 @@ endef
 else
 
 $(VOFILES): %.vo: %.v | $(VDFILE)
-	$(SHOW)COQC $<
-	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(PROFILE_ARG) $(COQFLAGS) $(COQLIBS) $<
+	$(SHOW)ROCQ compile $<
+	$(HIDE)$(TIMER) $(ROCQ) compile $(COQDEBUG) $(TIMING_ARG) $(PROFILE_ARG) $(COQFLAGS) $(COQLIBS) $<
 	$(HIDE)$(PROFILE_ZIP)
 ifeq ($(COQDONATIVE), "yes")
 	$(SHOW)COQNATIVE $@
@@ -807,20 +809,20 @@ endif
 
 # this is broken :( todo fix if we ever find a solution that doesn't need grouped targets
 $(GLOBFILES): %.glob: %.v
-	$(SHOW)'COQC $< (for .glob)'
-	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(COQFLAGS) $(COQLIBS) $<
+	$(SHOW)'ROCQ compile $< (for .glob)'
+	$(HIDE)$(TIMER) $(ROCQ) compile $(COQDEBUG) $(COQFLAGS) $(COQLIBS) $<
 
 endif
 
 $(foreach vfile,$(VFILES:.v=),$(eval $(call globvorule,$(vfile))))
 
 $(VFILES:.v=.vos): %.vos: %.v
-	$(SHOW)COQC -vos $<
-	$(HIDE)$(TIMER) $(COQC) -vos $(COQDEBUG) $(COQFLAGS) $(COQLIBS) $<
+	$(SHOW)ROCQ compile -vos $<
+	$(HIDE)$(TIMER) $(ROCQ) compile -vos $(COQDEBUG) $(COQFLAGS) $(COQLIBS) $<
 
 $(VFILES:.v=.vok): %.vok: %.v
-	$(SHOW)COQC -vok $<
-	$(HIDE)$(TIMER) $(COQC) -vok $(COQDEBUG) $(COQFLAGS) $(COQLIBS) $<
+	$(SHOW)ROCQ compile -vok $<
+	$(HIDE)$(TIMER) $(ROCQ) compile -vok $(COQDEBUG) $(COQFLAGS) $(COQLIBS) $<
 
 $(addsuffix .timing.diff,$(VFILES)): %.timing.diff : %.before-timing %.after-timing
 	$(SHOW)PYTHON TIMING-DIFF $*.{before,after}-timing
@@ -828,7 +830,7 @@ $(addsuffix .timing.diff,$(VFILES)): %.timing.diff : %.before-timing %.after-tim
 
 $(BEAUTYFILES): %.v.beautified: %.v
 	$(SHOW)'BEAUTIFY $<'
-	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(COQFLAGS) $(COQLIBS) -beautify $<
+	$(HIDE)$(TIMER) $(ROCQ) compile $(COQDEBUG) $(COQFLAGS) $(COQLIBS) -beautify $<
 
 $(TEXFILES): %.tex: %.v
 	$(SHOW)'COQDOC -latex $<'
