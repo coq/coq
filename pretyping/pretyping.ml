@@ -558,15 +558,20 @@ let instance ?loc evd (ql,ul) =
   in
   evd, Some (UVars.Instance.of_array (Array.rev_of_list ql', Array.rev_of_list ul'))
 
+type pretype_instance =
+  | Global of (glob_quality list * glob_univ list) option
+  | Inferred of UVars.Instance.t
+
 let pretype_global ?loc rigid env evd gr us =
   let evd, instance =
     match us with
-    | None -> evd, None
-    | Some l -> instance ?loc evd l
+    | Global None -> evd, None
+    | Global (Some l) -> instance ?loc evd l
+    | Inferred i -> evd, Some i
   in
   Evd.fresh_global ?loc ~rigid ?names:instance !!env evd gr
 
-let pretype_ref ?loc sigma env ref us =
+let pretype_ref ?loc sigma env ref us tycon =
   match ref with
   | GlobRef.VarRef id ->
       (* Section variable *)
@@ -586,8 +591,19 @@ let pretype_ref ?loc sigma env ref us =
             been cleared - section variables should be different from goal
             variables *)
          Pretype_errors.error_var_not_found ?loc !!env sigma id)
+
   | ref ->
-    let sigma, c = pretype_global ?loc univ_flexible env sigma ref us in
+    let inst =
+      match ref with
+      | GlobRef.ConstructRef c ->
+        (match tycon with
+        | Some ty ->
+          (try let ((ind, u), pars) = find_mrectype !!env sigma ty in Inferred (EInstance.kind sigma u)
+           with Not_found -> Global us)
+        | None -> Global us)
+      | _ -> Global us
+    in
+    let sigma, c = pretype_global ?loc univ_flexible env sigma ref inst in
     let sigma, ty = type_of !!env sigma c in
     sigma, make_judge c ty
 
@@ -767,7 +783,7 @@ struct
 
   let pretype_ref self (ref, u) =
     fun ?loc ~flags tycon env sigma ->
-    let sigma, t_ref = pretype_ref ?loc sigma env ref u in
+    let sigma, t_ref = pretype_ref ?loc sigma env ref u tycon in
     discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma t_ref tycon
 
   let pretype_var self id =
