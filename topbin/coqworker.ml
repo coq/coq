@@ -19,10 +19,12 @@ let error s () =
 type kind =
   | Worker of { init : unit -> unit; loop : unit -> unit }
   | Compile
+  | Repl
 
 let start kind args = match kind with
   | Worker { init; loop } -> WorkerLoop.start ~init ~loop args
   | Compile -> Coqc.main args
+  | Repl -> Coqtop.(start_coq coqtop_toplevel args)
 
 let () =
   if Array.length Sys.argv < 2
@@ -34,6 +36,7 @@ let () =
     let kind =
       match kind with
       | "--kind=compile" -> Compile
+      | "--kind=repl" -> Repl
       | "--kind=proof" -> Worker { init = WProof.init_stdout; loop = WProof.main_loop }
       | "--kind=query" -> Worker { init = WQuery.init_stdout; loop = WQuery.main_loop }
       | "--kind=tactic" -> Worker { init = WTactic.init_stdout; loop = WTactic.main_loop }

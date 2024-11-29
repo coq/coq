@@ -21,9 +21,9 @@
 (executable
  (name coqtop_bin)
  (public_name coqtop)
- (package rocq-runtime)
+ (package coq-core)
  (modules coqtop_bin)
- (libraries rocq-runtime.toplevel))
+ (libraries rocqshim))
 
 (executable
  (name coqtop_byte_bin)
