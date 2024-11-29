@@ -693,17 +693,13 @@ let pr_ast fmt = function
 | ArgumentExt arg -> fprintf fmt "%a@\n" ArgumentExt.print_ast arg
 
 let help () =
-  Format.eprintf "Usage: coqpp file.mlg@\n%!";
+  Format.eprintf "Usage: rocq preprocess-mlg file.mlg@\n%!";
   exit 1
 
-let parse () =
-  let () =
-    if Array.length Sys.argv <> 2
-    then help ()
-  in
-  match Sys.argv.(1) with
-  | "-help" | "--help" -> help ()
-  | file -> file
+let parse = function
+  | ["-help"|"--help"] -> help()
+  | [file] -> file
+  | _ -> help ()
 
 let output_name file =
   try
@@ -712,8 +708,8 @@ let output_name file =
   | Invalid_argument _ ->
     fatal "Input file must have an extension for coqpp [input.ext -> input.ml]"
 
-let () =
-  let file = parse () in
+let main args =
+  let file = parse args in
   let output = output_name file in
   let ast = parse_file file in
   let chan = open_out output in
