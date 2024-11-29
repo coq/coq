@@ -13,6 +13,12 @@ let fatal_error fmt = Printf.kfprintf (fun _ -> exit 1) stderr (fmt^^"\n")
 let error_usage () =
   fatal_error "Usage: rocq [-debug-shim] {-v|--version|NAME} [ARGUMENTS...]"
 
+let with_worker ~debug_shim kind args =
+  let prog = Rocqshim.get_worker_path { package = "rocq-runtime"; basename = "coqworker" } in
+  let () = if debug_shim then Printf.eprintf "Using %s\n%!" prog in
+  let argv = Array.of_list (prog :: ("--kind="^kind) :: args) in
+  Rocqshim.exec_or_create_process prog argv
+
 let () =
   if Array.length Sys.argv < 2 then error_usage ();
 
@@ -21,11 +27,9 @@ let () =
 
   match args with
   | "-v" :: _ | "--version" :: _ -> Boot.Usage.version ()
-  | ("c" | "compile") :: args ->
-    let prog = Rocqshim.get_worker_path { package = "rocq-runtime"; basename = "coqworker" } in
-    let () = if debug_shim then Printf.eprintf "Using %s\n%!" prog in
-    let argv = Array.of_list (prog :: "--kind=compile" :: args) in
-    Rocqshim.exec_or_create_process prog argv
+  | ("c" | "compile") :: args -> with_worker ~debug_shim "compile" args
+  | ("top"|"repl") :: args -> with_worker ~debug_shim "repl" args
+
   | prog :: _ ->
     fatal_error "Unknown argument %s" prog
   | [] -> error_usage ()
