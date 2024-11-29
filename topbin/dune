@@ -11,7 +11,7 @@
  (synopsis "Rocq support for finding and dynlinking subcommands")
  (wrapped false) ; no point repeating the Rocqloader name
  (modules rocqloader)
- (libraries boot unix findlib.dynload rocqshim))
+ (libraries boot unix threads findlib.dynload rocqshim))
 
 (executable
  (public_name rocq)
