@@ -383,12 +383,12 @@ open Inf
 
 type is_type = IsType | IsTerm
 
+let instance_univs u = snd (Instance.to_array u)
+
 let infer_generic_instance_eq variances u =
   Array.fold_left (fun variances u ->
     Level.Set.fold (fun l -> infer_level_eq ~typing_variance:Invariant None l) (Universe.levels u) variances)
-    variances u
-
-let instance_univs u = snd (Instance.to_array u)
+    variances (instance_univs u)
 
 let extend_con_instance cb u =
   Instance.append (Instance.of_level_instance cb.const_univ_hyps) u
@@ -447,12 +447,12 @@ let infer_cumulative_instance cv_pb (is_type, _appvariance) nargs gvariances var
 
 let infer_inductive_instance cv_pb variance env variances ind nargs u =
   if not (Environ.mem_mind (fst ind) env) then
-    infer_generic_instance_eq variances (instance_univs u)
+    infer_generic_instance_eq variances u
   else
   let mind = Environ.lookup_mind (fst ind) env in
   let u = extend_ind_instance mind u in
   match extended_mind_variance mind with
-  | None -> infer_generic_instance_eq variances (instance_univs u)
+  | None -> infer_generic_instance_eq variances u
   | Some mind_variance -> infer_cumulative_instance cv_pb variance (UVars.NumArgs nargs) mind_variance variances u
 
 let constructor_variances _mind _ind _ctor variance =
@@ -464,12 +464,12 @@ let constructor_variances _mind _ind _ctor variance =
 
 let infer_constructor_instance_eq env variance variances ((mi,ind),ctor) nargs u =
   if not (Environ.mem_mind mi env) then
-    infer_generic_instance_eq variances (instance_univs u)
+    infer_generic_instance_eq variances u
   else
   let mind = Environ.lookup_mind mi env in
   let u = extend_ind_instance mind u in
   match extended_mind_variance mind with
-  | None -> infer_generic_instance_eq variances (instance_univs u)
+  | None -> infer_generic_instance_eq variances u
   | Some mind_variance ->
     let cstr_variance = constructor_variances mind ind ctor mind_variance in
     infer_cumulative_instance Cumul variance (UVars.NumArgs nargs) cstr_variance variances u
@@ -495,7 +495,7 @@ let infer_constant cv_pb variance env nargs variances has_def (con,u) =
   match extended_const_variance cb with
   | None ->
     let variances = if has_def then set_infer_mode false variances else variances in
-    infer_generic_instance_eq variances (instance_univs u)
+    infer_generic_instance_eq variances u
   | Some cst_variance -> infer_cumulative_instance cv_pb variance nargs cst_variance variances u
 
 let whd_stack (infos, tab) hd stk = CClosure.whd_stack infos tab hd stk
@@ -519,7 +519,7 @@ let rec infer_fterm cv_pb (variance : is_type * Variance.t) infos variances hd s
       | _ -> assert false
     end
   | FEvar (_, _, usubs, _) ->
-    let variances = infer_generic_instance_eq variances (instance_univs (snd usubs))in
+    let variances = infer_generic_instance_eq variances (snd usubs)in
     infer_stack variance infos variances stk
   | FRel _ -> infer_stack variance infos variances stk
   | FInt _ -> infer_stack variance infos variances stk
@@ -535,7 +535,7 @@ let rec infer_fterm cv_pb (variance : is_type * Variance.t) infos variances hd s
   | FFlex (Names.ConstKey con as fl) ->
     begin
       if not (Environ.mem_constant (fst con) (info_env (fst infos))) then
-        let variances = infer_generic_instance_eq variances (snd (Instance.to_array (snd con))) in
+        let variances = infer_generic_instance_eq variances (snd con) in
         let variances = infer_stack variance infos variances stk in
         variances
       else
@@ -586,9 +586,11 @@ let rec infer_fterm cv_pb (variance : is_type * Variance.t) infos variances hd s
       infer_vect  Conv variance infos variances (Array.map (mk_clos le) cl)
     in
     infer_stack variance infos variances stk
-  | FArray (u,elemsdef,ty) -> (* False? Not implemnting irrelevance *)
-    let variances = infer_generic_instance_eq variances (instance_univs u) in
-    let variances = infer_fterm Conv (IsType, snd variance) infos variances ty [] in
+  | FArray (u,elemsdef,ty) ->
+    let variances =
+      infer_cumulative_instance cv_pb (IsType, snd variance) FullyApplied CPrimitives.array_variances variances u
+    in
+    let variances = infer_fterm cv_pb (IsType, Covariant) infos variances ty [] in
     let elems, def = Parray.to_array elemsdef in
     let variances = infer_fterm Conv (IsTerm, Invariant) infos variances def [] in
     let variances = infer_vect Conv (IsTerm, Invariant) infos variances elems in
