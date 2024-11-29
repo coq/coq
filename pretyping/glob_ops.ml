@@ -97,7 +97,7 @@ let glob_sort_family s =
       | GSProp -> InSProp
       | GProp -> InProp
       | GSet -> InSet
-      | GUniv _ | GLocalUniv _ | GRawUniv _ -> raise ComplexSort
+      | GUniv _ | GLocalUniv _ | GRawUniv _ -> InType
     end
   | _ -> raise ComplexSort
 

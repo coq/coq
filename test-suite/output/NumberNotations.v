@@ -81,14 +81,14 @@ Module Test4.
   Check let v := 0%utp in v : unit.
   Check let v := 0%upp in v : unit.
 
-  Polymorphic Definition pto_punits := pto_punit_all@{Set}.
-  Polymorphic Definition pof_punits := pof_punit@{Set}.
+  Polymorphic Definition pto_punits := pto_punit_all@{}.
+  Polymorphic Definition pof_punits := pof_punit@{}.
   Number Notation punit pto_punits pof_punits (abstract after 0) : ppps.
   Delimit Scope ppps with ppps.
   Universe u.
   Constraint Set < u.
   Check let v := 0%ppps in v : punit@{u}. (* Check that universes are refreshed *)
-  Fail Check let v := 1%ppps in v : punit@{u}. (* Note that universes are not refreshed here *)
+  Check let v := 1%ppps in v : punit@{u}. (* Note that universes are not refreshed here *)
 End Test4.
 
 Module Test5.
@@ -454,7 +454,7 @@ Module Test20.
   Eval cbv in (_ : known_type bool) : ty.
   Eval cbv in (_ : known_type Prop) : ty.
   Eval cbv in (_ : known_type Set) : ty.
-  Eval cbv in (_ : known_type Type) : ty.
+  Eval cbv in (_ : known_type Type@{_}) : ty.
   Local Set Printing All.
   Check let v := 0%kt in v : ty.
   Check let v := 1%kt in v : ty.
