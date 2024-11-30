@@ -305,14 +305,11 @@ let _ = DebugCommon.fwd_db_subgoals := db_subgoals
 let debug_cmd = ref DebugHook.Action.Ignore
 
 let subgoals flags =
-  let doc = get_doc () in
   if !DebuggerTypes.read_in_debug then begin
     debug_cmd := DebugHook.Action.Subgoals flags;
     None (* return value passed through DebugHook.Answer *)
-  end else begin
-    ignore @@ Stm.finish ~doc;
+  end else
     db_subgoals flags None None
-  end
 
 let goals () =
   let open DebuggerTypes in

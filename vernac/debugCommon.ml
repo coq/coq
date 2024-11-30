@@ -306,6 +306,7 @@ let stepping_stop loc =
     | Continue -> false
     | StepInRev
     | StepIn   -> true
+    | Interrupt  (* for continuing after receiving Interrupt *)
     | StepOverRev
     | StepOver -> let st, l_cur, l_prev = locs_info () in
                   if l_cur = 0 || l_cur < l_prev then true (* stepped out *)
@@ -316,8 +317,8 @@ let stepping_stop loc =
                     (l_cur = l_prev && peq)  (* stepped over *)
     | StepOutRev
     | StepOut  -> let st, l_cur, l_prev = locs_info () in
-                  if l_cur < l_prev then true
-                  else if l_prev = 0 then false
+                  if l_prev = 0 then false
+                  else if l_cur < l_prev then true
                   else
                     List.nth st (l_cur - l_prev) != (List.hd !st_prev)
     | Skip | RunCnt _ | RunBreakpoint _ -> false (* not detected here *)
@@ -326,13 +327,15 @@ let stepping_stop loc =
 
 (* assumes in debugger and not in Ltac2 library *)
 let stop_in_debugger loc =
-  if breakpoint_stop loc || stepping_stop loc then
+  if (breakpoint_stop loc || stepping_stop loc) &&
+      (Vernacstate.Declare.there_are_pending_proofs ()) then
     let st, l_cur, _ = locs_info () in
     st_prev := st;
     st_prev_len := l_cur;
     true
   else
     false
+  [@@ocaml.warning "-3"]
 
 open Pp (* for str *)
 
