@@ -216,6 +216,12 @@ let interp_gen ~verbosely ~st ~interp_fn cmd =
     let exn = Exninfo.capture exn in
     let exn = locate_if_not_already ?loc:cmd.CAst.loc exn in
     Vernacstate.Interp.invalidate_cache ();
+    if DebugCommon.get_debug () then begin
+      (* let user examine debug state for exception *)
+      let (_, info) = exn in
+      let loc = real_error_loc ~cmdloc:cmd.CAst.loc ~eloc:(Loc.get_loc info) in
+      DebugCommon.show_exn_in_debugger exn loc;
+    end;
     Exninfo.iraise exn
 
 (* Regular interp *)

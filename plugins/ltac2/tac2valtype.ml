@@ -8,25 +8,18 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type goals =
-| NoGoals
-| FocusGoals of { fg : Interface.goal list; bg : Interface.goal list }
-| NoFocusGoals of {
-  bg : Interface.goal list;
-  shelved : Interface.goal list;
-  given_up : Interface.goal list;
+open Tac2expr
+open Tac2ffi
+open Tac2typing_env
+
+(* avoid mutual dependency between Tac2typing_env and Tac2expr *)
+type valtype = TVar.t glb_typexpr option  (* todo: keep option? *)
+
+type typed_valexpr = Tac2env.typed_valexpr = {
+  e : valexpr;
+  t : Obj.t option  (* really valtype *)
 }
 
-class type proof_view =
-  object
-    inherit GObj.widget
-    method source_buffer : GSourceView3.source_buffer
-    method buffer : GText.buffer
-    method refresh : force:bool -> unit
-    method clear : unit -> unit
-    method set_goals : goals -> bool -> unit
-    method incr_sel_goal_num : int -> unit
-    method select_first_goal : unit -> unit
-  end
+let wrap (t: t * TVar.t glb_typexpr) = Obj.repr t
 
-val proof_view : unit -> proof_view
+let unwrap : Obj.t -> t * TVar.t glb_typexpr = fun o -> Obj.obj o

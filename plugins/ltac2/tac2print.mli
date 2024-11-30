@@ -53,7 +53,8 @@ type val_printer =
 
 val register_val_printer : type_constant -> val_printer -> unit
 
-val pr_valexpr : Environ.env -> Evd.evar_map -> valexpr -> 'a glb_typexpr -> Pp.t
+val pr_valexpr : ?maptv:('a glb_typexpr -> 'a glb_typexpr)
+    -> Environ.env -> Evd.evar_map -> valexpr -> 'a glb_typexpr -> Pp.t
 
 (** {5 Utilities} *)
 

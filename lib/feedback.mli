@@ -86,6 +86,9 @@ val msg_info : ?loc:Loc.t -> Pp.t -> unit
 val msg_notice : ?loc:Loc.t -> Pp.t -> unit
 (** Message that should be displayed, such as [Print Foo] or [Show Bar]. *)
 
+val msg_error_debugger : ?loc:Loc.t -> Pp.t -> unit
+(** Not for general use.  Display an error in the Ltac debugger *)
+
 val msg_warning : ?loc:Loc.t -> Pp.t -> unit
 (** Message indicating that something went wrong, but without serious
     consequences. *)

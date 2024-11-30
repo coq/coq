@@ -191,11 +191,16 @@ let concl_next_tac =
     "right"
   ])
 
+let sugg_name env sigma g =
+  if Printer.print_goal_names () then
+    Some (Names.Id.to_string (Termops.evar_suggested_name env sigma g))
+  else None
+
 let process_goal short sigma g =
   let evi = Evd.find_undefined sigma g in
   let env = Evd.evar_filtered_env (Global.env ()) evi in
   let min_env = Environ.reset_context env in
-  let name = if Printer.print_goal_names () then Some (Names.Id.to_string (Termops.evar_suggested_name env sigma g)) else None in
+  let name = sugg_name env sigma g in
   let ccl =
     pr_letype_env ~goal_concl_style:true env sigma (Evd.evar_concl evi)
   in
@@ -211,25 +216,28 @@ let process_goal short sigma g =
       in
       hyps
   in
-  { Interface.goal_hyp = List.rev hyps; Interface.goal_ccl = ccl; Interface.goal_id = Proof.goal_uid g; Interface.goal_name = name }
+  DebuggerTypes.{ goal_hyp = List.rev hyps; goal_ccl = ccl; goal_id = Proof.goal_uid g; goal_name = name }
 
-let process_goal_diffs ~short diff_goal_map oldp nsigma ng =
+let process_goal_diffs ~short diff_goal_map nsigma ng =
   let env = Global.env () in
-  let name = if Printer.print_goal_names () then Some (Names.Id.to_string (Termops.evar_suggested_name env nsigma ng)) else None in
-  let og_s = match oldp, diff_goal_map with
-  | Some oldp, Some diff_goal_map -> Proof_diffs.map_goal ng diff_goal_map
-  | None, _ | _, None -> None
+  let name = sugg_name env nsigma ng in
+  let og_s = match diff_goal_map with
+  | Some diff_goal_map -> Proof_diffs.map_goal ng diff_goal_map
+  | None -> None
   in
   let (hyps_pp_list, concl_pp) = Proof_diffs.diff_goal ~short ?og_s (Proof_diffs.make_goal env nsigma ng) in
-  { Interface.goal_hyp = hyps_pp_list; Interface.goal_ccl = concl_pp;
-    Interface.goal_id = Proof.goal_uid ng; Interface.goal_name = name }
+  DebuggerTypes.{ goal_hyp = hyps_pp_list; goal_ccl = concl_pp;
+    goal_id = Proof.goal_uid ng; goal_name = name }
 
-let export_pre_goals flags Proof.{ sigma; goals; stack } process =
-  let open Interface in
-  let process x = List.map (process sigma) x in
-  let fg_goals = if flags.gf_fg then process goals else [] in
+let export_pre_goals (export_goals_args : DebugCommon.export_goals_args) flags process0 =
+  let open DebuggerTypes in
+  let sigma = export_goals_args.sigma in
+  let process x = List.map (process0 sigma) x in
+  let fg_goals = if flags.gf_fg then process export_goals_args.goals else [] in
   let bg_goals =
-    if flags.gf_bg then List.(map (fun (lg,rg) -> process lg, process rg)) stack
+    if flags.gf_bg then
+      let process x = List.map (process0 export_goals_args.bgsigma) x in
+      List.(map (fun (lg,rg) -> process lg, process rg)) export_goals_args.stack
     else []
   in
   let shelved_goals =
@@ -242,42 +250,79 @@ let export_pre_goals flags Proof.{ sigma; goals; stack } process =
   in
   { fg_goals; bg_goals; shelved_goals; given_up_goals }
 
-let subgoals flags =
+let set_ex_args newp export_goals_args =
+    let Proof.{ sigma; goals; stack} = Proof.data newp in
+    Option.default DebugCommon.{
+      sigma;
+      goals;
+      bgsigma=sigma;
+      stack;
+      show_diffs=true;
+    } export_goals_args
+
+let set_map_args doc newp goal_map_args =
+  match goal_map_args with
+  | Some _ -> goal_map_args (* in debugger *)
+  (* todo: bg, shelved and given_up are not reliable while in the debugger.
+     Would be great if that could be fixed. *)
+  | None ->
+    let oldp = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
+    match oldp with
+    | Some oldp ->
+      Some (Proof_diffs.default_goal_map_args oldp newp)
+    | None -> None
+
+let db_subgoals flags export_goals_args goal_map_args =
   let doc = get_doc () in
-  ignore (Stm.finish ~doc : Vernacstate.t);
-  let short = match flags.Interface.gf_mode with
+  if not !DebuggerTypes.read_in_debug then
+    ignore @@ Stm.finish ~doc;
+  let short = match flags.DebuggerTypes.gf_mode with
   | "short" -> true
   | _ -> false
   in
   try
     let newp = Vernacstate.Declare.give_me_the_proof () in
-    if Proof_diffs.show_diffs () then begin
-      let oldp = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
-      (try
-        let diff_goal_map = match oldp with
-        | None -> None
-        | Some oldp -> Some (Proof_diffs.make_goal_map oldp newp)
+    let export_goals_args = set_ex_args newp export_goals_args in
+    let without_diffs () = Some (export_pre_goals export_goals_args flags (process_goal short)) in
+    if Proof_diffs.show_diffs () && export_goals_args.show_diffs then begin
+      let goal_map_args = set_map_args doc newp goal_map_args in
+      try
+        let diff_goal_map = match goal_map_args with
+          | Some goal_map_args -> Some (Proof_diffs.make_goal_map goal_map_args)
+          | None -> None
         in
-        Some (export_pre_goals flags Proof.(data newp) (process_goal_diffs ~short diff_goal_map oldp))
-       with Pp_diff.Diff_Failure msg ->
-         Proof_diffs.notify_proof_diff_failure msg;
-         Some (export_pre_goals flags Proof.(data newp) (process_goal short)))
+        Some (export_pre_goals export_goals_args flags (process_goal_diffs ~short diff_goal_map))
+      with Pp_diff.Diff_Failure msg ->
+        Proof_diffs.notify_proof_diff_failure msg;
+        without_diffs ()
     end else
-      Some (export_pre_goals flags Proof.(data newp) (process_goal short))
+      without_diffs ()
   with Vernacstate.Declare.NoCurrentProof -> None
   [@@ocaml.warning "-3"]
 
+let _ = DebugCommon.fwd_db_subgoals := db_subgoals
+
+let debug_cmd = ref DebugHook.Action.Ignore
+
+let subgoals flags =
+  if !DebuggerTypes.read_in_debug then begin
+    debug_cmd := DebugHook.Action.Subgoals flags;
+    None (* return value passed through DebugHook.Answer *)
+  end else
+    db_subgoals flags None None
+
 let goals () =
-  let open Interface in
+  let open DebuggerTypes in
   let all = { gf_mode = "full"; gf_fg = true; gf_bg = true; gf_shelved = true; gf_given_up = true } in
   subgoals all
 
 let evars () =
   try
     let doc = get_doc () in
-    ignore (Stm.finish ~doc : Vernacstate.t);
-    let pfts = Vernacstate.Declare.give_me_the_proof () in
-    let Proof.{ sigma } = Proof.data pfts in
+    if not !DebuggerTypes.read_in_debug then
+      ignore @@ Stm.finish ~doc;
+    (* todo: if in debugger, use sigma from debugger *)
+    let Proof.{ sigma } = Proof.data (Vernacstate.Declare.give_me_the_proof ()) in
     let exl = Evar.Map.bindings (Evd.undefined_map sigma) in
     let map_evar ev = { Interface.evar_info = string_of_ppcmds (pr_evar sigma ev); } in
     let el = List.map map_evar exl in
@@ -405,8 +450,6 @@ let proof_diff (diff_opt, sid) =
       let old = Stm.get_prev_proof ~doc sid in
       Proof_diffs.diff_proofs ~diff_opt ?old proof
 
-let debug_cmd = ref DebugHook.Action.Ignore
-
 let db_cmd cmd =
   debug_cmd := DebugHook.Action.Command cmd
 
@@ -414,9 +457,13 @@ let db_continue opt =
   let open DebugHook.Action in
   debug_cmd := match opt with
   | Interface.StepIn -> StepIn
+  | Interface.StepInRev -> StepInRev
   | Interface.StepOver -> StepOver
+  | Interface.StepOverRev -> StepOverRev
   | Interface.StepOut -> StepOut
+  | Interface.StepOutRev -> StepOutRev
   | Interface.Continue -> Continue
+  | Interface.ContinueRev -> ContinueRev
   | Interface.Interrupt -> Interrupt
 
 let db_upd_bpts updates =
@@ -601,7 +648,7 @@ let loop ( { Coqtop.run_mode; color_mode },_) ~opts:_ state =
         pr_with_pid (Xml_printer.to_string_fmt xml_query);
       let Xmlprotocol.Unknown q = Xmlprotocol.to_call xml_query in
       let () = pr_debug_call q in
-      let (send, r)  = eval_call q in
+      let (send, r) = eval_call q in
       (* conditional send so that db_stack and db_vars can reply through DebugHook.Answer *)
       if send then begin
         let () = pr_debug_answer q r in
@@ -632,16 +679,16 @@ let loop ( { Coqtop.run_mode; color_mode },_) ~opts:_ state =
     let open Xmlprotocol in
     let xml = match ans with
       | Prompt msg -> of_ltac_debug_answer ~tag:"prompt" msg
-      | Goal msg -> of_ltac_debug_answer ~tag:"goal" msg
       | Output msg -> of_ltac_debug_answer ~tag:"output" msg
       | Init -> of_ltac_debug_answer ~tag:"init" (str "")
       | Vars vars -> of_vars vars;
       | Stack s -> of_stack s
+      | Subgoals g -> of_subgoals g
     in
     print_xml xml_oc xml in
 
-  (* XXX: no need to have a ref here *)
-  let ltac_debug_parse () =
+  let ltac_debug_parse read_in_debug =
+    DebuggerTypes.read_in_debug := read_in_debug;
     let raw_cmd =
       debug_cmd := DebugHook.Action.Ignore;
       process_xml_msg xml_ic xml_oc out_ch;
@@ -663,6 +710,7 @@ let loop ( { Coqtop.run_mode; color_mode },_) ~opts:_ state =
       });
 
   while not !quit do
+    DebuggerTypes.read_in_debug := false;
     process_xml_msg xml_ic xml_oc out_ch
   done;
   pr_debug "Exiting gracefully.";

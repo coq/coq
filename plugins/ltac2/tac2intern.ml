@@ -19,6 +19,7 @@ open Tac2env
 open Tac2print
 open Tac2expr
 open Tac2typing_env
+open Tac2valtype
 
 (** Hardwired types and constants *)
 
@@ -117,21 +118,21 @@ let is_pure_constructor kn =
 
 let rec is_value = function
 | GTacAtm (AtmInt _) | GTacVar _ | GTacFun _ -> true
-| GTacAtm (AtmStr _) | GTacApp _ | GTacLet (true, _, _) -> false
+| GTacAtm (AtmStr _) | GTacApp _ | GTacAls _ | GTacLet (true, _, _) -> false
 | GTacRef kn -> not (Tac2env.interp_global kn).gdata_mutable
 | GTacCst (Tuple _, _, el) -> List.for_all is_value el
 | GTacCst (_, _, []) -> true
 | GTacOpn (_, el) -> List.for_all is_value el
 | GTacCst (Other kn, _, el) -> is_pure_constructor kn && List.for_all is_value el
 | GTacLet (false, bnd, e) ->
-  is_value e && List.for_all (fun (_, e) -> is_value e) bnd
+  is_value e && List.for_all (fun (_, e, _) -> is_value e) bnd
 | GTacCse _ | GTacPrj _ | GTacSet _ | GTacExt _ | GTacPrm _
 | GTacWth _ | GTacFullMatch _ -> false
 
 let is_rec_rhs = function
 | GTacFun _ -> true
 | GTacAtm _ | GTacVar _ | GTacRef _ | GTacApp _ | GTacLet _ | GTacPrj _
-| GTacSet _ | GTacExt _ | GTacPrm _ | GTacCst _
+| GTacSet _ | GTacExt _ | GTacPrm _ | GTacCst _ | GTacAls _
 | GTacCse _ | GTacOpn _ | GTacWth _ | GTacFullMatch _-> false
 
 let warn_not_unit =
@@ -250,6 +251,8 @@ let expand_pattern avoid bnd =
         let qid = RelId (qualid_of_ident ?loc:pat.loc id) in
         Name id, Some qid
     in
+    (* todo: instead of excluding ids that appear in the pattern, why not use
+       ".p*" as the ident for fresh variables? *)
     let avoid = ids_of_pattern avoid pat in
     let avoid = add_name avoid na in
     (avoid, (na, pat, expand) :: bnd)
@@ -480,15 +483,22 @@ let rec intern_pat_rec env cpat t =
 
 let intern_pat env cpat t =
   let patvars, pat = intern_pat_rec env cpat t in
-  Id.Map.map (fun (_,v) -> monomorphic v) patvars, pat
+  Id.Map.map (fun (_,v) -> monomorphic v) patvars, patvars, pat
 
-let rec glb_of_wip_pat_r = function
-  | PatVar x -> GPatVar x
+let add_pat_type env tm id =
+  match id with
+  | Name id2 ->
+    let t = snd (Names.Id.Map.find id2 tm) in
+    id, (Some (wrap (env, t)))
+  | Anonymous -> Anonymous, None
+
+let rec glb_of_wip_pat_r env tm = function
+  | PatVar x -> let n,t = add_pat_type env tm x in GPatVar (n,t)
   | PatAtm atm -> GPatAtm atm
-  | PatRef (ctor,pats) -> GPatRef (ctor, List.map glb_of_wip_pat pats)
-  | PatOr pats -> GPatOr (List.map glb_of_wip_pat pats)
-  | PatAs (p,x) -> GPatAs (glb_of_wip_pat p, x.v)
-and glb_of_wip_pat pat = glb_of_wip_pat_r pat.CAst.v
+  | PatRef (ctor,pats) -> GPatRef (ctor, List.map (glb_of_wip_pat env tm) pats)
+  | PatOr pats -> GPatOr (List.map (glb_of_wip_pat env tm) pats)
+  | PatAs (p,x) -> GPatAs ((glb_of_wip_pat env tm) p, x.v)
+and glb_of_wip_pat env tm pat = glb_of_wip_pat_r env tm pat.CAst.v
 
 (** Pattern analysis for non-exhaustiveness and (TODO) useless patterns based on
     "Warnings for pattern matching", Luc Maranget, Journal of Functional Programming, 17(3), 2007 *)
@@ -915,7 +925,7 @@ let get_pattern_kind env pl = match pl with
 
 (** For now, patterns recognized by the pattern-matching compiling are limited
     to depth-one where leaves are either variables or catch-all *)
-let to_simple_case env ?loc (e,t) pl =
+let to_simple_case env ?loc (e,t) pl tml =
   let todo () = raise HardCase in
   match get_pattern_kind env pl with
   | PKind_any ->
@@ -924,7 +934,7 @@ let to_simple_case env ?loc (e,t) pl =
     | GEPatVar na -> na
     | _ -> assert false
     in
-    GTacLet (false, [na, e], b)
+    GTacLet (false, [na, e, Some (wrap (env, t))], b)     (* what case is this for? *)
   | PKind_empty ->
     let kn = check_elt_empty loc env t in
     GTacCse (e, Other kn, [||], [||])
@@ -944,9 +954,9 @@ let to_simple_case env ?loc (e,t) pl =
     in
     let const = Array.make nconst None in
     let nonconst = Array.make nnonconst None in
-    let rec intern_branch = function
-    | [] -> ()
-    | (pat, br) :: rem ->
+    let rec intern_branch pl tml = match pl, tml with
+    | [],[] -> ()
+    | (pat, br) :: rem, tm :: tymrem ->
       let () = match pat.v with
       | PatAtm _ | PatOr _ | PatAs _ ->
         raise HardCase
@@ -962,7 +972,7 @@ let to_simple_case env ?loc (e,t) pl =
           else
             let () =
               if Option.is_empty nonconst.(narg) then
-                let ids = Array.make arity Anonymous in
+                let ids = Array.make arity (Anonymous, None) in
                 nonconst.(narg) <- Some (ids, br)
             in
             (ncst, succ narg)
@@ -983,16 +993,19 @@ let to_simple_case env ?loc (e,t) pl =
           if List.is_empty args then
             if Option.is_empty const.(index) then const.(index) <- Some br
             else ()
-          else
+          else begin
+            let ids = List.map (add_pat_type env tm) ids in
             let ids = Array.of_list ids in
             if Option.is_empty nonconst.(index) then nonconst.(index) <- Some (ids, br)
             else ()
+          end
         in
         ()
       in
-      intern_branch rem
+      intern_branch rem tymrem
+    | _,_ -> failwith "not possible"
     in
-    let () = intern_branch pl in
+    let () = intern_branch pl tml in
     let map n is_const = function
     | None -> assert false (* exhaustivity check *)
     | Some x -> x
@@ -1103,7 +1116,10 @@ let rec intern_rec env tycon {loc;v=e} =
         CErrors.anomaly (str "Missing hardwired alias " ++ KerName.print kn)
     in
     let () = check_deprecated_ltac2 ?loc qid (TacAlias kn) in
-    intern_rec env tycon e.alias_body
+    let a,b = intern_rec env tycon e.alias_body in
+    match a with
+    | GTacApp _ -> (GTacAls (a, loc, KerName.to_string kn), b)
+    | _ -> a,b
   end
 | CTacCst qid ->
   let kn = get_constructor env qid in
@@ -1126,7 +1142,8 @@ let rec intern_rec env tycon {loc;v=e} =
     | None -> List.fold_right (fun t accu -> GTypArrow (t, accu)) tl t
     | Some tycon -> tycon
   in
-  (GTacFun (nas, e), t)
+  let tl2 = List.map (fun t -> wrap (env, t)) tl in
+  (GTacFun (nas, Some tl2, e), t)
 | CTacApp ({loc;v=CTacCst qid}, args) ->
   let kn = get_constructor env qid in
   intern_constructor env loc tycon kn args
@@ -1145,9 +1162,11 @@ let rec intern_rec env tycon {loc;v=e} =
     CAst.make ?loc @@ CTacFun ([var], arg)
   in
   let args = List.map map args in
-  intern_rec env tycon (CAst.make ?loc @@ CTacApp (e.alias_body, args))
+  let alias_body = CAst.make ?loc:aloc e.alias_body.v in
+  intern_rec env tycon (CAst.make ?loc @@ CTacApp (alias_body, args))
 | CTacApp (f, args) ->
   let loc = f.loc in
+  let app_loc = List.fold_left (fun loc arg -> Loc.merge_opt loc arg.loc) loc args in
   let (f, ft) = intern_rec env None f in
   let fold t arg =
     let dom, codom = tycon_app ?loc env ~ft t in
@@ -1155,7 +1174,7 @@ let rec intern_rec env tycon {loc;v=e} =
     (codom, arg)
   in
   let (t, args) = CList.fold_left_map fold ft args in
-  check (GTacApp (f, args), t)
+  check (GTacApp (f, args, app_loc), t)
 | CTacLet (is_rec, el, e) ->
   let map (pat, e) =
     let (pat, ty) = extract_pattern_type pat in
@@ -1175,9 +1194,22 @@ let rec intern_rec env tycon {loc;v=e} =
   if is_rec then intern_let_rec env el tycon e
   else intern_let env loc ids el tycon e
 | CTacSyn (el, kn) ->
+  let modpath, label = Names.KerName.repr kn in
+  let label = Names.Label.to_string label in
+  (* get first parenthesized substring, e.g. from "str(apply) ..." *)
+  let regex = Str.regexp {|[^(]*(\([^)]*\)).*|} in
+  let sname = if Str.string_match regex label 0
+    then Str.matched_group 1 label else ""
+  in
+  let fname = Names.ModPath.to_string modpath ^ "." ^ sname in
   let body = Tac2env.interp_notation kn in
   let v = if CList.is_empty el then body else CAst.make ?loc @@ CTacLet(false, el, body) in
-  intern_rec env tycon v
+  let ex = intern_rec env tycon v in
+  (match ex with
+  | (GTacLet (_,_,(GTacApp _)) as ex2), g
+  | (GTacLet (_,_,(GTacLet (_,_,GTacApp _))) as ex2),g -> GTacAls (ex2,loc,fname), g
+    (* todo: any other patterns? *)
+  | _ -> ex)
 | CTacCnv (e, tc) ->
   let tc = intern_type env tc in
   let e = intern_rec_with_constraint env e tc in
@@ -1187,7 +1219,7 @@ let rec intern_rec env tycon {loc;v=e} =
   let (e1, t1) = intern_rec env None e1 in
   let (e2, t2) = intern_rec env tycon e2 in
   let () = check_elt_unit loc1 env t1 in
-  (GTacLet (false, [Anonymous, e1], e2), t2)
+  (GTacLet (false, [Anonymous, e1, (* wrap *) None], e2), t2)
 | CTacIft (e, e1, e2) ->
   let e = intern_rec_with_constraint env e (GTypRef (Other t_bool, [])) in
   let (e1, t1) = intern_rec env tycon e1 in
@@ -1195,13 +1227,13 @@ let rec intern_rec env tycon {loc;v=e} =
   let e2 = intern_rec_with_constraint env e2 t in
   (GTacCse (e, Other t_bool, [|e1; e2|], [||]), t)
 | CTacCse (e, pl) ->
-  let e,brs,rt = intern_case env loc e tycon pl in
+  let e,brs,tml,rt = intern_case env loc e tycon pl in
   begin try
-    let cse = to_simple_case env ?loc e brs in
+    let cse = to_simple_case env ?loc e brs tml in
     cse, rt
   with HardCase ->
     let e, _ = e in
-    let brs = List.map (fun (p,br) -> glb_of_wip_pat p, br) brs in
+    let brs = List.map2 (fun (p,br) tm -> glb_of_wip_pat env tm p, br) brs tml in
     GTacFullMatch (e,brs), rt
   end
 | CTacRec (def, fs) ->
@@ -1253,7 +1285,7 @@ let rec intern_rec env tycon {loc;v=e} =
     | None -> e
     | Some (None, _) -> e
     | Some (Some var, def) ->
-      GTacLet (false, [Name var, def], e)
+      GTacLet (false, [Name var, def, (* wrap *) None], e)
   in
   check (e,  GTypRef (Other kn, tparam))
 | CTacPrj (e, proj) ->
@@ -1323,13 +1355,14 @@ and intern_let env loc ids el tycon e =
   let fold body (na, exp, tc, e) =
     let tc = Option.map (intern_type env) tc in
     let (e, t) = intern_rec env tc e in
+    let t1 = t in
     let t = if is_value e then abstract_var env t else monomorphic t in
-    (exp body, (na, e, t))
+    (exp body, (na, e, t, (Some (wrap (env, t1)))))
   in
   let (e, elp) = List.fold_left_map fold e el in
-  let env = List.fold_left (fun accu (na, _, t) -> push_name na t accu) env elp in
+  let env = List.fold_left (fun accu (na, _, t, _) -> push_name na t accu) env elp in
   let (e, t) = intern_rec env tycon e in
-  let el = List.map (fun (na, e, _) -> na, e) elp in
+  let el = List.map (fun (na, e, _, wt) -> na, e, wt) elp in
   (GTacLet (false, el, e), t)
 
 and intern_let_rec env el tycon e =
@@ -1389,7 +1422,7 @@ and intern_let_rec env el tycon e =
         user_err ?loc:loc_e (str "This kind of expression is not allowed as \
           right-hand side of a recursive binding")
     in
-    (na, e)
+    (na, e, (* wrap *) None)
   in
   let el = List.map map el in
   let (e, t) = intern_rec env tycon e in
@@ -1451,12 +1484,14 @@ and intern_case env loc e tycon pl =
     | Some t -> t
     | None -> GTypVar (fresh_id env)
   in
+  let tml = ref [] in
   let pl = List.map (fun (cpat,cbr) ->
       (* intern_pat: check type of pattern = type of discriminee,
          check or patterns bind same vars to same types,
          return bound vars
          + pattern representation with casts removed and names globalized *)
-      let patvars, pat = intern_pat env cpat et in
+      let patvars, tm, pat = intern_pat env cpat et in
+      tml := tm :: !tml;
       let patenv = push_ids patvars env in
       let br = intern_rec_with_constraint patenv cbr rt in
       pat, br)
@@ -1465,7 +1500,7 @@ and intern_case env loc e tycon pl =
   let just_patterns = List.map fst pl in
   let () = check_no_missing_pattern env et just_patterns in
   let () = check_redundant_clauses env et just_patterns in
-  ((e,et),pl,rt)
+  ((e,et),pl,(List.rev !tml),rt)
 
 type context = (Id.t * type_scheme) list
 
@@ -1715,11 +1750,12 @@ let rec subst_glb_pat subst = function
 let rec subst_expr subst e = match e with
 | GTacAtm _ | GTacVar _ | GTacPrm _ -> e
 | GTacRef kn -> GTacRef (subst_kn subst kn)
-| GTacFun (ids, e) -> GTacFun (ids, subst_expr subst e)
-| GTacApp (f, args) ->
-  GTacApp (subst_expr subst f, List.map (fun e -> subst_expr subst e) args)
+| GTacFun (ids, ts, e) -> GTacFun (ids, ts, subst_expr subst e)
+| GTacAls (f, loc, fn) ->
+  GTacAls (subst_expr subst f, loc, fn)
+| GTacApp (f, args, loc) ->
+  GTacApp (subst_expr subst f, List.map (fun e -> subst_expr subst e) args, loc)
 | GTacLet (r, bs, e) ->
-  let bs = List.map (fun (na, e) -> (na, subst_expr subst e)) bs in
   GTacLet (r, bs, subst_expr subst e)
 | GTacCst (t, n, el) as e0 ->
   let t' = subst_or_tuple subst_kn subst t in

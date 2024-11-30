@@ -21,6 +21,7 @@ let msg_format = ref (Richpp { width = 72; depth = max_int })
 
 open Util
 open Interface
+open DebuggerTypes
 open Serialize
 open Xml_datatype
 
@@ -158,20 +159,28 @@ let of_pp (pp : Pp.t) =
 let of_dbcontinue_opt opt =
   let code = match opt with
   | StepIn -> 0
-  | StepOver -> 1
-  | StepOut -> 2
-  | Continue -> 3
-  | Interrupt -> 4
+  | StepInRev -> 1
+  | StepOver -> 2
+  | StepOverRev -> 3
+  | StepOut -> 4
+  | StepOutRev -> 5
+  | Continue -> 6
+  | ContinueRev -> 7
+  | Interrupt -> 8
   in
   of_int code
 
 let to_dbcontinue_opt opt =
   match to_int opt with
   | 0 -> StepIn
-  | 1 -> StepOver
-  | 2 -> StepOut
-  | 3 -> Continue
-  | 4 -> Interrupt
+  | 1 -> StepInRev
+  | 2 -> StepOver
+  | 3 -> StepOverRev
+  | 4 -> StepOut
+  | 5 -> StepOutRev
+  | 6 -> Continue
+  | 7 -> ContinueRev
+  | 8 -> Interrupt
   | _ -> failwith "to_dbcontinue_opt"
 
 let of_value f = function
@@ -463,8 +472,9 @@ end = struct
             Pp.string_of_ppcmds goal ^ "]" in
       String.concat " " (List.map pr_goal g.fg_goals)
   let pr_goal_flags (g : goal_flags) =
-    Printf.sprintf "{ fg := %s; bg := %s; shelved := %s; given_up := %s }"
-      (pr_bool g.gf_fg) (pr_bool g.gf_bg) (pr_bool g.gf_shelved) (pr_bool g.gf_given_up)
+    Printf.sprintf "{ mode = %s; fg := %s; bg := %s; shelved := %s; given_up := %s }"
+      (pr_string g.gf_mode) (pr_bool g.gf_fg) (pr_bool g.gf_bg) (pr_bool g.gf_shelved)
+      (pr_bool g.gf_given_up)
   let pr_evar (e : evar) = "[" ^ e.evar_info ^ "]"
   let pr_status (s : status) =
     let path =
@@ -493,9 +503,13 @@ end = struct
   let pr_state_id = Stateid.to_string
   let pr_db_continue_opt = function
     | StepIn -> "StepIn"
+    | StepInRev -> "StepInRev"
     | StepOver -> "StepOver"
+    | StepOverRev -> "StepOverRev"
     | StepOut -> "StepOut"
+    | StepOutRev -> "StepOutRev"
     | Continue -> "Continue"
+    | ContinueRev -> "ContinueRev"
     | Interrupt -> "Interrupt"
 
   let pr_search_cst = function
@@ -778,7 +792,7 @@ let db_continue x : db_continue_rty call = Db_continue x
 let db_stack x    : db_stack_rty call    = Db_stack x
 let db_vars x     : db_vars_rty call     = Db_vars x
 let db_configd x  : db_configd_rty call  = Db_configd x
-let subgoals x    : subgoals_rty call = Subgoals x
+let subgoals x    : subgoals_rty call    = Subgoals x
 
 let abstract_eval_call : type a. _ -> a call -> bool * a value = fun handler c ->
   let send = ref true in
@@ -811,7 +825,8 @@ let abstract_eval_call : type a. _ -> a call -> bool * a value = fun handler c -
     | Db_stack x   -> send := false; mkGood (handler.db_stack x)
     | Db_vars x    -> send := false; mkGood (handler.db_vars x)
     | Db_configd x -> mkGood (handler.db_configd x)
-    | Subgoals x   -> mkGood (handler.subgoals x)
+    | Subgoals x   -> send := not !DebuggerTypes.read_in_debug;
+                      mkGood (handler.subgoals x)
   with any ->
     let any = Exninfo.capture any in
     true, Fail (handler.handle_exn any)
@@ -1157,6 +1172,7 @@ let msg_kind = function
 let of_vars vars = of_value (of_list (of_pair of_string of_pp)) (Good vars)
 let of_stack frames = of_value (of_list (of_pair of_string (of_option
     (of_pair of_string (of_list of_int))))) (Good frames)
+let of_subgoals gs = of_value (of_option of_goals) (Good gs)
 
 (* vim: set foldmethod=marker: *)
 

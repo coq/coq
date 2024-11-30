@@ -8,14 +8,20 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open DebuggerTypes
+
 (** Ltac debugger interface; clients should register hooks to interact
    with their provided interface. *)
 module Action = struct
   type t =
     | StepIn
+    | StepInRev
     | StepOver
+    | StepOverRev
     | StepOut
+    | StepOutRev
     | Continue
+    | ContinueRev
     | Skip
     | Interrupt
     | Help
@@ -23,6 +29,7 @@ module Action = struct
     | Configd
     | GetStack
     | GetVars of int
+    | Subgoals of goal_flags
     | RunCnt of int
     | RunBreakpoint of string
     | Command of string
@@ -61,23 +68,48 @@ module Action = struct
     | "x" -> Ok Interrupt
     | "h"| "?" -> Ok Help
     | _ -> parse_complex inst
+
+  let to_string t =
+    match t with
+    | Continue -> "Continue"
+    | ContinueRev -> "ContinueRev"
+    | StepIn -> "StepIn"
+    | StepInRev -> "StepInRev"
+    | StepOver -> "StepOver"
+    | StepOverRev -> "StepOverRev"
+    | StepOut -> "StepOut"
+    | StepOutRev -> "StepOutRev"
+    | Skip -> "Skip"
+    | Interrupt -> "Interrupt"
+    | Help -> "Help"
+    | UpdBpts _ -> "UpdBpts"
+    | Configd -> "Configd"
+    | GetStack -> "GetStack"
+    | GetVars _ -> "GetVars"
+    | Subgoals _ -> "Subgoals"
+    | RunCnt _ -> "RunCnt"
+    | RunBreakpoint _ -> "RunBreakpoint"
+    | Command _ -> "Command"
+    | Failed -> "Failed"
+    | Ignore -> "Ignore"
+
 end
 
 module Answer = struct
   type t =
     | Prompt of Pp.t
-    | Goal of Pp.t
     | Output of Pp.t
     | Init
     | Stack of (string * (string * int list) option) list
     | Vars of (string * Pp.t) list
+    | Subgoals of goals_rty
 end
 
 module Intf = struct
 
   type t =
-    { read_cmd : unit -> Action.t
-    (** request a debugger command from the client *)
+    { read_cmd : bool -> Action.t
+    (** request a debugger command from the client.  true = in debugger *)
     ; submit_answer : Answer.t -> unit
     (** receive a debugger answer from Ltac *)
     ; isTerminal : bool

@@ -853,7 +853,7 @@ let perform_redefinition redef =
   | None -> redef.redef_body
   | Some id ->
     (* Rebind the old value with a let-binding *)
-    GTacLet (false, [Name id, data.Tac2env.gdata_expr], redef.redef_body)
+    GTacLet (false, [Name id, data.Tac2env.gdata_expr, (* Tac2valtype.wrap *) None], redef.redef_body)
   in
   let data = { data with Tac2env.gdata_expr = body } in
   Tac2env.define_global kn data
@@ -913,7 +913,7 @@ let register_redefinition qid old ({loc=eloc} as e) =
 let perform_eval ~pstate e =
   let env = Global.env () in
   let (e, ty) = Tac2intern.intern ~strict:false [] e in
-  let v = Tac2interp.interp Tac2interp.empty_environment e in
+  let v = Tac2interp.interp (Tac2interp.empty_environment ()) e in
   let selector, proof =
     match pstate with
     | None ->
@@ -1204,7 +1204,8 @@ let ltac2_interp e =
   let loc = e.loc in
   let (e, t) = intern ~strict:false [] e in
   let () = check_unit ?loc t in
-  let tac = Tac2interp.interp Tac2interp.empty_environment e in
+  DebugCommon.init ();
+  let tac = Tac2interp.interp (Tac2interp.empty_environment ()) e in
   Proofview.tclIGNORE tac
 
 let ComTactic.Interpreter ltac2_interp = ComTactic.register_tactic_interpreter "coq-core.plugins.ltac2" ltac2_interp

@@ -136,8 +136,10 @@ type ctor_data_for_patterns = {
   cindx : ctor_indx;
 }
 
+type tvar_info = Obj.t  (* hides TVar.t Tac2expr.glb_typexpr (circular linking issue) *)
+
 type glb_pat =
-  | GPatVar of Name.t
+  | GPatVar of Name.t * tvar_info option
   | GPatAtm of atom
   | GPatRef of ctor_data_for_patterns * glb_pat list
   | GPatOr of glb_pat list
@@ -167,11 +169,11 @@ type glb_tacexpr =
 | GTacAtm of atom
 | GTacVar of Id.t
 | GTacRef of ltac_constant
-| GTacFun of Name.t list * glb_tacexpr
-| GTacApp of glb_tacexpr * glb_tacexpr list
-| GTacLet of rec_flag * (Name.t * glb_tacexpr) list * glb_tacexpr
+| GTacFun of Name.t list * Obj.t list option * glb_tacexpr
+| GTacApp of glb_tacexpr * glb_tacexpr list * Loc.t option
+| GTacLet of rec_flag * (Name.t * glb_tacexpr * tvar_info option) list * glb_tacexpr
 | GTacCst of case_info * int * glb_tacexpr list
-| GTacCse of glb_tacexpr * case_info * glb_tacexpr array * (Name.t array * glb_tacexpr) array
+| GTacCse of glb_tacexpr * case_info * glb_tacexpr array * ((Name.t * tvar_info option) array * glb_tacexpr) array
 | GTacPrj of type_constant * glb_tacexpr * int
 | GTacSet of type_constant * glb_tacexpr * int * glb_tacexpr
 | GTacOpn of ltac_constructor * glb_tacexpr list
@@ -179,6 +181,7 @@ type glb_tacexpr =
 | GTacFullMatch of glb_tacexpr * (glb_pat * glb_tacexpr) list
 | GTacExt : (_, 'a) Tac2dyn.Arg.tag * 'a -> glb_tacexpr
 | GTacPrm of ml_tactic_name
+| GTacAls of glb_tacexpr * Loc.t option * string (* for abbrev+notation debug support *)
 
 (** {5 Parsing & Printing} *)
 
