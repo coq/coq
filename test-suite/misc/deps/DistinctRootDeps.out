@@ -1,3 +1,3 @@
 DistinctRoot/A/File1.vo DistinctRoot/A/File1.glob DistinctRoot/A/File1.v.beautified DistinctRoot/A/File1.required_vo: DistinctRoot/A/File1.v @COQWORKER@
 DistinctRoot/B/File1.vo DistinctRoot/B/File1.glob DistinctRoot/B/File1.v.beautified DistinctRoot/B/File1.required_vo: DistinctRoot/B/File1.v @COQWORKER@
-DistinctRoot/File2.vo DistinctRoot/File2.glob DistinctRoot/File2.v.beautified DistinctRoot/File2.required_vo: DistinctRoot/File2.v @COQWORKER@ DistinctRoot/B/File1.vo
+DistinctRoot/File2.vo DistinctRoot/File2.glob DistinctRoot/File2.v.beautified DistinctRoot/File2.required_vo: DistinctRoot/File2.v DistinctRoot/B/File1.vo @COQWORKER@
