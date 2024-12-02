@@ -77,7 +77,7 @@ let warn_if_clash ?(what=Library) exact file dir f1 = let open Format in functio
         end
   | [] -> ()
 
-let safe_assoc st ?(what=Library) from verbose file k =
+let safe_assoc ?(warn_clashes=true) st ?(what=Library) from file k =
   let search =
     match what with
     | Library -> Loadpath.search_v_known st
@@ -85,12 +85,14 @@ let safe_assoc st ?(what=Library) from verbose file k =
   match search ?from k with
   | None -> None
   | Some (Loadpath.ExactMatches (f :: l)) ->
-    if verbose then warn_if_clash ~what true file k f l; Some [f]
+    if warn_clashes then warn_if_clash ~what true file k f l;
+    Some [f]
   | Some (Loadpath.PartialMatchesInSameRoot (root, l)) ->
     (match List.sort String.compare l with [] -> assert false | f :: l as all ->
     (* If several files match, it will fail at Require;
        To be "fair", in coqdep, we add dependencies on all matching files *)
-    if verbose then warn_if_clash ~what false file k f l; Some all)
+    if warn_clashes then warn_if_clash ~what false file k f l;
+    Some all)
   | Some (Loadpath.ExactMatches []) -> assert false
 
 let file_name s = function
@@ -141,97 +143,101 @@ let coq_to_stdlib from strl =
   | Some from -> Some (tr_qualid from), strl
   | None -> None, List.map tr_qualid strl
 
-let rec find_dependencies st basename =
-  let verbose = true in (* for past/future use? *)
-  try
-    (* Visited marks *)
-    let visited_ml = ref StrSet.empty in
-    let visited_v = ref VCache.empty in
-    let should_visit_v_and_mark from str =
-       if not (VCache.mem (from, str) !visited_v) then begin
-          visited_v := VCache.add (from, str) !visited_v;
-          true
-       end else false
-    in
-    (* Output: dependencies found *)
-    let dependencies = ref [] in
-    let add_dep dep = dependencies := dep :: !dependencies in
-    let add_dep_other s = add_dep (Dep_info.Dep.Other s) in
+let with_in_channel ~fname f =
+  let chan = try open_in fname
+    with Sys_error msg -> Error.cannot_open fname msg
+  in
+  Util.try_finally f chan close_in chan
 
-    (* Reading file contents *)
-    let f = basename ^ ".v" in
-    let chan = open_in f in
-    let buf = Lexing.from_channel chan in
-    let open Lexer in
-    try
-      while true do
-        let tok = coq_action buf in
-        match tok with
-        | Require (from, strl) ->
-          let from, strl = coq_to_stdlib from strl in
-          let decl str =
-            if should_visit_v_and_mark from str then begin
-              match safe_assoc st from verbose f str with
-              | Some files ->
-                List.iter (fun file_str ->
-                    let file_str = canonize file_str in
-                    add_dep (Dep_info.Dep.Require file_str)) files
-              | None ->
-                if verbose && not (Loadpath.is_in_coqlib st ?from str) then
-                  warning_module_notfound (Library, from, f, str)
-            end
-          in
-          List.iter decl strl
-        | Declare sl ->
-          (* We resolve "pkg_name" to a .cma file, using the META *)
-          let sl = List.map (declare_ml_to_file f) sl in
-          let decl (meta_file, str) =
-            add_dep_other meta_file;
-            let plugin_file = Filename.chop_extension str in
-            if not (StrSet.mem plugin_file !visited_ml) then begin
-                visited_ml := StrSet.add plugin_file !visited_ml;
-                add_dep (Dep_info.Dep.Ml plugin_file)
-              end
-          in
-          List.iter decl sl
-        | Load file ->
-          let canon =
-            match file with
-            | Logical str ->
-              if should_visit_v_and_mark None [str] then safe_assoc st None verbose f [str]
-              else None
-            | Physical str ->
-              if String.equal (Filename.basename str) str then
-                if should_visit_v_and_mark None [str] then safe_assoc st None verbose f [str]
-                else None
-              else
-                Some [canonize str]
-          in
-          (match canon with
-           | None -> ()
-           | Some l ->
-             let decl canon =
-               add_dep_other (Format.sprintf "%s.v" canon);
-               let deps = find_dependencies st canon in
-               List.iter add_dep deps
-             in
-             List.iter decl l)
-        | External(from,str) ->
-          begin match safe_assoc st ~what:External (Some from) verbose f [str] with
-          | Some (file :: _) -> add_dep (Dep_info.Dep.Other (canonize file))
-          | Some [] -> assert false
-          | None -> warning_module_notfound (External, Some from, f, [str])
-          end
-      done;
+(* recursive because of Load *)
+let rec find_dependencies st basename =
+  (* Visited marks *)
+  let visited_ml = ref StrSet.empty in
+  let visited_v = ref VCache.empty in
+  let should_visit_v_and_mark from str =
+    if not (VCache.mem (from, str) !visited_v) then begin
+      visited_v := VCache.add (from, str) !visited_v;
+      true
+    end else false
+  in
+  (* Output: dependencies found *)
+  let dependencies = ref [] in
+  let add_dep dep = dependencies := dep :: !dependencies in
+  let add_dep_other s = add_dep (Dep_info.Dep.Other s) in
+
+  (* Reading file contents *)
+  let f = basename ^ ".v" in
+  with_in_channel ~fname:f @@ fun chan ->
+  let buf = Lexing.from_channel chan in
+  let open Lexer in
+  let rec loop () =
+    match coq_action buf with
+    | exception Fin_fichier ->
       List.rev !dependencies
-    with
-    | Fin_fichier ->
-      close_in chan;
-      List.rev !dependencies
-    | Syntax_error (i,j) ->
-      close_in chan;
+    | exception Syntax_error (i,j) ->
       Error.cannot_parse f (i,j)
-  with Sys_error msg -> Error.cannot_open (basename ^ ".v") msg
+    | tok ->  match tok with
+      | Require (from, strl) ->
+        let from, strl = coq_to_stdlib from strl in
+        let decl str =
+          if should_visit_v_and_mark from str then begin
+            match safe_assoc st from f str with
+            | Some files ->
+              List.iter (fun file_str ->
+                  let file_str = canonize file_str in
+                  add_dep (Dep_info.Dep.Require file_str)) files
+            | None ->
+              if not (Loadpath.is_in_coqlib st ?from str) then
+                warning_module_notfound (Library, from, f, str)
+          end
+        in
+        List.iter decl strl;
+        loop ()
+      | Declare sl ->
+        (* We resolve "pkg_name" to a .cma file, using the META *)
+        let sl = List.map (declare_ml_to_file f) sl in
+        let decl (meta_file, str) =
+          add_dep_other meta_file;
+          let plugin_file = Filename.chop_extension str in
+          if not (StrSet.mem plugin_file !visited_ml) then begin
+            visited_ml := StrSet.add plugin_file !visited_ml;
+            add_dep (Dep_info.Dep.Ml plugin_file)
+          end
+        in
+        List.iter decl sl;
+        loop ()
+      | Load file ->
+        let canon =
+          match file with
+          | Logical str ->
+            if should_visit_v_and_mark None [str] then safe_assoc st None f [str]
+            else None
+          | Physical str ->
+            if String.equal (Filename.basename str) str then
+              if should_visit_v_and_mark None [str] then safe_assoc st None f [str]
+              else None
+            else
+              Some [canonize str]
+        in
+        (match canon with
+         | None -> ()
+         | Some l ->
+           let decl canon =
+             add_dep_other (Format.sprintf "%s.v" canon);
+             let deps = find_dependencies st canon in
+             List.iter add_dep deps
+           in
+           List.iter decl l);
+        loop ()
+      | External(from,str) ->
+        begin match safe_assoc st ~what:External (Some from) f [str] with
+        | Some (file :: _) -> add_dep (Dep_info.Dep.Other (canonize file))
+        | Some [] -> assert false
+        | None -> warning_module_notfound (External, Some from, f, [str])
+        end;
+        loop ()
+  in
+  loop ()
 
 module State = struct
   type t = Loadpath.State.t
@@ -295,7 +301,7 @@ let sort st =
           | Lexer.Require (from, sl) ->
                 List.iter
                   (fun s ->
-                    match safe_assoc st from false file s with
+                    match safe_assoc st from ~warn_clashes:false file s with
                     | None -> ()
                     | Some l -> List.iter loop l)
                 sl
