@@ -39,4 +39,4 @@ val normalize_context_set : lbound:UGraph.Bound.t -> variances:InferCumulativity
   UnivFlex.t (* The defined and undefined variables *) ->
   ?binders:UnivNames.universe_binders ->
   extra ->
-  UnivFlex.t in_universe_context_set
+  (UnivFlex.t * InferCumulativity.level_variances) in_universe_context_set

@@ -156,6 +156,12 @@ let universe_variances_of_proofs env sigma proofs =
     compute_variances_type_constr env sigma status typ) status proofs in
   Inf.inferred status
 
+let universe_variances_of_partial_proofs env sigma proofs =
+  let status = init_status sigma in
+  let status = List.fold_left (fun status body ->
+    compute_variances_body env sigma status body) status proofs in
+  Inf.inferred status
+
 let universe_variances_of_named_context env sigma ~as_types ?(cumul_pb=InvCumul) ctx =
   let status = init_status sigma in
   let fold_binder i binder status =

@@ -210,7 +210,7 @@ let interp_context_gen scope ~program_mode ~kind ~autoimp_enable ~coercions env 
       | Locality.Global _ -> true, InferCumulativity.Cumul
     in
     UnivVariances.universe_variances_of_named_context env sigma ~as_types ~cumul_pb ctx in
-  let sigma, ctx = Evarutil.finalize ~variances ~partial:true sigma @@ fun nf ->
+  let sigma, variances, ctx = Evarutil.finalize ~variances ~partial:true sigma @@ fun nf ->
     List.map (NamedDecl.map_constr_het (fun x -> x) nf) ctx
   in
   (* reorder, evar-normalize and add implicit status *)

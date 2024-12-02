@@ -152,7 +152,7 @@ val nf_evars_universes : evar_map -> Constr.constr -> Constr.constr
 val finalize : ?abort_on_undefined_evars:bool -> evar_map -> ?variances:InferCumulativity.level_variances ->
   ?partial:bool ->
   ((EConstr.t -> Constr.t) -> 'a) ->
-  evar_map * 'a
+  evar_map * InferCumulativity.level_variances * 'a
 
 (** {6 Term manipulation up to instantiation} *)
 

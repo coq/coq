@@ -66,7 +66,7 @@ let glob_sort_name_eq g1 g2 = match g1, g2 with
 
 exception ComplexSort
 
-let glob_Type_sort = None, UAnonymous {rigid=UnivFlexible}
+let glob_Type_sort = None, UAnonymous {rigid=UnivRigid}
 let glob_SProp_sort = None, UNamed [GSProp, 0]
 let glob_Prop_sort = None, UNamed [GProp, 0]
 let glob_Set_sort = None, UNamed [GSet, 0]
@@ -91,15 +91,15 @@ let glob_sort_eq (q1, l1) (q2, l2) =
 
 let glob_sort_family s =
   let open Sorts in
-  if glob_sort_eq s glob_Type_sort then InType
-  else match s with
-    | None, UNamed [s, 0] -> begin match s with
-        | GSProp -> InSProp
-        | GProp -> InProp
-        | GSet -> InSet
-        | GUniv _ | GLocalUniv _ | GRawUniv _ -> raise ComplexSort
-      end
-    | _ -> raise ComplexSort
+  match s with
+  | None, UAnonymous _ -> InType
+  | None, UNamed [s, 0] -> begin match s with
+      | GSProp -> InSProp
+      | GProp -> InProp
+      | GSet -> InSet
+      | GUniv _ | GLocalUniv _ | GRawUniv _ -> raise ComplexSort
+    end
+  | _ -> raise ComplexSort
 
 let glob_univ_eq u1 u2 =
   let eq l1 l2 =

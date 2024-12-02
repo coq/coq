@@ -443,5 +443,6 @@ module CoreCategories = struct
   let tactics = make "tactics"
   let user_warn = make "user-warn"
   let vernacular = make "vernacular"
+  let universes = make "universes"
 
 end

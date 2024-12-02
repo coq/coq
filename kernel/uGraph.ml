@@ -121,6 +121,17 @@ let add_universe u ~lbound ~strict g = match lbound with
 let check_declared_universes g l =
   G.check_declared g.graph l
 
+let minimize l g =
+  match G.minimize l g.graph with
+  | Some (graph, lbound) -> Some ({ g with graph }, lbound)
+  | None -> None
+
+let remove_set_clauses l g =
+  let graph = G.remove_set_clauses l g.graph in
+  { g with graph }
+
+let pr_model g = G.pr_model g.graph
+
 let constraints_of_universes g =
   let add cst accu = Constraints.add cst accu in
   G.constraints_of g.graph add Constraints.empty

@@ -1096,7 +1096,7 @@ let declare_definition ~info ~cinfo ~opaque ~obls ~body ?using sigma =
   Option.iter (check_evars_are_solved env sigma) typ;
   check_evars_are_solved env sigma body;
   let inferred_variances = UnivVariances.universe_variances env sigma ?typ body in
-  let sigma = Evd.minimize_universes ~variances:inferred_variances sigma in
+  let sigma, variances = Evd.minimize_universes ~variances:inferred_variances sigma in
   let body = EConstr.to_constr sigma body in
   let typ = Option.map (EConstr.to_constr sigma) typ in
   let uctx = Evd.ustate sigma in
@@ -1112,7 +1112,7 @@ let prepare_obligations ~name ?types ~body env sigma =
     | None -> Retyping.get_type_of env sigma body
   in
   let variances = UnivVariances.universe_variances env sigma ~typ:types body in
-  let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:false ~variances
+  let sigma, variances, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:false ~variances
       sigma (fun nf -> nf body, nf types)
   in
   RetrieveObl.check_evars env sigma;
@@ -1125,7 +1125,7 @@ let prepare_parameter ~poly ~udecl ~types sigma =
   let env = Global.env () in
   Pretyping.check_evars_are_solved ~program_mode:false env sigma;
   let ivariances = UnivVariances.universe_variances_of_type env sigma types in
-  let sigma, typ = Evarutil.finalize ~abort_on_undefined_evars:true
+  let sigma, ivariances, typ = Evarutil.finalize ~abort_on_undefined_evars:true
       ~variances:ivariances
       sigma (fun nf -> nf types)
   in
@@ -2058,7 +2058,7 @@ let prepare_proof ?(warn_incomplete=true) { proof; pinfo } =
   (* EJGA: likely the right solution is to attach side effects to the first constant only? *)
   let proofs = List.map (fun (_, body, typ) -> (to_constr body, to_constr typ)) initial_goals in
   let variances = UnivVariances.universe_variances_of_proofs (Global.env()) evd proofs in
-  let evd = Evd.minimize_universes evd ~variances in
+  let evd, variances = Evd.minimize_universes evd ~variances in
   let proofs = List.map (fun (body, typ) -> (Evarutil.nf_evars_universes evd body, Evarutil.nf_evars_universes evd typ)) proofs in
   let proofs = match pinfo.possible_guard with
     | None -> proofs
@@ -2293,7 +2293,7 @@ let save_admitted ~pm ~proof =
   let sigma = Evd.from_ctx proof.initial_euctx in
   List.iter (check_type_evars_solved (Global.env()) sigma) typs;
   let sec_vars = compute_proof_using_for_admitted proof.pinfo proof typs iproof in
-  let sigma = Evd.minimize_universes sigma in
+  let sigma, _variances = Evd.minimize_universes sigma in
   let uctx = Evd.ustate sigma in
   let typs = List.map (fun typ -> (EConstr.to_constr sigma typ, uctx)) typs in
   finish_admitted ~pm ~pinfo:proof.pinfo ~sec_vars typs

@@ -1271,12 +1271,12 @@ let minimize ?(lbound = UGraph.Bound.Set)
   ?(variances = Univ.Level.Map.empty)
   ~partial uctx =
   let open UnivMinim in
-  let (vars', us') =
+  let (vars', variances), us' =
     normalize_context_set ~lbound ~variances ~partial uctx.universes uctx.local uctx.univ_variables
       ~binders:(fst uctx.names)
       uctx.minim_extra
   in
-  if ContextSet.equal us' uctx.local then uctx
+  if ContextSet.equal us' uctx.local then uctx, variances
   else
     let universes = UGraph.merge_constraints (snd us') uctx.initial_universes in
       { names = uctx.names;
@@ -1285,7 +1285,7 @@ let minimize ?(lbound = UGraph.Bound.Set)
         sort_variables = uctx.sort_variables;
         universes = universes;
         initial_universes = uctx.initial_universes;
-        minim_extra = UnivMinim.empty_extra; (* weak constraints are consumed *) }
+        minim_extra = UnivMinim.empty_extra; (* weak constraints are consumed *) }, variances
 
 let universe_context_inst_decl decl qvars levels names =
   let leftqs = List.fold_left (fun acc l -> QVar.Set.remove l acc) qvars decl.univdecl_qualities in
@@ -1341,9 +1341,9 @@ let check_uctx_impl ~fail uctx uctx' =
 
 let disable_minim, _ = CDebug.create_full ~name:"minimization" ()
 
-let minimize ?lbound ?variances ~partial uctx =
-  if CDebug.get_flag disable_minim then uctx
-  else minimize ?lbound ?variances ~partial uctx
+let minimize ?lbound ?(variances = InferCumulativity.empty_level_variances) ~partial uctx =
+  if CDebug.get_flag disable_minim then uctx, variances
+  else minimize ?lbound ~variances ~partial uctx
 
 (* XXX print above_prop too *)
 let pr_weak prl {minim_extra={UnivMinim.weak_constraints=weak; above_prop}} =

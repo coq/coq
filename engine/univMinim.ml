@@ -13,6 +13,9 @@ open UnivSubst
 open InferCumulativity
 
 let _debug_minim, debug = CDebug.create_full ~name:"univMinim" ()
+let _debug_minim_each, debug_each = CDebug.create_full ~name:"univMinim_each" ()
+let switch_minim, _ = CDebug.create_full ~name:"switchminim" ()
+let () = CDebug.set_flag switch_minim true
 
 (* To disallow minimization to Set *)
 let { Goptions.get = get_set_minimization } =
@@ -66,7 +69,7 @@ let lower_add l c m =
 let lower_of_list l =
   List.fold_left (fun acc (k,l) -> Level.Map.add l k acc) Level.Map.empty l
 
-type lbound = { enforce : bool; lbound: Universe.t; lower : lowermap }
+type lbound = { enforce : bool; inst: Universe.t; lower : lowermap }
 
 module LBMap :
 sig
@@ -94,18 +97,22 @@ let compute_lbound left =
   in
     List.fold_left (fun lbound (k, l) -> sup (Universe.addn l k) lbound) None left
 
-let instantiate_with_lbound u lbound lower ~enforce (ctx, us, seen, insts, cstrs) =
+let instantiate u inst lower ~enforce (ctx, us, seen, insts, cstrs) =
+  (debug Pp.(fun () -> str"Instantiating " ++ Level.raw_pr u ++ str" with " ++ Universe.pr Level.raw_pr inst);
+  (Level.Set.remove u ctx, UnivFlex.define u inst us, seen,
+   LBMap.add u {enforce;inst;lower} insts, cstrs),
+  {enforce; inst; lower})
+
+
+let instantiate_with_lbound u inst lower ~enforce (ctx, us, seen, insts, cstrs as acc) =
   let flexible = try not (UnivFlex.is_defined u us) with Not_found -> false in
   if enforce || not flexible then
-    let inst = Universe.make u in
-    let cstrs' = enforce_leq lbound inst cstrs in
-      (ctx, us, seen, LBMap.add u {enforce;lbound;lower} insts, cstrs'),
-      {enforce; lbound=inst; lower}
+    let uinst = Universe.make u in
+    let cstrs' = enforce_leq inst uinst cstrs in
+      (ctx, us, seen, LBMap.add u {enforce;inst;lower} insts, cstrs'),
+      {enforce; inst; lower}
   else (* Actually instantiate *)
-    (debug Pp.(fun () -> str"Instantiating " ++ Level.raw_pr u ++ str" with " ++ Universe.pr Level.raw_pr lbound);
-    (Level.Set.remove u ctx, UnivFlex.define u lbound us, seen,
-     LBMap.add u {enforce;lbound;lower} insts, cstrs),
-    {enforce; lbound; lower})
+  instantiate u inst lower ~enforce acc
 
 type constraints_map = (constraint_type * Level.Map.key) list Level.Map.t
 
@@ -149,6 +156,14 @@ let is_set_increment u =
   | [(l, k)] -> Level.is_set l
   | _ -> false
 
+let term_type_variances u us variances =
+  let open UVars.Variance in
+  match Level.Map.find_opt u variances with
+  | None -> if UnivFlex.mem u us then Irrelevant, Irrelevant else Invariant, Invariant
+  | Some pos ->
+    let termv, typev = term_type_variances pos in
+     Option.default Irrelevant termv, Option.default Irrelevant typev
+
 let minimize_univ_variables partial ctx us variances left right cstrs =
   let left, lbounds =
     Level.Map.fold (fun r lower (left, lbounds as acc)  ->
@@ -157,7 +172,7 @@ let minimize_univ_variables partial ctx us variances left right cstrs =
         let lbounds =
           match compute_lbound (List.map (fun (d,l) -> d, Universe.make l) lower) with
           | None -> lbounds
-          | Some lbound -> LBMap.add r {enforce=true; lbound; lower=lower_of_list lower}
+          | Some inst -> LBMap.add r {enforce=true; inst; lower=lower_of_list lower}
                                    lbounds
         in (Level.Map.remove r left, lbounds))
       left (left, LBMap.empty)
@@ -170,7 +185,7 @@ let minimize_univ_variables partial ctx us variances left right cstrs =
         let acc, left, newlow, lower =
           List.fold_left
           (fun (acc, left, newlow, lower') (d, l) ->
-           let acc', {enforce=enf;lbound=l';lower} = aux acc l in
+           let acc', {enforce=enf;inst=l';lower} = aux acc l in
            let l' =
              if enf then Universe.make l
              else l'
@@ -181,14 +196,7 @@ let minimize_univ_variables partial ctx us variances left right cstrs =
         let left = CList.uniquize (List.filter (not_lower lower) left) in
         (acc, left, Level.Map.lunion newlow lower)
     in
-    let term_variance, type_variance =
-      let open UVars.Variance in
-      match Level.Map.find_opt u variances with
-      | None -> if UnivFlex.mem u us then Irrelevant, Irrelevant else Invariant, Invariant
-      | Some pos ->
-        let termv, typev = term_type_variances pos in
-         Option.default Irrelevant termv, Option.default Irrelevant typev
-    in
+    let term_variance, type_variance = term_type_variances u us variances in
     let instantiate_lbound lbound =
       if is_set_increment lbound && not (get_set_minimization()) then
         (* Minim to Set disabled, do not instantiate with Set *)
@@ -199,18 +207,27 @@ let minimize_univ_variables partial ctx us variances left right cstrs =
         instantiate_with_lbound u lbound lower ~enforce:false acc
     in
     let enforce_uppers ((ctx,us,seen,insts,cstrs), b as acc) =
+      debug Pp.(fun () -> str"Looking for " ++ Level.raw_pr u ++ str" in right map");
       match Level.Map.find u right with
-      | exception Not_found -> acc
+      | exception Not_found ->
+        debug Pp.(fun () -> str"Looking for " ++ Level.raw_pr u ++ str" in right map: not found");
+        acc
       | upper ->
+        debug Pp.(fun () -> str"Enforcing upper bound of " ++ Universe.pr Level.raw_pr b.inst ++ str":" ++ Universe.pr Level.raw_pr (Universe.of_list (List.map (fun (d, r) -> r, d) upper)));
         let upper = List.filter (fun (d, r) -> not (UnivFlex.mem r us)) upper in
-        let cstrs = enforce_uppers upper b.lbound cstrs in
+        debug Pp.(fun () -> str"Enforcing upper bound of " ++ Universe.pr Level.raw_pr b.inst ++ str":" ++ Universe.pr Level.raw_pr (Universe.of_list (List.map (fun (d, r) -> r, d) upper)));
+        let cstrs = enforce_uppers upper b.inst cstrs in
         (ctx, us, seen, insts, cstrs), b
     in
     if not (Level.Set.mem u ctx)
-    then enforce_uppers (acc, {enforce=true; lbound=Universe.make u; lower})
+    then enforce_uppers (acc, {enforce=true; inst=Universe.make u; lower})
     else
       let lbound = match compute_lbound left with None -> Universe.type0 | Some lbound -> lbound in
       debug Pp.(fun () -> str"Lower bound of " ++ Level.raw_pr u ++ str":" ++ Universe.pr Level.raw_pr lbound);
+      if Level.Set.mem u (Universe.levels lbound) then
+        (* let cstrs' = enforce_leq (Univ.univ_level_rem u lbound lbound) (Universe.make u) cstrs in *)
+        (ctx, us, seen, insts, cstrs), { enforce = true; inst = Universe.make u; lower }
+      else
       let open UVars.Variance in
       match term_variance, type_variance with
       | Irrelevant, Irrelevant ->
@@ -219,24 +236,126 @@ let minimize_univ_variables partial ctx us variances left right cstrs =
       | (Covariant | Irrelevant), Covariant when not partial ->
         enforce_uppers (instantiate_lbound lbound)
       | _, _ ->
-        if Universe.is_type0 lbound then enforce_uppers (acc, {enforce = true; lbound = Universe.make u; lower})
+        if Universe.is_type0 lbound then enforce_uppers (acc, {enforce = true; inst = Universe.make u; lower})
         else enforce_uppers (instantiate_with_lbound u lbound lower ~enforce:true acc)
   and aux (ctx, us, seen, insts, cstrs as acc) u =
     debug Pp.(fun () -> str"Calling minim on " ++ Level.raw_pr u);
     try let lbound = Level.Map.find u insts.LBMap.lbmap in
-      debug Pp.(fun () -> str" = " ++ Universe.pr Level.raw_pr lbound.lbound);
+      debug Pp.(fun () -> str" = " ++ Universe.pr Level.raw_pr lbound.inst);
       acc, lbound
     with Not_found ->
+      debug Pp.(fun () -> str"Calling minim on " ++ Level.raw_pr u ++ str" not found");
       if Level.Set.mem u seen then
+        (debug Pp.(fun () -> str"Calling minim on " ++ Level.raw_pr u ++ str" not found but seen");
         (* Loop in the contraints *)
-        let bnd = {enforce=true; lbound=Universe.make u; lower = Level.Map.empty} in
-        acc, bnd
-      else instance (ctx, us, Level.Set.add u seen, insts, cstrs) u
+        let bnd = {enforce=true; inst=Universe.make u; lower = Level.Map.empty} in
+        acc, bnd)
+      else
+        (let acc = instance (ctx, us, Level.Set.add u seen, insts, cstrs) u in
+          debug Pp.(fun () -> str"Calling minim on " ++ Level.raw_pr u ++ str" computed an instance");
+          acc)
   in
+  let (ctx, us, _, _, cstrs as acc) =
     UnivFlex.fold (fun u ~is_defined (ctx, us, seen, insts, cstrs as acc) ->
-      if not is_defined then fst (aux acc u)
+      if not is_defined then
+        (debug Pp.(fun () -> str"Calling aux on " ++ Level.raw_pr u);
+         fst (aux acc u))
       else Level.Set.remove u ctx, us, seen, insts, cstrs)
       us (ctx, us, Level.Set.empty, lbounds, cstrs)
+  in
+  let () = debug Pp.(fun () -> str"Maximising contravariant universes") in
+  let instantiate_ubound (ctx, us, cstrs as acc) u ubound =
+    match ubound with
+    | Some [(0,e)] -> (* u + i <= e *)
+      let univ = Universe.of_expr (e, 0) in
+      let univ = UnivFlex.normalize_universe us univ in
+      if Universe.mem u univ then acc else
+      let () = debug Pp.(fun () -> str"Instantiating "++ Level.raw_pr u ++ str" with " ++ Level.raw_pr e) in
+      (Level.Set.remove u ctx, UnivFlex.define u univ us,
+       subst_univs_level_constraints (Level.Map.singleton u univ) cstrs)
+    | _ ->  acc
+  in
+  let maximize_contravariant (ctx, us, cstrs as acc) u =
+    let term_variance, type_variance = term_type_variances u us variances in
+    match term_variance, type_variance with
+    | (Covariant | Irrelevant), Contravariant when not partial ->
+      let ubound = Level.Map.find_opt u right in
+      instantiate_ubound acc u ubound
+    | _, _ -> acc
+  in
+    UnivFlex.fold (fun u ~is_defined acc ->
+      if not is_defined then maximize_contravariant acc u
+      else acc) us (ctx, us, cstrs)
+
+let warn_not_minimizable u =
+  Feedback.msg_notice Pp.(str"Universe " ++ Level.raw_pr u ++ str" is not mimimizable as its lower bound \
+       is not expressible in terms of other universes")
+
+let sup_opt_variances x y =
+  match x, y with
+  | Some v, Some v' -> Some (UVars.Variance.sup v v')
+  | Some _, None -> x
+  | None, Some _ -> y
+  | None, None -> None
+
+let sup_opt_variances_int x y =
+  match x, y with
+  | Some (i, v), Some (i', v') -> Some (max i i', UVars.Variance.sup v v')
+  | Some _, None -> x
+  | None, Some _ -> y
+  | None, None -> None
+
+let sup_variance_occs { in_term; in_binder; in_type } { in_term = in_term'; in_binder = in_binder'; in_type = in_type' } =
+  { in_term = sup_opt_variances in_term in_term';
+    in_type = sup_opt_variances in_type in_type';
+    in_binder = sup_opt_variances_int in_binder in_binder'  }
+
+let update_variance variances l l' =
+  match Level.Map.find_opt l variances with
+  | None -> variances
+  | Some v ->
+    let upd = function None -> Some v | Some v' -> Some (sup_variance_occs v v') in
+    Level.Map.update l' upd variances
+
+let set_variance variances l v =
+  Level.Map.add l v variances
+
+let max_variance variances ls =
+  let fold l v =
+    match Level.Map.find_opt l variances with
+    | None -> v
+    | Some v' -> sup_variance_occs v v'
+  in
+  Level.Set.fold fold ls { in_term = None; in_type = None; in_binder = None }
+
+let simplify_variables partial ctx us variances graph =
+  let dom = UnivFlex.domain us in
+  let minimize u (ctx, us, variances, graph) =
+    match UGraph.minimize u graph with
+    | Some (graph, lbound) ->
+      debug_each Pp.(fun () -> str"Minimizing " ++ Level.raw_pr u ++ str" resulted in lbound: " ++ Universe.pr Level.raw_pr lbound ++ str" and graph " ++ UGraph.pr_model graph);
+      let variances =
+        let fold l variances = update_variance variances u l in
+        Level.Set.fold fold (Universe.levels lbound) variances
+      in
+      (Level.Set.remove u ctx, UnivFlex.define u lbound us, variances, graph)
+    | None -> warn_not_minimizable u; (ctx, UnivFlex.remove u us, variances, graph)
+  in
+  let arbitrary u acc = minimize u acc in
+  let simplify u (ctx, us, variances, graph as acc) =
+    (* u is an undefined flexible variable, lookup its variance information *)
+    let term_variance, type_variance = term_type_variances u us variances in
+    let open UVars.Variance in
+    match term_variance, type_variance with
+    | Irrelevant, Irrelevant -> arbitrary u acc
+    | (Covariant | Irrelevant), Covariant when not partial -> minimize u acc
+    | _, _ -> acc
+  in
+  let fold u (ctx, us, variances, graph as acc) =
+    if UnivFlex.is_defined u us then acc
+    else simplify u acc
+  in
+  Level.Set.fold fold dom (ctx, us, variances, graph)
 
 module UPairs = OrderedType.UnorderedPair(Universe)
 module UPairSet = Set.Make (UPairs)
@@ -284,31 +403,13 @@ let decompose_constraints cstrs =
 let simplify_cstr (l, d, r) =
   (Universe.unrepr (Universe.repr l), d, Universe.unrepr (Universe.repr r))
 
-let sup_opt_variances x y =
-  match x, y with
-  | Some v, Some v' -> Some (UVars.Variance.sup v v')
-  | Some _, None -> x
-  | None, Some _ -> y
-  | None, None -> None
 
-let sup_opt_variances_int x y =
-  match x, y with
-  | Some (i, v), Some (i', v') -> Some (max i i', UVars.Variance.sup v v')
-  | Some _, None -> x
-  | None, Some _ -> y
-  | None, None -> None
-
-let sup_variance_occs { in_term; in_binder; in_type } { in_term = in_term'; in_binder = in_binder'; in_type = in_type' } =
-  { in_term = sup_opt_variances in_term in_term';
-    in_type = sup_opt_variances in_type in_type';
-    in_binder = sup_opt_variances_int in_binder in_binder'  }
-
-let update_variance variances l l' =
-  match Level.Map.find_opt l variances with
-  | None -> variances
-  | Some v ->
-    let upd = function None -> Some v | Some v' -> Some (sup_variance_occs v v') in
-    Level.Map.update l' upd variances
+let partition_to_constraints partition cstrs =
+  let fold le le' cstrs = Constraints.add (Universe.of_expr le, Eq, Universe.of_expr le') cstrs in
+  List.fold_left (fun cstrs eqs ->
+    let canon = LevelExpr.Set.choose eqs in
+    let rest = LevelExpr.Set.remove canon eqs in
+    LevelExpr.Set.fold (fold canon) rest cstrs) cstrs partition
 
 let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?binders {weak_constraints=weak;above_prop} =
   let prl = UnivNames.pr_level_with_global_universes ?binders in
@@ -318,6 +419,9 @@ let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?bin
     str"Weak constraints " ++
     prlist_with_sep spc (fun (u,v) -> Universe.pr Level.raw_pr u ++ str" ~ " ++ Universe.pr Level.raw_pr v)
      (UPairSet.elements weak));
+  if CDebug.get_flag _debug_minim then
+    if not (Level.Set.is_empty (Univ.ContextSet.levels ctx)) && Univ.Level.Map.is_empty variances then
+      Feedback.msg_debug Pp.(str"normalize_context_set called with empty variance information");
   let (ctx, csts) = ContextSet.levels ctx, ContextSet.constraints ctx in
   (* Keep the Prop/Set <= i constraints separate for minimization *)
   let csts = decompose_constraints csts in
@@ -326,19 +430,28 @@ let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?bin
   in
   (* Process weak constraints: when one side is flexible and the 2
      universes are unrelated unify them. *)
-  let smallles, csts, g = UPairSet.fold (fun (u,v) (smallles, csts, g as acc) ->
+  let smallles, csts, g, variances =
+    if not (CDebug.get_flag switch_minim) then
+      UPairSet.fold (fun (u,v) (smallles, csts, g, variances as acc) ->
       let norm = Universe.subst_fn (level_subst_of (UnivFlex.normalize_univ_variable us)) in
       let u = norm u and v = norm v in
       if (Universe.is_type0 u || Universe.is_type0 v) then begin
         if get_set_minimization() then begin
-          if Universe.is_type0 u then (Constraints.add (u,Le,v) smallles,csts,g)
-          else (Constraints.add (v,Le,u) smallles,csts,g)
+          if Universe.is_type0 u then (Constraints.add (u,Le,v) smallles,csts,g,variances)
+          else (Constraints.add (v,Le,u) smallles,csts,g,variances)
         end else acc
       end else
         let set_to a b =
-          (smallles,
-           Constraints.add (Universe.make a,Eq,b) csts,
-           UGraph.enforce_constraint (Universe.make a,Eq,b) g)
+          let levels = Level.Set.add a (Universe.levels b) in
+          let max_variance = max_variance variances levels in
+          match InferCumulativity.term_type_variances max_variance with
+          | None, None | Some UVars.Variance.Irrelevant, Some UVars.Variance.Irrelevant -> (* Irrelevant *)
+            (smallles,
+            Constraints.add (Universe.make a,Eq,b) csts,
+            UGraph.enforce_constraint (Universe.make a,Eq,b) g,
+            Level.Set.fold (fun bl variances -> set_variance variances bl max_variance) levels variances)
+          | _, _ -> (* One universe is not irrelevant *)
+            (smallles, csts, g, variances)
         in
         let check_le a b = UGraph.check_constraint g (a,Le,b) in
         if check_le u v || check_le v u
@@ -349,7 +462,8 @@ let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?bin
           match Universe.level v with
           | Some v when UnivFlex.mem v us -> set_to v u
           | _ -> acc)
-      weak (smallles, csts, g)
+      weak (smallles, csts, g, variances)
+    else (smallles, csts, g, variances)
   in
   let smallles = match (lbound : UGraph.Bound.t) with
     | Prop -> smallles
@@ -362,7 +476,7 @@ let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?bin
       Level.Set.fold fold above_prop smallles
     else smallles
   in
-  let csts, partition =
+  let graph =
     (* We first put constraints in a normal-form: all self-loops are collapsed
        to equalities. *)
     let g = UGraph.initial_universes_with g in
@@ -385,21 +499,19 @@ let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?bin
     let atomic, nonatomic =
      Constraints.partition (fun (_l, d, r) -> not (d == Le && not (Univ.Universe.is_level r))) csts in
     let g = UGraph.merge_constraints atomic g in
-    let g =
-      Constraints.fold (fun cstr g ->
-        if UGraph.check_constraint g cstr then g
-        else UGraph.enforce_constraint (simplify_cstr cstr) g)
-      nonatomic g in
-    let cstrs = UGraph.constraints_of_universes g in
-    debug Pp.(fun () -> str "New universe context: " ++ pr_universe_context_set prl (ctx, fst cstrs));
-    debug Pp.(fun () -> str "Partition: " ++ pr_partition prl (snd cstrs));
-    cstrs
+    Constraints.fold (fun cstr g ->
+      if UGraph.check_constraint g cstr then g
+      else UGraph.enforce_constraint (simplify_cstr cstr) g)
+      nonatomic g
   in
-  (* Ignore constraints from lbound:Set *)
+  let cstrs, partition = UGraph.constraints_of_universes graph in
+  debug Pp.(fun () -> str "New universe context: " ++ pr_universe_context_set prl (ctx, cstrs));
+  debug Pp.(fun () -> str "Partition: " ++ pr_partition prl partition);
+(* Ignore constraints from lbound:Set *)
   let noneqs =
     Constraints.filter
       (fun (l,d,r) -> not (d == Le && Universe.is_type0 l))
-      csts
+      cstrs
   in
   (* Put back constraints [Set <= u] from type inference *)
   let noneqs = Constraints.union noneqs smallles in
@@ -455,38 +567,63 @@ let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?bin
     in
     Constraints.fold fold noneqs Constraints.empty
   in
-  (* Compute the left and right set of flexible variables, constraints
-     mentioning other variables remain in noneqs. *)
-  let filter, noneqs, ucstrsl, ucstrsr =
-    Constraints.fold (fun (l,d,r) (filter, noneq, ucstrsl, ucstrsr as acc) ->
-      let analyse l k r (filter, noneq, ucstrsl, ucstrsr) =
-        let lus = UnivFlex.mem l us and rus = UnivFlex.mem r us in
-        let ucstrsl' =
-          if lus then add_list_map l (k, r) ucstrsl
-          else ucstrsl
-        and ucstrsr' =
-          add_list_map r (k, l) ucstrsr
-        in
-        let noneqs =
-          if lus || rus then noneq
-          else Constraints.add (Universe.addn (Universe.make l) k, Le, Universe.make r) noneq
-        in (filter, noneqs, ucstrsl', ucstrsr')
-      in
-      match Universe.level r with
-      | Some r -> List.fold_left (fun acc (l, k) -> analyse l k r acc) acc (Univ.Universe.repr l)
-      | None -> (Level.Set.union filter (Universe.levels r), Constraints.add (l, d, r) noneqs, ucstrsl, ucstrsr))
-    noneqs (Level.Set.empty, Constraints.empty, Level.Map.empty, Level.Map.empty)
-  in
-  let us = Level.Set.fold (fun l us -> UnivFlex.remove l us) filter us in
   (* Now we construct the instantiation of each variable. *)
   debug Pp.(fun () -> str "Starting minimization with: " ++ pr_universe_context_set prl (ctx, noneqs) ++
     UnivFlex.pr Level.raw_pr us);
-  let ctx', us, seen, inst, noneqs =
-    minimize_univ_variables partial ctx us variances ucstrsr ucstrsl noneqs
+  let ctx', us, variances, noneqs =
+    if not (CDebug.get_flag switch_minim) then
+      (* Compute the left and right set of flexible variables, constraints
+        mentioning other variables remain in noneqs. *)
+       let filter, noneqs, ucstrsl, ucstrsr =
+        Constraints.fold (fun (l,d,r) (filter, noneq, ucstrsl, ucstrsr as acc) ->
+          let analyse l k r (filter, noneq, ucstrsl, ucstrsr) =
+            let lus = UnivFlex.mem l us and rus = UnivFlex.mem r us in
+            let ucstrsl' =
+              if lus then add_list_map l (k, r) ucstrsl
+              else ucstrsl
+            and ucstrsr' =
+              add_list_map r (k, l) ucstrsr
+            in
+            let noneqs =
+              if lus || rus then noneq
+              else Constraints.add (Universe.addn (Universe.make l) k, Le, Universe.make r) noneq
+            in (filter, noneqs, ucstrsl', ucstrsr')
+          in
+          match Universe.level r with
+          | Some r -> List.fold_left (fun acc (l, k) -> analyse l k r acc) acc (Univ.Universe.repr l)
+          | None -> (Level.Set.union filter (Universe.levels r), Constraints.add (l, d, r) noneqs, ucstrsl, ucstrsr))
+        noneqs (Level.Set.empty, Constraints.empty, Level.Map.empty, Level.Map.empty)
+      in
+          let us = Level.Set.fold (fun l us -> UnivFlex.remove l us) filter us in
+      let ctx, us, noneqs = minimize_univ_variables partial ctx us variances ucstrsr ucstrsl noneqs in
+      ctx, us, variances, noneqs
+    else
+      let smalllesu = Constraints.fold (fun (l, d, r) acc ->
+        match Universe.level r with Some r -> Level.Set.add r acc | None -> acc) smallles Level.Set.empty in
+      (* debug Pp.(fun () -> str"Model before removal: " ++ UGraph.pr_model graph); *)
+      let graph = UnivFlex.fold (fun l ~is_defined graph ->
+        if not is_defined && not (Level.Set.mem l smalllesu) then
+          (debug Pp.(fun () -> str"Removing " ++ Level.raw_pr l ++ str" -> Set constraints");
+           UGraph.remove_set_clauses l graph)
+        else graph)
+        us graph
+      in
+      (* debug Pp.(fun () -> str"Model after removal: " ++ UGraph.pr_model graph); *)
+      let ctx', us, variances, graph = simplify_variables partial ctx us variances graph in
+      debug Pp.(fun () -> str"Model after simplification: " ++ UGraph.pr_model graph ++ fnl () ++ str"FLEXIBLES: " ++ UnivFlex.pr Level.raw_pr us);
+      let cstrs, partition = UGraph.constraints_of_universes graph in
+      let cstrs = partition_to_constraints partition cstrs in
+      let cstrs =
+        Constraints.filter
+          (fun (l,d,r) -> not (d == Le && Universe.is_type0 l))
+          cstrs
+      in
+      let cstrs = Constraints.union smallles cstrs in
+      ctx', us, variances, cstrs
   in
   let us = UnivFlex.normalize us in
   let noneqs = UnivSubst.subst_univs_constraints (UnivFlex.normalize_univ_variable us) noneqs in
   let ctx = (ctx', Constraints.union noneqs eqs) in
   debug Pp.(fun () -> str "After minimization: " ++ pr_universe_context_set prl ctx ++ fnl () ++
     UnivFlex.pr Level.raw_pr us);
-  us, ctx
+  (us, variances), ctx

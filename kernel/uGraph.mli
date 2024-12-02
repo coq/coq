@@ -105,6 +105,13 @@ val choose : (Level.t -> bool) -> t -> Level.t -> Level.t option
    e.g. if [g] is [a <= b <= c] then [constraints_for ~kept:{a, c} g] is [a <= c]. *)
 val constraints_for : kept:Level.Set.t -> t -> Constraints.t
 
+val minimize : Level.t -> t -> (t * Universe.t) option
+
+(* Hack for template polymorphism *)
+val remove_set_clauses : Level.t -> t -> t
+
+val pr_model : t -> Pp.t
+
 val domain : t -> Level.Set.t
 (** Known universes *)
 

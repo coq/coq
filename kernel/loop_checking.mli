@@ -65,7 +65,10 @@ val domain : t -> Level.Set.t
 
 val choose : (Level.t -> bool) -> t -> Level.t -> Level.t option
 
-(* val minimize : t -> Level.t -> t * (Level.t * int) list *)
+val minimize : Level.t -> t -> (t * Universe.t) option
+
+(* Hack for template-polymorphism. [remove_set_clauses u m] removes all [u -> Set+0] clauses from the model  *)
+val remove_set_clauses : Level.t -> t -> t
 
 (** {5 High-level representation} *)
 

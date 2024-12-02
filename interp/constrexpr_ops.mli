@@ -14,7 +14,7 @@ open Constrexpr
 
 (** Constrexpr_ops: utilities on [constr_expr] *)
 
-val expr_Type_sort : sort_expr
+val expr_Type_sort : UState.rigid -> sort_expr
 val expr_SProp_sort : sort_expr
 val expr_Prop_sort : sort_expr
 val expr_Set_sort : sort_expr

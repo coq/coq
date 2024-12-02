@@ -566,7 +566,7 @@ let interp_mutual_inductive_constr ~sigma ~flags ~udecl ~ctx_params ~indnames ~a
   let sigma, (default_dep_elim, arities) = inductive_levels ~auto_prop_lowering env_ar_params sigma ~poly ~indnames ~arities_explicit arities ctor_args in
   let lbound = if poly then UGraph.Bound.Set else UGraph.Bound.Prop in
   let ivariances = UnivVariances.universe_variances_of_inductive env_ar_params sigma ~params:ctx_params ~arities ~constructors in
-  let sigma = Evd.minimize_universes ~lbound ~variances:ivariances sigma in
+  let sigma, ivariances = Evd.minimize_universes ~lbound ~variances:ivariances sigma in
   let arities = List.map EConstr.(to_constr sigma) arities in
   let constructors = List.map (on_snd (List.map (EConstr.to_constr sigma))) constructors in
   let ctx_params = List.map (fun d -> EConstr.to_rel_decl sigma d) ctx_params in
@@ -796,7 +796,7 @@ let extract_inductive indl =
   List.map (fun ({CAst.v=indname},_,ar,lc) -> {
     ind_name = indname;
     ind_arity_explicit = Option.has_some ar;
-    ind_arity = Option.default (CAst.make @@ CSort Constrexpr_ops.expr_Type_sort) ar;
+    ind_arity = Option.default (CAst.make @@ CSort (Constrexpr_ops.expr_Type_sort UState.univ_flexible)) ar;
     ind_lc = List.map (fun (_,({CAst.v=id},t)) -> (id,t)) lc
   }) indl
 

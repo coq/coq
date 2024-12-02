@@ -122,10 +122,11 @@ let local_lookup_scheme eff kind ind = match lookup_scheme kind ind with
 let local_check_scheme kind ind eff =
   Option.has_some (local_lookup_scheme eff kind ind)
 
-let define ?loc internal role id c poly uctx =
+let define ?loc internal role id c poly env uctx =
   let id = compute_name internal id in
   let uctx = UState.collapse_above_prop_sort_variables ~to_prop:true uctx in
-  let uctx = UState.minimize uctx ~partial:false in
+  let variances = UnivVariances.universe_variances_constr env (Evd.from_ctx uctx) c in
+  let uctx, variances = UState.minimize uctx ~variances ~partial:false in
   let c = UState.nf_universes uctx c in
   let uctx = UState.restrict uctx (Vars.universes_of_constr c) in
   (* FIXME infer variances *)
@@ -169,13 +170,14 @@ end = struct
 (* Assumes that dependencies are already defined *)
 let rec define_individual_scheme_base ?loc kind suff f ~internal idopt (mind,i as ind) eff =
   (* FIXME: do not rely on the imperative modification of the global environment *)
-  let (c, ctx) = f (Global.env ()) eff ind in
+  let env = (Global.env ()) in
+  let (c, ctx) = f env eff ind in
   let mib = Global.lookup_mind mind in
   let id = match idopt with
     | Some id -> id
     | None -> add_suffix mib.mind_packets.(i).mind_typename ("_"^suff) in
   let role = Evd.Schema (ind, kind) in
-  let const, neff = define ?loc internal role id c (Declareops.inductive_is_polymorphic mib) ctx in
+  let const, neff = define ?loc internal role id c (Declareops.inductive_is_polymorphic mib) env ctx in
   let eff = Evd.concat_side_effects neff eff in
   const, eff
 
@@ -190,7 +192,8 @@ and define_individual_scheme ?loc kind ~internal names (mind,i as ind) eff =
 (* Assumes that dependencies are already defined *)
 and define_mutual_scheme_base ?(locmap=Locmap.default None) kind suff f ~internal names mind eff =
   (* FIXME: do not rely on the imperative modification of the global environment *)
-  let (cl, ctx) = f (Global.env ()) eff mind in
+  let env = (Global.env ()) in
+  let (cl, ctx) = f env eff mind in
   let mib = Global.lookup_mind mind in
   let ids = Array.init (Array.length mib.mind_packets) (fun i ->
       try Int.List.assoc i names
@@ -198,7 +201,7 @@ and define_mutual_scheme_base ?(locmap=Locmap.default None) kind suff f ~interna
   let fold i effs id cl =
     let role = Evd.Schema ((mind, i), kind)in
     let loc = Locmap.lookup ~locmap (mind,i) in
-    let cst, neff = define ?loc internal role id cl (Declareops.inductive_is_polymorphic mib) ctx in
+    let cst, neff = define ?loc internal role id cl (Declareops.inductive_is_polymorphic mib) env ctx in
     (Evd.concat_side_effects neff effs, cst)
   in
   let (eff, consts) = Array.fold_left2_map_i fold eff ids cl in

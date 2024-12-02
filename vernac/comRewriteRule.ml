@@ -45,7 +45,7 @@ let do_symbol ~poly ~unfold_fix udecl (id, typ) =
   in
   Pretyping.check_evars_are_solved ~program_mode:false env evd;
   let ivariances = UnivVariances.universe_variances_of_type env evd typ in
-  let evd = Evd.minimize_universes ~variances:ivariances evd in
+  let evd, ivariances = Evd.minimize_universes ~variances:ivariances evd in
   let _qvars, uvars = EConstr.universes_of_constr evd typ in
   let evd = Evd.restrict_universe_context evd uvars in
   let typ = EConstr.to_constr evd typ in
@@ -421,7 +421,7 @@ let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) 
   let flags = { Pretyping.no_classes_no_fail_inference_flags with undeclared_evars_patvars = true; patvars_abstract = true; expand_evars = false; solve_unification_constraints = false } in
   let evd, lhs, typ = Pretyping.understand_tcc_ty ~flags env evd lhs in
 
-  let evd = Evd.minimize_universes evd in
+  let evd, variances = Evd.minimize_universes evd in
   let _qvars, uvars = EConstr.universes_of_constr evd lhs in
   let evd = Evd.restrict_universe_context evd uvars in
   let uctx, uctx' = UState.check_univ_decl_rev (Evd.ustate evd) udecl in
@@ -471,7 +471,7 @@ let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) 
       Pretyping.understand_tcc ~flags env evd rhs
   in
 
-  let evd' = Evd.minimize_universes evd' in
+  let evd', _variances = Evd.minimize_universes evd' in
   let _qvars', uvars' = EConstr.universes_of_constr evd' rhs in
   let evd' = Evd.restrict_universe_context evd' (Univ.Level.Set.union uvars uvars') in
   let fail pp = warn_rewrite_rules_break_SR ?loc:rhs_loc Pp.(str "universe inconsistency, missing constraints: " ++ pp) in

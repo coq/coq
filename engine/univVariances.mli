@@ -34,6 +34,11 @@ val universe_variances_of_proofs :
   (Constr.t * Constr.t) list ->
   InferCumulativity.level_variances
 
+val universe_variances_of_partial_proofs :
+  Environ.env -> Evd.evar_map ->
+  EConstr.t list ->
+  InferCumulativity.level_variances
+
 val universe_variances_of_named_context :
   Environ.env -> Evd.evar_map ->
   as_types:bool ->

@@ -91,7 +91,7 @@ let interp_fields_evars env sigma ~ninds ~nparams impls_env nots l =
 
 let check_anonymous_type ind =
   match ind with
-  | { CAst.v = CSort s } -> Constrexpr_ops.(sort_expr_eq expr_Type_sort s)
+  | { CAst.v = CSort s } -> Constrexpr_ops.(sort_expr_eq (expr_Type_sort UState.univ_flexible) s)
   | _ -> false
 
 let error_parameters_must_be_named bk {CAst.loc; v=name} =
@@ -168,7 +168,7 @@ let build_type_telescope ~unconstrained_sorts newps env0 sigma { DataI.arity; _ 
   | None ->
     let sigma, s = Evd.new_sort_variable Evd.univ_flexible sigma in
     sigma, (EConstr.mkSort s, s)
-  | Some { CAst.v = CSort s; loc } when Constrexpr_ops.(sort_expr_eq expr_Type_sort s) ->
+  | Some { CAst.v = CSort s; loc } when Constrexpr_ops.(sort_expr_eq (expr_Type_sort UState.univ_flexible) s) ->
     (* special case: the user wrote ": Type". We want to allow it to become algebraic
        (and Prop but that may change in the future) *)
     let sigma, s = Evd.new_sort_variable ?loc UState.univ_flexible sigma in
@@ -264,7 +264,7 @@ let typecheck_params_and_fields ~auto_prop_lowering def ~poly ~cumulative udecl 
   let ivariances = UnivVariances.universe_variances_of_record env0 sigma ~params:newps ~fields:(List.map snd data) ~types:(List.map snd typs) in
   let sigma, (newps, ans) =
     (* too complex for Evarutil.finalize as we normalize non-constr *)
-    let sigma = Evd.minimize_universes ~lbound ~variances:ivariances sigma in
+    let sigma, ivariances = Evd.minimize_universes ~lbound ~variances:ivariances sigma in
     let uvars = ref Univ.Level.Set.empty in
     let nf c =
       let _, varsc = EConstr.universes_of_constr sigma c in

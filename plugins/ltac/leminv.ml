@@ -213,7 +213,8 @@ let inversion_scheme ~name ~poly env sigma t sort dep_option inv_op =
   end in
   let avoid = ref Id.Set.empty in
   let Proof.{sigma} = Proof.data pf in
-  let sigma = Evd.minimize_universes sigma in
+  (* FIXME compute variances*)
+  let sigma, _variances = Evd.minimize_universes sigma in
   let rec fill_holes c =
     match EConstr.kind sigma c with
     | Evar (e,args) ->
