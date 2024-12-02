@@ -141,6 +141,7 @@ type 'body pproof_entry = {
      - the initial uctx if opaque deferred;
      - the uctx of type only if opaque private;
      - the full uctx otherwise *)
+  proof_entry_variances   : Declarations.variances option;
   proof_entry_inline_code : bool;
 }
 
@@ -264,22 +265,23 @@ let make_univs_immediate ~poly ?keep_body_ucst_separate ~opaque ~uctx ~udecl ~ef
 (** [univsbody] are universe-constraints attached to the body-only,
    used in vio-delayed opaque constants and private poly universes *)
 let definition_entry_core ?using ?(inline=false) ?types
-    ?(univs=default_named_univ_entry) body =
+    ?(univs=default_named_univ_entry) ?variances body =
   { proof_entry_body = body;
     proof_entry_secctx = using;
     proof_entry_type = types;
     proof_entry_universes = univs;
+    proof_entry_variances = variances;
     proof_entry_inline_code = inline}
 
-let pure_definition_entry ?(opaque=Transparent) ?using ?inline ?types ?univs body =
-  definition_entry_core ?using ?inline ?types ?univs body
+let pure_definition_entry ?(opaque=Transparent) ?using ?inline ?types ?univs ?variances body =
+  definition_entry_core ?using ?inline ?types ?univs ?variances body
 
-let definition_entry ?(opaque=false) ?using ?inline ?types ?univs body =
+let definition_entry ?(opaque=false) ?using ?inline ?types ?univs ?variances body =
   let opaque = if opaque then Opaque Univ.ContextSet.empty else Transparent in
-  definition_entry_core ?using ?inline ?types ?univs (Default { body = (body, Evd.empty_side_effects); opaque })
+  definition_entry_core ?using ?inline ?types ?univs ?variances (Default { body = (body, Evd.empty_side_effects); opaque })
 
-let delayed_definition_entry ?feedback_id ?using ~univs ?types body =
-  definition_entry_core ?using ?types ~univs (DeferredOpaque { body; feedback_id })
+let delayed_definition_entry ?feedback_id ?using ~univs ?variances ?types body =
+  definition_entry_core ?using ?types ~univs ?variances (DeferredOpaque { body; feedback_id })
 
 let parameter_entry ?inline ?(univs=default_named_univ_entry) typ = {
   parameter_entry_secctx = None;
@@ -495,6 +497,7 @@ let cast_pure_proof_entry (e : Constr.constr pproof_entry) =
     definition_entry_secctx = e.proof_entry_secctx;
     definition_entry_type = e.proof_entry_type;
     definition_entry_universes = univ_entry;
+    definition_entry_variance = e.proof_entry_variances;
     definition_entry_inline_code = e.proof_entry_inline_code;
   },
   ctx
@@ -747,6 +750,7 @@ let declare_variable ~name ~kind ~typing_flags d =
             proof_entry_secctx = None; (* de.proof_entry_secctx is NOT respected *)
             proof_entry_type = de.proof_entry_type;
             proof_entry_universes = univs;
+            proof_entry_variances = de.proof_entry_variances; (* FIXME can it have variance?? *)
             proof_entry_inline_code = de.proof_entry_inline_code;
           }
           in

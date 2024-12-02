@@ -230,6 +230,7 @@ let infer_definition ~sec_univs env entry =
   let hbody = if body == j.uj_val then Some hbody else None in
   let def = Def body in
   let hyps = used_section_variables env entry.definition_entry_secctx (Some body) typ in
+  (* TODO check variance *)
   hbody, {
     const_hyps = hyps;
     const_univ_hyps = make_univ_hyps sec_univs;
@@ -237,7 +238,7 @@ let infer_definition ~sec_univs env entry =
     const_type = typ;
     const_body_code = ();
     const_universes = univs;
-    const_variance = None; (* FIXME *)
+    const_variance = entry.definition_entry_variance;
     const_relevance = Relevanceops.relevance_of_term env body;
     const_inline_code = entry.definition_entry_inline_code;
     const_typing_flags = Environ.typing_flags env;

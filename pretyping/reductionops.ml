@@ -1221,7 +1221,7 @@ let check_convert_instances ~flex:_ u u' univs =
   if Evd.check_quconstraints univs csts then Result.Ok univs else Result.Error None
 
 (* general conversion and inference functions *)
-let check_inductive_instances cv_pb variance u1 u2 univs =
+let check_inductive_instances ~flex:_ cv_pb variance u1 u2 univs =
   let csts = get_cumulativity_constraints cv_pb variance u1 u2 in
   if (Evd.check_quconstraints univs csts) then Result.Ok univs
   else Result.Error None
@@ -1282,7 +1282,7 @@ let sigma_compare_instances ~flex i0 i1 sigma =
   | exception Evd.UniversesDiffer -> Result.Error None
   | exception UGraph.UniverseInconsistency err -> Result.Error (Some err)
 
-let sigma_check_inductive_instances cv_pb variance u1 u2 sigma =
+let sigma_check_inductive_instances ~flex cv_pb variance u1 u2 sigma =
   match Evarutil.compare_cumulative_instances cv_pb variance u1 u2 sigma with
   | Inl sigma -> Result.Ok sigma
   | Inr err -> Result.Error (Some err)
@@ -1302,7 +1302,7 @@ let univproblem_compare_sorts env pb s0 s1 uset =
 let univproblem_compare_instances ~flex i0 i1 uset =
   Result.Ok (UnivProblem.enforce_eq_instances_univs flex i0 i1 uset)
 
-let univproblem_check_inductive_instances cv_pb variance u1 u2 sigma =
+let univproblem_check_inductive_instances ~flex cv_pb variance u1 u2 sigma =
   Result.Ok (UnivProblem.compare_cumulative_instances cv_pb variance u1 u2 sigma)
 
 let univproblem_univ_state =
@@ -1714,7 +1714,7 @@ let infer_convert_instances ~flex u u' (univs,cstrs as cuniv) =
     else
       Result.Error None
 
-let infer_inductive_instances cv_pb variance u1 u2 (univs,csts) =
+let infer_inductive_instances ~flex cv_pb variance u1 u2 (univs,csts) =
   let qcsts, csts' = get_cumulativity_constraints cv_pb variance u1 u2 in
   if Sorts.QConstraints.trivial qcsts then
     match UGraph.merge_constraints csts' univs with

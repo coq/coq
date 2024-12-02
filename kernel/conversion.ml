@@ -151,7 +151,7 @@ type conv_pb =
 type ('a, 'err) universe_compare = {
   compare_sorts : env -> conv_pb -> Sorts.t -> Sorts.t -> 'a -> ('a, 'err option) result;
   compare_instances: flex:bool -> UVars.Instance.t -> UVars.Instance.t -> 'a -> ('a, 'err option) result;
-  compare_cumul_instances : conv_pb -> UVars.Variance.t array ->
+  compare_cumul_instances : flex:bool -> conv_pb -> UVars.Variance.t array ->
     UVars.Instance.t -> UVars.Instance.t -> 'a -> ('a, 'err option) result;
 }
 
@@ -169,8 +169,8 @@ let convert_instances ~flex u u' (s, check) =
 
 exception MustExpand
 
-let convert_instances_cumul pb var u u' (s, check) =
-  (check.compare_cumul_instances pb var u u' s, check)
+let convert_instances_cumul ~flex pb var u u' (s, check) =
+  (check.compare_cumul_instances ~flex pb var u u' s, check)
 
 let get_cumulativity_constraints cv_pb variance u u' =
   match cv_pb with
@@ -210,7 +210,8 @@ let fail_check (infos : 'err conv_tab) (state, check) = match state with
 | Result.Error (Some err) -> raise (NotConvertibleTrace (infos.err_ret err))
 
 let convert_inductives cv_pb ind nargs u1 u2 (s, check) =
-  convert_inductives_gen (check.compare_instances ~flex:false) check.compare_cumul_instances
+  convert_inductives_gen (check.compare_instances ~flex:false)
+    (check.compare_cumul_instances ~flex:false)
     cv_pb ind nargs u1 u2 s, check
 
 let constructor_cumulativity_arguments (mind, ind, ctor) =
@@ -232,10 +233,11 @@ let convert_constructors_gen cmp_instances cmp_cumul (mind, ind, cns) nargs u1 u
       cmp_cumul CONV variance u1 u2 s
 
 let convert_constructors ctor nargs u1 u2 (s, check) =
-  convert_constructors_gen (check.compare_instances ~flex:false) check.compare_cumul_instances
+  convert_constructors_gen (check.compare_instances ~flex:false)
+    (check.compare_cumul_instances ~flex:false)
     ctor nargs u1 u2 s, check
 
-let conv_table_key infos ~nargs k1 k2 cuniv =
+let conv_table_key cv_pb infos ~nargs k1 k2 cuniv =
   if k1 == k2 then cuniv else
   match k1, k2 with
   | ConstKey (cst, u), ConstKey (cst', u') when Constant.CanOrd.equal cst cst' ->
@@ -244,7 +246,14 @@ let conv_table_key infos ~nargs k1 k2 cuniv =
     else
       let flex = evaluable_constant cst (info_env infos.cnv_inf)
         && RedFlags.red_set (info_flags infos.cnv_inf) (RedFlags.fCONST cst)
-      in fail_check infos @@ convert_instances ~flex u u' cuniv
+      in
+      let cb = lookup_constant cst (info_env infos.cnv_inf) in
+      (match cb.const_variance with
+      | None -> fail_check infos @@ convert_instances ~flex u u' cuniv
+      | Some variance ->
+        let pri =  UVars.Instance.pr Sorts.QVar.raw_pr (Univ.Universe.pr Univ.Level.raw_pr) in
+        Feedback.msg_debug Pp.(str"conv_table_key: " ++ pri u ++ str" ~ " ++ pri u');
+        fail_check infos @@ convert_instances_cumul ~flex cv_pb variance u u' cuniv)
   | VarKey id, VarKey id' when Id.equal id id' -> cuniv
   | RelKey n, RelKey n' when Int.equal n n' -> cuniv
   | _ -> raise NotConvertible
@@ -437,7 +446,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     | (FFlex fl1, FFlex fl2) ->
       (try
          let nargs = same_args_size v1 v2 in
-         let cuniv = conv_table_key infos ~nargs fl1 fl2 cuniv in
+         let cuniv = conv_table_key cv_pb infos ~nargs fl1 fl2 cuniv in
          let () = if irr_flex infos.cnv_inf fl1 then raise NotConvertible (* trigger the fallback *) in
          let mask = if infos.cnv_typ then match fl1 with
          | ConstKey _ -> get_ref_mask infos.cnv_inf infos.lft_tab fl1
@@ -737,7 +746,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     | FArray (u1,t1,ty1), FArray (u2,t2,ty2) ->
       let len = Parray.length_int t1 in
       if not (Int.equal len (Parray.length_int t2)) then raise NotConvertible;
-      let cuniv = fail_check infos @@ convert_instances_cumul CONV [|UVars.Variance.Irrelevant|] u1 u2 cuniv in
+      let cuniv = fail_check infos @@ convert_instances_cumul ~flex:false CONV [|UVars.Variance.Irrelevant|] u1 u2 cuniv in
       let el1 = el_stack lft1 v1 in
       let el2 = el_stack lft2 v2 in
       let cuniv = ccnv CONV l2r infos el1 el2 ty1 ty2 cuniv in
@@ -819,7 +828,7 @@ and convert_stacks ?(mask = [||]) l2r infos lft1 lft2 stk1 stk2 cuniv =
                     let u2 = CClosure.usubst_instance e2 u2 in
                     match mind.Declarations.mind_variance with
                     | None -> convert_instances ~flex:false u1 u2 cu
-                    | Some variances -> convert_instances_cumul CONV variances u1 u2 cu
+                    | Some variances -> convert_instances_cumul ~flex:false CONV variances u1 u2 cu
                 in
                 let cu = fail_check infos cu in
                 let pms1 = mk_clos_vect e1 pms1 in
@@ -946,7 +955,7 @@ let check_convert_instances ~flex:_ u u' univs =
   else Result.Error None
 
 (* general conversion and inference functions *)
-let check_inductive_instances cv_pb variance u1 u2 univs =
+let check_inductive_instances ~flex:_ cv_pb variance u1 u2 univs =
   let qcsts, ucsts = get_cumulativity_constraints cv_pb variance u1 u2 in
   if Sorts.QConstraints.trivial qcsts && (UGraph.check_constraints ucsts univs) then Result.Ok univs
   else Result.Error None
