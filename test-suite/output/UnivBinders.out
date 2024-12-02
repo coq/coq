@@ -60,7 +60,7 @@ mono
      : Type@{mono.uu+1}
 Type@{mono.uu}
      : Type@{mono.uu+1}
-File "./output/UnivBinders.v", line 50, characters 2-31:
+File "./output/UnivBinders.v", line 51, characters 2-31:
 The command has indeed failed with message:
 Universe uu already exists.
 monomono
@@ -71,13 +71,14 @@ monomono
      : Type@{MONOU+1}
 mono
      : Type@{mono.uu+1}
-File "./output/UnivBinders.v", line 70, characters 0-52:
+File "./output/UnivBinders.v", line 71, characters 0-52:
 The command has indeed failed with message:
 Universe uu already exists.
 bobmorane =
-let tt := Type@{fooS.u1} in let ff := Type@{fooS.u3} in tt -> ff
-     : Type@{max(fooS.u0,fooS.u2)}
-File "./output/UnivBinders.v", line 87, characters 23-25:
+let tt := Type@{UnivBinders.32} in
+let ff := Type@{UnivBinders.34} in tt -> ff
+     : Type@{max(UnivBinders.31,UnivBinders.33)}
+File "./output/UnivBinders.v", line 86, characters 23-25:
 The command has indeed failed with message:
 Universe uu already bound.
 foo@{E M N} =
@@ -110,16 +111,16 @@ punwrap is a primitive projection of PWrap
 Arguments punwrap A%type_scope p
 punwrap is transparent
 Expands to: Constant UnivBinders.punwrap
-File "./output/UnivBinders.v", line 104, characters 0-19:
+File "./output/UnivBinders.v", line 103, characters 0-19:
 The command has indeed failed with message:
 Universe instance length is 3 but should be 1.
-File "./output/UnivBinders.v", line 105, characters 0-20:
+File "./output/UnivBinders.v", line 104, characters 0-20:
 The command has indeed failed with message:
 Universe instance length is 0 but should be 1.
-File "./output/UnivBinders.v", line 108, characters 0-33:
+File "./output/UnivBinders.v", line 107, characters 0-33:
 The command has indeed failed with message:
 This object does not support universe names.
-File "./output/UnivBinders.v", line 112, characters 0-50:
+File "./output/UnivBinders.v", line 111, characters 0-50:
 The command has indeed failed with message:
 Cannot enforce v+1 ≤ u because u < u+3 < u+4 ≤ gU+2 < gU+4 ≤ gV+1 < gV+4 ≤ v
 < v+4
@@ -191,7 +192,7 @@ Arguments axfoo' _%type_scope
 *** [ axbar' : Type@{axfoo'.u1} -> Type@{axfoo'.i} ]
 
 Arguments axbar' _%type_scope
-File "./output/UnivBinders.v", line 158, characters 19-26:
+File "./output/UnivBinders.v", line 157, characters 19-26:
 The command has indeed failed with message:
 When declaring multiple assumptions in one command, only the first name is
 allowed to mention a universe binder (which will be shared by the whole
@@ -251,7 +252,7 @@ Arguments MutualI1' A%type_scope
 Arguments C1' A%type_scope p1
 Arguments MutualI2' A%type_scope
 Arguments C2' A%type_scope p2
-File "./output/UnivBinders.v", line 209, characters 0-33:
+File "./output/UnivBinders.v", line 208, characters 0-33:
 The command has indeed failed with message:
 Universe inconsistency. Cannot enforce a+1 ≤ a because a < a+1.
 JMeq :

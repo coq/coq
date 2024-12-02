@@ -1,5 +1,5 @@
 Primitive array := #array_type.
-
+Set Debug "univMinim".
 Check [| | 0 |].
 
 Check [| 1; 2; 3 | 0 |].

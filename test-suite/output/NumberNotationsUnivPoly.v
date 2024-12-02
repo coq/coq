@@ -1,4 +1,4 @@
-Set Universe Polymorphism.
+Set Universe Polymorphism. Unset Printing Universe Variances.
 Axiom A : Type.
 
 Inductive B : A -> Type :=
