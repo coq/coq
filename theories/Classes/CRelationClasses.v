@@ -25,6 +25,7 @@ Generalizable Variables A B C D R S T U l eqA eqB eqC eqD.
 
 Set Universe Polymorphism.
 Set Polymorphic Inductive Cumulativity.
+Set Polymorphic Definitions Cumulativity.
 
 Definition crelation@{-a +ra} (A : Type@{a}) := A -> A -> Type@{ra}.
 Definition arrow@{-a -b} (A : Type@{a}) (B : Type@{b}) := A -> B.

@@ -32,6 +32,7 @@ val do_definition
   -> ?scope:Locality.definition_scope
   -> ?clearbody:bool
   -> poly:bool
+  -> cumulative:bool
   -> ?typing_flags:Declarations.typing_flags
   -> kind:Decls.definition_object_kind
   -> ?using:Vernacexpr.section_subset_expr
@@ -51,6 +52,7 @@ val do_definition_program
   -> scope:Locality.definition_scope
   -> ?clearbody:bool
   -> poly:bool
+  -> cumulative:bool
   -> ?typing_flags:Declarations.typing_flags
   -> kind:Decls.logical_kind
   -> ?using:Vernacexpr.section_subset_expr
@@ -70,6 +72,7 @@ val do_definition_interactive
   -> scope:Locality.definition_scope
   -> ?clearbody:bool
   -> poly:bool
+  -> cumulative:bool
   -> typing_flags:Declarations.typing_flags option
   -> kind:Decls.logical_kind
   -> ?using:Vernacexpr.section_subset_expr

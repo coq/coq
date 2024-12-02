@@ -198,8 +198,6 @@ let v_cstrs =
        (v_tuple "univ_constraint"
           [|v_univ;v_enum "order_request" 2;v_univ|]))
 
-let v_variance = v_enum "variance" 4
-
 let v_level_instance = v_annot_c ("level_instance", v_pair (v_array v_quality) (v_array v_level))
 let v_univ_instance = v_annot_c ("instance", v_pair (v_array v_quality) (v_array v_univ))
 let v_abs_context = v_tuple "abstract_universe_context" [|v_pair (v_array v_name) (v_array v_name); v_cstrs|]
@@ -343,7 +341,12 @@ let v_typing_flags =
       v_oracle; v_bool; v_bool;
       v_bool; v_bool; v_bool; v_bool; v_bool|]
 
-let v_univs = v_sum "universes" 1 [|[|v_abs_context|]|]
+let v_variance = v_enum "variance" 4
+let v_position = v_sum "position" 2 [| [| v_int |]  |]
+
+let v_variances = v_opt (v_array (v_pair v_variance v_position))
+
+let v_univs = v_sum "universes" 1 [|[|v_abs_context; v_variances|]|]
 
 let v_vm_reloc_table = v_array (v_pair v_int v_int)
 
@@ -403,7 +406,7 @@ let v_cb = v_tuple "constant_body"
     v_relevance;
     v_opt v_vm_indirect_code;
     v_univs;
-    Opt (Array v_variance);
+    v_variances;
     v_bool;
     v_typing_flags|]
 
@@ -465,8 +468,7 @@ let v_ind_pack = v_tuple "mutual_inductive_body"
     v_rctxt;
     v_univs; (* universes *)
     v_opt v_template_universes;
-    v_opt (v_array v_variance);
-    v_opt (v_array v_variance);
+    v_variances;
     v_opt v_bool;
     v_typing_flags|]
 

@@ -149,7 +149,7 @@ let is_set_increment u =
   | [(l, k)] -> Level.is_set l
   | _ -> false
 
-let minimize_univ_variables ctx us variances left right cstrs =
+let minimize_univ_variables partial ctx us variances left right cstrs =
   let left, lbounds =
     Level.Map.fold (fun r lower (left, lbounds as acc)  ->
       if UnivFlex.mem r us || not (Level.Set.mem r ctx) then acc
@@ -187,7 +187,6 @@ let minimize_univ_variables ctx us variances left right cstrs =
       | None -> if UnivFlex.mem u us then Irrelevant, Irrelevant else Invariant, Invariant
       | Some pos ->
         let termv, typev = term_type_variances pos in
-        (* No recorded variance for this universe *)
          Option.default Irrelevant termv, Option.default Irrelevant typev
     in
     let instantiate_lbound lbound =
@@ -214,8 +213,10 @@ let minimize_univ_variables ctx us variances left right cstrs =
       debug Pp.(fun () -> str"Lower bound of " ++ Level.raw_pr u ++ str":" ++ Universe.pr Level.raw_pr lbound);
       let open UVars.Variance in
       match term_variance, type_variance with
-      | Irrelevant, (Irrelevant | Covariant) ->
+      | Irrelevant, Irrelevant ->
         (* This keeps principal typings, as instantiating to e.g. Set in a covariant position allows to use Set <= i for any i *)
+        enforce_uppers (instantiate_lbound lbound)
+      | (Covariant | Irrelevant), Covariant when not partial ->
         enforce_uppers (instantiate_lbound lbound)
       | _, _ ->
         if Universe.is_type0 lbound then enforce_uppers (acc, {enforce = true; lbound = Universe.make u; lower})
@@ -283,7 +284,33 @@ let decompose_constraints cstrs =
 let simplify_cstr (l, d, r) =
   (Universe.unrepr (Universe.repr l), d, Universe.unrepr (Universe.repr r))
 
-let normalize_context_set ~lbound ~variances g ctx (us:UnivFlex.t) ?binders {weak_constraints=weak;above_prop} =
+let sup_opt_variances x y =
+  match x, y with
+  | Some v, Some v' -> Some (UVars.Variance.sup v v')
+  | Some _, None -> x
+  | None, Some _ -> y
+  | None, None -> None
+
+let sup_opt_variances_int x y =
+  match x, y with
+  | Some (i, v), Some (i', v') -> Some (max i i', UVars.Variance.sup v v')
+  | Some _, None -> x
+  | None, Some _ -> y
+  | None, None -> None
+
+let sup_variance_occs { in_term; in_binder; in_type } { in_term = in_term'; in_binder = in_binder'; in_type = in_type' } =
+  { in_term = sup_opt_variances in_term in_term';
+    in_type = sup_opt_variances in_type in_type';
+    in_binder = sup_opt_variances_int in_binder in_binder'  }
+
+let update_variance variances l l' =
+  match Level.Map.find_opt l variances with
+  | None -> variances
+  | Some v ->
+    let upd = function None -> Some v | Some v' -> Some (sup_variance_occs v v') in
+    Level.Map.update l' upd variances
+
+let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?binders {weak_constraints=weak;above_prop} =
   let prl = UnivNames.pr_level_with_global_universes ?binders in
   debug Pp.(fun () -> str "Minimizing context: " ++ pr_universe_context_set prl ctx ++ spc () ++
     UnivFlex.pr Level.raw_pr us ++ fnl () ++
@@ -377,7 +404,7 @@ let normalize_context_set ~lbound ~variances g ctx (us:UnivFlex.t) ?binders {wea
   (* Put back constraints [Set <= u] from type inference *)
   let noneqs = Constraints.union noneqs smallles in
   let flex x = UnivFlex.mem x us in
-  let ctx, us, eqs = List.fold_left (fun (ctx, us, cstrs) eqs ->
+  let ctx, us, variances, eqs = List.fold_left (fun (ctx, us, variances, cstrs) eqs ->
       let canon, (global, rigid, flexible) = choose_canonical ctx flex eqs in
       (* Add equalities for globals which can't be merged anymore. *)
       let canonu = Universe.of_expr canon in
@@ -391,20 +418,30 @@ let normalize_context_set ~lbound ~variances g ctx (us:UnivFlex.t) ?binders {wea
       in
       if UnivFlex.mem (fst canon) us then
         (* canon + k = l + k' ... <-> l = canon + k - k' (k' <= k by invariant of choose_canonical) *)
-        let ctx, us = LevelExpr.Set.fold (fun (f, k') (ctx, us) -> (Level.Set.remove f ctx, UnivFlex.define f (Universe.addn canonu (-k')) us)) flexible (ctx, us) in
-        ctx, us, cstrs
+        let fold (f, k') (ctx, us, variances) =
+          (Level.Set.remove f ctx, UnivFlex.define f (Universe.addn canonu (-k')) us,
+            update_variance variances f (fst canon))
+        in
+        let ctx, us, variances = LevelExpr.Set.fold fold flexible (ctx, us, variances) in
+        ctx, us, variances, cstrs
       else
-        if LevelExpr.Set.is_empty flexible then (ctx, us, cstrs) else
+        if LevelExpr.Set.is_empty flexible then (ctx, us, variances, cstrs) else
         (* We need to find the max of canon and flexibles *)
         let (canon', canonk' as can') = LevelExpr.Set.max_elt flexible in
-        let ctx, us = LevelExpr.Set.fold (fun (f, k') (ctx, us) ->
-          (Level.Set.remove f ctx, UnivFlex.define f (Universe.addn (Universe.of_expr can') (-k')) us))
-          (LevelExpr.Set.remove (canon', canonk') flexible) (ctx, us)
+        let ctx, us, variances =
+          let fold (f, k') (ctx, us, variances) =
+            (Level.Set.remove f ctx, UnivFlex.define f (Universe.addn (Universe.of_expr can') (-k')) us,
+             update_variance variances f (fst can'))
+          in
+          LevelExpr.Set.fold fold (LevelExpr.Set.remove (canon', canonk') flexible) (ctx, us, variances)
         in
         if snd canon < canonk' then
-          ctx, us, enforce_eq canonu (Universe.of_expr can') cstrs
-        else Level.Set.remove canon' ctx, UnivFlex.define canon' (Universe.addn canonu (-canonk')) us, cstrs)
-      (ctx, us, Constraints.empty)
+          ctx, us, variances, enforce_eq canonu (Universe.of_expr can') cstrs
+        else
+          let ctx, us = Level.Set.remove canon' ctx, UnivFlex.define canon' (Universe.addn canonu (-canonk')) us in
+          let variances = update_variance variances canon' (fst canon) in
+          ctx, us, variances, cstrs)
+      (ctx, us, variances, Constraints.empty)
       partition
   in
   (* Noneqs is now in canonical form w.r.t. equality constraints,
@@ -445,11 +482,11 @@ let normalize_context_set ~lbound ~variances g ctx (us:UnivFlex.t) ?binders {wea
   debug Pp.(fun () -> str "Starting minimization with: " ++ pr_universe_context_set prl (ctx, noneqs) ++
     UnivFlex.pr Level.raw_pr us);
   let ctx', us, seen, inst, noneqs =
-    minimize_univ_variables ctx us variances ucstrsr ucstrsl noneqs
+    minimize_univ_variables partial ctx us variances ucstrsr ucstrsl noneqs
   in
   let us = UnivFlex.normalize us in
   let noneqs = UnivSubst.subst_univs_constraints (UnivFlex.normalize_univ_variable us) noneqs in
   let ctx = (ctx', Constraints.union noneqs eqs) in
-  debug Pp.(fun () -> str "After minimization: " ++ pr_universe_context_set prl ctx ++
+  debug Pp.(fun () -> str "After minimization: " ++ pr_universe_context_set prl ctx ++ fnl () ++
     UnivFlex.pr Level.raw_pr us);
   us, ctx

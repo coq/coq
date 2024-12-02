@@ -150,6 +150,7 @@ val nf_evars_universes : evar_map -> Constr.constr -> Constr.constr
     Note that the normalizer passed to [f] holds some imperative state
    in its closure. *)
 val finalize : ?abort_on_undefined_evars:bool -> evar_map -> ?variances:InferCumulativity.level_variances ->
+  ?partial:bool ->
   ((EConstr.t -> Constr.t) -> 'a) ->
   evar_map * 'a
 

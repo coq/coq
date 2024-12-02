@@ -515,15 +515,14 @@ val evars_of_filtered_evar_info : evar_map -> 'a evar_info -> Evar.Set.t
 
 (** Rigid or flexible universe variables.
 
-   [UnivRigid] variables are user-provided or come from an explicit
-   [Type] in the source, we do not minimize them or unify them eagerly.
+   [UnivRigid] variables are user-provided [explicit = true],
+   we do not minimize the rigid universes.
 
-   [UnivFlexible alg] variables are fresh universe variables of
+   [UnivFlexible] variables are fresh universe variables of
    polymorphic constants or generated during refinement, sometimes in
    algebraic position (i.e. not appearing in the term at the moment of
-   creation). They are the candidates for minimization (if alg, to an
-   algebraic universe) and unified eagerly in the first-order
-   unification heurstic.  *)
+   creation). They are the candidates for minimization and unified eagerly
+   in the first-order unification heurstic.  *)
 
 type rigid = UState.rigid =
   | UnivRigid
@@ -616,7 +615,12 @@ val collapse_sort_variables : evar_map -> evar_map
 val fix_undefined_variables : evar_map -> evar_map
 
 (** Universe minimization *)
-val minimize_universes : ?lbound:UGraph.Bound.t -> ?variances:InferCumulativity.level_variances -> evar_map -> evar_map
+val minimize_universes : ?lbound:UGraph.Bound.t ->
+  ?variances:InferCumulativity.level_variances ->
+  ?partial:bool ->
+  (* Only partial information about universes is recorded in the evar_map,
+     so no irreversible minimization should be performed. *)
+  evar_map -> evar_map
 
 (** Lift [UState.update_sigma_univs] *)
 val update_sigma_univs : UGraph.t -> evar_map -> evar_map

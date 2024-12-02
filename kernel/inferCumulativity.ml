@@ -15,8 +15,15 @@ open UVars
 open Variance
 open Util
 
+let debug = CDebug.create ~name:"inferCumul" ()
+
 type cumul_pb =
   | Conv | Cumul | InvCumul
+
+let pr_cumul_pb = Pp.(function
+  | Conv -> str"="
+  | Cumul -> str"≤"
+  | InvCumul -> str"≥")
 
 (** Not the same as Type_errors.BadVariance because we don't have the env where we raise. *)
 exception BadVariance of Level.t * VariancePos.t * VariancePos.t
@@ -121,7 +128,7 @@ let term_type_variances { in_binder; in_term; in_type } =
     | None, Some _ -> y
     | Some v, Some v' -> Some (UVars.Variance.sup v v')
   in
- sup_opt in_binder in_term, in_type
+  in_term, sup_opt in_binder in_type
 
 let min_pos_variance position { in_binder; in_term; in_type } =
   let open Position in
@@ -329,7 +336,6 @@ let infer_cumulative_instance cv_pb nargs gvariances variances u =
         Level.Set.fold infer_level_leq (Universe.levels u) variances
       | InvCumul, (Covariant, _) ->
         (* Covariant in contravariant position -> contravariant *)
-
         Level.Set.fold infer_level_geq (Universe.levels u) variances)
     variances
     (UVars.Variances.repr gvariances)
@@ -477,9 +483,10 @@ let rec infer_fterm cv_pb infos variances hd stk =
     let (_, (p, _), _, _, br) =
       Inductive.expand_case_specif mib (ci, u, pms, p, NoInvert, mkProp, br)
     in
-    let infer c variances = infer_fterm Conv infos variances (mk_clos e c) [] in
-    let variances = infer p variances in
-    Array.fold_right infer br variances
+    debug Pp.(fun () -> str"computing variance of case with conv_pb = " ++ pr_cumul_pb cv_pb);
+    let infer cv_pb c variances = infer_fterm cv_pb infos variances (mk_clos e c) [] in
+    let variances = infer cv_pb p variances in
+    Array.fold_right (infer cv_pb) br variances
 
   (* Removed by whnf *)
   | FLOCKED | FCaseT _ | FLetIn _ | FApp _ | FLIFT _ | FCLOS _ -> assert false
@@ -500,7 +507,7 @@ and infer_stack infos variances (stk:CClosure.stack) =
         let dummy = mkProp in
         let case = (ci, u, pms, p, NoInvert, dummy, br) in
         let (_, (p, _), _, _, br) = Inductive.expand_case (info_env (fst infos)) case in
-        let variances = infer_fterm Conv infos variances (mk_clos e p) [] in
+        let variances = infer_fterm Cumul infos variances (mk_clos e p) [] in
         infer_vect infos variances (Array.map (mk_clos e) br)
       | Zshift _ -> variances
       | Zupdate _ -> variances

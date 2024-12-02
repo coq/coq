@@ -138,7 +138,7 @@ GRAMMAR EXTEND Gram
     [ [ "Set"  -> { None, UNamed [CSet, 0] }
       | "Prop" -> { None, UNamed [CProp, 0] }
       | "SProp" -> { None, UNamed [CSProp, 0] }
-      | "Type" -> { None, UAnonymous {rigid=UnivRigid} }
+      | "Type" -> { None, UAnonymous {rigid=UnivFlexible} }
       | "Type"; "@{"; "_"; "}" -> { None, UAnonymous {rigid=UnivFlexible} }
       | "Type"; "@{"; test_sort_qvar; q = reference; "|"; u = universe_opt; "}" ->
         { Some (CQVar q), u }

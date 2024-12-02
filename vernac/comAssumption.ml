@@ -210,7 +210,7 @@ let interp_context_gen scope ~program_mode ~kind ~autoimp_enable ~coercions env 
       | Locality.Global _ -> true, InferCumulativity.Cumul
     in
     UnivVariances.universe_variances_of_named_context env sigma ~as_types ~cumul_pb ctx in
-  let sigma, ctx = Evarutil.finalize ~variances sigma @@ fun nf ->
+  let sigma, ctx = Evarutil.finalize ~variances ~partial:true sigma @@ fun nf ->
     List.map (NamedDecl.map_constr_het (fun x -> x) nf) ctx
   in
   (* reorder, evar-normalize and add implicit status *)
@@ -240,7 +240,7 @@ let do_assumptions ~program_mode ~poly ~scope ~kind ?user_warns ~inline l =
   let sigma, udecl = interp_cumul_univ_decl_opt env udecl in
   let coercions, ctx = local_binders_of_decls ~poly l in
   let sigma, variances, ctx = interp_context_gen scope ~program_mode ~kind ~autoimp_enable:true ~coercions env sigma ctx in
-  let univs = Evd.check_univ_decl ~poly sigma variances udecl in
+  let univs = Evd.check_univ_decl ~poly ~cumulative:(not (Option.is_empty udecl.univdecl_variances)) sigma variances udecl in
   declare_context ~try_global_assum_as_instance:false ~scope ~univs ?user_warns ~inline ctx
 
 let warn_context_outside_section =

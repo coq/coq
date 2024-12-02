@@ -25,6 +25,7 @@ Local Arguments transitivity {A R Transitive x} y {z}.
 
 Set Universe Polymorphism.
 Set Polymorphic Inductive Cumulativity.
+Set Polymorphic Definitions Cumulativity.
 
 (** * Morphisms.
 

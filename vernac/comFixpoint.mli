@@ -33,6 +33,8 @@ val do_mutually_recursive
      (* Logical kind: Theorem, Definition, Fixpoint, etc.*)
   -> poly:bool
      (* Use universe polymorphism *)
+  -> cumulative:bool
+     (* Use cumulativity *)
   -> ?typing_flags:Declarations.typing_flags
   -> ?user_warns:Globnames.extended_global_reference UserWarn.with_qf
      (* Warnings and deprecations *)

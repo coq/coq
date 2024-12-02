@@ -111,7 +111,7 @@ let rec check_type_conclusion ind =
       | (None, UAnonymous {rigid=UnivRigid}) ->
         (* should have been made flexible *)
         assert false
-      | (None, UAnonymous {rigid=UnivFlexible}) -> false
+      | (None, UAnonymous {rigid=UnivFlexible}) -> true
       | _ -> true
     end
   | GProd (_, _, _, _, e)

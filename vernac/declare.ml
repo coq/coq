@@ -76,6 +76,7 @@ module Info = struct
 
   type t =
     { poly : bool
+    ; cumulative : bool
     ; inline : bool
     ; kind : Decls.logical_kind
     ; udecl : UState.universe_decl
@@ -90,14 +91,15 @@ module Info = struct
 
   (** Note that [opaque] doesn't appear here as it is not known at the
      start of the proof in the interactive case. *)
-  let make ?loc ?(poly=false) ?(inline=false) ?(kind=Decls.(IsDefinition Definition))
+  let make ?loc ?(poly=false) ?(cumulative = false) ?(inline=false) ?(kind=Decls.(IsDefinition Definition))
       ?(udecl=UState.default_univ_decl) ?(scope=Locality.default_scope)
       ?(clearbody=false) ?hook ?typing_flags ?user_warns ?(ntns=[]) () =
     let loc = match loc with
       | None -> Loc.get_current_command_loc()
       | Some _ -> loc
     in
-    { poly; inline; kind; udecl; scope; hook; typing_flags; clearbody; user_warns; ntns; loc }
+    { poly; cumulative; inline; kind; udecl; scope; hook; typing_flags; clearbody; user_warns; ntns; loc }
+
 end
 
 (** Declaration of constants and parameters *)
@@ -223,10 +225,10 @@ let make_univs_immediate_private_mono ~initial_euctx ~uctx ~variances ~udecl ~ef
     UState.check_mono_univ_decl uctx_body udecl in
   initial_euctx, utyp, used_univs, Default { body = (body, eff); opaque = Opaque ubody }
 
-let make_univs_immediate_private_poly ~uctx ~variances ~udecl ~eff ~used_univs body typ =
+let make_univs_immediate_private_poly ~cumulative ~uctx ~variances ~udecl ~eff ~used_univs body typ =
   let used_univs_typ, used_univs = universes_of_body_type ~used_univs body typ in
   let uctx' = UState.restrict uctx used_univs_typ in
-  let utyp = UState.check_univ_decl ~poly:true uctx' variances udecl in
+  let utyp = UState.check_univ_decl ~poly:true ~cumulative uctx' variances udecl in
   let ubody =
     let uctx = UState.restrict uctx used_univs in
     Univ.ContextSet.diff
@@ -235,7 +237,7 @@ let make_univs_immediate_private_poly ~uctx ~variances ~udecl ~eff ~used_univs b
   in
   uctx', utyp, used_univs, Default { body = (body, eff); opaque = Opaque ubody }
 
-let make_univs_immediate_default ~poly ~opaque ~uctx ~variances ~udecl ~eff ~used_univs body typ =
+let make_univs_immediate_default ~poly ~cumulative ~opaque ~uctx ~variances ~udecl ~eff ~used_univs body typ =
   let _, used_univs = universes_of_body_type ~used_univs body typ in
   (* Since the proof is computed now, we can simply have 1 set of
      constraints in which we merge the ones for the body and the ones
@@ -243,7 +245,7 @@ let make_univs_immediate_default ~poly ~opaque ~uctx ~variances ~udecl ~eff ~use
      the actually used universes.
      TODO: check if restrict is really necessary now. *)
   let uctx = UState.restrict uctx used_univs in
-  let utyp = UState.check_univ_decl ~poly uctx variances udecl in
+  let utyp = UState.check_univ_decl ~poly ~cumulative uctx variances udecl in
   let utyp = match utyp.universes_entry_universes with
     | Polymorphic_entry _ -> utyp
     | Monomorphic_entry uctx ->
@@ -258,15 +260,15 @@ let make_univs_immediate_default ~poly ~opaque ~uctx ~variances ~udecl ~eff ~use
   in
   uctx, utyp, used_univs, Default { body = (body, eff); opaque = if opaque then Opaque Univ.ContextSet.empty else Transparent }
 
-let make_univs_immediate ~poly ?keep_body_ucst_separate ~opaque ~uctx ~variance ~udecl ~eff ~used_univs body typ =
+let make_univs_immediate ~poly ~cumulative ?keep_body_ucst_separate ~opaque ~uctx ~variances ~udecl ~eff ~used_univs body typ =
   (* allow_deferred case *)
   match keep_body_ucst_separate with
   | Some initial_euctx when not poly -> make_univs_immediate_private_mono ~initial_euctx ~uctx ~variances ~udecl ~eff ~used_univs body typ
   | _ ->
   (* private_poly_univs case *)
   if poly && opaque && private_poly_univs ()
-  then make_univs_immediate_private_poly ~uctx ~variances ~udecl ~eff ~used_univs body typ
-  else make_univs_immediate_default ~poly ~opaque ~uctx ~variances ~udecl ~eff ~used_univs body typ
+  then make_univs_immediate_private_poly ~cumulative ~uctx ~variances ~udecl ~eff ~used_univs body typ
+  else make_univs_immediate_default ~poly ~cumulative ~opaque ~uctx ~variances ~udecl ~eff ~used_univs body typ
 
 let extend_variances univs =
   let open UState in
@@ -874,7 +876,7 @@ type proof_object =
 let future_map2_pair_list_distribute p l f =
   List.map_i (fun i c -> f (Future.chain p (fun (a, b) -> (List.nth a i, b))) c) 0 l
 
-let process_proof ~info:Info.({ udecl; poly }) ?(is_telescope=false) = function
+let process_proof ~info:Info.({ udecl; poly; cumulative }) ?(is_telescope=false) = function
   | DefaultProof { proof = (entries, uctx); opaque; using; keep_body_ucst_separate } ->
     (* Force transparency for Derive-like dependent statements *)
     let opaques =
@@ -890,7 +892,7 @@ let process_proof ~info:Info.({ udecl; poly }) ?(is_telescope=false) = function
     snd (List.fold_left2_map (fun used_univs ((body, eff), typ) opaque ->
         let variances = UnivVariances.universe_variances_constr (Global.env ()) (Evd.from_ctx uctx) ?typ body in
         let uctx, univs, used_univs, body =
-          make_univs_immediate ~poly ?keep_body_ucst_separate ~opaque ~uctx ~variances ~udecl ~eff ~used_univs body typ in
+          make_univs_immediate ~poly ~cumulative ?keep_body_ucst_separate ~opaque ~uctx ~variances ~udecl ~eff ~used_univs body typ in
         (used_univs, (definition_entry_core ?using ~univs ?types:typ body, uctx))) Univ.Level.Set.empty entries opaques)
   | DeferredOpaqueProof { deferred_proof = bodies; using; initial_proof_data; feedback_id; initial_euctx } ->
     let { Proof.poly; entry; sigma } = initial_proof_data in

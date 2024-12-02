@@ -66,7 +66,7 @@ let glob_sort_name_eq g1 g2 = match g1, g2 with
 
 exception ComplexSort
 
-let glob_Type_sort = None, UAnonymous {rigid=UnivRigid}
+let glob_Type_sort = None, UAnonymous {rigid=UnivFlexible}
 let glob_SProp_sort = None, UNamed [GSProp, 0]
 let glob_Prop_sort = None, UNamed [GProp, 0]
 let glob_Set_sort = None, UNamed [GSet, 0]

@@ -134,13 +134,13 @@ Definition CVU (fn:nat -> R -> R) (f:R -> R) (x:R)
         (N <= n)%nat -> Boule x r y -> Rabs (f y - fn n y) < eps).
 
 (** Normal convergence *)
-Definition CVN_r (fn:nat -> R -> R) (r:posreal) : Type :=
+Definition CVN_r@{i} (fn:nat -> R -> R) (r:posreal) : Type@{i} :=
   { An:nat -> R &
     { l:R |
       Un_cv (fun n:nat => sum_f_R0 (fun k:nat => Rabs (An k)) n) l /\
       (forall (n:nat) (y:R), Boule 0 r y -> Rabs (fn n y) <= An n) } }.
 
-Definition CVN_R (fn:nat -> R -> R) : Type := forall r:posreal, CVN_r fn r.
+Definition CVN_R (fn:nat -> R -> R) := forall r:posreal, CVN_r fn r.
 
 Definition SFL (fn:nat -> R -> R)
   (cv:forall x:R, { l:R | Un_cv (fun N:nat => SP fn N x) l })

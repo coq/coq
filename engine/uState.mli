@@ -211,7 +211,10 @@ val fix_undefined_variables : t -> t
 
 (** Universe minimization *)
 
-val minimize : ?lbound:UGraph.Bound.t -> ?variances:InferCumulativity.level_variances -> t -> t
+val minimize : ?lbound:UGraph.Bound.t ->
+  ?variances:InferCumulativity.level_variances ->
+  partial:bool ->
+  t -> t
 
 val collapse_above_prop_sort_variables : to_prop:bool -> t -> t
 

@@ -121,10 +121,11 @@ struct
     | InBinder binder ->
       if is_applied_enough nargs binder then
         let open Variance in
-        (match v with
+        Irrelevant
+        (* (match v with
         | Contravariant -> Irrelevant
         | Invariant | Covariant -> v
-        | Irrelevant -> v)
+        | Irrelevant -> v) *)
       else v
 
   let eq_constraint nargs csts vp =

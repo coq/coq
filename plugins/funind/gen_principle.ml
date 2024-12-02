@@ -387,6 +387,7 @@ let register_struct is_rec (rec_order, fixpoint_exprl) =
           Pp.(str "Body of Function must be given.")
     in
     ComDefinition.do_definition ~name:fname.CAst.v ~poly:false
+      ~cumulative:false
       ~kind:Decls.Definition univs binders None body (Some rtype);
     let evd, rev_pconstants =
       List.fold_left
@@ -404,7 +405,7 @@ let register_struct is_rec (rec_order, fixpoint_exprl) =
     in
     (None, evd, List.rev rev_pconstants)
   | _ ->
-    let pm, p = ComFixpoint.do_mutually_recursive ~program_mode:false ~poly:false ~kind:(IsDefinition Fixpoint) (CFixRecOrder rec_order, fixpoint_exprl) in
+    let pm, p = ComFixpoint.do_mutually_recursive ~program_mode:false ~poly:false ~cumulative:false ~kind:(IsDefinition Fixpoint) (CFixRecOrder rec_order, fixpoint_exprl) in
     assert (Option.is_empty pm && Option.is_empty p);
     let evd, rev_pconstants =
       List.fold_left

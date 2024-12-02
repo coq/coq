@@ -167,7 +167,7 @@ let rec evar_absorb_arguments env evd (evk,args as ev) = function
 (* Refining an evar to a sort *)
 
 let define_evar_as_sort env evd (ev,args) =
-  let evd, s = new_sort_variable univ_rigid evd in
+  let evd, s = new_sort_variable univ_flexible evd in
   let evi = Evd.find_undefined evd ev in
   let concl = Reductionops.whd_all (evar_env env evi) evd (Evd.evar_concl evi) in
   let sort = destSort evd concl in

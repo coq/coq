@@ -20,7 +20,7 @@ open Constrexpr
 (***********)
 (* Universes *)
 
-let expr_Type_sort = None, UAnonymous {rigid=UnivRigid}
+let expr_Type_sort = None, UAnonymous {rigid=UnivFlexible}
 let expr_SProp_sort = None, UNamed [CSProp, 0]
 let expr_Prop_sort = None, UNamed [CProp, 0]
 let expr_Set_sort = None, UNamed [CSet, 0]

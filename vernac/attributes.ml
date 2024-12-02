@@ -285,6 +285,25 @@ let polymorphic =
   | Some b -> return b
   | None -> return (is_universe_polymorphism())
 
+
+let cumulative_definitions_option_name = ["Polymorphic"; "Definitions"; "Cumulativity"]
+let is_cumulative_polymorphic_definitions =
+  let b = ref false in
+  let () = let open Goptions in
+    declare_bool_option
+      { optstage = Summary.Stage.Interp;
+        optdepr  = None;
+        optkey   = cumulative_definitions_option_name;
+        optread  = (fun () -> !b);
+        optwrite = ((:=) b) }
+  in
+  fun () -> !b
+
+let cumulative =
+  qualify_attribute ukey (bool_attribute ~name:"cumulative") >>= function
+  | Some b -> return b
+  | None -> return (is_cumulative_polymorphic_definitions())
+
 let template =
   qualify_attribute ukey
     (bool_attribute ~name:"template")
