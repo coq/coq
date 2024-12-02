@@ -2596,7 +2596,9 @@ let solve_obligation ?check_final prg num tac =
     let name = Internal.get_name prg in
     Proof_ending.End_obligation {name; num; auto; check_final}
   in
-  let cinfo = CInfo.make ~name:obl.obl_name ~typ:(EConstr.of_constr obl.obl_type) () in
+  let typ = EConstr.of_constr obl.obl_type in
+  let evd = UnivVariances.register_universe_variances_of_type (Global.env ()) evd typ in
+  let cinfo = CInfo.make ~name:obl.obl_name ~typ () in
   let using =
     let using = Internal.get_using prg in
     let env = Global.env () in
@@ -2605,7 +2607,7 @@ let solve_obligation ?check_final prg num tac =
   in
   let poly = Internal.get_poly prg in
   let info = Info.make ~kind ~poly () in
-  let lemma = Proof.start_core ~cinfo ~info ~proof_ending ?using evd  in
+  let lemma = Proof.start_core ~cinfo ~info ~proof_ending ?using evd in
   let lemma = fst @@ Proof.by !default_tactic lemma in
   let lemma = Option.cata (fun tac -> Proof.set_endline_tactic tac lemma) lemma tac in
   lemma

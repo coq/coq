@@ -246,23 +246,24 @@ Arguments psnd {A B}.
 
 Notation "x :: xs" := (pcons x xs).
 
-#[universes(polymorphic)]
+(* #[universes(polymorphic)]
 Fixpoint All@{i j} {A : Type@{i}} (P : A -> Type@{j}) (l : plist A) : Type@{j} :=
  match l with
  | pnil => unit
  | x :: xs => pprod (P x) (All P xs)
- end.
-(*
+ end. *)
+
 #[universes(polymorphic, cumulative)]
-Inductive All {A : Type} (P : A -> Type) : list A -> Type :=
-| All_nil : All P nil
-| All_cons x (px : P x) xs (pxs : All P xs) : All P (x :: xs). *)
+Inductive All {A : Type} (P : A -> Type) : plist A -> Type :=
+| All_nil : All P pnil
+| All_cons x (px : P x) xs (pxs : All P xs) : All P (x :: xs).
 
 #[universes(polymorphic)]
 Lemma All_impl {A} (P Q : A -> Type) l : (forall x, P x -> Q x) -> All P l -> All Q l.
 Proof.
   intros HP.
-  induction l; [intros|intros []]; constructor; eauto.
+  induction 1; constructor; auto.
+  (* induction l; [intros|intros []]; constructor; eauto. *)
 Qed.
 Check pointwise_relation.
 
@@ -320,7 +321,7 @@ Lemma rewrite_all_in {l : plist nat} (Q : nat -> Type) :
   All (fun x => Q (x + 0)) l ->
   All (fun x => Q x) l.
 Proof.
-  intros a.  Show Universes.
+  intros a.
   setoid_rewrite add_0_r_peq in a.
   exact a.
 Qed.

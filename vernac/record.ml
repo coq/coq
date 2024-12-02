@@ -409,7 +409,7 @@ let declare_proj_coercion_instance ~flags ref from =
     Classes.declare_instance ~warn:true env sigma (Some info) local ref
   end
 
-let make_projection_variances i variances =
+let _make_projection_variances i variances =
   match variances with
   | None -> None
   | Some v ->
@@ -470,8 +470,8 @@ let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramde
     UState.{ universes_entry_universes = UState.Monomorphic_entry Univ.ContextSet.empty;
       universes_entry_binders = snd univs }
   | Entries.Polymorphic_entry (uctx, variances) ->
-    let variances = make_projection_variances (Context.Rel.nhyps paramdecls) variances in
-    UState.{ universes_entry_universes = UState.Polymorphic_entry (uctx, variances);
+    (* let variances = make_projection_variances (Context.Rel.nhyps paramdecls) variances in *)
+    UState.{ universes_entry_universes = UState.Polymorphic_entry (uctx, None);
       universes_entry_binders = snd univs }
   in
   let entry = Declare.definition_entry ~univs ~types:projtyp proj in

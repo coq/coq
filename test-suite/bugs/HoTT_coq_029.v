@@ -46,16 +46,18 @@ Module FirstComment.
     := {
         ComponentsOf :> forall c, D.(Morphism) (F c) (G c)
       }.
-
+  Set Debug "univMinim".
+  Set Debug "UnivVariances".
   Definition ProductCategory
              `(C : @Category objC)
              `(D : @Category objD)
   : @Category (objC * objD)%type.
+  Show Universes.
     refine (@Build_Category _
                             (fun s d => (C.(Morphism) (fst s) (fst d) * D.(Morphism) (snd s) (snd d))%type)
                             (fun o => (Identity (fst o), Identity (snd o)))
                             (fun s d d' m2 m1 => (Compose (fst m2) (fst m1), Compose (snd m2) (snd m1)))).
-
+                            Show Universes.
   Defined.
 
   Infix "*" := ProductCategory : category_scope.

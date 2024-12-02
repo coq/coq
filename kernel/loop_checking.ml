@@ -2974,6 +2974,11 @@ let set lvl u model =
   let u = NeList.of_list (repr_univ model u) in
   set_can can k u model
 
+type 'a simplification_result =
+  | HasSubst of 'a * Universe.t
+  | NoBound
+  | CannotSimplify
+
 (** [minimize idx model] returns a new model where the universe level idx has been removed and
   the new constraints are enough to derive the previous ones on all other universes.
   It returns a lower bound on idx in the original constraints, or None if it cannot be expressed.
@@ -3022,7 +3027,7 @@ let minimize_can can k model =
     | n -> n
   in
   let glb = List.map (repr_expr_can model) (List.sort_uniq sort glb) in
-  if CList.is_empty glb then None
+  if CList.is_empty glb then NoBound
   else
     let glb = Universe.addn (unrepr_univ model glb) k in
     if Universe.for_all (fun (_, k) -> k >= 0) glb
@@ -3031,31 +3036,34 @@ let minimize_can can k model =
       let model = _remove_node model can in
       debug_check_invariants model;
       _debug_minim Pp.(fun () -> str"Removed " ++ pr_can model can ++ str ", new model: " ++ pr_clauses_all model);
-      Some (model, glb))
-    else None
+      HasSubst (model, glb))
+    else CannotSimplify
 
 
 let minimize level model =
   match repr model (Index.find level model.table) with
-  | exception Not_found -> None
+  | exception Not_found -> CannotSimplify (* should rather raise the exception here *)
   | (can, k) -> minimize_can can k model
 
 let maximize_can can _k model =
   let bwd = can.clauses_bwd in
   _debug_minim Pp.(fun () -> str"Maximizing " ++ pr_can model can ++ str" in graph: " ++ pr_clauses_all model);
-  if not (Int.equal (ClausesOf.cardinal bwd) 1) then None
-  else
+  let card = ClausesOf.cardinal bwd in
+  match card with
+  | 0 -> NoBound
+  | n when n <> 1 -> CannotSimplify
+  | _ ->
     let cank, _local, premsbwd = ClausesOf.choose bwd in
     let ubound = NeList.map (repr_expr_can model) premsbwd in
     if NeList.for_all (fun (_, k) -> cank <= k) ubound then
       let ubound = NeList.map (fun (can, k) -> (can, k - cank)) ubound in
-      try Some (set_can can _k ubound model, unrepr_univ model (NeList.to_list ubound))
-      with InconsistentEquality -> None
-  else None
+      try HasSubst (set_can can _k ubound model, unrepr_univ model (NeList.to_list ubound))
+      with InconsistentEquality -> CannotSimplify
+    else CannotSimplify
 
 let maximize level model =
   match repr model (Index.find level model.table) with
-  | exception Not_found -> None
+  | exception Not_found -> CannotSimplify
   | (can, k) -> maximize_can can k model
 
 let remove_set_clauses_can can model =

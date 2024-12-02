@@ -294,7 +294,8 @@ Section GenericInstances.
   Proof with auto.
     intros A R H B R' H0 x y z X X0 x0 y0 X1.
     assert(R x0 x0).
-    - eapply transitivity with y0... now apply symmetry.
+    - eapply transitivity with y0...
+      now apply symmetry.
     - eapply transitivity with (y x0)...
   Qed.
 

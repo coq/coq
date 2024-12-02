@@ -22,6 +22,21 @@ val empty_extra : extra
 
 val extra_union : extra -> extra -> extra
 
+(** Operations on inferred variances *)
+
+val update_variance : InferCumulativity.variances -> Level.t -> Level.t -> InferCumulativity.variances
+(** [update_variance variances l l'] merges the variance information of [l] and [l'] in [l'] *)
+
+val update_variances : InferCumulativity.variances -> Level.t -> Level.Set.t -> InferCumulativity.variances
+(** [update_variances variances l ls] merges the variance information of [l] in each level in [ls] *)
+
+
+val sup_variances : InferCumulativity.variances -> Level.Set.t -> InferCumulativity.infer_variance_occurrence
+(** [sup_variances variances ls] Computes the supremum of the variance occurrences of all the levels in [ls] *)
+
+val set_variance : InferCumulativity.variances -> Level.t -> InferCumulativity.infer_variance_occurrence -> InferCumulativity.variances
+(** [set_variance variances l occ] sets the variance information attached to [l] to [occs] in the result *)
+
 (** Simplification and pruning of constraints:
     [normalize_context_set ctx us]
 

@@ -344,9 +344,16 @@ let v_typing_flags =
 let v_variance = v_enum "variance" 4
 let v_position = v_sum "position" 2 [| [| v_int |]  |]
 
-let v_variances = v_opt (v_array (v_pair v_variance v_position))
+let v_application_variances = v_array (v_pair v_variance v_position)
 
-let v_univs = v_sum "universes" 1 [|[|v_abs_context; v_variances|]|]
+let v_variance_occurrence =
+  v_tuple "variance_occurrence"
+    [| v_tuple "binders" [| v_opt v_variance; v_list v_int |];
+       v_opt v_variance; v_opt v_variance  |]
+
+let v_variances = v_pair (v_array v_variance_occurrence) v_application_variances
+
+let v_univs = v_sum "universes" 1 [|[|v_abs_context; v_opt v_variances|]|]
 
 let v_vm_reloc_table = v_array (v_pair v_int v_int)
 
@@ -406,7 +413,7 @@ let v_cb = v_tuple "constant_body"
     v_relevance;
     v_opt v_vm_indirect_code;
     v_univs;
-    v_variances;
+    Opt v_variances; (* section variances *)
     v_bool;
     v_typing_flags|]
 
@@ -468,7 +475,7 @@ let v_ind_pack = v_tuple "mutual_inductive_body"
     v_rctxt;
     v_univs; (* universes *)
     v_opt v_template_universes;
-    v_variances;
+    v_opt v_variances;
     v_opt v_bool;
     v_typing_flags|]
 

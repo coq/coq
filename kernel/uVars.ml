@@ -285,7 +285,7 @@ struct
     let in_binders = binders_variance in_binders in
     let sup_opt = Option.union Variance.sup in
     if Option.is_empty in_term then
-      Option.default (Variance.Irrelevant, Position.InTerm) in_binders
+      Option.default (Variance.Irrelevant, Position.InType) in_binders
     else
       let v = sup_opt in_term (Option.map fst in_binders) in
       Option.cata (fun v -> (v, Position.InTerm)) (Variance.Irrelevant, Position.InTerm) v

@@ -16,6 +16,7 @@ open Variance
 open Util
 
 let debug = CDebug.create ~name:"inferCumul" ()
+let debug_infer_term = CDebug.create ~name:"inferCumul_infer_term" ()
 
 type cumul_pb =
   | Conv | Cumul | InvCumul
@@ -355,6 +356,8 @@ let extended_const_variance cb =
   | Some variance, Some sec_variance -> Some (UVars.Variances.append sec_variance variance)
 
 let infer_cumulative_instance cv_pb nargs gvariances variances u =
+  let vs = Variances.application_variances gvariances in
+  debug_infer_term Pp.(fun () -> str"infer_cumulative_instance: " ++ ApplicationVariances.pr vs);
   let open Position in
   Array.fold_left2 (fun variances varu u ->
       match cv_pb, varu with
@@ -378,7 +381,7 @@ let infer_cumulative_instance cv_pb nargs gvariances variances u =
         (* Covariant in contravariant position -> contravariant *)
         Level.Set.fold infer_level_geq (Universe.levels u) variances)
     variances
-    (ApplicationVariances.repr (Variances.application_variances gvariances))
+    (ApplicationVariances.repr vs)
     u
 
 let infer_inductive_instance cv_pb env variances ind nargs u =
@@ -436,7 +439,7 @@ let rec infer_fterm cv_pb infos variances hd stk =
   Control.check_for_interrupt ();
   let hd,stk = whd_stack infos hd stk in
   let open CClosure in
-  debug Pp.(fun () -> str"infer_fterm on " ++ Constr.debug_print (CClosure.term_of_fconstr hd));
+  debug_infer_term Pp.(fun () -> str"infer_fterm " ++ pr_mode (if Inf.get_infer_mode variances then Infer else Check) ++  Position.pr (Inf.get_position variances) ++ str", cv_pb = " ++ pr_cumul_pb cv_pb ++ str" term: " ++ Constr.debug_print (CClosure.term_of_fconstr hd));
   let push_relevance (infos, tab) n = (push_relevance infos n, tab) in
   let push_relevances (infos, tab) n = (push_relevances infos n, tab) in
   match fterm_of hd with
@@ -477,7 +480,9 @@ let rec infer_fterm cv_pb infos variances hd stk =
       with BadVariance _ | NotInferring as e ->
       match def with
       | None -> raise e
-      | Some (hd,stk) -> infer_fterm cv_pb infos variances hd stk
+      | Some (hd,stk) ->
+        debug_infer_term Pp.(fun () -> str"expanding constant: " ++ Names.GlobRef.print (Names.GlobRef.ConstRef (fst con)));
+        infer_fterm cv_pb infos variances hd stk
     end
   | FProj (_,_,c) ->
     let variances = infer_fterm Conv infos variances c [] in
@@ -504,12 +509,12 @@ let rec infer_fterm cv_pb infos variances hd stk =
     infer_stack infos variances stk
   | FFix ((_,(na,tys,cl)),e) | FCoFix ((_,(na,tys,cl)),e) ->
     let n = Array.length cl in
-    let variances = infer_vect infos variances (Array.map (mk_clos e) tys) in
+    let variances = infer_vect infos variances Conv (Array.map (mk_clos e) tys) in
     let le = CClosure.usubs_liftn n e in
     let variances =
       let na = Array.map (usubst_binder e) na in
       let infos = push_relevances infos na in
-      infer_vect infos variances (Array.map (mk_clos le) cl)
+      infer_vect infos variances Conv (Array.map (mk_clos le) cl)
     in
     infer_stack infos variances stk
   | FArray (u,elemsdef,ty) -> (* False? Not implemnting irrelevance *)
@@ -517,7 +522,7 @@ let rec infer_fterm cv_pb infos variances hd stk =
     let variances = infer_fterm Conv infos variances ty [] in
     let elems, def = Parray.to_array elemsdef in
     let variances = infer_fterm Conv infos variances def [] in
-    let variances = infer_vect infos variances elems in
+    let variances = infer_vect infos variances Conv elems in
     infer_stack infos variances stk
 
   | FCaseInvert (_, _, _, p, _, _, br, e) ->
@@ -558,7 +563,7 @@ and infer_stack infos variances (stk:CClosure.stack) =
   | z :: stk ->
     let open CClosure in
     let variances = match z with
-      | Zapp v -> infer_vect infos variances v
+      | Zapp v -> infer_vect infos variances Conv v
       | Zproj _ -> variances
       | Zfix (fx,a) ->
         let variances = infer_fterm Conv infos variances fx [] in
@@ -574,13 +579,16 @@ and infer_stack infos variances (stk:CClosure.stack) =
     in
     infer_stack infos variances stk
 
-and infer_vect infos variances v =
-  Array.fold_left (fun variances c -> infer_fterm Conv infos variances c []) variances v
+and infer_vect infos variances cv_pb v =
+  Array.fold_left (fun variances c -> infer_fterm cv_pb infos variances c []) variances v
 
-let infer_term cv_pb env ~evars variances c =
+let infer_infos env ~evars =
   let open CClosure in
   let reds = RedFlags.red_add_transparent RedFlags.betaiotazeta TransparentState.full in
-  let infos = (create_clos_infos reds ~evars env, create_tab ()) in
+  (create_clos_infos reds ~evars env, create_tab ())
+
+let infer_term cv_pb env ~evars variances c =
+  let infos = infer_infos env ~evars in
   infer_fterm cv_pb infos variances (CClosure.inject c) []
 
 let infer_named_context env ~evars variances ctx =
@@ -609,8 +617,21 @@ let infer_context env ~evars ?(shift = 0) variances ctx =
   let env, _, variances = Context.Rel.fold_outside infer_typ ctx ~init:(env, shift, variances) in
   env, variances
 
+let whd_decompose_lambda env ?(evars = CClosure.default_evar_handler env) c =
+  let open Context.Rel.Declaration in
+  let infos = infer_infos env ~evars in
+  let rec decrec env m c =
+    let t = CClosure.whd_val (fst infos) (snd infos) (CClosure.inject c) in
+    match kind t with
+      | Lambda (n,a,c0) ->
+          let d = LocalAssum (n,a) in
+          decrec (Environ.push_rel d env) (Context.Rel.add d m) c0
+      | _ -> m,t
+  in
+  decrec env Context.Rel.empty c
+
 let infer_body env ~evars ~shift variances body =
-  let ctx, body = Reduction.whd_decompose_lambda ~evars env body in
+  let ctx, body = whd_decompose_lambda ~evars env body in
   let env, variances = infer_context env ~evars ~shift variances ctx in
   let variances = Inf.set_position Position.InTerm variances in
   infer_term Cumul env ~evars variances body

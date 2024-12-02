@@ -310,15 +310,15 @@ and ind_or_type =
 let array_variances : UVars.variances = UVars.(Variances.make
   [| { in_binders = Some Variance.Irrelevant, [0]; in_term = None; in_type = None } |])
 
-let one_univ : AbstractContext.t * Variances.t option =
+let array_univs : AbstractContext.t * Variances.t option =
   AbstractContext.make ([||],Names.[|Name (Id.of_string "u")|]) Constraints.empty,
-  Some (Variances.make [| { in_binders = Some Variance.Contravariant, [0]; in_term = None; in_type = None } |])
+  Some (Variances.make [| { in_binders = Some Variance.Contravariant, [0]; in_term = None; in_type = Some Variance.Covariant } |])
 
 let typ_univs (type a) (t : a prim_type) = match t with
   | PT_int63 -> AbstractContext.empty, None
   | PT_float64 -> AbstractContext.empty, None
   | PT_string -> AbstractContext.empty, None
-  | PT_array -> one_univ
+  | PT_array -> array_univs
 
 type prim_type_ex = PTE : 'a prim_type -> prim_type_ex
 
@@ -471,6 +471,10 @@ let params = function
 
 let nparams x = List.length (params x)
 
+let array_ops_univs : AbstractContext.t * Variances.t option =
+  AbstractContext.make ([||],Names.[|Name (Id.of_string "u")|]) Constraints.empty,
+  Some (Variances.make [| { in_binders = Some Variance.Contravariant, [0]; in_term = None; in_type = None } |])
+
 let univs = function
   | Int63head0
   | Int63tail0
@@ -533,7 +537,7 @@ let univs = function
   | Arraydefault
   | Arrayset
   | Arraycopy
-  | Arraylength -> one_univ
+  | Arraylength -> array_ops_univs
 
 type arg_kind =
   | Kparam (* not needed for the evaluation of the primitive when it reduces *)

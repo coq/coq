@@ -297,12 +297,22 @@ let _warn_not_minimizable u =
   Feedback.msg_notice Pp.(str"Universe " ++ Level.raw_pr u ++ str" is not mimimizable as its lower bound \
        is not expressible in terms of other universes")
 
-let update_variance (variances : InferCumulativity.variances)  l l' =
+let update_variance (variances : InferCumulativity.variances) l l' =
   match Level.Map.find_opt l variances with
   | None -> variances
   | Some loccs ->
-    let upd = function None -> Some loccs | Some l'occs -> Some (sup_occs loccs l'occs) in
+    let upd = function None -> None | Some l'occs -> Some (sup_occs loccs l'occs) in
     Level.Map.update l' upd variances
+
+let update_variances (variances : InferCumulativity.variances) l ls =
+  match Level.Map.find_opt l variances with
+  | None -> variances
+  | Some loccs ->
+    let update_one l' variances =
+      let upd = function None -> None | Some l'occs -> Some (sup_occs loccs l'occs) in
+      Level.Map.update l' upd variances
+    in
+    Level.Set.fold update_one ls variances
 
 let set_variance (variances : InferCumulativity.variances) l v =
   Level.Map.add l v variances
@@ -313,7 +323,8 @@ let sup_variances (variances : InferCumulativity.variances) ls =
     | None -> acc
     | Some occs -> sup_occs occs acc
   in
-  let def = try Level.Set.choose ls with Not_found -> assert false (* Would mean that no variances are declared *) in
+  if Level.Set.is_empty ls then InferCumulativity.default_occ else
+  let def = Level.Set.choose ls in
   Level.Set.fold fold ls (Option.get (Level.Map.find_opt def variances))
 
 let simplify_variables partial ctx us variances graph =
@@ -321,51 +332,46 @@ let simplify_variables partial ctx us variances graph =
   debug_each Pp.(fun () -> str"Simplifying variables with " ++ (if partial then str"partial" else str"non-partial") ++ str" information about the definition");
   let minimize u (ctx, us, variances, graph) =
     match UGraph.minimize u graph with
-    | Some (graph, lbound) ->
+    | HasSubst (graph, lbound) ->
       debug_each Pp.(fun () -> str"Minimizing " ++ Level.raw_pr u ++ str" resulted in lbound: " ++ Universe.pr Level.raw_pr lbound ++ str" and graph " ++ UGraph.pr_model graph);
-      let variances =
-        let fold l variances = update_variance variances u l in
-        Level.Set.fold fold (Universe.levels lbound) variances
-      in
+      let variances = update_variances variances u (Universe.levels lbound) in
       (Level.Set.remove u ctx, UnivFlex.define u lbound us,
        Level.Map.remove u variances, graph)
-    | None -> (ctx, us, variances, graph)
+    | NoBound | CannotSimplify -> (ctx, us, variances, graph)
+  in
+  let collapse_to_set u (ctx, us, variances, graph as acc) =
+    try
+      let graph = UGraph.set u Universe.type0 graph in
+      (Level.Set.remove u ctx, UnivFlex.define u Universe.type0 us,
+       Level.Map.remove u variances, graph)
+    with UGraph.InconsistentEquality -> acc
   in
   let arbitrary u (ctx, us, variances, graph as acc) =
     match UGraph.minimize u graph with
-    | Some (graph, lbound) ->
+    | HasSubst (graph, lbound) ->
       debug_each Pp.(fun () -> str"Minimizing " ++ Level.raw_pr u ++ str" resulted in lbound: " ++ Universe.pr Level.raw_pr lbound ++ str" and graph " ++ UGraph.pr_model graph);
-      let variances =
-        let fold l variances = update_variance variances u l in
-        Level.Set.fold fold (Universe.levels lbound) variances
-      in
+      let variances = update_variances variances u (Universe.levels lbound) in
       (Level.Set.remove u ctx, UnivFlex.define u lbound us,
        Level.Map.remove u variances, graph)
-    | None ->
-      try
-        let graph = UGraph.set u Universe.type0 graph in
-        (Level.Set.remove u ctx, UnivFlex.define u Universe.type0 us,
-         Level.Map.remove u variances, graph)
-      with UGraph.InconsistentEquality -> acc
+    | NoBound -> (* Not bounded and not appearing anywhere: can collapse *)
+      collapse_to_set u acc
+    | CannotSimplify -> acc
   in
   let maximize u (ctx, us, variances, graph as acc) =
     match UGraph.maximize u graph with
-    | Some (graph, ubound) ->
+    | HasSubst (graph, ubound) ->
       debug_each Pp.(fun () -> str"Maximizing " ++ Level.raw_pr u ++ str" resulted in ubound: " ++ Universe.pr Level.raw_pr ubound ++ str" and graph " ++ UGraph.pr_model graph);
-      let variances =
-        let fold l variances = update_variance variances u l in
-        Level.Set.fold fold (Universe.levels ubound) variances
-      in
+      let variances = update_variances variances u (Universe.levels ubound) in
       (Level.Set.remove u ctx, UnivFlex.define u ubound us,
        Level.Map.remove u variances, graph)
-    | None -> acc
+    | NoBound | CannotSimplify -> acc
   in
   let simplify_min u (ctx, us, variances, graph as acc) =
     (* u is an undefined flexible variable, lookup its variance information *)
     let term_variance, type_variance = term_type_variances_irrel u us variances in
     let open UVars.Variance in
     match term_variance, type_variance with
-    | Irrelevant, Irrelevant when not partial -> arbitrary u acc
+    | Irrelevant, Irrelevant -> arbitrary u acc
     | (Covariant | Irrelevant), Covariant when not partial -> minimize u acc
     | _, _ -> acc
   in
@@ -500,8 +506,9 @@ let new_minimize_weak ctx us weak (g, variances) =
       end else acc
     end else
       let set_to a b =
-        let levels = Level.Set.add a (Universe.levels b) in
-        let sup_variances = sup_variances variances levels in
+        debug Pp.(fun () -> str"Minimize_weak: setting " ++ Level.raw_pr a ++ str" to " ++ Universe.pr Level.raw_pr b);
+        let levels = Universe.levels b in
+        let sup_variances = sup_variances variances (Level.Set.add a levels) in
         match InferCumulativity.term_type_variances sup_variances with
         | (None | Some UVars.Variance.Irrelevant), (None | Some UVars.Variance.Irrelevant) -> (* Irrelevant *)
           let variances =

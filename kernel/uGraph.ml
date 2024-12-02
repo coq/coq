@@ -126,13 +126,15 @@ let check_declared_universes g l =
 
 let minimize l g =
   match G.minimize l g.graph with
-  | Some (graph, lbound) -> Some ({ g with graph }, lbound)
-  | None -> None
+  | G.HasSubst (graph, lbound) -> G.HasSubst ({ g with graph }, lbound)
+  | G.NoBound -> G.NoBound
+  | G.CannotSimplify -> G.CannotSimplify
 
 let maximize l g =
   match G.maximize l g.graph with
-  | Some (graph, lbound) -> Some ({ g with graph }, lbound)
-  | None -> None
+  | G.HasSubst (graph, lbound) -> G.HasSubst ({ g with graph }, lbound)
+  | G.NoBound -> G.NoBound
+  | G.CannotSimplify -> G.CannotSimplify
 
 let remove_set_clauses l g =
   let graph = G.remove_set_clauses l g.graph in
