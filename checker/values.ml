@@ -414,7 +414,7 @@ let v_cb = v_tuple "constant_body"
     v_relevance;
     v_opt v_vm_indirect_code;
     v_univs;
-    Opt v_variances; (* section variances *)
+    v_opt v_variances; (* section variances *)
     v_bool;
     v_typing_flags|]
 
