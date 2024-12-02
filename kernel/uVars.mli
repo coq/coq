@@ -15,7 +15,7 @@ open Sorts
 
 module Variance :
 sig
-  (** A universe position in the instance given to a cumulative
+  (** A universe variance in the instance given to a cumulative
      inductive or definition can be the following. *)
   type t = Irrelevant | Covariant | Contravariant | Invariant
 
@@ -30,13 +30,42 @@ sig
 
 end
 
-type variances = Variance.t array
+type application = FullyApplied | NumArgs of int
+val is_applied : application -> int -> bool
+val is_applied_enough : application -> int -> bool
 
-val pr_variances : variances -> Pp.t
+module VariancePos :
+sig
+  type t = Variance.t * int option
 
-val eq_variances : variances -> variances -> bool
+  val pr : t -> Pp.t
+  val equal : t -> t -> bool
+  val check_subtype : t -> t -> bool
 
-val sub_variances : variances -> variances -> bool
+  val variance : application -> t -> Variance.t
+end
+
+module Variances :
+sig
+  type t
+
+  val length : t -> int
+  val pr : t -> Pp.t
+  val equal : t -> t -> bool
+  val check_subtype : t -> t -> bool
+
+  val eq_sizes : t -> t -> bool
+
+  (* Invariant variances *)
+  val make : int -> Variance.t -> t
+
+  val of_array : VariancePos.t array -> t
+  val repr : t -> VariancePos.t array
+
+  val append : t -> t -> t
+end
+
+type variances = Variances.t
 
 (** {6 Universe instances} *)
 
@@ -146,8 +175,8 @@ type 'a quconstraint_function = 'a -> 'a -> Sorts.QUConstraints.t -> Sorts.QUCon
 
 val enforce_eq_instances : Instance.t quconstraint_function
 
-val enforce_eq_variance_instances : Variance.t array -> Instance.t quconstraint_function
-val enforce_leq_variance_instances : Variance.t array -> Instance.t quconstraint_function
+val enforce_eq_variance_instances : nargs:application -> Variances.t -> Instance.t quconstraint_function
+val enforce_leq_variance_instances : nargs:application -> Variances.t -> Instance.t quconstraint_function
 
 type 'a puniverses = 'a * Instance.t
 val out_punivs : 'a puniverses -> 'a

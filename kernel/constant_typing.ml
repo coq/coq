@@ -97,7 +97,7 @@ let skip_trusted_seff sl b e =
 type typing_context =
   TyCtx of Environ.env * unsafe_type_judgment * Id.Set.t * UVars.sort_level_subst * universes
 
-let process_universes env = function
+let process_universes env ?sec_univs = function
   | Entries.Monomorphic_entry ->
     env, UVars.empty_sort_subst, UVars.Instance.empty, Monomorphic
   | Entries.Polymorphic_entry (uctx, variances) ->
@@ -106,6 +106,17 @@ let process_universes env = function
     let env = Environ.push_context ~strict:false uctx env in
     let inst, auctx = UVars.abstract_universes uctx in
     let usubst = UVars.make_instance_subst inst in
+    let variances = match sec_univs with
+    | None -> variances
+    | Some sec_univs ->
+      match variances with
+      | None -> None
+      | Some variances ->
+      (* no variance for qualities *)
+        let _, sec_univs = UVars.LevelInstance.to_array sec_univs in
+        let sec_variances = UVars.Variances.of_array (Array.map (fun _ -> UVars.Variance.Invariant, None) sec_univs) in
+        Some (UVars.Variances.append sec_variances variances)
+    in
     env, usubst, UVars.Instance.of_level_instance inst, Polymorphic (auctx, variances)
 
 let check_primitive_type env op_t u t =
@@ -128,7 +139,7 @@ let adjust_primitive_univ_entry p auctx variances = function
             && Constraints.is_empty (UContext.constraints uctx))
     then CErrors.user_err Pp.(str "Incorrect universes for primitive " ++
                                 str (CPrimitives.op_or_type_to_string p));
-    if not (Option.equal UVars.eq_variances variances variances') then
+    if not (Option.equal UVars.Variances.equal variances variances') then
       CErrors.user_err Pp.(str "Incorrect universe variances for primitive " ++
         str (CPrimitives.op_or_type_to_string p));
     Polymorphic_entry (UContext.refine_names (AbstractContext.names auctx) uctx, variances)
@@ -168,6 +179,7 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p } =
     const_type = typ;
     const_body_code = ();
     const_universes = univs;
+    const_sec_variance = None;
     const_relevance = Sorts.Relevant;
     const_inline_code = false;
     const_typing_flags = Environ.typing_flags env;
@@ -185,6 +197,7 @@ let infer_symbol env { symb_entry_universes; symb_entry_unfold_fix; symb_entry_t
     const_type = t;
     const_body_code = ();
     const_universes = univs;
+    const_sec_variance = None;
     const_relevance = UVars.subst_sort_level_relevance usubst r;
     const_inline_code = false;
     const_typing_flags = Environ.typing_flags env;
@@ -195,27 +208,44 @@ let make_univ_hyps = function
   | None -> LevelInstance.empty
   | Some us -> us
 
+let split_sec_variances sec_univs univs =
+  match univs with
+    | Monomorphic | Polymorphic (_, None) -> univs, None
+    | Polymorphic (auctx, Some variance) -> match sec_univs with
+      | None -> univs, None
+      | Some sec_univs ->
+        (* no variance for qualities *)
+        let _nsecq, nsecu = UVars.LevelInstance.length sec_univs in
+        let variance = UVars.Variances.repr variance in
+        let arr = Array.sub variance nsecu (Array.length variance - nsecu) in
+        let arr' = Array.sub variance 0 nsecu in
+        Polymorphic (auctx, Some (UVars.Variances.of_array arr)),
+         Some (UVars.Variances.of_array arr')
+
 let infer_parameter ~sec_univs env entry =
-  let env, usubst, _, univs = process_universes env entry.parameter_entry_universes in
+  let env, usubst, _, univs = process_universes env ?sec_univs entry.parameter_entry_universes in
   let j = Typeops.infer env entry.parameter_entry_type in
   let r = Typeops.assumption_of_judgment env j in
   let typ = Vars.subst_univs_level_constr usubst j.uj_val in
   let undef = Undef entry.parameter_entry_inline_code in
   let hyps = used_section_variables env entry.parameter_entry_secctx None typ in
+  let univ_hyps = make_univ_hyps sec_univs in
+  let univs, sec_variances = split_sec_variances sec_univs univs in
   {
     const_hyps = hyps;
-    const_univ_hyps = make_univ_hyps sec_univs;
+    const_univ_hyps = univ_hyps;
     const_body = undef;
     const_type = typ;
     const_body_code = ();
     const_universes = univs;
+    const_sec_variance = sec_variances;
     const_relevance = UVars.subst_sort_level_relevance usubst r;
     const_inline_code = false;
     const_typing_flags = Environ.typing_flags env;
   }
 
 let infer_definition ~sec_univs env entry =
-  let env, usubst, _, univs = process_universes env entry.definition_entry_universes in
+  let env, usubst, _, univs = process_universes env ?sec_univs entry.definition_entry_universes in
   let hbody = HConstr.of_constr env entry.definition_entry_body in
   let j = Typeops.infer_hconstr env hbody in
   let typ = match entry.definition_entry_type with
@@ -230,6 +260,7 @@ let infer_definition ~sec_univs env entry =
   let hbody = if body == j.uj_val then Some hbody else None in
   let def = Def body in
   let hyps = used_section_variables env entry.definition_entry_secctx (Some body) typ in
+  let univs, sec_variance = split_sec_variances sec_univs univs in
   (* TODO check variance *)
   hbody, {
     const_hyps = hyps;
@@ -238,6 +269,7 @@ let infer_definition ~sec_univs env entry =
     const_type = typ;
     const_body_code = ();
     const_universes = univs;
+    const_sec_variance = sec_variance;
     const_relevance = Relevanceops.relevance_of_term env body;
     const_inline_code = entry.definition_entry_inline_code;
     const_typing_flags = Environ.typing_flags env;
@@ -245,12 +277,13 @@ let infer_definition ~sec_univs env entry =
 
 (** Definition is opaque (Qed), so we delay the typing of its body. *)
 let infer_opaque ~sec_univs env entry =
-  let env, usubst, _, univs = process_universes env entry.opaque_entry_universes in
+  let env, usubst, _, univs = process_universes env ?sec_univs entry.opaque_entry_universes in
   let typj = Typeops.infer_type env entry.opaque_entry_type in
   let context = TyCtx (env, typj, entry.opaque_entry_secctx, usubst, univs) in
   let def = OpaqueDef () in
   let typ = Vars.subst_univs_level_constr usubst typj.utj_val in
   let hyps = used_section_variables env (Some entry.opaque_entry_secctx) None typ in
+  let univs, sec_variance = split_sec_variances sec_univs univs in
   {
     const_hyps = hyps;
     const_univ_hyps = make_univ_hyps sec_univs;
@@ -258,6 +291,7 @@ let infer_opaque ~sec_univs env entry =
     const_type = typ;
     const_body_code = ();
     const_universes = univs;
+    const_sec_variance = sec_variance;
     const_relevance = UVars.subst_sort_level_relevance usubst @@ Sorts.relevance_of_sort typj.utj_type;
     const_inline_code = false;
     const_typing_flags = Environ.typing_flags env;

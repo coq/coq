@@ -26,8 +26,16 @@ type position =
   | InBinder of int
   | InTerm | InType
 
+type variance_occurrence =
+  { in_binder : (int * UVars.Variance.t) option;
+    in_term : UVars.Variance.t option;
+    in_type : UVars.Variance.t option }
+
+val pr_variance_occurrence : variance_occurrence -> Pp.t
+
 (* The position records the last position in the term where the variable was used relevantly. *)
-type level_variances = (position * UVars.Variance.t) Univ.Level.Map.t
+type level_variances = variance_occurrence Univ.Level.Map.t
+
 val pr_variances : (Univ.Level.t -> Pp.t) -> level_variances -> Pp.t
 
 val empty_level_variances : level_variances

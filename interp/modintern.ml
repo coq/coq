@@ -136,8 +136,9 @@ let interp_with_decl env base kind = function
     let c, ectx = interp_constr env sigma c in
     let poly = lookup_polymorphism env base kind fqid in
     (* FIXME variances are ignored here *)
-    begin match (UState.check_univ_decl ~poly ectx UnivMinim.empty_level_variances udecl).universes_entry_universes with
+    begin match (UState.check_univ_decl ~poly ~cumulative:false ectx UnivMinim.empty_level_variances udecl).universes_entry_universes with
       | UState.Polymorphic_entry (ctx, variances) -> (* FIXME variances *)
+        assert (variances == None);
         let inst, ctx = UVars.abstract_universes ctx in
         let c = EConstr.Vars.subst_univs_level_constr (UVars.make_instance_subst inst) c in
         let c = EConstr.to_constr sigma c in

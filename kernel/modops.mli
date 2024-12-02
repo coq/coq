@@ -113,7 +113,7 @@ type signature_mismatch_error =
   | IncompatibleUniverses of UGraph.univ_inconsistency
   | IncompatiblePolymorphism of env * types * types
   | IncompatibleConstraints of { got : UVars.AbstractContext.t; expect : UVars.AbstractContext.t }
-  | IncompatibleVariance
+  | IncompatibleVariance of { got : UVars.Variances.t; expect : UVars.Variances.t }
   | NoRewriteRulesSubtyping
 
 type subtyping_trace_elt =

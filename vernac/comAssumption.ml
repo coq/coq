@@ -27,16 +27,15 @@ module NamedDecl = Context.Named.Declaration
     - with implicit status for discharge (impl)
     - virtually with named universes *)
 
-let entry_variances univs =
+let clear_entry_variances univs =
   let open UState in
   match univs.universes_entry_universes with
-  | Monomorphic_entry _ -> None
-  | Polymorphic_entry (_uctx, variances) -> variances
+  | Monomorphic_entry _ -> univs
+  | Polymorphic_entry (uctx, variances) ->
+    { univs with universes_entry_universes = Polymorphic_entry (uctx, None) }
 
 let declare_local ~coe ~try_assum_as_instance ~kind ~univs ~impargs ~impl ~name body typ =
-  let () = if Option.is_empty (entry_variances univs) then () else
-      CErrors.user_err Pp.(str"Section-local assumptions and definitions cannot have a variance annotation")
-  in
+  let univs = clear_entry_variances univs in
   let decl = match body with
     | None ->
       Declare.SectionLocalAssum {typ; impl; univs}

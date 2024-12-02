@@ -309,7 +309,7 @@ and ind_or_type =
 
 let one_univ =
   AbstractContext.make ([||],Names.[|Name (Id.of_string "u")|]) Constraints.empty,
-  Some (Array.make 1 (UVars.Variance.Irrelevant))
+  Some (UVars.Variances.of_array [|UVars.Variance.Contravariant, Some 0|])
 
 let typ_univs (type a) (t : a prim_type) = match t with
   | PT_int63 -> AbstractContext.empty, None

@@ -401,7 +401,8 @@ let do_instance_resolve_TC termtype sigma env =
   let sigma = Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars ~fail:false env sigma in
   let sigma = Evarutil.nf_evar_map_undefined sigma in
   (* Beware of this step, it is required as to minimize universes. *)
-  let sigma = Evd.minimize_universes sigma in
+  let variances = UnivVariances.universe_variances_of_type env sigma termtype in
+  let sigma = Evd.minimize_universes ~variances sigma in
   (* Check that the type is free of evars now. *)
   Pretyping.check_evars env sigma termtype;
   termtype, sigma

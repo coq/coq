@@ -20,6 +20,53 @@ let { Goptions.get = get_set_minimization } =
     ~value:true
     ()
 
+(** Level variances *)
+
+type position =
+  | InBinder of int
+  | InTerm | InType
+
+type variance_occurrence =
+  { in_binder : (int * UVars.Variance.t) option;
+    in_term : UVars.Variance.t option;
+    in_type : UVars.Variance.t option }
+
+(* The position records the last position in the term where the variable was used relevantly. *)
+type level_variances = variance_occurrence Univ.Level.Map.t
+
+let empty_level_variances = Univ.Level.Map.empty
+
+let pr_variance_occurrence { in_binder; in_term; in_type } =
+  let open Pp in
+  let pr_binder =
+    match in_binder with
+    | None -> mt()
+    | Some (i, variance) -> str": " ++ UVars.Variance.pr variance ++ str " in " ++ pr_nth (i+1) ++ str" binder"
+  in
+  let pr_in_type =
+    match in_type with
+  | None -> pr_binder
+  | Some variance -> pr_binder ++ (if Option.is_empty in_binder then str": " else str", ") ++ UVars.Variance.pr variance ++ str " in type"
+  in
+  match in_term with
+  | None -> pr_in_type
+  | Some variance -> pr_in_type ++ (if Option.is_empty in_binder && Option.is_empty in_type then str": " else str", ") ++ UVars.Variance.pr variance ++ str " in term"
+
+let min_pos_variance { in_binder; in_term; in_type } =
+  let in_binder = Option.map snd in_binder in
+  let sup_opt x y =
+    match x, y with
+    | None, None -> x
+    | Some v, None -> x
+    | None, Some v -> y
+    | Some v, Some v' -> Some (UVars.Variance.sup v v')
+  in
+  sup_opt in_binder (sup_opt in_type in_term)
+
+let pr_variances prl variances =
+  Univ.Level.Map.pr prl pr_variance_occurrence variances
+
+
 (** Simplification *)
 
 (** Precondition: flexible <= ctx *)
@@ -182,8 +229,11 @@ let minimize_univ_variables ctx us variances left right cstrs =
     in
     let variance =
       match Level.Map.find_opt u variances with
-      | None -> UVars.Variance.Invariant
-      | Some (_position, v) -> v
+      | None -> if UnivFlex.mem u us then UVars.Variance.Irrelevant else UVars.Variance.Invariant
+      | Some pos ->
+        match min_pos_variance pos with
+        | Some v -> v
+        | None -> (* No recorded variance for this universe *) UVars.Variance.Irrelevant
     in
     let instantiate_lbound lbound =
       if is_set_increment lbound && not (get_set_minimization()) then
@@ -276,23 +326,6 @@ let decompose_constraints cstrs =
 
 let simplify_cstr (l, d, r) =
   (Universe.unrepr (Universe.repr l), d, Universe.unrepr (Universe.repr r))
-
-type position =
-  | InBinder of int
-  | InTerm | InType
-
-(* The position records the last position in the term where the variable was used relevantly. *)
-type level_variances = (position * UVars.Variance.t) Univ.Level.Map.t
-
-let empty_level_variances = Univ.Level.Map.empty
-
-let pr_pos_variance (position, variance) =
-  let open Pp in
-  let pr_pos = function InBinder i -> str "(in " ++ pr_nth i ++ str" binder)" | InTerm -> str "(in term)" | InType -> str "(in type)" in
-  UVars.Variance.pr variance ++ spc () ++ pr_pos position
-
-let pr_variances prl variances =
-  Univ.Level.Map.pr prl pr_pos_variance variances
 
 let normalize_context_set ~lbound ~variances g ctx (us:UnivFlex.t) ?binders {weak_constraints=weak;above_prop} =
   let prl = UnivNames.pr_level_with_global_universes ?binders in

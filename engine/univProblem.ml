@@ -122,7 +122,7 @@ let enforce_eq_qualities qs qs' cstrs =
       if Sorts.Quality.equal a b then c else Set.add (QEq (a, b)) c)
     cstrs qs qs'
 
-let compare_cumulative_instances  cv_pb variances u u' cstrs =
+let compare_cumulative_instances cv_pb ~nargs variances u u' cstrs =
   let make u = Sorts.sort_of_univ u in
   let qs, us = UVars.Instance.to_array u
   and qs', us' = UVars.Instance.to_array u' in
@@ -130,6 +130,7 @@ let compare_cumulative_instances  cv_pb variances u u' cstrs =
   CArray.fold_left3
     (fun cstrs v u u' ->
        let open UVars.Variance in
+       let v = UVars.VariancePos.variance nargs v in
        match v with
        | Irrelevant -> Set.add (UWeak (u,u')) cstrs
        | Covariant ->
@@ -142,4 +143,4 @@ let compare_cumulative_instances  cv_pb variances u u' cstrs =
           | Conversion.CUMUL -> Set.add (ULe (make u', make u)) cstrs)
        | Invariant ->
          Set.add (UEq (make u, make u')) cstrs)
-    cstrs variances us us'
+    cstrs (UVars.Variances.repr variances) us us'

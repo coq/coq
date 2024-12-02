@@ -226,8 +226,11 @@ type ('a, 'b, 'c, 'd) gen_universe_decl = {
   univdecl_constraints : 'd; (* Declared constraints *)
   univdecl_extensible_constraints : bool (* Can new constraints be added *) }
 
+type pre_variances =
+  UVars.Variance.t option array option
+
 type universe_decl =
-  (QVar.t list, Level.t list, UVars.variances option, Univ.Constraints.t) gen_universe_decl
+  (QVar.t list, Level.t list, pre_variances, Univ.Constraints.t) gen_universe_decl
 
 val default_univ_decl : universe_decl
 
@@ -242,7 +245,7 @@ val default_univ_decl : universe_decl
    When polymorphic, the universes corresponding to
    [decl.univdecl_instance] come first in the order defined by that
    list. *)
-val check_univ_decl : poly:bool -> t -> UnivMinim.level_variances -> universe_decl -> named_universes_entry
+val check_univ_decl : poly:bool -> ?cumulative:bool -> t -> UnivMinim.level_variances -> universe_decl -> named_universes_entry
 val check_univ_decl_rev : t -> universe_decl -> t * UVars.UContext.t
 val check_uctx_impl : fail:(Pp.t -> unit) -> t -> t -> unit
 

@@ -1190,8 +1190,11 @@ let explain_not_match_error = function
     str "but expected" ++ spc() ++ h (pr_auctx expect) ++
     (if not (UVars.eq_sizes (AbstractContext.size got) (AbstractContext.size expect)) then mt() else
        fnl() ++ str "(incompatible constraints)")
-  | IncompatibleVariance ->
-    str "incompatible variance information"
+  | IncompatibleVariance { got; expect } ->
+    str "incompatible variance information: " ++ spc () ++ h (UVars.Variances.pr got) ++ spc() ++
+    str "but expected" ++ spc () ++ h (UVars.Variances.pr expect) ++
+    (if not (UVars.Variances.eq_sizes got expect) then mt() else
+        fnl() ++ str "(incompatible variances)")
   | NoRewriteRulesSubtyping ->
     strbrk "subtyping for rewrite rule blocks is not supported"
 

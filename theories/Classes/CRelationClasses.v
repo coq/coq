@@ -24,14 +24,14 @@ Require Import Stdlib.Program.Tactics.
 Generalizable Variables A B C D R S T U l eqA eqB eqC eqD.
 
 Set Universe Polymorphism.
+Set Polymorphic Inductive Cumulativity.
 
-Definition crelation@{*a +ra} (A : Type@{a}) := A -> A -> Type@{ra}.
+Definition crelation@{-a +ra} (A : Type@{a}) := A -> A -> Type@{ra}.
+Definition arrow@{-a -b} (A : Type@{a}) (B : Type@{b}) := A -> B.
 
-Definition arrow@{*a *b} (A : Type@{a}) (B : Type@{b}) := A -> B.
+Definition flip@{-a -b -c} {A : Type@{a}} {B : Type@{b}} {C : Type@{c}} (f : A -> B -> C) := fun x y => f y x.
 
-Definition flip@{*a *b *c} {A : Type@{a}} {B : Type@{b}} {C : Type@{c}} (f : A -> B -> C) := fun x y => f y x.
-
-Class subrelation@{*a *ra *ra'} {A : Type@{a}} (R : crelation@{a ra} A) (R' : crelation@{a ra'} A) :=
+Class subrelation@{-a -ra -ra'} {A : Type@{a}} (R : crelation@{a ra} A) (R' : crelation@{a ra'} A) :=
   is_subrelation : forall {x y}, R x y -> R' x y.
 
 Module Import TypeProduct.
@@ -43,7 +43,7 @@ Arguments snd {A B}.
 
 End TypeProduct.
 
-Definition iffT@{*a *b} (A : Type@{a}) (B : Type@{b}) := (prodT@{max(a,b) max(a,b)} (A -> B) (B -> A))%type.
+Definition iffT@{-a -b} (A : Type@{a}) (B : Type@{b}) := (prodT@{max(a,b) max(a,b)} (A -> B) (B -> A))%type.
 
 Cumulative Inductive sumT A B :=
 | inlt : A -> sumT A B
@@ -336,15 +336,20 @@ Proof. firstorder. Defined.
 Local Open Scope list_scope.
 
 (** A compact representation of non-dependent arities, with the codomain singled-out. *)
+(* Set Debug "ustate".
+Set Debug "uCompare".
+Set Debug "conversion". *)
+
+(* Set Debug "UnivVariances". *)
+
+Definition relation_equivalence@{a ra} {A : Type@{a}} : crelation@{max(a,ra+1) max(a,ra)} (crelation@{a ra} A) :=
+  fun R R' : crelation@{a ra} A => forall x y : A, iffT@{ra ra} (R x y) (R' x y).
 
 (** We define the various operations which define the algebra on binary crelations *)
 Section Binary.
   Context {A : Type}.
 
-  Definition relation_equivalence : crelation (crelation A) :=
-    fun R R' => forall x y, iffT (R x y) (R' x y).
-
-  Global Instance: RewriteRelation relation_equivalence.
+  Global Instance: RewriteRelation (@relation_equivalence A).
   Defined.
 
   Definition relation_conjunction (R : crelation A) (R' : crelation A) : crelation A :=
@@ -356,7 +361,7 @@ Section Binary.
   (** Relation equivalence is an equivalence, and subrelation defines a partial order. *)
 
   Global Instance relation_equivalence_equivalence :
-    Equivalence relation_equivalence.
+    Equivalence (@relation_equivalence A).
   Proof.
     split; red; unfold relation_equivalence, iffT.
     - firstorder.

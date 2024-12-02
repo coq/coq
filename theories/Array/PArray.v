@@ -2,24 +2,24 @@ Require Import Uint63.
 
 Set Universe Polymorphism.
 
-Primitive array@{*u} : Type@{u} -> Type@{u} := #array_type.
+Primitive array := #array_type.
 
-Primitive make@{*u}: forall A : Type@{u}, int -> A -> array A := #array_make.
+Primitive make@{-u}: forall A : Type@{u}, int -> A -> array A := #array_make.
 Arguments make {_} _ _.
 
-Primitive get@{*u} : forall A : Type@{u}, array A -> int -> A := #array_get.
+Primitive get@{-u} : forall A : Type@{u}, array A -> int -> A := #array_get.
 Arguments get {_} _ _.
 
-Primitive default@{*u} : forall A : Type@{u}, array A -> A:= #array_default.
+Primitive default@{-u} : forall A : Type@{u}, array A -> A:= #array_default.
 Arguments default {_} _.
 
-Primitive set@{*u} : forall A : Type@{u}, array A -> int -> A -> array A := #array_set.
+Primitive set@{-u} : forall A : Type@{u}, array A -> int -> A -> array A := #array_set.
 Arguments set {_} _ _ _.
 
-Primitive length@{*u} : forall A : Type@{u}, array A -> int := #array_length.
+Primitive length@{-u} : forall A : Type@{u}, array A -> int := #array_length.
 Arguments length {_} _.
 
-Primitive copy@{*u} : forall A : Type@{u}, array A -> array A := #array_copy.
+Primitive copy@{-u} : forall A : Type@{u}, array A -> array A := #array_copy.
 Arguments copy {_} _.
 
 Module Export PArrayNotations.

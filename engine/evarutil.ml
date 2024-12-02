@@ -731,7 +731,7 @@ let subterm_source evk ?where (loc,k) =
 
 (* Add equality constraints for covariant/invariant positions. For
    irrelevant positions, unify universes when flexible. *)
-let compare_cumulative_instances cv_pb variances u u' sigma =
+let compare_cumulative_instances cv_pb ~nargs variances u u' sigma =
   let open UnivProblem in
   let cstrs = Univ.Constraints.empty in
   let soft = Set.empty in
@@ -743,6 +743,7 @@ let compare_cumulative_instances cv_pb variances u u' sigma =
   | sigma ->
   let cstrs, soft = Array.fold_left3 (fun (cstrs, soft) v u u' ->
       let open UVars.Variance in
+      let v = UVars.VariancePos.variance nargs v in
       match v with
       | Irrelevant -> cstrs, Set.add (UWeak (u,u')) soft
       | Covariant when cv_pb == Conversion.CUMUL ->
@@ -750,7 +751,7 @@ let compare_cumulative_instances cv_pb variances u u' sigma =
       | Contravariant when cv_pb == Conversion.CUMUL ->
         Univ.Constraints.add (u',Univ.Le,u) cstrs, soft
       | Covariant | Contravariant | Invariant -> Univ.Constraints.add (u,Univ.Eq,u') cstrs, soft)
-      (cstrs,soft) variances us us'
+      (cstrs,soft) (UVars.Variances.repr variances) us us'
   in
   match Evd.add_constraints sigma cstrs with
   | sigma ->

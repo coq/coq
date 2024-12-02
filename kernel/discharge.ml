@@ -34,13 +34,15 @@ let lift_univs info univ_hyps univs sec_variance =
     let variances, sec_variances =
     match variances, sec_variance with
     | None, None -> None, None
-    | None, Some _ | Some _, None -> assert false
+    | None, Some _| Some _, None -> assert false
     | Some variance, Some sec_variance ->
       (* no variance for qualities *)
+      let sec_variance = UVars.Variances.repr sec_variance in
       let sec_variance, newvariance =
         Array.chop (Array.length sec_variance - un) sec_variance
       in
-      Some (Array.append newvariance variance), Some sec_variance
+      Some (UVars.Variances.of_array (Array.append newvariance (UVars.Variances.repr variance))),
+      Some (UVars.Variances.of_array sec_variance)
   in
 
     info, univ_hyps, Polymorphic (auctx, variances), sec_variances
@@ -69,7 +71,7 @@ let cook_opaque_proofterm info c =
 
 let cook_constant _env info cb =
   (* Adjust the info so that it is meaningful under the block of quantified universe binders *)
-  let info, univ_hyps, univs, _sec_variance = lift_univs info cb.const_univ_hyps cb.const_universes None (* FIXME sec_variance *) in
+  let info, univ_hyps, univs, sec_variance = lift_univs info cb.const_univ_hyps cb.const_universes cb.const_sec_variance in
   let cache = create_cache info in
   let map c = abstract_as_body cache c in
   let body = match cb.const_body with
@@ -90,6 +92,7 @@ let cook_constant _env info cb =
     const_type = typ;
     const_body_code = ();
     const_universes = univs;
+    const_sec_variance = sec_variance;
     const_relevance = cb.const_relevance;
     const_inline_code = cb.const_inline_code;
     const_typing_flags = cb.const_typing_flags;

@@ -97,8 +97,8 @@ let check_variance error env v1 v2 =
   match v1, v2 with
   | None, None -> env
   | Some v1, Some v2 ->
-    if not (Array.for_all2 Variance.check_subtype v2 v1) then
-      error IncompatibleVariance
+    if not (Variances.check_subtype v2 v1) then
+      error (IncompatibleVariance { got = v1; expect = v2 })
     else env
   | None, Some _ -> error (CumulativeStatusExpected true)
   | Some _, None -> error (CumulativeStatusExpected false)

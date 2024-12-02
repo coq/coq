@@ -17,7 +17,7 @@ type conv_pb =
 val pr_conv_pb : conv_pb -> Pp.t
 
 type ('a, 'err) convert_instances = UVars.Instance.t -> UVars.Instance.t -> 'a -> ('a, 'err) Result.t
-type ('a, 'err) convert_instances_cumul = conv_pb -> UVars.Variance.t array -> UVars.Instance.t -> UVars.Instance.t -> 'a -> ('a, 'err) Result.t
+type ('a, 'err) convert_instances_cumul = nargs:UVars.application -> conv_pb -> UVars.Variances.t -> UVars.Instance.t -> UVars.Instance.t -> 'a -> ('a, 'err) Result.t
 
 type ('a, 'err) universe_compare = {
   compare_sorts : env -> conv_pb -> Sorts.t -> Sorts.t -> 'a -> ('a, 'err option) result;
@@ -27,7 +27,7 @@ type ('a, 'err) universe_compare = {
 
 type ('a, 'err) universe_state = 'a * ('a, 'err) universe_compare
 
-val get_cumulativity_constraints : conv_pb -> UVars.Variance.t array ->
+val get_cumulativity_constraints : conv_pb -> nargs:UVars.application -> UVars.Variances.t ->
     UVars.Instance.t -> UVars.Instance.t -> Sorts.QUConstraints.t
 
 val inductive_cumulativity_arguments : (Declarations.mutual_inductive_body * int) -> int
@@ -41,7 +41,7 @@ constructors. *)
 val convert_instances : flex:bool -> UVars.Instance.t -> UVars.Instance.t ->
     'a * ('a, 'err) universe_compare -> ('a, 'err option) result * ('a, 'err) universe_compare
 
-val convert_instances_cumul : flex:bool -> conv_pb -> UVars.Variance.t array ->
+val convert_instances_cumul : flex:bool -> conv_pb -> nargs:UVars.application -> UVars.Variances.t ->
     UVars.Instance.t -> UVars.Instance.t ->
     'a * ('a, 'err) universe_compare -> ('a, 'err option) result * ('a, 'err) universe_compare
 
@@ -54,7 +54,7 @@ val convert_inductives_gen :
   env ->
   conv_pb ->
   Names.inductive ->
-  nargs:Int.t ->
+  nargs:UVars.application ->
   UVars.Instance.t ->
   UVars.Instance.t ->
   'a ->
@@ -64,7 +64,7 @@ val convert_inductives :
   env ->
   conv_pb ->
   Names.inductive ->
-  nargs:Int.t ->
+  nargs:UVars.application ->
   UVars.Instance.t ->
   UVars.Instance.t ->
   'a * ('a, 'b) universe_compare ->
@@ -75,7 +75,7 @@ val convert_constructors_gen :
   ('a, 'err) convert_instances_cumul ->
   env ->
   Names.constructor ->
-  nargs:Int.t ->
+  nargs:UVars.application ->
   UVars.Instance.t ->
   UVars.Instance.t ->
   'a -> ('a, 'err) Result.t
@@ -83,7 +83,7 @@ val convert_constructors_gen :
 val convert_constructors :
   env ->
   Names.constructor ->
-  nargs:Int.t ->
+  nargs:UVars.application ->
   UVars.Instance.t ->
   UVars.Instance.t ->
   'a * ('a, 'b) universe_compare ->
@@ -95,7 +95,7 @@ val convert_constants_gen :
   env ->
   conv_pb ->
   Names.Constant.t ->
-  nargs:Int.t ->
+  nargs:UVars.application ->
   UVars.Instance.t ->
   UVars.Instance.t ->
   'a -> ('a, 'err) Result.t
@@ -105,7 +105,7 @@ val convert_constants :
   conv_pb ->
   Names.Constant.t ->
   flex:bool ->
-  nargs:Int.t ->
+  nargs:UVars.application ->
   UVars.Instance.t ->
   UVars.Instance.t ->
   'a * ('a, 'b) universe_compare ->

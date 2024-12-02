@@ -752,7 +752,7 @@ let cmp_inductives cv_pb (mind,ind as spec) nargs u1 u2 cstrs =
   | Some variances ->
     let num_param_arity = UCompare.inductive_cumulativity_arguments spec in
     if not (Int.equal num_param_arity nargs) then enforce_eq_instances_univs false u1 u2 cstrs
-    else compare_cumulative_instances cv_pb  variances u1 u2 cstrs
+    else compare_cumulative_instances ~nargs:(NumArgs nargs) cv_pb variances u1 u2 cstrs
 
 let cmp_constructors (mind, ind, cns as spec) nargs u1 u2 cstrs =
   let open UnivProblem in
@@ -777,7 +777,7 @@ let cmp_constants cv_pb cb nargs u1 u2 cstrs =
     (* FIXME check that enough args are applied (a variance should contain an int for the min number of applied args) *)
     (* if not (Array.length variance <= nargs) then enforce_eq_instances_univs true u1 u2 cstrs
     else  *)
-    compare_cumulative_instances cv_pb variance u1 u2 cstrs
+    compare_cumulative_instances ~nargs:(NumArgs nargs) cv_pb variance u1 u2 cstrs
 
 let eq_universes env sigma cstrs cv_pb refargs l l' =
   if EInstance.is_empty l then (assert (EInstance.is_empty l'); true)
@@ -788,7 +788,7 @@ let eq_universes env sigma cstrs cv_pb refargs l l' =
     let open UnivProblem in
     match refargs with
     | Some (ConstRef c, 1) when Environ.is_array_type env c ->
-      cstrs := compare_cumulative_instances cv_pb [|UVars.Variance.Irrelevant|] l l' !cstrs;
+      cstrs := compare_cumulative_instances ~nargs:(NumArgs 1) cv_pb (UVars.Variances.make 1 UVars.Variance.Irrelevant) l l' !cstrs;
       true
     | Some (ConstRef c, n) ->
       let cb = Environ.lookup_constant c env in

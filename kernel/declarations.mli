@@ -113,6 +113,12 @@ type ('opaque, 'bytecode) pconstant_body = {
     const_relevance : Sorts.relevance;
     const_body_code : 'bytecode;
     const_universes : universes;
+
+    const_sec_variance : UVars.variances option;
+    (** Variance info for section polymorphic universes. [None]
+       outside sections. The final variance once all sections are
+       discharged is [const_sec_variance ++ const_universes.variance]. *)
+
     const_inline_code : bool;
     const_typing_flags : typing_flags; (** The typing options which
                                            were used for

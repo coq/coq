@@ -24,6 +24,7 @@ Local Obligation Tactic := try solve [ simpl_crelation ].
 Local Arguments transitivity {A R Transitive x} y {z}.
 
 Set Universe Polymorphism.
+Set Polymorphic Inductive Cumulativity.
 
 (** * Morphisms.
 
@@ -34,10 +35,10 @@ Set Universe Polymorphism.
    The relation [R] will be instantiated by [respectful] and [A] by an arrow
    type for usual morphisms. *)
 
-Class Proper@{*a *ra} {A : Type@{a}} (R : crelation@{a ra} A) (m : A) :=
+Class Proper@{-a -ra} {A : Type@{a}} (R : crelation@{a ra} A) (m : A) :=
   proper_prf : R m m.
 
-Class ProperProxy@{*a *ra} {A : Type@{a}} (R : crelation@{a ra} A) (m : A) :=
+Class ProperProxy@{-a -ra} {A : Type@{a}} (R : crelation@{a ra} A) (m : A) :=
   proper_proxy : R m m.
 
 Section Proper.
@@ -77,7 +78,7 @@ Definition respectful_hetero
 
 (** The non-dependent version is an instance where we forget dependencies. *)
   
-Definition respectful@{*a *ra *b *rb} {A : Type@{a}} {B : Type@{b}} (R : crelation@{a ra} A) (R' : crelation@{b rb} B) : crelation (A -> B) :=
+Definition respectful@{-a -ra -b -rb} {A : Type@{a}} {B : Type@{b}} (R : crelation@{a ra} A) (R' : crelation@{b rb} B) : crelation (A -> B) :=
     fun f g => forall x y, R x y -> R' (f x) (g y).
 
 (** We favor the use of Leibniz equality or a declared reflexive crelation 

@@ -2983,7 +2983,7 @@ let interp_univ_decl env decl =
 let variance_of_entry arr =
   if Array.is_empty arr then None
   else if Array.for_all Option.is_empty arr then None
-  else Some (Array.map (function None -> UVars.Variance.Invariant | Some v -> v) arr)
+  else Some arr
 
 let interp_cumul_univ_decl env decl =
   let open UState in

@@ -125,6 +125,7 @@ let subst_const_body subst cb =
         const_body_code =
           Option.map (Vmemitcodes.subst_body_code subst) cb.const_body_code;
         const_universes = cb.const_universes;
+        const_sec_variance = cb.const_sec_variance;
         const_relevance = cb.const_relevance;
         const_inline_code = cb.const_inline_code;
         const_typing_flags = cb.const_typing_flags }

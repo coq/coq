@@ -1044,9 +1044,9 @@ let to_universe_context evd = UState.context evd.universes
 
 let univ_entry ~poly evd = UState.univ_entry ~poly evd.universes
 
-let check_univ_decl ~poly evd ivariances decl = UState.check_univ_decl ~poly evd.universes ivariances decl
+let check_univ_decl ~poly ?(cumulative=true) evd ivariances decl = UState.check_univ_decl ~poly ~cumulative evd.universes ivariances decl
 
-let check_univ_decl_early ~poly ~with_obls sigma udecl terms =
+let check_univ_decl_early ~poly ?(cumulative=true) ~with_obls sigma udecl terms =
   let () =
     if with_obls && not poly &&
        (not udecl.UState.univdecl_extensible_instance
@@ -1061,7 +1061,7 @@ let check_univ_decl_early ~poly ~with_obls sigma udecl terms =
   let uctx = UState.collapse_sort_variables uctx in
   let uctx = UState.restrict uctx vars in
   (* FIXME compute variances *)
-  ignore (UState.check_univ_decl ~poly uctx UnivMinim.empty_level_variances udecl)
+  ignore (UState.check_univ_decl ~poly ~cumulative uctx UnivMinim.empty_level_variances udecl)
 
 let restrict_universe_context ?lbound evd vars =
   { evd with universes = UState.restrict ?lbound evd.universes vars }

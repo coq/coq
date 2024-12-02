@@ -28,12 +28,13 @@ module Inf : sig
   type variances
   val infer_level_eq : Level.t -> variances -> variances
   val infer_level_leq : Level.t -> variances -> variances
+  val infer_level_geq : Level.t -> variances -> variances
 
   val get_infer_mode : variances -> bool
   val set_infer_mode : bool -> variances -> variances
 
-  val start : (Level.t * Variance.t option) array -> variances
-  val finish : variances -> Variance.t array
+  val start : (Level.t * VariancePos.t option) array -> variances
+  val finish : variances -> Variances.t
 end = struct
   type inferred = IrrelevantI | CovariantI | ContravariantI
   type mode = Check | Infer
@@ -45,7 +46,7 @@ end = struct
      so we stop by raising [TrivialVariance]. The [soft] check comes before that.
   *)
   type variances = {
-    orig_array : (Level.t * Variance.t option) array;
+    orig_array : (Level.t * VariancePos.t option) array;
     univs : (mode * inferred) Level.Map.t;
     infer_mode : bool;
   }
@@ -58,7 +59,7 @@ end = struct
     | CovariantI -> Covariant
     | ContravariantI -> Contravariant
 
-  let to_variance_opt o = Option.cata to_variance Invariant o
+  let to_variance_opt o = (Option.cata to_variance Invariant o, None)
 
   let infer_level_eq u variances =
     match Level.Map.find_opt u variances.univs with
@@ -88,20 +89,38 @@ end = struct
     in
     if univs == variances.univs then variances else {variances with univs}
 
+  let infer_level_geq u variances =
+    (* can only set Irrelevant -> Contravariant so no TrivialVariance *)
+    let univs =
+      Level.Map.update u (function
+          | None -> None
+          | Some (_,CovariantI) as x -> x
+          | Some (_,ContravariantI) as x -> x
+          | Some (Infer,IrrelevantI) ->
+            if not variances.infer_mode then raise NotInferring;
+            Some (Infer,ContravariantI)
+          | Some (Check,IrrelevantI) ->
+            raise (BadVariance (u, Irrelevant, Contravariant)))
+        variances.univs
+    in
+    if univs == variances.univs then variances else {variances with univs}
+
+
   let start us =
     let univs = Array.fold_left (fun univs (u,variance) ->
         match variance with
         | None -> Level.Map.add u (Infer,IrrelevantI) univs
-        | Some Invariant -> univs
-        | Some Covariant -> Level.Map.add u (Check,CovariantI) univs
-        | Some Irrelevant -> Level.Map.add u (Check,IrrelevantI) univs
-        | Some Contravariant -> Level.Map.add u (Check,ContravariantI) univs)
+        | Some (Invariant, _) -> univs
+        | Some (Covariant, _) -> Level.Map.add u (Check,CovariantI) univs
+        | Some (Irrelevant, _) -> Level.Map.add u (Check,IrrelevantI) univs
+        | Some (Contravariant, _) -> Level.Map.add u (Check,ContravariantI) univs)
         Level.Map.empty us
     in
     if Level.Map.is_empty univs then raise TrivialVariance;
     {univs; orig_array=us; infer_mode=true}
 
   let finish variances =
+    Variances.of_array @@
     Array.map
       (fun (u,_check) -> to_variance_opt (Option.map snd (Level.Map.find_opt u variances.univs)))
       variances.orig_array
@@ -129,18 +148,27 @@ let extended_mind_variance mind =
   | None, None -> None
   | Some _ as variance, None -> variance
   | None, Some _ -> assert false
-  | Some variance, Some sec_variance -> Some (Array.append sec_variance variance)
+  | Some variance, Some sec_variance -> Some (UVars.Variances.append sec_variance variance)
+
+let extended_const_variance cb =
+  match Declareops.universes_variances cb.const_universes, cb.const_sec_variance with
+  | None, None -> None
+  | Some _ as variance, None -> variance
+  | None, Some _ -> assert false
+  | Some variance, Some sec_variance -> Some (UVars.Variances.append sec_variance variance)
 
 (* todo check correctness. MS *)
-let infer_cumulative_ind_instance cv_pb mind_variance variances u =
+let infer_cumulative_instance cv_pb nargs mind_variance variances u =
   Array.fold_left2 (fun variances varu u ->
       match cv_pb, varu, Universe.level u with
-      | _, Irrelevant, _ -> variances
-      | _, Invariant, Some u | CONV, Covariant, Some u -> infer_level_eq u variances
-      | CUMUL, Covariant, Some u -> infer_level_leq u variances
+      | _, (Irrelevant, _), _-> variances
+      | _, (_, Some i), _ when i < nargs -> variances (* Irrelevance due to enough applied arguments *)
+      | _, (Invariant, _), Some u | CONV, ((Covariant | Contravariant), _), Some u -> infer_level_eq u variances
+      | CUMUL, (Covariant, _), Some u -> infer_level_leq u variances
+      | CUMUL, (Contravariant, _), Some u -> infer_level_geq u variances
       | _, _, _ -> variances)
     variances
-    mind_variance
+    (UVars.Variances.repr mind_variance)
     u
 
 let infer_inductive_instance cv_pb env variances ind nargs u =
@@ -151,7 +179,7 @@ let infer_inductive_instance cv_pb env variances ind nargs u =
   | Some mind_variance ->
     if not (Int.equal (UCompare.inductive_cumulativity_arguments (mind,snd ind)) nargs)
     then infer_generic_instance_eq variances u
-    else infer_cumulative_ind_instance cv_pb mind_variance variances u
+    else infer_cumulative_instance cv_pb nargs mind_variance variances u
 
 let infer_constructor_instance_eq env variances ((mi,ind),ctor) nargs u =
   let mind = Environ.lookup_mind mi env in
@@ -170,10 +198,12 @@ let infer_sort cv_pb variances s =
   | CUMUL ->
     Level.Set.fold infer_level_leq (Sorts.levels s) variances
 
-let infer_constant env variances (con,u) =
+let infer_constant cv_pb env nargs variances (con,u) =
   let cb = Environ.lookup_constant con env in
   let u = extend_con_instance cb u in
-  infer_generic_instance_eq variances u
+  match extended_const_variance cb with
+  | None -> infer_generic_instance_eq variances u
+  | Some cst_variance -> infer_cumulative_instance cv_pb nargs cst_variance variances u
 
 let whd_stack (infos, tab) hd stk = CClosure.whd_stack infos tab hd stk
 
@@ -208,7 +238,8 @@ let rec infer_fterm cv_pb infos variances hd stk =
       try
         let infer_mode = get_infer_mode variances in
         let variances = if Option.has_some def then set_infer_mode false variances else variances in
-        let variances = infer_constant (info_env (fst infos)) variances con in
+        let nargs = stack_args_size stk in
+        let variances = infer_constant cv_pb (info_env (fst infos)) nargs variances con in
         let variances = infer_stack infos variances stk in
         set_infer_mode infer_mode variances
       with BadVariance _ | NotInferring as e ->
@@ -333,6 +364,6 @@ let infer_inductive_core ~env_params ~env_ar_par ~arities ~ctors univs =
 let infer_inductive ~env_params ~env_ar_par ~arities ~ctors univs =
   try infer_inductive_core ~env_params ~env_ar_par ~arities ~ctors univs
   with
-  | TrivialVariance -> Array.make (Array.length univs) Invariant
+  | TrivialVariance -> Variances.make (Array.length univs) Invariant
   | BadVariance (lev, expected, actual) ->
     Type_errors.error_bad_variance env_params ~lev ~expected ~actual

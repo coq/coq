@@ -544,8 +544,11 @@ let build_inductive env ~sec_univs names prv univs template
       | Some sec_univs ->
         (* no variance for qualities *)
         let _nsecq, nsecu = UVars.LevelInstance.length sec_univs in
-        Polymorphic (auctx, Some (Array.sub variance nsecu (Array.length variance - nsecu))),
-        Some (Array.sub variance 0 nsecu)
+        let variance = UVars.Variances.repr variance in
+        let arr = Array.sub variance nsecu (Array.length variance - nsecu) in
+        let arr' = Array.sub variance 0 nsecu in
+        Polymorphic (auctx, Some (UVars.Variances.of_array arr)),
+         Some (UVars.Variances.of_array arr')
   in
   let univ_hyps = match sec_univs with
     | None -> UVars.LevelInstance.empty

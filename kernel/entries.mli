@@ -16,7 +16,7 @@ open Constr
    constants/axioms, mutual inductive definitions, modules and module
    types *)
 
-type variance_entry = UVars.Variance.t array option
+type variance_entry = UVars.variances option
 
 type universes_entry =
   | Monomorphic_entry

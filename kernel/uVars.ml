@@ -60,26 +60,96 @@ struct
     | Irrelevant -> csts
     | Covariant | Contravariant | Invariant -> enforce_eq u u' csts
 
-  let leq_constraints variance u u' csts =
-    let len = Array.length u in
-    assert (len = Array.length u' && len = Array.length variance);
-    Array.fold_left3 leq_constraint csts variance u u'
-
-  let eq_constraints variance u u' csts =
-    let len = Array.length u in
-    assert (len = Array.length u' && len = Array.length variance);
-    Array.fold_left3 eq_constraint csts variance u u'
 end
 
-type variances = Variance.t array
+type application = FullyApplied | NumArgs of int
+let is_applied o n = match o with FullyApplied -> true | NumArgs m -> Int.equal m n
 
-let pr_variances var =
-  let open Pp in
-  prvect_with_sep spc Variance.pr var
+let is_applied_enough o n = match o with FullyApplied -> true | NumArgs m -> n < m
 
-let eq_variances = Array.equal Variance.equal
+module VariancePos =
+struct
+  type t = Variance.t * int option
 
-let sub_variances inf exp = Array.equal Variance.check_subtype exp inf
+  let make v = (v, None)
+
+  let equal (v, pos) (v', pos') =
+    Variance.equal v v' && Option.equal Int.equal pos pos'
+
+  let le_pos x y =
+    match x, y with
+    | Some i, Some i' -> i <= i'
+    | Some _, None -> true
+    | None, Some _ -> false
+    | None, None -> true
+
+  let check_subtype (v, pos) (v', pos') =
+    Variance.check_subtype v v' && le_pos pos pos'
+
+  let variance nargs (v, pos) =
+    match pos with
+    | None -> v
+    | Some binder ->
+      if is_applied_enough nargs binder then
+        let open Variance in
+        (match v with
+        | Contravariant -> Irrelevant
+        | Invariant | Covariant -> v
+        | Irrelevant -> v)
+      else v
+
+  let eq_constraint nargs csts vp =
+    Variance.eq_constraint csts (variance nargs vp)
+
+  let leq_constraint nargs csts vp =
+    Variance.leq_constraint csts (variance nargs vp)
+
+  let pr (v, pos) =
+    match pos with
+    | None -> Variance.pr v
+    | Some i -> Variance.pr v ++ str"(" ++ pr_nth (i + 1) ++ str")"
+
+end
+
+module Variances =
+struct
+  type t = VariancePos.t array
+
+  let of_array x = x
+  let repr x = x
+
+  let length = Array.length
+  let append = Array.append
+
+  let pr var =
+    let open Pp in
+    prvect_with_sep spc VariancePos.pr var
+
+  let equal vs vs' =
+    Array.equal VariancePos.equal vs vs'
+
+  let check_subtype inf exp =
+    Array.equal VariancePos.check_subtype inf exp
+
+  let eq_sizes v v' = Int.equal (Array.length v) (Array.length v')
+
+  let make n default : t =
+    Array.make n (VariancePos.make default)
+
+  let leq_constraints ~nargs variances u u' csts =
+    let len = Array.length u in
+
+    assert (len = Array.length u' && len = Array.length variances);
+    Array.fold_left3 (VariancePos.leq_constraint nargs) csts variances u u'
+
+  let eq_constraints ~nargs variances u u' csts =
+    let len = Array.length u in
+    assert (len = Array.length u' && len = Array.length variances);
+    Array.fold_left3 (VariancePos.eq_constraint nargs) csts variances u u'
+
+end
+
+type variances = Variances.t
 
 module LevelInstance : sig
     type t
@@ -200,9 +270,10 @@ struct
     q, u
 
   let pr prq prl ?variances (q,u) =
+    let variances = Option.map Variances.repr variances in
     let ppu i u =
-      let v = Option.map (fun v -> if i < Array.length v then v.(i) else Variance.Invariant (* TODO fix: bad caller somewhere *)) variances in
-      pr_opt_no_spc Variance.pr v ++ prl u
+      let v = Option.map (fun v -> if i < Array.length v then v.(i) else (Variance.Invariant, None) (* TODO fix: bad caller somewhere *)) variances in
+      pr_opt_no_spc VariancePos.pr v ++ prl u
     in
     (if Array.is_empty q then mt() else prvect_with_sep spc (Quality.pr prq) q ++ strbrk " | ")
     ++ prvecti_with_sep spc ppu u
@@ -339,7 +410,7 @@ let levels (xq,xu) =
 let pr prq prl ?variances (q,u) =
   let ppu i u =
     let v = Option.map (fun v -> v.(i)) variances in
-    pr_opt_no_spc Variance.pr v ++ prl u
+    pr_opt_no_spc VariancePos.pr v ++ prl u
   in
   (if Array.is_empty q then mt() else prvect_with_sep spc (Quality.pr prq) q ++ strbrk " | ")
   ++ prvecti_with_sep spc ppu u
@@ -371,17 +442,17 @@ let enforce_eq_instances x y (qcs, ucs as orig) =
   let ucs' = CArray.fold_right2 enforce_eq xu yu ucs in
   if qcs' == qcs && ucs' == ucs then orig else qcs', ucs'
 
-let enforce_eq_variance_instances variances x y (qcs,ucs as orig) =
+let enforce_eq_variance_instances ~nargs variances x y (qcs,ucs as orig) =
   let xq, xu = Instance.to_array x and yq, yu = Instance.to_array y in
   let qcs' = CArray.fold_right2 Sorts.enforce_eq_quality xq yq qcs in
-  let ucs' = Variance.eq_constraints variances xu yu ucs in
+  let ucs' = Variances.eq_constraints ~nargs variances xu yu ucs in
   if qcs' == qcs && ucs' == ucs then orig else qcs', ucs'
 
-let enforce_leq_variance_instances variances x y (qcs,ucs as orig) =
+let enforce_leq_variance_instances ~nargs variances x y (qcs,ucs as orig) =
   let xq, xu = Instance.to_array x and yq, yu = Instance.to_array y in
   (* no variance for quality variables -> enforce_eq *)
   let qcs' = CArray.fold_right2 Sorts.enforce_eq_quality xq yq qcs in
-  let ucs' = Variance.leq_constraints variances xu yu ucs in
+  let ucs' = Variances.leq_constraints ~nargs variances xu yu ucs in
   if qcs' == qcs && ucs' == ucs then orig else qcs', ucs'
 
 let subst_instance_level s l =

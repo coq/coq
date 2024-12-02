@@ -9,6 +9,7 @@
 (************************************************************************)
 
 val universe_variances : Environ.env -> Evd.evar_map -> ?typ:EConstr.t -> EConstr.t -> UnivMinim.level_variances
+val universe_variances_constr : Environ.env -> Evd.evar_map -> ?typ:Constr.t -> Constr.t -> UnivMinim.level_variances
 
 val universe_variances_of_type : Environ.env -> Evd.evar_map -> EConstr.t -> UnivMinim.level_variances
 
@@ -21,6 +22,12 @@ val universe_variances_of_record : Environ.env -> Evd.evar_map ->
   params:EConstr.rel_context ->
   fields:EConstr.rel_context list ->
   types:EConstr.t list -> UnivMinim.level_variances
+
+val universe_variances_of_fix :
+  Environ.env -> Evd.evar_map ->
+  EConstr.t list ->
+  EConstr.t option list ->
+  UnivMinim.level_variances
 
 val universe_variances_of_proofs :
   Environ.env -> Evd.evar_map ->
