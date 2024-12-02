@@ -8,36 +8,36 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val universe_variances : Environ.env -> Evd.evar_map -> ?typ:EConstr.t -> EConstr.t -> UnivMinim.level_variances
-val universe_variances_constr : Environ.env -> Evd.evar_map -> ?typ:Constr.t -> Constr.t -> UnivMinim.level_variances
+val universe_variances : Environ.env -> Evd.evar_map -> ?typ:EConstr.t -> EConstr.t -> InferCumulativity.level_variances
+val universe_variances_constr : Environ.env -> Evd.evar_map -> ?typ:Constr.t -> Constr.t -> InferCumulativity.level_variances
 
-val universe_variances_of_type : Environ.env -> Evd.evar_map -> EConstr.t -> UnivMinim.level_variances
+val universe_variances_of_type : Environ.env -> Evd.evar_map -> EConstr.t -> InferCumulativity.level_variances
 
 val universe_variances_of_inductive : Environ.env -> Evd.evar_map ->
   params:EConstr.rel_context ->
   arities:EConstr.t list ->
-  constructors:(Names.Id.t list * EConstr.t list) list -> UnivMinim.level_variances
+  constructors:(Names.Id.t list * EConstr.t list) list -> InferCumulativity.level_variances
 
 val universe_variances_of_record : Environ.env -> Evd.evar_map ->
   params:EConstr.rel_context ->
   fields:EConstr.rel_context list ->
-  types:EConstr.t list -> UnivMinim.level_variances
+  types:EConstr.t list -> InferCumulativity.level_variances
 
 val universe_variances_of_fix :
   Environ.env -> Evd.evar_map ->
   EConstr.t list ->
   EConstr.t option list ->
-  UnivMinim.level_variances
+  InferCumulativity.level_variances
 
 val universe_variances_of_proofs :
   Environ.env -> Evd.evar_map ->
   (Constr.t * Constr.t) list ->
-  UnivMinim.level_variances
+  InferCumulativity.level_variances
 
 val universe_variances_of_named_context :
   Environ.env -> Evd.evar_map ->
   as_types:bool ->
-  ?variance:UVars.Variance.t ->
+  ?cumul_pb:InferCumulativity.cumul_pb ->
   (* The variance with which to analyze each binding in the context *)
   EConstr.named_context ->
-  UnivMinim.level_variances
+  InferCumulativity.level_variances

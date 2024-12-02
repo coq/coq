@@ -934,11 +934,12 @@ let extend_variances inst variances =
   else if vlen > ulen then CErrors.user_err Pp.(str"More variance annotations than bound universes")
   else Array.append variances (Array.make (ulen - vlen) None)
 
-let occurrence_to_variance UnivMinim.{ in_binder; in_term; in_type } =
+let occurrence_to_variance InferCumulativity.{ in_binder; in_term; in_type } =
   let open Variance in
+  let open Position in
   match in_binder, in_term, in_type with
-  | None, None, None -> assert false
-  | Some (i, Contravariant), (Some (Covariant | Irrelevant) | None), _ -> Contravariant, Position.InBinder i
+  | None, None, None -> (Irrelevant, InTerm)
+  | Some (i, Contravariant), (Some Irrelevant | None), _ -> Contravariant, InBinder i
   | Some (i, variance), None, _ -> (variance, InBinder i)
   | None, Some variance, _ -> (variance, InTerm)
   | Some (i, variance), Some variance', _ -> (sup variance variance', InTerm)
@@ -959,7 +960,7 @@ let pr_pre_variances =
 
 let check_variances ~cumulative names ivariances inst variances =
   debug Pp.(fun () -> str"Checking variance annotation: " ++ Option.cata pr_pre_variances (mt ()) variances);
-  debug Pp.(fun () -> str"Inferred variances: " ++ UnivMinim.pr_variances Level.raw_pr ivariances);
+  debug Pp.(fun () -> str"Inferred variances: " ++ InferCumulativity.pr_variances Level.raw_pr ivariances);
   let variances = Option.map (extend_variances inst) variances in
   match variances with
   | None -> if not cumulative then None else Some (computed_variances ivariances inst)
@@ -970,14 +971,14 @@ let check_variances ~cumulative names ivariances inst variances =
         (pr_uctx_level_names names level))
       | Some ({ in_binder; in_term } as v') ->
         debug Pp.(fun () -> str"Checking variance annotation: " ++ pr_opt UVars.Variance.pr variance ++ str " vs inferred annotation " ++
-          UnivMinim.pr_variance_occurrence v');
+          InferCumulativity.pr_variance_occurrence v');
         let (variance', position) = occurrence_to_variance v' in
         match variance with
         | None -> (variance', position)
         | Some variance ->
-          if UVars.Variance.le variance variance' then (variance, position)
+          if UVars.Variance.le variance' variance then (variance, position)
           else CErrors.user_err Pp.(str"Variance annotation " ++ UVars.Variance.pr variance ++ str" for universe binder " ++
-            (pr_uctx_level_names names level) ++ str" is incorrect, inferred variance is " ++ UVars.Variance.pr variance')
+            (pr_uctx_level_names names level) ++ str" is incorrect, inferred variance is " ++ UVars.VariancePos.pr (variance', position))
     in
     if not cumulative then
       CErrors.user_err

@@ -97,7 +97,7 @@ let check_variance error env v1 v2 =
   match v1, v2 with
   | None, None -> env
   | Some v1, Some v2 ->
-    if not (Variances.le v2 v1) then
+    if not (Variances.le v1 v2) then
       error (IncompatibleVariance { got = v1; expect = v2 })
     else env
   | None, Some _ -> error (CumulativeStatusExpected true)

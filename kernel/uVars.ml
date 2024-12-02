@@ -33,13 +33,13 @@ struct
     | (Irrelevant | Covariant | Contravariant | Invariant), _ -> false
 
   let le x y = match x, y with
-  | (Irrelevant | Covariant | Contravariant | Invariant), Irrelevant -> true
-  | Irrelevant, (Covariant | Contravariant) -> false
-  | (Covariant | Invariant), Covariant -> true
-  | (Contravariant | Invariant), Contravariant -> true
+  | Irrelevant, (Irrelevant | Covariant | Contravariant | Invariant) -> true
+  | (Covariant | Contravariant | Invariant), Irrelevant -> false
+  | Covariant, (Covariant | Invariant) -> true
+  | Contravariant, (Contravariant | Invariant) -> true
   | Covariant, Contravariant -> false
   | Contravariant, Covariant -> false
-  | (Irrelevant | Covariant | Contravariant), Invariant -> false
+  | Invariant, (Covariant | Contravariant) -> false
   | Invariant, Invariant -> true
 
   let pr = function

@@ -590,7 +590,7 @@ val to_universe_context : evar_map -> UVars.UContext.t
 
 val univ_entry : poly:bool -> evar_map -> UVars.variances option -> UState.named_universes_entry
 
-val check_univ_decl : poly:bool -> ?cumulative:bool -> evar_map -> UnivMinim.level_variances -> UState.universe_decl -> UState.named_universes_entry
+val check_univ_decl : poly:bool -> ?cumulative:bool -> evar_map -> InferCumulativity.level_variances -> UState.universe_decl -> UState.named_universes_entry
 
 (** An early check of compatibility of the universe declaration before
     starting to build a declaration interactively *)
@@ -616,7 +616,7 @@ val collapse_sort_variables : evar_map -> evar_map
 val fix_undefined_variables : evar_map -> evar_map
 
 (** Universe minimization *)
-val minimize_universes : ?lbound:UGraph.Bound.t -> ?variances:UnivMinim.level_variances -> evar_map -> evar_map
+val minimize_universes : ?lbound:UGraph.Bound.t -> ?variances:InferCumulativity.level_variances -> evar_map -> evar_map
 
 (** Lift [UState.update_sigma_univs] *)
 val update_sigma_univs : UGraph.t -> evar_map -> evar_map

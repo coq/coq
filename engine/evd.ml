@@ -1061,7 +1061,7 @@ let check_univ_decl_early ~poly ?(cumulative=true) ~with_obls sigma udecl terms 
   let uctx = UState.collapse_sort_variables uctx in
   let uctx = UState.restrict uctx vars in
   (* FIXME compute variances *)
-  ignore (UState.check_univ_decl ~poly ~cumulative uctx UnivMinim.empty_level_variances udecl)
+  ignore (UState.check_univ_decl ~poly ~cumulative uctx InferCumulativity.empty_level_variances udecl)
 
 let restrict_universe_context ?lbound evd vars =
   { evd with universes = UState.restrict ?lbound evd.universes vars }

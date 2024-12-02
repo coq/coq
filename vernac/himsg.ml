@@ -906,8 +906,8 @@ let explain_bad_invert env =
 
 let explain_bad_variance env sigma ~lev ~expected ~actual =
   str "Incorrect variance for universe " ++ Termops.pr_evd_level sigma lev ++
-  str": expected " ++ UVars.Variance.pr expected ++
-  str " but cannot be less restrictive than " ++ UVars.Variance.pr actual ++ str "."
+  str": expected " ++ UVars.VariancePos.pr expected ++
+  str " but cannot be less restrictive than " ++ UVars.VariancePos.pr actual ++ str "."
 
 let explain_undeclared_used_variables env sigma ~declared_vars ~inferred_vars =
   let l = Id.Set.elements (Id.Set.diff inferred_vars declared_vars) in

@@ -78,7 +78,7 @@ type ('constr, 'types, 'r) ptype_error =
   | BadBinderRelevance of 'r * ('constr, 'types, 'r) Context.Rel.Declaration.pt
   | BadCaseRelevance of 'r * 'constr
   | BadInvert
-  | BadVariance of { lev : Level.t; expected : Variance.t; actual : Variance.t }
+  | BadVariance of { lev : Level.t; expected : VariancePos.t; actual : VariancePos.t }
   | UndeclaredUsedVariables of { declared_vars : Id.Set.t; inferred_vars : Id.Set.t }
 
 type type_error = (constr, types, Sorts.relevance) ptype_error

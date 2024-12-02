@@ -204,12 +204,12 @@ let interp_context_gen scope ~program_mode ~kind ~autoimp_enable ~coercions env 
   (* Note, we must use the normalized evar from now on! *)
   let sigma = solve_remaining_evars all_and_fail_flags env ~initial sigma in
   let variances =
-    let as_types, v =
+    let as_types, cumul_pb =
       match scope with
-      | Locality.Discharge -> false, UVars.Variance.Contravariant
-      | Locality.Global _ -> true, UVars.Variance.Covariant
+      | Locality.Discharge -> false, InferCumulativity.InvCumul
+      | Locality.Global _ -> true, InferCumulativity.Cumul
     in
-    UnivVariances.universe_variances_of_named_context env sigma ~as_types ~variance:v ctx in
+    UnivVariances.universe_variances_of_named_context env sigma ~as_types ~cumul_pb ctx in
   let sigma, ctx = Evarutil.finalize ~variances sigma @@ fun nf ->
     List.map (NamedDecl.map_constr_het (fun x -> x) nf) ctx
   in

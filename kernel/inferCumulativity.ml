@@ -18,16 +18,126 @@ open Util
 type cumul_pb =
   | Conv | Cumul | InvCumul
 
-exception TrivialVariance
-
 (** Not the same as Type_errors.BadVariance because we don't have the env where we raise. *)
-exception BadVariance of Level.t * Variance.t * Variance.t
+exception BadVariance of Level.t * VariancePos.t * VariancePos.t
 (* some ocaml bug is triggered if we make this an inline record *)
 
 exception NotInferring
 
+type mode = Check | Infer
+
+type variance_occurrence =
+  { in_binder : (int * UVars.Variance.t) option;
+    in_term : UVars.Variance.t option;
+    in_type : UVars.Variance.t option }
+
+let pr_variance_occurrence { in_binder; in_term; in_type } =
+  let open Pp in
+  let pr_binder =
+    match in_binder with
+    | None -> mt()
+    | Some (i, variance) -> str": " ++ UVars.Variance.pr variance ++ str " in " ++ pr_nth (i+1) ++ str" binder"
+  in
+  let pr_in_type =
+    match in_type with
+  | None -> pr_binder
+  | Some variance -> pr_binder ++ (if Option.is_empty in_binder then str": " else str", ") ++ UVars.Variance.pr variance ++ str " in type"
+  in
+  match in_term with
+  | None -> pr_in_type
+  | Some variance -> pr_in_type ++ (if Option.is_empty in_binder && Option.is_empty in_type then str": " else str", ") ++ UVars.Variance.pr variance ++ str " in term"
+
+(** Level variances *)
+
+(* The position records the last position in the term where the variable was used relevantly. *)
+type level_variances = variance_occurrence Univ.Level.Map.t
+
+let empty_level_variances = Univ.Level.Map.empty
+
+let pr_variances prl variances =
+  Univ.Level.Map.pr prl pr_variance_occurrence variances
+
+let position_variance_sup mode infer_mode u ({ in_binder; in_term; in_type } as o) (variance, position as vp) =
+  let open Variance in
+  let open Position in
+  match variance with
+  | Irrelevant -> o (* The new variance is irrelevant, we keep record of the last relevant positions *)
+  | _ ->
+    match position with
+    | InBinder i ->
+      (match in_binder with
+      | Some (i', old_variance) ->
+        (match mode with
+        | Infer ->
+          if not infer_mode then raise NotInferring;
+          { o with in_binder = Some (max i i', Variance.sup old_variance variance) }
+        | Check ->
+          if not (Variance.le variance old_variance) then
+            raise (BadVariance (u, (old_variance, InBinder i'), vp))
+          else o)
+      | None ->
+        (match mode with
+         | Infer ->
+          if not infer_mode then raise NotInferring;
+          { o with in_binder = Some (i, variance) }
+         | Check -> raise (BadVariance (u, (Irrelevant, InBinder i), vp))))
+    | InType ->
+        (match in_type with
+        | Some old_variance ->
+          (match mode with
+          | Infer ->
+            if not infer_mode then raise NotInferring;
+            { o with in_type = Some (Variance.sup variance old_variance) }
+          | Check ->
+            if not (Variance.le variance old_variance) then
+              raise (BadVariance (u, (old_variance, InType), vp))
+            else o)
+        | None ->
+          (match mode with
+          | Infer -> { o with in_type = Some variance }
+          | Check -> raise (BadVariance (u, (Irrelevant, InType), vp))))
+    | InTerm ->
+      (match in_term with
+      | Some old_variance ->
+        (match mode with
+        | Infer ->
+          if not infer_mode then raise NotInferring;
+          { o with in_term = Some (Variance.sup variance old_variance) }
+        | Check ->
+          if not (Variance.le variance old_variance) then
+            raise (BadVariance (u, (old_variance, InType), vp))
+          else o)
+      | None ->
+        (match mode with
+        | Infer -> { o with in_term = Some variance }
+        | Check -> raise (BadVariance (u, (Irrelevant, InType), vp))))
+
+let term_type_variances { in_binder; in_term; in_type } =
+  let in_binder = Option.map snd in_binder in
+  let sup_opt x y =
+    match x, y with
+    | None, None -> x
+    | Some _, None -> x
+    | None, Some _ -> y
+    | Some v, Some v' -> Some (UVars.Variance.sup v v')
+  in
+ sup_opt in_binder in_term, in_type
+
+let min_pos_variance position { in_binder; in_term; in_type } =
+  let open Position in
+  match position with
+  | InBinder i ->
+    (match in_binder with
+    | Some (i', v) when Int.equal i i' -> Some v
+    | Some (_, v) -> Some v
+    | None -> None)
+  | InTerm -> in_term
+  | InType -> in_type
+
 module Inf : sig
   type variances
+
+  val pr : (Level.t -> Pp.t) -> variances -> Pp.t
   val infer_level_eq : Level.t -> variances -> variances
   val infer_level_leq : Level.t -> variances -> variances
   val infer_level_geq : Level.t -> variances -> variances
@@ -35,11 +145,14 @@ module Inf : sig
   val get_infer_mode : variances -> bool
   val set_infer_mode : bool -> variances -> variances
 
-  val start : (Level.t * VariancePos.t option) array -> variances
+  val set_position : Position.t -> variances -> variances
+
+  val start : (Level.t * VariancePos.t option) array -> Position.t -> variances
+  val start_inference : Level.Set.t -> Position.t -> variances
+
+  val inferred : variances -> level_variances
   val finish : variances -> Variances.t
 end = struct
-  type inferred = IrrelevantI | CovariantI | ContravariantI
-  type mode = Check | Infer
 
   (**
      Each local universe is either in the [univs] map or is Invariant.
@@ -49,95 +162,117 @@ end = struct
   *)
   type variances = {
     orig_array : (Level.t * VariancePos.t option) array;
-    univs : (mode * inferred) Level.Map.t;
+    univs : (mode * variance_occurrence) Level.Map.t;
     infer_mode : bool;
+    position : Position.t;
   }
 
   let get_infer_mode v = v.infer_mode
   let set_infer_mode b v = if v.infer_mode == b then v else {v with infer_mode=b}
 
-  let to_variance = function
-    | IrrelevantI -> Irrelevant
-    | CovariantI -> Covariant
-    | ContravariantI -> Contravariant
+  let set_position p v = if v.position == p then v else {v with position=p}
 
-  let to_variance_opt o pos =
-    let ivariance = Option.cata to_variance Invariant o in
-    match pos with
-    | None -> VariancePos.make ivariance Position.InTerm
-    | Some (_, pos) -> VariancePos.make ivariance pos
+  let to_variance_pos position vocc =
+    match min_pos_variance position vocc with
+    | Some v -> (v, position)
+    | None -> (Irrelevant, position)
 
   let infer_level_eq u variances =
     match Level.Map.find_opt u variances.univs with
     | None -> variances
     | Some (Check, expected) ->
-      let expected = to_variance expected in
-      raise (BadVariance (u, expected, Invariant))
-    | Some (Infer, _) ->
+      let expected = to_variance_pos variances.position expected in
+      if VariancePos.le (Invariant, variances.position) expected then variances
+      else raise (BadVariance (u, expected, (Invariant, variances.position)))
+    | Some (Infer, inferred) ->
       if not variances.infer_mode then raise NotInferring;
-      let univs = Level.Map.remove u variances.univs in
-      if Level.Map.is_empty univs then raise TrivialVariance;
+      let newv = position_variance_sup Infer true u inferred (Invariant, variances.position) in
+      let univs = Level.Map.add u (Infer, newv) variances.univs in
       {variances with univs}
 
   let infer_level_leq u variances =
-    (* can only set Irrelevant -> Covariant so no TrivialVariance *)
     let univs =
       Level.Map.update u (function
           | None -> None
-          | Some (_,CovariantI) as x -> x
-          | Some (Infer,ContravariantI) ->
-            if not variances.infer_mode then raise NotInferring;
-            None
-          | Some (Check,ContravariantI) ->
-            raise (BadVariance (u, Contravariant, Covariant))
-          | Some (Infer,IrrelevantI) ->
-            if not variances.infer_mode then raise NotInferring;
-            Some (Infer,CovariantI)
-          | Some (Check,IrrelevantI) ->
-            raise (BadVariance (u, Irrelevant, Covariant)))
+          | Some (mode, occ) ->
+            let occ' = position_variance_sup mode variances.infer_mode u occ (Covariant, variances.position) in
+            Some (mode, occ'))
         variances.univs
     in
-    if Level.Map.is_empty univs then raise TrivialVariance;
     if univs == variances.univs then variances else {variances with univs}
 
   let infer_level_geq u variances =
-    (* can only set Irrelevant -> Contravariant so no TrivialVariance *)
     let univs =
       Level.Map.update u (function
           | None -> None
-          | Some (Infer,CovariantI) ->
-            if not variances.infer_mode then raise NotInferring;
-            None
-          | Some (Check,CovariantI) ->
-            raise (BadVariance (u, Covariant, Contravariant))
-          | Some (_,ContravariantI) as x -> x
-          | Some (Infer,IrrelevantI) ->
-            if not variances.infer_mode then raise NotInferring;
-            Some (Infer,ContravariantI)
-          | Some (Check,IrrelevantI) ->
-            raise (BadVariance (u, Irrelevant, Contravariant)))
+          | Some (mode, occ) ->
+            let occ' = position_variance_sup mode variances.infer_mode u occ (Contravariant, variances.position) in
+            Some (mode, occ'))
         variances.univs
     in
     if univs == variances.univs then variances else {variances with univs}
 
+  let default_occ =
+    { in_binder = None; in_term = None; in_type = None }
 
-  let start us =
+  let make_occ variance position =
+    let open Position in
+    match position with
+    | InBinder i ->
+      { in_binder = Some (i, variance); in_term = None; in_type = None }
+    | InTerm ->
+      { in_binder = Some (-1, variance); in_term = Some variance; in_type = None }
+    | InType ->
+      { in_binder = Some (-1, variance); in_term = Some variance; in_type = Some variance }
+
+  let start us position =
     let univs = Array.fold_left (fun univs (u,variance) ->
         match variance with
-        | None -> Level.Map.add u (Infer,IrrelevantI) univs
-        | Some (Invariant, _) -> univs
-        | Some (Covariant, _) -> Level.Map.add u (Check,CovariantI) univs
-        | Some (Irrelevant, _) -> Level.Map.add u (Check,IrrelevantI) univs
-        | Some (Contravariant, _) -> Level.Map.add u (Check,ContravariantI) univs)
-        Level.Map.empty us
+        | None -> Level.Map.add u (Infer, default_occ) univs
+        | Some (variance, position) -> Level.Map.add u (Check, make_occ variance position) univs)
+      Level.Map.empty us
     in
-    if Level.Map.is_empty univs then raise TrivialVariance;
-    {univs; orig_array=us; infer_mode=true}
+    {univs; orig_array=us; infer_mode=true; position}
+
+  let start_inference levels position =
+    let univs = Level.Set.fold (fun level -> Level.Map.add level (Infer, default_occ)) levels Level.Map.empty in
+    { univs; orig_array = [||]; infer_mode=true; position}
+
+  let sup_vopt x y =
+    match x, y with
+    | None, None -> x
+    | Some _, None -> x
+    | None, Some _ -> y
+    | Some v, Some v' -> Some (UVars.Variance.sup v v')
+
+  let variance_of_occ { in_binder; in_term; in_type } =
+    let open Position in
+    match in_binder, in_term, in_type with
+    | Some (i, v), (None | Some Irrelevant), (None | Some Irrelevant) -> (v, InBinder i)
+    | in_binder, Some v, None -> (Option.get (sup_vopt (Option.map snd in_binder) (Some v)), InTerm)
+    | in_binder, in_term, in_type ->
+      let in_binder = Option.map snd in_binder in
+      match sup_vopt in_binder (sup_vopt in_term in_type) with
+      | Some v -> (v, InType)
+      | None -> (Irrelevant, InType)
+
+  let to_variance_opt o =
+    Option.cata (fun (_mode, occ) -> variance_of_occ occ) (Irrelevant,Position.InTerm) o
+
+  let inferred variances = Level.Map.map (fun (_mode, occ) -> occ) variances.univs
+
+  let pr prl variances =
+    let open Pp in
+    let prmocc (mode, occ) =
+      let pr_mode = function Infer -> str" infer:" | Check -> str" check:" in
+      pr_mode mode ++ pr_variance_occurrence occ
+    in
+    Univ.Level.Map.pr prl prmocc variances.univs
 
   let finish variances =
     Variances.of_array @@
     Array.map
-      (fun (u,pos) -> to_variance_opt (Option.map snd (Level.Map.find_opt u variances.univs)) pos)
+      (fun (u,_) -> to_variance_opt (Level.Map.find_opt u variances.univs))
       variances.orig_array
 
 end
@@ -145,7 +280,7 @@ open Inf
 
 let infer_generic_instance_eq variances u =
   Array.fold_left (fun variances u ->
-    Level.Set.fold infer_level_eq (Universe.levels u) variances)
+    Level.Set.fold (fun l -> infer_level_eq l) (Universe.levels u) variances)
     variances u
 
 (* no variance for qualities *)
@@ -172,8 +307,7 @@ let extended_const_variance cb =
   | None, Some _ -> assert false
   | Some variance, Some sec_variance -> Some (UVars.Variances.append sec_variance variance)
 
-(* FIXME: Check correctness MS *)
-let infer_Cumulative_instance cv_pb nargs mind_variance variances u =
+let infer_cumulative_instance cv_pb nargs gvariances variances u =
   let open Position in
   Array.fold_left2 (fun variances varu u ->
       match cv_pb, varu with
@@ -181,16 +315,30 @@ let infer_Cumulative_instance cv_pb nargs mind_variance variances u =
       | _, (_, InType) -> variances (* Irrelevant due to appearing only in the type *)
       | _, (_, InBinder i) when i < nargs -> variances (* Irrelevance due to enough applied arguments *)
       | _, (Invariant, _)
-      | Conv, ((Covariant | Contravariant), _) -> Level.Set.fold infer_level_eq (Universe.levels u) variances
-      | Cumul, (Covariant, _) -> Level.Set.fold infer_level_leq (Universe.levels u) variances
-      | Cumul, (Contravariant, _) -> Level.Set.fold infer_level_geq (Universe.levels u) variances
-      | InvCumul, (Contravariant, _) -> Level.Set.fold infer_level_leq (Universe.levels u) variances
-      | InvCumul, (Covariant, _) -> Level.Set.fold infer_level_geq (Universe.levels u) variances)
+      | Conv, ((Covariant | Contravariant), _) ->
+        (* Co/contravariant in invariant position, becomes invariant *)
+        Level.Set.fold infer_level_eq (Universe.levels u) variances
+      | Cumul, (Covariant, _) ->
+        (* Covariant in covariant position -> covariant *)
+        Level.Set.fold infer_level_leq (Universe.levels u) variances
+      | Cumul, (Contravariant, _) ->
+        (* Contravariant in covariant position -> contravariant *)
+        Level.Set.fold infer_level_geq (Universe.levels u) variances
+      | InvCumul, (Contravariant, _) ->
+        (* Contravariant in contravariant position -> covariant *)
+        Level.Set.fold infer_level_leq (Universe.levels u) variances
+      | InvCumul, (Covariant, _) ->
+        (* Covariant in contravariant position -> contravariant *)
+
+        Level.Set.fold infer_level_geq (Universe.levels u) variances)
     variances
-    (UVars.Variances.repr mind_variance)
+    (UVars.Variances.repr gvariances)
     u
 
 let infer_inductive_instance cv_pb env variances ind nargs u =
+  if not (Environ.mem_mind (fst ind) env) then
+    infer_generic_instance_eq variances (instance_univs u)
+  else
   let mind = Environ.lookup_mind (fst ind) env in
   let u = extend_ind_instance mind u in
   match extended_mind_variance mind with
@@ -198,15 +346,18 @@ let infer_inductive_instance cv_pb env variances ind nargs u =
   | Some mind_variance ->
     if not (Int.equal (UCompare.inductive_cumulativity_arguments (mind,snd ind)) nargs)
     then infer_generic_instance_eq variances u
-    else infer_Cumulative_instance cv_pb nargs mind_variance variances u
+    else infer_cumulative_instance cv_pb nargs mind_variance variances u
 
 let infer_constructor_instance_eq env variances ((mi,ind),ctor) nargs u =
+  if not (Environ.mem_mind mi env) then
+    infer_generic_instance_eq variances (instance_univs u)
+  else
   let mind = Environ.lookup_mind mi env in
   let u = extend_ind_instance mind u in
   match extended_mind_variance mind with
   | None -> infer_generic_instance_eq variances u
   | Some _ ->
-    if not (Int.equal (UCompare.constructor_cumulativity_arguments (mind,ind,ctor)) nargs)
+    if not (Int.equal (UCompare.constructor_cumulativity_arguments (mind, ind, ctor)) nargs)
     then infer_generic_instance_eq variances u
     else variances (* constructors are convertible at common supertype *)
 
@@ -224,7 +375,7 @@ let infer_constant cv_pb env nargs variances (con,u) =
   let u = extend_con_instance cb u in
   match extended_const_variance cb with
   | None -> infer_generic_instance_eq variances u
-  | Some cst_variance -> infer_Cumulative_instance cv_pb nargs cst_variance variances u
+  | Some cst_variance -> infer_cumulative_instance cv_pb nargs cst_variance variances u
 
 let whd_stack (infos, tab) hd stk = CClosure.whd_stack infos tab hd stk
 
@@ -246,7 +397,9 @@ let rec infer_fterm cv_pb infos variances hd stk =
       | Meta _ -> infer_stack infos variances stk
       | _ -> assert false
     end
-  | FEvar _ -> assert false
+  | FEvar (_, _, usubs, _) ->
+    let variances = infer_generic_instance_eq variances (instance_univs (snd usubs))in
+    infer_stack infos variances stk
   | FRel _ -> infer_stack infos variances stk
   | FInt _ -> infer_stack infos variances stk
   | FFloat _ -> infer_stack infos variances stk
@@ -260,10 +413,15 @@ let rec infer_fterm cv_pb infos variances hd stk =
     end
   | FFlex (Names.ConstKey con as fl) ->
     begin
+      if not (Environ.mem_constant (fst con) (info_env (fst infos))) then
+        let variances = infer_generic_instance_eq variances (snd (Instance.to_array (snd con))) in
+        let variances = infer_stack infos variances stk in
+        variances
+      else
       let def = unfold_ref_with_args (fst infos) (snd infos) fl stk in
       try
         let infer_mode = get_infer_mode variances in
-        let variances = if Option.has_some def then set_infer_mode false variances else variances in
+        (* let variances = if Option.has_some def then set_infer_mode false variances else variances in *)
         let nargs = stack_args_size stk in
         let variances = infer_constant cv_pb (info_env (fst infos)) nargs variances con in
         let variances = infer_stack infos variances stk in
@@ -278,8 +436,8 @@ let rec infer_fterm cv_pb infos variances hd stk =
     infer_stack infos variances stk
   | FLambda _ ->
     let (na,ty,bd) = destFLambda mk_clos hd in
-    let variances = infer_fterm Conv infos variances ty [] in
-    infer_fterm Conv (push_relevance infos na) variances bd []
+    let variances = infer_fterm (flip_pb cv_pb) infos variances ty [] in
+    infer_fterm cv_pb (push_relevance infos na) variances bd []
   | FProd (na,dom,codom,e) ->
     let na = usubst_binder e na in
     let variances = infer_fterm (flip_pb cv_pb) infos variances dom [] in
@@ -356,40 +514,40 @@ and infer_stack infos variances (stk:CClosure.stack) =
 and infer_vect infos variances v =
   Array.fold_left (fun variances c -> infer_fterm Conv infos variances c []) variances v
 
-let infer_term cv_pb env variances c =
+let infer_term cv_pb env ~evars variances c =
   let open CClosure in
   let reds = RedFlags.red_add_transparent RedFlags.betaiotazeta TransparentState.full in
-  let infos = (create_clos_infos reds env, create_tab ()) in
+  let infos = (create_clos_infos reds ~evars env, create_tab ()) in
   infer_fterm cv_pb infos variances (CClosure.inject c) []
 
-let infer_arity_constructor is_arity env variances arcn =
+let infer_arity_constructor is_arity env ~evars variances arcn =
   let infer_typ typ (env,variances) =
     match typ with
     | Context.Rel.Declaration.LocalAssum (_, typ') ->
-      (Environ.push_rel typ env, infer_term Cumul env variances typ')
+      (Environ.push_rel typ env, infer_term (if is_arity then InvCumul else Cumul) env ~evars variances typ')
     | Context.Rel.Declaration.LocalDef _ -> assert false
   in
   let typs, codom = Reduction.whd_decompose_prod env arcn in
   let env, variances = Context.Rel.fold_outside infer_typ typs ~init:(env, variances) in
   (* If we have Inductive foo@{i j} : ... -> Type@{i} := C : ... -> foo Type@{j}
      i is irrelevant, j is invariant. *)
-  if not is_arity then infer_term Cumul env variances codom else variances
+  if not is_arity then infer_term Cumul env ~evars variances codom else variances
 
-let infer_inductive_core ~env_params ~env_ar_par ~arities ~ctors univs =
-  let variances = Inf.start univs in
+let infer_inductive_core ~env_params ~env_ar_par ~evars ~arities ~ctors univs =
+  let variances = Inf.start univs Position.InType in
   let variances = List.fold_left (fun variances arity ->
-      infer_arity_constructor true env_params variances arity)
+      infer_arity_constructor true env_params ~evars variances arity)
       variances arities
   in
+  let variances = Inf.set_position Position.InTerm variances in
   let variances = List.fold_left
-      (List.fold_left (infer_arity_constructor false env_ar_par))
+      (List.fold_left (infer_arity_constructor false env_ar_par ~evars))
       variances ctors
   in
   Inf.finish variances
 
-let infer_inductive ~env_params ~env_ar_par ~arities ~ctors univs =
-  try infer_inductive_core ~env_params ~env_ar_par ~arities ~ctors univs
+let infer_inductive ~env_params ~env_ar_par ~evars ~arities ~ctors univs =
+  try infer_inductive_core ~env_params ~env_ar_par ~evars ~arities ~ctors univs
   with
-  | TrivialVariance -> Variances.make (Array.length univs) (VariancePos.make Invariant Position.InTerm)
   | BadVariance (lev, expected, actual) ->
     Type_errors.error_bad_variance env_params ~lev ~expected ~actual

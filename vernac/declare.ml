@@ -1018,7 +1018,7 @@ let declare_possibly_mutual_parameters ~info ~cinfo ?(mono_uctx_extra=UState.emp
   pi3 (List.fold_left2 (
     fun (i, subst, csts) { CInfo.name; impargs } (typ, uctx) ->
       let uctx' = UState.restrict uctx (Vars.universes_of_constr typ) in
-      let ivariances = UnivMinim.empty_level_variances in
+      let ivariances = InferCumulativity.empty_level_variances in (* FIXME infer variances *)
       let univs = UState.check_univ_decl ~poly uctx' ivariances udecl in
       let univs = if i = 0 then add_mono_uctx mono_uctx_extra univs else univs in
       let typ = Vars.replace_vars subst typ in

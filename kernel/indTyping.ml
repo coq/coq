@@ -494,6 +494,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
               Array.append sec_univs univs
           in
           let variances = InferCumulativity.infer_inductive ~env_params ~env_ar_par
+              ~evars:(CClosure.default_evar_handler env)
               ~arities:(List.map (fun e -> e.mind_entry_arity) mie.mind_entry_inds)
               ~ctors:(List.map (fun e -> e.mind_entry_lc) mie.mind_entry_inds)
               univs

@@ -22,20 +22,6 @@ val empty_extra : extra
 
 val extra_union : extra -> extra -> extra
 
-type variance_occurrence =
-  { in_binder : (int * UVars.Variance.t) option;
-    in_term : UVars.Variance.t option;
-    in_type : UVars.Variance.t option }
-
-val pr_variance_occurrence : variance_occurrence -> Pp.t
-
-(* The position records the last position in the term where the variable was used relevantly. *)
-type level_variances = variance_occurrence Univ.Level.Map.t
-
-val pr_variances : (Univ.Level.t -> Pp.t) -> level_variances -> Pp.t
-
-val empty_level_variances : level_variances
-
 (** Simplification and pruning of constraints:
     [normalize_context_set ctx us]
 
@@ -47,7 +33,7 @@ val empty_level_variances : level_variances
     (a global one if there is one) and transitively saturate
     the constraints w.r.t to the equalities. *)
 
-val normalize_context_set : lbound:UGraph.Bound.t -> variances:level_variances -> UGraph.t -> ContextSet.t ->
+val normalize_context_set : lbound:UGraph.Bound.t -> variances:InferCumulativity.level_variances -> UGraph.t -> ContextSet.t ->
   UnivFlex.t (* The defined and undefined variables *) ->
   ?binders:UnivNames.universe_binders ->
   extra ->

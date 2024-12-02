@@ -19,9 +19,22 @@ sig
      inductive or definition can be the following. *)
   type t = Irrelevant | Covariant | Contravariant | Invariant
 
-  (** [le x y] holds if variance [y] is also an instance of [x] *)
+  (** [le x y] holds if variance [x] is also an instance of [y].
+    I.e. [x] is smaller than [y] for the order
+
+    Irrelevant <= Covariant, Contravariant <= Invariant
+
+            Invariant
+              |   |
+              v   v
+       Covariant  Contravariant
+              |   |
+              v   v
+            Irrelevant
+    *)
   val le : t -> t -> bool
 
+  (** [sup x y] computes the supremum of [x] and [y] for the order above *)
   val sup : t -> t -> t
 
   val pr : t -> Pp.t
