@@ -903,7 +903,7 @@ Similar to universes, fresh global sorts can be declared with the :cmd:`Sort`.
    quantification will be discharged for each section definition
    independently. Polymorphic sort qualities are forbidden outside sections.
 
-  .. exn:: Polymorphic sorts can only be declared inside sections, use #[universe(polymorphic=no)] Sort instead.
+  .. exn:: Polymorphic sorts can only be declared inside sections, use #[universe(polymorphic=no)] Sort in order to declare a global sort.
 
     Generated when a :cmd:`Sort` command is issued outside a section with universe polymorphism set.
     Either scope the :cmd:`Sort` with an enclosing :cmd:`Section` or be explicit about creating a global sort
