@@ -43,7 +43,7 @@ fun (A : Type@{uu}) (Wrap : Wrap@{uu} A) => Wrap
 Arguments wrap {A}%type_scope {Wrap}
 bar@{uu} = nat
      : Wrap@{uu} Set
-(* uu |= Set+1 <= uu *)
+(* uu |= 1 <= uu *)
 foo@{uu u v} =
 Type@{u} -> Type@{v} -> Type@{uu}
      : Type@{max(uu+1,u+1,v+1)}
@@ -140,7 +140,7 @@ Inductive insecind@{uu k} : Type@{k+1} :=
 
 Arguments inseccstr _%type_scope
 insec2@{u} = Prop
-     : Type@{Set+1}
+     : Type@{1}
 (* u |=  *)
 inmod@{uu} = Type@{uu}
      : Type@{uu+1}

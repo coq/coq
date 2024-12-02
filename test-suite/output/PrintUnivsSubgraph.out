@@ -1,8 +1,8 @@
-Set < i
+0 < i
     < j
 i < j (because i <(from foo) j)
 
-Set < i
+0 < i
     < k
 i < k (because i <(from foo) j <(from connect) l <(from baz) k)
 

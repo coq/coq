@@ -39,7 +39,7 @@ File "./output/NumberNotations.v", line 91, characters 32-33:
 The command has indeed failed with message:
 In environment
 v := pto_punits (Number.UIntDecimal (Decimal.D1 Decimal.Nil)) : punit
-The term "v" has type "punit@{Set}" while it is expected to have type
+The term "v" has type "punit@{0}" while it is expected to have type
  "punit@{u}"
 (universe inconsistency: Cannot enforce Set = u).
 S

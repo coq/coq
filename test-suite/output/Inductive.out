@@ -18,7 +18,7 @@ option is template universe polymorphic
 Arguments option A%type_scope
 Expands to: Inductive Stdlib.Init.Datatypes.option
 Declared in library Stdlib.Init.Datatypes, line 184, characters 10-16
-option : Type@{option.u0} -> Type@{max(Set,option.u0)}
+option : Type@{option.u0} -> Type@{max(0,option.u0)}
 
 option is template universe polymorphic on option.u0
 Arguments option A%type_scope
@@ -47,7 +47,7 @@ sunit is not universe polymorphic
 sunit may only be eliminated to produce values whose type is SProp.
 Expands to: Inductive Inductive.sunit
 Declared in library Inductive, line 38, characters 10-15
-sempty@{q | } : Type@{q | Set}
+sempty@{q | } : Type@{q | 0}
 (* q |  |=  *)
 
 sempty is universe polymorphic

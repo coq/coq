@@ -1,8 +1,8 @@
 File "./output/CantApplyBadType.v", line 8, characters 16-24:
 The command has indeed failed with message:
 The term "Type" has type "Type@{u+1}" while it is expected to have type
- "Type@{u1}" (universe inconsistency: Cannot enforce u+1 ≤ u1 because u1
-< u1+1 = u+1).
+ "Type@{u1}"
+(universe inconsistency: Cannot enforce u+1 ≤ u1 because u1 < u1+1 = u+1).
 File "./output/CantApplyBadType.v", line 15, characters 0-58:
 The command has indeed failed with message:
 Illegal application: 
