@@ -23,8 +23,8 @@ coq_makefile -f _CoqProject -o CoqMakefile b.v
 make -f CoqMakefile > makeout
 cat >expected <<EOT
 COQDEP VFILES
-COQC b.v
-COQC x/a.v
+ROCQ compile b.v
+ROCQ compile x/a.v
 EOT
 
 grep -v "make" makeout >actual
@@ -42,9 +42,9 @@ make -f CoqMakefile clean
 make -f CoqMakefile > makeout
 cat >expected <<EOT
 COQDEP VFILES
-COQC b.v
-COQC x/a.v
-COQC x/c.v
+ROCQ compile b.v
+ROCQ compile x/a.v
+ROCQ compile x/c.v
 EOT
 
 grep -v "make" makeout >actual
