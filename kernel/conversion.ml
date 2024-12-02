@@ -936,16 +936,6 @@ let leq_constr_univs_cmp =
   { compare_sorts = compare_sorts_env;
     compare_instances = compare_instances_env;
     compare_cumul_instances = compare_cumul_instances_env; }   *)
-(*
-let get_global_variance env ~nargs gr =
-  let open GlobRef in
-  match gr with
-  | ConstRef cst ->
-    let cb = Environ.lookup_constant cst env in cb.const_variance
-  | IndRef ind ->
-    let mib = Environ.lookup_mind (fst ind) env in mib.mind_variance
-  | ConstructRef cstr ->
-    let cstr = Environ.lookup_mind (fst (fst cstr)) env in  *)
 
 let to_bool = function
   Result.Ok _ -> true | Result.Error () -> false

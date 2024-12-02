@@ -1084,7 +1084,8 @@ let declare_definition ~info ~cinfo ~opaque ~obls ~body ?using sigma =
   let env = Global.env () in
   Option.iter (check_evars_are_solved env sigma) typ;
   check_evars_are_solved env sigma body;
-  let sigma = Evd.minimize_universes sigma in
+  let inferred_variances = UnivVariances.universe_variances env sigma (Option.cata (fun typ -> [typ;body]) [body] typ) in
+  let sigma = Evd.minimize_universes ~variances:inferred_variances sigma in
   let body = EConstr.to_constr sigma body in
   let typ = Option.map (EConstr.to_constr sigma) typ in
   let uctx = Evd.ustate sigma in

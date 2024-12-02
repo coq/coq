@@ -208,7 +208,8 @@ val fix_undefined_variables : t -> t
 (** cf UnivFlex *)
 
 (** Universe minimization *)
-val minimize : ?lbound:UGraph.Bound.t -> t -> t
+
+val minimize : ?lbound:UGraph.Bound.t -> ?variances:UnivMinim.level_variances -> t -> t
 
 val collapse_above_prop_sort_variables : to_prop:bool -> t -> t
 

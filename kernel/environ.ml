@@ -963,6 +963,17 @@ let is_type_in_type env r =
   | IndRef ind -> type_in_type_ind ind env
   | ConstructRef cstr -> type_in_type_ind (inductive_of_constructor cstr) env
 
+let variance env gr =
+  let open GlobRef in
+  match gr with
+  | ConstRef cst ->
+    let cb = lookup_constant cst env in cb.const_variance
+  | IndRef ind ->
+    let mib = lookup_mind (fst ind) env in mib.mind_variance
+  | ConstructRef cstr ->
+    let mib = lookup_mind (fst (fst cstr)) env in mib.mind_variance
+  | VarRef _id -> None
+
 let vm_library env = env.vm_library
 
 let set_vm_library lib env =
