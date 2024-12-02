@@ -79,6 +79,7 @@ module Info = struct
     ; inline : bool
     ; kind : Decls.logical_kind
     ; udecl : UState.universe_decl
+    ; variances : Declarations.variances option
     ; scope : Locality.definition_scope
     ; clearbody : bool (* always false for non Discharge scope *)
     ; hook : Hook.t option
@@ -91,13 +92,13 @@ module Info = struct
   (** Note that [opaque] doesn't appear here as it is not known at the
      start of the proof in the interactive case. *)
   let make ?loc ?(poly=false) ?(inline=false) ?(kind=Decls.(IsDefinition Definition))
-      ?(udecl=UState.default_univ_decl) ?(scope=Locality.default_scope)
+      ?(udecl=UState.default_univ_decl) ?variances ?(scope=Locality.default_scope)
       ?(clearbody=false) ?hook ?typing_flags ?user_warns ?(ntns=[]) () =
     let loc = match loc with
       | None -> Loc.get_current_command_loc()
       | Some _ -> loc
     in
-    { poly; inline; kind; udecl; scope; hook; typing_flags; clearbody; user_warns; ntns; loc }
+    { poly; inline; kind; udecl; variances; scope; hook; typing_flags; clearbody; user_warns; ntns; loc }
 end
 
 (** Declaration of constants and parameters *)

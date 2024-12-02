@@ -2098,8 +2098,9 @@ let find_to_merge_bwd model (status : Status.t) prems (canv, kv) =
       debug_find_to_merge Pp.(fun () -> str"Paths from premises " ++ Premises.pr (pr_can_expr model) prems ++ str" are " ++
         pr_paths model mergep);
       status, mergep
-    | NeList.Cons (p, ps) ->
-      (* Multiple premises: we will merge the intersection of merged universes in each possible path,
+    | NeList.Cons (_, _ ) ->
+      status, PathSet.empty
+      (* (* Multiple premises: we will merge the intersection of merged universes in each possible path,
          if all premises are mergeable. *)
       let fold prem (status, merge) =
         if not (PathSet.is_empty merge) then
@@ -2114,7 +2115,7 @@ let find_to_merge_bwd model (status : Status.t) prems (canv, kv) =
       let status', mergemax = NeList.fold fold ps (merge_prem status p) in
       debug_find_to_merge Pp.(fun () -> str"Paths from premises " ++ Premises.pr (pr_can_expr model) prems ++ str" are " ++
         pr_paths model mergemax);
-      status', mergemax
+      status', mergemax *)
   in
   let _status, merge = backward_premises 0 0 prems (status, []) in
   debug_find_to_merge Pp.(fun () -> str"Backward search terminated with paths " ++ pr_paths model merge);
@@ -2517,8 +2518,7 @@ let check_constraint (m : t) u k u' =
 let check_leq m u v = check_constraint m u Le v
 let check_eq m u v =
   match Universe.repr u, Universe.repr v with
-  | [ur], [vr] -> check_eq_level_expr ur vr m
-  (* || check_constraint m u Eq v *)
+  | [ur], [vr] -> check_eq_level_expr ur vr m || check_constraint m u Eq v
   | _, _ -> check_constraint m u Eq v
 
 let enforce_constraint (u, k, v) (m : t) = enforce u k v m

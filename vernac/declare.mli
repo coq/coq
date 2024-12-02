@@ -105,6 +105,7 @@ module Info : sig
     -> ?kind : Decls.logical_kind
     (** Theorem, etc... *)
     -> ?udecl : UState.universe_decl
+    -> ?variances : Declarations.variances
     -> ?scope : Locality.definition_scope
     (** locality  *)
     -> ?clearbody:bool

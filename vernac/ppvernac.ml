@@ -142,7 +142,7 @@ let pr_lfqid {CAst.loc;v=fqid} =
     pr_located pr_fqid @@ Loc.tag ~loc:(Loc.make_loc (b,b + String.length (string_of_fqid fqid))) fqid
 
 let pr_lname_decl (n, u) =
-  pr_lname n ++ pr_universe_decl u
+  pr_lname n ++ pr_cumul_univ_decl u
 
 let pr_ltac_ref = Libnames.pr_qualid
 
@@ -538,14 +538,14 @@ let pr_where_notation decl_ntn =
 let pr_rec_definition (rec_order, { fname; univs; binders; rtype; body_def; notations }) =
   let pr_pure_lconstr c = Flags.without_option Flags.beautify pr_lconstr c in
   let annot = pr_guard_annot pr_lconstr_expr binders rec_order in
-  pr_ident_decl (fname,univs) ++ pr_binders_arg binders ++ annot
+  pr_cumul_ident_decl (fname,univs) ++ pr_binders_arg binders ++ annot
   ++ pr_type_option (fun c -> spc() ++ pr_lconstr_expr c) rtype
   ++ pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_pure_lconstr def) body_def
   ++ prlist pr_where_notation notations
 
 let pr_statement head (idpl,(bl,c)) =
   hov 2
-    (head ++ spc() ++ pr_ident_decl idpl ++ spc() ++
+    (head ++ spc() ++ pr_cumul_ident_decl idpl ++ spc() ++
      (match bl with [] -> mt() | _ -> pr_binders bl ++ spc()) ++
      str":" ++ pr_spc_lconstr c)
 
@@ -961,7 +961,7 @@ let pr_synpure_vernac_expr v =
       | NoDischarge -> str ""
     in
     let pr_onecorec {fname; univs; binders; rtype; body_def; notations } =
-      pr_ident_decl (fname,univs) ++ spc() ++ pr_binders binders ++ spc() ++ str":" ++
+      pr_cumul_ident_decl (fname,univs) ++ spc() ++ pr_binders binders ++ spc() ++ str":" ++
       spc() ++ pr_lconstr_expr rtype ++
       pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_lconstr def) body_def ++
       prlist pr_where_notation notations
@@ -1030,7 +1030,7 @@ let pr_synpure_vernac_expr v =
       hov 1 (
         keyword "Instance" ++
         (match instid with
-         | {loc; v = Name id}, l -> spc () ++ pr_ident_decl (CAst.(make ?loc id),l) ++ spc ()
+         | {loc; v = Name id}, l -> spc () ++ pr_cumul_ident_decl (CAst.(make ?loc id),l) ++ spc ()
          | { v = Anonymous }, _ -> mt ()) ++
         pr_and_type_binders_arg sup ++
         str":" ++ spc () ++

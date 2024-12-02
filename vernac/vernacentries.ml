@@ -2714,7 +2714,7 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
     end
 
   | VernacDeclareInstance (id, bl, inst, info) ->
-    vtdefault(fun () -> vernac_declare_instance ~atts id bl inst info)
+    vtdefault(fun () -> vernac_declare_instance ~atts (fst id, Option.map Constrexpr_ops.cumul_of_univ_decl (snd id)) bl inst info)
   | VernacContext sup ->
     vtdefault(fun () -> vernac_context ~atts sup)
   | VernacExistingInstance insts ->

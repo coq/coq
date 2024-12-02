@@ -17,43 +17,48 @@ module Quality = Sorts.Quality
 module Variance =
 struct
   (** A universe position in the instance given to a cumulative
-     inductive can be the following. Note there is no Contravariant
-     case because [forall x : A, B <= forall x : A', B'] requires [A =
-     A'] as opposed to [A' <= A]. *)
-  type t = Irrelevant | Covariant | Invariant
+     inductive can be the following. *)
+  type t = Irrelevant | Covariant | Contravariant | Invariant
 
   let sup x y =
     match x, y with
     | Irrelevant, s | s, Irrelevant -> s
     | Invariant, _ | _, Invariant -> Invariant
     | Covariant, Covariant -> Covariant
+    | Contravariant, Contravariant -> Contravariant
+    | Covariant, Contravariant | Contravariant, Covariant -> Invariant
 
   let equal a b = match a,b with
-    | Irrelevant, Irrelevant | Covariant, Covariant | Invariant, Invariant -> true
-    | (Irrelevant | Covariant | Invariant), _ -> false
+    | Irrelevant, Irrelevant | Covariant, Covariant | Contravariant, Contravariant | Invariant, Invariant -> true
+    | (Irrelevant | Covariant | Contravariant | Invariant), _ -> false
 
   let check_subtype x y = match x, y with
-  | (Irrelevant | Covariant | Invariant), Irrelevant -> true
-  | Irrelevant, Covariant -> false
+  | (Irrelevant | Covariant | Contravariant | Invariant), Irrelevant -> true
+  | Irrelevant, (Covariant | Contravariant) -> false
   | (Covariant | Invariant), Covariant -> true
-  | (Irrelevant | Covariant), Invariant -> false
+  | (Contravariant | Invariant), Contravariant -> true
+  | Covariant, Contravariant -> false
+  | Contravariant, Covariant -> false
+  | (Irrelevant | Covariant | Contravariant), Invariant -> false
   | Invariant, Invariant -> true
 
   let pr = function
     | Irrelevant -> str "*"
     | Covariant -> str "+"
+    | Contravariant -> str "-"
     | Invariant -> str "="
 
   let leq_constraint csts variance u u' =
     match variance with
     | Irrelevant -> csts
     | Covariant -> enforce_leq u u' csts
+    | Contravariant -> enforce_leq u' u csts
     | Invariant -> enforce_eq u u' csts
 
   let eq_constraint csts variance u u' =
     match variance with
     | Irrelevant -> csts
-    | Covariant | Invariant -> enforce_eq u u' csts
+    | Covariant | Contravariant | Invariant -> enforce_eq u u' csts
 
   let leq_constraints variance u u' csts =
     let len = Array.length u in

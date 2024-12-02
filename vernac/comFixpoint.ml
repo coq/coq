@@ -419,7 +419,8 @@ let interp_mutual_definition env ~program_mode ~function_mode rec_order fixl =
   let fixnames = List.map (fun fix -> fix.Vernacexpr.fname.CAst.v) fixl in
 
   (* Interp arities allowing for unresolved types *)
-  let sigma, decl = interp_mutual_univ_decl_opt env (List.map (fun Vernacexpr.{univs} -> univs) fixl) in
+  let sigma, decl, variances = interp_mutual_univ_decl_opt env (List.map (fun Vernacexpr.{univs} -> univs) fixl) in
+  let variances = ComDefinition.variance_of_entry variances in
   let sigma, (fixenv, fixctxs, fixctximpenvs, fixctximps) =
     on_snd List.split4 @@
       List.fold_left_map (fun sigma -> interp_fix_context ~program_mode env sigma) sigma fixl in
@@ -464,7 +465,7 @@ let interp_mutual_definition env ~program_mode ~function_mode rec_order fixl =
 
   (* Build the fix declaration block *)
   let fix = {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs} in
-  (env, rec_sign, sigma), (fix, possible_guard, decl)
+  (env, rec_sign, sigma), (fix, possible_guard, decl, variances)
 
 let check_recursive ~kind env evd {fixnames;fixdefs;fixwfs} =
   (* TO MOVE AT FINAL DEFINITION TIME? *)
@@ -484,7 +485,7 @@ let ground_fixpoint env evd {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fix
 
 let interp_fixpoint_short rec_order fixpoint_exprl =
   let env = Global.env () in
-  let (_, _, sigma),(fix, _, _) = interp_mutual_definition ~program_mode:false ~function_mode:true env (CFixRecOrder rec_order) fixpoint_exprl in
+  let (_, _, sigma),(fix, _, _, _) = interp_mutual_definition ~program_mode:false ~function_mode:true env (CFixRecOrder rec_order) fixpoint_exprl in
   let sigma = Pretyping.(solve_remaining_evars all_no_fail_flags env sigma) in
   let typel = (ground_fixpoint env sigma fix).fixtypes in
   typel, sigma
@@ -547,13 +548,13 @@ let do_mutually_recursive ?pm ~program_mode ?(use_inference_hook=false) ?scope ?
   : Declare.OblState.t option * Declare.Proof.t option =
   let env = Global.env () in
   let env = Environ.update_typing_flags ?typing_flags env in
-  let (env,rec_sign,sigma),(fix,possible_guard,udecl) = interp_mutual_definition env ~program_mode ~function_mode:false rec_order fixl in
+  let (env,rec_sign,sigma),(fix,possible_guard,udecl,variances) = interp_mutual_definition env ~program_mode ~function_mode:false rec_order fixl in
   check_recursive ~kind env sigma fix;
   let sigma, ({fixdefs=bodies;fixrs;fixtypes;fixwfs} as fix), obls, hook =
     match pm with
     | Some pm -> finish_obligations env sigma rec_sign possible_guard poly udecl fix
     | None -> finish_regular env sigma use_inference_hook fix in
-  let info = Declare.Info.make ?scope ?clearbody ~kind ~poly ~udecl ?hook ?typing_flags ?user_warns ~ntns:fix.fixntns () in
+  let info = Declare.Info.make ?scope ?clearbody ~kind ~poly ~udecl ?variances ?hook ?typing_flags ?user_warns ~ntns:fix.fixntns () in
   let cinfo = build_recthms fix in
   match pm with
   | Some pm ->

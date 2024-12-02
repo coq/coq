@@ -489,6 +489,9 @@ let add_local_univ cstr local =
   { local with local_cst = Constraints.add cstr local.local_cst;
     local_univs = UGraph.enforce_constraint cstr local.local_univs }
 
+let enforce_local_univ cstr local =
+  { local with local_univs = UGraph.enforce_constraint cstr local.local_univs }
+
 let add_local (l, d, r) local =
   let cstr = (Universe.make l, d, Universe.make r) in
   add_local_univ cstr local
@@ -499,9 +502,9 @@ let enforce_leq_up u v local =
 
 let instantiate_variable l (b : Universe.t) v local =
   v := UnivFlex.define l b !v;
-  try { local with local_univs = UGraph.set l b local.local_univs }
-  with UGraph.InconsistentEquality ->
-    add_local_univ (Universe.make l, Eq, b) local
+  (* try { local with local_univs = UGraph.set l b local.local_univs } *)
+  (* with UGraph.InconsistentEquality -> *)
+  enforce_local_univ (Universe.make l, Eq, b) local
 
 let get_constraint = function
 | Conversion.CONV -> Eq
@@ -697,12 +700,15 @@ let process_universe_constraints uctx cstrs =
   !vars, extra, local.local_cst, local.local_univs, local.local_sorts
 
 let process_universe_constraints uctx cstrs =
-  debug Pp.(fun () -> str"Calling process_universe_constraints");
+  debug Pp.(fun () -> str"Calling process_universe_constraints with: " ++ UnivProblem.Set.pr cstrs);
   try let res = process_universe_constraints uctx cstrs in
-    debug Pp.(fun () -> str"process_universe_constraint terminated");
+    debug Pp.(fun () -> str"process_universe_constraints terminated");
     res
   with Stack_overflow ->
     CErrors.anomaly (Pp.str "process_universe_constraint raised a stack overflow")
+    | UGraph.UniverseInconsistency incon as e ->
+      debug Pp.(fun () -> str"process_universe_constraint failed with inconsistency: "
+      ++ UGraph.explain_universe_inconsistency QVar.raw_pr (pr_uctx_level uctx) incon); raise e
 
 let add_universe_constraints uctx cstrs =
   let univs, local = uctx.local in

@@ -219,13 +219,17 @@ let test_plural_form_rules loc kwd = function
 let lname_of_lident : lident -> lname =
   CAst.map (fun s -> Name s)
 
-let name_of_ident_decl : ident_decl -> name_decl =
+let name_of_cumul_ident_decl : cumul_ident_decl -> name_decl =
   on_fst lname_of_lident
+
+let name_of_ident_decl : ident_decl -> name_decl =
+  fun x ->
+    (lname_of_lident (fst x), Option.map cumul_of_univ_decl (snd x))
 
 let test_variance_ident =
   let open Procq.Lookahead in
   to_entry "test_variance_ident" begin
-    lk_kws ["=";"+";"*"] >> lk_ident
+    lk_kws ["=";"+";"-";"*"] >> lk_ident
   end
 
 let test_univ_decl =
@@ -234,7 +238,7 @@ let test_univ_decl =
 
 let test_cumul_univ_decl =
   let open Procq.Lookahead in
-  let lk_list_variance_ident = lk_list (lk_kw "+" <+> lk_kw "*" <+> lk_kw "=" <+> lk_ident) in
+  let lk_list_variance_ident = lk_list (lk_kw "+" <+> lk_kw "*" <+> lk_kw "=" <+> lk_kw "-" <+> lk_ident) in
   to_entry "test_cumul_univ_decl" (lk_ident_list >> lk_kw "|" >> lk_list_variance_ident >> (lk_kw "?" <+> lk_empty) >> (lk_kw "|" <+> lk_kw "|}"))
 
 
@@ -243,14 +247,15 @@ let test_cumul_univ_decl =
 (* Gallina declarations *)
 GRAMMAR EXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_token assumption_token def_body of_type of_type_inst
-    record_field notation_declaration decl_notations fix_definition ident_decl univ_decl
+    record_field notation_declaration decl_notations fix_definition
+    cumul_ident_decl ident_decl univ_decl cumul_univ_decl
     univ_constraint inductive_or_record_definition;
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
-    [ [ thm = thm_token; id = ident_decl; bl = binders; ":"; c = lconstr;
+    [ [ thm = thm_token; id = cumul_ident_decl; bl = binders; ":"; c = lconstr;
         l = LIST0
-          [ "with"; id = ident_decl; bl = binders; ":"; c = lconstr ->
+          [ "with"; id = cumul_ident_decl; bl = binders; ":"; c = lconstr ->
           { (id,(bl,c)) } ] ->
           { VernacStartTheoremProof (thm, (id,(bl,c))::l) }
       | stre = assumption_token; nl = inline; bl = assum_list ->
@@ -259,8 +264,8 @@ GRAMMAR EXTEND Gram
           { let (kwd,stre) = tk in
             test_plural_form loc kwd bl;
             VernacAssumption (stre, nl, bl) }
-      | d = def_token; id = ident_decl; b = def_body ->
-          { VernacDefinition (d, name_of_ident_decl id, b) }
+      | d = def_token; id = cumul_ident_decl; b = def_body ->
+          { VernacDefinition (d, name_of_cumul_ident_decl id, b) }
       | IDENT "Symbol"; bl = assum_list ->
           { VernacSymbol bl }
       | IDENT "Symbols"; bl = assum_list ->
@@ -376,6 +381,7 @@ GRAMMAR EXTEND Gram
   ;
   variance:
     [ [ "+" -> { UVars.Variance.Covariant }
+      | "-" -> { UVars.Variance.Contravariant }
       | "=" -> { UVars.Variance.Invariant }
       | "*" -> { UVars.Variance.Irrelevant }
     ] ]
@@ -502,7 +508,7 @@ GRAMMAR EXTEND Gram
   ;
   (* (co)-fixpoints *)
   fix_definition:
-    [ [ id_decl = ident_decl;
+    [ [ id_decl = cumul_ident_decl;
         bl = binders_fixannot;
         rtype = type_cstr;
         body_def = OPT [":="; def = lconstr -> { def } ]; notations = decl_notations ->
@@ -511,7 +517,7 @@ GRAMMAR EXTEND Gram
           } ] ]
   ;
   cofix_definition:
-    [ [ id_decl = ident_decl; binders = binders; rtype = type_cstr;
+    [ [ id_decl = cumul_ident_decl; binders = binders; rtype = type_cstr;
         body_def = OPT [":="; def = lconstr -> { def }]; notations = decl_notations ->
         { {fname = fst id_decl; univs = snd id_decl; binders; rtype; body_def; notations}
         } ]]
@@ -830,7 +836,7 @@ GRAMMAR EXTEND Gram
           LIST1 [ v=strategy_level; "["; q=LIST1 smart_global; "]" -> { (v,q) } ] ->
             { VernacSynPure (VernacSetStrategy l) }
       (* Canonical structure *)
-      | IDENT "Canonical"; OPT [ IDENT "Structure" -> {()} ]; qid = global; ud = OPT [ u = OPT univ_decl; d = def_body -> { (u,d) } ] ->
+      | IDENT "Canonical"; OPT [ IDENT "Structure" -> {()} ]; qid = global; ud = OPT [ u = OPT cumul_univ_decl; d = def_body -> { (u,d) } ] ->
           { match ud with
            | None ->
              VernacSynPure (VernacCanonical CAst.(make ?loc:qid.CAst.loc @@ AN qid))
@@ -841,7 +847,7 @@ GRAMMAR EXTEND Gram
           { VernacSynPure (VernacCanonical CAst.(make ~loc @@ ByNotation ntn)) }
 
       (* Coercions *)
-      | IDENT "Coercion"; qid = global; ud = OPT [ u = OPT univ_decl; d = def_body -> { u, d } ] ->
+      | IDENT "Coercion"; qid = global; ud = OPT [ u = OPT cumul_univ_decl; d = def_body -> { u, d } ] ->
           { match ud with Some (u, d) -> let s = coerce_reference_to_id qid in
           VernacSynPure (VernacDefinition ((NoDischarge,Coercion),((CAst.make ?loc:qid.CAst.loc (Name s)),u),d))
           | None -> VernacSynPure (VernacCoercion (CAst.make ~loc @@ AN qid, None)) }
@@ -969,7 +975,7 @@ GRAMMAR EXTEND Gram
     ]
   ];
   instance_name:
-    [ [ name = ident_decl; bl = binders ->
+    [ [ name = cumul_ident_decl; bl = binders ->
           { (CAst.map (fun id -> Name id) (fst name), snd name), bl }
       | -> { ((CAst.make ~loc Anonymous), None), []  } ] ]
   ;

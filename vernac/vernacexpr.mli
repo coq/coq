@@ -187,7 +187,7 @@ type recursion_order_expr =
 
 type recursive_expr_gen =
   { fname : lident
-  ; univs : universe_decl_expr option
+  ; univs : cumul_univ_decl_expr option
   ; binders : local_binder_expr list
   ; rtype : constr_expr
   ; body_def : constr_expr option
@@ -245,7 +245,7 @@ type typeclass_constraint = name_decl * Glob_term.binding_kind * constr_expr
 and typeclass_context = typeclass_constraint list
 
 type proof_expr =
-  ident_decl * (local_binder_expr list * constr_expr)
+  cumul_ident_decl * (local_binder_expr list * constr_expr)
 
 type opacity_flag = Opaque | Transparent
 
