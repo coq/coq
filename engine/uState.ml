@@ -1036,7 +1036,7 @@ let extend_variances inst variances =
   else if vlen > ulen then CErrors.user_err Pp.(str"More variance annotations than bound universes")
   else Array.append variances (Array.make (ulen - vlen) None)
 
-let force_variance ~force_in_term v ({ in_binders = (binder_mode, occs); in_term; in_type; _ } as vocc) =
+let force_variance ~force_in_term v (VarianceOccurrence.{ in_binders = (binder_mode, occs); in_term; in_type; _ } as vocc) =
   let bindersv = Option.map (fun _ -> v) binder_mode in
   let in_term =
     if force_in_term then Some v
@@ -1046,14 +1046,14 @@ let force_variance ~force_in_term v ({ in_binders = (binder_mode, occs); in_term
   in
   { vocc with in_binders = bindersv, occs; in_term; in_type = in_type }
 
-let computed_variances cumulative ivariances inst =
+let computed_variances cumulative kind ivariances inst =
   let inferred_variance level =
     match Level.Map.find_opt level ivariances with
     | None -> None
     | Some o ->
       let occ = InferCumulativity.forget_infer_variance_occurrence o in
       if cumulative then Some occ
-      else Some (force_variance ~force_in_term:true Variance.Invariant occ)
+      else Some (force_variance ~force_in_term:(kind = UVars.Assumption) Variance.Invariant occ)
   in
   let arr = Array.map inferred_variance (snd (LevelInstance.to_array inst)) in
   if not cumulative && Array.for_all Option.is_empty arr then None
@@ -1067,7 +1067,7 @@ let pr_pre_variances =
   let pr = pr_opt Variance.pr in
   prvect_with_sep spc pr
 
-let check_variances ~cumulative names ivariances inst variances =
+let check_variances ~cumulative ~kind names ivariances inst variances =
   debug Pp.(fun () -> str"Checking variance annotation with cumulative = " ++ bool cumulative);
   debug Pp.(fun () -> str"Checking variance annotation: " ++ Option.cata pr_pre_variances (mt ()) variances);
   debug Pp.(fun () -> str"Inferred variances: " ++ Option.cata (InferCumulativity.pr_variances Level.raw_pr) (mt()) ivariances);
@@ -1075,7 +1075,7 @@ let check_variances ~cumulative names ivariances inst variances =
   match variances with
   | None -> (match ivariances with
     | None -> if cumulative then CErrors.anomaly Pp.(str"Variance was not inferred when checking universe declaration of cumulative definition") else None
-    | Some ivariances -> computed_variances cumulative ivariances inst)
+    | Some ivariances -> computed_variances cumulative kind ivariances inst)
   | Some variances ->
     if not cumulative then
       CErrors.user_err
@@ -1103,7 +1103,7 @@ let check_variances ~cumulative names ivariances inst variances =
         in
         Some (UVars.Variances.make (Array.map2 check_var (snd (LevelInstance.to_array inst)) variances))
 
-let check_poly_univ_decl ~cumulative uctx decl =
+let check_poly_univ_decl ~cumulative ~kind uctx decl =
   (* Note: if [decl] is [default_univ_decl], behave like [context uctx] *)
   let levels, csts = uctx.local in
   let qvars = QState.undefined uctx.sort_variables in
@@ -1117,15 +1117,15 @@ let check_poly_univ_decl ~cumulative uctx decl =
       decl.univdecl_constraints
     end
   in
-  let variances = check_variances ~cumulative uctx.names uctx.variances inst decl.univdecl_variances in
+  let variances = check_variances ~cumulative ~kind uctx.names uctx.variances inst decl.univdecl_variances in
   let uctx = UContext.make nas (inst, csts) in
   uctx, variances
 
-let check_univ_decl ~poly ?(cumulative=true) uctx decl =
+let check_univ_decl ~poly ?(cumulative=true) ~kind uctx decl =
   let (binders, _) = uctx.names in
   let entry =
     if poly then
-      let uctx, variances = check_poly_univ_decl ~cumulative uctx decl in
+      let uctx, variances = check_poly_univ_decl ~cumulative ~kind uctx decl in
       Polymorphic_entry (uctx, variances)
     else Monomorphic_entry (check_mono_univ_decl uctx decl) in
   { universes_entry_universes = entry;

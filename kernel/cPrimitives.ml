@@ -307,10 +307,13 @@ and ind_or_type =
   | PITT_type : 'a prim_type * 'a -> ind_or_type
   | PITT_param : int -> ind_or_type (* DeBruijn index referring to prenex type quantifiers *)
 
-let array_variances : UVars.variances = UVars.(Variances.make
-  [| { in_binders = Some Variance.Irrelevant, [0]; in_term = None; in_type = None; under_impred_qvars = None } |])
+let array_variances : UVars.variances =
+  let open VarianceOccurrence in
+  UVars.(Variances.make
+    [| { in_binders = Some Variance.Irrelevant, [0]; in_term = None; in_type = None; under_impred_qvars = None } |])
 
 let array_univs : AbstractContext.t * Variances.t option =
+  let open VarianceOccurrence in
   AbstractContext.make ([||],Names.[|Name (Id.of_string "u")|]) Constraints.empty,
   Some (Variances.make [| { in_binders = Some Variance.Contravariant, [0]; in_term = None; in_type = Some Variance.Covariant;
     under_impred_qvars = None } |])
@@ -473,6 +476,7 @@ let params = function
 let nparams x = List.length (params x)
 
 let array_ops_univs : AbstractContext.t * Variances.t option =
+  let open VarianceOccurrence in
   AbstractContext.make ([||],Names.[|Name (Id.of_string "u")|]) Constraints.empty,
   Some (Variances.make [| { in_binders = Some Variance.Contravariant, [0]; in_term = None; in_type = None;
     under_impred_qvars = None } |])

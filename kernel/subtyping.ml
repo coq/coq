@@ -94,6 +94,7 @@ let check_conv_error error why state poly pb env a1 a2 =
   | Result.Error (Some e) -> error (IncompatibleUniverses e)
 
 let clear_term_variances vs =
+  let open VarianceOccurrence in
   UVars.Variances.(make (Array.map (fun vocc -> { vocc with in_term = None }) (repr vs)))
 
 let check_variance error env ~term_variances v1 v2 =

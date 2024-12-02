@@ -284,7 +284,7 @@ let typecheck_params_and_fields ~auto_prop_lowering def ~poly ~cumulative udecl 
     let sigma = Evd.restrict_universe_context ~lbound sigma !uvars in
     sigma, (newps, ans)
   in
-  let univs = Evd.check_univ_decl ~poly ~cumulative sigma decl in
+  let univs = Evd.check_univ_decl ~poly ~cumulative ~kind:UVars.Definition sigma decl in
   let ce t = Pretyping.check_evars env0 sigma (EConstr.of_constr t) in
   let () = List.iter (iter_constr ce) (List.rev newps) in
   imps, univs, newps, ans

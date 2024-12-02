@@ -251,7 +251,8 @@ val default_univ_decl : universe_decl
    When polymorphic, the universes corresponding to
    [decl.univdecl_instance] come first in the order defined by that
    list. *)
-val check_univ_decl : poly:bool -> ?cumulative:bool -> t -> universe_decl -> named_universes_entry
+val check_univ_decl : poly:bool -> ?cumulative:bool -> kind:UVars.assumption_or_definition ->
+  t -> universe_decl -> named_universes_entry
 val check_univ_decl_rev : t -> universe_decl -> t * UVars.UContext.t
 val check_uctx_impl : fail:(Pp.t -> unit) -> t -> t -> unit
 

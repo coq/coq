@@ -298,10 +298,26 @@ let is_polymorphic_definitions_cumulativity =
   in
   fun () -> !b
 
-let cumulative =
+let cumulative_assumptions_option_name = ["Polymorphic"; "Assumptions"; "Cumulativity"]
+let is_polymorphic_assumptions_cumulativity =
+  let b = ref false in
+  let () = let open Goptions in
+    declare_bool_option
+      { optstage = Summary.Stage.Interp;
+        optdepr  = None;
+        optkey   = cumulative_assumptions_option_name;
+        optread  = (fun () -> !b);
+        optwrite = (fun d -> b := d) }
+  in
+  fun () -> !b
+
+let cumulative assordef =
   qualify_attribute ukey (bool_attribute ~name:"cumulative") >>= function
   | Some b -> return b
-  | None -> return (is_polymorphic_definitions_cumulativity())
+  | None ->
+    match assordef with
+    | UVars.Assumption -> return (is_polymorphic_assumptions_cumulativity())
+    | UVars.Definition -> return (is_polymorphic_definitions_cumulativity())
 
 let template =
   qualify_attribute ukey

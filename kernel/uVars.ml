@@ -198,12 +198,6 @@ end
 
 type impred_qvars = Sorts.QVar.Set.t option
 
-type ('a, 'b) gen_variance_occurrence =
-  { in_binders : 'a;
-    in_term : 'b;
-    in_type : 'b;
-    under_impred_qvars : impred_qvars }
-
 let update_impred_qvars (f : Sorts.QVar.t -> Sorts.Quality.t option) vars =
   match vars with
   | None -> None
@@ -233,33 +227,41 @@ let impred_qvars_of_quality q =
   | QConstant (QProp | QSProp) -> Some Sorts.QVar.Set.empty
   | QConstant QType -> None
 
-let pr_variance_occurrence fa fterm ftype { in_binders; in_term; in_type; under_impred_qvars = _ } =
-  let open Pp in
-  let pr_binders = fa in_binders in
-  let pr_in_term = fterm in_term in
-  let pr_in_type = ftype in_type in
-  let variances = List.append pr_binders (List.append pr_in_term pr_in_type) in
-  if List.is_empty variances then mt ()
-  else str"(" ++ prlist_with_sep pr_comma identity variances ++ str")"
-
 let union_impred_qvars impred_qvars impred_qvars' =
   match impred_qvars, impred_qvars' with
   | None, _ -> None
   | _, None -> None
   | Some s, Some s' -> Some (Sorts.QVar.Set.union s s')
 
-let default_occ in_binders =
-  { in_binders; in_term = None; in_type = None; under_impred_qvars = Some Sorts.QVar.Set.empty }
+type assumption_or_definition =
+  Assumption | Definition
 
 module VarianceOccurrence =
 struct
-  type t = (Variance.t option * int list, Variance.t option) gen_variance_occurrence
-
-  let default_occ = default_occ (None, [])
+  type t =
+    { in_binders : Variance.t option * int list; (* Max variance, binders where the level occurs *)
+      in_term : Variance.t option;
+      in_type : Variance.t option;
+      under_impred_qvars : impred_qvars }
+  let default_occ =
+    { in_binders = None, []; in_term = None; in_type = None; under_impred_qvars = Some Sorts.QVar.Set.empty }
 
   let lift n occ =
     let v, pos = occ.in_binders in
     { occ with in_binders = v, List.map (fun i -> (i + n)) pos }
+
+  let pr_variance_occurrence fa fterm ftype { in_binders; in_term; in_type; under_impred_qvars = _ } =
+    let open Pp in
+    let pr_binders = fa in_binders in
+    let pr_in_term = fterm in_term in
+    let pr_in_type = ftype in_type in
+    let variances = List.append pr_binders pr_in_term in
+    if List.is_empty variances then
+      str"*" ++ if List.is_empty pr_in_type then mt () else str"(" ++
+        prlist_with_sep pr_comma identity pr_in_type ++ str")"
+    else
+      let variances = List.append variances pr_in_type in
+      str"(" ++ prlist_with_sep pr_comma identity variances ++ str")"
 
   let pr occ =
     let pr_binders (bindersv, binders) =
@@ -1036,6 +1038,7 @@ let subst_sort_level_relevance subst r =
   Sorts.relevance_subst_fn (subst_sort_level_qvar subst) r
 
 let subst_sort_level_variance_occurrence usubst b =
+  let open VarianceOccurrence in
   let upd qv = Some (subst_sort_level_qvar usubst qv) in
   let under_impred_qvars = update_impred_qvars upd b.under_impred_qvars in
   { b with under_impred_qvars }

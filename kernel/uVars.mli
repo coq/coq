@@ -107,24 +107,23 @@ type impred_qvars = Sorts.QVar.Set.t option
 (** Set of potentially impredicative QVars under which the universe lives.
   If there is an occurrence under a non-impredicative QVar somewhere, this is empty. *)
 
-type ('a, 'b) gen_variance_occurrence =
-  { in_binders : 'a;
-    in_term : 'b;
-    in_type : 'b;
-    under_impred_qvars : impred_qvars }
-
-val pr_variance_occurrence : ('a -> Pp.t list) -> ('b -> Pp.t list) ->
-  ('b -> Pp.t list) ->
-  ('a, 'b) gen_variance_occurrence -> Pp.t
-
 val impred_qvars_of_quality : Sorts.Quality.t -> impred_qvars
 val update_impred_qvars : (Sorts.QVar.t -> Sorts.Quality.t option) -> impred_qvars -> impred_qvars
 val pr_impred_qvars : impred_qvars -> Pp.t
 val union_impred_qvars : impred_qvars -> impred_qvars -> impred_qvars
 
+type assumption_or_definition =
+  Assumption | Definition
+
 module VarianceOccurrence :
 sig
-  type t = (Variance.t option * int list, Variance.t option) gen_variance_occurrence
+  (** Irrelevance and not appearing are represented both by [None] *)
+  type t =
+    { in_binders : Variance.t option * int list; (* Max variance, binders where the level occurs *)
+      in_term : Variance.t option;
+      in_type : Variance.t option;
+      under_impred_qvars : impred_qvars }
+
   val default_occ : t
 
   val lift : int -> t -> t

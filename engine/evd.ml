@@ -1044,7 +1044,8 @@ let to_universe_context evd = UState.context evd.universes
 
 let univ_entry ~poly evd = UState.univ_entry ~poly evd.universes
 
-let check_univ_decl ~poly ?(cumulative=true) evd decl = UState.check_univ_decl ~poly ~cumulative evd.universes decl
+let check_univ_decl ~poly ?(cumulative=true) ~kind evd decl =
+  UState.check_univ_decl ~poly ~cumulative ~kind evd.universes decl
 
 let check_univ_decl_early ~poly ?(cumulative=true) ~with_obls sigma udecl terms =
   let () =
@@ -1060,7 +1061,7 @@ let check_univ_decl_early ~poly ?(cumulative=true) ~with_obls sigma udecl terms 
   let uctx = ustate sigma in
   let uctx = UState.collapse_sort_variables uctx in
   let uctx = UState.restrict uctx vars in
-  ignore (UState.check_univ_decl ~poly ~cumulative uctx udecl)
+  ignore (UState.check_univ_decl ~poly ~cumulative ~kind:(UVars.Assumption) uctx udecl)
 
 let restrict_universe_context ?lbound evd vars =
   { evd with universes = UState.restrict ?lbound evd.universes vars }

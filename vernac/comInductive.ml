@@ -572,7 +572,8 @@ let interp_mutual_inductive_constr ~sigma ~flags ~udecl ~ctx_params ~indnames ~a
   let constructors = List.map (on_snd (List.map (EConstr.to_constr sigma))) constructors in
   let ctx_params = List.map (fun d -> EConstr.to_rel_decl sigma d) ctx_params in
   let sigma = restrict_inductive_universes ~lbound sigma ctx_params arities constructors in
-  let UState.{ universes_entry_universes = univ_entry; universes_entry_binders = binders } = Evd.check_univ_decl ~poly ~cumulative sigma udecl in
+  let UState.{ universes_entry_universes = univ_entry; universes_entry_binders = binders } =
+    Evd.check_univ_decl ~poly ~cumulative ~kind:UVars.Definition sigma udecl in
 
   (* Build the inductive entries *)
   let entries = List.map3 (fun indname arity (cnames,ctypes) ->

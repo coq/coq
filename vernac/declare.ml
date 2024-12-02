@@ -228,7 +228,7 @@ let make_univs_immediate_private_mono ~initial_euctx ~uctx ~udecl ~eff ~used_uni
 let make_univs_immediate_private_poly ~cumulative ~uctx ~udecl ~eff ~used_univs body typ =
   let used_univs_typ, used_univs = universes_of_body_type ~used_univs body typ in
   let uctx' = UState.restrict uctx used_univs_typ in
-  let utyp = UState.check_univ_decl ~poly:true ~cumulative uctx' udecl in
+  let utyp = UState.check_univ_decl ~poly:true ~cumulative ~kind:UVars.Definition uctx' udecl in
   let ubody =
     let uctx = UState.restrict uctx used_univs in
     Univ.ContextSet.diff
@@ -245,7 +245,7 @@ let make_univs_immediate_default ~poly ~cumulative ~opaque ~uctx ~udecl ~eff ~us
      the actually used universes.
      TODO: check if restrict is really necessary now. *)
   let uctx = UState.restrict uctx used_univs in
-  let utyp = UState.check_univ_decl ~poly ~cumulative uctx udecl in
+  let utyp = UState.check_univ_decl ~poly ~cumulative ~kind:UVars.Definition uctx udecl in
   let utyp = match utyp.universes_entry_universes with
     | Polymorphic_entry _ -> utyp
     | Monomorphic_entry uctx ->
@@ -1022,7 +1022,7 @@ let declare_possibly_mutual_parameters ~info ~cinfo ?(mono_uctx_extra=UState.emp
     fun (i, subst, csts) { CInfo.name; impargs } (typ, uctx) ->
       let uctx' = UState.restrict uctx (Vars.universes_of_constr typ) in
       let sigma = UnivVariances.register_universe_variances_of_type (Global.env ()) (Evd.from_ctx uctx') (EConstr.of_constr typ) in
-      let univs = UState.check_univ_decl ~poly (Evd.ustate sigma) udecl in
+      let univs = UState.check_univ_decl ~poly ~kind:Assumption (Evd.ustate sigma) udecl in
       let univs = if i = 0 then add_mono_uctx mono_uctx_extra univs else univs in
       let typ = Vars.replace_vars subst typ in
       let pe = {
@@ -1129,7 +1129,7 @@ let prepare_parameter ~poly ~udecl ~types sigma =
   let sigma, typ = Evarutil.finalize ~abort_on_undefined_evars:true
       sigma (fun nf -> nf types)
   in
-  let univs = Evd.check_univ_decl ~poly sigma udecl in
+  let univs = Evd.check_univ_decl ~poly ~kind:UVars.Assumption sigma udecl in
   let pe = {
       parameter_entry_secctx = None;
       parameter_entry_type = typ;

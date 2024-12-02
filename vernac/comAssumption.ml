@@ -240,7 +240,7 @@ let do_assumptions ~program_mode ~poly ~cumulative ~scope ~kind ?user_warns ~inl
   let sigma, udecl = interp_cumul_univ_decl_opt env udecl in
   let coercions, ctx = local_binders_of_decls ~poly l in
   let sigma, ctx = interp_context_gen scope ~program_mode ~kind ~autoimp_enable:true ~coercions env sigma ctx in
-  let univs = Evd.check_univ_decl ~poly ~cumulative sigma udecl in
+  let univs = Evd.check_univ_decl ~poly ~cumulative ~kind:UVars.Assumption sigma udecl in
   declare_context ~try_global_assum_as_instance:false ~scope ~univs ?user_warns ~inline ctx
 
 let warn_context_outside_section =

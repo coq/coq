@@ -243,7 +243,7 @@ let build_wellfounded env sigma poly cumulative udecl recname ctx body ccl impls
         let tuple_value = update tuple_value in
         let ccl = update ccl in
         let ctx = Context.Rel.map_het (ERelevance.kind sigma) update ctx in
-        let univs = UState.check_univ_decl ~poly ~cumulative uctx udecl in
+        let univs = UState.check_univ_decl ~poly ~cumulative ~kind:UVars.Definition uctx udecl in
         let h_body =
           let inst = UState.(match univs.universes_entry_universes with
               | Polymorphic_entry (uctx, _variances) -> UVars.Instance.of_level_instance (UVars.UContext.instance uctx)

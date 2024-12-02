@@ -162,5 +162,6 @@ val vernac_monomorphic_flag : Loc.t option -> vernac_flag
 val universe_polymorphism_option_name : string list
 val is_universe_polymorphism : unit -> bool
 
-val cumulative : bool attribute
+val cumulative : UVars.assumption_or_definition -> bool attribute
 val is_polymorphic_definitions_cumulativity : unit -> bool
+val is_polymorphic_assumptions_cumulativity : unit -> bool

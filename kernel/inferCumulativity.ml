@@ -60,18 +60,20 @@ let default_occ =
     infer_principal = false;
     infer_under_impred_qvars = Some Sorts.QVar.Set.empty }
 
-let make_checked_occ ~infer_in_type UVars.{ in_binders; in_term; in_type; under_impred_qvars } =
+let make_checked_occ ~infer_in_type
+  UVars.VarianceOccurrence.{ in_binders; in_term; in_type; under_impred_qvars } =
   { infer_binders = ((if infer_in_type then Infer else Check), in_binders);
     infer_term = Check, in_term;
     infer_type = (if infer_in_type then Infer else Check), in_type;
     infer_principal = false (* ignored when checking *);
     infer_under_impred_qvars = under_impred_qvars }
 
-let forget_infer_variance_occurrence { infer_binders; infer_term; infer_type; infer_principal = _; infer_under_impred_qvars = under_impred_qvars } =
-  { in_binders = snd infer_binders;
+let forget_infer_variance_occurrence
+  { infer_binders; infer_term; infer_type; infer_principal = _; infer_under_impred_qvars = impred_qvars } =
+  UVars.VarianceOccurrence.{ in_binders = snd infer_binders;
     in_term = snd infer_term;
     in_type = snd infer_type;
-    under_impred_qvars }
+    under_impred_qvars = impred_qvars }
 
 let of_variance_occurrences ~infer_in_type (vs : (Level.t * UVars.VarianceOccurrence.t option) array) : variances =
   Array.fold_left (fun vs (l, vocc) ->
@@ -330,7 +332,7 @@ end = struct
     let univs = Level.Set.fold (fun level -> Level.Map.add level default_occ) levels Level.Map.empty in
     { univs; orig_array = [||]; infer_mode=true; position}
 
-let variance_occurrence_to_variance_pos ({ in_binders; in_term; in_type; under_impred_qvars = _ } : VarianceOccurrence.t) =
+let variance_occurrence_to_variance_pos VarianceOccurrence.{ in_binders; in_term; in_type; under_impred_qvars = _ } =
   let open Position in
   let binders = binder_pos in_binders in
   match binders, in_term, in_type with
@@ -445,6 +447,7 @@ let infer_inductive_instance cv_pb env variances ind nargs u =
 let constructor_variances _mind _ind _ctor variance =
   (* let npars = mind.Declarations.mind_nparams in *)
   (* let nargs = mind.Declarations.mind_packets.(ind).Declarations.mind_consnrealargs.(ctor - 1) in *)
+  let open VarianceOccurrence in
   let map vocc = { vocc with in_type = vocc.in_term; in_term = None } in
   Variances.make (Array.map map (Variances.repr variance))
 
