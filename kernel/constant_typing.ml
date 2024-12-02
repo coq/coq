@@ -100,13 +100,13 @@ type typing_context =
 let process_universes env = function
   | Entries.Monomorphic_entry ->
     env, UVars.empty_sort_subst, UVars.Instance.empty, Monomorphic
-  | Entries.Polymorphic_entry uctx ->
+  | Entries.Polymorphic_entry (uctx, variances) ->
     (** [ctx] must contain local universes, such that it has no impact
         on the rest of the graph (up to transitivity). *)
     let env = Environ.push_context ~strict:false uctx env in
     let inst, auctx = UVars.abstract_universes uctx in
     let usubst = UVars.make_instance_subst inst in
-    env, usubst, UVars.Instance.of_level_instance inst, Polymorphic auctx
+    env, usubst, UVars.Instance.of_level_instance inst, Polymorphic (auctx, variances)
 
 let check_primitive_type env op_t u t =
   let inft = Typeops.type_of_prim_or_type env u op_t in
@@ -115,11 +115,11 @@ let check_primitive_type env op_t u t =
   | Result.Error () ->
     Type_errors.error_incorrect_primitive env (make_judge op_t inft) t
 
-let adjust_primitive_univ_entry p auctx = function
+let adjust_primitive_univ_entry p auctx variances = function
   | Monomorphic_entry ->
-    assert (AbstractContext.is_empty auctx); (* ensured by ComPrimitive *)
+    assert (AbstractContext.is_empty auctx && Option.is_empty variances); (* ensured by ComPrimitive *)
     Monomorphic_entry
-  | Polymorphic_entry uctx ->
+  | Polymorphic_entry (uctx, variances') ->
     assert (not (AbstractContext.is_empty auctx)); (* ensured by ComPrimitive *)
     (* [push_context] will check that the universes aren't repeated in
        the instance so comparing the sizes works. No polymorphic
@@ -128,24 +128,26 @@ let adjust_primitive_univ_entry p auctx = function
             && Constraints.is_empty (UContext.constraints uctx))
     then CErrors.user_err Pp.(str "Incorrect universes for primitive " ++
                                 str (CPrimitives.op_or_type_to_string p));
-    Polymorphic_entry (UContext.refine_names (AbstractContext.names auctx) uctx)
+    if not (Option.equal UVars.eq_variances variances variances') then
+      CErrors.user_err Pp.(str "Incorrect universe variances for primitive " ++
+        str (CPrimitives.op_or_type_to_string p));
+    Polymorphic_entry (UContext.refine_names (AbstractContext.names auctx) uctx, variances)
 
-let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; prim_entry_variance = v } =
+let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p } =
   let open CPrimitives in
-  let auctx = CPrimitives.op_or_type_univs p in
-  (* FIXME: TODO check variance declaration *)
+  let auctx, variances = CPrimitives.op_or_type_univs p in
   let univs, typ =
     match utyp with
     | None ->
       let u = Instance.of_level_instance (UContext.instance (AbstractContext.repr auctx)) in
       let typ = Typeops.type_of_prim_or_type env u p in
       let univs = if AbstractContext.is_empty auctx then Monomorphic
-        else Polymorphic auctx
+        else Polymorphic (auctx, variances)
       in
       univs, typ
 
     | Some (typ,univ_entry) ->
-      let univ_entry = adjust_primitive_univ_entry p auctx univ_entry in
+      let univ_entry = adjust_primitive_univ_entry p auctx variances univ_entry in
       let env, usubst, u, univs = process_universes env univ_entry in
       let typ = (Typeops.infer_type env typ).utj_val in
       let () = check_primitive_type env p u typ in
@@ -166,7 +168,6 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; prim_e
     const_type = typ;
     const_body_code = ();
     const_universes = univs;
-    const_variance = v;
     const_relevance = Sorts.Relevant;
     const_inline_code = false;
     const_typing_flags = Environ.typing_flags env;
@@ -184,7 +185,6 @@ let infer_symbol env { symb_entry_universes; symb_entry_unfold_fix; symb_entry_t
     const_type = t;
     const_body_code = ();
     const_universes = univs;
-    const_variance = None; (* FIXME *)
     const_relevance = UVars.subst_sort_level_relevance usubst r;
     const_inline_code = false;
     const_typing_flags = Environ.typing_flags env;
@@ -209,7 +209,6 @@ let infer_parameter ~sec_univs env entry =
     const_type = typ;
     const_body_code = ();
     const_universes = univs;
-    const_variance = None; (* FIXME *)
     const_relevance = UVars.subst_sort_level_relevance usubst r;
     const_inline_code = false;
     const_typing_flags = Environ.typing_flags env;
@@ -239,7 +238,6 @@ let infer_definition ~sec_univs env entry =
     const_type = typ;
     const_body_code = ();
     const_universes = univs;
-    const_variance = entry.definition_entry_variance;
     const_relevance = Relevanceops.relevance_of_term env body;
     const_inline_code = entry.definition_entry_inline_code;
     const_typing_flags = Environ.typing_flags env;
@@ -260,7 +258,6 @@ let infer_opaque ~sec_univs env entry =
     const_type = typ;
     const_body_code = ();
     const_universes = univs;
-    const_variance = None;
     const_relevance = UVars.subst_sort_level_relevance usubst @@ Sorts.relevance_of_sort typj.utj_type;
     const_inline_code = false;
     const_typing_flags = Environ.typing_flags env;

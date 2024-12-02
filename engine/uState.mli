@@ -18,7 +18,7 @@ open Sorts
 
 type universes_entry =
 | Monomorphic_entry of Univ.ContextSet.t
-| Polymorphic_entry of UVars.UContext.t
+| Polymorphic_entry of UVars.UContext.t * UVars.variances option
 
 exception UniversesDiffer
 
@@ -81,9 +81,11 @@ val constraints : t -> Univ.Constraints.t
 val context : t -> UVars.UContext.t
 (** Shorthand for {!context_set} with {!Context_set.to_context}. *)
 
-type named_universes_entry = universes_entry * UnivNames.universe_binders
+type named_universes_entry =
+  { universes_entry_universes : universes_entry;
+    universes_entry_binders : UnivNames.universe_binders }
 
-val univ_entry : poly:bool -> t -> named_universes_entry
+val univ_entry : poly:bool -> t -> UVars.variances option -> named_universes_entry
 (** Pick from {!context} or {!context_set} based on [poly]. *)
 
 val universe_binders : t -> UnivNames.universe_binders
@@ -215,16 +217,17 @@ val collapse_above_prop_sort_variables : to_prop:bool -> t -> t
 
 val collapse_sort_variables : t -> t
 
-type ('a, 'b, 'c) gen_universe_decl = {
+type ('a, 'b, 'c, 'd) gen_universe_decl = {
   univdecl_qualities : 'a;
   univdecl_extensible_qualities : bool;
   univdecl_instance : 'b; (* Declared universes *)
   univdecl_extensible_instance : bool; (* Can new universes be added *)
-  univdecl_constraints : 'c; (* Declared constraints *)
+  univdecl_variances : 'c; (* Declared variances *)
+  univdecl_constraints : 'd; (* Declared constraints *)
   univdecl_extensible_constraints : bool (* Can new constraints be added *) }
 
 type universe_decl =
-  (QVar.t list, Level.t list, Univ.Constraints.t) gen_universe_decl
+  (QVar.t list, Level.t list, UVars.variances option, Univ.Constraints.t) gen_universe_decl
 
 val default_univ_decl : universe_decl
 
@@ -239,7 +242,7 @@ val default_univ_decl : universe_decl
    When polymorphic, the universes corresponding to
    [decl.univdecl_instance] come first in the order defined by that
    list. *)
-val check_univ_decl : poly:bool -> t -> universe_decl -> named_universes_entry
+val check_univ_decl : poly:bool -> t -> UnivMinim.level_variances -> universe_decl -> named_universes_entry
 val check_univ_decl_rev : t -> universe_decl -> t * UVars.UContext.t
 val check_uctx_impl : fail:(Pp.t -> unit) -> t -> t -> unit
 

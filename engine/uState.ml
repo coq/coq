@@ -21,7 +21,7 @@ let _debug_ustate_flag, debug = CDebug.create_full ~name:"ustate" ()
 
 type universes_entry =
 | Monomorphic_entry of Univ.ContextSet.t
-| Polymorphic_entry of UVars.UContext.t
+| Polymorphic_entry of UVars.UContext.t * UVars.variances option
 
 module UNameMap = Id.Map
 
@@ -363,14 +363,19 @@ let context uctx =
   let qvars = QState.undefined uctx.sort_variables in
   UContext.of_context_set (compute_instance_binders (snd uctx.names)) qvars uctx.local
 
-type named_universes_entry = universes_entry * UnivNames.universe_binders
+type named_universes_entry =
+  { universes_entry_universes : universes_entry;
+    universes_entry_binders : UnivNames.universe_binders }
 
-let univ_entry ~poly uctx =
+let univ_entry ~poly uctx variances =
   let (binders, _) = uctx.names in
   let entry =
-    if poly then Polymorphic_entry (context uctx)
-    else Monomorphic_entry (context_set uctx) in
-  entry, binders
+    if poly then Polymorphic_entry (context uctx, variances)
+    else
+      (assert (Option.is_empty variances);
+        Monomorphic_entry (context_set uctx)) in
+  { universes_entry_universes = entry;
+    universes_entry_binders = binders }
 
 let of_context_set ((qs,us),csts) =
   let sort_variables = QState.of_set qs in
@@ -786,16 +791,17 @@ let constrain_variables diff uctx =
   let local, vars = UnivFlex.constrain_variables diff uctx.univ_variables uctx.local in
   { uctx with local; univ_variables = vars }
 
-type ('a, 'b, 'c) gen_universe_decl = {
+type ('a, 'b, 'c, 'd) gen_universe_decl = {
   univdecl_qualities : 'a;
   univdecl_extensible_qualities : bool;
   univdecl_instance : 'b; (* Declared universes *)
   univdecl_extensible_instance : bool; (* Can new universes be added *)
-  univdecl_constraints : 'c; (* Declared constraints *)
+  univdecl_variances : 'c; (* Universe variance information *)
+  univdecl_constraints : 'd; (* Declared constraints *)
   univdecl_extensible_constraints : bool (* Can new constraints be added *) }
 
 type universe_decl =
-  (QVar.t list, Level.t list, Constraints.t) gen_universe_decl
+  (QVar.t list, Level.t list, UVars.variances option, Constraints.t) gen_universe_decl
 
 let default_univ_decl =
   { univdecl_qualities = [];
@@ -805,6 +811,7 @@ let default_univ_decl =
     univdecl_extensible_qualities = true;
     univdecl_instance = [];
     univdecl_extensible_instance = true;
+    univdecl_variances = None;
     univdecl_constraints = Constraints.empty;
     univdecl_extensible_constraints = true }
 
@@ -897,6 +904,10 @@ let check_mono_univ_decl uctx decl =
     || not (QVar.Set.is_empty (QState.undefined uctx.sort_variables))
     then CErrors.user_err Pp.(str "Monomorphic declarations may not have sort variables.")
   in
+  let () =
+    if not (Option.is_empty decl.univdecl_variances) then
+      CErrors.user_err Pp.(str "Monomorphic declarations may not have variance annotations.")
+  in
   let levels, csts = uctx.local in
   let () =
     let prefix = decl.univdecl_instance in
@@ -911,7 +922,37 @@ let check_mono_univ_decl uctx decl =
     levels, decl.univdecl_constraints
   end
 
-let check_poly_univ_decl uctx decl =
+let extend_variances inst variances =
+  let _, ulen = UVars.LevelInstance.length inst in
+  let vlen = Array.length variances in
+  if Int.equal vlen ulen then variances
+  else if vlen > ulen then CErrors.user_err Pp.(str"More variance annotations than bound universes")
+  else Array.append variances (Array.make (ulen - vlen) UVars.Variance.Invariant)
+
+
+let computed_variances ivariances inst =
+  let infered_variance level =
+    match Level.Map.find_opt level ivariances with
+    | None -> UVars.Variance.Invariant
+    | Some (_position, variance) -> variance
+  in Array.map infered_variance (snd (LevelInstance.to_array inst))
+
+let check_variances names ivariances inst variances =
+  let variances = Option.map (extend_variances inst) variances in
+  match variances with
+  | None -> Some (computed_variances ivariances inst)
+  | Some variances ->
+    let check_var level variance =
+      match Univ.Level.Map.find_opt level ivariances with
+      | None -> variance
+      | Some (_position, variance') ->
+        if UVars.Variance.check_subtype variance' variance then variance
+        else CErrors.user_err Pp.(str"Variance annotation " ++ UVars.Variance.pr variance ++ str" for universe binder " ++
+          (pr_uctx_level_names names level) ++ str" is incorrect, inferred variance is " ++ UVars.Variance.pr variance')
+    in
+    Some (Array.map2 check_var (snd (LevelInstance.to_array inst)) variances)
+
+let check_poly_univ_decl uctx ivariances decl =
   (* Note: if [decl] is [default_univ_decl], behave like [context uctx] *)
   let levels, csts = uctx.local in
   let qvars = QState.undefined uctx.sort_variables in
@@ -925,15 +966,19 @@ let check_poly_univ_decl uctx decl =
       decl.univdecl_constraints
     end
   in
+  let variances = check_variances uctx.names ivariances inst decl.univdecl_variances in
   let uctx = UContext.make nas (inst, csts) in
-  uctx
+  uctx, variances
 
-let check_univ_decl ~poly uctx decl =
+let check_univ_decl ~poly uctx ivariances decl =
   let (binders, _) = uctx.names in
   let entry =
-    if poly then Polymorphic_entry (check_poly_univ_decl uctx decl)
+    if poly then
+      let uctx, variances = check_poly_univ_decl uctx ivariances decl in
+      Polymorphic_entry (uctx, variances)
     else Monomorphic_entry (check_mono_univ_decl uctx decl) in
-  entry, binders
+  { universes_entry_universes = entry;
+    universes_entry_binders = binders; }
 
 let is_bound l lbound = match lbound with
   | UGraph.Bound.Prop -> false

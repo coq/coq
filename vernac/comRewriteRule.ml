@@ -38,7 +38,7 @@ let do_symbol ~poly ~unfold_fix udecl (id, typ) =
   if Dumpglob.dump () then Dumpglob.dump_definition id false "symb";
   let id = id.CAst.v in
   let env = Global.env () in
-  let evd, udecl, variances = Constrintern.interp_cumul_univ_decl_opt env udecl in
+  let evd, udecl = Constrintern.interp_cumul_univ_decl_opt env udecl in
   let evd, (typ, impls) =
     Constrintern.(interp_type_evars_impls ~impls:empty_internalization_env)
       env evd typ
@@ -49,9 +49,8 @@ let do_symbol ~poly ~unfold_fix udecl (id, typ) =
   let _qvars, uvars = EConstr.universes_of_constr evd typ in
   let evd = Evd.restrict_universe_context evd uvars in
   let typ = EConstr.to_constr evd typ in
-  let univs = Evd.check_univ_decl ~poly evd udecl in
-  let variances = ComDefinition.variance_of_entry variances in
-  let entry = Declare.symbol_entry ~univs ?variances ~unfold_fix typ in
+  let univs = Evd.check_univ_decl ~poly evd ivariances udecl in
+  let entry = Declare.symbol_entry ~univs ~unfold_fix typ in
   let kn = Declare.declare_constant ~name:id ~kind:Decls.IsSymbol (Declare.SymbolEntry entry) in
   let () = Impargs.maybe_declare_manual_implicits false (GlobRef.ConstRef kn) impls in
   let () = Declare.assumption_message id in
@@ -402,6 +401,7 @@ let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) 
       univdecl_extensible_qualities = udecl.univdecl_extensible_qualities;
       univdecl_instance = instance;
       univdecl_extensible_instance = udecl.univdecl_extensible_instance;
+      univdecl_variances = None; (* FIXME *)
       univdecl_constraints = cstrs;
       univdecl_extensible_constraints = udecl.univdecl_extensible_constraints;
     } in

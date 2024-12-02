@@ -57,15 +57,15 @@ let hcons_template_universe ar =
 
 let universes_context = function
   | Monomorphic -> UVars.AbstractContext.empty
-  | Polymorphic ctx -> ctx
+  | Polymorphic (ctx, _) -> ctx
 
 let abstract_universes = function
   | Entries.Monomorphic_entry ->
     UVars.empty_sort_subst, Monomorphic
-  | Entries.Polymorphic_entry uctx ->
+  | Entries.Polymorphic_entry (uctx, variances) ->
     let (inst, auctx) = UVars.abstract_universes uctx in
     let inst = UVars.make_instance_subst inst in
-    (inst, Polymorphic auctx)
+    (inst, Polymorphic (auctx, variances))
 
 (** {6 Constants } *)
 
@@ -81,6 +81,10 @@ let constant_has_body cb = match cb.const_body with
 
 let constant_polymorphic_context cb =
   universes_context cb.const_universes
+
+let universes_variances = function
+  | Monomorphic -> None
+  | Polymorphic (_, variance) -> variance
 
 let is_opaque cb = match cb.const_body with
   | OpaqueDef _ -> true
@@ -121,7 +125,6 @@ let subst_const_body subst cb =
         const_body_code =
           Option.map (Vmemitcodes.subst_body_code subst) cb.const_body_code;
         const_universes = cb.const_universes;
-        const_variance = cb.const_variance;
         const_relevance = cb.const_relevance;
         const_inline_code = cb.const_inline_code;
         const_typing_flags = cb.const_typing_flags }
@@ -148,8 +151,9 @@ let hcons_const_def ?(hbody=Constr.hcons) = function
 let hcons_universes cbu =
   match cbu with
   | Monomorphic -> Monomorphic
-  | Polymorphic ctx ->
-    Polymorphic (UVars.hcons_abstract_universe_context ctx)
+  | Polymorphic (ctx, variances) ->
+    (* FIXME hashcons variances? *)
+    Polymorphic (UVars.hcons_abstract_universe_context ctx, variances)
 
 let hcons_const_body ?hbody cb =
   { cb with
@@ -279,7 +283,6 @@ let subst_mind_body subst mib =
     mind_packets = Array.Smart.map (subst_mind_packet subst) mib.mind_packets ;
     mind_universes = mib.mind_universes;
     mind_template = mib.mind_template;
-    mind_variance = mib.mind_variance;
     mind_sec_variance = mib.mind_sec_variance;
     mind_private = mib.mind_private;
     mind_typing_flags = mib.mind_typing_flags;
@@ -291,10 +294,10 @@ let inductive_polymorphic_context mib =
 let inductive_is_polymorphic mib =
   match mib.mind_universes with
   | Monomorphic -> false
-  | Polymorphic _ctx -> true
+  | Polymorphic _ -> true
 
 let inductive_is_cumulative mib =
-  Option.has_some mib.mind_variance
+  Option.has_some (universes_variances mib.mind_universes)
 
 let inductive_make_projection ind mib ~proj_arg =
   match mib.mind_record with

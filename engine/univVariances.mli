@@ -24,7 +24,7 @@ val universe_variances_of_record : Environ.env -> Evd.evar_map ->
 
 val universe_variances_of_proofs :
   Environ.env -> Evd.evar_map ->
-  (Environ.named_context_val * EConstr.t * EConstr.t) list ->
+  (Constr.t * Constr.t) list ->
   UnivMinim.level_variances
 
 val universe_variances_of_named_context :

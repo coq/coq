@@ -128,7 +128,8 @@ let define ?loc internal role id c poly uctx =
   let uctx = UState.minimize uctx in
   let c = UState.nf_universes uctx c in
   let uctx = UState.restrict uctx (Vars.universes_of_constr c) in
-  let univs = UState.univ_entry ~poly uctx in
+  (* FIXME infer variances *)
+  let univs = UState.univ_entry ~poly uctx None in
   !declare_definition_scheme ~internal ~univs ~role ~name:id ?loc c
 
   module Locmap : sig

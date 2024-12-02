@@ -41,7 +41,7 @@ let check_constant_declaration env opac kn cb opacify =
       (* Monomorphic universes are stored at the library level, the
          ones in const_universes should not be needed *)
       false, env
-    | Polymorphic auctx ->
+    | Polymorphic (auctx, _variances) -> (* FIXME check variances *)
       let ctx = UVars.AbstractContext.repr auctx in
       (* [env] contains De Bruijn universe variables *)
       let env = push_context ~strict:false ctx env in
@@ -96,7 +96,7 @@ let check_quality_mask env qmask lincheck =
 let check_instance_mask env udecl umask lincheck =
   match udecl, umask with
     | Monomorphic, ([||], [||]) -> lincheck
-    | Polymorphic uctx, (qmask, umask) ->
+    | Polymorphic (uctx, _), (qmask, umask) ->
         let lincheck = Array.fold_left_i (fun i lincheck mask -> check_quality_mask env mask lincheck) lincheck qmask in
         let lincheck = Array.fold_left_i (fun i lincheck mask -> Partial_subst.maybe_add_univ mask () lincheck) lincheck umask in
         if (Array.length qmask, Array.length umask) <> UVars.AbstractContext.size uctx then CErrors.anomaly Pp.(str "Bad univ mask length.");

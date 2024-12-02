@@ -245,32 +245,32 @@ let pr_universe_ctx_set sigma c =
   else
     mt()
 
-let pr_universe_ctx sigma ?variance c =
+let pr_universe_ctx sigma ?variances c =
   if !Detyping.print_universes && not (UVars.UContext.is_empty c) then
     fnl()++
     pr_in_comment
       (v 0
          (UVars.pr_universe_context (Termops.pr_evd_qvar sigma) (Termops.pr_evd_level sigma)
-            ?variance c))
+            ?variances c))
   else
     mt()
 
-let pr_abstract_universe_ctx sigma ?variance ?priv c =
+let pr_abstract_universe_ctx sigma ?variances ?priv c =
   let open Univ in
   let priv = Option.default Univ.ContextSet.empty priv in
   let has_priv = not (ContextSet.is_empty priv) in
   if !Detyping.print_universes && (not (UVars.AbstractContext.is_empty c) || has_priv) then
     let prqvar u = Termops.pr_evd_qvar sigma u in
     let prlev u = Termops.pr_evd_level sigma u in
-    let pub = (if has_priv then str "Public universes:" ++ fnl() else mt()) ++ v 0 (UVars.pr_abstract_universe_context prqvar prlev ?variance c) in
+    let pub = (if has_priv then str "Public universes:" ++ fnl() else mt()) ++ v 0 (UVars.pr_abstract_universe_context prqvar prlev ?variances c) in
     let priv = if has_priv then fnl() ++ str "Private universes:" ++ fnl() ++ v 0 (Univ.pr_universe_context_set prlev priv) else mt() in
     fnl()++pr_in_comment (pub ++ priv)
   else
     mt()
 
-let pr_universes sigma ?variance ?priv = function
+let pr_universes sigma ?priv = function
   | Declarations.Monomorphic -> mt ()
-  | Declarations.Polymorphic ctx -> pr_abstract_universe_ctx sigma ?variance ?priv ctx
+  | Declarations.Polymorphic (ctx, variances) -> pr_abstract_universe_ctx sigma ?variances ?priv ctx
 
 (**********************************************************************)
 (* Global references *)

@@ -83,7 +83,6 @@ val interp_mutual_inductive_constr
   :  sigma:Evd.evar_map
   -> flags:flags
   -> udecl:UState.universe_decl
-  -> variances:Entries.variance_entry
   -> ctx_params:EConstr.rel_context
   -> indnames:Names.Id.t list
   -> arities_explicit:bool list
@@ -117,10 +116,9 @@ val maybe_unify_params_in : Environ.env -> Evd.evar_map -> ninds:int -> nparams:
 
 val variance_of_entry
   : cumulative:bool
-  -> variances:Entries.variance_entry
-  -> Entries.inductive_universes_entry
-  -> Entries.variance_entry option
-(** Will return None if non-cumulative, and resize if there are more
+  -> UVars.UContext.t
+  -> UVars.variances option -> UVars.variances option
+(** The identity if non-cumulative, and resize if there are more
     universes than originally specified.
     If monomorphic, [cumulative] is treated as [false].
 *)

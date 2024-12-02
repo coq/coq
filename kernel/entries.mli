@@ -16,16 +16,16 @@ open Constr
    constants/axioms, mutual inductive definitions, modules and module
    types *)
 
+type variance_entry = UVars.Variance.t array option
+
 type universes_entry =
   | Monomorphic_entry
-  | Polymorphic_entry of UVars.UContext.t
+  | Polymorphic_entry of UVars.UContext.t * variance_entry
 
 type inductive_universes_entry =
   | Monomorphic_ind_entry
-  | Polymorphic_ind_entry of UVars.UContext.t
+  | Polymorphic_ind_entry of UVars.UContext.t * variance_entry
   | Template_ind_entry of Univ.ContextSet.t
-
-type variance_entry = UVars.Variance.t option array
 
 type 'a in_universes_entry = 'a * universes_entry
 
@@ -57,7 +57,6 @@ type mutual_inductive_entry = {
   mind_entry_params : Constr.rel_context;
   mind_entry_inds : one_inductive_entry list;
   mind_entry_universes : inductive_universes_entry;
-  mind_entry_variance : variance_entry option;
   (* [None] if non-cumulative, otherwise associates each universe of
      the entry to [None] if to be inferred or [Some v] if to be
      checked. *)
@@ -72,7 +71,6 @@ type definition_entry = {
   definition_entry_secctx : Id.Set.t option;
   definition_entry_type : types option;
   definition_entry_universes : universes_entry;
-  definition_entry_variance : Declarations.variances option;
   definition_entry_inline_code : bool;
 }
 
@@ -100,7 +98,6 @@ type parameter_entry = {
 
 type primitive_entry = {
   prim_entry_type : types in_universes_entry option;
-  prim_entry_variance : Declarations.variances option;
   prim_entry_content : CPrimitives.op_or_type;
 }
 

@@ -28,7 +28,7 @@ let position_variance_sup (old_position, old_variance as o) (position, variance)
   | Irrelevant -> o (* The new variance is irrelevant, we keep record of the first relevant position *)
   | _ -> (position, Variance.sup old_variance variance)
 
-let compute_variances env sigma status position variance c =
+let compute_variances_constr env sigma status position variance c =
   let update_variance position variance level status =
     let upd old_variance =
       match old_variance with
@@ -79,7 +79,7 @@ let compute_variances env sigma status position variance c =
       aux status position variance codom
     | Const _ | Ind _ | Construct _ ->
       let gr, u = Constr.destRef c in
-      let gvariance = Environ.variance env gr in
+      let gvariance = Environ.variances env gr in
       (match gvariance with
       | None -> update_instance_variances position u status
       | Some gvariance -> update_cumul_instance_variances position variance gvariance u status)
@@ -90,8 +90,20 @@ let compute_variances env sigma status position variance c =
       aux status position variance (Vars.subst1 b codom)
     | _ -> fold_constr_with_binders (fun acc -> acc) (fun ctx status c -> aux status position variance c) () status c
   in
-  let c = EConstr.to_constr ~abort_on_undefined_evars:false sigma c in
   aux status position variance c
+
+let compute_variances env sigma status position variance c =
+  let c = EConstr.to_constr ~abort_on_undefined_evars:false sigma c in
+  compute_variances_constr env sigma status position variance c
+
+let compute_variances_context_constr env sigma ?(variance=Variance.Contravariant) status ctx =
+  let fold_binder i binder status =
+    let open Context.Rel.Declaration in
+    compute_variances_constr env sigma status (InBinder i) variance (get_type binder)
+  in
+  let variances = CList.fold_right_i fold_binder 0 ctx status in
+  debug Pp.(fun () -> str"Variances in context: " ++ UnivMinim.pr_variances (Evd.pr_level sigma) variances);
+  variances
 
 let compute_variances_context env sigma ?(variance=Variance.Contravariant) status ctx =
   let fold_binder i binder status =
@@ -102,15 +114,21 @@ let compute_variances_context env sigma ?(variance=Variance.Contravariant) statu
   debug Pp.(fun () -> str"Variances in context: " ++ UnivMinim.pr_variances (Evd.pr_level sigma) variances);
   variances
 
+let compute_variances_body_constr env sigma status c =
+  let ctx, c = Term.decompose_lambda_decls c in
+  let status = compute_variances_context_constr env sigma status ctx in
+  compute_variances_constr env sigma status InTerm Variance.Covariant c
+
 let compute_variances_body env sigma status c =
-  let ctx, c = EConstr.decompose_lambda_decls sigma c in
-  let status = compute_variances_context env sigma status ctx in
-  compute_variances env sigma status InTerm Variance.Covariant c
+  compute_variances_body_constr env sigma status (EConstr.to_constr sigma c)
+
+let compute_variances_type_constr env sigma status c =
+  let ctx, c = Term.decompose_prod_decls c in
+  let status = compute_variances_context_constr env sigma status ctx in
+ compute_variances_constr env sigma status InType Variance.Covariant c
 
 let compute_variances_type env sigma status c =
-  let ctx, c = EConstr.decompose_prod_decls sigma c in
-  let status = compute_variances_context env sigma status ctx in
- compute_variances env sigma status InType Variance.Covariant c
+  compute_variances_type_constr env sigma status (EConstr.to_constr sigma c)
 
 let init_status sigma =
   let ustate = Evd.ustate sigma in
@@ -151,9 +169,9 @@ let universe_variances_of_record env sigma ~params ~fields ~types =
 
 let universe_variances_of_proofs env sigma proofs =
   let status = init_status sigma in
-  List.fold_left (fun status (_, body, typ) ->
-    let status = compute_variances_body env sigma status body in
-    compute_variances_type env sigma status typ) status proofs
+  List.fold_left (fun status (body, typ) ->
+    let status = compute_variances_body_constr env sigma status body in
+    compute_variances_type_constr env sigma status typ) status proofs
 
 let universe_variances_of_named_context env sigma ?(variance=Variance.Contravariant) ctx =
   let status = init_status sigma in

@@ -283,7 +283,7 @@ let generate_functional_principle (evd : Evd.evar_map ref) old_princ_type sorts
                  (EConstr.of_constr value))
           in
           (* Pp.msgnl (str "new principle := " ++ pr_lconstr value); *)
-          let univs = Evd.univ_entry ~poly:false evd' in
+          let univs = Evd.univ_entry ~poly:false evd' None in
           let ce = Declare.definition_entry ~univs value in
           ignore
             (Declare.declare_constant ~name

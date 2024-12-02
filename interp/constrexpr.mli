@@ -45,9 +45,9 @@ type instance_expr = quality_expr list * opt_universe_expr list
 (** Constraints don't have anonymous universes *)
 type univ_constraint_expr = universe_expr * (Univ.constraint_type * bool) * universe_expr
 
-type universe_decl_expr = (lident list, lident list, univ_constraint_expr list) UState.gen_universe_decl
+type universe_decl_expr = (lident list, lident list, unit, univ_constraint_expr list) UState.gen_universe_decl
 type cumul_univ_decl_expr =
-  (lident list, (lident * UVars.Variance.t option) list, univ_constraint_expr list) UState.gen_universe_decl
+  (lident list, (lident * UVars.Variance.t option) list, unit, univ_constraint_expr list) UState.gen_universe_decl
 
 type ident_decl = lident * universe_decl_expr option
 type cumul_ident_decl = lident * cumul_univ_decl_expr option

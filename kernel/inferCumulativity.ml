@@ -125,7 +125,7 @@ let extend_ind_instance mib u =
   (Array.append (level_instance_univs mib.mind_univ_hyps) (instance_univs u))
 
 let extended_mind_variance mind =
-  match mind.mind_variance, mind.mind_sec_variance with
+  match Declareops.universes_variances mind.mind_universes, mind.mind_sec_variance with
   | None, None -> None
   | Some _ as variance, None -> variance
   | None, Some _ -> assert false

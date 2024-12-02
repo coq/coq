@@ -284,6 +284,8 @@ type position =
 (* The position records the last position in the term where the variable was used relevantly. *)
 type level_variances = (position * UVars.Variance.t) Univ.Level.Map.t
 
+let empty_level_variances = Univ.Level.Map.empty
+
 let pr_pos_variance (position, variance) =
   let open Pp in
   let pr_pos = function InBinder i -> str "(in " ++ pr_nth i ++ str" binder)" | InTerm -> str "(in term)" | InType -> str "(in type)" in

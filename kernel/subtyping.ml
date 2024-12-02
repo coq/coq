@@ -93,25 +93,27 @@ let check_conv_error error why state poly pb env a1 a2 =
   | Result.Error None -> error why
   | Result.Error (Some e) -> error (IncompatibleUniverses e)
 
-let check_universes error env u1 u2 =
-  match u1, u2 with
-  | Monomorphic, Monomorphic -> env
-  | Polymorphic auctx1, Polymorphic auctx2 ->
-    if not (UGraph.check_subtype (Environ.universes env) auctx2 auctx1) then
-      error (IncompatibleConstraints { got = auctx1; expect = auctx2; } )
-    else
-      Environ.push_context ~strict:false (UVars.AbstractContext.repr auctx2) env
-  | Monomorphic, Polymorphic _ -> error (PolymorphicStatusExpected true)
-  | Polymorphic _, Monomorphic -> error (PolymorphicStatusExpected false)
-
-let check_variance error v1 v2 =
+let check_variance error env v1 v2 =
   match v1, v2 with
-  | None, None -> ()
+  | None, None -> env
   | Some v1, Some v2 ->
     if not (Array.for_all2 Variance.check_subtype v2 v1) then
       error IncompatibleVariance
+    else env
   | None, Some _ -> error (CumulativeStatusExpected true)
   | Some _, None -> error (CumulativeStatusExpected false)
+
+let check_universes error env u1 u2 =
+  match u1, u2 with
+  | Monomorphic, Monomorphic -> env
+  | Polymorphic (auctx1, variances1), Polymorphic (auctx2, variances2) ->
+    if not (UGraph.check_subtype (Environ.universes env) auctx2 auctx1) then
+      error (IncompatibleConstraints { got = auctx1; expect = auctx2; } )
+    else
+      (let env = check_variance error env variances1 variances2 in
+       Environ.push_context ~strict:false (UVars.AbstractContext.repr auctx2) env)
+  | Monomorphic, Polymorphic _ -> error (PolymorphicStatusExpected true)
+  | Polymorphic _, Monomorphic -> error (PolymorphicStatusExpected false)
 
 let squash_info_equal s1 s2 = match s1, s2 with
   | AlwaysSquashed, AlwaysSquashed -> true
@@ -131,7 +133,6 @@ let check_inductive (cst, ustate) trace env mp1 l info1 mp2 mib2 subst1 subst2 r
       | _ -> error (InductiveFieldExpected mib2)
   in
   let env = check_universes error env mib1.mind_universes mib2.mind_universes in
-  let () = check_variance error mib1.mind_variance mib2.mind_variance in
   let inst = make_abstract_instance (Declareops.inductive_polymorphic_context mib1) in
   let mib2 =  Declareops.subst_mind_body subst2 mib2 in
   let check_inductive_type cst name t1 t2 =

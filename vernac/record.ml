@@ -190,7 +190,6 @@ type tc_result =
   Impargs.manual_implicits
   (* Part relative to closing the definitions *)
   * UState.named_universes_entry
-  * Entries.variance_entry
   * Constr.rel_context
   * DataR.t list
 
@@ -224,7 +223,7 @@ let typecheck_params_and_fields ~auto_prop_lowering def ~poly udecl ps (records 
   let is_template =
     List.exists (fun { DataI.arity; _} -> Option.cata check_anonymous_type true arity) records in
   let unconstrained_sorts = not poly && not def && is_template in
-  let sigma, decl, variances = Constrintern.interp_cumul_univ_decl_opt env0 udecl in
+  let sigma, decl = Constrintern.interp_cumul_univ_decl_opt env0 udecl in
   let () = List.iter check_parameters_must_be_named ps in
   let sigma, (impls_env, ((_env1,newps), imps)) =
     Constrintern.interp_context_evars ~program_mode:false ~unconstrained_sorts env0 sigma ps in
@@ -285,10 +284,10 @@ let typecheck_params_and_fields ~auto_prop_lowering def ~poly udecl ps (records 
     let sigma = Evd.restrict_universe_context ~lbound sigma !uvars in
     sigma, (newps, ans)
   in
-  let univs = Evd.check_univ_decl ~poly sigma decl in
+  let univs = Evd.check_univ_decl ~poly sigma ivariances decl in
   let ce t = Pretyping.check_evars env0 sigma (EConstr.of_constr t) in
   let () = List.iter (iter_constr ce) (List.rev newps) in
-  imps, univs, variances, newps, ans
+  imps, univs, newps, ans
 
 type record_error =
   | MissingProj of Id.t * Id.t list
@@ -441,8 +440,10 @@ let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramde
   let proj = it_mkLambda_or_LetIn (mkLambda (x,rp,body)) paramdecls in
   let projtyp = it_mkProd_or_LetIn (mkProd (x,rp,ccl)) paramdecls in
   let univs = match fst univs with
-  | Entries.Monomorphic_entry -> UState.Monomorphic_entry Univ.ContextSet.empty, snd univs
-  | Entries.Polymorphic_entry uctx -> UState.Polymorphic_entry uctx, snd univs
+  | Entries.Monomorphic_entry ->
+    UState.{ universes_entry_universes = UState.Monomorphic_entry Univ.ContextSet.empty;
+      universes_entry_binders = snd univs }
+  | Entries.Polymorphic_entry (uctx, variances) -> UState.{ universes_entry_universes = UState.Polymorphic_entry (uctx, variances); universes_entry_binders = snd univs }
   in
   let entry = Declare.definition_entry ~univs ~types:projtyp proj in
   let kind = Decls.IsDefinition kind in
@@ -503,7 +504,7 @@ let declare_projections indsp univs ?(kind=Decls.StructureComponent) inhabitant_
   let (mib,mip) = Global.lookup_inductive indsp in
   let poly = Declareops.inductive_is_polymorphic mib in
   let uinstance = match fst univs with
-    | Polymorphic_entry uctx -> UVars.Instance.of_level_instance @@ UVars.UContext.instance uctx
+    | Polymorphic_entry (uctx, _) -> UVars.Instance.of_level_instance @@ UVars.UContext.instance uctx
     | Monomorphic_entry -> UVars.Instance.empty
   in
   let paramdecls = Inductive.inductive_paramdecls (mib, uinstance) in
@@ -721,7 +722,7 @@ let pre_process_structure ~auto_prop_lowering udecl kind ~poly (records : Ast.t 
   let indlocs = check_unique_names records in
   let () = check_priorities kind records in
   let ps, data = extract_record_data records in
-  let impargs, univs, variances, params, data =
+  let impargs, univs, params, data =
     (* In theory we should be able to use
        [Notation.with_notation_protection], due to the call to
        Metasyntax.set_notation_for_interpretation, however something
@@ -749,15 +750,15 @@ let pre_process_structure ~auto_prop_lowering udecl kind ~poly (records : Ast.t 
   let data = List.map2 map data records in
   let projections_kind =
     Decls.(match kind_class kind with NotClass -> StructureComponent | _ -> Method) in
-  impargs, params, univs, variances, projections_kind, data, indlocs
+  impargs, params, univs, projections_kind, data, indlocs
 
-let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind ~indlocs data =
+let interp_structure_core ~cumulative finite ~univs ~primitive_proj impargs params template ~projections_kind ~indlocs data =
   let nparams = List.length params in
-  let (univs, ubinders) = univs in
+  let ubinders = univs.UState.universes_entry_binders in
   let poly, projunivs =
-    match univs with
+    match univs.UState.universes_entry_universes with
     | UState.Monomorphic_entry _ -> false, Entries.Monomorphic_entry
-    | UState.Polymorphic_entry uctx -> true, Entries.Polymorphic_entry uctx
+    | UState.Polymorphic_entry (uctx, variances) -> true, Entries.Polymorphic_entry (uctx, variances)
   in
   let ntypes = List.length data in
   let mk_block i { Data.id; idbuild; rdata = { DataR.arity; fields; _ }; _ } =
@@ -774,24 +775,27 @@ let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj i
   let ind_univs, global_univ_decls = match blocks, data with
   | [entry], [data] ->
     ComInductive.compute_template_inductive ~user_template:template
-      ~ctx_params:params ~univ_entry:univs entry
+      ~ctx_params:params ~univ_entry:univs.universes_entry_universes entry
       (if Term.isArity entry.mind_entry_arity then SyntaxAllowsTemplatePoly else SyntaxNoTemplatePoly)
   | _ ->
     begin match template with
     | Some true -> user_err Pp.(str "Template-polymorphism not allowed with mutual records.")
     | Some false | None ->
-      match univs with
-      | UState.Polymorphic_entry uctx -> Polymorphic_ind_entry uctx, Univ.ContextSet.empty
+      match univs.universes_entry_universes with
+      | UState.Polymorphic_entry (uctx, variances) -> Polymorphic_ind_entry (uctx, variances), Univ.ContextSet.empty
       | UState.Monomorphic_entry uctx -> Monomorphic_ind_entry, uctx
     end
   in
-  let globnames, global_univ_decls = match ind_univs with
-  | Monomorphic_ind_entry -> (univs, ubinders), Some global_univ_decls
-  | Template_ind_entry _ -> (univs, ubinders), Some global_univ_decls
-  | Polymorphic_ind_entry _ -> (univs, UnivNames.empty_binders), None
+  let globnames, global_univ_decls, univs = match ind_univs with
+  | Monomorphic_ind_entry -> univs, Some global_univ_decls, ind_univs
+  | Template_ind_entry _ -> univs, Some global_univ_decls, ind_univs
+  | Polymorphic_ind_entry (ctx, variances) ->
+    let variances = ComInductive.variance_of_entry ~cumulative ctx variances in
+    let univs =
+      UState.{ universes_entry_universes = Polymorphic_entry (ctx, variances);
+               universes_entry_binders = UnivNames.empty_binders }
+    in univs, None, Polymorphic_ind_entry (ctx, variances)
   in
-  let univs = ind_univs in
-  let variance = ComInductive.variance_of_entry ~cumulative ~variances univs in
   let mie =
     { mind_entry_params = params;
       mind_entry_record = Some (if primitive_proj then Some (Array.map_of_list (fun a -> a.Data.inhabitant_id) data) else None);
@@ -799,7 +803,6 @@ let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj i
       mind_entry_inds = blocks;
       mind_entry_private = None;
       mind_entry_universes = univs;
-      mind_entry_variance = variance;
     }
   in
   let impls = List.map (fun _ -> impargs, []) data in
@@ -820,9 +823,9 @@ let interp_structure ~flags udecl kind ~primitive_proj records =
       auto_prop_lowering;
       finite;
     } = flags in
-  let impargs, params, univs, variances, projections_kind, data, indlocs =
+  let impargs, params, univs, projections_kind, data, indlocs =
     pre_process_structure ~auto_prop_lowering udecl kind ~poly records in
-  interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind ~indlocs data
+  interp_structure_core ~cumulative finite ~univs ~primitive_proj impargs params template ~projections_kind ~indlocs data
 
 let declare_structure { Record_decl.mie; default_dep_elim; primitive_proj; impls; globnames; global_univ_decls; projunivs; ubinders; projections_kind; poly; records; indlocs } =
   Option.iter Global.push_context_set global_univ_decls;
@@ -846,14 +849,10 @@ let get_class_params : Data.t list -> Data.t = function
   | _ ->
     CErrors.user_err (str "Mutual definitional classes are not supported.")
 
-let fix_variances v =
-  if Array.for_all Option.is_empty v then None
-  else Some (Array.map (function None -> UVars.Variance.Invariant | Some v -> v) v)
-
 (* declare definitional class (typeclasses that are not record) *)
 (* [data] is a list with a single [Data.t] with a single field (in [Data.rdata])
    and [Data.is_coercion] must be [NoCoercion] *)
-let declare_class_constant ~univs ~variances paramimpls params data =
+let declare_class_constant ~univs paramimpls params data =
   let {Data.id; rdata; is_coercion; proj_flags; inhabitant_id} = get_class_params data in
   assert (not is_coercion);  (* should be ensured by caller *)
   let implfs = rdata.DataR.implfs in
@@ -865,16 +864,16 @@ let declare_class_constant ~univs ~variances paramimpls params data =
     | _ -> assert false in  (* should be ensured by caller *)
   let class_body = it_mkLambda_or_LetIn field params in
   let class_type = it_mkProd_or_LetIn rdata.DataR.arity params in
-  let variances = fix_variances variances in
   let class_entry =
-    Declare.definition_entry ~types:class_type ~univs ?variances class_body in
+    Declare.definition_entry ~types:class_type ~univs class_body in
   let cst = Declare.declare_constant ~name:id
       (Declare.DefinitionEntry class_entry) ~kind:Decls.(IsDefinition Definition)
   in
-  let inst, univs = match univs with
-    | UState.Monomorphic_entry _, ubinders ->
-      UVars.Instance.empty, (UState.Monomorphic_entry Univ.ContextSet.empty, ubinders)
-    | UState.Polymorphic_entry uctx, _ ->
+  let inst, univs = match univs.universes_entry_universes with
+    | UState.Monomorphic_entry _ ->
+      UVars.Instance.empty,
+      UState.{ univs with universes_entry_universes = UState.Monomorphic_entry Univ.ContextSet.empty }
+    | UState.Polymorphic_entry (uctx, variances) ->
       UVars.Instance.of_level_instance (UVars.UContext.instance uctx), univs
   in
   let cstu = (cst, inst) in
@@ -966,8 +965,8 @@ let declare_class ~univs params inds def ?mode data =
   in
   let data = List.map map inds in
   let univs, params, fields =
-    match fst univs with
-    | UState.Polymorphic_entry uctx ->
+    match univs.UState.universes_entry_universes with
+    | UState.Polymorphic_entry (uctx, variances) ->
       let usubst, auctx = UVars.abstract_universes uctx in
       let usubst = UVars.make_instance_subst usubst in
       let map c = Vars.subst_univs_level_constr usubst c in
@@ -1058,15 +1057,15 @@ let definition_structure ~flags udecl kind ~primitive_proj (records : Ast.t list
       auto_prop_lowering;
       finite;
     } = flags in
-  let impargs, params, univs, variances, projections_kind, data, indlocs =
+  let impargs, params, univs, projections_kind, data, indlocs =
     pre_process_structure ~auto_prop_lowering udecl kind ~poly records
   in
   let inds, def = match kind_class kind with
-    | DefClass -> declare_class_constant ~univs ~variances impargs params data
+    | DefClass -> declare_class_constant ~univs impargs params data
     | RecordClass | NotClass ->
       let structure =
         interp_structure_core
-          ~cumulative finite ~univs ~variances ~primitive_proj
+          ~cumulative finite ~univs ~primitive_proj
           impargs params template ~projections_kind ~indlocs data in
       declare_structure structure
   in

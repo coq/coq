@@ -105,7 +105,6 @@ module Info : sig
     -> ?kind : Decls.logical_kind
     (** Theorem, etc... *)
     -> ?udecl : UState.universe_decl
-    -> ?variances : Declarations.variances
     -> ?scope : Locality.definition_scope
     (** locality  *)
     -> ?clearbody:bool
@@ -358,26 +357,22 @@ val definition_entry
   -> ?inline:bool
   -> ?types:Constr.types
   -> ?univs:UState.named_universes_entry
-  -> ?variances:Declarations.variances
   -> Constr.constr
   -> proof_entry
 
 val parameter_entry
   :  ?inline:int
   -> ?univs:UState.named_universes_entry
-  -> ?variances:Declarations.variances
   -> Constr.constr
   -> parameter_entry
 
 val primitive_entry
   :  ?types:(Constr.types * UState.named_universes_entry)
-  -> ?variances:Declarations.variances
   -> CPrimitives.op_or_type
   -> primitive_entry
 
 val symbol_entry
   :  ?univs:UState.named_universes_entry
-  -> ?variances:Declarations.variances
   -> unfold_fix:bool
   -> Constr.types
   -> symbol_entry
@@ -432,7 +427,6 @@ type constant_entry =
 val prepare_parameter
   : poly:bool
   -> udecl:UState.universe_decl
-  -> ?variances:Declarations.variances
   -> types:EConstr.types
   -> Evd.evar_map
   -> Evd.evar_map * parameter_entry

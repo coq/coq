@@ -78,5 +78,3 @@ val do_definition_interactive
   -> local_binder_expr list
   -> constr_expr
   -> Declare.Proof.t
-
-val variance_of_entry :  UVars.Variance.t option array -> Declarations.variances option

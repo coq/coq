@@ -178,7 +178,9 @@ let decl_constant name univs c =
   let univs = UState.restrict_universe_context univs vars in
   let () = Global.push_context_set univs in
   let types = (Typeops.infer (Global.env ()) c).uj_type in
-  let univs = UState.Monomorphic_entry Univ.ContextSet.empty, UnivNames.empty_binders in
+  let univs =
+    UState.{ universes_entry_universes = Monomorphic_entry Univ.ContextSet.empty;
+      universes_entry_binders = UnivNames.empty_binders } in
   (* UnsafeMonomorphic: we always do poly:false *)
   UnsafeMonomorphic.mkConst
     (declare_constant ~name

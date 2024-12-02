@@ -365,6 +365,7 @@ GRAMMAR EXTEND Gram
            univdecl_extensible_qualities = false;
            univdecl_instance = l;
            univdecl_extensible_instance = ext;
+           univdecl_variances = ();
            univdecl_constraints = fst cs;
            univdecl_extensible_constraints = snd cs } }
     | "@{" ; l = LIST0 identref; ext = [ "?" -> { true } | -> { false } ];
@@ -375,6 +376,7 @@ GRAMMAR EXTEND Gram
            univdecl_extensible_qualities = false;
            univdecl_instance = l;
            univdecl_extensible_instance = ext;
+           univdecl_variances = ();
            univdecl_constraints = fst cs;
            univdecl_extensible_constraints = snd cs } }
     ] ]
@@ -403,6 +405,7 @@ GRAMMAR EXTEND Gram
            univdecl_extensible_qualities = false;
            univdecl_instance = l;
            univdecl_extensible_instance = ext;
+           univdecl_variances = ();
            univdecl_constraints = fst cs;
            univdecl_extensible_constraints = snd cs } }
 
@@ -414,6 +417,7 @@ GRAMMAR EXTEND Gram
            univdecl_extensible_qualities = false;
            univdecl_instance = l;
            univdecl_extensible_instance = ext;
+           univdecl_variances = ();
            univdecl_constraints = fst cs;
            univdecl_extensible_constraints = snd cs } }
     ] ]

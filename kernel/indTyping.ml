@@ -433,7 +433,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
            where the universes introduced by the definition are only [>= Prop] *)
         Environ.push_floating_context_set ctx env
     | Monomorphic_ind_entry -> env
-    | Polymorphic_ind_entry ctx -> push_context ctx env
+    | Polymorphic_ind_entry (ctx, _variance) -> push_context ctx env
   in
 
   let has_template_poly = match mie.mind_entry_universes with
@@ -474,43 +474,41 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
         data, Some None, reason
   in
 
-  let variance = match mie.mind_entry_variance with
-    | None -> None
-    | Some variances ->
+  let usubst, univs =
       match mie.mind_entry_universes with
       | Monomorphic_ind_entry | Template_ind_entry _ ->
-        CErrors.user_err Pp.(str "Inductive cannot be both monomorphic and universe cumulative.")
-      | Polymorphic_ind_entry uctx ->
-        (* no variance for qualities *)
-        let _qualities, univs = LevelInstance.to_array @@ UContext.instance uctx in
-        let univs = Array.map2 (fun a b -> a,b) univs variances in
-        let univs = match sec_univs with
-          | None -> univs
-          | Some sec_univs ->
-            (* no variance for qualities *)
-            let _, sec_univs = UVars.LevelInstance.to_array sec_univs in
-            let sec_univs = Array.map (fun u -> u, None) sec_univs in
-            Array.append sec_univs univs
+        UVars.empty_sort_subst, Monomorphic
+      | Polymorphic_ind_entry (uctx, variance) ->
+        let variance = match variance with
+        | None -> None
+        | Some variances ->
+          (* no variance for qualities *)
+          let _qualities, univs = LevelInstance.to_array @@ UContext.instance uctx in
+          let univs = Array.map2 (fun a b -> a,Some b) univs variances in
+          let univs = match sec_univs with
+            | None -> univs
+            | Some sec_univs ->
+              (* no variance for qualities *)
+              let _, sec_univs = UVars.LevelInstance.to_array sec_univs in
+              let sec_univs = Array.map (fun u -> u, None) sec_univs in
+              Array.append sec_univs univs
+          in
+          let variances = InferCumulativity.infer_inductive ~env_params ~env_ar_par
+              ~arities:(List.map (fun e -> e.mind_entry_arity) mie.mind_entry_inds)
+              ~ctors:(List.map (fun e -> e.mind_entry_lc) mie.mind_entry_inds)
+              univs
+          in
+          Some variances
         in
-        let variances = InferCumulativity.infer_inductive ~env_params ~env_ar_par
-            ~arities:(List.map (fun e -> e.mind_entry_arity) mie.mind_entry_inds)
-            ~ctors:(List.map (fun e -> e.mind_entry_lc) mie.mind_entry_inds)
-            univs
-        in
-        Some variances
+        (* Abstract universes *)
+        let (inst, auctx) = UVars.abstract_universes uctx in
+        let inst = UVars.make_instance_subst inst in
+        (inst, Polymorphic (auctx, variance))
+
   in
 
   let template = get_template mie.mind_entry_universes ~env_params ~env_ar_par ~params mie.mind_entry_inds data in
 
-  (* Abstract universes *)
-  let usubst, univs = match mie.mind_entry_universes with
-  | Monomorphic_ind_entry | Template_ind_entry _ ->
-    UVars.empty_sort_subst, Monomorphic
-  | Polymorphic_ind_entry uctx ->
-    let (inst, auctx) = UVars.abstract_universes uctx in
-    let inst = UVars.make_instance_subst inst in
-    (inst, Polymorphic auctx)
-  in
   let params = Vars.subst_univs_level_context usubst params in
   let data = List.map (abstract_packets usubst) data in
 
@@ -521,4 +519,4 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
     Environ.push_rel_context ctx env
   in
 
-  env_ar_par, univs, template, variance, record, why_not_prim_record, params, Array.of_list data
+  env_ar_par, univs, template, record, why_not_prim_record, params, Array.of_list data

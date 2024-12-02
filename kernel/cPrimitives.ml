@@ -286,7 +286,7 @@ let const_of_string = function
 
 let const_univs = function
   | Arraymaxlength
-  | Stringmaxlength -> AbstractContext.empty
+  | Stringmaxlength -> AbstractContext.empty, None
 
 type 'a prim_type =
   | PT_int63 : unit prim_type
@@ -308,12 +308,13 @@ and ind_or_type =
   | PITT_param : int -> ind_or_type (* DeBruijn index referring to prenex type quantifiers *)
 
 let one_univ =
-  AbstractContext.make ([||],Names.[|Name (Id.of_string "u")|]) Constraints.empty
+  AbstractContext.make ([||],Names.[|Name (Id.of_string "u")|]) Constraints.empty,
+  Some (Array.make 1 (UVars.Variance.Irrelevant))
 
 let typ_univs (type a) (t : a prim_type) = match t with
-  | PT_int63 -> AbstractContext.empty
-  | PT_float64 -> AbstractContext.empty
-  | PT_string -> AbstractContext.empty
+  | PT_int63 -> AbstractContext.empty, None
+  | PT_float64 -> AbstractContext.empty, None
+  | PT_string -> AbstractContext.empty, None
   | PT_array -> one_univ
 
 type prim_type_ex = PTE : 'a prim_type -> prim_type_ex
@@ -522,7 +523,7 @@ let univs = function
   | Stringget
   | Stringsub
   | Stringcat
-  | Stringcompare -> AbstractContext.empty
+  | Stringcompare -> AbstractContext.empty, None
 
   | Arraymake
   | Arrayget

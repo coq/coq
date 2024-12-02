@@ -969,15 +969,15 @@ let is_type_in_type env r =
   | IndRef ind -> type_in_type_ind ind env
   | ConstructRef cstr -> type_in_type_ind (inductive_of_constructor cstr) env
 
-let variance env gr =
+let variances env gr =
   let open GlobRef in
   match gr with
   | ConstRef cst ->
-    let cb = lookup_constant cst env in cb.const_variance
+    let cb = lookup_constant cst env in Declareops.universes_variances cb.const_universes
   | IndRef ind ->
-    let mib = lookup_mind (fst ind) env in mib.mind_variance
+    let mib = lookup_mind (fst ind) env in Declareops.universes_variances mib.mind_universes
   | ConstructRef cstr ->
-    let mib = lookup_mind (fst (fst cstr)) env in mib.mind_variance
+    let mib = lookup_mind (fst (fst cstr)) env in Declareops.universes_variances mib.mind_universes
   | VarRef _id -> None
 
 let vm_library env = env.vm_library

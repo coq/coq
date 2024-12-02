@@ -95,7 +95,7 @@ let () =
 
 (* Util *)
 let define ~poly name sigma c types =
-  let univs = Evd.univ_entry ~poly sigma in
+  let univs = Evd.univ_entry ~poly sigma None in
   let entry = Declare.definition_entry ~univs ?types c in
   let kind = Decls.(IsDefinition Scheme) in
   let kn = Declare.declare_constant ~kind ~name (Declare.DefinitionEntry entry) in

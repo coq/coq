@@ -71,9 +71,15 @@ struct
     Array.fold_left3 eq_constraint csts variance u u'
 end
 
+type variances = Variance.t array
+
 let pr_variances var =
   let open Pp in
   prvect_with_sep spc Variance.pr var
+
+let eq_variances = Array.equal Variance.equal
+
+let sub_variances inf exp = Array.equal Variance.check_subtype exp inf
 
 module LevelInstance : sig
     type t
@@ -97,7 +103,7 @@ module LevelInstance : sig
 
     val subst_fn : (Sorts.QVar.t -> Quality.t) * (Level.t -> Level.t) -> t -> t
 
-    val pr : (Sorts.QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
+    val pr : (Sorts.QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variances:variances -> t -> Pp.t
     val levels : t -> Quality.Set.t * Level.Set.t
 
     val lookup_quality : t -> int -> Quality.t
@@ -193,9 +199,9 @@ struct
     let u = Array.fold_left (fun acc x -> Level.Set.add x acc) Level.Set.empty xu in
     q, u
 
-  let pr prq prl ?variance (q,u) =
+  let pr prq prl ?variances (q,u) =
     let ppu i u =
-      let v = Option.map (fun v -> if i < Array.length v then v.(i) else Variance.Invariant (* TODO fix: bad caller somewhere *)) variance in
+      let v = Option.map (fun v -> if i < Array.length v then v.(i) else Variance.Invariant (* TODO fix: bad caller somewhere *)) variances in
       pr_opt_no_spc Variance.pr v ++ prl u
     in
     (if Array.is_empty q then mt() else prvect_with_sep spc (Quality.pr prq) q ++ strbrk " | ")
@@ -233,7 +239,7 @@ module Instance : sig
 
   val subst_fn : (Sorts.QVar.t -> Quality.t) * (Level.t -> Universe.t) -> t -> t
 
-  val pr : (Sorts.QVar.t -> Pp.t) -> (Universe.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
+  val pr : (Sorts.QVar.t -> Pp.t) -> (Universe.t -> Pp.t) -> ?variances:variances -> t -> Pp.t
   val levels : t -> Quality.Set.t * Level.Set.t
   type mask = Quality.pattern array * int option array
 
@@ -330,9 +336,9 @@ let levels (xq,xu) =
   let u = Array.fold_left (fun acc x -> Level.Set.union (Universe.levels x) acc) Level.Set.empty xu in
   q, u
 
-let pr prq prl ?variance (q,u) =
+let pr prq prl ?variances (q,u) =
   let ppu i u =
-    let v = Option.map (fun v -> v.(i)) variance in
+    let v = Option.map (fun v -> v.(i)) variances in
     pr_opt_no_spc Variance.pr v ++ prl u
   in
   (if Array.is_empty q then mt() else prvect_with_sep spc (Quality.pr prq) q ++ strbrk " | ")
@@ -514,9 +520,9 @@ struct
   let empty = (([||], [||]), (LevelInstance.empty, Constraints.empty))
   let is_empty (_, (univs, csts)) = LevelInstance.is_empty univs && Constraints.is_empty csts
 
-  let pr prq prl ?variance (_, (univs, csts) as uctx) =
+  let pr prq prl ?variances (_, (univs, csts) as uctx) =
     if is_empty uctx then mt() else
-      h (LevelInstance.pr prq prl ?variance univs ++ str " |= ") ++ h (v 0 (Constraints.pr prl csts))
+      h (LevelInstance.pr prq prl ?variances univs ++ str " |= ") ++ h (v 0 (Constraints.pr prl csts))
 
   let hcons ((qnames, unames), (univs, csts)) =
     ((Array.map Names.Name.hcons qnames, Array.map Names.Name.hcons unames), (LevelInstance.hcons univs, hcons_constraints csts))
@@ -595,7 +601,7 @@ struct
     let inst = LevelInstance.abstract_instance (size self) in
     (names, (inst, cst))
 
-  let pr prq pru ?variance ctx = UContext.pr prq pru ?variance (repr ctx)
+  let pr prq pru ?variances ctx = UContext.pr prq pru ?variances (repr ctx)
 
 end
 

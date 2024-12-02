@@ -450,7 +450,7 @@ val is_polymorphic : env -> Names.GlobRef.t -> bool
 val is_template_polymorphic : env -> GlobRef.t -> bool
 val is_type_in_type : env -> GlobRef.t -> bool
 
-val variance : env -> Names.GlobRef.t -> UVars.Variance.t array option
+val variances : env -> Names.GlobRef.t -> UVars.variances option
 
 (** {5 VM and native} *)
 

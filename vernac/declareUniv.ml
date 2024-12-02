@@ -93,7 +93,7 @@ let label_of = let open GlobRef in function
   CErrors.anomaly ~label:"declare_univ_binders"
     Pp.(str "declare_univ_binders on a constructor reference")
 
-let declare_univ_binders gr (univs, pl) =
+let declare_univ_binders gr UState.{ universes_entry_universes = univs; universes_entry_binders = pl } =
   let l = label_of gr in
   match univs with
   | UState.Polymorphic_entry _ -> ()

@@ -2972,12 +2972,18 @@ let interp_univ_decl env decl =
     univdecl_extensible_qualities = decl.univdecl_extensible_qualities;
     univdecl_instance = instance;
     univdecl_extensible_instance = decl.univdecl_extensible_instance;
+    univdecl_variances = None;
     univdecl_constraints = cstrs;
     univdecl_extensible_constraints = decl.univdecl_extensible_constraints;
   }
   in
   Loop_checking.set_debug_pr_level (UState.pr_uctx_level (Evd.ustate evd));
   evd, decl
+
+let variance_of_entry arr =
+  if Array.is_empty arr then None
+  else if Array.for_all Option.is_empty arr then None
+  else Some (Array.map (function None -> UVars.Variance.Invariant | Some v -> v) arr)
 
 let interp_cumul_univ_decl env decl =
   let open UState in
@@ -3000,12 +3006,13 @@ let interp_cumul_univ_decl env decl =
     univdecl_extensible_qualities = decl.univdecl_extensible_qualities;
     univdecl_instance = instance;
     univdecl_extensible_instance = decl.univdecl_extensible_instance;
+    univdecl_variances = variance_of_entry variances;
     univdecl_constraints = cstrs;
     univdecl_extensible_constraints = decl.univdecl_extensible_constraints;
   }
   in
   Loop_checking.set_debug_pr_level (UState.pr_uctx_level (Evd.ustate evd));
-  evd, decl, variances
+  evd, decl
 
 let interp_univ_decl_opt env l =
   match l with
@@ -3013,7 +3020,7 @@ let interp_univ_decl_opt env l =
   | Some decl -> interp_univ_decl env decl
 
 let interp_cumul_univ_decl_opt env = function
-  | None -> Evd.from_env env, UState.default_univ_decl, [| |]
+  | None -> Evd.from_env env, UState.default_univ_decl
   | Some decl -> interp_cumul_univ_decl env decl
 
 let interp_mutual_univ_decl_opt env udecls =

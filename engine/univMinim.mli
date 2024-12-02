@@ -30,6 +30,8 @@ type position =
 type level_variances = (position * UVars.Variance.t) Univ.Level.Map.t
 val pr_variances : (Univ.Level.t -> Pp.t) -> level_variances -> Pp.t
 
+val empty_level_variances : level_variances
+
 (** Simplification and pruning of constraints:
     [normalize_context_set ctx us]
 

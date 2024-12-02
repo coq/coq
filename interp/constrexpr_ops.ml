@@ -69,6 +69,7 @@ let cumul_of_univ_decl : Constrexpr.universe_decl_expr -> Constrexpr.cumul_univ_
     univdecl_extensible_qualities = x.univdecl_extensible_qualities;
     univdecl_instance = List.map (fun lid -> lid, None) x.univdecl_instance;
     univdecl_extensible_instance = x.univdecl_extensible_instance;
+    univdecl_variances = x.univdecl_variances;
     univdecl_constraints = x.univdecl_constraints;
     univdecl_extensible_constraints = x.univdecl_extensible_constraints }
 

@@ -58,7 +58,7 @@ let inductive_cumulativity_arguments (mind,ind) =
 let convert_inductives_gen cmp_instances cmp_cumul env cv_pb (mind, ind) ~nargs u1 u2 s =
   let mind = Environ.lookup_mind mind env in
   let ind = (mind, ind) in
-  match mind.Declarations.mind_variance with
+  match Declareops.universes_variances mind.Declarations.mind_universes with
   | None -> cmp_instances u1 u2 s
   | Some variances ->
     let num_param_arity = inductive_cumulativity_arguments ind in
@@ -79,7 +79,7 @@ let constructor_cumulativity_arguments (mind, ind, ctor) =
 
 let convert_constructors_gen cmp_instances cmp_cumul env ((mind, ind), cns) ~nargs u1 u2 s =
   let mind = Environ.lookup_mind mind env in
-  match mind.Declarations.mind_variance with
+  match Declareops.universes_variances mind.Declarations.mind_universes with
   | None -> cmp_instances u1 u2 s
   | Some _ ->
     let num_cnstr_args = constructor_cumulativity_arguments (mind,ind,cns) in
@@ -99,7 +99,7 @@ let convert_constructors env (ctor : Names.constructor) ~nargs u1 u2 (s, check) 
 
 let convert_constants_gen cmp_instances cmp_cumul env cv_pb cst ~nargs u1 u2 s =
   let cb = lookup_constant cst env in
-  (match cb.Declarations.const_variance with
+  (match Declareops.universes_variances cb.Declarations.const_universes with
   | None -> cmp_instances u1 u2 s
   | Some variance ->
     let _foo = nargs in (* FIXME check nargs/variance compatibility *)

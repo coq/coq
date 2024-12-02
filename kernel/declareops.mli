@@ -16,6 +16,7 @@ open UVars
     [constant_body], [mutual_inductive_body], [module_body] ... *)
 
 val universes_context : universes -> AbstractContext.t
+val universes_variances : universes -> UVars.variances option
 
 val abstract_universes : Entries.universes_entry -> UVars.sort_level_subst * universes
 

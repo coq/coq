@@ -276,7 +276,7 @@ let relevance_of_inductive env (ind,u) =
 let check_instance mib u =
   if not (match mib.mind_universes with
       | Monomorphic -> Instance.is_empty u
-      | Polymorphic uctx -> Instance.length u = AbstractContext.size uctx)
+      | Polymorphic (uctx, _) -> Instance.length u = AbstractContext.size uctx)
   then CErrors.anomaly Pp.(str "bad instance length on mutind.")
 
 let type_of_inductive_gen ?(polyprop=true) ((mib,mip),u) paramtyps =

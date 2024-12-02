@@ -500,9 +500,9 @@ let type_case_scrutinee env (mib, _mip) (u', largs) u pms (pctx, p) c =
   in
   (* We use l2r:true for compat with old versions which used CONV with arguments
      flipped. It is relevant for performance eg in bedrock / Kami. *)
-  let qcst, ucst = match mib.mind_variance with
-  | None -> UVars.enforce_eq_instances u u' Sorts.QUConstraints.empty
-  | Some variance -> UVars.enforce_leq_variance_instances variance u' u Sorts.QUConstraints.empty
+  let qcst, ucst = match mib.mind_universes with
+  | Monomorphic | Polymorphic (_, None) -> UVars.enforce_eq_instances u u' Sorts.QUConstraints.empty
+  | Polymorphic (_, Some variance) -> UVars.enforce_leq_variance_instances variance u' u Sorts.QUConstraints.empty
   in
   let () = check_qconstraints qcst env in
   let () = check_constraints ucst env in
@@ -980,7 +980,7 @@ let type_of_prim env u t =
                        tr_type n arg_ty, nary_op (n + 1) ret_ty r)
   in
   let params, args_ty, ret_ty = types t in
-  assert (UVars.AbstractContext.size (univs t) = UVars.Instance.length u);
+  assert (UVars.AbstractContext.size (fst (univs t)) = UVars.Instance.length u);
   Vars.subst_instance_constr u
     (Term.it_mkProd_or_LetIn (nary_op 0 ret_ty args_ty) params)
 

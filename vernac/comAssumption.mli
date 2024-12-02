@@ -31,7 +31,6 @@ val declare_local
   -> try_assum_as_instance:bool (* true = declare a variable of type a class as an instance *)
   -> kind:Decls.logical_kind
   -> univs:UState.named_universes_entry
-  -> ?variances:Declarations.variances
   -> impargs:Impargs.manual_implicits
   -> impl:Glob_term.binding_kind
   -> name:variable
@@ -60,7 +59,6 @@ val declare_global
   -> kind:Decls.logical_kind
   -> ?user_warns:Globnames.extended_global_reference UserWarn.with_qf
   -> univs:UState.named_universes_entry
-  -> ?variances:Declarations.variances
   -> impargs:Impargs.manual_implicits
   -> inline:Declaremods.inline
   -> name:variable
