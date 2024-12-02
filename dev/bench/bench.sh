@@ -346,6 +346,8 @@ git clone -q --depth 1 -b "$new_coq_opam_archive_git_branch" "$new_coq_opam_arch
 
 initial_opam_packages="num ocamlfind dune"
 
+installable_rocq_runtime=rocq-runtime
+
 # Create an opam root and install Coq
 # $1 = root_name {ex: NEW / OLD}
 # $2 = compiler name
@@ -426,7 +428,12 @@ create_opam() {
 
     if [ ! -z "$coq_native" ]; then opam install coq-native; fi
 
-    for package in rocq-runtime coq-core rocq-core coqide-server; do
+    for package in rocq-runtime coq-core coqide-server coq; do
+      if [ $package = rocq-runtime ] && ! [ -e rocq-runtime.opam ]; then
+        echo "No rocq-runtime in $RUNNER"
+        installable_rocq_runtime=
+        continue
+      fi
         export COQ_OPAM_PACKAGE=$package
         export COQ_ITERATION=1
 
@@ -469,7 +476,7 @@ old_coq_commit_long="$COQ_HASH_LONG"
 
 # Packages which appear in the rendered table
 # Deliberately don't include the "coqide-server" and "coq" packages
-installable_coq_opam_packages="rocq-runtime coq-core rocq-core"
+installable_coq_opam_packages="$installable_rocq_runtime coq-core rocq-core"
 
 echo "DEBUG: $render_results $log_dir $num_of_iterations 0 user_time_pdiff $installable_coq_opam_packages"
 rendered_results="$($render_results "$log_dir" $num_of_iterations 0 user_time_pdiff $installable_coq_opam_packages)"
