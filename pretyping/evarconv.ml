@@ -468,8 +468,6 @@ let compare_heads pbty env evd ~nargs term term' =
       let cst = lookup_constant c env in
       (match Declareops.universes_variances cst.const_universes with
       | Some variance ->
-        let prc = Termops.Internal.print_constr_env env evd in
-        Feedback.msg_debug Pp.(str"Comparing instances cumulativity " ++  prc term ++ if pbty == CONV then str"=" else str"≤" ++ prc term');
         compare_cumulative_instances pbty evd ~nargs variance u u'
       | None -> check_strict evd u u')
   | Const _, Const _ -> UnifFailure (evd, NotSameHead)

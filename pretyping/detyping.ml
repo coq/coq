@@ -208,6 +208,12 @@ type _ delay =
 (** Should we keep details of universes during detyping ? *)
 let print_universes = ref false
 
+let { Goptions.get = print_variances } =
+  Goptions.declare_bool_option_and_ref
+    ~key:["Printing";"Universe";"Variances"]
+    ~value:true
+    ()
+
 (** Should we print hidden sort quality variables? *)
 let { Goptions.get = print_sort_quality } =
   Goptions.declare_bool_option_and_ref

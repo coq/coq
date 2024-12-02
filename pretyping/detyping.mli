@@ -24,6 +24,9 @@ type _ delay =
 (** Should we keep details of universes during detyping ? *)
 val print_universes : bool ref
 
+(** Should we print universe variance information in About and Print *)
+val print_variances : unit -> bool
+
 (** If true, prints full local context of evars *)
 val print_evar_arguments : bool ref
 
