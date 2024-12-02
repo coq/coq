@@ -54,7 +54,7 @@ let compute_variances_constr env ~evars status position cv_pb c =
 
 let compute_variances_constr env sigma status position variance c =
   let status = compute_variances_constr env ~evars:(Evd.evar_handler sigma) status position variance c in
-  debug Pp.(fun () -> str"Variances of " ++ Termops.Internal.print_constr_env env sigma (EConstr.of_constr c) ++ fnl () ++
+  debug Pp.(fun () -> str"Variances of " ++ (try Termops.Internal.print_constr_env env sigma (EConstr.of_constr c) with _ -> str"<anomaly in printing>") ++ fnl () ++
     InferCumulativity.pr_variances (Evd.pr_level sigma) (InferCumulativity.Inf.inferred status));
   status
 

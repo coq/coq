@@ -16,6 +16,8 @@ type t
 
 val empty : t
 
+val clear_constraints : t -> t
+
 val check_invariants : required_canonical:(Level.t -> bool) -> t -> unit
 
 exception AlreadyDeclared

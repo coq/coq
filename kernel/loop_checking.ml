@@ -844,6 +844,19 @@ let empty_model = {
 }
 
 let empty = empty_model
+
+let clear_constraints m =
+  let entries =
+    let map entry =
+      match entry with
+      | Equiv _ -> entry
+      | Canonical can ->
+        Canonical { can with clauses_bwd = ClausesOf.empty; clauses_fwd = ForwardClauses.empty }
+    in
+    PMap.map map m.entries
+  in
+  { m with entries; values = None; canonical = 0 }
+
 module CN = struct
   type t = canonical_node
   (* let equal x y = x == y *)

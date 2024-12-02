@@ -32,7 +32,7 @@ val check_eq : Universe.t check_function
 val initial_universes : t
 
 (** Initial universes, but keeping options such as type in type from the argument. *)
-val initial_universes_with : t -> t
+val clear_constraints : t -> t
 
 (** Check equality of instances w.r.t. a universe graph *)
 val check_eq_instances : Instance.t check_function
@@ -106,6 +106,7 @@ val choose : (Level.t -> bool) -> t -> Level.t -> Level.t option
 val constraints_for : kept:Level.Set.t -> t -> Constraints.t
 
 val minimize : Level.t -> t -> (t * Universe.t) option
+val maximize : Level.t -> t -> (t * Universe.t) option
 
 (* Hack for template polymorphism *)
 val remove_set_clauses : Level.t -> t -> t

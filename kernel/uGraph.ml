@@ -66,7 +66,7 @@ let initial_universes =
   let g = G.add ~rank:big_rank Level.set g in
   {empty_universes with graph=g}
 
-let initial_universes_with g = {g with graph=initial_universes.graph}
+let clear_constraints g = {g with graph=G.clear_constraints g.graph}
 
 let enforce_constraint (u,d,v) g =
   match d with

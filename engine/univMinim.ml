@@ -510,7 +510,8 @@ let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?bin
     str"Variances: " ++ pr_variances prl variances ++ fnl () ++
     str"Weak constraints " ++
     prlist_with_sep spc (fun (u,v) -> Universe.pr Level.raw_pr u ++ str" ~ " ++ Universe.pr Level.raw_pr v)
-     (UPairSet.elements weak));
+     (UPairSet.elements weak) ++
+     str"Graph: " ++ UGraph.pr_model g);
   if CDebug.get_flag _debug_minim then
     if not (Level.Set.is_empty (Univ.ContextSet.levels ctx)) && Univ.Level.Map.is_empty variances then
       Feedback.msg_debug Pp.(str"normalize_context_set called with empty variance information");
@@ -541,9 +542,9 @@ let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?bin
   let graph =
     (* We first put constraints in a normal-form: all self-loops are collapsed
        to equalities. *)
-    let g = UGraph.initial_universes_with g in
+    let g = UGraph.clear_constraints g in
     (* use lbound:Set to collapse [u <= v <= Set] into [u = v = Set] *)
-    let g = Level.Set.fold (fun v g -> UGraph.add_universe ~lbound:Set ~strict:false v g)
+    let g = Level.Set.fold (fun v g -> UGraph.enforce_constraint (Universe.type0, Le, Universe.make v) g)
         ctx g
     in
     let add_soft u g =
