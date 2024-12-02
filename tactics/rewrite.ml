@@ -269,9 +269,7 @@ end) = struct
   let get_transitive_proof env = find_class_proof transitive_type transitive_proof env
 
   let mk_relation env evars ty =
-    let evars', ty = Evarsolve.refresh_universes ~onlyalg:true ~status:(Evd.UnivFlexible false)
-    (Some false) env (fst evars) ty in
-    app_poly env (evars', snd evars) relation [| ty |]
+    app_poly env evars relation [| ty |]
 
   (** Build an inferred signature from constraints on the arguments and expected output
       relation *)
@@ -297,9 +295,7 @@ end) = struct
             let ty = Reductionops.nf_betaiota env (goalevars evars) ty in
             let (evars, b', arg, cstrs) = aux env evars (subst1 mkProp b) cstrs in
             let evars, relty = mk_relty evars env ty obj in
-            let evars', b' = Evarsolve.refresh_universes ~onlyalg:true ~status:(Evd.UnivFlexible false)
-              (Some false) env (fst evars) b' in
-            let evars, newarg = app_poly env (evars', snd evars) respectful [| ty ; b' ; relty ; arg |] in
+            let evars, newarg = app_poly env evars respectful [| ty ; b' ; relty ; arg |] in
               evars, mkProd(na, ty, b), newarg, (ty, Some relty) :: cstrs
           else
             let (evars, b, arg, cstrs) =
@@ -380,13 +376,7 @@ end) = struct
       | _ -> invalid_arg "apply_pointwise")
     | [] -> rel
 
-  let refresh_univs env evars ty =
-    let evars', ty = Evarsolve.refresh_universes ~onlyalg:true ~status:(Evd.UnivFlexible false)
-      (Some false) env (fst evars) ty in
-    (evars', snd evars), ty
-
   let pointwise_or_dep_relation env evars n t car rel =
-    let evars, car = refresh_univs env evars car in
     if noccurn (goalevars evars) 1 car && noccurn (goalevars evars) 1 rel then
       app_poly env evars pointwise_relation [| t; lift (-1) car; lift (-1) rel |]
     else
@@ -499,7 +489,6 @@ module TypeGlobal = struct
 
 
   let inverse env (evd,cstrs) car rel =
-    let evd, car = Evarsolve.refresh_universes ~onlyalg:true (Some false) env evd car in
     let (evd, sort) = Evarutil.new_Type ~rigid:Evd.univ_flexible evd in
       app_poly_check env (evd,cstrs) rocq_inverse [| car ; car; sort; rel |]
 
@@ -808,10 +797,8 @@ let resolve_morphism env m args args' (b,cstr) evars =
       else TypeGlobal.build_signature evars env appmtype cstrs cstr
     in
       (* Actual signature found *)
-    let evars', appmtype' = Evarsolve.refresh_universes ~status:(Evd.UnivFlexible false) ~onlyalg:true
-      (Some false) env (fst evars) appmtype' in
     let cl_args = [| appmtype' ; signature ; appm |] in
-    let evars, app = app_poly_sort b env (evars', snd evars) (if b then PropGlobal.proper_type else TypeGlobal.proper_type)
+    let evars, app = app_poly_sort b env evars (if b then PropGlobal.proper_type else TypeGlobal.proper_type)
       cl_args in
     let dosub, appsub =
       if b then PropGlobal.do_subrelation, PropGlobal.apply_subrelation
@@ -1373,7 +1360,7 @@ module Strategies =
       let subst, ctx = UnivGen.fresh_universe_context_set_instance ctx in
       let subst = Sorts.QVar.Map.empty, subst in
       let lemma = Vars.subst_univs_level_constr subst (EConstr.of_constr lemma) in
-      let sigma = Evd.merge_context_set UnivRigid sigma ctx in
+      let sigma = Evd.merge_context_set UnivFlexible sigma ctx in
       (sigma, (lemma, NoBindings))
 
     let old_hints (db : string) : 'a pure_strategy =

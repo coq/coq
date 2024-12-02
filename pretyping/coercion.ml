@@ -676,12 +676,6 @@ let add_reverse_coercion env sigma v'_ty v_ty v' v =
   match Rocqlib.lib_ref_opt "core.coercion.reverse_coercion" with
   | None -> sigma, v'
   | Some reverse_coercion ->
-     let sigma, v'_ty =
-       Evarsolve.refresh_universes ~onlyalg:true ~status:Evd.univ_flexible
-         (Some false) env sigma v'_ty in
-     let sigma, v_ty =
-       Evarsolve.refresh_universes ~onlyalg:true ~status:Evd.univ_flexible
-         (Some false) env sigma v_ty in
      let sigma, reverse_coercion = Evd.fresh_global env sigma reverse_coercion in
      Typing.checked_appvect env sigma reverse_coercion [| v'_ty; v_ty; v'; v |]
 

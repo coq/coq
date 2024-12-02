@@ -187,7 +187,7 @@ Module binders.
     exact Type@{i}.
   Qed.
 
-  Lemma barext@{i j|+} : Type@{j}.
+  Lemma barext@{i j|?} : Type@{j}.
   Proof.
     exact Type@{i}.
   Qed.
@@ -379,7 +379,7 @@ Module Anonymous.
 
   Definition defaultalg := (fun x : Type => x) (Type : Type).
   Definition usedefaultalg := defaultalg@{_ _ _}.
-  Check usedefaultalg@{_ _}.
+  Check usedefaultalg@{_}.
 
   Definition anonalg := (fun x : Type@{_} => x) (Type : Type).
   Check anonalg@{_ _}.
@@ -458,7 +458,7 @@ Module ObligationRegression.
   (** Test for a regression encountered when fixing obligations for
       stronger restriction of universe context. *)
   Require Import CMorphisms.
-  Check trans_co_eq_inv_arrow_morphism@{_ _ _ _ _  _ _}.
+  Check trans_co_eq_inv_arrow_morphism@{_ _ _}.
 End ObligationRegression.
 
 Axiom poly@{i} : forall(A : Type@{i}) (a : A), unit.
@@ -513,7 +513,7 @@ Module EarlyMonoUniverseDeclarationCheck.
   Fail Program Fixpoint f'@{u} (A:Type@{u}) (n:nat) : Type@{u} := (* By convention, we require extensibility for Program *)
     match n with 0 => _ | S n => f' (A->A) n end.
 
-  Program Fixpoint f'@{u +} (A:Type@{u}) (n:nat) : Type@{u} :=
+  Program Fixpoint f'@{u ?} (A:Type@{u}) (n:nat) : Type@{u} :=
     match n with 0 => _ | S n => f' (A->A) n end.
   Next Obligation. exact nat. Defined.
 
@@ -523,7 +523,7 @@ Module EarlyMonoUniverseDeclarationCheck.
   Fail Program Fixpoint f''@{u} (A:Type@{u}) (n:nat) {measure n} : Type@{u} := (* By convention, we require extensibility for Program *)
     match n with 0 => _ | S n => f'' (A->A) n end.
 
-  Program Fixpoint f''@{u +} (A:Type@{u}) (n:nat) {measure n} : Type@{u} :=
+  Program Fixpoint f''@{u ?} (A:Type@{u}) (n:nat) {measure n} : Type@{u} :=
     match n with 0 => _ | S n => f'' (A->A) n end.
   Next Obligation. Show. exact nat. Defined.
   Next Obligation. Show. Admitted.

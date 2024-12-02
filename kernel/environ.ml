@@ -294,7 +294,7 @@ let expand_arity (mib, mip) (ind, u) params nas =
   let params = Vars.subst_of_rel_context_instance paramdecl params in
   let realdecls, _ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
   let self =
-    let u = UVars.Instance.abstract_instance (UVars.Instance.length u) in
+    let u = UVars.Instance.of_level_instance @@ UVars.LevelInstance.abstract_instance (UVars.Instance.length u) in
     let args = Context.Rel.instance mkRel 0 mip.mind_arity_ctxt in
     mkApp (mkIndU (ind, u), args)
   in
@@ -458,8 +458,10 @@ let add_constraints c env =
 let check_constraints c env =
   UGraph.check_constraints c env.env_universes
 
+let _debug_environ, debug = CDebug.create_full ~name:"environ" ()
+
 let add_universes ~lbound ~strict ctx g =
-  let _qs, us = UVars.Instance.to_array (UVars.UContext.instance ctx) in
+  let _qs, us = UVars.LevelInstance.to_array (UVars.UContext.instance ctx) in
   let g = Array.fold_left
       (fun g v -> UGraph.add_universe ~lbound ~strict v g)
       g us
@@ -479,11 +481,12 @@ let add_qualities qs known =
     qs
 
 let push_context ?(strict=false) ctx env =
-  let qs, _us = UVars.Instance.to_array (UVars.UContext.instance ctx) in
+  let qs, _us = UVars.LevelInstance.to_array (UVars.UContext.instance ctx) in
   let env = { env with env_qualities = add_qualities qs env.env_qualities } in
   map_universes (add_universes ~lbound:UGraph.Bound.Set ~strict ctx) env
 
 let add_universes_set ~lbound ~strict ctx g =
+  debug Pp.(fun () -> str"Adding universes context" ++ Univ.pr_universe_context_set Univ.Level.raw_pr ctx);
   let g = Univ.Level.Set.fold
             (* Be lenient, module typing reintroduces universes and constraints due to includes *)
             (fun v g -> try UGraph.add_universe ~lbound ~strict v g with UGraph.AlreadyDeclared -> g)

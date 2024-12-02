@@ -412,7 +412,7 @@ let coerce_to_indtype ~program_mode typing_fun env sigma matx tomatchl =
 (* Utils *)
 
 let mkExistential ?(src=(Loc.tag Evar_kinds.InternalHole)) env sigma =
-  let sigma, (e, u) = Evarutil.new_type_evar env sigma ~src:src univ_flexible_alg in
+  let sigma, (e, u) = Evarutil.new_type_evar env sigma ~src:src univ_flexible in
   sigma, e
 
 let adjust_tomatch_to_pattern ~program_mode sigma pb ((current,typ),deps,dep) =
@@ -1735,7 +1735,7 @@ let abstract_tycon ?loc env sigma subst tycon extenv t =
     | Rel n when is_local_def (lookup_rel n !!env) -> t
     | Evar ev ->
         let ty = get_type_of !!env sigma t in
-        let sigma, ty = refresh_universes (Some false) !!env sigma ty in
+        let sigma, ty = refresh_universes ~status:Evd.UnivFlexible (Some false) !!env sigma ty in
         let inst =
           List.map_i
             (fun i _ ->
@@ -1758,7 +1758,7 @@ let abstract_tycon ?loc env sigma subst tycon extenv t =
       let vl = List.map pi1 good in
       let ty =
         let ty = get_type_of !!env sigma t in
-        let sigma, res = refresh_universes (Some false) !!env !evdref ty in
+        let sigma, res = refresh_universes ~status:Evd.UnivFlexible (Some false) !!env !evdref ty in
         evdref := sigma; res
       in
       let dummy_subst = List.init k (fun _ -> mkProp) in
@@ -2101,20 +2101,13 @@ let expected_elimination_sorts env sigma tomatchl =
  *)
 
 let prepare_predicate ?loc ~program_mode typing_fun env sigma tomatchs arsign tycon pred =
-  let refresh_tycon sigma t =
-    (* If we put the typing constraint in the term, it has to be
-       refreshed to preserve the invariant that no algebraic universe
-       can appear in the term.  *)
-    refresh_universes ~status:Evd.univ_flexible ~onlyalg:true (Some true)
-                      !!env sigma t
-  in
   let preds =
     match pred with
     (* No return clause *)
     | None ->
         let sigma,t =
           match tycon with
-          | Some t -> refresh_tycon sigma t
+          | Some t -> sigma , t
           | None ->
              (* No type constraint: we first create a generic evar type constraint *)
              let src = (loc, Evar_kinds.CasesType false) in

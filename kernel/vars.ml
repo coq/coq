@@ -479,6 +479,54 @@ let subst_instance_context s ctx =
         RelDecl.map_constr (subst_instance_constr s) d)
       ctx
 
+let subst_level_instance_constr subst c =
+  if UVars.LevelInstance.is_empty subst then c
+  else
+    let f u = UVars.subst_level_instance_instance subst u in
+    let rec aux t =
+      let t = if CArray.is_empty (fst (UVars.LevelInstance.to_array subst)) then t
+        else map_constr_relevance (UVars.subst_level_instance_relevance subst) t
+      in
+      match kind t with
+      | Const (c, u) ->
+        if UVars.Instance.is_empty u then t
+        else
+          let u' = f u in
+            if u' == u then t
+            else (mkConstU (c, u'))
+      | Ind (i, u) ->
+        if UVars.Instance.is_empty u then t
+        else
+          let u' = f u in
+            if u' == u then t
+            else (mkIndU (i, u'))
+      | Construct (c, u) ->
+        if UVars.Instance.is_empty u then t
+        else
+          let u' = f u in
+            if u' == u then t
+            else (mkConstructU (c, u'))
+      | Sort s ->
+        let s' = UVars.subst_level_instance_sort subst s in
+        if s' == s then t else mkSort s'
+
+      | Case (ci, u, pms, p, iv, c, br) ->
+        let u' = f u in
+        if u' == u then Constr.map aux t
+        else Constr.map aux (mkCase (ci,u',pms,p,iv,c,br))
+
+      | Array (u,elems,def,ty) ->
+        let u' = f u in
+        let elems' = CArray.Smart.map aux elems in
+        let def' = aux def in
+        let ty' = aux ty in
+        if u == u' && elems == elems' && def == def' && ty == ty' then t
+        else mkArray (u',elems',def',ty')
+
+      | _ -> Constr.map aux t
+    in
+    aux c
+
 type ('a,'s,'u,'r) univ_visitor = {
   visit_sort : 'a -> 's -> 'a;
   visit_instance : 'a -> 'u -> 'a;
@@ -503,7 +551,7 @@ let univs_and_qvars_visitor =
         | QConstant _ -> qs)
         qs qs'
     in
-    let us = Array.fold_left (fun acc x -> Univ.Level.Set.add x acc) us us' in
+    let us = Array.fold_left (fun acc x -> Univ.Level.Set.union (Univ.Universe.levels x) acc) us us' in
     qs, us
   in
   let visit_relevance (qs,us as acc) = let open Sorts in function

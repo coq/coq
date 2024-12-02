@@ -1253,12 +1253,16 @@ let intern_sort ~local_univs (q,l) =
   Option.map (intern_qvar ~local_univs) q,
   map_glob_sort_gen (List.map (on_fst (intern_sort_name ~local_univs))) l
 
+let intern_universe ~local_univs s =
+  let map l = List.map (on_fst (intern_sort_name ~local_univs)) l in
+  map_glob_sort_gen map s
+
 let intern_instance ~local_univs = function
-  | None -> None
-  | Some (qs, us) ->
-    let qs = List.map (intern_quality ~local_univs) qs in
-    let us = List.map (map_glob_sort_gen (intern_sort_name ~local_univs)) us in
-    Some (qs, us)
+| None -> None
+| Some (qs, us) ->
+  let qs = List.map (intern_quality ~local_univs) qs in
+  let us = List.map (intern_universe ~local_univs) us in
+  Some (qs, us)
 
 let intern_name_alias = function
   | { CAst.v = CRef(qid,u) } ->
@@ -1341,10 +1345,7 @@ let find_projection_data c =
   | GRef (GlobRef.ConstRef cst,us) -> Some (cst, us, [], Structure.projection_nparams cst)
   | _ -> None
 
-let glob_sort_of_level (level: glob_level) : glob_sort =
-  match level with
-  | UAnonymous _ as l -> None, l
-  | UNamed id -> None, UNamed [id, 0]
+let glob_sort_of_level (univ: glob_univ) : glob_sort = None, univ
 
 (* Is it a global reference or a syntactic definition? *)
 let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
@@ -2930,10 +2931,14 @@ let interp_known_level evd u =
   let u = intern_sort_name ~local_univs:{bound = bound_univs evd; unb_univs=false} u in
   known_glob_level evd u
 
-let interp_univ_constraint evd (u,c,v) =
-  let u = interp_known_level evd u in
-  let v = interp_known_level evd v in
-  u,c,v
+let interp_universe evd u =
+  let le = List.map (on_fst (interp_known_level evd)) u in
+  Univ.Universe.of_list le
+
+let interp_univ_constraint evd (u,(c, b) ,v) =
+  let u = interp_universe evd u in
+  let v = interp_universe evd v in
+  (if b then Univ.Universe.super u else u),c,v
 
 let interp_univ_constraints env evd cstrs =
   let interp (evd,cstrs) cstr =

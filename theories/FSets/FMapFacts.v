@@ -1131,7 +1131,8 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
     transitivity (f k0 e0 (f k e b)).
     + apply Comp; auto.
     + apply Tra; auto.
-      contradict Hnotin; rewrite <- Hnotin; exists e0; auto.
+      contradict Hnotin.
+      rewrite <- Hnotin. exists e0; auto.
   Qed.
 
   #[local]

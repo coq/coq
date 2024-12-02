@@ -22,6 +22,7 @@ Require Import Relation_Definitions.
 Require Export Stdlib.Classes.CRelationClasses.
 Require Import Stdlib.Classes.CMorphisms.
 
+Set Universe Polymorphism.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
@@ -134,7 +135,6 @@ Section Respecting.
 End Respecting.
 
 (** The default equivalence on function spaces, with higher-priority than [eq]. *)
-
 #[global]
 Instance pointwise_reflexive {A} `(reflb : Reflexive B eqB) :
   Reflexive (pointwise_relation A eqB) | 9.

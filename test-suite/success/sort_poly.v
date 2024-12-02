@@ -12,7 +12,7 @@ Module Syntax.
   Definition baz@{s | | } := Type@{s | Set}.
   Print baz.
 
-  Definition potato@{s | + | } := Type.
+  Definition potato@{s | ? | } := Type.
 
   Check eq_refl : Prop = baz@{Prop | }.
 
@@ -93,7 +93,7 @@ Module Inference.
      left of the arrow) produces a rigid univ level. It gets a
      constraint "= Set" but rigids don't get substituted away for (bad)
      reasons. This is why we need the 2 "+". *)
-  Definition zig'@{s| + | +} A := A -> zog@{s|} A.
+  Definition zig'@{s| ? | ?} A := A -> zog@{s|} A.
 
   (* different manually bound sort variables don't unify *)
   Fail Definition zog'@{s s'| |} (A:Type@{s|Set}) := zog@{s'|} A.
@@ -103,7 +103,7 @@ Module Inductives.
   Inductive foo1@{s| |} : Type@{s|Set} := .
   Fail Check foo1_sind.
 
-  Fail Definition foo1_False@{s|+|+} (x:foo1@{s|}) : False := match x return False with end.
+  Fail Definition foo1_False@{s|?|?} (x:foo1@{s|}) : False := match x return False with end.
   (* XXX error message is bad *)
 
   Inductive foo2@{s| |} := Foo2 : Type@{s|Set} -> foo2.
@@ -227,7 +227,7 @@ Module Inductives.
   Inductive sigma@{s|u v|} (A:Type@{s|u}) (B:A -> Type@{s|v}) : Type@{s|max(u,v)}
     := pair : forall x : A, B x -> sigma A B.
 
-  Definition sigma_srect@{s|k +|} A B
+  Definition sigma_srect@{s|k ?|} A B
     (P : sigma@{s|_ _} A B -> Type@{s|k})
     (H : forall x b, P (pair _ _ x b))
     (s:sigma A B)
@@ -235,7 +235,7 @@ Module Inductives.
     := match s with pair _ _ x b => H x b end.
 
   (* squashed because positive type with >0 constructors *)
-  Fail Definition sigma_srect'@{s sk|k +|} A B
+  Fail Definition sigma_srect'@{s sk|k ?|} A B
     (P : sigma@{s|_ _} A B -> Type@{sk|k})
     (H : forall x b, P (pair _ _ x b))
     (s:sigma A B)
@@ -243,17 +243,17 @@ Module Inductives.
     := match s with pair _ _ x b => H x b end.
 
   (* even though it's squashed, we can still define the projections *)
-  Definition pr1@{s|+|} {A B} (s:sigma@{s|_ _} A B) : A
+  Definition pr1@{s|?|} {A B} (s:sigma@{s|_ _} A B) : A
     := match s with pair _ _ x _ => x end.
 
-  Definition pr2@{s|+|} {A B} (s:sigma@{s|_ _} A B) : B (pr1 s)
+  Definition pr2@{s|?|} {A B} (s:sigma@{s|_ _} A B) : B (pr1 s)
     := match s with pair _ _ _ y => y end.
 
   (* but we can't prove eta *)
   Inductive seq@{s|u|} (A:Type@{s|u}) (a:A) : A -> Prop := seq_refl : seq A a a.
   Arguments seq_refl {_ _}.
 
-  Definition eta@{s|+|+} A B (s:sigma@{s|_ _} A B) : seq _ s (pair A B (pr1 s) (pr2 s)).
+  Definition eta@{s|?|?} A B (s:sigma@{s|_ _} A B) : seq _ s (pair A B (pr1 s) (pr2 s)).
   Proof.
     Fail destruct s.
   Abort.
@@ -263,7 +263,7 @@ Module Inductives.
     := Rpair { Rpr1 : A; Rpr2 : B Rpr1 }.
 
   (* match desugared to primitive projections using definitional eta *)
-  Definition Rsigma_srect@{s sk|k +|} A B
+  Definition Rsigma_srect@{s sk|k ?|} A B
     (P : Rsigma@{s|_ _} A B -> Type@{sk|k})
     (H : forall x b, P (Rpair _ _ x b))
     (s:Rsigma A B)

@@ -279,17 +279,21 @@ sort: [
 | "Prop"
 | "SProp"
 | "Type"
-| "Type" "@{" "_" "}"
-| "Type" "@{" OPT [ qualid "|" ] universe "}"
+| "Type" "@{" OPT [ qualid "|" ] universe_opt "}"
+]
+
+universe_opt: [
+| universe
+| "_"
 ]
 
 universe: [
 | "max" "(" LIST1 universe_expr SEP "," ")"
-| "_"
 | universe_expr
 ]
 
 universe_expr: [
+| natural
 | universe_name OPT ( "+" natural )
 ]
 
@@ -300,32 +304,31 @@ universe_name: [
 ]
 
 univ_annot: [
-| "@{" LIST0 univ_level_or_quality OPT [ "|" LIST0 univ_level_or_quality ] "}"
+| "@{" LIST0 univ_or_quality OPT [ "|" LIST0 univ_or_quality ] "}"
 ]
 
-univ_level_or_quality: [
-| "Set"
+univ_or_quality: [
 | "SProp"
 | "Prop"
 | "Type"
 | "_"
-| qualid
+| universe
 ]
 
 univ_decl: [
-| "@{" OPT [ LIST0 ident "|" ] LIST0 ident OPT "+" OPT [ "|" LIST0 univ_constraint SEP "," OPT "+" ] "}"
+| "@{" OPT [ LIST0 ident "|" ] LIST0 ident OPT "?" OPT [ "|" LIST0 univ_constraint SEP "," OPT "?" ] "}"
 ]
 
 cumul_univ_decl: [
-| "@{" OPT [ LIST0 ident "|" ] LIST0 ( OPT [ "+" | "=" | "*" ] ident ) OPT "+" OPT [ "|" LIST0 univ_constraint SEP "," OPT "+" ] "}"
+| "@{" OPT [ LIST0 ident "|" ] LIST0 ( OPT [ "+" | "=" | "*" ] ident ) OPT "?" OPT [ "|" LIST0 univ_constraint SEP "," OPT "?" ] "}"
 ]
 
 univ_constraint: [
-| universe_name [ "<" | "=" | "<=" ] universe_name
+| universe [ "<" | "=" | "<=" ] universe
 ]
 
 univ_decl_constraints: [
-| "|" LIST0 univ_constraint SEP "," [ "+" | ] "}"
+| "|" LIST0 univ_constraint SEP "," [ "?" | ] "}"
 | [ "}" | "|}" ]
 ]
 
@@ -978,6 +981,7 @@ command: [
 | [ "Enable" | "Disable" ] "Notation" OPT [ string | qualid LIST0 ident ] OPT ( ":=" one_term ) OPT ( "(" LIST1 enable_notation_flag SEP "," ")" ) OPT [ ":" scope_name | ":" "no" "scope" ]
 | "Eval" red_expr "in" term
 | "Compute" term
+| "Check" "Constraint" LIST1 univ_constraint SEP ","
 | "Check" term
 | "About" reference OPT univ_name_list
 | "SearchPattern" one_pattern OPT ( [ "inside" | "in" | "outside" ] LIST1 qualid )

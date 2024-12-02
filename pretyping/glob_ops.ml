@@ -101,12 +101,15 @@ let glob_sort_family s =
       end
     | _ -> raise ComplexSort
 
-let glob_level_eq u1 u2 =
-  glob_sort_gen_eq glob_sort_name_eq u1 u2
+let glob_univ_eq u1 u2 =
+  let eq l1 l2 =
+    List.equal (fun (x,m) (y,n) -> glob_sort_name_eq x y && Int.equal m n) l1 l2
+  in
+  glob_sort_gen_eq eq u1 u2
 
 let instance_eq (q1,u1) (q2,u2) =
   List.equal glob_quality_eq q1 q2
-  && List.equal glob_level_eq u1 u2
+  && List.equal glob_univ_eq u1 u2
 
 let binding_kind_eq bk1 bk2 = match bk1, bk2 with
   | Explicit, Explicit -> true

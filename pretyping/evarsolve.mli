@@ -115,7 +115,7 @@ val evar_define : unifier -> unify_flags -> ?choose:bool -> ?imitate_defs:bool -
 
 
 val refresh_universes :
-  ?status:Evd.rigid ->
+  status:Evd.rigid ->
   ?onlyalg:bool (* Only algebraic universes *) ->
   ?refreshset:bool ->
   (* Also refresh Prop and Set universes, so that the returned type can be any supertype

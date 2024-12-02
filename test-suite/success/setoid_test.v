@@ -15,7 +15,7 @@ Fixpoint In (a : A) (s : set) {struct s} : Prop :=
   | Add b s' => a = b \/ In a s'
   end.
 
-Definition same (s t : set) : Prop := forall a : A, In a s <-> In a t.
+Definition same (s t : set) : Prop := forall a : A, iff@{Prop|Set Set} (In a s) (In a t).
 
 Lemma setoid_set : Setoid_Theory set same.
 
@@ -230,7 +230,7 @@ End InType.
 
 Module Polymorphism.
 Require Import CRelationClasses CMorphisms.
-
+Set Universe Polymorphism.
 #[universes(polymorphic, cumulative)]
 Inductive plist@{i} (A : Type@{i}) : Type@{i} :=
 | pnil : plist A
@@ -280,11 +280,14 @@ Axiom add_0_r_peq : forall x : nat, peq (x + 0)%nat x.
 Instance peq_left {A : Type} {B : Type} {R : crelation B} (f : A -> B) `{Reflexive B R} : Proper (peq ==> R) f.
 Admitted.
 
-#[export] Instance reflexive_eq_dom_reflexive@{i j jr mij mijr} {A : Type@{i}} {B : Type@{j}} (R : crelation@{j jr} B) :
+#[universes(polymorphic), export]
+Instance reflexive_eq_dom_reflexive@{i j jr}
+ {A : Type@{i}} {B : Type@{j}} (R : crelation@{j jr} B) :
   Reflexive@{j jr} R ->
-  Reflexive@{mij mijr} (@peq A ==> R)%signatureT.
+  Reflexive (respectful (@peq A) R)%signatureT.
 Proof.
   intros hr x ? ? e. destruct e. apply hr.
+  Show Proof.
 Qed.
 
 #[universes(polymorphic), export]
@@ -321,6 +324,7 @@ Proof.
   setoid_rewrite add_0_r_peq in a.
   exact a.
 Qed.
+Check rewrite_all_in@{Set}.
 
 Lemma rewrite_all_in2 {l : plist nat} (Q : nat -> Type) (R : nat -> Type) :
   All (fun x => pprod (Q (x + 0)%nat) (R x))%type l ->
@@ -330,4 +334,63 @@ Proof.
   setoid_rewrite add_0_r_peq in a.
   exact a.
 Qed.
-End Polymorphism.
+Check rewrite_all_in2@{0 0}.
+
+End UnivPolymorphism.
+
+Module SortPolymorphism.
+Set Universe Polymorphism.
+Notation "x :: xs" := (cons x xs).
+
+Fixpoint All@{s|i j|} {A : Type@{i}} (P : A -> Type@{s|j}) (l : list A) : Type@{s|j} :=
+ match l with
+ | nil => unit
+ | x :: xs => prod (P x) (All P xs)
+ end.
+
+Lemma All_impl@{s|?|} {A} (P Q : A -> Type@{s|_}) l : (forall x, P x -> Q x) -> All P l -> All Q l.
+Proof.
+  intros HP.
+  induction l using list_ty_elim; [intros|intros []]; constructor; eauto.
+Qed.
+
+Axiom add_0_r_eq : forall x : (nat : Type), eq (plus x O)%nat x.
+
+Instance All_proper@{s|?|} {A} :
+  Morphisms.Proper ((pointwise_relation A iff) ++> eq ++> iff) All@{s|_ _}.
+Proof.
+  intros f g Hfg x y e. destruct e. split; apply All_impl, Hfg.
+Qed.
+
+(** One can be polymorphic here and allow Q in some arbitrary sort [s] as this
+  only requires eliminating an equality in Type@{Type|0} *)
+Lemma rewrite_all@{s|?|} {l : list nat} (Q : nat -> Type@{s|_}) :
+  All (fun x => Q x) l ->
+  All (fun x => Q (plus x O)) l.
+Proof.
+  intros a.
+  setoid_rewrite add_0_r_eq.
+  exact a.
+Qed.
+
+Lemma rewrite_all_in {l : list nat} (Q : nat -> Type) :
+  All (fun x => Q (plus x O)) l ->
+  All (fun x => Q x) l.
+Proof.
+  intros a.
+  setoid_rewrite add_0_r_eq in a.
+  exact a.
+Qed.
+Check rewrite_all_in@{0}.
+
+Lemma rewrite_all_in2 {l : list nat} (Q : nat -> Type) (R : nat -> Type) :
+  All (fun x => prod (Q (plus x O)%nat) (R x))%type l ->
+  All (fun x => prod (Q x) (R x))%type l.
+Proof.
+  intros a.
+  setoid_rewrite add_0_r_eq in a.
+  exact a.
+Qed.
+
+Check rewrite_all_in2@{0 0}.
+End SortPolymorphism.

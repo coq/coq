@@ -145,11 +145,11 @@ let basecuttac k c =
           | _ ->
           let f = Rocqlib.lib_ref ("plugins.ssreflect.ssr_have_upoly") in
           let sigma, uc = match qc with
-            | QConstant (QSProp | QProp) -> sigma, Univ.Level.set
-            | _ -> Evd.new_univ_level_variable Evd.univ_flexible sigma in
+            | QConstant (QSProp | QProp) -> sigma, Univ.Universe.type0
+            | _ -> Evd.new_univ_variable Evd.univ_flexible sigma in
           let sigma, ug = match qg with
-            | QConstant (QSProp | QProp) -> sigma, Univ.Level.set
-            | _ -> Evd.new_univ_level_variable Evd.univ_flexible sigma in
+            | QConstant (QSProp | QProp) -> sigma, Univ.Universe.type0
+            | _ -> Evd.new_univ_variable Evd.univ_flexible sigma in
           let names = UVars.Instance.of_array ([|qc;qg|],[|uc;ug|]) in
           let sigma, f = EConstr.fresh_global env sigma ~names f in
           let sigma, step = Evarutil.new_evar env sigma c in

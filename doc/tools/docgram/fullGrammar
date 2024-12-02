@@ -27,7 +27,7 @@ sort: [
 | "SProp"
 | "Type"
 | "Type" "@{" "_" "}"
-| "Type" "@{" test_sort_qvar reference "|" universe "}"
+| "Type" "@{" test_sort_qvar reference "|" universe_opt "}"
 | "Type" "@{" universe "}"
 ]
 
@@ -36,6 +36,16 @@ sort_family: [
 | "Prop"
 | "SProp"
 | "Type"
+]
+
+universe_opt: [
+| universe
+| "_"
+]
+
+universe: [
+| "max" "(" LIST1 universe_expr SEP "," ")"
+| universe_expr
 ]
 
 universe_increment: [
@@ -50,13 +60,8 @@ universe_name: [
 ]
 
 universe_expr: [
+| natural
 | universe_name universe_increment
-]
-
-universe: [
-| "max" "(" LIST1 universe_expr SEP "," ")"
-| "_"
-| universe_expr
 ]
 
 lconstr: [
@@ -184,17 +189,16 @@ evar_instance: [
 ]
 
 univ_annot: [
-| "@{" LIST0 univ_level_or_quality OPT [ "|" LIST0 univ_level_or_quality ] "}"
+| "@{" LIST0 univ_or_quality OPT [ "|" LIST0 univ_or_quality ] "}"
 |
 ]
 
-univ_level_or_quality: [
-| "Set"
+univ_or_quality: [
 | "SProp"
 | "Prop"
 | "Type"
 | "_"
-| global
+| universe
 ]
 
 fix_decls: [
@@ -955,17 +959,17 @@ inline: [
 ]
 
 univ_constraint: [
-| universe_name [ "<" | "=" | "<=" ] universe_name
+| universe [ "<" | "=" | "<=" ] universe
 ]
 
 univ_decl_constraints: [
-| "|" LIST0 univ_constraint SEP "," [ "+" | ] "}"
+| "|" LIST0 univ_constraint SEP "," [ "?" | ] "}"
 | [ "}" | bar_cbrace ]
 ]
 
 univ_decl: [
-| "@{" test_univ_decl LIST0 identref "|" LIST0 identref [ "+" | ] univ_decl_constraints
-| "@{" LIST0 identref [ "+" | ] univ_decl_constraints
+| "@{" test_univ_decl LIST0 identref "|" LIST0 identref [ "?" | ] univ_decl_constraints
+| "@{" LIST0 identref [ "?" | ] univ_decl_constraints
 ]
 
 variance: [
@@ -980,8 +984,8 @@ variance_identref: [
 ]
 
 cumul_univ_decl: [
-| "@{" test_cumul_univ_decl LIST0 identref "|" LIST0 variance_identref [ "+" | ] univ_decl_constraints
-| "@{" LIST0 variance_identref [ "+" | ] univ_decl_constraints
+| "@{" test_cumul_univ_decl LIST0 identref "|" LIST0 variance_identref [ "?" | ] univ_decl_constraints
+| "@{" LIST0 variance_identref [ "?" | ] univ_decl_constraints
 ]
 
 ident_decl: [
@@ -1390,6 +1394,7 @@ toplevel_selector: [
 query_command: [
 | "Eval" red_expr "in" lconstr "."
 | "Compute" lconstr "."
+| "Check" "Constraint" LIST1 univ_constraint SEP "," "."
 | "Check" lconstr "."
 | "About" smart_global OPT univ_name_list "."
 | "SearchPattern" constr_pattern in_or_out_modules "."

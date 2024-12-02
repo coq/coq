@@ -1549,7 +1549,7 @@ let debug_print_fix pr_constr ((t,i),(lna,tl,bl)) =
 
 let pr_puniverses p u =
   if UVars.Instance.is_empty u then p
-  else Pp.(p ++ str"(*" ++ UVars.Instance.pr Sorts.QVar.raw_pr Univ.Level.raw_pr u ++ str"*)")
+  else Pp.(p ++ str"(*" ++ UVars.Instance.pr Sorts.QVar.raw_pr (Univ.Universe.pr Univ.Level.raw_pr) u ++ str"*)")
 
 let rec debug_print c =
   let open Pp in
@@ -1612,7 +1612,7 @@ let rec debug_print c =
   | String s -> str"String("++str (Printf.sprintf "%S" (Pstring.to_string s)) ++ str")"
   | Array(u,t,def,ty) -> str"Array(" ++ prlist_with_sep pr_comma debug_print (Array.to_list t) ++ str" | "
       ++ debug_print def ++ str " : " ++ debug_print ty
-      ++ str")@{" ++ UVars.Instance.pr Sorts.QVar.raw_pr Univ.Level.raw_pr u ++ str"}"
+      ++ str")@{" ++ UVars.Instance.pr Sorts.QVar.raw_pr (Univ.Universe.pr Univ.Level.raw_pr) u ++ str"}"
 
 and debug_invert = let open Pp in function
   | NoInvert -> mt()

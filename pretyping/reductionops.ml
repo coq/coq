@@ -1689,12 +1689,14 @@ let infer_eq (univs, cstrs as cuniv) u u' =
     Result.Ok (UGraph.merge_constraints cstrs' univs, Constraints.union cstrs cstrs')
   with UGraph.UniverseInconsistency err -> Result.Error (Some err)
 
+
 let infer_leq (univs, cstrs as cuniv) u u' =
   if UGraph.check_leq_sort univs u u' then Result.Ok cuniv
-  else match UnivSubst.enforce_leq_alg_sort u u' univs with
-  | cstrs', univs ->
-    Result.Ok (univs, Univ.Constraints.union cstrs cstrs')
-  | exception UGraph.UniverseInconsistency err -> Result.Error (Some err)
+  else
+    try
+      let cstrs' = UnivSubst.enforce_leq_sort u u' Constraints.empty in
+      Result.Ok (UGraph.merge_constraints cstrs' univs, Constraints.union cstrs cstrs')
+    with UGraph.UniverseInconsistency err -> Result.Error (Some err)
 
 let infer_cmp_universes _env pb s0 s1 univs =
   match pb with

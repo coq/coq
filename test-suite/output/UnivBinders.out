@@ -43,7 +43,7 @@ fun (A : Type@{uu}) (Wrap : Wrap@{uu} A) => Wrap
 Arguments wrap {A}%type_scope {Wrap}
 bar@{uu} = nat
      : Wrap@{uu} Set
-(* uu |= Set < uu *)
+(* uu |= Set+1 <= uu *)
 foo@{uu u v} =
 Type@{u} -> Type@{v} -> Type@{uu}
      : Type@{max(uu+1,u+1,v+1)}
@@ -121,7 +121,8 @@ The command has indeed failed with message:
 This object does not support universe names.
 File "./output/UnivBinders.v", line 112, characters 0-50:
 The command has indeed failed with message:
-Cannot enforce v < u because u < gU < gV < v
+Cannot enforce v+1 ≤ u because u < u+3 < u+4 ≤ gU+2 < gU+4 ≤ gV+1 < gV+4 ≤ v
+< v+4
 insec@{v} = Type@{uu} -> Type@{v}
      : Type@{max(uu+1,v+1)}
 (* v |=  *)
@@ -252,7 +253,7 @@ Arguments MutualI2' A%type_scope
 Arguments C2' A%type_scope p2
 File "./output/UnivBinders.v", line 209, characters 0-33:
 The command has indeed failed with message:
-Universe inconsistency. Cannot enforce a < a because a = a.
+Universe inconsistency. Cannot enforce a+1 ≤ a because a < a+1.
 JMeq :
 forall [A : Type@{JMeq.u0}], A -> forall [B : Type@{JMeq.u1}], B -> Prop
 

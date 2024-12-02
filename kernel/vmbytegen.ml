@@ -323,12 +323,15 @@ let is_toplevel_inst env u =
   UVars.eq_sizes env.uinst_len (UVars.Instance.length u)
   && let qs, us = UVars.Instance.to_array u in
   Array.for_all_i (fun i q -> Sorts.Quality.equal q (Sorts.Quality.var i)) 0 qs
-  && Array.for_all_i (fun i l -> Univ.Level.equal l (Univ.Level.var i)) 0 us
+  && Array.for_all_i (fun i l -> Univ.Universe.equal l (Univ.Universe.var i)) 0 us
+
+let is_closed_univ u =
+  Univ.Universe.for_all (fun (l, _) -> Option.is_empty @@ Univ.Level.var_index l) u
 
 let is_closed_inst u =
   let qs, us = UVars.Instance.to_array u in
   Array.for_all (fun q -> Option.is_empty (Sorts.Quality.var_index q)) qs
-  && Array.for_all (fun l -> Option.is_empty (Univ.Level.var_index l)) us
+  && Array.for_all (fun u -> is_closed_univ u) us
 
 (*i  Examination of the continuation *)
 
@@ -874,11 +877,16 @@ let () = Callback.register "rocq_subst_instance" rocq_subst_instance
 let is_univ_copy (maxq,maxu) u =
   let qs,us = UVars.Instance.to_array u in
   let check_array max var_index a =
-    Array.length a = max
-    && Array.for_all_i (fun i x -> Option.equal Int.equal (var_index x) (Some i)) 0 a
+    Array.length a = max &&
+    Array.for_all_i (fun i x -> Option.equal Int.equal (var_index x) (Some i)) 0 a
+  in
+  let univ_var_index x =
+    match Univ.Universe.level x with
+    | Some l -> Univ.Level.var_index l
+    | None -> None
   in
   check_array maxq Sorts.Quality.var_index qs
-  && check_array maxu Univ.Level.var_index us
+  && check_array maxu univ_var_index us
 
 let dump_bytecode = ref false
 

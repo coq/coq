@@ -543,12 +543,12 @@ let build_inductive env ~sec_univs names prv univs template variance
       | None -> Some variance, None
       | Some sec_univs ->
         (* no variance for qualities *)
-        let _nsecq, nsecu = UVars.Instance.length sec_univs in
+        let _nsecq, nsecu = UVars.LevelInstance.length sec_univs in
         Some (Array.sub variance nsecu (Array.length variance - nsecu)),
         Some (Array.sub variance 0 nsecu)
   in
   let univ_hyps = match sec_univs with
-    | None -> UVars.Instance.empty
+    | None -> UVars.LevelInstance.empty
     | Some univs -> univs
   in
   let mib =

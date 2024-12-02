@@ -173,7 +173,7 @@ let extract_monomorphic = function
 
 let instance_of_univs = function
   | UState.Monomorphic_entry _, _ -> UVars.Instance.empty
-  | UState.Polymorphic_entry uctx, _ -> UVars.UContext.instance uctx
+  | UState.Polymorphic_entry uctx, _ -> UVars.Instance.of_level_instance (UVars.UContext.instance uctx)
 
 let add_mono_uctx uctx = function
   | UState.Monomorphic_entry ctx, ubinders -> UState.Monomorphic_entry (Univ.ContextSet.union (UState.context_set uctx) ctx), ubinders
@@ -642,7 +642,7 @@ let declare_constant ~loc ?(local = Locality.ImportDefaultBehavior) ~name ~kind 
   let kn = Global.add_constant ?typing_flags name decl in
   let () =
     let is_new_constraint (u,_,v as c) =
-      match UGraph.check_declared_universes before_univs Univ.Level.Set.(add u (add v empty)) with
+      match UGraph.check_declared_universes before_univs Univ.Level.Set.(union (Univ.Universe.levels u) (Univ.Universe.levels v)) with
       | Ok () -> not (UGraph.check_constraint before_univs c)
       | Error _ -> true
     in
@@ -731,7 +731,7 @@ let declare_variable ~name ~kind ~typing_flags d =
         | UState.Polymorphic_entry uctx ->
           Global.push_section_context uctx;
           let mk_anon_names u =
-            let qs, us = UVars.Instance.to_array u in
+            let qs, us = UVars.LevelInstance.to_array u in
             Array.make (Array.length qs) Anonymous, Array.make (Array.length us) Anonymous
           in
           Global.push_section_context
@@ -1172,14 +1172,13 @@ module ProgramDecl = struct
             obls
         , b )
     in
-    let prg_uctx = UState.make_flexible_nonalgebraic uctx in
     { prg_cinfo = { cinfo with CInfo.typ = reduce cinfo.CInfo.typ }
     ; prg_info = info
     ; prg_using = using
     ; prg_hook = obl_hook
     ; prg_opaque = opaque
     ; prg_body = body
-    ; prg_uctx
+    ; prg_uctx = uctx
     ; prg_obligations = {obls = obls'; remaining = Array.length obls'}
     ; prg_deps = deps
     ; prg_possible_guard = possible_guard

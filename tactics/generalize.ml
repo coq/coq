@@ -430,7 +430,7 @@ let abstract_args gl generalize_vars dep id defined f args =
       na, r, t, c
     in
     let argty = Retyping.get_type_of env sigma arg in
-    let sigma, ty = Evarsolve.refresh_universes (Some true) env sigma ty in
+    let sigma, ty = Evarsolve.refresh_universes ~status:UnivFlexible (Some true) env sigma ty in
     let lenctx = List.length ctx in
     let liftargty = lift lenctx argty in
     let leq = constr_cmp ctxenv sigma Conversion.CUMUL liftargty ty in

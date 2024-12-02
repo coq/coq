@@ -195,7 +195,7 @@ Qed.
 
 #[global]
 Instance CR_cv_morph
-  : forall {R : ConstructiveReals} (un : nat -> CRcarrier R), CMorphisms.Proper
+  : forall {R : ConstructiveReals} (un : nat -> CRcarrier R), CMorphisms.Proper@{Set+1 Set}
       (CMorphisms.respectful (CReq R) CRelationClasses.iffT) (CR_cv R un).
 Proof.
   split.
