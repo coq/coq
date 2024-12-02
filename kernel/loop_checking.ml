@@ -846,7 +846,7 @@ module PSet = SetWithCardinal(Index)
 (* Comparison on this type is pointer equality *)
 type canonical_node =
   { canon: Index.t;
-    locality: locality;
+    local: locality;
     value : int;
     clauses_bwd : ClausesOf.t; (* premises -> canon + k *)
     clauses_fwd : ForwardClauses.t (* canon + k, ... ->  concl + k' *) }
@@ -859,13 +859,19 @@ type entry =
   | Equiv of locality * Index.t * int
 
 type model = {
+  locality : locality;
   entries : entry PMap.t;
   canentries : PSet.t; (* subset of entries that are Canonical *)
   values : int PMap.t option; (* values, superseding the ones attached to canonical nodes if present *)
   canonical : int; (* Number of canonical nodes *)
   table : Index.table }
 
+let set_local m =
+  assert (m.locality == Global);
+  { m with locality = Local }
+
 let empty_model = {
+  locality = Global;
   entries = PMap.empty;
   canentries = PSet.empty;
   values = None;
@@ -895,10 +901,11 @@ module CN = struct
 end
 (* module CSet = CSet.Make(CN) *)
 
-let enter_equiv m u v local i =
-  { entries = PMap.modify u (fun _ a ->
+let enter_equiv m u v i =
+  { locality = m.locality;
+    entries = PMap.modify u (fun _ a ->
           match a with
-          | Canonical _ -> Equiv (local, v, i)
+          | Canonical _ -> Equiv (m.locality, v, i)
           | _ -> assert false) m.entries;
     canentries = PSet.remove u m.canentries;
     canonical = m.canonical - 1;
@@ -1793,9 +1800,9 @@ let remove_premise idx prems =
         | Some l' -> Some (NeList.Cons (prem, l'))
   in aux prems
 
-let add_can_clause_model m local ((prems, (canl, conclk)) : can_clause) : (can_clause * model) option =
+let add_can_clause_model m ((prems, (canl, conclk)) : can_clause) : (can_clause * model) option =
   let canprems = NeList.map (fun (can, k) -> (can.canon, k)) prems in
-  let clof = (conclk, local, canprems) in
+  let clof = (conclk, m.locality, canprems) in
   (* Add clause to the backwards clauses of l *)
   let canl' =
     let bwd = ClausesOf.add clof canl.clauses_bwd in
@@ -1881,22 +1888,22 @@ let enforce_eq_can model (canu, ku as _u) (canv, kv as _v) : (canonical_node * i
       (* Set + k = l + k' -> k' < k
         -> l = Set + (k - k') *)
       (assert (kv <= ku);
-       (canu, ku, canv, ku - kv, enter_equiv model canv.canon canu.canon canv.locality (ku - kv)))
+       (canu, ku, canv, ku - kv, enter_equiv model canv.canon canu.canon (ku - kv)))
     else if Level.is_set (Index.repr canv.canon model.table) then
       (assert (ku <= kv);
-       (canv, kv, canu, kv - ku, enter_equiv model canu.canon canv.canon canu.locality (kv - ku)))
+       (canv, kv, canu, kv - ku, enter_equiv model canu.canon canv.canon (kv - ku)))
     else if Int.equal ku kv then
       (* This heuristic choice has real performance impact in e.g. math_classes/dyadics.v *)
       if ForwardClauses.cardinal canu.clauses_fwd <= ForwardClauses.cardinal canv.clauses_fwd then
-        (canv, kv, canu, 0, enter_equiv model canu.canon canv.canon canu.locality 0)
-      else (canu, ku, canv, 0, enter_equiv model canv.canon canu.canon canv.locality 0)
+        (canv, kv, canu, 0, enter_equiv model canu.canon canv.canon 0)
+      else (canu, ku, canv, 0, enter_equiv model canv.canon canu.canon 0)
     else if ku <= kv then
-      (canv, kv, canu, kv - ku, enter_equiv model canu.canon canv.canon canu.locality (kv - ku))
+      (canv, kv, canu, kv - ku, enter_equiv model canu.canon canv.canon (kv - ku))
     else
       (* canu + ku = canv + kv /\ kv < ku ->
         canv = canu + (ku - kv)
         *)
-      (canu, ku, canv, ku - kv, enter_equiv model canv.canon canu.canon canv.locality (ku - kv))
+      (canu, ku, canv, ku - kv, enter_equiv model canv.canon canu.canon (ku - kv))
   in
   (* other = can + diff *)
   let can, model =
@@ -2456,10 +2463,10 @@ let update_model ((prems, (can, k)) : can_clause) (m : model) : PSet.t * model =
       | None -> (PSet.empty, m')
     else (PSet.empty, m)
 
-let infer_clause_extension local cl minit =
+let infer_clause_extension cl minit =
   (* debug Pp.(fun () -> str "current model is: " ++ pr_levelmap model); *)
   (* debug_check_invariants minit; *)
-  match add_can_clause_model minit local cl with
+  match add_can_clause_model minit cl with
   | None ->
     (* The clause was already present in the model *)
      Some minit
@@ -2476,9 +2483,9 @@ let infer_clause_extension local cl minit =
       (* debug Pp.(fun () -> str"Enforcing clauses requires a new inference"); *)
       infer_clauses_extension cans m
 
-let infer_clause_extension local cl m =
+let infer_clause_extension cl m =
   debug_global Pp.(fun () -> str"Enforcing clause " ++ pr_can_clause m cl);
-  let res = infer_clause_extension local cl m in
+  let res = infer_clause_extension cl m in
   match res with
   | None -> debug_global Pp.(fun () -> str"Resulted in a loop"); res
   | Some m ->
@@ -2543,7 +2550,7 @@ let check_one_clause_loop model prems concl conclk =
       if result then (m, result)
       else
         let cl = can_clause_of_can_constraint (repr_expr_can m (prem.canon, k + 1), repr_expr_can m (concl.canon, conclk)) in
-        let res = infer_clause_extension Local cl m in
+        let res = infer_clause_extension cl m in
         match res with
         | None -> (m, true)
         | Some m -> (m, false))
@@ -2565,7 +2572,7 @@ let infer_extension =
   time3 Pp.(str "infer_extension") infer_extension *)
 
 (** Enforce u <= v and check if v <= u already held, in that case, enforce u = v *)
-let enforce_leq_can local u v m =
+let enforce_leq_can u v m =
   let cl = (v, u) in
   (* let vcan = v in *)
   (* debug_global Pp.(fun () -> str"enforce_leq " ++ pr_can_clause m cl); *)
@@ -2575,7 +2582,7 @@ let enforce_leq_can local u v m =
   if (match v with NeList.Tip v -> eq_can_expr u v | _ -> false) then
     (debug_enforce_eq Pp.(fun () -> str"already equal"); Some m)
   else
-  match infer_clause_extension local (v, u) m with
+  match infer_clause_extension (v, u) m with
   | None -> None
   | Some m' ->
     if m' != m then
@@ -2585,26 +2592,26 @@ let enforce_leq_can local u v m =
       Some (simplify_clauses_between m' u v))
     else Some m
 
-let enforce_leq_level local u v m =
+let enforce_leq_level u v m =
   let m, canu = repr_compress_node m u in
   let m, canv = repr_compress_node m v in
-  enforce_leq_can local canu (NeList.Tip canv) m
+  enforce_leq_can canu (NeList.Tip canv) m
 
 let _get_proper_value m can =
   match canonical_value m can with
   | Some v -> v
   | None -> raise (Undeclared (Index.repr can.canon m.table))
 
-let enforce_eq_level local u v m =
+let enforce_eq_level u v m =
   let (canu, ku as u) = repr_node m u in
   let (canv, kv as v) = repr_node m v in
   debug_enforce_eq Pp.(fun () -> str"enforce_eq: " ++ pr_can_expr m u ++ str" = " ++ pr_can_expr m (canv, kv));
-  match enforce_leq_can local v (NeList.Tip u) m with
+  match enforce_leq_can v (NeList.Tip u) m with
   | None -> None
   | Some m' ->
     let canu' = repr_expr_can m' (canu.canon, ku) in
     let canv' = repr_expr_can m' (canv.canon, kv) in
-    enforce_leq_can local canu' (NeList.Tip canv') m'
+    enforce_leq_can canu' (NeList.Tip canv') m'
 
 let enforce_eq_level = time3 (Pp.str "enforce_eq_level") enforce_eq_level
 
@@ -2628,7 +2635,7 @@ let can_clause_of_clause m (prems, concl) =
   let concl = repr_node_expr m concl in
   (prems, concl)
 
-let infer_extension local (prems, (concl, k)) m = enforce_leq_can local (concl, k) prems m
+let infer_extension (prems, (concl, k)) m = enforce_leq_can (concl, k) prems m
 
 (* let debug_filter, _ = CDebug.create_full ~name:"loop-checking-filter" () *)
 
@@ -2647,42 +2654,42 @@ let filter_trivial_can_clause m ((prems, (concl, k as conclk)) : can_clause) : c
     in
     Some (prems, conclk)
 
-let infer_extension_filter local cl m =
+let infer_extension_filter cl m =
   match filter_trivial_can_clause m cl with
   | None -> Some m
-  | Some cl -> infer_extension local cl m
+  | Some cl -> infer_extension cl m
 
 let repr_can_clause m (prems, conclk) =
   let concl = repr_can_expr m conclk in
   let prems = repr_can_premises m prems in
   (prems, concl)
 
-let enforce_can_constraints local cls m =
+let enforce_can_constraints cls m =
   List.fold_left (fun m cl ->
     match m with
     | None -> None
-    | Some m -> infer_extension_filter local (repr_can_clause m cl) m) (Some m) cls
+    | Some m -> infer_extension_filter (repr_can_clause m cl) m) (Some m) cls
 
-let enforce_constraint local u k v (m : t) =
+let enforce_constraint u k v (m : t) =
   let cls = clauses_of_constraint u k v [] in
   List.fold_left (fun m cl ->
     match m with
     | None -> None
-    | Some m -> infer_extension_filter local (can_clause_of_clause m cl) m) (Some m) cls
+    | Some m -> infer_extension_filter (can_clause_of_clause m cl) m) (Some m) cls
 
-let enforce local u k v m =
+let enforce u k v m =
   match Universe.repr u, k, Universe.repr v with
-  | [(u, 0)], Eq, [(v, 0)] -> enforce_eq_level local u v m
-  | [(u, 0)], Le, [(v, 0)] -> enforce_leq_level local u v m
-  | _, _, _ -> enforce_constraint local u k v m
+  | [(u, 0)], Eq, [(v, 0)] -> enforce_eq_level u v m
+  | [(u, 0)], Le, [(v, 0)] -> enforce_leq_level u v m
+  | _, _, _ -> enforce_constraint u k v m
 
-let enforce_eq local u v m =
-  debug_enforce_eq (let vc = v in Pp.(fun () -> Universe.pr debug_pr_level u ++ str" = " ++ Universe.pr debug_pr_level vc ++ pr_local local));
-  enforce local u Eq v m
-let enforce_leq local u v m =
-  debug_enforce_eq (let vc = v in Pp.(fun () -> Universe.pr debug_pr_level u ++ str" ≤ " ++ Universe.pr debug_pr_level vc ++ pr_local local));
-  enforce local u Le v m
-let enforce_lt local u v m = enforce_constraint local (Universe.addn u 1) Le v m
+let enforce_eq u v m =
+  debug_enforce_eq (let vc = v in Pp.(fun () -> Universe.pr debug_pr_level u ++ str" = " ++ Universe.pr debug_pr_level vc ++ pr_local m.locality));
+  enforce u Eq v m
+let enforce_leq u v m =
+  debug_enforce_eq (let vc = v in Pp.(fun () -> Universe.pr debug_pr_level u ++ str" ≤ " ++ Universe.pr debug_pr_level vc ++ pr_local m.locality));
+  enforce u Le v m
+let enforce_lt u v m = enforce_constraint (Universe.addn u 1) Le v m
 
 let check_clause model cl =
   match filter_trivial_can_clause model cl with
@@ -2706,25 +2713,25 @@ let check_eq m u v =
    (* || check_constraint m u Eq v *)
   | _, _ -> check_constraint m u Eq v
 
-let enforce_constraint local (u, k, v) (m : t) = enforce local u k v m
+let enforce_constraint (u, k, v) (m : t) = enforce u k v m
 
 exception AlreadyDeclared
 
-let add_model local u { entries; table; values; canonical; canentries } =
+let add_model u { locality; entries; table; values; canonical; canentries } =
   if Index.mem u table then
    (debug_global Pp.(fun () -> str"Already declared level: " ++ debug_pr_level u);
     raise AlreadyDeclared)
   else
     let idx, table = Index.fresh u table in
-    let can = Canonical { canon = idx; value = 0; locality = local;
+    let can = Canonical { canon = idx; value = 0; local = locality;
       clauses_fwd = ForwardClauses.empty; clauses_bwd = ClausesOf.empty } in
     let entries = PMap.add idx can entries in
-    idx, { entries; table; values; canonical = canonical + 1; canentries = PSet.add idx canentries }
+    idx, { locality; entries; table; values; canonical = canonical + 1; canentries = PSet.add idx canentries }
 
-let add ?(rank:int option) local u model =
+let add ?(rank:int option) u model =
   let _r = rank in
-  debug_global Pp.(fun () -> str"Declaring level " ++ debug_pr_level u ++ pr_local local);
-  let _idx, model = add_model local u model in
+  debug_global Pp.(fun () -> str"Declaring level " ++ debug_pr_level u ++ pr_local model.locality);
+  let _idx, model = add_model u model in
   model
 
 let check_declared model us =
@@ -2943,19 +2950,19 @@ let set_can can k u model =
         let premsrepr = Option.map (repr_premises model) premsfwd in
         let conclk = repr_can_expr model (concl, conclk) in
         let premsfwd = (app_opt_nelist (shift_prems kprem (repr_can_premises model u)) premsrepr) in
-        match enforce_leq_can Local conclk premsfwd model with
+        match enforce_leq_can conclk premsfwd model with
         | Some model -> remove_all_bwd_clauses_from model concl.canon can.canon
         | None -> raise InconsistentEquality)
         fwd model)
       fwd model
   in
   let modelbwd =
-    ClausesOf.fold (fun (cank, local, premsbwd) model ->
+    ClausesOf.fold (fun (cank, _local, premsbwd) model ->
       (* premsbwd -> can + cank *)
       let premsrepr = repr_premises model premsbwd in
       let u' = shift_prems cank (repr_can_premises model u) in
       let cls = clauses_of_univ_constraint premsrepr u' [] in
-      match enforce_can_constraints local cls model with
+      match enforce_can_constraints cls model with
       | Some model -> remove_fwd_clauses_to model premsbwd can.canon
       | None -> raise InconsistentEquality)
     bwd modelfwd
@@ -2985,7 +2992,7 @@ let minimize_can can k model =
           (* Remove duplicate records of this constraint in premsfwd *)
           let model = remove_fwd_clauses_from model premsfwd can.canon in
           let model =
-            ClausesOf.fold (fun (cank, local, premsbwd) model ->
+            ClausesOf.fold (fun (cank, _local, premsbwd) model ->
               (* premsbwd -> can + cank *)
               let premsfwd = (cons_opt_nelist (can.canon, kprem) premsfwd) in
               let cl = merge_clauses premsbwd can.canon cank premsfwd concl.canon conclk in
@@ -2994,7 +3001,7 @@ let minimize_can can k model =
                 match filter_trivial_can_clause model cl with
                 | None -> model
                 | Some cl ->
-                  match add_can_clause_model model local cl with
+                  match add_can_clause_model model cl with
                   | Some (_, m) -> m
                   | None -> model
               in
@@ -3135,9 +3142,11 @@ let constraints_of model ?(only_local = false) fold acc =
   let module UF = Unionfind.Make (LevelExpr.Set) (LevelExpr.Map) in
   let equiv = UF.create () in
   let bwd = ref PMap.empty in
+  let locals = ref Level.Set.empty in
   let constraints_of u v =
     match v with
     | Canonical can ->
+      if only_local && can.local == Local then locals := Level.Set.add (Index.repr can.canon model.table) !locals;
       bwd := PMap.add can.canon can.clauses_bwd !bwd
     | Equiv (local, v, vk) ->
       if only_local && local == Global then () else
@@ -3147,7 +3156,7 @@ let constraints_of model ?(only_local = false) fold acc =
   in
   let () = PMap.iter constraints_of model.entries in
   let cstrs = constraints_of_clauses model !bwd in
-  Constraints.fold fold cstrs acc, UF.partition equiv
+  !locals, Constraints.fold fold cstrs acc, UF.partition equiv
 
 type 'a constraint_fold = univ_constraint -> 'a -> 'a
 
@@ -3204,13 +3213,13 @@ let constraints_for ~(kept:Level.Set.t) model (fold : 'a constraint_fold) (accu 
       let fwd = PartialClausesOf.shift k prems in
       PartialClausesOf.fold (fun (conclk, premsfwd) model ->
         (* premsfwd, can + kprem -> concl + conclk *)
-        ClausesOf.fold (fun (cank, local, premsbwd) model ->
+        ClausesOf.fold (fun (cank, _local, premsbwd) model ->
           (* premsbwd -> can + cank *)
           let premsfwd = (cons_opt_nelist (can.canon, kprem) premsfwd) in
           let cl = merge_clauses premsbwd can.canon cank premsfwd concl.canon conclk in
           let cl = (repr_clause model cl) in
           debug_constraints_for Pp.(fun () -> str"constraints_for adding: " ++ pr_can_clause model cl);
-          match add_can_clause_model model local cl with
+          match add_can_clause_model model cl with
           | Some (_, m) -> m
           | None -> model)
         bwd model)

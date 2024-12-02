@@ -100,7 +100,7 @@ val empty_universes : t
    level expressions (i.e. l = l' + k).
    The [only_local] option only returns the constraints added since [set_local] was performed
    on the graph. *)
-val constraints_of_universes : ?only_local:bool -> t -> Constraints.t * LevelExpr.Set.t list
+val constraints_of_universes : ?only_local:bool -> t -> Level.Set.t * Constraints.t * LevelExpr.Set.t list
 
 val choose : (Level.t -> bool) -> t -> Level.t -> Level.t option
 (** [choose p g u] picks a universe verifying [p] and equal

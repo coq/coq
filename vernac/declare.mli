@@ -138,6 +138,7 @@ val declare_mutual_definitions
   -> cinfo: Constr.t CInfo.t list
   -> opaque:bool
   -> uctx:UState.t
+  -> variances:InferCumulativity.level_variances
   -> bodies:Constr.t list
   -> possible_guard:Pretyping.possible_guard * Sorts.relevance list
   -> ?using:Vernacexpr.section_subset_expr

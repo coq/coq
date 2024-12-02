@@ -86,8 +86,8 @@ struct
     | (InTerm | InType), InBinder _ -> false
     | InTerm, InTerm -> true
     | InType, InType -> true
-    | InTerm, InType -> true
-    | InType, InTerm -> false
+    | InType, InTerm -> true
+    | InTerm, InType -> false
 
   let pr pos =
     match pos with

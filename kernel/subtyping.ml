@@ -101,7 +101,7 @@ let check_variance error env v1 v2 =
       error (IncompatibleVariance { got = v1; expect = v2 })
     else env
   | None, Some _ -> error (CumulativeStatusExpected true)
-  | Some _, None -> error (CumulativeStatusExpected false)
+  | Some _, None -> env (* A cumulative definition can implement a non-cumulative definition *)
 
 let check_universes error env u1 u2 =
   match u1, u2 with

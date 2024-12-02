@@ -45,7 +45,7 @@ val from_env : ?binders:lident list -> Environ.env -> t
 val of_names : (UnivNames.universe_binders * UnivNames.rev_binders) -> t
 (** Main entry point when only names matter, e.g. for printing. *)
 
-val of_context_set : UnivGen.sort_context_set -> t
+val of_context_set : Environ.env -> UnivGen.sort_context_set -> t
 (** Main entry point when starting from the instance of a global
     reference, e.g. when building a scheme. *)
 

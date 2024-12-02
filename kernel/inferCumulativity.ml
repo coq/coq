@@ -81,6 +81,7 @@ let pr_variances prl variances =
 let position_variance_sup mode infer_mode u ({ in_binder; in_term; in_type } as o) (variance, position as vp) =
   let open Variance in
   let open Position in
+  debug Pp.(fun () -> str"position_variance_sup: " ++ Level.raw_pr u ++ pr_variance_occurrence o ++ str", " ++ VariancePos.pr vp);
   match variance with
   | Irrelevant -> o (* The new variance is irrelevant, we keep record of the last relevant positions *)
   | _ ->
@@ -544,17 +545,22 @@ let infer_term cv_pb env ~evars variances c =
   infer_fterm cv_pb infos variances (CClosure.inject c) []
 
 let infer_arity_constructor is_arity env ~evars variances arcn =
-  let infer_typ typ (env,variances) =
+  let infer_typ typ (env, i, variances) =
+    let variances = if is_arity then Inf.set_position (Position.InBinder i) variances else variances in
     match typ with
     | Context.Rel.Declaration.LocalAssum (_, typ') ->
-      (Environ.push_rel typ env, infer_term (if is_arity then InvCumul else Cumul) env ~evars variances typ')
+      (Environ.push_rel typ env, succ i,
+       infer_term (if is_arity then InvCumul else Cumul) env ~evars variances typ')
     | Context.Rel.Declaration.LocalDef _ -> assert false
   in
   let typs, codom = Reduction.whd_decompose_prod env arcn in
-  let env, variances = Context.Rel.fold_outside infer_typ typs ~init:(env, variances) in
+  let env, _, variances = Context.Rel.fold_outside infer_typ typs ~init:(env, 0, variances) in
   (* If we have Inductive foo@{i j} : ... -> Type@{i} := C : ... -> foo Type@{j}
      i is irrelevant, j is invariant. *)
-  if not is_arity then infer_term Cumul env ~evars variances codom else variances
+  if not is_arity then
+    let variances = Inf.set_position Position.InTerm variances in
+    infer_term Cumul env ~evars variances codom
+  else variances
 
 let infer_inductive_core ~env_params ~env_ar_par ~evars ~arities ~ctors univs =
   let variances = Inf.start univs Position.InType in

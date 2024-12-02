@@ -382,9 +382,10 @@ let merge_graph_context ?(lbound=UGraph.Bound.Set) (us, csts) g =
     UGraph.add_universe v ~lbound ~strict:false g) us g in
   UGraph.merge_constraints csts g
 
-let of_context_set ((qs,us),csts) =
+let of_context_set env ((qs,us),csts) =
+  debug Pp.(fun () -> str"of_context_set: " ++ pr_universe_context_set Level.raw_pr (us, csts));
   let sort_variables = QState.of_set qs in
-  let universes = UGraph.initial_universes in
+  let universes = UGraph.set_local (Environ.universes env) in
   let universes = merge_graph_context (us, csts) universes in
   { empty with
     local = (us,csts);
@@ -953,13 +954,21 @@ let occurrence_to_variance InferCumulativity.{ in_binder; in_term; in_type } =
   | Some (i, variance), Some variance', _ -> (sup variance variance', InTerm)
   | None, None, Some in_type -> (in_type, InType)
 
-let computed_variances ivariances inst =
-  let infered_variance level =
+let computed_variances cumulative ivariances inst =
+  let inferred_variance level =
     match Level.Map.find_opt level ivariances with
-    | None -> VariancePos.make Variance.Invariant Position.InTerm
-    | Some o -> occurrence_to_variance o
+    | None -> None
+    | Some o ->
+      let var, pos = occurrence_to_variance o in
+      if cumulative then Some (var, pos)
+      else Some (if var == Irrelevant then var, pos else Invariant, pos)
   in
-  UVars.Variances.of_array (Array.map infered_variance (snd (LevelInstance.to_array inst)))
+  let arr = Array.map inferred_variance (snd (LevelInstance.to_array inst)) in
+  if Array.for_all Option.is_empty arr then None
+  else
+    let arr =
+      Array.map (function None -> VariancePos.make Variance.Invariant Position.InTerm | Some v -> v) arr
+    in Some (UVars.Variances.of_array arr)
 
 let pr_pre_variances =
   let open Pp in
@@ -971,7 +980,7 @@ let check_variances ~cumulative names ivariances inst variances =
   debug Pp.(fun () -> str"Inferred variances: " ++ InferCumulativity.pr_variances Level.raw_pr ivariances);
   let variances = Option.map (extend_variances inst) variances in
   match variances with
-  | None -> if not cumulative then None else Some (computed_variances ivariances inst)
+  | None -> computed_variances cumulative ivariances inst
   | Some variances ->
     let check_var level variance =
       match Univ.Level.Map.find_opt level ivariances with
@@ -1248,7 +1257,7 @@ let make_with_initial_binders ~lbound univs binders =
     uctx binders
 
 let from_env ?(binders=[]) env =
-  make_with_initial_binders ~lbound:UGraph.Bound.Set (Environ.universes env) binders
+  make_with_initial_binders ~lbound:UGraph.Bound.Set (UGraph.set_local (Environ.universes env)) binders
 
 let subst_univs_context_with_def def usubst (uctx, cst) =
   (Level.Set.diff uctx def, UnivSubst.subst_univs_constraints usubst cst)

@@ -1020,8 +1020,8 @@ let declare_possibly_mutual_parameters ~info ~cinfo ?(mono_uctx_extra=UState.emp
   pi3 (List.fold_left2 (
     fun (i, subst, csts) { CInfo.name; impargs } (typ, uctx) ->
       let uctx' = UState.restrict uctx (Vars.universes_of_constr typ) in
-      let ivariances = InferCumulativity.empty_level_variances in (* FIXME infer variances *)
-      let univs = UState.check_univ_decl ~poly uctx' ivariances udecl in
+      let variances = UnivVariances.universe_variances_of_type (Global.env ()) (Evd.from_ctx uctx) (EConstr.of_constr typ) in
+      let univs = UState.check_univ_decl ~poly uctx' variances udecl in
       let univs = if i = 0 then add_mono_uctx mono_uctx_extra univs else univs in
       let typ = Vars.replace_vars subst typ in
       let pe = {
@@ -1055,7 +1055,7 @@ let prepare_recursive_edeclaration sigma cinfo fixtypes fixrs fixdefs =
   let defs = List.map (EConstr.Vars.subst_vars sigma (List.rev fixnames)) fixdefs in
   (Array.of_list names, Array.of_list fixtypes, Array.of_list defs)
 
-let declare_mutual_definitions ~info ~cinfo ~opaque ~uctx ~bodies ~possible_guard ?using () =
+let declare_mutual_definitions ~info ~cinfo ~opaque ~uctx ~variances ~bodies ~possible_guard ?using () =
   (* Note: uctx is supposed to be already minimized *)
   let { Info.typing_flags; _ } = info in
   let env = Global.env() in
@@ -1567,10 +1567,12 @@ let declare_mutual_definitions ~pm l =
   let fixitems = List.map2 (fun (d, typ, impargs) name -> CInfo.make ~name ~typ ~impargs ()) defs first.prg_deps in
   let fixdefs, fixtypes, _ = List.split3 defs in
   let possible_guard = Option.get first.prg_possible_guard in
+  let variances = UnivVariances.universe_variances_of_fix (Global.env ()) (Evd.from_ctx first.prg_uctx) (List.map EConstr.of_constr fixtypes)
+    (List.map (fun x -> Some (EConstr.of_constr x)) fixdefs) in
   (* Declare the recursive definitions *)
   let kns =
     declare_mutual_definitions ~info:first.prg_info
-      ~uctx:first.prg_uctx ~bodies:fixdefs ~possible_guard ~opaque:first.prg_opaque
+      ~uctx:first.prg_uctx ~variances ~bodies:fixdefs ~possible_guard ~opaque:first.prg_opaque
       ~cinfo:fixitems ?using:first.prg_using ()
   in
   (* Only for the first constant *)
@@ -2291,9 +2293,11 @@ let save_admitted ~pm ~proof =
   let Proof.{ entry } = Proof.data iproof in
   let typs = List.map pi3 (Proofview.initial_goals entry) in
   let sigma = Evd.from_ctx proof.initial_euctx in
-  List.iter (check_type_evars_solved (Global.env()) sigma) typs;
+  let env = Global.env () in
+  List.iter (check_type_evars_solved env sigma) typs;
   let sec_vars = compute_proof_using_for_admitted proof.pinfo proof typs iproof in
-  let sigma, _variances = Evd.minimize_universes sigma in
+  let variances = UnivVariances.universe_variances_of_proof_statements env sigma typs in
+  let sigma, _variances = Evd.minimize_universes ~variances sigma in
   let uctx = Evd.ustate sigma in
   let typs = List.map (fun typ -> (EConstr.to_constr sigma typ, uctx)) typs in
   finish_admitted ~pm ~pinfo:proof.pinfo ~sec_vars typs

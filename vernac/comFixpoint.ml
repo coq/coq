@@ -578,7 +578,7 @@ let do_mutually_recursive ?pm ~program_mode ?(use_inference_hook=false) ?scope ?
       (* All bodies are defined *)
       let possible_guard = (possible_guard, fixrs) in
       let _ : GlobRef.t list =
-        Declare.declare_mutual_definitions ~cinfo ~info ~opaque:false ~uctx ~possible_guard ~bodies ?using ()
+        Declare.declare_mutual_definitions ~cinfo ~info ~opaque:false ~uctx ~variances ~possible_guard ~bodies ?using ()
       in
       None, None
     with Option.IsNone ->

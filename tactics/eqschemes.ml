@@ -228,7 +228,7 @@ let build_sym_scheme env _handle ind =
             mkRel 1 (* varH *),
             [|cstr (nrealargs+1)|])))))
   in
-  c, UState.of_context_set ctx
+  c, UState.of_context_set env ctx
 
 let sym_scheme_kind =
   declare_individual_scheme_object "sym_internal"
@@ -301,7 +301,7 @@ let build_sym_involutive_scheme env handle ind =
                NoInvert,
                mkRel 1 (* varH *),
                [|mkApp(eqrefl,[|applied_ind_C;cstr (nrealargs+1)|])|])))))
-  in (c, UState.of_context_set ctx)
+  in (c, UState.of_context_set env ctx)
 
 let sym_involutive_scheme_kind =
   declare_individual_scheme_object "sym_involutive"
@@ -461,7 +461,7 @@ let build_l2r_rew_scheme dep env handle ind kind =
        [|main_body|]))
    else
      main_body))))))
-  in (c, UState.of_context_set ctx)
+  in (c, UState.of_context_set env ctx)
 
 (**********************************************************************)
 (* Build the left-to-right rewriting lemma for hypotheses associated  *)
@@ -553,7 +553,7 @@ let build_l2r_forward_rew_scheme dep env ind kind =
           (if dep then realsign_ind_P 1 applied_ind_P' else realsign_P 2) s)
       (mkNamedLambda (make_annot varHC indr) applied_PC'
         (mkVar varHC))|]))))))
-  in c, UState.of_context_set ctx
+  in c, UState.of_context_set env ctx
 
 (**********************************************************************)
 (* Build the right-to-left rewriting lemma for hypotheses associated  *)
@@ -630,7 +630,7 @@ let build_r2l_forward_rew_scheme dep env ind kind =
            lift (nrealargs+3) applied_PC,
            mkRel 1)|])),
     [|mkVar varHC|]))))))
-  in c, UState.of_context_set ctx
+  in c, UState.of_context_set env ctx
 
 (**********************************************************************)
 (* This function "repairs" the non-dependent r2l forward rewriting    *)
@@ -848,7 +848,7 @@ let build_congr env (eq,refl,ctx) ind =
        [|mkApp (refl,
           [|mkVar varB;
             mkApp (mkVar varf, [|lift (mip.mind_nrealargs+3) b|])|])|])))))))
-  in c, UState.of_context_set ctx
+  in c, UState.of_context_set env ctx
 
 let congr_scheme_kind = declare_individual_scheme_object "congr"
   (fun env _ ind ->

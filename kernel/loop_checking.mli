@@ -12,7 +12,13 @@
 
 open Univ
 
+type locality =
+  | Global
+  | Local
+
 type t
+
+val set_local : t -> t
 
 val empty : t
 
@@ -20,12 +26,8 @@ val clear_constraints : t -> t
 
 val check_invariants : required_canonical:(Level.t -> bool) -> t -> unit
 
-type locality =
-  | Global
-  | Local
-
 exception AlreadyDeclared
-val add : ?rank:int -> locality -> Level.t -> t -> t
+val add : ?rank:int -> Level.t -> t -> t
 (** All points must be pre-declared through this function before
     they can be mentioned in the others. NB: use a large [rank] to
     keep the node canonical *)
@@ -39,10 +41,10 @@ type 'a check_function = t -> 'a -> 'a -> bool
 val check_eq : Universe.t check_function
 val check_leq : Universe.t check_function
 
-val enforce_eq : locality -> Universe.t -> Universe.t -> t -> t option
-val enforce_leq : locality -> Universe.t -> Universe.t -> t -> t option
-val enforce_lt : locality -> Universe.t -> Universe.t -> t -> t option
-val enforce_constraint : locality -> univ_constraint -> t -> t option
+val enforce_eq : Universe.t -> Universe.t -> t -> t option
+val enforce_leq : Universe.t -> Universe.t -> t -> t option
+val enforce_lt : Universe.t -> Universe.t -> t -> t option
+val enforce_constraint : univ_constraint -> t -> t option
 
 exception InconsistentEquality
 
@@ -63,7 +65,14 @@ val get_explanation : univ_constraint -> t -> explanation
 
 type 'a constraint_fold = univ_constraint -> 'a -> 'a
 
-val constraints_of : t -> ?only_local:bool -> 'a constraint_fold -> 'a -> 'a * LevelExpr.Set.t list
+(** [constraints_of graph ?only_local fold acc = (levels, acc', equivs)]
+
+  Computes the constraints modeled by the graph.
+  If [only_local] is [true] (default is [false]), [levels] is the set of universes that were declared locally
+  (since the last and only possible [set_local] call on the graph).
+  The [Le] constraints are passed to a folding function starting with [acc] whose result is returned as [acc'].
+  Finally [equivs] containts equivalence classes of level expressions, i.e. equality ([Eq]) constraints. *)
+val constraints_of : t -> ?only_local:bool -> 'a constraint_fold -> 'a -> Level.Set.t * 'a * LevelExpr.Set.t list
 
 val constraints_for : kept:Level.Set.t -> t -> 'a constraint_fold -> 'a -> 'a
 

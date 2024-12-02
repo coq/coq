@@ -208,7 +208,7 @@ let build_functional_principle env (sigma : Evd.evar_map) old_princ_type sorts f
     Declare.build_by_tactic env ~uctx ~poly:false ~typ ftac
   in
   (* uctx was ignored before *)
-  let hook = Declare.Hook.make (hook new_principle_type) in
+  let hook = Declare.Hook.make (hook (UState.nf_universes _uctx new_principle_type)) in
   (body, typ, univs, hook, sigma)
 
 let change_property_sort evd toSort princ princName =
@@ -270,7 +270,7 @@ let generate_functional_principle (evd : Evd.evar_map ref) old_princ_type sorts
         (*     let id_of_f = Label.to_id (con_label f) in *)
         let register_with_sort fam_sort =
           let evd' = Evd.from_env (Global.env ()) in
-          let evd', s = Evd.fresh_sort_in_family evd' fam_sort in
+          let evd', s = Evd.fresh_sort_in_family evd' ~rigid:Evd.univ_rigid fam_sort in
           let name =
             Indrec.make_elimination_ident base_new_princ_name fam_sort
           in

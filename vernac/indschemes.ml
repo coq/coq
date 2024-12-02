@@ -384,7 +384,7 @@ let do_mutual_induction_scheme ?(force_mutual=false) env ?(isrec=true) l =
     let _, ctx = Typeops.type_of_global_in_context env (Names.GlobRef.IndRef ind) in
     let u, ctx = UnivGen.fresh_instance_from ctx None in
     let u = EConstr.EInstance.make u in
-    let sigma = Evd.from_ctx (UState.of_context_set ctx) in
+    let sigma = Evd.from_ctx (UState.of_context_set env ctx) in
     sigma, u
   in
   let sigma, lrecspec =

@@ -14,6 +14,7 @@ open InferCumulativity
 
 let _debug_minim, debug = CDebug.create_full ~name:"univMinim" ()
 let _debug_minim_each, debug_each = CDebug.create_full ~name:"univMinim_each" ()
+let _debug_minim_each, debug_graph = CDebug.create_full ~name:"univMinim_graph" ()
 let switch_minim, _ = CDebug.create_full ~name:"switchminim" ()
 let () = CDebug.set_flag switch_minim true
 
@@ -339,10 +340,27 @@ let simplify_variables partial ctx us variances graph =
         let fold l variances = update_variance variances u l in
         Level.Set.fold fold (Universe.levels lbound) variances
       in
-      (Level.Set.remove u ctx, UnivFlex.define u lbound us, variances, graph)
+      (Level.Set.remove u ctx, UnivFlex.define u lbound us,
+       Level.Map.remove u variances, graph)
     | None -> (ctx, us, variances, graph)
   in
-  let arbitrary u acc = minimize u acc in
+  let arbitrary u (ctx, us, variances, graph as acc) =
+    match UGraph.minimize u graph with
+    | Some (graph, lbound) ->
+      debug_each Pp.(fun () -> str"Minimizing " ++ Level.raw_pr u ++ str" resulted in lbound: " ++ Universe.pr Level.raw_pr lbound ++ str" and graph " ++ UGraph.pr_model graph);
+      let variances =
+        let fold l variances = update_variance variances u l in
+        Level.Set.fold fold (Universe.levels lbound) variances
+      in
+      (Level.Set.remove u ctx, UnivFlex.define u lbound us,
+       Level.Map.remove u variances, graph)
+    | None ->
+      try
+        let graph = UGraph.set u Universe.type0 graph in
+        (Level.Set.remove u ctx, UnivFlex.define u Universe.type0 us,
+         Level.Map.remove u variances, graph)
+      with UGraph.InconsistentEquality -> acc
+  in
   let maximize u (ctx, us, variances, graph as acc) =
     match UGraph.maximize u graph with
     | Some (graph, ubound) ->
@@ -351,7 +369,8 @@ let simplify_variables partial ctx us variances graph =
         let fold l variances = update_variance variances u l in
         Level.Set.fold fold (Universe.levels ubound) variances
       in
-      (Level.Set.remove u ctx, UnivFlex.define u ubound us, variances, graph)
+      (Level.Set.remove u ctx, UnivFlex.define u ubound us,
+       Level.Map.remove u variances, graph)
     | None -> acc
   in
   let simplify_min u (ctx, us, variances, graph as acc) =
@@ -471,6 +490,18 @@ let minimize_weak us weak (smallles, csts, g, variances) =
         | _ -> acc)
     weak (smallles, csts, g, variances)
 
+let new_minimize_weak_pre us weak smallles =
+  UPairSet.fold (fun (u,v) smallles ->
+    let norm = Universe.subst_fn (level_subst_of (UnivFlex.normalize_univ_variable us)) in
+    let u = norm u and v = norm v in
+    if (Universe.is_type0 u || Universe.is_type0 v) then begin
+      if get_set_minimization() then begin
+        if Universe.is_type0 u then (Constraints.add (u,Le,v) smallles)
+        else (Constraints.add (v,Le,u) smallles)
+      end else smallles
+    end else smallles)
+    weak smallles
+
 let new_minimize_weak ctx us weak (g, variances) =
   UPairSet.fold (fun (u,v) (ctx, us, g, variances as acc) ->
     let norm = Universe.subst_fn (level_subst_of (UnivFlex.normalize_univ_variable us)) in
@@ -486,8 +517,10 @@ let new_minimize_weak ctx us weak (g, variances) =
         let max_variance = max_variance variances levels in
         match InferCumulativity.term_type_variances max_variance with
         | (None | Some UVars.Variance.Irrelevant), (None | Some UVars.Variance.Irrelevant) -> (* Irrelevant *)
-          (Level.Set.remove a ctx, UnivFlex.define a b us, UGraph.set a b g,
-          Level.Set.fold (fun bl variances -> set_variance variances bl max_variance) levels variances)
+          let variances =
+            Level.Set.fold (fun bl variances -> set_variance variances bl max_variance) levels variances
+          in
+          (Level.Set.remove a ctx, UnivFlex.define a b us, UGraph.set a b g, Level.Map.remove a variances)
         | _, _ -> (* One universe is not irrelevant *)
           (ctx,us, g, variances)
       in
@@ -510,7 +543,8 @@ let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?bin
     str"Variances: " ++ pr_variances prl variances ++ fnl () ++
     str"Weak constraints " ++
     prlist_with_sep spc (fun (u,v) -> Universe.pr Level.raw_pr u ++ str" ~ " ++ Universe.pr Level.raw_pr v)
-     (UPairSet.elements weak) ++
+     (UPairSet.elements weak));
+  debug_graph Pp.(fun () ->
      str"Graph: " ++ UGraph.pr_model g);
   if CDebug.get_flag _debug_minim then
     if not (Level.Set.is_empty (Univ.ContextSet.levels ctx)) && Univ.Level.Map.is_empty variances then
@@ -526,7 +560,7 @@ let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?bin
   let smallles, csts, g, variances =
     if not (CDebug.get_flag switch_minim) then
       minimize_weak us weak (smallles, csts, g, variances)
-    else (smallles, csts, g, variances)
+    else (new_minimize_weak_pre us weak smallles, csts, g, variances)
   in
   let smallles = match (lbound : UGraph.Bound.t) with
     | Prop -> smallles
@@ -567,7 +601,8 @@ let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?bin
       else UGraph.enforce_constraint (simplify_cstr cstr) g)
       nonatomic g
   in
-  let cstrs, partition = UGraph.constraints_of_universes graph in
+  let locals, cstrs, partition = UGraph.constraints_of_universes ~only_local:true graph in
+  debug Pp.(fun () -> str "Local universes: " ++ pr_universe_context_set prl (locals, cstrs));
   debug Pp.(fun () -> str "New universe context: " ++ pr_universe_context_set prl (ctx, cstrs));
   debug Pp.(fun () -> str "Partition: " ++ pr_partition prl partition);
 (* Ignore constraints from lbound:Set *)
@@ -595,7 +630,7 @@ let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?bin
         (* canon + k = l + k' ... <-> l = canon + k - k' (k' <= k by invariant of choose_canonical) *)
         let fold (f, k') (ctx, us, variances) =
           (Level.Set.remove f ctx, UnivFlex.define f (Universe.addn canonu (-k')) us,
-            update_variance variances f (fst canon))
+           Level.Map.remove f (update_variance variances f (fst canon)))
         in
         let ctx, us, variances = LevelExpr.Set.fold fold flexible (ctx, us, variances) in
         ctx, us, variances, cstrs
@@ -606,7 +641,7 @@ let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?bin
         let ctx, us, variances =
           let fold (f, k') (ctx, us, variances) =
             (Level.Set.remove f ctx, UnivFlex.define f (Universe.addn (Universe.of_expr can') (-k')) us,
-             update_variance variances f (fst can'))
+             Level.Map.remove f (update_variance variances f (fst can')))
           in
           LevelExpr.Set.fold fold (LevelExpr.Set.remove (canon', canonk') flexible) (ctx, us, variances)
         in
@@ -615,7 +650,7 @@ let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?bin
         else
           let ctx, us = Level.Set.remove canon' ctx, UnivFlex.define canon' (Universe.addn canonu (-canonk')) us in
           let variances = update_variance variances canon' (fst canon) in
-          ctx, us, variances, cstrs)
+          ctx, us, Level.Map.remove canon' variances, cstrs)
       (ctx, us, variances, Constraints.empty)
       partition
   in
@@ -673,9 +708,9 @@ let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?bin
       in
       (* debug Pp.(fun () -> str"Model after removal: " ++ UGraph.pr_model graph); *)
       let ctx', us, variances, graph = simplify_variables partial ctx us variances graph in
-      debug Pp.(fun () -> str"Model after simplification: " ++ UGraph.pr_model graph ++ fnl () ++ UnivFlex.pr Level.raw_pr us);
+      debug_graph Pp.(fun () -> str"Model after simplification: " ++ UGraph.pr_model graph ++ fnl () ++ UnivFlex.pr Level.raw_pr us);
       let ctx', us, graph, variances = new_minimize_weak ctx' us weak (graph, variances) in
-      let cstrs, partition = UGraph.constraints_of_universes graph in
+      let locals, cstrs, partition = UGraph.constraints_of_universes ~only_local:true graph in
       let cstrs = partition_to_constraints partition cstrs in
       let cstrs =
         Constraints.filter

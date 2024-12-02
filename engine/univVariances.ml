@@ -185,6 +185,12 @@ let universe_variances_of_proofs env sigma proofs =
     compute_variances_type_constr env sigma status typ) status proofs in
   Inf.inferred status
 
+let universe_variances_of_proof_statements env sigma proofs =
+  let status = init_status sigma in
+  let status = List.fold_left (fun status typ ->
+    compute_variances_type env sigma status typ) status proofs in
+  Inf.inferred status
+
 let universe_variances_of_partial_proofs env sigma proofs =
   let status = init_status sigma in
   let status = List.fold_left (fun status body ->
