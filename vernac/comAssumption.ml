@@ -26,7 +26,10 @@ module NamedDecl = Context.Named.Declaration
     - with implicit arguments (impls)
     - with implicit status for discharge (impl)
     - virtually with named universes *)
-let declare_local ~coe ~try_assum_as_instance ~kind ~univs ~impargs ~impl ~name body typ =
+let declare_local ~coe ~try_assum_as_instance ~kind ~univs ?variances ~impargs ~impl ~name body typ =
+  let () = if Option.is_empty variances then () else
+      CErrors.user_err Pp.(str"Section-local assumptions and definitions cannot have a variance annotation")
+  in
   let decl = match body with
     | None ->
       Declare.SectionLocalAssum {typ; impl; univs}
@@ -59,7 +62,7 @@ let instance_of_univ_entry = function
     - with implicit arguments
     - with inlining for functor application
     - with named universes *)
-let declare_global ~coe ~try_assum_as_instance ~local ~kind ?user_warns ~univs ~impargs ~inline ~name body typ =
+let declare_global ~coe ~try_assum_as_instance ~local ~kind ?user_warns ~univs ?variances ~impargs ~inline ~name body typ =
   let (uentry, ubinders) = univs in
   let inl = let open Declaremods in match inline with
     | NoInline -> None
@@ -67,8 +70,8 @@ let declare_global ~coe ~try_assum_as_instance ~local ~kind ?user_warns ~univs ~
     | InlineAt i -> Some i
   in
   let decl = match body with
-    | None -> Declare.ParameterEntry (Declare.parameter_entry ~univs:(uentry, ubinders) ?inline:inl typ)
-    | Some b -> Declare.DefinitionEntry (Declare.definition_entry ~univs ~types:typ b) in
+    | None -> Declare.ParameterEntry (Declare.parameter_entry ~univs:(uentry, ubinders) ?variances ?inline:inl typ)
+    | Some b -> Declare.DefinitionEntry (Declare.definition_entry ~univs ?variances ~types:typ b) in
   let kn = Declare.declare_constant ~name ~local ~kind ?user_warns decl in
   let gr = GlobRef.ConstRef kn in
   let () = maybe_declare_manual_implicits false gr impargs in
@@ -112,13 +115,13 @@ let clear_univs scope univ =
 let context_subst subst (id,b,t,infos) =
   id, Option.map (Vars.replace_vars subst) b, Vars.replace_vars subst t, infos
 
-let declare_context ~try_global_assum_as_instance ~scope ~univs ?user_warns ~inline ctx =
+let declare_context ~try_global_assum_as_instance ~scope ~univs ?variances ?user_warns ~inline ctx =
   let fn i subst d =
     let (name,b,t,(impl,kind,coe,impargs)) = context_subst subst d in
     let univs = if i = 0 then univs else clear_univs scope univs in
     let refu = match scope with
-      | Locality.Discharge -> declare_local ~coe ~try_assum_as_instance:true ~kind ~univs ~impargs ~impl ~name b t
-      | Locality.Global local -> declare_global ~coe ~try_assum_as_instance:try_global_assum_as_instance ~local ~kind ?user_warns ~univs ~impargs ~inline ~name b t in
+      | Locality.Discharge -> declare_local ~coe ~try_assum_as_instance:true ~kind ~univs ?variances ~impargs ~impl ~name b t
+      | Locality.Global local -> declare_global ~coe ~try_assum_as_instance:try_global_assum_as_instance ~local ~kind ?user_warns ~univs ?variances ~impargs ~inline ~name b t in
     let ref, u = refu in
     (name, Constr.mkRef (ref, UVars.Instance.of_level_instance u)) :: subst
   in
@@ -185,12 +188,19 @@ let find_binding_kind id impls =
     | _ -> None in
   Option.default Explicit (CList.find_map find impls)
 
-let interp_context_gen ~program_mode ~kind ~autoimp_enable ~coercions env sigma l =
+let interp_context_gen scope ~program_mode ~kind ~autoimp_enable ~coercions env sigma l =
   let initial = sigma in
   let sigma, (ienv, ((env, ctx), impls)) = interp_named_context_evars ~program_mode ~autoimp_enable env sigma l in
   (* Note, we must use the normalized evar from now on! *)
   let sigma = solve_remaining_evars all_and_fail_flags env ~initial sigma in
-  let sigma, ctx = Evarutil.finalize sigma @@ fun nf ->
+  let variances =
+    let v =
+      match scope with
+      | Locality.Discharge -> UVars.Variance.Contravariant
+      | Locality.Global _ -> UVars.Variance.Covariant
+    in
+    UnivVariances.universe_variances_of_named_context env sigma ~variance:v ctx in
+  let sigma, ctx = Evarutil.finalize ~variances sigma @@ fun nf ->
     List.map (NamedDecl.map_constr_het (fun x -> x) nf) ctx
   in
   (* reorder, evar-normalize and add implicit status *)
@@ -217,11 +227,12 @@ let do_assumptions ~program_mode ~poly ~scope ~kind ?user_warns ~inline l =
   let udecl, l = match scope with
     | Locality.Global import_behavior -> process_assumptions_udecls l
     | Locality.Discharge -> None, process_assumptions_no_udecls l in
-  let sigma, udecl = interp_univ_decl_opt env udecl in
+  let sigma, udecl, variances = interp_cumul_univ_decl_opt env udecl in
+  let variances = ComDefinition.variance_of_entry variances in
   let coercions, ctx = local_binders_of_decls ~poly l in
-  let sigma, ctx = interp_context_gen ~program_mode ~kind ~autoimp_enable:true ~coercions env sigma ctx in
+  let sigma, ctx = interp_context_gen scope ~program_mode ~kind ~autoimp_enable:true ~coercions env sigma ctx in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
-  declare_context ~try_global_assum_as_instance:false ~scope ~univs ?user_warns ~inline ctx
+  declare_context ~try_global_assum_as_instance:false ~scope ~univs ?variances ?user_warns ~inline ctx
 
 let warn_context_outside_section =
   CWarnings.create ~name:"context-outside-section"
@@ -255,7 +266,7 @@ let do_context ~program_mode ~poly ctx =
     if sec then Discharge
     else Global (if Lib.is_modtype () then ImportDefaultBehavior else ImportNeedQualified)
   in
-  let sigma, ctx = interp_context_gen ~program_mode ~kind:Context ~autoimp_enable:false ~coercions:Id.Set.empty env sigma ctx in
+  let sigma, ctx = interp_context_gen scope ~program_mode ~kind:Context ~autoimp_enable:false ~coercions:Id.Set.empty env sigma ctx in
   let univs = Evd.univ_entry ~poly sigma in
   declare_context ~try_global_assum_as_instance:true ~scope ~univs ~inline:Declaremods.NoInline ctx
 
@@ -266,6 +277,6 @@ let interp_context env sigma ctx =
     List.rev (snd (List.fold_left_i (fun n (subst, ctx) (id,b,t,impl) ->
         let decl = (id, Option.map (Vars.subst_vars subst) b, Vars.subst_vars subst t, impl) in
         (id :: subst, decl :: ctx)) 1 ([],[]) ctx)) in
-  let sigma, ctx = interp_context_gen ~program_mode:false ~kind:Context ~autoimp_enable:false ~coercions:Id.Set.empty env sigma ctx in
+  let sigma, ctx = interp_context_gen Locality.Discharge ~program_mode:false ~kind:Context ~autoimp_enable:false ~coercions:Id.Set.empty env sigma ctx in
   let ctx = List.map (fun (id,b,t,(impl,_,_,_)) -> (id,b,t,impl)) ctx in
   sigma, reverse_rel_context_of_reverse_named_context ctx

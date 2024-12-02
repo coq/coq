@@ -183,7 +183,7 @@ let minimize_univ_variables ctx us variances left right cstrs =
     let variance =
       match Level.Map.find_opt u variances with
       | None -> UVars.Variance.Invariant
-      | Some v -> v
+      | Some (_position, v) -> v
     in
     let instantiate_lbound lbound =
       if is_set_increment lbound && not (get_set_minimization()) then
@@ -205,19 +205,20 @@ let minimize_univ_variables ctx us variances left right cstrs =
     if not (Level.Set.mem u ctx)
     then enforce_uppers (acc, {enforce=true; lbound=Universe.make u; lower})
     else
-      let lbound = compute_lbound left in
-      match lbound with
-      | None ->
-        let open UVars.Variance in
-        (match variance with
-        | Contravariant | Invariant -> enforce_uppers (acc, {enforce=true; lbound=Universe.make u; lower})
-        | Irrelevant | Covariant -> (* This keeps principal typings, as instantiating to Set in a covariant position allows to use Set <= i for any i *)
-          enforce_uppers (instantiate_lbound Universe.type0))
-      | Some lbound ->
+      let lbound = match compute_lbound left with None -> Universe.type0 | Some lbound -> lbound in
+      debug Pp.(fun () -> str"Lower bound of " ++ Level.raw_pr u ++ str":" ++ Universe.pr Level.raw_pr lbound);
+      let open UVars.Variance in
+      match variance with
+      | Contravariant | Invariant ->
+        if Universe.is_type0 lbound then enforce_uppers (acc, {enforce = true; lbound = Universe.make u; lower})
+        else enforce_uppers (instantiate_with_lbound u lbound lower ~enforce:true acc)
+      | Irrelevant | Covariant -> (* This keeps principal typings, as instantiating to e.g. Set in a covariant position allows to use Set <= i for any i *)
         enforce_uppers (instantiate_lbound lbound)
   and aux (ctx, us, seen, insts, cstrs as acc) u =
     debug Pp.(fun () -> str"Calling minim on " ++ Level.raw_pr u);
-    try acc, Level.Map.find u insts.LBMap.lbmap
+    try let lbound = Level.Map.find u insts.LBMap.lbmap in
+      debug Pp.(fun () -> str" = " ++ Universe.pr Level.raw_pr lbound.lbound);
+      acc, lbound
     with Not_found ->
       if Level.Set.mem u seen then
         (* Loop in the contraints *)
@@ -276,9 +277,20 @@ let decompose_constraints cstrs =
 let simplify_cstr (l, d, r) =
   (Universe.unrepr (Universe.repr l), d, Universe.unrepr (Universe.repr r))
 
-type level_variances = UVars.Variance.t Univ.Level.Map.t
+type position =
+  | InBinder of int
+  | InTerm | InType
+
+(* The position records the last position in the term where the variable was used relevantly. *)
+type level_variances = (position * UVars.Variance.t) Univ.Level.Map.t
+
+let pr_pos_variance (position, variance) =
+  let open Pp in
+  let pr_pos = function InBinder i -> str "(in " ++ pr_nth i ++ str" binder)" | InTerm -> str "(in term)" | InType -> str "(in type)" in
+  UVars.Variance.pr variance ++ spc () ++ pr_pos position
+
 let pr_variances prl variances =
-  Univ.Level.Map.pr prl UVars.Variance.pr variances
+  Univ.Level.Map.pr prl pr_pos_variance variances
 
 let normalize_context_set ~lbound ~variances g ctx (us:UnivFlex.t) ?binders {weak_constraints=weak;above_prop} =
   let prl = UnivNames.pr_level_with_global_universes ?binders in

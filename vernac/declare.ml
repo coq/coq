@@ -152,11 +152,13 @@ type parameter_entry = {
   parameter_entry_secctx : Id.Set.t option;
   parameter_entry_type : Constr.types;
   parameter_entry_universes : UState.named_universes_entry;
+  parameter_entry_variances : Declarations.variances option;
   parameter_entry_inline_code : Entries.inline;
 }
 
 type primitive_entry = {
   prim_entry_type : (Constr.types * UState.named_universes_entry) option;
+  prim_entry_variances : Declarations.variances option;
   prim_entry_content : CPrimitives.op_or_type;
 }
 
@@ -164,6 +166,7 @@ type symbol_entry = {
   symb_entry_type : Constr.types;
   symb_entry_unfold_fix: bool;
   symb_entry_universes : UState.named_universes_entry;
+  symb_entry_variances : Declarations.variances option;
 }
 
 let default_univ_entry = UState.Monomorphic_entry Univ.ContextSet.empty
@@ -298,20 +301,23 @@ let definition_entry ?(opaque=false) ?using ?inline ?types ?univs ?variances bod
 let delayed_definition_entry ?feedback_id ?using ~univs ?variances ?types body =
   definition_entry_core ?using ?types ~univs ?variances (DeferredOpaque { body; feedback_id })
 
-let parameter_entry ?inline ?(univs=default_named_univ_entry) typ = {
+let parameter_entry ?inline ?(univs=default_named_univ_entry) ?variances typ = {
   parameter_entry_secctx = None;
   parameter_entry_type = typ;
   parameter_entry_universes = univs;
+  parameter_entry_variances = variances;
   parameter_entry_inline_code = inline;
 }
 
-let primitive_entry ?types c = {
+let primitive_entry ?types ?variances c = {
   prim_entry_type = types;
+  prim_entry_variances = variances;
   prim_entry_content = c;
 }
 
-let symbol_entry ?(univs=default_named_univ_entry) ~unfold_fix symb_entry_type = {
+let symbol_entry ?(univs=default_named_univ_entry) ?variances ~unfold_fix symb_entry_type = {
   symb_entry_universes = univs;
+  symb_entry_variances = variances;
   symb_entry_unfold_fix = unfold_fix;
   symb_entry_type;
 }
@@ -631,6 +637,7 @@ let declare_constant ~loc ?(local = Locality.ImportDefaultBehavior) ~name ~kind 
       let () = Global.push_context_set ctx in
       let e = {
         Entries.prim_entry_type = typ;
+        Entries.prim_entry_variance = e.prim_entry_variances;
         Entries.prim_entry_content = e.prim_entry_content;
       } in
       let ubinders = make_ubinders ctx univ_entry in
@@ -722,7 +729,7 @@ let inVariable v = Libobject.Dyn.Easy.inj v objVariable
 let declare_variable ~name ~kind ~typing_flags d =
   (* Variables are distinguished by only short names *)
   if Decls.variable_exists name then
-    raise (DeclareUniv.AlreadyDeclared (None, name));
+      raise (DeclareUniv.AlreadyDeclared (None, name));
 
   let impl,opaque = match d with (* Fails if not well-typed *)
     | SectionLocalAssum {typ;impl;univs} ->
@@ -765,7 +772,7 @@ let declare_variable ~name ~kind ~typing_flags d =
             proof_entry_secctx = None; (* de.proof_entry_secctx is NOT respected *)
             proof_entry_type = de.proof_entry_type;
             proof_entry_universes = univs;
-            proof_entry_variances = de.proof_entry_variances; (* FIXME can it have variance?? *)
+            proof_entry_variances = None; (* FIXME can it have variance?? *)
             proof_entry_inline_code = de.proof_entry_inline_code;
           }
           in
@@ -1017,6 +1024,7 @@ let declare_possibly_mutual_parameters ~info ~cinfo ?(mono_uctx_extra=UState.emp
           parameter_entry_secctx = sec_vars;
           parameter_entry_type = Evarutil.nf_evars_universes (Evd.from_ctx uctx) typ;
           parameter_entry_universes = univs;
+          parameter_entry_variances = None; (* FIXME ? *)
           parameter_entry_inline_code = None;
         } in
       let cst = declare_parameter ~name ~scope ~hook ~impargs ~uctx pe in
@@ -1084,7 +1092,7 @@ let declare_definition ~info ~cinfo ~opaque ~obls ~body ?using sigma =
   let env = Global.env () in
   Option.iter (check_evars_are_solved env sigma) typ;
   check_evars_are_solved env sigma body;
-  let inferred_variances = UnivVariances.universe_variances env sigma (Option.cata (fun typ -> [typ;body]) [body] typ) in
+  let inferred_variances = UnivVariances.universe_variances env sigma ?typ body in
   let sigma = Evd.minimize_universes ~variances:inferred_variances sigma in
   let body = EConstr.to_constr sigma body in
   let typ = Option.map (EConstr.to_constr sigma) typ in
@@ -1109,10 +1117,12 @@ let prepare_obligations ~name ?types ~body env sigma =
   let uctx = Evd.ustate sigma in
   body, cty, uctx, evmap, obls
 
-let prepare_parameter ~poly ~udecl ~types sigma =
+let prepare_parameter ~poly ~udecl ?variances ~types sigma =
   let env = Global.env () in
   Pretyping.check_evars_are_solved ~program_mode:false env sigma;
+  let ivariances = UnivVariances.universe_variances_of_type env sigma types in
   let sigma, typ = Evarutil.finalize ~abort_on_undefined_evars:true
+      ~variances:ivariances
       sigma (fun nf -> nf types)
   in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
@@ -1120,6 +1130,7 @@ let prepare_parameter ~poly ~udecl ~types sigma =
       parameter_entry_secctx = None;
       parameter_entry_type = typ;
       parameter_entry_universes = univs;
+      parameter_entry_variances = variances;
       parameter_entry_inline_code = None;
     } in
   sigma, pe
@@ -2025,7 +2036,8 @@ let prepare_proof ?(warn_incomplete=true) { proof; pinfo } =
     Proof.unfocus_all proof
   in
   let eff = Evd.eval_side_effects evd in
-  let evd = Evd.minimize_universes evd in
+  let variances = UnivVariances.universe_variances_of_proofs (Global.env()) evd initial_goals in
+  let evd = Evd.minimize_universes evd ~variances in
   let to_constr c =
     match EConstr.to_constr_opt evd c with
     | Some p -> p

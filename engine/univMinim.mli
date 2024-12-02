@@ -22,7 +22,12 @@ val empty_extra : extra
 
 val extra_union : extra -> extra -> extra
 
-type level_variances = UVars.Variance.t Univ.Level.Map.t
+type position =
+  | InBinder of int
+  | InTerm | InType
+
+(* The position records the last position in the term where the variable was used relevantly. *)
+type level_variances = (position * UVars.Variance.t) Univ.Level.Map.t
 val pr_variances : (Univ.Level.t -> Pp.t) -> level_variances -> Pp.t
 
 (** Simplification and pruning of constraints:
@@ -36,7 +41,7 @@ val pr_variances : (Univ.Level.t -> Pp.t) -> level_variances -> Pp.t
     (a global one if there is one) and transitively saturate
     the constraints w.r.t to the equalities. *)
 
-val normalize_context_set : lbound:UGraph.Bound.t -> variances:UVars.Variance.t Level.Map.t -> UGraph.t -> ContextSet.t ->
+val normalize_context_set : lbound:UGraph.Bound.t -> variances:level_variances -> UGraph.t -> ContextSet.t ->
   UnivFlex.t (* The defined and undefined variables *) ->
   ?binders:UnivNames.universe_binders ->
   extra ->

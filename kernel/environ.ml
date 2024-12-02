@@ -499,14 +499,20 @@ let push_context_set ?(strict=false) ctx env =
 let push_floating_context_set ctx env =
   map_universes (add_universes_set ~lbound:UGraph.Bound.Prop ~strict:false ctx) env
 
+let gather_new_constraints restricted g =
+  let _, failed = Univ.Constraints.partition (UGraph.check_constraint g) restricted in
+  failed
+
 let push_subgraph (levels,csts) env =
   let add_subgraph g =
     let newg = Univ.Level.Set.fold (fun v g -> UGraph.add_universe ~lbound:UGraph.Bound.Set ~strict:false v g) levels g in
     let newg = UGraph.merge_constraints csts newg in
     (if not (Univ.Constraints.is_empty csts) then
        let restricted = UGraph.constraints_for ~kept:(UGraph.domain g) newg in
-       (if not (UGraph.check_constraints restricted g) then
-          CErrors.anomaly Pp.(str "Local constraints imply new transitive constraints.")));
+       let missing = gather_new_constraints restricted g in
+       (if not (Univ.Constraints.is_empty missing) then
+          CErrors.anomaly Pp.(str "Local constraints imply new transitive constraints: " ++ fnl () ++
+            Univ.Constraints.pr Univ.Level.raw_pr missing)));
     newg
   in
   map_universes add_subgraph env

@@ -262,9 +262,10 @@ let typecheck_params_and_fields ~auto_prop_lowering def ~poly udecl ps (records 
   in
   (* TODO: Have this use Declaredef.prepare_definition *)
   let lbound = if unconstrained_sorts then UGraph.Bound.Prop else UGraph.Bound.Set in
+  let ivariances = UnivVariances.universe_variances_of_record env0 sigma ~params:newps ~fields:(List.map snd data) ~types:(List.map snd typs) in
   let sigma, (newps, ans) =
     (* too complex for Evarutil.finalize as we normalize non-constr *)
-    let sigma = Evd.minimize_universes ~lbound sigma in
+    let sigma = Evd.minimize_universes ~lbound ~variances:ivariances sigma in
     let uvars = ref Univ.Level.Set.empty in
     let nf c =
       let _, varsc = EConstr.universes_of_constr sigma c in

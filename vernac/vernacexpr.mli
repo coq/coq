@@ -424,8 +424,8 @@ type nonrec synpure_vernac_expr =
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
   | VernacAssumption of (discharge * Decls.assumption_object_kind) *
-      Declaremods.inline * (ident_decl list * constr_expr) with_coercion list
-  | VernacSymbol of (ident_decl list * constr_expr) with_coercion list
+      Declaremods.inline * (cumul_ident_decl list * constr_expr) with_coercion list
+  | VernacSymbol of (cumul_ident_decl list * constr_expr) with_coercion list
   | VernacInductive of inductive_kind * (inductive_expr * notation_declaration list) list
   | VernacFixpoint of discharge * fixpoints_expr
   | VernacCoFixpoint of discharge * cofixpoints_expr
@@ -495,7 +495,7 @@ type nonrec synpure_vernac_expr =
   | VernacSearch of searchable * Goal_select.t option * qualid list search_restriction
   | VernacLocate of locatable
   | VernacRegister of qualid * register_kind
-  | VernacPrimitive of ident_decl * CPrimitives.op_or_type * constr_expr option
+  | VernacPrimitive of cumul_ident_decl * CPrimitives.op_or_type * constr_expr option
   | VernacComments of comment list
   | VernacAttributes of Attributes.vernac_flags
 

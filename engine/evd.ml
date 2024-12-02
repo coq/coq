@@ -1103,6 +1103,9 @@ let new_sort_variable ?loc ?name rigid sigma =
 let add_forgotten_univ d u =
   { d with universes = UState.add_forgotten_univ d.universes u }
 
+let pr_level sigma =
+  UnivNames.pr_level_with_global_universes ~binders:(UState.universe_binders sigma.universes)
+
 (****************************************)
 (* Operations on constants              *)
 (****************************************)

@@ -2,24 +2,24 @@ Require Import Uint63.
 
 Set Universe Polymorphism.
 
-Primitive array := #array_type.
+Primitive array@{*u} : Type@{u} -> Type@{u} := #array_type.
 
-Primitive make : forall A, int -> A -> array A := #array_make.
+Primitive make@{*u}: forall A : Type@{u}, int -> A -> array A := #array_make.
 Arguments make {_} _ _.
 
-Primitive get : forall A, array A -> int -> A := #array_get.
+Primitive get@{*u} : forall A : Type@{u}, array A -> int -> A := #array_get.
 Arguments get {_} _ _.
 
-Primitive default : forall A, array A -> A:= #array_default.
+Primitive default@{*u} : forall A : Type@{u}, array A -> A:= #array_default.
 Arguments default {_} _.
 
-Primitive set : forall A, array A -> int -> A -> array A := #array_set.
+Primitive set@{*u} : forall A : Type@{u}, array A -> int -> A -> array A := #array_set.
 Arguments set {_} _ _ _.
 
-Primitive length : forall A, array A -> int := #array_length.
+Primitive length@{*u} : forall A : Type@{u}, array A -> int := #array_length.
 Arguments length {_} _.
 
-Primitive copy : forall A, array A -> array A := #array_copy.
+Primitive copy@{*u} : forall A : Type@{u}, array A -> array A := #array_copy.
 Arguments copy {_} _.
 
 Module Export PArrayNotations.
@@ -39,6 +39,7 @@ Local Open Scope array_scope.
 Primitive max_length := #array_max_length.
 
 (** Axioms *)
+
 Axiom get_out_of_bounds : forall A (t:array A) i, (i <? length t) = false -> t.[i] = default t.
 
 Axiom get_set_same : forall A t i (a:A), (i <? length t) = true -> t.[i<-a].[i] = a.
@@ -87,10 +88,10 @@ Proof.
   rewrite !get_out_of_bounds in get_make; assumption.
 Qed.
 
-Lemma get_set_same_default A (t : array A) (i : int) :
+Lemma get_set_same_default@{u|?} (A : Type@{u}) (t : array A) (i : int) :
   t.[i <- default t].[i] = default t.
 Proof.
- case_eq (i <? length t); intros.
+ case_eq (i <? length@{u} t); intros.
  - rewrite get_set_same; trivial.
  - rewrite get_out_of_bounds, default_set; trivial.
    rewrite length_set; trivial.

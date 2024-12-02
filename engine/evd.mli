@@ -581,6 +581,8 @@ val sort_context_set : evar_map -> UnivGen.sort_context_set
 val universe_subst : evar_map -> UnivFlex.t
 val universes : evar_map -> UGraph.t
 
+val pr_level : evar_map -> Univ.Level.t -> Pp.t
+
 (** [to_universe_context evm] extracts the local universes and
     constraints of [evm] and orders the universes the same as
     [Univ.ContextSet.to_context]. *)

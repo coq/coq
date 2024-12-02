@@ -38,18 +38,20 @@ let do_symbol ~poly ~unfold_fix udecl (id, typ) =
   if Dumpglob.dump () then Dumpglob.dump_definition id false "symb";
   let id = id.CAst.v in
   let env = Global.env () in
-  let evd, udecl = Constrintern.interp_univ_decl_opt env udecl in
+  let evd, udecl, variances = Constrintern.interp_cumul_univ_decl_opt env udecl in
   let evd, (typ, impls) =
     Constrintern.(interp_type_evars_impls ~impls:empty_internalization_env)
       env evd typ
   in
   Pretyping.check_evars_are_solved ~program_mode:false env evd;
-  let evd = Evd.minimize_universes evd in
+  let ivariances = UnivVariances.universe_variances_of_type env evd typ in
+  let evd = Evd.minimize_universes ~variances:ivariances evd in
   let _qvars, uvars = EConstr.universes_of_constr evd typ in
   let evd = Evd.restrict_universe_context evd uvars in
   let typ = EConstr.to_constr evd typ in
   let univs = Evd.check_univ_decl ~poly evd udecl in
-  let entry = Declare.symbol_entry ~univs ~unfold_fix typ in
+  let variances = ComDefinition.variance_of_entry variances in
+  let entry = Declare.symbol_entry ~univs ?variances ~unfold_fix typ in
   let kn = Declare.declare_constant ~name:id ~kind:Decls.IsSymbol (Declare.SymbolEntry entry) in
   let () = Impargs.maybe_declare_manual_implicits false (GlobRef.ConstRef kn) impls in
   let () = Declare.assumption_message id in

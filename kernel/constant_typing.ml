@@ -130,9 +130,10 @@ let adjust_primitive_univ_entry p auctx = function
                                 str (CPrimitives.op_or_type_to_string p));
     Polymorphic_entry (UContext.refine_names (AbstractContext.names auctx) uctx)
 
-let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
+let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; prim_entry_variance = v } =
   let open CPrimitives in
   let auctx = CPrimitives.op_or_type_univs p in
+  (* FIXME: TODO check variance declaration *)
   let univs, typ =
     match utyp with
     | None ->
@@ -165,7 +166,7 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
     const_type = typ;
     const_body_code = ();
     const_universes = univs;
-    const_variance = None; (* FIXME *)
+    const_variance = v;
     const_relevance = Sorts.Relevant;
     const_inline_code = false;
     const_typing_flags = Environ.typing_flags env;

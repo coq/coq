@@ -896,7 +896,7 @@ let pr_synpure_vernac_expr v =
   | VernacAssumption ((discharge,kind),t,l) ->
     let n = List.length (List.flatten (List.map fst (List.map snd l))) in
     let pr_params (c, (xl, t)) =
-      hov 2 (prlist_with_sep sep pr_ident_decl xl ++ spc() ++
+      hov 2 (prlist_with_sep sep pr_cumul_ident_decl xl ++ spc() ++
              str(match c with AddCoercion -> ":>" | NoCoercion -> ":") ++ spc() ++ pr_lconstr_expr t) in
     let assumptions = prlist_with_sep spc (fun p -> hov 1 (str "(" ++ pr_params p ++ str ")")) l in
     return (hov 2 (pr_assumption_token (n > 1) discharge kind ++
@@ -904,7 +904,7 @@ let pr_synpure_vernac_expr v =
   | VernacSymbol l ->
     let n = List.length (List.flatten (List.map fst (List.map snd l))) in
     let pr_params (c, (xl, t)) =
-      hov 2 (prlist_with_sep sep pr_ident_decl xl ++ spc() ++
+      hov 2 (prlist_with_sep sep pr_cumul_ident_decl xl ++ spc() ++
               str(match c with AddCoercion -> ":>" | NoCoercion -> ":") ++ spc() ++ pr_lconstr_expr t) in
     let assumptions = prlist_with_sep spc (fun p -> hov 1 (str "(" ++ pr_params p ++ str ")")) l in
     return (hov 2 (keyword (if (n > 1) then "Symbols" else "Symbol") ++ spc() ++ assumptions))
@@ -1278,7 +1278,7 @@ let pr_synpure_vernac_expr v =
     )
   | VernacPrimitive(id,r,typopt) ->
     hov 2
-      (keyword "Primitive" ++ spc() ++ pr_ident_decl id ++
+      (keyword "Primitive" ++ spc() ++ pr_cumul_ident_decl id ++
        (Option.cata (fun ty -> spc() ++ str":" ++ pr_spc_lconstr ty) (mt()) typopt) ++ spc() ++
        str ":=" ++ spc() ++
        str (CPrimitives.op_or_type_to_string r))

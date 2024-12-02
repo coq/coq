@@ -299,7 +299,7 @@ GRAMMAR EXTEND Gram
         { VernacRegister(g, RegisterScheme {inductive = g'; scheme_kind = qid}) }
       | IDENT "Register"; IDENT "Inline"; g = global ->
           { VernacRegister(g, RegisterInline) }
-      | IDENT "Primitive"; id = ident_decl; typopt = OPT [ ":"; typ = lconstr -> { typ } ]; ":="; r = register_token ->
+      | IDENT "Primitive"; id = cumul_ident_decl; typopt = OPT [ ":"; typ = lconstr -> { typ } ]; ":="; r = register_token ->
           { VernacPrimitive(id, r, typopt) }
       | IDENT "Universe"; l = LIST1 identref -> { VernacUniverse l }
       | IDENT "Universes"; l = LIST1 identref -> { VernacUniverse l }
@@ -601,7 +601,7 @@ GRAMMAR EXTEND Gram
     [ [ "("; a = assumpt; ")" -> { a } ] ]
   ;
   assumpt:
-    [ [ idl = LIST1 ident_decl; oc = of_type; c = lconstr ->
+    [ [ idl = LIST1 cumul_ident_decl; oc = of_type; c = lconstr ->
         { (oc,(idl,c)) } ] ]
   ;
 
