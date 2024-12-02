@@ -135,6 +135,8 @@ sig
   val le : t -> t -> bool
   val equal : t -> t -> bool
 
+  val term_variance : t -> Variance.t
+
   val term_variance_pos : t -> VariancePos.t
 
   val variance_and_principality : nargs:int -> t -> Variance.t * bool

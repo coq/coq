@@ -461,7 +461,7 @@ let universe_subgraph kept univ =
     UGraph.add_universe u ~lbound:UGraph.Bound.Set ~strict newgraph
   in
   let univ = Level.Set.fold add kept UGraph.initial_universes in
-  UGraph.merge_constraints csts univ
+  fst (UGraph.merge_constraints csts univ)
 
 let sort_universes g =
   let open Univ in
@@ -930,11 +930,11 @@ let vernac_exact_proof ~lemma ~pm c =
 
 let vernac_assumption ~atts kind l inline =
   let open DefAttributes in
-  let scope, poly, program_mode, using, user_warns =
-    atts.scope, atts.polymorphic, atts.program, atts.using, atts.user_warns in
+  let scope, poly, cumulative, program_mode, using, user_warns =
+    atts.scope, atts.polymorphic, atts.cumulative, atts.program, atts.using, atts.user_warns in
   if Option.has_some using then
     Attributes.unsupported_attributes [CAst.make ("using",VernacFlagEmpty)];
-  ComAssumption.do_assumptions ~poly ~program_mode ~scope ~kind ?user_warns ~inline l
+  ComAssumption.do_assumptions ~poly ~cumulative ~program_mode ~scope ~kind ?user_warns ~inline l
 
 let { Goptions.get = is_polymorphic_inductive_cumulativity } =
   declare_bool_option_and_ref
@@ -954,8 +954,6 @@ let polymorphic_cumulative ~is_defclass =
     (bool_attribute ~name:"polymorphic"
      ++ bool_attribute ~name:"cumulative")
   >>= fun (poly,cumul) ->
-  if is_defclass && Option.has_some cumul
-  then user_err Pp.(str "Definitional classes do not support the inductive cumulativity attribute.");
   match poly, cumul with
   | Some poly, Some cumul ->
      (* Case of Polymorphic|Monomorphic Cumulative|NonCumulative Inductive
@@ -965,7 +963,8 @@ let polymorphic_cumulative ~is_defclass =
   | Some poly, None ->
      (* Case of Polymorphic|Monomorphic Inductive
         and #[ universes(polymorphic|monomorphic) ] Inductive *)
-     if poly then return (true, is_polymorphic_inductive_cumulativity ())
+     if poly then return (true, if is_defclass then is_polymorphic_definitions_cumulativity ()
+      else is_polymorphic_inductive_cumulativity ())
      else return (false, false)
   | None, Some cumul ->
      (* Case of Cumulative|NonCumulative Inductive *)
@@ -974,7 +973,8 @@ let polymorphic_cumulative ~is_defclass =
   | None, None ->
      (* Case of Inductive *)
      if is_universe_polymorphism () then
-       return (true, is_polymorphic_inductive_cumulativity ())
+       return (true, if is_defclass then is_polymorphic_definitions_cumulativity () else
+         is_polymorphic_inductive_cumulativity ())
      else
        return (false, false)
 

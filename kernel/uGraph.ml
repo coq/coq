@@ -94,7 +94,10 @@ let enforce_constraint cst g = match enforce_constraint0 cst g with
   else g, []
 | Some g -> g
 
-let merge_constraints csts g = Constraints.fold (fun cst g -> fst (enforce_constraint cst g)) csts g
+let merge_constraints csts g =
+  Constraints.fold (fun cst (g, equivs) ->
+    let g, equivs' = enforce_constraint cst g in
+    g, equivs' @ equivs) csts (g, [])
 
 let check_constraint { graph = g; type_in_type } (u,d,v) =
   type_in_type
@@ -165,7 +168,7 @@ let check_subtype univs ctxT ctx =
     let cstT = UContext.constraints (AbstractContext.repr ctxT) in
     let push accu v = add_universe v ~lbound:Bound.Set ~strict:false accu in
     let univs = Array.fold_left push univs (snd (LevelInstance.to_array inst)) in
-    let univs = merge_constraints cstT univs in
+    let univs, _equivs = merge_constraints cstT univs in
     check_constraints cst univs
   else false
 

@@ -386,9 +386,8 @@ struct
 
 end
 
-module SetWithCardinal (O:OrderedType.S) =
+module SetWithCardinal (O:OrderedType.S) (S : CSig.SetS with type elt = O.t) =
 struct
-  module S = Set.Make(O)
 
   type t = { set : S.t; cardinal : int }
 
@@ -416,8 +415,9 @@ struct
 
   let elements s = S.elements s.set
 
+  let smap f s = S.fold (fun x acc -> S.add (f x) acc) s S.empty
   let map f {set; _} =
-    let s' = S.map f set in
+    let s' = smap f set in
     { set = s'; cardinal = S.cardinal s'}
 
   let for_all p s = S.for_all p s.set
@@ -436,6 +436,8 @@ struct
     { set = l; cardinal = !left }, { set = r; cardinal = !right }
 
   let choose s = S.choose s.set
+
+  let of_set s = { set = s; cardinal = S.cardinal s }
 end
 
 module type TypeWithCardinal =
@@ -634,7 +636,7 @@ type locality =
 let pr_local local = let open Pp in
   match local with
   | Local -> spc () ++ str"(local)"
-  | Global -> mt()
+  | Global -> spc () ++ str"(global)"
 
 let compare_locality local local' =
   match local, local' with
@@ -692,7 +694,8 @@ module ClausesOf = struct
       hov 0 (Premises.pr pr_index_point prem ++ str " → " ++ pr_index_point (concl, k) ++ pr_local local)
   end
 
-  module SWC = SetWithCardinal(ClauseInfo)
+  module ClauseSet = Set.Make(ClauseInfo)
+  module SWC = SetWithCardinal(ClauseInfo)(ClauseSet)
   include SWC
 
   let pr pr_index_point concl cls =
@@ -744,7 +747,8 @@ module PartialClausesOf = struct
         ++ str " → " ++ pr_index_point (concl, k))
   end
 
-  module SWC = SetWithCardinal(ClauseInfo)
+  module ClauseInfos = Set.Make (ClauseInfo)
+  module SWC = SetWithCardinal(ClauseInfo)(ClauseInfos)
   include SWC
 
   let pr pr_index_point prem concl cls =
@@ -875,7 +879,7 @@ struct
 
 end
 
-module PSet = SetWithCardinal(Index)
+module PSet = SetWithCardinal(Index)(Index.Set)
 
 (* Comparison on this type is pointer equality *)
 type canonical_node =
@@ -900,9 +904,7 @@ type model = {
   canonical : int; (* Number of canonical nodes *)
   table : Index.table }
 
-let set_local m =
-  assert (m.locality == Global);
-  { m with locality = Local }
+let set_local m = { m with locality = Local }
 
 let empty_model = {
   locality = Global;
@@ -917,15 +919,16 @@ let empty = empty_model
 
 let clear_constraints m =
   let entries =
-    let map entry =
+    let map l entry =
       match entry with
-      | Equiv _ -> entry
+      | Equiv (local, _, _) ->
+        Canonical { canon = l; value = 0; local; clauses_bwd = ClausesOf.empty; clauses_fwd = ForwardClauses.empty }
       | Canonical can ->
-        Canonical { can with clauses_bwd = ClausesOf.empty; clauses_fwd = ForwardClauses.empty }
+        Canonical { can with value = 0; clauses_bwd = ClausesOf.empty; clauses_fwd = ForwardClauses.empty }
     in
-    PMap.map map m.entries
+    PMap.mapi map m.entries
   in
-  { m with entries; values = None; canonical = 0 }
+  { m with canentries = (PSet.of_set (PMap.domain entries)); entries; values = None; canonical = 0 }
 
 module CN = struct
   type t = canonical_node
@@ -1814,7 +1817,7 @@ let pr_levelmap (m : model) : Pp.t =
 
 let pr_model ?(local=false) model =
   (* Pp.(str "model: " ++ pr_levelmap model) *)
-  Pp.(str"clauses: " ++ pr_clauses_all ~local model)
+  Pp.(str"clauses: " ++ pr_local model.locality ++ fnl () ++ pr_clauses_all ~local model)
 
 let debug_model m =
   debug_model Pp.(fun () -> str"Model is " ++ pr_levelmap m)

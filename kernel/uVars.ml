@@ -294,14 +294,14 @@ struct
     | Some v, None -> Variance.is_irrelevant v
     | None, None -> true
 
-  let le ({ in_binders = (in_binders, pos); in_term; in_type; under_impred_qvars } as x)
+  let le ({ in_binders = (in_binders, pos); in_term; in_type; under_impred_qvars = _ } as x)
     ({ in_binders = (in_binders', pos'); in_term = in_term'; in_type = in_type';
-       under_impred_qvars = under_impred_qvars' } as y) =
+       under_impred_qvars = _under_impred_qvars' } as y) =
     x == y ||
     (option_le Variance.le in_binders in_binders' && List.subset pos pos' &&
     option_le Variance.le in_term in_term' &&
-    option_le Variance.le in_type in_type' &&
-    Option.equal Sorts.QVar.Set.equal under_impred_qvars under_impred_qvars')
+    option_le Variance.le in_type in_type')
+    (* Option.equal Sorts.QVar.Set.equal under_impred_qvars under_impred_qvars') Does not matter for subtyping *)
 
   (* let term_variance { in_binders; in_term; in_type = _ }  =
     let in_binders = Variance.sup_variances (List.map snd in_binders) in
@@ -320,6 +320,9 @@ struct
       match binder with
       | None -> None
       | Some i -> Some (v, Position.InBinder i)
+
+  let term_variance { in_binders = (bindersv, _); in_term; in_type = _; under_impred_qvars = _ } =
+    Option.default Variance.Irrelevant (Option.union Variance.sup bindersv in_term)
 
   let term_variance_pos { in_binders; in_term; in_type = _; under_impred_qvars = _ }  =
     let in_binders = binders_variance in_binders in

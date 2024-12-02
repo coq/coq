@@ -226,7 +226,7 @@ let interp_context_gen scope ~program_mode ~kind ~autoimp_enable ~coercions env 
   in
    sigma, ctx
 
-let do_assumptions ~program_mode ~poly ~scope ~kind ?user_warns ~inline l =
+let do_assumptions ~program_mode ~poly ~cumulative ~scope ~kind ?user_warns ~inline l =
   let sec = Lib.sections_are_opened () in
   if Dumpglob.dump () then begin
     List.iter (fun (_,(idl,_)) ->
@@ -240,7 +240,7 @@ let do_assumptions ~program_mode ~poly ~scope ~kind ?user_warns ~inline l =
   let sigma, udecl = interp_cumul_univ_decl_opt env udecl in
   let coercions, ctx = local_binders_of_decls ~poly l in
   let sigma, ctx = interp_context_gen scope ~program_mode ~kind ~autoimp_enable:true ~coercions env sigma ctx in
-  let univs = Evd.check_univ_decl ~poly ~cumulative:(not (Option.is_empty udecl.univdecl_variances)) sigma udecl in
+  let univs = Evd.check_univ_decl ~poly ~cumulative sigma udecl in
   declare_context ~try_global_assum_as_instance:false ~scope ~univs ?user_warns ~inline ctx
 
 let warn_context_outside_section =

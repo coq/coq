@@ -108,11 +108,11 @@ let subst_of_equivalences us =
 let instantiate_variable l (b : Universe.t) (ctx, us, variances, graph) =
   debug Pp.(fun () -> str"Instantiating " ++ Level.raw_pr l ++ str " with " ++ Universe.pr Level.raw_pr b);
   debug Pp.(fun () -> str"Context: " ++ Level.Set.pr Level.raw_pr ctx);
-  debug Pp.(fun () -> str"Model: " ++ UGraph.pr_model ~local:true graph);
+  debug_graph Pp.(fun () -> str"Model: " ++ UGraph.pr_model ~local:true graph);
   let graph, equivs = UGraph.set l b graph in
   let subst = subst_of_equivalences us equivs in
   debug Pp.(fun () -> str "Set affected also: " ++ pr_subst subst);
-  debug Pp.(fun () -> str"Model after set: " ++ UGraph.pr_model ~local:true graph);
+  debug_graph Pp.(fun () -> str"Model after set: " ++ UGraph.pr_model ~local:true graph);
   update_univ_subst (ctx, us, variances, graph) ((l, b) :: subst)
 
 let update_equivs_bound (_, us, _, _ as acc) l u equivs =
@@ -152,8 +152,13 @@ let simplify_variables partial ctx us variances graph =
     (* u is an undefined flexible variable, lookup its variance information *)
     let term_variance, type_variance, principal, impred = variance_info u us variances in
     let open UVars.Variance in
-    if not principal then (* The universe does not occur in the principal type of the application where it appears, we can minimize it at will *)
-      arbitrary u acc
+    if not principal then
+      (* The universe does not occur in the principal type of the application where it appears *)
+      match type_variance with
+      | Irrelevant -> arbitrary u acc
+      | Covariant -> minimize u acc
+      | Contravariant -> maximize u acc
+      | Invariant -> acc
     else
       match term_variance, type_variance with
       | Irrelevant, Irrelevant -> arbitrary u acc
@@ -206,7 +211,7 @@ let extra_union a b = {
   above_prop = Level.Set.union a.above_prop b.above_prop;
 }
 
-let pr_partition prl m =
+let _pr_partition prl m =
   let open Pp in
   prlist_with_sep spc (fun s ->
     str "{" ++ LevelExpr.Set.fold (fun lk acc -> LevelExpr.pr prl lk ++ str", " ++ acc) s (mt()) ++ str "}" ++ fnl ())
@@ -234,39 +239,6 @@ let partition_to_constraints partition cstrs =
     let canon = LevelExpr.Set.choose eqs in
     let rest = LevelExpr.Set.remove canon eqs in
     LevelExpr.Set.fold (fold canon) rest cstrs) cstrs partition
-
-let minimize_weak us weak (smallles, csts, g, variances) =
-  UPairSet.fold (fun (u,v) (smallles, csts, g, variances as acc) ->
-    let norm = Universe.subst_fn (level_subst_of (UnivFlex.normalize_univ_variable us)) in
-    let u = norm u and v = norm v in
-    if (Universe.is_type0 u || Universe.is_type0 v) then begin
-      if get_set_minimization() then begin
-        if Universe.is_type0 u then (Constraints.add (u,Le,v) smallles,csts,g,variances)
-        else (Constraints.add (v,Le,u) smallles,csts,g,variances)
-      end else acc
-    end else
-      let set_to a b =
-        let levels = Level.Set.add a (Universe.levels b) in
-        let sup_variances = sup_variances variances levels in
-        match InferCumulativity.term_type_variances sup_variances with
-        | (None | Some UVars.Variance.Irrelevant), (None | Some UVars.Variance.Irrelevant), false -> (* Irrelevant *)
-          (smallles,
-          Constraints.add (Universe.make a,Eq,b) csts,
-          fst (UGraph.enforce_constraint (Universe.make a,Eq,b) g),
-          Level.Set.fold (fun bl variances -> set_variance variances bl sup_variances) levels variances)
-        | _, _, _ -> (* One universe is not irrelevant *)
-          (smallles, csts, g, variances)
-      in
-      let check_le a b = UGraph.check_constraint g (a,Le,b) in
-      if check_le u v || check_le v u
-      then acc
-      else match Universe.level u with
-      | Some u when UnivFlex.mem u us -> set_to u v
-      | _ ->
-        match Universe.level v with
-        | Some v when UnivFlex.mem v us -> set_to v u
-        | _ -> acc)
-    weak (smallles, csts, g, variances)
 
 let new_minimize_weak_pre us weak smallles =
   UPairSet.fold (fun (u,v) smallles ->
@@ -336,9 +308,7 @@ let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?bin
   (* Process weak constraints: when one side is flexible and the 2
      universes are unrelated unify them. *)
   let smallles, csts, g, variances =
-    if not (CDebug.get_flag switch_minim) then
-      minimize_weak us weak (smallles, csts, g, variances)
-    else (new_minimize_weak_pre us weak smallles, csts, g, variances)
+    (new_minimize_weak_pre us weak smallles, csts, g, variances)
   in
   let smallles = match (lbound : UGraph.Bound.t) with
     | Prop -> smallles
@@ -355,6 +325,7 @@ let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?bin
     (* We first put constraints in a normal-form: all self-loops are collapsed
        to equalities. *)
     let g = UGraph.clear_constraints g in
+    let g = UGraph.set_local g in
     (* use lbound:Set to collapse [u <= v <= Set] into [u = v = Set] *)
     let g = Level.Set.fold (fun v g -> fst (UGraph.enforce_constraint (Universe.type0, Le, Universe.make v) g))
         ctx g
@@ -373,16 +344,17 @@ let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?bin
     debug Pp.(fun () -> str "Merging constraints: " ++ pr_universe_context_set prl (ctx, csts));
     let atomic, nonatomic =
      Constraints.partition (fun (_l, d, r) -> not (d == Le && not (Univ.Universe.is_level r))) csts in
-    let g = UGraph.merge_constraints atomic g in
+    let g, _ = UGraph.merge_constraints atomic g in
     Constraints.fold (fun cstr g ->
       if UGraph.check_constraint g cstr then g
       else fst (UGraph.enforce_constraint (simplify_cstr cstr) g))
       nonatomic g
   in
+  (* debug Pp.(fun () -> str "Local graph: " ++ UGraph.pr_model graph); *)
   let locals, cstrs, partition = UGraph.constraints_of_universes ~only_local:true graph in
-  debug Pp.(fun () -> str "Local universes: " ++ pr_universe_context_set prl (locals, cstrs));
-  debug Pp.(fun () -> str "New universe context: " ++ pr_universe_context_set prl (ctx, cstrs));
-  debug Pp.(fun () -> str "Partition: " ++ pr_partition prl partition);
+  (* debug Pp.(fun () -> str "Local universes: " ++ pr_universe_context_set prl (locals, cstrs)); *)
+  (* debug Pp.(fun () -> str "New universe context: " ++ pr_universe_context_set prl (ctx, cstrs)); *)
+  (* debug Pp.(fun () -> str "Partition: " ++ pr_partition prl partition); *)
 (* Ignore constraints from lbound:Set *)
   let noneqs =
     Constraints.filter

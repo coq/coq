@@ -453,7 +453,7 @@ let map_universes f env = set_universes (f env.env_universes) env
 
 let add_constraints c env =
   if Univ.Constraints.is_empty c then env
-  else map_universes (UGraph.merge_constraints c) env
+  else map_universes (fun univs -> fst (UGraph.merge_constraints c univs)) env
 
 let check_constraints c env =
   UGraph.check_constraints c env.env_universes
@@ -466,7 +466,7 @@ let add_universes ~lbound ~strict ctx g =
       (fun g v -> UGraph.add_universe ~lbound ~strict v g)
       g us
   in
-  UGraph.merge_constraints (UVars.UContext.constraints ctx) g
+  fst (UGraph.merge_constraints (UVars.UContext.constraints ctx) g)
 
 let add_qualities qs known =
   let open Sorts.Quality in
@@ -491,7 +491,7 @@ let add_universes_set ~lbound ~strict ctx g =
             (* Be lenient, module typing reintroduces universes and constraints due to includes *)
             (fun v g -> try UGraph.add_universe ~lbound ~strict v g with UGraph.AlreadyDeclared -> g)
             (Univ.ContextSet.levels ctx) g
-  in UGraph.merge_constraints (Univ.ContextSet.constraints ctx) g
+  in fst (UGraph.merge_constraints (Univ.ContextSet.constraints ctx) g)
 
 let push_context_set ?(strict=false) ctx env =
   map_universes (add_universes_set ~lbound:UGraph.Bound.Set ~strict ctx) env
@@ -506,7 +506,7 @@ let gather_new_constraints restricted g =
 let push_subgraph (levels,csts) env =
   let add_subgraph g =
     let newg = Univ.Level.Set.fold (fun v g -> UGraph.add_universe ~lbound:UGraph.Bound.Set ~strict:false v g) levels g in
-    let newg = UGraph.merge_constraints csts newg in
+    let newg, _equivs = UGraph.merge_constraints csts newg in
     (if not (Univ.Constraints.is_empty csts) then
        let restricted = UGraph.constraints_for ~kept:(UGraph.domain g) newg in
        let missing = gather_new_constraints restricted g in

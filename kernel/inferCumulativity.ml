@@ -592,11 +592,11 @@ and infer_case infos variances cv_pb p br e =
   let push_relevances (infos, tab) n = (push_relevances infos n, tab) in
   let orig_pos = get_position variances in
   debug Pp.(fun () -> str"computing variance of case with conv_pb = " ++ pr_cumul_pb cv_pb ++ str " and position " ++ Position.pr orig_pos);
-  let variances =
+  (* let variances =
     if cv_pb == Cumul && orig_pos == Position.InTerm then
       set_position Position.InType variances
     else variances
-  in
+   *)
   let variances =
     let (ctx, arity), _r = p in
     let ctx = Array.map (usubst_binder e) ctx in
@@ -625,7 +625,7 @@ and infer_stack infos variances (stk:CClosure.stack) =
         let variances = infer_fterm Conv infos variances fx [] in
         infer_stack infos variances a
       | ZcaseT (_,_,_,p,br,e) ->
-        infer_case infos variances Cumul p br e
+        infer_case infos variances Conv p br e
       | Zshift _ -> variances
       | Zupdate _ -> variances
       | Zprimitive (_,_,rargs,kargs) ->

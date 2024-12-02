@@ -62,7 +62,7 @@ type level_equivalences = (Level.t * (Level.t * int)) list
 
 val enforce_constraint : univ_constraint -> t -> t * level_equivalences
 
-val merge_constraints : Constraints.t -> t -> t
+val merge_constraints : Constraints.t -> t -> t * level_equivalences
 
 val check_constraint  : t -> univ_constraint -> bool
 val check_constraints : Constraints.t -> t -> bool

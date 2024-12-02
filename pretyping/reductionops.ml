@@ -1689,7 +1689,7 @@ let infer_eq (univs, cstrs as cuniv) u u' =
   if UGraph.check_eq_sort univs u u' then Result.Ok cuniv
   else try
     let cstrs' = UnivSubst.enforce_eq_sort u u' Constraints.empty in
-    Result.Ok (UGraph.merge_constraints cstrs' univs, Constraints.union cstrs cstrs')
+    Result.Ok (fst (UGraph.merge_constraints cstrs' univs), Constraints.union cstrs cstrs')
   with UGraph.UniverseInconsistency err -> Result.Error (Some err)
 
 
@@ -1698,7 +1698,7 @@ let infer_leq (univs, cstrs as cuniv) u u' =
   else
     try
       let cstrs' = UnivSubst.enforce_leq_sort u u' Constraints.empty in
-      Result.Ok (UGraph.merge_constraints cstrs' univs, Constraints.union cstrs cstrs')
+      Result.Ok (fst (UGraph.merge_constraints cstrs' univs), Constraints.union cstrs cstrs')
     with UGraph.UniverseInconsistency err -> Result.Error (Some err)
 
 let infer_cmp_universes _env pb s0 s1 univs =
@@ -1721,7 +1721,7 @@ let infer_inductive_instances ~flex ~nargs cv_pb variance u1 u2 (univs,csts) =
   let qcsts, csts' = UCompare.get_cumulativity_constraints cv_pb ~nargs variance u1 u2 in
   if Sorts.QConstraints.trivial qcsts then
     match UGraph.merge_constraints csts' univs with
-    | univs -> Result.Ok (univs, Univ.Constraints.union csts csts')
+    | univs, _equivs -> Result.Ok (univs, Univ.Constraints.union csts csts')
     | exception (UGraph.UniverseInconsistency err) -> Result.Error (Some err)
   else Result.Error None
 

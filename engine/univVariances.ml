@@ -79,13 +79,13 @@ let compute_variances_context env sigma ?(position = fun x -> Position.InBinder 
   debug Pp.(fun () -> str"Variances in context: " ++ Inf.pr (Evd.pr_level sigma) variances);
   variances
 
-let compute_variances_body_constr env sigma ?(ctx_cumul_pb=InvCumul) ?(cumul_pb=Cumul) status c =
+let compute_variances_body_constr env sigma ?(ctx_position = fun i -> Position.InBinder i)  ?(ctx_cumul_pb=InvCumul) ?(cumul_pb=Cumul) status c =
   let ctx, c = Term.decompose_lambda_decls c in
-  let status = compute_variances_context_constr env sigma ~cumul_pb:ctx_cumul_pb status (Vars.smash_rel_context ctx) in
+  let status = compute_variances_context_constr env sigma ~position:ctx_position ~cumul_pb:ctx_cumul_pb status (Vars.smash_rel_context ctx) in
   compute_variances_constr (Environ.push_rel_context ctx env) sigma status InTerm cumul_pb c
 
-let compute_variances_body env sigma  ?(ctx_cumul_pb=InvCumul) ?(cumul_pb=Cumul) status c =
-  compute_variances_body_constr env sigma ~ctx_cumul_pb ~cumul_pb status (EConstr.to_constr ~abort_on_undefined_evars:false sigma c)
+let compute_variances_body env sigma ?(ctx_position = fun i -> Position.InBinder i) ?(ctx_cumul_pb=InvCumul) ?(cumul_pb=Cumul) status c =
+  compute_variances_body_constr env sigma ~ctx_position ~ctx_cumul_pb ~cumul_pb status (EConstr.to_constr ~abort_on_undefined_evars:false sigma c)
 
 let compute_variances_type_constr env sigma ?(ignore_codom=false) ?(position=Position.InType) ?(ctx_position = fun x -> Position.InBinder x) ?(ctx_cumul_pb=InvCumul) ?(cumul_pb=Cumul) status c =
   let ctx, c = Term.decompose_prod_decls c in
@@ -188,7 +188,9 @@ let register_universe_variances_of_fix env sigma types bodies =
   let status = init_status sigma in
   let status = List.fold_left2 (fun status typ body ->
     let status = compute_variances_type env sigma status typ in
-    Option.fold_left (compute_variances_body env sigma ~ctx_cumul_pb:Conv ~cumul_pb:Conv) status body) status types bodies in
+    (* The universes in the fixpoint will end up in the term *)
+    Option.fold_left (compute_variances_body env sigma ~ctx_position:(fun _ -> Position.InTerm) ~ctx_cumul_pb:Conv ~cumul_pb:Conv) status body)
+    status types bodies in
     (* let status = compute_variances_type env sigma status typ in *)
     (* Option.fold_left (compute_variances_body env sigma) status body) status types bodies in *)
   finalize sigma status
