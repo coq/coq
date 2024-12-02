@@ -261,10 +261,10 @@ let typecheck_params_and_fields ~auto_prop_lowering def ~poly ~cumulative udecl 
   in
   (* TODO: Have this use Declaredef.prepare_definition *)
   let lbound = if unconstrained_sorts then UGraph.Bound.Prop else UGraph.Bound.Set in
-  let ivariances = UnivVariances.universe_variances_of_record env0 sigma ~env_ar_pars:env_ar ~params:newps ~fields:(List.map snd data) ~types:(List.map snd typs) in
+  let sigma = UnivVariances.register_universe_variances_of_record env0 sigma ~env_ar_pars:env_ar ~params:newps ~fields:(List.map snd data) ~types:(List.map snd typs) in
   let sigma, (newps, ans) =
     (* too complex for Evarutil.finalize as we normalize non-constr *)
-    let sigma, ivariances = Evd.minimize_universes ~lbound ~variances:ivariances sigma in
+    let sigma = Evd.minimize_universes ~lbound sigma in
     let uvars = ref Univ.Level.Set.empty in
     let nf c =
       let _, varsc = EConstr.universes_of_constr sigma c in
@@ -284,7 +284,7 @@ let typecheck_params_and_fields ~auto_prop_lowering def ~poly ~cumulative udecl 
     let sigma = Evd.restrict_universe_context ~lbound sigma !uvars in
     sigma, (newps, ans)
   in
-  let univs = Evd.check_univ_decl ~poly ~cumulative sigma ivariances decl in
+  let univs = Evd.check_univ_decl ~poly ~cumulative sigma decl in
   let ce t = Pretyping.check_evars env0 sigma (EConstr.of_constr t) in
   let () = List.iter (iter_constr ce) (List.rev newps) in
   imps, univs, newps, ans

@@ -565,13 +565,13 @@ let interp_mutual_inductive_constr ~sigma ~flags ~udecl ~ctx_params ~indnames ~a
   in
   let sigma, (default_dep_elim, arities) = inductive_levels ~auto_prop_lowering env_ar_params sigma ~poly ~indnames ~arities_explicit arities ctor_args in
   let lbound = if poly then UGraph.Bound.Set else UGraph.Bound.Prop in
-  let ivariances = UnivVariances.universe_variances_of_inductive env_ar_params sigma ~udecl ~params:ctx_params ~arities ~constructors in
-  let sigma, ivariances = Evd.minimize_universes ~lbound ~variances:ivariances sigma in
+  let sigma = UnivVariances.register_universe_variances_of_inductive env_ar_params sigma ~udecl ~params:ctx_params ~arities ~constructors in
+  let sigma = Evd.minimize_universes ~lbound sigma in
   let arities = List.map EConstr.(to_constr sigma) arities in
   let constructors = List.map (on_snd (List.map (EConstr.to_constr sigma))) constructors in
   let ctx_params = List.map (fun d -> EConstr.to_rel_decl sigma d) ctx_params in
   let sigma = restrict_inductive_universes ~lbound sigma ctx_params arities constructors in
-  let UState.{ universes_entry_universes = univ_entry; universes_entry_binders = binders } = Evd.check_univ_decl ~poly ~cumulative sigma ivariances udecl in
+  let UState.{ universes_entry_universes = univ_entry; universes_entry_binders = binders } = Evd.check_univ_decl ~poly ~cumulative sigma udecl in
 
   (* Build the inductive entries *)
   let entries = List.map3 (fun indname arity (cnames,ctypes) ->

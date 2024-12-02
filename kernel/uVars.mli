@@ -57,6 +57,9 @@ sig
   val le : t -> t -> bool
 
   val pr : t -> Pp.t
+
+  (* Lifting for binder positions *)
+  val lift : int -> t -> t
 end
 
 module VariancePos :
@@ -67,6 +70,7 @@ sig
   val pr : t -> Pp.t
   val equal : t -> t -> bool
   val le : t -> t -> bool
+  val lift : int -> t -> t
 
   val variance : application -> t -> Variance.t
 end
@@ -79,6 +83,8 @@ sig
   val pr : t -> Pp.t
   val equal : t -> t -> bool
   val le : t -> t -> bool
+
+  val lift : int -> t -> t
 
   val eq_sizes : t -> t -> bool
 

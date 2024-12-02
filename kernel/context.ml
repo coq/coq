@@ -510,6 +510,16 @@ struct
   (** Return the number of {e local declarations} in a given named-context. *)
   let length = List.length
 
+  (** Return the number of {e local assumptions} in a given named-context. *)
+  let nhyps ctx =
+    let open Declaration in
+    let rec nhyps acc = function
+      | [] -> acc
+      | LocalAssum _ :: hyps -> nhyps (succ acc) hyps
+      | LocalDef _ :: hyps -> nhyps acc hyps
+    in
+    nhyps 0 ctx
+
 (** Return a declaration designated by a given identifier
     @raise Not_found if the designated identifier is not present in the designated named-context. *)
   let rec lookup id = function

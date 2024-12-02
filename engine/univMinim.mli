@@ -33,10 +33,10 @@ val extra_union : extra -> extra -> extra
     (a global one if there is one) and transitively saturate
     the constraints w.r.t to the equalities. *)
 
-val normalize_context_set : lbound:UGraph.Bound.t -> variances:InferCumulativity.level_variances ->
+val normalize_context_set : lbound:UGraph.Bound.t -> variances:InferCumulativity.variances ->
   partial:bool ->
   UGraph.t -> ContextSet.t ->
   UnivFlex.t (* The defined and undefined variables *) ->
   ?binders:UnivNames.universe_binders ->
   extra ->
-  (UnivFlex.t * InferCumulativity.level_variances) in_universe_context_set
+  (UnivFlex.t * InferCumulativity.variances) in_universe_context_set

@@ -103,29 +103,35 @@ let compute_variances_type env sigma ?(position=Position.InType) ?(ctx_position 
   compute_variances_type_constr env sigma status ~position ~ctx_position ~ctx_cumul_pb
     (EConstr.to_constr ~abort_on_undefined_evars:false sigma c)
 
-let init_status ?(position=Position.InType) ?(udecl : UState.universe_decl option) sigma =
-  let ustate = Evd.ustate sigma in
-  let ctx = UState.context_set ustate in
-  match udecl with
-  | None -> Inf.start_inference (ContextSet.levels ctx) position
-  | Some udecl ->
-    let levels = ContextSet.levels ctx in
-    let us = udecl.UState.univdecl_instance and variances = udecl.UState.univdecl_variances in
-    match variances with
-    | None -> Inf.start_inference levels position
-    | Some vs ->
-      assert (Int.equal (Array.length vs) (List.length us));
-      let comp = CList.combine us (Array.to_list vs) in
-      let map = Level.Set.fold (fun l m ->
-        try
-          let open InferCumulativity in
-          let (_, v) = List.find (fun (l', _) -> Level.equal l l') comp in
-          (match v with
-          | None -> Level.Map.add l (Infer, default_occ) m
-          | Some v -> Level.Map.add l (Check, make_occ v UVars.Position.InType) m)
-        with Not_found -> Level.Map.add l (Infer, default_occ) m)
-        levels Level.Map.empty
-      in Inf.start_map map position
+let init_status_ustate ?(position=Position.InType) ?(udecl : UState.universe_decl option) ustate =
+  match UState.get_variances ustate with
+  | Some variances -> Inf.start_variances variances position
+  | None ->
+    let ctx = UState.context_set ustate in
+    match udecl with
+    | None -> Inf.start_inference (ContextSet.levels ctx) position
+    | Some udecl ->
+      let levels = ContextSet.levels ctx in
+      let us = udecl.UState.univdecl_instance and variances = udecl.UState.univdecl_variances in
+      match variances with
+      | None -> Inf.start_inference levels position
+      | Some vs ->
+        assert (Int.equal (Array.length vs) (List.length us));
+        let comp = CList.combine us (Array.to_list vs) in
+        let map = Level.Set.fold (fun l m ->
+          try
+            let open InferCumulativity in
+            let (_, v) = List.find (fun (l', _) -> Level.equal l l') comp in
+            (match v with
+            | None -> Level.Map.add l (Infer, default_occ) m
+            | Some v -> Level.Map.add l (Check, make_occ (v, InTerm)) m)
+          with Not_found -> Level.Map.add l (Infer, default_occ) m)
+          levels Level.Map.empty
+        in Inf.start_variances map position
+
+  let init_status ?(position=Position.InType) ?(udecl : UState.universe_decl option) sigma =
+    let ustate = Evd.ustate sigma in
+    init_status_ustate ~position ?udecl ustate
 
 let universe_variances_body_ty env sigma status ?typ body =
   let status = Option.fold_left (compute_variances_type env sigma) status typ in
@@ -133,11 +139,11 @@ let universe_variances_body_ty env sigma status ?typ body =
   debug Pp.(fun () -> Inf.pr (Evd.pr_level sigma) variances ++ fnl () ++
     str "Computed from body " ++ Termops.Internal.print_constr_env env sigma body ++ fnl () ++
     str " and type: " ++ Option.cata (Termops.Internal.print_constr_env env sigma) (mt()) typ);
-  Inf.inferred variances
+  variances
 
 let universe_variances env sigma ?typ body =
   let status = init_status ~position:InTerm sigma in
-  universe_variances_body_ty env sigma status ?typ body
+  Inf.inferred (universe_variances_body_ty env sigma status ?typ body)
 
 let universe_variances_constr env sigma ?typ body =
   let status = init_status sigma in
@@ -145,14 +151,26 @@ let universe_variances_constr env sigma ?typ body =
   let status = compute_variances_body_constr env sigma status body in
   Inf.inferred status
 
-let universe_variances_of_type env sigma typ =
+let finalize sigma status =
+  Evd.set_variances sigma (Inf.inferred status)
+
+let register_universe_variances_of env sigma ?typ body =
+  let status = init_status ~position:InTerm sigma in
+  let status = universe_variances_body_ty env sigma status ?typ body in
+  finalize sigma status
+
+let register_universe_variances_of_constr env sigma ?typ body =
+  let status = universe_variances_constr env sigma ?typ body in
+  Evd.set_variances sigma status
+
+let register_universe_variances_of_type env sigma typ =
   let status = init_status sigma in
   let status = compute_variances_type env sigma status typ in
   debug Pp.(fun () -> Inf.pr (Evd.pr_level sigma) status ++ fnl () ++
     str "Computed from type " ++ Termops.Internal.print_constr_env env sigma typ);
-  Inf.inferred status
+  finalize sigma status
 
-let universe_variances_of_inductive env sigma ~udecl ~params ~arities ~constructors =
+let register_universe_variances_of_inductive env sigma ~udecl ~params ~arities ~constructors =
   let status = init_status ~udecl sigma in
   let params = EConstr.Vars.smash_rel_context params in
   let status = compute_variances_context env sigma status params in
@@ -161,43 +179,43 @@ let universe_variances_of_inductive env sigma ~udecl ~params ~arities ~construct
   let status = List.fold_left (fun status (_nas, tys) ->
     List.fold_left (fun status ty ->
       compute_variances_type env sigma status ~position:InTerm ~ctx_position:(fun _ -> InTerm) ~ctx_cumul_pb:Cumul ty) status tys) status constructors in
-    Inf.inferred status
+  finalize sigma status
 
-let universe_variances_of_record env sigma ~env_ar_pars ~params ~fields ~types =
+let register_universe_variances_of_record env sigma ~env_ar_pars ~params ~fields ~types =
   let status = init_status sigma in
   let status = compute_variances_context env sigma status params in
   let paramlen = Context.Rel.length params in
   let status = List.fold_left (compute_variances_type ~ctx_position:(fun i -> InBinder (i + paramlen)) env sigma) status types in
   let status = List.fold_left (compute_variances_context env_ar_pars sigma ~position:(fun _ -> InTerm) ~cumul_pb:Cumul) status fields in
-  Inf.inferred status
+  finalize sigma status
 
-let universe_variances_of_fix env sigma types bodies =
+let register_universe_variances_of_fix env sigma types bodies =
   let status = init_status sigma in
   let status = List.fold_left2 (fun status typ body ->
     let status = compute_variances_type env sigma status typ in
     Option.fold_left (compute_variances_body env sigma) status body) status types bodies in
-  Inf.inferred status
+  finalize sigma status
 
-let universe_variances_of_proofs env sigma proofs =
+let register_universe_variances_of_proofs env sigma proofs =
   let status = init_status sigma in
   let status = List.fold_left (fun status (body, typ) ->
     let status = compute_variances_body_constr env sigma status body in
     compute_variances_type_constr env sigma status typ) status proofs in
-  Inf.inferred status
+  finalize sigma status
 
-let universe_variances_of_proof_statements env sigma proofs =
+let register_universe_variances_of_proof_statements env sigma proofs =
   let status = init_status sigma in
   let status = List.fold_left (fun status typ ->
     compute_variances_type env sigma status typ) status proofs in
-  Inf.inferred status
+  finalize sigma status
 
-let universe_variances_of_partial_proofs env sigma proofs =
+let register_universe_variances_of_partial_proofs env sigma proofs =
   let status = init_status sigma in
   let status = List.fold_left (fun status body ->
     compute_variances_body env sigma status body) status proofs in
-  Inf.inferred status
+  finalize sigma status
 
-let universe_variances_of_named_context env sigma ~as_types ?(cumul_pb=InvCumul) ctx =
+let register_universe_variances_of_named_context env sigma ~as_types ?(cumul_pb=InvCumul) ctx =
   let status = init_status sigma in
   let fold_binder i binder status =
     let open Context.Named.Declaration in
@@ -207,6 +225,6 @@ let universe_variances_of_named_context env sigma ~as_types ?(cumul_pb=InvCumul)
     else let status = compute_variances env sigma status (InBinder i) cumul_pb (get_type binder) in
     Option.cata (compute_variances env sigma status (InBinder i) cumul_pb) status (get_value binder)
   in
-  let variances = CList.fold_right_i fold_binder 0 ctx status in
-  debug Pp.(fun () -> str"Variances in named context: " ++ Inf.pr (Evd.pr_level sigma) variances);
-  Inf.inferred variances
+  let status = CList.fold_right_i fold_binder 0 ctx status in
+  debug Pp.(fun () -> str"Variances in named context: " ++ Inf.pr (Evd.pr_level sigma) status);
+  finalize sigma status

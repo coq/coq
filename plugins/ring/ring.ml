@@ -195,8 +195,8 @@ let decl_constant na suff univs c =
 let ltac_call tac (args:glob_tactic_arg list) =
   CAst.make @@ TacArg (TacCall (CAst.make (ArgArg(Loc.tag @@ Lazy.force tac),args)))
 
-let constr_of sigma v = match Value.to_constr v with
-  | Some c -> EConstr.to_constr sigma c
+let constr_of v = match Value.to_constr v with
+  | Some c -> c
   | None -> failwith "Ring.exec_tactic: anomaly"
 
 let tactic_res = ref [||]
@@ -231,9 +231,12 @@ let exec_tactic env sigma n f args =
   let _, pv = Proofview.init sigma [env, EConstr.mkProp] in
   let tac = Tacinterp.eval_tactic_ist ist (ltac_call f (args@[getter])) in
   let ((), pv, _, _) = Proofview.apply ~name:(Id.of_string "ring") ~poly:false (Global.env ()) tac pv in
-  let sigma, _variances = Evd.minimize_universes (Proofview.return pv) in
-  let nf c = constr_of sigma c in
-  Array.map nf !tactic_res, Evd.universe_context_set sigma
+  let sigma = (Proofview.return pv) in
+  let nf c = constr_of c in
+  let res = Array.map nf !tactic_res in
+  let sigma = UnivVariances.register_universe_variances_of_partial_proofs env sigma (Array.to_list res) in
+  let sigma = Evd.minimize_universes sigma in
+  Array.map (EConstr.to_constr sigma) res, Evd.universe_context_set sigma
 
 let gen_constant n = (); fun () -> (EConstr.of_constr (UnivGen.constr_of_monomorphic_global (Global.env ()) (Rocqlib.lib_ref n)))
 let gen_reference n = (); fun () -> (Rocqlib.lib_ref n)

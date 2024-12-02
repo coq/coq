@@ -33,8 +33,8 @@ let create_clos_infos env sigma flags =
 (* Expanding/testing/exposing existential variables *)
 (****************************************************)
 
-let finalize ?abort_on_undefined_evars sigma ?variances ?(partial=false) f =
-  let sigma, variances = minimize_universes sigma ?variances ~partial in
+let finalize ?abort_on_undefined_evars sigma ?(partial=false) f =
+  let sigma = minimize_universes sigma ~partial in
   let uvars = ref Univ.Level.Set.empty in
   let nf_constr c =
     let _, varsc = EConstr.universes_of_constr sigma c in
@@ -44,7 +44,7 @@ let finalize ?abort_on_undefined_evars sigma ?variances ?(partial=false) f =
   in
   let v = f nf_constr in
   let sigma = restrict_universe_context sigma !uvars in
-  sigma, variances, v
+  sigma, v
 
 (** Term exploration up to instantiation. *)
 let kind_of_term_upto = EConstr.kind_upto

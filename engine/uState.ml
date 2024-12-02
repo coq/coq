@@ -228,6 +228,7 @@ type t =
    universes : UGraph.t; (** The current graph extended with the local constraints *)
    initial_universes : UGraph.t; (** The graph at the creation of the evar_map + local universes
                                      (but not local constraints) *)
+   variances : InferCumulativity.variances option;
    minim_extra : UnivMinim.extra;
  }
 
@@ -238,6 +239,7 @@ let empty =
     sort_variables = QState.empty;
     universes = UGraph.initial_universes;
     initial_universes = UGraph.initial_universes;
+    variances = None;
     minim_extra = UnivMinim.empty_extra; }
 
 let make ~lbound univs =
@@ -313,6 +315,7 @@ let union uctx uctx' =
     let newus = Level.Set.diff (ContextSet.levels uctx'.local)
                                (ContextSet.levels uctx.local) in
     let newus = Level.Set.diff newus (UnivFlex.domain uctx.univ_variables) in
+    let variances = Option.union InferCumulativity.union_variances uctx.variances uctx'.variances in
     let extra = UnivMinim.extra_union uctx.minim_extra uctx'.minim_extra in
     let declarenew g =
       Level.Set.fold (fun u g -> UGraph.add_universe u ~lbound:UGraph.Bound.Set ~strict:false g) newus g
@@ -334,6 +337,7 @@ let union uctx uctx' =
            else
              let cstrsr = ContextSet.constraints uctx'.local in
              merge_constraints uctx cstrsr (declarenew uctx.universes));
+        variances;
         minim_extra = extra}
 
 let context_set uctx = uctx.local
@@ -958,13 +962,13 @@ let computed_variances cumulative ivariances inst =
   let inferred_variance level =
     match Level.Map.find_opt level ivariances with
     | None -> None
-    | Some o ->
+    | Some (_mode, o) ->
       let var, pos = occurrence_to_variance o in
       if cumulative then Some (var, pos)
       else Some (if var == Irrelevant then var, pos else Invariant, pos)
   in
   let arr = Array.map inferred_variance (snd (LevelInstance.to_array inst)) in
-  if Array.for_all Option.is_empty arr then None
+  if not cumulative && Array.for_all Option.is_empty arr then None
   else
     let arr =
       Array.map (function None -> VariancePos.make Variance.Invariant Position.InTerm | Some v -> v) arr
@@ -977,33 +981,38 @@ let pr_pre_variances =
 
 let check_variances ~cumulative names ivariances inst variances =
   debug Pp.(fun () -> str"Checking variance annotation: " ++ Option.cata pr_pre_variances (mt ()) variances);
-  debug Pp.(fun () -> str"Inferred variances: " ++ InferCumulativity.pr_variances Level.raw_pr ivariances);
+  debug Pp.(fun () -> str"Inferred variances: " ++ Option.cata (InferCumulativity.pr_variances Level.raw_pr) (mt()) ivariances);
   let variances = Option.map (extend_variances inst) variances in
   match variances with
-  | None -> computed_variances cumulative ivariances inst
+  | None -> (match ivariances with
+    | None -> if cumulative then CErrors.anomaly Pp.(str"Variance was not inferred when checking universe declaration of cumulative definition") else None
+    | Some ivariances -> computed_variances cumulative ivariances inst)
   | Some variances ->
-    let check_var level variance =
-      match Univ.Level.Map.find_opt level ivariances with
-      | None -> CErrors.user_err Pp.(str"Variance annotation " ++ pr_opt UVars.Variance.pr variance ++ str" for unused universe binder " ++
-        (pr_uctx_level_names names level))
-      | Some ({ in_binder; in_term } as v') ->
-        debug Pp.(fun () -> str"Checking variance annotation: " ++ pr_opt UVars.Variance.pr variance ++ str " vs inferred annotation " ++
-          InferCumulativity.pr_variance_occurrence v');
-        let (variance', position) = occurrence_to_variance v' in
-        match variance with
-        | None -> (variance', position)
-        | Some variance ->
-          if UVars.Variance.le variance' variance then (variance, position)
-          else CErrors.user_err Pp.(str"Variance annotation " ++ UVars.Variance.pr variance ++ str" for universe binder " ++
-            (pr_uctx_level_names names level) ++ str" is incorrect, inferred variance is " ++ UVars.VariancePos.pr (variance', position))
-    in
     if not cumulative then
       CErrors.user_err
         Pp.(strbrk "Universe variance was specified but this definition will not be cumulative.")
     else
+      match ivariances with
+      | None -> CErrors.anomaly Pp.(str"Variance was not inferred when checking universe declaration of cumulative definition")
+      | Some ivariances ->
+      let check_var level variance =
+        match Univ.Level.Map.find_opt level ivariances with
+        | None -> CErrors.user_err Pp.(str"Variance annotation " ++ pr_opt UVars.Variance.pr variance ++ str" for unused universe binder " ++
+          (pr_uctx_level_names names level))
+        | Some (_mode, ({ in_binder; in_term } as v')) ->
+          debug Pp.(fun () -> str"Checking variance annotation: " ++ pr_opt UVars.Variance.pr variance ++ str " vs inferred annotation " ++
+            InferCumulativity.pr_variance_occurrence v');
+          let (variance', position) = occurrence_to_variance v' in
+          match variance with
+          | None -> (variance', position)
+          | Some variance ->
+            if UVars.Variance.le variance' variance then (variance, position)
+            else CErrors.user_err Pp.(str"Variance annotation " ++ UVars.Variance.pr variance ++ str" for universe binder " ++
+              (pr_uctx_level_names names level) ++ str" is incorrect, inferred variance is " ++ UVars.VariancePos.pr (variance', position))
+      in
       Some (UVars.Variances.of_array (Array.map2 check_var (snd (LevelInstance.to_array inst)) variances))
 
-let check_poly_univ_decl ~cumulative uctx ivariances decl =
+let check_poly_univ_decl ~cumulative uctx decl =
   (* Note: if [decl] is [default_univ_decl], behave like [context uctx] *)
   let levels, csts = uctx.local in
   let qvars = QState.undefined uctx.sort_variables in
@@ -1017,15 +1026,15 @@ let check_poly_univ_decl ~cumulative uctx ivariances decl =
       decl.univdecl_constraints
     end
   in
-  let variances = check_variances ~cumulative uctx.names ivariances inst decl.univdecl_variances in
+  let variances = check_variances ~cumulative uctx.names uctx.variances inst decl.univdecl_variances in
   let uctx = UContext.make nas (inst, csts) in
   uctx, variances
 
-let check_univ_decl ~poly ?(cumulative=true) uctx ivariances decl =
+let check_univ_decl ~poly ?(cumulative=true) uctx decl =
   let (binders, _) = uctx.names in
   let entry =
     if poly then
-      let uctx, variances = check_poly_univ_decl ~cumulative uctx ivariances decl in
+      let uctx, variances = check_poly_univ_decl ~cumulative uctx decl in
       Polymorphic_entry (uctx, variances)
     else Monomorphic_entry (check_mono_univ_decl uctx decl) in
   { universes_entry_universes = entry;
@@ -1282,25 +1291,34 @@ let collapse_above_prop_sort_variables ~to_prop uctx =
 let collapse_sort_variables uctx =
   { uctx with sort_variables = QState.collapse uctx.sort_variables }
 
+let get_variances uctx = uctx.variances
+let set_variances uctx variances = { uctx with variances = Some variances }
+
+let warn_no_variances =
+  CWarnings.create ~name:"minimization without variances" ~category:CWarnings.CoreCategories.universes ~default:CWarnings.Enabled
+    Pp.(fun () -> str"Calling minimization without variance information is a noop, see dev/doc/changes.md for an explanation.")
+
 let minimize ?(lbound = UGraph.Bound.Set)
-  ?(variances = Univ.Level.Map.empty)
   ~partial uctx =
   let open UnivMinim in
-  let (vars', variances), us' =
-    normalize_context_set ~lbound ~variances ~partial uctx.universes uctx.local uctx.univ_variables
-      ~binders:(fst uctx.names)
-      uctx.minim_extra
-  in
-  if ContextSet.equal us' uctx.local then uctx, variances
-  else
-    let universes = UGraph.merge_constraints (snd us') uctx.initial_universes in
-      { names = uctx.names;
-        local = us';
-        univ_variables = vars';
-        sort_variables = uctx.sort_variables;
-        universes = universes;
-        initial_universes = uctx.initial_universes;
-        minim_extra = UnivMinim.empty_extra; (* weak constraints are consumed *) }, variances
+  match uctx.variances with
+  | None -> warn_no_variances (); uctx
+  | Some variances ->
+    let (vars', variances), us' =
+      normalize_context_set ~lbound ~variances ~partial uctx.universes
+        uctx.local uctx.univ_variables ~binders:(fst uctx.names) uctx.minim_extra
+    in
+    if ContextSet.equal us' uctx.local then { uctx with variances = Some variances }
+    else
+      let universes = UGraph.merge_constraints (snd us') uctx.initial_universes in
+        { names = uctx.names;
+          local = us';
+          univ_variables = vars';
+          sort_variables = uctx.sort_variables;
+          universes = universes;
+          initial_universes = uctx.initial_universes;
+          variances = Some variances;
+          minim_extra = UnivMinim.empty_extra; (* weak constraints are consumed *) }
 
 let universe_context_inst_decl decl qvars levels names =
   let leftqs = List.fold_left (fun acc l -> QVar.Set.remove l acc) qvars decl.univdecl_qualities in
@@ -1356,9 +1374,9 @@ let check_uctx_impl ~fail uctx uctx' =
 
 let disable_minim, _ = CDebug.create_full ~name:"minimization" ()
 
-let minimize ?lbound ?(variances = InferCumulativity.empty_level_variances) ~partial uctx =
-  if CDebug.get_flag disable_minim then uctx, variances
-  else minimize ?lbound ~variances ~partial uctx
+let minimize ?lbound ~partial uctx =
+  if CDebug.get_flag disable_minim then uctx
+  else minimize ?lbound ~partial uctx
 
 (* XXX print above_prop too *)
 let pr_weak prl {minim_extra={UnivMinim.weak_constraints=weak; above_prop}} =
@@ -1383,6 +1401,8 @@ let pr ctx =
        h (UGraph.pr_universes prl (UGraph.repr (ugraph ctx))) ++ fnl () ++ *)
        str"SORTS:"++brk(0,1)++
        h (pr_sort_opt_subst ctx) ++ fnl() ++
+       (pr_opt (fun variances -> str"VARIANCES:"++brk(0,1)++
+       h (InferCumulativity.pr_variances Univ.Level.raw_pr variances) ++ fnl ()) ctx.variances) ++
        str "WEAK CONSTRAINTS:"++brk(0,1)++
        h (pr_weak prl ctx) ++ fnl ())
 
@@ -1391,6 +1411,7 @@ struct
 
 let reboot env uctx =
   let uctx_global = from_env env in
-  { uctx_global with univ_variables = uctx.univ_variables; sort_variables = uctx.sort_variables }
+  { uctx_global with univ_variables = UnivFlex.fix_undefined_variables uctx.univ_variables;
+    sort_variables = uctx.sort_variables; }
 
 end

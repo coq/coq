@@ -243,7 +243,7 @@ let build_wellfounded env sigma poly cumulative udecl recname ctx body ccl impls
         let tuple_value = update tuple_value in
         let ccl = update ccl in
         let ctx = Context.Rel.map_het (ERelevance.kind sigma) update ctx in
-        let univs = UState.check_univ_decl ~poly ~cumulative uctx InferCumulativity.empty_level_variances udecl in
+        let univs = UState.check_univ_decl ~poly ~cumulative uctx udecl in
         let h_body =
           let inst = UState.(match univs.universes_entry_universes with
               | Polymorphic_entry (uctx, _variances) -> UVars.Instance.of_level_instance (UVars.UContext.instance uctx)
@@ -460,12 +460,12 @@ let interp_mutual_definition env ~program_mode ~function_mode rec_order fixl =
 
   (* Instantiate evars and check all are resolved *)
   let sigma = Evarconv.solve_unif_constraints_with_heuristics env sigma in
-  let variances = UnivVariances.universe_variances_of_fix env sigma fixtypes fixdefs in
-  let sigma, variances = Evd.minimize_universes ~variances sigma in
+  let sigma = UnivVariances.register_universe_variances_of_fix env sigma fixtypes fixdefs in
+  let sigma = Evd.minimize_universes sigma in
 
   (* Build the fix declaration block *)
   let fix = {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs} in
-  (env, rec_sign, sigma), (fix, possible_guard, variances, decl)
+  (env, rec_sign, sigma), (fix, possible_guard, decl)
 
 let check_recursive ~kind env evd {fixnames;fixdefs;fixwfs} =
   (* TO MOVE AT FINAL DEFINITION TIME? *)
@@ -548,7 +548,7 @@ let do_mutually_recursive ?pm ~program_mode ?(use_inference_hook=false) ?scope ?
   : Declare.OblState.t option * Declare.Proof.t option =
   let env = Global.env () in
   let env = Environ.update_typing_flags ?typing_flags env in
-  let (env,rec_sign,sigma),(fix,possible_guard,variances,udecl) = interp_mutual_definition env ~program_mode ~function_mode:false rec_order fixl in
+  let (env,rec_sign,sigma),(fix,possible_guard,udecl) = interp_mutual_definition env ~program_mode ~function_mode:false rec_order fixl in
   check_recursive ~kind env sigma fix;
   let sigma, ({fixdefs=bodies;fixrs;fixtypes;fixwfs} as fix), obls, hook =
     match pm with
@@ -578,7 +578,7 @@ let do_mutually_recursive ?pm ~program_mode ?(use_inference_hook=false) ?scope ?
       (* All bodies are defined *)
       let possible_guard = (possible_guard, fixrs) in
       let _ : GlobRef.t list =
-        Declare.declare_mutual_definitions ~cinfo ~info ~opaque:false ~uctx ~variances ~possible_guard ~bodies ?using ()
+        Declare.declare_mutual_definitions ~cinfo ~info ~opaque:false ~uctx ~possible_guard ~bodies ?using ()
       in
       None, None
     with Option.IsNone ->

@@ -203,14 +203,14 @@ let interp_context_gen scope ~program_mode ~kind ~autoimp_enable ~coercions env 
   let sigma, (ienv, ((env, ctx), impls)) = interp_named_context_evars ~program_mode ~autoimp_enable env sigma l in
   (* Note, we must use the normalized evar from now on! *)
   let sigma = solve_remaining_evars all_and_fail_flags env ~initial sigma in
-  let variances =
+  let sigma =
     let as_types, cumul_pb =
       match scope with
       | Locality.Discharge -> false, InferCumulativity.InvCumul
       | Locality.Global _ -> true, InferCumulativity.Cumul
     in
-    UnivVariances.universe_variances_of_named_context env sigma ~as_types ~cumul_pb ctx in
-  let sigma, variances, ctx = Evarutil.finalize ~variances ~partial:true sigma @@ fun nf ->
+    UnivVariances.register_universe_variances_of_named_context env sigma ~as_types ~cumul_pb ctx in
+  let sigma, ctx = Evarutil.finalize ~partial:true sigma @@ fun nf ->
     List.map (NamedDecl.map_constr_het (fun x -> x) nf) ctx
   in
   (* reorder, evar-normalize and add implicit status *)
@@ -224,7 +224,7 @@ let interp_context_gen scope ~program_mode ~kind ~autoimp_enable ~coercions env 
       (id,b,t,data))
       ctx
   in
-   sigma, variances, ctx
+   sigma, ctx
 
 let do_assumptions ~program_mode ~poly ~scope ~kind ?user_warns ~inline l =
   let sec = Lib.sections_are_opened () in
@@ -239,8 +239,8 @@ let do_assumptions ~program_mode ~poly ~scope ~kind ?user_warns ~inline l =
     | Locality.Discharge -> None, process_assumptions_no_udecls l in
   let sigma, udecl = interp_cumul_univ_decl_opt env udecl in
   let coercions, ctx = local_binders_of_decls ~poly l in
-  let sigma, variances, ctx = interp_context_gen scope ~program_mode ~kind ~autoimp_enable:true ~coercions env sigma ctx in
-  let univs = Evd.check_univ_decl ~poly ~cumulative:(not (Option.is_empty udecl.univdecl_variances)) sigma variances udecl in
+  let sigma, ctx = interp_context_gen scope ~program_mode ~kind ~autoimp_enable:true ~coercions env sigma ctx in
+  let univs = Evd.check_univ_decl ~poly ~cumulative:(not (Option.is_empty udecl.univdecl_variances)) sigma udecl in
   declare_context ~try_global_assum_as_instance:false ~scope ~univs ?user_warns ~inline ctx
 
 let warn_context_outside_section =
@@ -275,8 +275,8 @@ let do_context ~program_mode ~poly ctx =
     if sec then Discharge
     else Global (if Lib.is_modtype () then ImportDefaultBehavior else ImportNeedQualified)
   in
-  let sigma, variances, ctx = interp_context_gen scope ~program_mode ~kind:Context ~autoimp_enable:false ~coercions:Id.Set.empty env sigma ctx in
-  let univs = Evd.univ_entry ~poly sigma None in (* FIXME unclear variance here *)
+  let sigma, ctx = interp_context_gen scope ~program_mode ~kind:Context ~autoimp_enable:false ~coercions:Id.Set.empty env sigma ctx in
+  let univs = Evd.univ_entry ~poly sigma None in (* No possibility to enforce variances here *)
   declare_context ~try_global_assum_as_instance:true ~scope ~univs ~inline:Declaremods.NoInline ctx
 
 (* API compatibility (used in Elpi) *)
@@ -286,6 +286,6 @@ let interp_context env sigma ctx =
     List.rev (snd (List.fold_left_i (fun n (subst, ctx) (id,b,t,impl) ->
         let decl = (id, Option.map (Vars.subst_vars subst) b, Vars.subst_vars subst t, impl) in
         (id :: subst, decl :: ctx)) 1 ([],[]) ctx)) in
-  let sigma, _variances, ctx = interp_context_gen Locality.Discharge ~program_mode:false ~kind:Context ~autoimp_enable:false ~coercions:Id.Set.empty env sigma ctx in
+  let sigma, ctx = interp_context_gen Locality.Discharge ~program_mode:false ~kind:Context ~autoimp_enable:false ~coercions:Id.Set.empty env sigma ctx in
   let ctx = List.map (fun (id,b,t,(impl,_,_,_)) -> (id,b,t,impl)) ctx in
   sigma, reverse_rel_context_of_reverse_named_context ctx

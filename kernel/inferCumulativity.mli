@@ -13,6 +13,9 @@ open UVars
 
 type mode = Check | Infer
 
+(** [Infer <= Check] orderring *)
+val mode_sup : mode -> mode -> mode
+
 (** Not the same as Type_errors.BadVariance because we don't have the env where we raise. *)
 exception BadVariance of Level.t * VariancePos.t * VariancePos.t
 
@@ -22,41 +25,49 @@ type variance_occurrence =
     in_type : UVars.Variance.t option }
 
 val default_occ : variance_occurrence
-val make_occ : Variance.t -> Position.t -> variance_occurrence
+val make_occ : VariancePos.t -> variance_occurrence
+
+type pre_variances =
+  (Univ.Level.t * VariancePos.t option) array
+
+type variance_occurrences = variance_occurrence array
 
 val pr_variance_occurrence : variance_occurrence -> Pp.t
 
 (* The position records the last position in the term where the variable was used relevantly. *)
-type level_variances = variance_occurrence Univ.Level.Map.t
+type variances = (mode * variance_occurrence) Univ.Level.Map.t
 
-val pr_variances : (Univ.Level.t -> Pp.t) -> level_variances -> Pp.t
+val pr_variances : (Univ.Level.t -> Pp.t) -> variances -> Pp.t
 
-val empty_level_variances : level_variances
+val empty_variances : variances
+val is_empty_variances : variances -> bool
+
+val union_variances : variances -> variances -> variances
 
 (* Compute the variance in the binders and term and separately, the variance in the type *)
 val term_type_variances : variance_occurrence -> Variance.t option * Variance.t option
 
 module Inf : sig
-  type variances
+  type status
 
-  val pr : (Level.t -> Pp.t) -> variances -> Pp.t
+  val pr : (Level.t -> Pp.t) -> status -> Pp.t
 
-  val infer_level_eq : Level.t -> variances -> variances
-  val infer_level_leq : Level.t -> variances -> variances
-  val infer_level_geq : Level.t -> variances -> variances
+  val infer_level_eq : Level.t -> status -> status
+  val infer_level_leq : Level.t -> status -> status
+  val infer_level_geq : Level.t -> status -> status
 
-  val get_infer_mode : variances -> bool
-  val set_infer_mode : bool -> variances -> variances
+  val get_infer_mode : status -> bool
+  val set_infer_mode : bool -> status -> status
 
-  val set_position : Position.t -> variances -> variances
+  val set_position : Position.t -> status -> status
 
-  val start_map : (mode * variance_occurrence) Level.Map.t -> Position.t -> variances
-  val start : (Level.t * VariancePos.t option) array -> Position.t -> variances
+  val start_variances : variances -> Position.t -> status
+  val start : (Level.t * VariancePos.t option) array -> Position.t -> status
 
-  val start_inference : Level.Set.t -> Position.t -> variances
+  val start_inference : Level.Set.t -> Position.t -> status
 
-  val inferred : variances -> level_variances
-  val finish : variances -> Variances.t
+  val inferred : status -> variances
+  val finish : status -> Variances.t
 
 end
 
@@ -70,9 +81,21 @@ val infer_term
   -> Environ.env
   (** Environment containing the polymorphic universes *)
   -> evars:CClosure.evar_handler
-  -> Inf.variances
+  -> Inf.status
   -> Constr.t
-  -> Inf.variances
+  -> Inf.status
+
+val infer_definition :
+  Environ.env ->
+  (** Environment containing the polymorphic universes *)
+  ?evars : CClosure.evar_handler ->
+  (** By default, CClosure.default_evar_handler *)
+  ?in_ctx:Constr.named_context ->
+  (** The section context in which the definition is checked *)
+  typ:Constr.t ->
+  ?body:Constr.t ->
+  pre_variances ->
+  int * UVars.Variances.t (* Variance position are shifted by [i] due to context [in_ctx], if present *)
 
 val infer_inductive
   : env_params : Environ.env
@@ -80,7 +103,8 @@ val infer_inductive
       parameters. *)
   -> env_ar_par : Environ.env
   (** Environment containing the polymorphic universes and the inductives then the parameters. *)
-  -> evars:CClosure.evar_handler
+  -> ?evars:CClosure.evar_handler
+  (** By default, CClosure.default_evar_handler *)
   -> arities : Constr.t list
   -> ctors : Constr.t list list
   -> (Univ.Level.t * UVars.VariancePos.t option) array

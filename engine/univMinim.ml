@@ -157,13 +157,18 @@ let is_set_increment u =
   | [(l, k)] -> Level.is_set l
   | _ -> false
 
-let term_type_variances u us variances =
+let term_type_variances_irrel u us variances =
   let open UVars.Variance in
   match Level.Map.find_opt u variances with
   | None -> if UnivFlex.mem u us then Irrelevant, Irrelevant else Invariant, Invariant
-  | Some pos ->
+  | Some (_mode, pos) ->
     let termv, typev = term_type_variances pos in
-     Option.default Irrelevant termv, Option.default Irrelevant typev
+    Option.default Irrelevant termv, Option.default Irrelevant typev
+
+(* let term_type_variances u us variances =
+  match Level.Map.find_opt u variances with
+  | None -> None, None
+  | Some (_mode, pos) -> term_type_variances pos *)
 
 let minimize_univ_variables partial ctx us variances left right cstrs =
   let left, lbounds =
@@ -197,7 +202,7 @@ let minimize_univ_variables partial ctx us variances left right cstrs =
         let left = CList.uniquize (List.filter (not_lower lower) left) in
         (acc, left, Level.Map.lunion newlow lower)
     in
-    let term_variance, type_variance = term_type_variances u us variances in
+    let term_variance, type_variance = term_type_variances_irrel u us variances in
     let instantiate_lbound lbound =
       if is_set_increment lbound && not (get_set_minimization()) then
         (* Minim to Set disabled, do not instantiate with Set *)
@@ -277,7 +282,7 @@ let minimize_univ_variables partial ctx us variances left right cstrs =
     | _ ->  acc
   in
   let maximize_contravariant (ctx, us, cstrs as acc) u =
-    let term_variance, type_variance = term_type_variances u us variances in
+    let term_variance, type_variance = term_type_variances_irrel u us variances in
     match term_variance, type_variance with
     | (Covariant | Irrelevant), Contravariant when not partial ->
       let ubound = Level.Map.find_opt u right in
@@ -314,20 +319,20 @@ let sup_variance_occs { in_term; in_binder; in_type } { in_term = in_term'; in_b
 let update_variance variances l l' =
   match Level.Map.find_opt l variances with
   | None -> variances
-  | Some v ->
-    let upd = function None -> Some v | Some v' -> Some (sup_variance_occs v v') in
+  | Some (mode, v) ->
+    let upd = function None -> Some (mode, v) | Some (mode', v') -> Some (mode_sup mode mode', sup_variance_occs v v') in
     Level.Map.update l' upd variances
 
 let set_variance variances l v =
   Level.Map.add l v variances
 
 let max_variance variances ls =
-  let fold l v =
+  let fold l (mode, v) =
     match Level.Map.find_opt l variances with
-    | None -> v
-    | Some v' -> sup_variance_occs v v'
+    | None -> (mode, v)
+    | Some (mode', v') -> (mode_sup mode mode', sup_variance_occs v v')
   in
-  Level.Set.fold fold ls { in_term = None; in_type = None; in_binder = None }
+  Level.Set.fold fold ls (Infer, { in_term = None; in_type = None; in_binder = None })
 
 let simplify_variables partial ctx us variances graph =
   let dom = UnivFlex.domain us in
@@ -375,10 +380,10 @@ let simplify_variables partial ctx us variances graph =
   in
   let simplify_min u (ctx, us, variances, graph as acc) =
     (* u is an undefined flexible variable, lookup its variance information *)
-    let term_variance, type_variance = term_type_variances u us variances in
+    let term_variance, type_variance = term_type_variances_irrel u us variances in
     let open UVars.Variance in
     match term_variance, type_variance with
-    | Irrelevant, Irrelevant -> arbitrary u acc
+    | Irrelevant, Irrelevant when not partial -> arbitrary u acc
     | (Covariant | Irrelevant), Covariant when not partial -> minimize u acc
     | _, _ -> acc
   in
@@ -389,7 +394,7 @@ let simplify_variables partial ctx us variances graph =
   let acc = Level.Set.fold fold_min dom (ctx, us, variances, graph) in
   let simplify_max u (ctx, us, variances, graph as acc) =
     (* u is an undefined flexible variable, lookup its variance information *)
-    let term_variance, type_variance = term_type_variances u us variances in
+    let term_variance, type_variance = term_type_variances_irrel u us variances in
     let open UVars.Variance in
     match term_variance, type_variance with
     | (Covariant | Irrelevant), Contravariant when not partial -> maximize u acc
@@ -469,13 +474,13 @@ let minimize_weak us weak (smallles, csts, g, variances) =
     end else
       let set_to a b =
         let levels = Level.Set.add a (Universe.levels b) in
-        let max_variance = max_variance variances levels in
+        let mode, max_variance = max_variance variances levels in
         match InferCumulativity.term_type_variances max_variance with
         | (None | Some UVars.Variance.Irrelevant), (None | Some UVars.Variance.Irrelevant) -> (* Irrelevant *)
           (smallles,
           Constraints.add (Universe.make a,Eq,b) csts,
           UGraph.enforce_constraint (Universe.make a,Eq,b) g,
-          Level.Set.fold (fun bl variances -> set_variance variances bl max_variance) levels variances)
+          Level.Set.fold (fun bl variances -> set_variance variances bl (mode, max_variance)) levels variances)
         | _, _ -> (* One universe is not irrelevant *)
           (smallles, csts, g, variances)
       in
@@ -514,11 +519,11 @@ let new_minimize_weak ctx us weak (g, variances) =
     end else
       let set_to a b =
         let levels = Level.Set.add a (Universe.levels b) in
-        let max_variance = max_variance variances levels in
+        let mode, max_variance = max_variance variances levels in
         match InferCumulativity.term_type_variances max_variance with
         | (None | Some UVars.Variance.Irrelevant), (None | Some UVars.Variance.Irrelevant) -> (* Irrelevant *)
           let variances =
-            Level.Set.fold (fun bl variances -> set_variance variances bl max_variance) levels variances
+            Level.Set.fold (fun bl variances -> set_variance variances bl (mode, max_variance)) levels variances
           in
           (Level.Set.remove a ctx, UnivFlex.define a b us, UGraph.set a b g, Level.Map.remove a variances)
         | _, _ -> (* One universe is not irrelevant *)
@@ -543,11 +548,12 @@ let normalize_context_set ~lbound ~variances ~partial g ctx (us:UnivFlex.t) ?bin
     str"Variances: " ++ pr_variances prl variances ++ fnl () ++
     str"Weak constraints " ++
     prlist_with_sep spc (fun (u,v) -> Universe.pr Level.raw_pr u ++ str" ~ " ++ Universe.pr Level.raw_pr v)
-     (UPairSet.elements weak));
+     (UPairSet.elements weak) ++
+     (if partial then str"In partial mode" else str"In non-partial mode") );
   debug_graph Pp.(fun () ->
      str"Graph: " ++ UGraph.pr_model g);
   if CDebug.get_flag _debug_minim then
-    if not (Level.Set.is_empty (Univ.ContextSet.levels ctx)) && Univ.Level.Map.is_empty variances then
+    if not (Level.Set.is_empty (Univ.ContextSet.levels ctx)) && InferCumulativity.is_empty_variances variances then
       Feedback.msg_debug Pp.(str"normalize_context_set called with empty variance information");
   let (ctx, csts) = ContextSet.levels ctx, ContextSet.constraints ctx in
   (* Keep the Prop/Set <= i constraints separate for minimization *)

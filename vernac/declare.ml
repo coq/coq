@@ -213,7 +213,7 @@ let make_univs_deferred_private_mono ~initial_euctx ?feedback_id ~uctx ~udecl bo
   let uctx_body = UState.restrict uctx used_univs in
   UState.check_mono_univ_decl uctx_body udecl
 
-let make_univs_immediate_private_mono ~initial_euctx ~uctx ~variances ~udecl ~eff ~used_univs body typ =
+let make_univs_immediate_private_mono ~initial_euctx ~uctx ~udecl ~eff ~used_univs body typ =
   let utyp = UState.univ_entry ~poly:false initial_euctx None in
   let _, used_univs = universes_of_body_type ~used_univs body typ in
   let ubody =
@@ -225,10 +225,10 @@ let make_univs_immediate_private_mono ~initial_euctx ~uctx ~variances ~udecl ~ef
     UState.check_mono_univ_decl uctx_body udecl in
   initial_euctx, utyp, used_univs, Default { body = (body, eff); opaque = Opaque ubody }
 
-let make_univs_immediate_private_poly ~cumulative ~uctx ~variances ~udecl ~eff ~used_univs body typ =
+let make_univs_immediate_private_poly ~cumulative ~uctx ~udecl ~eff ~used_univs body typ =
   let used_univs_typ, used_univs = universes_of_body_type ~used_univs body typ in
   let uctx' = UState.restrict uctx used_univs_typ in
-  let utyp = UState.check_univ_decl ~poly:true ~cumulative uctx' variances udecl in
+  let utyp = UState.check_univ_decl ~poly:true ~cumulative uctx' udecl in
   let ubody =
     let uctx = UState.restrict uctx used_univs in
     Univ.ContextSet.diff
@@ -237,7 +237,7 @@ let make_univs_immediate_private_poly ~cumulative ~uctx ~variances ~udecl ~eff ~
   in
   uctx', utyp, used_univs, Default { body = (body, eff); opaque = Opaque ubody }
 
-let make_univs_immediate_default ~poly ~cumulative ~opaque ~uctx ~variances ~udecl ~eff ~used_univs body typ =
+let make_univs_immediate_default ~poly ~cumulative ~opaque ~uctx ~udecl ~eff ~used_univs body typ =
   let _, used_univs = universes_of_body_type ~used_univs body typ in
   (* Since the proof is computed now, we can simply have 1 set of
      constraints in which we merge the ones for the body and the ones
@@ -245,7 +245,7 @@ let make_univs_immediate_default ~poly ~cumulative ~opaque ~uctx ~variances ~ude
      the actually used universes.
      TODO: check if restrict is really necessary now. *)
   let uctx = UState.restrict uctx used_univs in
-  let utyp = UState.check_univ_decl ~poly ~cumulative uctx variances udecl in
+  let utyp = UState.check_univ_decl ~poly ~cumulative uctx udecl in
   let utyp = match utyp.universes_entry_universes with
     | Polymorphic_entry _ -> utyp
     | Monomorphic_entry uctx ->
@@ -260,15 +260,15 @@ let make_univs_immediate_default ~poly ~cumulative ~opaque ~uctx ~variances ~ude
   in
   uctx, utyp, used_univs, Default { body = (body, eff); opaque = if opaque then Opaque Univ.ContextSet.empty else Transparent }
 
-let make_univs_immediate ~poly ~cumulative ?keep_body_ucst_separate ~opaque ~uctx ~variances ~udecl ~eff ~used_univs body typ =
+let make_univs_immediate ~poly ~cumulative ?keep_body_ucst_separate ~opaque ~uctx ~udecl ~eff ~used_univs body typ =
   (* allow_deferred case *)
   match keep_body_ucst_separate with
-  | Some initial_euctx when not poly -> make_univs_immediate_private_mono ~initial_euctx ~uctx ~variances ~udecl ~eff ~used_univs body typ
+  | Some initial_euctx when not poly -> make_univs_immediate_private_mono ~initial_euctx ~uctx ~udecl ~eff ~used_univs body typ
   | _ ->
   (* private_poly_univs case *)
   if poly && opaque && private_poly_univs ()
-  then make_univs_immediate_private_poly ~cumulative ~uctx ~variances ~udecl ~eff ~used_univs body typ
-  else make_univs_immediate_default ~poly ~cumulative ~opaque ~uctx ~variances ~udecl ~eff ~used_univs body typ
+  then make_univs_immediate_private_poly ~cumulative ~uctx ~udecl ~eff ~used_univs body typ
+  else make_univs_immediate_default ~poly ~cumulative ~opaque ~uctx ~udecl ~eff ~used_univs body typ
 
 let extend_variances univs =
   let open UState in
@@ -890,9 +890,9 @@ let process_proof ~info:Info.({ udecl; poly; cumulative }) ?(is_telescope=false)
        previous entries requires to accumulate the universes from the
        previous definitions *)
     snd (List.fold_left2_map (fun used_univs ((body, eff), typ) opaque ->
-        let variances = UnivVariances.universe_variances_constr (Global.env ()) (Evd.from_ctx uctx) ?typ body in
+        let sigma = UnivVariances.universe_variances_constr (Global.env ()) (Evd.from_ctx uctx) ?typ body in
         let uctx, univs, used_univs, body =
-          make_univs_immediate ~poly ~cumulative ?keep_body_ucst_separate ~opaque ~uctx ~variances ~udecl ~eff ~used_univs body typ in
+          make_univs_immediate ~poly ~cumulative ?keep_body_ucst_separate ~opaque ~uctx:(Evd.ustate sigma) ~udecl ~eff ~used_univs body typ in
         (used_univs, (definition_entry_core ?using ~univs ?types:typ body, uctx))) Univ.Level.Set.empty entries opaques)
   | DeferredOpaqueProof { deferred_proof = bodies; using; initial_proof_data; feedback_id; initial_euctx } ->
     let { Proof.poly; entry; sigma } = initial_proof_data in
@@ -1020,8 +1020,8 @@ let declare_possibly_mutual_parameters ~info ~cinfo ?(mono_uctx_extra=UState.emp
   pi3 (List.fold_left2 (
     fun (i, subst, csts) { CInfo.name; impargs } (typ, uctx) ->
       let uctx' = UState.restrict uctx (Vars.universes_of_constr typ) in
-      let variances = UnivVariances.universe_variances_of_type (Global.env ()) (Evd.from_ctx uctx) (EConstr.of_constr typ) in
-      let univs = UState.check_univ_decl ~poly uctx' variances udecl in
+      let sigma = UnivVariances.register_universe_variances_of_type (Global.env ()) (Evd.from_ctx uctx') (EConstr.of_constr typ) in
+      let univs = UState.check_univ_decl ~poly (Evd.ustate sigma) udecl in
       let univs = if i = 0 then add_mono_uctx mono_uctx_extra univs else univs in
       let typ = Vars.replace_vars subst typ in
       let pe = {
@@ -1055,7 +1055,7 @@ let prepare_recursive_edeclaration sigma cinfo fixtypes fixrs fixdefs =
   let defs = List.map (EConstr.Vars.subst_vars sigma (List.rev fixnames)) fixdefs in
   (Array.of_list names, Array.of_list fixtypes, Array.of_list defs)
 
-let declare_mutual_definitions ~info ~cinfo ~opaque ~uctx ~variances ~bodies ~possible_guard ?using () =
+let declare_mutual_definitions ~info ~cinfo ~opaque ~uctx ~bodies ~possible_guard ?using () =
   (* Note: uctx is supposed to be already minimized *)
   let { Info.typing_flags; _ } = info in
   let env = Global.env() in
@@ -1095,8 +1095,8 @@ let declare_definition ~info ~cinfo ~opaque ~obls ~body ?using sigma =
   let env = Global.env () in
   Option.iter (check_evars_are_solved env sigma) typ;
   check_evars_are_solved env sigma body;
-  let inferred_variances = UnivVariances.universe_variances env sigma ?typ body in
-  let sigma, variances = Evd.minimize_universes ~variances:inferred_variances sigma in
+  let sigma = UnivVariances.register_universe_variances_of env sigma ?typ body in
+  let sigma = Evd.minimize_universes sigma in
   let body = EConstr.to_constr sigma body in
   let typ = Option.map (EConstr.to_constr sigma) typ in
   let uctx = Evd.ustate sigma in
@@ -1111,8 +1111,8 @@ let prepare_obligations ~name ?types ~body env sigma =
     | Some t -> t
     | None -> Retyping.get_type_of env sigma body
   in
-  let variances = UnivVariances.universe_variances env sigma ~typ:types body in
-  let sigma, variances, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:false ~variances
+  let sigma = UnivVariances.register_universe_variances_of env sigma ~typ:types body in
+  let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:false
       sigma (fun nf -> nf body, nf types)
   in
   RetrieveObl.check_evars env sigma;
@@ -1124,12 +1124,11 @@ let prepare_obligations ~name ?types ~body env sigma =
 let prepare_parameter ~poly ~udecl ~types sigma =
   let env = Global.env () in
   Pretyping.check_evars_are_solved ~program_mode:false env sigma;
-  let ivariances = UnivVariances.universe_variances_of_type env sigma types in
-  let sigma, ivariances, typ = Evarutil.finalize ~abort_on_undefined_evars:true
-      ~variances:ivariances
+  let sigma = UnivVariances.register_universe_variances_of_type env sigma types in
+  let sigma, typ = Evarutil.finalize ~abort_on_undefined_evars:true
       sigma (fun nf -> nf types)
   in
-  let univs = Evd.check_univ_decl ~poly sigma ivariances udecl in
+  let univs = Evd.check_univ_decl ~poly sigma udecl in
   let pe = {
       parameter_entry_secctx = None;
       parameter_entry_type = typ;
@@ -1567,12 +1566,12 @@ let declare_mutual_definitions ~pm l =
   let fixitems = List.map2 (fun (d, typ, impargs) name -> CInfo.make ~name ~typ ~impargs ()) defs first.prg_deps in
   let fixdefs, fixtypes, _ = List.split3 defs in
   let possible_guard = Option.get first.prg_possible_guard in
-  let variances = UnivVariances.universe_variances_of_fix (Global.env ()) (Evd.from_ctx first.prg_uctx) (List.map EConstr.of_constr fixtypes)
+  let sigma = UnivVariances.register_universe_variances_of_fix (Global.env ()) (Evd.from_ctx first.prg_uctx) (List.map EConstr.of_constr fixtypes)
     (List.map (fun x -> Some (EConstr.of_constr x)) fixdefs) in
   (* Declare the recursive definitions *)
   let kns =
     declare_mutual_definitions ~info:first.prg_info
-      ~uctx:first.prg_uctx ~variances ~bodies:fixdefs ~possible_guard ~opaque:first.prg_opaque
+      ~uctx:(Evd.ustate sigma) ~bodies:fixdefs ~possible_guard ~opaque:first.prg_opaque
       ~cinfo:fixitems ?using:first.prg_using ()
   in
   (* Only for the first constant *)
@@ -2059,8 +2058,8 @@ let prepare_proof ?(warn_incomplete=true) { proof; pinfo } =
      actually call those and do a side-effect, TTBOMK *)
   (* EJGA: likely the right solution is to attach side effects to the first constant only? *)
   let proofs = List.map (fun (_, body, typ) -> (to_constr body, to_constr typ)) initial_goals in
-  let variances = UnivVariances.universe_variances_of_proofs (Global.env()) evd proofs in
-  let evd, variances = Evd.minimize_universes evd ~variances in
+  let evd = UnivVariances.register_universe_variances_of_proofs (Global.env()) evd proofs in
+  let evd = Evd.minimize_universes evd in
   let proofs = List.map (fun (body, typ) -> (Evarutil.nf_evars_universes evd body, Evarutil.nf_evars_universes evd typ)) proofs in
   let proofs = match pinfo.possible_guard with
     | None -> proofs
@@ -2296,8 +2295,8 @@ let save_admitted ~pm ~proof =
   let env = Global.env () in
   List.iter (check_type_evars_solved env sigma) typs;
   let sec_vars = compute_proof_using_for_admitted proof.pinfo proof typs iproof in
-  let variances = UnivVariances.universe_variances_of_proof_statements env sigma typs in
-  let sigma, _variances = Evd.minimize_universes ~variances sigma in
+  let sigma = UnivVariances.register_universe_variances_of_proof_statements env sigma typs in
+  let sigma = Evd.minimize_universes sigma in
   let uctx = Evd.ustate sigma in
   let typs = List.map (fun typ -> (EConstr.to_constr sigma typ, uctx)) typs in
   finish_admitted ~pm ~pinfo:proof.pinfo ~sec_vars typs

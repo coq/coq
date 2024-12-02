@@ -17,6 +17,8 @@ open Cooking
 
 module NamedDecl = Context.Named.Declaration
 
+let debug = CDebug.create ~name:"discharge" ()
+
 let lift_univs info univ_hyps univs sec_variance =
   match univs with
   | Monomorphic ->
@@ -33,18 +35,24 @@ let lift_univs info univ_hyps univs sec_variance =
     in
     let variances, sec_variances =
     match variances, sec_variance with
-    | None, None -> None, None
+    | None, None ->
+      debug Pp.(fun () -> str"discharging with no variance or sec_variance");
+      None, None
     | None, Some _| Some _, None -> assert false
     | Some variance, Some sec_variance ->
       (* no variance for qualities *)
+      debug Pp.(fun () -> str"discharging with variances = " ++ UVars.Variances.pr variance ++
+         str " and sec_variance = " ++
+        UVars.Variances.pr sec_variance);
       let sec_variance = UVars.Variances.repr sec_variance in
       let sec_variance, newvariance =
         Array.chop (Array.length sec_variance - un) sec_variance
       in
+      let newbinders = List.count NamedDecl.is_local_assum (Cooking.named_context_of_cooking_info info) in
+      let variance = UVars.Variances.lift newbinders variance in
       Some (UVars.Variances.of_array (Array.append newvariance (UVars.Variances.repr variance))),
       Some (UVars.Variances.of_array sec_variance)
-  in
-
+    in
     info, univ_hyps, Polymorphic (auctx, variances), sec_variances
 
 (********************************)

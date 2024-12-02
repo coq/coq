@@ -46,12 +46,12 @@ let do_primitive id udecl prim typopt =
             PretypeError (env,evd,CannotUnify (typ,expected_typ,Some e)),info))
     in
     Pretyping.check_evars_are_solved ~program_mode:false env evd;
-    let ivariances = UnivVariances.universe_variances_of_type env evd typ in
-    let evd, ivariances = Evd.minimize_universes evd ~variances:ivariances in
+    let evd = UnivVariances.register_universe_variances_of_type env evd typ in
+    let evd = Evd.minimize_universes evd in
     let _qvars, uvars = EConstr.universes_of_constr evd typ in
     let evd = Evd.restrict_universe_context evd uvars in
     let typ = EConstr.to_constr evd typ in
     (* TODO check variances *)
-    let univ_entry = Evd.check_univ_decl ~poly:(not (UVars.AbstractContext.is_empty auctx)) evd ivariances udecl in
+    let univ_entry = Evd.check_univ_decl ~poly:(not (UVars.AbstractContext.is_empty auctx)) evd udecl in
     let entry = Declare.primitive_entry ~types:(typ, univ_entry) prim in
     declare id entry

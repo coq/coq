@@ -550,7 +550,6 @@ let expand_as =
 (* [resolve_and_replace_implicits] solves implicits of its argument and replaces them by their solution *)
 
 let resolve_and_replace_implicits exptyp env sigma rt =
-  let open Evd in
   let open Evar_kinds in
   (* we first (pseudo) understand [rt] and get back the computed evar_map *)
   (* FIXME : JF (30/03/2017) I'm not completely sure to have split understand as needed.
@@ -598,7 +597,7 @@ let resolve_and_replace_implicits exptyp env sigma rt =
     let sigma', _ = eval_pretyper pretyper ~flags:pretype_flags (Some exptyp) genv sigma rt in
     solve_remaining_evars flags env ~initial:sigma sigma'
   in
-  let ctx, _variances = Evd.minimize_universes ctx in
+  let ctx = Evd.minimize_universes ctx in
   let f c =
     EConstr.of_constr
       (Evarutil.nf_evars_universes ctx (EConstr.Unsafe.to_constr c))

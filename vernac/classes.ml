@@ -394,15 +394,16 @@ let do_instance_subst_constructor_and_ty subst k u ctx =
   let term = it_mkLambda_or_LetIn (Option.get app) ctx in
   term, termtype
 
-let do_instance_resolve_TC termtype sigma env =
+let do_instance_resolve_TC term termtype sigma env =
   let sigma = Evarutil.nf_evar_map sigma in
   let sigma = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals_or_obligations ~fail:true env sigma in
   (* Try resolving fields that are typeclasses automatically. *)
   let sigma = Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars ~fail:false env sigma in
   let sigma = Evarutil.nf_evar_map_undefined sigma in
   (* Beware of this step, it is required so as to minimize universes. *)
-  let variances = UnivVariances.universe_variances_of_type env sigma termtype in
-  let sigma, variances = Evd.minimize_universes ~variances sigma in
+  let sigma = UnivVariances.register_universe_variances_of_type env sigma termtype in
+  let sigma = Option.cata (UnivVariances.register_universe_variances_of env sigma) sigma term in
+  let sigma = Evd.minimize_universes ~partial:(Option.is_empty term) sigma in
   (* Check that the type is free of evars now. *)
   Pretyping.check_evars env sigma termtype;
   termtype, sigma
@@ -469,7 +470,7 @@ let do_instance_interactive env env' sigma ?hook ~tac ~locality ~poly cty k u ct
         else
           None, it_mkProd_or_LetIn cty ctx
       in
-      let termtype, sigma = do_instance_resolve_TC termtype sigma env in
+      let termtype, sigma = do_instance_resolve_TC term termtype sigma env in
       term, termtype, sigma
   in
   Flags.silently (fun () ->
@@ -481,7 +482,7 @@ let do_instance env env' sigma ?hook ~locality ~poly cty k u ctx ctx' pri decl i
   let term, termtype, sigma =
     interp_props ~program_mode:false env' cty k u ctx ctx' subst sigma props
   in
-  let termtype, sigma = do_instance_resolve_TC termtype sigma env in
+  let termtype, sigma = do_instance_resolve_TC (Some term) termtype sigma env in
   Pretyping.check_evars_are_solved ~program_mode:false env sigma;
   declare_instance_constant pri locality imps ?hook id decl poly sigma term termtype
 
@@ -496,7 +497,7 @@ let do_instance_program ~pm env env' sigma ?hook ~locality ~poly cty k u ctx ctx
       let term, termtype =
         do_instance_subst_constructor_and_ty subst k u (ctx' @ ctx) in
       term, termtype, sigma in
-  let termtype, sigma = do_instance_resolve_TC termtype sigma env in
+  let termtype, sigma = do_instance_resolve_TC (Some term) termtype sigma env in
   if not (Evd.has_undefined sigma) && not (Option.is_empty opt_props) then
     let () = declare_instance_constant pri locality imps ?hook id decl poly sigma term termtype in
     pm

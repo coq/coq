@@ -94,6 +94,8 @@ let empty_cooking_info = {
     };
 }
 
+let named_context_of_cooking_info info = info.abstr_info.abstr_ctx
+
 (*s Cooking the constants. *)
 
 type my_global_reference =

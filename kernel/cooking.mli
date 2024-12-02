@@ -50,6 +50,8 @@ val names_info : cooking_info -> Id.Set.t
 
 val universe_context_of_cooking_info : cooking_info -> UVars.AbstractContext.t
 
+val named_context_of_cooking_info : cooking_info -> named_context
+
 val instance_of_cooking_info : cooking_info -> Constr.t array
 
 type cooking_cache

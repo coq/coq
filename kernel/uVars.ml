@@ -60,6 +60,10 @@ struct
     | Irrelevant -> csts
     | Covariant | Contravariant | Invariant -> enforce_eq u u' csts
 
+  let _is_irrelevant = function
+    | Irrelevant -> true
+    | _ -> false
+
 end
 
 type application = FullyApplied | NumArgs of int
@@ -94,6 +98,11 @@ struct
     | InTerm ->  str"(in term)"
     | InType ->  str"(in type)"
     | InBinder i -> str"(" ++ pr_nth (i + 1) ++ str")"
+
+  let lift k pos =
+    match pos with
+    | InTerm | InType -> pos
+    | InBinder i -> InBinder (k + i)
 end
 
 module VariancePos =
@@ -106,7 +115,11 @@ struct
     Variance.equal v v' && Position.equal pos pos'
 
   let le (v, pos) (v', pos') =
-    Variance.le v v' && Position.le pos pos'
+    (Variance.equal v v' && Position.le pos pos') ||
+    (Variance.le v v')
+
+  let lift k (v, pos) =
+    (v, Position.lift k pos)
 
   let variance nargs (v, pos) =
     let open Position in
@@ -163,6 +176,8 @@ struct
 
   let make n default : t =
     Array.make n default
+
+  let lift k = Array.map (VariancePos.lift k)
 
   let leq_constraints ~nargs variances u u' csts =
     let len = Array.length u in
