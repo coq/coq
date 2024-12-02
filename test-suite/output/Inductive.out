@@ -70,7 +70,7 @@ ssig@{q1 q2 q3 | a b} may only be eliminated to produce values whose type is in 
   than the instantiation of q3.
 Arguments ssig A%type_scope B%function_scope
 Expands to: Inductive Inductive.ssig
-Declared in library Inductive, line 48, characters 22-26
+Declared in library Inductive, line 47, characters 22-26
 BoxP@{q | a} : Type@{q | a} -> Prop
 (* q | a |=  *)
 
@@ -79,4 +79,4 @@ BoxP@{q | a} may only be eliminated to produce values whose type is SProp or Pro
   unless instantiated such that the quality q is SProp or Prop.
 Arguments BoxP A%type_scope
 Expands to: Inductive Inductive.BoxP
-Declared in library Inductive, line 56, characters 22-26
+Declared in library Inductive, line 55, characters 22-26

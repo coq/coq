@@ -75,10 +75,9 @@ File "./output/UnivBinders.v", line 71, characters 0-52:
 The command has indeed failed with message:
 Universe uu already exists.
 bobmorane =
-let tt := Type@{UnivBinders.32} in
-let ff := Type@{UnivBinders.34} in tt -> ff
-     : Type@{max(UnivBinders.31,UnivBinders.33)}
-File "./output/UnivBinders.v", line 86, characters 23-25:
+let tt := Type@{fooS.u1} in let ff := Type@{fooS.u3} in tt -> ff
+     : Type@{max(fooS.u0,fooS.u2)}
+File "./output/UnivBinders.v", line 88, characters 23-25:
 The command has indeed failed with message:
 Universe uu already bound.
 foo@{E M N} =
@@ -111,16 +110,16 @@ punwrap is a primitive projection of PWrap
 Arguments punwrap A%type_scope p
 punwrap is transparent
 Expands to: Constant UnivBinders.punwrap
-File "./output/UnivBinders.v", line 103, characters 0-19:
+File "./output/UnivBinders.v", line 105, characters 0-19:
 The command has indeed failed with message:
 Universe instance length is 3 but should be 1.
-File "./output/UnivBinders.v", line 104, characters 0-20:
+File "./output/UnivBinders.v", line 106, characters 0-20:
 The command has indeed failed with message:
 Universe instance length is 0 but should be 1.
-File "./output/UnivBinders.v", line 107, characters 0-33:
+File "./output/UnivBinders.v", line 109, characters 0-33:
 The command has indeed failed with message:
 This object does not support universe names.
-File "./output/UnivBinders.v", line 111, characters 0-50:
+File "./output/UnivBinders.v", line 113, characters 0-50:
 The command has indeed failed with message:
 Cannot enforce v+1 ≤ u because u < u+3 < u+4 ≤ gU+2 < gU+4 ≤ gV+1 < gV+4 ≤ v
 < v+4
@@ -192,7 +191,7 @@ Arguments axfoo' _%type_scope
 *** [ axbar' : Type@{axfoo'.u1} -> Type@{axfoo'.i} ]
 
 Arguments axbar' _%type_scope
-File "./output/UnivBinders.v", line 157, characters 19-26:
+File "./output/UnivBinders.v", line 159, characters 19-26:
 The command has indeed failed with message:
 When declaring multiple assumptions in one command, only the first name is
 allowed to mention a universe binder (which will be shared by the whole
@@ -252,20 +251,20 @@ Arguments MutualI1' A%type_scope
 Arguments C1' A%type_scope p1
 Arguments MutualI2' A%type_scope
 Arguments C2' A%type_scope p2
-File "./output/UnivBinders.v", line 208, characters 0-33:
+File "./output/UnivBinders.v", line 210, characters 0-33:
 The command has indeed failed with message:
 Universe inconsistency. Cannot enforce a+1 ≤ a because a < a+1.
 JMeq :
-forall [A : Type@{JMeq.u0}], A -> forall [B : Type@{JMeq.u1}], B -> Prop
+forall [A : Type@{JMeq.u0}], A -> forall [B : Type@{JMeq.u0}], B -> Prop
 
-JMeq is template universe polymorphic on JMeq.u0
+JMeq is not universe polymorphic
 Arguments JMeq [A]%type_scope x [B]%type_scope _
 Expands to: Inductive UnivBinders.PartialTemplate.JMeq
-Declared in library UnivBinders, line 219, characters 10-14
-File "./output/UnivBinders.v", line 234, characters 2-38:
+Declared in library UnivBinders, line 220, characters 10-14
+File "./output/UnivBinders.v", line 235, characters 2-38:
 The command has indeed failed with message:
 Universe u0 already exists.
-File "./output/UnivBinders.v", line 241, characters 6-26:
+File "./output/UnivBinders.v", line 242, characters 6-26:
 The command has indeed failed with message:
 Tactic failure: Not equal (due to universes).
 eq_rect
