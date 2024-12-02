@@ -57,7 +57,7 @@ module QMap = QVar.Map
 
 type t = {
   global : QSet.t ;
-  (** Global variables, should always be named (included in the next field) *)
+  (** Global variables, may not be set to another *)
   named : QSet.t;
   (** Named variables, may not be set to another *)
   qmap : Quality.t option QMap.t;
@@ -75,9 +75,7 @@ let rec repr q m = match QMap.find q m.qmap with
 | None -> QVar q
 | Some (QVar q) -> repr q m
 | Some (QConstant _ as q) -> q
-| exception Not_found ->
-(*   let () = assert !Flags.in_debugger in *) (* FIXME *)
-  QVar q
+| exception Not_found -> QVar q
 
 let is_above_prop q m = QSet.mem q m.above
 
@@ -89,7 +87,7 @@ let set q qv m =
   | q, QVar qv ->
     if QVar.equal q qv then Some m
     else
-    if QSet.mem q m.named then None
+    if QSet.mem q m.named || QSet.mem q m.global then None
     else
       let above =
         if QSet.mem q m.above then QSet.add qv (QSet.remove q m.above)
@@ -98,14 +96,14 @@ let set q qv m =
       Some { m with qmap = QMap.add q (Some (QVar qv)) m.qmap; above }
   | q, (QConstant qc as qv) ->
     if qc == QSProp && QSet.mem q m.above then None
-    else if QSet.mem q m.named then None
+    else if QSet.mem q m.named || QSet.mem q m.global then None
     else
       Some { m with qmap = QMap.add q (Some qv) m.qmap; above = QSet.remove q m.above }
 
 let set_above_prop q m =
   let q = repr q m in
   let q = match q with QVar q -> q | QConstant _ -> assert false in
-  if QSet.mem q m.named then None
+  if QSet.mem q m.named || QSet.mem q m.global then None
   else Some { m with above = QSet.add q m.above }
 
 let unify_quality ~fail c q1 q2 local = match q1, q2 with
@@ -177,14 +175,13 @@ let of_set qs =
   { global = QSet.empty ; named = QSet.empty; qmap = QMap.bind (fun _ -> None) qs; above = QSet.empty }
 
 let of_global qs =
-  { (of_set qs) with
-    global = qs ;
-    named = qs }
+  { empty with
+    global = qs }
 
 (* XXX what about [above]? *)
 let undefined m =
   let mq = QMap.filter (fun _ v -> Option.is_empty v) m.qmap in
-  QSet.diff (QMap.domain mq) m.global
+  QMap.domain mq
 
 let collapse_above_prop ~to_prop m =
   let map q v = match v with
@@ -198,17 +195,17 @@ let collapse_above_prop ~to_prop m =
 
 let collapse m =
   let map q v = match v with
-  | None -> if QSet.mem q m.named then None else Some (QConstant QType)
+  | None -> if QSet.mem q m.named || QSet.mem q m.global then None else Some (QConstant QType)
   | Some _ -> v
   in
   { m with qmap = QMap.mapi map m.qmap; above = QSet.empty }
 
-let pr prqvar { qmap; above; named } =
+let pr prqvar { qmap; above; named ; global } =
   let open Pp in
   let prbody u = function
   | None ->
     if QSet.mem u above then str " >= Prop"
-    else if QSet.mem u named then
+    else if QSet.mem u named || QSet.mem u global then
       str " (internal name " ++ QVar.raw_pr u ++ str ")"
     else mt ()
   | Some q ->
