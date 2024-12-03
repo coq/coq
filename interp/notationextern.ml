@@ -144,28 +144,80 @@ let notation_rule_eq x1 x2 =
     interpretation_eq x1.not_patt x2.not_patt &&
     notation_applicative_status_eq x1.not_status x2.not_status)
 
-let strictly_finer_interpretation_than r1 r2 =
-  Notation_ops.strictly_finer_interpretation_than r1.not_patt r2.not_patt
+module NotationSet :
+sig
+
+type t
+val empty : t
+val add : notation_rule -> t -> t
+val remove : notation_rule -> t -> t
+val repr : t -> notation_rule list
+
+end =
+struct
+
+type diff = Add | Sub
+
+type data = {
+  ntn_todo : (diff * notation_rule) list;
+  ntn_done : notation_rule list;
+}
+
+type t = data ref option
+
+let empty = None
+
+let push k r s = match s with
+| None -> Some (ref { ntn_done = []; ntn_todo = [k, r] })
+| Some { contents = s } ->
+  Some (ref { ntn_done = s.ntn_done; ntn_todo = (k, r) :: s.ntn_todo })
+
+let add r s = push Add r s
+
+let remove r s = push Sub r s
+
+let force s =
+  if List.is_empty s.ntn_todo then None
+  else
+    let cmp r1 r2 = Notation_ops.strictly_finer_interpretation_than r1.not_patt r2.not_patt in
+    (* strictly finer interpretation are kept in front *)
+    let fold accu (knd, ntn) = match knd with
+    | Add ->
+      let finer, rest = List.partition (fun c -> cmp c ntn) accu in
+      (finer @ ntn :: rest)
+    | Sub ->
+      List.remove_first (fun rule -> notation_rule_eq ntn rule) accu
+    in
+    Some (List.fold_left fold s.ntn_done (List.rev s.ntn_todo))
+
+let repr s = match s with
+| None -> []
+| Some r ->
+  match force !r with
+  | None -> r.contents.ntn_done
+  | Some ans ->
+    let () = r := { ntn_done = ans; ntn_todo = [] } in
+    ans
+
+end
 
 let keymap_add key interp map =
-  let old = try KeyMap.find key map with Not_found -> [] in
-  (* strictly finer interpretation are kept in front *)
-  let strictly_finer, rest = List.partition (fun c -> strictly_finer_interpretation_than c interp) old in
-  KeyMap.add key (strictly_finer @ interp :: rest) map
+  let old = try KeyMap.find key map with Not_found -> NotationSet.empty in
+  KeyMap.add key (NotationSet.add interp old) map
 
 let keymap_remove key interp map =
-  let old = try KeyMap.find key map with Not_found -> [] in
-  KeyMap.add key (List.remove_first (fun rule -> notation_rule_eq interp rule) old) map
+  let old = try KeyMap.find key map with Not_found -> NotationSet.empty in
+  KeyMap.add key (NotationSet.remove interp old) map
 
 let keymap_find key map =
-  try KeyMap.find key map
+  try NotationSet.repr (KeyMap.find key map)
   with Not_found -> []
 
 (* Scopes table : interpretation -> scope_name *)
 let notations_key_table = Summary.ref
     ~stage:Summary.Stage.Interp
     ~name:"notation_uninterpretation"
-    (KeyMap.empty : notation_rule list KeyMap.t)
+    (KeyMap.empty : NotationSet.t KeyMap.t)
 
 let glob_constr_keys c = match DAst.get c with
   | GApp (c, _) ->
