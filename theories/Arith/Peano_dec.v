@@ -35,8 +35,6 @@ Register dec_eq_nat as num.nat.eq_dec.
 
 Definition UIP_nat:= Eqdep_dec.UIP_dec Nat.eq_dec.
 
-Scheme le_ind_dep := Induction for le Sort Prop.
-
 Lemma le_unique: forall (m n : nat) (le_mn1 le_mn2 : m <= n), le_mn1 = le_mn2.
 Proof.
   intros m. refine (le_ind_dep m _ _ _).
