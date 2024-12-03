@@ -687,8 +687,8 @@ let abs_ssrterm ?(resolve_typeclasses=false) ist env sigma t =
        sigma, Evarutil.nf_evar sigma ct in
   let c, abstracted_away, ucst = abs_evars env sigma0 t in
   let n = List.length abstracted_away in
-  let t = abs_cterm env sigma0 n c in
   let sigma = Evd.merge_universe_context sigma0 ucst in
+  let t = abs_cterm env sigma n c in
   sigma, t, n
 
 let top_id = mk_internal_id "top assumption"
@@ -761,9 +761,9 @@ let pf_interp_ty ?(resolve_typeclasses=false) env sigma0 ist ty =
        sigma, Evarutil.nf_evar sigma cty in
    let c, evs, ucst = abs_evars env sigma0 ty in
    let n = List.length evs in
+   let sigma0 = Evd.merge_universe_context sigma0 ucst in
    let lam_c = abs_cterm env sigma0 n c in
    let ctx, c = EConstr.decompose_lambda_n_assum sigma n lam_c in
-   let sigma0 = Evd.merge_universe_context sigma0 ucst in
    sigma0, n, EConstr.it_mkProd_or_LetIn c ctx, lam_c
 
 (* TASSI: given (c : ty), generates (c ??? : ty[???/...]) with m evars *)

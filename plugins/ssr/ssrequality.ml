@@ -475,10 +475,10 @@ let rwcltac ?under ?map_redex cl rdx dir (sigma, r) =
   let sigma0 = Proofview.Goal.sigma gl in
   let sigma = resolve_typeclasses ~where:r ~fail:false env sigma in
   let r_n, evs, ucst = abs_evars env sigma0 (sigma, r) in
+  let sigma0 = Evd.set_universe_context sigma0 ucst in
   let n = List.length evs in
   let r_n' = abs_cterm env sigma0 n r_n in
   let r' = EConstr.Vars.subst_var sigma pattern_id r_n' in
-  let sigma0 = Evd.set_universe_context sigma0 ucst in
   let sigma, rdxt = Typing.type_of env sigma rdx in
   let () = debug_ssr (fun () -> Pp.(str"r@rwcltac=" ++ pr_econstr_env env sigma r)) in
   let cvtac, rwtac, sigma0 =
