@@ -91,7 +91,6 @@ CI_TARGETS= \
     ci-smtcoq \
     ci-smtcoq_trakt \
     ci-stalmarck \
-    ci-stdlib2 \
     ci-tactician \
     ci-tlc \
     ci-trakt \

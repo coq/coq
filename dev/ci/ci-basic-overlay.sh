@@ -417,12 +417,6 @@ project verdi_raft "https://github.com/uwplse/verdi-raft" "master"
 # Contact @palmskog on github
 
 ########################################################################
-# stdlib2
-########################################################################
-project stdlib2 "https://github.com/coq/stdlib2" "master"
-# Contact @maximedenes, @vbgl on github
-
-########################################################################
 # argosy
 ########################################################################
 project argosy "https://github.com/mit-pdos/argosy" "master"

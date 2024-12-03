@@ -830,9 +830,6 @@ library:ci-simple_io:
 library:ci-sf:
   extends: .ci-template
 
-library:ci-stdlib2:
-  extends: .ci-template-flambda
-
 library:ci-tlc:
   extends: .ci-template
 
