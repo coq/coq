@@ -18,7 +18,7 @@
  (public_name coqc)
  (package coq-core)
  (modules coqc_bin)
- (libraries coq-core.toplevel))
+ (libraries coq-core.toplevel coq-core.plugins.zify coq-core.plugins.ltac coq-core.plugins.micromega coq-core.plugins.ring coq-core.plugins.ssreflect coq-core.plugins.tauto coq-core.plugins.number_string_notation coq-core.plugins.cc coq-core.plugins.firstorder coq-core.plugins.nsatz coq-core.plugins.extraction coq-core.plugins.funind coq-core.plugins.derive))
  ; Adding -ccopt -flto to links options could be interesting, however,
  ; it doesn't work on Windows
 
