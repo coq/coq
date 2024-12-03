@@ -178,6 +178,8 @@ Register le_n as num.nat.le_n.
 Hint Constructors le: core.
 (*i equivalent to : "Hints Resolve le_n le_S : core." i*)
 
+Scheme le_ind_dep := Induction for le Sort Prop.
+
 Definition lt (n m:nat) := S n <= m.
 #[global]
 Hint Unfold lt: core.
