@@ -65,18 +65,16 @@ Proof.
   intros x y z; apply eq_trans.
 Qed.
 
-Local Obligation Tactic := zcongruence.
-
 #[global]
-Program Instance succ_wd : Proper (eq ==> eq) succ.
+Instance succ_wd : Proper (eq ==> eq) succ. Proof. zcongruence. Qed.
 #[global]
-Program Instance pred_wd : Proper (eq ==> eq) pred.
+Instance pred_wd : Proper (eq ==> eq) pred. Proof. zcongruence. Qed.
 #[global]
-Program Instance add_wd : Proper (eq ==> eq ==> eq) add.
+Instance add_wd : Proper (eq ==> eq ==> eq) add. Proof. zcongruence. Qed.
 #[global]
-Program Instance sub_wd : Proper (eq ==> eq ==> eq) sub.
+Instance sub_wd : Proper (eq ==> eq ==> eq) sub. Proof. zcongruence. Qed.
 #[global]
-Program Instance mul_wd : Proper (eq ==> eq ==> eq) mul.
+Instance mul_wd : Proper (eq ==> eq ==> eq) mul. Proof. zcongruence. Qed.
 
 Theorem gt_wB_1 : 1 < wB.
 Proof.

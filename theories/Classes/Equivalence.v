@@ -26,7 +26,6 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 
 Generalizable Variables A R eqA B S eqB.
-Local Obligation Tactic := try solve [simpl_relation].
 
 Local Open Scope signature_scope.
 
@@ -54,19 +53,13 @@ Infix "=~=" := pequiv (at level 70, no associativity) : equiv_scope.
 (** Shortcuts to make proof search easier. *)
 
 #[global]
- Program Instance equiv_reflexive `(sa : Equivalence A) : Reflexive equiv | 1.
+Instance equiv_reflexive `(sa : Equivalence A) : Reflexive equiv | 1 := _.
 
 #[global]
-Program Instance equiv_symmetric `(sa : Equivalence A) : Symmetric equiv | 1.
+Instance equiv_symmetric `(sa : Equivalence A) : Symmetric equiv | 1 := _.
 
 #[global]
-Program Instance equiv_transitive `(sa : Equivalence A) : Transitive equiv | 1.
-
-  Next Obligation.
-  Proof.
-    intros A R sa x y z Hxy Hyz.
-    now transitivity y.
-  Qed.
+Instance equiv_transitive `(sa : Equivalence A) : Transitive equiv | 1 := _.
 
 Arguments equiv_symmetric {A R} sa x y : rename.
 Arguments equiv_transitive {A R} sa x y z : rename.
@@ -120,14 +113,13 @@ Section Respecting.
                           eqb : Equivalence B (R' : relation B)) : Type :=
     { morph : A -> B | respectful R R' morph morph }.
 
-  Program Instance respecting_equiv `(eqa : Equivalence A R, eqb : Equivalence B R') :
+  Instance respecting_equiv `(eqa : Equivalence A R, eqb : Equivalence B R') :
     Equivalence (fun (f g : respecting eqa eqb) => 
                    forall (x y : A), R x y -> R' (proj1_sig f x) (proj1_sig g y)).
-
-  Solve Obligations with unfold respecting in * ; simpl_relation ; program_simpl.
-
-  Next Obligation.
-  Proof. 
+  Proof.
+    split.
+    { unfold respecting in * ; simpl_relation ; program_simpl. }
+    { unfold respecting in * ; simpl_relation ; program_simpl. }
     intros. intros f g h H H' x y Rxy.
     unfold respecting in *. program_simpl. transitivity (g y); auto. firstorder.
   Qed.

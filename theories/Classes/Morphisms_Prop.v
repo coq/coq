@@ -16,71 +16,81 @@
 
 Require Import Stdlib.Classes.Morphisms.
 Require Import Stdlib.Program.Basics.
-Require Import Stdlib.Program.Tactics.
-
-Local Obligation Tactic := try solve [simpl_relation | firstorder auto].
 
 (** Standard instances for [not], [iff] and [impl]. *)
 
 (** Logical negation. *)
 
 #[global]
-Program Instance not_impl_morphism :
+Instance not_impl_morphism :
   Proper (impl --> impl) not | 1.
+Proof. firstorder idtac. Qed.
 
 #[global]
-Program Instance not_iff_morphism :
+Instance not_iff_morphism :
   Proper (iff ++> iff) not.
+Proof. firstorder idtac. Qed.
 
 (** Logical conjunction. *)
 
 #[global]
-Program Instance and_impl_morphism :
+Instance and_impl_morphism :
   Proper (impl ==> impl ==> impl) and | 1.
+Proof. firstorder idtac. Qed.
 
 #[global]
-Program Instance and_iff_morphism :
+Instance and_iff_morphism :
   Proper (iff ==> iff ==> iff) and.
+Proof. firstorder idtac. Qed.
 
 (** Logical disjunction. *)
 
 #[global]
-Program Instance or_impl_morphism :
+Instance or_impl_morphism :
   Proper (impl ==> impl ==> impl) or | 1.
+Proof. firstorder idtac. Qed.
 
 #[global]
-Program Instance or_iff_morphism :
+Instance or_iff_morphism :
   Proper (iff ==> iff ==> iff) or.
+Proof. firstorder idtac. Qed.
 
 (** Logical implication [impl] is a morphism for logical equivalence. *)
 
 #[global]
-Program Instance iff_iff_iff_impl_morphism : Proper (iff ==> iff ==> iff) impl.
+Instance iff_iff_iff_impl_morphism : Proper (iff ==> iff ==> iff) impl.
+Proof. firstorder idtac. Qed.
 
 (** Morphisms for quantifiers *)
 
 #[global]
-Program Instance ex_iff_morphism {A : Type} : Proper (pointwise_relation A iff ==> iff) (@ex A).
+Instance ex_iff_morphism {A : Type} : Proper (pointwise_relation A iff ==> iff) (@ex A).
+Proof. firstorder idtac. Qed.
 
 #[global]
-Program Instance ex_impl_morphism {A : Type} :
+Instance ex_impl_morphism {A : Type} :
   Proper (pointwise_relation A impl ==> impl) (@ex A) | 1.
+Proof. firstorder idtac. Qed.
 
 #[global]
-Program Instance ex_flip_impl_morphism {A : Type} :
+Instance ex_flip_impl_morphism {A : Type} :
   Proper (pointwise_relation A (flip impl) ==> flip impl) (@ex A) | 1.
+Proof. firstorder idtac. Qed.
 
 #[global]
-Program Instance all_iff_morphism {A : Type} :
+Instance all_iff_morphism {A : Type} :
   Proper (pointwise_relation A iff ==> iff) (@all A).
+Proof. firstorder idtac. Qed.
 
 #[global]
-Program Instance all_impl_morphism {A : Type} :
+Instance all_impl_morphism {A : Type} :
   Proper (pointwise_relation A impl ==> impl) (@all A) | 1.
+Proof. firstorder idtac. Qed.
 
 #[global]
-Program Instance all_flip_impl_morphism {A : Type} :
+Instance all_flip_impl_morphism {A : Type} :
   Proper (pointwise_relation A (flip impl) ==> flip impl) (@all A) | 1.
+Proof. firstorder idtac. Qed.
 
 (** Equivalent points are simultaneously accessible or not *)
 

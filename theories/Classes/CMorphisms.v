@@ -19,7 +19,6 @@ Require Import Stdlib.Program.Tactics.
 Require Export Stdlib.Classes.CRelationClasses.
 
 Generalizable Variables A eqA B C D R RA RB RC m f x y.
-Local Obligation Tactic := try solve [ simpl_crelation ].
 
 Local Arguments transitivity {A R Transitive x} y {z}.
 
@@ -277,11 +276,10 @@ Section GenericInstances.
   (** We can build a PER on the Coq function space if we have PERs on the domain and
    codomain. *)
   
-  Program Instance respectful_per `(PER A R, PER B R') : PER (R ==> R').
-
-  Next Obligation.
+  Instance respectful_per `(PER A R, PER B R') : PER (R ==> R').
   Proof with auto.
-    intros A R H B R' H0 x y z X X0 x0 y0 X1.
+    split. { simpl_crelation. }
+    intros x y z X X0 x0 y0 X1.
     assert(R x0 x0).
     - eapply transitivity with y0... now apply symmetry.
     - eapply transitivity with (y x0)...
@@ -292,13 +290,11 @@ Section GenericInstances.
   (** The complement of a crelation conserves its proper elements. *)
  
   (** The [flip] too, actually the [flip] instance is a bit more general. *)
-  Program Definition flip_proper
+  Definition flip_proper
           `(mor : Proper (A -> B -> C) (RA ==> RB ==> RC) f) :
-    Proper (RB ==> RA ==> RC) (flip f) := _.
-  
-  Next Obligation.
+    Proper (RB ==> RA ==> RC) (flip f).
   Proof.
-    intros A B C RA RB RC f mor x y X x0 y0 X0.
+    intros x y X x0 y0 X0.
     apply mor ; auto.
   Qed.
 
@@ -306,64 +302,52 @@ Section GenericInstances.
   (** Every Transitive crelation gives rise to a binary morphism on [impl],
    contravariant in the first argument, covariant in the second. *)
   
-  Global Program 
+  Global
   Instance trans_contra_co_type_morphism
     `(Transitive A R) : Proper (R --> R ++> arrow) R.
-  
-  Next Obligation.
   Proof with auto.
-    intros A R H x y X x0 y0 X0 X1.
+    intros x y X x0 y0 X0 X1.
     apply transitivity with x...
     apply transitivity with x0...
   Qed.
 
   (** Proper declarations for partial applications. *)
 
-  Global Program 
+  Global
   Instance trans_contra_inv_impl_type_morphism
   `(Transitive A R) {x} : Proper (R --> flip arrow) (R x) | 3.
-
-  Next Obligation.
   Proof with auto.
-    intros A R H x x0 y X X0.
+    intros x0 y X X0.
     apply transitivity with y...
   Qed.
 
-  Global Program 
+  Global
   Instance trans_co_impl_type_morphism
     `(Transitive A R) {x} : Proper (R ++> arrow) (R x) | 3.
-
-  Next Obligation.
   Proof with auto.
-    intros A R H x x0 y X X0.
+    intros x0 y X X0.
     apply transitivity with x0...
   Qed.
 
-  Global Program 
+  Global
   Instance trans_sym_co_inv_impl_type_morphism
     `(PER A R) {x} : Proper (R ++> flip arrow) (R x) | 3.
-
-  Next Obligation.
   Proof with auto.
-    intros A R H x x0 y X X0.
+    intros x0 y X X0.
     apply transitivity with y... apply symmetry...
   Qed.
 
-  Global Program Instance trans_sym_contra_arrow_morphism
+  Global Instance trans_sym_contra_arrow_morphism
     `(PER A R) {x} : Proper (R --> arrow) (R x) | 3.
-
-  Next Obligation.
   Proof with auto.
-    intros A R H x x0 y X X0.
+    intros x0 y X X0.
     apply transitivity with x0... apply symmetry...
   Qed.
 
-  Global Program Instance per_partial_app_type_morphism
+  Global Instance per_partial_app_type_morphism
   `(PER A R) {x} : Proper (R ==> iffT) (R x) | 2.
-
-  Next Obligation.
   Proof with auto.
-    intros A R H x x0 y X.
+    intros x0 y X.
     split.
     - intros ; apply transitivity with x0...
     - intros.
@@ -373,24 +357,20 @@ Section GenericInstances.
 
   (** Every Transitive crelation induces a morphism by "pushing" an [R x y] on the left of an [R x z] proof to get an [R y z] goal. *)
 
-  Global Program 
+  Global
   Instance trans_co_eq_inv_arrow_morphism
   `(Transitive A R) : Proper (R ==> (@eq A) ==> flip arrow) R | 2.
-
-  Next Obligation.
   Proof with auto.
-    intros A R H x y X y0 y1 e X0; destruct e.
+    intros x y X y0 y1 e X0; destruct e.
     apply transitivity with y...
   Qed.
 
   (** Every Symmetric and Transitive crelation gives rise to an equivariant morphism. *)
 
-  Global Program 
+  Global
   Instance PER_type_morphism `(PER A R) : Proper (R ==> R ==> iffT) R | 1.
-
-  Next Obligation.
   Proof with auto.
-    intros A R H x y X x0 y0 X0.
+    intros x y X x0 y0 X0.
     split ; intros.
     - apply transitivity with x0...
       apply transitivity with x... apply symmetry...
@@ -402,10 +382,8 @@ Section GenericInstances.
   Lemma symmetric_equiv_flip `(Symmetric A R) : relation_equivalence R (flip R).
   Proof. firstorder. Qed.
 
-  Global Program Instance compose_proper A B C RA RB RC :
+  Global Instance compose_proper A B C RA RB RC :
     Proper ((RB ==> RC) ==> (RA ==> RB) ==> (RA ==> RC)) (@compose A B C).
-
-  Next Obligation.
   Proof.
     simpl_crelation.
     unfold compose. firstorder. 

@@ -35,8 +35,8 @@ Definition ZcompareZ (x y : Z) :=
   Z_of_comparison (Z.compare x y).
 
 #[global]
-Program Instance BinOp_Zcompare : BinOp Z.compare :=
-  { TBOp := ZcompareZ }.
+Instance BinOp_Zcompare : BinOp Z.compare.
+Proof. intros; refine  {| TBOp := ZcompareZ |}. reflexivity.  Defined.
 Add Zify BinOp BinOp_Zcompare.
 
 #[global]

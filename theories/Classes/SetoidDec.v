@@ -50,13 +50,11 @@ Definition swap_sumbool {A B} (x : { A } + { B }) : { B } + { A } :=
     | right H => @left _ _ H
   end.
 
-Require Import Stdlib.Program.Program.
-
 Local Open Scope program_scope.
 
 (** Invert the branches. *)
 
-Program Definition nequiv_dec `{EqDec A} (x y : A) : { x =/= y } + { x == y } := swap_sumbool (x == y).
+Definition nequiv_dec `{EqDec A} (x y : A) : { x =/= y } + { x == y } := swap_sumbool (x == y).
 
 (** Overloaded notation for inequality. *)
 
@@ -81,58 +79,58 @@ Require Import Stdlib.Arith.Arith.
   it by specifying which setoid we're talking about. *)
 
 #[global]
-Program Instance eq_setoid A : Setoid A | 10 :=
+Instance eq_setoid A : Setoid A | 10 :=
   { equiv := eq ; setoid_equiv := eq_equivalence }.
 
 #[global]
-Program Instance nat_eq_eqdec : EqDec (eq_setoid nat) :=
+Instance nat_eq_eqdec : EqDec (eq_setoid nat) :=
   eq_nat_dec.
 
 Require Import Stdlib.Bool.Bool.
 
 #[global]
-Program Instance bool_eqdec : EqDec (eq_setoid bool) :=
+Instance bool_eqdec : EqDec (eq_setoid bool) :=
   bool_dec.
 
 #[global]
-Program Instance unit_eqdec : EqDec (eq_setoid unit) :=
-  fun x y => in_left.
-
-  Next Obligation.
-  Proof.
-    do 2 match goal with x : () |- _ => destruct x end.
-    reflexivity.
-  Qed.
+Instance unit_eqdec : EqDec (eq_setoid unit).
+Proof.
+  refine (fun x y => left _).
+  abstract (case x, y; reflexivity).
+Defined.
 
 #[global]
-Program Instance prod_eqdec `(! EqDec (eq_setoid A), ! EqDec (eq_setoid B))
- : EqDec (eq_setoid (prod A B)) :=
+Instance prod_eqdec `(! EqDec (eq_setoid A), ! EqDec (eq_setoid B))
+ : EqDec (eq_setoid (prod A B)).
+Proof.
+  refine (
   fun x y =>
     let '(x1, x2) := x in
     let '(y1, y2) := y in
     if x1 == y1 then
-      if x2 == y2 then in_left
-      else in_right
-    else in_right.
-
-  Solve Obligations with unfold complement ; program_simpl.
+      if x2 == y2 then left _
+      else right _
+    else right _).
+  all : abstract (cbv [equiv eq_setoid] in *; congruence).
+Defined.
 
 (** Objects of function spaces with countable domains like bool
   have decidable equality. *)
+Require Import FunctionalExtensionality.
 
 #[global]
-Program Instance bool_function_eqdec `(! EqDec (eq_setoid A))
- : EqDec (eq_setoid (bool -> A)) :=
+Instance bool_function_eqdec `(! EqDec (eq_setoid A))
+ : EqDec (eq_setoid (bool -> A)).
+Proof.
+  refine (
   fun f g =>
     if f true == g true then
-      if f false == g false then in_left
-      else in_right
-    else in_right.
+      if f false == g false then left _
+      else right _
+    else right _).
 
-  Solve Obligations with try red ; unfold complement ; program_simpl.
+  all : cbv [equiv eq_setoid] in *; try abstract congruence.
+  abstract (extensionality x; destruct x; auto).
+Defined.
 
-  Next Obligation.
-  Proof.
-    extensionality x.
-    destruct x ; auto.
-  Qed.
+Require Stdlib.Program.Program. (* for compat *)

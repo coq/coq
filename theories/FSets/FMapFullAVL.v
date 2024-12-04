@@ -27,8 +27,8 @@
 
 *)
 
-Require Program.
 Require Import FMapInterface FMapList ZArith Int FMapAVL Lia.
+Require Program.Wf.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -686,28 +686,32 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
   Definition cardinal_e_2 ee :=
    (cardinal_e (fst ee) + cardinal_e (snd ee))%nat.
 
-  Local Unset Keyed Unification.
-
-  Program Fixpoint compare_aux (ee:Raw.enumeration D.t * Raw.enumeration D.t)
-   { measure (cardinal_e_2 ee) } : comparison :=
-  match ee with
-  | (Raw.End _, Raw.End _) => Eq
-  | (Raw.End _, Raw.More _ _ _ _) => Lt
-  | (Raw.More _ _ _ _, Raw.End _) => Gt
-  | (Raw.More x1 d1 r1 e1, Raw.More x2 d2 r2 e2) =>
-      match X.compare x1 x2 with
-      | EQ _ => match D.compare d1 d2 with
-                | EQ _ => compare_aux (Raw.cons r1 e1, Raw.cons r2 e2)
-                | LT _ => Lt
-                | GT _ => Gt
-                end
-      | LT _ => Lt
-      | GT _ => Gt
-      end
-  end.
-  Next Obligation.
-  intros; unfold cardinal_e_2; simpl;
-  abstract (do 2 rewrite cons_cardinal_e; lia ).
+  Definition compare_aux : Raw.enumeration D.t * Raw.enumeration D.t -> comparison.
+  Proof.
+    refine (@Init.Wf.Fix _ (Program.Wf.MR lt (cardinal_e_2 )) _ _
+      (fun ee (compare_aux : forall ee', cardinal_e_2 ee' < _ -> _) =>
+      (let (e, e0) as ee' return (ee' = ee -> _) := ee in
+      match e with
+      | Raw.End _ => match e0 with
+        | Raw.End _ => fun _ => Eq
+        | Raw.More _ _ _ _ => fun _ => Lt
+        end
+      | Raw.More x1 d1 r1 e => match e0 with
+        | Raw.End _ => fun _ => Gt
+        | Raw.More x2 d2 r2 e0 => fun H => match X.compare x1 x2 as c return c = _ -> _ with
+          | LT _ => fun _ => Lt
+          | EQ _ => fun _ => match D.compare d1 d2 as c return c = _ -> _ with
+            | LT _ => fun _ => Lt
+            | EQ _ => fun _ => compare_aux (Raw.cons r1 e, Raw.cons r2 e0) _
+            | GT _ => fun _ => Gt
+              end eq_refl
+          | GT _ => fun _ => Gt
+          end eq_refl
+        end
+      end) eq_refl)).
+    { apply Wf.measure_wf, Nat.lt_wf_0. }
+    { clear compare_aux e3 e4 e5 e6; intros; unfold cardinal_e_2; simpl;
+      abstract (subst; simpl; do 2 rewrite cons_cardinal_e; lia ). }
   Defined.
 
   Definition Cmp c :=
@@ -736,13 +740,8 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
   Lemma compare_aux_Cmp : forall e,
    Cmp (compare_aux e) (flatten_e (fst e)) (flatten_e (snd e)).
   Proof.
-  intros e; unfold compare_aux.
-  match goal with [ |- context[Wf.Fix_sub _ _ _ _ ?f] ] => set (rec := f) end.
-  apply Wf.Fix_sub_rect.
-  + intros [[] []] g h Heq; simpl; try reflexivity.
-    repeat caseq; try reflexivity.
-    now apply Heq.
-  + intros [] IH wf; simpl.
+    induction e as [[]IH] using (well_founded_induction (Program.Wf.measure_wf Nat.lt_wf_0 cardinal_e_2));
+    cbv [compare_aux]; rewrite Fix_eq by (intros; repeat caseq; congruence).
     repeat caseq; simpl; try MX.elim_comp; auto.
     apply cons_Cmp; eauto.
     rewrite <- !cons_1; apply IH.
@@ -851,3 +850,4 @@ Module Make_ord (X: OrderedType)(D: OrderedType)
             with Module MapS.E := X
  :=IntMake_ord(Z_as_Int)(X)(D).
 
+Require Program. (* for compat *)

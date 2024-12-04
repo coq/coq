@@ -24,7 +24,6 @@ Require Export Stdlib.Classes.Equivalence.
 Require Import Stdlib.Logic.Decidable.
 Require Import Stdlib.Bool.Bool.
 Require Import Stdlib.Arith.Peano_dec.
-Require Import Stdlib.Program.Program.
 
 Generalizable Variables A B R.
 
@@ -55,7 +54,7 @@ Local Open Scope program_scope.
 
 (** Invert the branches. *)
 
-Program Definition nequiv_dec `{EqDec A} (x y : A) : { x =/= y } + { x === y } := 
+Definition nequiv_dec `{EqDec A} (x y : A) : { x =/= y } + { x === y } := 
           swap_sumbool (x == y).
 
 
@@ -80,80 +79,78 @@ Infix "<>b" := nequiv_decb (no associativity, at level 70).
    which setoid we're talking about. *)
 
 #[global]
-Program Instance nat_eq_eqdec : EqDec nat eq := eq_nat_dec.
+Instance nat_eq_eqdec : EqDec nat eq := eq_nat_dec.
 
 #[global]
-Program Instance bool_eqdec : EqDec bool eq := bool_dec.
+Instance bool_eqdec : EqDec bool eq := bool_dec.
 
 #[global]
-Program Instance unit_eqdec : EqDec unit eq := fun x y => in_left.
-
-  Next Obligation.
-  Proof.
-    do 2 match goal with [ x : () |- _ ] => destruct x end.
-    reflexivity.
-  Qed.
-
-#[global] Obligation Tactic := unfold complement, equiv ; program_simpl.
-#[export] Obligation Tactic := unfold complement, equiv ; program_simpl.
+Instance unit_eqdec : EqDec unit eq.
+Proof.
+  refine (fun x y => left _).
+  abstract (case x, y; reflexivity).
+Defined.
 
 #[global]
-Program Instance prod_eqdec `(EqDec A eq, EqDec B eq) :
-  EqDec (prod A B) eq :=
-  { equiv_dec x y :=
+Instance prod_eqdec `(EqDec A eq, EqDec B eq) :
+  EqDec (prod A B) eq.
+Proof.
+  refine (fun x y =>
     let '(x1, x2) := x in
     let '(y1, y2) := y in
     if x1 == y1 then
-      if x2 == y2 then in_left
-      else in_right
-    else in_right }.
+      if x2 == y2 then left _
+      else right _
+    else right _ ).
+  all : abstract (cbv [complement equiv] in *; congruence).
+Defined.
 
 #[global]
-Program Instance sum_eqdec `(EqDec A eq, EqDec B eq) :
-  EqDec (sum A B) eq := {
-  equiv_dec x y :=
+Instance sum_eqdec `(EqDec A eq, EqDec B eq) :
+  EqDec (sum A B) eq.
+Proof.
+  refine (fun x y =>
     match x, y with
-      | inl a, inl b => if a == b then in_left else in_right
-      | inr a, inr b => if a == b then in_left else in_right
-      | inl _, inr _ | inr _, inl _ => in_right
-    end }.
+      | inl a, inl b => if a == b then left _ else right _
+      | inr a, inr b => if a == b then left _ else right _
+      | inl _, inr _ | inr _, inl _ => right _
+    end ).
+  all : abstract (cbv [complement equiv] in *; congruence).
+Defined.
 
 (** Objects of function spaces with countable domains like bool have decidable
   equality. Proving the reflection requires functional extensionality though. *)
+Require Import FunctionalExtensionality.
 
 #[global]
-Program Instance bool_function_eqdec `(EqDec A eq) : EqDec (bool -> A) eq :=
-  { equiv_dec f g :=
+Instance bool_function_eqdec `(EqDec A eq) : EqDec (bool -> A) eq.
+Proof.
+  refine (fun f g =>
     if f true == g true then
-      if f false == g false then in_left
-      else in_right
-    else in_right }.
-
-  Next Obligation.
-  Proof.
-    extensionality x.
-    destruct x ; auto.
-  Qed.
+      if f false == g false then left _
+      else right _
+    else right _ ).
+  all : cbv [complement equiv] in *; try abstract congruence.
+  abstract (extensionality x; case x; trivial).
+Defined.
 
 Require Import List.
 
 #[global]
-Program Instance list_eqdec `(eqa : EqDec A eq) : EqDec (list A) eq :=
-  { equiv_dec :=
+Instance list_eqdec `(eqa : EqDec A eq) : EqDec (list A) eq.
+  refine (
     fix aux (x y : list A) :=
     match x, y with
-      | nil, nil => in_left
+      | nil, nil => left _
       | cons hd tl, cons hd' tl' =>
         if hd == hd' then
-          if aux tl tl' then in_left else in_right
-          else in_right
-      | _, _ => in_right
-    end }.
+          if aux tl tl' then left _ else right _
+          else right _
+      | _, _ => right _
+    end ).
+  all : abstract (cbv [complement equiv] in *; congruence).
+Defined.
 
-  Next Obligation.
-    match goal with y : list _ |- _ => destruct y end ;
-    unfold not in *; eauto.
-  Defined.
-
-  Solve Obligations with unfold equiv, complement in * ; 
-    program_simpl ; intuition (discriminate || eauto).
+Require Import Stdlib.Program.Program. (* for compat *)
+#[global] Obligation Tactic := unfold complement, equiv ; program_simpl.
+#[export] Obligation Tactic := unfold complement, equiv ; program_simpl.
