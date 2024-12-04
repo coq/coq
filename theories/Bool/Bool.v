@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+Require Import Stdlib.Logic.HLevelsBase.
 Require Import DecidableClass.
 
 (** The type [bool] is defined in the prelude as
@@ -23,13 +24,64 @@ Local Ltac Tauto.intuition_solver ::= auto with bool.
 Ltac destr_bool :=
  intros; destruct_all bool; simpl in *; trivial; try discriminate.
 
-(** Interpretation of booleans as propositions *)
+(** * Interpretation of booleans as propositions *)
 
 Definition Is_true (b:bool) :=
   match b with
     | true => True
     | false => False
   end.
+
+(** A proof of the resulting propositions can be wrapped to make it reduce
+   whenever the boolean is [true], even if the original proof is sealed. *)
+
+Definition transparent_Is_true' (b : bool) : (True -> Is_true b) -> Is_true b :=
+  match b with
+  | true => fun _ => I
+  | false => fun H => False_rect _ (H I)
+  end.
+
+Notation transparent_Is_true b pf := (transparent_Is_true' b (fun _ => pf)).
+
+(**
+<<
+Example transparent_Is_true_true pf : transparent_Is_true' true pf = I
+  := eq_refl.
+>>
+*)
+
+(** This is useful for efficiently implementing subset types in cases where the
+    subset-membership check is cheap enough to be performed after every
+    operation, instead of keeping around (a closure for) the validity proof.
+    Thunking ([True ->]) is to avoid cbv eagerly computing the proof.
+
+    For Example:
+<<
+#[projections(primitive)]
+Record bounded_nat (m : nat) : Set := of_nat_value {
+  to_nat : nat ;
+  to_nat_range' : Is_true (Nat.ltb to_nat m) }.
+
+Axiom three_less_than_seven : Is_true (Nat.ltb 3 7).
+Example three_two_ways :
+  of_nat_value 7 3 (transparent_Is_true _ three_less_than_seven) =
+  of_nat_value 7 3 I.
+Proof. compute. reflexivity. Qed.
+>>
+*)
+
+(** For advanced dependently-typed use, equalities between these proofs can in
+    turn be proven with a transparent and easy-to-normalize lemma: *)
+
+Definition Is_true_hprop b : IsHProp (Is_true b) :=
+  match b with
+  | true => true_hprop
+  | false => false_hprop
+  end.
+
+(** The previous proof is based on the encode-decode method of HoTT; it is
+   a special case of the more general result that decidable equality implies
+   IsHSet (originally Hedberg's theorem). *)
 
 (*******************)
 (** * Decidability *)
@@ -719,6 +771,29 @@ Proof.
 Qed.
 
 (** Lemmas about the [b = true] embedding of [bool] to [Prop] *)
+
+Definition not_eqtrue_false : not (eq_true false) :=
+  fun H => match H with end.
+
+Definition transparent_eq_true' b : (True -> eq_true b) -> eq_true b :=
+  match b with
+  | true => fun _ => is_eq_true
+  | _ => fun H => False_rect _ (not_eqtrue_false (H I))
+  end.
+
+Notation transparent_eq_true b pf := (transparent_eq_true' b (fun _ => pf)).
+
+Definition eq_any_transparent_eq_true b pf' : forall pf, transparent_eq_true b pf = pf'
+  := match pf' with is_eq_true => fun _ => eq_refl end.
+
+Definition eq_true_hprop b : IsHProp (eq_true b) :=
+  match b return IsHProp (eq_true b) with
+  | true => fun p q =>
+    eq_trans
+      (eq_sym (eq_any_transparent_eq_true _ p is_eq_true))
+      (eq_any_transparent_eq_true _ q is_eq_true)
+  | false => fun H => False_rect _ (not_eqtrue_false H)
+  end.
 
 Lemma eq_iff_eq_true : forall b1 b2, b1 = b2 <-> (b1 = true <-> b2 = true).
 Proof.
