@@ -62,6 +62,22 @@ intros n1 n2 H.
 apply pred_wd in H. now do 2 rewrite pred_succ in H.
 Qed.
 
+(* I cannot interpret this file at all. Error:
+    Cannot find a physical path bound to logical path
+    NZAxioms with prefix Stdlib.Numbers.NatInt.
+*) 
+Lemma Possucc_inj:
+  forall x y, x = y <-> Pos.succ x = Pos.succ y.
+Proof.
+  intros; split; intros.
+    + rewrite H; reflexivity.
+    + generalize dependent y. induction x using Pos.peano_ind; intros.
+      - repeat (discriminate || reflexivity || destruct y).
+      - rewrite <-Pos.add_1_r in H.
+        assert (H1: Pos.succ x = (Pos.succ y - 1)%positive). lia.
+        rewrite Pos.sub_1_r in H1. now rewrite Pos.pred_succ in H1.
+Qed.
+
 (* The following theorem is useful as an equivalence for proving
 bidirectional induction steps *)
 Theorem succ_inj_wd : forall n1 n2, S n1 == S n2 <-> n1 == n2.
@@ -78,6 +94,16 @@ Qed.
 
 (* We cannot prove that the predecessor is injective, nor that it is
 left-inverse to the successor at this point *)
+Lemma Pospred_inj:
+  forall x y, x <> 1%positive -> y <> 1%positive -> x = y <-> Pos.pred x = Pos.pred y.
+Proof.
+  intros; split; intros.
+  + rewrite H1; reflexivity.
+  + generalize dependent y. induction x using Pos.peano_ind; intros.
+      - repeat (discriminate || reflexivity || contradiction || destruct y).
+      - rewrite <-Pos.add_1_r in H.
+        assert (H2: Pos.succ x = (Pos.succ y - 1)%positive); try lia.
+Qed.
 
 Section CentralInduction.
 
