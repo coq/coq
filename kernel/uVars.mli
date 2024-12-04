@@ -24,13 +24,13 @@ sig
 
     Irrelevant <= Covariant, Contravariant <= Invariant
 
-            Invariant
+            (=) Invariant
               |   |
               v   v
-       Covariant  Contravariant
+    (+) Covariant  (-) Contravariant
               |   |
               v   v
-            Irrelevant
+            * Irrelevant
     *)
   val le : t -> t -> bool
 
@@ -108,10 +108,10 @@ end
 type impred_qvars_status =
   | Predicative
   | Impredicative of Sorts.QVar.Set.t
-type impred_qvars = impred_qvars_status option
-
-(** Set of potentially impredicative QVars under which the universe lives.
-  If there is an occurrence under a non-impredicative QVar somewhere, this is empty. *)
+  (** Set of potentially impredicative QVars under which the universe lives.
+    If there is an occurrence under a non-impredicative QVar somewhere,
+    this is empty. *)
+type impred_qvars = impred_qvars_status option (* None = not occurring *)
 
 val impred_qvars_of_quality : Sorts.Quality.t -> impred_qvars_status
 val update_impred_qvars : (Sorts.QVar.t -> Sorts.Quality.t option) -> impred_qvars -> impred_qvars
@@ -125,7 +125,8 @@ module VarianceOccurrence :
 sig
   (** Irrelevance and not appearing are represented both by [None] *)
   type t =
-    { in_binders : Variance.t option * int list; (* Max variance, binders where the level occurs *)
+    { in_binders : Variance.t option * int list;
+      (** Supremum of the variances, binders where the level occurs *)
       in_term : Variance.t option;
       in_type : Variance.t option;
       under_impred_qvars : impred_qvars }
