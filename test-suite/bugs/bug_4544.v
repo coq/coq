@@ -11,6 +11,9 @@ Require Stdlib.Init.Datatypes.
 Import Stdlib.Init.Notations.
 
 Global Set Universe Polymorphism.
+Set Polymorphic Definitions Cumulativity. (* Already implied *)
+Unset Polymorphic Assumptions Cumulativity. (* Already implied *)
+Set Polymorphic Inductive Cumulativity.
 
 Notation "A -> B" := (forall (_ : A), B) : type_scope.
 Global Set Primitive Projections.
@@ -109,14 +112,17 @@ Definition transport {A : Type} (P : A -> Type) {x y : A} (p : x = y) (u : P x) 
 
 Notation "p # x" := (transport _ p x) (right associativity, at level 65, only parsing) : path_scope.
 
+#[universes(cumulative)]
 Definition ap {A B:Type} (f:A -> B) {x y:A} (p:x = y) : f x = f y
   := match p with idpath => idpath end.
 
+#[universes(cumulative)]
 Definition pointwise_paths {A} {P:A->Type} (f g:forall x:A, P x)
   := forall x:A, f x = g x.
 
 Notation "f == g" := (pointwise_paths f g) (at level 70, no associativity) : type_scope.
 
+#[universes(polymorphic,cumulative)]
 Definition Sect {A B : Type} (s : A -> B) (r : B -> A) :=
   forall x : A, r (s x) = x.
 
@@ -158,13 +164,14 @@ Notation "-2" := minus_two (at level 0) : trunc_scope.
 Notation "-1" := (-2.+1) (at level 0) : trunc_scope.
 Notation "0" := (-1.+1) : trunc_scope.
 
-Fixpoint IsTrunc_internal (n : trunc_index) (A : Type) : Type :=
+#[universes(cumulative)]
+Fixpoint IsTrunc_internal (n : trunc_index) (A : Type) :=
   match n with
     | -2 => Contr_internal A
     | n'.+1 => forall (x y : A), IsTrunc_internal n' (x = y)
   end.
 
-Class IsTrunc (n : trunc_index) (A : Type) : Type :=
+Class IsTrunc (n : trunc_index) (A : Type@{i}) : Type@{i} :=
   Trunc_is_trunc : IsTrunc_internal n A.
 
 Global Instance istrunc_paths (A : Type) n `{H : IsTrunc n.+1 A} (x y : A)
@@ -179,7 +186,9 @@ Notation IsHProp := (IsTrunc -1).
 Monomorphic Axiom dummy_funext_type : Type0.
 Monomorphic Class Funext := { dummy_funext_value : dummy_funext_type }.
 
-Inductive Unit : Type1 :=
+Unset Universe Minimization ToSet.
+
+Inductive Unit@{l} : Type1@{l} :=
     tt : Unit.
 
 Class IsPointed (A : Type) := point : A.
@@ -307,8 +316,8 @@ admit.
 Defined.
 
 Section Adjointify.
-
-  Context {A B : Type} (f : A -> B) (g : B -> A).
+  Universes a b.
+  Context {A : Type@{a}} {B : Type@{b}} (f : A -> B) (g : B -> A).
   Context (isretr : Sect g f) (issect : Sect f g).
 
   Let issect' := fun x =>
@@ -318,7 +327,7 @@ Section Adjointify.
   Proof.
     unfold issect'.
     apply moveR_M1.
-    repeat rewrite ap_pp, concat_p_pp; rewrite <- ap_compose.
+    repeat rewrite ap_pp, concat_p_pp. rewrite <- ap_compose.
     rewrite (concat_pA1 (fun b => (isretr b)^) (ap f (issect a)^)).
     repeat rewrite concat_pp_p; rewrite ap_V; apply moveL_Vp; rewrite concat_p1.
     rewrite concat_p_pp, <- ap_compose.
@@ -452,7 +461,7 @@ Section Extensions.
     := match n with
          | O => Unit@{l}
          | S n => (forall (g : forall a, C (f a)),
-                     ExtensionAlong@{i j k l l} f C g) *
+                     ExtensionAlong@{i j k} f C g) *
                   forall (h k : forall b, C b),
                     ExtendableAlong n f (fun b => h b = k b)
        end.
@@ -474,7 +483,6 @@ Module Export Modalities.
 Module Export ReflectiveSubuniverse.
 
 Module Type ReflectiveSubuniverses.
-
   Parameter ReflectiveSubuniverse@{u a} : Type2@{u a}.
 
   Parameter O_reflector@{u a i} : forall (O : ReflectiveSubuniverse@{u a}),
@@ -492,14 +500,13 @@ Module Type ReflectiveSubuniverses.
   Parameter inO_equiv_inO@{u a i j k} :
       forall (O : ReflectiveSubuniverse@{u a}) (T : Type@{i}) (U : Type@{j})
              (T_inO : In@{u a i} O T) (f : T -> U) (feq : IsEquiv f),
-
         let gei := ((fun x => x) : Type@{i} -> Type@{k}) in
         let gej := ((fun x => x) : Type@{j} -> Type@{k}) in
         In@{u a j} O U.
 
   Parameter hprop_inO@{u a i}
   : Funext -> forall (O : ReflectiveSubuniverse@{u a}) (T : Type@{i}),
-                IsHProp (In@{u a i} O T).
+                IsHProp@{i} (In@{u a i} O T).
 
   Parameter extendable_to_O@{u a i j k}
   : forall (O : ReflectiveSubuniverse@{u a}) {P : Type2le@{i a}} {Q : Type2le@{j a}} {Q_inO : In@{u a j} O Q},
@@ -532,7 +539,7 @@ Module ReflectiveSubuniverses_Restriction
        (Res : ReflectiveSubuniverses_Restriction_Data Os)
 <: ReflectiveSubuniverses.
 
-  Definition ReflectiveSubuniverse := Res.New_ReflectiveSubuniverse.
+  Definition ReflectiveSubuniverse@{u a} := Res.New_ReflectiveSubuniverse@{u a}.
 
   Definition O_reflector@{u a i} (O : ReflectiveSubuniverse@{u a})
     := Os.O_reflector@{u a i} (Res.ReflectiveSubuniverses_restriction O).
@@ -556,7 +563,7 @@ Module ReflectiveSubuniverses_FamUnion
 <: ReflectiveSubuniverses.
 
   Definition ReflectiveSubuniverse@{u a} : Type2@{u a}
-    := Os1.ReflectiveSubuniverse@{u a} + Os2.ReflectiveSubuniverse@{u a}.
+    := (Os1.ReflectiveSubuniverse@{u a} + Os2.ReflectiveSubuniverse@{u a})%type.
 
   Definition O_reflector@{u a i} : forall (O : ReflectiveSubuniverse@{u a}),
                              Type2le@{i a} -> Type2le@{i a}.
@@ -592,7 +599,7 @@ Defined.
 
   Definition hprop_inO@{u a i}
   : Funext -> forall (O : ReflectiveSubuniverse@{u a}) (T : Type@{i}),
-                IsHProp (In@{u a i} O T).
+                IsHProp@{i} (In@{u a i} O T).
 admit.
 Defined.
 
@@ -636,7 +643,7 @@ Module Type Modalities.
 
   Parameter hprop_inO@{u a i}
   : Funext -> forall (O : Modality@{u a}) (T : Type@{i}),
-                IsHProp (In@{u a i} O T).
+                IsHProp@{i} (In@{u a i} O T).
 
 End Modalities.
 
@@ -652,7 +659,7 @@ Module Modalities_to_ReflectiveSubuniverses
 admit.
 Defined.
 
-  Definition ReflectiveSubuniverse := Modality.
+  Definition ReflectiveSubuniverse@{u a} := Modality@{u a}.
 
   Definition O_reflector@{u a i} := O_reflector@{u a i}.
 
@@ -668,6 +675,7 @@ Defined.
              (T_inO : In@{u a i} O T) (f : T -> U) (feq : IsEquiv f),
         In@{u a j} O U
     := inO_equiv_inO@{u a i j k}.
+
   Definition hprop_inO@{u a i}
   : Funext -> forall (O : ReflectiveSubuniverse@{u a}) (T : Type@{i}),
                 IsHProp (In@{u a i} O T)
@@ -702,7 +710,7 @@ Module EasyModalities_to_Modalities (Os : EasyModalities)
 
   Import Os.
 
-  Definition Modality := Modality.
+  Definition Modality@{u a} := Modality@{ u a}.
 
   Definition O_reflector@{u a i} := O_reflector@{u a i}.
   Definition to@{u a i} := to@{u a i}.
@@ -713,7 +721,7 @@ Module EasyModalities_to_Modalities (Os : EasyModalities)
 
   Definition hprop_inO@{u a i} `{Funext} (O : Modality@{u a})
              (T : Type@{i})
-  : IsHProp (In@{u a i} O T).
+  : IsHProp@{i} (In@{u a i} O T).
 admit.
 Defined.
 
@@ -722,7 +730,7 @@ Defined.
              (B_inO : forall oa, In@{u a j} O (B oa))
   : let gei := ((fun x => x) : Type@{i} -> Type@{k}) in
     let gej := ((fun x => x) : Type@{j} -> Type@{k}) in
-    (forall a, B (to O A a)) -> forall oa, B oa.
+    (forall a, B (to@{u a i} O A a)) -> forall oa, B oa.
 admit.
 Defined.
 
@@ -748,6 +756,7 @@ Defined.
     -
  intros; apply O_inO.
     -
+
  intros a; refine (O_ind_beta_internal@{u a i j k} O A (fun _ => O_reflector O B) _ _ a).
     -
  apply A_inO.
@@ -767,8 +776,9 @@ Defined.
  pattern x; refine (O_ind_internal O A _ _ _ x); intros.
         *
  apply minO_pathsO.
+
         *
- simpl; admit.
+    simpl; admit.
   Defined.
 
 End EasyModalities_to_Modalities.
@@ -821,21 +831,21 @@ Module Truncation_Modalities <: Modalities.
 
   Definition In (n : Modality@{u u'}) A := IsTrunc n A.
 
-  Definition O_inO (n : Modality@{u u'}) A : In n (O_reflector n A).
-admit.
-Defined.
+  Definition O_inO (n : Modality@{u u'}) (A : Type@{a}) : In@{u u' a} n (O_reflector@{u u' a} n A).
+  Proof. admit.
+  Defined.
 
   Definition to (n : Modality@{u u'}) A := @tr n A.
 
-  Definition inO_equiv_inO (n : Modality@{u u'})
+  Definition inO_equiv_inO@{u a i j k} (n : Modality@{u a})
              (A : Type@{i}) (B : Type@{j}) Atr f feq
   : let gei := ((fun x => x) : Type@{i} -> Type@{k}) in
     let gej := ((fun x => x) : Type@{j} -> Type@{k}) in
-    In n B
-  := @trunc_equiv A B f n Atr feq.
+    In@{u a j} n B
+  := @trunc_equiv@{i j} A B f n Atr feq.
 
-  Definition hprop_inO `{Funext} (n : Modality@{u u'}) A
-  : IsHProp (In n A).
+  Definition hprop_inO@{u a i} `{Funext} (n : Modality@{u a}) (A : Type@{i})
+  : IsHProp@{i} (In n A).
 admit.
 Defined.
 

@@ -32,16 +32,12 @@ let v := 0%upp in v : unit
      : unit
 let v := 0%ppps in v : punit
      : punit
-File "./output/NumberNotations.v", line 91, characters 2-46:
+File "./output/NumberNotations.v", line 91, characters 2-41:
 Warning: To avoid stack overflow, large numbers in punit are interpreted as
 applications of pto_punits. [abstract-large-number,numbers,default]
-File "./output/NumberNotations.v", line 91, characters 32-33:
-The command has indeed failed with message:
-In environment
-v := pto_punits (Number.UIntDecimal (Decimal.D1 Decimal.Nil)) : punit
-The term "v" has type "punit@{Set}" while it is expected to have type
- "punit@{u}"
-(universe inconsistency: Cannot enforce Set = u).
+let v := pto_punits (Number.UIntDecimal (Decimal.D1 Decimal.Nil)) in
+v : punit
+     : punit
 S
      : nat -> nat
 S (ack 4 4)

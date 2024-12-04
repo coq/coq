@@ -101,6 +101,7 @@ module Info : sig
   val make
     : ?loc:Loc.t
     -> ?poly:bool
+    -> ?cumulative:bool
     -> ?inline : bool
     -> ?kind : Decls.logical_kind
     (** Theorem, etc... *)

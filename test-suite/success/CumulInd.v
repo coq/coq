@@ -2,7 +2,7 @@
 (* variances other than Invariant are forbidden for non-cumul inductives *)
 Fail Inductive foo@{+u} : Prop := .
 Fail Polymorphic Inductive foo@{*u} : Prop := .
-Inductive foo@{=u} : Prop := .
+Inductive foo@{u} : Prop := .
 
 Set Universe Polymorphism.
 Set Polymorphic Inductive Cumulativity.
@@ -32,6 +32,6 @@ Inductive irrelevant@{*u} : Prop := .
 Definition irrelevant_with_weak@{u} : irrelevant@{u} -> irrelevant := fun x => x.
 
 Unset Cumulativity Weak Constraints.
-Fail Definition irrelevant_without_weak@{u} : irrelevant@{u} -> irrelevant := fun x => x.
-Definition irrelevant_without_weak@{u+} : irrelevant@{u} -> irrelevant := fun x => x.
-Check irrelevant_without_weak@{_ _}.
+Definition irrelevant_without_weak@{u} : irrelevant@{u} -> irrelevant := fun x => x.
+Definition irrelevant_without_weak'@{u?} : irrelevant@{u} -> irrelevant := fun x => x.
+Check irrelevant_without_weak@{_}.

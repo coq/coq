@@ -20,7 +20,7 @@ open Constrexpr
 (***********)
 (* Universes *)
 
-let expr_Type_sort = None, UAnonymous {rigid=UnivRigid}
+let expr_Type_sort rigid = None, UAnonymous {rigid}
 let expr_SProp_sort = None, UNamed [CSProp, 0]
 let expr_Prop_sort = None, UNamed [CProp, 0]
 let expr_Set_sort = None, UNamed [CSet, 0]
@@ -51,19 +51,27 @@ let relevance_expr_eq a b = match a, b with
 
 let relevance_info_expr_eq = Option.equal relevance_expr_eq
 
-let univ_level_expr_eq u1 u2 =
-  Glob_ops.glob_sort_gen_eq sort_name_expr_eq u1 u2
+let universe_expr_eq u1 u2 =
+  List.equal (fun (x,m) (y,n) -> sort_name_expr_eq x y && Int.equal m n) u1 u2
+
+let opt_universe_expr_eq u1 u2 =
+  Glob_ops.glob_sort_gen_eq universe_expr_eq u1 u2
 
 let sort_expr_eq (q1, l1) (q2, l2) =
-  Option.equal qvar_expr_eq q1 q2 &&
-  Glob_ops.glob_sort_gen_eq
-    (List.equal (fun (x,m) (y,n) ->
-      sort_name_expr_eq x y
-      && Int.equal m n))
-    l1 l2
+  Option.equal qvar_expr_eq q1 q2 && opt_universe_expr_eq l1 l2
 
 let instance_expr_eq (q1,u1) (q2,u2) =
-  List.equal quality_expr_eq q1 q2 && List.equal univ_level_expr_eq u1 u2
+  List.equal quality_expr_eq q1 q2 && List.equal opt_universe_expr_eq u1 u2
+
+let cumul_of_univ_decl : Constrexpr.universe_decl_expr -> Constrexpr.cumul_univ_decl_expr =
+  fun x ->
+    { univdecl_qualities = x.univdecl_qualities;
+    univdecl_extensible_qualities = x.univdecl_extensible_qualities;
+    univdecl_instance = List.map (fun lid -> lid, None) x.univdecl_instance;
+    univdecl_extensible_instance = x.univdecl_extensible_instance;
+    univdecl_variances = x.univdecl_variances;
+    univdecl_constraints = x.univdecl_constraints;
+    univdecl_extensible_constraints = x.univdecl_extensible_constraints }
 
 (***********************)
 (* For binders parsing *)

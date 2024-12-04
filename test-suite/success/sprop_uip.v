@@ -6,10 +6,12 @@ Set Warnings "+bad-relevance".
 
 (** Case inversion, conversion and universe polymorphism. *)
 Set Universe Polymorphism.
+Set Polymorphic Inductive Cumulativity.
+
 Inductive IsTy@{i j} : Type@{j} -> SProp :=
   isty : IsTy Type@{i}.
 
-Definition IsTy_rec_red@{i j+} (P:forall T : Type@{j}, IsTy@{i j} T -> Set)
+Definition IsTy_rec_red@{i j?} (P:forall T : Type@{j}, IsTy@{i j} T -> Set)
            v (e:IsTy@{i j} Type@{i})
   : IsTy_rec P v _ e = v
   := eq_refl.

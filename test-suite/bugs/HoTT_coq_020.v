@@ -38,7 +38,7 @@ Section NaturalTransformationComposition.
   Polymorphic Definition NTComposeT (T' : NaturalTransformation F' F'') (T : NaturalTransformation F F') :
     NaturalTransformation F F''.
     exists (fun c => Compose _ _ _ _ (T' c) (T c)).
-    repeat progress present_obj @Morphism @Morphism. (* removing this line makes the error go away *)
+    try progress present_obj @Morphism @Morphism. (* removing this line makes the error go away *)
     intros. (* removing this line makes the error go away *)
     admit.
   Defined.

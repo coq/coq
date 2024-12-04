@@ -58,9 +58,20 @@ let pr_red_expr =
     (pr_constr_expr, pr_lconstr_expr, pr_smart_global, pr_constr_expr, pr_or_var int)
     keyword
 
-let pr_uconstraint (l, d, r) =
-  pr_sort_name_expr l ++ spc () ++ Univ.pr_constraint_type d ++ spc () ++
-  pr_sort_name_expr r
+let pr_incr pr (x, k) =
+  pr x ++ (if k = 0 then mt() else str"+" ++ int k)
+
+let pr_universe_expr =
+  prlist_with_sep (fun () -> str",") (pr_incr pr_sort_name_expr)
+
+let pr_constraint_type d k =
+  match d with
+  | Univ.Le -> if k then str"<" else str"<="
+  | Univ.Eq -> str"="
+
+let pr_uconstraint (l, (d, k), r) =
+  pr_universe_expr l ++ spc () ++ pr_constraint_type d k ++ spc () ++
+  pr_universe_expr r
 
 let pr_full_univ_name_list = function
   | None -> mt()
@@ -131,7 +142,7 @@ let pr_lfqid {CAst.loc;v=fqid} =
     pr_located pr_fqid @@ Loc.tag ~loc:(Loc.make_loc (b,b + String.length (string_of_fqid fqid))) fqid
 
 let pr_lname_decl (n, u) =
-  pr_lname n ++ pr_universe_decl u
+  pr_lname n ++ pr_cumul_univ_decl u
 
 let pr_ltac_ref = Libnames.pr_qualid
 
@@ -527,14 +538,14 @@ let pr_where_notation decl_ntn =
 let pr_rec_definition (rec_order, { fname; univs; binders; rtype; body_def; notations }) =
   let pr_pure_lconstr c = Flags.without_option Flags.beautify pr_lconstr c in
   let annot = pr_guard_annot pr_lconstr_expr binders rec_order in
-  pr_ident_decl (fname,univs) ++ pr_binders_arg binders ++ annot
+  pr_cumul_ident_decl (fname,univs) ++ pr_binders_arg binders ++ annot
   ++ pr_type_option (fun c -> spc() ++ pr_lconstr_expr c) rtype
   ++ pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_pure_lconstr def) body_def
   ++ prlist pr_where_notation notations
 
 let pr_statement head (idpl,(bl,c)) =
   hov 2
-    (head ++ spc() ++ pr_ident_decl idpl ++ spc() ++
+    (head ++ spc() ++ pr_cumul_ident_decl idpl ++ spc() ++
      (match bl with [] -> mt() | _ -> pr_binders bl ++ spc()) ++
      str":" ++ pr_spc_lconstr c)
 
@@ -885,7 +896,7 @@ let pr_synpure_vernac_expr v =
   | VernacAssumption ((discharge,kind),t,l) ->
     let n = List.length (List.flatten (List.map fst (List.map snd l))) in
     let pr_params (c, (xl, t)) =
-      hov 2 (prlist_with_sep sep pr_ident_decl xl ++ spc() ++
+      hov 2 (prlist_with_sep sep pr_cumul_ident_decl xl ++ spc() ++
              str(match c with AddCoercion -> ":>" | NoCoercion -> ":") ++ spc() ++ pr_lconstr_expr t) in
     let assumptions = prlist_with_sep spc (fun p -> hov 1 (str "(" ++ pr_params p ++ str ")")) l in
     return (hov 2 (pr_assumption_token (n > 1) discharge kind ++
@@ -893,7 +904,7 @@ let pr_synpure_vernac_expr v =
   | VernacSymbol l ->
     let n = List.length (List.flatten (List.map fst (List.map snd l))) in
     let pr_params (c, (xl, t)) =
-      hov 2 (prlist_with_sep sep pr_ident_decl xl ++ spc() ++
+      hov 2 (prlist_with_sep sep pr_cumul_ident_decl xl ++ spc() ++
               str(match c with AddCoercion -> ":>" | NoCoercion -> ":") ++ spc() ++ pr_lconstr_expr t) in
     let assumptions = prlist_with_sep spc (fun p -> hov 1 (str "(" ++ pr_params p ++ str ")")) l in
     return (hov 2 (keyword (if (n > 1) then "Symbols" else "Symbol") ++ spc() ++ assumptions))
@@ -950,7 +961,7 @@ let pr_synpure_vernac_expr v =
       | NoDischarge -> str ""
     in
     let pr_onecorec {fname; univs; binders; rtype; body_def; notations } =
-      pr_ident_decl (fname,univs) ++ spc() ++ pr_binders binders ++ spc() ++ str":" ++
+      pr_cumul_ident_decl (fname,univs) ++ spc() ++ pr_binders binders ++ spc() ++ str":" ++
       spc() ++ pr_lconstr_expr rtype ++
       pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_lconstr def) body_def ++
       prlist pr_where_notation notations
@@ -1019,7 +1030,7 @@ let pr_synpure_vernac_expr v =
       hov 1 (
         keyword "Instance" ++
         (match instid with
-         | {loc; v = Name id}, l -> spc () ++ pr_ident_decl (CAst.(make ?loc id),l) ++ spc ()
+         | {loc; v = Name id}, l -> spc () ++ pr_cumul_ident_decl (CAst.(make ?loc id),l) ++ spc ()
          | { v = Anonymous }, _ -> mt ()) ++
         pr_and_type_binders_arg sup ++
         str":" ++ spc () ++
@@ -1219,6 +1230,14 @@ let pr_synpure_vernac_expr v =
     let pr_i = match io with None -> mt ()
                            | Some i -> Goal_select.pr_goal_selector i ++ str ": " in
     return (pr_i ++ pr_mayeval r c)
+  | VernacCheckConstraint (c,io) ->
+    let pr_check_constraint c =
+      hov 2 (keyword "Check" ++ spc() ++ keyword "Constraint" ++
+      prlist_with_sep (fun _ -> str",") pr_uconstraint c)
+    in
+    let pr_i = match io with None -> mt ()
+    | Some i -> Goal_select.pr_goal_selector i ++ str ": " in
+    return (pr_i ++ pr_check_constraint c)
   | VernacGlobalCheck c ->
     return (hov 2 (keyword "Type" ++ pr_constrarg c))
   | VernacDeclareReduction (s,r) ->
@@ -1259,7 +1278,7 @@ let pr_synpure_vernac_expr v =
     )
   | VernacPrimitive(id,r,typopt) ->
     hov 2
-      (keyword "Primitive" ++ spc() ++ pr_ident_decl id ++
+      (keyword "Primitive" ++ spc() ++ pr_cumul_ident_decl id ++
        (Option.cata (fun ty -> spc() ++ str":" ++ pr_spc_lconstr ty) (mt()) typopt) ++ spc() ++
        str ":=" ++ spc() ++
        str (CPrimitives.op_or_type_to_string r))

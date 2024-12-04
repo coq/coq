@@ -15,7 +15,7 @@ Fixpoint In (a : A) (s : set) {struct s} : Prop :=
   | Add b s' => a = b \/ In a s'
   end.
 
-Definition same (s t : set) : Prop := forall a : A, In a s <-> In a t.
+Definition same (s t : set) : Prop := forall a : A, iff (In a s) (In a t).
 
 Lemma setoid_set : Setoid_Theory set same.
 
@@ -230,7 +230,7 @@ End InType.
 
 Module Polymorphism.
 Require Import CRelationClasses CMorphisms.
-
+Set Universe Polymorphism.
 #[universes(polymorphic, cumulative)]
 Inductive plist@{i} (A : Type@{i}) : Type@{i} :=
 | pnil : plist A
@@ -246,27 +246,28 @@ Arguments psnd {A B}.
 
 Notation "x :: xs" := (pcons x xs).
 
-#[universes(polymorphic)]
+(* #[universes(polymorphic)]
 Fixpoint All@{i j} {A : Type@{i}} (P : A -> Type@{j}) (l : plist A) : Type@{j} :=
  match l with
  | pnil => unit
  | x :: xs => pprod (P x) (All P xs)
- end.
-(*
+ end. *)
+
 #[universes(polymorphic, cumulative)]
-Inductive All {A : Type} (P : A -> Type) : list A -> Type :=
-| All_nil : All P nil
-| All_cons x (px : P x) xs (pxs : All P xs) : All P (x :: xs). *)
+Inductive All {A : Type} (P : A -> Type) : plist A -> Type :=
+| All_nil : All P pnil
+| All_cons x (px : P x) xs (pxs : All P xs) : All P (x :: xs).
 
 #[universes(polymorphic)]
 Lemma All_impl {A} (P Q : A -> Type) l : (forall x, P x -> Q x) -> All P l -> All Q l.
 Proof.
   intros HP.
-  induction l; [intros|intros []]; constructor; eauto.
+  induction 1; constructor; auto.
+  (* induction l; [intros|intros []]; constructor; eauto. *)
 Qed.
 Check pointwise_relation.
 
-#[universes(polymorphic)]
+#[universes(polymorphic, cumulative)]
 Inductive peq@{i} (A : Type@{i}) (a : A) : A -> Type@{i} :=
   peq_refl : peq A a a.
 
@@ -280,15 +281,18 @@ Axiom add_0_r_peq : forall x : nat, peq (x + 0)%nat x.
 Instance peq_left {A : Type} {B : Type} {R : crelation B} (f : A -> B) `{Reflexive B R} : Proper (peq ==> R) f.
 Admitted.
 
-#[export] Instance reflexive_eq_dom_reflexive@{i j jr mij mijr} {A : Type@{i}} {B : Type@{j}} (R : crelation@{j jr} B) :
+#[universes(polymorphic), export]
+Instance reflexive_eq_dom_reflexive@{i j jr ?}
+ {A : Type@{i}} {B : Type@{j}} (R : crelation@{j jr} B) :
   Reflexive@{j jr} R ->
-  Reflexive@{mij mijr} (@peq A ==> R)%signatureT.
+  Reflexive (respectful (@peq A) R)%signatureT.
 Proof.
   intros hr x ? ? e. destruct e. apply hr.
+  Show Proof.
 Qed.
-
+Unset Strict Universe Declaration.
 #[universes(polymorphic), export]
-Instance All_proper {A} :
+Instance All_proper {A : Type@{a}} : (* FIXME: removing @{a} does the wrong minimization *)
   CMorphisms.Proper ((pointwise_relation A iffT) ==> peq ==> iffT) All.
 Proof.
   intros f g Hfg x y e. destruct e. split; apply All_impl, Hfg.
@@ -317,10 +321,11 @@ Lemma rewrite_all_in {l : plist nat} (Q : nat -> Type) :
   All (fun x => Q (x + 0)) l ->
   All (fun x => Q x) l.
 Proof.
-  intros a.  Show Universes.
+  intros a.
   setoid_rewrite add_0_r_peq in a.
   exact a.
 Qed.
+Check rewrite_all_in@{Set}.
 
 Lemma rewrite_all_in2 {l : plist nat} (Q : nat -> Type) (R : nat -> Type) :
   All (fun x => pprod (Q (x + 0)%nat) (R x))%type l ->
@@ -330,4 +335,6 @@ Proof.
   setoid_rewrite add_0_r_peq in a.
   exact a.
 Qed.
+Check rewrite_all_in2@{0 0}.
+
 End Polymorphism.

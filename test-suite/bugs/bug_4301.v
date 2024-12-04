@@ -5,7 +5,7 @@ Module Type Foo.
   Parameter U : Type.
 End Foo.
 
-Module Lower (X : Foo with Definition U := True : Type).
+Module Lower (X : Foo with Definition U := True : Type@{_}).
 End Lower.
 
 Module M : Foo.

@@ -2,8 +2,7 @@
      : array nat
 [| 1; 2; 3 | 0 : nat |]
      : array nat
-[| | 0 : nat |]@{Set}
-     : array@{Set} nat
-[| bool; list nat | nat : Set |]@{prim_array.29}
-     : array@{prim_array.29} Set
-(* {prim_array.29} |= Set < prim_array.29 *)
+[| | 0 : nat |]@{0}
+     : array@{0} nat
+[| bool; list nat | nat : Set |]@{1}
+     : array@{1} Set

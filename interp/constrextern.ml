@@ -909,12 +909,20 @@ let extern_glob_sort uvars (s:glob_sort) =
     | _ -> false
   in
   if really_extern then extern_glob_sort uvars s
-  else Constrexpr_ops.expr_Type_sort
+  else
+    match s with
+    | _, UNamed _ -> Constrexpr_ops.expr_Type_sort UState.univ_rigid
+    | _, UAnonymous { rigid } -> Constrexpr_ops.expr_Type_sort rigid
+
+
+let extern_glob_level uvars u =
+  let map l = List.map (on_fst (extern_glob_sort_name uvars)) l in
+  map_glob_sort_gen map u
 
 let extern_instance uvars = function
   | Some (ql,ul) when !print_universes ->
     let ql = List.map extern_glob_quality ql in
-    let ul = List.map (map_glob_sort_gen (extern_glob_sort_name uvars)) ul in
+    let ul = List.map (extern_glob_level uvars) ul in
     Some (ql,ul)
   | _ -> None
 

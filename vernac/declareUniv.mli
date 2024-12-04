@@ -31,3 +31,6 @@ val add_constraint_source : GlobRef.t -> Univ.ContextSet.t -> unit
 
 val constraint_sources : unit -> (GlobRef.t * Univ.Constraints.t) list
 (** Returns constraints associated to globrefs, newest first. *)
+
+(** Command [Check Constraint] *)
+val check_constraint : Environ.env -> Evd.evar_map -> Constrexpr.univ_constraint_expr list -> unit

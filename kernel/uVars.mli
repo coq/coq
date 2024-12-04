@@ -15,30 +15,179 @@ open Sorts
 
 module Variance :
 sig
-  (** A universe position in the instance given to a cumulative
-     inductive can be the following. Note there is no Contravariant
-     case because [forall x : A, B <= forall x : A', B'] requires [A =
-     A'] as opposed to [A' <= A]. *)
-  type t = Irrelevant | Covariant | Invariant
+  (** A universe variance in the instance given to a cumulative
+     inductive or definition can be the following. *)
+  type t = Irrelevant | Covariant | Contravariant | Invariant
 
-  (** [check_subtype x y] holds if variance [y] is also an instance of [x] *)
-  val check_subtype : t -> t -> bool
+  (** [le x y] holds if variance [x] is also an instance of [y].
+    I.e. [x] is smaller than [y] for the order
 
+    Irrelevant <= Covariant, Contravariant <= Invariant
+
+            (=) Invariant
+              |   |
+              v   v
+    (+) Covariant  (-) Contravariant
+              |   |
+              v   v
+            * Irrelevant
+    *)
+  val le : t -> t -> bool
+
+  (** [sup x y] computes the supremum of [x] and [y] for the order above *)
   val sup : t -> t -> t
+
+  val sup_variances : t list -> t option
+  (** [sup_variances l] computes the supremum of all the given variances, returning [None]
+    if the list is empty *)
 
   val pr : t -> Pp.t
 
   val equal : t -> t -> bool
 
+  val opp : t -> t
+  (** Flips Co and Contra variance, no-op on Invariant and Irrelevant *)
 end
+
+type application = FullyApplied | NumArgs of int
+val is_applied : application -> int -> bool
+val is_applied_enough : application -> int -> bool
+
+module Position :
+sig
+  type t =
+  | InBinder of int
+  | InTerm | InType
+
+  val equal : t -> t -> bool
+  val le : t -> t -> bool
+
+  val pr : t -> Pp.t
+
+  (* Lifting for binder positions *)
+  val lift : int -> t -> t
+end
+
+module VariancePos :
+sig
+  type t = Variance.t * Position.t
+
+  val make : Variance.t -> Position.t -> t
+  val pr : t -> Pp.t
+  val equal : t -> t -> bool
+  val le : t -> t -> bool
+  val lift : int -> t -> t
+
+  val variance : application -> t -> Variance.t
+end
+
+module ApplicationVariances :
+sig
+  type t
+
+  val length : t -> int
+  val pr : t -> Pp.t
+  val equal : t -> t -> bool
+  val le : t -> t -> bool
+
+  val lift : int -> t -> t
+
+  val eq_sizes : t -> t -> bool
+
+  (* Invariant variances *)
+  val make : int -> VariancePos.t -> t
+
+  val of_array : VariancePos.t array -> t
+  val repr : t -> VariancePos.t array
+
+  val append : t -> t -> t
+end
+
+(** {6 Variance occurrences} *)
+
+type impred_qvars_status =
+  | Predicative
+  | Impredicative of Sorts.QVar.Set.t
+  (** Set of potentially impredicative QVars under which the universe lives.
+    If there is an occurrence under a non-impredicative QVar somewhere,
+    this is empty. *)
+type impred_qvars = impred_qvars_status option (* None = not occurring *)
+
+val impred_qvars_of_quality : Sorts.Quality.t -> impred_qvars_status
+val update_impred_qvars : (Sorts.QVar.t -> Sorts.Quality.t option) -> impred_qvars -> impred_qvars
+val pr_impred_qvars : impred_qvars -> Pp.t
+val union_impred_qvars : impred_qvars -> impred_qvars -> impred_qvars
+
+type assumption_or_definition =
+  Assumption | Definition
+
+module VarianceOccurrence :
+sig
+  (** Irrelevance and not appearing are represented both by [None] *)
+  type t =
+    { in_binders : Variance.t option * int list;
+      (** Supremum of the variances, binders where the level occurs *)
+      in_term : Variance.t option;
+      in_type : Variance.t option;
+      under_impred_qvars : impred_qvars }
+
+  val default_occ : t
+
+  val lift : int -> t -> t
+  (** [lift n occ] Lifts the [InBinder] annotation in [occ] by [n] *)
+
+  val pr : t -> Pp.t
+
+  val le : t -> t -> bool
+  val equal : t -> t -> bool
+
+  val term_variance : t -> Variance.t
+
+  val term_variance_pos : t -> VariancePos.t
+
+  val typing_and_cumul_variance : nargs:int -> t -> Variance.t * Variance.t
+
+  val typing_and_cumul_variance_app : ?with_type:bool -> application -> t -> Variance.t * Variance.t
+
+  val variance_app : application -> t -> Variance.t
+
+  val under_impred_qvars : t -> impred_qvars
+
+end
+
+module Variances :
+sig
+  type t
+
+  val make : VarianceOccurrence.t array -> t
+
+  val make_full : VarianceOccurrence.t array -> ApplicationVariances.t -> t
+
+  val repr : t -> VarianceOccurrence.t array
+
+  val lift : int -> t -> t
+
+  val split : int -> t -> t * t
+  val append : t -> t -> t
+
+  val pr : t -> Pp.t
+
+  val le : t -> t -> bool
+  val equal : t -> t -> bool
+  val eq_sizes : t -> t -> bool
+
+  val application_variances : t -> ApplicationVariances.t
+end
+
+type variances = Variances.t
 
 (** {6 Universe instances} *)
 
-module Instance :
+module LevelInstance :
 sig
   type t
-  (** A universe instance represents a vector of argument universes
-      and sort qualities to a polymorphic definition
+  (** A universe level instance represents a vector of argument
+      universe levels and sort qualities to a polymorphic definition
       (constant, inductive or constructor). *)
 
   val empty : t
@@ -68,7 +217,7 @@ sig
   val share : t -> t * int
   (** Simultaneous hash-consing and hash-value computation *)
 
-  val pr : (QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
+  val pr : (QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variances:variances -> t -> Pp.t
   (** Pretty-printing, no comments *)
 
   val levels : t -> Quality.Set.t * Level.Set.t
@@ -78,10 +227,59 @@ sig
     : (QVar.t -> Quality.t) * (Level.t -> Level.t)
     -> t -> t
 
+end
+
+module Instance :
+sig
+  type t
+  (** A universe instance represents a vector of argument universes
+      and sort qualities to a polymorphic definition
+      (constant, inductive or constructor). *)
+
+  val empty : t
+  val is_empty : t -> bool
+
+  val of_array : Quality.t array * Universe.t array -> t
+  val to_array : t -> Quality.t array * Universe.t array
+
+  val of_level_instance : LevelInstance.t -> t
+
+  val abstract_instance : int * int -> t
+  (** Instance of the given size made of QVar/Level.var *)
+
+  val append : t -> t -> t
+  (** To concatenate two instances, used for discharge *)
+
+  val equal : t -> t -> bool
+  (** Equality *)
+
+  val length : t -> int * int
+  (** Instance length *)
+
+  val hcons : t -> t
+  (** Hash-consing. *)
+
+  val hash : t -> int
+  (** Hash value *)
+
+  val share : t -> t * int
+  (** Simultaneous hash-consing and hash-value computation *)
+
+  val pr : (QVar.t -> Pp.t) -> (Universe.t -> Pp.t) -> ?variances:ApplicationVariances.t -> t -> Pp.t
+  (** Pretty-printing, no comments *)
+
+  val levels : t -> Quality.Set.t * Level.Set.t
+  (** The set of levels in the instance *)
+
+  val subst_fn
+    : (QVar.t -> Quality.t) * (Level.t -> Universe.t)
+    -> t -> t
+
   type mask = Quality.pattern array * int option array
 
-  val pattern_match : mask -> t -> ('term, Quality.t, Level.t) Partial_subst.t -> ('term, Quality.t, Level.t) Partial_subst.t option
+  val pattern_match : mask -> t -> ('term, Quality.t, Universe.t) Partial_subst.t -> ('term, Quality.t, Universe.t) Partial_subst.t option
   (** Pattern matching, as used by the rewrite rules mechanism *)
+
 end
 
 val eq_sizes : int * int -> int * int -> bool
@@ -91,8 +289,8 @@ type 'a quconstraint_function = 'a -> 'a -> Sorts.QUConstraints.t -> Sorts.QUCon
 
 val enforce_eq_instances : Instance.t quconstraint_function
 
-val enforce_eq_variance_instances : Variance.t array -> Instance.t quconstraint_function
-val enforce_leq_variance_instances : Variance.t array -> Instance.t quconstraint_function
+val enforce_eq_variance_instances : nargs:application -> Variances.t -> Instance.t quconstraint_function
+val enforce_leq_variance_instances : nargs:application -> Variances.t -> Instance.t quconstraint_function
 
 type 'a puniverses = 'a * Instance.t
 val out_punivs : 'a puniverses -> 'a
@@ -110,12 +308,12 @@ module UContext :
 sig
   type t
 
-  val make : bound_names -> Instance.t constrained -> t
+  val make : bound_names -> LevelInstance.t constrained -> t
 
   val empty : t
   val is_empty : t -> bool
 
-  val instance : t -> Instance.t
+  val instance : t -> LevelInstance.t
   val constraints : t -> Constraints.t
 
   val union : t -> t -> t
@@ -136,7 +334,7 @@ sig
   val sort_qualities : Quality.t array -> Quality.t array
   (** Arbitrary choice of linear order of the variables *)
 
-  val of_context_set : (Instance.t -> bound_names) -> QVar.Set.t -> ContextSet.t -> t
+  val of_context_set : (LevelInstance.t -> bound_names) -> QVar.Set.t -> ContextSet.t -> t
   (** Build a vector of universe levels assuming a function generating names *)
 
   val to_context_set : t -> Quality.Set.t * ContextSet.t
@@ -216,6 +414,8 @@ val subst_sort_level_sort : sort_level_subst -> Sorts.t -> Sorts.t
 
 val subst_sort_level_relevance : sort_level_subst -> Sorts.relevance -> Sorts.relevance
 
+val subst_sort_level_variances : sort_level_subst -> Variances.t -> Variances.t
+
 (** Substitution of instances *)
 val subst_instance_instance : Instance.t -> Instance.t -> Instance.t
 val subst_instance_universe : Instance.t -> Universe.t -> Universe.t
@@ -224,19 +424,26 @@ val subst_instance_sort : Instance.t -> Sorts.t -> Sorts.t
 val subst_instance_relevance : Instance.t -> Sorts.relevance -> Sorts.relevance
 val subst_instance_sort_level_subst : Instance.t -> sort_level_subst -> sort_level_subst
 
-val make_instance_subst : Instance.t -> sort_level_subst
+(** Substitution of level instances *)
+val subst_level_instance_instance : LevelInstance.t -> Instance.t -> Instance.t
+val subst_level_instance_universe : LevelInstance.t -> Universe.t -> Universe.t
+val subst_level_instance_sort : LevelInstance.t -> Sorts.t -> Sorts.t
+val subst_level_instance_relevance : LevelInstance.t -> Sorts.relevance -> Sorts.relevance
+
+val make_instance_subst : LevelInstance.t -> sort_level_subst
 (** Creates [u(0) ↦ 0; ...; u(n-1) ↦ n - 1] out of [u(0); ...; u(n - 1)] *)
 
-val abstract_universes : UContext.t -> Instance.t * AbstractContext.t
+val abstract_universes : UContext.t -> LevelInstance.t * AbstractContext.t
 (** TODO: move universe abstraction out of the kernel *)
 
+val make_abstract_level_instance : AbstractContext.t -> LevelInstance.t
 val make_abstract_instance : AbstractContext.t -> Instance.t
 
 (** {6 Pretty-printing of universes. } *)
 
-val pr_universe_context : (QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variance:Variance.t array ->
+val pr_universe_context : (QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variances:variances ->
   UContext.t -> Pp.t
-val pr_abstract_universe_context : (QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variance:Variance.t array ->
+val pr_abstract_universe_context : (QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variances:variances ->
   AbstractContext.t -> Pp.t
 
 (** {6 Hash-consing } *)

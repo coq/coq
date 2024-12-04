@@ -130,7 +130,7 @@ Definition adapted_couple_opt (f:R -> R) (a b:R) (l lf:list R) :=
     pos_Rl lf i <> pos_Rl lf (S i) \/ f (pos_Rl l (S i)) <> pos_Rl lf i) /\
   (forall i:nat, (i < pred (length l))%nat -> pos_Rl l i <> pos_Rl l (S i)).
 
-Definition is_subdivision (f:R -> R) (a b:R) (l:list R) : Type :=
+Definition is_subdivision@{i} (f:R -> R) (a b:R) (l:list R) : Type@{i} :=
   { l0:list R & adapted_couple f a b l l0 }.
 
 Definition IsStepFun (f:R -> R) (a b:R) : Type :=

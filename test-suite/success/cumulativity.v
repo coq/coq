@@ -23,7 +23,7 @@ Fail Definition LowerTp@{i j|j < i} : Tp@{i} -> Tp@{j} := fun x => x.
 
 Record Tp' := { tp' : Tp }.
 
-Definition CTp := Tp.
+Definition CTp@{u} := Tp@{u}. (* FIXME? *)
 (* here we have to reduce a constant to infer the correct subtyping. *)
 Record Tp''@{+u} := { tp'' : CTp@{u} }.
 
@@ -48,7 +48,7 @@ Record B (X : A) : Type := { b : X; }.
 NonCumulative Inductive NCList (A: Type)
   := ncnil | nccons : A -> NCList A -> NCList A.
 
-Fail Definition LiftNCL@{k i j|k <= i, k <= j} {A:Type@{k}}
+Definition LiftNCL@{k i j|k <= i, k <= j} {A:Type@{k}}
   : NCList@{i} A -> NCList@{j} A := fun x => x.
 
 Inductive eq@{i} {A : Type@{i}} (x : A) : A -> Type@{i} := eq_refl : eq x x.
@@ -70,11 +70,11 @@ End down.
 
 Record Arrow@{i j} := { arrow : Type@{i} -> Type@{j} }.
 
-Fail Definition arrow_lift@{i i' j j' | i' < i, j < j'}
+Definition arrow_lift@{i i' j j' | i' < i, j < j'}
   : Arrow@{i j} -> Arrow@{i' j'}
   := fun x => x.
 
-Definition arrow_lift@{i i' j j' | i' = i, j <= j'}
+Definition arrow_lift_inv@{i i' j j' | i' = i, j <= j'}
   : Arrow@{i j} -> Arrow@{i' j'}
   := fun x => x.
 
@@ -87,6 +87,7 @@ with Mut2 A :=
 
 (* If we don't reduce T while inferring cumulativity for the
    constructor we will see a Rel and believe i is irrelevant. *)
+
 Inductive withparams@{i j} (T:=Type@{i}:Type@{j}) := mkwithparams : T -> withparams.
 
 Definition withparams_co@{i i' j|i < i', i' < j} : withparams@{i j} -> withparams@{i' j}
@@ -119,15 +120,19 @@ Fail Definition checkcumul' :=
 (* An inductive type with an irrelevant universe *)
 Inductive foo@{i} : Type@{i} := mkfoo { }.
 
+
+Set Debug "UnivVariances".
+Set Debug "univMinim".
+
 Definition bar := foo.
 
 (* The universe on mkfoo is flexible and should be unified with i. *)
 Definition foo1@{i} : foo@{i} := let x := mkfoo in x. (* fast path for conversion *)
-Definition foo2@{i} : bar@{i} := let x := mkfoo in x. (* must reduce *)
+Definition foo2@{i} : bar := let x := mkfoo in x. (* must reduce *)
 
 (* Rigid universes however should not be unified unnecessarily. *)
 Definition foo3@{i j|} : foo@{i} := let x := mkfoo@{j} in x.
-Definition foo4@{i j|} : bar@{i} := let x := mkfoo@{j} in x.
+Definition foo4@{j|} : bar := let x := mkfoo@{j} in x.
 
 (* Constructors for an inductive with indices *)
 Module WithIndex.

@@ -215,7 +215,7 @@ struct
       | Cst_const (c, u) ->
         if UVars.Instance.is_empty u then Constant.debug_print c
         else str"(" ++ Constant.debug_print c ++ str ", " ++
-          UVars.Instance.pr Sorts.QVar.raw_pr Univ.Level.raw_pr u ++ str")"
+          UVars.Instance.pr Sorts.QVar.raw_pr (Univ.Universe.pr Univ.Level.raw_pr) u ++ str")"
       | Cst_proj (p,r) ->
         str".(" ++ Projection.debug_print p ++ str")"
 
@@ -447,6 +447,7 @@ let magically_constant_of_fixbody env sigma (reference, params) bd = function
           | Some csts ->
             let addqs l r (qs,us) = Sorts.QVar.Map.add l r qs, us in
             let addus l r (qs,us) = qs, Univ.Level.Map.add l r us in
+            let get_level u = Option.get (Universe.level u) in
             let subst = Set.fold (fun cst acc ->
                 match cst with
                 | QEq (a,b) | QLeq (a,b) ->
@@ -455,15 +456,15 @@ let magically_constant_of_fixbody env sigma (reference, params) bd = function
                     | _ -> assert false
                   in
                   addqs a b acc
-                  | ULub (u, v) | UWeak (u, v) -> addus u v acc
-                  | UEq (u, v) | ULe (u, v) ->
-                    (* XXX add something when qsort? *)
-                    let get u = match u with
-                    | Sorts.SProp | Sorts.Prop -> assert false
-                    | Sorts.Set -> Level.set
-                    | Sorts.Type u | Sorts.QSort (_, u) -> Option.get (Universe.level u)
-                    in
-                    addus (get u) (get v) acc)
+                | ULub (u, v) | UWeak (u, v) -> addus (Option.get (Universe.level u)) v acc
+                | UEq (u, v) | ULe (u, v) ->
+                  (* XXX add something when qsort? *)
+                  let get u = match u with
+                  | Sorts.SProp | Sorts.Prop -> assert false
+                  | Sorts.Set -> Universe.type0
+                  | Sorts.Type u | Sorts.QSort (_, u) -> u
+                  in
+                  addus (get_level (get u)) (get v) acc)
                 csts UVars.empty_sort_subst
             in
             let inst = UVars.subst_sort_level_instance subst u in

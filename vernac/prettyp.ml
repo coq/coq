@@ -66,12 +66,7 @@ let print_ref env reduce ref udecl =
   let typ = Arguments_renaming.rename_type typ ref in
   let impargs = select_stronger_impargs (implicits_of_global ref) in
   let impargs = List.map binding_kind_of_status impargs in
-  let variance = let open GlobRef in match ref with
-    | VarRef _ | ConstRef _ -> None
-    | IndRef (ind,_) | ConstructRef ((ind,_),_) ->
-      let mind = Environ.lookup_mind ind env in
-      mind.Declarations.mind_variance
-  in
+  let variances = Environ.variances env ref in
   let inst =
     if Environ.is_polymorphic env ref
     then Printer.pr_universe_instance sigma inst
@@ -79,7 +74,7 @@ let print_ref env reduce ref udecl =
   in
   let priv = None in (* We deliberately don't print private univs in About. *)
   hov 0 (pr_global ref ++ inst ++ str " :" ++ spc () ++ pr_ltype_env env sigma ~impargs typ ++
-         Printer.pr_abstract_universe_ctx sigma ?variance univs ?priv)
+         Printer.pr_abstract_universe_ctx sigma ?variances univs ?priv)
 
 (** Command [Print Implicit], somehow subsumed by [About] *)
 

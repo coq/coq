@@ -276,7 +276,7 @@ let is_universe_polymorphism =
         optdepr  = None;
         optkey   = universe_polymorphism_option_name;
         optread  = (fun () -> !b);
-        optwrite = ((:=) b) }
+        optwrite = (:=) b }
   in
   fun () -> !b
 
@@ -284,6 +284,40 @@ let polymorphic =
   qualify_attribute ukey (bool_attribute ~name:"polymorphic") >>= function
   | Some b -> return b
   | None -> return (is_universe_polymorphism())
+
+let cumulative_definitions_option_name = ["Polymorphic"; "Definitions"; "Cumulativity"]
+let is_polymorphic_definitions_cumulativity =
+  let b = ref true in
+  let () = let open Goptions in
+    declare_bool_option
+      { optstage = Summary.Stage.Interp;
+        optdepr  = None;
+        optkey   = cumulative_definitions_option_name;
+        optread  = (fun () -> !b);
+        optwrite = (fun d -> b := d) }
+  in
+  fun () -> !b
+
+let cumulative_assumptions_option_name = ["Polymorphic"; "Assumptions"; "Cumulativity"]
+let is_polymorphic_assumptions_cumulativity =
+  let b = ref false in
+  let () = let open Goptions in
+    declare_bool_option
+      { optstage = Summary.Stage.Interp;
+        optdepr  = None;
+        optkey   = cumulative_assumptions_option_name;
+        optread  = (fun () -> !b);
+        optwrite = (fun d -> b := d) }
+  in
+  fun () -> !b
+
+let cumulative assordef =
+  qualify_attribute ukey (bool_attribute ~name:"cumulative") >>= function
+  | Some b -> return b
+  | None ->
+    match assordef with
+    | UVars.Assumption -> return (is_polymorphic_assumptions_cumulativity())
+    | UVars.Definition -> return (is_polymorphic_definitions_cumulativity())
 
 let template =
   qualify_attribute ukey

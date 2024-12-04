@@ -282,7 +282,7 @@ let type_of_prim_type _env u (type a) (prim : a CPrimitives.prim_type) = match p
   | CPrimitives.PT_array ->
     begin match UVars.Instance.to_array u with
     | [||], [|u|] ->
-      let ty = Constr.mkType (Univ.Universe.make u) in
+      let ty = Constr.mkType u in
       Constr.mkProd(Context.anonR, ty , ty)
     | _ -> anomaly Pp.(str"universe instance for array type should have length 1")
     end
@@ -500,9 +500,9 @@ let type_case_scrutinee env (mib, _mip) (u', largs) u pms (pctx, p) c =
   in
   (* We use l2r:true for compat with old versions which used CONV with arguments
      flipped. It is relevant for performance eg in bedrock / Kami. *)
-  let qcst, ucst = match mib.mind_variance with
-  | None -> UVars.enforce_eq_instances u u' Sorts.QUConstraints.empty
-  | Some variance -> UVars.enforce_leq_variance_instances variance u' u Sorts.QUConstraints.empty
+  let qcst, ucst = match mib.mind_universes with
+  | Monomorphic | Polymorphic (_, None) -> UVars.enforce_eq_instances u u' Sorts.QUConstraints.empty
+  | Polymorphic (_, Some variance) -> UVars.enforce_leq_variance_instances ~nargs:UVars.FullyApplied variance u' u Sorts.QUConstraints.empty
   in
   let () = check_qconstraints qcst env in
   let () = check_constraints ucst env in
@@ -799,13 +799,13 @@ and execute_aux tbl env cstr =
     | String _ -> type_of_string env
     | Array(u,t,def,ty) ->
       (* ty : Type@{u} and all of t,def : ty *)
-      let ulev = match UVars.Instance.to_array u with
+      let univ = match UVars.Instance.to_array u with
         | [||], [|u|] -> u
         | _ -> assert false
       in
       let tyty = execute tbl env ty in
       let ty = self ty in
-      check_cast env ty tyty DEFAULTcast (mkType (Universe.make ulev));
+      check_cast env ty tyty DEFAULTcast (mkType univ);
       let def_ty = execute tbl env def in
       check_cast env (self def) def_ty DEFAULTcast ty;
       let ta = type_of_array env u in
@@ -980,7 +980,7 @@ let type_of_prim env u t =
                        tr_type n arg_ty, nary_op (n + 1) ret_ty r)
   in
   let params, args_ty, ret_ty = types t in
-  assert (UVars.AbstractContext.size (univs t) = UVars.Instance.length u);
+  assert (UVars.AbstractContext.size (fst (univs t)) = UVars.Instance.length u);
   Vars.subst_instance_constr u
     (Term.it_mkProd_or_LetIn (nary_op 0 ret_ty args_ty) params)
 

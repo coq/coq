@@ -294,6 +294,7 @@ val pr_evar_map : ?with_univs:bool -> int option -> env -> evar_map -> Pp.t
 val pr_evar_map_filter : ?with_univs:bool -> (Evar.t -> any_evar_info -> bool) ->
   env -> evar_map -> Pp.t
 val pr_evd_level : evar_map -> Univ.Level.t -> Pp.t
+val pr_evd_universe : evar_map -> Univ.Universe.t -> Pp.t
 val pr_evd_qvar : evar_map -> Sorts.QVar.t -> Pp.t
 
 module Internal : sig

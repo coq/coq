@@ -408,9 +408,12 @@ let judge_of_letin env sigma name defj typj j =
   { uj_val = mkLetIn (make_annot name r, defj.uj_val, typj.utj_val, j.uj_val) ;
     uj_type = subst1 defj.uj_val j.uj_type }
 
+let debug = CDebug.create ~name:"pretyping" ()
+
 let type_of_constant env sigma (c,u) =
   let open Declarations in
   let cb = Environ.lookup_constant c env in
+  debug Pp.(fun () -> str"Typing:" ++ Termops.Internal.print_constr_env env sigma (mkConstU (c,u)));
   let () = Reductionops.check_hyps_inclusion env sigma (GR.ConstRef c) cb.const_hyps in
   let u = EInstance.kind sigma u in
   let ty, csts = Environ.constant_type env (c,u) in
@@ -456,7 +459,7 @@ let judge_of_array env sigma u tj defj tyj =
     | _ -> assert false
   in
   let sigma = Evd.set_leq_sort env sigma tyj.utj_type
-      (ESorts.make (Sorts.sort_of_univ (Univ.Universe.make ulev)))
+      (ESorts.make (Sorts.sort_of_univ ulev))
   in
   let check_one sigma j = check_actual_type env sigma j tyj.utj_val in
   let sigma = check_one sigma defj in
@@ -676,11 +679,7 @@ let sort_of env sigma c =
 (* Try to solve the existential variables by typing *)
 
 let type_of ?(refresh=false) env sigma c =
-  let sigma, j = execute env sigma c in
-  (* side-effect on evdref *)
-    if refresh then
-      Evarsolve.refresh_universes ~onlyalg:true (Some false) env sigma j.uj_type
-    else sigma, j.uj_type
+  let sigma, j = execute env sigma c in sigma, j.uj_type
 
 let solve_evars env sigma c =
   let sigma, j = execute env sigma c in

@@ -323,9 +323,10 @@ scope_delimiter: [
 ]
 
 sort: [
-| REPLACE "Type" "@{" reference "|" universe "}"
-| WITH "Type" "@{" OPT [ qualid "|" ] universe "}"
+| REPLACE "Type" "@{" reference "|" universe_opt "}"
+| WITH "Type" "@{" OPT [ qualid "|" ] universe_opt "}"
 | DELETE "Type" "@{" universe "}"
+| DELETE "Type" "@{" "_" "}"
 ]
 
 term100: [
@@ -636,15 +637,15 @@ inline: [
 ]
 
 univ_decl: [
-| REPLACE "@{" test_univ_decl LIST0 identref "|" LIST0 identref [ "+" | ] univ_decl_constraints
-| WITH    "@{" OPT [ LIST0 identref "|" ] LIST0 identref  OPT "+"  OPT [ "|" LIST0 univ_constraint SEP "," OPT "+" ] "}"
-| DELETE "@{" LIST0 identref [ "+" | ] univ_decl_constraints
+| REPLACE "@{" test_univ_decl LIST0 identref "|" LIST0 identref [ "?" | ] univ_decl_constraints
+| WITH    "@{" OPT [ LIST0 identref "|" ] LIST0 identref  OPT "?"  OPT [ "|" LIST0 univ_constraint SEP "," OPT "?" ] "}"
+| DELETE "@{" LIST0 identref [ "?" | ] univ_decl_constraints
 ]
 
 cumul_univ_decl: [
-| REPLACE "@{" test_cumul_univ_decl LIST0 identref "|" LIST0 variance_identref [ "+" | ] univ_decl_constraints
-| WITH "@{" OPT [ LIST0 identref "|" ] LIST0 variance_identref    OPT "+"   OPT [ "|" LIST0 univ_constraint SEP "," OPT "+" ] "}"
-| DELETE "@{" LIST0 variance_identref [ "+" | ] univ_decl_constraints
+| REPLACE "@{" test_cumul_univ_decl LIST0 identref "|" LIST0 variance_identref [ "?" | ] univ_decl_constraints
+| WITH "@{" OPT [ LIST0 identref "|" ] LIST0 variance_identref    OPT "?"   OPT [ "|" LIST0 univ_constraint SEP "," OPT "?" ] "}"
+| DELETE "@{" LIST0 variance_identref [ "?" | ] univ_decl_constraints
 ]
 
 of_type: [
@@ -1533,6 +1534,8 @@ query_command: [
 | WITH "Compute" lconstr
 | REPLACE "Check" lconstr "."
 | WITH "Check" lconstr
+| REPLACE "Check" "Constraint" LIST1 univ_constraint SEP "," "."
+| WITH "Check" "Constraint" LIST1 univ_constraint SEP ","
 | REPLACE "About" smart_global OPT univ_name_list "."
 | WITH "About" smart_global OPT univ_name_list
 | REPLACE "SearchPattern" constr_pattern in_or_out_modules "."

@@ -60,6 +60,7 @@ let scope_delimiter = Entry.make "scope_delimiter"
 let syntax_modifiers = Entry.make "syntax_modifiers"
 let goal_selector = Entry.make "goal_selector"
 let toplevel_selector = Entry.make "toplevel_selector"
+let univ_constraint = Entry.make "univ_constraint"
 
 let make_bullet s =
   let open Proof_bullet in
@@ -218,23 +219,27 @@ let test_plural_form_rules loc kwd = function
 let lname_of_lident : lident -> lname =
   CAst.map (fun s -> Name s)
 
-let name_of_ident_decl : ident_decl -> name_decl =
+let name_of_cumul_ident_decl : cumul_ident_decl -> name_decl =
   on_fst lname_of_lident
+
+let name_of_ident_decl : ident_decl -> name_decl =
+  fun x ->
+    (lname_of_lident (fst x), Option.map cumul_of_univ_decl (snd x))
 
 let test_variance_ident =
   let open Procq.Lookahead in
   to_entry "test_variance_ident" begin
-    lk_kws ["=";"+";"*"] >> lk_ident
+    lk_kws ["=";"+";"-";"*"] >> lk_ident
   end
 
 let test_univ_decl =
   let open Procq.Lookahead in
-  to_entry "test_univ_decl" (lk_ident_list >> lk_kw "|" >> lk_ident_list >> (lk_kw "+" <+> lk_empty) >> (lk_kw "|" <+> lk_kw "|}"))
+  to_entry "test_univ_decl" (lk_ident_list >> lk_kw "|" >> lk_ident_list >> (lk_kw "?" <+> lk_empty) >> (lk_kw "|" <+> lk_kw "|}"))
 
 let test_cumul_univ_decl =
   let open Procq.Lookahead in
-  let lk_list_variance_ident = lk_list (lk_kw "+" <+> lk_kw "*" <+> lk_kw "=" <+> lk_ident) in
-  to_entry "test_cumul_univ_decl" (lk_ident_list >> lk_kw "|" >> lk_list_variance_ident >> (lk_kw "+" <+> lk_empty) >> (lk_kw "|" <+> lk_kw "|}"))
+  let lk_list_variance_ident = lk_list (lk_kw "+" <+> lk_kw "*" <+> lk_kw "=" <+> lk_kw "-" <+> lk_ident) in
+  to_entry "test_cumul_univ_decl" (lk_ident_list >> lk_kw "|" >> lk_list_variance_ident >> (lk_kw "?" <+> lk_empty) >> (lk_kw "|" <+> lk_kw "|}"))
 
 
 }
@@ -242,13 +247,15 @@ let test_cumul_univ_decl =
 (* Gallina declarations *)
 GRAMMAR EXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_token assumption_token def_body of_type of_type_inst
-    record_field notation_declaration decl_notations fix_definition ident_decl univ_decl inductive_or_record_definition;
+    record_field notation_declaration decl_notations fix_definition
+    cumul_ident_decl ident_decl univ_decl cumul_univ_decl
+    univ_constraint inductive_or_record_definition;
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
-    [ [ thm = thm_token; id = ident_decl; bl = binders; ":"; c = lconstr;
+    [ [ thm = thm_token; id = cumul_ident_decl; bl = binders; ":"; c = lconstr;
         l = LIST0
-          [ "with"; id = ident_decl; bl = binders; ":"; c = lconstr ->
+          [ "with"; id = cumul_ident_decl; bl = binders; ":"; c = lconstr ->
           { (id,(bl,c)) } ] ->
           { VernacStartTheoremProof (thm, (id,(bl,c))::l) }
       | stre = assumption_token; nl = inline; bl = assum_list ->
@@ -257,8 +264,8 @@ GRAMMAR EXTEND Gram
           { let (kwd,stre) = tk in
             test_plural_form loc kwd bl;
             VernacAssumption (stre, nl, bl) }
-      | d = def_token; id = ident_decl; b = def_body ->
-          { VernacDefinition (d, name_of_ident_decl id, b) }
+      | d = def_token; id = cumul_ident_decl; b = def_body ->
+          { VernacDefinition (d, name_of_cumul_ident_decl id, b) }
       | IDENT "Symbol"; bl = assum_list ->
           { VernacSymbol bl }
       | IDENT "Symbols"; bl = assum_list ->
@@ -292,7 +299,7 @@ GRAMMAR EXTEND Gram
         { VernacRegister(g, RegisterScheme {inductive = g'; scheme_kind = qid}) }
       | IDENT "Register"; IDENT "Inline"; g = global ->
           { VernacRegister(g, RegisterInline) }
-      | IDENT "Primitive"; id = ident_decl; typopt = OPT [ ":"; typ = lconstr -> { typ } ]; ":="; r = register_token ->
+      | IDENT "Primitive"; id = cumul_ident_decl; typopt = OPT [ ":"; typ = lconstr -> { typ } ]; ":="; r = register_token ->
           { VernacPrimitive(id, r, typopt) }
       | IDENT "Universe"; l = LIST1 identref -> { VernacUniverse l }
       | IDENT "Universes"; l = LIST1 identref -> { VernacUniverse l }
@@ -341,16 +348,16 @@ GRAMMAR EXTEND Gram
       | -> { NoInline } ] ]
   ;
   univ_constraint:
-    [ [ l = universe_name; ord = [ "<" -> { Univ.Lt } | "=" -> { Univ.Eq } | "<=" -> { Univ.Le } ];
-        r = universe_name -> { (l, ord, r) } ] ]
+    [ [ l = universe; ord = [ "<" -> { (Univ.Le, true) } | "=" -> { (Univ.Eq, false) } | "<=" -> { (Univ.Le, false) } ];
+        r = universe -> { (l, ord, r) } ] ]
   ;
   univ_decl_constraints:
     [ [ "|"; l' = LIST0 univ_constraint SEP ",";
-        ext = [ "+" -> { true } | -> { false } ]; "}" -> { (l',ext) }
+        ext = [ "?" -> { true } | -> { false } ]; "}" -> { (l',ext) }
       | ext = [ "}" -> { true } | bar_cbrace -> { false } ] -> { ([], ext) } ] ]
   ;
   univ_decl:
-    [ [ "@{" ; test_univ_decl; l0 = LIST0 identref; "|";  l = LIST0 identref; ext = [ "+" -> { true } | -> { false } ];
+    [ [ "@{" ; test_univ_decl; l0 = LIST0 identref; "|";  l = LIST0 identref; ext = [ "?" -> { true } | -> { false } ];
          cs = univ_decl_constraints
          ->
          { let open UState in
@@ -358,9 +365,10 @@ GRAMMAR EXTEND Gram
            univdecl_extensible_qualities = false;
            univdecl_instance = l;
            univdecl_extensible_instance = ext;
+           univdecl_variances = ();
            univdecl_constraints = fst cs;
            univdecl_extensible_constraints = snd cs } }
-    | "@{" ; l = LIST0 identref; ext = [ "+" -> { true } | -> { false } ];
+    | "@{" ; l = LIST0 identref; ext = [ "?" -> { true } | -> { false } ];
          cs = univ_decl_constraints
          ->
          { let open UState in
@@ -368,12 +376,14 @@ GRAMMAR EXTEND Gram
            univdecl_extensible_qualities = false;
            univdecl_instance = l;
            univdecl_extensible_instance = ext;
+           univdecl_variances = ();
            univdecl_constraints = fst cs;
            univdecl_extensible_constraints = snd cs } }
     ] ]
   ;
   variance:
     [ [ "+" -> { UVars.Variance.Covariant }
+      | "-" -> { UVars.Variance.Contravariant }
       | "=" -> { UVars.Variance.Invariant }
       | "*" -> { UVars.Variance.Irrelevant }
     ] ]
@@ -387,7 +397,7 @@ GRAMMAR EXTEND Gram
   ;
   cumul_univ_decl:
     [ [ "@{" ; test_cumul_univ_decl; l0 = LIST0 identref; "|";
-        l = LIST0 variance_identref; ext = [ "+" -> { true } | -> { false } ];
+        l = LIST0 variance_identref; ext = [ "?" -> { true } | -> { false } ];
          cs = univ_decl_constraints
          ->
          { let open UState in
@@ -395,10 +405,11 @@ GRAMMAR EXTEND Gram
            univdecl_extensible_qualities = false;
            univdecl_instance = l;
            univdecl_extensible_instance = ext;
+           univdecl_variances = ();
            univdecl_constraints = fst cs;
            univdecl_extensible_constraints = snd cs } }
 
-       | "@{" ; l = LIST0 variance_identref; ext = [ "+" -> { true } | -> { false } ];
+       | "@{" ; l = LIST0 variance_identref; ext = [ "?" -> { true } | -> { false } ];
          cs = univ_decl_constraints
          ->
          { let open UState in
@@ -406,6 +417,7 @@ GRAMMAR EXTEND Gram
            univdecl_extensible_qualities = false;
            univdecl_instance = l;
            univdecl_extensible_instance = ext;
+           univdecl_variances = ();
            univdecl_constraints = fst cs;
            univdecl_extensible_constraints = snd cs } }
     ] ]
@@ -500,7 +512,7 @@ GRAMMAR EXTEND Gram
   ;
   (* (co)-fixpoints *)
   fix_definition:
-    [ [ id_decl = ident_decl;
+    [ [ id_decl = cumul_ident_decl;
         bl = binders_fixannot;
         rtype = type_cstr;
         body_def = OPT [":="; def = lconstr -> { def } ]; notations = decl_notations ->
@@ -509,7 +521,7 @@ GRAMMAR EXTEND Gram
           } ] ]
   ;
   cofix_definition:
-    [ [ id_decl = ident_decl; binders = binders; rtype = type_cstr;
+    [ [ id_decl = cumul_ident_decl; binders = binders; rtype = type_cstr;
         body_def = OPT [":="; def = lconstr -> { def }]; notations = decl_notations ->
         { {fname = fst id_decl; univs = snd id_decl; binders; rtype; body_def; notations}
         } ]]
@@ -593,7 +605,7 @@ GRAMMAR EXTEND Gram
     [ [ "("; a = assumpt; ")" -> { a } ] ]
   ;
   assumpt:
-    [ [ idl = LIST1 ident_decl; oc = of_type; c = lconstr ->
+    [ [ idl = LIST1 cumul_ident_decl; oc = of_type; c = lconstr ->
         { (oc,(idl,c)) } ] ]
   ;
 
@@ -828,7 +840,7 @@ GRAMMAR EXTEND Gram
           LIST1 [ v=strategy_level; "["; q=LIST1 smart_global; "]" -> { (v,q) } ] ->
             { VernacSynPure (VernacSetStrategy l) }
       (* Canonical structure *)
-      | IDENT "Canonical"; OPT [ IDENT "Structure" -> {()} ]; qid = global; ud = OPT [ u = OPT univ_decl; d = def_body -> { (u,d) } ] ->
+      | IDENT "Canonical"; OPT [ IDENT "Structure" -> {()} ]; qid = global; ud = OPT [ u = OPT cumul_univ_decl; d = def_body -> { (u,d) } ] ->
           { match ud with
            | None ->
              VernacSynPure (VernacCanonical CAst.(make ?loc:qid.CAst.loc @@ AN qid))
@@ -839,7 +851,7 @@ GRAMMAR EXTEND Gram
           { VernacSynPure (VernacCanonical CAst.(make ~loc @@ ByNotation ntn)) }
 
       (* Coercions *)
-      | IDENT "Coercion"; qid = global; ud = OPT [ u = OPT univ_decl; d = def_body -> { u, d } ] ->
+      | IDENT "Coercion"; qid = global; ud = OPT [ u = OPT cumul_univ_decl; d = def_body -> { u, d } ] ->
           { match ud with Some (u, d) -> let s = coerce_reference_to_id qid in
           VernacSynPure (VernacDefinition ((NoDischarge,Coercion),((CAst.make ?loc:qid.CAst.loc (Name s)),u),d))
           | None -> VernacSynPure (VernacCoercion (CAst.make ~loc @@ AN qid, None)) }
@@ -967,7 +979,7 @@ GRAMMAR EXTEND Gram
     ]
   ];
   instance_name:
-    [ [ name = ident_decl; bl = binders ->
+    [ [ name = cumul_ident_decl; bl = binders ->
           { (CAst.map (fun id -> Name id) (fst name), snd name), bl }
       | -> { ((CAst.make ~loc Anonymous), None), []  } ] ]
   ;
@@ -1113,6 +1125,8 @@ GRAMMAR EXTEND Gram
           { fun g -> VernacCheckMayEval (Some r, g, c) }
       | IDENT "Compute"; c = lconstr; "." ->
           { fun g -> VernacCheckMayEval (Some (Genredexpr.CbvVm None), g, c) }
+      | IDENT "Check"; IDENT "Constraint"; l = LIST1 univ_constraint SEP ","; "." ->
+          { fun g -> VernacCheckConstraint (l, g) }
       | IDENT "Check"; c = lconstr; "." ->
          { fun g -> VernacCheckMayEval (None, g, c) }
       (* Searching the environment *)

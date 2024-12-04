@@ -3,6 +3,7 @@ Require Import TestSuite.admit.
 (* -*- mode: coq; coq-prog-args: ("-indices-matter") -*- *)
 (* File reduced by coq-bug-finder from 5012 lines to 4659 lines, then from 4220 lines to 501 lines, then from 513 lines to 495 lines, then from 513 lines to 495 lines, then from 412 lines to 79 lines, then from 412 lines to 79 lines. *)
 Set Universe Polymorphism.
+Set Polymorphic Inductive Cumulativity.
 Definition admit {T} : T.
 Admitted.
 Inductive paths {A : Type} (a : A) : A -> Type :=
@@ -48,18 +49,17 @@ Notation "f ^-1" := (@equiv_inv _ _ f _) (at level 3) : equiv_scope.
 Inductive Bool : Type := true | false.
 
 Local Open Scope equiv_scope.
-Definition equiv_path (A B : Type) (p : A = B) : A <~> B
+Definition equiv_path (A B : Type@{_}) (p : A = B :> Type@{_}) : A <~> B
   := BuildEquiv _ _ (transport (fun X:Type => X) p) admit.
 
-Class Univalence :=
-  isequiv_equiv_path :: forall (A B : Type), IsEquiv (equiv_path A B) .
+Class Univalence := isequiv_equiv_path :: forall (A B : Type), IsEquiv (equiv_path A B).
 
 Section Univalence.
-  Context `{Univalence}.
-  Definition path_universe_uncurried {A B : Type} (f : A <~> B) : A = B
-    := (equiv_path A B)^-1 f.
+  Universes u u' top. Context `{Univalence@{u u' top}}.
+  Definition path_universe_uncurried {A : Type@{u}} {B : Type@{u'}} (f : A <~> B) : A = B :=
+    ((equiv_path A B)^-1 f).
 
-  Definition path_universe {A B : Type} (f : A -> B) {feq : IsEquiv f} : (A = B)
+  Definition path_universe {A : Type@{u}} {B : Type@{u'}} (f : A -> B) {feq : IsEquiv f} : (A = B)
     := path_universe_uncurried (BuildEquiv _ _ f feq).
 End Univalence.
 
@@ -67,7 +67,7 @@ Definition e : Equiv@{i j} Bool Bool.
   admit.
 Defined.
 
-Definition p `{Univalence} : @paths Type Bool Bool := path_universe e.
+Definition p `{U : Univalence} : @paths Type Bool Bool := @path_universe _ _ _ e _.
 
 Theorem thm `{Univalence} : (forall A, ((A -> False) -> False) -> A) -> False.
   intro f.

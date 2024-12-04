@@ -1575,7 +1575,8 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
   let sigma = subst.subst_sigma in
   debug_tactic_unification (fun () ->
       str "Starting unification:" ++ spc() ++
-      Termops.Internal.print_constr_env env sigma (fst m) ++ strbrk" ~= " ++
+      Termops.Internal.print_constr_env env sigma (fst m) ++
+      (match cv_pb with CONV -> strbrk" ~= " | CUMUL -> strbrk" ~<= ") ++
       Termops.Internal.print_constr_env env sigma (fst n));
 
   let opt = { at_top = conv_at_top; with_types = false; with_cs = true } in
@@ -1779,7 +1780,6 @@ let nf_meta ~metas env sigma c =
   if Metaset.is_empty freemetas then c else Meta.meta_instance metas env sigma c
 
 let unify_to_type ~metas env sigma flags c status u =
-  let sigma, c = refresh_universes ~status:Evd.univ_flexible ~onlyalg:true (Some false) env sigma c in
   let t = get_type_of_with_metas ~metas env sigma (nf_meta ~metas env sigma c) in
   let t = nf_betaiota env sigma (nf_meta ~metas env sigma t) in
   unify_0 ~metas env sigma CUMUL flags t u

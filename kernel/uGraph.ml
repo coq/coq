@@ -11,16 +11,9 @@
 open Univ
 open UVars
 
-module G = AcyclicGraph.Make(struct
-    type t = Level.t
-    module Set = Level.Set
-    module Map = Level.Map
+let _debug_ugraph, debug = CDebug.create_full ~name:"uGraph" ()
 
-    let equal = Level.equal
-    let compare = Level.compare
-
-    let raw_pr = Level.raw_pr
-  end)
+module G = Loop_checking
 (* Do not include G to make it easier to control universe specific
    code (eg add_universe with a constraint vs G.add with no
    constraint) *)
@@ -50,30 +43,20 @@ let set_type_in_type b g = {g with type_in_type=b}
 
 let type_in_type g = g.type_in_type
 
-let check_smaller_expr g (u,n) (v,m) =
-  let diff = n - m in
-    match diff with
-    | 0 -> G.check_leq g.graph u v
-    | 1 -> G.check_lt g.graph u v
-    | x when x < 0 -> G.check_leq g.graph u v
-    | _ -> false
-
-let exists_bigger g ul l =
-  Universe.exists (fun ul' ->
-    check_smaller_expr g ul ul') l
-
-let real_check_leq g u v =
-  Universe.for_all (fun ul -> exists_bigger g ul v) u
+let graph_check_leq g u v = G.check_leq g.graph u v
+let graph_check_eq g u v = G.check_eq g.graph u v
 
 let check_leq g u v =
-  type_in_type g || Universe.equal u v || (real_check_leq g u v)
+  type_in_type g || Universe.equal u v || graph_check_leq g u v
+
+let check_leq g u u' =
+  let res = check_leq g u u' in
+  debug Pp.(fun () -> str"check_leq: " ++ Universe.pr Level.raw_pr u ++
+    str" <= " ++ Universe.pr Level.raw_pr u' ++ str" = " ++ bool res);
+  res
 
 let check_eq g u v =
-  type_in_type g || Universe.equal u v ||
-    (real_check_leq g u v && real_check_leq g v u)
-
-let check_eq_level g u v =
-  u == v || type_in_type g || G.check_eq g.graph u v
+  type_in_type g || Universe.equal u v || graph_check_eq g u v
 
 let empty_universes = {graph=G.empty; type_in_type=false}
 
@@ -81,80 +64,55 @@ let initial_universes =
   let big_rank = 1000000 in
   let g = G.empty in
   let g = G.add ~rank:big_rank Level.set g in
-  {empty_universes with graph=g}
+  {empty_universes with graph=g }
 
-let initial_universes_with g = {g with graph=initial_universes.graph}
+let set_local g =
+  { g with graph = G.set_local g.graph }
+
+let clear_constraints g = {g with graph=G.clear_constraints g.graph}
+
+type level_equivalences = (Level.t * (Level.t * int)) list
 
 let enforce_constraint (u,d,v) g =
   match d with
-  | Le -> G.enforce_leq u v g
-  | Lt -> G.enforce_lt u v g
-  | Eq -> G.enforce_eq u v g
+  | Le -> G.enforce_leq u v g.graph
+  | Eq -> G.enforce_eq u v g.graph
 
-let enforce_constraint0 cst g = match enforce_constraint cst g.graph with
+let enforce_constraint0 cst g = match enforce_constraint cst g with
 | None -> None
-| Some g' ->
-  if g' == g.graph then Some g
-  else Some { g with graph = g' }
+| Some (g', equivs) ->
+  if g' == g.graph then Some (g, equivs)
+  else Some ({ g with graph = g' }, equivs)
 
 let enforce_constraint cst g = match enforce_constraint0 cst g with
 | None ->
   if not (type_in_type g) then
     let (u, c, v) = cst in
     let e = lazy (G.get_explanation cst g.graph) in
-    let mk u = Sorts.sort_of_univ @@ Universe.make u in
+    let mk u = Sorts.sort_of_univ u in
     raise (UniverseInconsistency (None, (c, mk u, mk v, Some (Path e))))
-  else g
+  else g, []
 | Some g -> g
 
-let merge_constraints csts g = Constraints.fold enforce_constraint csts g
+let merge_constraints csts g =
+  Constraints.fold (fun cst (g, equivs) ->
+    let g, equivs' = enforce_constraint cst g in
+    g, equivs' @ equivs) csts (g, [])
 
 let check_constraint { graph = g; type_in_type } (u,d,v) =
   type_in_type
   || match d with
   | Le -> G.check_leq g u v
-  | Lt -> G.check_lt g u v
   | Eq -> G.check_eq g u v
 
 let check_constraints csts g = Constraints.for_all (check_constraint g) csts
 
-let leq_expr (u,m) (v,n) =
-  let d = match m - n with
-    | 1 -> Lt
-    | diff -> assert (diff <= 0); Le
-  in
-  (u,d,v)
+exception InconsistentEquality = G.InconsistentEquality
+exception OccurCheck = G.OccurCheck
 
-let enforce_leq_alg u v g =
-  let open Util in
-  let enforce_one (u,v) = function
-    | Inr _ as orig -> orig
-    | Inl (cstrs,g) as orig ->
-      if check_smaller_expr g u v then orig
-      else
-        (let c = leq_expr u v in
-         match enforce_constraint0 c g with
-         | Some g -> Inl (Constraints.add c cstrs,g)
-         | None -> Inr (c, g))
-  in
-  (* max(us) <= max(vs) <-> forall u in us, exists v in vs, u <= v *)
-  let c = List.map (fun u -> List.map (fun v -> (u,v)) (Universe.repr v)) (Universe.repr u) in
-  let c = List.cartesians enforce_one (Inl (Constraints.empty,g)) c in
-  (* We pick a best constraint: smallest number of constraints, not an error if possible. *)
-  let order x y = match x, y with
-    | Inr _, Inr _ -> 0
-    | Inl _, Inr _ -> -1
-    | Inr _, Inl _ -> 1
-    | Inl (c,_), Inl (c',_) ->
-      Int.compare (Constraints.cardinal c) (Constraints.cardinal c')
-  in
-  match List.min order c with
-  | Inl x -> x
-  | Inr ((u, c, v), g) ->
-    let e = lazy (G.get_explanation (u, c, v) g.graph) in
-    let mk u = Sorts.sort_of_univ @@ Universe.make u in
-    let e = UniverseInconsistency (None, (c, mk u, mk v, Some (Path e))) in
-    raise e
+let set l u g =
+  let g', equivs = G.set l u g.graph in
+  { g with graph = g' }, equivs
 
 module Bound =
 struct
@@ -165,8 +123,8 @@ exception AlreadyDeclared = G.AlreadyDeclared
 let add_universe u ~lbound ~strict g = match lbound with
 | Bound.Set ->
   let graph = G.add u g.graph in
-  let d = if strict then Lt else Le in
-  enforce_constraint (Level.set, d, u) { g with graph }
+  let b = if strict then Universe.type1 else Universe.type0 in
+  fst (enforce_constraint (b, Le, Universe.make u) { g with graph })
 | Bound.Prop ->
   (* Do not actually add any constraint. This is a hack for template. *)
   { g with graph = G.add u g.graph }
@@ -174,9 +132,27 @@ let add_universe u ~lbound ~strict g = match lbound with
 let check_declared_universes g l =
   G.check_declared g.graph l
 
-let constraints_of_universes g =
+let minimize l g =
+  match G.minimize l g.graph with
+  | G.HasSubst (graph, equivs, lbound) -> G.HasSubst ({ g with graph }, equivs, lbound)
+  | G.NoBound -> G.NoBound
+  | G.CannotSimplify -> G.CannotSimplify
+
+let maximize l g =
+  match G.maximize l g.graph with
+  | G.HasSubst (graph, equivs, lbound) -> G.HasSubst ({ g with graph }, equivs, lbound)
+  | G.NoBound -> G.NoBound
+  | G.CannotSimplify -> G.CannotSimplify
+
+let remove_set_clauses l g =
+  let graph = G.remove_set_clauses l g.graph in
+  { g with graph }
+
+let pr_model ?local g = G.pr_model ?local g.graph
+
+let constraints_of_universes ?(only_local=false) g =
   let add cst accu = Constraints.add cst accu in
-  G.constraints_of g.graph add Constraints.empty
+  G.constraints_of g.graph ~only_local add Constraints.empty
 let constraints_for ~kept g =
   let add cst accu = Constraints.add cst accu in
   G.constraints_for ~kept g.graph add Constraints.empty
@@ -191,8 +167,8 @@ let check_subtype univs ctxT ctx =
     let cst = UContext.constraints uctx in
     let cstT = UContext.constraints (AbstractContext.repr ctxT) in
     let push accu v = add_universe v ~lbound:Bound.Set ~strict:false accu in
-    let univs = Array.fold_left push univs (snd (Instance.to_array inst)) in
-    let univs = merge_constraints cstT univs in
+    let univs = Array.fold_left push univs (snd (LevelInstance.to_array inst)) in
+    let univs, _equivs = merge_constraints cstT univs in
     check_constraints cst univs
   else false
 
@@ -202,7 +178,7 @@ let check_eq_instances g t1 t2 =
   let qt1, ut1 = Instance.to_array t1 in
   let qt2, ut2 = Instance.to_array t2 in
   CArray.equal Sorts.Quality.equal qt1 qt2
-  && CArray.equal (check_eq_level g) ut1 ut2
+  && CArray.equal (check_eq g) ut1 ut2
 
 let domain g = G.domain g.graph
 let choose p g u = G.choose p g.graph u
@@ -253,21 +229,26 @@ let pr_pmap sep pr map =
 
 let pr_arc prl = let open Pp in
   function
-  | u, G.Node ltle ->
-    if Level.Map.is_empty ltle then mt ()
+  | u, G.Node l ->
+    if CList.is_empty l then mt ()
     else
-      prl u ++ str " " ++
-      v 0
-        (pr_pmap spc (fun (v, strict) ->
-              (if strict then str "< " else str "<= ") ++ prl v)
-            ltle) ++
-      fnl ()
+      (* In increasing order *)
+      let l = List.sort (fun (i, _) (i', _) -> Int.compare i i') l in
+      let l = CList.factorize_left Int.equal l in
+      let pr_cstrs (i, l) =
+        let l = List.sort Universe.compare l in
+        let k, is_lt = if i >= 1 then pred i, true else 0, false in
+        let u = (u, k) in
+        LevelExpr.pr prl u ++ spc () ++ v 0
+        (prlist_with_sep spc (fun v -> str (if is_lt then "< " else "<= ") ++ Universe.pr prl v) l)
+      in
+      prlist_with_sep spc pr_cstrs l ++ fnl ()
   | u, G.Alias v ->
-    prl u  ++ str " = " ++ prl v ++ fnl ()
+    prl u  ++ str " = " ++ LevelExpr.pr prl v ++ fnl  ()
 
 type node = G.node =
-| Alias of Level.t
-| Node of bool Level.Map.t
+| Alias of LevelExpr.t
+| Node of (int * Universe.t) list (** Nodes [(k_i, u_i); ...] s.t. u + k_i <= u_i *)
 
 let repr g = G.repr g.graph
 
@@ -288,7 +269,10 @@ let explain_universe_inconsistency default_prq default_prl (printers, (o,u,v,p) 
   | Sorts.QSort (q, u) -> str "Type@{" ++ prq q ++ str " | " ++ Universe.pr prl u ++ str"}"
   in
   let pr_rel = function
-    | Eq -> str"=" | Lt -> str"<" | Le -> str"<="
+    | Eq -> str"=" | Le -> str"≤"
+  in
+  let pr_erel = function
+    | G.UEq -> str"=" | G.ULe -> str"≤" | G.ULt -> str"<"
   in
   let reason = match p with
     | None -> mt()
@@ -297,8 +281,8 @@ let explain_universe_inconsistency default_prq default_prl (printers, (o,u,v,p) 
       let pstart, p = Lazy.force p in
       if p = [] then mt ()
       else
-        str " because" ++ spc() ++ prl pstart ++
-        prlist (fun (r,v) -> spc() ++ pr_rel r ++ str" " ++ prl v) p
+        str " because" ++ spc() ++ Universe.pr prl pstart ++
+        prlist (fun (r,v) -> spc() ++ pr_erel r ++ str" " ++ Universe.pr prl v) p
   in
     str "Cannot enforce" ++ spc() ++ pr_uni u ++ spc() ++
       pr_rel o ++ spc() ++ pr_uni v ++ reason

@@ -551,7 +551,6 @@ let mk_eq f c1 c2 k =
   Proofview.Goal.enter begin fun gl ->
     let open Tacmach in
     let evm, ty = pf_apply type_of gl c1 in
-    let evm, ty = Evarsolve.refresh_universes (Some false) (pf_env gl) evm ty in
     let term = mkApp (fc, [| ty; c1; c2 |]) in
     let evm, _ =  type_of (pf_env gl) evm term in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evm) (k term)

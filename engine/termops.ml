@@ -264,6 +264,7 @@ let has_no_evar sigma =
   with Exit -> false
 
 let pr_evd_level sigma = UState.pr_uctx_level (Evd.ustate sigma)
+let pr_evd_universe sigma = Univ.Universe.pr (pr_evd_level sigma)
 
 let pr_evd_qvar sigma = UState.pr_uctx_qvar (Evd.ustate sigma)
 

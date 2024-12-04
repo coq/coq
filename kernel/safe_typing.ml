@@ -798,8 +798,8 @@ let constant_entry_of_side_effect eff =
     match cb.const_universes with
     | Monomorphic ->
       Monomorphic_entry
-    | Polymorphic auctx ->
-      Polymorphic_entry (UVars.AbstractContext.repr auctx)
+    | Polymorphic (auctx, variances) ->
+      Polymorphic_entry (UVars.AbstractContext.repr auctx, variances)
   in
   let p =
     match cb.const_body with
@@ -901,7 +901,7 @@ let export_private_constants eff senv =
     let (_, _, _, h) = Opaqueproof.repr o in
     let univs = match c.const_universes with
     | Monomorphic -> None
-    | Polymorphic auctx -> Some (UVars.AbstractContext.size auctx)
+    | Polymorphic (auctx, _variances) -> Some (UVars.AbstractContext.size auctx)
     in
     let body = Constr.hcons body in
     let opaque = { exp_body = body; exp_handle = h; exp_univs = univs } in

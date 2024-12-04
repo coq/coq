@@ -1,38 +1,76 @@
 UNIVERSES:
  {w v u} |= u <= v
             v <= w
-ALGEBRAIC UNIVERSES:
- {}
 FLEXIBLE UNIVERSES:
  
 SORTS:
  
+
+VARIANCES:
+ ShowUnivs.23(in * position for typing,  infer:  in term,  infer:  in type)
+ ShowUnivs.22(in * position for typing,  infer:  in term,  infer:  in type)
+ ShowUnivs.21(in * position for typing,  infer:  in term,  infer:  in type)
 WEAK CONSTRAINTS:
  
 
 Normalized constraints:
- {w v u} |= u <= v
-            v <= w
+ UNIVERSES:
+  {w v u} |= u <= v
+             v <= w
+ FLEXIBLE UNIVERSES:
+  
+ SORTS:
+  
+ 
+ VARIANCES:
+  ShowUnivs.23(in * position for typing,  infer:  in term,  infer:  in type)
+  ShowUnivs.22(in * position for typing,  infer:  in term,  infer:  in type)
+  ShowUnivs.21(in * position for typing,  infer:  in term,  infer:  in type)
+ WEAK CONSTRAINTS:
+  
+ 
 UNIVERSES:
  {ShowUnivs.28 ShowUnivs.27 ShowUnivs.26 ShowUnivs.25 ShowUnivs.24} |=
-   ShowUnivs.25 < ShowUnivs.26
-   ShowUnivs.26 < ShowUnivs.27
-   ShowUnivs.26 <= ShowUnivs.28
-   ShowUnivs.27 <= ShowUnivs.24
-   ShowUnivs.28 <= ShowUnivs.24
-ALGEBRAIC UNIVERSES:
- {ShowUnivs.28 ShowUnivs.27 ShowUnivs.24}
+   max(ShowUnivs.26, ShowUnivs.27) <= ShowUnivs.24
+   ShowUnivs.28 <= ShowUnivs.27
+   ShowUnivs.25+1 <= ShowUnivs.28
+   ShowUnivs.28+1 <= ShowUnivs.26
 FLEXIBLE UNIVERSES:
  ShowUnivs.28
  ShowUnivs.27
  ShowUnivs.26
+ ShowUnivs.25
  ShowUnivs.24
 SORTS:
  α1 := Type
  α2 := Type
  α3 := α1
+
+VARIANCES:
+ ShowUnivs.28(in * position for typing,  infer:  in term,  infer:  in type)
+ ShowUnivs.27(in * position for typing,  infer:  in term,  infer:  in type)
+ ShowUnivs.26(in * position for typing,  infer:  in term,  infer:  in type)
+ ShowUnivs.25(in * position for typing,  infer:  in term,  infer:  in type)
+ ShowUnivs.24(in * position for typing,  infer:  in term,  infer:  in type)
 WEAK CONSTRAINTS:
  
 
 Normalized constraints:
- {ShowUnivs.26 ShowUnivs.25} |= ShowUnivs.25 < ShowUnivs.26
+ UNIVERSES:
+  
+ FLEXIBLE UNIVERSES:
+  ShowUnivs.28 := 1
+  ShowUnivs.27 := 1
+  ShowUnivs.26 := 2
+  ShowUnivs.25 := 0
+  ShowUnivs.24 := 2
+ SORTS:
+  α1 := Type
+  α2 := Type
+  α3 := α1
+ 
+ VARIANCES:
+  
+ WEAK CONSTRAINTS:
+  
+ 

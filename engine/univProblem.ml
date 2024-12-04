@@ -15,21 +15,21 @@ type t =
   | QLeq of Sorts.Quality.t * Sorts.Quality.t
   | ULe of Sorts.t * Sorts.t
   | UEq of Sorts.t * Sorts.t
-  | ULub of Level.t * Level.t
-  | UWeak of Level.t * Level.t
+  | ULub of Universe.t * Universe.t
+  | UWeak of Universe.t * Universe.t
 
 
 let is_trivial = function
   | QLeq (QConstant QProp, QConstant QType) -> true
   | QLeq (a,b) | QEq (a, b) -> Sorts.Quality.equal a b
   | ULe (u, v) | UEq (u, v) -> Sorts.equal u v
-  | ULub (u, v) | UWeak (u, v) -> Level.equal u v
+  | ULub (u, v) | UWeak (u, v) -> Universe.equal u v
 
 let force = function
   | QEq _ | QLeq _ | ULe _ | UEq _ | UWeak _ as cst -> cst
-  | ULub (u,v) -> UEq (Sorts.sort_of_univ @@ Universe.make u, Sorts.sort_of_univ @@ Universe.make v)
+  | ULub (u,v) -> UEq (Sorts.sort_of_univ u, Sorts.sort_of_univ v)
 
-let check_eq_level g u v = UGraph.check_eq_level g u v
+let check_eq g u v = UGraph.check_eq g u v
 
 module Set = struct
   module S = Set.Make(
@@ -56,9 +56,9 @@ module Set = struct
         else if Sorts.equal u v' && Sorts.equal v u' then 0
         else i
       | ULub (u, v), ULub (u', v') | UWeak (u, v), UWeak (u', v') ->
-        let i = Level.compare u u' in
-        if Int.equal i 0 then Level.compare v v'
-        else if Level.equal u v' && Level.equal v u' then 0
+        let i = Universe.compare u u' in
+        if Int.equal i 0 then Universe.compare v v'
+        else if Universe.equal u v' && Universe.equal v u' then 0
         else i
       | QEq _, _ -> -1
       | _, QEq _ -> 1
@@ -83,8 +83,8 @@ module Set = struct
     | QLeq (a, b) -> Sorts.Quality.raw_pr a ++ str " <= " ++ Sorts.Quality.raw_pr b
     | ULe (u, v) -> Sorts.debug_print u ++ str " <= " ++ Sorts.debug_print v
     | UEq (u, v) -> Sorts.debug_print u ++ str " = " ++ Sorts.debug_print v
-    | ULub (u, v) -> Level.raw_pr u ++ str " /\\ " ++ Level.raw_pr v
-    | UWeak (u, v) -> Level.raw_pr u ++ str " ~ " ++ Level.raw_pr v
+    | ULub (u, v) -> Universe.pr Level.raw_pr u ++ str " /\\ " ++ Universe.pr Level.raw_pr v
+    | UWeak (u, v) -> Universe.pr Level.raw_pr u ++ str " ~ " ++ Universe.pr Level.raw_pr v
 
   let pr c =
     let open Pp in
@@ -100,7 +100,7 @@ end
 type 'a constraint_function = 'a -> 'a -> Set.t -> Set.t
 
 let enforce_eq_instances_univs strict x y c =
-  let mkU u = Sorts.sort_of_univ @@ Universe.make u in
+  let mkU u = Sorts.sort_of_univ u in
   let mk u v = if strict then ULub (u, v) else UEq (mkU u, mkU v) in
   if not (UVars.eq_sizes (UVars.Instance.length x) (UVars.Instance.length y)) then
     CErrors.anomaly Pp.(str "Invalid argument: enforce_eq_instances_univs called with" ++
@@ -122,20 +122,25 @@ let enforce_eq_qualities qs qs' cstrs =
       if Sorts.Quality.equal a b then c else Set.add (QEq (a, b)) c)
     cstrs qs qs'
 
-let compare_cumulative_instances  cv_pb variances u u' cstrs =
-  let make u = Sorts.sort_of_univ @@ Univ.Universe.make u in
+let compare_cumulative_instances cv_pb ~nargs variances u u' cstrs =
+  let make u = Sorts.sort_of_univ u in
   let qs, us = UVars.Instance.to_array u
   and qs', us' = UVars.Instance.to_array u' in
   let cstrs = enforce_eq_qualities qs qs' cstrs in
   CArray.fold_left3
     (fun cstrs v u u' ->
        let open UVars.Variance in
+       let v = UVars.VarianceOccurrence.variance_app nargs v in
        match v with
        | Irrelevant -> Set.add (UWeak (u,u')) cstrs
        | Covariant ->
          (match cv_pb with
           | Conversion.CONV -> Set.add (UEq (make u, make u')) cstrs
           | Conversion.CUMUL -> Set.add (ULe (make u, make u')) cstrs)
+        | Contravariant ->
+          (match cv_pb with
+          | Conversion.CONV -> Set.add (UEq (make u, make u')) cstrs
+          | Conversion.CUMUL -> Set.add (ULe (make u', make u)) cstrs)
        | Invariant ->
          Set.add (UEq (make u, make u')) cstrs)
-    cstrs variances us us'
+    cstrs (UVars.Variances.repr variances) us us'

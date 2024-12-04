@@ -49,7 +49,7 @@ type signature_mismatch_error =
   | IncompatibleUniverses of UGraph.univ_inconsistency
   | IncompatiblePolymorphism of env * types * types
   | IncompatibleConstraints of { got : UVars.AbstractContext.t; expect : UVars.AbstractContext.t }
-  | IncompatibleVariance
+  | IncompatibleVariance of { got : UVars.Variances.t; expect : UVars.Variances.t }
   | NoRewriteRulesSubtyping
 
 type subtyping_trace_elt =
@@ -335,7 +335,7 @@ let strengthen_const mp_from l cb resolver =
     let con = constant_of_delta_kn resolver kn in
     let u = UVars.make_abstract_instance (Declareops.constant_polymorphic_context cb) in
       { cb with
-        const_body = Def (mkConstU (con,u));
+        const_body = Def (mkConstU (con, u));
         const_body_code = Some (Vmbytegen.compile_alias con) }
 
 let rec strengthen_module mp_from mp_to mb =

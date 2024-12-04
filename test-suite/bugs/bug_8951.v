@@ -8,7 +8,6 @@ End M.
 
 Module Make (X:T).
   Include X.
-
 End Make.
 
 Module P := Make M.

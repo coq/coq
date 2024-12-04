@@ -42,5 +42,5 @@ cannot be applied to the terms
  "n" : "Type"
  "n" : "Type"
 The 2nd term has type "Type" which should be a subtype of 
-"Set". (universe inconsistency: Cannot enforce Errors.57 <= Set)
+"Set". (universe inconsistency: Cannot enforce Errors.57 ≤ Set)
 

@@ -332,9 +332,9 @@ Fixpoint arrows (l : Tlist) (r : Type) : Type :=
 
 (** We can define abbreviations for operation and relation types based on [arrows]. *)
 
-Definition unary_operation A := arrows (A::Tnil) A.
-Definition binary_operation A := arrows (A::A::Tnil) A.
-Definition ternary_operation A := arrows (A::A::A::Tnil) A.
+Definition unary_operation (A : Type) := arrows (A::Tnil) A.
+Definition binary_operation (A : Type) := arrows (A::A::Tnil) A.
+Definition ternary_operation (A : Type) := arrows (A::A::A::Tnil) A.
 
 (** We define n-ary [predicate]s as functions into [Prop]. *)
 

@@ -2,7 +2,7 @@ Set Implicit Arguments.
 Set Universe Polymorphism.
 Set Printing Universes.
 
-Inductive type_paths (A : Type) : Type -> Prop
+Inductive type_paths (A : Type@{_}) : Type@{_} -> Prop
   := idtypepath : type_paths A A.
 Monomorphic Definition comp_type_paths := Eval compute in type_paths@{Type Type}.
 Check comp_type_paths.
@@ -10,7 +10,7 @@ Check comp_type_paths.
      : Type (* Top.12 *) -> Type (* Top.12 *) -> Prop *)
 (* This is terrible. *)
 
-Inductive type_paths' (A : Type) : Type -> Prop
+Inductive type_paths' (A : Type@{_}) : Type@{_} -> Prop
   := idtypepath' : type_paths' A A
    | other_type_path : False -> forall B : Type, type_paths' A B.
 Monomorphic Definition comp_type_paths' := Eval compute in type_paths'.

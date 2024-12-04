@@ -22,6 +22,7 @@ Definition RRTa : crelation Type := arrow.
 Definition RRTb : crelation Type := Basics.arrow.
 
 Parameter f: A -> B.
+
 #[local] Instance f_Ri: Proper (R ==> Ri) f. Admitted.
 #[local] Instance f_Ra: Proper (R ==> Ra) f. Admitted.
 #[local] Instance f_Rb: Proper (R ==> Rb) f. Admitted.
@@ -37,6 +38,23 @@ Parameter f: A -> B.
 #[local] Instance f_RRTi: Proper (R ==> RRTi) f. Admitted.
 #[local] Instance f_RRTa: Proper (R ==> RRTa) f. Admitted.
 #[local] Instance f_RRTb: Proper (R ==> RRTb) f. Admitted.
+
+
+(*#[universes(polymorphic), local] Instance f_Ri@{u v?|?}: Proper@{u v} (R ==> Ri) f. Admitted.
+#[universes(polymorphic), local] Instance f_Ra@{u v?}: Proper@{u v} (R ==> Ra) f. Admitted.
+#[local,universes(polymorphic)] Instance f_Rb@{u v?}: Proper@{u v} (R ==> Rb) f. Admitted.
+#[local,universes(polymorphic)] Instance f_RBi@{u v?}: Proper@{u v} (R ==> RBi) f. Admitted.
+#[local,universes(polymorphic)] Instance f_RBa@{u v?}: @Proper@{u v} (A -> B) (R ==> RBa) f. Admitted.
+#[local,universes(polymorphic)] Instance f_RBb@{u v?}: Proper@{u v} (R ==> RBb) f. Admitted.
+#[local,universes(polymorphic)] Instance f_RTi@{u v?}: Proper@{u v} (R ==> RTi) f. Admitted.
+#[local,universes(polymorphic)] Instance f_RTa@{u v?}: Proper@{u v} (R ==> RTa) f. Admitted.
+#[local,universes(polymorphic)] Instance f_RTb@{u v?}: Proper@{u v} (R ==> RTb) f. Admitted.
+#[local,universes(polymorphic)] Instance f_RRBi@{u v?}: Proper@{u v} (R ==> RRBi) f. Admitted.
+#[local,universes(polymorphic)] Instance f_RRBa@{u v?}: Proper@{u v} (R ==> RRBa) f. Admitted.
+#[local,universes(polymorphic)] Instance f_RRBb@{u v?}: Proper@{u v} (R ==> RRBb) f. Admitted.
+#[local,universes(polymorphic)] Instance f_RRTi@{u v?}: Proper@{u v} (R ==> RRTi) f. Admitted.
+#[local,universes(polymorphic)] Instance f_RRTa@{u v?}: @Proper@{u v} (A -> B) (R ==> RRTa) f. Admitted.
+#[local,universes(polymorphic)] Instance f_RRTb@{u v?}: Proper@{u v} (R ==> RRTb) f. Admitted.*)
 
 
 
@@ -56,6 +74,7 @@ Ltac test S b1 b2 b3 b4 :=
     asserts b3 ltac:(rewrite HR);
     asserts b4 ltac:(rewrite <- HR);
     unfold arrow, Basics.arrow; now rewrite <- HR | clear Ht ].
+Print Universes.
 
 Goal True.
 Proof.

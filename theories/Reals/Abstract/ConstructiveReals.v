@@ -238,7 +238,7 @@ Qed.
 
 Lemma CRlt_proper
   : forall R : ConstructiveReals,
-    CMorphisms.Proper
+    CMorphisms.Proper@{Set+1 Set}
       (CMorphisms.respectful (CReq R)
                              (CMorphisms.respectful (CReq R) CRelationClasses.iffT)) (CRlt R).
 Proof.
@@ -345,7 +345,7 @@ Qed.
 
 #[global]
 Instance CRlt_morph
-  : forall {R : ConstructiveReals}, CMorphisms.Proper
+  : forall {R : ConstructiveReals}, CMorphisms.Proper@{Set+1 Set}
       (CMorphisms.respectful (CReq R) (CMorphisms.respectful (CReq R) CRelationClasses.iffT)) (CRlt R).
 Proof.
   intros R x y H x0 y0 H0. destruct H, H0. split.
@@ -575,7 +575,7 @@ Qed.
 
 #[global]
 Instance CRplus_morph_T
-  : forall {R : ConstructiveReals}, CMorphisms.Proper
+  : forall {R : ConstructiveReals}, CMorphisms.Proper@{Set Set}
       (CMorphisms.respectful (CReq R) (CMorphisms.respectful (CReq R) (CReq R))) (CRplus R).
 Proof.
   intros R x y H z t H1. apply CRplus_morph; assumption.
@@ -583,7 +583,7 @@ Qed.
 
 #[global]
 Instance CRmult_morph_T
-  : forall {R : ConstructiveReals}, CMorphisms.Proper
+  : forall {R : ConstructiveReals}, CMorphisms.Proper@{Set Set}
       (CMorphisms.respectful (CReq R) (CMorphisms.respectful (CReq R) (CReq R))) (CRmult R).
 Proof.
   intros R x y H z t H1. apply CRmult_morph; assumption.
@@ -591,22 +591,23 @@ Qed.
 
 #[global]
 Instance CRopp_morph_T
-  : forall {R : ConstructiveReals}, CMorphisms.Proper
+  : forall {R : ConstructiveReals}, CMorphisms.Proper@{Set Set}
       (CMorphisms.respectful (CReq R) (CReq R)) (CRopp R).
 Proof.
   apply CRisRingExt.
 Qed.
 
-Add Parametric Morphism {R : ConstructiveReals} : (CRminus R)
-    with signature (CReq R) ==> (CReq R) ==> (CReq R)
-      as CRminus_morph.
+#[global]
+Instance CRminus_morph
+  : forall {R : ConstructiveReals}, Morphisms.Proper
+      (Morphisms.respectful (CReq R) (Morphisms.respectful (CReq R) (CReq R))) (CRminus R).
 Proof.
-  intros. unfold CRminus. rewrite H,H0. reflexivity.
+  intros R ??? ???. unfold CRminus. rewrite H, H0. reflexivity.
 Qed.
 
 #[global]
 Instance CRminus_morph_T
-  : forall {R : ConstructiveReals}, CMorphisms.Proper
+  : forall {R : ConstructiveReals}, CMorphisms.Proper@{Set Set}
       (CMorphisms.respectful (CReq R) (CMorphisms.respectful (CReq R) (CReq R))) (CRminus R).
 Proof.
   intros R x y exy z t ezt. unfold CRminus. rewrite exy,ezt. reflexivity.
@@ -993,7 +994,7 @@ Qed.
 
 #[global]
 Instance CR_of_Q_morph_T
-  : forall {R : ConstructiveReals}, CMorphisms.Proper
+  : forall {R : ConstructiveReals}, CMorphisms.Proper@{Set Set}
       (CMorphisms.respectful Qeq (CReq R)) (CR_of_Q R).
 Proof.
   intros R x y H. apply CR_of_Q_morph; assumption.
@@ -1027,6 +1028,8 @@ Proof.
     apply CR_of_Q_morph. field. intro abs.
     rewrite abs in qPos. exact (Qlt_irrefl 0 qPos).
 Qed.
+
+(* Set Cumulativity Weak Constraints. *)
 
 Lemma CRmult_le_0_compat : forall {R : ConstructiveReals} (a b : CRcarrier R),
     0 <= a -> 0 <= b -> 0 <= a * b.
@@ -1218,7 +1221,7 @@ Qed.
 
 #[global]
 Instance CRapart_morph
-  : forall {R : ConstructiveReals}, CMorphisms.Proper
+  : forall {R : ConstructiveReals}, CMorphisms.Proper@{Set+1 Set}
       (CMorphisms.respectful (CReq R) (CMorphisms.respectful (CReq R) CRelationClasses.iffT)) (CRapart R).
 Proof.
   intros R x y H x0 y0 H0. destruct H, H0. split.

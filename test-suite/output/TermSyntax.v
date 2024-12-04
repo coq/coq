@@ -1,5 +1,5 @@
 (* Check cast setting scopes *)
-Check nat * nat : Type.
+Check nat * nat : Type@{_}.
 Check 0 * 0 : nat.
 Require Import ZArith.
 Check 0 * 0 : Z.

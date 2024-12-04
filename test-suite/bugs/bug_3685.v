@@ -1,5 +1,6 @@
 Require Import TestSuite.admit.
 Set Universe Polymorphism.
+Set Polymorphic Inductive Cumulativity.
 Class Funext := { }.
 Delimit Scope category_scope with category.
 Record PreCategory := { object :> Type ; morphism : object -> object -> Type }.
@@ -65,7 +66,7 @@ Module Bad.
   Include PointwiseCore.
   Definition functor_uncurried `{Funext} (P : PreCategory -> Type)
              (has_functor_categories : forall C D : sub_pre_cat P, P (C -> D))
-  : object (((sub_pre_cat P)^op * (sub_pre_cat P)) -> (sub_pre_cat P))
+  : object (((sub_pre_cat P)^op * (sub_pre_cat P)) -> (sub_pre_cat@{_ _ _ _ 0} P))
     := Eval cbv zeta in
         let object_of := (fun CD => (((fst CD) -> (snd CD))))
         in Build_Functor

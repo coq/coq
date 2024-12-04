@@ -53,6 +53,7 @@ module DefAttributes = struct
     scope : definition_scope;
     locality : bool option;
     polymorphic : bool;
+    cumulative : bool;
     program : bool;
     user_warns : Globnames.extended_global_reference UserWarn.with_qf option;
     canonical_instance : bool;
@@ -104,12 +105,12 @@ module DefAttributes = struct
   let clearbody = bool_attribute ~name:"clearbody"
 
   (* [XXX] EJGA: coercion is unused here *)
-  let def_attributes_gen ?(coercion=false) ?(discharge=NoDischarge,"","") () =
+  let def_attributes_gen ?(coercion=false) ?(discharge=NoDischarge,"","") ?(ass_or_def=UVars.Definition) () =
     let discharge, deprecated_thing, replacement = discharge in
     let clearbody = match discharge with DoDischarge -> clearbody | NoDischarge -> return None in
-    (locality ++ user_warns_with_use_globref_instead ++ polymorphic ++ program ++
+    (locality ++ user_warns_with_use_globref_instead ++ polymorphic ++ cumulative ass_or_def ++ program ++
                canonical_instance ++ typing_flags ++ using ++
-               reversible ++ clearbody) >>= fun ((((((((locality, user_warns), polymorphic), program),
+               reversible ++ clearbody) >>= fun (((((((((locality, user_warns), polymorphic), cumulative), program),
            canonical_instance), typing_flags), using),
            reversible), clearbody) ->
       let using = Option.map Proof_using.using_from_string using in
@@ -118,17 +119,17 @@ module DefAttributes = struct
         then CErrors.user_err Pp.(str "Cannot use attribute clearbody outside sections.")
       in
       let scope = scope_of_locality locality discharge deprecated_thing replacement in
-      return { scope; locality; polymorphic; program; user_warns; canonical_instance; typing_flags; using; reversible; clearbody }
+      return { scope; locality; polymorphic; cumulative; program; user_warns; canonical_instance; typing_flags; using; reversible; clearbody }
 
-  let parse ?coercion ?discharge f =
-    Attributes.parse (def_attributes_gen ?coercion ?discharge ()) f
+  let parse ?coercion ?discharge ?ass_or_def f =
+    Attributes.parse (def_attributes_gen ?coercion ?discharge ?ass_or_def ()) f
 
   let def_attributes = def_attributes_gen ()
 
 end
 
-let with_def_attributes ?coercion ?discharge ~atts f =
-  let atts = DefAttributes.parse ?coercion ?discharge atts in
+let with_def_attributes ?coercion ?discharge ?ass_or_def ~atts f =
+  let atts = DefAttributes.parse ?coercion ?discharge ?ass_or_def atts in
   if atts.DefAttributes.program then Declare.Obls.check_program_libraries ();
   f ~atts
 
@@ -169,10 +170,12 @@ let show_top_evars ~proof =
 
 let show_universes ~proof =
   let Proof.{goals;sigma} = Proof.data proof in
-  let ctx = Evd.universe_context_set (Evd.minimize_universes sigma) in
+  let env = Global.env () in
+  let sigma = UnivVariances.register_universe_variances_of_partial_proofs env sigma (Proof.partial_proof proof) in
+  let sigma' = Evd.minimize_universes sigma in
   UState.pr (Evd.ustate sigma) ++ fnl () ++
   v 1 (str "Normalized constraints:" ++ cut() ++
-       Univ.pr_universe_context_set (Termops.pr_evd_level sigma) ctx)
+       UState.pr (Evd.ustate sigma'))
 
 (* Simulate the Intro(s) tactic *)
 let show_intro ~proof all =
@@ -367,17 +370,23 @@ let print_registered_schemes () =
   in
   hov 0 (prlist_with_sep fnl pr_schemes_of_ind (Indmap.bindings schemes))
 
+type kind = Lt | Le | Eq
+
 let dump_universes output g =
   let open Univ in
   let dump_arc u = function
     | UGraph.Node ltle ->
-      Univ.Level.Map.iter (fun v strict ->
-          let typ = if strict then Lt else Le in
-          output typ u v) ltle;
-    | UGraph.Alias v ->
-      output Eq u v
+      List.iter (fun (k, v) ->
+        if k = 1 then
+          output Lt (Universe.of_expr (u, 0)) v
+        else
+          output Le (Universe.of_expr (u, k)) v)
+        ltle;
+    | UGraph.Alias (v, k) ->
+      output Eq (Universe.make u) (Universe.of_expr (v, k))
   in
   Univ.Level.Map.iter dump_arc g
+
 
 let dump_universes_gen prl g s =
   let fulls = System.get_output_path s in
@@ -390,11 +399,11 @@ let dump_universes_gen prl g s =
       begin fun kind left right ->
         let () = Lazy.force init in
         match kind with
-          | Univ.Lt ->
+          | Lt ->
             Printf.fprintf output "  \"%s\" -> \"%s\" [style=bold];\n" right left
-          | Univ.Le ->
+          | Le ->
             Printf.fprintf output "  \"%s\" -> \"%s\" [style=solid];\n" right left
-          | Univ.Eq ->
+          | Eq ->
             Printf.fprintf output "  \"%s\" -> \"%s\" [style=dashed];\n" left right
       end, begin fun () ->
         if Lazy.is_val init then Printf.fprintf output "}\n";
@@ -403,9 +412,9 @@ let dump_universes_gen prl g s =
     end else begin
       begin fun kind left right ->
         let kind = match kind with
-          | Univ.Lt -> "<"
-          | Univ.Le -> "<="
-          | Univ.Eq -> "="
+          | Lt -> "<"
+          | Le -> "<="
+          | Eq -> "="
         in
         Printf.fprintf output "%s %s %s ;\n" left kind right
       end, (fun () -> close_out output)
@@ -448,17 +457,17 @@ let universe_subgraph kept univ =
   let kept = List.fold_left (fun kept q -> Level.Set.add (parse q) kept) Level.Set.empty kept in
   let csts = UGraph.constraints_for ~kept univ in
   let add u newgraph =
-    let strict = UGraph.check_constraint univ (Level.set,Lt,u) in
+    let strict = UGraph.check_constraint univ (Universe.type1,Le,Universe.make u) in
     UGraph.add_universe u ~lbound:UGraph.Bound.Set ~strict newgraph
   in
   let univ = Level.Set.fold add kept UGraph.initial_universes in
-  UGraph.merge_constraints csts univ
+  fst (UGraph.merge_constraints csts univ)
 
 let sort_universes g =
   let open Univ in
-  let rec normalize u = match Level.Map.find u g with
-  | UGraph.Alias u -> normalize u
-  | UGraph.Node _ -> u
+  let rec normalize (u, ku as l) = match Level.Map.find u g with
+  | UGraph.Alias (u, k) -> normalize (u, ku + k)
+  | UGraph.Node _ -> l
   in
   let get_next u = match Level.Map.find u g with
   | UGraph.Alias u -> assert false (* nodes are normalized *)
@@ -468,7 +477,7 @@ let sort_universes g =
   let rec traverse accu todo = match todo with
   | [] -> accu
   | (u, n) :: todo ->
-    let () = assert (Level.equal (normalize u) u) in
+    let () = assert (LevelExpr.equal (normalize (u, n)) (u, n)) in
     let n = match Level.Map.find u accu with
     | m -> if m < n then Some n else None
     | exception Not_found -> Some n
@@ -478,21 +487,22 @@ let sort_universes g =
     | Some n ->
       let accu = Level.Map.add u n accu in
       let next = get_next u in
-      let fold v lt todo =
-        let v = normalize v in
-        if lt then (v, n + 1) :: todo else (v, n) :: todo
+      let fold (k, u) todo =
+        let u = Universe.repr u in
+        let v = List.map (fun (v, kv) -> normalize (v, k + n - kv)) u in
+        v @ todo
       in
-      let todo = Level.Map.fold fold next todo in
+      let todo = List.fold_right fold next todo in
       traverse accu todo
   in
   (* Only contains normalized nodes *)
-  let levels = traverse Level.Map.empty [normalize Level.set, 0] in
+  let levels = traverse Level.Map.empty [normalize (Level.set, 0)] in
   let max_level = Level.Map.fold (fun _ n accu -> max n accu) levels 0 in
   let dummy_mp = Names.DirPath.make [Names.Id.of_string "Type"] in
   let ulevels = Array.init max_level (fun i -> Level.(make (UGlobal.make dummy_mp "" i))) in
   (* Add the normal universes *)
   let fold (cur, ans) u =
-    let ans = Level.Map.add cur (UGraph.Node (Level.Map.singleton u true)) ans in
+    let ans = Level.Map.add cur (UGraph.Node [1, Universe.make u]) ans in
     (u, ans)
   in
   let _, ans = Array.fold_left fold (Level.set, Level.Map.empty) ulevels in
@@ -501,8 +511,9 @@ let sort_universes g =
   let fold u _ ans =
     if Level.is_set u then ans
     else
-      let n = Level.Map.find (normalize u) levels in
-      Level.Map.add u (UGraph.Alias ulevels.(n)) ans
+      let v, k = normalize (u, 0) in
+      let n = Level.Map.find v levels in
+      Level.Map.add u (UGraph.Alias (ulevels.(n), k)) ans
   in
   Level.Map.fold fold g ans
 
@@ -517,30 +528,27 @@ type constraint_source = GlobRef of GlobRef.t | Library of DirPath.t
    (either [<] or [=], NB we can't get both at the same time).
 *)
 type constraint_sources = {
-  edges : (constraint_source * Univ.constraint_type) Univ.Level.Map.t Univ.Level.Map.t;
+  edges : (constraint_source * Univ.constraint_type) Univ.Universe.Map.t Univ.Universe.Map.t;
 }
 
-let empty_sources = { edges = Univ.Level.Map.empty }
+let empty_sources = { edges = Univ.Universe.Map.empty }
 
 let mk_sources () =
   let open Univ in
   let srcs = DeclareUniv.constraint_sources () in
   let pick_stricter_constraint (_,k as v) (_,k' as v') =
     match k, k' with
-    | Le, Lt | Le, Eq -> v'
-    | Lt, Le | Eq, Le -> v
-    | Le, Le | Lt, Lt | Eq, Eq ->
+    | Le, Eq -> v'
+    | Eq, Le -> v
+    | Le, Le | Eq, Eq ->
       (* same: prefer [v]
          (the older refs are encountered last, and fallback libraries first) *)
       v
-    | Lt, Eq | Eq, Lt ->
-      (* XXX don't assert in case of type in type? *)
-      assert false
   in
   let add_edge_unidirectional (u,k,v) ref edges =
-    Level.Map.update u (fun uedges ->
-        let uedges = Option.default Level.Map.empty uedges in
-        Some (Level.Map.update v (function
+    Universe.Map.update u (fun uedges ->
+        let uedges = Option.default Universe.Map.empty uedges in
+        Some (Universe.Map.update v (function
             | None -> Some (ref, k)
             | Some v' -> Some (pick_stricter_constraint (ref, k) v'))
             uedges))
@@ -550,7 +558,7 @@ let mk_sources () =
     let edges = add_edge_unidirectional cst ref edges in
     if k = Eq then add_edge_unidirectional (v,k,u) ref edges else edges
   in
-  let edges = Level.Map.empty in
+  let edges = Universe.Map.empty in
   let edges =
     let libs = Library.loaded_libraries () in
     List.fold_left (fun edges dp ->
@@ -569,7 +577,7 @@ let mk_sources () =
     edges;
   }
 
-exception Found of (Univ.constraint_type * Univ.Level.t * constraint_source) list
+exception Found of (Univ.constraint_type * Univ.Universe.t * constraint_source) list
 
 (* We are looking for a path from [source] to [target].
    If [k] is [Lt] the path must contain at least one [Lt].
@@ -579,7 +587,7 @@ exception Found of (Univ.constraint_type * Univ.Level.t * constraint_source) lis
    path had enough [Lt] (always true if the original [k] is [Le] or [Eq]).
 *)
 let search src ~target k ~source =
-  let module UMap = Univ.Level.Map in
+  let module UMap = Univ.Universe.Map in
   let rec loop visited todo next_todo =
     match todo, next_todo with
     | [], [] -> ()
@@ -590,24 +598,25 @@ let search src ~target k ~source =
         | Some has_enough_lt ->
           if has_enough_lt then true
           else (* original k was [Lt], if current k is also [Lt] we have no new info on this path *)
-            k = Univ.Lt
+            false
       in
       if is_visited then loop visited todo next_todo
       else
-        let visited = UMap.add source (k <> Univ.Lt) visited in
+        let visited = UMap.add source true visited in
         let visited, next_todo =
           UMap.fold (fun u (ref,k') (visited,next_todo) ->
-              if k = Univ.Eq && k' = Univ.Lt then
+              (* if k = Univ.Eq && k' = Univ.Lt then
                 (* no point searching for a loop involving [u]  *)
                 (UMap.add u true visited, next_todo)
-              else
-                let next_k = if k = Univ.Lt && k' = Univ.Lt then Univ.Le
-                  else k
-                in
+              else *)
+                (* let next_k = if k = Univ.Lt && k' = Univ.Lt then Univ.Le *)
+                  (* else k *)
+                (* in *)
                 let revpath = (k',u,ref) :: revpath in
-                if Univ.Level.equal u target && next_k <> Univ.Lt
+                if Univ.Universe.equal u target
+                    (* && next_k <> Univ.Lt *)
                 then raise (Found revpath)
-                else (visited, (u, next_k, revpath) :: next_todo))
+                else (visited, (u, k, revpath) :: next_todo))
             (Option.default UMap.empty (UMap.find_opt source src.edges))
             (visited,next_todo)
         in
@@ -630,7 +639,7 @@ let search src (u,k,v) =
     else Some path
 
 let find_source (u,k,v as cst) src =
-  if Univ.Level.is_set u && k = Univ.Lt then []
+  if Univ.Universe.is_typen 1 u && k = Univ.Le then []
   else Option.default [] (search src cst)
 
 let pr_constraint_source = function
@@ -641,7 +650,7 @@ let pr_source_path prl u src =
   if CList.is_empty src then mt()
   else
     let pr_rel = function
-      | Univ.Eq -> str"=" | Lt -> str"<" | Le -> str"<="
+      | Univ.Eq -> str"=" | Le -> str"<="
     in
     let pr_one (k,v,ref) =
       spc() ++
@@ -654,22 +663,32 @@ let pr_pmap sep pr map =
   let cmp (u,_) (v,_) = Univ.Level.compare u v in
   Pp.prlist_with_sep sep pr (List.sort cmp (Univ.Level.Map.bindings map))
 
+
 let pr_arc srcs prl = let open Pp in
-  function
-  | u, UGraph.Node ltle ->
-    if Univ.Level.Map.is_empty ltle then mt ()
-    else
-      prl u ++ str " " ++
-      v 0
-        (pr_pmap spc (fun (v, strict) ->
-             let k = if strict then Univ.Lt else Univ.Le in
-             let src = find_source (u,k,v) srcs in
-             hov 2 ((if strict then str "< " else str "<= ") ++ prl v ++ pr_source_path prl u src))
-            ltle) ++
-      fnl ()
-  | u, UGraph.Alias v ->
-    let src = find_source (u,Eq,v) srcs in
-    prl u  ++ str " = " ++ prl v ++ pr_source_path prl u src ++ fnl ()
+let open Univ in
+function
+| u, UGraph.Node l ->
+  if CList.is_empty l then mt ()
+  else
+    (* In increasing order *)
+    let l = List.sort (fun (i, _) (i', _) -> Int.compare i i') l in
+    let l = CList.factorize_left Int.equal l in
+    let pr_cstrs (i, l) =
+      let l = List.sort Universe.compare l in
+      let k, is_lt = if i >= 1 then pred i, true else 0, false in
+      let u = (u, k) in
+      let prv v =
+        let src = find_source (Universe.of_expr u, Univ.Le, v) srcs in
+        str (if is_lt then "< " else "<= ") ++ Universe.pr prl v ++ pr_source_path (Universe.pr prl) (Universe.of_expr u) src
+      in
+      LevelExpr.pr prl u ++ spc () ++ v 0 (prlist_with_sep spc prv l)
+    in
+    prlist_with_sep spc pr_cstrs l ++ fnl ()
+| u, UGraph.Alias v ->
+  let uu = Universe.make u in
+  let vu = Universe.of_expr v in
+  let src = find_source (uu,Eq,vu) srcs in
+  prl u  ++ str " = " ++ LevelExpr.pr prl v ++ pr_source_path (Universe.pr prl) uu src ++ fnl  ()
 
 let pr_universes srcs prl g = pr_pmap Pp.mt (pr_arc srcs prl) g
 
@@ -695,7 +714,7 @@ let print_universes { sort; subgraph; with_sources; file; } =
     in
     let srcs = if with_sources then mk_sources () else empty_sources in
     pr_universes srcs prl univ ++ pr_remaining
-  | Some s -> dump_universes_gen (fun u -> Pp.string_of_ppcmds (prl u)) univ s
+  | Some s -> dump_universes_gen (fun u -> Pp.string_of_ppcmds (Univ.Universe.pr prl u)) univ s
   end
 
 (*********************)
@@ -835,18 +854,18 @@ let vernac_definition_name lid local =
 
 let vernac_definition_interactive ~atts (discharge, kind) (lid, udecl) bl t =
   let open DefAttributes in
-  let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody =
-    atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
+  let scope, local, poly, cumulative, program_mode, user_warns, typing_flags, using, clearbody =
+    atts.scope, atts.locality, atts.polymorphic, atts.cumulative, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
   let canonical_instance, reversible = atts.canonical_instance, atts.reversible in
   let hook = vernac_definition_hook ~canonical_instance ~local ~poly ~reversible kind in
   let name = vernac_definition_name lid scope in
-  ComDefinition.do_definition_interactive ?loc:lid.loc ~typing_flags ~program_mode ~name ~poly ~scope ?clearbody:atts.clearbody
+  ComDefinition.do_definition_interactive ?loc:lid.loc ~typing_flags ~program_mode ~name ~poly ~cumulative ~scope ?clearbody:atts.clearbody
     ~kind:(Decls.IsDefinition kind) ?user_warns ?using:atts.using ?hook udecl bl t
 
 let vernac_definition ~atts ~pm (discharge, kind) (lid, udecl) bl red_option c typ_opt =
   let open DefAttributes in
-  let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody =
-     atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
+  let scope, local, poly, cumulative, program_mode, user_warns, typing_flags, using, clearbody =
+     atts.scope, atts.locality, atts.polymorphic, atts.cumulative, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
   let canonical_instance, reversible = atts.canonical_instance, atts.reversible in
   let hook = vernac_definition_hook ~canonical_instance ~local ~poly kind ~reversible in
   let name = vernac_definition_name lid scope in
@@ -859,12 +878,12 @@ let vernac_definition ~atts ~pm (discharge, kind) (lid, udecl) bl red_option c t
   if program_mode then
     let kind = Decls.IsDefinition kind in
     ComDefinition.do_definition_program ?loc:lid.loc ~pm ~name
-      ?clearbody ~poly ?typing_flags ~scope ~kind
+      ?clearbody ~poly ~cumulative ?typing_flags ~scope ~kind
       ?user_warns ?using udecl bl red_option c typ_opt ?hook
   else
     let () =
       ComDefinition.do_definition ~name ?loc:lid.loc
-        ?clearbody ~poly ?typing_flags ~scope ~kind
+        ?clearbody ~poly ~cumulative ?typing_flags ~scope ~kind
         ?user_warns ?using udecl bl red_option c typ_opt ?hook in
     pm
 
@@ -873,21 +892,21 @@ let vernac_start_proof ~atts kind l =
   let open DefAttributes in
   if Dumpglob.dump () then
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
-  let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody =
-    atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
+  let scope, local, poly, cumulative, program_mode, user_warns, typing_flags, using, clearbody =
+    atts.scope, atts.locality, atts.polymorphic, atts.cumulative, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
   List.iter (fun ((id, _), _) -> check_name_freshness scope id) l;
   match l with
   | [] -> assert false
   | [({v=name; loc},udecl),(bl,typ)] ->
     ComDefinition.do_definition_interactive ?loc
-      ~typing_flags ~program_mode ~name ~poly ?clearbody ~scope
+      ~typing_flags ~program_mode ~name ~poly ~cumulative ?clearbody ~scope
       ~kind:(Decls.IsProof kind) ?user_warns ?using udecl bl typ
   | ((lid,_),_) :: _ ->
     let fix = List.map (fun ((fname, univs), (binders, rtype)) ->
         { fname; binders; rtype; body_def = None; univs; notations = []}) l in
     let pm, proof =
       ComFixpoint.do_mutually_recursive ~program_mode ~use_inference_hook:program_mode
-        ~scope ?clearbody ~kind:(Decls.IsProof kind) ~poly ?typing_flags
+        ~scope ?clearbody ~kind:(Decls.IsProof kind) ~poly ~cumulative ?typing_flags
         ?user_warns ?using (CUnknownRecOrder, fix) in
     assert (Option.is_empty pm);
     Option.get proof
@@ -911,11 +930,11 @@ let vernac_exact_proof ~lemma ~pm c =
 
 let vernac_assumption ~atts kind l inline =
   let open DefAttributes in
-  let scope, poly, program_mode, using, user_warns =
-    atts.scope, atts.polymorphic, atts.program, atts.using, atts.user_warns in
+  let scope, poly, cumulative, program_mode, using, user_warns =
+    atts.scope, atts.polymorphic, atts.cumulative, atts.program, atts.using, atts.user_warns in
   if Option.has_some using then
     Attributes.unsupported_attributes [CAst.make ("using",VernacFlagEmpty)];
-  ComAssumption.do_assumptions ~poly ~program_mode ~scope ~kind ?user_warns ~inline l
+  ComAssumption.do_assumptions ~poly ~cumulative ~program_mode ~scope ~kind ?user_warns ~inline l
 
 let { Goptions.get = is_polymorphic_inductive_cumulativity } =
   declare_bool_option_and_ref
@@ -935,8 +954,6 @@ let polymorphic_cumulative ~is_defclass =
     (bool_attribute ~name:"polymorphic"
      ++ bool_attribute ~name:"cumulative")
   >>= fun (poly,cumul) ->
-  if is_defclass && Option.has_some cumul
-  then user_err Pp.(str "Definitional classes do not support the inductive cumulativity attribute.");
   match poly, cumul with
   | Some poly, Some cumul ->
      (* Case of Polymorphic|Monomorphic Cumulative|NonCumulative Inductive
@@ -946,7 +963,8 @@ let polymorphic_cumulative ~is_defclass =
   | Some poly, None ->
      (* Case of Polymorphic|Monomorphic Inductive
         and #[ universes(polymorphic|monomorphic) ] Inductive *)
-     if poly then return (true, is_polymorphic_inductive_cumulativity ())
+     if poly then return (true, if is_defclass then is_polymorphic_definitions_cumulativity ()
+      else is_polymorphic_inductive_cumulativity ())
      else return (false, false)
   | None, Some cumul ->
      (* Case of Cumulative|NonCumulative Inductive *)
@@ -955,7 +973,8 @@ let polymorphic_cumulative ~is_defclass =
   | None, None ->
      (* Case of Inductive *)
      if is_universe_polymorphism () then
-       return (true, is_polymorphic_inductive_cumulativity ())
+       return (true, if is_defclass then is_polymorphic_definitions_cumulativity () else
+         is_polymorphic_inductive_cumulativity ())
      else
        return (false, false)
 
@@ -1245,15 +1264,15 @@ let with_obligations program_mode f pm =
 let vernac_fixpoint ~atts ~pm (rec_order,fixl) =
   let open DefAttributes in
   let scope = vernac_fixpoint_common ~atts fixl in
-  let poly, typing_flags, program_mode, clearbody, using, user_warns =
-    atts.polymorphic, atts.typing_flags, atts.program, atts.clearbody, atts.using, atts.user_warns in
+  let poly, cumulative, typing_flags, program_mode, clearbody, using, user_warns =
+    atts.polymorphic, atts.cumulative, atts.typing_flags, atts.program, atts.clearbody, atts.using, atts.user_warns in
   let () =
     if program_mode then
       (* XXX: Switch to the attribute system and match on ~atts *)
       let opens = List.exists (fun { body_def } -> Option.is_empty body_def) fixl in
       if opens then CErrors.user_err Pp.(str"Program Fixpoint requires a body.") in
   with_obligations program_mode
-    (fun pm -> ComFixpoint.do_mutually_recursive ?pm ~scope ?clearbody ~kind:(IsDefinition Fixpoint) ~poly ?typing_flags ?user_warns ?using (CFixRecOrder rec_order, fixl))
+    (fun pm -> ComFixpoint.do_mutually_recursive ?pm ~scope ?clearbody ~kind:(IsDefinition Fixpoint) ~poly ~cumulative ?typing_flags ?user_warns ?using (CFixRecOrder rec_order, fixl))
     pm
 
 let vernac_cofixpoint_common ~atts l =
@@ -1266,15 +1285,15 @@ let vernac_cofixpoint_common ~atts l =
 let vernac_cofixpoint ~pm ~atts cofixl =
   let open DefAttributes in
   let scope = vernac_cofixpoint_common ~atts cofixl in
-  let poly, typing_flags, program_mode, clearbody, using, user_warns =
-    atts.polymorphic, atts.typing_flags, atts.program, atts.clearbody, atts.using, atts.user_warns in
+  let poly, cumulative, typing_flags, program_mode, clearbody, using, user_warns =
+    atts.polymorphic, atts.cumulative, atts.typing_flags, atts.program, atts.clearbody, atts.using, atts.user_warns in
   let () =
     if program_mode then
       let opens = List.exists (fun { body_def } -> Option.is_empty body_def) cofixl in
       if opens then
         CErrors.user_err Pp.(str"Program CoFixpoint requires a body.") in
   with_obligations program_mode
-    (fun pm -> ComFixpoint.do_mutually_recursive ?pm ~scope ?clearbody ~kind:(IsDefinition CoFixpoint) ~poly ?typing_flags ?user_warns ?using (CCoFixRecOrder, cofixl))
+    (fun pm -> ComFixpoint.do_mutually_recursive ?pm ~scope ?clearbody ~kind:(IsDefinition CoFixpoint) ~poly ~cumulative ?typing_flags ?user_warns ?using (CCoFixRecOrder, cofixl))
     pm
 
 let vernac_scheme l =
@@ -2056,6 +2075,8 @@ let check_may_eval env sigma redexp rc =
   let sigma, c = Pretyping.understand_tcc env sigma gc in
   let sigma = Evarconv.solve_unif_constraints_with_heuristics env sigma in
   Evarconv.check_problems_are_solved env sigma;
+  let sigma = UnivVariances.register_universe_variances_of env sigma c in
+  let sigma = UnivVariances.register_universe_variances_of_undefined env sigma in
   let sigma = Evd.minimize_universes sigma in
   let uctx = Evd.universe_context_set sigma in
   let env = Environ.push_context_set uctx (Evarutil.nf_env_evar sigma env) in
@@ -2092,6 +2113,11 @@ let vernac_check_may_eval ~pstate redexp glopt rc =
   let glopt = query_command_selector glopt in
   let sigma, env = get_current_context_of_args ~pstate glopt in
   check_may_eval env sigma redexp rc
+
+let vernac_check_constraint ~pstate c glopt =
+  let glopt = query_command_selector glopt in
+  let sigma, env = get_current_context_of_args ~pstate glopt in
+  DeclareUniv.check_constraint env sigma c
 
 let vernac_declare_reduction ~local s r =
   let local = Option.default false local in
@@ -2572,12 +2598,14 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
   | VernacDefinition ((discharge,kind as dkind),lid,DefineBody (bl,red_option,c,typ)) ->
     let coercion = match kind with Decls.Coercion -> true | _ -> false in
     vtmodifyprogram (fun ~pm ->
-      with_def_attributes ~coercion ~discharge:(discharge, "\"Let\"", "\"#[local] Definition\"") ~atts
+      with_def_attributes ~coercion ~discharge:(discharge, "\"Let\"", "\"#[local] Definition\"")
+       ~ass_or_def:UVars.Definition ~atts
        vernac_definition ~pm dkind lid bl red_option c typ)
   | VernacDefinition ((discharge,kind as dkind),lid,ProveBody(bl,typ)) ->
     let coercion = match kind with Decls.Coercion -> true | _ -> false in
     vtopenproof(fun () ->
-      with_def_attributes ~coercion ~discharge:(discharge, "\"Let\"", "\"#[local] Definition\"") ~atts
+      with_def_attributes ~coercion ~discharge:(discharge, "\"Let\"", "\"#[local] Definition\"")
+       ~ass_or_def:UVars.Definition ~atts
        vernac_definition_interactive dkind lid bl typ)
 
   | VernacStartTheoremProof (k,l) ->
@@ -2589,7 +2617,7 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
 
   | VernacAssumption ((discharge,kind),nl,l) ->
     vtdefault(fun () ->
-        with_def_attributes ~atts
+        with_def_attributes ~ass_or_def:UVars.Assumption ~atts
           ~discharge:(discharge,
                       "\"Variable\" or \"Hypothesis\"",
                       "\"#[local] Parameter\" or \"#[local] Axiom\"")
@@ -2693,7 +2721,7 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
     end
 
   | VernacDeclareInstance (id, bl, inst, info) ->
-    vtdefault(fun () -> vernac_declare_instance ~atts id bl inst info)
+    vtdefault(fun () -> vernac_declare_instance ~atts (fst id, Option.map Constrexpr_ops.cumul_of_univ_decl (snd id)) bl inst info)
   | VernacContext sup ->
     vtdefault(fun () -> vernac_context ~atts sup)
   | VernacExistingInstance insts ->
@@ -2765,7 +2793,10 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
         unsupported_attributes atts;
         Feedback.msg_notice @@
         vernac_check_may_eval ~pstate r g c)
-
+  | VernacCheckConstraint (c,g) ->
+    vtreadproofopt(fun ~pstate ->
+        unsupported_attributes atts;
+        vernac_check_constraint ~pstate c g)
   | VernacDeclareReduction (s,r) ->
     vtdefault(fun () ->
         with_locality ~atts vernac_declare_reduction s r)

@@ -18,11 +18,11 @@ let fail_check state check box = match state with
 | Result.Error (Some err) -> box.fail err
 
 let convert_instances ~flex u1 u2 (state, check, box) =
-  let state, check = Conversion.convert_instances ~flex u1 u2 (state, check) in
+  let state, check = UCompare.convert_instances ~flex u1 u2 (state, check) in
   fail_check state check box
 
 let sort_cmp_universes env pb s1 s2 (state, check, box) =
-  let state, check = Conversion.sort_cmp_universes env pb s1 s2 (state, check) in
+  let state, check = UCompare.sort_cmp_universes env pb s1 s2 (state, check) in
   fail_check state check box
 
 let table_key_instance env = function

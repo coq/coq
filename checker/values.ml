@@ -196,11 +196,10 @@ let v_cstrs =
     ("Univ.constraints",
      v_set
        (v_tuple "univ_constraint"
-          [|v_level;v_enum "order_request" 3;v_level|]))
+          [|v_univ;v_enum "order_request" 2;v_univ|]))
 
-let v_variance = v_enum "variance" 3
-
-let v_instance = v_annot_c ("instance", v_pair (v_array v_quality) (v_array v_level))
+let v_level_instance = v_annot_c ("level_instance", v_pair (v_array v_quality) (v_array v_level))
+let v_univ_instance = v_annot_c ("instance", v_pair (v_array v_quality) (v_array v_univ))
 let v_abs_context = v_tuple "abstract_universe_context" [|v_pair (v_array v_name) (v_array v_name); v_cstrs|]
 let v_context_set = v_tuple "universe_context_set" [|v_hset v_level;v_cstrs|]
 
@@ -211,7 +210,7 @@ let v_sort = v_sum "sort" 3 (*SProp, Prop, Set*) [|[|v_univ(*Type*)|];[|v_qvar;v
 let v_relevance = v_sum "relevance" 2 [|[|v_qvar|]|]
 let v_binder_annot x = v_tuple "binder_annot" [|x;v_relevance|]
 
-let v_puniverses v = v_tuple "punivs" [|v;v_instance|]
+let v_puniverses v = v_tuple "punivs" [|v;v_univ_instance|]
 
 let v_caseinfo =
   let v_cstyle = v_enum "case_style" 5 in
@@ -251,14 +250,14 @@ let v_case_return = v_tuple_c ("case_return", [|v_tuple_c ("case_return'", [|v_a
     [|v_puniverses v_cst|]; (* Const *)
     [|v_puniverses v_ind|]; (* Ind *)
     [|v_puniverses v_cons|]; (* Construct *)
-    [|v_caseinfo;v_instance; v_array v_constr; v_case_return; v_case_invert; v_constr; v_array v_case_branch|]; (* Case *)
+    [|v_caseinfo;v_univ_instance; v_array v_constr; v_case_return; v_case_invert; v_constr; v_array v_case_branch|]; (* Case *)
     [|v_fix|]; (* Fix *)
     [|v_cofix|]; (* CoFix *)
     [|v_proj;v_relevance;v_constr|]; (* Proj *)
     [|v_uint63|]; (* v_int *)
     [|v_float64|]; (* Float *)
     [|v_string|]; (* v_string *)
-    [|v_instance;v_array v_constr;v_constr;v_constr|] (* v_array *)
+    [|v_univ_instance;v_array v_constr;v_constr;v_constr|] (* v_array *)
   |]))
 
 let v_rdecl = v_sum "rel_declaration" 0
@@ -294,10 +293,10 @@ let v_subst =
 (** kernel/lazyconstr *)
 
 let v_abstr_info =
-  v_tuple_c ("abstr_info", [|v_nctxt; v_abs_context; v_instance|])
+  v_tuple_c ("abstr_info", [|v_nctxt; v_abs_context; v_level_instance|])
 
 let v_abstr_inst_info =
-  v_tuple_c ("abstr_inst_info", [|v_list v_id; v_instance|])
+  v_tuple_c ("abstr_inst_info", [|v_list v_id; v_level_instance|])
 
 let v_expand_info =
   v_tuple_c ("expand_info", [|v_hmap v_cst v_abstr_inst_info; v_hmap v_cst v_abstr_inst_info|])
@@ -342,7 +341,20 @@ let v_typing_flags =
       v_oracle; v_bool; v_bool;
       v_bool; v_bool; v_bool; v_bool; v_bool|]
 
-let v_univs = v_sum "universes" 1 [|[|v_abs_context|]|]
+let v_variance = v_enum "variance" 4
+let v_position = v_sum "position" 2 [| [| v_int |]  |]
+
+let v_application_variances = v_array (v_pair v_variance v_position)
+
+let v_impred_qvars = v_opt (v_sum "impred_qvar_status" 1 [| [| v_set v_qvar |] |])
+let v_variance_occurrence =
+  v_tuple "variance_occurrence"
+    [| v_tuple "binders" [| v_opt v_variance; v_list v_int |];
+       v_opt v_variance; v_opt v_variance; v_impred_qvars  |]
+
+let v_variances = v_pair (v_array v_variance_occurrence) v_application_variances
+
+let v_univs = v_sum "universes" 1 [|[|v_abs_context; v_opt v_variances|]|]
 
 let v_vm_reloc_table = v_array (v_pair v_int v_int)
 
@@ -354,7 +366,7 @@ let v_non_subst_reloc = v_sum "vm_non_subst_reloc" 0 [|
   [|v_sort|];
   [|v_fail "Evar"|];
   [|v_int|];
-  [|v_instance|];
+  [|v_univ_instance|];
   [|v_any|]; (* contains a Vmvalues.value *)
   [|v_uint63|];
   [|v_float64|];
@@ -396,12 +408,13 @@ let v_vm_to_patch = v_tuple "vm_to_patch" [|v_vm_emitcodes; v_vm_fv; v_vm_positi
 
 let v_cb = v_tuple "constant_body"
   [|v_section_ctxt;
-    v_instance;
+    v_level_instance;
     v_cst_def;
     v_constr;
     v_relevance;
     v_opt v_vm_indirect_code;
     v_univs;
+    v_opt v_variances; (* section variances *)
     v_bool;
     v_typing_flags|]
 
@@ -457,14 +470,13 @@ let v_ind_pack = v_tuple "mutual_inductive_body"
     v_finite;
     v_int;
     v_section_ctxt;
-    v_instance;
+    v_level_instance;
     v_int;
     v_int;
     v_rctxt;
     v_univs; (* universes *)
     v_opt v_template_universes;
-    v_opt (v_array v_variance);
-    v_opt (v_array v_variance);
+    v_opt v_variances;
     v_opt v_bool;
     v_typing_flags|]
 

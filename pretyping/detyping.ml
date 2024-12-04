@@ -208,6 +208,12 @@ type _ delay =
 (** Should we keep details of universes during detyping ? *)
 let print_universes = ref false
 
+let { Goptions.get = print_variances } =
+  Goptions.declare_bool_option_and_ref
+    ~key:["Printing";"Universe";"Variances"]
+    ~value:true
+    ()
+
 (** Should we print hidden sort quality variables? *)
 let { Goptions.get = print_sort_quality } =
   Goptions.declare_bool_option_and_ref
@@ -362,13 +368,9 @@ let { Goptions.get = print_relevances } =
 (** univ and sort detyping *)
 
 let detype_level_name sigma l =
-  if Univ.Level.is_set l then GSet else
-    match UState.id_of_level (Evd.ustate sigma) l with
-    | Some id -> GLocalUniv (CAst.make id)
-    | None -> GUniv l
-
-let detype_level sigma l =
-  UNamed (detype_level_name sigma l)
+  match UState.id_of_level (Evd.ustate sigma) l with
+  | Some id -> GLocalUniv (CAst.make id)
+  | None -> GUniv l
 
 let detype_qvar sigma q =
   match UState.id_of_qvar (Evd.ustate sigma) q with
@@ -842,6 +844,11 @@ type binder_kind = BProd | BLambda | BLetIn
 (**********************************************************************)
 (* Main detyping function                                             *)
 
+let detype_instance_univ sigma u =
+  (if !print_universes
+    then detype_universe sigma u
+    else UAnonymous {rigid=UnivRigid})
+
 let detype_instance sigma l =
   if not !print_universes then None
   else
@@ -850,7 +857,7 @@ let detype_instance sigma l =
     else
       let qs, us = UVars.Instance.to_array l in
       let qs = List.map (detype_quality sigma) (Array.to_list qs) in
-      let us = List.map (detype_level sigma) (Array.to_list us) in
+      let us = List.map (detype_instance_univ sigma) (Array.to_list us) in
       Some (qs, us)
 
 let delay (type a) (d : a delay) (f : a delay -> _ -> _ -> _ -> _ -> _ -> a glob_constr_r) flags env avoid sigma t : a glob_constr_g =

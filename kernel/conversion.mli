@@ -20,32 +20,13 @@ type 'a extended_conversion_function =
   ?evars:CClosure.evar_handler ->
   'a -> 'a -> (unit, unit) result
 
-type conv_pb = CONV | CUMUL
+type conv_pb = UCompare.conv_pb = CONV | CUMUL
 
-type ('a, 'err) universe_compare = {
-  compare_sorts : env -> conv_pb -> Sorts.t -> Sorts.t -> 'a -> ('a, 'err option) result;
-  compare_instances: flex:bool -> UVars.Instance.t -> UVars.Instance.t -> 'a -> ('a, 'err option) result;
-  compare_cumul_instances : conv_pb -> UVars.Variance.t array ->
-    UVars.Instance.t -> UVars.Instance.t -> 'a -> ('a, 'err option) result;
-}
+type ('a, 'err) universe_compare = ('a, 'err) UCompare.universe_compare
 
-type ('a, 'err) universe_state = 'a * ('a, 'err) universe_compare
+type ('a, 'err) universe_state = ('a, 'err) UCompare.universe_state
 
 type ('a, 'err) generic_conversion_function = ('a, 'err) universe_state -> constr -> constr -> ('a, 'err option) result
-
-val get_cumulativity_constraints : conv_pb -> UVars.Variance.t array ->
-  UVars.Instance.t -> UVars.Instance.t -> Sorts.QUConstraints.t
-
-val inductive_cumulativity_arguments : (Declarations.mutual_inductive_body * int) -> int
-val constructor_cumulativity_arguments : (Declarations.mutual_inductive_body * int * int) -> int
-
-val sort_cmp_universes : env -> conv_pb -> Sorts.t -> Sorts.t ->
-  'a * ('a, 'err) universe_compare -> ('a, 'err option) result * ('a, 'err) universe_compare
-
-(* [flex] should be true for constants, false for inductive types and
-constructors. *)
-val convert_instances : flex:bool -> UVars.Instance.t -> UVars.Instance.t ->
-  'a * ('a, 'err) universe_compare -> ('a, 'err option) result * ('a, 'err) universe_compare
 
 (** This function never returns an non-empty error. *)
 val checked_universes : (UGraph.t, 'err) universe_compare

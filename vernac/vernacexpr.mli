@@ -187,7 +187,7 @@ type recursion_order_expr =
 
 type recursive_expr_gen =
   { fname : lident
-  ; univs : universe_decl_expr option
+  ; univs : cumul_univ_decl_expr option
   ; binders : local_binder_expr list
   ; rtype : constr_expr
   ; body_def : constr_expr option
@@ -245,7 +245,7 @@ type typeclass_constraint = name_decl * Glob_term.binding_kind * constr_expr
 and typeclass_context = typeclass_constraint list
 
 type proof_expr =
-  ident_decl * (local_binder_expr list * constr_expr)
+  cumul_ident_decl * (local_binder_expr list * constr_expr)
 
 type opacity_flag = Opaque | Transparent
 
@@ -424,8 +424,8 @@ type nonrec synpure_vernac_expr =
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
   | VernacAssumption of (discharge * Decls.assumption_object_kind) *
-      Declaremods.inline * (ident_decl list * constr_expr) with_coercion list
-  | VernacSymbol of (ident_decl list * constr_expr) with_coercion list
+      Declaremods.inline * (cumul_ident_decl list * constr_expr) with_coercion list
+  | VernacSymbol of (cumul_ident_decl list * constr_expr) with_coercion list
   | VernacInductive of inductive_kind * (inductive_expr * notation_declaration list) list
   | VernacFixpoint of discharge * fixpoints_expr
   | VernacCoFixpoint of discharge * cofixpoints_expr
@@ -488,13 +488,14 @@ type nonrec synpure_vernac_expr =
   | VernacMemOption of Goptions.option_name * Goptions.table_value list
   | VernacPrintOption of Goptions.option_name
   | VernacCheckMayEval of Genredexpr.raw_red_expr option * Goal_select.t option * constr_expr
+  | VernacCheckConstraint of univ_constraint_expr list * Goal_select.t option
   | VernacGlobalCheck of constr_expr
   | VernacDeclareReduction of string * Genredexpr.raw_red_expr
   | VernacPrint of printable
   | VernacSearch of searchable * Goal_select.t option * qualid list search_restriction
   | VernacLocate of locatable
   | VernacRegister of qualid * register_kind
-  | VernacPrimitive of ident_decl * CPrimitives.op_or_type * constr_expr option
+  | VernacPrimitive of cumul_ident_decl * CPrimitives.op_or_type * constr_expr option
   | VernacComments of comment list
   | VernacAttributes of Attributes.vernac_flags
 

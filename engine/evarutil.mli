@@ -150,6 +150,7 @@ val nf_evars_universes : evar_map -> Constr.constr -> Constr.constr
     Note that the normalizer passed to [f] holds some imperative state
    in its closure. *)
 val finalize : ?abort_on_undefined_evars:bool -> evar_map ->
+  ?partial:bool ->
   ((EConstr.t -> Constr.t) -> 'a) ->
   evar_map * 'a
 
@@ -178,7 +179,7 @@ val eq_constr_univs_test :
    constraints such that [u1 cv_pb? u2] according to [variance].
    Additionally flexible universes in irrelevant positions are unified
    if possible. Returns [Inr p] when the former is impossible. *)
-val compare_cumulative_instances : Conversion.conv_pb -> UVars.Variance.t array ->
+val compare_cumulative_instances : Conversion.conv_pb -> nargs:UVars.application -> UVars.Variances.t ->
   UVars.Instance.t -> UVars.Instance.t -> evar_map ->
   (evar_map, UGraph.univ_inconsistency) Util.union
 

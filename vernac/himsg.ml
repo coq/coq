@@ -906,8 +906,8 @@ let explain_bad_invert env =
 
 let explain_bad_variance env sigma ~lev ~expected ~actual =
   str "Incorrect variance for universe " ++ Termops.pr_evd_level sigma lev ++
-  str": expected " ++ UVars.Variance.pr expected ++
-  str " but cannot be less restrictive than " ++ UVars.Variance.pr actual ++ str "."
+  str": expected " ++ UVars.VariancePos.pr expected ++
+  str " but cannot be less restrictive than " ++ UVars.VariancePos.pr actual ++ str "."
 
 let explain_undeclared_used_variables env sigma ~declared_vars ~inferred_vars =
   let l = Id.Set.elements (Id.Set.diff inferred_vars declared_vars) in
@@ -1183,15 +1183,18 @@ let explain_not_match_error = function
       in
       let uctx = AbstractContext.repr auctx in
       Printer.pr_universe_instance_constraints sigma
-        (UContext.instance uctx)
+        (Instance.of_level_instance (UContext.instance uctx))
         (UContext.constraints uctx)
     in
     str "incompatible polymorphic binders: got" ++ spc () ++ h (pr_auctx got) ++ spc() ++
     str "but expected" ++ spc() ++ h (pr_auctx expect) ++
     (if not (UVars.eq_sizes (AbstractContext.size got) (AbstractContext.size expect)) then mt() else
        fnl() ++ str "(incompatible constraints)")
-  | IncompatibleVariance ->
-    str "incompatible variance information"
+  | IncompatibleVariance { got; expect } ->
+    str "incompatible variance information: " ++ spc () ++ h (UVars.Variances.pr got) ++ spc() ++
+    str "but expected" ++ spc () ++ h (UVars.Variances.pr expect) ++
+    (if not (UVars.Variances.eq_sizes got expect) then mt() else
+        fnl() ++ str "(incompatible variances)")
   | NoRewriteRulesSubtyping ->
     strbrk "subtyping for rewrite rule blocks is not supported"
 

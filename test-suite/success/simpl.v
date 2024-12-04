@@ -137,8 +137,8 @@ Arguments Cell {_ _}.
 Arguments hd {_ _}.
 Arguments tl {_ _}.
 Notation "x ::: y" := (Cell x y) (at level 60).
-Definition ilist T n := @Nat.iter n Type (cell T) unit.
-Fixpoint imap@{u u0 u1 u2} (T:Type@{u}) (S:Type@{u0}) (f : T -> S) n : ilist@{u2 u1} T n -> ilist@{u0 u1} S n :=
+Definition ilist@{u} (T : Type@{u}) n := @Nat.iter n Type (cell T) unit.
+Fixpoint imap@{u u0} (T:Type@{u}) (S:Type@{u0}) (f : T -> S) n : ilist@{u} T n -> ilist@{u} S n :=
  match n with
  | 0 => fun l => tt
  | S n => fun l => f l.(hd) ::: imap _ _ f _ l.(tl)

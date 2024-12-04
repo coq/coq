@@ -23,7 +23,7 @@ val declare_variable
   -> impl:Glob_term.binding_kind
   -> name:variable
   -> Constr.types
-  -> GlobRef.t * UVars.Instance.t
+  -> GlobRef.t * UVars.LevelInstance.t
 
 (** Declaration of a local construction (Variable/Hypothesis/Let) *)
 val declare_local
@@ -36,7 +36,7 @@ val declare_local
   -> name:variable
   -> Constr.constr option
   -> Constr.types
-  -> GlobRef.t * UVars.Instance.t
+  -> GlobRef.t * UVars.LevelInstance.t
 
 (** Declaration of a global assumption (Axiom/Parameter) *)
 val declare_axiom
@@ -49,7 +49,7 @@ val declare_axiom
   -> inline:Declaremods.inline
   -> name:variable
   -> Constr.types
-  -> GlobRef.t * UVars.Instance.t
+  -> GlobRef.t * UVars.LevelInstance.t
 
 (** Declaration of a global construction (Axiom/Parameter/Definition) *)
 val declare_global
@@ -64,17 +64,18 @@ val declare_global
   -> name:variable
   -> Constr.constr option
   -> Constr.types
-  -> GlobRef.t * UVars.Instance.t
+  -> GlobRef.t * UVars.LevelInstance.t
 
 (** Interpret the commands Variable/Hypothesis/Axiom/Parameter *)
 val do_assumptions
   :  program_mode:bool
   -> poly:bool
+  -> cumulative:bool
   -> scope:Locality.definition_scope
   -> kind:Decls.assumption_object_kind
   -> ?user_warns:Globnames.extended_global_reference UserWarn.with_qf
   -> inline:Declaremods.inline
-  -> (ident_decl list * constr_expr) with_coercion list
+  -> (cumul_ident_decl list * constr_expr) with_coercion list
   -> unit
 
 (** Interpret the command Context *)

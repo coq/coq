@@ -197,6 +197,9 @@ val subst_univs_level_context : sort_level_subst -> Constr.rel_context -> Constr
 val subst_instance_constr : Instance.t -> constr -> constr
 val subst_instance_context : Instance.t -> Constr.rel_context -> Constr.rel_context
 
+(** LevelInstance substitution *)
+val subst_level_instance_constr : LevelInstance.t -> constr -> constr
+
 val univ_instantiate_constr : Instance.t -> constr univ_abstracted -> constr
 (** Ignores the constraints carried by [univ_abstracted]. *)
 

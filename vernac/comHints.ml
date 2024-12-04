@@ -51,7 +51,7 @@ let project_hint ~poly pri l2r r =
       (Nametab.basename_of_global gr)
       ("_proj_" ^ if l2r then "l2r" else "r2l")
   in
-  let ctx = Evd.univ_entry ~poly sigma in
+  let ctx = Evd.univ_entry ~poly sigma None in
   let c = EConstr.to_constr sigma c in
   let cb =
     Declare.(DefinitionEntry (definition_entry ~univs:ctx ~opaque:false c))

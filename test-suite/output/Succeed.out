@@ -6,4 +6,4 @@ The reference x was not found in the current environment.
 File "./output/Succeed.v", line 7, characters 19-23:
 The command has indeed failed with message:
 The term "Prop" has type "Type" while it is expected to have type 
-"Prop" (universe inconsistency: Cannot enforce Set+1 <= Prop).
+"Prop" (universe inconsistency: Cannot enforce 1 ≤ Prop).

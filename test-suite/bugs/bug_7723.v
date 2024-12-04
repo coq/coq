@@ -2,7 +2,7 @@ Set Universe Polymorphism.
 
 Module Segfault.
 
-Inductive decision_tree : Type := .
+Inductive decision_tree : Set := .
 
 Fixpoint first_satisfying_helper {A B} (f : A -> option B) (ls : list A) : option B
   := match ls with
@@ -14,15 +14,17 @@ Fixpoint first_satisfying_helper {A B} (f : A -> option B) (ls : list A) : optio
           end
      end.
 
-Axiom admit : forall {T}, T.
+Cumulative Axiom admit@{-u} : forall {T : Type@{u}}, T.
+
 Definition dtree4 : option decision_tree :=
   match first_satisfying_helper (fun pat : nat => Some pat) (cons 0 nil)
   with
   | Some _ => admit
   | None => admit
-  end
-.
-Definition dtree'' := Eval vm_compute in dtree4. (* segfault *)
+  end.
+
+Definition foo := dtree4.
+Definition dtree4'@{} := Eval vm_compute in foo.
 
 End Segfault.
 

@@ -1,4 +1,4 @@
-Polymorphic Axiom foo@{u} : Prop -> Prop.
+Cumulative Polymorphic Axiom foo@{u} : Prop -> Prop.
 Arguments foo {_}.
 
 Axiom bla : forall {A B}, @foo A -> @foo B -> Prop.

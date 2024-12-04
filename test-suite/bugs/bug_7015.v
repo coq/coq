@@ -5,7 +5,7 @@ Set Printing Universes.
 Module Simple.
 
   (* in the real world foo@{i} might be [@paths@{i} nat] I guess *)
-  Inductive foo : nat -> Type :=.
+  Inductive foo@{i} : nat -> Type@{i} :=.
 
   (* on [refl (fun x => f x)] this computes to [refl f] *)
   Definition eta_out {A B} (f g : forall x : A, B x) (e : (fun x => f x) = (fun x => g x)) : f = g.
@@ -40,7 +40,7 @@ Module WithRed.
   (** this test needs to reduce the parameter's type to work *)
 
 
-  Inductive foo@{i j} (b:bool) (x:if b return Type@{j} then Type@{i} else nat) : Type@{i} := .
+  Inductive foo@{i} (b:bool) (x:if b return Type@{i+1} then Type@{i} else nat) : Type@{i} := .
 
   (* on [refl (fun x => f x)] this computes to [refl f] *)
   Definition eta_out {A B} (f g : forall x : A, B x) (e : (fun x => f x) = (fun x => g x)) : f = g.
@@ -52,23 +52,23 @@ Module WithRed.
     Universes i j k.
     Constraint i < j. (* fail instead of forcing equality *)
 
-    Definition one : (fun n => foo@{i k} false n) = fun n => foo@{j k} false n := eq_refl.
+    Definition one : (fun n => foo@{i} false n) = fun n => foo@{j} false n := eq_refl.
 
-    Definition two : foo@{i k} false = foo@{j k} false := eta_out _ _ one.
+    Definition two : foo@{i} false = foo@{j} false := eta_out _ _ one.
 
-    Definition two' : foo@{i k} false = foo@{j k} false := Eval compute in two.
+    Definition two' : foo@{i} false = foo@{j} false := Eval compute in two.
 
     (* Failure of SR doesn't just mean that the type changes, sometimes
      we lose being well-typed entirely. *)
-    Definition three := @eq_refl (foo@{i k} false = foo@{j k} false) two.
+    Definition three := @eq_refl (foo@{i} false = foo@{j} false) two.
     Definition four := Eval compute in three.
 
-    Definition five : foo@{i k} false = foo@{j k} false := eq_refl.
+    Definition five : foo@{i} false = foo@{j} false := eq_refl.
   End univs.
 
   (* inference tries and succeeds with syntactic equality which doesn't eta expand *)
-  Fail Definition infer@{i j k|i < k, j < k, k < eq.u0}
-    : foo@{i k} false = foo@{j k} false :> (nat -> Type@{k})
+  Fail Definition infer@{i j ?|i < eq.u0, j < eq.u0}
+    : foo@{i} false = foo@{j} false :> (nat -> Type@{max(i,j)})
     := eq_refl.
 
 End WithRed.

@@ -29,7 +29,7 @@ Local Open Scope trunc_scope.
 Notation "-2" := minus_two (at level 0) : trunc_scope.
 Notation "-1" := (-2.+1) (at level 0) : trunc_scope.
 
-Fixpoint IsTrunc_internal (n : trunc_index) (A : Type) : Type :=
+Fixpoint IsTrunc_internal (n : trunc_index) (A : Type@{i}) : Type@{i} :=
   match n with
     | -2 => Contr_internal A
     | n'.+1 => forall (x y : A), IsTrunc_internal n' (x = y)

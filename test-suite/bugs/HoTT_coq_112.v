@@ -3,7 +3,7 @@ Require Import TestSuite.admit.
 Set Universe Polymorphism.
 Definition admit {T} : T.
 Admitted.
-Inductive paths {A : Type} (a : A) : A -> Type :=
+Cumulative Inductive paths {A : Type} (a : A) : A -> Type :=
   idpath : paths a a.
 Arguments idpath {A a} , [A] a.
 Notation "x = y :> A" := (@paths A x y) : type_scope.
@@ -19,14 +19,14 @@ Definition apD10 {A} {B:A->Type} {f g : forall x, B x} (h:f=g)
   : forall x, f x = g x
   := fun x => match h with idpath => idpath end.
 
-Class IsEquiv {A B : Type} (f : A -> B) := BuildIsEquiv {
+Cumulative Class IsEquiv {A B : Type} (f : A -> B) := BuildIsEquiv {
   equiv_inv : B -> A ;
   eisretr : forall x, f (equiv_inv x) = x
 }.
 
 Arguments eisretr {A B} f {_} _.
 
-Record Equiv A B := BuildEquiv {
+Cumulative Record Equiv A B := BuildEquiv {
   equiv_fun :> A -> B ;
   equiv_isequiv :> IsEquiv equiv_fun
 }.
@@ -55,6 +55,7 @@ Section Univalence.
     := path_universe_uncurried (BuildEquiv _ _ f feq).
 
   Set Printing Universes.
+  Set Debug "univMinim".
   Definition transport_path_universe {A B : Type} (f : A -> B) {feq : IsEquiv f} (z : A)
   : transport (fun X:Type => X) (path_universe f) z = f z
     := apD10 (ap (equiv_fun A B) (eisretr (equiv_path A B) (BuildEquiv _ _ f feq))) z.

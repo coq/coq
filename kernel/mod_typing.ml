@@ -100,7 +100,7 @@ let rec check_with_def (cst, ustate) env struc (idl, wth) mp reso =
           | Result.Error (None | Some _) ->
             error_incorrect_with_constraint lab
           end
-        | Polymorphic uctx, Polymorphic ctx ->
+        | Polymorphic (uctx, _variances), Polymorphic (ctx, _variances') -> (* FIXME check variances *)
           let () =
             if not (UGraph.check_subtype (Environ.universes env) uctx ctx) then
               error_incorrect_with_constraint lab
@@ -233,7 +233,7 @@ type 'a vm_state = 'a * 'a vm_handler
 let check_with ustate vmstate env mp (sign,reso,cst,vm) = function
   | WithDef(idl, (c, ctx)) ->
     let struc = destr_nofunctor mp sign in
-    let univs = match ctx with None -> Monomorphic | Some uctx -> Polymorphic uctx in
+    let univs = match ctx with None -> Monomorphic | Some uctx -> Polymorphic (uctx, None) in (* FIXME no variance *)
     let vm, bcode = vmstate.vm_handler env univs c vm in
     let body = { w_def = c; w_univs = univs; w_bytecode = bcode } in
     let struc', cst = check_with_def (cst, ustate) env struc (idl, body) mp reso in

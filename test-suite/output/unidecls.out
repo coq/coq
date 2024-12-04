@@ -1,7 +1,7 @@
-Set < nat_rect.u0
-    < decls.a
-    < decls.b
-    < a
+0 < nat_rect.u0
+  < decls.a
+  < decls.b
+  < a
 a < decls.a
 
 Type@{a}
@@ -52,7 +52,8 @@ In environment
 A : Type@{v}
 The term "A" has type "Type@{v}" while it is expected to have type
  "Type@{Arg.u}"
-(universe inconsistency: Cannot enforce v <= Arg.u because Arg.u < v).
+(universe inconsistency: Cannot enforce v ≤ Arg.u because Arg.u < Arg.u+1 ≤ v
+< v+1).
 File "./output/unidecls.v", line 93, characters 17-24:
 The command has indeed failed with message:
 Undeclared universe FnApp.v.
@@ -72,23 +73,24 @@ FnApp2.bar
 File "./output/unidecls.v", line 113, characters 17-21:
 The command has indeed failed with message:
 Undeclared universe: poly.
-Set < nat_rect.u0
-    < decls.a
-    < decls.b
-    < a
-    < foo
-    < Foo.foo
-    < Foo.bar
-    < bar
-    < secfoo
-    < secfoo2
-    < Arg.u
-    < Fn.v
+0
+< nat_rect.u0
+< decls.a
+< decls.b
+< a
+< foo
+< Foo.foo
+< Foo.bar
+< bar
+< secfoo
+< secfoo2
+< Arg.u
+< Fn.v
 a < decls.a
 secfoo2 < a
 Arg.u < Fn.v
 
-id@{Set} nat
+id@{0} nat
      : nat -> nat
-id@{Set}
+id@{0}
      : forall A : Set, A -> A

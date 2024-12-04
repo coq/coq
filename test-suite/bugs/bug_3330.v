@@ -43,7 +43,7 @@ Open Scope function_scope.
 
 Set Printing Universes. Set Printing All.
 
-Inductive paths {A : Type} (a : A) : A -> Type :=
+Inductive paths@{u} {A : Type@{u}} (a : A) : A -> Type@{u} :=
   idpath : paths a a.
 
 Arguments idpath {A a} , [A] a.
@@ -120,7 +120,7 @@ Fixpoint nat_to_trunc_index (n : nat) : trunc_index
 
 Coercion nat_to_trunc_index : nat >-> trunc_index.
 
-Fixpoint IsTrunc_internal (n : trunc_index) (A : Type) : Type :=
+Fixpoint IsTrunc_internal (n : trunc_index) (A : Type@{i}) : Type@{i} :=
   match n with
     | minus_two => Contr_internal A
     | trunc_S n' => forall (x y : A), IsTrunc_internal n' (x = y)
@@ -162,8 +162,8 @@ Set Printing Universes.
 Set Printing All.
 Record PreCategory :=
   Build_PreCategory' {
-      object :> Type;
-      morphism : object -> object -> Type;
+      object :> Type@{i};
+      morphism : object -> object -> Type@{j};
 
       identity : forall x, morphism x x;
       compose : forall s d d',
@@ -189,7 +189,7 @@ Record PreCategory :=
 
       identity_identity : forall x, identity x o identity x = identity x;
 
-      trunc_morphism : forall s d, IsHSet (morphism s d)
+      trunc_morphism : forall s d, IsTrunc@{j} 0 (morphism s d)
     }.
 
 Bind Scope category_scope with PreCategory.
@@ -938,6 +938,7 @@ Section natural_transformation_identity.
     path_natural_transformation; auto with morphism.
   Qed.
 End natural_transformation_identity.
+
 Section associativity.
 
   Section nt.

@@ -19,7 +19,7 @@ Local Open Scope R_scope.
 (*            Newton's Integral            *)
 (*******************************************)
 
-Definition Newton_integrable (f:R -> R) (a b:R) : Type :=
+Definition Newton_integrable@{i} (f:R -> R) (a b:R) : Type@{i} :=
   { g:R -> R | antiderivative f g a b \/ antiderivative f g b a }.
 
 Definition NewtonInt (f:R -> R) (a b:R) (pr:Newton_integrable f a b) : R :=
