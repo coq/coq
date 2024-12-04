@@ -1047,6 +1047,30 @@ Proof.
  intros; apply iter_ind; trivial.
 Qed.
 
+(** Properties of [iter_op] *)
+
+Lemma iter_op_0_r {A} op z x : @N.iter_op A op z x N0 = z. Proof. trivial. Qed.
+
+Lemma iter_op_1_r {A} op z x : @N.iter_op A op z x (N.pos xH) = x. Proof. trivial. Qed.
+
+Lemma iter_op_succ_r {A} op z x n
+  (opp_z_r : x = op x z)
+  (op_assoc  : forall x y z : A, op x (op y z) = op (op x y) z)
+  : @N.iter_op A op z x (N.succ n) = op x (N.iter_op op z x n).
+Proof. case n; cbn; auto using Pos.iter_op_succ. Qed.
+
+Lemma iter_op_add_r {A} op z x n
+  (opp_z_r : x = op x z)
+  (op_assoc  : forall x y z : A, op x (op y z) = op (op x y) z)
+  : @N.iter_op A op z x (N.succ n) = op x (N.iter_op op z x n).
+Proof. induction n using N.peano_ind; cbn; rewrite ?iter_op_succ_r; auto. Qed.
+
+Lemma iter_op_correct {A} op z x n
+  (opp_z_r : x = op x z)
+  (op_assoc  : forall x y z : A, op x (op y z) = op (op x y) z)
+  : @N.iter_op A op z x n = N.iter n (op x) z.
+Proof. case n; cbn; auto using Pos.iter_op_correct. Qed.
+
 End N.
 
 Bind Scope N_scope with N.t N.
