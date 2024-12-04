@@ -313,3 +313,15 @@ Record machine_state := { machine_reg_state :> reg_state ; machine_flag_state :>
 Fail Scheme Boolean Equality for machine_state.
 
 End M.
+
+Module ComputableDecidableEquality.
+
+Inductive bintree :=
+| Leaf : bintree
+| Node : bintree -> bintree -> bintree.
+
+Scheme Equality for bintree.
+
+Check eq_refl : bintree_eq_dec (Node (Node Leaf Leaf) Leaf) (Node (Node Leaf Leaf) Leaf) = left eq_refl.
+
+End ComputableDecidableEquality.
