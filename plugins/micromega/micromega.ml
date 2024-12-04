@@ -2037,59 +2037,6 @@ let simpl_cone cO cI ctimes ceqb e = match e with
            | _ -> PsatzAdd (t1, t2)))
 | _ -> e
 
-type q = { qnum : z; qden : positive }
-
-(** val qeq_bool : q -> q -> bool **)
-
-let qeq_bool x y =
-  zeq_bool (Z.mul x.qnum (Zpos y.qden)) (Z.mul y.qnum (Zpos x.qden))
-
-(** val qle_bool : q -> q -> bool **)
-
-let qle_bool x y =
-  Z.leb (Z.mul x.qnum (Zpos y.qden)) (Z.mul y.qnum (Zpos x.qden))
-
-(** val qplus : q -> q -> q **)
-
-let qplus x y =
-  { qnum = (Z.add (Z.mul x.qnum (Zpos y.qden)) (Z.mul y.qnum (Zpos x.qden)));
-    qden = (Coq_Pos.mul x.qden y.qden) }
-
-(** val qmult : q -> q -> q **)
-
-let qmult x y =
-  { qnum = (Z.mul x.qnum y.qnum); qden = (Coq_Pos.mul x.qden y.qden) }
-
-(** val qopp : q -> q **)
-
-let qopp x =
-  { qnum = (Z.opp x.qnum); qden = x.qden }
-
-(** val qminus : q -> q -> q **)
-
-let qminus x y =
-  qplus x (qopp y)
-
-(** val qinv : q -> q **)
-
-let qinv x =
-  match x.qnum with
-  | Z0 -> { qnum = Z0; qden = XH }
-  | Zpos p -> { qnum = (Zpos x.qden); qden = p }
-  | Zneg p -> { qnum = (Zneg x.qden); qden = p }
-
-(** val qpower_positive : q -> positive -> q **)
-
-let qpower_positive =
-  pow_pos qmult
-
-(** val qpower : q -> z -> q **)
-
-let qpower q0 = function
-| Z0 -> { qnum = (Zpos XH); qden = XH }
-| Zpos p -> qpower_positive q0 p
-| Zneg p -> qinv (qpower_positive q0 p)
-
 type 'a t =
 | Empty
 | Elt of 'a
@@ -2419,6 +2366,59 @@ let rec zChecker l = function
 let zTautoChecker f w =
   tauto_checker zunsat zdeduce normalise0 negate (fun cl ->
     zChecker (map fst cl)) f w
+
+type q = { qnum : z; qden : positive }
+
+(** val qeq_bool : q -> q -> bool **)
+
+let qeq_bool x y =
+  zeq_bool (Z.mul x.qnum (Zpos y.qden)) (Z.mul y.qnum (Zpos x.qden))
+
+(** val qle_bool : q -> q -> bool **)
+
+let qle_bool x y =
+  Z.leb (Z.mul x.qnum (Zpos y.qden)) (Z.mul y.qnum (Zpos x.qden))
+
+(** val qplus : q -> q -> q **)
+
+let qplus x y =
+  { qnum = (Z.add (Z.mul x.qnum (Zpos y.qden)) (Z.mul y.qnum (Zpos x.qden)));
+    qden = (Coq_Pos.mul x.qden y.qden) }
+
+(** val qmult : q -> q -> q **)
+
+let qmult x y =
+  { qnum = (Z.mul x.qnum y.qnum); qden = (Coq_Pos.mul x.qden y.qden) }
+
+(** val qopp : q -> q **)
+
+let qopp x =
+  { qnum = (Z.opp x.qnum); qden = x.qden }
+
+(** val qminus : q -> q -> q **)
+
+let qminus x y =
+  qplus x (qopp y)
+
+(** val qinv : q -> q **)
+
+let qinv x =
+  match x.qnum with
+  | Z0 -> { qnum = Z0; qden = XH }
+  | Zpos p -> { qnum = (Zpos x.qden); qden = p }
+  | Zneg p -> { qnum = (Zneg x.qden); qden = p }
+
+(** val qpower_positive : q -> positive -> q **)
+
+let qpower_positive =
+  pow_pos qmult
+
+(** val qpower : q -> z -> q **)
+
+let qpower q0 = function
+| Z0 -> { qnum = (Zpos XH); qden = XH }
+| Zpos p -> qpower_positive q0 p
+| Zneg p -> qinv (qpower_positive q0 p)
 
 type qWitness = q psatz
 

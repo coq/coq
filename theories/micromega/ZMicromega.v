@@ -607,8 +607,6 @@ Qed.
 
 (** NB: narrow_interval_upper_bound is Zdiv.Zdiv_le_lower_bound *)
 
-Require Import QArith.
-
 Inductive ZArithProof :=
 | DoneProof
 | RatProof : ZWitness -> ZArithProof -> ZArithProof
@@ -699,7 +697,7 @@ Proof.
     intros.
     rewrite IHZdivide_pol1.
     rewrite IHZdivide_pol2.
-    ring.
+    rewrite Z.mul_add_distr_l, Z.mul_assoc; trivial.
 Qed.
 
 Lemma Zgcd_pol_ge : forall p, fst (Zgcd_pol p) >= 0.
@@ -729,7 +727,7 @@ Qed.
 Lemma Zdivide_pol_one : forall p, Zdivide_pol 1 p.
 Proof.
   intros p; induction p as [c| |]; constructor ; auto.
-  exists c. ring.
+  exists c. rewrite Z.mul_1_r; trivial.
 Qed.
 
 Lemma Zgcd_minus : forall a b c, (a | c - b ) -> (Z.gcd a b | c).
@@ -739,7 +737,8 @@ Proof.
   set (g:=Z.gcd a b) in *; clearbody g.
   exists (q * a' + b').
   symmetry in Hq. rewrite <- Z.add_move_r in Hq.
-  rewrite <- Hq, Hb, Ha. ring.
+  rewrite <- Hq, Hb, Ha.
+  rewrite ?Z.mul_add_distr_r, ?Z.mul_assoc; trivial.
 Qed.
 
 Lemma Zdivide_pol_sub : forall p a b,
@@ -791,7 +790,7 @@ Proof.
   - (* Pc *)
     intros ? ? H. inv H.
     constructor.
-    exists 0. now ring.
+    exists 0. apply Z.sub_diag.
   - (* Pinj *)
     intros.
     constructor.  apply IHp ; auto.
@@ -836,7 +835,7 @@ Proof.
   intros.
   rewrite <- Zdiv_pol_correct ; auto.
   - rewrite (RingMicromega.PsubC_ok Zsor ZSORaddon).
-    unfold eval_pol. ring.
+    unfold eval_pol. rewrite Z.sub_add; trivial.
     (**)
   - apply Zgcd_pol_div ; auto.
 Qed.
@@ -1710,7 +1709,7 @@ Proof.
            unfold RingMicromega.eval_nformula.
            simpl.
            rewrite (RingMicromega.PsubC_ok Zsor ZSORaddon).
-           unfold eval_pol. ring.
+           unfold eval_pol. apply Z.sub_diag.
         -- discriminate.
       * (* No cutting plane *)
         intros H0 H1 H2 env.
@@ -1749,7 +1748,7 @@ Proof.
         replace (x=?z1)%positive with false.
         1:replace (x=?t1)%positive with false.
         1:replace (t1=?z1)%positive with false.
-        1:destruct (env x <=? 0); ring.
+        1: destruct (env x <=? 0); solve [rewrite ?Z.sub_opp_r, ?Z.sub_0_r; trivial].
         { unfold t1.
           pos_tac; normZ.
           lia (Hyp (e := Z.pos z1 - Z.succ (Z.pos z1)) ltac:(assumption)).

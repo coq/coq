@@ -52,6 +52,5 @@ Ltac xpsatz dom d :=
 Tactic Notation "psatz" constr(dom) int_or_var(n) := xpsatz dom n.
 Tactic Notation "psatz" constr(dom) := xpsatz dom ltac:(-1).
 
-(* Local Variables: *)
-(* coding: utf-8 *)
-(* End: *)
+#[global]
+Instance DQ : DeclaredConstant Qmake := {}.
