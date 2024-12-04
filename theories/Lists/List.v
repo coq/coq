@@ -855,7 +855,7 @@ Section Elts.
   Lemma remove_remove_eq : forall l x, remove x (remove x l) = remove x l.
   Proof. intros l x; now rewrite (notin_remove _ _ (remove_In l x)). Qed.
 
-  Lemma remove_length_le : forall l x, length (remove x l) <= length l.
+  Lemma length_remove_le : forall l x, length (remove x l) <= length l.
   Proof.
     intro l; induction l as [|y l IHl]; simpl; intros x; trivial.
     destruct (eq_dec x y); simpl.
@@ -863,13 +863,13 @@ Section Elts.
     - apply (proj1 (Nat.succ_le_mono _ _) (IHl x)).
   Qed.
 
-  Lemma remove_length_lt : forall l x, In x l -> length (remove x l) < length l.
+  Lemma length_remove_lt : forall l x, In x l -> length (remove x l) < length l.
   Proof.
     intro l; induction l as [|y l IHl]; simpl; intros x Hin.
     - contradiction Hin.
     - destruct Hin as [-> | Hin].
       + destruct (eq_dec x x); [|easy].
-        apply Nat.lt_succ_r, remove_length_le.
+        apply Nat.lt_succ_r, length_remove_le.
       + specialize (IHl _ Hin); destruct (eq_dec x y); simpl; auto.
         now apply Nat.succ_lt_mono in IHl.
   Qed.
@@ -1767,20 +1767,20 @@ End Fold_Right_Recursor.
       - cbn. rewrite IH. destruct (f x); reflexivity.
     Qed.
 
-    Corollary filter_length f (l : list A) : length (filter f l) + length (filter (fun x => negb (f x)) l) = length l.
+    Corollary length_filter f (l : list A) : length (filter f l) + length (filter (fun x => negb (f x)) l) = length l.
     Proof. symmetry. apply (partition_length f), partition_as_filter. Qed.
 
-    Corollary filter_length_le f (l : list A): length (filter f l) <= length l.
-    Proof. rewrite <- (filter_length f l). apply Nat.le_add_r. Qed.
+    Corollary length_filter_le f (l : list A): length (filter f l) <= length l.
+    Proof. rewrite <- (length_filter f l). apply Nat.le_add_r. Qed.
 
-    Lemma filter_length_forallb f (l : list A): length (filter f l) = length l -> forallb f l = true.
+    Lemma forallb_length_filter f (l : list A): length (filter f l) = length l -> forallb f l = true.
     Proof.
       intro H. induction l as [|x l IH]; [reflexivity |].
       cbn in *. destruct (f x).
       - apply IH. now injection H.
       - exfalso. assert (length l < length (filter f l)) as E.
         + symmetry in H. apply Nat.eq_le_incl in H. exact H.
-        + eapply Nat.le_ngt; [apply filter_length_le | exact E].
+        + eapply Nat.le_ngt; [apply length_filter_le | exact E].
     Qed.
 
     (** Remove by filtering *)
@@ -2193,14 +2193,31 @@ Section Cutting.
   Lemma firstn_nil n: firstn n [] = [].
   Proof. induction n; now simpl. Qed.
 
-  Lemma firstn_cons n a l: firstn (S n) (a::l) = a :: (firstn n l).
+  Lemma firstn_S_cons n a l: firstn (S n) (a::l) = a :: (firstn n l).
   Proof. now simpl. Qed.
 
+  Lemma unfold_firstn n l :
+    firstn n l =
+    match n with
+      | 0 => nil
+      | S n0 => match l with
+                  | nil => nil
+                  | a :: l0 => a :: firstn n0 l0
+                end
+    end.
+  Proof. now destruct n. Qed.
+
   Lemma nth_error_firstn n l i
-    : nth_error (firstn n l) i = if Nat.ltb i n then nth_error l i else None.
+    : nth_error (firstn n l) i = if i <? n then nth_error l i else None.
   Proof.
     revert l i; induction n, l, i; cbn [firstn nth_error]; trivial.
     case Nat.ltb; trivial.
+  Qed.
+
+  Lemma nth_error_firstn_Some n m l x
+    : nth_error (firstn n l) m = Some x -> nth_error l m = Some x.
+  Proof.
+    induction m in n, l |- *; intros H; destruct n, l; cbn in *; try solve [inversion H]; eauto.
   Qed.
 
   Lemma nth_firstn (n : nat) (l : list A) (i : nat) (d : A) :
@@ -2213,7 +2230,7 @@ Section Cutting.
   Lemma firstn_all l: firstn (length l) l = l.
   Proof. induction l as [| ? ? H]; simpl; [reflexivity | now rewrite H]. Qed.
 
-  Lemma firstn_all2 n: forall (l:list A), (length l) <= n -> firstn n l = l.
+  Lemma firstn_all2 n: forall (l:list A), length l <= n -> firstn n l = l.
   Proof. induction n as [|k iHk].
     - intro l. inversion 1 as [H1|?].
       rewrite (length_zero_iff_nil l) in H1. subst. now simpl.
@@ -2225,20 +2242,40 @@ Section Cutting.
   Lemma firstn_0 l: firstn 0 l = [].
   Proof. now simpl. Qed.
 
-  Lemma firstn_le_length n: forall l:list A, length (firstn n l) <= n.
+  Lemma firstn_O_eq n l : n = 0 -> firstn n l = [].
+  Proof. now intros ->. Qed.
+
+  Lemma length_firstn_min : forall n l, length (firstn n l) = min n (length l).
   Proof.
-    induction n as [|k iHk]; simpl; [auto | intro l; destruct l as [|x xs]; simpl].
-    - now apply Nat.le_0_l.
-    - now rewrite <- Nat.succ_le_mono.
+    intro n; induction n; intro l; destruct l; simpl; auto.
   Qed.
 
-  Lemma firstn_length_le: forall l:list A, forall n:nat,
+  Lemma le_length_firstn n: forall l:list A, length (firstn n l) <= n.
+  Proof.
+    intros. rewrite length_firstn_min. apply Nat.le_min_l.
+  Qed.
+
+  Lemma le_length_firstn_length n: forall l:list A, length (firstn n l) <= length l.
+  Proof.
+    intros. rewrite length_firstn_min. apply Nat.le_min_r.
+  Qed.
+
+  Lemma length_firstn_le n: forall l:list A,
     n <= length l -> length (firstn n l) = n.
-  Proof. intro l; induction l as [|x xs Hrec].
-    - simpl. intros n H. apply Nat.le_0_r in H. now subst.
-    - intro n; destruct n as [|n].
-      * now simpl.
-      * simpl. intro H. f_equal. apply Hrec. now apply Nat.succ_le_mono.
+  Proof.
+    intros. rewrite length_firstn_min. now apply Nat.min_l.
+  Qed.
+
+  Lemma length_firstn_le_inv n : forall l:list A,
+    length (firstn n l) = n -> n <= length l.
+  Proof.
+    intros l <-. apply le_length_firstn_length.
+  Qed.
+
+  Lemma length_firstn_length_le n: forall l:list A,
+    length l <= n -> length (firstn n l) = length l.
+  Proof.
+    intros. rewrite length_firstn_min. now apply Nat.min_r.
   Qed.
 
   Lemma firstn_app n:
@@ -2249,6 +2286,20 @@ Section Cutting.
     - destruct l1 as [|x xs].
       * reflexivity.
       * rewrite <- app_comm_cons. simpl. f_equal. apply iHk.
+  Qed.
+
+  Lemma firstn_app_exact:
+    forall l1 l2,
+    firstn (length l1) (l1 ++ l2) = l1.
+  Proof.
+    intros. now rewrite firstn_app, Nat.sub_diag, firstn_0, firstn_all, app_nil_r.
+  Qed.
+
+  Lemma firstn_app_exact_eq:
+    forall n l1 l2,
+    n = length l1 -> firstn n (l1 ++ l2) = l1.
+  Proof.
+    intros * ->. apply firstn_app_exact.
   Qed.
 
   Lemma firstn_app_2 n:
@@ -2265,8 +2316,15 @@ Section Cutting.
         rewrite H0, firstn_all2; [reflexivity | now apply Nat.le_add_r].
   Qed.
 
-  Lemma firstn_firstn:
-    forall l:list A,
+  Lemma firstn_app_2_eq n:
+    forall l1 l2 k,
+    k = length l1 + n -> firstn k (l1 ++ l2) = l1 ++ firstn n l2.
+  Proof.
+    intros * ->; apply firstn_app_2.
+  Qed.
+
+  Lemma firstn_firstn_min:
+    forall l : list A,
     forall i j : nat,
     firstn i (firstn j l) = firstn (min i j) l.
   Proof. intro l; induction l as [|x xs Hl].
@@ -2274,6 +2332,38 @@ Section Cutting.
     - intros [|i]; [easy|].
       intros [|j]; [easy|].
       cbn. f_equal. apply Hl.
+  Qed.
+
+  Lemma firstn_idemp:
+    forall l : list A,
+    forall i : nat,
+    firstn i (firstn i l) = firstn i l.
+  Proof.
+    now intros; rewrite firstn_firstn_min, Nat.min_id.
+  Qed.
+
+  Lemma firstn_firstn_l:
+    forall l : list A,
+    forall i j : nat,
+    i <= j -> firstn i (firstn j l) = firstn i l.
+  Proof.
+    now intros; rewrite firstn_firstn_min, Nat.min_l.
+  Qed.
+
+  Lemma firstn_firstn_r:
+    forall l : list A,
+    forall i j : nat,
+    j <= i -> firstn i (firstn j l) = firstn j l.
+  Proof.
+    now intros; rewrite firstn_firstn_min, Nat.min_r.
+  Qed.
+
+  Lemma firstn_comm:
+    forall l : list A,
+    forall i j : nat,
+    firstn i (firstn j l) = firstn j (firstn i l).
+  Proof.
+    now intros; rewrite !firstn_firstn_min, Nat.min_comm.
   Qed.
 
   Fixpoint skipn (n:nat)(l:list A) : list A :=
@@ -2284,6 +2374,17 @@ Section Cutting.
                  | a::l => skipn n l
                end
     end.
+
+  Lemma unfold_skipn n l :
+    skipn n l =
+    match n with
+      | 0 => l
+      | S n => match l with
+                 | nil => nil
+                 | a::l => skipn n l
+               end
+    end.
+  Proof. now destruct n. Qed.
 
   Lemma nth_error_skipn n l i : nth_error (skipn n l) i = nth_error l (n + i).
   Proof.
@@ -2307,6 +2408,21 @@ Section Cutting.
   Lemma skipn_firstn_comm : forall m n l,
   skipn m (firstn n l) = firstn (n - m) (skipn m l).
   Proof. now intro m; induction m; intros [] []; simpl; rewrite ?firstn_nil. Qed.
+
+  Lemma firstn_add : forall m n l,
+  firstn (m + n) l = firstn m l ++ firstn n (skipn m l).
+  Proof.
+    induction m. simpl. reflexivity.
+    simpl. destruct l; simpl.
+    now rewrite firstn_nil.
+    rewrite IHm. now rewrite app_comm_cons.
+  Qed.
+
+  Lemma skipn_firstn_succ_skipn_succ n (l : list A) : skipn n (firstn (S n) l) ++ skipn (S n) l = skipn n l.
+  Proof.
+    induction l in n |- *; simpl; auto. now rewrite app_nil_r.
+    destruct n; simpl; auto.
+  Qed.
 
   Lemma skipn_0 : forall l, skipn 0 l = l.
   Proof. reflexivity. Qed.
@@ -2364,11 +2480,6 @@ Section Cutting.
     - simpl. intros H. f_equal. apply IH. exact H.
   Qed.
 
-  Lemma length_firstn : forall n l, length (firstn n l) = min n (length l).
-  Proof.
-    intro n; induction n; intro l; destruct l; simpl; auto.
-  Qed.
-
   Lemma length_skipn n :
     forall l, length (skipn n l) = length l - n.
   Proof.
@@ -2380,6 +2491,19 @@ Section Cutting.
   Lemma skipn_app n : forall l1 l2,
     skipn n (l1 ++ l2) = (skipn n l1) ++ (skipn (n - length l1) l2).
   Proof. induction n; auto; intros [|]; simpl; auto. Qed.
+
+  Lemma skipn_app_exact (l1 l2 : list A) : skipn (length l1) (l1 ++ l2) = l2.
+  Proof.
+    intros.
+    induction l1 in l2 |- *.
+    - reflexivity.
+    - simpl. eauto.
+  Qed.
+
+  Lemma skipn_app_exact_eq n (l1 l2 : list A) : n = length l1 -> skipn n (l1 ++ l2) = l2.
+  Proof.
+    intros ->. apply skipn_app_exact.
+  Qed.
 
   Lemma firstn_skipn_rev: forall x l,
       firstn x l = rev (skipn (length l - x) (rev l)).
@@ -2495,7 +2619,7 @@ Section Combining.
       - destruct l' as [| x' l'].
         + simpl. repeat (rewrite firstn_nil). rewrite combine_nil. reflexivity.
         + simpl. destruct n as [| n]; [reflexivity|].
-          repeat (rewrite firstn_cons). simpl.
+          repeat (rewrite firstn_S_cons). simpl.
           rewrite IHl. reflexivity.
     Qed.
 
@@ -2932,6 +3056,27 @@ Section NatSeq.
     rewrite <-seq_shift, nth_error_map, IHn.
     cbn [Nat.ltb Nat.leb]; case len, Nat.leb; trivial.
     cbn [option_map]; rewrite ?plus_n_Sm; trivial.
+  Qed.
+
+  Lemma firstn_seq_min n m start : firstn n (seq start m) = seq start (Nat.min n m).
+  Proof.
+    induction m in n, start |- *; simpl.
+    - now rewrite Nat.min_0_r, firstn_nil.
+    - destruct n; simpl.
+      + reflexivity.
+      + now rewrite IHm.
+  Qed.
+
+  Lemma firstn_seq_le n m start :
+    n <= m -> firstn n (seq start m) = seq start n.
+  Proof.
+    intro. now rewrite firstn_seq_min, Nat.min_l.
+  Qed.
+
+  Lemma firstn_seq_ge n m start :
+    m <= n -> firstn n (seq start m) = seq start m.
+  Proof.
+    intro. now rewrite firstn_seq_min, Nat.min_r.
   Qed.
 
 End NatSeq.
@@ -3716,7 +3861,7 @@ Section Repeat.
       | S k => x::(repeat x k)
     end.
 
-  Theorem repeat_length x n:
+  Theorem length_repeat x n:
     length (repeat x n) = n.
   Proof.
     induction n as [| k Hrec]; simpl; rewrite ?Hrec; reflexivity.
@@ -3747,7 +3892,7 @@ Section Repeat.
     repeat x n = l1 ++ l2 -> repeat x (length l1) = l1 /\ repeat x (length l2) = l2.
   Proof.
     revert n; induction l1 as [|a l1 IHl1]; simpl; intros n Hr; subst.
-    - repeat split; now rewrite repeat_length.
+    - repeat split; now rewrite length_repeat.
     - destruct n; inversion Hr as [ [Heq Hr0] ]; subst.
       now apply IHl1 in Hr0 as [-> ->].
   Qed.
@@ -3845,7 +3990,29 @@ Section Repeat.
   Proof.
     intro Hnm. rewrite (nth_error_nth' _ a).
     - now rewrite nth_repeat.
-    - now rewrite repeat_length.
+    - now rewrite length_repeat.
+  Qed.
+
+  Lemma firstn_repeat_min a m n :
+    firstn n (repeat a m) = repeat a (Nat.min m n).
+  Proof.
+    induction m in n |- *; simpl.
+    - apply firstn_nil.
+    - destruct n; simpl.
+      + reflexivity.
+      + now rewrite IHm.
+  Qed.
+
+  Lemma firstn_repeat_le a m n :
+    n <= m -> firstn n (repeat a m) = repeat a n.
+  Proof.
+    intro. now rewrite firstn_repeat_min, Nat.min_r.
+  Qed.
+
+  Lemma firstn_repeat_ge a m n :
+    m <= n -> firstn n (repeat a m) = repeat a m.
+  Proof.
+    intro. now rewrite firstn_repeat_min, Nat.min_l.
   Qed.
 
 End Repeat.
@@ -3922,7 +4089,7 @@ Proof.
   rewrite flat_map_concat_map, length_concat, map_map. reflexivity.
 Qed.
 
-Corollary flat_map_constant_length A B c (f: A -> list B) l:
+Corollary length_flat_map_constant A B c (f: A -> list B) l:
   (forall x, In x l -> length (f x) = c) -> length (flat_map f l) = (length l) * c.
 Proof.
   intro H. rewrite length_flat_map.
@@ -3935,7 +4102,7 @@ Lemma length_list_power (A B:Type)(l:list A) (l':list B):
     length (list_power l l') = (length l')^(length l).
 Proof.
   induction l as [ | a m IH ]; [reflexivity|].
-  cbn. rewrite flat_map_constant_length with (c := length l').
+  cbn. rewrite length_flat_map_constant with (c := length l').
   - rewrite IH. apply Nat.mul_comm.
   - intros x H. apply length_map.
 Qed.
@@ -4069,8 +4236,8 @@ Notation split_length_r := length_snd_split (only parsing).
 Notation combine_length := length_combine (only parsing).
 #[deprecated(since = "8.20", use = length_prod)]
 Notation prod_length := length_prod (only parsing).
-#[deprecated(since = "8.20", use = length_firstn)]
-Notation firstn_length := length_firstn (only parsing).
+#[deprecated(since = "8.20", use = length_firstn_min)]
+Notation firstn_length := length_firstn_min (only parsing).
 #[deprecated(since = "8.20", use = length_skipn)]
 Notation skipn_length := length_skipn (only parsing).
 #[deprecated(since = "8.20", use = length_seq)]
@@ -4084,6 +4251,20 @@ Notation nth_error_O := nth_error_0 (only parsing).
 Notation firstn_O := firstn_0 (only parsing).
 Notation skipn_O := skipn_0 (only parsing).
 Notation list_power_length := length_list_power (only parsing).
+Notation remove_length_le := length_remove_le (only parsing).
+Notation remove_length_lt := length_remove_lt (only parsing).
+Notation length_firstn := length_firstn_min (only parsing). (* grab the name to prevent further uses *)
+Notation filter_length := length_filter (only parsing).
+Notation filter_length_le := length_filter_le (only parsing).
+Notation filter_length_forallb := forallb_length_filter (only parsing).
+#[deprecated(since = "8.21", use = firstn_S_cons)]
+Notation firstn_cons := firstn_S_cons (only parsing).
+Notation firstn_le_length := le_length_firstn (only parsing).
+#[deprecated(since = "8.21", use = length_firstn_le)]
+Definition firstn_length_le A l n := @length_firstn_le A n l.
+Notation firstn_firstn := firstn_firstn_min (only parsing).
+Notation repeat_length := length_repeat (only parsing).
+Notation flat_map_constant_length := length_flat_map_constant (only parsing).
 (* end hide *)
 
 
