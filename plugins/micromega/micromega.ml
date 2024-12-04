@@ -289,6 +289,20 @@ module Coq_Pos =
     | Gt -> p
     | _ -> p'
 
+  (** val eqb : positive -> positive -> bool **)
+
+  let rec eqb p q0 =
+    match p with
+    | XI p2 -> (match q0 with
+                | XI q1 -> eqb p2 q1
+                | _ -> false)
+    | XO p2 -> (match q0 with
+                | XO q1 -> eqb p2 q1
+                | _ -> false)
+    | XH -> (match q0 with
+             | XH -> true
+             | _ -> false)
+
   (** val leb : positive -> positive -> bool **)
 
   let leb x y =
@@ -482,6 +496,20 @@ module Z =
     match compare x y with
     | Gt -> true
     | _ -> false
+
+  (** val eqb : z -> z -> bool **)
+
+  let eqb x y =
+    match x with
+    | Z0 -> (match y with
+             | Z0 -> true
+             | _ -> false)
+    | Zpos p -> (match y with
+                 | Zpos q0 -> Coq_Pos.eqb p q0
+                 | _ -> false)
+    | Zneg p -> (match y with
+                 | Zneg q0 -> Coq_Pos.eqb p q0
+                 | _ -> false)
 
   (** val max : z -> z -> z **)
 
@@ -2150,12 +2178,12 @@ type zWitness = z psatz
 (** val zWeakChecker : z nFormula list -> z psatz -> bool **)
 
 let zWeakChecker =
-  check_normalised_formulas Z0 (Zpos XH) Z.add Z.mul zeq_bool Z.leb
+  check_normalised_formulas Z0 (Zpos XH) Z.add Z.mul Z.eqb Z.leb
 
 (** val psub1 : z pol -> z pol -> z pol **)
 
 let psub1 =
-  psub0 Z0 Z.add Z.sub Z.opp zeq_bool
+  psub0 Z0 Z.add Z.sub Z.opp Z.eqb
 
 (** val popp1 : z pol -> z pol **)
 
@@ -2165,22 +2193,22 @@ let popp1 =
 (** val padd1 : z pol -> z pol -> z pol **)
 
 let padd1 =
-  padd0 Z0 Z.add zeq_bool
+  padd0 Z0 Z.add Z.eqb
 
 (** val normZ : z pExpr -> z pol **)
 
 let normZ =
-  norm Z0 (Zpos XH) Z.add Z.mul Z.sub Z.opp zeq_bool
+  norm Z0 (Zpos XH) Z.add Z.mul Z.sub Z.opp Z.eqb
 
 (** val zunsat : z nFormula -> bool **)
 
 let zunsat =
-  check_inconsistent Z0 zeq_bool Z.leb
+  check_inconsistent Z0 Z.eqb Z.leb
 
 (** val zdeduce : z nFormula -> z nFormula -> z nFormula option **)
 
 let zdeduce =
-  nformula_plus_nformula Z0 Z.add zeq_bool
+  nformula_plus_nformula Z0 Z.add Z.eqb
 
 (** val xnnormalise : z formula -> z nFormula **)
 
@@ -2297,7 +2325,7 @@ let genCuttingPlane = function
    | Equal ->
      let g,c = zgcd_pol e in
      if (&&) (Z.gtb g Z0)
-          ((&&) (negb (zeq_bool c Z0)) (negb (zeq_bool (Z.gcd g c) g)))
+          ((&&) (negb (Z.eqb c Z0)) (negb (Z.eqb (Z.gcd g c) g)))
      then None
      else Some ((makeCuttingPlane e),Equal)
    | NonEqual -> Some ((e,Z0),op)
@@ -2320,7 +2348,7 @@ let is_pol_Z0 = function
 (** val eval_Psatz0 : z nFormula list -> zWitness -> z nFormula option **)
 
 let eval_Psatz0 =
-  eval_Psatz Z0 (Zpos XH) Z.add Z.mul zeq_bool Z.leb
+  eval_Psatz Z0 (Zpos XH) Z.add Z.mul Z.eqb Z.leb
 
 (** val valid_cut_sign : op1 -> bool **)
 
