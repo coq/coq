@@ -7,6 +7,8 @@
 (*         *     GNU Lesser General Public License Version 2.1          *)
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
+Attributes deprecated(since="9.0").
+Local Set Warnings "-deprecated".
 Require Export Stdlib.Program.Utils.
 Require Export Stdlib.Program.Wf.
 Require Export Stdlib.Program.Equality.

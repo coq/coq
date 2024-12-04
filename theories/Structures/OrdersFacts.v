@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Bool Basics OrdersTac.
+Require Import Bool Init.Basics OrdersTac.
 Require Export Orders.
 
 Set Implicit Arguments.
@@ -246,7 +246,7 @@ Module OrderedTypeRev (O:OrderedTypeFull) <: OrderedTypeFull.
 Definition t := O.t.
 Definition eq := O.eq.
 #[global]
-Program Instance eq_equiv : Equivalence eq.
+Instance eq_equiv : Equivalence eq. Proof. split; exact _. Qed.
 Definition eq_dec := O.eq_dec.
 
 Definition lt := flip O.lt.

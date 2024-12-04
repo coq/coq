@@ -119,8 +119,9 @@ Section RelProd_Instances.
            `(Transitive _ RA, Transitive _ RB) : Transitive (RA*RB).
   Proof. firstorder. Qed.
 
-  Global Program Instance RelProd_Equivalence 
+  Global Instance RelProd_Equivalence 
           `(Equivalence _ RA, Equivalence _ RB) : Equivalence (RA*RB).
+  Proof. split; exact _. Qed.
 
   Lemma FstRel_ProdRel :
     relation_equivalence (RA @@1) (RA*(fun _ _ : B => True)).

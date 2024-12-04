@@ -13,6 +13,8 @@
    Author: Matthieu Sozeau
    Institution: LRI, CNRS UMR 8623 - University Paris Sud
 *)
+Attributes deprecated(since="9.0").
+Local Set Warnings "-deprecated".
 
 Require Import Stdlib.Program.Basics.
 Require Export FunctionalExtensionality.

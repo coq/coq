@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Orders OrdersTac OrdersFacts Setoid Morphisms Basics.
+Require Import Orders OrdersTac OrdersFacts Setoid Morphisms Init.Basics.
 
 (** * A Generic construction of min and max *)
 

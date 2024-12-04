@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Setoid Morphisms Basics Equalities Orders.
+Require Import Setoid Morphisms Init.Basics Equalities Orders.
 Set Implicit Arguments.
 
 (** * The order tactic *)
