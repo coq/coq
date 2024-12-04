@@ -165,8 +165,8 @@ Ltac lterm_goal g :=
   | (_ ?t1 ?t2) => constr:(t1::t2::nil)
   end.
 
-Lemma Zeqb_ok: forall x y : Z, Zeq_bool x y = true -> x == y.
- intros x y H. rewrite (Zeq_bool_eq x y H). reflexivity. Qed. 
+Lemma Zeqb_ok: forall x y : Z, Z.eqb x y = true -> x == y.
+ intros x y H. rewrite (proj1 (Z.eqb_eq x y) H). reflexivity. Qed.
 
 
 Ltac reify_goal lvar lexpr lterm:=
@@ -220,7 +220,7 @@ Ltac ring_gen :=
              |- ?g => 
                apply (@ring_correct Z _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
                        (@gen_phiZ _ _ _ _ _ _ _ _ _) _
-                 (@comm _ _ _ _ _ _ _ _ _ _) Zeq_bool Zeqb_ok N (fun n:N => n)
+                 (@comm _ _ _ _ _ _ _ _ _ _) Z.eqb Zeqb_ok N (fun n:N => n)
                  (@pow_N _ _ _ _ _ _ _ _ _));
                [apply mkpow_th; reflexivity
                  |vm_compute; reflexivity]
@@ -240,7 +240,7 @@ Ltac ring_simplify_aux lterm fv lexpr hyp :=
     match lexpr with
       | ?e::?le => (* e:PExpr Z est la réification de t0:R *)
         let t := constr:(@Ncring_polynom.norm_subst
-          Z 0%Z 1%Z Z.add Z.mul Z.sub Z.opp (@eq Z) Zops Zeq_bool e) in
+          Z 0%Z 1%Z Z.add Z.mul Z.sub Z.opp (@eq Z) Zops Z.eqb e) in
         (* t:Pol Z *)
         let te := 
           constr:(@Ncring_polynom.Pphi Z 

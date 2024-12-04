@@ -47,8 +47,11 @@ Ltac Zpower_neg :=
     end
   end.
 
+Lemma Zeqb_imp_eq : forall x y, Z.eqb x y = true -> x = y.
+Proof. intros x y; exact (proj1 (Z.eqb_eq x y)). Qed.
+
 Add Ring Zr : Zth
-  (decidable Zeq_bool_eq, constants [Zcst], preprocess [Zpower_neg;unfold Z.succ],
+  (decidable Zeqb_imp_eq, constants [Zcst], preprocess [Zpower_neg;unfold Z.succ],
    power_tac Zpower_theory [Zpow_tac],
     (* The following two options are not needed; they are the default choice
        when the set of coefficient is the usual ring Z *)

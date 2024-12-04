@@ -2672,22 +2672,22 @@ Qed.
 
 Lemma R_rm : ring_morph
   0%R 1%R Rplus Rmult Rminus Ropp eq
-  0%Z 1%Z Zplus Zmult Zminus Z.opp Zeq_bool IZR.
+  0%Z 1%Z Zplus Zmult Zminus Z.opp Z.eqb IZR.
 Proof.
   constructor; try easy.
   - exact plus_IZR.
   - exact minus_IZR.
   - exact mult_IZR.
   - exact opp_IZR.
-  - now intros x y H; f_equal; apply Zeq_bool_eq.
+  - intros x y H; f_equal; exact (proj1 (Z.eqb_eq x y) H).
 Qed.
 
 (* NOTE: keeping inconsistent variable names for backward compatibility. *)
-Lemma Zeq_bool_IZR : forall x y:Z, IZR x = IZR y -> Zeq_bool x y = true.
-Proof. now intros n m H; apply Zeq_is_eq_bool, eq_IZR. Qed.
+Lemma Zeqb_IZR : forall x y:Z, IZR x = IZR y -> Z.eqb x y = true.
+Proof. now intros n m H; apply (proj2 (Z.eqb_eq n m)), eq_IZR. Qed.
 
 Add Field RField : Rfield
-  (completeness Zeq_bool_IZR, morphism R_rm, constants [IZR_tac], power_tac R_power_theory [Rpow_tac]).
+  (completeness Zeqb_IZR, morphism R_rm, constants [IZR_tac], power_tac R_power_theory [Rpow_tac]).
 
 (*********************************************************)
 (** * Definitions of new types                           *)
