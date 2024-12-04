@@ -14,7 +14,8 @@
    This file also contains the proof that classical reals are a
    quotient of constructive Cauchy reals. *)
 
-Require Export ZArith_base.
+Require Export PeanoNat.
+Require Export BinInt.
 Require Import QArith_base.
 Require Import ConstructiveCauchyReals.
 Require Import ConstructiveCauchyRealsMult.

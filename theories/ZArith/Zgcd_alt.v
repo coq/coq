@@ -21,7 +21,8 @@ Author: Pierre Letouzey
     here due to both its intrinsic interest and its use as reference
     point when proving gcd on Int31 numbers *)
 
-Require Import ZArith_base.
+Require Import BinInt.
+Require Import Znat.
 Require Import ZArithRing.
 Require Import Zdiv.
 Require Import Znumtheory.

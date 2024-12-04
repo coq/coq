@@ -15,6 +15,7 @@ Require Import Rtrigo1.
 Require Import Ranalysis1.
 Require Import PSeries_reg.
 Require Import Lia Lra.
+Require Import Arith.Factorial.
 Local Open Scope nat_scope.
 Local Open Scope R_scope.
 

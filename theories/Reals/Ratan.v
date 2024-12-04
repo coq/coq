@@ -22,6 +22,7 @@ Require Import Ranalysis5.
 Require Import SeqSeries.
 Require Import PartSum.
 Require Import Lia.
+Require Import Znat.
 
 Local Open Scope R_scope.
 Local Ltac Tauto.intuition_solver ::= auto with rorders real arith.

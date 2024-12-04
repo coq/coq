@@ -18,10 +18,12 @@ Require Import OrderedRing.
 Require Import QMicromega RingMicromega.
 Require Import Refl.
 Require Import Sumbool Raxioms Rfunctions RIneq Rpow_def.
+Require Import BinNat.
 Require Import QArith.
 Require Import Qfield.
 Require Import Qreals.
 Require Import DeclConstant.
+Require Import Znat.
 
 Require Setoid.
 
@@ -111,14 +113,12 @@ Proof.
     now apply Q2R_inv, Qeq_bool_neq.
 Qed.
 
-Notation to_nat := N.to_nat.
-
 Lemma QSORaddon :
   @SORaddon R
   R0 R1 Rplus Rmult Rminus Ropp  (@eq R)  Rle (* ring elements *)
   Q 0%Q 1%Q Qplus Qmult Qminus Qopp (* coefficients *)
   Qeq_bool Qle_bool
-  Q2R nat to_nat pow.
+  Q2R nat N.to_nat pow.
 Proof.
   constructor.
   - constructor ; intros ; try reflexivity.
@@ -201,7 +201,7 @@ Proof.
   - destruct z ; try congruence.
     + compute. congruence.
     + compute. congruence.
-  - generalize (Zle_0_nat n). auto using Z.le_ge.
+  - generalize (Znat.Nat2Z.is_nonneg n). auto using Z.le_ge.
 Qed.
 
 Definition CInvR0 (r : Rcst) := Qeq_bool (Q_of_Rcst r) (0 # 1).
@@ -352,7 +352,7 @@ Proof.
       * rewrite andb_false_iff in C.
         destruct C.
         -- simpl. apply Z.ltb_ge in H.
-           right. Ztac.normZ. Ztac.slia H H0.
+           auto using Z.le_ge.
         -- left ; apply Qeq_bool_neq; auto.
     + simpl.
       rewrite <- IHc.
@@ -459,7 +459,7 @@ Proof.
   apply Reval_pop2_eval_op2.
 Qed.
 
-Definition QReval_expr := eval_pexpr Rplus Rmult Rminus Ropp Q2R to_nat pow.
+Definition QReval_expr := eval_pexpr Rplus Rmult Rminus Ropp Q2R N.to_nat pow.
 
 Definition QReval_formula (e: PolEnv R) (k: Tauto.kind) (ff : Formula Q) :=
   let (lhs,o,rhs) := ff in Reval_op2 k o (QReval_expr e lhs) (QReval_expr e rhs).
@@ -566,3 +566,6 @@ Qed.
 (* Local Variables: *)
 (* coding: utf-8 *)
 (* End: *)
+
+#[deprecated(since="9.0")]
+Notation to_nat := N.to_nat.

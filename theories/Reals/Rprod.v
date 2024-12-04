@@ -15,6 +15,8 @@ Require Import Rseries.
 Require Import PartSum.
 Require Import Binomial.
 Require Import Lia.
+Require Import Arith.Factorial.
+Require Import Peano_dec.
 Local Open Scope R_scope.
 
 (** TT Ak; 0<=k<=N *)

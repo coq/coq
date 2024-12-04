@@ -26,7 +26,8 @@ Require Export SplitAbsolu.
 Require Export SplitRmult.
 Require Export ArithProp.
 Require Import Zpower.
-Require Import Ztac.
+Require Import Znat.
+Require Import Arith.Factorial.
 Local Open Scope nat_scope.
 Local Open Scope R_scope.
 
@@ -265,12 +266,12 @@ Proof.
     + elim (IZN (up (b * / (Rabs x - 1))) H2); intros; exists x0;
         apply
           (Rge_trans (INR x0) (IZR (up (b * / (Rabs x - 1)))) (b * / (Rabs x - 1))).
-      * rewrite INR_IZR_INZ; apply IZR_ge. normZ. slia H3 H5.
+      * rewrite INR_IZR_INZ; apply IZR_ge. Lia.lia.
       * unfold Rge; left; assumption.
     + exists 0%nat;
         apply
           (Rge_trans (INR 0) (IZR (up (b * / (Rabs x - 1)))) (b * / (Rabs x - 1))).
-      * rewrite INR_IZR_INZ; apply IZR_ge; simpl. normZ. slia H2 H3.
+      * rewrite INR_IZR_INZ; apply IZR_ge; simpl. Lia.lia.
       * unfold Rge; left; assumption.
 Qed.
 
@@ -938,3 +939,6 @@ Definition infinite_sum (s:nat -> R) (l:R) : Prop :=
 
 (** Compatibility with previous versions *)
 Notation infinit_sum := infinite_sum (only parsing).
+
+Local Set Warnings "-deprecated".
+Require Ztac. (* deprecated since 9.0 *)

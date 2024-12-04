@@ -16,7 +16,7 @@
    WARNING: this file is experimental and likely to change in future releases.
 *)
 
-Require Import QArith_base Qabs.
+Require Import Znat QArith_base Qabs.
 Require Import ConstructiveReals.
 Require Import ConstructiveAbs.
 Require Import ConstructiveLimits.

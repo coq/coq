@@ -9,7 +9,7 @@
 (************************************************************************)
 
 Require Export Cring.
-
+Import BinNat.
 
 (* Definition of integral domains: commutative ring without zero divisor *)
 

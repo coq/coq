@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+Require Import Znat.
 Require Import QArith Qabs.
 Require Import ConstructiveReals.
 Require Import ConstructiveRealsMorphisms.

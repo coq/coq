@@ -1,5 +1,6 @@
 
 (* compile en user    3m39.915s sur cachalot *)
+Require Import BinNat.
 Require Import Nsatz.
 Require List.
 Import List.ListNotations.

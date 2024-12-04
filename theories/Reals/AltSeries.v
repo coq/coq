@@ -14,6 +14,7 @@ Require Import Rseries.
 Require Import SeqProp.
 Require Import PartSum.
 Require Import Lra.
+Require Import Compare_dec.
 Local Open Scope R_scope.
 
 (**********)

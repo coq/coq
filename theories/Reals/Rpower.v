@@ -26,6 +26,7 @@ Require Import Sqrt_reg.
 Require Import MVT.
 Require Import Ranalysis4.
 Require Import Lra.
+Require Import Arith.Factorial.
 Local Open Scope R_scope.
 
 Definition P_Rmin_stt (P:R -> Prop) x y := Rmin_case x y P.

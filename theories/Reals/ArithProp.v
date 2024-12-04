@@ -1,5 +1,4 @@
-(************************************************************************)
-(*         *      The Rocq Prover / The Rocq Development Team           *)
+
 (*  v      *         Copyright INRIA, CNRS and contributors             *)
 (* <O___,, * (see version control and CREDITS file for authors & dates) *)
 (*   \VV/  **************************************************************)
@@ -11,6 +10,7 @@
 Require Import Rdefinitions Raxioms RIneq.
 Require Import Rbasic_fun.
 Require Import ArithRing.
+Require Import PeanoNat.
 
 Local Open Scope Z_scope.
 Local Open Scope R_scope.
