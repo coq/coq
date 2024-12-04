@@ -12,13 +12,12 @@ Require Import List.
 Require Import Setoid.
 Require Import BinPos.
 Require Import BinList.
-Require Import Znumtheory.
 Require Export Morphisms Setoid Bool.
-Require Import ZArith.
 Require Import Algebra_syntax.
 Require Export Ncring.
 Require Import Ncring_polynom.
 Require Import Ncring_initial.
+Require Import BinInt.
 
 Set Implicit Arguments.
 
@@ -165,10 +164,6 @@ Ltac lterm_goal g :=
   | (_ ?t1 ?t2) => constr:(t1::t2::nil)
   end.
 
-Lemma Zeqb_ok: forall x y : Z, Zeq_bool x y = true -> x == y.
- intros x y H. rewrite (Zeq_bool_eq x y H). reflexivity. Qed. 
-
-
 Ltac reify_goal lvar lexpr lterm:=
   (*idtac lvar; idtac lexpr; idtac lterm;*)
   match lexpr with
@@ -205,6 +200,16 @@ Lemma comm: forall (R:Type)`{Ring R}(c : Z) (x : R),
     + simpl.  gen_rewrite.
 Qed.
 
+Local Definition Private_ring_correct_Z :=
+  @ring_correct Z _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+    (@gen_phiZ _ _ _ _ _ _ _ _ _) _
+    (@comm _ _ _ _ _ _ _ _ _ _)
+    Z.eqb
+    ltac:(apply Z.eqb_eq)
+    N
+    (fun n:N => n)
+    (@pow_N _ _ _ _ _ _ _ _ _).
+
 Ltac ring_gen :=
    match goal with
      |- ?g =>
@@ -218,10 +223,7 @@ Ltac ring_gen :=
            reify_goal fv lexpr lterm;
            match goal with 
              |- ?g => 
-               apply (@ring_correct Z _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
-                       (@gen_phiZ _ _ _ _ _ _ _ _ _) _
-                 (@comm _ _ _ _ _ _ _ _ _ _) Zeq_bool Zeqb_ok N (fun n:N => n)
-                 (@pow_N _ _ _ _ _ _ _ _ _));
+               apply Private_ring_correct_Z;
                [apply mkpow_th; reflexivity
                  |vm_compute; reflexivity]
            end
@@ -232,6 +234,12 @@ Ltac non_commutative_ring:=
   intros;
   ring_gen.
 
+Local Definition Private_polynom_norm_subst_ok_Z :=
+(@Ncring_polynom.norm_subst_ok
+          Z _ 0%Z 1%Z Z.add Z.mul Z.sub Z.opp (@eq Z)
+          _ _ 0 1 _+_ _*_ _-_ -_ _==_ _ _ Ncring_initial.gen_phiZ _
+          (@comm _ 0 1 _+_ _*_ _-_ -_ _==_ _ _) _ ltac:(apply Z.eqb_eq)).
+
 (* simplification *)
 
 Ltac ring_simplify_aux lterm fv lexpr hyp :=
@@ -240,7 +248,7 @@ Ltac ring_simplify_aux lterm fv lexpr hyp :=
     match lexpr with
       | ?e::?le => (* e:PExpr Z est la réification de t0:R *)
         let t := constr:(@Ncring_polynom.norm_subst
-          Z 0%Z 1%Z Z.add Z.mul Z.sub Z.opp (@eq Z) Zops Zeq_bool e) in
+          Z 0%Z 1%Z Z.add Z.mul Z.sub Z.opp (@eq Z) Zops Z.eqb e) in
         (* t:Pol Z *)
         let te := 
           constr:(@Ncring_polynom.Pphi Z 
@@ -255,10 +263,7 @@ Ltac ring_simplify_aux lterm fv lexpr hyp :=
         assert (eq2:(@Ncring_polynom.PEeval Z
           _ 0 1 _+_ _*_ _-_ -_ _==_ _ Ncring_initial.gen_phiZ N (fun n:N => n) 
           (@Ring_theory.pow_N _ 1 multiplication) fv e) == te);
-        [apply (@Ncring_polynom.norm_subst_ok
-          Z _ 0%Z 1%Z Z.add Z.mul Z.sub Z.opp (@eq Z)
-          _ _ 0 1 _+_ _*_ _-_ -_ _==_ _ _ Ncring_initial.gen_phiZ _
-          (@comm _ 0 1 _+_ _*_ _-_ -_ _==_ _ _) _ Zeqb_ok);
+        [apply Private_polynom_norm_subst_ok_Z;
            apply mkpow_th; reflexivity
           | match hyp with
                 | 1%nat => rewrite eq2

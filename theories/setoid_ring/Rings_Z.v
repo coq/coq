@@ -11,6 +11,7 @@
 Require Export Cring.
 Require Export Integral_domain.
 Require Export Ncring_initial.
+Require Import BinInt.
 
 #[global]
 Instance Zcri: (Cring (Rr:=Zr)).

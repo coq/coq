@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import ZArith_base.
 Require Import Zpow_def.
 Require Import BinInt.
 Require Import BinNat.
@@ -154,11 +153,9 @@ Ltac rsimpl := simpl.
  Qed.
 
  Lemma gen_Zeqb_ok : forall x y,
-   Zeq_bool x y = true -> [x] == [y].
+   Z.eqb x y = true -> [x] == [y].
  Proof.
-  intros x y H7.
-  assert (H10 := Zeq_bool_eq x y H7);unfold IDphi in H10.
-  rewrite H10;reflexivity.
+  intros x y ->%Z.eqb_eq; reflexivity.
  Qed.
 
  Lemma gen_phiZ1_add_pos_neg : forall x y,

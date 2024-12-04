@@ -24,6 +24,7 @@ Require Import ZArith_base.
 Require Import ZArithRing.
 Require Import Ztac.
 Require PreOmega.
+Require Import micromega.Tauto.
 Local Open Scope Z_scope.
 
 Ltac flatten_bool :=
@@ -447,8 +448,6 @@ Qed.
 
 
 
-Require Import Stdlib.micromega.Tauto BinNums.
-
 Definition cnf_of_list {T: Type} (tg : T) (l : list (NFormula Z)) :=
   List.fold_right (fun x acc =>
                      if Zunsat x then acc else ((x,tg)::nil)::acc)
@@ -566,13 +565,13 @@ Definition ceiling (a b:Z) : Z :=
     end.
 
 
-Require Import Znumtheory.
-
 Lemma Zdivide_ceiling : forall a b, (b | a) -> ceiling a b = Z.div a b.
 Proof.
   unfold ceiling.
   intros a b H.
-  apply Zdivide_mod in H.
+  assert (mod0_divide : forall a b, (b | a) -> a mod b = 0).
+  { intros ? ? (?,->); apply Z_mod_mult. }
+  apply mod0_divide in H.
   case_eq (Z.div_eucl a b).
   intros z z0 H0.
   change z with (fst (z,z0)).
@@ -607,7 +606,7 @@ Qed.
 
 (** NB: narrow_interval_upper_bound is Zdiv.Zdiv_le_lower_bound *)
 
-Require Import QArith.
+Require Import QArith. Local Open Scope Z_scope.
 
 Inductive ZArithProof :=
 | DoneProof
@@ -634,7 +633,6 @@ Register ExProof     as micromega.ZArithProof.ExProof.
    - b is the constant
    - a is the gcd of the other coefficient.
 *)
-Require Import Znumtheory.
 
 Definition isZ0 (x:Z) :=
   match x with
@@ -689,7 +687,8 @@ Proof.
   - (* Pc *)
     simpl.
     intros.
-    apply Zdivide_Zdiv_eq ; auto.
+    rewrite <-Z.divide_div_mul_exact, Z.mul_comm, Z.div_mul;
+      try symmetry; auto using Z.lt_neq.
   - (* Pinj *)
     simpl.
     intros.
@@ -734,12 +733,8 @@ Qed.
 
 Lemma Zgcd_minus : forall a b c, (a | c - b ) -> (Z.gcd a b | c).
 Proof.
-  intros a b c (q,Hq).
-  destruct (Zgcd_is_gcd a b) as [(a',Ha) (b',Hb) _].
-  set (g:=Z.gcd a b) in *; clearbody g.
-  exists (q * a' + b').
-  symmetry in Hq. rewrite <- Z.add_move_r in Hq.
-  rewrite <- Hq, Hb, Ha. ring.
+  intros a b c [q Hq%Z.sub_move_r]; subst.
+  auto using Z.divide_add_r, Z.divide_mul_r, Z.gcd_divide_l, Z.gcd_divide_r.
 Qed.
 
 Lemma Zdivide_pol_sub : forall p a b,
@@ -760,7 +755,7 @@ Proof.
     inv H0.
     constructor.
     + apply Zdivide_pol_Zdivide with (1:= (ltac:(assumption) : Zdivide_pol a p)).
-      destruct (Zgcd_is_gcd a b) ; assumption.
+      apply Z.gcd_divide_l.
     + apply IHp2 ; assumption.
 Qed.
 
@@ -817,12 +812,12 @@ Proof.
         -- unfold ZgcdM in HH1. unfold ZgcdM.
            destruct (Zmax_spec  (Z.gcd z1 z2)  1) as [HH2 | HH2].
            ++ destruct HH2 as [H1 H2]. rewrite H2 in *.
-              destruct (Zgcd_is_gcd (Z.gcd z1 z2) z); auto.
+              apply Z.gcd_divide_l.
            ++ destruct HH2 as [H1 H2]. rewrite H2.
-              destruct (Zgcd_is_gcd 1  z); auto.
+              apply Z.gcd_divide_l.
       * apply (Zdivide_pol_Zdivide _ z).
         -- apply (IHp2 _ _ H); auto.
-        -- destruct (Zgcd_is_gcd (ZgcdM z1 z2) z); auto.
+        -- apply Z.gcd_divide_r.
     + constructor.
       * apply Zdivide_pol_one.
       * apply Zdivide_pol_one.
@@ -1265,11 +1260,8 @@ Proof.
            intuition subst; easy.
         -- rewrite negb_false_iff in H0.
            apply Zeq_bool_eq in H0.
-           assert (HH := Zgcd_is_gcd g c).
-           rewrite H0 in HH.
-           destruct HH as [H3 H4 ?].
-           apply Zdivide_opp_r in H4.
-           rewrite Zdivide_ceiling ; auto.
+           rewrite Zdivide_ceiling; cycle 1.
+           { apply Z.divide_opp_r. rewrite <-H0. apply Z.gcd_divide_r. }
            apply Z.sub_move_0_r.
            apply Z.div_unique_exact.
            ++ now intros ->.
@@ -1331,13 +1323,9 @@ Proof.
       rewrite Zgcd_pol_correct_lt with (1:= H0) in H2. 2: auto using Z.gt_lt.
       set (x:=eval_pol env (Zdiv_pol (PsubC Z.sub p c) g)) in *; clearbody x.
       contradict H5.
-      apply Zis_gcd_gcd.
+      apply Z.add_move_0_l in H2; subst c.
+      rewrite Z.gcd_opp_r, Z.gcd_mul_diag_l; trivial.
       * apply Z.lt_le_incl, Z.gt_lt; assumption.
-      * constructor; auto with zarith.
-        exists (-x).
-        rewrite Z.mul_opp_l, Z.mul_comm.
-        now apply Z.add_move_0_l.
-        (**)
     + destruct (makeCuttingPlane p);  discriminate.
   - discriminate.
   - destruct (makeCuttingPlane (PsubC Z.sub p 1)) ; discriminate.
