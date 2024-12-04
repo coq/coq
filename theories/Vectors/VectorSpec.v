@@ -350,9 +350,13 @@ assert (v = fst (splitat n vw)) as -> by now rewrite E.
 assert (w = snd (splitat n vw)) as -> by now rewrite E.
 clear E. induction n as [|n IH].
 - reflexivity.
-- cbn. specialize (IH (tl vw)).
-  destruct (splitat n (tl vw)) as [??].
-  rewrite (eta vw). cbn. apply f_equal, IH.
+- cbn.
+  rewrite (eta vw) at 1.
+  rewrite (IH (tl vw)) at 1.
+  (* unification keeps unfolding [Nat.add]. In order to destruct
+     [splitat n (tl vw)] we need to make all appearances uniform. *)
+  change (splitat n (tl vw)) with (splitat n (tl vw)).
+  destruct (splitat n (tl vw)) as [??]. reflexivity.
 Qed.
 
 Lemma append_inj {A} : forall {n m : nat} (v v' : t A n) (w w' : t A m),
