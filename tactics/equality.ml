@@ -98,6 +98,7 @@ let rewrite_core_unif_flags = {
   use_meta_bound_pattern_unification = true;
   allowed_evars = Evarsolve.AllowedEvars.all;
   restrict_conv_on_strict_subterms = false;
+  firstorder_function_conversion = Unification.firstorder_function_conversion ();
   modulo_betaiota = false;
   modulo_eta = true;
 }
@@ -163,6 +164,7 @@ let rewrite_conv_closed_core_unif_flags = {
   allowed_evars = Evarsolve.AllowedEvars.all;
 
   restrict_conv_on_strict_subterms = false;
+  firstorder_function_conversion = Unification.firstorder_function_conversion ();
   modulo_betaiota = false;
   modulo_eta = true;
 }
@@ -197,6 +199,8 @@ let rewrite_keyed_core_unif_flags = {
   allowed_evars = Evarsolve.AllowedEvars.all;
 
   restrict_conv_on_strict_subterms = false;
+
+  firstorder_function_conversion = Unification.firstorder_function_conversion (); (* Should really be false *)
   modulo_betaiota = true;
 
   modulo_eta = true;

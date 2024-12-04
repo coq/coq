@@ -316,7 +316,14 @@ Definition Rrepr_morphism
 Proof.
   apply (Build_ConstructiveRealsMorphism
            DRealConstructive CRealConstructive Rrepr).
-  - intro q. simpl. unfold IQR. rewrite Rquot2. apply CRealEq_refl.
+  - intro q. simpl. unfold IQR. rewrite Rquot2.
+    Set Printing All.
+    unfold CReq.
+    (* goal is "CReq CRealConstructive q q", which unfolds to "CRle _ q q /\ CRle _ q q"
+       CRle unfolds to "CRlt -> False", CRlt applied to CRealConstructive then unfolds to CRealLt
+       the lemma CRealEq_refl is in terms of CRealLe which unfolds to "CRealLt -> False"
+       thus we cannot do "apply CRealEq_refl" *)
+    apply (CRealEq_refl (inject_Q q)).
   - intros. simpl. simpl in H. rewrite Rlt_def in H.
     apply CRealLtEpsilon in H. exact H.
 Defined.
@@ -326,7 +333,7 @@ Definition Rabst_morphism
 Proof.
   apply (Build_ConstructiveRealsMorphism
            CRealConstructive DRealConstructive Rabst).
-  - intro q. apply Req_constr_refl.
+  - intro q. unfold CReq,CRle. simpl. apply Req_constr_refl.
   - intros. simpl. simpl in H. rewrite Rlt_def.
     apply CRealLtForget. rewrite Rquot2, Rquot2. exact H.
 Defined.

@@ -44,6 +44,7 @@ let auto_core_unif_flags_of st1 st2 = {
   use_meta_bound_pattern_unification = true;
   allowed_evars = Evarsolve.AllowedEvars.all;
   restrict_conv_on_strict_subterms = false; (* Compat *)
+  firstorder_function_conversion = Unification.firstorder_function_conversion ();
   modulo_betaiota = false;
   modulo_eta = true;
 }
