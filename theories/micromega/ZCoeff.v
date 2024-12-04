@@ -114,7 +114,7 @@ Qed.
 Lemma Zring_morph :
   ring_morph 0 1 rplus rtimes rminus ropp req
              0%Z 1%Z Z.add Z.mul Z.sub Z.opp
-             Zeq_bool gen_order_phi_Z.
+             Z.eqb gen_order_phi_Z.
 Proof.
 exact (gen_phiZ_morph (SORsetoid sor) ring_ops_wd (SORrt sor)).
 Qed.
@@ -159,7 +159,7 @@ Lemma Zcleb_morph : forall x y : Z, Z.leb x y = true -> [x] <= [y].
 Proof.
 unfold Z.leb; intros x y H.
 case_eq (x ?= y)%Z; intro H1; rewrite H1 in H.
-- le_equal. apply (morph_eq Zring_morph). unfold Zeq_bool; now rewrite H1.
+- le_equal. apply (morph_eq Zring_morph). apply Z.eqb_eq; auto using Z.compare_eq.
 - le_less. now apply clt_morph.
 - discriminate.
 Qed.
