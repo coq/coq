@@ -499,7 +499,7 @@ let main () =
   let coqenv = resolve_coqenv install_dirs in
   let cflags, sse2_math = compute_cflags () in
   check_fmath sse2_math;
-  if prefs.interactive then
+  if not prefs.quiet then
     print_summary prefs arch camlenv install_dirs browser;
   write_config_file ~file:"config/coq_config.ml"
     (write_coq_config_ml install_prefix camlenv coqenv caml_flags caml_version_nums arch arch_is_win32 hasnatdynlink browser prefs);
