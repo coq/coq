@@ -30,7 +30,7 @@ let fail_msg =
    or ensure you have installed the package containing Coq's stdlib (coq-stdlib in OPAM) \
    If you intend to use Coq without a standard library, the -boot -noinit options must be used."
 
-let fail s = Format.eprintf "%s@\n%!" fail_msg; exit 1
+let fail s = Format.kfprintf (fun _ -> exit 1) Format.err_formatter ("%s@\n"^^s^^"%!") fail_msg
 
 (* This code needs to be refactored, for now it is just what used to be in envvars  *)
 
@@ -44,9 +44,10 @@ let guess_coqlib () =
     ~dir:Coq_config.coqlibsuffix
     ~file:prelude
     (fun () ->
-      if Sys.file_exists (Filename.concat Coq_config.coqlib prelude)
-      then Coq_config.coqlib
-      else fail ()))
+       let coqlib = Util.relocate Coq_config.coqlib in
+       if Sys.file_exists (Filename.concat coqlib prelude)
+       then coqlib
+       else fail "tried %s, exe = %s" coqlib Sys.executable_name))
 
 (* Build layout uses coqlib = coqcorelib *)
 let guess_coqcorelib lib =

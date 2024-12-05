@@ -9,7 +9,7 @@
 
 (rule
  (targets test_suite_config.inc)
- (action (with-stdout-to %{targets} (run tools/coq_config_to_make.exe))))
+ (action (with-stdout-to %{targets} (run tools/coq_config_to_make.exe %{bin:coqc}))))
 
 (rule
  (targets summary.log)

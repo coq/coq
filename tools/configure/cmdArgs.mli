@@ -8,13 +8,15 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+type prefix = RelocatableInstall | Prefix of string
+
 type nativecompiler = NativeYes | NativeNo | NativeOndemand
 
 module Prefs : sig
 
 (** User-setable options from command line [configure] arugments *)
 type t =
-  { prefix : string option
+  { prefix : prefix option
   (** root prefix for installation  *)
   ; quiet : bool
   (** whether to display a summary *)

@@ -8,12 +8,16 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+type relocatable_path =
+  | NotRelocatable of string (* absolute path *)
+  | Relocatable of string (* relative to the inferred prefix *)
+
 (* The fields below are absolute paths *)
-val install_prefix : string   (* Install prefix passed by the user *)
-val coqlib : string     (* where the std library is installed *)
-val configdir : string  (* where configuration files are installed *)
-val datadir : string    (* where extra data files are installed *)
-val docdir : string     (* where the doc is installed *)
+val install_prefix : relocatable_path   (* Install prefix passed by the user *)
+val coqlib : relocatable_path     (* where the std library is installed *)
+val configdir : relocatable_path  (* where configuration files are installed *)
+val datadir : relocatable_path    (* where extra data files are installed *)
+val docdir : relocatable_path     (* where the doc is installed *)
 
 (* The fields below are paths relative to the installation prefix *)
 (* However, if an absolute path, it means discarding the actual prefix *)

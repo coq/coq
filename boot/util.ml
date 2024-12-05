@@ -60,7 +60,10 @@ let canonical_path_name p =
     Filename.concat current p
 
 let coqbin =
-  canonical_path_name (Filename.dirname Sys.executable_name)
+  (* avoid following symlinks if possible (Sys.executable_name followed symlinks) *)
+  if String.equal (Filename.basename Sys.argv.(0)) Sys.argv.(0)
+  then canonical_path_name (Filename.dirname Sys.executable_name)
+  else Filename.dirname Sys.argv.(0)
 
 (** The following only makes sense when executables are running from
     source tree (e.g. during build or in local mode). *)
@@ -75,3 +78,7 @@ let coqroot =
 let check_file_else ~dir ~file oth =
   let path = use_suffix coqroot dir in
   if Sys.file_exists (Filename.concat path file) then path else oth ()
+
+let relocate = function
+  | Coq_config.NotRelocatable p -> p
+  | Coq_config.Relocatable p -> Filename.concat coqroot p
