@@ -38,4 +38,4 @@
    plugin_list
   ; used for the prefix
   (env_var PWD))
- (action (chdir %{project_root} (run %{project_root}/tools/configure/configure.exe -no-ask -quiet))))
+ (action (chdir %{project_root} (run %{project_root}/tools/configure/configure.exe -quiet -prefix ../install/default))))

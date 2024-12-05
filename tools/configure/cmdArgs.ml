@@ -85,16 +85,16 @@ let warn_warn_error () =
                   warnings are not set in the config section of the \
                   corresponding build tool [coq_makefile, dune]@\n%!"
 
-let check_absolute = function
-  | None -> ()
+let make_absolute = function
+  | None -> None
   | Some path ->
     if Filename.is_relative path then
-      die "argument to -prefix must be an absolute path"
-    else ()
+      Some (Sys.getcwd() ^ "/" ^ path)
+    else Some path
 
 let args_options = Arg.align [
-  "-prefix", arg_string_option (fun p prefix -> check_absolute prefix; { p with prefix }),
-    "<dir> Set installation directory to <dir> (absolute path required)";
+  "-prefix", arg_string_option (fun p prefix -> { p with prefix = make_absolute prefix }),
+    "<dir> Set installation directory to <dir>";
   "-quiet", arg_set (fun p -> { p with quiet = true }),
     " Don't print variables during configure";
   "-no-ask", arg_set (fun p -> { p with interactive = false }),
