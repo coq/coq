@@ -262,7 +262,7 @@ let find_suffix prefix path = match prefix with
 (* This computes the actual effective path for an install directory,
    based on the given prefix; if prefix is absent, it is assumed that
    the profile is "local" *)
-let do_one_instdir ~prefix ~arch InstallDir.{var; msg; uservalue; selfcontainedlayout; unixlayout} =
+let do_one_instdir ~interactive ~prefix ~arch InstallDir.{var; msg; uservalue; selfcontainedlayout; unixlayout} =
   (var,msg),
   match uservalue, prefix with
   | Some d, p -> d, find_suffix p d
@@ -270,6 +270,7 @@ let do_one_instdir ~prefix ~arch InstallDir.{var; msg; uservalue; selfcontainedl
     let suffix = if (arch_is_win32 arch) then selfcontainedlayout else relativize unixlayout in
     use_suffix p suffix, suffix
   | None, None ->
+    let () = if not interactive then die (Printf.sprintf "No installation path given for %s" msg) in
     let suffix = if (unix arch) then unixlayout else selfcontainedlayout in
     let base = if (unix arch) then "/usr/local" else "C:/coq" in
     let dflt = use_suffix base suffix in
@@ -278,14 +279,8 @@ let do_one_instdir ~prefix ~arch InstallDir.{var; msg; uservalue; selfcontainedl
     if line = "" then (dflt,suffix) else (line,find_suffix None line)
 
 let install_dirs prefs arch =
-  let prefix =
-    match prefs.prefix with
-    | None ->
-      if prefs.interactive then None
-      else Some Sys.(getcwd () ^ "/../install/default")
-    | p -> p
-  in
-  List.map (do_one_instdir ~prefix ~arch) (install prefs)
+  let prefix = prefs.prefix in
+  List.map (do_one_instdir ~interactive:prefs.interactive ~prefix ~arch) (install prefs)
 
 let select var install_dirs = List.find (fun ((v,_),_) -> v=var) install_dirs |> snd
 
