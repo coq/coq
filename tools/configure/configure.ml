@@ -204,7 +204,7 @@ let coqsrc = Sys.getcwd ()
 
 type path_style =
   | Absolute of string (* Should start with a "/" *)
-  | Relative of string (* Should not start with a "/" *)
+  | Relative of string (* Should not start with a "/", relative to the prefix *)
 
 module InstallDir = struct
 
@@ -227,7 +227,7 @@ module InstallDir = struct
 end
 
 let install prefs =
-  [ InstallDir.make "COQPREFIX" "Stdlib" prefs.prefix (Relative "") (Relative "")
+  [ InstallDir.make "COQPREFIX" "Stdlib" None (Relative "") (Relative "")
   ; InstallDir.make "COQLIBINSTALL" "the Coq library" prefs.libdir (Relative "lib/coq") (Relative "lib/coq")
   ; InstallDir.make "CONFIGDIR" "the Coqide configuration files" prefs.configdir (Relative "config") (Absolute "/etc/xdg/coq")
   ; InstallDir.make "DATADIR" "the Coqide data files" prefs.datadir (Relative "share/coq") (Relative "share/coq")
