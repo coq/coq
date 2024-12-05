@@ -91,7 +91,7 @@
   ; without this if the gtk libs are not available dune can try to use
   ; coqide from PATH instead of giving a nice error
   ; there is no problem with the other shims since they don't depend on optional build products
-  %{project_root}/ide/coqide/coqide_main.exe
+  %{project_root}/ide/coqide/rocqide_main.exe
   %{bin:coqworker.opt}
   %{project_root}/theories/Init/Prelude.vo
   %{project_root}/coqide-server.install
