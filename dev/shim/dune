@@ -21,6 +21,25 @@
     (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqtop} -I \"$(dirname \"$0\")/%{workspace_root}/_build/install/default/lib\" -coqlib \"$(dirname \"$0\")/%{project_root}\" \"$@\"'")
     (run chmod +x %{targets})))))
 
+; coqidetop
+
+(alias
+ (name coqidetop-prelude)
+ (deps
+  %{bin:coqidetop.opt}
+   ; XXX: bug, we are missing the dep on the _install meta file...
+  %{project_root}/theories/Init/Prelude.vo))
+
+(rule
+ (targets coqidetop.opt)
+ (deps (alias coqidetop-prelude))
+ (action
+  (with-stdout-to %{targets}
+   (progn
+    (echo "#!/usr/bin/env bash\n")
+    (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqidetop.opt} -I \"$(dirname \"$0\")/%{workspace_root}/_build/install/default/lib\" -coqlib \"$(dirname \"$0\")/%{project_root}\" \"$@\"'")
+    (run chmod +x %{targets})))))
+
 ; coqc
 
 (alias
