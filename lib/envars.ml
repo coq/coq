@@ -97,6 +97,7 @@ let expand_path_macros ~warn s =
 (** {2 Coq paths} *)
 
 let coqbin =
+  (* NB this follows symlinks *)
   CUnix.canonical_path_name (Filename.dirname Sys.executable_name)
 
 (** The following only makes sense when executables are running from
@@ -115,20 +116,19 @@ let _ =
 let use_suffix prefix suffix =
   if String.length suffix > 0 && suffix.[0] = '/' then suffix else prefix / suffix
 
-let docdir () =
+(* XXX do we actually need the local_suffix? *)
+let relocate local_suffix path =
   (* This assumes implicitly that the suffix is non-trivial *)
-  let path = use_suffix coqroot Coq_config.docdirsuffix in
-  if Sys.file_exists path then path else Coq_config.docdir
+  let local_path = use_suffix coqroot local_suffix in
+  if Sys.file_exists local_path
+  then local_path
+  else Boot.Util.relocate path
 
-let datadir () =
-  (* This assumes implicitly that the suffix is non-trivial *)
-  let path = use_suffix coqroot Coq_config.datadirsuffix in
-  if Sys.file_exists path then path else Coq_config.datadir
+let docdir () = relocate Coq_config.docdirsuffix Coq_config.docdir
 
-let configdir () =
-  (* This assumes implicitly that the suffix is non-trivial *)
-  let path = use_suffix coqroot Coq_config.configdirsuffix in
-  if Sys.file_exists path then path else Coq_config.configdir
+let datadir () = relocate Coq_config.datadirsuffix Coq_config.datadir
+
+let configdir () = relocate Coq_config.configdirsuffix Coq_config.configdir
 
 let coqpath =
   let coqpath = getenv_else "COQPATH" (fun () -> "") in

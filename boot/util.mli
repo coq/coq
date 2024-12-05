@@ -12,3 +12,5 @@ val getenv_else : string -> (unit -> string) -> string
 
 val check_file_else :
   dir:string -> file:string -> (unit -> string) -> string
+
+val relocate : Coq_config.relocatable_path -> string

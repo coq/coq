@@ -204,13 +204,17 @@ let coqsrc = Sys.getcwd ()
 
 type path_style =
   | Absolute of string (* Should start with a "/" *)
-  | Relative of string (* Should not start with a "/" *)
+  | Relative of string (* Should not start with a "/", relative to the prefix *)
+
+type relocatable_path =
+  | Relocatable of string
+  | NotRelocatable of string
 
 module InstallDir = struct
 
   type t =
     { var : string
-    (** Makefile variable to write *)
+    (** Used as key by [select] (otherwise ignored) *)
     ; msg : string
     (** Description of the directory  *)
     ; uservalue : string option
@@ -227,7 +231,7 @@ module InstallDir = struct
 end
 
 let install prefs =
-  [ InstallDir.make "COQPREFIX" "Stdlib" prefs.prefix (Relative "") (Relative "")
+  [ InstallDir.make "COQPREFIX" "Stdlib" None (Relative "") (Relative "")
   ; InstallDir.make "COQLIBINSTALL" "the Coq library" prefs.libdir (Relative "lib/coq") (Relative "lib/coq")
   ; InstallDir.make "CONFIGDIR" "the Coqide configuration files" prefs.configdir (Relative "config") (Absolute "/etc/xdg/coq")
   ; InstallDir.make "DATADIR" "the Coqide data files" prefs.datadir (Relative "share/coq") (Relative "share/coq")
@@ -238,10 +242,13 @@ let install prefs =
 let strip_trailing_slash_if_any p =
   if p.[String.length p - 1] = '/' then String.sub p 0 (String.length p - 1) else p
 
-let use_suffix prefix = function
-  | Relative "" -> prefix
-  | Relative suff -> prefix ^ "/" ^ suff
-  | Absolute path -> path
+let use_suffix prefix suff =
+  match suff with
+  | Absolute path -> NotRelocatable path
+  | Relative suff ->
+  match prefix with
+  | Prefix prefix -> NotRelocatable (if suff = "" then prefix else prefix ^ "/" ^ suff)
+  | RelocatableInstall -> Relocatable suff
 
 let relativize = function
   (* Turn a global layout based on some prefix to a relative layout *)
@@ -249,8 +256,8 @@ let relativize = function
   | Absolute path -> Relative (String.sub path 1 (String.length path - 1))
 
 let find_suffix prefix path = match prefix with
-  | None -> Absolute path
-  | Some p ->
+  | None | Some RelocatableInstall -> Absolute path
+  | Some (Prefix p) ->
      let p = strip_trailing_slash_if_any p in
      let lpath = String.length path in
      let lp = String.length p in
@@ -262,47 +269,45 @@ let find_suffix prefix path = match prefix with
 (* This computes the actual effective path for an install directory,
    based on the given prefix; if prefix is absent, it is assumed that
    the profile is "local" *)
-let do_one_instdir ~prefix ~arch InstallDir.{var; msg; uservalue; selfcontainedlayout; unixlayout} =
+let do_one_instdir ~interactive ~prefix ~arch InstallDir.{var; msg; uservalue; selfcontainedlayout; unixlayout} =
   (var,msg),
   match uservalue, prefix with
-  | Some d, p -> d, find_suffix p d
+  | Some d, p -> NotRelocatable d, find_suffix p d
   | None, Some p ->
     let suffix = if (arch_is_win32 arch) then selfcontainedlayout else relativize unixlayout in
     use_suffix p suffix, suffix
   | None, None ->
+    let () = if not interactive then die (Printf.sprintf "No installation path given for %s" msg) in
     let suffix = if (unix arch) then unixlayout else selfcontainedlayout in
     let base = if (unix arch) then "/usr/local" else "C:/coq" in
-    let dflt = use_suffix base suffix in
-    let () = printf "Where should I install %s [%s]? " msg dflt in
+    let dflt = use_suffix (Prefix base) suffix in
+    let ppdflt = match dflt with NotRelocatable v -> v | Relocatable _ -> assert false in
+    let () = printf "Where should I install %s [%s]? " msg ppdflt in
     let line = read_line () in
-    if line = "" then (dflt,suffix) else (line,find_suffix None line)
+    if line = "" then (dflt,suffix) else (NotRelocatable line,find_suffix prefix line)
 
 let install_dirs prefs arch =
   let prefix =
     match prefs.prefix with
-    | None ->
-      begin
-        try Some (Sys.getenv "COQ_CONFIGURE_PREFIX")
-        with
-        | Not_found when prefs.interactive -> None
-        | Not_found -> Some Sys.(getcwd () ^ "/../install/default")
-      end
-    | p -> p
+    | Some _ as p -> p
+    | None -> match Sys.getenv_opt "COQ_CONFIGURE_PREFIX" with
+      | Some p -> Some (Prefix p)
+      | None -> None
   in
-  List.map (do_one_instdir ~prefix ~arch) (install prefs)
+  List.map (do_one_instdir ~interactive:prefs.interactive ~prefix ~arch) (install prefs)
 
 let select var install_dirs = List.find (fun ((v,_),_) -> v=var) install_dirs |> snd
 
 module CoqEnv = struct
   (** Coq core paths, for libraries, documentation, configuration, and data *)
   type t =
-    { coqlib : string
+    { coqlib : relocatable_path
     ; coqlibsuffix : path_style
-    ; docdir : string
+    ; docdir : relocatable_path
     ; docdirsuffix : path_style
-    ; configdir : string
+    ; configdir : relocatable_path
     ; configdirsuffix : path_style
-    ; datadir : string
+    ; datadir : relocatable_path
     ; datadirsuffix : path_style }
 end
 
@@ -363,6 +368,10 @@ let pr_native = function
 let print_summary prefs arch camlenv install_dirs browser =
   let { CamlConf.caml_version; camlbin; camllib; _ } = camlenv in
   let pr s = printf s in
+  let pr_reloc oc = function
+    | NotRelocatable p -> fprintf oc "%s" (esc p)
+    | Relocatable p -> fprintf oc "(relocatable prefix)/%s" (esc p)
+  in
   pr "\n";
   pr "  Architecture                : %s\n" arch;
   pr "  Sys.os_type                 : %s\n" Sys.os_type;
@@ -375,7 +384,7 @@ let print_summary prefs arch camlenv install_dirs browser =
   pr "  Native Compiler enabled     : %s\n\n" (pr_native prefs.nativecompiler);
   (pr "  Paths where installation is expected by Coq Makefile:\n";
    List.iter
-     (fun ((_,msg),(dir,_)) -> pr "  - %s is expected in %s\n" msg (esc dir))
+     (fun ((_,msg),(dir,_)) -> pr "  - %s is expected in %a\n" msg pr_reloc dir)
      install_dirs);
   pr "\n";
   pr "If anything is wrong above, please restart './configure'.\n\n";
@@ -391,16 +400,21 @@ let write_coq_config_ml install_prefix camlenv coqenv caml_flags caml_version_nu
   let pr_b = pr "let %s = %B\n" in
   let pr_i32 = pr "let %s = %dl\n" in
   let pr_p s o = pr "let %s = %S\n" s
-    (match o with Relative s -> s | Absolute s -> s) in
+      (match o with Relative s -> s | Absolute s -> s) in
+  let pr_reloc s = function
+    | NotRelocatable o -> pr "let %s = NotRelocatable %S\n" s o
+    | Relocatable o -> pr "let %s = Relocatable %S\n" s o
+  in
   let pr_li n l = pr "let %s = [%s]\n" n (String.concat ";" (List.map string_of_int l)) in
   pr "(* DO NOT EDIT THIS FILE: automatically generated by ../configure *)\n";
   pr "(* Exact command that generated this file: *)\n";
   pr "(* %s *)\n\n" (String.concat " " (Array.to_list Sys.argv));
-  pr_s "install_prefix" install_prefix;
-  pr_s "coqlib" coqlib;
-  pr_s "configdir" configdir;
-  pr_s "datadir" datadir;
-  pr_s "docdir" docdir;
+  pr "type relocatable_path = NotRelocatable of string | Relocatable of string\n";
+  pr_reloc "install_prefix" install_prefix;
+  pr_reloc "coqlib" coqlib;
+  pr_reloc "configdir" configdir;
+  pr_reloc "datadir" datadir;
+  pr_reloc "docdir" docdir;
   pr_p "coqlibsuffix" coqlibsuffix;
   pr_p "configdirsuffix" configdirsuffix;
   pr_p "datadirsuffix" datadirsuffix;
@@ -503,7 +517,7 @@ let main () =
   let coqenv = resolve_coqenv install_dirs in
   let cflags, sse2_math = compute_cflags () in
   check_fmath sse2_math;
-  if prefs.interactive then
+  if not prefs.quiet then
     print_summary prefs arch camlenv install_dirs browser;
   write_config_file ~file:"config/coq_config.ml"
     (write_coq_config_ml install_prefix camlenv coqenv caml_flags caml_version_nums arch arch_is_win32 hasnatdynlink browser prefs);
