@@ -210,7 +210,7 @@ module InstallDir = struct
 
   type t =
     { var : string
-    (** Makefile variable to write *)
+    (** Used as key by [select] (otherwise ignored) *)
     ; msg : string
     (** Description of the directory  *)
     ; uservalue : string option
