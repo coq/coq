@@ -30,10 +30,31 @@ let coq_warn_error (prefs : Prefs.t) =
     then "-warn-error +a"
     else ""
 
+let canonical_path_name p =
+  let current = Sys.getcwd () in
+  try
+    Sys.chdir p;
+    let p' = Sys.getcwd () in
+    Sys.chdir current;
+    p'
+  with Sys_error _ ->
+    (* We give up to find a canonical name and just simplify it... *)
+    Filename.concat current p
+
 let main () =
+  let coqc = Sys.argv.(1) in
+
+  let coqbin = canonical_path_name (Filename.dirname coqc) in
+  let coqroot = Filename.dirname coqbin in
+
+  let relocate = function
+    | Coq_config.NotRelocatable p -> p
+    | Coq_config.Relocatable p -> Filename.concat coqroot p
+  in
+
   let prefs = Prefs.default in
-  let coqprefix = Coq_config.install_prefix in
-  let coqlibinstall = Coq_config.coqlib in
+  let coqprefix = relocate Coq_config.install_prefix in
+  let coqlibinstall = relocate Coq_config.coqlib in
   (* EJGA: Good enough approximation *)
   let best_compiler = if Coq_config.has_natdynlink then "opt" else "byte" in
   let ocamlfind = Coq_config.ocamlfind in
