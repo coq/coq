@@ -18,6 +18,7 @@ module Prefs = struct
 
 type t = {
   prefix : string option;
+  quiet : bool;
   interactive : bool;
   libdir : string option;
   configdir : string option;
@@ -39,6 +40,7 @@ open Prefs
 
 let default_prefs = {
   prefix = None;
+  quiet = false;
   interactive = true;
   libdir = None;
   configdir = None;
@@ -93,8 +95,10 @@ let check_absolute = function
 let args_options = Arg.align [
   "-prefix", arg_string_option (fun p prefix -> check_absolute prefix; { p with prefix }),
     "<dir> Set installation directory to <dir> (absolute path required)";
+  "-quiet", arg_set (fun p -> { p with quiet = true }),
+    " Don't print variables during configure";
   "-no-ask", arg_set (fun p -> { p with interactive = false }),
-    " Don't ask questions / print variables during configure [questions will be filled with defaults]";
+    " Don't ask questions during configure [questions will be filled with defaults]";
   "-libdir", arg_string_option (fun p libdir -> { p with libdir }),
     "<dir> Where to install lib files";
   "-configdir", arg_string_option (fun p configdir -> { p with configdir }),
@@ -134,6 +138,6 @@ let parse_args () =
 
 (* Support don't ask *)
 let cprintf prefs x =
-  if prefs.interactive
+  if not prefs.quiet
   then cprintf x
   else Printf.ifprintf stdout x

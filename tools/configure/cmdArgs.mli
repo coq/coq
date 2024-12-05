@@ -16,8 +16,10 @@ module Prefs : sig
 type t =
   { prefix : string option
   (** root prefix for installation  *)
-  ; interactive : bool
+  ; quiet : bool
   (** whether to display a summary *)
+  ; interactive : bool
+  (** whether to ask for unspecified values *)
   ; libdir : string option
   (** override $prefix/lib/coq *)
   ; configdir : string option
