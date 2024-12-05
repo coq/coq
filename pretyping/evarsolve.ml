@@ -1579,6 +1579,13 @@ let instantiate_evar unify flags env evd evk body =
   let allowed_evars = AllowedEvars.remove evk flags.allowed_evars in
   let flags = { flags with allowed_evars } in
   let evd' = check_evar_instance unify flags env evd evk body in
+  let evd' = try
+      let evk' = match EConstr.kind evd' body with
+        | Evar (e, _) -> e
+        | App (f, _) -> fst (EConstr.destEvar evd' f)
+        | _ -> raise DestKO in
+      if List.mem evk (Evd.shelf evd') then Evd.shelve evd' [evk'] else evd'
+    with DestKO -> evd' in
   Evd.define evk body evd'
 
 (* We try to instantiate the evar assuming the body won't depend
