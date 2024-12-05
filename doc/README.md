@@ -103,8 +103,8 @@ The current documentation targets are:
 - `make refman-pdf`
   Build the reference manual in PDF form into `_build/default/doc/refman-pdf`
 
-- `make stdlib-html`
-  Build Coq's standard library documentation into `_build/default/doc/stdlib/html`
+- `make corelib-html`
+  Build Rocq core library documentation into `_build/default/doc/corelib/html`
 
 - `make apidoc`
   Build the ML API's documentation into `_build/default/_doc/_html`

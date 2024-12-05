@@ -436,11 +436,11 @@ doc:refman-pdf:
 doc:stdlib:
   extends: .doc-template
   variables:
-    DUNE_TARGET: stdlib-html
+    DUNE_TARGET: corelib-html
   artifacts:
     paths:
       - _build/log
-      - _build/default/doc/stdlib/html
+      - _build/default/doc/corelib/html
 
 doc:refman:deploy:
   extends: .deploy-template
@@ -463,7 +463,7 @@ doc:refman:deploy:
     - mkdir -p _deploy/$CI_COMMIT_REF_NAME
     - cp -rv _build/default/_doc/_html _deploy/$CI_COMMIT_REF_NAME/api
     - cp -rv _build/default/doc/refman-html _deploy/$CI_COMMIT_REF_NAME/refman
-    - cp -rv _build/default/doc/stdlib/html _deploy/$CI_COMMIT_REF_NAME/stdlib
+    - cp -rv _build/default/doc/corelib/html _deploy/$CI_COMMIT_REF_NAME/stdlib
     - cd _deploy/$CI_COMMIT_REF_NAME/
     - git add api refman stdlib
     - git commit -m "Documentation of branch “$CI_COMMIT_REF_NAME” at $CI_COMMIT_SHORT_SHA"
