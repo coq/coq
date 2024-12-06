@@ -58,8 +58,8 @@ check_variable () {
 : "${old_opam_override_urls:=}"
 
 if [ "$CI" ]; then
-  : "${new_coq_commit:=$(git rev-parse HEAD^2)}"
-  : "${old_coq_commit:=$(git merge-base HEAD^1 $new_coq_commit)}"
+  : "${new_coq_commit:=476460fb01e3f40edf2f4a63470d0cbbd1d89f7a}"
+  : "${old_coq_commit:=1d77a8830d03d3c050af9b9442e707b8cfcf2576}"
 else
   echo New coq commit:
   read -r new_coq_commit
