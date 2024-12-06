@@ -11,7 +11,7 @@
 # Dune Makefile for Coq
 
 .PHONY: help help-install states world coqide watch check    # Main developer targets
-.PHONY: refman-html refman-pdf stdlib-html apidoc     # Documentation targets
+.PHONY: refman-html refman-pdf corelib-html apidoc     # Documentation targets
 .PHONY: test-suite dev-targets
 .PHONY: fmt ocheck obuild ireport clean               # Maintenance targets
 .PHONY: dunestrap release install                 # Miscellaneous
@@ -60,7 +60,7 @@ help:
 	@echo ""
 	@echo "  - refman-html: build Coq's reference manual [HTML version]"
 	@echo "  - refman-pdf:  build Coq's reference manual [PDF version]"
-	@echo "  - stdlib-html: build Coq's Stdlib documentation [HTML version]"
+	@echo "  - corelib-html: build Coq's Corelib documentation [HTML version]"
 	@echo "  - apidoc:      build ML API documentation"
 	@echo ""
 	@echo " Miscellaneous targets:"
@@ -91,16 +91,16 @@ help-install:
 	@echo ""
 	@echo " $$ ./configure -prefix <install_prefix>"
 	@echo " $$ make dunestrap"
-	@echo " $$ dune build -p coq-core,coq-stdlib"
-	@echo " $$ dune install --prefix=<install_prefix> coq-core coq-stdlib"
+	@echo " $$ dune build -p coq-core,rocq-core"
+	@echo " $$ dune install --prefix=<install_prefix> coq-core rocq-core"
 	@echo ""
 	@echo " Provided opam/dune packages are:"
 	@echo ""
 	@echo "  - coq-core: base Coq package, toplevel compilers, plugins, tools, no stdlib, no GTK"
-	@echo "  - coq-stdlib: Coq's standard library"
+	@echo "  - rocq-core: Coq's prelude and basis of standard library"
 	@echo "  - coqide-server: XML protocol language server"
 	@echo "  - coqide: CoqIDE gtk application"
-	@echo "  - coq: meta package depending on coq-core coq-stdlib"
+	@echo "  - coq: meta package depending on coq-core rocq-core coq-stdlib"
 	@echo ""
 	@echo " To build a package, you can use:"
 	@echo ""
@@ -158,7 +158,7 @@ dunestrap: $(DUNE_FILES)
 states: dunestrap
 	dune build $(DUNEOPT) dev/shim/coqtop
 
-MAIN_TARGETS:=coq-core.install coq-stdlib.install coqide-server.install coq.install
+MAIN_TARGETS:=coq-core.install rocq-core.install coqide-server.install
 
 world: dunestrap
 	dune build $(DUNEOPT) $(MAIN_TARGETS)
@@ -181,8 +181,8 @@ refman-html: dunestrap
 refman-pdf: dunestrap
 	dune build --no-buffer @refman-pdf
 
-stdlib-html: dunestrap
-	dune build @stdlib-html
+corelib-html: dunestrap
+	dune build @corelib-html
 
 apidoc:
 	dune build $(DUNEOPT) @doc

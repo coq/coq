@@ -48,14 +48,14 @@ not the vernacular standard library.
 
 Note that in this setup, Coq needs to be started with the -boot and
 -noinit options, as will otherwise fail to find the regular Coq
-prelude, now living in the coq-stdlib package."))
+prelude, now living in the rocq-core package."))
 
 (package
- (name coq-stdlib)
+ (name rocq-core)
  (depends
   (coq-core (= :version)))
  (depopts coq-native)
- (synopsis "The Coq Proof Assistant -- Standard Library")
+ (synopsis "The Coq Proof Assistant with its prelude")
  (description "Coq is a formal proof management system. It provides
 a formal language to write mathematical definitions, executable
 algorithms and theorems together with an environment for
@@ -67,8 +67,9 @@ project, or the Bedrock verified low-level programming library), the
 formalization of mathematics (e.g. the full formalization of the
 Feit-Thompson theorem or homotopy type theory) and teaching.
 
-This package includes the Coq Standard Library, that is to say, the
-set of modules usually bound to the Coq.* namespace."))
+This package includes the Rocq prelude, that is loaded automatically
+by Rocq in every .v file, as well as other modules bound to the
+Corelib.* and Ltac2.* namespaces."))
 
 (package
  (name coqide-server)
@@ -119,14 +120,16 @@ This package provides the Coq Reference Manual."))
 
 (package
  (name coq)
+ (allow_empty)
  (depends
   (coq-core (= :version))
-  (coq-stdlib (= :version))
+  (rocq-core (= :version))
+  coq-stdlib
   (coqide-server (= :version))
   (ounit2 :with-test)
   (conf-python-3 :with-test)
   (conf-time :with-test))
- (synopsis "The Coq Proof Assistant")
+ (synopsis "The Coq Proof Assistant with Stdlib")
  (description "Coq is a formal proof management system. It provides
 a formal language to write mathematical definitions, executable
 algorithms and theorems together with an environment for
@@ -136,4 +139,6 @@ Typical applications include the certification of properties of
 programming languages (e.g. the CompCert compiler certification
 project, or the Bedrock verified low-level programming library), the
 formalization of mathematics (e.g. the full formalization of the
-Feit-Thompson theorem or homotopy type theory) and teaching."))
+Feit-Thompson theorem or homotopy type theory) and teaching.
+
+This package is a virtual package gathering the rocq-core and coq-stdlib packages."))

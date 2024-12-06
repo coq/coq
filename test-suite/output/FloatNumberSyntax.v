@@ -1,4 +1,4 @@
-Require Import Floats.
+Require Import PrimFloat.
 
 Check 2%float.
 Check 2.5%float.

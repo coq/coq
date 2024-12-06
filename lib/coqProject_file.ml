@@ -225,12 +225,15 @@ let process_cmd_line ~warning_fn orig_dir parse_extra proj args =
     error "Use \"-arg -impredicative-set\" instead of \"-impredicative-set\""
 
   | "-Q" :: d :: lp :: r ->
-    let lp = if String.equal lp "Coq" then "Stdlib" else lp in
+    let lp = if String.equal lp "Coq" then "Corelib" else lp in
     aux { proj with q_includes = proj.q_includes @ [sourced (mk_path d,lp)] } r
   | "-I" :: d :: r ->
     aux { proj with ml_includes = proj.ml_includes @ [sourced (mk_path d)] } r
   | "-R" :: d :: lp :: r ->
-    let lp = if String.equal lp "Coq" then "Stdlib" else lp in
+    let lp = if String.equal lp "Coq" then "Corelib" else lp in
+    (* -R Coq ... is only used by Dune in conjunction with the -boot
+       option. The above line should be removed once we require an
+       updated version of Dune. *)
     aux { proj with r_includes = proj.r_includes @ [sourced (mk_path d,lp)] } r
 
   | "-native-compiler" :: flag :: r ->

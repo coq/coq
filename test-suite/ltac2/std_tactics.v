@@ -1,4 +1,4 @@
-Require Import Stdlib.Setoids.Setoid.
+Require Import Corelib.Setoids.Setoid.
 Require Import Ltac2.Ltac2.
 
 Axiom f: nat -> nat.

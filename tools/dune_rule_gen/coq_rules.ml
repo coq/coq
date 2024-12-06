@@ -7,7 +7,7 @@
 (* Written by: Rudi Grinberg                                            *)
 (************************************************************************)
 
-(* coq_rules: generate dune build rules for Coq's test-suite and stdlib *)
+(* coq_rules: generate dune build rules for Coq's test-suite and init *)
 
 (* Originally written by Emilio Jesús Gallego Arias and Rudi Grinberg
    for Dune's coq_rules.ml , which followed a first coq_dune.exe
@@ -77,7 +77,7 @@ let translate_boot_to_native dep =
   let dep = Path.to_string dep |> Filename.remove_extension in
   let dir = Filename.dirname dep in
   let components = String.split_on_char '/' dep |> List.filter not_dot_path_or_coqlib in
-  let name = String.concat "_" ("Stdlib"::components) in
+  let name = String.concat "_" ("Corelib"::components) in
   Filename.concat dir ("N" ^ name ^ ".cmi") |> Path.make
 
 let cmi_of_dep ~tname dep =
@@ -112,10 +112,10 @@ module Theory = struct
 
 end
 
-(** [Regular theory] contains the info about the stdlib theory, see
+(** [Regular theory] contains the info about the core theory, see
     documentation in the .mli file *)
 module Boot_type = struct
-  type t = Stdlib | NoInit | Regular of Theory.t
+  type t = Corelib | NoInit | Regular of Theory.t
 end
 
 (* Context for a Coq theory *)
@@ -166,8 +166,8 @@ module Context = struct
     let flags =
       let boot_paths = match boot with
         | Boot_type.NoInit -> []
-        | Stdlib -> Theory.args theory
-        | Regular stdlib -> Theory.args stdlib @ Theory.args theory
+        | Corelib -> Theory.args theory
+        | Regular init -> Theory.args init @ Theory.args theory
       in
       let loadpath = Arg.(A "-boot") :: boot_paths in
       let native_common = native_common ~split () in
@@ -196,12 +196,12 @@ let prelude_path = "Init/Prelude.vo"
 let boot_module_setup ~cctx coq_module =
   match cctx.Context.boot with
   | Boot_type.NoInit -> [Arg.A "-noinit"], []
-  | Stdlib ->
+  | Corelib ->
     (match Coq_module.prefix coq_module with
      | ["Init"] -> [ Arg.A "-noinit" ], []
      | _ -> [ ], [ Path.relative (Path.make "theories") prelude_path ]
     )
-  | Regular stdlib -> [], [ Path.relative stdlib.directory prelude_path ]
+  | Regular init -> [], [ Path.relative init.directory prelude_path ]
 
 (* rule generation for a module *)
 let module_rule ~(cctx : Context.t) coq_module =
@@ -280,6 +280,6 @@ let install_rule ~(cctx : Context.t) coq_module =
     Coq_module.install_files ~tname ~rule coq_module
     |> List.map (fun (src,dst) -> src, Filename.concat dst_base dst) in
   (* May need to woraround invalid empty `(install )` stanza if that happens *)
-  Dune_file.Install.{ section = "lib_root"; package = "coq-stdlib"; files }
+  Dune_file.Install.{ section = "lib_root"; package = "rocq-core"; files }
 
 let install_rules ~dir_info ~cctx = gen_rules ~dir_info ~cctx ~f:install_rule

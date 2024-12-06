@@ -274,12 +274,15 @@ let parse_args ~init arglist : t * string list =
     |"-Q" ->
       let d = next () in
       let p = next () in
-      let p = if String.equal p "Coq" then "Stdlib" else p in
+      let p = if String.equal p "Coq" then "Corelib" else p in
       add_vo_include oval d p false
     |"-R" ->
       let d = next () in
       let p = next () in
-      let p = if String.equal p "Coq" then "Stdlib" else p in
+      let p = if String.equal p "Coq" then "Corelib" else p in
+      (* -R Coq ... is only used by Dune in conjunction with the -boot
+         option. The above line should be removed once we require an
+         updated version of Dune. *)
       add_vo_include oval d p true
 
     (* Options with one arg *)
@@ -445,7 +448,7 @@ let parse_args ~init args =
 (******************************************************************************)
 
 (* prelude_data == From Coq Require Import Prelude. *)
-let prelude_data = RequireInjection { lib = "Prelude"; prefix = Some "Stdlib"; export = Some Import; allow_failure = false }
+let prelude_data = RequireInjection { lib = "Prelude"; prefix = Some "Corelib"; export = Some Import; allow_failure = false }
 
 let injection_commands opts =
   if opts.pre.load_init then prelude_data :: opts.pre.injections else opts.pre.injections

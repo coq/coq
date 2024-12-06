@@ -1,7 +1,7 @@
 (* simpl performs eta expansion *)
 
 Set Implicit Arguments.
-Require Import List.
+Require Import TestSuite.list.
 
 Definition k0 := Set.
 Definition k1 := k0 -> k0.
@@ -19,7 +19,7 @@ Definition BushnToList (n:nat)(A:k0)(t:Pow Bush n A): list A.
 Proof.
   intros.
   induction n.
-  exact (t::nil).
+  exact (cons t nil).
   simpl in t.
   exact (flat_map IHn (BushToList t)).
 Defined.

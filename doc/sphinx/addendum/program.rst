@@ -123,12 +123,12 @@ use the :g:`dec` combinator to get the correct hypotheses as in:
 
 .. coqtop:: in
 
-   Require Import Program Arith.
+   From Corelib.Program Require Import Basics Tactics.
 
 .. coqtop:: all
 
    Program Definition id (n : nat) : { x : nat | x = n } :=
-     if dec (leb n 0) then 0
+     if sumbool_of_bool (Nat.leb n 0) then 0
      else S (pred n).
 
 The :g:`let` tupling construct :g:`let (x1, ..., xn) := t in b` does not
@@ -177,7 +177,7 @@ with mutually recursive definitions too.  For example:
 
 .. coqtop:: reset in
 
-   Require Import Program Arith.
+   From Corelib.Program Require Import Basics Tactics.
 
 .. coqtop:: all
 
@@ -208,7 +208,7 @@ compilation algorithm).
 
 .. coqtop:: reset none
 
-   Require Import Program Arith.
+   From Corelib.Program Require Import Basics Tactics Wf.
 
 One can use a well-founded order or a measure as termination orders
 using the syntax:
@@ -334,7 +334,7 @@ optional tactic is replaced by the default one if not specified.
    (the default), or if the system should infer which obligations can be
    declared opaque.
 
-The module :g:`Stdlib.Program.Tactics` defines the default tactic for solving
+The module :g:`Corelib.Program.Tactics` defines the default tactic for solving
 obligations called :g:`program_simpl`. Importing :g:`Stdlib.Program.Program` also
 adds some useful notations, as documented in the file itself.
 

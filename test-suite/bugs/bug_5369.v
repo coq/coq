@@ -1,4 +1,4 @@
-Require Import Stdlib.Classes.Morphisms Stdlib.Setoids.Setoid.
+Require Import Corelib.Classes.Morphisms Corelib.Setoids.Setoid.
 Axiom f g : nat -> nat -> nat.
 Axiom Hfg : forall n m, n = n -> f n m = g n m.
 Axiom LetIn : forall {A B} (x : A) (f : A -> B), B.

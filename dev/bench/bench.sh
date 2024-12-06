@@ -49,7 +49,7 @@ check_variable () {
 : "${old_coq_version:=dev}"
 : "${num_of_iterations:=1}"
 : "${timeout:=3h}"
-: "${coq_opam_packages:=coq-test-suite coq-bignums coq-hott coq-performance-tests-lite coq-engine-bench-lite coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-mathcomp-analysis coq-math-classes coq-corn coq-compcert coq-equations coq-metacoq-utils coq-metacoq-common coq-metacoq-template coq-metacoq-pcuic coq-metacoq-safechecker coq-metacoq-erasure coq-metacoq-translations coq-color coq-coqprime coq-coqutil coq-bedrock2 coq-rewriter coq-fiat-core coq-fiat-parsers coq-fiat-crypto-with-bedrock coq-unimath coq-coquelicot coq-iris-examples coq-verdi coq-verdi-raft coq-fourcolor coq-rewriter-perf-SuperFast coq-vst coq-category-theory coq-neural-net-interp-computed-lite}"
+: "${coq_opam_packages:=coq-stdlib coq-test-suite coq-bignums coq-hott coq-performance-tests-lite coq-engine-bench-lite coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-mathcomp-analysis coq-math-classes coq-corn coq-compcert coq-equations coq-metacoq-utils coq-metacoq-common coq-metacoq-template coq-metacoq-pcuic coq-metacoq-safechecker coq-metacoq-erasure coq-metacoq-translations coq-color coq-coqprime coq-coqutil coq-bedrock2 coq-rewriter coq-fiat-core coq-fiat-parsers coq-fiat-crypto-with-bedrock coq-unimath coq-coquelicot coq-iris-examples coq-verdi coq-verdi-raft coq-fourcolor coq-rewriter-perf-SuperFast coq-vst coq-category-theory coq-neural-net-interp-computed-lite}"
 : "${coq_native:=}"
 
 # example: coq-hott.dev git+https://github.com/some-user/coq-hott#some-branch
@@ -426,13 +426,13 @@ create_opam() {
 
     if [ ! -z "$coq_native" ]; then opam install coq-native; fi
 
-    for package in coq-core coq-stdlib coqide-server coq; do
+    for package in coq-core rocq-core coqide-server; do
         export COQ_OPAM_PACKAGE=$package
         export COQ_ITERATION=1
 
         # build stdlib with -j 1 to get nicer timings
         local this_nproc=$number_of_processors
-        if [ "$package" = coq-stdlib ]; then this_nproc=1; fi
+        if [ "$package" = rocq-core ]; then this_nproc=1; fi
 
         _RES=0
         opam pin add -y -b -j "$this_nproc" --kind=path $package.$COQ_VER . \
@@ -469,7 +469,7 @@ old_coq_commit_long="$COQ_HASH_LONG"
 
 # Packages which appear in the rendered table
 # Deliberately don't include the "coqide-server" and "coq" packages
-installable_coq_opam_packages="coq-core coq-stdlib"
+installable_coq_opam_packages="coq-core rocq-core"
 
 echo "DEBUG: $render_results $log_dir $num_of_iterations 0 user_time_pdiff $installable_coq_opam_packages"
 rendered_results="$($render_results "$log_dir" $num_of_iterations 0 user_time_pdiff $installable_coq_opam_packages)"
@@ -486,20 +486,20 @@ format_vosize() {
 
 # HTML for stdlib
 # NB: unlike coq_makefile packages, stdlib produces foo.timing not foo.v.timing
-new_base_path=$new_opam_root/ocaml-NEW/.opam-switch/build/coq-stdlib.dev/_build/default/theories/
-old_base_path=$old_opam_root/ocaml-OLD/.opam-switch/build/coq-stdlib.dev/_build/default/theories/
+new_base_path=$new_opam_root/ocaml-NEW/.opam-switch/build/rocq-core.dev/_build/default/theories/
+old_base_path=$old_opam_root/ocaml-OLD/.opam-switch/build/rocq-core.dev/_build/default/theories/
 for vo in $(cd $new_base_path/; find . -name '*.vo'); do
     if [ -e $old_base_path/$vo ]; then
         format_vosize "$coq_opam_package/$vo" "$old_base_path/$vo" "$new_base_path/$vo" >> "$log_dir/vosize.log"
     fi
     if [ -e $old_base_path/${vo%%.vo}.timing ] && \
            [ -e $new_base_path/${vo%%.vo}.timing ]; then
-        mkdir -p $working_dir/html/coq-stdlib/$(dirname $vo)/
+        mkdir -p $working_dir/html/rocq-core/$(dirname $vo)/
         # NB: sometimes randomly fails
         $timelog2html $new_base_path/${vo%%o} \
                       $old_base_path/${vo%%.vo}.timing \
                       $new_base_path/${vo%%.vo}.timing > \
-                      $working_dir/html/coq-stdlib/${vo%%o}.html ||
+                      $working_dir/html/rocq-core/${vo%%o}.html ||
             echo "Failed (code $?):" $timelog2html $new_base_path/${vo%%o} \
                  $old_base_path/${vo%%.vo}.timing \
                  $new_base_path/${vo%%.vo}.timing

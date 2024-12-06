@@ -1,6 +1,6 @@
 
 Require Extraction.
-Require Import List.
+Require Import ListDef.
 
 Section Test.
 Variable A : Type.

@@ -1,4 +1,4 @@
-Require Import Stdlib.derive.Derive.
+Require Import Corelib.derive.Derive.
 
 Derive f in (f = 1 + 1) as feq.
 Proof.

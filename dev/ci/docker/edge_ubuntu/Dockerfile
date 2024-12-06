@@ -15,6 +15,9 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
         perl libgmp-dev libgmp-dev:i386 \
         # Dependencies of lablgtk (for CoqIDE)
         libgtksourceview-3.0-dev adwaita-icon-theme-full \
+        # Dependencies of stdlib and sphinx doc
+        texlive-latex-extra texlive-fonts-recommended texlive-xetex latexmk \
+        python3-pip python3-setuptools python3-pexpect python3-bs4 fonts-freefont-otf \
         # Dependencies of source-doc and coq-makefile
         texlive-latex-extra texlive-science tipa \
         # Dependencies of HB (test suite)
@@ -24,6 +27,11 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
         # Required for fiat-crypto and Coqtail
         python-is-python3 \
       && rm -rf /var/lib/apt/lists /usr/share/doc
+
+# More dependencies of the sphinx doc
+RUN pip3 install --break-system-packages docutils==0.17.1 sphinx==5.3.0 sphinx_rtd_theme==1.0.0 \
+        antlr4-python3-runtime==4.7.1 sphinxcontrib-bibtex==2.5.0 \
+      && rm -rf ~/.cache/pip
 
 # We need to install OPAM 2.0 manually for now.
 RUN wget https://github.com/ocaml/opam/releases/download/2.1.5/opam-2.1.5-x86_64-linux -O /usr/bin/opam && chmod 755 /usr/bin/opam

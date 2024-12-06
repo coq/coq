@@ -71,8 +71,8 @@ way, using its built-in rule generation for OCaml. Public tools
 written in OCaml are distributed in the `coq-core` package.
 
 The set of public `.v` files present in this repository, usually
-referred as the "Coq Standard Library" are distributed in the
-`coq-stdlib` package. As of June 2022, Dune has a set of built-in
+referred as the "Coq prelude" are distributed in the
+`rocq-core` package. As of June 2022, Dune has a set of built-in
 rules for `.v` files which is capable of building Coq's standard
 library.
 

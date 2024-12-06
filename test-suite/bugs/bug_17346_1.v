@@ -1,7 +1,7 @@
 Require Import Setoid.
 
-Import Stdlib.Classes.Morphisms.
-Import Stdlib.Relations.Relation_Definitions.
+Import Corelib.Classes.Morphisms.
+Import Corelib.Relations.Relation_Definitions.
 
 Lemma interp  (base_interp : nat -> Type)  : Type.
 Admitted.

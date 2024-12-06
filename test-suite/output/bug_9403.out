@@ -1,6 +1,6 @@
 1 goal
   
   X : tele
-  α, β, γ1, γ2 : X → Prop
+  α, β, γ1, γ2 : X -> Prop
   ============================
-  accessor α β γ1 → accessor α β (λ.. x : X, γ1 x ∨ γ2 x)
+  accessor α β γ1 -> accessor α β (λ.. x : X, γ1 x \/ γ2 x)

@@ -1,7 +1,5 @@
 (* This example was proposed by Cuihtlauac ALVARADO *)
 
-Require Import List.
-
 Fixpoint mult2 (n : nat) : nat :=
   match n with
   | O => 0

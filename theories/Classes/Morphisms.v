@@ -14,10 +14,10 @@
    Institution: LRI, CNRS UMR 8623 - University Paris Sud
 *)
 
-Require Import Stdlib.Program.Basics.
-Require Import Stdlib.Program.Tactics.
-Require Import Stdlib.Relations.Relation_Definitions.
-Require Export Stdlib.Classes.RelationClasses.
+Require Import Corelib.Program.Basics.
+Require Import Corelib.Program.Tactics.
+Require Import Corelib.Relations.Relation_Definitions.
+Require Export Corelib.Classes.RelationClasses.
 
 Generalizable Variables A eqA B C D R RA RB RC m f x y.
 Local Obligation Tactic := try solve [ simpl_relation ].

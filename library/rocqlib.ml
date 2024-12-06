@@ -16,11 +16,11 @@ let make_dir l = DirPath.make (List.rev_map Id.of_string l)
 (************************************************************************)
 (* Rocq reference API                                                   *)
 (************************************************************************)
-let coq = Libnames.coq_string (* "Stdlib" *)
+let rocq = Libnames.rocq_init_string (* "Corelib" *)
 
-let init_dir = [ coq; "Init"]
+let init_dir = [ rocq; "Init"]
 
-let jmeq_module_name = [coq;"Logic";"JMeq"]
+let jmeq_module_name = ["Stdlib";"Logic";"JMeq"]
 
 let table : GlobRef.t CString.Map.t ref =
   Summary.ref ~name:"rocqlib_registered" CString.Map.empty

@@ -11,4 +11,5 @@ if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 ( cd "${CI_BUILD_DIR}/mczify"
   make
+  make install
 )

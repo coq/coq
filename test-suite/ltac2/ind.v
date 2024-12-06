@@ -2,7 +2,7 @@ Require Import Ltac2.Ltac2.
 Require Import Ltac2.Option.
 
 Ltac2 Eval
-  let nat := Option.get (Env.get [@Stdlib; @Init; @Datatypes; @nat]) in
+  let nat := Option.get (Env.get [@Corelib; @Init; @Datatypes; @nat]) in
   let nat := match nat with
   | Std.IndRef nat => nat
   | _ => Control.throw Not_found

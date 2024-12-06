@@ -1,6 +1,6 @@
 (coq.theory
  (name Ltac2)
- (package coq-stdlib)
+ (package rocq-core)
  (synopsis "Ltac2 tactic language")
  (flags -w -deprecated-native-compiler-option)
  (plugins

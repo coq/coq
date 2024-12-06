@@ -247,6 +247,9 @@ analysis on inductive or coinductive objects (see :ref:`variants`).
 .. tacn:: dependent destruction @ident {? generalizing {+ @ident } } {? using @one_term }
    :undocumented:
 
+   .. note::
+      This tactic requires the Stdlib library.
+
    There is a long example of :tacn:`dependent destruction` and an explanation
    of the underlying technique :ref:`here <dependent-induction-examples>`.
 
@@ -406,6 +409,9 @@ Induction
 
 .. tacn:: dependent induction @ident {? {| generalizing | in } {+ @ident } } {? using @one_term }
 
+   .. note::
+      This tactic requires the Stdlib library.
+
    The *experimental* tactic :tacn:`dependent induction` performs
    induction-inversion on an instantiated inductive predicate. One needs to first
    :cmd:`Require` the `Stdlib.Program.Equality` module to use this tactic. The tactic
@@ -429,7 +435,7 @@ Induction
 
    .. example::
 
-      .. coqtop:: reset all
+      .. coqtop:: reset all extra
 
          Lemma lt_1_r : forall n:nat, n < 1 -> n = 0.
          intros n H ; induction H.
@@ -440,7 +446,7 @@ Induction
       argument is 1 here. Dependent induction solves this problem by adding
       the corresponding equality to the context.
 
-      .. coqtop:: reset all
+      .. coqtop:: reset all extra
 
          Require Import Stdlib.Program.Equality.
          Lemma lt_1_r : forall n:nat, n < 1 -> n = 0.
@@ -450,13 +456,13 @@ Induction
       simplify the subgoals with respect to the generated equalities. In
       this enriched context, it becomes possible to solve this subgoal.
 
-      .. coqtop:: all
+      .. coqtop:: all extra
 
          reflexivity.
 
       Now we are in a contradictory context and the proof can be solved.
 
-      .. coqtop:: all abort
+      .. coqtop:: all abort extra
 
          inversion H.
 
@@ -884,6 +890,9 @@ This section describes some special purpose tactics to work with
 
 .. tacn:: inversion_sigma {? @ident {? as @simple_intropattern } }
 
+   .. note::
+      This tactic requires the Stdlib library.
+
    Turns equalities of dependent pairs (e.g.,
    :g:`existT P x p = existT P y q`, frequently left over by :tacn:`inversion` on
    a dependent type family) into pairs of equalities (e.g., a hypothesis
@@ -986,7 +995,7 @@ This section describes some special purpose tactics to work with
    Let us consider the following inductive type of
    length-indexed lists, and a lemma about inverting equality of cons:
 
-   .. coqtop:: reset all
+   .. coqtop:: reset all extra
 
       Require Import Stdlib.Logic.Eqdep_dec.
 
@@ -1003,20 +1012,20 @@ This section describes some special purpose tactics to work with
 
    After performing inversion, we are left with an equality of existTs:
 
-   .. coqtop:: all
+   .. coqtop:: all extra
 
       inversion H.
 
    We can turn this equality into a usable form with inversion_sigma:
 
-   .. coqtop:: all
+   .. coqtop:: all extra
 
       inversion_sigma.
 
    To finish cleaning up the proof, we will need to use the fact that
    that all proofs of n = n for n a nat are eq_refl:
 
-   .. coqtop:: all
+   .. coqtop:: all extra
 
       let H := match goal with H : n = n |- _ => H end in
       pose proof (Eqdep_dec.UIP_refl_nat _ H); subst H.
@@ -1024,7 +1033,7 @@ This section describes some special purpose tactics to work with
 
    Finally, we can finish the proof:
 
-   .. coqtop:: all
+   .. coqtop:: all extra
 
       assumption.
       Qed.
@@ -1043,18 +1052,18 @@ Helper tactics
 
    .. example:: Using :tacn:`decide` to rewrite the goal
 
-      .. coqtop:: in
+      .. coqtop:: in extra
 
          Goal forall (P Q : Prop) (Hp : {P} + {~P}) (Hq : {Q} + {~Q}),
              P -> ~Q -> (if Hp then true else false) = (if Hq then false else true).
 
-      .. coqtop:: all
+      .. coqtop:: all extra
 
          intros P Q Hp Hq p nq.
          decide Hp with p.
          decide Hq with nq.
 
-      .. coqtop:: in
+      .. coqtop:: in extra
 
          reflexivity.
          Qed.
@@ -1401,6 +1410,9 @@ Generation of inversion principles with ``Derive`` ``Inversion``
 Examples of :tacn:`dependent destruction` / :tacn:`dependent induction`
 -----------------------------------------------------------------------
 
+.. note::
+   These tactics require the Stdlib library.
+
 The tactics :tacn:`dependent induction` and :tacn:`dependent destruction` are another
 solution for inverting inductive predicate instances and potentially
 doing induction at the same time. It is based on the ``BasicElim`` tactic
@@ -1415,7 +1427,7 @@ argument a hypothesis to generalize. It uses the JMeq datatype
 defined in Stdlib.Logic.JMeq, hence we need to require it before. For
 example, revisiting the first example of the inversion documentation:
 
-.. coqtop:: in reset
+.. coqtop:: in reset extra
 
    Require Import Stdlib.Logic.JMeq.
 
@@ -1429,7 +1441,7 @@ example, revisiting the first example of the inversion documentation:
 
    intros n m H.
 
-.. coqtop:: all
+.. coqtop:: all extra
 
    generalize_eqs H.
 
@@ -1443,7 +1455,7 @@ rule of thumb, all the variables that appear inside constructors in
 the indices of the hypothesis should be generalized. This is exactly
 what the ``generalize_eqs_vars`` variant does:
 
-.. coqtop:: all abort
+.. coqtop:: all abort extra
 
    generalize_eqs_vars H.
    induction H.
@@ -1453,16 +1465,16 @@ to use an heterogeneous equality to relate the new hypothesis to the
 old one (which just disappeared here). However, the tactic works just
 as well in this case, e.g.:
 
-.. coqtop:: none
+.. coqtop:: none extra
 
    Require Import Stdlib.Program.Equality.
 
-.. coqtop:: in
+.. coqtop:: in extra
 
    Parameter Q : forall (n m : nat), Le n m -> Prop.
    Goal forall n m (p : Le (S n) m), Q (S n) m p.
 
-.. coqtop:: all
+.. coqtop:: all extra
 
    intros n m p.
    generalize_eqs_vars p.
@@ -1478,7 +1490,7 @@ automatically do such simplifications (which may involve the axiom K).
 This is what the ``simplify_dep_elim`` tactic from ``Stdlib.Program.Equality``
 does. For example, we might simplify the previous goals considerably:
 
-.. coqtop:: all abort
+.. coqtop:: all abort extra
 
    induction p ; simplify_dep_elim.
 
@@ -1491,15 +1503,15 @@ are :tacn:`dependent induction` and :tacn:`dependent destruction` that do induct
 simply case analysis on the generalized hypothesis. For example we can
 redo what we've done manually with dependent destruction:
 
-.. coqtop:: in
+.. coqtop:: in extra
 
    Lemma ex : forall n m:nat, Le (S n) m -> P n m.
 
-.. coqtop:: in
+.. coqtop:: in extra
 
    intros n m H.
 
-.. coqtop:: all abort
+.. coqtop:: all abort extra
 
    dependent destruction H.
 
@@ -1508,30 +1520,30 @@ destructed hypothesis actually appeared in the goal, the tactic would
 still be able to invert it, contrary to dependent inversion. Consider
 the following example on vectors:
 
-.. coqtop:: in
+.. coqtop:: in extra
 
    Set Implicit Arguments.
 
-.. coqtop:: in
+.. coqtop:: in extra
 
    Parameter A : Set.
 
-.. coqtop:: in
+.. coqtop:: in extra
 
    Inductive vector : nat -> Type :=
             | vnil : vector 0
             | vcons : A -> forall n, vector n -> vector (S n).
 
-.. coqtop:: in
+.. coqtop:: in extra
 
    Goal forall n, forall v : vector (S n),
             exists v' : vector n, exists a : A, v = vcons a v'.
 
-.. coqtop:: in
+.. coqtop:: in extra
 
    intros n v.
 
-.. coqtop:: all
+.. coqtop:: all extra
 
    dependent destruction v.
 
@@ -1549,27 +1561,27 @@ predicates on a real example. We will develop an example application
 to the theory of simply-typed lambda-calculus formalized in a
 dependently-typed style:
 
-.. coqtop:: in reset
+.. coqtop:: in reset extra
 
    Inductive type : Type :=
             | base : type
             | arrow : type -> type -> type.
 
-.. coqtop:: in
+.. coqtop:: in extra
 
    Notation " t --> t' " := (arrow t t') (at level 20, t' at next level).
 
-.. coqtop:: in
+.. coqtop:: in extra
 
    Inductive ctx : Type :=
             | empty : ctx
             | snoc : ctx -> type -> ctx.
 
-.. coqtop:: in
+.. coqtop:: in extra
 
    Notation " G , tau " := (snoc G tau) (at level 20, tau at next level).
 
-.. coqtop:: in
+.. coqtop:: in extra
 
    Fixpoint conc (G D : ctx) : ctx :=
             match D with
@@ -1577,11 +1589,11 @@ dependently-typed style:
             | snoc D' x => snoc (conc G D') x
             end.
 
-.. coqtop:: in
+.. coqtop:: in extra
 
    Notation " G ; D " := (conc G D) (at level 20).
 
-.. coqtop:: in
+.. coqtop:: in extra
 
    Inductive term : ctx -> type -> Type :=
             | ax : forall G tau, term (G, tau) tau
@@ -1608,7 +1620,7 @@ name. A term is either an application of:
 
 Once we have this datatype we want to do proofs on it, like weakening:
 
-.. coqtop:: in abort
+.. coqtop:: in abort extra
 
    Lemma weakening : forall G D tau, term (G ; D) tau ->
                      forall tau', term (G , tau' ; D) tau.
@@ -1617,7 +1629,7 @@ The problem here is that we can't just use induction on the typing
 derivation because it will forget about the ``G ; D`` constraint appearing
 in the instance. A solution would be to rewrite the goal as:
 
-.. coqtop:: in abort
+.. coqtop:: in abort extra
 
    Lemma weakening' : forall G' tau, term G' tau ->
                       forall G D, (G ; D) = G' ->
@@ -1631,21 +1643,21 @@ more natural statement. The :tacn:`dependent induction` tactic alleviates this
 trouble by doing all of this plumbing of generalizing and substituting
 back automatically. Indeed we can simply write:
 
-.. coqtop:: in
+.. coqtop:: in extra
 
    Require Import Stdlib.Program.Tactics.
    Require Import Stdlib.Program.Equality.
 
-.. coqtop:: in
+.. coqtop:: in extra
 
    Lemma weakening : forall G D tau, term (G ; D) tau ->
                      forall tau', term (G , tau' ; D) tau.
 
-.. coqtop:: in
+.. coqtop:: in extra
 
    Proof with simpl in * ; simpl_depind ; auto.
 
-.. coqtop:: in
+.. coqtop:: in extra
 
    intros G D tau H. dependent induction H generalizing G D ; intros.
 
@@ -1657,7 +1669,7 @@ hypotheses. By default, all variables appearing inside constructors
 be generalized automatically but one can always give the list
 explicitly.
 
-.. coqtop:: all
+.. coqtop:: all extra
 
    Show.
 
@@ -1668,31 +1680,31 @@ cases where the equality is not between constructor forms though, one
 must help the automation by giving some arguments, using the
 ``specialize`` tactic for example.
 
-.. coqtop:: in
+.. coqtop:: in extra
 
    destruct D... apply weak; apply ax. apply ax.
 
-.. coqtop:: in
+.. coqtop:: in extra
 
    destruct D...
 
-.. coqtop:: all
+.. coqtop:: all extra
 
    Show.
 
-.. coqtop:: all
+.. coqtop:: all extra
 
    specialize (IHterm G0 empty eq_refl).
 
 Once the induction hypothesis has been narrowed to the right equality,
 it can be used directly.
 
-.. coqtop:: all
+.. coqtop:: all extra
 
    apply weak, IHterm.
 
 Now concluding this subgoal is easy.
 
-.. coqtop:: in
+.. coqtop:: in extra
 
    constructor; apply IHterm; reflexivity.

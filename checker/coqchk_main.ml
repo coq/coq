@@ -21,7 +21,7 @@ let fatal_error info anomaly =
   flush_all (); Format.eprintf "@[Fatal Error: @[%a@]@]@\n%!" Pp.pp_with info; flush_all ();
   exit (if anomaly then 129 else 1)
 
-let rocq_root = Id.of_string "Stdlib"
+let rocq_root = Id.of_string "Corelib"
 let parse_dir s =
   let len = String.length s in
   let rec decoupe_dirs dirs n =
@@ -97,7 +97,7 @@ let includes = ref []
 let push_include (s, alias) = includes := (s,alias) :: !includes
 
 let set_include d p =
-  let p = if String.equal p "Coq" then "Stdlib" else p in
+  let p = if String.equal p "Coq" then "Corelib" else p in
   let p = dirpath_of_string p in
   push_include (d,p)
 

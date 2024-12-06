@@ -8,11 +8,11 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Export Stdlib.Classes.SetoidTactics.
+Require Export Corelib.Classes.SetoidTactics.
 
 Export Morphisms.ProperNotations.
 
-Require Stdlib.ssr.ssrsetoid.
+Require Corelib.ssr.ssrsetoid.
 
 (** For backward compatibility *)
 

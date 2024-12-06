@@ -1,4 +1,4 @@
-From Stdlib.ssr Require Import ssreflect ssrfun ssrbool.
+From Corelib.ssr Require Import ssreflect ssrfun ssrbool.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

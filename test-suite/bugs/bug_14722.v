@@ -19,7 +19,7 @@ Axiom e : wordX.
 Section Equiv.
 
 Context {Registers: map.map wordX}
-        {mem: map.map Stdlib.Init.Byte.byte}.
+        {mem: map.map Corelib.Init.Byte.byte}.
 
 Context (Registers_ok: @map.ok wordX Registers)
         (mem_ok: @map.ok Byte.byte mem).

@@ -1,4 +1,4 @@
-Require Stdlib.extraction.Extraction.
+Require Corelib.extraction.Extraction.
 
 Set Primitive Projections.
 Record Foo' := Foo { foo : Type }.

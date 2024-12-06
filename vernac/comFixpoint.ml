@@ -133,7 +133,7 @@ let ensure_program () =
   with NotFoundRef r ->
     CErrors.user_err
       Pp.(str r ++ spc() ++ str "not registered," ++ spc() ++
-          str "you should try requiring library Stdlib.Program.Wf.")
+          str "you should try requiring library Corelib.Program.Wf.")
 
 let recproofid = Id.of_string "recproof"
 let argname = Id.of_string "recarg"

@@ -1,6 +1,4 @@
-Require Import List.
-
-Import ListNotations.
+Require Import ListDef.
 
 Class MBind (M : Type -> Type) :=
   mbind : forall {A B}, (A -> M B) -> M A -> M B.
@@ -12,4 +10,4 @@ Defined.
 
 Polymorphic Record dyn := Dyn { type : Type; elem : type }.
 
-Definition fails : list dyn := [Dyn _ (@List.app)].
+Definition fails : list dyn := (Dyn _ (@Datatypes.app)) :: nil.

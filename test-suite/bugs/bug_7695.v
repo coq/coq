@@ -1,4 +1,4 @@
-Require Import Hurkens.
+Require Import TestSuite.hurkens.
 
 Universes i j k.
 Module Type T.

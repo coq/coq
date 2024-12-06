@@ -1,9 +1,7 @@
-Require Export Stdlib.Lists.List.
-
 Polymorphic Fixpoint LIn (A : Type) (a:A) (l:list A) : Type :=
   match l with
     | nil => False
-    | b :: m => (b = a) + LIn A a m
+    | cons b m => (b = a) + LIn A a m
   end.
 
 Polymorphic Inductive NTerm : Type :=
@@ -13,7 +11,7 @@ Polymorphic Inductive NTerm : Type :=
 Polymorphic Fixpoint dummy {A B} (x : list (A * B)) : list (A * B) :=
   match x with
     | nil => nil
-    | (_, _) :: _ => nil
+    | cons (_, _) _ => nil
   end.
 
 Lemma foo :

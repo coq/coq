@@ -14,11 +14,12 @@
   ;   + config/coq_config.py
   ;   + tools/coqdoc/coqdoc.css
   (package coq-core)
-  (package coq-stdlib)
+  (package rocq-core)
   (source_tree sphinx)
   (source_tree tools/coqrst)
   unreleased.rst
-  (env_var SPHINXWARNOPT)))
+  (env_var SPHINXWARNOPT)
+  (env_var COQRST_EXTRA)))
 
 (rule
  (targets
@@ -30,12 +31,13 @@
  ; EJGA: note this should've been fixed in dune master as of 05/03/2021
  (deps
   (package coq-core)
-  (package coq-stdlib)
+  (package rocq-core)
   (source_tree sphinx)
   (source_tree tools/coqrst)
   ../config/coq_config.py
   unreleased.rst
-  (env_var SPHINXWARNOPT))
+  (env_var SPHINXWARNOPT)
+  (env_var COQRST_EXTRA))
  (action
   (run env sphinx-build -q %{env:SPHINXWARNOPT=-W} -b html sphinx %{targets})))
 
@@ -49,11 +51,13 @@
  ; EJGA: note this should've been fixed in dune master as of 05/03/2021
  (deps
   (package coq-core)
-  (package coq-stdlib)
+  (package rocq-core)
   (source_tree sphinx)
   (source_tree tools/coqrst)
+  ../config/coq_config.py
   unreleased.rst
-  (env_var SPHINXWARNOPT))
+  (env_var SPHINXWARNOPT)
+  (env_var COQRST_EXTRA))
  (action
   (progn
    (run env sphinx-build -q %{env:SPHINXWARNOPT=-W} -b latex sphinx %{targets})

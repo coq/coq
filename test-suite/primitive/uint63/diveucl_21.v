@@ -1,4 +1,4 @@
-Require Import Uint63.
+Require Import PrimInt63.
 
 Set Implicit Arguments.
 

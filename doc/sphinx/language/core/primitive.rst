@@ -39,8 +39,8 @@ These primitive declarations are regular axioms. As such, they must be trusted a
 
 .. coqtop:: in reset
 
-   From Stdlib Require Import Uint63.
-   Lemma one_minus_one_is_zero : (1 - 1 = 0)%uint63.
+   From Corelib Require Import PrimInt63 Uint63Axioms.
+   Lemma one_minus_one_is_zero : (sub 1 1 = 0)%uint63.
    Proof. apply eqb_correct; vm_compute; reflexivity. Qed.
 
 .. coqtop:: all
@@ -89,8 +89,6 @@ For instance, the product of two primitive floats can be computed using the
    Axiom mul_spec : forall x y, Prim2SF (x * y)%float = SF64mul (Prim2SF x) (Prim2SF y).
 
 where :g:`Prim2SF` is defined in the :g:`FloatOps` module.
-
-The set of such operators is described in section :ref:`floats_library`.
 
 These primitive declarations are regular axioms. As such, they must be trusted, and are listed by the
 :g:`Print Assumptions` command.

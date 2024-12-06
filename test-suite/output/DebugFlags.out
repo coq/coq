@@ -1,6 +1,6 @@
 File "./output/DebugFlags.v", line 1, characters 0-33:
 Warning: There is no debug flag "ThisFlagDoesNotExist".
 [unknown-debug-flag,default]
-Debug: [Cbv] Unfolding Stdlib.Init.Datatypes.id
+Debug: [Cbv] Unfolding Corelib.Init.Datatypes.id
      = tt
      : unit

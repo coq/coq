@@ -1,4 +1,5 @@
-Require Import Program Extraction ExtrOcamlBasic.
+From Corelib.Program Require Import Wf.
+Require Import Extraction ExtrOcamlBasic.
 Print sig.
 Section FIXPOINT.
 

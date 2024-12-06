@@ -181,7 +181,11 @@ let rec find_dependencies st basename =
         let from, strl = coq_to_stdlib from strl in
         let decl str =
           if should_visit_v_and_mark from str then begin
-            match safe_assoc st from f str with
+            let files = safe_assoc st from f str in
+            let files = match from, files with
+              | Some _, _ | None, Some _ -> files
+              | None, None -> safe_assoc st (Some ["Stdlib"]) f str in
+            match files with
             | Some files ->
               List.iter (fun file_str ->
                   let file_str = canonize file_str in

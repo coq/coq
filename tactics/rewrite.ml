@@ -509,12 +509,12 @@ end
 let init_relation_classes () =
   if Rocqlib.has_ref "rewrite.prop.relation" || Rocqlib.has_ref "rewrite.type.relation" then ()
   else CErrors.user_err
-    (Pp.str "No bindings have been registered for relation classes in Prop or Type, maybe you need to require Stdlib.Classes.(C)RelationClasses.")
+    (Pp.str "No bindings have been registered for relation classes in Prop or Type, maybe you need to require Corelib.Classes.(C)RelationClasses.")
 
 let init_rewrite () =
   if Rocqlib.has_ref "rewrite.prop.Proper" || Rocqlib.has_ref "rewrite.type.Proper" then ()
   else CErrors.user_err
-    (Pp.str "No bindings have been registered for morphisms in Prop or Type, maybe you need to require Stdlib.Classes.(C)Morphisms.")
+    (Pp.str "No bindings have been registered for morphisms in Prop or Type, maybe you need to require Corelib.Classes.(C)Morphisms.")
 
 let get_type_of_refresh env evars t =
   let evars', tty = Evarsolve.get_type_of_refresh env (fst evars) t in
@@ -1903,7 +1903,7 @@ let () = CErrors.register_handler begin function
 | RelationNotDeclared (env, sigma, ty, concl) ->
   let rel, _, _, _, _, _ = decompose_app_rel_error env sigma concl in
   Some (str" The relation " ++ Printer.pr_econstr_env env sigma rel ++ str" is not a declared " ++
-    str ty ++ str" relation. Maybe you need to require the Stdlib.Classes.RelationClasses library")
+    str ty ++ str" relation. Maybe you need to require the Corelib.Classes.RelationClasses library")
 | _ -> None
 end
 

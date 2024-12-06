@@ -10,13 +10,13 @@ Inductive I {A:Type} := C : ## where "##" := I.
 
 (* The following was working in 8.6 *)
 
-Require Import Vector.
+Require Import TestSuite.vector.
 
 Reserved Notation "# a" (at level 70).
 Fixpoint f {n : nat} (v:Vector.t nat n) : nat :=
   match v with
-  | nil _ => 0
-  | cons _ _ _ v => S (#v)
+  | Vector.nil _ => 0
+  | Vector.cons _ _ _ v => S (#v)
   end
 where "# v" := (f v).
 

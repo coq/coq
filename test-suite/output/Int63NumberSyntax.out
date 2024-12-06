@@ -67,15 +67,9 @@ t = 2%ui63
      : nat
 2
      : int
-File "./output/Int63NumberSyntax.v", line 41, characters 0-22:
-Warning: Overwriting previous delimiting key ui63 in scope uint63_scope
-[overwriting-delimiting-key,parsing,default]
-File "./output/Int63NumberSyntax.v", line 41, characters 0-22:
-Warning: Hiding binding of key uint63 to nat_scope
-[hiding-delimiting-key,parsing,default]
-(2 + 2)%uint63
+add 2 2
      : int
-2 + 2
+add 2 2
      : int
      = 4
      : int
@@ -95,7 +89,7 @@ Warning: Hiding binding of key uint63 to nat_scope
      : int
      = 12
      : int
-     = 3 + x
+     = add 3 x
      : int
-     = 1 + 2 + x
+     = add (add 1 2) x
      : int

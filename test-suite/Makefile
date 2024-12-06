@@ -70,7 +70,7 @@ endif
 endif
 export COQLIB
 
-ifeq ($(wildcard $(COQLIB)/theories/Reals/Reals.vo),)
+ifeq ($(wildcard $(COQLIB)/theories/Init/Prelude.vo),)
   COQLIB_NOT_FOUND:=true
 else
   COQLIB_NOT_FOUND:=false
@@ -168,7 +168,7 @@ COMPLEXITY := $(if $(bogomips),complexity)
 INTERACTIVE := interactive
 UNIT_TESTS := unit-tests
 VSUBSYSTEMS := prerequisite success failure bugs bugs-nocoqchk output output-coqtop \
-  output-modulo-time $(INTERACTIVE) micromega $(COMPLEXITY) modules stm \
+  output-modulo-time $(INTERACTIVE) $(COMPLEXITY) modules stm \
   coqdoc ssr $(wildcard primitive/*) ltac2 coqchk
 
 # All subsystems
@@ -214,7 +214,7 @@ noop: ;
 run: $(SUBSYSTEMS)
 
 clean:
-	rm -f trace .csdp.cache .nia.cache .lia.cache output/MExtraction.out
+	rm -f trace .csdp.cache .nia.cache .lia.cache
 	rm -f misc/universes/all_stdlib.v
 	$(SHOW) 'RM        <**/*.stamp> <**/*.vo> <**/*.log> <**/*.glob> <**/*.time>'
 	$(HIDE)find . \( \
@@ -257,7 +257,6 @@ summary:
 	  $(call summary_dir, "Output tests with coqtop", output-coqtop); \
 	  $(call summary_dir, "Output (modulo time changes) tests", output-modulo-time); \
 	  $(call summary_dir, "Interactive tests", interactive); \
-	  $(call summary_dir, "Micromega tests", micromega); \
 	  $(call summary_dir, "Miscellaneous tests", misc); \
 	  $(call summary_dir, "Complexity tests", complexity); \
 	  $(call summary_dir, "Module tests", modules); \
@@ -366,7 +365,7 @@ $(addsuffix .log,$(wildcard prerequisite/*.v)): %.v.log: %.v
 	} > "$@"
 	$(HIDE)$(call REPORT_TIMER,$@)
 
-$(addsuffix .log,$(wildcard bugs/*.v ssr/*.v success/*.v failure/*.v stm/*.v micromega/*.v modules/*.v primitive/*/*.v ltac2/*.v coqchk/*.v)): %.v.log: %.v $(PREREQUISITELOG)
+$(addsuffix .log,$(wildcard bugs/*.v ssr/*.v success/*.v failure/*.v stm/*.v modules/*.v primitive/*/*.v ltac2/*.v coqchk/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  opts="$(if $(findstring modules/,$<),-R modules Mods)"; \
@@ -520,14 +519,6 @@ approve-coqdoc: coqdoc
 	  echo "Updated $$f!"; \
 	fi; done)
 
-# the expected output for the MExtraction test is
-# /plugins/micromega/micromega.ml except with additional newline
-output/MExtraction.out: ../plugins/micromega/micromega.ml
-	$(SHOW) GEN $@
-	$(HIDE) cp $< $@
-	$(HIDE) chmod u+w $@
-	$(HIDE) echo >> $@
-
 $(addsuffix .log,$(wildcard output-modulo-time/*.v)): %.v.log: %.v %.out
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
@@ -646,10 +637,10 @@ $(addsuffix .log,$(wildcard ideal-features/*.v)): %.v.log: %.v $(PREREQUISITELOG
 	$(HIDE)$(call REPORT_TIMER,$@)
 
 # Additional dependencies for module tests
-COMMON_MODULE_DEPENDENCIES := modules/plik.v modules/Nat.v
-# We exclude Nat.v.log and plik.v.log because these log files do not
-# depend on having the corresponding .vo files built first, and we end
-# up with pseudo-cyclic build rules if we don't exclude them (See
+COMMON_MODULE_DEPENDENCIES := modules/plik.v
+# We exclude plik.v.log because this log file does not
+# depend on having the corresponding .vo file built first, and we end
+# up with pseudo-cyclic build rules if we don't exclude it (See
 # COQBUG(https://github.com/coq/coq/issues/12582)).
 $(addsuffix .log,$(filter-out $(COMMON_MODULE_DEPENDENCIES),$(wildcard modules/*.v))): %.v.log: $(COMMON_MODULE_DEPENDENCIES:.v=.v.log)
 

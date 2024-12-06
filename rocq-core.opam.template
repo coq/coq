@@ -1,0 +1,18 @@
+build: [
+  ["dune" "subst"] {dev}
+  # We tell dunestrap to use coq-config from coq-core
+  [ make "dunestrap" "COQ_SPLIT=1" "DUNESTRAPOPT=-p rocq-core"]
+  [
+    "dune"
+    "build"
+    "-p"
+    name
+    "-j"
+    jobs
+    "--promote-install-files=false"
+    "@install"
+    "@runtest" {with-test}
+    "@doc" {with-doc}
+  ]
+  ["dune" "install" "-p" name "--create-install-files" name]
+]

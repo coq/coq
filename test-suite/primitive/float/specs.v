@@ -9,10 +9,13 @@
        Again on each float/int from the lists, each operator
        is evaluated in multiple evaluation mechanisms to check
        that their results agree with the one given by vm_compute. *)
-From Stdlib Require Import String List ZArith Sint63 Uint63 Floats.
+From Corelib Require Import ListDef BinNums PrimInt63 Uint63Axioms.
+From Corelib Require Import SpecFloat PrimFloat FloatOps FloatAxioms.
 From Ltac2 Require Import Ltac2 Printf.
-Import ListNotations.
-Open Scope string_scope.
+
+Notation "[ x ; y ; .. ; z ]" :=  (cons x (cons y .. (cons z nil) ..))
+  (format "[ '[' x ;  '/' y ;  '/' .. ;  '/' z ']' ]") : list_scope.
+
 Open Scope list_scope.
 Open Scope float_scope.
 
@@ -46,17 +49,17 @@ Definition tricky_floats : list float
           (* constants from [add.v] *)
           ; 3
           (* ; Z.ldexp one 1023%Z *) (* same as largest finite (emax-prec) above *)
-          ; Z.ldexp one (-1023)%Z; -Z.ldexp one (-1023)%Z
+          ; Z.ldexp one (Zneg (xI (xI (xI (xI (xI (xI (xI (xI (xI xH)))))))))); -Z.ldexp one (Zneg (xI (xI (xI (xI (xI (xI (xI (xI (xI xH))))))))))
           (* constants from [classify.v] *)
-          ; Z.ldexp one (-1024)%Z; -Z.ldexp one (-1024)%Z
+          ; Z.ldexp one (Zneg (xO (xO (xO (xO (xO (xO (xO (xO (xO (xO xH))))))))))); -Z.ldexp one (Zneg (xO (xO (xO (xO (xO (xO (xO (xO (xO (xO xH)))))))))))
           (* constants from [div.v] *)
           ; 6
           (* constants from [double_rounding.v] *)
-          ; Z.ldexp one 53; Z.ldexp one (-52)
-          ; 1 + Z.ldexp 1 (-52)%Z
+          ; Z.ldexp one (Zpos (xI (xO (xI (xO (xI xH)))))); Z.ldexp one (Zpos (xO (xO (xI (xO (xI xH))))))
+          ; 1 + Z.ldexp 1 (Zneg (xO (xO (xI (xO (xI xH))))))
           (* constants from [next_up_down.v] *)
           ; 42; -42
-          ; Z.ldexp one (-1022); -Z.ldexp one (-1022)
+          ; Z.ldexp one (Zneg (xO (xI (xI (xI (xI (xI (xI (xI (xI xH)))))))))); -Z.ldexp one (Zneg (xO (xI (xI (xI (xI (xI (xI (xI (xI xH))))))))))
           ; -0x1.ffffffffffffap+1023
           ; -0x1.fffffffffffff
           ; -0x0.fffffffffffffp-1022
@@ -71,27 +74,27 @@ Definition tricky_floats : list float
           ; 9
       ].
 Definition tricky_spec_floats :=
-  Eval cbv in List.map Prim2SF tricky_floats.
+  Eval cbv in ListDef.map Prim2SF tricky_floats.
 (** ** List of ints to instantiate spec and operator args *)
 Definition tricky_ints : list int
   := Eval cbv in
       [0; 1
-       ; max_int; max_int - 1
-       ; Uint63.of_Z prec
-       ; Uint63.of_Z emax
-       ; Uint63.of_Z emin
-       ; 2; max_int / 2
-       ; max_int / 2 - 1; max_int / 2 + 1
-       ; Uint63.of_Z prec - 1; Uint63.of_Z prec + 1
-       ; Uint63.of_Z prec / 2; Uint63.of_Z prec / 2 - 1; Uint63.of_Z prec / 2 + 1
-       ; Uint63.of_Z emax - 1; Uint63.of_Z emax + 1
-       ; Uint63.of_Z emax / 2; Uint63.of_Z emax / 2 - 1; Uint63.of_Z emax / 2 + 1
-       ; Uint63.of_Z emin - 1; Uint63.of_Z emin + 1
-       ; Uint63.of_Z emin / 2; Uint63.of_Z emin / 2 - 1; Uint63.of_Z emin / 2 + 1
+       ; max_int; PrimInt63.sub max_int 1
+       ; Uint63Axioms.of_Z prec
+       ; Uint63Axioms.of_Z emax
+       ; Uint63Axioms.of_Z emin
+       ; 2; PrimInt63.div max_int 2
+       ; PrimInt63.sub (PrimInt63.div max_int 2) 1; PrimInt63.add (PrimInt63.div max_int 2) 1
+       ; PrimInt63.sub (Uint63Axioms.of_Z prec) 1; PrimInt63.add (Uint63Axioms.of_Z prec) 1
+       ; PrimInt63.div (Uint63Axioms.of_Z prec) 2; PrimInt63.sub (PrimInt63.div (Uint63Axioms.of_Z prec) 2) 1; PrimInt63.sub (PrimInt63.div (Uint63Axioms.of_Z prec) 2) 1
+       ; PrimInt63.sub (Uint63Axioms.of_Z emax) 1; PrimInt63.add (Uint63Axioms.of_Z emax) 1
+       ; PrimInt63.div (Uint63Axioms.of_Z emax) 2; PrimInt63.sub (PrimInt63.div (Uint63Axioms.of_Z emax) 2) 1; PrimInt63.add (PrimInt63.div (Uint63Axioms.of_Z emax) 2) 1
+       ; PrimInt63.sub (Uint63Axioms.of_Z emin) 1; PrimInt63.add (Uint63Axioms.of_Z emin) 1
+       ; PrimInt63.div (Uint63Axioms.of_Z emin) 2; PrimInt63.sub (PrimInt63.div (Uint63Axioms.of_Z emin) 2) 1; PrimInt63.add (PrimInt63.div (Uint63Axioms.of_Z emin) 2) 1
        (* constants from [ldexp.v] *)
        (* ; 9223372036854775807 *) (* max_int *)
-       ; (-2102)%sint63
-       ; (-3)%sint63
+       ; 0x7ffffffffffff7ca%uint63 (* (-2102)%sint63 *)
+       ; 0x7ffffffffffffffd%uint63 (* (-3)%sint63 *)
        ; 3
       ]%uint63.
 (** *************************************************************************)
@@ -127,12 +130,35 @@ Inductive SPEC :=
     propositional spec for pretty-printing of results. *)
 Definition ANNOTATED_BARE_SPEC : Type := BARE_SPEC * {P : Prop | P}.
 
+(* missing list functions *)
+Section FlatMap.
+Variables (A : Type) (B : Type).
+Variable f : A -> list B.
+Definition flat_map :=
+  fix flat_map (l:list A) : list B :=
+    match l with
+    | nil => nil
+    | cons x t => (f x)++(flat_map t)
+    end.
+End FlatMap.
+Arguments flat_map [_ _].
+
+Section ListPairs.
+Variables (A : Type) (B : Type).
+Fixpoint combine (l : list A) (l' : list B) : list (A*B) :=
+  match l,l' with
+  | x::tl, y::tl' => (x,y)::(combine tl tl')
+  | _, _ => nil
+  end.
+End ListPairs.
+Arguments combine [_ _].
+
 (** ** Machinery for instantiating specifications with all examples *)
 Fixpoint instantiate1_all_ways (s : SPEC) : list ANNOTATED_BARE_SPEC
   := match s with
-     | @BARE U spec s => [(s, exist _ U spec)]
+     | @BARE U spec s => cons (s, exist _ U spec) nil
      | @FORALL T s
-       => List.flat_map
+       => flat_map
             (fun v => instantiate1_all_ways (s v))
             match T with
             | INT => tricky_ints
@@ -142,7 +168,7 @@ Fixpoint instantiate1_all_ways (s : SPEC) : list ANNOTATED_BARE_SPEC
      end.
 
 Definition instantiate_all_ways_nored (ls : list SPEC) : list ANNOTATED_BARE_SPEC
-  := List.flat_map instantiate1_all_ways ls.
+  := flat_map instantiate1_all_ways ls.
 
 Definition instantiate_all_ways (ls : list SPEC) : list ANNOTATED_BARE_SPEC
   := Eval cbv in instantiate_all_ways_nored ls.
@@ -373,9 +399,9 @@ Definition op_spec_list : list SPEC :=
 (** We unfold standard library constants early to guarantee that we
     won't run afoul of constants that show up in the specs themselves *)
 Definition map_fst : list ANNOTATED_BARE_SPEC -> list BARE_SPEC
-  := Eval cbv in List.map (@fst _ _).
+  := Eval cbv in ListDef.map (@fst _ _).
 Definition combine_annotations (orig : list ANNOTATED_BARE_SPEC) (result : list BARE_SPEC) : list ANNOTATED_BARE_SPEC
-  := Eval cbv in List.map (fun '((_, anno), v) => (v, anno)) (List.combine orig result).
+  := Eval cbv in ListDef.map (fun '((_, anno), v) => (v, anno)) (combine orig result).
 (** The native compiler is much slower if we feed it the precomputed
     instantiations of specs, whereas we want to make sure that [simpl]
     and [cbn] have as few places to take the wrong path as possible.
@@ -413,7 +439,7 @@ Section NegativeTest.
 
 Axiom wrong_spec : forall x, (- x)%float = PrimFloat.abs x.
 
-Definition wrong_spec_list : list SPEC := [ `wrong_spec ].
+Definition wrong_spec_list : list SPEC := cons ( `wrong_spec ) nil.
 
 Let wrong_specs : list ANNOTATED_BARE_SPEC
   := Eval cbv [wrong_spec_list instantiate_all_ways] in instantiate_all_ways wrong_spec_list.
@@ -460,14 +486,14 @@ Let op_bare_specs_red : list BARE_SPEC
 Inductive hlist := hnil | hcons {T} (x : T) (_ : hlist).
 Fixpoint extract_lhs (ls : list BARE_SPEC) : hlist
   := match ls with
-     | [] => hnil
+     | nil => hnil
      | x :: xs
        => let rest := extract_lhs xs in
           match x with EQ v _ | IFF v _ => hcons v rest end
      end.
 Fixpoint merge_lhs (ls : list BARE_SPEC) (result : hlist) : list BARE_SPEC
   := match ls, result with
-     | [], _ | _, hnil => []
+     | nil, _ | _, hnil => nil
      | x :: xs, hcons v vs
        => match x with
           | EQ _ x' => EQ v x'

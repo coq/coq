@@ -10,11 +10,11 @@
 
 (** * Bytes *)
 
-Require Import Stdlib.Init.Ltac.
-Require Import Stdlib.Init.Datatypes.
-Require Import Stdlib.Init.Logic.
-Require Import Stdlib.Init.Specif.
-Require Stdlib.Init.Nat.
+Require Import Corelib.Init.Ltac.
+Require Import Corelib.Init.Datatypes.
+Require Import Corelib.Init.Logic.
+Require Import Corelib.Init.Specif.
+Require Corelib.Init.Nat.
 
 Declare ML Module "coq-core.plugins.number_string_notation".
 

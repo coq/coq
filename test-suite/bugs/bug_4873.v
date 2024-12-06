@@ -1,4 +1,4 @@
-Require Import Stdlib.Classes.Morphisms.
+Require Import Corelib.Classes.Morphisms.
 Require Import Relation_Definitions.
 
 Fixpoint tuple' T n : Type :=

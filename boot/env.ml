@@ -27,8 +27,8 @@ type t =
 (* fatal error *)
 let fail_msg =
   "cannot guess a path for Coq libraries; please use -coqlib option \
-   or ensure you have installed the package containing Coq's stdlib (coq-stdlib in OPAM) \
-   If you intend to use Coq without a standard library, the -boot -noinit options must be used."
+   or ensure you have installed the package containing Coq's prelude (rocq-core in OPAM) \
+   If you intend to use Coq without prelude, the -boot -noinit options must be used."
 
 let fail s = Format.eprintf "%s@\n%!" fail_msg; exit 1
 
@@ -58,7 +58,7 @@ let fail_lib lib =
   let open Printf in
   eprintf "File not found: %s\n" lib;
   eprintf "The path for Coq libraries is wrong.\n";
-  eprintf "Coq libraries are shipped in the coq-stdlib package.\n";
+  eprintf "Coq prelude is shipped in the rocq-core package.\n";
   eprintf "Please check the COQLIB env variable or the -coqlib option.\n";
   exit 1
 

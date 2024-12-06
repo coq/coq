@@ -16,12 +16,11 @@ to any of the three.
 
    Before using any of the commands or options described in this chapter,
    the extraction framework should first be loaded explicitly
-   via ``Require Extraction``, or via the more robust
-   ``From Stdlib Require Extraction``.
+   via ``From Corelib Require Extraction``.
 
 .. coqtop:: in
 
-   Require Extraction.
+   From Corelib Require Extraction.
 
 Generating ML Code
 -------------------
@@ -451,8 +450,8 @@ OCaml code with C code, the linker needs to know
 
    .. coqtop:: in
 
-      Require Extraction.
-      Require Stdlib.extraction.ExtrOcamlNatInt.
+      From Corelib Require Extraction.
+      Extract Inductive nat => int [ "0" "Stdlib.Int.succ" ].
       Axiom f : nat -> nat -> nat.
       Extract Foreign Constant f => "f_impl".
 
@@ -687,7 +686,8 @@ We then indicate where to find other examples and tests of extraction.
 A detailed example: Euclidean division
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The file ``Euclid`` contains the proof of Euclidean division.
+This example requires the Stdlib library.
+Its file ``Euclid`` contains the proof of Euclidean division.
 The natural numbers used here are unary, represented by the type ``nat``,
 which is defined by two constructors ``O`` and ``S``.
 This module contains a theorem ``eucl_dev``, whose type is::
@@ -698,10 +698,10 @@ where ``diveucl`` is a type for the pair of the quotient and the
 modulo, plus some logical assertions that disappear during extraction.
 We can now extract this program to OCaml:
 
-.. coqtop:: reset all
+.. coqtop:: reset all extra
 
-   Require Extraction.
-   Require Import Euclid Wf_nat.
+   From Corelib Require Extraction.
+   From Stdlib Require Import Euclid Wf_nat.
    Extraction Inline gt_wf_rec lt_wf_rec induction_ltof2.
    Recursive Extraction eucl_dev.
 
@@ -743,7 +743,7 @@ It is easier to test on OCaml integers::
    - : int * int = (11, 8)
 
 Note that these ``nat_of_int`` and ``int_of_nat`` are now
-available via a mere ``Require Import ExtrOcamlIntConv`` and then
+available via a mere ``From Stdlib Require Import ExtrOcamlIntConv`` and then
 adding these functions to the list of functions to extract. This file
 ``ExtrOcamlIntConv.v`` and some others in ``plugins/extraction/``
 are meant to help building concrete program via extraction.

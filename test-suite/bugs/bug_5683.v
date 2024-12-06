@@ -1,5 +1,5 @@
 Require Import Program.Tactics.
-Require Import FunctionalExtensionality.
+Require Import TestSuite.funext.
 
 Inductive Succ A :=
 | Succ_O : Succ A

@@ -1,5 +1,5 @@
-From Stdlib Require BinNat.
-From Stdlib Require Extraction.
+From Corelib Require NatDef.
+From Corelib Require Extraction.
 
 (* Define axiomatic functions. *)
 Axiom ax_fun : nat -> nat.

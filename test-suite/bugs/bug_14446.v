@@ -1,4 +1,4 @@
-Require Stdlib.Program.Tactics.
+Require Corelib.Program.Tactics.
 
 Program Definition foo : True -> False := fun _ => _.
 

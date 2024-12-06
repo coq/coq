@@ -1,4 +1,4 @@
-From Stdlib Require Import PrimFloat.
+Require Import PrimFloat.
 
 Definition foo : { x : float | x = 1%float }.
 Proof.

@@ -12,11 +12,11 @@ Fail Inductive u : Type := d : u | e : t u -> u.
 
 (* This used to succeed in versions 8.1 to 8.3 *)
 
-Require Import Logic.
-Require Hurkens.
 Definition Ti := Type.
 Inductive prod2 (X Y:Ti) := pair2 : X -> Y -> prod2 X Y.
 Fail Definition B : Prop := let F := prod2 True in F Prop. (* Aie! *)
+(* Require Import Logic. *)
+(* Require Hurkens. *)
 (*Definition p2b (P:Prop) : B := pair2 True Prop I P.
 Definition b2p (b:B) : Prop := match b with pair2 _ P => P end.
 Lemma L1 : forall A : Prop, b2p (p2b A) -> A.

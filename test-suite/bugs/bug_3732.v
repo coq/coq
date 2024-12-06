@@ -2,9 +2,7 @@ Require Import TestSuite.admit.
 (* File reduced by coq-bug-finder from original input, then from 2073 lines to 358 lines, then from 359 lines to 218 lines, then from 107 lines to 92 lines *)
 (* coqc version trunk (October 2014) compiled on Oct 11 2014 1:13:41 with OCaml 4.01.0
    coqtop version cagnode16:/afs/csail.mit.edu/u/j/jgross/coq-trunk,trunk (d65496f09c4b68fa318783e53f9cd6d5c18e1eb7) *)
-Require Stdlib.Lists.List.
-
-Import Stdlib.Lists.List.
+Require Import TestSuite.list.
 
 Set Implicit Arguments.
 Global Set Asymmetric Patterns.
@@ -22,15 +20,15 @@ Section machine.
   Fixpoint last (G : list Type) : Type.
     exact (match G with
              | nil => unit
-             | T :: nil => T
-             | _ :: G' => last G'
+             | cons T nil => T
+             | cons _ G' => last G'
            end).
   Defined.
   Fixpoint eatLast (G : list Type) : list Type.
     exact (match G with
              | nil => nil
-             | _ :: nil => nil
-             | x :: G' => x :: eatLast G'
+             | cons _ nil => nil
+             | cons x G' => cons x (eatLast G')
            end).
   Defined.
 
@@ -40,7 +38,7 @@ Section machine.
       | ExistsX G A p1 => fun p' =>
                             match G return propX (A :: G) -> propX (eatLast (A :: G)) -> propX (eatLast G) with
                               | nil => fun p1 _ => ExistsX p1
-                              | _ :: _ => fun _ rc => ExistsX rc
+                              | cons _ _ => fun _ rc => ExistsX rc
                             end p1 (subst p1 (match G return (last G -> PropX) -> last (A :: G) -> PropX with
                                                 | nil => fun _ _ => Inj True
                                                 | _ => fun p' => p'

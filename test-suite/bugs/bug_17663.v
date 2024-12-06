@@ -1,4 +1,4 @@
-From Stdlib Require Import Uint63.
+Require Import PrimInt63.
 
 Module Type T.
   Parameter eq : int -> int -> bool.

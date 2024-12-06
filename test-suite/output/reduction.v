@@ -43,10 +43,10 @@ Eval cbv head beta delta iota in (let x := 1 + 1 in fun x => 1 + x) 2. (* not fu
 Eval cbv head in match 0 + n with 0 => 1 + 1 | S n => 1 + n end.
 Eval cbv head in fix f n := match 0 + n with 0 => 1 + 1 | S n => 1 + f n end.
 
-Require Import Uint63.
-Eval cbv head in (2+2)%uint63.
+Require Import PrimInt63.
+Eval cbv head in PrimInt63.add 2 2.
 Parameter x:int.
-Eval cbv head in (2+x)%uint63.
+Eval cbv head in PrimInt63.add 2 x.
 
-Require Import Floats.
-Eval cbv head in (0x1p+0)%float.
+Require Import PrimFloat.
+Eval cbv head in 0x1p+0%float.

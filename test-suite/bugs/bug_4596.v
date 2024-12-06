@@ -1,4 +1,4 @@
-Require Import Stdlib.Setoids.Setoid Stdlib.Classes.Morphisms.
+Require Import Corelib.Setoids.Setoid Corelib.Classes.Morphisms.
 
 Definition T (x : bool) := x = true.
 

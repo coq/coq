@@ -6,8 +6,8 @@
  *)
 
 
-Require Export Stdlib.Init.Notations.
-Require Export Stdlib.Init.Ltac.
+Require Export Corelib.Init.Notations.
+Require Export Corelib.Init.Ltac.
 Notation "'∏'  x .. y , P" := (forall x, .. (forall y, P) ..)
   (at level 200, x binder, y binder, right associativity) : type_scope.
 Notation "'λ' x .. y , t" := (fun x => .. (fun y => t) ..)

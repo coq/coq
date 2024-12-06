@@ -45,7 +45,6 @@ well.
       - [Understanding reviewers' feedback](#understanding-reviewers-feedback)
       - [Fixing your branch](#fixing-your-branch)
     - [Improving the official documentation](#improving-the-official-documentation)
-    - [Contributing to the standard library](#contributing-to-the-standard-library)
   - [Becoming a maintainer](#becoming-a-maintainer)
     - [Reviewing pull requests](#reviewing-pull-requests)
       - [Collaborating on a pull request](#collaborating-on-a-pull-request)
@@ -215,7 +214,7 @@ they test underused / undertested features.
 There are many general purpose Coq libraries, so before you publish
 yours, consider whether you could contribute to an existing one
 instead (either the official [standard
-library](#contributing-to-the-standard-library), or one of the many
+library][standard-library], or one of the many
 [alternative standard libraries][other-standard-libraries]).
 
 #### Maintaining existing packages in coq-community ####
@@ -731,7 +730,7 @@ same time.
 The official documentation is formed of two components:
 
 - the [reference manual][refman],
-- the [documentation of the standard library][stdlib-doc].
+- the [documentation of the prelude][stdlib-doc].
 
 The sources of the reference manual are located in the
 [`doc/sphinx`][refman-sources] directory.  They are written in rst
@@ -741,7 +740,7 @@ This README was written to be read from begin to end.  As soon as your
 edits to the documentation are more than changing the textual content,
 we strongly encourage you to read this document.
 
-The documentation of the standard library is generated with
+The documentation of the prelude is generated with
 [coqdoc][coqdoc-documentation] from the comments in the sources of the
 standard library.
 
@@ -753,25 +752,6 @@ You can browse through the list of open documentation issues using the
 [kind: documentation][kind-documentation] label, or the [user
 documentation GitHub project][documentation-github-project] (you can
 look in particular at the "Writing" and "Fixing" columns).
-
-### Contributing to the standard library ###
-
-Contributing to the standard library is also made easier by not having
-to learn about Coq's internals, and its implementation language.
-
-Due to the compatibility constraints created by the many projects that
-depend on it, proposing breaking changes, will usually require to go
-through a specific process, with a deprecation phase.  Additions, such
-as contributing new lemmas on existing definitions, and clean-ups of
-existing proofs are easier contributions to start with. In case of
-doubt, ask in an issue before spending too much time preparing your PR.
-
-If you create a new file, it needs to be listed in
-`doc/stdlib/index-list.html`.
-
-Add coqdoc comments to extend the [standard library
-documentation][stdlib-doc].  See the [coqdoc
-documentation][coqdoc-documentation] to learn more.
 
 ## Becoming a maintainer ##
 
@@ -1395,6 +1375,7 @@ can be found [on the wiki][wiki-CUDW].
 [ocamlformat]: https://github.com/ocaml-ppx/ocamlformat
 [ocamlverse-community]: https://ocamlverse.github.io/content/community.html
 [old-style-guide]: dev/doc/style.txt
+[standard-library]: https://github.com/coq-community/stdlib
 [other-standard-libraries]: https://github.com/coq/stdlib2/wiki/Other-%22standard%22-libraries
 [pinentry-mac]: https://stackoverflow.com/questions/39494631/gpg-failed-to-sign-the-data-fatal-failed-to-write-commit-object-git-2-10-0
 [plugin-tutorial]: doc/plugin_tutorial

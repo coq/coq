@@ -1,4 +1,4 @@
-From Stdlib Require Import ssreflect Setoid.
+From Corelib Require Import ssreflect Setoid.
 
 Structure SEProp := {prop_of : Prop; _ : prop_of <-> True}.
 

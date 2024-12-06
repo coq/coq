@@ -1,5 +1,3 @@
-Require Import Utf8.
-
 Inductive tele : Type :=
   | TeleO : tele
   | TeleS {X} (binder : X -> tele) : tele.
@@ -12,7 +10,7 @@ Fixpoint tele_fun (TT : tele) (T : Type) : Type :=
 
 Notation "TT -t> A" := (tele_fun TT A) (at level 99, A at level 200, right associativity).
 
-Record tele_arg_cons {X : Type} (f : X → Type) : Type := TeleArgCons
+Record tele_arg_cons {X : Type} (f : X -> Type) : Type := TeleArgCons
   { tele_arg_head : X;
     tele_arg_tail : f tele_arg_head }.
 Global Arguments TeleArgCons {_ _} _ _.
@@ -20,13 +18,13 @@ Global Arguments TeleArgCons {_ _} _ _.
 Fixpoint tele_arg (t : tele) : Type :=
   match t with
   | TeleO => unit
-  | TeleS f => tele_arg_cons (λ x, tele_arg (f x))
+  | TeleS f => tele_arg_cons (fun x => tele_arg (f x))
   end.
 
-Fixpoint tele_app {TT : tele} {U} : (TT -t> U) → tele_arg TT → U :=
-  match TT as TT return (TT -t> U) → tele_arg TT → U with
-  | TeleO => λ F _, F
-  | TeleS r => λ (F : TeleS r -t> U) '(TeleArgCons x b),
+Fixpoint tele_app {TT : tele} {U} : (TT -t> U) -> tele_arg TT -> U :=
+  match TT as TT return (TT -t> U) -> tele_arg TT -> U with
+  | TeleO => fun F _ => F
+  | TeleS r => fun (F : TeleS r -t> U) '(TeleArgCons x b) =>
       tele_app (F x) b
   end.
 Global Arguments tele_app {!_ _} & _ !_ /.

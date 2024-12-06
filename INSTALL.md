@@ -91,8 +91,8 @@ To build and install Coq (and CoqIDE if desired) do:
 
     $ ./configure -prefix <install_prefix> $options
     $ make dunestrap
-    $ dune build -p coq-core,coq-stdlib,coq,coqide-server,coqide
-    $ dune install --prefix=<install_prefix> coq-core coq-stdlib coq coqide-server coqide
+    $ dune build -p coq-core,rocq-core,coq,coqide-server,coqide
+    $ dune install --prefix=<install_prefix> coq-core rocq-core coq coqide-server coqide
 
 You can drop the `coqide` packages if not needed.
 

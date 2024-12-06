@@ -522,7 +522,7 @@ or :g:`m` to the type :g:`nat` of natural numbers).
 
     .. coqtop:: all
 
-       Require Import List.
+       Require Import ListDef.
 
        Implicit Types m n : nat.
 

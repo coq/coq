@@ -20,13 +20,13 @@
 
 \begin{coqdoccode}
 \coqdocnoindent
-\coqdockw{Class} \coqdef{Coqdoc.typeclasses.EqDec}{EqDec}{\coqdocrecord{EqDec}} \coqdef{Coqdoc.typeclasses.T:1}{T}{\coqdocbinder{T}} := \{ \coqdef{Coqdoc.typeclasses.eqb}{eqb}{\coqdocprojection{eqb}} : \coqref{Coqdoc.typeclasses.T:1}{\coqdocvariable{T}} \coqexternalref{::type scope:x '->' x}{http://coq.inria.fr/stdlib/Stdlib.Init.Logic}{\coqdocnotation{\ensuremath{\rightarrow}}} \coqref{Coqdoc.typeclasses.T:1}{\coqdocvariable{T}} \coqexternalref{::type scope:x '->' x}{http://coq.inria.fr/stdlib/Stdlib.Init.Logic}{\coqdocnotation{\ensuremath{\rightarrow}}} \coqexternalref{bool}{http://coq.inria.fr/stdlib/Stdlib.Init.Datatypes}{\coqdocinductive{bool}} \}.\coqdoceol
+\coqdockw{Class} \coqdef{Coqdoc.typeclasses.EqDec}{EqDec}{\coqdocrecord{EqDec}} \coqdef{Coqdoc.typeclasses.T:1}{T}{\coqdocbinder{T}} := \{ \coqdef{Coqdoc.typeclasses.eqb}{eqb}{\coqdocprojection{eqb}} : \coqref{Coqdoc.typeclasses.T:1}{\coqdocvariable{T}} \coqexternalref{::type scope:x '->' x}{http://coq.inria.fr/stdlib/Corelib.Init.Logic}{\coqdocnotation{\ensuremath{\rightarrow}}} \coqref{Coqdoc.typeclasses.T:1}{\coqdocvariable{T}} \coqexternalref{::type scope:x '->' x}{http://coq.inria.fr/stdlib/Corelib.Init.Logic}{\coqdocnotation{\ensuremath{\rightarrow}}} \coqexternalref{bool}{http://coq.inria.fr/stdlib/Corelib.Init.Datatypes}{\coqdocinductive{bool}} \}.\coqdoceol
 \coqdocemptyline
 \coqdocnoindent
 \coqdockw{Section} \coqdef{Coqdoc.typeclasses.TC}{TC}{\coqdocsection{TC}}.\coqdoceol
 \coqdocemptyline
 \coqdocnoindent
-\#[\coqdocvar{local}] \coqdockw{Instance} \coqdef{Coqdoc.typeclasses.unit EqDec}{unit\_EqDec}{\coqdocinstance{unit\_EqDec}} : \coqref{Coqdoc.typeclasses.EqDec}{\coqdocclass{EqDec}} \coqexternalref{unit}{http://coq.inria.fr/stdlib/Stdlib.Init.Datatypes}{\coqdocinductive{unit}} := \{ \coqref{Coqdoc.typeclasses.eqb}{\coqdocmethod{eqb}} := \coqdockw{fun} \coqdocvar{\_} \coqdocvar{\_} \ensuremath{\Rightarrow} \coqexternalref{true}{http://coq.inria.fr/stdlib/Stdlib.Init.Datatypes}{\coqdocconstructor{true}} \}.\coqdoceol
+\#[\coqdocvar{local}] \coqdockw{Instance} \coqdef{Coqdoc.typeclasses.unit EqDec}{unit\_EqDec}{\coqdocinstance{unit\_EqDec}} : \coqref{Coqdoc.typeclasses.EqDec}{\coqdocclass{EqDec}} \coqexternalref{unit}{http://coq.inria.fr/stdlib/Corelib.Init.Datatypes}{\coqdocinductive{unit}} := \{ \coqref{Coqdoc.typeclasses.eqb}{\coqdocmethod{eqb}} := \coqdockw{fun} \coqdocvar{\_} \coqdocvar{\_} \ensuremath{\Rightarrow} \coqexternalref{true}{http://coq.inria.fr/stdlib/Corelib.Init.Datatypes}{\coqdocconstructor{true}} \}.\coqdoceol
 \coqdocemptyline
 \coqdocnoindent
 \coqdockw{End} \coqref{Coqdoc.typeclasses.TC}{\coqdocsection{TC}}.\coqdoceol

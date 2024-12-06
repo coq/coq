@@ -1,4 +1,4 @@
-Require Import Program.
+Require Import Program.Basics Program.Tactics.
 Set Implicit Arguments.
 Unset Strict Implicit.
 

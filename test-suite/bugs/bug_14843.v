@@ -16,6 +16,6 @@ Definition f2' (ti:unit) : unit := tt.
 Definition cf' := mk' f1' f2'.
 End M.
 
-Require Import Stdlib.extraction.Extraction.
+Require Import Corelib.extraction.Extraction.
 Recursive Extraction M.cf M.cf'.
 Extraction TestCompile M.cf M.cf'.

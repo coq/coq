@@ -1,4 +1,4 @@
-Require Import Stdlib.Program.Tactics.
+Require Import Corelib.Program.Tactics.
 Local Obligation Tactic := try constructor.
 
 Axiom P : Prop. Axiom p : P.

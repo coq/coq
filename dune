@@ -21,7 +21,7 @@
 
 (alias
  (name default)
- (deps coq-core.install coq-stdlib.install coqide-server.install))
+ (deps coq-core.install rocq-core.install coqide-server.install))
 
 (install
  (section lib)
@@ -44,7 +44,7 @@
   %{project_root}/_build/install/%{context_name}/lib/coq-core/META)
  (action
   (with-stdout-to %{targets}
-   (run tools/dune_rule_gen/gen_rules.exe Stdlib theories %{env:COQ_DUNE_EXTRA_OPT=}))))
+   (run tools/dune_rule_gen/gen_rules.exe Corelib theories %{env:COQ_DUNE_EXTRA_OPT=}))))
 
 (rule
  (targets ltac2_dune)
@@ -65,7 +65,7 @@
   (source_tree user-contrib))
  (action
   (with-stdout-to %{targets}
-   (run tools/dune_rule_gen/gen_rules.exe Stdlib theories -split %{env:COQ_DUNE_EXTRA_OPT=}))))
+   (run tools/dune_rule_gen/gen_rules.exe Corelib theories -split %{env:COQ_DUNE_EXTRA_OPT=}))))
 
 (rule
  (targets ltac2_dune_split)
@@ -80,7 +80,7 @@
 ; Use summary.log as the target
 (alias
  (name runtest)
- (package coq)
+ (package rocq-core)
  (deps test-suite/summary.log))
 
 ; For make compat
@@ -93,5 +93,4 @@
 
 ; (dirs (:standard _build_ci))
 
-(documentation
- (package coq))
+(dirs :standard \ stdlib)

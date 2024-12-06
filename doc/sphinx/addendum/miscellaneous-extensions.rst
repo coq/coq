@@ -4,7 +4,7 @@ Program derivation
 Rocq comes with an extension called ``Derive``, which supports program
 derivation. Typically in the style of Bird and Meertens formalism or derivations
 of program refinements. To use the Derive extension it must first be
-required with ``Require Stdlib.derive.Derive``. When the extension is loaded,
+required with ``From Corelib Require Derive``. When the extension is loaded,
 it provides the following command:
 
 .. cmd:: Derive @open_binders in @type as @ident
@@ -30,10 +30,15 @@ it provides the following command:
 
 .. example::
 
+  .. coqtop:: none
+
+     Module Nat.
+     Axiom mul_add_distr_l : forall n m p : nat, n * (m + p) = n * m + n * p.
+     End Nat.
+
   .. coqtop:: all
 
-     Require Stdlib.derive.Derive.
-     Require Import PeanoNat.
+     From Corelib Require Derive.
 
      Section P.
 

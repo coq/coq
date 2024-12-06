@@ -16,14 +16,14 @@ option : Type -> Type
 
 option is template universe polymorphic
 Arguments option A%type_scope
-Expands to: Inductive Stdlib.Init.Datatypes.option
-Declared in library Stdlib.Init.Datatypes, line 184, characters 10-16
+Expands to: Inductive Corelib.Init.Datatypes.option
+Declared in library Corelib.Init.Datatypes, line 202, characters 10-16
 option : Type@{option.u0} -> Type@{max(Set,option.u0)}
 
 option is template universe polymorphic on option.u0
 Arguments option A%type_scope
-Expands to: Inductive Stdlib.Init.Datatypes.option
-Declared in library Stdlib.Init.Datatypes, line 184, characters 10-16
+Expands to: Inductive Corelib.Init.Datatypes.option
+Declared in library Corelib.Init.Datatypes, line 202, characters 10-16
 File "./output/Inductive.v", line 27, characters 4-13:
 The command has indeed failed with message:
 Parameters should be syntactically the same for each inductive type.
@@ -39,8 +39,8 @@ or : Prop -> Prop -> Prop
 or is not universe polymorphic
 or may only be eliminated to produce values whose type is SProp or Prop.
 Arguments or (A B)%type_scope
-Expands to: Inductive Stdlib.Init.Logic.or
-Declared in library Stdlib.Init.Logic, line 89, characters 10-12
+Expands to: Inductive Corelib.Init.Logic.or
+Declared in library Corelib.Init.Logic, line 89, characters 10-12
 sunit : SProp
 
 sunit is not universe polymorphic

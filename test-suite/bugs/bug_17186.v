@@ -1,4 +1,4 @@
-From Stdlib Require Import ssreflect.
+From Corelib Require Import ssreflect.
 
 Axiom blah : forall (P : unit -> Type) (n : unit), P n.
 

@@ -1360,9 +1360,10 @@ Two examples of syntax differences:
 
 Ltac1 tactics are not automatically available in Ltac2.  (Note that some of the tactics described
 in the documentation are defined with Ltac1.)
-You can make them accessible in Ltac2 with commands similar to the following:
+You can make them accessible in Ltac2 with commands similar to the following
+(the example requires the Stdlib library for the :tacn:`lia` tactic):
 
-.. coqtop:: in
+.. coqtop:: in extra
 
    From Stdlib Require Import Lia.
    Local Ltac2 lia_ltac1 () := ltac1:(lia).

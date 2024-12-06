@@ -104,7 +104,7 @@ stdenv.mkDerivation rec {
            !elem (baseNameOf path) [".git" "result" "bin" "_build" "_build_ci" "_build_vo" "nix"]) ./.;
 
   preConfigure = ''
-    patchShebangs dev/tools/ doc/stdlib
+    patchShebangs dev/tools/ doc/corelib
   '';
 
   prefixKey = "-prefix ";
@@ -120,7 +120,7 @@ stdenv.mkDerivation rec {
   # From https://github.com/NixOS/nixpkgs/blob/master/pkgs/build-support/ocaml/dune.nix
   installPhase = ''
     runHook preInstall
-    dune install --prefix $out --libdir $OCAMLFIND_DESTDIR coq-core coq-stdlib coq coqide-server ${optionalString buildIde "coqide"}
+    dune install --prefix $out --libdir $OCAMLFIND_DESTDIR coq-core rocq-core coqide-server ${optionalString buildIde "coqide"}
     runHook postInstall
   '';
 

@@ -1,3 +1,6 @@
+(* *** DO NOT EDIT *** *)
+(* This file is extracted from test-suite/output/MExtraction.v in the stdlib *)
+(* *** DO NOT EDIT *** *)
 
 type __ = Obj.t
 

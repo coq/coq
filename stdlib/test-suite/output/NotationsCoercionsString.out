@@ -1,0 +1,6 @@
+Let "x" e1 e2
+     : expr
+Let "x" e1 e2
+     : expr
+Let "x" e1 e2 : list string
+     : list string

@@ -19,7 +19,7 @@ not the vernacular standard library.
 
 Note that in this setup, Coq needs to be started with the -boot and
 -noinit options, as will otherwise fail to find the regular Coq
-prelude, now living in the coq-stdlib package."""
+prelude, now living in the rocq-core package."""
 maintainer: ["The Coq development team <coqdev@inria.fr>"]
 authors: ["The Coq development team, INRIA, CNRS, and contributors"]
 license: "LGPL-2.1-only"

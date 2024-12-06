@@ -16,7 +16,7 @@ Defined.
 
 (* Then the original bug *)
 
-Require Import List.
+Require Import TestSuite.list.
 
 Inductive a : Set := (* some dummy inductive *)
 b : (list a) -> a.   (* i don't know if this *)

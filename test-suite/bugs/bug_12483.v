@@ -1,4 +1,4 @@
-Require Import Floats.
+Require Import PrimFloat FloatAxioms.
 
 Goal False.
 Proof.

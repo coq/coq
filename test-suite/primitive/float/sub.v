@@ -1,9 +1,9 @@
-Require Import ZArith Uint63 Floats.
+Require Import PrimFloat.
 
 Open Scope float_scope.
 
-Definition huge := Eval compute in Z.ldexp one 1023%Z.
-Definition tiny := Eval compute in Z.ldexp one (-1023)%Z.
+Definition huge := 0x1p+1023%float.  (* Z.ldexp one 1023%Z. *)
+Definition tiny := 0x0.8p-1022%float.  (* Z.ldexp one (-1023)%Z. *)
 
 Check (eq_refl : huge - tiny = huge).
 

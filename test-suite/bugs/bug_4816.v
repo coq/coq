@@ -19,8 +19,6 @@ Section Foo.
   End Bar.
 End Foo.
 
-Require Stdlib.Classes.RelationClasses.
-
 Axiom PreOrder : forall (A : Type) (r : A -> A -> Type), Type.
 
 #[universes(polymorphic)]

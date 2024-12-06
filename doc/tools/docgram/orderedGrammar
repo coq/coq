@@ -1627,7 +1627,6 @@ simple_tactic: [
 | "classical_right"
 | "contradict" ident
 | "dintuition" OPT ltac_expr
-| "discrR"
 | "dtauto"
 | "easy"
 | "exfalso"
@@ -1638,8 +1637,6 @@ simple_tactic: [
 | "now_show" one_type
 | "nra"
 | "rapply" one_term
-| "split_Rabs"
-| "split_Rmult"
 | "tauto"
 | "time_constr" ltac_expr
 | "zify"

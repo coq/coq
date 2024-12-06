@@ -1,1 +1,1 @@
-From Stdlib Require Import Setoid CMorphisms.
+From Corelib Require Import Setoid CMorphisms.

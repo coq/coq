@@ -9,8 +9,8 @@
   - Coq appearing in identifiers (tested in Check and Line 1)
   - Coq being looked up via nametab (tested in About)
 *)
-Require Import Coq.ssr.ssrbool.
-From Coq Require Import ssreflect ssrbool.
+Require Import Corelib.ssr.ssrbool.
+From Corelib Require Import ssreflect ssrbool.
 
 (* Note: this tests the two different lookup modes *)
 About Coq.Init.Nat.add.

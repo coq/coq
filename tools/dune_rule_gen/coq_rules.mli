@@ -26,13 +26,13 @@ end
 module Boot_type : sig
 
   type t =
-      Stdlib
+      Corelib
     (** Standard library *)
     | NoInit
-    (** Standalone library (without Coq's stdlib, for example the prelude) *)
+    (** Standalone library (without Coq's core lib, for example the prelude) *)
     | Regular of Theory.t
     (** Regular library, qualified with -Q, path controls where the
-        Coq stdlib is *)
+        Coq init is *)
 
 end
 
@@ -48,7 +48,7 @@ module Context : sig
     -> rule:Coq_module.Rule_type.t (* quick, native, etc... *)
     -> async:bool
     -> dir_info:Coq_module.t Dir_info.t (* contents of the directory scan *)
-    -> split:bool (* whether we are building coq-core + coq-stdlib or only coq-stdlib *)
+    -> split:bool (* whether we are building coq-core + rocq-core or only rocq-core *)
     -> t
 
 end

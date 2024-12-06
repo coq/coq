@@ -66,10 +66,6 @@ Inductive LE (n : nat) : nat -> Set :=
   | LE_n : LE n n
   | LE_S : forall m : nat, LE n m -> LE n (S m).
 
-Require Import Bool.
-
-
-
 Inductive PropForm : Set :=
   | Fvar : nat -> PropForm
   | Or : PropForm -> PropForm -> PropForm.
@@ -82,14 +78,14 @@ Type
   (fun (A : Assign) (F : PropForm) =>
    match F return bool with
    | Fvar n => A n
-   | Or F G => Prop_sem A F || Prop_sem A G
+   | Or F G => orb (Prop_sem A F) (Prop_sem A G)
    end).
 
 Type
   (fun (A : Assign) (H : PropForm) =>
    match H return bool with
    | Fvar n => A n
-   | Or F G => Prop_sem A F || Prop_sem A G
+   | Or F G => orb (Prop_sem A F) (Prop_sem A G)
    end).
 End testIFExpr.
 
@@ -1398,7 +1394,7 @@ End test_term.
 
 
 
-Require Import Peano_dec.
+Require Import TestSuite.arith.
 Parameter n : nat.
 Definition eq_prf := exists m : _, n = m.
 Parameter p : eq_prf.
@@ -1844,13 +1840,13 @@ Type
 
 
 (* Test de la syntaxe avec nombres *)
-Require Import Arith.
 Type (fun n => match n with
                | S (S O) => true
                | _ => false
                end).
 
-Require Import ZArith.
+Require Import TestSuite.binpos.
+Inductive Z := Z0 | Zpos : positive -> Z | Zneg : positive -> Z.
 Type (fun n => match n with
                | Z0 => true
                | _ => false

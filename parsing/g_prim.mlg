@@ -17,19 +17,7 @@ open Libnames
 
 open Procq.Prim
 
-let deprecated_Coq loc l id = match List.rev l with
-  | [] -> make_qualid ~loc DirPath.empty id
-  | s :: p ->
-     match Id.to_string s with
-     | "Coq" ->
-       let l' = List.rev (Id.of_string "Stdlib" :: p) in
-       let qid = make_qualid ~loc (DirPath.make l') id in
-       Nametab.warn_deprecated_dirpath_Coq ~loc (l, id);
-       qid
-     | _ ->
-       make_qualid ~loc (DirPath.make l) id
-
-let local_make_qualid loc l id = deprecated_Coq loc l id
+let local_make_qualid loc l id = make_qualid ~loc (DirPath.make l) id
 
 let my_int_of_string ?loc s =
   try

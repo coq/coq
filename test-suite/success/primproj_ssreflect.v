@@ -1,4 +1,4 @@
-From Stdlib Require Import ssreflect.
+From Corelib Require Import ssreflect.
 
 Module R.
   #[local] Set Printing Unfolded Projections As Match.

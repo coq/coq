@@ -944,13 +944,13 @@ are applied using the :tacn:`rewrite_strat` tactic.
    Innermost first.
    When there are multiple nested matches in a subterm, the innermost subterm
    is rewritten.  For :ref:`example <rewrite_strat_innermost_outermost>`,
-   rewriting :n:`(a + b) + c` with Nat.add_comm gives :n:`(b + a) + c`.
+   rewriting :n:`(a && b) && c` with `andbC` gives :n:`(b && a) && c`.
 
 :n:`outermost @rewstrategy1`
    Outermost first.
    When there are multiple nested matches in a subterm, the outermost subterm
    is rewritten.  For :ref:`example <rewrite_strat_innermost_outermost>`,
-   rewriting :n:`(a + b) + c` with Nat.add_comm gives :n:`c + (a + b)`.
+   rewriting :n:`(a && b) && c` with `andbC` gives :n:`c && (a && b)`.
 
 :n:`bottomup @rewstrategy1`
    bottom-up
@@ -1036,25 +1036,26 @@ on success. It is stronger than the tactic ``fold``.
 
 .. example:: :n:`innermost` and :n:`outermost`
 
-   The type of `Nat.add_comm` is `forall n m : nat, n + m = m + n`.
+   The type of `andbC` is `forall a b : bool, a && b = b && a`.
 
    .. coqtop:: all
 
-      Require Import Stdlib.Arith.Arith.
+      Require Import ssrbool.
       Set Printing Parentheses.
-      Goal forall a b c: nat, a + b + c = 0.
-      rewrite_strat innermost Nat.add_comm.
+      Local Open Scope bool_scope.
+      Goal forall a b c : bool, a && b && c = true.
+      rewrite_strat innermost andbC.
 
    .. coqtop:: none
 
       Abort.
-      Goal forall a b c: nat, a + b + c = 0.
+      Goal forall a b c : bool, a && b && c = true.
 
    Using :n:`outermost` instead gives this result:
 
    .. coqtop:: all
 
-      rewrite_strat outermost Nat.add_comm.
+      rewrite_strat outermost andbC.
 
    .. coqtop:: none
 

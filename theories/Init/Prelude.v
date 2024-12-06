@@ -12,16 +12,17 @@ Require Export Notations.
 Require Export Logic.
 Require Export Datatypes.
 Require Export Specif.
-Require Stdlib.Init.Byte.
-Require Stdlib.Init.Decimal.
-Require Stdlib.Init.Hexadecimal.
-Require Stdlib.Init.Number.
-Require Stdlib.Init.Nat.
+Require Corelib.Init.Byte.
+Require Corelib.Init.Decimal.
+Require Corelib.Init.Hexadecimal.
+Require Corelib.Init.Number.
+Require Corelib.Init.Nat.
 Require Export Peano.
-Require Export Stdlib.Init.Wf.
-Require Export Stdlib.Init.Ltac.
-Require Export Stdlib.Init.Tactics.
-Require Export Stdlib.Init.Tauto.
+Require Export Corelib.Init.Wf.
+Require Export Corelib.Init.Ltac.
+Require Export Corelib.Init.Tactics.
+Require Export Corelib.Init.Tauto.
+Require Export Corelib.Init.Sumbool.
 (* Some initially available plugins. See also:
    - ltac_plugin (in Ltac)
    - tauto_plugin (in Tauto).

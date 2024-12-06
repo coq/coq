@@ -1,4 +1,4 @@
-Require Import Stdlib.Program.Tactics.
+Require Import Corelib.Program.Tactics.
 Set Universe Polymorphism.
 Set Printing Universes.
 Definition typ := Type.

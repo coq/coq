@@ -1,4 +1,4 @@
-From Stdlib Require Import Program.Tactics.
+From Corelib Require Import Program.Tactics.
 
 (* Part using attributes *)
 

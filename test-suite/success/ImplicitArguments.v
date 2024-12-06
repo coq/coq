@@ -16,13 +16,42 @@ Inductive vector {A : Type} : nat -> Type :=
 
 Arguments vector A : clear implicits.
 
-Require Import Stdlib.Program.Program.
+Require Import TestSuite.jmeq.
 
-Program Definition head {A : Type} {n : nat} (v : vector A (S n)) : vector A n :=
-  match v with
-    | vnil => !
-    | vcons a v' => v'
-  end.
+Definition head_subproof A n (v : vector A (S n)) (a : A) n'
+    (v' : vector A n') (eqn : S n' = S n) (eqv : JMeq (vcons a v') v) :=
+  let H : S n = S n -> n' = n :=
+    match eqn in _ = n'' return n'' = S n -> n' = n with
+    | eq_refl =>
+        fun eqSn' : S n' = S n =>
+          let eqn' : n' = n :=
+            f_equal (fun e => match e with  0 => n' | S n0 => n0 end) eqSn' in
+          eq_ind_r (fun n'' => n'' = n)
+            (eq_ind_r
+               (fun n' =>
+                  forall v', S n' = S n -> JMeq (vcons a v') v -> n = n)
+               (fun (v' : vector A n) _ _ => eq_refl) eqn' v'
+               eqn eqv)
+            eqn'
+    end in
+  H eq_refl.
+
+Definition head {A : Type} {n : nat} (v : vector A (S n)) :=
+  let case_nil (eqn : O = S n) _ :=
+    False_rect (vector A n)
+      (False_ind False
+         (eq_ind O (fun e => match e with O => True | S _ => False end)
+            I (S n) eqn)) in
+  let case_cons (a : A) n' (v' : vector A n')
+        (eqn : eq (S n') (S n)) (eqv : JMeq (vcons a v') v) :=
+      eq_rect n' (vector A) v' n
+        (head_subproof A n v a n' v' eqn eqv) in
+  match
+    v as v' in vector _ n' return eq n' (S n) -> JMeq v' v -> vector A n
+  with
+  | vnil => case_nil
+  | @vcons _ a n' v' => case_cons a n' v'
+  end (eq_refl (S n)) (JMeq_refl v).
 
 Fixpoint app {A : Type} {n m : nat} (v : vector A n) (w : vector A m) : vector A (n + m) :=
   match v in vector _ n return vector A (n + m) with

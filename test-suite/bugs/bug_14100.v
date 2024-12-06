@@ -1,4 +1,4 @@
-From Stdlib Require Import Extraction.
+From Corelib Require Import Extraction.
 
 Set Warnings "-extraction-inside-module".
 

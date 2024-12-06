@@ -14,10 +14,10 @@
    Institution: LRI, CNRS UMR 8623 - University Paris Sud
 *)
 
-Require Stdlib.Classes.CRelationClasses Stdlib.Classes.CMorphisms.
-Require Import Stdlib.Classes.Morphisms Stdlib.Classes.Morphisms_Prop.
-Require Export Stdlib.Classes.RelationClasses Stdlib.Relations.Relation_Definitions.
-Require Import Stdlib.Classes.Equivalence Stdlib.Program.Basics.
+Require Corelib.Classes.CRelationClasses Corelib.Classes.CMorphisms.
+Require Import Corelib.Classes.Morphisms Corelib.Classes.Morphisms_Prop.
+Require Export Corelib.Classes.RelationClasses Corelib.Relations.Relation_Definitions.
+Require Import Corelib.Classes.Equivalence Corelib.Program.Basics.
 
 Generalizable Variables A R.
 
@@ -152,7 +152,7 @@ Tactic Notation "setoid_replace" constr(x) "with" constr(y)
    [respectful] calls and substitute leibniz equalities. One can
    redefine it using [Ltac add_morphism_tactic ::= t]. *)
 
-Require Import Stdlib.Program.Tactics.
+Require Import Corelib.Program.Tactics.
 
 Local Open Scope signature_scope.
 

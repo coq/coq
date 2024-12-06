@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Stdlib.extraction.Extraction.
+Require Corelib.extraction.Extraction.
 
 (** Extraction to Ocaml : use of basic Ocaml types *)
 

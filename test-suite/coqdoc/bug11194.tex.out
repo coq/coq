@@ -20,13 +20,13 @@
 
 \begin{coqdoccode}
 \coqdocnoindent
-\coqdockw{Record} \coqdef{Coqdoc.bug11194.a struct}{a\_struct}{\coqdocrecord{a\_struct}} := \{ \coqdef{Coqdoc.bug11194.anum}{anum}{\coqdocprojection{anum}} : \coqexternalref{nat}{http://coq.inria.fr/stdlib/Stdlib.Init.Datatypes}{\coqdocinductive{nat}} \}.\coqdoceol
+\coqdockw{Record} \coqdef{Coqdoc.bug11194.a struct}{a\_struct}{\coqdocrecord{a\_struct}} := \{ \coqdef{Coqdoc.bug11194.anum}{anum}{\coqdocprojection{anum}} : \coqexternalref{nat}{http://coq.inria.fr/stdlib/Corelib.Init.Datatypes}{\coqdocinductive{nat}} \}.\coqdoceol
 \coqdocnoindent
 \coqdockw{Canonical} \coqdockw{Structure} \coqdef{Coqdoc.bug11194.a struct 0}{a\_struct\_0}{\coqdocdefinition{a\_struct\_0}} := \{| \coqref{Coqdoc.bug11194.anum}{\coqdocprojection{anum}} := 0|\}.\coqdoceol
 \coqdocnoindent
 \coqdockw{Definition} \coqdef{Coqdoc.bug11194.rename a s 0}{rename\_a\_s\_0}{\coqdocdefinition{rename\_a\_s\_0}} := \coqref{Coqdoc.bug11194.a struct 0}{\coqdocdefinition{a\_struct\_0}}.\coqdoceol
 \coqdocnoindent
-\coqdockw{Coercion} \coqdef{Coqdoc.bug11194.some nat}{some\_nat}{\coqdocdefinition{some\_nat}} := (@\coqexternalref{Some}{http://coq.inria.fr/stdlib/Stdlib.Init.Datatypes}{\coqdocconstructor{Some}} \coqexternalref{nat}{http://coq.inria.fr/stdlib/Stdlib.Init.Datatypes}{\coqdocinductive{nat}}).\coqdoceol
+\coqdockw{Coercion} \coqdef{Coqdoc.bug11194.some nat}{some\_nat}{\coqdocdefinition{some\_nat}} := (@\coqexternalref{Some}{http://coq.inria.fr/stdlib/Corelib.Init.Datatypes}{\coqdocconstructor{Some}} \coqexternalref{nat}{http://coq.inria.fr/stdlib/Corelib.Init.Datatypes}{\coqdocinductive{nat}}).\coqdoceol
 \coqdocnoindent
 \coqdockw{Definition} \coqdef{Coqdoc.bug11194.rename some nat}{rename\_some\_nat}{\coqdocdefinition{rename\_some\_nat}} := \coqref{Coqdoc.bug11194.some nat}{\coqdocdefinition{some\_nat}}.\coqdoceol
 \end{coqdoccode}

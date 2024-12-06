@@ -211,7 +211,7 @@ let convert_string d =
       (str "Directory " ++ str d ++ str " cannot be used as a Coq identifier (skipped)");
     raise_notrace Exit
 
-let rocq_root = Id.of_string "Stdlib"
+let rocq_root = Id.of_string "Corelib"
 
 let add_rec_path ~unix_path ~rocq_root =
   let open System in
@@ -335,7 +335,10 @@ let rec parse_args (args : string list) accu =
   | "-noinit" :: rem ->
     parse_args rem accu
   | ("-Q" | "-R") :: d :: p :: rem ->
-    let p = if String.equal p "Coq" then "Stdlib" else p in
+    let p = if String.equal p "Coq" then "Corelib" else p in
+    (* -R Coq ... is only used by Dune in conjunction with the -boot
+       option. The above line should be removed once we require an
+       updated version of Dune. *)
     let p = Loadpath.dirpath_of_string p in
     let accu = { accu with vo_path = (d, p) :: accu.vo_path } in
     parse_args rem accu

@@ -20,7 +20,7 @@
 
 \begin{coqdoccode}
 \coqdocnoindent
-\coqdockw{Lemma} \coqdef{Coqdoc.bug5648.a}{a}{\coqdoclemma{a}} : \coqexternalref{True}{http://coq.inria.fr/stdlib/Stdlib.Init.Logic}{\coqdocinductive{True}}.\coqdoceol
+\coqdockw{Lemma} \coqdef{Coqdoc.bug5648.a}{a}{\coqdoclemma{a}} : \coqexternalref{True}{http://coq.inria.fr/stdlib/Corelib.Init.Logic}{\coqdocinductive{True}}.\coqdoceol
 \coqdocnoindent
 \coqdockw{Proof}.\coqdoceol
 \coqdocnoindent

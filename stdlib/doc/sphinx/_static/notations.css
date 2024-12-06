@@ -1,0 +1,283 @@
+/************************************************************************/
+/*         *   The Coq Proof Assistant / The Coq Development Team       */
+/*  v      *         Copyright INRIA, CNRS and contributors             */
+/* <O___,, * (see version control and CREDITS file for authors & dates) */
+/*   \VV/  **************************************************************/
+/*    //   *    This file is distributed under the terms of the         */
+/*         *     GNU Lesser General Public License Version 2.1          */
+/*         *     (see LICENSE file for the text of the license)         */
+/************************************************************************/
+.notation {
+    /* font-family: "Ubuntu Mono", "Consolas", monospace; */
+    white-space: pre-wrap;
+    font-weight: bold;
+}
+
+.notation .notation-sup {
+    top: -0.4em;
+}
+
+.notation .notation-sub {
+    bottom: -0.4em;
+    border-radius: 1rem;
+}
+
+@font-face { /* This font has been edited to center all characters */
+  font-family: 'CoqNotations';
+  font-style: normal;
+  font-weight: 800;
+  src: local('CoqNotations'), url(./CoqNotations.ttf) format('truetype');
+}
+
+.notation .notation-sup, .notation .notation-sub {
+    background: #EAEAEA;
+    border: 1px solid #AAA;
+    color: black;
+    /* cursor: help; */
+    display: inline-block;
+    font-size: 0.45em;
+    font-weight: bolder;
+    font-family: CoqNotations, monospace;
+    height: 2.2em;
+    line-height: 1.6em;
+    position: absolute;
+    right: -1em; /* half of the width */
+    text-align: center;
+    width: 2.2em;
+}
+
+.notation .repeat, .notation .alternative {
+    background: #EAEAEA;
+    border: 1px solid #AAA;
+    display: inline-block;
+    padding: 0 0.2em 0 0.3em;
+    margin: 0.25em 0;
+}
+
+.notation .repeated-alternative {
+    display: inline-table;
+}
+
+.notation .alternative {
+    display: inline-table;
+    padding: 0 0.2em;
+}
+
+.notation .alternative-block {
+    display: table-cell;
+    padding: 0 0.5em;
+}
+
+.notation .alternative-separator {
+    border-left: 1px solid black; /* Display a thin bar */
+    display: table-cell;
+    width: 0;
+}
+
+.alternative-block:first-child {
+  padding-left: 0;
+}
+
+.alternative-block:last-child {
+  padding-right: 0;
+}
+
+.notation .repeat {
+    padding-right: 0.6em; /* Space for the left half of the sub- and sup-scripts */
+}
+
+.notation .repeat-wrapper,
+.notation .repeat-wrapper-with-sub {
+    display: inline-block;
+    position: relative;
+    margin-right: 0.4em; /* Space for the right half of the sub- and sup-scripts */
+}
+
+.notation .hole, .std-token .pre {
+    color: #4e9a06;
+    font-style: italic;
+    font-weight: bold;
+}
+
+/***********************/
+/* Small extra classes */
+/***********************/
+
+.math-preamble {
+    display: none;
+}
+
+.inline-grammar-production {
+    font-weight: bold;
+}
+
+/************************/
+/* Coqtop IO and Coqdoc */
+/************************/
+
+.coqtop dd, .ansi-bg-default {
+    background: #eeeeee !important;
+}
+
+.coqtop dd, .ansi-fg-default {
+    color: #2e3436 !important;
+}
+
+.coqtop dt {                    /* Questions */
+    background: none !important;
+    color: #333 !important;
+    font-weight: normal !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.coqtop dd {                    /* Responses */
+    padding: 0.5em;
+    margin-left: 0 !important;
+    margin-top: 0.5em !important;
+}
+
+.coqdoc, .coqtop dl {
+    margin: 12px; /* Copied from RTD theme */
+}
+
+.coqdoc {
+    display: block;
+    white-space: pre;
+}
+
+.coqtop dt, .coqtop dd {
+    border: none !important;
+    display: block !important;
+}
+
+.coqtop.coqtop-hidden, dd.coqtop-hidden, dt.coqtop-hidden { /* Overqualifying for precedence */
+    display: none !important;
+}
+
+/* FIXME: Specific to the RTD theme */
+.coqdoc, .coqtop dt, .coqtop dd, pre { /* pre added because of production lists */
+    font-family: Consolas,"Andale Mono WT","Andale Mono","Lucida Console","Lucida Sans Typewriter","DejaVu Sans Mono","Bitstream Vera Sans Mono","Liberation Mono","Nimbus Mono L",Monaco,"Courier New",Courier,monospace !important; /* Copied from RTD theme */
+    font-size: 12px !important; /* Copied from RTD theme */
+    line-height: 1.5 !important; /* Copied from RTD theme */
+    white-space: pre;
+}
+
+/*************/
+/* Overrides */
+/*************/
+
+.prodn-table {
+    display: table;
+    margin: 1.5em 0px;
+    vertical-align: baseline;
+    font-weight: bold;
+}
+
+.prodn-column-group  {
+    display: table-column-group;
+}
+
+.prodn-column {
+    display: table-column;
+}
+
+.prodn-row-group {
+    display: table-row-group;
+}
+
+.prodn-row {
+    display: table-row;
+}
+
+.prodn-cell-nonterminal,
+.prodn-cell-op,
+.prodn-cell-production,
+.prodn-cell-tag
+{
+    display: table-cell;
+}
+
+.prodn-cell-nonterminal {
+    padding-right: 0.49em;
+}
+
+.prodn-cell-op {
+    padding-right: 0.90em;
+    font-weight: normal;
+}
+
+.prodn-cell-production {
+    width: 99%;
+}
+
+.prodn-cell-tag {
+    text-align: right;
+    font-weight: normal;
+    font-size: 75%;
+    font-family: "Lato","proxima-nova","Helvetica Neue",Arial,sans-serif;
+}
+
+.prodn-table .notation > .repeat-wrapper {
+    margin-top: 0.28em;
+}
+
+.prodn-table .notation > .repeat-wrapper-with-sub {
+    margin-top: 0.28em;
+    margin-bottom: 0.28em;
+}
+
+.term-defn {
+    font-style: italic;
+}
+
+.std-term {
+    color: #2980B9;  /* override if :visited */
+}
+
+/* We can't display nested blocks otherwise */
+code, .rst-content tt, .rst-content code {
+    background: transparent !important;
+    border: none !important;
+    font-size: inherit !important;
+}
+
+code {
+    padding: 0 !important;      /* This padding doesn't make sense without a border */
+}
+
+dt > .property {
+    margin-right: 0.25em;
+}
+
+.icon-home:visited {
+  color: #FFFFFF;
+}
+
+/* Pygments for Coq is confused by ‘…’ */
+code span.error {
+    background: inherit !important;
+    line-height: inherit !important;
+    margin-bottom: 0 !important;
+    padding: 0 !important;
+}
+
+/* Red is too aggressive */
+.rst-content tt.literal, .rst-content tt.literal, .rst-content code.literal {
+    color: inherit !important;
+}
+
+
+.coqdoc-comment {
+    color: #808080 !important
+}
+
+/* make the error message index readable */
+.indextable code {
+    white-space: inherit;  /* break long lines */
+}
+
+.indextable tr td + td {
+    padding-left: 2em; /* indent 2nd & subsequent lines */
+    text-indent: -2em;
+}

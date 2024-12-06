@@ -9,8 +9,6 @@ Module Foo.
     end.
 End Foo.
 
-Require Import ClassicalFacts.
-
 Inductive True1 : Prop := I1 : True1
 with True2 : Prop := I2 : True1 -> True2.
 
@@ -29,17 +27,15 @@ contradiction (
 
 End func_unit_discr.
 
-Require Import Vectors.VectorDef.
+Require Import TestSuite.vector.
+Import Vector.
 
-About caseS.
-About tl.
-Open Scope vector_scope.
 Local Notation "[]" := (@nil _).
 Local Notation "h :: t" := (@cons _ h _ t) (at level 60, right associativity).
 Definition is_nil {A n} (v : t A n) : bool := match v with [] => true | _ => false end.
 
 Fixpoint id {A n} (v : t A n) : t A n :=
   match v in t _ n' return t A n' with
-    | (h :: t) as v' => h :: id (tl v')
+    | (h :: t) as v' => h :: id (tl _ v')
     |_ => []
   end.

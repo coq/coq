@@ -282,16 +282,49 @@ let warn_deprecated_from_Coq =
     (fun () -> strbrk
         "\"From Coq\" has been replaced by \"From Stdlib\".")
 
-let deprecated_Coq p =
-  if not (Libnames.qualid_eq p (Libnames.qualid_of_string "Coq")) then p else
+let deprecated_Coq from qidl =
+  let coq_id = Id.of_string "Coq" in
+  let stdlib_id =
+    (* temporary hack to enable HoTT and UniMath to compile with rocq-core *)
+    let qidl =
+      let qid2idl qid =
+        let p, id = Libnames.repr_qualid qid in
+        List.rev (id :: DirPath.repr p) in
+      let from = match from with None -> [] | Some from -> qid2idl from in
+      List.map (fun (qid, _) -> from @ qid2idl qid) qidl in
+    let ids' = List.map Id.of_string ["Init"; "Setoids"; "Ltac"] in
+    let in_rocq idl = match idl with
+      | id :: id' :: _ -> Id.equal id coq_id && (CList.mem_f Id.equal id' ids')
+      | _ -> false in
+    Id.of_string (if List.for_all in_rocq qidl then "Corelib" else "Stdlib") in
+  let repl_id id =
+    if Id.equal id coq_id then true, stdlib_id else false, id in
+  let repl_Coq_qid qid =
+    let p, id = Libnames.repr_qualid qid in
+    let warn, p, id =
+      if DirPath.is_empty p then let w, id = repl_id id in w, p, id else
+        let warn, p = match List.rev (DirPath.repr p) with
+          | id :: p' -> let w, id' = repl_id id in w, (id' :: p')
+          | [] -> false, [] in
+        warn, DirPath.make (List.rev p), id in
+    let qid = Libnames.make_qualid ?loc:qid.loc p id in
+    let warn = if warn then Some qid else None in
+    warn, Libnames.make_qualid ?loc:qid.loc p id in
+  let warn, from, qidl = match from with
+    | Some from -> let w, from = repl_Coq_qid from in w, Some from, qidl
+    | None ->
+       let w, qidl = CList.fold_left_map (fun w (qid, fe) ->
+           let w', qid = repl_Coq_qid qid in Option.append w w', (qid, fe))
+         None qidl in
+       w, from, qidl in
+  let () = match warn with None -> () | Some qid ->
     let quickfix = Option.map (fun loc ->
-        [Quickfix.make ~loc (Pp.str "Stdlib")]) p.loc
-    in
-    let () = warn_deprecated_from_Coq ?quickfix () in
-    Libnames.qualid_of_ident (Id.of_string "Stdlib")
+      [Quickfix.make ~loc (Libnames.pr_qualid qid)]) qid.loc in
+    warn_deprecated_from_Coq ?quickfix () in
+  from, qidl
 
 let synterp_require ~intern from export qidl =
-  let from = Option.map deprecated_Coq from in
+  let from, qidl = deprecated_Coq from qidl in
   let root = match from with
   | None -> None
   | Some from ->

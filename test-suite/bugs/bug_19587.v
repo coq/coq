@@ -1,4 +1,4 @@
-Require Import Coq.Setoids.Setoid Coq.Classes.Morphisms.
+Require Import Corelib.Setoids.Setoid Corelib.Classes.Morphisms.
 
 Class ring α := { rng_zero : α; }.
 Class field := { }.

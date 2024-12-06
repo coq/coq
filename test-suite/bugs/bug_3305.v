@@ -1,4 +1,4 @@
-Require Export Stdlib.Classes.RelationClasses.
+Require Export Corelib.Classes.RelationClasses.
 
 Section defs.
   Variable A : Type.

@@ -1,9 +1,7 @@
-Require Export Stdlib.Program.Utils.
-Require Export Stdlib.Program.Basics.
-Require Export Stdlib.Program.Syntax.
+Require Export Corelib.Program.Basics.
 Require Setoid.
 
-Require Export Stdlib.Classes.CMorphisms.
+Require Export Corelib.Classes.CMorphisms.
 
 Declare Scope category_theory_scope.
 Open Scope category_theory_scope.

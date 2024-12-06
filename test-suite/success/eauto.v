@@ -93,7 +93,7 @@ Qed.
 (* Example from Nicolas Tabareau on coq-club - Feb 2016. 
   Full backtracking on dependent subgoals.
  *)
-Require Import Stdlib.Classes.Init.
+Require Import Corelib.Classes.Init.
 
 Module NTabareau.
 
@@ -185,7 +185,7 @@ Defined.
 End NTabareauClasses.
 
 
-Require Import List.
+Require Import ListDef.
 
 Parameter in_list : list (nat * nat) -> nat -> Prop.
 Definition not_in_list (l : list (nat * nat)) (n : nat) : Prop :=

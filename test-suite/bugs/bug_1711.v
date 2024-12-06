@@ -1,7 +1,6 @@
 (* Test for evar map consistency - was failing at some point and was *)
 (* assumed to be solved from revision 10151 (but using a bad fix) *)
 
-Require Import List.
 Set Implicit Arguments.
 
 Inductive rose : Set := Rose : nat -> list rose -> rose.
@@ -30,5 +29,5 @@ Proof. intro H; elim H using rose_rec2 with
     (L:=fun _ => list rose); (* was assumed to fail here *)
 (*  (L:=fun (_:list rose) => list rose); *)
   clear H; simpl; intros.
-  exact (Rose n rs). exact nil. exact (H::H0).
+  exact (Rose n rs). exact nil. exact (cons H H0).
 Defined.

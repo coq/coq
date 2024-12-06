@@ -20,8 +20,8 @@
 
 \begin{coqdoccode}
 \coqdocnoindent
-\coqdockw{Record} \coqdef{Coqdoc.Record.a}{a}{\coqdocrecord{a}} := \{ \coqdef{Coqdoc.Record.b}{b}{\coqdocprojection{b}} : \coqexternalref{nat}{http://coq.inria.fr/stdlib/Stdlib.Init.Datatypes}{\coqdocinductive{nat}} ; \coqdef{Coqdoc.Record.c}{c}{\coqdocprojection{c}} : \coqexternalref{bool}{http://coq.inria.fr/stdlib/Stdlib.Init.Datatypes}{\coqdocinductive{bool}} \}.\coqdoceol
+\coqdockw{Record} \coqdef{Coqdoc.Record.a}{a}{\coqdocrecord{a}} := \{ \coqdef{Coqdoc.Record.b}{b}{\coqdocprojection{b}} : \coqexternalref{nat}{http://coq.inria.fr/stdlib/Corelib.Init.Datatypes}{\coqdocinductive{nat}} ; \coqdef{Coqdoc.Record.c}{c}{\coqdocprojection{c}} : \coqexternalref{bool}{http://coq.inria.fr/stdlib/Corelib.Init.Datatypes}{\coqdocinductive{bool}} \}.\coqdoceol
 \coqdocnoindent
-\coqdockw{Definition} \coqdef{Coqdoc.Record.d}{d}{\coqdocdefinition{d}} := \{| \coqref{Coqdoc.Record.b}{\coqdocprojection{b}} := 0 ; \coqref{Coqdoc.Record.c}{\coqdocprojection{c}} := \coqexternalref{true}{http://coq.inria.fr/stdlib/Stdlib.Init.Datatypes}{\coqdocconstructor{true}} |\}.\coqdoceol
+\coqdockw{Definition} \coqdef{Coqdoc.Record.d}{d}{\coqdocdefinition{d}} := \{| \coqref{Coqdoc.Record.b}{\coqdocprojection{b}} := 0 ; \coqref{Coqdoc.Record.c}{\coqdocprojection{c}} := \coqexternalref{true}{http://coq.inria.fr/stdlib/Corelib.Init.Datatypes}{\coqdocconstructor{true}} |\}.\coqdoceol
 \end{coqdoccode}
 \end{document}

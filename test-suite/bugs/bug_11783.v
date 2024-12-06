@@ -1,5 +1,5 @@
 Section S.
   Variable A : Type.
-  Require Hurkens.
-  Definition foo := Hurkens.Generic.paradox A.
+  Require TestSuite.hurkens.
+  Definition foo := hurkens.Generic.paradox A.
 End S.

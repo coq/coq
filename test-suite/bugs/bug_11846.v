@@ -1,4 +1,4 @@
-Require Import FunInd.
+Require Import TestSuite.funind.
 
 Inductive tree : Type :=
 | Node : unit -> tree.
