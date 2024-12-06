@@ -46,19 +46,22 @@ let json_listarr a =
   str ("]")
 
 
-let preamble mod_name comment used_modules usf =
+let preamble mod_name pragmaO comment used_modules usf =
   (match comment with
     | None -> mt ()
     | Some s -> str "/* " ++ hov 0 s ++ str " */" ++ fnl ()) ++
-  json_dict_open [
+  json_dict_open (List.concat [
+    (match pragmaO with
+      | Some (Compiler_pragma cp) -> [("pragma", json_str cp)]
+      | None -> []);
+    [
     ("what", json_str "module");
     ("name", json_id mod_name);
     ("need_magic", json_bool (usf.magic));
     ("need_dummy", json_bool (usf.mldummy));
     ("used_modules", json_list
       (List.map (fun mf -> json_str (file_of_modfile mf)) used_modules))
-  ]
-
+  ]])
 
 (*s Pretty-printing of types. *)
 

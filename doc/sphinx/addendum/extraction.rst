@@ -571,6 +571,12 @@ Additional settings
    This :term:`option` provides a comment that is
    included at the beginning of the output files.
 
+.. opt:: Extraction File Pragma @string
+
+   This :term:`option` provides a compiler pragma that is
+   included at the beginning of the output files.
+   ``Set Extraction File Pragma "OPTIONS_GHC -cpp -XMagicHash".``
+
 .. opt:: Extraction Flag @natural
 
    This :term:`option` controls which optimizations are used during extraction, providing a finer-grained

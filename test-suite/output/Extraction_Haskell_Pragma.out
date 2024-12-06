@@ -1,0 +1,9 @@
+{-# OPTIONS_GHC -cpp -XMagicHash #-}
+
+module Main where
+
+import qualified Prelude
+
+data Nat =
+   O
+ | S Nat
