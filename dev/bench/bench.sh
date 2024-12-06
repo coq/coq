@@ -49,7 +49,7 @@ check_variable () {
 : "${old_coq_version:=dev}"
 : "${num_of_iterations:=1}"
 : "${timeout:=3h}"
-: "${coq_opam_packages:=coq-stdlib coq-test-suite coq-bignums coq-hott coq-performance-tests-lite coq-engine-bench-lite coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-mathcomp-analysis coq-math-classes coq-corn coq-compcert coq-equations coq-metacoq-utils coq-metacoq-common coq-metacoq-template coq-metacoq-pcuic coq-metacoq-safechecker coq-metacoq-erasure coq-metacoq-translations coq-color coq-coqprime coq-coqutil coq-bedrock2 coq-rewriter coq-fiat-core coq-fiat-parsers coq-fiat-crypto-with-bedrock coq-unimath coq-coquelicot coq-iris-examples coq-verdi coq-verdi-raft coq-fourcolor coq-rewriter-perf-SuperFast coq-vst coq-category-theory coq-neural-net-interp-computed-lite}"
+: "${coq_opam_packages:=coq-test-suite coq-bignums coq-hott coq-performance-tests-lite coq-engine-bench-lite coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-mathcomp-analysis coq-math-classes coq-corn coq-compcert coq-equations coq-metacoq-utils coq-metacoq-common coq-metacoq-template coq-metacoq-pcuic coq-metacoq-safechecker coq-metacoq-erasure coq-metacoq-translations coq-color coq-coqprime coq-coqutil coq-bedrock2 coq-rewriter coq-fiat-core coq-fiat-parsers coq-fiat-crypto-with-bedrock coq-unimath coq-coquelicot coq-iris-examples coq-verdi coq-verdi-raft coq-fourcolor coq-rewriter-perf-SuperFast coq-vst coq-category-theory coq-neural-net-interp-computed-lite}"
 : "${coq_native:=}"
 
 # example: coq-hott.dev git+https://github.com/some-user/coq-hott#some-branch
@@ -426,35 +426,6 @@ create_opam() {
 
     if [ ! -z "$coq_native" ]; then opam install coq-native; fi
 
-    for package in coq-core rocq-core coqide-server; do
-        export COQ_OPAM_PACKAGE=$package
-        export COQ_ITERATION=1
-
-        # build stdlib with -j 1 to get nicer timings
-        local this_nproc=$number_of_processors
-        if [ "$package" = rocq-core ]; then this_nproc=1; fi
-
-        _RES=0
-        opam pin add -y -b -j "$this_nproc" --kind=path $package.$COQ_VER . \
-             3>$log_dir/$package.$RUNNER.opam_install.1.stdout.log 1>&3 \
-             4>$log_dir/$package.$RUNNER.opam_install.1.stderr.log 2>&4 || \
-            _RES=$?
-        if [ $_RES = 0 ]; then
-            echo "$package ($RUNNER) installed successfully"
-        else
-            echo "ERROR: \"opam install $package.$coq_opam_version\" has failed (for the $RUNNER commit = $COQ_HASH_LONG)."
-            zulip_edit "Bench failed: could not install $package ($RUNNER)."
-            exit 1
-        fi
-
-        # we don't multi compile coq for now (TODO some other time)
-        # the render needs all the files so copy them around
-        for it in $(seq 2 $num_of_iterations); do
-            cp "$log_dir/$package.$RUNNER.1.time" "$log_dir/$package.$RUNNER.$it.time"
-            cp "$log_dir/$package.$RUNNER.1.perf" "$log_dir/$package.$RUNNER.$it.perf"
-        done
-    done
-
 }
 
 # Create an OPAM-root to which we will install the NEW version of Coq.
@@ -467,14 +438,9 @@ create_opam "OLD" "$old_ocaml_version" "$old_coq_commit" "$old_coq_version" \
             "$old_coq_opam_archive_dir" "$old_opam_override_urls" "$old_ocaml_flambda"
 old_coq_commit_long="$COQ_HASH_LONG"
 
-# Packages which appear in the rendered table
-# Deliberately don't include the "coqide-server" and "coq" packages
-installable_coq_opam_packages="coq-core rocq-core"
+installable_coq_opam_packages=""
 
-echo "DEBUG: $render_results $log_dir $num_of_iterations 0 user_time_pdiff $installable_coq_opam_packages"
-rendered_results="$($render_results "$log_dir" $num_of_iterations 0 user_time_pdiff $installable_coq_opam_packages)"
-echo "${rendered_results}"
-zulip_edit "Benching continues..."
+zulip_edit "Opam setup, benching continues..."
 
 format_vosize() {
   old=$(stat -c%s $2)
@@ -484,34 +450,8 @@ format_vosize() {
   echo "$1 $old $new $diff $diffpercent%"
 }
 
-# HTML for stdlib
-# NB: unlike coq_makefile packages, stdlib produces foo.timing not foo.v.timing
-new_base_path=$new_opam_root/ocaml-NEW/.opam-switch/build/rocq-core.dev/_build/default/theories/
-old_base_path=$old_opam_root/ocaml-OLD/.opam-switch/build/rocq-core.dev/_build/default/theories/
-for vo in $(cd $new_base_path/; find . -name '*.vo'); do
-    if [ -e $old_base_path/$vo ]; then
-        format_vosize "$coq_opam_package/$vo" "$old_base_path/$vo" "$new_base_path/$vo" >> "$log_dir/vosize.log"
-    fi
-    if [ -e $old_base_path/${vo%%.vo}.timing ] && \
-           [ -e $new_base_path/${vo%%.vo}.timing ]; then
-        mkdir -p $working_dir/html/rocq-core/$(dirname $vo)/
-        # NB: sometimes randomly fails
-        $timelog2html $new_base_path/${vo%%o} \
-                      $old_base_path/${vo%%.vo}.timing \
-                      $new_base_path/${vo%%.vo}.timing > \
-                      $working_dir/html/rocq-core/${vo%%o}.html ||
-            echo "Failed (code $?):" $timelog2html $new_base_path/${vo%%o} \
-                 $old_base_path/${vo%%.vo}.timing \
-                 $new_base_path/${vo%%.vo}.timing
-    fi
-done
-
 # --------------------------------------------------------------------------------
 # Measure the compilation times of the specified OPAM packages in both switches
-
-# Sort the opam packages
-sorted_coq_opam_packages=$("${program_path}/sort-by-deps.sh" ${coq_opam_packages})
-echo "sorted_coq_opam_packages = ${sorted_coq_opam_packages}"
 
 failed_packages=
 skipped_packages=
@@ -521,9 +461,19 @@ export TIMING=1
 export PROFILING=1
 export COQ_PROFILE_COMPONENTS=command,parse_command,partac.perform
 
-for coq_opam_package in $sorted_coq_opam_packages; do
+# packages tied to the coq commit need to be pinned accordingly
+core_packages='coq-core rocq-core coq-stdlib coqide-server coq'
+
+for coq_opam_package in $core_packages $coq_opam_packages; do
 
     export COQ_OPAM_PACKAGE=$coq_opam_package
+    is_core=
+    for core in $core_packages; do
+      if [ "$coq_opam_package" = "$core" ]; then is_core=1; fi
+    done
+    if [[ $is_core ]]; then
+      : not getting info from opam repo
+    else
     if [ ! -z "$BENCH_DEBUG" ]; then
         opam list
         opam show $coq_opam_package || {
@@ -539,6 +489,7 @@ $coq_opam_package (unknown package)"
             continue
             }
     fi
+    fi
     echo "coq_opam_package = $coq_opam_package"
 
     for RUNNER in NEW OLD; do
@@ -547,11 +498,31 @@ $coq_opam_package (unknown package)"
 
         # perform measurements for the NEW/OLD commit (provided by the user)
         if [ $RUNNER = "NEW" ]; then
-            export OPAMROOT="$new_opam_root"
-            echo "Testing NEW commit: $(date)"
+          export OPAMROOT="$new_opam_root"
+          COQ_HASH=$new_coq_commit_long
+          echo "Testing NEW commit: $(date)"
         else
             export OPAMROOT="$old_opam_root"
+            COQ_HASH=$old_coq_commit_long
             echo "Testing OLD commit: $(date)"
+        fi
+
+        git checkout -q $COQ_HASH
+
+        if [ "$coq_opam_package" = rocq-core ] && ! [ -e $coq_opam_package.opam ]; then
+          echo "Skipping $coq_opam_package for $RUNNER"
+          continue 2
+        fi
+
+        if [ -e "$coq_opam_package.opam" ]; then
+          local_opam_dir=.
+        elif [ -e "stdlib/$coq_opam_package.opam" ]; then
+          local_opam_dir=stdlib
+        else
+          local_opam_dir=
+        fi
+        if [[ $local_opam_dir ]]; then
+          opam pin add -ny "$coq_opam_package.dev" -k path $local_opam_dir
         fi
 
         eval $(opam env)
@@ -624,7 +595,7 @@ $coq_opam_package (in $RUNNER)"
     cat $log_dir/$coq_opam_package.$RUNNER.1.*.perf || true
 
     # Print the intermediate results after we finish benchmarking each OPAM package
-    if [ "$coq_opam_package" = "$(echo $sorted_coq_opam_packages | sed 's/ /\n/g' | tail -n 1)" ]; then
+    if [ "$coq_opam_package" = "$(echo $coq_opam_packages | sed 's/ /\n/g' | tail -n 1)" ]; then
 
         # It does not make sense to print the intermediate results when
         # we finished bechmarking the very last OPAM package because the
@@ -736,8 +707,8 @@ echo "INFO: workspace = ${CI_JOB_URL:-.}/artifacts/browse/${bench_dirname}"
 if [ -z "$installable_coq_opam_packages" ]; then
     # Tell the user that none of the OPAM-package(s) the user provided
     # /are installable.
-    printf "\n\nINFO: failed to install: $sorted_coq_opam_packages"
-    coqbot_update_comment "done" "" "$sorted_coq_opam_packages"
+    printf "\n\nINFO: failed to install: $coq_opam_packages"
+    coqbot_update_comment "done" "" "$coq_opam_packages"
     exit 1
 fi
 
@@ -761,7 +732,7 @@ if [ -n "$failed_packages" ]; then
 $skipped_packages"
     fi
 else # in case the failed package detection is bugged
-    not_installable_coq_opam_packages=$(comm -23 <(echo $sorted_coq_opam_packages | sed 's/ /\n/g' | sort | uniq) <(echo $installable_coq_opam_packages | sed 's/ /\n/g' | sort | uniq) | sed 's/\t//g')
+    not_installable_coq_opam_packages=$(comm -23 <(echo $coq_opam_packages | sed 's/ /\n/g' | sort | uniq) <(echo $installable_coq_opam_packages | sed 's/ /\n/g' | sort | uniq) | sed 's/\t//g')
 fi
 
 coqbot_update_comment "done" "${rendered_results}" "${not_installable_coq_opam_packages}"
