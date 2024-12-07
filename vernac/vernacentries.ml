@@ -1030,9 +1030,6 @@ let primitive_proj =
   | Some t -> return t
   | None -> return (primitive_flag ())
 
-let { Goptions.get = do_auto_prop_lowering } =
-  Goptions.declare_bool_option_and_ref ~key:["Automatic";"Proposition";"Inductives"] ~value:true ()
-
 let mode_attr =
   let open Attributes in
   let open Notations in
@@ -1096,8 +1093,7 @@ let preprocess_inductive_decl ~atts kind indl =
           ++ private_ind ++ typing_flags ++ prim_proj_attr ++ hint_mode_attr)
         atts)
   in
-  let auto_prop_lowering = do_auto_prop_lowering () in
-  let flags = { ComInductive.template; cumulative; poly; finite; auto_prop_lowering; mode } in
+  let flags = { ComInductive.template; cumulative; poly; finite; mode } in
   if Option.has_some is_defclass then
     (* Definitional class case *)
     let (id, bl, c, l) = Option.get is_defclass in

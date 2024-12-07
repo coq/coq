@@ -17,7 +17,6 @@ type flags = {
   poly : bool;
   cumulative : bool;
   template : bool option;
-  auto_prop_lowering : bool;
   finite : Declarations.recursivity_kind;
   mode : Hints.hint_mode list option;
 }
@@ -130,8 +129,7 @@ sig
   (** Returns the modified arities (the result sort may be replaced by Prop).
       Should be called with minimized universes. *)
   val inductive_levels
-    : auto_prop_lowering:bool
-    -> Environ.env
+    : Environ.env
     -> Evd.evar_map
     -> poly:bool
     -> indnames:Names.Id.t list
