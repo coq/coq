@@ -1746,6 +1746,13 @@ let rec invert_definition unify flags choose imitate_defs
               add_conv_oriented_pb (None,env',mkEvar ev'',mkEvar ev') evd in
           evdref := evd;
           evar'')
+    | App (f, args) when EConstr.isLambda !evdref f ->
+        let p = !progress in
+        progress := true;
+        (try
+          map_constr_with_full_binders env' !evdref (fun d (env,k) -> push_rel d env, k+1)
+                                        imitate envk t
+        with _ -> progress := p; imitate envk (whd_beta env' !evdref t))
     | _ ->
         progress := true;
         match
