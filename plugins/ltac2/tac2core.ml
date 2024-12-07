@@ -900,6 +900,9 @@ let () =
 
 (** Patterns *)
 
+let () = define "pattern_of_constr" (constr @-> eret pattern) @@ fun c env sigma ->
+  Patternops.pattern_of_constr env sigma c
+
 let () =
   define "pattern_empty_context"
     (ret (repr_ext val_matching_context))

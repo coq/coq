@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Ltac2.Init.
+Require Import Ltac2.Init Ltac2.Pattern.
 
 (** ML-facing types *)
 
@@ -35,6 +35,10 @@ Ltac2 Type clause := {
   on_hyps : (ident * occurrences * hyp_location_flag) list option;
   on_concl : occurrences;
 }.
+
+Ltac2 default_clause : clause :=
+  { on_hyps := None;
+    on_concl := AllOccurrences }.
 
 Ltac2 Type reference := [
 | VarRef (ident)
@@ -181,6 +185,10 @@ Ltac2 @ external eval_vm : (pattern * occurrences) option -> constr -> constr :=
 Ltac2 @ external eval_native : (pattern * occurrences) option -> constr -> constr := "coq-core.plugins.ltac2" "eval_native".
 
 Ltac2 @ external change : pattern option -> (constr array -> constr) -> clause -> unit := "coq-core.plugins.ltac2" "tac_change".
+
+Ltac2 change_constr (from:constr) (into:constr) (cl:clause) :=
+  let p := Pattern.pattern_of_constr from in
+  change (Some p) (fun _ => into) cl.
 
 Ltac2 @ external rewrite : evar_flag -> rewriting list -> clause -> (unit -> unit) option -> unit := "coq-core.plugins.ltac2" "tac_rewrite".
 

@@ -13,6 +13,9 @@ Require Ltac2.Control.
 
 Ltac2 Type t := pattern.
 
+Ltac2 @external pattern_of_constr : constr -> pattern := "coq-core.plugins.ltac2" "pattern_of_constr".
+(** Returns a pattern which matches the given constr. Undefined evars are turned into wildcards. *)
+
 Ltac2 Type context.
 
 Ltac2 Type match_kind := [
