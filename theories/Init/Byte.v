@@ -16,7 +16,7 @@ Require Import Corelib.Init.Logic.
 Require Import Corelib.Init.Specif.
 Require Corelib.Init.Nat.
 
-Declare ML Module "coq-core.plugins.number_string_notation".
+Declare ML Module "rocq-runtime.plugins.number_string_notation".
 
 (** We define an inductive for use with the [String Notation] command
     which contains all ascii characters.  We use 256 constructors for

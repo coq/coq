@@ -16,7 +16,7 @@ open Classes
 
 }
 
-DECLARE PLUGIN "coq-core.plugins.ltac"
+DECLARE PLUGIN "rocq-runtime.plugins.ltac"
 
 (** Options: depth, debug and transparency settings. *)
 

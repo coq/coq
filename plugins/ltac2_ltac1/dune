@@ -1,7 +1,11 @@
 (library
  (name ltac2_ltac1_plugin)
- (public_name coq-core.plugins.ltac2_ltac1)
+ (public_name rocq-runtime.plugins.ltac2_ltac1)
  (synopsis "Ltac2 and Ltac1 interoperability plugin")
  (libraries ltac_plugin ltac2_plugin))
+
+(deprecated_library_name
+ (old_public_name coq-core.plugins.ltac2_ltac1)
+ (new_public_name rocq-runtime.plugins.ltac2_ltac1))
 
 (coq.pp (modules g_ltac2_ltac1))

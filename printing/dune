@@ -1,6 +1,10 @@
 (library
  (name printing)
  (synopsis "Coq's Term Pretty Printing Library")
- (public_name coq-core.printing)
+ (public_name rocq-runtime.printing)
  (wrapped false)
  (libraries parsing proofs))
+
+(deprecated_library_name
+ (old_public_name coq-core.printing)
+ (new_public_name rocq-runtime.printing))

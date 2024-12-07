@@ -2,7 +2,7 @@
 (executable
  (name coqdep)
  (public_name coqdep)
- (package coq-core)
+ (package rocq-runtime)
  (modes exe byte)
  (modules coqdep)
  (libraries coqdeplib))

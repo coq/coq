@@ -304,7 +304,7 @@ object(self)
 
 end
 
-class script_view (tv : source_view) (ct : Rocq.rocqtop) =
+class script_view (tv : source_view) (ct : RocqDriver.rocqtop) =
 
 let view = new GSourceView3.source_view (Gobject.unsafe_cast tv) in
 let provider = new Wg_Completion.completion_provider view#buffer ct in

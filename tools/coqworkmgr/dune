@@ -1,13 +1,17 @@
 (library
  (name coqworkmgrlib)
- (public_name coq-core.coqworkmgrapi)
+ (public_name rocq-runtime.coqworkmgrapi)
  (modules coqworkmgrApi)
  (wrapped false)
  (libraries str unix))
 
+(deprecated_library_name
+ (old_public_name coq-core.coqworkmgrapi)
+ (new_public_name rocq-runtime.coqworkmgrapi))
+
 (executable
  (name coqworkmgr)
  (public_name coqworkmgr)
- (package coq-core)
+ (package rocq-runtime)
  (modules coqworkmgr)
  (libraries coqworkmgrlib))

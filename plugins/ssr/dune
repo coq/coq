@@ -1,9 +1,13 @@
 (library
  (name ssreflect_plugin)
- (public_name coq-core.plugins.ssreflect)
+ (public_name rocq-runtime.plugins.ssreflect)
  (synopsis "Rocq's ssreflect plugin")
  (modules_without_implementation ssrast)
  (flags :standard -open Gramlib)
- (libraries coq-core.plugins.ssrmatching))
+ (libraries rocq-runtime.plugins.ssrmatching))
+
+(deprecated_library_name
+ (old_public_name coq-core.plugins.ssreflect)
+ (new_public_name rocq-runtime.plugins.ssreflect))
 
 (coq.pp (modules ssrvernac ssrparser ssrtacs))

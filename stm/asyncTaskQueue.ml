@@ -109,6 +109,11 @@ module Make(T : Task) () = struct
 
   let uid = ref 0
 
+  let get_toplevel_path top =
+    let dir = Findlib.package_directory "rocq-runtime" in
+    let exe = if Sys.(os_type = "Win32" || os_type = "Cygwin") then ".exe" else "" in
+    Filename.concat dir (top^exe)
+
   let spawn ~spawn_args id priority =
     let name = Printf.sprintf "%s:%d:%d" T.name id !uid in
     incr uid;
@@ -124,7 +129,7 @@ module Make(T : Task) () = struct
         in
         Array.of_list (wselect :: spawn_args @ worker_opts) in
       let env = Array.append (T.extra_env ()) (Unix.environment ()) in
-      let worker_name = System.get_toplevel_path ("coqworker") in
+      let worker_name = get_toplevel_path "coqworker" in
       Worker.spawn ~env worker_name args in
     name, proc, CThread.prepare_in_channel_for_thread_friendly_io ic, oc
 

@@ -3,7 +3,7 @@
 ;  (alias plugin-tutorial)
 ;  (deps
 ;   (source_tree .)
-;   (package coq-core)
+;   (package rocq-runtime)
 ;    ../../tools/CoqMakefile.in
 ;    ../../theories/Init/Prelude.vo)
 ;  (action

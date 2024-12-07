@@ -7,7 +7,7 @@ Ltac2 foo := ().
 Ltac2 Notation bar := ().
 
 #[deprecated(note="test_external")]
-Ltac2 @ external qux : 'a array -> int := "coq-core.plugins.ltac2" "array_length".
+Ltac2 @ external qux : 'a array -> int := "rocq-runtime.plugins.ltac2" "array_length".
 (* Randomly picked external function *)
 
 Ltac2 Eval foo.

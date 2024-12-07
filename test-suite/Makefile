@@ -85,11 +85,7 @@ coqdoc := $(BIN)coqdoc
 coqtop := $(BIN)coqtop -q -test-mode -R prerequisite TestSuite
 coqtopbyte := $(BIN)coqtop.byte -q
 
-ifeq ($(BEST),opt)
-coqidetop := $(BIN)coqidetop.opt
-else
-coqidetop := $(BIN)coqidetop.byte
-endif
+coqidetop := $(BIN)coqidetop
 
 coqc_interactive := $(coqc) -test-mode
 coqdep := $(BIN)coqdep
@@ -338,7 +334,7 @@ unit-tests: $(UNIT_LOGFILES)
 # Build executable, run it to generate log file
 unit-tests/%.ml.log: unit-tests/%.ml unit-tests/src/$(UNIT_LINK)
 	$(SHOW) 'TEST      $<'
-	$(HIDE)$(OCAMLBEST) -w -29 -linkpkg -package coq-core.toplevel,ounit2 \
+	$(HIDE)$(OCAMLBEST) -w -29 -linkpkg -package rocq-runtime.toplevel,ounit2 \
 	     -I unit-tests/src $(UNIT_LINK) $< -o $<.test;
 	$(HIDE)$(call WITH_TIMER,$@,./$<.test)
 	$(HIDE)$(call REPORT_TIMER,$@)

@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-DECLARE PLUGIN "coq-core.plugins.ltac2"
+DECLARE PLUGIN "rocq-runtime.plugins.ltac2"
 
 {
 
@@ -973,7 +973,7 @@ let rules = [
   )
 ] in
 
-  Egramml.grammar_extend ~plugin_uid:("coq-core.plugins.ltac2", "g_ltac2.mlg:adhoc1")
+  Egramml.grammar_extend ~plugin_uid:("rocq-runtime.plugins.ltac2", "g_ltac2.mlg:adhoc1")
     Procq.Constr.term (Procq.Reuse (Some"0", rules))
 
 

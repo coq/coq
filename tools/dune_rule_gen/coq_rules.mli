@@ -48,7 +48,7 @@ module Context : sig
     -> rule:Coq_module.Rule_type.t (* quick, native, etc... *)
     -> async:bool
     -> dir_info:Coq_module.t Dir_info.t (* contents of the directory scan *)
-    -> split:bool (* whether we are building coq-core + rocq-core or only rocq-core *)
+    -> split:bool (* whether we are building rocq-runtime + rocq-core or only rocq-core *)
     -> t
 
 end

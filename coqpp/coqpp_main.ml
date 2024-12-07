@@ -693,7 +693,7 @@ let pr_ast fmt = function
 | ArgumentExt arg -> fprintf fmt "%a@\n" ArgumentExt.print_ast arg
 
 let help () =
-  Format.eprintf "Usage: coqpp file.mlg@\n%!";
+  Format.eprintf "Usage: rocq preprocess-mlg file.mlg@\n%!";
   exit 1
 
 let parse () =
@@ -712,7 +712,7 @@ let output_name file =
   | Invalid_argument _ ->
     fatal "Input file must have an extension for coqpp [input.ext -> input.ml]"
 
-let () =
+let main () =
   let file = parse () in
   let output = output_name file in
   let ast = parse_file file in
