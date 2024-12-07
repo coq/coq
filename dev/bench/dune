@@ -24,3 +24,8 @@
  (package coq-core)
  (modules timelog2html)
  (libraries benchlib))
+
+(executable
+ (name coqprof2html)
+ (modules coqprofparser coqprof2html)
+ (libraries yojson benchlib))
