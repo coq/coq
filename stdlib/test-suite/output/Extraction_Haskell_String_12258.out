@@ -1,9 +1,7 @@
 {-# OPTIONS_GHC -cpp -XMagicHash #-}
 {- For Hugs, use the option -F"cpp -P -traditional" -}
 
-{- IMPORTANT: If you change this file, make sure that running [cp
-   Extraction_Haskell_String_12258.out Extraction_Haskell_String_12258.hs &&
-   ghc -o test Extraction_Haskell_String_12258.hs] succeeds -}
+{- IMPORTANT: If you change this file, make sure that running [cp Extraction_Haskell_String_12258.out Extraction_Haskell_String_12258.hs && ghc -o test Extraction_Haskell_String_12258.hs] succeeds -}
 
 module Main where
 
