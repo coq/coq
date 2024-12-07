@@ -80,7 +80,7 @@
 ; Use summary.log as the target
 (alias
  (name runtest)
- (package rocq-core)
+ (package coq)
  (deps test-suite/summary.log))
 
 ; For make compat
