@@ -923,7 +923,7 @@ let { Goptions.get = is_polymorphic_inductive_cumulativity } =
     ~value:false
     ()
 
-let polymorphic_cumulative ~is_defclass =
+let polymorphic_cumulative =
   let error_poly_context () =
     user_err
       Pp.(str "The cumulative attribute can only be used in a polymorphic context.");
@@ -935,8 +935,6 @@ let polymorphic_cumulative ~is_defclass =
     (bool_attribute ~name:"polymorphic"
      ++ bool_attribute ~name:"cumulative")
   >>= fun (poly,cumul) ->
-  if is_defclass && Option.has_some cumul
-  then user_err Pp.(str "Definitional classes do not support the inductive cumulativity attribute.");
   match poly, cumul with
   | Some poly, Some cumul ->
      (* Case of Polymorphic|Monomorphic Cumulative|NonCumulative Inductive
@@ -971,7 +969,7 @@ let should_treat_as_uniform () =
   else ComInductive.NonUniformParameters
 
 (* [XXX] EGJA: several arguments not used here *)
-let vernac_record ~template udecl ~cumulative k ~poly ?typing_flags ~primitive_proj finite ?mode records =
+let vernac_record records =
   let map ((is_coercion, name), binders, sort, nameopt, cfs, ido) =
     let idbuild = match nameopt with
     | None -> CAst.map (Nameops.add_prefix "Build_") name
@@ -981,10 +979,7 @@ let vernac_record ~template udecl ~cumulative k ~poly ?typing_flags ~primitive_p
     Record.Ast.{ name; is_coercion; binders; cfs; idbuild; sort; default_inhabitant_id }
   in
   let records = List.map map records in
-  match typing_flags with
-  | Some _ ->
-    CErrors.user_err (Pp.str "Typing flags are not yet supported for records.")
-  | None -> records
+  records
 
 let extract_inductive_udecl (indl:(inductive_expr * notation_declaration list) list) =
   match indl with
@@ -1062,94 +1057,83 @@ module Preprocessed_Mind_decl = struct
     | Inductive of inductive
 end
 
-let preprocess_inductive_decl ~atts kind indl =
-  let udecl, indl = extract_inductive_udecl indl in
-  let is_defclass = match kind, indl with
-  | Class _, [ ( id , bl , c , Constructors [l]), [] ] -> Some (id, bl, c, l)
-  | _ -> None
+let preprocess_defclass ~atts udecl (id, bl, c, l) =
+  let poly, mode =
+    Attributes.(parse Notations.(polymorphic ++ mode_attr) atts)
   in
-  let finite = finite_of_kind kind in
-  let is_record = function
-  | ((_ , _ , _ , RecordDecl _), _) -> true
-  | _ -> false
+  let auto_prop_lowering = do_auto_prop_lowering () in
+  let flags = {
+    (* flags which don't matter for definitional classes *)
+    ComInductive.template=None; cumulative=false; finite=BiFinite;
+    (* real flags *)
+    poly; auto_prop_lowering; mode;
+  }
   in
-  let is_constructor = function
-  | ((_ , _ , _ , Constructors _), _) -> true
-  | _ -> false
+  let bl = match bl with
+    | bl, None -> bl
+    | _ -> CErrors.user_err Pp.(str "Definitional classes do not support the \"|\" syntax.")
   in
-  (* We only allow the #[projections(primitive)] attribute
-     for records. *)
-  let prim_proj_attr : bool Attributes.attribute =
-    if List.for_all is_record indl then primitive_proj
-    else Notations.return false
+  if fst id = AddCoercion then
+    user_err Pp.(str "Definitional classes do not support the \">\" syntax.");
+  let ((attr, rf_coercion, rf_instance), (lid, ce)) = l in
+  let rf_locality = match rf_coercion, rf_instance with
+    | AddCoercion, _ | _, BackInstance -> parse option_locality attr
+    | _ -> let () = unsupported_attributes attr in Goptions.OptDefault in
+  let f = AssumExpr ((make ?loc:lid.loc @@ Name lid.v), [], ce),
+          { rf_coercion ; rf_reversible = None ; rf_instance ; rf_priority = None ;
+            rf_locality ; rf_notation = [] ; rf_canonical = true } in
+  let recordl = [id, bl, c, None, [f], None] in
+  let kind = Class true in
+  let records = vernac_record recordl in
+  Preprocessed_Mind_decl.(Record { flags; udecl; primitive_proj=false; kind; records })
+
+let preprocess_record ~atts udecl kind indl =
+  let () = match kind with
+    | Variant ->
+      user_err (str "The Variant keyword does not support syntax { ... }.")
+    | Record | Structure | Class _ | Inductive_kw | CoInductive -> ()
   in
+  let check_where ((_, _, _, _), wh) = match wh with
+    | [] -> ()
+    | _ :: _ ->
+      user_err (str "\"where\" clause not supported for records.")
+  in
+  let () = List.iter check_where indl in
   let hint_mode_attr : Hints.hint_mode list option Attributes.attribute =
     match kind with
     | Class _ -> mode_attr
     | _ -> Notations.return None
   in
-  let ((((template, (poly, cumulative)), private_ind), typing_flags), primitive_proj), mode =
+  let ((template, (poly, cumulative)), primitive_proj), mode =
     Attributes.(
       parse Notations.(
           template
-          ++ polymorphic_cumulative ~is_defclass:(Option.has_some is_defclass)
-          ++ private_ind ++ typing_flags ++ prim_proj_attr ++ hint_mode_attr)
+          ++ polymorphic_cumulative
+          ++ primitive_proj ++ hint_mode_attr)
         atts)
   in
   let auto_prop_lowering = do_auto_prop_lowering () in
+  let finite = finite_of_kind kind in
   let flags = { ComInductive.template; cumulative; poly; finite; auto_prop_lowering; mode } in
-  if Option.has_some is_defclass then
-    (* Definitional class case *)
-    let (id, bl, c, l) = Option.get is_defclass in
-    let bl = match bl with
-      | bl, None -> bl
-      | _ -> CErrors.user_err Pp.(str "Definitional classes do not support the \"|\" syntax.")
-    in
-    if fst id = AddCoercion then
-      user_err Pp.(str "Definitional classes do not support the \">\" syntax.");
-    let ((attr, rf_coercion, rf_instance), (lid, ce)) = l in
-    let rf_locality = match rf_coercion, rf_instance with
-      | AddCoercion, _ | _, BackInstance -> parse option_locality attr
-      | _ -> let () = unsupported_attributes attr in Goptions.OptDefault in
-    let f = AssumExpr ((make ?loc:lid.loc @@ Name lid.v), [], ce),
-            { rf_coercion ; rf_reversible = None ; rf_instance ; rf_priority = None ;
-              rf_locality ; rf_notation = [] ; rf_canonical = true } in
-    let recordl = [id, bl, c, None, [f], None] in
-    let kind = Class true in
-    let records = vernac_record ~template udecl ~cumulative kind ~poly ?typing_flags ~primitive_proj finite ?mode recordl in
-    indl, Preprocessed_Mind_decl.(Record { flags; udecl; primitive_proj; kind; records })
-  else if List.for_all is_record indl then
-    (* Mutual record case *)
-    let () = match kind with
-      | Variant ->
-        user_err (str "The Variant keyword does not support syntax { ... }.")
-      | Record | Structure | Class _ | Inductive_kw | CoInductive -> ()
-    in
-    let check_where ((_, _, _, _), wh) = match wh with
-    | [] -> ()
-    | _ :: _ ->
-      user_err (str "\"where\" clause not supported for records.")
-    in
-    let () = List.iter check_where indl in
-    let parse_record_field_attr (x, f) =
-      let attr =
-        let rev = match f.rfu_coercion with
-          | AddCoercion -> reversible
-          | NoCoercion -> Notations.return None in
-        let loc = match f.rfu_coercion, f.rfu_instance with
-          | AddCoercion, _ | _, BackInstance -> option_locality
-          | _ -> Notations.return Goptions.OptDefault in
-        Notations.(rev ++ loc ++ canonical_field) in
-      let (rf_reversible, rf_locality), rf_canonical = parse attr f.rfu_attrs in
-      x,
-      { rf_coercion = f.rfu_coercion;
-        rf_reversible;
-        rf_instance = f.rfu_instance;
-        rf_priority = f.rfu_priority;
-        rf_locality;
-        rf_notation = f.rfu_notation;
-        rf_canonical } in
-    let unpack ((id, bl, c, decl), _) = match decl with
+  let parse_record_field_attr (x, f) =
+    let attr =
+      let rev = match f.rfu_coercion with
+        | AddCoercion -> reversible
+        | NoCoercion -> Notations.return None in
+      let loc = match f.rfu_coercion, f.rfu_instance with
+        | AddCoercion, _ | _, BackInstance -> option_locality
+        | _ -> Notations.return Goptions.OptDefault in
+      Notations.(rev ++ loc ++ canonical_field) in
+    let (rf_reversible, rf_locality), rf_canonical = parse attr f.rfu_attrs in
+    x,
+    { rf_coercion = f.rfu_coercion;
+      rf_reversible;
+      rf_instance = f.rfu_instance;
+      rf_priority = f.rfu_priority;
+      rf_locality;
+      rf_notation = f.rfu_notation;
+      rf_canonical } in
+  let unpack ((id, bl, c, decl), _) = match decl with
     | RecordDecl (oc, fs, ido) ->
       let bl = match bl with
         | bl, None -> bl
@@ -1157,37 +1141,69 @@ let preprocess_inductive_decl ~atts kind indl =
       in
       (id, bl, c, oc, List.map parse_record_field_attr fs, ido)
     | Constructors _ -> assert false (* ruled out above *)
-    in
-    let kind = match kind with Class _ -> Class false | _ -> kind in
-    let recordl = List.map unpack indl in
-    let records = vernac_record ~template udecl ~cumulative kind ~poly ?typing_flags ~primitive_proj finite ?mode recordl in
-    indl, Preprocessed_Mind_decl.(Record { flags; udecl; primitive_proj; kind; records })
-  else if List.for_all is_constructor indl then
-    (* Mutual inductive case *)
-    let () = match kind with
+  in
+  let kind = match kind with Class _ -> Class false | _ -> kind in
+  let recordl = List.map unpack indl in
+  let records = vernac_record recordl in
+  Preprocessed_Mind_decl.(Record { flags; udecl; primitive_proj; kind; records })
+
+let preprocess_inductive ~atts udecl kind indl =
+  let () = match kind with
     | (Record | Structure) ->
       user_err (str "The Record keyword is for types defined using the syntax { ... }.")
     | Class _ ->
       user_err (str "Inductive classes not supported.")
     | Variant | Inductive_kw | CoInductive -> ()
-    in
-    let check_name ((na, _, _, _), _) = match na with
+  in
+  let check_name ((na, _, _, _), _) = match na with
     | (AddCoercion, _) ->
       user_err (str "Variant types do not handle the \"> Name\" \
-        syntax, which is reserved for records. Use the \":>\" \
-        syntax on constructors instead.")
+                     syntax, which is reserved for records. Use the \":>\" \
+                     syntax on constructors instead.")
     | _ -> ()
-    in
-    let () = List.iter check_name indl in
-    let unpack (((_, id) , bl, c, decl), ntn) = match decl with
+  in
+  let () = List.iter check_name indl in
+  let hint_mode_attr : Hints.hint_mode list option Attributes.attribute =
+    match kind with
+    | Class _ -> mode_attr
+    | _ -> Notations.return None
+  in
+  let (((template, (poly, cumulative)), private_ind), typing_flags), mode =
+    Attributes.(
+      parse Notations.(
+          template
+          ++ polymorphic_cumulative
+          ++ private_ind ++ typing_flags ++ hint_mode_attr)
+        atts)
+  in
+  let finite = finite_of_kind kind in
+  let auto_prop_lowering = do_auto_prop_lowering () in
+  let flags = { ComInductive.template; cumulative; poly; finite; auto_prop_lowering; mode } in
+  let unpack (((_, id) , bl, c, decl), ntn) = match decl with
     | Constructors l -> (id, bl, c, l), ntn
     | RecordDecl _ -> assert false (* ruled out above *)
-    in
-    let inductives = List.map unpack indl in
-    let uniform = should_treat_as_uniform () in
-    indl, Preprocessed_Mind_decl.(Inductive { flags; udecl; typing_flags; private_ind; uniform; inductives })
-  else
-    user_err (str "Mixed record-inductive definitions are not allowed.")
+  in
+  let inductives = List.map unpack indl in
+  let uniform = should_treat_as_uniform () in
+  Preprocessed_Mind_decl.(Inductive { flags; udecl; typing_flags; private_ind; uniform; inductives })
+
+let preprocess_inductive_decl ~atts kind indl =
+  let udecl, indl = extract_inductive_udecl indl in
+  let v = match kind, indl with
+  | Class _, [ ( id , bl , c , Constructors [l]), [] ] ->
+    preprocess_defclass ~atts udecl (id,bl,c,l)
+  | _ ->
+    if List.for_all (function
+        | ((_ , _ , _ , RecordDecl _), _) -> true
+        | _ -> false) indl
+    then preprocess_record ~atts udecl kind indl
+    else if List.for_all (function
+        | ((_ , _ , _ , Constructors _), _) -> true
+        | _ -> false) indl
+    then preprocess_inductive ~atts udecl kind indl
+    else user_err (str "Mixed record-inductive definitions are not allowed.")
+  in
+  indl, v
 
 let dump_inductive indl_for_glob decl =
   let open Preprocessed_Mind_decl in
