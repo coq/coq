@@ -385,9 +385,12 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
   Control.check_for_interrupt ();
   (* First head reduce both terms *)
   let ninfos = infos_with_reds infos.cnv_inf RedFlags.betaiotazeta in
-  let (hd1, v1 as appr1) = whd_stack ninfos infos.lft_tab (fst st1) (snd st1) in
-  let (hd2, v2 as appr2) = whd_stack ninfos infos.rgt_tab (fst st2) (snd st2) in
-  let appr1 = (lft1, appr1) and appr2 = (lft2, appr2) in
+  let appr1 = whd_stack ninfos infos.lft_tab (fst st1) (snd st1) in
+  let appr2 = whd_stack ninfos infos.rgt_tab (fst st2) (snd st2) in
+  eqwhnf cv_pb l2r infos (lft1, appr1) (lft2, appr2) cuniv
+
+(* assumes that appr1 and appr2 are in whnf *)
+and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2) cuniv =
   (** We delay the computation of the lifts that apply to the head of the term
       with [el_stack] inside the branches where they are actually used. *)
   (** Irrelevant terms are guaranteed to be [FIrrelevant], except for [FFlex],
@@ -450,7 +453,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         let r2 = unfold_ref_with_args infos.cnv_inf infos.rgt_tab fl2 v2 in
         match r1, r2 with
         | None, None -> raise NotConvertible
-        | Some t1, Some t2 ->
+        | Some (t1, v1), Some (t2, v2) ->
           (* else the oracle tells which constant is to be expanded *)
           let oracle = CClosure.oracle_of_infos infos.cnv_inf in
           let to_er fl =
@@ -459,18 +462,22 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
             | VarKey id -> Some (Conv_oracle.EvalVarRef id)
             | RelKey _ -> None
           in
+          let ninfos = infos_with_reds infos.cnv_inf RedFlags.betaiotazeta in
+          let () = Control.check_for_interrupt () in
           if Conv_oracle.oracle_order oracle l2r (to_er fl1) (to_er fl2) then
-            eqappr cv_pb l2r infos (lft1, t1) appr2 cuniv
+            let appr1 = whd_stack ninfos infos.lft_tab t1 v1 in
+            eqwhnf cv_pb l2r infos (lft1, appr1) appr2 cuniv
           else
-            eqappr cv_pb l2r infos appr1 (lft2, t2) cuniv
+            let appr2 = whd_stack ninfos infos.rgt_tab t2 v2 in
+            eqwhnf cv_pb l2r infos appr1 (lft2, appr2) cuniv
         | Some (t1, v1), None ->
           let all = RedFlags.(red_add_transparent all (red_transparent (info_flags infos.cnv_inf))) in
           let t1 = whd_stack (infos_with_reds infos.cnv_inf all) infos.lft_tab t1 v1 in
-          eqappr cv_pb l2r infos (lft1, t1) appr2 cuniv
+          eqwhnf cv_pb l2r infos (lft1, t1) appr2 cuniv
         | None, Some (t2, v2) ->
           let all = RedFlags.(red_add_transparent all (red_transparent (info_flags infos.cnv_inf))) in
           let t2 = whd_stack (infos_with_reds infos.cnv_inf all) infos.rgt_tab t2 v2 in
-          eqappr cv_pb l2r infos appr1 (lft2, t2) cuniv
+          eqwhnf cv_pb l2r infos appr1 (lft2, t2) cuniv
         )
 
     | (FProj (p1,r1,c1), FProj (p2, r2, c2)) ->
@@ -582,7 +589,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
               unfoldings, we perform reduction with all flags on. *)
             let all = RedFlags.(red_add_transparent all (red_transparent (info_flags infos.cnv_inf))) in
             let r1 = whd_stack (infos_with_reds infos.cnv_inf all) infos.lft_tab def1 v1 in
-            eqappr cv_pb l2r infos (lft1, r1) appr2 cuniv
+            eqwhnf cv_pb l2r infos (lft1, r1) appr2 cuniv
         | None ->
           (match c2 with
            | FConstruct ((ind2,_j2),u2) ->
@@ -600,7 +607,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           (** Symmetrical case of above. *)
           let all = RedFlags.(red_add_transparent all (red_transparent (info_flags infos.cnv_inf))) in
           let r2 = whd_stack (infos_with_reds infos.cnv_inf all) infos.rgt_tab def2 v2 in
-          eqappr cv_pb l2r infos appr1 (lft2, r2) cuniv
+          eqwhnf cv_pb l2r infos appr1 (lft2, r2) cuniv
         | None ->
           match c1 with
           | FConstruct ((ind1,_j1),u1) ->
