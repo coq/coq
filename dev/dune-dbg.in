@@ -8,6 +8,11 @@ while [[ $# -gt 0 ]]; do
             shift
             opts+=("-emacs")
             ;;
+        -I)
+          shift
+          opts+=("-I" "$1")
+          shift
+          ;;
         coqchk)
             shift
             exe=_build/default/checker/coqchk.bc
