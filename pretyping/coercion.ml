@@ -750,21 +750,21 @@ let rec inh_conv_coerce_to_fail ?loc ?use_coercions env sigma ?(flags=default_fl
       | _ ->
         Exninfo.iraise (NoCoercionNoUnifier (best_failed_sigma,e), info)
 
-let allow_all_but_patvars sigma =
+let allow_all_but_rrpat_evars sigma =
   let p evk =
     try
       let EvarInfo evi = Evd.find sigma evk in
-      match snd (Evd.evar_source evi) with Evar_kinds.MatchingVar _ -> false | _ -> true
+      match snd (Evd.evar_source evi) with Evar_kinds.RewriteRulePattern _ -> false | _ -> true
     with Not_found -> true
   in
   Evarsolve.AllowedEvars.from_pred p
 
-let default_flags_of_patvars env sigma ~patvars_abstract =
+let default_flags_of_patvars env sigma ~rrpat_evars_abstract =
   let flags = default_flags_of env in
-  if patvars_abstract then { flags with allowed_evars = allow_all_but_patvars sigma } else flags
+  if rrpat_evars_abstract then { flags with allowed_evars = allow_all_but_rrpat_evars sigma } else flags
 
 (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
-let inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions ?(patvars_abstract=false) rigidonly env sigma ?(flags=default_flags_of_patvars env sigma ~patvars_abstract) cj t =
+let inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions ?(rrpat_evars_abstract=false) rigidonly env sigma ?(flags=default_flags_of_patvars env sigma ~rrpat_evars_abstract) cj t =
   let (sigma, val', otrace) =
     try
       let (sigma, val', trace) = inh_conv_coerce_to_fail ?loc ?use_coercions env sigma ~flags rigidonly cj.uj_val cj.uj_type t in
@@ -796,15 +796,15 @@ let inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions ?(patva
   in
   (sigma,{ uj_val = val'; uj_type = t },otrace)
 
-let inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions ?patvars_abstract rigidonly env sigma ?flags cj t =
-  try inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions ?patvars_abstract rigidonly env sigma ?flags cj t
+let inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions ?rrpat_evars_abstract rigidonly env sigma ?flags cj t =
+  try inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions ?rrpat_evars_abstract rigidonly env sigma ?flags cj t
   with e when Option.has_some loc ->
     let _, info as iexn = Exninfo.capture e in
     match Loc.get_loc info with
     | Some _ -> Exninfo.iraise iexn
     | None -> Exninfo.iraise (e, Loc.add_loc info (Option.get loc))
 
-let inh_conv_coerce_to ?loc ~program_mode ~resolve_tc ?use_coercions ?patvars_abstract env sigma ?flags =
-  inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions ?patvars_abstract false ?flags env sigma
-let inh_conv_coerce_rigid_to ?loc ~program_mode ~resolve_tc ?use_coercions ?patvars_abstract env sigma ?flags =
-  inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions ?patvars_abstract true ?flags env sigma
+let inh_conv_coerce_to ?loc ~program_mode ~resolve_tc ?use_coercions ?rrpat_evars_abstract env sigma ?flags =
+  inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions ?rrpat_evars_abstract false ?flags env sigma
+let inh_conv_coerce_rigid_to ?loc ~program_mode ~resolve_tc ?use_coercions ?rrpat_evars_abstract env sigma ?flags =
+  inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions ?rrpat_evars_abstract true ?flags env sigma
