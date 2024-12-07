@@ -8,21 +8,4 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-module Dep : sig
-  type t =
-  | Require of string
-  (** module basename, to which we later append .vo or .vos *)
-  | Ml of string
-  (** plugin basename and byte extension, resolved from Declare Ml Module *)
-  | Other of string
-  (** load, meta, and external dependencies *)
-
-  module Set : CSet.ExtS with type elt = t
-end
-
-type t =
-  { name : string  (* This should become [module : Coq_module.t] eventually *)
-  ; deps : Dep.t list
-  }
-
-val make : name:string -> deps:Dep.t list -> t
+val static_toplevel_libs : string list
