@@ -517,6 +517,11 @@ let formatter dry file =
       (* note: max_indent should be < margin above, otherwise it's ignored *)
   ft
 
+let get_pragma () =
+  let p = file_pragma () in
+  if String.is_empty p then None
+  else Some (Compiler_pragma p)
+
 let get_comment () =
   let s = file_comment () in
   if String.is_empty s then None
@@ -543,11 +548,12 @@ let print_structure_to_file (fn,si,mo) dry struc =
   (* Print the implementation *)
   let cout = if dry then None else Option.map open_out fn in
   let ft = formatter dry cout in
+  let pragma = get_pragma () in
   let comment = get_comment () in
   begin try
     (* The real printing of the implementation *)
     set_phase Impl;
-    pp_with ft (d.preamble mo comment opened unsafe_needs);
+    pp_with ft (d.preamble mo pragma comment opened unsafe_needs);
     pp_with ft (d.pp_struct struc);
     Format.pp_print_flush ft ();
     Option.iter close_out cout;
