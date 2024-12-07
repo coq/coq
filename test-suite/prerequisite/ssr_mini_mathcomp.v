@@ -594,6 +594,15 @@ Fixpoint map s := if s is x :: s' then f x :: map s' else [::].
 
 End Map.
 
+Section MapComp.
+
+Variable T2 : Type.
+
+Lemma eq_map (f g : T -> T2) : f =1 g -> map f =1 map g.
+Proof. by move=> Ef; elim=> //= x s ->; rewrite Ef. Qed.
+
+End MapComp.
+
 Section SeqFind.
 
 Variable a : pred T.
