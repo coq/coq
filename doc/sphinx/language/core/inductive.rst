@@ -465,40 +465,42 @@ constructions.
       fix_definition ::= @ident_decl {* @binder } {? @fixannot } {? : @type } {? := @term } {? @decl_notations }
 
    Allows defining functions by pattern matching over inductive
-   objects using a fixed point construction. The meaning of this declaration is
-   to define :n:`@ident` as a recursive function with arguments specified by
-   the :n:`@binder`\s such that :n:`@ident` applied to arguments
-   corresponding to these :n:`@binder`\s has type :n:`@type`, and is
-   equivalent to the expression :n:`@term`. The type of :n:`@ident` is
-   consequently :n:`forall {* @binder }, @type` and its value is equivalent
-   to :n:`fun {* @binder } => @term`.
+   objects using a fixed point construction.
 
-   This command accepts the :attr:`program`,
-   :attr:`bypass_check(universes)`, and :attr:`bypass_check(guard)` attributes.
+   The basic form :n:`Fixpoint @ident {* @binder} { struct @ident } : @type := @term.
+   declares :n:`@ident` to be the recursive function with arguments
+   :n:`{* @binder}` and body :n:`@term` of type :n:`type`.
 
-   To be accepted, a :cmd:`Fixpoint` definition has to satisfy syntactical
-   constraints on a special argument called the decreasing argument. They
-   are needed to ensure that the :cmd:`Fixpoint` definition always terminates.
+   To be accepted, a :cmd:`Fixpoint` definition has to satisfy a syntactical
+   constraint on a special argument called the decreasing argument. This
+   is needed to ensure that the :cmd:`Fixpoint` definition always terminates.
    The point of the :n:`{struct @ident}` annotation (see :n:`@fixannot`) is to
    let the user tell the system which argument decreases along the recursive calls.
 
-   The :n:`{struct @ident}` annotation may be left implicit, in which case the
-   system successively tries arguments from left to right until it finds one
+   The :n:`{struct @ident}` annotation may be left implicit, in which case
+   Rocq successively tries arguments from left to right until it finds one
    that satisfies the decreasing condition.
 
-   :cmd:`Fixpoint` without the :attr:`program` attribute does not support the
-   :n:`wf` or :n:`measure` clauses of :n:`@fixannot`. See :ref:`program_fixpoint`.
+   The :n:`@type` annotation may be left implicit, in which case Rocq
+   attempts to infer it.
+
+   This command accepts the :attr:`local`, :attr:`universes(polymorphic)`, :attr:`program`,
+   :attr:`bypass_check(universes)`, :attr:`bypass_check(guard)`, :attr:`deprecated`,
+   :attr:`warn` and :attr:`using` attributes. The :attr:`program` attribute is needed
+   so that the :n:`wf` or :n:`measure` clauses of :n:`@fixannot` are
+   supported. See :ref:`program_fixpoint`.
 
    The :n:`with` clause allows simultaneously defining several mutual fixpoints.
    It is especially useful when defining functions over mutually defined
    inductive types.  Example: :ref:`Mutual Fixpoints<example_mutual_fixpoints>`.
 
+   If :n:`@decl_notation` is present, a notation is defined at the same time
+   (see :ref:`simultaneous-definition-and-notation`).
+
    If :n:`@term` is omitted, :n:`@type` is required and Rocq enters proof mode.
    This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
    In this case, the proof should be terminated with :cmd:`Defined` in order to define a :term:`constant`
    for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.
-
-   This command accepts the :attr:`using` attribute.
 
    .. note::
 
