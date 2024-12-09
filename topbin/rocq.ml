@@ -30,6 +30,7 @@ let () =
   | ("c" | "compile") :: args -> with_worker opts "compile" args
   | ("top"|"repl") :: args -> with_worker opts "repl" args
   | ("preprocess-mlg"|"pp-mlg") :: args -> Coqpp_main.main args
+  | "dep" :: args -> Coqdeplib.Rocqdep_main.main args
 
   | prog :: _ ->
     fatal_error "Unknown argument %s" prog
