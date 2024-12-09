@@ -12,7 +12,7 @@
  (modules rocq)
  (modes exe byte)
  ; we statically link the "small" subcommands instead of having separate binaries
- (libraries rocqshim coqdeplib coqpp coqdoclib))
+ (libraries rocqshim coqdeplib coqpp coqdoclib rocqwc))
 
 (install
  (section bin)
