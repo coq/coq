@@ -8,4 +8,4 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-let () = Coqdeplib.Rocqdep_main.main (List.tl (Array.to_list Sys.argv))
+val main : string list -> unit
