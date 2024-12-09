@@ -9,4 +9,7 @@
  (old_public_name coq-core.plugins.number_string_notation)
  (new_public_name rocq-runtime.plugins.number_string_notation))
 
-(coq.pp (modules g_number_string))
+(rule
+ (targets g_number_string.ml)
+ (deps (:mlg g_number_string.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))

@@ -8,4 +8,7 @@
  (old_public_name coq-core.plugins.ring)
  (new_public_name rocq-runtime.plugins.ring))
 
-(coq.pp (modules g_ring))
+(rule
+ (targets g_ring.ml)
+ (deps (:mlg g_ring.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))

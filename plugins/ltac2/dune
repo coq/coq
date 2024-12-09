@@ -9,4 +9,7 @@
  (old_public_name coq-core.plugins.ltac2)
  (new_public_name rocq-runtime.plugins.ltac2))
 
-(coq.pp (modules g_ltac2))
+(rule
+ (targets g_ltac2.ml)
+ (deps (:mlg g_ltac2.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))

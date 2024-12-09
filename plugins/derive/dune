@@ -8,4 +8,7 @@
  (old_public_name coq-core.plugins.derive)
  (new_public_name rocq-runtime.plugins.derive))
 
-(coq.pp (modules g_derive))
+(rule
+ (targets g_derive.ml)
+ (deps (:mlg g_derive.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))

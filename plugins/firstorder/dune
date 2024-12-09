@@ -21,4 +21,7 @@
  (old_public_name coq-core.plugins.firstorder)
  (new_public_name rocq-runtime.plugins.firstorder))
 
-(coq.pp (modules g_ground))
+(rule
+ (targets g_ground.ml)
+ (deps (:mlg g_ground.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))

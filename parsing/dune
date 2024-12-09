@@ -9,4 +9,12 @@
  (old_public_name coq-core.parsing)
  (new_public_name rocq-runtime.parsing))
 
-(coq.pp (modules g_prim g_constr))
+(rule
+ (targets g_prim.ml)
+ (deps (:mlg g_prim.mlg))
+ (action (chdir %{project_root} (chdir %{project_root} (run rocq pp-mlg %{deps})))))
+
+(rule
+ (targets g_constr.ml)
+ (deps (:mlg g_constr.mlg))
+ (action (chdir %{project_root} (chdir %{project_root} (run rocq pp-mlg %{deps})))))

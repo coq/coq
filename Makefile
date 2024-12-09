@@ -234,7 +234,7 @@ CONTEXT=_build/install/default
 # XXX: Port this to a dune alias so the build is hygienic!
 .PHONY: plugin-tutorial
 plugin-tutorial: dunestrap
-	dune build $(CONTEXT)/lib/rocq-runtime/META rocq-runtime.install theories/Init/Prelude.vo
+	dune build $(CONTEXT)/lib/rocq-runtime/META $(CONTEXT)/lib/coq-core/META rocq-runtime.install coq-core.install theories/Init/Prelude.vo
 	+$(MAKE) OCAMLPATH=$(shell pwd)/$(CONTEXT)/lib/ COQBIN=$(shell pwd)/$(CONTEXT)/bin/ COQCORELIB=$(shell pwd)/$(CONTEXT)/lib/rocq-runtime COQLIB=$(shell pwd)/_build/default/ -C doc/plugin_tutorial
 
 # This is broken in a very weird way with a permission error... see

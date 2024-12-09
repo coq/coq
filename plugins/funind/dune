@@ -8,4 +8,7 @@
  (old_public_name coq-core.plugins.funind)
  (new_public_name rocq-runtime.plugins.funind))
 
-(coq.pp (modules g_indfun))
+(rule
+ (targets g_indfun.ml)
+ (deps (:mlg g_indfun.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))
