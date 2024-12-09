@@ -22,7 +22,7 @@ open Pltac
 
 }
 
-DECLARE PLUGIN "coq-core.plugins.ring"
+DECLARE PLUGIN "rocq-runtime.plugins.ring"
 
 TACTIC EXTEND protect_fv
 | [ "protect_fv" string(map) "in" ident(id) ] ->

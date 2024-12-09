@@ -141,8 +141,8 @@ let produce_output fl =
 (*s \textbf{Main program.} Print the banner, parse the command line,
     read the files and then call [produce_document] from module [Web]. *)
 
-let _ =
-  CmdArgs.parse_args (); (* Sets prefs *)
+let main ~prog args =
+  CmdArgs.parse_args ~prog args; (* Sets prefs *)
   let files = List.rev !prefs.files in
   Index.init_coqlib_library ();
     if not !prefs.quiet then banner ();

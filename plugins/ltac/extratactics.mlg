@@ -28,7 +28,7 @@ open G_redexpr
 
 }
 
-DECLARE PLUGIN "coq-core.plugins.ltac"
+DECLARE PLUGIN "rocq-runtime.plugins.ltac"
 
 TACTIC EXTEND assert_succeeds
 | [ "assert_succeeds" tactic3(tac) ]

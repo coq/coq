@@ -20,8 +20,8 @@ Require Import RingMicromega.
 Require Import VarMap.
 Require Import DeclConstant.
 Require Stdlib.micromega.Tauto.
-Declare ML Module "coq-core.plugins.micromega_core".
-Declare ML Module "coq-core.plugins.micromega".
+Declare ML Module "rocq-runtime.plugins.micromega_core".
+Declare ML Module "rocq-runtime.plugins.micromega".
 
 Ltac rchange :=
   let __wit := fresh "__wit" in

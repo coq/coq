@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-class command_window : string -> Rocq.rocqtop -> RocqOps.rocqops ->
+class command_window : string -> RocqDriver.rocqtop -> RocqOps.rocqops ->
     Wg_RoutedMessageViews.message_views_router -> int ->
   object
     method new_query : ?command:string -> ?term:string -> unit -> unit

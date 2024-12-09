@@ -31,7 +31,7 @@ open Vernacextend
 
 }
 
-DECLARE PLUGIN "coq-core.plugins.ltac"
+DECLARE PLUGIN "rocq-runtime.plugins.ltac"
 
 {
 

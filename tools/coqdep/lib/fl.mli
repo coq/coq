@@ -19,3 +19,8 @@ val findlib_resolve
   -> package:string
   -> plugin_name:string list
   -> string * string
+
+module Internal : sig
+  (** Call Loadpath.get_worker_path instead *)
+  val get_worker_path : unit -> string
+end

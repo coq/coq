@@ -70,21 +70,25 @@ let arg_string f = Arg.String (fun s -> prefs := f !prefs s)
 let arg_file f = Arg.String (fun s -> FileUtil.check_if_file_exists s; prefs := f !prefs s)
 let arg_int f = Arg.Int (fun d -> prefs := f !prefs d)
 
+let current = Arg.current
+
+let argv = ref [||]
+
 (* TODO: replace these hacks with Arg.Rest_all, when coq moves to a newer version of OCaml stdlib *)
 let arg_path f = Arg.String (fun s ->
-  if Array.length Sys.argv < !Arg.current + 3 ||
-    CString.is_prefix "-" Sys.argv.(!Arg.current + 2) then
+  if Array.length !argv < !current + 3 ||
+    CString.is_prefix "-" !argv.(!current + 2) then
     raise (Arg.Bad ("Two arguments expected: <dir> and <name>"))
   else
-    Arg.current := !Arg.current + 1;
-    prefs := f !prefs (normalize_path s, Sys.argv.(!Arg.current + 1)))
+    Arg.current := !current + 1;
+    prefs := f !prefs (normalize_path s, !argv.(!current + 1)))
 let arg_url_path f = Arg.String (fun s ->
-  if Array.length Sys.argv < !Arg.current + 3 ||
-    CString.is_prefix "-" Sys.argv.(!Arg.current + 2) then
+  if Array.length !argv < !current + 3 ||
+    CString.is_prefix "-" !argv.(!current + 2) then
     raise (Arg.Bad ("Two arguments expected: <url> and <path>"))
   else
-    Arg.current := !Arg.current + 1;
-    f s Sys.argv.(!Arg.current + 1))
+    current := !current + 1;
+    f s !argv.(!current + 1))
 
 let args_options = Arg.align [
   "--html", arg_set (fun p -> { p with targetlang = HTML }),
@@ -228,17 +232,25 @@ let args_options = Arg.align [
 let add_input_files f = prefs := { !prefs with files = what_file f :: !prefs.files }
 let usage_msg = "coqdoc [options] <input file>...\nAvailable options are:"
 
-let parse_args () =
-(* Deprecated options *)
 let single_hyphen_opts =
-  ["-html"; "-latex"; "-texmacs"; "-raw"; "-dvi"; "-ps"; "-pdf"; "-stdout"; "-output"; "-directory"; "-gallina"; "-short"; "-light"; "-title"; "-body-only"; "-no-preamble"; "-with-header"; "-with-footer"; "-no-index"; "-multi-index"; "-index"; "-toc"; "-table-of-contents"; "-vernac-file"; "-tex-file"; "-preamble"; "-files-from"; "-files"; "-glob-from"; "-no-glob"; "-quiet"; "-verbose"; "-no-externals"; "-external"; "-coqlib_url"; "-coqlib"; "-latin1"; "-utf8"; "-charset"; "-inputenc"; "-interpolate"; "-raw-comments"; "-parse-comments"; "-plain-comments"; "-toc-depth"; "-no-lib-name"; "-lib-name"; "-lib-subtitles"; "-inline-notmono"; "-version"] in
+  ["-html"; "-latex"; "-texmacs"; "-raw"; "-dvi"; "-ps"; "-pdf"; "-stdout"; "-output"; "-directory"; "-gallina"; "-short"; "-light"; "-title"; "-body-only"; "-no-preamble"; "-with-header"; "-with-footer"; "-no-index"; "-multi-index"; "-index"; "-toc"; "-table-of-contents"; "-vernac-file"; "-tex-file"; "-preamble"; "-files-from"; "-files"; "-glob-from"; "-no-glob"; "-quiet"; "-verbose"; "-no-externals"; "-external"; "-coqlib_url"; "-coqlib"; "-latin1"; "-utf8"; "-charset"; "-inputenc"; "-interpolate"; "-raw-comments"; "-parse-comments"; "-plain-comments"; "-toc-depth"; "-no-lib-name"; "-lib-name"; "-lib-subtitles"; "-inline-notmono"; "-version"]
+
 let deprecated_mapper_opts =
-  [("-noindex", "--no-index"); ("-nopreamble", "--no-preamble"); ("-noexternals", "--no-externals"); ("-V", "--version")] in
-  let new_argv = Array.map (fun s -> match List.find_opt (fun m -> m = s) single_hyphen_opts with
-    | Some _ -> Printf.sprintf "-%s" s
-    | None -> (match List.assoc_opt s deprecated_mapper_opts with
-               | Some b -> b
-               | None -> s)) Sys.argv in
+  [("-noindex", "--no-index"); ("-nopreamble", "--no-preamble"); ("-noexternals", "--no-externals"); ("-V", "--version")]
+
+let translate_arg s =
+  match List.find_opt (fun m -> m = s) single_hyphen_opts with
+  | Some _ -> Printf.sprintf "-%s" s
+  | None -> (match List.assoc_opt s deprecated_mapper_opts with
+      | Some b -> b
+      | None -> s)
+
+let parse_args ~prog args =
+(* Deprecated options *)
+  let new_argv = List.map translate_arg args in
+  let new_argv = Array.of_list (prog::new_argv) in
+  argv := new_argv;
+  current := 0;
   try
     Arg.parse_argv new_argv args_options add_input_files usage_msg
   with
