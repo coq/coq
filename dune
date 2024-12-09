@@ -23,6 +23,10 @@
  (name default)
  (deps rocq-runtime.install coq-core.install rocq-core.install coqide-server.install))
 
+(alias
+ (name runtime)
+ (deps rocq-runtime.install coq-core.install))
+
 (install
  (section lib)
  (package rocq-runtime)
