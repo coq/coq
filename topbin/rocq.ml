@@ -36,6 +36,7 @@ let () =
   | ("preprocess-mlg"|"pp-mlg") :: args -> Coqpp_main.main args
   | "dep" :: args -> Coqdeplib.Rocqdep_main.main args
   | "doc" :: args -> Coqdoclib.Rocqdoc_main.main ~prog:(Sys.argv.(0) ^ " doc") args
+  | "wc" :: args -> Rocqwc.main args
 
   | prog :: _ ->
     fatal_error "Unknown argument %s" prog
