@@ -29,10 +29,9 @@
 (executable
  (name coqtop_byte_bin)
  (public_name coqtop.byte)
- (package rocq-runtime)
+ (package coq-core)
  (modules coqtop_byte_bin)
- (libraries compiler-libs.toplevel rocq-runtime.config.byte rocq-runtime.toplevel rocq-runtime.dev findlib.top)
- (modes byte))
+ (libraries rocqshim))
 
 (executable
  (name coqc_bin)
@@ -59,9 +58,16 @@
  ; Adding -ccopt -flto to links options could be interesting, however,
  ; it doesn't work on Windows
 
+(executable
+ (name coqworker_with_drop)
+ (modules coqworker_with_drop)
+ (modes byte)
+ (libraries compiler-libs.toplevel rocq-runtime.config.byte rocq-runtime.toplevel rocq-runtime.dev findlib.top))
+
 (install
  (section libexec)
  (package rocq-runtime)
  (files
   (coqworker.exe as coqworker)
-  (coqworker.bc as coqworker.byte)))
+  (coqworker.bc as coqworker.byte)
+  (coqworker_with_drop.bc as coqworker_with_drop)))
