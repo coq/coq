@@ -8,4 +8,7 @@
  (old_public_name coq-core.plugins.rtauto)
  (new_public_name rocq-runtime.plugins.rtauto))
 
-(coq.pp (modules g_rtauto))
+(rule
+ (targets g_rtauto.ml)
+ (deps (:mlg g_rtauto.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))

@@ -8,4 +8,7 @@
  (old_public_name coq-core.plugins.ssrmatching)
  (new_public_name rocq-runtime.plugins.ssrmatching))
 
-(coq.pp (modules g_ssrmatching))
+(rule
+ (targets g_ssrmatching.ml)
+ (deps (:mlg g_ssrmatching.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))

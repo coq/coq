@@ -21,4 +21,7 @@
  (old_public_name coq-core.plugins.nsatz)
  (new_public_name rocq-runtime.plugins.nsatz))
 
-(coq.pp (modules g_nsatz))
+(rule
+ (targets g_nsatz.ml)
+ (deps (:mlg g_nsatz.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))

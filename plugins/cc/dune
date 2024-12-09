@@ -21,4 +21,7 @@
  (old_public_name coq-core.plugins.cc)
  (new_public_name rocq-runtime.plugins.cc))
 
-(coq.pp (modules g_congruence))
+(rule
+ (targets g_congruence.ml)
+ (deps (:mlg g_congruence.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))

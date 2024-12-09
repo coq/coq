@@ -8,4 +8,7 @@
  (old_public_name coq-core.plugins.btauto)
  (new_public_name rocq-runtime.plugins.btauto))
 
-(coq.pp (modules g_btauto))
+(rule
+ (targets g_btauto.ml)
+ (deps (:mlg g_btauto.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))
