@@ -20,7 +20,7 @@
 (executable
  (name coqdoc)
  (public_name coqdoc)
- (package rocq-runtime)
+ (package coq-core)
  (modules coqdoc)
  (libraries coqdoclib))
 
