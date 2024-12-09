@@ -30,14 +30,19 @@
 
 (ocamllex ocamllibdep)
 
+(library
+ (name rocqwc)
+ (modules rocqwc)
+ (libraries))
+
 (executable
  (name coqwc)
  (public_name coqwc)
- (package rocq-runtime)
+ (package coq-core)
  (modules coqwc)
- (libraries))
+ (libraries rocqwc))
 
-(ocamllex coqwc)
+(ocamllex rocqwc)
 
 (executables
  (names coq_tex)
