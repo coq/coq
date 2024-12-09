@@ -19,9 +19,10 @@ val get_worker_path : worker -> string
 
 type opts = { debug_shim : bool }
 
-(** Initialize environment and search paths, returning the arguments
-    not consumed to produce the [opts]. *)
-val init : string list -> opts * string list
+val parse_opts : string list -> opts * string list
+
+(** Initialize environment and search paths. *)
+val init : opts -> string list -> unit
 
 (** On windows [Unix.execv] creates a new process and exits this one.
     This confuses dune into thinking we are done,

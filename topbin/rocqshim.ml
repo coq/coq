@@ -115,15 +115,14 @@ let exec_or_create_process prog argv =
 
 type opts = { debug_shim : bool }
 
-let init args =
-  let debug, args = match args with
-    | "-debug-shim" :: args -> true, args
-    | _ -> false, args
-  in
+let parse_opts = function
+  | "-debug-shim" :: rest -> { debug_shim = true }, rest
+  | args -> { debug_shim = false }, args
+
+let init { debug_shim=debug } args =
   (* important to putenv before reading OCAMLPATH / COQLIB *)
   let () = putenv_from_file ~debug () in
   let opts = parse_args args in
   let env_ocamlpath = make_ocamlpath opts in
   let () = if debug then Printf.eprintf "OCAMLPATH = %s\n%!" env_ocamlpath in
-  Findlib.init ~env_ocamlpath ();
-  { debug_shim = debug }, args
+  Findlib.init ~env_ocamlpath ()
