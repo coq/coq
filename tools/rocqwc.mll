@@ -107,7 +107,7 @@ let proof_end =
 rule spec = parse
   | "(*"   { comment lexbuf; spec lexbuf }
   | '"'    { let n = string lexbuf in slines := !slines + n;
-	     seen_spec := true; spec lexbuf }
+             seen_spec := true; spec lexbuf }
   | '\n'   { newline (); spec lexbuf }
   | space+ | stars
            { spec lexbuf }
@@ -116,7 +116,7 @@ rule spec = parse
   | def_start
            { seen_spec := true; definition lexbuf }
   | character | _
-	   { seen_spec := true; spec lexbuf }
+           { seen_spec := true; spec lexbuf }
   | eof    { () }
 
 (*s [spec_to_dot] scans a spec until a dot is reached and returns. *)
@@ -124,13 +124,13 @@ rule spec = parse
 and spec_to_dot = parse
   | "(*"   { comment lexbuf; spec_to_dot lexbuf }
   | '"'    { let n = string lexbuf in slines := !slines + n;
-	     seen_spec := true; spec_to_dot lexbuf }
+             seen_spec := true; spec_to_dot lexbuf }
   | '\n'   { newline (); spec_to_dot lexbuf }
   | dot    { () }
   | space+ | stars
            { spec_to_dot lexbuf }
   | character | _
-	   { seen_spec := true; spec_to_dot lexbuf }
+           { seen_spec := true; spec_to_dot lexbuf }
   | eof    { () }
 
 (*s [definition] scans a definition; passes to [proof] if the body is
@@ -139,14 +139,14 @@ and spec_to_dot = parse
 and definition = parse
   | "(*"   { comment lexbuf; definition lexbuf }
   | '"'    { let n = string lexbuf in slines := !slines + n;
-	     seen_spec := true; definition lexbuf }
+             seen_spec := true; definition lexbuf }
   | '\n'   { newline (); definition lexbuf }
   | ":="   { seen_spec := true; spec lexbuf }
   | dot    { proof lexbuf }
   | space+ | stars
            { definition lexbuf }
   | character | _
-	   { seen_spec := true; definition lexbuf }
+           { seen_spec := true; definition lexbuf }
   | eof    { () }
 
 (*s Scans a proof, then returns to [spec]. *)
@@ -154,7 +154,7 @@ and definition = parse
 and proof = parse
   | "(*"   { comment lexbuf; proof lexbuf }
   | '"'    { let n = string lexbuf in plines := !plines + n;
-	     seen_proof := true; proof lexbuf }
+             seen_proof := true; proof lexbuf }
   | space+ | stars
            { proof lexbuf }
   | '\n'   { newline (); proof lexbuf }
@@ -167,19 +167,19 @@ and proof = parse
   | proof_end
            { seen_proof := true; spec lexbuf }
   | character | _
-	   { seen_proof := true; proof lexbuf }
+           { seen_proof := true; proof lexbuf }
   | eof    { () }
 
 and proof_term = parse
   | "(*"   { comment lexbuf; proof_term lexbuf }
   | '"'    { let n = string lexbuf in plines := !plines + n;
-	     seen_proof := true; proof_term lexbuf }
+             seen_proof := true; proof_term lexbuf }
   | space+ | stars
            { proof_term lexbuf }
   | '\n'   { newline (); proof_term lexbuf }
   | dot    { spec lexbuf }
   | character | _
-	   { seen_proof := true; proof_term lexbuf }
+           { seen_proof := true; proof_term lexbuf }
   | eof    { () }
 
 (*s Scans a comment. *)
@@ -188,12 +188,12 @@ and comment = parse
   | "(*"   { comment lexbuf; comment lexbuf }
   | "*)"   { () }
   | '"'    { let n = string lexbuf in dlines := !dlines + n;
-	     seen_comment := true; comment lexbuf }
+             seen_comment := true; comment lexbuf }
   | '\n'   { newline (); comment lexbuf }
   | space+ | stars
-	   { comment lexbuf }
+           { comment lexbuf }
   | character | _
-	   { seen_comment := true; comment lexbuf }
+           { seen_comment := true; comment lexbuf }
   | eof    { () }
 
 (*s The entry [string] reads a string until its end and returns the number
@@ -214,7 +214,7 @@ and string = parse
 
 and read_header = parse
   | "(*"   { skip_comment lexbuf; skip_until_nl lexbuf;
-	     read_header lexbuf }
+             read_header lexbuf }
   | "\n"   { () }
   | space+ { read_header lexbuf }
   | _      { lexbuf.lex_curr_pos <- lexbuf.lex_curr_pos - 1 }
@@ -276,8 +276,8 @@ let rec parse = function
 
 (*s Main program. *)
 
-let _ =
-  let files = parse (List.tl (Array.to_list Sys.argv)) in
+let main args =
+  let files = parse args in
   if not (!spec_only || !proof_only) then
     printf "     spec    proof comments\n";
   match files with
@@ -286,5 +286,3 @@ let _ =
     | _ -> List.iter process_file files; print_totals ()
 
 (*i*)}(*i*)
-
-
