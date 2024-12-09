@@ -21,4 +21,57 @@
  (old_public_name coq-core.plugins.tauto)
  (new_public_name rocq-runtime.plugins.tauto))
 
-(coq.pp (modules extratactics g_tactic  g_rewrite g_eqdecide g_auto g_obligations g_ltac profile_ltac_tactics coretactics g_class extraargs))
+(rule
+ (targets extratactics.ml)
+ (deps (:mlg extratactics.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))
+
+(rule
+ (targets g_tactic.ml)
+ (deps (:mlg g_tactic.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))
+
+(rule
+ (targets g_rewrite.ml)
+ (deps (:mlg g_rewrite.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))
+
+(rule
+ (targets g_eqdecide.ml)
+ (deps (:mlg g_eqdecide.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))
+
+(rule
+ (targets g_auto.ml)
+ (deps (:mlg g_auto.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))
+
+(rule
+ (targets g_obligations.ml)
+ (deps (:mlg g_obligations.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))
+
+(rule
+ (targets g_ltac.ml)
+ (deps (:mlg g_ltac.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))
+
+(rule
+ (targets profile_ltac_tactics.ml)
+ (deps (:mlg profile_ltac_tactics.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))
+
+(rule
+ (targets coretactics.ml)
+ (deps (:mlg coretactics.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))
+
+(rule
+ (targets g_class.ml)
+ (deps (:mlg g_class.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))
+
+(rule
+ (targets extraargs.ml)
+ (deps (:mlg extraargs.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))

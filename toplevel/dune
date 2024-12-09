@@ -17,4 +17,7 @@
 ; Interp provides the `zarith` library to plugins, we could also use
 ; -linkall in the plugins file, to be discussed.
 
-(coq.pp (modules g_toplevel))
+(rule
+ (targets g_toplevel.ml)
+ (deps (:mlg g_toplevel.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))

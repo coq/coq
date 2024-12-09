@@ -10,4 +10,17 @@
  (old_public_name coq-core.plugins.ssreflect)
  (new_public_name rocq-runtime.plugins.ssreflect))
 
-(coq.pp (modules ssrvernac ssrparser ssrtacs))
+(rule
+ (targets ssrvernac.ml)
+ (deps (:mlg ssrvernac.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))
+
+(rule
+ (targets ssrparser.ml)
+ (deps (:mlg ssrparser.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))
+
+(rule
+ (targets ssrtacs.ml)
+ (deps (:mlg ssrtacs.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))

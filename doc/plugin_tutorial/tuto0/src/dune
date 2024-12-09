@@ -3,4 +3,7 @@
  (public_name rocq-runtime.plugins.tutorial.p0)
  (libraries rocq-runtime.plugins.ltac))
 
-(coq.pp (modules g_tuto0))
+(rule
+ (targets g_tuto0.ml)
+ (deps (:mlg g_tuto0.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))
