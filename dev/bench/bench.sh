@@ -588,7 +588,13 @@ $coq_opam_package (in $RUNNER)"
         done
     done
 
-    installable_coq_opam_packages="$installable_coq_opam_packages $coq_opam_package"
+    case $coq_opam_package in
+      coqide-server|coq)
+        # don't render results for these
+        ;;
+      *)
+        installable_coq_opam_packages="$installable_coq_opam_packages $coq_opam_package"
+    esac
 
     # --------------------------------------------------------------
     cat $log_dir/$coq_opam_package.$RUNNER.1.*.time || true
