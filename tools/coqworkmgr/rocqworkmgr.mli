@@ -8,4 +8,4 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-let () = Rocqworkmgr.main ~prog:(Sys.argv.(0)) (List.tl (Array.to_list Sys.argv))
+val main : prog:string -> string list -> unit
