@@ -12,16 +12,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: homebrew outdated pkg-config fix
-        run: |
-          brew update
-          brew upgrade
-          brew install pkgconf
-          # work around https://github.com/actions/runner-images/issues/10984
-
       - name: Install system dependencies
         run: |
-          brew install gnu-time opam gtksourceview3 adwaita-icon-theme expat libxml2
+          brew unlink pkg-config
+          brew install gnu-time opam gtksourceview3 adwaita-icon-theme expat libxml2 pkgconf
+          brew unlink pkgconf
+          brew link pkg-config
 
       - name: Install OCaml dependencies
         run: |
