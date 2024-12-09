@@ -4,7 +4,7 @@
 ; We use directory targets in documentation
 (using directory-targets 0.1)
 
-; We need this due to `(coq.pp )` declarations
+; We need this for when we use the dune.disabled files instead of our rule_gen
 (using coq 0.8)
 
 (formatting

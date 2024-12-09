@@ -41,4 +41,12 @@
  (old_public_name coq-core.plugins.zify)
  (new_public_name rocq-runtime.plugins.zify))
 
-(coq.pp (modules g_micromega g_zify))
+(rule
+ (targets g_micromega.ml)
+ (deps (:mlg g_micromega.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))
+
+(rule
+ (targets g_zify.ml)
+ (deps (:mlg g_zify.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))
