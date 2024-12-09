@@ -37,6 +37,7 @@ let () =
   | "dep" :: args -> Coqdeplib.Rocqdep_main.main args
   | "doc" :: args -> Coqdoclib.Rocqdoc_main.main ~prog:(Sys.argv.(0) ^ " doc") args
   | "wc" :: args -> Rocqwc.main args
+  | "workmgr" :: args -> Rocqworkmgr.main ~prog:(Sys.argv.(0) ^ " workmgr") args
 
   | prog :: _ ->
     fatal_error "Unknown argument %s" prog
