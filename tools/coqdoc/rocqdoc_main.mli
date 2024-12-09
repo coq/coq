@@ -8,5 +8,4 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* Command-line parser with side-effects *)
-val parse_args : prog:string -> string list -> unit
+val main : prog:string -> string list -> unit

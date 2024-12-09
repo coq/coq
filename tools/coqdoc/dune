@@ -12,10 +12,16 @@
  (files
   (coqdoc.sty as texmf/tex/latex/misc/coqdoc.sty)))
 
+(library
+ (name coqdoclib)
+ (modules :standard \ coqdoc)
+ (libraries str rocq-runtime.boot rocq-runtime.config rocq-runtime.clib))
+
 (executable
  (name coqdoc)
  (public_name coqdoc)
  (package rocq-runtime)
- (libraries str rocq-runtime.boot rocq-runtime.config rocq-runtime.clib))
+ (modules coqdoc)
+ (libraries coqdoclib))
 
 (ocamllex cpretty)
