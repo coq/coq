@@ -29,10 +29,16 @@ let () =
   let args = List.tl (Array.to_list Sys.argv) in
   let opts, args = Rocqshim.parse_opts args in
   match args with
+  (* help prints *)
   | "-v" :: _ | "--version" :: _ -> Boot.Usage.version ()
+
+  (* workers *)
   | ("c" | "compile") :: args -> with_worker opts "compile" args
   | ("top"|"repl") :: args -> with_worker opts "repl" args
   | ("top-with-drop"|"repl-with-drop") :: args -> with_worker_gen opts "coqworker_with_drop" args
+  | "native-precompile" :: args -> with_worker_gen opts "rocqnative" args
+
+  (* statically linked subcommands *)
   | ("preprocess-mlg"|"pp-mlg") :: args -> Coqpp_main.main args
   | "dep" :: args -> Coqdeplib.Rocqdep_main.main args
   | "doc" :: args -> Coqdoclib.Rocqdoc_main.main ~prog:(Sys.argv.(0) ^ " doc") args
