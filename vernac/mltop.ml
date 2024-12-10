@@ -75,12 +75,16 @@ module Fl_internals = struct
 
 end
 
+let dbg_dynlink = CDebug.create ~name:"dynlink" ()
+
 module PluginSpec : sig
 
   type t
 
-  (* Main constructor, takes the format used in Declare ML Module *)
-  val of_package : string -> t
+  (* Main constructor, takes the format used in Declare ML Module.
+     With [usercode:true], warn instead of error on legacy syntax. *)
+  val of_package : ?usercode:bool -> string -> t
+
   val to_package : t -> string
 
   (* Load a plugin, low-level, that is to say, will directly call the
@@ -92,6 +96,9 @@ module PluginSpec : sig
      should strengthen this invariant. *)
   val digest : t -> Digest.t list
 
+  (** bool = true for implicit dependencies *)
+  val add_deps : t list -> (bool * t) list
+
   val pp : t -> string
 
   module Set : CSet.ExtS with type elt = t
@@ -101,40 +108,7 @@ end = struct
 
   type t = { lib : string }
 
-  module Errors = struct
-
-    let plugin_name_invalid_format m =
-      CErrors.user_err
-        Pp.(str Format.(asprintf "%s is not a valid plugin name." m) ++ spc () ++
-            str "It should be a public findlib name, e.g. package-name.foo," ++ spc () ++
-            str "or a legacy name followed by a findlib public name, e.g. "++ spc () ++
-            str "legacy_plugin:package-name.plugin.")
-
-  end
-
-  let of_package m =
-    match String.split_on_char ':' m with
-    | [ lib ] ->
-      { lib }
-    | ([] | _ :: _) ->
-      Errors.plugin_name_invalid_format m
-
-  let to_package { lib } = lib
-
-  let load = function
-    | { lib } ->
-      Fl_dynload.load_packages [lib]
-
-  let digest s =
-    match s with
-    | { lib } ->
-      let plugins = Fl_internals.fl_find_plugins lib in
-      List.map Digest.file plugins
-
   let compare { lib = l1 } { lib = l2 } = String.compare l1 l2
-
-  let pp = function
-    | { lib } -> lib
 
   module Self = struct
       type nonrec t = t
@@ -143,6 +117,80 @@ end = struct
 
   module Set = CSet.Make(Self)
   module Map = CMap.Make(Self)
+
+  module Errors = struct
+
+    let warn_legacy_loading =
+      let name = "legacy-loading-removed" in
+      CWarnings.create ~name (fun name ->
+          Pp.(str "Legacy loading plugin method has been removed from Coq, \
+                   and the `:` syntax is deprecated, and its first \
+                   argument ignored; please remove \"" ++
+              str name ++ str ":\" from your Declare ML"))
+
+    let plugin_name_invalid_format m =
+      CErrors.user_err
+        Pp.(str Format.(asprintf "%s is not a valid plugin name." m) ++ spc () ++
+            str "It should be a public findlib name, e.g. package-name.foo." ++ spc () ++
+            str "Legacy names followed by a findlib public name, e.g. "++ spc () ++
+            str "legacy_plugin:package-name.plugin," ++ spc() ++
+            str "are not supported anymore.")
+
+  end
+
+  let of_package ?(usercode=false) m =
+    match String.split_on_char ':' m with
+    | [ lib ] ->
+      { lib }
+    | [cmxs; lib] when usercode ->
+      Errors.warn_legacy_loading cmxs;
+      { lib }
+    | _ -> Errors.plugin_name_invalid_format m
+
+  let to_package { lib } = lib
+
+  let load = function
+    | { lib } ->
+      if Findlib.is_recorded_package lib then
+        dbg_dynlink Pp.(fun () -> str lib ++ str " already loaded")
+      else begin
+        (* no point in using Fl_dynload since we [add_deps] to get digests *)
+        let plugins = Fl_internals.fl_find_plugins lib in
+        dbg_dynlink Pp.(fun () ->
+            str lib ++ str ": linking" ++ spc() ++
+            prlist_with_sep spc str plugins);
+        List.iter Dynlink.loadfile plugins;
+        Findlib.record_package Record_load lib
+      end
+
+  let add_deps plugins =
+    let explicit = Set.of_list plugins in
+    let preds = Findlib.recorded_predicates() in
+    let allplugins = Findlib.package_deep_ancestors preds (List.map to_package plugins) in
+    let deps = List.filter_map (fun lib ->
+        (* comes from findlib so guaranteed valid *)
+        let plugin = { lib } in
+        let explicit = Set.mem plugin explicit in
+        (* only add not-yet-loaded implicit deps *)
+        if not explicit && Findlib.is_recorded_package lib then None
+        else Some (not explicit, plugin))
+      allplugins
+    in
+    dbg_dynlink Pp.(fun () ->
+        str "for " ++ prlist_with_sep spc (fun {lib} -> str lib) plugins ++
+        str ":" ++ fnl() ++
+        str "all deps " ++ prlist_with_sep spc str allplugins ++ fnl() ++
+        str "filtered " ++ prlist_with_sep spc (fun (_,{lib}) -> str lib) deps);
+    deps
+
+  let digest s =
+    match s with
+    | { lib } ->
+      let plugins = Fl_internals.fl_find_plugins lib in
+      List.map Digest.file plugins
+
+  let pp = function
+    | { lib } -> lib
 
 end
 
@@ -278,8 +326,7 @@ let init_ml_object mname =
 
 let load_ml_object mname =
   ml_load mname;
-  add_known_module mname;
-  init_ml_object mname
+  add_known_module mname
 
 let add_known_module name =
   let name = PluginSpec.of_package name in
@@ -305,44 +352,46 @@ let add_loaded_module md =
 
 let reset_loaded_modules () = loaded_modules := []
 
-let if_verbose_load verb f name =
-  if not verb then f name
-  else
-    let info = str "[Loading ML file " ++ str (PluginSpec.pp name) ++ str " ..." in
-    try
-      let path = f name in
-      Feedback.msg_info (info ++ str " done]");
-      path
-    with reraise ->
-      Feedback.msg_info (info ++ str " failed]");
-      raise reraise
+type load_request =
+  | Summary
+  | Regular of { implicit : bool }
 
-(** Load a module for the first time (i.e. dynlink it)
-    or simulate its reload (i.e. doing nothing except maybe
-    an initialization function). *)
+let if_verbose_load req f name =
+  match req with
+  | Regular {implicit} when not !Flags.quiet -> begin
+      let info =
+        str "[Loading ML file " ++ str (PluginSpec.pp name) ++
+        (if implicit then str " (implicit dependency)" else mt()) ++ str " ..." in
+      try
+        let path = f name in
+        Feedback.msg_info (info ++ str " done]");
+        path
+      with reraise ->
+        Feedback.msg_info (info ++ str " failed]");
+        raise reraise
+    end
+  | Summary | Regular _ -> f name
 
-let trigger_ml_object ~verbose ~cache ~reinit plugin =
+(** Load a module for the first time (i.e. dynlink it) *)
+
+let trigger_ml_object req plugin =
   let () =
-    if plugin_is_known plugin then
-      (if reinit then init_ml_object plugin)
-    else
-      begin
-        if not has_dynlink then
-          CErrors.user_err
-            (str "Dynamic link not supported (module " ++ str (PluginSpec.pp plugin) ++ str ").")
-        else
-          if_verbose_load (verbose && not !Flags.quiet) load_ml_object plugin
-      end
+    if not @@ plugin_is_known plugin then begin
+      if not has_dynlink then
+        CErrors.user_err
+          (str "Dynamic link not supported (module " ++ str (PluginSpec.pp plugin) ++ str ").")
+      else
+        if_verbose_load req load_ml_object plugin
+    end
   in
-  add_loaded_module plugin;
-  if cache then perform_cache_obj plugin
+  add_loaded_module plugin
 
 let unfreeze_ml_modules x =
   reset_loaded_modules ();
   List.iter
     (fun name ->
        let name = PluginSpec.of_package name in
-       trigger_ml_object ~verbose:false ~cache:false ~reinit:false name) x
+       trigger_ml_object Summary name) x
 
 let () =
   Summary.declare_ml_modules_summary
@@ -355,16 +404,27 @@ let () =
 (* Liboject entries of declared ML Modules *)
 type ml_module_object =
   { mlocal : Vernacexpr.locality_flag
-  ; mnames : PluginSpec.t list
+  ; mnames : (bool * PluginSpec.t) list
+  (* bool: if true then implicit dep
+     XXX should we init_ml_object even for implicit deps? *)
   ; mdigests : Digest.t list
   }
 
 let cache_ml_objects mnames =
-  let iter obj = trigger_ml_object ~verbose:true ~cache:true ~reinit:true obj in
+  let iter (implicit,obj) =
+    trigger_ml_object (Regular {implicit}) obj;
+    if not implicit then begin
+      init_ml_object obj;
+      perform_cache_obj obj
+    end
+  in
   List.iter iter mnames
 
 let load_ml_objects _ {mnames; _} =
-  let iter obj = trigger_ml_object ~verbose:true ~cache:false ~reinit:true obj in
+  let iter (implicit,obj) =
+    trigger_ml_object (Regular {implicit}) obj;
+    if not implicit then init_ml_object obj
+  in
   List.iter iter mnames
 
 let classify_ml_objects {mlocal=mlocal} =
@@ -380,33 +440,12 @@ let inMLModule : ml_module_object -> Libobject.obj =
       subst_function = (fun (_,o) -> o);
       classify_function = classify_ml_objects }
 
-let warn_legacy_loading =
-  let name = "legacy-loading-removed" in
-  CWarnings.create ~name (fun name ->
-      Pp.(str "Legacy loading plugin method has been removed from Coq, \
-               and the `:` syntax is deprecated, and its first \
-               argument ignored; please remove \"" ++
-          str name ++ str ":\" from your Declare ML"))
-
-let inspect_legacy_decl l =
-  match String.split_on_char ':' l with
-  | [lib] -> lib
-  | [cmxs; lib] ->
-    warn_legacy_loading cmxs;
-    lib
-  | bad ->
-    let bad = String.concat ":" bad in
-    CErrors.user_err Pp.(str "bad package name: " ++ str bad ++ str " .")
-
-let remove_legacy_decls = List.map inspect_legacy_decl
-
-let declare_ml_modules local l =
-  let l = remove_legacy_decls l in
-  let mnames = List.map PluginSpec.of_package l in
+let declare_ml_modules local mnames =
+  let mnames = List.map (PluginSpec.of_package ~usercode:true) mnames in
   if Lib.sections_are_opened()
   then CErrors.user_err Pp.(str "Cannot Declare ML Module while sections are opened.");
-  (* List.concat_map only available in 4.10 *)
-  let mdigests = List.map PluginSpec.digest mnames |> List.concat in
+  let mnames = PluginSpec.add_deps mnames in
+  let mdigests = CList.concat_map (fun (_,plugin) -> PluginSpec.digest plugin) mnames in
   Lib.add_leaf (inMLModule {mlocal=local; mnames; mdigests});
   (* We can't put this in cache_function: it may declare other
      objects, and when the current module is required we want to run
