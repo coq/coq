@@ -141,9 +141,8 @@ or :term:`constants <constant>` defined in the :term:`global environment` with t
    --------------
    E[Γ] ⊢ c~\triangleright_δ~t
 
-:term:`Delta-reduction <delta-reduction>` only unfolds :term:`constants <constant>` that are
-marked :gdef:`transparent`.  :gdef:`Opaque <opaque>` is the opposite of
-transparent; :term:`delta-reduction` doesn't unfold opaque constants.
+:term:`Delta-reduction <delta-reduction>` unfolds constants when permitted by their
+:term:`opaqueness <opaque>` settings.
 
 ι-reduction
 ~~~~~~~~~~~
