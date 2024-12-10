@@ -8,4 +8,4 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val main : prog:string -> string list -> unit
+let () = Benchlib.Timelog2html.main ~prog:(Sys.argv.(0)) (List.tl (Array.to_list Sys.argv))
