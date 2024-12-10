@@ -10,107 +10,83 @@
 
 open File_util
 
-module Error = struct
+let coqc_predicates = ["native"]
 
-  exception CannotFindMeta of string * string
-  exception CannotParseMetaFile of string * string
-  exception DeclaredMLModuleNotFound of string * string * string
-  exception MetaLacksFieldForPackage of string * string * string
+module Fl_internals = struct
+  (** Functions not exported by findlib (XXX there is a copy in mltop, we should share them) *)
 
-  let no_meta f package = raise @@ CannotFindMeta (f, package)
-  let cannot_parse_meta_file file msg = raise @@ CannotParseMetaFile (file,msg)
-  let declare_in_META f s m = raise @@ DeclaredMLModuleNotFound (f, s, m)
-  let meta_file_lacks_field meta_file package field = raise @@ MetaLacksFieldForPackage (meta_file, package, field)
+  (* Fl_split.in_words is not exported *)
+  let fl_split_in_words s =
+    (* splits s in words separated by commas and/or whitespace *)
+    let l = String.length s in
+    let rec split i j =
+      if j < l then
+        match s.[j] with
+        | (' '|'\t'|'\n'|'\r'|',') ->
+          if i<j then (String.sub s i (j-i)) :: (split (j+1) (j+1))
+          else split (j+1) (j+1)
+        |	_ ->
+          split i (j+1)
+      else
+      if i<j then [ String.sub s i (j-i) ] else []
+    in
+    split 0 0
 
-  let _ = CErrors.register_handler @@ function
-    | CannotFindMeta (f, package) ->
-      Some Pp.(str "in file" ++ spc () ++ str f ++ str "," ++ spc ()
-               ++ str "could not find META." ++ str package ++ str ".")
-    | CannotParseMetaFile (file, msg) ->
-      Some Pp.(str "META file \"" ++ str file ++ str "\":" ++ spc ()
-               ++ str "Syntax error:" ++ spc () ++ str msg)
-    | DeclaredMLModuleNotFound (f, s, m) ->
-      Some Pp.(str "in file " ++ str f ++ str "," ++ spc() ++ str "declared ML module" ++ spc ()
-               ++ str s ++ spc () ++ str "has not been found in" ++ spc () ++ str m ++ str ".")
-    | MetaLacksFieldForPackage (meta_file, package, field) ->
-      Some Pp.(str "META file \"" ++ str meta_file ++ str "\"" ++ spc () ++ str "lacks field" ++ spc ()
-               ++ str field ++ spc () ++ str "for package" ++ spc () ++ str package ++ str ".")
-    | _ -> None
+  (* simulate what fl_dynload does *)
+  let fl_find_plugins lib =
+    let base = Findlib.package_directory lib in
+    let archive = try Findlib.package_property coqc_predicates lib "plugin"
+      with Not_found ->
+      try fst (Findlib.package_property_2 ("plugin"::coqc_predicates) lib "archive")
+      with Not_found -> ""
+    in
+    fl_split_in_words archive |> List.map (Findlib.resolve_path ~base)
+
+  (* first string is the v file which triggered the error, rest is Fl_package_base.No_such_package *)
+  exception No_such_package of string * string * string
+
+  let () = CErrors.register_handler Pp.(function
+      | No_such_package(vfile,p,msg) ->
+        let paths = Findlib.search_path () in
+        Some (hov 0 (str "In file" ++ spc() ++ str vfile ++ spc() ++
+                     str "findlib error: " ++ str p ++ str " not found in:" ++ cut () ++
+                     v 0 (prlist_with_sep cut str paths) ++ fnl() ++ str msg))
+      | _ ->
+        None
+    )
+
 end
 
-(* Platform build is doing something weird with META, hence we parse
-   when finding, but at some point we should find, then parse. *)
-let parse_META meta_file package =
-  try
-    let ic = open_in meta_file in
-    let m = Fl_metascanner.parse ic in
-    close_in ic;
-    Some m
-  with
-  (* This should not be necessary, but there's a problem in the platform build *)
-  | Sys_error _msg -> None
-  (* findlib >= 1.9.3 uses its own Error exception, so we can't catch
-     it without bumping our version requirements. TODO pass the message on once we bump. *)
-  | _ -> Error.cannot_parse_meta_file package ""
+let relative_if_dune path =
+  (* relativize the path if inside the current dune workspace
+     if we relativize paths outside the dune workspace it fails so make sure to avoid it *)
+  match Sys.getenv_opt "DUNE_SOURCEROOT" with
+  | Some dune when CString.is_prefix dune path ->
+    normalize_path (to_relative_path path)
+  | _ -> normalize_path path
 
-let find_parsable_META package =
-  (try
-     let meta_file = Findlib.package_meta_file package in
-     Option.map (fun meta -> meta_file, meta) (parse_META meta_file package)
-   with Fl_package_base.No_such_package _ -> None)
-
-let rec find_plugin_field_opt fld = function
-  | [] ->
-    None
-  | { Fl_metascanner.def_var; def_value; Fl_metascanner.def_preds ;_ } :: rest ->
-    if String.equal def_var fld
-    then Some def_value
-    else find_plugin_field_opt fld rest
-
-let find_plugin_field fld def pkgs =
-  Option.default def (find_plugin_field_opt fld pkgs)
-
-let rec find_plugin meta_file plugin_name path p { Fl_metascanner.pkg_defs ; pkg_children  } =
-  match p with
-  | [] -> path, pkg_defs
-  | p :: ps ->
-    let c =
-      match CList.assoc_f_opt String.equal p pkg_children with
-      | None -> Error.declare_in_META meta_file (String.concat "." plugin_name) meta_file
-      | Some c -> c
-    in
-    let path = path @ [find_plugin_field "directory" "." c.Fl_metascanner.pkg_defs] in
-    find_plugin meta_file plugin_name path ps c
-
-let findlib_resolve ~file ~package ~plugin_name =
-  let (meta_file, meta) =
-    match find_parsable_META package with
-    | None   -> Error.no_meta file package
-    | Some v -> v
-  in
-  let path = [find_plugin_field "directory" "." meta.Fl_metascanner.pkg_defs] in
-  let path, plug = find_plugin meta_file plugin_name path plugin_name meta in
-  let cmxs_file =
-    let file =
-      match find_plugin_field_opt "plugin" plug with
-      | None -> Error.meta_file_lacks_field meta_file package "plugin"
-      | Some file -> file
-    in
-    let add d file =
-      if d = Filename.current_dir_name then file else Filename.concat d file
-    in
-    List.fold_right add path file
-  in
-  let meta_file =
-    (* relativize the path if inside the current dune workspace
-       if we relativize paths outside the dune workspace it fails so make sure to avoid it *)
-    match Sys.getenv_opt "DUNE_SOURCEROOT" with
-    | Some dune when CString.is_prefix dune meta_file ->
-      normalize_path (to_relative_path meta_file)
-    | _ -> meta_file
-  in
-  let cmxs_file =
-    let meta_dir = Filename.dirname meta_file in
-    normalize_path (Filename.concat meta_dir cmxs_file)
-  in
+let findlib_resolve ~package =
+  let meta_file = Findlib.package_meta_file package in
+  let cmxss = Fl_internals.fl_find_plugins package in
+  let meta_file = relative_if_dune meta_file in
+  let cmxs_file = List.map relative_if_dune cmxss in
   (meta_file, cmxs_file)
+
+let static_libs = CString.Set.of_list Static_toplevel_libs.static_toplevel_libs
+
+let findlib_deep_resolve ~package =
+  let packages = Findlib.package_deep_ancestors coqc_predicates [package] in
+  let packages = CList.filter (fun package ->
+      not (CString.Set.mem package static_libs))
+      packages
+  in
+  List.fold_left (fun (metas,cmxss) package ->
+      let meta, cmxss' = findlib_resolve ~package in
+      meta :: metas, cmxss' @ cmxss)
+    ([],[])
+    packages
+
+let findlib_deep_resolve ~file ~package =
+  try findlib_deep_resolve ~package
+  with Fl_package_base.No_such_package(p,m) ->
+    raise (Fl_internals.No_such_package (file,p,m))

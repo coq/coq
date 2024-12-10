@@ -8,14 +8,17 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** [findlib_resolve ~file ~package ~plugin_name] tries to locate
-    a [.cmxs] for a given [package.plugin_name].
+(** [findlib_deep_resolve ~file ~package] tries to locate
+    a [.cmxs] for a given [package]. It also searches for its dependencies.
+
+    Dependencies of coq-core.toplevel (i.e. coqc) are ignored.
+
+    [file] is used for error messages.
 
     If a [META] file for [package] is found, it will try to use it to resolve
     the path to the [.cmxs], and return a relative path to both. If not, it
     errors. *)
-val findlib_resolve
+val findlib_deep_resolve
   :  file:string
   -> package:string
-  -> plugin_name:string list
-  -> string * string
+  -> string list * string list
