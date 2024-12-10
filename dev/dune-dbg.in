@@ -41,7 +41,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         coqnative)
             shift
-            exe=_build/default/topbin/coqnative_bin.bc
+            exe=_build/default/topbin/rocqnative.bc
             break
             ;;
         *)
