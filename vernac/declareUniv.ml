@@ -183,11 +183,13 @@ let cache_constraint_source x = constraint_sources := x :: !constraint_sources
 let constraint_sources () = !constraint_sources
 
 let constraint_obj =
-  Libobject.declare_object @@
-  Libobject.superglobal_object "univ constraint sources"
-    ~cache:cache_constraint_source
-    ~subst:None
-    ~discharge:(fun x -> Some x)
+  Libobject.declare_object {
+    (Libobject.default_object "univ constraint sources") with
+    cache_function = cache_constraint_source;
+    load_function = (fun _ c -> cache_constraint_source c);
+    discharge_function = (fun x -> Some x);
+    classify_function = (fun _ -> Escape);
+  }
 
 (* XXX this seems like it could be merged with declare_univ_binders
    main issue is the filtering or redundant constraints (needed for perf / smaller vo file sizes) *)

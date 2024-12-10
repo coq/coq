@@ -634,7 +634,11 @@ let find_source (u,k,v as cst) src =
   else Option.default [] (search src cst)
 
 let pr_constraint_source = function
-  | GlobRef ref -> pr_global ref
+  | GlobRef ref -> begin try pr_global ref
+      with Not_found ->
+        (* global in a module type or functor *)
+        GlobRef.print ref
+    end
   | Library dp -> str "library " ++ pr_qualid (Nametab.shortest_qualid_of_module (MPfile dp))
 
 let pr_source_path prl u src =

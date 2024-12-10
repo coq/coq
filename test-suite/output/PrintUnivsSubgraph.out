@@ -6,3 +6,7 @@ Set < i
     < k
 i < k (because i <(from foo) j <(from connect) l <(from baz) k)
 
+Set < u
+    < v
+v < u (because v <(from PrintUnivsSubgraph.T.foo) u)
+
