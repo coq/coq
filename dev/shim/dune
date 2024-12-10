@@ -18,7 +18,26 @@
   (with-stdout-to %{targets}
    (progn
     (echo "#!/usr/bin/env bash\n")
-    (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqtop} -I \"$(dirname \"$0\")/%{project_root}/../install/default/lib\" -coqlib \"$(dirname \"$0\")/%{project_root}\" \"$@\"'")
+    (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqtop} -I \"$(dirname \"$0\")/%{workspace_root}/_build/install/default/lib\" -coqlib \"$(dirname \"$0\")/%{project_root}\" \"$@\"'")
+    (run chmod +x %{targets})))))
+
+; coqidetop
+
+(alias
+ (name coqidetop-prelude)
+ (deps
+  %{bin:coqidetop.opt}
+   ; XXX: bug, we are missing the dep on the _install meta file...
+  %{project_root}/theories/Init/Prelude.vo))
+
+(rule
+ (targets coqidetop.opt)
+ (deps (alias coqidetop-prelude))
+ (action
+  (with-stdout-to %{targets}
+   (progn
+    (echo "#!/usr/bin/env bash\n")
+    (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqidetop.opt} -I \"$(dirname \"$0\")/%{workspace_root}/_build/install/default/lib\" -coqlib \"$(dirname \"$0\")/%{project_root}\" \"$@\"'")
     (run chmod +x %{targets})))))
 
 ; coqc
@@ -37,7 +56,7 @@
   (with-stdout-to %{targets}
    (progn
     (echo "#!/usr/bin/env bash\n")
-    (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqc} -I \"$(dirname \"$0\")/%{project_root}/../install/default/lib\" -coqlib \"$(dirname \"$0\")\"/%{project_root} -nI \"$(dirname \"$0\")\"/%{project_root}/kernel/.kernel.objs/byte \"$@\"'")
+    (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqc} -I \"$(dirname \"$0\")/%{workspace_root}/_build/install/default/lib\" -coqlib \"$(dirname \"$0\")\"/%{project_root} -nI \"$(dirname \"$0\")\"/%{project_root}/kernel/.kernel.objs/byte \"$@\"'")
     (run chmod +x %{targets})))))
 
 ; coqtop.byte
@@ -80,7 +99,7 @@
   (with-stdout-to %{targets}
    (progn
     (echo "#!/usr/bin/env bash\n")
-    (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqtop.byte} -I \"$(dirname \"$0\")/%{project_root}/../install/default/lib\" -coqlib \"$(dirname \"$0\")\"/%{project_root} \"$@\"'")
+    (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqtop.byte} -I \"$(dirname \"$0\")/%{workspace_root}/_build/install/default/lib\" -coqlib \"$(dirname \"$0\")\"/%{project_root} \"$@\"'")
     (run chmod +x %{targets})))))
 
 ; coqide
@@ -91,7 +110,7 @@
   ; without this if the gtk libs are not available dune can try to use
   ; coqide from PATH instead of giving a nice error
   ; there is no problem with the other shims since they don't depend on optional build products
-  %{project_root}/ide/coqide/coqide_main.exe
+  %{project_root}/ide/coqide/rocqide_main.exe
   %{bin:coqworker.opt}
   %{project_root}/theories/Init/Prelude.vo
   %{project_root}/coqide-server.install
@@ -104,5 +123,5 @@
   (with-stdout-to %{targets}
    (progn
     (echo "#!/usr/bin/env bash\n")
-    (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqide} -I \"$(dirname \"$0\")/%{project_root}/../install/default/lib\" -coqlib \"$(dirname \"$0\")\"/%{project_root} \"$@\"'")
+    (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqide} -I \"$(dirname \"$0\")/%{workspace_root}/_build/install/default/lib\" -coqlib \"$(dirname \"$0\")\"/%{project_root} \"$@\"'")
     (run chmod +x %{targets})))))
