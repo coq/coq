@@ -216,7 +216,7 @@ let def_class_levels ~def env_ar sigma aritysorts ctors =
     sigma, [DefaultElim, EConstr.mkSort s]
 
 (* ps = parameter list *)
-let typecheck_params_and_fields ~auto_prop_lowering def ~poly udecl ps (records : DataI.t list) : tc_result =
+let typecheck_params_and_fields def ~poly udecl ps (records : DataI.t list) : tc_result =
   let env0 = Global.env () in
   (* Special case elaboration for template-polymorphic inductives,
      lower bound on introduced universes is Prop so that we do not miss
@@ -256,7 +256,7 @@ let typecheck_params_and_fields ~auto_prop_lowering def ~poly udecl ps (records 
       let indnames = List.map (fun x -> x.DataI.name) records in
       let arities_explicit = List.map (fun x -> Option.has_some x.DataI.arity) records in
       let sigma, (default_dep_elim, typs) =
-        ComInductive.Internal.inductive_levels ~auto_prop_lowering env_ar sigma ~poly ~indnames ~arities_explicit typs ctors
+        ComInductive.Internal.inductive_levels env_ar sigma ~poly ~indnames ~arities_explicit typs ctors
       in
       sigma, List.combine default_dep_elim typs
   in
@@ -716,7 +716,7 @@ let check_proj_flags kind rf =
   let pf_canonical = rf.rf_canonical in
   Data.{ pf_coercion; pf_reversible; pf_instance; pf_priority; pf_locality; pf_canonical }
 
-let pre_process_structure ~auto_prop_lowering udecl kind ~poly (records : Ast.t list) =
+let pre_process_structure udecl kind ~poly (records : Ast.t list) =
   let indlocs = check_unique_names records in
   let () = check_priorities kind records in
   let ps, data = extract_record_data records in
@@ -727,7 +727,7 @@ let pre_process_structure ~auto_prop_lowering udecl kind ~poly (records : Ast.t 
        is messing state beyond that.
     *)
     Vernacstate.System.protect (fun () ->
-        typecheck_params_and_fields ~auto_prop_lowering (kind = Class true) ~poly udecl ps data) ()
+        typecheck_params_and_fields (kind = Class true) ~poly udecl ps data) ()
   in
   let adjust_impls impls = match kind_class kind with
     | NotClass -> impargs @ [CAst.make None] @ impls
@@ -816,11 +816,10 @@ let interp_structure ~flags udecl kind ~primitive_proj records =
       poly;
       cumulative;
       template;
-      auto_prop_lowering;
       finite;
     } = flags in
   let impargs, params, univs, variances, projections_kind, data, indlocs =
-    pre_process_structure ~auto_prop_lowering udecl kind ~poly records in
+    pre_process_structure udecl kind ~poly records in
   interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind ~indlocs data
 
 let declare_structure { Record_decl.mie; default_dep_elim; primitive_proj; impls; globnames; global_univ_decls; projunivs; ubinders; projections_kind; poly; records; indlocs } =
@@ -1049,11 +1048,10 @@ let definition_structure ~flags udecl kind ~primitive_proj (records : Ast.t list
       poly;
       cumulative;
       template;
-      auto_prop_lowering;
       finite;
     } = flags in
   let impargs, params, univs, variances, projections_kind, data, indlocs =
-    pre_process_structure ~auto_prop_lowering udecl kind ~poly records
+    pre_process_structure udecl kind ~poly records
   in
   let inds, def = match kind_class kind with
     | DefClass -> declare_class_constant ~univs impargs params data

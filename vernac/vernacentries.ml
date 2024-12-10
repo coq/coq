@@ -1025,9 +1025,6 @@ let primitive_proj =
   | Some t -> return t
   | None -> return (primitive_flag ())
 
-let { Goptions.get = do_auto_prop_lowering } =
-  Goptions.declare_bool_option_and_ref ~key:["Automatic";"Proposition";"Inductives"] ~value:true ()
-
 let mode_attr =
   let open Attributes in
   let open Notations in
@@ -1061,12 +1058,11 @@ let preprocess_defclass ~atts udecl (id, bl, c, l) =
   let poly, mode =
     Attributes.(parse Notations.(polymorphic ++ mode_attr) atts)
   in
-  let auto_prop_lowering = do_auto_prop_lowering () in
   let flags = {
     (* flags which don't matter for definitional classes *)
     ComInductive.template=None; cumulative=false; finite=BiFinite;
     (* real flags *)
-    poly; auto_prop_lowering; mode;
+    poly; mode;
   }
   in
   let bl = match bl with
@@ -1112,9 +1108,8 @@ let preprocess_record ~atts udecl kind indl =
           ++ primitive_proj ++ hint_mode_attr)
         atts)
   in
-  let auto_prop_lowering = do_auto_prop_lowering () in
   let finite = finite_of_kind kind in
-  let flags = { ComInductive.template; cumulative; poly; finite; auto_prop_lowering; mode } in
+  let flags = { ComInductive.template; cumulative; poly; finite; mode } in
   let parse_record_field_attr (x, f) =
     let attr =
       let rev = match f.rfu_coercion with
@@ -1177,8 +1172,7 @@ let preprocess_inductive ~atts udecl kind indl =
         atts)
   in
   let finite = finite_of_kind kind in
-  let auto_prop_lowering = do_auto_prop_lowering () in
-  let flags = { ComInductive.template; cumulative; poly; finite; auto_prop_lowering; mode } in
+  let flags = { ComInductive.template; cumulative; poly; finite; mode } in
   let unpack (((_, id) , bl, c, decl), ntn) = match decl with
     | Constructors l -> (id, bl, c, l), ntn
     | RecordDecl _ -> assert false (* ruled out above *)
