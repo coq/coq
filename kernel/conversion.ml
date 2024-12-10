@@ -44,6 +44,8 @@ let el_stack el stk =
       stk in
   el_shft n el
 
+let same_length a1 a2 = Int.equal (Array.length a1) (Array.length a2)
+
 let compare_stack_shape stk1 stk2 =
   let rec compare_rec bal stk1 stk2 =
   match (stk1,stk2) with
@@ -54,8 +56,9 @@ let compare_stack_shape stk1 stk2 =
     | (_, Zapp l2::s2) -> compare_rec (bal-Array.length l2) stk1 s2
     | (Zproj _::s1, Zproj _::s2) ->
         Int.equal bal 0 && compare_rec 0 s1 s2
-    | (ZcaseT(_c1,_,_,_,_,_)::s1, ZcaseT(_c2,_,_,_,_,_)::s2) ->
-        Int.equal bal 0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
+    | (ZcaseT(_c1,_,pms1,_,br1,_)::s1, ZcaseT(_c2,_,pms2,_,br2,_)::s2) ->
+        Int.equal bal 0 (* && c1.ci_ind  = c2.ci_ind *) && same_length pms1 pms2
+        && same_length br1 br2 && compare_rec 0 s1 s2
     | (Zfix(_,a1)::s1, Zfix(_,a2)::s2) ->
         Int.equal bal 0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
     | Zprimitive(op1,_,rargs1, _kargs1)::s1, Zprimitive(op2,_,rargs2, _kargs2)::s2 ->
