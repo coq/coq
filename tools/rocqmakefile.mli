@@ -8,4 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-let () = Rocqmakefile.main ~prog:[Sys.argv.(0)] (List.tl (Array.to_list Sys.argv))
+(** [rocq makefile] wants to output the command to invoke it again,
+    quoting as necessary. For this we need "rocq" and "makefile" to be
+    separate strings. *)
+val main : prog:string list -> string list -> unit

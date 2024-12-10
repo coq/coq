@@ -13,12 +13,17 @@
   (make-both-time-files.py as tools/make-both-time-files.py)
   (make-both-single-timing-files.py as tools/make-both-single-timing-files.py)))
 
+(library
+ (name rocqmakefile)
+ (modules rocqmakefile)
+ (libraries rocq-runtime.boot rocq-runtime.lib))
+
 (executable
  (name coq_makefile)
  (public_name coq_makefile)
- (package rocq-runtime)
+ (package coq-core)
  (modules coq_makefile)
- (libraries rocq-runtime.boot rocq-runtime.lib))
+ (libraries rocqmakefile))
 
 ; Bare-bones mllib/mlpack parser
 (executable
