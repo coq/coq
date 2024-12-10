@@ -3,7 +3,7 @@ Error: Anomaly "Uncaught exception Not_found."
 Please report at http://coq.inria.fr/bugs/.
 Backtrace:
 Call foo
-Prim <coq-core.plugins.ltac2:eval_hnf>
+Prim <rocq-runtime.plugins.ltac2:eval_hnf>
 
 
 

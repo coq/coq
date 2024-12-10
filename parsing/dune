@@ -1,8 +1,20 @@
 (library
  (name parsing)
- (public_name coq-core.parsing)
+ (public_name rocq-runtime.parsing)
  (wrapped false)
  (modules_without_implementation notation_gram)
- (libraries coq-core.gramlib interp))
+ (libraries rocq-runtime.gramlib interp))
 
-(coq.pp (modules g_prim g_constr))
+(deprecated_library_name
+ (old_public_name coq-core.parsing)
+ (new_public_name rocq-runtime.parsing))
+
+(rule
+ (targets g_prim.ml)
+ (deps (:mlg g_prim.mlg))
+ (action (chdir %{project_root} (chdir %{project_root} (run rocq pp-mlg %{deps})))))
+
+(rule
+ (targets g_constr.ml)
+ (deps (:mlg g_constr.mlg))
+ (action (chdir %{project_root} (chdir %{project_root} (run rocq pp-mlg %{deps})))))

@@ -1,47 +1,62 @@
 (install
  (section lib)
- (package coq-core)
+ (package rocq-runtime)
  (files
   (CoqMakefile.in as tools/CoqMakefile.in)))
 
 (install
  (section libexec)
- (package coq-core)
+ (package rocq-runtime)
  (files
   (TimeFileMaker.py as tools/TimeFileMaker.py)
   (make-one-time-file.py as tools/make-one-time-file.py)
   (make-both-time-files.py as tools/make-both-time-files.py)
   (make-both-single-timing-files.py as tools/make-both-single-timing-files.py)))
 
+(library
+ (name rocqmakefile)
+ (modules rocqmakefile)
+ (libraries rocq-runtime.boot rocq-runtime.lib))
+
 (executable
  (name coq_makefile)
  (public_name coq_makefile)
  (package coq-core)
  (modules coq_makefile)
- (libraries coq-core.boot coq-core.lib))
+ (libraries rocqmakefile))
 
 ; Bare-bones mllib/mlpack parser
 (executable
  (name ocamllibdep)
  (public_name ocamllibdep)
- (package coq-core)
+ (package rocq-runtime)
  (modules ocamllibdep)
  (libraries unix))
 
 (ocamllex ocamllibdep)
+
+(library
+ (name rocqwc)
+ (modules rocqwc)
+ (libraries))
 
 (executable
  (name coqwc)
  (public_name coqwc)
  (package coq-core)
  (modules coqwc)
- (libraries))
+ (libraries rocqwc))
 
-(ocamllex coqwc)
+(ocamllex rocqwc)
+
+(library
+ (name rocqtex)
+ (modules rocqtex)
+ (libraries str))
 
 (executables
  (names coq_tex)
  (public_names coq-tex)
  (package coq-core)
  (modules coq_tex)
- (libraries str))
+ (libraries rocqtex))

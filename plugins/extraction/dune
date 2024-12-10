@@ -1,7 +1,14 @@
 (library
  (name extraction_plugin)
- (public_name coq-core.plugins.extraction)
+ (public_name rocq-runtime.plugins.extraction)
  (synopsis "Rocq's extraction plugin")
- (libraries coq-core.vernac))
+ (libraries rocq-runtime.vernac))
 
-(coq.pp (modules g_extraction))
+(deprecated_library_name
+ (old_public_name coq-core.plugins.extraction)
+ (new_public_name rocq-runtime.plugins.extraction))
+
+(rule
+ (targets g_extraction.ml)
+ (deps (:mlg g_extraction.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))

@@ -27,10 +27,10 @@ Require Export Corelib.Init.Sumbool.
    - ltac_plugin (in Ltac)
    - tauto_plugin (in Tauto).
 *)
-Declare ML Module "coq-core.plugins.cc_core".
-Declare ML Module "coq-core.plugins.cc".
-Declare ML Module "coq-core.plugins.firstorder_core".
-Declare ML Module "coq-core.plugins.firstorder".
+Declare ML Module "rocq-runtime.plugins.cc_core".
+Declare ML Module "rocq-runtime.plugins.cc".
+Declare ML Module "rocq-runtime.plugins.firstorder_core".
+Declare ML Module "rocq-runtime.plugins.firstorder".
 
 (* Parsing / printing of hexadecimal numbers *)
 Arguments Nat.of_hex_uint d%_hex_uint_scope.

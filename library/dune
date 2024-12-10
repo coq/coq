@@ -1,9 +1,10 @@
 (library
  (name library)
  (synopsis "Coq's Loadable Libraries (vo) Support")
- (public_name coq-core.library)
+ (public_name rocq-runtime.library)
  (wrapped false)
  (libraries kernel))
 
-(documentation
- (package coq-core))
+(deprecated_library_name
+ (old_public_name coq-core.library)
+ (new_public_name rocq-runtime.library))

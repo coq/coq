@@ -3,6 +3,5 @@
  (name coqdep)
  (public_name coqdep)
  (package coq-core)
- (modes exe byte)
  (modules coqdep)
  (libraries coqdeplib))

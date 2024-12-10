@@ -36,7 +36,7 @@ jobs:
           eval $(opam env)
           ./configure -prefix "$(pwd)/_install_ci" -native-compiler no
           make dunestrap
-          dune build -p coq-core,rocq-core,coqide-server,coqide
+          dune build -p rocq-runtime,coq-core,rocq-core,coqide-server,coqide
         env:
           MACOSX_DEPLOYMENT_TARGET: "10.11"
           NJOBS: "2"
@@ -44,7 +44,7 @@ jobs:
       - name: Install Coq
         run: |
           eval $(opam env)
-          dune install --prefix="$(pwd)/_install_ci" coq-core rocq-core coqide-server coqide
+          dune install --prefix="$(pwd)/_install_ci" rocq-runtime coq-core rocq-core coqide-server coqide
 
       - name: Run Coq Test Suite
         run: |

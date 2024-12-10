@@ -2,7 +2,7 @@ package "test" (
     directory = "."
     version = "dev"
     description = "A test plugin"
-    requires = "coq-core.plugins.ltac"
+    requires = "rocq-runtime.plugins.ltac"
     archive(byte) = "test_plugin.cma"
     archive(native) = "test_plugin.cmxa"
     plugin(byte) = "test_plugin.cma"

@@ -4,12 +4,12 @@
 (library
  (name coqpp)
  (wrapped false)
- (modules coqpp_ast coqpp_lex coqpp_parse coqpp_parser)
+ (modules :standard \ coqpp)
  (modules_without_implementation coqpp_ast))
 
 (executable
- (name coqpp_main)
  (public_name coqpp)
+ (empty_module_interface_if_absent)
  (package coq-core)
  (libraries coqpp)
- (modules coqpp_main))
+ (modules coqpp))

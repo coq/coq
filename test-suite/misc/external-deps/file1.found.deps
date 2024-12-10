@@ -1,1 +1,1 @@
-misc/external-deps/file1.vo misc/external-deps/file1.glob misc/external-deps/file1.v.beautified misc/external-deps/file1.required_vo: misc/external-deps/file1.v misc/external-deps/deps/d1
+misc/external-deps/file1.vo misc/external-deps/file1.glob misc/external-deps/file1.v.beautified misc/external-deps/file1.required_vo: misc/external-deps/file1.v @COQWORKER@ misc/external-deps/deps/d1

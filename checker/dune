@@ -4,17 +4,29 @@
 ; duplicate module names in the whole build.
 (library
  (name coq_checklib)
- (public_name coq-core.checklib)
+ (public_name rocq-runtime.checklib)
  (synopsis "Rocq's Standalone Proof Checker")
- (modules :standard \ coqchk votour)
+ (modules :standard \ rocqchk coqchk votour)
  (wrapped true)
- (libraries coq-core.boot coq-core.kernel))
+ (libraries rocq-runtime.boot rocq-runtime.kernel))
+
+(deprecated_library_name
+ (old_public_name coq-core.checklib)
+ (new_public_name rocq-runtime.checklib))
+
+(executable
+ (name rocqchk)
+ (public_name rocqchk)
+ (modes exe byte)
+ (package rocq-runtime)
+ (modules rocqchk)
+ (flags :standard -open Coq_checklib)
+ (libraries coq_checklib))
 
 (executable
  (name coqchk)
  (public_name coqchk)
  (modes exe byte)
- ; Move to coq-checker?
  (package coq-core)
  (modules coqchk)
  (flags :standard -open Coq_checklib)
@@ -23,7 +35,7 @@
 (executable
  (name votour)
  (public_name votour)
- (package coq-core)
+ (package rocq-runtime)
  (modules votour)
  (flags :standard -open Coq_checklib)
  (libraries coq_checklib))

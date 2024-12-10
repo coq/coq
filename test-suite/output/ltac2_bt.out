@@ -2,31 +2,31 @@ File "./output/ltac2_bt.v", line 8, characters 2-48:
 The command has indeed failed with message:
 Uncaught Ltac2 exception: Invalid_argument None
 Backtrace:
-Prim <coq-core.plugins.ltac2:plus>
+Prim <rocq-runtime.plugins.ltac2:plus>
 Call {Control.zero e}
-Prim <coq-core.plugins.ltac2:zero>
+Prim <rocq-runtime.plugins.ltac2:zero>
 
 File "./output/ltac2_bt.v", line 9, characters 2-49:
 The command has indeed failed with message:
 Uncaught Ltac2 exception: Invalid_argument None
 Backtrace:
-Prim <coq-core.plugins.ltac2:plus>
+Prim <rocq-runtime.plugins.ltac2:plus>
 Call {Control.throw e}
-Prim <coq-core.plugins.ltac2:throw>
+Prim <rocq-runtime.plugins.ltac2:throw>
 
 File "./output/ltac2_bt.v", line 10, characters 2-60:
 The command has indeed failed with message:
 Uncaught Ltac2 exception: Invalid_argument None
 Backtrace:
-Prim <coq-core.plugins.ltac2:plus_bt>
+Prim <rocq-runtime.plugins.ltac2:plus_bt>
 Call f
-Prim <coq-core.plugins.ltac2:zero>
+Prim <rocq-runtime.plugins.ltac2:zero>
 
 File "./output/ltac2_bt.v", line 11, characters 2-61:
 The command has indeed failed with message:
 Uncaught Ltac2 exception: Invalid_argument None
 Backtrace:
-Prim <coq-core.plugins.ltac2:plus_bt>
+Prim <rocq-runtime.plugins.ltac2:plus_bt>
 Call f
-Prim <coq-core.plugins.ltac2:zero>
+Prim <rocq-runtime.plugins.ltac2:zero>
 

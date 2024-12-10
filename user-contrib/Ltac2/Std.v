@@ -131,123 +131,123 @@ Ltac2 Type inversion_kind := [
 
 (** Standard, built-in tactics. See Ltac1 for documentation. *)
 
-Ltac2 @ external intros : evar_flag -> intro_pattern list -> unit := "coq-core.plugins.ltac2" "tac_intros".
+Ltac2 @ external intros : evar_flag -> intro_pattern list -> unit := "rocq-runtime.plugins.ltac2" "tac_intros".
 
 Ltac2 @ external apply : advanced_flag -> evar_flag ->
-  (unit -> constr_with_bindings) list -> (ident * (intro_pattern option)) option -> unit := "coq-core.plugins.ltac2" "tac_apply".
+  (unit -> constr_with_bindings) list -> (ident * (intro_pattern option)) option -> unit := "rocq-runtime.plugins.ltac2" "tac_apply".
 
-Ltac2 @ external elim : evar_flag -> constr_with_bindings -> constr_with_bindings option -> unit := "coq-core.plugins.ltac2" "tac_elim".
-Ltac2 @ external case : evar_flag -> constr_with_bindings -> unit := "coq-core.plugins.ltac2" "tac_case".
+Ltac2 @ external elim : evar_flag -> constr_with_bindings -> constr_with_bindings option -> unit := "rocq-runtime.plugins.ltac2" "tac_elim".
+Ltac2 @ external case : evar_flag -> constr_with_bindings -> unit := "rocq-runtime.plugins.ltac2" "tac_case".
 
-Ltac2 @ external generalize : (constr * occurrences * ident option) list -> unit := "coq-core.plugins.ltac2" "tac_generalize".
+Ltac2 @ external generalize : (constr * occurrences * ident option) list -> unit := "rocq-runtime.plugins.ltac2" "tac_generalize".
 
-Ltac2 @ external assert : assertion -> unit := "coq-core.plugins.ltac2" "tac_assert".
-Ltac2 @ external enough : constr -> (unit -> unit) option option -> intro_pattern option -> unit := "coq-core.plugins.ltac2" "tac_enough".
+Ltac2 @ external assert : assertion -> unit := "rocq-runtime.plugins.ltac2" "tac_assert".
+Ltac2 @ external enough : constr -> (unit -> unit) option option -> intro_pattern option -> unit := "rocq-runtime.plugins.ltac2" "tac_enough".
 
-Ltac2 @ external pose : ident option -> constr -> unit := "coq-core.plugins.ltac2" "tac_pose".
-Ltac2 @ external set : evar_flag -> (unit -> ident option * constr) -> clause -> unit := "coq-core.plugins.ltac2" "tac_set".
+Ltac2 @ external pose : ident option -> constr -> unit := "rocq-runtime.plugins.ltac2" "tac_pose".
+Ltac2 @ external set : evar_flag -> (unit -> ident option * constr) -> clause -> unit := "rocq-runtime.plugins.ltac2" "tac_set".
 
-Ltac2 @ external remember : evar_flag -> ident option -> (unit -> constr) -> intro_pattern option -> clause -> unit := "coq-core.plugins.ltac2" "tac_remember".
+Ltac2 @ external remember : evar_flag -> ident option -> (unit -> constr) -> intro_pattern option -> clause -> unit := "rocq-runtime.plugins.ltac2" "tac_remember".
 
 Ltac2 @ external destruct : evar_flag -> induction_clause list ->
-  constr_with_bindings option -> unit := "coq-core.plugins.ltac2" "tac_destruct".
+  constr_with_bindings option -> unit := "rocq-runtime.plugins.ltac2" "tac_destruct".
 
 Ltac2 @ external induction : evar_flag -> induction_clause list ->
-  constr_with_bindings option -> unit := "coq-core.plugins.ltac2" "tac_induction".
+  constr_with_bindings option -> unit := "rocq-runtime.plugins.ltac2" "tac_induction".
 
-Ltac2 @ external red : clause -> unit := "coq-core.plugins.ltac2" "tac_red".
-Ltac2 @ external hnf : clause -> unit := "coq-core.plugins.ltac2" "tac_hnf".
-Ltac2 @ external simpl : red_flags -> (pattern * occurrences) option -> clause -> unit := "coq-core.plugins.ltac2" "tac_simpl".
-Ltac2 @ external cbv : red_flags -> clause -> unit := "coq-core.plugins.ltac2" "tac_cbv".
-Ltac2 @ external cbn : red_flags -> clause -> unit := "coq-core.plugins.ltac2" "tac_cbn".
-Ltac2 @ external lazy : red_flags -> clause -> unit := "coq-core.plugins.ltac2" "tac_lazy".
-Ltac2 @ external unfold : (reference * occurrences) list -> clause -> unit := "coq-core.plugins.ltac2" "tac_unfold".
-Ltac2 @ external fold : constr list -> clause -> unit := "coq-core.plugins.ltac2" "tac_fold".
-Ltac2 @ external pattern : (constr * occurrences) list -> clause -> unit := "coq-core.plugins.ltac2" "tac_pattern".
-Ltac2 @ external vm : (pattern * occurrences) option -> clause -> unit := "coq-core.plugins.ltac2" "tac_vm".
-Ltac2 @ external native : (pattern * occurrences) option -> clause -> unit := "coq-core.plugins.ltac2" "tac_native".
+Ltac2 @ external red : clause -> unit := "rocq-runtime.plugins.ltac2" "tac_red".
+Ltac2 @ external hnf : clause -> unit := "rocq-runtime.plugins.ltac2" "tac_hnf".
+Ltac2 @ external simpl : red_flags -> (pattern * occurrences) option -> clause -> unit := "rocq-runtime.plugins.ltac2" "tac_simpl".
+Ltac2 @ external cbv : red_flags -> clause -> unit := "rocq-runtime.plugins.ltac2" "tac_cbv".
+Ltac2 @ external cbn : red_flags -> clause -> unit := "rocq-runtime.plugins.ltac2" "tac_cbn".
+Ltac2 @ external lazy : red_flags -> clause -> unit := "rocq-runtime.plugins.ltac2" "tac_lazy".
+Ltac2 @ external unfold : (reference * occurrences) list -> clause -> unit := "rocq-runtime.plugins.ltac2" "tac_unfold".
+Ltac2 @ external fold : constr list -> clause -> unit := "rocq-runtime.plugins.ltac2" "tac_fold".
+Ltac2 @ external pattern : (constr * occurrences) list -> clause -> unit := "rocq-runtime.plugins.ltac2" "tac_pattern".
+Ltac2 @ external vm : (pattern * occurrences) option -> clause -> unit := "rocq-runtime.plugins.ltac2" "tac_vm".
+Ltac2 @ external native : (pattern * occurrences) option -> clause -> unit := "rocq-runtime.plugins.ltac2" "tac_native".
 
-Ltac2 @ external eval_red : constr -> constr := "coq-core.plugins.ltac2" "eval_red".
-Ltac2 @ external eval_hnf : constr -> constr := "coq-core.plugins.ltac2" "eval_hnf".
-Ltac2 @ external eval_red : constr -> constr := "coq-core.plugins.ltac2" "eval_red".
-Ltac2 @ external eval_simpl : red_flags -> (pattern * occurrences) option -> constr -> constr := "coq-core.plugins.ltac2" "eval_simpl".
-Ltac2 @ external eval_cbv : red_flags -> constr -> constr := "coq-core.plugins.ltac2" "eval_cbv".
-Ltac2 @ external eval_cbn : red_flags -> constr -> constr := "coq-core.plugins.ltac2" "eval_cbn".
-Ltac2 @ external eval_lazy : red_flags -> constr -> constr := "coq-core.plugins.ltac2" "eval_lazy".
-Ltac2 @ external eval_unfold : (reference * occurrences) list -> constr -> constr := "coq-core.plugins.ltac2" "eval_unfold".
-Ltac2 @ external eval_fold : constr list -> constr -> constr := "coq-core.plugins.ltac2" "eval_fold".
-Ltac2 @ external eval_pattern : (constr * occurrences) list -> constr -> constr := "coq-core.plugins.ltac2" "eval_pattern".
-Ltac2 @ external eval_vm : (pattern * occurrences) option -> constr -> constr := "coq-core.plugins.ltac2" "eval_vm".
-Ltac2 @ external eval_native : (pattern * occurrences) option -> constr -> constr := "coq-core.plugins.ltac2" "eval_native".
+Ltac2 @ external eval_red : constr -> constr := "rocq-runtime.plugins.ltac2" "eval_red".
+Ltac2 @ external eval_hnf : constr -> constr := "rocq-runtime.plugins.ltac2" "eval_hnf".
+Ltac2 @ external eval_red : constr -> constr := "rocq-runtime.plugins.ltac2" "eval_red".
+Ltac2 @ external eval_simpl : red_flags -> (pattern * occurrences) option -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_simpl".
+Ltac2 @ external eval_cbv : red_flags -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_cbv".
+Ltac2 @ external eval_cbn : red_flags -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_cbn".
+Ltac2 @ external eval_lazy : red_flags -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_lazy".
+Ltac2 @ external eval_unfold : (reference * occurrences) list -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_unfold".
+Ltac2 @ external eval_fold : constr list -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_fold".
+Ltac2 @ external eval_pattern : (constr * occurrences) list -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_pattern".
+Ltac2 @ external eval_vm : (pattern * occurrences) option -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_vm".
+Ltac2 @ external eval_native : (pattern * occurrences) option -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_native".
 
-Ltac2 @ external change : pattern option -> (constr array -> constr) -> clause -> unit := "coq-core.plugins.ltac2" "tac_change".
+Ltac2 @ external change : pattern option -> (constr array -> constr) -> clause -> unit := "rocq-runtime.plugins.ltac2" "tac_change".
 
-Ltac2 @ external rewrite : evar_flag -> rewriting list -> clause -> (unit -> unit) option -> unit := "coq-core.plugins.ltac2" "tac_rewrite".
+Ltac2 @ external rewrite : evar_flag -> rewriting list -> clause -> (unit -> unit) option -> unit := "rocq-runtime.plugins.ltac2" "tac_rewrite".
 
-Ltac2 @ external setoid_rewrite : orientation -> (unit -> constr_with_bindings) -> occurrences -> ident option -> unit := "coq-core.plugins.ltac2" "tac_setoid_rewrite".
+Ltac2 @ external setoid_rewrite : orientation -> (unit -> constr_with_bindings) -> occurrences -> ident option -> unit := "rocq-runtime.plugins.ltac2" "tac_setoid_rewrite".
 
-Ltac2 @ external reflexivity : unit -> unit := "coq-core.plugins.ltac2" "tac_reflexivity".
+Ltac2 @ external reflexivity : unit -> unit := "rocq-runtime.plugins.ltac2" "tac_reflexivity".
 
-Ltac2 @ external assumption : unit -> unit := "coq-core.plugins.ltac2" "tac_assumption".
+Ltac2 @ external assumption : unit -> unit := "rocq-runtime.plugins.ltac2" "tac_assumption".
 
-Ltac2 @ external transitivity : constr -> unit := "coq-core.plugins.ltac2" "tac_transitivity".
+Ltac2 @ external transitivity : constr -> unit := "rocq-runtime.plugins.ltac2" "tac_transitivity".
 
-Ltac2 @ external etransitivity : unit -> unit := "coq-core.plugins.ltac2" "tac_etransitivity".
+Ltac2 @ external etransitivity : unit -> unit := "rocq-runtime.plugins.ltac2" "tac_etransitivity".
 
-Ltac2 @ external cut : constr -> unit := "coq-core.plugins.ltac2" "tac_cut".
+Ltac2 @ external cut : constr -> unit := "rocq-runtime.plugins.ltac2" "tac_cut".
 
-Ltac2 @ external left : evar_flag -> bindings -> unit := "coq-core.plugins.ltac2" "tac_left".
-Ltac2 @ external right : evar_flag -> bindings -> unit := "coq-core.plugins.ltac2" "tac_right".
+Ltac2 @ external left : evar_flag -> bindings -> unit := "rocq-runtime.plugins.ltac2" "tac_left".
+Ltac2 @ external right : evar_flag -> bindings -> unit := "rocq-runtime.plugins.ltac2" "tac_right".
 
-Ltac2 @ external constructor : evar_flag -> unit := "coq-core.plugins.ltac2" "tac_constructor".
-Ltac2 @ external split : evar_flag -> bindings -> unit := "coq-core.plugins.ltac2" "tac_split".
+Ltac2 @ external constructor : evar_flag -> unit := "rocq-runtime.plugins.ltac2" "tac_constructor".
+Ltac2 @ external split : evar_flag -> bindings -> unit := "rocq-runtime.plugins.ltac2" "tac_split".
 
-Ltac2 @ external constructor_n : evar_flag -> int -> bindings -> unit := "coq-core.plugins.ltac2" "tac_constructorn".
+Ltac2 @ external constructor_n : evar_flag -> int -> bindings -> unit := "rocq-runtime.plugins.ltac2" "tac_constructorn".
 
-Ltac2 @ external intros_until : hypothesis -> unit := "coq-core.plugins.ltac2" "tac_introsuntil".
+Ltac2 @ external intros_until : hypothesis -> unit := "rocq-runtime.plugins.ltac2" "tac_introsuntil".
 
-Ltac2 @ external symmetry : clause -> unit := "coq-core.plugins.ltac2" "tac_symmetry".
+Ltac2 @ external symmetry : clause -> unit := "rocq-runtime.plugins.ltac2" "tac_symmetry".
 
-Ltac2 @ external rename : (ident * ident) list -> unit := "coq-core.plugins.ltac2" "tac_rename".
+Ltac2 @ external rename : (ident * ident) list -> unit := "rocq-runtime.plugins.ltac2" "tac_rename".
 
-Ltac2 @ external revert : ident list -> unit := "coq-core.plugins.ltac2" "tac_revert".
+Ltac2 @ external revert : ident list -> unit := "rocq-runtime.plugins.ltac2" "tac_revert".
 
-Ltac2 @ external admit : unit -> unit := "coq-core.plugins.ltac2" "tac_admit".
+Ltac2 @ external admit : unit -> unit := "rocq-runtime.plugins.ltac2" "tac_admit".
 
-Ltac2 @ external fix_ : ident -> int -> unit := "coq-core.plugins.ltac2" "tac_fix".
-Ltac2 @ external cofix_ : ident -> unit := "coq-core.plugins.ltac2" "tac_cofix".
+Ltac2 @ external fix_ : ident -> int -> unit := "rocq-runtime.plugins.ltac2" "tac_fix".
+Ltac2 @ external cofix_ : ident -> unit := "rocq-runtime.plugins.ltac2" "tac_cofix".
 
-Ltac2 @ external clear : ident list -> unit := "coq-core.plugins.ltac2" "tac_clear".
-Ltac2 @ external keep : ident list -> unit := "coq-core.plugins.ltac2" "tac_keep".
+Ltac2 @ external clear : ident list -> unit := "rocq-runtime.plugins.ltac2" "tac_clear".
+Ltac2 @ external keep : ident list -> unit := "rocq-runtime.plugins.ltac2" "tac_keep".
 
-Ltac2 @ external clearbody : ident list -> unit := "coq-core.plugins.ltac2" "tac_clearbody".
+Ltac2 @ external clearbody : ident list -> unit := "rocq-runtime.plugins.ltac2" "tac_clearbody".
 
-Ltac2 @ external exact_no_check : constr -> unit := "coq-core.plugins.ltac2" "tac_exactnocheck".
-Ltac2 @ external vm_cast_no_check : constr -> unit := "coq-core.plugins.ltac2" "tac_vmcastnocheck".
-Ltac2 @ external native_cast_no_check : constr -> unit := "coq-core.plugins.ltac2" "tac_nativecastnocheck".
+Ltac2 @ external exact_no_check : constr -> unit := "rocq-runtime.plugins.ltac2" "tac_exactnocheck".
+Ltac2 @ external vm_cast_no_check : constr -> unit := "rocq-runtime.plugins.ltac2" "tac_vmcastnocheck".
+Ltac2 @ external native_cast_no_check : constr -> unit := "rocq-runtime.plugins.ltac2" "tac_nativecastnocheck".
 
-Ltac2 @ external inversion : inversion_kind -> destruction_arg -> intro_pattern option -> ident list option -> unit := "coq-core.plugins.ltac2" "tac_inversion".
+Ltac2 @ external inversion : inversion_kind -> destruction_arg -> intro_pattern option -> ident list option -> unit := "rocq-runtime.plugins.ltac2" "tac_inversion".
 
 (** coretactics *)
 
-Ltac2 @ external move : ident -> move_location -> unit := "coq-core.plugins.ltac2" "tac_move".
+Ltac2 @ external move : ident -> move_location -> unit := "rocq-runtime.plugins.ltac2" "tac_move".
 
-Ltac2 @ external intro : ident option -> move_location option -> unit := "coq-core.plugins.ltac2" "tac_intro".
+Ltac2 @ external intro : ident option -> move_location option -> unit := "rocq-runtime.plugins.ltac2" "tac_intro".
 
-Ltac2 @ external specialize : constr_with_bindings -> intro_pattern option -> unit := "coq-core.plugins.ltac2" "tac_specialize".
+Ltac2 @ external specialize : constr_with_bindings -> intro_pattern option -> unit := "rocq-runtime.plugins.ltac2" "tac_specialize".
 
 (** extratactics *)
 
-Ltac2 @ external discriminate : evar_flag -> destruction_arg option -> unit := "coq-core.plugins.ltac2" "tac_discriminate".
-Ltac2 @ external injection : evar_flag -> intro_pattern list option -> destruction_arg option -> unit := "coq-core.plugins.ltac2" "tac_injection".
+Ltac2 @ external discriminate : evar_flag -> destruction_arg option -> unit := "rocq-runtime.plugins.ltac2" "tac_discriminate".
+Ltac2 @ external injection : evar_flag -> intro_pattern list option -> destruction_arg option -> unit := "rocq-runtime.plugins.ltac2" "tac_injection".
 
-Ltac2 @ external absurd : constr -> unit := "coq-core.plugins.ltac2" "tac_absurd".
-Ltac2 @ external contradiction : constr_with_bindings option -> unit := "coq-core.plugins.ltac2" "tac_contradiction".
+Ltac2 @ external absurd : constr -> unit := "rocq-runtime.plugins.ltac2" "tac_absurd".
+Ltac2 @ external contradiction : constr_with_bindings option -> unit := "rocq-runtime.plugins.ltac2" "tac_contradiction".
 
-Ltac2 @ external autorewrite : bool -> (unit -> unit) option -> ident list -> clause -> unit := "coq-core.plugins.ltac2" "tac_autorewrite".
+Ltac2 @ external autorewrite : bool -> (unit -> unit) option -> ident list -> clause -> unit := "rocq-runtime.plugins.ltac2" "tac_autorewrite".
 
-Ltac2 @ external subst : ident list -> unit := "coq-core.plugins.ltac2" "tac_subst".
-Ltac2 @ external subst_all : unit -> unit := "coq-core.plugins.ltac2" "tac_substall".
+Ltac2 @ external subst : ident list -> unit := "rocq-runtime.plugins.ltac2" "tac_subst".
+Ltac2 @ external subst_all : unit -> unit := "rocq-runtime.plugins.ltac2" "tac_substall".
 
 (** auto *)
 
@@ -255,23 +255,23 @@ Ltac2 Type debug := [ Off | Info | Debug ].
 
 Ltac2 Type strategy := [ BFS | DFS ].
 
-Ltac2 @ external trivial : debug -> reference list -> ident list option -> unit := "coq-core.plugins.ltac2" "tac_trivial".
+Ltac2 @ external trivial : debug -> reference list -> ident list option -> unit := "rocq-runtime.plugins.ltac2" "tac_trivial".
 
-Ltac2 @ external auto : debug -> int option -> reference list -> ident list option -> unit := "coq-core.plugins.ltac2" "tac_auto".
+Ltac2 @ external auto : debug -> int option -> reference list -> ident list option -> unit := "rocq-runtime.plugins.ltac2" "tac_auto".
 
-Ltac2 @ external eauto : debug -> int option -> reference list -> ident list option -> unit := "coq-core.plugins.ltac2" "tac_eauto".
+Ltac2 @ external eauto : debug -> int option -> reference list -> ident list option -> unit := "rocq-runtime.plugins.ltac2" "tac_eauto".
 
-Ltac2 @ external typeclasses_eauto : strategy option -> int option -> ident list option -> unit := "coq-core.plugins.ltac2" "tac_typeclasses_eauto".
+Ltac2 @ external typeclasses_eauto : strategy option -> int option -> ident list option -> unit := "rocq-runtime.plugins.ltac2" "tac_typeclasses_eauto".
 
-Ltac2 @ external resolve_tc : constr -> unit := "coq-core.plugins.ltac2" "tac_resolve_tc".
+Ltac2 @ external resolve_tc : constr -> unit := "rocq-runtime.plugins.ltac2" "tac_resolve_tc".
 (** Resolve the existential variables appearing in the constr
     whose types are typeclasses.
     Fail if any of them cannot be resolved.
     Does not focus. *)
 
-Ltac2 @ external unify : constr -> constr -> unit := "coq-core.plugins.ltac2" "tac_unify".
+Ltac2 @ external unify : constr -> constr -> unit := "rocq-runtime.plugins.ltac2" "tac_unify".
 
 Ltac2 @ external congruence : int option -> constr list option -> unit :=
-  "coq-core.plugins.ltac2" "congruence".
+  "rocq-runtime.plugins.ltac2" "congruence".
 Ltac2 @ external simple_congruence : int option -> constr list option -> unit :=
-  "coq-core.plugins.ltac2" "simple_congruence".
+  "rocq-runtime.plugins.ltac2" "simple_congruence".

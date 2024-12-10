@@ -1,7 +1,10 @@
 (library
  (name tuto3_plugin)
- (public_name coq-core.plugins.tutorial.p3)
+ (public_name rocq-runtime.plugins.tutorial.p3)
  (flags :standard -warn-error -3)
- (libraries coq-core.plugins.ltac))
+ (libraries rocq-runtime.plugins.ltac))
 
-(coq.pp (modules g_tuto3))
+(rule
+ (targets g_tuto3.ml)
+ (deps (:mlg g_tuto3.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))

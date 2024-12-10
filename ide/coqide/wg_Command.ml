@@ -121,15 +121,15 @@ object(self)
             let err = Ideutils.validate err in
             result#set err;
             notebook#set_page ~tab_label:(new_tab_lbl "Error") frame#coerce;
-            Rocq.return ()
+            RocqDriver.return ()
         | Interface.Good () ->
             notebook#set_page ~tab_label:(new_tab_lbl arg) frame#coerce;
-            Rocq.return ()
+            RocqDriver.return ()
         in
         rocqops#raw_rocq_query ~route_id ~next phrase
       in
       result#set (Pp.str ("Result for command " ^ phrase ^ ":\n"));
-      ignore @@ Rocq.try_grab rocqtop process ignore
+      ignore @@ RocqDriver.try_grab rocqtop process ignore
     in
     ignore (combo#entry#connect#activate ~callback);
     ignore (ok_b#connect#clicked ~callback);

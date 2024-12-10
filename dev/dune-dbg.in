@@ -16,7 +16,7 @@ while [[ $# -gt 0 ]]; do
         coqchk)
             shift
             exe=_build/default/checker/coqchk.bc
-            opts+=($(ocamlfind query -recursive -i-format coq-core.checklib))
+            opts+=($(ocamlfind query -recursive -i-format rocq-runtime.checklib))
             break
             ;;
         coqide)
@@ -26,7 +26,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         coqc)
             shift
-            exe=_build/default/topbin/coqc_byte_bin.bc
+            exe="_build/default/topbin/coqworker.bc --kind=compile"
             break
             ;;
         coqtop)
@@ -41,7 +41,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         coqnative)
             shift
-            exe=_build/default/topbin/coqnative_bin.bc
+            exe=_build/default/topbin/rocqnative.bc
             break
             ;;
         *)
@@ -51,4 +51,4 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-ocamldebug "${opts[@]}" $(ocamlfind query -recursive -i-format coq-core.dev) $(ocamlfind query -i-format -descendants coq-core.vernac) -I +threads -I dev $exe "$@"
+ocamldebug "${opts[@]}" $(ocamlfind query -recursive -i-format rocq-runtime.dev) $(ocamlfind query -i-format -descendants rocq-runtime.vernac) -I +threads -I dev $exe "$@"

@@ -22,3 +22,8 @@ val findlib_deep_resolve
   :  file:string
   -> package:string
   -> string list * string list
+
+module Internal : sig
+  (** Call Loadpath.get_worker_path instead *)
+  val get_worker_path : unit -> string
+end

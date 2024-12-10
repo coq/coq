@@ -1,6 +1,9 @@
 (library
  (name tuto1_plugin)
- (public_name coq-core.plugins.tutorial.p1)
- (libraries coq-core.plugins.ltac))
+ (public_name rocq-runtime.plugins.tutorial.p1)
+ (libraries rocq-runtime.plugins.ltac))
 
-(coq.pp (modules g_tuto1))
+(rule
+ (targets g_tuto1.ml)
+ (deps (:mlg g_tuto1.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))
