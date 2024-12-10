@@ -239,6 +239,15 @@ before_script:
     - if [ "$COQ_CI_NATIVE" = true ]; then echo "Definition f x := x + x." > test_native.v; fi
     - if [ "$COQ_CI_NATIVE" = true ]; then coqc test_native.v; fi
     - if [ "$COQ_CI_NATIVE" = true ]; then test -f .coq-native/Ntest_native.cmxs; fi
+  after_script:
+    - eval $(opam env)
+    - du -ha "$(coqc -where)" > files.listing
+  artifacts:
+    name: "$CI_JOB_NAME"
+    paths:
+      - files.listing
+    when: always
+    expire_in: 1 week
   variables:
     OPAM_VARIANT: "+flambda"
   only: *full-ci
