@@ -19,15 +19,76 @@ let fatal msg =
 
 let mk_code s = { code = s; loc = None }
 
-let print_code fmt c =
+let count_substring_newlines s offset len =
+  let rec aux acc offset len =
+    if len = 0 then acc
+    else
+      let acc = match s.[offset] with
+        | '\n' -> acc+1
+        | _ -> acc
+      in
+      aux acc (offset+1) (len-1)
+  in
+  aux 0 offset len
+
+type line_counter = {
+  fname : string;
+  mutable lines : int;
+}
+
+(* NB: using [Format.pp_set_formatter_out_functions] doesn't work well because
+   [Format.formatter_of_out_channel] does [out_newline = out_string fmt "\n"]
+   so if we update the line count in both out_newline and out_string
+   then we double count newlines from out_newline
+   ([out_string fmt "\n"] will use our wrapper).
+
+   OTOH if we update the line count only in [out_string] we would miss
+   newlines output by formatters created by [Format.formatter_of_out_functions]
+
+   (not a big concern for coqpp but it's not a nice API to take
+   [Format.formatter] but only work properly when it was created in a specific way)
+*)
+let of_out_channel_with_line_count fname oc =
+  let v = { fname; lines = 1 } in
+
+  let out_string s offset len =
+    v.lines <- v.lines + count_substring_newlines s offset len;
+    output_substring oc s offset len
+  in
+  let out_newline () =
+    v.lines <- v.lines + 1;
+    output_char oc '\n'
+  in
+  let out_spaces n = output_string oc (String.make n ' ') in
+  let fmt = Format.formatter_of_out_functions {
+    out_string;
+    out_flush = (fun () -> flush oc);
+    out_newline;
+    out_spaces;
+    out_indent = out_spaces;
+  }
+  in
+  fmt, v
+
+let exit_code counter fmt () =
+  (* this flush makes the formatting of the generated code worse but
+     is probably worth it for better error locations *)
+  Format.pp_print_flush fmt ();
+  let lines = counter.lines in
+  (* lines+1 because we are setting the position for the next line  *)
+  let msg = asprintf "# %i \"%s\"" (lines+1) counter.fname in
+  fprintf fmt "@<0>%s@\n" msg
+
+let print_code counter fmt c =
   match c.loc with
   | None -> fprintf fmt "%s" c.code
   | Some loc ->
     (* Print the line location as a source annotation *)
     let loc = loc.loc_start in
     let padding = String.make (loc.pos_cnum - loc.pos_bol + 1) ' ' in
-    let code_insert = asprintf "\n# %i \"%s\"\n%s%s" loc.pos_lnum loc.pos_fname padding c.code in
-    fprintf fmt "@[@<0>%s@]@\n" code_insert
+    let code_insert = asprintf "\n# %i \"%s\"\n%s%s\n" loc.pos_lnum loc.pos_fname padding c.code in
+    fprintf fmt "@<0>%s" code_insert;
+    exit_code counter fmt ()
 
 module StringSet = Set.Make(String)
 
@@ -107,8 +168,8 @@ let print_opt fmt pr = function
 module GramExt :
 sig
 
-val print_extrule : Format.formatter -> (symb list * string option list * code) -> unit
-val print_ast : Format.formatter -> grammar_ext -> unit
+val print_extrule : line_counter -> Format.formatter -> (symb list * string option list * code) -> unit
+val print_ast : line_counter -> Format.formatter -> grammar_ext -> unit
 
 end =
 struct
@@ -202,7 +263,7 @@ function
 
 and parse_token ~in_anon tkn = parse_tokens ~in_anon [tkn]
 
-let print_fun fmt (vars, body) =
+let print_fun counter fmt (vars, body) =
   let vars = List.rev vars in
   let iter = function
   | None -> fprintf fmt "_@ "
@@ -210,7 +271,7 @@ let print_fun fmt (vars, body) =
   in
   let () = fprintf fmt "fun@ " in
   let () = List.iter iter vars in
-  let () = fprintf fmt "loc ->@ @[%a@]" print_code body in
+  let () = fprintf fmt "loc ->@ @[%a@]" (print_code counter) body in
   ()
 
 (** Meta-program instead of calling Tok.of_pattern here because otherwise
@@ -230,22 +291,22 @@ function
 | "EOI", None -> fprintf fmt "Tok.PEOI"
 | _ -> failwith "Tok.of_pattern: not a constructor"
 
-let rec print_prod fmt p =
+let rec print_prod counter fmt p =
   let (vars, tkns) = List.split p.gprod_symbs in
   let tkn = List.map parse_tokens tkns in
-  print_extrule fmt (tkn, vars, p.gprod_body)
+  print_extrule counter fmt (tkn, vars, p.gprod_body)
 
-and print_extrule fmt (tkn, vars, body) =
+and print_extrule counter fmt (tkn, vars, body) =
   let tkn = List.rev tkn in
-  fprintf fmt "@[Procq.Production.make@ @[(%a)@]@ @[(%a)@]@]" (print_symbols ~norec:false) tkn print_fun (vars, body)
+  fprintf fmt "@[Procq.Production.make@ @[(%a)@]@ @[(%a)@]@]" (print_symbols ~norec:false counter) tkn (print_fun counter) (vars, body)
 
-and print_symbols ~norec fmt = function
+and print_symbols ~norec counter fmt = function
 | [] -> fprintf fmt "Procq.Rule.stop"
 | tkn :: tkns ->
   let c = if norec then "Procq.Rule.next_norec" else "Procq.Rule.next" in
-  fprintf fmt "@[%s@ (%a)@ (%a)@]" c (print_symbols ~norec) tkns print_symbol tkn
+  fprintf fmt "@[%s@ (%a)@ (%a)@]" c (print_symbols ~norec counter) tkns (print_symbol counter) tkn
 
-and print_symbol fmt tkn = match tkn with
+and print_symbol counter fmt tkn = match tkn with
 | SymbToken (t, s) ->
   fprintf fmt "(Procq.Symbol.token (%a))" print_tok (t, s)
 | SymbEntry (e, None) ->
@@ -257,35 +318,35 @@ and print_symbol fmt tkn = match tkn with
 | SymbNext ->
   fprintf fmt "Procq.Symbol.next"
 | SymbList0 (s, None) ->
-  fprintf fmt "(Procq.Symbol.list0 %a)" print_symbol s
+  fprintf fmt "(Procq.Symbol.list0 %a)" (print_symbol counter) s
 | SymbList0 (s, Some sep) ->
-  fprintf fmt "(Procq.Symbol.list0sep (%a) (%a) false)" print_symbol s print_anonymized_symbol sep
+  fprintf fmt "(Procq.Symbol.list0sep (%a) (%a) false)" (print_symbol counter) s (print_anonymized_symbol counter) sep
 | SymbList1 (s, None) ->
-  fprintf fmt "(Procq.Symbol.list1 (%a))" print_symbol s
+  fprintf fmt "(Procq.Symbol.list1 (%a))" (print_symbol counter) s
 | SymbList1 (s, Some sep) ->
-  fprintf fmt "(Procq.Symbol.list1sep (%a) (%a) false)" print_symbol s print_anonymized_symbol sep
+  fprintf fmt "(Procq.Symbol.list1sep (%a) (%a) false)" (print_symbol counter) s (print_anonymized_symbol counter) sep
 | SymbOpt s ->
-  fprintf fmt "(Procq.Symbol.opt %a)" print_symbol s
+  fprintf fmt "(Procq.Symbol.opt %a)" (print_symbol counter) s
 | SymbRules rules ->
   let pr fmt (r, body) =
     let (vars, tkn) = List.split r in
     let tkn = List.rev tkn in
-    fprintf fmt "Procq.Rules.make @[(%a)@ (%a)@]" (print_symbols ~norec:true) tkn print_fun (vars, body)
+    fprintf fmt "Procq.Rules.make @[(%a)@ (%a)@]" (print_symbols ~norec:true counter) tkn (print_fun counter) (vars, body)
   in
   let pr fmt rules = print_list fmt pr rules in
   fprintf fmt "(Procq.Symbol.rules %a)" pr (List.rev rules)
 | SymbQuote c ->
   fprintf fmt "(%s)" c
 
-and print_anonymized_symbol fmt tkn = match tkn with
+and print_anonymized_symbol counter fmt tkn = match tkn with
 | SymbToken (t, s) ->
   fprintf fmt "(Procq.Symbol.tokens [Procq.TPattern (%a)])" print_tok (t, s)
-| _ -> print_symbol fmt (SymbRules [[None, tkn], mk_code "()"])
+| _ -> print_symbol counter fmt (SymbRules [[None, tkn], mk_code "()"])
 
-let print_rule fmt r =
+let print_rule counter fmt r =
   let pr_lvl fmt lvl = print_opt fmt print_string lvl in
   let pr_asc fmt asc = print_opt fmt print_assoc asc in
-  let pr_prd fmt prd = print_list fmt print_prod prd in
+  let pr_prd fmt prd = print_list fmt (print_prod counter) prd in
   fprintf fmt "@[(%a,@ %a,@ %a)@]" pr_lvl r.grule_label pr_asc r.grule_assoc pr_prd (List.rev r.grule_prods)
 
 let gramext_count = ref 0
@@ -300,15 +361,15 @@ let grammar_extend () =
   | Some name -> "Egramml.grammar_extend"^gramext_plugin_uid name
   | None -> "Procq.grammar_extend"
 
-let print_entry fmt e = match e.gentry_rules with
+let print_entry counter fmt e = match e.gentry_rules with
 | GDataReuse (pos, r) ->
   let rules = List.rev r in
   let pr_pos fmt pos = print_opt fmt print_string pos in
-  let pr_prd fmt prd = print_list fmt print_prod prd in
+  let pr_prd fmt prd = print_list fmt (print_prod counter) prd in
   fprintf fmt "let () =@ @[%s@ %s@ @[(Procq.Reuse (%a, %a))@]@]@ in@ "
     (grammar_extend ()) e.gentry_name pr_pos pos pr_prd rules
 | GDataFresh (pos, rules) ->
-  let print_rules fmt rules = print_list fmt print_rule rules in
+  let print_rules fmt rules = print_list fmt (print_rule counter) rules in
   let pr_check fmt () = match pos with
   | None -> fprintf fmt "let () =@ @[assert@ (Procq.Entry.is_empty@ %s)@]@ in@\n" e.gentry_name
   | Some _ -> fprintf fmt ""
@@ -317,10 +378,10 @@ let print_entry fmt e = match e.gentry_rules with
   fprintf fmt "%alet () =@ @[%s@ %s@ @[(Procq.Fresh@ (%a, %a))@]@]@ in@ "
     pr_check () (grammar_extend ()) e.gentry_name print_position pos print_rules rules
 
-let print_ast fmt ext =
+let print_ast counter fmt ext =
   let () = fprintf fmt "@[<2>let _ =@ " in
   let () = fprintf fmt "@[<v>%a@]" print_local ext in
-  let () = List.iter (fun e -> print_entry fmt e) ext.gramext_entries in
+  let () = List.iter (fun e -> print_entry counter fmt e) ext.gramext_entries in
   let () = fprintf fmt "()@]@\n" in
   ()
 
@@ -329,19 +390,19 @@ end
 module VernacExt :
 sig
 
-val print_ast : Format.formatter -> vernac_ext -> unit
+val print_ast : line_counter -> Format.formatter -> vernac_ext -> unit
 
 end =
 struct
 
-let print_rule_classifier fmt r = match r.vernac_class with
+let print_rule_classifier counter fmt r = match r.vernac_class with
 | None -> fprintf fmt "None"
 | Some f ->
   let no_binder = function ExtTerminal _ -> true | ExtNonTerminal _ -> false in
   if List.for_all no_binder r.vernac_toks then
-    fprintf fmt "Some @[%a@]" print_code f
+    fprintf fmt "Some @[%a@]" (print_code counter) f
   else
-    fprintf fmt "Some @[(fun %a-> %a)@]" print_binders r.vernac_toks print_code f
+    fprintf fmt "Some @[(fun %a-> %a)@]" print_binders r.vernac_toks (print_code counter) f
 
 (* let print_atts fmt = function *)
 (*   | None -> fprintf fmt "@[let () = Attributes.unsupported_attributes atts in@] " *)
@@ -370,13 +431,13 @@ let print_atts_left fmt = function
     in
     aux fmt atts
 
-let print_atts_right fmt = function
+let print_atts_right counter fmt = function
   | None -> fprintf fmt "(Attributes.unsupported_attributes atts)"
   | Some atts ->
     let rec aux fmt = function
       | [] -> assert false
-      | [_,y] -> print_code fmt y
-      | (_,y) :: rem -> fprintf fmt "(%a ++ %a)" print_code y aux rem
+      | [_,y] -> print_code counter fmt y
+      | (_,y) :: rem -> fprintf fmt "(%a ++ %a)" (print_code counter) y aux rem
     in
     let nota = match atts with [_] -> "" | _ -> "Attributes.Notations." in
     fprintf fmt "(Attributes.parse %s%a atts)" nota aux atts
@@ -407,29 +468,29 @@ let pr_end_wrapper fmt = function
 | [] -> fprintf fmt ""
 | args -> fprintf fmt "@ %a" pr_named_arguments args
 
-let print_body_state state fmt r =
+let print_body_state counter state fmt r =
   let state = match r.vernac_state with Some _ as s -> s | None -> state in
   match state with
-  | None -> fprintf fmt "Vernactypes.vtdefault (fun () -> %a)" print_code r.vernac_body
-  | Some "CUSTOM" -> print_code fmt r.vernac_body
+  | None -> fprintf fmt "Vernactypes.vtdefault (fun () -> %a)" (print_code counter) r.vernac_body
+  | Some "CUSTOM" -> print_code counter fmt r.vernac_body
   | Some state ->
     let state, wrap = understand_state state in
     fprintf fmt "Vernactypes.%s (%a (%a)%a)" state pr_begin_wrapper wrap
-      print_code r.vernac_body pr_end_wrapper wrap
+      (print_code counter) r.vernac_body pr_end_wrapper wrap
 
-let print_body_fun state fmt r =
+let print_body_fun counter state fmt r =
   match r.vernac_synterp with
   | None ->
     fprintf fmt "let coqpp_body %a%a =@ @[%a@] in@ "
-      print_binders r.vernac_toks print_atts_left r.vernac_atts (print_body_state state) r
+      print_binders r.vernac_toks print_atts_left r.vernac_atts (print_body_state counter state) r
   | Some (id,pe) ->
     fprintf fmt "let coqpp_body %a%a =@ @[(let %s = %a in %a)@] in@ "
-      print_binders r.vernac_toks print_atts_left r.vernac_atts id print_code pe  (print_body_state state) r
+      print_binders r.vernac_toks print_atts_left r.vernac_atts id (print_code counter) pe  (print_body_state counter state) r
 
-let print_body state fmt r =
+let print_body counter state fmt r =
   fprintf fmt "@[<2>(%a@[<2>fun %a?loc ~atts () ->@]@ @[<2>coqpp_body@ %a%a@])@]"
-    (print_body_fun state) r print_binders r.vernac_toks
-    print_binders r.vernac_toks print_atts_right r.vernac_atts
+    (print_body_fun counter state) r print_binders r.vernac_toks
+    print_binders r.vernac_toks (print_atts_right counter) r.vernac_atts
 
 let rec print_sig fmt = function
 | [] -> fprintf fmt "@[Vernacextend.TyNil@]"
@@ -439,12 +500,12 @@ let rec print_sig fmt = function
   fprintf fmt "@[Vernacextend.TyNonTerminal (%a,@ %a)@]"
     print_symbol symb print_sig rem
 
-let print_rule state fmt r =
+let print_rule counter state fmt r =
   fprintf fmt "Vernacextend.TyML@ @[<v1>(%b,@ %a,@ %a,@ %a)@]"
-    r.vernac_depr print_sig r.vernac_toks (print_body state) r print_rule_classifier r
+    r.vernac_depr print_sig r.vernac_toks (print_body counter state) r (print_rule_classifier counter) r
 
-let print_rules state fmt rules =
-  print_list fmt (fun fmt r -> fprintf fmt "(%a)" (print_rule state) r) rules
+let print_rules counter state fmt rules =
+  print_list fmt (fun fmt r -> fprintf fmt "(%a)" (print_rule counter state) r) rules
 
 let print_classifier fmt = function
 | ClassifDefault -> fprintf fmt ""
@@ -459,12 +520,12 @@ let print_entry fmt = function
 | None -> fprintf fmt "None"
 | Some e -> fprintf fmt "(Some (%s))" e.code
 
-let print_ast fmt ext =
+let print_ast counter fmt ext =
   let pr fmt () =
     fprintf fmt "Vernacextend.static_vernac_extend ~plugin:%s ~command:\"%s\" %a ?entry:%a %a"
       (match check_is_plugin ~what:"VERNAC EXTEND" () with | Some name -> "(Some \""^name^"\")" | None -> "None")
       ext.vernacext_name print_classifier ext.vernacext_class
-      print_entry ext.vernacext_entry (print_rules ext.vernacext_state) ext.vernacext_rules
+      print_entry ext.vernacext_entry (print_rules counter ext.vernacext_state) ext.vernacext_rules
   in
   let () = fprintf fmt "let () = @[%a@]@\n" pr () in
   ()
@@ -474,7 +535,7 @@ end
 module TacticExt :
 sig
 
-val print_ast : Format.formatter -> tactic_ext -> unit
+val print_ast : line_counter -> Format.formatter -> tactic_ext -> unit
 
 end =
 struct
@@ -486,14 +547,14 @@ let rec print_clause fmt = function
   fprintf fmt "@[Tacentries.TyArg (%a, %a)@]"
     print_symbol g print_clause cl
 
-let print_rule fmt r =
+let print_rule counter fmt r =
   fprintf fmt "@[Tacentries.TyML (%a, @[(fun %aist@ -> %a)@])@]"
-    print_clause r.tac_toks print_binders r.tac_toks print_code r.tac_body
+    print_clause r.tac_toks print_binders r.tac_toks (print_code counter) r.tac_body
 
-let print_rules fmt rules =
-  print_list fmt (fun fmt r -> fprintf fmt "(%a)" print_rule r) rules
+let print_rules counter fmt rules =
+  print_list fmt (fun fmt r -> fprintf fmt "(%a)" (print_rule counter) r) rules
 
-let print_ast fmt ext =
+let print_ast counter fmt ext =
   let deprecation fmt =
     function
     | None -> ()
@@ -505,7 +566,7 @@ let print_ast fmt ext =
     fprintf fmt "Tacentries.tactic_extend \"%s\" \"%s\" ~level:%i %a%a"
       name ext.tacext_name level
       deprecation ext.tacext_deprecated
-      print_rules ext.tacext_rules
+      (print_rules counter) ext.tacext_rules
   in
   let () = fprintf fmt "let () = @[%a@]\n" pr () in
   ()
@@ -515,8 +576,8 @@ end
 module VernacArgumentExt :
 sig
 
-val print_ast : Format.formatter -> vernac_argument_ext -> unit
-val print_rules : Format.formatter -> string * tactic_rule list -> unit
+val print_ast : line_counter -> Format.formatter -> vernac_argument_ext -> unit
+val print_rules : line_counter -> Format.formatter -> string * tactic_rule list -> unit
 
 end =
 struct
@@ -550,11 +611,11 @@ let parse_rule self r =
   let symbs, vars = List.split symbs in
   (symbs, vars, r.tac_body)
 
-let print_rules fmt (name, rules) =
+let print_rules counter fmt (name, rules) =
   (* Rules are reversed. *)
   let rules = List.rev rules in
   let rules = List.map (fun r -> parse_rule name r) rules in
-  let pr fmt l = print_list fmt (fun fmt r -> fprintf fmt "(%a)" GramExt.print_extrule r) l in
+  let pr fmt l = print_list fmt (fun fmt r -> fprintf fmt "(%a)" (GramExt.print_extrule counter) r) l in
   match rules with
   | [([SymbEntry (e, None)], [Some s], { code = c } )] when String.trim c = s ->
     (* This is a horrible hack to work around limitations of camlp5 regarding
@@ -564,19 +625,19 @@ let print_rules fmt (name, rules) =
     fprintf fmt "@[Vernacextend.Arg_alias@ @[<2>(%s)@]@]" e
   | _ -> fprintf fmt "@[Vernacextend.Arg_rules@ @[<2>(%a)@]@]" pr rules
 
-let print_printer fmt = function
+let print_printer counter fmt = function
 | None -> fprintf fmt "@[fun _ -> Pp.str \"missing printer\"@]"
-| Some f -> print_code fmt f
+| Some f -> print_code counter fmt f
 
-let print_ast fmt arg =
+let print_ast counter fmt arg =
   let name = arg.vernacargext_name in
   let pr fmt () =
     fprintf fmt "Vernacextend.vernac_argument_extend ~plugin:\"%s\" ~name:%a @[<2>{@\n\
       Vernacextend.arg_parsing =@ %a;@\n\
       Vernacextend.arg_printer = fun env sigma ->@ %a;@\n}@]"
       (force_is_plugin ~what:"VERNAC ARGUMENT EXTEND" ())
-      print_string name print_rules (name, arg.vernacargext_rules)
-      print_printer arg.vernacargext_printer
+      print_string name (print_rules counter) (name, arg.vernacargext_rules)
+      (print_printer counter) arg.vernacargext_printer
   in
   fprintf fmt "@[<2>let (wit_%s, %s) =@ @[%a@]@]@\nlet _ = (wit_%s, %s)@\n"
     name name pr () name name
@@ -586,7 +647,7 @@ end
 module ArgumentExt :
 sig
 
-val print_ast : Format.formatter -> argument_ext -> unit
+val print_ast : line_counter -> Format.formatter -> argument_ext -> unit
 
 end =
 struct
@@ -611,12 +672,12 @@ let rec print_wit fmt = function
 | OptArgType arg ->
   fprintf fmt "Genarg.OptArg @[(%a)@]" print_wit arg
 
-let print_ast fmt arg =
+let print_ast counter fmt arg =
   let name = arg.argext_name in
   let pr_tag fmt t = print_opt fmt print_argtype t in
   let intern fmt () = match arg.argext_glob, arg.argext_type with
   | Some f, (None | Some _) ->
-    fprintf fmt "@[Tacentries.ArgInternFun ((fun f ist v -> (ist, f ist v)) (%a))@]" print_code f
+    fprintf fmt "@[Tacentries.ArgInternFun ((fun f ist v -> (ist, f ist v)) (%a))@]" (print_code counter) f
   | None, Some t ->
     fprintf fmt "@[Tacentries.ArgInternWit (%a)@]" print_wit t
   | None, None ->
@@ -624,7 +685,7 @@ let print_ast fmt arg =
   in
   let subst fmt () = match arg.argext_subst, arg.argext_type with
   | Some f, (None | Some _) ->
-    fprintf fmt "@[Tacentries.ArgSubstFun (%a)@]" print_code f
+    fprintf fmt "@[Tacentries.ArgSubstFun (%a)@]" (print_code counter) f
   | None, Some t ->
     fprintf fmt "@[Tacentries.ArgSubstWit (%a)@]" print_wit t
   | None, None ->
@@ -632,7 +693,7 @@ let print_ast fmt arg =
   in
   let interp fmt () = match arg.argext_interp, arg.argext_type with
   | Some (None, f), (None | Some _) ->
-    fprintf fmt "@[Tacentries.ArgInterpSimple (%a)@]" print_code f
+    fprintf fmt "@[Tacentries.ArgInterpSimple (%a)@]" (print_code counter) f
   | Some (Some kind, f), (None | Some _) ->
     fatal (Printf.sprintf "Unknown kind %s of interpretation function" kind)
   | None, Some t ->
@@ -665,9 +726,9 @@ let print_ast fmt arg =
                  Tacentries.arg_printer = @[((fun env sigma -> %a), (fun env sigma -> %a), (fun env sigma -> %a))@];@\n}@]"
       (force_is_plugin ~what:"ARGUMENT EXTEND" ())
       print_string name
-      VernacArgumentExt.print_rules (name, arg.argext_rules)
+      (VernacArgumentExt.print_rules counter) (name, arg.argext_rules)
       pr_tag arg.argext_type
-      intern () subst () interp () print_code rpr print_code gpr print_code tpr
+      intern () subst () interp () (print_code counter) rpr (print_code counter) gpr (print_code counter) tpr
   in
   fprintf fmt "let (wit_%s, %s) = @[%a@]@\nlet _ = (wit_%s, %s)@\n"
     name name pr () name name
@@ -682,15 +743,15 @@ let declare_plugin fmt name =
   in
   ()
 
-let pr_ast fmt = function
-| Code s -> fprintf fmt "%a@\n" print_code s
+let pr_ast counter fmt = function
+| Code s -> fprintf fmt "%a@\n" (print_code counter) s
 | Comment s -> fprintf fmt "%s@\n" s
 | DeclarePlugin name -> declare_plugin fmt name
-| GramExt gram -> fprintf fmt "%a@\n" GramExt.print_ast gram
-| VernacExt vernac -> fprintf fmt "%a@\n" VernacExt.print_ast vernac
-| VernacArgumentExt arg -> fprintf fmt "%a@\n" VernacArgumentExt.print_ast arg
-| TacticExt tac -> fprintf fmt "%a@\n" TacticExt.print_ast tac
-| ArgumentExt arg -> fprintf fmt "%a@\n" ArgumentExt.print_ast arg
+| GramExt gram -> fprintf fmt "%a@\n" (GramExt.print_ast counter) gram
+| VernacExt vernac -> fprintf fmt "%a@\n" (VernacExt.print_ast counter) vernac
+| VernacArgumentExt arg -> fprintf fmt "%a@\n" (VernacArgumentExt.print_ast counter) arg
+| TacticExt tac -> fprintf fmt "%a@\n" (TacticExt.print_ast counter) tac
+| ArgumentExt arg -> fprintf fmt "%a@\n" (ArgumentExt.print_ast counter) arg
 
 let help () =
   Format.eprintf "Usage: coqpp file.mlg@\n%!";
@@ -718,8 +779,8 @@ let () =
   let ast = parse_file file in
   let chan = open_out output in
   let () = file_name := Filename.basename file in
-  let fmt = formatter_of_out_channel chan in
-  let iter ast = Format.fprintf fmt "@[%a@]%!" pr_ast ast in
+  let fmt, counter = of_out_channel_with_line_count output chan in
+  let iter ast = Format.fprintf fmt "@[%a@]%!" (pr_ast counter) ast in
   let () = List.iter iter ast in
   let () = close_out chan in
   exit 0
