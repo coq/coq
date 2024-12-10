@@ -610,7 +610,9 @@ let add_field ((l,sfb) as field) gn senv =
     | SFBmind mib, I mind -> Environ.add_mind mind mib senv.env
     | SFBmodtype mtb, MT -> Environ.add_modtype mtb senv.env
     | SFBmodule mb, M -> Modops.add_module mb senv.env
-    | SFBrules r, R -> Environ.add_rewrite_rules r.rewrules_rules senv.env
+    | SFBrules r, R ->
+      let rules = List.map (Rewrite_rules_ops.translate_rewrite_rule senv.env) r.rewrules_rules in
+      Environ.add_rewrite_rules rules senv.env
     | _ -> assert false
   in
   let sections = match senv.sections with

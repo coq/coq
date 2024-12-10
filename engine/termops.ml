@@ -179,6 +179,8 @@ let pr_evar_source env sigma = function
      | Some Evar_kinds.Body -> str "body of "
      | Some Evar_kinds.Domain -> str "domain of "
      | Some Evar_kinds.Codomain -> str "codomain of ") ++ Evar.print evk
+  | Evar_kinds.RewriteRulePattern Anonymous -> str "anonymous pattern variable"
+  | Evar_kinds.RewriteRulePattern Name id -> str "pattern variable " ++ Id.print id
 
 let pr_evar_info (type a) env sigma (evi : a Evd.evar_info) =
   let open Evd in

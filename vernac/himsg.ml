@@ -722,6 +722,10 @@ let rec explain_evar_kind env sigma evk ty =
       strbrk " found for " ++
       explain_evar_kind env sigma evk
       (pr_leconstr_env env sigma ty') src
+  | Evar_kinds.RewriteRulePattern Anonymous ->
+      strbrk "an anonymous pattern variable of type " ++ ty
+  | Evar_kinds.RewriteRulePattern Name id ->
+      strbrk "the pattern variable named " ++ Id.print id
 
 let explain_typeclass_resolution env sigma evi k =
   match Typeclasses.class_of_constr env sigma (Evd.evar_concl evi) with

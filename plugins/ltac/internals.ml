@@ -49,7 +49,7 @@ let with_delayed_uconstr ist c tac =
     program_mode = false;
     polymorphic = false;
     undeclared_evars_patvars = false;
-    patvars_abstract = false;
+    rrpat_evars_abstract = true;
     unconstrained_sorts = false;
  } in
   let c = Tacinterp.type_uconstr ~flags ist c in
@@ -88,7 +88,7 @@ let constr_flags () = Pretyping.{
   program_mode = false;
   polymorphic = false;
   undeclared_evars_patvars = false;
-  patvars_abstract = false;
+  rrpat_evars_abstract = true;
   unconstrained_sorts = false;
 }
 
