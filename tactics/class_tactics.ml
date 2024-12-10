@@ -1110,23 +1110,35 @@ let deps_of_constraints cstrs evm p =
     Intpart.union_set (Evar.Set.union evx evy) p)
     cstrs
 
-let evar_dependencies pred evm p =
+let evar_dependencies env pred evm p =
   let cache = Evarutil.create_undefined_evars_cache () in
   Evd.fold_undefined
-    (fun ev evi _ ->
-      if Evd.is_typeclass_evar evm ev && pred evm ev evi then
-        let evars = Evar.Set.add ev (Evarutil.filtered_undefined_evars_of_evar_info ~cache evm evi)
-        in Intpart.union_set evars p
-      else ())
-    evm ()
+    (fun ev evi strictly_uniques ->
+       if Evd.is_typeclass_evar evm ev && pred evm ev evi then
+         let is_strict_unique =
+           let env = Evd.evar_filtered_env env evi in
+           match Typeclasses.class_of_constr env evm (Evd.evar_concl evi) with
+           | None -> false
+           | Some (_, ((cl, _), _)) ->
+             cl.cl_strict && cl.cl_unique
+         in
+         if is_strict_unique then (Evar.Set.singleton ev) :: strictly_uniques
+         else
+           let evars =
+             Evar.Set.add ev (Evarutil.filtered_undefined_evars_of_evar_info ~cache evm evi)
+           in
+           (Intpart.union_set evars p; strictly_uniques)
+       else strictly_uniques)
+    evm []
 
 (** [split_evars] returns groups of undefined evars according to dependencies *)
 
-let split_evars pred evm =
+let split_evars pred env evm =
   let p = Intpart.create () in
-  evar_dependencies pred evm p;
+  let strictly_uniques = evar_dependencies env pred evm p in
   deps_of_constraints (snd (extract_all_conv_pbs evm)) evm p;
-  Intpart.partition p
+  let part = Intpart.partition p in
+  List.append part strictly_uniques
 
 let is_inference_forced p evd ev =
   try
@@ -1210,7 +1222,7 @@ let resolve_all_evars depth unique env p oevd fail =
         str"Initial evar map: " ++
         Termops.pr_evar_map ~with_univs:!Detyping.print_universes None env oevd)
   in
-  let split = split_evars p oevd in
+  let split = split_evars p env oevd in
   let in_comp comp ev = Evar.Set.mem ev comp in
   let rec docomp evd = function
     | [] ->
