@@ -15,14 +15,14 @@ Require Arith_base.
 bounded integers. Another popular approach is to bundle integers with
 a proof of boundedness, thus inheriting integer arithmetic rather than
 redefining it on the bounded type. See
-https://github.com/coq/coq/blob/master/theories/Vectors/Vector.v
+https://github.com/coq/coq/blob/master/stdlib/theories/Vectors/Vector.v
 for a similar discussion on bounded lists.
 
 An alternative implementation can be found for instance in
 https://github.com/math-comp/math-comp/blob/master/mathcomp/ssreflect/fintype.v
 One can read more about this type in section 7.4 of this book:
 https://zenodo.org/record/4282710#.X_q4aGso-yU . *)
-Attributes warn(cats="stdlib vector", note="Alternatives to Fin.t are available, see <https://github.com/coq/coq/blob/master/theories/Vectors/Fin.v>.").
+Attributes warn(cats="stdlib vector", note="Alternatives to Fin.t are available, see <https://github.com/coq/coq/blob/master/stdlib/theories/Vectors/Fin.v>.").
 
 (** [fin n] is a way to represent \[1 .. n\]
 
