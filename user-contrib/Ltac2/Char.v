@@ -9,9 +9,16 @@
 (************************************************************************)
 
 Require Import Ltac2.Init.
-Require Ltac2.Int.
+Require Ltac2.Int Ltac2.Control.
 
-Ltac2 @external of_int : int -> char := "coq-core.plugins.ltac2" "char_of_int".
+Ltac2 @external of_int_opt : int -> char option := "coq-core.plugins.ltac2" "char_of_int_opt".
+(** [None] if the integer is not a valid char (in range [0-255]). *)
+
+Ltac2 of_int (i : int) : char :=
+  match of_int_opt i with
+  | Some c => c
+  | None => Control.throw_invalid_argument "Char.of_int"
+  end.
 (** Throws if the integer is not a valid char (in range [0-255]). *)
 
 Ltac2 @external to_int : char -> int := "coq-core.plugins.ltac2" "char_to_int".
