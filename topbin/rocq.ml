@@ -39,6 +39,7 @@ let () =
   | "wc" :: args -> Rocqwc.main args
   | "workmgr" :: args -> Rocqworkmgr.main ~prog:(Sys.argv.(0) ^ " workmgr") args
   | "tex" :: args -> Rocqtex.main ~prog:(Sys.argv.(0) ^ " tex") args
+  | "makefile" :: args -> Rocqmakefile.main ~prog:[Sys.argv.(0); "makefile"] args
 
   | prog :: _ ->
     fatal_error "Unknown argument %s" prog
