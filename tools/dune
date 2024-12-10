@@ -44,9 +44,14 @@
 
 (ocamllex rocqwc)
 
+(library
+ (name rocqtex)
+ (modules rocqtex)
+ (libraries str))
+
 (executables
  (names coq_tex)
  (public_names coq-tex)
- (package rocq-runtime)
+ (package coq-core)
  (modules coq_tex)
- (libraries str))
+ (libraries rocqtex))
