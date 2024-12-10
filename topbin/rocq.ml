@@ -23,6 +23,12 @@ let with_worker_gen opts basename args =
 let with_worker opts kind args =
   with_worker_gen opts "coqworker" (("--kind="^kind) :: args)
 
+let with_sibling_exe opts prog args =
+  let prog = System.get_toplevel_path prog in
+  let () = if opts.Rocqshim.debug_shim then Printf.eprintf "Using %s\n%!" prog in
+  let argv = Array.of_list (prog :: args) in
+  Rocqshim.exec_or_create_process prog argv
+
 let () =
   if Array.length Sys.argv < 2 then error_usage ();
 
@@ -37,6 +43,9 @@ let () =
   | ("top"|"repl") :: args -> with_worker opts "repl" args
   | ("top-with-drop"|"repl-with-drop") :: args -> with_worker_gen opts "coqworker_with_drop" args
   | "native-precompile" :: args -> with_worker_gen opts "rocqnative" args
+
+  (* public executables *)
+  | "check" :: args -> with_sibling_exe opts "rocqchk" args
 
   (* statically linked subcommands *)
   | ("preprocess-mlg"|"pp-mlg") :: args -> Coqpp_main.main args
