@@ -41,13 +41,18 @@
  (libraries rocqshim))
 
 (executable
- (name coqnative_bin)
- (public_name coqnative)
- (package rocq-runtime)
- (modules coqnative_bin)
+ (name rocqnative)
+ (modules rocqnative)
  (libraries rocq-runtime.kernel)
- (modes exe byte)
+ (modes exe byte) ; NB byte not installed, just exists for debugger
  (link_flags -linkall))
+
+(executable
+ (name coqnative)
+ (public_name coqnative)
+ (package coq-core)
+ (modules coqnative)
+ (libraries rocqshim))
 
 ; Workers
 (executable
@@ -70,4 +75,5 @@
  (files
   (coqworker.exe as coqworker)
   (coqworker.bc as coqworker.byte)
-  (coqworker_with_drop.bc as coqworker_with_drop)))
+  (coqworker_with_drop.bc as coqworker_with_drop)
+  (rocqnative.exe as rocqnative)))
