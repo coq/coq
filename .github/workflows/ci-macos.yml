@@ -14,10 +14,7 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          brew unlink pkg-config
-          brew install gnu-time opam gtksourceview3 adwaita-icon-theme expat libxml2 pkgconf
-          brew unlink pkgconf
-          brew link pkg-config
+          brew install gnu-time opam gtksourceview3 adwaita-icon-theme expat libxml2
 
       - name: Install OCaml dependencies
         run: |
