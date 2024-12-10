@@ -69,7 +69,7 @@ Check rev t : tuple_of n T.
 ]]
 
 Thus lemmas about lists are enough in most cases. *)
-Attributes warn(cats="stdlib vector", note="Using Vector.t is known to be technically difficult, see <https://github.com/coq/coq/blob/master/theories/Vectors/Vector.v>.").
+Attributes warn(cats="stdlib vector", note="Using Vector.t is known to be technically difficult, see <https://github.com/coq/coq/blob/master/stdlib/theories/Vectors/Vector.v>.").
 
 (** Vectors.
 
