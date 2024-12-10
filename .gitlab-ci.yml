@@ -232,6 +232,7 @@ before_script:
   script:
     - opam pin add --kind=path coq-core.dev .
     - opam pin add --kind=path rocq-core.dev .
+    - opam pin add --kind=path coq-stdlib.dev stdlib/
     - opam pin add --kind=path coqide-server.dev .
     - opam pin add --kind=path coqide.dev .
   variables:
