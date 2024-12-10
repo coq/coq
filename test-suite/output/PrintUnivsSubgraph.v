@@ -11,3 +11,11 @@ Print Universes Subgraph(i j).
 Definition connect : Type@{l} := Type@{j}.
 
 Print Universes Subgraph (i k).
+
+Universes u v.
+Module Type T.
+  Definition foo : Type@{u} := Type@{v}.
+End T.
+
+Print Universes Subgraph (u v).
+(* T.foo does not exist but we don't fail *)
