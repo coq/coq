@@ -41,7 +41,7 @@ type mode = Conversion | Reduction
 (* In conversion mode we can introduce FIrrelevant terms.
    Invariants of the conversion mode:
    - the only irrelevant terms as returned by [knr] are either [FIrrelevant],
-     [FLambda], [FFlex] or [FRel].
+     [FLambda], [FLambdaF], [FFlex] or [FRel].
    - the stack never contains irrelevant-producing nodes i.e. [Zproj], [ZFix]
      and [ZcaseT] are all relevant
 *)
@@ -93,8 +93,10 @@ and fterm =
   | FCaseT of case_info * UVars.Instance.t * constr array * case_return * fconstr * case_branch array * usubs (* predicate and branches are closures *)
   | FCaseInvert of case_info * UVars.Instance.t * constr array * case_return * finvert * fconstr * case_branch array * usubs
   | FLambda of int * (Name.t binder_annot * constr) list * constr * usubs
+  | FLambdaF of Name.t binder_annot * fconstr * fconstr
   | FProd of Name.t binder_annot * fconstr * constr * usubs
   | FLetIn of Name.t binder_annot * fconstr * fconstr * constr * usubs
+  | FLetInF of Name.t binder_annot * fconstr * fconstr * fconstr
   | FEvar of Evar.t * constr list * usubs * evar_repack
   | FInt of Uint63.t
   | FFloat of Float64.t
@@ -108,6 +110,8 @@ and fterm =
 and usubs = fconstr subs UVars.puniverses
 
 and finvert = fconstr array
+
+type frel_context = (fconstr, fconstr, Sorts.relevance) Rel.Declaration.pt list
 
 let get_invert fiv = fiv
 
@@ -227,7 +231,7 @@ let rec lft_fconstr n ft =
     | FLIFT(k,m) -> lft_fconstr (n+k) m
     | FLOCKED -> assert false
     | FFlex (RelKey _) | FAtom _ | FApp _ | FProj _ | FCaseT _ | FCaseInvert _ | FProd _
-      | FLetIn _ | FEvar _ | FCLOS _ | FArray _ -> {mark=ft.mark; term=FLIFT(n,ft)}
+    | FLambdaF _ | FLetInF _ | FLetIn _ | FEvar _ | FCLOS _ | FArray _ -> {mark=ft.mark; term=FLIFT(n,ft)}
 let lift_fconstr k f =
   if Int.equal k 0 then f else lft_fconstr k f
 let lift_fconstr_vect k v =
@@ -302,6 +306,8 @@ let destFLambda clos_fun t =
     (usubst_binder e na,clos_fun e ty,clos_fun (usubs_lift e) b)
   | FLambda(n,(na,ty)::tys,b,e) ->
     (usubst_binder e na,clos_fun e ty,{mark=t.mark;term=FLambda(n-1,tys,b,usubs_lift e)})
+  | FLambdaF (na, ty, b) ->
+      (na, ty, b)
   | _ -> assert false
 
 (* Optimization: do not enclose variables in a closure.
@@ -468,22 +474,6 @@ let rec subst_constr (subst,usubst as e) c =
 | _ ->
   Constr.map_with_binders usubs_lift subst_constr e c
 
-let subst_context e ctx =
-  let open Context.Rel.Declaration in
-  let rec subst_context ctx = match ctx with
-  | [] -> e, []
-  | LocalAssum (na, ty) :: ctx ->
-    let e, ctx = subst_context ctx in
-    let ty = subst_constr e ty in
-    usubs_lift e, LocalAssum (na, ty) :: ctx
-  | LocalDef (na, ty, bdy) :: ctx ->
-    let e, ctx = subst_context ctx in
-    let ty = subst_constr e ty in
-    let bdy = subst_constr e bdy in
-    usubs_lift e, LocalDef (na, ty, bdy) :: ctx
-  in
-  snd @@ subst_context ctx
-
 (* The inverse of mk_clos: move back to constr *)
 let rec to_constr lfts v =
   match v.term with
@@ -538,6 +528,8 @@ let rec to_constr lfts v =
         in
         let f = subst_constr (usubs_liftn len subs) f in
         Term.compose_lam (List.rev tys) f
+    | FLambdaF (na, ty, f) ->
+        mkLambda (na, to_constr lfts ty, to_constr (el_lift lfts) f)
     | FProd (n, t, c, e) ->
       if is_subs_id (fst e) && is_lift_id lfts then
         mkProd (n, to_constr lfts t, subst_instance_constr (snd e) c)
@@ -552,6 +544,11 @@ let rec to_constr lfts v =
                to_constr lfts b,
                to_constr lfts t,
                subst_constr subs f)
+    | FLetInF (n, b, t, f) ->
+      mkLetIn (n,
+                to_constr lfts b,
+                to_constr lfts t,
+                to_constr (el_lift lfts) f)
     | FEvar (ev, args, env, repack) ->
       let subs = comp_subs lfts env in
       repack (ev, List.map (fun a -> subst_constr subs a) args)
@@ -610,23 +607,106 @@ and comp_subs el (s,u') =
    reallocation. *)
 let term_of_fconstr c = to_constr el_id c
 
-let subst_context env ctx =
-  if is_subs_id (fst env) then
-    subst_instance_context (snd env) ctx
-  else
-    let subs = comp_subs el_id env in
-    subst_context subs ctx
 
-let it_mkLambda_or_LetIn ctx t =
+let rec resubst subs v =
+  match v.term with
+    | FRel i -> clos_rel subs i
+    | FCaseT (ci, u, pms, p, c, ve, env) ->
+      let env = comp_subs subs env in
+      { v with term = FCaseT (ci, u, pms, p, resubst subs c, ve, env) }
+    | FCaseInvert (ci, u, pms, p, indices, c, ve, env) ->
+      let env = comp_subs subs env in
+      let indices = Array.Fun1.map resubst subs indices in
+      { v with term = FCaseInvert (ci, u, pms, p, indices, resubst subs c, ve, env) }
+    | FFix (fx, e) ->
+      let e = comp_subs subs e in
+      { v with term = FFix (fx, e) }
+    | FCoFix (cfx, e) ->
+      let e = comp_subs subs e in
+      { v with term = FCoFix (cfx, e) }
+    | FApp (f,ve) ->
+      { v with term =
+          FApp (resubst subs f,
+               Array.Fun1.map resubst subs ve) }
+    | FProj (p, r, c) ->
+      { v with term =
+        FProj (p, r, resubst subs c) }
+    | FLambda (len, tys, f, e) ->
+      let e = comp_subs subs e in
+      { v with term = FLambda (len, tys, f, e) }
+    | FLambdaF (na, ty, f) ->
+      { v with term =
+        FLambdaF (na, resubst subs ty, resubst (subs_lift subs) f) }
+    | FProd (n, t, c, e) ->
+      let e = comp_subs subs e in
+      { v with term = FProd (n, resubst subs t, c, e) }
+    | FLetIn (n, b, t, f, e) ->
+      let e = comp_subs subs e in
+      { v with term =
+        FLetIn (n, resubst subs b, resubst subs t, f, e) }
+    | FLetInF (n, b, t, f) ->
+      { v with term =
+        FLetInF (n, resubst subs b, resubst subs t, resubst (subs_lift subs) f) }
+    | FEvar (ev, args, env, repack) ->
+      let env = comp_subs subs env in
+      { v with term =
+        FEvar (ev, args, env, repack) }
+    | FLIFT (k, a) ->
+      resubst (subs_popn k subs) a
+
+    | FArray (u, t, ty) ->
+      let t = Parray.map (resubst subs) t in
+      let ty = resubst subs ty in
+      { v with term =
+        FArray (u, t, ty) }
+
+    | FCLOS (t,env) ->
+      let env = comp_subs subs env in
+      { v with term =
+        FCLOS (t, env) }
+
+    | FFlex (RelKey _) -> v (* outside the substitution *)
+    | FFlex (ConstKey _ | VarKey _) | FInd _ | FConstruct _ | FAtom _ | FInt _ | FFloat _ | FString _ -> v
+
+    | FIrrelevant -> v (* Stable under substitution and lifts *)
+    | FLOCKED -> assert (!Flags.in_debugger); v
+
+and comp_subs subs s =
+  on_fst (Esubst.comp resubst lift_fconstr subs) s
+
+let resubs_id = Esubst.subs_id max_int
+
+let resubst1 v t =
+  let subs = Esubst.(subs_cons v resubs_id) in
+  resubst subs t
+
+
+let mk_clos_context e (ctx : rel_context) : frel_context =
   let open Context.Rel.Declaration in
-  match List.rev ctx with
-  | [] -> t
-  | LocalAssum (n, ty) :: ctx ->
-      let assums, ctx = List.map_until (function LocalAssum (n, ty) -> Some (n, ty) | LocalDef _ -> None) ctx in
-      let assums = (n, ty) :: assums in
-      { term = FLambda(List.length assums, assums, Term.it_mkLambda_or_LetIn (term_of_fconstr t) (List.rev ctx), (subs_id 0, UVars.Instance.empty)); mark = t.mark }
-  | LocalDef _ :: _ ->
-      mk_clos (subs_id 0, UVars.Instance.empty) (Term.it_mkLambda_or_LetIn (term_of_fconstr t) ctx)
+  let rec mk_clos_context ctx = match ctx with
+  | [] -> e, []
+  | LocalAssum (na, ty) :: ctx ->
+    let e, ctx = mk_clos_context ctx in
+    let na = usubst_binder e na in
+    let ty = mk_clos e ty in
+    usubs_lift e, LocalAssum (na, ty) :: ctx
+  | LocalDef (na, ty, bdy) :: ctx ->
+    let e, ctx = mk_clos_context ctx in
+    let na = usubst_binder e na in
+    let ty = mk_clos e ty in
+    let bdy = mk_clos e bdy in
+    usubs_lift e, LocalDef (na, ty, bdy) :: ctx
+  in
+  snd @@ mk_clos_context ctx
+
+let it_mkLambda_or_LetIn (ctx : frel_context) t =
+  let open Context.Rel.Declaration in
+  List.fold_left (fun t -> function
+    | LocalAssum (n, ty) ->
+      { term = FLambdaF (n, ty, t); mark = t.mark }
+    | LocalDef (n, b, ty) ->
+      { term = FLetInF (n, b, ty, t); mark = t.mark }
+  ) t ctx
 
 (* fstrong applies unfreeze_fun recursively on the (freeze) term and
  * yields a term.  Assumes that the unfreeze_fun never returns a
@@ -745,6 +825,23 @@ let rec get_args n tys f e = function
           get_args (n-na) etys f (usubs_consn l 0 na e) s
     | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _) :: _ | []) as stk ->
       (Inr {mark=Cstr; term=FLambda(n,tys,f,e)}, stk)
+
+let rec get_arg h e = function
+  | Zupdate r :: s ->
+      (** The stack contains [Zupdate] mark only if in sharing mode *)
+      let () = update r Cstr h.term in
+      get_arg h e s
+  | Zshift k :: s ->
+      get_arg h (Esubst.subs_shft (k, e)) s
+  | Zapp l :: s ->
+      let s = match Array.length l with
+        | 0 -> assert false
+        | 1 -> s
+        | n -> Zapp (Array.sub l 1 (n-1)) :: s
+      in
+      Inl Esubst.(subs_cons l.(0) e), s
+  | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _) :: _ | []) as stk ->
+      Inr {mark=Cstr; term=h.term}, stk
 
 (* Eta expansion: add a reference to implicit surrounding lambda at end of stack *)
 let rec eta_expand_stack info na = function
@@ -1354,8 +1451,8 @@ let rec knh info m stk =
        | Some s -> knh info c (s :: zupdate info m stk))
 
 (* cases where knh stops *)
-    | (FFlex _|FLetIn _|FConstruct _|FEvar _|FCaseInvert _|FIrrelevant|
-       FCoFix _|FLambda _|FRel _|FAtom _|FInd _|FProd _|FInt _|FFloat _|
+    | (FFlex _|FLetIn _|FLetInF _|FConstruct _|FEvar _|FCaseInvert _|FIrrelevant|
+       FCoFix _|FLambda _|FLambdaF _|FRel _|FAtom _|FInd _|FProd _|FInt _|FFloat _|
        FString _|FArray _) ->
         (m, stk)
 
@@ -1441,13 +1538,13 @@ type ('constr, 'stack, 'context, _) depth =
   | Nil: ('constr * 'stack, 'ret) escape -> ('constr, 'stack, 'context, 'ret) depth
   | Cons: ('constr, 'stack, 'context) resume_state * ('constr, 'stack, 'context, 'ret) depth -> ('constr, 'stack, 'context, 'ret) depth
 
-type 'a patstate = (fconstr, stack, rel_context, 'a) depth
+type 'a patstate = (fconstr, stack, frel_context, 'a) depth
 
 val match_symbol : ('a, 'a patstate) reduction -> clos_infos -> Table.t ->
-  pat_state:(fconstr, stack, rel_context, 'a) depth -> table_key -> UVars.Instance.t * bool * rewrite_rule list -> stack -> 'a
+  pat_state:(fconstr, stack, frel_context, 'a) depth -> table_key -> UVars.Instance.t * bool * rewrite_rule list -> stack -> 'a
 
 val match_head : ('a, 'a patstate) reduction -> clos_infos -> Table.t ->
-  pat_state:(fconstr, stack, rel_context, 'a) depth -> (fconstr, stack, rel_context) resume_state -> fconstr -> stack -> 'a
+  pat_state:(fconstr, stack, frel_context, 'a) depth -> (fconstr, stack, frel_context) resume_state -> fconstr -> stack -> 'a
 
 end =
 struct
@@ -1489,7 +1586,7 @@ type ('constr, 'stack, 'context, _) depth =
   | Nil: ('constr * 'stack, 'ret) escape -> ('constr, 'stack, 'context, 'ret) depth
   | Cons: ('constr, 'stack, 'context) resume_state * ('constr, 'stack, 'context, 'ret) depth -> ('constr, 'stack, 'context, 'ret) depth
 
-type 'a patstate = (fconstr, stack, rel_context, 'a) depth
+type 'a patstate = (fconstr, stack, frel_context, 'a) depth
 
 let extract_or_kill filter a status =
   let step elim status =
@@ -1628,9 +1725,9 @@ and match_elim : 'a. ('a, 'a patstate) reduction -> _ -> _ -> pat_state:(fconstr
           elims states
       in
       let loc = LocStart { elims; context; head; stack=s; next } in
-      let ntys_ret = subst_context e ntys_ret in
+      let ntys_ret = mk_clos_context e ntys_ret in
       let ret = mk_clos (usubs_liftn (Context.Rel.length ntys_ret) e) (snd p) in
-      let brs = Array.map2 (fun ctx br -> subst_context e ctx, mk_clos (usubs_liftn (Context.Rel.length ctx) e) (snd br)) ntys_brs brs in
+      let brs = Array.map2 (fun ctx br -> mk_clos_context e ctx, mk_clos (usubs_liftn (Context.Rel.length ctx) e) (snd br)) ntys_brs brs in
       let loc = Array.fold_right2 (fun patterns (ctx, arg) next -> LocArg { patterns; context = ctx @ context; arg; next }) (Array.transpose (Array.map (Status.split_array (Array.length brs)) pbrss)) brs loc in
       let loc = LocArg { patterns = prets; context = ntys_ret @ context; arg = ret; next = loc } in
       match_main red info tab ~pat_state states loc
@@ -1756,28 +1853,36 @@ and match_head : 'a. ('a, 'a patstate) reduction -> _ -> _ -> pat_state:(fconstr
     let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
     match_main red info tab ~pat_state states loc
   | FProd (n, ty, body, e) ->
-    let ntys, _ = Term.decompose_prod body in
-    let na = 1 + List.length ntys in
-    let tysbodyelims, states = extract_or_kill2 (function [@ocaml.warning "-4"] (PHProd (ptys, pbod), es), psubst when Array.length ptys <= na -> Some ((ptys, pbod, es), psubst) | _ -> None) patterns states in
-    let na = Array.fold_left (Status.fold_left (fun a (p1, _, _) -> min a (Array.length p1))) na tysbodyelims in
-    assert (na > 0);
-    let ptys, pbody, elims, states = extract_or_kill4 (fun ((ptys, pbod, elims), psubst) ->
-        let npp = Array.length ptys in
-        if npp == na then Some (ptys, pbod, elims, psubst) else
-        let fst, lst = Array.chop na ptys in
-        Some (fst, ERigid (PHProd (lst, pbod), []), elims, psubst)
+    let tysbodyelims, states = extract_or_kill2 (function [@ocaml.warning "-4"] (PHProd (ptys, pbod), es), psubst -> Some ((ptys, pbod, es), psubst) | _ -> None) patterns states in
+    let pty, pbody, elims, states = extract_or_kill4 (fun ((ptys, pbod, elims), psubst) ->
+        match Array.length ptys with
+        | 0 -> assert false
+        | 1 -> Some (ptys.(0), pbod, elims, psubst)
+        | n ->
+          let rem = Array.sub ptys 1 (n-1) in
+          Some (ptys.(0), ERigid (PHProd (rem, pbod), []), elims, psubst)
       ) tysbodyelims states
     in
-
-    let ntys, body = Term.decompose_prod_n (na-1) body in
-    let ctx1 = List.map (fun (n, ty) -> Context.Rel.Declaration.LocalAssum (n, ty)) ntys |> subst_context e in
-    let ctx = ctx1 @ [Context.Rel.Declaration.LocalAssum (n, term_of_fconstr ty)] in
-    let ntys'' = List.mapi (fun n (_, t) -> mk_clos (usubs_liftn n e) t) (List.rev ntys) in
-    let tys = Array.of_list (ty :: ntys'') in
-    let contexts_upto = Array.init na (fun i -> List.lastn i ctx @ context) in
+    let decl = Context.Rel.Declaration.LocalAssum (n, ty) in
     let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
-    let loc = LocArg { patterns = pbody; context = ctx @ context; arg = mk_clos (usubs_liftn na e) body; next = loc } in
-    let loc = Array.fold_right3 (fun patterns arg context next -> LocArg { patterns; context; arg; next }) (Array.transpose (Array.map (Status.split_array na) ptys)) tys contexts_upto loc in
+    let loc = LocArg { patterns = pbody; context = decl :: context; arg = mk_clos (usubs_lift e) body; next = loc } in
+    let loc = LocArg { patterns = pty; context; arg = ty; next = loc } in
+    match_main red info tab ~pat_state states loc
+  | FLambdaF (n, ty, body) ->
+    let tysbodyelims, states = extract_or_kill2 (function [@ocaml.warning "-4"] (PHLambda (ptys, pbod), es), psubst -> Some ((ptys, pbod, es), psubst) | _ -> None) patterns states in
+    let pty, pbody, elims, states = extract_or_kill4 (fun ((ptys, pbod, elims), psubst) ->
+        match Array.length ptys with
+        | 0 -> assert false
+        | 1 -> Some (ptys.(0), pbod, elims, psubst)
+        | n ->
+          let rem = Array.sub ptys 1 (n-1) in
+          Some (ptys.(0), ERigid (PHProd (rem, pbod), []), elims, psubst)
+      ) tysbodyelims states
+    in
+    let decl = Context.Rel.Declaration.LocalAssum (n, ty) in
+    let loc = LocStart { elims; context; head=t; stack=stk; next=Continue next } in
+    let loc = LocArg { patterns = pbody; context = decl :: context; arg = body; next = loc } in
+    let loc = LocArg { patterns = pty; context; arg = ty; next = loc } in
     match_main red info tab ~pat_state states loc
   | FLambda (na, ntys, body, e) ->
     let tysbodyelims, states = extract_or_kill2 (function [@ocaml.warning "-4"] (PHLambda (ptys, pbod), es), psubst when Array.length ptys <= na -> Some ((ptys, pbod, es), psubst) | _ -> None) patterns states in
@@ -1792,7 +1897,7 @@ and match_head : 'a. ('a, 'a patstate) reduction -> _ -> _ -> pat_state:(fconstr
     in
     let ntys, tys' = List.chop na ntys in
     let body = Term.compose_lam (List.rev tys') body in
-    let ctx = List.rev_map (fun (n, ty) -> Context.Rel.Declaration.LocalAssum (n, ty)) ntys |> subst_context e in
+    let ctx = List.rev_map (fun (n, ty) -> Context.Rel.Declaration.LocalAssum (n, ty)) ntys |> mk_clos_context e in
     let tys = Array.of_list ntys in
     let tys = Array.mapi (fun n (_, t) -> mk_clos (usubs_liftn n e) t) tys in
     let contexts_upto = Array.init na (fun i -> List.lastn i ctx @ context) in
@@ -1835,6 +1940,12 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
   | FLambda(n,tys,f,e) when red_set info.i_flags fBETA ->
       (match get_args n tys f e stk with
           Inl e', s -> knit info tab ~pat_state e' f s
+        | Inr lam, s -> knr_ret info tab ~pat_state (lam,s))
+  | FLambdaF (_, _, f) when red_set info.i_flags fBETA ->
+      (match get_arg m resubs_id stk with
+          Inl e', s ->
+            let f' = resubst e' f in
+            kni info tab ~pat_state f' s
         | Inr lam, s -> knr_ret info tab ~pat_state (lam,s))
   | FFlex fl when red_set info.i_flags fDELTA ->
       (match Table.lookup info tab fl with
@@ -1896,6 +2007,9 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
     else knr_ret info tab ~pat_state (m, stk)
   | FLetIn (_,v,_,bd,e) when red_set info.i_flags fZETA ->
       knit info tab ~pat_state (on_fst (subs_cons v) e) bd stk
+  | FLetInF (_, v, _, bd) when red_set info.i_flags fZETA ->
+      let bd = resubst1 v bd in
+      kni info tab ~pat_state bd stk
   | FInt _ | FFloat _ | FString _ | FArray _ ->
     (match [@ocaml.warning "-4"] strip_update_shift_app m stk with
      | (_, _, Zprimitive(op,(_,u as c),rargs,nargs)::s) ->
@@ -1924,8 +2038,8 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
     knr_ret info tab ~pat_state (m, stk)
   | FProd _ | FAtom _ | FInd _ (* relevant statically *)
   | FCaseInvert _ | FProj _ | FFix _ | FEvar _ (* relevant because of knh(t) *)
-  | FLambda _ | FFlex _ | FRel _ (* irrelevance handled by conversion *)
-  | FLetIn _ (* only happens in reduction mode *) ->
+  | FLambda _ | FLambdaF _ | FFlex _ | FRel _ (* irrelevance handled by conversion *)
+  | FLetIn _ | FLetInF _ (* only happens in reduction mode *) ->
     knr_ret info tab ~pat_state (m, stk)
   | FLOCKED | FCLOS _ | FApp _ | FCaseT _ | FLIFT _ ->
     (* ruled out by knh(t) *)
@@ -2001,8 +2115,8 @@ let kh info tab v stk = fapp_stack(kni info tab v stk)
 let is_val v = match v.term with
 | FAtom _ | FRel _   | FInd _ | FConstruct _ | FInt _ | FFloat _ | FString _ -> true
 | FFlex _ -> v.mark == Ntrl
-| FApp _ | FProj _ | FFix _ | FCoFix _ | FCaseT _ | FCaseInvert _ | FLambda _
-| FProd _ | FLetIn _ | FEvar _ | FArray _ | FLIFT _ | FCLOS _ -> false
+| FApp _ | FProj _ | FFix _ | FCoFix _ | FCaseT _ | FCaseInvert _ | FLambda _ | FLambdaF _
+| FProd _ | FLetIn _ | FLetInF _ | FEvar _ | FArray _ | FLIFT _ | FCLOS _ -> false
 | FIrrelevant | FLOCKED -> assert false
 
 let rec kl info tab m =
@@ -2072,10 +2186,16 @@ and norm_head info tab m =
         let (e', info, rvtys) = List.fold_left fold (e,info,[]) tys in
         let bd = klt info tab e' f in
         List.fold_left (fun b (na,ty) -> mkLambda(na,ty,b)) bd rvtys
+      | FLambdaF (na, ty, f) ->
+        let c = kl (push_relevance info na) tab f in
+        mkLambda (na, kl info tab ty, c)
       | FLetIn(na,a,b,f,e) ->
           let na = usubst_binder e na in
           let c = klt (push_relevance info na) tab (usubs_lift e) f in
           mkLetIn(na, kl info tab a, kl info tab b, c)
+      | FLetInF (na, a, b, f) ->
+        let c = kl (push_relevance info na) tab f in
+        mkLetIn(na, kl info tab a, kl info tab b, c)
       | FProd(na,dom,rng,e) ->
         let na = usubst_binder e na in
         let rng = klt (push_relevance info na) tab (usubs_lift e) rng in
