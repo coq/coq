@@ -46,6 +46,7 @@ let () =
 
   (* public executables *)
   | "check" :: args -> with_sibling_exe opts "rocqchk" args
+  | "votour" :: args -> with_sibling_exe opts "votour" args
 
   (* statically linked subcommands *)
   | ("preprocess-mlg"|"pp-mlg") :: args -> Coqpp_main.main args
