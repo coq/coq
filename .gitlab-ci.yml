@@ -58,6 +58,7 @@ before_script:
   - eval $(opam env)
   - opam list
   - opam config list
+  - printf '(display short)\n' >> ~/.config/dune/config
   - dune printenv --root .
   - dev/tools/check-cachekey.sh
   - dev/ci/gitlab-section.sh end before_script
