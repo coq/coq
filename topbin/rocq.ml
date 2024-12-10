@@ -40,6 +40,7 @@ let () =
   | "workmgr" :: args -> Rocqworkmgr.main ~prog:(Sys.argv.(0) ^ " workmgr") args
   | "tex" :: args -> Rocqtex.main ~prog:(Sys.argv.(0) ^ " tex") args
   | "makefile" :: args -> Rocqmakefile.main ~prog:[Sys.argv.(0); "makefile"] args
+  | "timelog2html" :: args -> Benchlib.Timelog2html.main ~prog:(Sys.argv.(0) ^ " timelog2html") args
 
   | prog :: _ ->
     fatal_error "Unknown argument %s" prog

@@ -15,12 +15,12 @@
 
 (library
  (name benchlib)
- (modules benchUtil sourcehandler timelogparser htmloutput)
+ (modules benchUtil sourcehandler timelogparser htmloutput timelog2html)
  (libraries unix str clib zarith))
 
 (executable
- (name timelog2html)
+ (name coqtimelog2html)
  (public_name coqtimelog2html)
- (package rocq-runtime)
- (modules timelog2html)
+ (package coq-core)
+ (modules coqtimelog2html)
  (libraries benchlib))

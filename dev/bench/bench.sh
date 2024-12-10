@@ -139,7 +139,7 @@ program_name="$0"
 program_path=$(readlink -f "${program_name%/*}")
 render_results="dune exec --no-print-directory --root $program_path/../.. -- dev/bench/render_results.exe"
 render_line_results="dune exec --no-print-directory --root $program_path/../.. -- dev/bench/render_line_results.exe"
-timelog2html="dune exec --no-print-directory --root $program_path/../.. -- dev/bench/timelog2html.exe"
+timelog2html="dune exec --no-print-directory --root $program_path/../.. -- rocq timelog2html"
 
 coqbot_url_prefix="https://coqbot.herokuapp.com/pendulum/"
 
