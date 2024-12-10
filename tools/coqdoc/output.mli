@@ -104,4 +104,5 @@ val inf_rule :  (int * string) list
 
 val make_multi_index : unit -> unit
 val make_index : unit -> unit
-val make_toc : unit -> unit
+val make_local_toc : unit -> unit
+val make_global_toc : unit -> unit
