@@ -211,7 +211,7 @@ ireport:
 	dune build $(DUNEOPT) @install --profile=ireport
 
 clean:
-	rm -f .dune-stamp
+	rm -f .dune-stamp theories/dune user-contrib/Ltac2/dune
 	dune clean
 
 # docgram
