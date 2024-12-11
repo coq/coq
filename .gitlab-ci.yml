@@ -192,6 +192,7 @@ before_script:
     name: "$CI_JOB_NAME"
     paths:
       - _build_ci
+      - stdlib/_build
     exclude: # reduce artifact size
       - _build_ci/**/.git # exclude .git directory itself as well
       - _build_ci/**/.git/**/*
