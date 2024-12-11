@@ -192,6 +192,7 @@ before_script:
     name: "$CI_JOB_NAME"
     paths:
       - _build_ci
+      - stdlib/_build
     exclude: # reduce artifact size
       - _build_ci/**/.git # exclude .git directory itself as well
       - _build_ci/**/.git/**/*
@@ -476,8 +477,8 @@ doc:refman:deploy:
     - cp -rv _build/default/_doc/_html _deploy/$CI_COMMIT_REF_NAME/api
     - cp -rv _build/default/doc/refman-html _deploy/$CI_COMMIT_REF_NAME/refman
     - cp -rv _build/default/doc/corelib/html _deploy/$CI_COMMIT_REF_NAME/init
-    - cp -rv _build_ci/stdlib/_build/default/doc/refman-html _deploy/$CI_COMMIT_REF_NAME/refman-stdlib
-    - cp -rv _build_ci/stdlib/html _deploy/$CI_COMMIT_REF_NAME/stdlib
+    - cp -rv stdlib/_build/default/doc/refman-html _deploy/$CI_COMMIT_REF_NAME/refman-stdlib
+    - cp -rv stdlib/_build/default/doc/stdlib/html _deploy/$CI_COMMIT_REF_NAME/stdlib
     - cd _deploy/$CI_COMMIT_REF_NAME/
     - git add api refman stdlib
     - git commit -m "Documentation of branch “$CI_COMMIT_REF_NAME” at $CI_COMMIT_SHORT_SHA"
