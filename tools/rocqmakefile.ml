@@ -244,7 +244,7 @@ let write_coqbin oc =
     # add an ending /\n\
     COQBIN:=$(COQBIN)/\n\
     endif\n\
-    COQMKFILE ?= \"$(COQBIN)coq_makefile\""
+    COQMKFILE ?= \"$(COQBIN)rocq\" makefile"
 
 let generate_conf_files oc p
 =
