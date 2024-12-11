@@ -79,16 +79,15 @@ endif
 COQEXTRAFLAGS?=
 COQFLAGS?=$(COQEXTRAFLAGS)
 
-coqc := $(BIN)coqc -q -R prerequisite TestSuite $(COQFLAGS)
-coqchk := $(BIN)coqchk -R prerequisite TestSuite
-coqdoc := $(BIN)coqdoc
-coqtop := $(BIN)coqtop -q -test-mode -R prerequisite TestSuite
-coqtopbyte := $(BIN)coqtop.byte -q
+coqc := $(BIN)rocq c -q -R prerequisite TestSuite $(COQFLAGS)
+coqchk := $(BIN)rocqchk -R prerequisite TestSuite
+coqdoc := $(BIN)rocq doc
+coqtop := $(BIN)rocq repl -q -test-mode -R prerequisite TestSuite
 
 coqidetop := $(BIN)coqidetop
 
 coqc_interactive := $(coqc) -test-mode
-coqdep := $(BIN)coqdep
+coqdep := $(BIN)rocq dep
 
 # This is the convention for coq_makefile
 OPT=-$(BEST)
@@ -702,7 +701,7 @@ coqwc/%.v.log : coqwc/%.v
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  tmpoutput=`mktemp`; \
-	  $(BIN)coqwc $< 2>&1 > $$tmpoutput; \
+	  $(BIN)rocq wc $< 2>&1 > $$tmpoutput; \
 	  diff -u --strip-trailing-cr coqwc/$*.out $$tmpoutput 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \

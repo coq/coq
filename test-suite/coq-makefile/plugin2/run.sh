@@ -3,7 +3,7 @@
 . ../template/init.sh
 
 mv src/test_plugin.mlpack src/test_plugin.mllib
-coq_makefile -f _CoqProject -o Makefile
+rocq makefile -f _CoqProject -o Makefile
 cat Makefile.conf
 make
 make html mlihtml

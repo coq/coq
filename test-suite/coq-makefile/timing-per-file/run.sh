@@ -3,13 +3,13 @@
 . ../timing-template/init.sh
 
 cd before/
-coq_makefile -f _CoqProject -o Makefile
+rocq makefile -f _CoqProject -o Makefile
 make cleanall
 make make-pretty-timed-before TGTS="all" -j1 || exit $?
 
 cd ../after/
 
-coq_makefile -f _CoqProject -o Makefile
+rocq makefile -f _CoqProject -o Makefile
 make cleanall
 
 make make-pretty-timed-after TGTS="all" -j1 || exit $?

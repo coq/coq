@@ -12,7 +12,7 @@ else
   OCAMLPATH=$OCAMLPATH:$PWD/findlib
 fi
 make -C findlib/foo clean
-coq_makefile -f _CoqProject -o Makefile
+rocq makefile -f _CoqProject -o Makefile
 cat Makefile.conf
 cat Makefile.local
 make -C findlib/foo

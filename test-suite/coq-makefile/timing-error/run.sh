@@ -2,7 +2,7 @@
 
 . ../timing-template/init.sh
 
-coq_makefile -f _CoqProject -o Makefile
+rocq makefile -f _CoqProject -o Makefile
 make cleanall
 if make pretty-timed TGTS="all" -j1; then
     echo "Error: make pretty-timed should have failed"

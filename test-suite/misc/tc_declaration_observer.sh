@@ -6,7 +6,7 @@ export COQBIN="$BIN"
 export PATH="$BIN:$PATH"
 
 cd misc/tc_declaration_observer
-coq_makefile -f _CoqProject -o Makefile
+rocq makefile -f _CoqProject -o Makefile
 make clean
 rm -f main.out
 make

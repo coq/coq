@@ -12,7 +12,7 @@ make -f Makefile.coq.noex
 make[3]: Nothing to be done for 'real-all'.
 make --no-print-directory -C coqprime src/Coqprime/PrimalityTest/Zp.vo
 make[1]: 'src/Coqprime/PrimalityTest/Zp.vo' is up to date.
-coq_makefile -f _CoqProject INSTALLDEFAULTROOT = Crypto -o Makefile-coq
+rocq makefile -f _CoqProject INSTALLDEFAULTROOT = Crypto -o Makefile-coq
 COQ_MAKEFILE -f _CoqProject > Makefile.coq
 make --no-print-directory -C rewriter
 make[2]: Nothing to be done for 'real-all'.

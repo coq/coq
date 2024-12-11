@@ -6,12 +6,12 @@ set -e
 
 mv theories/sub theories2
 
-coq_makefile -f _CoqProject -o Makefile
+rocq makefile -f _CoqProject -o Makefile
 cat Makefile.conf
 make
 
 cp ../_CoqProject.sub theories2/_CoqProject
 cd theories2
-coq_makefile -f _CoqProject -o Makefile
+rocq makefile -f _CoqProject -o Makefile
 cat Makefile.conf
 make

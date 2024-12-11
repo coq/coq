@@ -7,7 +7,7 @@ export PATH=$COQBIN:$PATH
 
 cd misc/side-eff-leak-univs/
 
-coq_makefile -f _CoqProject -o Makefile
+rocq makefile -f _CoqProject -o Makefile
 
 make clean
 

@@ -1052,7 +1052,7 @@ start:coq.test
 ++ ls -l /builds/coq/coq/_install_ci/bin/
 total 377964
 -rwxr-xr-x 1 root root  1885376 Sep  1 11:46 coq-tex
--rwxr-xr-x 1 root root  2500248 Sep  1 11:46 coq_makefile
+-rwxr-xr-x 1 root root  2500248 Sep  1 11:46 rocq makefile
 -rwxr-xr-x 1 root root 24673120 Sep  1 11:46 coqc
 -rwxr-xr-x 1 root root  9648760 Sep  1 11:46 coqchk
 -rwxr-xr-x 1 root root  5855160 Sep  1 11:46 coqdep
@@ -1303,7 +1303,7 @@ No timing data
 ++ ls -l /builds/coq/coq/_install_ci/bin/
 total 377964
 -rwxr-xr-x 1 root root  1885376 Sep  1 11:46 coq-tex
--rwxr-xr-x 1 root root  2500248 Sep  1 11:46 coq_makefile
+-rwxr-xr-x 1 root root  2500248 Sep  1 11:46 rocq makefile
 -rwxr-xr-x 1 root root 24673120 Sep  1 11:46 coqc
 -rwxr-xr-x 1 root root  9648760 Sep  1 11:46 coqchk
 -rwxr-xr-x 1 root root  5855160 Sep  1 11:46 coqdep
@@ -1435,7 +1435,7 @@ Building MetaCoq locally
 make[1]: Entering directory '/builds/coq/coq/_build_ci/metacoq'
 make -C template-coq .merlin
 make[2]: Entering directory '/builds/coq/coq/_build_ci/metacoq/template-coq'
-coq_makefile -f _PluginProject -o Makefile.plugin
+rocq makefile -f _PluginProject -o Makefile.plugin
 `which gsed || which sed` -i -e s/coqdeps/coqdeps.plugin/g Makefile.plugin
 make -f Makefile.plugin .merlin
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/template-coq'
@@ -1450,7 +1450,7 @@ make -C pcuic .merlin
 make[2]: Entering directory '/builds/coq/coq/_build_ci/metacoq/pcuic'
 cat metacoq-config > _PluginProject
 cat _PluginProject.in >> _PluginProject
-coq_makefile -f _PluginProject -o Makefile.plugin 
+rocq makefile -f _PluginProject -o Makefile.plugin 
 `which gsed || which sed` -i -e s/coqdeps/coqdeps.plugin/g Makefile.plugin
 make -f Makefile.plugin .merlin
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/pcuic'
@@ -1472,7 +1472,7 @@ make -C safechecker .merlin
 make[2]: Entering directory '/builds/coq/coq/_build_ci/metacoq/safechecker'
 cat metacoq-config > _PluginProject
 cat _PluginProject.in >> _PluginProject
-coq_makefile -f _PluginProject -o Makefile.plugin 
+rocq makefile -f _PluginProject -o Makefile.plugin 
 `which gsed || which sed` -i -e s/coqdeps/coqdeps.plugin/g Makefile.plugin
 make -f Makefile.plugin .merlin
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/safechecker'
@@ -1499,7 +1499,7 @@ make -C erasure .merlin
 make[2]: Entering directory '/builds/coq/coq/_build_ci/metacoq/erasure'
 cat metacoq-config > _PluginProject
 cat _PluginProject.in >> _PluginProject
-coq_makefile -f _PluginProject -o Makefile.plugin 
+rocq makefile -f _PluginProject -o Makefile.plugin 
 `which gsed || which sed` -i -e s/coqdeps/coqdeps.plugin/g Makefile.plugin
 make -f Makefile.plugin .merlin
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/erasure'
@@ -1526,7 +1526,7 @@ make -C checker .merlin
 make[2]: Entering directory '/builds/coq/coq/_build_ci/metacoq/checker'
 cat metacoq-config > _PluginProject
 cat _PluginProject.in >> _PluginProject
-coq_makefile -f _PluginProject -o Makefile.plugin
+rocq makefile -f _PluginProject -o Makefile.plugin
 make -f Makefile.plugin .merlin
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/checker'
 make[3]: warning: jobserver unavailable: using -j1.  Add '+' to parent make rule.
@@ -1558,8 +1558,8 @@ make all test-suite
 make[2]: Entering directory '/builds/coq/coq/_build_ci/metacoq'
 make -C template-coq
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/template-coq'
-coq_makefile -f _CoqProject -o Makefile.coq
-coq_makefile -f _TemplateCoqProject -o Makefile.template
+rocq makefile -f _CoqProject -o Makefile.coq
+rocq makefile -f _TemplateCoqProject -o Makefile.template
 `which gsed || which sed` -i -e s/coqdeps/coqdeps.template/g Makefile.template
 make -f Makefile.coq
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/template-coq'
@@ -2242,8 +2242,8 @@ make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/pcuic'
 cat metacoq-config > _CoqProject
 cat _CoqProject.in >> _CoqProject
 cat _CoqProject.in >> _CoqProject
-coq_makefile -f _CoqProject -o Makefile.pcuic 
-coq_makefile -f _CoqProject -o Makefile.coq
+rocq makefile -f _CoqProject -o Makefile.pcuic 
+rocq makefile -f _CoqProject -o Makefile.coq
 Warning: ../template-coq/theories (used in -R or -Q) is not a subdirectory of the current directory
 
 make -f Makefile.coq
@@ -2310,7 +2310,7 @@ make[4]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/checker'
 make[3]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/checker'
 make -C examples
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/examples'
-coq_makefile -f _CoqProject -o Makefile.coq
+rocq makefile -f _CoqProject -o Makefile.coq
 Warning: ../template-coq/theories (used in -R or -Q) is not a subdirectory of the current directory
 
 make -f Makefile.coq pretty-timed
@@ -2542,7 +2542,7 @@ make -C safechecker
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/safechecker'
 cat metacoq-config > _CoqProject
 cat _CoqProject.in >> _CoqProject
-coq_makefile -f _CoqProject -o Makefile.safechecker 
+rocq makefile -f _CoqProject -o Makefile.safechecker 
 Warning: ../template-coq/theories (used in -R or -Q) is not a subdirectory of the current directory
 
 make -f Makefile.safechecker
@@ -2970,7 +2970,7 @@ make -C erasure
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/erasure'
 cat metacoq-config > _CoqProject
 cat _CoqProject.in >> _CoqProject
-coq_makefile -f _CoqProject -o Makefile.erasure 
+rocq makefile -f _CoqProject -o Makefile.erasure 
 Warning: ../template-coq/theories (used in -R or -Q) is not a subdirectory of the current directory
 
 make -f Makefile.erasure
@@ -3760,10 +3760,10 @@ make[4]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/erasure'
 make[3]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/erasure'
 make -C test-suite
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/test-suite'
-coq_makefile -f _CoqProject -o Makefile.coq
+rocq makefile -f _CoqProject -o Makefile.coq
 make -C plugin-demo
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/test-suite/plugin-demo'
-coq_makefile -f _CoqProject -o Makefile.coq
+rocq makefile -f _CoqProject -o Makefile.coq
 Warning: ../template-coq/theories (used in -R or -Q) is not a subdirectory of the current directory
 
 make -f Makefile.coq pretty-timed	
@@ -3895,7 +3895,7 @@ COQDEP VFILES
 *** Warning: in file test/test.v, 
     required library Loader matches several files in path
     (found Loader.v in ../../template-coq/theories and theories; used the latter)
-coq_makefile -f _PluginProject -o Makefile.plugin
+rocq makefile -f _PluginProject -o Makefile.plugin
 Warning: ../../template-coq/theories (used in -R or -Q) is not a subdirectory of the current directory
 
 COQPP src/g_demo_plugin.mlg
@@ -5085,7 +5085,7 @@ make -C translations install
 make[2]: Entering directory '/builds/coq/coq/_build_ci/metacoq/translations'
 cat metacoq-config > _CoqProject 
 cat _CoqProject.in >> _CoqProject
-coq_makefile -f _CoqProject -o Makefile.coq
+rocq makefile -f _CoqProject -o Makefile.coq
 Warning: ../template-coq/theories (used in -R or -Q) is not a subdirectory of the current directory
 
 make -f Makefile.coq pretty-timed
