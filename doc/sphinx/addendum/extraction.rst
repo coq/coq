@@ -576,20 +576,10 @@ Additional settings
    Specifies a compiler `pragma
    <https://downloads.haskell.org/ghc/latest/docs/users_guide/exts/pragmas.html#options-ghc-pragma>`_
    that is included at the beginning of the output files.
-   For example:
-
-   .. coqtop:: in
-
-      Set Extraction File Pragma "OPTIONS_GHC -cpp -XMagicHash".
-
-   The pragma enables C preprocessor and `MagicHash
+   For example, for a Haskell extraction, `Set Extraction File Pragma "OPTIONS_GHC -cpp -XMagicHash".`
+   enables the C preprocessor and the `MagicHash
    <https://downloads.haskell.org/ghc/latest/docs/users_guide/exts/magic_hash.html#the-magic-hash>`_
    language extension.
-
-   .. note::
-
-      The option has sense only for extraction to `Haskell or JSON <#grammar-token-language>`_.
-
 .. opt:: Extraction Flag @natural
 
    This :term:`option` controls which optimizations are used during extraction, providing a finer-grained
