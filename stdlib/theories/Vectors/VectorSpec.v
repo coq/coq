@@ -9,8 +9,8 @@
 (************************************************************************)
 
 (** N.B.: Using this encoding of vectors is discouraged.
-See <https://github.com/coq/coq/blob/master/theories/Vectors/Vector.v>. *)
-Attributes warn(cats="stdlib vector", note="Using Vector.t is known to be technically difficult, see <https://github.com/coq/coq/blob/master/theories/Vectors/Vector.v>.").
+See <https://github.com/coq/coq/blob/master/stdlib/theories/Vectors/Vector.v>. *)
+Attributes warn(cats="stdlib vector", note="Using Vector.t is known to be technically difficult, see <https://github.com/coq/coq/blob/master/stdlib/theories/Vectors/Vector.v>.").
 
 (** Proofs of specification for functions defined over Vector
 
