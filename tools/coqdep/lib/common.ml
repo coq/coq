@@ -113,14 +113,6 @@ module VCache = Set.Make(VData)
     (those loaded by [Require]) from other dependencies, e.g. dependencies
     on ".v" files (for [Load]) or ".cmx", ".cmo", etc... (for [Declare]). *)
 
-let warn_legacy_loading =
-  let name = "legacy-loading-removed-coqdep" in
-  CWarnings.create ~name (fun name ->
-      Pp.(str "Legacy loading plugin method has been removed from Coq, \
-               and the `:` syntax is deprecated, and its first \
-               argument ignored; please remove \"" ++
-          str name ++ str ":\" from your Declare ML"))
-
 (* Transform "Declare ML %DECL" to a pair of (meta, cmxs). Something
    very similar is in ML top *)
 let declare_ml_to_file file (decl : string) =
@@ -129,7 +121,7 @@ let declare_ml_to_file file (decl : string) =
   | [package] ->
     Fl.findlib_deep_resolve ~file ~package
   | [cmxs; package] ->
-    warn_legacy_loading cmxs;
+    (* rocq compile will warn *)
     Fl.findlib_deep_resolve ~file ~package
   | bad_pkg ->
     CErrors.user_err Pp.(str "Failed to resolve plugin: " ++ str decl)
