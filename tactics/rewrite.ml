@@ -196,7 +196,7 @@ let decompose_applied_relation env sigma (c,l) =
       let t' = it_mkProd_or_LetIn t' (List.map (fun (n,t) -> LocalAssum (n, t)) ctx) in
       match find_rel t' with
       | Some c -> c
-      | None -> user_err Pp.(str "Cannot find an homogeneous relation to rewrite.")
+      | None -> user_err Pp.(str "Cannot find a homogeneous relation to rewrite.")
 
 (** Utility functions *)
 
