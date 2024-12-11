@@ -13,7 +13,7 @@ cat > theories/b.v <<EOF
 Require a.
 EOF
 
-coq_makefile -f _CoqProject -o Makefile
+rocq makefile -f _CoqProject -o Makefile
 
 if make 2> stdErr.log; then exit 1; fi
 

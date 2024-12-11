@@ -12,7 +12,7 @@ cp test.v _test
 
 cd _test
 
-coqc -d comment-lexing -beautify test.v > test.out.real 2>&1
+rocq c -d comment-lexing -beautify test.v > test.out.real 2>&1
 
 diff -u ../test.out test.out.real
 

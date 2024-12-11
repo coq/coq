@@ -1,6 +1,6 @@
 COQDEP src/Compilers/Z/Bounds/Pipeline/ReflectiveTactics.v
 COQDEP src/Compilers/Z/Bounds/Pipeline/Definition.v
-/home/jgross/.local64/coq/coq-master/bin/coq_makefile -f _CoqProject INSTALLDEFAULTROOT = Crypto -o Makefile-old
+/home/jgross/.local64/coq/coq-master/bin/rocq makefile -f _CoqProject INSTALLDEFAULTROOT = Crypto -o Makefile-old
 COQ_MAKEFILE -f _CoqProject > Makefile.coq
 make --no-print-directory -C coqprime
 make[1]: Nothing to be done for 'all'.

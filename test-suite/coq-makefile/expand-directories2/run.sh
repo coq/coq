@@ -10,7 +10,7 @@ cd _test || exit 1
 
 # check cmd line arg is included in coqdep
 # preserves order of args (cmd line args last)
-actual=$(coq_makefile -sources-of -f _CoqProject -o CoqMakefile b.v)
+actual=$(rocq makefile -sources-of -f _CoqProject -o CoqMakefile b.v)
 expected="x/a.v b.v"
 if [ "$actual" != "$expected" ]; then
   echo actual: $actual
@@ -19,7 +19,7 @@ if [ "$actual" != "$expected" ]; then
 fi
 
 # correct compile steps reflecting dependency on cmd line arg
-coq_makefile -f _CoqProject -o CoqMakefile b.v
+rocq makefile -f _CoqProject -o CoqMakefile b.v
 make -f CoqMakefile > makeout
 cat >expected <<EOT
 COQDEP VFILES
@@ -35,7 +35,7 @@ if [ "$(diff actual expected)" != "" ]; then
   cat actual
 fi
 
-# new file is included without running coq_makefile
+# new file is included without running rocq makefile
 cat >x/c.v <<EOT
 EOT
 make -f CoqMakefile clean

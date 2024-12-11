@@ -1,10 +1,8 @@
 #!/bin/sh
 
-command -v "${BIN}coqtop.byte" || { echo "Missing coqtop.byte"; exit 1; }
-
 f=$(mktemp)
 {
-    printf 'Drop.\n#go;;\nQuit.\n' | "${BIN}coqtop.byte" -q
+    printf 'Drop.\n#go;;\nQuit.\n' | "${BIN}rocq" repl-with-drop -q
 } 2>&1 | tee "$f"
 
 # if there's an issue in `include_utilities`, `#go;;` won't be mentioned

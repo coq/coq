@@ -34,11 +34,10 @@ endif
 COQEXTRAFLAGS?=
 COQFLAGS?=$(COQEXTRAFLAGS)
 
-coqc := coqc -q -R prerequisite TestSuite $(COQFLAGS)
-coqchk := coqchk -R prerequisite TestSuite
-coqdoc := coqdoc
-coqtop := coqtop -q -test-mode -R prerequisite TestSuite
-coqtopbyte := coqtop.byte -q
+coqc := rocq c -q -R prerequisite TestSuite $(COQFLAGS)
+coqchk := rocqchk -R prerequisite TestSuite
+coqdoc := rocq doc
+coqtop := rocq repl -q -test-mode -R prerequisite TestSuite
 
 coqc_interactive := $(coqc) -test-mode
 

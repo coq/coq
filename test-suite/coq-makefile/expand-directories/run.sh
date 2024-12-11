@@ -11,7 +11,7 @@ cd _test || exit 1
 # includes 6 file extensions, ignores others such as .c, .vo
 # recursive expansion
 # explicit non-existent file included
-actual=`coq_makefile -sources-of -o CoqMakefile . nonexistent.v`
+actual=`rocq makefile -sources-of -o CoqMakefile . nonexistent.v`
 expected="a/b/g.v a/g.mlg a/g.mllib a/g.mlpack g.ml g.mli nonexistent.v"
 if [ "$actual" != "$expected" ]; then
   echo actual: $actual
@@ -20,7 +20,7 @@ if [ "$actual" != "$expected" ]; then
 fi
 
 # expands specific directory, not ., gets the right subset
-actual=`coq_makefile -sources-of -o CoqMakefile a`
+actual=`rocq makefile -sources-of -o CoqMakefile a`
 expected="a/b/g.v a/g.mlg a/g.mllib a/g.mlpack"
 if [ "$actual" != "$expected" ]; then
   echo actual: $actual
@@ -29,7 +29,7 @@ if [ "$actual" != "$expected" ]; then
 fi
 
 # command line args are in Makefile.conf
-coq_makefile -o CoqMakefile . x
+rocq makefile -o CoqMakefile . x
 actual=`grep "COQMF_CMDLINE_VFILES := . x" CoqMakefile.conf`
 if test $? -ne 0; then
   echo bad COQMF_CMDLINE_VFILES:

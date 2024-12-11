@@ -1,4 +1,4 @@
-(* Flags used to compile Coq but _not_ plugins (via coq_makefile) *)
+(* Flags used to compile Coq but _not_ plugins (via rocq makefile) *)
 module Prefs = struct
   type t = { warn_error : bool }
   let default = { warn_error = true }

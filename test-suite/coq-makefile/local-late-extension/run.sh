@@ -8,6 +8,6 @@ find . -maxdepth 1 -not -name . -not -name _test -exec cp -r '{}' -t _test ';'
 cd _test
 
 set -x
-coq_makefile -Q . Top foo.v -o Makefile
+rocq makefile -Q . Top foo.v -o Makefile
 make printvo
 diff -u printvo.expected printvo || exit $?
