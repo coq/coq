@@ -550,7 +550,7 @@ Compiled files
 ------------------
 
 This section describes the commands used to load compiled files (see
-Chapter :ref:`thecoqcommands` for documentation on how to compile a file). A compiled
+Chapter :ref:`therocqcommands` for documentation on how to compile a file). A compiled
 file is a particular case of a module called a *library file*.
 
 .. cmd:: {? From @dirpath } Require {? {| Import | Export } {? @import_categories } } {+ @filtered_import }
@@ -657,7 +657,7 @@ file is a particular case of a module called a *library file*.
 
       Note that the :cmd:`Import` and :cmd:`Export` commands can be used inside modules.
 
-      .. seealso:: Chapter :ref:`thecoqcommands`
+      .. seealso:: Chapter :ref:`therocqcommands`
 
 .. cmd:: Print Libraries
 
@@ -689,7 +689,7 @@ file is a particular case of a module called a *library file*.
    metadata so ``findlib`` can locate your plugin. This usually involves
    generating some kind of ``META`` file and placing it in a place where
    ``findlib`` can see it. Different build systems provide different
-   helpers to do this: see :ref:`here for coq_makefile <coq_makefile>`,
+   helpers to do this: see :ref:`here for rocq makefile <rocq_makefile>`,
    and :ref:`here for Dune <building_dune>`.
 
    This command supports the :attr:`local` attribute.  If present,
@@ -754,7 +754,7 @@ follows:
    :name: From … Dependency
 
    Adds an additional dependency of the current `.v`  file on an external file.  This
-   information is included in the ``coqdep`` tool generated list of dependencies.
+   information is included in the ``rocq dep`` tool generated list of dependencies.
    The file name :n:`@string` must exist relative to one of the top directories
    associated with :n:`@dirpath`.  :n:`@string` can include directory separators
    (``/``) to select a file in a subdirectory.
@@ -778,7 +778,7 @@ Backtracking
 
 The backtracking commands described in this section can only be used
 interactively, they cannot be part of a Rocq file loaded via
-``Load`` or compiled by ``coqc``.
+``Load`` or compiled by ``rocq c``.
 
 
 .. cmd:: Reset @ident
@@ -826,14 +826,13 @@ Quitting and debugging
 
 .. cmd:: Quit
 
-   Causes Rocq to exit.  Valid only in coqtop.
+   Causes Rocq to exit.  Valid only in `rocq repl-with-drop`.
 
 
 .. cmd:: Drop
 
    This command temporarily enters the OCaml toplevel.
-   It is a debug facility used by Rocq's implementers.  Valid only in the
-   bytecode version of coqtop.
+   It is a debug facility used by Rocq's implementers.  Valid only in `rocq repl-with-drop`.
    The OCaml command:
 
    ::
@@ -849,15 +848,6 @@ Quitting and debugging
    ::
 
       go();;
-
-   .. warning::
-
-      #. It only works with the bytecode version of Rocq (i.e. `coqtop.byte`,
-         see Section `interactive-use`).
-      #. You must have compiled Rocq from the source package and set the
-         environment variable COQTOP to the root of your copy of the sources
-         (see Section `customization-by-environment-variables`).
-
 
 .. cmd:: Time @sentence
 

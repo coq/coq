@@ -27,7 +27,7 @@ make -f Makefile.coq.noex
 make[3]: Nothing to be done for 'real-all'.
 make --no-print-directory -C coqprime src/Coqprime/PrimalityTest/Zp.vo
 make[1]: 'src/Coqprime/PrimalityTest/Zp.vo' is up to date.
-COQDEP VFILES
+ROCQ DEP VFILES
 make --no-print-directory -C rewriter
 make[2]: Nothing to be done for 'real-all'.
 make --no-print-directory -C bedrock2/deps/coqutil

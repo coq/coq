@@ -2399,11 +2399,11 @@ Interactive debugger
 .. flag:: Ltac Debug
 
    This flag, when set, enables the step-by-step debugger in the |Ltac| interpreter.
-   The debugger is supported in `coqtop` and Proof General by printing information
+   The debugger is supported in `rocq repl` and Proof General by printing information
    on the console and accepting typed commands.  In addition, CoqIDE now supports a
    :ref:`visual debugger <coqide-debugger>` with additional capabilities.
 
-When the debugger is activated in `coqtop`, it stops at every step of the evaluation of
+When the debugger is activated in `rocq repl`, it stops at every step of the evaluation of
 the current |Ltac| expression and prints information on what it is doing.
 The debugger stops, prompting for a command which can be one of the
 following:
@@ -2430,7 +2430,7 @@ A non-interactive mode for the debugger is available via the flag:
 .. flag:: Ltac Batch Debug
 
    This flag has the effect of presenting a newline at every prompt, when
-   the debugger is on in `coqtop`.  (It has no effect when running the
+   the debugger is on in `rocq repl`.  (It has no effect when running the
    CoqIDE debugger.)  The debug log thus created, which does not require
    user input to generate when this flag is set, can then be run through
    external tools such as diff.
@@ -2546,7 +2546,7 @@ The following example requires the Stdlib library to use the :tacn:`lia` tactic.
    general, non-top-level calls to :tacn:`reset ltac profile` should
    be avoided.
 
-You can also pass the ``-profile-ltac`` command line option to ``coqc``, which
+You can also pass the ``-profile-ltac`` command line option to ``rocq c``, which
 turns the :flag:`Ltac Profiling` flag on at the beginning of each document,
 and performs a :cmd:`Show Ltac Profile` at the end.
 

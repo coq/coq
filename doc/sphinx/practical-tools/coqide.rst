@@ -18,7 +18,7 @@ To run CoqIDE, enter `coqide` on the command line.
 If you include script file names (which end with `.v`) as arguments, each is opened
 in a separate tab.  If you don't, CoqIDE opens a single unnamed buffer
 (titled `*scratch*`).  `coqide` also accepts many of the options of `coqtop`
-(see :ref:`thecoqcommands`), while ignoring the ones that aren't meaningful
+(see :ref:`therocqcommands`), while ignoring the ones that aren't meaningful
 for CoqIDE.  Use `coqide --help` to see the list of command line options.
 
 .. _coqide_mainscreen:
@@ -145,7 +145,7 @@ tactic exists (names of standard tactics are written in lowercase).
 The failing command has been underlined.
 
 If you're not in async mode and you modify the processed part of the buffer,
-everything after that point is undone.  Unlike in `coqtop`, you should not use
+everything after that point is undone.  Unlike in `rocq repl`, you should not use
 :cmd:`Undo` to go backward.
 
 The other buttons on the toolbar do the following:
@@ -240,12 +240,12 @@ The *Compile* menu offers direct commands to:
 + compile the current buffer;
 + run a compilation using `make`;
 + go to the next compilation error; and
-+ create a `Makefile` using `coq_makefile`.
++ create a `Makefile` using `rocq makefile`.
 
 At the moment these are not working well.  We recommend you compile
 from a terminal window for now.  We expect to fix them soon.
 
-*Compile buffer* saves the current buffer and compiles it with `coqc` as specified
+*Compile buffer* saves the current buffer and compiles it with `rocq c` as specified
 in the *Externals* section of the *Edit/Preferences* dialog.  Output appears
 in the *Messages* panel.  It's mostly useful for single-file projects because it doesn't
 automatically recompile other files that it depends on that may have changed.
@@ -255,7 +255,7 @@ the *Externals* section of the *Edit/Preferences* dialog.  Output appears in the
 *Messages* panel.  If you use `_CoqProject` files, you may want to change the settings to
 `make -f CoqMakefile` and `coq_makefile -f _CoqProject -o CoqMakefile` as suggested
 in :ref:`here <building_with_coqproject>`.  Alternatively, you may find it easier
-to do your `make` and `coq_makefile` commands from the command line.
+to do your `make` and `rocq makefile` commands from the command line.
 
 .. _coqide_make_note:
 

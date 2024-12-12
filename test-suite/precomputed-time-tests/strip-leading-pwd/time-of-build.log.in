@@ -2,7 +2,7 @@ printf -- '-R $PWD/src/coqutil/ coqutil\n-arg -w -arg unsupported-attributes\n' 
 Generating Makefile.coq.all
 make -f Makefile.coq.all
 make[1]: Entering directory '/home/jgross/Documents/GitHub/coqutil'
-COQDEP VFILES
+ROCQ DEP VFILES
 make[1]: Leaving directory '/home/jgross/Documents/GitHub/coqutil'
 ROCQ compile $PWD/src/coqutil/Byte.v
 ROCQ compile $PWD/src/coqutil/sanity.v

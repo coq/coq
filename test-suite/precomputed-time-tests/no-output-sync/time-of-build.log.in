@@ -1439,7 +1439,7 @@ rocq makefile -f _PluginProject -o Makefile.plugin
 `which gsed || which sed` -i -e s/coqdeps/coqdeps.plugin/g Makefile.plugin
 make -f Makefile.plugin .merlin
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/template-coq'
-COQDEP VFILES
+ROCQ DEP VFILES
 OCAMLLIBDEP gen-src/metacoq_template_plugin.mlpack
 FILL .merlin
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/template-coq'
@@ -1455,13 +1455,13 @@ rocq makefile -f _PluginProject -o Makefile.plugin
 make -f Makefile.plugin .merlin
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/pcuic'
 make[3]: warning: jobserver unavailable: using -j1.  Add '+' to parent make rule.
-COQDEP VFILES
+ROCQ DEP VFILES
 Fatal error: exception Sys_error("../template-coq/build: No such file or directory")
 OCAMLLIBDEP src/metacoq_pcuic_plugin.mlpack
 Uncaught exception: Sys_error("../template-coq/build: No such file or directory")
 FILL .merlin
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/pcuic'
-COQDEP VFILES
+ROCQ DEP VFILES
 Fatal error: exception Sys_error("../template-coq/build: No such file or directory")
 OCAMLLIBDEP src/metacoq_pcuic_plugin.mlpack
 Uncaught exception: Sys_error("../template-coq/build: No such file or directory")
@@ -1477,7 +1477,7 @@ rocq makefile -f _PluginProject -o Makefile.plugin
 make -f Makefile.plugin .merlin
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/safechecker'
 make[3]: warning: jobserver unavailable: using -j1.  Add '+' to parent make rule.
-COQDEP VFILES
+ROCQ DEP VFILES
 Fatal error: exception Sys_error("../template-coq/build: No such file or directory")
 COQPP src/g_metacoq_safechecker.mlg
 OCAMLLIBDEP src/metacoq_safechecker_plugin.mlpack
@@ -1486,7 +1486,7 @@ CAMLDEP src/g_metacoq_safechecker.ml
 Bad -I option: ../template-coq/build: No such file or directory
 FILL .merlin
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/safechecker'
-COQDEP VFILES
+ROCQ DEP VFILES
 Fatal error: exception Sys_error("../template-coq/build: No such file or directory")
 OCAMLLIBDEP src/metacoq_safechecker_plugin.mlpack
 Uncaught exception: Sys_error("../template-coq/build: No such file or directory")
@@ -1504,7 +1504,7 @@ rocq makefile -f _PluginProject -o Makefile.plugin
 make -f Makefile.plugin .merlin
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/erasure'
 make[3]: warning: jobserver unavailable: using -j1.  Add '+' to parent make rule.
-COQDEP VFILES
+ROCQ DEP VFILES
 Fatal error: exception Sys_error("../template-coq/build: No such file or directory")
 COQPP src/g_metacoq_erasure.mlg
 OCAMLLIBDEP src/metacoq_erasure_plugin.mlpack
@@ -1513,7 +1513,7 @@ CAMLDEP src/g_metacoq_erasure.ml
 Bad -I option: ../template-coq/build: No such file or directory
 FILL .merlin
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/erasure'
-COQDEP VFILES
+ROCQ DEP VFILES
 Fatal error: exception Sys_error("../template-coq/build: No such file or directory")
 OCAMLLIBDEP src/metacoq_erasure_plugin.mlpack
 Uncaught exception: Sys_error("../template-coq/build: No such file or directory")
@@ -1530,7 +1530,7 @@ rocq makefile -f _PluginProject -o Makefile.plugin
 make -f Makefile.plugin .merlin
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/checker'
 make[3]: warning: jobserver unavailable: using -j1.  Add '+' to parent make rule.
-COQDEP VFILES
+ROCQ DEP VFILES
 Fatal error: exception Sys_error("../template-coq/build: No such file or directory")
 COQPP src/g_metacoq_checker.mlg
 OCAMLLIBDEP src/metacoq_checker_plugin.mlpack
@@ -1539,7 +1539,7 @@ CAMLDEP src/g_metacoq_checker.ml
 Bad -I option: ../template-coq/build: No such file or directory
 FILL .merlin
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/checker'
-COQDEP VFILES
+ROCQ DEP VFILES
 Fatal error: exception Sys_error("../template-coq/build: No such file or directory")
 OCAMLLIBDEP src/metacoq_checker_plugin.mlpack
 Uncaught exception: Sys_error("../template-coq/build: No such file or directory")
@@ -1563,7 +1563,7 @@ rocq makefile -f _TemplateCoqProject -o Makefile.template
 `which gsed || which sed` -i -e s/coqdeps/coqdeps.template/g Makefile.template
 make -f Makefile.coq
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/template-coq'
-COQDEP VFILES
+ROCQ DEP VFILES
 ROCQ compile theories/utils/MCPrelude.v
 ROCQ compile theories/utils/MCRelations.v
 theories/utils/MCPrelude.vo (real: 0.09, user: 0.05, sys: 0.04, mem: 63096 ko)
@@ -1746,7 +1746,7 @@ patching file gen-src/cRelationClasses.mli
 make[4]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/template-coq'
 make -f Makefile.template optfiles
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/template-coq'
-COQDEP VFILES
+ROCQ DEP VFILES
 COQPP src/g_template_coq.mlg
 CAMLDEP src/plugin_core.mli
 CAMLDEP src/run_template_monad.mli
@@ -2252,8 +2252,8 @@ Warning: ../template-coq/theories (used in -R or -Q) is not a subdirectory of th
 make -f Makefile.pcuic
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/checker'
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/pcuic'
-COQDEP VFILES
-COQDEP VFILES
+ROCQ DEP VFILES
+ROCQ DEP VFILES
 ROCQ compile theories/Reflect.v
 ROCQ compile theories/PCUICAst.v
 theories/PCUICAst.vo (real: 0.99, user: 0.75, sys: 0.23, mem: 477372 ko)
@@ -2315,7 +2315,7 @@ Warning: ../template-coq/theories (used in -R or -Q) is not a subdirectory of th
 
 make -f Makefile.coq pretty-timed
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/examples'
-COQDEP VFILES
+ROCQ DEP VFILES
 ROCQ compile demo.v
 demo.vo (real: 1.94, user: 1.56, sys: 0.36, mem: 527740 ko)
 ROCQ compile add_constructor.v
@@ -2547,7 +2547,7 @@ Warning: ../template-coq/theories (used in -R or -Q) is not a subdirectory of th
 
 make -f Makefile.safechecker
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/safechecker'
-COQDEP VFILES
+ROCQ DEP VFILES
 ROCQ compile theories/PCUICSafeReduce.v
 theories/PCUICSafeReduce.vo (real: 121.19, user: 119.92, sys: 0.74, mem: 1136588 ko)
 ROCQ compile theories/PCUICSafeConversion.v
@@ -2783,7 +2783,7 @@ Removing: src/all_Forall.ml src/all_Forall.mli src/ascii.ml src/ascii.mli src/as
 make[4]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/safechecker'
 make -f Makefile.plugin
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/safechecker'
-COQDEP VFILES
+ROCQ DEP VFILES
 CAMLDEP src/safeTemplateChecker.mli
 CAMLDEP src/pCUICSafeChecker.mli
 CAMLDEP src/pCUICSafeConversion.mli
@@ -2975,7 +2975,7 @@ Warning: ../template-coq/theories (used in -R or -Q) is not a subdirectory of th
 
 make -f Makefile.erasure
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/erasure'
-COQDEP VFILES
+ROCQ DEP VFILES
 ROCQ compile theories/EAst.v
 theories/EAst.vo (real: 0.97, user: 0.72, sys: 0.24, mem: 477800 ko)
 ROCQ compile theories/EAstUtils.v
@@ -3509,7 +3509,7 @@ mv: 'wGraph.mli' and 'wGraph.mli' are the same file
 Removing: src/all_Forall.ml src/all_Forall.mli src/ascii.ml src/ascii.mli src/ast0.ml src/ast0.mli src/ast_denoter.ml src/ast_quoter.ml src/astUtils.ml src/astUtils.mli src/basicAst.ml src/basicAst.mli src/basics.ml src/basics.mli src/binInt.ml src/binInt.mli src/binNat.ml src/binNat.mli src/binNums.ml src/binNums.mli src/binPosDef.ml src/binPosDef.mli src/binPos.ml src/binPos.mli src/bool.ml src/bool.mli src/common0.ml src/common0.mli src/compare_dec.ml src/compare_dec.mli src/config0.ml src/config0.mli src/cRelationClasses.ml src/cRelationClasses.mli src/datatypes.ml src/datatypes.mli src/decimal.ml src/decimal.mli src/denoter.ml src/environment.ml src/environment.mli src/equalities.ml src/equalities.mli src/extractable.ml src/extractable.mli src/hexadecimal.ml src/hexadecimal.mli src/liftSubst.ml src/liftSubst.mli src/list0.ml src/list0.mli src/logic0.ml src/logic0.mli src/mCPrelude.mli src/mCPrelude.ml src/mCCompare.ml src/mCCompare.mli src/mCList.ml src/mCList.mli src/mCOption.ml src/mCOption.mli src/mCProd.ml src/mCProd.mli src/mCRelations.ml src/mCRelations.mli src/mCString.ml src/mCString.mli src/mSetDecide.ml src/mSetDecide.mli src/mSetFacts.ml src/mSetFacts.mli src/mSetInterface.ml src/mSetInterface.mli src/mSetList.ml src/mSetList.mli src/mSetProperties.ml src/mSetProperties.mli src/nat0.ml src/nat0.mli src/numeral.ml src/numeral.mli src/orderedType0.ml src/orderedType0.mli src/ordersFacts.ml src/ordersFacts.mli src/ordersLists.ml src/ordersLists.mli src/orders.ml src/orders.mli src/ordersTac.ml src/ordersTac.mli src/peanoNat.ml src/peanoNat.mli src/plugin_core.ml src/plugin_core.mli src/pretty.ml src/pretty.mli src/reification.ml src/quoter.ml src/run_extractable.ml src/run_extractable.mli src/specif.ml src/specif.mli src/string0.ml src/string0.mli src/tm_util.ml src/universes0.ml src/universes0.mli src/univSubst0.ml src/univSubst0.mli
 make -f Makefile.plugin
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/erasure'
-COQDEP VFILES
+ROCQ DEP VFILES
 CAMLDEP src/safeTemplateErasure.mli
 CAMLDEP src/ePretty.mli
 CAMLDEP src/safeErasureFunction.mli
@@ -3772,8 +3772,8 @@ Warning: ../../template-coq/theories (used in -R or -Q) is not a subdirectory of
 
 make -f Makefile.coq
 make[5]: Entering directory '/builds/coq/coq/_build_ci/metacoq/test-suite/plugin-demo'
-COQDEP VFILES
-COQDEP VFILES
+ROCQ DEP VFILES
+ROCQ DEP VFILES
 *** Warning: in file theories/MyPlugin.v, 
     required library Loader matches several files in path
     (found Loader.v in ../../template-coq/theories and theories; used the latter)
@@ -3891,7 +3891,7 @@ Moving  MyPlugin.mli to myPlugin.mli
 make -f Makefile.plugin
 make[5]: Entering directory '/builds/coq/coq/_build_ci/metacoq/test-suite/plugin-demo'
 Makefile.plugin:20: Makefile.plugin.conf: No such file or directory
-COQDEP VFILES
+ROCQ DEP VFILES
 *** Warning: in file test/test.v, 
     required library Loader matches several files in path
     (found Loader.v in ../../template-coq/theories and theories; used the latter)
@@ -5090,7 +5090,7 @@ Warning: ../template-coq/theories (used in -R or -Q) is not a subdirectory of th
 
 make -f Makefile.coq pretty-timed
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/translations'
-COQDEP VFILES
+ROCQ DEP VFILES
 *** Warning: in file sigma.v, 
     required library Loader matches several files in path
     (found Loader.v in ../template-coq/theories and ../checker/theories; used the latter)

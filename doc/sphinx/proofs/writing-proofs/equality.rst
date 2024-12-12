@@ -1200,7 +1200,7 @@ which supports additional fine-tuning.
 
       In much the same way this tactic does not play well with
       :cmd:`Qed` and :cmd:`Defined` without using :tacn:`abstract` as
-      an intermediary, this tactic does not play well with ``coqchk``,
+      an intermediary, this tactic does not play well with ``rocqchk``,
       even when used with :tacn:`abstract`, due to the inability of
       tactics to persist information about conversion hints in the
       proof term. See `#12200

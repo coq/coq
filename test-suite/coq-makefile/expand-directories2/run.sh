@@ -22,35 +22,26 @@ fi
 rocq makefile -f _CoqProject -o CoqMakefile b.v
 make -f CoqMakefile > makeout
 cat >expected <<EOT
-COQDEP VFILES
+ROCQ DEP VFILES
 ROCQ compile b.v
 ROCQ compile x/a.v
 EOT
 
 grep -v "make" makeout >actual
-if [ "$(diff actual expected)" != "" ]; then
-  echo expected:
-  cat expected
-  echo actual:
-  cat actual
-fi
+diff -u actual expected
 
 # new file is included without running rocq makefile
 cat >x/c.v <<EOT
+Require Import T.x.a.
 EOT
 make -f CoqMakefile clean
 make -f CoqMakefile > makeout
 cat >expected <<EOT
-COQDEP VFILES
+ROCQ DEP VFILES
 ROCQ compile b.v
 ROCQ compile x/a.v
 ROCQ compile x/c.v
 EOT
 
 grep -v "make" makeout >actual
-if [ "$(diff actual expected)" != "" ]; then
-  echo expected:
-  cat expected
-  echo actual:
-  cat actual
-fi
+diff -u actual expected

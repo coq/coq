@@ -891,7 +891,7 @@ $(addsuffix .d,$(MLPACKFILES)): %.mlpack.d: %.mlpack
 VDFILE_FLAGS:=$(if @PROJECT_FILE@,-f @PROJECT_FILE@,) $(CMDLINE_COQLIBS) $(CMDLINE_VFILES)
 
 $(VDFILE): @PROJECT_FILE@ $(VFILES)
-	$(SHOW)'COQDEP VFILES'
+	$(SHOW)'ROCQ DEP VFILES'
 	$(HIDE)$(COQDEP) -vos -dyndep var $(VDFILE_FLAGS) $(redir_if_ok)
 
 # Misc ########################################################################

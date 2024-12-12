@@ -12,9 +12,9 @@ which are available only in proof mode, incrementally transform incomplete
 proofs to eventually generate a complete proof.
 
 When you run Rocq interactively, such as through CoqIDE, Proof General or
-coqtop, Rocq shows the current proof state (the incomplete proof) as you
+`rocq repl`, Rocq shows the current proof state (the incomplete proof) as you
 enter tactics.  This information isn't shown when you run Rocq in batch
-mode with `coqc`.
+mode with `rocq c`.
 
 Proof State
 -----------
@@ -511,7 +511,7 @@ be changed using the following option.
    `"Noedit"`
      No tactic
      language is activated at all. This is the default when the :term:`prelude`
-     is not loaded, e.g. through the `-noinit` option for `coqc`.
+     is not loaded, e.g. through the `-noinit` option for `rocq`.
 
    `"Ltac2"`
      Activates the Ltac2 language and the Ltac2-specific variants of the documented
@@ -1001,7 +1001,7 @@ Requesting information
 
 .. cmd:: Show Goal @natural at @natural
 
-   Available in coqtop.  Displays a goal at a
+   Available in `rocq repl`.  Displays a goal at a
    proof state using the goal ID number and the proof state ID number.
    It is primarily for use by tools such as Prooftree that need to fetch
    goal history in this way.  Prooftree is a tool for visualizing a proof
@@ -1089,12 +1089,12 @@ How to enable diffs
    use red and green for the compared values; they appear regardless of the setting.
    (Colors are user-configurable.)
 
-For coqtop, showing diffs can be enabled when starting coqtop with the
+For `rocq repl`, showing diffs can be enabled when starting `rocq repl` with the
 ``-diffs on|off|removed`` command-line option or by setting the :opt:`Diffs` option
 within Rocq.  You will need to provide the ``-color on|auto`` command-line option when
-you start coqtop in either case.
+you start `rocq repl` in either case.
 
-Colors for coqtop can be configured by setting the ``COQ_COLORS`` environment
+Colors for `rocq repl` can be configured by setting the ``COQ_COLORS`` environment
 variable.  See section :ref:`customization-by-environment-variables`.  Diffs
 use the tags ``diff.added``, ``diff.added.bg``, ``diff.removed`` and ``diff.removed.bg``.
 
@@ -1195,7 +1195,7 @@ in a compacted hypotheses:
 
 To show differences in the proof term:
 
-- In coqtop and Proof General, use the :cmd:`Show Proof` `Diffs` command.
+- In `rocq repl` and Proof General, use the :cmd:`Show Proof` `Diffs` command.
 
 - In CoqIDE, position the cursor on or just after a tactic to compare the proof term
   after the tactic with the proof term before the tactic, then select

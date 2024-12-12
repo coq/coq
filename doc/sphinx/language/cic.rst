@@ -434,7 +434,7 @@ The Calculus of Inductive Constructions with impredicative Set
 
 The Rocq Prover can be used as a type checker for the Calculus of Inductive
 Constructions with an impredicative sort :math:`\Set` by using the compiler
-option ``-impredicative-set``. For example, using the ordinary `coqtop`
+option ``-impredicative-set``. For example, using the ordinary `rocq repl`
 command, the following is rejected,
 
 .. example::
@@ -443,7 +443,7 @@ command, the following is rejected,
 
       Fail Definition id: Set := forall X:Set,X->X.
 
-while it will type check, if one uses instead the `coqtop`
+while it will type check, if one uses instead the `rocq repl`
 ``-impredicative-set`` option..
 
 The major change in the theory concerns the rule for product formation

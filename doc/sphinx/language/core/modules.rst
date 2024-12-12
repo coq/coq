@@ -566,7 +566,7 @@ as :n:`Stdlib.Init.Logic`, in which:
   corresponds to the file system path :n:`Init/Logic.v` on Linux)
 
 When Rocq is processing a script that hasn't been saved in a file, such as a new
-buffer in CoqIDE or anything in coqtop, definitions in the script are associated
+buffer in CoqIDE or anything in `rocq repl`, definitions in the script are associated
 with the logical name :n:`Top` and there is no associated file system path.
 
 **Item part.** Items are further qualified by a suffix in the form

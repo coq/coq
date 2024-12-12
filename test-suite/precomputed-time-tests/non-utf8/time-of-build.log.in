@@ -30,7 +30,7 @@ make[2]: Entering directory 'bedrock2/deps/coqutil'
 /builds/coq/coq/_install_ci/bin/rocq makefile -f _CoqProject INSTALLDEFAULTROOT = coqutil -arg "-async-proofs-tac-j 1" bedrock2/deps/coqutil/src/Tactics/Tactics.v bedrock2/deps/coqutil/src/Tactics/eabstract.v bedrock2/deps/coqutil/src/Tactics/letexists.v bedrock2/deps/coqutil/src/Tactics/rdelta.v bedrock2/deps/coqutil/src/Tactics/syntactic_unify.v bedrock2/deps/coqutil/src/dlet.v bedrock2/deps/coqutil/src/Map/Funext.v bedrock2/deps/coqutil/src/Map/Empty_set_keyed_map.v bedrock2/deps/coqutil/src/Map/SortedListString.v bedrock2/deps/coqutil/src/Map/Z_keyed_SortedListMap.v bedrock2/deps/coqutil/src/Map/SortedListWord.v bedrock2/deps/coqutil/src/Map/Properties.v bedrock2/deps/coqutil/src/Map/TestLemmas.v bedrock2/deps/coqutil/src/Map/Interface.v bedrock2/deps/coqutil/src/Map/TestGoals.v bedrock2/deps/coqutil/src/Map/SlowGoals.v bedrock2/deps/coqutil/src/Map/SortedListString_test.v bedrock2/deps/coqutil/src/Map/Solver.v bedrock2/deps/coqutil/src/Map/SortedList.v bedrock2/deps/coqutil/src/Z/div_mod_to_equations.v bedrock2/deps/coqutil/src/Z/ZLib.v bedrock2/deps/coqutil/src/Z/HexNotation.v bedrock2/deps/coqutil/src/Z/BitOps.v bedrock2/deps/coqutil/src/Datatypes/String.v bedrock2/deps/coqutil/src/Datatypes/List.v bedrock2/deps/coqutil/src/Datatypes/PropSet.v bedrock2/deps/coqutil/src/Datatypes/Option.v bedrock2/deps/coqutil/src/Datatypes/Prod.v bedrock2/deps/coqutil/src/Datatypes/HList.v bedrock2/deps/coqutil/src/Datatypes/PrimitivePair.v bedrock2/deps/coqutil/src/Word/Naive.v bedrock2/deps/coqutil/src/Word/Properties.v bedrock2/deps/coqutil/src/Word/Interface.v bedrock2/deps/coqutil/src/Word/LittleEndian.v bedrock2/deps/coqutil/src/sanity.v bedrock2/deps/coqutil/src/Decidable.v bedrock2/deps/coqutil/src/Macros/subst.v bedrock2/deps/coqutil/src/Macros/symmetry.v bedrock2/deps/coqutil/src/Macros/unique.v -o Makefile.coq.all
 make -f Makefile.coq.all
 make[3]: Entering directory 'bedrock2/deps/coqutil'
-COQDEP VFILES
+ROCQ DEP VFILES
 ROCQ compile bedrock2/deps/coqutil/src/Tactics/eabstract.v
 ROCQ compile bedrock2/deps/coqutil/src/sanity.v
 ROCQ compile bedrock2/deps/coqutil/src/Tactics/letexists.v
@@ -315,8 +315,8 @@ make -f Makefile.coq.all
 make -f Makefile.coq.all
 make[3]: Entering directory 'bedrock2/deps/riscv-coq'
 make[3]: Entering directory 'bedrock2/bedrock2'
-COQDEP VFILES
-COQDEP VFILES
+ROCQ DEP VFILES
+ROCQ DEP VFILES
 ROCQ compile bedrock2/bedrock2/src/Syntax.v
 ROCQ compile bedrock2/deps/riscv-coq/src/Utility/Monads.v
 ROCQ compile bedrock2/bedrock2/src/Byte.v
@@ -1184,8 +1184,8 @@ make[3]: Entering directory 'bedrock2/compiler'
 /builds/coq/coq/_install_ci/bin/rocq makefile -f _CoqProject Kami/Lib/StringStringAsOT.v Kami/Lib/FMap.v Kami/Lib/ilist.v Kami/Lib/Indexer.v Kami/Lib/DepEq.v Kami/Lib/Nomega.v Kami/Lib/StringEq.v Kami/Lib/Misc.v Kami/Lib/Word.v Kami/Lib/FinNotations.v Kami/Lib/Reflection.v Kami/Lib/NatLib.v Kami/Lib/StringAsList.v Kami/Lib/Concat.v Kami/Lib/ListSupport.v Kami/Lib/VectorFacts.v Kami/Lib/StringAsOT.v Kami/Lib/CommonTactics.v Kami/Lib/WordSupport.v Kami/Lib/BasicLogic.v Kami/Lib/DepEqNat.v Kami/Lib/Struct.v Kami/SemFacts.v Kami/ParametricInlineLtac.v Kami/PartialInlineFacts.v Kami/Wf.v Kami/Semantics.v Kami/ParametricSyntax.v Kami/Inline.v Kami/StepDet.v Kami/InlineFacts.v Kami/Amortization.v Kami/Tutorial.v Kami/Label.v Kami/MapReifyEx.v Kami/ParametricEquiv.v Kami/ParametricInline.v Kami/Notations.v Kami/Substitute.v Kami/ParametricWf.v Kami/ParamDup.v Kami/SymEval.v Kami/Syntax.v Kami/ModuleBoundEx.v Kami/Tactics.v Kami/SymEvalTac.v Kami/ModularFacts.v Kami/Synthesize.v Kami/RefinementFacts.v Kami/Decomposition.v Kami/Renaming.v Kami/Kami.v Kami/Duplicate.v Kami/ModuleBound.v Kami/Specialize.v Kami/Ex/ProcThreeStage.v Kami/Ex/SimpleFifoCorrect.v Kami/Ex/IsaRv32PgmExt.v Kami/Ex/ProcThreeStInv.v Kami/Ex/Divider32.v Kami/Ex/SC.v Kami/Ex/Names.v Kami/Ex/OneEltFifo.v Kami/Ex/Multiplier64.v Kami/Ex/Multiplier32.v Kami/Ex/ProcFDInv.v Kami/Ex/ProcDec.v Kami/Ex/ProcFourStDec.v Kami/Ex/IsaRv32.v Kami/Ex/MemAtomic.v Kami/Ex/ProcFDInl.v Kami/Ex/IsaRv32Pgm.v Kami/Ex/Divider64.v Kami/Ex/Fifo.v Kami/Ex/ProcThreeStInl.v Kami/Ex/ProcDecSC.v Kami/Ex/ProcDecSCN.v Kami/Ex/NativeFifo.v Kami/Ex/FifoCorrect.v Kami/Ex/ProcThreeStDec.v Kami/Ex/RegFile.v Kami/Ex/InDepthTutorial.v Kami/Ex/ProcDecInv.v Kami/Ex/ProcFetchDecode.v Kami/Ex/SCMMInl.v Kami/Ex/ProcFDCorrect.v Kami/Ex/MemTypes.v Kami/Ex/ProcDecInl.v Kami/Ex/IsaRv32/PgmFact.v Kami/Ex/IsaRv32/PgmMatMulReport.v Kami/Ex/IsaRv32/PgmBankerWorker3.v Kami/Ex/IsaRv32/PgmGcd.v Kami/Ex/IsaRv32/PgmMatMulInit.v Kami/Ex/IsaRv32/PgmPeterson2.v Kami/Ex/IsaRv32/PgmHanoi.v Kami/Ex/IsaRv32/PgmBankerWorker1.v Kami/Ex/IsaRv32/PgmPeterson1.v Kami/Ex/IsaRv32/PgmBankerInit.v Kami/Ex/IsaRv32/PgmMatMulNormal1.v Kami/Ex/IsaRv32/PgmDekker1.v Kami/Ex/IsaRv32/PgmBankerWorker2.v Kami/Ex/IsaRv32/PgmBsort.v Kami/Ex/IsaRv32/PgmMatMulNormal2.v Kami/Ex/IsaRv32/PgmDekker2.v Kami/Ext/Extraction.v Kami/Ext/BSyntax.v -o Makefile.coq.all
 make -f Makefile.coq.all
 make[3]: Entering directory 'bedrock2/deps/kami'
-COQDEP VFILES
-COQDEP VFILES
+ROCQ DEP VFILES
+ROCQ DEP VFILES
 ROCQ compile bedrock2/compiler/lib/fiat_crypto_tactics/Test.v
 ROCQ compile bedrock2/compiler/lib/LibTacticsMin.v
 ROCQ compile Kami/Lib/StringAsOT.v
@@ -3847,7 +3847,7 @@ printf -- '-Q bedrock2/deps/coqutil/src coqutil\n-Q bedrock2/deps/riscv-coq/src 
 /builds/coq/coq/_install_ci/bin/rocq makefile -f _CoqProject INSTALLDEFAULTROOT = bedrock2 -arg "-async-proofs-tac-j 1" bedrock2/processor/src/Test.v bedrock2/processor/src/KamiWord.v bedrock2/processor/src/KamiRiscv.v -o Makefile.coq.all
 make -f Makefile.coq.all
 make[3]: Entering directory 'bedrock2/processor'
-COQDEP VFILES
+ROCQ DEP VFILES
 ROCQ compile bedrock2/processor/src/Test.v
 ROCQ compile bedrock2/processor/src/KamiWord.v
 ROCQ compile bedrock2/processor/src/KamiRiscv.v
