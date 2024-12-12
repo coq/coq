@@ -41,7 +41,7 @@
   (source_tree plugins)
   (source_tree theories)
   (source_tree user-contrib)
-  %{project_root}/_build/install/%{context_name}/lib/coq-core/META)
+  %{workspace_root}/_build/install/%{context_name}/lib/coq-core/META)
  (action
   (with-stdout-to %{targets}
    (run tools/dune_rule_gen/gen_rules.exe Corelib theories %{env:COQ_DUNE_EXTRA_OPT=}))))
@@ -52,7 +52,7 @@
   (source_tree plugins)
   (source_tree theories)
   (source_tree user-contrib)
-  %{project_root}/_build/install/%{context_name}/lib/coq-core/META)
+  %{workspace_root}/_build/install/%{context_name}/lib/coq-core/META)
  (action
   (with-stdout-to %{targets}
    (run tools/dune_rule_gen/gen_rules.exe Ltac2 user-contrib/Ltac2 %{env:COQ_DUNE_EXTRA_OPT=}))))

@@ -7,7 +7,7 @@
 
 (rule
  (targets static_toplevel_libs.ml)
- (deps %{project_root}/_build/install/%{context_name}/lib/coq-core/META)
+ (deps %{workspace_root}/_build/install/%{context_name}/lib/coq-core/META)
  (action
   (with-stdout-to %{targets}
    (run ocamlfind query -recursive -predicates native coq-core.toplevel
