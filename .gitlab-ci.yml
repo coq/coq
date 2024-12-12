@@ -62,6 +62,7 @@ before_script:
   - dune printenv --root .
   - dev/tools/check-cachekey.sh
   - dev/tools/list-potential-artifacts.sh > downloaded_artifacts.txt
+  - if [ -d saved_build_ci ]; then mv saved_build_ci _build_ci; fi
   - dev/ci/gitlab-section.sh end before_script
 
 # Regular "release" build of Rocq, with final installed layout
@@ -193,17 +194,21 @@ before_script:
   extends: .auto-use-tags
   script:
     - ulimit -S -s 16384           # For flambda + native
-    - make -f Makefile.ci -j "$NJOBS" "$(echo ${CI_JOB_NAME#*:} | sed -e 's/+.*$//')"
+    # set CI_TARGETS from job name if not already provided, then print
+    - echo CI_TARGETS = ${CI_TARGETS:=${CI_JOB_NAME#*:ci-}}
+    - for target in $CI_TARGETS; do dev/ci/ci-wrapper.sh "$target"; done
   after_script:
+    - if [ "$SAVE_BUILD_CI" ] && [ -d _build_ci ]; then mv _build_ci saved_build_ci; fi
     - dev/tools/list-potential-artifacts.sh > available_artifacts.txt
     - dev/tools/cleanup-artifacts.sh downloaded_artifacts.txt available_artifacts.txt
   artifacts:
     name: "$CI_JOB_NAME"
     paths:
-      - _build_ci
+      - _install_ci
+      - saved_build_ci
     exclude: # reduce artifact size
-      - _build_ci/**/.git # exclude .git directory itself as well
-      - _build_ci/**/.git/**/*
+      - saved_build_ci/**/.git # exclude .git directory itself as well
+      - saved_build_ci/**/.git/**/*
     when: always
     expire_in: 1 week
   needs:
@@ -631,6 +636,7 @@ library:ci-bedrock2:
   extends: .ci-template-flambda
   variables:
     NJOBS: "1"
+    SAVE_BUILD_CI: "1"
   needs:
   - build:edge+flambda
   - library:ci-stdlib+flambda
@@ -747,6 +753,7 @@ library:ci-fiat_crypto:
   extends: .ci-template-flambda
   variables:
     COQEXTRAFLAGS: "-async-proofs-tac-j 0"
+    SAVE_BUILD_CI: "1"
   needs:
   - build:edge+flambda
   - library:ci-stdlib+flambda
@@ -856,6 +863,8 @@ library:ci-mathcomp:
   - build:edge+flambda
   - plugin:ci-elpi_hb  # for Hierarchy Builder
   stage: build-2
+  variables:
+    SAVE_BUILD_CI: "1"
 
 library:ci-mathcomp_test:
   extends: .ci-template-flambda
@@ -909,6 +918,8 @@ library:ci-analysis:
   - library:ci-bigenough
   - plugin:ci-elpi_hb  # for Hierarchy Builder
   stage: build-3+
+  variables:
+    SAVE_BUILD_CI: "1"
 
 library:ci-analysis_stdlib:
   extends: .ci-template-flambda
@@ -970,9 +981,14 @@ library:ci-sf:
 
 library:ci-stdlib:
   extends: .ci-template
+  variables:
+    SAVE_BUILD_CI: "1"
 
 library:ci-stdlib+flambda:
   extends: .ci-template-flambda
+  variables:
+    CI_TARGETS: "stdlib"
+    SAVE_BUILD_CI: "1"
 
 library:ci-stdlib_test:
   extends: .ci-template
@@ -1061,6 +1077,8 @@ library:ci-http:
   - library:ci-itree_io
   - plugin:ci-quickchick
   stage: build-3+
+  variables:
+    CI_TARGETS: "ceres parsec json async_test http"
 
 library:ci-trakt:
   extends: .ci-template-flambda
@@ -1086,9 +1104,6 @@ plugin:ci-atbr:
 
 plugin:ci-autosubst_ocaml:
   extends: .ci-template-flambda
-  needs:
-  - build:edge+flambda
-  - library:ci-stdlib+flambda
 
 plugin:ci-itauto:
   extends: .ci-template-flambda
@@ -1124,6 +1139,9 @@ plugin:ci-elpi_hb:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
+  variables:
+    CI_TARGETS: "elpi hb"
+    SAVE_BUILD_CI: "1"
 
 plugin:ci-elpi_test:
   extends: .ci-template-flambda
@@ -1146,6 +1164,8 @@ plugin:ci-equations:
   needs:
   - build:edge+flambda
   - library:ci-stdlib+flambda
+  variables:
+    SAVE_BUILD_CI: "1"
 
 plugin:ci-equations_test:
   extends: .ci-template-flambda
@@ -1184,6 +1204,8 @@ plugin:ci-mtac2:
   needs:
   - build:edge+flambda
   - library:ci-stdlib+flambda
+  variables:
+    CI_TARGETS: "unicoq mtac2"
 
 plugin:ci-paramcoq:
   extends: .ci-template-flambda
@@ -1215,6 +1237,8 @@ plugin:ci-quickchick:
   - plugin:ci-elpi_hb
   - library:ci-mathcomp
   stage: build-3+
+  variables:
+    SAVE_BUILD_CI: "1"
 
 plugin:ci-quickchick_test:
   extends: .ci-template-flambda
