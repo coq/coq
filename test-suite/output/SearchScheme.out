@@ -1,22 +1,27 @@
 nat_sind:
   forall P : nat -> SProp,
   P 0 -> (forall n : nat, P n -> P (S n)) -> forall n : nat, P n
-nat_rec:
-  forall P : nat -> Set,
-  P 0 -> (forall n : nat, P n -> P (S n)) -> forall n : nat, P n
 nat_ind:
   forall P : nat -> Prop,
+  P 0 -> (forall n : nat, P n -> P (S n)) -> forall n : nat, P n
+nat_rec:
+  forall P : nat -> Set,
   P 0 -> (forall n : nat, P n -> P (S n)) -> forall n : nat, P n
 nat_rect:
   forall P : nat -> Type,
   P 0 -> (forall n : nat, P n -> P (S n)) -> forall n : nat, P n
-le_ind:
-  forall (n : nat) (P : nat -> Prop),
-  P n ->
-  (forall m : nat, n <= m -> P m -> P (S m)) ->
-  forall n0 : nat, n <= n0 -> P n0
 le_sind:
   forall (n : nat) (P : nat -> SProp),
   P n ->
   (forall m : nat, n <= m -> P m -> P (S m)) ->
   forall n0 : nat, n <= n0 -> P n0
+le_ind:
+  forall (n : nat) (P : nat -> Prop),
+  P n ->
+  (forall m : nat, n <= m -> P m -> P (S m)) ->
+  forall n0 : nat, n <= n0 -> P n0
+le_ind_dep:
+  forall (n : nat) (P : forall n0 : nat, n <= n0 -> Prop),
+  P n (le_n n) ->
+  (forall (m : nat) (l : n <= m), P m l -> P (S m) (le_S n m l)) ->
+  forall (n0 : nat) (l : n <= n0), P n0 l

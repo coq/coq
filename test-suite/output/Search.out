@@ -1,23 +1,28 @@
 le_n: forall n : nat, n <= n
 le_0_n: forall n : nat, 0 <= n
 le_S: forall n m : nat, n <= m -> n <= S m
-le_S_n: forall n m : nat, S n <= S m -> n <= m
-le_pred: forall n m : nat, n <= m -> Nat.pred n <= Nat.pred m
 le_n_S: forall n m : nat, n <= m -> S n <= S m
-max_l: forall n m : nat, m <= n -> Nat.max n m = n
+le_pred: forall n m : nat, n <= m -> Nat.pred n <= Nat.pred m
+le_S_n: forall n m : nat, S n <= S m -> n <= m
+min_l: forall n m : nat, n <= m -> Nat.min n m = n
 max_r: forall n m : nat, n <= m -> Nat.max n m = m
 min_r: forall n m : nat, m <= n -> Nat.min n m = m
-min_l: forall n m : nat, n <= m -> Nat.min n m = n
-le_ind:
-  forall (n : nat) (P : nat -> Prop),
-  P n ->
-  (forall m : nat, n <= m -> P m -> P (S m)) ->
-  forall n0 : nat, n <= n0 -> P n0
+max_l: forall n m : nat, m <= n -> Nat.max n m = n
 le_sind:
   forall (n : nat) (P : nat -> SProp),
   P n ->
   (forall m : nat, n <= m -> P m -> P (S m)) ->
   forall n0 : nat, n <= n0 -> P n0
+le_ind:
+  forall (n : nat) (P : nat -> Prop),
+  P n ->
+  (forall m : nat, n <= m -> P m -> P (S m)) ->
+  forall n0 : nat, n <= n0 -> P n0
+le_ind_dep:
+  forall (n : nat) (P : forall n0 : nat, n <= n0 -> Prop),
+  P n (le_n n) ->
+  (forall (m : nat) (l : n <= m), P m l -> P (S m) (le_S n m l)) ->
+  forall (n0 : nat) (l : n <= n0), P n0 l
 false: bool
 true: bool
 is_true: bool -> Prop
