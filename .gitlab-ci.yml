@@ -60,6 +60,7 @@ before_script:
   - opam config list
   - dune printenv --root .
   - dev/tools/check-cachekey.sh
+  - dev/tools/list-potential-artifacts.sh > downloaded_artifacts.txt
   - dev/ci/gitlab-section.sh end before_script
 
 # Regular "release" build of Coq, with final installed layout
@@ -188,6 +189,9 @@ before_script:
   script:
     - ulimit -S -s 16384           # For flambda + native
     - make -f Makefile.ci -j "$NJOBS" "$(echo ${CI_JOB_NAME#*:} | sed -e 's/+.*$//')"
+  after_script:
+    - dev/tools/list-potential-artifacts.sh > available_artifacts.txt
+    - dev/tools/cleanup-artifacts.sh downloaded_artifacts.txt available_artifacts.txt
   artifacts:
     name: "$CI_JOB_NAME"
     paths:
@@ -629,6 +633,10 @@ library:ci-bedrock2_examples:
     NJOBS: "1"
   needs:
   - build:edge+flambda
+  - library:ci-stdlib+flambda
+  - library:ci-coqutil
+  - library:ci-kami
+  - library:ci-riscv_coq
   - library:ci-bedrock2
   stage: build-3+
   timeout: 2h
@@ -686,6 +694,7 @@ library:ci-coquelicot:
   needs:
   - build:edge+flambda
   - library:ci-stdlib+flambda
+  - plugin:ci-elpi_hb
   - library:ci-mathcomp
   stage: build-3+
 
@@ -718,6 +727,7 @@ library:ci-fcsl_pcm:
   needs:
   - build:edge+flambda
   - library:ci-stdlib+flambda
+  - plugin:ci-elpi_hb
   - library:ci-mathcomp
   stage: build-2
 
@@ -728,6 +738,10 @@ library:ci-fiat_crypto:
   needs:
   - build:edge+flambda
   - library:ci-stdlib+flambda
+  - library:ci-coqutil
+  - library:ci-kami
+  - library:ci-riscv_coq
+  - library:ci-bedrock2
   - library:ci-coqprime
   - library:ci-rupicola
   - plugin:ci-rewriter
@@ -749,6 +763,13 @@ library:ci-fiat_crypto_ocaml:
   needs:
   - build:edge+flambda
   - library:ci-stdlib+flambda
+  - library:ci-coqutil
+  - library:ci-kami
+  - library:ci-riscv_coq
+  - library:ci-bedrock2
+  - library:ci-coqprime
+  - library:ci-rupicola
+  - plugin:ci-rewriter
   - library:ci-fiat_crypto
   stage: build-3+
   artifacts:
@@ -850,6 +871,7 @@ library:ci-finmap:
   needs:
   - build:edge+flambda
   - library:ci-stdlib+flambda
+  - plugin:ci-elpi_hb
   - library:ci-mathcomp
   stage: build-3+
 
@@ -858,6 +880,7 @@ library:ci-bigenough:
   needs:
   - build:edge+flambda
   - library:ci-stdlib+flambda
+  - plugin:ci-elpi_hb
   - library:ci-mathcomp
   stage: build-3+
 
@@ -898,6 +921,8 @@ library:ci-itree_io:
   needs:
   - build:edge+flambda
   - library:ci-stdlib+flambda
+  - library:ci-ext_lib
+  - library:ci-paco
   - library:ci-simple_io
   - library:ci-itree
   stage: build-3+
@@ -978,6 +1003,7 @@ library:ci-mathcomp_word:
   needs:
   - build:edge+flambda
   - library:ci-stdlib+flambda
+  - plugin:ci-elpi_hb
   - library:ci-mathcomp
   stage: build-2
 
@@ -986,6 +1012,7 @@ library:ci-jasmin:
   needs:
   - build:edge+flambda
   - library:ci-stdlib+flambda
+  - plugin:ci-elpi_hb
   - library:ci-mathcomp
   - library:ci-mathcomp_word
   stage: build-3+
@@ -995,7 +1022,13 @@ library:ci-http:
   needs:
   - build:edge+flambda
   - library:ci-stdlib+flambda
+  - plugin:ci-elpi_hb
+  - library:ci-mathcomp
   - library:ci-menhir
+  - library:ci-ext_lib
+  - library:ci-simple_io
+  - library:ci-paco
+  - library:ci-itree
   - library:ci-itree_io
   - plugin:ci-quickchick
   stage: build-3+
@@ -1148,6 +1181,7 @@ plugin:ci-quickchick:
   - library:ci-stdlib+flambda
   - library:ci-ext_lib
   - library:ci-simple_io
+  - plugin:ci-elpi_hb
   - library:ci-mathcomp
   stage: build-3+
 
@@ -1156,6 +1190,10 @@ plugin:ci-quickchick_test:
   needs:
   - build:edge+flambda
   - library:ci-stdlib+flambda
+  - library:ci-ext_lib
+  - library:ci-simple_io
+  - plugin:ci-elpi_hb
+  - library:ci-mathcomp
   - plugin:ci-quickchick
   stage: build-3+
 
@@ -1191,6 +1229,9 @@ library:ci-rupicola:
   needs:
   - build:edge+flambda
   - library:ci-stdlib+flambda
+  - library:ci-coqutil
+  - library:ci-kami
+  - library:ci-riscv_coq
   - library:ci-bedrock2
   stage: build-3+
 
@@ -1214,6 +1255,7 @@ plugin:ci-smtcoq_trakt:
   needs:
   - build:edge+flambda
   - library:ci-stdlib+flambda
+  - plugin:ci-elpi_hb
   - library:ci-trakt
   stage: build-3+
 
