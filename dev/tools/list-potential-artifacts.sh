@@ -1,7 +1,5 @@
 #!/bin/sh
 
-for d in _build_ci stdlib/_build; do
-  if [ -d $d ]; then
-    find $d -type f -o -type l | sort
-  fi
-done
+if [ -d _install_ci ]; then
+  find _install_ci -type f -o -type l | sort
+fi
