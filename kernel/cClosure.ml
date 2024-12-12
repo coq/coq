@@ -114,9 +114,6 @@ let get_invert fiv = fiv
 let fterm_of v = v.term
 let set_ntrl v = v.mark <- Ntrl
 
-let mk_atom c = {mark=Ntrl;term=FAtom c}
-let mk_red f = {mark=Red;term=f}
-
 (* Could issue a warning if no is still Red, pointing out that we loose
    sharing. *)
 let update v1 mark t =
