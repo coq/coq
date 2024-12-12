@@ -125,44 +125,44 @@
 ########## Standard library and plugins ##########
 
 /theories/         @coq/stdlib-maintainers
-/doc/stdlib/       @coq/stdlib-maintainers
+/stdlib/           @coq/stdlib-maintainers
 
-/theories/Classes/ @coq/typeclasses-maintainers
+/theories/Classes/        @coq/typeclasses-maintainers
+/stdlib/theories/Classes/ @coq/typeclasses-maintainers
 
-/theories/Reals/   @coq/reals-library-maintainers
+/stdlib/theories/Reals/   @coq/reals-library-maintainers
 
 /theories/Compat/  @coq/compat-maintainers
 
-/plugins/btauto/       @coq/btauto-maintainers
-/theories/btauto/      @coq/btauto-maintainers
+/plugins/btauto/          @coq/btauto-maintainers
+/stdlib/theories/btauto/  @coq/btauto-maintainers
 
 /plugins/cc/           @coq/cc-maintainers
-/theories/cc/          @coq/cc-maintainers
 
 /plugins/derive/       @coq/derive-maintainers
 /theories/derive/      @coq/derive-maintainers
 
-/plugins/extraction/   @coq/extraction-maintainers
-/theories/extraction/  @coq/extraction-maintainers
+/plugins/extraction/         @coq/extraction-maintainers
+/theories/extraction/        @coq/extraction-maintainers
+/stdlib/theories/extraction/ @coq/extraction-maintainers
 
-/plugins/firstorder/   @coq/firstorder-maintainers
-/theories/firstorder/  @coq/firstorder-maintainers
+/plugins/firstorder/          @coq/firstorder-maintainers
+/stdlib/theories/firstorder/  @coq/firstorder-maintainers
 
 /plugins/funind/       @coq/funind-maintainers
-/theories/funind/      @coq/funind-maintainers
+/stdlib/theories/funind/      @coq/funind-maintainers
 
 /plugins/ltac/         @coq/ltac-maintainers
-/theories/ltac/        @coq/ltac-maintainers
 
 /plugins/micromega/    @coq/micromega-maintainers
-/theories/micromega/   @coq/micromega-maintainers
-/test-suite/micromega/ @coq/micromega-maintainers
+/stdlib/theories/micromega/   @coq/micromega-maintainers
+/stdlib/test-suite/micromega/ @coq/micromega-maintainers
 
 /plugins/nsatz/        @coq/nsatz-maintainers
-/theories/nsatz/       @coq/nsatz-maintainers
+/stdlib/theories/nsatz/       @coq/nsatz-maintainers
 
 /plugins/ring/  @coq/ring-maintainers
-/theories/setoid_ring/ @coq/ring-maintainers
+/stdlib/theories/setoid_ring/ @coq/ring-maintainers
 
 /plugins/ssrmatching/  @coq/ssreflect-maintainers
 /theories/ssrmatching/ @coq/ssreflect-maintainers
@@ -175,7 +175,7 @@
 /plugins/syntax/       @coq/parsing-maintainers
 
 /plugins/rtauto/       @coq/rtauto-maintainers
-/theories/rtauto/      @coq/rtauto-maintainers
+/stdlib/theories/rtauto/      @coq/rtauto-maintainers
 
 /plugins/ltac2/        @coq/ltac2-maintainers
 /user-contrib/Ltac2    @coq/ltac2-maintainers
