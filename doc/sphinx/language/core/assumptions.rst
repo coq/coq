@@ -203,7 +203,7 @@ has type :n:`@type`.
 
 .. example:: Simple assumptions
 
-    .. coqtop:: reset in
+    .. rocqtop:: reset in
 
        Parameter X Y : Set.
        Parameter (R : X -> Y -> Prop) (S : Y -> X -> Prop).

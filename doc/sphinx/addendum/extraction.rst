@@ -18,7 +18,7 @@ to any of the three.
    the extraction framework should first be loaded explicitly
    via ``From Corelib Require Extraction``.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    From Corelib Require Extraction.
 
@@ -294,7 +294,7 @@ what ML term corresponds to a given axiom.
 
      The number of type variables is checked by the system. For example:
 
-     .. coqtop:: in
+     .. rocqtop:: in
 
         Axiom Y : Set -> Set -> Set.
         Extract Constant Y "'a" "'b" => " 'a * 'b ".
@@ -303,7 +303,7 @@ what ML term corresponds to a given axiom.
       The extraction recognizes whether the realized axiom
       should become a ML type constant or a ML object declaration. For example:
 
-      .. coqtop:: in
+      .. rocqtop:: in
 
          Axiom X:Set.
          Axiom x:X.
@@ -404,7 +404,7 @@ native boolean type instead of the Rocq one. The syntax is the following:
 
 Typical examples are the following:
 
-.. coqtop:: in
+.. rocqtop:: in
     
    Extract Inductive unit => "unit" [ "()" ].
    Extract Inductive bool => "bool" [ "true" "false" ].
@@ -417,7 +417,7 @@ Typical examples are the following:
    OCaml's lexical criteria for an infix symbol, then the rest of the string is
    used as an infix constructor or type.
 
-.. coqtop:: in
+.. rocqtop:: in
    
    Extract Inductive list => "list" [ "[]" "(::)" ].
    Extract Inductive prod => "(*)"  [ "(,)" ].
@@ -425,7 +425,7 @@ Typical examples are the following:
 As an example of translation to a non-inductive datatype, let's turn
 ``nat`` into OCaml ``int`` (see caveat above):
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Extract Inductive nat => int [ "0" "succ" ] "(fun fO fS n -> if n=0 then fO () else fS (n-1))".
 
@@ -448,7 +448,7 @@ OCaml code with C code, the linker needs to know
 
    For example:
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       From Corelib Require Extraction.
       Extract Inductive nat => int [ "0" "Stdlib.Int.succ" ].
@@ -629,7 +629,7 @@ alright but the generated code may be refused by the ML
 type checker. A very well known example is the ``distr-pair``
 function:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Definition dp {A B:Type}(x:A)(y:B)(f:forall C:Type, C->C) := (f A x, f B y).
 
@@ -651,7 +651,7 @@ Secondly, some Rocq definitions may have no counterpart in ML. This
 happens when there is a quantification over types inside the type
 of a constructor; for example:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Inductive anything : Type := dummy : forall A:Set, A -> anything.
 
@@ -698,7 +698,7 @@ where ``diveucl`` is a type for the pair of the quotient and the
 modulo, plus some logical assertions that disappear during extraction.
 We can now extract this program to OCaml:
 
-.. coqtop:: reset all extra
+.. rocqtop:: reset all extra
 
    From Corelib Require Extraction.
    From Stdlib Require Import Euclid Wf_nat.

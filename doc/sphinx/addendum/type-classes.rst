@@ -17,7 +17,7 @@ Typeclass and instance declarations
 The syntax for typeclasses and instance declarations is the same as the record
 syntax:
 
-.. coqdoc::
+.. rocqdoc::
 
   Class classname (p1 : t1) ⋯ (pn : tn) [: sort] := { f1 : u1 ; ⋯ ; fm : um }.
 
@@ -31,7 +31,7 @@ instantiation of the record type.
 
 We’ll use the following example typeclass in the rest of the chapter:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Class EqDec (A : Type) :=
      { eqb : A -> A -> bool ;
@@ -40,7 +40,7 @@ We’ll use the following example typeclass in the rest of the chapter:
 This typeclass implements a boolean equality test which is compatible with
 Leibniz equality on some type. An example implementation is:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Instance unit_EqDec : EqDec unit :=
      { eqb x y := true ;
@@ -54,7 +54,7 @@ finish the definition (e.g. due to a missing field or non-inferable
 hole) it must be finished in proof mode. If it is sufficient a trivial
 proof mode with no open goals is started.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    #[refine] Instance unit_EqDec' : EqDec unit := { eqb x y := true }.
    Proof. intros [] [];reflexivity. Defined.
@@ -66,13 +66,13 @@ Alternatively, in :flag:`Program Mode` if one does not give all the
 members in the Instance declaration, Rocq generates obligations for the
 remaining fields, e.g.:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Require Import Program.Tactics.
    Program Instance eq_bool : EqDec bool :=
      { eqb x y := if x then y else negb y }.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Next Obligation.
      destruct x ; destruct y ; (discriminate || reflexivity).
@@ -89,7 +89,7 @@ Binding typeclasses
 
 Once a typeclass is declared, one can use it in typeclass binders:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Definition neqb {A} {eqa : EqDec A} (x y : A) := negb (eqb x y).
 
@@ -99,7 +99,7 @@ found. In the example above, a constraint ``EqDec A`` is generated and
 satisfied by ``eqa : EqDec A``. In case no satisfying constraint can be
 found, an error is raised:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Fail Definition neqb' (A : Type) (x y : A) := negb (eqb x y).
 
@@ -109,7 +109,7 @@ will use local hypotheses as well as declared lemmas in
 the ``typeclass_instances`` database. Hence the example can also be
 written:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Definition neqb' A (eqa : EqDec A) (x y : A) := negb (eqb x y).
 
@@ -127,7 +127,7 @@ particular support for typeclasses:
 
 Following the previous example, one can write:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Generalizable Variables A B C.
 
@@ -142,14 +142,14 @@ Parameterized instances
 One can declare parameterized instances as in Haskell simply by giving
 the constraints as a binding context before the instance, e.g.:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Program Instance prod_eqb `(EA : EqDec A, EB : EqDec B) : EqDec (A * B) :=
      { eqb x y := match x, y with
                   | (la, ra), (lb, rb) => andb (eqb la lb) (eqb ra rb)
                   end }.
 
-.. coqtop:: none
+.. rocqtop:: none
 
    Admit Obligations.
 
@@ -168,13 +168,13 @@ binding context as an argument, so variables can be implicit, and
 :ref:`implicit-generalization` can be used.
 For example:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Section EqDec_defs.
 
    Context `{EA : EqDec A}.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    #[ global, program ] Instance option_eqb : EqDec (option A) :=
      { eqb x y := match x, y with
@@ -184,7 +184,7 @@ For example:
             end }.
    Admit Obligations.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    End EqDec_defs.
 
@@ -208,14 +208,14 @@ One can also parameterize typeclasses by other typeclasses, generating a
 hierarchy of typeclasses and superclasses. In the same way, we give the
 superclasses as a binding context:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Class Ord `(E : EqDec A) := { le : A -> A -> bool }.
 
 Contrary to Haskell, we have no special syntax for superclasses, but
 this declaration is equivalent to:
 
-.. coqdoc::
+.. rocqdoc::
 
     Class `(E : EqDec A) => Ord A :=
       { le : A -> A -> bool }.
@@ -230,7 +230,7 @@ as a record type with two parameters: a type ``A`` and an ``E`` of type
 parameter inside generalizing binders: the generalization of
 superclasses will be done automatically.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Definition le_eqb `{Ord A} (x y : A) := andb (le x y) (le y x).
 
@@ -238,7 +238,7 @@ To specify sharing of structures, you may want to explicitly specify the
 superclasses. You can do this directly in regular binders, and with the ``!``
 modifier before typeclass binders. For example:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Definition lt `{eqa : EqDec A, !Ord eqa} (x y : A) := andb (le x y) (neqb x y).
 
@@ -253,11 +253,11 @@ Substructures
 Substructures are components of a typeclass which are themselves instances of a
 typeclass. They often arise when using typeclasses for logical properties, e.g.:
 
-.. coqtop:: none
+.. rocqtop:: none
 
    Require Import Relation_Definitions.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Class Reflexive (A : Type) (R : relation A) :=
      reflexivity : forall x, R x x.
@@ -269,7 +269,7 @@ This declares singleton typeclasses for reflexive and transitive relations,
 (see the :ref:`singleton class <singleton-class>` variant for an
 explanation). These may be used as parts of other typeclasses:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Class PreOrder (A : Type) (R : relation A) :=
      { PreOrder_Reflexive :: Reflexive A R ;
@@ -542,7 +542,7 @@ By default, all :term:`constants <constant>` and local variables are considered 
 should take care not to make opaque any constant that is used to abbreviate a
 type, like:
 
-.. coqdoc::
+.. rocqdoc::
    Definition relation A := A -> A -> Prop.
 
 .. versionadded:: 8.15

@@ -19,7 +19,7 @@ closer to its normal form.  For example, :term:`zeta-reduction` removes
 :n:`@ident` with :n:`@term__1` wherever :n:`@ident` appears in :n:`@term__2`.
 The resulting term may be longer or shorter than the original.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Eval cbv zeta in let i := 1 in i + i.
 
@@ -222,7 +222,7 @@ Examples
       ``+`` is a :ref:`notation <Notations>` for ``Nat.add``, which is defined
       with a :cmd:`Fixpoint`.
 
-      .. coqtop:: all abort
+      .. rocqtop:: all abort
 
          Print Nat.add.
          Goal 1 + 1 = 2.
@@ -233,7 +233,7 @@ Examples
 
       The term can be fully reduced with `cbv`:
 
-      .. coqtop:: all abort
+      .. rocqtop:: all abort
 
          Goal 1 + 1 = 2.
          cbv.

@@ -348,7 +348,7 @@ There are three situations:
 
   We first give an example of coercion between atomic inductive types
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
     Definition bool_in_nat (b:bool) := if b then 0 else 1.
     Coercion bool_in_nat : bool >-> nat.
@@ -365,7 +365,7 @@ There are three situations:
 
   We give an example of coercion between classes with parameters.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
     Parameters (C : nat -> Set) (D : nat -> bool -> Set) (E : bool -> Set).
     Parameter f : forall n:nat, C n -> D (S n) true.
@@ -384,7 +384,7 @@ There are three situations:
   :g:`forall x : A', B'`, we have to coerce ``A'`` towards ``A`` and ``B``
   towards ``B'``. An example is given below:
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
     Parameters (A B : Set) (h : A -> B).
     Coercion h : A >-> B.
@@ -398,7 +398,7 @@ There are three situations:
   Remark the changes in the result following the modification of the
   previous example.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
     Parameter U' : (C 0 -> B) -> nat.
     Parameter t' : E true -> A.
@@ -418,7 +418,7 @@ There are three situations:
   functions. In :g:`forall x:A,B`, such a coercion path may also be applied
   to ``B`` if necessary.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
     Parameter Graph : Type.
     Parameter Node : Graph -> Type.
@@ -438,7 +438,7 @@ There are three situations:
   ``f`` is replaced by the term obtained by applying to ``f`` the
   coercion path between ``A`` and ``Funclass`` if it exists.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
     Parameter bij : Set -> Set -> Set.
     Parameter ap : forall A B:Set, bij A B -> A -> B.
@@ -455,7 +455,7 @@ There are three situations:
 
   Notice the :n:`:>` on `ssort` making it a :term:`reversible coercion`.
 
-  .. coqtop:: in
+  .. rocqtop:: in
 
     Structure S := {
       ssort :> Type;
@@ -464,7 +464,7 @@ There are three situations:
     Definition test (s : S) := sstuff s.
     Canonical Structure S_nat := {| ssort := nat; sstuff := 0; |}.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
     Check test (nat : Type).
 
@@ -475,7 +475,7 @@ There are three situations:
   Notice there is no `:>` on `ssort'` and the added :cmd:`Coercion` compared
   to the previous example.
 
-  .. coqtop:: in
+  .. rocqtop:: in
 
     Structure S' := {
       ssort' : Type;
@@ -487,13 +487,13 @@ There are three situations:
 
   Since there's no `:>` on the definition of `ssort'`, the :attr:`reversible` attribute is not set:
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
     Fail Check test' (nat : Type).
 
   The attribute can be set after declaring the coercion:
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
     #[reversible] Coercion ssort'.
     Check test' (nat : Type).
@@ -502,22 +502,22 @@ There are three situations:
 
 .. example:: Identity coercions.
 
-  .. coqtop:: in
+  .. rocqtop:: in
 
     Definition fct := nat -> nat.
     Parameter incr_fct : Set.
     Parameter fct_of_incr_fct : incr_fct -> fct.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
     Fail Coercion fct_of_incr_fct : incr_fct >-> Funclass.
 
-  .. coqtop:: in
+  .. rocqtop:: in
 
     Coercion fct_of_incr_fct : incr_fct >-> fct.
     Parameter f' : incr_fct.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
     Check f' : fct.
     Fail Check f' 0.
@@ -528,6 +528,6 @@ There are three situations:
 
   Let us see the resulting graph after all these examples.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
     Print Graph.

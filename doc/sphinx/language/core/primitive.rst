@@ -10,7 +10,7 @@ The language of terms features 63-bit machine integers as values. The type of
 such a value is *axiomatized*; it is declared through the following sentence
 (excerpt from the :g:`PrimInt63` module):
 
-.. coqdoc::
+.. rocqdoc::
 
    Primitive int := #int63_type.
 
@@ -23,7 +23,7 @@ The :g:`PrimInt63` module declares the available operators for this type.
 For instance, equality of two unsigned primitive integers can be determined using
 the :g:`Uint63.eqb` function, declared and specified as follows:
 
-.. coqdoc::
+.. rocqdoc::
 
    Primitive eqb := #int63_eq.
    Notation "m '==' n" := (eqb m n) (at level 70, no associativity) : uint63_scope.
@@ -37,13 +37,13 @@ modules.
 These primitive declarations are regular axioms. As such, they must be trusted and are listed by the
 :g:`Print Assumptions` command, as in the following example.
 
-.. coqtop:: in reset
+.. rocqtop:: in reset
 
    From Corelib Require Import PrimInt63 Uint63Axioms.
    Lemma one_minus_one_is_zero : (sub 1 1 = 0)%uint63.
    Proof. apply eqb_correct; vm_compute; reflexivity. Qed.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Print Assumptions one_minus_one_is_zero.
 
@@ -73,7 +73,7 @@ The language of terms features Binary64 floating-point numbers as values.
 The type of such a value is *axiomatized*; it is declared through the
 following sentence (excerpt from the :g:`PrimFloat` module):
 
-.. coqdoc::
+.. rocqdoc::
 
    Primitive float := #float64_type.
 
@@ -81,7 +81,7 @@ This type is equipped with a few operators, that must be similarly declared.
 For instance, the product of two primitive floats can be computed using the
 :g:`PrimFloat.mul` function, declared and specified as follows:
 
-.. coqdoc::
+.. rocqdoc::
 
    Primitive mul := #float64_mul.
    Notation "x * y" := (mul x y) : float_scope.
@@ -120,7 +120,7 @@ The language of terms features persistent arrays as values. The type of
 such a value is *axiomatized*; it is declared through the following sentence
 (excerpt from the :g:`PArray` module):
 
-.. coqdoc::
+.. rocqdoc::
 
    Primitive array := #array_type.
 
@@ -129,7 +129,7 @@ For instance, elements in an array can be accessed and updated using the
 :g:`PArray.get` and :g:`PArray.set` functions, declared and specified as
 follows:
 
-.. coqdoc::
+.. rocqdoc::
 
    Primitive get := #array_get.
    Primitive set := #array_set.
@@ -179,7 +179,7 @@ The language of terms supports immutable strings as values. Primitive strings
 are *axiomatized*.  The type is declared through the following sentence (excerpt
 from the :g:`PrimString` module):
 
-.. coqdoc::
+.. rocqdoc::
 
    Primitive string := #string_type.
 
@@ -188,7 +188,7 @@ the length of a string can be computed with :g:`PrimString.length`, and the char
 (i.e., byte) at a given position can be obtained with :g:`PrimString.get`. These
 functions are defined as follows:
 
-.. coqdoc::
+.. rocqdoc::
 
    Definition char63 := int.
 

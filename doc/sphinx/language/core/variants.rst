@@ -47,11 +47,11 @@ be defined using :cmd:`Variant`.
 
   The Booleans, the unit type and the empty type are respectively defined by:
 
-   .. coqtop:: none
+   .. rocqtop:: none
 
       Module FreshNameSpace.
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Variant bool : Set := true : bool | false : bool.
       Variant unit : Set := tt : unit.
@@ -59,7 +59,7 @@ be defined using :cmd:`Variant`.
 
   The option and sum types are defined by:
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Variant option (A : Type) : Type := None : option A | Some : A -> option A.
       Variant sum (A B : Type) : Type := inl : A -> sum A B | inr : B -> sum A B.
@@ -69,13 +69,13 @@ be defined using :cmd:`Variant`.
   defined as a two-constructor type family over :g:`bool`
   parameterized by the proposition :n:`P`:
 
-  .. coqtop:: in
+  .. rocqtop:: in
 
      Variant reflect (P : Prop) : bool -> Set :=
      | ReflectT : P -> reflect P true
      | ReflectF : ~ P -> reflect P false.
 
-  .. coqtop:: none
+  .. rocqtop:: none
 
      End FreshNameSpace.
 
@@ -111,7 +111,7 @@ Private (matching) inductive types
 
 .. example::
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Module Foo.
       #[ private(matching) ] Inductive my_nat := my_O : my_nat | my_S : my_nat -> my_nat.
@@ -189,7 +189,7 @@ the term being matched. This dependency of the term being matched in the
 return type is expressed with an :n:`@ident` clause where :n:`@ident`
 is dependent in the return type. For instance, in the following example:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Inductive bool : Type := true : bool | false : bool.
    Inductive eq (A:Type) (x:A) : A -> Prop := eq_refl : eq A x x.
@@ -215,11 +215,11 @@ the identifier :g:`b` being used to represent the dependency.
    the return type. For instance, the following alternative definition is
    accepted and has the same meaning as the previous one.
 
-   .. coqtop:: none
+   .. rocqtop:: none
 
       Reset bool_case.
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Definition bool_case (b:bool) : or (eq bool b true) (eq bool b false) :=
       match b return or (eq bool b true) (eq bool b false) with
@@ -252,7 +252,7 @@ is expressed with a clause in the form
 
 For instance, in the following example:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Definition eq_sym (A:Type) (x y:A) (H:eq A x y) : eq A y x :=
    match H in eq _ _ z return eq A z x with

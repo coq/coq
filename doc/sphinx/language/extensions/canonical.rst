@@ -101,7 +101,7 @@ in :ref:`canonicalstructures`; here only a simple example is given.
 
       Here is an example.
 
-      .. coqtop:: all reset
+      .. rocqtop:: all reset
 
          Require Import Relation_Definitions.
 
@@ -124,7 +124,7 @@ in :ref:`canonicalstructures`; here only a simple example is given.
       Thanks to :g:`nat_setoid` declared as canonical, the implicit arguments :g:`A`
       and :g:`B` can be synthesized in the next statement.
 
-      .. coqtop:: all abort
+      .. rocqtop:: all abort
 
          Lemma is_law_S : is_law S.
 
@@ -148,7 +148,7 @@ in :ref:`canonicalstructures`; here only a simple example is given.
       For instance, when declaring the :g:`Setoid` structure above, the
       :g:`Prf_equiv` field declaration could be written as follows.
 
-      .. coqdoc::
+      .. rocqdoc::
 
          #[canonical=no] Prf_equiv : equivalence Carrier Equal
 
@@ -166,11 +166,11 @@ in :ref:`canonicalstructures`; here only a simple example is given.
 
       For instance, the above example gives the following output:
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Print Canonical Projections.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Print Canonical Projections nat.
 
@@ -187,7 +187,7 @@ We build an infix notation == for a comparison predicate. Such
 notation will be overloaded, and its meaning will depend on the types
 of the terms that are compared.
 
-.. coqtop:: all reset
+.. rocqtop:: all reset
 
   Module EQ.
     Record class (T : Type) := Class { cmp : T -> T -> Prop }.
@@ -218,20 +218,20 @@ coercion, but we will not do that here.
 The following line tests that, when we assume a type ``e`` that is in
 the ``EQ`` class, we can relate two of its objects with ``==``.
 
-.. coqtop:: all
+.. rocqtop:: all
 
   Import EQ.theory.
   Check forall (e : EQ.type) (a b : EQ.obj e), a == b.
 
 Still, no concrete type is in the ``EQ`` class.
 
-.. coqtop:: all
+.. rocqtop:: all
 
   Fail Check 3 == 3.
 
 We amend that by equipping ``nat`` with a comparison relation.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Definition nat_eq (x y : nat) := Nat.compare x y = Eq.
    Definition nat_EQcl : EQ.class nat := EQ.Class nat_eq.
@@ -262,7 +262,7 @@ how to deal with type constructors, i.e. how to make the following
 example work:
 
 
-.. coqtop:: all
+.. rocqtop:: all
 
   Fail Check forall (e : EQ.type) (a b : EQ.obj e), (a, b) == (a, b).
 
@@ -270,7 +270,7 @@ The error message is telling that Rocq has no idea on how to compare
 pairs of objects. The following construction is telling Rocq exactly
 how to do that.
 
-.. coqtop:: all
+.. rocqtop:: all
 
   Definition pair_eq (e1 e2 : EQ.type) (x y : EQ.obj e1 * EQ.obj e2) :=
     fst x == fst y /\ snd x == snd y.
@@ -300,7 +300,7 @@ To get to an interesting example we need another base class to be
 available. We choose the class of types that are equipped with an
 order relation, to which we associate the infix ``<=`` notation.
 
-.. coqtop:: all
+.. rocqtop:: all
 
   Module LE.
 
@@ -325,7 +325,7 @@ order relation, to which we associate the infix ``<=`` notation.
 
 As before we register a canonical ``LE`` class for ``nat``.
 
-.. coqtop:: all
+.. rocqtop:: all
 
   Import LE.theory.
 
@@ -337,7 +337,7 @@ As before we register a canonical ``LE`` class for ``nat``.
 
 And we enable Rocq to relate pair of terms with ``<=``.
 
-.. coqtop:: all
+.. rocqtop:: all
 
   Definition pair_le e1 e2 (x y : LE.obj e1 * LE.obj e2) :=
      fst x <= fst y /\ snd x <= snd y.
@@ -353,7 +353,7 @@ At the current stage we can use ``==`` and ``<=`` on concrete types, like
 tuples of natural numbers, but we can’t develop an algebraic theory
 over the types that are equipped with both relations.
 
-.. coqtop:: all
+.. rocqtop:: all
 
   Check 2 <= 3 /\ 2 == 2.
 
@@ -364,7 +364,7 @@ over the types that are equipped with both relations.
 We need to define a new class that inherits from both ``EQ`` and ``LE``.
 
 
-.. coqtop:: all
+.. rocqtop:: all
 
   Module LEQ.
 
@@ -392,7 +392,7 @@ it plays no role in the search for instances.
 Unfortunately there is still an obstacle to developing the algebraic
 theory of this new class.
 
-.. coqtop:: all
+.. rocqtop:: all
 
     Module theory.
 
@@ -407,7 +407,7 @@ The following two constructions tell Rocq how to canonically build the
 ``LE.type`` and ``EQ.type`` structure given an ``LEQ.type`` structure on the same
 type.
 
-.. coqtop:: all
+.. rocqtop:: all
 
     Definition to_EQ (e : type) : EQ.type :=
        EQ.Pack (obj e) (EQ_class _ (class_of e)).
@@ -422,7 +422,7 @@ type.
 We can now formulate out first theorem on the objects of the ``LEQ``
 structure.
 
-.. coqtop:: all
+.. rocqtop:: all
 
      Lemma lele_eq (e : type) (x y : obj e) : x <= y -> y <= x -> x == y.
 
@@ -443,7 +443,7 @@ structure.
 Of course one would like to apply results proved in the algebraic
 setting to any concrete instate of the algebraic structure.
 
-.. coqtop:: all
+.. rocqtop:: all
 
   Example test_algebraic (n m : nat) : n <= m -> m <= n -> n == m.
 
@@ -462,7 +462,7 @@ Again one has to tell Rocq that the type ``nat`` is in the ``LEQ`` class, and
 how the type constructor ``*`` interacts with the ``LEQ`` class. In the
 following proofs are omitted for brevity.
 
-.. coqtop:: all
+.. rocqtop:: all
 
   Lemma nat_LEQ_compat (n m : nat) : n <= m /\ m <= n <-> n == m.
 
@@ -483,7 +483,7 @@ constructor ``*``. It also tests that they work as expected.
 Unfortunately, these declarations are very verbose. In the following
 subsection we show how to make them more compact.
 
-.. coqtop:: all
+.. rocqtop:: all
 
   Module Add_instance_attempt.
 
@@ -521,7 +521,7 @@ Compact declaration of Canonical Structures
 
 We need some infrastructure for that.
 
-.. coqtop:: all
+.. rocqtop:: all
 
   Module infrastructure.
 
@@ -560,7 +560,7 @@ They are explained in more details in :cite:`CSwcu`.
 We now have all we need to create a compact “packager” to declare
 instances of the ``LEQ`` class.
 
-.. coqtop:: all
+.. rocqtop:: all
 
   Import infrastructure.
 
@@ -589,7 +589,7 @@ the reader can refer to :cite:`CSwcu`.
 
 The declaration of canonical instances can now be way more compact:
 
-.. coqtop:: all
+.. rocqtop:: all
 
   Canonical Structure nat_LEQty := Eval hnf in Pack nat nat_LEQmx.
 
@@ -599,6 +599,6 @@ The declaration of canonical instances can now be way more compact:
 Error messages are also quite intelligible (if one skips to the end of
 the message).
 
-.. coqtop:: all
+.. rocqtop:: all
 
   Fail Canonical Structure err := Eval hnf in Pack bool nat_LEQmx.

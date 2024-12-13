@@ -439,7 +439,7 @@ command, the following is rejected,
 
 .. example::
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Fail Definition id: Set := forall X:Set,X->X.
 

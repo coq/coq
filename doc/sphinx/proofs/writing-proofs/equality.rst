@@ -10,7 +10,7 @@ There are multiple notions of :gdef:`equality` in Rocq:
   a `Prop`.  The standard library
   defines `eq` similar to this:
 
-   .. coqdoc::
+   .. rocqdoc::
 
       Inductive eq {A : Type} (x : A) : A -> Prop := eq_refl : eq x x.
 
@@ -187,24 +187,24 @@ Rewriting with Leibniz and setoid equality
       For instance, if we want to rewrite the right-hand side in the
       following goal, this will not work:
 
-      .. coqtop:: none
+      .. rocqtop:: none
 
          From Corelib Require Import Setoid.
 
          Axiom add_comm : forall n m, n + m = m + n.
 
-      .. coqtop:: out
+      .. rocqtop:: out
 
          Lemma example x y : x + y = y + x.
 
-      .. coqtop:: all fail
+      .. rocqtop:: all fail
 
          rewrite add_comm at 2.
 
       One can explicitly specify how some variables are bound to match
       a different subterm:
 
-      .. coqtop:: all abort
+      .. rocqtop:: all abort
 
          rewrite add_comm with (m := x).
 
@@ -432,7 +432,7 @@ Rewriting with definitional equality
 
    .. example::
 
-      .. coqtop:: all abort fail
+      .. rocqtop:: all abort fail
 
          Goal False.
            change_no_check True.
@@ -441,7 +441,7 @@ Rewriting with definitional equality
 
    .. example::
 
-      .. coqtop:: all abort fail
+      .. rocqtop:: all abort fail
 
          Goal True -> False.
            intro H.
@@ -481,7 +481,7 @@ tactics change existential variables in a way similar to other conversions while
 also adding a single explicit cast to the proof term to tell the kernel
 which reduction engine to use.  See :ref:`type-cast`.)  For example:
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Goal 3 + 4 = 7.
       Show Proof.
@@ -490,7 +490,7 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
       Show Proof.
       Show Existentials.
 
-   .. coqtop:: none
+   .. rocqtop:: none
 
       Abort.
 
@@ -651,7 +651,7 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
 
       Here are typical examples comparing :tacn:`cbn` and :tacn:`simpl`:
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Definition add1 (n:nat) := n + 1.
          Eval simpl in add1 0.
@@ -735,7 +735,7 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
 
       .. example::
 
-         .. coqtop:: abort all fail
+         .. rocqtop:: abort all fail
 
             Goal 0 <= 1.
             unfold le.
@@ -747,7 +747,7 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
 
       .. example::
 
-         .. coqtop:: abort all fail
+         .. rocqtop:: abort all fail
 
             Opaque Nat.add.
             Goal 1 + 0 = 1.
@@ -776,27 +776,27 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
 
    .. example:: :tacn:`fold` doesn't always undo :tacn:`unfold`
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Goal ~0=0.
          unfold not.
 
       This :tacn:`fold` doesn't undo the preceeding :tacn:`unfold` (it makes no change):
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          fold not.
 
       However, this :tacn:`pattern` followed by :tacn:`fold` does:
 
-      .. coqtop:: all abort
+      .. rocqtop:: all abort
 
          pattern (0 = 0).
          fold not.
 
    .. example:: Use :tacn:`fold` to reverse unfolding of `fold_right`
 
-      .. coqtop:: none
+      .. rocqtop:: none
 
          Require Import ListDef.
          Local Open Scope list_scope.
@@ -807,7 +807,7 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
                                               | b :: t => f b (fold_right t)
                                               end.
 
-      .. coqtop:: all abort
+      .. rocqtop:: all abort
 
          Goal forall x xs, fold_right and True (x::xs).
          red.
@@ -1108,7 +1108,7 @@ which supports additional fine-tuning.
 
    .. example::
 
-      .. coqtop:: all reset abort
+      .. rocqtop:: all reset abort
 
          Opaque id.
          Goal id 10 = 10.
@@ -1130,7 +1130,7 @@ which supports additional fine-tuning.
       This can be illustrated with the following example involving the
       factorial function.
 
-      .. coqtop:: in reset
+      .. rocqtop:: in reset
 
          Fixpoint fact (n : nat) : nat :=
            match n with
@@ -1141,7 +1141,7 @@ which supports additional fine-tuning.
       Suppose now that, for whatever reason, we want in general to
       unfold the :g:`id` function very late during conversion:
 
-      .. coqtop:: in
+      .. rocqtop:: in
 
          Strategy 1000 [id].
 
@@ -1153,7 +1153,7 @@ which supports additional fine-tuning.
       :g:`nat`), which takes time :math:`n!`.  We can see this cross
       the relevant threshold at around :math:`n = 9`:
 
-      .. coqtop:: all abort
+      .. rocqtop:: all abort
 
          Goal True.
          Time assert (id (fact 8) = fact 8) by reflexivity.
@@ -1166,7 +1166,7 @@ which supports additional fine-tuning.
 
       We can get around this issue by using :tacn:`with_strategy`:
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Goal True.
          Fail Timeout 1 assert (id (fact 100) = fact 100) by reflexivity.
@@ -1176,14 +1176,14 @@ which supports additional fine-tuning.
       trouble, because the reduction strategy changes are local to the
       tactic passed to :tacn:`with_strategy`.
 
-      .. coqtop:: all abort fail
+      .. rocqtop:: all abort fail
 
          exact I.
          Timeout 1 Defined.
 
       We can fix this issue by using :tacn:`abstract`:
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Goal True.
          Time assert (id (fact 100) = fact 100) by with_strategy -1 [id] abstract reflexivity.

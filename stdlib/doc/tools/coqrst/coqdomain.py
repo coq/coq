@@ -685,13 +685,13 @@ class CoqtopDirective(Directive):
 
     Usage::
 
-       .. coqtop:: options…
+       .. rocqtop:: options…
 
           Coq code to send to coqtop
 
     Example::
 
-       .. coqtop:: in reset
+       .. rocqtop:: in reset
 
           Print nat.
           Definition a := 1.
@@ -716,7 +716,7 @@ class CoqtopDirective(Directive):
       - ``restart``: Send a ``Restart`` command before running this block (only works in proof mode)
       - ``abort``: Send an ``Abort All`` command after running this block (leaves all pending proofs if any)
 
-    ``coqtop``\ 's state is preserved across consecutive ``.. coqtop::`` blocks
+    ``coqtop``\ 's state is preserved across consecutive ``.. rocqtop::`` blocks
     of the same document (``coqrst`` creates a single ``coqtop`` process per
     reST source file).  Use the ``reset`` option to reset Coq's state.
     """
@@ -725,7 +725,7 @@ class CoqtopDirective(Directive):
     optional_arguments = 0
     final_argument_whitespace = True
     option_spec = { 'name': directives.unchanged }
-    directive_name = "coqtop"
+    directive_name = "rocqtop"
 
     def run(self):
         # Uses a ‘container’ instead of a ‘literal_block’ to disable
@@ -742,13 +742,13 @@ class CoqdocDirective(Directive):
 
     Usage::
 
-       .. coqdoc::
+       .. rocqdoc::
 
           Coq code to highlight
 
     Example::
 
-       .. coqdoc::
+       .. rocqdoc::
 
           Definition test := 1.
     """
@@ -758,7 +758,7 @@ class CoqdocDirective(Directive):
     optional_arguments = 0
     final_argument_whitespace = True
     option_spec = { 'name': directives.unchanged }
-    directive_name = "coqdoc"
+    directive_name = "rocqdoc"
 
     def run(self):
         # Uses a ‘container’ instead of a ‘literal_block’ to disable
@@ -785,7 +785,7 @@ class ExampleDirective(BaseAdmonition):
 
           The following adds ``plus_comm`` to the ``plu`` database:
 
-          .. coqdoc::
+          .. rocqdoc::
 
              Hint Resolve plus_comm : plu.
     """
@@ -1010,12 +1010,12 @@ class CoqtopBlocksTransform(Transform):
         unexpected_options = list(options - {'all', 'none', 'in', 'out'})
         if unexpected_options:
             loc = os.path.basename(get_node_location(node))
-            raise ExtensionError("{}: Unexpected options for .. coqtop:: {}".format(loc,unexpected_options))
+            raise ExtensionError("{}: Unexpected options for .. rocqtop:: {}".format(loc,unexpected_options))
 
         # Display options
         if len(options) != 1:
             loc = os.path.basename(get_node_location(node))
-            raise ExtensionError("{}: Exactly one display option must be passed to .. coqtop::".format(loc))
+            raise ExtensionError("{}: Exactly one display option must be passed to .. rocqtop::".format(loc))
 
         opt_all = 'all' in options
         opt_input = 'in' in options

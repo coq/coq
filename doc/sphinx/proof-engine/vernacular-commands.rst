@@ -219,7 +219,7 @@ described elsewhere
 
    .. example:: Searching for a pattern
 
-      .. coqtop:: none reset extra
+      .. rocqtop:: none reset extra
 
          From Stdlib Require Import PeanoNat.
 
@@ -227,7 +227,7 @@ described elsewhere
       we are looking for commutativity lemmas.
       The following example requires the Stdlib library.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Search (_ ?n ?m = _ ?m ?n).
 
@@ -235,7 +235,7 @@ described elsewhere
 
    .. example:: Searching for part of an identifier
 
-      .. coqtop:: all reset
+      .. rocqtop:: all reset
 
          Search "_assoc".
 
@@ -243,7 +243,7 @@ described elsewhere
 
    .. example:: Searching for a reference by notation
 
-      .. coqtop:: all reset
+      .. rocqtop:: all reset
 
          Search "+".
 
@@ -253,7 +253,7 @@ described elsewhere
 
       The following example requires the Stdlib library.
 
-      .. coqtop:: none reset extra
+      .. rocqtop:: none reset extra
 
          From Stdlib Require Import PeanoNat.
 
@@ -261,7 +261,7 @@ described elsewhere
       objects whose type contains `Nat.modulo` but which do not
       contain the substring "mod".
 
-      .. coqtop:: all extra
+      .. rocqtop:: all extra
 
          Search "'mod'" -"mod".
          Search "mod"%nat -"mod".
@@ -273,11 +273,11 @@ described elsewhere
       The following search shows the objects whose type contains
       `bool` in an hypothesis as a strict subterm only:
 
-      .. coqtop:: none reset
+      .. rocqtop:: none reset
 
          Add Search Blacklist "internal_".
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Search hyp:bool -headhyp:bool.
 
@@ -288,7 +288,7 @@ described elsewhere
       The following search shows the objects whose type contains `bool`
       in the conclusion as a strict subterm only:
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Search concl:bool -headconcl:bool.
 
@@ -299,25 +299,25 @@ described elsewhere
       The following search shows the definitions whose type is a `nat`
       or a function which returns a `nat` and the lemmas about `+`:
 
-      .. coqtop:: all reset
+      .. rocqtop:: all reset
 
          Search [ is:Definition headconcl:nat | is:Lemma (_ + _) ].
 
       The following search shows the instances whose type includes the
       classes `Reflexive` or `Symmetric`:
 
-      .. coqtop:: none reset
+      .. rocqtop:: none reset
 
          Require Import Morphisms.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Search is:Instance [ Reflexive | Symmetric ].
 
       The following search outputs operations on `nat` defined in the
       prelude either with the `Definition` or `Fixpoint` keyword:
 
-      .. coqtop:: all reset
+      .. rocqtop:: all reset
 
          Search (nat -> nat -> nat) -bool [ is:Definition | is:Fixpoint ].
 
@@ -334,17 +334,17 @@ described elsewhere
 
       The following example requires the Stdlib library.
 
-      .. coqtop:: in reset extra
+      .. rocqtop:: in reset extra
 
          From Stdlib Require Import Arith.
 
-      .. coqtop:: all extra
+      .. rocqtop:: all extra
 
          SearchPattern (_ + _ = _ + _).
          SearchPattern (nat -> bool).
          SearchPattern (forall l : list _, _ l l).
 
-      .. coqtop:: all extra
+      .. rocqtop:: all extra
 
          SearchPattern (?X1 + _ = _ + ?X1).
 
@@ -361,11 +361,11 @@ described elsewhere
 
       The following example requires the Stdlib library.
 
-      .. coqtop:: in reset extra
+      .. rocqtop:: in reset extra
 
          From Stdlib Require Import Arith.
 
-      .. coqtop:: all extra
+      .. rocqtop:: all extra
 
          SearchRewrite (_ + _ + _).
 
@@ -477,7 +477,7 @@ Requests to the environment
 
 .. example:: Locate examples
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Locate nat.
       Locate Datatypes.O.
@@ -1119,7 +1119,7 @@ Controlling Typing Flags
 
 .. example::
 
-   .. coqtop:: all reset
+   .. rocqtop:: all reset
 
         Unset Guard Checking.
 
@@ -1143,7 +1143,7 @@ Controlling Typing Flags
    Note that the proper way to define the Ackermann function is to use
    an inner fixpoint:
 
-   .. coqtop:: all reset
+   .. rocqtop:: all reset
 
         Fixpoint ack m :=
           fix ackm n :=
@@ -1187,7 +1187,7 @@ Exposing constants to OCaml libraries
    This command supports attributes :attr:`local`, :attr:`export` and :attr:`global`.
    The default is :attr:`global`, even inside sections.
 
-   .. coqdoc::
+   .. rocqdoc::
 
       Register bool as kernel.ind_bool.
 

@@ -43,7 +43,7 @@ For inductive types with exactly two constructors and for pattern matching
 expressions that do not depend on the arguments of the constructors, it is possible
 to use a ``if … then … else`` notation. For instance, the definition
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Definition not (b:bool) :=
    match b with
@@ -53,7 +53,7 @@ to use a ``if … then … else`` notation. For instance, the definition
 
 can be alternatively written
 
-.. coqtop:: reset all
+.. rocqtop:: reset all
 
    Definition not (b:bool) := if b then false else true.
 
@@ -66,7 +66,7 @@ and :n:`@ident__2`, the following terms are equal:
 
 .. example::
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Check (fun x (H:{x=0}+{x<>0}) =>
      match H with
@@ -109,7 +109,7 @@ constructor.  Then, in :n:`@term__1`, these variables are bound to the
 arguments of the constructor in :n:`@term__0`.  For instance, the
 definition
 
-.. coqtop:: reset all
+.. rocqtop:: reset all
 
    Definition fst (A B:Set) (H:A * B) := match H with
    | pair x y => x
@@ -117,7 +117,7 @@ definition
 
 can be alternatively written
 
-.. coqtop:: reset all
+.. rocqtop:: reset all
 
    Definition fst (A B:Set) (p:A * B) := let (x, _) := p in x.
 
@@ -153,7 +153,7 @@ one constructor by giving an arbitrary pattern instead of just a tuple
 for all the arguments. For example, the preceding example can be
 written:
 
-.. coqtop:: reset all
+.. rocqtop:: reset all
 
    Definition fst (A B:Set) (p:A*B) := let 'pair x _ := p in x.
 
@@ -161,7 +161,7 @@ This is useful to match deeper inside tuples and also to use notations
 for the pattern, as the syntax :g:`let ’p := t in b` allows arbitrary
 patterns to do the deconstruction. For example:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Definition deep_tuple (A:Set) (x:(A*A)*(A*A)) : A*A*A*A :=
    let '((a,b), (c, d)) := x in (a,b,c,d).
@@ -262,13 +262,13 @@ Printing of hidden subterms
 
    .. example::
 
-      .. coqtop:: in
+      .. rocqtop:: in
 
          Polymorphic Inductive eqT@{u} {A:Type@{u}} (a:A) : A -> Type@{u} := reflT : eqT a a.
          Set Definitional UIP.
          Inductive seq {A} (a:A) : A -> SProp := srefl : seq a a.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Print eqT_rect.
          Print seq_rect.
@@ -311,7 +311,7 @@ This example emphasizes what the printing settings offer.
 
 .. example::
 
-     .. coqtop:: all
+     .. rocqtop:: all
 
        Definition snd (A B:Set) (H:A * B) := match H with
        | pair x y => y
@@ -351,7 +351,7 @@ a warning is issued in such situations.
 
    .. example::
 
-      .. coqtop:: all warn
+      .. rocqtop:: all warn
 
          Definition is_zero (o : option nat) := match o with
          | Some _ => true
@@ -406,7 +406,7 @@ pattern matching. Consider for example the function that computes the
 maximum of two natural numbers. We can write it in primitive syntax
 by:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Fixpoint max (n m:nat) {struct m} : nat :=
      match n with
@@ -424,7 +424,7 @@ Multiple patterns
 
 Using multiple patterns in the definition of ``max`` lets us write:
 
-.. coqtop:: in reset
+.. rocqtop:: in reset
 
    Fixpoint max (n m:nat) {struct m} : nat :=
        match n, m with
@@ -440,7 +440,7 @@ to right. A match expression is generated **only** when there is at least
 one constructor in the column of patterns. E.g. the following example
 does not build a match expression.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Check (fun x:nat => match x return nat with
                        | y => y
@@ -452,7 +452,7 @@ Aliasing subpatterns
 
 We can also use :n:`as @ident` to associate a name to a sub-pattern:
 
-.. coqtop:: in reset
+.. rocqtop:: in reset
 
    Fixpoint max (n m:nat) {struct n} : nat :=
      match n, m with
@@ -468,7 +468,7 @@ Nested patterns
 
 Here is now an example of nested patterns:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Fixpoint even (n:nat) : bool :=
      match n with
@@ -479,12 +479,12 @@ Here is now an example of nested patterns:
 
 This is compiled into:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Unset Printing Matching.
    Print even.
 
-.. coqtop:: none
+.. rocqtop:: none
 
    Set Printing Matching.
 
@@ -494,7 +494,7 @@ superposition. Consider the boolean function :g:`lef` that given two
 natural numbers yields :g:`true` if the first one is less or equal than the
 second one and :g:`false` otherwise. We can write it as follows:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Fixpoint lef (n m:nat) {struct m} : bool :=
      match n, m with
@@ -513,7 +513,7 @@ is matched by the first pattern, and so :g:`(lef O O)` yields true.
 
 Another way to write this function is:
 
-.. coqtop:: in reset
+.. rocqtop:: in reset
 
    Fixpoint lef (n m:nat) {struct m} : bool :=
      match n, m with
@@ -529,7 +529,7 @@ not match neither the first nor the second one.
 Terms with useless patterns are not accepted by the system. Here is an
 example:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Fail Check (fun x:nat =>
                  match x with
@@ -546,7 +546,7 @@ Multiple patterns that share the same right-hand-side can be
 factorized using the notation :n:`{+| {+, @pattern } }`. For
 instance, :g:`max` can be rewritten as follows:
 
-.. coqtop:: in reset
+.. rocqtop:: in reset
 
    Fixpoint max (n m:nat) {struct m} : nat :=
      match n, m with
@@ -558,7 +558,7 @@ Similarly, factorization of (not necessarily multiple) patterns that
 share the same variables is possible by using the notation :n:`{+| @pattern}`.
 Here is an example:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Definition filter_2_4 (n:nat) : nat :=
      match n with
@@ -570,7 +570,7 @@ Here is an example:
 Nested disjunctive patterns are allowed, inside parentheses, with the
 notation :n:`({+| @pattern})`, as in:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Definition filter_some_square_corners (p:nat*nat) : nat*nat :=
      match p with
@@ -588,7 +588,7 @@ When matching objects of a parametric type, parameters do not bind in
 patterns. They must be substituted by “``_``”. Consider for example the
 type of polymorphic lists:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Inductive List (A:Set) : Set :=
    | nil : List A
@@ -596,7 +596,7 @@ type of polymorphic lists:
 
 We can check the function *tail*:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Check
      (fun l:List nat =>
@@ -607,7 +607,7 @@ We can check the function *tail*:
 
 When we use parameters in patterns there is an error message:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Fail Check
      (fun l:List nat =>
@@ -620,7 +620,7 @@ When we use parameters in patterns there is an error message:
 
    This :term:`flag` (off by default) removes parameters from constructors in patterns:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Set Asymmetric Patterns.
    Check (fun l:List nat =>
@@ -635,7 +635,7 @@ Implicit arguments in patterns
 
 By default, implicit arguments are omitted in patterns. So we write:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Arguments nil {A}.
    Arguments cons [A] _ _.
@@ -649,7 +649,7 @@ By default, implicit arguments are omitted in patterns. So we write:
 But the possibility to use all the arguments is given by “``@``” implicit
 explicitations (as for terms, see :ref:`explicit-applications`).
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Check
      (fun l:List nat =>
@@ -669,7 +669,7 @@ dependent types, but we can also use the expansion strategy to
 destructure objects of dependent types. Consider the type :g:`listn` of
 lists of a certain length:
 
-.. coqtop:: in reset
+.. rocqtop:: in reset
 
    Inductive listn : nat -> Set :=
    | niln : listn 0
@@ -681,14 +681,14 @@ Understanding dependencies in patterns
 
 We can define the function length over :g:`listn` by:
 
-.. coqdoc::
+.. rocqdoc::
 
    Definition length (n:nat) (l:listn n) := n.
 
 Just for illustrating pattern matching, we can define it by case
 analysis:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Definition length (n:nat) (l:listn n) :=
      match l with
@@ -714,7 +714,7 @@ of the |rhs| are different instances of the elimination predicate. The
 function :g:`concat` for :g:`listn` is an example where the branches have
 different types and we need to provide the elimination predicate:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Fixpoint concat (n:nat) (l:listn n) (m:nat) (l':listn m) {struct l} :
     listn (n + m) :=
@@ -723,7 +723,7 @@ different types and we need to provide the elimination predicate:
      | consn n' a y => consn (n' + m) a (concat n' y m l')
      end.
 
-.. coqtop:: none
+.. rocqtop:: none
 
    Reset concat.
 
@@ -750,7 +750,7 @@ a dependent product.
 For example, an equivalent definition for :g:`concat` (even though the
 matching on the second term is trivial) would have been:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Fixpoint concat (n:nat) (l:listn n) (m:nat) (l':listn m) {struct l} :
     listn (n + m) :=
@@ -763,7 +763,7 @@ Even without real matching over the second term, this construction can
 be used to keep types linked. If :g:`a` and :g:`b` are two :g:`listn` of the same
 length, by writing
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Check (fun n (a b: listn n) =>
     match a, b with
@@ -789,7 +789,7 @@ anything.
 
 To be concrete: the ``tail`` function can be written:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Definition tail n (v: listn (S n)) :=
      match v in listn (S m) return listn m with
@@ -811,7 +811,7 @@ in the description of the tactic :tacn:`refine`.
 For example, we can write the function :g:`buildlist` that given a natural
 number :g:`n` builds a list of length :g:`n` containing zeros as follows:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Fixpoint buildlist (n:nat) : listn n :=
      match n return listn n with
@@ -822,7 +822,7 @@ number :g:`n` builds a list of length :g:`n` containing zeros as follows:
 We can also use multiple patterns. Consider the following definition
 of the predicate less-equal :g:`Le`:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Inductive LE : nat -> nat -> Prop :=
      | LEO : forall n:nat, LE 0 n
@@ -831,7 +831,7 @@ of the predicate less-equal :g:`Le`:
 We can use multiple patterns to write the proof of the lemma
 :g:`forall (n m:nat), (LE n m) \/ (LE m n)`:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Fixpoint dec (n m:nat) {struct n} : LE n m \/ LE m n :=
      match n, m return LE n m \/ LE m n with
@@ -862,7 +862,7 @@ can also be caught in the matching.
 
 .. example::
 
-   .. coqtop:: in reset
+   .. rocqtop:: in reset
 
       Inductive list : nat -> Set :=
       | nil : list 0
@@ -870,7 +870,7 @@ can also be caught in the matching.
 
    In the next example, the local definition is not caught.
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Fixpoint length n (l:list n) {struct l} : nat :=
         match l with
@@ -880,7 +880,7 @@ can also be caught in the matching.
 
    But in this example, it is.
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Fixpoint length' n (l:list n) {struct l} : nat :=
         match l with
@@ -908,7 +908,7 @@ pattern.
 
 .. example::
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Inductive I : Set :=
         | C1 : nat -> I
@@ -916,7 +916,7 @@ pattern.
 
       Coercion C1 : nat >-> I.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Check (fun x => match x with
                       | C2 O => 0

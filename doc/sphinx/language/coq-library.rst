@@ -136,7 +136,7 @@ Propositional Connectives
 First, we find propositional calculus connectives.
 At times, it's helpful to know exactly what these notations represent.
 
-.. coqdoc::
+.. rocqdoc::
 
   Inductive True : Prop := I.
   Inductive False :  Prop := .
@@ -157,7 +157,7 @@ We also have the `Type` level negation:
 .. index::
   single: notT (term)
 
-.. coqtop:: in
+.. rocqtop:: in
 
   Definition notT (A:Type) := A -> False.
 
@@ -176,7 +176,7 @@ Quantifiers
 
 Then we find first-order quantifiers:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Definition all (A:Set) (P:A -> Prop) := forall x:A, P x.
    Inductive ex (A: Set) (P:A -> Prop) : Prop :=
@@ -213,7 +213,7 @@ This definition, due to Christine Paulin-Mohring, is equivalent to
 define ``eq`` as the smallest reflexive relation, and it is also
 equivalent to Leibniz' equality.
 
-.. coqtop:: in
+.. rocqtop:: in
 
   Inductive eq (A:Type) (x:A) : A -> Prop :=
     eq_refl : eq A x x.
@@ -234,7 +234,7 @@ Finally, a few easy lemmas are provided.
   single: eq_rect (term)
   single: eq_rect_r (term)
 
-.. coqdoc::
+.. rocqdoc::
 
   Theorem absurd : forall A C:Prop, A -> ~ A -> C.
   Section equality.
@@ -262,7 +262,7 @@ arguments. The theorem are names ``f_equal2``, ``f_equal3``,
 ``f_equal4`` and ``f_equal5``.
 For instance ``f_equal3`` is defined the following way.
 
-.. coqtop:: in abort
+.. rocqtop:: in abort
 
   Theorem f_equal3 :
    forall (A1 A2 A3 B:Type) (f:A1 -> A2 -> A3 -> B)
@@ -315,7 +315,7 @@ Programming
   single: identity (term)
   single: refl_identity (term)
 
-.. coqtop:: in
+.. rocqtop:: in
 
   Inductive unit : Set := tt.
   Inductive bool : Set := true | false.
@@ -340,7 +340,7 @@ We then define the disjoint sum of ``A+B`` of two sets ``A`` and
   single: fst (term)
   single: snd (term)
 
-.. coqtop:: in
+.. rocqtop:: in
 
   Inductive sum (A B:Set) : Set := inl (_:A) | inr (_:B).
   Inductive prod (A B:Set) : Set := pair (_:A) (_:B).
@@ -386,7 +386,7 @@ provided.
    single: sig2 (term)
    single: exist2 (term)
 
-.. coqtop:: in
+.. rocqtop:: in
 
   Inductive sig (A:Set) (P:A -> Prop) : Set := exist (x:A) (_:P x).
   Inductive sig2 (A:Set) (P Q:A -> Prop) : Set :=
@@ -405,7 +405,7 @@ constructor of types in ``Type``.
    single: projT1 (term)
    single: projT2 (term)
 
-.. coqtop:: in
+.. rocqtop:: in
 
   Inductive sigT (A:Type) (P:A -> Type) : Type := existT (x:A) (_:P x).
   Section Projections2.
@@ -429,7 +429,7 @@ A related non-dependent construct is the constructive sum
   single: right (term)
   single: {A}+{B} (term)
 
-.. coqtop:: in
+.. rocqtop:: in
 
   Inductive sumbool (A B:Prop) : Set := left (_:A) | right (_:B).
 
@@ -444,7 +444,7 @@ in the construction :g:`A+{B}` in ``Set``.
   single: inright (term)
   single: A+{B} (term)
 
-.. coqtop:: in
+.. rocqtop:: in
 
   Inductive sumor (A:Set) (B:Prop) : Set :=
   | inleft (_:A)
@@ -458,7 +458,7 @@ Intuitionistic Type Theory.
   single: Choice2 (term)
   single: bool_choice (term)
 
-.. coqdoc::
+.. rocqdoc::
 
   Lemma Choice :
    forall (S S':Set) (R:S -> S' -> Prop),
@@ -482,7 +482,7 @@ an exceptional value encoding errors:
   single: value (term)
   single: error (term)
 
-.. coqtop:: in
+.. rocqtop:: in
 
   Definition Exc := option.
   Definition value := Some.
@@ -499,7 +499,7 @@ realizability interpretation.
   single: absurd_set (term)
   single: and_rect (term)
 
-.. coqdoc::
+.. rocqdoc::
 
   Definition except := False_rec.
   Theorem absurd_set : forall (A:Prop) (C:Set), A -> ~ A -> C.
@@ -525,7 +525,7 @@ section :tacn:`refine`). This scope is opened by default.
   The following example is not part of the standard library, but it
   shows the usage of the notations:
 
-  .. coqtop:: in reset
+  .. rocqtop:: in reset
 
     Fixpoint even (n:nat) : bool :=
      match n with
@@ -552,7 +552,7 @@ section :tacn:`refine`). This scope is opened by default.
 
 Now comes the content of module ``Peano``:
 
-.. coqdoc::
+.. rocqdoc::
 
   Theorem eq_S : forall x y:nat, x = y -> S x = S y.
   Definition pred (n:nat) : nat :=
@@ -603,7 +603,7 @@ Finally, it gives the definition of the usual orderings ``le``,
 .. This emits a notation already used warning but it won't be shown to
    the user.
 
-.. coqtop:: in warn
+.. rocqtop:: in warn
 
   Inductive le (n:nat) : nat -> Prop :=
   | le_n : le n n
@@ -622,7 +622,7 @@ induction principle.
   single: nat_case (term)
   single: nat_double_ind (term)
 
-.. coqdoc::
+.. rocqdoc::
 
   Theorem nat_case :
    forall (n:nat) (P:nat -> Prop),
@@ -649,7 +649,7 @@ well-founded induction, in module ``Wf.v``.
    single: Acc_rect (term)
    single: well_founded (term)
 
-.. coqdoc::
+.. rocqdoc::
 
   Section Well_founded.
   Variable A : Type.
@@ -678,7 +678,7 @@ fixpoint equation can be proved.
   single: Fix_F_inv (term)
   single: Fix_F_eq (term)
 
-.. coqdoc::
+.. rocqdoc::
 
   Section FixPoint.
   Variable P : A -> Type.

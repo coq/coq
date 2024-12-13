@@ -78,7 +78,7 @@ See :ref:`coq_makefile` and :ref:`building_dune`.
    or restart `CoqIDE`.
    The project file name is configurable in `Edit / Preferences / Project`.
 
-      .. coqdoc::
+      .. rocqdoc::
          -R <PATH> Mod1
 
 Customization at launch time

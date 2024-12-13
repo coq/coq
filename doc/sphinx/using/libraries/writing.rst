@@ -112,7 +112,7 @@ notation, definition, axiom, theorem or file.
 
 .. example:: Deprecating a tactic.
 
-   .. coqtop:: all abort warn
+   .. rocqtop:: all abort warn
 
       #[deprecated(since="mylib 0.9", note="Use idtac instead.")]
       Ltac foo := idtac.
@@ -126,7 +126,7 @@ notation, definition, axiom, theorem or file.
 
    Let's say your library initially contained:
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Definition foo x := S x.
 
@@ -134,7 +134,7 @@ notation, definition, axiom, theorem or file.
    your users' code without advanced notice.  To do so, replace the previous
    code by the following:
 
-   .. coqtop:: in reset
+   .. rocqtop:: in reset
 
       Definition bar x := S x.
       #[deprecated(since="mylib 1.2", note="Use bar instead.")]
@@ -142,6 +142,6 @@ notation, definition, axiom, theorem or file.
 
    Then, the following code still works, but emits a warning:
 
-   .. coqtop:: all warn
+   .. rocqtop:: all warn
 
       Check (foo 0).

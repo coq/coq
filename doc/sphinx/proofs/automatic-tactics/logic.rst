@@ -17,7 +17,7 @@ Solvers for logic and equality
       The following goal can be proved by :tacn:`tauto` whereas :tacn:`auto` would
       fail:
 
-      .. coqtop:: reset all
+      .. rocqtop:: reset all
 
          Goal forall (x:nat) (P:nat -> Prop), x = 0 \/ P x -> x <> 0 -> P x.
          intros.
@@ -29,7 +29,7 @@ Solvers for logic and equality
 
    .. example::
 
-      .. coqtop:: reset all
+      .. rocqtop:: reset all
 
          Goal forall (A:Prop) (P:nat -> Prop), A \/ (forall x:nat, ~ A -> P x) -> forall x:nat, ~ A -> P x.
          tauto.
@@ -183,7 +183,7 @@ Solvers for logic and equality
 
    .. example::
 
-      .. coqtop:: reset all
+      .. rocqtop:: reset all
 
          Theorem T (A:Type) (f:A -> A) (g: A -> A -> A) a b: a=(f a) -> (g b (f a))=(f (f a)) -> (g a b)=(f (g b a)) -> (g a b)=a.
          intros.

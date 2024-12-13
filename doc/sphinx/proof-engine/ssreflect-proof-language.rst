@@ -94,7 +94,7 @@ specific to the authors of |SSR| and which requires a few options
 to be set in a different way than in their default way. All in all,
 this corresponds to working in the following context:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    From Corelib Require Import ssreflect ssrfun ssrbool.
    Set Implicit Arguments.
@@ -135,7 +135,7 @@ compatible with the rest of Rocq, up to a few discrepancies.
 + New constant and theorem names might clash with the user theory.
   This can be avoided by not importing all of |SSR|:
 
-  .. coqtop:: in
+  .. rocqtop:: in
 
      From Corelib Require ssreflect.
      Import ssreflect.SsrSyntax.
@@ -206,7 +206,7 @@ construct differs from the latter as follows.
 + The pattern can be nested (deep pattern matching); in particular,
   this allows expression of the form:
 
-.. coqdoc::
+.. rocqdoc::
 
    let: exist (x, y) p_xy := Hp in … .
 
@@ -215,14 +215,14 @@ construct differs from the latter as follows.
 
   .. example::
 
-    .. coqtop:: reset none
+    .. rocqtop:: reset none
 
        From Corelib Require Import ssreflect.
        Set Implicit Arguments.
        Unset Strict Implicit.
        Unset Printing Implicit Defensive.
 
-    .. coqtop:: all
+    .. rocqtop:: all
 
        Definition f u := let: (m, n) := u in m + n.
        Check f.
@@ -231,7 +231,7 @@ construct differs from the latter as follows.
     whereas with a usual ``let`` the same term requires an extra type
     annotation in order to type check.
 
-    .. coqtop:: reset all
+    .. rocqtop:: reset all
 
        Fail Definition f u := let (m, n) := u in m + n.
 
@@ -275,7 +275,7 @@ example, the null and all list function(al)s can be defined as follows:
 
 .. example::
 
-    .. coqtop:: reset none
+    .. rocqtop:: reset none
 
        From Corelib Require Import ssreflect.
        Set Implicit Arguments.
@@ -283,7 +283,7 @@ example, the null and all list function(al)s can be defined as follows:
        Unset Printing Implicit Defensive.
        Section Test.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Variable d: Set.
       Definition null (s : list d) :=
@@ -319,7 +319,7 @@ annotations.
 
 .. example::
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Definition orb b1 b2 := if b1 then true else b2.
 
@@ -376,7 +376,7 @@ expressions such as
 
 .. example::
 
-   .. coqtop:: reset none
+   .. rocqtop:: reset none
 
       From Corelib Require Import ssreflect.
       Set Implicit Arguments.
@@ -387,7 +387,7 @@ expressions such as
       Variable null : forall T : Type, T -> bool.
       Variable all : (T -> bool) -> list T -> bool.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Definition all_null (s : list T) := all (@null T) s.
 
@@ -401,7 +401,7 @@ each point of use; e.g., the above definition can be written:
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
@@ -413,7 +413,7 @@ each point of use; e.g., the above definition can be written:
      Variable all : (T -> bool) -> list T -> bool.
 
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Prenex Implicits null.
      Definition all_null (s : list T) := all null s.
@@ -436,7 +436,7 @@ The syntax of the new declaration is
    a ``Set Printing All`` command). All |SSR| library files thus start
    with the incantation
 
-   .. coqdoc::
+   .. rocqdoc::
 
       Set Implicit Arguments.
       Unset Strict Implicit.
@@ -464,14 +464,14 @@ defined by the following declaration:
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Inductive list (A : Type) : Type := nil | cons of A & list A.
 
@@ -505,7 +505,7 @@ Definitions
    |SSR| :tacn:`pose (ssreflect)` tactic supports *open syntax*: the body of the
    definition does not need surrounding parentheses. For instance:
 
-.. coqdoc::
+.. rocqdoc::
 
    pose t := x + y.
 
@@ -518,14 +518,14 @@ For example, the tactic :tacn:`pose (ssreflect)` supports parameters:
 
 .. example::
 
-   .. coqtop:: reset none
+   .. rocqtop:: reset none
 
       From Corelib Require Import ssreflect.
       Set Implicit Arguments.
       Unset Strict Implicit.
       Unset Printing Implicit Defensive.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Lemma test : True.
       pose f x y := x + y.
@@ -534,7 +534,7 @@ The |SSR| :tacn:`pose (ssreflect)` tactic also supports (co)fixpoints, by provid
 the local counterpart of the ``Fixpoint f := …`` and ``CoFixpoint f := …``
 constructs. For instance, the following tactic:
 
-.. coqdoc::
+.. rocqdoc::
 
    pose fix f (x y : nat) {struct x} : nat :=
      if x is S p then S (f p y) else 0.
@@ -544,7 +544,7 @@ on natural numbers.
 
 Similarly, local cofixpoints can be defined by a tactic of the form:
 
-.. coqdoc::
+.. rocqdoc::
 
    pose cofix f (arg : T) := … .
 
@@ -553,26 +553,26 @@ offers a smooth way of defining local abstractions. The type of
 “holes” is guessed by type inference, and the holes are abstracted.
 For instance the tactic:
 
-.. coqdoc::
+.. rocqdoc::
 
    pose f := _ + 1.
 
 is shorthand for:
 
-.. coqdoc::
+.. rocqdoc::
 
    pose f n := n + 1.
 
 When the local definition of a function involves both arguments and
 holes, hole abstractions appear first. For instance, the tactic:
 
-.. coqdoc::
+.. rocqdoc::
 
    pose f x := x + _.
 
 is shorthand for:
 
-.. coqdoc::
+.. rocqdoc::
 
    pose f n x := x + n.
 
@@ -580,13 +580,13 @@ The interaction of the :tacn:`pose (ssreflect)` tactic with the interpretation o
 arguments results in a powerful and concise syntax for local
 definitions involving dependent types. For instance, the tactic:
 
-.. coqdoc::
+.. rocqdoc::
 
    pose f x y := (x, y).
 
 adds to the context the local definition:
 
-.. coqdoc::
+.. rocqdoc::
 
    pose f (Tx Ty : Type) (x : Tx) (y : Ty) := (x, y).
 
@@ -639,7 +639,7 @@ The tactic:
 
 .. example::
 
-   .. coqtop:: reset none
+   .. rocqtop:: reset none
 
       From Corelib Require Import ssreflect.
       Set Implicit Arguments.
@@ -647,12 +647,12 @@ The tactic:
       Unset Printing Implicit Defensive.
       Axiom f : nat -> nat.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Lemma test x :  f x + f x = f x.
       set t := f _.
 
-   .. coqtop:: all restart
+   .. rocqtop:: all restart
 
       set t := {2}(f _).
 
@@ -690,14 +690,14 @@ conditions.
 
 .. example::
 
-   .. coqtop:: reset none
+   .. rocqtop:: reset none
 
       From Corelib Require Import ssreflect.
       Set Implicit Arguments.
       Unset Strict Implicit.
       Unset Printing Implicit Defensive.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Lemma test (x y z : nat) :  x + y = z.
       set t := _ x.
@@ -711,14 +711,14 @@ conditions.
 
   .. example::
 
-     .. coqtop:: reset none
+     .. rocqtop:: reset none
 
         From Corelib Require Import ssreflect.
         Set Implicit Arguments.
         Unset Strict Implicit.
         Unset Printing Implicit Defensive.
 
-     .. coqtop:: all
+     .. rocqtop:: all
 
         Lemma test : (let f x y z := x + y + z in f 1) 2 3 = 6.
         set t := (let g y z := S y + z in g) 2.
@@ -732,14 +732,14 @@ Moreover:
 
   .. example::
 
-     .. coqtop:: reset none
+     .. rocqtop:: reset none
 
         From Corelib Require Import ssreflect.
         Set Implicit Arguments.
         Unset Strict Implicit.
         Unset Printing Implicit Defensive.
 
-     .. coqtop:: all
+     .. rocqtop:: all
 
         Lemma test x y z : x + y = z.
         set t := _ + _.
@@ -752,14 +752,14 @@ Moreover:
 
   .. example::
 
-     .. coqtop:: reset none
+     .. rocqtop:: reset none
 
         From Corelib Require Import ssreflect.
         Set Implicit Arguments.
         Unset Strict Implicit.
         Unset Printing Implicit Defensive.
 
-     .. coqtop:: all
+     .. rocqtop:: all
 
         Lemma test : forall x : nat, x + 1 = 0.
         Fail set t := _ + 1.
@@ -785,7 +785,7 @@ An *occurrence switch* can be:
 
   .. example::
 
-     .. coqtop:: reset none
+     .. rocqtop:: reset none
 
         From Corelib Require Import ssreflect.
         Set Implicit Arguments.
@@ -793,7 +793,7 @@ An *occurrence switch* can be:
         Unset Printing Implicit Defensive.
         Axiom f : nat -> nat.
 
-     .. coqtop:: all
+     .. rocqtop:: all
 
         Lemma test : f 2 + f 8 = f 2 + f 2.
         set x := {+1 3}(f 2).
@@ -807,14 +807,14 @@ An *occurrence switch* can be:
 
   .. example::
 
-     .. coqtop:: reset none
+     .. rocqtop:: reset none
 
         From Corelib Require Import ssreflect.
         Set Implicit Arguments.
         Unset Strict Implicit.
         Unset Printing Implicit Defensive.
 
-     .. coqtop:: all
+     .. rocqtop:: all
 
         Notation "a < b":= (le (S a) b).
         Lemma test x y : x < y -> S x < S y.
@@ -828,7 +828,7 @@ An *occurrence switch* can be:
 
   .. example::
 
-     .. coqtop:: reset none
+     .. rocqtop:: reset none
 
         From Corelib Require Import ssreflect.
         Set Implicit Arguments.
@@ -836,7 +836,7 @@ An *occurrence switch* can be:
         Unset Printing Implicit Defensive.
         Axiom f : nat -> nat.
 
-     .. coqtop:: all
+     .. rocqtop:: all
 
         Lemma test : f 2 + f 8 = f 2 + f 2.
         set x := {-2}(f 2).
@@ -859,14 +859,14 @@ selection.
 
   .. example::
 
-     .. coqtop:: reset none
+     .. rocqtop:: reset none
 
         From Corelib Require Import ssreflect.
         Set Implicit Arguments.
         Unset Strict Implicit.
         Unset Printing Implicit Defensive.
 
-     .. coqtop:: all
+     .. rocqtop:: all
 
         Lemma test x y z : x + y = x + y + z.
         set a := {2}(_ + _).
@@ -876,14 +876,14 @@ only one occurrence of the selected term.
 
   .. example::
 
-     .. coqtop:: reset none
+     .. rocqtop:: reset none
 
         From Corelib Require Import ssreflect.
         Set Implicit Arguments.
         Unset Strict Implicit.
         Unset Printing Implicit Defensive.
 
-     .. coqtop:: all
+     .. rocqtop:: all
 
         Lemma test x y z : (x + y) + (z + z) = z + z.
         Fail set a := {2}(_ + _).
@@ -907,11 +907,11 @@ context of a goal thanks to the ``in`` tactical.
 
   .. example::
 
-     .. coqtop:: reset none
+     .. rocqtop:: reset none
 
         From Corelib Require Import ssreflect.
 
-     .. coqtop:: all
+     .. rocqtop:: all
 
         Lemma test x t (Hx : x = 3) : x + t = 4.
         set z := 3 in Hx.
@@ -923,11 +923,11 @@ context of a goal thanks to the ``in`` tactical.
 
   .. example::
 
-     .. coqtop:: reset none
+     .. rocqtop:: reset none
 
         From Corelib Require Import ssreflect.
 
-     .. coqtop:: all
+     .. rocqtop:: all
 
         Lemma test x t (Hx : x = 3) : x + t = 4.
         set z := 3 in Hx * .
@@ -1039,20 +1039,20 @@ constants to the goal.
 
    For example, the proof of [#3]_
 
-   .. coqtop:: reset none
+   .. rocqtop:: reset none
 
       From Corelib Require Import ssreflect.
       Set Implicit Arguments.
       Unset Strict Implicit.
       Unset Printing Implicit Defensive.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Lemma subnK : forall m n, n <= m -> m - n + n = m.
 
    might start with
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       move=> m n le_n_m.
 
@@ -1065,7 +1065,7 @@ constants to the goal.
    constants from the context by turning them into variables and
    assumptions.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       move: m le_n_m.
 
@@ -1076,7 +1076,7 @@ constants to the goal.
 
 Because they are tacticals, ``:`` and ``=>`` can be combined, as in
 
-.. coqdoc::
+.. rocqdoc::
 
    move: m le_n_m => p le_n_p.
 
@@ -1101,14 +1101,14 @@ The ``:`` tactical is used to operate on an element in the context.
    to encapsulate the inductive step in a single
    command:
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Lemma subnK : forall m n, n <= m -> m - n + n = m.
      move=> m n le_n_m.
@@ -1136,7 +1136,7 @@ Basic tactics like ``apply`` and ``elim`` can also be used without the ’:’
 tactical: for example, we can directly start a proof of ``subnK`` by
 induction on the top variable ``m`` with
 
-.. coqdoc::
+.. rocqdoc::
 
    elim=> [|m IHm] n le_n.
 
@@ -1147,7 +1147,7 @@ explained in terms of the goal stack::
 
 is basically equivalent to
 
-.. coqdoc::
+.. rocqdoc::
 
    move: a H1 H2; tactic => a H1 H2.
 
@@ -1160,13 +1160,13 @@ temporary abbreviation to hide the statement of the goal from
 The general form of the ``in`` tactical can be used directly with the
 ``move``, ``case`` and ``elim`` tactics, so that one can write
 
-.. coqdoc::
+.. rocqdoc::
 
    elim: n => [|n IHn] in m le_n_m *.
 
 instead of
 
-.. coqdoc::
+.. rocqdoc::
 
    elim: n m le_n_m => [|n IHn] m le_n_m.
 
@@ -1196,7 +1196,7 @@ The move tactic.
 
    .. example::
 
-      .. coqtop:: reset all
+      .. rocqtop:: reset all
 
          Require Import ssreflect.
          Goal not False.
@@ -1266,14 +1266,14 @@ The elim tactic
 
    .. example::
 
-      .. coqtop:: reset none
+      .. rocqtop:: reset none
 
          From Corelib Require Import ssreflect.
          Set Implicit Arguments.
          Unset Strict Implicit.
          Unset Printing Implicit Defensive.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Lemma test m : forall n : nat, m <= n.
          elim.
@@ -1306,7 +1306,7 @@ existential metavariables of sort :g:`Prop`.
 
 .. example::
 
-   .. coqtop:: reset none
+   .. rocqtop:: reset none
 
       From Corelib Require Import ssreflect.
       Set Implicit Arguments.
@@ -1314,7 +1314,7 @@ existential metavariables of sort :g:`Prop`.
       Unset Printing Implicit Defensive.
       Axiom lt_trans : forall a b c, a < b -> b < c -> a < c.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Lemma test : forall y, 1 < y -> y < 2 -> exists x : { n | n < 3 }, 0 < proj1_sig x.
       move=> y y_gt1 y_lt2; apply: (ex_intro _ (exist _ y _)).
@@ -1407,7 +1407,7 @@ Switches affect the discharging of a :token:`d_item` as follows.
 
 For example, the tactic:
 
-.. coqdoc::
+.. rocqdoc::
 
    move: n {2}n (refl_equal n).
 
@@ -1418,7 +1418,7 @@ For example, the tactic:
 
 Therefore, this tactic changes any goal ``G`` into
 
-.. coqdoc::
+.. rocqdoc::
 
    forall n n0 : nat, n = n0 -> G.
 
@@ -1486,7 +1486,7 @@ context to interpret wildcards; in particular, it can accommodate the
 
 .. example::
 
-   .. coqtop:: reset none
+   .. rocqtop:: reset none
 
       From Corelib Require Import ssreflect.
       Set Implicit Arguments.
@@ -1495,7 +1495,7 @@ context to interpret wildcards; in particular, it can accommodate the
       Axiom f : nat -> nat.
       Axiom g : nat -> nat.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Lemma test (Hfg : forall x, f x = g x) a b : f a = g b.
       apply: trans_equal (Hfg _) _.
@@ -1639,11 +1639,11 @@ The second entry in the :token:`i_view` grammar rule,
 ``/ltac:(`` :token:`tactic` ``)``, executes :token:`tactic`.
 Notations can be used to name tactics,  for example
 
-.. coqtop:: none
+.. rocqtop:: none
 
       Tactic Notation "my" "ltac" "code" := idtac.
 
-.. coqtop:: in warn
+.. rocqtop:: in warn
 
    Notation "'myop'" := (ltac:(my ltac code)) : ssripat_scope.
 
@@ -1778,14 +1778,14 @@ Clears are deferred until the end of the intro pattern.
 
 .. example::
 
-   .. coqtop:: reset none
+   .. rocqtop:: reset none
 
       From Corelib Require Import ssreflect ssrbool.
       Set Implicit Arguments.
       Unset Strict Implicit.
       Unset Printing Implicit Defensive.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Lemma test x y : Nat.leb 0 x = true -> (Nat.leb 0 x) && (Nat.leb y 2) = true.
       move=> {x} ->.
@@ -1839,14 +1839,14 @@ Block introduction
 
   .. example::
 
-     .. coqtop:: reset none
+     .. rocqtop:: reset none
 
         From Corelib Require Import ssreflect.
         Set Implicit Arguments.
         Unset Strict Implicit.
         Unset Printing Implicit Defensive.
 
-     .. coqtop:: all
+     .. rocqtop:: all
 
         Record r := { a : nat; b := (a, 3); _ : bool; }.
 
@@ -1869,7 +1869,7 @@ Generation of equations
 The generation of named equations option stores the definition of a
 new constant as an equation. The tactic:
 
-.. coqdoc::
+.. rocqdoc::
 
    move En: (size l) => n.
 
@@ -1877,7 +1877,7 @@ where ``l`` is a list, replaces ``size l`` by ``n`` in the goal and
 adds the fact ``En : size l = n`` to the context.
 This is quite different from:
 
-.. coqdoc::
+.. rocqdoc::
 
    pose n := (size l).
 
@@ -1892,14 +1892,14 @@ deal with the possible parameters of the constants introduced.
 
 .. example::
 
-   .. coqtop:: reset none
+   .. rocqtop:: reset none
 
       From Corelib Require Import ssreflect.
       Set Implicit Arguments.
       Unset Strict Implicit.
       Unset Printing Implicit Defensive.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Lemma test (a b :nat) : a <> b.
       case E : a => [|n].
@@ -1911,14 +1911,14 @@ under fresh |SSR| names.
 
 .. example::
 
-   .. coqtop:: reset none
+   .. rocqtop:: reset none
 
       From Corelib Require Import ssreflect.
       Set Implicit Arguments.
       Unset Strict Implicit.
       Unset Printing Implicit Defensive.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Lemma test (a b :nat) : a <> b.
       case E : a => H.
@@ -1962,7 +1962,7 @@ be substituted.
    inferred by looking at the type of the top assumption. This allows for the
    compact syntax:
 
-   .. coqdoc::
+   .. rocqdoc::
 
       case: {2}_ / eqP.
 
@@ -1978,14 +1978,14 @@ be substituted.
       Here is a small example on lists. We define first a function that
       adds an element at the end of a given list.
 
-      .. coqtop:: reset none
+      .. rocqtop:: reset none
 
          From Corelib Require Import ssreflect.
          Set Implicit Arguments.
          Unset Strict Implicit.
          Unset Printing Implicit Defensive.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          From Corelib Require Import ListDef.
          Section LastCases.
@@ -1999,7 +1999,7 @@ be substituted.
       Then we define an inductive predicate for case analysis on lists
       according to their last element:
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Inductive last_spec : list A -> Type :=
          | LastSeq0 : last_spec nil
@@ -2010,7 +2010,7 @@ be substituted.
 
       We are now ready to use ``lastP`` in conjunction with ``case``.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Lemma test l : (length l) * 2 = length (l ++ l).
          case: (lastP l).
@@ -2018,13 +2018,13 @@ be substituted.
       Applied to the same goal, the tactic ``case: l / (lastP l)``
       generates the same subgoals, but ``l`` has been cleared from both contexts:
 
-      .. coqtop:: all restart
+      .. rocqtop:: all restart
 
          case: l / (lastP l).
 
       Again applied to the same goal:
 
-      .. coqtop:: all restart abort
+      .. rocqtop:: all restart abort
 
          case: {1 3}l / (lastP l).
 
@@ -2039,7 +2039,7 @@ be substituted.
 
    .. example::
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Lemma test l : (length l) * 2 = length (l ++ l).
          case E: {1 3}l / (lastP l) => [|s x].
@@ -2132,7 +2132,7 @@ In the script provided as example in Section :ref:`indentation_ssr`, the
 paragraph corresponding to each sub-case ends with a tactic line prefixed
 with a ``by``, like in:
 
-.. coqdoc::
+.. rocqdoc::
 
    by apply/eqP; rewrite -dvdn1.
 
@@ -2149,7 +2149,7 @@ with a ``by``, like in:
    The default implementation of the :tacn:`done` tactic, in the ``ssreflect.v``
    file, is:
 
-   .. coqdoc::
+   .. rocqdoc::
 
       Ltac done :=
         trivial; hnf; intros; solve
@@ -2165,13 +2165,13 @@ A natural and common way of closing a goal is to apply a lemma that
 is the exact one needed for the goal to be solved. The defective form
 of the tactic:
 
-.. coqdoc::
+.. rocqdoc::
 
    exact.
 
 is equivalent to:
 
-.. coqdoc::
+.. rocqdoc::
 
    do [done | by move=> top; apply top].
 
@@ -2179,13 +2179,13 @@ where ``top`` is a fresh name assigned to the top assumption of the goal.
 This applied form is supported by the ``:`` discharge tactical, and the
 tactic:
 
-.. coqdoc::
+.. rocqdoc::
 
    exact: MyLemma.
 
 is equivalent to:
 
-.. coqdoc::
+.. rocqdoc::
 
    by apply: MyLemma.
 
@@ -2197,19 +2197,19 @@ is equivalent to:
    follows the ``by`` keyword is considered to be a parenthesized block applied to
    the current goal. Hence for example if the tactic:
 
-   .. coqdoc::
+   .. rocqdoc::
 
       by rewrite my_lemma1.
 
    succeeds, then the tactic:
 
-   .. coqdoc::
+   .. rocqdoc::
 
       by rewrite my_lemma1; apply my_lemma2.
 
    usually fails since it is equivalent to:
 
-   .. coqdoc::
+   .. rocqdoc::
 
       by (rewrite my_lemma1; apply my_lemma2).
 
@@ -2266,7 +2266,7 @@ Finally, the tactics ``last`` and ``first`` combine with the branching syntax
 of Ltac: if the tactic generates n subgoals on a given goal,
 then the tactic
 
-.. coqdoc::
+.. rocqdoc::
 
    tactic ; last k [ tactic1 |…| tacticm ] || tacticn.
 
@@ -2279,14 +2279,14 @@ to the others.
    Here is a small example on lists. We define first a function that
    adds an element at the end of a given list.
 
-   .. coqtop:: reset none
+   .. rocqtop:: reset none
 
       From Corelib Require Import ssreflect.
       Set Implicit Arguments.
       Unset Strict Implicit.
       Unset Printing Implicit Defensive.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Inductive test : nat -> Prop :=
       | C1 n of n = 1 : test n
@@ -2314,13 +2314,13 @@ Iteration
 
 A tactic of the form:
 
-.. coqdoc::
+.. rocqdoc::
 
    do [ tactic 1 | … | tactic n ].
 
 is equivalent to the standard Ltac expression:
 
-.. coqdoc::
+.. rocqdoc::
 
    first [ tactic 1 | … | tactic n ].
 
@@ -2345,14 +2345,14 @@ Their meaning is as follows.
 
 For instance, the tactic:
 
-.. coqdoc::
+.. rocqdoc::
 
    tactic; do 1? rewrite mult_comm.
 
 rewrites at most one time the lemma ``mult_comm`` in all the subgoals
 generated by tactic, whereas the tactic:
 
-.. coqdoc::
+.. rocqdoc::
 
    tactic; do 2! rewrite mult_comm.
 
@@ -2398,14 +2398,14 @@ between standard Ltac ``in`` and the |SSR| tactical in.
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Ltac mytac H := rewrite H.
 
@@ -2473,21 +2473,21 @@ the holes are abstracted in term.
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Lemma test : True.
      have: _ * 0 = 0.
 
   The invocation of ``have`` is equivalent to:
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
@@ -2495,7 +2495,7 @@ the holes are abstracted in term.
      Unset Printing Implicit Defensive.
      Lemma test : True.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      have: forall n : nat, n * 0 = 0.
 
@@ -2505,7 +2505,7 @@ tactic:
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
@@ -2513,7 +2513,7 @@ tactic:
      Unset Printing Implicit Defensive.
      Lemma test : True.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      have: forall x y, (x, y) = (x, y + 0).
 
@@ -2536,7 +2536,7 @@ tactics of the form:
 
 which behaves like:
 
-.. coqdoc::
+.. rocqdoc::
 
    have: term ; first by tactic.
    move=> clear_switch i_item.
@@ -2549,7 +2549,7 @@ to introduce the new assumption itself.
 The ``by`` feature is especially convenient when the proof script of the
 statement is very short, basically when it fits in one line like in:
 
-.. coqdoc::
+.. rocqdoc::
 
    have H23 : 3 + 2 = 2 + 3 by rewrite addnC.
 
@@ -2558,14 +2558,14 @@ the further use of the intermediate step. For instance,
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Lemma test a : 3 * a - 1 = a.
      have -> : forall x, x * a = a.
@@ -2577,7 +2577,7 @@ the further use of the intermediate step. For instance,
 Thanks to the deferred execution of clears, the following idiom is
 also supported (assuming x occurs in the goal only):
 
-.. coqdoc::
+.. rocqdoc::
 
    have {x} -> : x = y.
 
@@ -2586,14 +2586,14 @@ destruction of existential assumptions like in the tactic:
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Lemma test : True.
      have [x Px]: exists x : nat, x > 0; last first.
@@ -2613,14 +2613,14 @@ term for the intermediate lemma, using tactics of the form:
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Lemma test : True.
      have H := forall x, (x, x) = (x, x).
@@ -2635,7 +2635,7 @@ The following example requires the mathcomp and mczify libraries.
 
 .. example::
 
-  .. coqtop:: reset none warn extra
+  .. rocqtop:: reset none warn extra
 
      From mathcomp Require Import ssreflect ssrfun ssrbool ssrnat zify.
 
@@ -2643,7 +2643,7 @@ The following example requires the mathcomp and mczify libraries.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
 
-  .. coqtop:: all extra
+  .. rocqtop:: all extra
 
      Lemma test : True.
      have H x (y : nat) : 2 * x + y = x + x + y by lia.
@@ -2654,7 +2654,7 @@ Since the :token:`i_pattern` can be omitted, to avoid ambiguity,
 bound variables can be surrounded
 with parentheses even if no type is specified:
 
-.. coqtop:: all restart extra
+.. rocqtop:: all restart extra
 
    have (x) : 2 * x = x + x by lia.
 
@@ -2668,7 +2668,7 @@ copying the goal itself.
 
 .. example::
 
-  .. coqtop:: all restart abort extra
+  .. rocqtop:: all restart abort extra
 
      have suff H : 2 + 2 = 3; last first.
 
@@ -2688,11 +2688,11 @@ context entry name.
 
 .. example::
 
-  .. coqtop:: none
+  .. rocqtop:: none
 
      Set Printing Depth 15.
 
-  .. coqtop:: all abort extra
+  .. rocqtop:: all abort extra
 
      Inductive Ord n := Sub x of x < n.
      Notation "'I_ n" := (Ord n) (at level 8, n at level 2, format "''I_' n").
@@ -2708,7 +2708,7 @@ For this purpose the ``[: name]`` intro pattern and the tactic
 
 .. example::
 
-  .. coqtop:: all abort extra
+  .. rocqtop:: all abort extra
 
      Lemma test n m (H : m + 1 < n) : True.
      have [:pm] @i : 'I_n by apply: (Sub m); abstract: pm; lia.
@@ -2721,7 +2721,7 @@ with`` have`` and an explicit term, they must be used as follows:
 
 .. example::
 
-  .. coqtop:: all abort extra
+  .. rocqtop:: all abort extra
 
      Lemma test n m (H : m + 1 < n) : True.
      have [:pm] @i : 'I_n := Sub m pm.
@@ -2740,7 +2740,7 @@ makes use of it).
 
 .. example::
 
-  .. coqtop:: all abort extra
+  .. rocqtop:: all abort extra
 
      Lemma test n m (H : m + 1 < n) : True.
      have [:pm] @i k : 'I_(n+k) by apply: (Sub m); abstract: pm k; lia.
@@ -2755,7 +2755,7 @@ The have tactic and typeclass resolution
 Since |SSR| 1.5, the ``have`` tactic behaves as follows with respect to
 typeclass inference.
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
 
@@ -2764,7 +2764,7 @@ typeclass inference.
 
      Goal True.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      have foo : ty.
 
@@ -2773,7 +2773,7 @@ typeclass inference.
 
   .. A strange bug prevents using the coqtop directive here
 
-  .. coqdoc::
+  .. rocqdoc::
 
      have foo : ty := .
 
@@ -2782,13 +2782,13 @@ typeclass inference.
   statement. Note that no proof term follows ``:=``; hence two subgoals are
   generated.
 
-  .. coqtop:: all restart
+  .. rocqtop:: all restart
 
      have foo : ty := t.
 
   No inference for ``ty`` and ``t``.
 
-  .. coqtop:: all restart abort
+  .. rocqtop:: all restart abort
 
      have foo := t.
 
@@ -2819,7 +2819,7 @@ The
 + the optional clear item is still performed in the *second*
   branch, which means that the tactic:
 
-  .. coqdoc::
+  .. rocqdoc::
 
      suff {H} H : forall x : nat, x >= 0.
 
@@ -2835,11 +2835,11 @@ The ``have`` modifier can follow the ``suff`` tactic.
 
 .. example::
 
-  .. coqtop:: none
+  .. rocqtop:: none
 
      Axioms G P : Prop.
 
-  .. coqtop:: all abort
+  .. rocqtop:: all abort
 
      Lemma test : G.
      suff have H : P.
@@ -2890,7 +2890,7 @@ name of the local definition with the ``@`` character.
 
 In the second subgoal, the tactic:
 
-.. coqdoc::
+.. rocqdoc::
 
    move=> clear_switch i_item.
 
@@ -2906,11 +2906,11 @@ The following example requires the mathcomp and mczify libraries.
 
 .. example::
 
-  .. coqtop:: reset none warn extra
+  .. rocqtop:: reset none warn extra
 
      From mathcomp Require Import ssreflect ssrfun ssrbool ssrnat.
 
-  .. coqtop:: all extra
+  .. rocqtop:: all extra
 
      Lemma quo_rem_unicity d q1 q2 r1 r2 :
        q1*d + r1 = q2*d + r2 -> r1 < d -> r2 < d -> (q1, r1) = (q2, r2).
@@ -2931,7 +2931,7 @@ pattern will be used to process its instance.
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect ssrfun ssrbool.
      Set Implicit Arguments.
@@ -2945,7 +2945,7 @@ pattern will be used to process its instance.
      Notation "a <= b" := (leqn a b) (at level 70) : this_scope.
      Open Scope this_scope.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Lemma simple n (ngt0 : 0 < n ) : P n.
      gen have ltnV, /andP[nge0 neq0] : n ngt0 / (0 <= n) && (n != 0); last first.
@@ -2981,14 +2981,14 @@ illustrated in the following example.
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Section Test.
      Variable x : nat.
@@ -3000,7 +3000,7 @@ illustrated in the following example.
   the pattern ``id (addx x)``, which would produce the following first
   subgoal
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
@@ -3012,7 +3012,7 @@ illustrated in the following example.
      Definition addx z := z + x.
      Lemma test : x <= addx x.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      wlog H : (y := x) (@twoy := id (addx x)) / twoy = 2 * y.
 
@@ -3134,14 +3134,14 @@ A :token:`r_item` can be one of the following.
 
   .. example::
 
-     .. coqtop:: reset none
+     .. rocqtop:: reset none
 
         From Corelib Require Import ssreflect.
         Set Implicit Arguments.
         Unset Strict Implicit.
         Unset Printing Implicit Defensive.
 
-     .. coqtop:: all abort
+     .. rocqtop:: all abort
 
         Definition double x := x + x.
         Definition ddouble x := double (double x).
@@ -3153,18 +3153,18 @@ A :token:`r_item` can be one of the following.
      The |SSR| terms containing holes are *not* typed as
      abstractions in this context. Hence the following script fails.
 
-     .. coqtop:: all
+     .. rocqtop:: all
 
         Definition f := fun x y => x + y.
         Lemma test x y : x + y = f y x.
 
-     .. coqtop:: all fail
+     .. rocqtop:: all fail
 
         rewrite -[f y]/(y + _).
 
      but the following script succeeds
 
-     .. coqtop:: all
+     .. rocqtop:: all
 
         rewrite -[f y x]/(y + _).
 
@@ -3195,7 +3195,7 @@ tactics.
 
 In a rewrite tactic of the form:
 
-.. coqdoc::
+.. rocqdoc::
 
    rewrite occ_switch [term1]term2.
 
@@ -3238,7 +3238,7 @@ Performing rewrite and simplification operations in a single tactic
 enhances significantly the concision of scripts. For instance the
 tactic:
 
-.. coqdoc::
+.. rocqdoc::
 
    rewrite /my_def {2}[f _]/= my_eq //=.
 
@@ -3253,14 +3253,14 @@ proof of basic results on natural numbers arithmetic.
 .. example::
 
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Axiom addn0 : forall m, m + 0 = m.
      Axiom addnS : forall m n, m + S n = S (m + n).
@@ -3289,14 +3289,14 @@ side of the equality the user wants to rewrite.
 .. example::
 
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Lemma test (H : forall t u, t + u = u + t) x y : x + y = y + x.
      rewrite [y + _]H.
@@ -3309,14 +3309,14 @@ the equality.
 .. example::
 
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Lemma test (H : forall t u, t + u * 0 = t) x y : x + y * 4 + 2 * 0 = x + 2 * 0.
      Fail rewrite [x + _]H.
@@ -3332,14 +3332,14 @@ Occurrence switches and redex switches
 .. example::
 
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Lemma test x y : x + y + 0 = x + y + y + 0 + 0 + (x + y + 0).
      rewrite {2}[_ + y + 0](_: forall z, z + 0 = z).
@@ -3361,14 +3361,14 @@ repetition.
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Lemma test x y (z : nat) : x + 1 = x + y + 1.
      rewrite 2!(_ : _ + 1 = z).
@@ -3391,7 +3391,7 @@ rewrite operations prescribed by the rules on the current goal.
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
@@ -3400,7 +3400,7 @@ rewrite operations prescribed by the rules on the current goal.
 
      Section Test.
 
-  .. coqtop:: all abort
+  .. rocqtop:: all abort
 
      Variables (a b c : nat).
      Hypothesis eqab : a = b.
@@ -3414,7 +3414,7 @@ rewrite operations prescribed by the rules on the current goal.
   ``(eqab, eqac)`` is actually a Rocq term and we can name it with a
   definition:
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Definition multi1 := (eqab, eqac).
 
@@ -3430,7 +3430,7 @@ literal matches have priority.
 
 .. example::
 
-   .. coqtop:: all abort
+   .. rocqtop:: all abort
 
       Definition d := a.
       Hypotheses eqd0 : d = 0.
@@ -3447,7 +3447,7 @@ repeated anew.
 
 .. example::
 
-  .. coqtop:: all abort
+  .. rocqtop:: all abort
 
      Hypothesis eq_adda_b : forall x, x + a = b.
      Hypothesis eq_adda_c : forall x, x + a = c.
@@ -3470,7 +3470,7 @@ tactic rewrite ``(=^~ multi1)`` is equivalent to ``rewrite multi1_rev``.
 
 .. example::
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Hypothesis eqba : b = a.
      Hypothesis eqca : c = a.
@@ -3489,7 +3489,7 @@ reasoning purposes. The library also provides one lemma per such
 operation, stating that both versions return the same values when
 applied to the same arguments:
 
-.. coqdoc::
+.. rocqdoc::
 
      Lemma addE : add =2 addn.
      Lemma doubleE : double =1 doublen.
@@ -3505,7 +3505,7 @@ In order to reason conveniently on expressions involving
 the efficient operations, we gather all these rules in the definition
 ``trecE``:
 
-.. coqdoc::
+.. rocqdoc::
 
    Definition trecE := (addE, (doubleE, oddE), (mulE, add_mulE, (expE, mul_expE))).
 
@@ -3525,7 +3525,7 @@ Anyway this tactic is *not* equivalent to
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
@@ -3534,14 +3534,14 @@ Anyway this tactic is *not* equivalent to
 
      Section Test.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Lemma test y z : y * 0 + y * (z * 0) = 0.
      rewrite (_ : _ * 0 = 0).
 
   while the other tactic results in
 
-  .. coqtop:: all restart abort
+  .. rocqtop:: all restart abort
 
      rewrite (_ : forall x, x * 0 = 0).
 
@@ -3559,14 +3559,14 @@ cases.
 
 + |SSR| never accepts to rewrite indeterminate patterns like:
 
-  .. coqdoc::
+  .. rocqdoc::
 
      Lemma foo (x : unit) : x = tt.
 
   |SSR| will however accept the
   ηζ expansion of this rule:
 
-  .. coqdoc::
+  .. rocqdoc::
 
      Lemma fubar (x : unit) : (let u := x in u) = tt.
 
@@ -3575,7 +3575,7 @@ cases.
 
   .. example::
 
-    .. coqtop:: reset none
+    .. rocqtop:: reset none
 
        From Corelib Require Import ssreflect.
        Set Implicit Arguments.
@@ -3584,7 +3584,7 @@ cases.
 
        Section Test.
 
-    .. coqtop:: all
+    .. rocqtop:: all
 
        Variable g : nat -> nat.
        Definition f := g.
@@ -3598,7 +3598,7 @@ cases.
     there is no occurrence of the head symbol ``f`` of the rewrite rule in the
     goal.
 
-    .. coqtop:: all restart fail
+    .. rocqtop:: all restart fail
 
        rewrite H.
 
@@ -3608,13 +3608,13 @@ cases.
     occurrence), using tactic ``rewrite /f`` (for a global replacement of
     ``f`` by ``g``) or ``rewrite pattern/f``, for a finer selection.
 
-    .. coqtop:: all restart
+    .. rocqtop:: all restart
 
        rewrite /f H.
 
     Alternatively, one can override the pattern inferred from ``H``
 
-    .. coqtop:: all restart
+    .. rocqtop:: all restart
 
        rewrite [f _]H.
 
@@ -3633,7 +3633,7 @@ corresponding new goals will be generated.
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect ssrfun ssrbool.
      Set Implicit Arguments.
@@ -3641,7 +3641,7 @@ corresponding new goals will be generated.
      Unset Printing Implicit Defensive.
      Set Warnings "-notation-overridden".
 
-  .. coqtop:: all abort
+  .. rocqtop:: all abort
 
      Axiom leq : nat -> nat -> bool.
      Notation "m <= n" := (leq m n) : nat_scope.
@@ -3664,7 +3664,7 @@ corresponding new goals will be generated.
   As in :ref:`apply_ssr`, the ``ssrautoprop`` tactic is used to try to
   solve the existential variable.
 
-  .. coqtop:: all abort
+  .. rocqtop:: all abort
 
      Lemma test (x : 'I_2) y (H : y < 2) : Some x = insub 2 y.
      rewrite insubT.
@@ -3690,14 +3690,14 @@ complete terms, as shown by the simple example below.
 
 .. example::
 
-   .. coqtop:: reset none
+   .. rocqtop:: reset none
 
       From Corelib Require Import ssreflect.
       Set Implicit Arguments.
       Unset Strict Implicit.
       Unset Printing Implicit Defensive.
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Axiom subnn : forall n : nat, n - n = 0.
       Parameter map : (nat -> nat) -> list nat -> list nat.
@@ -3707,13 +3707,13 @@ complete terms, as shown by the simple example below.
         (forall n : nat, F1 n = F2 n) ->
         forall l : list nat, map F1 l = map F2 l.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Lemma example_map l : sumlist (map (fun m => m - m) l) = 0.
 
    In this context, one cannot directly use ``eq_map``:
 
-   .. coqtop:: all fail
+   .. rocqtop:: all fail
 
       rewrite eq_map.
 
@@ -3722,7 +3722,7 @@ complete terms, as shown by the simple example below.
    rewriting step. In order to perform the rewrite step, one has to
    provide the term by hand as follows:
 
-   .. coqtop:: all abort
+   .. rocqtop:: all abort
 
       rewrite (@eq_map _ (fun _ : nat => 0)).
         by move=> m; rewrite subnn.
@@ -3730,7 +3730,7 @@ complete terms, as shown by the simple example below.
    The :tacn:`under` tactic lets one perform the same operation in a more
    convenient way:
 
-   .. coqtop:: all abort
+   .. rocqtop:: all abort
 
       Lemma example_map l : sumlist (map (fun m => m - m) l) = 0.
       under eq_map => m do rewrite subnn.
@@ -3767,7 +3767,7 @@ Let us redo the running example in interactive mode.
 
 .. example::
 
-   .. coqtop:: all abort
+   .. rocqtop:: all abort
 
       Lemma example_map l : sumlist (map (fun m => m - m) l) = 0.
       under eq_map => m.
@@ -3881,7 +3881,7 @@ Notes:
 
 .. example::
 
-   .. coqtop:: reset none
+   .. rocqtop:: reset none
 
       From Corelib Require Import ssreflect.
       Set Implicit Arguments.
@@ -3932,12 +3932,12 @@ Notes:
       Parameter odd : nat -> bool.
       Parameter prime : nat -> bool.
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Parameter addnC : forall m n : nat, m + n = n + m.
       Parameter muln1 : forall n : nat, n * 1 = n.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Check eq_bigr.
       Check eq_big.
@@ -3976,7 +3976,7 @@ copy of any term ``t``. However this copy is (on purpose) *not
 convertible* to ``t`` in the Rocq system [#8]_. The job is done by the
 following construction:
 
-.. coqdoc::
+.. rocqdoc::
 
    Lemma master_key : unit. Proof. exact tt. Qed.
    Definition locked A := let: tt := master_key in fun x : A => x.
@@ -3988,7 +3988,7 @@ selective rewriting, blocking on the fly the reduction in the term ``t``.
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect ssrfun ssrbool.
      From Corelib Require Import ListDef.
@@ -3997,7 +3997,7 @@ selective rewriting, blocking on the fly the reduction in the term ``t``.
      Unset Printing Implicit Defensive.
      Section Test.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Variable A : Type.
      Fixpoint has (p : A -> bool) (l : list A) : bool :=
@@ -4012,7 +4012,7 @@ definition.
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
@@ -4020,7 +4020,7 @@ definition.
      Unset Printing Implicit Defensive.
      Section Test.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
       Definition lid := locked (fun x : nat => x).
 
@@ -4040,14 +4040,14 @@ some functions by the partial evaluation switch ``/=``, unless this
 allowed the evaluation of a condition. This is possible thanks to another
 mechanism of term tagging, resting on the following *Notation*:
 
-.. coqdoc::
+.. rocqdoc::
 
    Notation "'nosimpl' t" := (let: tt := tt in t).
 
 The term ``(nosimpl t)`` simplifies to ``t`` *except* in a definition.
 More precisely, given:
 
-.. coqdoc::
+.. rocqdoc::
 
    Definition foo := (nosimpl bar).
 
@@ -4063,7 +4063,7 @@ Note that ``nosimpl bar`` is simply notation for a term that reduces to
    The ``nosimpl`` trick only works if no reduction is apparent in
    ``t``; in particular, the declaration:
 
-   .. coqdoc::
+   .. rocqdoc::
 
       Definition foo x := nosimpl (bar x).
 
@@ -4071,14 +4071,14 @@ Note that ``nosimpl bar`` is simply notation for a term that reduces to
    function, and to use the following definition, which blocks the
    reduction as expected:
 
-   .. coqdoc::
+   .. rocqdoc::
 
       Definition foo x := nosimpl bar x.
 
 A standard example making this technique shine is the case of
 arithmetic operations. We define for instance:
 
-.. coqdoc::
+.. rocqdoc::
 
    Definition addn := nosimpl plus.
 
@@ -4098,7 +4098,7 @@ Congruence
 Because of the way matching interferes with parameters of type families,
 the tactic:
 
-.. coqdoc::
+.. rocqdoc::
 
    apply: my_congr_property.
 
@@ -4125,7 +4125,7 @@ which the function is supplied:
 
    .. example::
 
-      .. coqtop:: reset none
+      .. rocqtop:: reset none
 
          From Corelib Require Import ssreflect.
          Set Implicit Arguments.
@@ -4133,7 +4133,7 @@ which the function is supplied:
          Unset Printing Implicit Defensive.
          Section Test.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Lemma test (x y z : nat) (H : x = y) : x = z.
          congr (_ = _) : H.
@@ -4152,7 +4152,7 @@ which the function is supplied:
 
    .. example::
 
-      .. coqtop:: reset none
+      .. rocqtop:: reset none
 
          From Corelib Require Import ssreflect.
          Set Implicit Arguments.
@@ -4160,7 +4160,7 @@ which the function is supplied:
          Unset Printing Implicit Defensive.
          Section Test.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Definition f n :=
            if n is 0 then plus else mult.
@@ -4175,7 +4175,7 @@ which the function is supplied:
 
    .. example::
 
-      .. coqtop:: reset none
+      .. rocqtop:: reset none
 
          From Corelib Require Import ssreflect.
          Set Implicit Arguments.
@@ -4183,7 +4183,7 @@ which the function is supplied:
          Unset Printing Implicit Defensive.
          Section Test.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Lemma test n m (Hnm : m <= n) : S m + (S n - S m) = S n.
          congr S; rewrite -/plus.
@@ -4196,7 +4196,7 @@ which the function is supplied:
 
    .. example::
 
-      .. coqtop:: reset none
+      .. rocqtop:: reset none
 
          From Corelib Require Import ssreflect.
          Set Implicit Arguments.
@@ -4204,7 +4204,7 @@ which the function is supplied:
          Unset Printing Implicit Defensive.
          Section Test.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Lemma test x y : x + (y * (y + x - x)) = x * 1 + (y + 0) * y.
          congr ( _ + (_ * _)).
@@ -4297,7 +4297,7 @@ For a quick glance at what can be expressed with the last
 :token:`r_pattern`,
 consider the goal ``a = b`` and the tactic
 
-.. coqdoc::
+.. rocqdoc::
 
    rewrite [in X in _ = X]rule.
 
@@ -4376,7 +4376,7 @@ parentheses are required around more complex patterns.
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
@@ -4384,7 +4384,7 @@ parentheses are required around more complex patterns.
      Unset Printing Implicit Defensive.
      Section Test.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Lemma test a b : a + b + 1 = b + (a + 1).
      set t := (X in _ = X).
@@ -4398,14 +4398,14 @@ patterns over simple terms, but to interpret a pattern with double
 parentheses as a simple term. For example, the following tactic would
 capture any occurrence of the term ``a in A``.
 
-.. coqdoc::
+.. rocqdoc::
 
    set t := ((a in A)).
 
 Contextual patterns can also be used as arguments of the ``:`` tactical.
 For example:
 
-.. coqdoc::
+.. rocqdoc::
 
    elim: n (n in _ = n) (refl_equal n).
 
@@ -4415,7 +4415,7 @@ Contextual patterns in rewrite
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
@@ -4423,7 +4423,7 @@ Contextual patterns in rewrite
      Unset Printing Implicit Defensive.
      Section Test.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Notation "n .+1" := (Datatypes.S n) (at level 2, left associativity,
                           format "n .+1") : nat_scope.
@@ -4439,7 +4439,7 @@ Contextual patterns in rewrite
   symbol.
   Then, we simplify also the first addition and expand ``0`` into ``0 + 0``.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      rewrite addSn -[X in _ = X]addn0.
 
@@ -4452,13 +4452,13 @@ Contextual patterns in rewrite
   entire region; hence the rewrite rule has to be instantiated
   explicitly. Thus the tactic:
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      rewrite -{2}[in X in _ = X](addn0 0).
 
   The following tactic is quite tricky:
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      rewrite [_.+1 in X in f _ X](addnC x.+1).
 
@@ -4478,7 +4478,7 @@ Contextual patterns in rewrite
   term identified by X, which is thus unified with the left-hand side of
   the rewrite rule.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      rewrite [x.+1 + y as X in f X _]addnC.
 
@@ -4496,7 +4496,7 @@ context shortcuts.
 The following example is taken from ``ssreflect.v``, where the
 ``LHS`` and ``RHS`` shortcuts are defined.
 
-.. coqdoc::
+.. rocqdoc::
 
    Notation RHS := (X in _ = X)%pattern.
    Notation LHS := (X in X = _)%pattern.
@@ -4504,7 +4504,7 @@ The following example is taken from ``ssreflect.v``, where the
 Shortcuts defined this way can be freely used in place of the trailing
 ``ident in term`` part of any contextual pattern. Some examples follow:
 
-.. coqdoc::
+.. rocqdoc::
 
    set rhs := RHS.
    rewrite [in RHS]rule.
@@ -4537,13 +4537,13 @@ The view syntax combined with the ``elim`` tactic specifies an elimination
 scheme to be used instead of the default, generated, one. Hence, the
 |SSR| tactic:
 
-.. coqdoc::
+.. rocqdoc::
 
    elim/V.
 
 is a synonym for:
 
-.. coqdoc::
+.. rocqdoc::
 
    intro top; elim top using V; clear top.
 
@@ -4553,13 +4553,13 @@ Since an elimination view supports the two bookkeeping tacticals of
 discharge and introduction (see Section :ref:`basic_tactics_ssr`),
 the |SSR| tactic:
 
-.. coqdoc::
+.. rocqdoc::
 
    elim/V: x => y.
 
 is a synonym for:
 
-.. coqdoc::
+.. rocqdoc::
 
    elim x using V; clear x; intro y.
 
@@ -4579,7 +4579,7 @@ generation (see Section :ref:`generation_of_equations_ssr`).
    The following script illustrates a toy example of this feature. Let us
    define a function adding an element at the end of a list:
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect ListDef.
      Set Implicit Arguments.
@@ -4587,7 +4587,7 @@ generation (see Section :ref:`generation_of_equations_ssr`).
      Unset Printing Implicit Defensive.
      Section Test.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Variable d : Type.
      Fixpoint add_last (s : list d) (z : d) {struct s} : list d :=
@@ -4596,7 +4596,7 @@ generation (see Section :ref:`generation_of_equations_ssr`).
   One can define an alternative, reversed, induction principle on
   inductively defined lists, by proving the following lemma:
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Axiom last_ind_list : forall P : list d -> Prop,
        P nil -> (forall s (x : d), P s -> P (add_last s x)) ->
@@ -4606,7 +4606,7 @@ generation (see Section :ref:`generation_of_equations_ssr`).
   in a concise syntax for reasoning inductively using the user-defined
   elimination scheme.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Lemma test (x : d) (l : list d): l = l.
      elim/last_ind_list E : l=> [| u v]; last first.
@@ -4617,13 +4617,13 @@ command) can be combined with the type family switches described
 in Section :ref:`type_families_ssr`.
 Consider an eliminator ``foo_ind`` of type:
 
-.. coqdoc::
+.. rocqdoc::
 
    foo_ind : forall …, forall x : T, P p1 … pm.
 
 and consider the tactic:
 
-.. coqdoc::
+.. rocqdoc::
 
    elim/foo_ind: e1 … / en.
 
@@ -4654,7 +4654,7 @@ Here is an example of a regular, but nontrivial, eliminator.
 
   Here is a toy example illustrating this feature.
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
@@ -4672,7 +4672,7 @@ Here is an example of a regular, but nontrivial, eliminator.
 
      Section Test.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Fixpoint plus (m n : nat) {struct n} : nat :=
        if n is S p then S (plus m p) else m.
@@ -4684,14 +4684,14 @@ Here is an example of a regular, but nontrivial, eliminator.
   The following tactics are all valid and perform the same elimination
   on this goal.
 
-  .. coqdoc::
+  .. rocqdoc::
 
      elim/plus_ind: z / (plus _ z).
      elim/plus_ind: {z}(plus _ z).
      elim/plus_ind: {z}_.
      elim/plus_ind: z / _.
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
@@ -4712,7 +4712,7 @@ Here is an example of a regular, but nontrivial, eliminator.
 
      Lemma test x y z : plus (plus x y) z = plus x (plus y z).
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      elim/plus_ind: z / _.
 
@@ -4722,7 +4722,7 @@ Here is an example of a regular, but nontrivial, eliminator.
   ``plus (plus x y) z``, thus instantiating the last ``_`` with ``z``.
   Note that the tactic:
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
@@ -4743,7 +4743,7 @@ Here is an example of a regular, but nontrivial, eliminator.
 
      Lemma test x y z : plus (plus x y) z = plus x (plus y z).
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Fail elim/plus_ind: y / _.
 
@@ -4758,7 +4758,7 @@ Here is an example of a truncated eliminator:
 
   Consider the goal:
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
@@ -4766,7 +4766,7 @@ Here is an example of a truncated eliminator:
      Unset Printing Implicit Defensive.
      Section Test.
 
-  .. coqdoc::
+  .. rocqdoc::
 
      Lemma test p n (n_gt0 : 0 < n) (pr_p : prime p) :
        p %| \prod_(i <- prime_decomp n | i \in prime_decomp n) i.1 ^ i.2 ->
@@ -4777,7 +4777,7 @@ Here is an example of a truncated eliminator:
 
   where the type of the ``big_prop`` eliminator is
 
-  .. coqdoc::
+  .. rocqdoc::
 
      big_prop: forall (R : Type) (Pb : R -> Type)
        (idx : R) (op1 : R -> R -> R), Pb idx ->
@@ -4790,7 +4790,7 @@ Here is an example of a truncated eliminator:
   inferred one, ``big[_/_]_(i <- _ | _ i) _ i``, is used instead,
   and after the introductions, the following goals are generated:
 
-  .. coqdoc::
+  .. rocqdoc::
 
      subgoal 1 is:
        p %| 1 -> exists2 x : nat * nat, x \in prime_decomp n & p = x.1
@@ -4822,7 +4822,7 @@ disjunction.
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
@@ -4830,7 +4830,7 @@ disjunction.
      Unset Printing Implicit Defensive.
      Section Test.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Variables P Q : bool -> Prop.
      Hypothesis P2Q : forall a b, P (a || b) -> Q a.
@@ -4843,7 +4843,7 @@ disjunction.
   This operation is so common that the tactic shell has specific
   syntax for it. The following scripts:
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
@@ -4856,13 +4856,13 @@ disjunction.
 
      Lemma test a : P (a || a) -> True.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      move=> HPa; move/P2Q: HPa => HQa.
 
   or more directly:
 
-  .. coqtop:: all restart
+  .. rocqtop:: all restart
 
      move/P2Q=> HQa.
 
@@ -4878,7 +4878,7 @@ equation-name generation mechanism (see Section :ref:`generation_of_equations_ss
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
@@ -4886,7 +4886,7 @@ equation-name generation mechanism (see Section :ref:`generation_of_equations_ss
      Unset Printing Implicit Defensive.
      Section Test.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Variables P Q: bool -> Prop.
      Hypothesis Q2P : forall a b, Q (a || b) -> P a \/ P b.
@@ -4896,7 +4896,7 @@ equation-name generation mechanism (see Section :ref:`generation_of_equations_ss
 
   This view tactic performs:
 
-  .. coqdoc::
+  .. rocqdoc::
 
      move=> HQ; case: {HQ}(Q2P HQ) => [HPa | HPb].
 
@@ -4911,7 +4911,7 @@ relevant for the current goal.
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
@@ -4919,7 +4919,7 @@ relevant for the current goal.
      Unset Printing Implicit Defensive.
      Section Test.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Variables P Q: bool -> Prop.
      Hypothesis PQequiv : forall a b, P (a || b) <-> Q a.
@@ -4933,14 +4933,14 @@ relevant for the current goal.
   the double implication into the expected simple implication. The last
   script is in fact equivalent to:
 
-  .. coqdoc::
+  .. rocqdoc::
 
      Lemma test a b : P (a || b) -> True.
      move/(iffLR (PQequiv _ _)).
 
   where:
 
-  .. coqdoc::
+  .. rocqdoc::
 
      Lemma iffLR P Q : (P <-> Q) -> P -> Q.
 
@@ -4955,7 +4955,7 @@ assumption to some given arguments.
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
@@ -4963,7 +4963,7 @@ assumption to some given arguments.
      Unset Printing Implicit Defensive.
      Section Test.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Lemma test z : (forall x y, x + y = z -> z = x) -> z = 0.
      move/(_ 0 z).
@@ -4984,7 +4984,7 @@ bookkeeping steps.
    The following example use the ``~~`` prenex notation for boolean negation:
 
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect ssrbool.
      Set Implicit Arguments.
@@ -4992,7 +4992,7 @@ bookkeeping steps.
      Unset Printing Implicit Defensive.
      Section Test.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Variables P Q: bool -> Prop.
      Hypothesis PQequiv : forall a b, P (a || b) <-> Q a.
@@ -5040,7 +5040,7 @@ analysis:
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect.
      Set Implicit Arguments.
@@ -5048,7 +5048,7 @@ analysis:
      Unset Printing Implicit Defensive.
      Section Test.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Definition orb (b1 b2 : bool) := if b1 then true else b2.
 
@@ -5057,7 +5057,7 @@ analysis
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect ssrbool.
      Set Implicit Arguments.
@@ -5065,7 +5065,7 @@ analysis
      Unset Printing Implicit Defensive.
      Section Test.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Lemma test b : b || ~~ b = true.
      by case: b.
@@ -5082,7 +5082,7 @@ decidable predicate to its boolean version.
 First, booleans are injected into propositions using the coercion
 mechanism:
 
-.. coqdoc::
+.. rocqdoc::
 
    Coercion is_true (b : bool) := b = true.
 
@@ -5099,7 +5099,7 @@ To get all the benefits of the boolean reflection, it is in fact
 convenient to introduce the following inductive predicate ``reflect`` to
 relate propositions and booleans:
 
-.. coqdoc::
+.. rocqdoc::
 
    Inductive reflect (P: Prop): bool -> Type :=
    | Reflect_true : P -> reflect P true
@@ -5110,7 +5110,7 @@ logically equivalent propositions.
 
 For instance, the following lemma:
 
-.. coqdoc::
+.. rocqdoc::
 
    Lemma andP: forall b1 b2, reflect (b1 /\ b2) (b1 && b2).
 
@@ -5125,20 +5125,20 @@ to the case analysis of Rocq's inductive types.
 
 Since the equivalence predicate is defined in Rocq as:
 
-.. coqdoc::
+.. rocqdoc::
 
    Definition iff (A B:Prop) := (A -> B) /\ (B -> A).
 
 where ``/\`` is a notation for ``and``:
 
-.. coqdoc::
+.. rocqdoc::
 
    Inductive and (A B:Prop) : Prop := conj : A -> B -> and A B.
 
 This makes case analysis very different according to the way an
 equivalence property has been defined.
 
-.. coqdoc::
+.. rocqdoc::
 
    Lemma andE (b1 b2 : bool) : (b1 /\ b2) <-> (b1 && b2).
 
@@ -5147,7 +5147,7 @@ Let us compare the respective behaviors of ``andE`` and ``andP``.
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect ssrbool.
      Set Implicit Arguments.
@@ -5156,19 +5156,19 @@ Let us compare the respective behaviors of ``andE`` and ``andP``.
      Section Test.
      Axiom andE : forall (b1 b2 : bool), (b1 /\ b2) <-> (b1 && b2).
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Lemma test (b1 b2 : bool) : if (b1 && b2) then b1 else ~~(b1||b2).
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      case: (@andE b1 b2).
 
-  .. coqtop:: none
+  .. rocqtop:: none
 
      Restart.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      case: (@andP b1 b2).
 
@@ -5188,7 +5188,7 @@ The view mechanism is compatible with reflect predicates.
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect ssrbool.
      Set Implicit Arguments.
@@ -5196,14 +5196,14 @@ The view mechanism is compatible with reflect predicates.
      Unset Printing Implicit Defensive.
      Section Test.
 
-  .. coqtop:: all abort
+  .. rocqtop:: all abort
 
      Lemma test (a b : bool) (Ha : a) (Hb : b) : a /\ b.
      apply/andP.
 
   Conversely
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Lemma test (a b : bool) : a /\ b -> a.
      move/andP.
@@ -5222,13 +5222,13 @@ Specializing assumptions
 
 The |SSR| tactic:
 
-.. coqdoc::
+.. rocqdoc::
 
    move/(_ term1 … termn).
 
 is equivalent to the tactic:
 
-.. coqdoc::
+.. rocqdoc::
 
    intro top; generalize (top term1 … termn); clear top.
 
@@ -5285,13 +5285,13 @@ If ``term`` is a double implication, then the view hint will be one of
 the defined view hints for implication. These hints are by default the
 ones present in the file ``ssreflect.v``:
 
-.. coqdoc::
+.. rocqdoc::
 
    Lemma iffLR : forall P Q, (P <-> Q) -> P -> Q.
 
 which transforms a double implication into the left-to-right one, or:
 
-.. coqdoc::
+.. rocqdoc::
 
    Lemma iffRL : forall P Q, (P <-> Q) -> Q -> P.
 
@@ -5306,7 +5306,7 @@ but they also allow complex transformation, involving negations.
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect ssrbool.
      Set Implicit Arguments.
@@ -5314,11 +5314,11 @@ but they also allow complex transformation, involving negations.
      Unset Printing Implicit Defensive.
      Section Test.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Check introN.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Lemma test (a b : bool) (Ha : a) (Hb : b) : ~~ (a && b).
      apply/andP.
@@ -5326,7 +5326,7 @@ but they also allow complex transformation, involving negations.
   In fact, this last script does not
   exactly use the hint ``introN``, but the more general hint:
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Check introNTF.
 
@@ -5339,7 +5339,7 @@ actually uses its propositional interpretation.
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect ssrbool.
      Set Implicit Arguments.
@@ -5347,7 +5347,7 @@ actually uses its propositional interpretation.
      Unset Printing Implicit Defensive.
      Section Test.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Lemma test (a b : bool) (pab : b && a) : b.
      have /andP [pa ->] : (a && b) by rewrite andbC.
@@ -5396,13 +5396,13 @@ equality, while the second term is the one applied to the right-hand side.
 
 In this context, the identity view can be used when no view has to be applied:
 
-.. coqdoc::
+.. rocqdoc::
 
    Lemma idP : reflect b1 b1.
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect ssrbool.
      Set Implicit Arguments.
@@ -5410,7 +5410,7 @@ In this context, the identity view can be used when no view has to be applied:
      Unset Printing Implicit Defensive.
      Section Test.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Lemma test (b1 b2 b3 : bool) : ~~ (b1 || b2) = b3.
      apply/idP/idP.
@@ -5418,7 +5418,7 @@ In this context, the identity view can be used when no view has to be applied:
   The same goal can be decomposed in several ways, and the user may
   choose the most convenient interpretation.
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect ssrbool.
      Set Implicit Arguments.
@@ -5426,7 +5426,7 @@ In this context, the identity view can be used when no view has to be applied:
      Unset Printing Implicit Defensive.
      Section Test.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Lemma test (b1 b2 b3 : bool) : ~~ (b1 || b2) = b3.
      apply/norP/idP.
@@ -5471,7 +5471,7 @@ in sequence. Both ``move`` and ``apply`` can be followed by an arbitrary
 number of ``/term``. The main difference between the following two
 tactics
 
-.. coqdoc::
+.. rocqdoc::
 
    apply/v1/v2/v3.
    apply/v1; apply/v2; apply/v3.
@@ -5483,7 +5483,7 @@ line would apply the view ``v2`` to all the goals generated by ``apply/v1``.
 Note that the NO-OP intro pattern ``-`` can be used to separate two views,
 making the two following examples equivalent:
 
-.. coqdoc::
+.. rocqdoc::
 
    move=> /v1; move=> /v2.
    move=> /v1 - /v2.
@@ -5494,7 +5494,7 @@ pass a given hypothesis to a lemma.
 
 .. example::
 
-  .. coqtop:: reset none
+  .. rocqtop:: reset none
 
      From Corelib Require Import ssreflect ssrbool.
      Set Implicit Arguments.
@@ -5503,7 +5503,7 @@ pass a given hypothesis to a lemma.
      Section Test.
      Variables P Q R : Prop.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Variable P2Q : P -> Q.
      Variable Q2R : Q -> R.

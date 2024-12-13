@@ -110,7 +110,7 @@ Notation          Interpretation        Precedence  Associativity
 
 .. example::
 
-  .. coqtop:: all reset
+  .. rocqtop:: all reset
 
     From Stdlib Require Import ZArith.
     Check (2 + 3)%Z.
@@ -150,7 +150,7 @@ Notation          Interpretation
 
 .. example::
 
-  .. coqtop:: all reset
+  .. rocqtop:: all reset
 
     From Stdlib Require Import Reals.
     Check  (2 + 3)%R.
@@ -169,7 +169,7 @@ tactics (see Chapters ring and micromega), there are also:
 
 .. example::
 
-  .. coqtop:: all reset
+  .. rocqtop:: all reset
 
     From Stdlib Require Import DiscrR.
     Open Scope R_scope.
@@ -182,7 +182,7 @@ tactics (see Chapters ring and micromega), there are also:
 
 .. example::
 
-  .. coqtop:: all reset
+  .. rocqtop:: all reset
 
     From Stdlib Require Import Reals.
     Open Scope R_scope.
@@ -196,7 +196,7 @@ tactics (see Chapters ring and micromega), there are also:
 
 .. example::
 
-  .. coqtop:: all reset
+  .. rocqtop:: all reset
 
     From Stdlib Require Import Reals.
     Open Scope R_scope.
@@ -261,7 +261,7 @@ many such theorems.
 The library of primitive floating-point arithmetic can be loaded by
 requiring module ``Floats``:
 
-.. coqtop:: in
+.. rocqtop:: in
 
   From Stdlib Require Import Floats.
 
@@ -270,7 +270,7 @@ named ``float``, defined in the kernel
 as well as two variant types ``float_comparison`` and ``float_class``:
 
 
-.. coqtop:: all
+.. rocqtop:: all
 
   Print float.
   Print float_comparison.
@@ -340,7 +340,7 @@ decimal constants. This ensures that the composition
 
 .. example::
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
     Open Scope float_scope.
     Eval compute in 1 + 0.5.
@@ -355,7 +355,7 @@ The primitive operators are specified with respect to their Gallina
 counterpart, using the variant type ``spec_float``, and the injection
 ``Prim2SF``:
 
-.. coqtop:: all
+.. rocqtop:: all
 
   Print spec_float.
   Check Prim2SF.

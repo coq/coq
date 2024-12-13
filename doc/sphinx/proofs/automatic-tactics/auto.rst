@@ -113,7 +113,7 @@ Tactics
 
    .. example::
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Hint Resolve ex_intro : core.
          Goal forall P:nat -> Prop, P 0 -> exists n, P n.
@@ -202,25 +202,25 @@ the optional tactic of the ``Hint Rewrite`` command.
 
 .. example:: Ackermann function
 
-   .. coqtop:: in reset
+   .. rocqtop:: in reset
 
       Parameter Ack : nat -> nat -> nat.
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Axiom Ack0 : forall m:nat, Ack 0 m = S m.
       Axiom Ack1 : forall n:nat, Ack (S n) 0 = Ack n 1.
       Axiom Ack2 : forall n m:nat, Ack (S n) (S m) = Ack n (Ack (S n) m).
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Global Hint Rewrite Ack0 Ack1 Ack2 : base0.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Lemma ResAck0 : Ack 3 2 = 29.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       autorewrite with base0 using try reflexivity.
 
@@ -228,49 +228,49 @@ the optional tactic of the ``Hint Rewrite`` command.
 
    This example requires the Stdlib library.
 
-   .. coqtop:: in reset extra
+   .. rocqtop:: in reset extra
 
       From Stdlib Require Import Arith Lia.
 
-   .. coqtop:: in extra
+   .. rocqtop:: in extra
 
       Parameter g : nat -> nat -> nat.
 
-   .. coqtop:: in extra
+   .. rocqtop:: in extra
 
       Axiom g0 : forall m:nat, g 0 m = m.
       Axiom g1 : forall n m:nat, (n > 0) -> (m > 100) -> g n m = g (pred n) (m - 10).
       Axiom g2 : forall n m:nat, (n > 0) -> (m <= 100) -> g n m = g (S n) (m + 11).
 
-   .. coqtop:: in extra
+   .. rocqtop:: in extra
 
       Global Hint Rewrite g0 g1 g2 using lia : base1.
 
-   .. coqtop:: in extra
+   .. rocqtop:: in extra
 
       Lemma Resg0 : g 1 110 = 100.
 
-   .. coqtop:: out extra
+   .. rocqtop:: out extra
 
       Show.
 
-   .. coqtop:: all extra
+   .. rocqtop:: all extra
 
       autorewrite with base1 using reflexivity || simpl.
 
-   .. coqtop:: none extra
+   .. rocqtop:: none extra
 
       Qed.
 
-   .. coqtop:: all extra
+   .. rocqtop:: all extra
 
       Lemma Resg1 : g 1 95 = 91.
 
-   .. coqtop:: all extra
+   .. rocqtop:: all extra
 
       autorewrite with base1 using reflexivity || simpl.
 
-   .. coqtop:: none extra
+   .. rocqtop:: none extra
 
       Qed.
 
@@ -526,7 +526,7 @@ Creating Hints
 
       .. example::
 
-         .. coqtop:: in
+         .. rocqtop:: in
 
             Hint Extern 4 (~(_ = _)) => discriminate : core.
 
@@ -540,7 +540,7 @@ Creating Hints
 
       .. example::
 
-         .. coqtop:: reset all
+         .. rocqtop:: reset all
 
             Require Import ListDef.
             Hint Extern 5 ({?X1 = ?X2} + {?X1 <> ?X2}) =>
@@ -638,13 +638,13 @@ Creating Hints
       This example illustrates the use of modes to control how resolutions
       can be triggered during proof search.
 
-      .. coqtop:: all reset
+      .. rocqtop:: all reset
 
          Parameter plus : nat -> nat -> nat -> Prop.
          Hint Mode plus ! - - : plus.
          Hint Mode plus - ! - : plus.
 
-      .. coqtop:: in
+      .. rocqtop:: in
 
          Axiom plus0l : forall m : nat, plus 0 m m.
          Axiom plus0r : forall n : nat, plus n 0 n.
@@ -657,7 +657,7 @@ Creating Hints
       by a constructor or constant. The last argument of the predicate will be
       the inferred result.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Goal exists x y, plus x y 12.
          Proof. eexists ?[x], ?[y].

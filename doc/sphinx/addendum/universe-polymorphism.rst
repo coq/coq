@@ -20,7 +20,7 @@ incompatible universe levels.
 A standard example of the difference between universe *polymorphic*
 and *monomorphic* definitions is given by the identity function:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Definition identity {A : Type} (a : A) := a.
 
@@ -29,7 +29,7 @@ function declares a global universe (automatically named ``identity.u0``) for it
 Subsequently, if we try to self-apply the identity, we will get an
 error:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Fail Definition selfid := identity (@identity).
 
@@ -41,25 +41,25 @@ itself for this self-application to type check, as the type of
 A universe polymorphic identity function binds its domain universe
 level at the definition level instead of making it global.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Polymorphic Definition pidentity {A : Type} (a : A) := a.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    About pidentity.
 
 It is then possible to reuse the constant at different levels, like
 so:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Polymorphic Definition selfpid := pidentity (@pidentity).
 
 Of course, the two instances of :g:`pidentity` in this definition are
 different. This can be seen when the :flag:`Printing Universes` flag is on:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Set Printing Universes.
    Print selfpid.
@@ -85,11 +85,11 @@ universes appearing in their parameters or fields. A typical example
 is given by monoids. We first put ourselves in a mode where every declaration
 is universe-polymorphic:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Set Universe Polymorphism.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Record Monoid := { mon_car :> Type; mon_unit : mon_car;
      mon_op : mon_car -> mon_car -> mon_car }.
@@ -97,7 +97,7 @@ is universe-polymorphic:
 A monoid is here defined by a carrier type, a unit in this type
 and a binary operation.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Print Monoid.
 
@@ -105,7 +105,7 @@ The Monoid's carrier universe is polymorphic, hence it is possible to
 instantiate it for example with :g:`Monoid` itself. First we build the
 trivial unit monoid in any universe :g:`i >= Set`:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Definition unit_monoid@{i} : Monoid@{i} :=
      {| mon_car := unit; mon_unit := tt; mon_op x y := tt |}.
@@ -117,7 +117,7 @@ From this we can build a definition for the monoid of monoids,
 where multiplication is given by the product of monoids. To do so, we
 first need to define a universe-polymorphic variant of pairs:
 
-.. coqtop:: in
+.. rocqtop:: in
 
   Record pprod@{i j} (A : Type@{i}) (B : Type@{j}) : Type@{max(i,j)} :=
     ppair { pfst : A; psnd : B }.
@@ -128,7 +128,7 @@ first need to define a universe-polymorphic variant of pairs:
 
 The monoid of monoids uses the cartesian product of monoids as its operation:
 
-.. coqtop:: in
+.. rocqtop:: in
 
     Definition monoid_op@{i} (m m' : Monoid@{i}) (x y : mon_car m ** mon_car m') :
        mon_car m ** mon_car m' :=
@@ -146,7 +146,7 @@ The monoid of monoids uses the cartesian product of monoids as its operation:
          mon_unit := unit_monoid@{i};
          mon_op := prod_monoid@{i} |}.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Print monoids_monoid.
 
@@ -243,13 +243,13 @@ Cumulative, NonCumulative
 
 Consider the examples below.
 
-.. coqtop:: in reset
+.. rocqtop:: in reset
 
    Polymorphic Cumulative Inductive list {A : Type} :=
    | nil : list
    | cons : A -> list -> list.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Set Printing Universes.
    Print list.
@@ -272,7 +272,7 @@ they are comparable at the same type.
 See :ref:`Conversion-rules` for more details on convertibility and subtyping.
 The following is an example of a record with non-trivial subtyping relation:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Polymorphic Cumulative Record packType := {pk : Type}.
    About packType.
@@ -287,7 +287,7 @@ The following is an example of a record with non-trivial subtyping relation:
 Looking back at the example of monoids, we can see that they are naturally
 covariant for cumulativity:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Set Universe Polymorphism.
 
@@ -296,7 +296,7 @@ covariant for cumulativity:
      mon_unit : mon_car;
      mon_op : mon_car -> mon_car -> mon_car }.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Set Printing Universes.
    Print Monoid.
@@ -304,12 +304,12 @@ covariant for cumulativity:
 This means that a monoid in a lower universe (like the unit monoid in set), can
 be seen as a monoid in any higher universe, without introducing explicit lifting.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Definition unit_monoid : Monoid@{Set} :=
      {| mon_car := unit; mon_unit := tt; mon_op x y := tt |}.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Monomorphic Universe i.
 
@@ -318,13 +318,13 @@ be seen as a monoid in any higher universe, without introducing explicit lifting
 Finally, invariant universes appear when there is no possible subtyping relation
 between different instances of the inductive. Consider:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Polymorphic Cumulative Record monad@{i} := {
       m : Type@{i} -> Type@{i};
       unit : forall (A : Type@{i}), A -> m A }.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Set Printing Universes.
    Print monad.
@@ -343,20 +343,20 @@ inferred (it is irrelevant), ``b`` is required to be irrelevant,
 ``c`` is covariant and ``d`` is invariant. With these annotations
 ``c`` and ``d`` have less general variances than would be inferred.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Polymorphic Cumulative Inductive Dummy@{a *b +c =d} : Prop := dummy.
    About Dummy.
 
 Insufficiently restrictive variance annotations lead to errors:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Fail Polymorphic Cumulative Record bad@{*a} := {p : Type@{a}}.
 
 .. example:: Demonstration of universe variances
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Set Printing Universes.
       Set Universe Polymorphism.
@@ -373,35 +373,35 @@ Insufficiently restrictive variance annotations lead to errors:
         (* An invariant universe blocks cumulativity from upper or lower levels. *)
         Axiom inv_low  : Invariant@{low}.
         Axiom inv_high : Invariant@{high}.
-   .. coqtop:: all
+   .. rocqtop:: all
 
         Fail Check (inv_low : Invariant@{high}).
         Fail Check (inv_high : Invariant@{low}).
-   .. coqtop:: in
+   .. rocqtop:: in
 
         (* A covariant universe allows cumulativity from a lower level. *)
         Axiom co_low  : Covariant@{low}.
         Axiom co_high : Covariant@{high}.
-   .. coqtop:: all
+   .. rocqtop:: all
 
         Check (co_low : Covariant@{high}).
         Fail Check (co_high : Covariant@{low}).
-   .. coqtop:: in
+   .. rocqtop:: in
 
         (* An irrelevant universe allows cumulativity from any level *)
         Axiom irr_low  : Irrelevant@{low}.
         Axiom irr_high : Irrelevant@{high}.
-   .. coqtop:: all
+   .. rocqtop:: all
 
         Check (irr_low : Irrelevant@{high}).
         Check (irr_high : Irrelevant@{low}).
-   .. coqtop:: in
+   .. rocqtop:: in
 
       End Universes.
 
 .. example:: A proof using cumulativity
 
-   .. coqtop:: in reset
+   .. rocqtop:: in reset
 
       Set Universe Polymorphism.
       Set Polymorphic Inductive Cumulativity.
@@ -409,14 +409,14 @@ Insufficiently restrictive variance annotations lead to errors:
 
       Inductive eq@{i} {A : Type@{i}} (x : A) : A -> Type@{i} := eq_refl : eq x x.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Print eq.
 
    The universe of :g:`eq` is irrelevant here, hence proofs of equalities can
    inhabit any universe.  The universe must be big enough to fit `A`.
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Definition funext_type@{a b e} (A : Type@{a}) (B : A -> Type@{b})
       := forall f g : (forall a, B a),
@@ -493,15 +493,15 @@ generated. It is however often the case that an equation :math:`j = i` would
 be more appropriate, when :g:`f`\'s universes are fresh for example.
 Consider the following example:
 
-.. coqtop:: none
+.. rocqtop:: none
 
    Polymorphic Definition pidentity {A : Type} (a : A) := a.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Definition id0 := @pidentity nat 0.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Set Printing Universes.
    Print id0.
@@ -613,13 +613,13 @@ Printing universes
    controlled by providing `With Constraint Sources` or `Without
    Constraint Sources`.
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Monomorphic Universes a b c.
       Monomorphic Definition make_b_lt_c : Type@{c} := Type@{b}.
       Monomorphic Definition make_a_le_b (F:Type@{b} -> Prop) (X:Type@{a}) := F X.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Print Universes Subgraph (a c).
 
@@ -647,11 +647,11 @@ Polymorphic definitions
 For polymorphic definitions, the declaration of (all) universe levels
 introduced by a definition uses the following syntax:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Polymorphic Definition le@{i j} (A : Type@{i}) : Type@{j} := A.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Print le.
 
@@ -666,7 +666,7 @@ can use :cmd:`Show Universes` to display the current context of universes.
 It is possible to provide only some universe levels and let Rocq infer the others
 by adding a :g:`+` in the list of bound universe levels:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Fail Definition foobar@{u} : Type@{u} := Type.
    Definition foobar@{u +} : Type@{u} := Type.
@@ -679,7 +679,7 @@ definition.
 Definitions can also be instantiated explicitly, giving their full
 instance:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Check (pidentity@{Set}).
    Monomorphic Universes k l.
@@ -690,7 +690,7 @@ an explicit :g:`Type` are considered rigid for unification and are never
 minimized. Flexible anonymous universes can be produced with an
 underscore or by omitting the annotation to a polymorphic definition.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Check (fun x => x) : Type -> Type.
    Check (fun x => x) : Type -> Type@{_}.
@@ -716,12 +716,12 @@ underscore or by omitting the annotation to a polymorphic definition.
 
    Consider the following definition:
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Lemma foo@{i} : Type@{i}.
       Proof. exact Type. Qed.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Print foo.
 
@@ -732,14 +732,14 @@ underscore or by omitting the annotation to a polymorphic definition.
    using the :term:`constant` we don't need to put a value for the inner
    universe:
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Check foo@{_}.
 
    and when not looking at the :term:`body` we don't mention the private
    universe:
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       About foo.
 
@@ -747,13 +747,13 @@ underscore or by omitting the annotation to a polymorphic definition.
    :g:`Defined`, the :flag:`Private Polymorphic Universes` flag may
    be unset:
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Unset Private Polymorphic Universes.
 
       Lemma bar : Type. Proof. exact Type. Qed.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       About bar.
       Fail Check bar@{_}.
@@ -761,14 +761,14 @@ underscore or by omitting the annotation to a polymorphic definition.
 
    Note that named universes are always public.
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Set Private Polymorphic Universes.
       Unset Strict Universe Declaration.
 
       Lemma baz : Type@{outer}. Proof. exact Type@{inner}. Qed.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       About baz.
 
@@ -779,11 +779,11 @@ Sort polymorphism
 
 Quantifying over universes does not allow instantiation with `Prop` or `SProp`. For instance
 
-.. coqtop:: in reset
+.. rocqtop:: in reset
 
    Polymorphic Definition type@{u} := Type@{u}.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Fail Check type@{Prop}.
 
@@ -793,7 +793,7 @@ sort qualities are called :gdef:`sort polymorphic`.
 
 All sort quality variables must be explicitly bound.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Polymorphic Definition sort@{s | u |} := Type@{s|u}.
 
@@ -807,7 +807,7 @@ Instantiating `s` in `Type@{s|u}` with the impredicative `Prop` or
 `SProp` produces `Prop` or `SProp` respectively regardless of the
 instantiation fof `u`.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Eval cbv in sort@{Prop|Set}.
    Eval cbv in sort@{Type|Set}.
@@ -820,12 +820,12 @@ runs (typically at the end of a definition).
 :cmd:`Check` and :cmd:`Eval` run minimization so we cannot use them to
 witness these temporary variables.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Goal True.
    Set Printing Universes.
 
-.. coqtop:: all abort
+.. rocqtop:: all abort
 
    let c := constr:(sort) in idtac c.
 
@@ -847,7 +847,7 @@ UIP`.
 
 For instance
 
-.. coqtop:: all reset
+.. rocqtop:: all reset
 
    Set Universe Polymorphism.
 
@@ -861,7 +861,7 @@ instantiation `s := Type` does not allow elimination to `Type`.
 
 However elimination to `Type` or to a polymorphic sort with `s := Prop` is allowed:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Definition Squash_Prop_rect A (P:Squash@{Prop|_} A -> Type)
      (H:forall x, P (squash _ x))
@@ -880,7 +880,7 @@ However elimination to `Type` or to a polymorphic sort with `s := Prop` is allow
    such as sigma types may be better defined as primitive records (which
    do not have this restriction) when possible.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Set Primitive Projections.
       Record sigma@{s|u v|} (A:Type@{s|u}) (B:A -> Type@{s|v})
@@ -907,7 +907,7 @@ sections, except in the following ways:
 
 - no monomorphic constraint may refer to a polymorphic universe:
 
-  .. coqtop:: all reset
+  .. rocqtop:: all reset
 
      Section Foo.
 
@@ -918,7 +918,7 @@ sections, except in the following ways:
   :cmd:`Variable`, which may need to be used with universe
   polymorphism activated (locally by attribute or globally by option):
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Fail Variable A : (Type@{i} : Type).
      Polymorphic Variable A : (Type@{i} : Type).
