@@ -978,8 +978,9 @@ let declare_possibly_mutual_definitions ~info ~cinfo ~obls ?(is_telescope=false)
   let () =
     (* For the recursive case, we override the temporary notations used while proving, now using the global names *)
     let local = info.scope=Locality.Discharge in
-    CWarnings.with_warn ("-"^Notation.warning_overridden_name)
-      (List.iter (Metasyntax.add_notation_interpretation ~local (Global.env()))) ntns
+    if ntns <> [] then
+      CWarnings.with_warn ("-"^Notation.warning_overridden_name)
+        (List.iter (Metasyntax.add_notation_interpretation ~local (Global.env()))) ntns
   in
   refs
 
