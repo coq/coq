@@ -9,7 +9,7 @@ There are several Rocq commands:
   :ref:`here <coqintegrateddevelopmentenvironment>`.  In addition, there are
   several other IDEs such as Proof General, vsCoq and Coqtail that are not
   included with the Coq installation.
-+ ``rocq``: the main entry point for Rocq
++ ``rocq``: the main entry point for the Rocq prover
 + ``rocqchk``: the Rocq checker (validation of compiled libraries) (also available through ``rocq check``)
 
 Many of the parameters to start these tools are shared and are described below.
@@ -22,13 +22,12 @@ but they are probably less current than `-help` or this document).
 Interactive use (rocq repl)
 ---------------------------
 
-In the interactive mode, also known as the Coq toplevel, users can
-develop their theories and proofs step by step. The Coq toplevel is run
+The Rocq toplevel (or read-eval-print-loop) is run
 by the command ``rocq repl`` (equivalently, `rocq top`).
 
 There is also a byte-code toplevel `rocq repl-with-drop` based on an OCaml toplevel.
 You can switch to the OCaml toplevel with the command ``Drop.``,
-and come back to the Coq toplevel with the command ``#go;;``.
+and come back to the Rocq toplevel with the command ``#go;;``.
 
 .. flag:: Coqtop Exit On Error
 
@@ -39,9 +38,9 @@ Batch compilation (rocq compile)
 --------------------------------
 
 The ``rocq compile`` (equivalently, `rocq c`) command compiles
-a Coq proof script file with a ".v" suffix
+a Rocq proof script file with a ".v" suffix
 to create a compiled file with a ".vo" suffix.  (See :ref:`compiled-files`.)
-The last component of the filename must be a valid Coq identifier as described in
+The last component of the filename must be a valid Rocq identifier as described in
 :ref:`lexical-conventions`; it should contain only letters, digits or
 underscores (_) with a ".v" suffix on the final component.
 For example ``/bar/foo/toto.v`` is valid, but ``/bar/foo/to-to.v`` is not.
@@ -66,7 +65,7 @@ See :ref:`rocq_makefile` and :ref:`building_dune`.
    `_CoqProject` file (see :ref:`rocq_makefile`) in the directory from which you
    start `CoqIDE` or give it as an argument to the ``coqide`` command.
    *<PATH>* is the pathname of the directory containing the module,
-   which can be an absolute path or relative to Coq's current directory.  For now,
+   which can be an absolute path or relative to Rocq's current directory.  For now,
    you must close and reload a named script file for `CoqIDE` to pick up the change,
    or restart `CoqIDE`.
    The project file name is configurable in `Edit / Preferences / Project`.
@@ -91,7 +90,7 @@ In order of importance they are:
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 When Rocq is launched, it can implicitly prepend a startup script to any document
-read by Rocq, whether it is an interactive session or a file to compile.
+it reads, whether it is an interactive session or a file to compile.
 The startup script can come from a configuration directory or it can be
 specified on the command line.
 

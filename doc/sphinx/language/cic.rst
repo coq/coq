@@ -443,8 +443,8 @@ command, the following is rejected,
 
       Fail Definition id: Set := forall X:Set,X->X.
 
-while it will type check, if one uses instead the `rocq repl`
-``-impredicative-set`` option..
+while it will type check, if one uses instead the
+``-impredicative-set`` command-line flag.
 
 The major change in the theory concerns the rule for product formation
 in the sort :math:`\Set`, which is extended to a domain in any sort:
