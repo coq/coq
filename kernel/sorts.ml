@@ -189,8 +189,8 @@ module Quality = struct
   module Set = CSet.Make(Self)
   module Map = CMap.Make(Self)
 
-  type pattern =
-    | PQVar of int option | PQConstant of constant
+  type 'q pattern =
+    | PQVar of 'q | PQConstant of constant
 
   let pattern_match ps s qusubst =
     match ps, s with
@@ -333,6 +333,18 @@ let levels s = match s with
 | Set -> Level.Set.singleton Level.set
 | Type u | QSort (_, u) -> Universe.levels u
 
+let qnorm fq = function
+  | SProp | Prop | Set | Type _ as s -> s
+  | QSort (q, v) as s ->
+    let open Quality in
+    match fq q with
+    | QVar q' ->
+      if q' == q then s
+      else qsort q' v
+    | QConstant QSProp -> sprop
+    | QConstant QProp -> prop
+    | QConstant QType -> sort_of_univ v
+
 let subst_fn (fq,fu) = function
   | SProp | Prop | Set as s -> s
   | Type v as s ->
@@ -447,6 +459,14 @@ let relevance_hash = function
   | Irrelevant -> 1
   | RelevanceVar q -> Hashset.Combine.combinesmall 2 (QVar.hash q)
 
+let relevance_subst_rel_fn f = function
+  | Relevant | Irrelevant as r -> r
+  | RelevanceVar qv as r ->
+    match f qv with
+    | Relevant | Irrelevant as r -> r
+    | RelevanceVar qv' ->
+      if qv' == qv then r else RelevanceVar qv'
+
 let relevance_subst_fn f = function
   | Relevant | Irrelevant as r -> r
   | RelevanceVar qv as r ->
@@ -477,8 +497,8 @@ let pr_sort_family = function
   | InType -> Pp.(str "Type")
   | InQSort -> Pp.(str "Type") (* FIXME? *)
 
-type pattern =
-  | PSProp | PSSProp | PSSet | PSType of int option | PSQSort of int option * int option
+type ('q, 'u) pattern =
+  | PSProp | PSSProp | PSSet | PSType of 'u | PSQSort of 'q * 'u
 
 let extract_level u =
   match Universe.level u with
@@ -499,3 +519,12 @@ let pattern_match ps s qusubst =
   | PSType uio, Type u -> Some (Partial_subst.maybe_add_univ uio (extract_level u) qusubst)
   | PSQSort (qio, uio), s -> Some (qusubst |> Partial_subst.maybe_add_quality qio (quality s) |> Partial_subst.maybe_add_univ uio (extract_sort_level s))
   | (PSProp | PSSProp | PSSet | PSType _), _ -> None
+
+let quality_of_relevance =
+  let open Quality in function
+  | Relevant -> QConstant QType
+  | Irrelevant -> QConstant QSProp
+  | RelevanceVar q -> QVar q
+
+let relevance_match io r qusubst =
+  Partial_subst.maybe_add_quality io (quality_of_relevance r) qusubst

@@ -4,5 +4,5 @@ val do_symbols : poly:bool -> unfold_fix:bool ->
 
 val do_rules :
   Names.Id.t ->
-  (Constrexpr.universe_decl_expr option * Constrexpr.constr_expr * Constrexpr.constr_expr) list ->
+  (Constrexpr.constr_expr * Constrexpr.constr_expr) list ->
   unit

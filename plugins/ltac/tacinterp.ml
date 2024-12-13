@@ -625,7 +625,7 @@ let constr_flags () = {
   program_mode = false;
   polymorphic = false;
   undeclared_evars_patvars = false;
-  patvars_abstract = false;
+  rrpat_evars_abstract = true;
   unconstrained_sorts = false;
 }
 
@@ -647,7 +647,7 @@ let open_constr_use_classes_flags () = {
   program_mode = false;
   polymorphic = false;
   undeclared_evars_patvars = false;
-  patvars_abstract = false;
+  rrpat_evars_abstract = true;
   unconstrained_sorts = false;
 }
 
@@ -660,7 +660,7 @@ let open_constr_no_classes_flags () = {
   program_mode = false;
   polymorphic = false;
   undeclared_evars_patvars = false;
-  patvars_abstract = false;
+  rrpat_evars_abstract = true;
   unconstrained_sorts = false;
 }
 
@@ -673,7 +673,7 @@ let pure_open_constr_flags = {
   program_mode = false;
   polymorphic = false;
   undeclared_evars_patvars = false;
-  patvars_abstract = false;
+  rrpat_evars_abstract = true;
   unconstrained_sorts = false;
 }
 

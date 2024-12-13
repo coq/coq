@@ -587,6 +587,10 @@ let rec match_arg_pattern whrec env sigma ctx psubst p t =
       | [] -> psubst
       | _ :: _ -> raise PatternFailure
 
+and match_arg_pattern_rel whrec env sigma ctx psubst (io, p) (na, t) =
+  let psubst = Sorts.relevance_match io (ERelevance.kind sigma na.Context.binder_relevance) psubst in
+  match_arg_pattern whrec env sigma ctx psubst p t
+
 and match_rigid_arg_pattern whrec env sigma ctx psubst p t =
   match [@ocaml.warning "-4"] p, EConstr.kind sigma t with
   | PHInd (ind, pu), Ind (ind', u) ->
@@ -609,11 +613,11 @@ and match_rigid_arg_pattern whrec env sigma ctx psubst p t =
     if np > na then raise PatternFailure;
     let ntys, body = EConstr.decompose_lambda_n sigma np t in
     let ctx' = List.map (fun (n, ty) -> Context.Rel.Declaration.LocalAssum (n, ty)) ntys in
-    let tys = Array.of_list @@ List.rev_map snd ntys in
+    let tys = Array.rev_of_list ntys in
     let na = Array.length tys in
     let contexts_upto = Array.init na (fun i -> List.skipn (na - i) ctx' @ ctx) in
-    let psubst = Array.fold_left3 (fun psubst ctx -> match_arg_pattern whrec env sigma ctx psubst) psubst contexts_upto ptys tys in
-    let psubst = match_arg_pattern whrec env sigma (ctx' @ ctx) psubst pbod body in
+    let psubst = Array.fold_left3 (fun psubst ctx -> match_arg_pattern_rel whrec env sigma ctx psubst) psubst contexts_upto ptys tys in
+    let psubst = match_arg_pattern whrec env sigma (ctx' @ ctx) psubst (ERigid pbod) body in
     psubst
   | PHProd (ptys, pbod), _ ->
     let ntys, _ = EConstr.decompose_prod sigma t in
@@ -621,10 +625,10 @@ and match_rigid_arg_pattern whrec env sigma ctx psubst p t =
     if np > na then raise PatternFailure;
     let ntys, body = EConstr.decompose_prod_n sigma np t in
     let ctx' = List.map (fun (n, ty) -> Context.Rel.Declaration.LocalAssum (n, ty)) ntys in
-    let tys = Array.of_list @@ List.rev_map snd ntys in
+    let tys = Array.rev_of_list ntys in
     let na = Array.length tys in
     let contexts_upto = Array.init na (fun i -> List.skipn (na - i) ctx' @ ctx) in
-    let psubst = Array.fold_left3 (fun psubst ctx -> match_arg_pattern whrec env sigma ctx psubst) psubst contexts_upto ptys tys in
+    let psubst = Array.fold_left3 (fun psubst ctx -> match_arg_pattern_rel whrec env sigma ctx psubst) psubst contexts_upto ptys tys in
     let psubst = match_arg_pattern whrec env sigma (ctx' @ ctx) psubst pbod body in
     psubst
   | (PHInd _ | PHConstr _ | PHRel _ | PHInt _ | PHFloat _ | PHString _ | PHSort _ | PHSymbol _), _ -> raise PatternFailure
@@ -644,10 +648,9 @@ and apply_rule whrec env sigma ctx psubst es stk =
       let args, s = extract_n_stack [] np s in
       let psubst = List.fold_left2 (match_arg_pattern whrec env sigma ctx) psubst pargs args in
       apply_rule whrec env sigma ctx psubst e s
-  | Declarations.PECase (pind, pu, pret, pbrs) :: e, Stack.Case ((ci, u, pms, p, iv, brs), cst_l) :: s ->
+  | Declarations.PECase (pind, pret, pbrs) :: e, Stack.Case ((ci, u, pms, p, iv, brs), cst_l) :: s ->
       if not @@ Ind.CanOrd.equal pind ci.ci_ind then raise PatternFailure;
       let dummy = mkProp in
-      let psubst = match_einstance sigma pu u psubst in
       let (_, _, _, ((ntys_ret, ret), _), _, _, brs) = EConstr.annotate_case env sigma (ci, u, pms, p, NoInvert, dummy, brs) in
       let psubst = match_arg_pattern whrec env sigma (ntys_ret @ ctx) psubst pret ret in
       let psubst = Array.fold_left2 (fun psubst pat (ctx', br) -> match_arg_pattern whrec env sigma (ctx' @ ctx) psubst pat br) psubst pbrs brs in

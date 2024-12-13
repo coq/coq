@@ -115,6 +115,7 @@ val evar_define : unifier -> unify_flags -> ?choose:bool -> ?imitate_defs:bool -
 
 
 val refresh_universes :
+  ?allowed_evars:AllowedEvars.t -> (* Don't refresh disallowed evars *)
   ?status:Evd.rigid ->
   ?onlyalg:bool (* Only algebraic universes *) ->
   ?refreshset:bool ->
