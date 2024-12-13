@@ -176,7 +176,7 @@ the interpretation of one command is particularly notable.
 Command line options
 ~~~~~~~~~~~~~~~~~~~~
 
-The following command-line options are recognized by the commands ``rocq c``
+The following command-line options are recognized by the commands ``rocq compile``
 and ``rocq repl``, unless stated otherwise:
 
 :-I *directory*, -include *directory*: Add physical path *directory*
@@ -221,7 +221,7 @@ and ``rocq repl``, unless stated otherwise:
 
 :-top *dirpath*: Set the logical module name to :n:`@dirpath` for the
   `rocq repl` interactive session. If no module name is specified,
-  `rocq repl` will default to ``Top``. `rocq c` does not accept this option
+  `rocq repl` will default to ``Top``. `rocq compile` does not accept this option
   because the logical module name is inferred from the name of
   the input file and the corresponding `-R` / `-Q` options.
 :-exclude-dir *directory*: Exclude any subdirectory named *directory*
@@ -283,7 +283,7 @@ and ``rocq repl``, unless stated otherwise:
 :-load-vernac-object *qualid*: Obsolete synonym of :n:`-require qualid`.
 :-batch: Exit just after argument parsing. Available for ``rocq repl`` only.
 :-verbose: Output the content of the input file as it is compiled.
-  This option is available for ``rocq c`` only.
+  This option is available for ``rocq compile`` only.
 :-native-compiler (yes|no|ondemand): Enable the :tacn:`native_compute`
   reduction machine and precompilation to ``.cmxs`` files for future use
   by :tacn:`native_compute`.
@@ -302,7 +302,7 @@ and ``rocq repl``, unless stated otherwise:
      This flag has been deprecated in favor of calling :ref:`rocq native-precompile <rocqnative>`. The
      toolchain has been adapted to transparently rely on the latter, so if you
      use :ref:`rocq_makefile` there is nothing to do. Otherwise you should
-     substitute calls to `rocq c -native-compiler yes` to calls to `rocq c` followed
+     substitute calls to `rocq c -native-compiler yes` to calls to `rocq compile` followed
      by `rocq native-precompile` on the resulting `vo` file.
 
   .. versionchanged:: 8.13
@@ -315,7 +315,7 @@ and ``rocq repl``, unless stated otherwise:
      :header-rows: 1
 
      * - ``configure``
-       - ``rocq c``
+       - ``rocq compile``
        - ``native_compute``
        - outcome
        - requirements
@@ -426,11 +426,11 @@ and ``rocq repl``, unless stated otherwise:
   (to be used by rocq doc, see :ref:`rocqdoc`). By default, if *file.v* is being
   compiled, *file.glob* is used.
 :-no-glob: Disable the dumping of references for global names.
-:-image *file*: Set the binary image to be used by ``rocq c`` to be *file*
+:-image *file*: Set the binary image to be used by ``rocq compile`` to be *file*
   instead of the standard one. Not of general use.
 :-bindir *directory*: Set the directory containing Rocq binaries to be
-  used by ``rocq c``. It is equivalent to doing export COQBIN= *directory*
-  before launching ``rocq c``.
+  used by ``rocq compile``. It is equivalent to doing export COQBIN= *directory*
+  before launching ``rocq compile``.
 :-where: Print the location of Rocq’s standard library and exit.
 :-config: Print the locations of Rocq’s binaries, dependencies, and
   libraries, then exit.
@@ -449,7 +449,7 @@ and ``rocq repl``, unless stated otherwise:
 Profiling
 ---------
 
-Use the `rocq c` command line argument `-profile` or the environment
+Use the `rocq compile` command line argument `-profile` or the environment
 variable `PROFILE` in `rocq makefile`, to generate profiling information in
 `Google trace format <https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/edit>`.
 
@@ -585,10 +585,10 @@ in sections without :cmd:`Proof using` are fully processed (much slower).
 
 **Interaction with standard compilation**
 
-When compiling a file ``foo.v`` using ``rocq c`` in the standard way (i.e., without
+When compiling a file ``foo.v`` using ``rocq compile`` in the standard way (i.e., without
 ``-vos`` nor ``-vok``), an empty file ``foo.vos`` and an empty file ``foo.vok``
 are created in addition to the regular output file ``foo.vo``.
-If ``rocq c`` is subsequently invoked on some other file ``bar.v`` using option
+If ``rocq compile`` is subsequently invoked on some other file ``bar.v`` using option
 ``-vos`` or ``-vok``, and that ``bar.v`` requires ``foo.v``, if Rocq finds an
 empty file ``foo.vos``, then it will load ``foo.vo`` instead of ``foo.vos``.
 

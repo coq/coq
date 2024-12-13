@@ -14,7 +14,7 @@ proofs to eventually generate a complete proof.
 When you run Rocq interactively, such as through CoqIDE, Proof General or
 `rocq repl`, Rocq shows the current proof state (the incomplete proof) as you
 enter tactics.  This information isn't shown when you run Rocq in batch
-mode with `rocq c`.
+mode with `rocq compile`.
 
 Proof State
 -----------

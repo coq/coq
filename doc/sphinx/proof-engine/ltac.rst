@@ -2546,7 +2546,7 @@ The following example requires the Stdlib library to use the :tacn:`lia` tactic.
    general, non-top-level calls to :tacn:`reset ltac profile` should
    be avoided.
 
-You can also pass the ``-profile-ltac`` command line option to ``rocq c``, which
+You can also pass the ``-profile-ltac`` command line option to ``rocq compile``, which
 turns the :flag:`Ltac Profiling` flag on at the beginning of each document,
 and performs a :cmd:`Show Ltac Profile` at the end.
 

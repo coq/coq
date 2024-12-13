@@ -778,7 +778,7 @@ Backtracking
 
 The backtracking commands described in this section can only be used
 interactively, they cannot be part of a Rocq file loaded via
-``Load`` or compiled by ``rocq c``.
+``Load`` or compiled by ``rocq compile``.
 
 
 .. cmd:: Reset @ident

@@ -98,7 +98,7 @@ and `Coqtail <https://github.com/whonore/Coqtail>`_.
 If your project has multiple files in a single directory that depend on each
 other through :cmd:`Require` commands, they must be compiled in an order that
 matches their dependencies.
-Scripts in `.v` files must be compiled to `.vo` files using `rocq c` before they
+Scripts in `.v` files must be compiled to `.vo` files using `rocq compile` before they
 can be :cmd:`Require`\d in other files.  Currently, the `.vo` file is created in
 the same directory as its `.v` file.  For example,
 if B.v depends on A.v, then you should compile A.v before B.v.  You can do this
@@ -381,16 +381,16 @@ The ``rocq makefile`` tool is included with Rocq and is based on generating a ma
 The majority of Rocq projects are very similar: a collection of ``.v``
 files and possibly some ``.ml`` ones (a Rocq plugin). The main piece of
 metadata needed in order to build the project are the command line
-options to ``rocq c`` (e.g. ``-R``, ``-Q``, ``-I``, see :ref:`command
+options to ``rocq compile`` (e.g. ``-R``, ``-Q``, ``-I``, see :ref:`command
 line options <command-line-options>`). Collecting the list of files
 and options is the job of the ``_CoqProject`` file.
 
 A ``_CoqProject`` file may contain the following kinds of entries in any order,
 separated by whitespace:
 
-* Selected options of `rocq c`, which are forwarded directly to it. Currently these
+* Selected options of `rocq compile`, which are forwarded directly to it. Currently these
   are ``-Q``, ``-I``, ``-R`` and ``-native-compiler``.
-* ``-arg`` options for other options of `rocq c` that don’t fall in the above set.
+* ``-arg`` options for other options of `rocq compile` that don’t fall in the above set.
 * Options specific to ``rocq makefile``. Currently there are two options:
   ``-generate-meta-for-package`` (see below for details), and ``-docroot``.
 * Directory names, which include all appropriate files in the directory and
@@ -411,7 +411,7 @@ A simple example of a ``_CoqProject`` file follows:
     src
     -generate-meta-for-package my-package
 
-Lines in the form ``-arg foo`` pass the argument ``foo`` to ``rocq c``: in the
+Lines in the form ``-arg foo`` pass the argument ``foo`` to ``rocq compile``: in the
 example, this passes the two-word option ``-w all`` (see
 :ref:`command line options <command-line-options>`).
 
@@ -556,15 +556,15 @@ Quoting arguments to rocq c
 +++++++++++++++++++++++++++
 Any string in a ``_CoqProject`` file may be enclosed in double quotes to include
 whitespace characters or ``#``. For example, use ``-arg "-w all"`` to pass the
-argument ``-w all`` to `rocq c`. If the argument to `rocq c` needs some quotes as well,
+argument ``-w all`` to `rocq compile`. If the argument to `rocq compile` needs some quotes as well,
 use single-quotes inside the double-quotes. For example ``-arg "-set 'Default
-Goal Selector=!'"`` gets passed to `rocq c` as ``-set 'Default Goal Selector=!'``.
+Goal Selector=!'"`` gets passed to `rocq compile` as ``-set 'Default Goal Selector=!'``.
 
 But note, that single-quotes in a ``_CoqProject`` file are only special
 characters if they appear in the string following ``-arg``. And on their own
 they don't quote spaces. For example ``-arg 'foo bar'`` in ``_CoqProject`` is
 equivalent to ``-arg foo "bar'"`` (in ``_CoqProject`` notation). ``-arg "'foo
-bar'"`` behaves differently and passes ``'foo bar'`` to `rocq c`.
+bar'"`` behaves differently and passes ``'foo bar'`` to `rocq compile`.
 
 Forbidden filenames
 +++++++++++++++++++
@@ -631,9 +631,9 @@ section of the generated makefile. These include:
    lets you build a plugin containing OCaml code that depends on the
    OCaml code of ``Unicoq``
 :COQFLAGS:
-   override the flags passed to ``rocq c``. By default ``-q``.
+   override the flags passed to ``rocq compile``. By default ``-q``.
 :COQEXTRAFLAGS:
-   extend the flags passed to ``rocq c``
+   extend the flags passed to ``rocq compile``
 :COQCHKFLAGS:
    override the flags passed to ``rocqchk``.  By default ``-silent -o``.
 :COQCHKEXTRAFLAGS:
@@ -704,7 +704,7 @@ The optional file ``CoqMakefile.local-late`` is included at the end of the gener
 file ``CoqMakefile``.  The following is a partial list of accessible variables:
 
 :COQ_VERSION:
-   the version of ``rocq c`` being used, which can be used to
+   the version of ``rocq compile`` being used, which can be used to
    provide different behavior depending on the Rocq version
 :COQMAKEFILE_VERSION:
    the version of Rocq used to generate the
@@ -1044,7 +1044,7 @@ well. The list is then treated as a list of command-line arguments of
 
 The semantics of ``-arg`` are as follows: the string given as argument is split
 on whitespace, but single quotes prevent splitting. The resulting list of
-strings is then passed to `rocq c`.
+strings is then passed to `rocq compile`.
 
 The current approach has a few limitations: Double quotes in a ``_CoqProject``
 file are only special characters at the start of a string. For lack of an
@@ -1055,7 +1055,7 @@ strings to ``rocq makefile`` using a ``_CoqProject`` file:
 * strings starting with ``#`` and containing ``"``
 * strings containing both whitespace and ``"``
 
-In addition, it is impossible to pass strings containing ``'`` to `rocq c` via
+In addition, it is impossible to pass strings containing ``'`` to `rocq compile` via
 ``-arg``.
 
 .. _building_dune:
@@ -1186,7 +1186,7 @@ the OCaml compiler, which may cause an important overhead. Hence native
 compilation is an opt-in configure flag.
 
 When native compilation is activated, Rocq generates the compiled files upfront,
-i.e. during the ``rocq c`` invocation on the corresponding ``.v`` file. This is
+i.e. during the ``rocq compile`` invocation on the corresponding ``.v`` file. This is
 impractical because it means one must chose in advance whether they will use
 a native-capable Rocq installation. In particular, activating native compilation
 forces the recompilation of the whole Rocq installation. See
@@ -1201,7 +1201,7 @@ perform native compilation on it. It assumes that the Rocq libraries on which
 *file.vo* depends have been first compiled to their native files, and will fail
 otherwise. It accepts the ``-R``, ``-Q``, ``-I`` and ``-nI`` arguments with the
 same semantics as if the native compilation process had been performed through
-``rocq c``. In particular, it means that:
+``rocq compile``. In particular, it means that:
 
 + ``-R`` and ``-Q`` are equivalent
 
@@ -1223,7 +1223,7 @@ The preferred method is to use ``dune``:
 
 in a directory with `my_toplevel.ml` containing the main loop entry
 point `Coqc.main()` or `Coqtop.(start_coq coqtop_toplevel)` (depending
-on if you want `rocq c` or `rocq repl` behaviour).
+on if you want `rocq compile` or `rocq repl` behaviour).
 
 For example, to statically link |Ltac|, you can do:
 

@@ -245,7 +245,7 @@ The *Compile* menu offers direct commands to:
 At the moment these are not working well.  We recommend you compile
 from a terminal window for now.  We expect to fix them soon.
 
-*Compile buffer* saves the current buffer and compiles it with `rocq c` as specified
+*Compile buffer* saves the current buffer and compiles it with `rocq compile` as specified
 in the *Externals* section of the *Edit/Preferences* dialog.  Output appears
 in the *Messages* panel.  It's mostly useful for single-file projects because it doesn't
 automatically recompile other files that it depends on that may have changed.
