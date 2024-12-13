@@ -324,7 +324,7 @@ proof by abstracting monomials by variables.
    following goal:
 
 .. needs csdp
-.. coqdoc::
+.. rocqdoc::
 
    Require Import ZArith Psatz.
    Open Scope Z_scope.
@@ -430,7 +430,7 @@ obtain :math:`-1`. Thus, by Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
 
   The :tacn:`lra` tactic automatically proves the following goal.
 
-  .. coqtop:: in extra
+  .. rocqtop:: in extra
 
     From Stdlib Require Import QArith Lqa. #[local] Open Scope Q_scope.
 
@@ -451,7 +451,7 @@ obtain :math:`-1`. Thus, by Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
   This is done thanks to the :term:`cone expression`
   :math:`p_2 + p_1 + 3 \times p_0 \equiv -1`.
 
-  .. coqtop:: all extra
+  .. rocqtop:: all extra
 
     From Stdlib.micromega Require Import RingMicromega QMicromega EnvRing Tauto.
 
@@ -469,7 +469,7 @@ obtain :math:`-1`. Thus, by Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
   ``QTautoChecker ff wit`` returns ``true``, then the goal represented by
   ``ff`` is valid.
 
-  .. coqtop:: in extra
+  .. rocqtop:: in extra
 
     Lemma example_lra' x y : x + 2 * y <= 4 -> 2 * x + y <= 4 -> x + y < 3.
     Proof.
@@ -487,14 +487,14 @@ obtain :math:`-1`. Thus, by Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
                Fop := OpLt; Frhs := PEc 3 |} tt))
       : BFormula (Formula Q) isProp).
 
-  .. coqtop:: all extra
+  .. rocqtop:: all extra
 
     pose (varmap := VarMap.Branch (VarMap.Elt y) x VarMap.Empty).
     let ff' := eval unfold ff in ff in wlra_Q wit ff'.
     change (eval_bf (Qeval_formula (@VarMap.find Q 0 varmap)) ff).
     apply (QTautoChecker_sound ff wit).
 
-  .. coqtop:: in extra
+  .. rocqtop:: in extra
 
     vm_compute.
     reflexivity.

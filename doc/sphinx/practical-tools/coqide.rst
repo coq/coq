@@ -430,7 +430,7 @@ You just need to define suitable notations as described in the chapter
 :ref:`syntax-extensions-and-notation-scopes`. For example, to use the
 mathematical symbols ∀ and ∃, you may define:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Notation "∀ x .. y , P" := (forall x, .. (forall y, P) ..)
      (at level 200, x binder, y binder, right associativity)

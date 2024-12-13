@@ -8050,7 +8050,7 @@ Changes in 8.11+beta1
      The following features an implicit argument after a local
      definition. It was wrongly rejected.
 
-     .. coqtop:: in
+     .. rocqtop:: in
 
         Definition f := fix f (o := true) {n : nat} m {struct m} :=
           match m with 0 => 0 | S m' => f (n:=n+1) m' end.

@@ -83,7 +83,7 @@ usable outside the section as shown in this :ref:`example <section_local_declara
    Terminating the proof for a :cmd:`Let` with :cmd:`Qed` produces an opaque side definition.
    `Let foo : T. Proof. tactics. Qed.` is equivalent to
 
-   .. coqdoc::
+   .. rocqdoc::
 
       Lemma foo_subproof : T. Proof. tactics. Qed.
       #[clearbody] Let foo := foo_subproof.
@@ -94,7 +94,7 @@ usable outside the section as shown in this :ref:`example <section_local_declara
    but also allowing implicit variables, :ref:`implicit-generalization`, and
    let-binders.
 
-   .. coqdoc::
+   .. rocqdoc::
 
      Context {A : Type} (a b : A).
      Context `{EqDec A}.
@@ -106,11 +106,11 @@ usable outside the section as shown in this :ref:`example <section_local_declara
 
 .. example:: Section-local declarations
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Section s1.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Variables x y : nat.
 
@@ -118,13 +118,13 @@ usable outside the section as shown in this :ref:`example <section_local_declara
    won't persist when the section is closed, and all persistent definitions which
    depend on `y'` will be prefixed with `let y' := y in`.
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Let y' := y.
       Definition x' := S x.
       Definition x'' := x' + y'.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Print x'.
       Print x''.

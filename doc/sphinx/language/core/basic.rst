@@ -159,15 +159,15 @@ Numbers
 
    .. example:: Stack overflow with :n:`nat`
 
-      .. coqtop:: all reset extra
+      .. rocqtop:: all reset extra
 
          Fail Eval compute in 100000 + 100000.  (* gives a stack overflow (not shown) *)
 
-      .. coqtop:: in extra
+      .. rocqtop:: in extra
 
          From Stdlib Require Import ZArith.  (* for definition of Z *)
 
-      .. coqtop:: all extra
+      .. rocqtop:: all extra
 
          Eval compute in (1000000000000000000000000000000000 + 1)%Z.
 
@@ -456,11 +456,11 @@ boldface label "Attribute:".  Attributes are listed in the
    This warning is configured to behave as an error by default.  You
    may turn it into a normal warning by using the :opt:`Warnings` option:
 
-   .. coqtop:: none
+   .. rocqtop:: none
 
       Set Silent.
 
-   .. coqtop:: all warn
+   .. rocqtop:: all warn
 
       Set Warnings "unsupported-attributes".
       #[ foo ] Comments.
@@ -478,13 +478,13 @@ The following attribute is supported by every command:
    the command. For instance if the current warning state is
    `some-warnings,-other-warning`,
 
-   .. coqdoc::
+   .. rocqdoc::
 
       #[warnings="+other-warning"] Command.
 
    is equivalent to
 
-   .. coqdoc::
+   .. rocqdoc::
 
       Set Warnings "+other-warning".
       Command.

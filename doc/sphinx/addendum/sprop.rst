@@ -36,7 +36,7 @@ Basic constructs
 The purpose of :math:`\SProp` is to provide types where all elements
 are convertible:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Theorem irrelevance (A : SProp) (P : A -> Prop) : forall x : A, P x -> forall y : A, P y.
    Proof.
@@ -48,14 +48,14 @@ Since we have definitional :ref:`eta-expansion-sect` for
 functions, the property of being a type of definitionally irrelevant
 values is impredicative, and so is :math:`\SProp`:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Check fun (A:Type) (B:A -> SProp) => (forall x:A, B x) : SProp.
 
 In order to keep conversion tractable, cumulativity for :math:`\SProp`
 is forbidden.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Fail Check (fun (A:SProp) => A : Type).
 
@@ -63,17 +63,17 @@ We can explicitly lift strict propositions into the relevant world by
 using a wrapping inductive type. The inductive stops definitional
 proof irrelevance from escaping.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Inductive Box (A:SProp) : Prop := box : A -> Box A.
    Arguments box {_} _.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Fail Check fun (A:SProp) (x y : Box A) => eq_refl : x = y.
 
 .. doesn't get merged with the above if coqdoc
-.. coqtop:: in
+.. rocqtop:: in
 
    Definition box_irrelevant (A:SProp) (x y : Box A) : x = y
      := match x, y with box x, box y => eq_refl end.
@@ -81,7 +81,7 @@ proof irrelevance from escaping.
 In the other direction, we can use impredicativity to "squash" a
 relevant type, making an irrelevant approximation.
 
-.. coqdoc::
+.. rocqdoc::
 
   Definition iSquash (A:Type) : SProp
     := forall P : SProp, (A -> P) -> P.
@@ -93,7 +93,7 @@ relevant type, making an irrelevant approximation.
 
 Or more conveniently (but equivalently)
 
-.. coqdoc::
+.. rocqdoc::
 
   Inductive Squash (A:Type) : SProp := squash : A -> Squash A.
 
@@ -101,11 +101,11 @@ Most inductives types defined in :math:`\SProp` are squashed types,
 i.e. they can only be eliminated to construct proofs of other strict
 propositions. Empty types are the only exception.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Inductive sEmpty : SProp := .
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Check sEmpty_rect.
 
@@ -117,7 +117,7 @@ propositions. Empty types are the only exception.
 Primitive records in :math:`\SProp` are allowed when fields are strict
 propositions, for instance:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Set Primitive Projections.
    Record sProd (A B : SProp) : SProp := { sfst : A; ssnd : B }.
@@ -126,12 +126,12 @@ On the other hand, to avoid having definitionally irrelevant types in
 non-:math:`\SProp` sorts (through record η-extensionality), primitive
 records in relevant sorts must have at least one relevant field.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Set Warnings "+non-primitive-record".
    Fail Record rBox (A:SProp) : Prop := rbox { runbox : A }.
 
-.. coqdoc::
+.. rocqdoc::
 
    Record ssig (A:Type) (P:A -> SProp) : Type := { spr1 : A; spr2 : P spr1 }.
 
@@ -144,7 +144,7 @@ Encodings for strict propositions
 The elimination for unit types can be encoded by a trivial function
 thanks to proof irrelevance:
 
-.. coqdoc::
+.. rocqdoc::
 
    Inductive sUnit : SProp := stt.
    Definition sUnit_rect (P:sUnit->Type) (v:P stt) (x:sUnit) : P x := v.
@@ -152,7 +152,7 @@ thanks to proof irrelevance:
 By using empty and unit types as base values, we can encode other
 strict propositions. For instance:
 
-.. coqdoc::
+.. rocqdoc::
 
   Definition is_true (b:bool) : SProp := if b then sUnit else sEmpty.
 
@@ -182,7 +182,7 @@ Definitional UIP
 Definitional UIP involves a special reduction rule through which
 reduction depends on conversion. Consider the following code:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Set Definitional UIP.
 
@@ -206,7 +206,7 @@ y` reduces if and only if `x` and `y` are convertible.
 Such matches are indicated in the printed representation by inserting
 a cast around the discriminee:
 
-.. coqtop:: out
+.. rocqtop:: out
 
    Print hidden_arrow.
 
@@ -217,7 +217,7 @@ The special reduction rule of UIP combined with an impredicative sort
 breaks termination of reduction
 :cite:`abel19:failur_normal_impred_type_theor`:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Axiom all_eq : forall (P Q:Prop), P -> Q -> seq P Q.
 
@@ -266,7 +266,7 @@ proof relevant.
    This :term:`flag` enables debug printing of relevance marks. It is off by default.
    Note that :flag:`Printing All` does not affect printing of relevance marks.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Set Printing Relevance Marks.
 

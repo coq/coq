@@ -39,14 +39,14 @@ More information on coinductive definitions can be found in
    The type of infinite sequences of natural numbers, usually called streams,
    is an example of a coinductive type.
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       CoInductive Stream : Set := Seq : nat -> Stream -> Stream.
 
    The usual destructors on streams :g:`hd:Stream->nat` and :g:`tl:Str->Str`
    can be defined as follows:
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Definition hd (x:Stream) := let (a,s) := x in a.
       Definition tl (x:Stream) := let (a,s) := x in s.
@@ -58,7 +58,7 @@ coinductive definitions are also allowed.
 
    The extensional equality on streams is an example of a coinductive type:
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       CoInductive EqSt : Stream -> Stream -> Prop :=
         eqst : forall s1 s2:Stream,
@@ -87,11 +87,11 @@ found in e.g. Agda, and preserves subject reduction.
 
 The above example can be rewritten in the following way.
 
-.. coqtop:: none
+.. rocqtop:: none
 
    Reset Stream.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Set Primitive Projections.
    CoInductive Stream : Set := Seq { hd : nat; tl : Stream }.
@@ -106,7 +106,7 @@ For instance, propositional η-equality is lost when going to the negative
 presentation. It is nonetheless logically consistent to recover it through an
 axiom.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Axiom Stream_eta : forall s: Stream, s = Seq (hd s) (tl s).
 
@@ -114,7 +114,7 @@ More generally, as in the case of positive coinductive types, it is consistent
 to further identify extensional equality of coinductive types with propositional
 equality:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Axiom Stream_ext : forall (s1 s2: Stream), EqSt s1 s2 -> s1 = s2.
 
@@ -162,7 +162,7 @@ Top-level definitions of corecursive functions
    Section :ref:`coinductive-types` for the definition of :g:`Stream`, :g:`hd`
    and :g:`tl`):
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       CoFixpoint from (n:nat) : Stream := Seq n (from (S n)).
 
@@ -177,7 +177,7 @@ Top-level definitions of corecursive functions
    On the contrary, the following recursive function does not satisfy the
    guard condition:
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Fail CoFixpoint filter (p:nat -> bool) (s:Stream) : Stream :=
         if p (hd s) then Seq (hd s) (filter p (tl s)) else filter p (tl s).
@@ -189,7 +189,7 @@ Top-level definitions of corecursive functions
    evaluated. We can test this using the command :cmd:`Eval`, which computes
    the normal forms of a term:
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Eval compute in (from 0).
       Eval compute in (hd (from 0)).

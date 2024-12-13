@@ -37,7 +37,7 @@ placeholder which generated it, or is used in the same context as the
 one in which it was generated, the context is not displayed and the
 existential variable is represented by “?” followed by an identifier.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Parameter identity : forall (X:Set), X -> X.
 
@@ -54,7 +54,7 @@ this is why an existential variable used in the same context as its
 context of definition is written with no instance.
 This behavior may be changed: see :ref:`explicit-display-existentials`.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Check (fun x y => _) 0 1.
 
@@ -110,12 +110,12 @@ it will create new existential variable(s) when :tacn:`apply` would fail.
       unspecified.  This makes :tacn:`apply` fail, while :tacn:`eapply`
       creates a new existential variable :n:`?y`.
 
-      .. coqtop:: none reset
+      .. rocqtop:: none reset
 
          Goal forall i j : nat, i = j.
          intros.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          (* Theorem eq_trans : forall (A : Type) (x y z : A), x = y -> y = z -> x = z. *)
 
@@ -173,13 +173,13 @@ automatically as a side effect of other tactics.
    shown below determines the value of this variable by unification,
    which resolves it.
 
-   .. coqtop:: reset in
+   .. rocqtop:: reset in
 
       Set Printing Goal Names.
 
       Goal forall p n m : nat, n = p -> p = m -> n = m.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       intros x y z H1 H2.
       eapply eq_trans. (* creates ?y : nat as a shelved goal *)
@@ -192,7 +192,7 @@ automatically as a side effect of other tactics.
    However if you choose poorly, you can end up with unprovable goals
    (in this case :n:`x = 0`).  Like this:
 
-   .. coqtop:: reset none
+   .. rocqtop:: reset none
 
       Set Printing Goal Names.
 
@@ -200,11 +200,11 @@ automatically as a side effect of other tactics.
       intros x y z H1 H2.
       eapply eq_trans. (* creates ?y : nat as a shelved goal *)
 
-   .. coqtop:: out
+   .. rocqtop:: out
 
       Unshelve. (* moves the shelved goals into focus--not needed and usually not done *)
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       3: apply 0.  (* assigns value to ?y *)
 
@@ -221,7 +221,7 @@ Explicit display of existential instances for pretty-printing
    context of an existential variable is instantiated at each of the
    occurrences of the existential variable.  Off by default.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Check (fun x y => _) 0 1.
 
@@ -244,7 +244,7 @@ between variables introduced by term binding as well as those
 introduced by tactic binding. The expression `tacexpr` can be any tactic
 expression as described in :ref:`ltac`.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Definition foo (x : nat) : nat := ltac:(exact x).
 

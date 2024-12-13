@@ -30,7 +30,7 @@ since the paper was written.)
 
    Here are some examples of simple tactic macros you can create with |Ltac|:
 
-   .. coqdoc::
+   .. rocqdoc::
 
       Ltac reduce_and_try_to_solve := simpl; intros; auto.
 
@@ -290,11 +290,11 @@ as a :token:`tactic_arg`.  Local symbols are also substituted into tactics:
 
 .. example:: Substitution of global and local symbols
 
-   .. coqtop:: reset none
+   .. rocqtop:: reset none
 
       Goal True.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Ltac n := 1.
       let n2 := n in idtac n2.
@@ -458,11 +458,11 @@ Selectors can also be used nested within a tactic expression with the
 
 .. example:: Selector reordering goals
 
-   .. coqtop:: reset in
+   .. rocqtop:: reset in
 
       Goal 1=0 /\ 2=0 /\ 3=0.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       repeat split.
       1,3: idtac.
@@ -479,15 +479,15 @@ separately.  They succeed only if there is a success for each goal.  For example
 
    This tactic fails because there no match for the second goal (`False`).
 
-   .. coqtop:: reset none fail
+   .. rocqtop:: reset none fail
 
       Goal True /\ False.
 
-   .. coqtop:: out
+   .. rocqtop:: out
 
       split.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Fail all: let n := numgoals in idtac "numgoals =" n;
       match goal with
@@ -514,7 +514,7 @@ when subsequent tactics outside these constructs fail.  For example:
 
    .. example:: Backtracking
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Fail multimatch True with
          | True => idtac "branch 1"
@@ -673,11 +673,11 @@ We can branch with backtracking with the following structure:
    equivalent to :n:`@ltac_expr__1 + (@ltac_expr__2 + @ltac_expr__3)`.
    Here's an example where the behavior differs slightly:
 
-      .. coqtop:: reset none
+      .. rocqtop:: reset none
 
          Goal True.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
         Fail (fail 2 + idtac) + idtac.
         Fail fail 2 + (idtac + idtac).
@@ -687,11 +687,11 @@ We can branch with backtracking with the following structure:
       In the first tactic, `idtac "2"` is not executed.  In the second, the subsequent `fail` causes
       backtracking and the execution of `idtac "B"`.
 
-      .. coqtop:: reset none
+      .. rocqtop:: reset none
 
          Goal True.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          idtac "1" + idtac "2".
          assert_fails ((idtac "A" + idtac "B"); fail).
@@ -773,20 +773,20 @@ In some cases backtracking may be too expensive.
 
    .. example:: Backtracking inside a non-backtracking construct
 
-      .. coqtop:: reset none
+      .. rocqtop:: reset none
 
          Goal True.
 
       The :tacn:`fail` doesn't trigger the second :tacn:`idtac`:
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          assert_fails (first [ idtac "1" | idtac "2" ]; fail).
 
       This backtracks within `(idtac "1A" + idtac "1B" + fail)` but
       :tacn:`first` won't consider the `idtac "2"` alternative:
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
        assert_fails (first [ (idtac "1A" + idtac "1B" + fail) | idtac "2" ]; fail).
 
@@ -796,7 +796,7 @@ In some cases backtracking may be too expensive.
 
       This works similarly for the :tacn:`solve` tactic.
 
-    .. coqtop:: reset all
+    .. rocqtop:: reset all
 
        Tactic Notation "myfirst" "[" tactic_list_sep(tacl,"|") "]" := first tacl.
        Goal True.
@@ -887,11 +887,11 @@ Rocq defines an |Ltac| tactic in `Init.Tactics` to check that a tactic *fails*:
       This is due to the order in which parts of the :token:`ltac_expr3`
       are evaluated and executed.  For example:
 
-      .. coqtop:: reset none
+      .. rocqtop:: reset none
 
          Goal True.
 
-      .. coqtop:: all fail
+      .. rocqtop:: all fail
 
          assert_fails match True with _ => fail end.
 
@@ -900,14 +900,14 @@ Rocq defines an |Ltac| tactic in `Init.Tactics` to check that a tactic *fails*:
       the :tacn:`match` to find its first success earlier.  One workaround
       is to prefix :token:`ltac_expr3` with "`idtac;`".
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          assert_fails (idtac; match True with _ => fail end).
 
       Alternatively, substituting the :tacn:`match` into the definition of :tacn:`assert_fails` works
       as expected:
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          tryif (once match True with _ => fail end) then gfail 0 (* tac *) "succeeds" else idtac.
 
@@ -966,7 +966,7 @@ Failing
          explanations/generalizations (e.g. gfail always fails; "tac; fail" succeeds but "fail." alone
          fails.
 
-      .. coqtop:: reset all fail
+      .. rocqtop:: reset all fail
 
          Goal True.
          Proof. fail. Abort.
@@ -1198,18 +1198,18 @@ Pattern matching on terms: match
       it doesn't look for further matches.  In :tacn:`match`, if :token:`ltac_expr` fails
       in a matching branch, it will try to match on subsequent branches.
 
-      .. coqtop:: reset none
+      .. rocqtop:: reset none
 
          Goal True.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Fail lazymatch True with
          | True => idtac "branch 1"; fail
          | _ => idtac "branch 2"
          end.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          match True with
          | True => idtac "branch 1"; fail
@@ -1223,7 +1223,7 @@ Pattern matching on terms: match
       :tacn:`match` tactics are only evaluated once, whereas :tacn:`multimatch`
       tactics may be evaluated more than once if the following constructs trigger backtracking:
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Fail match True with
          | True => idtac "branch 1"
@@ -1231,7 +1231,7 @@ Pattern matching on terms: match
          end ;
          idtac "branch A"; fail.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Fail multimatch True with
          | True => idtac "branch 1"
@@ -1246,11 +1246,11 @@ Pattern matching on terms: match
       Notice the :tacn:`idtac` prints ``(z + 1)`` while the :tacn:`pose` substitutes
       ``(x + 1)``.
 
-      .. coqtop:: in reset
+      .. rocqtop:: in reset
 
          Goal True.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
            match constr:(fun x => (x + 1) * 3) with
            | fun z => ?y * 3 => idtac "y =" y; pose (fun z: nat => y * 5)
@@ -1263,7 +1263,7 @@ Pattern matching on terms: match
       Internally "x <> y" is represented as "(~ (x = y))", which produces the
       first match.
 
-      .. coqtop:: in reset
+      .. rocqtop:: in reset
 
          Ltac f t := match t with
                     | context [ (~ ?t) ] => idtac "?t = " t; fail
@@ -1271,7 +1271,7 @@ Pattern matching on terms: match
                     end.
          Goal True.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          f ((~ True) <> (~ False)).
 
@@ -1378,7 +1378,7 @@ Examples:
       Hypotheses are matched from the last hypothesis (which is by default the newest
       hypothesis) to the first until the :tacn:`apply` succeeds.
 
-      .. coqtop:: reset all
+      .. rocqtop:: reset all
 
          Goal forall A B : Prop, A -> B -> (A->B).
          intros.
@@ -1392,7 +1392,7 @@ Examples:
 
       Hypotheses are matched from the first hypothesis to the last until the :tacn:`apply` succeeds.
 
-      .. coqtop:: reset all
+      .. rocqtop:: reset all
 
          Goal forall A B : Prop, A -> B -> (A->B).
          intros.
@@ -1409,7 +1409,7 @@ Examples:
       Observe that the number of permutations can grow as the factorial
       of the number of hypotheses and hypothesis patterns.
 
-      .. coqtop:: reset all
+      .. rocqtop:: reset all
 
          Goal forall A B : Prop, A -> B -> (A->B).
          intros A B H.
@@ -1446,7 +1446,7 @@ produce subgoals but generates a term to be used in tactic expressions:
 
    .. example:: Substituting a matched context
 
-      .. coqtop:: reset all
+      .. rocqtop:: reset all
 
          Goal True /\ True.
          match goal with
@@ -1480,15 +1480,15 @@ expression returns an identifier:
       Successive calls to :tacn:`fresh` give distinct names even if the names haven't
       yet been added to the local context:
 
-      .. coqtop:: reset none
+      .. rocqtop:: reset none
 
          Goal True -> True.
 
-      .. coqtop:: out
+      .. rocqtop:: out
 
          intro x.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          let a := fresh "x" in
          let b := fresh "x" in
@@ -1497,7 +1497,7 @@ expression returns an identifier:
       When applying :tacn:`fresh` in a function, the name is chosen based on the
       tactic context at the point where the function was defined:
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          let a := fresh "x" in
          let f := fun _ => fresh "x" in
@@ -1553,14 +1553,14 @@ Counting goals: numgoals
 
    .. example::
 
-      .. coqtop:: reset in
+      .. rocqtop:: reset in
 
          Ltac pr_numgoals := let n := numgoals in idtac "There are" n "goals".
 
          Goal True /\ True /\ True.
          split;[|split].
 
-      .. coqtop:: all abort
+      .. rocqtop:: all abort
 
          all:pr_numgoals.
 
@@ -1589,12 +1589,12 @@ Testing boolean expressions: guard
 
    .. example:: guard
 
-      .. coqtop:: in
+      .. rocqtop:: in
 
          Goal True /\ True /\ True.
          split;[|split].
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          all:let n:= numgoals in guard n<4.
          Fail all:let n:= numgoals in guard n=2.
@@ -1698,7 +1698,7 @@ succeeds, and results in an error otherwise.
 
    .. example:: is_fix
 
-      .. coqtop:: reset in
+      .. rocqtop:: reset in
 
          Goal True.
          is_fix (fix f (n : nat) := match n with S n => f n | O => O end).
@@ -1714,7 +1714,7 @@ succeeds, and results in an error otherwise.
 
    .. example:: is_cofix
 
-      .. coqtop:: reset in
+      .. rocqtop:: reset in
 
          CoInductive Stream (A : Type) : Type :=  Cons : A -> Stream A -> Stream A.
          Goal True.
@@ -1748,7 +1748,7 @@ succeeds, and results in an error otherwise.
 
    .. example:: is_proj
 
-      .. coqtop:: reset in
+      .. rocqtop:: reset in
 
          Set Primitive Projections.
          Record Box {T : Type} := box { unbox : T }.
@@ -1831,7 +1831,7 @@ different :token:`string` parameters to :tacn:`restart_timer` and
 
 .. example::
 
-   .. coqtop:: all reset abort
+   .. rocqtop:: all reset abort
 
       Ltac time_constr1 tac :=
         let eval_early := match goal with _ => restart_timer "(depth 1)" end in
@@ -1950,7 +1950,7 @@ Proof that the natural numbers have at least two elements
    context to prove that natural numbers have at least two
    elements. This can be done as follows:
 
-   .. coqtop:: reset all
+   .. rocqtop:: reset all
 
       Lemma card_nat :
         ~ exists x y : nat, forall z:nat, x = z \/ y = z.
@@ -1960,14 +1960,14 @@ Proof that the natural numbers have at least two elements
 
    At this point, the :tacn:`congruence` tactic would finish the job:
 
-   .. coqtop:: all abort
+   .. rocqtop:: all abort
 
       all: congruence.
 
    But for the purpose of the example, let's craft our own custom
    tactic to solve this:
 
-   .. coqtop:: none
+   .. rocqtop:: none
 
       Lemma card_nat :
         ~ exists x y : nat, forall z:nat, x = z \/ y = z.
@@ -1975,7 +1975,7 @@ Proof that the natural numbers have at least two elements
       intros (x & y & Hz).
       destruct (Hz 0), (Hz 1), (Hz 2).
 
-   .. coqtop:: all abort
+   .. rocqtop:: all abort
 
       all: match goal with
            | _ : ?a = ?b, _ : ?a = ?c |- _ => assert (b = c) by now transitivity a
@@ -1995,7 +1995,7 @@ Proving that a list is a permutation of a second list
 
    Let's first define the permutation predicate:
 
-   .. coqtop:: in reset
+   .. rocqtop:: in reset
 
       Section Sort.
 
@@ -2009,7 +2009,7 @@ Proving that a list is a permutation of a second list
 
       End Sort.
 
-   .. coqtop:: none
+   .. rocqtop:: none
 
       Require Import ListDef.
 
@@ -2032,7 +2032,7 @@ Proving that a list is a permutation of a second list
    primitive tactics and we cannot make computations with them. Thus,
    instead, we use Rocq's natural number type :g:`nat`.
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Ltac perm_aux n :=
         match goal with
@@ -2056,7 +2056,7 @@ Proving that a list is a permutation of a second list
    lengths are equal. (If they aren't, the lists cannot be
    permutations of each other.)
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Ltac solve_perm :=
         match goal with
@@ -2068,21 +2068,21 @@ Proving that a list is a permutation of a second list
 
    And now, here is how we can use the tactic :g:`solve_perm`:
 
-   .. coqtop:: out
+   .. rocqtop:: out
 
       Goal perm nat (1 :: 2 :: 3 :: nil) (3 :: 2 :: 1 :: nil).
 
-   .. coqtop:: all abort
+   .. rocqtop:: all abort
 
       solve_perm.
 
-   .. coqtop:: out
+   .. rocqtop:: out
 
       Goal perm nat
              (0 :: 1 :: 2 :: 3 :: 4 :: 5 :: 6 :: 7 :: 8 :: 9 :: nil)
              (0 :: 2 :: 4 :: 6 :: 8 :: 9 :: 7 :: 5 :: 3 :: 1 :: nil).
 
-   .. coqtop:: all abort
+   .. rocqtop:: all abort
 
       solve_perm.
 
@@ -2096,7 +2096,7 @@ propositional logic. Considering the contraction-free sequent calculi LJT* of
 Roy Dyckhoff :cite:`Dyc92`, it is quite natural to code such a tactic using the
 tactic language as shown below.
 
-.. coqtop:: in reset
+.. rocqtop:: in reset
 
    Ltac basic :=
    match goal with
@@ -2105,7 +2105,7 @@ tactic language as shown below.
        | _ : ?A |- ?A => assumption
    end.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Ltac simplify :=
    repeat (intros;
@@ -2130,7 +2130,7 @@ tactic language as shown below.
            | |- ~ _ => red
        end).
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Ltac my_tauto :=
      simplify; basic ||
@@ -2162,13 +2162,13 @@ and the right ``or``).
 
 Having defined ``my_tauto``, we can prove tautologies like these:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Lemma my_tauto_ex1 :
      forall A B : Prop, A /\ B -> A \/ B.
    Proof. my_tauto. Qed.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Lemma my_tauto_ex2 :
      forall A B : Prop, (~ ~ B -> B) -> (A -> B) -> ~ ~ A -> B.
@@ -2183,19 +2183,19 @@ isomorphisms. Here, we choose to use the isomorphisms of the simply
 typed λ-calculus with Cartesian product and unit type (see, for
 example, :cite:`RC95`). The axioms of this λ-calculus are given below.
 
-.. coqtop:: in reset
+.. rocqtop:: in reset
 
    Open Scope type_scope.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Section Iso_axioms.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Variables A B C : Set.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Axiom Com : A * B = B * A.
 
@@ -2211,7 +2211,7 @@ example, :cite:`RC95`). The axioms of this λ-calculus are given below.
 
    Axiom AL_unit : (unit -> A) = A.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Lemma Cons : B = C -> A * B = A * C.
 
@@ -2221,11 +2221,11 @@ example, :cite:`RC95`). The axioms of this λ-calculus are given below.
 
    Qed.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    End Iso_axioms.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Ltac simplify_type ty :=
    match ty with
@@ -2255,7 +2255,7 @@ example, :cite:`RC95`). The axioms of this λ-calculus are given below.
        | |- ?A = ?B => try simplify_type A; try simplify_type B
    end.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Ltac len trm :=
    match trm with
@@ -2263,11 +2263,11 @@ example, :cite:`RC95`). The axioms of this λ-calculus are given below.
        | _ => constr:(1)
    end.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Ltac assoc := repeat rewrite <- Ass.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Ltac solve_type_eq n :=
    match goal with
@@ -2282,7 +2282,7 @@ example, :cite:`RC95`). The axioms of this λ-calculus are given below.
            end
    end.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Ltac compare_structure :=
    match goal with
@@ -2294,7 +2294,7 @@ example, :cite:`RC95`). The axioms of this λ-calculus are given below.
                end
    end.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Ltac solve_iso := simplify_type_eq; compare_structure.
 
@@ -2309,7 +2309,7 @@ The main tactic that puts all these components together is ``solve_iso``.
 
 Here are examples of what can be solved by ``solve_iso``.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Lemma solve_iso_ex1 :
      forall A B : Set, A * unit * B = B * (unit * A).
@@ -2317,7 +2317,7 @@ Here are examples of what can be solved by ``solve_iso``.
      intros; solve_iso.
    Qed.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Lemma solve_iso_ex2 :
      forall A B C : Set,
@@ -2357,20 +2357,20 @@ Tracing execution
 
    .. example::
 
-      .. coqtop:: in reset
+      .. rocqtop:: in reset
 
          Ltac t x := exists x; reflexivity.
          Goal exists n, n=0.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Info 0 t 1||t 0.
 
-      .. coqtop:: in
+      .. rocqtop:: in
 
          Undo.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Info 1 t 1||t 0.
 
@@ -2482,7 +2482,7 @@ performance issue.
 
 The following example requires the Stdlib library to use the :tacn:`lia` tactic.
 
-.. coqtop:: reset in extra
+.. rocqtop:: reset in extra
 
    From Stdlib Require Import Lia.
 
@@ -2501,14 +2501,14 @@ The following example requires the Stdlib library to use the :tacn:`lia` tactic.
         M /\ L /\ K /\ J /\ I /\ H /\ G /\ F /\ E /\ D /\ C /\ B /\ A).
    Proof.
 
-.. coqtop:: all extra
+.. rocqtop:: all extra
 
    Set Ltac Profiling.
    tac.
    Show Ltac Profile.
    Show Ltac Profile "lia".
 
-.. coqtop:: in extra
+.. rocqtop:: in extra
 
    Abort.
    Unset Ltac Profiling.

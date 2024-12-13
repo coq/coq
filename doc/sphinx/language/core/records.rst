@@ -121,7 +121,7 @@ Defining record types
 
       The set of rational numbers may be defined as:
 
-      .. coqtop:: reset all
+      .. rocqtop:: reset all
 
          Record Rat : Set := mkRat
           { negative : bool
@@ -141,12 +141,12 @@ Defining record types
 
    .. example:: Reusing a field name in multiple records
 
-      .. coqtop:: in
+      .. rocqtop:: in
 
          Module A. Record R := { f : nat }. End A.
          Module B. Record S := { f : nat }. End B.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Check {| A.f := 0 |}.
          Check {| B.f := 0 |}.
@@ -155,7 +155,7 @@ Defining record types
 
    .. example:: Using the "as" clause in a record definition
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Record MyRecord := { myfield : nat } as VarName.
          About myfield. (* observe the MyRecord variable is named "VarName" *)
@@ -172,7 +172,7 @@ Defining record types
 
       Compare to :cmd:`Record` in the previous example:
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Class MyClass := { myfield2 : nat }.
          About myfield2. (* Argument name defaults to the class name and is marked implicit *)
@@ -252,7 +252,7 @@ Constructing records
 
       Constructing the rational :math:`1/2` using either the record or application syntax:
 
-      .. coqtop:: in
+      .. rocqtop:: in
 
          Theorem one_two_irred : forall x y z:nat, x * y = 1 /\ x * z = 2 -> x = 1.
          Admitted.
@@ -295,7 +295,7 @@ Accessing fields (projections)
 
    .. example:: Accessing record fields
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          (* projection form *)
          Eval compute in half.(top).
@@ -305,7 +305,7 @@ Accessing fields (projections)
 
    .. example:: Matching on records
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Eval compute in (
            match half with
@@ -315,13 +315,13 @@ Accessing fields (projections)
 
    .. example:: Accessing anonymous record fields with match
 
-      .. coqtop:: in
+      .. rocqtop:: in
 
          Record T := const { _ : nat }.
          Definition gett x := match x with const n => n end.
          Definition inst := const 3.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Eval compute in gett inst.
 
@@ -353,7 +353,7 @@ You can override the display format for specified record types by adding entries
 
    .. example::
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Check top half.  (* off: application form *)
          Set Printing Projections.
@@ -440,7 +440,7 @@ desugared using the unfolded primitive projections and `let` bindings.
 
 .. example::
 
-   .. coqtop:: reset all
+   .. rocqtop:: reset all
 
       #[projections(primitive)] Record Sigma A B := sigma { p1 : A; p2 : B p1 }.
       Arguments sigma {_ _} _ _.
@@ -455,7 +455,7 @@ desugared using the unfolded primitive projections and `let` bindings.
 
    Matches which are equivalent to just a projection have adhoc handling to avoid generating useless ``let``:
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Arguments p1 {_ _} _.
       Check fun x : Sigma nat (fun x => x = 0) =>

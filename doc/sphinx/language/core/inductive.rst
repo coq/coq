@@ -121,7 +121,7 @@ A simple inductive type belongs to a universe that is a simple :n:`@sort`.
 
    The set of natural numbers is defined as:
 
-   .. coqtop:: reset all
+   .. rocqtop:: reset all
 
       Inductive nat : Set :=
       | O : nat
@@ -134,7 +134,7 @@ A simple inductive type belongs to a universe that is a simple :n:`@sort`.
    This definition generates four :term:`induction principles <induction principle>`:
    :g:`nat_rect`, :g:`nat_ind`, :g:`nat_rec` and :g:`nat_sind`. The type of :g:`nat_ind` is:
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Check nat_ind.
 
@@ -154,11 +154,11 @@ by giving the type of its arguments alone.
 
 .. example::
 
-   .. coqtop:: reset none
+   .. rocqtop:: reset none
 
       Reset nat.
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Inductive nat : Set := O | S (_:nat).
 
@@ -182,7 +182,7 @@ which is a type whose conclusion is a :n:`@sort`.
    As an example of indexed inductive types, let us define the
    :g:`even` predicate:
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Inductive even : nat -> Prop :=
       | even_0 : even O
@@ -192,7 +192,7 @@ which is a type whose conclusion is a :n:`@sort`.
    defined) over natural numbers. The type of its two constructors are the
    defining clauses of the predicate :g:`even`. The type of :g:`even_ind` is:
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Check even_ind.
 
@@ -223,7 +223,7 @@ the same parameter values of its specification.
 
    A typical example is the definition of polymorphic lists:
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Inductive list (A:Set) : Set :=
       | nil : list A
@@ -232,7 +232,7 @@ the same parameter values of its specification.
    In the type of :g:`nil` and :g:`cons`, we write ":g:`list A`" and not
    just ":g:`list`". The constructors :g:`nil` and :g:`cons` have these types:
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Check nil.
       Check cons.
@@ -240,17 +240,17 @@ the same parameter values of its specification.
    Observe that the induction principles are also quantified with :g:`(A:Set)`,
    for example:
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Check list_ind.
 
    Once again, the names of the constructor arguments and the type of the conclusion can be omitted:
 
-   .. coqtop:: none
+   .. rocqtop:: none
 
       Reset list.
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Inductive list (A:Set) : Set := nil | cons (_:A) (_:list A).
 
@@ -261,7 +261,7 @@ the same parameter values of its specification.
 
      One can define :
 
-     .. coqtop:: all
+     .. rocqtop:: all
 
         Inductive list2 (A:Set) : Set :=
         | nil2 : list2 A
@@ -269,7 +269,7 @@ the same parameter values of its specification.
 
      that can also be written by specifying only the type of the arguments:
 
-     .. coqtop:: all reset
+     .. rocqtop:: all reset
 
         Inductive list2 (A:Set) : Set :=
         | nil2
@@ -277,7 +277,7 @@ the same parameter values of its specification.
 
      But the following definition will give an error:
 
-     .. coqtop:: all
+     .. rocqtop:: all
 
         Fail Inductive listw (A:Set) : Set :=
         | nilw : listw (A*A)
@@ -297,7 +297,7 @@ the same parameter values of its specification.
      inductive definitions are abstracted over their parameters
      before type checking constructors, allowing to write:
 
-     .. coqtop:: all
+     .. rocqtop:: all
 
         Set Uniform Inductive Parameters.
         Inductive list3 (A:Set) : Set :=
@@ -308,7 +308,7 @@ the same parameter values of its specification.
      and using :cmd:`Context` to give the uniform parameters, like so
      (cf. :ref:`section-mechanism`):
 
-     .. coqtop:: all reset
+     .. rocqtop:: all reset
 
         Section list3.
         Context (A:Set).
@@ -320,7 +320,7 @@ the same parameter values of its specification.
      For finer control, you can use a ``|`` between the uniform and
      the non-uniform parameters:
 
-     .. coqtop:: in reset
+     .. rocqtop:: in reset
 
         Inductive Acc {A:Type} (R:A->A->Prop) | (x:A) : Prop
           := Acc_in : (forall y, R y x -> Acc y) -> Acc x.
@@ -348,7 +348,7 @@ useful.  Use the :cmd:`Scheme` command to generate a useful induction principle.
    forests. We assume two types :g:`A` and :g:`B` that are given as variables. The types can
    be declared like this:
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Parameters A B : Set.
 
@@ -364,7 +364,7 @@ useful.  Use the :cmd:`Scheme` command to generate a useful induction principle.
    To illustrate this point on our example, here are the types of :g:`tree_rec`
    and :g:`forest_rec`.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Check tree_rec.
 
@@ -374,7 +374,7 @@ useful.  Use the :cmd:`Scheme` command to generate a useful induction principle.
    two type variables :g:`A` and :g:`B`, the declaration should be
    done as follows:
 
-   .. coqdoc::
+   .. rocqdoc::
 
       Inductive tree (A B:Set) : Set := node : A -> forest A B -> tree A B
 
@@ -495,7 +495,7 @@ constructions.
 
       One can define the addition function as :
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Fixpoint add (n m:nat) {struct n} : nat :=
          match n with
@@ -519,7 +519,7 @@ constructions.
 
       The following definition is not correct and generates an error message:
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Fail Fixpoint wrongplus (n m:nat) {struct n} : nat :=
          match m with
@@ -534,7 +534,7 @@ constructions.
 
       The function computing the addition over the second argument should rather be written:
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Fixpoint plus (n m:nat) {struct m} : nat :=
          match m with
@@ -545,21 +545,21 @@ constructions.
       **Aside**: Observe that `plus n 0` is reducible but `plus 0 n` is not,
       the reverse of `Nat.add`, for which `0 + n` is reducible and `n + 0` is not.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Goal forall n:nat, plus n 0 = plus 0 n.
          intros; simpl.  (* plus 0 n not reducible *)
 
-      .. coqtop:: none
+      .. rocqtop:: none
 
          Abort.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Goal forall n:nat, n + 0 = 0 + n.
          intros; simpl.  (* n + 0 not reducible *)
 
-      .. coqtop:: none
+      .. rocqtop:: none
 
          Abort.
 
@@ -570,7 +570,7 @@ constructions.
       the function :g:`mod2` which gives the remainder modulo 2 of a natural
       number.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Fixpoint mod2 (n:nat) : nat :=
          match n with
@@ -587,7 +587,7 @@ constructions.
 
       The size of trees and forests can be defined the following way:
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Fixpoint tree_size (t:tree) : nat :=
          match t with
@@ -637,7 +637,7 @@ the sort of the inductive type :math:`t` (not to be confused with :math:`\Sort` 
 
    which corresponds to the result of the Rocq declaration:
 
-   .. coqtop:: in reset
+   .. rocqtop:: in reset
 
       Inductive list (A:Set) : Set :=
       | nil : list A
@@ -658,7 +658,7 @@ the sort of the inductive type :math:`t` (not to be confused with :math:`\Sort` 
 
    which corresponds to the result of the Rocq declaration:
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Inductive tree : Set :=
       | node : forest -> tree
@@ -681,7 +681,7 @@ the sort of the inductive type :math:`t` (not to be confused with :math:`\Sort` 
 
    which corresponds to the result of the Rocq declaration:
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Inductive even : nat -> Prop :=
       | even_O : even 0
@@ -846,7 +846,7 @@ cases:
    For instance, if one considers the following variant of a tree type
    branching over the natural numbers:
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Inductive nattree (A:Type) : Type :=
       | leaf : nattree A
@@ -911,14 +911,14 @@ between universes for inductive types in the Type hierarchy.
    inductive definition. The following declaration introduces the
    second-order existential quantifier :math:`∃ X.P(X)`.
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Inductive exProp (P:Prop->Prop) : Prop :=
       | exP_intro : forall X:Prop, P X -> exProp P.
 
    The same definition on :math:`\Set` is not allowed and fails:
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Fail Inductive exSet (P:Set->Prop) : Set :=
       exS_intro : forall X:Set, P X -> exSet P.
@@ -928,7 +928,7 @@ between universes for inductive types in the Type hierarchy.
    :math:`(\Type(i)→\Prop)→\Type(j)` with the constraint that the parameter :math:`X` of :math:`\kw{exT}_{\kw{intro}}`
    has type :math:`\Type(k)` with :math:`k<j` and :math:`k≤ i`.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Inductive exType (P:Type->Prop) : Type :=
       exT_intro : forall X:Type, P X -> exType P.
@@ -939,7 +939,7 @@ between universes for inductive types in the Type hierarchy.
    The following inductive definition is rejected because it does not
    satisfy the positivity condition:
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Fail Inductive I : Prop := not_I_I (not_I : I -> False) : I.
 
@@ -947,16 +947,16 @@ between universes for inductive types in the Type hierarchy.
    contradiction from it (we can test this by disabling the
    :flag:`Positivity Checking` flag):
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       #[bypass_check(positivity)] Inductive I : Prop := not_I_I (not_I : I -> False) : I.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Definition I_not_I : I -> ~ I := fun i =>
         match i with not_I_I not_I => not_I end.
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Lemma contradiction : False.
       Proof.
@@ -974,18 +974,18 @@ between universes for inductive types in the Type hierarchy.
    Here is another example of an inductive definition which is
    rejected because it does not satify the positivity condition:
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Fail Inductive Lam := lam (_ : Lam -> Lam).
 
    Again, if we were to accept it, we could derive a contradiction
    (this time through a non-terminating recursive function):
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       #[bypass_check(positivity)] Inductive Lam := lam (_ : Lam -> Lam).
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Fixpoint infinite_loop l : False :=
         match l with lam x => infinite_loop (x l) end.
@@ -999,7 +999,7 @@ between universes for inductive types in the Type hierarchy.
    We will see that in presence of an impredicative type they
    are unsound:
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Fail Inductive A: Type := introA: ((A -> Prop) -> Prop) -> A.
 
@@ -1010,15 +1010,15 @@ between universes for inductive types in the Type hierarchy.
    the type :math:`A` with the function :math:`λx. λz. z = x` injecting
    any type :math:`T` into :math:`T → \Prop`.
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       #[bypass_check(positivity)] Inductive A: Type := introA: ((A -> Prop) -> Prop) -> A.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Definition f (x: A -> Prop): A := introA (fun z => z = x).
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Lemma f_inj: forall x y, f x = f y -> x = y.
       Proof.
@@ -1034,12 +1034,12 @@ between universes for inductive types in the Type hierarchy.
    injective function :math:`f` we use Cantor's classic diagonal
    argument.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Definition d: A -> Prop := fun x => exists s, x = f s /\ ~s x.
       Definition fd: A := f d.
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Lemma cantor: (d fd) <-> ~(d fd).
       Proof.
@@ -1211,7 +1211,7 @@ example, let us consider the following definition:
 
 .. example::
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Inductive option (A:Type) : Type :=
       | None : option A
@@ -1228,7 +1228,7 @@ if set in :math:`\Prop`.
 
 .. example::
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Check (fun A:Set => option A).
       Check (fun A:Prop => option A).
@@ -1237,7 +1237,7 @@ Here is another example.
 
 .. example::
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Inductive prod (A B:Type) : Type := pair : A -> B -> prod A B.
 
@@ -1248,7 +1248,7 @@ eliminations schemes are allowed.
 
 .. example::
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Check (fun A:Set => prod A).
       Check (fun A:Prop => prod A A).
@@ -1439,7 +1439,7 @@ logical disjunction :math:`A ∨ B` is defined inductively by:
 
 .. example::
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Inductive or (A B:Prop) : Prop :=
       or_introl : A -> or A B | or_intror : B -> or A B.
@@ -1450,7 +1450,7 @@ the proof of :g:`or A B` is not accepted:
 
 .. example::
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Fail Definition choice (A B: Prop) (x:or A B) :=
       match x with or_introl _ _ a => true | or_intror _ _ b => false end.
@@ -1474,7 +1474,7 @@ proof-irrelevance property which is sometimes a useful axiom:
 
 .. example::
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Axiom proof_irrelevance : forall (P : Prop) (x y : P), x=y.
 
@@ -1508,7 +1508,7 @@ type.
 
 .. example::
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Print eq_rec.
       Require Extraction.
@@ -1765,7 +1765,7 @@ command and show the internal representation.
 
 .. example::
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Fixpoint plus (n m:nat) {struct n} : nat :=
       match n with

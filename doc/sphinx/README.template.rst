@@ -190,7 +190,7 @@ DON'T
 
      .. tacv:: assert form as simple_intropattern
 
-Using the ``.. coqtop::`` directive for syntax highlighting
+Using the ``.. rocqtop::`` directive for syntax highlighting
 -----------------------------------------------------------
 
 DO
@@ -198,13 +198,13 @@ DO
 
      A tactic of the form:
 
-     .. coqdoc::
+     .. rocqdoc::
 
         do [ t1 | … | tn ].
 
      is equivalent to the standard Ltac expression:
 
-     .. coqdoc::
+     .. rocqdoc::
 
         first [ t1 | … | tn ].
 
@@ -213,13 +213,13 @@ DON'T
 
      A tactic of the form:
 
-     .. coqtop:: in
+     .. rocqtop:: in
 
         do [ t1 | … | tn ].
 
      is equivalent to the standard Ltac expression:
 
-     .. coqtop:: in
+     .. rocqtop:: in
 
         first [ t1 | … | tn ].
 
@@ -248,7 +248,7 @@ DO
 
      Here is a useful axiom:
 
-     .. coqdoc::
+     .. rocqdoc::
 
         Axiom proof_irrelevance : forall (P : Prop) (x y : P), x=y.
 
@@ -266,7 +266,7 @@ DON'T
 
      .. example::
 
-        .. coqdoc::
+        .. rocqdoc::
 
            Axiom proof_irrelevance : forall (P : Prop) (x y : P), x=y.
 
@@ -276,13 +276,13 @@ Tips and tricks
 Nested lemmas
 -------------
 
-The ``.. coqtop::`` directive does *not* reset Coq after running its contents.  That is, the following will create two nested lemmas (which by default results in a failure)::
+The ``.. rocqtop::`` directive does *not* reset Coq after running its contents.  That is, the following will create two nested lemmas (which by default results in a failure)::
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Lemma l1: 1 + 1 = 2.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Lemma l2: 2 + 2 <> 1.
 

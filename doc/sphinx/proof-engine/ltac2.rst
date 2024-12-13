@@ -62,7 +62,7 @@ by a value.
 
 Use the following command to import Ltac2:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    From Ltac2 Require Import Ltac2.
 
@@ -166,7 +166,7 @@ One can define new types with the following commands.
 
    .. example::
 
-      .. coqtop:: in
+      .. rocqtop:: in
 
          Module PositiveInt.
            #[abstract] Ltac2 Type t := int.
@@ -175,7 +175,7 @@ One can define new types with the following commands.
            Ltac2 get (x:t) : int := x.
          End PositiveInt.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Ltac2 Eval PositiveInt.get (PositiveInt.make 3).
          Fail Ltac2 Eval PositiveInt.get (PositiveInt.make -1).
@@ -196,11 +196,11 @@ Ltac2 provides over 150 API functions that provide various capabilities.  These
 are declared with :cmd:`Ltac2 external` in :n:`lib/coq/user-contrib/Ltac2/*.v`.
 For example, `Message.print` defined in `Message.v` is used to print messages:
 
-.. coqtop:: none
+.. rocqtop:: none
 
    Goal True.
 
-.. coqtop:: all abort
+.. rocqtop:: all abort
 
    Message.print (Message.of_string "fully qualified calls").
    From Ltac2 Require Import Message.
@@ -315,7 +315,7 @@ Ltac2 Definitions
 
    .. example:: Dynamic nature of mutable cells
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Ltac2 mutable x := true.
          Ltac2 y () := x.
@@ -325,7 +325,7 @@ Ltac2 Definitions
 
    .. example:: Interaction with recursive calls
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Ltac2 mutable rec f b := if b then 0 else f true.
          Ltac2 Set f := fun b => if b then 1 else f true.
@@ -662,7 +662,7 @@ is potentially ill-typed as a runtime **Rocq** term.
 
    The following term is valid (with type `unit -> constr`), but will fail at runtime:
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Ltac2 myconstr () := constr:(nat -> 0).
 
@@ -673,7 +673,7 @@ of the corresponding term expression.
 
    The following will type check, with type `constr`.
 
-   .. coqdoc::
+   .. rocqdoc::
 
       let x := '0 in constr:(1 + ltac2:(exact $x))
 
@@ -718,7 +718,7 @@ current context using the `Ltac2.Constr.pretype` function.
 
    The following notation is essentially the identity.
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Notation "[ x ]" := ltac2:(let x := Ltac2.Constr.pretype x in exact $x) (only parsing).
 
@@ -909,12 +909,12 @@ one from Ltac1, except that it requires the goal to be focused.
    These lines define a `msg` tactic that's used in several examples as a more-succinct
    alternative to `print (to_string "...")`:
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       From Ltac2 Require Import Message.
       Ltac2 msg x := print (of_string x).
 
-   .. coqtop:: none
+   .. rocqtop:: none
 
       Goal True.
 
@@ -923,7 +923,7 @@ one from Ltac1, except that it requires the goal to be focused.
    in a matching branch, it will try to match on subsequent branches.  Note that
    :n:`'@term` below is equivalent to :n:`open_constr:(@term)`.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Fail lazy_match! 'True with
       | True => msg "branch 1"; fail
@@ -944,7 +944,7 @@ one from Ltac1, except that it requires the goal to be focused.
    :tacn:`match!` tactics are only evaluated once, whereas :tacn:`multi_match!`
    tactics may be evaluated more than once if the following constructs trigger backtracking:
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Fail match! 'True with
       | True => msg "branch 1"
@@ -952,7 +952,7 @@ one from Ltac1, except that it requires the goal to be focused.
       end ;
       msg "branch A"; fail.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Fail multi_match! 'True with
       | True => msg "branch 1"
@@ -970,7 +970,7 @@ one from Ltac1, except that it requires the goal to be focused.
    Notice the :tacn:`idtac` prints ``(z + 1)`` while the :tacn:`pose` substitutes
    ``(x + 1)``.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       match! constr:(fun x => (x + 1) * 3) with
       | fun z => ?y * 3 => print (of_constr y); pose (fun z: nat => $y * 5)
@@ -985,14 +985,14 @@ one from Ltac1, except that it requires the goal to be focused.
    Internally "x <> y" is represented as "(~ (x = y))", which produces the
    first match.
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Ltac2 f2 t := match! t with
                     | context [ (~ ?t) ] => print (of_constr t); fail
                     | _ => ()
                     end.
 
-   .. coqtop:: all abort
+   .. rocqtop:: all abort
 
       f2 constr:((~ True) <> (~ False)).
 
@@ -1099,7 +1099,7 @@ Match over goals
    Hypotheses are matched from the last hypothesis (which is by default the newest
    hypothesis) to the first until the :tacn:`apply` succeeds.
 
-   .. coqtop:: all abort
+   .. rocqtop:: all abort
 
       Goal forall A B : Prop, A -> B -> (A->B).
       intros.
@@ -1115,7 +1115,7 @@ Match over goals
 
    Hypotheses are matched from the first hypothesis to the last until the :tacn:`apply` succeeds.
 
-   .. coqtop:: all abort
+   .. rocqtop:: all abort
 
       Goal forall A B : Prop, A -> B -> (A->B).
       intros.
@@ -1134,7 +1134,7 @@ Match over goals
    Observe that the number of permutations can grow as the factorial
    of the number of hypotheses and hypothesis patterns.
 
-   .. coqtop:: all abort
+   .. rocqtop:: all abort
 
       Goal forall A B : Prop, A -> B -> (A->B).
       intros A B H.
@@ -1235,11 +1235,11 @@ Notations
 
    .. example:: Printing a :n:`@term`
 
-      .. coqtop:: none
+      .. rocqtop:: none
 
          Goal True.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          From Ltac2 Require Import Message.
          Ltac2 Notation "ex1" x(constr) := print (of_constr x).
@@ -1248,7 +1248,7 @@ Notations
       You can also print terms with a regular Ltac2 definition, but then the :n:`@term` must be in
       the quotation `constr:( … )`:
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Ltac2 ex2 x := print (of_constr x).
          ex2 constr:(1+2).
@@ -1259,7 +1259,7 @@ Notations
 
    .. example:: Parsing a list of :n:`@term`\s
 
-      .. coqtop:: abort all
+      .. rocqtop:: abort all
 
          Ltac2 rec print_list x := match x with
          | a :: t => print (of_constr a); print_list t
@@ -1276,7 +1276,7 @@ Notations
 
       Assume we perform:
 
-      .. coqdoc::
+      .. rocqdoc::
 
          Ltac2 Notation "foo" c(thunk(constr)) ids(list0(ident)) := Bar.f c ids.
 
@@ -1363,7 +1363,7 @@ in the documentation are defined with Ltac1.)
 You can make them accessible in Ltac2 with commands similar to the following
 (the example requires the Stdlib library for the :tacn:`lia` tactic):
 
-.. coqtop:: in extra
+.. rocqtop:: in extra
 
    From Stdlib Require Import Lia.
    Local Ltac2 lia_ltac1 () := ltac1:(lia).
@@ -1791,7 +1791,7 @@ Ltac1 **cannot** implicitly access variables from the Ltac2 scope, but this can
 be done with an explicit annotation on the :n:`ltac1:({* @ident } |- @ltac_expr)`
 quotation.  See :ref:`ltac2_built-in-quotations`.  For example:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Local Ltac2 replace_with (lhs: constr) (rhs: constr) :=
      ltac1:(lhs rhs |- replace lhs with rhs) (Ltac1.of_constr lhs) (Ltac1.of_constr rhs).
@@ -1844,12 +1844,12 @@ eagerly, if one wants to use it as an argument to a Ltac1 function, one has to
 resort to the good old :n:`idtac; ltac2:(foo)` trick. For instance, the code
 below will fail immediately and won't print anything.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    From Ltac2 Require Import Ltac2.
    Set Default Proof Mode "Classic".
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Ltac mytac tac := idtac "I am being evaluated"; tac.
 
@@ -1872,7 +1872,7 @@ Use the `ltac2val` quotation to return values to Ltac1 from Ltac2.
 
 It has the same typing rules as `ltac2:()` except the expression must have type `Ltac2.Ltac1.t`.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Import Constr.Unsafe.
 

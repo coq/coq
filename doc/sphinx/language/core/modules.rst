@@ -205,7 +205,7 @@ are now available through the dot notation.
 
    .. example::
 
-      .. coqtop:: reset in
+      .. rocqtop:: reset in
 
          Module Mod.
          Definition T:=nat.
@@ -213,7 +213,7 @@ are now available through the dot notation.
          End Mod.
          Check Mod.T.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Fail Check T.
          Import Mod.
@@ -228,7 +228,7 @@ are now available through the dot notation.
 
    .. example::
 
-      .. coqtop:: in
+      .. rocqtop:: in
 
          Module A.
          Module B.
@@ -237,7 +237,7 @@ are now available through the dot notation.
          End A.
          Import A.
 
-      .. coqtop:: all fail
+      .. rocqtop:: all fail
 
          Check B.T.
 
@@ -263,7 +263,7 @@ are now available through the dot notation.
 
    .. example::
 
-      .. coqtop:: reset in
+      .. rocqtop:: reset in
 
          Module A.
          Module B.
@@ -274,7 +274,7 @@ are now available through the dot notation.
          End A.
          Import A(B.T(..), Z).
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Check B.T.
          Check B.C.
@@ -359,7 +359,7 @@ are now available through the dot notation.
 
    .. example::
 
-      .. coqtop:: reset in
+      .. rocqtop:: reset in
 
          Module A.
          Definition foo := 0.
@@ -368,7 +368,7 @@ are now available through the dot notation.
          End B.
          End A.
 
-      .. coqtop:: all
+      .. rocqtop:: all
 
          Print Namespace Top.
          Print Namespace Top.A.
@@ -381,18 +381,18 @@ Examples
 
 .. example:: Defining a simple module interactively
 
-    .. coqtop:: in
+    .. rocqtop:: in
 
        Module M.
        Definition T := nat.
        Definition x := 0.
 
-    .. coqtop:: all
+    .. rocqtop:: all
 
        Definition y : bool.
        exact true.
 
-    .. coqtop:: in
+    .. rocqtop:: in
 
        Defined.
        End M.
@@ -401,7 +401,7 @@ Inside a module one can define :term:`constants <constant>`, prove theorems and 
 else that can be done in the toplevel. Components of a closed
 module can be accessed using the dot notation:
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Print M.x.
 
@@ -409,7 +409,7 @@ module can be accessed using the dot notation:
 
 .. example:: Defining a simple module type interactively
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Module Type SIG.
       Parameter T : Set.
@@ -423,7 +423,7 @@ module can be accessed using the dot notation:
    Since :n:`SIG`, the type of the new module :n:`N`, doesn't define :n:`y` or
    give the body of :n:`x`, which are not included in :n:`N`.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Module N : SIG with Definition T := nat := M.
       Print N.T.
@@ -431,7 +431,7 @@ module can be accessed using the dot notation:
       Fail Print N.y.
 
    .. reset to remove N (undo in last coqtop block doesn't seem to do that), invisibly redefine M, SIG
-   .. coqtop:: none reset
+   .. rocqtop:: none reset
 
       Module M.
       Definition T := nat.
@@ -449,7 +449,7 @@ module can be accessed using the dot notation:
 The definition of :g:`N` using the module type expression :g:`SIG` with
 :g:`Definition T := nat` is equivalent to the following one:
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Module Type SIG'.
    Definition T : Set := nat.
@@ -468,17 +468,17 @@ If we just want to be sure that our implementation satisfies a
 given module type without restricting the interface, we can use a
 transparent constraint
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Module P <: SIG := M.
 
-.. coqtop:: all
+.. rocqtop:: all
 
    Print P.y.
 
 .. example:: Creating a functor (a module with parameters)
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Module Two (X Y: SIG).
       Definition T := (X.T * Y.T)%type.
@@ -487,18 +487,18 @@ transparent constraint
 
    and apply it to our modules and do some computations:
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
 
       Module Q := Two M N.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Eval compute in (fst Q.x + snd Q.x).
 
 .. example:: A module type with two sub-modules, sharing some fields
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Module Type SIG2.
         Declare Module M1 : SIG.
@@ -508,7 +508,7 @@ transparent constraint
         End M2.
       End SIG2.
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Module Mod <: SIG2.
         Module M1.
@@ -592,7 +592,7 @@ their fully qualified name (see :ref:`gallina-definitions`).
 
 .. example::
 
-    .. coqtop:: all
+    .. rocqtop:: all
 
        Check 0.
 

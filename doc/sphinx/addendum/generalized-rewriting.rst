@@ -121,7 +121,7 @@ parameters is any term :math:`f \, t_1 \ldots t_n`.
    morphism parametric over ``A`` that respects the relation instance
    ``(set_eq A)``. The latter condition is proved by showing:
 
-   .. coqdoc::
+   .. rocqdoc::
 
      forall (A: Type) (S1 S1' S2 S2': list A),
        set_eq A S1 S1' ->
@@ -216,7 +216,7 @@ They also support the :attr:`universes(polymorphic)` attributes.
 
    For Leibniz equality, we may declare:
 
-   .. coqdoc::
+   .. rocqdoc::
 
      Add Parametric Relation (A : Type) : A (@eq A)
        [reflexivity proved by @refl_equal A]
@@ -247,7 +247,7 @@ following command.
    homogeneous sets and we declare set equality as a parametric
    equivalence relation and union of two sets as a parametric morphism.
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Require Export Setoid.
       Require Export Relation_Definitions.
@@ -286,7 +286,7 @@ following command.
    (maximally inserted) implicit arguments. If ``A`` is always set as
    maximally implicit in the previous example, one can write:
 
-   .. coqdoc::
+   .. rocqdoc::
 
       Add Parametric Relation A : (set A) eq_set
         reflexivity proved by eq_set_refl
@@ -304,12 +304,12 @@ following command.
    properties over ``eq_set`` and ``union`` can be established from the two
    declarations above.
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Goal forall (S : set nat),
         eq_set (union (union S (empty nat)) S) (union S S).
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Proof. intros. rewrite empty_neutral. reflexivity. Qed.
 
@@ -489,7 +489,7 @@ various combinations of properties on relations and morphisms are
 represented as records and instances of these classes are put in a
 hint database. For example, the declaration:
 
-.. coqdoc::
+.. rocqdoc::
 
    Add Parametric Relation (x1 : T1) ... (xn : Tn) : (A t1 ... tn) (Aeq t′1 ... t′m)
      [reflexivity proved by refl]
@@ -500,7 +500,7 @@ hint database. For example, the declaration:
 
 is equivalent to an instance declaration:
 
-.. coqdoc::
+.. rocqdoc::
 
    Instance id (x1 : T1) ... (xn : Tn) : @Equivalence (A t1 ... tn) (Aeq t′1 ... t′m) :=
      [Equivalence_Reflexive := refl]
@@ -526,7 +526,7 @@ registered as parametric relations and morphisms.
 
 .. example:: First class setoids
 
-   .. coqtop:: in reset
+   .. rocqtop:: in reset
 
       Require Import Relation_Definitions Setoid.
 
@@ -686,16 +686,16 @@ declared as morphisms in the ``Classes.Morphisms_Prop`` module. For
 example, to declare that universal quantification is a morphism for
 logical equivalence:
 
-.. coqtop:: none
+.. rocqtop:: none
 
    Require Import Morphisms.
 
-.. coqtop:: in
+.. rocqtop:: in
 
    Instance all_iff_morphism (A : Type) :
             Proper (pointwise_relation A iff ==> iff) (@all A).
 
-.. coqtop:: all abort
+.. rocqtop:: all abort
 
    Proof. simpl_relation.
 
@@ -717,7 +717,7 @@ functional arguments (or whatever subrelation of the pointwise
 extension). For example, one could declare the ``map`` combinator on lists
 as a morphism:
 
-.. coqdoc::
+.. rocqdoc::
 
    Instance map_morphism `{Equivalence A eqA, Equivalence B eqB} :
             Proper ((eqA ==> eqB) ==> list_equiv eqA ==> list_equiv eqB) (@map A B).
@@ -776,7 +776,7 @@ is used even when rewriting with individual lemmas.
 
 .. example::
 
-   .. coqtop:: reset in
+   .. rocqtop:: reset in
 
       Require Setoid.
       Definition f x y := 2*x + y.
@@ -787,7 +787,7 @@ is used even when rewriting with individual lemmas.
         2 * g 1 8 = 20.
       Proof.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
         intros. (* By default, this rewrite succeeds by unifying f with g. *)
           assert_succeeds (setoid_rewrite double_f).
@@ -808,7 +808,7 @@ is used even when rewriting with individual lemmas.
           assert_succeeds (setoid_rewrite double_f).
           assert_succeeds (rewrite_strat bottomup double_f).
 
-   .. coqtop:: none
+   .. rocqtop:: none
 
         exact eq_refl.
       Qed.
@@ -1038,7 +1038,7 @@ on success. It is stronger than the tactic ``fold``.
 
    The type of `andbC` is `forall a b : bool, a && b = b && a`.
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       Require Import ssrbool.
       Set Printing Parentheses.
@@ -1046,17 +1046,17 @@ on success. It is stronger than the tactic ``fold``.
       Goal forall a b c : bool, a && b && c = true.
       rewrite_strat innermost andbC.
 
-   .. coqtop:: none
+   .. rocqtop:: none
 
       Abort.
       Goal forall a b c : bool, a && b && c = true.
 
    Using :n:`outermost` instead gives this result:
 
-   .. coqtop:: all
+   .. rocqtop:: all
 
       rewrite_strat outermost andbC.
 
-   .. coqtop:: none
+   .. rocqtop:: none
 
       Abort.

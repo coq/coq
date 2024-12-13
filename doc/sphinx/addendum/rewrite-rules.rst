@@ -36,7 +36,7 @@ but they may still reduce using the provided rules, unlike axioms.
 
    Binds an :n:`@ident` to a :n:`@type` as a symbol.
 
-   .. coqtop:: in
+   .. rocqtop:: in
 
       Symbol pplus : nat -> nat -> nat.
       Notation "a ++ b" := (pplus a b).
@@ -61,7 +61,7 @@ When a rule is applied, the term is matched against the pattern,
 subterms aligned with pattern variables are collected
 and then substituted into the replacement, which is returned.
 
-  .. coqtop:: all
+  .. rocqtop:: all
 
      Rewrite Rule pplus_rewrite :=
      | ?n ++ 0 => ?n
@@ -112,7 +112,7 @@ Note that if in the replacement, the context was extended with a variable bearin
 this explicit substitution is inferred automatically (like for existential variable instantiations).
 
 
-   .. coqtop:: all warn
+   .. rocqtop:: all warn
 
       Symbol raise : forall (A : Type), A.
       Rewrite Rule raise_nat :=
@@ -139,7 +139,7 @@ which in turn must imply the constraints needed for the replacement.
 You can make the declared constraints extensible
 so all inferred constraints from the left-hand side are used for the replacement.
 
-   .. coqtop:: reset all warn
+   .. rocqtop:: reset all warn
 
       #[universes(polymorphic)] Symbol raise@{q|u|} : forall (A : Type@{q|u}), A.
       Rewrite Rule raise_nat :=
