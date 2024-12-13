@@ -1,6 +1,6 @@
 # Update CACHEKEY in the .gitlab-ci.yml when modifying this file.
 
-FROM ubuntu:23.04
+FROM ubuntu:24.04
 LABEL maintainer="e@x80.org"
 
 ENV DEBIAN_FRONTEND="noninteractive"
@@ -15,6 +15,8 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
         perl libgmp-dev libgmp-dev:i386 \
         # Dependencies of lablgtk (for CoqIDE)
         libgtksourceview-3.0-dev adwaita-icon-theme-full \
+        # pipeline-stats
+        python3-gitlab python3-tabulate \
         # Dependencies of source-doc and coq-makefile
         texlive-latex-extra texlive-science tipa \
         # Dependencies of HB (test suite)
