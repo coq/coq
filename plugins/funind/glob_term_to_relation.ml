@@ -1522,7 +1522,6 @@ let do_build_inductive evd (funconstants : pconstant list)
       ComInductive.poly = false;
       cumulative = false;
       template = Some false;
-      auto_prop_lowering = false;
       finite = Finite;
       mode = None;
     }

@@ -170,29 +170,6 @@ smallest sort which permits large elimination (excluding
 `SProp`). For :ref:`empty and singleton <Empty-and-singleton-elimination>`
 types this means they are declared in `Prop`.
 
-.. flag:: Automatic Proposition Inductives
-
-   By default the above behaviour is extended to empty and singleton
-   inductives explicitly declared in `Type` (but not those in explicit
-   universes using `Type@{u}`, or in `Type` through an auxiliary definition
-   such as `Definition typ := Type.`).
-
-   Disabling this flag prevents inductives with an explicit non-`Prop`
-   type from being lowered to `Prop`. This will become the default in
-   a future version. Use :flag:`Dependent Proposition Eliminators` to
-   declare the inductive type in `Prop` while preserving compatibility.
-
-   Depending on universe minimization they may then be declared in
-   `Set` or in a floating universe level,
-   see also :flag:`Universe Minimization ToSet`.
-
-.. warn:: Automatically putting @ident in Prop even though it was declared with Type.
-   :name: automatic-prop-lowering
-
-   This warning is produced when :flag:`Automatic Proposition
-   Inductives` is enabled and resulted in an inductive type being
-   lowered to `Prop`.
-
 Simple indexed inductive types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
