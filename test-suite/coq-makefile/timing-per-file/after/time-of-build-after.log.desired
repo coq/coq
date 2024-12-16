@@ -1,4 +1,5 @@
 ROCQ DEP VFILES
+.Makefile.d (ignored)
 ROCQ compile Slow.v
 Slow.vo (real: 0.04, user: 0.02, sys: 0.01, mem: 45512 ko)
 ROCQ compile Fast.v

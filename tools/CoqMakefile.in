@@ -892,7 +892,7 @@ VDFILE_FLAGS:=$(if @PROJECT_FILE@,-f @PROJECT_FILE@,) $(CMDLINE_COQLIBS) $(CMDLI
 
 $(VDFILE): @PROJECT_FILE@ $(VFILES)
 	$(SHOW)'ROCQ DEP VFILES'
-	$(HIDE)$(COQDEP) -vos -dyndep var $(VDFILE_FLAGS) $(redir_if_ok)
+	$(HIDE)$(TIMER) $(COQDEP) -vos -dyndep var $(VDFILE_FLAGS) $(redir_if_ok)
 
 # Misc ########################################################################
 
