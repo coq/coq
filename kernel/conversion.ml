@@ -465,21 +465,21 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
           let ninfos = infos_with_reds infos.cnv_inf RedFlags.betaiotazeta in
           let () = Control.check_for_interrupt () in
           if Conv_oracle.oracle_order oracle l2r (to_er fl1) (to_er fl2) then begin
-            record_delta infos.lft_tab hd1;
+            record_delta infos.lft_tab t1;
             let appr1 = whd_stack ninfos infos.lft_tab t1 v1 in
             eqwhnf cv_pb l2r infos (lft1, appr1) appr2 cuniv
           end else begin
-            record_delta infos.rgt_tab hd2;
+            record_delta infos.rgt_tab t2;
             let appr2 = whd_stack ninfos infos.rgt_tab t2 v2 in
             eqwhnf cv_pb l2r infos appr1 (lft2, appr2) cuniv
           end
         | Some (t1, v1), None ->
-          record_delta infos.lft_tab hd1;
+          record_delta infos.lft_tab t1;
           let all = RedFlags.(red_add_transparent all (red_transparent (info_flags infos.cnv_inf))) in
           let t1 = whd_stack (infos_with_reds infos.cnv_inf all) infos.lft_tab t1 v1 in
           eqwhnf cv_pb l2r infos (lft1, t1) appr2 cuniv
         | None, Some (t2, v2) ->
-          record_delta infos.rgt_tab hd2;
+          record_delta infos.rgt_tab t2;
           let all = RedFlags.(red_add_transparent all (red_transparent (info_flags infos.cnv_inf))) in
           let t2 = whd_stack (infos_with_reds infos.cnv_inf all) infos.rgt_tab t2 v2 in
           eqwhnf cv_pb l2r infos appr1 (lft2, t2) cuniv
@@ -515,7 +515,7 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
           | FFlex _ ->
             begin match unfold_ref_with_args infos.cnv_inf infos.rgt_tab hd2 v2 with
              | Some t2 ->
-               record_delta infos.rgt_tab hd2;
+               record_delta infos.rgt_tab (fst t2);
                eqappr cv_pb l2r infos appr1 (lft2, t2) cuniv
              | None -> raise NotConvertible
             end
@@ -532,7 +532,7 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
           | FFlex _ ->
             begin match unfold_ref_with_args infos.cnv_inf infos.lft_tab hd1 v1 with
              | Some t1 ->
-               record_delta infos.lft_tab hd1;
+               record_delta infos.lft_tab (fst t1);
                eqappr cv_pb l2r infos (lft1, t1) appr2 cuniv
              | None -> raise NotConvertible
             end
@@ -595,7 +595,7 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
               Conversion check to rigid terms eventually implies full weak-head
               reduction, so instead of repeatedly performing small-step
               unfoldings, we perform reduction with all flags on. *)
-            record_delta infos.lft_tab hd1;
+            record_delta infos.lft_tab def1;
             let all = RedFlags.(red_add_transparent all (red_transparent (info_flags infos.cnv_inf))) in
             let r1 = whd_stack (infos_with_reds infos.cnv_inf all) infos.lft_tab def1 v1 in
             eqwhnf cv_pb l2r infos (lft1, r1) appr2 cuniv
@@ -614,7 +614,7 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
        begin match unfold_ref_with_args infos.cnv_inf infos.rgt_tab hd2 v2 with
         | Some (def2, v2) ->
           (** Symmetrical case of above. *)
-          record_delta infos.rgt_tab hd2;
+          record_delta infos.rgt_tab def2;
           let all = RedFlags.(red_add_transparent all (red_transparent (info_flags infos.cnv_inf))) in
           let r2 = whd_stack (infos_with_reds infos.cnv_inf all) infos.rgt_tab def2 v2 in
           eqwhnf cv_pb l2r infos appr1 (lft2, r2) cuniv
