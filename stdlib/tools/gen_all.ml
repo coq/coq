@@ -12,8 +12,6 @@ let from = "Stdlib"
 
 let () = Printf.printf "Set Warnings \"-deprecated-library-file,-warn-library-file\".\n\n"
 
-let () = Printf.printf "From %s Require\n" from
-
 let logical_concat prefix f =
   let f = Filename.remove_extension f in
   match prefix with
@@ -40,7 +38,7 @@ let rec traverse todo todo' = match todo, todo' with
         let () =
           if Filename.extension path = ".v" &&
              logical <> "All"
-          then Printf.printf "  %s\n" logical
+          then Printf.printf "From %s Require Export %s.\n" from logical
         in
         todo'
       | _ -> todo'
@@ -49,4 +47,4 @@ let rec traverse todo todo' = match todo, todo' with
 
 let () = traverse [".", ""] []
 
-let () = Printf.printf ".\n%!"
+let () = Printf.printf "%!"
