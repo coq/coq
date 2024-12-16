@@ -2013,8 +2013,8 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
       (* TODO missing record_step for non-Def definitions *)
       (match Table.lookup info tab.tab fl with
         | Def (v, _) ->
-          record_step tab Delta m.ctx;
           push_context tab fl m.ctx v;
+          record_step tab Delta v.ctx;
           kni info tab ~pat_state v stk
         | Primitive op ->
           if check_native_args op stk then
