@@ -10,7 +10,7 @@
 
 let from = "Stdlib"
 
-let () = Printf.printf "Set Warnings \"-deprecated-library-file,-warn-library-file\".\n\n"
+let () = Printf.printf "Set Warnings \"-deprecated-library-file,-warn-library-file,-notation-incompatible-prefix,-notation-overridden,-overwriting-delimiting-key\".\n\n"
 
 let logical_concat prefix f =
   let f = Filename.remove_extension f in
