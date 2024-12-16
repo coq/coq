@@ -1302,6 +1302,10 @@ let process_steps steps =
   let inherited = RedContextMap.bindings inherited in
   total, steps, inherited
 
+let safe_pr_global gr =
+  try Nametab.pr_global_env Id.Set.empty gr
+  with Not_found -> GlobRef.print gr
+
 let to_table header total steps =
   let open Pp in
   let pr_row (ctx, (steps:CClosure.RecordedSteps.t)) =
@@ -1310,7 +1314,7 @@ let to_table header total steps =
       | Some ctx ->
         hov 2
           (prlist_with_sep (fun () -> spc() ++ str "in ")
-             (Nametab.pr_global_env Id.Set.empty)
+             safe_pr_global
              ctx)
     in
     let pp_flag get =
@@ -1354,6 +1358,15 @@ let print_conversion_steps left right =
 
 let () = Conversion.dbg_msg := print_conversion_steps
 
+let format_steps steps =
+  let open Pp in
+  let total, steps, inherited = process_steps steps in
+  let rate = pp_sample_rate !CClosure.RecordedSteps.sample_rate in
+  pr_opt (fun rate -> str "sample rate: " ++ str rate) rate ++
+  to_table "individual" total steps ++ fnl() ++
+  fnl() ++
+  to_table "inherited" total inherited
+
 (* future work: print percentages, print step counts in children
    nicer formatting (some kind of table?) *)
 let print_recorded_steps tab =
@@ -1361,14 +1374,8 @@ let print_recorded_steps tab =
   if not @@ has_recorded_steps tab then ()
   else
     print_recorded_steps @@ fun () ->
-    let open Pp in
     let steps = get_recorded_steps tab in
-    let total, steps, inherited = process_steps steps in
-    let rate = pp_sample_rate !CClosure.RecordedSteps.sample_rate in
-    pr_opt (fun rate -> str "sample rate: " ++ str rate) rate ++
-    to_table "individual" total steps ++ fnl() ++
-    fnl() ++
-    to_table "inherited" total inherited
+    format_steps steps
 
 (* lazy reduction functions. The infos must be created for each term *)
 (* Note by HH [oct 08] : why would it be the job of clos_norm_flags to add
