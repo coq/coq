@@ -949,6 +949,9 @@ let subst_defined_metas_evars sigma (bl,el) c =
   (* This seems to be performance-critical, and using the
      evar-insensitive primitives blow up the time passed in this
      function. *)
+  if List.is_empty bl && List.is_empty el then
+    if occur_meta sigma c then None else Some c
+  else
   let c = EConstr.Unsafe.to_constr c in
   let rec substrec c = match Constr.kind c with
     | Meta i ->
