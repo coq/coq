@@ -1164,7 +1164,7 @@ plugin:ci-perennial:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-stdlib
+  - library:ci-stdlib+flambda
 
 plugin:plugin-tutorial:
   stage: build-0
