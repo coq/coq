@@ -27,6 +27,7 @@ stages:
   - build-2
   - build-3+
   - deploy
+  - stats
 
 # We set "needs" to contain all transitive dependencies. We include the
 # transitive dependencies as otherwise we don't get their artifacts
@@ -40,7 +41,7 @@ variables:
   # echo $(md5sum dev/ci/docker/old_ubuntu_lts/Dockerfile | head -c 10)
   # echo $(md5sum dev/ci/docker/edge_ubuntu/Dockerfile | head -c 10)
   BASE_CACHEKEY: "old_ubuntu_lts-V2024-10-11-f72b1aa7c6"
-  EDGE_CACHEKEY: "edge_ubuntu-V2024-12-02-8a4b2ae476"
+  EDGE_CACHEKEY: "edge_ubuntu-V2024-12-13-5c140221f4"
   BASE_IMAGE: "$CI_REGISTRY_IMAGE:$BASE_CACHEKEY"
   EDGE_IMAGE: "$CI_REGISTRY_IMAGE:$EDGE_CACHEKEY"
 
@@ -1313,3 +1314,13 @@ doc:ci-refman:
       - _build/log
       - _build/default/doc/refman-html
       - _build/default/doc/refman-pdf
+
+pipeline-stats:
+  image: $EDGE_IMAGE
+  extends: .auto-use-tags
+  stage: stats
+  dependencies: []
+  before_script: []
+  script:
+  - dev/tools/pipeline-stats.py
+  when: always
