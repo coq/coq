@@ -472,6 +472,8 @@ let add_step record : step_kind -> unit = function
   | Match -> record.matches <- 1 + record.matches
   | Fix -> record.fixpoints <- 1 + record.fixpoints
 
+let global_steps = ref None
+
 type clos_tab = {
   tab : Table.t;
   recorded_steps : recorded_steps RedContextTbl.t option;
@@ -516,6 +518,13 @@ module RecordedSteps = struct
     match tab.recorded_steps with
     | None -> false
     | Some record -> RedContextTbl.length record > 0
+
+  let globally_record_steps () = global_steps := Some (RedContextTbl.create 57)
+
+  let get_global_steps () =
+    match !global_steps with
+    | None -> []
+    | Some record -> RedContextTbl.to_seq record |> Seq.map (on_snd copy) |> List.of_seq
 
   let get_recorded_steps tab =
     match tab.recorded_steps with
@@ -1936,21 +1945,30 @@ let lazy_trace flag ctx = lazy_trace Pp.(fun () ->
   | None | Some [] -> str "top"
   | Some kns -> prlist_with_sep pr_comma GlobRef.print kns)
 
+let record_step_in records flag ctx =
+  let record = match RedContextTbl.find_opt records ctx with
+    | Some record -> record
+    | None ->
+      let record = empty_recorded_steps () in
+      RedContextTbl.add records ctx record;
+      record
+  in
+  add_step record flag
+
 let record_step tab flag ctx =
-  let () = match tab.recorded_steps with
-    | None -> ()
-    | Some records ->
+  let () = match tab.recorded_steps, !global_steps with
+    | None, None -> ()
+    | Some records, None | None, Some records ->
+      let num,denum = !RecordedSteps.sample_rate in
+      (* sample [num / denum] of the steps *)
+      if num = denum || Random.int denum < num then
+        record_step_in records flag ctx
+    | Some records1, Some records2 ->
       let num,denum = !RecordedSteps.sample_rate in
       (* sample [num / denum] of the steps *)
       if num = denum || Random.int denum < num then begin
-        let record = match RedContextTbl.find_opt records ctx with
-          | Some record -> record
-          | None ->
-            let record = empty_recorded_steps () in
-            RedContextTbl.add records ctx record;
-            record
-        in
-        add_step record flag
+        record_step_in records1 flag ctx;
+        record_step_in records2 flag ctx
       end
   in
   lazy_trace flag ctx
@@ -1972,7 +1990,9 @@ let push_context fl ctx v =
     v.ctx <- ctx
 
 let push_context tab fl ctx v =
-  if Option.is_empty tab.recorded_steps && not (CDebug.get_flag lazy_trace_flag)
+  if Option.is_empty !global_steps &&
+     Option.is_empty tab.recorded_steps &&
+     not (CDebug.get_flag lazy_trace_flag)
   then ()
   else push_context fl ctx v
 

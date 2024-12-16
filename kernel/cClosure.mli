@@ -160,6 +160,9 @@ module RecordedSteps : sig
 
   val get_recorded_steps : clos_tab -> (current_context * t) list
 
+  val globally_record_steps : unit -> unit
+
+  val get_global_steps : unit -> (current_context * t) list
 end
 
 val info_env : clos_infos -> env
