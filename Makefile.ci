@@ -249,7 +249,7 @@ ci-verdi_raft: ci-stdlib
 
 ci-waterproof: ci-stdlib
 
-ci-refman: ci-platform_full
+ci-refman: ci-mathcomp ci-mczify
 
 # Virtual targets used by the CI to group compilation of rules in a single job
 

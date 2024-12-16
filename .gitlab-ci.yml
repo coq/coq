@@ -1280,34 +1280,9 @@ doc:ci-refman:
   needs:
   - build:edge+flambda
   - library:ci-stdlib+flambda
-  - plugin:ci-itauto
-  - plugin:ci-aac_tactics
-  - plugin:ci-bignums
-  - plugin:ci-coq_dpdgraph
-  - library:ci-coquelicot
-  - library:ci-corn
-  - library:ci-coqprime
   - plugin:ci-elpi_hb
-  - library:ci-ext_lib
-  - plugin:ci-equations
-  - library:ci-flocq
-  - plugin:ci-coqhammer
-  - library:ci-hott
-  - library:ci-iris
-  - library:ci-math_classes
   - library:ci-mathcomp
-  - library:ci-mathcomp_word
   - library:ci-mczify
-  - library:ci-finmap
-  - library:ci-bigenough
-  - library:ci-analysis
-  - library:ci-menhir
-  - plugin:ci-mtac2
-  - plugin:ci-paramcoq
-  - plugin:ci-quickchick
-  - plugin:ci-reduction_effects
-  - plugin:ci-relation_algebra
-  - library:ci-simple_io
   stage: build-3+
   artifacts:
     paths:
