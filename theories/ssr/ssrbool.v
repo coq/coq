@@ -465,9 +465,7 @@ Reserved Notation "[ ==> b1 , b2 , .. , bn => c ]" (at level 0, format
   "'[hv' [ ==> '['  b1 , '/'  b2 , '/'  .. , '/'  bn ']' '/'  =>  c ] ']'").
 
 (**  Shorter delimiter  **)
-#[export] Set Warnings "-overwriting-delimiting-key".
 Delimit Scope bool_scope with B.
-#[export] Set Warnings "overwriting-delimiting-key".
 Open Scope bool_scope.
 
 (**  An alternative to xorb that behaves somewhat better wrt simplification. **)

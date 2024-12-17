@@ -78,14 +78,8 @@ neg_infinity
      : nat
 2%float
      : float
-File "./output/FloatNumberSyntax.v", line 47, characters 0-35:
-Warning: Overwriting previous delimiting key float in scope float_scope
-[overwriting-delimiting-key,parsing,default]
 t = 2%flt
      : float
-File "./output/FloatNumberSyntax.v", line 50, characters 0-35:
-Warning: Overwriting previous delimiting key nat in scope nat_scope
-[overwriting-delimiting-key,parsing,default]
 File "./output/FloatNumberSyntax.v", line 50, characters 0-35:
 Warning: Hiding binding of key float to float_scope
 [hiding-delimiting-key,parsing,default]

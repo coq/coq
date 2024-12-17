@@ -56,14 +56,8 @@ Cannot interpret this number as a value of type int
      : nat
 2%sint63
      : int
-File "./output/Sint63NumberSyntax.v", line 34, characters 0-37:
-Warning: Overwriting previous delimiting key sint63 in scope sint63_scope
-[overwriting-delimiting-key,parsing,default]
 t = 2%si63
      : int
-File "./output/Sint63NumberSyntax.v", line 37, characters 0-36:
-Warning: Overwriting previous delimiting key nat in scope nat_scope
-[overwriting-delimiting-key,parsing,default]
 File "./output/Sint63NumberSyntax.v", line 37, characters 0-36:
 Warning: Hiding binding of key sint63 to sint63_scope
 [hiding-delimiting-key,parsing,default]
@@ -73,9 +67,6 @@ t = 2%si63
      : nat
 2
      : int
-File "./output/Sint63NumberSyntax.v", line 43, characters 0-39:
-Warning: Overwriting previous delimiting key si63 in scope sint63_scope
-[overwriting-delimiting-key,parsing,default]
 File "./output/Sint63NumberSyntax.v", line 43, characters 0-39:
 Warning: Hiding binding of key sint63 to nat_scope
 [hiding-delimiting-key,parsing,default]

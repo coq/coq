@@ -50,14 +50,8 @@ Overflow in int63 literal: 9223372036854775808.
      : nat
 2%uint63
      : int
-File "./output/Int63NumberSyntax.v", line 31, characters 0-37:
-Warning: Overwriting previous delimiting key uint63 in scope uint63_scope
-[overwriting-delimiting-key,parsing,default]
 t = 2%ui63
      : int
-File "./output/Int63NumberSyntax.v", line 34, characters 0-36:
-Warning: Overwriting previous delimiting key nat in scope nat_scope
-[overwriting-delimiting-key,parsing,default]
 File "./output/Int63NumberSyntax.v", line 34, characters 0-36:
 Warning: Hiding binding of key uint63 to uint63_scope
 [hiding-delimiting-key,parsing,default]
