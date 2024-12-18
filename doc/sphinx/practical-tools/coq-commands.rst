@@ -113,7 +113,7 @@ script from a configuration directory.  ``-q`` prevents the use of a startup scr
 Environment variables
 ~~~~~~~~~~~~~~~~~~~~~
 
-``$COQPATH`` can be used to specify the :term:`load path`. It is a list of directories separated by
+``$ROCQPATH`` can be used to specify the :term:`load path`. It is a list of directories separated by
 ``:`` (``;`` on Windows). Coq will also honor ``$XDG_DATA_HOME`` and
 ``$XDG_DATA_DIRS`` (see Section :ref:`logical-paths-load-path`).
 
