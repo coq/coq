@@ -29,7 +29,7 @@ type universe_source =
 
 type universe_name_decl = universe_source * (Id.t * UGlobal.t) list
 
-type [@warning "-37"] sort_source =
+type sort_source =
   | BoundQuality
   | UnqualifiedQuality
 
@@ -131,12 +131,11 @@ let input_sort_names : sort_name_decl -> Libobject.obj =
       load_function = load_sort_names;
       open_function = simple_open open_sort_names;
       discharge_function = discharge_sort_names;
-      subst_function = (fun (subst, a) -> (* Actually the name is generated once and for all. *) a);
-      classify_function = (fun a -> Substitute) }
+      classify_function = (fun a -> Escape) }
 
 let input_sort_names (src, l) =
   if CList.is_empty l then ()
-  else Lib.add_leaf (input_sort_names { sdecl_src = src; sdecl_named = l; (* sdecl_anon = a *) })
+  else Lib.add_leaf (input_sort_names { sdecl_src = src; sdecl_named = l })
 
 
 let label_of = let open GlobRef in function
@@ -211,7 +210,6 @@ let do_universe ~poly l =
     in
     Global.push_section_context ctx
 
-    (* TODO: move to its proper place *)
 let do_sort ~poly l =
   let in_section = Lib.sections_are_opened () in
   let () =
