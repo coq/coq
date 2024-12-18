@@ -42,7 +42,7 @@ val parse_arguments :
 
 (** 3 initialization of global runtime data
 
-    All global setup is done here, like COQLIB and the paths for native
+    All global setup is done here, like ROCQLIB and the paths for native
     compilation. If Coq is used to process multiple libraries, what is set up
     here is really global and common to all of them.
 

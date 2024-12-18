@@ -158,7 +158,7 @@ except that ``space_overhead`` is set to 120 and ``minor_heap_size`` is set to 3
    an incorrect warning: coq-commands.rst:4: WARNING: Duplicate explicit target name: "here".
    The warning doesn't even have the right line number. :-(
 
-.. todo how about COQLIB, COQCORELIB, DOCDIR
+.. todo how about ROCQLIB, ROCQRUNTIMELIB, DOCDIR
 
 .. _ROCQ_PROFILE_COMPONENTS:
 
@@ -637,7 +637,7 @@ relative paths in object files ``-Q`` and ``-R`` have exactly the same meaning.
   assumptions and variables (constants without a :term:`body`).
 :-silent: Do not write progress information to the standard output.
 
-Environment variable ``$COQLIB`` can be set to override the location of
+Environment variable ``$ROCQLIB`` can be set to override the location of
 the standard library.
 
 The algorithm for deciding which modules are checked or admitted is
