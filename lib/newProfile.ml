@@ -247,7 +247,10 @@ let leave ?time name ?(args=[]) ?last () =
 (* NB: "process" and "init" are unconditional because they don't go
    through [profile] and I'm too lazy to make them conditional *)
 let components =
-  match Sys.getenv_opt "COQ_PROFILE_COMPONENTS" with
+  let from_env =
+    CList.find_map (fun prefix -> Sys.getenv_opt (prefix^"_PROFILE_COMPONENTS")) ["ROCQ";"COQ"]
+  in
+  match from_env with
   | None -> CString.Pred.(full |> remove "unification" |> remove "Conversion")
   | Some s ->
     List.fold_left (fun cs c -> CString.Pred.add c cs)

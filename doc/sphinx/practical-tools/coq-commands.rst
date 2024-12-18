@@ -160,7 +160,7 @@ except that ``space_overhead`` is set to 120 and ``minor_heap_size`` is set to 3
 
 .. todo how about COQLIB, COQCORELIB, DOCDIR
 
-.. _COQ_PROFILE_COMPONENTS:
+.. _ROCQ_PROFILE_COMPONENTS:
 
 Specifies which components produce events when using the
 :ref:`profiling` system. It is a comma separated list of
@@ -457,7 +457,7 @@ The output gives the duration and event counts for the execution of
 components of Rocq (for instance `process` for the whole file,
 `command` for each command, `pretyping` for elaboration).
 
-Environment variable :ref:`COQ_PROFILE_COMPONENTS <COQ_PROFILE_COMPONENTS>` can be used to filter
+Environment variable :ref:`ROCQ_PROFILE_COMPONENTS <ROCQ_PROFILE_COMPONENTS>` can be used to filter
 which components produce events. This may be needed to reduce the
 size of the generated file.
 
@@ -474,7 +474,7 @@ Events are annotated with additional information in the `args` field
 - `subtimes` indicates how much time was spent in sub-components and
   how many times each subcomponent was profiled during the event
   (including subcomponents which do not appear in
-  `COQ_PROFILE_COMPONENTS`).
+  `ROCQ_PROFILE_COMPONENTS`).
 
 - for the `command` event, `cmd` displays the precise location of the
   command and a compressed representation of it (like the `-time` header),
