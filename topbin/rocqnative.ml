@@ -245,7 +245,7 @@ let init_load_path_std () =
   (* then directories in XDG_DATA_DIRS and XDG_DATA_HOME *)
   List.iter (fun s -> add_rec_path ~unix_path:s ~rocq_root:Loadpath.default_root_prefix)
     (xdg_dirs ~warn:(fun x -> Feedback.msg_warning (str x)));
-  (* then directories in COQPATH *)
+  (* then directories in ROCQPATH *)
   List.iter (fun s -> add_rec_path ~unix_path:s ~rocq_root:Loadpath.default_root_prefix) rocqpath
 
 let init_load_path ~boot ~vo_path =

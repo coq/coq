@@ -10,7 +10,7 @@
 
 (** Standard LoadPath for Coq user libraries; in particular it
    includes (in-order) Coq's standard library, Coq's [user-contrib]
-   folder, and directories specified in [COQPATH] and [XDG_DIRS] *)
+   folder, and directories specified in [ROCQPATH] and [XDG_DIRS] *)
 val init_load_path
   : coqenv:Boot.Env.t
   -> CUnix.physical_path list * Loadpath.vo_path list
