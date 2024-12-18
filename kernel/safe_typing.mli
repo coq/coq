@@ -191,9 +191,6 @@ val push_named_def :
 (** Add local universes to a polymorphic section *)
 val push_section_context : UVars.UContext.t -> safe_transformer0
 
-(** Add local qualities to a polymorphic section *)
-(* val push_section_qualities : Sorts.QVar.Set.t -> safe_transformer0 *)
-
 (** {6 Interactive module functions } *)
 
 val start_module : Label.t -> ModPath.t safe_transformer

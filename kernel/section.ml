@@ -38,8 +38,6 @@ type 'a t = {
   (** All polymorphic universes, including from previous sections. *)
   has_poly_univs : bool;
   (** Are there polymorphic universes or constraints, including in previous sections. *)
-  (* qualities : Sorts.QVar.Set.t ;
-  Qualities local to the section *)
   expand_info_map : expand_info;
   (** Tells how to re-instantiate global declarations when they are
       generalized *)
@@ -66,11 +64,6 @@ let push_local_universe_context ctx sec =
     let poly_universes = UContext.union sctx ctx in
     let all_poly_univs = Instance.append sec.all_poly_univs (UContext.instance ctx) in
     { sec with poly_universes; all_poly_univs; has_poly_univs = true }
-
-(* let push_local_qualities qs sec =
-  if Sorts.QVar.Set.is_empty qs then sec
-  else
-    { sec with qualities = Sorts.QVar.Set.union qs sec.qualities } *)
 
 let is_polymorphic_univ u sec =
   let _, us = Instance.to_array sec.all_poly_univs in
