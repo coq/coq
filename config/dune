@@ -36,6 +36,6 @@
    %{project_root}/dev/header.c
    ; Needed to generate include lists for coq_makefile
    plugin_list
-  (env_var PWD) ; used in the fallback of COQ_CONFIGURE_PREFIX
-  (env_var COQ_CONFIGURE_PREFIX))
+  ; used for the prefix
+  (env_var PWD))
  (action (chdir %{project_root} (run %{project_root}/tools/configure/configure.exe -no-ask))))
