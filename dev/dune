@@ -22,7 +22,7 @@
   (deps
     dune-dbg.in
     ../checker/coqchk.bc
-    ../topbin/coqworker.bc
+    ../topbin/rocqworker.bc
     ../topbin/rocqnative.bc
     ../ide/coqide/rocqide_main.bc
     ; We require all the OCaml libs to be in place and searchable

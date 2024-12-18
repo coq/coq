@@ -129,7 +129,7 @@ module Make(T : Task) () = struct
         in
         Array.of_list (wselect :: spawn_args @ worker_opts) in
       let env = Array.append (T.extra_env ()) (Unix.environment ()) in
-      let worker_name = get_toplevel_path "coqworker" in
+      let worker_name = get_toplevel_path "rocqworker" in
       Worker.spawn ~env worker_name args in
     name, proc, CThread.prepare_in_channel_for_thread_friendly_io ic, oc
 
