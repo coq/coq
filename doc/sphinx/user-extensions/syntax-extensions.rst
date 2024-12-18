@@ -1453,7 +1453,7 @@ Note that `_` by itself is a valid :n:`@name` but is not a valid :n:`@ident`.
           time. Type checking is done only at the time of use of the notation.
 
 .. note:: Some examples of Notation may be found in the files composing
-          the initial state of Rocq (see directory :file:`$COQLIB/theories/Init`).
+          the initial state of Rocq (see directory :file:`$ROCQLIB/theories/Init`).
 
 .. note:: The notation ``"{ x }"`` has a special status in the main grammars of
           terms and patterns so that
@@ -2612,7 +2612,7 @@ Tactic notations allow customizing the syntax of tactics.
       Tactic Notation "destruct_with_eqn" constr(x) := destruct x eqn:?.
 
    For a complex example, examine the 16 `Tactic Notation "setoid_replace"`\s
-   defined in :file:`$COQLIB/theories/Classes/SetoidTactics.v`, which are designed
+   defined in :file:`$ROCQLIB/theories/Classes/SetoidTactics.v`, which are designed
    to accept any subset of 4 optional parameters.
 
    The nonterminals that can specified in the tactic notation are:

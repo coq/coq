@@ -11,9 +11,9 @@ mkdir overridden/plugins
 touch overridden/theories/Init/Prelude.vo
 
 cat > coq_environment.txt <<EOT
-# we override COQLIB because we can
-COQLIB="$TMP/overridden" # bla bla
-COQCORELIB="$TMP/overridden" # bla bla
+# we override ROCQLIB because we can
+ROCQLIB="$TMP/overridden" # bla bla
+ROCQRUNTIMELIB="$TMP/overridden" # bla bla
 OCAMLFIND="$TMP/overridden"
 FOOBAR="one more"
 EOT
@@ -21,12 +21,12 @@ EOT
 cp $BIN/rocq .
 cp $BIN/rocq makefile .
 mkdir -p overridden/tools/
-cp $COQLIB/../rocq-runtime/tools/CoqMakefile.in overridden/tools/
+cp $ROCQLIB/../rocq-runtime/tools/CoqMakefile.in overridden/tools/
 
-unset COQLIB
+unset ROCQLIB
 N=`./rocq c -config | grep COQLIB | grep /overridden | wc -l`
 if [ $N -ne 1 ]; then
-  echo COQLIB not overridden by coq_environment
+  echo ROCQLIB not overridden by coq_environment
   coqc -config
   exit 1
 fi
@@ -49,10 +49,10 @@ mkdir -p overridden2/theories/Init/
 mkdir overridden2/plugins
 touch overridden2/theories/Init/Prelude.vo
 
-export COQLIB="$PWD/overridden2"
+export ROCQLIB="$PWD/overridden2"
 N=`./rocq c -config | grep COQLIB | grep overridden2 | wc -l`
 if [ $N -ne 1 ]; then
-  echo COQLIB not overridden by COQLIB when coq_environment present
+  echo ROCQLIB not overridden by ROCQLIB when coq_environment present
   coqc -config
   exit 1
 fi

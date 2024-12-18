@@ -15,7 +15,7 @@ stdenv.mkDerivation {
   buildInputs = [ coq ] ++ (with coq.ocamlPackages; [ ocaml findlib camlp5 num ]);
 
   configurePhase = "coq_makefile -f Make -o Makefile";
-  installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
+  installFlags = [ "ROCQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
 
   postInstall = ''
     cp ${META} META

@@ -4,7 +4,7 @@
 # targets (or the current directory if none).
 #
 # It assumes that all the prerequisites are already installed. The
-# install location is found using the COQLIB, COQC, COQBIN variables if
+# install location is found using the ROCQLIB, COQC, COQBIN variables if
 # set, 'coqc' otherwise.
 #
 # Option --exclude can be used to ignore a given user contribution. In
@@ -14,10 +14,10 @@
 # Option --stdlib can be used to also qualify the files from the standard
 # library.
 
-if test ! "$COQLIB"; then
+if test ! "$ROCQLIB"; then
   if test ${COQBIN##*/}; then COQBIN=$COQBIN/; fi
   if test ! "$COQC"; then COQC=`which ${COQBIN}coqc`; fi
-  COQLIB=`"$COQC" -where`
+  ROCQLIB=`"$COQC" -where`
 fi
 
 stdlib=no
@@ -30,10 +30,10 @@ scan_dir () {
 
 scan_all_dir () {
   if test $stdlib = yes; then
-    scan_dir "$COQLIB/theories" "Coq."
-    scan_dir "$COQLIB/plugins" "Coq."
+    scan_dir "$ROCQLIB/theories" "Coq."
+    scan_dir "$ROCQLIB/plugins" "Coq."
   fi
-  scan_dir "$COQLIB/user-contrib" "" "$exclude"
+  scan_dir "$ROCQLIB/user-contrib" "" "$exclude"
 }
 
 create_script () {

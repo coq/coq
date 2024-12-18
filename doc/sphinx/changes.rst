@@ -11514,7 +11514,7 @@ Interfaces
 - Coqtop/coqc outputs highlighted syntax. Colors can be configured thanks
   to the COQ_COLORS environment variable, and their current state can
   be displayed with the -list-tags command line option.
-- Third party user interfaces can install their main loop in $COQLIB/toploop
+- Third party user interfaces can install their main loop in $ROCQLIB/toploop
   and call coqtop with the -toploop flag to select it.
 
 Internal Infrastructure
