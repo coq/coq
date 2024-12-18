@@ -224,9 +224,6 @@ let warn_scope_delimiter_start_ =
     ~default:CWarnings.AsError
     (fun () -> strbrk "Scope delimiters should not start with an underscore.")
 
-let warn_overwriting_key = CWarnings.create ~name:"overwriting-delimiting-key" ~category:CWarnings.CoreCategories.parsing
-    Pp.(fun (oldkey,scope) -> str "Overwriting previous delimiting key " ++ str oldkey ++ str " in scope " ++ str scope)
-
 let warn_hiding_key =  CWarnings.create ~name:"hiding-delimiting-key" ~category:CWarnings.CoreCategories.parsing
     Pp.(fun (key,oldscope) -> str "Hiding binding of key " ++ str key ++ str " to " ++ str oldscope)
 
@@ -237,10 +234,7 @@ let declare_delimiters scope key =
   begin match sc.delimiters with
     | None -> scope_map := String.Map.add scope newsc !scope_map
     | Some oldkey when String.equal oldkey key -> ()
-    | Some oldkey ->
-      (* FIXME: implement multikey scopes? *)
-      warn_overwriting_key (oldkey,scope);
-      scope_map := String.Map.add scope newsc !scope_map
+    | Some oldkey -> scope_map := String.Map.add scope newsc !scope_map
   end;
   try
     let oldscope = String.Map.find key !delimiters_map in

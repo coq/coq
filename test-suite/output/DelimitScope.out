@@ -1,0 +1,8 @@
+(~~ false)%bool
+     : bool
+(~~ false)%B
+     : bool
+(~~ false)%B
+     : bool
+(~~ false)%B
+     : bool
