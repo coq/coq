@@ -1094,7 +1094,7 @@ For `rocq repl`, showing diffs can be enabled when starting `rocq repl` with the
 within Rocq.  You will need to provide the ``-color on|auto`` command-line option when
 you start `rocq repl` in either case.
 
-Colors for `rocq repl` can be configured by setting the ``COQ_COLORS`` environment
+Colors for `rocq repl` can be configured by setting the ``ROCQ_COLORS`` environment
 variable.  See section :ref:`customization-by-environment-variables`.  Diffs
 use the tags ``diff.added``, ``diff.added.bg``, ``diff.removed`` and ``diff.removed.bg``.
 
@@ -1139,7 +1139,7 @@ Notes:
    hypotheses.  In the first one, notice that the goal ``P 1`` is not highlighted at
    all after the split because it has not changed.
 
-    .. todo: Use this script and remove the screenshots when COQ_COLORS
+    .. todo: Use this script and remove the screenshots when ROCQ_COLORS
       works for coqtop in sphinx
     .. rocqtop:: none
 
