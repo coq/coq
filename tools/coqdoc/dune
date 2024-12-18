@@ -1,6 +1,6 @@
 (install
  (section lib)
- (package coq-core)
+ (package rocq-runtime)
  (files
   (coqdoc.css as tools/coqdoc/coqdoc.css)
   (coqdoc.sty as tools/coqdoc/coqdoc.sty)))
@@ -8,14 +8,20 @@
 ; File needs to be here too.
 (install
  (section share_root)
- (package coq-core)
+ (package rocq-runtime)
  (files
   (coqdoc.sty as texmf/tex/latex/misc/coqdoc.sty)))
 
+(library
+ (name coqdoclib)
+ (modules :standard \ coqdoc)
+ (libraries str rocq-runtime.boot rocq-runtime.config rocq-runtime.clib))
+
 (executable
- (name main)
+ (name coqdoc)
  (public_name coqdoc)
  (package coq-core)
- (libraries str coq-core.boot coq-core.config coq-core.clib))
+ (modules coqdoc)
+ (libraries coqdoclib))
 
 (ocamllex cpretty)

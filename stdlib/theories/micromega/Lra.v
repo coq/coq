@@ -22,7 +22,7 @@ Require Import VarMap.
 Require Stdlib.micromega.Tauto.
 Require Import Rregisternames.
 
-Declare ML Module "coq-core.plugins.micromega".
+Declare ML Module "rocq-runtime.plugins.micromega".
 
 Ltac rchange :=
   let __wit := fresh "__wit" in

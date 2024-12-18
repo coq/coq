@@ -1,8 +1,15 @@
 (library
  (name ltac2_plugin)
- (public_name coq-core.plugins.ltac2)
+ (public_name rocq-runtime.plugins.ltac2)
  (synopsis "Ltac2 plugin")
  (modules_without_implementation tac2expr tac2qexpr tac2types)
- (libraries vernac coq-core.plugins.cc_core))
+ (libraries vernac rocq-runtime.plugins.cc_core))
 
-(coq.pp (modules g_ltac2))
+(deprecated_library_name
+ (old_public_name coq-core.plugins.ltac2)
+ (new_public_name rocq-runtime.plugins.ltac2))
+
+(rule
+ (targets g_ltac2.ml)
+ (deps (:mlg g_ltac2.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))

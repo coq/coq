@@ -1,3 +1,3 @@
 Require Import Algebra Reflect.
 
-Declare ML Module "coq-core.plugins.btauto".
+Declare ML Module "rocq-runtime.plugins.btauto".

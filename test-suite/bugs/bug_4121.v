@@ -4,7 +4,7 @@ Unset Strict Universe Declaration.
 (* coqc version 8.5beta1 (March 2015) compiled on Mar 11 2015 18:51:36 with OCaml 4.01.0
    coqtop version cagnode15:/afs/csail.mit.edu/u/j/jgross/coq-8.5,v8.5 (8dbfee5c5f897af8186cb1bdfb04fd4f88eca677) *)
 
-Declare ML Module "coq-core.plugins.ltac".
+Declare ML Module "rocq-runtime.plugins.ltac".
 
 Set Universe Polymorphism.
 Class Contr_internal (A : Type) := BuildContr { center : A }.

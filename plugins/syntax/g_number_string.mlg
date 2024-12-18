@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-DECLARE PLUGIN "coq-core.plugins.number_string_notation"
+DECLARE PLUGIN "rocq-runtime.plugins.number_string_notation"
 
 {
 

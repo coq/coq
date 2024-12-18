@@ -38,7 +38,7 @@ Axiom path_path_sigma : forall {A : Type} (P : A -> Type) (u v : sigT P)
            (s : transport (fun x => transport P x u.2 = v.2) r p..2 = q..2),
 p = q.
 
-Declare ML Module "coq-core.plugins.ltac".
+Declare ML Module "rocq-runtime.plugins.ltac".
 
 Set Default Proof Mode "Classic".
 

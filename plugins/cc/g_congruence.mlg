@@ -16,7 +16,7 @@ open Stdarg
 
 }
 
-DECLARE PLUGIN "coq-core.plugins.cc"
+DECLARE PLUGIN "rocq-runtime.plugins.cc"
 
 (* Tactic registration *)
 

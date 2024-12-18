@@ -12,39 +12,39 @@ From Ltac2 Require Import Init.
 
 Ltac2 Type t := inductive.
 
-Ltac2 @ external equal : t -> t -> bool := "coq-core.plugins.ltac2" "ind_equal".
+Ltac2 @ external equal : t -> t -> bool := "rocq-runtime.plugins.ltac2" "ind_equal".
 (** Equality test. *)
 
 Ltac2 Type data.
 (** Type of data representing inductive blocks. *)
 
-Ltac2 @ external data : t -> data := "coq-core.plugins.ltac2" "ind_data".
+Ltac2 @ external data : t -> data := "rocq-runtime.plugins.ltac2" "ind_data".
 (** Get the mutual blocks corresponding to an inductive type in the current
     environment. Panics if there is no such inductive. *)
 
-Ltac2 @ external repr : data -> t := "coq-core.plugins.ltac2" "ind_repr".
+Ltac2 @ external repr : data -> t := "rocq-runtime.plugins.ltac2" "ind_repr".
 (** Returns the inductive corresponding to the block. Inverse of [data]. *)
 
-Ltac2 @ external index : t -> int := "coq-core.plugins.ltac2" "ind_index".
+Ltac2 @ external index : t -> int := "rocq-runtime.plugins.ltac2" "ind_index".
 (** Returns the index of the inductive type inside its mutual block. Guaranteed
     to range between [0] and [nblocks data - 1] where [data] was retrieved
     using the above function. *)
 
-Ltac2 @ external nblocks : data -> int := "coq-core.plugins.ltac2" "ind_nblocks".
+Ltac2 @ external nblocks : data -> int := "rocq-runtime.plugins.ltac2" "ind_nblocks".
 (** Returns the number of inductive types appearing in a mutual block. *)
 
-Ltac2 @ external nconstructors : data -> int := "coq-core.plugins.ltac2" "ind_nconstructors".
+Ltac2 @ external nconstructors : data -> int := "rocq-runtime.plugins.ltac2" "ind_nconstructors".
 (** Returns the number of constructors appearing in the current block. *)
 
-Ltac2 @ external get_block : data -> int -> data := "coq-core.plugins.ltac2" "ind_get_block".
+Ltac2 @ external get_block : data -> int -> data := "rocq-runtime.plugins.ltac2" "ind_get_block".
 (** Returns the block corresponding to the nth inductive type. Index must range
     between [0] and [nblocks data - 1], otherwise the function panics. *)
 
-Ltac2 @ external get_constructor : data -> int -> constructor := "coq-core.plugins.ltac2" "ind_get_constructor".
+Ltac2 @ external get_constructor : data -> int -> constructor := "rocq-runtime.plugins.ltac2" "ind_get_constructor".
 (** Returns the nth constructor of the inductive type. Index must range between
     [0] and [nconstructors data - 1], otherwise the function panics. *)
 
 Ltac2 @ external get_projections : data -> projection array option
-  := "coq-core.plugins.ltac2" "ind_get_projections".
+  := "rocq-runtime.plugins.ltac2" "ind_get_projections".
 (** Returns the list of projections for a primitive record,
     or [None] if the inductive is not a primitive record. *)

@@ -25,14 +25,14 @@ doc: "https://coq.github.io/doc/"
 bug-reports: "https://github.com/coq/coq/issues"
 depends: [
   "dune" {>= "3.8"}
-  "coq-core" {= version}
+  "rocq-runtime" {= version}
   "odoc" {with-doc}
 ]
 depopts: ["coq-native"]
 dev-repo: "git+https://github.com/coq/coq.git"
 build: [
   ["dune" "subst"] {dev}
-  # We tell dunestrap to use coq-config from coq-core
+  # We tell dunestrap to use coq-config from rocq-runtime
   [ make "dunestrap" "COQ_SPLIT=1" "DUNESTRAPOPT=-p rocq-core"]
   [
     "dune"

@@ -26,7 +26,7 @@ open Pltac
 
 }
 
-DECLARE PLUGIN "coq-core.plugins.funind"
+DECLARE PLUGIN "rocq-runtime.plugins.funind"
 
 {
 

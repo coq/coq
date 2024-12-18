@@ -1,23 +1,23 @@
 COQDEP src/Compilers/Z/Bounds/Pipeline/Definition.v
 COQDEP src/Compilers/Z/Bounds/Pipeline/ReflectiveTactics.v
-/home/jgross/.local64/coq/coq-master/bin/coq_makefile -f _CoqProject INSTALLDEFAULTROOT = Crypto -o Makefile-old
+/home/jgross/.local64/coq/coq-master/bin/rocq makefile -f _CoqProject INSTALLDEFAULTROOT = Crypto -o Makefile-old
 COQ_MAKEFILE -f _CoqProject > Makefile.coq
 make --no-print-directory -C coqprime
 make[1]: Nothing to be done for 'all'.
 ECHO > _CoqProject
-COQC src/Compilers/Z/Bounds/Pipeline/Definition.v
+ROCQ compile src/Compilers/Z/Bounds/Pipeline/Definition.v
 src/Compilers/Z/Bounds/Pipeline/Definition (real: 7.40, user: 7.22, sys: 0.15, mem: 578344 ko)
-COQC src/Compilers/Z/Bounds/Pipeline/ReflectiveTactics.v
+ROCQ compile src/Compilers/Z/Bounds/Pipeline/ReflectiveTactics.v
 src/Compilers/Z/Bounds/Pipeline/ReflectiveTactics (real: 1.73, user: 1.58, sys: 0.14, mem: 546112 ko)
-COQC src/Compilers/Z/Bounds/Pipeline.v
+ROCQ compile src/Compilers/Z/Bounds/Pipeline.v
 src/Compilers/Z/Bounds/Pipeline (real: 1.18, user: 1.04, sys: 0.14, mem: 539160 ko)
-COQC src/Specific/Framework/SynthesisFramework.v
+ROCQ compile src/Specific/Framework/SynthesisFramework.v
 src/Specific/Framework/SynthesisFramework (real: 1.95, user: 1.72, sys: 0.22, mem: 648632 ko)
-COQC src/Specific/X25519/C64/Synthesis.v
+ROCQ compile src/Specific/X25519/C64/Synthesis.v
 src/Specific/X25519/C64/Synthesis (real: 11.23, user: 10.30, sys: 0.19, mem: 687812 ko)
-COQC src/Specific/NISTP256/AMD64/Synthesis.v
+ROCQ compile src/Specific/NISTP256/AMD64/Synthesis.v
 src/Specific/NISTP256/AMD64/Synthesis (real: 13.74, user: 12.54, sys: 0.23, mem: 667664 ko)
-COQC src/Specific/X25519/C64/feadd.v
+ROCQ compile src/Specific/X25519/C64/feadd.v
 Finished transaction in 2.852 secs (2.699u,0.012s) (successful)
 total time:      2.664s
 
@@ -146,9 +146,9 @@ total time:      2.664s
 ─synthesize ----------------------------   0.0%   2.6%       1    0.068s
 
 src/Specific/X25519/C64/feadd (real: 23.43, user: 21.41, sys: 0.26, mem: 766168 ko)
-COQC src/Specific/solinas32_2e255m765_12limbs/Synthesis.v
+ROCQ compile src/Specific/solinas32_2e255m765_12limbs/Synthesis.v
 src/Specific/solinas32_2e255m765_12limbs/Synthesis (real: 39.53, user: 36.64, sys: 0.21, mem: 729464 ko)
-COQC src/Specific/X25519/C64/fecarry.v
+ROCQ compile src/Specific/X25519/C64/fecarry.v
 Finished transaction in 4.798 secs (4.375u,0.003s) (successful)
 total time:      4.332s
 
@@ -245,9 +245,9 @@ total time:      4.332s
   └Glue.zrange_to_reflective_goal ------   4.0%   4.9%       1    0.212s
 
 src/Specific/X25519/C64/fecarry (real: 28.85, user: 26.31, sys: 0.25, mem: 787148 ko)
-COQC src/Specific/solinas32_2e255m765_13limbs/Synthesis.v
+ROCQ compile src/Specific/solinas32_2e255m765_13limbs/Synthesis.v
 src/Specific/solinas32_2e255m765_13limbs/Synthesis (real: 49.50, user: 45.58, sys: 0.18, mem: 744472 ko)
-COQC src/Specific/X25519/C64/femul.v
+ROCQ compile src/Specific/X25519/C64/femul.v
 Finished transaction in 9.325 secs (8.62u,0.016s) (successful)
 total time:      8.576s
 
@@ -356,9 +356,9 @@ total time:      8.576s
 └change G' -----------------------------   3.2%   3.2%       1    0.272s
 
 src/Specific/X25519/C64/femul (real: 42.98, user: 39.50, sys: 0.29, mem: 839624 ko)
-COQC src/Specific/X25519/C64/feaddDisplay > src/Specific/X25519/C64/feaddDisplay.log
-COQC src/Specific/X25519/C64/fecarryDisplay > src/Specific/X25519/C64/fecarryDisplay.log
-COQC src/Specific/X25519/C64/fesub.v
+ROCQ compile src/Specific/X25519/C64/feaddDisplay > src/Specific/X25519/C64/feaddDisplay.log
+ROCQ compile src/Specific/X25519/C64/fecarryDisplay > src/Specific/X25519/C64/fecarryDisplay.log
+ROCQ compile src/Specific/X25519/C64/fesub.v
 Finished transaction in 3.729 secs (3.48u,0.012s) (successful)
 total time:      3.444s
 
@@ -491,7 +491,7 @@ total time:      3.444s
     └destruct_sig ----------------------   0.0%   2.1%       4    0.040s
 
 src/Specific/X25519/C64/fesub (real: 26.11, user: 23.72, sys: 0.24, mem: 781808 ko)
-COQC src/Specific/X25519/C64/fesquare.v
+ROCQ compile src/Specific/X25519/C64/fesquare.v
 Finished transaction in 6.477 secs (6.044u,0.008s) (successful)
 total time:      6.012s
 
@@ -602,8 +602,8 @@ total time:      6.012s
   └change G' ---------------------------   3.1%   3.1%       1    0.188s
 
 src/Specific/X25519/C64/fesquare (real: 35.23, user: 32.24, sys: 0.26, mem: 802776 ko)
-COQC src/Specific/X25519/C64/femulDisplay > src/Specific/X25519/C64/femulDisplay.log
-COQC src/Specific/X25519/C64/freeze.v
+ROCQ compile src/Specific/X25519/C64/femulDisplay > src/Specific/X25519/C64/femulDisplay.log
+ROCQ compile src/Specific/X25519/C64/freeze.v
 Finished transaction in 7.785 secs (7.139u,0.019s) (successful)
 total time:      7.112s
 
@@ -710,7 +710,7 @@ total time:      7.112s
   └Glue.zrange_to_reflective_goal ------   2.6%   3.2%       1    0.228s
 
 src/Specific/X25519/C64/freeze (real: 36.42, user: 33.24, sys: 0.26, mem: 826476 ko)
-COQC src/Specific/NISTP256/AMD64/feadd.v
+ROCQ compile src/Specific/NISTP256/AMD64/feadd.v
 Finished transaction in 9.065 secs (8.452u,0.004s) (successful)
 total time:      8.408s
 
@@ -871,7 +871,7 @@ total time:      8.408s
     └k ---------------------------------   2.6%   2.8%       1    0.232s
 
 src/Specific/NISTP256/AMD64/feadd (real: 40.48, user: 37.21, sys: 0.27, mem: 797944 ko)
-COQC src/Specific/NISTP256/AMD64/fenz.v
+ROCQ compile src/Specific/NISTP256/AMD64/fenz.v
 Finished transaction in 6.724 secs (6.196u,0.007s) (successful)
 total time:      6.180s
 
@@ -994,7 +994,7 @@ total time:      6.180s
     └Glue.zrange_to_reflective ---------   0.1%   2.1%       1    0.132s
 
 src/Specific/NISTP256/AMD64/fenz (real: 28.91, user: 26.41, sys: 0.19, mem: 756216 ko)
-COQC src/Specific/NISTP256/AMD64/feopp.v
+ROCQ compile src/Specific/NISTP256/AMD64/feopp.v
 Finished transaction in 7.716 secs (7.216u,0.s) (successful)
 total time:      7.168s
 
@@ -1141,7 +1141,7 @@ total time:      7.168s
   └Glue.zrange_to_reflective_goal ------   2.1%   2.7%       1    0.196s
 
 src/Specific/NISTP256/AMD64/feopp (real: 32.08, user: 29.46, sys: 0.25, mem: 765212 ko)
-COQC src/Specific/NISTP256/AMD64/fesub.v
+ROCQ compile src/Specific/NISTP256/AMD64/fesub.v
 Finished transaction in 12.83 secs (11.988u,0.019s) (successful)
 total time:     11.956s
 
@@ -1286,12 +1286,12 @@ total time:     11.956s
   └Glue.zrange_to_reflective_goal ------   1.7%   2.7%       1    0.324s
 
 src/Specific/NISTP256/AMD64/fesub (real: 43.78, user: 40.09, sys: 0.30, mem: 799668 ko)
-COQC src/Specific/NISTP256/AMD64/feaddDisplay > src/Specific/NISTP256/AMD64/feaddDisplay.log
-COQC src/Specific/NISTP256/AMD64/fenzDisplay > src/Specific/NISTP256/AMD64/fenzDisplay.log
-COQC src/Specific/NISTP256/AMD64/feoppDisplay > src/Specific/NISTP256/AMD64/feoppDisplay.log
-COQC src/Specific/NISTP256/AMD64/fesubDisplay > src/Specific/NISTP256/AMD64/fesubDisplay.log
-COQC src/Specific/X25519/C64/fesquareDisplay > src/Specific/X25519/C64/fesquareDisplay.log
-COQC src/Specific/solinas32_2e255m765_12limbs/femul.v
+ROCQ compile src/Specific/NISTP256/AMD64/feaddDisplay > src/Specific/NISTP256/AMD64/feaddDisplay.log
+ROCQ compile src/Specific/NISTP256/AMD64/fenzDisplay > src/Specific/NISTP256/AMD64/fenzDisplay.log
+ROCQ compile src/Specific/NISTP256/AMD64/feoppDisplay > src/Specific/NISTP256/AMD64/feoppDisplay.log
+ROCQ compile src/Specific/NISTP256/AMD64/fesubDisplay > src/Specific/NISTP256/AMD64/fesubDisplay.log
+ROCQ compile src/Specific/X25519/C64/fesquareDisplay > src/Specific/X25519/C64/fesquareDisplay.log
+ROCQ compile src/Specific/solinas32_2e255m765_12limbs/femul.v
 Finished transaction in 60.265 secs (55.388u,0.103s) (successful)
 total time:     55.440s
 
@@ -1396,9 +1396,9 @@ total time:     55.440s
 └change G' -----------------------------   3.9%   3.9%       1    2.148s
 
 src/Specific/solinas32_2e255m765_12limbs/femul (real: 179.21, user: 164.11, sys: 0.42, mem: 1549104 ko)
-COQC src/Specific/X25519/C64/fesubDisplay > src/Specific/X25519/C64/fesubDisplay.log
-COQC src/Specific/X25519/C64/freezeDisplay > src/Specific/X25519/C64/freezeDisplay.log
-COQC src/Specific/solinas32_2e255m765_13limbs/femul.v
+ROCQ compile src/Specific/X25519/C64/fesubDisplay > src/Specific/X25519/C64/fesubDisplay.log
+ROCQ compile src/Specific/X25519/C64/freezeDisplay > src/Specific/X25519/C64/freezeDisplay.log
+ROCQ compile src/Specific/solinas32_2e255m765_13limbs/femul.v
 Finished transaction in 74.548 secs (68.928u,0.079s) (successful)
 total time:     68.948s
 
@@ -1503,7 +1503,7 @@ total time:     68.948s
 └change G' -----------------------------   4.1%   4.1%       1    2.840s
 
 src/Specific/solinas32_2e255m765_13limbs/femul (real: 207.94, user: 192.95, sys: 0.48, mem: 1656912 ko)
-COQC src/Specific/NISTP256/AMD64/femul.v
+ROCQ compile src/Specific/NISTP256/AMD64/femul.v
 Finished transaction in 122.29 secs (111.972u,0.239s) (successful)
 total time:    112.164s
 
@@ -1568,8 +1568,8 @@ total time:    112.164s
 ─synthesize_montgomery -----------------   0.0%   2.9%       1    3.220s
 
 src/Specific/NISTP256/AMD64/femul (real: 217.80, user: 202.52, sys: 0.53, mem: 3307052 ko)
-COQC src/Specific/NISTP256/AMD64/femulDisplay > src/Specific/NISTP256/AMD64/femulDisplay.log
-COQC src/Specific/X25519/C64/ladderstep.v
+ROCQ compile src/Specific/NISTP256/AMD64/femulDisplay > src/Specific/NISTP256/AMD64/femulDisplay.log
+ROCQ compile src/Specific/X25519/C64/ladderstep.v
 total time:     82.012s
 
  tactic                                   local  total   calls       max 
@@ -1659,4 +1659,4 @@ total time:     82.012s
   └Glue.zrange_to_reflective_goal ------   1.4%   2.1%       1    1.720s
 
 src/Specific/X25519/C64/ladderstep (real: 316.83, user: 299.49, sys: 0.52, mem: 1621500 ko)
-COQC src/Specific/X25519/C64/ladderstepDisplay > src/Specific/X25519/C64/ladderstepDisplay.log
+ROCQ compile src/Specific/X25519/C64/ladderstepDisplay > src/Specific/X25519/C64/ladderstepDisplay.log

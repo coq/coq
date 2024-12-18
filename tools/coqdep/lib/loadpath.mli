@@ -26,8 +26,10 @@ type result =
 module State : sig
   type t
 
-  val make : boot:bool -> t
+  val make : worker:string option -> boot:bool -> t
 end
+
+val get_worker_path : State.t -> string
 
 val search_v_known : State.t -> ?from:dirpath -> dirpath -> result option
 val search_other_known : State.t -> ?from:dirpath -> dirpath -> result option

@@ -1,7 +1,7 @@
 (library
  (name clib)
  (synopsis "Coq's Utility Library [general purpose]")
- (public_name coq-core.clib)
+ (public_name rocq-runtime.clib)
  (wrapped false)
  (modules_without_implementation cSig)
  (modules :standard \ unicodetable_gen)
@@ -10,6 +10,10 @@
    (!memprof-limits -> memprof_coq.std.ml)
    (memprof-limits -> memprof_coq.memprof.ml))
    str unix threads))
+
+(deprecated_library_name
+ (old_public_name coq-core.clib)
+ (new_public_name rocq-runtime.clib))
 
 (executable
  (name unicodetable_gen)

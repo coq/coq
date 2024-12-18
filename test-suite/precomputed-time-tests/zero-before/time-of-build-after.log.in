@@ -12,7 +12,7 @@ make -f Makefile.coq.noex
 make[3]: Nothing to be done for 'real-all'.
 make --no-print-directory -C coqprime src/Coqprime/PrimalityTest/Zp.vo
 make[1]: 'src/Coqprime/PrimalityTest/Zp.vo' is up to date.
-coq_makefile -f _CoqProject INSTALLDEFAULTROOT = Crypto -o Makefile-coq
+rocq makefile -f _CoqProject INSTALLDEFAULTROOT = Crypto -o Makefile-coq
 COQ_MAKEFILE -f _CoqProject > Makefile.coq
 make --no-print-directory -C rewriter
 make[2]: Nothing to be done for 'real-all'.
@@ -27,7 +27,7 @@ make -f Makefile.coq.noex
 make[3]: Nothing to be done for 'real-all'.
 make --no-print-directory -C coqprime src/Coqprime/PrimalityTest/Zp.vo
 make[1]: 'src/Coqprime/PrimalityTest/Zp.vo' is up to date.
-COQDEP VFILES
+ROCQ DEP VFILES
 make --no-print-directory -C rewriter
 make[2]: Nothing to be done for 'real-all'.
 make --no-print-directory -C bedrock2/deps/coqutil
@@ -41,7 +41,7 @@ make -f Makefile.coq.noex
 make[3]: Nothing to be done for 'real-all'.
 make --no-print-directory -C coqprime src/Coqprime/PrimalityTest/Zp.vo
 make[1]: 'src/Coqprime/PrimalityTest/Zp.vo' is up to date.
-COQC src/UnsaturatedSolinasHeuristics/Tests.v
+ROCQ compile src/UnsaturatedSolinasHeuristics/Tests.v
 Finished transaction in 25.269 secs (24.869u,0.051s) (successful)
 src/UnsaturatedSolinasHeuristics/Tests.vo (real: 26.27, user: 25.97, sys: 0.27, mem: 566428 ko)
 DIFF Crypto.Fancy.Montgomery256.Prod.MontRed256

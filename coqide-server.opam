@@ -20,7 +20,7 @@ doc: "https://coq.github.io/doc/"
 bug-reports: "https://github.com/coq/coq/issues"
 depends: [
   "dune" {>= "3.8"}
-  "coq-core" {= version}
+  "rocq-runtime" {= version}
   "odoc" {with-doc}
 ]
 build: [

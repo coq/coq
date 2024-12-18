@@ -79,20 +79,15 @@ endif
 COQEXTRAFLAGS?=
 COQFLAGS?=$(COQEXTRAFLAGS)
 
-coqc := $(BIN)coqc -q -R prerequisite TestSuite $(COQFLAGS)
-coqchk := $(BIN)coqchk -R prerequisite TestSuite
-coqdoc := $(BIN)coqdoc
-coqtop := $(BIN)coqtop -q -test-mode -R prerequisite TestSuite
-coqtopbyte := $(BIN)coqtop.byte -q
+coqc := $(BIN)rocq c -q -R prerequisite TestSuite $(COQFLAGS)
+coqchk := $(BIN)rocqchk -R prerequisite TestSuite
+coqdoc := $(BIN)rocq doc
+coqtop := $(BIN)rocq repl -q -test-mode -R prerequisite TestSuite
 
-ifeq ($(BEST),opt)
-coqidetop := $(BIN)coqidetop.opt
-else
-coqidetop := $(BIN)coqidetop.byte
-endif
+coqidetop := $(BIN)coqidetop
 
 coqc_interactive := $(coqc) -test-mode
-coqdep := $(BIN)coqdep
+coqdep := $(BIN)rocq dep
 
 # This is the convention for coq_makefile
 OPT=-$(BEST)
@@ -338,7 +333,7 @@ unit-tests: $(UNIT_LOGFILES)
 # Build executable, run it to generate log file
 unit-tests/%.ml.log: unit-tests/%.ml unit-tests/src/$(UNIT_LINK)
 	$(SHOW) 'TEST      $<'
-	$(HIDE)$(OCAMLBEST) -w -29 -linkpkg -package coq-core.toplevel,ounit2 \
+	$(HIDE)$(OCAMLBEST) -w -29 -linkpkg -package rocq-runtime.toplevel,ounit2 \
 	     -I unit-tests/src $(UNIT_LINK) $< -o $<.test;
 	$(HIDE)$(call WITH_TIMER,$@,./$<.test)
 	$(HIDE)$(call REPORT_TIMER,$@)
@@ -706,7 +701,7 @@ coqwc/%.v.log : coqwc/%.v
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  tmpoutput=`mktemp`; \
-	  $(BIN)coqwc $< 2>&1 > $$tmpoutput; \
+	  $(BIN)rocq wc $< 2>&1 > $$tmpoutput; \
 	  diff -u --strip-trailing-cr coqwc/$*.out $$tmpoutput 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \

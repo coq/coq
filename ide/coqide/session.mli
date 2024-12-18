@@ -41,7 +41,7 @@ type session = {
   segment : Wg_Segment.segment;
   fileops : FileOps.ops;
   rocqops : RocqOps.ops;
-  rocqtop : Rocq.rocqtop;
+  rocqtop : RocqDriver.rocqtop;
   command : Wg_Command.command_window;
   finder : Wg_Find.finder;
   debugger : Wg_Debugger.debugger_view;

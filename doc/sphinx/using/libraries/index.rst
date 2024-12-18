@@ -31,8 +31,8 @@ to consider:
 - Compared to libraries, plugins can change Rocq's behavior in many possibly
   unexpected ways. Therefore, using a plugin requires a higher degree of trust
   in its authors than is needed for libraries.  If desired, you can mitigate
-  trust issues by running :ref:`coqchk` on compiled files produced from Rocq
-  scripts that load plugins.  (`coqchk` doesn't load plugins, so they won't be
+  trust issues by running :ref:`rocqchk` on compiled files produced from Rocq
+  scripts that load plugins.  (`rocqchk` doesn't load plugins, so they won't be
   part of trusted code base.)
 - Plugins that aren't in Rocq's
   `CI (continuous integration) system <https://github.com/coq/coq/blob/master/dev/ci/README-users.md>`_

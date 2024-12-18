@@ -121,12 +121,12 @@ end = struct
   module Errors = struct
 
     let warn_legacy_loading =
-      let name = "legacy-loading-removed" in
-      CWarnings.create ~name (fun name ->
-          Pp.(str "Legacy loading plugin method has been removed from Coq, \
-                   and the `:` syntax is deprecated, and its first \
-                   argument ignored; please remove \"" ++
-              str name ++ str ":\" from your Declare ML"))
+      CWarnings.create ~name:"legacy-loading-removed" ~category:Deprecation.Version.v9_0
+        Pp.(fun name ->
+            str "Legacy loading plugin method has been removed from Coq, \
+                 and the `:` syntax is deprecated, and its first \
+                 argument ignored; please remove \"" ++
+            str name ++ str ":\" from your Declare ML")
 
     let plugin_name_invalid_format m =
       CErrors.user_err
@@ -136,16 +136,36 @@ end = struct
             str "legacy_plugin:package-name.plugin," ++ spc() ++
             str "are not supported anymore.")
 
+    let warn_coq_core =
+      CWarnings.create ~name:"coq-core-plugin" ~category:Deprecation.Version.v9_0
+        Pp.(fun () -> str "\"coq-core\" has been renamed to \"rocq-runtime\".")
+
   end
 
+  (* We would properly load the rocq-runtime cmxs because of the
+     virtual coq-core findlib package, but we would not initialize the plugin.
+     eg [Declare ML Module "coq-core.plugins.ltac". Ltac foo := idtac.] would fail
+     as the grammar for Ltac is not activated. *)
+  let compat_coq_core lib =
+    let old_prefix = "coq-core.plugins." in
+    if CString.is_prefix old_prefix lib
+    then begin
+      Errors.warn_coq_core ();
+      let old_len = String.length old_prefix in
+      "rocq-runtime.plugins." ^ (CString.sub lib old_len (String.length lib - old_len))
+    end
+    else lib
+
   let of_package ?(usercode=false) m =
-    match String.split_on_char ':' m with
-    | [ lib ] ->
-      { lib }
-    | [cmxs; lib] when usercode ->
-      Errors.warn_legacy_loading cmxs;
-      { lib }
-    | _ -> Errors.plugin_name_invalid_format m
+    let lib = match String.split_on_char ':' m with
+      | [ lib ] -> lib
+      | [cmxs; lib] when usercode ->
+        Errors.warn_legacy_loading cmxs;
+        lib
+      | _ -> Errors.plugin_name_invalid_format m
+    in
+    let lib = if usercode then compat_coq_core lib else lib in
+    { lib }
 
   let to_package { lib } = lib
 

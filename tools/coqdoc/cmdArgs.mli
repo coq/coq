@@ -9,4 +9,4 @@
 (************************************************************************)
 
 (* Command-line parser with side-effects *)
-val parse_args : unit -> unit
+val parse_args : prog:string -> string list -> unit

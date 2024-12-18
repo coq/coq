@@ -1,48 +1,79 @@
+(library
+ (name rocqshim)
+ (public_name rocq-runtime.rocqshim)
+ (synopsis "Rocq support for finding and exec-ing subcommands")
+ (wrapped false) ; no point repeating the Rocqshim name
+ (modules rocqshim)
+ (libraries boot unix findlib))
+
+(executable
+ (public_name rocq)
+ (package rocq-runtime)
+ (modules rocq)
+ (modes exe byte)
+ ; we statically link the "small" subcommands instead of having separate binaries
+ (libraries rocqshim coqdeplib coqpp coqdoclib rocqwc rocqworkmgr rocqtex rocqmakefile benchlib))
+
+(install
+ (section bin)
+ (package rocq-runtime)
+ (files (rocq.bc as rocq.byte)))
+
 (executable
  (name coqtop_bin)
  (public_name coqtop)
  (package coq-core)
  (modules coqtop_bin)
- (libraries coq-core.toplevel))
+ (libraries rocqshim))
 
 (executable
  (name coqtop_byte_bin)
  (public_name coqtop.byte)
  (package coq-core)
  (modules coqtop_byte_bin)
- (libraries compiler-libs.toplevel coq-core.config.byte coq-core.toplevel coq-core.dev findlib.top)
- (modes byte))
+ (libraries rocqshim))
 
 (executable
  (name coqc_bin)
  (public_name coqc)
  (package coq-core)
  (modules coqc_bin)
- (libraries coq-core.toplevel))
+ (libraries rocqshim))
+
+(executable
+ (name rocqnative)
+ (modules rocqnative)
+ (libraries rocq-runtime.kernel)
+ (modes exe byte) ; NB byte not installed, just exists for debugger
+ (link_flags -linkall))
+
+(executable
+ (name coqnative)
+ (public_name coqnative)
+ (package coq-core)
+ (modules coqnative)
+ (libraries rocqshim))
+
+; Workers
+(executable
+ (name coqworker)
+ (modules coqworker)
+ (modes exe byte)
+ (libraries rocq-runtime.toplevel))
  ; Adding -ccopt -flto to links options could be interesting, however,
  ; it doesn't work on Windows
 
 (executable
- (name coqc_byte_bin)
- (public_name coqc.byte)
- (package coq-core)
- (modules coqc_byte_bin)
- (libraries coq-core.toplevel)
- (modes byte))
+ (name coqworker_with_drop)
+ (modules coqworker_with_drop)
+ (modes byte)
+ (libraries compiler-libs.toplevel rocq-runtime.config.byte rocq-runtime.toplevel rocq-runtime.dev findlib.top))
 
-(executable
- (name coqnative_bin)
- (public_name coqnative)
- (package coq-core)
- (modules coqnative_bin)
- (libraries coq-core.kernel)
- (modes exe byte)
- (link_flags -linkall))
-
-; Workers
-(executable
- (name coqworker_bin)
- (public_name coqworker.opt)
- (package coq-core)
- (modules coqworker_bin)
- (libraries coq-core.toplevel))
+(install
+ (section libexec)
+ (package rocq-runtime)
+ (files
+  (coqworker.exe as coqworker)
+  (coqworker.bc as coqworker.byte)
+  (coqworker_with_drop.bc as coqworker_with_drop)
+  (rocqnative.exe as rocqnative)))

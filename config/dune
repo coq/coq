@@ -1,18 +1,26 @@
 (library
  (name config)
  (synopsis "Coq Configuration Variables")
- (public_name coq-core.config)
+ (public_name rocq-runtime.config)
  (modules coq_config)
  (wrapped false))
+
+(deprecated_library_name
+  (old_public_name coq-core.config)
+  (new_public_name rocq-runtime.config))
 
 (library
  (name byte_config)
  (synopsis "Coq Configuration Variables (for bytecode only)")
- (public_name coq-core.config.byte)
+ (public_name rocq-runtime.config.byte)
  (modules coq_byte_config)
  (wrapped false)
  (libraries compiler-libs.toplevel)
  (modes byte))
+
+(deprecated_library_name
+  (old_public_name coq-core.config.byte)
+  (new_public_name rocq-runtime.config.byte))
 
 (executable (name list_plugins) (modules list_plugins))
 (rule (targets plugin_list)

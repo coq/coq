@@ -8,5 +8,13 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* Main coqtop entry point *)
-let () = Coqtop.(start_coq coqtop_toplevel (List.tl (Array.to_list Sys.argv)))
+open Rocqshim
+
+let () =
+  let args = List.tl (Array.to_list Sys.argv) in
+  let opts, args = Rocqshim.parse_opts args in
+  let () = Rocqshim.init opts args in
+  let prog = get_worker_path { package = "rocq-runtime"; basename = "coqworker" } in
+  let () = if opts.debug_shim then Printf.eprintf "Using %s\n%!" prog in
+  let argv = Array.of_list (prog :: "--kind=repl" :: args) in
+  exec_or_create_process prog argv

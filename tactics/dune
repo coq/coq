@@ -1,9 +1,13 @@
 (library
  (name tactics)
  (synopsis "Coq's Core Tactics [ML implementation]")
- (public_name coq-core.tactics)
+ (public_name rocq-runtime.tactics)
  (wrapped false)
  (modules_without_implementation genredexpr)
  ; until ocaml/dune#4892 fixed
  ; (private_modules btermdn dn)
  (libraries printing))
+
+(deprecated_library_name
+ (old_public_name coq-core.tactics)
+ (new_public_name rocq-runtime.tactics))

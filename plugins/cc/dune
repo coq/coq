@@ -1,16 +1,27 @@
 (library
  (name cc_core_plugin)
- (public_name coq-core.plugins.cc_core)
+ (public_name rocq-runtime.plugins.cc_core)
  (synopsis "Rocq's congruence closure plugin")
  (modules (:standard \ g_congruence))
- (libraries coq-core.tactics))
+ (libraries rocq-runtime.tactics))
+
+(deprecated_library_name
+ (old_public_name coq-core.plugins.cc_core)
+ (new_public_name rocq-runtime.plugins.cc_core))
 
 (library
  (name cc_plugin)
- (public_name coq-core.plugins.cc)
+ (public_name rocq-runtime.plugins.cc)
  (synopsis "Rocq's congruence closure plugin (Ltac1 syntax)")
  (modules g_congruence)
  (flags :standard -open Cc_core_plugin)
- (libraries coq-core.plugins.ltac coq-core.plugins.cc_core))
+ (libraries rocq-runtime.plugins.ltac rocq-runtime.plugins.cc_core))
 
-(coq.pp (modules g_congruence))
+(deprecated_library_name
+ (old_public_name coq-core.plugins.cc)
+ (new_public_name rocq-runtime.plugins.cc))
+
+(rule
+ (targets g_congruence.ml)
+ (deps (:mlg g_congruence.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))

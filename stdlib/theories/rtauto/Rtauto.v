@@ -13,7 +13,7 @@ Require Export List.
 Require Export Bintree.
 Require Import Bool BinPos.
 
-Declare ML Module "coq-core.plugins.rtauto".
+Declare ML Module "rocq-runtime.plugins.rtauto".
 
 Ltac clean:=try (simpl;congruence).
 

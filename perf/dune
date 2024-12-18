@@ -1,7 +1,7 @@
 (library
  (name coqperf)
  (synopsis "Instruction count using Linux perf.")
- (public_name coq-core.perf)
+ (public_name rocq-runtime.perf)
  (wrapped false)
  (foreign_stubs (language c) (names perf))
  ; Just "linux" is not enough, see https://github.com/ocaml/dune/issues/4895.
@@ -12,3 +12,7 @@
    (= %{system} "linux_eabihf")
    (= %{system} "linux_elf")
    (= %{system} "elf"))))
+
+(deprecated_library_name
+ (old_public_name coq-core.perf)
+ (new_public_name rocq-runtime.perf))

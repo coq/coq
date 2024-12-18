@@ -1,7 +1,14 @@
 (library
  (name funind_plugin)
- (public_name coq-core.plugins.funind)
+ (public_name rocq-runtime.plugins.funind)
  (synopsis "Rocq's functional induction plugin")
- (libraries coq-core.plugins.ltac coq-core.plugins.extraction))
+ (libraries rocq-runtime.plugins.ltac rocq-runtime.plugins.extraction))
 
-(coq.pp (modules g_indfun))
+(deprecated_library_name
+ (old_public_name coq-core.plugins.funind)
+ (new_public_name rocq-runtime.plugins.funind))
+
+(rule
+ (targets g_indfun.ml)
+ (deps (:mlg g_indfun.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))

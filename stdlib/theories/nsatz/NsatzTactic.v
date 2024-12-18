@@ -32,8 +32,8 @@ Require Export Integral_domain.
 Require Import ZArith.
 Require Import Lia.
 
-Declare ML Module "coq-core.plugins.nsatz_core".
-Declare ML Module "coq-core.plugins.nsatz".
+Declare ML Module "rocq-runtime.plugins.nsatz_core".
+Declare ML Module "rocq-runtime.plugins.nsatz".
 
 Section nsatz1.
 

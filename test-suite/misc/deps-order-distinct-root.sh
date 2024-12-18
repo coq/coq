@@ -4,7 +4,7 @@
 # See also bugs #2242, #2337, #2339
 rm -f misc/deps/DistinctRoot/*.vo misc/deps/DistinctRoot/*.vo/{A,B}/*.vo
 output=misc/deps/DistinctRootDeps.real
-(cd misc/deps; $coqdep -f _CoqDistinctRoot) > "$output" 2>&1
+(cd misc/deps; $coqdep -worker @COQWORKER@ -f _CoqDistinctRoot) > "$output" 2>&1
 diff -u --strip-trailing-cr misc/deps/DistinctRootDeps.out "$output"
 R=$?
 times

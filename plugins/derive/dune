@@ -1,7 +1,14 @@
 (library
  (name derive_plugin)
- (public_name coq-core.plugins.derive)
+ (public_name rocq-runtime.plugins.derive)
  (synopsis "Rocq's derive plugin")
- (libraries coq-core.vernac))
+ (libraries rocq-runtime.vernac))
 
-(coq.pp (modules g_derive))
+(deprecated_library_name
+ (old_public_name coq-core.plugins.derive)
+ (new_public_name rocq-runtime.plugins.derive))
+
+(rule
+ (targets g_derive.ml)
+ (deps (:mlg g_derive.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))

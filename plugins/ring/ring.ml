@@ -144,7 +144,7 @@ let closed_term args _ = match args with
 
 let closed_term_ast =
   let tacname = {
-    mltac_plugin = "coq-core.plugins.ring";
+    mltac_plugin = "rocq-runtime.plugins.ring";
     mltac_tactic = "closed_term";
   } in
   let () = Tacenv.register_ml_tactic tacname [|closed_term|] in
@@ -201,7 +201,7 @@ let tactic_res = ref [||]
 
 let get_res =
   let open Tacexpr in
-  let name = { mltac_plugin = "coq-core.plugins.ring"; mltac_tactic = "get_res"; } in
+  let name = { mltac_plugin = "rocq-runtime.plugins.ring"; mltac_tactic = "get_res"; } in
   let entry = { mltac_name = name; mltac_index = 0 } in
   let tac args ist =
     let n = Tacinterp.Value.cast (Genarg.topwit Stdarg.wit_int) (List.hd args) in

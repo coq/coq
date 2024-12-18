@@ -27,23 +27,23 @@ bedrock2/deps/coqutil/src/Datatypes/Option (real: 0.37, user: 0.09, sys: 0.06, m
 make[1]: Entering directory 'bedrock2'
 make -C bedrock2/deps/coqutil
 make[2]: Entering directory 'bedrock2/deps/coqutil'
-/builds/coq/coq/_install_ci/bin/coq_makefile -f _CoqProject INSTALLDEFAULTROOT = coqutil -arg "-async-proofs-tac-j 1" bedrock2/deps/coqutil/src/Tactics/Tactics.v bedrock2/deps/coqutil/src/Tactics/eabstract.v bedrock2/deps/coqutil/src/Tactics/letexists.v bedrock2/deps/coqutil/src/Tactics/rdelta.v bedrock2/deps/coqutil/src/Tactics/syntactic_unify.v bedrock2/deps/coqutil/src/dlet.v bedrock2/deps/coqutil/src/Map/Funext.v bedrock2/deps/coqutil/src/Map/Empty_set_keyed_map.v bedrock2/deps/coqutil/src/Map/SortedListString.v bedrock2/deps/coqutil/src/Map/Z_keyed_SortedListMap.v bedrock2/deps/coqutil/src/Map/SortedListWord.v bedrock2/deps/coqutil/src/Map/Properties.v bedrock2/deps/coqutil/src/Map/TestLemmas.v bedrock2/deps/coqutil/src/Map/Interface.v bedrock2/deps/coqutil/src/Map/TestGoals.v bedrock2/deps/coqutil/src/Map/SlowGoals.v bedrock2/deps/coqutil/src/Map/SortedListString_test.v bedrock2/deps/coqutil/src/Map/Solver.v bedrock2/deps/coqutil/src/Map/SortedList.v bedrock2/deps/coqutil/src/Z/div_mod_to_equations.v bedrock2/deps/coqutil/src/Z/ZLib.v bedrock2/deps/coqutil/src/Z/HexNotation.v bedrock2/deps/coqutil/src/Z/BitOps.v bedrock2/deps/coqutil/src/Datatypes/String.v bedrock2/deps/coqutil/src/Datatypes/List.v bedrock2/deps/coqutil/src/Datatypes/PropSet.v bedrock2/deps/coqutil/src/Datatypes/Option.v bedrock2/deps/coqutil/src/Datatypes/Prod.v bedrock2/deps/coqutil/src/Datatypes/HList.v bedrock2/deps/coqutil/src/Datatypes/PrimitivePair.v bedrock2/deps/coqutil/src/Word/Naive.v bedrock2/deps/coqutil/src/Word/Properties.v bedrock2/deps/coqutil/src/Word/Interface.v bedrock2/deps/coqutil/src/Word/LittleEndian.v bedrock2/deps/coqutil/src/sanity.v bedrock2/deps/coqutil/src/Decidable.v bedrock2/deps/coqutil/src/Macros/subst.v bedrock2/deps/coqutil/src/Macros/symmetry.v bedrock2/deps/coqutil/src/Macros/unique.v -o Makefile.coq.all
+/builds/coq/coq/_install_ci/bin/rocq makefile -f _CoqProject INSTALLDEFAULTROOT = coqutil -arg "-async-proofs-tac-j 1" bedrock2/deps/coqutil/src/Tactics/Tactics.v bedrock2/deps/coqutil/src/Tactics/eabstract.v bedrock2/deps/coqutil/src/Tactics/letexists.v bedrock2/deps/coqutil/src/Tactics/rdelta.v bedrock2/deps/coqutil/src/Tactics/syntactic_unify.v bedrock2/deps/coqutil/src/dlet.v bedrock2/deps/coqutil/src/Map/Funext.v bedrock2/deps/coqutil/src/Map/Empty_set_keyed_map.v bedrock2/deps/coqutil/src/Map/SortedListString.v bedrock2/deps/coqutil/src/Map/Z_keyed_SortedListMap.v bedrock2/deps/coqutil/src/Map/SortedListWord.v bedrock2/deps/coqutil/src/Map/Properties.v bedrock2/deps/coqutil/src/Map/TestLemmas.v bedrock2/deps/coqutil/src/Map/Interface.v bedrock2/deps/coqutil/src/Map/TestGoals.v bedrock2/deps/coqutil/src/Map/SlowGoals.v bedrock2/deps/coqutil/src/Map/SortedListString_test.v bedrock2/deps/coqutil/src/Map/Solver.v bedrock2/deps/coqutil/src/Map/SortedList.v bedrock2/deps/coqutil/src/Z/div_mod_to_equations.v bedrock2/deps/coqutil/src/Z/ZLib.v bedrock2/deps/coqutil/src/Z/HexNotation.v bedrock2/deps/coqutil/src/Z/BitOps.v bedrock2/deps/coqutil/src/Datatypes/String.v bedrock2/deps/coqutil/src/Datatypes/List.v bedrock2/deps/coqutil/src/Datatypes/PropSet.v bedrock2/deps/coqutil/src/Datatypes/Option.v bedrock2/deps/coqutil/src/Datatypes/Prod.v bedrock2/deps/coqutil/src/Datatypes/HList.v bedrock2/deps/coqutil/src/Datatypes/PrimitivePair.v bedrock2/deps/coqutil/src/Word/Naive.v bedrock2/deps/coqutil/src/Word/Properties.v bedrock2/deps/coqutil/src/Word/Interface.v bedrock2/deps/coqutil/src/Word/LittleEndian.v bedrock2/deps/coqutil/src/sanity.v bedrock2/deps/coqutil/src/Decidable.v bedrock2/deps/coqutil/src/Macros/subst.v bedrock2/deps/coqutil/src/Macros/symmetry.v bedrock2/deps/coqutil/src/Macros/unique.v -o Makefile.coq.all
 make -f Makefile.coq.all
 make[3]: Entering directory 'bedrock2/deps/coqutil'
-COQDEP VFILES
-COQC bedrock2/deps/coqutil/src/Tactics/eabstract.v
-COQC bedrock2/deps/coqutil/src/sanity.v
-COQC bedrock2/deps/coqutil/src/Tactics/letexists.v
-COQC bedrock2/deps/coqutil/src/Tactics/rdelta.v
-COQC bedrock2/deps/coqutil/src/dlet.v
-COQC bedrock2/deps/coqutil/src/Macros/subst.v
-COQC bedrock2/deps/coqutil/src/Macros/unique.v
-COQC bedrock2/deps/coqutil/src/Datatypes/PrimitivePair.v
-COQC bedrock2/deps/coqutil/src/Datatypes/List.v
-COQC bedrock2/deps/coqutil/src/Datatypes/String.v
-COQC bedrock2/deps/coqutil/src/Word/Interface.v
-COQC bedrock2/deps/coqutil/src/Datatypes/Option.v
-COQC bedbedrock2/deps/coqutil/src/Word/Interface (real: 1.40, user: 0.31, sys: 0.22, mem: 293000 ko)
+ROCQ DEP VFILES
+ROCQ compile bedrock2/deps/coqutil/src/Tactics/eabstract.v
+ROCQ compile bedrock2/deps/coqutil/src/sanity.v
+ROCQ compile bedrock2/deps/coqutil/src/Tactics/letexists.v
+ROCQ compile bedrock2/deps/coqutil/src/Tactics/rdelta.v
+ROCQ compile bedrock2/deps/coqutil/src/dlet.v
+ROCQ compile bedrock2/deps/coqutil/src/Macros/subst.v
+ROCQ compile bedrock2/deps/coqutil/src/Macros/unique.v
+ROCQ compile bedrock2/deps/coqutil/src/Datatypes/PrimitivePair.v
+ROCQ compile bedrock2/deps/coqutil/src/Datatypes/List.v
+ROCQ compile bedrock2/deps/coqutil/src/Datatypes/String.v
+ROCQ compile bedrock2/deps/coqutil/src/Word/Interface.v
+ROCQ compile bedrock2/deps/coqutil/src/Datatypes/Option.v
+ROCQ compile bedbedrock2/deps/coqutil/src/Word/Interface (real: 1.40, user: 0.31, sys: 0.22, mem: 293000 ko)
 bedrock2/deps/coqutil/src/Z/div_mod_to_equations (real: 0.92, user: 0.26, sys: 0.17, mem: 238732 ko)
 bedrock2/deps/coqutil/src/Z/HexNotation (real: 1.24, user: 0.39, sys: 0.18, mem: 303504 ko)
 bedrock2/deps/coqutil/src/Z/ZLib (real: 2.83, user: 1.00, sys: 0.28, mem: 442912 ko)
@@ -93,31 +93,31 @@ bedrock2/deps/coqutil/src/Map/Properties (real: 13.04, user: 6.02, sys: 0.32, me
 bedrock2/deps/coqutil/src/Map/SortedListString_test (real: 1.34, user: 0.44, sys: 0.21, mem: 305528 ko)
 bedrock2/deps/coqutil/src/Map/Solver (real: 0.80, user: 0.36, sys: 0.21, mem: 312496 ko)
 rock2/deps/coqutil/src/Z/div_mod_to_equations.v
-COQC bedrock2/deps/coqutil/src/Z/ZLib.v
-COQC bedrock2/deps/coqutil/src/Z/HexNotation.v
-COQC bedrock2/deps/coqutil/src/Z/BitOps.v
-COQC bedrock2/deps/coqutil/src/Datatypes/Prod.v
-COQC bedrock2/deps/coqutil/src/Word/Naive.v
-COQC bedrock2/deps/coqutil/src/Word/Properties.v
-COQC bedrock2/deps/coqutil/src/Macros/symmetry.v
-COQC bedrock2/deps/coqutil/src/Decidable.v
-COQC bedrock2/deps/coqutil/src/Tactics/syntactic_unify.v
-COQC bedrock2/deps/coqutil/src/Datatypes/HList.v
-COQC bedrock2/deps/coqutil/src/Tactics/Tactics.v
-COQC bedrock2/deps/coqutil/src/Word/LittleEndian.v
-COQC bedrock2/deps/coqutil/src/Datatypes/PropSet.v
-COQC bedrock2/deps/coqutil/src/Map/Interface.v
-COQC bedrock2/deps/coqutil/src/Map/Funext.v
-COQC bedrock2/deps/coqutil/src/Map/Empty_set_keyed_map.v
-COQC bedrock2/deps/coqutil/src/Map/SortedList.v
-COQC bedrock2/deps/coqutil/src/Map/Properties.v
-COQC bedrock2/deps/coqutil/src/Map/SortedListString.v
-COQC bedrock2/deps/coqutil/src/Map/Z_keyed_SortedListMap.v
-COQC bedrock2/deps/coqutil/src/Map/SortedListWord.v
-COQC bedrock2/deps/coqutil/src/Map/SortedListString_test.v
-COQC bedrock2/deps/coqutil/src/Map/Solver.v
-COQC bedrock2/deps/coqutil/src/Map/TestGoals.v
-COQC bedrock2/deps/coqutil/src/Map/TestLemmas.v
+ROCQ compile bedrock2/deps/coqutil/src/Z/ZLib.v
+ROCQ compile bedrock2/deps/coqutil/src/Z/HexNotation.v
+ROCQ compile bedrock2/deps/coqutil/src/Z/BitOps.v
+ROCQ compile bedrock2/deps/coqutil/src/Datatypes/Prod.v
+ROCQ compile bedrock2/deps/coqutil/src/Word/Naive.v
+ROCQ compile bedrock2/deps/coqutil/src/Word/Properties.v
+ROCQ compile bedrock2/deps/coqutil/src/Macros/symmetry.v
+ROCQ compile bedrock2/deps/coqutil/src/Decidable.v
+ROCQ compile bedrock2/deps/coqutil/src/Tactics/syntactic_unify.v
+ROCQ compile bedrock2/deps/coqutil/src/Datatypes/HList.v
+ROCQ compile bedrock2/deps/coqutil/src/Tactics/Tactics.v
+ROCQ compile bedrock2/deps/coqutil/src/Word/LittleEndian.v
+ROCQ compile bedrock2/deps/coqutil/src/Datatypes/PropSet.v
+ROCQ compile bedrock2/deps/coqutil/src/Map/Interface.v
+ROCQ compile bedrock2/deps/coqutil/src/Map/Funext.v
+ROCQ compile bedrock2/deps/coqutil/src/Map/Empty_set_keyed_map.v
+ROCQ compile bedrock2/deps/coqutil/src/Map/SortedList.v
+ROCQ compile bedrock2/deps/coqutil/src/Map/Properties.v
+ROCQ compile bedrock2/deps/coqutil/src/Map/SortedListString.v
+ROCQ compile bedrock2/deps/coqutil/src/Map/Z_keyed_SortedListMap.v
+ROCQ compile bedrock2/deps/coqutil/src/Map/SortedListWord.v
+ROCQ compile bedrock2/deps/coqutil/src/Map/SortedListString_test.v
+ROCQ compile bedrock2/deps/coqutil/src/Map/Solver.v
+ROCQ compile bedrock2/deps/coqutil/src/Map/TestGoals.v
+ROCQ compile bedrock2/deps/coqutil/src/Map/TestLemmas.v
 Finished transaction in 0.297 secs (0.095u,0.05s) (successful)
 Part 1a: Small goals (originally took <5s each)
 Finished transaction in 0.35 secs (0.143u,0.032s) (successful)
@@ -179,7 +179,7 @@ total time:      1.147s
    â”‚ â””â”€unrecogs_in_map -----------------   1.4%   2.0%       0    0.002s
    â””â”€revert_all_Props ------------------   2.1%   2.2%      15    0.003s
 
-COQC bedrock2/deps/coqutil/src/Map/SlowGoals.v
+ROCQ compile bedrock2/deps/coqutil/src/Map/SlowGoals.v
 Finished transaction in 3.949 secs (1.835u,0.093s) (successful)
 Finished transaction in 6.898 secs (3.179u,0.177s) (successful)
 Finished transaction in 6.138 secs (2.811u,0.154s) (successful)
@@ -298,7 +298,7 @@ make[2]: Leaving directory 'bedrock2/deps/coqutil'
 make -C bedrock2/deps/riscv-coq all
 make -C bedrock2/bedrock2
 make[2]: Entering directory 'bedrock2/deps/riscv-coq'
-/builds/coq/coq/_install_ci/bin/coq_makefile -f _CoqProject INSTALLDEFAULTROOT = riscv -arg "-async-proofs-tac-j 1" bedrock2/deps/riscv-coq/src/Spec/Primitives.v bedrock2/deps/riscv-coq/src/Spec/ExecuteI.v bedrock2/deps/riscv-coq/src/Spec/ExecuteI64.v bedrock2/deps/riscv-coq/src/Spec/MetricPrimitives.v bedrock2/deps/riscv-coq/src/Spec/Machine.v bedrock2/deps/riscv-coq/src/Spec/ExecuteM.v bedrock2/deps/riscv-coq/src/Spec/ExecuteM64.v bedrock2/deps/riscv-coq/src/Spec/PseudoInstructions.v bedrock2/deps/riscv-coq/src/Spec/Execute.v bedrock2/deps/riscv-coq/src/Spec/Decode.v bedrock2/deps/riscv-coq/src/Spec/VirtualMemory.v bedrock2/deps/riscv-coq/src/Utility/MMIOTrace.v bedrock2/deps/riscv-coq/src/Utility/InstructionNotations.v bedrock2/deps/riscv-coq/src/Utility/nat_div_mod_to_quot_rem.v bedrock2/deps/riscv-coq/src/Utility/prove_Zeq_bitwise.v bedrock2/deps/riscv-coq/src/Utility/InstructionCoercions.v bedrock2/deps/riscv-coq/src/Utility/Words32Naive.v bedrock2/deps/riscv-coq/src/Utility/JMonad.v bedrock2/deps/riscv-coq/src/Utility/Utility.v bedrock2/deps/riscv-coq/src/Utility/DefaultMemImpl64.v bedrock2/deps/riscv-coq/src/Utility/runsToNonDet_Run.v bedrock2/deps/riscv-coq/src/Utility/ZBitOps.v bedrock2/deps/riscv-coq/src/Utility/MonadNotations.v bedrock2/deps/riscv-coq/src/Utility/Tactics.v bedrock2/deps/riscv-coq/src/Utility/MonadTests.v bedrock2/deps/riscv-coq/src/Utility/Words64Naive.v bedrock2/deps/riscv-coq/src/Utility/Encode.v bedrock2/deps/riscv-coq/src/Utility/MkMachineWidth.v bedrock2/deps/riscv-coq/src/Utility/MonadT.v bedrock2/deps/riscv-coq/src/Utility/div_mod_to_quot_rem.v bedrock2/deps/riscv-coq/src/Utility/DefaultMemImpl32.v bedrock2/deps/riscv-coq/src/Utility/PowerFunc.v bedrock2/deps/riscv-coq/src/Utility/ListLib.v bedrock2/deps/riscv-coq/src/Utility/runsToNonDet.v bedrock2/deps/riscv-coq/src/Utility/Monads.v bedrock2/deps/riscv-coq/src/Platform/MetricLogging.v bedrock2/deps/riscv-coq/src/Platform/Example64Literal.v bedrock2/deps/riscv-coq/src/Platform/RiscvMachine.v bedrock2/deps/riscv-coq/src/Platform/MetricMinimal.v bedrock2/deps/riscv-coq/src/Platform/Example.v bedrock2/deps/riscv-coq/src/Platform/Memory.v bedrock2/deps/riscv-coq/src/Platform/MinimalLogging.v bedrock2/deps/riscv-coq/src/Platform/Run.v bedrock2/deps/riscv-coq/src/Platform/MetricRiscvMachine.v bedrock2/deps/riscv-coq/src/Platform/Minimal.v bedrock2/deps/riscv-coq/src/Platform/MinimalMMIO.v bedrock2/deps/riscv-coq/src/Proofs/invert_encode_Fence.v bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeA64.v bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeCSR.v bedrock2/deps/riscv-coq/src/Proofs/invert_encode_SB.v bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeI64.v bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeA.v bedrock2/deps/riscv-coq/src/Proofs/invert_encode_U.v bedrock2/deps/riscv-coq/src/Proofs/invert_encode_I.v bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeProver.v bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeI.v bedrock2/deps/riscv-coq/src/Proofs/invert_encode_FenceI.v bedrock2/deps/riscv-coq/src/Proofs/invert_encode_R_atomic.v bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeM64.v bedrock2/deps/riscv-coq/src/Proofs/EncodeBound.v bedrock2/deps/riscv-coq/src/Proofs/invert_encode_R.v bedrock2/deps/riscv-coq/src/Proofs/invert_encode_S.v bedrock2/deps/riscv-coq/src/Proofs/DecodeEncode.v bedrock2/deps/riscv-coq/src/Proofs/invert_encode_I_system.v bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeM.v bedrock2/deps/riscv-coq/src/Proofs/invert_encode_UJ.v bedrock2/deps/riscv-coq/src/Proofs/invert_encode_I_shift_57.v bedrock2/deps/riscv-coq/src/Proofs/invert_encode_I_shift_66.v -o Makefile.coq.all
+/builds/coq/coq/_install_ci/bin/rocq makefile -f _CoqProject INSTALLDEFAULTROOT = riscv -arg "-async-proofs-tac-j 1" bedrock2/deps/riscv-coq/src/Spec/Primitives.v bedrock2/deps/riscv-coq/src/Spec/ExecuteI.v bedrock2/deps/riscv-coq/src/Spec/ExecuteI64.v bedrock2/deps/riscv-coq/src/Spec/MetricPrimitives.v bedrock2/deps/riscv-coq/src/Spec/Machine.v bedrock2/deps/riscv-coq/src/Spec/ExecuteM.v bedrock2/deps/riscv-coq/src/Spec/ExecuteM64.v bedrock2/deps/riscv-coq/src/Spec/PseudoInstructions.v bedrock2/deps/riscv-coq/src/Spec/Execute.v bedrock2/deps/riscv-coq/src/Spec/Decode.v bedrock2/deps/riscv-coq/src/Spec/VirtualMemory.v bedrock2/deps/riscv-coq/src/Utility/MMIOTrace.v bedrock2/deps/riscv-coq/src/Utility/InstructionNotations.v bedrock2/deps/riscv-coq/src/Utility/nat_div_mod_to_quot_rem.v bedrock2/deps/riscv-coq/src/Utility/prove_Zeq_bitwise.v bedrock2/deps/riscv-coq/src/Utility/InstructionCoercions.v bedrock2/deps/riscv-coq/src/Utility/Words32Naive.v bedrock2/deps/riscv-coq/src/Utility/JMonad.v bedrock2/deps/riscv-coq/src/Utility/Utility.v bedrock2/deps/riscv-coq/src/Utility/DefaultMemImpl64.v bedrock2/deps/riscv-coq/src/Utility/runsToNonDet_Run.v bedrock2/deps/riscv-coq/src/Utility/ZBitOps.v bedrock2/deps/riscv-coq/src/Utility/MonadNotations.v bedrock2/deps/riscv-coq/src/Utility/Tactics.v bedrock2/deps/riscv-coq/src/Utility/MonadTests.v bedrock2/deps/riscv-coq/src/Utility/Words64Naive.v bedrock2/deps/riscv-coq/src/Utility/Encode.v bedrock2/deps/riscv-coq/src/Utility/MkMachineWidth.v bedrock2/deps/riscv-coq/src/Utility/MonadT.v bedrock2/deps/riscv-coq/src/Utility/div_mod_to_quot_rem.v bedrock2/deps/riscv-coq/src/Utility/DefaultMemImpl32.v bedrock2/deps/riscv-coq/src/Utility/PowerFunc.v bedrock2/deps/riscv-coq/src/Utility/ListLib.v bedrock2/deps/riscv-coq/src/Utility/runsToNonDet.v bedrock2/deps/riscv-coq/src/Utility/Monads.v bedrock2/deps/riscv-coq/src/Platform/MetricLogging.v bedrock2/deps/riscv-coq/src/Platform/Example64Literal.v bedrock2/deps/riscv-coq/src/Platform/RiscvMachine.v bedrock2/deps/riscv-coq/src/Platform/MetricMinimal.v bedrock2/deps/riscv-coq/src/Platform/Example.v bedrock2/deps/riscv-coq/src/Platform/Memory.v bedrock2/deps/riscv-coq/src/Platform/MinimalLogging.v bedrock2/deps/riscv-coq/src/Platform/Run.v bedrock2/deps/riscv-coq/src/Platform/MetricRiscvMachine.v bedrock2/deps/riscv-coq/src/Platform/Minimal.v bedrock2/deps/riscv-coq/src/Platform/MinimalMMIO.v bedrock2/deps/riscv-coq/src/Proofs/invert_encode_Fence.v bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeA64.v bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeCSR.v bedrock2/deps/riscv-coq/src/Proofs/invert_encode_SB.v bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeI64.v bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeA.v bedrock2/deps/riscv-coq/src/Proofs/invert_encode_U.v bedrock2/deps/riscv-coq/src/Proofs/invert_encode_I.v bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeProver.v bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeI.v bedrock2/deps/riscv-coq/src/Proofs/invert_encode_FenceI.v bedrock2/deps/riscv-coq/src/Proofs/invert_encode_R_atomic.v bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeM64.v bedrock2/deps/riscv-coq/src/Proofs/EncodeBound.v bedrock2/deps/riscv-coq/src/Proofs/invert_encode_R.v bedrock2/deps/riscv-coq/src/Proofs/invert_encode_S.v bedrock2/deps/riscv-coq/src/Proofs/DecodeEncode.v bedrock2/deps/riscv-coq/src/Proofs/invert_encode_I_system.v bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeM.v bedrock2/deps/riscv-coq/src/Proofs/invert_encode_UJ.v bedrock2/deps/riscv-coq/src/Proofs/invert_encode_I_shift_57.v bedrock2/deps/riscv-coq/src/Proofs/invert_encode_I_shift_66.v -o Makefile.coq.all
 make[2]: Entering directory 'bedrock2/bedrock2'
 printf -- '-Q src bedrock2\n-Q /builds/coq/coWarning: ../coqutil/src (used in -R or -Q) is not a subdirectory of the current directory
 
@@ -310,22 +310,22 @@ bedrock2/bedrock2/src/Notations (real: 0.16, user: 0.04, sys: 0.03, mem: 56396 k
 bedrock2/deps/riscv-coq/src/Platform/MetricLogging (real: 1.44, user: 0.46, sys: 0.23, mem: 344552 ko)
 bedrock2/deps/riscv-coq/src/Utility/MMIOTrace (real: 0.17, user: 0.04, sys: 0.03, mem: 56096 ko)
 q/_build_ci/bedrock2/deps/coqutil/src coqutil\n' > _CoqProject
-/builds/coq/coq/_install_ci/bin/coq_makefile -f _CoqProject INSTALLDEFAULTROOT = bedrock2 -arg "-async-proofs-tac-j 1" bedrock2/bedrock2/src/BasicCSyntax.v bedrock2/bedrock2/src/ToCString.v bedrock2/bedrock2/src/BytedumpTest.v bedrock2/bedrock2/src/BasicC32Semantics.v bedrock2/bedrock2/src/Byte.v bedrock2/bedrock2/src/Variables.v bedrock2/bedrock2/src/Semantics.v bedrock2/bedrock2/src/div10.v bedrock2/bedrock2/src/NotationsCustomEntry.v bedrock2/bedrock2/src/ListPred.v bedrock2/bedrock2/src/BasicC64Semantics.v bedrock2/bedrock2/src/Map/SeparationLogic.v bedrock2/bedrock2/src/Map/Separation.v bedrock2/bedrock2/src/Syntax.v bedrock2/bedrock2/src/WeakestPreconditionProperties.v bedrock2/bedrock2/src/NotationsInConstr.v bedrock2/bedrock2/src/WeakestPrecondition.v bedrock2/bedrock2/src/TODO_absint.v bedrock2/bedrock2/src/Bytedump.v bedrock2/bedrock2/src/FE310CSemantics.v bedrock2/bedrock2/src/StructNotations.v bedrock2/bedrock2/src/Examples/lightbulb.v bedrock2/bedrock2/src/Examples/MultipleReturnValues.v bedrock2/bedrock2/src/Examples/ARPResponder.v bedrock2/bedrock2/src/Examples/swap.v bedrock2/bedrock2/src/Examples/chacha20.v bedrock2/bedrock2/src/Examples/Demos.v bedrock2/bedrock2/src/Examples/bsearch.v bedrock2/bedrock2/src/Examples/Trace.v bedrock2/bedrock2/src/Examples/StructAccess.v bedrock2/bedrock2/src/Examples/FE310CompilerDemo.v bedrock2/bedrock2/src/Examples/ipow.v bedrock2/bedrock2/src/Markers.v bedrock2/bedrock2/src/Memory.v bedrock2/bedrock2/src/Structs.v bedrock2/bedrock2/src/Notations.v bedrock2/bedrock2/src/ProgramLogic.v bedrock2/bedrock2/src/Hexdump.v bedrock2/bedrock2/src/BasicC64Syntax.v bedrock2/bedrock2/src/Scalars.v bedrock2/bedrock2/src/string2ident.v bedrock2/bedrock2/src/ptsto_bytes.v bedrock2/bedrock2/src/StringNamesSyntax.v bedrock2/bedrock2/src/Lift1Prop.v bedrock2/bedrock2/src/ZNamesSyntax.v bedrock2/bedrock2/src/TailRecursion.v bedrock2/bedrock2/src/Array.v -o Makefile.coq.all
+/builds/coq/coq/_install_ci/bin/rocq makefile -f _CoqProject INSTALLDEFAULTROOT = bedrock2 -arg "-async-proofs-tac-j 1" bedrock2/bedrock2/src/BasicCSyntax.v bedrock2/bedrock2/src/ToCString.v bedrock2/bedrock2/src/BytedumpTest.v bedrock2/bedrock2/src/BasicC32Semantics.v bedrock2/bedrock2/src/Byte.v bedrock2/bedrock2/src/Variables.v bedrock2/bedrock2/src/Semantics.v bedrock2/bedrock2/src/div10.v bedrock2/bedrock2/src/NotationsCustomEntry.v bedrock2/bedrock2/src/ListPred.v bedrock2/bedrock2/src/BasicC64Semantics.v bedrock2/bedrock2/src/Map/SeparationLogic.v bedrock2/bedrock2/src/Map/Separation.v bedrock2/bedrock2/src/Syntax.v bedrock2/bedrock2/src/WeakestPreconditionProperties.v bedrock2/bedrock2/src/NotationsInConstr.v bedrock2/bedrock2/src/WeakestPrecondition.v bedrock2/bedrock2/src/TODO_absint.v bedrock2/bedrock2/src/Bytedump.v bedrock2/bedrock2/src/FE310CSemantics.v bedrock2/bedrock2/src/StructNotations.v bedrock2/bedrock2/src/Examples/lightbulb.v bedrock2/bedrock2/src/Examples/MultipleReturnValues.v bedrock2/bedrock2/src/Examples/ARPResponder.v bedrock2/bedrock2/src/Examples/swap.v bedrock2/bedrock2/src/Examples/chacha20.v bedrock2/bedrock2/src/Examples/Demos.v bedrock2/bedrock2/src/Examples/bsearch.v bedrock2/bedrock2/src/Examples/Trace.v bedrock2/bedrock2/src/Examples/StructAccess.v bedrock2/bedrock2/src/Examples/FE310CompilerDemo.v bedrock2/bedrock2/src/Examples/ipow.v bedrock2/bedrock2/src/Markers.v bedrock2/bedrock2/src/Memory.v bedrock2/bedrock2/src/Structs.v bedrock2/bedrock2/src/Notations.v bedrock2/bedrock2/src/ProgramLogic.v bedrock2/bedrock2/src/Hexdump.v bedrock2/bedrock2/src/BasicC64Syntax.v bedrock2/bedrock2/src/Scalars.v bedrock2/bedrock2/src/string2ident.v bedrock2/bedrock2/src/ptsto_bytes.v bedrock2/bedrock2/src/StringNamesSyntax.v bedrock2/bedrock2/src/Lift1Prop.v bedrock2/bedrock2/src/ZNamesSyntax.v bedrock2/bedrock2/src/TailRecursion.v bedrock2/bedrock2/src/Array.v -o Makefile.coq.all
 make -f Makefile.coq.all
 make -f Makefile.coq.all
 make[3]: Entering directory 'bedrock2/deps/riscv-coq'
 make[3]: Entering directory 'bedrock2/bedrock2'
-COQDEP VFILES
-COQDEP VFILES
-COQC bedrock2/bedrock2/src/Syntax.v
-COQC bedrock2/deps/riscv-coq/src/Utility/Monads.v
-COQC bedrock2/bedrock2/src/Byte.v
-COQC bedrock2/deps/riscv-coq/src/Utility/Tactics.v
-COQC bedrock2/deps/riscv-coq/src/Platform/MetricLogging.v
-COQC bedrock2/bedrock2/src/Notations.v
-COQC bedrock2/bedrock2/src/div10.v
-COQC bedrock2/deps/riscv-coq/src/Utility/MMIOTrace.v
-COQC bedrock2/deps/riscv-coq/src/Utility/nat_div_mbedrock2/bedrock2/src/div10 (real: 1.82, user: 0.61, sys: 0.29, mem: 437628 ko)
+ROCQ DEP VFILES
+ROCQ DEP VFILES
+ROCQ compile bedrock2/bedrock2/src/Syntax.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Utility/Monads.v
+ROCQ compile bedrock2/bedrock2/src/Byte.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Utility/Tactics.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Platform/MetricLogging.v
+ROCQ compile bedrock2/bedrock2/src/Notations.v
+ROCQ compile bedrock2/bedrock2/src/div10.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Utility/MMIOTrace.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Utility/nat_div_mbedrock2/bedrock2/src/div10 (real: 1.82, user: 0.61, sys: 0.29, mem: 437628 ko)
 bedrock2/deps/riscv-coq/src/Utility/nat_div_mod_to_quot_rem (real: 1.14, user: 0.36, sys: 0.19, mem: 298516 ko)
 File "bedrock2/bedrock2/src/NotationsCustomEntry.v", line 50, characters 0-51:
 Warning: Declaring a scope implicitly is deprecated; use in advance an
@@ -379,14 +379,14 @@ deprecated. Please specify a hint database.
 [implicit-core-hint-db,deprecated]
 bedrock2/deps/riscv-coq/src/Utility/MonadT (real: 0.78, user: 0.23, sys: 0.15, mem: 212520 ko)
 od_to_quot_rem.v
-COQC bedrock2/bedrock2/src/NotationsCustomEntry.v
-COQC bedrock2/deps/riscv-coq/src/Utility/JMonad.v
-COQC bedrock2/bedrock2/src/ListPred.v
-COQC bedrock2/deps/riscv-coq/src/Utility/MonadNotations.v
-COQC bedrock2/bedrock2/src/Lift1Prop.v
-COQC bedrock2/deps/riscv-coq/src/Utility/PowerFunc.v
-COQC bedrock2/deps/riscv-coq/src/Utility/MonadTests.v
-COQC bedrock2/bedrock2/src/NotationsInConstr.v
+ROCQ compile bedrock2/bedrock2/src/NotationsCustomEntry.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Utility/JMonad.v
+ROCQ compile bedrock2/bedrock2/src/ListPred.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Utility/MonadNotations.v
+ROCQ compile bedrock2/bedrock2/src/Lift1Prop.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Utility/PowerFunc.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Utility/MonadTests.v
+ROCQ compile bedrock2/bedrock2/src/NotationsInConstr.v
      = [(3, true); (3, false); (4, true); (4, false)]
      : Id (list (nat * bool))
      = None
@@ -401,7 +401,7 @@ COQC bedrock2/bedrock2/src/NotationsInConstr.v
      : list nat
      = [(tt, 0); (tt, 1); (tt, 2); (tt, 3)]
      : Id (list (unit * nat))
-COQC bedrock2/bedrock2/src/Structs.v
+ROCQ compile bedrock2/bedrock2/src/Structs.v
      = ([(0, 1); (0, 0)], (0, 0))
      : Id (list (nat * nat) * (nat * nat))
      = [(0, 1, (0, 1)); (1, 0, (1, 0))]
@@ -416,7 +416,7 @@ COQC bedrock2/bedrock2/src/Structs.v
      : Id (list Regs * Regs)
      = ([<<0,11,11>>; <<1,11,11>>; <<2,11,11>>; <<3,11,11>>], <<3,11,11>>)
      : Id (list Regs * Regs)
-COQC bedrock2/deps/riscv-coq/src/Utility/MonadT.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Utility/MonadT.v
      = list (option nat)
      : Type
      = fun (A : Type) (aset : (A -> Prop) -> Prop)
@@ -452,7 +452,7 @@ end
 Argument scopes are [_ function_scope type_scope function_scope
   function_scope _]
 Closed under the global context
-COQC bedrock2/deps/riscv-coq/src/Utility/ListLib.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Utility/ListLib.v
      = 4%Z
      : Z
      = 20%Z
@@ -558,43 +558,43 @@ expr
            (expr.op mul (expr.literal 2) (expr.literal 1)))
      : forall p : parameters,
        bopname -> bopname -> expr -> PathError expr + type * expr
-COQC bedrock2/bedrock2/src/Markers.v
-COQC bedrock2/bedrock2/src/string2ident.v
-COQC bedrock2/bedrock2/src/Hexdump.v
-COQC bedrock2/bedrock2/src/ZNamesSyntax.v
-COQC bedrock2/deps/riscv-coq/src/Utility/div_mod_to_quot_rem.v
-COQC bedrock2/bedrock2/src/Variables.v
-COQC bedrock2/deps/riscv-coq/src/Utility/runsToNonDet.v
-COQC bedrock2/deps/riscv-coq/src/Utility/ZBitOps.v
-COQC bedrock2/bedrock2/src/StringNamesSyntax.v
-COQC bedrock2/bedrock2/src/Bytedump.v
-COQC bedrock2/bedrock2/src/Memory.v
-COQC bedrock2/deps/riscv-coq/src/Utility/Utility.v
-COQC bedrock2/deps/riscv-coq/src/Utility/prove_Zeq_bitwise.v
-COQC bedrock2/bedrock2/src/Map/Separation.v
-COQC bedrock2/bedrock2/src/StructNotations.v
-COQC bedrock2/deps/riscv-coq/src/Utility/Words32Naive.v
-COQC bedrock2/bedrock2/src/ToCString.v
-COQC bedrock2/deps/riscv-coq/src/Utility/Words64Naive.v
-COQC bedrock2/bedrock2/src/BytedumpTest.v
-COQC bedrock2/deps/riscv-coq/src/Utility/DefaultMemImpl32.v
+ROCQ compile bedrock2/bedrock2/src/Markers.v
+ROCQ compile bedrock2/bedrock2/src/string2ident.v
+ROCQ compile bedrock2/bedrock2/src/Hexdump.v
+ROCQ compile bedrock2/bedrock2/src/ZNamesSyntax.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Utility/div_mod_to_quot_rem.v
+ROCQ compile bedrock2/bedrock2/src/Variables.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Utility/runsToNonDet.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Utility/ZBitOps.v
+ROCQ compile bedrock2/bedrock2/src/StringNamesSyntax.v
+ROCQ compile bedrock2/bedrock2/src/Bytedump.v
+ROCQ compile bedrock2/bedrock2/src/Memory.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Utility/Utility.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Utility/prove_Zeq_bitwise.v
+ROCQ compile bedrock2/bedrock2/src/Map/Separation.v
+ROCQ compile bedrock2/bedrock2/src/StructNotations.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Utility/Words32Naive.v
+ROCQ compile bedrock2/bedrock2/src/ToCString.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Utility/Words64Naive.v
+ROCQ compile bedrock2/bedrock2/src/BytedumpTest.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Utility/DefaultMemImpl32.v
  
  !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ ¡¢£¤¥¦§¨©ª«¬­®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ
-COQC bedrock2/bedrock2/src/Semantics.v
-COQC bedrock2/deps/riscv-coq/src/Spec/Decode.v
-COQC bedrock2/bedrock2/src/Map/SeparationLogic.v
-COQC bedrock2/deps/riscv-coq/src/Platform/Memory.v
-COQC bedrock2/deps/riscv-coq/src/Spec/Machine.v
-COQC bedrock2/bedrock2/src/WeakestPrecondition.v
-COQC bedrock2/deps/riscv-coq/src/Platform/RiscvMachine.v
-COQC bedrock2/bedrock2/src/Array.v
-COQC bedrock2/deps/riscv-coq/src/Utility/MkMachineWidth.v
-COQC bedrock2/deps/riscv-coq/src/Spec/VirtualMemory.v
-COQC bedrock2/bedrock2/src/BasicC64Syntax.v
-COQC bedrock2/deps/riscv-coq/src/Platform/MetricRiscvMachine.v
-COQC bedrock2/bedrock2/src/Examples/Trace.v
-COQC bedrock2/deps/riscv-coq/src/Spec/ExecuteM.v
-COQC bedrock2/deps/riscv-coq/src/Spec/ExecuteM64.v
+ROCQ compile bedrock2/bedrock2/src/Semantics.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Spec/Decode.v
+ROCQ compile bedrock2/bedrock2/src/Map/SeparationLogic.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Platform/Memory.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Spec/Machine.v
+ROCQ compile bedrock2/bedrock2/src/WeakestPrecondition.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Platform/RiscvMachine.v
+ROCQ compile bedrock2/bedrock2/src/Array.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Utility/MkMachineWidth.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Spec/VirtualMemory.v
+ROCQ compile bedrock2/bedrock2/src/BasicC64Syntax.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Platform/MetricRiscvMachine.v
+ROCQ compile bedrock2/bedrock2/src/Examples/Trace.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Spec/ExecuteM.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Spec/ExecuteM64.v
 squarer_correct
      : forall (m : Semantics.mem) (l : Semantics.locals),
        exec map.empty squarer [] m l
@@ -605,11 +605,11 @@ squarer_correct
        exec map.empty squarer [] m l
          (fun (t' : trace) (_ : Semantics.mem) (_ : Semantics.locals) =>
           squarer_trace t')
-COQC bedrock2/bedrock2/src/Examples/StructAccess.v
-COQC bedrock2/deps/riscv-coq/src/Spec/PseudoInstructions.v
-COQC bedrock2/bedrock2/src/BasicCSyntax.v
-COQC bedrock2/deps/riscv-coq/src/Utility/InstructionCoercions.v
-COQC bedrock2/bedrock2/src/WeakestPreconditionFile "bedrock2/deps/riscv-coq/src/Utility/InstructionCoercions.v", line 10, characters 0-70:
+ROCQ compile bedrock2/bedrock2/src/Examples/StructAccess.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Spec/PseudoInstructions.v
+ROCQ compile bedrock2/bedrock2/src/BasicCSyntax.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Utility/InstructionCoercions.v
+ROCQ compile bedrock2/bedrock2/src/WeakestPreconditionFile "bedrock2/deps/riscv-coq/src/Utility/InstructionCoercions.v", line 10, characters 0-70:
 Warning: Declaring a scope implicitly is deprecated; use in advance an
 explicit "Declare Scope ilist_scope.". [undeclared-scope,deprecated]
 bedrock2/deps/riscv-coq/src/Utility/InstructionCoercions (real: 1.33, user: 0.43, sys: 0.21, mem: 313976 ko)
@@ -660,24 +660,24 @@ bedrock2/bedrock2/src/Examples/MultipleReturnValues (real: 1.64, user: 0.54, sys
 bedrock2/bedrock2/src/Examples/ARPResponder (real: 4.88, user: 2.06, sys: 0.33, mem: 465924 ko)
 bedrock2/bedrock2/src/Examples/chacha20 (real: 3.11, user: 1.25, sys: 0.26, mem: 435736 ko)
 Properties.v
-COQC bedrock2/deps/riscv-coq/src/Utility/DefaultMemImpl64.v
-COQC bedrock2/deps/riscv-coq/src/Utility/Encode.v
-COQC bedrock2/deps/riscv-coq/src/Spec/Primitives.v
-COQC bedrock2/deps/riscv-coq/src/Spec/ExecuteI.v
-COQC bedrock2/deps/riscv-coq/src/Spec/ExecuteI64.v
-COQC bedrock2/deps/riscv-coq/src/Spec/MetricPrimitives.v
-COQC bedrock2/deps/riscv-coq/src/Spec/Execute.v
-COQC bedrock2/deps/riscv-coq/src/Utility/InstructionNotations.v
-COQC bedrock2/deps/riscv-coq/src/Platform/Run.v
-COQC bedrock2/deps/riscv-coq/src/Platform/Minimal.v
-COQC bedrock2/bedrock2/src/FE310CSemantics.v
-COQC bedrock2/bedrock2/src/TailRecursion.v
-COQC bedrock2/bedrock2/src/ptsto_bytes.v
-COQC bedrock2/deps/riscv-coq/src/Platform/MinimalMMIO.v
-COQC bedrock2/bedrock2/src/Examples/MultipleReturnValues.v
-COQC bedrock2/bedrock2/src/Examples/ARPResponder.v
-COQC bedrock2/bedrock2/src/Examples/chacha20.v
-COQC bedrock2/bedrock2/src/Examples/Demos.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Utility/DefaultMemImpl64.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Utility/Encode.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Spec/Primitives.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Spec/ExecuteI.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Spec/ExecuteI64.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Spec/MetricPrimitives.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Spec/Execute.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Utility/InstructionNotations.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Platform/Run.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Platform/Minimal.v
+ROCQ compile bedrock2/bedrock2/src/FE310CSemantics.v
+ROCQ compile bedrock2/bedrock2/src/TailRecursion.v
+ROCQ compile bedrock2/bedrock2/src/ptsto_bytes.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Platform/MinimalMMIO.v
+ROCQ compile bedrock2/bedrock2/src/Examples/MultipleReturnValues.v
+ROCQ compile bedrock2/bedrock2/src/Examples/ARPResponder.v
+ROCQ compile bedrock2/bedrock2/src/Examples/chacha20.v
+ROCQ compile bedrock2/bedrock2/src/Examples/Demos.v
 allProgs@{bedrock2.Examples.Demos.686 bedrock2.Examples.Demos.687} =
 [("bsearch",
  ([left; right; target], [left],
@@ -868,10 +868,10 @@ cmd.seq (cmd.set 1 (expr.literal 0))
                     (cmd.set 4
                        (expr.op bopname.add (expr.var 4) (expr.literal 1)))))))))))]
      : list (string * (list Z * list Z * cmd))
-COQC bedrock2/bedrock2/src/BasicC32Semantics.v
-COQC bedrock2/bedrock2/src/BasicC64Semantics.v
-COQC bedrock2/bedrock2/src/Scalars.v
-COQC bedrock2/bedrock2/src/TODO_absint.v
+ROCQ compile bedrock2/bedrock2/src/BasicC32Semantics.v
+ROCQ compile bedrock2/bedrock2/src/BasicC64Semantics.v
+ROCQ compile bedrock2/bedrock2/src/Scalars.v
+ROCQ compile bedrock2/bedrock2/src/TODO_absint.v
 bedrock2/bedrock2/src/ProgramLogic (real: 1.65, user: 0.52, sys: 0.25, mem: 371960 ko)
 File "bedrock2/bedrock2/src/Examples/lightbulb.v", line 48, characters 0-36:
 Warning: Notation "_ * _" was already used in scope type_scope.
@@ -901,8 +901,8 @@ bedrock2/deps/riscv-coq/src/Proofs/invert_encode_FenceI (real: 14.48, user: 6.72
 bedrock2/deps/riscv-coq/src/Utility/runsToNonDet_Run (real: 1.66, user: 0.58, sys: 0.23, mem: 408744 ko)
 bedrock2/deps/riscv-coq/src/Platform/MinimalLogging (real: 2.10, user: 0.74, sys: 0.27, mem: 460380 ko)
 bedrock2/deps/riscv-coq/src/Platform/MetricMinimal (real: 24.74, user: 11.74, sys: 0.31, mem: 501100 ko)
-COQC bedrock2/bedrock2/src/ProgramLogic.v
-COQC bedrock2/bedrock2/src/Examples/lightbulb.v
+ROCQ compile bedrock2/bedrock2/src/ProgramLogic.v
+ROCQ compile bedrock2/bedrock2/src/Examples/lightbulb.v
      = "uintptr_t lightbulb(uintptr_t packet, uintptr_t len) {
   uintptr_t ethertype, protocol, mmio_val, command, r;
   ethertype = ((*(uint8_t*)((packet)+((uintptr_t)12ULL)))<<((uintptr_t)8ULL))|(*(uint8_t*)((packet)+((uintptr_t)13ULL)));
@@ -925,7 +925,7 @@ COQC bedrock2/bedrock2/src/Examples/lightbulb.v
 }
 "
      : string
-COQC bedrock2/bedrock2/src/Examples/swap.v
+ROCQ compile bedrock2/bedrock2/src/Examples/swap.v
 static void swap(uintptr_t a, uintptr_t b);
 
 void swap_swap(uintptr_t a, uintptr_t b) {
@@ -942,22 +942,22 @@ static void swap(uintptr_t a, uintptr_t b) {
   return;
 }
 
-COQC bedrock2/bedrock2/src/Examples/bsearch.v
+ROCQ compile bedrock2/bedrock2/src/Examples/bsearch.v
 H19
 H13
-COQC bedrock2/deps/riscv-coq/src/Proofs/invert_encode_Fence.v
-COQC bedrock2/deps/riscv-coq/src/Proofs/invert_encode_R.v
-COQC bedrock2/deps/riscv-coq/src/Proofs/invert_encode_R_atomic.v
-COQC bedrock2/deps/riscv-coq/src/Proofs/invert_encode_I.v
-COQC bedrock2/deps/riscv-coq/src/Proofs/invert_encode_I_shift_57.v
-COQC bedrock2/deps/riscv-coq/src/Proofs/invert_encode_I_shift_66.v
-COQC bedrock2/deps/riscv-coq/src/Proofs/invert_encode_I_system.v
-COQC bedrock2/deps/riscv-coq/src/Proofs/invert_encode_S.v
-COQC bedrock2/bedrock2/src/Examples/FE310CompilerDemo.v
-COQC bedrock2/deps/riscv-coq/src/Proofs/invert_encode_SB.v
-COQC bedrock2/deps/riscv-coq/src/Proofs/invert_encode_U.v
-COQC bedrock2/deps/riscv-coq/src/Proofs/invert_encode_UJ.v
-COQC bedrock2/bedrock2/src/Examples/ipow.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Proofs/invert_encode_Fence.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Proofs/invert_encode_R.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Proofs/invert_encode_R_atomic.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Proofs/invert_encode_I.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Proofs/invert_encode_I_shift_57.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Proofs/invert_encode_I_shift_66.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Proofs/invert_encode_I_system.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Proofs/invert_encode_S.v
+ROCQ compile bedrock2/bedrock2/src/Examples/FE310CompilerDemo.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Proofs/invert_encode_SB.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Proofs/invert_encode_U.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Proofs/invert_encode_UJ.v
+ROCQ compile bedrock2/bedrock2/src/Examples/ipow.v
 make[3]: Leaving directory 'bedrock2/bedrock2'
 make src/BytedumpTest.out
 make[3]: Entering directory 'bedrock2/bedrock2'
@@ -971,12 +971,12 @@ diff -u src/BytedumpTest.golden.bin src/BytedumpTest.out.tmp
 mv src/BytedumpTest.out.tmp src/BytedumpTest.out
 make[3]: Leaving directory 'bedrock2/bedrock2'
 make[2]: Leaving directory 'bedrock2/bedrock2'
-COQC bedrock2/deps/riscv-coq/src/Proofs/invert_encode_FenceI.v
-COQC bedrock2/deps/riscv-coq/src/Proofs/EncodeBound.v
-COQC bedrock2/deps/riscv-coq/src/Utility/runsToNonDet_Run.v
-COQC bedrock2/deps/riscv-coq/src/Platform/MinimalLogging.v
-COQC bedrock2/deps/riscv-coq/src/Platform/MetricMinimal.v
-COQC bedrock2/deps/riscv-coq/src/Platform/Example.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Proofs/invert_encode_FenceI.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Proofs/EncodeBound.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Utility/runsToNonDet_Run.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Platform/MinimalLogging.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Platform/MetricMinimal.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Platform/Example.v
      = [({| SortedList.value := []; SortedList._value_ok := eq_refl |},
         EvLoadWord 36 (IInstruction (Blt 9 19 (-16))), [],
         ({| SortedList.value := []; SortedList._value_ok := eq_refl |}, []));
@@ -1098,25 +1098,25 @@ ortedList._value_ok := eq_refl |}, []));
        EvLoadWord 0 (IInstruction (Addi 19 0 6)), [],
        ({| SortedList.value := []; SortedList._value_ok := eq_refl |}, []))]
      : list (LogItem LogEvent)
-COQC bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeProver.v
-COQC bedrock2/deps/riscv-coq/src/Platform/Example64Literal.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeProver.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Platform/Example64Literal.v
      = {| unsigned := 1073745919; _unsigned_in_range := eq_refl |}
      : word64
-COQC bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeA64.v
-COQC bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeCSR.v
-COQC bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeI64.v
-COQC bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeA.v
-COQC bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeI.v
-COQC bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeM64.v
-COQC bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeM.v
-COQC bedrock2/deps/riscv-coq/src/Proofs/DecodeEncode.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeA64.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeCSR.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeI64.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeA.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeI.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeM64.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Proofs/DecodeEncodeM.v
+ROCQ compile bedrock2/deps/riscv-coq/src/Proofs/DecodeEncode.v
 make[3]: Leaving directory 'bedrock2/deps/riscv-coq'
 make[2]: Leaving directory 'bedrock2/deps/riscv-coq'
 make -C bedrock2/compiler
 make -C bedrock2/deps/kami
 make[2]: Entering directory 'bedrock2/compiler'
 printf -- '-Q ../bedrock2/src bedrock2\n-Q bedrock2/deps/coqutil/src coqutil\n-Q bedrock2/deps/riscv-coq/src riscv\n-Q ./lib lib\n-Q ./src compiler\n' > _CoqProject
-/builds/coq/coq/_install_ci/bin/coq_makefile -f _CoqProject INSTALLDEFAULTROOT = bedrock2 -arg "-async-proofs-tac-j 1" bedrock2/compiler/src/EmitsValid.v bedrock2/compiler/src/util/Misc.v bedrock2/compiler/src/util/Learning.v bedrock2/compiler/src/util/Tactics.v bedrock2/compiler/src/util/MyOmega.v bedrock2/compiler/src/util/ListLib.v bedrock2/compiler/src/util/Set.v bedrock2/compiler/src/util/SetSolverTests.v bedrock2/compiler/src/util/Common.v bedrock2/compiler/src/util/LogGoal.v bedrock2/compiler/src/SeparationLogic.v bedrock2/compiler/src/ExprImp.v bedrock2/compiler/src/FlatToRiscv32.v bedrock2/compiler/src/FlatToRiscv.v bedrock2/compiler/src/on_hyp_containing.v bedrock2/compiler/src/Basic32Semantics.v bedrock2/compiler/src/Simp.v bedrock2/compiler/src/FlatToRiscvDef.v bedrock2/compiler/src/RegAlloc3.v bedrock2/compiler/src/RegAllocAnnotatedNotations.v bedrock2/compiler/src/UnmappedMemForExtSpec.v bedrock2/compiler/src/RegAlloc2.v bedrock2/compiler/src/NoActionSyntaxParams.v bedrock2/compiler/src/Pipeline.v bedrock2/compiler/src/RiscvWordProperties.v bedrock2/compiler/src/GoFlatToRiscv.v bedrock2/compiler/src/Rem4.v bedrock2/compiler/src/SimplWordExpr.v bedrock2/compiler/src/ZNameGen.v bedrock2/compiler/src/NameGen.v bedrock2/compiler/src/FlatImp.v bedrock2/compiler/src/FlattenExpr.v bedrock2/compiler/src/eqexact.v bedrock2/compiler/src/examples/swap_bytes_over_uart_hexdump.v bedrock2/compiler/src/examples/TestExprImp.v bedrock2/compiler/src/examples/highlevel/FuncMut.v bedrock2/compiler/src/examples/highlevel/For.v bedrock2/compiler/src/examples/InlineAssemblyMacro.v bedrock2/compiler/src/examples/CompileExamples.v bedrock2/compiler/src/examples/toposort.v bedrock2/compiler/src/examples/FE310Compiler.v bedrock2/compiler/src/examples/EditDistExample.v bedrock2/compiler/src/examples/Fibonacci.v bedrock2/compiler/src/examples/TestFlatImp.v bedrock2/compiler/src/examples/MMIO.v bedrock2/compiler/lib/LibTacticsMin.v bedrock2/compiler/lib/fiat_crypto_tactics/Not.v bedrock2/compiler/lib/fiat_crypto_tactics/Test.v bedrock2/compiler/lib/fiat_crypto_tactics/UniquePose.v bedrock2/compiler/lib/LibTactics.v -o Makefile.coq.all
+/builds/coq/coq/_install_ci/bin/rocq makefile -f _CoqProject INSTALLDEFAULTROOT = bedrock2 -arg "-async-proofs-tac-j 1" bedrock2/compiler/src/EmitsValid.v bedrock2/compiler/src/util/Misc.v bedrock2/compiler/src/util/Learning.v bedrock2/compiler/src/util/Tactics.v bedrock2/compiler/src/util/MyOmega.v bedrock2/compiler/src/util/ListLib.v bedrock2/compiler/src/util/Set.v bedrock2/compiler/src/util/SetSolverTests.v bedrock2/compiler/src/util/Common.v bedrock2/compiler/src/util/LogGoal.v bedrock2/compiler/src/SeparationLogic.v bedrock2/compiler/src/ExprImp.v bedrock2/compiler/src/FlatToRiscv32.v bedrock2/compiler/src/FlatToRiscv.v bedrock2/compiler/src/on_hyp_containing.v bedrock2/compiler/src/Basic32Semantics.v bedrock2/compiler/src/Simp.v bedrock2/compiler/src/FlatToRiscvDef.v bedrock2/compiler/src/RegAlloc3.v bedrock2/compiler/src/RegAllocAnnotatedNotations.v bedrock2/compiler/src/UnmappedMemForExtSpec.v bedrock2/compiler/src/RegAlloc2.v bedrock2/compiler/src/NoActionSyntaxParams.v bedrock2/compiler/src/Pipeline.v bedrock2/compiler/src/RiscvWordProperties.v bedrock2/compiler/src/GoFlatToRiscv.v bedrock2/compiler/src/Rem4.v bedrock2/compiler/src/SimplWordExpr.v bedrock2/compiler/src/ZNameGen.v bedrock2/compiler/src/NameGen.v bedrock2/compiler/src/FlatImp.v bedrock2/compiler/src/FlattenExpr.v bedrock2/compiler/src/eqexact.v bedrock2/compiler/src/examples/swap_bytes_over_uart_hexdump.v bedrock2/compiler/src/examples/TestExprImp.v bedrock2/compiler/src/examples/highlevel/FuncMut.v bedrock2/compiler/src/examples/highlevel/For.v bedrock2/compiler/src/examples/InlineAssemblyMacro.v bedrock2/compiler/src/examples/CompileExamples.v bedrock2/compiler/src/examples/toposort.v bedrock2/compiler/src/examples/FE310Compiler.v bedrock2/compiler/src/examples/EditDistExample.v bedrock2/compiler/src/examples/Fibonacci.v bedrock2/compiler/src/examples/TestFlatImp.v bedrock2/compiler/src/examples/MMIO.v bedrock2/compiler/lib/LibTacticsMin.v bedrock2/compiler/lib/fiat_crypto_tactics/Not.v bedrock2/compiler/lib/fiat_crypto_tactics/Test.v bedrock2/compiler/lib/fiat_crypto_tactics/UniquePose.v bedrock2/compiler/lib/LibTactics.v -o Makefile.coq.all
 make[2]: Entering directory 'bedrock2/deps/kami'
 printf -- '-R Kami Kami\n-Q bedrock2/deps/Warning: ../bedrock2/src (used in -R or -Q) is not a subdirectory of the current directory
 
@@ -1181,38 +1181,38 @@ bedrock2/compiler/src/Basic32Semantics (real: 1.46, user: 0.50, sys: 0.20, mem: 
 riscv-coq/src riscv\n-Q bedrock2/deps/coqutil/src coqutil\n' > _CoqProject
 make -f Makefile.coq.all
 make[3]: Entering directory 'bedrock2/compiler'
-/builds/coq/coq/_install_ci/bin/coq_makefile -f _CoqProject Kami/Lib/StringStringAsOT.v Kami/Lib/FMap.v Kami/Lib/ilist.v Kami/Lib/Indexer.v Kami/Lib/DepEq.v Kami/Lib/Nomega.v Kami/Lib/StringEq.v Kami/Lib/Misc.v Kami/Lib/Word.v Kami/Lib/FinNotations.v Kami/Lib/Reflection.v Kami/Lib/NatLib.v Kami/Lib/StringAsList.v Kami/Lib/Concat.v Kami/Lib/ListSupport.v Kami/Lib/VectorFacts.v Kami/Lib/StringAsOT.v Kami/Lib/CommonTactics.v Kami/Lib/WordSupport.v Kami/Lib/BasicLogic.v Kami/Lib/DepEqNat.v Kami/Lib/Struct.v Kami/SemFacts.v Kami/ParametricInlineLtac.v Kami/PartialInlineFacts.v Kami/Wf.v Kami/Semantics.v Kami/ParametricSyntax.v Kami/Inline.v Kami/StepDet.v Kami/InlineFacts.v Kami/Amortization.v Kami/Tutorial.v Kami/Label.v Kami/MapReifyEx.v Kami/ParametricEquiv.v Kami/ParametricInline.v Kami/Notations.v Kami/Substitute.v Kami/ParametricWf.v Kami/ParamDup.v Kami/SymEval.v Kami/Syntax.v Kami/ModuleBoundEx.v Kami/Tactics.v Kami/SymEvalTac.v Kami/ModularFacts.v Kami/Synthesize.v Kami/RefinementFacts.v Kami/Decomposition.v Kami/Renaming.v Kami/Kami.v Kami/Duplicate.v Kami/ModuleBound.v Kami/Specialize.v Kami/Ex/ProcThreeStage.v Kami/Ex/SimpleFifoCorrect.v Kami/Ex/IsaRv32PgmExt.v Kami/Ex/ProcThreeStInv.v Kami/Ex/Divider32.v Kami/Ex/SC.v Kami/Ex/Names.v Kami/Ex/OneEltFifo.v Kami/Ex/Multiplier64.v Kami/Ex/Multiplier32.v Kami/Ex/ProcFDInv.v Kami/Ex/ProcDec.v Kami/Ex/ProcFourStDec.v Kami/Ex/IsaRv32.v Kami/Ex/MemAtomic.v Kami/Ex/ProcFDInl.v Kami/Ex/IsaRv32Pgm.v Kami/Ex/Divider64.v Kami/Ex/Fifo.v Kami/Ex/ProcThreeStInl.v Kami/Ex/ProcDecSC.v Kami/Ex/ProcDecSCN.v Kami/Ex/NativeFifo.v Kami/Ex/FifoCorrect.v Kami/Ex/ProcThreeStDec.v Kami/Ex/RegFile.v Kami/Ex/InDepthTutorial.v Kami/Ex/ProcDecInv.v Kami/Ex/ProcFetchDecode.v Kami/Ex/SCMMInl.v Kami/Ex/ProcFDCorrect.v Kami/Ex/MemTypes.v Kami/Ex/ProcDecInl.v Kami/Ex/IsaRv32/PgmFact.v Kami/Ex/IsaRv32/PgmMatMulReport.v Kami/Ex/IsaRv32/PgmBankerWorker3.v Kami/Ex/IsaRv32/PgmGcd.v Kami/Ex/IsaRv32/PgmMatMulInit.v Kami/Ex/IsaRv32/PgmPeterson2.v Kami/Ex/IsaRv32/PgmHanoi.v Kami/Ex/IsaRv32/PgmBankerWorker1.v Kami/Ex/IsaRv32/PgmPeterson1.v Kami/Ex/IsaRv32/PgmBankerInit.v Kami/Ex/IsaRv32/PgmMatMulNormal1.v Kami/Ex/IsaRv32/PgmDekker1.v Kami/Ex/IsaRv32/PgmBankerWorker2.v Kami/Ex/IsaRv32/PgmBsort.v Kami/Ex/IsaRv32/PgmMatMulNormal2.v Kami/Ex/IsaRv32/PgmDekker2.v Kami/Ext/Extraction.v Kami/Ext/BSyntax.v -o Makefile.coq.all
+/builds/coq/coq/_install_ci/bin/rocq makefile -f _CoqProject Kami/Lib/StringStringAsOT.v Kami/Lib/FMap.v Kami/Lib/ilist.v Kami/Lib/Indexer.v Kami/Lib/DepEq.v Kami/Lib/Nomega.v Kami/Lib/StringEq.v Kami/Lib/Misc.v Kami/Lib/Word.v Kami/Lib/FinNotations.v Kami/Lib/Reflection.v Kami/Lib/NatLib.v Kami/Lib/StringAsList.v Kami/Lib/Concat.v Kami/Lib/ListSupport.v Kami/Lib/VectorFacts.v Kami/Lib/StringAsOT.v Kami/Lib/CommonTactics.v Kami/Lib/WordSupport.v Kami/Lib/BasicLogic.v Kami/Lib/DepEqNat.v Kami/Lib/Struct.v Kami/SemFacts.v Kami/ParametricInlineLtac.v Kami/PartialInlineFacts.v Kami/Wf.v Kami/Semantics.v Kami/ParametricSyntax.v Kami/Inline.v Kami/StepDet.v Kami/InlineFacts.v Kami/Amortization.v Kami/Tutorial.v Kami/Label.v Kami/MapReifyEx.v Kami/ParametricEquiv.v Kami/ParametricInline.v Kami/Notations.v Kami/Substitute.v Kami/ParametricWf.v Kami/ParamDup.v Kami/SymEval.v Kami/Syntax.v Kami/ModuleBoundEx.v Kami/Tactics.v Kami/SymEvalTac.v Kami/ModularFacts.v Kami/Synthesize.v Kami/RefinementFacts.v Kami/Decomposition.v Kami/Renaming.v Kami/Kami.v Kami/Duplicate.v Kami/ModuleBound.v Kami/Specialize.v Kami/Ex/ProcThreeStage.v Kami/Ex/SimpleFifoCorrect.v Kami/Ex/IsaRv32PgmExt.v Kami/Ex/ProcThreeStInv.v Kami/Ex/Divider32.v Kami/Ex/SC.v Kami/Ex/Names.v Kami/Ex/OneEltFifo.v Kami/Ex/Multiplier64.v Kami/Ex/Multiplier32.v Kami/Ex/ProcFDInv.v Kami/Ex/ProcDec.v Kami/Ex/ProcFourStDec.v Kami/Ex/IsaRv32.v Kami/Ex/MemAtomic.v Kami/Ex/ProcFDInl.v Kami/Ex/IsaRv32Pgm.v Kami/Ex/Divider64.v Kami/Ex/Fifo.v Kami/Ex/ProcThreeStInl.v Kami/Ex/ProcDecSC.v Kami/Ex/ProcDecSCN.v Kami/Ex/NativeFifo.v Kami/Ex/FifoCorrect.v Kami/Ex/ProcThreeStDec.v Kami/Ex/RegFile.v Kami/Ex/InDepthTutorial.v Kami/Ex/ProcDecInv.v Kami/Ex/ProcFetchDecode.v Kami/Ex/SCMMInl.v Kami/Ex/ProcFDCorrect.v Kami/Ex/MemTypes.v Kami/Ex/ProcDecInl.v Kami/Ex/IsaRv32/PgmFact.v Kami/Ex/IsaRv32/PgmMatMulReport.v Kami/Ex/IsaRv32/PgmBankerWorker3.v Kami/Ex/IsaRv32/PgmGcd.v Kami/Ex/IsaRv32/PgmMatMulInit.v Kami/Ex/IsaRv32/PgmPeterson2.v Kami/Ex/IsaRv32/PgmHanoi.v Kami/Ex/IsaRv32/PgmBankerWorker1.v Kami/Ex/IsaRv32/PgmPeterson1.v Kami/Ex/IsaRv32/PgmBankerInit.v Kami/Ex/IsaRv32/PgmMatMulNormal1.v Kami/Ex/IsaRv32/PgmDekker1.v Kami/Ex/IsaRv32/PgmBankerWorker2.v Kami/Ex/IsaRv32/PgmBsort.v Kami/Ex/IsaRv32/PgmMatMulNormal2.v Kami/Ex/IsaRv32/PgmDekker2.v Kami/Ext/Extraction.v Kami/Ext/BSyntax.v -o Makefile.coq.all
 make -f Makefile.coq.all
 make[3]: Entering directory 'bedrock2/deps/kami'
-COQDEP VFILES
-COQDEP VFILES
-COQC bedrock2/compiler/lib/fiat_crypto_tactics/Test.v
-COQC bedrock2/compiler/lib/LibTacticsMin.v
-COQC Kami/Lib/StringAsOT.v
-COQC bedrock2/compiler/src/NoActionSyntaxParams.v
-COQC bedrock2/compiler/lib/fiat_crypto_tactics/UniquePose.v
-COQC bedrock2/compiler/src/Simp.v
-COQC Kami/Lib/CommonTactics.v
-COQC bedrock2/compiler/src/util/Misc.v
-COQC bedrock2/compiler/src/util/Learning.v
-COQC bedrock2/compiler/src/util/MyOmega.v
-COQC Kami/Lib/StringEq.v
-COQC bedrock2/compiler/src/util/LogGoal.v
-COQC bedrock2/compiler/src/SeparationLogic.v
-COQC Kami/Lib/Nomega.v
-COQC bedrock2/compiler/src/Rem4.v
-COQC Kami/Lib/DepEq.v
-COQC Kami/Lib/VectorFacts.v
-COQC Kami/Lib/StringAsList.v
-COQC bedrock2/compiler/src/SimplWordExpr.v
-COQC bedrock2/compiler/src/RiscvWordProperties.v
-COQC Kami/Lib/FinNotations.v
-COQC Kami/Lib/Reflection.v
-COQC bedrock2/compiler/src/eqexact.v
-COQC bedrock2/compiler/src/on_hyp_containing.v
-COQC bedrock2/compiler/src/Basic32Semantics.v
-COQC Kami/Lib/Concat.v
-COQC Kami/LKami/Lib/ListSupport (real: 1.09, user: 0.37, sys: 0.15, mem: 353524 ko)
+ROCQ DEP VFILES
+ROCQ DEP VFILES
+ROCQ compile bedrock2/compiler/lib/fiat_crypto_tactics/Test.v
+ROCQ compile bedrock2/compiler/lib/LibTacticsMin.v
+ROCQ compile Kami/Lib/StringAsOT.v
+ROCQ compile bedrock2/compiler/src/NoActionSyntaxParams.v
+ROCQ compile bedrock2/compiler/lib/fiat_crypto_tactics/UniquePose.v
+ROCQ compile bedrock2/compiler/src/Simp.v
+ROCQ compile Kami/Lib/CommonTactics.v
+ROCQ compile bedrock2/compiler/src/util/Misc.v
+ROCQ compile bedrock2/compiler/src/util/Learning.v
+ROCQ compile bedrock2/compiler/src/util/MyOmega.v
+ROCQ compile Kami/Lib/StringEq.v
+ROCQ compile bedrock2/compiler/src/util/LogGoal.v
+ROCQ compile bedrock2/compiler/src/SeparationLogic.v
+ROCQ compile Kami/Lib/Nomega.v
+ROCQ compile bedrock2/compiler/src/Rem4.v
+ROCQ compile Kami/Lib/DepEq.v
+ROCQ compile Kami/Lib/VectorFacts.v
+ROCQ compile Kami/Lib/StringAsList.v
+ROCQ compile bedrock2/compiler/src/SimplWordExpr.v
+ROCQ compile bedrock2/compiler/src/RiscvWordProperties.v
+ROCQ compile Kami/Lib/FinNotations.v
+ROCQ compile Kami/Lib/Reflection.v
+ROCQ compile bedrock2/compiler/src/eqexact.v
+ROCQ compile bedrock2/compiler/src/on_hyp_containing.v
+ROCQ compile bedrock2/compiler/src/Basic32Semantics.v
+ROCQ compile Kami/Lib/Concat.v
+ROCQ compile Kami/LKami/Lib/ListSupport (real: 1.09, user: 0.37, sys: 0.15, mem: 353524 ko)
 File "bedrock2/compiler/src/UnmappedMemForExtSpec.v", line 45, characters 2-49:
 Warning: Adding and removing hints in the core database implicitly is
 deprecated. Please specify a hint database.
@@ -1331,26 +1331,26 @@ Warning: Ltac Profiler cannot yet handle backtracking into multi-success
 tactics; profiling results may be wildly inaccurate.
 [profile-backtracking,ltac]
 ib/ListSupport.v
-COQC bedrock2/compiler/src/UnmappedMemForExtSpec.v
-COQC Kami/Lib/BasicLogic.v
-COQC Kami/Lib/DepEqNat.v
-COQC Kami/Ex/Names.v
-COQC bedrock2/compiler/src/NameGen.v
-COQC Kami/Lib/StringStringAsOT.v
-COQC bedrock2/compiler/src/examples/highlevel/For.v
-COQC bedrock2/compiler/src/examples/toposort.v
-COQC Kami/Lib/NatLib.v
-COQC bedrock2/compiler/lib/LibTactics.v
-COQC Kami/Lib/ilist.v
-COQC bedrock2/compiler/lib/fiat_crypto_tactics/Not.v
-COQC bedrock2/compiler/src/util/Tactics.v
-COQC bedrock2/compiler/src/util/Common.v
-COQC Kami/Lib/Indexer.v
-COQC bedrock2/compiler/src/util/ListLib.v
-COQC Kami/Lib/Misc.v
-COQC bedrock2/compiler/src/util/Set.v
-COQC Kami/Lib/Word.v
-COQC bedrock2/compiler/src/ExprImp.v
+ROCQ compile bedrock2/compiler/src/UnmappedMemForExtSpec.v
+ROCQ compile Kami/Lib/BasicLogic.v
+ROCQ compile Kami/Lib/DepEqNat.v
+ROCQ compile Kami/Ex/Names.v
+ROCQ compile bedrock2/compiler/src/NameGen.v
+ROCQ compile Kami/Lib/StringStringAsOT.v
+ROCQ compile bedrock2/compiler/src/examples/highlevel/For.v
+ROCQ compile bedrock2/compiler/src/examples/toposort.v
+ROCQ compile Kami/Lib/NatLib.v
+ROCQ compile bedrock2/compiler/lib/LibTactics.v
+ROCQ compile Kami/Lib/ilist.v
+ROCQ compile bedrock2/compiler/lib/fiat_crypto_tactics/Not.v
+ROCQ compile bedrock2/compiler/src/util/Tactics.v
+ROCQ compile bedrock2/compiler/src/util/Common.v
+ROCQ compile Kami/Lib/Indexer.v
+ROCQ compile bedrock2/compiler/src/util/ListLib.v
+ROCQ compile Kami/Lib/Misc.v
+ROCQ compile bedrock2/compiler/src/util/Set.v
+ROCQ compile Kami/Lib/Word.v
+ROCQ compile bedrock2/compiler/src/ExprImp.v
 End of ExprImp.v
 total time:      8.389s
 
@@ -1520,15 +1520,15 @@ Kami/Syntax (real: 4.38, user: 1.89, sys: 0.23, mem: 479116 ko)
 â””invert keep (var) ---------------------   0.0%   2.0%      31    0.028s
 â”€pose proof IH as IH' ------------------   2.6%   2.6%    3724    0.006s
 
-COQC bedrock2/compiler/src/ZNameGen.v
-COQC bedrock2/compiler/src/examples/TestExprImp.v
-COQC bedrock2/compiler/src/examples/highlevel/FuncMut.v
-COQC bedrock2/compiler/src/FlatImp.v
-COQC Kami/Lib/Struct.v
-COQC Kami/Lib/WordSupport.v
-COQC Kami/Lib/FMap.v
-COQC Kami/Syntax.v
-COQC Kami/Semantics.v
+ROCQ compile bedrock2/compiler/src/ZNameGen.v
+ROCQ compile bedrock2/compiler/src/examples/TestExprImp.v
+ROCQ compile bedrock2/compiler/src/examples/highlevel/FuncMut.v
+ROCQ compile bedrock2/compiler/src/FlatImp.v
+ROCQ compile Kami/Lib/Struct.v
+ROCQ compile Kami/Lib/WordSupport.v
+ROCQ compile Kami/Lib/FMap.v
+ROCQ compile Kami/Syntax.v
+ROCQ compile Kami/Semantics.v
 End of FlatImp.v
 total time:     26.926s
 
@@ -1959,48 +1959,48 @@ were not defined. [cannot-define-projection,records]
 â”€pose proof IH as IH' ------------------   2.5%   2.5%   11247    0.004s
 â”€inversion_lemma -----------------------   0.0%   2.3%      11    0.208s
 
-COQC bedrock2/compiler/src/util/SetSolverTests.v
-COQC bedrock2/compiler/src/RegAlloc2.v
-COQC bedrock2/compiler/src/FlattenExpr.v
-COQC Kami/Inline.v
-COQC Kami/SymEval.v
-COQC Kami/Wf.v
-COQC Kami/SemFacts.v
-COQC Kami/ModularFacts.v
-COQC Kami/StepDet.v
-COQC Kami/Label.v
-COQC Kami/RefinementFacts.v
-COQC Kami/InlineFacts.v
-COQC Kami/Renaming.v
-COQC Kami/Substitute.v
-COQC Kami/Decomposition.v
-COQC Kami/Amortization.v
-COQC Kami/SymEvalTac.v
-COQC Kami/PartialInlineFacts.v
-COQC Kami/ParametricSyntax.v
-COQC Kami/Specialize.v
-COQC Kami/ParametricWf.v
-COQC Kami/ParametricEquiv.v
-COQC Kami/Notations.v
-COQC Kami/Duplicate.v
-COQC Kami/Synthesize.v
-COQC Kami/Ex/MemTypes.v
-COQC Kami/Ext/BSyntax.v
-COQC Kami/ParametricInline.v
-COQC Kami/ModuleBound.v
-COQC Kami/ModuleBoundEx.v
-COQC Kami/ParamDup.v
-COQC Kami/Tactics.v
-COQC Kami/ParametricInlineLtac.v
-COQC Kami/MapReifyEx.v
-COQC Kami/Ex/SC.v
-COQC Kami/Ex/OneEltFifo.v
-COQC Kami/Ex/Fifo.v
-COQC Kami/Ex/NativeFifo.v
-COQC Kami/Ex/IsaRv32.v
-COQC Kami/Ex/Divider32.v
-COQC Kami/Ex/Multiplier64.v
-COQC Kami/Ex/Multiplier32.v
+ROCQ compile bedrock2/compiler/src/util/SetSolverTests.v
+ROCQ compile bedrock2/compiler/src/RegAlloc2.v
+ROCQ compile bedrock2/compiler/src/FlattenExpr.v
+ROCQ compile Kami/Inline.v
+ROCQ compile Kami/SymEval.v
+ROCQ compile Kami/Wf.v
+ROCQ compile Kami/SemFacts.v
+ROCQ compile Kami/ModularFacts.v
+ROCQ compile Kami/StepDet.v
+ROCQ compile Kami/Label.v
+ROCQ compile Kami/RefinementFacts.v
+ROCQ compile Kami/InlineFacts.v
+ROCQ compile Kami/Renaming.v
+ROCQ compile Kami/Substitute.v
+ROCQ compile Kami/Decomposition.v
+ROCQ compile Kami/Amortization.v
+ROCQ compile Kami/SymEvalTac.v
+ROCQ compile Kami/PartialInlineFacts.v
+ROCQ compile Kami/ParametricSyntax.v
+ROCQ compile Kami/Specialize.v
+ROCQ compile Kami/ParametricWf.v
+ROCQ compile Kami/ParametricEquiv.v
+ROCQ compile Kami/Notations.v
+ROCQ compile Kami/Duplicate.v
+ROCQ compile Kami/Synthesize.v
+ROCQ compile Kami/Ex/MemTypes.v
+ROCQ compile Kami/Ext/BSyntax.v
+ROCQ compile Kami/ParametricInline.v
+ROCQ compile Kami/ModuleBound.v
+ROCQ compile Kami/ModuleBoundEx.v
+ROCQ compile Kami/ParamDup.v
+ROCQ compile Kami/Tactics.v
+ROCQ compile Kami/ParametricInlineLtac.v
+ROCQ compile Kami/MapReifyEx.v
+ROCQ compile Kami/Ex/SC.v
+ROCQ compile Kami/Ex/OneEltFifo.v
+ROCQ compile Kami/Ex/Fifo.v
+ROCQ compile Kami/Ex/NativeFifo.v
+ROCQ compile Kami/Ex/IsaRv32.v
+ROCQ compile Kami/Ex/Divider32.v
+ROCQ compile Kami/Ex/Multiplier64.v
+ROCQ compile Kami/Ex/Multiplier32.v
 End of FlattenExpr.v
 total time:    587.422s
 
@@ -2179,35 +2179,35 @@ bedrock2/compiler/src/examples/Fibonacci (real: 7.21, user: 3.30, sys: 0.23, mem
 --------------   3.2%   3.2%    3570    1.144s
 â””inversion H ---------------------------   2.7%   2.7%     626    1.070s
 
-COQC bedrock2/compiler/src/examples/TestFlatImp.v
-COQC bedrock2/compiler/src/FlatToRiscvDef.v
-COQC bedrock2/compiler/src/RegAlloc3.v
-COQC bedrock2/compiler/src/EmitsValid.v
-COQC bedrock2/compiler/src/RegAllocAnnotatedNotations.v
-COQC bedrock2/compiler/src/GoFlatToRiscv.v
-COQC bedrock2/compiler/src/FlatToRiscv32.v
-COQC bedrock2/compiler/src/FlatToRiscv.v
-COQC Kami/Ex/Divider64.v
-COQC Kami/Ex/FifoCorrect.v
-COQC bedrock2/compiler/src/Pipeline.v
-COQC bedrock2/compiler/src/examples/MMIO.v
+ROCQ compile bedrock2/compiler/src/examples/TestFlatImp.v
+ROCQ compile bedrock2/compiler/src/FlatToRiscvDef.v
+ROCQ compile bedrock2/compiler/src/RegAlloc3.v
+ROCQ compile bedrock2/compiler/src/EmitsValid.v
+ROCQ compile bedrock2/compiler/src/RegAllocAnnotatedNotations.v
+ROCQ compile bedrock2/compiler/src/GoFlatToRiscv.v
+ROCQ compile bedrock2/compiler/src/FlatToRiscv32.v
+ROCQ compile bedrock2/compiler/src/FlatToRiscv.v
+ROCQ compile Kami/Ex/Divider64.v
+ROCQ compile Kami/Ex/FifoCorrect.v
+ROCQ compile bedrock2/compiler/src/Pipeline.v
+ROCQ compile bedrock2/compiler/src/examples/MMIO.v
 compiled@{} =
 [[Lui addr 268582912; Addi addr addr 0; Lw i addr 0;
 Beq i 0 16; Mul s i i; Sw addr s 0; Jal 0 (-16)]]
      : list Instruction
-COQC Kami/Ex/RegFile.v
-COQC Kami/Ex/SCMMInl.v
-COQC Kami/Kami.v
-COQC Kami/Ex/MemAtomic.v
-COQC bedrock2/compiler/src/examples/InlineAssemblyMacro.v
-COQC Kami/Ex/SimpleFifoCorrect.v
+ROCQ compile Kami/Ex/RegFile.v
+ROCQ compile Kami/Ex/SCMMInl.v
+ROCQ compile Kami/Kami.v
+ROCQ compile Kami/Ex/MemAtomic.v
+ROCQ compile bedrock2/compiler/src/examples/InlineAssemblyMacro.v
+ROCQ compile Kami/Ex/SimpleFifoCorrect.v
 compiled@{} =
 [[Lw 9 1 0; Mul 4 2 3; Add 5 2 3; Sub 6 2 3; Auipc 31 0;
 Add 31 31 9; Jalr 0 31 8; Addi 7 4 0; Jal 0 20; Addi 7 5 0;
 Jal 0 12; Addi 7 6 0; Jal 0 4]]
      : list Instruction
-COQC bedrock2/compiler/src/examples/CompileExamples.v
-COQC bedrock2/compiler/src/examples/Fibonacci.v
+ROCQ compile bedrock2/compiler/src/examples/CompileExamples.v
+ROCQ compile bedrock2/compiler/src/examples/Fibonacci.v
 fib_ExprImp@{compiler.examples.Fibonacci.17} =
 fun n : Z =>
 cmd.seq (cmd.set 1 (expr.literal 0))
@@ -2254,7 +2254,7 @@ RISCV:
 13031000 33026200 6ff05ffe
      = {| Naive.unsigned := 13; Naive._unsigned_in_range := eq_refl |}
      : word
-COQC bedrock2/compiler/src/examples/FE310Compiler.v
+ROCQ compile bedrock2/compiler/src/examples/FE310Compiler.v
 Finished transaction in 0.063 secs (0.028u,0.001s) (successful)
 Axioms:
 AdmitAxiom.proof_admitted : False
@@ -2583,8 +2583,8 @@ tialL) x
                                        FlatToRiscv.runsTo initialL post
 assume_riscv_word_properties : forall p : MMIO.parameters,
                                RiscvWordProperties.word.riscv_ok MMIO.word
-COQC bedrock2/compiler/src/examples/EditDistExample.v
-COQC bedrock2/compiler/src/examples/swap_bytes_over_uart_hexdump.v
+ROCQ compile bedrock2/compiler/src/examples/EditDistExample.v
+ROCQ compile bedrock2/compiler/src/examples/swap_bytes_over_uart_hexdump.v
 37250200 1305c5fe 03210500 b7850010 93850500 37060040 13060600 9306f001
 3377d100 93070001 3318f700 b3680601 23a01501 13031000 37390110 13098901
 93090027 23203901 373a0110 130a8a00 23206a00 b73a0110 938aca00 23a06a00
@@ -2595,31 +2595,31 @@ b3047340 b3fd3400 33fe5d00 63080e00 83210400 b3846440 6ff0dffe 23201400
 b3002000 33026240 63967000 33424200 6f004000 6ff0dff8
 make[3]: Leaving directory 'bedrock2/compiler'
 make[2]: Leaving directory 'bedrock2/compiler'
-COQC Kami/Ex/IsaRv32Pgm.v
-COQC Kami/Ex/ProcDec.v
-COQC Kami/Ext/Extraction.v
-COQC Kami/Tutorial.v
-COQC Kami/Ex/ProcThreeStage.v
-COQC Kami/Ex/IsaRv32/PgmGcd.v
-COQC Kami/Ex/IsaRv32/PgmFact.v
-COQC Kami/Ex/IsaRv32/PgmBsort.v
-COQC Kami/Ex/IsaRv32/PgmHanoi.v
-COQC Kami/Ex/IsaRv32/PgmDekker1.v
-COQC Kami/Ex/IsaRv32/PgmDekker2.v
-COQC Kami/Ex/IsaRv32/PgmPeterson1.v
-COQC Kami/Ex/IsaRv32/PgmPeterson2.v
-COQC Kami/Ex/IsaRv32/PgmMatMulInit.v
-COQC Kami/Ex/IsaRv32/PgmMatMulNormal1.v
-COQC Kami/Ex/IsaRv32/PgmMatMulNormal2.v
-COQC Kami/Ex/IsaRv32/PgmMatMulReport.v
-COQC Kami/Ex/IsaRv32/PgmBankerInit.v
-COQC Kami/Ex/IsaRv32/PgmBankerWorker1.v
-COQC Kami/Ex/IsaRv32/PgmBankerWorker2.v
-COQC Kami/Ex/IsaRv32/PgmBankerWorker3.v
-COQC Kami/Ex/ProcThreeStInl.v
-COQC Kami/Ex/ProcFetchDecode.v
-COQC Kami/Ex/ProcDecInl.v
-COQC Kami/Ex/InDepthTutorial.v
+ROCQ compile Kami/Ex/IsaRv32Pgm.v
+ROCQ compile Kami/Ex/ProcDec.v
+ROCQ compile Kami/Ext/Extraction.v
+ROCQ compile Kami/Tutorial.v
+ROCQ compile Kami/Ex/ProcThreeStage.v
+ROCQ compile Kami/Ex/IsaRv32/PgmGcd.v
+ROCQ compile Kami/Ex/IsaRv32/PgmFact.v
+ROCQ compile Kami/Ex/IsaRv32/PgmBsort.v
+ROCQ compile Kami/Ex/IsaRv32/PgmHanoi.v
+ROCQ compile Kami/Ex/IsaRv32/PgmDekker1.v
+ROCQ compile Kami/Ex/IsaRv32/PgmDekker2.v
+ROCQ compile Kami/Ex/IsaRv32/PgmPeterson1.v
+ROCQ compile Kami/Ex/IsaRv32/PgmPeterson2.v
+ROCQ compile Kami/Ex/IsaRv32/PgmMatMulInit.v
+ROCQ compile Kami/Ex/IsaRv32/PgmMatMulNormal1.v
+ROCQ compile Kami/Ex/IsaRv32/PgmMatMulNormal2.v
+ROCQ compile Kami/Ex/IsaRv32/PgmMatMulReport.v
+ROCQ compile Kami/Ex/IsaRv32/PgmBankerInit.v
+ROCQ compile Kami/Ex/IsaRv32/PgmBankerWorker1.v
+ROCQ compile Kami/Ex/IsaRv32/PgmBankerWorker2.v
+ROCQ compile Kami/Ex/IsaRv32/PgmBankerWorker3.v
+ROCQ compile Kami/Ex/ProcThreeStInl.v
+ROCQ compile Kami/Ex/ProcFetchDecode.v
+ROCQ compile Kami/Ex/ProcDecInl.v
+ROCQ compile Kami/Ex/InDepthTutorial.v
 Inductive Modules : Type :=
     RegFile : string ->
               list string ->
@@ -3822,9 +3822,9 @@ simpleFifo
                CallM _ : Void <- "enq.fifo2" (# (a1) :
                Bit dataSize); Ret $$ (WO))%kami_action))%struct] nil
      : Modules
-COQC Kami/Ex/IsaRv32PgmExt.v
-COQC Kami/Ex/ProcThreeStInv.v
-COQC Kami/Ex/ProcFDInl.v
+ROCQ compile Kami/Ex/IsaRv32PgmExt.v
+ROCQ compile Kami/Ex/ProcThreeStInv.v
+ROCQ compile Kami/Ex/ProcFDInl.v
 impl =
 fun dataSize : nat =>
 (stage1 dataSize ++
@@ -3832,25 +3832,25 @@ fun dataSize : nat =>
      : nat -> Modules
 
 Argument scope is [nat_scope]
-COQC Kami/Ex/ProcThreeStDec.v
-COQC Kami/Ex/ProcDecInv.v
-COQC Kami/Ex/ProcDecSC.v
-COQC Kami/Ex/ProcDecSCN.v
-COQC Kami/Ex/ProcFDInv.v
-COQC Kami/Ex/ProcFDCorrect.v
-COQC Kami/Ex/ProcFourStDec.v
+ROCQ compile Kami/Ex/ProcThreeStDec.v
+ROCQ compile Kami/Ex/ProcDecInv.v
+ROCQ compile Kami/Ex/ProcDecSC.v
+ROCQ compile Kami/Ex/ProcDecSCN.v
+ROCQ compile Kami/Ex/ProcFDInv.v
+ROCQ compile Kami/Ex/ProcFDCorrect.v
+ROCQ compile Kami/Ex/ProcFourStDec.v
 make[3]: Leaving directory 'bedrock2/deps/kami'
 make[2]: Leaving directory 'bedrock2/deps/kami'
 make -C bedrock2/processor
 make[2]: Entering directory 'bedrock2/processor'
 printf -- '-Q bedrock2/deps/coqutil/src coqutil\n-Q bedrock2/deps/riscv-coq/src riscv\n-R bedrock2/deps/kami/Kami/ Kami\n-Q ./src processor\n' > _CoqProject
-/builds/coq/coq/_install_ci/bin/coq_makefile -f _CoqProject INSTALLDEFAULTROOT = bedrock2 -arg "-async-proofs-tac-j 1" bedrock2/processor/src/Test.v bedrock2/processor/src/KamiWord.v bedrock2/processor/src/KamiRiscv.v -o Makefile.coq.all
+/builds/coq/coq/_install_ci/bin/rocq makefile -f _CoqProject INSTALLDEFAULTROOT = bedrock2 -arg "-async-proofs-tac-j 1" bedrock2/processor/src/Test.v bedrock2/processor/src/KamiWord.v bedrock2/processor/src/KamiRiscv.v -o Makefile.coq.all
 make -f Makefile.coq.all
 make[3]: Entering directory 'bedrock2/processor'
-COQDEP VFILES
-COQC bedrock2/processor/src/Test.v
-COQC bedrock2/processor/src/KamiWord.v
-COQC bedrock2/processor/src/KamiRiscv.v
+ROCQ DEP VFILES
+ROCQ compile bedrock2/processor/src/Test.v
+ROCQ compile bedrock2/processor/src/KamiWord.v
+ROCQ compile bedrock2/processor/src/KamiRiscv.v
 make[3]: Leaving directory 'bedrock2/processor'
 make[2]: Leaving directory 'bedrock2/processor'
 make[1]: Leaving directory 'bedrock2'

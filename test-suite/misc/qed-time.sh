@@ -13,7 +13,7 @@ cd misc/qed-time/
 # command gets 1 time line, but because output-modulo-time normalizes
 # times to 0 it can't check that the replayed command is not ignored
 
-coqc -time file.v > out
+rocq c -time file.v > out
 
 last=$(tail -n 1 out)
 

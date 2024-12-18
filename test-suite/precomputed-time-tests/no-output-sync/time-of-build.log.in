@@ -753,7 +753,7 @@ CONTRIBUTING.md
 CREDITS
 INSTALL.md
 LICENSE
-META.coq-core.in
+META.rocq-runtime.in
 Makefile
 Makefile.build
 Makefile.checker
@@ -1052,7 +1052,7 @@ start:coq.test
 ++ ls -l /builds/coq/coq/_install_ci/bin/
 total 377964
 -rwxr-xr-x 1 root root  1885376 Sep  1 11:46 coq-tex
--rwxr-xr-x 1 root root  2500248 Sep  1 11:46 coq_makefile
+-rwxr-xr-x 1 root root  2500248 Sep  1 11:46 rocq makefile
 -rwxr-xr-x 1 root root 24673120 Sep  1 11:46 coqc
 -rwxr-xr-x 1 root root  9648760 Sep  1 11:46 coqchk
 -rwxr-xr-x 1 root root  5855160 Sep  1 11:46 coqdep
@@ -1303,7 +1303,7 @@ No timing data
 ++ ls -l /builds/coq/coq/_install_ci/bin/
 total 377964
 -rwxr-xr-x 1 root root  1885376 Sep  1 11:46 coq-tex
--rwxr-xr-x 1 root root  2500248 Sep  1 11:46 coq_makefile
+-rwxr-xr-x 1 root root  2500248 Sep  1 11:46 rocq makefile
 -rwxr-xr-x 1 root root 24673120 Sep  1 11:46 coqc
 -rwxr-xr-x 1 root root  9648760 Sep  1 11:46 coqchk
 -rwxr-xr-x 1 root root  5855160 Sep  1 11:46 coqdep
@@ -1435,11 +1435,11 @@ Building MetaCoq locally
 make[1]: Entering directory '/builds/coq/coq/_build_ci/metacoq'
 make -C template-coq .merlin
 make[2]: Entering directory '/builds/coq/coq/_build_ci/metacoq/template-coq'
-coq_makefile -f _PluginProject -o Makefile.plugin
+rocq makefile -f _PluginProject -o Makefile.plugin
 `which gsed || which sed` -i -e s/coqdeps/coqdeps.plugin/g Makefile.plugin
 make -f Makefile.plugin .merlin
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/template-coq'
-COQDEP VFILES
+ROCQ DEP VFILES
 OCAMLLIBDEP gen-src/metacoq_template_plugin.mlpack
 FILL .merlin
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/template-coq'
@@ -1450,18 +1450,18 @@ make -C pcuic .merlin
 make[2]: Entering directory '/builds/coq/coq/_build_ci/metacoq/pcuic'
 cat metacoq-config > _PluginProject
 cat _PluginProject.in >> _PluginProject
-coq_makefile -f _PluginProject -o Makefile.plugin 
+rocq makefile -f _PluginProject -o Makefile.plugin 
 `which gsed || which sed` -i -e s/coqdeps/coqdeps.plugin/g Makefile.plugin
 make -f Makefile.plugin .merlin
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/pcuic'
 make[3]: warning: jobserver unavailable: using -j1.  Add '+' to parent make rule.
-COQDEP VFILES
+ROCQ DEP VFILES
 Fatal error: exception Sys_error("../template-coq/build: No such file or directory")
 OCAMLLIBDEP src/metacoq_pcuic_plugin.mlpack
 Uncaught exception: Sys_error("../template-coq/build: No such file or directory")
 FILL .merlin
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/pcuic'
-COQDEP VFILES
+ROCQ DEP VFILES
 Fatal error: exception Sys_error("../template-coq/build: No such file or directory")
 OCAMLLIBDEP src/metacoq_pcuic_plugin.mlpack
 Uncaught exception: Sys_error("../template-coq/build: No such file or directory")
@@ -1472,12 +1472,12 @@ make -C safechecker .merlin
 make[2]: Entering directory '/builds/coq/coq/_build_ci/metacoq/safechecker'
 cat metacoq-config > _PluginProject
 cat _PluginProject.in >> _PluginProject
-coq_makefile -f _PluginProject -o Makefile.plugin 
+rocq makefile -f _PluginProject -o Makefile.plugin 
 `which gsed || which sed` -i -e s/coqdeps/coqdeps.plugin/g Makefile.plugin
 make -f Makefile.plugin .merlin
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/safechecker'
 make[3]: warning: jobserver unavailable: using -j1.  Add '+' to parent make rule.
-COQDEP VFILES
+ROCQ DEP VFILES
 Fatal error: exception Sys_error("../template-coq/build: No such file or directory")
 COQPP src/g_metacoq_safechecker.mlg
 OCAMLLIBDEP src/metacoq_safechecker_plugin.mlpack
@@ -1486,7 +1486,7 @@ CAMLDEP src/g_metacoq_safechecker.ml
 Bad -I option: ../template-coq/build: No such file or directory
 FILL .merlin
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/safechecker'
-COQDEP VFILES
+ROCQ DEP VFILES
 Fatal error: exception Sys_error("../template-coq/build: No such file or directory")
 OCAMLLIBDEP src/metacoq_safechecker_plugin.mlpack
 Uncaught exception: Sys_error("../template-coq/build: No such file or directory")
@@ -1499,12 +1499,12 @@ make -C erasure .merlin
 make[2]: Entering directory '/builds/coq/coq/_build_ci/metacoq/erasure'
 cat metacoq-config > _PluginProject
 cat _PluginProject.in >> _PluginProject
-coq_makefile -f _PluginProject -o Makefile.plugin 
+rocq makefile -f _PluginProject -o Makefile.plugin 
 `which gsed || which sed` -i -e s/coqdeps/coqdeps.plugin/g Makefile.plugin
 make -f Makefile.plugin .merlin
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/erasure'
 make[3]: warning: jobserver unavailable: using -j1.  Add '+' to parent make rule.
-COQDEP VFILES
+ROCQ DEP VFILES
 Fatal error: exception Sys_error("../template-coq/build: No such file or directory")
 COQPP src/g_metacoq_erasure.mlg
 OCAMLLIBDEP src/metacoq_erasure_plugin.mlpack
@@ -1513,7 +1513,7 @@ CAMLDEP src/g_metacoq_erasure.ml
 Bad -I option: ../template-coq/build: No such file or directory
 FILL .merlin
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/erasure'
-COQDEP VFILES
+ROCQ DEP VFILES
 Fatal error: exception Sys_error("../template-coq/build: No such file or directory")
 OCAMLLIBDEP src/metacoq_erasure_plugin.mlpack
 Uncaught exception: Sys_error("../template-coq/build: No such file or directory")
@@ -1526,11 +1526,11 @@ make -C checker .merlin
 make[2]: Entering directory '/builds/coq/coq/_build_ci/metacoq/checker'
 cat metacoq-config > _PluginProject
 cat _PluginProject.in >> _PluginProject
-coq_makefile -f _PluginProject -o Makefile.plugin
+rocq makefile -f _PluginProject -o Makefile.plugin
 make -f Makefile.plugin .merlin
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/checker'
 make[3]: warning: jobserver unavailable: using -j1.  Add '+' to parent make rule.
-COQDEP VFILES
+ROCQ DEP VFILES
 Fatal error: exception Sys_error("../template-coq/build: No such file or directory")
 COQPP src/g_metacoq_checker.mlg
 OCAMLLIBDEP src/metacoq_checker_plugin.mlpack
@@ -1539,7 +1539,7 @@ CAMLDEP src/g_metacoq_checker.ml
 Bad -I option: ../template-coq/build: No such file or directory
 FILL .merlin
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/checker'
-COQDEP VFILES
+ROCQ DEP VFILES
 Fatal error: exception Sys_error("../template-coq/build: No such file or directory")
 OCAMLLIBDEP src/metacoq_checker_plugin.mlpack
 Uncaught exception: Sys_error("../template-coq/build: No such file or directory")
@@ -1558,83 +1558,83 @@ make all test-suite
 make[2]: Entering directory '/builds/coq/coq/_build_ci/metacoq'
 make -C template-coq
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/template-coq'
-coq_makefile -f _CoqProject -o Makefile.coq
-coq_makefile -f _TemplateCoqProject -o Makefile.template
+rocq makefile -f _CoqProject -o Makefile.coq
+rocq makefile -f _TemplateCoqProject -o Makefile.template
 `which gsed || which sed` -i -e s/coqdeps/coqdeps.template/g Makefile.template
 make -f Makefile.coq
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/template-coq'
-COQDEP VFILES
-COQC theories/utils/MCPrelude.v
-COQC theories/utils/MCRelations.v
+ROCQ DEP VFILES
+ROCQ compile theories/utils/MCPrelude.v
+ROCQ compile theories/utils/MCRelations.v
 theories/utils/MCPrelude.vo (real: 0.09, user: 0.05, sys: 0.04, mem: 63096 ko)
-COQC theories/utils/MCProd.v
+ROCQ compile theories/utils/MCProd.v
 theories/utils/MCRelations.vo (real: 0.09, user: 0.05, sys: 0.04, mem: 68156 ko)
-COQC theories/utils/MCSquash.v
+ROCQ compile theories/utils/MCSquash.v
 theories/utils/MCSquash.vo (real: 0.09, user: 0.04, sys: 0.04, mem: 61384 ko)
-COQC theories/utils/MCArith.v
+ROCQ compile theories/utils/MCArith.v
 theories/utils/MCProd.vo (real: 0.14, user: 0.09, sys: 0.04, mem: 88348 ko)
-COQC theories/utils/MCCompare.v
+ROCQ compile theories/utils/MCCompare.v
 theories/utils/MCArith.vo (real: 0.70, user: 0.48, sys: 0.22, mem: 404556 ko)
-COQC theories/utils/MCEquality.v
+ROCQ compile theories/utils/MCEquality.v
 theories/utils/MCEquality.vo (real: 0.08, user: 0.04, sys: 0.03, mem: 62924 ko)
-COQC theories/utils/LibHypsNaming.v
+ROCQ compile theories/utils/LibHypsNaming.v
 theories/utils/LibHypsNaming.vo (real: 0.60, user: 0.42, sys: 0.18, mem: 339136 ko)
-COQC theories/config.v
+ROCQ compile theories/config.v
 theories/config.vo (real: 0.08, user: 0.04, sys: 0.03, mem: 61716 ko)
-COQC theories/monad_utils.v
+ROCQ compile theories/monad_utils.v
 theories/monad_utils.vo (real: 0.22, user: 0.14, sys: 0.08, mem: 149456 ko)
-COQC theories/utils/MCList.v
+ROCQ compile theories/utils/MCList.v
 theories/utils/MCList.vo (real: 1.71, user: 1.47, sys: 0.22, mem: 452340 ko)
-COQC theories/utils/MCOption.v
+ROCQ compile theories/utils/MCOption.v
 theories/utils/MCOption.vo (real: 0.79, user: 0.56, sys: 0.22, mem: 440168 ko)
-COQC theories/utils/All_Forall.v
+ROCQ compile theories/utils/All_Forall.v
 theories/utils/MCCompare.vo (real: 6.40, user: 6.04, sys: 0.32, mem: 529900 ko)
-COQC theories/utils/MCString.v
+ROCQ compile theories/utils/MCString.v
 theories/utils/MCString.vo (real: 0.44, user: 0.30, sys: 0.13, mem: 270156 ko)
 theories/utils/All_Forall.vo (real: 3.03, user: 2.78, sys: 0.23, mem: 465984 ko)
-COQC theories/utils.v
+ROCQ compile theories/utils.v
 theories/utils.vo (real: 0.71, user: 0.52, sys: 0.18, mem: 385340 ko)
-COQC theories/utils/wGraph.v
-COQC theories/BasicAst.v
+ROCQ compile theories/utils/wGraph.v
+ROCQ compile theories/BasicAst.v
 theories/BasicAst.vo (real: 0.98, user: 0.75, sys: 0.22, mem: 450728 ko)
-COQC theories/Universes.v
+ROCQ compile theories/Universes.v
 theories/utils/wGraph.vo (real: 5.22, user: 4.72, sys: 0.47, mem: 498552 ko)
 theories/Universes.vo (real: 4.54, user: 4.23, sys: 0.28, mem: 531272 ko)
-COQC theories/common/uGraph.v
-COQC theories/Environment.v
+ROCQ compile theories/common/uGraph.v
+ROCQ compile theories/Environment.v
 theories/Environment.vo (real: 1.35, user: 1.10, sys: 0.24, mem: 484172 ko)
-COQC theories/Ast.v
+ROCQ compile theories/Ast.v
 theories/Ast.vo (real: 1.04, user: 0.79, sys: 0.24, mem: 479940 ko)
-COQC theories/AstUtils.v
+ROCQ compile theories/AstUtils.v
 theories/AstUtils.vo (real: 1.24, user: 1.00, sys: 0.23, mem: 485664 ko)
-COQC theories/TemplateMonad/Common.v
+ROCQ compile theories/TemplateMonad/Common.v
 theories/TemplateMonad/Common.vo (real: 0.82, user: 0.60, sys: 0.22, mem: 437492 ko)
-COQC theories/Induction.v
+ROCQ compile theories/Induction.v
 theories/Induction.vo (real: 1.45, user: 1.18, sys: 0.26, mem: 486324 ko)
-COQC theories/EnvironmentTyping.v
+ROCQ compile theories/EnvironmentTyping.v
 theories/common/uGraph.vo (real: 6.23, user: 5.85, sys: 0.35, mem: 551516 ko)
-COQC theories/WfInv.v
+ROCQ compile theories/WfInv.v
 theories/WfInv.vo (real: 1.31, user: 1.05, sys: 0.25, mem: 489932 ko)
-COQC theories/TemplateMonad/Core.v
+ROCQ compile theories/TemplateMonad/Core.v
 theories/EnvironmentTyping.vo (real: 2.05, user: 1.77, sys: 0.27, mem: 491968 ko)
-COQC theories/TemplateMonad/Extractable.v
+ROCQ compile theories/TemplateMonad/Extractable.v
 theories/TemplateMonad/Core.vo (real: 0.97, user: 0.73, sys: 0.24, mem: 481988 ko)
-COQC theories/LiftSubst.v
+ROCQ compile theories/LiftSubst.v
 theories/TemplateMonad/Extractable.vo (real: 0.95, user: 0.70, sys: 0.23, mem: 481156 ko)
-COQC theories/TemplateMonad.v
+ROCQ compile theories/TemplateMonad.v
 theories/TemplateMonad.vo (real: 0.79, user: 0.54, sys: 0.24, mem: 420452 ko)
-COQC theories/Constants.v
+ROCQ compile theories/Constants.v
 theories/Constants.vo (real: 1.08, user: 0.82, sys: 0.25, mem: 498504 ko)
 theories/LiftSubst.vo (real: 12.60, user: 11.81, sys: 0.72, mem: 532016 ko)
-COQC theories/UnivSubst.v
-COQC theories/Pretty.v
+ROCQ compile theories/UnivSubst.v
+ROCQ compile theories/Pretty.v
 theories/Pretty.vo (real: 1.11, user: 0.87, sys: 0.24, mem: 486460 ko)
 theories/UnivSubst.vo (real: 3.38, user: 3.11, sys: 0.24, mem: 490756 ko)
-COQC theories/Typing.v
-COQC theories/Extraction.v
+ROCQ compile theories/Typing.v
+ROCQ compile theories/Extraction.v
 theories/Extraction.vo (real: 9.78, user: 9.33, sys: 0.41, mem: 571876 ko)
 theories/Typing.vo (real: 53.00, user: 51.78, sys: 0.98, mem: 809012 ko)
-COQC theories/TypingWf.v
+ROCQ compile theories/TypingWf.v
 theories/TypingWf.vo (real: 8.46, user: 8.05, sys: 0.36, mem: 556676 ko)
 ./update_plugin.sh
 Updating gen-src from src
@@ -1746,7 +1746,7 @@ patching file gen-src/cRelationClasses.mli
 make[4]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/template-coq'
 make -f Makefile.template optfiles
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/template-coq'
-COQDEP VFILES
+ROCQ DEP VFILES
 COQPP src/g_template_coq.mlg
 CAMLDEP src/plugin_core.mli
 CAMLDEP src/run_template_monad.mli
@@ -1801,9 +1801,9 @@ make[4]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/template-coq'
 cp src/template_coq.cm* build/
 make -f Makefile.template
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/template-coq'
-COQC theories/Loader.v
+ROCQ compile theories/Loader.v
 theories/Loader.vo (real: 1.04, user: 0.77, sys: 0.26, mem: 500040 ko)
-COQC theories/All.v
+ROCQ compile theories/All.v
 theories/All.vo (real: 1.25, user: 0.95, sys: 0.28, mem: 521596 ko)
 make[4]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/template-coq'
 make -f Makefile.plugin
@@ -2229,7 +2229,7 @@ gen-src/metacoq_template_plugin.cmxa (real: 0.03, user: 0.01, sys: 0.02, mem: 13
 CAMLOPT -shared -o gen-src/metacoq_template_plugin.cmxs
 findlib: [WARNING] Interface numeral.cmi occurs in several directories: /builds/coq/coq/_install_ci/lib/coq/plugins/syntax, gen-src
 gen-src/metacoq_template_plugin.cmxs (real: 0.13, user: 0.09, sys: 0.03, mem: 18540 ko)
-COQC theories/ExtractableLoader.v
+ROCQ compile theories/ExtractableLoader.v
 theories/ExtractableLoader.vo (real: 0.09, user: 0.05, sys: 0.03, mem: 62540 ko)
 cp gen-src/metacoq_template_plugin.cm* build/
 make[4]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/template-coq'
@@ -2242,8 +2242,8 @@ make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/pcuic'
 cat metacoq-config > _CoqProject
 cat _CoqProject.in >> _CoqProject
 cat _CoqProject.in >> _CoqProject
-coq_makefile -f _CoqProject -o Makefile.pcuic 
-coq_makefile -f _CoqProject -o Makefile.coq
+rocq makefile -f _CoqProject -o Makefile.pcuic 
+rocq makefile -f _CoqProject -o Makefile.coq
 Warning: ../template-coq/theories (used in -R or -Q) is not a subdirectory of the current directory
 
 make -f Makefile.coq
@@ -2252,57 +2252,57 @@ Warning: ../template-coq/theories (used in -R or -Q) is not a subdirectory of th
 make -f Makefile.pcuic
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/checker'
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/pcuic'
-COQDEP VFILES
-COQDEP VFILES
-COQC theories/Reflect.v
-COQC theories/PCUICAst.v
+ROCQ DEP VFILES
+ROCQ DEP VFILES
+ROCQ compile theories/Reflect.v
+ROCQ compile theories/PCUICAst.v
 theories/PCUICAst.vo (real: 0.99, user: 0.75, sys: 0.23, mem: 477372 ko)
-COQC theories/PCUICSize.v
+ROCQ compile theories/PCUICSize.v
 theories/PCUICSize.vo (real: 1.73, user: 1.44, sys: 0.28, mem: 503484 ko)
-COQC theories/PCUICInduction.v
+ROCQ compile theories/PCUICInduction.v
 theories/PCUICInduction.vo (real: 1.19, user: 0.89, sys: 0.29, mem: 481312 ko)
-COQC theories/PCUICCheckerCompleteness.v
+ROCQ compile theories/PCUICCheckerCompleteness.v
 theories/PCUICCheckerCompleteness.vo (real: 0.85, user: 0.60, sys: 0.24, mem: 433064 ko)
-COQC theories/TemplateToPCUIC.v
+ROCQ compile theories/TemplateToPCUIC.v
 theories/Reflect.vo (real: 5.26, user: 4.53, sys: 0.70, mem: 552364 ko)
-COQC theories/WeakeningEnv.v
+ROCQ compile theories/WeakeningEnv.v
 theories/TemplateToPCUIC.vo (real: 0.98, user: 0.69, sys: 0.27, mem: 482472 ko)
-COQC theories/PCUICAstUtils.v
+ROCQ compile theories/PCUICAstUtils.v
 theories/WeakeningEnv.vo (real: 3.33, user: 2.80, sys: 0.50, mem: 512292 ko)
-COQC theories/Checker.v
+ROCQ compile theories/Checker.v
 theories/PCUICAstUtils.vo (real: 3.13, user: 2.78, sys: 0.32, mem: 543424 ko)
-COQC theories/PCUICReflect.v
+ROCQ compile theories/PCUICReflect.v
 theories/Checker.vo (real: 4.71, user: 4.00, sys: 0.69, mem: 555748 ko)
-COQC theories/WcbvEval.v
+ROCQ compile theories/WcbvEval.v
 theories/PCUICReflect.vo (real: 4.46, user: 4.11, sys: 0.32, mem: 543956 ko)
-COQC theories/PCUICLiftSubst.v
+ROCQ compile theories/PCUICLiftSubst.v
 theories/WcbvEval.vo (real: 5.56, user: 4.94, sys: 0.59, mem: 533768 ko)
-COQC theories/Retyping.v
+ROCQ compile theories/Retyping.v
 theories/Retyping.vo (real: 1.16, user: 0.90, sys: 0.26, mem: 524140 ko)
-COQC theories/Normal.v
+ROCQ compile theories/Normal.v
 theories/Normal.vo (real: 1.10, user: 0.84, sys: 0.25, mem: 497360 ko)
-COQC theories/Generation.v
+ROCQ compile theories/Generation.v
 theories/Generation.vo (real: 1.95, user: 1.69, sys: 0.25, mem: 514692 ko)
-COQC theories/Closed.v
+ROCQ compile theories/Closed.v
 File "./theories/Closed.v", line 299, characters 2-42:
 Warning:
 Automatically inlined signature for type All_local_env. Use [Derive Signature for All_local_env.] to avoid this.
 theories/PCUICLiftSubst.vo (real: 27.51, user: 26.28, sys: 0.94, mem: 597996 ko)
-COQC theories/PCUICToTemplate.v
+ROCQ compile theories/PCUICToTemplate.v
 theories/PCUICToTemplate.vo (real: 1.33, user: 1.04, sys: 0.28, mem: 527408 ko)
-COQC theories/PCUICUtils.v
+ROCQ compile theories/PCUICUtils.v
 theories/PCUICUtils.vo (real: 1.81, user: 1.47, sys: 0.33, mem: 527440 ko)
-COQC theories/PCUICUnivSubst.v
+ROCQ compile theories/PCUICUnivSubst.v
 theories/Closed.vo (real: 22.03, user: 21.55, sys: 0.36, mem: 603616 ko)
-COQC theories/Weakening.v
+ROCQ compile theories/Weakening.v
 theories/PCUICUnivSubst.vo (real: 3.67, user: 3.33, sys: 0.32, mem: 533884 ko)
-COQC theories/PCUICEquality.v
+ROCQ compile theories/PCUICEquality.v
 theories/Weakening.vo (real: 16.17, user: 15.64, sys: 0.43, mem: 579100 ko)
-COQC theories/Substitution.v
+ROCQ compile theories/Substitution.v
 theories/PCUICEquality.vo (real: 40.79, user: 39.04, sys: 1.52, mem: 790088 ko)
-COQC theories/PCUICPosition.v
+ROCQ compile theories/PCUICPosition.v
 theories/Substitution.vo (real: 29.09, user: 27.93, sys: 0.98, mem: 621392 ko)
-COQC theories/All.v
+ROCQ compile theories/All.v
 theories/All.vo (real: 1.65, user: 1.29, sys: 0.34, mem: 545736 ko)
 ./update_plugin.sh
 Renaming extracted files
@@ -2310,17 +2310,17 @@ make[4]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/checker'
 make[3]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/checker'
 make -C examples
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/examples'
-coq_makefile -f _CoqProject -o Makefile.coq
+rocq makefile -f _CoqProject -o Makefile.coq
 Warning: ../template-coq/theories (used in -R or -Q) is not a subdirectory of the current directory
 
 make -f Makefile.coq pretty-timed
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/examples'
-COQDEP VFILES
-COQC demo.v
+ROCQ DEP VFILES
+ROCQ compile demo.v
 demo.vo (real: 1.94, user: 1.56, sys: 0.36, mem: 527740 ko)
-COQC add_constructor.v
+ROCQ compile add_constructor.v
 add_constructor.vo (real: 1.44, user: 1.13, sys: 0.30, mem: 524144 ko)
-COQC tauto.v
+ROCQ compile tauto.v
 tauto.vo (real: 20.77, user: 19.93, sys: 0.72, mem: 581920 ko)
     Time |  Peak Mem | File Name            
 --------------------------------------------
@@ -2332,51 +2332,51 @@ tauto.vo (real: 20.77, user: 19.93, sys: 0.72, mem: 581920 ko)
 make[4]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/examples'
 make[3]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/examples'
 theories/PCUICPosition.vo (real: 29.43, user: 28.24, sys: 1.03, mem: 723216 ko)
-COQC theories/PCUICTyping.v
+ROCQ compile theories/PCUICTyping.v
 Axioms:
 ind_guard : mutual_inductive_body -> bool
 fix_guard : mfixpoint term -> bool
 cofix_guard : mfixpoint term -> bool
 theories/PCUICTyping.vo (real: 44.26, user: 42.82, sys: 1.17, mem: 727688 ko)
-COQC theories/PCUICReduction.v
-COQC theories/PCUICWeakeningEnv.v
+ROCQ compile theories/PCUICReduction.v
+ROCQ compile theories/PCUICWeakeningEnv.v
 theories/PCUICWeakeningEnv.vo (real: 5.17, user: 4.38, sys: 0.74, mem: 571076 ko)
-COQC theories/PCUICGeneration.v
+ROCQ compile theories/PCUICGeneration.v
 theories/PCUICReduction.vo (real: 6.98, user: 6.16, sys: 0.78, mem: 583116 ko)
-COQC theories/PCUICNormal.v
+ROCQ compile theories/PCUICNormal.v
 theories/PCUICNormal.vo (real: 1.72, user: 1.37, sys: 0.33, mem: 551200 ko)
-COQC theories/PCUICNameless.v
+ROCQ compile theories/PCUICNameless.v
 theories/PCUICGeneration.vo (real: 3.72, user: 3.34, sys: 0.36, mem: 586388 ko)
-COQC theories/PCUICMetaTheory.v
+ROCQ compile theories/PCUICMetaTheory.v
 theories/PCUICMetaTheory.vo (real: 1.26, user: 0.96, sys: 0.29, mem: 546928 ko)
-COQC theories/PCUICChecker.v
+ROCQ compile theories/PCUICChecker.v
 theories/PCUICChecker.vo (real: 1.41, user: 1.11, sys: 0.29, mem: 549776 ko)
-COQC theories/PCUICToTemplateCorrectness.v
+ROCQ compile theories/PCUICToTemplateCorrectness.v
 theories/PCUICToTemplateCorrectness.vo (real: 8.69, user: 7.84, sys: 0.79, mem: 608576 ko)
-COQC theories/PCUICCumulativity.v
+ROCQ compile theories/PCUICCumulativity.v
 theories/PCUICCumulativity.vo (real: 2.17, user: 1.85, sys: 0.30, mem: 561876 ko)
-COQC theories/PCUICClosed.v
+ROCQ compile theories/PCUICClosed.v
 theories/PCUICNameless.vo (real: 15.98, user: 14.98, sys: 0.89, mem: 623196 ko)
-COQC theories/PCUICPretty.v
+ROCQ compile theories/PCUICPretty.v
 theories/PCUICPretty.vo (real: 1.64, user: 1.30, sys: 0.33, mem: 551364 ko)
 theories/PCUICClosed.vo (real: 24.65, user: 23.99, sys: 0.51, mem: 654592 ko)
-COQC theories/PCUICWeakening.v
-COQC theories/PCUICCSubst.v
+ROCQ compile theories/PCUICWeakening.v
+ROCQ compile theories/PCUICCSubst.v
 theories/PCUICCSubst.vo (real: 1.93, user: 1.55, sys: 0.36, mem: 562424 ko)
-COQC theories/PCUICWcbvEval.v
+ROCQ compile theories/PCUICWcbvEval.v
 theories/PCUICWcbvEval.vo (real: 12.05, user: 11.54, sys: 0.43, mem: 589944 ko)
 theories/PCUICWeakening.vo (real: 24.20, user: 23.42, sys: 0.64, mem: 685852 ko)
-COQC theories/PCUICSigmaCalculus.v
-COQC theories/PCUICUnivSubstitution.v
+ROCQ compile theories/PCUICSigmaCalculus.v
+ROCQ compile theories/PCUICUnivSubstitution.v
 theories/PCUICUnivSubstitution.vo (real: 10.93, user: 10.41, sys: 0.45, mem: 621644 ko)
 theories/PCUICSigmaCalculus.vo (real: 39.32, user: 38.12, sys: 0.96, mem: 657100 ko)
-COQC theories/PCUICSubstitution.v
+ROCQ compile theories/PCUICSubstitution.v
 theories/PCUICSubstitution.vo (real: 26.54, user: 25.65, sys: 0.68, mem: 673140 ko)
-COQC theories/PCUICParallelReduction.v
-COQC theories/TemplateToPCUICCorrectness.v
+ROCQ compile theories/PCUICParallelReduction.v
+ROCQ compile theories/TemplateToPCUICCorrectness.v
 theories/TemplateToPCUICCorrectness.vo (real: 13.77, user: 13.16, sys: 0.52, mem: 641024 ko)
 theories/PCUICParallelReduction.vo (real: 29.43, user: 28.26, sys: 0.87, mem: 779308 ko)
-COQC theories/PCUICParallelReductionConfluence.v
+ROCQ compile theories/PCUICParallelReductionConfluence.v
 Axioms:
 ind_guard : mutual_inductive_body → bool
 FunctionalExtensionality.functional_extensionality_dep
@@ -2385,38 +2385,38 @@ FunctionalExtensionality.functional_extensionality_dep
 fix_guard : mfixpoint term → bool
 cofix_guard : mfixpoint term → bool
 theories/PCUICParallelReductionConfluence.vo (real: 96.83, user: 94.58, sys: 1.69, mem: 849824 ko)
-COQC theories/PCUICConfluence.v
+ROCQ compile theories/PCUICConfluence.v
 theories/PCUICConfluence.vo (real: 35.96, user: 34.44, sys: 1.27, mem: 742788 ko)
-COQC theories/PCUICContextConversion.v
+ROCQ compile theories/PCUICContextConversion.v
 theories/PCUICContextConversion.vo (real: 9.28, user: 8.74, sys: 0.48, mem: 629108 ko)
-COQC theories/PCUICConversion.v
+ROCQ compile theories/PCUICConversion.v
 File "./theories/PCUICConversion.v", line 2097, characters 4-13:
 Warning:
 Automatically inlined signature for type clos_refl_trans_1n. Use [Derive Signature for clos_refl_trans_1n.] to avoid this.
 File "./theories/PCUICConversion.v", line 2234, characters 4-37:
 Warning: Cannot remove s'. [cannot-remove-as-expected,tactics]
 theories/PCUICConversion.vo (real: 30.61, user: 29.65, sys: 0.79, mem: 750296 ko)
-COQC theories/PCUICInversion.v
-COQC theories/PCUICRetyping.v
+ROCQ compile theories/PCUICInversion.v
+ROCQ compile theories/PCUICRetyping.v
 theories/PCUICRetyping.vo (real: 1.94, user: 1.58, sys: 0.34, mem: 589768 ko)
 theories/PCUICInversion.vo (real: 10.19, user: 9.35, sys: 0.77, mem: 622488 ko)
-COQC theories/PCUICCtxShape.v
+ROCQ compile theories/PCUICCtxShape.v
 theories/PCUICCtxShape.vo (real: 2.23, user: 1.75, sys: 0.38, mem: 598288 ko)
-COQC theories/PCUICContexts.v
+ROCQ compile theories/PCUICContexts.v
 theories/PCUICContexts.vo (real: 6.83, user: 6.33, sys: 0.45, mem: 615568 ko)
-COQC theories/PCUICArities.v
+ROCQ compile theories/PCUICArities.v
 theories/PCUICArities.vo (real: 8.61, user: 7.75, sys: 0.80, mem: 625664 ko)
-COQC theories/PCUICSpine.v
+ROCQ compile theories/PCUICSpine.v
 theories/PCUICSpine.vo (real: 23.61, user: 22.85, sys: 0.63, mem: 706592 ko)
-COQC theories/PCUICInductives.v
+ROCQ compile theories/PCUICInductives.v
 theories/PCUICInductives.vo (real: 19.89, user: 19.08, sys: 0.66, mem: 683776 ko)
-COQC theories/PCUICValidity.v
+ROCQ compile theories/PCUICValidity.v
 theories/PCUICValidity.vo (real: 4.40, user: 3.99, sys: 0.36, mem: 624912 ko)
-COQC theories/PCUICAlpha.v
-COQC theories/PCUICInductiveInversion.v
+ROCQ compile theories/PCUICAlpha.v
+ROCQ compile theories/PCUICInductiveInversion.v
 theories/PCUICAlpha.vo (real: 10.12, user: 9.58, sys: 0.47, mem: 684644 ko)
 theories/PCUICInductiveInversion.vo (real: 10.95, user: 10.39, sys: 0.48, mem: 661964 ko)
-COQC theories/PCUICSR.v
+ROCQ compile theories/PCUICSR.v
 Axioms:
 todounivs : forall A : Type, A
 todoeta : forall A : Type, A
@@ -2467,7 +2467,7 @@ cofix_guard_lift
     cofix_guard mfix -> cofix_guard mfix'
 cofix_guard : mfixpoint term -> bool
 theories/PCUICSR.vo (real: 82.63, user: 80.36, sys: 1.84, mem: 975764 ko)
-COQC theories/PCUICPrincipality.v
+ROCQ compile theories/PCUICPrincipality.v
 Axioms:
 todounivs : forall A : Type@{todounivs.u0}, A
 todoeta : forall A : Type@{todoeta.u0}, A
@@ -2528,10 +2528,10 @@ cofix_guard_eq_term
     tCoFix mfix idx ≡ tCoFix mfix' idx -> cofix_guard mfix'
 cofix_guard : mfixpoint term -> bool
 theories/PCUICPrincipality.vo (real: 27.66, user: 26.11, sys: 1.08, mem: 959132 ko)
-COQC theories/PCUICSafeLemmata.v
+ROCQ compile theories/PCUICSafeLemmata.v
 theories/PCUICSafeLemmata.vo (real: 7.45, user: 6.54, sys: 0.85, mem: 667924 ko)
-COQC theories/PCUICSN.v
-COQC theories/PCUICElimination.v
+ROCQ compile theories/PCUICSN.v
+ROCQ compile theories/PCUICElimination.v
 theories/PCUICSN.vo (real: 2.47, user: 2.12, sys: 0.33, mem: 630488 ko)
 theories/PCUICElimination.vo (real: 8.12, user: 7.64, sys: 0.44, mem: 646256 ko)
 # echo "All done, moving extraction files!"
@@ -2542,17 +2542,17 @@ make -C safechecker
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/safechecker'
 cat metacoq-config > _CoqProject
 cat _CoqProject.in >> _CoqProject
-coq_makefile -f _CoqProject -o Makefile.safechecker 
+rocq makefile -f _CoqProject -o Makefile.safechecker 
 Warning: ../template-coq/theories (used in -R or -Q) is not a subdirectory of the current directory
 
 make -f Makefile.safechecker
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/safechecker'
-COQDEP VFILES
-COQC theories/PCUICSafeReduce.v
+ROCQ DEP VFILES
+ROCQ compile theories/PCUICSafeReduce.v
 theories/PCUICSafeReduce.vo (real: 121.19, user: 119.92, sys: 0.74, mem: 1136588 ko)
-COQC theories/PCUICSafeConversion.v
+ROCQ compile theories/PCUICSafeConversion.v
 theories/PCUICSafeConversion.vo (real: 140.66, user: 139.40, sys: 0.64, mem: 1007764 ko)
-COQC theories/PCUICSafeChecker.v
+ROCQ compile theories/PCUICSafeChecker.v
 File "./theories/PCUICSafeChecker.v", line 1035, characters 4-15:
 Warning:
 Automatically inlined signature for type Forall. Use [Derive Signature for Forall.] to avoid this.
@@ -2621,10 +2621,10 @@ cofix_guard_eq_term
     tCoFix mfix idx ≡ tCoFix mfix' idx -> cofix_guard mfix'
 cofix_guard : mfixpoint term -> bool
 theories/PCUICSafeChecker.vo (real: 56.94, user: 56.09, sys: 0.61, mem: 958816 ko)
-COQC theories/SafeTemplateChecker.v
-COQC theories/PCUICSafeRetyping.v
+ROCQ compile theories/SafeTemplateChecker.v
+ROCQ compile theories/PCUICSafeRetyping.v
 theories/SafeTemplateChecker.vo (real: 2.78, user: 2.42, sys: 0.35, mem: 703592 ko)
-COQC theories/Extraction.v
+ROCQ compile theories/Extraction.v
 theories/PCUICSafeRetyping.vo (real: 6.81, user: 6.30, sys: 0.48, mem: 733700 ko)
 theories/Extraction.vo (real: 4.93, user: 4.47, sys: 0.43, mem: 749140 ko)
 echo "Done extracting the safe checker, moving extraction files!"
@@ -2783,7 +2783,7 @@ Removing: src/all_Forall.ml src/all_Forall.mli src/ascii.ml src/ascii.mli src/as
 make[4]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/safechecker'
 make -f Makefile.plugin
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/safechecker'
-COQDEP VFILES
+ROCQ DEP VFILES
 CAMLDEP src/safeTemplateChecker.mli
 CAMLDEP src/pCUICSafeChecker.mli
 CAMLDEP src/pCUICSafeConversion.mli
@@ -2962,7 +2962,7 @@ CAMLOPT -a -o src/metacoq_safechecker_plugin.cmxa
 src/metacoq_safechecker_plugin.cmxa (real: 0.05, user: 0.00, sys: 0.01, mem: 13624 ko)
 CAMLOPT -shared -o src/metacoq_safechecker_plugin.cmxs
 src/metacoq_safechecker_plugin.cmxs (real: 0.14, user: 0.11, sys: 0.03, mem: 20224 ko)
-COQC theories/Loader.v
+ROCQ compile theories/Loader.v
 theories/Loader.vo (real: 0.09, user: 0.05, sys: 0.03, mem: 63536 ko)
 make[4]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/safechecker'
 make[3]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/safechecker'
@@ -2970,43 +2970,43 @@ make -C erasure
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/erasure'
 cat metacoq-config > _CoqProject
 cat _CoqProject.in >> _CoqProject
-coq_makefile -f _CoqProject -o Makefile.erasure 
+rocq makefile -f _CoqProject -o Makefile.erasure 
 Warning: ../template-coq/theories (used in -R or -Q) is not a subdirectory of the current directory
 
 make -f Makefile.erasure
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/erasure'
-COQDEP VFILES
-COQC theories/EAst.v
+ROCQ DEP VFILES
+ROCQ compile theories/EAst.v
 theories/EAst.vo (real: 0.97, user: 0.72, sys: 0.24, mem: 477800 ko)
-COQC theories/EAstUtils.v
-COQC theories/EInduction.v
+ROCQ compile theories/EAstUtils.v
+ROCQ compile theories/EInduction.v
 theories/EInduction.vo (real: 0.97, user: 0.71, sys: 0.25, mem: 479012 ko)
-COQC theories/Extract.v
+ROCQ compile theories/Extract.v
 theories/EAstUtils.vo (real: 1.36, user: 1.10, sys: 0.26, mem: 487520 ko)
-COQC theories/ELiftSubst.v
+ROCQ compile theories/ELiftSubst.v
 theories/Extract.vo (real: 1.89, user: 1.57, sys: 0.32, mem: 617808 ko)
-COQC theories/EArities.v
+ROCQ compile theories/EArities.v
 theories/EArities.vo (real: 6.12, user: 5.66, sys: 0.42, mem: 643396 ko)
 theories/ELiftSubst.vo (real: 10.89, user: 10.08, sys: 0.75, mem: 521520 ko)
-COQC theories/ETyping.v
-COQC theories/ECSubst.v
+ROCQ compile theories/ETyping.v
+ROCQ compile theories/ECSubst.v
 theories/ETyping.vo (real: 1.01, user: 0.73, sys: 0.27, mem: 487644 ko)
-COQC theories/EPretty.v
+ROCQ compile theories/EPretty.v
 theories/ECSubst.vo (real: 1.31, user: 1.05, sys: 0.25, mem: 512080 ko)
-COQC theories/EWndEval.v
+ROCQ compile theories/EWndEval.v
 theories/EPretty.vo (real: 1.02, user: 0.77, sys: 0.24, mem: 488076 ko)
-COQC theories/EWcbvEval.v
+ROCQ compile theories/EWcbvEval.v
 theories/EWndEval.vo (real: 0.97, user: 0.70, sys: 0.26, mem: 485084 ko)
 theories/EWcbvEval.vo (real: 4.15, user: 3.85, sys: 0.28, mem: 520080 ko)
-COQC theories/EAll.v
-COQC theories/Prelim.v
+ROCQ compile theories/EAll.v
+ROCQ compile theories/Prelim.v
 theories/EAll.vo (real: 1.76, user: 1.42, sys: 0.32, mem: 619396 ko)
 theories/Prelim.vo (real: 3.82, user: 3.39, sys: 0.40, mem: 741428 ko)
-COQC theories/ESubstitution.v
-COQC theories/EInversion.v
+ROCQ compile theories/ESubstitution.v
+ROCQ compile theories/EInversion.v
 theories/EInversion.vo (real: 3.19, user: 2.67, sys: 0.50, mem: 729072 ko)
 theories/ESubstitution.vo (real: 14.12, user: 13.39, sys: 0.67, mem: 794032 ko)
-COQC theories/ErasureCorrectness.v
+ROCQ compile theories/ErasureCorrectness.v
 Axioms:
 todounivs : forall A : Type, A
 todoeta : forall A : Type, A
@@ -3080,8 +3080,8 @@ cofix_guard_eq_term
     cofix_guard mfix'
 cofix_guard : mfixpoint term -> bool
 theories/ErasureCorrectness.vo (real: 58.09, user: 56.17, sys: 1.60, mem: 1113548 ko)
-COQC theories/ErasureFunction.v
-COQC theories/SafeErasureFunction.v
+ROCQ compile theories/ErasureFunction.v
+ROCQ compile theories/SafeErasureFunction.v
 theories/SafeErasureFunction.vo (real: 24.59, user: 23.34, sys: 1.11, mem: 854428 ko)
 Axioms:
 todounivs : forall A : Type, A
@@ -3152,9 +3152,9 @@ cofix_guard_eq_term
     cofix_guard mfix'
 cofix_guard : mfixpoint term -> bool
 theories/ErasureFunction.vo (real: 40.61, user: 39.21, sys: 1.22, mem: 1012876 ko)
-COQC theories/SafeTemplateErasure.v
+ROCQ compile theories/SafeTemplateErasure.v
 theories/SafeTemplateErasure.vo (real: 4.47, user: 3.99, sys: 0.45, mem: 806128 ko)
-COQC theories/Extraction.v
+ROCQ compile theories/Extraction.v
 theories/Extraction.vo (real: 6.38, user: 5.74, sys: 0.59, mem: 872556 ko)
 echo "Done extracting the erasure, moving extraction files!"
 Done extracting the erasure, moving extraction files!
@@ -3509,7 +3509,7 @@ mv: 'wGraph.mli' and 'wGraph.mli' are the same file
 Removing: src/all_Forall.ml src/all_Forall.mli src/ascii.ml src/ascii.mli src/ast0.ml src/ast0.mli src/ast_denoter.ml src/ast_quoter.ml src/astUtils.ml src/astUtils.mli src/basicAst.ml src/basicAst.mli src/basics.ml src/basics.mli src/binInt.ml src/binInt.mli src/binNat.ml src/binNat.mli src/binNums.ml src/binNums.mli src/binPosDef.ml src/binPosDef.mli src/binPos.ml src/binPos.mli src/bool.ml src/bool.mli src/common0.ml src/common0.mli src/compare_dec.ml src/compare_dec.mli src/config0.ml src/config0.mli src/cRelationClasses.ml src/cRelationClasses.mli src/datatypes.ml src/datatypes.mli src/decimal.ml src/decimal.mli src/denoter.ml src/environment.ml src/environment.mli src/equalities.ml src/equalities.mli src/extractable.ml src/extractable.mli src/hexadecimal.ml src/hexadecimal.mli src/liftSubst.ml src/liftSubst.mli src/list0.ml src/list0.mli src/logic0.ml src/logic0.mli src/mCPrelude.mli src/mCPrelude.ml src/mCCompare.ml src/mCCompare.mli src/mCList.ml src/mCList.mli src/mCOption.ml src/mCOption.mli src/mCProd.ml src/mCProd.mli src/mCRelations.ml src/mCRelations.mli src/mCString.ml src/mCString.mli src/mSetDecide.ml src/mSetDecide.mli src/mSetFacts.ml src/mSetFacts.mli src/mSetInterface.ml src/mSetInterface.mli src/mSetList.ml src/mSetList.mli src/mSetProperties.ml src/mSetProperties.mli src/nat0.ml src/nat0.mli src/numeral.ml src/numeral.mli src/orderedType0.ml src/orderedType0.mli src/ordersFacts.ml src/ordersFacts.mli src/ordersLists.ml src/ordersLists.mli src/orders.ml src/orders.mli src/ordersTac.ml src/ordersTac.mli src/peanoNat.ml src/peanoNat.mli src/plugin_core.ml src/plugin_core.mli src/pretty.ml src/pretty.mli src/reification.ml src/quoter.ml src/run_extractable.ml src/run_extractable.mli src/specif.ml src/specif.mli src/string0.ml src/string0.mli src/tm_util.ml src/universes0.ml src/universes0.mli src/univSubst0.ml src/univSubst0.mli
 make -f Makefile.plugin
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/erasure'
-COQDEP VFILES
+ROCQ DEP VFILES
 CAMLDEP src/safeTemplateErasure.mli
 CAMLDEP src/ePretty.mli
 CAMLDEP src/safeErasureFunction.mli
@@ -3754,16 +3754,16 @@ CAMLOPT -a -o src/metacoq_erasure_plugin.cmxa
 src/metacoq_erasure_plugin.cmxa (real: 0.02, user: 0.00, sys: 0.01, mem: 13520 ko)
 CAMLOPT -shared -o src/metacoq_erasure_plugin.cmxs
 src/metacoq_erasure_plugin.cmxs (real: 0.17, user: 0.13, sys: 0.03, mem: 20232 ko)
-COQC theories/Loader.v
+ROCQ compile theories/Loader.v
 theories/Loader.vo (real: 0.41, user: 0.30, sys: 0.11, mem: 237756 ko)
 make[4]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/erasure'
 make[3]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/erasure'
 make -C test-suite
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/test-suite'
-coq_makefile -f _CoqProject -o Makefile.coq
+rocq makefile -f _CoqProject -o Makefile.coq
 make -C plugin-demo
 make[4]: Entering directory '/builds/coq/coq/_build_ci/metacoq/test-suite/plugin-demo'
-coq_makefile -f _CoqProject -o Makefile.coq
+rocq makefile -f _CoqProject -o Makefile.coq
 Warning: ../template-coq/theories (used in -R or -Q) is not a subdirectory of the current directory
 
 make -f Makefile.coq pretty-timed	
@@ -3772,25 +3772,25 @@ Warning: ../../template-coq/theories (used in -R or -Q) is not a subdirectory of
 
 make -f Makefile.coq
 make[5]: Entering directory '/builds/coq/coq/_build_ci/metacoq/test-suite/plugin-demo'
-COQDEP VFILES
-COQDEP VFILES
+ROCQ DEP VFILES
+ROCQ DEP VFILES
 *** Warning: in file theories/MyPlugin.v, 
     required library Loader matches several files in path
     (found Loader.v in ../../template-coq/theories and theories; used the latter)
-COQC theories/Lens.v
+ROCQ compile theories/Lens.v
 theories/Lens.vo (real: 0.10, user: 0.05, sys: 0.04, mem: 64048 ko)
-COQC theories/MyPlugin.v
-COQC bug1.v
+ROCQ compile theories/MyPlugin.v
+ROCQ compile bug1.v
 File "./theories/MyPlugin.v", line 10, characters 0-24:
 Warning: Interpreting this declaration as if a global declaration prefixed by
 "Local", i.e. as a global declaration which shall not be available without
 qualification when imported. [local-declaration,scope]
 theories/MyPlugin.vo (real: 1.20, user: 0.91, sys: 0.28, mem: 513348 ko)
-COQC theories/Extraction.v
+ROCQ compile theories/Extraction.v
 bug1.vo (real: 1.30, user: 1.03, sys: 0.26, mem: 510284 ko)
-COQC bug2.v
+ROCQ compile bug2.v
 bug2.vo (real: 1.09, user: 0.81, sys: 0.26, mem: 500380 ko)
-COQC bug5.v
+ROCQ compile bug5.v
 File "./theories/Extraction.v", line 7, characters 0-28:
 Warning: The extraction is currently set to bypass opacity, the following
 opaque constant bodies have been accessed
@@ -3850,7 +3850,7 @@ opaque constant bodies have been accessed
   All_Forall.All_map_inv All_Forall.Alli_shift All_Forall.All2_impl_In.
  [extraction-opaque-accessed,extraction]
 bug5.vo (real: 1.92, user: 1.62, sys: 0.29, mem: 512080 ko)
-COQC bug6.v
+ROCQ compile bug6.v
 File "./theories/Extraction.v", line 7, characters 0-28:
 Warning: The identifier __top_assumption_ contains __ which is reserved for
 the extraction [extraction-reserved-identifier,extraction]
@@ -3891,11 +3891,11 @@ Moving  MyPlugin.mli to myPlugin.mli
 make -f Makefile.plugin
 make[5]: Entering directory '/builds/coq/coq/_build_ci/metacoq/test-suite/plugin-demo'
 Makefile.plugin:20: Makefile.plugin.conf: No such file or directory
-COQDEP VFILES
+ROCQ DEP VFILES
 *** Warning: in file test/test.v, 
     required library Loader matches several files in path
     (found Loader.v in ../../template-coq/theories and theories; used the latter)
-coq_makefile -f _PluginProject -o Makefile.plugin
+rocq makefile -f _PluginProject -o Makefile.plugin
 Warning: ../../template-coq/theories (used in -R or -Q) is not a subdirectory of the current directory
 
 COQPP src/g_demo_plugin.mlg
@@ -3913,7 +3913,7 @@ CAMLOPT -c -for-pack Demo_plugin gen-src/lens.ml
 gen-src/lens.cmx (real: 0.07, user: 0.04, sys: 0.02, mem: 22124 ko)
 CAMLOPT -c -for-pack Demo_plugin gen-src/myPlugin.ml
 bug6.vo (real: 1.11, user: 0.85, sys: 0.25, mem: 500408 ko)
-COQC bug7.v
+ROCQ compile bug7.v
 gen-src/myPlugin.cmx (real: 0.12, user: 0.10, sys: 0.02, mem: 27228 ko)
 CAMLOPT -c -for-pack Demo_plugin src/g_demo_plugin.ml
 src/g_demo_plugin.cmx (real: 0.09, user: 0.06, sys: 0.02, mem: 27844 ko)
@@ -3923,11 +3923,11 @@ CAMLOPT -a -o src/demo_plugin.cmxa
 src/demo_plugin.cmxa (real: 0.02, user: 0.00, sys: 0.01, mem: 13200 ko)
 CAMLOPT -shared -o src/demo_plugin.cmxs
 src/demo_plugin.cmxs (real: 0.04, user: 0.01, sys: 0.02, mem: 14256 ko)
-COQC theories/Loader.v
+ROCQ compile theories/Loader.v
 theories/Loader.vo (real: 0.10, user: 0.05, sys: 0.04, mem: 62308 ko)
-COQC test/test.v
+ROCQ compile test/test.v
 bug7.vo (real: 1.21, user: 0.89, sys: 0.31, mem: 500252 ko)
-COQC bug8.v
+ROCQ compile bug8.v
 Notation plus := Nat.add
 Expands to: Notation Coq.Init.Peano.plus
 (1 + 2)
@@ -3943,20 +3943,20 @@ _x: Lens Point Point nat nat
 test/test.vo (real: 1.51, user: 1.21, sys: 0.29, mem: 513888 ko)
 make[5]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/test-suite/plugin-demo'
 make[4]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/test-suite/plugin-demo'
-COQC bugkncst.v
+ROCQ compile bugkncst.v
 bug8.vo (real: 1.10, user: 0.84, sys: 0.25, mem: 500436 ko)
-COQC case.v
+ROCQ compile case.v
 File "./bugkncst.v", line 12, characters 21-36:
 Warning: omega is deprecated since 8.12; use “lia” instead.
 [omega-is-deprecated,deprecated]
 case.vo (real: 1.12, user: 0.88, sys: 0.23, mem: 500120 ko)
-COQC castprop.v
+ROCQ compile castprop.v
 castprop.vo (real: 1.23, user: 0.94, sys: 0.28, mem: 510368 ko)
-COQC cofix.v
+ROCQ compile cofix.v
 cofix.vo (real: 1.11, user: 0.81, sys: 0.29, mem: 500192 ko)
-COQC erasure_live_test.v
+ROCQ compile erasure_live_test.v
 bugkncst.vo (real: 57.89, user: 56.51, sys: 1.14, mem: 896928 ko)
-COQC vs.v
+ROCQ compile vs.v
 File "./vs.v", line 91, characters 0-145:
 Warning: omega is deprecated since 8.12; use “lia” instead.
 [omega-is-deprecated,deprecated]
@@ -3990,33 +3990,33 @@ opaque constant bodies have been accessed
 : the_loop_terminate main_terminate.
  [extraction-opaque-accessed,extraction]
 vs.vo (real: 5.44, user: 4.90, sys: 0.51, mem: 501352 ko)
-COQC evars.v
+ROCQ compile evars.v
 evars.vo (real: 1.10, user: 0.79, sys: 0.29, mem: 500100 ko)
-COQC extractable.v
+ROCQ compile extractable.v
 extractable.vo (real: 1.17, user: 0.88, sys: 0.29, mem: 501748 ko)
-COQC hnf_ctor.v
+ROCQ compile hnf_ctor.v
 hnf_ctor.vo (real: 1.11, user: 0.80, sys: 0.30, mem: 502088 ko)
-COQC issue27.v
+ROCQ compile issue27.v
 issue27.vo (real: 1.35, user: 1.02, sys: 0.31, mem: 522688 ko)
-COQC issue28.v
+ROCQ compile issue28.v
 File "./issue28.v", line 31, characters 0-282:
 Warning: Interpreting this declaration as if a global declaration prefixed by
 "Local", i.e. as a global declaration which shall not be available without
 qualification when imported. [local-declaration,scope]
 issue28.vo (real: 1.35, user: 1.05, sys: 0.29, mem: 522968 ko)
-COQC letin.v
+ROCQ compile letin.v
 letin.vo (real: 1.21, user: 0.90, sys: 0.29, mem: 500080 ko)
-COQC modules_sections.v
+ROCQ compile modules_sections.v
 modules_sections.vo (real: 1.73, user: 1.35, sys: 0.35, mem: 526276 ko)
-COQC mutind.v
+ROCQ compile mutind.v
 mutind.vo (real: 1.19, user: 0.89, sys: 0.29, mem: 500068 ko)
-COQC opaque.v
+ROCQ compile opaque.v
 opaque.vo (real: 1.26, user: 0.94, sys: 0.31, mem: 500016 ko)
-COQC proj.v
+ROCQ compile proj.v
 proj.vo (real: 1.52, user: 1.21, sys: 0.29, mem: 524028 ko)
-COQC run_in_tactic.v
+ROCQ compile run_in_tactic.v
 run_in_tactic.vo (real: 1.34, user: 1.03, sys: 0.29, mem: 522996 ko)
-COQC safechecker_test.v
+ROCQ compile safechecker_test.v
 File "./safechecker_test.v", line 39, characters 0-27:
 Warning: To avoid stack overflow, large numbers in nat are interpreted as
 applications of Nat.of_num_uint. [abstract-large-number,numbers]
@@ -4050,21 +4050,21 @@ Ignored instance declaration for “e_fun”: “forall
                                            A -> B” is not a class
 [not-a-class,typeclasses]
 safechecker_test.vo (real: 3.34, user: 2.89, sys: 0.44, mem: 726228 ko)
-COQC tmExistingInstance.v
+ROCQ compile tmExistingInstance.v
 tmExistingInstance.vo (real: 1.21, user: 0.92, sys: 0.28, mem: 522724 ko)
-COQC tmInferInstance.v
+ROCQ compile tmInferInstance.v
 tmInferInstance.vo (real: 1.30, user: 0.98, sys: 0.31, mem: 522552 ko)
-COQC TypingTests.v
+ROCQ compile TypingTests.v
 TypingTests.vo (real: 2.62, user: 2.27, sys: 0.34, mem: 558304 ko)
-COQC unfold.v
+ROCQ compile unfold.v
 unfold.vo (real: 1.35, user: 1.03, sys: 0.31, mem: 522248 ko)
-COQC univ.v
+ROCQ compile univ.v
 univ.vo (real: 1.28, user: 0.99, sys: 0.28, mem: 522992 ko)
-COQC tmVariable.v
+ROCQ compile tmVariable.v
 tmVariable.vo (real: 1.31, user: 1.01, sys: 0.29, mem: 524932 ko)
-COQC order_rec.v
+ROCQ compile order_rec.v
 order_rec.vo (real: 1.41, user: 1.09, sys: 0.30, mem: 525128 ko)
-COQC erasure_test.v
+ROCQ compile erasure_test.v
 erasure_live_test.vo (real: 88.03, user: 86.21, sys: 1.46, mem: 1038900 ko)
 File "./erasure_test.v", line 44, characters 0-27:
 Warning: To avoid stack overflow, large numbers in nat are interpreted as
@@ -4301,7 +4301,7 @@ gen-src/metacoq_template_plugin.cmxa (real: 0.03, user: 0.01, sys: 0.02, mem: 13
 CAMLOPT -shared -o gen-src/metacoq_template_plugin.cmxs
 findlib: [WARNING] Interface numeral.cmi occurs in several directories: /builds/coq/coq/_install_ci/lib/coq/plugins/syntax, gen-src
 gen-src/metacoq_template_plugin.cmxs (real: 0.14, user: 0.10, sys: 0.03, mem: 18520 ko)
-COQC theories/ExtractableLoader.v
+ROCQ compile theories/ExtractableLoader.v
 theories/ExtractableLoader.vo (real: 0.10, user: 0.06, sys: 0.04, mem: 62624 ko)
 cp gen-src/metacoq_template_plugin.cm* build/
 make[3]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/template-coq'
@@ -4351,7 +4351,7 @@ make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/safechecker'
 0m01.13s | 524144 ko | add_constructor.vo   
 make[3]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/examples'
 make[2]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/examples'
-COQC theories/Loader.v
+ROCQ compile theories/Loader.v
 theories/Loader.vo (real: 0.11, user: 0.07, sys: 0.03, mem: 63372 ko)
 make[3]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/safechecker'
 make[2]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/safechecker'
@@ -4371,7 +4371,7 @@ Cleaning result of extraction
 Extraction up-to date
 make -f Makefile.plugin
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/erasure'
-COQC theories/Loader.v
+ROCQ compile theories/Loader.v
 theories/Loader.vo (real: 0.44, user: 0.28, sys: 0.15, mem: 237408 ko)
 make[3]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/erasure'
 make[2]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/erasure'
@@ -4561,7 +4561,7 @@ gen-src/metacoq_template_plugin.cmxa (real: 0.05, user: 0.01, sys: 0.02, mem: 14
 CAMLOPT -shared -o gen-src/metacoq_template_plugin.cmxs
 findlib: [WARNING] Interface numeral.cmi occurs in several directories: /builds/coq/coq/_install_ci/lib/coq/plugins/syntax, gen-src
 gen-src/metacoq_template_plugin.cmxs (real: 0.15, user: 0.10, sys: 0.04, mem: 18416 ko)
-COQC theories/ExtractableLoader.v
+ROCQ compile theories/ExtractableLoader.v
 theories/ExtractableLoader.vo (real: 0.09, user: 0.04, sys: 0.04, mem: 62716 ko)
 cp gen-src/metacoq_template_plugin.cm* build/
 make[3]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/template-coq'
@@ -4943,7 +4943,7 @@ Extraction up-to date
 make[3]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/safechecker'
 make -f Makefile.plugin
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/safechecker'
-COQC theories/Loader.v
+ROCQ compile theories/Loader.v
 theories/Loader.vo (real: 0.12, user: 0.07, sys: 0.04, mem: 63996 ko)
 make[3]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/safechecker'
 make -f Makefile.safechecker install
@@ -4999,7 +4999,7 @@ Cleaning result of extraction
 Extraction up-to date
 make -f Makefile.plugin
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/erasure'
-COQC theories/Loader.v
+ROCQ compile theories/Loader.v
 theories/Loader.vo (real: 0.45, user: 0.29, sys: 0.15, mem: 238116 ko)
 make[3]: Leaving directory '/builds/coq/coq/_build_ci/metacoq/erasure'
 make -f Makefile.erasure install
@@ -5085,17 +5085,17 @@ make -C translations install
 make[2]: Entering directory '/builds/coq/coq/_build_ci/metacoq/translations'
 cat metacoq-config > _CoqProject 
 cat _CoqProject.in >> _CoqProject
-coq_makefile -f _CoqProject -o Makefile.coq
+rocq makefile -f _CoqProject -o Makefile.coq
 Warning: ../template-coq/theories (used in -R or -Q) is not a subdirectory of the current directory
 
 make -f Makefile.coq pretty-timed
 make[3]: Entering directory '/builds/coq/coq/_build_ci/metacoq/translations'
-COQDEP VFILES
+ROCQ DEP VFILES
 *** Warning: in file sigma.v, 
     required library Loader matches several files in path
     (found Loader.v in ../template-coq/theories and ../checker/theories; used the latter)
-COQC sigma.v
-COQC MiniHoTT.v
+ROCQ compile sigma.v
+ROCQ compile MiniHoTT.v
 File "./MiniHoTT.v", line 37, characters 0-198:
 Warning: Notation "exists _ .. _ , _" was already used in scope type_scope.
 [notation-overridden,parsing]
@@ -5125,7 +5125,7 @@ File "./MiniHoTT.v", line 140, characters 0-45:
 Warning: Notation "_ = _" was already used in scope type_scope.
 [notation-overridden,parsing]
 sigma.vo (real: 1.17, user: 0.86, sys: 0.30, mem: 500064 ko)
-COQC MiniHoTT_paths.v
+ROCQ compile MiniHoTT_paths.v
 File "./MiniHoTT_paths.v", line 41, characters 0-198:
 Warning: Notation "exists _ .. _ , _" was already used in scope type_scope.
 [notation-overridden,parsing]
@@ -5155,11 +5155,11 @@ File "./MiniHoTT_paths.v", line 144, characters 0-45:
 Warning: Notation "_ = _" was already used in scope type_scope.
 [notation-overridden,parsing]
 MiniHoTT_paths.vo (real: 3.65, user: 3.42, sys: 0.20, mem: 350716 ko)
-COQC translation_utils.v
+ROCQ compile translation_utils.v
 MiniHoTT.vo (real: 4.94, user: 4.41, sys: 0.50, mem: 348856 ko)
 translation_utils.vo (real: 2.16, user: 1.82, sys: 0.33, mem: 554420 ko)
-COQC param_original.v
-COQC param_cheap_packed.v
+ROCQ compile param_original.v
+ROCQ compile param_cheap_packed.v
 Coq.Init.Datatypes.nat has been translated.
 Coq.Init.Datatypes.list has been translated.
 listᵗ : forall A : TYPE, list A.1 -> Type
@@ -5173,7 +5173,7 @@ listᵗ A (x.1 :: lH.1)
      : forall (A : TYPE) (x : El A) (lH : ∃ l : list A.1, listᵗ A l),
        listᵗ A (x.1 :: lH.1)
 param_cheap_packed.vo (real: 1.82, user: 1.49, sys: 0.32, mem: 553352 ko)
-COQC param_generous_packed.v
+ROCQ compile param_generous_packed.v
 "T has been translated as Tᵗ"
 "tm has been translated as tmᵗ"
 Coq.Init.Datatypes.nat has been translated.
@@ -5393,7 +5393,7 @@ Fresh universe MetaCoq.Translations.param_generous_packed.810 was added to the c
 "Translating MetaCoq.Translations.MiniHoTT.isequiv_idmap"
 "isequiv_idmap has been translated as isequiv_idmapᵗ"
 param_generous_packed.vo (real: 9.61, user: 8.61, sys: 0.95, mem: 892080 ko)
-COQC times_bool_fun.v
+ROCQ compile times_bool_fun.v
 "Translating MetaCoq.Translations.MiniHoTT.equiv_idmap"
 "equiv_idmap has been translated as equiv_idmapᵗ"
 File "./times_bool_fun.v", line 2, characters 0-68:
@@ -5470,7 +5470,7 @@ Fresh universe MetaCoq.Translations.times_bool_fun.579 was added to the context.
 "MetaCoq.Translations.MiniHoTT.IsEquiv has been translated."
 "Translating MetaCoq.Translations.MiniHoTT.Equiv"
 param_original.vo (real: 18.98, user: 17.91, sys: 0.96, mem: 741808 ko)
-COQC param_binary.v
+ROCQ compile param_binary.v
 "MetaCoq.Translations.MiniHoTT.Equiv has been translated."
 File "./param_binary.v", line 207, characters 23-24:
 Warning: Ignoring implicit binder declaration in unexpected position.
@@ -5484,7 +5484,7 @@ Coq.Init.Datatypes.list has been translated.
 "HD has been translated as HDᵗ"
 "MAP has been translated as MAPᵗ"
 param_binary.vo (real: 2.24, user: 1.93, sys: 0.29, mem: 556444 ko)
-COQC standard_model.v
+ROCQ compile standard_model.v
 "Translating MetaCoq.Translations.times_bool_fun.wUnivalence"
 "wUnivalence has been translated as wUnivalenceᵗ"
 check_guarded: true
@@ -5523,7 +5523,7 @@ Fresh universe MetaCoq.Translations.times_bool_fun.649 was added to the context.
 "UA has been translated as UAᵗ"
 "notUA has been translated as notUAᵗ"
 times_bool_fun.vo (real: 27.19, user: 25.86, sys: 1.20, mem: 857128 ko)
-COQC times_bool_fun2.v
+ROCQ compile times_bool_fun2.v
 File "./times_bool_fun2.v", line 4, characters 0-83:
 Warning: Notation "exists _ .. _ , _" was already used in scope type_scope.
 [notation-overridden,parsing]

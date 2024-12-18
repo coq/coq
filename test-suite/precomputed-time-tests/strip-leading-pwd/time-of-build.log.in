@@ -2,14 +2,14 @@ printf -- '-R $PWD/src/coqutil/ coqutil\n-arg -w -arg unsupported-attributes\n' 
 Generating Makefile.coq.all
 make -f Makefile.coq.all
 make[1]: Entering directory '/home/jgross/Documents/GitHub/coqutil'
-COQDEP VFILES
+ROCQ DEP VFILES
 make[1]: Leaving directory '/home/jgross/Documents/GitHub/coqutil'
-COQC $PWD/src/coqutil/Byte.v
-COQC $PWD/src/coqutil/sanity.v
-COQC $PWD/src/coqutil/Tactics/autoforward.v
-COQC $PWD/src/coqutil/dlet.v
-COQC $PWD/src/coqutil/Ltac2Lib/Constr.v
-COQC $PWD/src/coqutil/Ltac2Lib/Msg.v
+ROCQ compile $PWD/src/coqutil/Byte.v
+ROCQ compile $PWD/src/coqutil/sanity.v
+ROCQ compile $PWD/src/coqutil/Tactics/autoforward.v
+ROCQ compile $PWD/src/coqutil/dlet.v
+ROCQ compile $PWD/src/coqutil/Ltac2Lib/Constr.v
+ROCQ compile $PWD/src/coqutil/Ltac2Lib/Msg.v
 $PWD/src/coqutil/dlet.vo (real: 0.08, user: 0.06, sys: 0.01, mem: 63768 ko)
 COQNATIVE $PWD/src/coqutil/dlet.vo
 $PWD/src/coqutil/Tactics/autoforward.vo (real: 0.09, user: 0.05, sys: 0.03, mem: 64908 ko)
@@ -21,15 +21,15 @@ COQNATIVE $PWD/src/coqutil/Ltac2Lib/Msg.vo
 $PWD/src/coqutil/Ltac2Lib/Constr.vo (real: 0.09, user: 0.04, sys: 0.04, mem: 71420 ko)
 COQNATIVE $PWD/src/coqutil/Ltac2Lib/Constr.vo
 $PWD/src/coqutil/Ltac2Lib/Msg.vo.native (real: 0.16, user: 0.06, sys: 0.02, mem: 23220 ko)
-COQC $PWD/src/coqutil/Ltac2Lib/Log.v
+ROCQ compile $PWD/src/coqutil/Ltac2Lib/Log.v
 $PWD/src/coqutil/dlet.vo.native (real: 0.18, user: 0.07, sys: 0.01, mem: 21888 ko)
 $PWD/src/coqutil/Tactics/autoforward.vo.native (real: 0.17, user: 0.07, sys: 0.01, mem: 22004 ko)
 $PWD/src/coqutil/sanity.vo.native (real: 0.17, user: 0.04, sys: 0.04, mem: 21960 ko)
 $PWD/src/coqutil/Ltac2Lib/Constr.vo.native (real: 0.17, user: 0.07, sys: 0.01, mem: 23256 ko)
-COQC $PWD/src/coqutil/Macros/unique.v
-COQC $PWD/src/coqutil/Macros/subst.v
-COQC $PWD/src/coqutil/Macros/ident_to_string.v
-COQC $PWD/src/coqutil/Tactics/forward.v
+ROCQ compile $PWD/src/coqutil/Macros/unique.v
+ROCQ compile $PWD/src/coqutil/Macros/subst.v
+ROCQ compile $PWD/src/coqutil/Macros/ident_to_string.v
+ROCQ compile $PWD/src/coqutil/Tactics/forward.v
 $PWD/src/coqutil/Macros/unique.vo (real: 0.09, user: 0.05, sys: 0.03, mem: 63500 ko)
 $PWD/src/coqutil/Macros/subst.vo (real: 0.09, user: 0.05, sys: 0.03, mem: 63844 ko)
 COQNATIVE $PWD/src/coqutil/Macros/unique.vo
@@ -41,13 +41,13 @@ COQNATIVE $PWD/src/coqutil/Ltac2Lib/Log.vo
 $PWD/src/coqutil/Macros/subst.vo.native (real: 0.18, user: 0.10, sys: 0.01, mem: 22064 ko)
 $PWD/src/coqutil/Macros/unique.vo.native (real: 0.18, user: 0.10, sys: 0.01, mem: 21952 ko)
 $PWD/src/coqutil/Tactics/forward.vo.native (real: 0.17, user: 0.08, sys: 0.01, mem: 22228 ko)
-COQC $PWD/src/coqutil/Z/Lia.v
-COQC $PWD/src/coqutil/Datatypes/Option.v
-COQC $PWD/src/coqutil/Sorting/Permutation.v
+ROCQ compile $PWD/src/coqutil/Z/Lia.v
+ROCQ compile $PWD/src/coqutil/Datatypes/Option.v
+ROCQ compile $PWD/src/coqutil/Sorting/Permutation.v
 $PWD/src/coqutil/Byte.vo (real: 0.59, user: 0.32, sys: 0.10, mem: 345240 ko)
 COQNATIVE $PWD/src/coqutil/Byte.vo
 $PWD/src/coqutil/Ltac2Lib/Log.vo.native (real: 0.21, user: 0.11, sys: 0.01, mem: 23276 ko)
-COQC $PWD/src/coqutil/Datatypes/PrimitivePair.v
+ROCQ compile $PWD/src/coqutil/Datatypes/PrimitivePair.v
 $PWD/src/coqutil/Macros/ident_to_string.vo (real: 0.33, user: 0.23, sys: 0.08, mem: 227492 ko)
 COQNATIVE $PWD/src/coqutil/Macros/ident_to_string.vo
 $PWD/src/coqutil/Datatypes/PrimitivePair.vo (real: 0.10, user: 0.06, sys: 0.03, mem: 66532 ko)
@@ -57,19 +57,19 @@ COQNATIVE $PWD/src/coqutil/Datatypes/Option.vo
 $PWD/src/coqutil/Sorting/Permutation.vo (real: 0.20, user: 0.17, sys: 0.03, mem: 138328 ko)
 COQNATIVE $PWD/src/coqutil/Sorting/Permutation.vo
 $PWD/src/coqutil/Datatypes/PrimitivePair.vo.native (real: 0.19, user: 0.06, sys: 0.03, mem: 22040 ko)
-COQC $PWD/src/coqutil/Word/Interface.v
+ROCQ compile $PWD/src/coqutil/Word/Interface.v
 $PWD/src/coqutil/Datatypes/Option.vo.native (real: 0.43, user: 0.26, sys: 0.07, mem: 27288 ko)
-COQC $PWD/src/coqutil/Datatypes/Prod.v
+ROCQ compile $PWD/src/coqutil/Datatypes/Prod.v
 $PWD/src/coqutil/Z/Lia.vo (real: 0.60, user: 0.39, sys: 0.06, mem: 291400 ko)
 COQNATIVE $PWD/src/coqutil/Z/Lia.vo
 $PWD/src/coqutil/Sorting/Permutation.vo.native (real: 0.40, user: 0.24, sys: 0.05, mem: 56896 ko)
-COQC $PWD/src/coqutil/Z/div_mod_to_equations.v
+ROCQ compile $PWD/src/coqutil/Z/div_mod_to_equations.v
 $PWD/src/coqutil/Macros/ident_to_string.vo.native (real: 0.67, user: 0.48, sys: 0.06, mem: 87324 ko)
-COQC $PWD/src/coqutil/Z/PushPullMod.v
+ROCQ compile $PWD/src/coqutil/Z/PushPullMod.v
 $PWD/src/coqutil/Datatypes/Prod.vo (real: 0.13, user: 0.08, sys: 0.04, mem: 94084 ko)
 COQNATIVE $PWD/src/coqutil/Datatypes/Prod.vo
 $PWD/src/coqutil/Byte.vo.native (real: 0.74, user: 0.53, sys: 0.07, mem: 100712 ko)
-COQC $PWD/src/coqutil/Tactics/fwd_bool_hints.v
+ROCQ compile $PWD/src/coqutil/Tactics/fwd_bool_hints.v
 $PWD/src/coqutil/Word/Interface.vo (real: 0.43, user: 0.32, sys: 0.10, mem: 329896 ko)
 COQNATIVE $PWD/src/coqutil/Word/Interface.vo
 $PWD/src/coqutil/Tactics/fwd_bool_hints.vo (real: 0.10, user: 0.07, sys: 0.02, mem: 65820 ko)
@@ -77,19 +77,19 @@ COQNATIVE $PWD/src/coqutil/Tactics/fwd_bool_hints.vo
 $PWD/src/coqutil/Z/div_mod_to_equations.vo (real: 0.29, user: 0.24, sys: 0.04, mem: 208528 ko)
 COQNATIVE $PWD/src/coqutil/Z/div_mod_to_equations.vo
 $PWD/src/coqutil/Tactics/fwd_bool_hints.vo.native (real: 0.20, user: 0.09, sys: 0.01, mem: 22416 ko)
-COQC $PWD/src/coqutil/Tactics/eabstract.v
+ROCQ compile $PWD/src/coqutil/Tactics/eabstract.v
 $PWD/src/coqutil/Tactics/eabstract.vo (real: 0.11, user: 0.08, sys: 0.03, mem: 63624 ko)
 COQNATIVE $PWD/src/coqutil/Tactics/eabstract.vo
 $PWD/src/coqutil/Datatypes/Prod.vo.native (real: 0.47, user: 0.27, sys: 0.08, mem: 29464 ko)
-COQC $PWD/src/coqutil/Tactics/fwd_arith_hints.v
+ROCQ compile $PWD/src/coqutil/Tactics/fwd_arith_hints.v
 $PWD/src/coqutil/Z/Lia.vo.native (real: 0.68, user: 0.52, sys: 0.05, mem: 99996 ko)
-COQC $PWD/src/coqutil/Tactics/simpl_rewrite.v
+ROCQ compile $PWD/src/coqutil/Tactics/simpl_rewrite.v
 $PWD/src/coqutil/Tactics/simpl_rewrite.vo (real: 0.13, user: 0.09, sys: 0.04, mem: 65792 ko)
 COQNATIVE $PWD/src/coqutil/Tactics/simpl_rewrite.vo
 $PWD/src/coqutil/Tactics/eabstract.vo.native (real: 0.25, user: 0.08, sys: 0.03, mem: 22032 ko)
-COQC $PWD/src/coqutil/Tactics/rdelta.v
+ROCQ compile $PWD/src/coqutil/Tactics/rdelta.v
 $PWD/src/coqutil/Z/div_mod_to_equations.vo.native (real: 0.63, user: 0.36, sys: 0.14, mem: 77596 ko)
-COQC $PWD/src/coqutil/Tactics/syntactic_unify.v
+ROCQ compile $PWD/src/coqutil/Tactics/syntactic_unify.v
 $PWD/src/coqutil/Tactics/rdelta.vo (real: 0.14, user: 0.08, sys: 0.05, mem: 63820 ko)
 COQNATIVE $PWD/src/coqutil/Tactics/rdelta.vo
 $PWD/src/coqutil/Tactics/fwd_arith_hints.vo (real: 0.40, user: 0.31, sys: 0.09, mem: 214876 ko)
@@ -97,13 +97,13 @@ COQNATIVE $PWD/src/coqutil/Tactics/fwd_arith_hints.vo
 $PWD/src/coqutil/Tactics/syntactic_unify.vo (real: 0.14, user: 0.06, sys: 0.08, mem: 65768 ko)
 COQNATIVE $PWD/src/coqutil/Tactics/syntactic_unify.vo
 $PWD/src/coqutil/Tactics/simpl_rewrite.vo.native (real: 0.29, user: 0.06, sys: 0.06, mem: 22100 ko)
-COQC $PWD/src/coqutil/Tactics/ident_of_string.v
+ROCQ compile $PWD/src/coqutil/Tactics/ident_of_string.v
 $PWD/src/coqutil/Tactics/rdelta.vo.native (real: 0.23, user: 0.06, sys: 0.05, mem: 22076 ko)
-COQC $PWD/src/coqutil/Tactics/ParamRecords.v
+ROCQ compile $PWD/src/coqutil/Tactics/ParamRecords.v
 $PWD/src/coqutil/Tactics/syntactic_unify.vo.native (real: 0.21, user: 0.08, sys: 0.02, mem: 22092 ko)
-COQC $PWD/src/coqutil/Tactics/eplace.v
+ROCQ compile $PWD/src/coqutil/Tactics/eplace.v
 $PWD/src/coqutil/Word/Interface.vo.native (real: 1.19, user: 0.94, sys: 0.12, mem: 78484 ko)
-COQC $PWD/src/coqutil/Tactics/letexists.v
+ROCQ compile $PWD/src/coqutil/Tactics/letexists.v
 $PWD/src/coqutil/Tactics/ParamRecords.vo (real: 0.13, user: 0.10, sys: 0.02, mem: 73372 ko)
 COQNATIVE $PWD/src/coqutil/Tactics/ParamRecords.vo
 $PWD/src/coqutil/Z/PushPullMod.vo (real: 1.27, user: 1.03, sys: 0.09, mem: 407636 ko)
@@ -113,45 +113,45 @@ COQNATIVE $PWD/src/coqutil/Tactics/eplace.vo
 $PWD/src/coqutil/Tactics/letexists.vo (real: 0.09, user: 0.06, sys: 0.02, mem: 64172 ko)
 COQNATIVE $PWD/src/coqutil/Tactics/letexists.vo
 $PWD/src/coqutil/Tactics/eplace.vo.native (real: 0.16, user: 0.07, sys: 0.02, mem: 22100 ko)
-COQC $PWD/src/coqutil/Tactics/Simp.v
+ROCQ compile $PWD/src/coqutil/Tactics/Simp.v
 $PWD/src/coqutil/Tactics/ParamRecords.vo.native (real: 0.22, user: 0.04, sys: 0.06, mem: 23244 ko)
-COQC $PWD/src/coqutil/Z/div_to_equations.v
+ROCQ compile $PWD/src/coqutil/Z/div_to_equations.v
 $PWD/src/coqutil/Tactics/fwd_arith_hints.vo.native (real: 0.59, user: 0.48, sys: 0.04, mem: 79096 ko)
-COQC $PWD/src/coqutil/Decidable.v
+ROCQ compile $PWD/src/coqutil/Decidable.v
 $PWD/src/coqutil/Tactics/letexists.vo.native (real: 0.19, user: 0.05, sys: 0.04, mem: 22024 ko)
-COQC $PWD/src/coqutil/Macros/symmetry.v
+ROCQ compile $PWD/src/coqutil/Macros/symmetry.v
 $PWD/src/coqutil/Macros/symmetry.vo (real: 0.12, user: 0.09, sys: 0.02, mem: 73944 ko)
 COQNATIVE $PWD/src/coqutil/Macros/symmetry.vo
 $PWD/src/coqutil/Z/div_to_equations.vo (real: 0.32, user: 0.18, sys: 0.13, mem: 201096 ko)
 COQNATIVE $PWD/src/coqutil/Z/div_to_equations.vo
 $PWD/src/coqutil/Macros/symmetry.vo.native (real: 0.24, user: 0.10, sys: 0.01, mem: 22936 ko)
-COQC $PWD/src/coqutil/Datatypes/HList.v
+ROCQ compile $PWD/src/coqutil/Datatypes/HList.v
 $PWD/src/coqutil/Decidable.vo (real: 0.44, user: 0.35, sys: 0.08, mem: 269884 ko)
 COQNATIVE $PWD/src/coqutil/Decidable.vo
 $PWD/src/coqutil/Z/PushPullMod.vo.native (real: 0.70, user: 0.53, sys: 0.05, mem: 100992 ko)
-COQC $PWD/src/coqutil/Datatypes/ToConversion.v
+ROCQ compile $PWD/src/coqutil/Datatypes/ToConversion.v
 $PWD/src/coqutil/Tactics/Simp.vo (real: 0.66, user: 0.32, sys: 0.18, mem: 293652 ko)
 COQNATIVE $PWD/src/coqutil/Tactics/Simp.vo
 $PWD/src/coqutil/Datatypes/HList.vo (real: 0.24, user: 0.21, sys: 0.03, mem: 174320 ko)
 COQNATIVE $PWD/src/coqutil/Datatypes/HList.vo
 $PWD/src/coqutil/Z/div_to_equations.vo.native (real: 0.64, user: 0.47, sys: 0.05, mem: 78704 ko)
-COQC $PWD/src/coqutil/Word/Bitwidth.v
+ROCQ compile $PWD/src/coqutil/Word/Bitwidth.v
 $PWD/src/coqutil/Datatypes/ToConversion.vo (real: 0.65, user: 0.34, sys: 0.14, mem: 301660 ko)
 COQNATIVE $PWD/src/coqutil/Datatypes/ToConversion.vo
 $PWD/src/coqutil/Decidable.vo.native (real: 0.72, user: 0.50, sys: 0.10, mem: 88688 ko)
-COQC $PWD/src/coqutil/Z/bitblast.v
+ROCQ compile $PWD/src/coqutil/Z/bitblast.v
 $PWD/src/coqutil/Tactics/Simp.vo.native (real: 0.73, user: 0.51, sys: 0.12, mem: 100544 ko)
-COQC $PWD/src/coqutil/Z/ZLib.v
+ROCQ compile $PWD/src/coqutil/Z/ZLib.v
 $PWD/src/coqutil/Datatypes/HList.vo.native (real: 0.75, user: 0.57, sys: 0.08, mem: 54340 ko)
-COQC $PWD/src/coqutil/Tactics/ltac_list_ops.v
+ROCQ compile $PWD/src/coqutil/Tactics/ltac_list_ops.v
 $PWD/src/coqutil/Tactics/ltac_list_ops.vo (real: 0.13, user: 0.07, sys: 0.05, mem: 65508 ko)
 COQNATIVE $PWD/src/coqutil/Tactics/ltac_list_ops.vo
 $PWD/src/coqutil/Word/Bitwidth.vo (real: 0.61, user: 0.31, sys: 0.15, mem: 291312 ko)
 COQNATIVE $PWD/src/coqutil/Word/Bitwidth.vo
 $PWD/src/coqutil/Tactics/ltac_list_ops.vo.native (real: 0.20, user: 0.10, sys: 0.01, mem: 22032 ko)
-COQC $PWD/src/coqutil/Tactics/destr.v
+ROCQ compile $PWD/src/coqutil/Tactics/destr.v
 $PWD/src/coqutil/Datatypes/ToConversion.vo.native (real: 0.65, user: 0.46, sys: 0.10, mem: 100708 ko)
-COQC $PWD/src/coqutil/Datatypes/String.v
+ROCQ compile $PWD/src/coqutil/Datatypes/String.v
 $PWD/src/coqutil/Tactics/destr.vo (real: 0.39, user: 0.21, sys: 0.18, mem: 221288 ko)
 COQNATIVE $PWD/src/coqutil/Tactics/destr.vo
 $PWD/src/coqutil/Z/bitblast.vo (real: 1.15, user: 0.92, sys: 0.07, mem: 414256 ko)
@@ -159,21 +159,21 @@ COQNATIVE $PWD/src/coqutil/Z/bitblast.vo
 $PWD/src/coqutil/Datatypes/String.vo (real: 0.54, user: 0.40, sys: 0.14, mem: 352920 ko)
 COQNATIVE $PWD/src/coqutil/Datatypes/String.vo
 $PWD/src/coqutil/Word/Bitwidth.vo.native (real: 0.76, user: 0.55, sys: 0.08, mem: 101296 ko)
-COQC $PWD/src/coqutil/Tactics/Records.v
+ROCQ compile $PWD/src/coqutil/Tactics/Records.v
 $PWD/src/coqutil/Z/ZLib.vo (real: 1.09, user: 0.78, sys: 0.16, mem: 408248 ko)
 COQNATIVE $PWD/src/coqutil/Z/ZLib.vo
 $PWD/src/coqutil/Tactics/Records.vo (real: 0.20, user: 0.17, sys: 0.03, mem: 149096 ko)
 COQNATIVE $PWD/src/coqutil/Tactics/Records.vo
 $PWD/src/coqutil/Tactics/destr.vo.native (real: 0.67, user: 0.51, sys: 0.05, mem: 88936 ko)
-COQC $PWD/src/coqutil/Tactics/Tactics.v
+ROCQ compile $PWD/src/coqutil/Tactics/Tactics.v
 $PWD/src/coqutil/Tactics/Records.vo.native (real: 0.43, user: 0.23, sys: 0.09, mem: 54316 ko)
-COQC $PWD/src/coqutil/Word/Bitwidth32.v
+ROCQ compile $PWD/src/coqutil/Word/Bitwidth32.v
 $PWD/src/coqutil/Datatypes/String.vo.native (real: 0.69, user: 0.49, sys: 0.09, mem: 87608 ko)
 $PWD/src/coqutil/Z/bitblast.vo.native (real: 0.71, user: 0.56, sys: 0.05, mem: 103836 ko)
-COQC $PWD/src/coqutil/Word/Bitwidth64.v
-COQC $PWD/src/coqutil/Tactics/fwd_core.v
+ROCQ compile $PWD/src/coqutil/Word/Bitwidth64.v
+ROCQ compile $PWD/src/coqutil/Tactics/fwd_core.v
 $PWD/src/coqutil/Z/ZLib.vo.native (real: 0.71, user: 0.48, sys: 0.12, mem: 100668 ko)
-COQC $PWD/src/coqutil/Word/Properties.v
+ROCQ compile $PWD/src/coqutil/Word/Properties.v
 $PWD/src/coqutil/Tactics/fwd_core.vo (real: 0.34, user: 0.27, sys: 0.06, mem: 240248 ko)
 COQNATIVE $PWD/src/coqutil/Tactics/fwd_core.vo
 $PWD/src/coqutil/Tactics/Tactics.vo (real: 0.60, user: 0.36, sys: 0.07, mem: 295528 ko)
@@ -183,13 +183,13 @@ COQNATIVE $PWD/src/coqutil/Word/Bitwidth32.vo
 $PWD/src/coqutil/Word/Bitwidth64.vo (real: 0.63, user: 0.36, sys: 0.10, mem: 291996 ko)
 COQNATIVE $PWD/src/coqutil/Word/Bitwidth64.vo
 $PWD/src/coqutil/Tactics/fwd_core.vo.native (real: 0.67, user: 0.49, sys: 0.08, mem: 87980 ko)
-COQC $PWD/src/coqutil/Z/BitOps.v
+ROCQ compile $PWD/src/coqutil/Z/BitOps.v
 $PWD/src/coqutil/Tactics/Tactics.vo.native (real: 0.69, user: 0.51, sys: 0.07, mem: 100016 ko)
-COQC $PWD/src/coqutil/Datatypes/PropSet.v
+ROCQ compile $PWD/src/coqutil/Datatypes/PropSet.v
 $PWD/src/coqutil/Word/Bitwidth32.vo.native (real: 0.78, user: 0.55, sys: 0.09, mem: 101360 ko)
-COQC $PWD/src/coqutil/Datatypes/List.v
+ROCQ compile $PWD/src/coqutil/Datatypes/List.v
 $PWD/src/coqutil/Word/Bitwidth64.vo.native (real: 0.80, user: 0.50, sys: 0.13, mem: 102472 ko)
-COQC $PWD/src/coqutil/Tactics/SafeSimpl.v
+ROCQ compile $PWD/src/coqutil/Tactics/SafeSimpl.v
 $PWD/src/coqutil/Tactics/SafeSimpl.vo (real: 0.79, user: 0.41, sys: 0.18, mem: 278808 ko)
 COQNATIVE $PWD/src/coqutil/Tactics/SafeSimpl.vo
 $PWD/src/coqutil/Tactics/ident_of_string.vo (real: 6.32, user: 6.20, sys: 0.11, mem: 444256 ko)
@@ -199,7 +199,7 @@ COQNATIVE $PWD/src/coqutil/Z/BitOps.vo
 $PWD/src/coqutil/Tactics/SafeSimpl.vo.native (real: 0.87, user: 0.69, sys: 0.07, mem: 102576 ko)
 $PWD/src/coqutil/Tactics/ident_of_string.vo.native (real: 0.77, user: 0.56, sys: 0.08, mem: 88000 ko)
 $PWD/src/coqutil/Z/BitOps.vo.native (real: 0.80, user: 0.63, sys: 0.05, mem: 102316 ko)
-COQC $PWD/src/coqutil/Z/prove_Zeq_bitwise.v
+ROCQ compile $PWD/src/coqutil/Z/prove_Zeq_bitwise.v
 $PWD/src/coqutil/Datatypes/PropSet.vo (real: 2.52, user: 2.23, sys: 0.17, mem: 406924 ko)
 COQNATIVE $PWD/src/coqutil/Datatypes/PropSet.vo
 $PWD/src/coqutil/Z/prove_Zeq_bitwise.vo (real: 0.84, user: 0.58, sys: 0.10, mem: 413136 ko)
@@ -239,11 +239,11 @@ Use Nat2Z.inj_mod instead. [deprecated-syntactic-definition,deprecated]
 $PWD/src/coqutil/Datatypes/List.vo (real: 5.28, user: 4.85, sys: 0.24, mem: 434980 ko)
 COQNATIVE $PWD/src/coqutil/Datatypes/List.vo
 $PWD/src/coqutil/Datatypes/List.vo.native (real: 0.72, user: 0.57, sys: 0.07, mem: 99024 ko)
-COQC $PWD/src/coqutil/Datatypes/ListSet.v
-COQC $PWD/src/coqutil/Map/Interface.v
-COQC $PWD/src/coqutil/Tactics/rewr.v
-COQC $PWD/src/coqutil/Tactics/fwd_list_hints.v
-COQC $PWD/src/coqutil/Sorting/OrderToPermutation.v
+ROCQ compile $PWD/src/coqutil/Datatypes/ListSet.v
+ROCQ compile $PWD/src/coqutil/Map/Interface.v
+ROCQ compile $PWD/src/coqutil/Tactics/rewr.v
+ROCQ compile $PWD/src/coqutil/Tactics/fwd_list_hints.v
+ROCQ compile $PWD/src/coqutil/Sorting/OrderToPermutation.v
 $PWD/src/coqutil/Tactics/fwd_list_hints.vo (real: 0.64, user: 0.36, sys: 0.15, mem: 274956 ko)
 COQNATIVE $PWD/src/coqutil/Tactics/fwd_list_hints.vo
 $PWD/src/coqutil/Sorting/OrderToPermutation.vo (real: 0.71, user: 0.43, sys: 0.16, mem: 317964 ko)
@@ -260,14 +260,14 @@ $PWD/src/coqutil/Tactics/fwd_list_hints.vo.native (real: 0.87, user: 0.62, sys: 
 $PWD/src/coqutil/Tactics/rewr.vo.native (real: 0.88, user: 0.62, sys: 0.11, mem: 101904 ko)
 $PWD/src/coqutil/Sorting/OrderToPermutation.vo.native (real: 1.11, user: 0.89, sys: 0.09, mem: 101560 ko)
 $PWD/src/coqutil/Map/Interface.vo.native (real: 1.29, user: 1.05, sys: 0.11, mem: 102644 ko)
-COQC $PWD/src/coqutil/Datatypes/Inhabited.v
-COQC $PWD/src/coqutil/Map/Properties.v
-COQC $PWD/src/coqutil/Map/SortedList.v
-COQC $PWD/src/coqutil/Map/Empty_set_keyed_map.v
+ROCQ compile $PWD/src/coqutil/Datatypes/Inhabited.v
+ROCQ compile $PWD/src/coqutil/Map/Properties.v
+ROCQ compile $PWD/src/coqutil/Map/SortedList.v
+ROCQ compile $PWD/src/coqutil/Map/Empty_set_keyed_map.v
 $PWD/src/coqutil/Datatypes/ListSet.vo.native (real: 0.91, user: 0.66, sys: 0.09, mem: 101836 ko)
-COQC $PWD/src/coqutil/Map/Funext.v
+ROCQ compile $PWD/src/coqutil/Map/Funext.v
 $PWD/src/coqutil/Word/Properties.vo.native (real: 0.87, user: 0.66, sys: 0.08, mem: 103320 ko)
-COQC $PWD/src/coqutil/Word/LittleEndianList.v
+ROCQ compile $PWD/src/coqutil/Word/LittleEndianList.v
 $PWD/src/coqutil/Datatypes/Inhabited.vo (real: 0.77, user: 0.51, sys: 0.10, mem: 284324 ko)
 COQNATIVE $PWD/src/coqutil/Datatypes/Inhabited.vo
 $PWD/src/coqutil/Map/Empty_set_keyed_map.vo (real: 0.79, user: 0.57, sys: 0.07, mem: 288536 ko)
@@ -277,13 +277,13 @@ COQNATIVE $PWD/src/coqutil/Map/Funext.vo
 $PWD/src/coqutil/Map/SortedList.vo (real: 1.60, user: 1.28, sys: 0.18, mem: 418272 ko)
 COQNATIVE $PWD/src/coqutil/Map/SortedList.vo
 $PWD/src/coqutil/Map/Empty_set_keyed_map.vo.native (real: 1.08, user: 0.84, sys: 0.11, mem: 103096 ko)
-COQC $PWD/src/coqutil/Word/BigEndian.v
+ROCQ compile $PWD/src/coqutil/Word/BigEndian.v
 $PWD/src/coqutil/Datatypes/Inhabited.vo.native (real: 1.13, user: 0.85, sys: 0.14, mem: 101692 ko)
-COQC $PWD/src/coqutil/Word/DebugWordEq.v
+ROCQ compile $PWD/src/coqutil/Word/DebugWordEq.v
 $PWD/src/coqutil/Map/Funext.vo.native (real: 1.03, user: 0.80, sys: 0.08, mem: 102372 ko)
-COQC $PWD/src/coqutil/Word/Naive.v
+ROCQ compile $PWD/src/coqutil/Word/Naive.v
 $PWD/src/coqutil/Map/SortedList.vo.native (real: 1.16, user: 0.88, sys: 0.15, mem: 102424 ko)
-COQC $PWD/src/coqutil/Word/SimplWordExpr.v
+ROCQ compile $PWD/src/coqutil/Word/SimplWordExpr.v
 $PWD/src/coqutil/Word/DebugWordEq.vo (real: 0.86, user: 0.50, sys: 0.17, mem: 361320 ko)
 COQNATIVE $PWD/src/coqutil/Word/DebugWordEq.vo
 $PWD/src/coqutil/Word/LittleEndianList.vo (real: 2.85, user: 2.50, sys: 0.14, mem: 421756 ko)
@@ -291,31 +291,31 @@ COQNATIVE $PWD/src/coqutil/Word/LittleEndianList.vo
 $PWD/src/coqutil/Word/Naive.vo (real: 1.14, user: 0.78, sys: 0.17, mem: 412576 ko)
 COQNATIVE $PWD/src/coqutil/Word/Naive.vo
 $PWD/src/coqutil/Word/DebugWordEq.vo.native (real: 0.79, user: 0.58, sys: 0.08, mem: 103300 ko)
-COQC $PWD/src/coqutil/Tactics/fwd_word_hints.v
+ROCQ compile $PWD/src/coqutil/Tactics/fwd_word_hints.v
 $PWD/src/coqutil/Word/SimplWordExpr.vo (real: 0.93, user: 0.64, sys: 0.13, mem: 419144 ko)
 COQNATIVE $PWD/src/coqutil/Word/SimplWordExpr.vo
 $PWD/src/coqutil/Word/BigEndian.vo (real: 1.82, user: 1.45, sys: 0.18, mem: 417760 ko)
 COQNATIVE $PWD/src/coqutil/Word/BigEndian.vo
 $PWD/src/coqutil/Word/LittleEndianList.vo.native (real: 0.85, user: 0.63, sys: 0.11, mem: 104004 ko)
-COQC $PWD/src/coqutil/Map/SortedListString.v
+ROCQ compile $PWD/src/coqutil/Map/SortedListString.v
 $PWD/src/coqutil/Tactics/fwd_word_hints.vo (real: 0.66, user: 0.40, sys: 0.07, mem: 310528 ko)
 COQNATIVE $PWD/src/coqutil/Tactics/fwd_word_hints.vo
 $PWD/src/coqutil/Word/Naive.vo.native (real: 0.99, user: 0.69, sys: 0.17, mem: 102316 ko)
-COQC $PWD/src/coqutil/Map/SortedListWord.v
+ROCQ compile $PWD/src/coqutil/Map/SortedListWord.v
 $PWD/src/coqutil/Word/SimplWordExpr.vo.native (real: 0.78, user: 0.55, sys: 0.11, mem: 104148 ko)
-COQC $PWD/src/coqutil/Map/Z_keyed_SortedListMap.v
+ROCQ compile $PWD/src/coqutil/Map/Z_keyed_SortedListMap.v
 $PWD/src/coqutil/Word/BigEndian.vo.native (real: 0.82, user: 0.59, sys: 0.10, mem: 103836 ko)
-COQC $PWD/src/coqutil/Datatypes/OperatorOverloading.v
+ROCQ compile $PWD/src/coqutil/Datatypes/OperatorOverloading.v
 $PWD/src/coqutil/Map/SortedListString.vo (real: 0.68, user: 0.39, sys: 0.08, mem: 279768 ko)
 COQNATIVE $PWD/src/coqutil/Map/SortedListString.vo
 $PWD/src/coqutil/Tactics/fwd_word_hints.vo.native (real: 0.99, user: 0.73, sys: 0.11, mem: 104180 ko)
-COQC $PWD/src/coqutil/Word/LittleEndian.v
+ROCQ compile $PWD/src/coqutil/Word/LittleEndian.v
 $PWD/src/coqutil/Map/SortedListWord.vo (real: 0.92, user: 0.50, sys: 0.23, mem: 363816 ko)
 COQNATIVE $PWD/src/coqutil/Map/SortedListWord.vo
 $PWD/src/coqutil/Map/Z_keyed_SortedListMap.vo (real: 0.90, user: 0.58, sys: 0.12, mem: 319092 ko)
 COQNATIVE $PWD/src/coqutil/Map/Z_keyed_SortedListMap.vo
 $PWD/src/coqutil/Map/SortedListString.vo.native (real: 1.00, user: 0.72, sys: 0.16, mem: 103220 ko)
-COQC $PWD/src/coqutil/Map/SortedListString_test.v
+ROCQ compile $PWD/src/coqutil/Map/SortedListString_test.v
 $PWD/src/coqutil/Datatypes/OperatorOverloading.vo (real: 1.53, user: 1.09, sys: 0.24, mem: 415560 ko)
 COQNATIVE $PWD/src/coqutil/Datatypes/OperatorOverloading.vo
 $PWD/src/coqutil/Map/SortedListWord.vo.native (real: 0.92, user: 0.62, sys: 0.15, mem: 104040 ko)
@@ -329,11 +329,11 @@ COQNATIVE $PWD/src/coqutil/Word/LittleEndian.vo
 $PWD/src/coqutil/Datatypes/OperatorOverloading.vo.native (real: 1.25, user: 0.95, sys: 0.17, mem: 103212 ko)
 $PWD/src/coqutil/Map/SortedListString_test.vo.native (real: 0.82, user: 0.60, sys: 0.08, mem: 103528 ko)
 $PWD/src/coqutil/Map/Properties.vo.native (real: 0.96, user: 0.77, sys: 0.08, mem: 100032 ko)
-COQC $PWD/src/coqutil/Tactics/fwd_map_hints.v
-COQC $PWD/src/coqutil/Map/Solver.v
-COQC $PWD/src/coqutil/Map/MapKeys.v
+ROCQ compile $PWD/src/coqutil/Tactics/fwd_map_hints.v
+ROCQ compile $PWD/src/coqutil/Map/Solver.v
+ROCQ compile $PWD/src/coqutil/Map/MapKeys.v
 $PWD/src/coqutil/Word/LittleEndian.vo.native (real: 0.80, user: 0.60, sys: 0.08, mem: 104064 ko)
-COQC $PWD/src/coqutil/Word/ZifyLittleEndian.v
+ROCQ compile $PWD/src/coqutil/Word/ZifyLittleEndian.v
 $PWD/src/coqutil/Tactics/fwd_map_hints.vo (real: 0.50, user: 0.33, sys: 0.06, mem: 283128 ko)
 COQNATIVE $PWD/src/coqutil/Tactics/fwd_map_hints.vo
 $PWD/src/coqutil/Map/MapKeys.vo (real: 0.61, user: 0.43, sys: 0.08, mem: 392964 ko)
@@ -341,7 +341,7 @@ COQNATIVE $PWD/src/coqutil/Map/MapKeys.vo
 $PWD/src/coqutil/Map/Solver.vo (real: 0.62, user: 0.39, sys: 0.08, mem: 304396 ko)
 COQNATIVE $PWD/src/coqutil/Map/Solver.vo
 $PWD/src/coqutil/Tactics/fwd_map_hints.vo.native (real: 0.70, user: 0.46, sys: 0.09, mem: 102724 ko)
-COQC $PWD/src/coqutil/Tactics/fwd.v
+ROCQ compile $PWD/src/coqutil/Tactics/fwd.v
 File "$PWD/src/coqutil/Word/ZifyLittleEndian.v", line 11, characters 41-61:
 Warning: Notation combine is deprecated.
 Use coqutil.Word.LittleEndianList.le_combine.
@@ -441,11 +441,11 @@ Use coqutil.Word.LittleEndianList.le_combine.
 $PWD/src/coqutil/Word/ZifyLittleEndian.vo (real: 0.94, user: 0.74, sys: 0.08, mem: 419828 ko)
 COQNATIVE $PWD/src/coqutil/Word/ZifyLittleEndian.vo
 $PWD/src/coqutil/Map/MapKeys.vo.native (real: 0.67, user: 0.45, sys: 0.11, mem: 101768 ko)
-COQC $PWD/src/coqutil/Map/OfFunc.v
+ROCQ compile $PWD/src/coqutil/Map/OfFunc.v
 $PWD/src/coqutil/Map/Solver.vo.native (real: 0.80, user: 0.63, sys: 0.06, mem: 104700 ko)
-COQC $PWD/src/coqutil/Map/SlowGoals.v
-COQC $PWD/src/coqutil/Map/TestGoals.v
-COQC $PWD/src/coqutil/Map/MapEauto.v
+ROCQ compile $PWD/src/coqutil/Map/SlowGoals.v
+ROCQ compile $PWD/src/coqutil/Map/TestGoals.v
+ROCQ compile $PWD/src/coqutil/Map/MapEauto.v
 $PWD/src/coqutil/Tactics/fwd.vo (real: 0.66, user: 0.38, sys: 0.10, mem: 297656 ko)
 COQNATIVE $PWD/src/coqutil/Tactics/fwd.vo
 $PWD/src/coqutil/Word/ZifyLittleEndian.vo.native (real: 0.85, user: 0.66, sys: 0.05, mem: 104132 ko)
@@ -453,7 +453,7 @@ $PWD/src/coqutil/Map/OfFunc.vo (real: 1.05, user: 0.75, sys: 0.12, mem: 417728 k
 COQNATIVE $PWD/src/coqutil/Map/OfFunc.vo
 $PWD/src/coqutil/Tactics/fwd.vo.native (real: 0.95, user: 0.64, sys: 0.16, mem: 104208 ko)
 $PWD/src/coqutil/Map/OfFunc.vo.native (real: 0.78, user: 0.63, sys: 0.06, mem: 101324 ko)
-COQC $PWD/src/coqutil/Map/OfListWord.v
+ROCQ compile $PWD/src/coqutil/Map/OfListWord.v
 $PWD/src/coqutil/Map/MapEauto.vo (real: 2.65, user: 2.22, sys: 0.23, mem: 420764 ko)
 COQNATIVE $PWD/src/coqutil/Map/MapEauto.vo
 $PWD/src/coqutil/Map/OfListWord.vo (real: 1.03, user: 0.74, sys: 0.12, mem: 421844 ko)

@@ -3,12 +3,12 @@
 . ../timing-template/init.sh
 
 cd before/
-coq_makefile -f _CoqProject -o Makefile
+rocq makefile -f _CoqProject -o Makefile
 make cleanall
 make all TIMING=before -j2 || exit $?
 
 cd ../after/
-coq_makefile -f _CoqProject -o Makefile
+rocq makefile -f _CoqProject -o Makefile
 make cleanall
 make all TIMING=after -j2 || exit $?
 

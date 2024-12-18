@@ -2237,7 +2237,7 @@ Command-line tools
   ``coq_makefile`` when compiling OCaml code, since
   it is no longer required by Coq. To re-enable passing
   the flag, put ``CAMLFLAGS+=-rectypes`` in the local makefile,
-  e.g., ``CoqMakefile.local`` (see :ref:`coqmakefilelocal`)
+  e.g., ``CoqMakefile.local`` (see :ref:`rocqmakefilelocal`)
   (`#17038 <https://github.com/coq/coq/pull/17038>`_,
   by Karl Palmskog with help from Gaëtan Gilbert).
 - **Changed:**
@@ -4508,7 +4508,7 @@ Command-line tools
   by Emilio Jesus Gallego Arias).
 - **Changed:**
   Syntax of `_CoqProject` files: `-arg` is now handled by :ref:`coq_makefile
-  <coq_makefile>` and not by `make`. Unquoted `#` now start line comments
+  <rocq_makefile>` and not by `make`. Unquoted `#` now start line comments
   (`#14558 <https://github.com/coq/coq/pull/14558>`_,
   by Stéphane Desarzens, with help from Jim Fehrle and Enrico Tassi).
 - **Changed:**
@@ -4528,13 +4528,13 @@ Command-line tools
   (`#14957 <https://github.com/coq/coq/pull/14957>`_,
   by Gaëtan Gilbert)
 - **Removed:**
-  These options of :ref:`coq_makefile <coq_makefile>`: `-extra`, `-extra-phony`,
+  These options of :ref:`coq_makefile <rocq_makefile>`: `-extra`, `-extra-phony`,
   `-custom`, `-no-install`, `-install`, `-no-opt`, `-byte`.
   Support for subdirectories is also removed
   (`#14558 <https://github.com/coq/coq/pull/14558>`_,
   by Stéphane Desarzens, with help from Jim Fehrle and Enrico Tassi).
 - **Added:**
-  :ref:`coq_makefile <coq_makefile>` now takes the `-docroot` option as alternative to the
+  :ref:`coq_makefile <rocq_makefile>` now takes the `-docroot` option as alternative to the
   `INSTALLCOQDOCROOT` variable
   (`#14558 <https://github.com/coq/coq/pull/14558>`_,
   by Stéphane Desarzens, with help from Jim Fehrle and Enrico Tassi).
@@ -5456,14 +5456,14 @@ Native Compilation
   by Pierre-Marie Pédrot).
 - **Deprecated:**
   the `-native-compiler` option for coqc. It is now recommended
-  to use the :ref:`coqnative` binary instead to generate native
+  to use the :ref:`rocqnative` binary instead to generate native
   compilation files ahead of time
   (`#14309 <https://github.com/coq/coq/pull/14309>`_,
   by Pierre-Marie Pédrot).
 - **Added:**
   A standalone `coqnative` binary that performs native compilation
   out of `vo` files, allowing to split library compilation from
-  native compilation. See :ref:`coqnative`. The hybrid build
+  native compilation. See :ref:`rocqnative`. The hybrid build
   system was adapted to perform a split compilation on the stdlib
   (`#13287 <https://github.com/coq/coq/pull/13287>`_,
   by Pierre-Marie Pédrot).
@@ -6321,7 +6321,7 @@ Tools
 - **Changed:**
   Added the ability for coq_makefile to directly set the installation folders,
   through the `COQLIBINSTALL` and `COQDOCINSTALL` variables.
-  See :ref:`coqmakefilelocal`
+  See :ref:`rocqmakefilelocal`
   (`#12389 <https://github.com/coq/coq/pull/12389>`_, by Martin Bodin, review of Enrico Tassi).
 - **Removed:** The option ``-I`` of coqchk was removed (it was
   deprecated in Coq 8.8) (`#12613
@@ -7176,7 +7176,7 @@ Tools
   <https://github.com/coq/coq/pull/12034>`_, by Gaëtan Gilbert).
 - **Added:**
   A new documentation environment ``details`` to make certain portion
-  of a Coq document foldable.  See :ref:`coqdoc-hide-show`
+  of a Coq document foldable.  See :ref:`rocqdoc-hide-show`
   (`#10592 <https://github.com/coq/coq/pull/10592>`_,
   by Thomas Letan).
 - **Added:**

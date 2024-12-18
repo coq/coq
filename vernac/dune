@@ -1,11 +1,28 @@
 (library
  (name vernac)
  (synopsis "Coq's Vernacular Language")
- (public_name coq-core.vernac)
+ (public_name rocq-runtime.vernac)
  (wrapped false)
  (modules_without_implementation vernacexpr)
  ; until ocaml/dune#4892 fixed
  ; (private_modules comProgramFixpoint egramcoq)
  (libraries tactics parsing findlib.dynload))
 
-(coq.pp (modules g_proofs g_vernac g_redexpr))
+(deprecated_library_name
+ (old_public_name coq-core.vernac)
+ (new_public_name rocq-runtime.vernac))
+
+(rule
+ (targets g_proofs.ml)
+ (deps (:mlg g_proofs.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))
+
+(rule
+ (targets g_vernac.ml)
+ (deps (:mlg g_vernac.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))
+
+(rule
+ (targets g_redexpr.ml)
+ (deps (:mlg g_redexpr.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))

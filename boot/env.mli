@@ -35,7 +35,7 @@ but we may do so in the future. Rules for "coqlib" are:
 - if none of the above succeeds, the initialization will fail
 
 - The [COQCORELIB] env variable is also used if set, if not, the location
-  of the coq-core files will be assumed to be [COQLIB/../coq-core], except
+  of the rocq-runtime files will be assumed to be [COQLIB/../rocq-runtime], except
   if [COQLIB/plugins] exists [as in some developers layouts], in which case
   we will set [COQCORELIB:=COQLIB].
 
@@ -96,7 +96,7 @@ val native_cmi : t -> string -> Path.t
 (** The location of the revision file *)
 val revision : t -> Path.t
 
-(** coq-core/lib directory, not sure if to keep this *)
+(** rocq-runtime/lib directory, not sure if to keep this *)
 val corelib : t -> Path.t
 
 (** coq/lib directory, not sure if to keep this *)

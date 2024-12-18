@@ -113,14 +113,6 @@ module VCache = Set.Make(VData)
     (those loaded by [Require]) from other dependencies, e.g. dependencies
     on ".v" files (for [Load]) or ".cmx", ".cmo", etc... (for [Declare]). *)
 
-let warn_legacy_loading =
-  let name = "legacy-loading-removed-coqdep" in
-  CWarnings.create ~name (fun name ->
-      Pp.(str "Legacy loading plugin method has been removed from Coq, \
-               and the `:` syntax is deprecated, and its first \
-               argument ignored; please remove \"" ++
-          str name ++ str ":\" from your Declare ML"))
-
 (* Transform "Declare ML %DECL" to a pair of (meta, cmxs). Something
    very similar is in ML top *)
 let declare_ml_to_file file (decl : string) =
@@ -129,7 +121,7 @@ let declare_ml_to_file file (decl : string) =
   | [package] ->
     Fl.findlib_deep_resolve ~file ~package
   | [cmxs; package] ->
-    warn_legacy_loading cmxs;
+    (* rocq compile will warn *)
     Fl.findlib_deep_resolve ~file ~package
   | bad_pkg ->
     CErrors.user_err Pp.(str "Failed to resolve plugin: " ++ str decl)
@@ -164,6 +156,9 @@ let rec find_dependencies st basename =
   let dependencies = ref DepSet.empty in
   let add_dep dep = dependencies := DepSet.add dep !dependencies in
   let add_dep_other s = add_dep (Dep_info.Dep.Other s) in
+
+  (* worker dep *)
+  let () = add_dep_other (Loadpath.get_worker_path st) in
 
   (* Reading file contents *)
   let f = basename ^ ".v" in
@@ -339,11 +334,18 @@ let init ~make_separator_hack args =
   separator_hack := make_separator_hack;
   vAccu := [];
   if not Coq_config.has_natdynlink then Makefile.set_dyndep "no";
-  let st = Loadpath.State.make ~boot:args.Args.boot in
+  let st = Loadpath.State.make ~worker:args.Args.worker ~boot:args.Args.boot in
   Makefile.set_write_vos args.Args.vos;
   Makefile.set_noglob args.Args.noglob;
   (* Add to the findlib search path, common with sysinit/coqinit *)
-  findlib_init args.Args.ml_path;
+  let ml_path = args.Args.ml_path in
+  let ml_path =
+    if args.Args.boot then ml_path
+    else
+      let env = Boot.Env.init () in
+      Boot.Env.Path.(to_string @@ relative (Boot.Env.corelib env) "..") :: ml_path
+  in
+  findlib_init ml_path;
   List.iter (add_include st) args.Args.vo_path;
   Makefile.set_dyndep args.Args.dyndep;
   st

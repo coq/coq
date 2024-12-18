@@ -14,5 +14,5 @@ EOF
 
 printf 'theories/generatedInPreAll.v:\n\ttouch theories/generatedInPreAll.v\n' > Makefile.local
 
-coq_makefile -f _CoqProject -o Makefile
+rocq makefile -f _CoqProject -o Makefile
 make

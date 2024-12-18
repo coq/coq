@@ -510,8 +510,8 @@ Document-level attributes
    :name: Attributes
 
    Associates attributes with the
-   document. When compiled with ``coqc`` (see Section
-   :ref:`thecoqcommands`), the attributes are associated with the
+   document. When compiled with ``rocq compile`` (see Section
+   :ref:`therocqcommands`), the attributes are associated with the
    compiled file and may have an effect when the file is loaded with
    :cmd:`Require`. Supported attributes include :attr:`deprecated`
    and :attr:`warn`.

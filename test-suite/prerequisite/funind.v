@@ -9,4 +9,4 @@
 (************************************************************************)
 
 From Corelib Require Extraction.
-Declare ML Module "funind_plugin:coq-core.plugins.funind".
+Declare ML Module "rocq-runtime.plugins.funind".

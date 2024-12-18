@@ -2,8 +2,12 @@
 ; dependency for most Coq command line tools.
 (library
  (name boot)
- (public_name coq-core.boot)
+ (public_name rocq-runtime.boot)
  (synopsis "Coq Enviroment and Paths facilities")
  ; until ocaml/dune#4892 fixed
  ; (private_modules util)
- (libraries coq-core.config))
+ (libraries rocq-runtime.config))
+
+(deprecated_library_name
+ (old_public_name coq-core.boot)
+ (new_public_name rocq-runtime.boot))

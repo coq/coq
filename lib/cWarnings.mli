@@ -103,7 +103,7 @@ val override_unknown_warning : bool ref
     "-w -unknown-warning". *)
 
 module CoreCategories : sig
-  (** Categories used in coq-core. Might not be exhaustive. *)
+  (** Categories used in rocq-runtime. Might not be exhaustive. *)
 
   val automation : category
   val bytecode_compiler : category

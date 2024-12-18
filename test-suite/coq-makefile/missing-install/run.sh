@@ -12,6 +12,6 @@ EOF
 mkdir theories
 touch theories/a.v theories/b.v
 
-coq_makefile -f _CoqProject -o Makefile
+rocq makefile -f _CoqProject -o Makefile
 make theories/b.vo
 if make install; then exit 1; fi

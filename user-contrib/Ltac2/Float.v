@@ -12,4 +12,4 @@ Require Import Ltac2.Init.
 
 Ltac2 Type t := float.
 
-Ltac2 @ external equal : t -> t -> bool := "coq-core.plugins.ltac2" "float_equal".
+Ltac2 @ external equal : t -> t -> bool := "rocq-runtime.plugins.ltac2" "float_equal".

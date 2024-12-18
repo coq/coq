@@ -10,7 +10,7 @@ fi
 # Shoud override the _CoqProject flag "-native-compiler no"
 export COQEXTRAFLAGS="-native-compiler yes"
 
-coq_makefile -f _CoqProject -o Makefile
+rocq makefile -f _CoqProject -o Makefile
 
 if ! grep -q COQMF_COQ_NATIVE_COMPILER_DEFAULT=yes Makefile.conf; then
     echo "Skipped: native compile disabled or ondemand"

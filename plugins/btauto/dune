@@ -1,7 +1,14 @@
 (library
  (name btauto_plugin)
- (public_name coq-core.plugins.btauto)
+ (public_name rocq-runtime.plugins.btauto)
  (synopsis "Rocq's btauto plugin")
- (libraries coq-core.plugins.ltac))
+ (libraries rocq-runtime.plugins.ltac))
 
-(coq.pp (modules g_btauto))
+(deprecated_library_name
+ (old_public_name coq-core.plugins.btauto)
+ (new_public_name rocq-runtime.plugins.btauto))
+
+(rule
+ (targets g_btauto.ml)
+ (deps (:mlg g_btauto.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))

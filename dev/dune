@@ -1,56 +1,56 @@
 (library
  (name dev)
- (public_name coq-core.dev)
+ (public_name rocq-runtime.dev)
  (synopsis "Coq's Debug Printers")
  (wrapped false)
  (modules top_printers vm_printers)
  ; NB currently we have no "install_printer" using ltac2,
  ; but we still want to load_printer ltac2
  ; so that its genarg printers are present in the debugger's printer process
- (libraries coq-core.vernac coq-core.plugins.ltac coq-core.plugins.ltac2))
+ (libraries rocq-runtime.vernac rocq-runtime.plugins.ltac rocq-runtime.plugins.ltac2))
 
 (library
  (name debugger_support)
- (public_name coq-core.debugger_support)
+ (public_name rocq-runtime.debugger_support)
  (synopsis "Coq Support for ocamldebug")
  (wrapped false)
  (modules debugger_support)
- (libraries coq-core.dev))
+ (libraries rocq-runtime.dev))
 
 (rule
   (targets dune-dbg)
   (deps
     dune-dbg.in
     ../checker/coqchk.bc
-    ../topbin/coqc_byte_bin.bc
-    ../topbin/coqnative_bin.bc
+    ../topbin/coqworker.bc
+    ../topbin/rocqnative.bc
     ../ide/coqide/rocqide_main.bc
     ../tools/coqdep/coqdep.bc
     ; We require all the OCaml libs to be in place and searchable
     ; by OCamlfind, this is a bit of a hack but until Dune gets
     ; proper ocamldebug support we have to live with that.
-    %{lib:coq-core.config:config.cma}
-    %{lib:coq-core.clib:clib.cma}
-    %{lib:coq-core.lib:lib.cma}
-    %{lib:coq-core.kernel:kernel.cma}
-    %{lib:coq-core.vm:coqrun.cma}
-    %{lib:coq-core.vm:../../stublibs/dllcoqrun_stubs.so}
-    %{lib:coq-core.library:library.cma}
-    %{lib:coq-core.engine:engine.cma}
-    %{lib:coq-core.pretyping:pretyping.cma}
-    %{lib:coq-core.gramlib:gramlib.cma}
-    %{lib:coq-core.interp:interp.cma}
-    %{lib:coq-core.proofs:proofs.cma}
-    %{lib:coq-core.parsing:parsing.cma}
-    %{lib:coq-core.printing:printing.cma}
-    %{lib:coq-core.tactics:tactics.cma}
-    %{lib:coq-core.vernac:vernac.cma}
-    %{lib:coq-core.plugins.ltac:ltac_plugin.cma}
-    %{lib:coq-core.plugins.ltac2:ltac2_plugin.cma}
-    %{lib:coq-core.dev:dev.cma}
-    %{lib:coq-core.debugger_support:debugger_support.cmi}
-    %{lib:coq-core.debugger_support:debugger_support.cma}
-    %{lib:coq-core.debugger_support:../META})
+    %{lib:rocq-runtime.config:config.cma}
+    %{lib:rocq-runtime.clib:clib.cma}
+    %{lib:rocq-runtime.lib:lib.cma}
+    %{lib:rocq-runtime.kernel:kernel.cma}
+    %{lib:rocq-runtime.vm:coqrun.cma}
+    %{lib:rocq-runtime.vm:../../stublibs/dllcoqrun_stubs.so}
+    %{lib:rocq-runtime.library:library.cma}
+    %{lib:rocq-runtime.engine:engine.cma}
+    %{lib:rocq-runtime.pretyping:pretyping.cma}
+    %{lib:rocq-runtime.gramlib:gramlib.cma}
+    %{lib:rocq-runtime.interp:interp.cma}
+    %{lib:rocq-runtime.proofs:proofs.cma}
+    %{lib:rocq-runtime.parsing:parsing.cma}
+    %{lib:rocq-runtime.printing:printing.cma}
+    %{lib:rocq-runtime.tactics:tactics.cma}
+    %{lib:rocq-runtime.vernac:vernac.cma}
+    %{lib:rocq-runtime.plugins.ltac:ltac_plugin.cma}
+    %{lib:rocq-runtime.plugins.ltac2:ltac2_plugin.cma}
+    %{lib:rocq-runtime.dev:dev.cma}
+    %{lib:rocq-runtime.debugger_support:debugger_support.cmi}
+    %{lib:rocq-runtime.debugger_support:debugger_support.cma}
+    %{lib:rocq-runtime.debugger_support:../META})
   (action (copy dune-dbg.in dune-dbg)))
 
 (alias
@@ -59,7 +59,7 @@
 
 (install
  (section lib)
- (package coq-core)
+ (package rocq-runtime)
  (files
   (ml_toplevel/include as dev/ml_toplevel/include)
   (ml_toplevel/include_directories as dev/ml_toplevel/include_directories)

@@ -1,1 +1,1 @@
-Declare ML Module "coq-core.plugins.derive".
+Declare ML Module "rocq-runtime.plugins.derive".

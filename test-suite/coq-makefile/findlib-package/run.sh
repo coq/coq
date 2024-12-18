@@ -2,7 +2,7 @@
 
 . ../template/init.sh
 
-sed -i.old 's/coq-core.plugins.ltac/coq-core.plugins.ltac,foo/' src/META.coq-test-suite
+sed -i.old 's/rocq-runtime.plugins.ltac/rocq-runtime.plugins.ltac,foo/' src/META.coq-test-suite
 
 echo "let () = Foolib.foo ();;" >> src/test_aux.ml
 if which cygpath 2>/dev/null; then
@@ -13,7 +13,7 @@ else
 fi
 export OCAMLPATH
 make -C findlib/foo clean
-coq_makefile -f _CoqProject -o Makefile
+rocq makefile -f _CoqProject -o Makefile
 cat Makefile.conf
 cat Makefile.local
 make -C findlib/foo
