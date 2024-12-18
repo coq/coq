@@ -32,6 +32,8 @@ Declare ML Module "coq-core.plugins.cc".
 Declare ML Module "coq-core.plugins.firstorder_core".
 Declare ML Module "coq-core.plugins.firstorder".
 
+Global Set Firstorder Solver auto.
+
 (* Parsing / printing of hexadecimal numbers *)
 Arguments Nat.of_hex_uint d%_hex_uint_scope.
 Arguments Nat.of_hex_int d%_hex_int_scope.

@@ -59,7 +59,13 @@ GRAMMAR EXTEND Gram
         { VernacSynPure (VernacDefinition (Decls.(NoDischarge, Definition), ((CAst.make ~loc Names.Anonymous), None), ProveBody ([], c))) }
       | IDENT "Proof" -> { VernacSynPure (VernacProof (None,None)) }
       | IDENT "Proof"; IDENT "using"; l = G_vernac.section_subset_expr ->
-          { VernacSynPure (VernacProof (None,Some l)) }
+        { VernacSynPure (VernacProof (None,Some l)) }
+      | IDENT "Proof"; "with"; ta = generic_tactic;
+        l = OPT [ IDENT "using"; l = G_vernac.section_subset_expr -> { l } ] ->
+          { Vernacexpr.VernacSynPure (Vernacexpr.VernacProof (Some ta, l)) }
+      | IDENT "Proof"; IDENT "using"; l = G_vernac.section_subset_expr;
+        "with"; ta = generic_tactic ->
+          { Vernacexpr.VernacSynPure (Vernacexpr.VernacProof (Some ta,Some l)) }
       | IDENT "Proof" ; IDENT "Mode" ; mn = string -> { VernacSynterp (VernacProofMode mn) }
       | IDENT "Proof"; c = lconstr -> { VernacSynPure (VernacExactProof c) }
       | IDENT "Abort" -> { VernacSynPure VernacAbort }
@@ -128,7 +134,11 @@ GRAMMAR EXTEND Gram
       | IDENT "Opaque"; lc = LIST1 global -> { HintsTransparency (HintsReferences lc, false) }
       | IDENT "Mode"; l = global; m = mode -> { HintsMode (l, m) }
       | IDENT "Unfold"; lqid = LIST1 global -> { HintsUnfold lqid }
-      | IDENT "Constructors"; lc = LIST1 global -> { HintsConstructors lc } ] ]
+      | IDENT "Constructors"; lc = LIST1 global -> { HintsConstructors lc }
+      | IDENT "Extern"; n = natural; c = OPT Constr.constr_pattern ; "=>";
+        tac = generic_tactic ->
+        { Vernacexpr.HintsExtern (n,c, tac) }
+  ] ]
     ;
   constr_body:
     [ [ ":="; c = lconstr -> { c }
