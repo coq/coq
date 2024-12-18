@@ -84,6 +84,8 @@ rule coq_action = parse
       { from_rule false lexbuf }
   | "Comments" space+ "From" space+
       { from_rule true lexbuf }
+  | "#["
+      { skip_attribute lexbuf; coq_action lexbuf }
   | space+
       { coq_action lexbuf }
   | "(*"
@@ -92,6 +94,16 @@ rule coq_action = parse
       { raise Fin_fichier}
   | _
       { skip_to_dot lexbuf; coq_action lexbuf }
+
+and skip_attribute = parse
+  | "(*"
+      { comment lexbuf; skip_attribute lexbuf }
+  | "]"
+      { () }
+  | '"' [^ '"']+ '"'
+      { skip_attribute lexbuf }
+  | _
+      { skip_attribute lexbuf }
 
 and from_rule only_extra_dep = parse
   | "(*"
