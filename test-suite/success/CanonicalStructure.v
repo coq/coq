@@ -216,3 +216,15 @@ Module ExtraArgs.
   Check fun (f : nat -> nat) => eq_refl : apply _ 0 = f 0.
 
 End ExtraArgs.
+
+(* Testing that we unfold keys that match but do not unify *)
+Module TestKeys.
+Structure Dummy (b : bool) := {T : Type}.
+Definition boolF := bool.
+Canonical Dummy_boolF : Dummy false := {| T := boolF |}.
+Definition boolT := boolF.
+Canonical Dummy_boolT : Dummy true := {| T := boolT |}.
+
+Set Debug "unification".
+Check eq_refl : id (@T false _) = boolT.
+End TestKeys.
