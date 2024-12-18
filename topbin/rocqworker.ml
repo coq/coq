@@ -13,7 +13,7 @@ module WQuery = AsyncTaskQueue.MakeWorker(Stm.QueryTask) ()
 module WTactic = AsyncTaskQueue.MakeWorker(Partac.TacTask) ()
 
 let error s () =
-  Format.eprintf "Usage: coqworker.opt --kind=[compile|proof|query|tactic] $args@\ngot %s\n%!" s;
+  Format.eprintf "Usage: rocqworker --kind=[compile|repl|proof|query|tactic] $args@\ngot %s\n%!" s;
   exit 1
 
 type kind =

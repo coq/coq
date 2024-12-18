@@ -1,7 +1,7 @@
-fA.vo fA.glob fA.v.beautified fA.required_vo: fA.v @COQWORKER@
-fB.vo fB.glob fB.v.beautified fB.required_vo: fB.v fA.vo @COQWORKER@
-fC.vo fC.glob fC.v.beautified fC.required_vo: fC.v fB.vo @COQWORKER@
-fD.vo fD.glob fD.v.beautified fD.required_vo: fD.v fA.vo @COQWORKER@
-fE.vo fE.glob fE.v.beautified fE.required_vo: fE.v fA.vo @COQWORKER@
-fF.vo fF.glob fF.v.beautified fF.required_vo: fF.v fA.vo @COQWORKER@
-fG.vo fG.glob fG.v.beautified fG.required_vo: fG.v fA.vo @COQWORKER@
+fA.vo fA.glob fA.v.beautified fA.required_vo: fA.v @ROCQWORKER@
+fB.vo fB.glob fB.v.beautified fB.required_vo: fB.v fA.vo @ROCQWORKER@
+fC.vo fC.glob fC.v.beautified fC.required_vo: fC.v fB.vo @ROCQWORKER@
+fD.vo fD.glob fD.v.beautified fD.required_vo: fD.v fA.vo @ROCQWORKER@
+fE.vo fE.glob fE.v.beautified fE.required_vo: fE.v fA.vo @ROCQWORKER@
+fF.vo fF.glob fF.v.beautified fF.required_vo: fF.v fA.vo @ROCQWORKER@
+fG.vo fG.glob fG.v.beautified fG.required_vo: fG.v fA.vo @ROCQWORKER@
