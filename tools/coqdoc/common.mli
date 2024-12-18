@@ -25,7 +25,7 @@ type otype = Dvi | Ps | Pdf
 
 (* Globals *************************************************************************)
 val page_title : string ref
-val out_channel : out_channel ref
+val out_channel : Buffer.t option ref
 (* End globals *********************************************************************)
 
 (** User-setable options from command line [coqdoc] arugments **********************)
@@ -72,5 +72,10 @@ val prefs : t ref
 val (/) : string -> string -> string
 val coqdoc_out : string -> string
 val open_out_file : string -> unit
+val set_header_output : unit -> unit
+val set_toc_output : unit -> unit
+val set_main_output : unit -> unit
 val close_out_file : unit -> unit
+val set_stdout : unit -> unit
+val flush_stdout : unit -> unit
 (* End little helpers **************************************************************)
