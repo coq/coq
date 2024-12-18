@@ -241,14 +241,15 @@ before_script:
   script:
     - if [ "$COQ_CI_NATIVE" = true ]; then opam install -y coq-native; fi
     - opam pin add --kind=path rocq-runtime.dev .
-    - opam pin add --kind=path coq-core.dev .
     - opam pin add --kind=path rocq-core.dev .
     - opam pin add --kind=path coq-stdlib.dev stdlib/
+    - if command -v coqc; then exit 1; fi # coq-core didn't get autoinstalled
     - opam pin add --kind=path coqide-server.dev .
     - opam pin add --kind=path coqide.dev .
     - if [ "$COQ_CI_NATIVE" = true ]; then echo "Definition f x := x + x." > test_native.v; fi
-    - if [ "$COQ_CI_NATIVE" = true ]; then coqc test_native.v; fi
+    - if [ "$COQ_CI_NATIVE" = true ]; then rocq c test_native.v; fi
     - if [ "$COQ_CI_NATIVE" = true ]; then test -f .coq-native/Ntest_native.cmxs; fi
+    - opam pin add --kind=path coq-core.dev .
   after_script:
     - eval $(opam env)
     - du -ha "$(coqc -where)" > files.listing
