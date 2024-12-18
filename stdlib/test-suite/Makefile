@@ -195,9 +195,12 @@ summary:
 	  $(call summary_dir, "Success tests", success); \
 	  $(call summary_dir, "Bugs tests", bugs); \
 	  $(call summary_dir, "Output tests", output); \
+	  $(call summary_dir, "Miscellaneous tests", misc); \
 	  $(call summary_dir, "Complexity tests", complexity); \
+	  $(call summary_dir, "Micromega tests", micromega); \
 	  $(call summary_dir, "Module tests", modules); \
 	  $(call summary_dir, "STM tests", stm); \
+	  $(call summary_dir, "Ltac2 tests", ltac2); \
 	  nb_success=`grep -e $(log_success) -r . -l --include="*.log" --exclude-dir=logs | wc -l`; \
 	  nb_failure=`grep -e $(log_failure) -r . -l --include="*.log" --exclude-dir=logs | wc -l`; \
 	  nb_tests=`expr $$nb_success + $$nb_failure`; \
