@@ -1429,7 +1429,7 @@ Managing the local context
 
 .. tacn:: remember @one_term {? @as_name } {? eqn : @naming_intropattern } {? in @goal_occurrences }
 
-   Similar to :n:`set (@ident := @one_term) in *` but creates a hypothesis using
+   Similar to :tacn:`set` :n:`(@ident := @one_term) in *` but creates a hypothesis using
    :term:`Leibniz equality` to remember the relation between the introduced
    variable and the term rather than creating a
    :term:`local definition <context-local definition>`.  If :n:`@as_name` is not
