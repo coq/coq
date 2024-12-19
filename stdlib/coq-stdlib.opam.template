@@ -1,0 +1,15 @@
+build: [
+  ["dune" "subst"] {dev}
+  [
+    "dev/with-rocq-wrap.sh"
+    "dune"
+    "build"
+    "-p"
+    name
+    "-j"
+    jobs
+    "@install"
+    "@runtest" {with-test}
+    "@doc" {with-doc}
+  ]
+]
