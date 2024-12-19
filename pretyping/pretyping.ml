@@ -1011,7 +1011,7 @@ struct
               let u = Univ.Universe.make u in
               Univ.Level.Map.update u0 (function
                   | None -> Some u
-                  | Some u' -> Some (Univ.Universe.sup u u'))
+                  | Some u' -> CErrors.anomaly Pp.(str "non linear template univ"))
                 bound
             in
             sigma, Some (t,bound), mkArity (ctx,s)
