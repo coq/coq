@@ -160,10 +160,11 @@ let interp_hints ~poly h =
           , hint_globref gr ))
     in
     HintsResolveEntry (List.flatten (List.map constr_hints_of_ind lqid))
-  | HintsExtern (pri, patcom, tacexp) ->
+  | HintsExtern (pri, patcom, tacexp, name) ->
     let pat = Option.map (fp sigma) patcom in
     let ltacvars = match pat with None -> Id.Set.empty | Some (l, _) -> l in
     let env = Genintern.{(empty_glob_sign ~strict:true env) with ltacvars} in
     let _, tacexp = Genintern.generic_intern env tacexp in
+    let globref = Option.cata (fun n -> Some (Nametab.global n)) None name in
     HintsExternEntry
-      ({Typeclasses.hint_priority = Some pri; hint_pattern = pat}, tacexp)
+      ({Typeclasses.hint_priority = Some pri; hint_pattern = pat}, tacexp, globref)

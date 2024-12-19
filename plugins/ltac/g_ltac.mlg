@@ -294,9 +294,10 @@ GRAMMAR EXTEND Gram
           { Vernacexpr.VernacSynPure (Vernacexpr.VernacProof (Some (in_tac ta),Some l)) } ] ]
   ;
   hint: TOP
-    [ [ IDENT "Extern"; n = natural; c = OPT Constr.constr_pattern ; "=>";
-        tac = Pltac.tactic ->
-        { Vernacexpr.HintsExtern (n,c, in_tac tac) } ] ]
+    [ [ IDENT "Extern"; n = natural; c = OPT Constr.constr_pattern;
+        name = OPT [ "as"; q = qualid -> { q } ];
+        "=>"; tac = Pltac.tactic ->
+          { Vernacexpr.HintsExtern (n,c, in_tac tac, name) } ] ]
   ;
   term: LEVEL "0"
     [ [ IDENT "ltac"; ":"; "("; tac = Pltac.ltac_expr; ")" ->
