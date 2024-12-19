@@ -9,10 +9,15 @@
 (************************************************************************)
 
 Require Import Ltac2.Init.
-Require Ltac2.Int.
+Require Ltac2.Int Ltac2.Control.
 
 Ltac2 @external of_int : int -> char := "rocq-runtime.plugins.ltac2" "char_of_int".
 (** Throws if the integer is not a valid char (in range [0-255]). *)
+
+Ltac2 of_int_opt (x:int) : char option :=
+  if Int.lt x 0 then None
+  else if Int.lt 255 x then None
+  else Some (of_int x).
 
 Ltac2 @external to_int : char -> int := "rocq-runtime.plugins.ltac2" "char_to_int".
 
