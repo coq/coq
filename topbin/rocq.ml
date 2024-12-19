@@ -21,7 +21,7 @@ let with_worker_gen opts basename args =
   Rocqshim.exec_or_create_process prog argv
 
 let with_worker opts kind args =
-  with_worker_gen opts "coqworker" (("--kind="^kind) :: args)
+  with_worker_gen opts "rocqworker" (("--kind="^kind) :: args)
 
 let with_sibling_exe opts prog args =
   let prog = System.get_toplevel_path prog in
@@ -41,7 +41,7 @@ let () =
   (* workers *)
   | ("c" | "compile") :: args -> with_worker opts "compile" args
   | ("top"|"repl") :: args -> with_worker opts "repl" args
-  | ("top-with-drop"|"repl-with-drop") :: args -> with_worker_gen opts "coqworker_with_drop" args
+  | ("top-with-drop"|"repl-with-drop") :: args -> with_worker_gen opts "rocqworker_with_drop" args
   | "native-precompile" :: args -> with_worker_gen opts "rocqnative" args
 
   (* public executables *)

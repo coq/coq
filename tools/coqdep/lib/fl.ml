@@ -93,7 +93,7 @@ let findlib_deep_resolve ~file ~package =
 
 module Internal = struct
   let get_worker_path () =
-    let top = "coqworker" in
+    let top = "rocqworker" in
     let dir = Findlib.package_directory "rocq-runtime" in
     let exe = if Sys.(os_type = "Win32" || os_type = "Cygwin") then ".exe" else "" in
     let file = Filename.concat dir (top^exe) in
