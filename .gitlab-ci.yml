@@ -83,6 +83,8 @@ before_script:
       - config/dune.c_flags
     expire_in: 1 week
   script:
+    - cp dev/ci/dune-workspace.ci dune-workspace
+
     - PKGS=rocq-runtime,coq-core,rocq-core,coqide-server
     - if [ "$COQIDE" != "no" ]; then PKGS=${PKGS},coqide; fi
     - dev/ci/gitlab-section.sh start coq.clean coq.clean
@@ -109,6 +111,7 @@ before_script:
   interruptible: true
   extends: .auto-use-tags
   script:
+    - cp dev/ci/dune-workspace.ci dune-workspace
     - make $DUNE_TARGET
     - tar cfj _build.tar.bz2 _build
   variables:

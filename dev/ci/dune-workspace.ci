@@ -1,0 +1,3 @@
+(lang dune 3.8)
+(context default)
+(env (_ (bin_annot false)))
