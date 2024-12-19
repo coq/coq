@@ -246,19 +246,19 @@ let retype ?metas ?(polyprop=true) sigma =
     | Ind (ind, u) ->
       let u = EInstance.kind sigma u in
       let mip = lookup_mind_specif env ind in
-      let paramtyps = make_param_univs env sigma (ind,u) args in
+      let paramtyps = make_param_univs env sigma args in
       let (ty, _) = Inductive.type_of_inductive_knowing_parameters ~polyprop (mip, u) paramtyps in
       EConstr.of_constr (rename_type ty (IndRef ind))
     | Construct (cstr, u) ->
       let u = EInstance.kind sigma u in
       let (ind, _) = cstr in
       let mip = lookup_mind_specif env ind in
-      let paramtyps = make_param_univs env sigma (ind, u) args in
+      let paramtyps = make_param_univs env sigma args in
       let (ty, _) = Inductive.type_of_constructor_knowing_parameters (cstr, u) mip paramtyps in
       EConstr.of_constr (rename_type ty (ConstructRef cstr))
     | _ -> assert false
 
-  and make_param_univs env sigma indu args =
+  and make_param_univs env sigma args =
     Array.map_to_list (fun arg ~expected ->
           let t = type_of env arg in
           let s = sort_of_arity_with_constraints env sigma t in
