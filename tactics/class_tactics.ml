@@ -1122,11 +1122,24 @@ let evar_dependencies pred evm p =
 
 (** [split_evars] returns groups of undefined evars according to dependencies *)
 
-let split_evars pred evm =
+let split_evars pred env evm =
   let p = Intpart.create () in
   evar_dependencies pred evm p;
   deps_of_constraints (snd (extract_all_conv_pbs evm)) evm p;
-  Intpart.partition p
+  let part = Intpart.partition p in
+  let is_strictly_unique ev =
+    let evi = Evd.find_undefined evm ev in
+    let concl = Evd.evar_concl evi in
+    match Typeclasses.class_of_constr env evm concl with
+    | None -> false
+    | Some (_, ((cl, _), _)) ->
+      cl.cl_strict && cl.cl_unique
+  in
+  let fn evs =
+    let (strictly_uniques, rest) = Evar.Set.partition is_strictly_unique evs in
+    rest :: (List.map Evar.Set.singleton (Evar.Set.elements strictly_uniques))
+  in
+  List.concat_map fn part
 
 let is_inference_forced p evd ev =
   try
@@ -1210,7 +1223,7 @@ let resolve_all_evars depth unique env p oevd fail =
         str"Initial evar map: " ++
         Termops.pr_evar_map ~with_univs:!Detyping.print_universes None env oevd)
   in
-  let split = split_evars p oevd in
+  let split = split_evars p env oevd in
   let in_comp comp ev = Evar.Set.mem ev comp in
   let rec docomp evd = function
     | [] ->
