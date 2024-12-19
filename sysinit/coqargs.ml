@@ -68,6 +68,7 @@ type coqargs_config = {
   beautify : bool;
   quiet : bool;
   time : time_config option;
+  profile_lazy : bool;
   test_mode : bool;
   profile : string option;
   print_emacs : bool;
@@ -136,6 +137,7 @@ let default_config = {
   beautify = false;
   quiet = false;
   time = None;
+  profile_lazy = false;
   test_mode = false;
   profile = None;
   print_emacs  = false;
@@ -413,6 +415,7 @@ let parse_args ~init arglist : t * string list =
     |"-time" -> { oval with config = { oval.config with time = Some ToFeedback }}
     |"-time-file" -> { oval with config = { oval.config with time = Some (ToFile (next())) }}
     | "-profile" -> { oval with config = { oval.config with profile = Some (next()) } }
+    | "-profile-lazy" -> { oval with config = { oval.config with profile_lazy = true } }
     |"-type-in-type" -> set_logic (fun o -> { o with type_in_type = true }) oval
     |"-unicode" -> add_vo_require oval "Utf8_core" None (Some Import)
     |"-where" -> set_query oval PrintWhere
