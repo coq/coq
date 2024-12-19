@@ -396,7 +396,7 @@ let print_signature' is_type extent env mp me =
 let unsafe_print_module extent env mp with_body mb =
   let name = print_modpath [] mp in
   let pr_equals = spc () ++ str ":= " in
-  let body = match with_body, mb.mod_expr with
+  let body = match with_body, Declareops.mod_expr mb with
     | false, _
     | true, Abstract -> mt()
     | _, Algebraic me ->
@@ -407,7 +407,7 @@ let unsafe_print_module extent env mp with_body mb =
       pr_equals ++ print_signature' false extent env mp sign
     | _, FullStruct -> pr_equals ++ print_signature' false extent env mp mb.mod_type
   in
-  let modtype = match mb.mod_expr, mb.mod_type_alg with
+  let modtype = match Declareops.mod_expr mb, mb.mod_type_alg with
     | FullStruct, _ -> mt ()
     | _, Some ty ->
       let ty = Modops.annotate_module_expression ty mb.mod_type in

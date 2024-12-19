@@ -1245,7 +1245,7 @@ let build_module_body params restype senv =
   in
   let senv = set_vm_library vmtab senv in
   let mb' = functorize_module params mb in
-  { mb' with mod_retroknowledge = ModBodyRK senv.local_retroknowledge }
+  { mb' with mod_retroknowledge = ModBodyVal senv.local_retroknowledge }
 
 (** Returning back to the old pre-interactive-module environment,
     with one extra component and some updated fields
@@ -1294,11 +1294,11 @@ let end_module l restype senv =
 
 let build_mtb mp sign delta =
   { mod_mp = mp;
-    mod_expr = ();
+    mod_expr = ModTypeNul;
     mod_type = sign;
     mod_type_alg = None;
     mod_delta = delta;
-    mod_retroknowledge = ModTypeRK }
+    mod_retroknowledge = ModTypeNul }
 
 let end_modtype l senv =
   let mp = senv.modpath in
@@ -1407,11 +1407,11 @@ let export ~output_native_objects senv dir =
   let str = NoFunctor (List.rev senv.revstruct) in
   let mb =
     { mod_mp = mp;
-      mod_expr = FullStruct;
+      mod_expr = ModBodyVal FullStruct;
       mod_type = str;
       mod_type_alg = None;
       mod_delta = senv.modresolver;
-      mod_retroknowledge = ModBodyRK senv.local_retroknowledge
+      mod_retroknowledge = ModBodyVal senv.local_retroknowledge
     }
   in
   let ast, symbols =

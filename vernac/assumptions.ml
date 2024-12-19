@@ -90,7 +90,7 @@ and fields_of_mp mp =
   in
   Modops.subst_structure subs fields
 
-and fields_of_mb subs mb args = match mb.mod_expr with
+and fields_of_mb subs mb args = match Declareops.mod_expr mb with
   | Algebraic expr -> fields_of_expression subs mb.mod_mp args mb.mod_type expr
   | Struct sign ->
     let sign = Modops.annotate_struct_body sign mb.mod_type in

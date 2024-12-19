@@ -77,6 +77,10 @@ val inductive_make_projection : Names.inductive -> mutual_inductive_body -> proj
 val inductive_make_projections : Names.inductive -> mutual_inductive_body ->
   (Names.Projection.Repr.t * Sorts.relevance) array option
 
+(** {6 Modules} *)
+
+val mod_expr : module_body -> module_implementation
+
 (** {6 Kernel flags} *)
 
 (** A default, safe set of flags for kernel type-checking *)
@@ -91,5 +95,6 @@ val safe_flags : Conv_oracle.oracle -> typing_flags
 val hcons_const_body : ?hbody:(Constr.t -> Constr.t) ->
   ('a, 'b) pconstant_body -> ('a, 'b) pconstant_body
 val hcons_mind : mutual_inductive_body -> mutual_inductive_body
+val hcons_generic_module_body : 'a generic_module_body -> 'a generic_module_body
 val hcons_module_body : module_body -> module_body
 val hcons_module_type : module_type_body -> module_type_body
