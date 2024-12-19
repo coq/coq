@@ -2,3 +2,8 @@
 (coq.theory
  (name Stdlib)
  (package coq-stdlib))
+
+(rule
+ (targets All.v)
+ (deps (source_tree .))
+ (action (with-stdout-to %{targets} (run ../tools/gen_all.exe))))
