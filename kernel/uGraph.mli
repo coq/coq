@@ -16,12 +16,16 @@ type t
 
 val set_type_in_type : bool -> t -> t
 
+val set_cumulative_prop : bool -> t -> t
+
 (** When [type_in_type], functions adding constraints do not fail and
    may instead ignore inconsistent constraints.
 
     Checking functions such as [check_leq] always return [true].
 *)
 val type_in_type : t -> bool
+
+val cumulative_prop : t -> bool
 
 type 'a check_function = t -> 'a -> 'a -> bool
 

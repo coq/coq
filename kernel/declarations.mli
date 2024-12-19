@@ -95,6 +95,8 @@ type typing_flags = {
   sprop_allowed: bool;
   (** If [false], error when encountering [SProp]. *)
 
+  cumulative_prop: bool;
+
   allow_uip: bool;
   (** Allow definitional UIP (breaks termination) *)
 
