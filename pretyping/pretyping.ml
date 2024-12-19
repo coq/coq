@@ -917,6 +917,129 @@ struct
     let sigma, j = pretype_sort ?loc ~flags sigma s in
     discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma j tycon
 
+  (* NB: the types and rel_contexts may mention previous args
+     eg "sigT : forall A, (A -> Type) -> Type" is
+     "TemplateArg ([], u, TemplateArg ([_:Rel 1], v, IndType (_, [], max(u,v))))"
+     note the "Rel 1"
+  *)
+  type template_arity =
+    | NonTemplateArg of Name.t binder_annot * types * template_arity
+    | TemplateArg of Name.t binder_annot * rel_context * Univ.Level.t * template_arity
+    | DefParam of Name.t binder_annot * constr * types * template_arity
+    | CtorType of Declarations.template_universes * types
+    | IndType of Declarations.template_universes * rel_context * Sorts.t
+
+  let get_template_arity env ind ctoropt =
+    let mib, mip = Inductive.lookup_mind_specif env ind in
+    let template = match mib.mind_template with
+      | None -> assert false
+      | Some t -> t
+    in
+    let type_after_params = match ctoropt with
+      | None -> begin match mip.mind_arity with
+          | RegularArity _ -> assert false
+          | TemplateArity { template_level = s } ->
+            let ctx = List.rev @@ List.skipn (List.length mib.mind_params_ctxt) @@
+              List.rev mip.mind_arity_ctxt
+            in
+            IndType (template, EConstr.of_rel_context ctx, s)
+        end
+      | Some ctor ->
+        let ctyp = mip.mind_user_lc.(ctor-1) in
+        let _, ctyp = Term.decompose_prod_n_decls (List.length mib.mind_params_ctxt) ctyp in
+        CtorType (template, EConstr.of_constr ctyp)
+    in
+    let rec aux is_template (params:Constr.rel_context) = match is_template, params with
+      | _, LocalDef (na,v,t) :: params ->
+        let codom = aux is_template params in
+        DefParam (EConstr.of_binder_annot na, EConstr.of_constr v, EConstr.of_constr t, codom)
+      | [], [] -> type_after_params
+      | _ :: _, [] | [], LocalAssum _ :: _ -> assert false
+      | false :: is_template, LocalAssum (na,t) :: params ->
+        let codom = aux is_template params in
+        NonTemplateArg (EConstr.of_binder_annot na, EConstr.of_constr t, codom)
+      | true :: is_template, LocalAssum (na,t) :: params ->
+        let ctx, c = Term.decompose_prod_decls t in
+        let u = match Constr.kind c with
+          | Sort (Type u) -> begin match Univ.Universe.level u with
+              | Some u -> u
+              | None -> assert false
+            end
+          | _ -> assert false
+        in
+        let codom = aux is_template params in
+        TemplateArg (EConstr.of_binder_annot na, EConstr.of_rel_context ctx, u, codom)
+    in
+    aux template.template_param_arguments (List.rev mib.mind_params_ctxt)
+
+  let enforce_template_csts sigma bound csts =
+    (* maybe could be smarter when something becomes Prop *)
+    let bound = Univ.Level.Map.map (fun u -> TemplateUniv (Univ.Universe.make u)) bound in
+    let csts = Inductive.instantiate_template_constraints bound csts in
+    Evd.add_constraints sigma csts
+
+  let template_sort boundus (s:Sorts.t) =
+    match s with
+    | SProp | Prop | Set -> ESorts.make s
+    | Type u ->
+      let u = Univ.subst_univs_level_universe boundus u in
+      ESorts.make (Sorts.sort_of_univ u)
+    | QSort (q,u) -> assert false
+
+  let bind_template_univ ~domu u bound =
+    Univ.Level.Map.update domu (function
+        | None -> Some u
+        | Some u' -> CErrors.anomaly Pp.(str "non linear template univ"))
+      bound
+
+  let rec finish_template sigma boundus = function
+    | CtorType (csts, typ) ->
+      let sigma = enforce_template_csts sigma boundus csts in
+      sigma, typ
+    | IndType (csts, ctx, s) ->
+      let sigma = enforce_template_csts sigma boundus csts in
+      let s = template_sort boundus s in
+      sigma, mkArity (ctx, s)
+    | DefParam (na, v, t, codom) ->
+      let sigma, codom = finish_template sigma boundus codom in
+      sigma, mkLetIn (na,v,t,codom)
+    | NonTemplateArg (na,dom,codom) ->
+      let sigma, codom = finish_template sigma boundus codom in
+      sigma, mkProd (na,dom,codom)
+    | TemplateArg (na,ctx,domu,codom) ->
+      (* partially applied template: use the global univ level *)
+      let boundus = bind_template_univ ~domu domu boundus in
+      let sigma, codom = finish_template sigma boundus codom in
+      let s = ESorts.make @@ Sorts.sort_of_univ @@ Univ.Universe.make domu in
+      sigma, mkProd (na,mkArity (ctx,s),codom)
+
+  let rec apply_template pretype_arg arg_state sigma body subst boundus todoargs typ =
+    match todoargs, typ with
+    | [], _
+    | _, (CtorType _ | IndType _) ->
+      let sigma, typ = finish_template sigma boundus typ in
+      sigma, body, subst, typ, arg_state, todoargs
+    | _, DefParam (_, v, _, codom) ->
+      (* eager subst may be inefficient but template inductives with
+         letin params are hopefully rare enough that it doesn't
+         matter *)
+      let v = Vars.esubst Vars.lift_substituend subst v in
+      let subst = Esubst.subs_cons (Vars.make_substituend v) subst in
+      apply_template pretype_arg arg_state sigma body subst boundus todoargs codom
+    | arg :: todoargs, NonTemplateArg (na, dom, codom) ->
+      let dom = Vars.esubst Vars.lift_substituend subst dom in
+      let sigma, arg_state, body, arg = pretype_arg sigma arg_state body arg na dom in
+      let subst = Esubst.subs_cons (Vars.make_substituend arg) subst in
+      apply_template pretype_arg arg_state sigma body subst boundus todoargs codom
+    | arg :: todoargs, TemplateArg (na, ctx, domu, codom) ->
+      let sigma, u = Evd.new_univ_level_variable UState.univ_flexible_alg sigma in
+      let s = ESorts.make @@ Sorts.sort_of_univ @@ Univ.Universe.make u in
+      let dom = Vars.esubst Vars.lift_substituend subst (mkArity (ctx, s)) in
+      let sigma, arg_state, body, arg = pretype_arg sigma arg_state body arg na dom in
+      let boundus = bind_template_univ ~domu u boundus in
+      let subst = Esubst.subs_cons (Vars.make_substituend arg) subst in
+      apply_template pretype_arg arg_state sigma body subst boundus todoargs codom
+
   let pretype_app self (f, args) =
     fun ?loc ~flags tycon env sigma ->
     let pretype tycon env sigma c = eval_pretyper self ~flags tycon env sigma c in
@@ -970,14 +1093,44 @@ struct
         else sigma, resj
       | _ -> sigma, resj
     in
-    let rec apply_rec env sigma n body (subs, typ) val_before_bidi candargs template bidiargs = function
+    let pretype_arg env sigma (n, val_before_bidi, bidiargs, candargs) trace body arg na tycon =
+      (* trace is the coercion trace from coercing the body to funclass *)
+      let bidi = n >= nargs_before_bidi in
+      let sigma, c, bidiargs =
+        if bidi then
+          (* We want to get some typing information from the context
+             before typing the argument, so we replace it by an
+             existential variable *)
+          let sigma, c_hole = new_evar env sigma ~src:(loc,Evar_kinds.InternalHole) tycon in
+          sigma, c_hole, (c_hole, tycon, arg, trace) :: bidiargs
+        else
+          let sigma, j = pretype (Some tycon) env sigma arg in
+          sigma, j_val j, bidiargs
+      in
+      let sigma, candargs, c =
+        match candargs with
+        | [] -> sigma, [], c
+        | arg :: args ->
+          begin match Evarconv.unify_delay !!env sigma c arg with
+          | exception Evarconv.UnableToUnify (sigma,e) ->
+            raise (PretypeError (!!env,sigma,CannotUnify (c, arg, Some e)))
+          | sigma ->
+            sigma, args, nf_evar sigma c
+          end
+      in
+      let sigma, c = adjust_evar_source sigma na c in
+      let body = Coercion.push_arg body c in
+      let val_before_bidi = if bidi then val_before_bidi else body in
+      sigma, (n+1,val_before_bidi,bidiargs,candargs), body, c
+    in
+    let rec apply_rec env sigma arg_state body (subs, typ) = function
       | [] ->
         let typ = Vars.esubst Vars.lift_substituend subs typ in
         let body = Coercion.force_app_body body in
         let resj = { uj_val = body; uj_type = typ } in
-        sigma, resj, val_before_bidi, template, List.rev bidiargs
+        let _,val_before_bidi, bidiargs,_ = arg_state in
+        sigma, resj, val_before_bidi, List.rev bidiargs
       | c::rest ->
-        let bidi = n >= nargs_before_bidi in
         let argloc = loc_of_glob_constr c in
         let sigma, body, na, c1, subs, c2, trace = match EConstr.kind sigma typ with
         | Prod (na, c1, c2) ->
@@ -998,91 +1151,38 @@ struct
           in
           sigma, body, na, c1, Esubst.subs_id 0, c2, trace
         in
-        let sigma, template, c1 = match template with
-          | None | Some ([],_) -> sigma, template, c1
-          | Some (None :: t, bound) -> sigma, Some (t,bound), c1
-          | Some (Some u0 :: t, bound) ->
-            (* template arg: type guaranteed to be syntactically an arity
-               we replace the output universe with a fresh one *)
-            let sigma, u = Evd.new_univ_level_variable UState.univ_flexible_alg sigma in
-            let s = ESorts.make @@ Sorts.sort_of_univ @@ Univ.Universe.make u in
-            let ctx, _ = destArity sigma c1 in
-            let bound =
-              let u = Univ.Universe.make u in
-              Univ.Level.Map.update u0 (function
-                  | None -> Some u
-                  | Some u' -> CErrors.anomaly Pp.(str "non linear template univ"))
-                bound
-            in
-            sigma, Some (t,bound), mkArity (ctx,s)
+        let sigma, arg_state, body, arg =
+          pretype_arg env sigma arg_state trace body c na.binder_name c1
         in
-        let (sigma, hj), bidiargs =
-          if bidi then
-            (* We want to get some typing information from the context before
-               typing the argument, so we replace it by an existential
-               variable *)
-            let sigma, c_hole = new_evar env sigma ~src:(loc,Evar_kinds.InternalHole) c1 in
-            (sigma, make_judge c_hole c1), (c_hole, c1, c, trace) :: bidiargs
-          else
-            let tycon = Some c1 in
-            pretype tycon env sigma c, bidiargs
-        in
-        let sigma, candargs, ujval =
-          match candargs with
-          | [] -> sigma, [], j_val hj
-          | arg :: args ->
-            begin match Evarconv.unify_delay !!env sigma (j_val hj) arg with
-              | exception Evarconv.UnableToUnify (sigma,e) ->
-                raise (PretypeError (!!env,sigma,CannotUnify (j_val hj, arg, Some e)))
-              | sigma ->
-                sigma, args, nf_evar sigma (j_val hj)
-            end
-        in
-        let sigma, ujval = adjust_evar_source sigma na.binder_name ujval in
-        let subs = Esubst.subs_cons (Vars.make_substituend ujval) subs in
-        let body = Coercion.push_arg body ujval in
-        let val_before_bidi = if bidi then val_before_bidi else body in
-        apply_rec env sigma (n+1) body (subs, c2) val_before_bidi candargs template bidiargs rest
+        let subs = Esubst.subs_cons (Vars.make_substituend arg) subs in
+        apply_rec env sigma arg_state body (subs, c2) rest
     in
-    let typ = (Esubst.subs_id 0, fj.uj_type) in
     let body = (Coercion.start_app_body sigma fj.uj_val) in
-    let template_params, template = match EConstr.kind sigma fj.uj_val with
-      | Ind (ind,u) | Construct ((ind,_),u)
+    let template_arity = match EConstr.kind sigma fj.uj_val with
+      | Ind (ind,u) | Construct ((ind,_),u) as k
         when EInstance.is_empty u && Environ.template_polymorphic_ind ind !!env ->
-        let mib = Environ.lookup_mind (fst ind) !!env in
-        let template = match mib.mind_template with
-        | None -> None
-        | Some t ->
-          let map = function Rel.Declaration.LocalAssum (_, t) -> Some t | LocalDef _ -> None in
-          let hyps = List.rev @@ List.map_filter map mib.Declarations.mind_params_ctxt in
-          let get_arity template c =
-            if template then
-              let decls, c = Term.decompose_prod_decls c in
-              match Constr.kind c with
-              | Sort (Sorts.Type u) ->
-                begin match Univ.Universe.level u with
-                | Some l -> Some l
-                | None -> assert false
-                end
-              | _ -> assert false
-            else None
-          in
-          let params = List.map2 get_arity t.Declarations.template_param_arguments hyps in
-          Some (params, Univ.Level.Map.empty)
+        let ctoropt = match k with
+          | Ind _ -> None
+          | Construct ((_,ctor),_) -> Some ctor
+          | _ -> assert false
         in
-        template, mib.mind_template
-      | _ -> None, None
+        Some (get_template_arity !!env ind ctoropt)
+      | _ -> None
     in
-    let sigma, resj, val_before_bidi, template_params, bidiargs =
-      apply_rec env sigma 0 body typ body candargs template_params [] args
+    let arg_state = (0,body,[],candargs) in
+    let subst =  Esubst.subs_id 0 in
+    let typ = fj.uj_type in
+    let sigma, body, subst, typ, arg_state, args =
+      match template_arity with
+      | None -> sigma, body, subst, typ, arg_state, args
+      | Some typ ->
+        let pretype_arg sigma arg_state body arg na dom =
+          pretype_arg env sigma arg_state Coercion.empty_coercion_trace body arg na.binder_name dom
+        in
+        apply_template pretype_arg arg_state sigma body subst Univ.Level.Map.empty args typ
     in
-    let sigma = match template_params, template with
-      | None, None -> sigma
-      | Some _, None | None, Some _ -> assert false
-      | Some (_,bound), Some t ->
-        let bound = Univ.Level.Map.map (fun u -> TemplateUniv u) bound in
-        let csts = Inductive.instantiate_template_constraints bound t in
-        Evd.add_constraints sigma csts
+    let sigma, resj, val_before_bidi, bidiargs =
+      apply_rec env sigma arg_state body (subst,typ) args
     in
     let sigma, resj = refresh_template env sigma resj in
     let sigma, resj, otrace = inh_conv_coerce_to_tycon ?loc ~flags env sigma resj tycon in
