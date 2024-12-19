@@ -202,3 +202,29 @@ Section HintTransparent.
   Qed.
 
 End HintTransparent.
+
+Module RepeatCreat.
+  Axiom T : Type.
+  Axiom v : T.
+
+  Set Warnings "+mismatched-hint-db".
+
+  (* if this fails it means the db already exists as a discriminated db *)
+  Succeed Create HintDb repeated.
+
+  Create HintDb repeated discriminated.
+
+  Fail Definition foo : T := ltac:(eauto with foo).
+
+  Hint Resolve v : foo.
+  Definition foo : T := ltac:(eauto with foo).
+
+  Create HintDb repeated discriminated.
+  (* hint is still there *)
+  Definition foo' : T := ltac:(eauto with foo).
+
+  Fail Create HintDb repeated.
+
+  (* implicit hint db *)
+  Fail Create HintDb foo discriminated.
+End RepeatCreat.
