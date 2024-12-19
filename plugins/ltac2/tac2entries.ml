@@ -952,10 +952,7 @@ let perform_eval ~pstate e =
       Goal_select.get_default_goal_selector (),
       Declare.Proof.get pstate
   in
-  let nosuchgoal =
-    let info = Exninfo.reify () in
-    Proofview.tclZERO ~info (Proof.SuggestNoSuchGoals (1,proof))
-  in
+  let nosuchgoal = v in
   let v = Goal_select.tclSELECT ~nosuchgoal selector v in
   let (proof, _, ans) = Proof.run_tactic (Global.env ()) v proof in
   let { Proof.sigma } = Proof.data proof in
