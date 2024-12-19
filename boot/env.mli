@@ -27,17 +27,17 @@ multiple accesses to the environment, do initialize it once and keep a ref
 to it. We don't forbid yet double initialization, (second time is a noop)
 but we may do so in the future. Rules for "coqlib" are:
 
-- the [COQLIB] env variable will be used if set
+- the [ROCQLIB] env variable will be used if set
 - if not, the existence of [theories/Init/Prelude.vo] will be checked,
   in the following order:
   + [coqlibsuffix] given in configure
   + [coqlib] given in configure
 - if none of the above succeeds, the initialization will fail
 
-- The [COQCORELIB] env variable is also used if set, if not, the location
-  of the rocq-runtime files will be assumed to be [COQLIB/../rocq-runtime], except
-  if [COQLIB/plugins] exists [as in some developers layouts], in which case
-  we will set [COQCORELIB:=COQLIB].
+- The [ROCQRUNTIMELIB] env variable is also used if set, if not, the location
+  of the rocq-runtime files will be assumed to be [ROCQLIB/../rocq-runtime], except
+  if [ROCQLIB/plugins] exists [as in some developers layouts], in which case
+  we will set [ROCQRUNTIMELIB:=ROCQLIB].
 
 Note that [set_coqlib] is used by some commands to process the [-coqlib] option,
 as of now this sets both [coqlib] and [coqcorelib]; this part of the initialization
