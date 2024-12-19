@@ -34,11 +34,6 @@ while [[ $# -gt 0 ]]; do
             exe=_build/default/topbin/coqtop_byte_bin.bc
             break
             ;;
-        coqdep)
-            shift
-            exe=_build/default/tools/coqdep/coqdep.bc
-            break
-            ;;
         coqnative)
             shift
             exe=_build/default/topbin/rocqnative.bc
