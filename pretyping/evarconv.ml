@@ -973,7 +973,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
       let x =
         let check_key default appr =
           try
-            let s = check_conv_record env sigma p1 appr2 in
+            let s = check_conv_record env sigma p1 appr in
             if kill then quick_fail sigma else conv_record flags env s
           with Not_found -> default in
         if nokey then check_key (UnifFailure (sigma, NoCanonicalStructure)) appr2
