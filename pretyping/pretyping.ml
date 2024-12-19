@@ -1086,7 +1086,7 @@ struct
     in
     let sigma, resj = refresh_template env sigma resj in
     let sigma, resj, otrace = inh_conv_coerce_to_tycon ?loc ~flags env sigma resj tycon in
-    let refine_arg n (sigma,t) (newarg,ty,origarg,trace) =
+    let refine_arg (sigma,t) (newarg,ty,origarg,trace) =
       (* Refine an argument (originally `origarg`) represented by an evar
          (`newarg`) to use typing information from the context *)
       (* Type the argument using the expected type *)
@@ -1102,7 +1102,7 @@ struct
     (* We now refine any arguments whose typing was delayed for
        bidirectionality *)
     let t = val_before_bidi in
-    let sigma, t = List.fold_left_i refine_arg nargs_before_bidi (sigma,t) bidiargs in
+    let sigma, t = List.fold_left refine_arg (sigma,t) bidiargs in
     let t = Coercion.force_app_body t in
     (* If we did not get a coercion trace (e.g. with `Program` coercions, we
        replaced user-provided arguments with inferred ones. Otherwise, we apply
