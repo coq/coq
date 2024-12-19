@@ -106,7 +106,8 @@ CI_TARGETS= \
     ci-verdi_raft \
     ci-vscoq \
     ci-vst \
-    ci-waterproof
+    ci-wasm \
+    ci-waterproof 
 
 CI_VIRTUAL_TARGETS= \
     ci-elpi_hb \
