@@ -16,7 +16,6 @@ open Names
 open Constr
 open EConstr
 open Vars
-open CClosure
 open Environ
 open Glob_term
 open Locus
@@ -48,34 +47,35 @@ type rprotection = {
   r_arguments : (GlobRef.t * (int -> protect_flag) reduction) list;
 }
 
-let global_of_constr_nofail sigma c =
-  try fst @@ EConstr.destRef sigma c
-  with DestKO -> GlobRef.VarRef (Id.of_string "dummy")
-
-let mk_atom c = CClosure.mk_atom (EConstr.Unsafe.to_constr c)
-
-let interp_map env l t =
+let interp_map env sigma l c = match EConstr.destRef sigma c with
+| exception DestKO-> None
+| (t, _) ->
   let eq g1 g2 = QGlobRef.equal env g1 g2 in
   match List.assoc_f eq t l.r_arguments with
   | exception Not_found -> None
   | Full -> Some Full
   | Arg f -> Some (Arg f)
 
-let rec mk_clos_but env sigma f_map n t =
-  let (f, args) = EConstr.decompose_app sigma t in
-  match interp_map env f_map (global_of_constr_nofail sigma f) with
-  | Some Full -> tag_arg env sigma f_map n Eval t
-  | Some (Arg tag) ->
-      let map i t = tag_arg env sigma f_map n (tag i) t in
-      let f = tag_arg env sigma f_map n Eval f in
-      if Array.is_empty args then f
-      else mk_red (FApp (f, Array.mapi map args))
-  | None -> mk_atom t
+let fresh_rel (n, data) c =
+  let n = n + 1 in
+  (n, c :: data), mkRel n
 
-and tag_arg env sigma f_map n tag c = match tag with
-| Eval -> mk_clos (Esubst.subs_id n, UVars.Instance.empty) (EConstr.Unsafe.to_constr c)
-| Prot -> mk_atom c
-| Rec -> mk_clos_but env sigma f_map n c
+let rec mk_clos_but env sigma f_map accu t =
+  let (f, args) = EConstr.decompose_app sigma t in
+  match interp_map env sigma f_map f with
+  | Some Full -> (accu, t)
+  | Some (Arg tag) ->
+    let fold i accu t = tag_arg env sigma f_map accu (tag i) t in
+    if Array.is_empty args then (accu, t)
+    else
+      let (accu, args) = Array.fold_left_map_i fold accu args in
+      accu, mkApp (f, args)
+  | None -> fresh_rel accu t
+
+and tag_arg env sigma f_map accu tag c = match tag with
+| Eval -> accu, c
+| Prot -> fresh_rel accu c
+| Rec -> mk_clos_but env sigma f_map accu c
 
 let protect_maps : protection String.Map.t ref = ref String.Map.empty
 let add_map s m = protect_maps := String.Map.add s m !protect_maps
@@ -99,13 +99,17 @@ let lookup_map map =
   { r_with_eq; r_arguments }
 
 let protect_red map env sigma c =
-  let tab = create_tab () in
-  let infos = Evarutil.create_clos_infos env sigma RedFlags.all in
   let map = lookup_map map in
   let rec eval n c = match EConstr.kind sigma c with
   | Prod (na, t, u) -> EConstr.mkProd (na, eval n t, eval (n + 1) u)
   | _ ->
-    let norm c = EConstr.of_constr @@ norm_val infos tab (mk_clos_but env sigma map n c) in
+    let rels = List.init n (fun i -> mkRel (n - i)) in
+    let norm c =
+      let (_, subterms), c = mk_clos_but env sigma map (n, rels) c in
+      let c = Reductionops.clos_norm_flags RedFlags.all env sigma c in
+      let subst = List.rev subterms in
+      EConstr.Vars.substl subst c
+    in
     if map.r_with_eq then
       let (rel, a1, a2) = dest_rel sigma c in
       mkApp (rel, [|norm a1; norm a2|])

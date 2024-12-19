@@ -108,12 +108,6 @@ val inject : constr -> fconstr
 val mk_clos      : usubs -> constr -> fconstr
 val mk_clos_vect : usubs -> constr array -> fconstr array
 
-(** mk_atom: prevents a term from being evaluated *)
-val mk_atom : constr -> fconstr
-
-(** mk_red: makes a reducible term (used in ring) *)
-val mk_red : fterm -> fconstr
-
 val zip : fconstr -> stack -> fconstr
 
 val fterm_of : fconstr -> fterm
