@@ -48,6 +48,7 @@ module QState : sig
   val collapse : t -> t
   val pr : (QVar.t -> Pp.t) -> t -> Pp.t
   val of_set : QVar.Set.t -> t
+  val of_global : QVar.Set.t -> t
 end =
 struct
 
@@ -55,6 +56,8 @@ module QSet = QVar.Set
 module QMap = QVar.Map
 
 type t = {
+  global : QSet.t ;
+  (** Global variables, may not be set to another *)
   named : QSet.t;
   (** Named variables, may not be set to another *)
   qmap : Quality.t option QMap.t;
@@ -66,15 +69,13 @@ type t = {
 
 type elt = QVar.t
 
-let empty = { named = QSet.empty; qmap = QMap.empty; above = QSet.empty }
+let empty = { global = QSet.empty; named = QSet.empty; qmap = QMap.empty; above = QSet.empty }
 
 let rec repr q m = match QMap.find q m.qmap with
 | None -> QVar q
 | Some (QVar q) -> repr q m
 | Some (QConstant _ as q) -> q
-| exception Not_found ->
-(*   let () = assert !Flags.in_debugger in *) (* FIXME *)
-  QVar q
+| exception Not_found -> QVar q
 
 let is_above_prop q m = QSet.mem q m.above
 
@@ -86,24 +87,24 @@ let set q qv m =
   | q, QVar qv ->
     if QVar.equal q qv then Some m
     else
-    if QSet.mem q m.named then None
+    if QSet.mem q m.named || QSet.mem q m.global then None
     else
       let above =
         if QSet.mem q m.above then QSet.add qv (QSet.remove q m.above)
         else m.above
       in
-      Some { named = m.named; qmap = QMap.add q (Some (QVar qv)) m.qmap; above }
+      Some { m with qmap = QMap.add q (Some (QVar qv)) m.qmap; above }
   | q, (QConstant qc as qv) ->
     if qc == QSProp && QSet.mem q m.above then None
-    else if QSet.mem q m.named then None
+    else if QSet.mem q m.named || QSet.mem q m.global then None
     else
-      Some { named = m.named; qmap = QMap.add q (Some qv) m.qmap; above = QSet.remove q m.above }
+      Some { m with qmap = QMap.add q (Some qv) m.qmap; above = QSet.remove q m.above }
 
 let set_above_prop q m =
   let q = repr q m in
   let q = match q with QVar q -> q | QConstant _ -> assert false in
-  if QSet.mem q m.named then None
-  else Some { named = m.named; qmap = m.qmap; above = QSet.add q m.above }
+  if QSet.mem q m.named || QSet.mem q m.global then None
+  else Some { m with above = QSet.add q m.above }
 
 let unify_quality ~fail c q1 q2 local = match q1, q2 with
 | QConstant QType, QConstant QType
@@ -157,7 +158,7 @@ let union ~fail s1 s2 =
   | exception Not_found -> false
   in
   let above = QSet.filter filter @@ QSet.union s1.above s2.above in
-  let s = { named = QSet.union s1.named s2.named; qmap; above } in
+  let s = { global = QSet.union s1.global s2.global ; named = QSet.union s1.named s2.named; qmap; above } in
   List.fold_left (fun s (q1,q2) ->
       let q1 = nf_quality s q1 and q2 = nf_quality s q2 in
       unify_quality ~fail:(fun () -> fail s q1 q2) CONV q1 q2 s)
@@ -166,17 +167,21 @@ let union ~fail s1 s2 =
 
 let add ~check_fresh ~named q m =
   if check_fresh then assert (not (QMap.mem q m.qmap));
-  { named = if named then QSet.add q m.named else m.named;
-    qmap = QMap.add q None m.qmap;
-    above = m.above }
+  { m with
+    named = if named then QSet.add q m.named else m.named;
+    qmap = QMap.add q None m.qmap; }
 
 let of_set qs =
-  { named = QSet.empty; qmap = QMap.bind (fun _ -> None) qs; above = QSet.empty }
+  { global = QSet.empty ; named = QSet.empty; qmap = QMap.bind (fun _ -> None) qs; above = QSet.empty }
+
+let of_global qs =
+  { empty with
+    global = qs }
 
 (* XXX what about [above]? *)
 let undefined m =
-  let m = QMap.filter (fun _ v -> Option.is_empty v) m.qmap in
-  QMap.domain m
+  let mq = QMap.filter (fun _ v -> Option.is_empty v) m.qmap in
+  QMap.domain mq
 
 let collapse_above_prop ~to_prop m =
   let map q v = match v with
@@ -186,21 +191,21 @@ let collapse_above_prop ~to_prop m =
       else Some (QConstant QType)
   | Some _ -> v
   in
-  { named = m.named; qmap = QMap.mapi map m.qmap; above = QSet.empty }
+  { m with qmap = QMap.mapi map m.qmap; above = QSet.empty }
 
 let collapse m =
   let map q v = match v with
-  | None -> if QSet.mem q m.named then None else Some (QConstant QType)
+  | None -> if QSet.mem q m.named || QSet.mem q m.global then None else Some (QConstant QType)
   | Some _ -> v
   in
-  { named = m.named; qmap = QMap.mapi map m.qmap; above = QSet.empty }
+  { m with qmap = QMap.mapi map m.qmap; above = QSet.empty }
 
-let pr prqvar { qmap; above; named } =
+let pr prqvar { qmap; above; named ; global } =
   let open Pp in
   let prbody u = function
   | None ->
     if QSet.mem u above then str " >= Prop"
-    else if QSet.mem u named then
+    else if QSet.mem u named || QSet.mem u global then
       str " (internal name " ++ QVar.raw_pr u ++ str ")"
     else mt ()
   | Some q ->
@@ -238,10 +243,12 @@ let empty =
     initial_universes = UGraph.initial_universes;
     minim_extra = UnivMinim.empty_extra; }
 
-let make ~lbound univs =
+let make ~lbound ~qualities univs =
   { empty with
     universes = univs;
-    initial_universes = univs }
+    initial_universes = univs ;
+    sort_variables = QState.of_global qualities
+  }
 
 let is_empty uctx =
   ContextSet.is_empty uctx.local &&
@@ -1114,7 +1121,7 @@ let add_universe ?loc name strict uctx u =
   { uctx with names; local; initial_universes; universes }
 
 let new_sort_variable ?loc ?name uctx =
-  let q = UnivGen.new_sort_global () in
+  let q = UnivGen.fresh_sort_quality () in
   (* don't need to check_fresh as it's guaranteed new *)
   let sort_variables = QState.add ~check_fresh:false ~named:(Option.has_some name)
       q uctx.sort_variables
@@ -1139,15 +1146,15 @@ let new_univ_variable ?loc rigid name uctx =
 
 let add_forgotten_univ uctx u = add_universe None true uctx u
 
-let make_with_initial_binders ~lbound univs binders =
-  let uctx = make ~lbound univs in
+let make_with_initial_binders ~lbound ~qualities univs binders =
+  let uctx = make ~lbound ~qualities univs in
   List.fold_left
     (fun uctx { CAst.loc; v = id } ->
        fst (new_univ_variable ?loc univ_rigid (Some id) uctx))
     uctx binders
 
 let from_env ?(binders=[]) env =
-  make_with_initial_binders ~lbound:UGraph.Bound.Set (Environ.universes env) binders
+  make_with_initial_binders ~lbound:UGraph.Bound.Set ~qualities:(Environ.qualities env) (Environ.universes env) binders
 
 let make_nonalgebraic_variable uctx u =
   { uctx with univ_variables = UnivFlex.make_nonalgebraic_variable uctx.univ_variables u }
