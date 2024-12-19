@@ -23,7 +23,7 @@
 (package
  (name coq-stdlib)
  (depends
-  coq-core ; dune coq mode needs the coq compat binaries
+  rocq-runtime
   (rocq-core (= :version)))
  (depopts coq-native)
  (synopsis "The Coq Proof Assistant -- Standard Library")
