@@ -833,11 +833,31 @@ let pr_error_unbound_universes quals univs names =
 
 exception UnboundUnivs of QVar.Set.t * Level.Set.t * univ_names
 
-(* Deliberately using no location as the location of the univs
-   doesn't correspond to the failing command. *)
-let error_unbound_universes qs us uctx = raise (UnboundUnivs (qs,us,uctx))
+(* XXX when we have multi location errors we won't have to pick an arbitrary error *)
+let error_unbound_universes qs us uctx =
+  let exception Found of Loc.t in
+  let loc =
+    try
+      Level.Set.iter (fun u ->
+          match Level.Map.find_opt u (snd (snd uctx)) with
+          | None -> ()
+          | Some info -> match info.uloc with
+            | None -> ()
+            | Some loc -> raise_notrace (Found loc))
+        us;
+      QVar.Set.iter (fun s ->
+          match QVar.Map.find_opt s (fst (snd uctx)) with
+          | None -> ()
+          | Some info -> match info.uloc with
+            | None -> ()
+            | Some loc -> raise_notrace (Found loc))
+        qs;
+      None
+    with Found loc -> Some loc
+  in
+  Loc.raise ?loc (UnboundUnivs (qs,us,uctx))
 
-let _ = CErrors.register_handler (function
+let () = CErrors.register_handler (function
     | UnboundUnivs (qs,us,uctx) -> Some (pr_error_unbound_universes qs us uctx)
     | _ -> None)
 
