@@ -1,17 +1,17 @@
 Debug: 1: looking for foo without backtracking
-Debug: 1.1: simple apply H on foo, 1 subgoal(s)
+Debug: 1.1: autoapply H with foo on foo, 1 subgoal(s)
 Debug: 1.1-1 : foo
 Debug: 1.1-1: looking for foo without backtracking
-Debug: 1.1-1.1: simple apply H on foo, 1 subgoal(s)
+Debug: 1.1-1.1: autoapply H with foo on foo, 1 subgoal(s)
 Debug: 1.1-1.1-1 : foo
 Debug: 1.1-1.1-1: looking for foo without backtracking
-Debug: 1.1-1.1-1.1: simple apply H on foo, 1 subgoal(s)
+Debug: 1.1-1.1-1.1: autoapply H with foo on foo, 1 subgoal(s)
 Debug: 1.1-1.1-1.1-1 : foo
 Debug: 1.1-1.1-1.1-1: looking for foo without backtracking
-Debug: 1.1-1.1-1.1-1.1: simple apply H on foo, 1 subgoal(s)
+Debug: 1.1-1.1-1.1-1.1: autoapply H with foo on foo, 1 subgoal(s)
 Debug: 1.1-1.1-1.1-1.1-1 : foo
 Debug: 1.1-1.1-1.1-1.1-1: looking for foo without backtracking
-Debug: 1.1-1.1-1.1-1.1-1.1: simple apply H on foo, 1 subgoal(s)
+Debug: 1.1-1.1-1.1-1.1-1.1: autoapply H with foo on foo, 1 subgoal(s)
 Debug: 1.1-1.1-1.1-1.1-1.1-1 : foo
 File "./output/TypeclassDebug.v", line 9, characters 5-33:
 The command has indeed failed with message:
