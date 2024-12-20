@@ -281,12 +281,8 @@ let install_dirs prefs arch =
   let prefix =
     match prefs.prefix with
     | None ->
-      begin
-        try Some (Sys.getenv "COQ_CONFIGURE_PREFIX")
-        with
-        | Not_found when prefs.interactive -> None
-        | Not_found -> Some Sys.(getcwd () ^ "/../install/default")
-      end
+      if prefs.interactive then None
+      else Some Sys.(getcwd () ^ "/../install/default")
     | p -> p
   in
   List.map (do_one_instdir ~prefix ~arch) (install prefs)
