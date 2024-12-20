@@ -99,16 +99,6 @@ val interp_mutual_inductive_constr
 (** Internal API, exported for Record                                   *)
 (************************************************************************)
 
-val compute_template_inductive
-  : user_template:bool option
-  -> ctx_params:Constr.rel_context
-  -> univ_entry:UState.universes_entry
-  -> Entries.one_inductive_entry
-  -> syntax_allows_template_poly
-  -> Entries.inductive_universes_entry * Univ.ContextSet.t
-(** [compute_template_inductive] computes whether an inductive can be template
-    polymorphic. *)
-
 val maybe_unify_params_in : Environ.env -> Evd.evar_map -> ninds:int -> nparams:int -> binders:int
   -> EConstr.t -> Evd.evar_map
 (** [nparams] is the number of parameters which aren't treated as

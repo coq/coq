@@ -616,8 +616,8 @@ val collapse_sort_variables : evar_map -> evar_map
 
 val fix_undefined_variables : evar_map -> evar_map
 
-(** Universe minimization *)
-val minimize_universes : ?lbound:UGraph.Bound.t -> evar_map -> evar_map
+(** Universe minimization (collapse_sort_variables is true by default) *)
+val minimize_universes : ?collapse_sort_variables:bool -> evar_map -> evar_map
 
 (** Lift [UState.update_sigma_univs] *)
 val update_sigma_univs : UGraph.t -> evar_map -> evar_map
