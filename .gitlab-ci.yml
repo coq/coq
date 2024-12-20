@@ -27,6 +27,7 @@ stages:
   - build-2
   - build-3+
   - deploy
+  - stats
 
 # We set "needs" to contain all transitive dependencies. We include the
 # transitive dependencies as otherwise we don't get their artifacts
@@ -40,7 +41,7 @@ variables:
   # echo $(md5sum dev/ci/docker/old_ubuntu_lts/Dockerfile | head -c 10)
   # echo $(md5sum dev/ci/docker/edge_ubuntu/Dockerfile | head -c 10)
   BASE_CACHEKEY: "old_ubuntu_lts-v8.20-V2024-01-08-011994e15c"
-  EDGE_CACHEKEY: "edge_ubuntu-v8.20-V2024-02-08-3ed9c93d7c"
+  EDGE_CACHEKEY: "edge_ubuntu-v8.20-V2024-12-20-c7411bcac7"
   BASE_IMAGE: "$CI_REGISTRY_IMAGE:$BASE_CACHEKEY"
   EDGE_IMAGE: "$CI_REGISTRY_IMAGE:$EDGE_CACHEKEY"
 
@@ -1052,3 +1053,13 @@ plugin:ci-tactician:
 
 plugin:ci-waterproof:
   extends: .ci-template-flambda
+
+pipeline-stats:
+  image: $EDGE_IMAGE
+  extends: .auto-use-tags
+  stage: stats
+  dependencies: []
+  before_script: []
+  script:
+  - dev/tools/pipeline-stats.py
+  when: always
