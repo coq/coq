@@ -143,6 +143,8 @@ let safe_meta_type metas n = match metas with
 | None -> assert false (* missing meta handler *)
 | Some f -> f n
 
+exception SingletonInductiveBecomesProp of inductive
+
 type output_q =
   | OutputType
   (* if the [QVar.t option] is None then it means Prop *)
@@ -160,7 +162,7 @@ let template_sort ~forbid_polyprop output_q boundus (s:Sorts.t) =
       | OutputVar (None, _) ->
         begin match forbid_polyprop with
         | None -> Sorts.prop
-        | Some indna -> raise (Inductive.SingletonInductiveBecomesProp indna)
+        | Some indna -> raise (SingletonInductiveBecomesProp indna)
         end
       | OutputVar (Some q, _) -> Sorts.qsort q u
     in
@@ -358,7 +360,7 @@ let retype ?metas ?(polyprop=true) sigma =
     | Ind (ind, _) ->
       let typ = TemplateArity.get_template_arity env ind ~ctoropt:None in
       let forbid_polyprop = if polyprop then None
-        else Some (MutInd.label (fst ind) |> Label.to_id)
+        else Some ind
       in
       let typ = type_of_template_knowing_parameters ~forbid_polyprop arity_sort_of typ (Array.to_list args) in
       rename_type typ (IndRef ind)
