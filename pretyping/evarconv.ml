@@ -971,26 +971,25 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
         | Construct _ -> true, true
         | _ -> not (has_undefined_evars_or_metas sigma c1), false in
       let x =
-        if nokey then
-          (try Some (check_conv_record env sigma p1 appr2)
-          with Not_found -> None)
+        let check_key default appr =
+          try
+            let s = check_conv_record env sigma p1 appr in
+            if kill then quick_fail sigma else conv_record flags env s
+          with Not_found -> default in
+        if nokey then check_key (UnifFailure (sigma, NoCanonicalStructure)) appr2
         else
           let x = Cs_keys_cache.fold (not l2r) (fun r appr ->
             match r with
-            | None ->
-              (try Some (check_conv_record env sigma p1 appr)
-              with | Not_found -> None)
-            | _ -> r) None keys in
+            | Success _ -> r
+            | _ -> check_key r appr) (UnifFailure (sigma, NoCanonicalStructure)) keys in
           (* If t is not a reference, it was not added to the keys cache, so we take care of it now. *)
           match x with
-          | None when not (EConstr.isRef sigma (fst appr2)) ->
-              (try Some (check_conv_record env sigma p1 appr2)
-              with Not_found -> None)
+          | UnifFailure _ when not (EConstr.isRef sigma (fst appr2)) -> check_key x appr2
           | _ -> x in
-      if kill then Inr (reduce && (match x with | None -> false | _ -> true)) else
+      if kill then Inr (reduce && (match x with | UnifFailure (_, NoCanonicalStructure) -> false | _ -> true)) else
       (* The projection constant will not change, so there is no point in keeping the keys anymore. *)
       let () = Cs_keys_cache.clear (not l2r) keys in
-      match x with | Some x -> Inl x | _ -> Inr false
+      match x with | Success _ -> Inl x | _ -> Inr false
     with _ -> Inr false in
   let () = debug_unification (fun () -> Pp.(v 0 (pr_state env evd appr1 ++ cut () ++ pr_state env evd appr2 ++ cut ()))) in
   match (flex_kind_of_term flags env evd term1 sk1,
@@ -1118,17 +1117,15 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
           | None ->
             UnifFailure (i,NotSameHead)
         and f2 i =
-          (try
-             if not flags.with_cs then raise Not_found
-             else conv_record flags env
-               (match get_cs env i true keys (lastUnfolded = Some true) appr1 appr2 with
-               | Inl x -> x
-               | Inr b ->
-                  let () = no_cs1 := b in
-                  (match get_cs env i false keys (lastUnfolded = Some false) appr1 appr2 with
-                  | Inl x -> x
-                  | Inr _ -> raise Not_found))
-           with Not_found -> UnifFailure (i,NoCanonicalStructure))
+           if not flags.with_cs then UnifFailure (i,NoCanonicalStructure)
+           else
+             (match get_cs env i true keys (lastUnfolded = Some true) appr1 appr2 with
+             | Inl x -> x
+             | Inr b ->
+                let () = no_cs1 := b in
+                (match get_cs env i false keys (lastUnfolded = Some false) appr1 appr2 with
+                | Inl x -> x
+                | Inr _ -> UnifFailure (i,NoCanonicalStructure)))
         and f3 i =
           (* heuristic: unfold second argument first, exception made
              if the first argument is a beta-redex (expand a constant
@@ -1191,13 +1188,11 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
 
     | MaybeFlexible vsk1', Rigid ->
         let f3 i =
-          (try
-             if not flags.with_cs then raise Not_found
-             else conv_record flags env (
-               match get_cs env i true keys false appr1 appr2 with
-               | Inl x -> x
-               | Inr _ -> raise Not_found)
-           with Not_found -> UnifFailure (i,NoCanonicalStructure))
+           if not flags.with_cs then UnifFailure (i,NoCanonicalStructure)
+           else
+             match get_cs env i true keys false appr1 appr2 with
+             | Inl x -> x
+             | Inr _ -> UnifFailure (i,NoCanonicalStructure)
         and f4 i =
           evar_eqappr_x flags env i pbty keys (Some false)
             (whd_betaiota_deltazeta_for_iota_state
@@ -1208,13 +1203,11 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
 
     | Rigid, MaybeFlexible vsk2' ->
         let f3 i =
-          (try
-             if not flags.with_cs then raise Not_found
-             else conv_record flags env (
-               match get_cs env i false keys false appr1 appr2 with
-               | Inl x -> x
-               | Inr _ -> raise Not_found)
-           with Not_found -> UnifFailure (i,NoCanonicalStructure))
+           if not flags.with_cs then UnifFailure (i,NoCanonicalStructure)
+           else
+             match get_cs env i false keys false appr1 appr2 with
+             | Inl x -> x
+             | Inr _ -> UnifFailure (i,NoCanonicalStructure)
         and f4 i =
           evar_eqappr_x flags env i pbty keys (Some true) appr1
             (whd_betaiota_deltazeta_for_iota_state
