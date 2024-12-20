@@ -24,14 +24,16 @@ doc: "https://coq.github.io/doc/"
 bug-reports: "https://github.com/coq/coq/issues"
 depends: [
   "dune" {>= "3.8"}
-  "coq-core"
+  "rocq-runtime"
   "rocq-core" {= version}
   "odoc" {with-doc}
 ]
 depopts: ["coq-native"]
+dev-repo: "git+https://github.com/coq/coq.git"
 build: [
   ["dune" "subst"] {dev}
   [
+    "dev/with-rocq-wrap.sh"
     "dune"
     "build"
     "-p"
@@ -43,4 +45,3 @@ build: [
     "@doc" {with-doc}
   ]
 ]
-dev-repo: "git+https://github.com/coq/coq.git"
