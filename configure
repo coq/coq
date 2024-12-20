@@ -11,4 +11,10 @@ then
     exit 1
 fi
 
-dune exec --root . -- $configure "$@"
+if [ "x$OPAM_PACKAGE_NAME" = 'x' ]; then
+  dune_release=''
+else
+  dune_release='--profile=release'
+fi
+
+dune exec $dune_release --root . -- $configure "$@"
