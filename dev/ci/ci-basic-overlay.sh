@@ -542,3 +542,8 @@ project autosubst_ocaml "https://github.com/uds-psl/autosubst-ocaml" "master"
 ########################################################################
 project trakt "https://github.com/ecranceMERCE/trakt" "coq-master"
 # Contact @ckeller, @louiseddp on github
+
+########################################################################
+# WasmCert-Coq
+########################################################################
+project coq_wasm "https://github.com/WasmCert/WasmCert-Coq" "master"
