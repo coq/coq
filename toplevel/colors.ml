@@ -24,7 +24,7 @@ let init_color opts =
   in
   let term_color =
     if has_color then begin
-      let colors = try Some (Sys.getenv "COQ_COLORS") with Not_found -> None in
+      let colors = CList.find_map (fun prefix -> Sys.getenv_opt (prefix^"_COLORS")) ["ROCQ";"COQ"] in
       match colors with
       | None -> Topfmt.default_styles (); true        (* Default colors *)
       | Some "" -> false                              (* No color output *)
@@ -55,7 +55,7 @@ let print_style_tags opts =
     (t ^ "=" ^ String.concat ";" tags)
   in
   let repr = List.map make tags in
-  let () = Printf.printf "COQ_COLORS=\"%s\"\n" (String.concat ":" repr) in
+  let () = Printf.printf "ROCQ_COLORS=\"%s\"\n" (String.concat ":" repr) in
   let () = List.iter iter tags in
   flush_all ()
 

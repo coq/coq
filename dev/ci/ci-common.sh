@@ -8,7 +8,7 @@ export NJOBS
 
 if which cygpath >/dev/null 2>&1; then OCAMLFINDSEP=\;; else OCAMLFINDSEP=:; fi
 
-# We can remove setting COQLIB and COQCORELIB from here, but better to
+# We can remove setting ROCQLIB and ROCQRUNTIMELIB from here, but better to
 # wait until we have merged the coq.boot patch so we can do this in a
 # more controlled way.
 if [ -n "${GITLAB_CI}" ];
@@ -32,8 +32,8 @@ then
     # Full Dune build, we basically do what `dune exec --` does
     export OCAMLPATH="$PWD/_build/install/default/lib/$OCAMLFINDSEP$OCAMLPATH"
     export COQBIN="$PWD/_build/install/default/bin"
-    export COQLIB="$PWD/_build/install/default/lib/coq"
-    export COQCORELIB="$PWD/_build/install/default/lib/rocq-runtime"
+    export ROCQLIB="$PWD/_build/install/default/lib/coq"
+    export ROCQRUNTIMELIB="$PWD/_build/install/default/lib/rocq-runtime"
 
     CI_INSTALL_DIR="$PWD/_build/install/default/"
 

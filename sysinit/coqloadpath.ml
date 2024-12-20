@@ -66,7 +66,7 @@ let init_load_path ~coqenv =
     (* then user-contrib *)
     contrib_vo @
 
-    (* then directories in XDG_DATA_DIRS and XDG_DATA_HOME and COQPATH *)
+    (* then directories in XDG_DATA_DIRS and XDG_DATA_HOME and ROCQPATH *)
     List.concat misc_vo
   in
   ml_loadpath, vo_loadpath

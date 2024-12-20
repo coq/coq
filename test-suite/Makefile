@@ -58,19 +58,19 @@ endif
 export OCAMLPATH := $(shell echo $(COQPREFIX)/lib$(FINDLIB_SEP)$$OCAMLPATH)
 export CAML_LD_LIBRARY_PATH:=$(shell echo $(COQPREFIX)/lib/stublibs):$(CAML_LD_LIBRARY_PATH)
 
-# COQLIB is an env variable so no quotes
-COQLIB?=
+# ROCQLIB is an env variable so no quotes
+ROCQLIB?=
 
-ifeq ($(COQLIB),)
+ifeq ($(ROCQLIB),)
 # Guard againt the COQLIBINSTALL directory not existing, otherwise
 # ocaml_pwd will error
 ifneq ($(wildcard $(shell echo $(COQLIBINSTALL))),)
-	COQLIB := $(shell ocaml ocaml_pwd.ml $(COQLIBINSTALL))
+	ROCQLIB := $(shell ocaml ocaml_pwd.ml $(COQLIBINSTALL))
 endif
 endif
-export COQLIB
+export ROCQLIB
 
-ifeq ($(wildcard $(COQLIB)/theories/Init/Prelude.vo),)
+ifeq ($(wildcard $(ROCQLIB)/theories/Init/Prelude.vo),)
   COQLIB_NOT_FOUND:=true
 else
   COQLIB_NOT_FOUND:=false
