@@ -18,7 +18,7 @@ open Declarations
 open Declareops
 open Environ
 open Reductionops
-open Inductive
+open Retyping
 open Inductiveops
 open Namegen
 open Miniml
@@ -469,9 +469,8 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
   | None ->
      try
        extract_really_ind env kn mib
-     with SingletonInductiveBecomesProp id ->
-       (* TODO : which inductive is concerned in the block ? *)
-       error_singleton_become_prop id (Some (GlobRef.IndRef (kn,0)))
+     with SingletonInductiveBecomesProp ind ->
+       error_singleton_become_prop ind
 
 (* Then the real function *)
 
@@ -1101,8 +1100,8 @@ let extract_fixpoint env sg vkn (fi,ti,ci) =
                    (EConstr.Vars.substl sub ci.(i)) ti.(i) in
         terms.(i) <- e;
         types.(i) <- t;
-      with SingletonInductiveBecomesProp id ->
-        error_singleton_become_prop id (Some (GlobRef.ConstRef vkn.(i)))
+      with SingletonInductiveBecomesProp ind ->
+        error_singleton_become_prop ind
   done;
   current_fixpoints := [];
   Dfix (Array.map (fun kn -> GlobRef.ConstRef kn) vkn, terms, types)
@@ -1167,8 +1166,8 @@ let extract_constant access env kn cb =
             add_opaque r;
             if access_opaque () then mk_def (get_opaque access env c)
             else mk_ax ())
-  with SingletonInductiveBecomesProp id ->
-    error_singleton_become_prop id (Some (GlobRef.ConstRef kn))
+  with SingletonInductiveBecomesProp ind ->
+    error_singleton_become_prop ind
 
 let extract_constant_spec env kn cb =
   let sg = Evd.from_env env in
@@ -1192,8 +1191,8 @@ let extract_constant_spec env kn cb =
     | (Info, Default) ->
         let t = snd (record_constant_type env sg kn (Some typ)) in
         Sval (r, type_expunge env t)
-  with SingletonInductiveBecomesProp id ->
-    error_singleton_become_prop id (Some (GlobRef.ConstRef kn))
+  with SingletonInductiveBecomesProp ind ->
+    error_singleton_become_prop ind
 
 let extract_with_type env sg c =
   try
@@ -1205,8 +1204,8 @@ let extract_with_type env sg c =
         let t = extract_type_scheme env sg db c (List.length s) in
         Some (vl, t)
     | _ -> None
-  with SingletonInductiveBecomesProp id ->
-    error_singleton_become_prop id None
+  with SingletonInductiveBecomesProp ind ->
+    error_singleton_become_prop ind
 
 let extract_constr env sg c =
   reset_meta_count ();
@@ -1218,8 +1217,8 @@ let extract_constr env sg c =
     | (Info,Default) ->
        let mlt = extract_type env sg [] 1 typ [] in
        extract_term env sg Mlenv.empty mlt c [], mlt
-  with SingletonInductiveBecomesProp id ->
-    error_singleton_become_prop id None
+  with SingletonInductiveBecomesProp ind ->
+    error_singleton_become_prop ind
 
 let extract_inductive env kn =
   let ind = extract_ind env kn in

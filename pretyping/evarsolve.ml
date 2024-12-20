@@ -203,7 +203,7 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
     else refresh_term_evars ~onevars:false ~top:true t
   in !evdref, t'
 
-let get_type_of_refresh  ?(polyprop=true) ?(lax=false) env evars t =
+let get_type_of_refresh ?(lax=false) env evars t =
   let tty = Retyping.get_type_of env evars t in
   let evars', tty = refresh_universes ~onlyalg:true
     ~status:(Evd.UnivFlexible false) (Some false) env evars tty in
