@@ -1020,7 +1020,9 @@ let noccurn sigma n term =
     | _ -> Expand.iter_with_binders sigma succ occur_rec n h knd
   in
   let h, term = Expand.make term in
-  try occur_rec n h term; true with LocalOccur -> false
+  try occur_rec n h term; true with
+  | LocalOccur -> false
+  | _ when !Flags.in_debugger -> false
 
 let noccur_between sigma n m term =
   let rec occur_rec n h c =
