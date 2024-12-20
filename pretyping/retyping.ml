@@ -16,7 +16,6 @@ open Util
 open Term
 open Constr
 open Context
-open Inductive
 open Inductiveops
 open Names
 open Reductionops
@@ -144,6 +143,110 @@ let safe_meta_type metas n = match metas with
 | None -> assert false (* missing meta handler *)
 | Some f -> f n
 
+type output_q =
+  | OutputType
+  (* if the [QVar.t option] is None then it means Prop *)
+  | OutputVar of Sorts.QVar.t option * Univ.Level.Set.t
+
+let template_sort ~forbid_polyprop output_q boundus (s:Sorts.t) =
+  match s with
+  | SProp | Prop | Set -> ESorts.make s
+  | QSort _ -> assert false
+  | Type u ->
+    let subst_fn u = Univ.Level.Map.find_opt u boundus in
+    let u = UnivSubst.subst_univs_universe subst_fn u in
+    let s = match output_q with
+      | OutputType -> Sorts.sort_of_univ u
+      | OutputVar (None, _) ->
+        begin match forbid_polyprop with
+        | None -> Sorts.prop
+        | Some indna -> raise (Inductive.SingletonInductiveBecomesProp indna)
+        end
+      | OutputVar (Some q, _) -> Sorts.qsort q u
+    in
+    ESorts.make s
+
+let bind_template_univ ~domu u bound =
+  Univ.Level.Map.update domu (function
+      | None -> Some u
+      | Some u' -> CErrors.anomaly ~label:"retyping" Pp.(str "non linear template univ"))
+    bound
+
+let rec finish_template ~forbid_polyprop output_q boundus = let open TemplateArity in function
+  | CtorType (_,typ) -> typ
+  | IndType (_, ctx, s) ->
+    let s = template_sort ~forbid_polyprop output_q boundus s in
+    mkArity (ctx,s)
+  | DefParam (na,v,t,codom) ->
+    let codom = finish_template ~forbid_polyprop output_q boundus codom in
+    mkLetIn (na,v,t,codom)
+  | NonTemplateArg (na,dom,codom) ->
+    let codom = finish_template ~forbid_polyprop output_q boundus codom in
+    mkProd (na,dom,codom)
+  | TemplateArg (na,ctx,domu,codom) ->
+    let output_q = match output_q with
+      | OutputType -> OutputType
+      | OutputVar (q, used_levels) ->
+        if Univ.Level.Set.mem domu used_levels
+        then OutputType
+        else output_q
+    in
+    let u = Univ.Universe.make domu in
+    let boundus = bind_template_univ ~domu u boundus in
+    let codom = finish_template ~forbid_polyprop output_q boundus codom in
+    let s = Sorts.sort_of_univ u in
+    mkProd (na, mkArity (ctx, ESorts.make s), codom)
+
+let rec type_of_template_knowing_parameters ~forbid_polyprop arity_sort_of output_q boundus typ args =
+  let open TemplateArity in
+  match args, typ with
+  | [], _
+  | _, (CtorType _ | IndType _) ->
+    finish_template ~forbid_polyprop output_q boundus typ
+  | _, DefParam (na, v, t, codom) ->
+    let codom = type_of_template_knowing_parameters ~forbid_polyprop arity_sort_of output_q boundus codom args in
+    mkLetIn (na, v, t, codom)
+  | _ :: args, NonTemplateArg (na, dom, codom) ->
+    let codom = type_of_template_knowing_parameters ~forbid_polyprop arity_sort_of output_q boundus codom args in
+    mkProd (na, dom, codom)
+  | arg :: args, TemplateArg (na, ctx, domu, codom) ->
+    let s = arity_sort_of arg in
+    let output_q = match output_q with
+      | OutputType -> output_q
+      | OutputVar (q, used_levels) ->
+        if not (Univ.Level.Set.mem domu used_levels) then output_q
+        else match s with
+          | Sorts.SProp -> OutputType (* invalid type, return whatever *)
+          | Set | Type _ -> OutputType
+          | Prop -> output_q
+          | QSort (q', _) ->
+            match q with
+            | None -> OutputVar (Some q', used_levels)
+            | Some q ->
+              if Sorts.QVar.equal q q' then output_q
+              else
+                (* no other supremum for different qvars
+                   (Type is a supremum because they're above Prop) *)
+                OutputType
+    in
+    let boundus =
+      let u = match s with
+        | Sorts.SProp | Prop | Set -> Univ.Universe.type0
+        | Type u | QSort (_, u) -> u
+      in
+      bind_template_univ ~domu u boundus
+    in
+    let codom = type_of_template_knowing_parameters ~forbid_polyprop arity_sort_of output_q boundus codom args in
+    (* typing ensures [ctx -> s] is correct *)
+    mkProd (na, mkArity (ctx, ESorts.make s), codom)
+
+let type_of_template_knowing_parameters ~forbid_polyprop arity_sort_of (can_be_prop,typ) args =
+  let output_q = match can_be_prop.TemplateArity.template_can_be_prop with
+    | None -> OutputType
+    | Some used_levels -> OutputVar (None, used_levels)
+  in
+  type_of_template_knowing_parameters ~forbid_polyprop arity_sort_of output_q Univ.Level.Map.empty typ args
+
 let retype ?metas ?(polyprop=true) sigma =
   let rec type_of env cstr =
     match EConstr.kind sigma cstr with
@@ -243,32 +346,27 @@ let retype ?metas ?(polyprop=true) sigma =
     | _ -> assert false
 
   and type_of_global_reference_knowing_parameters env c args =
+    let arity_sort_of arg =
+      let t = type_of env arg in
+      let s = sort_of_arity_with_constraints env sigma t in
+      ESorts.kind sigma s
+    in
+    let rename_type typ gr =
+      EConstr.of_constr @@ rename_type (EConstr.Unsafe.to_constr typ) gr
+    in
     match EConstr.kind sigma c with
-    | Ind (ind, u) ->
-      let u = EInstance.kind sigma u in
-      let mip = lookup_mind_specif env ind in
-      let paramtyps = make_param_univs env sigma args in
-      let (ty, _) = Inductive.type_of_inductive_knowing_parameters ~polyprop (mip, u) paramtyps in
-      EConstr.of_constr (rename_type ty (IndRef ind))
-    | Construct (cstr, u) ->
-      let u = EInstance.kind sigma u in
-      let (ind, _) = cstr in
-      let mip = lookup_mind_specif env ind in
-      let paramtyps = make_param_univs env sigma args in
-      let (ty, _) = Inductive.type_of_constructor_knowing_parameters (cstr, u) mip paramtyps in
-      EConstr.of_constr (rename_type ty (ConstructRef cstr))
+    | Ind (ind, _) ->
+      let typ = TemplateArity.get_template_arity env ind ~ctoropt:None in
+      let forbid_polyprop = if polyprop then None
+        else Some (MutInd.label (fst ind) |> Label.to_id)
+      in
+      let typ = type_of_template_knowing_parameters ~forbid_polyprop arity_sort_of typ (Array.to_list args) in
+      rename_type typ (IndRef ind)
+    | Construct ((ind,ctor as cstr), _) ->
+      let typ = TemplateArity.get_template_arity env ind ~ctoropt:(Some ctor) in
+      let typ = type_of_template_knowing_parameters ~forbid_polyprop:None arity_sort_of typ (Array.to_list args) in
+      rename_type typ (ConstructRef cstr)
     | _ -> assert false
-
-  and make_param_univs env sigma args =
-    Array.map_to_list (fun arg ~expected ->
-          let t = type_of env arg in
-          let s = sort_of_arity_with_constraints env sigma t in
-          match ESorts.kind sigma s with
-          | Sorts.SProp -> TemplateUniv (Univ.Universe.make expected)
-          | Sorts.Prop -> TemplateProp
-          | Sorts.Set -> TemplateUniv Univ.Universe.type0
-          | Sorts.Type u | Sorts.QSort (_, u) -> TemplateUniv u)
-      args
 
   in type_of, sort_of, type_of_global_reference_knowing_parameters
 
