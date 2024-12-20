@@ -30,7 +30,7 @@ val error_inductive : ?loc:Loc.t -> GlobRef.t -> 'a
 val error_nb_cons : unit -> 'a
 val error_module_clash : ModPath.t -> ModPath.t -> 'a
 val error_no_module_expr : ModPath.t -> 'a
-val error_singleton_become_prop : Id.t -> GlobRef.t option -> 'a
+val error_singleton_become_prop : inductive -> 'a
 val error_unknown_module : ?loc:Loc.t -> qualid -> 'a
 val error_scheme : unit -> 'a
 val error_not_visible : GlobRef.t -> 'a
