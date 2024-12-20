@@ -218,15 +218,15 @@ which is a list of (logical path, :term:`physical path`) pairs for directories.
 For example, you may see::
 
   Logical Path / Physical path:
-  Bignums /home/jef/coq/lib/coq/user-contrib/Bignums
-  Bignums.BigZ /home/jef/coq/lib/coq/user-contrib/Bignums/BigZ
-  Ltac2 /home/jef/coq/lib/coq/user-contrib/Ltac2
-  Stdlib /home/jef/coq/lib/coq/theories
-  Stdlib.Numbers /home/jef/coq/lib/coq/theories/Numbers
-  Stdlib.Numbers.Natural /home/jef/coq/lib/coq/theories/Numbers/Natural
-  Stdlib.Numbers.Natural.Binary /home/jef/coq/lib/coq/theories/Numbers/Natural/Binary
-  Stdlib.Numbers.Integer /home/jef/coq/lib/coq/theories/Numbers/Integer
-  Stdlib.Arith /home/jef/coq/lib/coq/theories/Arith
+  Bignums /home/jef/coq/lib/rocq/user-contrib/Bignums
+  Bignums.BigZ /home/jef/coq/lib/rocq/user-contrib/Bignums/BigZ
+  Ltac2 /home/jef/coq/lib/rocq/user-contrib/Ltac2
+  Stdlib /home/jef/coq/lib/rocq/theories
+  Stdlib.Numbers /home/jef/coq/lib/rocq/theories/Numbers
+  Stdlib.Numbers.Natural /home/jef/coq/lib/rocq/theories/Numbers/Natural
+  Stdlib.Numbers.Natural.Binary /home/jef/coq/lib/rocq/theories/Numbers/Natural/Binary
+  Stdlib.Numbers.Integer /home/jef/coq/lib/rocq/theories/Numbers/Integer
+  Stdlib.Arith /home/jef/coq/lib/rocq/theories/Arith
   <> /home/jef/myproj
 
 The components of each pair share suffixes, e.g. `Bignums.BigZ` and `Bignums/BigZ` or

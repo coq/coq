@@ -53,7 +53,7 @@ jobs:
           make clean
           export OCAMLPATH="$(pwd)/../_install_ci/lib":"$OCAMLPATH"
           BIN="$(pwd)/../_install_ci/bin/"
-          LIB="$(pwd)/../_install_ci/lib/coq/"
+          LIB="$(pwd)/../_install_ci/lib/rocq/"
           make -j "$NJOBS" BIN="$BIN" COQLIB="$LIB" PRINT_LOGS=1 TIMED=1 all
         env:
           NJOBS: "2"

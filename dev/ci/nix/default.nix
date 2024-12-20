@@ -78,7 +78,7 @@ let flocq = coqPackages.flocq.overrideAttrs (o: {
     src = fetchTarball "https://gitlab.inria.fr/flocq/flocq/-/archive/master/flocq-master.tar.gz";
     configurePhase = ''
       autoreconf
-      ${bash}/bin/bash configure --libdir=$out/lib/coq/${coq.coq-version}/user-contrib/Flocq
+      ${bash}/bin/bash configure --libdir=$out/lib/rocq/${coq.coq-version}/user-contrib/Flocq
     '';
     buildPhase = ''
       ./remake

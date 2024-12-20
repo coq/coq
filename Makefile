@@ -267,7 +267,7 @@ define subtarget =
   .PHONY: theories-$(2)
 
   $(2)_FILES=$$(wildcard $(1)*.v)
-  $(2)_FILES_PATH=$$(addprefix _build/install/default/lib/coq/, $$($(2)_FILES:.v=.vo))
+  $(2)_FILES_PATH=$$(addprefix _build/install/default/lib/rocq/, $$($(2)_FILES:.v=.vo))
 
   theories-$(2):
 	@echo "DUNE $(1)*.vo"

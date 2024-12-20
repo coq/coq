@@ -32,7 +32,7 @@ then
     # Full Dune build, we basically do what `dune exec --` does
     export OCAMLPATH="$PWD/_build/install/default/lib/$OCAMLFINDSEP$OCAMLPATH"
     export COQBIN="$PWD/_build/install/default/bin"
-    export COQLIB="$PWD/_build/install/default/lib/coq"
+    export COQLIB="$PWD/_build/install/default/lib/rocq"
     export COQCORELIB="$PWD/_build/install/default/lib/rocq-runtime"
 
     CI_INSTALL_DIR="$PWD/_build/install/default/"

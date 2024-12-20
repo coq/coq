@@ -275,7 +275,7 @@ let coqnative_rules ~dir_info ~cctx = gen_rules ~dir_info ~cctx ~f:coqnative_mod
 
 let install_rule ~(cctx : Context.t) coq_module =
   let tname, rule, package = cctx.theory.dirname, cctx.rule, cctx.theory.directory in
-  let dst_base = Filename.concat "coq" (Path.to_string package) in
+  let dst_base = Filename.concat "rocq" (Path.to_string package) in
   let files =
     Coq_module.install_files ~tname ~rule coq_module
     |> List.map (fun (src,dst) -> src, Filename.concat dst_base dst) in

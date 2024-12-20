@@ -173,8 +173,8 @@ before_script:
     - not-a-real-job
   script:
     - cd _install_ci
-    - find lib/coq/ -name '*.vo' -fprint0 vofiles
-    - xargs -0 --arg-file=vofiles bin/coqchk -o -m -coqlib lib/coq/ > ../coqchk.log 2>&1 || touch coqchk.failed
+    - find lib/rocq/ -name '*.vo' -fprint0 vofiles
+    - xargs -0 --arg-file=vofiles bin/coqchk -o -m -coqlib lib/rocq/ > ../coqchk.log 2>&1 || touch coqchk.failed
     - tail -n 1000 ../coqchk.log # the log is too big for gitlab so pipe to a file and display the tail
     - "[ ! -f coqchk.failed ]" # needs quoting for yml syntax reasons
   artifacts:
@@ -346,8 +346,8 @@ build:base:dev:dune:
     - cp theories/dune.disabled theories/dune
     - cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
     - dune build -p rocq-runtime,coq-core,rocq-core,coqide-server
-    - ls _build/install/default/lib/coq/theories/Init/Prelude.vo
-    - ls _build/install/default/lib/coq/user-contrib/Ltac2/Ltac2.vo
+    - ls _build/install/default/lib/rocq/theories/Init/Prelude.vo
+    - ls _build/install/default/lib/rocq/user-contrib/Ltac2/Ltac2.vo
   only: *full-ci
 
 build:base+async:

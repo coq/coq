@@ -15,12 +15,12 @@ stdenv.mkDerivation {
   buildInputs = [ coq ] ++ (with coq.ocamlPackages; [ ocaml findlib camlp5 num ]);
 
   configurePhase = "coq_makefile -f Make -o Makefile";
-  installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
+  installFlags = [ "COQLIB=$(out)/lib/rocq/${coq.coq-version}/" ];
 
   postInstall = ''
     cp ${META} META
     install -d $OCAMLFIND_DESTDIR
-    ln -s $out/lib/coq/${coq.coq-version}/user-contrib/Unicoq $OCAMLFIND_DESTDIR/
+    ln -s $out/lib/rocq/${coq.coq-version}/user-contrib/Unicoq $OCAMLFIND_DESTDIR/
     install -m 0644 META src/unicoq.a $OCAMLFIND_DESTDIR/Unicoq
   '';
 }

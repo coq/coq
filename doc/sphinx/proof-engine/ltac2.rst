@@ -193,7 +193,7 @@ APIs
 ~~~~
 
 Ltac2 provides over 150 API functions that provide various capabilities.  These
-are declared with :cmd:`Ltac2 external` in :n:`lib/coq/user-contrib/Ltac2/*.v`.
+are declared with :cmd:`Ltac2 external` in :n:`lib/rocq/user-contrib/Ltac2/*.v`.
 For example, `Message.print` defined in `Message.v` is used to print messages:
 
 .. rocqtop:: none

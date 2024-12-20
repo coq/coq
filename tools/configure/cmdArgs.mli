@@ -19,7 +19,7 @@ type t =
   ; interactive : bool
   (** whether to display a summary *)
   ; libdir : string option
-  (** override $prefix/lib/coq *)
+  (** override $prefix/lib/rocq *)
   ; configdir : string option
   (** override /etc/xdg/coq *)
   ; datadir : string option
