@@ -49,9 +49,13 @@ code=$?
 
 printf "\n%s exit code: %s\n" "$CI_NAME" "$code" >> "$CI_NAME.log"
 
-echo 'Aggregating timing log...'
-echo
-tools/make-one-time-file.py --real "$CI_NAME.log"
+# the test suite already prints a timing table
+if [ "$CI_NAME" != stdlib_test ]; then
+  echo 'Aggregating timing log...'
+  echo
+  tools/make-one-time-file.py --real "$CI_NAME.log"
+fi
+
 if [ "$CI" ] && ! [ $code = 0 ]; then
   set +x
 
