@@ -18,9 +18,9 @@ let worker_init init ((),stm_opts)  injections ~opts : Vernac.State.t =
   Coqtop.init_toploop opts stm_opts injections
 
 let usage = Boot.Usage.{
-  executable_name = "coqworker";
+  executable_name = "rocqworker";
   extra_args = "";
-  extra_options = ("\n" ^ "coqworker" ^ " specific options:\
+  extra_options = ("\n" ^ "rocqworker" ^ " specific options:\
 \n  --xml_format=Ppcmds    serialize pretty printing messages using the std_ppcmds format\n");
 }
 
