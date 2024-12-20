@@ -95,6 +95,7 @@ let rec subst_type env sigma subs typ = function
 
 let subst_type env sigma typ args = subst_type env sigma [] typ args
 
+
 (* If ft is the type of f which itself is applied to args, *)
 (* [sort_of_atomic_type] computes ft[args] which has to be a sort *)
 
