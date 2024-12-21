@@ -13,7 +13,7 @@
 (rule
   (targets (dir html))
   (alias stdlib-html)
-  (package coq-stdlib-doc)
+  (package rocq-stdlib-doc)
   (deps
    ; This will be replaced soon by `theories/**/*.v` soon, thanks to rgrinberg
    (source_tree %{project_root}/theories)
@@ -21,7 +21,7 @@
    (:header %{project_root}/doc/common/styles/html/coqremote/header.html)
    (:footer %{project_root}/doc/common/styles/html/coqremote/footer.html)
    ; For .glob files, should be gone when Coq Dune is smarter.
-   (package coq-stdlib))
+   (package rocq-stdlib))
  (action
   (progn
    (run mkdir -p html)
@@ -40,4 +40,4 @@
 (install
  (dirs (html as html/stdlib))
  (section doc)
- (package coq-stdlib-doc))
+ (package rocq-stdlib-doc))
