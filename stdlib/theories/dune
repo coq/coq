@@ -1,7 +1,7 @@
 (include_subdirs qualified)
 (coq.theory
  (name Stdlib)
- (package coq-stdlib))
+ (package rocq-stdlib))
 
 (env
  (dev
