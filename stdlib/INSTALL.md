@@ -18,7 +18,7 @@ Build Requirements
 To compile the stdlib yourself, you need:
 
 - [Coq](https://github.comq/coq/coq)
-  Look into [coq-stdlib.opam](./coq-stdlib.opam) for supported versions.
+  Look into [rocq-stdlib.opam](./rocq-stdlib.opam) for supported versions.
 
 Opam (https://opam.ocaml.org/) is recommended to install Coq.
 

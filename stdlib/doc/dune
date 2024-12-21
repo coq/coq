@@ -7,7 +7,7 @@
   ; - Static files:
   ;   + %{bin:coqdoc} etc...
   ;   + tools/coqdoc/coqdoc.css
-  (package coq-stdlib)
+  (package rocq-stdlib)
   (source_tree sphinx)
   (source_tree tools/coqrst)
   (env_var SPHINXWARNOPT)))
@@ -16,12 +16,12 @@
  (targets
   (dir refman-html))
  (alias refman-html)
- (package coq-stdlib-doc)
+ (package rocq-stdlib-doc)
  ; Cannot use this deps alias because of ocaml/dune#3415
  ; (deps (alias refman-deps))
  ; EJGA: note this should've been fixed in dune master as of 05/03/2021
  (deps
-  (package coq-stdlib)
+  (package rocq-stdlib)
   (source_tree sphinx)
   (source_tree tools/coqrst)
   (env_var SPHINXWARNOPT))
@@ -32,13 +32,13 @@
  (targets
   (dir refman-pdf))
  (alias refman-pdf)
- (package coq-stdlib-doc)
+ (package rocq-stdlib-doc)
  ; Cannot use this deps alias because of ocaml/dune#3415
  ; (deps (alias refman-deps))
  ; EJGA: note this should've been fixed in dune master as of 05/03/2021
  (deps
   (package coq-core)
-  (package coq-stdlib)
+  (package rocq-stdlib)
   (source_tree sphinx)
   (source_tree tools/coqrst)
   (env_var SPHINXWARNOPT))
@@ -52,7 +52,7 @@
   (refman-html as html/refman)
   (refman-pdf as pdf/refman))
  (section doc)
- (package coq-stdlib-doc))
+ (package rocq-stdlib-doc))
 
 (documentation
- (package coq-stdlib-doc))
+ (package rocq-stdlib-doc))
