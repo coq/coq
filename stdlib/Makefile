@@ -1,8 +1,8 @@
 all:
-	dune build -p coq-stdlib @install
+	dune build -p rocq-stdlib @install
 
 install:
-	dune install --root . coq-stdlib
+	dune install --root . rocq-stdlib
 
 # Make of individual .vo
 theories/%.vo:
