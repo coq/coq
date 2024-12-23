@@ -44,6 +44,9 @@ let system_getenv name =
 
 let getenv_else s dft = try system_getenv s with Not_found -> dft ()
 
+let getenv_rocq_or_coq_else s dft =
+  getenv_else ("ROCQ"^s) (fun () -> getenv_else ("COQ"^s) dft)
+
 let safe_getenv warning n =
   getenv_else n (fun () ->
     warning ("Environment variable "^n^" not found: using '$"^n^"' .");
@@ -131,7 +134,7 @@ let configdir () =
   if Sys.file_exists path then path else Coq_config.configdir
 
 let coqpath =
-  let coqpath = getenv_else "COQPATH" (fun () -> "") in
+  let coqpath = getenv_rocq_or_coq_else "PATH" (fun () -> "") in
   let make_search_path path =
     let paths = path_to_list path in
     let valid_paths = List.filter Sys.file_exists paths in
