@@ -190,8 +190,22 @@ Goal forall
 True.
 Proof.
 intros.
-Fail specialize IHn with (1 := eq_refl).
-(* After #17322 this fails with
+specialize IHn with (1 := eq_refl).
+Unshelve.
+2: match goal with
+     |- tuple => idtac
+   end.
+(* History of the dealing of evars in specialize:
+
+- Previously it was leaving w as an unresolved evar, producing the hypothesis
+
+    IHn : load_bytes (unchecked_store_bytes ?w) -> True
+
+   The correct behaviour should probably to requantify on w as
+
+    IHn : forall w, load_bytes (unchecked_store_bytes w) -> True
+
+- After #17322 (and before #18341) this was failing with
 
     In environment
     IHn : forall (m' : mem) (w : tuple), unchecked_store_bytes w = m' -> load_bytes m' -> True
@@ -200,15 +214,33 @@ Fail specialize IHn with (1 := eq_refl).
     Unable to unify "?t" with "w" (cannot instantiate "?t" because "w" is not in its scope:
     available arguments are "IHn").
 
-   Previously it was leaving w as an unresolved evar, producing the hypothesis
-
-    IHn : load_bytes (unchecked_store_bytes ?w) -> True
-
-   The correct behaviour should probably to requantify on w as
-
-    IHn : forall w, load_bytes (unchecked_store_bytes w) -> True
+- After #18341 (fixing #18332) the old behaviour (leaving an unsolved evar) came back.
 
 *)
+
+
 Abort.
 
 End bug_17322_2.
+
+Module bug_18332.
+  (* Test that specialize accepts arguments with evars. *)
+
+  Lemma lem: (forall n m:nat, (forall x, x>=n) -> m = n) -> True.
+  Proof.
+    intros H.
+    evar (n':nat).
+    evar (foo: forall x, x >= ?n').
+    specialize H with (1:=foo).
+    match type of H with
+      forall m : nat, m = _ => idtac
+    | _ => fail 0
+    end.
+    Unshelve.
+    all:swap 2 3.
+    - exact I.
+    - intros x.
+      unfold ge.
+      apply le_0_n.
+  Qed.
+End bug_18332.
