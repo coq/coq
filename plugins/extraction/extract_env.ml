@@ -518,11 +518,10 @@ let formatter dry file =
   ft
 
 let get_comment () =
-  let s = file_comment () in
+  let s = String.trim (file_comment ()) in
   if String.is_empty s then None
   else
-    let split_comment = Str.split (Str.regexp "[ \t\n]+") s in
-    Some (prlist_with_sep spc str split_comment)
+    Some (str s)
 
 let print_structure_to_file (fn,si,mo) dry struc =
   Buffer.clear buf;
