@@ -339,9 +339,13 @@ let pr_hints db h pr_c pr_pat =
     | HintsConstructors c ->
       keyword "Constructors"
       ++ spc() ++ prlist_with_sep spc pr_qualid c
-    | HintsExtern (n,c,tac) ->
+    | HintsExtern (n,c,tac,name) ->
       let pat = match c with None -> mt () | Some pat -> pr_pat pat in
-      keyword "Extern" ++ spc() ++ int n ++ spc() ++ pat ++ str" =>" ++
+      let nstr = match name with
+        | Some n -> str " as " ++ str (Libnames.string_of_qualid n)
+        | None -> mt ()
+      in
+      keyword "Extern" ++ spc() ++ int n ++ spc() ++ pat ++ nstr ++ str" =>" ++
       spc() ++ pr_gen tac
   in
   hov 2 (keyword "Hint "++ pph ++ opth)
