@@ -183,8 +183,6 @@ let make_subst =
   in
   make Univ.Level.Map.empty
 
-exception SingletonInductiveBecomesProp of Id.t
-
 let subst_univs_sort subs = function
 | Sorts.QSort _ -> no_sort_variable ()
 | Sorts.Prop | Sorts.Set | Sorts.SProp as s -> s
@@ -286,7 +284,7 @@ let check_instance mib u =
       | Polymorphic uctx -> Instance.length u = AbstractContext.size uctx)
   then CErrors.anomaly Pp.(str "bad instance length on mutind.")
 
-let type_of_inductive_gen ?(polyprop=true) ((mib,mip),u) paramtyps =
+let type_of_inductive_gen ((mib,mip),u) paramtyps =
   check_instance mib u;
   match mip.mind_arity with
   | RegularArity a ->
@@ -299,8 +297,6 @@ let type_of_inductive_gen ?(polyprop=true) ((mib,mip),u) paramtyps =
     (* The Ocaml extraction cannot handle (yet?) "Prop-polymorphism", i.e.
         the situation where a non-Prop singleton inductive becomes Prop
         when applied to Prop params *)
-    if not polyprop && not (Sorts.is_prop ar.template_level) && Sorts.is_prop s
-    then raise (SingletonInductiveBecomesProp mip.mind_typename);
     Term.mkArity (ctx, s), cst
 
 let type_of_inductive pind =
@@ -310,8 +306,8 @@ let type_of_inductive pind =
 let constrained_type_of_inductive pind =
   type_of_inductive_gen pind []
 
-let type_of_inductive_knowing_parameters ?(polyprop=true) mip args =
-  type_of_inductive_gen ~polyprop mip args
+let type_of_inductive_knowing_parameters mip args =
+  type_of_inductive_gen mip args
 
 (************************************************************************)
 (* Type of a constructor *)
