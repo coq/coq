@@ -1,4 +1,4 @@
-
+Module SimpleFib.
 
 Fixpoint fib n :=
   match n with
@@ -28,3 +28,43 @@ Definition main n := (f n, g n).
 Set Debug "lazy".
 
 Eval lazy in main 15.
+
+End SimpleFib.
+
+Module Bug1.
+Require Import ListDef.
+
+(* example from lexical profiling theory and practice *)
+
+Definition f {A} (x:A) l := match l with nil => x::nil | y::tl => x::y::tl end.
+
+Fixpoint append {A} (l:list A) l' := match l with nil => l' | x::tl => x :: append tl l' end.
+
+Fixpoint rev {A} (l:list A) := match l with nil => nil | y::tl => append (rev tl) (y::nil) end.
+
+Fixpoint fold_right {A B} (f:A->B->B) (l:list A) acc :=
+  match l with
+  | nil => acc
+  | x::tl => f x (fold_right f tl acc)
+  end.
+
+Definition head l := match l with nil => 0 | x::l => x end.
+
+Definition myhead l := head (fold_right f l nil).
+
+Definition mylast l := head (rev (fold_right f l nil)).
+
+Fixpoint eat n := match n with 0 => tt | S n => eat n end.
+
+Set Debug "lazy".
+
+Eval lazy in
+  match eat (myhead (seq 1 1000)) with
+    tt => eat (mylast (seq 1001 10))
+  end.
+(* 1000 beta/iota steps in "f in myhead"
+   with kernel term sharing on, because "f" in myhead is actually "@f nat"
+   we need to update the context in zupdate
+   otherwise the steps are assigned to myhead *)
+
+End Bug1.
