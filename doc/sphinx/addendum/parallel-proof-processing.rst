@@ -165,6 +165,24 @@ kernel to check all the proof objects, one has to click the button
 with the gears (Fully check the document) on the top bar.
 Only then all the universe constraints are checked.
 
+Limiting the number of parallel workers
+---------------------------------------
+
+Many Coq processes may run on the same computer, and each of them may start
+many additional worker processes.
+The `rocq workmgr` utility lets one limit the number of workers, globally.
+
+The utility accepts the `-j` argument to specify the maximum number of
+workers (defaults to 2). `rocq workmgr` automatically starts in the
+background and prints an environment variable assignment like
+`ROCQWORKMGR\_SOCKET=localhost:45634`. The user must set this variable in
+all the shells from which Rocq processes will be started.  If one uses just
+one terminal running the bash shell, then `export $(rocq workmgr -j 4)` will
+do the job.
+
+After that, all Coq processes, e.g. `coqide` and `rocq compile`,
+will honor the limit, globally.
+
 Caveats
 ```````
 
