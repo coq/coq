@@ -166,12 +166,13 @@ before_script:
 
 # set "needs" when using
 .validate-template:
-  stage: build-1
+  stage: build-2
   interruptible: true
   extends: .auto-use-tags
   needs:
     - not-a-real-job
   script:
+    - for target in $CI_TARGETS; do dev/ci/ci-wrapper.sh "$target"; done
     - cd _install_ci
     - find lib/coq/ -name '*.vo' -fprint0 vofiles
     - xargs -0 --arg-file=vofiles bin/coqchk -o -m -coqlib lib/coq/ > ../coqchk.log 2>&1 || touch coqchk.failed
@@ -579,10 +580,14 @@ test-suite:base+async:
 
 validate:base:
   extends: .validate-template
+  variables:
+    CI_TARGETS: "stdlib"
   needs:
     - build:base
+    - library:ci-stdlib
   only: *full-ci
 
+# we currently don't have a stdlib+32bit job
 validate:base+32bit:
   extends: .validate-template
   needs:
@@ -594,8 +599,11 @@ validate:base+32bit:
 validate:edge+flambda:
   extends: .validate-template
   image: $EDGE_IMAGE
+  variables:
+    CI_TARGETS: "stdlib"
   needs:
     - build:edge+flambda
+    - library:ci-stdlib+flambda
   variables:
     OPAM_VARIANT: "+flambda"
   only: *full-ci
