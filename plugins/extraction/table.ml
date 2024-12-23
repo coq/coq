@@ -643,6 +643,13 @@ let { Goptions.get = file_comment } =
     ~value:""
     ()
 
+(* Allows to print a compiler pragmas at the beginning of the output files *)
+let { Goptions.get = file_pragma } =
+  declare_string_option_and_ref
+    ~key:["Extraction"; "File"; "Pragma"]
+    ~value:""
+    ()
+
 (*s Extraction Lang *)
 
 type lang = Ocaml | Haskell | Scheme | JSON
