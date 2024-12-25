@@ -41,30 +41,7 @@ let compare_term_label t1 t2 = match t1, t2 with
 
 type 'res lookup_res = 'res Dn.lookup_res = Label of 'res | Nothing | Everything
 
-let eta_reduce = Reductionops.shrink_eta
-
-(* TODO: instead of doing that on patterns we should try to perform it on terms
-   before translating them into patterns in Hints. *)
-let rec eta_reduce_pat (p:constr_pattern) = match p with
-| PLambda (_, _, q) ->
-  let f, cl = match eta_reduce_pat q with
-  | PApp (f, cl) -> f, cl
-  | q -> q, [||]
-  in
-  let napp = Array.length cl in
-  if napp > 0 then
-    let r = eta_reduce_pat (Array.last cl) in
-    match r with
-    | PRel 1 ->
-      let lc = Array.sub cl 0 (napp - 1) in
-      let u = if Array.is_empty lc then f else PApp (f, lc) in
-      if Patternops.noccurn_pattern 1 u then Patternops.lift_pattern (-1) u else p
-    | _ -> p
-  else p
-| PRef _ | PVar _ | PEvar _ | PRel _ | PApp _ | PSoApp _ | PProj _ | PProd _
-| PLetIn _ | PSort _ | PMeta _ | PIf _ | PCase _ | PFix _ | PCoFix _ | PInt _
-| PFloat _ | PString _ | PArray _ -> p
-| PUninstantiated _ -> .
+(* let eta_reduce = Reductionops.shrink_eta *)
 
 let evaluable_constant c env ts =
   (* This is a hack to work around a broken Print Module implementation, see
@@ -89,6 +66,89 @@ let label_of_opaque_constant c stack =
     let n_args_drop = min (n_args_needed - 1) n_args_given in (* we do not drop the record value from the stack *)
     (ProjLabel (p, n_args_missing), List.skipn n_args_drop stack)
 
+(* let drop_dead_rels_constr sigma n c = *)
+(*   let rec go_opt lb ub c : _ option = *)
+(*     match EConstr.kind sigma c with *)
+(*     (\* Ground terms *\) *)
+(*     | Sort _ *)
+(*     | Var _ -> Some c *)
+(*     | Construct _ -> Some c *)
+(*     | Ind _ -> Some c *)
+(*     | Const _ -> Some c *)
+(*     (\* Interesting and simple terms *\) *)
+(*     | Rel i when lb <= i && i <= n -> None *)
+(*     | App (f, args) -> *)
+(*       begin *)
+(*         match go_opt lb ub f with *)
+(*         | Some f -> Some (EConstr.mkApp (f, Array.map (go lb ub) args)) *)
+(*         | None -> None *)
+(*       end *)
+(*     | Lambda (n, ty, b) -> *)
+(*       begin *)
+(*         match go_opt lb ub ty with *)
+(*         | Some ty -> Some (EConstr.mkLambda (n, ty, go (lb+1) (ub+1) b)) *)
+(*         | None -> None *)
+(*       end *)
+(*     | Prod (n, ty, b) -> *)
+(*       begin *)
+(*         match go_opt lb ub ty with *)
+(*         | Some ty -> Some (EConstr.mkProd (n, ty, go (lb+1) (ub+1) b)) *)
+(*         | None -> None *)
+(*       end *)
+(*     (\* Everything else *\) *)
+(*     | _ -> None *)
+(*   and go lb ub c = *)
+(*     match go_opt lb ub c with *)
+(*     | Some c -> c *)
+(*     | None -> EConstr.mkMeta 0 *)
+(*   in *)
+(*   go 1 n c *)
+
+let decomp_lambda_constr sigma decomp =
+  let rec go ds p =
+    match EConstr.kind sigma p with
+    | Lambda (n, ty, c) ->
+      let ds = (n, ty) :: ds in
+      go ds c
+    | App (f, args) ->
+      let numd = List.length ds in
+      let nargs = Array.length args in
+      assert (numd > 0);
+      let n = min numd nargs in
+      (* Feedback.msg_debug Pp.(str "numd: " ++ int numd ++ str ", nargs: " ++ int nargs ++ str ", n: " ++ int n); *)
+      let ds = List.skipn n ds in
+      let (args, _) = Array.chop (nargs - n) args in
+      (* Feedback.msg_debug Pp.(str "constr before: " ++ Printer.pr_econstr_env (Global.env()) sigma p); *)
+      let p = EConstr.mkApp (f, args) in
+      (* let p = drop_dead_rels_constr sigma n (EConstr.mkApp (f, args)) in *)
+      let p = EConstr.Vars.lift (-n) p in
+      (* Feedback.msg_debug Pp.(str "constr after : " ++ Printer.pr_econstr_env (Global.env()) sigma p); *)
+      begin
+        match decomp [] p with
+        | _ as c when ds = [] ->
+          (* Feedback.msg_debug Pp.(str "Stripped all lambdas"); *)
+          c (* no more remaining lambdas  *)
+        | Label _ ->                (* there are left-over lambdas and the body is discriminating *)
+          let (_, b) = List.last ds in
+          let ds = List.drop_last ds in
+          let p = List.fold_left (fun p (n, ty) -> EConstr.mkLambda (n, ty, p)) p ds in
+          Label (LamLabel, [b; p])
+        | Nothing | Everything -> Everything
+      end
+    | _ ->
+      begin
+        match decomp [] p with
+        | Label _ ->
+          let (_, b) = List.last ds in
+          let ds = List.drop_last ds in
+          let p = List.fold_left (fun p (n, ty) -> EConstr.mkLambda (n, ty, p)) p ds in
+          Label (LamLabel, [b; p])
+        | Nothing | Everything -> Everything
+      end
+    in
+  go
+
+
 (* The pattern view functions below try to overapproximate βι-neutral terms up
    to η-conversion. Some historical design choices are still incorrect w.r.t. to
    this specification. TODO: try to make them follow the spec. *)
@@ -97,7 +157,7 @@ let constr_val_discr env sigma ts t =
   (* Should we perform weak βι here? *)
   let open GlobRef in
   let rec decomp stack t =
-    match EConstr.kind sigma (eta_reduce sigma t) with
+    match EConstr.kind sigma t with
     | App (f,l) -> decomp (Array.fold_right (fun a l -> a::l) l stack) f
     | Proj (p,_,c) when evaluable_projection p env ts -> Everything
     | Proj (p,_,c) ->
@@ -117,14 +177,8 @@ let constr_val_discr env sigma ts t =
     | Var id when evaluable_named id env ts -> Everything
     | Var id -> Label(GRLabel (VarRef id), stack)
     | Prod (n,d,c) -> Label(ProdLabel, [d; c])
-    | Lambda (_,d,c) when List.is_empty stack ->
-      begin
-        (* Check if [c] could possibly unify with [fun x => f x].
-           Only return [LamLabel] if that is impossible! *)
-        match decomp stack c with
-        | Label _ | Nothing -> Label(LamLabel, d :: c :: stack)
-        | Everything -> Everything
-      end
+    | Lambda (n,d,c) when List.is_empty stack ->
+      decomp_lambda_constr sigma decomp [(n,d)] c
     | Lambda _ -> Everything
     | Sort _ -> Label(SortLabel, [])
     | Evar _ -> Everything
@@ -140,10 +194,89 @@ let constr_val_discr env sigma ts t =
   in
   decomp [] t
 
+(* let drop_dead_rels_pat n p = *)
+(*   let rec go_opt lb ub p : _ option = *)
+(*     match p with *)
+(*     (\* Ground terms *\) *)
+(*     | PSort _ *)
+(*     | PRef _ -> Some p *)
+(*     (\* Interesting and simple terms *\) *)
+(*     | PRel i when lb <= i && i <= n -> None *)
+(*     | PApp (f, args) -> *)
+(*       begin *)
+(*         match go_opt lb ub f with *)
+(*         | Some f -> Some (PApp (f, Array.map (go lb ub) args)) *)
+(*         | None -> None *)
+(*       end *)
+(*     | PLambda (n, ty, b) -> *)
+(*       begin *)
+(*         match go_opt lb ub ty with *)
+(*         | Some ty -> Some (PLambda (n, ty, go (lb+1) (ub+1) b)) *)
+(*         | None -> None *)
+(*       end *)
+(*     | PProd (n, ty, b) -> *)
+(*       begin *)
+(*         match go_opt lb ub ty with *)
+(*         | Some ty -> Some (PProd (n, ty, go (lb+1) (ub+1) b)) *)
+(*         | None -> None *)
+(*       end *)
+(*     (\* Everything else *\) *)
+(*     | _ -> None *)
+(*   and go lb ub p = *)
+(*     match go_opt lb ub p with *)
+(*     | Some p -> p *)
+(*     | None -> PMeta None *)
+(*   in *)
+(*   go 1 n p *)
+
+let decomp_lambda_pat decomp =
+  let rec go ds p =
+    match p with
+    | PLambda (n, ty, c) ->
+      let ds = (n, ty) :: ds in
+      go ds c
+    | PApp (f, args) ->
+      let numd = List.length ds in
+      let nargs = Array.length args in
+      assert (numd > 0);
+      let n = min numd nargs in
+      (* Feedback.msg_debug Pp.(str "numd: " ++ int numd ++ str ", nargs: " ++ int nargs ++ str ", n: " ++ int n); *)
+      let ds = List.skipn n ds in
+      let (args, _) = Array.chop (nargs - n) args in
+      (* Feedback.msg_debug Pp.(str "pattern before:" ++ Printer.pr_constr_pattern_env (Global.env()) (Evd.empty) p); *)
+      let p = PApp (f, args) in
+      (* let p = drop_dead_rels_pat n (PApp (f, args)) in *)
+      let p = Patternops.lift_pattern (-n) p in
+      (* Feedback.msg_debug Pp.(str "pattern after :" ++ Printer.pr_constr_pattern_env (Global.env()) (Evd.empty) p); *)
+      begin
+        match decomp [] p with
+        | _ as c when ds = [] ->
+          (* Feedback.msg_debug Pp.(str "Stripped all lambdas"); *)
+          c (* no more remaining lambdas  *)
+        | Some _ ->                (* there are left-over lambdas and the body is discriminating *)
+          let (_, b) = List.last ds in
+          let ds = List.drop_last ds in
+          let p = List.fold_left (fun p (n, ty) -> PLambda (n, ty, p)) p ds in
+          Some (LamLabel, [b; p])
+        | None -> None
+      end
+    | _ ->
+      begin
+        match decomp [] p with
+        | Some _ ->
+          let (_, b) = List.last ds in
+          let ds = List.drop_last ds in
+          let p = List.fold_left (fun p (n, ty) -> PLambda (n, ty, p)) p ds in
+          Some (LamLabel, [b; p])
+        | None -> None
+      end
+    in
+  go
+
 let constr_pat_discr env ts p =
   let open GlobRef in
   let rec decomp stack p =
-    match eta_reduce_pat p with
+    match p with
     | PApp (f,args) -> decomp (Array.to_list args @ stack) f
     | PProj (p,c) when evaluable_projection p env ts -> None
     | PProj (p,c) ->
@@ -162,14 +295,8 @@ let constr_pat_discr env ts p =
     | PVar v when evaluable_named v env ts -> None
     | PVar v -> Some (GRLabel (VarRef v), stack)
     | PProd (_,d,c) when stack = [] -> Some (ProdLabel, [d ; c])
-    | PLambda (_,d,c) when List.is_empty stack ->
-      begin
-        (* Check if [c] could possibly unify with [fun x => f x].
-           Only return [LamLabel] if that is impossible! *)
-        match decomp stack c with
-        | Some _ -> Some (LamLabel, d :: c :: stack)
-        | None -> None
-      end
+    | PLambda (n,d,c) when List.is_empty stack ->
+      decomp_lambda_pat decomp [(n,d)] c
     | PSort s when stack = [] -> Some (SortLabel, [])
     | PCase(_,_,p,_) | PIf(p,_,_) ->
       begin
@@ -185,7 +312,7 @@ let constr_pat_discr env ts p =
 let constr_pat_discr_syntactic env p =
   let open GlobRef in
   let rec decomp stack p =
-    match eta_reduce_pat p with
+    match p with
     | PApp (f,args) -> decomp (Array.to_list args @ stack) f
     | PProj (p,c) ->
       let p = Environ.QProjection.canonize env p in
@@ -201,6 +328,7 @@ let constr_pat_discr_syntactic env p =
     | PVar v -> Some (GRLabel (VarRef v), stack)
     | PProd (_,d,c) when stack = [] -> Some (ProdLabel, [d ; c])
     | PSort s when stack = [] -> Some (SortLabel, [])
+    | PLambda _ -> None         (* TODO: does syntactic pattern matching respect eta? *)
     | _ -> None
   in
   decomp [] p
