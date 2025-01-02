@@ -28,7 +28,7 @@ and module_implementation =
   | Struct of structure_body (** interactive body living in the parameter context of [mod_type] *)
   | FullStruct (** special case of [Struct] : the body is exactly [mod_type] *)
 
-and 'a generic_module_body =
+and 'a generic_module_body = private
   { mod_mp : ModPath.t; (** absolute path of the module *)
     mod_expr : ('a, module_implementation) when_mod_body; (** implementation *)
     mod_type : module_signature; (** expanded type *)
@@ -68,7 +68,29 @@ type 'a module_retroknowledge = ('a, Retroknowledge.action list) when_mod_body
 
 (** {6 Builders} *)
 
+val make_module_body : ModPath.t -> module_signature -> Mod_subst.delta_resolver -> Retroknowledge.action list -> module_body
+val make_module_type : ModPath.t -> module_signature -> Mod_subst.delta_resolver -> module_type_body
+
+val strengthen_module_body : src:ModPath.t -> dst:ModPath.t option ->
+  module_signature -> delta_resolver -> module_body -> module_body
+
+val strengthen_module_type :
+  structure_body -> delta_resolver -> module_type_body -> module_type_body
+
+val replace_module_body : structure_body -> delta_resolver -> module_body -> module_body
+
+val module_type_of_module : module_body -> module_type_body
+val module_body_of_type : ModPath.t -> module_type_body -> module_body
+
 val functorize_module : (Names.MBId.t * module_type_body) list -> module_body -> module_body
+
+(** {6 Setters} *)
+
+(* This is internal code used by the kernel, you should not mess with this. *)
+
+val set_implementation : module_implementation -> module_body -> module_body
+val set_algebraic_type : module_type_body -> module_expression -> module_type_body
+val set_retroknowledge : module_body -> Retroknowledge.action list -> module_body
 
 (** {6 Accessors} *)
 

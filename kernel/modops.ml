@@ -129,13 +129,8 @@ let destr_nofunctor mp = function
 
 (** {6 Misc operations } *)
 
-let module_type_of_module mb =
-  { mb with mod_expr = ModTypeNul; mod_type_alg = None;
-    mod_retroknowledge = ModTypeNul; }
-
-let module_body_of_type mp mtb =
-  { mtb with mod_expr = ModBodyVal Abstract; mod_mp = mp;
-      mod_retroknowledge = ModBodyVal []; }
+let module_type_of_module = Mod_declarations.module_type_of_module
+let module_body_of_type = Mod_declarations.module_body_of_type
 
 let check_modpath_equiv env mp1 mp2 =
   if ModPath.equal mp1 mp2 then ()
@@ -231,12 +226,8 @@ let rec strengthen_module mp_from mp_to mb =
   else match mb.mod_type with
   | NoFunctor struc ->
     let reso,struc' = strengthen_signature mp_from struc mp_to mb.mod_delta in
-    { mb with
-      mod_expr = ModBodyVal (Algebraic (MENoFunctor (MEident mp_to)));
-      mod_type = NoFunctor struc';
-      mod_delta =
-        add_mp_delta_resolver mp_from mp_to
-          (add_delta_resolver mb.mod_delta reso) }
+    let reso = add_mp_delta_resolver mp_from mp_to (add_delta_resolver mb.mod_delta reso) in
+    strengthen_module_body ~src:mp_to ~dst:None (NoFunctor struc') reso mb
   | MoreFunctor _ -> mb
 
 and strengthen_signature mp_from struc mp_to reso = match struc with
@@ -265,11 +256,8 @@ let strengthen mtb mp =
   else match mtb.mod_type with
   | NoFunctor struc ->
     let reso',struc' = strengthen_signature mtb.mod_mp struc mp mtb.mod_delta in
-    { mtb with
-      mod_type = NoFunctor struc';
-      mod_delta =
-        add_delta_resolver mtb.mod_delta
-          (add_mp_delta_resolver mtb.mod_mp mp reso') }
+    let reso' = add_delta_resolver mtb.mod_delta (add_mp_delta_resolver mtb.mod_mp mp reso') in
+    strengthen_module_type struc' reso' mtb
   | MoreFunctor _ -> mtb
 
 (** {6 Strengthening a module for [Module M := M'] or [Include M] } *)
@@ -284,11 +272,8 @@ let rec strengthen_and_subst_module mb subst mp_from mp_to =
         strengthen_and_subst_struct struc subst
           mp_from mp_to false false mb.mod_delta
       in
-      { mb with
-        mod_mp = mp_to;
-        mod_expr = ModBodyVal (Algebraic (MENoFunctor (MEident mp_from)));
-        mod_type = NoFunctor struc';
-        mod_delta = add_mp_delta_resolver mp_to mp_from reso' }
+      let reso' = add_mp_delta_resolver mp_to mp_from reso' in
+      strengthen_module_body ~src:mp_from ~dst:(Some mp_to) (NoFunctor struc') reso' mb
   | MoreFunctor _ ->
     let subst = add_mp mb.mod_mp mp_to empty_delta_resolver subst in
     subst_module subst do_delta_dom mb
@@ -399,13 +384,8 @@ let strengthen_and_subst_module_body mb mp include_b = match mb.mod_type with
       strengthen_and_subst_struct struc subst
         mb.mod_mp mp mb_is_an_alias include_b mb.mod_delta
     in
-    { mb with
-      mod_mp = mp;
-      mod_type = NoFunctor struc';
-      mod_expr = ModBodyVal (Algebraic (MENoFunctor (MEident mb.mod_mp)));
-      mod_delta =
-        if include_b then reso'
-        else add_delta_resolver new_resolver reso' }
+    let reso' = if include_b then reso' else add_delta_resolver new_resolver reso' in
+    strengthen_module_body ~src:mb.mod_mp ~dst:(Some mp) (NoFunctor struc') reso' mb
   | MoreFunctor _ ->
     let subst = map_mp mb.mod_mp mp empty_delta_resolver in
     subst_module subst do_delta_dom_codom mb

@@ -1238,7 +1238,7 @@ let build_module_body params restype senv =
   in
   let senv = set_vm_library vmtab senv in
   let mb' = functorize_module params mb in
-  { mb' with mod_retroknowledge = ModBodyVal senv.local_retroknowledge }
+  set_retroknowledge mb' senv.local_retroknowledge
 
 (** Returning back to the old pre-interactive-module environment,
     with one extra component and some updated fields
@@ -1285,13 +1285,7 @@ let end_module l restype senv =
   (mp,mbids,mb.mod_delta),
   propagate_senv (l,SFBmodule mb) newenv newresolver senv' oldsenv
 
-let build_mtb mp sign delta =
-  { mod_mp = mp;
-    mod_expr = ModTypeNul;
-    mod_type = sign;
-    mod_type_alg = None;
-    mod_delta = delta;
-    mod_retroknowledge = ModTypeNul }
+let build_mtb = Mod_declarations.make_module_type
 
 let end_modtype l senv =
   let mp = senv.modpath in
@@ -1398,15 +1392,7 @@ let export ~output_native_objects senv dir =
   let () = assert (Sorts.QVar.Set.is_empty senv.env.Environ.env_qualities) in
   let mp = senv.modpath in
   let str = NoFunctor (List.rev senv.revstruct) in
-  let mb =
-    { mod_mp = mp;
-      mod_expr = ModBodyVal FullStruct;
-      mod_type = str;
-      mod_type_alg = None;
-      mod_delta = senv.modresolver;
-      mod_retroknowledge = ModBodyVal senv.local_retroknowledge
-    }
-  in
+  let mb = Mod_declarations.make_module_body mp str senv.modresolver senv.local_retroknowledge in
   let ast, symbols =
     if output_native_objects then
       Nativelibrary.dump_library mp senv.env str

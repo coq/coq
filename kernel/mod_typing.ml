@@ -146,10 +146,7 @@ let rec check_with_def (cst, ustate) env struc (idl, wth) mp reso =
           let struc', cst =
             check_with_def (cst, ustate) env' struc (idl, wth) (MPdot(mp,lab)) mb.mod_delta
           in
-          let mb' = { mb with
-                      mod_type = NoFunctor struc';
-                      mod_type_alg = None }
-          in
+          let mb' = replace_module_body struc' mb.mod_delta mb in
           before@(lab,SFBmodule mb')::after, cst
         | _ -> error_generative_module_expected lab
       end
@@ -184,12 +181,8 @@ let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
       in
       let mp' = MPdot (mp,lab) in
       let new_mb = strengthen_and_subst_module_body new_mb mp' false in
-      let new_mb' =
-        { new_mb with
-          mod_mp = mp';
-          mod_expr = ModBodyVal (Algebraic (MENoFunctor (MEident new_mp)));
-        }
-      in
+      (** TODO: check this is fine when new_mb is a functor *)
+      let new_mb' = strengthen_module_body ~src:new_mp ~dst:(Some mp') new_mb.mod_type new_mb.mod_delta new_mb in
       let new_reso = add_delta_resolver reso new_mb.mod_delta in
       (* we propagate the new equality in the rest of the signature
          with the identity substitution accompanied by the new resolver*)
@@ -209,12 +202,7 @@ let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
         let struc',reso',cst =
           check_with_mod (cst, ustate) env' struc (idl,new_mp) mp' old.mod_delta
         in
-        let new_mb =
-          { old with
-            mod_type = NoFunctor struc';
-            mod_type_alg = None;
-            mod_delta = reso' }
-        in
+        let new_mb = replace_module_body struc' reso' old in
         let new_reso = add_delta_resolver reso reso' in
         let id_subst = map_mp mp' mp' reso' in
         let new_after = subst_structure id_subst after in
@@ -285,21 +273,7 @@ let rec translate_mse (cst, ustate) (vm, vmstate) env mpo inl = function
     let mp = mp_from_mexpr me in
     check_with_alg ustate vmstate env mp (translate_mse (cst, ustate) (vm, vmstate) env None inl me) with_decl
 
-let mk_mod mp e ty reso =
-  { mod_mp = mp;
-    mod_expr = ModBodyVal e;
-    mod_type = ty;
-    mod_type_alg = None;
-    mod_delta = reso;
-    mod_retroknowledge = ModBodyVal []; }
-
-let mk_modtype mp ty reso =
-  { mod_mp = mp;
-    mod_expr = ModTypeNul;
-    mod_type = ty;
-    mod_type_alg = None;
-    mod_delta = reso;
-    mod_retroknowledge = ModTypeNul; }
+let mk_modtype = Mod_declarations.make_module_type
 
 let rec translate_mse_funct (cst, ustate) (vm, vmstate) env ~is_mod mp inl mse = function
   | [] ->
@@ -319,7 +293,7 @@ let rec translate_mse_funct (cst, ustate) (vm, vmstate) env ~is_mod mp inl mse =
 and translate_modtype state vmstate env mp inl (params,mte) =
   let sign,alg,reso,cst,vm = translate_mse_funct state vmstate env ~is_mod:false mp inl mte params in
   let mtb = mk_modtype mp sign reso in
-  { mtb with mod_type_alg = Some alg }, cst, vm
+  set_algebraic_type mtb alg, cst, vm
 
 (** [finalize_module] :
     from an already-translated (or interactive) implementation and
@@ -328,7 +302,9 @@ and translate_modtype state vmstate env mp inl (params,mte) =
 let finalize_module_alg (cst, ustate) (vm, vmstate) env mp (sign,alg,reso) restype = match restype with
   | None ->
     let impl = match alg with Some e -> Algebraic e | None -> FullStruct in
-    mk_mod mp impl sign reso, cst, vm
+    let mb = make_module_body mp sign reso [] in
+    let mb = set_implementation impl mb in
+    mb, cst, vm
   | Some (params_mte,inl) ->
     let res_mtb, cst, vm = translate_modtype (cst, ustate) (vm, vmstate) env mp inl params_mte in
     let auto_mtb = mk_modtype mp sign reso in
@@ -342,11 +318,9 @@ let finalize_module_alg (cst, ustate) (vm, vmstate) env mp (sign,alg,reso) resty
       in
       Struct sign
     in
-    { res_mtb with
-      mod_mp = mp;
-      mod_expr = ModBodyVal impl;
-      mod_retroknowledge = ModBodyVal [];
-    },
+    let mb = module_body_of_type mp res_mtb in
+    let mb = set_implementation impl mb in
+    mb,
     (** constraints from module body typing + subtyping + module type. *)
     cst,
     vm

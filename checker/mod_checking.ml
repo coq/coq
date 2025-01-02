@@ -195,13 +195,7 @@ let lookup_module mp env =
   with Not_found ->
     failwith ("Unknown module: "^ModPath.to_string mp)
 
-let mk_mtb mp sign delta =
-  { mod_mp = mp;
-    mod_expr = ModTypeNul;
-    mod_type = sign;
-    mod_type_alg = None;
-    mod_delta = delta;
-    mod_retroknowledge = ModTypeNul; }
+let mk_mtb mp sign delta = Mod_declarations.make_module_type mp sign delta
 
 let rec collect_constants_without_body sign mp accu =
   let collect_field s lab = function

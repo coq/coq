@@ -68,6 +68,69 @@ type 'a module_retroknowledge = ('a, Retroknowledge.action list) when_mod_body
       * the argument of [MEapply] is now directly forced to be a [ModPath.t].
 *)
 
+(** Builders *)
+
+let make_module_body mp typ delta retro = {
+  mod_mp = mp;
+  mod_expr = ModBodyVal FullStruct;
+  mod_type = typ;
+  mod_type_alg = None;
+  mod_delta = delta;
+  mod_retroknowledge = ModBodyVal retro;
+}
+
+let make_module_type mp typ delta = {
+  mod_mp = mp;
+  mod_expr = ModTypeNul;
+  mod_type = typ;
+  mod_type_alg = None;
+  mod_delta = delta;
+  mod_retroknowledge = ModTypeNul;
+}
+
+let strengthen_module_body ~src ~dst typ delta mb =
+  let mp = match dst with None -> mb.mod_mp | Some mp -> mp in
+  { mb with
+    mod_mp = mp;
+    mod_expr = ModBodyVal (Algebraic (MENoFunctor (MEident src)));
+    mod_type = typ;
+    mod_delta = delta; }
+
+let strengthen_module_type struc delta mtb =
+  { mtb with
+    mod_type = NoFunctor struc;
+    mod_delta = delta }
+
+let replace_module_body struc delta mb =
+  (* This is only used by "with Module", we should try to inherit the algebraic type *)
+  let () = match mb.mod_expr with ModBodyVal Abstract -> () | _ -> assert false in
+  let () = match mb.mod_type with NoFunctor _ -> () | MoreFunctor _ -> assert false in
+  { mb with
+    mod_type = NoFunctor struc;
+    mod_type_alg = None;
+    mod_delta = delta }
+
+let module_type_of_module mb =
+  { mb with mod_expr = ModTypeNul; mod_type_alg = None;
+    mod_retroknowledge = ModTypeNul; }
+
+let module_body_of_type mp mtb =
+  { mtb with mod_expr = ModBodyVal Abstract; mod_mp = mp;
+      mod_retroknowledge = ModBodyVal []; }
+
+(** Setters *)
+
+let set_implementation e mb =
+  { mb with mod_expr = ModBodyVal e }
+
+let set_algebraic_type mb alg =
+  { mb with mod_type_alg = Some alg }
+
+let set_retroknowledge mb rk =
+  { mb with mod_retroknowledge = ModBodyVal rk }
+
+(** Accessors *)
+
 let mod_expr { mod_expr = ModBodyVal v; _ } = v
 
 (** Hashconsing of modules *)

@@ -330,13 +330,9 @@ and check_modtypes (cst, ustate) trace env mtb1 mtb2 subst1 subst2 equiv =
         (* contravariant *)
         let env =
           if Modops.is_functor body_t1 then env
-          else add_module
-            {mod_mp = mtb1.mod_mp;
-             mod_expr = ModBodyVal Abstract;
-             mod_type = subst_signature subst1 body_t1;
-             mod_type_alg = None;
-             mod_retroknowledge = ModBodyVal [];
-             mod_delta = mtb1.mod_delta} env
+          else
+            let mtb = make_module_type mtb1.mod_mp (subst_signature subst1 body_t1) mtb1.mod_delta in
+            add_module (module_body_of_type mtb1.mod_mp mtb) env
         in
         check_structure cst ~nargs:(nargs + 1) env body_t1 body_t2 equiv subst1 subst2
       | _ , _ -> error_incompatible_modtypes mtb1 mtb2
