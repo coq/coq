@@ -10,6 +10,7 @@
 
 open Names
 open Declarations
+open Mod_declarations
 
 (** This module defines the global environment of Rocq. The functions
    below are exactly the same as the ones in [Safe_typing], operating on

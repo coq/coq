@@ -3,6 +3,7 @@ open Util
 open Names
 open Conversion
 open Declarations
+open Mod_declarations
 open Environ
 
 (** {6 Checking constants } *)

@@ -12,6 +12,7 @@ open Names
 open Constr
 open Environ
 open Declarations
+open Mod_declarations
 open Entries
 open Mod_subst
 

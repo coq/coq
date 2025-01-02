@@ -1242,6 +1242,7 @@ let explain_is_a_functor mp =
 
 let explain_incompatible_module_types mexpr1 mexpr2 =
   let open Declarations in
+  let open Mod_declarations in
   let rec get_arg = function
   | NoFunctor _ -> 0
   | MoreFunctor (_, _, ty) -> succ (get_arg ty)

@@ -62,6 +62,7 @@
 open Util
 open Names
 open Declarations
+open Mod_declarations
 open Constr
 open Context.Named.Declaration
 
@@ -307,7 +308,7 @@ end =
 struct
 
 type t = {
-  certif_struc : Declarations.structure_body;
+  certif_struc : Mod_declarations.structure_body;
   certif_univs : Univ.ContextSet.t;
 }
 

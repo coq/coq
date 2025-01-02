@@ -11,6 +11,7 @@
 open Miniml
 open Constr
 open Declarations
+open Mod_declarations
 open Names
 open ModPath
 open Libnames

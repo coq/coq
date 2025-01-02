@@ -21,6 +21,7 @@ open Util
 open Names
 open Constr
 open Declarations
+open Mod_declarations
 open Declareops
 open Environ
 open Mod_subst

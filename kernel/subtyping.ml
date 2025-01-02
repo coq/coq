@@ -19,6 +19,7 @@ open UVars
 open Util
 open Constr
 open Declarations
+open Mod_declarations
 open Declareops
 open Conversion
 open Inductive

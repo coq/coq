@@ -280,7 +280,7 @@ let compile senv ~in_file =
   let fold senv dep = Library.register_library senv (DPmap.find dep contents) in
   let senv = List.fold_left fold senv (List.rev deps) in
   (* Extract the native code and compile it *)
-  let modl = (Safe_typing.module_of_library lib.Library.library_data).Declarations.mod_type in
+  let modl = (Safe_typing.module_of_library lib.Library.library_data).Mod_declarations.mod_type in
   let out_vo = Filename.(remove_extension in_file) ^ ".vo" in
   Library.save_library_to (Safe_typing.env_of_safe_env senv) dir out_vo modl
 

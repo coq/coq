@@ -9,6 +9,7 @@
 (************************************************************************)
 
 open Declarations
+open Mod_declarations
 open Mod_subst
 open UVars
 

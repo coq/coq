@@ -34,9 +34,9 @@ val env_of_safe_env : safe_environment -> Environ.env
 
 val sections_of_safe_env : safe_environment -> section_data Section.t option
 
-val structure_body_of_safe_env : safe_environment -> Declarations.structure_body
+val structure_body_of_safe_env : safe_environment -> Mod_declarations.structure_body
 
-val flatten_env : safe_environment -> ModPath.t * Declarations.structure_body
+val flatten_env : safe_environment -> ModPath.t * Mod_declarations.structure_body
 
 (** The safe_environment state monad *)
 
@@ -229,7 +229,7 @@ val current_dirpath : safe_environment -> DirPath.t
 
 type compiled_library
 
-val module_of_library : compiled_library -> Declarations.module_body
+val module_of_library : compiled_library -> Mod_declarations.module_body
 val univs_of_library : compiled_library -> Univ.ContextSet.t
 val check_flags_for_library : compiled_library -> safe_transformer0
 

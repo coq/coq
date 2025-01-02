@@ -28,6 +28,7 @@ open Names
 open Constr
 open Vars
 open Declarations
+open Mod_declarations
 open Context.Rel.Declaration
 
 module NamedDecl = Context.Named.Declaration

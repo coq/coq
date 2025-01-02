@@ -74,7 +74,7 @@ let register_ref local s c =
 let check_required_library d =
   let dir = make_dir d in
   try
-    let _ : Declarations.module_body = Global.lookup_module (ModPath.MPfile dir) in
+    let _ : Mod_declarations.module_body = Global.lookup_module (ModPath.MPfile dir) in
     ()
   with Not_found ->
     let in_current_dir = match Lib.current_mp () with

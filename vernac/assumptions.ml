@@ -19,6 +19,7 @@
 open Util
 open Names
 open Declarations
+open Mod_declarations
 
 module NamedDecl = Context.Named.Declaration
 

@@ -1443,7 +1443,7 @@ let vernac_import (export, cats) mpl =
   let import_mod (CAst.{v = mp; loc},f) =
     try
       let () = Dumpglob.dump_modref ?loc mp "mod" in
-      let () = if Modops.is_functor (Global.lookup_module mp).Declarations.mod_type
+      let () = if Modops.is_functor (Global.lookup_module mp).Mod_declarations.mod_type
         then CErrors.user_err ?loc Pp.(str "Cannot import functor " ++ str (ModPath.to_string mp) ++ str".")
       in
       import_module_with_filter ~export cats mp f

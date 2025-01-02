@@ -14,6 +14,7 @@ open Context
 open Pp
 open Names
 open Declarations
+open Mod_declarations
 open Libnames
 open Goptions
 

@@ -17,6 +17,7 @@
 open Util
 open Names
 open Declarations
+open Mod_declarations
 open Entries
 open Environ
 open Modops

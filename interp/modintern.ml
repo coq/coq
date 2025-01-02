@@ -9,6 +9,7 @@
 (************************************************************************)
 
 open Declarations
+open Mod_declarations
 open Libnames
 open Constrexpr
 open Constrintern

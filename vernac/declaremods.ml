@@ -13,6 +13,7 @@ open CErrors
 open Util
 open Names
 open Declarations
+open Mod_declarations
 open Entries
 open Libnames
 open Libobject

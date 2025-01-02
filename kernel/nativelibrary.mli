@@ -7,8 +7,9 @@
 (*         *     GNU Lesser General Public License Version 2.1          *)
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
+
 open Names
-open Declarations
+open Mod_declarations
 open Environ
 open Nativecode
 

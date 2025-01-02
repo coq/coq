@@ -13,6 +13,7 @@ open Constr
 open Univ
 open UVars
 open Declarations
+open Mod_declarations
 
 (** Unsafe environments. We define here a datatype for environments.
    Since typing is not yet defined, it is not possible to check the
