@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* Coq_makefile: automatically create a Makefile for a Coq development *)
+(* rocq makefile: automatically create a Makefile for a Rocq development *)
 
 open CoqProject_file
 open Printf
@@ -19,7 +19,7 @@ let usage_coq_makefile ~ok =
   let out = if ok then stdout else stderr in
   output_string out "Usage summary:\
 \n\
-\ncoq_makefile .... [file.v] ... [file.ml[ig]?] ... [file.ml{lib,pack}]\
+\nrocq makefile .... [file.v] ... [file.ml[ig]?] ... [file.ml{lib,pack}]\
 \n  ... [-I dir] ... [-R physicalpath logicalpath]\
 \n  ... [-Q physicalpath logicalpath] ... [VARIABLE = value]\
 \n  ... [-arg opt] ... [-docroot path] [-f file] [-o file]\

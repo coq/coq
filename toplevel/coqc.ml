@@ -20,10 +20,10 @@ let coqc_init ((_,color_mode),_) injections ~opts =
   injections
 
 let coqc_specific_usage = Boot.Usage.{
-  executable_name = "coqc";
+  executable_name = "rocq compile";
   extra_args = "file...";
   extra_options = "\n\
-coqc specific options:\
+rocq compile specific options:\
 \n  -o f.vo                use f.vo as the output file name\
 \n  -verbose               compile and output the input file\
 \n  -noglob                do not dump globalizations\
