@@ -4,7 +4,7 @@ build: [
     "-prefix" prefix
     "-mandir" man
     "-libdir" "%{lib}%/coq"
-    "-native-compiler" "yes" {coq-native:installed} "no" {!coq-native:installed}
+    "-native-compiler" "yes" {rocq-native:installed} "no" {!rocq-native:installed}
   ] {with-test}
   [
     "dune"

@@ -34,7 +34,7 @@ depends: [
   "conf-linux-libc-dev" {os = "linux"}
   "odoc" {with-doc}
 ]
-depopts: ["coq-native" "memprof-limits" "memtrace"]
+depopts: ["rocq-native" "memprof-limits" "memtrace"]
 dev-repo: "git+https://github.com/coq/coq.git"
 build: [
   ["dune" "subst"] {dev}
@@ -42,7 +42,7 @@ build: [
     "-prefix" prefix
     "-mandir" man
     "-libdir" "%{lib}%/coq"
-    "-native-compiler" "yes" {coq-native:installed} "no" {!coq-native:installed}
+    "-native-compiler" "yes" {rocq-native:installed} "no" {!rocq-native:installed}
   ]
   [
     "dune"
