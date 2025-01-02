@@ -140,7 +140,7 @@ let rec check_with_def (cst, ustate) env struc (idl, wth) mp reso =
         | SFBmodule mb -> mb
         | _ -> error_not_a_module_label lab
       in
-      begin match Declareops.mod_expr mb with
+      begin match Mod_declarations.mod_expr mb with
         | Abstract ->
           let struc = Modops.destr_nofunctor (MPdot (mp,lab)) mb.mod_type in
           let struc', cst =
@@ -172,7 +172,7 @@ let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
       (* Toplevel module definition *)
       let new_mb = lookup_module new_mp env in
       let new_mtb = module_type_of_module new_mb in
-      let cst = match Declareops.mod_expr old with
+      let cst = match Mod_declarations.mod_expr old with
         | Abstract ->
           let mtb_old = module_type_of_module old in
           let cst = Subtyping.check_subtypes (cst, ustate) env' new_mtb mtb_old in
@@ -203,7 +203,7 @@ let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
         | SFBmodule msb -> msb
         | _ -> error_not_a_module_label lab
       in
-      begin match Declareops.mod_expr old with
+      begin match Mod_declarations.mod_expr old with
       | Abstract ->
         let struc = destr_nofunctor mp' old.mod_type in
         let struc',reso',cst =
@@ -377,7 +377,7 @@ let rec forbid_incl_signed_functor env = function
   | MEwith _ -> assert false (* No 'with' syntax for modules *)
   | MEident mp1 ->
     let mb = lookup_module mp1 env in
-    match mb.mod_type, mb.mod_type_alg, Declareops.mod_expr mb with
+    match mb.mod_type, mb.mod_type_alg, Mod_declarations.mod_expr mb with
     | MoreFunctor _, Some _, _ ->
       (* functor + restricted signature = error *)
       error_include_restricted_functor mp1

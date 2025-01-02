@@ -64,3 +64,14 @@ type 'a module_retroknowledge = ('a, Retroknowledge.action list) when_mod_body
       * the head of [MEapply] can only be another [MEapply] or a [MEident]
       * the argument of [MEapply] is now directly forced to be a [ModPath.t].
 *)
+
+
+(** {6 Accessors} *)
+
+val mod_expr : module_body -> module_implementation
+
+(** {6 Hashconsing} *)
+
+val hcons_generic_module_body : 'a generic_module_body -> 'a generic_module_body
+val hcons_module_body : module_body -> module_body
+val hcons_module_type : module_type_body -> module_type_body

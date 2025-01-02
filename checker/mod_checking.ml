@@ -244,7 +244,7 @@ let rec check_module env opac mp mb opacify =
   let opac =
     check_signature env opac mb.mod_type mb.mod_mp mb.mod_delta opacify
   in
-  let optsign, opac = match Declareops.mod_expr mb with
+  let optsign, opac = match Mod_declarations.mod_expr mb with
     | Struct sign_struct ->
       let opacify = collect_constants_without_body mb.mod_type mb.mod_mp opacify in
       (* TODO: a bit wasteful, we recheck the types of parameters twice *)

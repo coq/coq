@@ -1114,7 +1114,7 @@ let add_modtype l params_mte inl senv =
   let vmstate = vm_state senv in
   let mtb, _, vmtab = Mod_typing.translate_modtype state vmstate senv.env mp inl params_mte  in
   let senv = set_vm_library vmtab senv in
-  let mtb = Declareops.hcons_module_type mtb in
+  let mtb = Mod_declarations.hcons_module_type mtb in
   let senv = add_field (l,SFBmodtype mtb) MT senv in
   mp, senv
 
@@ -1136,7 +1136,7 @@ let add_module l me inl senv =
   let vmstate = vm_state senv in
   let mb, _, vmtab = Mod_typing.translate_module state vmstate senv.env mp inl me in
   let senv = set_vm_library vmtab senv in
-  let mb = Declareops.hcons_module_body mb in
+  let mb = Mod_declarations.hcons_module_body mb in
   let senv = add_field (l,SFBmodule mb) M senv in
   let senv =
     if Modops.is_functor mb.mod_type then senv

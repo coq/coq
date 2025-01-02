@@ -8,8 +8,10 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open Util
 open Names
 open Declarations
+open Declareops
 
 type structure_field_body =
   (module_body, module_type_body) Declarations.structure_field_body
@@ -64,3 +66,105 @@ type 'a module_retroknowledge = ('a, Retroknowledge.action list) when_mod_body
       * the head of [MEapply] can only be another [MEapply] or a [MEident]
       * the argument of [MEapply] is now directly forced to be a [ModPath.t].
 *)
+
+let mod_expr { mod_expr = ModBodyVal v; _ } = v
+
+(** Hashconsing of modules *)
+
+let hcons_when_mod_body (type a b) (f : b -> b) : (a, b) when_mod_body -> (a, b) when_mod_body = function
+| ModBodyVal v as arg ->
+  let v' = f v in
+  if v == v' then arg else ModBodyVal v'
+| ModTypeNul -> ModTypeNul
+
+let hcons_functorize hty he hself f = match f with
+| NoFunctor e ->
+  let e' = he e in
+  if e == e' then f else NoFunctor e'
+| MoreFunctor (mid, ty, nf) ->
+  (** FIXME *)
+  let mid' = mid in
+  let ty' = hty ty in
+  let nf' = hself nf in
+  if mid == mid' && ty == ty' && nf == nf' then f
+  else MoreFunctor (mid, ty', nf')
+
+let hcons_module_alg_expr me = me
+
+let rec hcons_module_expression me = match me with
+| MENoFunctor malg ->
+  let malg' = hcons_module_alg_expr malg in
+  if malg == malg' then me else MENoFunctor malg'
+| MEMoreFunctor mf ->
+  let mf' = hcons_module_expression mf in
+  if mf' == mf then me else MEMoreFunctor mf'
+
+let rec hcons_structure_field_body sb = match sb with
+| SFBconst cb ->
+  let cb' = hcons_const_body cb in
+  if cb == cb' then sb else SFBconst cb'
+| SFBmind mib ->
+  let mib' = hcons_mind mib in
+  if mib == mib' then sb else SFBmind mib'
+| SFBmodule mb ->
+  let mb' = hcons_generic_module_body mb in
+  if mb == mb' then sb else SFBmodule mb'
+| SFBmodtype mb ->
+  let mb' = hcons_generic_module_body mb in
+  if mb == mb' then sb else SFBmodtype mb'
+| SFBrules _ -> sb (* TODO? *)
+
+and hcons_structure_body sb =
+  (** FIXME *)
+  let map (l, sfb as fb) =
+    let l' = Names.Label.hcons l in
+    let sfb' = hcons_structure_field_body sfb in
+    if l == l' && sfb == sfb' then fb else (l', sfb')
+  in
+  List.Smart.map map sb
+
+and hcons_module_signature ms =
+  hcons_functorize hcons_generic_module_body hcons_structure_body hcons_module_signature ms
+
+and hcons_module_implementation mip = match mip with
+| Abstract -> Abstract
+| Algebraic me ->
+  let me' = hcons_module_expression me in
+  if me == me' then mip else Algebraic me'
+| Struct ms ->
+  let ms' = hcons_structure_body ms in
+  if ms == ms' then mip else Struct ms
+| FullStruct -> FullStruct
+
+and hcons_generic_module_body :
+  'a. 'a generic_module_body -> 'a generic_module_body =
+  fun mb ->
+  let mp' = mb.mod_mp in
+  let expr' = hcons_when_mod_body hcons_module_implementation mb.mod_expr in
+  let type' = hcons_module_signature mb.mod_type in
+  let type_alg' = mb.mod_type_alg in
+  let delta' = mb.mod_delta in
+  let retroknowledge' = mb.mod_retroknowledge in
+
+  if
+    mb.mod_mp == mp' &&
+    mb.mod_expr == expr' &&
+    mb.mod_type == type' &&
+    mb.mod_type_alg == type_alg' &&
+    mb.mod_delta == delta' &&
+    mb.mod_retroknowledge == retroknowledge'
+  then mb
+  else {
+    mod_mp = mp';
+    mod_expr = expr';
+    mod_type = type';
+    mod_type_alg = type_alg';
+    mod_delta = delta';
+    mod_retroknowledge = retroknowledge';
+  }
+
+let hcons_module_body =
+  hcons_generic_module_body
+
+let hcons_module_type =
+  hcons_generic_module_body
