@@ -221,7 +221,7 @@ identifier is linked to the place of its definition.
 file``. Take care of erasing this global file, if any, when starting
 the whole compilation process.
 
-Then invoke `rocq doc` or ``rocqdoc --glob-from file`` to tell `rocq doc` to look
+Then invoke `rocq doc` or ``rocq doc --glob-from file`` to tell `rocq doc` to look
 for name resolutions in the file ``file`` (it will look in ``file.glob``
 by default).
 
@@ -286,7 +286,7 @@ Usage
 ~~~~~
 
 `rocq doc` is invoked on a shell command line as follows:
-``rocqdoc <options and files>``.
+``rocq doc <options and files>``.
 Any command line argument which is not an option is considered to be a
 file (even if it starts with a ``-``). Rocq files are identified by the
 suffixes ``.v`` and ``.g`` and |Latex| files by the suffix ``.tex``.
