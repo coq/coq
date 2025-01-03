@@ -8,7 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Nnat ZArith_base Lia ZArithRing Zdiv Morphisms.
+Require Import BinNat BinInt Nnat Znat Lia ZArithRing Zdiv Morphisms.
+Require Zeven.
 
 Local Open Scope Z_scope.
 
@@ -388,12 +389,12 @@ Proof.
  intros. symmetry.
  apply Zrem_unique_full with (Z.quot2 a).
  - apply Zquot2_odd_remainder.
- - apply Zquot2_odd_eqn.
+ - apply Zeven.Zquot2_odd_eqn.
 Qed.
 
 Lemma Zrem_even : forall a, Z.rem a 2 = if Z.even a then 0 else Z.sgn a.
 Proof.
- intros a. rewrite Zrem_odd, Zodd_even_bool. now destruct Z.even.
+ intros a. rewrite Zrem_odd, <-Z.negb_even. now destruct Z.even.
 Qed.
 
 Lemma Zeven_rem : forall a, Z.even a = Z.eqb (Z.rem a 2) 0.

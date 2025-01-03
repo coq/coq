@@ -410,7 +410,7 @@ Lemma Qpower_lt_compat_l_inv:
   forall (q : Q) (n m : Z), (q ^ n < q ^ m)%Q -> (1<q)%Q -> (n < m)%Z.
 Proof.
   intros q n m Hnm Hq.
-  destruct (Z_lt_le_dec n m) as [Hd|Hd].
+  destruct (Z.ltb_spec n m) as [Hd|Hd].
   - assumption.
   - pose proof Qpower_le_compat_l q m n Hd (Qlt_le_weak _ _ Hq) as Hnm'.
     pose proof Qlt_le_trans _ _ _ Hnm Hnm' as Habsurd.
@@ -421,7 +421,7 @@ Lemma Qpower_le_compat_l_inv:
   forall (q : Q) (n m : Z), (q ^ n <= q ^ m)%Q -> (1<q)%Q -> (n <= m)%Z.
 Proof.
   intros q n m Hnm Hq.
-  destruct (Z_lt_le_dec m n) as [Hd|Hd].
+  destruct (Z.ltb_spec m n) as [Hd|Hd].
   - pose proof Qpower_lt_compat_l q m n Hd Hq as Hnm'.
     pose proof Qle_lt_trans _ _ _ Hnm Hnm' as Habsurd.
     destruct (Qlt_irrefl _ Habsurd).

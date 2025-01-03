@@ -14,6 +14,7 @@
     are bijections. *)
 
 Require Import Decimal DecimalFacts DecimalPos DecimalZ DecimalQ Rdefinitions.
+Require Import PeanoNat.
 
 Lemma of_IQmake_to_decimal num den :
   match IQmake_to_decimal num den with

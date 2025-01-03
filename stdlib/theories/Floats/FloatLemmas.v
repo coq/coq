@@ -55,8 +55,7 @@ Proof.
   rewrite Bool.andb_true_iff.
   intro H'.
   destruct H' as (H1,H2).
-  rewrite Z.eqb_compare in H1.
-  apply Zeq_bool_eq in H1.
+  apply Z.eqb_eq in H1.
   apply Z.max_case_strong.
   1:apply Z.min_case_strong.
   - reflexivity.

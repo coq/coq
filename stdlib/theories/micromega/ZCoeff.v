@@ -12,7 +12,7 @@
 
 Require Import OrderedRing.
 Require Import RingMicromega.
-Require Import ZArith_base.
+Require Import BinInt.
 Require Import InitialRing.
 Require Import Setoid.
 Require Import ZArithRing.
@@ -114,7 +114,7 @@ Qed.
 Lemma Zring_morph :
   ring_morph 0 1 rplus rtimes rminus ropp req
              0%Z 1%Z Z.add Z.mul Z.sub Z.opp
-             Zeq_bool gen_order_phi_Z.
+             Z.eqb gen_order_phi_Z.
 Proof.
 exact (gen_phiZ_morph (SORsetoid sor) ring_ops_wd (SORrt sor)).
 Qed.
@@ -159,18 +159,16 @@ Lemma Zcleb_morph : forall x y : Z, Z.leb x y = true -> [x] <= [y].
 Proof.
 unfold Z.leb; intros x y H.
 case_eq (x ?= y)%Z; intro H1; rewrite H1 in H.
-- le_equal. apply (morph_eq Zring_morph). unfold Zeq_bool; now rewrite H1.
+- le_equal. apply (morph_eq Zring_morph). apply Z.eqb_eq; auto using Z.compare_eq.
 - le_less. now apply clt_morph.
 - discriminate.
 Qed.
 
-Lemma Zcneqb_morph : forall x y : Z, Zeq_bool x y = false -> [x] ~= [y].
+Lemma Zcneqb_morph : forall x y : Z, Z.eqb x y = false -> [x] ~= [y].
 Proof.
-intros x y H. unfold Zeq_bool in H.
-case_eq (Z.compare x y); intro H1; rewrite H1 in *; (discriminate || clear H).
+intros x y []%Z.eqb_neq%Z.lt_gt_cases.
 - apply (Rlt_neq sor). now apply clt_morph.
-- fold (x > y)%Z in H1. rewrite Z.gt_lt_iff in H1.
-  apply (Rneq_symm sor). apply (Rlt_neq sor). now apply clt_morph.
+- apply (Rneq_symm sor). apply (Rlt_neq sor). now apply clt_morph.
 Qed.
 
 End InitialMorphism.

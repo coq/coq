@@ -15,6 +15,7 @@ Require Import Classical_Prop.
 Require Import List.
 Require Import RList.
 Require Import Lia Lra.
+Require Import Wf_Z.
 Local Open Scope R_scope.
 
 Set Implicit Arguments.

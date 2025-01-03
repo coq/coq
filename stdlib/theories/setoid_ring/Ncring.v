@@ -14,7 +14,7 @@ Require Import Setoid.
 Require Import BinPos.
 Require Import BinNat.
 Require Export Morphisms Setoid Bool.
-Require Export ZArith_base.
+Require Export BinInt.
 Require Export Algebra_syntax.
 
 Set Implicit Arguments.

@@ -1156,7 +1156,7 @@ Definition CRup_nat {R : ConstructiveReals} (x : CRcarrier R)
   : { n : nat  &  x < CR_of_Q R (Z.of_nat n #1) }.
 Proof.
   destruct (CR_archimedean R x). exists (Pos.to_nat x0).
-  rewrite positive_nat_Z. exact c.
+  rewrite Znat.positive_nat_Z. exact c.
 Qed.
 
 Definition CRfloor {R : ConstructiveReals} (a : CRcarrier R)

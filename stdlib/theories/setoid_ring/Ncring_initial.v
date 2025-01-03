@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import ZArith_base.
+Require Import BinInt.
 Require Import Zpow_def.
 Require Import BinInt.
 Require Import BinNat.
@@ -20,6 +20,8 @@ Require Import BinInt.
 Require Import Setoid.
 Require Export Ncring.
 Require Export Ncring_polynom.
+
+Require Zbool.
 
 Set Implicit Arguments.
 
@@ -153,14 +155,6 @@ Ltac rsimpl := simpl.
   destruct x;rsimpl; try rewrite same_gen; reflexivity.
  Qed.
 
- Lemma gen_Zeqb_ok : forall x y,
-   Zeq_bool x y = true -> [x] == [y].
- Proof.
-  intros x y H7.
-  assert (H10 := Zeq_bool_eq x y H7);unfold IDphi in H10.
-  rewrite H10;reflexivity.
- Qed.
-
  Lemma gen_phiZ1_add_pos_neg : forall x y,
  gen_phiZ1 (Z.pos_sub x y)
  == gen_phiPOS1 x + -gen_phiPOS1 y.
@@ -227,6 +221,11 @@ Global Instance gen_phiZ_morph :
 - apply gen_phiZ_opp.
 - apply gen_phiZ_ext.
 Defined.
+
+#[deprecated(since="9.0")]
+Lemma gen_Zeqb_ok : forall x y,
+  Z.eqb x y = true -> [x] == [y].
+Proof. intros x y ->%Z.eqb_eq; reflexivity. Qed.
 
 End ZMORPHISM.
 

@@ -2624,8 +2624,10 @@ Hint Extern 0 (IZR _ >= IZR _) => apply Rle_ge, IZR_le, Zle_bool_imp_le, eq_refl
 Hint Extern 0 (IZR _ <  IZR _) => apply IZR_lt, eq_refl : real.
 #[global]
 Hint Extern 0 (IZR _ >  IZR _) => apply IZR_lt, eq_refl : real.
+Lemma Private_Zeq_bool_neq : forall x y : Z, (x =? y) = false -> x <> y.
+Proof. intros. rewrite <-Z.eqb_eq. congruence. Qed.
 #[global]
-Hint Extern 0 (IZR _ <> IZR _) => apply eq_IZR_contrapositive, Zeq_bool_neq, eq_refl : real.
+Hint Extern 0 (IZR _ <> IZR _) => apply eq_IZR_contrapositive, Private_Zeq_bool_neq, eq_refl : real.
 
 Lemma one_IZR_lt1 : forall n:Z, -1 < IZR n < 1 -> n = 0%Z.
 Proof.
@@ -2672,22 +2674,26 @@ Qed.
 
 Lemma R_rm : ring_morph
   0%R 1%R Rplus Rmult Rminus Ropp eq
-  0%Z 1%Z Zplus Zmult Zminus Z.opp Zeq_bool IZR.
+  0%Z 1%Z Zplus Zmult Zminus Z.opp Z.eqb IZR.
 Proof.
   constructor; try easy.
   - exact plus_IZR.
   - exact minus_IZR.
   - exact mult_IZR.
   - exact opp_IZR.
-  - now intros x y H; f_equal; apply Zeq_bool_eq.
+  - now intros x y H; f_equal; apply Z.eqb_eq.
 Qed.
 
 (* NOTE: keeping inconsistent variable names for backward compatibility. *)
-Lemma Zeq_bool_IZR : forall x y:Z, IZR x = IZR y -> Zeq_bool x y = true.
-Proof. now intros n m H; apply Zeq_is_eq_bool, eq_IZR. Qed.
+#[deprecated(use=Z.eqb_eq, since="9.0")]
+Lemma Zeq_bool_IZR : forall x y:Z, IZR x = IZR y -> Z.eqb x y = true.
+Proof. now intros n m H; apply Z.eqb_eq, eq_IZR. Qed.
+
+Local Lemma Private_Zeqb_IZR : forall x y:Z, IZR x = IZR y -> Z.eqb x y = true.
+Proof. intros. apply Z.eqb_eq, eq_IZR; trivial. Qed.
 
 Add Field RField : Rfield
-  (completeness Zeq_bool_IZR, morphism R_rm, constants [IZR_tac], power_tac R_power_theory [Rpow_tac]).
+  (completeness Private_Zeqb_IZR, morphism R_rm, constants [IZR_tac], power_tac R_power_theory [Rpow_tac]).
 
 (*********************************************************)
 (** * Definitions of new types                           *)

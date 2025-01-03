@@ -9,7 +9,7 @@
 (************************************************************************)
 
 Require Import OrderedType.
-Require Import ZArith_base.
+Require Import BinInt.
 Require Import PeanoNat Peano_dec Compare_dec.
 Require Import Ascii String.
 Require Import NArith Ndec.

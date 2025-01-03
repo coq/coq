@@ -11,6 +11,7 @@
 Require Import Rbase.
 Require Import Rfunctions.
 Require Import SeqSeries.
+Require Import Arith.Factorial.
 Local Open Scope R_scope.
 
 (*****************************************************************)

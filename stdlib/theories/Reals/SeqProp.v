@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+Require Import Arith.Factorial.
 Require Import Rbase.
 Require Import Rfunctions.
 Require Import Rseries.
