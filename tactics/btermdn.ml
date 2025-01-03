@@ -346,7 +346,7 @@ let constr_pat_discr_syntactic env p =
     | PVar v -> Some (GRLabel (VarRef v), stack)
     | PProd (_,d,c) when stack = [] -> Some (ProdLabel, [Pattern d ; Pattern c])
     | PLambda (_,d,c) when List.is_empty stack ->
-      Some (LamLabel, Pattern d :: Pattern c :: stack)
+      decomp_lambda_pat decomp [d] c
     | PSort s when stack = [] -> Some (SortLabel, [])
     | PCase(_,_,p,_) | PIf(p,_,_) -> Some (CaseLabel, Pattern p :: stack)
     | _ -> None
