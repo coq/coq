@@ -71,11 +71,17 @@ and partial_constr =
   | Constr of EConstr.t
   | PartialConstr of constr_res
 
-let decomp_lambda_constr sigma decomp =
-  let rec go ds p =
+let decomp_lambda_constr sigma decomp : EConstr.t list -> EConstr.t -> constr_res =
+  let res ty ds p =
+    let acc = Label (LamLabel, [Constr ty; Constr p]) in
+    let fn acc ty = (Label (LamLabel, [Constr ty; PartialConstr acc])) in
+    let res = List.fold_left fn acc ds in
+    res
+  in
+  let rec go ds p  : constr_res =
     match EConstr.kind sigma p with
-    | Lambda (n, ty, c) ->
-      let ds = (n, ty) :: ds in
+    | Lambda (_, ty, c) ->
+      let ds = ty :: ds in
       go ds c
     | App (f, args) ->
       let numd = List.length ds in
@@ -90,28 +96,23 @@ let decomp_lambda_constr sigma decomp =
       let p = EConstr.Vars.lift (-n) p in
       (* Feedback.msg_debug Pp.(str "constr after : " ++ Printer.pr_econstr_env (Global.env()) sigma p); *)
       begin
-        match decomp [] p with
-        | _ as c when ds = [] ->
-          (* Feedback.msg_debug Pp.(str "Stripped all lambdas"); *)
+        match decomp [] p, ds with
+        | _ as c, [] ->
           c (* no more remaining lambdas  *)
-        | Label _ ->                (* there are left-over lambdas and the body is discriminating *)
-          let (_, b) = List.last ds in
-          let ds = List.drop_last ds in
-          let p = List.fold_left (fun p (n, ty) -> EConstr.mkLambda (n, ty, p)) p ds in
-          Label (LamLabel, [Constr b; Constr p])
-        | Nothing | Everything -> Everything
+        | Label _, ty :: ds ->
+          res ty ds p
+        | Nothing, _ | Everything, _ -> Everything
       end
     | _ ->
       begin
-        match decomp [] p with
-        | Label _ ->
-          let (_, b) = List.last ds in
-          let ds = List.drop_last ds in
-          let p = List.fold_left (fun p (n, ty) -> EConstr.mkLambda (n, ty, p)) p ds in
-          Label (LamLabel, [Constr b; Constr p])
-        | Nothing | Everything -> Everything
+        match decomp [] p, ds with
+        | _, [] -> assert false
+        | Label _, ty :: ds ->
+          (* there are left-over lambdas and the body is discriminating *)
+          res ty ds p
+        | Nothing, _ | Everything, _ -> Everything
       end
-    in
+  in
   go
 
 (* The pattern view functions below try to overapproximate βι-neutral terms up
@@ -141,8 +142,8 @@ let constr_val_discr env sigma ts t : constr_res =
     | Var id when evaluable_named id env ts -> Everything
     | Var id -> Label(GRLabel (VarRef id), stack)
     | Prod (n,d,c) -> Label(ProdLabel, [Constr d; Constr c])
-    | Lambda (n,d,c) when List.is_empty stack ->
-      decomp_lambda_constr sigma decomp [(n,d)] c
+    | Lambda (_,d,c) when List.is_empty stack ->
+      decomp_lambda_constr sigma decomp [d] c
     | Lambda _ -> Everything
     | Sort _ -> Label(SortLabel, [])
     | Evar _ -> Everything
@@ -167,11 +168,17 @@ and partial_pat =
   | Pattern of constr_pattern
   | PartialPat of pat_res
 
-let decomp_lambda_pat decomp =
+let decomp_lambda_pat decomp : constr_pattern list -> constr_pattern -> pat_res =
+  let res ty ds p =
+    let acc = Some (LamLabel, [Pattern ty; Pattern p]) in
+    let fn acc ty = Some (LamLabel, [Pattern ty; PartialPat acc]) in
+    let res = List.fold_left fn acc ds in
+    res
+  in
   let rec go ds p =
     match p with
-    | PLambda (n, ty, c) ->
-      let ds = (n, ty) :: ds in
+    | PLambda (_, ty, c) ->
+      let ds = ty :: ds in
       go ds c
     | PApp (f, args) ->
       let numd = List.length ds in
@@ -186,28 +193,24 @@ let decomp_lambda_pat decomp =
       let p = Patternops.lift_pattern (-n) p in
       (* Feedback.msg_debug Pp.(str "pattern after :" ++ Printer.pr_constr_pattern_env (Global.env()) (Evd.empty) p); *)
       begin
-        match decomp [] p with
-        | _ as c when ds = [] ->
-          (* Feedback.msg_debug Pp.(str "Stripped all lambdas"); *)
+        match decomp [] p, ds with
+        | _ as c, [] ->
           c (* no more remaining lambdas  *)
-        | Some _ ->                (* there are left-over lambdas and the body is discriminating *)
-          let (_, b) = List.last ds in
-          let ds = List.drop_last ds in
-          let p = List.fold_left (fun p (n, ty) -> PLambda (n, ty, p)) p ds in
-          Some (LamLabel, [Pattern b; Pattern p])
-        | None -> None
+        | Some _, ty :: ds ->
+          (* there are left-over lambdas and the body is discriminating *)
+          res ty ds p
+        | None, _ -> None
       end
     | _ ->
       begin
-        match decomp [] p with
-        | Some _ ->
-          let (_, b) = List.last ds in
-          let ds = List.drop_last ds in
-          let p = List.fold_left (fun p (n, ty) -> PLambda (n, ty, p)) p ds in
-          Some (LamLabel, [Pattern b; Pattern p])
-        | None -> None
+        match decomp [] p, ds with
+        | _, [] -> assert false
+        | Some _, ty :: ds ->
+          (* there are left-over lambdas and the body is discriminating *)
+          res ty ds p
+        | None, _ -> None
       end
-    in
+  in
   go
 
 
@@ -233,8 +236,8 @@ let constr_pat_discr env ts p : pat_res =
     | PVar v when evaluable_named v env ts -> None
     | PVar v -> Some (GRLabel (VarRef v), stack)
     | PProd (_,d,c) when stack = [] -> Some (ProdLabel, [Pattern d ; Pattern c])
-    | PLambda (n,d,c) when List.is_empty stack ->
-      decomp_lambda_pat decomp [(n,d)] c
+    | PLambda (_,d,c) when List.is_empty stack ->
+      decomp_lambda_pat decomp [d] c
     | PSort s when stack = [] -> Some (SortLabel, [])
     | PCase(_,_,p,_) | PIf(p,_,_) ->
       begin
