@@ -13,6 +13,8 @@ open Constr
 open Names
 open Pattern
 
+let debug = CDebug.create ~name:"dnet-decomp" ()
+
 (* Discrimination nets with bounded depth.
    See the module dn.ml for further explanations.
    Eduardo (5/8/97). *)
@@ -162,7 +164,8 @@ let constr_val_discr env sigma ts t : constr_res =
   (* Should we perform weak βι here? *)
   let open GlobRef in
   let rec decomp (stack : partial_constr list) (t : EConstr.t) : constr_res =
-    match EConstr.kind sigma t with
+    debug Pp.(fun () -> str "constr_val_discr.decomp input: " ++ Printer.pr_leconstr_env env Evd.empty t);
+    let out = match EConstr.kind sigma t with
     | App (f,l) -> decomp (Array.fold_right (fun a l -> Constr a :: l) l stack) f
     | Proj (p,_,c) when evaluable_projection p env ts -> Everything
     | Proj (p,_,c) -> Label(ProjLabel (Projection.repr p, 0), Constr c :: stack)
@@ -194,6 +197,9 @@ let constr_val_discr env sigma ts t : constr_res =
       end
     | Rel _ | Meta _ | LetIn _ | Fix _ | CoFix _
     | Int _ | Float _ | String _ | Array _ -> Nothing
+    in
+    debug Pp.(fun () -> str "constr_val_discr.decomp output: " ++ pr_constr_res (Printer.pr_leconstr_env env Evd.empty) out);
+    out
   and decomp_partial (stack : partial_constr list) (t : partial_constr) : constr_res =
     match t with
     | Constr t -> decomp stack t
@@ -276,7 +282,8 @@ let decomp_lambda_pat decomp : constr_pattern list -> constr_pattern -> pat_res 
 let constr_pat_discr env ts p : pat_res =
   let open GlobRef in
   let rec decomp (stack : partial_pat list) (p : constr_pattern) : pat_res =
-    match p with
+    debug Pp.(fun () -> str "constr_pat_discr.decomp input: " ++ Printer.pr_lconstr_pattern_env env Evd.empty p);
+    let out = match p with
     | PApp (f,args) -> decomp ((Array.map_to_list (fun p -> Pattern p) args) @ stack) f
     | PProj (p,c) when evaluable_projection p env ts -> None
     | PProj (p,c) -> Some (ProjLabel (Projection.repr p, 0), Pattern c :: stack)
@@ -304,9 +311,13 @@ let constr_pat_discr env ts p : pat_res =
         | None -> None
       end
     | _ -> None
+    in
+    debug Pp.(fun () -> str "constr_pat_discr.decomp output: " ++ pr_pat_res (Printer.pr_lconstr_pattern_env env Evd.empty) out);
+    out
   and decomp_partial (stack : partial_pat list) (t : partial_pat) : pat_res =
     match t with
-    | Pattern p -> decomp stack p
+    | Pattern p ->
+      decomp stack p
     | PartialPat res -> res
   in
   decomp_partial [] p
@@ -314,7 +325,8 @@ let constr_pat_discr env ts p : pat_res =
 let constr_pat_discr_syntactic env p =
   let open GlobRef in
   let rec decomp (stack : partial_pat list) (p : constr_pattern) : pat_res =
-    match p with
+    debug Pp.(fun () -> str "constr_pat_discr_syntactic.decomp input: " ++ Printer.pr_lconstr_pattern_env env Evd.empty p);
+    let out = match p with
     | PApp (f,args) -> decomp ((Array.map_to_list (fun p -> Pattern p) args) @ stack) f
     | PProj (p,c) -> Some (ProjLabel (Names.Projection.repr p, 0), Pattern c :: stack)
     | PRef ((IndRef _) as ref)
@@ -332,6 +344,9 @@ let constr_pat_discr_syntactic env p =
     | PSort s when stack = [] -> Some (SortLabel, [])
     | PCase(_,_,p,_) | PIf(p,_,_) -> Some (CaseLabel, Pattern p :: stack)
     | _ -> None
+    in
+    debug Pp.(fun () -> str "constr_pat_discr_syntactic.decomp output: " ++ pr_pat_res (Printer.pr_lconstr_pattern_env env Evd.empty) out);
+    out
   and decomp_partial (stack : partial_pat list) (t : partial_pat) : pat_res =
     match t with
     | Pattern p -> decomp stack p
