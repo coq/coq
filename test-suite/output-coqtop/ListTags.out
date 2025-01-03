@@ -1,4 +1,4 @@
-COQ_COLORS="constr.evar=94:constr.keyword=1:constr.notation=37:constr.path=95:constr.reference=92:constr.type=33;1:diff.added=48;2;0;141;0;4:diff.added.bg=48;2;0;91;0:diff.removed=48;2;170;0;0;4:diff.removed.bg=48;2;91;0;0:message.debug=37;45;1:message.error=37;41;1:message.prompt=32:message.warning=37;43;1:module.definition=91;1:module.keyword=1:tactic.keyword=1:tactic.primitive=92:tactic.string=91"
+ROCQ_COLORS="constr.evar=94:constr.keyword=1:constr.notation=37:constr.path=95:constr.reference=92:constr.type=33;1:diff.added=48;2;0;141;0;4:diff.added.bg=48;2;0;91;0:diff.removed=48;2;170;0;0;4:diff.removed.bg=48;2;91;0;0:message.debug=37;45;1:message.error=37;41;1:message.prompt=32:message.warning=37;43;1:module.definition=91;1:module.keyword=1:tactic.keyword=1:tactic.primitive=92:tactic.string=91"
 [94mconstr.evar[0m
 [1mconstr.keyword[0m
 [37mconstr.notation[0m

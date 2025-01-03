@@ -254,7 +254,7 @@ directory, e.g. the file `Foo/Bar/script.vo` becomes `Foo.Bar.script`:
 - directories specified with :ref:`-R and -Q command line options <-Q-option>`,
 - the current directory where the Rocq process was launched (without
   including subdirectories),
-- the directories listed in the `COQPATH` environment variable (separated with
+- the directories listed in the `ROCQPATH` environment variable (separated with
   colons, or, on Windows, with semicolons)
 
 .. not working - the ``coq`` subdirectory for each directory  listed in the ``XDG_DATA_DIRS``
@@ -287,8 +287,8 @@ or include a `From` clause (as if they are available through `-Q`).  This is don
 to reduce the number of ambiguous logical paths.  We encourage using `From`
 clauses.
 
-Note that if you use a `_CoqProject` file, the `COQPATH` environment variable is not helpful.
-If you use `COQPATH` without a `_CoqProject`, a file in `MyPackage/theories/SubDir/File.v` will be
+Note that if you use a `_CoqProject` file, the `ROCQPATH` environment variable is not helpful.
+If you use `ROCQPATH` without a `_CoqProject`, a file in `MyPackage/theories/SubDir/File.v` will be
 loaded with the logical name `MyPackage/theories/SubDir.File`, which may not be what you want.
 
 If you associate the same logical name with more than one directory, Rocq
@@ -645,7 +645,7 @@ section of the generated makefile. These include:
 :COQLIBINSTALL, COQPLUGININSTALL, COQDOCINSTALL:
    specify where the Rocq libraries, plugins and documentation will be installed.
    By default a combination of ``$(DESTDIR)`` (if defined) with
-   ``$(COQLIB)/user-contrib``, ``$(COQCORELIB)/..`` and ``$(DOCDIR)/coq/user-contrib``.
+   ``$(ROCQLIB)/user-contrib``, ``$(ROCQRUNTIMELIB)/..`` and ``$(DOCDIR)/coq/user-contrib``.
 
 Use :ref:`rocqmakefilelocallate` instead to access more variables.
 
@@ -1101,7 +1101,7 @@ generated; the optional ``(modules <ordered_set_lang>)`` field allows
 you to filter the list of modules, and ``(libraries
 <ocaml_libraries>)`` allows the Rocq theory depend on ML plugins. For
 the moment, Dune relies on Rocq's standard mechanisms (such as
-``COQPATH``) to locate installed Rocq libraries.
+``ROCQPATH``) to locate installed Rocq libraries.
 
 By default Dune will skip ``.v`` files present in subdirectories. In
 order to enable the usual recursive organization of Rocq projects add
