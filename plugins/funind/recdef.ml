@@ -1615,6 +1615,16 @@ let com_eqn uctx nb_arg eq_name functional_ref f_ref terminate_ref
   in
   ()
 
+let check_relation_type env evd relation =
+  let err () = CErrors.user_err (strbrk "a well-founded relation is expected to be of type A->A->Prop for some type A.") in
+  let evd, t = Typing.type_of env evd relation in
+  let open Reductionops in
+  match EConstr.kind evd (whd_all env evd t) with
+  | Prod (_, typ, _) ->
+    let rel = mkArrowR typ (mkArrowR (Vars.lift 1 typ) mkProp) in
+    if not (is_conv env evd rel t) then err ()
+  | _ -> err ()
+
 (*      Pp.msgnl (fun _ _ -> str "eqn finished"); *)
 
 let recursive_definition ~interactive_proof ~is_mes function_name rec_impls
@@ -1689,6 +1699,7 @@ let recursive_definition ~interactive_proof ~is_mes function_name rec_impls
       env
   in
   let relation, evuctx = interp_constr env_with_pre_rec_args evd r in
+  let () = check_relation_type env_with_pre_rec_args evd relation in
   let evd = Evd.from_ctx evuctx in
   let tcc_lemma_name = add_suffix function_name "_tcc" in
   let tcc_lemma_constr = ref Undefined in
