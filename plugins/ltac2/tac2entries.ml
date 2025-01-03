@@ -942,21 +942,15 @@ let perform_eval ~pstate e =
   let env = Global.env () in
   let (e, ty) = Tac2intern.intern ~strict:false [] e in
   let v = Tac2interp.interp Tac2interp.empty_environment e in
-  let selector, proof =
+  let proof =
     match pstate with
     | None ->
       let sigma = Evd.from_env env in
       let name, poly = Id.of_string "ltac2", false in
-      Goal_select.SelectAll, Proof.start ~name ~poly sigma []
+      Proof.start ~name ~poly sigma []
     | Some pstate ->
-      Goal_select.get_default_goal_selector (),
       Declare.Proof.get pstate
   in
-  let nosuchgoal =
-    let info = Exninfo.reify () in
-    Proofview.tclZERO ~info (Proof.SuggestNoSuchGoals (1,proof))
-  in
-  let v = Goal_select.tclSELECT ~nosuchgoal selector v in
   let (proof, _, ans) = Proof.run_tactic (Global.env ()) v proof in
   let { Proof.sigma } = Proof.data proof in
   let name = int_name () in
