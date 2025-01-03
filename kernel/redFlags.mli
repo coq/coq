@@ -71,3 +71,7 @@ val betazeta : reds
 val delta : reds
 val zeta : reds
 val nored : reds
+
+(* Debugging *)
+
+val debug_pr : reds -> Pp.t
