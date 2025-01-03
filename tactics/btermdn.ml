@@ -39,7 +39,28 @@ let compare_term_label t1 t2 = match t1, t2 with
     (Projection.Repr.UserOrd.compare p1 p2)
 | _ -> Stdlib.compare t1 t2 (** OK *)
 
+let pr_term_label (l : term_label) =
+  let open Pp in
+  match l with
+  | GRLabel gr ->
+    str "GRLabel(" ++ GlobRef.print gr ++ str ")"
+  | ProjLabel (proj, i) ->
+    str "ProjLabel(" ++ Projection.Repr.print proj ++ str ", " ++ int i ++ str ")"
+  | ProdLabel -> str "ProdLabel"
+  | SortLabel -> str "SortLabel"
+  | CaseLabel -> str "CaseLabel"
+  | LamLabel -> str "LamLabel"
+
 type 'res lookup_res = 'res Dn.lookup_res = Label of 'res | Nothing | Everything
+
+let pr_lookup_res pr_res r =
+  let open Pp in
+  match r with
+  | Label lbl ->
+    str "Label(" ++ hv 2 (pr_res lbl) ++ str ")"
+  | Nothing -> str "Nothing"
+  | Everything -> str "Everything"
+
 
 (* let eta_reduce = Reductionops.shrink_eta *)
 
@@ -70,6 +91,25 @@ type constr_res = (term_label * partial_constr list) lookup_res
 and partial_constr =
   | Constr of EConstr.t
   | PartialConstr of constr_res
+
+let rec pr_constr_res pr_constr (cr : constr_res) =
+  let open Pp in
+  let pr_partial_constr (pc : partial_constr) =
+    match pc with
+    | Constr c ->
+      str "Constr(" ++ hv 2 (pr_constr c) ++ str ")"
+    | PartialConstr pc ->
+      str "PartialConstr([" ++ hv 2 (pr_constr_res pr_constr pc) ++ str "])"
+  in
+  let aux (lbl, pcs) =
+    pr_term_label lbl ++
+    str "," ++
+    prlist_with_sep
+      (fun () -> str ",")
+      pr_partial_constr
+      pcs
+  in
+  pr_lookup_res aux cr
 
 let decomp_lambda_constr sigma decomp : EConstr.t list -> EConstr.t -> constr_res =
   let res ty ds p =
@@ -167,6 +207,27 @@ type pat_res = (term_label * partial_pat list) option
 and partial_pat =
   | Pattern of constr_pattern
   | PartialPat of pat_res
+
+let rec pr_pat_res pr_pat (cr : pat_res) =
+  let open Pp in
+  let pr_partial_pat (pc : partial_pat) =
+    match pc with
+    | Pattern c ->
+      str "Pattern(" ++ hv 2 (pr_pat c) ++ str ")"
+    | PartialPat pc ->
+      str "PartialPat([" ++ hv 2 (pr_pat_res pr_pat pc) ++ str "])"
+  in
+  let aux (lbl, pcs) =
+    pr_term_label lbl ++
+    str "," ++
+    prlist_with_sep
+      (fun () -> str ",")
+      pr_partial_pat
+      pcs
+  in
+  match cr with
+  | Some x -> str "Some(" ++ hv 2 (aux x) ++ str ")"
+  | None -> str "None"
 
 let decomp_lambda_pat decomp : constr_pattern list -> constr_pattern -> pat_res =
   let res ty ds p =
