@@ -66,44 +66,6 @@ let label_of_opaque_constant c stack =
     let n_args_drop = min (n_args_needed - 1) n_args_given in (* we do not drop the record value from the stack *)
     (ProjLabel (p, n_args_missing), List.skipn n_args_drop stack)
 
-(* let drop_dead_rels_constr sigma n c = *)
-(*   let rec go_opt lb ub c : _ option = *)
-(*     match EConstr.kind sigma c with *)
-(*     (\* Ground terms *\) *)
-(*     | Sort _ *)
-(*     | Var _ -> Some c *)
-(*     | Construct _ -> Some c *)
-(*     | Ind _ -> Some c *)
-(*     | Const _ -> Some c *)
-(*     (\* Interesting and simple terms *\) *)
-(*     | Rel i when lb <= i && i <= n -> None *)
-(*     | App (f, args) -> *)
-(*       begin *)
-(*         match go_opt lb ub f with *)
-(*         | Some f -> Some (EConstr.mkApp (f, Array.map (go lb ub) args)) *)
-(*         | None -> None *)
-(*       end *)
-(*     | Lambda (n, ty, b) -> *)
-(*       begin *)
-(*         match go_opt lb ub ty with *)
-(*         | Some ty -> Some (EConstr.mkLambda (n, ty, go (lb+1) (ub+1) b)) *)
-(*         | None -> None *)
-(*       end *)
-(*     | Prod (n, ty, b) -> *)
-(*       begin *)
-(*         match go_opt lb ub ty with *)
-(*         | Some ty -> Some (EConstr.mkProd (n, ty, go (lb+1) (ub+1) b)) *)
-(*         | None -> None *)
-(*       end *)
-(*     (\* Everything else *\) *)
-(*     | _ -> None *)
-(*   and go lb ub c = *)
-(*     match go_opt lb ub c with *)
-(*     | Some c -> c *)
-(*     | None -> EConstr.mkMeta 0 *)
-(*   in *)
-(*   go 1 n c *)
-
 let decomp_lambda_constr sigma decomp =
   let rec go ds p =
     match EConstr.kind sigma p with
@@ -120,7 +82,6 @@ let decomp_lambda_constr sigma decomp =
       let (args, _) = Array.chop (nargs - n) args in
       (* Feedback.msg_debug Pp.(str "constr before: " ++ Printer.pr_econstr_env (Global.env()) sigma p); *)
       let p = EConstr.mkApp (f, args) in
-      (* let p = drop_dead_rels_constr sigma n (EConstr.mkApp (f, args)) in *)
       let p = EConstr.Vars.lift (-n) p in
       (* Feedback.msg_debug Pp.(str "constr after : " ++ Printer.pr_econstr_env (Global.env()) sigma p); *)
       begin
@@ -194,41 +155,6 @@ let constr_val_discr env sigma ts t =
   in
   decomp [] t
 
-(* let drop_dead_rels_pat n p = *)
-(*   let rec go_opt lb ub p : _ option = *)
-(*     match p with *)
-(*     (\* Ground terms *\) *)
-(*     | PSort _ *)
-(*     | PRef _ -> Some p *)
-(*     (\* Interesting and simple terms *\) *)
-(*     | PRel i when lb <= i && i <= n -> None *)
-(*     | PApp (f, args) -> *)
-(*       begin *)
-(*         match go_opt lb ub f with *)
-(*         | Some f -> Some (PApp (f, Array.map (go lb ub) args)) *)
-(*         | None -> None *)
-(*       end *)
-(*     | PLambda (n, ty, b) -> *)
-(*       begin *)
-(*         match go_opt lb ub ty with *)
-(*         | Some ty -> Some (PLambda (n, ty, go (lb+1) (ub+1) b)) *)
-(*         | None -> None *)
-(*       end *)
-(*     | PProd (n, ty, b) -> *)
-(*       begin *)
-(*         match go_opt lb ub ty with *)
-(*         | Some ty -> Some (PProd (n, ty, go (lb+1) (ub+1) b)) *)
-(*         | None -> None *)
-(*       end *)
-(*     (\* Everything else *\) *)
-(*     | _ -> None *)
-(*   and go lb ub p = *)
-(*     match go_opt lb ub p with *)
-(*     | Some p -> p *)
-(*     | None -> PMeta None *)
-(*   in *)
-(*   go 1 n p *)
-
 let decomp_lambda_pat decomp =
   let rec go ds p =
     match p with
@@ -245,7 +171,6 @@ let decomp_lambda_pat decomp =
       let (args, _) = Array.chop (nargs - n) args in
       (* Feedback.msg_debug Pp.(str "pattern before:" ++ Printer.pr_constr_pattern_env (Global.env()) (Evd.empty) p); *)
       let p = PApp (f, args) in
-      (* let p = drop_dead_rels_pat n (PApp (f, args)) in *)
       let p = Patternops.lift_pattern (-n) p in
       (* Feedback.msg_debug Pp.(str "pattern after :" ++ Printer.pr_constr_pattern_env (Global.env()) (Evd.empty) p); *)
       begin
