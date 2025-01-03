@@ -215,7 +215,8 @@ let coerce ?loc env sigma (x : EConstr.constr) (y : EConstr.constr)
     | Sort s, Sort s' ->
       (match ESorts.kind sigma s, ESorts.kind sigma s' with
        | Prop, Prop | Set, Set -> sigma, None
-       | (Prop | Set), Type _ -> sigma, None
+       | Prop, Type _ when UGraph.cumulative_prop (Evd.universes sigma) -> sigma, None
+       | Set, Type _ -> sigma, None
        | Type x, Type y when Univ.Universe.equal x y -> sigma, None (* false *)
        | _ -> subco sigma)
     | Prod (name, a, b), Prod (name', a', b') ->
