@@ -41,7 +41,7 @@ variables:
   # echo $(md5sum dev/ci/docker/old_ubuntu_lts/Dockerfile | head -c 10)
   # echo $(md5sum dev/ci/docker/edge_ubuntu/Dockerfile | head -c 10)
   BASE_CACHEKEY: "old_ubuntu_lts-V2024-10-11-f72b1aa7c6"
-  EDGE_CACHEKEY: "edge_ubuntu-V2024-12-13-5c140221f4"
+  EDGE_CACHEKEY: "edge_ubuntu-V2025-01-03-c1da705cbe"
   BASE_IMAGE: "$CI_REGISTRY_IMAGE:$BASE_CACHEKEY"
   EDGE_IMAGE: "$CI_REGISTRY_IMAGE:$EDGE_CACHEKEY"
 
@@ -239,16 +239,16 @@ before_script:
   extends: .auto-use-tags
   # OPAM will build out-of-tree so no point in importing artifacts
   script:
-    - if [ "$COQ_CI_NATIVE" = true ]; then opam install -y coq-native; fi
+    - if [ "$ROCQ_CI_NATIVE" = true ]; then opam install -y rocq-native; fi
     - opam pin add --kind=path rocq-runtime.dev .
     - opam pin add --kind=path rocq-core.dev .
     - opam pin add --kind=path coq-stdlib.dev stdlib/
     - if command -v coqc; then exit 1; fi # coq-core didn't get autoinstalled
     - opam pin add --kind=path coqide-server.dev .
     - opam pin add --kind=path coqide.dev .
-    - if [ "$COQ_CI_NATIVE" = true ]; then echo "Definition f x := x + x." > test_native.v; fi
-    - if [ "$COQ_CI_NATIVE" = true ]; then rocq c test_native.v; fi
-    - if [ "$COQ_CI_NATIVE" = true ]; then test -f .coq-native/Ntest_native.cmxs; fi
+    - if [ "$ROCQ_CI_NATIVE" = true ]; then echo "Definition f x := x + x." > test_native.v; fi
+    - if [ "$ROCQ_CI_NATIVE" = true ]; then rocq c test_native.v; fi
+    - if [ "$ROCQ_CI_NATIVE" = true ]; then test -f .coq-native/Ntest_native.cmxs; fi
     - opam pin add --kind=path coq-core.dev .
   after_script:
     - eval $(opam env)
@@ -390,7 +390,7 @@ lint:
 pkg:opam:native:
   extends: .pkg:opam-template
   variables:
-    COQ_CI_NATIVE: "true"
+    ROCQ_CI_NATIVE: "true"
 
 # broken, see eg https://gitlab.com/coq/coq/-/jobs/1754045983
 # pkg:nix:deploy:

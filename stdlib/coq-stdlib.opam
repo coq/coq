@@ -28,7 +28,7 @@ depends: [
   "rocq-core" {= version}
   "odoc" {with-doc}
 ]
-depopts: ["coq-native"]
+depopts: ["rocq-native"]
 dev-repo: "git+https://github.com/coq/coq.git"
 build: [
   ["dune" "subst"] {dev}

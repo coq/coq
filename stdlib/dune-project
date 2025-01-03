@@ -25,7 +25,7 @@
  (depends
   rocq-runtime
   (rocq-core (= :version)))
- (depopts coq-native)
+ (depopts rocq-native)
  (synopsis "The Coq Proof Assistant -- Standard Library")
  (description "Coq is a formal proof management system. It provides
 a formal language to write mathematical definitions, executable

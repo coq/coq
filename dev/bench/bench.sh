@@ -424,7 +424,7 @@ create_opam() {
 
     echo "$1_coq_commit_long = $COQ_HASH_LONG"
 
-    if [ ! -z "$coq_native" ]; then opam install coq-native; fi
+    if [ ! -z "$coq_native" ]; then opam install coq-native rocq-native; fi
 
 }
 
