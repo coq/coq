@@ -35,3 +35,15 @@ let pr_level_with_global_universes ?(binders=empty_binders) l =
   match qualid_of_level binders l with
   | Some qid  -> Libnames.pr_qualid qid
   | None -> Level.raw_pr l
+
+let qualid_of_quality (ctx,_) q =
+  match Sorts.QVar.repr q with
+  | Global qid ->
+    (try Some (Nametab.shortest_qualid_of_quality ctx qid)
+     with Not_found -> None)
+  | _ -> None
+
+let pr_quality_with_global_universes ?(binders=empty_binders) q =
+  match qualid_of_quality binders q with
+  | Some qid  -> Libnames.pr_qualid qid
+  | None -> Sorts.QVar.raw_pr q

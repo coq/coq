@@ -74,4 +74,6 @@ val lift_private_mono_univs : cooking_info -> 'a -> 'a
 
 val lift_private_poly_univs : cooking_info -> Univ.ContextSet.t -> Univ.ContextSet.t
 
+val lift_relevance : cooking_info -> Sorts.relevance -> Sorts.relevance
+
 val discharge_proj_repr : cooking_info -> Names.Projection.Repr.t -> Names.Projection.Repr.t
