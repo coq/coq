@@ -208,6 +208,9 @@ Module TemplateAlg.
 
   Check foo True nat : Prop.
 
+  Check fun A => foo A nat : Prop.
+  Fail Check fun A:Set => foo A nat : Prop.
+
   Universes u v.
 
   Axiom U : Type@{u}.
