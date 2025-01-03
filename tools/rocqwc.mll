@@ -8,10 +8,10 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* coqwc - counts the lines of spec, proof and comments in Coq sources
+(* rocq wc - counts the lines of spec, proof and comments in Coq sources
  * Copyright (C) 2003 Jean-Christophe Filliâtre *)
 
-(*s {\bf coqwc.} Counts the lines of spec, proof and comments in a Coq source.
+(*s {\bf rocq wc.} Counts the lines of spec, proof and comments in a Coq source.
     It assumes the files to be lexically well-formed. *)
 
 (*i*){
@@ -250,12 +250,12 @@ let process_file f =
     update_totals ()
   with
     | Sys_error s ->
-        flush stdout; eprintf "coqwc: %s: %s\n" f s; flush stderr
+        flush stdout; eprintf "rocq wc: %s: %s\n" f s; flush stderr
 
 (*s Parsing of the command line. *)
 
 let usage () =
-  prerr_endline "usage: coqwc [options] [files]";
+  prerr_endline "usage: rocq wc [options] [files]";
   prerr_endline "Options are:";
   prerr_endline "  -p   print percentage of comments";
   prerr_endline "  -s   print only the spec size";

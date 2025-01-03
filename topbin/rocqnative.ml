@@ -292,7 +292,7 @@ struct
 
 let print_usage_channel co command =
   output_string co command;
-  output_string co "coqnative options are:\n";
+  output_string co "rocq native-precompile options are:\n";
   output_string co
 "  -Q dir coqdir          map physical dir to logical coqdir\
 \n  -R dir coqdir          synonymous for -Q\
@@ -311,7 +311,7 @@ let print_usage_channel co command =
 let print_usage = print_usage_channel stderr
 
 let print_usage_coqnative () =
-  print_usage "Usage: coqnative <options> file\n\n"
+  print_usage "Usage: rocq native-precompile <options> file\n\n"
 
 let usage () =
   print_usage_coqnative ();
