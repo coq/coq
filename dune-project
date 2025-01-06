@@ -30,7 +30,7 @@
   (ocamlfind (>= 1.8.1))
   (zarith (>= 1.11))
   (conf-linux-libc-dev (= :os "linux")))
- (depopts coq-native memprof-limits memtrace)
+ (depopts rocq-native memprof-limits memtrace)
  (synopsis "The Coq Proof Assistant -- Core Binaries and Tools")
  (description "Coq is a formal proof management system. It provides
 a formal language to write mathematical definitions, executable
@@ -60,7 +60,7 @@ prelude, now living in the rocq-core package."))
  (name rocq-core)
  (depends
   (rocq-runtime (= :version)))
- (depopts coq-native)
+ (depopts rocq-native)
  (synopsis "The Coq Proof Assistant with its prelude")
  (description "Coq is a formal proof management system. It provides
 a formal language to write mathematical definitions, executable
