@@ -1227,14 +1227,6 @@ let propagate_loads senv =
 (** Build the module body of the current module, taking in account
     a possible return type (_:T) *)
 
-let functorize_module params mb =
-  let f x = functorize params x in
-  let fe x = iterate (fun e -> MEMoreFunctor e) (List.length params) x in
-  { mb with
-    mod_expr = Modops.implem_smart_map (fun x -> x) fe mb.mod_expr;
-    mod_type = f mb.mod_type;
-    mod_type_alg = Option.map fe mb.mod_type_alg }
-
 let build_module_body params restype senv =
   let struc = NoFunctor (List.rev senv.revstruct) in
   let restype' = Option.map (fun (ty,inl) -> (([],ty),inl)) restype in

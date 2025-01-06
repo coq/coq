@@ -12,6 +12,7 @@ open Util
 open Names
 open Declarations
 open Declareops
+open Mod_subst
 
 type structure_field_body =
   (module_body, module_type_body) Declarations.structure_field_body
@@ -168,3 +169,185 @@ let hcons_module_body =
 
 let hcons_module_type =
   hcons_generic_module_body
+
+(** Operators *)
+
+let rec functor_smart_map fty f0 funct = match funct with
+  | MoreFunctor (mbid,ty,e) ->
+    let ty' = fty ty in
+    let e' = functor_smart_map fty f0 e in
+    if ty==ty' && e==e' then funct else MoreFunctor (mbid,ty',e')
+  | NoFunctor a ->
+    let a' = f0 a in if a==a' then funct else NoFunctor a'
+
+let implem_smart_map (type a) fs fa (expr : (a, _) when_mod_body) : (a, _) when_mod_body =
+  match expr with
+  | ModTypeNul -> ModTypeNul
+  | ModBodyVal impl ->
+    match impl with
+    | Struct e -> let e' = fs e in if e==e' then expr else ModBodyVal (Struct e')
+    | Algebraic a -> let a' = fa a in if a==a' then expr else ModBodyVal (Algebraic a')
+    | Abstract | FullStruct -> expr
+
+let functorize params init =
+  List.fold_left (fun e (mbid,mt) -> MoreFunctor(mbid,mt,e)) init params
+
+let functorize_module params mb =
+  let f x = functorize params x in
+  let fe x = iterate (fun e -> MEMoreFunctor e) (List.length params) x in
+  { mb with
+    mod_expr = implem_smart_map (fun x -> x) fe mb.mod_expr;
+    mod_type = f mb.mod_type;
+    mod_type_alg = Option.map fe mb.mod_type_alg }
+
+(** Substitutions of modular structures *)
+
+let id_delta x _y = x
+
+let is_functor = function
+  | NoFunctor _ -> false
+  | MoreFunctor _ -> true
+
+let subst_with_body subst = function
+  | WithMod(id,mp) as orig ->
+    let mp' = subst_mp subst mp in
+    if mp==mp' then orig else WithMod(id,mp')
+  | WithDef(id,(c,ctx)) as orig ->
+    let c' = subst_mps subst c in
+    if c==c' then orig else WithDef(id,(c',ctx))
+
+let rec subst_structure subst do_delta sign =
+  let subst_field ((l,body) as orig) = match body with
+    | SFBconst cb ->
+      let cb' = subst_const_body subst cb in
+      if cb==cb' then orig else (l,SFBconst cb')
+    | SFBmind mib ->
+      let mib' = subst_mind_body subst mib in
+      if mib==mib' then orig else (l,SFBmind mib')
+    | SFBrules rrb ->
+      let rrb' = subst_rewrite_rules subst rrb in
+      if rrb==rrb' then orig else (l,SFBrules rrb')
+    | SFBmodule mb ->
+      let mb' = subst_module subst do_delta mb in
+      if mb==mb' then orig else (l,SFBmodule mb')
+    | SFBmodtype mtb ->
+      let mtb' = subst_modtype subst do_delta mtb in
+      if mtb==mtb' then orig else (l,SFBmodtype mtb')
+  in
+  List.Smart.map subst_field sign
+
+and subst_retro : type a. Mod_subst.substitution -> a module_retroknowledge -> a module_retroknowledge =
+  fun subst retro ->
+    match retro with
+    | ModTypeNul as r -> r
+    | ModBodyVal l as r ->
+      let l' = List.Smart.map (subst_retro_action subst) l in
+      if l == l' then r else ModBodyVal l
+
+and subst_module_body : type a. _ -> _ -> _ -> a generic_module_body -> a generic_module_body =
+  fun is_mod subst do_delta mb ->
+    let { mod_mp=mp; mod_expr=me; mod_type=ty; mod_type_alg=aty;
+          mod_retroknowledge=retro; _ } = mb in
+  let mp' = subst_mp subst mp in
+  let subst =
+    if ModPath.equal mp mp' then subst
+    else if is_mod && not (is_functor ty) then subst
+    else add_mp mp mp' empty_delta_resolver subst
+  in
+  let ty' = subst_signature subst do_delta ty in
+  let me' = subst_impl subst me in
+  let aty' = Option.Smart.map (subst_expression subst id_delta) aty in
+  let retro' = subst_retro subst retro in
+  let delta' = do_delta mb.mod_delta subst in
+  if mp==mp' && me==me' && ty==ty' && aty==aty'
+     && retro==retro' && delta'==mb.mod_delta
+  then mb
+  else
+    { mod_mp = mp';
+      mod_expr = me';
+      mod_type = ty';
+      mod_type_alg = aty';
+      mod_retroknowledge = retro';
+      mod_delta = delta';
+    }
+
+and subst_module subst do_delta mb =
+  subst_module_body true subst do_delta mb
+
+and subst_impl : type a. _ -> (a, _) when_mod_body -> (a, _) when_mod_body =
+  fun subst me ->
+  implem_smart_map
+    (subst_structure subst id_delta) (subst_expression subst id_delta) me
+
+and subst_modtype subst do_delta mtb = subst_module_body false subst do_delta mtb
+
+and subst_expr subst do_delta seb = match seb with
+  | MEident mp ->
+    let mp' = subst_mp subst mp in
+    if mp==mp' then seb else MEident mp'
+  | MEapply (meb1,mp2) ->
+    let meb1' = subst_expr subst do_delta meb1 in
+    let mp2' = subst_mp subst mp2 in
+    if meb1==meb1' && mp2==mp2' then seb else MEapply(meb1',mp2')
+  | MEwith (meb,wdb) ->
+    let meb' = subst_expr subst do_delta meb in
+    let wdb' = subst_with_body subst wdb in
+    if meb==meb' && wdb==wdb' then seb else MEwith(meb',wdb')
+
+and subst_expression subst do_delta me = match me with
+| MENoFunctor malg ->
+  let malg' = subst_expr subst do_delta malg in
+  if malg == malg' then me else MENoFunctor malg'
+| MEMoreFunctor mf ->
+  let mf' = subst_expression subst do_delta mf in
+  if mf == mf' then me else MEMoreFunctor mf'
+
+and subst_signature subst do_delta =
+  functor_smart_map
+    (subst_modtype subst do_delta)
+    (subst_structure subst do_delta)
+
+(** Cleaning a module expression from bounded parts
+
+     For instance:
+       functor(X:T)->struct module M:=X end)
+     becomes:
+       functor(X:T)->struct module M:=<content of T> end)
+*)
+
+type 'a mod_expr = ('a, module_implementation) when_mod_body
+
+let rec is_bounded_expr l = function
+  | MEident (MPbound mbid) -> MBIset.mem mbid l
+  | MEapply (fexpr,mp) ->
+      is_bounded_expr l (MEident mp) || is_bounded_expr l fexpr
+  | _ -> false
+
+let rec clean_module_body : type a. _ -> a generic_module_body -> a generic_module_body =
+  fun l mb ->
+  let typ = mb.mod_type in
+  let typ' = clean_signature l typ in
+  let expr' = clean_mod_expr l mb.mod_expr in
+  if typ==typ' && mb.mod_expr==expr' then mb
+  else { mb with mod_type=typ'; mod_expr = expr' }
+
+and clean_field l field = match field with
+  | (lab,SFBmodule mb) ->
+    let mb' = clean_module_body l mb in
+    if mb==mb' then field else (lab,SFBmodule mb')
+  | _ -> field
+
+and clean_structure l = List.Smart.map (clean_field l)
+
+and clean_signature l =
+  functor_smart_map (clean_module_body l) (clean_structure l)
+
+and clean_expression _ me = me
+
+and clean_mod_expr : type a. _ -> a mod_expr -> a mod_expr =
+  fun l me -> match me with
+  | ModBodyVal (Algebraic (MENoFunctor m)) when is_bounded_expr l m ->
+    ModBodyVal FullStruct
+  | _ ->
+    let me' = implem_smart_map (clean_structure l) (clean_expression l) me in
+    if me == me' then me else me'

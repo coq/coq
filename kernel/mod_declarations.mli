@@ -9,6 +9,7 @@
 (************************************************************************)
 
 open Names
+open Mod_subst
 open Declarations
 
 type structure_field_body =
@@ -65,13 +66,51 @@ type 'a module_retroknowledge = ('a, Retroknowledge.action list) when_mod_body
       * the argument of [MEapply] is now directly forced to be a [ModPath.t].
 *)
 
+(** {6 Builders} *)
+
+val functorize_module : (Names.MBId.t * module_type_body) list -> module_body -> module_body
 
 (** {6 Accessors} *)
 
 val mod_expr : module_body -> module_implementation
+
+(** {6 Mapping} *)
+
+val implem_smart_map :
+  (structure_body -> structure_body) ->
+  (module_expression -> module_expression) ->
+  ('a, module_implementation) when_mod_body ->
+  ('a, module_implementation) when_mod_body
+
+val functor_smart_map : ('a -> 'a) -> ('b -> 'b) ->
+  ('a, 'b) functorize -> ('a, 'b) functorize
+
+(** {6 Substitution} *)
+
+val subst_signature : substitution ->
+  (delta_resolver -> substitution -> delta_resolver) -> module_signature -> module_signature
+
+val subst_structure : substitution ->
+  (delta_resolver -> substitution -> delta_resolver) -> structure_body -> structure_body
+
+val subst_module : substitution ->
+  (delta_resolver -> substitution -> delta_resolver) -> module_body -> module_body
+
+val subst_modtype : substitution ->
+  (delta_resolver -> substitution -> delta_resolver) -> module_type_body -> module_type_body
 
 (** {6 Hashconsing} *)
 
 val hcons_generic_module_body : 'a generic_module_body -> 'a generic_module_body
 val hcons_module_body : module_body -> module_body
 val hcons_module_type : module_type_body -> module_type_body
+
+(** {6 Cleaning a module expression from bounded parts }
+
+     For instance:
+       functor(X:T)->struct module M:=X end)
+     becomes:
+       functor(X:T)->struct module M:=<content of T> end)
+*)
+
+val clean_structure : Names.MBIset.t -> structure_body -> structure_body
