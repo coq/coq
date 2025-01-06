@@ -1063,8 +1063,8 @@ let check_univ_decl_early ~poly ~with_obls sigma udecl terms =
   let uctx = UState.restrict uctx vars in
   ignore (UState.check_univ_decl ~poly uctx udecl)
 
-let restrict_universe_context ?lbound evd vars =
-  { evd with universes = UState.restrict ?lbound evd.universes vars }
+let restrict_universe_context evd vars =
+  { evd with universes = UState.restrict evd.universes vars }
 
 let universe_subst evd =
   UState.subst evd.universes

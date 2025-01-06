@@ -238,7 +238,7 @@ let empty =
     initial_universes = UGraph.initial_universes;
     minim_extra = UnivMinim.empty_extra; }
 
-let make ~lbound univs =
+let make univs =
   { empty with
     universes = univs;
     initial_universes = univs }
@@ -944,33 +944,30 @@ let check_univ_decl ~poly uctx decl =
     else Monomorphic_entry (check_mono_univ_decl uctx decl) in
   entry, binders
 
-let is_bound l lbound = match lbound with
-  | UGraph.Bound.Prop -> false
-  | UGraph.Bound.Set -> Level.is_set l
-
-let restrict_universe_context ?(lbound = UGraph.Bound.Set) (univs, csts) keep =
+let restrict_universe_context (univs, csts) keep =
   let removed = Level.Set.diff univs keep in
   if Level.Set.is_empty removed then univs, csts
   else
   let allunivs = Constraints.fold (fun (u,_,v) all -> Level.Set.add u (Level.Set.add v all)) csts univs in
   let g = UGraph.initial_universes in
-  let g = Level.Set.fold (fun v g -> if Level.is_set v then g else
-                        UGraph.add_universe v ~lbound ~strict:false g) allunivs g in
+  let g = Level.Set.fold (fun v g ->
+      if Level.is_set v then g else
+        UGraph.add_universe v ~lbound:Set ~strict:false g) allunivs g in
   let g = UGraph.merge_constraints csts g in
   let allkept = Level.Set.union (UGraph.domain UGraph.initial_universes) (Level.Set.diff allunivs removed) in
   let csts = UGraph.constraints_for ~kept:allkept g in
-  let csts = Constraints.filter (fun (l,d,r) -> not (is_bound l lbound && d == Le)) csts in
+  let csts = Constraints.filter (fun (l,d,r) -> not (Level.is_set l && d == Le)) csts in
   (Level.Set.inter univs keep, csts)
 
-let restrict ?lbound uctx vars =
+let restrict uctx vars =
   let vars = Id.Map.fold (fun na l vars -> Level.Set.add l vars)
       (snd (fst uctx.names)) vars
   in
-  let uctx' = restrict_universe_context ?lbound uctx.local vars in
+  let uctx' = restrict_universe_context uctx.local vars in
   { uctx with local = uctx' }
 
-let restrict_even_binders ?lbound uctx vars =
-  let uctx' = restrict_universe_context ?lbound uctx.local vars in
+let restrict_even_binders uctx vars =
+  let uctx' = restrict_universe_context uctx.local vars in
   { uctx with local = uctx' }
 
 let restrict_constraints uctx csts =
@@ -1159,15 +1156,15 @@ let new_univ_variable ?loc rigid name uctx =
 
 let add_forgotten_univ uctx u = add_universe None true uctx u
 
-let make_with_initial_binders ~lbound univs binders =
-  let uctx = make ~lbound univs in
+let make_with_initial_binders univs binders =
+  let uctx = make univs in
   List.fold_left
     (fun uctx { CAst.loc; v = id } ->
        fst (new_univ_variable ?loc univ_rigid (Some id) uctx))
     uctx binders
 
 let from_env ?(binders=[]) env =
-  make_with_initial_binders ~lbound:UGraph.Bound.Set (Environ.universes env) binders
+  make_with_initial_binders (Environ.universes env) binders
 
 let make_nonalgebraic_variable uctx u =
   { uctx with univ_variables = UnivFlex.make_nonalgebraic_variable uctx.univ_variables u }
@@ -1198,10 +1195,10 @@ let collapse_above_prop_sort_variables ~to_prop uctx =
 let collapse_sort_variables uctx =
   { uctx with sort_variables = QState.collapse uctx.sort_variables }
 
-let minimize ?(lbound = UGraph.Bound.Set) uctx =
+let minimize uctx =
   let open UnivMinim in
   let (vars', us') =
-    normalize_context_set ~lbound uctx.universes uctx.local uctx.univ_variables
+    normalize_context_set uctx.universes uctx.local uctx.univ_variables
       uctx.minim_extra
   in
   if ContextSet.equal us' uctx.local then uctx
