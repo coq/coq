@@ -12,7 +12,7 @@ open Pp
 open Coqargs
 
 (** This file provides generic support for Coq executables + specific
-    support for the coqtop executable *)
+    support for the rocq repl executable *)
 
 let () = at_exit flush_all
 
@@ -80,7 +80,7 @@ let start_coq custom args =
   custom.run ~opts custom_opts state
 
 (** ****************************************)
-(** Specific support for coqtop executable *)
+(** Specific support for rocq repl executable *)
 
 let ltac_debug_answer = let open DebugHook.Answer in function
     | Prompt prompt ->
@@ -184,10 +184,10 @@ let coqtop_run ({ run_mode; color_mode },_) ~opts state =
   | Batch -> exit 0
 
 let coqtop_specific_usage = Boot.Usage.{
-  executable_name = "coqtop";
+  executable_name = "rocq repl";
   extra_args = "";
   extra_options = "\n\
-coqtop specific options:\n\
+rocq repl specific options:\n\
 \n  -batch                 batch mode (exits after interpretation of command line)\
 \n"
 }

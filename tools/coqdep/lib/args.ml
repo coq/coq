@@ -39,7 +39,7 @@ let warn_unknown_option =
 
 let usage () =
   let open Printf in
-  eprintf " usage: coqdep [options] <filename>+\n";
+  eprintf " usage: rocq dep [options] <filename>+\n";
   eprintf " options:\n";
   eprintf "  -boot : For coq developers, prints dependencies over coq library files (omitted by default).\n";
   eprintf "  -sort : output the given file name ordered by dependencies\n";

@@ -12,7 +12,7 @@
 open Common
 
 let banner () =
-  Printf.eprintf "This is coqdoc version %s\n" Coq_config.version;
+  Printf.eprintf "This is rocq doc version %s\n" Coq_config.version;
   flush stderr
 
 let normalize_path p =
@@ -226,11 +226,11 @@ let args_options = Arg.align [
   " First line comments of the form (** * ModuleName : text *) will be interpreted as subtitles";
   "--inline-notmono", arg_set (fun p -> { p with inline_notmono = true }),
   " Use a proportional width font for inline code (possibly with a different color)";
-  "--version", Arg.Unit (fun () -> banner()), " Display coqdoc version";
+  "--version", Arg.Unit (fun () -> banner()), " Display rocq doc version";
 ]
 
 let add_input_files f = prefs := { !prefs with files = what_file f :: !prefs.files }
-let usage_msg = "coqdoc [options] <input file>...\nAvailable options are:"
+let usage_msg = "rocq doc [options] <input file>...\nAvailable options are:"
 
 let single_hyphen_opts =
   ["-html"; "-latex"; "-texmacs"; "-raw"; "-dvi"; "-ps"; "-pdf"; "-stdout"; "-output"; "-directory"; "-gallina"; "-short"; "-light"; "-title"; "-body-only"; "-no-preamble"; "-with-header"; "-with-footer"; "-no-index"; "-multi-index"; "-index"; "-toc"; "-table-of-contents"; "-vernac-file"; "-tex-file"; "-preamble"; "-files-from"; "-files"; "-glob-from"; "-no-glob"; "-quiet"; "-verbose"; "-no-externals"; "-external"; "-coqlib_url"; "-coqlib"; "-latin1"; "-utf8"; "-charset"; "-inputenc"; "-interpolate"; "-raw-comments"; "-parse-comments"; "-plain-comments"; "-toc-depth"; "-no-lib-name"; "-lib-name"; "-lib-subtitles"; "-inline-notmono"; "-version"]
