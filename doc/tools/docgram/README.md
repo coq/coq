@@ -6,7 +6,7 @@ It also updates `tacn` and `cmd` directives when they can be unambiguously match
 productions of the grammar (in practice, that's probably almost always).
 `tacv` and `cmdv` directives are not updated because matching them appears to require
 human judgement.  `doc_grammar` generates a few files that may be useful to
-developers and documentors.
+developers and documenters.
 
 The mlg grammars present several challenges to generating an accurate grammar
 for documentation purposes:
