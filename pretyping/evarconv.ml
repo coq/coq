@@ -1215,7 +1215,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
         begin match flex_kind_of_term flags env evd t1 sk1 with
         | Flexible ev1 -> anomaly (Pp.str "rigid terms can not fold to flexible ones")
         | MaybeFlexible v1 -> flex_maybeflex true ev2 appr2 appr1 appr1
-        | Rigid -> flex_rigid true ev2 appr2 appr1
+        | Rigid -> flex_rigid false ev2 appr2 appr1
         end
 
     | MaybeFlexible vsk1', Rigid ->
