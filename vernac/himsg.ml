@@ -1429,10 +1429,12 @@ let error_bad_entry () =
 let error_large_non_prop_inductive_not_in_type () =
   str "Large non-propositional inductive types must be in Type."
 
-let error_inductive_missing_constraints (us,ind_univ) =
+let error_inductive_missing_constraints env (us,ind_univ) =
+  let sigma = Evd.from_env env in
+  let pr_sort u = Printer.pr_sort sigma u in
   str "Missing universe constraint declared for inductive type:" ++ spc()
   ++ v 0 (prlist_with_sep spc (fun u ->
-      hov 0 (Printer.pr_sort Evd.empty u ++ str " <= " ++ Printer.pr_sort Evd.empty ind_univ))
+      hov 0 (pr_sort u ++ str " <= " ++ pr_sort ind_univ))
       us)
 
 (* Recursion schemes errors *)
@@ -1453,20 +1455,20 @@ let error_not_mutual_in_scheme env ind ind' =
 
 (* Inductive constructions errors *)
 
-let explain_inductive_error = function
-  | NonPos (env,c,v) -> error_non_strictly_positive env c v
-  | NotEnoughArgs (env,c,v) -> error_ill_formed_inductive env c v
-  | NotConstructor (env,id,c,v,n,m) ->
+let explain_inductive_error env = function
+  | NonPos (c,v) -> error_non_strictly_positive env c v
+  | NotEnoughArgs (c,v) -> error_ill_formed_inductive env c v
+  | NotConstructor (id,c,v,n,m) ->
       error_ill_formed_constructor env id c v n m
-  | NonPar (env,c,n,v1,v2) -> error_bad_ind_parameters env c n v1 v2
+  | NonPar (c,n,v1,v2) -> error_bad_ind_parameters env c n v1 v2
   | SameNamesTypes id -> error_same_names_types id
   | SameNamesConstructors id -> error_same_names_constructors id
   | SameNamesOverlap idl -> error_same_names_overlap idl
-  | NotAnArity (env, c) -> error_not_an_arity env c
+  | NotAnArity c -> error_not_an_arity env c
   | BadEntry -> error_bad_entry ()
   | LargeNonPropInductiveNotInType ->
     error_large_non_prop_inductive_not_in_type ()
-  | MissingConstraints csts -> error_inductive_missing_constraints csts
+  | MissingConstraints csts -> error_inductive_missing_constraints env csts
 
 (* Primitive errors *)
 
@@ -1647,8 +1649,8 @@ let rec vernac_interp_error_handler = function
     explain_prim_token_notation_error kind ctx sigma te
   | Typeclasses_errors.TypeClassError(env, sigma, te) ->
     explain_typeclass_error env sigma te
-  | InductiveError e ->
-    explain_inductive_error e
+  | InductiveError (env,e) ->
+    explain_inductive_error env e
   | Primred.IncompatibleDeclarations (act,x,y) ->
     explain_incompatible_prim_declarations act x y
   | Modops.ModuleTypingError e ->

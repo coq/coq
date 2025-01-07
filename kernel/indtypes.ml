@@ -74,18 +74,18 @@ let explain_ind_err id ntyp env nparamsctxt c err =
   let (_lparams,c') = mind_extract_params nparamsctxt c in
   match err with
     | LocalNonPos kt ->
-        raise (InductiveError (NonPos (env,c',mkRel (kt+nparamsctxt))))
+        raise (InductiveError (env, NonPos (c',mkRel (kt+nparamsctxt))))
     | LocalNotEnoughArgs kt ->
         raise (InductiveError
-                 (NotEnoughArgs (env,c',mkRel (kt+nparamsctxt))))
+                 (env, NotEnoughArgs (c',mkRel (kt+nparamsctxt))))
     | LocalNotConstructor (paramsctxt,nargs)->
         let nparams = Context.Rel.nhyps paramsctxt in
         raise (InductiveError
-                 (NotConstructor (env,id,c',mkRel (ntyp+nparamsctxt),
+                 (env, NotConstructor (id,c',mkRel (ntyp+nparamsctxt),
                                   nparams,nargs)))
     | LocalNonPar (n,i,l) ->
         raise (InductiveError
-                 (NonPar (env,c',n,mkRel i,mkRel (l+nparamsctxt))))
+                 (env, NonPar (c',n,mkRel i,mkRel (l+nparamsctxt))))
 
 let failwith_non_pos n ntypes c =
   for k = n to n + ntypes - 1 do
@@ -333,7 +333,7 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
           | Prod (na,b,d) ->
               let () = assert (List.is_empty largs) in
               if not recursive && not (noccur_between n ntypes b) then
-                raise (InductiveError Type_errors.BadEntry);
+                raise (InductiveError (env,Type_errors.BadEntry));
               let nmr',recarg = check_strict_positivity ienv nmr b in
               let ienv' = ienv_push_var ienv (na,b,mk_norec) in
                 check_constr_rec ienv' nmr' (recarg::lrec) d
@@ -376,7 +376,7 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
 let check_positivity ~chkpos kn names env_ar_par paramsctxt finite inds =
   let ntypes = Array.length inds in
   let recursive = finite != BiFinite in
-  if not recursive && Array.length inds <> 1 then raise (InductiveError Type_errors.BadEntry);
+  if not recursive && Array.length inds <> 1 then raise (InductiveError (env_ar_par,Type_errors.BadEntry));
   let rc = Array.mapi (fun j t -> (Mrec (RecArgInd (kn,j)),t)) (Rtree.mk_rec_calls ntypes) in
   let ra_env_ar = Array.rev_to_list rc in
   let nparamsctxt = Context.Rel.length paramsctxt in

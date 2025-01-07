@@ -28,31 +28,31 @@ open Context.Rel.Declaration
    of names. The name [id] is the name of the current inductive type, used
    when reporting the error. *)
 
-let check_constructors_names =
+let check_constructors_names env idset ids =
   let rec check idset = function
     | [] -> idset
     | c::cl ->
         if Id.Set.mem c idset then
-          raise (InductiveError (SameNamesConstructors c))
+          raise (InductiveError (env, SameNamesConstructors c))
         else
           check (Id.Set.add c idset) cl
   in
-  check
+  check idset ids
 
 (* [mind_check_names mie] checks the names of an inductive types declaration,
    and raises the corresponding exceptions when two types or two constructors
    have the same name. *)
 
-let mind_check_names mie =
+let mind_check_names env mie =
   let rec check indset cstset = function
     | [] -> ()
     | ind::inds ->
         let id = ind.mind_entry_typename in
         let cl = ind.mind_entry_consnames in
         if Id.Set.mem id indset then
-          raise (InductiveError (SameNamesTypes id))
+          raise (InductiveError (env, SameNamesTypes id))
         else
-          let cstset' = check_constructors_names cstset cl in
+          let cstset' = check_constructors_names env cstset cl in
           check (Id.Set.add id indset) cstset' inds
   in
   check Id.Set.empty Id.Set.empty mie.mind_entry_inds
@@ -381,9 +381,9 @@ let get_template univs ~env_params ~env_ar_par ~params entries data =
     let params = List.rev_map Option.has_some params in
     Some { template_param_arguments = params; template_context = ctx }
 
-let abstract_packets usubst ((arity,lc),(indices,splayed_lc),univ_info) =
+let abstract_packets env usubst ((arity,lc),(indices,splayed_lc),univ_info) =
   if not (List.is_empty univ_info.missing)
-  then raise (InductiveError (MissingConstraints (univ_info.missing,univ_info.ind_univ)));
+  then raise (InductiveError (env, MissingConstraints (univ_info.missing,univ_info.ind_univ)));
   let arity = Vars.subst_univs_level_constr usubst arity in
   let lc = Array.map (Vars.subst_univs_level_constr usubst) lc in
   let indices = Vars.subst_univs_level_context usubst indices in
@@ -422,7 +422,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   | _ -> ()
   in
   (* Check unicity of names (redundant with safe_typing's add_field checks) *)
-  mind_check_names mie;
+  mind_check_names env mie;
   assert (List.is_empty (Environ.rel_context env));
 
   (* universes *)
@@ -512,7 +512,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
     (inst, Polymorphic auctx)
   in
   let params = Vars.subst_univs_level_context usubst params in
-  let data = List.map (abstract_packets usubst) data in
+  let data = List.map (abstract_packets env usubst) data in
 
   let env_ar_par =
     let ctx = Environ.rel_context env_ar_par in
