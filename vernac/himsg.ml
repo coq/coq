@@ -1431,7 +1431,7 @@ let error_large_non_prop_inductive_not_in_type () =
 
 let error_inductive_missing_constraints env (us,ind_univ) =
   let sigma = Evd.from_env env in
-  let pr_sort u = Printer.pr_sort sigma u in
+  let pr_sort u = Flags.with_option Constrextern.print_universes (Printer.pr_sort sigma) u in
   str "Missing universe constraint declared for inductive type:" ++ spc()
   ++ v 0 (prlist_with_sep spc (fun u ->
       hov 0 (pr_sort u ++ str " <= " ++ pr_sort ind_univ))
