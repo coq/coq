@@ -18,7 +18,7 @@ let with_worker_gen opts basename args =
   Rocqshim.exec_or_create_process prog argv
 
 let with_worker opts kind args =
-  with_worker_gen opts "coqworker" (("--kind="^kind) :: args)
+  with_worker_gen opts "rocqworker" (("--kind="^kind) :: args)
 
 let with_sibling_exe opts prog args =
   let prog = System.get_toplevel_path prog in
@@ -86,7 +86,7 @@ let error_usage () =
 let run_subcommand opts args = function
   | Compile -> with_worker opts "compile" args
   | Repl -> with_worker opts "repl" args
-  | ReplWithDrop -> with_worker_gen opts "coqworker_with_drop" args
+  | ReplWithDrop -> with_worker_gen opts "rocqworker_with_drop" args
   | NativePrecompile -> with_worker_gen opts "rocqnative" args
   | Check -> with_sibling_exe opts "rocqchk" args
   | Votour -> with_sibling_exe opts "votour" args

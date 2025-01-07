@@ -8,7 +8,7 @@ dotest=true
 if [ $dotest = false ]; then exit 0; fi
 rm -f misc/deps/Theory2/*.vo misc/deps/Theory2/Subtheory?/*.vo misc/deps/Theory2/Subtheory?/Subsubtheory?/*.vo
 output=misc/deps/Theory2Deps.real
-(cd misc/deps; $coqdep -worker @COQWORKER@ -f _CoqTheory2Project) > "$output" 2>&1
+(cd misc/deps; $coqdep -worker @ROCQWORKER@ -f _CoqTheory2Project) > "$output" 2>&1
 diff -u --strip-trailing-cr misc/deps/Theory2Deps.out $output
 R=$?
 if [ $R != 0 ]; then

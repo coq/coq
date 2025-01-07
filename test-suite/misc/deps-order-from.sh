@@ -4,7 +4,7 @@
 # See bugs #11631, #14539
 rm -f misc/deps/test-from/A/C.vo misc/deps/test-from/B/C.vo misc/deps/test-from/D.vo misc/deps/test-from/E.vo
 output=misc/deps/deps-from.real
-$coqdep -worker @COQWORKER@ -R misc/deps/test-from T misc/deps/test-from/D.v misc/deps/test-from/E.v > "$output" 2>&1
+$coqdep -worker @ROCQWORKER@ -R misc/deps/test-from T misc/deps/test-from/D.v misc/deps/test-from/E.v > "$output" 2>&1
 diff -u --strip-trailing-cr misc/deps/deps-from.out "$output"
 R=$?
 times

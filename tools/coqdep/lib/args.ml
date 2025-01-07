@@ -53,7 +53,7 @@ let usage () =
   eprintf "  -exclude-dir dir : skip subdirectories named 'dir' during -R/-Q search\n";
   eprintf "  -coqlib dir : set the coq standard library directory\n";
   eprintf "  -dyndep (opt|byte|both|no|var) : set how dependencies over ML modules are printed\n";
-  eprintf "  -worker WORKER : output WORKER instead of the coqworker path\n";
+  eprintf "  -worker WORKER : output WORKER instead of the rocqworker path\n";
   eprintf "  -w (w1,..,wn) : configure display of warnings\n";
   eprintf "%!"; (* flush *)
   exit 1
