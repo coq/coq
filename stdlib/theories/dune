@@ -7,3 +7,8 @@
  (dev
   (coq
    (flags :standard -w +default))))
+
+(rule
+ (targets All.v)
+ (deps (source_tree .))
+ (action (with-stdout-to %{targets} (run ../tools/gen_all.exe))))
