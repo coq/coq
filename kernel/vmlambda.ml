@@ -16,7 +16,7 @@ let get_lval (_, v) = v
 
 let is_value lc =
   match lc with
-  | Lval _ | Lint _ | Luint _ | Lfloat _ -> true
+  | Lval _ | Lint _ | Luint _ | Lfloat _ | Lstring _ -> true
   | _ -> false
 
 let get_value lc =
@@ -25,6 +25,7 @@ let get_value lc =
   | Lval (_, v) -> v
   | Lint i -> val_of_int i
   | Lfloat f -> val_of_float f
+  | Lstring s -> val_of_string s
   | _ -> assert false
 
 let hash_block tag args =
@@ -34,6 +35,7 @@ let hash_block tag args =
     | Luint i -> Uint63.hash i
     | Lint i -> Hashtbl.hash (i : int)
     | Lfloat f -> Float64.hash f
+    | Lstring s -> Pstring.hash s
     | Lval (h, _) -> h
     | _ -> assert false
     in
