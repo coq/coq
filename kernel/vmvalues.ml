@@ -78,6 +78,8 @@ let rec eq_structured_values v1 v2 =
       then Int64.equal (Obj.magic v1 : int64) (Obj.magic v2 : int64)
     else if Int.equal t1 Obj.double_tag
       then Float64.(equal (of_float (Obj.magic v1)) (of_float (Obj.magic v2)))
+    else if Int.equal t1 Obj.string_tag
+      then String.equal (Obj.magic v1) (Obj.magic v2)
     else begin
       assert (t1 <= Obj.last_non_constant_constructor_tag &&
               t2 <= Obj.last_non_constant_constructor_tag);
@@ -433,6 +435,8 @@ let val_of_int i = (Obj.magic i : values)
 let val_of_uint i = (Obj.magic i : structured_values)
 
 let val_of_float f = (Obj.magic f : structured_values)
+
+let val_of_string s = (Obj.magic s : structured_values)
 
 let atom_of_proj kn v =
   let r = Obj.new_block proj_tag 2 in
