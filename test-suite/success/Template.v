@@ -211,6 +211,11 @@ Module TemplateAlg.
   Check fun A => foo A nat : Prop.
   Fail Check fun A:Set => foo A nat : Prop.
 
+  Goal Prop.
+    let c := constr:(forall A, prod A A) in
+    exact c.
+  Defined.
+
   Universes u v.
 
   Axiom U : Type@{u}.
