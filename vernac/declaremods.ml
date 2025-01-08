@@ -66,8 +66,8 @@ let rec get_module_path = function
   | MEapply (me,_) -> get_module_path me
 
 let type_of_mod mp env = function
-  | true -> (Environ.lookup_module mp env).mod_type
-  | false -> (Environ.lookup_modtype mp env).mod_type
+  | true -> mod_type (Environ.lookup_module mp env)
+  | false -> mod_type (Environ.lookup_modtype mp env)
 
 (** {6 Name management}
 
@@ -187,9 +187,9 @@ struct
           let mb = Environ.lookup_module mp env in
           let mbid_left,subst = compute_subst env mbids fbody_b mp_l inl in
           let resolver =
-            if Modops.is_functor mb.mod_type then empty_delta_resolver
+            if Modops.is_functor (mod_type mb) then empty_delta_resolver
             else
-              Modops.inline_delta_resolver env inl mp farg_id farg_b mb.mod_delta
+              Modops.inline_delta_resolver env inl mp farg_id farg_b (mod_delta mb)
           in
           mbid_left,join (map_mbid mbid mp resolver) subst
 
@@ -1389,7 +1389,7 @@ let declare_one_include_core (me,base,kind,inl) =
       let (_, cst) = Subtyping.check_subtypes state (Global.env ()) mb mtb in
       let () = Global.add_constraints cst in
       let mpsup_delta =
-        Modops.inline_delta_resolver (Global.env ()) inl cur_mp mbid mtb mb.mod_delta
+        Modops.inline_delta_resolver (Global.env ()) inl cur_mp mbid mtb (mod_delta mb)
       in
       let subst = Mod_subst.map_mbid mbid cur_mp mpsup_delta in
       compute_sign (Modops.subst_signature subst str)

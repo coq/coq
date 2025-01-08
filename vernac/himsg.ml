@@ -1247,8 +1247,8 @@ let explain_incompatible_module_types mexpr1 mexpr2 =
   | NoFunctor _ -> 0
   | MoreFunctor (_, _, ty) -> succ (get_arg ty)
   in
-  let len1 = get_arg mexpr1.mod_type in
-  let len2 = get_arg mexpr2.mod_type in
+  let len1 = get_arg @@ mod_type mexpr1 in
+  let len2 = get_arg @@ mod_type mexpr2 in
   if len1 <> len2 then
     str "Incompatible module types: module expects " ++ int len2 ++
       str " arguments, found " ++ int len1 ++ str "."

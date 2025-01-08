@@ -45,21 +45,21 @@ and translate_field mp env acc (l,x) =
         Pp.str msg));
      compile_rewrite_rules env l acc rrb
   | SFBmodule md ->
-     let mp = md.mod_mp in
+     let mp = mod_mp md in
      (debug_native_compiler (fun () ->
         let msg =
           Printf.sprintf "Compiling module %s..." (ModPath.to_string mp)
         in
         Pp.str msg));
-     translate_mod mp env md.mod_type acc
+     translate_mod mp env (mod_type md) acc
   | SFBmodtype mdtyp ->
-     let mp = mdtyp.mod_mp in
+     let mp = mod_mp mdtyp in
      (debug_native_compiler (fun () ->
         let msg =
           Printf.sprintf "Compiling module type %s..." (ModPath.to_string mp)
         in
         Pp.str msg));
-     translate_mod mp env mdtyp.mod_type acc
+     translate_mod mp env (mod_type mdtyp) acc
 
 let dump_library mp env mod_expr =
   debug_native_compiler (fun () -> Pp.str "Compiling library...");

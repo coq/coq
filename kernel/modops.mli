@@ -58,7 +58,7 @@ val add_linked_module : module_body -> link_info -> env -> env
 (** same, for a module type *)
 val add_module_type : ModPath.t -> module_type_body -> env -> env
 
-val add_retroknowledge : mod_body module_retroknowledge -> env -> env
+val add_retroknowledge : Retroknowledge.action list -> env -> env
 
 (** {6 Strengthening } *)
 

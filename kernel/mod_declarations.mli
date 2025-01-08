@@ -12,30 +12,8 @@ open Names
 open Mod_subst
 open Declarations
 
-type structure_field_body =
-  (module_body, module_type_body) Declarations.structure_field_body
-
-and structure_body =
-  (module_body, module_type_body) Declarations.structure_body
-
-(** A module signature is a structure, with possibly functors on top of it *)
-
-and module_signature = (module_type_body,structure_body) functorize
-
-and module_implementation =
-  | Abstract (** no accessible implementation *)
-  | Algebraic of module_expression (** non-interactive algebraic expression *)
-  | Struct of structure_body (** interactive body living in the parameter context of [mod_type] *)
-  | FullStruct (** special case of [Struct] : the body is exactly [mod_type] *)
-
-and 'a generic_module_body = private
-  { mod_mp : ModPath.t; (** absolute path of the module *)
-    mod_expr : ('a, module_implementation) when_mod_body; (** implementation *)
-    mod_type : module_signature; (** expanded type *)
-    mod_type_alg : module_expression option; (** algebraic type *)
-    mod_delta : Mod_subst.delta_resolver; (**
-      quotiented set of equivalent constants and inductive names *)
-    mod_retroknowledge : ('a, Retroknowledge.action list) when_mod_body }
+type 'a generic_module_body
+type module_body = mod_body generic_module_body
 
 (** For a module, there are five possible situations:
     - [Declare Module M : T] then [mod_expr = Abstract; mod_type_alg = Some T]
@@ -45,14 +23,28 @@ and 'a generic_module_body = private
     - [Module M : T. ... End M] then [mod_expr = Struct; mod_type_alg = Some T]
     And of course, all these situations may be functors or not. *)
 
-and module_body = mod_body generic_module_body
+type module_type_body = mod_type generic_module_body
 
 (** A [module_type_body] is just a [module_body] with no implementation and
     also an empty [mod_retroknowledge]. Its [mod_type_alg] contains
     the algebraic definition of this module type, or [None]
     if it has been built interactively. *)
 
-and module_type_body = mod_type generic_module_body
+type structure_field_body =
+  (module_body, module_type_body) Declarations.structure_field_body
+
+type structure_body =
+  (module_body, module_type_body) Declarations.structure_body
+
+(** A module signature is a structure, with possibly functors on top of it *)
+
+type module_signature = (module_type_body,structure_body) functorize
+
+type module_implementation =
+  | Abstract (** no accessible implementation *)
+  | Algebraic of module_expression (** non-interactive algebraic expression *)
+  | Struct of structure_body (** interactive body living in the parameter context of [mod_type] *)
+  | FullStruct (** special case of [Struct] : the body is exactly [mod_type] *)
 
 type 'a module_retroknowledge = ('a, Retroknowledge.action list) when_mod_body
 
@@ -65,6 +57,15 @@ type 'a module_retroknowledge = ('a, Retroknowledge.action list) when_mod_body
       * the head of [MEapply] can only be another [MEapply] or a [MEident]
       * the argument of [MEapply] is now directly forced to be a [ModPath.t].
 *)
+
+(** {6 Accessors} *)
+
+val mod_mp : 'a generic_module_body -> ModPath.t
+val mod_expr : module_body -> module_implementation
+val mod_type : 'a generic_module_body -> module_signature
+val mod_type_alg : 'a generic_module_body -> module_expression option
+val mod_delta : 'a generic_module_body -> delta_resolver
+val mod_retroknowledge : module_body -> Retroknowledge.action list
 
 (** {6 Builders} *)
 
@@ -91,10 +92,6 @@ val functorize_module : (Names.MBId.t * module_type_body) list -> module_body ->
 val set_implementation : module_implementation -> module_body -> module_body
 val set_algebraic_type : module_type_body -> module_expression -> module_type_body
 val set_retroknowledge : module_body -> Retroknowledge.action list -> module_body
-
-(** {6 Accessors} *)
-
-val mod_expr : module_body -> module_implementation
 
 (** {6 Mapping} *)
 

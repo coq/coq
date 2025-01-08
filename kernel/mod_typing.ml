@@ -43,8 +43,8 @@ let split_struc k m struc =
     | h::tail -> split (h::rev_before) tail
   in split [] struc
 
-let discr_resolver mtb = match mtb.mod_type with
-  | NoFunctor _ -> mtb.mod_delta
+let discr_resolver mtb = match mod_type mtb with
+  | NoFunctor _ -> mod_delta mtb
   | MoreFunctor _ -> empty_delta_resolver
 
 let rec rebuild_mp mp l =
@@ -142,11 +142,11 @@ let rec check_with_def (cst, ustate) env struc (idl, wth) mp reso =
       in
       begin match Mod_declarations.mod_expr mb with
         | Abstract ->
-          let struc = Modops.destr_nofunctor (MPdot (mp,lab)) mb.mod_type in
+          let struc = Modops.destr_nofunctor (MPdot (mp,lab)) (mod_type mb) in
           let struc', cst =
-            check_with_def (cst, ustate) env' struc (idl, wth) (MPdot(mp,lab)) mb.mod_delta
+            check_with_def (cst, ustate) env' struc (idl, wth) (MPdot(mp,lab)) (mod_delta mb)
           in
-          let mb' = replace_module_body struc' mb.mod_delta mb in
+          let mb' = replace_module_body struc' (mod_delta mb) mb in
           before@(lab,SFBmodule mb')::after, cst
         | _ -> error_generative_module_expected lab
       end
@@ -182,11 +182,11 @@ let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
       let mp' = MPdot (mp,lab) in
       let new_mb = strengthen_and_subst_module_body new_mb mp' false in
       (** TODO: check this is fine when new_mb is a functor *)
-      let new_mb' = strengthen_module_body ~src:new_mp ~dst:(Some mp') new_mb.mod_type new_mb.mod_delta new_mb in
-      let new_reso = add_delta_resolver reso new_mb.mod_delta in
+      let new_mb' = strengthen_module_body ~src:new_mp ~dst:(Some mp') (mod_type new_mb) (mod_delta new_mb) new_mb in
+      let new_reso = add_delta_resolver reso (mod_delta new_mb) in
       (* we propagate the new equality in the rest of the signature
          with the identity substitution accompanied by the new resolver*)
-      let id_subst = map_mp mp' mp' new_mb.mod_delta in
+      let id_subst = map_mp mp' mp' (mod_delta new_mb) in
       let new_after = subst_structure id_subst after in
       before@(lab,SFBmodule new_mb')::new_after, new_reso, cst
     else
@@ -198,9 +198,9 @@ let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
       in
       begin match Mod_declarations.mod_expr old with
       | Abstract ->
-        let struc = destr_nofunctor mp' old.mod_type in
+        let struc = destr_nofunctor mp' (mod_type old) in
         let struc',reso',cst =
-          check_with_mod (cst, ustate) env' struc (idl,new_mp) mp' old.mod_delta
+          check_with_mod (cst, ustate) env' struc (idl,new_mp) mp' (mod_delta old)
         in
         let new_mb = replace_module_body struc' reso' old in
         let new_reso = add_delta_resolver reso reso' in
@@ -263,9 +263,9 @@ let rec translate_mse (cst, ustate) (vm, vmstate) env mpo inl = function
       | Some mp -> strengthen_and_subst_module_body (lookup_module mp1 env) mp false
       | None ->
         let mt = lookup_modtype mp1 env in
-        module_body_of_type mt.mod_mp mt
+        module_body_of_type (mod_mp mt) mt
     in
-    mb.mod_type, me, mb.mod_delta, cst, vm
+    mod_type mb, me, mod_delta mb, cst, vm
   | MEapply (fe,mp1) ->
     translate_apply ustate env inl (translate_mse (cst, ustate) (vm, vmstate) env mpo inl fe) mp1 mk_alg_app
   | MEwith(me, with_decl) ->
@@ -351,7 +351,7 @@ let rec forbid_incl_signed_functor env = function
   | MEwith _ -> assert false (* No 'with' syntax for modules *)
   | MEident mp1 ->
     let mb = lookup_module mp1 env in
-    match mb.mod_type, mb.mod_type_alg, Mod_declarations.mod_expr mb with
+    match mod_type mb, mod_type_alg mb, Mod_declarations.mod_expr mb with
     | MoreFunctor _, Some _, _ ->
       (* functor + restricted signature = error *)
       error_include_restricted_functor mp1
@@ -363,8 +363,8 @@ let rec forbid_incl_signed_functor env = function
 let rec translate_mse_include_module (cst, ustate) (vm, vmstate) env mp inl = function
   | MEident mp1 ->
     let mb = strengthen_and_subst_module_body (lookup_module mp1 env) mp true in
-    let sign = clean_bounded_mod_expr mb.mod_type in
-    sign,(),mb.mod_delta,cst,vm
+    let sign = clean_bounded_mod_expr (mod_type mb) in
+    sign, (), mod_delta mb, cst, vm
   | MEapply (fe,arg) ->
     let ftrans = translate_mse_include_module (cst, ustate) (vm, vmstate) env mp inl fe in
     translate_apply ustate env inl ftrans arg (fun _ _ -> ())
@@ -376,5 +376,5 @@ let translate_mse_include is_mod (cst, ustate) (vm, vmstate) env mp inl me =
     translate_mse_include_module (cst, ustate) (vm, vmstate) env mp inl me
   else
     let mtb, cst, vm = translate_modtype (cst, ustate) (vm, vmstate) env mp inl ([],me) in
-    let sign = clean_bounded_mod_expr mtb.mod_type in
-    sign, (), mtb.mod_delta, cst, vm
+    let sign = clean_bounded_mod_expr (mod_type mtb) in
+    sign, (), mod_delta mtb, cst, vm

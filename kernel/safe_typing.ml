@@ -1121,7 +1121,7 @@ let add_modtype l params_mte inl senv =
 (** full_add_module adds module with universes and constraints *)
 
 let full_add_module mb senv =
-  let dp = ModPath.dp mb.mod_mp in
+  let dp = ModPath.dp (mod_mp mb) in
   let linkinfo = Nativecode.link_info_of_dirpath dp in
   { senv with env = Modops.add_linked_module mb linkinfo senv.env }
 
@@ -1139,10 +1139,10 @@ let add_module l me inl senv =
   let mb = Mod_declarations.hcons_module_body mb in
   let senv = add_field (l,SFBmodule mb) M senv in
   let senv =
-    if Modops.is_functor mb.mod_type then senv
-    else update_resolver (Mod_subst.add_delta_resolver mb.mod_delta) senv
+    if Modops.is_functor @@ mod_type mb then senv
+    else update_resolver (Mod_subst.add_delta_resolver @@ mod_delta mb) senv
   in
-  (mp,mb.mod_delta),senv
+  (mp, mod_delta mb),senv
 
 (** {6 Starting / ending interactive modules and module types } *)
 
@@ -1195,10 +1195,10 @@ let add_module_parameter mbid mte inl senv =
     | _ -> assert false
   in
   let new_paramresolver =
-    if Modops.is_functor mtb.mod_type then senv.paramresolver
-    else Mod_subst.add_delta_resolver mtb.mod_delta senv.paramresolver
+    if Modops.is_functor @@ mod_type mtb then senv.paramresolver
+    else Mod_subst.add_delta_resolver (mod_delta mtb) senv.paramresolver
   in
-  mtb.mod_delta,
+  mod_delta mtb,
   { senv with
     modvariant = new_variant;
     paramresolver = new_paramresolver }
@@ -1279,10 +1279,10 @@ let end_module l restype senv =
   let senv' = propagate_loads { senv with env = newenv } in
   let newenv = Modops.add_module mb senv'.env in
   let newresolver =
-    if Modops.is_functor mb.mod_type then oldsenv.modresolver
-    else Mod_subst.add_delta_resolver mb.mod_delta oldsenv.modresolver
+    if Modops.is_functor @@ mod_type mb then oldsenv.modresolver
+    else Mod_subst.add_delta_resolver (mod_delta mb) oldsenv.modresolver
   in
-  (mp,mbids,mb.mod_delta),
+  (mp, mbids, mod_delta mb),
   propagate_senv (l,SFBmodule mb) newenv newresolver senv' oldsenv
 
 let build_mtb = Mod_declarations.make_module_type
@@ -1446,7 +1446,7 @@ let import lib vmtab vodigest senv =
     env;
     (* Do NOT store the name quotient from the dependencies in the set of
        constraints that will be marshalled on disk. *)
-    paramresolver = Mod_subst.add_delta_resolver mb.mod_delta senv.paramresolver;
+    paramresolver = Mod_subst.add_delta_resolver (mod_delta mb) senv.paramresolver;
     required;
     loads = (mp,mb)::senv.loads;
     sections;

@@ -131,7 +131,12 @@ let set_retroknowledge mb rk =
 
 (** Accessors *)
 
+let mod_mp { mod_mp = mp; _ } = mp
 let mod_expr { mod_expr = ModBodyVal v; _ } = v
+let mod_type m = m.mod_type
+let mod_type_alg m = m.mod_type_alg
+let mod_delta m = m.mod_delta
+let mod_retroknowledge { mod_retroknowledge = ModBodyVal rk; _ } = rk
 
 (** Hashconsing of modules *)
 
