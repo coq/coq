@@ -652,17 +652,47 @@ $skipped_packages"
         if [ -e $old_base_path/$vo ]; then
           format_vosize "$coq_opam_package/$vo" "$old_base_path/$vo" "$new_base_path/$vo" >> "$log_dir/vosize.log"
         fi
-        if [ -e $old_base_path/${vo%%o}.timing ] && \
-               [ -e $new_base_path/${vo%%o}.timing ]; then
-            mkdir -p $working_dir/html/$coq_opam_package/$(dirname $vo)/
-            # NB: sometimes randomly fails
-            $timelog2html $new_base_path/${vo%%o} \
-                                       $old_base_path/${vo%%o}.timing \
-                                       $new_base_path/${vo%%o}.timing > \
-                                       $working_dir/html/$coq_opam_package/${vo%%o}.html ||
-                echo "Failed (code $?):" $timelog2html $new_base_path/${vo%%o} \
-                     $old_base_path/${vo%%o}.timing \
-                     $new_base_path/${vo%%o}.timing
+
+        # use profile if it exists, otherwise timing
+        # NB: timelog2html sometimes randomly fails
+        old_data=
+        new_data=
+        old_compressed=
+        new_compressed=
+        if [ -e "$old_base_path/$vo.prof.json.gz" ]; then
+          old_data="$old_base_path/$vo.prof.json.gz"
+          old_compressed=1
+        elif [ -e "$old_base_path/${vo%%o}.timing" ]; then
+          old_data="$old_base_path/${vo%%o}.timing"
+        fi
+        if [ -e "$new_base_path/$vo.prof.json.gz" ]; then
+          new_data="$new_base_path/$vo.prof.json.gz"
+          new_compressed=1
+        elif [ -e "$new_base_path/${vo%%o}.timing" ]; then
+          new_data="$new_base_path/${vo%%o}.timing"
+        fi
+
+        if [ "$old_data" ] && [ "$new_data" ]; then
+          # timelog2html doesn't know how to uncompress
+          if [ "$old_compressed" ]; then
+            gunzip --keep "$old_data"
+          fi
+          if [ "$new_compressed" ]; then
+            gunzip --keep "$new_data"
+          fi
+          mkdir -p "$working_dir/html/$coq_opam_package/$(dirname "$vo")/"
+          $timelog2html \
+            "$new_base_path/${vo%%o}" \
+            "${old_data%.gz}" \
+            "${new_data%.gz}" \
+            > "$working_dir/html/$coq_opam_package/${vo%%o}.html" ||
+            echo "Failed (code $?): timelog2html for $vo on $old_data $new_data"
+          if [ "$old_compressed" ]; then
+            rm "${old_data%.gz}"
+          fi
+          if [ "$new_compressed" ]; then
+            rm "${new_data%.gz}"
+          fi
         fi
     done
 done
