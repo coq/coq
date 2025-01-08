@@ -25,7 +25,6 @@
  (depends
   rocq-runtime
   (rocq-core (= :version)))
- (depopts rocq-native)
  (synopsis "The Rocq Proof Assistant -- Standard Library")
  (description "Rocq is a formal proof management system. It provides
 a formal language to write mathematical definitions, executable
@@ -47,7 +46,6 @@ set of modules usually bound to the Stdlib.* namespace."))
  (depends
   coq-core
   (rocq-stdlib (= :version)))
- (depopts coq-native)
  (synopsis "Compatibility metapackage for Coq Stdlib library after the Rocq renaming"))
 
 (package

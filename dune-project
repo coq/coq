@@ -60,7 +60,6 @@ prelude, now living in the rocq-core package."))
  (name rocq-core)
  (depends
   (rocq-runtime (= :version)))
- (depopts rocq-native)
  (synopsis "The Coq Proof Assistant with its prelude")
  (description "Coq is a formal proof management system. It provides
 a formal language to write mathematical definitions, executable
