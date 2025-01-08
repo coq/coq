@@ -137,9 +137,6 @@ number_of_processors=$(cat /proc/cpuinfo | grep '^processor *' | wc -l)
 
 program_name="$0"
 program_path=$(readlink -f "${program_name%/*}")
-render_results="dune exec --no-print-directory --root $program_path/../.. -- dev/bench/render_results.exe"
-render_line_results="dune exec --no-print-directory --root $program_path/../.. -- dev/bench/render_line_results.exe"
-timelog2html="dune exec --no-print-directory --root $program_path/../.. -- rocq timelog2html"
 
 coqbot_url_prefix="https://coqbot.herokuapp.com/pendulum/"
 
@@ -344,7 +341,7 @@ git clone -q --depth 1 -b "$old_coq_opam_archive_git_branch" "$old_coq_opam_arch
 new_coq_opam_archive_dir="$working_dir/new_coq_opam_archive"
 git clone -q --depth 1 -b "$new_coq_opam_archive_git_branch" "$new_coq_opam_archive_git_uri" "$new_coq_opam_archive_dir"
 
-initial_opam_packages="num ocamlfind dune yojson"
+initial_opam_packages="num zarith ocamlfind dune yojson"
 
 # Create an opam root and install Rocq
 # $1 = root_name {ex: NEW / OLD}
@@ -433,6 +430,16 @@ create_opam() {
 create_opam "NEW" "$new_ocaml_version" "$new_coq_commit" "$new_coq_version" \
             "$new_coq_opam_archive_dir" "$new_opam_override_urls" "$new_ocaml_flambda"
 new_coq_commit_long="$COQ_HASH_LONG"
+
+# pre build needed helpers (needs an opam switch)
+
+# pre build needed helpers (needs an opam switch)
+dune build --root "$program_path/../.." -- dev/bench/render_results.exe dev/bench/render_line_results.exe topbin/rocq.exe
+
+render_results=$(readlink -f "$program_path/../../_build/default/dev/bench/render_results.exe")
+render_line_results=$(readlink -f "$program_path/../../_build/default/dev/bench//render_line_results.exe")
+rocq_exe=$(readlink -f "$program_path/../../_build/default/topbin/rocq.exe")
+timelog2html="$rocq_exe timelog2html"
 
 # Create an OPAM-root to which we will install the OLD version of Rocq.
 create_opam "OLD" "$old_ocaml_version" "$old_coq_commit" "$old_coq_version" \
@@ -648,17 +655,47 @@ $skipped_packages"
         if [ -e $old_base_path/$vo ]; then
           format_vosize "$coq_opam_package/$vo" "$old_base_path/$vo" "$new_base_path/$vo" >> "$log_dir/vosize.log"
         fi
-        if [ -e $old_base_path/${vo%%o}.timing ] && \
-               [ -e $new_base_path/${vo%%o}.timing ]; then
-            mkdir -p $working_dir/html/$coq_opam_package/$(dirname $vo)/
-            # NB: sometimes randomly fails
-            $timelog2html $new_base_path/${vo%%o} \
-                                       $old_base_path/${vo%%o}.timing \
-                                       $new_base_path/${vo%%o}.timing > \
-                                       $working_dir/html/$coq_opam_package/${vo%%o}.html ||
-                echo "Failed (code $?):" $timelog2html $new_base_path/${vo%%o} \
-                     $old_base_path/${vo%%o}.timing \
-                     $new_base_path/${vo%%o}.timing
+
+        # use profile if it exists, otherwise timing
+        # NB: timelog2html sometimes randomly fails
+        old_data=
+        new_data=
+        old_compressed=
+        new_compressed=
+        if [ -e "$old_base_path/$vo.prof.json.gz" ]; then
+          old_data="$old_base_path/$vo.prof.json.gz"
+          old_compressed=1
+        elif [ -e "$old_base_path/${vo%%o}.timing" ]; then
+          old_data="$old_base_path/${vo%%o}.timing"
+        fi
+        if [ -e "$new_base_path/$vo.prof.json.gz" ]; then
+          new_data="$new_base_path/$vo.prof.json.gz"
+          new_compressed=1
+        elif [ -e "$new_base_path/${vo%%o}.timing" ]; then
+          new_data="$new_base_path/${vo%%o}.timing"
+        fi
+
+        if [ "$old_data" ] && [ "$new_data" ]; then
+          # timelog2html doesn't know how to uncompress
+          if [ "$old_compressed" ]; then
+            gunzip --keep "$old_data"
+          fi
+          if [ "$new_compressed" ]; then
+            gunzip --keep "$new_data"
+          fi
+          mkdir -p "$working_dir/html/$coq_opam_package/$(dirname "$vo")/"
+          $timelog2html \
+            "$new_base_path/${vo%%o}" \
+            "${old_data%.gz}" \
+            "${new_data%.gz}" \
+            > "$working_dir/html/$coq_opam_package/${vo%%o}.html" ||
+            echo "Failed (code $?): timelog2html for $vo on $old_data $new_data"
+          if [ "$old_compressed" ]; then
+            rm "${old_data%.gz}"
+          fi
+          if [ "$new_compressed" ]; then
+            rm "${new_data%.gz}"
+          fi
         fi
     done
 done
