@@ -29,11 +29,6 @@ let getenv_else s dft =
 
 let getenv_rocq = Boot.Util.getenv_rocq
 
-let getenv_rocq_else s dft =
-  match getenv_rocq s with
-  | Some v -> v
-  | None -> dft ()
-
 let safe_getenv warning n =
   getenv_else n (fun () ->
     warning ("Environment variable "^n^" not found: using '$"^n^"' .");
@@ -121,13 +116,15 @@ let configdir () =
   if Sys.file_exists path then path else Coq_config.configdir
 
 let coqpath =
-  let coqpath = getenv_rocq_else "PATH" (fun () -> "") in
   let make_search_path path =
     let paths = path_to_list path in
     let valid_paths = List.filter Sys.file_exists paths in
     List.rev valid_paths
   in
-  make_search_path coqpath
+  let rocqpath = getenv_else "ROCQPATH" (fun () -> "") in
+  let coqpath = getenv_else "COQPATH" (fun () -> "") in
+  let () = if coqpath <> "" then warn_deprecated_coq_var ~rocq:"ROCQPATH" ~coq:"COQPATH" () in
+  make_search_path rocqpath @ make_search_path coqpath
 
 (** {2 Caml paths} *)
 
