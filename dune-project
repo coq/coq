@@ -125,18 +125,16 @@ semi-interactive development of machine-checked proofs.
 This package provides the Coq Reference Manual."))
 
 (package
- (name coq)
+ (name rocq)
  (allow_empty)
  (depends
-  (coq-core (= :version))
   (rocq-core (= :version))
-  coq-stdlib
-  (coqide-server (= :version))
+  rocq-stdlib
   (ounit2 :with-test)
   (conf-python-3 :with-test)
   (conf-time :with-test))
- (synopsis "The Coq Proof Assistant with Stdlib")
- (description "Coq is a formal proof management system. It provides
+ (synopsis "The Rocq Proof Assistant with Stdlib")
+ (description "Rocq is a formal proof management system. It provides
 a formal language to write mathematical definitions, executable
 algorithms and theorems together with an environment for
 semi-interactive development of machine-checked proofs.
@@ -147,4 +145,14 @@ project, or the Bedrock verified low-level programming library), the
 formalization of mathematics (e.g. the full formalization of the
 Feit-Thompson theorem or homotopy type theory) and teaching.
 
-This package is a virtual package gathering the rocq-core and coq-stdlib packages."))
+This package is a virtual package gathering the rocq-core and rocq-stdlib packages."))
+
+(package
+ (name coq)
+ (allow_empty)
+ (depends
+  (rocq (= :version))
+  (coq-core (= :version))
+  coq-stdlib
+  (coqide-server (= :version)))
+ (synopsis "Compatibility metapackage for Coq after the Rocq renaming"))
