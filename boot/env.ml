@@ -39,15 +39,16 @@ let plugins_dir = "plugins"
 let prelude = Filename.concat theories_dir "Init/Prelude.vo"
 
 let guess_coqlib () =
-  Util.getenv_else "ROCQLIB" (fun () ->
-  Util.getenv_else "COQLIB" (fun () ->
-  Util.check_file_else
-    ~dir:Coq_config.coqlibsuffix
-    ~file:prelude
-    (fun () ->
-      if Sys.file_exists (Filename.concat Coq_config.coqlib prelude)
-      then Coq_config.coqlib
-      else fail ())))
+  match Util.getenv_rocq "LIB" with
+  | Some v -> v
+  | None ->
+    Util.check_file_else
+      ~dir:Coq_config.coqlibsuffix
+      ~file:prelude
+      (fun () ->
+         if Sys.file_exists (Filename.concat Coq_config.coqlib prelude)
+         then Coq_config.coqlib
+         else fail ())
 
 (* Build layout uses coqlib = coqcorelib *)
 let guess_coqcorelib lib =
@@ -82,9 +83,11 @@ let validate_env ({ core; lib } as env) =
    mis-use for example when we pass command line arguments *)
 let init () =
   let lib = guess_coqlib () in
-  let core = Util.getenv_else "ROCQRUNTIMELIB"
-      (fun () -> Util.getenv_else "COQCORELIB"
-      (fun () -> guess_coqcorelib lib)) in
+  let core =
+    match Util.getenv_rocq_gen ~rocq:"ROCQRUNTIMELIB" ~coq:"COQCORELIB" with
+    | Some v -> v
+    | None -> guess_coqcorelib lib
+  in
   validate_env { core ; lib }
 
 let env_ref = ref None

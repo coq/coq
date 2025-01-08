@@ -173,7 +173,14 @@ let parse_args argv =
 let main ~prog argv =
   parse_args (Array.of_list (prog::argv));
   try
-    let sock = try Sys.getenv "ROCQWORKMGR_SOCK" with Not_found -> Sys.getenv "COQWORKMGR_SOCK" in
+    let sock =
+      let rocq = "ROCQWORKMGR_SOCK" in
+      let coq = "COQWORKMGR_SOCK" in
+      try Sys.getenv rocq with Not_found ->
+      let s = Sys.getenv coq in
+      Printf.eprintf "Deprecated environment variable %s, use %s instead.\n%!" coq rocq;
+      s
+    in
     if !debug then Printf.eprintf "Contacting %s\n%!" sock;
     let cur, max, pid = check_alive sock in
     Printf.printf "ROCQWORKMGR_SOCK=%s\n%!" sock;

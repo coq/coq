@@ -27,19 +27,39 @@ let getenv_from_file name =
       let rec find () =
         let l = input_line ic in
         match parse_env_line l with
-        | Some(n,v) when n = name -> v
+        | Some(n,v) when n = name -> Some v
         | _ -> find ()
       in
         find ())
   with
-  | Sys_error s -> raise Not_found
-  | End_of_file -> raise Not_found
+  | Sys_error s -> None
+  | End_of_file -> None
 
 
-let system_getenv name =
-  try Sys.getenv name with Not_found -> getenv_from_file name
+let getenv_opt name =
+  match Sys.getenv_opt name with
+  | Some _ as v -> v
+  | None -> getenv_from_file name
 
-let getenv_else s dft = try system_getenv s with Not_found -> dft ()
+let warn_deprecated_coq_var = ref (fun ~rocq ~coq ->
+    Printf.eprintf "Deprecated environment variable %s, use %s instead.\n%!" coq rocq)
+
+let set_warn_deprecated_coq_var f = warn_deprecated_coq_var := f
+
+let warn_deprecated_coq_var ~rocq ~coq = !warn_deprecated_coq_var ~rocq ~coq
+
+let getenv_rocq_gen ~rocq ~coq =
+  match getenv_opt rocq with
+  | Some _ as  v -> v
+  | None ->
+    match getenv_opt coq with
+    | Some _ as v ->
+      warn_deprecated_coq_var ~rocq ~coq;
+      v
+    | None -> None
+
+let getenv_rocq name =
+  getenv_rocq_gen ~rocq:("ROCQ"^name) ~coq:("COQ"^name)
 
 (** Add a local installation suffix (unless the suffix is itself
     absolute in which case the prefix does not matter) *)

@@ -24,8 +24,7 @@ let init_color opts =
   in
   let term_color =
     if has_color then begin
-      let colors = CList.find_map (fun prefix -> Sys.getenv_opt (prefix^"_COLORS")) ["ROCQ";"COQ"] in
-      match colors with
+      match Envars.getenv_rocq "_COLORS" with
       | None -> Topfmt.default_styles (); true        (* Default colors *)
       | Some "" -> false                              (* No color output *)
       | Some s -> Topfmt.parse_color_config s; true   (* Overwrite all colors *)
