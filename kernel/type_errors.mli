@@ -90,20 +90,20 @@ exception TypeError of env * type_error
 (** The different kinds of errors that may result of a malformed inductive
     definition. *)
 type inductive_error =
-  | NonPos of env * constr * constr
-  | NotEnoughArgs of env * constr * constr
-  | NotConstructor of env * Id.t * constr * constr * int * int
-  | NonPar of env * constr * int * constr * constr
+  | NonPos of constr * constr
+  | NotEnoughArgs of constr * constr
+  | NotConstructor of Id.t * constr * constr * int * int
+  | NonPar of constr * int * constr * constr
   | SameNamesTypes of Id.t
   | SameNamesConstructors of Id.t
   | SameNamesOverlap of Id.t list
-  | NotAnArity of env * constr
+  | NotAnArity of constr
   | BadEntry
   | LargeNonPropInductiveNotInType
   | MissingConstraints of (Sorts.t list * Sorts.t)
   (* each universe in the set should have been <= the other one *)
 
-exception InductiveError of inductive_error
+exception InductiveError of env * inductive_error
 
 (** Raising functions *)
 

@@ -307,7 +307,7 @@ let explain_exn = function
       | UndeclaredUsedVariables _ -> str "UndeclaredUsedVariables"
       ))
 
-  | InductiveError e ->
+  | InductiveError (env,e) ->
       hov 0 (str "Error related to inductive types")
 (*      let ctx = Check.get_env() in
       hov 0

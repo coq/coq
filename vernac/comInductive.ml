@@ -74,7 +74,7 @@ type structured_one_inductive_expr = {
 
 exception Same of Id.t
 
-let check_all_names_different indl =
+let check_all_names_different env indl =
   let rec elements = function
   | [] -> Id.Set.empty
   | id :: l ->
@@ -85,15 +85,15 @@ let check_all_names_different indl =
   let cstr_names = List.map_append (fun ind -> List.map fst ind.ind_lc) indl in
   let ind_names = match elements ind_names with
   | s -> s
-  | exception (Same t) -> raise (InductiveError (SameNamesTypes t))
+  | exception (Same t) -> raise (InductiveError (env, SameNamesTypes t))
   in
   let cstr_names = match elements cstr_names with
   | s -> s
-  | exception (Same c) -> raise (InductiveError (SameNamesConstructors c))
+  | exception (Same c) -> raise (InductiveError (env, SameNamesConstructors c))
   in
   let l = Id.Set.inter ind_names cstr_names in
   if not (Id.Set.is_empty l) then
-    raise (InductiveError (SameNamesOverlap (Id.Set.elements l)))
+    raise (InductiveError (env, SameNamesOverlap (Id.Set.elements l)))
 
 (** Make the arity conclusion flexible to avoid generating an upper bound universe now,
     only if the universe does not appear anywhere else.
@@ -627,7 +627,7 @@ let maybe_unify_params_in env_ar_par sigma ~ninds ~nparams ~binders:k c =
   aux (env_ar_par,k) sigma c
 
 let interp_mutual_inductive_gen env0 ~flags udecl (uparamsl,paramsl,indl) notations ~private_ind =
-  check_all_names_different indl;
+  check_all_names_different env0 indl;
   List.iter check_param paramsl;
   if not (List.is_empty uparamsl) && not (List.is_empty notations)
   then user_err (str "Inductives with uniform parameters may not have attached notations.");
