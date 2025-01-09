@@ -29,7 +29,7 @@ val destr_nofunctor : ModPath.t -> ('ty,'a) functorize -> 'a
 (** Conversions between [module_body] and [module_type_body] *)
 
 val module_type_of_module : module_body -> module_type_body
-val module_body_of_type : ModPath.t -> module_type_body -> module_body
+val module_body_of_type : module_type_body -> module_body
 
 val check_modpath_equiv : env -> ModPath.t -> ModPath.t -> unit
 
@@ -40,8 +40,8 @@ val annotate_struct_body : structure_body -> module_signature -> module_signatur
 
 (** {6 Substitutions } *)
 
-val subst_signature : substitution -> module_signature -> module_signature
-val subst_structure : substitution -> structure_body -> structure_body
+val subst_signature : substitution -> ModPath.t -> module_signature -> module_signature
+val subst_structure : substitution -> ModPath.t -> structure_body -> structure_body
 
 (** {6 Adding to an environment } *)
 
@@ -49,11 +49,11 @@ val add_structure :
   ModPath.t -> structure_body -> delta_resolver -> env -> env
 
 (** adds a module and its components, but not the constraints *)
-val add_module : module_body -> env -> env
+val add_module : ModPath.t -> module_body -> env -> env
 
 (** same as add_module, but for a module whose native code has been linked by
 the native compiler. The linking information is updated. *)
-val add_linked_module : module_body -> link_info -> env -> env
+val add_linked_module : ModPath.t -> module_body -> link_info -> env -> env
 
 (** same, for a module type *)
 val add_module_type : ModPath.t -> module_type_body -> env -> env
@@ -64,7 +64,7 @@ val add_retroknowledge : Retroknowledge.action list -> env -> env
 
 val strengthen : module_type_body -> ModPath.t -> module_type_body
 
-val strengthen_and_subst_module_body : module_body -> ModPath.t -> bool -> module_body
+val strengthen_and_subst_module_body : ModPath.t -> module_body -> ModPath.t -> bool -> module_body
 
 val subst_modtype_signature_and_resolver : ModPath.t -> ModPath.t ->
   module_signature -> delta_resolver -> module_signature * delta_resolver

@@ -265,8 +265,6 @@ let check_constant (cst, ustate) trace env l info1 cb2 subst1 subst2 =
             check_conv NotConvertibleBodyField cst poly CONV env c1 c2))
 
 let rec check_modules state trace env mp1 msb1 mp2 msb2 subst1 subst2 =
-  let () = assert (ModPath.equal mp1 (mod_mp msb1)) in
-  let () = assert (ModPath.equal mp2 (mod_mp msb2)) in
   let mty1 = module_type_of_module msb1 in
   let mty2 = module_type_of_module msb2 in
   check_modtypes state trace env mp1 mty1 mp2 mty2 subst1 subst2 false
@@ -297,16 +295,12 @@ and check_signatures (cst, ustate) trace env mp1 sig1 mp2 sig2 subst1 subst2 res
             in
             let mp1' = MPdot (mp1, l) in
             let mp2' = MPdot (mp2, l) in
-            let () = assert (ModPath.equal mp1' (mod_mp mtb1)) in
-            let () = assert (ModPath.equal mp2' (mod_mp mtb2)) in
             let env = add_module_type mp2' mtb2 (add_module_type mp1' mtb1 env) in
             check_modtypes (cst, ustate) (Submodule l :: trace) env mp1' mtb1 mp2' mtb2 subst1 subst2 true
   in
     List.fold_left check_one_body cst sig2
 
 and check_modtypes (cst, ustate) trace env mp1 mtb1 mp2 mtb2 subst1 subst2 equiv =
-  let () = assert (ModPath.equal mp1 (mod_mp mtb1)) in
-  let () = assert (ModPath.equal mp2 (mod_mp mtb2)) in
   if mtb1==mtb2 || mod_type mtb1 == mod_type mtb2 then cst
   else
     let rec check_structure cst ~nargs env struc1 struc2 equiv subst1 subst2 =
@@ -339,17 +333,15 @@ and check_modtypes (cst, ustate) trace env mp1 mtb1 mp2 mtb2 subst1 subst2 equiv
         let env =
           if Modops.is_functor body_t1 then env
           else
-            let mtb = make_module_type mp1 (subst_signature subst1 body_t1) (mod_delta mtb1) in
-            add_module (module_body_of_type mp1 mtb) env
+            let mtb = make_module_type (subst_signature subst1 mp1 body_t1) (mod_delta mtb1) in
+            add_module mp1 (module_body_of_type mtb) env
         in
         check_structure cst ~nargs:(nargs + 1) env body_t1 body_t2 equiv subst1 subst2
       | _ , _ -> error_incompatible_modtypes mtb1 mtb2
     in
     check_structure cst ~nargs:0 env (mod_type mtb1) (mod_type mtb2) equiv subst1 subst2
 
-let check_subtypes state env sup super =
-  let mp_sup = mod_mp sup in
-  let mp_super = mod_mp super in
+let check_subtypes state env mp_sup sup mp_super super =
   let env = add_module_type mp_sup sup env in
   check_modtypes state [] env
     mp_sup (strengthen sup mp_sup) mp_super super empty_subst

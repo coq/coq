@@ -572,10 +572,10 @@ let [_v_sfb;_v_struc;_v_sign;_v_mexpr;_v_impl;v_module;_v_modtype] : _ Vector.t 
            [|v_struc|]|])  (* Struct *)
   and v_module =
     v_tuple_c ("module_body",
-           [|v_mp;v_sum_c ("when_mod_body", 0, [|[|v_impl|]|]);v_sign;v_opt v_mexpr;v_resolver;v_retroknowledge|])
+           [|v_sum_c ("when_mod_body", 0, [|[|v_impl|]|]);v_sign;v_opt v_mexpr;v_resolver;v_retroknowledge|])
   and v_modtype =
     v_tuple_c ("module_type_body",
-           [|v_mp;v_noimpl;v_sign;v_opt v_mexpr;v_resolver;v_unit|])
+           [|v_noimpl;v_sign;v_opt v_mexpr;v_resolver;v_unit|])
   in
   [v_sfb;v_struc;v_sign;v_mexpr;v_impl;v_module;v_modtype])
 

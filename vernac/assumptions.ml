@@ -84,13 +84,12 @@ and memoize_fields_of_mp mp =
 and fields_of_mp mp =
   let open Mod_subst in
   let mb = lookup_module_in_impl mp in
-  let () = assert (ModPath.equal mp (mod_mp mb)) in
   let fields,inner_mp,subs = fields_of_mb empty_subst mp mb [] in
   let subs =
     if ModPath.equal inner_mp mp then subs
     else add_mp inner_mp mp (mod_delta mb) subs
   in
-  Modops.subst_structure subs fields
+  Modops.subst_structure subs mp fields
 
 and fields_of_mb subs mp mb args = match Mod_declarations.mod_expr mb with
   | Algebraic expr -> fields_of_expression subs mp args (mod_type mb) expr
@@ -111,7 +110,6 @@ and fields_of_expr subs mp0 args = function
   | MEident mp ->
     let mp = Mod_subst.subst_mp subs mp in
     let mb = lookup_module_in_impl mp in
-    let () = assert (ModPath.equal mp (mod_mp mb)) in
     fields_of_mb subs mp mb args
   | MEapply (me1,mp2) -> fields_of_expr subs mp0 (mp2::args) me1
   | MEwith _ -> assert false (* no 'with' in [mod_expr] *)

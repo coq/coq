@@ -60,7 +60,6 @@ type 'a module_retroknowledge = ('a, Retroknowledge.action list) when_mod_body
 
 (** {6 Accessors} *)
 
-val mod_mp : 'a generic_module_body -> ModPath.t
 val mod_expr : module_body -> module_implementation
 val mod_type : 'a generic_module_body -> module_signature
 val mod_type_alg : 'a generic_module_body -> module_expression option
@@ -69,10 +68,10 @@ val mod_retroknowledge : module_body -> Retroknowledge.action list
 
 (** {6 Builders} *)
 
-val make_module_body : ModPath.t -> module_signature -> Mod_subst.delta_resolver -> Retroknowledge.action list -> module_body
-val make_module_type : ModPath.t -> module_signature -> Mod_subst.delta_resolver -> module_type_body
+val make_module_body : module_signature -> Mod_subst.delta_resolver -> Retroknowledge.action list -> module_body
+val make_module_type : module_signature -> Mod_subst.delta_resolver -> module_type_body
 
-val strengthen_module_body : src:ModPath.t -> dst:ModPath.t option ->
+val strengthen_module_body : src:ModPath.t ->
   module_signature -> delta_resolver -> module_body -> module_body
 
 val strengthen_module_type :
@@ -81,7 +80,7 @@ val strengthen_module_type :
 val replace_module_body : structure_body -> delta_resolver -> module_body -> module_body
 
 val module_type_of_module : module_body -> module_type_body
-val module_body_of_type : ModPath.t -> module_type_body -> module_body
+val module_body_of_type : module_type_body -> module_body
 
 val functorize_module : (Names.MBId.t * module_type_body) list -> module_body -> module_body
 
@@ -101,22 +100,22 @@ val implem_smart_map :
   ('a, module_implementation) when_mod_body ->
   ('a, module_implementation) when_mod_body
 
-val functor_smart_map : ('a -> 'a) -> ('b -> 'b) ->
+val functor_smart_map : (MBId.t -> 'a -> 'a) -> ('b -> 'b) ->
   ('a, 'b) functorize -> ('a, 'b) functorize
 
 (** {6 Substitution} *)
 
 val subst_signature : substitution ->
-  (delta_resolver -> substitution -> delta_resolver) -> module_signature -> module_signature
+  (delta_resolver -> substitution -> delta_resolver) -> ModPath.t -> module_signature -> module_signature
 
 val subst_structure : substitution ->
-  (delta_resolver -> substitution -> delta_resolver) -> structure_body -> structure_body
+  (delta_resolver -> substitution -> delta_resolver) -> ModPath.t -> structure_body -> structure_body
 
 val subst_module : substitution ->
-  (delta_resolver -> substitution -> delta_resolver) -> module_body -> module_body
+  (delta_resolver -> substitution -> delta_resolver) -> ModPath.t -> module_body -> module_body
 
 val subst_modtype : substitution ->
-  (delta_resolver -> substitution -> delta_resolver) -> module_type_body -> module_type_body
+  (delta_resolver -> substitution -> delta_resolver) -> ModPath.t -> module_type_body -> module_type_body
 
 (** {6 Hashconsing} *)
 
