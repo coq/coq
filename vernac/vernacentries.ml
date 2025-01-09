@@ -1967,7 +1967,7 @@ let () =
     CWarnings.normalize_flags_string flags
   in
   declare_string_option ~preprocess
-    { optstage = Summary.Stage.Interp;
+    { optstage = Summary.Stage.Synterp;
       optdepr  = None;
       optkey   = ["Warnings"];
       optread  = CWarnings.get_flags;
@@ -1975,7 +1975,7 @@ let () =
 
 let () =
   declare_string_option
-    { optstage = Summary.Stage.Interp;
+    { optstage = Summary.Stage.Synterp;
       optdepr  = None;
       optkey   = ["Debug"];
       optread  = CDebug.get_flags;
