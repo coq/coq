@@ -15,7 +15,6 @@ depends: [
   "rocq-stdlib" {= version}
   "odoc" {with-doc}
 ]
-depopts: ["rocq-native"]
 build: [
   ["dune" "subst"] {dev}
   [
