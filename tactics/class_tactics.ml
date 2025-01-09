@@ -1137,7 +1137,7 @@ let split_evars pred env evm =
   in
   let fn evs =
     let (strictly_uniques, rest) = Evar.Set.partition is_strictly_unique evs in
-    rest :: (List.map Evar.Set.singleton (Evar.Set.elements strictly_uniques))
+    List.rev_append (List.rev_map Evar.Set.singleton (Evar.Set.elements strictly_uniques)) [rest]
   in
   List.concat_map fn part
 

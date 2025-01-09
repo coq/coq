@@ -254,4 +254,25 @@ Module StrictlyUnique.
     (* We can now resolve [WhatIsThis] even though we don't have a [DynamicType] *)
     Example test := Eval lazy in (fun (ls : list dyn_type) => what_is ls _) _.
   End Solution.
+
+  Module Dependencies.
+    (* Other evars can still depend on strictly unique evars by using them
+       directly in their type. We must make sure to not forget those dependencies. *)
+
+    #[local] Set Typeclasses Strict Resolution.
+    #[local] Set Typeclasses Unique Instances.
+    Class SU : Type := su : unit.
+    Arguments su : clear implicits.
+    #[local] Unset Typeclasses Strict Resolution.
+    #[local] Unset Typeclasses Unique Instances.
+
+    Instance SU_inst : SU := tt.
+
+    Class Depends (t : unit) := {}.
+    Hint Mode Depends + : typeclass_instances.
+
+    Instance Depends_inst {t} : Depends t := {}.
+
+    Example test := Eval lazy in (fun (s : SU) (d : Depends (su s)) => d) _ _.
+  End Dependencies.
 End StrictlyUnique.
