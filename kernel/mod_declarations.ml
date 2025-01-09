@@ -115,6 +115,7 @@ let module_type_of_module mb =
     mod_retroknowledge = ModTypeNul; }
 
 let module_body_of_type mp mtb =
+  let () = assert (ModPath.equal mp mtb.mod_mp) in
   { mtb with mod_expr = ModBodyVal Abstract; mod_mp = mp;
       mod_retroknowledge = ModBodyVal []; }
 

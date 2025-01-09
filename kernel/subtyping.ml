@@ -264,10 +264,12 @@ let check_constant (cst, ustate) trace env l info1 cb2 subst1 subst2 =
                Anyway [check_conv] will handle that afterwards. *)
             check_conv NotConvertibleBodyField cst poly CONV env c1 c2))
 
-let rec check_modules state trace env msb1 msb2 subst1 subst2 =
+let rec check_modules state trace env mp1 msb1 mp2 msb2 subst1 subst2 =
+  let () = assert (ModPath.equal mp1 (mod_mp msb1)) in
+  let () = assert (ModPath.equal mp2 (mod_mp msb2)) in
   let mty1 = module_type_of_module msb1 in
-  let mty2 =  module_type_of_module msb2 in
-  check_modtypes state trace env mty1 mty2 subst1 subst2 false
+  let mty2 = module_type_of_module msb2 in
+  check_modtypes state trace env mp1 mty1 mp2 mty2 subst1 subst2 false
 
 and check_signatures (cst, ustate) trace env mp1 sig1 mp2 sig2 subst1 subst2 reso1 reso2 =
   let map1 = make_labmap mp1 sig1 in
@@ -282,8 +284,10 @@ and check_signatures (cst, ustate) trace env mp1 sig1 mp2 sig2 subst1 subst2 res
         | SFBrules _ ->
             error_signature_mismatch trace l NoRewriteRulesSubtyping
         | SFBmodule msb2 ->
+            let mp1' = MPdot (mp1, l) in
+            let mp2' = MPdot (mp2, l) in
             begin match get_mod mp1 map1 l with
-              | Module msb -> check_modules (cst, ustate) (Submodule l :: trace) env msb msb2 subst1 subst2
+              | Module msb1 -> check_modules (cst, ustate) (Submodule l :: trace) env mp1' msb1 mp2' msb2 subst1 subst2
               | _ -> error_signature_mismatch trace l ModuleFieldExpected
             end
         | SFBmodtype mtb2 ->
@@ -291,15 +295,18 @@ and check_signatures (cst, ustate) trace env mp1 sig1 mp2 sig2 subst1 subst2 res
               | Modtype mtb -> mtb
               | _ -> error_signature_mismatch trace l ModuleTypeFieldExpected
             in
-            let env =
-              add_module_type (mod_mp mtb2) mtb2
-                (add_module_type (mod_mp mtb1) mtb1 env)
-            in
-            check_modtypes (cst, ustate) (Submodule l :: trace) env mtb1 mtb2 subst1 subst2 true
+            let mp1' = MPdot (mp1, l) in
+            let mp2' = MPdot (mp2, l) in
+            let () = assert (ModPath.equal mp1' (mod_mp mtb1)) in
+            let () = assert (ModPath.equal mp2' (mod_mp mtb2)) in
+            let env = add_module_type mp2' mtb2 (add_module_type mp1' mtb1 env) in
+            check_modtypes (cst, ustate) (Submodule l :: trace) env mp1' mtb1 mp2' mtb2 subst1 subst2 true
   in
     List.fold_left check_one_body cst sig2
 
-and check_modtypes (cst, ustate) trace env mtb1 mtb2 subst1 subst2 equiv =
+and check_modtypes (cst, ustate) trace env mp1 mtb1 mp2 mtb2 subst1 subst2 equiv =
+  let () = assert (ModPath.equal mp1 (mod_mp mtb1)) in
+  let () = assert (ModPath.equal mp2 (mod_mp mtb2)) in
   if mtb1==mtb2 || mod_type mtb1 == mod_type mtb2 then cst
   else
     let rec check_structure cst ~nargs env struc1 struc2 equiv subst1 subst2 =
@@ -307,32 +314,33 @@ and check_modtypes (cst, ustate) trace env mtb1 mtb2 subst1 subst2 equiv =
       | NoFunctor list1,
         NoFunctor list2 ->
         if equiv then
-          let subst2 = add_mp (mod_mp mtb2) (mod_mp mtb1) (mod_delta mtb1) subst2 in
+          let subst2 = add_mp mp2 mp1 (mod_delta mtb1) subst2 in
           let cst = check_signatures (cst, ustate) trace env
-            (mod_mp mtb1) list1 (mod_mp mtb2) list2 subst1 subst2
+            mp1 list1 mp2 list2 subst1 subst2
             (mod_delta mtb1) (mod_delta mtb2)
           in
           let cst = check_signatures (cst, ustate) trace env
-            (mod_mp mtb2) list2 (mod_mp mtb1) list1 subst2 subst1
+            mp2 list2 mp1 list1 subst2 subst1
             (mod_delta mtb2) (mod_delta mtb1)
           in
           cst
         else
           check_signatures (cst, ustate) trace env
-            (mod_mp mtb1) list1 (mod_mp mtb2) list2 subst1 subst2
+            mp1 list1 mp2 list2 subst1 subst2
             (mod_delta mtb1) (mod_delta mtb2)
       | MoreFunctor (arg_id1,arg_t1,body_t1),
         MoreFunctor (arg_id2,arg_t2,body_t2) ->
-        let mp2 = MPbound arg_id2 in
-        let subst1 = join (map_mbid arg_id1 mp2 (mod_delta arg_t2)) subst1 in
-        let env = add_module_type mp2 arg_t2 env in
-        let cst = check_modtypes (cst, ustate) (FunctorArgument (nargs+1) :: trace) env arg_t2 arg_t1 subst2 subst1 equiv in
+        let mparg1 = MPbound arg_id1 in
+        let mparg2 = MPbound arg_id2 in
+        let subst1 = join (map_mbid arg_id1 mparg2 (mod_delta arg_t2)) subst1 in
+        let env = add_module_type mparg2 arg_t2 env in
+        let cst = check_modtypes (cst, ustate) (FunctorArgument (nargs+1) :: trace) env mparg2 arg_t2 mparg1 arg_t1 subst2 subst1 equiv in
         (* contravariant *)
         let env =
           if Modops.is_functor body_t1 then env
           else
-            let mtb = make_module_type (mod_mp mtb1) (subst_signature subst1 body_t1) (mod_delta mtb1) in
-            add_module (module_body_of_type (mod_mp mtb1) mtb) env
+            let mtb = make_module_type mp1 (subst_signature subst1 body_t1) (mod_delta mtb1) in
+            add_module (module_body_of_type mp1 mtb) env
         in
         check_structure cst ~nargs:(nargs + 1) env body_t1 body_t2 equiv subst1 subst2
       | _ , _ -> error_incompatible_modtypes mtb1 mtb2
@@ -340,8 +348,9 @@ and check_modtypes (cst, ustate) trace env mtb1 mtb2 subst1 subst2 equiv =
     check_structure cst ~nargs:0 env (mod_type mtb1) (mod_type mtb2) equiv subst1 subst2
 
 let check_subtypes state env sup super =
-  let env = add_module_type (mod_mp sup) sup env in
+  let mp_sup = mod_mp sup in
+  let mp_super = mod_mp super in
+  let env = add_module_type mp_sup sup env in
   check_modtypes state [] env
-    (strengthen sup (mod_mp sup)) super empty_subst
-    (map_mp (mod_mp super) (mod_mp sup) (mod_delta sup)) false
-
+    mp_sup (strengthen sup mp_sup) mp_super super empty_subst
+    (map_mp mp_super mp_sup (mod_delta sup)) false
