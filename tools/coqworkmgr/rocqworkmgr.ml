@@ -173,10 +173,17 @@ let parse_args argv =
 let main ~prog argv =
   parse_args (Array.of_list (prog::argv));
   try
-    let sock = Sys.getenv "COQWORKMGR_SOCK" in
+    let sock =
+      let rocq = "ROCQWORKMGR_SOCK" in
+      let coq = "COQWORKMGR_SOCK" in
+      try Sys.getenv rocq with Not_found ->
+      let s = Sys.getenv coq in
+      Printf.eprintf "Deprecated environment variable %s, use %s instead.\n%!" coq rocq;
+      s
+    in
     if !debug then Printf.eprintf "Contacting %s\n%!" sock;
     let cur, max, pid = check_alive sock in
-    Printf.printf "COQWORKMGR_SOCK=%s\n%!" sock;
+    Printf.printf "ROCQWORKMGR_SOCK=%s\n%!" sock;
     Printf.eprintf
       "coqworkmgr already up and running (pid=%d, socket=%s, j=%d/%d)\n%!"
       pid sock cur max;
@@ -187,7 +194,7 @@ let main ~prog argv =
   if not !debug then begin
     let pid = Unix.fork () in
     if pid <> 0 then begin
-      Printf.printf "COQWORKMGR_SOCK=%s\n%!" str;
+      Printf.printf "ROCQWORKMGR_SOCK=%s\n%!" str;
       exit 0
     end else begin
       ignore(Unix.setsid ());
@@ -195,7 +202,7 @@ let main ~prog argv =
       Unix.close Unix.stdout;
     end;
   end else begin
-    Printf.printf "COQWORKMGR_SOCK=%s\n%!" str;
+    Printf.printf "ROCQWORKMGR_SOCK=%s\n%!" str;
   end;
   Sys.catch_break true;
   try

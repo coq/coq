@@ -13,6 +13,11 @@
     may come from different sources (shell environment variables,
     command line options, options set at the time Coq was build). *)
 
+val getenv_rocq : string -> string option
+(** [getenv_rocq name] returns the value of "ROCQ$name" if it exists,
+    otherwise the value of "COQ$name" if it exists and warns that it
+    is deprecated, otherwise [None]. *)
+
 (** [expand_path_macros warn s] substitutes environment variables
     in a string by their values. This function also takes care of
     substituting path of the form '~X' by an absolute path.

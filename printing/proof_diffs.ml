@@ -24,7 +24,7 @@ while "removed" shows each modified item twice--once with the old value showing
 removed text and once with the new value showing added text.
 
 In CoqIDE, colors and highlights can be set in the Edit/Preferences/Tags panel.
-For coqtop, these can be set through the COQ_COLORS environment variable.
+For coqtop, these can be set through the ROCQ_COLORS environment variable.
 
 Limitations/Possible enhancements:
 

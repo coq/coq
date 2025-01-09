@@ -24,8 +24,7 @@ let init_color opts =
   in
   let term_color =
     if has_color then begin
-      let colors = try Some (Sys.getenv "COQ_COLORS") with Not_found -> None in
-      match colors with
+      match Envars.getenv_rocq "_COLORS" with
       | None -> Topfmt.default_styles (); true        (* Default colors *)
       | Some "" -> false                              (* No color output *)
       | Some s -> Topfmt.parse_color_config s; true   (* Overwrite all colors *)
@@ -55,7 +54,7 @@ let print_style_tags opts =
     (t ^ "=" ^ String.concat ";" tags)
   in
   let repr = List.map make tags in
-  let () = Printf.printf "COQ_COLORS=\"%s\"\n" (String.concat ":" repr) in
+  let () = Printf.printf "ROCQ_COLORS=\"%s\"\n" (String.concat ":" repr) in
   let () = List.iter iter tags in
   flush_all ()
 

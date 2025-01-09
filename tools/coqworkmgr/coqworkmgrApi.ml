@@ -100,7 +100,7 @@ let option_map f = function None -> None | Some x -> Some (f x)
 
 let init p =
   try
-    let sock = Sys.getenv "COQWORKMGR_SOCK" in
+    let sock = try Sys.getenv "ROCQWORKMGR_SOCK" with Not_found -> Sys.getenv "COQWORKMGR_SOCK" in
     manager := option_map (fun s ->
       let cout = Unix.out_channel_of_descr s in
       set_binary_mode_out cout true;

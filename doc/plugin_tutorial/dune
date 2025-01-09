@@ -7,7 +7,7 @@
 ;    ../../tools/CoqMakefile.in
 ;    ../../theories/Init/Prelude.vo)
 ;  (action
-;    (bash "make COQCORELIB=$(pwd)/../../ COQLIB=$(pwd)/../../")))
+;    (bash "make ROCQRUNTIMELIB=$(pwd)/../../ ROCQLIB=$(pwd)/../../")))
 
 
 (env

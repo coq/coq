@@ -120,7 +120,7 @@ let parse_opts = function
   | args -> { debug_shim = false }, args
 
 let init { debug_shim=debug } args =
-  (* important to putenv before reading OCAMLPATH / COQLIB *)
+  (* important to putenv before reading OCAMLPATH / ROCQLIB *)
   let () = putenv_from_file ~debug () in
   let opts = parse_args args in
   let env_ocamlpath = make_ocamlpath opts in
