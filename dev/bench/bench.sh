@@ -611,8 +611,8 @@ $coq_opam_package (in $RUNNER)"
         :
     else
 
-        echo "DEBUG: $render_results "$log_dir" $num_of_iterations 0 user_time_pdiff $installable_coq_opam_packages"
-        rendered_results="$($render_results "$log_dir" $num_of_iterations 0 user_time_pdiff $installable_coq_opam_packages)"
+        echo "DEBUG: $render_results "$log_dir" $num_of_iterations 1 user_time_pdiff $installable_coq_opam_packages"
+        rendered_results="$($render_results "$log_dir" $num_of_iterations 1 user_time_pdiff $installable_coq_opam_packages)"
         echo "${rendered_results}"
         # update the comment
         coqbot_update_comment "" "${rendered_results}" ""
@@ -719,8 +719,8 @@ if [ -z "$installable_coq_opam_packages" ]; then
     exit 1
 fi
 
-echo "DEBUG: $render_results $log_dir $num_of_iterations 0 user_time_pdiff $installable_coq_opam_packages"
-rendered_results="$($render_results "$log_dir" $num_of_iterations 0 user_time_pdiff $installable_coq_opam_packages)"
+echo "DEBUG: $render_results $log_dir $num_of_iterations 1 user_time_pdiff $installable_coq_opam_packages"
+rendered_results="$($render_results "$log_dir" $num_of_iterations 1 user_time_pdiff $installable_coq_opam_packages)"
 echo "${rendered_results}"
 echo "${rendered_results}" > $timings/bench_summary
 
