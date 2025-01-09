@@ -953,6 +953,39 @@ let whd_state_gen ?csts flags env sigma =
                | Some t -> whrec cst_l' (t,s)
                | None -> ((mkApp (mkConstU kn, args), s), cst_l)
              end
+        |args, (Stack.Cst {const;curr;remains;volatile;params=s';cst_l} :: s'') ->
+          let x' = Stack.zip sigma (x, args) in
+          begin match remains with
+          | [] ->
+            (match const with
+            | Stack.Cst_const const ->
+              (match constant_opt_value_in env const with
+              | None -> fold ()
+              | Some body ->
+                let const = (fst const, EInstance.make (snd const)) in
+                let body = EConstr.of_constr body in
+                let cst_l = Cst_stack.add_cst ~volatile (mkConstU const) cst_l in
+                whrec cst_l (body, s' @ (Stack.append_app [|x'|] s'')))
+            | Stack.Cst_proj (p,r) ->
+              let stack = s' @ (Stack.append_app [|x'|] s'') in
+              match Stack.strip_n_app 0 stack with
+              | None -> assert false
+              | Some (_,arg,s'') ->
+                whrec Cst_stack.empty (arg, Stack.Proj (p,r,cst_l) :: s''))
+          | next :: remains' -> match Stack.strip_n_app (next-curr-1) s'' with
+            | None -> fold ()
+            | Some (bef,arg,s''') ->
+              let cst_l = Stack.Cst
+                  { const;
+                    curr=next;
+                    volatile;
+                    remains=remains';
+                    params=s' @ (Stack.append_app [|x'|] bef);
+                    cst_l;
+                  }
+              in
+              whrec Cst_stack.empty (arg, cst_l :: s''')
+          end
        | _ -> fold ()
       end
 
