@@ -541,7 +541,6 @@ module ProofFormat = struct
     | Done
     | Step of int * prf_rule * proof
     | Split of int * Vect.t * proof * proof
-    | Enum of int * prf_rule * Vect.t * prf_rule * proof list
     | ExProof of int * int * int * var * var * var * proof
 
   (* x = z - t, z >= 0, t >= 0 *)
@@ -573,9 +572,6 @@ module ProofFormat = struct
     | Split (i, v, p1, p2) ->
       Printf.fprintf o "%i:=%a ; { %a } { %a }" i Vect.pp v output_proof p1
         output_proof p2
-    | Enum (i, p1, v, p2, pl) ->
-      Printf.fprintf o "%i{%a<=%a<=%a}%a" i output_prf_rule p1 Vect.pp v
-        output_prf_rule p2 (pp_list ";" output_proof) pl
     | ExProof (i, j, k, x, z, t, pr) ->
       Printf.fprintf o "%i := %i = %i - %i ; %i := %i >= 0 ; %i := %i >= 0 ; %a"
         i x z t j z k t output_proof pr
@@ -672,9 +668,6 @@ module ProofFormat = struct
     | Done -> -1
     | Step (i, pr, prf) -> max i (max (pr_rule_max_def pr) (proof_max_def prf))
     | Split (i, _, p1, p2) -> max i (max (proof_max_def p1) (proof_max_def p2))
-    | Enum (i, p1, _, p2, l) ->
-      let m = max (pr_rule_max_def p1) (pr_rule_max_def p2) in
-      List.fold_left (fun i prf -> max i (proof_max_def prf)) (max i m) l
     | ExProof (i, j, k, _, _, _, prf) ->
       max (max (max i j) k) (proof_max_def prf)
 
@@ -716,8 +709,6 @@ module ProofFormat = struct
       let bds, m, ids, p' = pr_rule_def_cut m id p in
       (bds, m, ids, CutPrf p')
     | p -> pr_rule_def_cut m id p
-
-  let rec implicit_cut p = match p with CutPrf p -> implicit_cut p | _ -> p
 
   let rec pr_rule_collect_defs pr =
     match pr with
@@ -817,14 +808,6 @@ module ProofFormat = struct
       if not (ISet.mem i h1) then (p1, h1) (* Should not have computed p2 *)
       else if not (ISet.mem i h2) then (p2, h2)
       else (Split (i, v, p1, p2), ISet.add i (ISet.union h1 h2))
-    | Enum (i, p1, v, p2, pl) ->
-      let pl, hl = List.split (List.map simplify_proof pl) in
-      let hyps = List.fold_left ISet.union ISet.empty hl in
-      ( Enum (i, p1, v, p2, pl)
-      , ISet.add i
-          (ISet.union
-             (ISet.union (pr_rule_collect_defs p1) (pr_rule_collect_defs p2))
-             hyps) )
     | ExProof (i, j, k, x, z, t, prf) ->
       let prf', hyps = simplify_proof prf in
       if
@@ -859,24 +842,6 @@ module ProofFormat = struct
     | ExProof (i, j, k, x, z, t, prf) ->
       let id, prf = normalise_proof id prf in
       (id, ExProof (i, j, k, x, z, t, prf))
-    | Enum (i, p1, v, p2, pl) ->
-      (* Why do I have  top-level cuts ? *)
-      (* let p1 = implicit_cut p1 in
-         let p2 = implicit_cut p2 in
-         let (ids,prfs) = List.split (List.map (normalise_proof id) pl) in
-           (List.fold_left max  0 ids ,
-              Enum(i,p1,v,p2,prfs))
-      *)
-      let bds1, m, id, p1' =
-        pr_rule_def_cut PrfRuleMap.empty id (implicit_cut p1)
-      in
-      let bds2, m, id, p2' = pr_rule_def_cut m id (implicit_cut p2) in
-      let ids, prfs = List.split (List.map (normalise_proof id) pl) in
-      ( List.fold_left max 0 ids
-      , List.fold_left
-          (fun acc (i, p) -> Step (i, CutPrf p, acc))
-          (Enum (i, p1', v, p2', prfs))
-          (bds2 @ bds1) )
 
   let normalise_proof id prf =
     let prf = fst (simplify_proof prf) in
@@ -1000,11 +965,6 @@ module ProofFormat = struct
         ( cmpl_pol_z v
         , cmpl_proof (Env.push_def i env) p1
         , cmpl_proof (Env.push_def i env) p2 )
-    | Enum (i, p1, _, p2, l) ->
-      Mc.EnumProof
-        ( cmpl_prf_rule_z env p1
-        , cmpl_prf_rule_z env p2
-        , List.map (cmpl_proof (Env.push_def i env)) l )
     | ExProof (i, j, k, x, _, _, prf) ->
       Mc.ExProof
         (CamlToCoq.positive x, cmpl_proof (Env.push_def i  (Env.push_def j (Env.push_def k env))) prf)

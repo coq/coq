@@ -23,25 +23,11 @@ Require Import Refl.
 Require Import BinInt.
 Require InitialRing.
 Require Import micromega.Tauto.
+Require Import PeanoNat.
 Local Open Scope Z_scope.
 
-Ltac flatten_bool :=
-  repeat match goal with
-           [ id : (_ && _)%bool = true |- _ ] =>  destruct (andb_prop _ _ id); clear id
-         |  [ id : (_ || _)%bool = true |- _ ] =>  destruct (orb_prop _ _ id); clear id
-         end.
 
 Ltac inv H := inversion H ; try subst ; clear H.
-
-Lemma eq_le_iff : forall x, 0 = x  <-> (0 <= x /\ x <= 0).
-Proof.
-  intros.
-  split ; intros H.
-  - subst.
-    split; reflexivity.
-  - destruct H.
-    apply Z.le_antisymm; auto.
-Qed.
 
 Lemma lt_le_iff x : 0 < x <-> 0 <= x - 1.
 Proof. rewrite <-Z.lt_succ_r, Z.sub_1_r, Z.succ_pred; reflexivity. Qed.
@@ -565,7 +551,6 @@ Inductive ZArithProof :=
 | RatProof : ZWitness -> ZArithProof -> ZArithProof
 | CutProof : ZWitness -> ZArithProof -> ZArithProof
 | SplitProof : PolC Z -> ZArithProof -> ZArithProof -> ZArithProof
-| EnumProof : ZWitness -> ZWitness -> list ZArithProof -> ZArithProof
 | ExProof   : positive -> ZArithProof -> ZArithProof
 (*ExProof x : exists z t, x = z - t /\ z >= 0 /\ t >= 0 *)
 .
@@ -576,7 +561,6 @@ Register DoneProof   as micromega.ZArithProof.DoneProof.
 Register RatProof    as micromega.ZArithProof.RatProof.
 Register CutProof    as micromega.ZArithProof.CutProof.
 Register SplitProof  as micromega.ZArithProof.SplitProof.
-Register EnumProof   as micromega.ZArithProof.EnumProof.
 Register ExProof     as micromega.ZArithProof.ExProof.
 
 
@@ -855,14 +839,6 @@ Definition bound_var (v : positive) : Formula Z :=
 Definition mk_eq_pos (x : positive) (y:positive) (t : positive) : Formula Z :=
   Build_Formula (PEX x) OpEq (PEsub (PEX y) (PEX t)).
 
-
-Fixpoint vars (jmp : positive) (p : Pol Z) : list positive :=
-  match p with
-  | Pc c => nil
-  | Pinj j p => vars (Pos.add j jmp) p
-  | PX p j q => jmp::(vars jmp p)++vars (Pos.succ jmp) q
-  end.
-
 Fixpoint max_var (jmp : positive) (p : Pol Z) : positive :=
   match p with
   | Pc _ => jmp
@@ -906,25 +882,6 @@ Proof.
     eapply Pos.le_trans ; eauto.
 Qed.
 
-Lemma max_var_correct : forall p j v,
-    In v (vars j p) -> Pos.le v (max_var j p).
-Proof.
-  intros p; induction p; simpl.
-  - tauto.
-  - auto.
-  - intros j v H.
-    rewrite in_app_iff in H.
-    destruct H as [H |[ H | H]].
-    + subst.
-      apply Pos.max_case_strong;intros ; auto.
-      * apply max_var_le.
-      * eapply Pos.le_trans ; eauto.
-        apply max_var_le.
-    + apply Pos.max_case_strong;intros ; auto.
-      eapply Pos.le_trans ; eauto.
-    + apply Pos.max_case_strong;intros ; auto.
-      eapply Pos.le_trans ; eauto.
-Qed.
 
 Definition max_var_nformulae (l : list (NFormula Z)) :=
   List.fold_left  (fun acc f => Pos.max acc (max_var xH (fst f))) l xH.
@@ -958,37 +915,7 @@ Section MaxVar.
     apply Pos.max_le_compat_r; auto.
   Qed.
 
-
-
-
-  Lemma max_var_nformulae_correct_aux : forall l p o v,
-      In (p,o) l -> In v (vars xH p) -> Pos.le v (fold_left F l 1)%positive.
-  Proof.
-  intros l p o v H H0.
-  generalize 1%positive as acc.
-  revert p o v H H0.
-  induction l as [|a l IHl].
-  - simpl. tauto.
-  - simpl.
-    intros p o v H H0 ?.
-    destruct H ; subst.
-    + unfold F at 2.
-      simpl.
-      apply max_var_correct in H0.
-      apply max_var_nformulae_mono_aux.
-      apply Pos.max_case_strong;intros ; auto.
-      eapply Pos.le_trans ; eauto.
-    + eapply IHl ; eauto.
-  Qed.
-
 End MaxVar.
-
-Lemma max_var_nformalae_correct : forall l p o v,
-      In (p,o) l -> In v (vars xH p) -> Pos.le v (max_var_nformulae l)%positive.
-Proof.
-  intros l p o v.
-  apply max_var_nformulae_correct_aux.
-Qed.
 
 
 Fixpoint max_var_psatz (w : Psatz Z) : positive :=
@@ -1006,9 +933,6 @@ Fixpoint max_var_prf (w : ZArithProof) : positive :=
   | DoneProof => xH
   | RatProof w pf | CutProof w pf => Pos.max (max_var_psatz w) (max_var_prf pf)
   | SplitProof p pf1 pf2 => Pos.max (max_var xH p) (Pos.max (max_var_prf pf1) (max_var_prf pf1))
-  | EnumProof w1 w2 l => List.fold_left
-                           (fun acc prf => Pos.max acc (max_var_prf prf)) l
-                           (Pos.max (max_var_psatz w1) (max_var_psatz w2))
   | ExProof _ pf => max_var_prf pf
   end.
 
@@ -1050,89 +974,7 @@ Fixpoint ZChecker  (l:list (NFormula Z)) (pf : ZArithProof)  {struct pf} : bool 
       let post := xnnormalise (bound_var t) in
       ZChecker (nfx::posz::post::l) prf
       else false
-      | EnumProof w1 w2 pf =>
-       match eval_Psatz l w1 , eval_Psatz l w2 with
-         |  Some f1 , Some f2 =>
-           match genCuttingPlane f1 , genCuttingPlane f2 with
-             |Some (e1,z1,op1) , Some (e2,z2,op2) =>
-               if (valid_cut_sign op1 && valid_cut_sign op2 && is_pol_Z0 (padd e1 e2))
-                 then
-                   (fix label (pfs:list ZArithProof) :=
-                   fun lb ub =>
-                     match pfs with
-                       | nil => if Z.gtb lb ub then true else false
-                       | pf::rsr => andb (ZChecker ((psub e1 (Pc lb), Equal) :: l) pf) (label rsr (Z.add lb 1%Z) ub)
-                     end)   pf (Z.opp z1)  z2
-                  else false
-              |   _    ,   _   => true
-           end
-          |   _   ,  _ => false
-    end
-end.
-
-
-
-Fixpoint bdepth (pf : ZArithProof) : nat :=
-  match pf with
-    | DoneProof  => O
-    | RatProof _ p =>  S (bdepth p)
-    | CutProof _  p =>   S  (bdepth p)
-    | SplitProof _ p1 p2 => S (Nat.max (bdepth p1) (bdepth p2))
-    | EnumProof _ _ l => S (List.fold_right (fun pf x => Nat.max (bdepth pf) x)   O l)
-    | ExProof _ p   => S (bdepth p)
-  end.
-
-Require Import PeanoNat Wf_nat.
-
-Lemma in_bdepth : forall l a b  y, In y l ->  ltof ZArithProof bdepth y (EnumProof a b  l).
-Proof.
-  intros l; induction l as [|a l IHl].
-  - (* nil *)
-    simpl.
-    tauto.
-  - (* cons *)
-    simpl.
-    intros a0 b y H.
-    destruct H as [H|H].
-    + subst.
-      unfold ltof.
-      simpl.
-      generalize (         (fold_right
-                              (fun (pf : ZArithProof) (x : nat) => Nat.max (bdepth pf) x) 0%nat l)).
-      intros.
-      generalize (bdepth y) ; intros.
-      rewrite Nat.lt_succ_r. apply Nat.le_max_l.
-    + generalize (IHl a0 b  y  H).
-      unfold ltof.
-      simpl.
-      generalize (      (fold_right (fun (pf : ZArithProof) (x : nat) => Nat.max (bdepth pf) x) 0%nat
-                                    l)).
-      intros.
-      eapply Nat.lt_le_trans.
-      * eassumption.
-      * rewrite <- Nat.succ_le_mono.
-        apply Nat.le_max_r.
-Qed.
-
-Lemma ltof_bdepth_split_l :
-  forall p pf1 pf2,
-         ltof ZArithProof bdepth pf1 (SplitProof p pf1 pf2).
-Proof.
-  intros.
-  unfold ltof. simpl.
-  rewrite Nat.lt_succ_r.
-  apply Nat.le_max_l.
-Qed.
-
-Lemma ltof_bdepth_split_r :
-  forall p pf1 pf2,
-         ltof ZArithProof bdepth pf2 (SplitProof p pf1 pf2).
-Proof.
-  intros.
-  unfold ltof. simpl.
-  rewrite Nat.lt_succ_r.
-  apply Nat.le_max_r.
-Qed.
+    end.
 
 
 Lemma eval_Psatz_sound : forall env w l f',
@@ -1266,17 +1108,10 @@ Proof.
   - case_eq (Zgcd_pol p) ; intros g c.
     case_eq (Z.gtb g 0 && (negb (Z.eqb c 0) && negb (Z.eqb (Z.gcd g c) g))).
     + intros H H0 H1 H2.
-      flatten_bool.
-      match goal with [ H' : (g >? 0) = true |- ?G ] => rename H' into H3 end.
-      match goal with [ H' : negb (Z.eqb c 0) = true |- ?G ] => rename H' into H end.
-      match goal with [ H' : negb (Z.eqb (Z.gcd g c) g) = true |- ?G ] => rename H' into H5 end.
-      rewrite negb_true_iff in H5.
-      apply Z.eqb_neq in H5.
-      rewrite Z.gtb_lt in H3.
-      rewrite negb_true_iff in H.
-      apply Z.eqb_neq in H.
+      rewrite !andb_true_iff, !negb_true_iff in H.
+      case H as (?%Z.gtb_lt & ?%Z.eqb_neq & H5%Z.eqb_neq).
       change (eval_pol env p = 0) in H2.
-      rewrite Zgcd_pol_correct_lt with (1:= H0) in H2. 2: auto using Z.gt_lt.
+      rewrite Zgcd_pol_correct_lt with (1:= H0) in H2 by auto using Z.gt_lt.
       set (x:=eval_pol env (Zdiv_pol (PsubC Z.sub p c) g)) in *; clearbody x.
       contradict H5.
       apply Zis_gcd_gcd.
@@ -1447,13 +1282,6 @@ Proof.
     apply Pos.le_1_l.
 Qed.
 
-
-Lemma eq_true_iff_eq :
-  forall b1 b2 : bool, (b1 = true <-> b2 = true) <-> b1 = b2.
-Proof.
-  intros b1 b2; destruct b1,b2 ; intuition congruence.
-Qed.
-
 Lemma eval_nformula_split : forall env p,
     eval_nformula env (p,NonStrict) \/ eval_nformula env (popp p,NonStrict).
 Proof.
@@ -1463,282 +1291,67 @@ Proof.
   apply Z.le_ge_cases.
 Qed.
 
+Local Lemma Private_Pos_neq_lt a b : Pos.lt a b -> a <> b.
+Proof. intros H ->. apply (Pos.lt_irrefl _ H). Qed.
 
+Local Lemma Private_Pos_neq_le_lt a b c : Pos.le a b -> Pos.lt b c -> a <> c.
+Proof. intros; eapply Private_Pos_neq_lt; eauto using Pos.le_lt_trans. Qed.
 
+Local Hint Resolve Private_Pos_neq_lt Private_Pos_neq_le_lt Pos.lt_trans: core.
+Local Hint Resolve Pos.lt_succ_diag_r Z.le_ge Z.le_refl Z.lt_le_incl : core.
 
 Lemma ZChecker_sound : forall w l,
     ZChecker l w = true -> forall env, make_impl  (eval_nformula env)  l False.
 Proof.
-  intros w; induction w as [w H] using (well_founded_ind (well_founded_ltof _ bdepth)).
-  destruct w as [ | w pf | w pf | p pf1 pf2 | w1 w2 pf | x pf].
-  - (* DoneProof *)
-  simpl. discriminate.
-  - (* RatProof *)
-  simpl.
-  intros l. case_eq (eval_Psatz l w) ; [| discriminate].
-  intros f Hf.
-  case_eq (Zunsat f).
-  + intros H0 ? ?.
-  apply (checker_nf_sound Zsor ZSORaddon l w).
-  unfold check_normalised_formulas.  unfold eval_Psatz in Hf. rewrite Hf.
-  unfold Zunsat in H0. assumption.
-  + intros H0 H1 env.
-    assert (make_impl  (eval_nformula env) (f::l) False) as H2.
-    { apply H with (2:= H1).
-      unfold ltof.
-      simpl.
-      auto with arith.
-    }
-    destruct f.
-    rewrite <- make_conj_impl in H2.
-    rewrite make_conj_cons in H2.
-    rewrite <- make_conj_impl.
-    intro.
-    apply H2.
-    split ; auto.
-    apply eval_Psatz_sound with (2:= Hf) ; assumption.
-  - (* CutProof *)
-    simpl.
-    intros l.
-    case_eq (eval_Psatz l w) ; [ | discriminate].
-    intros f' Hlc.
-    case_eq (genCuttingPlane f').
-    + intros p H0 H1 env.
-      assert (make_impl (eval_nformula env) (nformula_of_cutting_plane p::l) False) as H2.
-      { eapply (H pf)  ; auto.
-        unfold ltof.
-        simpl.
-        auto with arith.
-      }
-      rewrite <- make_conj_impl in H2.
-      rewrite make_conj_cons in H2.
-      rewrite <- make_conj_impl.
-      intro.
-      apply H2.
-      split ; auto.
-      apply (eval_Psatz_sound env) in Hlc.
-      * apply cutting_plane_sound with (1:= Hlc) (2:= H0).
-      * auto.
-    + (* genCuttingPlane = None *)
-      intros H0 H1 env.
-      rewrite <- make_conj_impl.
-      intros H2.
-      apply eval_Psatz_sound with (2:= Hlc) in H2.
-      apply genCuttingPlaneNone with (2:= H2) ; auto.
-  - (* SplitProof *)
-    intros l.
-    cbn - [genCuttingPlane].
-    case_eq (genCuttingPlane (p, NonStrict)) ; [| discriminate].
-    case_eq (genCuttingPlane (popp p, NonStrict)) ; [| discriminate].
-    intros cp1 GCP1 cp2 GCP2 ZC1 env.
-    flatten_bool.
-    match goal with [ H' : ZChecker _ pf1 = true |- _ ] => rename H' into H0 end.
-    match goal with [ H' : ZChecker _ pf2 = true |- _ ] => rename H' into H1 end.
+  setoid_rewrite <-make_conj_impl.
+  induction w as [ | | | p | x ]; cbn [ZChecker]; intros l E env HX.
+  { (* DoneProof *) discriminate. }
+  { (* RatProof *)
+    destruct eval_Psatz as [f'|] eqn:Hlc in E; [|discriminate];
+      eapply eval_Psatz_sound in Hlc; eauto.
+    destruct Zunsat eqn:Hus in E. { eapply Zunsat_sound in Hus; eauto. }
+    eapply IHw; try apply E; try apply le_n.
+    rewrite make_conj_cons; eauto. }
+  { (* CutProof *)
+    destruct eval_Psatz as [f'|] eqn:Hlc in E; [|discriminate];
+      eapply eval_Psatz_sound in Hlc; eauto.
+    destruct genCuttingPlane eqn:Hcp in E; [|eauto using genCuttingPlaneNone];
+      eapply cutting_plane_sound in Hcp; eauto.
+    eapply IHw; try apply E; try apply le_n.
+    rewrite make_conj_cons; eauto. }
+  { (* SplitProof *)
+    destruct genCuttingPlane eqn:Hcp1 in E; [|discriminate].
+    destruct genCuttingPlane eqn:Hcp2 in E; [|discriminate];
+    apply andb_true_iff in E; destruct E as [El Er].
     destruct (eval_nformula_split env p).
-    + apply (fun H' ck => H _ H' _ ck env) in H0.
-      * rewrite <- make_conj_impl in *.
-        intro ; apply H0.
-        rewrite make_conj_cons. split; auto.
-        apply (cutting_plane_sound _ (p,NonStrict)) ; auto.
-      * apply ltof_bdepth_split_l.
-    + apply (fun H' ck => H _ H' _ ck env) in H1.
-      * rewrite <- make_conj_impl in *.
-        intro ; apply H1.
-        rewrite make_conj_cons. split; auto.
-        apply (cutting_plane_sound _ (popp p,NonStrict)) ; auto.
-      * apply ltof_bdepth_split_r.
-  - (* EnumProof *)
-    intros l.
-    simpl.
-    case_eq (eval_Psatz l w1) ; [  | discriminate].
-    case_eq (eval_Psatz l w2) ; [  | discriminate].
-    intros f1 Hf1 f2 Hf2.
-    case_eq (genCuttingPlane f2).
-    + intros p; destruct p as [ [p1 z1] op1].
-      case_eq (genCuttingPlane f1).
-      * intros p; destruct p as [ [p2 z2] op2].
-        case_eq (valid_cut_sign op1 && valid_cut_sign op2 && is_pol_Z0 (padd p1 p2)).
-        -- intros Hcond.
-           flatten_bool.
-           match goal with [ H1 : is_pol_Z0 (padd p1 p2) = true |- _ ] => rename H1 into HZ0 end.
-           match goal with [ H2 : valid_cut_sign op1 = true |- _ ] => rename H2 into Hop1 end.
-           match goal with [ H3 : valid_cut_sign op2 = true |- _ ] => rename H3 into Hop2 end.
-           intros HCutL HCutR Hfix env.
-           (* get the bounds of the enum *)
-           rewrite <- make_conj_impl.
-           intro H0.
-           assert (-z1 <= eval_pol env p1 <= z2) as H1. {
-             split.
-             - apply  (eval_Psatz_sound env) in Hf2 ; auto.
-               apply cutting_plane_sound with (1:= Hf2) in HCutR.
-               unfold nformula_of_cutting_plane in HCutR.
-               unfold eval_nformula in HCutR.
-               unfold RingMicromega.eval_nformula in HCutR.
-               change (RingMicromega.eval_pol Z.add Z.mul (fun x : Z => x)) with eval_pol in HCutR.
-               unfold eval_op1 in HCutR.
-               destruct op1 ; simpl in Hop1 ; try discriminate;
-                 rewrite eval_pol_add in HCutR; simpl in HCutR.
-               + rewrite Z.add_move_0_l in HCutR; rewrite HCutR, Z.opp_involutive; reflexivity.
-               + now apply Z.le_sub_le_add_r in HCutR.
-               (**)
-             - apply (fun H => is_pol_Z0_eval_pol _ H env) in HZ0.
-               rewrite eval_pol_add, Z.add_move_r, Z.sub_0_l in HZ0.
-               rewrite HZ0.
-               apply  (eval_Psatz_sound env) in Hf1 ; auto.
-               apply cutting_plane_sound with (1:= Hf1) in HCutL.
-               unfold nformula_of_cutting_plane in HCutL.
-               unfold eval_nformula in HCutL.
-               unfold RingMicromega.eval_nformula in HCutL.
-               change (RingMicromega.eval_pol Z.add Z.mul (fun x : Z => x)) with eval_pol in HCutL.
-               unfold eval_op1 in HCutL.
-               rewrite eval_pol_add in HCutL. simpl in HCutL.
-               destruct op2 ; simpl in Hop2 ; try discriminate.
-               + rewrite Z.add_move_r, Z.sub_0_l in HCutL.
-                 now rewrite HCutL, Z.opp_involutive.
-               + now rewrite <- Z.le_sub_le_add_l in HCutL.
-           }
-           revert Hfix.
-           match goal with
-           | |- context[?F pf (-z1) z2 = true] => set (FF := F)
-           end.
-           intros Hfix.
-           assert (HH :forall x, -z1 <= x <= z2 -> exists pr,
-                        (In pr pf /\
-                           ZChecker ((PsubC Z.sub p1 x,Equal) :: l) pr = true)%Z). {
-             clear HZ0 Hop1 Hop2 HCutL HCutR H0 H1.
-             revert Hfix.
-             generalize (-z1). clear z1. intro z1.
-             revert z1 z2.
-             induction pf as [|a pf IHpf];simpl ;intros z1 z2 Hfix x **.
-             - revert Hfix.
-               now case (Z.gtb_spec); [ | easy ]; intros LT; elim (Zorder.Zlt_not_le _ _ LT); transitivity x.
-             - flatten_bool.
-               match goal with [ H' : _ <= x <= _ |- _ ] => rename H' into H0 end.
-               match goal with [ H' : FF pf (z1 + 1) z2 = true |- _ ] => rename H' into H2 end.
-               destruct (ZArith_dec.Z_le_lt_eq_dec _ _ (proj1 H0)) as [ LT | -> ].
-               2: exists a; auto.
-               rewrite <- Z.le_succ_l in LT.
-               assert (LE: (Z.succ z1 <= x <= z2)%Z) by intuition.
-               elim IHpf with (2:=H2) (3:= LE).
-               + intros x0 ?.
-                 exists x0 ; split;tauto.
-               + intros until 1.
-                 apply H ; auto.
-                 cbv [ltof] in *.
-                 cbn [bdepth] in *.
-                 eauto using Nat.lt_le_trans, le_n_S, Nat.le_max_r.
-           }
-           (*/asser *)
-           destruct (HH _ H1) as [pr [Hin Hcheker]].
-           assert (make_impl (eval_nformula env) ((PsubC Z.sub p1 (eval_pol env p1),Equal) :: l) False) as H2. {
-             eapply (H pr)  ;auto.
-             apply in_bdepth ; auto.
-           }
-           rewrite <- make_conj_impl in H2.
-           apply H2.
-           rewrite  make_conj_cons.
-           split ;auto.
-           unfold  eval_nformula.
-           unfold RingMicromega.eval_nformula.
-           simpl.
-           rewrite (RingMicromega.PsubC_ok Zsor ZSORaddon).
-           unfold eval_pol. ring.
-        -- discriminate.
-      * (* No cutting plane *)
-        intros H0 H1 H2 env.
-        rewrite <- make_conj_impl.
-        intros H3.
-        apply eval_Psatz_sound with (2:= Hf1) in H3.
-        apply genCuttingPlaneNone with (2:= H3) ; auto.
-    + (* No Cutting plane (bis) *)
-      intros H0 H1 env.
-      rewrite <- make_conj_impl.
-      intros H2.
-      apply eval_Psatz_sound with (2:= Hf2) in H2.
-      apply genCuttingPlaneNone with (2:= H2) ; auto.
-  - intros l.
-    unfold ZChecker.
-    fold ZChecker.
-    set (fr := (max_var_nformulae l)%positive).
-    set (z1 := (Pos.succ fr)) in *.
-    set (t1 := (Pos.succ z1)) in *.
-    destruct (x <=? fr)%positive eqn:LE ; [|congruence].
-    intros H0 env.
-    set (env':= fun v => if Pos.eqb v z1
-                      then if Z.leb (env x) 0 then 0 else env x
-                      else if Pos.eqb v t1
-                           then if Z.leb (env x) 0 then -(env x) else 0
-                           else env v).
-    apply (fun H' ck => H _ H' _ ck env') in H0.
-    + rewrite <- make_conj_impl in *.
-      intro H1.
-      rewrite !make_conj_cons in H0.
-      apply H0 ; repeat split.
-      *
-        apply eval_nformula_mk_eq_pos.
-        unfold env'.
-        rewrite! Pos.eqb_refl.
-        replace (x=?z1)%positive with false.
-        1:replace (x=?t1)%positive with false.
-        1:replace (t1=?z1)%positive with false.
-        1:destruct (env x <=? 0); ring.
-        { unfold t1.
-          symmetry; apply not_true_iff_false; rewrite Pos.eqb_eq; symmetry; apply Pos.succ_discr.
-        }
-        {
-          unfold t1, z1.
-          symmetry; apply not_true_iff_false; rewrite Pos.eqb_eq; intros ->.
-          apply Pos.leb_le, Pos.lt_succ_r in LE; rewrite <-?Pos.succ_lt_mono in *.
-          pose proof Pos.lt_not_add_l fr 1; rewrite Pos.add_1_r in *; contradiction.
-        }
-        {
-          unfold z1.
-          symmetry; apply not_true_iff_false; rewrite Pos.eqb_eq; intros ->.
-          apply Pos.leb_le, Pos.lt_succ_r in LE; rewrite <-?Pos.succ_lt_mono in *.
-          case (Pos.lt_irrefl _ LE).
-        }
-      *
-        apply eval_nformula_bound_var.
-        unfold env'.
-        rewrite! Pos.eqb_refl.
-        destruct (env x <=? 0) eqn:EQ.
-        -- compute. congruence.
-        -- rewrite Z.leb_gt in EQ.
-           apply Z.ge_le_iff, Z.lt_le_incl; trivial.
-      *
-        apply eval_nformula_bound_var.
-        unfold env'.
-        rewrite! Pos.eqb_refl.
-        replace (t1 =? z1)%positive with false.
-        -- destruct (env x <=? 0) eqn:EQ.
-           ++ rewrite Z.leb_le in EQ.
-              apply Z.ge_le_iff. rewrite Z.opp_le_mono, Z.opp_involutive; trivial.
-           ++ compute; congruence.
-        -- unfold t1.
-           clear.
-           symmetry; apply not_true_iff_false; rewrite Pos.eqb_eq; symmetry; apply Pos.succ_discr.
-      *
-        rewrite (agree_env_eval_nformulae _ env') in H1;auto.
-        unfold agree_env; intros x0 H2.
-        unfold env'.
-        replace (x0 =? z1)%positive with false.
-        1:replace (x0 =? t1)%positive with false.
-        1:reflexivity.
-        {
-          unfold t1, z1.
-          symmetry; apply not_true_iff_false; rewrite Pos.eqb_eq; intros ->.
-          apply Pos.lt_succ_r in H2; rewrite <-?Pos.succ_lt_mono in *.
-          pose proof Pos.lt_not_add_l (max_var_nformulae l) 1; rewrite Pos.add_1_r in *; contradiction.
-        }
-        {
-          unfold z1, fr in *.
-          symmetry; apply not_true_iff_false; rewrite Pos.eqb_eq; intros ->.
-          apply Pos.lt_succ_r in H2; rewrite <-?Pos.succ_lt_mono in *.
-          case (Pos.lt_irrefl _ H2).
-        }
-    + unfold ltof.
-      simpl.
-      apply Nat.lt_succ_diag_r.
+    { eapply IHw1 in El; auto.
+      eapply cutting_plane_sound in Hcp1; eauto.
+      rewrite make_conj_cons; eauto. }
+    { eapply IHw2 in Er; auto.
+      eapply cutting_plane_sound in Hcp2; eauto.
+      rewrite make_conj_cons; eauto. } }
+  { (* ExProof *)
+    destruct (Pos.leb_spec x (max_var_nformulae l)); [|discriminate].
+    let fr := constr:((max_var_nformulae l)%positive) in
+    let z1 := constr:(Pos.succ fr) in
+    let t1 := constr:(Pos.succ z1) in
+    let env':= constr:(fun v =>
+      if Pos.eqb v z1      then if Z.leb (env x) 0 then 0 else env x
+      else if Pos.eqb v t1 then if Z.leb (env x) 0 then -(env x) else 0
+      else env v) in
+    eapply IHw; try eapply E; try apply Nat.lt_succ_diag_r; instantiate (1:=env').
+    rewrite !make_conj_cons; repeat split; cycle -1.
+    { rewrite agree_env_eval_nformulae in HX; eauto; []; intros ? ?.
+      erewrite !(proj2 (Pos.eqb_neq _ _ )); eauto. }
+    { apply eval_nformula_mk_eq_pos.
+      rewrite !Pos.eqb_refl, !(proj2 (Pos.eqb_neq _ _ )) by (eauto || symmetry; eauto).
+      case Z.leb; auto using Z.sub_0_r, Z.sub_opp_r. }
+    { apply eval_nformula_bound_var.
+      rewrite !Pos.eqb_refl; case Z.leb_spec; intros EQ; auto. }
+    { apply eval_nformula_bound_var.
+      rewrite !Pos.eqb_refl, !(proj2 (Pos.eqb_neq _ _ )) by (eauto || symmetry; eauto).
+      case Z.leb_spec; intros; auto.
+      apply Z.le_ge, Z.opp_nonneg_nonpos; auto. } }
 Qed.
 
 Definition ZTautoChecker  (f : BFormula (Formula Z) Tauto.isProp) (w: list ZArithProof): bool :=
@@ -1746,41 +1359,25 @@ Definition ZTautoChecker  (f : BFormula (Formula Z) Tauto.isProp) (w: list ZArit
 
 Lemma ZTautoChecker_sound : forall f w, ZTautoChecker f w = true -> forall env, eval_bf  (Zeval_formula env)  f.
 Proof.
-  intros f w.
-  unfold ZTautoChecker.
   apply (tauto_checker_sound _ _ _ _ eval_nformula).
-  - apply Zeval_nformula_dec.
-  - intros t ? env.
-  unfold eval_nformula. unfold RingMicromega.eval_nformula.
-  destruct t.
-  apply (check_inconsistent_sound Zsor ZSORaddon) ; auto.
-  - unfold Zdeduce. intros ? ? ? H **. revert H.
-     apply (nformula_plus_nformula_correct Zsor ZSORaddon); auto.
-  -
-    intros ? ? ? ? H.
-    rewrite normalise_correct  in H.
-    rewrite Zeval_formula_compat; auto.
-  -
-    intros ? ? ? ? H.
-    rewrite negate_correct in H ; auto.
-    rewrite Tauto.hold_eNOT.
-    rewrite Zeval_formula_compat; auto.
-  - intros t w0.
-    unfold eval_tt.
-    intros H env.
-    rewrite (make_impl_map (eval_nformula env)).
-    + eapply ZChecker_sound; eauto.
-    + tauto.
+  { apply Zeval_nformula_dec. }
+  { intros [] ? ?; apply (check_inconsistent_sound Zsor ZSORaddon) ; auto. }
+  { intros * H **; revert H.
+    apply (nformula_plus_nformula_correct Zsor ZSORaddon); auto. }
+  { intros * H. rewrite normalise_correct in H. apply Zeval_formula_compat, H. }
+  { intros * H. rewrite negate_correct in H.
+    rewrite Tauto.hold_eNOT, Zeval_formula_compat; auto. }
+  { intros * H env.
+    rewrite (make_impl_map (eval_nformula env)) by reflexivity.
+    eapply ZChecker_sound, H. }
 Qed.
+
 Fixpoint xhyps_of_pt (base:nat) (acc : list nat) (pt:ZArithProof)  : list nat :=
   match pt with
     | DoneProof => acc
     | RatProof c pt => xhyps_of_pt (S base ) (xhyps_of_psatz base acc c) pt
     | CutProof c pt => xhyps_of_pt (S base ) (xhyps_of_psatz base acc c) pt
     | SplitProof p pt1 pt2 => xhyps_of_pt (S base) (xhyps_of_pt (S base) acc pt1) pt2
-    | EnumProof c1 c2 l =>
-      let acc := xhyps_of_psatz base (xhyps_of_psatz base acc c2) c1 in
-        List.fold_left (xhyps_of_pt (S base)) l acc
     | ExProof _ pt  =>  xhyps_of_pt (S (S (S base ))) acc pt
   end.
 
@@ -1804,11 +1401,129 @@ Definition coneMember := ZWitness.
 
 Definition eval := eval_formula.
 
+#[deprecated(since="9.1")]
+Ltac flatten_bool :=
+  repeat match goal with
+           [ id : (_ && _)%bool = true |- _ ] =>  destruct (andb_prop _ _ id); clear id
+         |  [ id : (_ || _)%bool = true |- _ ] =>  destruct (orb_prop _ _ id); clear id
+         end.
+
+Require Import PeanoNat Wf_nat.
+Local Set Warnings "-deprecated".
+
+#[deprecated(since="9.1")]
+Lemma eq_le_iff : forall x, 0 = x  <-> (0 <= x /\ x <= 0).
+Proof.
+  intros.
+  split ; intros H.
+  - subst.
+    split; reflexivity.
+  - destruct H.
+    apply Z.le_antisymm; auto.
+Qed.
+
+#[deprecated(since="9.1")]
+Fixpoint vars (jmp : positive) (p : Pol Z) : list positive :=
+  match p with
+  | Pc c => nil
+  | Pinj j p => vars (Pos.add j jmp) p
+  | PX p j q => jmp::(vars jmp p)++vars (Pos.succ jmp) q
+  end.
+
+#[deprecated(since="9.1")]
+Lemma max_var_correct : forall p j v,
+    In v (vars j p) -> Pos.le v (max_var j p).
+Proof.
+  intros p; induction p; simpl.
+  - tauto.
+  - auto.
+  - intros j v H.
+    rewrite in_app_iff in H.
+    destruct H as [H |[ H | H]].
+    + subst.
+      apply Pos.max_case_strong;intros ; auto.
+      * apply max_var_le.
+      * eapply Pos.le_trans ; eauto.
+        apply max_var_le.
+    + apply Pos.max_case_strong;intros ; auto.
+      eapply Pos.le_trans ; eauto.
+    + apply Pos.max_case_strong;intros ; auto.
+      eapply Pos.le_trans ; eauto.
+Qed.
+
+#[deprecated(since="9.1")]
+  Lemma max_var_nformulae_correct_aux : forall l p o v,
+      In (p,o) l -> In v (vars xH p) -> Pos.le v (fold_left F l 1)%positive.
+  Proof.
+  intros l p o v H H0.
+  generalize 1%positive as acc.
+  revert p o v H H0.
+  induction l as [|a l IHl].
+  - simpl. tauto.
+  - simpl.
+    intros p o v H H0 ?.
+    destruct H ; subst.
+    + unfold F at 2.
+      simpl.
+      apply max_var_correct in H0.
+      apply max_var_nformulae_mono_aux.
+      apply Pos.max_case_strong;intros ; auto.
+      eapply Pos.le_trans ; eauto.
+    + eapply IHl ; eauto.
+  Qed.
+
+#[deprecated(since="9.1")]
+Lemma max_var_nformalae_correct : forall l p o v,
+      In (p,o) l -> In v (vars xH p) -> Pos.le v (max_var_nformulae l)%positive.
+Proof.
+  intros l p o v.
+  apply max_var_nformulae_correct_aux.
+Qed.
+
+
+#[deprecated(since="9.1")]
+Fixpoint bdepth (pf : ZArithProof) : nat :=
+match pf with
+  | DoneProof  => O
+  | RatProof _ p =>  S (bdepth p)
+  | CutProof _  p =>   S  (bdepth p)
+  | SplitProof _ p1 p2 => S (Nat.max (bdepth p1) (bdepth p2))
+  | ExProof _ p   => S (bdepth p)
+end.
+
+#[deprecated(since="9.1")]
+Lemma ltof_bdepth_split_l :
+  forall p pf1 pf2,
+         ltof ZArithProof bdepth pf1 (SplitProof p pf1 pf2).
+Proof.
+  intros.
+  unfold ltof. simpl.
+  rewrite Nat.lt_succ_r.
+  apply Nat.le_max_l.
+Qed.
+
+#[deprecated(since="9.1")]
+Lemma ltof_bdepth_split_r :
+  forall p pf1 pf2,
+         ltof ZArithProof bdepth pf2 (SplitProof p pf1 pf2).
+Proof.
+  intros.
+  unfold ltof. simpl.
+  rewrite Nat.lt_succ_r.
+  apply Nat.le_max_r.
+Qed.
+
+#[deprecated(since="9.1")]
+Lemma eq_true_iff_eq :
+  forall b1 b2 : bool, (b1 = true <-> b2 = true) <-> b1 = b2.
+Proof.
+  intros b1 b2; destruct b1,b2 ; intuition congruence.
+Qed.
+
 #[deprecated(note="Use [prod positive nat]", since="9.0")]
 Definition prod_pos_nat := prod positive nat.
 
 #[deprecated(use=Z.to_N, since="9.0")]
 Notation n_of_Z := Z.to_N (only parsing).
 
-Local Set Warnings "-deprecated".
 Require Ztac. (* deprecated since 9.0 *)

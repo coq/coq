@@ -35,38 +35,6 @@ module ERelevance = EConstr.ERelevance
 
 let debug = false
 
-(* Limit the proof search *)
-
-let max_depth = max_int
-
-let since_8_14 = Deprecation.make ~since:"8.14" ()
-
-(* Search limit for provers over Q R *)
-let { Goptions.get = lra_proof_depth } =
-  declare_int_option_and_ref
-    ~depr:since_8_14
-    ~key:["Lra"; "Depth"]
-    ~value:max_depth
-    ()
-
-(* Search limit for provers over Z *)
-let { Goptions.get = lia_enum } =
-  declare_bool_option_and_ref
-    ~depr:since_8_14
-    ~key:["Lia"; "Enum"]
-    ~value:true
-    ()
-
-let { Goptions.get = lia_proof_depth } =
-  declare_int_option_and_ref
-    ~depr:since_8_14
-    ~key:["Lia"; "Depth"]
-    ~value:max_depth
-    ()
-
-let get_lia_option () =
-  (true, lia_enum (), lia_proof_depth ())
-
 (* Enable/disable caches *)
 
 let { Goptions.get = use_lia_cache } =
@@ -230,7 +198,6 @@ let rocq_doneProof = lazy (constr_of_ref "micromega.ZArithProof.DoneProof")
 let rocq_ratProof = lazy (constr_of_ref "micromega.ZArithProof.RatProof")
 let rocq_cutProof = lazy (constr_of_ref "micromega.ZArithProof.CutProof")
 let rocq_splitProof = lazy (constr_of_ref "micromega.ZArithProof.SplitProof")
-let rocq_enumProof = lazy (constr_of_ref "micromega.ZArithProof.EnumProof")
 let rocq_ExProof = lazy (constr_of_ref "micromega.ZArithProof.ExProof")
 let rocq_IsProp = lazy (constr_of_ref "micromega.kind.isProp")
 let rocq_IsBool = lazy (constr_of_ref "micromega.kind.isBool")
@@ -1431,12 +1398,6 @@ let rec dump_proof_term = function
       , [| dump_pol (Lazy.force rocq_Z) dump_z p
          ; dump_proof_term prf1
          ; dump_proof_term prf2 |] )
-  | Micromega.EnumProof (c1, c2, prfs) ->
-    EConstr.mkApp
-      ( Lazy.force rocq_enumProof
-      , [| dump_psatz rocq_Z dump_z c1
-         ; dump_psatz rocq_Z dump_z c2
-         ; dump_list (Lazy.force rocq_proofTerm) dump_proof_term prfs |] )
   | Micromega.ExProof (p, prf) ->
     EConstr.mkApp
       (Lazy.force rocq_ExProof, [|dump_positive p; dump_proof_term prf|])
@@ -1457,9 +1418,6 @@ let rec size_of_pf = function
   | Micromega.RatProof (p, a) -> size_of_pf a + size_of_psatz p
   | Micromega.CutProof (p, a) -> size_of_pf a + size_of_psatz p
   | Micromega.SplitProof (_, p1, p2) -> size_of_pf p1 + size_of_pf p2
-  | Micromega.EnumProof (p1, p2, l) ->
-    size_of_psatz p1 + size_of_psatz p2
-    + List.fold_left (fun acc p -> size_of_pf p + acc) 0 l
   | Micromega.ExProof (_, a) -> size_of_pf a + 1
 
 let dump_proof_term t =
@@ -2281,9 +2239,6 @@ let hyps_of_pt pt =
     | Mc.RatProof (c, pt) -> xhyps (base + 1) pt (xhyps_of_cone base acc c)
     | Mc.CutProof (c, pt) -> xhyps (base + 1) pt (xhyps_of_cone base acc c)
     | Mc.SplitProof (p, p1, p2) -> xhyps (base + 1) p1 (xhyps (base + 1) p2 acc)
-    | Mc.EnumProof (c1, c2, l) ->
-      let s = xhyps_of_cone base (xhyps_of_cone base acc c2) c1 in
-      List.fold_left (fun s x -> xhyps (base + 1) x s) s l
     | Mc.ExProof (_, pt) -> xhyps (base + 3) pt acc
   in
   xhyps 0 pt ISet.empty
@@ -2314,11 +2269,6 @@ let compact_pt pt f =
       Mc.CutProof (compact_cone c (translate ofset), compact_pt (ofset + 1) pt)
     | Mc.SplitProof (p, p1, p2) ->
       Mc.SplitProof (p, compact_pt (ofset + 1) p1, compact_pt (ofset + 1) p2)
-    | Mc.EnumProof (c1, c2, l) ->
-      Mc.EnumProof
-        ( compact_cone c1 (translate ofset)
-        , compact_cone c2 (translate ofset)
-        , Mc.map (fun x -> compact_pt (ofset + 1) x) l )
     | Mc.ExProof (x, pt) -> Mc.ExProof (x, compact_pt (ofset + 3) pt)
   in
   compact_pt 0 pt
@@ -2366,7 +2316,7 @@ let memo_nra =
 
 let linear_prover_Q =
   { name = "linear prover"
-  ; get_option = lra_proof_depth
+  ; get_option = (fun _ -> max_int)
   ; prover =
       (fun (o, l) ->
         lift_pexpr_prover (Certificate.linear_prover_with_cert o) l)
@@ -2377,7 +2327,7 @@ let linear_prover_Q =
 
 let linear_prover_R =
   { name = "linear prover"
-  ; get_option = lra_proof_depth
+  ; get_option = (fun _ -> max_int)
   ; prover =
       (fun (o, l) ->
         lift_pexpr_prover (Certificate.linear_prover_with_cert o) l)
@@ -2388,7 +2338,7 @@ let linear_prover_R =
 
 let nlinear_prover_R =
   { name = "nra"
-  ; get_option = lra_proof_depth
+  ; get_option = (fun _ -> max_int)
   ; prover = memo_nra
   ; hyps = hyps_of_cone
   ; compact = compact_cone
@@ -2424,7 +2374,7 @@ let non_linear_prover_Z str o =
 
 let linear_Z =
   { name = "lia"
-  ; get_option = get_lia_option
+  ; get_option = (fun _ -> (true, true, max_int))
   ; prover = memo_lia
   ; hyps = hyps_of_pt
   ; compact = compact_pt
@@ -2433,7 +2383,7 @@ let linear_Z =
 
 let nlinear_Z =
   { name = "nlia"
-  ; get_option = get_lia_option
+  ; get_option = (fun _ -> (true, true, max_int))
   ; prover = memo_nlia
   ; hyps = hyps_of_pt
   ; compact = compact_pt

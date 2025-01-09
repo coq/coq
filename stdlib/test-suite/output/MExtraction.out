@@ -2361,7 +2361,6 @@ type zArithProof =
 | RatProof of zWitness * zArithProof
 | CutProof of zWitness * zArithProof
 | SplitProof of z polC * zArithProof * zArithProof
-| EnumProof of zWitness * zWitness * zArithProof list
 | ExProof of positive * zArithProof
 
 (** val zgcdM : z -> z -> z **)
@@ -2414,25 +2413,10 @@ let genCuttingPlane = function
 let nformula_of_cutting_plane = function
 | e_z,o -> let e,z0 = e_z in (padd1 e (Pc z0)),o
 
-(** val is_pol_Z0 : z polC -> bool **)
-
-let is_pol_Z0 = function
-| Pc z0 -> (match z0 with
-            | Z0 -> true
-            | _ -> false)
-| _ -> false
-
 (** val eval_Psatz0 : z nFormula list -> zWitness -> z nFormula option **)
 
 let eval_Psatz0 =
   eval_Psatz Z0 (Zpos XH) Z.add Z.mul Z.eqb Z.leb
-
-(** val valid_cut_sign : op1 -> bool **)
-
-let valid_cut_sign = function
-| Equal -> true
-| NonStrict -> true
-| _ -> false
 
 (** val bound_var : positive -> z formula **)
 
@@ -2479,33 +2463,6 @@ let rec zChecker l = function
       | Some cp2 ->
         (&&) (zChecker ((nformula_of_cutting_plane cp1)::l) pf1)
           (zChecker ((nformula_of_cutting_plane cp2)::l) pf2)
-      | None -> false)
-   | None -> false)
-| EnumProof (w1, w2, pf0) ->
-  (match eval_Psatz0 l w1 with
-   | Some f1 ->
-     (match eval_Psatz0 l w2 with
-      | Some f2 ->
-        (match genCuttingPlane f1 with
-         | Some p ->
-           let p2,op3 = p in
-           let e1,z1 = p2 in
-           (match genCuttingPlane f2 with
-            | Some p3 ->
-              let p4,op4 = p3 in
-              let e2,z2 = p4 in
-              if (&&) ((&&) (valid_cut_sign op3) (valid_cut_sign op4))
-                   (is_pol_Z0 (padd1 e1 e2))
-              then let rec label pfs lb ub =
-                     match pfs with
-                     | [] -> Z.gtb lb ub
-                     | pf1::rsr ->
-                       (&&) (zChecker (((psub1 e1 (Pc lb)),Equal)::l) pf1)
-                         (label rsr (Z.add lb (Zpos XH)) ub)
-                   in label pf0 (Z.opp z1) z2
-              else false
-            | None -> true)
-         | None -> true)
       | None -> false)
    | None -> false)
 | ExProof (x, prf) ->

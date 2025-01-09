@@ -318,10 +318,6 @@ let rec pp_proof_term o = function
   | Micromega.SplitProof (p, p1, p2) ->
     Printf.fprintf o "S[%a,%a,%a]" (pp_pol pp_z) p pp_proof_term p1
       pp_proof_term p2
-  | Micromega.EnumProof (c1, c2, rst) ->
-    Printf.fprintf o "EP[%a,%a,%a]" (pp_psatz pp_z) c1 (pp_psatz pp_z) c2
-      (pp_list "," pp_proof_term)
-      rst
   | Micromega.ExProof (p, prf) ->
     Printf.fprintf o "Ex[%a,%a]" pp_positive p pp_proof_term prf
 
