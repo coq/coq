@@ -21,6 +21,7 @@ Require Export Rprod.
 Require Export Cauchy_prod.
 Require Export Alembert.
 Require Import Lra.
+Require Import Compare_dec.
 Local Open Scope R_scope.
 
 (**********)

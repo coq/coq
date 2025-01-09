@@ -8,8 +8,10 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+Attributes deprecated(since="9.0", note="use ZArith instead").
+
 (** Library for manipulating integers based on binary encoding.
-    These are the basic modules, required by [Omega] and [Ring] for instance.
+    This is a subset of basic modules.
     The full library is [ZArith]. *)
 
 Require Export BinNums.

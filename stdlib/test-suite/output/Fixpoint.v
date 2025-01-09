@@ -16,7 +16,7 @@ Check
     end
   in f 0.
 
-From Stdlib Require Import ZArith_base Lia.
+From Stdlib Require Import BinInt Lia.
 Open Scope Z_scope.
 
 Inductive even: Z -> Prop :=

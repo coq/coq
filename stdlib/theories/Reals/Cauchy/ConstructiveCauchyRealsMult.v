@@ -18,6 +18,8 @@ Require Import QArith Qabs Qround Qpower.
 Require Import Logic.ConstructiveEpsilon.
 Require Export ConstructiveCauchyReals.
 Require CMorphisms.
+Require Import Znat.
+Require Import Zorder.
 Require Import Lia.
 Require Import Lqa.
 Require Import QExtra.

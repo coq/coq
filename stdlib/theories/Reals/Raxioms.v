@@ -19,7 +19,8 @@
 (**    Lifts of basic operations for classical reals     *)
 (*********************************************************)
 
-Require Export ZArith_base.
+Require Export BinInt.
+Require Import Znat.
 Require Import ClassicalDedekindReals.
 Require Import ConstructiveCauchyReals.
 Require Import ConstructiveCauchyRealsMult.

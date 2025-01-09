@@ -15,6 +15,7 @@
 
 Require Import Decimal DecimalFacts DecimalPos DecimalN DecimalZ.
 Require Import Hexadecimal HexadecimalFacts HexadecimalPos HexadecimalN HexadecimalZ QArith.
+Import PeanoNat.
 
 Lemma of_IQmake_to_hexadecimal num den :
   match IQmake_to_hexadecimal num den with

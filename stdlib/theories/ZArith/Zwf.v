@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import ZArith_base.
+Require Import PeanoNat BinInt.
 Require Export Wf_nat.
 Require Import Lia.
 Local Open Scope Z_scope.

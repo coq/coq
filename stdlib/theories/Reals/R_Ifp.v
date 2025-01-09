@@ -14,7 +14,7 @@
 (**********************************************************)
 
 Require Import Rdefinitions Raxioms RIneq.
-Require Import ZArith Ztac.
+Require Import ZArith.
 Local Open Scope R_scope.
 
 (*********************************************************)
@@ -72,9 +72,7 @@ Proof.
     apply lt_IZR in H1.
     rewrite <- minus_IZR in H2.
     apply le_IZR in H2.
-    normZ.
-    + slia H2 HZ.
-    + slia H1 HZ.
+    Lia.lia.
 Qed.
 
 (**********)
@@ -313,9 +311,7 @@ Proof.
     rewrite <- (plus_IZR (Int_part r1 + Int_part r2 + 1) 1) in H0;
     generalize (up_tech (r1 + r2) (Int_part r1 + Int_part r2 + 1) H H0);
     intro; clear H H0; unfold Int_part at 1.
-  normZ.
-  - slia H HZ.
-  - slia H0 HZ.
+  Lia.lia.
 Qed.
 
 (**********)
@@ -377,9 +373,7 @@ Proof.
     rewrite <- (plus_IZR (Int_part r1 + Int_part r2) 1) in H1;
     generalize (up_tech (r1 + r2) (Int_part r1 + Int_part r2) H0 H1);
     intro; clear H0 H1; unfold Int_part at 1.
-  normZ.
-  - slia H HZ.
-  - slia H0 HZ.
+  Lia.lia.
 Qed.
 
 (**********)
@@ -422,3 +416,6 @@ Proof.
     rewrite <- (Ropp_plus_distr (IZR (Int_part r1)) (IZR (Int_part r2)));
     unfold Rminus; trivial with zarith real.
 Qed.
+
+Local Set Warnings "-deprecated".
+Require Ztac. (* deprecated since 9.0 *)

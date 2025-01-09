@@ -14,7 +14,7 @@ Local Open Scope R_scope.
 
 Lemma Rlt_R0_R2 : 0 < 2.
 Proof.
-change 2 with (INR 2); apply lt_INR_0; apply Nat.lt_0_succ.
+change 2 with (INR 2); apply lt_INR_0; apply PeanoNat.Nat.lt_0_succ.
 Qed.
 
 Notation Rplus_lt_pos := Rplus_lt_0_compat (only parsing).

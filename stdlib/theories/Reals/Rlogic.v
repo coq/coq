@@ -15,6 +15,9 @@
 - Decidability of negated formulas.
 *)
 
+Require Import PeanoNat.
+Require Import Zabs.
+Require Import Zorder.
 Require Import RIneq.
 
 (** * Decidability of arithmetical statements *)

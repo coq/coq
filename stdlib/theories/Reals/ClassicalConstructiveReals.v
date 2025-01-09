@@ -22,6 +22,7 @@
     classical reals. *)
 
 Require Import QArith_base.
+Require Import Znat.
 Require Import Rdefinitions.
 Require Import Raxioms.
 Require Import ConstructiveReals.
