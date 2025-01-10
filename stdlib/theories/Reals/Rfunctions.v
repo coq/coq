@@ -939,6 +939,3 @@ Definition infinite_sum (s:nat -> R) (l:R) : Prop :=
 
 (** Compatibility with previous versions *)
 Notation infinit_sum := infinite_sum (only parsing).
-
-Local Set Warnings "-deprecated".
-Require Ztac. (* deprecated since 9.0 *)
