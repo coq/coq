@@ -3,7 +3,7 @@
 set -ex
 
 rocq=$(command -v rocq)
-rocqhash=$(md5sum "$rocq")
+rocqhash=$(dune exec --root . -- dev/tools/hash.exe "$rocq")
 
 rm -rf .wrappers
 mkdir .wrappers
