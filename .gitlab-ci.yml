@@ -124,7 +124,7 @@ before_script:
       - _build.tar.bz2
       - theories/dune
       - user-contrib/Ltac2/dune
-    expire_in: 1 week
+    expire_in: 1 day
 
 .doc-template:
   stage: build-1
