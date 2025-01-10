@@ -823,29 +823,19 @@ let whd_state_gen ?csts flags env sigma =
                  let stack' = (c, Stack.Proj (p, r, cst_l) :: stack) in
                  whrec Cst_stack.empty(* cst_l *) stack'
                | curr :: remains ->
-                 if curr == 0 then (* Try to reduce the record argument *)
+                 match Stack.strip_n_app curr (Stack.append_app [|c|] stack) with
+                 | None -> fold ()
+                 | Some (bef,arg,s') ->
                    let cst_l = Stack.Cst
                        { const=Stack.Cst_proj (p,r);
-                         volatile; curr; remains;
-                         params=Stack.empty;
+                         curr;
+                         remains;
+                         volatile;
+                         params=bef;
                          cst_l;
                        }
                    in
-                   whrec Cst_stack.empty (c, cst_l::stack)
-                 else
-                   match Stack.strip_n_app curr stack with
-                   | None -> fold ()
-                   | Some (bef,arg,s') ->
-                     let cst_l = Stack.Cst
-                         { const=Stack.Cst_proj (p,r);
-                           curr;
-                           remains;
-                           volatile;
-                           params=Stack.append_app [|c|] bef;
-                           cst_l;
-                         }
-                     in
-                     whrec Cst_stack.empty (arg,cst_l::s')
+                   whrec Cst_stack.empty (arg,cst_l::s')
            end)
 
     | LetIn (_,b,_,c) when RedFlags.red_set flags RedFlags.fZETA ->
