@@ -187,7 +187,7 @@ let universe_binders_with_opt_names orig names =
   let qorig, uorig as orig = Array.to_list qorig, Array.to_list uorig in
   let qdecl, udecl = match names with
   | None -> orig
-  | Some (qdecl,udecl) ->
+  | Some (gref, (qdecl, udecl)) ->
     try
       let qs =
         List.map2 (fun orig {CAst.v = na} ->
@@ -205,6 +205,7 @@ let universe_binders_with_opt_names orig names =
     with Invalid_argument _ ->
       let open UnivGen in
       raise (UniverseLengthMismatch {
+          gref;
           actual = List.length qorig, List.length uorig;
           expect = List.length qdecl, List.length udecl;
         })

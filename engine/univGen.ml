@@ -30,6 +30,7 @@ let diff_sort_context ((qs,us),csts) ((qs',us'),csts') =
   (QVar.Set.diff qs qs', Level.Set.diff us us'), Constraints.diff csts csts'
 
 type univ_length_mismatch = {
+  gref : GlobRef.t;
   actual : int * int;
   expect : int * int;
 }
@@ -38,14 +39,15 @@ compliation with -rectypes to crash. *)
 exception UniverseLengthMismatch of univ_length_mismatch
 
 let () = CErrors.register_handler (function
-    | UniverseLengthMismatch { actual=(aq,au); expect=(eq,eu) } ->
+    | UniverseLengthMismatch { gref; actual=(aq,au); expect=(eq,eu) } ->
       let ppreal, ppexpected =
         if aq = 0 && eq = 0 then Pp.(int au, int eu)
         else Pp.(str "(" ++ int aq ++ str " | " ++ int au ++ str ")"
                 , str "(" ++ int eq ++ str " | " ++ int eu ++ str ")")
       in
-      Some Pp.(str "Universe instance length is " ++ ppreal
-               ++ str " but should be " ++ ppexpected ++ str".")
+      Some Pp.(str "Universe instance length for " ++ Nametab.pr_global_env Id.Set.empty gref ++
+               spc() ++ str "is " ++ ppreal ++
+               spc() ++ str "but should be " ++ ppexpected ++ str".")
   | _ -> None)
 
 (* Generator of levels *)
@@ -82,24 +84,25 @@ let fresh_instance auctx : _ in_sort_context_set =
   let inst = Instance.of_array (qinst,uinst) in
   inst, ((qctx,uctx), AbstractContext.instantiate inst auctx)
 
-let existing_instance ?loc auctx inst =
+let existing_instance ?loc ~gref auctx inst =
   let () =
     let actual = Instance.length inst
     and expect = AbstractContext.size auctx in
       if not (UVars.eq_sizes actual expect) then
-        Loc.raise ?loc (UniverseLengthMismatch { actual; expect })
+        Loc.raise ?loc (UniverseLengthMismatch { gref; actual; expect })
       else ()
   in
   inst, ((Sorts.QVar.Set.empty,Level.Set.empty), AbstractContext.instantiate inst auctx)
 
 let fresh_instance_from ?loc ctx = function
-  | Some inst -> existing_instance ?loc ctx inst
+  | Some (gref,inst) -> existing_instance ?loc ~gref ctx inst
   | None -> fresh_instance ctx
 
 (** Fresh universe polymorphic construction *)
 
 let fresh_global_instance ?loc ?names env gr =
   let auctx = Environ.universes_of_global env gr in
+  let names = Option.map (fun x -> gr, x) names in
   let u, ctx = fresh_instance_from ?loc auctx names in
   u, ctx
 
