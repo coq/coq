@@ -12,4 +12,4 @@ The command has indeed failed with message:
 Module A' of M not expected to be a functor.
 File "./output/ErrorModuleWith.v", line 13, characters 0-38:
 The command has indeed failed with message:
-Module M2 is not equal to M1.
+Module M2 is not equal to module M1.
