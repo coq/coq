@@ -975,6 +975,14 @@ let norm_cbn flags env sigma t =
       | d -> d in
     push_rel d env in
   let rec strongrec env t =
-    map_constr_with_full_binders env sigma
-      push_rel_check_zeta strongrec env (whd_cbn flags env sigma t) in
+    let t =  whd_cbn flags env sigma t in
+    (* don't recurse on the head, it's already reduced *)
+    match EConstr.kind sigma t with
+    | App (h,args) ->
+      let args' = Array.Smart.map (strongrec env) args in
+      if args == args' then t else mkApp (h, args')
+    | _ ->
+      map_constr_with_full_binders env sigma
+        push_rel_check_zeta strongrec env t
+  in
   strongrec env t
