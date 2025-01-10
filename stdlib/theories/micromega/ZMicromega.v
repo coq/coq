@@ -1525,5 +1525,3 @@ Definition prod_pos_nat := prod positive nat.
 
 #[deprecated(use=Z.to_N, since="9.0")]
 Notation n_of_Z := Z.to_N (only parsing).
-
-Require Ztac. (* deprecated since 9.0 *)

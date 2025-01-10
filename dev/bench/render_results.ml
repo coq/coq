@@ -231,7 +231,7 @@ coq_opam_packages
 
 |> CList.filter
      (fun (_, new_t, old_t, _) ->
-        minimal_user_time <= new_t.user_time && minimal_user_time <= old_t.user_time)
+        minimal_user_time <= new_t.user_time || minimal_user_time <= old_t.user_time)
 
 (* Below we take the measurements and format them to stdout. *)
 

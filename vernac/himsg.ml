@@ -1110,8 +1110,16 @@ let pr_modtype_subpath upper mp =
   in
   let mp, suff = aux mp in
   (if suff = [] then mt ()
-   else str (if upper then "Module " else "module ") ++ DirPath.print (DirPath.make suff) ++ str " of ") ++
+   else strbrk (if upper then "Module " else "module ") ++ DirPath.print (DirPath.make suff) ++ strbrk " of ") ++
   DirPath.print mp
+
+let pr_module_or_modtype_subpath mp = match Nametab.shortest_qualid_of_module mp with
+| qid ->
+  (* [mp] is bound to a proper module *)
+  strbrk "module " ++ Libnames.pr_qualid qid
+| exception Not_found ->
+  (* [mp] ought to be bound to a submodule of a module type *)
+  pr_modtype_subpath false mp
 
 open Modops
 
@@ -1246,7 +1254,7 @@ let explain_incompatible_module_types mexpr1 mexpr2 =
   else str "Incompatible module types."
 
 let explain_not_equal_module_paths mp1 mp2 =
-  str "Module " ++ pr_modpath mp1 ++ strbrk " is not equal to " ++ pr_modpath mp2 ++ str "."
+  str "Module " ++ pr_modpath mp1 ++ strbrk " is not equal to " ++ pr_module_or_modtype_subpath mp2 ++ str "."
 
 let explain_no_such_label l mp =
   str "No field named " ++ Label.print l ++ str " in " ++ pr_modtype_subpath false mp ++ str "."

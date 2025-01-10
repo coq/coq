@@ -416,6 +416,3 @@ Proof.
     rewrite <- (Ropp_plus_distr (IZR (Int_part r1)) (IZR (Int_part r2)));
     unfold Rminus; trivial with zarith real.
 Qed.
-
-Local Set Warnings "-deprecated".
-Require Ztac. (* deprecated since 9.0 *)
