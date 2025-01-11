@@ -221,3 +221,58 @@ not_in_list ((p, q) :: l) n -> not_in_list l n.
   intros.
   eauto with essai.
 Qed.
+
+Module StrictlyUnique.
+  Inductive thing := | List.
+  Module Problem.
+    Class WhatIsThis (T : Type) (t : T) : Type := what_is : thing.
+    Arguments what_is {T} t _.
+    Instance WhatIsThis_list {X} ls : @WhatIsThis (list X) ls := List.
+
+    Class DynamicType := { dyn_type : Type }.
+
+    (* [WhatIsThis ls] cannot be resolved despite having a clear answer. The
+       fact that the [DynamicType] instance cannot be found makes Coq abandon
+       the search for [WhatIsThis] entirely. *)
+    Fail Example test := Eval lazy in (fun (ls : list dyn_type) => what_is ls _) _.
+  End Problem.
+
+  Module Solution.
+    (* Inform Coq that [WhatIsThis] will not/must not instantiate evars. *)
+    #[local] Set Typeclasses Strict Resolution.
+    (* Inform Coq that [WhatIsThis] should not backtrack. *)
+    #[local] Set Typeclasses Unique Instances.
+    Class WhatIsThis (T : Type) (t : T) : Type := what_is : thing.
+    Arguments what_is {T} t _.
+    #[local] Unset Typeclasses Strict Resolution.
+    #[local] Unset Typeclasses Unique Instances.
+
+    Instance WhatIsThis_list {X} ls : @WhatIsThis (list X) ls := List.
+
+    Class DynamicType := { dyn_type : Type }.
+
+    (* We can now resolve [WhatIsThis] even though we don't have a [DynamicType] *)
+    Example test := Eval lazy in (fun (ls : list dyn_type) => what_is ls _) _.
+  End Solution.
+
+  Module Dependencies.
+    (* Other evars can still depend on strictly unique evars by using them
+       directly in their type. We must make sure to not forget those dependencies. *)
+
+    #[local] Set Typeclasses Strict Resolution.
+    #[local] Set Typeclasses Unique Instances.
+    Class SU : Type := su : unit.
+    Arguments su : clear implicits.
+    #[local] Unset Typeclasses Strict Resolution.
+    #[local] Unset Typeclasses Unique Instances.
+
+    Instance SU_inst : SU := tt.
+
+    Class Depends (t : unit) := {}.
+    Hint Mode Depends + : typeclass_instances.
+
+    Instance Depends_inst {t} : Depends t := {}.
+
+    Example test := Eval lazy in (fun (s : SU) (d : Depends (su s)) => d) _ _.
+  End Dependencies.
+End StrictlyUnique.
