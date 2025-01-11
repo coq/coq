@@ -1,0 +1,27 @@
+- **Deprecated:** most of :g:`Znumtheory` in favor of a new module
+  :g:`Zdivisibility`.
+  For now, :g:`Zdivisibility` is light on the theory of primality so that part
+  of :g:`Znumtheory` remains supported.
+  Reducing reliance on :g:`Znumtheory` within stdlib changed the internal
+  dependencies between files, code relying on files being transitively
+  required in stdlib may need to now explicitly ``Require``
+  :g:`Znumtheory`,
+  :g:`BinInt`,
+  :g:`Setoid`,
+  :g:`BinNat`,
+  :g:`Zpow_def`,
+  :g:`Znat`,
+  :g:`Zdiv`,
+  :g:`Zcomplements`,
+  :g:`Zbool`,
+  :g:`ZArithRing`,
+  :g:`ZArith`,
+  :g:`Wf_Z`,
+  :g:`Tauto`,
+  :g:`QArith`,
+  :g:`Lia`,
+  :g:`BinPos`,
+  :g:`BinNums`, or
+  :g:`BinList`
+  (`#19789 <https://github.com/coq/coq/pull/19789>`_,
+  by Andres Erbsen).
