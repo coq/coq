@@ -15,7 +15,7 @@ open Util
 let warn_deprecated_coq_var = CWarnings.create ~name:"deprecated-coq-env-var" ~category:Deprecation.Version.v9_0
     Pp.(fun (rocq,coq) ->
         str "Deprecated environment variable " ++ str coq ++ pr_comma() ++
-        str "use " ++ str rocq ++ str "instead.")
+        str "use " ++ str rocq ++ str " instead.")
 
 let warn_deprecated_coq_var ?loc ~rocq ~coq () = warn_deprecated_coq_var ?loc (rocq,coq)
 
