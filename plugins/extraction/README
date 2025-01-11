@@ -1,13 +1,13 @@
 
-          Coq Extraction
-          ==============
+          Rocq Extraction
+          ===============
 
 
 What is it ?
 ------------
 
 The extraction is a mechanism that produces functional code
-(Ocaml/Haskell/Scheme) out of any Coq terms (either programs or
+(Ocaml/Haskell/Scheme) out of any Rocq terms (either programs or
 proofs).
 
 Who did it ?
@@ -24,9 +24,9 @@ C. Paulin.
 Where can we find more information ?
 ------------------------------------
 
-- Coq Reference Manual includes a full chapter about extraction
+- Rocq Reference Manual includes a full chapter about extraction
 - P. Letouzey's PhD thesis [3] forms a complete document about
-  both theory and implementation and test-cases of Coq-extraction
+  both theory and implementation and test-cases of Rocq extraction
 - A more recent article [4] proposes a short overview of extraction
 - earlier documents [1] [2] may also be useful.
 
@@ -38,12 +38,12 @@ Extraction code has been completely rewritten since version V6.3.
 
 1) Principles 
 
-The main goal of the new extraction is to handle any Coq term, even 
+The main goal of the new extraction is to handle any Rocq term, even 
 those upon sort Type, and to produce code that always compiles. 
 Thus it will never answer something like "Not an ML type", but rather
 a dummy term like the ML unit. 
 
-Translation between Coq and ML is based upon the following principles: 
+Translation between Rocq and ML is based upon the following principles: 
 
 - Terms of sort Prop don't have any computational meaning, so they are
 merged into one ML term "__". This part is done according to P. Letouzey's 
@@ -61,14 +61,14 @@ s a sort ) don't have any ML counterpart at the term level, since they
 are types transformers. In fact they do not have any computational
 meaning either. So we also merge them into that dummy term "__".
 
-- A Coq term gives a ML term or a ML type depending of its type: 
+- A Rocq term gives a ML term or a ML type depending of its type: 
 type schemes will (try to) give ML types, and all other terms give ML terms.
 
 And the rest of the translation is (almost) straightforward: an inductive
 gives an inductive, etc...
 
 This gives ML code that have no special reason to typecheck, due 
-to the incompatibilities between Coq and ML typing systems. In fact
+to the incompatibilities between Rocq and ML typing systems. In fact
 most of the time everything goes right. 
 
 We now verify during extraction that the produced code is typecheckable, 
@@ -80,7 +80,7 @@ code, with either "Obj.magic" in Ocaml or "unsafeCoerce" in Haskell.
 
 2.a) The pros 
 
-The ability to extract every Coq term, as explain in the previous 
+The ability to extract every Rocq term, as explain in the previous 
 paragraph. 
 
 The ability to extract from a file an ML module (cf Extraction Library in the 

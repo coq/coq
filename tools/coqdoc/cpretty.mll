@@ -524,7 +524,7 @@ let begin_verb = "(*" space* "begin" space+ "verb" space* "*)"
 let end_verb = "(*" space* "end" space+ "verb" space* "*)"
 *)
 
-(*s Scanning Coq, at beginning of line *)
+(*s Scanning Rocq, at beginning of line *)
 
 rule coq_bol = parse
   | space* (nl+ as s)
@@ -656,7 +656,7 @@ rule coq_bol = parse
         in
           if eol then coq_bol lexbuf else coq lexbuf }
 
-(*s Scanning Coq elsewhere *)
+(*s Scanning Rocq elsewhere *)
 
 and coq = parse
   | nl
@@ -1033,7 +1033,7 @@ and url_name = parse
           Buffer.clear url_buffer; Buffer.clear url_name_buffer }
   | _ { Buffer.add_char url_name_buffer (lexeme_char lexbuf 0); url_name lexbuf }
 
-(*s Coq, inside quotations *)
+(*s Rocq, inside quotations *)
 
 and escaped_coq = parse
   | "]"
@@ -1071,7 +1071,7 @@ and escaped_coq = parse
       { Output.sublexer_in_doc (lexeme_char lexbuf 0);
         escaped_coq lexbuf }
 
-(*s Coq "Comments" command. *)
+(*s Rocq "Comments" command. *)
 
 and comments = parse
   | space_nl+

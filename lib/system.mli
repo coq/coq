@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** {5 Coqtop specific system utilities} *)
+(** {5 Rocq REPL specific system utilities} *)
 
 (** {6 Directories} *)
 
@@ -80,7 +80,7 @@ val all_in_path :
 
 val trust_file_cache : bool ref
 (** [trust_file_cache] indicates whether we trust the underlying
-    mapped file-system not to change along the execution of Coq. This
+    mapped file-system not to change along the execution of Rocq. This
     assumption greatly speeds up file search, but it is often
     inconvenient in interactive mode *)
 
@@ -165,5 +165,5 @@ val fmt_instructions_result : 'a instructions_result -> Pp.t
  better not to as in most cases if this function fails to construct
  the right name you want you execution to fail rather than fall into
  choosing some random binary from the system-wide installation of
- Coq. *)
+ Rocq. *)
 val get_toplevel_path : string -> string

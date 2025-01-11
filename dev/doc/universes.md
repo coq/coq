@@ -2,7 +2,7 @@ Notes on universe polymorphism
 ------------------------------
 
 The implementation of universe polymorphism introduces a few changes
-to the API of Coq. First and foremost, the term language changes, as
+to the API of Rocq. First and foremost, the term language changes, as
 global references now carry a universe level substitution:
 
 ~~~ocaml

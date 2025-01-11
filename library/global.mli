@@ -11,7 +11,7 @@
 open Names
 open Declarations
 
-(** This module defines the global environment of Coq. The functions
+(** This module defines the global environment of Rocq. The functions
    below are exactly the same as the ones in [Safe_typing], operating on
    that global environment. [add_*] functions perform name verification,
    i.e. check that the name given as argument match those provided by

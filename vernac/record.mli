@@ -86,7 +86,7 @@ val declare_existing_class : GlobRef.t -> unit
 
 val canonical_inhabitant_id : isclass:bool -> Id.t -> Id.t
 
-(* Implementation internals, consult Coq developers before using;
+(* Implementation internals, consult Rocq developers before using;
    current user Elpi, see https://github.com/LPCIC/coq-elpi/pull/151 *)
 module Internal : sig
   type projection_flags = {

@@ -1,6 +1,6 @@
-## Overall Docker Setup for Coq's CI.
+## Overall Docker Setup for Rocq's CI.
 
-This directory provides Docker images to be used by Coq's CI. The
+This directory provides Docker images to be used by Rocq's CI. The
 images do support Docker autobuild on `hub.docker.com` and Gitlab's
 private registry.
 

@@ -783,7 +783,7 @@ let warn_abstract_large_num =
 
 (***********************************************************************)
 
-(** ** Conversion between Coq [Decimal.int] and internal raw string *)
+(** ** Conversion between Rocq [Decimal.int] and internal raw string *)
 
 (** Decimal.Nil has index 1, then Decimal.D0 has index 2 .. Decimal.D9 is 11 *)
 
@@ -903,7 +903,7 @@ let rawnum_of_rocqint c =
 
 (***********************************************************************)
 
-(** ** Conversion between Coq [Z] and internal bigint *)
+(** ** Conversion between Rocq [Z] and internal bigint *)
 
 (** First, [positive] from/to bigint *)
 
@@ -1107,7 +1107,7 @@ let locate_byte () = unsafe_locate_ind (q_byte ())
 
 (***********************************************************************)
 
-(** ** Conversion between Coq [list Byte.byte] and internal raw string *)
+(** ** Conversion between Rocq [list Byte.byte] and internal raw string *)
 
 let rocqbyte_of_char_code esig byte c =
   mkConstruct esig (byte, 1 + c)

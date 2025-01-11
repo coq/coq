@@ -1,6 +1,6 @@
 (library
  (name interp)
- (synopsis "Coq's Syntactic Interpretation for AST [notations, implicits]")
+ (synopsis "Rocq's Syntactic Interpretation for AST [notations, implicits]")
  (public_name rocq-runtime.interp)
  (wrapped false)
  (modules_without_implementation constrexpr notation_term)

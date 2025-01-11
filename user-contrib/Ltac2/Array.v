@@ -210,7 +210,7 @@ Ltac2 rec exist_aux (p : 'a -> bool) (a : 'a array) (pos : int) (len : int) :=
              end
   end.
 
-(* Note: named exist (as in Coq library) rather than exists cause exists is a notation *)
+(* Note: named exist (as in Rocq library) rather than exists cause exists is a notation *)
 Ltac2 exist (p : 'a -> bool) (a : 'a array) := exist_aux p a 0 (length a).
 
 Ltac2 rec for_all_aux (p : 'a -> bool) (a : 'a array) (pos : int) (len : int) :=

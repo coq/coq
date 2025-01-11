@@ -78,8 +78,8 @@ end
    partially qualified names to ['a] is determined by the [visibility]
    parameter of [push].
 
-   The [shortest_qualid] function given a user_name Coq.A.B.x, tries
-   to find the shortest among x, B.x, A.B.x and Coq.A.B.x that denotes
+   The [shortest_qualid] function given a user_name Mylib.A.B.x, tries
+   to find the shortest among x, B.x, A.B.x and Mylib.A.B.x that denotes
    the same object.
 *)
 module type NAMETREE = sig
@@ -121,7 +121,7 @@ let fix_coq_id coq_repl l =
    | _coq_id :: l -> coq_repl :: l
    | _ -> l)
 
-(* [l] is reversed, thus [Coq.ssr.bool] for example *)
+(* [l] is reversed, thus [Corelib.ssr.bool] for example *)
 let warn_deprecated_dirpath_Coq ?loc (coq_repl, l, id) =
   let dp l = DirPath.make (List.rev l) in
   let old_id = pr_qualid @@ Libnames.make_qualid (DirPath.make l) id in
@@ -387,7 +387,7 @@ let match_prefixes =
       let id_prefix = cprefix Id.(to_string id) in
       let matches = Id.Map.filter_range (fun x -> id_prefix Id.(to_string x)) tab in
       let matches = Id.Map.mapi (fun _key tab -> search_prefixes tab (DirPath.repr dir)) matches in
-      (* Coq's flatten is "magical", so this is not so bad perf-wise *)
+      (* Rocq's flatten is "magical", so this is not so bad perf-wise *)
       CList.flatten @@ Id.Map.(fold (fun _ r l -> r :: l) matches [])
     with Not_found -> []
 

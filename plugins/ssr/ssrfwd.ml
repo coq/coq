@@ -484,10 +484,10 @@ let intro_lock ipats =
             Array.length args >= 2 && is_app_evar sigma (Array.last args) &&
             Ssrequality.ssr_is_setoid env sigma hd args
             (* if the last condition above [ssr_is_setoid ...] holds
-            then [Coq.Classes.RelationClasses] has been required *)
+            then [Corelib.Classes.RelationClasses] has been required *)
             ||
             (* if this is not the case, the tactic can still succeed
-            when the considered relation is [Coq.Init.Logic.iff] *)
+            when the considered relation is [Corelib.Init.Logic.iff] *)
             Ssrcommon.is_const_ref env sigma hd (Rocqlib.lib_ref "core.iff.type") &&
             Array.length args = 2 && is_app_evar sigma args.(1) ->
           protect_subgoal env sigma hd args

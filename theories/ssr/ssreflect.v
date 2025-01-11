@@ -41,7 +41,7 @@ Declare ML Module "rocq-runtime.plugins.ssreflect".
                           nosimpl disables expansion of C by /=.
               locked t == t, but locked t is not convertible to t.
        locked_with k t == t, but not convertible to t or locked_with k' t
-                          unless k = k' (with k : unit). Coq type-checking
+                          unless k = k' (with k : unit). Rocq type-checking
                           will be much more efficient if locked_with with a
                           bespoke k is used for sealed definitions.
           unlockable v == interface for sealed constant definitions of v.
@@ -58,7 +58,7 @@ Declare ML Module "rocq-runtime.plugins.ssreflect".
      This minimizes the comparison overhead for foo, while still allowing
      rewrite unlock to expose big_foo_expression.
 
-         #[#elaborate x#]# == triggers Coq elaboration to fill the holes of the term x
+         #[#elaborate x#]# == triggers Rocq elaboration to fill the holes of the term x
                           The main use case is to trigger typeclass inference in
                           the body of a ssreflect have := #[#elaborate body#]#.
 
@@ -104,8 +104,8 @@ Export SsrMatchingSyntax.
 Export SsrSyntax.
 
 (** Save primitive notation that will be overloaded. **)
-Local Notation CoqGenericIf c vT vF := (if c then vT else vF) (only parsing).
-Local Notation CoqGenericDependentIf c x R vT vF :=
+Local Notation RocqGenericIf c vT vF := (if c then vT else vF) (only parsing).
+Local Notation RocqGenericDependentIf c x R vT vF :=
   (if c as x return R then vT else vF) (only parsing).
 
 (** Reserve notation that introduced in this file. **)
@@ -140,7 +140,7 @@ Delimit Scope ssripat_scope with ssripat.
 
 (**
  Make the general "if" into a notation, so that we can override it below.
- The notations are "only parsing" because the Coq decompiler will not
+ The notations are "only parsing" because the Rocq decompiler will not
  recognize the expansion of the boolean if; using the default printer
  avoids a spurious trailing %%GEN_IF. **)
 
@@ -148,13 +148,13 @@ Declare Scope general_if_scope.
 Delimit Scope general_if_scope with GEN_IF.
 
 Notation "'if' c 'then' vT 'else' vF" :=
-  (CoqGenericIf c vT vF) (only parsing) : general_if_scope.
+  (RocqGenericIf c vT vF) (only parsing) : general_if_scope.
 
 Notation "'if' c 'return' R 'then' vT 'else' vF" :=
-  (CoqGenericDependentIf c c R vT vF) (only parsing) : general_if_scope.
+  (RocqGenericDependentIf c c R vT vF) (only parsing) : general_if_scope.
 
 Notation "'if' c 'as' x 'return' R 'then' vT 'else' vF" :=
-  (CoqGenericDependentIf c x R vT vF) (only parsing) : general_if_scope.
+  (RocqGenericDependentIf c x R vT vF) (only parsing) : general_if_scope.
 
 (**  Force boolean interpretation of simple if expressions.  **)
 
@@ -179,7 +179,7 @@ Open Scope boolean_if_scope.
  enclosed in square brackets and introduced by a keyword:
       #[#keyword ... #]#
  Because the keyword follows a bracket it does not need to be reserved.
- Non-ssreflect libraries that do not respect the form syntax (e.g., the Coq
+ Non-ssreflect libraries that do not respect the form syntax (e.g., the Rocq
  Lists library) should be loaded before ssreflect so that their notations
  do not mask all ssreflect forms.                                            **)
 Declare Scope form_scope.
@@ -225,7 +225,7 @@ Inductive external_view : Type := tactic_view of Type.
    Note when using the #[#the _ of _ #]# form to generate a substructure from a
  telescopes-style canonical hierarchy (implementing inheritance with
  coercions), one should always project or coerce the value to the BASE
- structure, because Coq will only find a Canonical derived structure for
+ structure, because Rocq will only find a Canonical derived structure for
  the Canonical base structure -- not for a base structure that is specific
  to proj_value.                                                              **)
 
@@ -271,7 +271,7 @@ Notation " #[# 'the' sT 'of' v : 'Type' #]#" := (@get Type sT v _ _)
 (**
  Helper notation for canonical structure inheritance support.
  This is a workaround for the poor interaction between delta reduction and
- canonical projections in Coq's unification algorithm, by which transparent
+ canonical projections in Rocq's unification algorithm, by which transparent
  definitions hide canonical instances, i.e., in
    Canonical a_type_struct := @Struct a_type ...
    Definition my_type := a_type.
@@ -305,7 +305,7 @@ Notation "{ 'type' 'of' c 'for' s }" := (dependentReturnType c s) : type_scope.
 (**
  A generic "phantom" type (actually, a unit type with a phantom parameter).
  This type can be used for type definitions that require some Structure
- on one of their parameters, to allow Coq to infer said structure so it
+ on one of their parameters, to allow Rocq to infer said structure so it
  does not have to be supplied explicitly or via the " #[#the _ of _ #]#" notation
  (the latter interacts poorly with other Notation).
    The definition of a (co)inductive type with a parameter p : p_type, that
@@ -369,7 +369,7 @@ Notation "=^~ r" := (ssr_converse r) : form_scope.
     Lemma, and the ssreflect unlock tactic.
   locked_with k t is equal but not convertible to t, much like locked t,
     but supports explicit tagging with a value k : unit. This is used to
-    mitigate a flaw in the term comparison heuristic of the Coq kernel,
+    mitigate a flaw in the term comparison heuristic of the Rocq kernel,
     which treats all terms of the form locked t as equal and compares their
     arguments recursively, leading to an exponential blowup of comparison.
     For this reason locked_with should be used rather than locked when
@@ -435,7 +435,7 @@ Canonical locked_with_unlockable T k x :=
 Lemma unlock_with T k x : unlocked (locked_with_unlockable k x) = x :> T.
 Proof. exact: unlock. Qed.
 
-(**  Notation to trigger Coq elaboration to fill the holes **)
+(**  Notation to trigger Rocq elaboration to fill the holes **)
 Notation "[ 'elaborate' x ]" := (ltac:(refine x)) (only parsing).
 
 (**  The internal lemmas for the have tactics.  **)

@@ -1,6 +1,6 @@
 (library
  (name proofs)
- (synopsis "Coq's Higher-level Refinement Proof Engine and Top-level Proof Structure")
+ (synopsis "Rocq's Higher-level Refinement Proof Engine and Top-level Proof Structure")
  (public_name rocq-runtime.proofs)
  (wrapped false)
  (modules_without_implementation tactypes)

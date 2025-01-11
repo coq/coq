@@ -22,7 +22,7 @@ type level =
 (** Document unique identifier for serialization *)
 type doc_id = int
 
-(** Coq "semantic" infos obtained during execution *)
+(** Rocq "semantic" infos obtained during execution *)
 type route_id = int
 
 val default_route : route_id
@@ -98,5 +98,5 @@ val console_feedback_listener : Format.formatter -> feedback -> unit
 
 val warn_no_listeners : bool ref
 (** The library will print a warning to the console if no listener is
-    available by default; ML-clients willing to use Coq without a
+    available by default; ML-clients willing to use Rocq without a
     feedback handler should set this to false. *)

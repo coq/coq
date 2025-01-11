@@ -9,7 +9,7 @@ DATEFINAL="January 7, 2020"
 CC="CC: https://github.com/coq/coq/issues/12334"
 #CC="\n@coqbot column:...."
 REASON="bundled in the Windows installer"
-#REASON="bundled in the Coq platform"
+#REASON="bundled in the Rocq platform"
 
 git show master:dev/ci/ci-basic-overlay.sh > /tmp/master-ci-basic-overlay.sh
 git show v${VERSION}:dev/ci/ci-basic-overlay.sh > /tmp/branch-ci-basic-overlay.sh
@@ -39,9 +39,9 @@ function urlencode() {
 }
 
 function template {
-  TITLE="Please create a tag for the upcoming release of Coq $VERSION"
-  BODY="The Coq team is planning to release Coq $VERSION-beta1 on $DATEBETA,
-and Coq $VERSION.0 on $DATEFINAL.
+  TITLE="Please create a tag for the upcoming release of Rocq $VERSION"
+  BODY="The Rocq team is planning to release Rocq $VERSION-beta1 on $DATEBETA,
+and Rocq $VERSION.0 on $DATEFINAL.
 
 Your project is currently scheduled for being $REASON.
 
@@ -50,7 +50,7 @@ on branch $1/tree/$2
 but we would like to ship a released version instead (a tag in git's slang).
 
 Could you please tag that commit, or communicate us any other tag
-that works with the Coq branch v$VERSION at the *latest* 15 days before the
+that works with the Rocq branch v$VERSION at the *latest* 15 days before the
 date of the final release?
 
 Thanks!

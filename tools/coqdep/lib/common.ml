@@ -10,7 +10,7 @@
 
 module StrSet = Set.Make(String)
 
-(** Coq files specifies on the command line:
+(** Rocq files specifies on the command line:
     - first string is the full filename, with only its extension removed
     - second string is the absolute version of the previous (via getcwd)
 *)
@@ -90,7 +90,7 @@ let safe_assoc ?(warn_clashes=true) st ?(what=Library) from file k =
   | Some (Loadpath.PartialMatchesInSameRoot (root, l)) ->
     (match List.sort String.compare l with [] -> assert false | f :: l as all ->
     (* If several files match, it will fail at Require;
-       To be "fair", in coqdep, we add dependencies on all matching files *)
+       To be "fair", in rocq dep, we add dependencies on all matching files *)
     if warn_clashes then warn_if_clash ~what false file k f l;
     Some all)
   | Some (Loadpath.ExactMatches []) -> assert false
@@ -109,7 +109,7 @@ module VCache = Set.Make(VData)
 (** To avoid reading .v files several times for computing dependencies,
     once for .vo, and once for .vos extensions, the
     following code performs a single pass and produces a structured
-    list of dependencies, separating dependencies on compiled Coq files
+    list of dependencies, separating dependencies on compiled Rocq files
     (those loaded by [Require]) from other dependencies, e.g. dependencies
     on ".v" files (for [Load]) or ".cmx", ".cmo", etc... (for [Declare]). *)
 

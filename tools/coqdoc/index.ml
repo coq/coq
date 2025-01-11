@@ -87,7 +87,7 @@ let find m l = Hashtbl.find reftable (m, l)
 
 let find_string s = let (m,s,t) = Hashtbl.find byidtable s in Ref (m,s,t)
 
-(* Coq modules *)
+(* Rocq modules *)
 let split_sp s =
   try
     let i = String.rindex s '.' in

@@ -305,7 +305,7 @@ module Internal : sig
 val debug_print_constr : evar_map -> constr -> Pp.t
 
 (** Pretty-printer hook: [print_constr_env env sigma c] will pretty
-   print c if the pretty printing layer has been linked into the Coq
+   print c if the pretty printing layer has been linked into the Rocq
    binary. *)
 val print_constr_env : env -> Evd.evar_map -> constr -> Pp.t
 

@@ -1,10 +1,10 @@
-Information for external library / Coq plugin authors
+Information for external library / Rocq plugin authors
 -----------------------------------------------------
 
 You are encouraged to consider submitting your project for addition to
-Coq's CI. This means that:
+Rocq's CI. This means that:
 
-- Any time that a proposed change is breaking your project, Coq
+- Any time that a proposed change is breaking your project, Rocq
   developers and contributors will send you patches to adapt it
   (systematically only for plugins) or
   will explain how to adapt it and work with you to ensure that you
@@ -12,21 +12,21 @@ Coq's CI. This means that:
 
 On the condition that:
 
-- At the time of the submission, your project works with Coq's
+- At the time of the submission, your project works with Rocq's
   `master` branch.
 
 - Your project is publicly available in a git repository and we can easily
   send patches to you (e.g. through pull / merge requests).
 
 - You react in a timely manner to adapt to the few requested changes
-  required by Coq developers or to integrate their patches (in a 7 days timeframe,
+  required by Rocq developers or to integrate their patches (in a 7 days timeframe,
   extensions can be requested for exceptionally complex changes).
 
 - You do not push, to the branch that we test, commits that haven't been
-  first tested to compile with the corresponding branch of Coq.
+  first tested to compile with the corresponding branch of Rocq.
 
   For that, we recommend setting a CI system for you project, see for instance
-  [supported CI images for Coq](#supported-ci-images-for-coq) below.
+  [supported CI images for Rocq](#supported-ci-images-for-rocq) below.
 
 - You maintain a reasonable build time for your project, or you provide
   a "lite" target that we can use.
@@ -40,40 +40,40 @@ period, in the absence of progress, the project would be removed from our
 CI.
 
 Due to a lack of computing resources, submitted libraries which do not
-clearly expand what Coq's CI covers might not be integrated. You are
-encouraged to discuss the addition of your project on [Coq's
+clearly expand what Rocq's CI covers might not be integrated. You are
+encouraged to discuss the addition of your project on [Rocq's
 Zulip](https://coq.zulipchat.com/). You are also encouraged to test
-your project with Coq master and report any issues you find (not just
-bugs) even if it is not in Coq's CI; if your project repeatedly finds
+your project with Rocq master and report any issues you find (not just
+bugs) even if it is not in Rocq's CI; if your project repeatedly finds
 issues they will be evidence that it would expand the CI's coverage.
 
 There is no such requirement for plugins: developers may reduce the
-cost of working with Coq's unstable OCaml API by adding
-their plugin to Coq's CI and getting it fixed when the API changes (as long
-as fixing the plugin doesn't put an undue burden on Coq developers).
+cost of working with Rocq's unstable OCaml API by adding
+their plugin to Rocq's CI and getting it fixed when the API changes (as long
+as fixing the plugin doesn't put an undue burden on Rocq developers).
 
 ### Timely merging of overlays
 
 A pitfall of the current CI setup is that when a breaking change is
-merged in Coq upstream, CI for your contrib will be broken until you
+merged in Rocq upstream, CI for your contrib will be broken until you
 merge the corresponding pull request with the fix for your contribution.
 
-As of today, you have to worry about synchronizing with Coq upstream
+As of today, you have to worry about synchronizing with Rocq upstream
 every once in a while; a workaround is to give merge permissions to
-someone from the Coq team as to help with these kind of merges.
+someone from the Rocq team as to help with these kind of merges.
 
 ### OCaml and plugin-specific considerations
 
-Projects that link against Coq's OCaml API [most of them are known
+Projects that link against Rocq's OCaml API [most of them are known
 as "plugins"] do have some special requirements:
 
-- Coq's OCaml API is not stable. We hope to improve this in the future
+- Rocq's OCaml API is not stable. We hope to improve this in the future
   but as of today you should expect to have to merge a fair amount of
-  "overlays", usually in the form of Pull Requests from Coq developers
-  in order to keep your plugin compatible with Coq master.
+  "overlays", usually in the form of Pull Requests from Rocq developers
+  in order to keep your plugin compatible with Rocq master.
 
   In order to alleviate the load, you can delegate the merging of such
-  compatibility pull requests to Coq developers themselves, by
+  compatibility pull requests to Rocq developers themselves, by
   granting access to the plugin repository or by using `bots` such as
   [Bors](https://github.com/apps/bors) that allow for automatic
   management of Pull Requests.
@@ -116,8 +116,8 @@ Some important points:
 - When declaring the job in `.gitlab-ci.yml` you must choose the opam
   switch by using `extends: .ci-template` or `extends: .ci-template-flambda`.
 
-  The first one uses the minimum version of OCaml supported by Coq.
-  The second one uses the highest version of OCaml supported by Coq,
+  The first one uses the minimum version of OCaml supported by Rocq.
+  The second one uses the highest version of OCaml supported by Rocq,
   with flambda enabled (currently it actually uses OCaml 4.14.1 as 5.0
   has significant performance issues). See also the corresponding
   [`Dockerfiles`](docker/) to find out what
@@ -125,22 +125,22 @@ Some important points:
 
   If your job depends on other jobs, you must use the same opam
   switch. If you wish to depend on jobs currently declared in separate
-  switches, please open a draft pull request and the Coq developers
+  switches, please open a draft pull request and the Rocq developers
   will decide which jobs should change switches. If you need an
   exception to this rule for some other reason, please discuss with
-  the Coq developers.
+  the Rocq developers.
 
 - Job dependencies are declared in 2 places: `Makefile.ci` using the
   usual Makefile syntax, and `.gitlab-ci.yml` using `needs`. If you
-  only depend on Coq itself the implicit `needs` from the template
+  only depend on Rocq itself the implicit `needs` from the template
   suffices. Otherwise the `needs` list must include all transitive
   dependencies. See for instance the declaration for
   `library:ci-analysis`.
 
-- If you depend on more than Coq itself you must specify the `stage`:
-  `build-2` if all your dependencies depend only on Coq itself,
+- If you depend on more than Rocq itself you must specify the `stage`:
+  `build-2` if all your dependencies depend only on Rocq itself,
   otherwise `build-3+` (the number is the max depth of the dependency
-  chain, with Coq itself at 0 and the default from the template at 1).
+  chain, with Rocq itself at 0 and the default from the template at 1).
 
 - If needed you can disable native compilation by doing `export
   COQEXTRAFLAGS='-native-compiler no'` before the build commands in
@@ -155,28 +155,28 @@ https://github.com/coq/coq/issues.
 ### Recommended branching policy.
 
 It is sometimes the case that you will need to maintain a branch of
-your project for particular Coq versions. This is in fact very likely
-if your project includes a Coq ML plugin.
+your project for particular Rocq versions. This is in fact very likely
+if your project includes a Rocq ML plugin.
 
 For such projects, we recommend a branching convention that mirrors
-Coq's branching policy. Then, you would have a `master` branch that
-follows Coq's `master`, a `v8.8` branch that works with Coq's `v8.8`
+Rocq's branching policy. Then, you would have a `master` branch that
+follows Rocq's `master`, a `v9.0` branch that works with Rocq's `v9.0`
 branch and so on.
 
 This convention will be supported by tools in the future to make some
 developer commands work more seamlessly.
 
-### Supported CI images for Coq
+### Supported CI images for Rocq
 
-The Coq developers and contributors provide official Docker and Nix
-images for testing against Coq master. Using these images is highly
+The Rocq developers and contributors provide official Docker and Nix
+images for testing against Rocq master. Using these images is highly
 recommended:
 
 - For Docker, see: https://github.com/coq-community/docker-coq
 
   The https://github.com/coq-community/docker-coq/wiki/CI-setup wiki
   page contains additional information and templates to help setting
-  Docker-based CI up for your Coq project
+  Docker-based CI up for your Rocq project
 
 - For Nix, see the setup at
   https://github.com/coq-community/manifesto/wiki/Continuous-Integration-with-Nix

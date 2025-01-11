@@ -21,7 +21,7 @@ type ('a,'b) custom_toplevel =
   ; run : 'a -> opts:Coqargs.t -> 'b -> unit
   }
 
-(** The generic Coq main module. [start custom] will parse the command line,
+(** The generic Rocq main module. [start custom] will parse the command line,
    print the banner, initialize the load path, load the input state,
    load the files given on the command line, load the resource file,
    produce the output state if any, and finally will launch

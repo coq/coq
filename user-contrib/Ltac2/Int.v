@@ -18,7 +18,7 @@ Ltac2 @ external add : int -> int -> int := "rocq-runtime.plugins.ltac2" "int_ad
 Ltac2 @ external sub : int -> int -> int := "rocq-runtime.plugins.ltac2" "int_sub".
 Ltac2 @ external mul : int -> int -> int := "rocq-runtime.plugins.ltac2" "int_mul".
 
-(* Note: unlike Coq Z division, Ltac2 matches OCaml division and rounds towards 0, so 1/-2 = 0 *)
+(* Note: unlike Rocq Z division, Ltac2 matches OCaml division and rounds towards 0, so 1/-2 = 0 *)
 Ltac2 @ external div : int -> int -> int := "rocq-runtime.plugins.ltac2" "int_div".
 
 Ltac2 @ external mod : int -> int -> int := "rocq-runtime.plugins.ltac2" "int_mod".

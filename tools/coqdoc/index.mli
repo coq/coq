@@ -41,7 +41,7 @@ type index_entry =
 (* Find what symbol coqtop said is located at loc in the source file *)
 val find : coq_module -> loc -> index_entry
 
-(* Find what data is referred to by some string in some coq module *)
+(* Find what data is referred to by some string in some rocq module *)
 val find_string : string -> index_entry
 
 (** [add_ref cur_mod loc lib_dp sp id entry_type] *)
@@ -50,7 +50,7 @@ val add_ref : string -> int -> coq_module -> coq_module -> string -> entry_type 
 (** [add_def loc1 loc2 entry_type sp id] *)
 val add_def : int -> int -> entry_type -> coq_module -> string -> unit
 
-(* Add a Coq module *)
+(* Add a Rocq module *)
 val add_module : coq_module -> unit
 
 type module_kind = Local | External of coq_module | Unknown

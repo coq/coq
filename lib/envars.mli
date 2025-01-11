@@ -9,9 +9,9 @@
 (************************************************************************)
 
 (** This file provides a high-level interface to the environment variables
-    needed by Coq to run (such as coqlib). The values of these variables
+    needed by Rocq to run (such as coqlib). The values of these variables
     may come from different sources (shell environment variables,
-    command line options, options set at the time Coq was build). *)
+    command line options, options set at the time Rocq was build). *)
 
 val getenv_rocq : string -> string option
 (** [getenv_rocq name] returns the value of "ROCQ$name" if it exists,
@@ -57,7 +57,7 @@ val coqpath : string list
 (** [camlfind ()] is the path to the ocamlfind binary. *)
 val ocamlfind : unit -> string
 
-(** Coq tries to honor the XDG Base Directory Specification to access
+(** Rocq tries to honor the XDG Base Directory Specification to access
     the user's configuration files.
 
     see [http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html]

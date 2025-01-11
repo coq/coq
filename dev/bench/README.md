@@ -1,4 +1,4 @@
-# Coq Bench Scripts
+# Rocq Bench Scripts
 
 ## Path and Global Environment Setup
 

@@ -1,9 +1,9 @@
 # How to use?
 
 # If you have Nix installed, you can get in an environment with everything
-# needed to compile Coq and CoqIDE by running:
+# needed to compile Rocq and CoqIDE by running:
 # $ nix-shell
-# at the root of the Coq repository.
+# at the root of the Rocq repository.
 
 # How to tweak default arguments?
 
@@ -11,15 +11,15 @@
 # instance to do this:
 # $ nix-shell --arg ocamlPackages "(import <nixpkgs> {}).ocaml-ng.ocamlPackages_4_09" --arg buildIde false
 
-# You can also compile Coq and "install" it by running:
+# You can also compile Rocq and "install" it by running:
 # $ make clean # (only needed if you have left-over compilation files)
 # $ nix-build
-# at the root of the Coq repository.
+# at the root of the Rocq repository.
 # nix-build also supports the --arg option, so you will be able to do:
 # $ nix-build --arg doInstallCheck false
 # if you want to speed up things by not running the test-suite.
 # Once the build is finished, you will find, in the current directory,
-# a symlink to where Coq was installed.
+# a symlink to where Rocq was installed.
 
 { pkgs ? import ./dev/nixpkgs.nix {}
 , ocamlPackages ? pkgs.ocaml-ng.ocamlPackages_4_14
@@ -159,9 +159,9 @@ stdenv.mkDerivation rec {
   ";
 
   meta = {
-    description = "Coq proof assistant";
+    description = "Rocq proof assistant";
     longDescription = ''
-      Coq is a formal proof management system.  It provides a formal language
+      Rocq is a formal proof management system.  It provides a formal language
       to write mathematical definitions, executable algorithms and theorems
       together with an environment for semi-interactive development of
       machine-checked proofs.

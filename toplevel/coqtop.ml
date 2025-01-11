@@ -11,7 +11,7 @@
 open Pp
 open Coqargs
 
-(** This file provides generic support for Coq executables + specific
+(** This file provides generic support for Rocq executables + specific
     support for the rocq repl executable *)
 
 let () = at_exit flush_all
@@ -114,7 +114,7 @@ type toplevel_options = {
 }
 
 let init_document opts stm_options injections =
-  (* Coq init process, phase 3: Stm initialization, backtracking state.
+  (* Rocq init process, phase 3: Stm initialization, backtracking state.
 
      It is essential that the module system is in a consistent
      state before we take the first snapshot. This was not

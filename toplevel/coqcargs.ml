@@ -57,7 +57,7 @@ let is_dash_argument s = String.length s > 0 && s.[0] = '-'
 let add_compile ?echo copts s =
   if is_dash_argument s then
     arg_error Pp.(str "Unknown option " ++ str s);
-  (* make the file name explicit; needed not to break up Coq loadpath stuff. *)
+  (* make the file name explicit; needed not to break up Rocq loadpath stuff. *)
   let echo = Option.default copts.echo echo in
   let s =
     let open Filename in

@@ -11,7 +11,7 @@
 (** * Decimal numbers *)
 
 (** These numbers coded in base 10 will be used for parsing and printing
-    other Coq numeral datatypes in an human-readable way.
+    other Rocq numeral datatypes in an human-readable way.
     See the [Number Notation] command.
     We represent numbers in base 10 as lists of decimal digits,
     in big-endian order (most significant digit comes first). *)
@@ -115,7 +115,7 @@ Definition norm d :=
   end.
 
 (** A few easy operations. For more advanced computations, use the conversions
-    with other Coq numeral datatypes (e.g. Z) and the operations on them. *)
+    with other Rocq numeral datatypes (e.g. Z) and the operations on them. *)
 
 Definition opp (d:int) :=
   match d with

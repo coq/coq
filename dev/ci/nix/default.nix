@@ -8,10 +8,10 @@
 
 with pkgs;
 
-# Coq from this directory
+# Rocq from this directory
 let coq = callPackage ./coq.nix { inherit branch wd; }; in
 
-# Third-party libraries, built with this Coq
+# Third-party libraries, built with this Rocq
 let coqPackages = mkCoqPackages coq; in
 let mathcomp = coqPackages.mathcomp.overrideAttrs (o: {
     name = "coq-git-mathcomp-git";
@@ -90,7 +90,7 @@ let callPackage = newScope { inherit coq
   mathcomp simple-io ssreflect stdpp unicoq Verdi flocq;
 }; in
 
-# Environments for building CI libraries with this Coq
+# Environments for building CI libraries with this Rocq
 let projects = {
   bedrock2 = callPackage ./bedrock2.nix {};
   bignums = callPackage ./bignums.nix {};

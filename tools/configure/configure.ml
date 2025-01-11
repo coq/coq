@@ -10,9 +10,9 @@
 
 [@@@ocaml.warning "+a"]
 
-(**********************************)
-(**  Configuration script for Coq *)
-(**********************************)
+(***********************************)
+(**  Configuration script for Rocq *)
+(***********************************)
 open Printf
 open Conf
 open Util
@@ -118,7 +118,7 @@ let check_findlib_version prefs { CamlConf.findlib_version; _ } =
     let () = cprintf prefs "Your version of OCamlfind is %s." findlib_version in
     die "You need OCamlfind 1.8.1 or later."
 
-(** Note, these warnings are only used in Coq Makefile *)
+(** Note, these warnings are only used in Rocq Makefile *)
 (** Explanation of enabled/disabled warnings:
     4: fragile pattern matching: too common in the code and too annoying to avoid in general
     9: missing fields in a record pattern: too common in the code and not worth the bother
@@ -138,7 +138,7 @@ let check_findlib_version prefs { CamlConf.findlib_version; _ } =
 (* Note, we list all warnings to be complete *)
 let coq_warnings = "-w -a+1..3-4+5..8-9+10..26-27+28..39-40-41-42+43-44-45+46..47-48+49..57-58+59..66-67-68+69-70"
 
-(* Flags used to compile Coq and plugins (via coq_makefile) *)
+(* Flags used to compile Rocq and plugins (via coq_makefile) *)
 let caml_flags =
   Printf.sprintf "-thread -bin-annot -strict-sequence %s" coq_warnings
 
@@ -290,7 +290,7 @@ let install_dirs prefs arch =
 let select var install_dirs = List.find (fun ((v,_),_) -> v=var) install_dirs |> snd
 
 module CoqEnv = struct
-  (** Coq core paths, for libraries, documentation, configuration, and data *)
+  (** Rocq core paths, for libraries, documentation, configuration, and data *)
   type t =
     { coqlib : string
     ; coqlibsuffix : path_style
@@ -312,7 +312,7 @@ let resolve_coqenv install_dirs =
 
 (** * CC runtime flags *)
 
-(* Note that Coq's VM requires at least C99-compliant floating-point
+(* Note that Rocq's VM requires at least C99-compliant floating-point
    arithmetic; this should be ensured by OCaml's own C flags, which
    set a minimum of [--std=gnu99] ; modern compilers by default assume
    C11 or later, so no explicit [--std=] flags are added by OCaml *)
@@ -335,7 +335,7 @@ let compute_cflags () =
     be performed with an intermediate 80-bit representation (x87).
 
     If this test fails but SSE2_MATH is available, the build can go
-    further as Coq's primitive floats will use it through a dedicated
+    further as Rocq's primitive floats will use it through a dedicated
     external C implementation (instead of relying on OCaml operations)
 
     If this test fails and SSE2_MATH is not available, abort.

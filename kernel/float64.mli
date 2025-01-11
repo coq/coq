@@ -11,7 +11,7 @@
 (** [t] is currently implemented by OCaml's [float] type.
 
 Beware: NaNs have a sign and a payload, while they should be
-indistinguishable from Coq's perspective. *)
+indistinguishable from Rocq's perspective. *)
 type t
 
 (** Test functions for special values to avoid calling [classify] *)

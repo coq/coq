@@ -299,7 +299,7 @@ Infix "mod" := modulo (at level 40, no associativity) : nat_scope.
 (** ** Greatest common divisor *)
 
 (** We use Euclid algorithm, which is normally not structural,
-    but Coq is now clever enough to accept this (behind modulo
+    but Rocq is now clever enough to accept this (behind modulo
     there is a subtraction, which now preserves being a subterm)
 *)
 

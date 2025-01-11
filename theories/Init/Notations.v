@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** These are the notations whose level and associativity are imposed by Coq *)
+(** These are the notations whose level and associativity are imposed by Rocq *)
 
 (** Notations for propositional connectives *)
 

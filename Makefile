@@ -8,7 +8,7 @@
 ##         #     (see LICENSE file for the text of the license)         ##
 ##########################################################################
 
-# Dune Makefile for Coq
+# Dune Makefile for Rocq
 
 .PHONY: help help-install states world coqide watch check    # Main developer targets
 .PHONY: refman-html refman-pdf corelib-html apidoc     # Documentation targets
@@ -35,15 +35,15 @@ HIDE := $(if $(VERBOSE),,@)
 
 help:
 	@echo ""
-	@echo "Welcome to Coq's Dune-based build system. If you are final user type"
+	@echo "Welcome to Rocq's Dune-based build system. If you are final user type"
 	@echo "make help-install for installation instructions. Common developer targets are:"
 	@echo ""
-	@echo "  - states: build a minimal functional coqtop"
+	@echo "  - states: build a minimal functional rocq repl"
 	@echo "  - world:  build main public binaries and libraries in developer mode (no coqide)"
 	@echo "  - watch:  build main public binaries and libraries [continuous build]"
 	@echo "  - coqide: build coqide binary in developer mode"
 	@echo "  - check:  build all ML files as fast as possible"
-	@echo "  - test-suite: run Coq's test suite [env NJOBS=N to set job parallelism]"
+	@echo "  - test-suite: run Rocq's test suite [env NJOBS=N to set job parallelism]"
 	@echo "  - dunestrap: Generate the dune rules for vo files"
 	@echo ""
 	@echo "  Note: running ./configure is not recommended for developers,"
@@ -58,9 +58,9 @@ help:
 	@echo ""
 	@echo " Documentation targets:"
 	@echo ""
-	@echo "  - refman-html: build Coq's reference manual [HTML version]"
-	@echo "  - refman-pdf:  build Coq's reference manual [PDF version]"
-	@echo "  - corelib-html: build Coq's Corelib documentation [HTML version]"
+	@echo "  - refman-html: build Rocq's reference manual [HTML version]"
+	@echo "  - refman-pdf:  build Rocq's reference manual [PDF version]"
+	@echo "  - corelib-html: build Rocq's Corelib documentation [HTML version]"
 	@echo "  - apidoc:      build ML API documentation"
 	@echo ""
 	@echo " Miscellaneous targets:"
@@ -77,7 +77,7 @@ help:
 
 dev-targets:
 	@echo ""
-	@echo "In order to get a functional Coq install layout, the world target is required."
+	@echo "In order to get a functional Rocq install layout, the world target is required."
 	@echo "However, This is often inconvenient for developers, due to the large amount of"
 	@echo "files that world will build. We provide some useful subtargets here:"
 	@echo ""
@@ -86,8 +86,8 @@ dev-targets:
 
 help-install:
 	@echo ""
-	@echo "The Dune-based Coq build is split into several packages; see Dune and dev/doc"
-	@echo "documentation for more details. A quick install of Coq alone can be done with"
+	@echo "The Dune-based Rocq build is split into several packages; see Dune and dev/doc"
+	@echo "documentation for more details. A quick install of Rocq alone can be done with"
 	@echo ""
 	@echo " $$ ./configure -prefix <install_prefix>"
 	@echo " $$ make dunestrap"
@@ -98,12 +98,12 @@ help-install:
 	@echo ""
 	@echo "  - rocq-runtime: base Rocq package, toplevel compilers, plugins, tools, no corelib, no stdlib, no GTK"
 	@echo "  - coq-core: compat binaries (coqc instead of rocq compile, etc)"
-	@echo "  - rocq-core: Coq's prelude and corelib"
+	@echo "  - rocq-core: Rocq's prelude and corelib"
 	@echo "  - coqide-server: XML protocol language server"
 	@echo "  - coqide: CoqIDE gtk application"
 	@echo "  - rocq: meta package depending on rocq-runtime rocq-core rocq-stdlib"
 	@echo "    (also calls the test suite when using --with-test)"
-	@echo "  - coq: meta package depending on rocq-runtime coq-core rocq-core rocq-stdlib coq-stdlib"
+	@echo "  - coq: meta package depending on rocq coq-core coq-stdlib"
 	@echo "    (also calls the test suite when using --with-test)"
 	@echo ""
 	@echo " To build a package, you can use:"
@@ -116,7 +116,7 @@ help-install:
 	@echo "  - 'dune install --prefix=<install_prefix> package'"
 	@echo ""
 	@echo " Note that '--prefix' must be passed to dune install. The '-prefix' passed to"
-	@echo " configure tells Coq where to look for libraries."
+	@echo " configure tells Rocq where to look for libraries."
 	@echo ""
 	@echo " Note that building a package in release mode ignores other packages present in"
 	@echo " the worktree. See Dune documentation for more information."
@@ -197,7 +197,7 @@ release: theories/dune
 
 # We define this target as to override Make's built-in one
 install:
-	@echo "To install Coq using dune, use 'dune build -p P && dune install P'"
+	@echo "To install Rocq using dune, use 'dune build -p P && dune install P'"
 	@echo "where P is any of the packages defined by opam files in the root dir"
 	@false
 
@@ -252,9 +252,9 @@ export CI_PURE_DUNE
 include Makefile.ci
 
 # Custom targets to create subsets of the world target but with less
-# compiled files. This is desired when we want to have our Coq Dune
-# build with Coq developments that are not dunerized and thus still
-# expect an install layout with a working Coq setup, but smaller than
+# compiled files. This is desired when we want to have our Rocq Dune
+# build with Rocq developments that are not dunerized and thus still
+# expect an install layout with a working Rocq setup, but smaller than
 # world.
 #
 # Unfortunately, Dune still lacks the capability to refer to install

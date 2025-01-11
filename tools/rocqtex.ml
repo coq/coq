@@ -27,7 +27,7 @@ let small = ref false
 
 let any_prompt = Str.regexp "[A-Z0-9a-z_\\$']* < "
 
-(* First pass: extract the Coq phrases to evaluate from [texfile]
+(* First pass: extract the Rocq phrases to evaluate from [texfile]
  * and put them into the file [inputv] *)
 
 let begin_coq = Str.regexp "\\\\begin{coq_\\(example\\|example\\*\\|example\\#\\|eval\\)}[ \t]*$"
@@ -61,7 +61,7 @@ let extract texfile inputv =
     close_in chan_in;
     close_out chan_out
 
-(* Second pass: insert the answers of Coq from [coq_output] into the
+(* Second pass: insert the answers of Rocq from [coq_output] into the
  * TeX file [texfile]. The result goes in file [result]. *)
 
 let tex_escaped s =
@@ -195,8 +195,8 @@ let insert texfile coq_output result =
       outside false
     end in
   try
-    let _ = read_output () in (* to skip the Coq banner *)
-    let _ = read_output () in (* to skip the Coq answer to Set Printing Width *)
+    let _ = read_output () in (* to skip the Rocq banner *)
+    let _ = read_output () in (* to skip the Rocq answer to Set Printing Width *)
     outside false
   with End_of_file -> begin
     close_in c_tex;
@@ -220,13 +220,13 @@ let one_file texfile =
       texfile ^ ".v.tex"
   in
   try
-    (* 1. extract Coq phrases *)
+    (* 1. extract Rocq phrases *)
     extract texfile inputv;
-    (* 2. run Coq on input *)
+    (* 2. run Rocq on input *)
     let _ = Sys.command (Printf.sprintf "%s < %s > %s 2>&1" !image inputv
                            coq_output)
     in
-    (* 3. insert Coq output into original file *)
+    (* 3. insert Rocq output into original file *)
     insert texfile coq_output result;
     (* 4. clean up *)
     rm inputv; rm coq_output
@@ -235,7 +235,7 @@ let one_file texfile =
     raise reraise
   end
 
-(* Parsing of the command line, check of the Coq command and process
+(* Parsing of the command line, check of the Rocq command and process
  * of all the files in the command line, one by one *)
 
 let files = ref []

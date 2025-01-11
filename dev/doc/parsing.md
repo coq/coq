@@ -1,8 +1,8 @@
 # Parsing
 
-Coq's parser is based on Camlp5 using an extensible grammar.  Somewhat helpful
+Rocq's parser is based on Camlp5 using an extensible grammar.  Somewhat helpful
 Camlp5 documentation is available [here](http://camlp5.github.io/doc/htmlc/grammars.html).
-However, the Camlp5 code has been copied into the Coq source tree and may differ
+However, the Camlp5 code has been copied into the Rocq source tree and may differ
 from the Camlp5 release.
 
 Notable attributes of the parser include:
@@ -48,12 +48,12 @@ grammar, then edits and inserts it into the documentation.  This is described in
 [`doc/tools/docgram/README.md`](../../doc/tools/docgram/README.md).
 `doc_grammar` generates
 [`doc/tools/docgram/fullGrammar`](../../doc/tools/docgram/fullGrammar),
-which has the full grammar for Coq
+which has the full grammar for Rocq
 (not including some optionally-loaded plugins).  This may be easier to read since everything is
 in one file and the parser action routines and other OCaml code are omitted.
 
 `*.mlg` files contain the following types of nodes (See `node` in the yacc grammar).  This part is
-very specific to Coq (not so similar to Camlp5):
+very specific to Rocq (not so similar to Camlp5):
 
 * OCaml code - OCaml code enclosed in curly braces, which is copied verbatim to the generated `*.ml` file
 
@@ -206,7 +206,7 @@ Grammatical elements that appear in productions are:
   actually nested productions, each of which can have its own action routines
 
 Nonterminals can also be defined with multiple levels to specify precedence and associativity
-of its productions.  This is described in the Coq documentation under the `Print Grammar`
+of its productions.  This is described in the Rocq documentation under the `Print Grammar`
 command.  The first square bracket around a nonterminal definition is for grouping
 level definitions, which are separated with `|`, for example:
 
@@ -278,14 +278,14 @@ The differences are:
 
 ### Other components
 
-Coq's lexer is in `clexer.ml`.  Its 10 token types are defined in `tok.ml`.
+Rocq's lexer is in `clexer.ml`.  Its 10 token types are defined in `tok.ml`.
 
 The parser is in `grammar.ml`.  The extensive use of GADT (generalized algebraic datatypes)
 makes it harder for the uninitiated to understand it.
 
 When the parser is invoked, the call tells the parser which nonterminal to parse.  `vernac_control`
 is the start symbol for commands.  `tactic_mode` is the start symbol for tactics.
-Tactics give syntax errors if Coq is not in proof mode.  There are additional details
+Tactics give syntax errors if Rocq is not in proof mode.  There are additional details
 not mentioned here.
 
 ### Parsing productions

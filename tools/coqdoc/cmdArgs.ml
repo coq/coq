@@ -74,7 +74,7 @@ let current = Arg.current
 
 let argv = ref [||]
 
-(* TODO: replace these hacks with Arg.Rest_all, when coq moves to a newer version of OCaml stdlib *)
+(* TODO: replace these hacks with Arg.Rest_all, when rocq moves to a newer version of OCaml stdlib *)
 let arg_path f = Arg.String (fun s ->
   if Array.length !argv < !current + 3 ||
     CString.is_prefix "-" !argv.(!current + 2) then

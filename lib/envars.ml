@@ -79,7 +79,7 @@ let expand_path_macros ~warn s =
 
 (** {1 Paths} *)
 
-(** {2 Coq paths} *)
+(** {2 Rocq paths} *)
 
 let coqbin =
   CUnix.canonical_path_name (Filename.dirname Sys.executable_name)

@@ -28,7 +28,7 @@ else
 fi
 
 # We assume that all non-bot merge commits are from the main branch
-# For Coq it is extremely rare for this assumption to be broken
+# For Rocq it is extremely rare for this assumption to be broken
 read -r base < <(git log -n 1 --merges --pretty='format:%H' "$head")
 
 dev/lint-commits.sh "$base" "$head" || CODE=1

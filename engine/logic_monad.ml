@@ -20,7 +20,7 @@
 
 
 (** To help distinguish between exceptions raised by the IO monad from
-    the one used natively by Coq, the former are wrapped in
+    the one used natively by Rocq, the former are wrapped in
     [Exception].  It is only used internally so that [catch] blocks of
     the IO monad would only catch exceptions raised by the [raise]
     function of the IO monad, and not for instance, by system

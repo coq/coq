@@ -1,6 +1,5 @@
-
-Coq main source components (in link order)
-------------------------------------------
+Rocq main source components (in link order)
+-------------------------------------------
 
 clib : Basic files in lib/, such as util.ml
 lib : Other files in lib/

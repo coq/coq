@@ -50,7 +50,7 @@ Require Import ssreflect.
         unwrap w == the projection of w : wrapped T on T.
           wrap x == the canonical injection of x : T into wrapped T; it is
                     equivalent to Wrap x, but is declared as a (default)
-                    Canonical Structure, which lets the Coq HO unification
+                    Canonical Structure, which lets the Rocq HO unification
                     automatically expand x into unwrap (wrap x). The delta
                     reduction of wrap x to Wrap can be exploited to
                     introduce controlled nondeterminism in Canonical
@@ -99,7 +99,7 @@ Require Import ssreflect.
  if we need to build an r from a given y0 while inferring some x0, such
  that y0 : T(x0), we pose
     Definition mk_r .. y .. (x := ...) y' & phant_id y y' := R x y'.
- Calling @mk_r .. y0 .. id will cause Coq to use y' := y0, while checking
+ Calling @mk_r .. y0 .. id will cause Rocq to use y' := y0, while checking
  the dependent type constraint y0 : T(x0).
 
  - Extensional equality for functions and relations (i.e. functions of two

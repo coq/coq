@@ -8,8 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Standard LoadPath for Coq user libraries; in particular it
-   includes (in-order) Coq's standard library, Coq's [user-contrib]
+(** Standard LoadPath for Rocq user libraries; in particular it
+   includes (in-order) Rocq's standard library, Rocq's [user-contrib]
    folder, and directories specified in [ROCQPATH] and [XDG_DIRS] *)
 val init_load_path
   : coqenv:Boot.Env.t

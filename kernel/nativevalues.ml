@@ -261,7 +261,7 @@ let cast_accu v = (Obj.magic v:accumulator)
 let mk_int (x : int) = (Obj.magic x : t)
 [@@ocaml.inline always]
 
-(* Coq's booleans are reversed... *)
+(* Rocq's booleans are reversed... *)
 let mk_bool (b : bool) = (Obj.magic (not b) : t)
 [@@ocaml.inline always]
 

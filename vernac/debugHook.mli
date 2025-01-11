@@ -17,14 +17,14 @@
  number of Outputs.
 
  Debugger initialization has the following steps:
- -> Coq sends Answer.Init
+ -> Rocq sends Answer.Init
  <- IDE sends zero or more initialization requests such as Action.UpdBpts
  <- IDE sends Action.Configd
 
  Stopping in the debugger generates Answer.Prompt and Answer.Goal messages,
  at which point the IDE will typically call GetStack and GetVars.  When the
  IDE sends with StepIn..Continue, the debugger will execute more code.  At
- that point, Coq won't try to read more messages from the IDE until the
+ that point, Rocq won't try to read more messages from the IDE until the
  debugger stops again or exits.
  *)
 module Action : sig

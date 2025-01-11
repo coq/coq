@@ -21,7 +21,7 @@
      existing non-dependent schemes eq_rect and eq_rect_r. There is in
      particular a problem with the dependent rewriting schemes in
      hypotheses for which the inductive types cannot be in last
-     position of the scheme as it is the general rule in Coq. This has
+     position of the scheme as it is the general rule in Rocq. This has
      an effect on the order of generated goals (side-conditions of the
      lemma after or before the main goal). The non-dependent case can be
      fixed but to the price of a lost of uniformity wrt side-conditions
@@ -575,7 +575,7 @@ let build_l2r_forward_rew_scheme dep env ind kind =
 (* Note that the dependent elimination here is not a dependency       *)
 (* in the conclusion of the scheme but a dependency in the premise of *)
 (* the scheme. This is unfortunately incompatible with the standard   *)
-(* pattern for schemes in Coq which expects that the eliminated       *)
+(* pattern for schemes in Rocq which expects that the eliminated      *)
 (* object is the last premise of the scheme. We then have no choice   *)
 (* than following the more liberal pattern of having the eliminated   *)
 (* object coming before the premises.                                 *)
@@ -635,7 +635,7 @@ let build_r2l_forward_rew_scheme dep env ind kind =
 (**********************************************************************)
 (* This function "repairs" the non-dependent r2l forward rewriting    *)
 (* scheme by making it comply with the standard pattern of schemes    *)
-(* in Coq. Otherwise said, it turns a scheme of type                  *)
+(* in Rocq. Otherwise said, it turns a scheme of type                 *)
 (*                                                                    *)
 (*  forall q1..pm a1..an, I q1..qm a1..an ->                          *)
 (*  forall (P: forall a1..an, kind),                                  *)
@@ -751,7 +751,7 @@ let rew_l2r_forward_dep_scheme_kind =
 (* we adopt r2l_forward_rew (this one introduces a blocked beta-      *)
 (* expansion but since the guard condition supports commutative cuts  *)
 (* this is not a problem; we need though a fix to adjust it to the    *)
-(* standard form of schemes in Coq)                                   *)
+(* standard form of schemes in Rocq)                                  *)
 (**********************************************************************)
 let rew_l2r_scheme_kind =
   declare_individual_scheme_object "rew_r"

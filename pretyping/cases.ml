@@ -1929,7 +1929,7 @@ let build_inversion_problem ~program_mode loc env sigma tms t =
   | Type _ | QSort _ ->
     (* If the sort has algebraic universes, we cannot use this sort a
        type constraint for the impossible case; especially if the
-       default case is not the canonical one provided in Prop by Coq
+       default case is not the canonical one provided in Prop by Rocq
        but one given by the user, which may be in either sort (an
        example is in Vector.caseS', even if this one can probably be
        put in Prop too with some care) *)

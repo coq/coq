@@ -479,7 +479,7 @@ val build_by_tactic
 
 (** {2 Program mode API} *)
 
-(** Coq's Program mode support. This mode extends declarations of
+(** Rocq's Program mode support. This mode extends declarations of
    constants and fixpoints with [Program Definition] and [Program
    Fixpoint] to support incremental construction of terms using
    delayed proofs, called "obligations"

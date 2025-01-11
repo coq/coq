@@ -274,7 +274,7 @@ Section GenericInstances.
   (* Share universes *)
   Implicit Types A B C : Type.
 
-  (** We can build a PER on the Coq function space if we have PERs on the domain and
+  (** We can build a PER on the Rocq function space if we have PERs on the domain and
    codomain. *)
   
   Program Instance respectful_per `(PER A R, PER B R') : PER (R ==> R').
@@ -411,7 +411,7 @@ Section GenericInstances.
     unfold compose. firstorder. 
   Qed.
 
-  (** Coq functions are morphisms for Leibniz equality,
+  (** Rocq functions are morphisms for Leibniz equality,
      applied only if really needed. *)
 
   Global Instance reflexive_eq_dom_reflexive `(Reflexive B R') {A} :

@@ -115,7 +115,7 @@ val query : doc:doc ->
 
 (* [edit_at id] is issued to change the editing zone.  [NewTip] is returned if
    the requested id is the new document tip hence the document portion following
-   [id] is dropped by Coq.  [`Focus fo] is returned to say that [fo.tip] is the
+   [id] is dropped by Rocq.  [`Focus fo] is returned to say that [fo.tip] is the
    new document tip, the document between [id] and [fo.stop] has been dropped.
    The portion between [fo.stop] and [fo.tip] has been kept.  [fo.start] is
    just to tell the gui where the editing zone starts, in case it wants to

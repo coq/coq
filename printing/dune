@@ -1,6 +1,6 @@
 (library
  (name printing)
- (synopsis "Coq's Term Pretty Printing Library")
+ (synopsis "Rocq's Term Pretty Printing Library")
  (public_name rocq-runtime.printing)
  (wrapped false)
  (libraries parsing proofs))

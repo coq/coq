@@ -17,8 +17,8 @@ Feit-Thompson theorem or homotopy type theory) and teaching.
 This package includes the Rocq prelude, that is loaded automatically
 by Rocq in every .v file, as well as other modules bound to the
 Corelib.* and Ltac2.* namespaces."""
-maintainer: ["The Coq development team <coqdev@inria.fr>"]
-authors: ["The Coq development team, INRIA, CNRS, and contributors"]
+maintainer: ["The Rocq development team <coqdev@inria.fr>"]
+authors: ["The Rocq development team, INRIA, CNRS, and contributors"]
 license: "LGPL-2.1-only"
 homepage: "https://coq.inria.fr/"
 doc: "https://coq.github.io/doc/"

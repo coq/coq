@@ -1,13 +1,13 @@
 Information for developers about the CI system
 ----------------------------------------------
 
-When you submit a pull request (PR) on the Coq GitHub repository, this will
+When you submit a pull request (PR) on the Rocq GitHub repository, this will
 launch a battery of CI tests. The PR will not be integrated
 unless these tests pass.
 
 We are currently running tests on the following platforms:
 
-- GitLab CI is the main CI platform. It tests the compilation of Coq,
+- GitLab CI is the main CI platform. It tests the compilation of Rocq,
   of the documentation, and of CoqIDE on Linux with several versions
   of OCaml and with warnings as errors; it runs the test-suite and
   tests the compilation of several external developments. It also runs
@@ -16,9 +16,9 @@ We are currently running tests on the following platforms:
   `./configure`. It should allow complying with this discipline
   without pain.
 
-- Github Actions are used to test the compilation of Coq on Windows
-  and macOS. For Windows, the Coq platform script is used, producing
-  an installer that can be used to test Coq.
+- Github Actions are used to test the compilation of Rocq on Windows
+  and macOS. For Windows, the Rocq platform script is used, producing
+  an installer that can be used to test Rocq.
 
 You can anticipate the results of most of these tests prior to submitting your
 PR by running GitLab CI on your private branches. To do so follow these steps:
@@ -26,7 +26,7 @@ PR by running GitLab CI on your private branches. To do so follow these steps:
 1. Log into GitLab CI (the easiest way is to sign in with your GitHub account).
 2. Click on "New Project".
 3. Choose "CI / CD for external repository" then click on "GitHub".
-4. Find your fork of the Coq repository and click on "Connect".
+4. Find your fork of the Rocq repository and click on "Connect".
 5. If GitLab did not do so automatically, [enable the Container Registry](https://docs.gitlab.com/ee/user/project/container_registry.html#enable-the-container-registry-for-your-project).
 6. You are encouraged to go to the CI / CD general settings and increase the
    timeout from 1h to 2h for better reliability.
@@ -42,7 +42,7 @@ See also [`test-suite/README.md`](../../test-suite/README.md) for information ab
 
 ### Light and full CI
 
-By default, only a light CI is run, mostly testing only Coq itself.
+By default, only a light CI is run, mostly testing only Rocq itself.
 Before merging a PR, it must also pass full CI testing multiple third party
 developments. See [`CONTRIBUTING.md`](../../CONTRIBUTING.md#understanding-automatic-feedback)
 for more details.
@@ -63,7 +63,7 @@ When your PR breaks external projects we test in our CI, you must:
    when doubts remain.
 3. For intentional breakages, you must then write porting instructions
    (typically the PR changelog), based on your previous assesment.
-   For instance something like "ensuring compilation with Coq X.Y and
+   For instance something like "ensuring compilation with Rocq X.Y and
    option -w +thing-we-are-removing-deprecated". You can also offer a
    script to help porting if you wish.
 4. The PR assignee will finally ask the project maintainers to prepare
@@ -77,7 +77,7 @@ When your PR breaks external projects we test in our CI, you must:
 
    > @maintainer please update <dev>. You can do so by <instructions on how
    > to update, typically the PR changelog entry>
-   > If <dev> is not updated in 7 days from now, it will be disabled in Coq CI
+   > If <dev> is not updated in 7 days from now, it will be disabled in Rocq CI
    > so as to not further delay the current PR (the project can be reenabled
    > later, once fixed). In case you encounter
    > unanticipated difficulties, please come back to us (for instance below)
@@ -109,18 +109,18 @@ are the steps to manually prepare a patch:
 2. Test your pull request with your adapted version of the external project by
    adding an overlay file to your pull request (cf.
    [`dev/ci/user-overlays/README.md`](user-overlays/README.md)).
-3. Fixes to external libraries (pure Coq projects) *must* be backward
-   compatible (i.e. they should also work with the development version of Coq,
+3. Fixes to external libraries (pure Rocq projects) *must* be backward
+   compatible (i.e. they should also work with the development version of Rocq,
    and the latest stable version). This will allow you to open a PR on the
    external project repository to have your changes merged *before* your PR on
-   Coq can be integrated.
+   Rocq can be integrated.
 
-   On the other hand, patches to plugins (projects linking to the Coq ML API)
+   On the other hand, patches to plugins (projects linking to the Rocq ML API)
    can very rarely be made backward compatible and plugins we test will
-   generally have a dedicated branch per Coq version.
+   generally have a dedicated branch per Rocq version.
    You can still open a pull request but the merging will be requested by the
-   developer who merges the PR on Coq. To avoid early merges of such PR,
-   which would break Coq CI, it is recommended to keep them as draft PRs.
+   developer who merges the PR on Rocq. To avoid early merges of such PR,
+   which would break Rocq CI, it is recommended to keep them as draft PRs.
 
 Moreover, in case of user visible change, your PR must absolutely add
 a changelog entry. See the README in [`doc/changelog`][user-changelog]
@@ -153,11 +153,11 @@ number, and selecting the XXXi hosted on GitHub. The script will:
 - go to `_build_ci/XXXi` to prepare your overlay
 (you can test your modifications by using `make -C ../.. ci-XXXi`)
 and push using `git push ejgallego` (replacing `ejgallego` by your GitHub nickname);
-- finally push the `dev/ci/user-overlays/9873-elgallego-YYY.sh` file on your Coq fork
+- finally push the `dev/ci/user-overlays/9873-elgallego-YYY.sh` file on your Rocq fork
 (replacing `9873` by the actual PR number, and `ejgallego` by your GitHub nickname).
 
 For problems related to ML-plugins, if you use `dune build` to build
-Coq, it will actually be aware of the broken contributions and perform
+Rocq, it will actually be aware of the broken contributions and perform
 a global build. This is very convenient when using `merlin` as you
 will get a coherent view of all the broken plugins, with full
 incremental cross-project rebuild.
@@ -166,7 +166,7 @@ Advanced GitLab CI information
 ------------------------------
 
 GitLab CI is set up to use the "build artifact" feature to avoid
-rebuilding Coq. In one job, Coq is built with `./configure -prefix _install_ci`
+rebuilding Rocq. In one job, Rocq is built with `./configure -prefix _install_ci`
 and `make install` is run, then the `_install_ci` directory
 persists to and is used by the next jobs.
 
@@ -186,24 +186,24 @@ Above, you can replace `master` and `job` by the desired GitLab branch and job n
 
 Currently available artifacts are:
 
-- the Coq executables and stdlib, in four copies varying in
-  architecture and OCaml version used to build Coq:
+- the Rocq executables and stdlib, in four copies varying in
+  architecture and OCaml version used to build Rocq:
   https://gitlab.com/coq/coq/-/jobs/artifacts/master/browse/_install_ci/?job=build:base
 
   Additionally, an experimental Dune build is provided:
   https://gitlab.com/coq/coq/-/jobs/artifacts/master/browse/_build/?job=build:edge:dune:dev
 
-- the Coq documentation, built in the `doc:*` jobs. When submitting a
+- the Rocq documentation, built in the `doc:*` jobs. When submitting a
   documentation PR, this can help reviewers checking the rendered
   result.  **@coqbot** will automatically post links to these
   artifacts in the PR checks section.  Furthermore, these artifacts are
   automatically deployed at:
 
-  + Coq's Reference Manual [master branch]:
+  + Rocq's Reference Manual [master branch]:
     <https://coq.github.io/doc/master/refman/>
-  + Coq's Standard Library Documentation [master branch]:
+  + Rocq's Standard Library Documentation [master branch]:
     <https://coq.github.io/doc/master/stdlib/>
-  + Coq's ML API Documentation [master branch]:
+  + Rocq's ML API Documentation [master branch]:
     <https://coq.github.io/doc/master/api/>
 
 ### GitLab and Docker
@@ -212,7 +212,7 @@ System and opam packages are installed in a Docker image. The image is
 automatically built and uploaded to your GitLab registry, and is
 loaded by subsequent jobs.
 
-**IMPORTANT**: When updating Coq's CI docker image, you must modify
+**IMPORTANT**: When updating Rocq's CI docker image, you must modify
 the `CACHEKEY` variable in [`.gitlab-ci.yml`](../../.gitlab-ci.yml)
 (see comment near it for details).
 
@@ -220,7 +220,7 @@ The Docker building job reuses the uploaded image if it is available,
 but if you wish to save more time you can skip the job by setting
 `SKIP_DOCKER` to `true`.
 
-In the case of the main Coq repository, this variable is set to true
+In the case of the main Rocq repository, this variable is set to true
 by default, but coqbot will set it to `false` anytime a PR modifies a
 path matching `dev/ci/docker/.*Dockerfile.*`.
 

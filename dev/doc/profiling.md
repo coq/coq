@@ -1,11 +1,11 @@
-# How to profile Coq?
+# How to profile Rocq?
 
-I (Pierre-Marie Pédrot) mainly use two OCaml branches to profile Coq, whether I
+I (Pierre-Marie Pédrot) mainly use two OCaml branches to profile Rocq, whether I
 want to profile time or memory consumption. AFAIK, this only works for Linux.
 
 ## Time
 
-In Coq source folder:
+In Rocq source folder:
 
 ```
 opam switch 4.09.0+trunk+fp
@@ -29,7 +29,7 @@ perf record -g -p PID
 ### Per-component [flame graphs](https://github.com/brendangregg/FlameGraph)
 
 I (Andres Erbsen) have found it useful to look at library-wide flame graphs of
-coq time consumption.  As the Ltac interpreter stack is reflected in the OCaml
+rocq time consumption.  As the Ltac interpreter stack is reflected in the OCaml
 stack, calls to the same primitive can appear on top of multiple essentially
 equivalent stacks. To make the profiles more readable, one could either try to
 edit the stack trace to merge "equivalent" frames, or simply look at the
@@ -87,7 +87,7 @@ See this blog post for more details:
 https://blog.janestreet.com/finding-memory-leaks-with-memtrace/
 
 To profile a file, you need to install the `memtrace` library, then
-recompile Coq. We also recommend you make a copy of the .v file (if
+recompile Rocq. We also recommend you make a copy of the .v file (if
 working on the stdlib to avoid issues with artifacts.
 
 The following command sequence will do all that:

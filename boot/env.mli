@@ -8,9 +8,9 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Coq runtime enviroment API.
+(** Rocq runtime enviroment API.
 
-This module provides functions for manipulation of Coq's runtime
+This module provides functions for manipulation of Rocq's runtime
 enviroment, including the standard directories and support files.
 
 This API is similar in spirit to findlib's or dune-sites API,
@@ -21,7 +21,7 @@ see their documentation for more information:
 
 It is important that this library has a minimal dependency set.
 
-The Coq runtime enviroment needs to be properly initialized before use;
+The Rocq runtime enviroment needs to be properly initialized before use;
 we detail the rules below. It is recommended that applications requiring
 multiple accesses to the environment, do initialize it once and keep a ref
 to it. We don't forbid yet double initialization, (second time is a noop)
@@ -44,7 +44,7 @@ as of now this sets both [coqlib] and [coqcorelib]; this part of the initializat
 will be eventually moved here.
 
 The error handling policy of this module is simple for now: failing to
-initialize Coq's env will produce a fatal error, and the application will exit with
+initialize Rocq's env will produce a fatal error, and the application will exit with
 code 1. No error handling is thus required on the client yet.
 
 *)
@@ -72,10 +72,10 @@ module Path : sig
 
 end
 
-(** Coq runtime enviroment, including location of Coq's stdlib *)
+(** Rocq runtime enviroment, including location of Rocq's stdlib *)
 type t
 
-(** [init ()] will initialize the Coq environment. *)
+(** [init ()] will initialize the Rocq environment. *)
 val init : unit -> t
 
 (** [stdlib directory] *)

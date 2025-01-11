@@ -29,7 +29,7 @@ val compile : string -> Nativecode.global list -> profile:bool -> string
 type native_library = Nativecode.global list * Nativevalues.symbols
 
 (** [compile_library (code, _) file] is similar to [compile file code]
-   but will perform some extra tweaks to handle [code] as a Coq lib. *)
+   but will perform some extra tweaks to handle [code] as a Rocq lib. *)
 val compile_library : native_library -> string -> unit
 
 (** [execute_library file upds] dynamically loads library [file],

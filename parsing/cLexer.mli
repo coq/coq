@@ -58,7 +58,7 @@ val terminal_number : string -> NumTok.Unsigned.t Tok.p
 {[
   let loc = Procq.Parsable.loc pa |> after in
   let str = Gramlib.Stream.of_string text in
-  (* Stream.count being correct is critical for Coq's lexer *)
+  (* Stream.count being correct is critical for Rocq's lexer *)
   Gramlib.Stream.njunk loc.ep str;
   let pa = Procq.Parsable.make ~loc str in
   (* ready to resume parsing *)
@@ -66,7 +66,7 @@ val terminal_number : string -> NumTok.Unsigned.t Tok.p
 *)
 val after : Loc.t -> Loc.t
 
-(** The lexer of Coq: *)
+(** The lexer of Rocq: *)
 
 module Lexer :
   Gramlib.Plexing.S

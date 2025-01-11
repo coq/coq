@@ -1,7 +1,7 @@
 (library
  (name dev)
  (public_name rocq-runtime.dev)
- (synopsis "Coq's Debug Printers")
+ (synopsis "Rocq's Debug Printers")
  (wrapped false)
  (modules top_printers vm_printers)
  ; NB currently we have no "install_printer" using ltac2,
@@ -12,7 +12,7 @@
 (library
  (name debugger_support)
  (public_name rocq-runtime.debugger_support)
- (synopsis "Coq Support for ocamldebug")
+ (synopsis "Rocq Support for ocamldebug")
  (wrapped false)
  (modules debugger_support)
  (libraries rocq-runtime.dev))

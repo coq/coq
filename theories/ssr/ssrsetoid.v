@@ -28,8 +28,8 @@ Require Import ssrunder.
 Require Import RelationClasses.
 Require Import Relation_Definitions.
 
-(** Reconcile [Coq.Classes.RelationClasses.Reflexive] with
-    [Coq.ssr.ssrclasses.Reflexive] *)
+(** Reconcile [Corelib.Classes.RelationClasses.Reflexive] with
+    [Corelib.ssr.ssrclasses.Reflexive] *)
 
 #[global]
 Instance compat_Reflexive :
