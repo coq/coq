@@ -13,13 +13,13 @@ let not_ready_msg = ref (fun name ->
                 "Please wait or pass "^
                 "the \"-async-proofs off\" option to Rocqide to disable "^
                 "asynchronous script processing and don't pass \"-vio\" to "^
-                "coqc."))
+                "rocq compile."))
 let not_here_msg = ref (fun name ->
       Pp.strbrk("The value you are asking for ("^name^") is not available "^
                 "in this process. If you really need this, pass "^
                 "the \"-async-proofs off\" option to Rocqide to disable "^
                 "asynchronous script processing and don't pass \"-vio\" to "^
-                "coqc."))
+                "rocq compile."))
 
 exception NotReady of string
 exception NotHere of string
