@@ -315,7 +315,7 @@ let warn_cannot_use_directory =
   CWarnings.create ~name:"cannot-use-directory" ~category:CWarnings.CoreCategories.filesystem
     (fun d ->
        Pp.(str "Directory " ++ str d ++
-           strbrk " cannot be used as a Coq identifier (skipped)"))
+           strbrk " cannot be used as a Rocq identifier (skipped)"))
 
 let convert_string d =
   try Names.Id.of_string d
