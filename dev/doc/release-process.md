@@ -10,14 +10,13 @@
 
 - [ ] Create both the upcoming final release (`X.X.0`) and the following major release (`Y.Y+rc1`) milestones if they do not already exist.
 - [ ] Send an announcement of the upcoming branching date on Coqdev + the Coq development category on Discourse (coqdev@inria.fr + coq+coq-development@discoursemail.com) and ask people to remove from the `X.X+rc1` milestone any feature and clean up PRs that they already know won't be ready on time.
-- [ ] Make sure that this change is merged in time for the branching date.
 - [ ] Prepare a PR on `master` (not yet to be merged) changing the version name to the next major version and both magic numbers in [`tools/configure/configure.ml`](../../tools/configure/configure.ml). For example, for `8.5`, the version name will be `8.5+alpha` while the magic numbers will end with `80490`.
   This PR should be opened before the branching date to have time to deal with CI issues, but should not be merged until branching.
 
 ## On the branching date ##
 
 - [ ] Merge the above PR and create the `vX.X` branch from the last merge commit before this one (using this name will ensure that the branch will be automatically protected).
-- [ ] Set the next major version alpha tag using `git tag -s` (you can leave the tag message empty).  The `VY.Y+alpha` tag marks the first commit to be in `master` and not in the `vX.X` release branch (be careful about small `v` for branches and big `V` for tags). Note that this commit is the first commit in the first PR merged in master, not the merge commit for that PR. Therefore, if you proceeded as described above, this should be the commit updating the version, magic numbers and compatibility infrastructure.  After tagging, double-check that `git describe` picks up the tag you just made (if not, you tagged the wrong commit).
+- [ ] Set the next major version alpha tag using `git tag -s` (you can leave the tag message empty).  The `VY.Y+alpha` tag marks the first commit to be in `master` and not in the `vX.X` release branch (be careful about small `v` for branches and big `V` for tags). Note that this commit is the first commit in the first PR merged in master, not the merge commit for that PR. Therefore, if you proceeded as described above, this should be the commit updating the version and magic numbers.  After tagging, double-check that `git describe` picks up the tag you just made (if not, you tagged the wrong commit).
 - [ ] Push the new tag with `git push upstream VY.Y+alpha --dry-run` (remove the `--dry-run` and redo if everything looks OK).
 - [ ] In the milestone, add to the description a line like `@coqbot: backport to v8.20 (move rejected PRs to: https://github.com/coq/coq/milestone/60)`
 - [ ] Monitor the [Release management project](https://github.com/orgs/coq/projects/11) in which coqbot will keep track of PRs to be backported (according to the previous command)
