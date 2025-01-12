@@ -41,17 +41,17 @@ let usage () =
   let open Printf in
   eprintf " usage: rocq dep [options] <filename>+\n";
   eprintf " options:\n";
-  eprintf "  -boot : For coq developers, prints dependencies over coq library files (omitted by default).\n";
+  eprintf "  -boot : For rocq developers, prints dependencies over rocq library files (omitted by default).\n";
   eprintf "  -sort : output the given file name ordered by dependencies\n";
   eprintf "  -noglob | -no-glob : \n";
   eprintf "  -noinit : currently no effect\n";
   eprintf "  -f file : read -I, -Q, -R and filenames from _CoqProject-formatted file.\n";
   eprintf "  -I dir : add (non recursively) dir to ocaml path\n";
-  eprintf "  -R dir logname : add and import dir recursively to coq load path under logical name logname\n";
-  eprintf "  -Q dir logname : add (recursively) and open (non recursively) dir to coq load path under logical name logname\n";
+  eprintf "  -R dir logname : add and import dir recursively to rocq load path under logical name logname\n";
+  eprintf "  -Q dir logname : add (recursively) and open (non recursively) dir to rocq load path under logical name logname\n";
   eprintf "  -vos : also output dependencies about .vos files\n";
   eprintf "  -exclude-dir dir : skip subdirectories named 'dir' during -R/-Q search\n";
-  eprintf "  -coqlib dir : set the coq standard library directory\n";
+  eprintf "  -coqlib dir : set the rocq core library directory\n";
   eprintf "  -dyndep (opt|byte|both|no|var) : set how dependencies over ML modules are printed\n";
   eprintf "  -worker WORKER : output WORKER instead of the rocqworker path\n";
   eprintf "  -w (w1,..,wn) : configure display of warnings\n";
