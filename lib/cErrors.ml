@@ -38,7 +38,7 @@ exception UserError of Pp.t (* User errors *)
    principled. *)
 let _ = Printexc.register_printer (function
     | UserError msg ->
-      Some (Format.asprintf "@[Coq Error: %a@]" Pp.pp_with msg)
+      Some (Format.asprintf "@[Rocq Error: %a@]" Pp.pp_with msg)
     | _ -> None)
 
 let user_err ?loc ?info strm =
