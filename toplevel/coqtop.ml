@@ -29,7 +29,7 @@ let get_version ~boot =
   with Sys_error _ | End_of_file -> Coq_config.version
 
 let print_header ~boot () =
-  Feedback.msg_info (str "Welcome to Coq " ++ str (get_version ~boot));
+  Feedback.msg_info (str "Welcome to Rocq " ++ str (get_version ~boot));
   flush_all ()
 
 

@@ -418,7 +418,7 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
 	  { $(call WITH_TIMER,$@,$(coqc_interactive) "$<" $(call get_coq_prog_args,"$<") 2>&1); \
 	      R=$$?; \
 	      if ! [ $$R = 0 ]; then printf '\ncoqc exited with code %s\n' "$$R"; fi; \
-	  } | grep -a -v "Welcome to Coq" \
+	  } | grep -a -v "Welcome to Rocq" \
 	    | grep -a -v "\[Loading ML file" \
 	    | grep -a -v "Skipping rcfile loading" \
 	    | grep -a -v "^<W>" \
@@ -442,7 +442,7 @@ $(addsuffix .log,$(wildcard output-coqtop/*.v)): %.v.log: %.v %.out $(PREREQUISI
 	  echo $(call log_intro,$<); \
 	  output=$*.out.real; \
 	  $(call WITH_TIMER,$@,$(coqtop) < "$<" $(call get_coq_prog_args,"$<") 2>&1) \
-	    | grep -v "Welcome to Coq" \
+	    | grep -v "Welcome to Rocq" \
 	    | grep -v "\[Loading ML file" \
 	    | grep -v "Skipping rcfile loading" \
 	    | grep -v "^<W>" \
@@ -521,7 +521,7 @@ $(addsuffix .log,$(wildcard output-modulo-time/*.v)): %.v.log: %.v %.out
 	  tmpoutput=`mktemp`; \
 	  tmpexpected=`mktemp`; \
 	  $(call WITH_TIMER,$@,$(coqc_interactive) "$<" $(call get_coq_prog_args,"$<") 2>&1) \
-	    | grep -v "Welcome to Coq" \
+	    | grep -v "Welcome to Rocq" \
 	    | grep -v "\[Loading ML file" \
 	    | grep -v "Skipping rcfile loading" \
 	    | grep -v "^<W>" \

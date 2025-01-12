@@ -39,7 +39,7 @@ $ make report PRINT_LOGS=1
 BUILDING SUMMARY FILE
 logs/success/fail.v.log
 ==========> TESTING success/fail.v <==========
-Welcome to Coq (version information)
+Welcome to Rocq (version information)
 Skipping rcfile loading.
 File "/path/to/success/fail.v", line 1, characters 4-5:
 Error:
