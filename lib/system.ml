@@ -246,9 +246,9 @@ let error_corrupted file s =
 let check_caml_version ~caml:s ~file:f =
   if not (String.equal Coq_config.caml_version s) then
     CErrors.user_err (str ("The file " ^ f ^ " was compiled with OCaml") ++
-    spc () ++ str s ++ spc () ++ str "while this instance of Coq was compiled \
+    spc () ++ str s ++ spc () ++ str "while this instance of Rocq was compiled \
     with OCaml" ++ spc() ++ str Coq_config.caml_version ++ str "." ++ spc () ++
-    str "Coq object files need to be compiled with the same OCaml toolchain to \
+    str "Rocq object files need to be compiled with the same OCaml toolchain to \
     be compatible.")
   else ()
 
@@ -271,13 +271,13 @@ let with_magic_number_check ?loc f a =
     (str"File " ++ str fname ++ strbrk" has bad magic number " ++
     (str @@ Int32.to_string actual) ++ str" (expected " ++ (str @@ Int32.to_string expected) ++ str")." ++
     spc () ++
-    strbrk "It is corrupted or was compiled with another version of Coq.")
+    strbrk "It is corrupted or was compiled with another version of Rocq.")
   | Bad_version_number {filename=fname;actual=actual;expected=expected} ->
     CErrors.user_err ?loc
     (str"File " ++ str fname ++ strbrk" has bad version number " ++
     (str @@ Int32.to_string actual) ++ str" (expected " ++ (str @@ Int32.to_string expected) ++ str")." ++
     spc () ++
-    strbrk "It is corrupted or was compiled with another version of Coq.")
+    strbrk "It is corrupted or was compiled with another version of Rocq.")
 
 (* input/ouptput of int32 and int64 *)
 
