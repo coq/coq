@@ -183,17 +183,17 @@ let args_options = Arg.align [
   "--quiet", arg_set (fun p -> { p with quiet = true }), " Quiet mode (default)";
   "--verbose", arg_set (fun p -> { p with quiet = false }), " Verbose mode";
   "--no-externals", arg_set (fun p -> { p with externals = false }),
-  " No links to Coq standard library";
+  " No links to Rocq standard library";
   "--external", arg_url_path (fun url lp -> Index.add_external_library lp url),
   "<url>+<d> set URL for external library <d>";
   "--coqlib_url", arg_string (fun p u -> { p with coqlib_url = u }),
-  "<url> Set URL for Coq standard library (default: " ^ Coq_config.wwwstdlib ^ ")";
+  "<url> Set URL for Rocq standard library (default: " ^ Coq_config.wwwstdlib ^ ")";
   "--coqlib", Arg.String (fun d -> Boot.Env.set_coqlib d),
-  "<dir> Set the path where Coq files are installed";
+  "<dir> Set the path where Rocq files are installed";
   "-R", arg_path (fun p l -> { p with paths = l :: !prefs.paths }),
-  "<dir>+<coqdir> map physical dir to Coq dir";
+  "<dir>+<coqdir> map physical dir to Rocq dir";
   "-Q", arg_path (fun p l -> { p with paths = l :: !prefs.paths }),
-  "<dir>+<coqdir> Map physical dir to Coq dir";
+  "<dir>+<coqdir> Map physical dir to Rocq dir";
   "--latin1", arg_set (fun p -> {p with encoding = { charset = "iso-8859-1";
                                                      inputenc = "latin1";
                                                      latin1 = true;
