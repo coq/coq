@@ -99,7 +99,7 @@ Section Well_founded.
   Hypothesis
     F_ext :
       forall (x:A) (f g:forall y:A, R y x -> P y),
-        (forall (y:A) (p:R y x), f y p = g y p) -> F f = F g.
+        (forall (y:A) (p q:R y x), f y p = g y q) -> F f = F g.
 
   Lemma Fix_F_inv : forall (x:A) (r s:Acc x), Fix_F r = Fix_F s.
   Proof.
