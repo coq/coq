@@ -29,19 +29,19 @@ let usage_coq_makefile ~ok =
   output_string out "\
 \nFull list of options:\
 \n\
-\n[file.v]: Coq file to be compiled\
+\n[file.v]: Rocq file to be compiled\
 \n[file.ml[ig]?]: Objective Caml file to be compiled\
 \n[file.ml{lib,pack}]: ocamlbuild-style file that describes a Objective Caml\
 \n  library/module\
 \n[-I dir]: look for Objective Caml dependencies in \"dir\"\
-\n[-R physicalpath logicalpath]: look for Coq dependencies recursively\
+\n[-R physicalpath logicalpath]: look for Rocq dependencies recursively\
 \n  starting from \"physicalpath\". The logical path associated to the\
 \n  physical path is \"logicalpath\".\
-\n[-Q physicalpath logicalpath]: look for Coq dependencies starting from\
+\n[-Q physicalpath logicalpath]: look for Rocq dependencies starting from\
 \n  \"physicalpath\". The logical path associated to the physical path\
 \n  is \"logicalpath\".\
 \n[VARIABLE = value]: Add the variable definition \"VARIABLE=value\"\
-\n[-arg opt]: send option \"opt\" to coqc\
+\n[-arg opt]: send option \"opt\" to rocq compile\
 \n[-docroot path]: Install the documentation in this folder, relative to\
 \n  \"user-contrib\".\
 \n[-f file]: take the contents of file as arguments\
@@ -223,7 +223,7 @@ let windrive s =
 ;;
 
 let generate_conf_coq_config oc =
-  section oc "Coq configuration.";
+  section oc "Rocq configuration.";
   Envars.print_config ~prefix_var_name:"COQMF_" oc;
   let env = Boot.Env.init () in
   let coqlib = Boot.Env.(coqlib env |> Path.to_string) in
