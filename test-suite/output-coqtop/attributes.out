@@ -1,35 +1,35 @@
 
-Coq < Toplevel input, characters 17-29:
+Rocq < Toplevel input, characters 17-29:
 > #[canonical=yes, canonical=no] Definition a := 3.
 >                  ^^^^^^^^^^^^
 Error: Attribute for canonical specified twice.
 
-Coq < Coq < Toplevel input, characters 29-43:
+Rocq < Rocq < Toplevel input, characters 29-43:
 > #[universes(polymorphic=yes,polymorphic=no)] Definition a := 3.
 >                             ^^^^^^^^^^^^^^
 Error: key 'polymorphic' has been already set.
 
-Coq < Coq < Toplevel input, characters 13-28:
+Rocq < Rocq < Toplevel input, characters 13-28:
 > #[universes(polymorphic=foo)] Definition a := 3.
 >             ^^^^^^^^^^^^^^^
 Error: Invalid value 'foo' for key polymorphic
 use one of {yes, no}
 
-Coq < Coq < Toplevel input, characters 13-29:
+Rocq < Rocq < Toplevel input, characters 13-29:
 > #[universes(polymorphic(foo))] Definition a := 3.
 >             ^^^^^^^^^^^^^^^^
 Error: Invalid syntax polymorphic(foo), try polymorphic={yes, no} instead.
 
-Coq < Coq < Toplevel input, characters 13-33:
+Rocq < Rocq < Toplevel input, characters 13-33:
 > #[universes(polymorphic(foo,bar))] Definition a := 3.
 >             ^^^^^^^^^^^^^^^^^^^^
 Error: Invalid syntax polymorphic(foo, bar), try polymorphic={yes,
 no} instead.
 
-Coq < Coq < Toplevel input, characters 30-37:
+Rocq < Rocq < Toplevel input, characters 30-37:
 > #[universes(polymorphic=yes, bla=bla)] Definition a := 3.
 >                              ^^^^^^^
 Error: This command does not support this attribute: universes.
 [unsupported-attributes,parsing,default]
 
-Coq < 
+Rocq < 

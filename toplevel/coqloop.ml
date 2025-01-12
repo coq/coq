@@ -202,7 +202,7 @@ let make_prompt () =
   try
     (Names.Id.to_string (Vernacstate.Declare.get_current_proof_name ())) ^ " < "
   with Vernacstate.Declare.NoCurrentProof ->
-    "Coq < "
+    "Rocq < "
   [@@ocaml.warning "-3"]
 
 (* the coq prompt added to the default one when in emacs mode

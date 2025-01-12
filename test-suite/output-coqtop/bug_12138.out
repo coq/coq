@@ -1,10 +1,10 @@
 
-Coq < Coq < Coq < Toplevel input, characters 0-1:
+Rocq < Rocq < Rocq < Toplevel input, characters 0-1:
 > {
 > ^
 Error: Syntax error: illegal begin of toplevel:vernac_toplevel.
 
-Coq < Coq < Coq < Toplevel input, characters 58-59:
+Rocq < Rocq < Rocq < Toplevel input, characters 58-59:
 > }
 > ^
 Error: Syntax error: illegal begin of toplevel:vernac_toplevel.

@@ -1,5 +1,5 @@
 
-Coq < 1 goal
+Rocq < 1 goal
   
   ============================
   forall i : nat, exists j k : nat, i = j /\ j = k /\ i = k
