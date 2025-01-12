@@ -104,7 +104,7 @@ let make_marshallable marsh_map summaries =
 
 let warn_summary_out_of_scope =
   CWarnings.create ~name:"summary-out-of-scope" ~default:Disabled Pp.(fun name ->
-      str "A Coq plugin was loaded inside a local scope (such as a Section)." ++ spc() ++
+      str "A Rocq plugin was loaded inside a local scope (such as a Section)." ++ spc() ++
       str "It is recommended to load plugins at the start of the file." ++ spc() ++
       str "Summary entry: " ++ str name)
 
