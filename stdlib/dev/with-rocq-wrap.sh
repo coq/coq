@@ -3,7 +3,10 @@
 set -ex
 
 rocq=$(command -v rocq)
-rocqhash=$(dune exec --root "$(dirname "$0")"/.. -- dev/tools/hash.exe "$rocq")
+# NB on cygwin "$rocq" is a cygwin path (/foo/bar)
+# but reading files from hash.exe needs windows paths (C:/cygwin/foo/bar)
+# we avoid the problem by going through stdin
+rocqhash=$(dune exec --root "$(dirname "$0")"/.. -- dev/tools/hash.exe < "$rocq")
 
 rm -rf .wrappers
 mkdir .wrappers
