@@ -559,6 +559,7 @@ let rec check_glob env sigma g c = match DAst.get g, Constr.kind c with
      sigma, mkApp (c, Array.of_list cl)
   | Glob_term.GInt i, Constr.Int i' when Uint63.equal i i' -> sigma, mkInt i
   | Glob_term.GFloat f, Constr.Float f' when Float64.equal f f' -> sigma, mkFloat f
+  | Glob_term.GString s, Constr.String s' when Pstring.equal s s' -> sigma, mkString s
   | Glob_term.GArray (_,t,def,ty), Constr.Array (_,t',def',ty') ->
      let sigma,u = Evd.fresh_array_instance env sigma in
      let sigma,def = check_glob env sigma def def' in
@@ -619,6 +620,7 @@ let rec constr_of_glob to_post post env sigma g = match DAst.get g with
       end
   | Glob_term.GInt i -> sigma, mkInt i
   | Glob_term.GFloat f -> sigma, mkFloat f
+  | Glob_term.GString s -> sigma, mkString s
   | Glob_term.GArray (_,t,def,ty) ->
       let sigma, u' = Evd.fresh_array_instance env sigma in
       let sigma, def' = constr_of_glob to_post post env sigma def in
@@ -647,6 +649,7 @@ let rec glob_of_constr token_kind ?loc env sigma c = match Constr.kind c with
   | Var id -> DAst.make ?loc (Glob_term.GRef (GlobRef.VarRef id, None))
   | Int i -> DAst.make ?loc (Glob_term.GInt i)
   | Float f -> DAst.make ?loc (Glob_term.GFloat f)
+  | String s -> DAst.make ?loc (Glob_term.GString s)
   | Array (u,t,def,ty) ->
       let def' = glob_of_constr token_kind ?loc env sigma def
       and t' = Array.map (glob_of_constr token_kind ?loc env sigma) t
