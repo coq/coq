@@ -93,8 +93,6 @@ module Coq_Pos :
 
   val mul : positive -> positive -> positive
 
-  val iter : ('a1 -> 'a1) -> 'a1 -> positive -> 'a1
-
   val size_nat : positive -> nat
 
   val compare_cont : comparison -> positive -> positive -> comparison
@@ -108,8 +106,6 @@ module Coq_Pos :
   val gcdn : nat -> positive -> positive -> positive
 
   val gcd : positive -> positive -> positive
-
-  val of_succ_nat : nat -> positive
  end
 
 module N :
@@ -585,7 +581,6 @@ type zArithProof =
 | RatProof of zWitness * zArithProof
 | CutProof of zWitness * zArithProof
 | SplitProof of z polC * zArithProof * zArithProof
-| EnumProof of zWitness * zWitness * zArithProof list
 | ExProof of positive * zArithProof
 
 val zgcdM : z -> z -> z
@@ -600,11 +595,7 @@ val genCuttingPlane : z nFormula -> ((z polC * z) * op1) option
 
 val nformula_of_cutting_plane : ((z polC * z) * op1) -> z nFormula
 
-val is_pol_Z0 : z polC -> bool
-
 val eval_Psatz0 : z nFormula list -> zWitness -> z nFormula option
-
-val valid_cut_sign : op1 -> bool
 
 val bound_var : positive -> z formula
 

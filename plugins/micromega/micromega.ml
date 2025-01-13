@@ -1,6 +1,3 @@
-(* *** DO NOT EDIT *** *)
-(* This file is extracted from test-suite/output/MExtraction.v in the stdlib *)
-(* *** DO NOT EDIT *** *)
 
 type __ = Obj.t
 
@@ -60,6 +57,12 @@ module Coq__1 = struct
 end
 include Coq__1
 
+(** val map : ('a1 -> 'a2) -> 'a1 list -> 'a2 list **)
+
+let rec map f = function
+| [] -> []
+| a::l0 -> (f a)::(map f l0)
+
 (** val nth : nat -> 'a1 list -> 'a1 -> 'a1 **)
 
 let rec nth n0 l default =
@@ -77,12 +80,6 @@ let rec rev_append l l' =
   match l with
   | [] -> l'
   | a::l0 -> rev_append l0 (a::l')
-
-(** val map : ('a1 -> 'a2) -> 'a1 list -> 'a2 list **)
-
-let rec map f = function
-| [] -> []
-| a::l0 -> (f a)::(map f l0)
 
 (** val fold_left : ('a1 -> 'a2 -> 'a1) -> 'a2 list -> 'a1 -> 'a1 **)
 
@@ -113,10 +110,121 @@ type z =
 
 module Pos =
  struct
+  (** val succ : positive -> positive **)
+
+  let rec succ = function
+  | XI p -> XO (succ p)
+  | XO p -> XI p
+  | XH -> XO XH
+
+  (** val add : positive -> positive -> positive **)
+
+  let rec add x y =
+    match x with
+    | XI p ->
+      (match y with
+       | XI q0 -> XO (add_carry p q0)
+       | XO q0 -> XI (add p q0)
+       | XH -> XO (succ p))
+    | XO p ->
+      (match y with
+       | XI q0 -> XI (add p q0)
+       | XO q0 -> XO (add p q0)
+       | XH -> XI p)
+    | XH -> (match y with
+             | XI q0 -> XO (succ q0)
+             | XO q0 -> XI q0
+             | XH -> XO XH)
+
+  (** val add_carry : positive -> positive -> positive **)
+
+  and add_carry x y =
+    match x with
+    | XI p ->
+      (match y with
+       | XI q0 -> XI (add_carry p q0)
+       | XO q0 -> XO (add_carry p q0)
+       | XH -> XI (succ p))
+    | XO p ->
+      (match y with
+       | XI q0 -> XO (add_carry p q0)
+       | XO q0 -> XI (add p q0)
+       | XH -> XO (succ p))
+    | XH ->
+      (match y with
+       | XI q0 -> XI (succ q0)
+       | XO q0 -> XO (succ q0)
+       | XH -> XI XH)
+
+  (** val pred_double : positive -> positive **)
+
+  let rec pred_double = function
+  | XI p -> XI (XO p)
+  | XO p -> XI (pred_double p)
+  | XH -> XH
+
   type mask =
   | IsNul
   | IsPos of positive
   | IsNeg
+
+  (** val mul : positive -> positive -> positive **)
+
+  let rec mul x y =
+    match x with
+    | XI p -> add y (XO (mul p y))
+    | XO p -> XO (mul p y)
+    | XH -> y
+
+  (** val iter : ('a1 -> 'a1) -> 'a1 -> positive -> 'a1 **)
+
+  let rec iter f x = function
+  | XI n' -> f (iter f (iter f x n') n')
+  | XO n' -> iter f (iter f x n') n'
+  | XH -> f x
+
+  (** val compare_cont : comparison -> positive -> positive -> comparison **)
+
+  let rec compare_cont r x y =
+    match x with
+    | XI p ->
+      (match y with
+       | XI q0 -> compare_cont r p q0
+       | XO q0 -> compare_cont Gt p q0
+       | XH -> Gt)
+    | XO p ->
+      (match y with
+       | XI q0 -> compare_cont Lt p q0
+       | XO q0 -> compare_cont r p q0
+       | XH -> Gt)
+    | XH -> (match y with
+             | XH -> r
+             | _ -> Lt)
+
+  (** val compare : positive -> positive -> comparison **)
+
+  let compare =
+    compare_cont Eq
+
+  (** val eqb : positive -> positive -> bool **)
+
+  let rec eqb p q0 =
+    match p with
+    | XI p2 -> (match q0 with
+                | XI q1 -> eqb p2 q1
+                | _ -> false)
+    | XO p2 -> (match q0 with
+                | XO q1 -> eqb p2 q1
+                | _ -> false)
+    | XH -> (match q0 with
+             | XH -> true
+             | _ -> false)
+
+  (** val of_succ_nat : nat -> positive **)
+
+  let rec of_succ_nat = function
+  | O -> XH
+  | S x -> succ (of_succ_nat x)
  end
 
 module Coq_Pos =
@@ -248,20 +356,6 @@ module Coq_Pos =
     | XO p -> XO (mul p y)
     | XH -> y
 
-  (** val iter : ('a1 -> 'a1) -> 'a1 -> positive -> 'a1 **)
-
-  let rec iter f x = function
-  | XI n' -> f (iter f (iter f x n') n')
-  | XO n' -> iter f (iter f x n') n'
-  | XH -> f x
-
-  (** val size_nat : positive -> nat **)
-
-  let rec size_nat = function
-  | XI p2 -> S (size_nat p2)
-  | XO p2 -> S (size_nat p2)
-  | XH -> S O
-
   (** val compare_cont : comparison -> positive -> positive -> comparison **)
 
   let rec compare_cont r x y =
@@ -285,33 +379,26 @@ module Coq_Pos =
   let compare =
     compare_cont Eq
 
-  (** val max : positive -> positive -> positive **)
-
-  let max p p' =
-    match compare p p' with
-    | Gt -> p
-    | _ -> p'
-
-  (** val eqb : positive -> positive -> bool **)
-
-  let rec eqb p q0 =
-    match p with
-    | XI p2 -> (match q0 with
-                | XI q1 -> eqb p2 q1
-                | _ -> false)
-    | XO p2 -> (match q0 with
-                | XO q1 -> eqb p2 q1
-                | _ -> false)
-    | XH -> (match q0 with
-             | XH -> true
-             | _ -> false)
-
   (** val leb : positive -> positive -> bool **)
 
   let leb x y =
     match compare x y with
     | Gt -> false
     | _ -> true
+
+  (** val size_nat : positive -> nat **)
+
+  let rec size_nat = function
+  | XI p2 -> S (size_nat p2)
+  | XO p2 -> S (size_nat p2)
+  | XH -> S O
+
+  (** val max : positive -> positive -> positive **)
+
+  let max p p' =
+    match compare p p' with
+    | Gt -> p
+    | _ -> p'
 
   (** val gcdn : nat -> positive -> positive -> positive **)
 
@@ -340,12 +427,6 @@ module Coq_Pos =
 
   let gcd a b =
     gcdn (Coq__1.add (size_nat a) (size_nat b)) a b
-
-  (** val of_succ_nat : nat -> positive **)
-
-  let rec of_succ_nat = function
-  | O -> XH
-  | S x -> succ (of_succ_nat x)
  end
 
 module N =
@@ -354,7 +435,7 @@ module N =
 
   let of_nat = function
   | O -> N0
-  | S n' -> Npos (Coq_Pos.of_succ_nat n')
+  | S n' -> Npos (Pos.of_succ_nat n')
  end
 
 (** val pow_pos : ('a1 -> 'a1 -> 'a1) -> 'a1 -> positive -> 'a1 **)
@@ -378,13 +459,13 @@ module Z =
   let succ_double = function
   | Z0 -> Zpos XH
   | Zpos p -> Zpos (XI p)
-  | Zneg p -> Zneg (Coq_Pos.pred_double p)
+  | Zneg p -> Zneg (Pos.pred_double p)
 
   (** val pred_double : z -> z **)
 
   let pred_double = function
   | Z0 -> Zneg XH
-  | Zpos p -> Zpos (Coq_Pos.pred_double p)
+  | Zpos p -> Zpos (Pos.pred_double p)
   | Zneg p -> Zneg (XI p)
 
   (** val pos_sub : positive -> positive -> z **)
@@ -400,11 +481,11 @@ module Z =
       (match y with
        | XI q0 -> pred_double (pos_sub p q0)
        | XO q0 -> double (pos_sub p q0)
-       | XH -> Zpos (Coq_Pos.pred_double p))
+       | XH -> Zpos (Pos.pred_double p))
     | XH ->
       (match y with
        | XI q0 -> Zneg (XO q0)
-       | XO q0 -> Zneg (Coq_Pos.pred_double q0)
+       | XO q0 -> Zneg (Pos.pred_double q0)
        | XH -> Z0)
 
   (** val add : z -> z -> z **)
@@ -415,13 +496,13 @@ module Z =
     | Zpos x' ->
       (match y with
        | Z0 -> x
-       | Zpos y' -> Zpos (Coq_Pos.add x' y')
+       | Zpos y' -> Zpos (Pos.add x' y')
        | Zneg y' -> pos_sub x' y')
     | Zneg x' ->
       (match y with
        | Z0 -> x
        | Zpos y' -> pos_sub y' x'
-       | Zneg y' -> Zneg (Coq_Pos.add x' y'))
+       | Zneg y' -> Zneg (Pos.add x' y'))
 
   (** val opp : z -> z **)
 
@@ -443,18 +524,18 @@ module Z =
     | Zpos x' ->
       (match y with
        | Z0 -> Z0
-       | Zpos y' -> Zpos (Coq_Pos.mul x' y')
-       | Zneg y' -> Zneg (Coq_Pos.mul x' y'))
+       | Zpos y' -> Zpos (Pos.mul x' y')
+       | Zneg y' -> Zneg (Pos.mul x' y'))
     | Zneg x' ->
       (match y with
        | Z0 -> Z0
-       | Zpos y' -> Zneg (Coq_Pos.mul x' y')
-       | Zneg y' -> Zpos (Coq_Pos.mul x' y'))
+       | Zpos y' -> Zneg (Pos.mul x' y')
+       | Zneg y' -> Zpos (Pos.mul x' y'))
 
   (** val pow_pos : z -> positive -> z **)
 
   let pow_pos z0 =
-    Coq_Pos.iter (mul z0) (Zpos XH)
+    Pos.iter (mul z0) (Zpos XH)
 
   (** val pow : z -> z -> z **)
 
@@ -472,11 +553,11 @@ module Z =
              | Zpos _ -> Lt
              | Zneg _ -> Gt)
     | Zpos x' -> (match y with
-                  | Zpos y' -> Coq_Pos.compare x' y'
+                  | Zpos y' -> Pos.compare x' y'
                   | _ -> Gt)
     | Zneg x' ->
       (match y with
-       | Zneg y' -> compOpp (Coq_Pos.compare x' y')
+       | Zneg y' -> compOpp (Pos.compare x' y')
        | _ -> Lt)
 
   (** val leb : z -> z -> bool **)
@@ -493,13 +574,6 @@ module Z =
     | Lt -> true
     | _ -> false
 
-  (** val gtb : z -> z -> bool **)
-
-  let gtb x y =
-    match compare x y with
-    | Gt -> true
-    | _ -> false
-
   (** val eqb : z -> z -> bool **)
 
   let eqb x y =
@@ -508,10 +582,10 @@ module Z =
              | Z0 -> true
              | _ -> false)
     | Zpos p -> (match y with
-                 | Zpos q0 -> Coq_Pos.eqb p q0
+                 | Zpos q0 -> Pos.eqb p q0
                  | _ -> false)
     | Zneg p -> (match y with
-                 | Zneg q0 -> Coq_Pos.eqb p q0
+                 | Zneg q0 -> Pos.eqb p q0
                  | _ -> false)
 
   (** val max : z -> z -> z **)
@@ -521,23 +595,11 @@ module Z =
     | Lt -> m
     | _ -> n0
 
-  (** val abs : z -> z **)
-
-  let abs = function
-  | Zneg p -> Zpos p
-  | x -> x
-
-  (** val to_N : z -> n **)
-
-  let to_N = function
-  | Zpos p -> Npos p
-  | _ -> N0
-
   (** val of_nat : nat -> z **)
 
   let of_nat = function
   | O -> Z0
-  | S n1 -> Zpos (Coq_Pos.of_succ_nat n1)
+  | S n1 -> Zpos (Pos.of_succ_nat n1)
 
   (** val of_N : n -> z **)
 
@@ -591,6 +653,25 @@ module Z =
 
   let div a b =
     let q0,_ = div_eucl a b in q0
+
+  (** val gtb : z -> z -> bool **)
+
+  let gtb x y =
+    match compare x y with
+    | Gt -> true
+    | _ -> false
+
+  (** val abs : z -> z **)
+
+  let abs = function
+  | Zneg p -> Zpos p
+  | x -> x
+
+  (** val to_N : z -> n **)
+
+  let to_N = function
+  | Zpos p -> Npos p
+  | _ -> N0
 
   (** val gcd : z -> z -> z **)
 
@@ -2280,7 +2361,6 @@ type zArithProof =
 | RatProof of zWitness * zArithProof
 | CutProof of zWitness * zArithProof
 | SplitProof of z polC * zArithProof * zArithProof
-| EnumProof of zWitness * zWitness * zArithProof list
 | ExProof of positive * zArithProof
 
 (** val zgcdM : z -> z -> z **)
@@ -2333,25 +2413,10 @@ let genCuttingPlane = function
 let nformula_of_cutting_plane = function
 | e_z,o -> let e,z0 = e_z in (padd1 e (Pc z0)),o
 
-(** val is_pol_Z0 : z polC -> bool **)
-
-let is_pol_Z0 = function
-| Pc z0 -> (match z0 with
-            | Z0 -> true
-            | _ -> false)
-| _ -> false
-
 (** val eval_Psatz0 : z nFormula list -> zWitness -> z nFormula option **)
 
 let eval_Psatz0 =
   eval_Psatz Z0 (Zpos XH) Z.add Z.mul Z.eqb Z.leb
-
-(** val valid_cut_sign : op1 -> bool **)
-
-let valid_cut_sign = function
-| Equal -> true
-| NonStrict -> true
-| _ -> false
 
 (** val bound_var : positive -> z formula **)
 
@@ -2398,33 +2463,6 @@ let rec zChecker l = function
       | Some cp2 ->
         (&&) (zChecker ((nformula_of_cutting_plane cp1)::l) pf1)
           (zChecker ((nformula_of_cutting_plane cp2)::l) pf2)
-      | None -> false)
-   | None -> false)
-| EnumProof (w1, w2, pf0) ->
-  (match eval_Psatz0 l w1 with
-   | Some f1 ->
-     (match eval_Psatz0 l w2 with
-      | Some f2 ->
-        (match genCuttingPlane f1 with
-         | Some p ->
-           let p2,op3 = p in
-           let e1,z1 = p2 in
-           (match genCuttingPlane f2 with
-            | Some p3 ->
-              let p4,op4 = p3 in
-              let e2,z2 = p4 in
-              if (&&) ((&&) (valid_cut_sign op3) (valid_cut_sign op4))
-                   (is_pol_Z0 (padd1 e1 e2))
-              then let rec label pfs lb ub =
-                     match pfs with
-                     | [] -> Z.gtb lb ub
-                     | pf1::rsr ->
-                       (&&) (zChecker (((psub1 e1 (Pc lb)),Equal)::l) pf1)
-                         (label rsr (Z.add lb (Zpos XH)) ub)
-                   in label pf0 (Z.opp z1) z2
-              else false
-            | None -> true)
-         | None -> true)
       | None -> false)
    | None -> false)
 | ExProof (x, prf) ->

@@ -233,7 +233,6 @@ module ProofFormat : sig
     | Done
     | Step of int * prf_rule * proof
     | Split of int * Vect.t * proof * proof
-    | Enum of int * prf_rule * Vect.t * prf_rule * proof list
     | ExProof of int * int * int * var * var * var * proof
 
   (* x = z - t, z >= 0, t >= 0 *)
