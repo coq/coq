@@ -125,17 +125,13 @@
 ########## Standard library and plugins ##########
 
 /theories/         @coq/stdlib-maintainers
-/stdlib/           @coq/stdlib-maintainers
 
 /theories/Classes/        @coq/typeclasses-maintainers
-/stdlib/theories/Classes/ @coq/typeclasses-maintainers
 
-/stdlib/theories/Reals/   @coq/reals-library-maintainers
 
 /theories/Compat/  @coq/compat-maintainers
 
 /plugins/btauto/          @coq/btauto-maintainers
-/stdlib/theories/btauto/  @coq/btauto-maintainers
 
 /plugins/cc/           @coq/cc-maintainers
 
@@ -144,25 +140,18 @@
 
 /plugins/extraction/         @coq/extraction-maintainers
 /theories/extraction/        @coq/extraction-maintainers
-/stdlib/theories/extraction/ @coq/extraction-maintainers
 
 /plugins/firstorder/          @coq/firstorder-maintainers
-/stdlib/theories/firstorder/  @coq/firstorder-maintainers
 
 /plugins/funind/       @coq/funind-maintainers
-/stdlib/theories/funind/      @coq/funind-maintainers
 
 /plugins/ltac/         @coq/ltac-maintainers
 
 /plugins/micromega/    @coq/micromega-maintainers
-/stdlib/theories/micromega/   @coq/micromega-maintainers
-/stdlib/test-suite/micromega/ @coq/micromega-maintainers
 
 /plugins/nsatz/        @coq/nsatz-maintainers
-/stdlib/theories/nsatz/       @coq/nsatz-maintainers
 
 /plugins/ring/  @coq/ring-maintainers
-/stdlib/theories/setoid_ring/ @coq/ring-maintainers
 
 /plugins/ssrmatching/  @coq/ssreflect-maintainers
 /theories/ssrmatching/ @coq/ssreflect-maintainers
@@ -175,7 +164,6 @@
 /plugins/syntax/       @coq/parsing-maintainers
 
 /plugins/rtauto/       @coq/rtauto-maintainers
-/stdlib/theories/rtauto/      @coq/rtauto-maintainers
 
 /plugins/ltac2/        @coq/ltac2-maintainers
 /user-contrib/Ltac2    @coq/ltac2-maintainers
@@ -218,7 +206,6 @@
 /plugins/syntax/number.ml            @coq/number-maintainers
 /plugins/syntax/number_string_notation_plugin.mllib  @coq/number-maintainers
 /user-contrib/Ltac2/Int.v            @coq/number-maintainers
-/test-suite/output/FloatExtraction*  @coq/number-maintainers
 /test-suite/output/*Number*          @coq/number-maintainers
 /test-suite/primitive/float/         @coq/number-maintainers
 /test-suite/primitive/sint63/        @coq/number-maintainers
@@ -227,13 +214,8 @@
 /theories/Init/Hexadecimal.v         @coq/number-maintainers
 /theories/Init/Nat.v                 @coq/number-maintainers
 /theories/Init/Number.v              @coq/number-maintainers
-/theories/*Arith/                    @coq/number-maintainers
 /theories/Numbers/                   @coq/number-maintainers
 /theories/Floats/                    @coq/number-maintainers
-/theories/extraction/Extr*Nat*       @coq/number-maintainers
-/theories/extraction/Extr*Z*         @coq/number-maintainers
-/theories/extraction/ExtrOCamlFloats.v  @coq/number-maintainers
-/theories/extraction/ExtrOCamlInt*   @coq/number-maintainers
 
 ########## Tools ##########
 
