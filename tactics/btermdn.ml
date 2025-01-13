@@ -77,17 +77,23 @@ let evaluable_named id env ts =
   (match ts with None -> true | Some ts -> TransparentState.is_transparent_variable ts id)
 
 let evaluable_projection p _env ts =
-  (match ts with None -> true | Some ts -> TransparentState.is_transparent_projection ts (Projection.repr p))
+  (match ts with None -> true | Some ts -> TransparentState.is_transparent_projection ts p)
 
-let label_of_opaque_constant c stack =
+let decomp_constant (c : Names.Constant.t) (args : 'a list) :
+  (Names.Projection.Repr.t * int) option * 'a list =
   match Structures.PrimitiveProjections.find_opt c with
-  | None -> (GRLabel (ConstRef c), stack)
+  | None -> (None, args)
   | Some p ->
     let n_args_needed = Structures.Structure.projection_nparams c + 1 in (* +1 for the record value itself *)
-    let n_args_given = List.length stack in
+    let n_args_given = List.length args in
     let n_args_missing = max (n_args_needed - n_args_given) 0 in
     let n_args_drop = min (n_args_needed - 1) n_args_given in (* we do not drop the record value from the stack *)
-    (ProjLabel (p, n_args_missing), List.skipn n_args_drop stack)
+    (Some (p, n_args_missing), List.skipn n_args_drop args)
+
+let label_of_opaque_constant c stack =
+  match decomp_constant c stack with
+  | (None, stack) -> (GRLabel (ConstRef c), stack)
+  | (Some (p, i), stack) -> (ProjLabel (p,i), stack)
 
 type constr_res = (term_label * partial_constr list) lookup_res
 and partial_constr =
@@ -113,49 +119,75 @@ let rec pr_constr_res pr_constr (cr : constr_res) =
   in
   pr_lookup_res aux cr
 
-let decomp_lambda_constr sigma decomp : EConstr.t list -> EConstr.t -> constr_res =
-  let res ty ds p =
-    let acc = Label (LamLabel, [Constr ty; Constr p]) in
-    let fn acc ty = (Label (LamLabel, [Constr ty; PartialConstr acc])) in
-    let res = List.fold_left fn acc ds in
-    res
+let decomp_lambda_constr env sigma ts decomp : EConstr.t -> EConstr.t -> constr_res =
+  let res ds p =
+    match ds with
+    | [] -> assert false
+    | ty :: ds ->
+      let acc = Label (LamLabel, [Constr ty; p]) in
+      let fn acc ty = (Label (LamLabel, [Constr ty; PartialConstr acc])) in
+      let res = List.fold_left fn acc ds in
+      res
   in
-  let rec go ds p  : constr_res =
-    match EConstr.kind sigma p with
-    | Lambda (_, ty, c) ->
+  let rec decomp_app c stack =
+    let k = EConstr.kind sigma c in
+    match k with
+    | App (f, args) -> decomp_app f (Array.to_list args @ stack)
+    | Const (c, _) -> (k, decomp_constant c stack)
+    | Proj (p, b, c) -> (k, (Some (Projection.repr p, 0), c :: stack))
+    | _ -> (k, (None, stack))
+  in
+  let rec go numds ds p  : constr_res =
+    match decomp_app p [] with
+    | (Lambda (_, ty, c), (None, [])) ->
       let ds = ty :: ds in
-      go ds c
-    | App (f, args) ->
-      let numd = List.length ds in
-      let nargs = Array.length args in
-      assert (numd > 0);
-      let n = min numd nargs in
-      (* Feedback.msg_debug Pp.(str "numd: " ++ int numd ++ str ", nargs: " ++ int nargs ++ str ", n: " ++ int n); *)
-      let ds = List.skipn n ds in
-      let (args, _) = Array.chop (nargs - n) args in
-      (* Feedback.msg_debug Pp.(str "constr before: " ++ Printer.pr_econstr_env (Global.env()) sigma p); *)
-      let p = EConstr.mkApp (f, args) in
-      let p = EConstr.Vars.lift (-n) p in
-      (* Feedback.msg_debug Pp.(str "constr after : " ++ Printer.pr_econstr_env (Global.env()) sigma p); *)
+      go (numds + 1) ds c
+    | (_, (None, [])) ->        (* this is neither a lambda nor an application *)
       begin
-        match decomp [] p, ds with
-        | _ as c, [] ->
-          c (* no more remaining lambdas  *)
-        | Label _, ty :: ds ->
-          res ty ds p
-        | Nothing, _ | Everything, _ -> Everything
-      end
-    | _ ->
-      begin
-        match decomp [] p, ds with
-        | _, [] -> assert false
-        | Label _, ty :: ds ->
+        match decomp [] p with
+        | _ when ds = [] -> assert false
+        | Label _ ->
           (* there are left-over lambdas and the body is discriminating *)
-          res ty ds p
-        | Nothing, _ | Everything, _ -> Everything
+          res ds (Constr p)
+        | Nothing | Everything -> Everything
+      end
+    | (_ as f, (None, args)) -> (* this is an application whose head [f] is not a projection *)
+      debug Pp.(fun () -> str "decomp_lambda_constr: not a projection");
+      let nargs = List.length args in
+      let n = min numds nargs in
+      let ds = List.skipn n ds in
+      let args = List.firstn (nargs - n) args in
+      let p = EConstr.mkApp (EConstr.of_kind f, Array.of_list args) in
+      let p = EConstr.Vars.lift (-n) p in
+      begin
+        match decomp [] p with
+        | _ as c when ds = [] ->
+          c (* no more remaining lambdas  *)
+        | Label _ -> res ds (Constr p)
+        | Nothing | Everything -> Everything
+      end
+    | (_, (Some (p, _), _)) when evaluable_projection p env ts ->
+      debug Pp.(fun () -> str "decomp_lambda_constr: transparent proj");
+      Everything
+    | (_, (Some (p, args_missing), args)) ->
+      debug Pp.(fun () -> str "decomp_lambda_constr: opaque proj");
+      (* We have [num_params + |args| - args_missing] virtual arguments left. *)
+      let params = Structures.Structure.projection_nparams (Projection.Repr.constant p) in
+      let nargs = List.length args in
+      let total_nargs = params + nargs - args_missing in
+      let n = min numds total_nargs in
+      let ds = List.skipn n ds in
+      let args = List.firstn (nargs -n ) args in
+      let args = List.map (fun c -> Constr c) args in
+      let args_missing = args_missing + (max 0 (n - nargs)) in
+      let p = Label (ProjLabel (p, args_missing), args) in
+      begin
+        match ds with
+        | [] -> p
+        | _ -> res ds (PartialConstr p)
       end
   in
-  go
+  fun ty -> go 1 [ty]
 
 (* The pattern view functions below try to overapproximate βι-neutral terms up
    to η-conversion. Some historical design choices are still incorrect w.r.t. to
@@ -167,7 +199,7 @@ let constr_val_discr env sigma ts t : constr_res =
     debug Pp.(fun () -> str "constr_val_discr.decomp input: " ++ Printer.pr_leconstr_env env Evd.empty t);
     let out = match EConstr.kind sigma t with
     | App (f,l) -> decomp (Array.fold_right (fun a l -> Constr a :: l) l stack) f
-    | Proj (p,_,c) when evaluable_projection p env ts -> Everything
+    | Proj (p,_,c) when evaluable_projection (Projection.repr p) env ts -> Everything
     | Proj (p,_,c) ->
       let p = Environ.QProjection.canonize env p in
       Label(ProjLabel (Projection.repr p, 0), Constr c :: stack)
@@ -186,7 +218,7 @@ let constr_val_discr env sigma ts t : constr_res =
     | Var id -> Label(GRLabel (VarRef id), stack)
     | Prod (n,d,c) -> Label(ProdLabel, [Constr d; Constr c])
     | Lambda (_,d,c) when List.is_empty stack ->
-      decomp_lambda_constr sigma decomp [d] c
+      decomp_lambda_constr env sigma ts decomp d c
     | Lambda _ -> Everything
     | Sort _ -> Label(SortLabel, [])
     | Evar _ -> Everything
@@ -235,50 +267,76 @@ let rec pr_pat_res pr_pat (cr : pat_res) =
   | Some x -> str "Some(" ++ hv 2 (aux x) ++ str ")"
   | None -> str "None"
 
-let decomp_lambda_pat decomp : constr_pattern list -> constr_pattern -> pat_res =
-  let res ty ds p =
-    let acc = Some (LamLabel, [Pattern ty; Pattern p]) in
-    let fn acc ty = Some (LamLabel, [Pattern ty; PartialPat acc]) in
-    let res = List.fold_left fn acc ds in
-    res
+let decomp_lambda_pat env ts decomp : constr_pattern -> constr_pattern -> pat_res =
+  let res ds p =
+    match ds with
+    | [] -> assert false
+    | ty :: ds ->
+      let acc = Some (LamLabel, [Pattern ty; p]) in
+      let fn acc ty = Some (LamLabel, [Pattern ty; PartialPat acc]) in
+      let res = List.fold_left fn acc ds in
+      res
   in
-  let rec go ds p =
+  let rec decomp_app p stack =
     match p with
-    | PLambda (_, ty, c) ->
+    | PApp (f, args) -> decomp_app f (Array.to_list args @ stack)
+    | PRef (ConstRef c) -> (p, decomp_constant c stack)
+    | PProj (pr, c) -> (p, (Some (Projection.repr pr, 0), c :: stack))
+    | _ -> (p, (None, stack))
+  in
+  let rec go numds ds p  : pat_res =
+    match decomp_app p [] with
+    | (PLambda (_, ty, c), (None, [])) ->
       let ds = ty :: ds in
-      go ds c
-    | PApp (f, args) ->
-      let numd = List.length ds in
-      let nargs = Array.length args in
-      assert (numd > 0);
-      let n = min numd nargs in
-      (* Feedback.msg_debug Pp.(str "numd: " ++ int numd ++ str ", nargs: " ++ int nargs ++ str ", n: " ++ int n); *)
-      let ds = List.skipn n ds in
-      let (args, _) = Array.chop (nargs - n) args in
-      (* Feedback.msg_debug Pp.(str "pattern before:" ++ Printer.pr_constr_pattern_env (Global.env()) (Evd.empty) p); *)
-      let p = PApp (f, args) in
-      let p = Patternops.lift_pattern (-n) p in
-      (* Feedback.msg_debug Pp.(str "pattern after :" ++ Printer.pr_constr_pattern_env (Global.env()) (Evd.empty) p); *)
+      go (numds + 1) ds c
+    | (_, (None, [])) ->        (* this is neither a lambda nor an application *)
       begin
-        match decomp [] p, ds with
-        | _ as c, [] ->
-          c (* no more remaining lambdas  *)
-        | Some _, ty :: ds ->
+        match decomp [] p with
+        | _ when ds = [] -> assert false
+        | Some _ ->
           (* there are left-over lambdas and the body is discriminating *)
-          res ty ds p
-        | None, _ -> None
+          res ds (Pattern p)
+        | None -> None
       end
-    | _ ->
+    | (_ as f, (None, args)) -> (* this is an application whose head [f] is not a projection *)
+      debug Pp.(fun () -> str "decomp_lambda_pat: not a projection");
+      let nargs = List.length args in
+      let n = min numds nargs in
+      let ds = List.skipn n ds in
+      let args = List.firstn (nargs - n) args in
+      let p = PApp (f, Array.of_list args) in
+      let p = Patternops.lift_pattern (-n) p in
       begin
-        match decomp [] p, ds with
-        | _, [] -> assert false
-        | Some _, ty :: ds ->
+        match decomp [] p with
+        | _ as c when ds = [] ->
+          c (* no more remaining lambdas  *)
+        | Some _ ->
           (* there are left-over lambdas and the body is discriminating *)
-          res ty ds p
-        | None, _ -> None
+          res ds (Pattern p)
+        | None -> None
+      end
+    | (_, (Some (p, _), _)) when evaluable_projection p env ts ->
+      debug Pp.(fun () -> str "decomp_lambda_pat: transparent proj");
+      None
+    | (_, (Some (p, args_missing), args)) ->
+      debug Pp.(fun () -> str "decomp_lambda_pat: opaque proj");
+      (* We have [num_params + |args| - args_missing] virtual arguments left. *)
+      let params = Structures.Structure.projection_nparams (Projection.Repr.constant p) in
+      let nargs = List.length args in
+      let total_nargs = params + nargs - args_missing in
+      let n = min numds total_nargs in
+      let ds = List.skipn n ds in
+      let args = List.firstn (nargs -n ) args in
+      let args = List.map (fun c -> Pattern c) args in
+      let args_missing = args_missing + (max 0 (n - nargs)) in
+      let p = (Some (ProjLabel (p, args_missing), args)) in
+      begin
+        match ds with
+        | [] -> p
+        | _ -> res ds (PartialPat p)
       end
   in
-  go
+  fun ty -> go 1 [ty]
 
 
 let constr_pat_discr env ts p : pat_res =
@@ -287,7 +345,7 @@ let constr_pat_discr env ts p : pat_res =
     debug Pp.(fun () -> str "constr_pat_discr.decomp input: " ++ Printer.pr_lconstr_pattern_env env Evd.empty p);
     let out = match p with
     | PApp (f,args) -> decomp ((Array.map_to_list (fun p -> Pattern p) args) @ stack) f
-    | PProj (p,c) when evaluable_projection p env ts -> None
+    | PProj (p,c) when evaluable_projection (Projection.repr p) env ts -> None
     | PProj (p,c) ->
       let p = Environ.QProjection.canonize env p in
       Some (ProjLabel (Projection.repr p, 0), Pattern c :: stack)
@@ -305,7 +363,7 @@ let constr_pat_discr env ts p : pat_res =
     | PVar v -> Some (GRLabel (VarRef v), stack)
     | PProd (_,d,c) when stack = [] -> Some (ProdLabel, [Pattern d ; Pattern c])
     | PLambda (_,d,c) when List.is_empty stack ->
-      decomp_lambda_pat decomp [d] c
+      decomp_lambda_pat env ts decomp d c
     | PSort s when stack = [] -> Some (SortLabel, [])
     | PCase(_,_,p,_) | PIf(p,_,_) ->
       begin
@@ -346,7 +404,7 @@ let constr_pat_discr_syntactic env p =
     | PVar v -> Some (GRLabel (VarRef v), stack)
     | PProd (_,d,c) when stack = [] -> Some (ProdLabel, [Pattern d ; Pattern c])
     | PLambda (_,d,c) when List.is_empty stack ->
-      decomp_lambda_pat decomp [d] c
+      decomp_lambda_pat env (Some TransparentState.full) decomp d c
     | PSort s when stack = [] -> Some (SortLabel, [])
     | PCase(_,_,p,_) | PIf(p,_,_) -> Some (CaseLabel, Pattern p :: stack)
     | _ -> None

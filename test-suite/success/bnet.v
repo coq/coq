@@ -21,7 +21,7 @@ Module M1.
   Definition f1 (_ : unit) := tt.
   Hint Opaque f1 : test.
 
-  Instance C1 : C (fun x => f1 x) := MKC _ _.
+  Definition C1 : C (fun x => f1 x) := MKC _ _.
   Hint Resolve C1 : test.
 
   Goal C (fun x => f1 x).
@@ -54,7 +54,7 @@ Module M2.
   Definition f2 (_ _ : unit) := tt.
   Hint Opaque f2 : test.
 
-  Instance C2 : C (fun x y : unit => f2 x y) := MKC _ _.
+  Definition C2 : C (fun x y : unit => f2 x y) := MKC _ _.
   Hint Resolve C2 : test.
 
   Goal C (fun x y : unit => f2 x y).
@@ -75,7 +75,7 @@ Module M2.
     typeclasses eauto with test.
   Abort.
 
-  Instance C2f : C (fun z x y : unit => f2 x y) := MKC _ _.
+  Definition C2f : C (fun z x y : unit => f2 x y) := MKC _ _.
   Hint Resolve C2f : test.
 
   Goal C (fun z : unit => f2).
@@ -88,7 +88,7 @@ End M2.
 
 Module const.
   Inductive option (X : Type) := None | Some (x : X).
-  Instance C_constant {X Y} (c : Y) : C (fun _ : X => c) := MKC _ _.
+  Definition C_constant {X Y} (c : Y) : C (fun _ : X => c) := MKC _ _.
   Hint Resolve C_constant : test.
 
   Goal C (fun _ : nat => @None unit).
@@ -99,13 +99,71 @@ Module const.
 
 End const.
 
+Module PrimProj.
+  #[projections(primitive)]
+  Record r (dummy : unit) := v { f : unit }.
+  Hint Opaque f : test.
+
+  (* Proj hint, Proj goal *)
+  Module M1.
+    Definition C_pproj dummy : C (fun r : r dummy => r.(f _)) := MKC _ _.
+    Hint Resolve C_pproj : test.
+
+    Goal forall dummy, C (fun r : r dummy => r.(f _)).
+    Proof.
+      intros dummy.
+      Print HintDb test.
+      typeclasses eauto with test.
+    Qed.
+  End M1.
+
+  (* Proj hint, Compat constant goal *)
+  Module M2.
+    Definition C_pproj (dummy : unit) : C (fun r => f dummy r) := MKC _ _.
+    Hint Resolve C_pproj : test.
+
+    Goal forall dummy, C (fun r : r dummy => ltac:(exact (f dummy)) r).
+    Proof.
+      intros dummy.
+      Print HintDb test.
+      typeclasses eauto with test.
+    Qed.
+  End M2.
+
+  (* Compat constant hint, Proj goal *)
+  Module M3.
+    Definition C_pproj (dummy : unit) : C (fun r => ltac:(exact (f dummy)) r) := MKC _ _.
+    Hint Resolve C_pproj : test.
+
+    Goal forall dummy, C (fun r : r dummy => r.(f _ )).
+    Proof.
+      intros dummy.
+      Print HintDb test.
+      typeclasses eauto with test.
+    Qed.
+  End M3.
+
+  (* Compat constant hint, compat constant goal *)
+  Module M4.
+    Definition C_pproj (dummy : unit) : C (fun r => ltac:(exact (f dummy)) r) := MKC _ _.
+    Hint Resolve C_pproj : test.
+
+    Goal forall dummy, C (fun r => ltac:(exact (f dummy)) r).
+    Proof.
+      intros dummy.
+      Print HintDb test.
+      typeclasses eauto with test.
+    Qed.
+  End M4.
+End PrimProj.
+
 Module Negative.
   (* To test the discriminating power of the bnet we construct a hint that
      always succeeds. Then, we manually restrict it to interesting patterns and
      ensure that the application is never attempted by asserting that the
      overall search fails. *)
 
-  Instance CA {X} x : @C X x := MKC _ _.
+  Definition CA {X} x : @C X x := MKC _ _.
 
 
   Definition f (_ _ : unit) := tt.
