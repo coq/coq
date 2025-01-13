@@ -1,24 +1,24 @@
 Installing From Sources
 =======================
 
-To install and use Coq, we recommend relying on [the Coq
+To install and use Rocq, we recommend relying on [the Rocq
 platform](https://github.com/coq/platform/) or on a package manager
 (e.g. opam or Nix).
 
 See https://coq.inria.fr/download and
 https://github.com/coq/coq/wiki#coq-installation to learn more.
 
-If you need to build Coq from sources manually (e.g. to
-contribute to Coq or to write a Coq package), the remainder of this
+If you need to build Rocq from sources manually (e.g. to
+contribute to Rocq or to write a Rocq package), the remainder of this
 file explains how to do so.
 
 Build Requirements
 ------------------
 
-To compile Coq yourself, you need:
+To compile Rocq yourself, you need:
 
 - [OCaml](https://ocaml.org/) (version >= 4.09.0)
-  (This version of Coq has been tested up to OCaml 4.14.1, for the 4.x series)
+  (This version of Rocq has been tested up to OCaml 4.14.1, for the 4.x series)
 
   Support for OCaml 5.x remains experimental.
 
@@ -52,7 +52,7 @@ would enable proving `False` on this architecture.
 
 Note that OCaml dependencies (`zarith` and `lablgtk3-sourceview3` at
 this moment) must be properly registered with `findlib/ocamlfind`
-since Coq's build system uses `findlib` to locate them.
+since Rocq's build system uses `findlib` to locate them.
 
 Debian / Ubuntu users can get the necessary system packages for
 CoqIDE with:
@@ -62,11 +62,11 @@ CoqIDE with:
 Opam (https://opam.ocaml.org/) is recommended to install OCaml and
 the corresponding packages.
 
-    $ opam switch create coq --packages="ocaml-variants.4.14.1+options,ocaml-option-flambda"
+    $ opam switch create rocq --packages="ocaml-variants.4.14.1+options,ocaml-option-flambda"
     $ eval $(opam env)
     $ opam install dune ocamlfind zarith lablgtk3-sourceview3
 
-should get you a reasonable OCaml environment to compile Coq. See the
+should get you a reasonable OCaml environment to compile Rocq. See the
 OPAM documentation for more help.
 
 Nix users can also get all the required dependencies by running:
@@ -82,12 +82,12 @@ run-time dependencies if you wish to use the native compiler.
 Build and install procedure
 ---------------------------
 
-Note that Coq supports a faster, but less optimized developer build,
+Note that Rocq supports a faster, but less optimized developer build,
 but final users must always use the release build. See
 [dev/doc/build-system.dune.md](dev/doc/build-system.dune.md)
 for more details.
 
-To build and install Coq (and CoqIDE if desired) do:
+To build and install Rocq (and CoqIDE if desired) do:
 
     $ ./configure -prefix <install_prefix> $options
     $ make dunestrap
@@ -97,7 +97,7 @@ To build and install Coq (and CoqIDE if desired) do:
 You can drop the `coqide` packages if not needed.
 
 Packagers may want to play with `dune install` options as to tweak
-installation path, the `-prefix` argument in `./configure` tells Coq
+installation path, the `-prefix` argument in `./configure` tells Rocq
 where to find its standard library, but doesn't control any other
 installation path these days.
 
@@ -106,18 +106,18 @@ OCaml toolchain advisory
 
 When loading plugins or `vo` files, you should make sure that these
 were compiled with the same OCaml setup (version, flags,
-dependencies...) as Coq.  Distribution of pre-compiled plugins and
+dependencies...) as Rocq.  Distribution of pre-compiled plugins and
 `.vo` files is only possible if users are guaranteed to have the same
-Coq version compiled with the same OCaml toolchain.  An OCaml setup
+Rocq version compiled with the same OCaml toolchain.  An OCaml setup
 mismatch is the most probable cause for an `Error while loading ...:
 implementation mismatch on ...`.
 
 coq_environment.txt
 -------------------
-Coq binaries which honor environment variables, such as `ROCQLIB`, can
+Rocq binaries which honor environment variables, such as `ROCQLIB`, can
 be seeded values for these variables by placing a text file named
 `coq_environment.txt` next to them. The file can contain assignments
 like `ROCQLIB="some path"`, that is a variable name followed by `=` and
 a string that follows OCaml's escaping conventions. This feature can be
-used by installers of binary package to make Coq aware of its installation
+used by installers of binary package to make Rocq aware of its installation
 path.
