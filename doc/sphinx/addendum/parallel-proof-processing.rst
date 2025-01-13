@@ -7,7 +7,7 @@ Asynchronous and Parallel Proof Processing
 
 This chapter explains how proofs can be asynchronously processed by
 Rocq. This feature improves the reactivity of the system when used in
-interactive mode via CoqIDE. In addition, it allows Rocq to take
+interactive mode via RocqIDE. In addition, it allows Rocq to take
 advantage of parallel hardware when used as a batch compiler by
 decoupling the checking of statements and definitions from the
 construction and checking of proofs objects.
@@ -26,7 +26,7 @@ category are universe inconsistencies.
 At the time of writing, only opaque proofs (ending with :cmd:`Qed` or
 :cmd:`Admitted`) can be processed asynchronously.
 
-Finally, asynchronous processing is disabled when running CoqIDE in
+Finally, asynchronous processing is disabled when running RocqIDE in
 Windows. The current implementation of the feature is not stable on
 Windows. It can be enabled, as described below at :ref:`interactive-mode`,
 though doing so is not recommended.
@@ -121,13 +121,13 @@ Caveats
 When a command fails the subsequent error messages may be
 bogus, i.e. caused by the first error. Error resilience for
 commands can be switched off by passing ``-async-proofs-command-error-resilience off``
-to CoqIDE.
+to RocqIDE.
 
 An incorrect proof block detection can result into an incorrect error
 recovery and hence in bogus errors. Proof block detection cannot be
 precise for bullets or any other non-well parenthesized proof
 structure. Error resilience can be turned off or selectively activated
-for any set of block kind passing to CoqIDE one of the following
+for any set of block kind passing to RocqIDE one of the following
 options:
 
 - ``-async-proofs-tactic-error-resilience off``
@@ -143,13 +143,13 @@ Interactive mode
 
 .. todo: How about PG and coqtail?
 
-CoqIDE and VsCoq support asynchronous proof processing.
+RocqIDE and VsCoq support asynchronous proof processing.
 
-When CoqIDE is started and async mode is enabled, two or more Rocq processes
+When RocqIDE is started and async mode is enabled, two or more Rocq processes
 are created. The master one
 follows the user, giving feedback as soon as possible by skipping
 proofs, which are delegated to the worker processes. The worker processes
-asynchronously processes the proofs.  The *Jobs panel* in the main CoqIDE
+asynchronously processes the proofs.  The *Jobs panel* in the main RocqIDE
 window shows the status of each worker process.
 If a proof contains an error, it's reported in red in the label of
 the very same button, that can also be used to see the list of errors
@@ -180,20 +180,20 @@ all the shells from which Rocq processes will be started.  If one uses just
 one terminal running the bash shell, then `export $(rocq workmgr -j 4)` will
 do the job.
 
-After that, all Coq processes, e.g. `coqide` and `rocq compile`,
+After that, all Coq processes, e.g. `rocqide` and `rocq compile`,
 will honor the limit, globally.
 
 Caveats
 ```````
 
-The number of worker processes can be increased by passing CoqIDE
+The number of worker processes can be increased by passing RocqIDE
 the ``-async-proofs-j n`` flag. Note that the memory consumption increases too,
 since each worker requires the same amount of memory as the master
 process. Also note that increasing the number of workers may reduce
 the reactivity of the master process to user commands.
 
 To disable this feature, one can pass the ``-async-proofs off`` flag to
-CoqIDE. Conversely, on Windows, where the feature is disabled by
+RocqIDE. Conversely, on Windows, where the feature is disabled by
 default, pass the ``-async-proofs on`` flag to enable it.
 
 Proofs that are known to take little time to process are not delegated

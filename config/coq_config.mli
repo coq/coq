@@ -28,7 +28,7 @@ val ocamlfind : string
 (* used in envars for coq_makefile *)
 val caml_flags : string     (* arguments passed to ocamlc (ie. CAMLFLAGS) *)
 
-(* Used in coqide *)
+(* Used in rocqide *)
 val arch : string       (* architecture *)
 
 (* dubious use in envars, use in coqmakefile *)
@@ -45,7 +45,7 @@ val all_src_dirs : string list
 (* Used in micromega *)
 val exec_extension : string (* "" under Unix, ".exe" under MS-windows *)
 
-(* Used in coqide *)
+(* Used in rocqide *)
 val browser : string
 (** default web browser to use, may be overridden by environment
     variable COQREMOTEBROWSER *)
@@ -57,7 +57,7 @@ val has_natdynlink : bool
 val wwwcoq : string
 val wwwstdlib : string
 
-(* used in coqide *)
+(* used in rocqide *)
 val wwwrefman : string
 
 (* for error reporting *)

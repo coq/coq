@@ -70,7 +70,6 @@ let read_lines_and_close_fd fd =
 (** Run some unix command and read the first line of its output.
     We avoid Unix.open_process and its non-fully-portable /bin/sh,
     especially when it comes to quoting the filenames.
-    See open_process_pid in ide/coqide/coq.ml for more details.
     Error messages:
      - if err=StdErr, any error message goes in the stderr of our script.
      - if err=StdOut, we merge stderr and stdout (just as 2>&1).

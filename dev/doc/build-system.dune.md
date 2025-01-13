@@ -106,7 +106,7 @@ Dune will read the file `~/.config/dune/config`; see `man
 dune-config`. Among others, you can set in this file the custom number
 of build threads `(jobs N)` and display options `(display _mode_)`.
 
-## Running binaries [coqtop / coqide]
+## Running binaries [coqtop / rocqide]
 
 Running `coqtop` directly with `dune exec -- coqtop` won't in general
 work well unless you are using `dune exec -- coqtop -noinit`. The
@@ -114,13 +114,13 @@ work well unless you are using `dune exec -- coqtop -noinit`. The
 vo files may go stale if you rebuild only `coqtop`.
 
 Instead, you should use the provided "shims" for running `coqtop` and
-`coqide` in a fast build. In order to use them, do:
+`rocqide` in a fast build. In order to use them, do:
 
 ```
 $ dune exec -- dev/shim/coqtop
 ```
 
-or `quickide` / `dev/shim/coqide` for CoqIDE, etc.... See `dev/shim/dune` for a
+or `quickide` / `dev/shim/rocqide` for RocqIDE, etc.... See `dev/shim/dune` for a
 complete list of targets. These targets enjoy quick incremental compilation
 thanks to `-opaque` so they tend to be very fast while developing.
 
@@ -207,7 +207,7 @@ dune exec -- dev/dune-dbg coqc foo.v
 (ocd) source db
 ```
 
-to start `coqc.byte foo.v`, other targets are `{checker,coqide,coqtop}`:
+to start `coqc.byte foo.v`, other targets are `{checker,rocqide,coqtop}`:
 
 ```
 dune exec -- dev/dune-dbg checker foo.vo
@@ -257,10 +257,10 @@ plugin will correctly track dependencies and rebuild incrementally as
 needed.
 
 However, it is not always desirable to go this way. For example, the
-current Rocq source tree contains two packages [Rocq and CoqIDE], and in
-the OPAM CoqIDE package we don't want to build CoqIDE against the
+current Rocq source tree contains two packages [Rocq and RocqIDE], and in
+the OPAM RocqIDE package we don't want to build RocqIDE against the
 local copy of Rocq. For this purpose, Dune supports the `-p` option, so
-`dune build -p coqide` will build CoqIDE against the system-installed
+`dune build -p rocqide` will build RocqIDE against the system-installed
 version of Rocq libs, and use a "release" profile that for example
 enables stronger compiler optimizations.
 
@@ -316,7 +316,7 @@ useful to Rocq, some examples are:
 
   You are likely running a partial build which doesn't include
   implicitly loaded plugins / vo files. See the "Running binaries
-  [coqtop / coqide]" section above as to how to correctly call Rocq's
+  [coqtop / rocqide]" section above as to how to correctly call Rocq's
   binaries.
 
 ## Dune cheat sheet

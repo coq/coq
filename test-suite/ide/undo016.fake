@@ -1,4 +1,4 @@
-# Script simulating a dialog between coqide and coqtop -ideslave
+# Script simulating a dialog between rocqide and coqtop -ideslave
 # Run it via fake_ide
 #
 # Test backtracking in presence of nested proofs

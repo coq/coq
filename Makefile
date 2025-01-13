@@ -10,7 +10,7 @@
 
 # Dune Makefile for Rocq
 
-.PHONY: help help-install states world coqide watch check    # Main developer targets
+.PHONY: help help-install states world rocqide watch check    # Main developer targets
 .PHONY: refman-html refman-pdf corelib-html apidoc     # Documentation targets
 .PHONY: test-suite dev-targets
 .PHONY: fmt ocheck obuild ireport clean               # Maintenance targets
@@ -39,9 +39,9 @@ help:
 	@echo "make help-install for installation instructions. Common developer targets are:"
 	@echo ""
 	@echo "  - states: build a minimal functional rocq repl"
-	@echo "  - world:  build main public binaries and libraries in developer mode (no coqide)"
+	@echo "  - world:  build main public binaries and libraries in developer mode (no rocqide)"
 	@echo "  - watch:  build main public binaries and libraries [continuous build]"
-	@echo "  - coqide: build coqide binary in developer mode"
+	@echo "  - rocqide: build rocqide binary in developer mode"
 	@echo "  - check:  build all ML files as fast as possible"
 	@echo "  - test-suite: run Rocq's test suite [env NJOBS=N to set job parallelism]"
 	@echo "  - dunestrap: Generate the dune rules for vo files"
@@ -51,7 +51,7 @@ help:
 	@echo "  Note: these targets produce a developer build, not suitable"
 	@echo "        for distribution to end-users or install"
 	@echo ""
-	@echo " To run an \$$app \\in {coqc,coqtop,coqtop.byte,coqide}:"
+	@echo " To run an \$$app \\in {coqc,coqtop,coqtop.byte,rocqide}:"
 	@echo ""
 	@echo "  - use 'dune exec -- dev/shim/\$$app args'"
 	@echo "    Example: 'dune exec -- dev/shim/coqc file.v'"
@@ -100,7 +100,7 @@ help-install:
 	@echo "  - coq-core: compat binaries (coqc instead of rocq compile, etc)"
 	@echo "  - rocq-core: Rocq's prelude and corelib"
 	@echo "  - coqide-server: XML protocol language server"
-	@echo "  - coqide: CoqIDE gtk application"
+	@echo "  - rocqide: RocqIDE gtk application"
 	@echo "  - rocq: meta package depending on rocq-runtime rocq-core rocq-stdlib"
 	@echo "    (also calls the test suite when using --with-test)"
 	@echo "  - coq: meta package depending on rocq coq-core coq-stdlib"
@@ -167,8 +167,8 @@ MAIN_TARGETS:=rocq-runtime.install coq-core.install rocq-core.install coqide-ser
 world: dunestrap
 	dune build $(DUNEOPT) $(MAIN_TARGETS)
 
-coqide:
-	dune build $(DUNEOPT) coqide.install
+rocqide:
+	dune build $(DUNEOPT) rocqide.install
 
 watch:
 	dune build $(DUNEOPT) $(MAIN_TARGETS) -w
@@ -282,9 +282,9 @@ $(foreach subdir,$(wildcard theories/*/),$(eval $(call subtarget,$(subdir),$(she
 #
 # dune build rocq-runtime.install
 # dune build coq.install
-# dune build coqide.install
+# dune build rocqide.install
 #
 # Packaging / OPAM targets:
 #
 # dune -p coq @install
-# dune -p coqide @install
+# dune -p rocqide @install

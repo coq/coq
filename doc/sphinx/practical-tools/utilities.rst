@@ -196,9 +196,9 @@ We recommend checking `CoqMakefile` and `CoqMakefile.conf` into your source code
 control system.  Also we recommend updating them with `rocq makefile` when you switch
 to a new version of Rocq.
 
-In CoqIDE, you must explicitly save modified buffers before running `make` and
+In RocqIDE, you must explicitly save modified buffers before running `make` and
 restart the Rocq interpreter in any buffers in which you're running code.
-More details :ref:`here <coqide_make_note>`.
+More details :ref:`here <rocqide_make_note>`.
 
 See :ref:`rocq_makefile` for a complete description of `rocq makefile` and the
 files it generates.
@@ -244,7 +244,7 @@ permits loading files from the
 associated directory with just the basename of the script file,
 e.g. specify `Foo` to load `Foo.vo`.  This entry corresponds to the
 current directory when Rocq was started.  Note that the :cmd:`Cd` command
-doesn't change the associated directory--you would need to restart CoqIDE.
+doesn't change the associated directory--you would need to restart RocqIDE.
 
 With some exceptions noted below, the :term:`load path` is generated from files loaded
 from the following directories and their subdirectories in the order shown.  The
@@ -262,7 +262,7 @@ directory, e.g. the file `Foo/Bar/script.vo` becomes `Foo.Bar.script`:
 
 - the ``${XDG_DATA_HOME}/coq/`` directory (see `XDG base directory specification
   <http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html>`_).
-  However, CoqIDE relies on the default setting; therefore we recommend not
+  However, RocqIDE relies on the default setting; therefore we recommend not
   setting this variable.
 - installed packages from the `user-contrib` directory in the Rocq installation,
 - the Rocq standard library from the `theories` directory in the Rocq installation
@@ -438,7 +438,7 @@ name, e.g. ``DECLARE PLUGIN "my-package.plugin"``.
 The ``-native-compiler`` option given in the ``_CoqProject`` file overrides
 the global one passed at configure time.
 
-CoqIDE, Proof General, VsCoq and Coqtail all
+RocqIDE, Proof General, VsCoq and Coqtail all
 understand ``_CoqProject`` files and can be used to invoke Rocq with the desired options.
 
 The ``rocq makefile`` utility can be used to set up a build infrastructure

@@ -19,9 +19,9 @@ while [[ $# -gt 0 ]]; do
             opts+=($(ocamlfind query -recursive -i-format rocq-runtime.checklib))
             break
             ;;
-        coqide)
+        rocqide)
             shift
-            exe=_build/default/ide/coqide/coqide_main.bc
+            exe=_build/default/ide/rocqide/rocqide_main.bc
             break
             ;;
         coqc)
@@ -40,7 +40,7 @@ while [[ $# -gt 0 ]]; do
             break
             ;;
         *)
-            echo "usage: dune exec -- dev/dune-dbg [-emacs] {coqchk|coqide|coqc|coqtop|coqdep|coqnative} coqargs"
+            echo "usage: dune exec -- dev/dune-dbg [-emacs] {coqchk|rocqide|coqc|coqtop|coqdep|coqnative} coqargs"
             exit 1
             ;;
     esac

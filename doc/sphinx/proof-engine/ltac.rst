@@ -2400,8 +2400,8 @@ Interactive debugger
 
    This flag, when set, enables the step-by-step debugger in the |Ltac| interpreter.
    The debugger is supported in `rocq repl` and Proof General by printing information
-   on the console and accepting typed commands.  In addition, CoqIDE now supports a
-   :ref:`visual debugger <coqide-debugger>` with additional capabilities.
+   on the console and accepting typed commands.  In addition, RocqIDE now supports a
+   :ref:`visual debugger <rocqide-debugger>` with additional capabilities.
 
 When the debugger is activated in `rocq repl`, it stops at every step of the evaluation of
 the current |Ltac| expression and prints information on what it is doing.
@@ -2431,7 +2431,7 @@ A non-interactive mode for the debugger is available via the flag:
 
    This flag has the effect of presenting a newline at every prompt, when
    the debugger is on in `rocq repl`.  (It has no effect when running the
-   CoqIDE debugger.)  The debug log thus created, which does not require
+   RocqIDE debugger.)  The debug log thus created, which does not require
    user input to generate when this flag is set, can then be run through
    external tools such as diff.
 
