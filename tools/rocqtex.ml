@@ -137,8 +137,8 @@ let insert texfile coq_output result =
       assert (n > discarded);
       let n = n - discarded in
       if not_first then output_string c_out "\\medskip\n";
-      if !verbose then Printf.printf "Coq < %s\n" s;
-      if show_questions then encapsule false c_out ("Coq < " ^ s);
+      if !verbose then Printf.printf "Rocq < %s\n" s;
+      if show_questions then encapsule false c_out ("Rocq < " ^ s);
       let rec read_lines k =
         if k = 0 then []
         else

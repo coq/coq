@@ -1,18 +1,18 @@
 
-Coq < 
-Coq < 
-Coq < Toplevel input, characters 9-11:
+Rocq < 
+Rocq < 
+Rocq < Toplevel input, characters 9-11:
 > Check ## [].
 >          ^^
 Error: Syntax error: '##' or [term] expected after '##' (in [term]).
 
-Coq < Coq < Setting x constr at next level
+Rocq < Rocq < Setting x constr at next level
 to match previous notation with longest common prefix: "## _".
 
-Coq < 
-Coq < Toplevel input, characters 9-11:
+Rocq < 
+Rocq < Toplevel input, characters 9-11:
 > Check ## [].
 >          ^^
 Error: Syntax error: '##' or [term] expected after '##' (in [term]).
 
-Coq < 
+Rocq < 

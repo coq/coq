@@ -1,12 +1,12 @@
 
-Coq < foo is defined
+Rocq < foo is defined
 
-Coq < bar is defined
+Rocq < bar is defined
 
-Coq < Coq < Coq < Coq < Coq < Coq < Coq < baz is defined
+Rocq < Rocq < Rocq < Rocq < Rocq < Rocq < Rocq < baz is defined
 
-Coq < 
-Coq < 1 goal
+Rocq < 
+Rocq < 1 goal
   
   ============================
   True

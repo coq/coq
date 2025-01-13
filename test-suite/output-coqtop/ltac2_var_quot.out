@@ -1,53 +1,53 @@
 
 
-Coq < Coq < Toplevel input, characters 7-9:
+Rocq < Rocq < Toplevel input, characters 7-9:
 > Check $x.
 >       ^^
 Error: Unbound value x
 
-Coq < Coq < Toplevel input, characters 16-17:
+Rocq < Rocq < Toplevel input, characters 16-17:
 > Check $preterm:x.
 >                ^
 Error: Unbound value x
 
-Coq < Coq < Toplevel input, characters 7-8:
+Rocq < Rocq < Toplevel input, characters 7-8:
 > Check $ x.
 >       ^
 Error: Syntax error: [lconstr] expected after 'Check' (in [query_command]).
 
-Coq < Coq < Toplevel input, characters 7-8:
+Rocq < Rocq < Toplevel input, characters 7-8:
 > Check $ preterm:x.
 >       ^
 Error: Syntax error: [lconstr] expected after 'Check' (in [query_command]).
 
-Coq < Coq < Toplevel input, characters 7-8:
+Rocq < Rocq < Toplevel input, characters 7-8:
 > Check $ preterm : x.
 >       ^
 Error: Syntax error: [lconstr] expected after 'Check' (in [query_command]).
 
-Coq < Coq < Toplevel input, characters 18-19:
+Rocq < Rocq < Toplevel input, characters 18-19:
 > Check $preterm : x.
 >                  ^
 Error: The reference x was not found in the current environment.
 
-Coq < Coq < Toplevel input, characters 16-24:
+Rocq < Rocq < Toplevel input, characters 16-24:
 > Check fun x => $preterm : x.
 >                ^^^^^^^^
 Error: Unbound value preterm
 
-Coq < Coq < Toplevel input, characters 17-18:
+Rocq < Rocq < Toplevel input, characters 17-18:
 > Check $preterm: x.
 >                 ^
 Error: The reference x was not found in the current environment.
 
-Coq < Coq < Toplevel input, characters 16-24:
+Rocq < Rocq < Toplevel input, characters 16-24:
 > Check fun x => $preterm: x.
 >                ^^^^^^^^
 Error: Unbound value preterm
 
-Coq < Coq < Toplevel input, characters 7-8:
+Rocq < Rocq < Toplevel input, characters 7-8:
 > Check $ preterm :x.
 >       ^
 Error: Syntax error: [lconstr] expected after 'Check' (in [query_command]).
 
-Coq < 
+Rocq < 

@@ -1,6 +1,6 @@
 
-Coq < 
-Coq < 1 goal
+Rocq < 
+Rocq < 1 goal
   
   ============================
   (exists n : nat, n = 5 \/ True) /\ (exists m : nat, m = 6 \/ True)

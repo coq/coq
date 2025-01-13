@@ -1,6 +1,6 @@
 
-Coq < 
-Coq < Coq < 1 goal
+Rocq < 
+Rocq < Rocq < 1 goal
   
   ============================
   forall P Q R : Prop, (Q -> R) -> (P -> Q) -> (P -> Q) -> P -> R
@@ -13,7 +13,7 @@ strange_imp_trans < No more goals.
 (dependent evars: ; in current goal:)
 
 strange_imp_trans < 
-Coq < Coq < 1 goal
+Rocq < Rocq < 1 goal
   
   ============================
   forall P Q : Prop, (P -> Q) /\ P -> Q
@@ -26,19 +26,19 @@ modpon < No more goals.
 (dependent evars: ; in current goal:)
 
 modpon < 
-Coq < Coq < 
-Coq < P1 is declared
+Rocq < Rocq < 
+Rocq < P1 is declared
 P2 is declared
 P3 is declared
 P4 is declared
 
-Coq < p12 is declared
+Rocq < p12 is declared
 
-Coq < p123 is declared
+Rocq < p123 is declared
 
-Coq < p34 is declared
+Rocq < p34 is declared
 
-Coq < Coq < 1 goal
+Rocq < Rocq < 1 goal
   
   P1, P2, P3, P4 : Prop
   p12 : P1 -> P2
@@ -85,5 +85,5 @@ goal 3 is:
 (dependent evars: ?X4:?P, ?X5 using ?X10 ?X11, ?X10 using ?X11, ?X11:?P0; in current goal: ?X4 ?X5 ?X10 ?X11)
 
 p14 < 
-Coq < 
-Coq < 
+Rocq < 
+Rocq < 
