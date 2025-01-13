@@ -522,7 +522,11 @@ let next_name_for_display gen env sigma flags na avoid =
 
 (* Remark: Anonymous var may be dependent in Evar's contexts *)
 let compute_displayed_name_in_gen_poly gen noccurn_fun env sigma flags avoid na c =
-  if noccurn_fun sigma 1 c then Anonymous, avoid
+  let noccurs =
+    try noccurn_fun sigma 1 c
+    with _ when !Flags.in_debugger -> false
+  in
+  if noccurs then Anonymous, avoid
   else
     let fresh_id, avoid = next_name_for_display gen env sigma flags na avoid in
     Name fresh_id, avoid
