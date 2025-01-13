@@ -57,6 +57,7 @@ val ppconstr_expr : Constrexpr.constr_expr -> unit
 val ppglob_constr : 'a Glob_term.glob_constr_g -> unit
 val pppattern : Pattern.constr_pattern -> unit
 val ppfconstr : CClosure.fconstr -> unit
+val pphconstr : HConstr.t -> unit
 val ppfsubst : CClosure.fconstr Esubst.subs -> unit
 
 val ppnumtokunsigned : NumTok.Unsigned.t -> unit
@@ -150,6 +151,7 @@ val ppuni : Univ.Universe.t -> unit
 val ppuni_level : Univ.Level.t -> unit (* raw *)
 val ppqvar : Sorts.QVar.t -> unit
 val ppesorts : EConstr.ESorts.t -> unit
+val pperelevance : EConstr.ERelevance.t -> unit
 val prlev : Univ.Level.t -> Pp.t (* with global names (does this work?) *)
 val ppqvarset : Sorts.QVar.Set.t -> unit
 val ppuniverse_set : Univ.Level.Set.t -> unit
