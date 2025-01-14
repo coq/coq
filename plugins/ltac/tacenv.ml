@@ -192,16 +192,22 @@ let register_ltac for_ml local ?deprecation id tac =
   Lib.add_leaf (inMD {local; id; for_ml; expr=tac; depr=deprecation})
 
 type tacreplace = {
-  repl_local : bool;
+  repl_local : Libobject.locality;
   repl_tac : ltac_constant;
   repl_expr : glob_tactic_expr;
 }
 
 let load_replace i (prefix, {repl_local; repl_tac; repl_expr=t}) =
-  replace repl_tac prefix.Nametab.obj_mp t
+  match repl_local with
+  | Local | Export -> ()
+  | SuperGlobal ->
+    replace repl_tac prefix.Nametab.obj_mp t
 
 let open_replace i (prefix, {repl_local; repl_tac; repl_expr=t}) =
-  replace repl_tac prefix.Nametab.obj_mp t
+  match repl_local with
+  | Local | SuperGlobal -> ()
+  | Export ->
+    replace repl_tac prefix.Nametab.obj_mp t
 
 let cache_replace (prefix, {repl_local; repl_tac; repl_expr=t}) =
   replace repl_tac prefix.Nametab.obj_mp t
@@ -212,9 +218,9 @@ let subst_replace (subst, {repl_local; repl_tac; repl_expr}) =
     repl_expr=Tacsubst.subst_tactic subst repl_expr;
   }
 
-let classify_replace = function
-  | {repl_local=false} -> Substitute
-  | {repl_local=true} -> Dispose
+let classify_replace o = match o.repl_local with
+  | Local -> Dispose
+  | Export | SuperGlobal -> Substitute
 
 let inReplace : tacreplace -> obj =
   declare_named_object_gen {(default_object "TAC-REDEFINITION") with

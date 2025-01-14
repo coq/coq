@@ -462,8 +462,11 @@ let warn_unusable_identifier =
 
 let register_ltac atts = function
 | [Tacexpr.TacticRedefinition (qid, body)] ->
-  let local = Attributes.(parse locality atts) in
-  let local = Locality.make_module_locality local in
+  let local = Attributes.(parse explicit_hint_locality atts) in
+  let local = match local with
+    | Some local -> Locality.check_locality_nodischarge local; [local]
+    | None -> if Lib.sections_are_opened () then [Local] else [SuperGlobal; Export]
+  in
   let kn =
     try Tacenv.locate_tactic qid
     with Not_found ->
@@ -472,7 +475,7 @@ let register_ltac atts = function
   in
   let ist = Tacintern.make_empty_glob_sign ~strict:true in
   let body = Tacintern.intern_tactic_or_tacarg ist body in
-  Tacenv.redefine_ltac local kn body;
+  local |> List.iter (fun local -> Tacenv.redefine_ltac local kn body);
   let name = Tacenv.shortest_qualid_of_tactic kn in
   Flags.if_verbose Feedback.msg_info (Libnames.pr_qualid name ++ str " is redefined")
 
