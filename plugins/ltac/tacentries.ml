@@ -520,7 +520,8 @@ let register_ltac local ?deprecation tacl =
     Tacenv.register_ltac false local id tac ?deprecation;
     Flags.if_verbose Feedback.msg_info (Id.print id ++ str " is defined")
   | UpdateTac kn ->
-    Tacenv.redefine_ltac local kn tac ?deprecation;
+    (* XXX if has_some deprecation then warn unsupported attribute? *)
+    Tacenv.redefine_ltac local kn tac;
     let name = Tacenv.shortest_qualid_of_tactic kn in
     Flags.if_verbose Feedback.msg_info (Libnames.pr_qualid name ++ str " is redefined")
   in
