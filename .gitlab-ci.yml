@@ -70,7 +70,7 @@ before_script:
   interruptible: true
   extends: .auto-use-tags
   variables:
-    COQIDE: "opt"
+    ROCQIDE: "opt"
   artifacts:
     name: "$CI_JOB_NAME"
     paths:
@@ -86,7 +86,7 @@ before_script:
     - cp dev/ci/dune-workspace.ci dune-workspace
 
     - PKGS=rocq-runtime,coq-core,rocq-core,coqide-server
-    - if [ "$COQIDE" != "no" ]; then PKGS=${PKGS},coqide; fi
+    - if [ "$ROCQIDE" != "no" ]; then PKGS=${PKGS},rocqide; fi
     - dev/ci/gitlab-section.sh start coq.clean coq.clean
     - make clean # ensure that `make clean` works on a fresh clone
     - dev/ci/gitlab-section.sh end coq.clean
@@ -115,7 +115,7 @@ before_script:
     - make $DUNE_TARGET
     - tar cfj _build.tar.bz2 _build
   variables:
-    DUNE_TARGET: "world coqide"
+    DUNE_TARGET: "world rocqide"
   artifacts:
     name: "$CI_JOB_NAME"
     when: always
@@ -249,7 +249,7 @@ before_script:
     - if command -v coqc; then exit 1; fi # coq-core didn't get autoinstalled
     - opam pin add --kind=path coq-core.dev .
     - opam pin add --kind=path coqide-server.dev .
-    - opam pin add --kind=path coqide.dev .
+    - opam pin add --kind=path rocqide.dev .
   after_script:
     - eval $(opam env)
     - du -ha "$(coqc -where)" > files.listing
@@ -315,13 +315,13 @@ build:base:
     COQ_EXTRA_CONF: "-native-compiler yes"
   only: *full-ci
 
-# no coqide for 32bit: libgtk installation problems
+# no rocqide for 32bit: libgtk installation problems
 build:base+32bit:
   extends: .build-template
   variables:
     OPAM_VARIANT: "+32bit"
     COQ_EXTRA_CONF: "-native-compiler yes"
-    COQIDE: "no"
+    ROCQIDE: "no"
   only: *full-ci
 
 build:edge+flambda:

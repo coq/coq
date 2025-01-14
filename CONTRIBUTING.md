@@ -232,7 +232,7 @@ manifesto's README][coq-community-manifesto].
 
 ### Contributing to the editor support packages ###
 
-Besides CoqIDE, whose sources are available in this repository, and to
+Besides Rocqide, whose sources are available in this repository, and to
 which you are welcome to contribute, there are a number of alternative
 user interfaces for Rocq, more often as an editor support package.
 
@@ -294,7 +294,7 @@ GitHub account).  You can file a bug for any of the following:
   find or don't understand some bit of documentation.
 - An error message that wasn't as helpful as you'd like. Bonus points
   for suggesting what information would have helped you.
-- Bugs in CoqIDE should also be filed in the [Rocq issue
+- Bugs in Rocqide should also be filed in the [Rocq issue
   tracker][Rocq-issue-tracker].  Bugs in the Emacs plugin should be
   filed against [ProofGeneral][ProofGeneral-issues], or against
   [company-coq][company-coq-issues] if they are specific to

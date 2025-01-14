@@ -88,11 +88,11 @@ semi-interactive development of machine-checked proofs.
 
 This package provides the `coqidetop` language server, an
 implementation of Coq's [XML protocol](https://github.com/coq/coq/blob/master/dev/doc/xml-protocol.md)
-which allows clients, such as CoqIDE, to interact with Coq in a
+which allows clients, such as RocqIDE, to interact with Coq in a
 structured way."))
 
 (package
- (name coqide)
+ (name rocqide)
  (depends
   (ocamlfind :build)
   (conf-findutils :build)
@@ -106,7 +106,7 @@ a formal language to write mathematical definitions, executable
 algorithms and theorems together with an environment for
 semi-interactive development of machine-checked proofs.
 
-This package provides the CoqIDE, a graphical user interface for the
+This package provides the RocqIDE, a graphical user interface for the
 development of interactive proofs."))
 
 (package

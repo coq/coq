@@ -10,6 +10,5 @@
 
 (install
  (section man)
- (package coqide)
- (files coqide.1))
-
+ (package rocqide)
+ (files rocqide.1))

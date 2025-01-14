@@ -109,7 +109,7 @@ module type Task = sig
 
       These functions are meant to parametrize the worker manager on
       the actions to be taken when things go wrong or are cancelled
-      (you can kill a worker in CoqIDE, or using kill -9...)
+      (you can kill a worker in RocqIDE, or using kill -9...)
 
       E.g. master can decide to inhabit the (delegate) Future.t with a
       closure (to be run in master), i.e. make the document still

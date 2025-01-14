@@ -493,7 +493,7 @@ let print_one_decl struc mp decl =
 (*s Extraction of a ml struct to a file. *)
 
 (** For Recursive Extraction, writing directly on stdout
-    won't work with coqide, we use a buffer instead *)
+    won't work with rocqide, we use a buffer instead *)
 
 let buf = Buffer.create 1000
 
@@ -573,7 +573,7 @@ let print_structure_to_file (fn,si,mo) dry struc =
        end;
        info_file si)
     (if dry then None else si);
-  (* Print the buffer content via Rocq standard formatter (ok with coqide). *)
+  (* Print the buffer content via Rocq standard formatter (ok with rocqide). *)
   if not (Int.equal (Buffer.length buf) 0) then begin
     Feedback.msg_notice (str (Buffer.contents buf));
     Buffer.reset buf

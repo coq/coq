@@ -1,7 +1,7 @@
 # How to use?
 
 # If you have Nix installed, you can get in an environment with everything
-# needed to compile Rocq and CoqIDE by running:
+# needed to compile Rocq and RocqIDE by running:
 # $ nix-shell
 # at the root of the Rocq repository.
 
@@ -111,7 +111,7 @@ stdenv.mkDerivation rec {
 
   enableParallelBuilding = true;
 
-  buildFlags = [ "world" ] ++ optional buildIde "coqide";
+  buildFlags = [ "world" ] ++ optional buildIde "rocqide";
 
   # TODO, building of documentation package when not in dev mode
   # https://github.com/coq/coq/issues/16198
@@ -120,7 +120,7 @@ stdenv.mkDerivation rec {
   # From https://github.com/NixOS/nixpkgs/blob/master/pkgs/build-support/ocaml/dune.nix
   installPhase = ''
     runHook preInstall
-    dune install --prefix $out --libdir $OCAMLFIND_DESTDIR rocq-runtime coq-core rocq-core coqide-server ${optionalString buildIde "coqide"}
+    dune install --prefix $out --libdir $OCAMLFIND_DESTDIR rocq-runtime coq-core rocq-core coqide-server ${optionalString buildIde "rocqide"}
     runHook postInstall
   '';
 

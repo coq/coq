@@ -1,0 +1,131 @@
+.TH ROCQIDE 1
+.
+.SH NAME
+rocqide \- graphical interface for the Rocq proof assistant
+.
+.
+.SH SYNOPSIS
+.B rocqide
+[
+options
+]
+.
+.SH DESCRIPTION
+.
+.B rocqide
+is a gtk graphical interface for the Rocq proof assistant.
+.PP
+For command-line-oriented or batch-oriented use of Rocq, see
+.BR rocq (1);
+.
+.
+.SH OPTIONS
+.
+.TP
+.B \-h
+Show the complete list of options accepted by
+.BR rocqide .
+.TP
+.BI \-I\  dir, \ \-include\  dir
+Add directory
+.I dir
+in the include path.
+.TP
+.BI \-R\  dir\ rocqdir
+Recursively map physical
+.I dir
+to logical
+.I rocqdir.
+.TP
+.B \-src
+Add source directories in the include path.
+.TP
+.B \-nois
+Start with an empty state.
+.TP
+.BI \-load\-ml\-object\  f
+Load ML object file
+.I f.
+.TP
+.BI \-load\-ml\-source\  f
+Load ML file
+.I f.
+.TP
+.BI \-l\  f, \ \-load\-vernac\-source\  f
+Load Rocq file
+.IR f .v
+(Load
+.IR f. ).
+.TP
+.BI \-lv\  f, \ \-load\-vernac\-source\-verbose\  f
+Load Rocq file
+.IR f .v
+(Load Verbose
+.IR f. ).
+.TP
+.BI \-load\-vernac\-object\  path
+Load Rocq library
+.I path
+(Require
+.IR path. ).
+.TP
+.BI \-require-import\  path
+Load Rocq library
+.I path
+and import it (Require Import
+.IR path. ).
+.TP
+.BI \-compile\  f
+Compile Rocq file
+.IR f .v
+(implies
+.BR \-batch ).
+.TP
+.BI \-compile\-verbose\  f
+Verbosely compile Rocq file
+.IR f .v
+(implies
+.BR -batch ).
+.TP
+.B \-where
+Print Rocq's standard library location and exit.
+.TP
+.B -v
+Print Rocq version and exit.
+.TP
+.B \-q
+Skip loading of rcfile.
+.TP
+.BI \-init\-file\  f
+Set the rcfile to
+.I f.
+.TP
+.B \-emacs
+Tells Rocq it is executed under Emacs.
+.TP
+.BI \-dump\-glob\  f
+Dump globalizations in file
+.I f
+(to be used by
+.BR rocq (1) doc).
+.TP
+.B \-impredicative\-set
+Set sort Set impredicative.
+.TP
+.B \-dont\-load\-proofs
+Don't load opaque proofs in memory.
+.
+.SH SEE ALSO
+.
+.BR rocq (1),
+.PP
+.I
+The Rocq Reference Manual
+.PP
+The Coq web site: http://coq.inria.fr
+.PP
+/usr/share/doc/rocqide/FAQ
+.
+.SH AUTHOR
+This manual page was written by Samuel Mimram <samuel.mimram@ens-lyon.org>,
+for the Debian project (but may be used by others).

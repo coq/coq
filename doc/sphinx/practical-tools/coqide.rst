@@ -2,29 +2,30 @@
 
 .. _coqintegrateddevelopmentenvironment:
 
-CoqIDE
-======
+RocqIDE
+=========
+.. extra =s to avoid being a git conflict marker
 
 .. todo: how to say that a number of things are broken?  Maybe list them
    somewhere--doesn't have to be super detailed
 
-The Coq Integrated Development Environment (CoqIDE) is a user-friendly GUI
+The Rocq Integrated Development Environment (RocqIDE) is a user-friendly GUI
 for Coq. Its main purpose is to allow users to edit Coq scripts and step forward
 and backward through them.  Stepping forward executes commands and
 tactics while stepping backward undoes previously executed commands and tactics,
 returning to a previous state.
 
-To run CoqIDE, enter `coqide` on the command line.
+To run RocqIDE, enter `rocqide` on the command line.
 If you include script file names (which end with `.v`) as arguments, each is opened
-in a separate tab.  If you don't, CoqIDE opens a single unnamed buffer
-(titled `*scratch*`).  `coqide` also accepts many of the options of `coqtop`
+in a separate tab.  If you don't, RocqIDE opens a single unnamed buffer
+(titled `*scratch*`).  `rocqide` also accepts many of the options of `rocq top`
 (see :ref:`therocqcommands`), while ignoring the ones that aren't meaningful
-for CoqIDE.  Use `coqide --help` to see the list of command line options.
+for RocqIDE.  Use `rocqide --help` to see the list of command line options.
 
-.. _coqide_mainscreen:
+.. _rocqide_mainscreen:
 
-.. image:: ../_static/coqide.png
-   :alt: CoqIDE main screen
+.. image:: ../_static/rocqide.png
+   :alt: RocqIDE main screen
 
 ..  Here is the code used in the screenshot:
 
@@ -41,7 +42,7 @@ for CoqIDE.  Use `coqide --help` to see the list of command line options.
     Proof.
       Induction n.
 
-The screenshot shows CoqIDE as the user is stepping through the file `Fermat.v`.
+The screenshot shows RocqIDE as the user is stepping through the file `Fermat.v`.
 
 A menu bar and a tool bar appear at the top of the window. The left-hand panel shows
 the current *script buffer*.  Each script buffer corresponds to a separate Coq process.
@@ -90,10 +91,10 @@ the cursor between `(*` and `*)` or select any text between them.
 
 Files are automatically saved periodically to a recovery file.  For example,
 `foo.v` is saved to `#foo.v#` every 10 seconds by default.  You can change the
-interval in the *Edit / Preferences / Files* dialog.  In some cases when CoqIDE
-exits abruptly, it saves named buffers in ``<NAME>.crashcoqide`` in the same
+interval in the *Edit / Preferences / Files* dialog.  In some cases when RocqIDE
+exits abruptly, it saves named buffers in ``<NAME>.crashrocqide`` in the same
 directory as ``<NAME>``.  Unnamed buffers are saved in
-``Unnamed_coqscript_<N>.crashcoqide`` in the directory that CoqIDE was started in.
+``Unnamed_rocqscript_<N>.crashrocqide`` in the directory that RocqIDE was started in.
 
 In the *View* menu, you can set several printing options that
 correspond to options that can appear in the script.  For example, *Display
@@ -112,8 +113,8 @@ from the toolbar and from the keyboard.  These include:
 - Reset Coq (`Alt-Home`) to restart the Coq process
 - Run to end (`Alt-End`) to run commands to the end of the buffer
 - Interrupt to stop processing commands after the current command completes.
-  (Note: on Windows but not on WSL, Interrupt doesn't work if you start CoqIDE
-  as a background process, e.g. `coqide &` in bash.  See Coq issue
+  (Note: on Windows but not on WSL, Interrupt doesn't work if you start RocqIDE
+  as a background process, e.g. `rocqide &` in bash.  See Rocq issue
   `#16142 <https://github.com/coq/coq/pull/16142>`_.)
 
 On macOS, use `Cmd-Ctrl` instead of `Alt` for these operations.
@@ -137,7 +138,7 @@ Commands may:
   Double click on an entry to jump to the point of the error.  Execution
   of commands stops unless you're in async mode.
 
-In the previous figure :ref:`CoqIDE main screen <coqide_mainscreen>`,
+In the previous figure :ref:`RocqIDE main screen <rocqide_mainscreen>`,
 the running buffer is `Fermat.v`.  All commands until
 the ``Theorem`` have already been executed, then the user tried to go
 forward executing ``Induction n``. That command failed because no such
@@ -159,7 +160,7 @@ The other buttons on the toolbar do the following:
 - Next occurrence (right arrow icon) - find the next occurrence
   of the current word
 
-The colored ribbon appearing across the bottom of the CoqIDE window just above
+The colored ribbon appearing across the bottom of the RocqIDE window just above
 the status bar represents the state of processing for the current script
 schematically.  Blue means unprocessed, light green means successfully
 processed, red mean an error, light orange is used for :cmd:`Axiom` and :cmd:`Admitted`
@@ -169,7 +170,7 @@ in the async mode section.)
 
 The left edge of the ribbon corresponds to the first command or tactic in the
 script and the right edge corresponds to the last command that has been passed
-to Coq.  Currently, for very long scripts, it may take many seconds for CoqIDE to
+to Rocq.  Currently, for very long scripts, it may take many seconds for RocqIDE to
 pass all the commands to the server, causing the display to jump around a lot.  Perhaps
 this will be improved in a future release.  The text at the far right hand side of
 the status bar (e.g. "0 / 1" gives the number of unprocessed proofs that have been
@@ -218,8 +219,8 @@ commands like ``Fixpoint`` that you can conveniently fill in afterwards.
 Queries
 -------
 
-.. image:: ../_static/coqide-queries.png
-   :alt: CoqIDE queries
+.. image:: ../_static/rocqide-queries.png
+   :alt: RocqIDE queries
 
 A *query* is any command that does not change the current state, such as
 :cmd:`About`, :cmd:`Check`, :cmd:`Print`, :cmd:`Search`, etc.  The *query pane*
@@ -257,7 +258,7 @@ the *Externals* section of the *Edit/Preferences* dialog.  Output appears in the
 in :ref:`here <building_with_coqproject>`.  Alternatively, you may find it easier
 to do your `make` and `rocq makefile` commands from the command line.
 
-.. _coqide_make_note:
+.. _rocqide_make_note:
 
 Note that you must explicitly save changed buffers before you run `make`.
 *File/Save all* is helpful for this.  Notice that modified and unmodified buffers show
@@ -284,14 +285,14 @@ Preferences
 You may customize your environment with the *Preferences* dialog, which is
 accessible from *Edit/Preferences* on the menu. There are several sections.
 
-.. image:: ../_static/coqide-preferences-editor.png
-   :alt: CoqIDE preferences dialog, Editor section
+.. image:: ../_static/rocqide-preferences-editor.png
+   :alt: RocqIDE preferences dialog, Editor section
 
 The *Files* section is devoted to file management: you may configure
 automatic saving of files, by periodically saving the contents into
 files named `#f#` for each opened file `f`. You may also activate the
 *auto reload* feature: in case an opened file is modified on disk by a
-third party, CoqIDE may read it again for you. Note that in the case
+third party, RocqIDE may read it again for you. Note that in the case
 you edited that same file, you will be prompted to choose to either
 discard your changes or not. The File charset encoding choice is
 described below in :ref:`character-encoding-saved-files`.
@@ -304,7 +305,7 @@ customizing the editor. It includes in particular the ability
 to activate an Emacs mode named micro-Proof-General
 (use the Help menu to know more about the available bindings).
 
-The *Appearance* section offers controls to set CoqIDE's window
+The *Appearance* section offers controls to set RocqIDE's window
 default size and the position of tabs.
 
 The *Fonts* section is for selecting the text font used for scripts,
@@ -316,7 +317,7 @@ as standard |GtkSourceView| styles are available. Other styles can be
 added e.g. in ``$HOME/.local/share/gtksourceview-3.0/styles/`` (see
 the general documentation about |GtkSourceView| for the various
 possibilities). Note that the style of the rest of graphical part of
-CoqIDE is not under the control of |GtkSourceView| but of GTK+ and
+RocqIDE is not under the control of |GtkSourceView| but of GTK+ and
 governed by files such as ``settings.ini`` and ``gtk.css`` in
 ``$XDG_CONFIG_HOME/gtk-3.0`` or files in
 ``$HOME/.themes/NameOfTheme/gtk-3.0``, as well as the environment
@@ -352,7 +353,7 @@ is set.  If the variable isn't set, the directory is ``~/.config/coq`` on Linux
 and `C:\\Users\\<USERNAME>\\AppData\\Local\\coq` on Windows.
 Preferences are in the file `coqiderc` and key bindings are in the file `coqide.keys`.
 
-.. _coqide_key_bindings:
+.. _rocqide_key_bindings:
 
 .. _key_bindings:
 
@@ -363,8 +364,8 @@ As explained just above, the *Edit/Preferences/Shortcuts* panel
 offers buttons to modify in a few clicks the key bindings for a whole menu.
 Here is a screenshot of the panel:
 
-.. image:: ../_static/coqide-preferences-shortcuts.png
-   :alt: CoqIDE preferences dialog, Shortcuts section
+.. image:: ../_static/rocqide-preferences-shortcuts.png
+   :alt: RocqIDE preferences dialog, Shortcuts section
 
 Each menu item in the GUI shows its key binding, if one has been defined,
 on the right-hand side.  Typing the key binding is equivalent to selecting
@@ -376,8 +377,8 @@ for the new binding and then releasing the mouse button.
 Alternatively, you can edit the configuration file directly.
 Key bindings are saved in the file `coqide.keys` in
 the :ref:`user configuration directory<user-configuration-directory>`.
-Make sure there are no CoqIDE processes running while you edit the file
-(CoqIDE creates or overwrites the file when it terminates,
+Make sure there are no RocqIDE processes running while you edit the file
+(RocqIDE creates or overwrites the file when it terminates,
 which may reorder the lines).
 
 The file contains lines such as:
@@ -393,14 +394,14 @@ which was bound by default to `Shift-Ctrl-A`. `<Primary>` indicates `Cmd` on mac
 and otherwise `Ctrl`.
 The second line is for a menu item that has no key binding.
 
-Lines that begin with semicolons are comments created by CoqIDE.  CoqIDE uses
+Lines that begin with semicolons are comments created by RocqIDE.  RocqIDE uses
 the default binding for these items.  To change a key binding, remove the semicolon
 and set the third item in the list as desired, such as in the third line.
 Avoid assigning the same binding to multiple items.
 
 If the same menu item name appears on multiple lines in the file, the value from the
 last line is used.  This is convenient for copying a group of changes from elsewhere–just
-insert the changes at the end of the file.  The next time CoqIDE terminates, it will
+insert the changes at the end of the file.  The next time RocqIDE terminates, it will
 resort the items.
 
 The end of
@@ -417,9 +418,9 @@ Edit/Preferences/Shortcuts panel. See :ref:`Shortcuts<shortcuts>`.
 Using Unicode symbols
 ---------------------
 
-CoqIDE is based on GTK+ and inherits from it support for Unicode in
+RocqIDE is based on GTK+ and inherits from it support for Unicode in
 its text panels. Consequently a large set of symbols is available for
-notations. Furthermore, CoqIDE conveniently provides a simple way to
+notations. Furthermore, RocqIDE conveniently provides a simple way to
 input Unicode characters.
 
 
@@ -440,8 +441,8 @@ mathematical symbols ∀ and ∃, you may define:
      : type_scope.
 
 A small set of such notations are already defined in the Coq library
-which you can enable with ``Require Import Unicode.Utf8`` inside CoqIDE,
-or equivalently, by starting CoqIDE with ``coqide -l utf8``.
+which you can enable with ``Require Import Unicode.Utf8`` inside RocqIDE,
+or equivalently, by starting RocqIDE with ``rocqide -l utf8``.
 
 However, there are some issues when using such Unicode symbols: you of
 course need to use a character font which supports them. In the Fonts
@@ -452,12 +453,12 @@ use antialiased fonts or not, by setting the environment variable
 `GDK_USE_XFT` to 1 or 0 respectively.
 
 
-.. _coqide-unicode:
+.. _rocqide-unicode:
 
 Bindings for input of Unicode symbols
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-CoqIDE supports a builtin mechanism to input non-ASCII symbols.
+RocqIDE supports a builtin mechanism to input non-ASCII symbols.
 For example, to input ``π``, it suffices to type ``\pi`` then press the
 combination of key ``Ctrl-Space`` (default key binding). Often, it
 suffices to type a prefix of the LaTeX token, e.g. typing ``\p``
@@ -468,7 +469,7 @@ right arrow, or ``\>=`` for a greater than or equal sign.
 
 A larger number of LaTeX tokens are supported by default. The full list
 is available here:
-https://github.com/coq/coq/blob/master/ide/coqide/default_bindings_src.ml
+https://github.com/coq/coq/blob/master/ide/rocqide/default_bindings_src.ml
 
 Custom bindings may be added, as explained further on.
 
@@ -478,7 +479,7 @@ of the preferences.
 .. note::
 
     It remains possible to input non-ASCII symbols using system-wide
-    approaches independent of CoqIDE.
+    approaches independent of RocqIDE.
 
 
 Adding custom bindings
@@ -508,7 +509,7 @@ Similarly, the above settings ensure than ``\l`` resolves to ``\le``,
 and that ``\la`` resolves to ``\lambda``.
 
 It can be useful to work with per-project binding files. For this purpose
-CoqIDE accepts a command line argument of the form
+RocqIDE accepts a command line argument of the form
 ``-unicode-bindings file1,file2,...,fileN``.
 Each of the file tokens provided may consists of one of:
 
@@ -542,7 +543,7 @@ related to the way files are saved.
 If you have no need to exchange files with non-UTF-8 aware
 applications, it is better to choose the UTF-8 encoding, since it
 guarantees that your files will be read again without problems. (This
-is because when CoqIDE reads a file, it tries to automatically detect
+is because when RocqIDE reads a file, it tries to automatically detect
 its character encoding.)
 
 If you choose something else than UTF-8, then missing characters will
@@ -550,13 +551,13 @@ be written encoded by `\x{....}` or `\x{........}` where each dot is
 an hexadecimal digit: the number between braces is the hexadecimal
 Unicode index for the missing character.
 
-.. _coqide-debugger:
+.. _rocqide-debugger:
 
 Debugger
 --------
 
 Version 8.15 introduces a visual debugger for |Ltac| tactics within
-CoqIDE.  It supports setting breakpoints visually and automatically
+RocqIDE.  It supports setting breakpoints visually and automatically
 displaying the stopping point in the source code with "continue",
 "step over" "step in" and "step out" operations.  The call stack and variable
 values for each stack frame are shown in a new panel.
@@ -581,7 +582,7 @@ shown with a dark blue background.  `Set Ltac Debug.` enables stopping in the
 debugger.
 
 .. image:: ../_static/debugger.png
-   :alt: CoqIDE Debugger
+   :alt: RocqIDE Debugger
 
 .. created with:
    Set Ltac Debug.  (* enable the debugger *)
@@ -647,7 +648,7 @@ Break (F11)
   Stops the debugger at the next possible stopping point, from which you can
   step or continue.   (Not supported in Windows at this time.)
 
-Note that the debugger is disabled when CoqIDE is running multiple worker processes,
+Note that the debugger is disabled when RocqIDE is running multiple worker processes,
 i.e. running in async mode.  Going "Forward" a single step at a time doesn't use
 async mode and will always enter the debugger as expected.  In addition, the debugger
 doesn't work correctly in some cases involving editing failed proofs in asymc mode (
@@ -671,7 +672,7 @@ indication that this has happened.
 
 .. unfortunately not working:
    Note: This `Wiki page <https://github.com/coq/coq/wiki/Configuration-of-CoqIDE#the-alternative-set-of-bindings>`_
-   describes a way to change CoqIDE key bindings.
+   describes a way to change RocqIDE key bindings.
 
 Call Stack and Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -740,7 +741,7 @@ If a debugger instance is stopped in a secondary script, the debugger function
 keys are directed to the debugger instance associated with the primary script.
 The debugger doesn't attempt to support multiple instances
 stopped in the same secondary script.  If you have a need to do this, run
-each debugger instance in a separate CoqIDE process/window.
+each debugger instance in a separate RocqIDE process/window.
 
 Note that if you set a breakpoint in a script that may be called by multiple debugger
 instances, you may inadvertently find you've gotten into unsupported territory.

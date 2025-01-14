@@ -9,7 +9,7 @@
 (************************************************************************)
 
 (*
-Displays the differences between successive proof steps in coqtop and CoqIDE.
+Displays the differences between successive proof steps in coqtop and RocqIDE.
 Proof General requires minor changes to make the diffs visible, but this code
 shouldn't break the existing version of PG.  See pp_diff.ml for details on how
 the diff works.
@@ -18,12 +18,12 @@ Diffs are computed for the hypotheses and conclusion of each goal in the new
 proof with its matching goal in the old proof.
 
 Diffs can be enabled in coqtop with 'Set Diffs "on"|"off"|"removed"' or
-'-diffs on|off|removed' on the OS command line.  In CoqIDE, they can be enabled
+'-diffs on|off|removed' on the OS command line.  In RocqIDE, they can be enabled
 from the View menu.  The "on" option shows only the new item with added text,
 while "removed" shows each modified item twice--once with the old value showing
 removed text and once with the new value showing added text.
 
-In CoqIDE, colors and highlights can be set in the Edit/Preferences/Tags panel.
+In RocqIDE, colors and highlights can be set in the Edit/Preferences/Tags panel.
 For coqtop, these can be set through the ROCQ_COLORS environment variable.
 
 Limitations/Possible enhancements:
@@ -33,7 +33,7 @@ not the greatest.  I didn't want to change the existing green highlight.
 Suggestions welcome.
 
 - coqtop underlines removed text because (per Wikipedia) the ANSI escape code
-for strikeout is not commonly supported (it didn't work on my system).  CoqIDE
+for strikeout is not commonly supported (it didn't work on my system).  RocqIDE
 uses strikeout on removed text.
 *)
 

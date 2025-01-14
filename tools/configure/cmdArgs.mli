@@ -33,7 +33,7 @@ type t =
   ; natdynlink : bool
   (** native dynlink enabled [only relevant to coq_makefile] *)
   ; browser : string option
-  (** override default browser command [for CoqIDE] *)
+  (** override default browser command [for RocqIDE] *)
   ; bytecodecompiler : bool
   (** Enable/disable Rocq's VM *)
   ; nativecompiler : nativecompiler

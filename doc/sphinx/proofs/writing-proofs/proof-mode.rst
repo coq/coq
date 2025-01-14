@@ -11,7 +11,7 @@ you complete a proof, such as with the :cmd:`Qed` command.  Tactics,
 which are available only in proof mode, incrementally transform incomplete
 proofs to eventually generate a complete proof.
 
-When you run Rocq interactively, such as through CoqIDE, Proof General or
+When you run Rocq interactively, such as through RocqIDE, Proof General or
 `rocq repl`, Rocq shows the current proof state (the incomplete proof) as you
 enter tactics.  This information isn't shown when you run Rocq in batch
 mode with `rocq compile`.
@@ -1034,7 +1034,7 @@ Showing differences between proof steps
 Rocq can automatically highlight the differences between successive proof steps
 and between values in some error messages.  Rocq can also highlight differences
 in the proof term.
-For example, the following screenshots of CoqIDE and coqtop show the application
+For example, the following screenshots of RocqIDE and coqtop show the application
 of the same :tacn:`intros` tactic.  The tactic creates two new hypotheses, highlighted in green.
 The conclusion is entirely in pale green because although it’s changed, no tokens were added
 to it.  The second screenshot uses the "removed" option, so it shows the conclusion a
@@ -1057,25 +1057,25 @@ new, no line of old text is shown for them.
 
 ..
 
-  .. image:: ../../_static/diffs-coqide-on.png
-     :alt: CoqIDE with Set Diffs on
+  .. image:: ../../_static/diffs-rocqide-on.png
+     :alt: RocqIDE with Set Diffs on
 
 ..
 
-  .. image:: ../../_static/diffs-coqide-removed.png
-     :alt: CoqIDE with Set Diffs removed
+  .. image:: ../../_static/diffs-rocqide-removed.png
+     :alt: RocqIDE with Set Diffs removed
 
 ..
 
   .. image:: ../../_static/diffs-coqtop-on3.png
      :alt: coqtop with Set Diffs on
 
-This image shows an error message with diff highlighting in CoqIDE:
+This image shows an error message with diff highlighting in RocqIDE:
 
 ..
 
   .. image:: ../../_static/diffs-error-message.png
-     :alt: CoqIDE error message with diffs
+     :alt: RocqIDE error message with diffs
 
 How to enable diffs
 ```````````````````
@@ -1098,8 +1098,8 @@ Colors for `rocq repl` can be configured by setting the ``ROCQ_COLORS`` environm
 variable.  See section :ref:`customization-by-environment-variables`.  Diffs
 use the tags ``diff.added``, ``diff.added.bg``, ``diff.removed`` and ``diff.removed.bg``.
 
-In CoqIDE, diffs should be enabled from the ``View`` menu.  Don’t use the ``Set Diffs``
-command in CoqIDE.  You can change the background colors shown for diffs from the
+In RocqIDE, diffs should be enabled from the ``View`` menu.  Don’t use the ``Set Diffs``
+command in RocqIDE.  You can change the background colors shown for diffs from the
 ``Edit | Preferences | Tags`` panel by changing the settings for the ``diff.added``,
 ``diff.added.bg``, ``diff.removed`` and ``diff.removed.bg`` tags.  This panel also
 lets you control other attributes of the highlights, such as the foreground
@@ -1177,16 +1177,16 @@ the split because it has not changed.
 
 ..
 
-  .. image:: ../../_static/diffs-coqide-multigoal.png
-     :alt: coqide with Set Diffs on with multiple goals
+  .. image:: ../../_static/diffs-rocqide-multigoal.png
+     :alt: rocqide with Set Diffs on with multiple goals
 
 Diffs may appear like this after applying a :tacn:`intro` tactic that results
 in a compacted hypotheses:
 
 ..
 
-  .. image:: ../../_static/diffs-coqide-compacted.png
-     :alt: coqide with Set Diffs on with compacted hypotheses
+  .. image:: ../../_static/diffs-rocqide-compacted.png
+     :alt: rocqide with Set Diffs on with compacted hypotheses
 
 .. _showing_proof_diffs:
 
@@ -1197,7 +1197,7 @@ To show differences in the proof term:
 
 - In `rocq repl` and Proof General, use the :cmd:`Show Proof` `Diffs` command.
 
-- In CoqIDE, position the cursor on or just after a tactic to compare the proof term
+- In RocqIDE, position the cursor on or just after a tactic to compare the proof term
   after the tactic with the proof term before the tactic, then select
   `View / Show Proof` from the menu or enter the associated key binding.
   Differences will be shown applying the current `Show Diffs` setting
@@ -1209,7 +1209,7 @@ To show differences in the proof term:
   ..
 
     .. image:: ../../_static/diffs-show-proof.png
-       :alt: coqide with Set Diffs on with compacted hypotheses
+       :alt: rocqide with Set Diffs on with compacted hypotheses
 
 Delaying solving unification constraints
 ----------------------------------------

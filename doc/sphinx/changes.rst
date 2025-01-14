@@ -4577,7 +4577,7 @@ CoqIDE
   visually and jumping to the stopping point plus continue, step over,
   step in and step out operations.  Displays the call stack and
   variable values for each stack frame.  Currently only for Ltac.
-  See the documentation :ref:`here <coqide-debugger>`
+  See the documentation :ref:`here <rocqide-debugger>`
   (`#14644 <https://github.com/coq/coq/pull/14644>`_,
   fixes `#13967 <https://github.com/coq/coq/issues/13967>`_,
   by Jim Fehrle)
@@ -8689,7 +8689,7 @@ reference manual. Here are the most important user-visible changes:
     ``\alpha`` then ``Shift+Space`` will insert the greek letter alpha.
     A larger number of default bindings are provided, following the latex
     naming convention. Bindings can be customized, either globally, or on a
-    per-project basis. See Section :ref:`coqide-unicode` for details
+    per-project basis. See Section :ref:`rocqide-unicode` for details
     (`#8560 <https://github.com/coq/coq/pull/8560>`_, by Arthur Charguéraud).
 
 - Infrastructure and dependencies:

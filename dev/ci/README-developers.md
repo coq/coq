@@ -8,7 +8,7 @@ unless these tests pass.
 We are currently running tests on the following platforms:
 
 - GitLab CI is the main CI platform. It tests the compilation of Rocq,
-  of the documentation, and of CoqIDE on Linux with several versions
+  of the documentation, and of RocqIDE on Linux with several versions
   of OCaml and with warnings as errors; it runs the test-suite and
   tests the compilation of several external developments. It also runs
   a linter that checks whitespace discipline. A [pre-commit

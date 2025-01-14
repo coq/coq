@@ -5,7 +5,7 @@ for his [vscoq](https://github.com/coq-community/vscoq/) project.
 
 Here, the aim is to provide a "hands on" description of the XML
 protocol that coqtop and IDEs use to communicate. The protocol first appeared 
-with Coq 8.5, and is used by CoqIDE, [vscoq](https://github.com/coq-community/vscoq/), and other user interfaces.
+with Coq 8.5, and is used by RocqDE, [vscoq legacy](https://github.com/coq-community/vscoq-legacy/), and other user interfaces.
 
 A somewhat out-of-date description of the async state machine is
 [documented here](https://github.com/ejgallego/jscoq/blob/v8.16/etc/notes/coq-notes.md).
@@ -331,7 +331,7 @@ many there are.
 -------------------------------
 
 ### <a name="command-status">**Status(force: bool)**</a>
-Returns information about the current proofs. CoqIDE typically sends this
+Returns information about the current proofs. RocqIDE typically sends this
 message with `force = false` after each sentence, and with `force = true` if
 the user wants to force the checking of all proofs (wheels button). In terms of
 the STM API, `force` triggers a `Join`.
@@ -544,7 +544,7 @@ Sends a list of option settings, where each setting roughly looks like:
   </list>
 </call>
 ```
-CoqIDE sends the following settings (defaults in parentheses):
+RocqIDE sends the following settings (defaults in parentheses):
 ```
 Printing Width : (<option_value val="intvalue"><int>60</int></option_value>),
 Printing Coercions : (<option_value val="boolvalue"><bool val="false"/></option_value>),
@@ -705,7 +705,7 @@ processed when Coq is no longer busy or execution stops in the debugger.
   <list>
     <pair>
       <pair>
-        <string>/home/proj/coq/ide/coqide/debug.v</string>
+        <string>/home/proj/coq/ide/rocqide/debug.v</string>
         <int>22</int>
       </pair>
       <bool val="true"/>
@@ -957,7 +957,7 @@ Currently these tags are used:
 * **goal** - the current goal for the debugger, for display in the Messages panel
   or elsewhere
 * **prompt** - output for display in the Messages panel prompting the user to
-  enter a debug command, allowing CoqIDE to display it without
+  enter a debug command, allowing RocqIDE to display it without
   appending a newline.  It also signals that coqidetop is waiting to receive
   a debugger-specific message such as [Db_cmd](#command-db_cmd).
 
@@ -984,8 +984,8 @@ There are 4 tags that indicate how the enclosed text should be highlighted:
 - diff.added.bg - unchanged text in a line that has additions ("bg" for "background")
 - diff.removed.bg - unchanged text in a line that has removals
 
-CoqIDE, Proof General and coqtop currently use 2 shades of green and 2 shades of red
-as the background color for highlights.  Coqtop and CoqIDE also apply underlining and/or
+RocqIDE, Proof General and coqtop currently use 2 shades of green and 2 shades of red
+as the background color for highlights.  Coqtop and RocqIDE also apply underlining and/or
 strikeout highlighting for the sake of the color blind.
 
 For example, `<diff.added>ABC</diff.added>` indicates that "ABC" should be highlighted

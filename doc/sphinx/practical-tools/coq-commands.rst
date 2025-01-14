@@ -5,7 +5,7 @@ The Rocq Prover commands
 
 There are several Rocq commands:
 
-+ ``coqide``: a graphical integrated development environment, described
++ ``rocqide``: a graphical integrated development environment, described
   :ref:`here <coqintegrateddevelopmentenvironment>`.  In addition, there are
   several other IDEs such as Proof General, vsCoq and Coqtail that are not
   included with the Coq installation.
@@ -61,13 +61,13 @@ See :ref:`rocq_makefile` and :ref:`building_dune`.
    To compile `foo.v` as part of a module `Mod1` that is rooted
    at `.` (i.e. the directory containing `foo.v`), run `rocq c -Q . Mod1 foo.v`.
 
-   To make the module available in `CoqIDE`, include the following line in the
+   To make the module available in `RocqIDE`, include the following line in the
    `_CoqProject` file (see :ref:`rocq_makefile`) in the directory from which you
-   start `CoqIDE` or give it as an argument to the ``coqide`` command.
+   start `RocqIDE` or give it as an argument to the ``rocqide`` command.
    *<PATH>* is the pathname of the directory containing the module,
    which can be an absolute path or relative to Rocq's current directory.  For now,
-   you must close and reload a named script file for `CoqIDE` to pick up the change,
-   or restart `CoqIDE`.
+   you must close and reload a named script file for `RocqIDE` to pick up the change,
+   or restart `RocqIDE`.
    The project file name is configurable in `Edit / Preferences / Project`.
 
       .. rocqdoc::

@@ -11,7 +11,7 @@ Proof.
   exact Type.
 Qed.
 
-(* (* coqide test, note the delegated proofs seem to get an empty dirpath?
+(* (* rocqide test, note the delegated proofs seem to get an empty dirpath?
       or I got confused because I had lemma foo in file foo
  *)
 Definition U := Type.

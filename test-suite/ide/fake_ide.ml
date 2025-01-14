@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Fake_ide : Simulate a [coqide] talking to a [coqidetop]. *)
+(** Fake_ide : Simulate a [rocqide] talking to a [coqidetop]. *)
 
 let error s =
   prerr_endline ("fake_ide: error: "^s);
@@ -308,7 +308,7 @@ let usage () =
     (Parser.print grammar));
   exit 1
 
-module Coqide = Spawn.Sync ()
+module Rocqide = Spawn.Sync ()
 
 let main =
   if Sys.os_type = "Unix" then Sys.set_signal Sys.sigpipe
@@ -326,7 +326,7 @@ let main =
   prerr_endline ("Running: "^idetop_name^" "^
                    (String.concat " " (Array.to_list coqtop_args)));
   let coq =
-    let _p, cin, cout = Coqide.spawn idetop_name coqtop_args in
+    let _p, cin, cout = Rocqide.spawn idetop_name coqtop_args in
     let ip = Xml_parser.make (Xml_parser.SChannel cin) in
     let op = Xml_printer.make (Xml_printer.TChannel cout) in
     Xml_parser.check_eof ip false;

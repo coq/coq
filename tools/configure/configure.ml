@@ -229,8 +229,8 @@ end
 let install prefs =
   [ InstallDir.make "COQPREFIX" "Corelib" prefs.prefix (Relative "") (Relative "")
   ; InstallDir.make "COQLIBINSTALL" "the Coq library" prefs.libdir (Relative "lib/coq") (Relative "lib/coq")
-  ; InstallDir.make "CONFIGDIR" "the Coqide configuration files" prefs.configdir (Relative "config") (Absolute "/etc/xdg/coq")
-  ; InstallDir.make "DATADIR" "the Coqide data files" prefs.datadir (Relative "share/coq") (Relative "share/coq")
+  ; InstallDir.make "CONFIGDIR" "the Rocqide configuration files" prefs.configdir (Relative "config") (Absolute "/etc/xdg/coq")
+  ; InstallDir.make "DATADIR" "the Rocqide data files" prefs.datadir (Relative "share/coq") (Relative "share/coq")
   ; InstallDir.make "MANDIR" "the Coq man pages" prefs.mandir (Relative "share/man") (Relative "share/man")
   ; InstallDir.make "DOCDIR" "documentation prefix path for all Coq packages" prefs.docdir (Relative "share/doc") (Relative "share/doc")
   ]

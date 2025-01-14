@@ -1,0 +1,3 @@
+{0 rocqide }
+
+The rocqide package only contains the RocqIDE executable and no OCaml library.
