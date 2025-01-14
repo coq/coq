@@ -116,7 +116,7 @@ There are many platforms for this purpose:
   hesitate to advertise them to people you know who might not be at
   ease with English.
 - The [Proof Assistants Stack Exchange][Proof-Assistants-SE], a Q&A
-  site for users of proof assistants, including Rocq.
+  site for users of proof assistants, including the Rocq Prover.
 - Other [Stack Exchange][Stack-Exchange] sites, and particularly
   [Stack Overflow][Stack-Overflow], receive questions about Rocq.
   Questions asked anywhere on Stack Exchange with the `coq` tag are
@@ -234,7 +234,7 @@ manifesto's README][coq-community-manifesto].
 
 Besides Rocqide, whose sources are available in this repository, and to
 which you are welcome to contribute, there are a number of alternative
-user interfaces for Rocq, more often as an editor support package.
+user interfaces for the Rocq Prover, more often as an editor support package.
 
 Here are the URLs of the repositories of the various editor support
 packages:
@@ -284,7 +284,7 @@ can't fix what we don't know about.  To report a bug, please open an
 issue in the [Rocq issue tracker][Rocq-issue-tracker] (you'll need a
 GitHub account).  You can file a bug for any of the following:
 
-- An anomaly. These are always considered bugs, so Rocq will even ask
+- An anomaly. These are always considered bugs, so the Rocq Prover will even ask
   you to file a bug report!
 - An error you didn't expect. If you're not sure whether it's a bug or
   intentional, feel free to file a bug anyway. We may want to improve
@@ -307,7 +307,7 @@ ask on our [Discourse forum][Discourse] or [Zulip chat][Zulip]
 before, after, or while writing a bug report.
 
 It is better if you can test that your bug is still present in the
-current testing or development version of Rocq (see the [next
+current testing or development version of the Rocq Prover (see the [next
 sub-section](#beta-testing)) before reporting it, but if you can't, it
 should not discourage you from reporting it.
 
@@ -327,7 +327,7 @@ use the Rocq bug minimizer is to call it through `@coqbot`, as documented
 
 ### Beta testing ###
 
-Rocq gets a new major release about every six months, which is then
+The Rocq Prover gets a new major release about every six months, which is then
 distributed through the [Rocq Platform][Rocq-Platform].
 New major versions of Rocq are first made available for beta-testing,
 before being declared stable and the new default version of the Rocq
@@ -349,11 +349,11 @@ changelog][unreleased-changelog].
 
 ### Helping triage existing issues ###
 
-Rocq has too many bug reports for its core developers alone to manage.
+The Rocq Prover has too many bug reports for its core developers alone to manage.
 You can help a lot by:
 
 - confirming that reported bugs are still active with the current
-  version of Rocq;
+  version of the Rocq Prover;
 - determining if the bug is a regression (new, and unexpected,
   behavior from a recent Rocq version);
 - more generally, by reproducing a bug, on another system,
@@ -427,7 +427,7 @@ projects.
 If you want to contribute a documentation update, bug fix or feature
 yourself, pull requests (PRs) on the [GitHub
 repository][coq-repository] are the way to contribute directly to the
-Rocq implementation (all changes, even the smallest changes from core
+Rocq Prover implementation (all changes, even the smallest changes from core
 developers, go through PRs).  You will need to create a fork of the
 repository on GitHub and push your changes to a new "topic branch" in
 that fork (instead of using an existing branch name like `master`).
@@ -947,7 +947,7 @@ of a limitation of GitHub). They are also listed on the
 
 ## Release management ##
 
-Rocq's major release cycles generally span about six months, with about
+The Rocq Prover major release cycles generally span about six months, with about
 4-5 months of development, and 1-2 months of stabilization /
 release candidates.  The release manager (RM) role is a rolling position
 among core developers.  The [release plan][release-plan] is published
@@ -998,15 +998,15 @@ The RM role does not include the task of making Rocq available through
 the various package managers out there: several contributors (most
 often external to the development team) take care of this, and we
 thank them for this.  If your preferred package manager does not
-include Rocq, it is a very worthy contribution to make it available
+include the Rocq Prover, it is a very worthy contribution to make it available
 there.  But be careful not to let a package get outdated, as this
 could lead some users to install an outdated version of Rocq without
-even being aware of it. Beyond packaging Rocq, you might want to
+even being aware of it. Beyond packaging the Rocq Prover itself, you might want to
 consider packaging the rest of Rocq packages available to users through
 the [Rocq Platform][Rocq-Platform]. In this case, it would be helpful if
 you try to favor the same versions as in the Rocq Platform.
 
-This [Repology page][repology-coq] lists the versions of Rocq which are
+This [Repology page][repology-coq] lists the versions of the Rocq Prover which are
 packaged in many repositories, although it is missing information on
 some repositories, like opam.
 
@@ -1045,7 +1045,7 @@ of the Rocq Platform.
 The list of dependencies can be found in the first section of the
 [`INSTALL.md`](INSTALL.md) file.
 
-Rocq is built using the `dune` build system. Run `make` to get help on
+The Rocq Prover is built using the `dune` build system. Run `make` to get help on
 the various available targets.  Additional documentation can be found
 in [`dev/doc/build-system.dune.md`][dev-doc-dune], and in [the
 official Dune documentation][dune-doc].

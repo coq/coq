@@ -1,4 +1,4 @@
-# Rocq
+# The Rocq Prover
 
 [![GitLab CI][gitlab-badge]][gitlab-link]
 [![GitHub macOS CI][gh-macos-badge]][gh-macos-link]
@@ -25,7 +25,7 @@
 [doi-badge]: https://zenodo.org/badge/DOI/10.5281/zenodo.1003420.svg
 [doi-link]: https://doi.org/10.5281/zenodo.1003420
 
-Rocq is a formal proof management system. It provides a formal language to write
+The Rocq Prover is an interactive theorem prover, or proof assistant. It provides a formal language to write
 mathematical definitions, executable algorithms and theorems together with an
 environment for semi-interactive development of machine-checked proofs.
 
@@ -56,8 +56,8 @@ See [`doc/README.md`](/doc/README.md) to learn more about the documentation,
 in particular how to build it. The
 documentation of the last released version is available on the Rocq
 web site at [coq.inria.fr/documentation](http://coq.inria.fr/documentation).
-See also [Cocorico](https://github.com/coq/coq/wiki) (the Rocq wiki),
-and the [Coq FAQ](https://github.com/coq/coq/wiki/The-Coq-FAQ),
+See also [the Rocq wiki](https://github.com/coq/coq/wiki),
+and the [Rocq FAQ](https://github.com/coq/coq/wiki/The-Coq-FAQ),
 for additional user-contributed documentation.
 
 The documentation of the master branch is continuously deployed.  See:
@@ -74,7 +74,7 @@ The documentation of the master branch is continuously deployed.  See:
 The [Recent
 changes](https://coq.github.io/doc/master/refman/changes.html) chapter
 of the reference manual explains the differences and the
-incompatibilities of each new version of Rocq. If you upgrade Rocq,
+incompatibilities of each new version of the Rocq Prover. If you upgrade Rocq,
 please read it carefully as it contains important advice on how to
 approach some problems you may encounter.
 
