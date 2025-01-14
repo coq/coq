@@ -11,7 +11,7 @@ well.
 
 ## Table of contents ##
 
-- [Guide to contributing to Rocq](#guide-to-contributing-to-coq)
+- [Guide to contributing to Rocq](#guide-to-contributing-to-rocq)
   - [Foreword](#foreword)
   - [Table of contents](#table-of-contents)
   - [Introduction](#introduction)
@@ -19,8 +19,8 @@ well.
     - [Asking and answering questions](#asking-and-answering-questions)
     - [Writing tutorials and blog posts](#writing-tutorials-and-blog-posts)
     - [Contributing to the wiki](#contributing-to-the-wiki)
-    - [Creating and maintaining Rocq packages](#creating-and-maintaining-coq-packages)
-      - [Distribution of Rocq packages](#distribution-of-coq-packages)
+    - [Creating and maintaining Rocq packages](#creating-and-maintaining-rocq-packages)
+      - [Distribution of Rocq packages](#distribution-of-rocq-packages)
       - [Support for plugin and library authors](#support-for-plugin-and-library-authors)
       - [Standard libraries](#standard-libraries)
       - [Maintaining existing packages in coq-community](#maintaining-existing-packages-in-coq-community)
@@ -34,7 +34,7 @@ well.
   - [Code changes](#code-changes)
     - [Using GitHub pull requests](#using-github-pull-requests)
       - [Fixing bugs and performing small changes](#fixing-bugs-and-performing-small-changes)
-      - [Proposing large changes: RFCs](#proposing-large-changes-rocq-rfcs)
+      - [Proposing large changes: Rocq RFCs](#proposing-large-changes-rocq-rfcs)
       - [Seeking early feedback on work-in-progress](#seeking-early-feedback-on-work-in-progress)
     - [Taking feedback into account](#taking-feedback-into-account)
       - [Understanding automatic feedback](#understanding-automatic-feedback)
@@ -53,7 +53,7 @@ well.
       - [Joining / leaving maintainer teams](#joining--leaving-maintainer-teams)
     - [Core development team](#core-development-team)
   - [Release management](#release-management)
-    - [Packaging Rocq](#packaging-coq)
+    - [Packaging Rocq](#packaging-rocq)
   - [Additional resources](#additional-resources)
     - [Developer documentation](#developer-documentation)
       - [Where to find the resources](#where-to-find-the-resources)
@@ -116,7 +116,7 @@ There are many platforms for this purpose:
   hesitate to advertise them to people you know who might not be at
   ease with English.
 - The [Proof Assistants Stack Exchange][Proof-Assistants-SE], a Q&A
-  site for users of proof assistants, including Rocq.
+  site for users of proof assistants, including the Rocq Prover.
 - Other [Stack Exchange][Stack-Exchange] sites, and particularly
   [Stack Overflow][Stack-Overflow], receive questions about Rocq.
   Questions asked anywhere on Stack Exchange with the `coq` tag are
@@ -128,23 +128,20 @@ mailing list, the [Coq IRC channel][IRC], the
 
 ### Writing tutorials and blog posts ###
 
-Writing about Rocq, in the form of tutorials or blog posts, is also a
+Writing about the Rocq Prover, in the form of tutorials or blog posts, is also a
 very important contribution.  In particular, it can help new users get
 interested in Rocq, and learn about it, and existing users learn about
-advance features.  Our official resources, such as the [reference
-manual][refman] are not suited for learning Rocq, but serve as
-reference documentation to which you can link from your tutorials.
+advance features.  The [reference manual][refman] is not suited for learning Rocq, but
+we now also provide short, action-oriented tutorials as part of our official resources.
+See the [Platform Docs][Platform-docs] repository for more information.
 
 The Rocq website has a page listing known
-[tutorials][Rocq-documentation] and the [wiki][] home page contains a
-list too.  You can expand the former through a pull request on the
-[Rocq website repository][Rocq-website-repository], while the latter can
-be edited directly by anyone with a GitHub account.
+[books][Rocq-books], including non-English books,
+which you can expand through a pull request on the
+[Rocq website repository][Rocq-website-repository].
 
-At the current time, we do not have a way of aggregating blog posts on
-a single page (like [OCaml planet][OCaml-planet]), but this would
-probably be something useful to get, so do not hesitate if you want to
-create it.  Some people use [Reddit][] for this purpose.
+Blog posts from the Rocq ecosystem are aggregated on the [Rocq Planet][Rocq-planet] page.
+If your blog is mainly about Rocq, you can contribute by adding it to the list.
 
 ### Contributing to the wiki ###
 
@@ -234,7 +231,7 @@ manifesto's README][coq-community-manifesto].
 
 Besides Rocqide, whose sources are available in this repository, and to
 which you are welcome to contribute, there are a number of alternative
-user interfaces for Rocq, more often as an editor support package.
+user interfaces for the Rocq Prover, more often as an editor support package.
 
 Here are the URLs of the repositories of the various editor support
 packages:
@@ -268,8 +265,8 @@ There are many other ways of creating content and making the Rocq
 community thrive, including many which we might not have thought
 about.  Feel free to add more references / ideas to this sub-section.
 
-You can tweet about Rocq, you can give talks about Rocq both in
-academic, and in non-academic venues (such as developer conferences).
+You can post about Rocq on social media, give talks about Rocq both in
+academic and non-academic venues (such as developer conferences).
 
 [Codewars][] is a platform where people can try to solve some
 programming challenges that were proposed by other community members.
@@ -284,7 +281,7 @@ can't fix what we don't know about.  To report a bug, please open an
 issue in the [Rocq issue tracker][Rocq-issue-tracker] (you'll need a
 GitHub account).  You can file a bug for any of the following:
 
-- An anomaly. These are always considered bugs, so Rocq will even ask
+- An anomaly. These are always considered bugs, so the Rocq Prover will even ask
   you to file a bug report!
 - An error you didn't expect. If you're not sure whether it's a bug or
   intentional, feel free to file a bug anyway. We may want to improve
@@ -307,7 +304,7 @@ ask on our [Discourse forum][Discourse] or [Zulip chat][Zulip]
 before, after, or while writing a bug report.
 
 It is better if you can test that your bug is still present in the
-current testing or development version of Rocq (see the [next
+current testing or development version of the Rocq Prover (see the [next
 sub-section](#beta-testing)) before reporting it, but if you can't, it
 should not discourage you from reporting it.
 
@@ -327,7 +324,7 @@ use the Rocq bug minimizer is to call it through `@coqbot`, as documented
 
 ### Beta testing ###
 
-Rocq gets a new major release about every six months, which is then
+The Rocq Prover gets a new major release about every six months, which is then
 distributed through the [Rocq Platform][Rocq-Platform].
 New major versions of Rocq are first made available for beta-testing,
 before being declared stable and the new default version of the Rocq
@@ -349,11 +346,11 @@ changelog][unreleased-changelog].
 
 ### Helping triage existing issues ###
 
-Rocq has too many bug reports for its core developers alone to manage.
+The Rocq Prover has too many bug reports for its core developers alone to manage.
 You can help a lot by:
 
 - confirming that reported bugs are still active with the current
-  version of Rocq;
+  version of the Rocq Prover;
 - determining if the bug is a regression (new, and unexpected,
   behavior from a recent Rocq version);
 - more generally, by reproducing a bug, on another system,
@@ -427,7 +424,7 @@ projects.
 If you want to contribute a documentation update, bug fix or feature
 yourself, pull requests (PRs) on the [GitHub
 repository][coq-repository] are the way to contribute directly to the
-Rocq implementation (all changes, even the smallest changes from core
+Rocq Prover implementation (all changes, even the smallest changes from core
 developers, go through PRs).  You will need to create a fork of the
 repository on GitHub and push your changes to a new "topic branch" in
 that fork (instead of using an existing branch name like `master`).
@@ -947,7 +944,7 @@ of a limitation of GitHub). They are also listed on the
 
 ## Release management ##
 
-Rocq's major release cycles generally span about six months, with about
+The Rocq Prover major release cycles generally span about six months, with about
 4-5 months of development, and 1-2 months of stabilization /
 release candidates.  The release manager (RM) role is a rolling position
 among core developers.  The [release plan][release-plan] is published
@@ -998,15 +995,15 @@ The RM role does not include the task of making Rocq available through
 the various package managers out there: several contributors (most
 often external to the development team) take care of this, and we
 thank them for this.  If your preferred package manager does not
-include Rocq, it is a very worthy contribution to make it available
+include the Rocq Prover, it is a very worthy contribution to make it available
 there.  But be careful not to let a package get outdated, as this
 could lead some users to install an outdated version of Rocq without
-even being aware of it. Beyond packaging Rocq, you might want to
+even being aware of it. Beyond packaging the Rocq Prover itself, you might want to
 consider packaging the rest of Rocq packages available to users through
 the [Rocq Platform][Rocq-Platform]. In this case, it would be helpful if
 you try to favor the same versions as in the Rocq Platform.
 
-This [Repology page][repology-coq] lists the versions of Rocq which are
+This [Repology page][repology-coq] lists the versions of the Rocq Prover which are
 packaged in many repositories, although it is missing information on
 some repositories, like opam.
 
@@ -1045,7 +1042,7 @@ of the Rocq Platform.
 The list of dependencies can be found in the first section of the
 [`INSTALL.md`](INSTALL.md) file.
 
-Rocq is built using the `dune` build system. Run `make` to get help on
+The Rocq Prover is built using the `dune` build system. Run `make` to get help on
 the various available targets.  Additional documentation can be found
 in [`dev/doc/build-system.dune.md`][dev-doc-dune], and in [the
 official Dune documentation][dune-doc].
@@ -1320,7 +1317,7 @@ can be found [on the wiki][wiki-CUDW].
 [coq-community-wiki]: https://github.com/coq-community/manifesto/wiki
 [coq-core]: https://github.com/orgs/coq/teams/core/members
 [coqdoc-documentation]: https://coq.inria.fr/refman/practical-tools/utilities.html#documenting-coq-files-with-coqdoc
-[Rocq-documentation]: https://coq.inria.fr/documentation
+[Rocq-books]: https://rocq-prover.org/books
 [Rocq-issue-tracker]: https://github.com/coq/coq/issues
 [Rocq-package-index]: https://rocq-prover.org/packages
 [Rocq-Platform]: https://github.com/coq/platform
@@ -1374,9 +1371,10 @@ can be found [on the wiki][wiki-CUDW].
 [ocamlformat]: https://github.com/ocaml-ppx/ocamlformat
 [ocamlverse-community]: https://ocamlverse.github.io/content/community.html
 [old-style-guide]: dev/doc/style.txt
-[standard-library]: https://github.com/coq-community/stdlib
+[standard-library]: https://github.com/coq/stdlib
 [other-standard-libraries]: https://github.com/coq/stdlib2/wiki/Other-%22standard%22-libraries
 [pinentry-mac]: https://stackoverflow.com/questions/39494631/gpg-failed-to-sign-the-data-fatal-failed-to-write-commit-object-git-2-10-0
+[Platform-docs]: https://github.com/coq/platform-docs
 [plugin-tutorial]: doc/plugin_tutorial
 [Proof-Assistants-SE]: https://proofassistants.stackexchange.com/
 [ProofGeneral-issues]: https://github.com/ProofGeneral/PG/issues
@@ -1386,6 +1384,7 @@ can be found [on the wiki][wiki-CUDW].
 [refman-README]: doc/sphinx/README.rst
 [release-plan]: https://github.com/coq/coq/wiki/Release-Plan
 [repology-coq]: https://repology.org/project/coq/versions
+[Rocq-planet]: https://rocq-prover.org/rocq-planet
 [RM-checklist]: dev/doc/release-process.md
 [Stack-Exchange]: https://stackexchange.com/filters/299857/questions-tagged-coq-on-stackexchange-sites
 [Stack-Exchange-to-Zulip]: https://coq.zulipchat.com/#narrow/stream/237977-Coq-users/topic/New.20Stack.20Exchange.20question
