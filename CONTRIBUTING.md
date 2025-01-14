@@ -1371,7 +1371,7 @@ can be found [on the wiki][wiki-CUDW].
 [ocamlformat]: https://github.com/ocaml-ppx/ocamlformat
 [ocamlverse-community]: https://ocamlverse.github.io/content/community.html
 [old-style-guide]: dev/doc/style.txt
-[standard-library]: https://github.com/coq-community/stdlib
+[standard-library]: https://github.com/coq/stdlib
 [other-standard-libraries]: https://github.com/coq/stdlib2/wiki/Other-%22standard%22-libraries
 [pinentry-mac]: https://stackoverflow.com/questions/39494631/gpg-failed-to-sign-the-data-fatal-failed-to-write-commit-object-git-2-10-0
 [Platform-docs]: https://github.com/coq/platform-docs
