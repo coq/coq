@@ -15,8 +15,7 @@ open Tacexpr
 
 (** {5 Tactic Definitions} *)
 
-val register_ltac : locality_flag -> ?deprecation:Deprecation.t ->
-  Tacexpr.tacdef_body list -> unit
+val register_ltac : Attributes.vernac_flags -> Tacexpr.tacdef_body list -> unit
 (** Adds new Ltac definitions to the environment. *)
 
 (** {5 Tactic Notations} *)

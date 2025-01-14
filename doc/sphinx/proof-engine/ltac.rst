@@ -1911,6 +1911,8 @@ Defining |Ltac| symbols
       do not count as user-defined tactics for `::=`.  If :attr:`local` is not
       specified, the redefinition applies across module boundaries.
 
+      Redefinitions are incompatible with :n:`{* with @tacdef_body }`.
+
       .. exn:: There is no Ltac named @qualid
          :undocumented:
 
