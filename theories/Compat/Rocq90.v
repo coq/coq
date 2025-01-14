@@ -8,19 +8,9 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Goptions
+(** Compatibility file for making Rocq act similar to Coq v9.0 *)
 
-val vernac_set_option :
-  locality:option_locality ->
-  stage:Summary.Stage.t ->
-  option_name -> Vernacexpr.option_setting -> unit
+(** When removing this file, please cleanup the "-compat" option code
+    in sysinit/coqargs.ml *)
 
-val vernac_add_option :
-  Libobject.locality -> option_name -> table_value list -> unit
-
-val vernac_remove_option :
-  Libobject.locality -> option_name -> table_value list -> unit
-
-val vernac_mem_option : option_name -> table_value list -> unit
-
-val vernac_print_option : option_name -> unit
+#[export] Set Warnings "-deprecated-since-9.1".
