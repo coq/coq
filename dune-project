@@ -31,8 +31,8 @@
   (zarith (>= 1.11))
   (conf-linux-libc-dev (= :os "linux")))
  (depopts rocq-native memprof-limits memtrace)
- (synopsis "The Rocq Proof Assistant -- Core Binaries and Tools")
- (description "Rocq is a formal proof management system. It provides
+ (synopsis "The Rocq Prover -- Core Binaries and Tools")
+ (description "The Rocq Prover is an interactive theorem prover, or proof assistant. It provides
 a formal language to write mathematical definitions, executable
 algorithms and theorems together with an environment for
 semi-interactive development of machine-checked proofs.
@@ -43,7 +43,7 @@ project, or the Bedrock verified low-level programming library), the
 formalization of mathematics (e.g. the full formalization of the
 Feit-Thompson theorem or homotopy type theory) and teaching.
 
-This package includes the Rocq core binaries, plugins, and tools, but
+This package includes the Rocq Prover core binaries, plugins, and tools, but
 not the vernacular standard library.
 
 Note that in this setup, Rocq needs to be started with the -boot and
@@ -60,8 +60,8 @@ prelude, now living in the rocq-core package."))
  (name rocq-core)
  (depends
   (rocq-runtime (= :version)))
- (synopsis "The Coq Proof Assistant with its prelude")
- (description "Coq is a formal proof management system. It provides
+ (synopsis "The Rocq Prover with its prelude")
+ (description "The Rocq Prover is an interactive theorem prover, or proof assistant. It provides
 a formal language to write mathematical definitions, executable
 algorithms and theorems together with an environment for
 semi-interactive development of machine-checked proofs.
@@ -80,15 +80,15 @@ Corelib.* and Ltac2.* namespaces."))
  (name coqide-server)
  (depends
   (rocq-runtime (= :version)))
- (synopsis "The Coq Proof Assistant, XML protocol server")
- (description "Coq is a formal proof management system. It provides
+ (synopsis "The Rocq Prover, XML protocol server")
+ (description "The Rocq Prover is an interactive theorem prover, or proof assistant. It provides
 a formal language to write mathematical definitions, executable
 algorithms and theorems together with an environment for
 semi-interactive development of machine-checked proofs.
 
 This package provides the `coqidetop` language server, an
-implementation of Coq's [XML protocol](https://github.com/coq/coq/blob/master/dev/doc/xml-protocol.md)
-which allows clients, such as RocqIDE, to interact with Coq in a
+implementation of Rocq's [XML protocol](https://github.com/coq/coq/blob/master/dev/doc/xml-protocol.md)
+which allows clients, such as RocqIDE, to interact with the Rocq Prover in a
 structured way."))
 
 (package
@@ -100,8 +100,8 @@ structured way."))
   (coqide-server (= :version))
   (cairo2 (>= 0.6.4))
   (lablgtk3-sourceview3 (and (>= 3.1.2) (or (>= 3.1.5) (<> :os "windows")))))
- (synopsis "The Coq Proof Assistant --- GTK3 IDE")
- (description "Coq is a formal proof management system. It provides
+ (synopsis "The Rocq Prover --- GTK3 IDE")
+ (description "The Rocq Prover is an interactive theorem prover, or proof assistant. It provides
 a formal language to write mathematical definitions, executable
 algorithms and theorems together with an environment for
 semi-interactive development of machine-checked proofs.
@@ -115,13 +115,13 @@ development of interactive proofs."))
  (depends
   (conf-python-3 :build)
   (coq (and :build (= :version))))
- (synopsis "The Coq Proof Assistant --- Reference Manual")
- (description "Coq is a formal proof management system. It provides
+ (synopsis "The Rocq Prover --- Reference Manual")
+ (description "The Rocq Prover is an interactive theorem prover, or proof assistant. It provides
 a formal language to write mathematical definitions, executable
 algorithms and theorems together with an environment for
 semi-interactive development of machine-checked proofs.
 
-This package provides the Coq Reference Manual."))
+This package provides the Rocq Reference Manual."))
 
 (package
  (name rocq)
@@ -132,8 +132,8 @@ This package provides the Coq Reference Manual."))
   (ounit2 :with-test)
   (conf-python-3 :with-test)
   (conf-time :with-test))
- (synopsis "The Rocq Proof Assistant with Stdlib")
- (description "Rocq is a formal proof management system. It provides
+ (synopsis "The Rocq Prover with Stdlib")
+ (description "The Rocq Prover is an interactive theorem prover, or proof assistant. It provides
 a formal language to write mathematical definitions, executable
 algorithms and theorems together with an environment for
 semi-interactive development of machine-checked proofs.
