@@ -159,9 +159,9 @@ stdenv.mkDerivation rec {
   ";
 
   meta = {
-    description = "Rocq proof assistant";
+    description = "Rocq Prover";
     longDescription = ''
-      Rocq is a formal proof management system.  It provides a formal language
+      The Rocq Prover is an interactive theorem prover, or proof assistant.  It provides a formal language
       to write mathematical definitions, executable algorithms and theorems
       together with an environment for semi-interactive development of
       machine-checked proofs.

@@ -1,5 +1,5 @@
-Continuous Integration for the Rocq Proof Assistant
-===================================================
+Continuous Integration for the Rocq Prover
+==========================================
 
 Changes to Rocq are systematically tested for regression and compatibility
 breakage on our Continuous Integration (CI) platforms *before* integration,
