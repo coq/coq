@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** The Coq toplevel loop. *)
+(** The Rocq toplevel loop. *)
 
 (** A buffer for the character read from a channel. We store the command
  * entered to be able to report errors without pretty-printing. *)
@@ -32,5 +32,5 @@ val ml_toplevel_include_ran : bool ref
 (** The main loop *)
 val loop : state:Vernac.State.t -> Vernac.State.t
 
-(** Main entry point of Coq: read and execute vernac commands. *)
+(** Main entry point of Rocq: read and execute vernac commands. *)
 val run : opts:Coqargs.t -> state:Vernac.State.t -> unit

@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** This file defines the most important datatype of Coq, namely kernel terms,
+(** This file defines the most important datatype of Rocq, namely kernel terms,
     as well as a handful of generic manipulation functions. *)
 
 open Names

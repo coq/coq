@@ -1,6 +1,6 @@
 (library
  (name vernac)
- (synopsis "Coq's Vernacular Language")
+ (synopsis "Rocq's Vernacular Language")
  (public_name rocq-runtime.vernac)
  (wrapped false)
  (modules_without_implementation vernacexpr)

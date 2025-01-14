@@ -19,7 +19,7 @@
     - DirPath.t represents generic paths as sequences of identifiers.
     - Label.t is an equivalent of Id.t made distinct for semantical purposes.
     - ModPath.t are module paths.
-    - KerName.t are absolute names of objects in Coq.
+    - KerName.t are absolute names of objects in Rocq.
 *)
 
 open Util
@@ -30,7 +30,7 @@ open Util
 module Id :
 sig
   type t
-  (** Values of this type represent (Coq) identifiers. *)
+  (** Values of this type represent (Rocq) identifiers. *)
 
   val equal : t -> t -> bool
   (** Equality over identifiers. *)
@@ -331,7 +331,7 @@ sig
       sees when printing. The second one is the canonical name, which is the
       actual absolute name of the reference.
 
-      This mechanism is fundamentally tied to the module system of Coq. Functor
+      This mechanism is fundamentally tied to the module system of Rocq. Functor
       application and module inclusion are the typical ways to introduce names
       where the canonical and user components differ. In particular, the two
       components should be undistinguishable from the point of view of typing,

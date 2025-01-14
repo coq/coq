@@ -582,7 +582,7 @@ Proof. by case: b => // /(_ isT). Qed.
 
 (**
  Coercion of sum-style datatypes into bool, which makes it possible
- to use ssr's boolean if rather than Coq's "generic" if.             **)
+ to use ssr's boolean if rather than Rocq's "generic" if.             **)
 
 Coercion isSome T (u : option T) := if u is Some _ then true else false.
 
@@ -1226,7 +1226,7 @@ Ltac bool_congr :=
  appearing in the premises or right-hand side of a generic lemma parameterized
  by ?P will be indistinguishable from @mem T pT A.
    Users should take care not to inadvertently "strip" (mem A) down to the
- coerced A, since this will expose the internal toP coercion: Coq could then
+ coerced A, since this will expose the internal toP coercion: Rocq could then
  display terms A x that cannot be typed as such. The topredE lemma can be used
  to restore the x \in A syntax in this case. While -topredE can conversely be
  used to change x \in P into P x for an applicative P, it is safer to use the
@@ -1331,7 +1331,7 @@ Notation "[ 'pred' x : T | E1 & E2 ]" :=
  need simpl_pred to coerce to both pred T _and_ {pred T}. However it is
  undesirable to have two distinct constants for what are essentially identical
  coercion functions, as this confuses the SSReflect keyed matching algorithm.
- While the Coq Coercion declarations appear to disallow such Coercion aliasing,
+ While the Rocq Coercion declarations appear to disallow such Coercion aliasing,
  it is possible to work around this limitation with a combination of modules
  and functors, which we do below.
    In addition we also give a predType instance for simpl_pred, which will
@@ -1888,7 +1888,7 @@ Notation "{ 'on' cd , 'bijective' f }" :=
 (**
  Weakening and monotonicity lemmas for localized predicates.
  Note that using these lemmas in backward reasoning will force expansion of
- the predicate definition, as Coq needs to expose the quantifier to apply
+ the predicate definition, as Rocq needs to expose the quantifier to apply
  these lemmas. We define a few specialized variants to avoid this for some
  of the ssrfun predicates.                                                   **)
 

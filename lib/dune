@@ -1,6 +1,6 @@
 (library
  (name lib)
- (synopsis "Coq's Utility Library [coq-specific]")
+ (synopsis "Rocq's Utility Library [rocq-specific]")
  (public_name rocq-runtime.lib)
  (wrapped false)
  (modules_without_implementation xml_datatype)

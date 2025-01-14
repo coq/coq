@@ -233,7 +233,7 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
             in
               (** The case where one of the inductives of the mutually
                   inductive block occurs as an argument of another is not
-                  known to be safe. So Coq rejects it. *)
+                  known to be safe. So Rocq rejects it. *)
               if chkpos &&
                  not (List.for_all (noccur_between n ntypes) largs)
               then failwith_non_pos_list n ntypes largs

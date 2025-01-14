@@ -230,9 +230,9 @@ function coqbot_update_comment() {
             comment_text="${comment_text}${nl}The following packages failed to install: ${uninstallable_packages}"
         fi
 
-        comment_text="${comment_text}${nl}${nl}<details><summary>Old Coq version ${old_coq_commit}</summary>"
+        comment_text="${comment_text}${nl}${nl}<details><summary>Old Rocq version ${old_coq_commit}</summary>"
         comment_text="${comment_text}${nl}${nl}${start_code_block}${nl}$(git log -n 1 "${old_coq_commit}")${nl}${end_code_block}${nl}</details>"
-        comment_text="${comment_text}${nl}${nl}<details><summary>New Coq version ${new_coq_commit}</summary>"
+        comment_text="${comment_text}${nl}${nl}<details><summary>New Rocq version ${new_coq_commit}</summary>"
         comment_text="${comment_text}${nl}${nl}${start_code_block}${nl}$(git log -n 1 "${new_coq_commit}")${nl}${end_code_block}${nl}</details>"
         comment_text="${comment_text}${nl}${nl}[Diff: ${bt}${old_coq_commit}..${new_coq_commit}${bt}](https://github.com/coq/coq/compare/${old_coq_commit}..${new_coq_commit})"
 
@@ -346,10 +346,10 @@ git clone -q --depth 1 -b "$new_coq_opam_archive_git_branch" "$new_coq_opam_arch
 
 initial_opam_packages="num ocamlfind dune"
 
-# Create an opam root and install Coq
+# Create an opam root and install Rocq
 # $1 = root_name {ex: NEW / OLD}
 # $2 = compiler name
-# $3 = git hash of Coq to be installed
+# $3 = git hash of Rocq to be installed
 # $4 = directory of coq opam archive
 # $5 = use flambda if nonempty
 create_opam() {
@@ -429,12 +429,12 @@ create_opam() {
 
 }
 
-# Create an OPAM-root to which we will install the NEW version of Coq.
+# Create an OPAM-root to which we will install the NEW version of Rocq.
 create_opam "NEW" "$new_ocaml_version" "$new_coq_commit" "$new_coq_version" \
             "$new_coq_opam_archive_dir" "$new_opam_override_urls" "$new_ocaml_flambda"
 new_coq_commit_long="$COQ_HASH_LONG"
 
-# Create an OPAM-root to which we will install the OLD version of Coq.
+# Create an OPAM-root to which we will install the OLD version of Rocq.
 create_opam "OLD" "$old_ocaml_version" "$old_coq_commit" "$old_coq_version" \
             "$old_coq_opam_archive_dir" "$old_opam_override_urls" "$old_ocaml_flambda"
 old_coq_commit_long="$COQ_HASH_LONG"
@@ -728,9 +728,9 @@ echo "${rendered_results}" > $timings/bench_summary
 echo "INFO: per line timing: ${CI_JOB_URL:-.}/artifacts/browse/${bench_dirname}/html/"
 
 cd "$coq_dir"
-echo INFO: Old Coq version
+echo INFO: Old Rocq version
 git log -n 1 "$old_coq_commit"
-echo INFO: New Coq version
+echo INFO: New Rocq version
 git log -n 1 "$new_coq_commit"
 
 if [ -n "$failed_packages" ]; then

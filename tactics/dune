@@ -1,6 +1,6 @@
 (library
  (name tactics)
- (synopsis "Coq's Core Tactics [ML implementation]")
+ (synopsis "Rocq's Core Tactics [ML implementation]")
  (public_name rocq-runtime.tactics)
  (wrapped false)
  (modules_without_implementation genredexpr)

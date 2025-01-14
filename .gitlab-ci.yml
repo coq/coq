@@ -64,7 +64,7 @@ before_script:
   - dev/tools/list-potential-artifacts.sh > downloaded_artifacts.txt
   - dev/ci/gitlab-section.sh end before_script
 
-# Regular "release" build of Coq, with final installed layout
+# Regular "release" build of Rocq, with final installed layout
 .build-template:
   stage: build-0
   interruptible: true
@@ -141,7 +141,7 @@ before_script:
     name: "$CI_JOB_NAME"
     expire_in: 2 months
 
-# The used Coq must be set explicitly for each job with "needs:".
+# The used Rocq must be set explicitly for each job with "needs:".
 # We add a spurious dependency `not-a-real-job` that must be
 # overridden otherwise the CI will fail (to help debugging missing needs).
 
@@ -607,7 +607,7 @@ validate:edge+flambda:
     OPAM_VARIANT: "+flambda"
   only: *full-ci
 
-# Libraries are by convention the projects that depend on Coq
+# Libraries are by convention the projects that depend on Rocq
 # but not on its ML API
 
 library:ci-argosy:
@@ -1054,7 +1054,7 @@ library:ci-trakt:
   - plugin:ci-elpi_hb
   stage: build-2
 
-# Plugins are by definition the projects that depend on Coq's ML API
+# Plugins are by definition the projects that depend on Rocq's ML API
 
 plugin:ci-aac_tactics:
   extends: .ci-template-flambda

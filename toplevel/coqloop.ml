@@ -195,7 +195,7 @@ let print_toplevel_parse_error (e, info) buf =
 *)
 end
 
-(*s The Coq prompt is the name of the focused proof, if any, and "Coq"
+(*s The Rocq prompt is the name of the focused proof, if any, and "Rocq"
     otherwise. We trap all exceptions to prevent the error message printing
     from cycling. *)
 let make_prompt () =
@@ -205,7 +205,7 @@ let make_prompt () =
     "Rocq < "
   [@@ocaml.warning "-3"]
 
-(* the coq prompt added to the default one when in emacs mode
+(* the rocq prompt added to the default one when in emacs mode
    The prompt contains the current state label [n] (for global
    backtracking) and the current proof state [p] (for proof
    backtracking) plus the list of open (nested) proofs (for proof
@@ -342,8 +342,8 @@ let coqloop_feed (fb : Feedback.feedback) = let open Feedback in
   | Message (lvl,loc,qf,msg) ->
     TopErr.print_error_for_buffer ?loc ~qf lvl msg top_buffer
 
-(** Main coq loop : read vernacular expressions until Drop is entered.
-    Ctrl-C is handled internally as Sys.Break instead of aborting Coq.
+(** Main rocq loop : read vernacular expressions until Drop is entered.
+    Ctrl-C is handled internally as Sys.Break instead of aborting Rocq.
     Normally, the only exceptions that can come out of [do_vernac] and
     exit the loop are Drop and Quit. Any other exception there indicates
     an issue with [print_toplevel_error] above. *)

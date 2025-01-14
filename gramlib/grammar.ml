@@ -38,7 +38,7 @@ module type S = sig
 
   module Parsable : sig
     type t
-    (** [Parsable.t] Stream tokenizers with Coq-specific funcitonality *)
+    (** [Parsable.t] Stream tokenizers with Rocq-specific functionality *)
 
     val make : ?loc:Loc.t -> (unit,char) Stream.t -> t
     (** [make ?loc strm] Build a parsable from stream [strm], resuming
@@ -387,7 +387,7 @@ type ('s, 'tr, 'k, 'r) ty_belast_rule =
 
 (* unfortunately, this is quadratic, but ty_rules aren't too long
  * (99% of the time of length less or equal 10 and maximum is 22
- * when compiling Coq and its standard library) *)
+ * when compiling Rocq and its standard library) *)
 let rec get_symbols : type s trec k r. (s, trec, k, r) ty_rule -> (s, trec, unit, k, r) any_symbols =
   let rec belast_rule : type s trr trs tr a k r. (trr, trs, tr) ty_and_rec -> (s, trr, k, r) ty_rule -> (s, trs, a) ty_symbol -> (s, tr, a -> k, r) ty_belast_rule =
     fun ar r s -> match ar, r with

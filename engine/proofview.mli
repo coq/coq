@@ -128,7 +128,7 @@ val unfocus : focus_context -> proofview -> proofview
     Tactics of course have arguments, but these are given at the
     meta-level as OCaml functions.  Most tactics in the sense we are
     used to return [()], that is no really interesting values. But
-    some might pass information around.  The tactics seen in Coq's
+    some might pass information around.  The tactics seen in Rocq's
     Ltac are (for now at least) only [unit tactic], the return values
     are kept for the OCaml toolkit.  The operation or the monad are
     [Proofview.tclUNIT] (which is the "return" of the tactic monad)

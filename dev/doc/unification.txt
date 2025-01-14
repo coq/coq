@@ -1,5 +1,5 @@
-Some notes about the use of unification in Coq
-----------------------------------------------
+Some notes about the use of unification in Rocq
+-----------------------------------------------
 
 There are several applications of unification and pattern-matching
 

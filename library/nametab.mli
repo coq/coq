@@ -212,8 +212,8 @@ val pr_global_env : Id.Set.t -> GlobRef.t -> Pp.t
 
 
 (** The [shortest_qualid] functions given an object with [user_name]
-   Coq.A.B.x, try to find the shortest among x, B.x, A.B.x and
-   Coq.A.B.x that denotes the same object.
+   Mylib.A.B.x, try to find the shortest among x, B.x, A.B.x and
+   Mylib.A.B.x that denotes the same object.
    @raise Not_found for unknown objects. *)
 
 val shortest_qualid_of_global : ?loc:Loc.t -> Id.Set.t -> GlobRef.t -> qualid

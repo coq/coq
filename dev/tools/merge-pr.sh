@@ -113,7 +113,7 @@ if [ "$REMOTE_URL" != "${OFFICIAL_REMOTE_GIT_URL}" ] && \
    [ "$REMOTE_URL" != "https://${OFFICIAL_REMOTE_HTTPS_URL}.git" ] && \
    [[ "$REMOTE_URL" != "https://"*"@${OFFICIAL_REMOTE_HTTPS_URL}" ]] && \
    [[ "$REMOTE_URL" != "https://"*"@${OFFICIAL_REMOTE_HTTPS_URL}.git" ]] ; then
-  error "remote $REMOTE does not point to the official Coq repo"
+  error "remote $REMOTE does not point to the official Rocq repo"
   error "that is $OFFICIAL_REMOTE_GIT_URL"
   error "it points to $REMOTE_URL instead"
   ask_confirmation

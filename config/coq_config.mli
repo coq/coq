@@ -34,9 +34,9 @@ val arch : string       (* architecture *)
 (* dubious use in envars, use in coqmakefile *)
 val arch_is_win32 : bool
 
-val version : string    (* version number of Coq *)
-val caml_version : string    (* OCaml version used to compile Coq *)
-val caml_version_nums : int list    (* OCaml version used to compile Coq by components *)
+val version : string    (* version number of Rocq *)
+val caml_version : string    (* OCaml version used to compile Rocq *)
+val caml_version_nums : int list    (* OCaml version used to compile Rocq by components *)
 val vo_version : int32
 
 (* used in envars for coq_makefile *)

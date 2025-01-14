@@ -23,7 +23,7 @@ open Util
     [ELSHFT] nor two consecutive [ELLFT]. *)
 
 (* Terminology comes from substitution calculi (see e.g. Hardin et al.).
-   That is, what is called a lift in Coq is made of what is called in
+   That is, what is called a lift in Rocq is made of what is called in
    substitution calculi a shift (the shift to add) and of what is
    called a lift (the threshold above which to apply the shift), which
    can be iterated as represented in the type [lift] *)

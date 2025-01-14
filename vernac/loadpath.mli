@@ -13,7 +13,7 @@ open Names
 (** * Load paths.
 
   A load path is a physical path in the file system; to each load path is
-  associated a Coq [DirPath.t] (the "logical" path of the physical path).
+  associated a Rocq [DirPath.t] (the "logical" path of the physical path).
 
 *)
 
@@ -21,7 +21,7 @@ type t
 (** Type of loadpath bindings. *)
 
 val logical : t -> DirPath.t
-(** Get the logical path (Coq module hierarchy) of a loadpath. *)
+(** Get the logical path (Rocq module hierarchy) of a loadpath. *)
 
 val physical : t -> CUnix.physical_path
 (** Get the physical path of a loadpath *)
@@ -55,9 +55,9 @@ val locate_file : string -> string
 module Error : sig
   type t = LibUnmappedDir | LibNotFound
 
-  (** Raise regular Coq errors with default informative message;
+  (** Raise regular Rocq errors with default informative message;
       usually document managers that have more information about the
-      workspace than coqc will override this with a better
+      workspace than rocq compile will override this with a better
       mechanism / message. *)
   val raise : DirPath.t -> t -> 'a
 end
@@ -77,12 +77,12 @@ val locate_absolute_library : DirPath.t -> (CUnix.physical_path, Error.t) Result
 
 (** {6 Extending the Load Path } *)
 
-(** Adds a path to the Coq and ML paths *)
+(** Adds a path to the Rocq and ML paths *)
 type vo_path =
   { unix_path : string
   (** Filesystem path containing vo/ml files *)
   ; coq_path  : DirPath.t
-  (** Coq prefix for the path *)
+  (** Rocq prefix for the path *)
   ; implicit  : bool
   (** [implicit = true] avoids having to qualify with [coq_path]
       true for -R, false for -Q in command line *)

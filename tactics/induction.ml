@@ -426,7 +426,7 @@ let induct_discharge with_evars dests avoid' tac (avoid,ra) names =
         end
     | ({ ba_kind = IndArg } as iarg) :: ra' ->
         Proofview.Goal.enter begin fun gl ->
-        (* Rem: does not happen in Coq schemes, only in user-defined schemes *)
+        (* Rem: does not happen in Rocq schemes, only in user-defined schemes *)
         let pat,names =
           consume_pattern avoid (Name iarg.ba_name) iarg.ba_dep gl names in
         dest_intro_patterns with_evars avoid thin MoveLast [pat] (fun ids thin ->
@@ -1218,7 +1218,7 @@ let induction_without_atomization isrec with_evars elim names lid =
   let sigma = Proofview.Goal.sigma gl in
   let hyp0 = List.hd lid in
   (* Check that the elimination scheme has a form similar to the
-    elimination schemes built by Coq. Schemes may have the standard
+    elimination schemes built by Rocq. Schemes may have the standard
     form computed from an inductive type OR (feb. 2006) a non standard
     form. That is: with no main induction argument and with an optional
     extra final argument of the form (f x y ...) in the conclusion. In

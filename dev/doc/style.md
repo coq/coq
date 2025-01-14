@@ -1,4 +1,4 @@
-# OCaml Style for Coq
+# OCaml Style for Rocq
 
 > Style uniformity is more important than style itself
 > -- <cite>Kernigan & Pike, The Practice of Programming</cite>

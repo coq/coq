@@ -10,7 +10,7 @@
 
 (** Mapping of grammar productions to camlp5 actions *)
 
-(** This is the part specific to Coq-level Notation and Tactic Notation.
+(** This is the part specific to Rocq-level Notation and Tactic Notation.
     For the ML-level tactic and vernac extensions, see Egramml. *)
 
 (** {5 Adding notations} *)

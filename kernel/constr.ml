@@ -1123,7 +1123,7 @@ let rec compare m n=
    overhead that is damageable for the hash-consing of small [constr]s
    (the most common case). One can think of an heterogeneous
    distribution of caches on smartly chosen nodes, but this is forbidden
-   by the use of generic equality in Coq source code. (Indeed, this forces
+   by the use of generic equality in Rocq source code. (Indeed, this forces
    each [constr] to have a unique canonical representation.)
 
    Given that hash-consing proceeds inductively, we can nonetheless
@@ -1136,7 +1136,7 @@ let rec compare m n=
    introducing an unreasonable number of collisions in the hash table.
    Some benchmarks make us think that this implementation of
    hash-consing is linear in the size of the hash-consed data
-   structure for our daily use of Coq.
+   structure for our daily use of Rocq.
 *)
 
 let array_eqeq t1 t2 =

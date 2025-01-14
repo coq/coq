@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Global control of Coq. *)
+(** Global control of Rocq. *)
 
 (** Used to convert signals to exceptions *)
 exception Timeout
@@ -17,7 +17,7 @@ exception Timeout
 val enable_thread_delay : bool ref
 
 val interrupt : bool ref
-(** Coq interruption: set the following boolean reference to interrupt Coq
+(** Rocq interruption: set the following boolean reference to interrupt Rocq
     (it eventually raises [Break], simulating a Ctrl-C) *)
 
 val check_for_interrupt : unit -> unit

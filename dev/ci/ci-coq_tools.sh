@@ -10,7 +10,7 @@ git_download coq_tools
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 jason_msg() {
-    echo "The build broke, if an overlay is needed, mention @JasonGross in describing the expected change in Coq that needs to be taken into account, and he'll prepare a fix for coq-tools"
+    echo "The build broke, if an overlay is needed, mention @JasonGross in describing the expected change in Rocq that needs to be taken into account, and he'll prepare a fix for coq-tools"
     exit $1
 }
 

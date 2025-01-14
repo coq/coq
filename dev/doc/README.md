@@ -1,4 +1,4 @@
-# Beginner's guide to hacking Coq
+# Beginner's guide to hacking Rocq
 
 ## Getting dependencies
 
@@ -13,7 +13,7 @@ by creating a Dune configuration file (see `man dune-config` to learn
 more). This file is generally located in `~/.config/dune/config` (this
 is system-dependent). It should start with the version of the Dune
 language used (by the configuration file---which can be different from
-the one used in the Coq repository), e.g.:
+the one used in the Rocq repository), e.g.:
 
 ```
 (lang dune 2.0)
@@ -42,7 +42,7 @@ the one used in the Coq repository), e.g.:
   (display short)
   ```
 
-## Building `coqtop` / `coqc` binaries
+## Building `rocq` binary
 
 We recommend that you use the targets in the `Makefile`. Calling `make` will
 show the available targets. See [`build-system.dune.md`](build-system.dune.md)
@@ -70,7 +70,7 @@ default verbosity globally as described in the previous section).
 To learn how to run the test suite, you can read
 [`test-suite/README.md`](../../test-suite/README.md).
 
-## Coq functions of interest
+## Rocq functions of interest
 - `Coqtop.start`: This function is the main entry point of coqtop.
 - `Coqtop.parse_args `: This function is responsible for parsing command-line arguments.
 - `Coqloop.loop`: This function implements the read-eval-print loop.
@@ -89,7 +89,7 @@ To learn how to run the test suite, you can read
 
 ## A note about rlwrap
 
-When using `rlwrap coqtop` make sure the version of `rlwrap` is at least
+When using `rlwrap rocq repl` make sure the version of `rlwrap` is at least
 `0.42`, otherwise you will get
 
 ```

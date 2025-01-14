@@ -1,6 +1,6 @@
 (library
  (name config)
- (synopsis "Coq Configuration Variables")
+ (synopsis "Rocq Configuration Variables")
  (public_name rocq-runtime.config)
  (modules coq_config)
  (wrapped false))
@@ -11,7 +11,7 @@
 
 (library
  (name byte_config)
- (synopsis "Coq Configuration Variables (for bytecode only)")
+ (synopsis "Rocq Configuration Variables (for bytecode only)")
  (public_name rocq-runtime.config.byte)
  (modules coq_byte_config)
  (wrapped false)

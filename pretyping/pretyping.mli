@@ -219,6 +219,6 @@ type pretyper = {
     pretyping function through the {!eval_pretyper} function below. *)
 
 val default_pretyper : pretyper
-(** Coq vanilla pretyper. *)
+(** Rocq vanilla pretyper. *)
 
 val eval_pretyper : pretyper -> flags:pretype_flags -> Evardefine.type_constraint -> GlobEnv.t -> evar_map -> glob_constr -> evar_map * unsafe_judgment

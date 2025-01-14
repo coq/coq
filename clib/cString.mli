@@ -34,11 +34,11 @@ sig
   (** Remove the eventual first surrounding simple quotes of a string. *)
 
   val quote_coq_string : string -> string
-  (** Quote a string according to Coq conventions (i.e. doubling
+  (** Quote a string according to Rocq conventions (i.e. doubling
       double quotes and surrounding by double quotes) *)
 
   val unquote_coq_string : string -> string option
-  (** Unquote a quoted string according to Coq conventions
+  (** Unquote a quoted string according to Rocq conventions
       (i.e. removing surrounding double quotes and undoubling double
       quotes); returns [None] if not a quoted string *)
 

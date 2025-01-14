@@ -16,11 +16,11 @@ let () =
     Toploop.add_directive
       "go"
       (Toploop.Directive_none go)
-      Toploop.{section="Coq"; doc="Run Coq toplevel loop"}
+      Toploop.{section="Coq"; doc="Run Rocq toplevel loop"}
 
 let _ =
   print_newline ();
-  print_endline "OCaml toplevel with Coq printers and utilities (to go back to Coq, use `#quit;;`, or `#go;;` if `#trace` was used)"
+  print_endline "OCaml toplevel with Rocq printers and utilities (to go back to Rocq, use `#quit;;`, or `#go;;` if `#trace` was used)"
 
 let _ =
   Coqloop.ml_toplevel_include_ran := true

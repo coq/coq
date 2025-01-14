@@ -192,7 +192,7 @@ let empty_frozen = Frozen.empty
 
 end
 
-(** For global tables registered statically before the end of coqtop
+(** For global tables registered statically before the end of rocq repl
     launch, the following empty [init_function] could be used. *)
 
 let nop () = ()

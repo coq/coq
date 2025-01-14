@@ -13,7 +13,7 @@ open Util
 open Genarg
 open Gramlib
 
-(** The parser of Coq *)
+(** The parser of Rocq *)
 include Grammar.GMake(CLexer.Lexer)
 
 let keyword_state = ref CLexer.empty_keyword_state

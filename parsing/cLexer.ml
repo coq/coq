@@ -753,7 +753,7 @@ let next_token ~diff_mode ttree loc s : (Tok.t * Loc.t, Exninfo.iexn) Result.t =
   let f (diff_mode, ttree, loc, s) = next_token ~diff_mode ttree loc s in
   CErrors.to_result ~f (diff_mode, ttree, loc, s)
 
-(** {6 The lexer of Coq} *)
+(** {6 The lexer of Rocq} *)
 
 module MakeLexer (Diff : sig val mode : bool end)
   : Gramlib.Plexing.S

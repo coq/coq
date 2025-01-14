@@ -4,7 +4,7 @@ usage()
         cat 1>&2 <<EOF
 Usage: $0 FILE VERSION NOTE
 
-        Write deprecation attributes in a Coq source file for all commands that
+        Write deprecation attributes in a Rocq source file for all commands that
         support it.
         Example: $0 Heap.v 8.3 "Use mergesort.v"
 EOF

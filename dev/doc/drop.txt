@@ -1,4 +1,4 @@
-When you start byte-compiled Coq toplevel:
+When you start byte-compiled Rocq toplevel:
 
   rlwrap bin/coqtop.byte
 
@@ -6,7 +6,7 @@ then if you type:
 
   Drop.
 
-you will decend from Coq toplevel down to Ocaml toplevel.
+you will decend from Rocq toplevel down to Ocaml toplevel.
 So if you want to learn:
 - the current values of some global variables you are interested in
 - or see what happens when you invoke certain functions

@@ -96,7 +96,7 @@ End Proper.
 Definition pointwise_relation A {B} (R : relation B) : relation (A -> B) :=
   fun f g => forall a, R (f a) (g a).
 
-(** We let Coq infer these relations when a default relation should
+(** We let Rocq infer these relations when a default relation should
   be found on the function space. *)
 Lemma rewrite_relation_pointwise {A B R} `{RewriteRelation B R}:
   RewriteRelation (@pointwise_relation A B R).
@@ -334,7 +334,7 @@ Section GenericInstances.
   Let U := Type.
   Context {A B C : U}.
 
-  (** We can build a PER on the Coq function space if we have PERs on the domain and
+  (** We can build a PER on the Rocq function space if we have PERs on the domain and
    codomain. *)
   
   Program Instance respectful_per `(PER A R, PER B R') : PER (R ==> R').

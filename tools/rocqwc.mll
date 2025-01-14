@@ -8,10 +8,10 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* rocq wc - counts the lines of spec, proof and comments in Coq sources
+(* rocq wc - counts the lines of spec, proof and comments in Rocq sources
  * Copyright (C) 2003 Jean-Christophe Filliâtre *)
 
-(*s {\bf rocq wc.} Counts the lines of spec, proof and comments in a Coq source.
+(*s {\bf rocq wc.} Counts the lines of spec, proof and comments in a Rocq source.
     It assumes the files to be lexically well-formed. *)
 
 (*i*){

@@ -8,13 +8,13 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Coq document type. *)
+(** Rocq document type. *)
 
 (**
 {4 Pretty printing guidelines}
 
 [Pp.t] is the main pretty printing document type
-in the Coq system. Documents are composed laying out boxes, and
+in the Rocq system. Documents are composed laying out boxes, and
 users can add arbitrary tag metadata that backends are free
 to interpret.
 

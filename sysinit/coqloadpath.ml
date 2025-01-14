@@ -28,7 +28,7 @@ let build_userlib_path ~unix_path =
     [vo_path]
   else []
 
-(* LoadPath for Coq user libraries *)
+(* LoadPath for Rocq user libraries *)
 let init_load_path ~coqenv =
 
   let open Loadpath in

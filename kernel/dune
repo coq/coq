@@ -1,6 +1,6 @@
 (library
  (name kernel)
- (synopsis "The Coq Kernel")
+ (synopsis "The Rocq Kernel")
  (public_name rocq-runtime.kernel)
  (wrapped false)
  (modules_without_implementation values declarations entries)

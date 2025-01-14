@@ -2,7 +2,7 @@
 (coq.theory
  (name Corelib)
  (package rocq-core)
- (synopsis "Coq's Standard Library")
+ (synopsis "Rocq's Core Library")
  ; Uncomment this to have dune compile native files in release mode
  ; (mode native)
  (boot)

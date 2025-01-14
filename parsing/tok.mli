@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** The type of token for the Coq lexer and parser *)
+(** The type of token for the Rocq lexer and parser *)
 
 type 'c p =
   | PKEYWORD : string -> string p

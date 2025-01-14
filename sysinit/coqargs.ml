@@ -447,7 +447,7 @@ let parse_args ~init args =
 (* Startup LoadPath and Modules                                               *)
 (******************************************************************************)
 
-(* prelude_data == From Coq Require Import Prelude. *)
+(* prelude_data == From Corelib Require Import Prelude. *)
 let prelude_data = RequireInjection { lib = "Prelude"; prefix = Some "Corelib"; export = Some Import; allow_failure = false }
 
 let injection_commands opts =

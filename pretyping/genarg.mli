@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Generic arguments used by the extension mechanisms of several Coq ASTs. *)
+(** Generic arguments used by the extension mechanisms of several Rocq ASTs. *)
 
 (** Generic arguments must be registered according to their usage:
 
@@ -237,7 +237,7 @@ val unquote : ('a, 'co) abstract_argument_type -> argument_type
 
 (** {6 Registering genarg-manipulating functions}
 
-  This is boilerplate code used here and there in the code of Coq. *)
+  This is boilerplate code used here and there in the code of Rocq. *)
 
 val get_arg_tag : ('a, 'b, 'c) genarg_type -> ('a, 'b, 'c) ArgT.tag
 (** Works only on base objects (ExtraArg), otherwise fails badly. *)

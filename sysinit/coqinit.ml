@@ -41,7 +41,7 @@ let gc_set : Gc.control -> unit =
     fixed_set
   | _ -> Gc.set
 
-(** Coq is a heavy user of persistent data structures and symbolic ASTs, so the
+(** Rocq is a heavy user of persistent data structures and symbolic ASTs, so the
     minor heap is heavily solicited. Unfortunately, the default size is far too
     small, so we enlarge it a lot (128 times larger).
 

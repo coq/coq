@@ -18,12 +18,12 @@ open Pp
    dependencies, and manage path for us.
 
    A bit of infrastructure is still in place to support a "legacy"
-   mode where Coq used to manage the OCaml include paths and directly
+   mode where Rocq used to manage the OCaml include paths and directly
    load .cmxs/.cma files itself.
 
    We also place here the required code for interacting with the
    Summary and Libobject, and provide an API so plugins can interact
-   with this loading/unloading for Coq-specific purposes adding their
+   with this loading/unloading for Rocq-specific purposes adding their
    own init functions, given that OCaml cannot unlink a dynamic module.
 
 *)
@@ -92,7 +92,7 @@ module PluginSpec : sig
   val load : t -> unit
 
   (* Compute a digest, a findlib library name have more than one
-     plugin .cmxs, however this is not the case in Coq. Maybe we
+     plugin .cmxs, however this is not the case in Rocq. Maybe we
      should strengthen this invariant. *)
   val digest : t -> Digest.t list
 
@@ -214,7 +214,7 @@ end = struct
 
 end
 
-(* If there is a toplevel under Coq *)
+(* If there is a toplevel under Rocq *)
 type toplevel =
   { load_plugin : PluginSpec.t -> unit
   (** Load a findlib library, given by public name *)
@@ -226,7 +226,7 @@ type toplevel =
   (** Run the OCaml toplevel with given initialisation file *)
   }
 
-(* Determines the behaviour of Coq with respect to ML files (compiled
+(* Determines the behaviour of Rocq with respect to ML files (compiled
    or not) *)
 type kind_load =
   | WithTop of toplevel
@@ -245,7 +245,7 @@ let remove () =
   load := WithoutTop;
   Nativelib.load_obj := (fun x -> () : string -> unit)
 
-(* Tests if an Ocaml toplevel runs under Coq *)
+(* Tests if an Ocaml toplevel runs under Rocq *)
 let is_ocaml_top () =
   match !load with
     | WithTop _ -> true
@@ -278,14 +278,14 @@ let add_ml_dir s =
     | _ -> ()
 
 (** Is the ML code of the standard library placed into loadable plugins
-    or statically compiled into coqtop ? For the moment this choice is
+    or statically compiled into rocq repl ? For the moment this choice is
     made according to the presence of native dynlink : even if bytecode
-    coqtop could always load plugins, we prefer to have uniformity between
+    rocq repl could always load plugins, we prefer to have uniformity between
     bytecode and native versions. *)
 
 (* [known_loaded_module] contains the names of the loaded ML modules
  * (linked or loaded with load_object). It is used not to load a
- * module twice. It is NOT the list of ML modules Coq knows. *)
+ * module twice. It is NOT the list of ML modules Rocq knows. *)
 
 (* TODO: Merge known_loaded_module and known_loaded_plugins *)
 let known_loaded_modules : PluginSpec.Set.t ref = ref PluginSpec.Set.empty

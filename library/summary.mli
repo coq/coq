@@ -22,7 +22,7 @@ module Stage : sig
 
 end
 
-(** Types of global Coq states. The ['a] type should be pure and marshallable by
+(** Types of global Rocq states. The ['a] type should be pure and marshallable by
     the standard OCaml marshalling function. *)
 type 'a summary_declaration = {
   stage : Stage.t;
@@ -30,7 +30,7 @@ type 'a summary_declaration = {
   unfreeze_function : 'a -> unit;
   init_function : unit -> unit }
 
-(** For tables registered during the launch of coqtop, the [init_function]
+(** For tables registered during the launch of rocq repl, the [init_function]
     will be run only once, during an [init_summaries] done at the end of
     coqtop initialization. For tables registered later (for instance
     during a plugin dynlink), [init_function] is used when unfreezing

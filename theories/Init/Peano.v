@@ -21,7 +21,7 @@
     - greater [gt]
 
    It states various lemmas and theorems about natural numbers,
-   including Peano's axioms of arithmetic (in Coq, these are provable).
+   including Peano's axioms of arithmetic (in Rocq, these are provable).
    Case analysis on [nat] and induction on [nat * nat] are provided too
  *)
 

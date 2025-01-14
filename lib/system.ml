@@ -35,7 +35,7 @@ let skipped_dirnames = ref ["CVS"; "_darcs"]
 
 let exclude_directory f = skipped_dirnames := f :: !skipped_dirnames
 
-(* Note: this test is possibly used for Coq module/file names but also for
+(* Note: this test is possibly used for Rocq module/file names but also for
    OCaml filenames, whose syntax as of today is more restrictive for
    module names (only initial letter then letter, digits, _ or quote),
    but more permissive (though disadvised) for file names  *)

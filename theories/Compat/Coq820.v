@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Compatibility file for making Coq act similar to Coq v8.20 *)
+(** Compatibility file for making Rocq act similar to Coq v8.20 *)
 
 (** When removing this file, please cleanup the "-compat" option code
     in sysinit/coqargs.ml *)

@@ -13,7 +13,7 @@ if which cygpath >/dev/null 2>&1; then OCAMLFINDSEP=\;; else OCAMLFINDSEP=:; fi
 # more controlled way.
 if [ -n "${GITLAB_CI}" ];
 then
-    # Gitlab build, Coq installed into `_install_ci`
+    # Gitlab build, Rocq installed into `_install_ci`
     export COQBIN="$PWD/_install_ci/bin"
     export OCAMLPATH="$PWD/_install_ci/lib$OCAMLFINDSEP$OCAMLPATH"
     export PATH="$PWD/_install_ci/bin:$PATH"
@@ -43,7 +43,7 @@ fi
 
 export PATH="$COQBIN:$PATH"
 
-# Coq's tools need an ending slash :S, we should fix them.
+# Rocq's tools need an ending slash :S, we should fix them.
 export COQBIN="$COQBIN/"
 
 ls -l "$COQBIN"

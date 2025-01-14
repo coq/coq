@@ -215,7 +215,7 @@ Definition to_pos (z:Z) : positive :=
   Euclidean division. Its projections are named [div] (noted "/")
   and [modulo] (noted with an infix "mod").
   These functions correspond to the `div` and `mod` of Haskell.
-  This is the historical convention of Coq.
+  This is the historical convention of Rocq.
 
   The main properties of this convention are :
     - we have [sgn (a mod b) = sgn (b)]

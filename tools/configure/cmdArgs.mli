@@ -35,11 +35,11 @@ type t =
   ; browser : string option
   (** override default browser command [for CoqIDE] *)
   ; bytecodecompiler : bool
-  (** Enable/disable Coq's VM *)
+  (** Enable/disable Rocq's VM *)
   ; nativecompiler : nativecompiler
-  (** Enable/disable Coq's native compiler *)
+  (** Enable/disable Rocq's native compiler *)
   ; coqwebsite : string
-  (** Override Coq's website, used by distributions  *)
+  (** Override Rocq's website, used by distributions  *)
   ; debug : bool
   (** Debug package and environment detection *)
   }

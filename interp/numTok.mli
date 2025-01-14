@@ -83,7 +83,7 @@ sig
     (** [sprint] and [print] returns the number as it was parsed, for printing *)
 
   val parse : (unit,char) Gramlib.Stream.t -> t
-    (** Parse a positive Coq number.
+    (** Parse a positive Rocq number.
         Precondition: the first char on the stream is already known to be a digit (\[0-9\]).
         Precondition: at least two extra chars after the number to parse.
 
@@ -97,7 +97,7 @@ sig
         - exponent part: empty or \[pP\]\[+-\]?\[0-9\]\[0-9_\]* *)
 
   val parse_string : string -> t option
-    (** Parse the string as a non negative Coq number, if possible *)
+    (** Parse the string as a non negative Rocq number, if possible *)
 
   val classify : t -> num_class
 
@@ -120,7 +120,7 @@ sig
     (** [sprint] and [print] returns the number as it was parsed, for printing *)
 
   val parse_string : string -> t option
-    (** Parse the string as a signed Coq number, if possible *)
+    (** Parse the string as a signed Rocq number, if possible *)
 
   val of_int_string : string -> t
     (** Convert from a string in the syntax of OCaml's int/int64 *)

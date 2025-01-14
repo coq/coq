@@ -15,7 +15,7 @@ open Constr
 open Environ
 
 (** This file defines the pervasive unification state used everywhere
-    in Coq tactic engine. It is very low-level and most of the
+    in Rocq tactic engine. It is very low-level and most of the
     functions exported here are irrelevant to the standard API user.
     Consider using {!Evarutil} or {!Proofview} instead.
 

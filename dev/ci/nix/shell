@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-## This file should be run from the root of the Coq source tree
+## This file should be run from the root of the Rocq source tree
 
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 echo "Branch: $BRANCH in $PWD"

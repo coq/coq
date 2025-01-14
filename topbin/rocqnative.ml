@@ -1,4 +1,4 @@
-(* Coq native compiler *)
+(* Rocq native compiler *)
 open CErrors
 open Util
 open Names

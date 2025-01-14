@@ -291,7 +291,7 @@ type doc = int
 let dummy_doc : doc = 0
 
 (* Imperative wrap around VCS to obtain _the_ VCS that is the
- * representation of the document Coq is currently processing *)
+ * representation of the document Rocq is currently processing *)
 module VCS : sig
 
   exception Expired
@@ -900,7 +900,7 @@ end = struct (* {{{ *)
        Exninfo.iraise ie
 
     | EmptyState | ParsingState _ ->
-      (* coqc has a 1 slot cache and only for valid states *)
+      (* rocq compile has a 1 slot cache and only for valid states *)
       if (VCS.is_interactive ()) || not (Stateid.equal id !cur_id) then
         anomaly Pp.(str "installing a non cached state.")
 

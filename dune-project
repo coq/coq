@@ -13,8 +13,8 @@
 (generate_opam_files true)
 
 (license LGPL-2.1-only)
-(maintainers "The Coq development team <coqdev@inria.fr>")
-(authors "The Coq development team, INRIA, CNRS, and contributors")
+(maintainers "The Rocq development team <coqdev@inria.fr>")
+(authors "The Rocq development team, INRIA, CNRS, and contributors")
 ; This generates bug-reports and dev-repo
 (source (github coq/coq))
 (homepage https://coq.inria.fr/)
@@ -31,8 +31,8 @@
   (zarith (>= 1.11))
   (conf-linux-libc-dev (= :os "linux")))
  (depopts rocq-native memprof-limits memtrace)
- (synopsis "The Coq Proof Assistant -- Core Binaries and Tools")
- (description "Coq is a formal proof management system. It provides
+ (synopsis "The Rocq Proof Assistant -- Core Binaries and Tools")
+ (description "Rocq is a formal proof management system. It provides
 a formal language to write mathematical definitions, executable
 algorithms and theorems together with an environment for
 semi-interactive development of machine-checked proofs.
@@ -43,11 +43,11 @@ project, or the Bedrock verified low-level programming library), the
 formalization of mathematics (e.g. the full formalization of the
 Feit-Thompson theorem or homotopy type theory) and teaching.
 
-This package includes the Coq core binaries, plugins, and tools, but
+This package includes the Rocq core binaries, plugins, and tools, but
 not the vernacular standard library.
 
-Note that in this setup, Coq needs to be started with the -boot and
--noinit options, as will otherwise fail to find the regular Coq
+Note that in this setup, Rocq needs to be started with the -boot and
+-noinit options, as will otherwise fail to find the regular Rocq
 prelude, now living in the rocq-core package."))
 
 (package

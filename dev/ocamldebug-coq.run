@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Wrapper around ocamldebug for Coq
+# Wrapper around ocamldebug for Rocq
 
 # This file is to be launched via the generated script ocamldebug-coq,
 # which will set the env variables $OCAMLDEBUG, $CAMLP5LIB, $COQTOP

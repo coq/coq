@@ -61,7 +61,7 @@ GRAMMAR EXTEND Gram
   ;
   ref_or_pattern_occ:
     (* If a string, it is interpreted as a ref
-       (anyway a Coq string does not reduce) *)
+       (anyway a Rocq string does not reduce) *)
     [ [ c = smart_global; nl = occs -> { nl,Inl c }
       | c = constr; nl = occs -> { nl,Inr c } ] ]
   ;

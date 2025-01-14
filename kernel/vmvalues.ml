@@ -190,7 +190,7 @@ let fun_of_val v = (Obj.magic v : vfun)
 
 type tcode
 (** A block whose first field is a C-allocated VM bytecode, encoded as char*.
-    This is compatible with the representation of the Coq VM closures. *)
+    This is compatible with the representation of OCaml closures. *)
 
 type tcode_array
 

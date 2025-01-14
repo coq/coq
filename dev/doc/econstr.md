@@ -62,7 +62,7 @@ Note that the `EConstr` module also redefines a `Vars` submodule.
 All functions deconstructing an econstr need to take an evar-map as a parameter.
 Therefore, you need to pass one as an argument virtually everywhere.
 
-In the Coq source code, it is recommended to take the evar-map as a first
+In the Rocq source code, it is recommended to take the evar-map as a first
 argument called `sigma`, except if the function also takes an environment in
 which case it is passed second. Namely, the two typical instances are:
 ```ocaml
@@ -90,7 +90,7 @@ need access to an evar-map. A lot of econstr-manipulating functions are also
 defined in [`Termops`](/engine/termops.mli).
 
 Functions manipulating tactic terms and kernel terms share the same name if they
-are the equivalent one of the other. Do not hesitate to grep Coq mli files to
+are the equivalent one of the other. Do not hesitate to grep Rocq mli files to
 find the equivalent of a function you want to port if it is neither in `EConstr`
 nor in `Termops` (this should be very rare).
 

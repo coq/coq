@@ -32,7 +32,7 @@ let anomaly ?loc ?info ?label pp =
 
 exception UserError of Pp.t (* User errors *)
 
-(* We register Coq Errors with the global printer here as they will be
+(* We register Rocq Errors with the global printer here as they will be
    printed if Dynlink.loadfile raises UserError in the module
    intializers, and in some other cases. We should make this more
    principled. *)

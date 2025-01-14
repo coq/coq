@@ -12,7 +12,7 @@ open Names
 open EConstr
 open Evd
 
-(** A bunch of Coq constants used by Program *)
+(** A bunch of Rocq constants used by Program *)
 
 val sig_typ : unit -> GlobRef.t
 val sig_intro : unit -> GlobRef.t

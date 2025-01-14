@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Compatibility file for making Coq act similar to Coq v8.18 *)
+(** Compatibility file for making Rocq act similar to Coq v8.18 *)
 
 Require Export Corelib.Compat.Coq819.
 

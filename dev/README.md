@@ -1,4 +1,4 @@
-# This directory contains information and tools to help develop the Coq system
+# This directory contains information and tools to help develop the Rocq system
 
 
 ## Debugging and profiling (`dev/`)
@@ -15,12 +15,12 @@
 
 
 ## Miscellaneous information about the code (`dev/doc`)
-**Beginner's guide to hacking Coq: [`dev/doc/README.md`](doc/README.md)**
+**Beginner's guide to hacking Rocq: [`dev/doc/README.md`](doc/README.md)**
 
 | File | Description |
 | ---- | ----------- |
-| [`dev/doc/changes.md`](doc/changes.md) | (partial) Per-version summary of the evolution of Coq ML source |
-| [`dev/doc/style.txt`](doc/style.txt) | A few style recommendations for writing Coq ML files |
+| [`dev/doc/changes.md`](doc/changes.md) | (partial) Per-version summary of the evolution of Rocq ML source |
+| [`dev/doc/style.txt`](doc/style.txt) | A few style recommendations for writing Rocq ML files |
 | [`dev/doc/debugging.md`](doc/debugging.md) | Help for debugging or profiling |
 | [`dev/doc/universes.md`](doc/universes.md) |  Help for debugging universes |
 | [`dev/doc/econstr.md`](doc/econstr.md) | Describes `Econstr`, implementation of treatment of `evar` in the engine |
@@ -28,7 +28,7 @@
 | [`dev/doc/parsing.md`](doc/parsing.md) | Grammar and parsing overview |
 | [`dev/doc/proof-engine.md`](doc/proof-engine.md) | Tutorial on new proof engine |
 | [`dev/doc/xml-protocol.md`](doc/xml-protocol.md) | XML protocol that coqtop and IDEs use to communicate |
-| [`dev/doc/release-process.md`](doc/release-process.md) | Process of creating a new Coq release |
+| [`dev/doc/release-process.md`](doc/release-process.md) | Process of creating a new Rocq release |
 
 
 ## Documentation of ML interfaces using `odoc` ( `_build/default/_doc`)
@@ -38,4 +38,4 @@
 
 | File | Description |
 | ---- | ----------- |
-| [`dev/tools/coqdev.el`](tools/coqdev.el) | Helper customizations for everyday Coq development, eg making `compile` work in subdirectories
+| [`dev/tools/coqdev.el`](tools/coqdev.el) | Helper customizations for everyday Rocq development, eg making `compile` work in subdirectories
