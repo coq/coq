@@ -95,7 +95,7 @@ lists several other active platforms.
 Please report any bug / feature request in [our issue tracker](https://github.com/coq/coq/issues).
 
 To be effective, bug reports should mention the OCaml version used
-to compile and run Rocq, the Rocq version (`coqtop -v`), the configuration
+to compile and run Rocq, the Rocq version (`coqtop -v` or `rocq -v`), the configuration
 used, and include a complete source example leading to the bug.
 
 ## Contributing to Rocq
@@ -107,7 +107,7 @@ Information about release plans is at https://github.com/coq/coq/wiki/Release-Pl
 ## Supporting Rocq
 
 Help the Rocq community grow and prosper by becoming a sponsor! The [Rocq
-Consortium](https://coq.inria.fr/consortium) can establish sponsorship contracts
+Consortium](https://rocq-prover.org/consortium) can establish sponsorship contracts
 or receive donations. If you want to take an active role in shaping Rocq's
 future, you can also become a Consortium member. If you are interested, please
 get in touch!
