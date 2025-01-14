@@ -128,23 +128,20 @@ mailing list, the [Coq IRC channel][IRC], the
 
 ### Writing tutorials and blog posts ###
 
-Writing about Rocq, in the form of tutorials or blog posts, is also a
+Writing about the Rocq Prover, in the form of tutorials or blog posts, is also a
 very important contribution.  In particular, it can help new users get
 interested in Rocq, and learn about it, and existing users learn about
-advance features.  Our official resources, such as the [reference
-manual][refman] are not suited for learning Rocq, but serve as
-reference documentation to which you can link from your tutorials.
+advance features.  The [reference manual][refman] is not suited for learning Rocq, but
+we now also provide short, action-oriented tutorials as part of our official resources.
+See the [Platform Docs][Platform-docs] repository for more information.
 
 The Rocq website has a page listing known
-[tutorials][Rocq-documentation] and the [wiki][] home page contains a
-list too.  You can expand the former through a pull request on the
-[Rocq website repository][Rocq-website-repository], while the latter can
-be edited directly by anyone with a GitHub account.
+[books][Rocq-books], including non-English books,
+which you can expand through a pull request on the
+[Rocq website repository][Rocq-website-repository].
 
-At the current time, we do not have a way of aggregating blog posts on
-a single page (like [OCaml planet][OCaml-planet]), but this would
-probably be something useful to get, so do not hesitate if you want to
-create it.  Some people use [Reddit][] for this purpose.
+Blog posts from the Rocq ecosystem are aggregated on the [Rocq Planet][Rocq-planet] page.
+If your blog is mainly about Rocq, you can contribute by adding it to the list.
 
 ### Contributing to the wiki ###
 
@@ -268,8 +265,8 @@ There are many other ways of creating content and making the Rocq
 community thrive, including many which we might not have thought
 about.  Feel free to add more references / ideas to this sub-section.
 
-You can tweet about Rocq, you can give talks about Rocq both in
-academic, and in non-academic venues (such as developer conferences).
+You can post about Rocq on social media, give talks about Rocq both in
+academic and non-academic venues (such as developer conferences).
 
 [Codewars][] is a platform where people can try to solve some
 programming challenges that were proposed by other community members.
@@ -1320,7 +1317,7 @@ can be found [on the wiki][wiki-CUDW].
 [coq-community-wiki]: https://github.com/coq-community/manifesto/wiki
 [coq-core]: https://github.com/orgs/coq/teams/core/members
 [coqdoc-documentation]: https://coq.inria.fr/refman/practical-tools/utilities.html#documenting-coq-files-with-coqdoc
-[Rocq-documentation]: https://coq.inria.fr/documentation
+[Rocq-books]: https://rocq-prover.org/books
 [Rocq-issue-tracker]: https://github.com/coq/coq/issues
 [Rocq-package-index]: https://rocq-prover.org/packages
 [Rocq-Platform]: https://github.com/coq/platform
@@ -1377,6 +1374,7 @@ can be found [on the wiki][wiki-CUDW].
 [standard-library]: https://github.com/coq-community/stdlib
 [other-standard-libraries]: https://github.com/coq/stdlib2/wiki/Other-%22standard%22-libraries
 [pinentry-mac]: https://stackoverflow.com/questions/39494631/gpg-failed-to-sign-the-data-fatal-failed-to-write-commit-object-git-2-10-0
+[Platform-docs]: https://github.com/coq/platform-docs
 [plugin-tutorial]: doc/plugin_tutorial
 [Proof-Assistants-SE]: https://proofassistants.stackexchange.com/
 [ProofGeneral-issues]: https://github.com/ProofGeneral/PG/issues
@@ -1386,6 +1384,7 @@ can be found [on the wiki][wiki-CUDW].
 [refman-README]: doc/sphinx/README.rst
 [release-plan]: https://github.com/coq/coq/wiki/Release-Plan
 [repology-coq]: https://repology.org/project/coq/versions
+[Rocq-planet]: https://rocq-prover.org/rocq-planet
 [RM-checklist]: dev/doc/release-process.md
 [Stack-Exchange]: https://stackexchange.com/filters/299857/questions-tagged-coq-on-stackexchange-sites
 [Stack-Exchange-to-Zulip]: https://coq.zulipchat.com/#narrow/stream/237977-Coq-users/topic/New.20Stack.20Exchange.20question
