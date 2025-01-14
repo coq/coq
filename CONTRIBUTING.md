@@ -11,7 +11,7 @@ well.
 
 ## Table of contents ##
 
-- [Guide to contributing to Rocq](#guide-to-contributing-to-coq)
+- [Guide to contributing to Rocq](#guide-to-contributing-to-rocq)
   - [Foreword](#foreword)
   - [Table of contents](#table-of-contents)
   - [Introduction](#introduction)
@@ -19,8 +19,8 @@ well.
     - [Asking and answering questions](#asking-and-answering-questions)
     - [Writing tutorials and blog posts](#writing-tutorials-and-blog-posts)
     - [Contributing to the wiki](#contributing-to-the-wiki)
-    - [Creating and maintaining Rocq packages](#creating-and-maintaining-coq-packages)
-      - [Distribution of Rocq packages](#distribution-of-coq-packages)
+    - [Creating and maintaining Rocq packages](#creating-and-maintaining-rocq-packages)
+      - [Distribution of Rocq packages](#distribution-of-rocq-packages)
       - [Support for plugin and library authors](#support-for-plugin-and-library-authors)
       - [Standard libraries](#standard-libraries)
       - [Maintaining existing packages in coq-community](#maintaining-existing-packages-in-coq-community)
@@ -34,7 +34,7 @@ well.
   - [Code changes](#code-changes)
     - [Using GitHub pull requests](#using-github-pull-requests)
       - [Fixing bugs and performing small changes](#fixing-bugs-and-performing-small-changes)
-      - [Proposing large changes: RFCs](#proposing-large-changes-rocq-rfcs)
+      - [Proposing large changes: Rocq RFCs](#proposing-large-changes-rocq-rfcs)
       - [Seeking early feedback on work-in-progress](#seeking-early-feedback-on-work-in-progress)
     - [Taking feedback into account](#taking-feedback-into-account)
       - [Understanding automatic feedback](#understanding-automatic-feedback)
@@ -53,7 +53,7 @@ well.
       - [Joining / leaving maintainer teams](#joining--leaving-maintainer-teams)
     - [Core development team](#core-development-team)
   - [Release management](#release-management)
-    - [Packaging Rocq](#packaging-coq)
+    - [Packaging Rocq](#packaging-rocq)
   - [Additional resources](#additional-resources)
     - [Developer documentation](#developer-documentation)
       - [Where to find the resources](#where-to-find-the-resources)
