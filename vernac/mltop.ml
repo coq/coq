@@ -123,7 +123,7 @@ end = struct
     let warn_legacy_loading =
       CWarnings.create ~name:"legacy-loading-removed" ~category:Deprecation.Version.v9_0
         Pp.(fun name ->
-            str "Legacy loading plugin method has been removed from Coq, \
+            str "Legacy loading plugin method has been removed from Rocq, \
                  and the `:` syntax is deprecated, and its first \
                  argument ignored; please remove \"" ++
             str name ++ str ":\" from your Declare ML")

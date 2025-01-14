@@ -103,7 +103,7 @@ let caml_version_nums { CamlConf.caml_version; _ } =
 let check_caml_version prefs caml_version caml_version_nums =
   if caml_version_nums >= [5;0;0] && prefs.nativecompiler <> NativeNo then
     let () = cprintf prefs "Your version of OCaml is %s." caml_version in
-    die "You have enabled Coq's native compiler, however it is not compatible with OCaml >= 5.0.0"
+    die "You have enabled Rocq's native compiler, however it is not compatible with OCaml >= 5.0.0"
   else if caml_version_nums >= [4;9;0] then
     cprintf prefs "You have OCaml %s. Good!" caml_version
   else
@@ -145,14 +145,14 @@ let caml_flags =
 (** * Native compiler *)
 
 let msg_byteonly =
-  "Only the bytecode version of Coq will be available."
+  "Only the bytecode version of Rocq will be available."
 
 let msg_no_ocamlopt () =
   warn "Cannot find the OCaml native-code compiler.\n%s" msg_byteonly
 
 let msg_no_dynlink_cmxa prefs =
   warn "Cannot find native-code dynlink library.\n%s" msg_byteonly;
-  cprintf prefs "For building a native-code Coq, you may try to first";
+  cprintf prefs "For building a native-code Rocq, you may try to first";
   cprintf prefs "compile and install a dummy dynlink.cmxa (see dev/dynlink.ml)";
   cprintf prefs "and then run ./configure -natdynlink no"
 
@@ -228,11 +228,11 @@ end
 
 let install prefs =
   [ InstallDir.make "COQPREFIX" "Corelib" prefs.prefix (Relative "") (Relative "")
-  ; InstallDir.make "COQLIBINSTALL" "the Coq library" prefs.libdir (Relative "lib/coq") (Relative "lib/coq")
+  ; InstallDir.make "COQLIBINSTALL" "the Rocq library" prefs.libdir (Relative "lib/coq") (Relative "lib/coq")
   ; InstallDir.make "CONFIGDIR" "the Rocqide configuration files" prefs.configdir (Relative "config") (Absolute "/etc/xdg/coq")
   ; InstallDir.make "DATADIR" "the Rocqide data files" prefs.datadir (Relative "share/coq") (Relative "share/coq")
-  ; InstallDir.make "MANDIR" "the Coq man pages" prefs.mandir (Relative "share/man") (Relative "share/man")
-  ; InstallDir.make "DOCDIR" "documentation prefix path for all Coq packages" prefs.docdir (Relative "share/doc") (Relative "share/doc")
+  ; InstallDir.make "MANDIR" "the Rocq man pages" prefs.mandir (Relative "share/man") (Relative "share/man")
+  ; InstallDir.make "DOCDIR" "documentation prefix path for all Rocq packages" prefs.docdir (Relative "share/doc") (Relative "share/doc")
   ]
 
 let strip_trailing_slash_if_any p =
@@ -366,10 +366,10 @@ let print_summary prefs arch camlenv install_dirs browser =
   pr "  OCaml binaries in           : %s\n" (esc camlbin);
   pr "  OCaml library in            : %s\n" (esc camllib);
   pr "  Web browser                 : %s\n" browser;
-  pr "  Coq web site                : %s\n" prefs.coqwebsite;
+  pr "  Rocq web site               : %s\n" prefs.coqwebsite;
   pr "  Bytecode VM enabled         : %B\n" prefs.bytecodecompiler;
   pr "  Native Compiler enabled     : %s\n\n" (pr_native prefs.nativecompiler);
-  (pr "  Paths where installation is expected by Coq Makefile:\n";
+  (pr "  Paths where installation is expected by Rocq Makefile:\n";
    List.iter
      (fun ((_,msg),(dir,_)) -> pr "  - %s is expected in %s\n" msg (esc dir))
      install_dirs);

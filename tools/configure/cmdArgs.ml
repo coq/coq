@@ -112,7 +112,7 @@ let args_options = Arg.align [
   "-browser", arg_string_option (fun p browser -> { p with browser }),
     "<command> Use <command> to open URL %s";
   "-bytecode-compiler", arg_bool (fun p bytecodecompiler -> { p with bytecodecompiler }),
-    "(yes|no) Enable Coq's bytecode reduction machine (VM)";
+    "(yes|no) Enable Rocq's bytecode reduction machine (VM)";
   "-native-compiler", arg_native (fun p nativecompiler -> { p with nativecompiler }),
     "(yes|no|ondemand) Compilation to native code for conversion and normalization
      yes: -native-compiler option of coqc will default to 'yes', stdlib will be precompiled
@@ -121,7 +121,7 @@ let args_options = Arg.align [
   "-warn-error", arg_bool (fun p _warn_error -> warn_warn_error (); p),
     "Deprecated option: warnings are now adjusted in the corresponding build tool.";
   "-coqwebsite", arg_string (fun p coqwebsite -> { p with coqwebsite }),
-    " URL of the coq website";
+    " URL of the rocq website";
   "-debug", arg_set (fun p -> { p with debug = true }), " Enable debug information for package detection"
 ]
 

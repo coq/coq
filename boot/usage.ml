@@ -9,7 +9,7 @@
 (************************************************************************)
 
 let version () =
-  Printf.printf "The Coq Proof Assistant, version %s\n" Coq_config.version;
+  Printf.printf "The Rocq Proof Assistant, version %s\n" Coq_config.version;
   Printf.printf "compiled with OCaml %s\n" Coq_config.caml_version
 
 let machine_readable_version () =
@@ -20,7 +20,7 @@ let machine_readable_version () =
 
 let print_usage_common co command =
   output_string co command;
-  output_string co "Coq options are:\n";
+  output_string co "Rocq options are:\n";
   output_string co
  "  -I dir                 look for ML files in dir\
 \n  -include dir           (idem)\
@@ -38,33 +38,33 @@ let print_usage_common co command =
 \n  -compat-from root lib  same as -require-import-from root lib, except that\
 \n                         a non existing file only produces a warning\
 \n\
-\n  -load-vernac-source f  load Coq file f.v (Load \"f\".)\
+\n  -load-vernac-source f  load Rocq file f.v (Load \"f\".)\
 \n  -l f                   (idem)\
-\n  -load-vernac-source-verbose f  load Coq file f.v (Load Verbose \"f\".)\
+\n  -load-vernac-source-verbose f  load Rocq file f.v (Load Verbose \"f\".)\
 \n  -lv f	           (idem)\
-\n  -require lib           load Coq library lib (Require lib)\
+\n  -require lib           load Rocq library lib (Require lib)\
 \n  -require-import lib, -ri lib\
-\n                         load and import Coq library lib\
+\n                         load and import Rocq library lib\
 \n                         (equivalent to Require Import lib.)\
 \n  -require-export lib, -re lib\
-\n                         load and transitively import Coq library lib\
+\n                         load and transitively import Rocq library lib\
 \n                         (equivalent to Require Export lib.)\
 \n  -require-from root lib, -rfrom root lib
-\n                         load Coq library lib (From root Require lib.)\
+\n                         load Rocq library lib (From root Require lib.)\
 \n  -require-import-from root lib, -rifrom root lib\
-\n                         load and import Coq library lib\
+\n                         load and import Rocq library lib\
 \n                         (equivalent to From root Require Import lib.)\
 \n  -require-export-from root lib, -refrom root lib\
-\n                         load and transitively import Coq library lib\
+\n                         load and transitively import Rocq library lib\
 \n                         (equivalent to From root Require Export lib.)\
 \n  -load-vernac-object lib\
 \n                         (obsolete synonym of -require lib)\
 \n\
-\n  -where                 print Coq's standard library location and exit\
-\n  -config, --config      print Coq's configuration information and exit\
-\n  -v, --version          print Coq version and exit\
-\n  -print-version         print Coq version in easy to parse format and exit\
-\n  -list-tags             print highlight color tags known by Coq and exit\
+\n  -where                 print Rocq's core library location and exit\
+\n  -config, --config      print Rocq's configuration information and exit\
+\n  -v, --version          print Rocq version and exit\
+\n  -print-version         print Rocq version in easy to parse format and exit\
+\n  -list-tags             print highlight color tags known by Rocq and exit\
 \n\
 \n  -quiet                 unset display of extra information (implies -w \"-all\")\
 \n  -w (w1,..,wn)          configure display of warnings\
@@ -75,7 +75,7 @@ let print_usage_common co command =
 \n                         use the vernac command \"Test Debug\" to see all\
 \n\
 \n  -color (yes|no|auto)   configure color output\
-\n  -emacs                 tells Coq it is executed under Emacs\
+\n  -emacs                 tells Rocq it is executed under Emacs\
 \n\
 \n  -q                     skip loading of rcfile\
 \n  -init-file f           set the rcfile to f\

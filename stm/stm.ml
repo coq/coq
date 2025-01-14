@@ -1112,9 +1112,9 @@ end = struct (* {{{ *)
     CWarnings.create ~name:"undo-batch-mode" Pp.(fun v ->
         str "Command" ++ spc() ++ quote (Ppvernac.pr_vernac v) ++
         strbrk (" is not recommended in batch mode. In particular, going back in the document" ^
-             " is not efficient in batch mode due to Coq not caching previous states for memory optimization reasons." ^
+             " is not efficient in batch mode due to Rocq not caching previous states for memory optimization reasons." ^
              " If your use is intentional, you may want to disable this warning and pass" ^
-             " the \"-async-proofs-cache force\" option to Coq."))
+             " the \"-async-proofs-cache force\" option to Rocq."))
 
   let back_tactic n (id,_,_,tactic,undo) =
     let value = (if tactic then 1 else 0) - undo in

@@ -247,17 +247,17 @@ let parse_cl ~prog args =
         "-n", Arg.Int (fun n -> linelen := n),
         "line-width     Set the line width";
         "-image", Arg.String (fun s -> image := s),
-        "coq-image  Use coq-image as Coq command";
+        "rocq-image  Use rocq-image as Rocq command";
         "-w", Arg.Set cut_at_blanks,
         "               Try to cut lines at blanks";
         "-v", Arg.Set verbose,
-        "               Verbose mode (show Coq answers on stdout)";
+        "               Verbose mode (show Rocq answers on stdout)";
         "-sl", Arg.Set slanted,
-        "              Coq answers in slanted font (only with LaTeX2e)";
+        "              Rocq answers in slanted font (only with LaTeX2e)";
         "-hrule", Arg.Set hrule,
-        "           Coq parts are written between 2 horizontal lines";
+        "           Rocq parts are written between 2 horizontal lines";
         "-small", Arg.Set small,
-        "           Coq parts are written in small font";
+        "           Rocq parts are written in small font";
       ]
       (fun s -> files := s :: !files)
       "coq-tex [options] file ..."

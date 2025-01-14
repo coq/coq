@@ -185,7 +185,7 @@ let main ~prog argv =
     let cur, max, pid = check_alive sock in
     Printf.printf "ROCQWORKMGR_SOCK=%s\n%!" sock;
     Printf.eprintf
-      "coqworkmgr already up and running (pid=%d, socket=%s, j=%d/%d)\n%!"
+      "rocqworkmgr already up and running (pid=%d, socket=%s, j=%d/%d)\n%!"
       pid sock cur max;
     exit 0
   with Not_found | Failure _ | Invalid_argument _ | Unix.Unix_error _ ->
@@ -222,7 +222,7 @@ let main ~prog argv =
     exit 0
   with Sys.Break ->
     if !parties <> [] then begin
-      Printf.eprintf "Some coq processes still need me\n%!";
+      Printf.eprintf "Some rocq processes still need me\n%!";
       exit 1;
     end else
       exit 0
