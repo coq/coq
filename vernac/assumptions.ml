@@ -19,6 +19,7 @@
 open Util
 open Names
 open Declarations
+open Mod_declarations
 
 module NamedDecl = Context.Named.Declaration
 
@@ -86,16 +87,16 @@ and fields_of_mp mp =
   let fields,inner_mp,subs = fields_of_mb empty_subst mb [] in
   let subs =
     if ModPath.equal inner_mp mp then subs
-    else add_mp inner_mp mp mb.mod_delta subs
+    else add_mp inner_mp mp (mod_delta mb) subs
   in
   Modops.subst_structure subs fields
 
-and fields_of_mb subs mb args = match Declareops.mod_expr mb with
-  | Algebraic expr -> fields_of_expression subs mb.mod_mp args mb.mod_type expr
+and fields_of_mb subs mb args = match Mod_declarations.mod_expr mb with
+  | Algebraic expr -> fields_of_expression subs (mod_mp mb) args (mod_type mb) expr
   | Struct sign ->
-    let sign = Modops.annotate_struct_body sign mb.mod_type in
-    fields_of_signature subs mb.mod_mp args sign
-  | Abstract|FullStruct -> fields_of_signature subs mb.mod_mp args mb.mod_type
+    let sign = Modops.annotate_struct_body sign (mod_type mb) in
+    fields_of_signature subs (mod_mp mb) args sign
+  | Abstract|FullStruct -> fields_of_signature subs (mod_mp mb) args (mod_type mb)
 
 (** The Abstract case above corresponds to [Declare Module] *)
 

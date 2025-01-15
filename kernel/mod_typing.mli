@@ -9,6 +9,7 @@
 (************************************************************************)
 
 open Declarations
+open Mod_declarations
 open Environ
 open Entries
 open Mod_subst

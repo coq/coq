@@ -62,6 +62,7 @@
 open Util
 open Names
 open Declarations
+open Mod_declarations
 open Constr
 open Context.Named.Declaration
 
@@ -307,7 +308,7 @@ end =
 struct
 
 type t = {
-  certif_struc : Declarations.structure_body;
+  certif_struc : Mod_declarations.structure_body;
   certif_univs : Univ.ContextSet.t;
 }
 
@@ -1113,14 +1114,14 @@ let add_modtype l params_mte inl senv =
   let vmstate = vm_state senv in
   let mtb, _, vmtab = Mod_typing.translate_modtype state vmstate senv.env mp inl params_mte  in
   let senv = set_vm_library vmtab senv in
-  let mtb = Declareops.hcons_module_type mtb in
+  let mtb = Mod_declarations.hcons_module_type mtb in
   let senv = add_field (l,SFBmodtype mtb) MT senv in
   mp, senv
 
 (** full_add_module adds module with universes and constraints *)
 
 let full_add_module mb senv =
-  let dp = ModPath.dp mb.mod_mp in
+  let dp = ModPath.dp (mod_mp mb) in
   let linkinfo = Nativecode.link_info_of_dirpath dp in
   { senv with env = Modops.add_linked_module mb linkinfo senv.env }
 
@@ -1135,13 +1136,13 @@ let add_module l me inl senv =
   let vmstate = vm_state senv in
   let mb, _, vmtab = Mod_typing.translate_module state vmstate senv.env mp inl me in
   let senv = set_vm_library vmtab senv in
-  let mb = Declareops.hcons_module_body mb in
+  let mb = Mod_declarations.hcons_module_body mb in
   let senv = add_field (l,SFBmodule mb) M senv in
   let senv =
-    if Modops.is_functor mb.mod_type then senv
-    else update_resolver (Mod_subst.add_delta_resolver mb.mod_delta) senv
+    if Modops.is_functor @@ mod_type mb then senv
+    else update_resolver (Mod_subst.add_delta_resolver @@ mod_delta mb) senv
   in
-  (mp,mb.mod_delta),senv
+  (mp, mod_delta mb),senv
 
 (** {6 Starting / ending interactive modules and module types } *)
 
@@ -1194,10 +1195,10 @@ let add_module_parameter mbid mte inl senv =
     | _ -> assert false
   in
   let new_paramresolver =
-    if Modops.is_functor mtb.mod_type then senv.paramresolver
-    else Mod_subst.add_delta_resolver mtb.mod_delta senv.paramresolver
+    if Modops.is_functor @@ mod_type mtb then senv.paramresolver
+    else Mod_subst.add_delta_resolver (mod_delta mtb) senv.paramresolver
   in
-  mtb.mod_delta,
+  mod_delta mtb,
   { senv with
     modvariant = new_variant;
     paramresolver = new_paramresolver }
@@ -1226,14 +1227,6 @@ let propagate_loads senv =
 (** Build the module body of the current module, taking in account
     a possible return type (_:T) *)
 
-let functorize_module params mb =
-  let f x = functorize params x in
-  let fe x = iterate (fun e -> MEMoreFunctor e) (List.length params) x in
-  { mb with
-    mod_expr = Modops.implem_smart_map (fun x -> x) fe mb.mod_expr;
-    mod_type = f mb.mod_type;
-    mod_type_alg = Option.map fe mb.mod_type_alg }
-
 let build_module_body params restype senv =
   let struc = NoFunctor (List.rev senv.revstruct) in
   let restype' = Option.map (fun (ty,inl) -> (([],ty),inl)) restype in
@@ -1245,7 +1238,7 @@ let build_module_body params restype senv =
   in
   let senv = set_vm_library vmtab senv in
   let mb' = functorize_module params mb in
-  { mb' with mod_retroknowledge = ModBodyVal senv.local_retroknowledge }
+  set_retroknowledge mb' senv.local_retroknowledge
 
 (** Returning back to the old pre-interactive-module environment,
     with one extra component and some updated fields
@@ -1286,19 +1279,13 @@ let end_module l restype senv =
   let senv' = propagate_loads { senv with env = newenv } in
   let newenv = Modops.add_module mb senv'.env in
   let newresolver =
-    if Modops.is_functor mb.mod_type then oldsenv.modresolver
-    else Mod_subst.add_delta_resolver mb.mod_delta oldsenv.modresolver
+    if Modops.is_functor @@ mod_type mb then oldsenv.modresolver
+    else Mod_subst.add_delta_resolver (mod_delta mb) oldsenv.modresolver
   in
-  (mp,mbids,mb.mod_delta),
+  (mp, mbids, mod_delta mb),
   propagate_senv (l,SFBmodule mb) newenv newresolver senv' oldsenv
 
-let build_mtb mp sign delta =
-  { mod_mp = mp;
-    mod_expr = ModTypeNul;
-    mod_type = sign;
-    mod_type_alg = None;
-    mod_delta = delta;
-    mod_retroknowledge = ModTypeNul }
+let build_mtb = Mod_declarations.make_module_type
 
 let end_modtype l senv =
   let mp = senv.modpath in
@@ -1405,15 +1392,7 @@ let export ~output_native_objects senv dir =
   let () = assert (Sorts.QVar.Set.is_empty senv.env.Environ.env_qualities) in
   let mp = senv.modpath in
   let str = NoFunctor (List.rev senv.revstruct) in
-  let mb =
-    { mod_mp = mp;
-      mod_expr = ModBodyVal FullStruct;
-      mod_type = str;
-      mod_type_alg = None;
-      mod_delta = senv.modresolver;
-      mod_retroknowledge = ModBodyVal senv.local_retroknowledge
-    }
-  in
+  let mb = Mod_declarations.make_module_body mp str senv.modresolver senv.local_retroknowledge in
   let ast, symbols =
     if output_native_objects then
       Nativelibrary.dump_library mp senv.env str
@@ -1467,7 +1446,7 @@ let import lib vmtab vodigest senv =
     env;
     (* Do NOT store the name quotient from the dependencies in the set of
        constraints that will be marshalled on disk. *)
-    paramresolver = Mod_subst.add_delta_resolver mb.mod_delta senv.paramresolver;
+    paramresolver = Mod_subst.add_delta_resolver (mod_delta mb) senv.paramresolver;
     required;
     loads = (mp,mb)::senv.loads;
     sections;

@@ -14,6 +14,7 @@ open Context
 open Pp
 open Names
 open Declarations
+open Mod_declarations
 open Libnames
 open Goptions
 
@@ -238,13 +239,13 @@ let nametab_register_module_body mp struc =
     nametab_register_dir mp;
     List.iter (nametab_register_body mp DirPath.empty) struc
 
-let get_typ_expr_alg mtb = match mtb.mod_type_alg with
+let get_typ_expr_alg mtb = match mod_type_alg mtb with
   | Some (MENoFunctor me) -> me
   | _ -> raise Not_found
 
 let nametab_register_modparam used mbid mtb =
   let id = MBId.to_id mbid in
-  match mtb.mod_type with
+  match mod_type mtb with
   | MoreFunctor _ -> id (* functorial param : nothing to register *)
   | NoFunctor struc ->
     (* We first try to use the algebraic type expression if any,
@@ -376,11 +377,11 @@ let rec print_expression x =
 and print_signature x =
   print_functor print_modtype print_structure x
 
-and print_modtype extent env mp used locals mtb = match mtb.mod_type_alg with
+and print_modtype extent env mp used locals mtb = match mod_type_alg mtb with
   | Some me ->
-    let me = Modops.annotate_module_expression me mtb.mod_type in
+    let me = Modops.annotate_module_expression me (mod_type mtb) in
     print_expression true extent env mp used locals me
-  | None -> print_signature true extent env mp used locals mtb.mod_type
+  | None -> print_signature true extent env mp used locals (mod_type mtb)
 
 (** Since we might play with nametab above, we should reset to prior
     state after the printing *)
@@ -396,23 +397,23 @@ let print_signature' is_type extent env mp me =
 let unsafe_print_module extent env mp with_body mb =
   let name = print_modpath [] mp in
   let pr_equals = spc () ++ str ":= " in
-  let body = match with_body, Declareops.mod_expr mb with
+  let body = match with_body, Mod_declarations.mod_expr mb with
     | false, _
     | true, Abstract -> mt()
     | _, Algebraic me ->
-      let me = Modops.annotate_module_expression me mb.mod_type in
+      let me = Modops.annotate_module_expression me (mod_type mb) in
       pr_equals ++ print_expression' false extent env mp me
     | _, Struct sign ->
-      let sign = Modops.annotate_struct_body sign mb.mod_type in
+      let sign = Modops.annotate_struct_body sign (mod_type mb) in
       pr_equals ++ print_signature' false extent env mp sign
-    | _, FullStruct -> pr_equals ++ print_signature' false extent env mp mb.mod_type
+    | _, FullStruct -> pr_equals ++ print_signature' false extent env mp (mod_type mb)
   in
-  let modtype = match Declareops.mod_expr mb, mb.mod_type_alg with
+  let modtype = match mod_expr mb, mod_type_alg mb with
     | FullStruct, _ -> mt ()
     | _, Some ty ->
-      let ty = Modops.annotate_module_expression ty mb.mod_type in
+      let ty = Modops.annotate_module_expression ty (mod_type mb) in
       brk (1,1) ++ str": " ++ print_expression' true extent env mp ty
-    | _, _ -> brk (1,1) ++ str": " ++ print_signature' true extent env mp mb.mod_type
+    | _, _ -> brk (1,1) ++ str": " ++ print_signature' true extent env mp (mod_type mb)
   in
   hv 0 (keyword "Module" ++ spc () ++ name ++ modtype ++ body)
 
@@ -436,7 +437,7 @@ let print_modtype kn =
      try
       if !short then raise ShortPrinting;
       print_signature' true WithContents
-        (Global.env ()) kn mtb.mod_type
+        (Global.env ()) kn (mod_type mtb)
      with e when CErrors.noncritical e ->
       print_signature' true OnlyNames
-        (Global.env ()) kn mtb.mod_type)
+        (Global.env ()) kn (mod_type mtb))

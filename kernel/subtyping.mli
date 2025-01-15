@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Declarations
+open Mod_declarations
 open Environ
 
 val check_subtypes : ('a, UGraph.univ_inconsistency) Conversion.universe_state -> env -> module_type_body -> module_type_body -> 'a

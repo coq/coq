@@ -3,6 +3,7 @@ open Util
 open Names
 open Conversion
 open Declarations
+open Mod_declarations
 open Environ
 
 (** {6 Checking constants } *)
@@ -194,20 +195,14 @@ let lookup_module mp env =
   with Not_found ->
     failwith ("Unknown module: "^ModPath.to_string mp)
 
-let mk_mtb mp sign delta =
-  { mod_mp = mp;
-    mod_expr = ModTypeNul;
-    mod_type = sign;
-    mod_type_alg = None;
-    mod_delta = delta;
-    mod_retroknowledge = ModTypeNul; }
+let mk_mtb mp sign delta = Mod_declarations.make_module_type mp sign delta
 
 let rec collect_constants_without_body sign mp accu =
   let collect_field s lab = function
   | SFBconst cb ->
      let c = Constant.make2 mp lab in
      if Declareops.constant_has_body cb then s else Cset.add c s
-  | SFBmodule msb -> collect_constants_without_body msb.mod_type (MPdot(mp,lab)) s
+  | SFBmodule msb -> collect_constants_without_body (mod_type msb) (MPdot(mp,lab)) s
   | SFBmind _ | SFBrules _ | SFBmodtype _ -> s in
   match sign with
   | MoreFunctor _ -> Cset.empty  (* currently ignored *)
@@ -218,7 +213,7 @@ let rec check_mexpr env opac mse mp_mse res = match mse with
   | MEident mp ->
     let mb = lookup_module mp env in
     let mb = Modops.strengthen_and_subst_module_body mb mp_mse false in
-    mb.mod_type, mb.mod_delta
+    mod_type mb, mod_delta mb
   | MEapply (f,mp) ->
     let sign, delta = check_mexpr env opac f mp_mse res in
     let farg_id, farg_b, fbody_b = Modops.destr_functor sign in
@@ -239,25 +234,25 @@ let rec check_mexpression env opac sign mbtyp mp_mse res = match sign with
 
 let rec check_module env opac mp mb opacify =
   Flags.if_verbose Feedback.msg_notice (str "  checking module: " ++ str (ModPath.to_string mp));
-  let env = Modops.add_retroknowledge mb.mod_retroknowledge env in
+  let env = Modops.add_retroknowledge (mod_retroknowledge mb) env in
   let opac =
-    check_signature env opac mb.mod_type mb.mod_mp mb.mod_delta opacify
+    check_signature env opac (mod_type mb) (mod_mp mb) (mod_delta mb) opacify
   in
-  let optsign, opac = match Declareops.mod_expr mb with
+  let optsign, opac = match Mod_declarations.mod_expr mb with
     | Struct sign_struct ->
-      let opacify = collect_constants_without_body mb.mod_type mb.mod_mp opacify in
+      let opacify = collect_constants_without_body (mod_type mb) (mod_mp mb) opacify in
       (* TODO: a bit wasteful, we recheck the types of parameters twice *)
-      let sign_struct = Modops.annotate_struct_body sign_struct mb.mod_type in
-      let opac = check_signature env opac sign_struct mb.mod_mp mb.mod_delta opacify in
-      Some (sign_struct, mb.mod_delta), opac
-    | Algebraic me -> Some (check_mexpression env opac me mb.mod_type mb.mod_mp mb.mod_delta), opac
+      let sign_struct = Modops.annotate_struct_body sign_struct (mod_type mb) in
+      let opac = check_signature env opac sign_struct (mod_mp mb) (mod_delta mb) opacify in
+      Some (sign_struct, mod_delta mb), opac
+    | Algebraic me -> Some (check_mexpression env opac me (mod_type mb) (mod_mp mb) (mod_delta mb)), opac
     | Abstract|FullStruct -> None, opac
   in
   let () = match optsign with
   | None -> ()
   | Some (sign,delta) ->
     let mtb1 = mk_mtb mp sign delta
-    and mtb2 = mk_mtb mp mb.mod_type mb.mod_delta in
+    and mtb2 = mk_mtb mp (mod_type mb) (mod_delta mb) in
     let env = Modops.add_module_type mp mtb1 env in
     let state = (Environ.universes env, Conversion.checked_universes) in
     let _ : UGraph.t = Subtyping.check_subtypes state env mtb1 mtb2 in
@@ -266,9 +261,9 @@ let rec check_module env opac mp mb opacify =
   opac
 
 and check_module_type env mty =
-  Flags.if_verbose Feedback.msg_notice (str "  checking module type: " ++ str (ModPath.to_string mty.mod_mp));
+  Flags.if_verbose Feedback.msg_notice (str "  checking module type: " ++ str (ModPath.to_string @@ mod_mp mty));
   let _ : _ Cmap.t =
-    check_signature env Cmap.empty mty.mod_type mty.mod_mp mty.mod_delta Cset.empty in
+    check_signature env Cmap.empty (mod_type mty) (mod_mp mty) (mod_delta mty) Cset.empty in
   ()
 
 and check_structure_field env opac mp lab res opacify = function

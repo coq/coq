@@ -10,6 +10,6 @@
 
 val set_indirect_accessor : (Opaqueproof.opaque -> Opaqueproof.opaque_proofterm) -> unit
 
-val check_module : Environ.env -> Names.Cset.t Names.Cmap.t -> Names.ModPath.t -> Declarations.module_body -> Names.Cset.t Names.Cmap.t
+val check_module : Environ.env -> Names.Cset.t Names.Cmap.t -> Names.ModPath.t -> Mod_declarations.module_body -> Names.Cset.t Names.Cmap.t
 
 exception BadConstant of Names.Constant.t * Pp.t

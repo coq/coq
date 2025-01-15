@@ -11,6 +11,7 @@
 open Miniml
 open Constr
 open Declarations
+open Mod_declarations
 open Names
 open ModPath
 open Libnames
@@ -36,7 +37,7 @@ let environment_until dir_opt =
     | [] -> []
     | d :: l ->
       let meb =
-        Modops.destr_nofunctor (MPfile d) (Global.lookup_module (MPfile d)).mod_type
+        Modops.destr_nofunctor (MPfile d) (mod_type @@ Global.lookup_module (MPfile d))
       in
       match dir_opt with
       | Some d' when DirPath.equal d d' -> [MPfile d, meb]
@@ -167,7 +168,7 @@ let expand_mexpr env mp me =
   let inl = Some (Flags.get_inline_level()) in
   let state = ((Environ.universes env, Univ.Constraints.empty), Reductionops.inferred_universes) in
   let mb, (_, cst), _ = Mod_typing.translate_module state vm_state env mp inl (MExpr ([], me, None)) in
-  mb.mod_type, mb.mod_delta
+  mod_type mb, mod_delta mb
 
 let expand_modtype env mp me =
   let inl = Some (Flags.get_inline_level()) in
@@ -182,7 +183,7 @@ let flatten_modtype env mp me_alg struc_opt =
   | Some me -> me, no_delta
   | None ->
      let mtb = expand_modtype env mp me_alg in
-     mtb.mod_type, mtb.mod_delta
+     mod_type mtb, mod_delta mtb
 
 (** Ad-hoc update of environment, inspired by [Mod_typing.check_with_aux_def].
 *)
@@ -222,11 +223,11 @@ let rec extract_structure_spec env mp reso = function
       specs
   | (l,SFBmodule mb) :: msig ->
       let specs = extract_structure_spec env mp reso msig in
-      let spec = extract_mbody_spec env mb.mod_mp mb in
+      let spec = extract_mbody_spec env (mod_mp mb) mb in
       (l,Smodule spec) :: specs
   | (l,SFBmodtype mtb) :: msig ->
       let specs = extract_structure_spec env mp reso msig in
-      let spec = extract_mbody_spec env mtb.mod_mp mtb in
+      let spec = extract_mbody_spec env (mod_mp mtb) mtb in
       (l,Smodtype spec) :: specs
 
 (* From [module_expression] to specifications *)
@@ -279,9 +280,9 @@ and extract_msignature_spec env mp1 reso = function
                 extract_msignature_spec env' mp1 reso me)
 
 and extract_mbody_spec : 'a. _ -> _ -> 'a generic_module_body -> _ =
-  fun env mp mb -> match mb.mod_type_alg with
-  | Some ty -> extract_mexpression_spec env mp (mb.mod_type,ty)
-  | None -> extract_msignature_spec env mp mb.mod_delta mb.mod_type
+  fun env mp mb -> match mod_type_alg mb with
+  | Some ty -> extract_mexpression_spec env mp (mod_type mb, ty)
+  | None -> extract_msignature_spec env mp (mod_delta mb) (mod_type mb)
 
 (* From a [structure_body] (i.e. a list of [structure_field_body])
    to implementations.
@@ -393,23 +394,23 @@ and extract_module access env mp ~all mb =
      Since we look at modules from outside, we shouldn't have variables.
      But a Declare Module at toplevel seems legal (cf #2525). For the
      moment we don't support this situation. *)
-  let impl = match Declareops.mod_expr mb with
+  let impl = match Mod_declarations.mod_expr mb with
     | Abstract -> error_no_module_expr mp
-    | Algebraic me -> extract_mexpression access env mp mb.mod_type me
+    | Algebraic me -> extract_mexpression access env mp (mod_type mb) me
     | Struct sign ->
       (* This module has a signature, otherwise it would be FullStruct.
          We extract just the elements required by this signature. *)
-      let () = add_labels mp mb.mod_type in
-      let sign = Modops.annotate_struct_body sign mb.mod_type in
-      extract_msignature access env mp mb.mod_delta ~all:false sign
-    | FullStruct -> extract_msignature access env mp mb.mod_delta ~all mb.mod_type
+      let () = add_labels mp (mod_type mb) in
+      let sign = Modops.annotate_struct_body sign (mod_type mb) in
+      extract_msignature access env mp (mod_delta mb) ~all:false sign
+    | FullStruct -> extract_msignature access env mp (mod_delta mb) ~all (mod_type mb)
   in
   (* Slight optimization: for modules without explicit signatures
      ([FullStruct] case), we build the type out of the extracted
      implementation *)
-  let typ = match Declareops.mod_expr mb with
+  let typ = match Mod_declarations.mod_expr mb with
     | FullStruct ->
-      assert (Option.is_empty mb.mod_type_alg);
+      assert (Option.is_empty @@ mod_type_alg mb);
       mtyp_of_mexpr impl
     | _ -> extract_mbody_spec env mp mb
   in

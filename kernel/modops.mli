@@ -12,6 +12,7 @@ open Names
 open Constr
 open Environ
 open Declarations
+open Mod_declarations
 open Entries
 open Mod_subst
 
@@ -31,12 +32,6 @@ val module_type_of_module : module_body -> module_type_body
 val module_body_of_type : ModPath.t -> module_type_body -> module_body
 
 val check_modpath_equiv : env -> ModPath.t -> ModPath.t -> unit
-
-val implem_smart_map :
-  (structure_body -> structure_body) ->
-  (module_expression -> module_expression) ->
-  ('a, module_implementation) when_mod_body ->
-  ('a, module_implementation) when_mod_body
 
 val annotate_module_expression : module_expression -> module_signature ->
   (module_type_body, (constr * UVars.AbstractContext.t option) module_alg_expr) functorize
@@ -63,7 +58,7 @@ val add_linked_module : module_body -> link_info -> env -> env
 (** same, for a module type *)
 val add_module_type : ModPath.t -> module_type_body -> env -> env
 
-val add_retroknowledge : mod_body module_retroknowledge -> env -> env
+val add_retroknowledge : Retroknowledge.action list -> env -> env
 
 (** {6 Strengthening } *)
 

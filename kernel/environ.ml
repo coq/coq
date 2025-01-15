@@ -28,6 +28,7 @@ open Names
 open Constr
 open Vars
 open Declarations
+open Mod_declarations
 open Context.Rel.Declaration
 
 module NamedDecl = Context.Named.Declaration
@@ -854,13 +855,13 @@ let keep_hyps env needed =
 (* Modules *)
 
 let add_modtype mtb env =
-  let mp = mtb.mod_mp in
+  let mp = mod_mp mtb in
   let new_modtypes = MPmap.add mp mtb env.env_globals.Globals.modtypes in
   let new_globals = { env.env_globals with Globals.modtypes = new_modtypes } in
   { env with env_globals = new_globals }
 
 let shallow_add_module mb env =
-  let mp = mb.mod_mp in
+  let mp = mod_mp mb in
   let new_mods = MPmap.add mp mb env.env_globals.Globals.modules in
   let new_globals = { env.env_globals with Globals.modules = new_mods } in
   { env with env_globals = new_globals }
