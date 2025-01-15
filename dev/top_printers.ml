@@ -80,6 +80,11 @@ let pppattern = (fun x -> pp(envpp pr_constr_pattern_env x))
 let pptype = (fun x -> try pp(envpp (fun env evm t -> pr_ltype_env env evm t) x) with e -> pp (str (Printexc.to_string e)))
 let ppfconstr c = ppconstr (CClosure.term_of_fconstr c)
 
+(* XXX we could also try to have a printer which shows which parts are
+   shared, but this is probably better for most uses (ie stepping
+   through typeops and wanting to print the current constr) *)
+let pphconstr c = ppconstr (HConstr.self c)
+
 let ppuint63 i = pp (str (Uint63.to_string i))
 
 let pp_parray pr a =
@@ -265,6 +270,13 @@ let ppuni u = pp(Universe.raw_pr u)
 let ppuni_level u = pp (Level.raw_pr u)
 let ppqvar q = pp (QVar.raw_pr q)
 let ppesorts s = pp (Sorts.debug_print (Evd.MiniEConstr.ESorts.unsafe_to_sorts s))
+
+(* pprelevance not directly useful since it's transparent, but used for pperelevance *)
+let pprelevance (r:Sorts.relevance) = match r with
+  | Relevant -> pp (str "Relevant")
+  | Irrelevant -> pp (str "Irrelevant")
+  | RelevanceVar q -> pp (surround (str "RelevanceVar " ++ spc() ++ Sorts.QVar.raw_pr q))
+let pperelevance r = pprelevance (EConstr.Unsafe.to_relevance r)
 
 let prlev l = UnivNames.pr_level_with_global_universes l
 let prqvar q = Sorts.QVar.raw_pr q

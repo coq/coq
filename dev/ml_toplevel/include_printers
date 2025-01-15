@@ -76,6 +76,7 @@
 #install_printer (* generic_argument *) Top_printers.pp_generic_argument;;
 
 #install_printer (* fconstr *) Top_printers.ppfconstr;;
+#install_printer (* HConstr.t *) Top_printers.pphconstr;;
 
 #install_printer (* fsubst *) Top_printers.ppfsubst;;
 

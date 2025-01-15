@@ -25,6 +25,7 @@ install_printer Top_printers.ppconstr_expr
 install_printer Top_printers.ppglob_constr
 install_printer Top_printers.pppattern
 install_printer Top_printers.ppfconstr
+install_printer Top_printers.pphconstr
 install_printer Top_printers.ppfsubst
 install_printer Top_printers.ppnumtokunsigned
 install_printer Top_printers.ppnumtokunsignednat
@@ -69,6 +70,7 @@ install_printer Top_printers.ppopenconstr
 install_printer Top_printers.pproof
 install_printer Top_printers.ppuni
 install_printer Top_printers.ppesorts
+install_printer Top_printers.pperelevance
 install_printer Top_printers.ppqvar
 install_printer Top_printers.ppuni_level
 install_printer Top_printers.ppqvarset
