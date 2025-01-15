@@ -214,7 +214,7 @@ html_context = {
         ("dev", "https://rocq-prover.org/doc/master/refman/"),
         ("stable", "https://rocq-prover.org/refman/"),
         ("9.0", "https://rocq-prover.org/doc/v9.0/refman/"),
-        ("8.20", "https://rocq-prover.org/doc/V8.20.0/refman/"),
+        ("8.20", "https://rocq-prover.org/doc/v8.20/refman/"),
         ("8.19", "https://rocq-prover.org/doc/V8.19.2/refman/"),
         ("8.18", "https://rocq-prover.org/doc/V8.18.0/refman/"),
         ("8.17", "https://rocq-prover.org/doc/V8.17.1/refman/"),
