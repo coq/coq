@@ -159,6 +159,7 @@ let pr_mutual_inductive_body env mind mib udecl =
        | PrimRecord l -> "Record", true, Array.map_to_list (fun (id,_,_,_) -> Name id) l
        | FakeRecord | NotRecord -> "Variant", false, default_as
   in
+  let udecl = Option.map (fun x -> GlobRef.IndRef (mind,0), x) udecl in
   let bl = Printer.universe_binders_with_opt_names
       (Declareops.inductive_polymorphic_context mib) udecl
   in

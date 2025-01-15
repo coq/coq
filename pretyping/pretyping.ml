@@ -576,6 +576,7 @@ let pretype_ref ?loc sigma env ref us =
         | Some (qs,us) ->
             let open UnivGen in
             Loc.raise ?loc (UniverseLengthMismatch {
+              gref = ref;
               actual = List.length qs, List.length us;
               expect = 0, 0;
             }));
@@ -1584,14 +1585,19 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
 
   let pretype_array self (u,t,def,ty) =
     fun ?loc ~flags tycon env sigma ->
+    let array_kn =   match (!!env).retroknowledge.Retroknowledge.retro_array with
+  | Some c -> c
+  | None -> CErrors.user_err Pp.(str"The type array must be registered before this construction can be typechecked.")
+    in
     let sigma, u = match u with
       | None -> sigma, None
       | Some ([],[u]) ->
         let sigma, u = glob_level ?loc sigma u in
         sigma, Some u
       | Some (qs,us) ->
-          let open UnivGen in
+        let open UnivGen in
           Loc.raise ?loc (UniverseLengthMismatch {
+            gref = ConstRef array_kn;
             actual = List.length qs, List.length us;
             expect = 0, 1;
           })
@@ -1612,7 +1618,7 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
         (ESorts.make (Sorts.sort_of_univ (Univ.Universe.make u)))
     in
     let u = UVars.Instance.of_array ([||],[| u |]) in
-    let ta = EConstr.of_constr @@ Typeops.type_of_array !!env u in
+    let ta = EConstr.mkConstU (array_kn, EInstance.make u) in
     let j = {
       uj_val = EConstr.mkArray(EInstance.make u, Array.map (fun j -> j.uj_val) jt, jdef.uj_val, jty.utj_val);
       uj_type = EConstr.mkApp(ta,[|jdef.uj_type|])

@@ -15,6 +15,7 @@ open Univ
 open UVars
 
 type univ_length_mismatch = {
+  gref : GlobRef.t;
   actual : int * int;
   expect : int * int;
 }
@@ -47,7 +48,8 @@ val diff_sort_context : sort_context_set -> sort_context_set -> sort_context_set
 
 val fresh_instance : AbstractContext.t -> Instance.t in_sort_context_set
 
-val fresh_instance_from : ?loc:Loc.t -> AbstractContext.t -> Instance.t option ->
+(** The globref is only used for the error message when there is a mismatch. *)
+val fresh_instance_from : ?loc:Loc.t -> AbstractContext.t -> (GlobRef.t * Instance.t) option ->
   Instance.t in_sort_context_set
 
 val fresh_sort_in_family : Sorts.family ->

@@ -112,10 +112,10 @@ punwrap is transparent
 Expands to: Constant UnivBinders.punwrap
 File "./output/UnivBinders.v", line 104, characters 0-19:
 The command has indeed failed with message:
-Universe instance length is 3 but should be 1.
+Universe instance length for foo is 3 but should be 1.
 File "./output/UnivBinders.v", line 105, characters 0-20:
 The command has indeed failed with message:
-Universe instance length is 0 but should be 1.
+Universe instance length for mono is 0 but should be 1.
 File "./output/UnivBinders.v", line 108, characters 0-33:
 The command has indeed failed with message:
 This object does not support universe names.
