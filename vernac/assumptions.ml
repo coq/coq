@@ -84,19 +84,20 @@ and memoize_fields_of_mp mp =
 and fields_of_mp mp =
   let open Mod_subst in
   let mb = lookup_module_in_impl mp in
-  let fields,inner_mp,subs = fields_of_mb empty_subst mb [] in
+  let () = assert (ModPath.equal mp (mod_mp mb)) in
+  let fields,inner_mp,subs = fields_of_mb empty_subst mp mb [] in
   let subs =
     if ModPath.equal inner_mp mp then subs
     else add_mp inner_mp mp (mod_delta mb) subs
   in
   Modops.subst_structure subs fields
 
-and fields_of_mb subs mb args = match Mod_declarations.mod_expr mb with
-  | Algebraic expr -> fields_of_expression subs (mod_mp mb) args (mod_type mb) expr
+and fields_of_mb subs mp mb args = match Mod_declarations.mod_expr mb with
+  | Algebraic expr -> fields_of_expression subs mp args (mod_type mb) expr
   | Struct sign ->
     let sign = Modops.annotate_struct_body sign (mod_type mb) in
-    fields_of_signature subs (mod_mp mb) args sign
-  | Abstract|FullStruct -> fields_of_signature subs (mod_mp mb) args (mod_type mb)
+    fields_of_signature subs mp args sign
+  | Abstract|FullStruct -> fields_of_signature subs mp args (mod_type mb)
 
 (** The Abstract case above corresponds to [Declare Module] *)
 
@@ -108,8 +109,10 @@ and fields_of_signature x =
 
 and fields_of_expr subs mp0 args = function
   | MEident mp ->
-    let mb = lookup_module_in_impl (Mod_subst.subst_mp subs mp) in
-    fields_of_mb subs mb args
+    let mp = Mod_subst.subst_mp subs mp in
+    let mb = lookup_module_in_impl mp in
+    let () = assert (ModPath.equal mp (mod_mp mb)) in
+    fields_of_mb subs mp mb args
   | MEapply (me1,mp2) -> fields_of_expr subs mp0 (mp2::args) me1
   | MEwith _ -> assert false (* no 'with' in [mod_expr] *)
 

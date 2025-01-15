@@ -263,7 +263,8 @@ let rec translate_mse (cst, ustate) (vm, vmstate) env mpo inl = function
       | Some mp -> strengthen_and_subst_module_body (lookup_module mp1 env) mp false
       | None ->
         let mt = lookup_modtype mp1 env in
-        module_body_of_type (mod_mp mt) mt
+        let () = assert (ModPath.equal mp1 (mod_mp mt)) in
+        module_body_of_type mp1 mt
     in
     mod_type mb, me, mod_delta mb, cst, vm
   | MEapply (fe,mp1) ->

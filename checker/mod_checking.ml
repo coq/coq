@@ -235,17 +235,18 @@ let rec check_mexpression env opac sign mbtyp mp_mse res = match sign with
 let rec check_module env opac mp mb opacify =
   Flags.if_verbose Feedback.msg_notice (str "  checking module: " ++ str (ModPath.to_string mp));
   let env = Modops.add_retroknowledge (mod_retroknowledge mb) env in
+  let () = assert (ModPath.equal (mod_mp mb) mp) in
   let opac =
-    check_signature env opac (mod_type mb) (mod_mp mb) (mod_delta mb) opacify
+    check_signature env opac (mod_type mb) mp (mod_delta mb) opacify
   in
   let optsign, opac = match Mod_declarations.mod_expr mb with
     | Struct sign_struct ->
-      let opacify = collect_constants_without_body (mod_type mb) (mod_mp mb) opacify in
+      let opacify = collect_constants_without_body (mod_type mb) mp opacify in
       (* TODO: a bit wasteful, we recheck the types of parameters twice *)
       let sign_struct = Modops.annotate_struct_body sign_struct (mod_type mb) in
-      let opac = check_signature env opac sign_struct (mod_mp mb) (mod_delta mb) opacify in
+      let opac = check_signature env opac sign_struct mp (mod_delta mb) opacify in
       Some (sign_struct, mod_delta mb), opac
-    | Algebraic me -> Some (check_mexpression env opac me (mod_type mb) (mod_mp mb) (mod_delta mb)), opac
+    | Algebraic me -> Some (check_mexpression env opac me (mod_type mb) mp (mod_delta mb)), opac
     | Abstract|FullStruct -> None, opac
   in
   let () = match optsign with
@@ -260,10 +261,11 @@ let rec check_module env opac mp mb opacify =
   in
   opac
 
-and check_module_type env mty =
-  Flags.if_verbose Feedback.msg_notice (str "  checking module type: " ++ str (ModPath.to_string @@ mod_mp mty));
+and check_module_type env mp mty =
+  let () = assert (ModPath.equal (mod_mp mty) mp) in
+  Flags.if_verbose Feedback.msg_notice (str "  checking module type: " ++ str (ModPath.to_string @@ mp));
   let _ : _ Cmap.t =
-    check_signature env Cmap.empty (mod_type mty) (mod_mp mty) (mod_delta mty) Cset.empty in
+    check_signature env Cmap.empty (mod_type mty) mp (mod_delta mty) Cset.empty in
   ()
 
 and check_structure_field env opac mp lab res opacify = function
@@ -278,7 +280,7 @@ and check_structure_field env opac mp lab res opacify = function
       let opac = check_module env opac (MPdot(mp,lab)) msb opacify in
       Modops.add_module msb env, opac
   | SFBmodtype mty ->
-      check_module_type env mty;
+      let () = check_module_type env (MPdot (mp, lab)) mty in
       add_modtype mty env, opac
   | SFBrules rrb ->
       check_rewrite_rules_body env lab rrb;
@@ -286,7 +288,7 @@ and check_structure_field env opac mp lab res opacify = function
 
 and check_signature env opac sign mp_mse res opacify = match sign with
   | MoreFunctor (arg_id, mtb, body) ->
-      check_module_type env mtb;
+      let () = check_module_type env (MPbound arg_id) mtb in
       let env' = Modops.add_module_type (MPbound arg_id) mtb env in
       let opac = check_signature env' opac body mp_mse res Cset.empty in
       opac
