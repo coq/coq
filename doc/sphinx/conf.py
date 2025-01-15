@@ -234,7 +234,7 @@ html_context = {
         ("8.3", "https://rocq-prover.org/doc/V8.3pl5/refman/"),
         ("8.2", "https://rocq-prover.org/doc/V8.2pl3/refman/"),
         ("8.1", "https://rocq-prover.org/doc/V8.1pl6/refman/"),
-        ("8.0", "https://coq.inria.fr/doc/V8.0/doc/")
+        ("8.0", "https://rocq-prover.org/doc/V8.0/doc/")
     ],
     'downloads': ([("PDF", PDF_URL.format(version=version))]
                   if coq_config.is_a_released_version else [])
