@@ -14,6 +14,10 @@ open Declarations
 open Declareops
 open Mod_subst
 
+type (_, 'v) when_mod_body =
+| ModBodyVal : 'v -> (mod_body, 'v) when_mod_body
+| ModTypeNul : (mod_type, 'v) when_mod_body
+
 type structure_field_body =
   (module_body, module_type_body) Declarations.structure_field_body
 
