@@ -73,8 +73,10 @@ let print_usage fmt () =
         "    "^cmd^separator^doc)
       subcommands
   in
-  Printf.fprintf fmt "Usage: rocq [-debug-shim] {-v|--version|--help|SUBCOMMAND} [ARGUMENTS...]\n\
+  Printf.fprintf fmt "Usage: rocq [-debug-shim] {-v|--version|--print-version|--help|SUBCOMMAND} [ARGUMENTS...]\n\
 \n\
+\n  -v, --version: print human readable version info\
+\n  --print-version: print machine readable version info\
 Supported subcommands:\n\
 %s\n\
 \n\
@@ -107,6 +109,7 @@ let () =
   match args with
   (* help prints *)
   | "-v" :: _ | "--version" :: _ -> Boot.Usage.version ()
+  | ("-print-version"|"--print-version") :: _ -> Boot.Usage.machine_readable_version ()
   | ("-h" | "-H" | "-help" | "--help") :: _ ->
     Printf.printf "%a%!" print_usage ();
     exit 0
