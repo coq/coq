@@ -514,8 +514,6 @@ let register_ltac local ?deprecation tacl =
     let () = List.iter iter_rec recvars in
     List.map map rfun
   in
-  (* STATE XXX: Review what is going on here. Why does this needs
-     protection? Why is not the STM level protection enough? Fishy *)
   let defs = Vernacstate.System.protect defs () in
   let iter (def, tac) = match def with
   | NewTac id ->
