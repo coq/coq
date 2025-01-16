@@ -124,8 +124,8 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
     let s' = ESorts.make s' in
     evdref := sigma;
     let evd =
-      if direction then set_leq_sort env !evdref s' s
-      else set_leq_sort env !evdref s s'
+      if direction then set_leq_sort !evdref s' s
+      else set_leq_sort !evdref s s'
     in evdref := evd; mkSort s'
   in
   let rec refresh ~onlyalg status ~direction t =
@@ -1479,7 +1479,7 @@ let solve_evar_evar ?(force=false) f unify flags env evd pbty (evk1,args1 as ev1
           let evd, k = Evd.new_sort_variable univ_flexible_alg evd in
           let t1 = it_mkProd_or_LetIn (mkSort k) ctx1 in
           let t2 = it_mkProd_or_LetIn (mkSort k) ctx2 in
-          let evd = Evd.set_leq_sort env (Evd.set_leq_sort env evd k i) k j in
+          let evd = Evd.set_leq_sort (Evd.set_leq_sort evd k i) k j in
           downcast evk2 t2 (downcast evk1 t1 evd)
     with Reduction.NotArity ->
       evd in

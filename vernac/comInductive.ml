@@ -266,7 +266,7 @@ let prop_lowering_candidates evd ~arities_explicit inds =
   let candidates = spread_nonprop candidates in
   candidates
 
-let include_constructor_argument env evd ~poly ~ctor_sort ~inductive_sort =
+let include_constructor_argument evd ~poly ~ctor_sort ~inductive_sort =
   if poly then
     (* We ignore the quality when comparing the sorts: it has an impact
        on squashing in the kernel but cannot cause a universe error. *)
@@ -283,12 +283,12 @@ let include_constructor_argument env evd ~poly ~ctor_sort ~inductive_sort =
     | None, Some _ -> evd
     | Some uctor, Some uind ->
       let mk u = ESorts.make (Sorts.sort_of_univ u) in
-      Evd.set_leq_sort env evd (mk uctor) (mk uind)
+      Evd.set_leq_sort evd (mk uctor) (mk uind)
   else
     match ESorts.kind evd ctor_sort with
     | SProp | Prop -> evd
     | Set | Type _ | QSort _ ->
-      Evd.set_leq_sort env evd ctor_sort inductive_sort
+      Evd.set_leq_sort evd ctor_sort inductive_sort
 
 type default_dep_elim = DeclareInd.default_dep_elim = DefaultElim | PropButDepElim
 
@@ -306,7 +306,7 @@ let inductive_levels env evd ~poly ~indnames ~arities_explicit arities ctors =
   let evd = List.fold_left (fun evd (raw_arity,(_,s),ctors) ->
       if less_than_2 ctors || is_impredicative_sort evd s then evd
       else (* >=2 constructors is like having a bool argument *)
-        include_constructor_argument env evd ~poly ~ctor_sort:ESorts.set ~inductive_sort:s)
+        include_constructor_argument evd ~poly ~ctor_sort:ESorts.set ~inductive_sort:s)
       evd inds
   in
   (* If indices_matter, the index telescope acts like an extra
@@ -353,7 +353,7 @@ let inductive_levels env evd ~poly ~indnames ~arities_explicit arities ctors =
       if is_impredicative_sort evd s then evd
       else List.fold_left
           (List.fold_left (fun evd ctor_sort ->
-               include_constructor_argument env evd ~poly ~ctor_sort ~inductive_sort:s))
+               include_constructor_argument evd ~poly ~ctor_sort ~inductive_sort:s))
           evd (Option.List.cons indices ctors))
       evd inds
   in

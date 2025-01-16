@@ -1152,16 +1152,16 @@ let normalize_sort evars s =
   UState.nf_sort evars.universes s
 
 (* FIXME inefficient *)
-let set_eq_sort env d s1 s2 =
-  let s1 = normalize_sort d s1 and s2 = normalize_sort d s2 in
+let set_eq_sort evd s1 s2 =
+  let s1 = normalize_sort evd s1 and s2 = normalize_sort evd s2 in
   match is_eq_sort s1 s2 with
-  | None -> d
+  | None -> evd
   | Some (u1, u2) ->
-    if not (type_in_type env) then
-      add_universe_constraints d
+    if not (UGraph.type_in_type (UState.ugraph evd.universes)) then
+      add_universe_constraints evd
         (UnivProblem.Set.singleton (UnivProblem.UEq (u1,u2)))
     else
-      d
+      evd
 
 let set_eq_level d u1 u2 =
   add_constraints d (Univ.enforce_eq_level u1 u2 Univ.Constraints.empty)
@@ -1173,13 +1173,13 @@ let set_eq_instances ?(flex=false) d u1 u2 =
   add_universe_constraints d
     (UnivProblem.enforce_eq_instances_univs flex u1 u2 UnivProblem.Set.empty)
 
-let set_leq_sort env evd s1 s2 =
+let set_leq_sort evd s1 s2 =
   let s1 = normalize_sort evd s1
   and s2 = normalize_sort evd s2 in
   match is_eq_sort s1 s2 with
   | None -> evd
   | Some (u1, u2) ->
-     if not (type_in_type env) then
+    if not (UGraph.type_in_type (UState.ugraph evd.universes)) then
        add_universe_constraints evd (UnivProblem.Set.singleton (UnivProblem.ULe (u1,u2)))
      else evd
 

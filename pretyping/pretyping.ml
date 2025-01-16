@@ -1145,7 +1145,7 @@ struct
             let sigma, q = Evd.new_quality_variable sigma in
             (* make q in cumulativity with Prop/Type *)
             let sigma =
-              Evd.set_leq_sort !!env sigma
+              Evd.set_leq_sort sigma
                 ESorts.prop
                 (ESorts.make (Sorts.qsort q Univ.Universe.type0))
             in
@@ -1611,7 +1611,7 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
       | Some u -> sigma, u
       | None -> Evd.new_univ_level_variable UState.univ_flexible sigma
     in
-    let sigma = Evd.set_leq_sort !!env sigma
+    let sigma = Evd.set_leq_sort sigma
         (* we retype because it may be an evar which has been defined, resulting in a lower sort
            cf #18480 *)
         (Retyping.get_sort_of !!env sigma jty.utj_val)
