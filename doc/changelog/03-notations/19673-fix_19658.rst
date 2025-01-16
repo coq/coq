@@ -1,6 +1,0 @@
-- **Fixed:**
-  spurious warning about incompatible prefixes in presence of
-  recursive notations
-  (`#19673 <https://github.com/coq/coq/pull/19673>`_,
-  fixes `#19658 <https://github.com/coq/coq/issues/19658>`_,
-  by Pierre Roux).

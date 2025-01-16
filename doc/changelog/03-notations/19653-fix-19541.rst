@@ -1,6 +1,0 @@
-- **Fixed:**
-  spurious warning about incompatible prefixes in presence of ``as
-  pattern`` :n:`@syntax_modifier`
-  (`#19653 <https://github.com/coq/coq/pull/19653>`_,
-  fixes `#19541 <https://github.com/coq/coq/issues/19541>`_,
-  by Pierre Roux).
