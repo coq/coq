@@ -46,8 +46,6 @@ type module_implementation =
   | Struct of structure_body (** interactive body living in the parameter context of [mod_type] *)
   | FullStruct (** special case of [Struct] : the body is exactly [mod_type] *)
 
-type 'a module_retroknowledge = ('a, Retroknowledge.action list) when_mod_body
-
 (** Extra invariants :
 
     - No [MEwith] inside a [mod_expr] implementation : the 'with' syntax
@@ -91,17 +89,6 @@ val functorize_module : (Names.MBId.t * module_type_body) list -> module_body ->
 val set_implementation : module_implementation -> module_body -> module_body
 val set_algebraic_type : module_type_body -> module_expression -> module_type_body
 val set_retroknowledge : module_body -> Retroknowledge.action list -> module_body
-
-(** {6 Mapping} *)
-
-val implem_smart_map :
-  (structure_body -> structure_body) ->
-  (module_expression -> module_expression) ->
-  ('a, module_implementation) when_mod_body ->
-  ('a, module_implementation) when_mod_body
-
-val functor_smart_map : (MBId.t -> 'a -> 'a) -> ('b -> 'b) ->
-  ('a, 'b) functorize -> ('a, 'b) functorize
 
 (** {6 Substitution} *)
 

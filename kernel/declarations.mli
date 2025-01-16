@@ -345,10 +345,6 @@ type rewrite_rules_body = {
 type mod_body = [ `ModBody ]
 type mod_type = [ `ModType ]
 
-type (_, 'v) when_mod_body =
-| ModBodyVal : 'v -> (mod_body, 'v) when_mod_body
-| ModTypeNul : (mod_type, 'v) when_mod_body
-
 (** Functor expressions are forced to be on top of other expressions *)
 
 type ('ty,'a) functorize =
