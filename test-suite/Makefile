@@ -289,7 +289,7 @@ report: summary.log
 
 # Not inside Dune, build by hand, note the shuffling
 ifeq ($(INSIDE_DUNE),)
-$(TEST_SUITE_CONFIG_PATH): $(TESTCONFIGURE)
+$(TEST_SUITE_CONFIG_PATH):
 	dune build $(TEST_SUITE_CONFIG_FILE)
 endif
 
