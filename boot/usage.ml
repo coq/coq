@@ -9,7 +9,7 @@
 (************************************************************************)
 
 let version () =
-  Printf.printf "The Rocq Proof Assistant, version %s\n" Coq_config.version;
+  Printf.printf "The Rocq Prover, version %s\n" Coq_config.version;
   Printf.printf "compiled with OCaml %s\n" Coq_config.caml_version
 
 let machine_readable_version () =
