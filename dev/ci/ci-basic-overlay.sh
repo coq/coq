@@ -170,7 +170,7 @@ project coquelicot 'https://gitlab.inria.fr/coquelicot/coquelicot' '88672c1eac54
 ########################################################################
 # CompCert
 ########################################################################
-project compcert 'https://github.com/AbsInt/CompCert' '54d2e47a61aec86c4240a5315946c2e25e4981ae'
+project compcert 'https://github.com/AbsInt/CompCert' '54341fe9728ca74fb446145c327220af33f8a701'
 # Contact @xavierleroy on github
 
 ########################################################################
@@ -194,7 +194,7 @@ project rewriter 'https://github.com/mit-plv/rewriter' '30c8507c1e30626b2aa1e15c
 ########################################################################
 # fiat_parsers
 ########################################################################
-project fiat_parsers 'https://github.com/mit-plv/fiat' '479537e0d67cd0423ef270ac1cc1b02f3f9c87d6'
+project fiat_parsers 'https://github.com/mit-plv/fiat' '41a0b8dd92a252fcf7491ee99e16eb002288e87e'
 # Contact @JasonGross on github
 
 ########################################################################
