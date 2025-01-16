@@ -593,8 +593,8 @@ type generic_name =
   | C of Constant.t
   | I of MutInd.t
   | R
-  | M (** name already known, cf the mod_mp field *)
-  | MT (** name already known, cf the mod_mp field *)
+  | M of ModPath.t
+  | MT of ModPath.t
 
 let add_field ((l,sfb) as field) gn senv =
   let mlabs,olabs = match sfb with
@@ -609,8 +609,8 @@ let add_field ((l,sfb) as field) gn senv =
   let env' = match sfb, gn with
     | SFBconst cb, C con -> Environ.add_constant con cb senv.env
     | SFBmind mib, I mind -> Environ.add_mind mind mib senv.env
-    | SFBmodtype mtb, MT -> Environ.add_modtype mtb senv.env
-    | SFBmodule mb, M -> Modops.add_module mb senv.env
+    | SFBmodtype mtb, MT mp -> Environ.add_modtype mp mtb senv.env
+    | SFBmodule mb, M mp -> Modops.add_module mp mb senv.env
     | SFBrules r, R -> Environ.add_rewrite_rules r.rewrules_rules senv.env
     | _ -> assert false
   in
@@ -624,7 +624,7 @@ let add_field ((l,sfb) as field) gn senv =
       | SFBmind mib, I mind ->
         let poly = Declareops.inductive_is_polymorphic mib in
         Some Section.(push_global ~poly env' (SecInductive mind) sections)
-      | _, (M | MT) -> Some sections
+      | _, (M _ | MT _) -> Some sections
       | _ -> assert false
   in
   { senv with
@@ -1115,15 +1115,15 @@ let add_modtype l params_mte inl senv =
   let mtb, _, vmtab = Mod_typing.translate_modtype state vmstate senv.env mp inl params_mte  in
   let senv = set_vm_library vmtab senv in
   let mtb = Mod_declarations.hcons_module_type mtb in
-  let senv = add_field (l,SFBmodtype mtb) MT senv in
+  let senv = add_field (l,SFBmodtype mtb) (MT mp) senv in
   mp, senv
 
 (** full_add_module adds module with universes and constraints *)
 
-let full_add_module mb senv =
-  let dp = ModPath.dp (mod_mp mb) in
+let full_add_module mp mb senv =
+  let dp = ModPath.dp mp in
   let linkinfo = Nativecode.link_info_of_dirpath dp in
-  { senv with env = Modops.add_linked_module mb linkinfo senv.env }
+  { senv with env = Modops.add_linked_module mp mb linkinfo senv.env }
 
 let full_add_module_type mp mt senv =
   { senv with env = Modops.add_module_type mp mt senv.env }
@@ -1137,7 +1137,7 @@ let add_module l me inl senv =
   let mb, _, vmtab = Mod_typing.translate_module state vmstate senv.env mp inl me in
   let senv = set_vm_library vmtab senv in
   let mb = Mod_declarations.hcons_module_body mb in
-  let senv = add_field (l,SFBmodule mb) M senv in
+  let senv = add_field (l,SFBmodule mb) (M mp) senv in
   let senv =
     if Modops.is_functor @@ mod_type mb then senv
     else update_resolver (Mod_subst.add_delta_resolver @@ mod_delta mb) senv
@@ -1220,7 +1220,7 @@ let functorize params init =
 
 let propagate_loads senv =
   List.fold_left
-    (fun env (_,mb) -> full_add_module mb env)
+    (fun env (mp, mb) -> full_add_module mp mb env)
     senv
     (List.rev senv.loads)
 
@@ -1277,7 +1277,7 @@ let end_module l restype senv =
   let newenv = if Environ.rewrite_rules_allowed senv.env then Environ.allow_rewrite_rules newenv else newenv in
   let newenv = Environ.set_vm_library (Environ.vm_library senv.env) newenv in
   let senv' = propagate_loads { senv with env = newenv } in
-  let newenv = Modops.add_module mb senv'.env in
+  let newenv = Modops.add_module mp mb senv'.env in
   let newresolver =
     if Modops.is_functor @@ mod_type mb then oldsenv.modresolver
     else Mod_subst.add_delta_resolver (mod_delta mb) oldsenv.modresolver
@@ -1298,8 +1298,8 @@ let end_modtype l senv =
   let newenv = Environ.set_vm_library (Environ.vm_library senv.env) newenv in
   let senv' = propagate_loads {senv with env=newenv} in
   let auto_tb = functorize params (NoFunctor (List.rev senv.revstruct)) in
-  let mtb = build_mtb mp auto_tb senv.modresolver in
-  let newenv = Environ.add_modtype mtb senv'.env in
+  let mtb = build_mtb auto_tb senv.modresolver in
+  let newenv = Environ.add_modtype mp mtb senv'.env in
   let newresolver = oldsenv.modresolver in
   (mp,mbids),
   propagate_senv (l,SFBmodtype mtb) newenv newresolver senv' oldsenv
@@ -1317,18 +1317,18 @@ let add_include me is_module inl senv =
   let senv = set_vm_library vmtab senv in
   (* Include Self support  *)
   let struc = NoFunctor (List.rev senv.revstruct) in
-  let mb = build_mtb mp_sup struc senv.modresolver in
+  let mb = build_mtb struc senv.modresolver in
   let rec compute_sign sign resolver =
     match sign with
     | MoreFunctor(mbid,mtb,str) ->
       let state = check_state senv in
-      let (_ : UGraph.t) = Subtyping.check_subtypes state senv.env mb mtb in
+      let (_ : UGraph.t) = Subtyping.check_subtypes state senv.env mp_sup mb (MPbound mbid) mtb in
       let mpsup_delta =
         Modops.inline_delta_resolver senv.env inl mp_sup mbid mtb senv.modresolver
       in
       let subst = Mod_subst.map_mbid mbid mp_sup mpsup_delta in
       let resolver = Mod_subst.subst_codom_delta_resolver subst resolver in
-      compute_sign (Modops.subst_signature subst str) resolver
+      compute_sign (Modops.subst_signature subst mp_sup str) resolver
     | NoFunctor str -> resolver, str
   in
   let resolver, str = compute_sign sign resolver in
@@ -1340,14 +1340,16 @@ let add_include me is_module inl senv =
       | SFBmind _ ->
         I (Mod_subst.mind_of_delta_kn resolver (KerName.make mp_sup l))
       | SFBrules _ -> R
-      | SFBmodule _ -> M
-      | SFBmodtype _ -> MT
+      | SFBmodule _ -> M (MPdot (mp_sup, l))
+      | SFBmodtype _ -> MT (MPdot (mp_sup, l))
     in
     add_field field new_name senv
   in
   resolver, List.fold_left add senv str
 
 (** {6 Libraries, i.e. compiled modules } *)
+
+let dirpath_of_library lib = lib.comp_name
 
 let module_of_library lib = lib.comp_mod
 
@@ -1392,7 +1394,7 @@ let export ~output_native_objects senv dir =
   let () = assert (Sorts.QVar.Set.is_empty senv.env.Environ.env_qualities) in
   let mp = senv.modpath in
   let str = NoFunctor (List.rev senv.revstruct) in
-  let mb = Mod_declarations.make_module_body mp str senv.modresolver senv.local_retroknowledge in
+  let mb = Mod_declarations.make_module_body str senv.modresolver senv.local_retroknowledge in
   let ast, symbols =
     if output_native_objects then
       Nativelibrary.dump_library mp senv.env str
@@ -1428,7 +1430,7 @@ let import lib vmtab vodigest senv =
   let env = Environ.link_vm_library vmtab env in
   let env =
     let linkinfo = Nativecode.link_info_of_dirpath lib.comp_name in
-    Modops.add_linked_module mb linkinfo env
+    Modops.add_linked_module mp mb linkinfo env
   in
   let sections =
     Option.map (Section.map_custom (fun custom ->

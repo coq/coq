@@ -46,7 +46,6 @@ and translate_field mp env acc (l,x) =
      compile_rewrite_rules env l acc rrb
   | SFBmodule md ->
      let mp = MPdot (mp, l) in
-     let () = assert (ModPath.equal mp (mod_mp md)) in
      (debug_native_compiler (fun () ->
         let msg =
           Printf.sprintf "Compiling module %s..." (ModPath.to_string mp)
@@ -55,7 +54,6 @@ and translate_field mp env acc (l,x) =
      translate_mod mp env (mod_type md) acc
   | SFBmodtype mdtyp ->
      let mp = MPdot (mp, l) in
-     let () = assert (ModPath.equal mp (mod_mp mdtyp)) in
      (debug_native_compiler (fun () ->
         let msg =
           Printf.sprintf "Compiling module type %s..." (ModPath.to_string mp)

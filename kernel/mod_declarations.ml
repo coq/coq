@@ -31,8 +31,7 @@ and module_implementation =
   | FullStruct (** special case of [Struct] : the body is exactly [mod_type] *)
 
 and 'a generic_module_body =
-  { mod_mp : ModPath.t; (** absolute path of the module *)
-    mod_expr : ('a, module_implementation) when_mod_body; (** implementation *)
+  { mod_expr : ('a, module_implementation) when_mod_body; (** implementation *)
     mod_type : module_signature; (** expanded type *)
     mod_type_alg : module_expression option; (** algebraic type *)
     mod_delta : Mod_subst.delta_resolver; (**
@@ -70,8 +69,7 @@ type 'a module_retroknowledge = ('a, Retroknowledge.action list) when_mod_body
 
 (** Builders *)
 
-let make_module_body mp typ delta retro = {
-  mod_mp = mp;
+let make_module_body typ delta retro = {
   mod_expr = ModBodyVal FullStruct;
   mod_type = typ;
   mod_type_alg = None;
@@ -79,8 +77,7 @@ let make_module_body mp typ delta retro = {
   mod_retroknowledge = ModBodyVal retro;
 }
 
-let make_module_type mp typ delta = {
-  mod_mp = mp;
+let make_module_type typ delta = {
   mod_expr = ModTypeNul;
   mod_type = typ;
   mod_type_alg = None;
@@ -88,10 +85,8 @@ let make_module_type mp typ delta = {
   mod_retroknowledge = ModTypeNul;
 }
 
-let strengthen_module_body ~src ~dst typ delta mb =
-  let mp = match dst with None -> mb.mod_mp | Some mp -> mp in
+let strengthen_module_body ~src typ delta mb =
   { mb with
-    mod_mp = mp;
     mod_expr = ModBodyVal (Algebraic (MENoFunctor (MEident src)));
     mod_type = typ;
     mod_delta = delta; }
@@ -114,9 +109,8 @@ let module_type_of_module mb =
   { mb with mod_expr = ModTypeNul; mod_type_alg = None;
     mod_retroknowledge = ModTypeNul; }
 
-let module_body_of_type mp mtb =
-  let () = assert (ModPath.equal mp mtb.mod_mp) in
-  { mtb with mod_expr = ModBodyVal Abstract; mod_mp = mp;
+let module_body_of_type mtb =
+  { mtb with mod_expr = ModBodyVal Abstract;
       mod_retroknowledge = ModBodyVal []; }
 
 (** Setters *)
@@ -132,7 +126,6 @@ let set_retroknowledge mb rk =
 
 (** Accessors *)
 
-let mod_mp { mod_mp = mp; _ } = mp
 let mod_expr { mod_expr = ModBodyVal v; _ } = v
 let mod_type m = m.mod_type
 let mod_type_alg m = m.mod_type_alg
@@ -209,7 +202,6 @@ and hcons_module_implementation mip = match mip with
 and hcons_generic_module_body :
   'a. 'a generic_module_body -> 'a generic_module_body =
   fun mb ->
-  let mp' = mb.mod_mp in
   let expr' = hcons_when_mod_body hcons_module_implementation mb.mod_expr in
   let type' = hcons_module_signature mb.mod_type in
   let type_alg' = mb.mod_type_alg in
@@ -217,7 +209,6 @@ and hcons_generic_module_body :
   let retroknowledge' = mb.mod_retroknowledge in
 
   if
-    mb.mod_mp == mp' &&
     mb.mod_expr == expr' &&
     mb.mod_type == type' &&
     mb.mod_type_alg == type_alg' &&
@@ -225,7 +216,6 @@ and hcons_generic_module_body :
     mb.mod_retroknowledge == retroknowledge'
   then mb
   else {
-    mod_mp = mp';
     mod_expr = expr';
     mod_type = type';
     mod_type_alg = type_alg';
@@ -243,7 +233,7 @@ let hcons_module_type =
 
 let rec functor_smart_map fty f0 funct = match funct with
   | MoreFunctor (mbid,ty,e) ->
-    let ty' = fty ty in
+    let ty' = fty mbid ty in
     let e' = functor_smart_map fty f0 e in
     if ty==ty' && e==e' then funct else MoreFunctor (mbid,ty',e')
   | NoFunctor a ->
@@ -285,7 +275,7 @@ let subst_with_body subst = function
     let c' = subst_mps subst c in
     if c==c' then orig else WithDef(id,(c',ctx))
 
-let rec subst_structure subst do_delta sign =
+let rec subst_structure subst do_delta mp sign =
   let subst_field ((l,body) as orig) = match body with
     | SFBconst cb ->
       let cb' = subst_const_body subst cb in
@@ -297,10 +287,10 @@ let rec subst_structure subst do_delta sign =
       let rrb' = subst_rewrite_rules subst rrb in
       if rrb==rrb' then orig else (l,SFBrules rrb')
     | SFBmodule mb ->
-      let mb' = subst_module subst do_delta mb in
+      let mb' = subst_module subst do_delta (MPdot (mp, l)) mb in
       if mb==mb' then orig else (l,SFBmodule mb')
     | SFBmodtype mtb ->
-      let mtb' = subst_modtype subst do_delta mtb in
+      let mtb' = subst_modtype subst do_delta (MPdot (mp, l)) mtb in
       if mtb==mtb' then orig else (l,SFBmodtype mtb')
   in
   List.Smart.map subst_field sign
@@ -313,9 +303,9 @@ and subst_retro : type a. Mod_subst.substitution -> a module_retroknowledge -> a
       let l' = List.Smart.map (subst_retro_action subst) l in
       if l == l' then r else ModBodyVal l
 
-and subst_module_body : type a. _ -> _ -> _ -> a generic_module_body -> a generic_module_body =
-  fun is_mod subst do_delta mb ->
-    let { mod_mp=mp; mod_expr=me; mod_type=ty; mod_type_alg=aty;
+and subst_module_body : type a. _ -> _ -> _ -> _ -> a generic_module_body -> a generic_module_body =
+  fun is_mod subst do_delta mp mb ->
+    let { mod_expr=me; mod_type=ty; mod_type_alg=aty;
           mod_retroknowledge=retro; _ } = mb in
   let mp' = subst_mp subst mp in
   let subst =
@@ -323,8 +313,8 @@ and subst_module_body : type a. _ -> _ -> _ -> a generic_module_body -> a generi
     else if is_mod && not (is_functor ty) then subst
     else add_mp mp mp' empty_delta_resolver subst
   in
-  let ty' = subst_signature subst do_delta ty in
-  let me' = subst_impl subst me in
+  let ty' = subst_signature subst do_delta mp ty in
+  let me' = subst_impl subst mp me in
   let aty' = Option.Smart.map (subst_expression subst id_delta) aty in
   let retro' = subst_retro subst retro in
   let delta' = do_delta mb.mod_delta subst in
@@ -332,23 +322,22 @@ and subst_module_body : type a. _ -> _ -> _ -> a generic_module_body -> a generi
      && retro==retro' && delta'==mb.mod_delta
   then mb
   else
-    { mod_mp = mp';
-      mod_expr = me';
+    { mod_expr = me';
       mod_type = ty';
       mod_type_alg = aty';
       mod_retroknowledge = retro';
       mod_delta = delta';
     }
 
-and subst_module subst do_delta mb =
-  subst_module_body true subst do_delta mb
+and subst_module subst do_delta mp mb =
+  subst_module_body true subst do_delta mp mb
 
-and subst_impl : type a. _ -> (a, _) when_mod_body -> (a, _) when_mod_body =
-  fun subst me ->
+and subst_impl : type a. _ -> _ -> (a, _) when_mod_body -> (a, _) when_mod_body =
+  fun subst mp me ->
   implem_smart_map
-    (subst_structure subst id_delta) (subst_expression subst id_delta) me
+    (fun sign -> subst_structure subst id_delta mp sign) (subst_expression subst id_delta) me
 
-and subst_modtype subst do_delta mtb = subst_module_body false subst do_delta mtb
+and subst_modtype subst do_delta mp mtb = subst_module_body false subst do_delta mp mtb
 
 and subst_expr subst do_delta seb = match seb with
   | MEident mp ->
@@ -371,10 +360,10 @@ and subst_expression subst do_delta me = match me with
   let mf' = subst_expression subst do_delta mf in
   if mf == mf' then me else MEMoreFunctor mf'
 
-and subst_signature subst do_delta =
+and subst_signature subst do_delta mp =
   functor_smart_map
-    (subst_modtype subst do_delta)
-    (subst_structure subst do_delta)
+    (fun mbid mtb -> subst_modtype subst do_delta (MPbound mbid) mtb)
+    (fun sign -> subst_structure subst do_delta mp sign)
 
 (** Cleaning a module expression from bounded parts
 
@@ -409,7 +398,7 @@ and clean_field l field = match field with
 and clean_structure l = List.Smart.map (clean_field l)
 
 and clean_signature l =
-  functor_smart_map (clean_module_body l) (clean_structure l)
+  functor_smart_map (fun _ mb -> clean_module_body l mb) (clean_structure l)
 
 and clean_expression _ me = me
 

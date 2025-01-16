@@ -224,13 +224,11 @@ let rec extract_structure_spec env mp reso = function
   | (l,SFBmodule mb) :: msig ->
       let specs = extract_structure_spec env mp reso msig in
       let mp = MPdot (mp, l) in
-      let () = assert (ModPath.equal mp (mod_mp mb)) in
       let spec = extract_mbody_spec env mp mb in
       (l,Smodule spec) :: specs
   | (l,SFBmodtype mtb) :: msig ->
       let specs = extract_structure_spec env mp reso msig in
       let mp = MPdot (mp, l) in
-      let () = assert (ModPath.equal mp (mod_mp mtb)) in
       let spec = extract_mbody_spec env mp mtb in
       (l,Smodtype spec) :: specs
 

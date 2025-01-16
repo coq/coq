@@ -195,7 +195,7 @@ let lookup_module mp env =
   with Not_found ->
     failwith ("Unknown module: "^ModPath.to_string mp)
 
-let mk_mtb mp sign delta = Mod_declarations.make_module_type mp sign delta
+let mk_mtb sign delta = Mod_declarations.make_module_type sign delta
 
 let rec collect_constants_without_body sign mp accu =
   let collect_field s lab = function
@@ -212,16 +212,16 @@ let rec collect_constants_without_body sign mp accu =
 let rec check_mexpr env opac mse mp_mse res = match mse with
   | MEident mp ->
     let mb = lookup_module mp env in
-    let mb = Modops.strengthen_and_subst_module_body mb mp_mse false in
+    let mb = Modops.strengthen_and_subst_module_body mp mb mp_mse false in
     mod_type mb, mod_delta mb
   | MEapply (f,mp) ->
     let sign, delta = check_mexpr env opac f mp_mse res in
     let farg_id, farg_b, fbody_b = Modops.destr_functor sign in
     let mtb = Modops.module_type_of_module (lookup_module mp env) in
     let state = (Environ.universes env, Conversion.checked_universes) in
-    let _ : UGraph.t = Subtyping.check_subtypes state env mtb farg_b in
+    let _ : UGraph.t = Subtyping.check_subtypes state env mp mtb (MPbound farg_id) farg_b in
     let subst = Mod_subst.map_mbid farg_id mp Mod_subst.empty_delta_resolver in
-    Modops.subst_signature subst fbody_b, Mod_subst.subst_codom_delta_resolver subst delta
+    Modops.subst_signature subst mp_mse fbody_b, Mod_subst.subst_codom_delta_resolver subst delta
   | MEwith _ -> CErrors.user_err Pp.(str "Unsupported 'with' constraint in module implementation")
 
 let rec check_mexpression env opac sign mbtyp mp_mse res = match sign with
@@ -235,7 +235,6 @@ let rec check_mexpression env opac sign mbtyp mp_mse res = match sign with
 let rec check_module env opac mp mb opacify =
   Flags.if_verbose Feedback.msg_notice (str "  checking module: " ++ str (ModPath.to_string mp));
   let env = Modops.add_retroknowledge (mod_retroknowledge mb) env in
-  let () = assert (ModPath.equal (mod_mp mb) mp) in
   let opac =
     check_signature env opac (mod_type mb) mp (mod_delta mb) opacify
   in
@@ -252,17 +251,16 @@ let rec check_module env opac mp mb opacify =
   let () = match optsign with
   | None -> ()
   | Some (sign,delta) ->
-    let mtb1 = mk_mtb mp sign delta
-    and mtb2 = mk_mtb mp (mod_type mb) (mod_delta mb) in
+    let mtb1 = mk_mtb sign delta
+    and mtb2 = mk_mtb (mod_type mb) (mod_delta mb) in
     let env = Modops.add_module_type mp mtb1 env in
     let state = (Environ.universes env, Conversion.checked_universes) in
-    let _ : UGraph.t = Subtyping.check_subtypes state env mtb1 mtb2 in
+    let _ : UGraph.t = Subtyping.check_subtypes state env mp mtb1 mp mtb2 in
     ()
   in
   opac
 
 and check_module_type env mp mty =
-  let () = assert (ModPath.equal (mod_mp mty) mp) in
   Flags.if_verbose Feedback.msg_notice (str "  checking module type: " ++ str (ModPath.to_string @@ mp));
   let _ : _ Cmap.t =
     check_signature env Cmap.empty (mod_type mty) mp (mod_delta mty) Cset.empty in
@@ -277,11 +275,13 @@ and check_structure_field env opac mp lab res opacify = function
       let kn = Mod_subst.mind_of_delta_kn res kn in
       CheckInductive.check_inductive env kn mib, opac
   | SFBmodule msb ->
-      let opac = check_module env opac (MPdot(mp,lab)) msb opacify in
-      Modops.add_module msb env, opac
+      let mp = MPdot(mp, lab) in
+      let opac = check_module env opac mp msb opacify in
+      Modops.add_module mp msb env, opac
   | SFBmodtype mty ->
-      let () = check_module_type env (MPdot (mp, lab)) mty in
-      add_modtype mty env, opac
+      let mp = MPdot (mp, lab) in
+      let () = check_module_type env mp mty in
+      add_modtype mp mty env, opac
   | SFBrules rrb ->
       check_rewrite_rules_body env lab rrb;
       Environ.add_rewrite_rules rrb.rewrules_rules env, opac

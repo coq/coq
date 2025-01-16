@@ -346,10 +346,10 @@ module QGlobRef : QNameS with type t = GlobRef.t
 
 (** {5 Modules } *)
 
-val add_modtype : module_type_body -> env -> env
+val add_modtype : ModPath.t -> module_type_body -> env -> env
 
 (** [shallow_add_module] does not add module components *)
-val shallow_add_module : module_body -> env -> env
+val shallow_add_module : ModPath.t -> module_body -> env -> env
 
 val lookup_module : ModPath.t -> env -> module_body
 val lookup_modtype : ModPath.t -> env -> module_type_body
