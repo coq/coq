@@ -1,5 +1,0 @@
-- **Fixed:**
-  Fix a regression in `Hint Extern` matching primitive projections
-  (`#19675 <https://github.com/coq/coq/pull/19675>`_,
-  fixes `#19668 <https://github.com/coq/coq/issues/19668>`_,
-  by Jan-Oliver Kaiser).
