@@ -28,6 +28,7 @@ module G = AcyclicGraph.Make(struct
 type t = {
   graph: G.t;
   type_in_type : bool;
+  checking_pseudo_sort_poly : bool;
 }
 
 (* Universe inconsistency: error raised when trying to enforce a relation
@@ -75,7 +76,11 @@ let check_eq g u v =
 let check_eq_level g u v =
   u == v || type_in_type g || G.check_eq g.graph u v
 
-let empty_universes = {graph=G.empty; type_in_type=false}
+let empty_universes = {
+  graph=G.empty;
+  type_in_type=false;
+  checking_pseudo_sort_poly=false;
+}
 
 let initial_universes =
   let big_rank = 1000000 in
@@ -109,7 +114,7 @@ let enforce_constraint cst g = match enforce_constraint0 cst g with
 
 let merge_constraints csts g = Constraints.fold enforce_constraint csts g
 
-let check_constraint { graph = g; type_in_type } (u,d,v) =
+let check_constraint { graph = g; type_in_type; _ } (u,d,v) =
   type_in_type
   || match d with
   | Le -> G.check_leq g u v
@@ -232,18 +237,26 @@ let check_eq_sort ugraph s1 s2 = match s1, s2 with
   QVar.equal q1 q2 && check_eq ugraph u1 u2
 | (QSort _, (Type _ | Set)) | ((Type _ | Set), QSort _) -> false
 
+let is_above_prop ugraph q =
+  ugraph.checking_pseudo_sort_poly
+  && match Sorts.QVar.var_index q with
+  | Some 0 -> true
+  | _ -> false
+
 let check_leq_sort ugraph s1 s2 = match s1, s2 with
 | (SProp, SProp) | (Prop, Prop) | (Set, Set) -> true
 | (SProp, _) -> type_in_type ugraph
 | (Prop, SProp) -> type_in_type ugraph
 | (Prop, (Set | Type _)) -> true
-| (Prop, QSort _) -> false
+| (Prop, QSort (q,_)) -> is_above_prop ugraph q
 | (_, (SProp | Prop)) -> type_in_type ugraph
 | (Type _ | Set), (Type _ | Set) ->
   check_leq ugraph (get_algebraic s1) (get_algebraic s2)
 | QSort (q1, u1), QSort (q2, u2) ->
   QVar.equal q1 q2 && check_leq ugraph u1 u2
-| (QSort _, (Type _ | Set)) | ((Type _ | Set), QSort _) -> false
+| QSort (q, _), Set -> is_above_prop ugraph q
+| QSort (q, u1), Type u2 -> is_above_prop ugraph q && check_leq ugraph u1 u2
+| ((Type _ | Set), QSort _) -> false
 
 (** Pretty-printing *)
 
@@ -302,3 +315,10 @@ let explain_universe_inconsistency default_prq default_prl (printers, (o,u,v,p) 
   in
     str "Cannot enforce" ++ spc() ++ pr_uni u ++ spc() ++
       pr_rel o ++ spc() ++ pr_uni v ++ reason
+
+module Internal = struct
+
+  let for_checking_pseudo_sort_poly g = {g with checking_pseudo_sort_poly=true}
+
+  let is_above_prop = is_above_prop
+end

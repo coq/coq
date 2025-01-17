@@ -48,6 +48,7 @@ val instantiate_inductive_constraints :
 
 type template_univ =
   | TemplateProp
+  | TemplateAboveProp of Sorts.QVar.t * Universe.t
   | TemplateUniv of Universe.t
 
 type param_univs = (expected:Univ.Level.t -> template_univ) list
