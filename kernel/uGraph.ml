@@ -161,20 +161,11 @@ let enforce_leq_alg u v g =
     let e = UniverseInconsistency (None, (c, mk u, mk v, Some (Path e))) in
     raise e
 
-module Bound =
-struct
-  type t = Prop | Set
-end
-
 exception AlreadyDeclared = G.AlreadyDeclared
-let add_universe u ~lbound ~strict g = match lbound with
-| Bound.Set ->
+let add_universe u ~strict g =
   let graph = G.add u g.graph in
   let d = if strict then Lt else Le in
   enforce_constraint (Level.set, d, u) { g with graph }
-| Bound.Prop ->
-  (* Do not actually add any constraint. This is a hack for template. *)
-  { g with graph = G.add u g.graph }
 
 let check_declared_universes g l =
   G.check_declared g.graph l
@@ -195,7 +186,7 @@ let check_subtype univs ctxT ctx =
     let inst = UContext.instance uctx in
     let cst = UContext.constraints uctx in
     let cstT = UContext.constraints (AbstractContext.repr ctxT) in
-    let push accu v = add_universe v ~lbound:Bound.Set ~strict:false accu in
+    let push accu v = add_universe v ~strict:false accu in
     let univs = Array.fold_left push univs (snd (Instance.to_array inst)) in
     let univs = merge_constraints cstT univs in
     check_constraints cst univs

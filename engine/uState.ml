@@ -313,7 +313,7 @@ let union uctx uctx' =
     let newus = Level.Set.diff newus (UnivFlex.domain uctx.univ_variables) in
     let extra = UnivMinim.extra_union uctx.minim_extra uctx'.minim_extra in
     let declarenew g =
-      Level.Set.fold (fun u g -> UGraph.add_universe u ~lbound:UGraph.Bound.Set ~strict:false g) newus g
+      Level.Set.fold (fun u g -> UGraph.add_universe u ~strict:false g) newus g
     in
     let fail_union s q1 q2 =
       if UGraph.type_in_type uctx.universes then s
@@ -952,7 +952,7 @@ let restrict_universe_context (univs, csts) keep =
   let g = UGraph.initial_universes in
   let g = Level.Set.fold (fun v g ->
       if Level.is_set v then g else
-        UGraph.add_universe v ~lbound:Set ~strict:false g) allunivs g in
+        UGraph.add_universe v ~strict:false g) allunivs g in
   let g = UGraph.merge_constraints csts g in
   let allkept = Level.Set.union (UGraph.domain UGraph.initial_universes) (Level.Set.diff allunivs removed) in
   let csts = UGraph.constraints_for ~kept:allkept g in
@@ -991,7 +991,7 @@ let merge ?loc ~sideff rigid uctx uctx' =
   let local = ContextSet.append uctx' uctx.local in
   let declare g =
     Level.Set.fold (fun u g ->
-        try UGraph.add_universe ~lbound:UGraph.Bound.Set ~strict:false u g
+        try UGraph.add_universe ~strict:false u g
         with UGraph.AlreadyDeclared when sideff -> g)
       levels g
   in
@@ -1052,7 +1052,7 @@ let demote_global_univs (lvl_set,csts_set) uctx =
   let univ_variables = Level.Set.fold UnivFlex.remove lvl_set uctx.univ_variables in
   let update_ugraph g =
     let g = Level.Set.fold (fun u g ->
-        try UGraph.add_universe u ~lbound:Set ~strict:true g
+        try UGraph.add_universe u ~strict:true g
         with UGraph.AlreadyDeclared -> g)
         lvl_set
         g
@@ -1077,7 +1077,7 @@ let merge_seff uctx uctx' =
   let levels = ContextSet.levels uctx' in
   let declare g =
     Level.Set.fold (fun u g ->
-        try UGraph.add_universe ~lbound:UGraph.Bound.Set ~strict:false u g
+        try UGraph.add_universe ~strict:false u g
         with UGraph.AlreadyDeclared -> g)
       levels g
   in
@@ -1119,9 +1119,8 @@ let add_loc l loc (names, (qnames_rev,unames_rev) as orig) =
   | Some _ -> (names, (qnames_rev, Level.Map.add l { uname = None; uloc = loc } unames_rev))
 
 let add_universe ?loc name strict uctx u =
-  let lbound = UGraph.Bound.Set in
-  let initial_universes = UGraph.add_universe ~lbound ~strict u uctx.initial_universes in
-  let universes = UGraph.add_universe ~lbound ~strict u uctx.universes in
+  let initial_universes = UGraph.add_universe ~strict u uctx.initial_universes in
+  let universes = UGraph.add_universe ~strict u uctx.universes in
   let local = ContextSet.add_universe u uctx.local in
   let names =
     match name with

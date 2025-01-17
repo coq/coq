@@ -459,10 +459,10 @@ let add_constraints c env =
 let check_constraints c env =
   UGraph.check_constraints c env.env_universes
 
-let add_universes ~lbound ~strict ctx g =
+let add_universes ~strict ctx g =
   let _qs, us = UVars.Instance.to_array (UVars.UContext.instance ctx) in
   let g = Array.fold_left
-      (fun g v -> UGraph.add_universe ~lbound ~strict v g)
+      (fun g v -> UGraph.add_universe ~strict v g)
       g us
   in
   UGraph.merge_constraints (UVars.UContext.constraints ctx) g
@@ -482,24 +482,21 @@ let add_qualities qs known =
 let push_context ?(strict=false) ctx env =
   let qs, _us = UVars.Instance.to_array (UVars.UContext.instance ctx) in
   let env = { env with env_qualities = add_qualities qs env.env_qualities } in
-  map_universes (add_universes ~lbound:UGraph.Bound.Set ~strict ctx) env
+  map_universes (add_universes ~strict ctx) env
 
-let add_universes_set ~lbound ~strict ctx g =
+let add_universes_set ~strict ctx g =
   let g = Univ.Level.Set.fold
             (* Be lenient, module typing reintroduces universes and constraints due to includes *)
-            (fun v g -> try UGraph.add_universe ~lbound ~strict v g with UGraph.AlreadyDeclared -> g)
+            (fun v g -> try UGraph.add_universe ~strict v g with UGraph.AlreadyDeclared -> g)
             (Univ.ContextSet.levels ctx) g
   in UGraph.merge_constraints (Univ.ContextSet.constraints ctx) g
 
 let push_context_set ?(strict=false) ctx env =
-  map_universes (add_universes_set ~lbound:UGraph.Bound.Set ~strict ctx) env
-
-let push_floating_context_set ctx env =
-  map_universes (add_universes_set ~lbound:UGraph.Bound.Prop ~strict:false ctx) env
+  map_universes (add_universes_set ~strict ctx) env
 
 let push_subgraph (levels,csts) env =
   let add_subgraph g =
-    let newg = Univ.Level.Set.fold (fun v g -> UGraph.add_universe ~lbound:UGraph.Bound.Set ~strict:false v g) levels g in
+    let newg = Univ.Level.Set.fold (fun v g -> UGraph.add_universe ~strict:false v g) levels g in
     let newg = UGraph.merge_constraints csts newg in
     (if not (Univ.Constraints.is_empty csts) then
        let restricted = UGraph.constraints_for ~kept:(UGraph.domain g) newg in

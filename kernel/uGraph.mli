@@ -71,13 +71,7 @@ val enforce_leq_alg : Univ.Universe.t -> Univ.Universe.t -> t -> Univ.Constraint
 
 exception AlreadyDeclared
 
-module Bound :
-sig
-  type t = Prop | Set
-  (** The [Prop] bound is only used for template polymorphic inductive types. *)
-end
-
-val add_universe : Level.t -> lbound:Bound.t -> strict:bool -> t -> t
+val add_universe : Level.t -> strict:bool -> t -> t
 
 (** Check that the universe levels are declared. *)
 val check_declared_universes : t -> Univ.Level.Set.t -> (unit, Univ.Level.Set.t) result

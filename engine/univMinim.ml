@@ -352,12 +352,12 @@ let normalize_context_set g ctx (us:UnivFlex.t) {weak_constraints=weak;above_pro
        to equalities. *)
     let g = UGraph.initial_universes_with g in
     (* use lbound:Set to collapse [u <= v <= Set] into [u = v = Set] *)
-    let g = Level.Set.fold (fun v g -> UGraph.add_universe ~lbound:Set ~strict:false v g)
+    let g = Level.Set.fold (fun v g -> UGraph.add_universe ~strict:false v g)
         ctx g
     in
     let add_soft u g =
       if not (Level.is_set u || Level.Set.mem u ctx)
-      then try UGraph.add_universe ~lbound:Set ~strict:false u g with UGraph.AlreadyDeclared -> g
+      then try UGraph.add_universe ~strict:false u g with UGraph.AlreadyDeclared -> g
       else g
     in
     let g = Constraints.fold
