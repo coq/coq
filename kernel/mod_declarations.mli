@@ -95,17 +95,23 @@ val set_retroknowledge : module_body -> Retroknowledge.action list -> module_bod
 
 (** {6 Substitution} *)
 
-val subst_signature : substitution ->
-  (delta_resolver -> substitution -> delta_resolver) -> ModPath.t -> module_signature -> module_signature
+type subst_kind
+val subst_dom : subst_kind
+val subst_codom : subst_kind
+val subst_dom_codom : subst_kind
+val subst_shallow_dom_codom : Mod_subst.substitution -> subst_kind
 
-val subst_structure : substitution ->
-  (delta_resolver -> substitution -> delta_resolver) -> ModPath.t -> structure_body -> structure_body
+val subst_signature : subst_kind -> substitution ->
+  ModPath.t -> module_signature -> module_signature
 
-val subst_module : substitution ->
-  (delta_resolver -> substitution -> delta_resolver) -> ModPath.t -> module_body -> module_body
+val subst_structure : subst_kind -> substitution ->
+  ModPath.t -> structure_body -> structure_body
 
-val subst_modtype : substitution ->
-  (delta_resolver -> substitution -> delta_resolver) -> ModPath.t -> module_type_body -> module_type_body
+val subst_module : subst_kind -> substitution ->
+  ModPath.t -> module_body -> module_body
+
+val subst_modtype : subst_kind -> substitution ->
+  ModPath.t -> module_type_body -> module_type_body
 
 (** {6 Hashconsing} *)
 

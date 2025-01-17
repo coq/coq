@@ -158,13 +158,8 @@ let rec annotate_struct_body body sign = match sign with
 
 (** {6 Substitutions of modular structures } *)
 
-let do_delta_dom reso subst = subst_dom_delta_resolver subst reso
-let do_delta_codom reso subst = subst_codom_delta_resolver subst reso
-let do_delta_dom_codom reso subst = subst_dom_codom_delta_resolver subst reso
-
-let subst_dom_codom_signature subst = subst_signature subst do_delta_dom_codom
-let subst_signature subst = subst_signature subst do_delta_codom
-let subst_structure subst = subst_structure subst do_delta_codom
+let subst_signature subst = subst_signature subst_codom subst
+let subst_structure subst = subst_structure subst_codom subst
 
 (** {6 Adding a module in the environment } *)
 
@@ -267,7 +262,7 @@ let rec strengthen_and_subst_module mb subst mp_from mp_to =
   | NoFunctor struc ->
     let delta_mb = get_global_delta mb in
     let mb_is_an_alias = mp_in_delta mp_from delta_mb in
-    if mb_is_an_alias then subst_module subst do_delta_dom mp_from mb
+    if mb_is_an_alias then subst_module subst_dom subst mp_from mb
     else
       let reso',struc' =
         strengthen_and_subst_struct struc subst
@@ -277,7 +272,7 @@ let rec strengthen_and_subst_module mb subst mp_from mp_to =
       strengthen_module_body ~src:mp_from (NoFunctor struc') reso' mb
   | MoreFunctor _ ->
     let subst = add_mp mp_from mp_to (empty_delta_resolver mp_to) subst in
-    subst_module subst do_delta_dom mp_from mb
+    subst_module subst_dom subst mp_from mb
 
 and strengthen_and_subst_struct struc subst mp_from mp_to alias incl reso =
   let strengthen_and_subst_field reso' item = match item with
@@ -327,7 +322,7 @@ and strengthen_and_subst_struct struc subst mp_from mp_to alias incl reso =
         let mp_from' = MPdot (mp_from,l) in
         let mp_to' = MPdot (mp_to,l) in
         let mb' = if alias then
-          subst_module subst do_delta_dom mp_from' mb
+          subst_module subst_dom subst mp_from' mb
         else
           strengthen_and_subst_module mb subst mp_from' mp_to'
         in
@@ -346,11 +341,7 @@ and strengthen_and_subst_struct struc subst mp_from mp_to alias incl reso =
         let mp_from' = MPdot (mp_from,l) in
         let mp_to' = MPdot(mp_to,l) in
         let subst' = add_mp mp_from' mp_to' (empty_delta_resolver mp_to') subst in
-        let mty' = subst_modtype subst'
-          (fun resolver _ -> subst_dom_codom_delta_resolver subst' resolver)
-          mp_from'
-          mty
-        in
+        let mty' = subst_modtype (subst_shallow_dom_codom subst') subst' mp_from' mty in
         let item' = if mty' == mty then item else (l, SFBmodtype mty') in
         add_mp_delta_resolver mp_to' mp_to' reso', item'
   in
@@ -393,12 +384,12 @@ let strengthen_and_subst_module_body mp_from mb mp include_b = match mod_type mb
     strengthen_module_body ~src:mp_from (NoFunctor struc') reso' mb
   | MoreFunctor _ ->
     let subst = map_mp mp_from mp (empty_delta_resolver mp) in
-    subst_module subst do_delta_dom_codom mp_from mb
+    Mod_declarations.subst_module subst_dom_codom subst mp_from mb
 
 (* [mp_from] is the ambient modpath of [sign] *)
 let subst_modtype_signature_and_resolver mp_from mp_to sign reso =
   let subst = map_mp mp_from mp_to (empty_delta_resolver mp_to) in
-  subst_dom_codom_signature subst mp_from sign, subst_dom_codom_delta_resolver subst reso
+  Mod_declarations.subst_signature subst_dom_codom subst mp_from sign, subst_dom_codom_delta_resolver subst reso
 
 let rec collect_mbid l sign =  match sign with
   | MoreFunctor (mbid,ty,m) ->
