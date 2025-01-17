@@ -330,7 +330,7 @@ and strengthen_and_subst_struct struc subst mp_from mp_to alias incl reso =
         if is_functor (mod_type mb') then
           add_mp_delta_resolver mp_to' mp_to' reso', item'
         else
-          add_delta_resolver reso' (mod_delta mb'), item'
+          add_delta_resolver (mod_delta mb') reso', item'
     | (l,SFBmodtype mty) ->
         let mp_from' = MPdot (mp_from,l) in
         let mp_to' = MPdot(mp_to,l) in
