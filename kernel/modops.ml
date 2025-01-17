@@ -243,7 +243,13 @@ and strengthen_signature mp_from struc mp_to reso = match struc with
     let mb' = strengthen_module mp_from' mp_to' mb in
     let item' = l,SFBmodule mb' in
     let reso',rest' = strengthen_signature mp_from rest mp_to reso in
-    add_delta_resolver reso' (mod_delta mb), item':: rest'
+    (* XXX: the order in which we extend the delta-resolver seems still wrong.
+       It probably doesn't matter much because this is only important for
+       strengthen_const that may expand the constant to the wrong definition,
+       but in the end we still have it in the resolver. We should probably
+       process the signature in the other direction. See below
+       {!strengthen_and_subst_struct} which uses fold_left. *)
+    add_delta_resolver (mod_delta mb) reso', item':: rest'
   | (_l,SFBmodtype _mty as item) :: rest ->
     let reso',rest' = strengthen_signature mp_from rest mp_to reso in
     reso',item::rest'
@@ -336,7 +342,7 @@ and strengthen_and_subst_struct struc subst mp_from mp_to alias incl reso =
         if is_functor (mod_type mb') then
           add_mp_delta_resolver mp_to' mp_to' reso', item'
         else
-          add_delta_resolver reso' (mod_delta mb'), item'
+          add_delta_resolver (mod_delta mb') reso', item'
     | (l,SFBmodtype mty) ->
         let mp_from' = MPdot (mp_from,l) in
         let mp_to' = MPdot(mp_to,l) in

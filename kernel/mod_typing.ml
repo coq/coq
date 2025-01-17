@@ -185,7 +185,7 @@ let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
       let new_mb = strengthen_and_subst_module_body new_mp new_mb mp' false in
       (** TODO: check this is fine when new_mb is a functor *)
       let new_mb' = strengthen_module_body ~src:new_mp (mod_type new_mb) (mod_delta new_mb) new_mb in
-      let new_reso = add_delta_resolver reso (mod_delta new_mb) in
+      let new_reso = add_delta_resolver (mod_delta new_mb) reso in
       (* we propagate the new equality in the rest of the signature
          with the identity substitution accompanied by the new resolver*)
       let id_subst = map_mp mp' mp' (mod_delta new_mb) in
@@ -205,7 +205,7 @@ let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
           check_with_mod (cst, ustate) env' struc (idl,new_mp) mp' (mod_delta old)
         in
         let new_mb = replace_module_body struc' reso' old in
-        let new_reso = add_delta_resolver reso reso' in
+        let new_reso = add_delta_resolver reso' reso in
         let id_subst = map_mp mp' mp' reso' in
         let new_after = subst_structure id_subst mp after in
         before@(lab,SFBmodule new_mb)::new_after, new_reso, cst
