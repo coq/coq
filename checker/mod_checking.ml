@@ -220,7 +220,7 @@ let rec check_mexpr env opac mse mp_mse res = match mse with
     let mtb = Modops.module_type_of_module (lookup_module mp env) in
     let state = (Environ.universes env, Conversion.checked_universes) in
     let _ : UGraph.t = Subtyping.check_subtypes state env mp mtb (MPbound farg_id) farg_b in
-    let subst = Mod_subst.map_mbid farg_id mp Mod_subst.empty_delta_resolver in
+    let subst = Mod_subst.map_mbid farg_id mp (Mod_subst.empty_delta_resolver mp) in
     Modops.subst_signature subst mp_mse fbody_b, Mod_subst.subst_codom_delta_resolver subst delta
   | MEwith _ -> CErrors.user_err Pp.(str "Unsupported 'with' constraint in module implementation")
 

@@ -21,7 +21,7 @@ compiler *)
 let rec translate_mod mp env mod_expr acc =
   match mod_expr with
   | NoFunctor struc ->
-      let env' = add_structure mp struc empty_delta_resolver env in
+      let env' = add_structure mp struc (empty_delta_resolver mp) env in
       List.fold_left (translate_field mp env') acc struc
   | MoreFunctor _ -> acc
 
@@ -65,7 +65,7 @@ let dump_library mp env mod_expr =
   debug_native_compiler (fun () -> Pp.str "Compiling library...");
   match mod_expr with
   | NoFunctor struc ->
-      let env = add_structure mp struc empty_delta_resolver env in
+      let env = add_structure mp struc (empty_delta_resolver mp) env in
       let t0 = Sys.time () in
       clear_global_tbl ();
       clear_symbols ();

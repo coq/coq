@@ -315,7 +315,7 @@ and subst_module_body : type a. _ -> _ -> _ -> _ -> a generic_module_body -> a g
   let subst =
     if ModPath.equal mp mp' then subst
     else if is_mod && not (is_functor ty) then subst
-    else add_mp mp mp' empty_delta_resolver subst
+    else add_mp mp mp' (empty_delta_resolver mp') subst
   in
   let ty' = subst_signature subst do_delta mp ty in
   let me' = subst_impl subst mp me in

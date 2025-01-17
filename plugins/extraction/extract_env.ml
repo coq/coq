@@ -180,7 +180,7 @@ let no_delta = Mod_subst.empty_delta_resolver
 
 let flatten_modtype env mp me_alg struc_opt =
   match struc_opt with
-  | Some me -> me, no_delta
+  | Some me -> me, no_delta mp
   | None ->
      let mtb = expand_modtype env mp me_alg in
      mod_type mtb, mod_delta mtb
@@ -427,7 +427,7 @@ let mono_environment ~opaque_access refs mpl =
   let l = List.rev (environment_until None) in
   List.rev_map
     (fun (mp,struc) ->
-      mp, extract_structure opaque_access env mp no_delta ~all:(Visit.needed_mp_all mp) struc)
+      mp, extract_structure opaque_access env mp (no_delta mp) ~all:(Visit.needed_mp_all mp) struc)
     l
 
 (**************************************)
@@ -696,7 +696,7 @@ let extraction_library ~opaque_access is_rec CAst.{loc;v=m} =
   let l = List.rev (environment_until (Some dir_m)) in
   let select l (mp,struc) =
     if Visit.needed_mp mp
-    then (mp, extract_structure opaque_access env mp no_delta ~all:true struc) :: l
+    then (mp, extract_structure opaque_access env mp (no_delta mp) ~all:true struc) :: l
     else l
   in
   let struc = List.fold_left select [] l in

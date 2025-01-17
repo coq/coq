@@ -149,7 +149,7 @@ struct
       | [],r -> user_err Pp.(str "Application of a functor with too few arguments.")
       | mbid::mbids,mp::mp_l ->
           let mbid_left,subst = compute_subst () mbids mp_l inl in
-          mbid_left,join (map_mbid mbid mp empty_delta_resolver) subst
+          mbid_left, join (map_mbid mbid mp (empty_delta_resolver mp)) subst
 
   let compute_subst ~is_mod () mbids mp1 mp_l inl =
     compute_subst () mbids mp_l inl
@@ -187,7 +187,7 @@ struct
           let mb = Environ.lookup_module mp env in
           let mbid_left,subst = compute_subst env mbids fbody_b mp_l inl in
           let resolver =
-            if Modops.is_functor (mod_type mb) then empty_delta_resolver
+            if Modops.is_functor (mod_type mb) then empty_delta_resolver mp
             else
               Modops.inline_delta_resolver env inl mp farg_id farg_b (mod_delta mb)
           in
@@ -661,7 +661,7 @@ let rec replace_module_object idl mp0 objs0 mp1 objs1 =
     begin
       let mp_id = MPdot(mp0, Label.of_id id) in
       let objs = match idl with
-        | [] -> subst_objects (map_mp mp1 mp_id empty_delta_resolver) objs1
+        | [] -> subst_objects (map_mp mp1 mp_id (empty_delta_resolver mp_id)) objs1
         | _ ->
           let objs_id = expand_sobjs sobjs in
           replace_module_object idl mp_id objs_id mp1 objs1
@@ -797,7 +797,7 @@ let intern_arg (idl,(typ,ann)) =
     let mbid = MBId.make lib_dir id in
     let mp = MPbound mbid in
     (* We can use an empty delta resolver because we load only syntax objects *)
-    let sobjs = subst_sobjs (map_mp mp0 mp empty_delta_resolver) sobjs in
+    let sobjs = subst_sobjs (map_mp mp0 mp (empty_delta_resolver mp)) sobjs in
     SynterpVisitor.load_module 1 dir mp sobjs;
     mbid
   in
@@ -848,7 +848,7 @@ let end_module_core id (m_info : current_module_syntax_info) objects fs =
     match m_info.cur_typ with
       | None -> sobjs
       | Some (mty, _) ->
-        subst_sobjs (map_mp (get_module_path mty) m_info.cur_mp empty_delta_resolver) sobjs
+        subst_sobjs (map_mp (get_module_path mty) m_info.cur_mp (empty_delta_resolver m_info.cur_mp)) sobjs
   in
   let node = ModuleObject (id,sobjs) in
   (* We add the keep objects, if any, and if this isn't a functor *)
@@ -905,7 +905,7 @@ let declare_module id args res mexpr_o =
   Summary.Synterp.unfreeze_summaries fs;
 
   (* We can use an empty delta resolver on syntax objects *)
-  let sobjs = subst_sobjs (map_mp mp0 mp empty_delta_resolver) sobjs in
+  let sobjs = subst_sobjs (map_mp mp0 mp (empty_delta_resolver mp)) sobjs in
   ignore (SynterpVisitor.add_leaf (ModuleObject (id,sobjs)));
   mp, args, mexpr_entry_o, mty_entry_o
 
@@ -1193,7 +1193,7 @@ let declare_modtype id args mtys (mty,ann) =
   let mte, base, kind = Modintern.intern_module_ast Modintern.ModType mty in
   let entry = mbids, mte in
   let sobjs = RawModOps.Synterp.get_functor_sobjs false inl entry in
-  let subst = map_mp (get_module_path (snd entry)) mp empty_delta_resolver in
+  let subst = map_mp (get_module_path (snd entry)) mp (empty_delta_resolver mp) in
   let sobjs = subst_sobjs subst sobjs in
 
   (* Undo the simulated interactive building of the module type
@@ -1261,7 +1261,7 @@ let declare_modtype id args mtys (mte,base,kind,inl) =
   let entry = params, mte in
   let env = Global.env () in
   let sobjs = RawModOps.Interp.get_functor_sobjs false env inl entry in
-  let subst = map_mp (get_module_path (snd entry)) mp empty_delta_resolver in
+  let subst = map_mp (get_module_path (snd entry)) mp (empty_delta_resolver mp) in
   let sobjs = subst_sobjs subst sobjs in
 
   (* Undo the simulated interactive building of the module type
@@ -1299,7 +1299,7 @@ let rec include_subst mp mbids = match mbids with
   | [] -> empty_subst
   | mbid::mbids ->
     let subst = include_subst mp mbids in
-    join (map_mbid mbid mp empty_delta_resolver) subst
+    join (map_mbid mbid mp (empty_delta_resolver mp)) subst
 
 let declare_one_include_core cur_mp (me_ast,annot) =
   let me, base, kind = Modintern.intern_module_ast Modintern.ModAny me_ast in
@@ -1314,7 +1314,7 @@ let declare_one_include_core cur_mp (me_ast,annot) =
   in
   let base_mp = get_module_path me in
   (* We can use an empty delta resolver on syntax objects *)
-  let subst = join subst_self (map_mp base_mp cur_mp empty_delta_resolver) in
+  let subst = join subst_self (map_mp base_mp cur_mp (empty_delta_resolver cur_mp)) in
   let aobjs = subst_aobjs subst aobjs in
   (me, base, kind, inl), aobjs
 
@@ -1655,7 +1655,7 @@ let process_module_binding mbid me =
   let dir = DirPath.make [MBId.to_id mbid] in
   let mp = MPbound mbid in
   let sobjs = InterpVisitor.get_module_sobjs false (Global.env()) (default_inline ()) me in
-  let subst = map_mp (get_module_path me) mp empty_delta_resolver in
+  let subst = map_mp (get_module_path me) mp (empty_delta_resolver mp) in
   let sobjs = subst_sobjs subst sobjs in
   SynterpVisitor.load_module 1 dir mp sobjs;
   InterpVisitor.load_module 1 dir mp sobjs

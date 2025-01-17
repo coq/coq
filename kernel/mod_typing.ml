@@ -43,9 +43,9 @@ let split_struc k m struc =
     | h::tail -> split (h::rev_before) tail
   in split [] struc
 
-let discr_resolver mtb = match mod_type mtb with
+let discr_resolver mp mtb = match mod_type mtb with
   | NoFunctor _ -> mod_delta mtb
-  | MoreFunctor _ -> empty_delta_resolver
+  | MoreFunctor _ -> empty_delta_resolver mp
 
 let rec rebuild_mp mp l =
   match l with
@@ -245,7 +245,7 @@ let translate_apply ustate env inl mp (sign,alg,reso,cst,vm) mp1 mkalg =
   let farg_id, farg_b, fbody_b = destr_functor sign in
   let mtb = module_type_of_module (lookup_module mp1 env) in
   let cst = Subtyping.check_subtypes (cst, ustate) env mp1 mtb (MPbound farg_id) farg_b in
-  let mp_delta = discr_resolver mtb in
+  let mp_delta = discr_resolver mp1 mtb in
   let mp_delta = inline_delta_resolver env inl mp1 farg_id farg_b mp_delta in
   let subst = map_mbid farg_id mp1 mp_delta in
   let body = subst_signature subst mp fbody_b in

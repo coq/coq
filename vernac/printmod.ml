@@ -308,7 +308,7 @@ let print_struct is_impl extent env mp struc =
   prlist_with_sep spc (print_body is_impl extent env mp) struc
 
 let print_structure is_type extent env mp locals struc =
-  let env' = Modops.add_structure mp struc Mod_subst.empty_delta_resolver env in
+  let env' = Modops.add_structure mp struc (Mod_subst.empty_delta_resolver mp) env in
   nametab_register_module_body mp struc;
   let kwd = if is_type then "Sig" else "Struct" in
   hv 2 (keyword kwd ++ spc () ++ print_struct false extent env' mp struc ++
