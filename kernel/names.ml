@@ -314,6 +314,12 @@ module ModPath = struct
     | MPdot (mp1, l1), MPdot (mp2, l2) -> String.equal l1 l2 && equal mp1 mp2
     | (MPfile _ | MPbound _ | MPdot _), _ -> false
 
+  let rec subpath mp mp' =
+    if equal mp mp' then true
+    else match mp' with
+    | MPdot (mp', _) -> subpath mp mp'
+    | _ -> false
+
   open Hashset.Combine
 
   let rec hash = function
