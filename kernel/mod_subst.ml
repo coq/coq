@@ -564,22 +564,20 @@ let substitution_prefixed_by k mp subst =
   Umap.fold mp_prefixmp subst empty_subst
 
 let join subst1 subst2 =
-  let apply_subst mpk add (mp,resolve) res =
-    let mp',resolve' =
-      match subst_mp_opt subst2 mp with
-        | None -> mp, None
-        | Some (mp',resolve') ->  mp', Some resolve' in
-    let resolve'' =
-      match resolve' with
-        | Some res ->
-            add_delta_resolver
-              (subst_dom_codom_delta_resolver subst2 resolve) res
-        | None ->
-            subst_codom_delta_resolver subst2 resolve
+  let apply_subst mpk (mp, resolve) res =
+    let mp', resolve' = match subst_mp_opt subst2 mp with
+    | None ->
+      let resolve' = subst_codom_delta_resolver subst2 resolve in
+      mp, resolve'
+    | Some (mp', resolve') ->
+      let resolve' =
+        add_delta_resolver
+          (subst_dom_codom_delta_resolver subst2 resolve) resolve'
+      in
+      mp', resolve'
     in
     let prefixed_subst = substitution_prefixed_by mpk mp' subst2 in
-    Umap.join prefixed_subst (add (mp',resolve'') res)
+    Umap.join prefixed_subst (Umap.add_mp mpk (mp', resolve') res)
   in
-  let mp_apply_subst mp = apply_subst mp (Umap.add_mp mp) in
-  let subst = Umap.fold mp_apply_subst subst1 empty_subst in
+  let subst = Umap.fold apply_subst subst1 empty_subst in
   Umap.join subst2 subst
