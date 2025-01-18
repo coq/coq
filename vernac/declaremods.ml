@@ -944,7 +944,7 @@ let check_subtypes_mt mp sub_mtb_l =
   check_sub mp mtb sub_mtb_l
 
 let current_modresolver () =
-  fst @@ Safe_typing.delta_of_senv @@ Global.safe_env ()
+  Safe_typing.delta_of_senv @@ Global.safe_env ()
 
 let current_struct () =
   let struc = Safe_typing.structure_body_of_safe_env @@ Global.safe_env () in
