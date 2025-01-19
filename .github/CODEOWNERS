@@ -285,4 +285,4 @@
 
 /.ocamlinit  @coq/build-maintainers
 *dune*       @coq/build-maintainers
-*.opam       @coq/build-maintainers
+*.opam       @coq/build-maintainers @erikmd
