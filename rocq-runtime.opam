@@ -39,6 +39,7 @@ dev-repo: "git+https://github.com/coq/coq.git"
 build: [
   ["dune" "subst"] {dev}
   [ "./configure"
+    "-release" # -release must be the first command line argument
     "-prefix" prefix
     "-mandir" man
     "-libdir" "%{lib}%/coq"
