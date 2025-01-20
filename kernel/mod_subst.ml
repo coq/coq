@@ -152,7 +152,7 @@ module Umap :
   let join map1 map2 = fold add_mp map1 map2
 end
 
-type substitution = (ModPath.t * delta_resolver) Umap.t
+type substitution = delta_resolver Umap.t
 
 let empty_subst = Umap.empty
 
@@ -176,7 +176,7 @@ let debug_string_of_delta resolve =
   String.concat ", " (List.rev l)
 
 let list_contents subst =
-  let one_pair (mp,reso) = (ModPath.to_string mp,debug_string_of_delta reso) in
+  let one_pair reso = (ModPath.to_string (Deltamap.root reso), debug_string_of_delta reso) in
   let mp_one_pair mp0 p l = (ModPath.to_string mp0, one_pair p)::l in
   Umap.fold mp_one_pair subst []
 
@@ -212,10 +212,10 @@ let add_mp_delta_resolver mp1 mp2 = Deltamap.add_mp mp1 mp2
 
 let add_mbid mbid mp resolve s =
   let () = assert (ModPath.equal mp (Deltamap.root resolve)) in
-  Umap.add_mbi mbid (mp, resolve) s
+  Umap.add_mbi mbid resolve s
 let add_mp mp1 mp2 resolve s =
   let () = assert (ModPath.equal mp2 (Deltamap.root resolve)) in
-  Umap.add_mp mp1 (mp2, resolve) s
+  Umap.add_mp mp1 resolve s
 
 let map_mbid mbid mp resolve =
   add_mbid mbid mp resolve empty_subst
@@ -297,12 +297,12 @@ let search_delta_inline resolve kn1 kn2 =
       with Not_found -> None
 
 let subst_mp_opt subst mp = (* 's like subst *)
- let rec aux mp =
-  match mp with
-    | MPfile _ | MPbound _ -> Umap.find mp subst
+  let repr r = Deltamap.root r, r in
+  let rec aux mp = match mp with
+    | MPfile _ | MPbound _ -> repr @@ Umap.find mp subst
     | MPdot (mp1,l) as mp2 ->
         begin
-          try Umap.find mp2 subst
+          try repr @@ Umap.find mp2 subst
           with Not_found ->
             let mp1',resolve = aux mp1 in
             MPdot (mp1',l),resolve
@@ -631,18 +631,17 @@ let add_delta_resolver resolver1 resolver2 =
   update_delta_resolver resolver1 resolver2
 
 let substitution_prefixed_by k mp subst =
-  let mp_prefixmp kmp (mp_to,reso) subst =
+  let mp_prefixmp kmp reso subst =
     if mp_in_mp mp kmp && not (ModPath.equal mp kmp) then
       let new_key = replace_mp_in_mp mp k kmp in
-      let () = assert (ModPath.equal mp_to (Deltamap.root reso)) in
-      Umap.add_mp new_key (mp_to,reso) subst
+      Umap.add_mp new_key reso subst
     else subst
   in
   Umap.fold mp_prefixmp subst empty_subst
 
 let join subst1 subst2 =
-  let apply_subst mpk (mp, resolve) res =
-    (* root(resolve) = mp *)
+  let apply_subst mpk resolve res =
+    let mp = Deltamap.root resolve in
     let mp', resolve' = match subst_mp_opt subst2 mp with
     | None ->
       let resolve' = subst_codom_delta_resolver subst2 resolve in
@@ -658,7 +657,7 @@ let join subst1 subst2 =
       mp', resolve'
     in
     let prefixed_subst = substitution_prefixed_by mpk mp' subst2 in
-    Umap.join prefixed_subst (Umap.add_mp mpk (mp', resolve') res)
+    Umap.join prefixed_subst (Umap.add_mp mpk resolve' res)
   in
   let subst = Umap.fold apply_subst subst1 empty_subst in
   Umap.join subst2 subst

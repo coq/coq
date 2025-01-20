@@ -286,10 +286,8 @@ let v_resolver =
     [|v_mp; v_map v_mp v_mp;
       v_hmap v_kn v_delta_hint|]
 
-let v_mp_resolver = v_tuple "" [|v_mp;v_resolver|]
-
 let v_subst =
-  v_annot_c ("substitution", v_map v_mp v_mp_resolver)
+  v_annot_c ("substitution", v_map v_mp v_resolver)
 
 (** kernel/lazyconstr *)
 
