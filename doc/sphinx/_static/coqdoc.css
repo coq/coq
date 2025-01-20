@@ -70,3 +70,50 @@
 .smallcaps {
     font-variant: small-caps;
 }
+
+
+:root {
+    --refman-custom-primary-blue: #260086;
+    --refman-custom-primary-blue-2: #040b92;
+    --refman-custom-secondary-orange: #ff540a;
+    --refman-custom-secondary-orange-2: #ffe9df;
+}
+
+.btn-info:hover, a:hover, a.wy-text-info:hover {
+    color: var(--refman-custom-primary-blue-2) !important
+}
+
+.wy-menu-vertical header, .wy-menu-vertical p.caption, .rst-content .wy-alert-neutral.admonition-todo a, .rst-content .wy-alert-neutral.admonition a, .rst-content .wy-alert-neutral.attention a, .rst-content .wy-alert-neutral.caution a, .rst-content .wy-alert-neutral.danger a, .rst-content .wy-alert-neutral.error a, .rst-content .wy-alert-neutral.hint a, .rst-content .wy-alert-neutral.important a, .rst-content .wy-alert-neutral.note a, .rst-content .wy-alert-neutral.seealso a, .rst-content .wy-alert-neutral.tip a, .rst-content .wy-alert-neutral.warning a, .wy-alert.wy-alert-neutral a, a, .wy-text-info, .btn-link, .wy-inline-validate.wy-inline-validate-info .wy-input-context, .wy-nav .wy-menu-vertical header, .rst-versions a, .rst-content a code, .rst-content a tt, html.writer-html4 .rst-content dl:not(.docutils)>dt, html.writer-html5 .rst-content dl[class]:not(.option-list):not(.field-list):not(.footnote):not(.glossary):not(.simple)>dt, html.writer-html4 .rst-content dl:not(.docutils)>dt:before, html.writer-html5 .rst-content dl[class]:not(.option-list):not(.field-list):not(.footnote):not(.glossary):not(.simple)>dt:before {
+    color: var(--refman-custom-primary-blue) !important
+}
+
+.rst-content .note .admonition-title,.rst-content .note .wy-alert-title,.rst-content .seealso .admonition-title,.rst-content .seealso .wy-alert-title,.rst-content .wy-alert-info.admonition-todo .admonition-title,.rst-content .wy-alert-info.admonition-todo .wy-alert-title,.rst-content .wy-alert-info.admonition .admonition-title,.rst-content .wy-alert-info.admonition .wy-alert-title,.rst-content .wy-alert-info.attention .admonition-title,.rst-content .wy-alert-info.attention .wy-alert-title,.rst-content .wy-alert-info.caution .admonition-title,.rst-content .wy-alert-info.caution .wy-alert-title,.rst-content .wy-alert-info.danger .admonition-title,.rst-content .wy-alert-info.danger .wy-alert-title,.rst-content .wy-alert-info.error .admonition-title,.rst-content .wy-alert-info.error .wy-alert-title,.rst-content .wy-alert-info.hint .admonition-title,.rst-content .wy-alert-info.hint .wy-alert-title,.rst-content .wy-alert-info.important .admonition-title,.rst-content .wy-alert-info.important .wy-alert-title,.rst-content .wy-alert-info.tip .admonition-title,.rst-content .wy-alert-info.tip .wy-alert-title,.rst-content .wy-alert-info.warning .admonition-title,.rst-content .wy-alert-info.warning .wy-alert-title,.rst-content .wy-alert.wy-alert-info .admonition-title,.wy-alert.wy-alert-info .rst-content .admonition-title,.wy-alert.wy-alert-info .wy-alert-title {
+    background: var(--refman-custom-primary-blue) !important
+}
+
+html.writer-html4 .rst-content dl:not(.docutils)>dt,html.writer-html5 .rst-content dl[class]:not(.option-list):not(.field-list):not(.footnote):not(.glossary):not(.simple)>dt {
+    background: var(--refman-custom-secondary-orange-2) !important;
+    color: var(--refman-custom-primary-blue) !important;
+    border-top: 3px solid var(--refman-custom-secondary-orange) !important;
+}
+
+.wy-tray-container li.wy-tray-item-info, .btn-info, .wy-menu-vertical a:active, .wy-side-nav-search, .wy-dropdown-menu>dd>a:hover, .wy-dropdown.wy-dropdown-bubble .wy-dropdown-menu a:hover, .wy-side-nav-search img, .wy-nav .wy-menu-vertical a:hover, .wy-nav-top, .wy-nav-top img {
+    background-color: var(--refman-custom-secondary-orange) !important
+}
+
+.wy-side-nav-search input[type=text] {
+    border-color: var(--refman-custom-primary-blue-2) !important
+}
+
+.rst-versions, .wy-nav-side {
+    background: #dedede !important;
+}
+
+.wy-side-nav-search>div.version {
+    color: #dedede !important;
+}
+
+.wy-menu-vertical a:hover {
+    background-color: #494949 !important;
+    color: #dedede !important;
+}
