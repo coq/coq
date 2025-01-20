@@ -256,6 +256,9 @@ sig
   val equal : t -> t -> bool
   val hash : t -> int
 
+  val subpath : t -> t -> bool
+  (* [subpath p q] is true when q = p.l1. ... . ln, where n is potentially 0 *)
+
   val is_bound : t -> bool
 
   val dummy : t

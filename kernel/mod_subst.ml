@@ -477,11 +477,7 @@ let replace_mp_in_kn mpfrom mpto kn =
     if mp==mp'' then kn
     else KerName.make mp'' l
 
-let rec mp_in_mp mp mp1 =
-  match mp1 with
-    | _ when ModPath.equal mp1 mp -> true
-    | MPdot (mp2,_l) -> mp_in_mp mp mp2
-    | _ -> false
+let mp_in_mp = ModPath.subpath
 
 let subset_prefixed_by mp resolver =
   let mp_prefix mkey mequ rslv =

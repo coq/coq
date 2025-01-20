@@ -116,6 +116,62 @@ type permanent_flags = {
   rewrite_rules_allowed : bool;
 }
 
+module ParamResolver :
+sig
+  type t
+  val empty : DirPath.t -> t
+  val add_delta_resolver : ModPath.t -> Mod_subst.delta_resolver -> t -> t
+  val constant_of_delta_kn : t -> KerName.t -> Constant.t
+  val mind_of_delta_kn : t -> KerName.t -> MutInd.t
+end =
+struct
+  type t = {
+    root : DirPath.t;
+    data : Mod_subst.delta_resolver MPmap.t;
+    (** Invariant: No [MPdot] in data *)
+  }
+
+  let empty root = {
+    root = root;
+    data = MPmap.empty;
+  }
+
+  let rec head mp = match mp with
+  | MPfile _ | MPbound _ -> mp
+  | MPdot (mp, _) -> head mp
+
+  let add_delta_resolver mp delta preso =
+    let self = MPfile preso.root in
+    let data =
+      if ModPath.subpath self mp then
+        match MPmap.find_opt self preso.data with
+        | None ->
+          (* we were at toplevel *)
+          MPmap.add self delta preso.data
+        | Some reso ->
+          MPmap.add self (Mod_subst.add_delta_resolver delta reso) preso.data
+      else
+        let () = match mp with
+        | MPfile _ | MPbound _ -> ()
+        | MPdot _ -> assert false
+        in
+        let () = assert (not (MPmap.mem mp preso.data)) in
+        MPmap.add mp delta preso.data
+    in
+    { preso with data }
+
+  let kn_of_delta preso kn =
+    let head = head (KerName.modpath kn) in
+    match MPmap.find_opt head preso.data with
+    | None -> kn
+    | Some delta -> Mod_subst.kn_of_delta delta kn
+
+  let constant_of_delta_kn preso kn = Constant.make kn (kn_of_delta preso kn)
+
+  let mind_of_delta_kn preso kn = MutInd.make kn (kn_of_delta preso kn)
+
+end
+
 type compiled_library = {
   comp_name : DirPath.t;
   comp_mod : module_body;
@@ -138,6 +194,7 @@ type section_data = {
   rev_objlabels : Label.Set.t;
   rev_reimport : reimport list;
   rev_revstruct : structure_body;
+  rev_paramresolver : ParamResolver.t;
 }
 
 module HandleMap = Opaqueproof.HandleMap
@@ -164,7 +221,7 @@ type safe_environment =
     modpath : ModPath.t;
     modvariant : modvariant;
     modresolver : Mod_subst.delta_resolver;
-    paramresolver : Mod_subst.delta_resolver;
+    paramresolver : ParamResolver.t;
     revstruct : structure_body;
     modlabels : Label.Set.t;
     objlabels : Label.Set.t;
@@ -193,7 +250,7 @@ let empty_environment =
     modpath = ModPath.dummy;
     modvariant = NONE;
     modresolver = Mod_subst.empty_delta_resolver;
-    paramresolver = Mod_subst.empty_delta_resolver;
+    paramresolver = ParamResolver.empty DirPath.dummy;
     revstruct = [];
     modlabels = Label.Set.empty;
     objlabels = Label.Set.empty;
@@ -213,13 +270,17 @@ let is_initial senv =
 
 let sections_are_opened senv = not (Option.is_empty senv.sections)
 
-let delta_of_senv senv = senv.modresolver,senv.paramresolver
+let delta_of_senv senv = senv.modresolver
 
 let constant_of_delta_kn_senv senv kn =
-  Mod_subst.constant_of_deltas_kn senv.paramresolver senv.modresolver kn
+  let mp = KerName.modpath kn in
+  if ModPath.subpath senv.modpath mp then Mod_subst.constant_of_delta_kn senv.modresolver kn
+  else ParamResolver.constant_of_delta_kn senv.paramresolver kn
 
 let mind_of_delta_kn_senv senv kn =
-  Mod_subst.mind_of_deltas_kn senv.paramresolver senv.modresolver kn
+  let mp = KerName.modpath kn in
+  if ModPath.subpath senv.modpath mp then Mod_subst.mind_of_delta_kn senv.modresolver kn
+  else ParamResolver.mind_of_delta_kn senv.paramresolver kn
 
 (** The safe_environment state monad *)
 
@@ -1160,7 +1221,7 @@ let start_mod_modtype ~istype l senv =
     env = senv.env;
     future_cst = senv.future_cst;
     modresolver = Mod_subst.empty_delta_resolver;
-    paramresolver = Mod_subst.add_delta_resolver senv.modresolver senv.paramresolver;
+    paramresolver = ParamResolver.add_delta_resolver senv.modpath senv.modresolver senv.paramresolver;
     univ = senv.univ;
     required = senv.required;
     opaquetab = senv.opaquetab;
@@ -1196,7 +1257,7 @@ let add_module_parameter mbid mte inl senv =
   in
   let new_paramresolver =
     if Modops.is_functor @@ mod_type mtb then senv.paramresolver
-    else Mod_subst.add_delta_resolver (mod_delta mtb) senv.paramresolver
+    else ParamResolver.add_delta_resolver mp (mod_delta mtb) senv.paramresolver
   in
   mod_delta mtb,
   { senv with
@@ -1376,7 +1437,7 @@ let start_library dir senv =
     required = senv.required;
 
     modresolver = Mod_subst.empty_delta_resolver;
-    paramresolver = Mod_subst.empty_delta_resolver;
+    paramresolver = ParamResolver.empty dir;
     revstruct = [];
     modlabels = Label.Set.empty;
     objlabels = Label.Set.empty;
@@ -1448,7 +1509,7 @@ let import lib vmtab vodigest senv =
     env;
     (* Do NOT store the name quotient from the dependencies in the set of
        constraints that will be marshalled on disk. *)
-    paramresolver = Mod_subst.add_delta_resolver (mod_delta mb) senv.paramresolver;
+    paramresolver = ParamResolver.add_delta_resolver mp (mod_delta mb) senv.paramresolver;
     required;
     loads = (mp,mb)::senv.loads;
     sections;
@@ -1463,6 +1524,7 @@ let open_section senv =
     rev_objlabels = senv.objlabels;
     rev_reimport = [];
     rev_revstruct = senv.revstruct;
+    rev_paramresolver = senv.paramresolver;
   } in
   let sections = Section.open_section ~custom senv.sections in
   { senv with sections=Some sections }
@@ -1478,9 +1540,9 @@ let close_section senv =
      that are going to be replayed. Those that are not forced are not readded
      by {!add_constant_aux}. *)
   let { rev_env = env; rev_univ = univ; rev_objlabels = objlabels;
-        rev_reimport; rev_revstruct = revstruct } = revert in
+        rev_reimport; rev_revstruct = revstruct; rev_paramresolver = paramresolver } = revert in
   let env = if Environ.rewrite_rules_allowed env0 then Environ.allow_rewrite_rules env else env in
-  let senv = { senv with env; revstruct; sections; univ; objlabels; } in
+  let senv = { senv with env; revstruct; sections; univ; objlabels; paramresolver } in
   (* Second phase: replay Requires *)
   let senv = List.fold_left (fun senv (lib,vmtab,vodigest) -> snd (import lib vmtab vodigest senv))
       senv (List.rev rev_reimport)
