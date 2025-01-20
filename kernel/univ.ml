@@ -307,23 +307,6 @@ struct
       if is_small e then type1
       else (u, n + 1)
 
-    type super_result =
-        SuperSame of bool
-        (* The level expressions are in cumulativity relation. boolean
-           indicates if left is smaller than right?  *)
-      | SuperDiff of int
-        (* The level expressions are unrelated, the comparison result
-           is canonical *)
-
-    (** [super u v] compares two level expressions,
-       returning [SuperSame] if they refer to the same level at potentially different
-       increments or [SuperDiff] if they are different. The booleans indicate if the
-       left expression is "smaller" than the right one in both cases. *)
-    let super (u,n) (v,n') =
-      let cmp = Level.compare u v in
-        if Int.equal cmp 0 then SuperSame (n < n')
-        else SuperDiff cmp
-
     let pr_with f (v, n) =
       if Int.equal n 0 then f v
       else f v ++ str"+" ++ int n
@@ -348,7 +331,6 @@ struct
   type t = Expr.t list
 
   let tip l = [l]
-  let cons x l = x :: l
 
   let rec hash = function
   | [] -> 0
@@ -418,38 +400,21 @@ struct
     else
       List.Smart.map (fun x -> Expr.successor x) l
 
-  let rec merge_univs l1 l2 =
+  (* Returns the formal universe that is greater than the universes u and v.
+     Used to type the products. *)
+  let rec sup (l1:t) (l2:t) : t =
     match l1, l2 with
     | [], _ -> l2
     | _, [] -> l1
     | h1 :: t1, h2 :: t2 ->
-       let open Expr in
-       (match super h1 h2 with
-        | SuperSame true (* h1 < h2 *) -> merge_univs t1 l2
-        | SuperSame false -> merge_univs l1 t2
-        | SuperDiff c ->
-           if c <= 0 (* h1 < h2 is name order *)
-           then cons h1 (merge_univs t1 l2)
-           else cons h2 (merge_univs l1 t2))
-
-  let sort u =
-    let rec aux a l =
-      match l with
-      | b :: l' ->
-        let open Expr in
-        (match super a b with
-         | SuperSame false -> aux a l'
-         | SuperSame true -> l
-         | SuperDiff c ->
-            if c <= 0 then cons a l
-            else cons b (aux a l'))
-      | [] -> cons a l
-    in
-      List.fold_right (fun a acc -> aux a acc) u []
-
-  (* Returns the formal universe that is greater than the universes u and v.
-     Used to type the products. *)
-  let sup x y = merge_univs x y
+      let cmp = Level.compare (fst h1) (fst h2) in
+      if Int.equal cmp 0 then
+        if (snd h1 : int) < snd h2
+        then sup t1 l2
+        else sup l1 t2
+      else if cmp <= 0
+      then h1 :: (sup t1 l2)
+      else h2 :: (sup l1 t2)
 
   let exists = List.exists
 
@@ -457,7 +422,7 @@ struct
   let repr x : t = x
   let unrepr l =
     assert (not (List.is_empty l));
-    sort l
+    List.fold_right (fun a acc -> sup [a] acc) l []
 end
 
 type constraint_type = AcyclicGraph.constraint_type = Lt | Le | Eq
@@ -642,7 +607,7 @@ let subst_univs_level_universe subst u =
   let f x = Universe.Expr.map (fun u -> subst_univs_level_level subst u) x in
   let u' = List.Smart.map f u in
     if u == u' then u
-    else Universe.sort u'
+    else Universe.unrepr u'
 
 let subst_univs_level_constraint subst (u,d,v) =
   let u' = subst_univs_level_level subst u
