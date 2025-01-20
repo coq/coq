@@ -512,7 +512,7 @@ let subst_mp_delta subst mp mkey =
 let gen_subst_delta_resolver dom subst resolver =
   let mp_apply_subst mkey mequ rslv =
     let mkey' = if dom then subst_mp subst mkey else mkey in
-    let rslv',mequ' = subst_mp_delta subst mequ mkey in
+    let rslv',mequ' = subst_mp_delta subst mequ mkey' in
     Deltamap.join rslv' (Deltamap.add_mp mkey' mequ' rslv)
   in
   let kn_apply_subst kkey hint rslv =
