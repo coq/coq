@@ -23,7 +23,7 @@
   The release manager is the person responsible for merging PRs that target the release branch and backporting appropriate PRs (mostly safe bug fixes, user message improvements and documentation updates) that are merged into `master`.
 - [ ] For major releases, you can create new views in the above project (on the model of previous releases)
 - [ ] Pin the versions of libraries and plugins in [`dev/ci/ci-basic-overlay.sh`](../ci/ci-basic-overlay.sh) to use commit hashes. You can use the [`dev/tools/pin-ci.sh`](../tools/pin-ci.sh) script to do this semi-automatically.
-- [ ] In a PR on `master` to be backported, add a new link to the `'versions'` list of the refman (in `html_context` in [`doc/sphinx/conf.py`](../../doc/sphinx/conf.py)).
+- [ ] In a PR on `master` to be backported, add a new link to the `'versions'` list of the refman (in `html_context` in [`doc/sphinx/conf.py`](../../doc/sphinx/conf.py)). At the same time, update the links of previous versions that were targeting branches to target a tag instead if the latest patch-level release is out.
 - [ ] Add `{rocq-runtime,coq-core,rocq-core,coqide-server}.X.X.dev` packages in [`core-dev`](https://github.com/coq/opam-coq-archive/tree/master/core-dev)
 - [ ] Ensure a `rocq-stdlib` package compatible with the new packages above exists either in [`ocaml repo`](https://github.com/ocaml/opam-repository) or in [`core-dev`](https://github.com/coq/opam-coq-archive/tree/master/core-dev)
 - [ ] Add `coq.X.X.dev` package in [`core-dev`](https://github.com/coq/opam-coq-archive/tree/master/core-dev)
