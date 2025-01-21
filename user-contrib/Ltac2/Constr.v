@@ -479,8 +479,20 @@ Ltac2 is_uint63(c: constr) :=
   | _ => false
   end.
 
+Ltac2 is_string(c: constr) :=
+  match Unsafe.kind c with
+  | Unsafe.String _ => true
+  | _ => false
+  end.
+
 Ltac2 is_array(c: constr) :=
   match Unsafe.kind c with
   | Unsafe.Array _ _ _ _ => true
+  | _ => false
+  end.
+
+Ltac2 is_sort(c: constr) :=
+  match Unsafe.kind c with
+  | Unsafe.Sort _ => true
   | _ => false
   end.
