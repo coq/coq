@@ -416,6 +416,17 @@ Ltac2 pretype (c : preterm) : constr :=
   Pretype.pretype Pretype.Flags.constr_flags Pretype.expected_without_type_constraint c.
 (** Pretype the provided preterm. Assumes the goal to be focussed. *)
 
+Ltac2 decompose_app_list (c : constr) :=
+  match Unsafe.kind c with
+    | Unsafe.App f cl => (f, Array.to_list cl)
+    | _ => (c,[])
+  end.
+
+Ltac2 decompose_app (c : constr) :=
+  match Unsafe.kind c with
+    | Unsafe.App f cl => (f, cl)
+    | _ => (c,[| |])
+  end.
 
 Ltac2 is_evar(c: constr) :=
   match Unsafe.kind c with
