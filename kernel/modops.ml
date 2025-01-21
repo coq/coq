@@ -220,11 +220,12 @@ let strengthen_const mp_from l cb resolver =
         const_body_code = Some (Vmbytegen.compile_alias con) }
 
 let rec strengthen_module mp mb =
+  let delta_mb = mod_delta mb in
   if mp_in_delta mp (mod_delta mb) then mb
   else match mod_type mb with
   | NoFunctor struc ->
-    let reso, struc' = strengthen_signature mp struc (mod_delta mb) in
-    let reso = add_mp_delta_resolver mp mp (add_delta_resolver (mod_delta mb) reso) in
+    let reso, struc' = strengthen_signature mp struc delta_mb in
+    let reso = add_mp_delta_resolver mp mp (add_delta_resolver delta_mb reso) in
     strengthen_module_body ~src:mp (NoFunctor struc') reso mb
   | MoreFunctor _ -> mb
 
@@ -243,12 +244,13 @@ and strengthen_signature mp struc reso0 =
   List.fold_left_map strengthen_field (empty_delta_resolver mp) struc
 
 let strengthen mtb mp =
+  let delta_mtb = mod_delta mtb in
   (* Has mtb already been strengthened ? *)
-  if mp_in_delta mp (mod_delta mtb) then mtb
+  if mp_in_delta mp delta_mtb then mtb
   else match mod_type mtb with
   | NoFunctor struc ->
-    let reso', struc' = strengthen_signature mp struc (mod_delta mtb) in
-    let reso' = add_delta_resolver (mod_delta mtb) (add_mp_delta_resolver mp mp reso') in
+    let reso', struc' = strengthen_signature mp struc delta_mtb in
+    let reso' = add_delta_resolver delta_mtb (add_mp_delta_resolver mp mp reso') in
     strengthen_module_type struc' reso' mtb
   | MoreFunctor _ -> mtb
 
@@ -257,12 +259,13 @@ let strengthen mtb mp =
 let rec strengthen_and_subst_module mb subst mp_from mp_to =
   match mod_type mb with
   | NoFunctor struc ->
-    let mb_is_an_alias = mp_in_delta mp_from (mod_delta mb) in
+    let delta_mb = mod_delta mb in
+    let mb_is_an_alias = mp_in_delta mp_from delta_mb in
     if mb_is_an_alias then subst_module subst do_delta_dom mp_from mb
     else
       let reso',struc' =
         strengthen_and_subst_struct struc subst
-          mp_from mp_to false false (mod_delta mb)
+          mp_from mp_to false false delta_mb
       in
       let reso' = add_mp_delta_resolver mp_to mp_from reso' in
       strengthen_module_body ~src:mp_from (NoFunctor struc') reso' mb
@@ -363,19 +366,20 @@ and strengthen_and_subst_struct struc subst mp_from mp_to alias incl reso =
 
 let strengthen_and_subst_module_body mp_from mb mp include_b = match mod_type mb with
   | NoFunctor struc ->
-    let mb_is_an_alias = mp_in_delta mp_from (mod_delta mb) in
+    let delta_mb = mod_delta mb in
+    let mb_is_an_alias = mp_in_delta mp_from delta_mb in
     (* if mb.mod_mp is an alias then the strengthening is useless
        (i.e. it is already done)*)
-    let mp_alias = mp_of_delta (mod_delta mb) mp_from in
+    let mp_alias = mp_of_delta delta_mb mp_from in
     let subst_resolver = map_mp mp_from mp (empty_delta_resolver mp) in
     let new_resolver =
       add_mp_delta_resolver mp mp_alias
-        (subst_dom_delta_resolver subst_resolver (mod_delta mb))
+        (subst_dom_delta_resolver subst_resolver delta_mb)
     in
     let subst = map_mp mp_from mp new_resolver in
     let reso',struc' =
       strengthen_and_subst_struct struc subst
-        mp_from mp mb_is_an_alias include_b (mod_delta mb)
+        mp_from mp mb_is_an_alias include_b delta_mb
     in
     let reso' = if include_b then reso' else add_delta_resolver new_resolver reso' in
     strengthen_module_body ~src:mp_from (NoFunctor struc') reso' mb

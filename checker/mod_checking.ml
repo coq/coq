@@ -235,24 +235,25 @@ let rec check_mexpression env opac sign mbtyp mp_mse res = match sign with
 let rec check_module env opac mp mb opacify =
   Flags.if_verbose Feedback.msg_notice (str "  checking module: " ++ str (ModPath.to_string mp));
   let env = Modops.add_retroknowledge (mod_retroknowledge mb) env in
+  let delta_mb = mod_delta mb in
   let opac =
-    check_signature env opac (mod_type mb) mp (mod_delta mb) opacify
+    check_signature env opac (mod_type mb) mp delta_mb opacify
   in
   let optsign, opac = match Mod_declarations.mod_expr mb with
     | Struct sign_struct ->
       let opacify = collect_constants_without_body (mod_type mb) mp opacify in
       (* TODO: a bit wasteful, we recheck the types of parameters twice *)
       let sign_struct = Modops.annotate_struct_body sign_struct (mod_type mb) in
-      let opac = check_signature env opac sign_struct mp (mod_delta mb) opacify in
-      Some (sign_struct, mod_delta mb), opac
-    | Algebraic me -> Some (check_mexpression env opac me (mod_type mb) mp (mod_delta mb)), opac
+      let opac = check_signature env opac sign_struct mp delta_mb opacify in
+      Some (sign_struct, delta_mb), opac
+    | Algebraic me -> Some (check_mexpression env opac me (mod_type mb) mp delta_mb), opac
     | Abstract|FullStruct -> None, opac
   in
   let () = match optsign with
   | None -> ()
   | Some (sign,delta) ->
     let mtb1 = mk_mtb sign delta
-    and mtb2 = mk_mtb (mod_type mb) (mod_delta mb) in
+    and mtb2 = mk_mtb (mod_type mb) delta_mb in
     let env = Modops.add_module_type mp mtb1 env in
     let state = (Environ.universes env, Conversion.checked_universes) in
     let _ : UGraph.t = Subtyping.check_subtypes state env mp mtb1 mp mtb2 in

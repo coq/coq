@@ -307,21 +307,23 @@ and check_modtypes (cst, ustate) trace env mp1 mtb1 mp2 mtb2 subst1 subst2 equiv
       match struc1,struc2 with
       | NoFunctor list1,
         NoFunctor list2 ->
+        let delta_mtb1 = mod_delta mtb1 in
+        let delta_mtb2 = mod_delta mtb2 in
         if equiv then
-          let subst2 = add_mp mp2 mp1 (mod_delta mtb1) subst2 in
+          let subst2 = add_mp mp2 mp1 delta_mtb1 subst2 in
           let cst = check_signatures (cst, ustate) trace env
             mp1 list1 mp2 list2 subst1 subst2
-            (mod_delta mtb1) (mod_delta mtb2)
+            delta_mtb1 delta_mtb2
           in
           let cst = check_signatures (cst, ustate) trace env
             mp2 list2 mp1 list1 subst2 subst1
-            (mod_delta mtb2) (mod_delta mtb1)
+            delta_mtb2 delta_mtb1
           in
           cst
         else
           check_signatures (cst, ustate) trace env
             mp1 list1 mp2 list2 subst1 subst2
-            (mod_delta mtb1) (mod_delta mtb2)
+            delta_mtb1 delta_mtb2
       | MoreFunctor (arg_id1,arg_t1,body_t1),
         MoreFunctor (arg_id2,arg_t2,body_t2) ->
         let mparg1 = MPbound arg_id1 in

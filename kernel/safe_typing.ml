@@ -1199,11 +1199,12 @@ let add_module l me inl senv =
   let senv = set_vm_library vmtab senv in
   let mb = Mod_declarations.hcons_module_body mb in
   let senv = add_field (l,SFBmodule mb) (M mp) senv in
+  let delta_mb = mod_delta mb in
   let senv =
     if Modops.is_functor @@ mod_type mb then senv
-    else update_resolver (Mod_subst.add_delta_resolver @@ mod_delta mb) senv
+    else update_resolver (Mod_subst.add_delta_resolver @@ delta_mb) senv
   in
-  (mp, mod_delta mb),senv
+  (mp, delta_mb), senv
 
 (** {6 Starting / ending interactive modules and module types } *)
 
@@ -1255,11 +1256,12 @@ let add_module_parameter mbid mte inl senv =
     | SIG (params,oldenv) -> SIG ((mbid,mtb) :: params, oldenv)
     | _ -> assert false
   in
+  let delta_mtb = mod_delta mtb in
   let new_paramresolver =
     if Modops.is_functor @@ mod_type mtb then senv.paramresolver
-    else ParamResolver.add_delta_resolver mp (mod_delta mtb) senv.paramresolver
+    else ParamResolver.add_delta_resolver mp delta_mtb senv.paramresolver
   in
-  mod_delta mtb,
+  delta_mtb,
   { senv with
     modvariant = new_variant;
     paramresolver = new_paramresolver }
@@ -1339,11 +1341,12 @@ let end_module l restype senv =
   let newenv = Environ.set_vm_library (Environ.vm_library senv.env) newenv in
   let senv' = propagate_loads { senv with env = newenv } in
   let newenv = Modops.add_module mp mb senv'.env in
+  let delta_mb = mod_delta mb in
   let newresolver =
     if Modops.is_functor @@ mod_type mb then oldsenv.modresolver
-    else Mod_subst.add_delta_resolver (mod_delta mb) oldsenv.modresolver
+    else Mod_subst.add_delta_resolver delta_mb oldsenv.modresolver
   in
-  (mp, mbids, mod_delta mb),
+  (mp, mbids, delta_mb),
   propagate_senv (l,SFBmodule mb) newenv newresolver senv' oldsenv
 
 let build_mtb = Mod_declarations.make_module_type
