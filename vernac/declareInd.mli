@@ -21,8 +21,7 @@ type indlocs = (Loc.t option * Loc.t option list) list
 (** Inductive type and constructor locs, for .glob and src loc info *)
 
 val declare_mutual_inductive_with_eliminations
-  : ?primitive_expected:bool
-  -> ?typing_flags:Declarations.typing_flags
+  : ?typing_flags:Declarations.typing_flags
   -> ?indlocs:indlocs
   -> ?default_dep_elim:default_dep_elim list
   -> Entries.mutual_inductive_entry (* Inductive types declaration *)

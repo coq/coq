@@ -89,8 +89,9 @@ val interp_mutual_inductive_constr
   -> arities:EConstr.t list
   -> template_syntax:syntax_allows_template_poly list
   -> constructors:(Names.Id.t list * EConstr.constr list) list
-  -> env_ar_params:Environ.env
-  (** Environment with the inductives and parameters in the rel_context *)
+  (** Names and types of constructors, not including parameters (as in kernel entries) *)
+  -> env_ar:Environ.env
+  (** Environment with the inductives in the rel_context *)
   -> private_ind:bool
   -> DeclareInd.default_dep_elim list * Entries.mutual_inductive_entry * UnivNames.universe_binders * Univ.ContextSet.t
 
@@ -126,25 +127,9 @@ val variance_of_entry
 
 module Internal :
 sig
-  (** Returns the modified arities (the result sort may be replaced by Prop).
-      Should be called with minimized universes. *)
-  val inductive_levels
-    : Environ.env
-    -> Evd.evar_map
-    -> poly:bool
-    -> indnames:Names.Id.t list
-    -> arities_explicit:bool list
-    (* whether the arities were explicit from the user (for auto Prop lowering) *)
-    -> EConstr.constr list
-    (* arities *)
-    -> EConstr.rel_context list list
-    (* constructors *)
-    -> Evd.evar_map * (DeclareInd.default_dep_elim list * EConstr.t list)
-
   val error_differing_params
     : kind:string
     -> (Names.lident * Vernacexpr.inductive_params_expr)
     -> (Names.lident * Vernacexpr.inductive_params_expr)
     -> 'a
-
 end

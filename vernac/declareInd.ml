@@ -183,7 +183,7 @@ let { Goptions.get = default_prop_dep_elim } =
 
 type default_dep_elim = DefaultElim | PropButDepElim
 
-let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typing_flags ?(indlocs=[]) ?default_dep_elim mie ubinders impls =
+let declare_mutual_inductive_with_eliminations ?typing_flags ?(indlocs=[]) ?default_dep_elim mie ubinders impls =
   (* spiwack: raises an error if the structure is supposed to be non-recursive,
         but isn't *)
   begin match mie.mind_entry_finite with
