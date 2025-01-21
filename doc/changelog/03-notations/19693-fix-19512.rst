@@ -1,5 +1,0 @@
-- **Fixed:**
-  Recognized all Unicode non-spacing marks as valid identifier characters
-  (`#19693 <https://github.com/coq/coq/pull/19693>`_,
-  fixes `#19512 <https://github.com/coq/coq/issues/19512>`_,
-  by Guillaume Melquiond).
