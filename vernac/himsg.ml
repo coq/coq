@@ -1450,8 +1450,8 @@ let error_inductive_missing_constraints env (us,ind_univ) =
 
 let error_not_allowed_dependent_analysis env isrec i =
   str "Dependent " ++ str (if isrec then "induction" else "case analysis") ++
-  strbrk " is not allowed for inductive definition " ++
-  pr_inductive env i ++ str "."
+  strbrk " is not allowed for " ++ pr_inductive env i ++ str "." ++
+  str "Primitive records must have eta conversion to allow dependent elimination."
 
 let error_not_mutual_in_scheme env ind ind' =
   if QInd.equal env ind ind' then
