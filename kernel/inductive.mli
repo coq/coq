@@ -58,7 +58,7 @@ val instantiate_template_constraints
   -> Univ.Constraints.t
 
 val instantiate_template_universes : mind_specif -> param_univs ->
-  Constraints.t * rel_context * template_univ Univ.Level.Map.t
+  Constraints.t * rel_context * (template_univ Univ.Level.Map.t * template_pseudo_sort_poly)
 
 val constrained_type_of_inductive : mind_specif puniverses -> types constrained
 

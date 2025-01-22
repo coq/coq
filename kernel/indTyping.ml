@@ -297,7 +297,7 @@ let get_arity c =
 let get_template univs ~env_params ~env_ar_par ~params entries data =
   match univs with
   | Polymorphic_ind_entry _ | Monomorphic_ind_entry -> None
-  | Template_ind_entry ctx ->
+  | Template_ind_entry {univs=ctx; pseudo_sort_poly} ->
     let entry, sort = match entries, data with
       | [entry], [(_, _, info)] -> entry, info.ind_univ
       | _ -> CErrors.user_err Pp.(str "Template-polymorphism not allowed with mutual inductives.")
@@ -379,7 +379,7 @@ let get_template univs ~env_params ~env_ar_par ~params entries data =
         ~ctors:[entry.mind_entry_lc]
     in
     let params = List.rev_map Option.has_some params in
-    Some { template_param_arguments = params; template_context = ctx }
+    Some { template_param_arguments = params; template_context = ctx; template_pseudo_sort_poly = pseudo_sort_poly }
 
 let abstract_packets env usubst ((arity,lc),(indices,splayed_lc),univ_info) =
   if not (List.is_empty univ_info.missing)
@@ -428,10 +428,14 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   (* universes *)
   let env_univs =
     match mie.mind_entry_universes with
-    | Template_ind_entry ctx ->
+    | Template_ind_entry {univs=ctx; pseudo_sort_poly} ->
+      begin match pseudo_sort_poly with
+      | TemplatePseudoSortPoly ->
         (* For that particular case, we typecheck the inductive in an environment
            where the universes introduced by the definition are only [>= Prop] *)
         Environ.push_floating_context_set ctx env
+      | TemplateUnivOnly -> Environ.push_context_set ~strict:false ctx env
+      end
     | Monomorphic_ind_entry -> env
     | Polymorphic_ind_entry ctx -> push_context ctx env
   in

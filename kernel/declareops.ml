@@ -53,7 +53,9 @@ let hcons_template_arity ar =
 
 let hcons_template_universe ar =
   { template_param_arguments = ar.template_param_arguments;
-    template_context = Univ.hcons_universe_context_set ar.template_context }
+    template_context = Univ.hcons_universe_context_set ar.template_context;
+    template_pseudo_sort_poly = ar.template_pseudo_sort_poly;
+  }
 
 let universes_context = function
   | Monomorphic -> UVars.AbstractContext.empty

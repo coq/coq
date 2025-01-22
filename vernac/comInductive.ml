@@ -448,13 +448,25 @@ let template_polymorphic_univs uctx params entry =
           not (Univ.Level.Set.mem u non_template_levels))
       paramslevels
   in
-  Univ.Level.Map.domain paramslevels
+  let paramslevels = Univ.Level.Map.domain paramslevels in
+  let pseudo_sort_poly =
+    let _, concl = Term.destArity entry.mind_entry_arity in
+    match concl with
+    | SProp | Prop | Set -> false
+    | QSort _ -> assert false
+    | Type u -> Univ.Universe.for_all (fun (u,n) ->
+        Int.equal n 0 && Univ.Level.Set.mem u paramslevels)
+        u
+  in
+  let pseudo_sort_poly = if pseudo_sort_poly then
+      Declarations.TemplatePseudoSortPoly
+    else Declarations.TemplateUnivOnly
+  in
+  pseudo_sort_poly, paramslevels
 
 let template_polymorphism_candidate uctx params entry template_syntax = match template_syntax with
-| SyntaxNoTemplatePoly -> Univ.Level.Set.empty
-| SyntaxAllowsTemplatePoly ->
-  let univs = template_polymorphic_univs uctx params entry in
-  univs
+| SyntaxNoTemplatePoly -> Declarations.TemplateUnivOnly, Univ.Level.Set.empty
+| SyntaxAllowsTemplatePoly -> template_polymorphic_univs uctx params entry
 
 let split_universe_context subset (univs, csts) =
   let rem = Univ.Level.Set.diff univs subset in
@@ -476,21 +488,21 @@ match user_template, univ_entry with
 | Some false, UState.Polymorphic_entry uctx ->
   Polymorphic_ind_entry uctx, Univ.ContextSet.empty
 | Some true, UState.Monomorphic_entry uctx ->
-  let template_universes = template_polymorphism_candidate uctx ctx_params entry template_syntax in
-  let template, global = split_universe_context template_universes uctx in
-  let () = if Univ.Level.Set.is_empty (fst template) then warn_no_template_universe () in
-  Template_ind_entry template, global
+  let pseudo_sort_poly, template_univs = template_polymorphism_candidate uctx ctx_params entry template_syntax in
+  let template_univs, global = split_universe_context template_univs uctx in
+  let () = if Univ.Level.Set.is_empty (fst template_univs) then warn_no_template_universe () in
+  Template_ind_entry {univs=template_univs; pseudo_sort_poly}, global
 | Some true, UState.Polymorphic_entry _ ->
   user_err Pp.(strbrk "Template-polymorphism and universe polymorphism are not compatible.")
 | None, UState.Polymorphic_entry uctx ->
   Polymorphic_ind_entry uctx, Univ.ContextSet.empty
 | None, UState.Monomorphic_entry uctx ->
-  let template_candidate = template_polymorphism_candidate uctx ctx_params entry template_syntax in
+  let pseudo_sort_poly, template_candidate = template_polymorphism_candidate uctx ctx_params entry template_syntax in
   let has_template = not @@ Univ.Level.Set.is_empty template_candidate in
   let template = should_auto_template entry.mind_entry_typename has_template in
   if template then
-    let template, global = split_universe_context template_candidate uctx in
-    Template_ind_entry template, global
+    let template_univs, global = split_universe_context template_candidate uctx in
+    Template_ind_entry {univs=template_univs; pseudo_sort_poly}, global
   else Monomorphic_ind_entry, uctx
 
 let check_param = function
@@ -841,7 +853,7 @@ let do_mutual_inductive ~flags ?typing_flags udecl indl ~private_ind ~uniform =
   (* Slightly hackish global universe declaration due to template types. *)
   let binders = match mie.mind_entry_universes with
   | Monomorphic_ind_entry -> (UState.Monomorphic_entry uctx, univ_binders)
-  | Template_ind_entry ctx -> (UState.Monomorphic_entry (Univ.ContextSet.union uctx ctx), univ_binders)
+  | Template_ind_entry ctx -> (UState.Monomorphic_entry (Univ.ContextSet.union uctx ctx.univs), univ_binders)
   | Polymorphic_ind_entry uctx -> (UState.Polymorphic_entry uctx, UnivNames.empty_binders)
   in
   (* Declare the global universes *)

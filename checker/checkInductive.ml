@@ -42,7 +42,9 @@ let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
         mechanism for template inductive types. *)
       begin match mb.mind_template with
       | None -> Monomorphic_ind_entry
-      | Some ctx -> Template_ind_entry ctx.template_context
+      | Some ctx ->
+        let pseudo_sort_poly = ctx.template_pseudo_sort_poly in
+        Template_ind_entry {univs=ctx.template_context; pseudo_sort_poly}
       end
     | Polymorphic auctx -> Polymorphic_ind_entry (AbstractContext.repr auctx)
   in
@@ -91,11 +93,18 @@ let check_arity env ar1 ar2 = match ar1, ar2 with
     (* template_level is inferred by indtypes, so functor application can produce a smaller one *)
   | (RegularArity _ | TemplateArity _), _ -> assert false
 
+let check_template_pseudo_sort_poly a b =
+  match a, b with
+  | TemplatePseudoSortPoly, TemplatePseudoSortPoly
+  | TemplateUnivOnly, TemplateUnivOnly -> true
+  | (TemplatePseudoSortPoly | TemplateUnivOnly), _ -> false
+
 let check_template ar1 ar2 = match ar1, ar2 with
 | None, None -> true
-| Some ar, Some {template_context; template_param_arguments} ->
+| Some ar, Some {template_context; template_param_arguments; template_pseudo_sort_poly} ->
   List.equal Bool.equal ar.template_param_arguments template_param_arguments &&
-  ContextSet.equal template_context ar.template_context
+  ContextSet.equal template_context ar.template_context &&
+  check_template_pseudo_sort_poly template_pseudo_sort_poly ar.template_pseudo_sort_poly
 | None, Some _ | Some _, None -> false
 
 (* if the generated inductive is squashed the original one must be squashed *)

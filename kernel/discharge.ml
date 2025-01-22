@@ -183,10 +183,10 @@ let cook_inductive info mib =
   in
   let mind_template = match mib.mind_template with
   | None -> None
-  | Some {template_param_arguments=levels; template_context} ->
+  | Some {template_param_arguments=levels; template_context; template_pseudo_sort_poly} ->
       let sec_levels = List.make (Context.Rel.nhyps (rel_context_of_cooking_cache cache)) false in
       let levels = List.rev_append sec_levels levels in
-      Some {template_param_arguments=levels; template_context}
+      Some {template_param_arguments=levels; template_context; template_pseudo_sort_poly}
   in
   {
     mind_packets;

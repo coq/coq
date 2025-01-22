@@ -25,6 +25,8 @@ open Constr
     In truly universe polymorphic mode, we always use RegularArity.
 *)
 
+type template_pseudo_sort_poly = TemplatePseudoSortPoly | TemplateUnivOnly
+
 type template_arity = {
   template_level : Sorts.t;
 }
@@ -32,6 +34,7 @@ type template_arity = {
 type template_universes = {
   template_param_arguments : bool list;
   template_context : Univ.ContextSet.t;
+  template_pseudo_sort_poly : template_pseudo_sort_poly;
 }
 
 type ('a, 'b) declaration_arity =

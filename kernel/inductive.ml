@@ -183,7 +183,7 @@ let make_subst =
   in
   make Univ.Level.Map.empty
 
-let subst_univs_sort subs = function
+let subst_univs_sort (subs, pseudo_sort_poly) = function
 | Sorts.QSort _ -> no_sort_variable ()
 | Sorts.Prop | Sorts.Set | Sorts.SProp as s -> s
 | Sorts.Type u ->
@@ -192,15 +192,18 @@ let subst_univs_sort subs = function
   let supern u n = iterate Universe.super n u in
   let map (u, n) =
     if Level.is_set u then Some (Universe.type0, n)
-    else match Level.Map.find u subs with
-    | TemplateProp ->
+    else match Level.Map.find u subs, pseudo_sort_poly with
+    | TemplateProp, TemplatePseudoSortPoly ->
       if Int.equal n 0 then
         (* This is an instantiation of a template universe by Prop, ignore it *)
         None
       else
         (* Prop + S n actually means Set + S n *)
         Some (Universe.type0, n)
-    | TemplateUniv v -> Some (v,n)
+    | TemplateProp, TemplateUnivOnly ->
+      (* exploit Prop <= Set *)
+      Some (Universe.type0, n)
+    | TemplateUniv v, _ -> Some (v,n)
     | exception Not_found ->
       (* Either an unbound template universe due to missing arguments, or a
          global one appearing in the inductive arity. *)
@@ -242,7 +245,7 @@ let instantiate_template_constraints subst templ =
   let _, cstrs = templ.template_context in
   let fold (u, cst, v) accu =
     (* v is not a local universe by the unbounded from below property *)
-    let u = subst_univs_sort subst (Sorts.sort_of_univ (Universe.make u)) in
+    let u = subst_univs_sort (subst, templ.template_pseudo_sort_poly) (Sorts.sort_of_univ (Universe.make u)) in
     match u with
     | Sorts.QSort _ | Sorts.SProp -> assert false
     | Sorts.Prop -> accu
@@ -264,9 +267,10 @@ let instantiate_template_universes (mib, _mip) args =
   | Some t -> t
   in
   let ctx = List.rev mib.mind_params_ctxt in
-  let subst = make_subst (ctx,templ.template_param_arguments,args) in
+  let subst0 = make_subst (ctx,templ.template_param_arguments,args) in
+  let subst = (subst0,templ.template_pseudo_sort_poly) in
   let ctx = subst_univs_ctx [] subst ctx templ.template_param_arguments in
-  let cstrs = instantiate_template_constraints subst templ in
+  let cstrs = instantiate_template_constraints subst0 templ in
   (cstrs, ctx, subst)
 
 (* Type of an inductive type *)
