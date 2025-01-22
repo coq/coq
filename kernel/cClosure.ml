@@ -813,7 +813,12 @@ let rec reloc_rargs_rec depth = function
 let reloc_rargs depth stk =
   if Int.equal depth 0 then stk else reloc_rargs_rec depth stk
 
-let rec try_drop_parameters depth n = function
+let rec try_drop_parameters depth n s =
+  if n = 0 then
+    (* fast path *)
+    reloc_rargs depth s
+  else
+  match s with
     | Zapp args::s ->
         let q = Array.length args in
         if n > q then try_drop_parameters depth (n-q) s
