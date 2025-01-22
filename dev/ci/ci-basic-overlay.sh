@@ -420,7 +420,6 @@ project verdi_raft "https://github.com/uwplse/verdi-raft" "master"
 # Stdlib
 ########################################################################
 project stdlib "https://github.com/coq/stdlib" "master"
-# TODO replace temporary test repo by actual one
 # Contact TODO on github
 
 ########################################################################
