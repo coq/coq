@@ -36,6 +36,14 @@ module IMap = struct
     r
 end
 
+let pp_smt_num o q =
+  let nn = Q.num q in
+  let dn = Q.den q in
+  if Z.equal dn Z.one then output_string o (Z.to_string nn)
+  else Printf.fprintf o "(/ %s %s)" (Z.to_string nn) (Z.to_string dn)
+
+
+
 let rec pp_list s f o l =
   match l with
   | [] -> ()
@@ -423,6 +431,7 @@ module Hash = struct
     | Mc.PX (p1, i1, p1'), Mc.PX (p2, i2, p2') ->
       eq_pol eq p1 p2 && eq_positive i1 i2 && eq_pol eq p1' p2'
     | _, _ -> false
+
 
   let eq_pair eq1 eq2 (x1, y1) (x2, y2) = eq1 x1 x2 && eq2 y1 y2
 

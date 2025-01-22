@@ -9,7 +9,7 @@
 (************************************************************************)
 
 open Polynomial
-
+open Mutils
 (** Profiling *)
 
 type profile_info =
@@ -23,9 +23,10 @@ type profile_info =
 val get_profile_info : unit -> profile_info
 
 (** Simplex interface *)
+(*type solution = InfVect.Inf.t Int.Map.t
 
-val find_point : cstr list -> Vect.t option
+val find_point : cstr list -> solution option *)
 val find_unsat_certificate : cstr list -> Vect.t option
 
 val integer_solver :
-  WithProof.t list -> ProofFormat.proof option
+  ISet.t option -> WithProof.t list -> ProofFormat.proof option
