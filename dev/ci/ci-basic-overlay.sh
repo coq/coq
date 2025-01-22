@@ -419,8 +419,7 @@ project verdi_raft 'https://github.com/uwplse/verdi-raft' 'a3375e867326a82225e72
 ########################################################################
 # Stdlib
 ########################################################################
-project stdlib 'https://github.com/coq/stdlib' '155be26dc10a8b6ddb3cfbdd4c144c077c583b5f'
-# TODO replace temporary test repo by actual one
+project stdlib 'https://github.com/coq/stdlib' '732498358e2258595ae0ab174297238a21f8d177'
 # Contact TODO on github
 
 ########################################################################
