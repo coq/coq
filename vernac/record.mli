@@ -33,43 +33,50 @@ val definition_structure
   -> Ast.t list
   -> GlobRef.t list
 
-  module Data : sig
-    type projection_flags = {
-      pf_coercion: bool;
-      pf_reversible: bool;
-      pf_instance: bool;
-      pf_priority: int option;
-      pf_locality: Goptions.option_locality;
-      pf_canonical: bool;
+module Data : sig
+  type projection_flags = {
+    pf_coercion: bool;
+    pf_reversible: bool;
+    pf_instance: bool;
+    pf_priority: int option;
+    pf_locality: Goptions.option_locality;
+    pf_canonical: bool;
+  }
+  type t =
+    { is_coercion : Vernacexpr.coercion_flag
+    ; proj_flags : projection_flags list
     }
-    type raw_data
-    type t =
-      { id : Id.t
-      ; idbuild : Id.t
-      ; is_coercion : bool
-      ; proj_flags : projection_flags list
-      ; rdata : raw_data
-      ; inhabitant_id : Id.t
-      }
-  end
+end
 
-  (** A record is an inductive [mie] with extra metadata in [records] *)
-  module Record_decl : sig
-    type t = {
-      mie : Entries.mutual_inductive_entry;
-      default_dep_elim : DeclareInd.default_dep_elim list;
-      records : Data.t list;
-      (* TODO: this part could be factored in mie *)
-      primitive_proj : bool;
-      impls : DeclareInd.one_inductive_impls list;
-      globnames : UState.named_universes_entry;
-      global_univ_decls : Univ.ContextSet.t option;
-      projunivs : Entries.universes_entry;
-      ubinders : UnivNames.universe_binders;
-      projections_kind : Decls.definition_object_kind;
-      poly : bool;
-      indlocs : DeclareInd.indlocs;
-    }
+module RecordEntry : sig
+
+  type one_ind_info = {
+    (* inhabitant_id not redundant with the entry in non prim record case *)
+    inhabitant_id : Id.t;
+    default_dep_elim : DeclareInd.default_dep_elim;
+    (* implfs includes the param and principal argument info *)
+    implfs : Impargs.manual_implicits list;
+  }
+
+  type t = {
+    global_univs : Univ.ContextSet.t;
+    ubinders : UnivNames.universe_binders;
+    mie : Entries.mutual_inductive_entry;
+    ind_infos : one_ind_info list;
+    param_impls : Impargs.manual_implicits;
+  }
+
+end
+
+(** A record is an inductive [mie] with extra metadata *)
+module Record_decl : sig
+  type t = {
+    entry : RecordEntry.t;
+    records : Data.t list;
+    globnames : UState.named_universes_entry;
+    projections_kind : Decls.definition_object_kind;
+    indlocs : DeclareInd.indlocs;
+  }
 end
 
 (** Ast.t list at the constr level *)
@@ -100,12 +107,10 @@ module Internal : sig
 
   val declare_projections
     : Names.inductive
-    -> Entries.universes_entry * UnivNames.universe_binders
-    -> ?kind:Decls.definition_object_kind
-    -> Names.Id.t
+    -> kind:Decls.definition_object_kind
+    -> inhabitant_id:Names.Id.t
     -> projection_flags list
     -> Impargs.manual_implicits list
-    -> Constr.rel_context
     -> Structure.projection list
 
   val declare_structure_entry : Structure.t -> unit
