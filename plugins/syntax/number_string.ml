@@ -93,8 +93,8 @@ let locate_number () =
       hexadecimal = unsafe_ref_ind q_hex;
       number = unsafe_ref_ind q_num;
     } in
-    Some (int_ty, gref q_int, gref q_uint, gref q_dint, gref q_duint,
-          num_ty, gref q_num, gref q_dec)
+    Some (int_ty, gref q_int, gref q_uint,
+          num_ty, gref q_num)
 
 let locate_int63 () =
   let pos_neg_int63n = "num.int63.pos_neg_int63" in
@@ -460,12 +460,12 @@ let vernac_number_notation local ty f g opts scope =
   (* Check the type of f *)
   let to_kind =
     match num_ty with
-    | Some (int_ty, cint, _, _, _, _, _, _) when has_type env sigma f (arrow cint cty) -> Int int_ty, Direct
-    | Some (int_ty, cint, _, _, _, _, _, _) when has_type env sigma f (arrow cint (opt cty)) -> Int int_ty, Option
-    | Some (int_ty, _, cuint, _, _, _, _, _) when has_type env sigma f (arrow cuint cty) -> UInt int_ty, Direct
-    | Some (int_ty, _, cuint, _, _, _, _, _) when has_type env sigma f (arrow cuint (opt cty)) -> UInt int_ty, Option
-    | Some (_, _, _, _, _, num_ty, cnum, _) when has_type env sigma f (arrow cnum cty) -> Number num_ty, Direct
-    | Some (_, _, _, _, _, num_ty, cnum, _) when has_type env sigma f (arrow cnum (opt cty)) -> Number num_ty, Option
+    | Some (int_ty, cint, _, _, _) when has_type env sigma f (arrow cint cty) -> Int int_ty, Direct
+    | Some (int_ty, cint, _, _, _) when has_type env sigma f (arrow cint (opt cty)) -> Int int_ty, Option
+    | Some (int_ty, _, cuint, _, _) when has_type env sigma f (arrow cuint cty) -> UInt int_ty, Direct
+    | Some (int_ty, _, cuint, _, _) when has_type env sigma f (arrow cuint (opt cty)) -> UInt int_ty, Option
+    | Some (_, _, _, num_ty, cnum) when has_type env sigma f (arrow cnum cty) -> Number num_ty, Direct
+    | Some (_, _, _, num_ty, cnum) when has_type env sigma f (arrow cnum (opt cty)) -> Number num_ty, Option
     | _ ->
     match z_pos_ty with
     | Some (z_pos_ty, cZ) when has_type env sigma f (arrow cZ cty) -> Z z_pos_ty, Direct
@@ -484,12 +484,12 @@ let vernac_number_notation local ty f g opts scope =
   let cty = match tyc_params with TargetPrim (c, _, _) -> gref c | TargetInd _ -> cty in
   let of_kind =
     match num_ty with
-    | Some (int_ty, cint, _, _, _, _, _, _) when has_type env sigma g (arrow cty cint) -> Int int_ty, Direct
-    | Some (int_ty, cint, _, _, _, _, _, _) when has_type env sigma g (arrow cty (opt cint)) -> Int int_ty, Option
-    | Some (int_ty, _, cuint, _, _, _, _, _) when has_type env sigma g (arrow cty cuint) -> UInt int_ty, Direct
-    | Some (int_ty, _, cuint, _, _, _, _, _) when has_type env sigma g (arrow cty (opt cuint)) -> UInt int_ty, Option
-    | Some (_, _, _, _, _, num_ty, cnum, _) when has_type env sigma g (arrow cty cnum) -> Number num_ty, Direct
-    | Some (_, _, _, _, _, num_ty, cnum, _) when has_type env sigma g (arrow cty (opt cnum)) -> Number num_ty, Option
+    | Some (int_ty, cint, _, _, _) when has_type env sigma g (arrow cty cint) -> Int int_ty, Direct
+    | Some (int_ty, cint, _, _, _) when has_type env sigma g (arrow cty (opt cint)) -> Int int_ty, Option
+    | Some (int_ty, _, cuint, _, _) when has_type env sigma g (arrow cty cuint) -> UInt int_ty, Direct
+    | Some (int_ty, _, cuint, _, _) when has_type env sigma g (arrow cty (opt cuint)) -> UInt int_ty, Option
+    | Some (_, _, _, num_ty, cnum) when has_type env sigma g (arrow cty cnum) -> Number num_ty, Direct
+    | Some (_, _, _, num_ty, cnum) when has_type env sigma g (arrow cty (opt cnum)) -> Number num_ty, Option
     | _ ->
     match z_pos_ty with
     | Some (z_pos_ty, cZ) when has_type env sigma g (arrow cty cZ) -> Z z_pos_ty, Direct
