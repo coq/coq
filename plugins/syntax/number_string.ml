@@ -45,8 +45,6 @@ let get_constructors ind =
   Array.to_list
     (Array.mapi (fun j c -> GlobRef.ConstructRef (ind, j + 1)) mc)
 
-let q_option () = Rocqlib.lib_ref "core.option.type"
-
 let unsafe_ref_ind q =
   match q with
   | GlobRef.IndRef i -> i
@@ -122,16 +120,23 @@ let has_type env sigma f ty =
   try let _ = Pretyping.understand ~flags env sigma c in true
   with Pretype_errors.PretypeError _ -> false
 
+let q_option () = Rocqlib.lib_ref "core.option.type"
+
+let q_result () = Rocqlib.lib_ref "core.result.type"
+
 let is_to_target env sigma f cty {kind; typ} =
   let arrow x y =
     DAst.make @@ GProd (Anonymous,None,Glob_term.Explicit, x, y)
   in
   let app x y = DAst.make @@ GApp (x,[y]) in
   let opt r = app (gref (q_option ())) r in
+  let result x = DAst.make @@ GApp (gref (q_result ()), [x; DAst.make @@ GHole GInternalHole]) in
   if has_type env sigma f (arrow typ cty) then
     Some (kind, Direct)
   else if has_type env sigma f (arrow typ (opt cty)) then
     Some (kind, Option)
+  else if has_type env sigma f (arrow typ (result cty)) then
+    Some (kind, Error)
   else None
 
 let is_from_target env sigma g cty {kind; typ} =
@@ -140,23 +145,27 @@ let is_from_target env sigma g cty {kind; typ} =
   in
   let app x y = DAst.make @@ GApp (x,[y]) in
   let opt r = app (gref (q_option ())) r in
+  let result x = DAst.make @@ GApp (gref (q_result ()), [x; DAst.make @@ GHole GInternalHole]) in
   if has_type env sigma g (arrow cty typ) then
     Some (kind, Direct)
   else if has_type env sigma g (arrow cty (opt typ)) then
     Some (kind, Option)
+  else if has_type env sigma g (arrow cty (result typ)) then
+    Some (kind, Error)
   else None
 
 let type_error_to f ty =
+  let ppty = pr_qualid ty in
   CErrors.user_err
     (pr_qualid f ++ str " should go from Number.int to " ++
-     pr_qualid ty ++ str " or (option " ++ pr_qualid ty ++ str ")." ++
-     fnl () ++ str "Instead of Number.int, the types Number.uint or Z or PrimInt63.pos_neg_int63 or PrimFloat.float or Number.number could be used (you may need to require BinNums or Number or PrimInt63 or PrimFloat first).")
+     ppty ++ str " or (option " ++ ppty ++ str "), or (result " ++ ppty ++ str " _)." ++
+     fnl () ++ strbrk "Instead of Number.int, the types Number.uint or Z or PrimInt63.pos_neg_int63 or PrimFloat.float or Number.number could be used (you may need to require BinNums or Number or PrimInt63 or PrimFloat first).")
 
 let type_error_of g ty =
   CErrors.user_err
     (pr_qualid g ++ str " should go from " ++ pr_qualid ty ++
-     str " to Number.int or (option Number.int)." ++ fnl () ++
-     str "Instead of Number.int, the types Number.uint or Z or PrimInt63.pos_neg_int63 or PrimFloat.float or Number.number could be used (you may need to require BinNums or Number or PrimInt63 or PrimFloat first).")
+     str " to Number.int or (option Number.int), or (result Number.int _)." ++ fnl () ++
+     strbrk "Instead of Number.int, the types Number.uint or Z or PrimInt63.pos_neg_int63 or PrimFloat.float or Number.number could be used (you may need to require BinNums or Number or PrimInt63 or PrimFloat first).")
 
 let error_params ind =
   CErrors.user_err
@@ -555,14 +564,15 @@ let locate_bytestring () =
       ]
 
 let type_error_to f ty =
+  let ppty = pr_qualid ty in
   CErrors.user_err
     (pr_qualid f ++ str " should go from Byte.byte, (list Byte.byte), or PrimString.string to " ++
-     pr_qualid ty ++ str " or (option " ++ pr_qualid ty ++ str ").")
+     ppty ++ str " or (option " ++ ppty ++ str "), or (result " ++ ppty ++ str " _).")
 
 let type_error_of g ty =
   CErrors.user_err
     (pr_qualid g ++ str " should go from " ++ pr_qualid ty ++
-     str " to T or (option T), where T is either Byte.byte, (list Byte.byte), or PrimString.string.")
+     strbrk " to T or (option T) or (result T _), where T is either Byte.byte, (list Byte.byte), or PrimString.string.")
 
 let vernac_string_notation local ty f g via scope =
   let env = Global.env () in

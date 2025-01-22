@@ -63,7 +63,7 @@ comparison : Set
 
 comparison is not universe polymorphic
 Expands to: Inductive Corelib.Init.Datatypes.comparison
-Declared in library Corelib.Init.Datatypes, line 351, characters 10-20
+Declared in library Corelib.Init.Datatypes, line 360, characters 10-20
 Inductive comparison : Set :=
     Eq : comparison | Lt : comparison | Gt : comparison.
 bar : foo

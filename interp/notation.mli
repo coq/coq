@@ -156,7 +156,7 @@ type string_target_kind =
   | Byte
   | PString
 
-type option_kind = Option | Direct
+type option_kind = Direct | Option | Error
 type 'target conversion_kind = 'target * option_kind
 
 (** A postprocessing translation [to_post] can be done after execution
