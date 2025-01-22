@@ -88,6 +88,45 @@ let rectify_hint_constr h = match h with
   | CAppExpl ((qid, None), []) -> Vernacexpr.HintsReference qid
   | _ -> Vernacexpr.HintsConstr c
 
+(* Hint Extern names *)
+
+open Libnames
+
+module FullPath =
+struct
+  type t = full_path
+  let equal = eq_full_path
+  let to_string = string_of_path
+  let repr sp =
+    let dir,id = repr_path sp in
+    id, (DirPath.repr dir)
+end
+
+module KnTab = Nametab.Make(FullPath)(KerName)
+
+type nametab = {
+  tab_cstr : KnTab.t;
+  tab_cstr_rev : full_path KNmap.t;  (* needed? *)
+}
+
+let empty_nametab = {
+  tab_cstr = KnTab.empty;
+  tab_cstr_rev = KNmap.empty;
+}
+
+let nametab = Summary.ref empty_nametab ~name:"hintextern-nametab"
+
+(* todo: pick better names *)
+let push_constructor vis sp kn =
+  let tab = !nametab in
+  let tab_cstr = KnTab.push vis sp kn tab.tab_cstr in
+  let tab_cstr_rev = KNmap.add kn sp tab.tab_cstr_rev in
+  nametab := { tab_cstr; tab_cstr_rev }
+
+let locate_constructor qid =
+  let tab = !nametab in
+  KnTab.locate qid tab.tab_cstr
+
 let interp_hints ~poly h =
   let env = Global.env () in
   let sigma = Evd.from_env env in
@@ -166,5 +205,6 @@ let interp_hints ~poly h =
     let env = Genintern.{(empty_glob_sign ~strict:true env) with ltacvars} in
     let _, tacexp = Genintern.generic_intern env tacexp in
     let globref = Option.cata (fun n -> Some (Nametab.global n)) None name in
+    (* todo: call push_constructor here *)
     HintsExternEntry
       ({Typeclasses.hint_priority = Some pri; hint_pattern = pat}, tacexp, globref)

@@ -64,6 +64,12 @@ let toplevel_selector = G_vernac.toplevel_selector
 let subprf = G_vernac.subprf
 let subprf_with_selector = G_vernac.subprf_with_selector
 
+let lname_of_lident : lident -> lname =
+  CAst.map (fun s -> Name s)
+
+let name_of_ident_decl : ident_decl -> name_decl =
+  on_fst lname_of_lident
+
 }
 
 GRAMMAR EXTEND Gram
@@ -295,7 +301,7 @@ GRAMMAR EXTEND Gram
   ;
   hint: TOP
     [ [ IDENT "Extern"; n = natural; c = OPT Constr.constr_pattern;
-        name = OPT [ "as"; q = qualid -> { q } ];
+        name = OPT [ "as"; id = ident_decl -> { name_of_ident_decl id } ];
         "=>"; tac = Pltac.tactic ->
           { Vernacexpr.HintsExtern (n,c, in_tac tac, name) } ] ]
   ;
