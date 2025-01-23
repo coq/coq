@@ -1,4 +1,0 @@
-- **Added:**
-  APIs `compare` `of_int` and `print` in `Ltac2.Uint63`
-  (`#19197 <https://github.com/coq/coq/pull/19197>`_,
-  by Gaëtan Gilbert).

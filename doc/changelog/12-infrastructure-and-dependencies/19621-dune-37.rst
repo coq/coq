@@ -1,4 +1,0 @@
-- **Changed:**
-  minimal Dune version required to build Coq bumped to 3.8.3
-  (`#19621 <https://github.com/coq/coq/pull/19621>`_,
-  by Pierre Roux).
