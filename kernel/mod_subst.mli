@@ -32,6 +32,10 @@ val add_inline_delta_resolver :
 
 val add_delta_resolver : delta_resolver -> delta_resolver -> delta_resolver
 
+(** Assuming mp ⊆ root(delta), [upcast_delta_resolver mp delta] allows seeing
+    [delta] as a resolver with root = mp. *)
+val upcast_delta_resolver : ModPath.t -> delta_resolver -> delta_resolver
+
 (** Effect of a [delta_resolver] on a module path, on a kernel name *)
 
 val mp_of_delta : delta_resolver -> ModPath.t -> ModPath.t
