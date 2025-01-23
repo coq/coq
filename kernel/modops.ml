@@ -219,41 +219,35 @@ let strengthen_const mp_from l cb resolver =
         const_body = Def (mkConstU (con,u));
         const_body_code = Some (Vmbytegen.compile_alias con) }
 
-let rec strengthen_module mp_from mp_to mb =
-  if mp_in_delta mp_from (mod_delta mb) then mb
+let rec strengthen_module mp mb =
+  if mp_in_delta mp (mod_delta mb) then mb
   else match mod_type mb with
   | NoFunctor struc ->
-    let reso,struc' = strengthen_signature mp_from struc mp_to (mod_delta mb) in
-    let reso = add_mp_delta_resolver mp_from mp_to (add_delta_resolver (mod_delta mb) reso) in
-    strengthen_module_body ~src:mp_to (NoFunctor struc') reso mb
+    let reso, struc' = strengthen_signature mp struc (mod_delta mb) in
+    let reso = add_mp_delta_resolver mp mp (add_delta_resolver (mod_delta mb) reso) in
+    strengthen_module_body ~src:mp (NoFunctor struc') reso mb
   | MoreFunctor _ -> mb
 
-and strengthen_signature mp_from struc mp_to reso = match struc with
-  | [] -> empty_delta_resolver,[]
-  | (l,SFBconst cb) :: rest ->
-    let item' = l,SFBconst (strengthen_const mp_from l cb reso) in
-    let reso',rest' = strengthen_signature mp_from rest mp_to reso in
-    reso',item'::rest'
-  | (_,(SFBmind _|SFBrules _) as item):: rest ->
-    let reso',rest' = strengthen_signature mp_from rest mp_to reso in
-    reso',item::rest'
-  | (l,SFBmodule mb) :: rest ->
-    let mp_from' = MPdot (mp_from,l) in
-    let mp_to' = MPdot(mp_to,l) in
-    let mb' = strengthen_module mp_from' mp_to' mb in
-    let item' = l,SFBmodule mb' in
-    let reso',rest' = strengthen_signature mp_from rest mp_to reso in
-    add_delta_resolver reso' (mod_delta mb), item':: rest'
-  | (_l,SFBmodtype _mty as item) :: rest ->
-    let reso',rest' = strengthen_signature mp_from rest mp_to reso in
-    reso',item::rest'
+and strengthen_signature mp struc reso0 =
+  let strengthen_field reso item = match item with
+  | (l, SFBconst cb) ->
+    reso, (l, SFBconst (strengthen_const mp l cb reso0))
+  | (l, SFBmodule mb) ->
+    let mp' = MPdot (mp, l) in
+    let mb' = strengthen_module mp' mb in
+    let reso = add_delta_resolver (mod_delta mb) reso in
+    reso, (l, SFBmodule mb')
+  | (_, (SFBmind _ | SFBrules _ | SFBmodtype _)) ->
+    reso, item
+  in
+  List.fold_left_map strengthen_field empty_delta_resolver struc
 
 let strengthen mtb mp =
   (* Has mtb already been strengthened ? *)
   if mp_in_delta mp (mod_delta mtb) then mtb
   else match mod_type mtb with
   | NoFunctor struc ->
-    let reso',struc' = strengthen_signature mp struc mp (mod_delta mtb) in
+    let reso', struc' = strengthen_signature mp struc (mod_delta mtb) in
     let reso' = add_delta_resolver (mod_delta mtb) (add_mp_delta_resolver mp mp reso') in
     strengthen_module_type struc' reso' mtb
   | MoreFunctor _ -> mtb
