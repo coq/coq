@@ -1934,7 +1934,7 @@ let build_inversion_problem ~program_mode loc env sigma tms t =
        example is in Vector.caseS', even if this one can probably be
        put in Prop too with some care) *)
     let sigma, s' = Evd.new_sort_variable univ_flexible sigma in
-    let sigma = Evd.set_leq_sort !!env sigma s s' in
+    let sigma = Evd.set_leq_sort sigma s s' in
     sigma, s') in
   let pb =
     { env       = pb_env;
@@ -2146,7 +2146,7 @@ let prepare_predicate ?loc ~program_mode typing_fun env sigma tomatchs arsign ty
       let sigma, rtnsort = Evd.new_sort_variable univ_flexible sigma in
       let sigma, predcclj = typing_fun (Some (mkSort rtnsort)) envar sigma rtntyp in
       let check_elim_sort sigma squash =
-        try Inductiveops.squash_elim_sort !!env sigma squash rtnsort
+        try Inductiveops.squash_elim_sort sigma squash rtnsort
         with UGraph.UniverseInconsistency _ ->
           (* Incompatible constraints are ignored and handled later
              when typing the pattern-matching. *)

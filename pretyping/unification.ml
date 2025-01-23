@@ -1174,8 +1174,8 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
             (try
                let sigma' =
                  if pb == CUMUL
-                 then Evd.set_leq_sort curenv sigma s1 s2
-                 else Evd.set_eq_sort curenv sigma s1 s2
+                 then Evd.set_leq_sort sigma s1 s2
+                 else Evd.set_eq_sort sigma s1 s2
                in push_sigma sigma' substn
              with e when CErrors.noncritical e ->
                error_cannot_unify curenv sigma (fst m,fst n))

@@ -562,8 +562,8 @@ val is_flexible_level : evar_map -> Univ.Level.t -> bool
 
 val normalize_universe_instance : evar_map -> UVars.Instance.t -> UVars.Instance.t
 
-val set_leq_sort : env -> evar_map -> esorts -> esorts -> evar_map
-val set_eq_sort : env -> evar_map -> esorts -> esorts -> evar_map
+val set_leq_sort : evar_map -> esorts -> esorts -> evar_map
+val set_eq_sort : evar_map -> esorts -> esorts -> evar_map
 val set_eq_level : evar_map -> Univ.Level.t -> Univ.Level.t -> evar_map
 val set_leq_level : evar_map -> Univ.Level.t -> Univ.Level.t -> evar_map
 val set_eq_instances : ?flex:bool ->

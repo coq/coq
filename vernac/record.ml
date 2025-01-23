@@ -235,12 +235,12 @@ let def_class_levels ~def ~env_ar_params sigma aritysorts ctors =
   in
   let ctor_sort = Retyping.get_sort_of env_ar_params sigma ctor in
   let is_prop_ctor = EConstr.ESorts.is_prop sigma ctor_sort in
-  let sigma = Evd.set_leq_sort env_ar_params sigma ctor_sort s in
+  let sigma = Evd.set_leq_sort sigma ctor_sort s in
   if Option.cata (Evd.is_flexible_level sigma) false (is_sort_variable sigma s)
   && is_prop_ctor
   then (* We assume that the level in aritysort is not constrained
           and clear it, if it is flexible *)
-    let sigma = Evd.set_eq_sort env_ar_params sigma EConstr.ESorts.set s in
+    let sigma = Evd.set_eq_sort sigma EConstr.ESorts.set s in
     sigma, EConstr.ESorts.prop, projname, ctor
   else
     sigma, s, projname, ctor

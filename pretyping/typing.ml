@@ -198,7 +198,7 @@ let is_correct_arity env sigma c pj ind specif params =
       | None -> sigma, s
       | Some squash ->
         let sigma =
-          try squash_elim_sort env sigma squash s
+          try squash_elim_sort sigma squash s
           with UGraph.UniverseInconsistency _ -> error (Some s)
         in
         sigma, s
@@ -455,7 +455,7 @@ let judge_of_array env sigma u tj defj tyj =
     | [||], [|u|] -> u
     | _ -> assert false
   in
-  let sigma = Evd.set_leq_sort env sigma tyj.utj_type
+  let sigma = Evd.set_leq_sort sigma tyj.utj_type
       (ESorts.make (Sorts.sort_of_univ (Univ.Universe.make ulev)))
   in
   let check_one sigma j = check_actual_type env sigma j tyj.utj_val in
@@ -506,7 +506,7 @@ let check_binder_relevance env sigma s decl =
     | Trivial -> Some sigma
     | Impossible -> None
     | DummySort s' ->
-      match Evd.set_leq_sort env sigma s s' with
+      match Evd.set_leq_sort sigma s s' with
       | sigma -> Some sigma
       | exception UGraph.UniverseInconsistency _ -> None
   in

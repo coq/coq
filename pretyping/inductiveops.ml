@@ -291,33 +291,33 @@ let is_squashed sigma ((_,mip),u) =
       then None
       else Some (SquashToQuality indq)
 
-let squash_elim_sort env sigma squash rtnsort = match squash with
+let squash_elim_sort sigma squash rtnsort = match squash with
 | SquashToSet ->
   (* Squashed inductive in Set, only happens with impredicative Set *)
   begin match ESorts.kind sigma rtnsort with
   | Set | SProp | Prop -> sigma
   | QSort _ | Type _ ->
-    Evd.set_eq_sort env sigma rtnsort ESorts.set
+    Evd.set_eq_sort sigma rtnsort ESorts.set
   end
 | SquashToQuality (QConstant QProp) ->
   (* Squashed inductive in Prop, return sort must be Prop or SProp *)
   begin match ESorts.kind sigma rtnsort with
   | SProp | Prop -> sigma
   | QSort _ | Type _ | Set ->
-    Evd.set_eq_sort env sigma rtnsort ESorts.prop
+    Evd.set_eq_sort sigma rtnsort ESorts.prop
   end
 | SquashToQuality (QConstant QSProp) ->
   (* Squashed inductive in SProp, return sort must be SProp. *)
   begin match ESorts.kind sigma rtnsort with
   | SProp -> sigma
   | Type _ | Set | Prop | QSort _ ->
-    Evd.set_eq_sort env sigma rtnsort ESorts.sprop
+    Evd.set_eq_sort sigma rtnsort ESorts.sprop
   end
 | SquashToQuality (QConstant QType) ->
   (* Sort poly squash to type *)
-  Evd.set_leq_sort env sigma ESorts.set rtnsort
+  Evd.set_leq_sort sigma ESorts.set rtnsort
 | SquashToQuality (QVar q) ->
-  Evd.set_leq_sort env sigma (ESorts.make (Sorts.qsort q Univ.Universe.type0)) rtnsort
+  Evd.set_leq_sort sigma (ESorts.make (Sorts.qsort q Univ.Universe.type0)) rtnsort
 
 let is_allowed_elimination sigma ((mib,_),_ as specifu) s =
   let open Sorts in
@@ -346,7 +346,7 @@ let make_allowed_elimination env sigma ((mib,_),_ as specifu) s =
       begin match EConstr.ESorts.kind sigma s with
       | SProp|Prop|Set -> Some sigma
       | QSort _ | Type _ ->
-        try Some (Evd.set_leq_sort env sigma s ESorts.set)
+        try Some (Evd.set_leq_sort sigma s ESorts.set)
         with UGraph.UniverseInconsistency _ -> None
       end
     | Some (SquashToQuality indq) ->
@@ -354,7 +354,7 @@ let make_allowed_elimination env sigma ((mib,_),_ as specifu) s =
       if quality_leq sq indq then Some sigma
       else
         let mk q = ESorts.make @@ Sorts.make q Univ.Universe.type0 in
-        try Some (Evd.set_leq_sort env sigma (mk sq) (mk indq))
+        try Some (Evd.set_leq_sort sigma (mk sq) (mk indq))
         with UGraph.UniverseInconsistency _ -> None
 
 (* XXX questionable for sort poly inductives *)
@@ -750,7 +750,7 @@ let rec instantiate_universes env evdref scl is = function
         else
           (* unconstrained sort: replace by fresh universe *)
           let evm, s = Evd.new_sort_variable Evd.univ_flexible !evdref in
-          let evm = Evd.set_leq_sort env evm s (EConstr.ESorts.make (Sorts.sort_of_univ u)) in
+          let evm = Evd.set_leq_sort evm s (EConstr.ESorts.make (Sorts.sort_of_univ u)) in
             evdref := evm; s
       in
       let ctx = EConstr.of_rel_context ctx in

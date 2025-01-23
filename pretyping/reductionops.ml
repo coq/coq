@@ -1263,16 +1263,16 @@ let is_conv_leq ?(reds=TransparentState.full) env sigma x y =
 let check_conv ?(pb=Conversion.CUMUL) ?(ts=TransparentState.full) env sigma x y =
   is_fconv ~reds:ts pb env sigma x y
 
-let sigma_compare_sorts env pb s0 s1 sigma =
+let sigma_compare_sorts _env pb s0 s1 sigma =
   match pb with
   | Conversion.CONV ->
     begin
-      try Result.Ok (Evd.set_eq_sort env sigma (ESorts.make s0) (ESorts.make s1))
+      try Result.Ok (Evd.set_eq_sort sigma (ESorts.make s0) (ESorts.make s1))
       with UGraph.UniverseInconsistency err -> Result.Error (Some err)
     end
   | Conversion.CUMUL ->
     begin
-      try Result.Ok (Evd.set_leq_sort env sigma (ESorts.make s0) (ESorts.make s1))
+      try Result.Ok (Evd.set_leq_sort sigma (ESorts.make s0) (ESorts.make s1))
       with UGraph.UniverseInconsistency err -> Result.Error (Some err)
     end
 
