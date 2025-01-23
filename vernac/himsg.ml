@@ -1448,11 +1448,6 @@ let error_inductive_missing_constraints env (us,ind_univ) =
 
 (* Recursion schemes errors *)
 
-let error_not_allowed_dependent_analysis env isrec i =
-  str "Dependent " ++ str (if isrec then "induction" else "case analysis") ++
-  strbrk " is not allowed for inductive definition " ++
-  pr_inductive env i ++ str "."
-
 let error_not_mutual_in_scheme env ind ind' =
   if QInd.equal env ind ind' then
     str "The inductive type " ++ pr_inductive env ind ++
@@ -1510,7 +1505,7 @@ let explain_recursion_scheme_error env = function
       (* error_not_allowed_case_analysis env isrec k i *)
   | NotMutualInScheme (ind,ind')-> error_not_mutual_in_scheme env ind ind'
   | NotAllowedDependentAnalysis (isrec, i) ->
-     error_not_allowed_dependent_analysis env isrec i
+     Inductiveops.error_not_allowed_dependent_analysis env isrec i
 
 (* Pattern-matching errors *)
 

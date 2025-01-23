@@ -237,3 +237,5 @@ val type_of_inductive_knowing_conclusion :
 
 (********************)
 val control_only_guard : env -> Evd.evar_map -> EConstr.types -> unit
+
+val error_not_allowed_dependent_analysis : Environ.env -> bool -> Names.inductive -> Pp.t
