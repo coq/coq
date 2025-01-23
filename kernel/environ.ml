@@ -1043,3 +1043,13 @@ struct
   let hash _env c = GlobRef.CanOrd.hash c
   let canonize _env c = GlobRef.canonize c
 end
+
+module Internal = struct
+  let for_checking_pseudo_sort_poly env =
+    let q = Sorts.QVar.make_var 0 in
+    assert (not (Sorts.QVar.Set.mem q env.env_qualities));
+    let env = map_universes UGraph.Internal.for_checking_pseudo_sort_poly env in
+    { env with env_qualities = Sorts.QVar.Set.add q env.env_qualities }
+
+  let is_above_prop env q = UGraph.Internal.is_above_prop env.env_universes q
+end

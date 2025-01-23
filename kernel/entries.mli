@@ -23,7 +23,10 @@ type universes_entry =
 type inductive_universes_entry =
   | Monomorphic_ind_entry
   | Polymorphic_ind_entry of UVars.UContext.t
-  | Template_ind_entry of Univ.ContextSet.t
+  | Template_ind_entry of {
+      univs : Univ.ContextSet.t;
+      pseudo_sort_poly : Declarations.template_pseudo_sort_poly;
+    }
 
 type variance_entry = UVars.Variance.t option array
 

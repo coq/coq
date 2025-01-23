@@ -846,7 +846,7 @@ let interp_structure_core (entry:RecordEntry.t) ~projections_kind ~indlocs data 
     | Monomorphic_ind_entry ->
       (UState.Monomorphic_entry entry.global_univs, entry.ubinders)
     | Template_ind_entry ctx ->
-      (UState.Monomorphic_entry (Univ.ContextSet.union entry.global_univs ctx), entry.ubinders)
+      (UState.Monomorphic_entry (Univ.ContextSet.union entry.global_univs ctx.univs), entry.ubinders)
     | Polymorphic_ind_entry uctx ->
       (UState.Polymorphic_entry uctx, UnivNames.empty_binders)
   in

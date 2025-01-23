@@ -197,8 +197,8 @@ let print_if_is_coercion ref =
 let template_poly_variables env ind =
   let mib, mip = Inductive.lookup_mind_specif env ind in
   match mib.mind_template with
-  | None -> []
-  | Some { template_param_arguments } ->
+  | None -> assert false
+  | Some { template_param_arguments; template_pseudo_sort_poly } ->
     let rec fold acc ctx template = match ctx, template with
       | _, [] -> acc
       | LocalDef _ :: ctx, _ -> fold acc ctx template
@@ -210,27 +210,36 @@ let template_poly_variables env ind =
         fold acc ctx template
       | [], _ :: _ -> assert false
     in
-    Univ.Level.Set.elements @@
-    fold Univ.Level.Set.empty (List.rev mib.mind_params_ctxt) template_param_arguments
-
+    let vars =
+      Univ.Level.Set.elements @@
+      fold Univ.Level.Set.empty (List.rev mib.mind_params_ctxt) template_param_arguments
+    in
+    vars, template_pseudo_sort_poly
 
 let get_template_poly_variables env = function
   | GlobRef.IndRef ind | ConstructRef (ind,_) -> template_poly_variables env ind
-  | VarRef _ | ConstRef _ -> []
+  | VarRef _ | ConstRef _ -> assert false
 
-let pr_template_variables = function
-  | [] -> mt ()
-  | vars -> str " on " ++ prlist_with_sep spc UnivNames.pr_level_with_global_universes vars
+let pr_template_variables env ref =
+  let vars, pseudo_sort_poly = get_template_poly_variables env ref in
+  let pseudo_sort_poly = match pseudo_sort_poly with
+    | TemplatePseudoSortPoly -> true
+    | TemplateUnivOnly -> false
+  in
+  str " on " ++ prlist_with_sep spc UnivNames.pr_level_with_global_universes vars
+  ++ spc() ++
+  (if pseudo_sort_poly
+   then str "(can be instantiated to Prop)"
+   else str "(cannot be instantiated to Prop)")
 
 let print_polymorphism env ref =
   let poly = Environ.is_polymorphic env ref in
   let template_poly = Environ.is_template_polymorphic env ref in
-  let template_variables = get_template_poly_variables env ref in
   [ pr_global ref ++ str " is " ++
       (if poly then str "universe polymorphic"
        else if template_poly then
          str "template universe polymorphic"
-         ++ if !Detyping.print_universes then h (pr_template_variables template_variables) else mt()
+         ++ if !Detyping.print_universes then h (pr_template_variables env ref) else mt()
        else str "not universe polymorphic") ]
 
 let print_squash env ref udecl = match ref with

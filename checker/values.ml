@@ -327,7 +327,7 @@ let v_template_arity =
   v_tuple "template_arity" [|v_sort|]
 
 let v_template_universes =
-  v_tuple "template_universes" [|v_list v_bool;v_context_set|]
+  v_tuple "template_universes" [|v_list v_bool;v_context_set; v_bool|]
 
 let v_primitive =
   v_enum "primitive" 63 (* Number of constructors of the CPrimitives.t type *)
