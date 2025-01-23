@@ -1133,7 +1133,7 @@ type hint_locality = Libobject.locality = Local | Export | SuperGlobal
 
 type hint_obj = {
   hint_local : hint_locality;
-  hint_name : string;
+  db_name : string;
   hint_action : hint_action;
 }
 
@@ -1160,8 +1160,8 @@ let superglobal h = match h.hint_local with
   | SuperGlobal -> true
   | Local | Export -> false
 
-let load_autohint _ h =
-  let name = h.hint_name in
+let load_autohint i ((sp,kn), h) =  (* TODO: what should I have here? *)
+  let name = h.db_name in
   let superglobal = superglobal h in
   match h.hint_action with
   | AddTransparency { grefs; state } ->
@@ -1175,28 +1175,26 @@ let load_autohint _ h =
   | AddMode { gref; mode } ->
     if superglobal then add_mode name gref mode
 
-let open_autohint i h =
+let open_autohint i ((sp,kn), h) =
   let superglobal = superglobal h in
   if Int.equal i 1 then match h.hint_action with
   | AddHints hints ->
-    let () =
-      if not superglobal then
-        (* Import-bound hints must be declared when not imported yet *)
-        let filter (_, h) = not @@ KNmap.mem h.code.uid !statustable in
-        add_hint h.hint_name (List.filter filter hints)
-    in
+    if not superglobal then
+      (* Import-bound hints must be declared when not imported yet *)
+      let filter (_, h) = not @@ KNmap.mem h.code.uid !statustable in
+      add_hint h.db_name (List.filter filter hints);
     let add (_, hint) = statustable := KNmap.add hint.code.uid true !statustable in
     List.iter add hints
   | AddCut paths ->
-    if not superglobal then add_cut h.hint_name paths
+    if not superglobal then add_cut h.db_name paths
   | AddTransparency { grefs; state } ->
-    if not superglobal then add_transparency h.hint_name grefs state
+    if not superglobal then add_transparency h.db_name grefs state
   | RemoveHints hints ->
-    if not superglobal then remove_hint h.hint_name hints
+    if not superglobal then remove_hint h.db_name hints
   | AddMode { gref; mode } ->
-    if not superglobal then add_mode h.hint_name gref mode
+    if not superglobal then add_mode h.db_name gref mode
 
-let cache_autohint o =
+let cache_autohint ((sp,kn), o) =
   load_autohint 1 o; open_autohint 1 o
 
 let subst_autohint (subst, obj) =
@@ -1332,16 +1330,18 @@ let discharge_autohint obj =
 
 let hint_cat = create_category "hints"
 
-let inAutoHint : hint_obj -> obj =
-  declare_object
+let (objConstant : (Id.t * hint_obj) Libobject.Dyn.tag) =
+  declare_named_object_full
     {(default_object "AUTOHINT") with
      cache_function = cache_autohint;
-     load_function = load_autohint;
-     open_function = simple_open ~cat:hint_cat open_autohint;
+     load_function = load_autohint;  (* Until *)
+     open_function = simple_open ~cat:hint_cat open_autohint;  (* Exactly *)
      subst_function = subst_autohint;
      classify_function = classify_autohint;
      discharge_function = discharge_autohint;
     }
+
+let inAutoHint v = Libobject.Dyn.Easy.inj v objConstant
 
 let check_locality locality =
   let not_local what =
@@ -1358,7 +1358,7 @@ let check_locality locality =
 let make_hint ~locality name action =
   {
   hint_local = locality;
-  hint_name = name;
+  db_name = name;
   hint_action = action;
 }
 
@@ -1367,7 +1367,7 @@ let remove_hints ~locality dbnames grs =
   let dbnames = if List.is_empty dbnames then ["core"] else dbnames in
     List.iter
       (fun dbname ->
-        let hint = make_hint ~locality dbname (RemoveHints grs) in
+        let hint = make_hint ~locality dbname (RemoveHints grs) in (* ??? *)
         Lib.add_leaf (inAutoHint hint))
       dbnames
 
