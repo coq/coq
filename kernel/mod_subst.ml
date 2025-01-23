@@ -46,6 +46,13 @@ module Deltamap = struct
     MPmap.fold fmp mm (KNmap.fold fkn km i)
   let join map1 map2 = fold add_mp add_kn map1 map2
 
+  (** if mp0 ⊆ root, we can see a resolver on root as a resolver on mp *)
+  let upcast mp0 (mm, km) =
+    let check mp = assert (ModPath.subpath mp0 mp) in
+    let () = MPmap.iter (fun mp _ -> check mp) mm in
+    let () = KNmap.iter (fun kn _ -> check (KerName.modpath kn)) km in
+    (mm, km)
+
   (** keep only data that is relevant for names with a modpath ⊇ root *)
   let reroot root (mm, km) =
     (* filter the modpaths *)
@@ -99,6 +106,8 @@ end
 type delta_resolver = Deltamap.t
 
 let empty_delta_resolver = Deltamap.empty
+
+let upcast_delta_resolver = Deltamap.upcast
 
 module Umap :
   sig
