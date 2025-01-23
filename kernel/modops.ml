@@ -228,24 +228,19 @@ let rec strengthen_module mp mb =
     strengthen_module_body ~src:mp (NoFunctor struc') reso mb
   | MoreFunctor _ -> mb
 
-and strengthen_signature mp struc reso = match struc with
-  | [] -> empty_delta_resolver,[]
-  | (l,SFBconst cb) :: rest ->
-    let item' = l,SFBconst (strengthen_const mp l cb reso) in
-    let reso', rest' = strengthen_signature mp rest reso in
-    reso',item'::rest'
-  | (_,(SFBmind _|SFBrules _) as item):: rest ->
-    let reso', rest' = strengthen_signature mp rest reso in
-    reso',item::rest'
-  | (l,SFBmodule mb) :: rest ->
+and strengthen_signature mp struc reso0 =
+  let strengthen_field reso item = match item with
+  | (l, SFBconst cb) ->
+    reso, (l, SFBconst (strengthen_const mp l cb reso0))
+  | (l, SFBmodule mb) ->
     let mp' = MPdot (mp, l) in
     let mb' = strengthen_module mp' mb in
-    let item' = l,SFBmodule mb' in
-    let reso', rest' = strengthen_signature mp rest reso in
-    add_delta_resolver reso' (mod_delta mb), item':: rest'
-  | (_l,SFBmodtype _mty as item) :: rest ->
-    let reso', rest' = strengthen_signature mp rest reso in
-    reso',item::rest'
+    let reso = add_delta_resolver (mod_delta mb) reso in
+    reso, (l, SFBmodule mb')
+  | (_, (SFBmind _ | SFBrules _ | SFBmodtype _)) ->
+    reso, item
+  in
+  List.fold_left_map strengthen_field empty_delta_resolver struc
 
 let strengthen mtb mp =
   (* Has mtb already been strengthened ? *)
