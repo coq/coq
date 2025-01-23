@@ -387,12 +387,6 @@ project http "https://github.com/liyishuai/coq-http" "master"
 # Contact @liyishuai on github
 
 ########################################################################
-# paramcoq
-########################################################################
-project paramcoq "https://github.com/coq-community/paramcoq" "master"
-# Contact @proux01 on github
-
-########################################################################
 # relation_algebra
 ########################################################################
 project relation_algebra "https://github.com/damien-pous/relation-algebra" "master"

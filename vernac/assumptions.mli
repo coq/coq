@@ -19,7 +19,7 @@ open Printer
     sealed inside opaque modules. Do not try to do anything fancy with those
     terms apart from printing them, otherwise demons may fly out of your nose.
 
-    NOTE: this function is used in the plugin paramcoq.
+    NOTE: this function was used in the plugin paramcoq (which no longer exists).
 *)
 val traverse :
   Global.indirect_accessor -> Label.t -> constr ->
