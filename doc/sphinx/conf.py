@@ -199,7 +199,7 @@ html_theme = 'sphinx_rtd_theme'
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-PDF_URL = "https://github.com/coq/coq/releases/download/V{version}/coq-{version}-reference-manual.pdf"
+PDF_URL = "https://github.com/coq/coq/releases/download/V{version}/rocq-{version}-reference-manual.pdf"
 html_theme_options = {
     'collapse_navigation': False
 }
@@ -375,11 +375,11 @@ latex_additional_files = [
     "_static/coqnotations.sty"
 ]
 
-latex_documents = [('index', 'CoqRefMan.tex', 'The Coq Reference Manual', author, 'manual')]
+latex_documents = [('index', f'rocq-{version}-reference-manual.tex', 'The Rocq Prover Reference Manual', author, 'manual')]
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
-# latex_logo = "../../ide/coq.png"
+latex_logo = "../../ide/rocqide/coq.png"
 
 # If true, show page references after internal links.
 #latex_show_pagerefs = False
