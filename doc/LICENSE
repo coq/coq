@@ -1,8 +1,8 @@
-The Coq Reference Manual is a collective work from the Coq Development
-Team whose members are listed in the file CREDITS of the Coq source
-package. All related documents (the LaTeX and BibTeX sources, the
+The Rocq Reference Manual is a collective work from the Rocq Development
+Team whose members are listed on https://rocq-prover.org/governance.
+All related documents (the LaTeX and BibTeX sources, the
 embedded png files, and the PostScript, PDF and html outputs) are
-copyright (c) 1999-2019, Inria, CNRS and contributors, with the
+copyright Inria, CNRS and contributors, with the
 exception of the Ubuntu font file UbuntuMono-B.ttf, which is Copyright
 2010,2011 Canonical Ltd and licensed under the Ubuntu font license,
 version 1.0
@@ -17,10 +17,9 @@ the Open Publication License, v1.0 or later (the latest version is
 presently available at http://www.opencontent.org/openpub/).  Options A
 and B are *not* elected.
 
-The Coq Standard Library is a collective work from the Coq Development
-Team whose members are listed in the file CREDITS of the Coq source
-package. All related documents (the Coq vernacular source files and
-the PostScript, PDF and html outputs) are copyright (c) 1999-2019,
+The Rocq Core Library is a collective work from the Rocq Development
+Team. All related documents (the Rocq vernacular source files and
+the PostScript, PDF and html outputs) are copyright
 Inria, CNRS and contributors. The material connected to the Standard
 Library is distributed under the terms of the Lesser General Public
 License version 2.1 or later.
