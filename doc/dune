@@ -58,6 +58,7 @@
   (source_tree sphinx)
   (source_tree tools/coqrst)
   ../config/coq_config.py
+  ../ide/rocqide/coq.png
   unreleased.rst
   (env_var SPHINXWARNOPT)
   (env_var COQRST_EXTRA))
