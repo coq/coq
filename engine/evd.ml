@@ -1304,7 +1304,7 @@ let pr_shelf evd =
   if List.is_empty evd.shelf then str"(empty stack)"
   else prlist_with_sep (fun () -> str"||") (prlist_with_sep spc Evar.print) evd.shelf
 
-let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?(relevance = Sorts.Relevant)
+let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ~relevance
   ?(abstract_arguments = Abstraction.identity) ?candidates
   ?name ?typeclass_candidate sign evd typ =
   let evi = {

@@ -1119,6 +1119,8 @@ module Goal = struct
   let sigma {sigma} = sigma
   let hyps {env} = EConstr.named_context env
   let concl {concl} = concl
+  let relevance {sigma; self} =
+    Evd.evar_relevance (Evd.find_undefined sigma self)
 
   let gmake_with info env sigma goal state =
     { env = Environ.reset_with_named_context (Evd.evar_filtered_hyps info) env ;

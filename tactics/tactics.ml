@@ -265,14 +265,14 @@ let error_replacing_dependency env sigma id err inglobal =
 
 (** This tactic creates a partial proof realizing the introduction rule, but
     does not check anything. *)
-let unsafe_intro env decl b =
+let unsafe_intro env decl ~relevance b =
   Refine.refine_with_principal ~typecheck:false begin fun sigma ->
     let ctx = named_context_val env in
     let nctx = push_named_context_val decl ctx in
     let inst = EConstr.identity_subst_val (named_context_val env) in
     let ninst = SList.cons (mkRel 1) inst in
     let nb = subst1 (mkVar (NamedDecl.get_id decl)) b in
-    let (sigma, ev) = new_pure_evar nctx sigma nb in
+    let (sigma, ev) = new_pure_evar nctx sigma ~relevance nb in
     (sigma, mkLambda_or_LetIn (NamedDecl.to_rel_decl decl) (mkEvar (ev, ninst)),
      Some ev)
   end
@@ -280,6 +280,7 @@ let unsafe_intro env decl b =
 let introduction id =
   Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
+    let relevance = Proofview.Goal.relevance gl in
     let sigma = Tacmach.project gl in
     let hyps = named_context_val (Proofview.Goal.env gl) in
     let env = Proofview.Goal.env gl in
@@ -288,8 +289,8 @@ let introduction id =
     in
     let open Context.Named.Declaration in
     match EConstr.kind sigma concl with
-    | Prod (id0, t, b) -> unsafe_intro env (LocalAssum ({id0 with binder_name=id}, t)) b
-    | LetIn (id0, c, t, b) -> unsafe_intro env (LocalDef ({id0 with binder_name=id}, c, t)) b
+    | Prod (id0, t, b) -> unsafe_intro env (LocalAssum ({id0 with binder_name=id}, t)) ~relevance b
+    | LetIn (id0, c, t, b) -> unsafe_intro env (LocalDef ({id0 with binder_name=id}, c, t)) ~relevance b
     | _ -> raise (RefinerError (env, sigma, IntroNeedsProduct))
   end
 
@@ -422,6 +423,7 @@ let rename_hyp repl =
       let env = Proofview.Goal.env gl in
       let sign = named_context_val env in
       let sigma = Proofview.Goal.sigma gl in
+      let relevance = Proofview.Goal.relevance gl in
       (* Check that we do not mess variables *)
       let vars = ids_of_named_context_val sign in
       let () =
@@ -454,7 +456,7 @@ let rename_hyp repl =
       in
       let instance = List.fold_right2 fold ohyps nhyps SList.empty in
       Refine.refine_with_principal ~typecheck:false begin fun sigma ->
-        let sigma, ev = Evarutil.new_pure_evar nctx sigma nconcl in
+        let sigma, ev = Evarutil.new_pure_evar nctx sigma ~relevance nconcl in
         sigma, mkEvar (ev, instance), Some ev
       end
     end
@@ -1208,6 +1210,7 @@ let intro_forthcoming_last_then_gen avoid dep_flag bound n tac =
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
     let concl = Proofview.Goal.concl gl in
+    let relevance = Proofview.Goal.relevance gl in
     let avoid =
       let avoid' = ids_of_named_context_val (named_context_val env) in
       if Id.Set.is_empty avoid then avoid' else Id.Set.union avoid' avoid
@@ -1243,7 +1246,7 @@ let intro_forthcoming_last_then_gen avoid dep_flag bound n tac =
       let inst = SList.defaultn (List.length @@ Environ.named_context env) SList.empty in
       let rels = List.init (List.length decls) (fun i -> mkRel (i + 1)) in
       let ninst = List.fold_right (fun c accu -> SList.cons c accu) rels inst in
-      let (sigma, ev) = new_pure_evar nctx sigma nconcl in
+      let (sigma, ev) = new_pure_evar nctx sigma ~relevance nconcl in
       (sigma, it_mkLambda_or_LetIn (mkEvar (ev, ninst)) decls,
        Some ev)
     end <*> tac ids
@@ -2803,6 +2806,7 @@ let pose_tac na c =
     let env = Proofview.Goal.env gl in
     let hyps = named_context_val env in
     let concl = Proofview.Goal.concl gl in
+    let relevance = Proofview.Goal.relevance gl in
     let t = typ_of env sigma c in
     let rel = Retyping.relevance_of_term env sigma c in
     let (sigma, t) = Evarsolve.refresh_universes ~onlyalg:true (Some false) env sigma t in
@@ -2820,7 +2824,7 @@ let pose_tac na c =
     Refine.refine ~typecheck:false begin fun sigma ->
       let id = make_annot id rel in
       let nhyps = EConstr.push_named_context_val (NamedDecl.LocalDef (id, c, t)) hyps in
-      let (sigma, ev) = Evarutil.new_pure_evar nhyps sigma concl in
+      let (sigma, ev) = Evarutil.new_pure_evar nhyps sigma ~relevance concl in
       let inst = EConstr.identity_subst_val hyps in
       let body = mkEvar (ev, SList.cons (mkRel 1) inst) in
       (sigma, mkLetIn (map_annot Name.mk_name id, c, t, body))

@@ -51,7 +51,7 @@ val new_evar :
 (** Alias of {!Evd.new_pure_evar} *)
 val new_pure_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?relevance:ERelevance.t ->
+  relevance:ERelevance.t ->
   ?abstract_arguments:Abstraction.t -> ?candidates:constr list ->
   ?name:Id.t ->
   ?typeclass_candidate:bool ->

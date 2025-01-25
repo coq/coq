@@ -189,7 +189,7 @@ val has_shelved : evar_map -> bool
 
 val new_pure_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?relevance:erelevance ->
+  relevance:erelevance ->
   ?abstract_arguments:Abstraction.t -> ?candidates:econstr list ->
   ?name:Id.t ->
   ?typeclass_candidate:bool ->

@@ -1711,7 +1711,8 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
               refresh_universes ~status:Evd.univ_flexible (Some true)
                 env_evar_unf evd evty
             else evd, evty in
-          let (evd, evk) = new_pure_evar sign evd evty ~filter in
+          (* XXX incorrect relevance *)
+          let (evd, evk) = new_pure_evar sign evd ~relevance:ERelevance.relevant evty ~filter in
           let EvarInfo evi = Evd.find evd evk in
           let instance = Evd.evar_identity_subst evi in
           let fixed = Evar.Set.add evk fixed in

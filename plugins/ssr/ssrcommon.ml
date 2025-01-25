@@ -862,10 +862,11 @@ let applyn ?(beta=false) ~with_evars ?(first_goes_last=false) n t =
         | 0 -> (t, args, sigma)
         | n ->
           match EConstr.kind sigma bo with
-          | Lambda (_, ty, bo) ->
+          | Lambda (na, ty, bo) ->
             let () = if not (EConstr.Vars.closed0 sigma ty) then raise dependent_apply_error in
             let ty = Reductionops.nf_betaiota env sigma ty in
-            let (sigma, evk) = Evarutil.new_pure_evar ~typeclass_candidate:false hyps sigma ty in
+            let relevance = na.binder_relevance in
+            let (sigma, evk) = Evarutil.new_pure_evar ~typeclass_candidate:false hyps sigma ~relevance ty in
             loop sigma bo (evk :: args) (n - 1)
           | _ -> assert false
       in
@@ -1162,7 +1163,7 @@ let tacTYPEOF c = Goal.enter_one ~__LOC__ (fun g ->
 
 (** This tactic creates a partial proof realizing the introduction rule, but
     does not check anything. *)
-let unsafe_intro env decl b =
+let unsafe_intro env decl ~relevance b =
   let open Context.Named.Declaration in
   Refine.refine_with_principal ~typecheck:false begin fun sigma ->
     let ctx = Environ.named_context_val env in
@@ -1170,7 +1171,7 @@ let unsafe_intro env decl b =
     let inst = EConstr.identity_subst_val (Environ.named_context_val env) in
     let ninst = SList.cons (EConstr.mkRel 1) inst in
     let nb = EConstr.Vars.subst1 (EConstr.mkVar (get_id decl)) b in
-    let sigma, ev = Evarutil.new_pure_evar nctx sigma nb in
+    let sigma, ev = Evarutil.new_pure_evar nctx sigma ~relevance nb in
     sigma, EConstr.mkNamedLambda_or_LetIn sigma decl (EConstr.mkEvar (ev, ninst)), Some ev
   end
 
@@ -1219,7 +1220,7 @@ let-in even after reduction, it fails. In case of success, the original name
 and final id are passed to the continuation [k] which gets evaluated. *)
 let tclINTRO ~id ~conclusion:k = Goal.enter begin fun gl ->
   let open Context in
-  let env, sigma, g = Goal.(env gl, sigma gl, concl gl) in
+  let env, sigma, g, relevance = Goal.(env gl, sigma gl, concl gl, relevance gl) in
   let decl, t, no_red = decompose_assum env sigma g in
   let original_name = Rel.Declaration.get_name decl in
   let already_used = Tacmach.pf_ids_of_hyps gl in
@@ -1235,7 +1236,7 @@ let tclINTRO ~id ~conclusion:k = Goal.enter begin fun gl ->
   in
   if List.mem id already_used then
     errorstrm Pp.(Id.print id ++ str" already used");
-  unsafe_intro env (set_decl_id id decl) t <*>
+  unsafe_intro env (set_decl_id id decl) ~relevance t <*>
   (if no_red then tclUNIT () else tclFULL_BETAIOTA) <*>
   k ~orig_name:original_name ~new_name:id
 end

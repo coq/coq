@@ -816,7 +816,8 @@ let make_projectable_subst aliases sigma sign args =
  *)
 
 let define_evar_from_virtual_equation define_fun env evd src t_in_env ty_t_in_sign sign filter inst_in_env =
-  let (evd, evk) = new_pure_evar sign evd ty_t_in_sign ~filter ~src in
+  assert (EConstr.isSort evd ty_t_in_sign);
+  let (evd, evk) = new_pure_evar sign evd ~relevance:ERelevance.relevant ty_t_in_sign ~filter ~src in
   let t_in_env = whd_evar evd t_in_env in
   let evd = define_fun env evd None (evk, inst_in_env) t_in_env in
   let EvarInfo evi = Evd.find evd evk in
@@ -879,14 +880,15 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
       rel_sign
       (sign1,filter1,args1,inst_in_sign,env1,evd,avoid)
   in
+  let s = Retyping.get_sort_of env evd ty_in_env in
   let evd,ev2ty_in_sign =
-    let s = Retyping.get_sort_of env evd ty_in_env in
     let evd,ty_t_in_sign = refresh_universes
      ~status:univ_flexible (Some false) env evd (mkSort s) in
     define_evar_from_virtual_equation define_fun env evd src ty_in_env
       ty_t_in_sign sign2 filter2 inst2_in_env in
   let (evd, ev2_in_sign) =
-    new_pure_evar sign2 evd ev2ty_in_sign ~filter:filter2 ~src in
+    (* XXX is this relevance correct? I don't really understand this code *)
+    new_pure_evar sign2 evd ~relevance:(ESorts.relevance_of_sort s) ev2ty_in_sign ~filter:filter2 ~src in
   let ev2_in_env = (ev2_in_sign, inst2_in_env) in
   (evd, mkEvar (ev2_in_sign, inst2_in_sign), ev2_in_env)
 
