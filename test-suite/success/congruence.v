@@ -18,7 +18,6 @@ Inductive ExtractTest (A:Type) (F:nat->Type) (I:Inner): Inner -> Inner -> unit -
     ExtractTest A F I (innerI_Type (if b then unit else nat)) innerI_extra tt
 .
 
-Set Debug "dependent_congruence".
 
 Lemma test_extract_f_x_from_index A F x f t1 t2 : extract_f_x_from_index A F innerI_extra x f t1 = extract_f_x_from_index A F innerI_extra x f t2 -> t1 = t2.
 Proof.
@@ -39,19 +38,23 @@ Proof.
     congruence.
 Qed.
 
-Require Import Vector.
+Inductive Vector (A : Type) : nat -> Type :=
+| nil : Vector A 0
+| cons : forall (h : A) (n : nat) (t : Vector A n), Vector A (S n).
 
 Local Notation "[ ]" := (nil _) (format "[ ]").
 Local Notation "h :: t" := (cons _ h _ t) (at level 60, right associativity).
 
-Lemma test_vec_eq (A:Type) (x:A) (n:nat) (v v' : Vector.t A n) : (x::v = x::v') -> v = v'.
+Lemma test_vec_eq (A:Type) (x:A) (n:nat) (v v' : Vector A n) : (x::v = x::v') -> v = v'.
 Proof.
     congruence.
 Qed.
 
-Require Import Fin.
+Inductive Fin : nat -> Set :=
+| F1 : forall {n}, Fin (S n)
+| FS : forall {n}, Fin n -> Fin (S n).
 
-Lemma test_fin_eq (n:nat) (f f': Fin.t n) : FS f = FS f' -> f = f'.
+Lemma test_fin_eq (n:nat) (f f': Fin n) : FS f = FS f' -> f = f'.
 Proof.
     congruence.
 Qed.
@@ -64,7 +67,6 @@ Proof.
   intros.
   congruence.
 Qed.
-
 
 Inductive wrap1 (X : unit -> Type) : unit -> forall (v : unit), X v -> Type :=
   | wrap1_zero (x : X tt) : wrap1 X tt tt x
