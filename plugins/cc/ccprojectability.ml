@@ -8,32 +8,57 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-let print env sigma t = Printer.pr_econstr_env env sigma t
+
+(* This represents how a term is getting extracted from another term *)
+type term_extraction =
+(* The term that is getting extracted *)
+| Id of EConstr.t
+(* The rel term that is getting extracted, the rel term from wich its getting extracted, The constructor from which to extract, Type of the Cosntructor that is getting extracted, index (1 based) to extract from, further extraction *)
+| Extraction of (EConstr.t * EConstr.t * (Names.constructor * EConstr.EInstance.t) * EConstr.t * int * term_extraction)
+
+(* this represents how a term is getting composed from an inductive type *)
+type term_composition =
+(* env type to compose *)
+| FromEnv of EConstr.t
+(* env type to compose, env parameter term to extract from, index (1 based) of parameter, extraction for the given type*)
+| FromParameter of EConstr.t * EConstr.t * int * term_extraction
+(* env type to compose, rel index term to extract from, index (1 based) index to compose from, extraction for the given type *)
+| FromIndex of EConstr.t * EConstr.t * int * term_extraction
+(* (env f type to compose, composition for f), array of (env arg type to compose, composition for arg)*)
+| Composition of (EConstr.t * term_composition) * (EConstr.t * term_composition) array
+
+(*type possible projection*)
+type projection_type =
+(* Simple for simply typed fields, *)
+| Simple
+(* Dependen_Ectractable for dependently typed fields for wich a type term_composition exists *)
+| Dependent_Extractable of term_composition
+(* NotProjectable for dependently typed fields for which currently no projection generation is known, simply typed generation is getting tried anyways*)
+| NotProjectable
 
 (*get the ith (1 based) argument in a series of prods*)
 let get_ith_arg sigma i term =
-  let (rels_to_arg,rest) = EConstr.decompose_prod_n sigma (i-1) term in
-  let (arg_name,arg_type,rest) = EConstr.destProd sigma rest in
+  let (rels_to_arg, rest) = EConstr.decompose_prod_n sigma (i-1) term in
+  let (arg_name, arg_type,rest) = EConstr.destProd sigma rest in
   (rels_to_arg, (arg_name, arg_type), rest)
 
 (*determin if the ith (1 based real constructor arguments without parametes) field of a constructor depends on its other fields*)
 let is_field_i_dependent env sigma cnstr i : bool =
   let constructor_type = Inductiveops.e_type_of_constructor env sigma cnstr in
   let ind_n_params = Inductiveops.inductive_nparams env (fst (fst cnstr)) in
-  let (field_rel_context,(_,field_type),_) = get_ith_arg sigma (i + ind_n_params) constructor_type in
+  let (field_rel_context, (_, field_type), _) = get_ith_arg sigma (i + ind_n_params) constructor_type in
   let rec is_field_i_dependent_rec i =
-  (
-    if i <= 0
-        then false
-    else
-      if Termops.dependent sigma (EConstr.mkRel i) field_type
-        then true
-    else is_field_i_dependent_rec (i-1)
-  ) in is_field_i_dependent_rec (i-1)
+  begin if i <= 0
+    then false
+    else if Termops.dependent sigma (EConstr.mkRel i) field_type
+      then true
+      else is_field_i_dependent_rec (i-1)
+  end in is_field_i_dependent_rec (i-1)
 
 let fresh_id env id =
   Namegen.next_ident_away id (Environ.ids_of_named_context_val @@ Environ.named_context_val env)
 
+(*this builds a projection in the simply typed case*)
 let build_simple_projection env sigma intype cnstr special default =
   let open EConstr in
   let open Names in
@@ -43,131 +68,65 @@ let build_simple_projection env sigma intype cnstr special default =
   let id = fresh_id env (Id.of_string "t") in
   sigma, mkLambda (make_annot (Name id) ERelevance.relevant, intype, body)
 
-type type_extraction =
-(* The term that is getting extracted *)
-| Id of EConstr.t
-(* The rel term that is getting extracted, the rel term from wich its getting extracted, The constructor from which to extract, Type of the Cosntructor that is getting extracted, index (1 based) to extract from, further extraction *)
-| Extraction of (EConstr.t * EConstr.t * (Names.constructor * EConstr.EInstance.t) * EConstr.t * int * type_extraction)
-
-let _pr_type_extraction env sigma ?(level="") (type_extraction:type_extraction) =
-  let rec pr_type_extraction_rec type_extraction level =
-    match type_extraction with
-    | Id e -> Pp.(str level ++ str "Id: " ++ print env sigma e)
-    | Extraction (re_term_to_extract, rel_term_to_extract_from, (cnstr, u), env_term_to_extract_from, index, extraction) ->
-      let (_,env_type_to_extract_from) = Typing.type_of env sigma env_term_to_extract_from in
-      Pp.(
-        str level ++ str "extract: " ++ print env sigma re_term_to_extract ++ str "\n" ++
-        str level ++ str "from: " ++ print env sigma rel_term_to_extract_from ++ str "\n" ++
-        str level ++ str "type: " ++ print env sigma env_type_to_extract_from ++ str "\n" ++
-        str level ++ str "in: " ++ Printer.pr_constructor env cnstr ++ str "\n" ++
-        str level ++ str "index: " ++ int index ++ str "\n" ++
-        str level ++ str "by:\n" ++ pr_type_extraction_rec extraction (level ^ "\t")
-      )
-  in pr_type_extraction_rec type_extraction level
-
-type type_composition =
-(* env type to compose *)
-| FromEnv of EConstr.t
-(* env type to compose, env parameter term to extract from, index (1 based) of parameter, extraction for the given type*)
-| FromParameter of EConstr.t * EConstr.t * int * type_extraction
-(* env type to compose, rel index term to extract from, index (1 based) index to compose from, extraction for the given type *)
-| FromIndex of EConstr.t * EConstr.t * int * type_extraction
-(* (env f type to compose, composition for f), array of (env arg type to compose, composition for arg)*)
-| Composition of (EConstr.t * type_composition) * (EConstr.t * type_composition) array
-
-let _pr_type_composition env sigma ?(level="") type_composition  =
-  let rec pr_type_composition_rec type_composition level =
-    match type_composition with
-    | FromEnv e -> Pp.(str "From Env: " ++ print env sigma e)
-    | FromParameter (type_to_compose, type_to_compose_from, index, extraction)->
-      Pp.(
-        str level ++ str "compose: " ++ print env sigma type_to_compose ++ str "\n" ++
-        str level ++ str "from param: " ++ print env sigma type_to_compose_from ++ str "\n" ++
-        str level ++ str "at: " ++ int index ++ str "\n" ++
-        str level ++ str "by: " ++ _pr_type_extraction env sigma extraction ~level:(level ^"\t") ++ str "\n"
-      )
-    | FromIndex (type_to_compose, type_to_compose_from, index, extraction)->
-      Pp.(
-        str level ++ str "compose: " ++ print env sigma type_to_compose ++ str "\n" ++
-        str level ++ str "from index: " ++ print env sigma type_to_compose_from ++ str "\n" ++
-        str level ++ str "at: " ++ int index ++ str "\n" ++
-        str level ++ str "by:\n" ++ _pr_type_extraction env sigma extraction ~level:(level ^ "\t") ++ str "\n"
-      )
-    | Composition ((f,f_composition), args_compositions) ->
-      Pp.(
-        str level ++ str "compose: " ++ print env sigma f ++ str "(" ++ seq (List.map (fun (arg,_) -> print env sigma arg ++ str ", ") (Array.to_list args_compositions)) ++ str ")" ++ str "\n" ++
-                     pr_type_composition_rec f_composition (level ^ "\t") ++ str "\n" ++
-        str level ++ str "(" ++ str "\n" ++
-                     seq (List.map (fun (_,c) -> pr_type_composition_rec c (level ^ "\t") ++ str ", ") (Array.to_list args_compositions)) ++ str "\n" ++
-        str level ++ str ")" ++ str "\n"
-      )
-  in pr_type_composition_rec type_composition level
-
-type projection_type =
-| Simple
-| Dependent of type_composition
-| NotProjectable
-
 (*find a composition to form a given term by extracting from given terms*)
-let find_type_composition
-  env sigma (cnstr:Names.constructor * EConstr.EInstance.t) (argindex:int) (env_field_type:EConstr.t) (ind:Names.inductive EConstr.puniverses) (env_ind_params:EConstr.t array) (env_ind_args:EConstr.t array)
-  : (Evd.evar_map * type_composition option) =
+let find_term_composition
+  env sigma cnstr argindex env_field_type ind env_ind_params env_ind_args : (Evd.evar_map * term_composition option) =
+  (*first we need to get some information about the inductive type*)
   let env_ind_n_params = Array.length env_ind_params in
   let rel_type_of_constructor = Inductiveops.type_of_constructor env cnstr in
   let (rel_field_context, (rel_field_annot, rel_field_type), rel_field_rest) = get_ith_arg sigma (argindex+env_ind_n_params) rel_type_of_constructor in
   let (rel_target_context, rel_target_type) = EConstr.decompose_prod sigma rel_field_rest in
   let rel_field_type_lifted = EConstr.Vars.lift (List.length rel_target_context + 1) rel_field_type in
-  let (_,rel_args) = EConstr.decompose_app sigma rel_target_type in
+  let (_, rel_args) = EConstr.decompose_app sigma rel_target_type in
   let (rel_ind_params, rel_ind_args) = CArray.chop env_ind_n_params rel_args in
-  let rec find_type_composition_rec env sigma (rel_term_to_compose:EConstr.t) (env_term_to_compose:EConstr.t)=
+  (*the actual recursive search for the term_composition*)
+  let rec find_term_composition_rec env sigma (rel_term_to_compose:EConstr.t) (env_term_to_compose:EConstr.t)=
     let rel_term_to_compose_kind = EConstr.kind sigma rel_term_to_compose in
     match rel_term_to_compose_kind with
     | Var _ | Const _ | Ind _ | Construct _ -> (sigma, Some (FromEnv rel_term_to_compose))
-    | _ ->(
-      match find_arg env sigma rel_term_to_compose rel_ind_params env_ind_params with
+    | _ ->
+      begin match find_arg env sigma rel_term_to_compose rel_ind_params env_ind_params with
       | Some (i, rel_term_to_compose_from, extraction) ->
         (sigma, Some (FromParameter (env_term_to_compose, env_ind_params.(i-1), i, extraction)))
-      | None -> (
-        match find_arg env sigma rel_term_to_compose rel_ind_args env_ind_args with
+      | None ->
+        begin match find_arg env sigma rel_term_to_compose rel_ind_args env_ind_args with
         | Some (i, rel_term_to_compose_from, extraction) -> (sigma, Some (FromIndex (env_term_to_compose, rel_term_to_compose_from, i, extraction)))
-        | None ->(
-          match rel_term_to_compose_kind with
-          | App (rel_f,rel_args) ->(
+        | None ->
+          begin match rel_term_to_compose_kind with
+          | App (rel_f,rel_args) -> begin
             let (env_f,env_args) = EConstr.decompose_app sigma env_term_to_compose in
-            let (sigma, f_composition) = find_type_composition_rec env sigma rel_f env_f in
+            let (sigma, f_composition) = find_term_composition_rec env sigma rel_f env_f in
             match f_composition with
-            | Some f_composition ->(
+            | Some f_composition -> begin
               if Array.length env_args != Array.length rel_args then (sigma, None) else
-              let (sigma, args_compositions) = (
+              let (sigma, args_compositions) = begin
                   let exception ArgNotComposable of Evd.evar_map in
-                  try(
+                  try begin
                     let (sigma, args_compositions) =
                       CArray.fold_left_map_i
-                        (fun i sigma rel_arg ->
-                          let (sigma, arg_composition) = find_type_composition_rec env sigma rel_arg env_args.(i) in
+                        begin fun i sigma rel_arg ->
+                          let (sigma, arg_composition) = find_term_composition_rec env sigma rel_arg env_args.(i) in
                           match arg_composition with
                           | Some arg_composition -> (sigma, (env_args.(i), arg_composition))
                           | None -> raise (ArgNotComposable sigma)
-                        )
+                        end
                         sigma
                         rel_args
-                    in
-                    (sigma, Some args_compositions)
-                  ) with ArgNotComposable sigma -> (sigma, None)
-              ) in
+                    in (sigma, Some args_compositions)
+                  end with ArgNotComposable sigma -> (sigma, None)
+              end in
               match args_compositions with
-              | Some args_compositions ->(
-                (sigma, Some (Composition ((env_f, f_composition), args_compositions)))
-              )
+              | Some args_compositions -> (sigma, Some (Composition ((env_f, f_composition), args_compositions)))
               | None -> (sigma, None)
-            )
+            end
             | None -> (sigma, None)
-          )
+          end
           | _ -> (sigma, None)
-        )
-      )
-    )
-  and find_arg env sigma (term_to_extract:EConstr.t) (terms_to_extract_from:EConstr.t array) (env_types_of_fields:EConstr.t array): (int * EConstr.t * type_extraction) option =
+        end
+      end
+    end
+  (*finds the first argument from which a term can be extracted*)
+  and find_arg env sigma term_to_extract terms_to_extract_from env_types_of_fields : (int * EConstr.t * term_extraction) option =
     let rec seq_find_map f xs =
       match xs() with
       | Seq.Nil -> None
@@ -177,23 +136,22 @@ let find_type_composition
         | Some _ as result -> result
     in
     seq_find_map
-      (fun (i, term_to_extract_from) ->
+      begin fun (i, term_to_extract_from) ->
         Option.map
           (fun r -> (i+1, term_to_extract_from, r))
-          (find_extraction env sigma term_to_extract term_to_extract_from env_types_of_fields.(i))
-      )
+          (find_term_extraction env sigma term_to_extract term_to_extract_from env_types_of_fields.(i))
+      end
       (Array.to_seqi terms_to_extract_from)
-  and find_extraction env sigma (term_to_extract:EConstr.t) (term_to_extract_from:EConstr.t) (type_of_term_to_extract_from:EConstr.t): type_extraction option =
+  (*finds the term_extraction for a given term*)
+  and find_term_extraction env sigma term_to_extract term_to_extract_from type_of_term_to_extract_from : term_extraction option =
     if EConstr.eq_constr_nounivs sigma term_to_extract term_to_extract_from
-    then(
-      Some (Id term_to_extract)
-    )
-    else(
+    then Some (Id term_to_extract)
+    else begin
       match EConstr.kind sigma term_to_extract_from with
-      | App (f, args) -> (
+      | App (f, args) -> begin
           match EConstr.kind sigma f with
-          | Construct c -> (
-              let (_,env_args) = EConstr.decompose_app sigma type_of_term_to_extract_from in
+          | Construct c -> begin
+              let (_, env_args) = EConstr.decompose_app sigma type_of_term_to_extract_from in
               let first_arg_option =
                 find_arg env sigma term_to_extract args env_args
               in
@@ -201,76 +159,79 @@ let find_type_composition
               | Some (i, arg_to_extract_from, extraction_result) ->
                 Some (Extraction (term_to_extract, arg_to_extract_from, c, type_of_term_to_extract_from, i, extraction_result))
               | None -> None
-          )
+          end
           | _ -> None
-      )
+      end
       | _ -> None
-    )
-  in find_type_composition_rec env sigma rel_field_type_lifted env_field_type
+    end
+  in find_term_composition_rec env sigma rel_field_type_lifted env_field_type
 
+(*tests if a field is projectable and returns the type_composition if it is*)
 let projectability_test
-  env sigma (cnstr:Names.constructor * EConstr.EInstance.t) (argindex:int) (field_type:EConstr.t) (ind: Names.inductive EConstr.puniverses) (ind_params:EConstr.t array) (ind_args:EConstr.t array)
-  : (Evd.evar_map * projection_type) =
+  env sigma cnstr argindex field_type ind ind_params ind_args : (Evd.evar_map * projection_type) =
   let dependent = is_field_i_dependent env sigma cnstr argindex in
-  if dependent then (
-    let (sigma, composition) = find_type_composition env sigma cnstr argindex field_type ind ind_params ind_args in
+  if dependent then begin
+    let (sigma, composition) = find_term_composition env sigma cnstr argindex field_type ind ind_params ind_args in
     match composition with
-    | Some composition -> (sigma, Dependent composition)
+    | Some composition -> (sigma, Dependent_Extractable composition)
     | None -> (sigma, NotProjectable)
-  )
+  end
   else (sigma, Simple)
 
-let rec build_extraction env sigma default rel_term_to_extract_from env_term_to_extract_from extraction =
+(*builds the term of a given term_extraction*)
+let rec build_term_extraction env sigma default rel_term_to_extract_from env_term_to_extract_from extraction =
   match extraction with
   (* The term that is getting extracted *)
   | Id term_getting_extracted -> rel_term_to_extract_from
   (* The term that is getting extracted, the term from wich its getting extracted, The constructor from which zu extract, index (1 based without params) to extract from, further extraction *)
-  | Extraction (rel_term_getting_extracted, rel_next_term_to_extrect_from, (cnstr, u), env_next_term_to_extract_from, index, next_extraction) -> (
+  | Extraction (rel_term_getting_extracted, rel_next_term_to_extrect_from, (cnstr, u), env_next_term_to_extract_from, index, next_extraction) -> begin
     let cnstr_n_args = Inductiveops.constructor_nrealargs env cnstr in
-    let special = build_extraction env sigma default (EConstr.mkRel (cnstr_n_args-(index-1))) env_next_term_to_extract_from next_extraction in
+    let special = build_term_extraction env sigma default (EConstr.mkRel (cnstr_n_args-(index-1))) env_next_term_to_extract_from next_extraction in
     let pos = snd cnstr in
-    let (_,match_type) = Typing.type_of env sigma env_term_to_extract_from in
+    let (_, match_type) = Typing.type_of env sigma env_term_to_extract_from in
     Combinators.make_selector env sigma ~pos ~special ~default rel_term_to_extract_from match_type
-  )
+  end
 
-
-let rec build_type_composition env sigma type_composition ind_params n_ind_params ind_args n_ind_args =
-  match type_composition with
+(*builds the term of a given term_composition*)
+let rec build_term_composition env sigma term_composition ind_params n_ind_params ind_args n_ind_args =
+  match term_composition with
   (* type to compose *)
   | FromEnv env_type_to_compose -> env_type_to_compose
   (* type to compose, parameter term to extract from, index (1 based) of parameter, extraction for the given type*)
-  | FromParameter (env_type_to_compose, env_parameter_to_extract_from, parameter_index, extraction) -> ( (* TODO: parameters don't bind so make them accasibble some other way*)
+  | FromParameter (env_type_to_compose, env_parameter_to_extract_from, parameter_index, extraction) -> begin
     let type_to_extract_from = ind_params.(parameter_index-1) in
-    build_extraction env sigma env_type_to_compose env_parameter_to_extract_from type_to_extract_from extraction
-    )
-    (* type to compose, indec term to extract from, index (1 based) index to compose from, extraction for the given type *)
-    | FromIndex (env_type_to_compose, index_to_compose_from, index_index, extraction) ->(
+    build_term_extraction env sigma env_type_to_compose env_parameter_to_extract_from type_to_extract_from extraction
+  end
+  (* type to compose, indec term to extract from, index (1 based) index to compose from, extraction for the given type *)
+  | FromIndex (env_type_to_compose, index_to_compose_from, index_index, extraction) -> begin
     let type_to_extract_from = ind_args.(index_index-1) in
-    build_extraction env sigma env_type_to_compose (EConstr.mkRel (n_ind_args-(index_index-1))) type_to_extract_from extraction
-  )
+    build_term_extraction env sigma env_type_to_compose (EConstr.mkRel (n_ind_args-(index_index-1))) type_to_extract_from extraction
+  end
   (* (f type to compose, composition for f), array of (arg type to compose, composition for arg)*)
-  | Composition ((f_to_compose , f_composition),  arg_compositions) -> (
-    let f_extraction_term = build_type_composition env sigma f_composition ind_params n_ind_params ind_args n_ind_args in
-    let arg_extraction_terms = Array.map (fun (_,arg_composition) -> build_type_composition env sigma arg_composition ind_params n_ind_params ind_args n_ind_args) arg_compositions in
+  | Composition ((f_to_compose , f_composition),  arg_compositions) -> begin
+    let f_extraction_term = build_term_composition env sigma f_composition ind_params n_ind_params ind_args n_ind_args in
+    let arg_extraction_terms = Array.map (fun (_,arg_composition) -> build_term_composition env sigma arg_composition ind_params n_ind_params ind_args n_ind_args) arg_compositions in
     EConstr.mkApp (f_extraction_term, arg_extraction_terms)
-  )
+  end
 
+(*replaces all rel variables corresponding to indices in a match statment with the index definition in the inductive definition*)
 let match_indices env sigma (cnst_summary:Inductiveops.constructor_summary) term_to_match n_ind_args max_free_rel =
-  let rec replace_rec n t = (
+  let rec replace_rec n t = begin
     match EConstr.kind sigma t with
-    | Rel i-> (
+    | Rel i-> begin
       if i <= n_ind_args + n && i > n then
         cnst_summary.cs_concl_realargs.(n_ind_args-i)
       else
         t
-    )
+    end
     | _ -> EConstr.map_with_binders sigma (fun n -> n+1) replace_rec n t
-  ) in
+  end in
   EConstr.map_with_binders sigma (fun n -> n+1) replace_rec 0 term_to_match
 
 let make_annot_numbered s i r =
   Context.make_annot (Names.Name.mk_name (Nameops.make_ident s i)) r
 
+(*makes a match statement where the index variables in the branches get replaced by the index definitions inside the inductive definition*)
 let make_selector_match_indices env sigma ~pos ~special c (ind_fam, ind_args) return_type composition_type_template =
   let open Inductiveops in
   let open EConstr in
@@ -298,10 +259,11 @@ let make_selector_match_indices env sigma ~pos ~special c (ind_fam, ind_args) re
   let ci = make_case_info env ind RegularStyle in
   Inductiveops.make_case_or_project env sigma indt ci (p, rci) c (Array.of_list brl)
 
-let build_dependent_projection env sigma cnstr default special argty type_composition ((ind, ind_params) as ind_fam) ind_args: (Evd.evar_map * EConstr.t) =
+(*builds a projection in the dependently typed case where a term_composition was found for the fields type*)
+let build_dependent_projection_with_term_composition env sigma cnstr default special argty term_composition ((ind, ind_params) as ind_fam) ind_args: (Evd.evar_map * EConstr.t) =
   let n_ind_params = List.length ind_params in
   let n_ind_args = List.length ind_args in
-  let composition_type_template = build_type_composition env sigma type_composition (Array.of_list ind_params) n_ind_params (Array.of_list ind_args) n_ind_args in
+  let composition_type_template = build_term_composition env sigma term_composition (Array.of_list ind_params) n_ind_params (Array.of_list ind_args) n_ind_args in
   let return_type = EConstr.Vars.lift 1 (
     EConstr.mkProd (Context.make_annot Names.Name.Anonymous EConstr.ERelevance.relevant, composition_type_template, EConstr.Vars.lift 1 composition_type_template)
   ) in
@@ -310,18 +272,15 @@ let build_dependent_projection env sigma cnstr default special argty type_compos
   let proj = EConstr.mkLambda (make_annot_numbered "e" None EConstr.ERelevance.relevant, argty, match_default) in
   (sigma, proj)
 
-let build_projection
-  (env : Environ.env)
-  (sigma : Evd.evar_map)
-  (cnstr : Constr.pconstructor) (*constructor that is getting projected*)
-  (argindex : int) (*1 based index of the field to project counted from left without induction params*)
-  (field_type : EConstr.t) (*type of the field that gets projected*)
-  (default : EConstr.t) (*p.p_lhs so the thing inside the constructor*)
-  (special : EConstr.t) (*Rel (nargs-argind+1) so the debrujin index of the field to project directly after binding*)
-  (argty : EConstr.types) (*type of the constructor term that is getting projected*)
-  :
-  (Evd.evar_map * EConstr.t) =
-
+(*checks the projectability of the given field and builds the according projection. If the field is found to be NotProjectable the simply typed projection generation is tried*)
+let build_projection env sigma
+  cnstr (*constructor that is getting projected*)
+  argindex (*1 based index of the field to project counted from left without induction params*)
+  field_type (*type of the field that gets projected*)
+  default (*p.p_lhs so the thing inside the constructor*)
+  special (*Rel (nargs-argind+1) so the debrujin index of the field to project directly after binding*)
+  argty (*type of the constructor term that is getting projected*)
+  : (Evd.evar_map * EConstr.t) =
   let Inductiveops.IndType (ind_family,ind_args) =
     try Inductiveops.find_rectype env sigma argty
     with Not_found ->
@@ -335,4 +294,4 @@ let build_projection
   let (sigma, proj_result) = projectability_test env sigma cnstr argindex field_type ind (Array.of_list ind_params) (Array.of_list ind_args) in
   match proj_result with
   | Simple | NotProjectable-> build_simple_projection env sigma argty cnstr special default
-  | Dependent type_composition -> build_dependent_projection env sigma cnstr default special argty type_composition (ind, ind_params) ind_args
+  | Dependent_Extractable type_composition -> build_dependent_projection_with_term_composition env sigma cnstr default special argty type_composition (ind, ind_params) ind_args
