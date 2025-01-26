@@ -973,6 +973,11 @@ library:ci-stdlib_doc:
   - library:ci-stdlib
   stage: build-2
 
+library:ci-test_relocatable:
+  extends: .ci-template
+  needs:
+  - build:base
+
 library:ci-tlc:
   extends: .ci-template
   needs:
