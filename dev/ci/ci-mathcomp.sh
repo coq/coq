@@ -9,7 +9,7 @@ git_download mathcomp
 
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
-( cd "${CI_BUILD_DIR}/mathcomp/mathcomp"
+( cd "${CI_BUILD_DIR}/mathcomp"
   make
   make install
 )
