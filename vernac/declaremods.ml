@@ -186,10 +186,10 @@ struct
           let farg_id, farg_b, fbody_b = Modops.destr_functor sign in
           let mb = Environ.lookup_module mp env in
           let mbid_left,subst = compute_subst env mbids fbody_b mp_l inl in
-          let resolver =
-            if Modops.is_functor (mod_type mb) then empty_delta_resolver mp
-            else
-              Modops.inline_delta_resolver env inl mp farg_id farg_b (mod_delta mb)
+          let resolver = match mod_global_delta mb with
+          | None -> empty_delta_resolver mp
+          | Some delta ->
+            Modops.inline_delta_resolver env inl mp farg_id farg_b delta
           in
           mbid_left,join (map_mbid mbid mp resolver) subst
 
@@ -1388,8 +1388,10 @@ let declare_one_include_core (me,base,kind,inl) =
       let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
       let (_, cst) = Subtyping.check_subtypes state (Global.env ()) cur_mp mb (MPbound mbid) mtb in
       let () = Global.add_constraints cst in
-      let mpsup_delta =
-        Modops.inline_delta_resolver (Global.env ()) inl cur_mp mbid mtb (mod_delta mb)
+      let mpsup_delta = match mod_global_delta mb with
+      | None -> assert false (* mb is guaranteed not to be a functor here *)
+      | Some delta ->
+        Modops.inline_delta_resolver (Global.env ()) inl cur_mp mbid mtb delta
       in
       let subst = Mod_subst.map_mbid mbid cur_mp mpsup_delta in
       compute_sign (Modops.subst_signature subst cur_mp str)

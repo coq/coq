@@ -136,6 +136,10 @@ let mod_type_alg m = m.mod_type_alg
 let mod_delta m = m.mod_delta
 let mod_retroknowledge { mod_retroknowledge = ModBodyVal rk; _ } = rk
 
+let mod_global_delta m = match m.mod_type with
+| MoreFunctor _ -> None
+| NoFunctor _ -> Some m.mod_delta
+
 (** Hashconsing of modules *)
 
 let hcons_when_mod_body (type a b) (f : b -> b) : (a, b) when_mod_body -> (a, b) when_mod_body = function
