@@ -312,6 +312,11 @@ let inductive_template env sigma tmloc ind =
 
 let try_find_ind env sigma typ realnames =
   let (IndType(indf,realargs) as ind) = find_rectype env sigma typ in
+  let () =
+    let (ind, _), _ = Inductiveops.dest_ind_family indf in
+    let specif = Inductive.lookup_mind_specif env ind in
+    if Inductive.is_private specif then raise Not_found
+  in
   let names =
     match realnames with
       | Some names -> names
@@ -432,6 +437,7 @@ let adjust_tomatch_to_pattern ~program_mode sigma pb ((current,typ),deps,dep) =
       (match find_row_ind tm1 with
         | None -> sigma, (current, tmtyp)
         | Some (loc,(ind,_)) ->
+            let () = Tacred.check_privacy !!(pb.env) ind in
             let sigma, indt = inductive_template !!(pb.env) sigma None ind in
             let sigma, current =
               if List.is_empty deps && isEvar sigma typ then
@@ -1446,7 +1452,6 @@ let compile ~program_mode sigma pb =
           compile_all_variables initial tomatch sigma pb
       | IsInd (_,(IndType(indf,realargs) as indt),names) ->
         let mind,_ = dest_ind_family indf in
-        let () = Tacred.check_privacy !!(pb.env) (fst mind) in
         let cstrs = get_constructors !!(pb.env) indf in
         let arsign = get_arity !!(pb.env) indf in
         let eqns,onlydflt = group_equations pb (fst mind) current cstrs pb.mat in
