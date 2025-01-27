@@ -131,7 +131,7 @@ DUNESTRAPOPT=--root .
 # We regenerate always as to correctly track deps, can do better
 # We do a single call to dune as to avoid races and locking
 ifneq ($(COQ_SPLIT),) # avoid depending on local rocq-runtime
-_build/default/theories_dune_split _build/default/ltac2_dune_split .dune-stamp: FORCE
+_build/default/theories_dune_split _build/default/ltac2_dune_split .dune-stamp:
 	dune build $(DUNEOPT) $(DUNESTRAPOPT) theories_dune_split ltac2_dune_split
 	touch .dune-stamp
 
@@ -141,7 +141,7 @@ theories/dune: .dune-stamp
 user-contrib/Ltac2/dune: .dune-stamp
 	cp -a _build/default/ltac2_dune_split $@ && chmod +w $@
 else
-_build/default/theories_dune _build/default/ltac2_dune .dune-stamp: FORCE
+_build/default/theories_dune _build/default/ltac2_dune .dune-stamp:
 	dune build $(DUNEOPT) $(DUNESTRAPOPT) theories_dune ltac2_dune
 	touch .dune-stamp
 
@@ -152,11 +152,13 @@ user-contrib/Ltac2/dune: .dune-stamp
 	cp -a _build/default/ltac2_dune $@ && chmod +w $@
 endif
 
-FORCE: ;
+.PHONY: .dune-stamp
 
 DUNE_FILES=theories/dune user-contrib/Ltac2/dune
 
-dunestrap: $(DUNE_FILES)
+dunestrap-generated: $(DUNE_FILES)
+
+dunestrap: ;
 
 states: dunestrap
 	dune build $(DUNEOPT) dev/shim/coqtop
@@ -215,7 +217,6 @@ ireport:
 	dune build $(DUNEOPT) @install --profile=ireport
 
 clean:
-	rm -f .dune-stamp theories/dune user-contrib/Ltac2/dune
 	dune clean
 
 # docgram

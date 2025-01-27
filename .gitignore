@@ -158,6 +158,4 @@ bin
 *.install
 
 .dune-stamp
-theories/dune
-user-contrib/Ltac2/dune
 /test-suite/test_suite_config.inc
