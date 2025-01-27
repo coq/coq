@@ -96,7 +96,6 @@ before_script:
     - dev/ci/gitlab-section.sh end coq.config
 
     - dev/ci/gitlab-section.sh start coq.build coq.build
-    - make dunestrap
     - dune build -p $PKGS
     - dev/ci/gitlab-section.sh end coq.build
 
@@ -343,8 +342,6 @@ build:base:dev:dune:
   interruptible: true
   extends: .auto-use-tags
   script:
-    - cp theories/dune.disabled theories/dune
-    - cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
     - dune build -p rocq-runtime,coq-core,rocq-core,coqide-server
     - ls _build/install/default/lib/coq/theories/Init/Prelude.vo
     - ls _build/install/default/lib/coq/user-contrib/Ltac2/Ltac2.vo
