@@ -101,7 +101,7 @@ and fields_of_mp mp =
 
 and fields_of_mb subs mp mb args = match Mod_declarations.mod_expr mb with
   | Algebraic expr -> fields_of_expression subs mp args (mod_type mb) expr
-  | Struct sign ->
+  | Struct (_,sign) ->
     let sign = Modops.annotate_struct_body sign (mod_type mb) in
     fields_of_signature subs mp args sign
   | Abstract|FullStruct -> fields_of_signature subs mp args (mod_type mb)
