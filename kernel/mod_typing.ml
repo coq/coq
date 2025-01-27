@@ -322,7 +322,7 @@ let finalize_module_alg (cst, ustate) (vm, vmstate) env mp (sign,alg,reso) resty
       | NoFunctor s -> s
       | MoreFunctor _ -> assert false (* All non-algebraic callers enforce this *)
       in
-      Struct sign
+      Struct (reso,sign)
     in
     let mb = module_body_of_type res_mtb in
     let mb = set_implementation impl mb in

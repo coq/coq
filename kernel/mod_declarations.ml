@@ -31,7 +31,7 @@ and module_signature = (module_type_body,structure_body) functorize
 and module_implementation =
   | Abstract (** no accessible implementation *)
   | Algebraic of module_expression (** non-interactive algebraic expression *)
-  | Struct of structure_body (** interactive body living in the parameter context of [mod_type] *)
+  | Struct of delta_resolver * structure_body (** interactive body living in the parameter context of [mod_type] *)
   | FullStruct (** special case of [Struct] : the body is exactly [mod_type] *)
 
 and 'a generic_module_body =
@@ -198,9 +198,9 @@ and hcons_module_implementation mip = match mip with
 | Algebraic me ->
   let me' = hcons_module_expression me in
   if me == me' then mip else Algebraic me'
-| Struct ms ->
+| Struct (reso,ms) ->
   let ms' = hcons_structure_body ms in
-  if ms == ms' then mip else Struct ms
+  if ms == ms' then mip else Struct (reso,ms)
 | FullStruct -> FullStruct
 
 and hcons_generic_module_body :
@@ -248,7 +248,7 @@ let implem_smart_map (type a) fs fa (expr : (a, _) when_mod_body) : (a, _) when_
   | ModTypeNul -> ModTypeNul
   | ModBodyVal impl ->
     match impl with
-    | Struct e -> let e' = fs e in if e==e' then expr else ModBodyVal (Struct e')
+    | Struct (reso,e) -> let reso', e' = fs (reso,e) in if reso==reso' && e==e' then expr else ModBodyVal (Struct (reso,e'))
     | Algebraic a -> let a' = fa a in if a==a' then expr else ModBodyVal (Algebraic a')
     | Abstract | FullStruct -> expr
 
@@ -339,7 +339,8 @@ and subst_module subst do_delta mp mb =
 and subst_impl : type a. _ -> _ -> (a, _) when_mod_body -> (a, _) when_mod_body =
   fun subst mp me ->
   implem_smart_map
-    (fun sign -> subst_structure subst id_delta mp sign) (subst_expression subst id_delta) me
+    (fun (inner_reso,sign) -> inner_reso, subst_structure subst id_delta mp sign)
+    (subst_expression subst id_delta) me
 
 and subst_modtype subst do_delta mp mtb = subst_module_body false subst do_delta mp mtb
 
@@ -401,6 +402,8 @@ and clean_field l field = match field with
 
 and clean_structure l = List.Smart.map (clean_field l)
 
+and clean_body l (reso,v) = reso, clean_structure l v
+
 and clean_signature l =
   functor_smart_map (fun _ mb -> clean_module_body l mb) (clean_structure l)
 
@@ -411,5 +414,5 @@ and clean_mod_expr : type a. _ -> a mod_expr -> a mod_expr =
   | ModBodyVal (Algebraic (MENoFunctor m)) when is_bounded_expr l m ->
     ModBodyVal FullStruct
   | _ ->
-    let me' = implem_smart_map (clean_structure l) (clean_expression l) me in
+    let me' = implem_smart_map (clean_body l) (clean_expression l) me in
     if me == me' then me else me'
