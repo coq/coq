@@ -271,13 +271,13 @@ GRAMMAR EXTEND Gram
           { VernacInductive (f, [ind]) }
       | f = inductive_token; indl = LIST1 inductive_or_record_definition SEP "with" ->
           { VernacInductive (f, indl) }
-      | "Fixpoint"; recs = LIST1 fix_definition SEP "with" ->
+      | IDENT "Fixpoint"; recs = LIST1 fix_definition SEP "with" ->
           { VernacFixpoint (NoDischarge, List.split recs) }
-      | IDENT "Let"; "Fixpoint"; recs = LIST1 fix_definition SEP "with" ->
+      | IDENT "Let"; IDENT "Fixpoint"; recs = LIST1 fix_definition SEP "with" ->
           { VernacFixpoint (DoDischarge, List.split recs) }
-      | "CoFixpoint"; corecs = LIST1 cofix_definition SEP "with" ->
+      | IDENT "CoFixpoint"; corecs = LIST1 cofix_definition SEP "with" ->
           { VernacCoFixpoint (NoDischarge, corecs) }
-      | IDENT "Let"; "CoFixpoint"; corecs = LIST1 cofix_definition SEP "with" ->
+      | IDENT "Let"; IDENT "CoFixpoint"; corecs = LIST1 cofix_definition SEP "with" ->
           { VernacCoFixpoint (DoDischarge, corecs) }
       | IDENT "Scheme"; l = LIST1 scheme SEP "with" -> { VernacScheme l }
       | IDENT "Scheme"; IDENT "Equality"; IDENT "for" ; id = smart_global ->
@@ -308,7 +308,7 @@ GRAMMAR EXTEND Gram
     [ [ test_hash_ident; "#"; r = IDENT -> { CPrimitives.parse_op_or_type ~loc r } ] ]
   ;
   thm_token:
-    [ [ "Theorem" -> { Theorem }
+    [ [ IDENT "Theorem" -> { Theorem }
       | IDENT "Lemma" -> { Lemma }
       | IDENT "Fact" -> { Fact }
       | IDENT "Remark" -> { Remark }
@@ -317,15 +317,15 @@ GRAMMAR EXTEND Gram
       | IDENT "Property" -> { Property } ] ]
   ;
   def_token:
-    [ [ "Definition" -> { (NoDischarge,Definition) }
+    [ [ IDENT "Definition" -> { (NoDischarge,Definition) }
       | IDENT "Example" -> { (NoDischarge,Example) }
       | IDENT "SubClass" -> { (NoDischarge,SubClass) } ] ]
   ;
   assumption_token:
-    [ [ "Hypothesis" -> { (DoDischarge, Logical) }
-      | "Variable" -> { (DoDischarge, Definitional) }
-      | "Axiom" -> { (NoDischarge, Logical) }
-      | "Parameter" -> { (NoDischarge, Definitional) }
+    [ [ IDENT "Hypothesis" -> { (DoDischarge, Logical) }
+      | IDENT "Variable" -> { (DoDischarge, Definitional) }
+      | IDENT "Axiom" -> { (NoDischarge, Logical) }
+      | IDENT "Parameter" -> { (NoDischarge, Definitional) }
       | IDENT "Conjecture" -> { (NoDischarge, Conjectural) } ] ]
   ;
   assumptions_token:
@@ -769,7 +769,7 @@ GRAMMAR EXTEND Gram
     [ [ qid = qualid -> { qid } | "("; me = module_expr_atom; ")" -> { me } ] ]
   ;
   with_declaration:
-    [ [ "Definition"; fqid = fullyqualid; udecl = OPT univ_decl; ":="; c = Constr.lconstr ->
+    [ [ IDENT "Definition"; fqid = fullyqualid; udecl = OPT univ_decl; ":="; c = Constr.lconstr ->
           { CWith_Definition (fqid,udecl,c) }
       | IDENT "Module"; fqid = fullyqualid; ":="; qid = qualid ->
           { CWith_Module (fqid,qid) }
@@ -898,7 +898,7 @@ GRAMMAR EXTEND Gram
       | IDENT "Generalizable";
            gen = [IDENT "All"; IDENT "Variables" -> { Some [] }
              | IDENT "No"; IDENT "Variables" -> { None }
-             | ["Variable" -> { () } | IDENT "Variables" -> { () } ];
+             | [IDENT "Variable" -> { () } | IDENT "Variables" -> { () } ];
                   idl = LIST1 identref -> { Some idl } ] ->
              { VernacSynPure (VernacGeneralizable gen) } ] ]
   ;
