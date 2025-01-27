@@ -60,7 +60,7 @@ let rec fields_of_functor f subs mp0 args = function
     match args with
     | [] -> assert false (* we should only encounter applied functors *)
     | mpa :: args ->
-      let subs = join (map_mbid mbid mpa empty_delta_resolver (*TODO*)) subs in
+      let subs = join (map_mbid mbid mpa (empty_delta_resolver mpa) (*TODO*)) subs in
       fields_of_functor f subs mp0 args e
 
 let rec lookup_module_in_impl mp =
@@ -85,9 +85,17 @@ and fields_of_mp mp =
   let open Mod_subst in
   let mb = lookup_module_in_impl mp in
   let fields,inner_mp,subs = fields_of_mb empty_subst mp mb [] in
+  let delta_mb = mod_delta mb in
   let subs =
+    (* XXX this code makes little sense, adding a delta_mb to subs if the root
+       does not coincide with mp used to be equivalent to a no-op and now fails
+       with an assertion failure. More likely than not, this means that we have
+       no idea about what we are doing. *)
     if ModPath.equal inner_mp mp then subs
-    else add_mp inner_mp mp (mod_delta mb) subs
+    else if has_root_delta_resolver mp delta_mb then
+      add_mp inner_mp mp delta_mb subs
+    else
+      add_mp inner_mp mp (empty_delta_resolver mp) subs
   in
   Modops.subst_structure subs mp fields
 

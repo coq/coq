@@ -15,21 +15,31 @@ open Constr
 
 (** {6 Delta resolver} *)
 
-(** A delta_resolver maps name (constant, inductive, module_path)
-   to canonical name  *)
+(** A delta resolver is a renaming of kernames and modpaths.
+    Objects on which the resolver acts non-trivially must share a common modpath
+    prefix called the root of the resolver. *)
 type delta_resolver
 
-val empty_delta_resolver : delta_resolver
+(** Given a root, build a resolver. *)
+val empty_delta_resolver : ModPath.t -> delta_resolver
 
+val has_root_delta_resolver : ModPath.t -> delta_resolver -> bool
+
+(** [add_mp_delta_resolver mp v reso] assumes that root(reso) ⊆ mp. *)
 val add_mp_delta_resolver :
   ModPath.t -> ModPath.t -> delta_resolver -> delta_resolver
 
+(** [add_kn_delta_resolver kn v reso] assumes that root(reso) ⊆ modpath(kn). *)
 val add_kn_delta_resolver :
   KerName.t -> KerName.t -> delta_resolver -> delta_resolver
 
+(** [add_inline_delta_resolver kn v reso] assumes that root(reso) ⊆ modpath(kn). *)
 val add_inline_delta_resolver :
   KerName.t -> (int * constr UVars.univ_abstracted option) -> delta_resolver -> delta_resolver
 
+(** [add_delta_resolver reso1 reso2] merges two renamings, assuming that
+    root(reso2) ⊆ root(reso1). Note that this is asymmetrical. The root of the
+    result is root(reso2). *)
 val add_delta_resolver : delta_resolver -> delta_resolver -> delta_resolver
 
 (** Assuming mp ⊆ root(delta), [upcast_delta_resolver mp delta] allows seeing
@@ -45,16 +55,9 @@ val kn_of_delta : delta_resolver -> KerName.t -> KerName.t
 
 val constant_of_delta_kn : delta_resolver -> KerName.t -> Constant.t
 
-(** Same, but a 2nd resolver is tried if the 1st one had no effect *)
-
-val constant_of_deltas_kn :
-  delta_resolver -> delta_resolver -> KerName.t -> Constant.t
-
 (** Same for inductive names *)
 
 val mind_of_delta_kn : delta_resolver -> KerName.t -> MutInd.t
-val mind_of_deltas_kn :
-  delta_resolver -> delta_resolver -> KerName.t -> MutInd.t
 
 (** Extract the set of inlined constant in the resolver *)
 val inline_of_delta : int option -> delta_resolver -> (int * KerName.t) list

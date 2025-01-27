@@ -81,7 +81,7 @@ module NamedDecl = Context.Named.Declaration
       module parameters [params] and earlier environment [oldsenv]
     * SIG (params,oldsenv) : same for a local module type
   - [modresolver] : delta_resolver concerning the module content, that needs to
-    be marshalled on disk
+    be marshalled on disk. Its root must be [modpath].
   - [paramresolver] : delta_resolver in scope but not part of the library per
     se, that is from functor parameters and required libraries
   - [revstruct] : current module content, most recent declarations first
@@ -249,7 +249,7 @@ let empty_environment =
   { env = Environ.empty_env;
     modpath = ModPath.dummy;
     modvariant = NONE;
-    modresolver = Mod_subst.empty_delta_resolver;
+    modresolver = Mod_subst.empty_delta_resolver ModPath.dummy;
     paramresolver = ParamResolver.empty DirPath.dummy;
     revstruct = [];
     modlabels = Label.Set.empty;
@@ -1220,7 +1220,7 @@ let start_mod_modtype ~istype l senv =
     (* carried over fields *)
     env = senv.env;
     future_cst = senv.future_cst;
-    modresolver = Mod_subst.empty_delta_resolver;
+    modresolver = Mod_subst.empty_delta_resolver mp;
     paramresolver = ParamResolver.add_delta_resolver senv.modpath senv.modresolver senv.paramresolver;
     univ = senv.univ;
     required = senv.required;
@@ -1436,7 +1436,7 @@ let start_library dir senv =
     modvariant = LIBRARY;
     required = senv.required;
 
-    modresolver = Mod_subst.empty_delta_resolver;
+    modresolver = Mod_subst.empty_delta_resolver mp;
     paramresolver = ParamResolver.empty dir;
     revstruct = [];
     modlabels = Label.Set.empty;
