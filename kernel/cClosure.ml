@@ -1899,7 +1899,14 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
        let (rargs, nargs) = skip_native_args (m::rargs) nargs in
        begin match nargs with
          | [] ->
-           let args = Array.of_list (List.rev rargs) in
+           let args = match rargs with
+           | [] -> [||]
+           | [a] -> [|a|]
+           | [a; b] -> [|b; a|]
+           | [a; b; c] -> [|c; b; a|]
+           | [a; b; c; d] -> [|d; c; b; a|]
+           | _ -> Array.rev_of_list rargs
+           in
            begin match FredNative.red_prim (info_env info) () op u args with
             | Some m -> kni info tab ~pat_state m s
             | None -> assert false
