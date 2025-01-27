@@ -37,23 +37,29 @@ let get_template_arity env ind ~ctoropt =
       let ctx = List.rev @@ List.skipn (List.length mib.mind_params_ctxt) @@
         List.rev mip.mind_arity_ctxt
       in
-      let template_can_be_prop = match s with
-        | SProp | Prop | Set -> None
-        | QSort _ -> assert false
-        | Type u ->
-          (* if all template levels are instantiated to Prop, do we get Prop? *)
-          let template_levels = Univ.ContextSet.levels template.template_context in
-          if List.exists (fun (u,n) -> n > 0 || not (Univ.Level.Set.mem u template_levels))
-              (Univ.Universe.repr u)
-          then None
-          else
-            (* don't use the qvar for non used univs
-               eg with "Ind (A:Type@{u}) (B:Type@{v}) : Type@{u}"
-               "Ind True nat" should be Prop *)
-            let used_template_levels =
-              Univ.Level.Set.inter template_levels (Univ.Universe.levels u)
-            in
-            Some used_template_levels
+      let template_can_be_prop = match template.template_pseudo_sort_poly with
+        | TemplateUnivOnly -> None
+        | TemplatePseudoSortPoly ->
+          (* we still need to check which levels are used in the conclusion *)
+          match s with
+          | SProp | Prop | Set -> None
+          | QSort _ -> assert false
+          | Type u ->
+            (* if all template levels are instantiated to Prop, do we get Prop?
+               XXX skip this check and trust that only actually pseudo sort poly inductives
+               are declared pseudo sort poly? *)
+            let template_levels = Univ.ContextSet.levels template.template_context in
+            if List.exists (fun (u,n) -> n > 0 || not (Univ.Level.Set.mem u template_levels))
+                (Univ.Universe.repr u)
+            then None
+            else
+              (* don't use the qvar for non used univs
+                 eg with "Ind (A:Type@{u}) (B:Type@{v}) : Type@{u}"
+                 "Ind True nat" should be Prop *)
+              let used_template_levels =
+                Univ.Level.Set.inter template_levels (Univ.Universe.levels u)
+              in
+              Some used_template_levels
       in
       { template_can_be_prop }, IndType (template, EConstr.of_rel_context ctx, s)
     | Some ctor ->

@@ -449,7 +449,7 @@ let universe_subgraph kept univ =
   let csts = UGraph.constraints_for ~kept univ in
   let add u newgraph =
     let strict = UGraph.check_constraint univ (Level.set,Lt,u) in
-    UGraph.add_universe u ~lbound:UGraph.Bound.Set ~strict newgraph
+    UGraph.add_universe u ~strict newgraph
   in
   let univ = Level.Set.fold add kept UGraph.initial_universes in
   UGraph.merge_constraints csts univ

@@ -306,7 +306,7 @@ let extra_union a b = {
   above_prop = Level.Set.union a.above_prop b.above_prop;
 }
 
-let normalize_context_set ~lbound g ctx (us:UnivFlex.t) {weak_constraints=weak;above_prop} =
+let normalize_context_set g ctx (us:UnivFlex.t) {weak_constraints=weak;above_prop} =
   let (ctx, csts) = ContextSet.levels ctx, ContextSet.constraints ctx in
   (* Keep the Set <= i constraints separate *)
   let smallles, csts =
@@ -338,11 +338,9 @@ let normalize_context_set ~lbound g ctx (us:UnivFlex.t) {weak_constraints=weak;a
         else acc)
       weak (smallles, csts, g)
   in
-  let smallles = match (lbound : UGraph.Bound.t) with
-    | Prop -> smallles
-    | Set when get_set_minimization () ->
+  let smallles = if get_set_minimization () then
       Constraints.filter (fun (l,d,r) -> UnivFlex.mem r us) smallles
-    | Set -> Constraints.empty (* constraints Set <= u may be dropped *)
+    else  Constraints.empty (* constraints Set <= u may be dropped *)
   in
   let smallles = if get_set_minimization() then
       let fold u accu = if UnivFlex.mem u us then Constraints.add (Level.set, Le, u) accu else accu in
@@ -354,12 +352,12 @@ let normalize_context_set ~lbound g ctx (us:UnivFlex.t) {weak_constraints=weak;a
        to equalities. *)
     let g = UGraph.initial_universes_with g in
     (* use lbound:Set to collapse [u <= v <= Set] into [u = v = Set] *)
-    let g = Level.Set.fold (fun v g -> UGraph.add_universe ~lbound:Set ~strict:false v g)
+    let g = Level.Set.fold (fun v g -> UGraph.add_universe ~strict:false v g)
         ctx g
     in
     let add_soft u g =
       if not (Level.is_set u || Level.Set.mem u ctx)
-      then try UGraph.add_universe ~lbound:Set ~strict:false u g with UGraph.AlreadyDeclared -> g
+      then try UGraph.add_universe ~strict:false u g with UGraph.AlreadyDeclared -> g
       else g
     in
     let g = Constraints.fold

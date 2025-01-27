@@ -231,3 +231,82 @@ Module TemplateNoExtraCsts.
   Polymorphic Definition some@{u|} (A:Type@{u}) (x:A) : opt' A := Some x.
 
 End TemplateNoExtraCsts.
+
+Module BoundedQuality.
+  Inductive dumb' (b:bool) (B : Type) := cons' : B -> (b = true -> dumb' false nat) -> dumb' b B.
+
+  (* dumb' true _ contains a nat *)
+  Fail Check dumb' true True : Prop.
+
+  Check dumb' true nat : Set.
+  Fail Check dumb' true Set : Set.
+  Check dumb' true Set.
+End BoundedQuality.
+
+Module BoundedQuality2.
+  Inductive dumb' (A:Type) (b:bool) (B : Type) := cons' : A -> (b = true -> dumb' A false nat) -> dumb' A b B.
+
+  Check dumb' True true Set : Prop.
+  Fail Check dumb' nat true Set : Prop.
+  Check dumb' nat true Set : Set.
+  Fail Check dumb' Set true Set : Set.
+  Check dumb' Set true Set.
+End BoundedQuality2.
+
+Module UnminimizedOption.
+  Unset Universe Minimization ToSet.
+  Inductive option A := None | Some (_:A).
+
+  Fail Check option True : Prop.
+  Check option nat : Set.
+  Fail Check option Set : Set.
+  Check option Set : Type.
+End UnminimizedOption.
+
+Module UnminimizedFunction.
+  Unset Universe Minimization ToSet.
+  Inductive Foo (T:Type) := foo (_:nat -> T).
+
+  Check Foo True : Prop.
+  Fail Check Foo nat : Prop.
+  Check Foo nat : Set.
+  Fail Check Foo Set : Set.
+  Check Foo Set : Type.
+End UnminimizedFunction.
+
+Module ExplicitOption.
+  Inductive option@{u} (A:Type@{u}) : Type@{u} := None | Some (_:A).
+
+  Fail Check option True : Prop.
+  Check option nat : Set.
+  Fail Check option Set : Set.
+  Check option Set : Type.
+End ExplicitOption.
+
+Module QvarInCtor.
+  (* this could be sort polymorphic:
+  Record Foo@{q|u v|} (A:Type@{q|u}) : Type@{q|max(u,v+1)}
+    := { foo1 : A; foo2 : forall P : Type@{q|v}, P }.
+
+  but qvar "q" (and univ "v") cannot be template poly due to appearing in the constructor
+  (even if we generalized template poly to allow conversion-irrelevant appearances,
+  this one isn't irrelevant)
+
+  so we need to collapse q := Type and can be template poly on u *)
+  Record Foo A := { foo1 : A ; foo2 : forall P, P }.
+
+  Fail Check Foo True : Prop.
+  Fail Check Foo nat : Set.
+  Polymorphic Definition test@{|} : Type@{Foo.u1+1} := Foo nat.
+  Polymorphic Definition test'@{u|} (A:Type@{u}) : Type@{max(u,Foo.u1+1)} := Foo A.
+End QvarInCtor.
+
+Module SemiPoly.
+  Universe u.
+
+  (* u cannot be template poly (it's global) but we could be template sort polymorphic *)
+  Inductive foo (A:Type@{u}) (B:Type@{u}) C := pair (_:A) (_:B) (_:C).
+
+  Fail Check foo True True True : Prop. (* maybe will be allowed someday *)
+  Fail Check foo nat nat nat : Set. (* must not be allowed *)
+End SemiPoly.

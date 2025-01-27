@@ -1063,8 +1063,8 @@ let check_univ_decl_early ~poly ~with_obls sigma udecl terms =
   let uctx = UState.restrict uctx vars in
   ignore (UState.check_univ_decl ~poly uctx udecl)
 
-let restrict_universe_context ?lbound evd vars =
-  { evd with universes = UState.restrict ?lbound evd.universes vars }
+let restrict_universe_context evd vars =
+  { evd with universes = UState.restrict evd.universes vars }
 
 let universe_subst evd =
   UState.subst evd.universes
@@ -1211,10 +1211,13 @@ let collapse_sort_variables evd =
   let universes = UState.collapse_sort_variables evd.universes in
   { evd with universes }
 
-let minimize_universes ?lbound evd =
-  let uctx' = UState.collapse_sort_variables evd.universes in
+let minimize_universes ?(collapse_sort_variables=true) evd =
+  let uctx' = if collapse_sort_variables
+    then UState.collapse_sort_variables evd.universes
+    else evd.universes
+  in
   let uctx' = UState.normalize_variables uctx' in
-  let uctx' = UState.minimize ?lbound uctx' in
+  let uctx' = UState.minimize uctx' in
   {evd with universes = uctx'}
 
 let universe_of_name evd s = UState.universe_of_name evd.universes s
