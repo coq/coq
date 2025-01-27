@@ -326,10 +326,11 @@ let rec extract_structure access env mp reso ~all = function
         else begin Visit.add_decl_deps d; (l,SEdecl d) :: ms end
       else ms
   | (l, SFBrules rrb) :: struc ->
-      let b = List.exists (fun (cst, _) -> Visit.needed_cst cst) rrb.rewrules_rules in
+      let head_symbols = List.map (fun r -> Rewrite_rules_ops.head_symbol r.pattern) rrb.rewrules_rules in
+      let b = List.exists Visit.needed_cst head_symbols in
       let ms = extract_structure access env mp reso ~all struc in
       if all || b then begin
-        List.iter (fun (cst, _) -> Table.add_symbol_rule (ConstRef cst) l) rrb.rewrules_rules;
+        List.iter (fun cst -> Table.add_symbol_rule (ConstRef cst) l) head_symbols;
         ms
       end else ms
   | (l,SFBmodule mb) :: struc ->

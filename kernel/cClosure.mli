@@ -98,6 +98,7 @@ val usubs_cons : fconstr -> usubs -> usubs
 val usubst_instance : 'a UVars.puniverses -> UVars.Instance.t -> UVars.Instance.t
 
 val usubst_binder : _ UVars.puniverses -> 'a binder_annot -> 'a binder_annot
+val usubst_relevance : _ UVars.puniverses -> Sorts.relevance -> Sorts.relevance
 
 (** To lazy reduce a constr, create a [clos_infos] with
    [create_clos_infos], inject the term to reduce with [inject]; then use
@@ -128,6 +129,7 @@ type evar_handler = {
   evar_expand : constr pexistential -> constr evar_expansion;
   evar_repack : Evar.t * constr list -> constr;
   evar_irrelevant : constr pexistential -> bool;
+  qnorm : Sorts.QVar.t -> Sorts.Quality.t;
   qvar_irrelevant : Sorts.QVar.t -> bool;
 }
 
@@ -143,6 +145,7 @@ val create_tab : unit -> clos_tab
 val info_env : clos_infos -> env
 val info_flags: clos_infos -> reds
 val info_univs : clos_infos -> UGraph.t
+val info_qnorm : clos_infos -> (Sorts.QVar.t -> Sorts.Quality.t)
 val unfold_projection : clos_infos -> Projection.t -> Sorts.relevance -> stack_member option
 
 val push_relevance : clos_infos -> 'b binder_annot -> clos_infos
@@ -171,9 +174,15 @@ val whd_val : clos_infos -> clos_tab -> fconstr -> constr
 val whd_stack :
   clos_infos -> clos_tab -> fconstr -> stack -> fconstr * stack
 
+(** [whd_fterm] performs weak head normalization in a given fterm. It
+   stops whenever a reduction is blocked. *)
+val whd_fterm : clos_infos -> clos_tab -> fconstr -> fconstr
+
 val skip_irrelevant_stack : clos_infos -> stack -> stack
 
 val eta_expand_stack : clos_infos -> Name.t binder_annot -> stack -> stack
+
+val eta_expand_fterm : fconstr -> fconstr
 
 (** [eta_expand_ind_stack env ind c s t] computes stacks corresponding
     to the conversion of the eta expansion of t, considered as an inhabitant
@@ -186,6 +195,9 @@ val eta_expand_stack : clos_infos -> Name.t binder_annot -> stack -> stack
  *)
 val eta_expand_ind_stack : env -> pinductive -> fconstr -> stack ->
    (fconstr * stack) -> stack * stack
+
+val eta_expand_ind_fterm :
+  env -> pinductive -> fconstr array -> fconstr -> fconstr array * fconstr array
 
 (** Conversion auxiliary functions to do step by step normalisation *)
 

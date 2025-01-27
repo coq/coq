@@ -144,7 +144,7 @@ exception NotConvertibleTrace of payload
     and this holds whatever Set is predicative or impredicative
 *)
 
-type conv_pb =
+type conv_pb = Declarations.conv_pb =
   | CONV
   | CUMUL
 
@@ -937,40 +937,57 @@ let clos_gen_conv (type err) ~typed trans cv_pb l2r evars env graph univs t1 t2 
       | NotConvertibleTrace _ -> assert false
   end ()
 
-let check_eq univs u u' =
+let check_eq ?qnorm univs u u' =
+  let u, u' = match qnorm with
+    | None -> u, u'
+    | Some fq -> Sorts.qnorm fq u, Sorts.qnorm fq u'
+  in
   if UGraph.check_eq_sort univs u u' then Result.Ok univs else Result.Error None
 
-let check_leq univs u u' =
+let check_leq ?qnorm univs u u' =
+  let u, u' = match qnorm with
+    | None -> u, u'
+    | Some fq -> Sorts.qnorm fq u, Sorts.qnorm fq u'
+  in
   if UGraph.check_leq_sort univs u u' then Result.Ok univs else Result.Error None
 
-let checked_sort_cmp_universes _env pb s0 s1 univs =
+let checked_sort_cmp_universes _env ?qnorm pb s0 s1 univs =
   match pb with
-  | CUMUL -> check_leq univs s0 s1
-  | CONV -> check_eq univs s0 s1
+  | CUMUL -> check_leq ?qnorm univs s0 s1
+  | CONV -> check_eq ?qnorm univs s0 s1
 
-let check_convert_instances ~flex:_ u u' univs =
+let check_convert_instances ?qnorm ~flex:_ u u' univs =
+  let u, u' = match qnorm with
+    | None -> u, u'
+    | Some fq -> UVars.Instance.qnorm fq u, UVars.Instance.qnorm fq u'
+  in
   if UGraph.check_eq_instances univs u u' then Result.Ok univs
   else Result.Error None
 
 (* general conversion and inference functions *)
-let check_inductive_instances cv_pb variance u1 u2 univs =
+let check_inductive_instances ?qnorm cv_pb variance u1 u2 univs =
+  let u1, u2 = match qnorm with
+    | None -> u1, u2
+    | Some fq -> UVars.Instance.qnorm fq u1, UVars.Instance.qnorm fq u2
+  in
   let qcsts, ucsts = get_cumulativity_constraints cv_pb variance u1 u2 in
   if Sorts.QConstraints.trivial qcsts && (UGraph.check_constraints ucsts univs) then Result.Ok univs
   else Result.Error None
 
-let checked_universes =
-  { compare_sorts = checked_sort_cmp_universes;
-    compare_instances = check_convert_instances;
-    compare_cumul_instances = check_inductive_instances; }
+let checked_universes qnorm =
+  { compare_sorts = checked_sort_cmp_universes ?qnorm;
+    compare_instances = check_convert_instances ?qnorm;
+    compare_cumul_instances = check_inductive_instances ?qnorm; }
 
 let () =
   let conv infos tab a b =
     try
       let box = Empty.abort in
       let univs = info_univs infos in
+      let qnorm = info_qnorm infos in
       let infos = { cnv_inf = infos; cnv_typ = true; lft_tab = tab; rgt_tab = tab; err_ret = box } in
       let univs', _ = ccnv CONV false infos el_id el_id a b
-          (univs, checked_universes)
+          (univs, checked_universes (Some qnorm))
       in
       assert (univs==univs');
       true
@@ -979,6 +996,8 @@ let () =
     | NotConvertibleTrace _ -> assert false
   in
   CClosure.set_conv conv
+
+let checked_universes = checked_universes None
 
 let gen_conv ~typed cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=default_evar_handler env) t1 t2 =
   let univs = Environ.universes env in

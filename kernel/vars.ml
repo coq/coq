@@ -358,14 +358,15 @@ let fold_kind_relevance f acc c =
   | CoFix (_,data) ->
     fold_rec_declaration_relevance f acc data
 
-let subst_univs_level_constr subst c =
+let subst_univs_level_constr ?subst_rel subst c =
   if UVars.is_empty_sort_subst subst then c
   else
+    let subst_rel = Option.default (UVars.subst_sort_level_relevance subst) subst_rel in
     let f = UVars.subst_sort_level_instance subst in
     (* XXX shouldn't Constr.map return the pointer equal term when unchanged instead? *)
     let changed = ref false in
     let rec aux t =
-      let t' = map_constr_relevance (UVars.subst_sort_level_relevance subst) t in
+      let t' = map_constr_relevance subst_rel t in
       let t = if t' == t then t else (changed := true; t') in
       match kind t with
       | Const (c, u) ->
@@ -412,10 +413,11 @@ let subst_univs_level_constr subst c =
     let c' = aux c in
       if !changed then c' else c
 
-let subst_univs_level_context s ctx =
+let subst_univs_level_context ?subst_rel s ctx =
+  let subst_rel = Option.default (UVars.subst_sort_level_relevance s) subst_rel in
   CList.Smart.map (fun d ->
-      let d = RelDecl.map_relevance (UVars.subst_sort_level_relevance s) d in
-      RelDecl.map_constr (subst_univs_level_constr s) d)
+      let d = RelDecl.map_relevance subst_rel d in
+      RelDecl.map_constr (subst_univs_level_constr ~subst_rel s) d)
     ctx
 
 let subst_instance_constr subst c =
@@ -543,3 +545,48 @@ let sort_and_universes_of_constr ?init c =
 
 let universes_of_constr ?(init=Univ.Level.Set.empty) c =
   snd (sort_and_universes_of_constr ~init:(Sorts.QVar.Set.empty,init) c)
+
+let testing_visitor on_qvar on_uvar =
+  let test_sort_uvar u =
+    match Univ.Universe.level u with
+    | Some u -> on_uvar ~sort:true u
+    | None -> Univ.(Level.Set.iter (fun u -> on_uvar ~sort:false u) (Universe.levels u))
+  in
+
+  let test_sort () = function
+    | Sorts.Type u ->
+      test_sort_uvar u
+    | Sorts.QSort (q, u) ->
+      let () = on_qvar ~rel:false q in
+      test_sort_uvar u
+    | Sorts.(SProp | Prop | Set) -> ()
+  in
+
+  let test_relevance () =
+    let open Sorts in function
+    | Irrelevant | Relevant -> ()
+    | RelevanceVar q -> on_qvar ~rel:true q
+  in
+
+  let test_instance () u =
+    let qs, us = UVars.Instance.to_array u in
+    let () = Array.iter (fun q ->
+        let open Sorts.Quality in
+        match q with
+        | QVar q -> on_qvar ~rel:false q
+        | QConstant _ -> ())
+        qs
+    in
+    let () = Array.iter (fun u -> on_uvar ~sort:false u) us in
+    ()
+  in
+  { visit_sort=test_sort; visit_relevance=test_relevance; visit_instance=test_instance }
+
+
+let test_sort_and_universes on_qvar on_uvar c =
+  let visitor = testing_visitor on_qvar on_uvar in
+  let rec aux c =
+    let () = visit_kind_univs visitor () (kind c) in
+    Constr.iter aux c
+  in
+  aux c

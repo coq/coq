@@ -434,7 +434,7 @@ type nonrec synpure_vernac_expr =
   | VernacCombinedScheme of lident * lident list
   | VernacUniverse of lident list
   | VernacConstraint of univ_constraint_expr list
-  | VernacAddRewRule of lident * (universe_decl_expr option * constr_expr * constr_expr) list
+  | VernacAddRewRule of lident * (constr_expr * constr_expr) list
 
   (* Gallina extensions *)
   | VernacCanonical of qualid or_by_notation

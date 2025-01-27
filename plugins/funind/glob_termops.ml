@@ -588,7 +588,7 @@ let resolve_and_replace_implicits exptyp env sigma rt =
       poly = false;
       resolve_tc = true;
       undeclared_evars_patvars = false;
-      patvars_abstract = false;
+      rrpat_evars_abstract = true;
       unconstrained_sorts = false;
     } in
     let vars = Evarutil.VarSet.variables (Global.env ()) in

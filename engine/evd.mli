@@ -536,6 +536,7 @@ val univ_flexible_alg : rigid
 type 'a in_ustate = 'a * UState.t
 
 val restrict_universe_context : ?lbound:UGraph.Bound.t -> evar_map -> Univ.Level.Set.t -> evar_map
+val restrict_sort_variables : evar_map -> Sorts.QVar.Set.t -> evar_map
 
 (** Raises Not_found if not a name for a universe in this map. *)
 val universe_of_name : evar_map -> Id.t -> Univ.Level.t
@@ -612,9 +613,15 @@ val with_sort_context_set : ?loc:Loc.t -> rigid -> evar_map -> 'a UnivGen.in_sor
 
 val nf_univ_variables : evar_map -> evar_map
 
+val freeze_sort_variables : evar_map -> evar_map
+
 val collapse_sort_variables : evar_map -> evar_map
 
 val fix_undefined_variables : evar_map -> evar_map
+
+val allow_failures : evar_map -> evar_map
+
+val recheck_failures : ?fail:(Pp.t -> unit) -> (UnivProblem.t -> bool) -> evar_map -> evar_map
 
 (** Universe minimization *)
 val minimize_universes : ?lbound:UGraph.Bound.t -> evar_map -> evar_map

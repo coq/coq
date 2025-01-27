@@ -46,8 +46,10 @@ module QState : sig
   val undefined : t -> QVar.Set.t
   val collapse_above_prop : to_prop:bool -> t -> t
   val collapse : t -> t
+  val freeze : t -> t
   val pr : (QVar.t -> Pp.t) -> t -> Pp.t
   val of_set : QVar.Set.t -> t
+  val restrict : t -> QVar.Set.t -> t
 end =
 struct
 
@@ -178,6 +180,12 @@ let undefined m =
   let m = QMap.filter (fun _ v -> Option.is_empty v) m.qmap in
   QMap.domain m
 
+let restrict m qvars =
+  let qvars = QSet.union qvars m.named in
+  { named = m.named;
+    qmap = QMap.filter (fun qv _ -> QSet.mem qv qvars) m.qmap;
+    above = QSet.inter m.above qvars }
+
 let collapse_above_prop ~to_prop m =
   let map q v = match v with
     | None ->
@@ -195,6 +203,9 @@ let collapse m =
   in
   { named = m.named; qmap = QMap.mapi map m.qmap; above = QSet.empty }
 
+let freeze m =
+  { m with named = QSet.union m.named (undefined m) }
+
 let pr prqvar { qmap; above; named } =
   let open Pp in
   let prbody u = function
@@ -208,7 +219,6 @@ let pr prqvar { qmap; above; named } =
     str " := " ++ q
   in
   h (prlist_with_sep fnl (fun (u, v) -> prqvar u ++ prbody u v) (QMap.bindings qmap))
-
 end
 
 module UPairSet = UnivMinim.UPairSet
@@ -227,6 +237,7 @@ type t =
    initial_universes : UGraph.t; (** The graph at the creation of the evar_map + local universes
                                      (but not local constraints) *)
    minim_extra : UnivMinim.extra;
+   failures : UnivProblem.Set.t option
  }
 
 let empty =
@@ -236,7 +247,8 @@ let empty =
     sort_variables = QState.empty;
     universes = UGraph.initial_universes;
     initial_universes = UGraph.initial_universes;
-    minim_extra = UnivMinim.empty_extra; }
+    minim_extra = UnivMinim.empty_extra;
+    failures = None }
 
 let make ~lbound univs =
   { empty with
@@ -312,6 +324,7 @@ let union uctx uctx' =
                                (ContextSet.levels uctx.local) in
     let newus = Level.Set.diff newus (UnivFlex.domain uctx.univ_variables) in
     let extra = UnivMinim.extra_union uctx.minim_extra uctx'.minim_extra in
+    let failures = match uctx.failures with Some f -> Some (UnivProblem.Set.union f (Option.default UnivProblem.Set.empty uctx'.failures)) | None -> None in
     let declarenew g =
       Level.Set.fold (fun u g -> UGraph.add_universe u ~lbound:UGraph.Bound.Set ~strict:false g) newus g
     in
@@ -332,7 +345,8 @@ let union uctx uctx' =
            else
              let cstrsr = ContextSet.constraints uctx'.local in
              merge_constraints uctx cstrsr (declarenew uctx.universes));
-        minim_extra = extra}
+        minim_extra = extra;
+        failures}
 
 let context_set uctx = uctx.local
 
@@ -515,6 +529,7 @@ let process_universe_constraints uctx cstrs =
   let open UnivProblem in
   let univs = uctx.universes in
   let vars = ref uctx.univ_variables in
+  let allow_failures = Option.has_some uctx.failures in
   let normalize u = UnivFlex.normalize_univ_variable !vars u in
   let qnormalize sorts q = QState.repr q sorts in
   let normalize_sort sorts s =
@@ -686,9 +701,11 @@ let process_universe_constraints uctx cstrs =
       let r = normalize_sort local.local_sorts r in
       equalize_universes l r local
   in
-  let unify_universes cst local =
-    if not (UGraph.type_in_type univs) then unify_universes cst local
-    else try unify_universes cst local with UGraph.UniverseInconsistency _ -> local
+  let unify_universes cst (pbs, local) =
+    try pbs, unify_universes cst local
+    with UGraph.UniverseInconsistency _ when UGraph.type_in_type univs || allow_failures ->
+      if UGraph.type_in_type univs then pbs, local
+      else UnivProblem.Set.add cst pbs, local
   in
   let local = {
     local_cst = Constraints.empty;
@@ -696,19 +713,20 @@ let process_universe_constraints uctx cstrs =
     local_above_prop = uctx.minim_extra.UnivMinim.above_prop;
     local_sorts = uctx.sort_variables;
   } in
-  let local = UnivProblem.Set.fold unify_universes cstrs local in
+  let pbs, local = UnivProblem.Set.fold unify_universes cstrs (UnivProblem.Set.empty, local) in
   let extra = { UnivMinim.above_prop = local.local_above_prop; UnivMinim.weak_constraints = local.local_weak } in
-  !vars, extra, local.local_cst, local.local_sorts
+  !vars, extra, local.local_cst, local.local_sorts, pbs
 
 let add_universe_constraints uctx cstrs =
   let univs, local = uctx.local in
-  let vars, extra, local', sorts = process_universe_constraints uctx cstrs in
+  let vars, extra, local', sorts, pbs = process_universe_constraints uctx cstrs in
   { uctx with
     local = (univs, Constraints.union local local');
     univ_variables = vars;
     universes = merge_constraints uctx local' uctx.universes;
     sort_variables = sorts;
-    minim_extra = extra; }
+    minim_extra = extra;
+    failures = Option.map (UnivProblem.Set.union pbs) uctx.failures }
 
 let problem_of_constraints cstrs =
   Constraints.fold (fun (l,d,r) acc ->
@@ -969,6 +987,9 @@ let restrict ?lbound uctx vars =
   let uctx' = restrict_universe_context ?lbound uctx.local vars in
   { uctx with local = uctx' }
 
+let restrict_sort_variables uctx qvars =
+  { uctx with sort_variables = QState.restrict uctx.sort_variables qvars }
+
 let restrict_even_binders ?lbound uctx vars =
   let uctx' = restrict_universe_context ?lbound uctx.local vars in
   { uctx with local = uctx' }
@@ -1195,11 +1216,35 @@ let fix_undefined_variables uctx =
 let collapse_above_prop_sort_variables ~to_prop uctx =
   { uctx with sort_variables = QState.collapse_above_prop ~to_prop uctx.sort_variables }
 
+let freeze_sort_variables uctx =
+  { uctx with sort_variables = QState.freeze uctx.sort_variables }
+
 let collapse_sort_variables uctx =
   { uctx with sort_variables = QState.collapse uctx.sort_variables }
 
+let allow_failures uctx = { uctx with failures = Some UnivProblem.Set.empty }
+
+let constraint_inconsistency = let open UnivProblem in function
+  | UEq (s, s') -> sort_inconsistency Eq s s'
+  | ULe (s, s') -> sort_inconsistency Le s s'
+  | QEq (q, q') -> sort_inconsistency Eq (Sorts.make q Universe.type0) (Sorts.make q' Universe.type0)
+  | QLeq (q, q') -> sort_inconsistency Le (Sorts.make q Universe.type0) (Sorts.make q' Universe.type0)
+  | ULub _ | UWeak _ -> assert false
+
+let recheck_failures ?fail checker uctx =
+  match uctx.failures with
+  | None -> uctx
+  | Some fails ->
+    let pbs = UnivProblem.Set.filter (fun cst -> not @@ checker cst) fails in
+    if not @@ UnivProblem.Set.is_empty pbs then begin match fail with
+    | Some fail -> fail (UnivProblem.Set.pr pbs)
+    | None -> let pb = UnivProblem.Set.choose pbs in constraint_inconsistency pb
+    end;
+    { uctx with failures = None }
+
 let minimize ?(lbound = UGraph.Bound.Set) uctx =
   let open UnivMinim in
+  if Option.has_some uctx.failures then anomaly Pp.(str "Cannot minimize inconsistent ustate") else
   let (vars', us') =
     normalize_context_set ~lbound uctx.universes uctx.local uctx.univ_variables
       uctx.minim_extra
@@ -1213,7 +1258,8 @@ let minimize ?(lbound = UGraph.Bound.Set) uctx =
         sort_variables = uctx.sort_variables;
         universes = universes;
         initial_universes = uctx.initial_universes;
-        minim_extra = UnivMinim.empty_extra; (* weak constraints are consumed *) }
+        minim_extra = UnivMinim.empty_extra; (* weak constraints are consumed *)
+        failures = None }
 
 let universe_context_inst_decl decl qvars levels names =
   let leftqs = List.fold_left (fun acc l -> QVar.Set.remove l acc) qvars decl.univdecl_qualities in

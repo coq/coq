@@ -155,6 +155,9 @@ val restrict_universe_context : ?lbound:UGraph.Bound.t -> ContextSet.t -> Level.
    universes are preserved. *)
 val restrict : ?lbound:UGraph.Bound.t -> t -> Univ.Level.Set.t -> t
 
+(** [restrict_sort_variables uctx qvars] restricts the sort variables of [uctx] to
+   [qvars] extended by local named sort variables. *)
+val restrict_sort_variables : t -> Sorts.QVar.Set.t -> t
 
 (** [restrict_even_binders uctx ctx] restricts the local universes of [uctx] to
    [ctx] extended by side effect universes
@@ -221,10 +224,16 @@ val constrain_variables : Univ.Level.Set.t -> t -> t
 val fix_undefined_variables : t -> t
 (** cf UnivFlex *)
 
+val allow_failures : t -> t
+
+val recheck_failures : ?fail:(Pp.t -> unit) -> (UnivProblem.t -> bool) -> t -> t
+
 (** Universe minimization *)
 val minimize : ?lbound:UGraph.Bound.t -> t -> t
 
 val collapse_above_prop_sort_variables : to_prop:bool -> t -> t
+
+val freeze_sort_variables : t -> t
 
 val collapse_sort_variables : t -> t
 

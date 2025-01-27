@@ -86,10 +86,10 @@ module Quality : sig
 
   module Map : CMap.ExtS with type key = t and module Set := Set
 
-  type pattern =
-    PQVar of int option | PQConstant of constant
+  type 'q pattern =
+    PQVar of 'q | PQConstant of constant
 
-  val pattern_match : pattern -> t -> ('t, t, 'u) Partial_subst.t -> ('t, t, 'u) Partial_subst.t option
+  val pattern_match : int option pattern -> t -> ('t, t, 'u) Partial_subst.t -> ('t, t, 'u) Partial_subst.t option
 end
 
 module QConstraint : sig
@@ -167,6 +167,8 @@ val levels : t -> Univ.Level.Set.t
 
 val super : t -> t
 
+val qnorm : (QVar.t -> Quality.t) -> t -> t
+
 val subst_fn : (QVar.t -> Quality.t) * (Univ.Universe.t -> Univ.Universe.t)
   -> t -> t
 
@@ -178,6 +180,7 @@ val relevance_hash : relevance -> int
 
 val relevance_equal : relevance -> relevance -> bool
 
+val relevance_subst_rel_fn : (QVar.t -> relevance) -> relevance -> relevance
 val relevance_subst_fn : (QVar.t -> Quality.t) -> relevance -> relevance
 
 val relevance_of_sort : t -> relevance
@@ -187,7 +190,9 @@ val debug_print : t -> Pp.t
 
 val pr_sort_family : family -> Pp.t
 
-type pattern =
-  | PSProp | PSSProp | PSSet | PSType of int option | PSQSort of int option * int option
+type ('q, 'u) pattern =
+  | PSProp | PSSProp | PSSet | PSType of 'u | PSQSort of 'q * 'u
 
-val pattern_match : pattern -> t -> ('t, Quality.t, Univ.Level.t) Partial_subst.t -> ('t, Quality.t, Univ.Level.t) Partial_subst.t option
+val pattern_match : (int option, int option) pattern -> t -> ('t, Quality.t, Univ.Level.t) Partial_subst.t -> ('t, Quality.t, Univ.Level.t) Partial_subst.t option
+
+val relevance_match : int option -> relevance -> ('t, Quality.t, 'u) Partial_subst.t -> ('t, Quality.t, 'u) Partial_subst.t

@@ -284,6 +284,36 @@ let rec map_filter_i_loop' f i = function
 let map_filter_i f l =
   map_filter_i_loop' f 0 l
 
+let rec fold_filter_loop f acc reset p = function
+  | [] -> begin match reset with
+      | None -> ()
+      | Some (c, orig) -> c.tail <- orig
+    end; acc
+  | x :: l as orig ->
+    let acc, b = f acc x in
+    if b then
+      let c = { head = x; tail = [] } in
+      let () = p.tail <- cast c in
+      let reset = match reset with
+        | Some _ -> reset
+        | None -> Some (p, orig)
+      in
+      fold_filter_loop f acc reset c l
+    else
+      fold_filter_loop f acc None p l
+
+let rec fold_filter f acc = function
+  | [] -> acc, []
+  | x :: l' as orig ->
+    let acc, b = f acc x in
+    if b then
+      let c = { head = x; tail = [] } in
+      let acc = fold_filter_loop f acc None c l' in
+      if c.tail == l' then acc, orig else acc, cast c
+    else
+      fold_filter f acc l'
+
+
 let partitioni p =
   let rec aux i = function
     | [] -> [], []
