@@ -1130,7 +1130,7 @@ let add_universe ?loc name strict uctx u =
   { uctx with names; local; initial_universes; universes }
 
 let new_sort_variable ?loc ?name uctx =
-  let q = UnivGen.new_sort_global () in
+  let q = UnivGen.fresh_sort_quality () in
   (* don't need to check_fresh as it's guaranteed new *)
   let sort_variables = QState.add ~check_fresh:false ~named:(Option.has_some name)
       q uctx.sort_variables
