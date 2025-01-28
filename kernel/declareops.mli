@@ -19,11 +19,6 @@ val universes_context : universes -> AbstractContext.t
 
 val abstract_universes : Entries.universes_entry -> UVars.sort_level_subst * universes
 
-(** {6 Arities} *)
-
-val map_decl_arity : ('a -> 'c) -> ('b -> 'd) ->
-  ('a, 'b) declaration_arity -> ('c, 'd) declaration_arity
-
 (** {6 Constants} *)
 
 val subst_const_body : substitution -> constant_body -> constant_body
