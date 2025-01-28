@@ -185,12 +185,12 @@ let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
       let new_mb = strengthen_and_subst_module_body new_mp new_mb mp' false in
       (** TODO: check this is fine when new_mb is a functor *)
       let new_mb' = strengthen_module_body ~src:new_mp (mod_type new_mb) (mod_delta new_mb) new_mb in
-      let new_reso = add_delta_resolver reso (upcast_delta_resolver mp (mod_delta new_mb)) in
+      let subreso = mod_delta new_mb in
       (* we propagate the new equality in the rest of the signature
          with the identity substitution accompanied by the new resolver*)
-      let id_subst = map_mp mp' mp' (mod_delta new_mb) in
+      let id_subst = map_mp mp' mp' subreso in
       let new_after = subst_structure id_subst mp after in
-      before@(lab,SFBmodule new_mb')::new_after, new_reso, cst
+      before @ (lab, SFBmodule new_mb') :: new_after, subreso, cst
     else
       (* Module definition of a sub-module *)
       let mp' = MPdot (mp,lab) in
@@ -201,17 +201,14 @@ let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
       begin match Mod_declarations.mod_expr old with
       | Abstract ->
         let struc = destr_nofunctor mp' (mod_type old) in
-        let struc',reso',cst =
+        let struc', subreso, cst =
           check_with_mod (cst, ustate) env' struc (idl,new_mp) mp' (mod_delta old)
         in
+        let reso' = add_delta_resolver (mod_delta old) (upcast_delta_resolver mp' subreso) in
         let new_mb = replace_module_body struc' reso' old in
-        (* XXX we are adding bits of [mod_delta old] twice below, all bindings
-           [mp₀ ↦ mp₁] where mp₁ ≠ mp.idl should already be part of reso and
-           will be left untouched in reso' by check_with_mod *)
-        let new_reso = add_delta_resolver reso (upcast_delta_resolver mp reso') in
         let id_subst = map_mp mp' mp' reso' in
         let new_after = subst_structure id_subst mp after in
-        before@(lab,SFBmodule new_mb)::new_after, new_reso, cst
+        before @ (lab, SFBmodule new_mb) :: new_after, subreso, cst
       | Algebraic (MENoFunctor (MEident mp0)) ->
         let mpnew = rebuild_mp mp0 idl in
         check_modpath_equiv env' mpnew mp;
@@ -234,7 +231,8 @@ let check_with ustate vmstate env mp (sign,reso,cst,vm) = function
     NoFunctor struc', reso, cst, vm
   | WithMod(idl,new_mp) ->
     let struc = destr_nofunctor mp sign in
-    let struc',reso',cst = check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso in
+    let struc', subreso, cst = check_with_mod (cst, ustate) env struc (idl, new_mp) mp reso in
+    let reso' = add_delta_resolver reso (upcast_delta_resolver mp subreso) in
     NoFunctor struc', reso', cst, vm
 
 let check_with_alg ustate vmstate env mp (sign, alg, reso, cst, vm) wd =
