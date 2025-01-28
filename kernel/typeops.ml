@@ -396,11 +396,11 @@ let check_cast env c ct k expected_type =
    dynamic constraints of the form u<=v are enforced *)
 
 let make_param_univs env indu spec args argtys =
-  Array.to_list @@ Array.mapi (fun i argt ~expected ->
+  Array.to_list @@ Array.mapi (fun i argt ~default ->
       match (snd (Reduction.dest_arity env argt)) with
       | SProp | exception Reduction.NotArity ->
         Type_errors.error_cant_apply_bad_type env
-          (i+1, mkType (Universe.make expected), argt)
+          (i+1, mkType (Universe.make default), argt)
           (make_judge (mkIndU indu) (Inductive.type_of_inductive (spec, snd indu)))
           (make_judgev args argtys)
       | Prop -> TemplateProp

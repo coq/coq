@@ -113,54 +113,65 @@ Remark: Set (predicative) is encoded as Type(0)
 
 (* Template polymorphism *)
 
-let no_sort_variable () =
-  CErrors.anomaly (Pp.str "A sort variable was sent to the kernel")
+type template_subst = Sorts.Quality.t Sorts.QVar.Map.t * Universe.t Level.Map.t
 
 type template_univ =
   | TemplateProp
   | TemplateAboveProp of Sorts.QVar.t * Universe.t
   | TemplateUniv of Universe.t
 
-let max_template_universe u v = match u, v with
-  | TemplateProp, x | x, TemplateProp -> x
-  | TemplateAboveProp (q1,u), TemplateAboveProp (q2,v) ->
-    if Sorts.QVar.equal q1 q2 then TemplateAboveProp (q1, Universe.sup u v)
-    else TemplateUniv (Universe.sup u v)
-  | TemplateAboveProp (_, u), TemplateUniv v
-  | TemplateUniv u, TemplateAboveProp (_,v)
-  | TemplateUniv u, TemplateUniv v -> TemplateUniv (Universe.sup u v)
+let max_above_prop_qualities a b =
+  let open Sorts.Quality in
+  match a, b with
+  | QConstant QSProp, _ | _, QConstant QSProp -> assert false
+  | QConstant QProp, x | x, QConstant QProp -> x
+  | (QConstant QType as x), _ | _, (QConstant QType as x) -> x
+  | QVar qa, QVar qb ->
+    if Sorts.QVar.equal qa qb then a
+    else qtype
 
-(* cons_subst add the mapping [u |-> su] in subst if [u] is not *)
-(* in the domain or add [u |-> sup x su] if [u] is already mapped *)
-(* to [x]. *)
-let cons_subst u su subst =
-  try
-    Univ.Level.Map.add u (max_template_universe su (Univ.Level.Map.find u subst)) subst
-  with Not_found -> Univ.Level.Map.add u su subst
+(* cons_subst adds the mappings
+   [u |-> univ of su] and [q |-> sup(subst(q), sort of su)] in subst
+   [u] is not in the domain (template univs are linear)
+   [q] may be in the domain in which case we exploit Prop <= Type for the existence of the sup. *)
+let cons_subst qopt u su (qsubst,usubst) =
+  let quality, univ = match su with
+    | TemplateProp -> Sorts.Quality.qprop, Universe.type0
+    | TemplateAboveProp (q,u) -> Sorts.Quality.QVar q, u
+    | TemplateUniv u -> Sorts.Quality.qtype, u
+  in
+  let qsubst = match qopt with
+    | None -> qsubst
+    | Some q ->
+      Sorts.QVar.Map.update q (function
+          | None -> Some quality
+          | Some quality' -> Some (max_above_prop_qualities quality quality'))
+        qsubst
+  in
+  assert (not @@ Level.Map.mem u usubst);
+  let usubst = Level.Map.add u univ usubst in
+  qsubst, usubst
 
-(* remember_subst updates the mapping [u |-> x] by [u |-> sup x u] *)
-(* if it is presents and returns the substitution unchanged if not.*)
-let remember_subst u subst =
-  try
-    let su = TemplateUniv (Universe.make u) in
-    Univ.Level.Map.add u (max_template_universe su (Univ.Level.Map.find u subst)) subst
-  with Not_found -> subst
-
-type param_univs = (expected:Univ.Level.t -> template_univ) list
+type param_univs = (default:Univ.Level.t -> template_univ) list
 
 let get_arity c =
   let decls, c = Term.decompose_prod_decls c in
   match kind c with
   | Sort (Sorts.Type u) ->
     begin match Universe.level u with
-    | Some l -> (decls, l)
+    | Some l -> (decls, None, l)
+    | None -> assert false
+    end
+  | Sort (Sorts.QSort (q, u)) ->
+    begin match Universe.level u with
+    | Some l -> (decls, Some q, l)
     | None -> assert false
     end
   | _ -> assert false
 
 (* Bind expected levels of parameters to actual levels *)
 (* Propagate the new levels in the signature *)
-let make_subst =
+let make_subst ~defaults : _ -> template_subst =
   let rec make subst = function
     | LocalDef _ :: sign, exp, args ->
         make subst (sign, exp, args)
@@ -169,72 +180,44 @@ let make_subst =
         make subst (sign, exp, args)
     | LocalAssum (_,t)::sign, true::exp, a::args ->
         (* We recover the level of the argument *)
-        let _, u = get_arity t in
-        let s = a ~expected:u in
-        make (cons_subst u s subst) (sign, exp, args)
+        let _, qopt, u = get_arity t in
+        assert (Option.has_some @@ Level.var_index u);
+        let default = UVars.subst_instance_level defaults u in
+        let s = a ~default in
+        make (cons_subst qopt u s subst) (sign, exp, args)
     | LocalAssum (_na,t) :: sign, true::exp, [] ->
-        (* No more argument here: we add the remaining universes to the *)
-        (* substitution (when [u] is distinct from all other universes in the *)
-        (* template, it is identity substitution  otherwise (ie. when u is *)
-        (* already in the domain of the substitution) [remember_subst] will *)
-        (* update its image [x] by [sup x u] in order not to forget the *)
-        (* dependency in [u] that remains to be fulfilled. *)
-        let _, u = get_arity t in
-        make (remember_subst u subst) (sign, exp, [])
+        (* No more argument here: we add the default universes to the
+           substitution. *)
+        let _, qopt, u = get_arity t in
+        let default = UVars.subst_instance_level defaults u in
+        make (cons_subst qopt u (TemplateUniv (Universe.make default)) subst) (sign, exp, [])
     | _sign, [], _ ->
         (* Uniform parameters are exhausted *)
         subst
     | [], _, _ ->
         assert false
   in
-  make Univ.Level.Map.empty
+  make (Sorts.QVar.Map.empty, Univ.Level.Map.empty)
 
-let subst_univs_sort (subs, pseudo_sort_poly) = function
-| Sorts.QSort _ -> no_sort_variable ()
+let subst_template_universe usubst u =
+  let u = Universe.repr u in
+  let subst_one acc (u,n) =
+    match Level.Map.find_opt u usubst with
+    | None -> (* global universe *) Universe.(sup acc (supern n (make u)))
+    | Some u' -> Universe.(sup acc (supern n u'))
+  in
+  let u = List.fold_left subst_one Universe.type0 u in
+  u
+
+let subst_univs_sort (qsubst,usubst:template_subst) = function
+| Sorts.QSort (q,u) ->
+  let q = Sorts.QVar.Map.get q qsubst in
+  let u = subst_template_universe usubst u in
+  Sorts.make q u
 | Sorts.Prop | Sorts.Set | Sorts.SProp as s -> s
 | Sorts.Type u ->
-  (* We implement by hand a max on universes that handles Prop *)
-  let u = Universe.repr u in
-  let supern u n = iterate Universe.super n u in
-  let map (u, n) =
-    if Level.is_set u then TemplateUniv (supern Universe.type0 n)
-    else match Level.Map.find u subs, pseudo_sort_poly with
-    | TemplateProp, TemplatePseudoSortPoly ->
-      if Int.equal n 0 then
-        (* This is an instantiation of a template universe by Prop, ignore it *)
-        TemplateProp
-      else
-        (* Prop + S n actually means Set + S n *)
-        TemplateUniv (supern Universe.type0 n)
-    | TemplateAboveProp (q, u), TemplatePseudoSortPoly ->
-      TemplateAboveProp (q, supern u n)
-    | TemplateProp, TemplateUnivOnly ->
-      (* exploit Prop <= Set *)
-      TemplateUniv (supern Universe.type0 n)
-    | TemplateAboveProp (_, u), TemplateUnivOnly ->
-      TemplateUniv (supern u n)
-    | TemplateUniv v, _ -> TemplateUniv (supern v n)
-    | exception Not_found ->
-      (* Either an unbound template universe due to missing arguments, or a
-         global one appearing in the inductive arity. *)
-      TemplateUniv (supern (Universe.make u) n)
-  in
-  let u = List.map map u in
-  match List.fold_left max_template_universe TemplateProp u with
-  | TemplateProp ->
-    Sorts.prop
-  | TemplateUniv u -> Sorts.sort_of_univ u
-  | TemplateAboveProp (q,u) -> Sorts.qsort q u
-
-let get_arity c =
-  let decls, c = Term.decompose_prod_decls c in
-  match kind c with
-  | Sort (Sorts.Type u) ->
-    begin match Universe.level u with
-    | Some l -> (decls, l)
-    | None -> assert false
-    end
-  | _ -> assert false
+  let u = subst_template_universe usubst u in
+  Sorts.sort_of_univ u
 
 let rec subst_univs_ctx accu subs ctx params = match ctx, params with
 | [], [] -> accu
@@ -243,17 +226,22 @@ let rec subst_univs_ctx accu subs ctx params = match ctx, params with
 | (LocalAssum _ as decl) :: ctx, false :: params ->
   subst_univs_ctx (decl :: accu) subs ctx params
 | LocalAssum (na, t) :: ctx, true :: params ->
-  let (decls, u) = get_arity t in
-  let u = subst_univs_sort subs (Sorts.sort_of_univ (Universe.make u)) in
+  let (decls, qopt, u) = get_arity t in
+  let u = Universe.make u in
+  let s = match qopt with
+    | Some q -> Sorts.qsort q u
+    | None -> Sorts.sort_of_univ u
+  in
+  let u = subst_univs_sort subs s in
   let decl = LocalAssum (na, Term.it_mkProd_or_LetIn (mkSort u) decls) in
   subst_univs_ctx (decl :: accu) subs ctx params
 | _, [] | [], _ -> assert false
 
 let instantiate_template_constraints subst templ =
-  let _, cstrs = templ.template_context in
+  let cstrs = UVars.UContext.constraints @@ UVars.AbstractContext.repr templ.template_context in
   let fold (u, cst, v) accu =
     (* v is not a local universe by the unbounded from below property *)
-    let u = subst_univs_sort (subst, templ.template_pseudo_sort_poly) (Sorts.sort_of_univ (Universe.make u)) in
+    let u = subst_univs_sort subst (Sorts.sort_of_univ (Universe.make u)) in
     match u with
     | Sorts.SProp -> assert false
     | Sorts.Prop -> accu
@@ -276,10 +264,12 @@ let instantiate_template_universes (mib, _mip) args =
   | Some t -> t
   in
   let ctx = List.rev mib.mind_params_ctxt in
-  let subst0 = make_subst (ctx,templ.template_param_arguments,args) in
-  let subst = (subst0,templ.template_pseudo_sort_poly) in
+  let subst =
+    make_subst ~defaults:templ.template_default_univs
+      (ctx,templ.template_param_arguments,args)
+  in
   let ctx = subst_univs_ctx [] subst ctx templ.template_param_arguments in
-  let cstrs = instantiate_template_constraints subst0 templ in
+  let cstrs = instantiate_template_constraints subst templ in
   (cstrs, ctx, subst)
 
 (* Type of an inductive type *)

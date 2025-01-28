@@ -43,8 +43,14 @@ let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
       begin match mb.mind_template with
       | None -> Monomorphic_ind_entry
       | Some ctx ->
-        let pseudo_sort_poly = ctx.template_pseudo_sort_poly in
-        Template_ind_entry {univs=ctx.template_context; pseudo_sort_poly}
+        let _, univs = UVars.Instance.levels ctx.template_default_univs in
+        let csts = UVars.AbstractContext.instantiate ctx.template_default_univs ctx.template_context in
+        let pseudo_sort_poly =
+          let qsize, _ = UVars.AbstractContext.size ctx.template_context in
+          if Int.equal qsize 0 then TemplateUnivOnly
+          else TemplatePseudoSortPoly
+        in
+        Template_ind_entry {univs=(univs,csts); pseudo_sort_poly}
       end
     | Polymorphic auctx -> Polymorphic_ind_entry (AbstractContext.repr auctx)
   in
@@ -93,18 +99,23 @@ let check_arity env ar1 ar2 = match ar1, ar2 with
     (* template_level is inferred by indtypes, so functor application can produce a smaller one *)
   | (RegularArity _ | TemplateArity _), _ -> assert false
 
-let check_template_pseudo_sort_poly a b =
-  match a, b with
-  | TemplatePseudoSortPoly, TemplatePseudoSortPoly
-  | TemplateUnivOnly, TemplateUnivOnly -> true
-  | (TemplatePseudoSortPoly | TemplateUnivOnly), _ -> false
+let check_template_context ctx1 ctx2 =
+  let repr ctx =
+    let ctx = UVars.AbstractContext.repr ctx in
+    let inst = UVars.UContext.instance ctx in
+    let csts = UVars.UContext.constraints ctx in
+    inst, csts
+  in
+  let inst1, csts1 = repr ctx1 in
+  let inst2, csts2 = repr ctx2 in
+  UVars.Instance.equal inst1 inst2 && Constraints.equal csts1 csts2
 
 let check_template ar1 ar2 = match ar1, ar2 with
 | None, None -> true
-| Some ar, Some {template_context; template_param_arguments; template_pseudo_sort_poly} ->
+| Some ar, Some {template_context; template_param_arguments; template_default_univs} ->
   List.equal Bool.equal ar.template_param_arguments template_param_arguments &&
-  ContextSet.equal template_context ar.template_context &&
-  check_template_pseudo_sort_poly template_pseudo_sort_poly ar.template_pseudo_sort_poly
+  check_template_context template_context ar.template_context &&
+  UVars.Instance.equal template_default_univs ar.template_default_univs
 | None, Some _ | Some _, None -> false
 
 (* if the generated inductive is squashed the original one must be squashed *)

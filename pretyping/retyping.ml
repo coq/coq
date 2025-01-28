@@ -145,28 +145,43 @@ let safe_meta_type metas n = match metas with
 
 exception SingletonInductiveBecomesProp of inductive
 
-type output_q =
-  | OutputType
-  (* if the [QVar.t option] is None then it means Prop *)
-  | OutputVar of Sorts.QVar.t option * Univ.Level.Set.t
-
-let template_sort ~forbid_polyprop output_q boundus (s:Sorts.t) =
+let template_sort ~forbid_polyprop (boundqs,boundus) (s:Sorts.t) =
   match s with
   | SProp | Prop | Set -> ESorts.make s
-  | QSort _ -> assert false
+  | QSort (q,u) ->
+    let q = Sorts.QVar.Map.get q boundqs in
+    let () = match forbid_polyprop with
+      | None -> ()
+      | Some indna ->
+        if Sorts.Quality.(equal qprop q) then
+          raise (SingletonInductiveBecomesProp indna)
+    in
+    let subst_fn u = Univ.Level.Map.find_opt u boundus in
+    let u = UnivSubst.subst_univs_universe subst_fn u in
+    let s = Sorts.make q u in
+    ESorts.make s
   | Type u ->
     let subst_fn u = Univ.Level.Map.find_opt u boundus in
     let u = UnivSubst.subst_univs_universe subst_fn u in
-    let s = match output_q with
-      | OutputType -> Sorts.sort_of_univ u
-      | OutputVar (None, _) ->
-        begin match forbid_polyprop with
-        | None -> Sorts.prop
-        | Some indna -> raise (SingletonInductiveBecomesProp indna)
-        end
-      | OutputVar (Some q, _) -> Sorts.qsort q u
-    in
+    let s = Sorts.sort_of_univ u in
     ESorts.make s
+
+(* qualities must be above prop *)
+let max_template_qualities a b =
+  let open Sorts.Quality in
+  match a, b with
+  | QConstant QSProp, _ | _, QConstant QSProp -> assert false
+  | QConstant QProp, x | x, QConstant QProp -> x
+  | (QConstant QType as x), _ | _, (QConstant QType as x) -> x
+  | QVar qa, QVar qb ->
+    if Sorts.QVar.equal qa qb then a
+    else qtype
+
+let bind_template_qvar q v boundqs =
+  Sorts.QVar.Map.update q (function
+      | None -> Some v
+      | Some v' -> Some (max_template_qualities v v'))
+    boundqs
 
 let bind_template_univ ~domu u bound =
   Univ.Level.Map.update domu (function
@@ -174,80 +189,67 @@ let bind_template_univ ~domu u bound =
       | Some u' -> CErrors.anomaly ~label:"retyping" Pp.(str "non linear template univ"))
     bound
 
-let rec finish_template ~forbid_polyprop output_q boundus = let open TemplateArity in function
+let rec finish_template ~forbid_polyprop bounds = let open TemplateArity in function
   | CtorType (_,typ) -> typ
   | IndType (_, ctx, s) ->
-    let s = template_sort ~forbid_polyprop output_q boundus s in
+    let s = template_sort ~forbid_polyprop bounds s in
     mkArity (ctx,s)
   | DefParam (na,v,t,codom) ->
-    let codom = finish_template ~forbid_polyprop output_q boundus codom in
+    let codom = finish_template ~forbid_polyprop bounds codom in
     mkLetIn (na,v,t,codom)
   | NonTemplateArg (na,dom,codom) ->
-    let codom = finish_template ~forbid_polyprop output_q boundus codom in
+    let codom = finish_template ~forbid_polyprop bounds codom in
     mkProd (na,dom,codom)
-  | TemplateArg (na,ctx,domu,codom) ->
-    let output_q = match output_q with
-      | OutputType -> OutputType
-      | OutputVar (q, used_levels) ->
-        if Univ.Level.Set.mem domu used_levels
-        then OutputType
-        else output_q
+  | TemplateArg (na,ctx,binder,codom) ->
+    let boundqs, boundus = bounds in
+    let boundqs = match binder.bind_qvar with
+      | None -> boundqs
+      | Some q -> bind_template_qvar q Sorts.Quality.qtype boundqs
     in
-    let u = Univ.Universe.make domu in
-    let boundus = bind_template_univ ~domu u boundus in
-    let codom = finish_template ~forbid_polyprop output_q boundus codom in
+    let u = Univ.Universe.make binder.default_binding in
+    let boundus = bind_template_univ ~domu:binder.bind_univ u boundus in
+    let codom = finish_template ~forbid_polyprop (boundqs,boundus) codom in
     let s = Sorts.sort_of_univ u in
     mkProd (na, mkArity (ctx, ESorts.make s), codom)
 
-let rec type_of_template_knowing_parameters ~forbid_polyprop arity_sort_of output_q boundus typ args =
+let rec type_of_template_knowing_parameters ~forbid_polyprop arity_sort_of bounds typ args =
   let open TemplateArity in
   match args, typ with
   | [], _
   | _, (CtorType _ | IndType _) ->
-    finish_template ~forbid_polyprop output_q boundus typ
+    finish_template ~forbid_polyprop bounds typ
   | _, DefParam (na, v, t, codom) ->
-    let codom = type_of_template_knowing_parameters ~forbid_polyprop arity_sort_of output_q boundus codom args in
+    let codom = type_of_template_knowing_parameters ~forbid_polyprop arity_sort_of bounds codom args in
     mkLetIn (na, v, t, codom)
   | _ :: args, NonTemplateArg (na, dom, codom) ->
-    let codom = type_of_template_knowing_parameters ~forbid_polyprop arity_sort_of output_q boundus codom args in
+    let codom = type_of_template_knowing_parameters ~forbid_polyprop arity_sort_of bounds codom args in
     mkProd (na, dom, codom)
-  | arg :: args, TemplateArg (na, ctx, domu, codom) ->
+  | arg :: args, TemplateArg (na, ctx, binder, codom) ->
+    let boundqs, boundus = bounds in
     let s = arity_sort_of arg in
-    let output_q = match output_q with
-      | OutputType -> output_q
-      | OutputVar (q, used_levels) ->
-        if not (Univ.Level.Set.mem domu used_levels) then output_q
-        else match s with
-          | Sorts.SProp -> OutputType (* invalid type, return whatever *)
-          | Set | Type _ -> OutputType
-          | Prop -> output_q
-          | QSort (q', _) ->
-            match q with
-            | None -> OutputVar (Some q', used_levels)
-            | Some q ->
-              if Sorts.QVar.equal q q' then output_q
-              else
-                (* no other supremum for different qvars
-                   (Type is a supremum because they're above Prop) *)
-                OutputType
+    let boundqs = match binder.bind_qvar with
+      | None -> boundqs
+      | Some q ->
+        let v = match s with
+        | Sorts.SProp -> Sorts.Quality.qtype (* invalid type, return whatever *)
+        | Prop | Set | Type _ | QSort _ -> Sorts.quality s
+        in
+        bind_template_qvar q v boundqs
     in
     let boundus =
       let u = match s with
         | Sorts.SProp | Prop | Set -> Univ.Universe.type0
         | Type u | QSort (_, u) -> u
       in
-      bind_template_univ ~domu u boundus
+      bind_template_univ ~domu:binder.bind_univ u boundus
     in
-    let codom = type_of_template_knowing_parameters ~forbid_polyprop arity_sort_of output_q boundus codom args in
+    let codom = type_of_template_knowing_parameters ~forbid_polyprop arity_sort_of (boundqs,boundus) codom args in
     (* typing ensures [ctx -> s] is correct *)
     mkProd (na, mkArity (ctx, ESorts.make s), codom)
 
-let type_of_template_knowing_parameters ~forbid_polyprop arity_sort_of (can_be_prop,typ) args =
-  let output_q = match can_be_prop.TemplateArity.template_can_be_prop with
-    | None -> OutputType
-    | Some used_levels -> OutputVar (None, used_levels)
-  in
-  type_of_template_knowing_parameters ~forbid_polyprop arity_sort_of output_q Univ.Level.Map.empty typ args
+let type_of_template_knowing_parameters ~forbid_polyprop arity_sort_of typ args =
+  type_of_template_knowing_parameters ~forbid_polyprop arity_sort_of
+    (Sorts.QVar.Map.empty, Univ.Level.Map.empty) typ args
 
 let retype ?metas ?(polyprop=true) sigma =
   let rec type_of env cstr =

@@ -400,6 +400,9 @@ struct
     else
       List.Smart.map (fun x -> Expr.successor x) l
 
+  let supern n l =
+    iterate super n l
+
   (* Returns the formal universe that is greater than the universes u and v.
      Used to type the products. *)
   let rec sup (l1:t) (l2:t) : t =

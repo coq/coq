@@ -25,16 +25,15 @@ open Constr
     In truly universe polymorphic mode, we always use RegularArity.
 *)
 
-type template_pseudo_sort_poly = TemplatePseudoSortPoly | TemplateUnivOnly
-
 type template_arity = {
   template_level : Sorts.t;
 }
 
 type template_universes = {
   template_param_arguments : bool list;
-  template_context : Univ.ContextSet.t;
-  template_pseudo_sort_poly : template_pseudo_sort_poly;
+  (* Bound qvars are above Prop, and univs can be instantiated by algebraics *)
+  template_context : UVars.AbstractContext.t;
+  template_default_univs : UVars.Instance.t;
 }
 
 (** Inlining level of parameters at functor applications.

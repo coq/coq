@@ -313,6 +313,10 @@ let get_arity c =
     end
   | _ -> None
 
+let make_template_univ_names (u:UVars.Instance.t) : UVars.bound_names =
+  let qlen, ulen = UVars.Instance.length u in
+  Array.make qlen Anonymous, Array.make ulen Anonymous
+
 let get_template (mie:mutual_inductive_entry) = match mie.mind_entry_universes with
 | Monomorphic_ind_entry | Polymorphic_ind_entry _ -> mie, None
 | Template_ind_entry {univs=(template_univs, _ as template_context); pseudo_sort_poly} ->
@@ -445,11 +449,27 @@ let get_template (mie:mutual_inductive_entry) = match mie.mind_entry_universes w
 
   let template_assums = CList.filter_map (fun x -> x) template_params in
 
-  mie, Some {
-    template_param_arguments = List.rev_map Option.has_some template_assums;
-    template_context;
-    template_pseudo_sort_poly = pseudo_sort_poly;
-  }
+  let template_qvars = match pseudo_sort_poly with
+    | TemplateUnivOnly -> Sorts.QVar.Set.empty
+    | TemplatePseudoSortPoly -> Sorts.QVar.Set.singleton (Sorts.QVar.make_var 0)
+  in
+  let template_context =
+    UVars.UContext.of_context_set make_template_univ_names
+      template_qvars
+      template_context
+  in
+  let inst, template_context = UVars.abstract_universes template_context in
+  let template_default_univs =
+    let qinst, uinst = UVars.Instance.to_array inst in
+    let qinst = Array.make (Array.length qinst) Sorts.Quality.qtype in
+    UVars.Instance.of_array (qinst,uinst)
+  in
+
+  mie, Some (inst, {
+      template_param_arguments = List.rev_map Option.has_some template_assums;
+      template_context;
+      template_default_univs;
+    })
 
 let abstract_packets env usubst ((arity,lc),(indices,splayed_lc),univ_info) =
   if not (List.is_empty univ_info.missing)
@@ -578,17 +598,10 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   let usubst, univs = match mie.mind_entry_universes with
   | Monomorphic_ind_entry ->
       UVars.empty_sort_subst, Monomorphic
-  | Template_ind_entry info -> begin match info.pseudo_sort_poly with
-      | TemplateUnivOnly -> UVars.empty_sort_subst, Monomorphic
-      | TemplatePseudoSortPoly ->
-        (* replace Type@{Var 0 | u} back to Type@{u}
-           XXX it would be nicer to keep the qvar in the declared structure *)
-        let qsubst =
-          Sorts.QVar.Map.singleton (Sorts.QVar.make_var 0) Sorts.Quality.(QConstant QType)
-        in
-        let usubst = Univ.empty_level_subst in
-        (qsubst, usubst), Monomorphic
-    end
+  | Template_ind_entry _ ->
+    let inst, _ = Option.get template in
+    let subst = UVars.make_instance_subst inst in
+    subst, Monomorphic
   | Polymorphic_ind_entry uctx ->
     let (inst, auctx) = UVars.abstract_universes uctx in
     let inst = UVars.make_instance_subst inst in
@@ -604,4 +617,5 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
     Environ.push_rel_context ctx env
   in
 
+  let template = Option.map snd template in
   env_ar_par, univs, template, variance, record, why_not_prim_record, params, Array.of_list data

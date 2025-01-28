@@ -431,7 +431,6 @@ type linearity = Linear of Sorts.QVar.t option | NonLinear
 
 let pseudo_sort_poly ~non_template_qvars ~template_univs sigma params arity =
   (* to be pseudo sort poly, every univ in the conclusion must be bound at a free quality *)
-  let open Declarations in
   (* XXX maybe should be anomaly (ie directly call destArity) *)
   if not @@ isArity sigma arity then TemplateUnivOnly
   else

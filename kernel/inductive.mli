@@ -51,15 +51,18 @@ type template_univ =
   | TemplateAboveProp of Sorts.QVar.t * Universe.t
   | TemplateUniv of Universe.t
 
-type param_univs = (expected:Univ.Level.t -> template_univ) list
+(** [default] is used to provide an error like "expected [default] but got SProp" *)
+type param_univs = (default:Univ.Level.t -> template_univ) list
+
+type template_subst = Sorts.Quality.t Sorts.QVar.Map.t * Universe.t Level.Map.t
 
 val instantiate_template_constraints
-  : template_univ Univ.Level.Map.t
+  : template_subst
   -> Declarations.template_universes
   -> Univ.Constraints.t
 
 val instantiate_template_universes : mind_specif -> param_univs ->
-  Constraints.t * rel_context * (template_univ Univ.Level.Map.t * template_pseudo_sort_poly)
+  Constraints.t * rel_context * template_subst
 
 val constrained_type_of_inductive : mind_specif puniverses -> types constrained
 

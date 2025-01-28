@@ -1143,12 +1143,16 @@ let add_mind l mie senv =
   let kn = MutInd.make2 senv.modpath l in
   let sec_univs = Option.map Section.all_poly_univs senv.sections in
   let mib, why_not_prim_record = Indtypes.check_inductive senv.env ~sec_univs kn mie in
-  (* We still have to add the template monomorphic constraints, and only those
+  (* We still have to add the template default univs and their constraints, and only those
      ones. In all other cases, they are already part of the environment at this
      point. *)
   let senv = match mib.mind_template with
   | None -> senv
-  | Some { template_context = ctx; _ } -> push_context_set ~strict:true ctx senv
+  | Some { template_context = ctx; template_default_univs = u; _ } ->
+    let qs, us = UVars.Instance.levels u in
+    assert Sorts.Quality.(Set.for_all (equal qtype) qs);
+    let csts = UVars.AbstractContext.instantiate u ctx in
+    push_context_set ~strict:true (us,csts) senv
   in
   (kn, why_not_prim_record), add_checked_mind kn mib senv
 

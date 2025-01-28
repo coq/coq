@@ -138,6 +138,9 @@ sig
   val super : t -> t
   (** The universe strictly above *)
 
+  val supern : int -> t -> t
+  (** Iterated [super] *)
+
   val sup   : t -> t -> t
   (** The l.u.b. of 2 universes *)
 

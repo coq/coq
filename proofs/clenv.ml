@@ -124,8 +124,9 @@ let get_type_of_with_metas ~metas env sigma c =
 
 let refresh_template_constraints ~metas env sigma ind c =
   let (mib, _) as spec = Inductive.lookup_mind_specif env ind in
-  let (_, cstrs0) = (Option.get mib.mind_template).template_context in
-  if Univ.Constraints.is_empty cstrs0 then sigma
+  let auctx = (Option.get mib.mind_template).template_context in
+  if Univ.Constraints.is_empty (UVars.UContext.constraints @@ UVars.AbstractContext.repr auctx) then
+    sigma
   else
     let _, allargs = decompose_app sigma c in
     let map c = { uj_val = c; uj_type = get_type_of_with_metas ~metas env sigma c } in
