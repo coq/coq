@@ -10,7 +10,7 @@ doc: "https://coq.github.io/doc/"
 bug-reports: "https://github.com/coq/coq/issues"
 depends: [
   "dune" {>= "3.8"}
-  "rocq" {= version}
+  "rocq-prover" {= version}
   "coq-core" {= version}
   "coq-stdlib"
   "coqide-server" {= version}

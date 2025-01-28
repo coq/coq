@@ -1,5 +1,5 @@
 (lang dune 3.8)
-(name rocq)
+(name rocq-prover)
 
 ; We use directory targets in documentation
 (using directory-targets 0.1)
@@ -140,7 +140,7 @@ semi-interactive development of machine-checked proofs.
 This package provides the Rocq Reference Manual."))
 
 (package
- (name rocq)
+ (name rocq-prover)
  (allow_empty)
  (depends
   (rocq-core (= :version))
@@ -166,7 +166,7 @@ This package is a virtual package gathering the rocq-core and rocq-stdlib packag
  (name coq)
  (allow_empty)
  (depends
-  (rocq (= :version))
+  (rocq-prover (= :version))
   (coq-core (= :version))
   coq-stdlib
   (coqide-server (= :version)))
