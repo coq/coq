@@ -18,7 +18,7 @@ for k in $LIBDIRS; do
     if [[ $k =~ "user-contrib" ]]; then
         BASE_PREFIX=""
     else
-        BASE_PREFIX="Coq."
+        BASE_PREFIX="Corelib."
     fi
     d=$(basename "$k")
     for j in "$k"/*.v; do
