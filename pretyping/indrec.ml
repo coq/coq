@@ -160,7 +160,13 @@ let check_valid_elimination env sigma (ind, u as pind) ~dep s =
 let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) s =
   let open EConstr in
   let sigma = check_valid_elimination env sigma pind ~dep s in
-  let lnamespar = Vars.subst_instance_context u (of_rel_context mib.mind_params_ctxt) in
+  let lnamespar =
+    let u = match mib.mind_template with
+      | None -> u
+      | Some t -> EInstance.make t.template_default_univs
+    in
+    Vars.subst_instance_context u (of_rel_context mib.mind_params_ctxt)
+  in
   let indf = make_ind_family(pind, Context.Rel.instance_list mkRel 0 lnamespar) in
   let constrs = get_constructors env indf in
   let projs = get_projections env ind in
