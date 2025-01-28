@@ -37,10 +37,6 @@ type template_universes = {
   template_pseudo_sort_poly : template_pseudo_sort_poly;
 }
 
-type ('a, 'b) declaration_arity =
-  | RegularArity of 'a
-  | TemplateArity of 'b
-
 (** Inlining level of parameters at functor applications.
     None means no inlining *)
 
@@ -167,7 +163,9 @@ type regular_inductive_arity = {
   mind_sort : Sorts.t;
 }
 
-type inductive_arity = (regular_inductive_arity, template_arity) declaration_arity
+type inductive_arity =
+  | RegularArity of regular_inductive_arity
+  | TemplateArity of template_arity
 
 type squash_info =
   | AlwaysSquashed
