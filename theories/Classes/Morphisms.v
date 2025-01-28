@@ -804,4 +804,5 @@ Register do_subrelation as rewrite.prop.do_subrelation.
 Register apply_subrelation as rewrite.prop.apply_subrelation.
 Register RewriteRelation as rewrite.prop.RewriteRelation.
 Register Proper as rewrite.prop.Proper.
+Register proper_prf as rewrite.prop.proper_prf.
 Register ProperProxy as rewrite.prop.ProperProxy.
