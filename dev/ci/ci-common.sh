@@ -145,7 +145,9 @@ git_download()
       pushd "$dest"
       ref="$(git rev-parse HEAD)"
     else
-      git clone "$giturl" "$dest"
+      # if $ref isn't a branch (eg it's a commit hash or a tag) git clone -b will fail
+      # in that case do a full git clone
+      git clone "$giturl" "$dest" -b "$ref" --depth 10 || git clone "$giturl" "$dest"
       pushd "$dest"
       git checkout "$ref"
     fi
