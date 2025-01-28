@@ -45,6 +45,8 @@ help:
 	@echo "  - check:  build all ML files as fast as possible"
 	@echo "  - test-suite: run Rocq's test suite [env NJOBS=N to set job parallelism]"
 	@echo "  - dunestrap: Generate the dune rules for vo files"
+	@echo "  - ci-foo: run CI script for foo and its dependencies (cf dev/ci/README-developers.md)"
+	@echo "  - clean-ci: clean CI build directories"
 	@echo ""
 	@echo "  Note: running ./configure is not recommended for developers,"
 	@echo "        see dev/doc/build-system.dune.md for more info"
