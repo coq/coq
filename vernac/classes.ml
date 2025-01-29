@@ -276,18 +276,20 @@ let existing_instance ?loc glob c info =
 
 let type_ctx_instance ~program_mode env sigma ctx inst subst =
   let open Vars in
-  let rec aux (sigma, subst, instctx) l = function
-    decl :: ctx ->
-      let t' = substl subst (RelDecl.get_type decl) in
-      let (sigma, c'), l =
-        match decl with
-        | LocalAssum _ -> interp_casted_constr_evars ~program_mode env sigma (List.hd l) t', List.tl l
-        | LocalDef (_,b,_) -> (sigma, substl subst b), l
+  let rec aux (sigma, subst) l ctx = match ctx, l with
+    | LocalAssum _ :: _, [] | [], _ :: _ -> assert false
+    | LocalAssum (_,t) :: ctx, c :: l ->
+      let t' = substl subst t in
+      let (sigma, c') =
+        interp_casted_constr_evars ~program_mode env sigma c t'
       in
-      let d = RelDecl.get_name decl, Some c', t' in
-        aux (sigma, c' :: subst, d :: instctx) l ctx
-    | [] -> sigma, subst
-  in aux (sigma, subst, []) inst (List.rev ctx)
+      aux (sigma, c' :: subst) l ctx
+    | LocalDef (_,b,_) :: ctx, l ->
+      let c' = substl subst b in
+      aux (sigma, c' :: subst) l ctx
+    | [], [] -> sigma, subst
+  in
+  aux (sigma, subst) inst (List.rev ctx)
 
 let id_of_class cl =
   let open GlobRef in
@@ -452,7 +454,7 @@ let do_instance_type_ctx_instance props k env' ctx' sigma ~program_mode subst =
   match rest with
   | (n, _) :: _ ->
     unbound_method env' sigma k.cl_impl (get_id n)
-  | _ ->
+  | [] ->
     let kcl_props = of_rel_context k.cl_props in
     let sigma, res =
       type_ctx_instance ~program_mode
