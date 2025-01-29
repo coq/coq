@@ -37,17 +37,15 @@ type typeclass = {
      the class is a singleton. This acts as the class' global identifier. *)
 
   cl_context : Constr.rel_context;
-  (** Context in which the definitions are typed.
-      Includes both typeclass parameters and superclasses. *)
+  (** Context in which the definitions are typed. *)
 
   cl_props : Constr.rel_context;
-  (** Context of definitions and properties on defs, will not be shared *)
+  (** Context of definitions and properties on defs, used for "Instance := {}" *)
 
   cl_projs : class_method list;
   (** The methods implementations of the typeclass as projections.
       Some may be undefinable due to sorting restrictions or simply undefined if
-      no name is provided. The [int option option] indicates subclasses whose hint has
-      the given priority. *)
+      no name is provided. Used for dumpglob in "Instance := {}" and in elpi. *)
 
   cl_strict : bool;
   (** Whether we use matching or full unification during resolution *)

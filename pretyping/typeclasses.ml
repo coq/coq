@@ -46,13 +46,10 @@ type typeclass = {
   (* The class implementation *)
   cl_impl : GlobRef.t;
 
-  (* Context in which the definitions are typed. Includes both typeclass parameters and superclasses. *)
   cl_context : Constr.rel_context;
 
-  (* Context of definitions and properties on defs, will not be shared *)
   cl_props : Constr.rel_context;
 
-  (* The method implementations as projections. *)
   cl_projs : class_method list;
 
   cl_strict : bool;
