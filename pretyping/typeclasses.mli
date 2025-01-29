@@ -22,7 +22,6 @@ type hint_info = (Id.Set.t * Pattern.constr_pattern) hint_info_gen
 
 type class_method = {
   meth_name : Name.t;
-  meth_info : hint_info option;
   meth_const : Constant.t option;
 }
 

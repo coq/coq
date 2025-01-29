@@ -34,7 +34,6 @@ let { Goptions.get = get_typeclasses_unique_solutions } =
 
 type class_method = {
   meth_name : Name.t;
-  meth_info : hint_info option;
   meth_const : Constant.t option;
 }
 

@@ -208,7 +208,6 @@ let subst_class (subst,cl) =
     else
     {
       meth_name = m.meth_name;
-      meth_info = m.meth_info;
       meth_const = c;
     }
   in

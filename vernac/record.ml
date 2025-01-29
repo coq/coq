@@ -999,7 +999,6 @@ let declare_class ?mode declared =
       let fields = [ RelDecl.LocalAssum ({binder_name=fname; binder_relevance=frelevance}, field) ] in
       let proj = {
         Typeclasses.meth_name = fname;
-        meth_info = None;
         meth_const = Some proj_kn;
       }
       in
@@ -1011,7 +1010,6 @@ let declare_class ?mode declared =
       let fields = List.firstn mip.mind_consnrealdecls.(0) ctor_args in
       let make_proj decl kn = {
         Typeclasses.meth_name = RelDecl.get_name decl;
-        meth_info = None;
         meth_const = kn;
       }
       in
