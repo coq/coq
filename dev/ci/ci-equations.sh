@@ -11,8 +11,8 @@ if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 export COQEXTRAFLAGS='-native-compiler no'
 ( cd "${CI_BUILD_DIR}/equations"
-  [ -e Makefile.coq ] || ./configure.sh coq
-  make -f Makefile.coq .merlin
+  [ -e Makefile.rocq ] || ./configure.sh
+  make -f Makefile.rocq .merlin
   make
   make install
 )
