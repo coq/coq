@@ -749,4 +749,5 @@ Register forall_def as rewrite.type.forall_def.
 Register do_subrelation as rewrite.type.do_subrelation.
 Register apply_subrelation as rewrite.type.apply_subrelation.
 Register Proper as rewrite.type.Proper.
+Register proper_prf as rewrite.type.proper_prf.
 Register ProperProxy as rewrite.type.ProperProxy.

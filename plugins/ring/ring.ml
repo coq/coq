@@ -431,56 +431,56 @@ let op_smorph r add mul req m1 m2 =
 
 let ring_equality env sigma (r,add,mul,opp,req) =
   match EConstr.kind sigma req with
-    | App (f, [| _ |]) when isRefX env sigma (rocq_eq ()) f ->
-        let sigma, setoid = plapp sigma rocq_eq_setoid [|r|] in
-        let sigma, op_morph =
-          match opp with
-              Some opp -> plapp sigma rocq_eq_morph [|r;add;mul;opp|]
-          | None -> plapp sigma rocq_eq_smorph [|r;add;mul|] in
-        let sigma, setoid = Typing.solve_evars env sigma setoid in
-        let sigma, op_morph = Typing.solve_evars env sigma op_morph in
-        (setoid,op_morph)
-    | _ ->
-        let sigma, setoid = setoid_of_relation env sigma r req in
-        let signature = [Some (r,Some req);Some (r,Some req)],Some(r,Some req) in
-        let add_m, add_m_lem =
-          try Rewrite.Internal.default_morphism env sigma signature add
-          with Not_found ->
-            CErrors.user_err (str "Ring addition " ++ pr_econstr_env env sigma add ++ str " should be declared as a morphism.") in
-        let mul_m, mul_m_lem =
-          try Rewrite.Internal.default_morphism env sigma signature mul
-          with Not_found ->
-            CErrors.user_err (str "Ring multiplication " ++ pr_econstr_env env sigma mul ++ str " should be declared as a morphism.") in
-        let op_morph =
-          match opp with
-            | Some opp ->
-                (let opp_m,opp_m_lem =
-                  try Rewrite.Internal.default_morphism env sigma ([Some(r,Some req)],Some(r,Some req)) opp
-                  with Not_found ->
-                    CErrors.user_err (str "Ring opposite " ++ pr_econstr_env env sigma opp ++ str " should be declared as a morphism.") in
-                let op_morph =
-                  op_morph r add mul opp req add_m_lem mul_m_lem opp_m_lem in
-                  Flags.if_verbose
-                    Feedback.msg_info
-                    (str"Using setoid \""++ pr_econstr_env env sigma req++str"\""++spc()++
-                        str"and morphisms \""++pr_econstr_env env sigma add_m ++
-                        str"\","++spc()++ str"\""++pr_econstr_env env sigma mul_m++
-                        str"\""++spc()++str"and \""++pr_econstr_env env sigma opp_m++
-                        str"\"");
-                  op_morph)
-            | None ->
-                (Flags.if_verbose
-                    Feedback.msg_info
-                    (str"Using setoid \""++pr_econstr_env env sigma req ++str"\"" ++ spc() ++
-                        str"and morphisms \""++pr_econstr_env env sigma add_m ++
-                        str"\""++spc()++str"and \""++
-                        pr_econstr_env env sigma mul_m++str"\"");
-                 op_smorph r add mul req add_m_lem mul_m_lem) in
-          (setoid,op_morph)
+  | App (f, [| _ |]) when isRefX env sigma (rocq_eq ()) f ->
+    let sigma, setoid = plapp sigma rocq_eq_setoid [|r|] in
+    let sigma, op_morph =
+      match opp with
+        Some opp -> plapp sigma rocq_eq_morph [|r;add;mul;opp|]
+      | None -> plapp sigma rocq_eq_smorph [|r;add;mul|] in
+    let sigma, setoid = Typing.solve_evars env sigma setoid in
+    let sigma, op_morph = Typing.solve_evars env sigma op_morph in
+    (sigma,setoid,op_morph)
+  | _ ->
+    let sigma, setoid = setoid_of_relation env sigma r req in
+    let signature = [Some (r,Some req);Some (r,Some req)],Some(r,Some req) in
+    let sigma, add_m, add_m_lem =
+      try Rewrite.Internal.default_morphism env sigma signature add
+      with Not_found ->
+        CErrors.user_err (str "Ring addition " ++ pr_econstr_env env sigma add ++ str " should be declared as a morphism.") in
+    let sigma, mul_m, mul_m_lem =
+      try Rewrite.Internal.default_morphism env sigma signature mul
+      with Not_found ->
+        CErrors.user_err (str "Ring multiplication " ++ pr_econstr_env env sigma mul ++ str " should be declared as a morphism.") in
+    let sigma, op_morph =
+      match opp with
+      | Some opp ->
+        (let sigma, opp_m,opp_m_lem =
+           try Rewrite.Internal.default_morphism env sigma ([Some(r,Some req)],Some(r,Some req)) opp
+           with Not_found ->
+             CErrors.user_err (str "Ring opposite " ++ pr_econstr_env env sigma opp ++ str " should be declared as a morphism.") in
+         let op_morph =
+           op_morph r add mul opp req add_m_lem mul_m_lem opp_m_lem in
+         Flags.if_verbose
+           Feedback.msg_info
+           (str"Using setoid \""++ pr_econstr_env env sigma req++str"\""++spc()++
+            str"and morphisms \""++pr_econstr_env env sigma add_m ++
+            str"\","++spc()++ str"\""++pr_econstr_env env sigma mul_m++
+            str"\""++spc()++str"and \""++pr_econstr_env env sigma opp_m++
+            str"\"");
+         sigma, op_morph)
+      | None ->
+        (Flags.if_verbose
+           Feedback.msg_info
+           (str"Using setoid \""++pr_econstr_env env sigma req ++str"\"" ++ spc() ++
+            str"and morphisms \""++pr_econstr_env env sigma add_m ++
+            str"\""++spc()++str"and \""++
+            pr_econstr_env env sigma mul_m++str"\"");
+         sigma, op_smorph r add mul req add_m_lem mul_m_lem) in
+    (sigma,setoid,op_morph)
 
 let build_setoid_params env sigma r add mul opp req eqth =
   match eqth with
-      Some th -> th
+      Some (a,b) -> sigma,a,b
     | None -> ring_equality env sigma (r,add,mul,opp,req)
 
 let dest_ring env sigma th_spec =
@@ -569,7 +569,7 @@ let interp_div env sigma div =
 let add_theory0 env sigma name rth eqth morphth cst_tac (pre,post) power sign div =
   check_required_library (cdir@["Ring_base"]);
   let (kind,r,zero,one,add,mul,sub,opp,req) = dest_ring env sigma rth in
-  let (sth,ext) = build_setoid_params env sigma r add mul opp req eqth in
+  let (sigma, sth,ext) = build_setoid_params env sigma r add mul opp req eqth in
   let sigma, (pow_tac, pspec) = interp_power env sigma power in
   let sigma, sspec = interp_sign env sigma sign in
   let sigma, dspec = interp_div env sigma div in
@@ -846,18 +846,18 @@ let ftheory_to_obj : field_info -> obj =
 
 let field_equality env sigma r inv req =
   match EConstr.kind sigma req with
-    | App (f, [| _ |]) when isRefX env sigma (rocq_eq ()) f ->
-        let c = UnivGen.constr_of_monomorphic_global (Global.env ()) Rocqlib.(lib_ref "core.eq.congr") in
-        let c = EConstr.of_constr c in
-        mkApp(c,[|r;r;inv|])
-    | _ ->
-        let _setoid = setoid_of_relation env sigma r req in
-        let signature = [Some (r,Some req)],Some(r,Some req) in
-        let inv_m, inv_m_lem =
-          try Rewrite.Internal.default_morphism env sigma signature inv
-          with Not_found ->
-            error "field inverse should be declared as a morphism" in
-          inv_m_lem
+  | App (f, [| _ |]) when isRefX env sigma (rocq_eq ()) f ->
+    let c = UnivGen.constr_of_monomorphic_global (Global.env ()) Rocqlib.(lib_ref "core.eq.congr") in
+    let c = EConstr.of_constr c in
+    sigma, mkApp(c,[|r;r;inv|])
+  | _ ->
+    let _setoid = setoid_of_relation env sigma r req in
+    let signature = [Some (r,Some req)],Some(r,Some req) in
+    let sigma, inv_m, inv_m_lem =
+      try Rewrite.Internal.default_morphism env sigma signature inv
+      with Not_found ->
+        error "field inverse should be declared as a morphism" in
+    sigma, inv_m_lem
 
 let add_field_theory0 env sigma name fth eqth morphth cst_tac inj (pre,post) power sign odiv =
   let open Constr in
@@ -865,13 +865,13 @@ let add_field_theory0 env sigma name fth eqth morphth cst_tac inj (pre,post) pow
   let (sigma,fth) = ic env sigma fth in
   let (kind,r,zero,one,add,mul,sub,opp,div,inv,req,rth) =
     dest_field env sigma fth in
-  let (sth,ext) = build_setoid_params env sigma r add mul opp req eqth in
+  let (sigma,sth,ext) = build_setoid_params env sigma r add mul opp req eqth in
   let eqth = Some(sth,ext) in
   let _ = add_theory0 env sigma name rth eqth morphth cst_tac (pre,post) power sign odiv in
   let sigma, (pow_tac, pspec) = interp_power env sigma power in
   let sigma, sspec = interp_sign env sigma sign in
   let sigma, dspec = interp_div env sigma odiv in
-  let inv_m = field_equality env sigma r inv req in
+  let sigma, inv_m = field_equality env sigma r inv req in
   let rk = reflect_coeff morphth in
   let params,ctx =
     exec_tactic env sigma 9 (field_ltac"field_lemmas")

@@ -54,8 +54,7 @@ module PropGlobal = struct
   let proper_class =
     fun () -> Option.get (TC.class_info (Rocqlib.lib_ref "rewrite.prop.Proper"))
 
-  let proper_proj () =
-    UnsafeMonomorphic.mkConst (Option.get (List.hd (proper_class ()).TC.cl_projs).TC.meth_const)
+  let proper_proj () = Rocqlib.lib_ref "rewrite.prop.proper_prf"
 
 end
 
@@ -137,9 +136,10 @@ let proper_projection env sigma r ty =
   let ctx, inst = decompose_prod_decls sigma ty in
   let mor, args = destApp sigma inst in
   let instarg = mkApp (r, rel_vect 0 (List.length ctx)) in
-  let app = mkApp (PropGlobal.proper_proj (),
+  let sigma, proj = Evd.fresh_global env sigma (PropGlobal.proper_proj ()) in
+  let app = mkApp (proj,
                   Array.append args [| instarg |]) in
-    it_mkLambda_or_LetIn app ctx
+  sigma, it_mkLambda_or_LetIn app ctx
 
 let declare_projection name instance_id r =
   let env = Global.env () in
@@ -147,7 +147,7 @@ let declare_projection name instance_id r =
   let sigma = Evd.from_env env in
   let sigma,c = Evd.fresh_global env sigma r in
   let ty = Retyping.get_type_of env sigma c in
-  let body = proper_projection env sigma c ty in
+  let sigma, body = proper_projection env sigma c ty in
   let sigma, typ = Typing.type_of env sigma body in
   let ctx, typ = decompose_prod_decls sigma typ in
   let typ =

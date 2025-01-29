@@ -247,8 +247,7 @@ end) = struct
     let r = lazy (bind_rewrite_ref "ProperProxy" ()) in
     fun () -> Option.get (TC.class_info (Lazy.force r))
 
-  let proper_proj () =
-    UnsafeMonomorphic.mkConst (Option.get (List.hd (proper_class ()).TC.cl_projs).TC.meth_const)
+  let proper_proj () = bind_rewrite_ref "proper_prf" ()
 
   let proper_type env (sigma,cstrs) =
     let l = (proper_class ()).TC.cl_impl in
@@ -1778,14 +1777,15 @@ let rec strategy_of_ast bindings = function
 
 let strategy_of_ast s = strategy_of_ast Id.Map.empty s
 
-let proper_projection sigma r ty =
+let proper_projection env sigma r ty =
   let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i)) in
   let ctx, inst = decompose_prod_decls sigma ty in
   let mor, args = destApp sigma inst in
   let instarg = mkApp (r, rel_vect 0 (List.length ctx)) in
-  let app = mkApp (PropGlobal.proper_proj (),
+  let sigma, proj = Evd.fresh_global env sigma (PropGlobal.proper_proj ()) in
+  let app = mkApp (proj,
                   Array.append args [| instarg |]) in
-    it_mkLambda_or_LetIn app ctx
+  sigma, it_mkLambda_or_LetIn app ctx
 
 let build_morphism_signature env sigma m =
   let m,ctx = Constrintern.interp_constr env sigma m in
@@ -1817,12 +1817,13 @@ let build_morphism_signature env sigma m =
 
 let default_morphism env sigma sign m =
   let t = Retyping.get_type_of env sigma m in
-  let evars, _, sign, cstrs =
+  let sigma, _, sign, cstrs =
     PropGlobal.build_signature (sigma, Evar.Set.empty) env t (fst sign) (snd sign)
   in
-  let evars, morph = app_poly_check env evars PropGlobal.proper_type [| t; sign; m |] in
-  let evars, mor = Class_tactics.resolve_one_typeclass env (goalevars evars) morph in
-    mor, proper_projection sigma mor morph
+  let sigma, morph = app_poly_check env sigma PropGlobal.proper_type [| t; sign; m |] in
+  let sigma, mor = Class_tactics.resolve_one_typeclass env (goalevars sigma) morph in
+  let sigma, proj = proper_projection env sigma mor morph in
+  sigma, mor, proj
 
 (** Bind to "rewrite" too *)
 
