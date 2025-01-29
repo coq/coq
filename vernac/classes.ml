@@ -392,13 +392,9 @@ let declare_instance_open sigma ?hook ~tac ~locality ~poly id pri impargs udecl 
 let instance_constructor cl args =
   match cl.clu_impl with
   | GlobRef.IndRef ind ->
-    Some (applist (mkConstructUi ((ind,cl.clu_univs), 1), args))
+    applist (mkConstructUi ((ind,cl.clu_univs), 1), args)
   | GlobRef.ConstRef cst ->
-    let term = match args with
-      | [] -> None
-      | _ -> Some (List.last args)
-    in
-    term
+    List.last args
   | _ -> assert false
 
 let do_instance_subst_constructor_and_ty subst k ctx =
@@ -410,7 +406,7 @@ let do_instance_subst_constructor_and_ty subst k ctx =
   let ty_constr = instance_type k subst in
   let app = instance_constructor k subst in
   let termtype = it_mkProd_or_LetIn ty_constr ctx in
-  let term = it_mkLambda_or_LetIn (Option.get app) ctx in
+  let term = it_mkLambda_or_LetIn app ctx in
   term, termtype
 
 let do_instance_resolve_TC termtype sigma env =
