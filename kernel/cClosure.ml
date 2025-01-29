@@ -906,7 +906,7 @@ let get_branch infos ci pms cterm br e =
     @raise Not_found if the inductive is not a primitive record, or if the
     constructor is partially applied.
  *)
-let eta_expand_ind_stack env (ind,u) m s (f, s') =
+let eta_expand_ind_stack env (ind,u) m (f, s') =
   let open Declarations in
   let mib = lookup_mind (fst ind) env in
   (* disallow eta-exp for non-primitive records *)
@@ -917,9 +917,11 @@ let eta_expand_ind_stack env (ind,u) m s (f, s') =
            arg1..argn ~= (proj1 t...projn t) where t = zip (f,s') *)
     let pars = mib.Declarations.mind_nparams in
     let right = fapp_stack (f, s') in
-    let (m, _s) = strip_update_shift_absorb_app m s in
     (** Try to drop the params, might fail on partially applied constructors. *)
     let argss = try_drop_parameters pars m in
+    let () = if not @@ Int.equal (Array.length projs) (Array.length argss)
+      then raise Not_found (* partially applied constructor (missing non-param arguments) *)
+    in
     let hstack = Array.map (fun (p,r) ->
         { mark = Red; (* right can't be a constructor though *)
           term = FProj (Projection.make p true, UVars.subst_instance_relevance u r, right) })

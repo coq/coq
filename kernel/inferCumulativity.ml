@@ -228,6 +228,7 @@ let rec infer_fterm cv_pb infos variances hd stk =
     in
     infer_stack infos variances stk
   | FConstruct ((ctor,u),args) ->
+    assert (List.is_empty stk);
     let variances =
       let nargs = Array.length args in
       infer_constructor_instance_eq (info_env (fst infos)) variances ctor nargs u
