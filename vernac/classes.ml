@@ -275,6 +275,7 @@ type typeclass_in_univs = {
   clu_univs : EInstance.t;
   clu_context : EConstr.rel_context;
   clu_trivial : bool;
+  clu_isstruct : Structures.Structure.t option;
   clu_props : EConstr.rel_context;
   clu_projs : class_method list;
 }
@@ -390,12 +391,11 @@ let declare_instance_open sigma ?hook ~tac ~locality ~poly id pri impargs udecl 
     lemma
 
 let instance_constructor cl args =
-  match cl.clu_impl with
-  | GlobRef.IndRef ind ->
-    applist (mkConstructUi ((ind,cl.clu_univs), 1), args)
-  | GlobRef.ConstRef cst ->
+  match cl.clu_isstruct with
+  | Some s ->
+    applist (mkConstructUi ((s.name,cl.clu_univs), 1), args)
+  | None ->
     List.last args
-  | _ -> assert false
 
 let do_instance_subst_constructor_and_ty subst k ctx =
   let subst =
@@ -519,10 +519,18 @@ let do_instance_program ~pm env env' sigma ?hook ~locality ~poly cty k ctx ctx' 
 let typeclass_univ_instance (cl, u) =
   assert (UVars.eq_sizes (UVars.AbstractContext.size cl.cl_univs) (EInstance.length u));
   let subst_ctx c = Context.Rel.map (Vars.subst_instance_constr u) (EConstr.of_rel_context c) in
+  let clu_isstruct = match cl.cl_impl with
+    | ConstRef _ -> None
+    | ConstructRef _ | VarRef _ -> assert false
+    | IndRef ind -> match Structures.Structure.find ind with
+      | exception Not_found -> None
+      | s -> Some s
+  in
   { clu_impl = cl.cl_impl;
     clu_univs = u;
     clu_context = subst_ctx cl.cl_context;
     clu_props = subst_ctx cl.cl_props;
+    clu_isstruct;
     clu_trivial = cl.cl_trivial;
     clu_projs = cl.cl_projs;
   }

@@ -42,7 +42,9 @@ type typeclass = {
   (** Class declared with "Class Foo params := {}", produces 0 goals in interactive mode. *)
 
   cl_props : Constr.rel_context;
-  (** Context of definitions and properties on defs, used for "Instance := {}" *)
+  (** Context of definitions and properties on defs, used for "Instance := {}".
+      If [cl_impl] is a record this is the arguments of its constructor (without parameters).
+      Otherwise it is a single [LocalAssum] of type convertible to [cl_impl]. *)
 
   cl_projs : class_method list;
   (** The methods implementations of the typeclass as projections.
