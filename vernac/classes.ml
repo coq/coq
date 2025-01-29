@@ -310,30 +310,17 @@ let declare_instance_constant iinfo global impargs ?hook name udecl poly sigma t
   let kn = Declare.declare_definition ~cinfo ~info ~opaque:false ~body:term sigma in
   instance_hook iinfo global ?hook kn
 
-let instance_constructor (cl,u) args =
+let instance_type (cl,u) args =
   let lenpars = List.count is_local_assum cl.cl_context in
-  let open EConstr in
-  let pars = fst (List.chop lenpars args) in
-  match cl.cl_impl with
-  | GlobRef.IndRef ind ->
-    let ind = ind, u in
-    (Some (applist (mkConstructUi (ind, 1), args)),
-     applist (mkIndU ind, pars))
-  | GlobRef.ConstRef cst ->
-    let cst = cst, u in
-    let term = match args with
-      | [] -> None
-      | _ -> Some (List.last args)
-    in
-    (term, applist (mkConstU cst, pars))
-  | _ -> assert false
+  let pars = List.firstn lenpars args in
+  applist (mkRef (cl.cl_impl,u), pars)
 
 let do_declare_instance sigma ~locality ~poly k u ctx ctx' pri udecl impargs subst name =
   let subst = List.fold_left2
       (fun subst' s decl -> if is_local_assum decl then s :: subst' else subst')
       [] subst k.cl_context
   in
-  let (_, ty_constr) = instance_constructor (k,u) subst in
+  let ty_constr = instance_type (k,u) subst in
   let termtype = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
   let sigma, entry = Declare.prepare_parameter ~poly sigma ~udecl ~types:termtype in
   let cst = Declare.declare_constant ~name
@@ -400,13 +387,26 @@ let declare_instance_open sigma ?hook ~tac ~locality ~poly id pri impargs udecl 
   | None ->
     lemma
 
+let instance_constructor (cl,u) args =
+  match cl.cl_impl with
+  | GlobRef.IndRef ind ->
+    Some (applist (mkConstructUi ((ind,u), 1), args))
+  | GlobRef.ConstRef cst ->
+    let term = match args with
+      | [] -> None
+      | _ -> Some (List.last args)
+    in
+    term
+  | _ -> assert false
+
 let do_instance_subst_constructor_and_ty subst k u ctx =
   let subst =
     List.fold_left2 (fun subst' s decl ->
       if is_local_assum decl then s :: subst' else subst')
     [] subst (k.cl_props @ k.cl_context)
   in
-  let (app, ty_constr) = instance_constructor (k,u) subst in
+  let ty_constr = instance_type (k,u) subst in
+  let app = instance_constructor (k,u) subst in
   let termtype = it_mkProd_or_LetIn ty_constr ctx in
   let term = it_mkLambda_or_LetIn (Option.get app) ctx in
   term, termtype
