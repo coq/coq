@@ -1854,8 +1854,8 @@ and interp_atomic ist tac : unit Proofview.tactic =
           in
           let ist = { ist with lfun = lfun' } in
             if is_onhyps && is_onconcl
-            then interp_type ist env sigma c
-            else interp_constr ist env sigma c
+            then Changed (interp_type ist env sigma c)
+            else Changed (interp_constr ist env sigma c)
         in
         Tactics.change ~check None c_interp (interp_clause ist (pf_env gl) (project gl) cl)
       end
@@ -1876,7 +1876,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
           let env = ensure_freshness env in
           let ist = { ist with lfun = lfun' } in
             try
-              interp_constr ist env sigma c
+              Changed (interp_constr ist env sigma c)
             with e when to_catch e (* Hack *) ->
               user_err  (strbrk "Failed to get enough information from the left-hand side to type the right-hand side.")
         in
