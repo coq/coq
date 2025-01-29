@@ -77,7 +77,6 @@ TIMED?=
 TIMECMD?=
 # Use command time on linux, gtime on Mac OS
 TIMEFMT?="$(if $(findstring undefined, $(flavor 1)),$@,$(1)) (real: %e, user: %U, sys: %S, mem: %M ko)"
-ifneq (,$(TIMED))
 ifeq (0,$(shell command time -f "" true >/dev/null 2>/dev/null; echo $$?))
 STDTIME?=command time -f $(TIMEFMT)
 else
@@ -86,9 +85,6 @@ STDTIME?=gtime -f $(TIMEFMT)
 else
 STDTIME?=command time
 endif
-endif
-else
-STDTIME?=command time -f $(TIMEFMT)
 endif
 
 COQBIN?=
