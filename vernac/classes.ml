@@ -436,9 +436,9 @@ let do_instance_type_ctx_instance props k env' ctx' sigma ~program_mode subst =
              let rest' = List.filter (fun v -> not (is_id v)) rest
              in
              let {CAst.loc;v=mid} = get_id loc_mid in
-             List.iter (fun m ->
-                 if Name.equal m.meth_name (Name mid) then
-                   Option.iter (fun x -> Dumpglob.add_glob ?loc (GlobRef.ConstRef x)) m.meth_const) k.clu_projs;
+             let opt_proj = List.find_opt (fun m -> Name.equal m.meth_name (Name mid)) k.clu_projs in
+             opt_proj |> Option.iter (fun x ->
+                 x.meth_const |> Option.iter (fun x -> Dumpglob.add_glob ?loc (GlobRef.ConstRef x)));
              c :: props, rest'
            with Not_found ->
              ((CAst.make @@ CHole (None)) :: props), rest
