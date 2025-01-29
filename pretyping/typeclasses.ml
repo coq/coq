@@ -15,7 +15,6 @@ open Vars
 open Evd
 open Util
 open Typeclasses_errors
-open Context.Rel.Declaration
 
 (*i*)
 
@@ -168,25 +167,6 @@ let remove_instance inst =
     with Not_found -> assert false in
   let insts = GlobRef.Map.remove inst.is_impl insts in
   instances := GlobRef.Map.add inst.is_class insts !instances
-
-
-let instance_constructor (cl,u) args =
-  let lenpars = List.count is_local_assum cl.cl_context in
-  let open EConstr in
-  let pars = fst (List.chop lenpars args) in
-    match cl.cl_impl with
-      | GlobRef.IndRef ind ->
-        let ind = ind, u in
-          (Some (applist (mkConstructUi (ind, 1), args)),
-           applist (mkIndU ind, pars))
-      | GlobRef.ConstRef cst ->
-        let cst = cst, u in
-        let term = match args with
-          | [] -> None
-          | _ -> Some (List.last args)
-        in
-          (term, applist (mkConstU cst, pars))
-      | _ -> assert false
 
 let typeclasses () = GlobRef.Map.fold (fun _ l c -> l :: c) !classes []
 

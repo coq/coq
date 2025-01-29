@@ -310,6 +310,24 @@ let declare_instance_constant iinfo global impargs ?hook name udecl poly sigma t
   let kn = Declare.declare_definition ~cinfo ~info ~opaque:false ~body:term sigma in
   instance_hook iinfo global ?hook kn
 
+let instance_constructor (cl,u) args =
+  let lenpars = List.count is_local_assum cl.cl_context in
+  let open EConstr in
+  let pars = fst (List.chop lenpars args) in
+  match cl.cl_impl with
+  | GlobRef.IndRef ind ->
+    let ind = ind, u in
+    (Some (applist (mkConstructUi (ind, 1), args)),
+     applist (mkIndU ind, pars))
+  | GlobRef.ConstRef cst ->
+    let cst = cst, u in
+    let term = match args with
+      | [] -> None
+      | _ -> Some (List.last args)
+    in
+    (term, applist (mkConstU cst, pars))
+  | _ -> assert false
+
 let do_declare_instance sigma ~locality ~poly k u ctx ctx' pri udecl impargs subst name =
   let subst = List.fold_left2
       (fun subst' s decl -> if is_local_assum decl then s :: subst' else subst')
