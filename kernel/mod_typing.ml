@@ -239,17 +239,24 @@ let check_with_alg ustate vmstate env mp (sign, alg, reso, cst, vm) wd =
   let struc, reso, cst, vm = check_with ustate vmstate env mp (sign, reso, cst, vm) wd in
   struc, MEwith (alg, wd), reso, cst, vm
 
-let translate_apply ustate env inl mp (sign,alg,reso,cst,vm) mp1 mkalg =
-  let farg_id, farg_b, fbody_b = destr_functor sign in
+let rec translate_apply ustate env inl mp subst (sign, reso, cst) args = match args with
+| [] ->
+  let sign = subst_signature subst mp sign in
+  let reso = subst_codom_delta_resolver subst reso in
+  (sign, reso, cst)
+| mp1 :: args ->
+  let farg_id, farg_b, sign = destr_functor sign in
+  let farg_b =
+    if is_empty_subst subst then farg_b
+    else subst_modtype subst_codom subst (MPbound farg_id) farg_b
+  in
   let mtb = module_type_of_module (lookup_module mp1 env) in
   let cst = Subtyping.check_subtypes (cst, ustate) env mp1 mtb (MPbound farg_id) farg_b in
   let mp_delta = discr_resolver mp1 mtb in
   let mp_delta = inline_delta_resolver env inl mp1 farg_id farg_b mp_delta in
-  let subst = map_mbid farg_id mp1 mp_delta in
-  let body = subst_signature subst mp fbody_b in
-  let alg' = mkalg alg mp1 in
-  let reso' = subst_codom_delta_resolver subst reso in
-  body, alg', reso', cst, vm
+  let nsubst = map_mbid farg_id mp1 mp_delta in
+  let subst = join subst nsubst in
+  translate_apply ustate env inl mp subst (sign, reso, cst) args
 
 (** Translation of a module struct entry :
     - We translate to a module when a [module_path] is given,
@@ -258,10 +265,12 @@ let translate_apply ustate env inl mp (sign,alg,reso,cst,vm) mp1 mkalg =
     - The second output is the algebraic expression, kept for the extraction.
 *)
 
-let mk_alg_app alg arg = MEapply (alg,arg)
+let rec decompose_apply accu = function
+| MEapply (f, arg) -> decompose_apply (arg :: accu) f
+| (MEident _ | MEwith _) as f -> f, accu
 
-let rec translate_mse (cst, ustate) (vm, vmstate) env mpo inl = function
-  | MEident mp1 as me ->
+let rec translate_mse (cst, ustate) (vm, vmstate) env mpo inl me = match me with
+  | MEident mp1 ->
     let mb = match mpo with
       | Some mp -> strengthen_and_subst_module_body mp1 (lookup_module mp1 env) mp false
       | None ->
@@ -269,9 +278,13 @@ let rec translate_mse (cst, ustate) (vm, vmstate) env mpo inl = function
         module_body_of_type mt
     in
     mod_type mb, me, mod_delta mb, cst, vm
-  | MEapply (fe,mp1) ->
+  | MEapply _ ->
+    let fe, args = decompose_apply [] me in
+    let (sign, alg, reso, cst, vm) = translate_mse (cst, ustate) (vm, vmstate) env mpo inl fe in
     let mp = match mpo with Some mp -> mp | None -> mp_from_mexpr fe in
-    translate_apply ustate env inl mp (translate_mse (cst, ustate) (vm, vmstate) env mpo inl fe) mp1 mk_alg_app
+    let (sign, reso, cst) = translate_apply ustate env inl mp empty_subst (sign, reso, cst) args in
+    let alg = List.fold_left (fun accu arg -> MEapply (accu, arg)) alg args in
+    (sign, alg, reso, cst, vm)
   | MEwith(me, with_decl) ->
     assert (Option.is_empty mpo); (* No 'with' syntax for modules *)
     let mp = mp_from_mexpr me in
@@ -369,9 +382,11 @@ let rec translate_mse_include_module (cst, ustate) (vm, vmstate) env mp inl = fu
     let mb = strengthen_and_subst_module_body mp1 (lookup_module mp1 env) mp true in
     let sign = clean_bounded_mod_expr (mod_type mb) in
     sign, (), mod_delta mb, cst, vm
-  | MEapply (fe,arg) ->
-    let ftrans = translate_mse_include_module (cst, ustate) (vm, vmstate) env mp inl fe in
-    translate_apply ustate env inl mp ftrans arg (fun _ _ -> ())
+  | MEapply _ as me ->
+    let fe, args = decompose_apply [] me in
+    let (sign, (), reso, cst, vm) = translate_mse_include_module (cst, ustate) (vm, vmstate) env mp inl fe in
+    let (sign, reso, cst) = translate_apply ustate env inl mp empty_subst (sign, reso, cst) args in
+    (sign, (), reso, cst, vm)
   | MEwith _ -> assert false (* No 'with' syntax for modules *)
 
 let translate_mse_include is_mod (cst, ustate) (vm, vmstate) env mp inl me =
