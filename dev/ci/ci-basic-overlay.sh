@@ -501,8 +501,13 @@ project jasmin "https://github.com/jasmin-lang/jasmin" "main"
 ########################################################################
 # Lean Importer
 ########################################################################
+# Lean3 version
 project lean_importer "https://github.com/SkySkimmer/coq-lean-import" "master"
 # Contact @SkySkimmer on github
+
+# Lean4 version
+project lean4_importer "https://github.com/JasonGross/coq-lean-import" "lean4-rebased"
+# Contact @JasonGross or @SkySkimmer on github
 
 ########################################################################
 # SMTCoq

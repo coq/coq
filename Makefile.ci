@@ -80,6 +80,7 @@ CI_TARGETS= \
     ci-json \
     ci-kami \
     ci-lean_importer \
+    ci-lean4_importer \
     ci-ltac2_compiler \
     ci-mathcomp_test \
     ci-metacoq \
