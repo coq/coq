@@ -680,7 +680,7 @@ let term_of_process c stk = term_of_fconstr (zip c stk)
 (* when we don't need to return the depth & initial part of the stack,
    with only the rebuilt term sufficing
    (typically head is a fconstruct so we return a fconstruct with added args) *)
-let strip_update_shift_app_constructor head stk =
+let strip_update_shift_absorb_app head stk =
   let rec strip_rec h = function
     | Zshift(k) :: s ->
         strip_rec (lift_fconstr k h) s
@@ -917,7 +917,7 @@ let eta_expand_ind_stack env (ind,u) m s (f, s') =
            arg1..argn ~= (proj1 t...projn t) where t = zip (f,s') *)
     let pars = mib.Declarations.mind_nparams in
     let right = fapp_stack (f, s') in
-    let (m, _s) = strip_update_shift_app_constructor m s in
+    let (m, _s) = strip_update_shift_absorb_app m s in
     (** Try to drop the params, might fail on partially applied constructors. *)
     let argss = try_drop_parameters pars m in
     let hstack = Array.map (fun (p,r) ->
@@ -1344,9 +1344,10 @@ let rec knh info m stk =
       (match unfold_projection info p r with
        | None -> (m, stk)
        | Some s -> knh info c (s :: zupdate info m stk))
+    | FConstruct _ -> strip_update_shift_absorb_app m stk
 
 (* cases where knh stops *)
-    | (FFlex _|FLetIn _|FConstruct _|FEvar _|FCaseInvert _|FIrrelevant|
+    | (FFlex _|FLetIn _|FEvar _|FCaseInvert _|FIrrelevant|
        FCoFix _|FLambda _|FRel _|FAtom _|FInd _|FProd _|FInt _|FFloat _|
        FString _|FArray _) ->
         (m, stk)
@@ -1382,7 +1383,8 @@ and knht info e t stk =
       | None -> ({ mark = Red; term = FProj (p, r, mk_clos e c) }, stk)
       | Some s -> knht info e c (s :: stk)
       end
-    | (Ind _|Const _|Construct _|Var _|Meta _ | Sort _ | Int _|Float _|String _) -> (mk_clos e t, stk)
+    | Construct _ -> knh info (mk_clos e t) stk
+    | (Ind _|Const _|Var _|Meta _ | Sort _ | Int _|Float _|String _) -> (mk_clos e t, stk)
     | CoFix cfx ->
       { mark = Cstr; term = FCoFix (cfx,e) }, stk
     | Lambda _ -> { mark = Cstr ; term = mk_lambda e t }, stk
@@ -1569,7 +1571,7 @@ and match_endstack : 'a. ('a, 'a patstate) reduction -> _ -> _ -> pat_state:(_, 
 and try_unfoldfix : 'a. ('a, 'a patstate) reduction -> _ -> _ -> pat_state:(_, _, _, 'a) depth -> _ -> 'a =
   fun red info tab ~pat_state (b, m, stk) ->
   if not b then red.red_ret info tab ~pat_state ~failed:true (m, stk) else
-  let rarg, stack = strip_update_shift_app_constructor m stk in
+  let rarg, stack = strip_update_shift_absorb_app m stk in
   match [@ocaml.warning "-4"] stack with
   | Zfix (fx, par) :: s ->
     let stk' = par @ append_stack [|rarg|] s in
@@ -1850,7 +1852,8 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
      let use_match = red_set info.i_flags fMATCH in
      let use_fix = red_set info.i_flags fFIX in
      if use_match || use_fix then
-      (match [@ocaml.warning "-4"] strip_update_shift_app_constructor m stk with
+      (match [@ocaml.warning "-4"] m,  stk with
+        | (_, Zapp _ :: _) -> assert false (* knh *)
         | (c, ZcaseT(ci,_,pms,_,br,e)::s) when use_match ->
             assert (ci.ci_npar>=0);
             (* instance on the case and instance on the constructor are compatible by typing *)
@@ -1887,7 +1890,7 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
   | FLetIn (_,v,_,bd,e) when red_set info.i_flags fZETA ->
       knit info tab ~pat_state (on_fst (subs_cons v) e) bd stk
   | FInt _ | FFloat _ | FString _ | FArray _ ->
-    (match [@ocaml.warning "-4"] strip_update_shift_app_constructor m stk with
+    (match [@ocaml.warning "-4"] strip_update_shift_absorb_app m stk with
      | (_, Zprimitive(op,(_,u as c),rargs,nargs)::s) ->
        let (rargs, nargs) = skip_native_args (m::rargs) nargs in
        begin match nargs with
