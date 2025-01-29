@@ -8,7 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(*i*)
+module CVars = Vars
+
 open Names
 open EConstr
 open CErrors
@@ -24,7 +25,6 @@ open Class_tactics
 open Libobject
 
 module RelDecl = Context.Rel.Declaration
-(*i*)
 
 let warn_default_mode = CWarnings.create ~name:"class-declaration-default-mode" ~category:CWarnings.CoreCategories.automation
   ~default:CWarnings.Disabled
@@ -523,6 +523,12 @@ let do_instance_program ~pm env env' sigma ?hook ~locality ~poly cty k u ctx ctx
   else
     declare_instance_program pm env sigma ~locality ~poly id pri imps decl term termtype
 
+let typeclass_univ_instance (cl, u) =
+  assert (UVars.eq_sizes (UVars.AbstractContext.size cl.cl_univs) (UVars.Instance.length u));
+  let subst_ctx c = Context.Rel.map (CVars.subst_instance_constr u) c in
+    { cl with cl_context = subst_ctx cl.cl_context;
+      cl_props = subst_ctx cl.cl_props}
+
 let interp_instance_context ~program_mode env ctx pl tclass =
   let sigma, decl = interp_univ_decl_opt env pl in
   let sigma, (impls, ((env', ctx), imps)) = interp_context_evars ~program_mode env sigma ctx in
@@ -533,7 +539,7 @@ let interp_instance_context ~program_mode env ctx pl tclass =
   let ctx'' = ctx' @ ctx in
   let (k, u), args = Typeclasses.dest_class_app (push_rel_context ctx'' env) sigma c in
   let u_s = EInstance.kind sigma u in
-  let cl = Typeclasses.typeclass_univ_instance (k, u_s) in
+  let cl = typeclass_univ_instance (k, u_s) in
   let args = List.map of_constr args in
   let cl_context = of_rel_context cl.cl_context in
   let _, args =

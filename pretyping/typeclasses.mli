@@ -88,9 +88,6 @@ val class_info_exn : env -> evar_map -> GlobRef.t -> typeclass
     This is done separately by typeclass_univ_instance. *)
 val dest_class_app : env -> evar_map -> EConstr.constr -> (typeclass * EConstr.EInstance.t) * constr list
 
-(** Get the instantiated typeclass structure for a given universe instance. *)
-val typeclass_univ_instance : typeclass UVars.puniverses -> typeclass
-
 (** Just return None if not a class *)
 val class_of_constr : env -> evar_map -> EConstr.constr ->
   (EConstr.rel_context * ((typeclass * EConstr.EInstance.t) * constr list)) option

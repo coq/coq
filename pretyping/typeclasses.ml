@@ -11,7 +11,6 @@
 (*i*)
 open Names
 open Constr
-open Vars
 open Evd
 open Util
 open Typeclasses_errors
@@ -78,12 +77,6 @@ let hint_priority is = is.is_info.hint_priority
 
 let classes : typeclasses ref = Summary.ref GlobRef.Map.empty ~name:"classes"
 let instances : instances ref = Summary.ref GlobRef.Map.empty ~name:"instances"
-
-let typeclass_univ_instance (cl, u) =
-  assert (UVars.eq_sizes (UVars.AbstractContext.size cl.cl_univs) (UVars.Instance.length u));
-  let subst_ctx c = Context.Rel.map (subst_instance_constr u) c in
-    { cl with cl_context = subst_ctx cl.cl_context;
-      cl_props = subst_ctx cl.cl_props}
 
 let class_info c = GlobRef.Map.find_opt c !classes
 
