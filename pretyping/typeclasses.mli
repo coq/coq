@@ -38,6 +38,9 @@ type typeclass = {
   cl_context : Constr.rel_context;
   (** Context in which the definitions are typed. *)
 
+  cl_trivial : bool;
+  (** Class declared with "Class Foo params := {}", produces 0 goals in interactive mode. *)
+
   cl_props : Constr.rel_context;
   (** Context of definitions and properties on defs, used for "Instance := {}" *)
 

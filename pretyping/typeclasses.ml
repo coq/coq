@@ -46,6 +46,8 @@ type typeclass = {
 
   cl_context : Constr.rel_context;
 
+  cl_trivial : bool;
+
   cl_props : Constr.rel_context;
 
   cl_projs : class_method list;

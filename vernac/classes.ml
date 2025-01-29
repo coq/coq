@@ -215,6 +215,7 @@ let subst_class (subst,cl) =
   { cl_univs = cl.cl_univs;
     cl_impl = do_subst_gr cl.cl_impl;
     cl_context = do_subst_ctx cl.cl_context;
+    cl_trivial = cl.cl_trivial;
     cl_props = do_subst_ctx cl.cl_props;
     cl_projs = do_subst_projs cl.cl_projs;
     cl_strict = cl.cl_strict;
@@ -230,6 +231,7 @@ let discharge_class cl =
     { cl_univs = cl_univs';
       cl_impl = cl.cl_impl;
       cl_context = context;
+      cl_trivial = cl.cl_trivial;
       cl_props = props;
       cl_projs = List.Smart.map discharge_proj cl.cl_projs;
       cl_strict = cl.cl_strict;
@@ -478,7 +480,7 @@ let do_instance_interactive env env' sigma ?hook ~tac ~locality ~poly cty k u ct
         (interp_props ~program_mode:false env' cty k u ctx ctx' subst sigma props)
     | None ->
       let term, termtype =
-        if List.is_empty k.cl_props then
+        if k.cl_trivial then
           let term, termtype =
             do_instance_subst_constructor_and_ty subst k u (ctx' @ ctx) in
           Some term, termtype
