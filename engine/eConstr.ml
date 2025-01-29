@@ -61,6 +61,8 @@ module EInstance = struct
 
   let equal sigma i1 i2 =
     UVars.Instance.equal (kind sigma i1) (kind sigma i2)
+
+  let length u = UVars.Instance.length (unsafe_to_instance u)
 end
 
 module Expand :

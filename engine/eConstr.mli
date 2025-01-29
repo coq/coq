@@ -81,6 +81,7 @@ sig
   val kind : Evd.evar_map -> t -> UVars.Instance.t
   val empty : t
   val is_empty : t -> bool
+  val length : t -> int * int
 end
 
 type types = t
