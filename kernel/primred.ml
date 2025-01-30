@@ -88,56 +88,56 @@ let add_retroknowledge retro action =
     end
 
 let add_retroknowledge env action =
-  set_retroknowledge env (add_retroknowledge env.retroknowledge action)
+  set_retroknowledge env (add_retroknowledge (Environ.retroknowledge env) action)
 
 let get_int_type env =
-  match env.retroknowledge.retro_int63 with
+  match (Environ.retroknowledge env).retro_int63 with
   | Some c -> c
   | None -> anomaly Pp.(str"Reduction of primitive: int63 not registered")
 
 let get_float_type env =
-  match env.retroknowledge.retro_float64 with
+  match (Environ.retroknowledge env).retro_float64 with
   | Some c -> c
   | None -> anomaly Pp.(str"Reduction of primitive: float64 not registered")
 
 let get_string_type env =
-  match env.retroknowledge.retro_string with
+  match (Environ.retroknowledge env).retro_string with
   | Some c -> c
   | None -> anomaly Pp.(str"Reduction of primitive: string not registered")
 
 let get_cmp_type env =
-  match env.retroknowledge.retro_cmp with
+  match (Environ.retroknowledge env).retro_cmp with
   | Some (((mindcmp,_),_),_,_) ->
      Constant.make (MutInd.user mindcmp) (MutInd.canonical mindcmp)
   | None -> anomaly Pp.(str"Reduction of primitive: comparison not registered")
 
 let get_bool_constructors env =
-  match env.retroknowledge.retro_bool with
+  match (Environ.retroknowledge env).retro_bool with
   | Some r -> r
   | None -> anomaly Pp.(str"Reduction of primitive: bool not registered")
 
 let get_carry_constructors env =
-  match env.retroknowledge.retro_carry with
+  match (Environ.retroknowledge env).retro_carry with
   | Some r -> r
   | None -> anomaly Pp.(str"Reduction of primitive: carry not registered")
 
 let get_pair_constructor env =
-  match env.retroknowledge.retro_pair with
+  match (Environ.retroknowledge env).retro_pair with
   | Some c  -> c
   | None -> anomaly Pp.(str"Reduction of primitive: pair not registered")
 
 let get_cmp_constructors env =
-  match env.retroknowledge.retro_cmp with
+  match (Environ.retroknowledge env).retro_cmp with
   | Some r -> r
   | None -> anomaly Pp.(str"Reduction of primitive: cmp not registered")
 
 let get_f_cmp_constructors env =
-  match env.retroknowledge.retro_f_cmp with
+  match (Environ.retroknowledge env).retro_f_cmp with
   | Some r -> r
   | None -> anomaly Pp.(str"Reduction of primitive: fcmp not registered")
 
 let get_f_class_constructors env =
-  match env.retroknowledge.retro_f_class with
+  match (Environ.retroknowledge env).retro_f_class with
   | Some r -> r
   | None -> anomaly Pp.(str"Reduction of primitive: fclass not registered")
 

@@ -135,7 +135,7 @@ let default_evar_handler env = {
   evar_repack = (fun _ -> assert false);
   evar_irrelevant = (fun _ -> assert false);
   qvar_irrelevant = (fun q ->
-      assert (Sorts.QVar.Set.mem q env.env_qualities);
+      assert (Sorts.QVar.Set.mem q (Environ.qualities env));
       false);
 }
 
@@ -377,7 +377,7 @@ end = struct
       | RelKey n ->
         let i = n - 1 in
         let d =
-          try Range.get env.env_rel_context.env_rel_map i
+          try Range.get (Environ.rel_context_val env).env_rel_map i
           with Invalid_argument _ -> raise Not_found
         in
         shortcut_irrelevant info (RelDecl.get_relevance d);
@@ -408,9 +408,9 @@ end = struct
           in
           Def (constant_value_in u cb.const_body, mask)
         | Symbol b ->
-          let r = match Cmap_env.find_opt cst env.symb_pats with
-          | None -> assert false
-          | Some r -> r
+          let r = match lookup_rewrite_rules cst env with
+          | exception Not_found -> assert false
+          | r -> r
           in
           raise (NotEvaluableConst (HasRules (u, b, r)))
         else
@@ -1139,7 +1139,7 @@ module FNativeEntries =
       defined_array := Option.has_some retro.Retroknowledge.retro_array
 
     let init env =
-      current_retro := env.retroknowledge;
+      current_retro := Environ.retroknowledge env;
       init_int !current_retro;
       init_float !current_retro;
       init_string !current_retro;
@@ -1152,7 +1152,7 @@ module FNativeEntries =
       init_array !current_retro
 
     let check_env env =
-      if not (!current_retro == env.retroknowledge) then init env
+      if not (!current_retro == Environ.retroknowledge env) then init env
 
     let check_int env =
       check_env env;
@@ -1313,10 +1313,7 @@ let rec skip_irrelevant_stack info stk = match stk with
   skip_irrelevant_stack info s
 
 let is_irrelevant_constructor infos ((ind,_),u) =
-  match Indmap_env.find_opt ind (info_env infos).Environ.irr_inds with
-  | None -> false
-  | Some r ->
-    is_irrelevant infos @@ UVars.subst_instance_relevance u r
+  is_irrelevant infos @@ UVars.subst_instance_relevance u @@ ind_relevance ind (info_env infos)
 
 (*********************************************************************)
 (* A machine that inspects the head of a term until it finds an

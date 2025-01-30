@@ -204,7 +204,7 @@ let define_pure_evar_as_array env sigma evk =
 let is_array_const env sigma c =
   match EConstr.kind sigma c with
   | Const (cst,_) ->
-    (match env.Environ.retroknowledge.Retroknowledge.retro_array with
+    (match (Environ.retroknowledge env).Retroknowledge.retro_array with
      | None -> false
      | Some cst' -> Environ.QConstant.equal env cst cst')
   | _ -> false

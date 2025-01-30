@@ -67,31 +67,8 @@ type rel_context_val = private {
   env_rel_map : Constr.rel_declaration Range.t;
 }
 
-type env = private {
-  env_globals       : Globals.t;
-  env_named_context : named_context_val; (* section variables *)
-  env_rel_context   : rel_context_val;
-  env_universes : UGraph.t;
-  env_qualities : Sorts.QVar.Set.t;
-  symb_pats : rewrite_rule list Cmap_env.t;
-  env_typing_flags  : typing_flags;
-  vm_library : Vmlibrary.t;
-  retroknowledge : Retroknowledge.retroknowledge;
-  rewrite_rules_allowed : bool;
-  (** Allow rewrite rules (breaks e.g. SR) *)
-
-  (** caches *)
-  env_nb_rel        : int;
-  irr_constants : Sorts.relevance Cmap_env.t
-(** [irr_constants] is a cache of the relevances which are not Relevant.
-    In other words, [const_relevance == Option.default Relevant (find_opt con irr_constants)]. *);
-  irr_inds : Sorts.relevance Indmap_env.t
-(** [irr_inds] is a cache of the relevances which are not Relevant. cf [irr_constants]. *);
-  constant_hyps : Names.Id.Set.t Names.Cmap_env.t
-(** Cache section variables depended on by each constant. Not present -> depends on nothing. *);
-  inductive_hyps : Names.Id.Set.t Names.Mindmap_env.t
-(** Cache section variables depended on by each inductive. Not present -> depends on nothing. *);
-}
+type env
+(** Type of global environments. *)
 
 type rewrule_not_allowed = Symb | Rule
 exception RewriteRulesNotAllowed of rewrule_not_allowed
@@ -104,7 +81,9 @@ val eq_named_context_val : named_context_val -> named_context_val -> bool
 val empty_env : env
 
 val universes     : env -> UGraph.t
+val qualities     : env -> Sorts.QVar.Set.t
 val rel_context   : env -> Constr.rel_context
+val rel_context_val : env -> rel_context_val
 val named_context : env -> Constr.named_context
 val named_context_val : env -> named_context_val
 
@@ -210,10 +189,12 @@ val lookup_constant_key :  Constant.t -> env -> constant_key
    raises an anomaly if the required path is not found *)
 val lookup_constant    : Constant.t -> env -> constant_body
 val evaluable_constant : Constant.t -> env -> bool
+val constant_relevance : Constant.t -> env -> Sorts.relevance
 
 val mem_constant : Constant.t -> env -> bool
 
 val add_rewrite_rules : (Constant.t * rewrite_rule) list -> env -> env
+val lookup_rewrite_rules : Constant.t -> env -> rewrite_rule list
 
 (** New-style polymorphism *)
 val polymorphic_constant  : Constant.t -> env -> bool
@@ -280,6 +261,8 @@ val add_mind : MutInd.t -> mutual_inductive_body -> env -> env
 val lookup_mind : MutInd.t -> env -> mutual_inductive_body
 
 val mem_mind : MutInd.t -> env -> bool
+
+val ind_relevance : inductive -> env -> Sorts.relevance
 
 (** The universe context associated to the inductive, empty if not
     polymorphic *)
@@ -460,6 +443,7 @@ val no_link_info : link_info
 
 (** Primitives *)
 val set_retroknowledge : env -> Retroknowledge.retroknowledge -> env
+val retroknowledge : env -> Retroknowledge.retroknowledge
 
 module Internal : sig
   (** Makes qvar 0 bound and treated as above prop.
