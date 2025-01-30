@@ -156,6 +156,8 @@ ci-cross_crypto: ci-stdlib
 
 ci-mtac2: ci-unicoq ci-stdlib
 
+ci-lean4_importer: ci-stdlib
+
 ci-coqutil: ci-stdlib
 ci-kami: ci-stdlib
 ci-rewriter: ci-stdlib
