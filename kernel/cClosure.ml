@@ -457,6 +457,7 @@ type recorded_steps = {
   mutable deltas : int;
   mutable matches : int;
   mutable fixpoints : int;
+  mutable seconds : float;
 }
 
 let empty_recorded_steps () = {
@@ -464,6 +465,7 @@ let empty_recorded_steps () = {
   deltas = 0;
   matches = 0;
   fixpoints = 0;
+  seconds = 0.;
 }
 
 let add_step record : step_kind -> unit = function
@@ -477,12 +479,35 @@ let global_steps = ref None
 type clos_tab = {
   tab : Table.t;
   recorded_steps : recorded_steps RedContextTbl.t option;
+  last_time : (current_context * float) ref;
 }
+
+let gettime = Unix.gettimeofday
 
 let create_tab ?(record_steps=false) () = {
   tab = Table.create ();
   recorded_steps = if record_steps then Some (RedContextTbl.create 17) else None;
+  last_time = ref (None, if record_steps then gettime() else 0.);
 }
+
+let update_time ?(force=false) tab ctx =
+  match tab.recorded_steps with
+  | None -> ()
+  | Some records ->
+    let ctx0, t0 = !(tab.last_time) in
+    if not force && (ctx0 == ctx || RedContext.equal ctx0 ctx) then ()
+    else begin
+      let record = match RedContextTbl.find_opt records ctx0 with
+        | Some record -> record
+        | None ->
+          let record = empty_recorded_steps () in
+          RedContextTbl.add records ctx0 record;
+          record
+      in
+      let t1 = gettime () in
+      record.seconds <- record.seconds +. (t1 -. t0);
+      tab.last_time := (ctx, t1)
+    end
 
 module RecordedSteps = struct
   (* immutable version for the API *)
@@ -491,6 +516,7 @@ module RecordedSteps = struct
     deltas : int;
     matches : int;
     fixpoints : int;
+    seconds : float;
   }
 
   let copy (steps:recorded_steps) : t = {
@@ -498,6 +524,7 @@ module RecordedSteps = struct
     deltas = steps.deltas;
     matches = steps.matches;
     fixpoints = steps.fixpoints;
+    seconds = steps.seconds;
   }
 
   let empty_steps : t = {
@@ -505,6 +532,7 @@ module RecordedSteps = struct
     deltas = 0;
     matches = 0;
     fixpoints = 0;
+    seconds = 0.;
   }
 
   let add_steps (a:t) (b:t) : t = {
@@ -512,6 +540,7 @@ module RecordedSteps = struct
     deltas = a.deltas + b.deltas;
     matches = a.matches + b.matches;
     fixpoints = a.fixpoints + b.fixpoints;
+    seconds = a.seconds +. b.seconds;
   }
 
   let has_recorded_steps tab =
@@ -1429,24 +1458,25 @@ let is_irrelevant_constructor infos ((ind,_),u) =
    atom or a subterm that may produce a redex (abstraction,
    constructor, cofix, letin, constant), or a neutral term (product,
    inductive) *)
-let rec knh info m stk =
+let rec knh info tab m stk =
+  let () = update_time tab m.ctx in
   match m.term with
-    | FLIFT(k,a) -> knh info a (zshift k stk)
-    | FCLOS(t,e) -> knht info e m.ctx t (zupdate info m stk)
+    | FLIFT(k,a) -> knh info tab a (zshift k stk)
+    | FCLOS(t,e) -> knht info tab e m.ctx t (zupdate info m stk)
     | FLOCKED -> assert false
-    | FApp(a,b) -> knh info a (append_stack b (zupdate info m stk))
+    | FApp(a,b) -> knh info tab a (append_stack b (zupdate info m stk))
     | FCaseT(ci,u,pms,(_,r as p),t,br,e) ->
       let r' = usubst_relevance e r in
       if is_irrelevant info r' then
         (mk_irrelevant, skip_irrelevant_stack info stk)
       else
-        knh info t (ZcaseT(m.ctx,ci,u,pms,p,br,e)::zupdate info m stk)
+        knh info tab t (ZcaseT(m.ctx,ci,u,pms,p,br,e)::zupdate info m stk)
     | FFix (((ri, n), (lna, _, _)), e) ->
       if is_irrelevant info (usubst_relevance e (lna.(n)).binder_relevance) then
         (mk_irrelevant, skip_irrelevant_stack info stk)
       else
         (match get_nth_arg m ri.(n) stk with
-             (Some(pars,arg),stk') -> knh info arg (Zfix(m,pars)::stk')
+             (Some(pars,arg),stk') -> knh info tab arg (Zfix(m,pars)::stk')
            | (None, stk') -> (m,stk'))
     | FProj (p,r,c) ->
       if is_irrelevant info r then
@@ -1454,7 +1484,7 @@ let rec knh info m stk =
       else
       (match unfold_projection info m.ctx p r with
        | None -> (m, stk)
-       | Some s -> knh info c (s :: zupdate info m stk))
+       | Some s -> knh info tab c (s :: zupdate info m stk))
 
 (* cases where knh stops *)
     | (FFlex _|FLetIn _|FConstruct _|FEvar _|FCaseInvert _|FIrrelevant|
@@ -1463,15 +1493,16 @@ let rec knh info m stk =
         (m, stk)
 
 (* The same for pure terms *)
-and knht info e ctx t stk =
+and knht info tab e ctx t stk =
+  let () = update_time tab ctx in
   match kind t with
     | App(a,b) ->
-        knht info e ctx a (append_stack (mk_clos_vect ctx e b) stk)
+        knht info tab e ctx a (append_stack (mk_clos_vect ctx e b) stk)
     | Case(ci,u,pms,(_,r as p),NoInvert,t,br) ->
       if is_irrelevant info (usubst_relevance e r) then
         (mk_irrelevant, skip_irrelevant_stack info stk)
       else
-        knht info e ctx t (ZcaseT(ctx, ci, u, pms, p, br, e)::stk)
+        knht info tab e ctx t (ZcaseT(ctx, ci, u, pms, p, br, e)::stk)
     | Case(ci,u,pms,(_,r as p),CaseInvert{indices},t,br) ->
       if is_irrelevant info (usubst_relevance e r) then
         (mk_irrelevant, skip_irrelevant_stack info stk)
@@ -1482,16 +1513,16 @@ and knht info e ctx t stk =
       if is_irrelevant info (usubst_relevance e (lna.(n)).binder_relevance) then
         (mk_irrelevant, skip_irrelevant_stack info stk)
       else
-        knh info { ctx; mark = Cstr; term = FFix (fx, e) } stk
-    | Cast(a,_,_) -> knht info e ctx a stk
-    | Rel n -> knh info (clos_rel (fst e) n) stk
+        knh info tab { ctx; mark = Cstr; term = FFix (fx, e) } stk
+    | Cast(a,_,_) -> knht info tab e ctx a stk
+    | Rel n -> knh info tab (clos_rel (fst e) n) stk
     | Proj (p, r, c) ->
       let r = usubst_relevance e r in
       if is_irrelevant info r then
         (mk_irrelevant, skip_irrelevant_stack info stk)
       else begin match unfold_projection info ctx p r with
       | None -> ({ ctx; mark = Red; term = FProj (p, r, mk_clos ctx e c) }, stk)
-      | Some s -> knht info e ctx c (s :: stk)
+      | Some s -> knht info tab e ctx c (s :: stk)
       end
     | (Ind _|Const _|Construct _|Var _|Meta _ | Sort _ | Int _|Float _|String _) -> (mk_clos ctx e t, stk)
     | CoFix cfx ->
@@ -1503,7 +1534,7 @@ and knht info e ctx t stk =
       { ctx; mark = Red; term = FLetIn (n, mk_clos ctx e b, mk_clos ctx e t, c, e) }, stk
     | Evar ev ->
       begin match info.i_cache.i_sigma.evar_expand ev with
-      | EvarDefined c -> knht info e ctx c stk
+      | EvarDefined c -> knht info tab e ctx c stk
       | EvarUndefined (evk, args) ->
         assert (UVars.Instance.is_empty (snd e));
         if info.i_cache.i_sigma.evar_irrelevant ev then
@@ -1517,7 +1548,7 @@ and knht info e ctx t stk =
       let ty = mk_clos ctx e ty in
       let t = Parray.init (Uint63.of_int len) (fun i -> mk_clos ctx e t.(i)) (mk_clos ctx e def) in
       let term = FArray (u,t,ty) in
-      knh info { ctx; mark = Cstr; term } stk
+      knh info tab { ctx; mark = Cstr; term } stk
 
 (************************************************************************)
 
@@ -1956,6 +1987,7 @@ let record_step_in records flag ctx =
   add_step record flag
 
 let record_step tab flag ctx =
+  update_time tab ctx;
   let () = match tab.recorded_steps, !global_steps with
     | None, None -> ()
     | Some records, None | None, Some records ->
@@ -2134,16 +2166,17 @@ and knr_ret : type a. _ -> _ -> pat_state: a depth -> ?failed: _ -> _ -> a =
       } in
       RedPattern.match_head red info tab ~pat_state patt m stk
   | RedPattern.Nil b ->
-      match b with No -> i | Yes -> if failed then None else Some i
+    let () = update_time ~force:true tab (fst i).ctx in
+    match b with No -> i | Yes -> if failed then None else Some i
 
 (* Computes the weak head normal form of a term *)
 and kni : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
   fun info tab ~pat_state m stk ->
-  let (hm,s) = knh info m stk in
+  let (hm,s) = knh info tab m stk in
   knr info tab ~pat_state hm s
 and knit : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> _ -> _ -> 'a =
   fun info tab ~pat_state e ctx t stk ->
-  let (ht,s) = knht info e ctx t stk in
+  let (ht,s) = knht info tab e ctx t stk in
   knr info tab ~pat_state ht s
 
 and case_inversion info tab ci u params indices v = match v with
@@ -2162,7 +2195,7 @@ and case_inversion info tab ci u params indices v = match v with
     let _, expect = mip.mind_nf_lc.(0) in
     let _ind, expect_args = destApp expect in
     let tab = if info.i_cache.i_mode == Conversion then tab
-      else { tab = Table.create (); recorded_steps = tab.recorded_steps }
+      else { tab = Table.create (); recorded_steps = tab.recorded_steps; last_time = tab.last_time }
     in
     let info = {info with i_cache = { info.i_cache with i_mode = Conversion}; i_flags=all} in
     let check_index i index =
@@ -2345,7 +2378,7 @@ let whd_stack infos tab m stk = match m.mark with
 | Ntrl ->
   (** No need to perform [kni] nor to unlock updates because
       every head subterm of [m] is [Ntrl] *)
-  knh infos m stk
+  knh infos tab m stk
 | Red | Cstr ->
   let k = kni infos tab m stk in
   let () =

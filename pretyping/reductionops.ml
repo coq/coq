@@ -1328,16 +1328,28 @@ let to_table header total steps =
       in
       [int v; percentage ++ str "%"]
     in
+    let pp_time get =
+      let v = get steps in
+      let total = get total in
+      let percentage = if total = 0. then begin
+          assert (v = 0.);
+          int 0
+        end
+        else int (int_of_float ((v *. 100.) /. total))
+      in
+      [str (Format.asprintf "%a" NewProfile.pptime v); percentage ++ str "%"]
+    in
     let ppsteps = List.concat [
         pp_flag (fun v -> v.betas);
         pp_flag (fun v -> v.deltas);
         pp_flag (fun v -> v.matches);
         pp_flag (fun v -> v.fixpoints);
+        pp_time (fun v -> v.seconds);
       ]
     in
     ppctx :: ppsteps
   in
-  let top = ["CTX"; "β"; ""; "δ"; ""; "ι"; ""; "fix"; ""] in
+  let top = ["CTX"; "β"; ""; "δ"; ""; "ι"; ""; "fix"; ""; "time"; ""] in
   pp_table header top (List.map pr_row steps)
 
 let print_conversion_steps left right =
@@ -1373,9 +1385,11 @@ let print_recorded_steps tab =
   let open CClosure.RecordedSteps in
   if not @@ has_recorded_steps tab then ()
   else
+    NewProfile.profile "print_recorded_steps" (fun () ->
     print_recorded_steps @@ fun () ->
     let steps = get_recorded_steps tab in
-    format_steps steps
+    format_steps steps)
+      ()
 
 (* lazy reduction functions. The infos must be created for each term *)
 (* Note by HH [oct 08] : why would it be the job of clos_norm_flags to add
@@ -1395,7 +1409,8 @@ let clos_norm_flags flgs env sigma t =
 let clos_whd_flags flgs env sigma t =
   try
     let tab = CClosure.create_tab ~record_steps:(record_steps()) () in
-    let res = EConstr.of_constr (CClosure.whd_val
+    let res =
+      EConstr.of_constr (CClosure.whd_val
       (Evarutil.create_clos_infos env sigma flgs)
       tab
       (CClosure.inject (EConstr.Unsafe.to_constr t)))

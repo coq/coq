@@ -150,6 +150,7 @@ module RecordedSteps : sig
     deltas : int;
     matches : int;
     fixpoints : int;
+    seconds : float;
   }
 
   val empty_steps : t
