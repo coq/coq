@@ -171,7 +171,7 @@ let change pat c cl =
   Proofview.Goal.enter begin fun gl ->
   let c subst env sigma =
     let subst = Array.map_of_list snd (Id.Map.bindings subst) in
-    delayed_of_tactic (Tac2ffi.app_fun1 c (array constr) constr subst) env sigma
+    Tacred.Changed (delayed_of_tactic (Tac2ffi.app_fun1 c (array constr) constr subst) env sigma)
   in
   let cl = mk_clause cl in
   Tactics.change ~check:true pat c cl

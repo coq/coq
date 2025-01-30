@@ -152,8 +152,10 @@ let  mkCaseEq a  : unit Proofview.tactic =
             let env = Proofview.Goal.env gl in
             (* FIXME: this looks really wrong. Does anybody really use
                this tactic? *)
-            let (_, c) = Tacred.pattern_occs [Locus.OnlyOccurrences [1], a] env (Evd.from_env env) concl in
-            change_concl c
+            let ans = Tacred.pattern_occs [Locus.OnlyOccurrences [1], a] env (Evd.from_env env) concl in
+            match ans with
+            | NoChange -> Proofview.tclUNIT ()
+            | Changed (_, c) -> change_concl c
           end;
           simplest_case a]
   end

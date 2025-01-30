@@ -725,22 +725,37 @@ let cofix id = mutual_cofix id [] 0
 type tactic_reduction = Reductionops.reduction_function
 type e_tactic_reduction = Reductionops.e_reduction_function
 
-let e_pf_change_decl (redfun : bool -> e_reduction_function) where env sigma decl =
+let[@ocaml.inline] (let*) m f = match m with
+| NoChange -> NoChange
+| Changed v -> f v
+
+let e_pf_change_decl (redfun : bool -> Tacred.change_function) where env sigma decl =
   let open Context.Named.Declaration in
   match decl with
   | LocalAssum (id,ty) ->
-      if where == InHypValueOnly then
-        error (VariableHasNoValue id.binder_name);
-    let (sigma, ty') = redfun false env sigma ty in
-    (sigma, LocalAssum (id, ty'))
+    let () =
+      if where == InHypValueOnly then error (VariableHasNoValue id.binder_name)
+    in
+    let* (sigma, ty') = redfun false env sigma ty in
+    Changed (sigma, LocalAssum (id, ty'))
   | LocalDef (id,b,ty) ->
-      let (sigma, b') =
-        if where != InHypTypeOnly then redfun true env sigma b else (sigma, b)
-      in
-      let (sigma, ty') =
-        if where != InHypValueOnly then redfun false env sigma ty else (sigma, ty)
-      in
-      (sigma, LocalDef (id,b',ty'))
+    let (sigma, b') =
+      if where != InHypTypeOnly then match redfun true env sigma b with
+      | NoChange -> (sigma, NoChange)
+      | Changed (sigma, b') -> (sigma, Changed b')
+      else (sigma, NoChange)
+    in
+    let (sigma, ty') =
+      if where != InHypValueOnly then match redfun false env sigma ty with
+      | NoChange -> (sigma, NoChange)
+      | Changed (sigma, ty') -> (sigma, Changed ty')
+      else (sigma, NoChange)
+    in
+    match b', ty' with
+    | NoChange, NoChange -> NoChange
+    | Changed b', NoChange -> Changed (sigma, LocalDef (id, b', ty))
+    | NoChange, Changed ty' -> Changed (sigma, LocalDef (id, b, ty'))
+    | Changed b', Changed ty' -> Changed (sigma, LocalDef (id, b', ty'))
 
 let bind_change_occurrences occs = function
   | None -> None
@@ -755,19 +770,30 @@ let bind_change_occurrences occs = function
 let e_change_in_concl ~cast ~check (redfun, sty) =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
-    let (sigma, c') = redfun (Tacmach.pf_env gl) sigma (Tacmach.pf_concl gl) in
-    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-    (convert_concl ~cast ~check c' sty)
+    match redfun (Tacmach.pf_env gl) sigma (Tacmach.pf_concl gl) with
+    | NoChange -> Proofview.tclUNIT ()
+    | Changed (sigma, c') ->
+      Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+      (convert_concl ~cast ~check c' sty)
   end
 
 let e_change_in_hyp ~check ~reorder redfun (id,where) =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let hyp = Tacmach.pf_get_hyp id gl in
-    let (sigma, c) = e_pf_change_decl redfun where (Proofview.Goal.env gl) sigma hyp in
-    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-    (convert_hyp ~check ~reorder c)
+    match e_pf_change_decl redfun where (Proofview.Goal.env gl) sigma hyp with
+    | NoChange -> Proofview.tclUNIT ()
+    | Changed (sigma, c) ->
+      Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+      (convert_hyp ~check ~reorder c)
   end
+
+let e_change_option ~check ~reorder (redfun, sty) = function
+| None ->
+  e_change_in_concl ~cast:true ~check (redfun, sty)
+| Some id ->
+  let redfun _ env sigma c = redfun env sigma c in
+  e_change_in_hyp ~check ~reorder redfun id
 
 type hyp_conversion =
 | AnyHypConv (** Arbitrary conversion *)
@@ -796,7 +822,10 @@ let e_change_in_hyps ~check ~reorder f args = match args with
         match Id.Map.find id reds with
         | reds ->
           let d = EConstr.of_named_decl d in
-          let fold redfun (sigma, d) = redfun env sigma d in
+          let fold redfun (sigma, d) = match redfun env sigma d with
+          | NoChange -> sigma, d
+          | Changed (sigma, d) -> sigma, d
+          in
           let (sigma, d) = List.fold_right fold reds (sigma, d) in
           let () = evdref := sigma in
           EConstr.Unsafe.to_named_decl d
@@ -814,10 +843,12 @@ let e_change_in_hyps ~check ~reorder f args = match args with
           with Not_found ->
             raise (RefinerError (env, sigma, NoSuchHyp id))
         in
-        let (sigma, d) = redfun env sigma hyp in
-        let sign = Logic.convert_hyp ~check ~reorder env sigma d in
-        let env = reset_with_named_context sign env in
-        (env, sigma)
+        match redfun env sigma hyp with
+        | NoChange -> (env, sigma)
+        | Changed (sigma, d) ->
+          let sign = Logic.convert_hyp ~check ~reorder env sigma d in
+          let env = reset_with_named_context sign env in
+          (env, sigma)
       in
       List.fold_left fold (env, sigma) args
     in
@@ -830,31 +861,34 @@ let e_change_in_hyps ~check ~reorder f args = match args with
     end
   end
 
-let e_reduct_in_concl = e_change_in_concl
+let e_reduct_in_concl ~cast ~check (redfun, sty) =
+  let redfun env sigma c = Changed (redfun env sigma c) in
+  e_change_in_concl ~cast ~check (redfun, sty)
 
 let reduct_in_concl ~cast ~check (redfun, sty) =
-  let redfun env sigma c = (sigma, redfun env sigma c) in
+  let redfun env sigma c = Changed (sigma, redfun env sigma c) in
   e_change_in_concl ~cast ~check (redfun, sty)
 
 let e_reduct_in_hyp ~check ~reorder redfun (id, where) =
-  let redfun _ env sigma c = redfun env sigma c in
+  let redfun _ env sigma c = Changed (redfun env sigma c) in
   e_change_in_hyp ~check ~reorder redfun (id, where)
 
 let reduct_in_hyp ~check ~reorder redfun (id, where) =
-  let redfun _ env sigma c = (sigma, redfun env sigma c) in
+  let redfun _ env sigma c = Changed (sigma, redfun env sigma c) in
   e_change_in_hyp ~check ~reorder redfun (id, where)
 
 let e_reduct_option ~check redfun = function
   | Some id -> e_reduct_in_hyp ~check ~reorder:check (fst redfun) id
-  | None    -> e_change_in_concl ~cast:true ~check redfun
+  | None    -> e_reduct_in_concl ~cast:true ~check redfun
 
 let reduct_option ~check (redfun, sty) where =
   let redfun env sigma c = (sigma, redfun env sigma c) in
   e_reduct_option ~check (redfun, sty) where
 
-type change_arg = Ltac_pretype.patvar_map -> env -> evar_map -> evar_map * EConstr.constr
+type change_arg = Ltac_pretype.patvar_map -> env -> evar_map -> (evar_map * EConstr.constr) Tacred.change
 
-let make_change_arg c pats env sigma = (sigma, replace_vars sigma (Id.Map.bindings pats) c)
+let make_change_arg c pats env sigma =
+  Changed (sigma, replace_vars sigma (Id.Map.bindings pats) c) (* TODO: fast-path *)
 
 let is_partial_template_head env sigma c =
   let (hd, args) = decompose_app sigma c in
@@ -898,17 +932,18 @@ let check_types env sigma mayneedglobalcheck deep newc origc =
     else sigma
 
 (* Now we introduce different instances of the previous tacticals *)
-let change_and_check cv_pb mayneedglobalcheck deep t env sigma c =
-  let (sigma, t') = t env sigma in
+let change_and_check cv_pb mayneedglobalcheck deep t env sigma c = match t env sigma with
+| NoChange -> NoChange
+| Changed (sigma, t') ->
   let sigma = check_types env sigma mayneedglobalcheck deep t' c in
   match infer_conv ~pb:cv_pb env sigma t' c with
   | None -> error NotConvertible
-  | Some sigma -> (sigma, t')
+  | Some sigma -> Changed (sigma, t')
 
 (* Use cumulativity only if changing the conclusion not a subterm *)
 let change_on_subterm ~check cv_pb deep t where env sigma c =
   let mayneedglobalcheck = ref false in
-  let (sigma, c) = match where with
+  let ans = match where with
   | None ->
       if check then
         change_and_check cv_pb mayneedglobalcheck deep (t Id.Map.empty) env sigma c
@@ -921,14 +956,17 @@ let change_on_subterm ~check cv_pb deep t where env sigma c =
             change_and_check Conversion.CONV mayneedglobalcheck true (t subst)
           else
             fun env sigma _c -> t subst env sigma) env sigma c in
-  let sigma = if !mayneedglobalcheck then
-    begin
-      try fst (Typing.type_of env sigma c)
-      with e when noncritical e ->
-        error (ReplacementIllTyped e)
-    end else sigma
-  in
-  (sigma, c)
+  match ans with
+  | NoChange -> NoChange
+  | Changed (sigma, c) ->
+    let sigma = if !mayneedglobalcheck then
+      begin
+        try fst (Typing.type_of env sigma c)
+        with e when noncritical e ->
+          error (ReplacementIllTyped e)
+      end else sigma
+    in
+    Changed (sigma, c)
 
 let change_in_concl ~check occl t =
   (* No need to check in e_change_in_concl, the check is done in change_on_subterm *)
@@ -989,7 +1027,7 @@ let normalise_vm_in_concl = reduct_in_concl ~cast:true ~check:false (Redexpr.cbv
 let unfold_in_concl loccname = reduct_in_concl ~cast:true ~check:false (unfoldn loccname,DEFAULTcast)
 let unfold_in_hyp   loccname = reduct_in_hyp ~check:false ~reorder:false (unfoldn loccname)
 let unfold_option   loccname = reduct_option ~check:false (unfoldn loccname,DEFAULTcast)
-let pattern_option l = e_reduct_option ~check:false (pattern_occs l,DEFAULTcast)
+let pattern_option l = e_change_option ~check:false ~reorder:false (pattern_occs l,DEFAULTcast)
 
 (* The main reduction function *)
 
@@ -1010,6 +1048,11 @@ let is_local_unfold env flags =
   | Evaluable.EvalProjectionRef c -> false (* FIXME *)
   in
   List.for_all check flags
+
+let change_of_red_expr_val ?occs redexp =
+  let (redfun, kind) = Redexpr.reduction_of_red_expr_val ?occs redexp in
+  let redfun env sigma c = Changed (redfun env sigma c) in (* TODO: fast-path *)
+  (redfun, kind)
 
 let reduce redexp cl =
   let trace env sigma =
@@ -1038,13 +1081,13 @@ let reduce redexp cl =
   | NoOccurrences -> Proofview.tclUNIT ()
   | occs ->
     let occs = Redexpr.out_occurrences occs in
-    let redfun = Redexpr.reduction_of_red_expr_val ~occs:(occs, nbcl) redexp in
+    let redfun = change_of_red_expr_val ~occs:(occs, nbcl) redexp in
     e_change_in_concl ~cast:true ~check redfun
   end
   <*>
   let f (id, occs, where) =
     let occs = Redexpr.out_occurrences occs in
-    let (redfun, _) = Redexpr.reduction_of_red_expr_val ~occs:(occs, nbcl) redexp in
+    let (redfun, _) = change_of_red_expr_val ~occs:(occs, nbcl) redexp in
     let redfun _ env sigma c = redfun env sigma c in
     let redfun env sigma d = e_pf_change_decl redfun where env sigma d in
     (id, redfun)

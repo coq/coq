@@ -149,7 +149,7 @@ val exact_proof      : Constrexpr.constr_expr -> unit Proofview.tactic
 type tactic_reduction = Reductionops.reduction_function
 type e_tactic_reduction = Reductionops.e_reduction_function
 
-type change_arg = patvar_map -> env -> evar_map -> evar_map * constr
+type change_arg = patvar_map -> env -> evar_map -> (evar_map * constr) Tacred.change
 
 val make_change_arg   : constr -> change_arg
 val reduct_in_hyp     : check:bool -> reorder:bool -> tactic_reduction -> hyp_location -> unit Proofview.tactic

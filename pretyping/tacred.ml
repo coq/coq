@@ -26,6 +26,9 @@ module NamedDecl = Context.Named.Declaration
 type reduction_tactic_error =
     InvalidAbstraction of env * Evd.evar_map * EConstr.constr * (env * Type_errors.type_error)
 
+type 'a change = NoChange | Changed of 'a
+type change_function = env -> Evd.evar_map -> constr -> (Evd.evar_map * constr) change
+
 exception ReductionTacticError of reduction_tactic_error
 
 (* Evaluable reference *)
@@ -1161,7 +1164,7 @@ let matches_head env sigma c t =
     parameters. This is a temporary fix while rewrite etc... are not up to equivalence
     of the projection and its eta expanded form.
 *)
-let change_map_constr_with_binders_left_to_right g f (env, l as acc) sigma c =
+let change_map_constr_with_binders_left_to_right changed g f (env, l as acc) sigma c =
   match EConstr.kind sigma c with
   | Proj (p, r, v) -> (* Treat specially for partial applications *)
     let t = Retyping.expand_projection env sigma p v [] in
@@ -1174,13 +1177,16 @@ let change_map_constr_with_binders_left_to_right g f (env, l as acc) sigma c =
     if hdf' == hdf then
       (* Still the same projection, we ignore the change in parameters *)
       mkProj (p, r, a')
-    else mkApp (app', [| a' |])
+    else
+      let () = changed := true in
+      mkApp (app', [| a' |])
   | _ -> map_constr_with_binders_left_to_right env sigma g f acc c
 
 let e_contextually byhead (occs,c) f = begin fun env sigma t ->
   let count = ref (Locusops.initialize_occurrence_counter occs) in
   (* FIXME: we do suspicious things with this evarmap *)
   let evd = ref sigma in
+  let changed = ref false in
   let rec traverse nested (env,c as envc) t =
     if Locusops.occurrences_done !count then (* Shortcut *) t
     else
@@ -1193,10 +1199,15 @@ let e_contextually byhead (occs,c) f = begin fun env sigma t ->
         if Option.has_some nested then
           user_err Pp.(str "The subterm at occurrence " ++ int (Option.get nested) ++ str " overlaps with the subterm at occurrence " ++ int (Locusops.current_occurrence !count) ++ str ".");
         (* Skip inner occurrences for stable counting of occurrences *)
-        if Locusops.more_specific_occurrences !count then
-          ignore (traverse_below (Some (Locusops.current_occurrence !count)) envc t);
-        let (evm, t) = (f subst) env !evd t in
-        (evd := evm; t)
+        let () = if Locusops.more_specific_occurrences !count then
+          ignore (traverse_below (Some (Locusops.current_occurrence !count)) envc t)
+        in
+        match (f subst) env !evd t with
+        | NoChange -> t
+        | Changed (evm, t) ->
+          let () = changed := true in
+          let () = evd := evm in
+          t
       end
       else
         traverse_below nested envc t
@@ -1209,18 +1220,20 @@ let e_contextually byhead (occs,c) f = begin fun env sigma t ->
     | App (f,l) when byhead -> mkApp (f, Array.map_left (traverse nested envc) l)
     | Proj (p,r,c) when byhead -> mkProj (p,r,traverse nested envc c)
     | _ ->
-        change_map_constr_with_binders_left_to_right
+        change_map_constr_with_binders_left_to_right changed
           (fun d (env,c) -> (push_rel d env, Patternops.lift_pattern 1 c))
           (traverse nested) envc sigma t
   in
   let t' = traverse None (env,c) t in
-  Locusops.check_used_occurrences !count;
-  (!evd, t')
+  let () = Locusops.check_used_occurrences !count in
+  if !changed then Changed (!evd, t') else NoChange
   end
 
 let contextually byhead occs f env sigma t =
-  let f' subst env sigma t = sigma, f subst env sigma t in
-  snd (e_contextually byhead occs f' env sigma t)
+  let f' subst env sigma t = Changed (sigma, f subst env sigma t) in
+  match e_contextually byhead occs f' env sigma t with
+  | Changed (_, t) -> t
+  | NoChange -> t
 
 (* linear bindings (following pretty-printer) of the value of name in c.
  * n is the number of the next occurrence of name.
@@ -1361,7 +1374,7 @@ let pattern_occs loccs_trm = begin fun env sigma c ->
   let abstr_trm, sigma = List.fold_right (abstract_scheme env) loccs_trm (c,sigma) in
   try
     let sigma, _ = Typing.type_of env sigma abstr_trm in
-    (sigma, applist(abstr_trm, List.map snd loccs_trm))
+    Changed (sigma, applist(abstr_trm, List.map snd loccs_trm)) (* TODO: fast path *)
   with Type_errors.TypeError (env',t) ->
     raise (ReductionTacticError (InvalidAbstraction (env,sigma,abstr_trm,(env',t))))
   end

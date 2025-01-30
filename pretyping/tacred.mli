@@ -28,6 +28,9 @@ val subst_evaluable_reference :
 type reduction_tactic_error =
     InvalidAbstraction of env * evar_map * constr * (env * Type_errors.type_error)
 
+type 'a change = NoChange | Changed of 'a
+type change_function = env -> evar_map -> constr -> (evar_map * constr) change
+
 exception ReductionTacticError of reduction_tactic_error
 
 (** {6 Reduction functions associated to tactics. } *)
@@ -75,7 +78,7 @@ val unfoldn :
 val fold_commands : constr list ->  reduction_function
 
 (** Pattern *)
-val pattern_occs : (occurrences * constr) list -> e_reduction_function
+val pattern_occs : (occurrences * constr) list -> change_function
 
 (** Rem: Lazy strategies are defined in Reduction *)
 
@@ -118,7 +121,7 @@ val contextually : bool -> occurrences * constr_pattern ->
   (patvar_map -> reduction_function) -> reduction_function
 
 val e_contextually : bool -> occurrences * constr_pattern ->
-  (patvar_map -> e_reduction_function) -> e_reduction_function
+  (patvar_map -> change_function) -> change_function
 
 (** Errors if the inductive is not allowed for pattern-matching. **)
 val check_privacy : env -> inductive -> unit
