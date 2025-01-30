@@ -1049,4 +1049,35 @@ module Internal = struct
     { env with env_qualities = Sorts.QVar.Set.add q env.env_qualities }
 
   let is_above_prop env q = UGraph.Internal.is_above_prop env.env_universes q
+
+  module View =
+  struct
+    type t = {
+      env_constants : constant_key Cmap_env.t;
+      env_inductives : mind_key Mindmap_env.t;
+      env_modules : module_body MPmap.t;
+      env_modtypes : module_type_body MPmap.t;
+      env_named_context : named_context_val;
+      env_rel_context   : rel_context_val;
+      env_universes : UGraph.t;
+      env_qualities : Sorts.QVar.Set.t;
+      env_symb_pats : rewrite_rule list Cmap_env.t;
+      env_typing_flags  : typing_flags;
+    }
+
+    let view (env : env) = {
+      env_constants = env.env_globals.constants;
+      env_inductives = env.env_globals.inductives;
+      env_modtypes = env.env_globals.modtypes;
+      env_modules = env.env_globals.modules;
+      env_named_context = env.env_named_context;
+      env_rel_context = env.env_rel_context;
+      env_universes = env.env_universes;
+      env_qualities = env.env_qualities;
+      env_symb_pats = env.symb_pats;
+      env_typing_flags = env.env_typing_flags;
+    } [@@ocaml.warning "-42"]
+
+  end
+
 end

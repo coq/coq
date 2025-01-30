@@ -467,4 +467,24 @@ module Internal : sig
   val for_checking_pseudo_sort_poly : env -> env
 
   val is_above_prop : env -> Sorts.QVar.t -> bool
+
+  module View :
+  sig
+    type t = {
+      env_constants : constant_key Cmap_env.t;
+      env_inductives : mind_key Mindmap_env.t;
+      env_modules : module_body MPmap.t;
+      env_modtypes : module_type_body MPmap.t;
+      env_named_context : named_context_val;
+      env_rel_context   : rel_context_val;
+      env_universes : UGraph.t;
+      env_qualities : Sorts.QVar.Set.t;
+      env_symb_pats : rewrite_rule list Cmap_env.t;
+      env_typing_flags  : typing_flags;
+    }
+
+    val view : env -> t
+  end
+  (** View type only used by Serlib. Do not use otherwise. *)
+
 end
