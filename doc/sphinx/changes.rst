@@ -14,9 +14,9 @@ Version 9.0
 Summary of changes
 ~~~~~~~~~~~~~~~~~~
 
-The Rocq Prover version 9.0 is the first Rocq Prover release after the renaming
-from The Coq Proof Assistant. The Rocq Prover 9.0 is backwards compatible with
-Coq 8.20, providing compatitibility shims so that developments depending on Coq
+The Rocq Prover version 9 is the first Rocq Prover release after the renaming
+from The Coq Proof Assistant. The Rocq Prover 9.0.0 is backwards compatible with
+Coq 8.20, providing compatibility shims so that developments depending on Coq
 can be easily ported, see `Porting to The Rocq Prover`_  for details. The 9.0 version
 is based on a new single binary `rocq` that dispatches commands to previously
 separate binaries, a split and renaming of the standard library to `Stdlib` and
@@ -26,44 +26,36 @@ more general notion of sort polymorphism.
 We highlight some of the most impactful changes here:
 
   - "The Rocq Prover" is the new official name of the project. We leave to users the
-  choice of renaming their projects to reflect this change, see `Renaming advice`_.
+    choice of renaming their projects to reflect this change, see `Renaming Advice`_.
+    The Rocq Prover comes with a new visual identity and website, see `The Rocq Prover Website`_.
 
   - A single `rocq` binary dispatches commands for compilation, read-eval-print-loop,
-  documentation building, dependency compatutation, etc... see :ref:`therocqcommands`.
-  It corresponds to the `rocq-runtime` `OCaml package <https://ocaml.org/p/rocq-runtime>`.
-  This is a bare-bones package not depending on any Gallina code.
-  CHECK LINK
+    documentation building, dependency computation, etc... see :ref:`therocqcommands`.
+    It corresponds to the `rocq-runtime` `OCaml package <https://ocaml.org/p/rocq-runtime>`_.
+    This is a bare-bones package not depending on any Gallina code.
+    CHECK LINK
 
-  - The `Coq` standard library has been split and renamed into two libraries. A
-  `Corelib` core library (an extended prelude corresponding to the `rocq-core` OCaml package,
-  binding to run `rocq-runtime`'s OCaml code).
-  and an `Stdlib` standard library (the `rocq-stdlib` opam package).
-  The `Stdlib` is now maintained `out of <https://github.com/rocq-prover/stdlib>`
-  the main `rocq` `repository <http://github/com/rocq-prover/rocq>`. FIX LINKS
+  - The `Coq` standard library has been renamed and :ref:`split and <90stdlib>` into two libraries:
+
+    - A `Corelib` core library. This is an extended prelude corresponding to the `rocq-core`
+      OCaml package, which is enough to run `rocq` tactics and contains the `Ltac2` library.
+    - An `Stdlib` standard library (the `rocq-stdlib` opam package). The `Stdlib` is
+      now maintained `out of <https://github.com/rocq-prover/stdlib>`_ the main `rocq`
+      `repository <http://github/com/rocq-prover/rocq>`_.
+      FIX LINKS
 
 Notable breaking changes:
 
   - TODO
 
-See the `Changes in 9.0`_ section below for the detailed list of changes,
+See the `Changes in 9.0.0`_ section below for the detailed list of changes,
 including potentially breaking changes marked with **Changed**.
-Coq's `reference manual for 9.0 <https://rocq-prover.org/doc/v9.0/refman>`_, TODO fix links
+Rocq's `reference manual for 9.0 <https://rocq-prover.org/doc/v9.0/refman>`_,
 documentation of the 9.0 `core <https://rocq-prover.org/doc/v9.0/corelib>`_ and
 `standard <https://rocq-prover.org/doc/v9.0/stdlib>`_ libraries,
 `reference manual of the 9.0 standard library <https://rocq-prover.org/doc/v9.0/refman-stdlib>`_
 and `developer documentation of the 9.0 ML API <https://rocq-prover.org/doc/v9.0/api>`_
 are also available.
-
-The Rocq Prover comes with a new website the was developped by Matthieu Sozeau,
-Nicolas Tabareau and Théo Zimmermann, in collaboration with Bastien Sozeau of the
-`Noir Blanc Rouge <https://noirblancrouge.com/>` type foundry. The new website is
-a fork of the `OCaml.org <https://ocaml.org>` website developed by mainly by
-`Tarides <https://tarides.com/>`. The Rocq development team is thankful for
-their help and for open-sourcing their website. It includes full support for the
-`Rocq package archive <https://github.com/coq/opam>`, a responsive design and easy
-contributions through markdown files. The new identity, customized fonts and logo
-were designed by Bastien Sozeau, consulting for the Rocq development team. They are
-released under a permissive open-source license.
 
 Théo Zimmermann with help from Ali Caglayan and Jason Gross maintained
 `coqbot <https://github.com/coq/bot>`_ used to run Coq's CI and other
@@ -85,7 +77,7 @@ Rodolphe Lepigre maintained the
 `Dune build system for OCaml and Coq/Rocq <https://github.com/ocaml/dune/>`_
 used to build Rocq itself and many Rocq projects.
 
-The `opam repository <https://github.com/coq/opam>` for Rocq packages has been maintained by
+The `opam repository <https://github.com/coq/opam>`_ for Rocq packages has been maintained by
 Guillaume Claret, Guillaume Melquiond, Karl Palmskog, Matthieu Sozeau
 and Enrico Tassi with contributions from many users. The up-to-data list
 of packages is `available on the Rocq website <https://rocq-prover.org/packages>`_.
@@ -124,23 +116,49 @@ You should expect warnings that the standard library previously under namespace 
 `Stdlib` and moved to a `separate repositiory <https://github.com/coq/stdlib>`_, but these warnings are
 independent of the `Coq` to `Rocq` renaming.
 
-To be future proof, projects based on `coq_makefile` can be ported to not rely on the compatibility
-layer anymore. To do so, one must replace uses of `coq_makefile` with :ref:`rocq makefile`, which
+To be future-proof, projects based on `coq_makefile` can be ported to not rely on the compatibility
+layer anymore. To do so, one must replace uses of `coq_makefile` with :ref:`rocq_makefile`, which
 will directly call the new `rocq` binary without relying on the compatibility shims.
 
-Beware, if using `dune` (TODO <= 3.17.2) to build a Rocq project, you will still need the compatibility shim
-for `coq-core` so that `dune`'s Coq language extension functions correctly. This issue has been solved in
-`dune` TODO.
+Beware, if using `dune` (TODO <= 3.17.2) to :ref:`build <building_dune>` a Rocq project, you will still
+need the compatibility shim for `coq-core` so that `dune`'s Coq language extension functions correctly.
+This issue has been solved in `dune` TODO.
 
 Renaming Advice
 ---------------
 
-We have applied the `renaming <https://rocq-prover.org/about#Name>` from the Coq Proof Assistant to The Rocq Prover
-in this version, and officialy supported projects in the `Rocq organization <https://github.com/rocq-prover>` will
-be renamed in the future. The Rocq Development Team has no position on renaming of projects it does not officially support:
-the consensus it to let users do as they wish. We note that the new identity is quite compatible with existing Rooster
-references. We however encourage existing and forthcoming projects to adopt the new identity and its color and font
-scheme, see the `ìdentity guidelines <https://rocq-prover.org/logo>` for more information.
+We have applied the `renaming <https://rocq-prover.org/about#Name>`_ from the
+Coq Proof Assistant to The Rocq Prover in this version, and officialy supported
+projects in the `Rocq organization <https://github.com/rocq-prover>`_ will be
+renamed in the future. The Rocq Development Team's official position on renaming of
+projects it does not officially maintain is to let their authors do as they wish.
+We just note that the new identity is quite compatible with existing
+Rooster references. However, we encourage existing and forthcoming projects to
+adopt the new logo, its colors and fonts, see the `ìdentity guidelines
+<https://rocq-prover.org/logo>`_ for more information.
+
+The Rocq Prover Website
+-----------------------
+
+The Rocq Prover comes with a new `website <https://rocq-prover.org>`_ that was
+developped by Matthieu Sozeau, Nicolas Tabareau and Théo Zimmermann, in
+collaboration with Bastien Sozeau of the `Noir Blanc Rouge
+<https://noirblancrouge.com/>`_ type foundry. The new website is a fork of the
+`OCaml.org <https://ocaml.org>`_ website developed by `Tarides
+<https://tarides.com/>`_. The Rocq development team is thankful for their help
+and for open-sourcing their website. It includes full support for the `Rocq
+package archive <https://github.com/coq/opam>`_, a responsive design and easy
+contributions through markdown files. The new identity, customized fonts and
+logo were designed by Bastien Sozeau, consulting for the Rocq development team.
+They are released under a permissive open-source license.
+
+The website is deployed automatically using a
+custom `deployer <https://deploy.rocq-prover.org>`_ developed by Matthieu
+Sozeau. The deployer keeps the website up-to-date with the github repositories
+of the `website <https://github.com/coq/rocq-prover.org>`__ and `documentation
+<https://github.com/coq/doc>`_. Its code is accessible on `github
+<https://github.com/coq/deploy-rocq-prover.org>`_.
+
 
 Changes in 9.0.0
 ~~~~~~~~~~~~~~~~
@@ -567,6 +585,8 @@ RocqIDE
 Standard library
 ^^^^^^^^^^^^^^^^
 
+.. _90stdlib:
+
 - **Changed:**
   Stdlib moved to its own repository, look for
   `Stdlib own changelog <https://rocq-prover.org/doc/v9.0/refman-stdlib/changes.html>`_
@@ -574,7 +594,7 @@ Standard library
   (`#19975 <https://github.com/coq/coq/pull/19686>`_,
   by Pierre Roux).
 - **Added:**
-  a new ``rocq`-core` package for users who don't want to depend on Stdlib.
+  a new `rocq-core` package for users who don't want to depend on Stdlib.
   This provides `Corelib <https://rocq-prover.org/doc/v9.0/corelib>`_ a tiny subset of Stdlib
   (`#19530 <https://github.com/coq/coq/pull/19530>`_,
   starting to implement `CEP#83 <https://github.com/coq/ceps/pull/83>`_
