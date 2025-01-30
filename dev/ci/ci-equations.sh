@@ -12,5 +12,5 @@ if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 export COQEXTRAFLAGS='-native-compiler no'
 ( cd "${CI_BUILD_DIR}/equations"
   dune build --root . --only-packages rocq-equations
-  dune install --root . rocq-equations
+  dune install --root . --only-packages rocq-equations --prefix="$CI_INSTALL_DIR"
 )
