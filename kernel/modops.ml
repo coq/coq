@@ -359,7 +359,7 @@ and strengthen_and_subst_struct struc subst mp_from mp_to alias incl reso =
       - in the alias case "Module M:=P." where "P" is already an alias
         with canonical form "Q": add the module Delta-equivalence "M := Q"
       - in the alias case where P is not itself an alias:
-        add the module Delta-equivalence "M := Q"
+        add the module Delta-equivalence "M := P"
       - in the "Include" case: add a Delta-equivalence "t := t'" where
         "t'" is the canonical form of "P.t" on each field *)
 
