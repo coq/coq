@@ -187,7 +187,7 @@ type stack_member =
   | ZcaseT of current_context * case_info * UVars.Instance.t * constr array * case_return * case_branch array * usubs
   | Zproj of current_context * Projection.Repr.t * Sorts.relevance
   | Zfix of fconstr * stack
-  | Zprimitive of CPrimitives.t * pconstant * fconstr list * fconstr next_native_args
+  | Zprimitive of current_context * CPrimitives.t * pconstant * fconstr list * fconstr next_native_args
        (* operator, constr def, arguments already seen (in rev order), next arguments *)
   | Zshift of int
   | Zupdate of fconstr
@@ -784,10 +784,10 @@ let rec zip m stk =
       (** The stack contains [Zupdate] marks only if in sharing mode *)
         let () = update rf m.mark m.ctx m.term in
         zip rf s
-    | Zprimitive(_op,c,rargs,kargs)::s ->
+    | Zprimitive(ctx,_op,c,rargs,kargs)::s ->
       let args = List.rev_append rargs (m::List.map snd kargs) in
-      let f = {ctx=None; mark = Red; term = FFlex (ConstKey c)} in
-      zip {ctx=None; mark=(neutr m.mark); term = FApp (f, Array.of_list args)} s
+      let f = {ctx; mark = Red; term = FFlex (ConstKey c)} in
+      zip {ctx; mark=(neutr m.mark); term = FApp (f, Array.of_list args)} s
 
 let fapp_stack (m,stk) = zip m stk
 
@@ -2005,7 +2005,7 @@ let record_step tab flag ctx =
   in
   lazy_trace flag ctx
 
-let push_context fl ctx v =
+let cons_context fl ctx =
   let kn = let open GlobRef in
     match fl with
     | ConstKey (kn,_) -> Some (ConstRef kn)
@@ -2013,12 +2013,18 @@ let push_context fl ctx v =
     | RelKey _ -> None
   in
   match kn with
-  | None -> ()
+  | None -> None
   | Some kn ->
     let ctx = match ctx with
       | None -> Some [kn]
       | Some ctx -> Some (kn::ctx)
     in
+    ctx
+
+let push_context fl ctx v =
+  match cons_context fl ctx with
+  | None -> ()
+  | Some _ as ctx ->
     v.ctx <- ctx
 
 let push_context tab fl ctx v =
@@ -2050,9 +2056,11 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
           kni info tab ~pat_state v stk
         | Primitive op ->
           if check_native_args op stk then
+            let ctx = cons_context fl m.ctx in
+            let () = record_step tab Delta ctx in
             let c = match fl with ConstKey c -> c | RelKey _ | VarKey _ -> assert false in
             let rargs, a, nargs, stk = get_native_args1 op c stk in
-            kni info tab ~pat_state a (Zprimitive(op,c,rargs,nargs)::stk)
+            kni info tab ~pat_state a (Zprimitive(ctx,op,c,rargs,nargs)::stk)
           else
             (* Similarly to fix, partially applied primitives are not Ntrl! *)
             knr_ret info tab ~pat_state (m, stk)
@@ -2112,10 +2120,11 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
       knit info tab ~pat_state (on_fst (subs_cons v) e) m.ctx bd stk
   | FInt _ | FFloat _ | FString _ | FArray _ ->
     (match [@ocaml.warning "-4"] strip_update_shift_app m stk with
-     | (_, _, Zprimitive(op,(_,u as c),rargs,nargs)::s) ->
+     | (_, _, Zprimitive(ctx,op,(_,u as c),rargs,nargs)::s) ->
        let (rargs, nargs) = skip_native_args (m::rargs) nargs in
        begin match nargs with
-         | [] ->
+       | [] ->
+           let () = record_step tab Match ctx in
            let args = match rargs with
            | [] -> [||]
            | [a] -> [|a|]
@@ -2124,14 +2133,13 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
            | [a; b; c; d] -> [|d; c; b; a|]
            | _ -> Array.rev_of_list rargs
            in
-           (* XXX record_step? *)
            begin match FredNative.red_prim (info_env info) () op u args with
             | Some m -> kni info tab ~pat_state m s
             | None -> assert false
            end
          | (kd,a)::nargs ->
            assert (kd = CPrimitives.Kwhnf);
-           kni info tab ~pat_state a (Zprimitive(op,c,rargs,nargs)::s)
+           kni info tab ~pat_state a (Zprimitive(ctx,op,c,rargs,nargs)::s)
              end
      | (_, _, s) -> knr_ret info tab ~pat_state (m, s))
   | FCaseInvert (ci, u, pms, _p,iv,_c,v,env) when red_set info.i_flags fMATCH ->
@@ -2358,7 +2366,7 @@ and zip_term info tab m stk = match stk with
     zip_term info tab (lift n m) s
 | Zupdate(_rf)::s ->
     zip_term info tab m s
-| Zprimitive(_,c,rargs, kargs)::s ->
+| Zprimitive(_,_,c,rargs, kargs)::s ->
     let kargs = List.map (fun (_,a) -> kl info tab a) kargs in
     let args =
       List.fold_left (fun args a -> kl info tab a ::args) (m::kargs) rargs in
@@ -2416,7 +2424,7 @@ let unfold_ref_with_args infos tab m v =
   | Primitive op when check_native_args op v ->
     let c = match [@ocaml.warning "-4"] fl with ConstKey c -> c | _ -> assert false in
     let rargs, a, nargs, v = get_native_args1 op c v in
-    Some (a, (Zupdate a::(Zprimitive(op,c,rargs,nargs)::v)))
+    Some (a, (Zupdate a::(Zprimitive(cons_context fl m.ctx,op,c,rargs,nargs)::v)))
   | Symbol (u, b, r) ->
     RedPattern.match_symbol knred (infos_with_reds infos all) tab ~pat_state:(RedPattern.Nil Yes) fl (u, b, r) v
   | Undef _ | OpaqueDef _ | Primitive _ -> None
