@@ -44,10 +44,6 @@ let subst_decl_arity f g subst ar =
       if x' == x then ar
       else TemplateArity x'
 
-let map_decl_arity f g = function
-  | RegularArity a -> RegularArity (f a)
-  | TemplateArity a -> TemplateArity (g a)
-
 let hcons_template_arity ar =
   { template_level = Sorts.hcons ar.template_level;
   }
@@ -332,8 +328,9 @@ let hcons_regular_ind_arity a =
 
 (** Just as for constants, this hash-consing is quite partial *)
 
-let hcons_ind_arity =
-  map_decl_arity hcons_regular_ind_arity hcons_template_arity
+let hcons_ind_arity = function
+  | RegularArity a -> RegularArity (hcons_regular_ind_arity a)
+  | TemplateArity a -> TemplateArity (hcons_template_arity a)
 
 (** Substitution of inductive declarations *)
 
