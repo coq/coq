@@ -452,11 +452,6 @@ let create_ltac_quotation ~plugin name cast (e, l) =
 
 (** Command *)
 
-
-type tacdef_kind =
-  | NewTac of Id.t
-  | UpdateTac of Tacexpr.ltac_constant
-
 let is_defined_tac kn =
   try ignore (Tacenv.interp_ltac kn); true with Not_found -> false
 
@@ -465,40 +460,51 @@ let warn_unusable_identifier =
       (fun id -> strbrk "The Ltac name" ++ spc () ++ Id.print id ++ spc () ++
         strbrk "may be unusable because of a conflict with a notation.")
 
-let register_ltac local ?deprecation tacl =
-  let map tactic_body =
-    match tactic_body with
+let register_ltac atts = function
+| [Tacexpr.TacticRedefinition (qid, body)] ->
+  let local = Attributes.(parse explicit_hint_locality atts) in
+  let local = match local with
+    | Some local -> Locality.check_locality_nodischarge local; [local]
+    | None -> if Lib.sections_are_opened () then [Local] else [SuperGlobal; Export]
+  in
+  let kn =
+    try Tacenv.locate_tactic qid
+    with Not_found ->
+      CErrors.user_err ?loc:qid.CAst.loc
+        (str "There is no Ltac named " ++ pr_qualid qid ++ str ".")
+  in
+  let ist = Tacintern.make_empty_glob_sign ~strict:true in
+  let body = Tacintern.intern_tactic_or_tacarg ist body in
+  local |> List.iter (fun local -> Tacenv.redefine_ltac local kn body);
+  let name = Tacenv.shortest_qualid_of_tactic kn in
+  Flags.if_verbose Feedback.msg_info (Libnames.pr_qualid name ++ str " is redefined")
+
+| tacl ->
+  let local, deprecation = Attributes.(parse Attributes.Notations.(locality ++ deprecation) atts) in
+  let local = Locality.make_module_locality local in
+  let map = function
     | Tacexpr.TacticDefinition ({CAst.loc;v=id}, body) ->
-        let kn = Lib.make_kn id in
-        let id_pp = Id.print id in
-        let () = if is_defined_tac kn then
+      let kn = Lib.make_kn id in
+      let id_pp = Id.print id in
+      let () = if is_defined_tac kn then
           CErrors.user_err ?loc
             (str "There is already an Ltac named " ++ id_pp ++ str".")
-        in
-        let is_shadowed =
-          try
-            match Procq.parse_string Pltac.tactic (Id.to_string id) with
-            | { CAst.v=(Tacexpr.TacArg _) } -> false
-            | _ -> true (* most probably TacAtom, i.e. a primitive tactic ident *)
-          with e when CErrors.noncritical e -> true (* prim tactics with args, e.g. "apply" *)
-        in
-        let () = if is_shadowed then warn_unusable_identifier id in
-        NewTac id, body
+      in
+      let is_shadowed =
+        try
+          match Procq.parse_string Pltac.tactic (Id.to_string id) with
+          | { CAst.v=(Tacexpr.TacArg _) } -> false
+          | _ -> true (* most probably TacAtom, i.e. a primitive tactic ident *)
+        with e when CErrors.noncritical e -> true (* prim tactics with args, e.g. "apply" *)
+      in
+      let () = if is_shadowed then warn_unusable_identifier id in
+      id, body
     | Tacexpr.TacticRedefinition (qid, body) ->
-        let kn =
-          try Tacenv.locate_tactic qid
-          with Not_found ->
-            CErrors.user_err ?loc:qid.CAst.loc
-                       (str "There is no Ltac named " ++ pr_qualid qid ++ str ".")
-        in
-        UpdateTac kn, body
+      CErrors.user_err Pp.(str "Ltac redefinitions not supported in a mutual block.")
   in
   let rfun = List.map map tacl in
   let recvars =
-    let fold accu (op, _) = match op with
-    | UpdateTac _ -> accu
-    | NewTac id -> (Lib.make_path id, Lib.make_kn id) :: accu
-    in
+    let fold accu (id, _) = (Lib.make_path id, Lib.make_kn id) :: accu in
     List.fold_left fold [] rfun
   in
   let ist = Tacintern.make_empty_glob_sign ~strict:true in
@@ -515,14 +521,9 @@ let register_ltac local ?deprecation tacl =
     List.map map rfun
   in
   let defs = Vernacstate.System.protect defs () in
-  let iter (def, tac) = match def with
-  | NewTac id ->
+  let iter (id, tac) =
     Tacenv.register_ltac false local id tac ?deprecation;
     Flags.if_verbose Feedback.msg_info (Id.print id ++ str " is defined")
-  | UpdateTac kn ->
-    Tacenv.redefine_ltac local kn tac ?deprecation;
-    let name = Tacenv.shortest_qualid_of_tactic kn in
-    Flags.if_verbose Feedback.msg_info (Libnames.pr_qualid name ++ str " is redefined")
   in
   List.iter iter defs
 

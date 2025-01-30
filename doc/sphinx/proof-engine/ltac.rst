@@ -1908,8 +1908,16 @@ Defining |Ltac| symbols
    `::=`
       Redefines an existing user-defined symbol, but gives an error if the
       symbol doesn't exist.  Note that :cmd:`Tactic Notation`\s
-      do not count as user-defined tactics for `::=`.  If :attr:`local` is not
-      specified, the redefinition applies across module boundaries.
+      do not count as user-defined tactics for `::=`.
+
+      In sections or with :attr:`local`, the redefinition is forgotten
+      at the end of the current module or section.
+      :attr:`global` and :attr:`export` may be used with their standard meanings.
+
+      Outside sections specifying no locality is equivalent to repeating the command
+      with :attr:`global` and :attr:`export`.
+
+      Redefinitions are incompatible with :n:`{* with @tacdef_body }`.
 
       .. exn:: There is no Ltac named @qualid
          :undocumented:

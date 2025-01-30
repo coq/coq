@@ -56,10 +56,8 @@ val register_ltac : bool -> bool -> ?deprecation:Deprecation.t -> Id.t ->
     definition. It also puts the Ltac name in the nametab, so that it can be
     used unqualified. *)
 
-val redefine_ltac : bool -> ?deprecation:Deprecation.t -> KerName.t ->
-  glob_tactic_expr -> unit
-(** Replace a Ltac with the given name and body. If the boolean flag is set
-    to true, then this is a local redefinition. *)
+val redefine_ltac : Libobject.locality -> KerName.t -> glob_tactic_expr -> unit
+(** Replace a Ltac with the given name and body. *)
 
 val interp_ltac : KerName.t -> glob_tactic_expr
 (** Find a user-defined tactic by name. Raise [Not_found] if it is absent. *)
