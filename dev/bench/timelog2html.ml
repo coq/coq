@@ -10,16 +10,16 @@
 
 let die fmt = Printf.kfprintf (fun _ -> exit 1) stderr fmt
 
-let usage ~prog () = die "Usage: %s VFILE TIMEFILES\n\n%a\n" prog
+let usage () = die "Usage: rocq timelog2html VFILE TIMEFILES\n\n%a\n"
     (fun fmt len -> Printf.fprintf fmt "(1 to %d time files are supported.)" len)
     Htmloutput.max_data_count
 
-let parse_args ~prog = function
-  | [] | [_] -> usage ~prog ()
+let parse_args = function
+  | [] | [_] -> usage ()
   | vfile :: data_files ->
     let data_files = Array.of_list data_files in
     let () = if Array.length data_files > Htmloutput.max_data_count
-      then usage ~prog ()
+      then usage ()
     in
     vfile, data_files
 
@@ -27,8 +27,8 @@ let file_data data_file =
   let data = Timelogparser.parse ~file:data_file in
   data_file, CArray.of_list data
 
-let main ~prog args =
-  let vfile, data_files = parse_args ~prog args in
+let main args =
+  let vfile, data_files = parse_args args in
 
   let source = BenchUtil.read_whole_file vfile in
 

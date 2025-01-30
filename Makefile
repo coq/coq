@@ -162,7 +162,8 @@ dunestrap: $(DUNE_FILES)
 states: dunestrap
 	dune build $(DUNEOPT) dev/shim/coqtop
 
-MAIN_TARGETS:=rocq-runtime.install coq-core.install rocq-core.install coqide-server.install
+MAIN_TARGETS:=rocq-runtime.install coq-core.install rocq-core.install \
+  coqide-server.install rocq-devtools.install
 
 world: dunestrap
 	dune build $(DUNEOPT) $(MAIN_TARGETS)

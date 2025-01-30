@@ -14,7 +14,11 @@ type worker = {
 }
 
 let get_worker_path {package; basename} =
-  let dir = Findlib.package_directory package in
+  let dir = try Findlib.package_directory package
+    with Findlib.No_such_package _ ->
+      Printf.eprintf "Error: Could not find package %s.\n%!" package;
+      exit 1
+  in
   let exe = if Sys.(os_type = "Win32" || os_type = "Cygwin") then ".exe" else "" in
   Filename.concat dir (basename^exe)
 
