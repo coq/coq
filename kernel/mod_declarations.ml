@@ -295,6 +295,14 @@ let subst_with_body subst = function
     let c' = subst_mps subst c in
     if c==c' then orig else WithDef(id,(c',ctx))
 
+let subst_retro : type a. Mod_subst.substitution -> a module_retroknowledge -> a module_retroknowledge =
+  fun subst retro ->
+    match retro with
+    | ModTypeNul as r -> r
+    | ModBodyVal l as r ->
+      let l' = List.Smart.map (subst_retro_action subst) l in
+      if l == l' then r else ModBodyVal l
+
 let rec subst_structure skind subst mp sign =
   let subst_field ((l,body) as orig) = match body with
     | SFBconst cb ->
@@ -314,14 +322,6 @@ let rec subst_structure skind subst mp sign =
       if mtb==mtb' then orig else (l,SFBmodtype mtb')
   in
   List.Smart.map subst_field sign
-
-and subst_retro : type a. Mod_subst.substitution -> a module_retroknowledge -> a module_retroknowledge =
-  fun subst retro ->
-    match retro with
-    | ModTypeNul as r -> r
-    | ModBodyVal l as r ->
-      let l' = List.Smart.map (subst_retro_action subst) l in
-      if l == l' then r else ModBodyVal l
 
 and subst_module_body : type a. _ -> _ -> _ -> _ -> a generic_module_body -> a generic_module_body =
   fun is_mod skind subst mp mb ->
