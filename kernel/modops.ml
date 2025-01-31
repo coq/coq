@@ -236,8 +236,13 @@ and strengthen_signature mp struc reso0 =
   | (l, SFBmodule mb) ->
     let mp' = MPdot (mp, l) in
     let mb' = strengthen_module mp' mb in
-    (* XXX adding the resolver when mb is a functor seems wrong *)
-    let reso = add_delta_resolver (mod_delta mb) reso in
+    let reso = match mod_global_delta mb with
+    | None ->
+      (* See {!strengthen_and_subst_module} *)
+      add_mp_delta_resolver mp' mp' reso
+    | Some delta ->
+      add_delta_resolver delta reso
+    in
     reso, (l, SFBmodule mb')
   | (_, (SFBmind _ | SFBrules _ | SFBmodtype _)) ->
     reso, item
