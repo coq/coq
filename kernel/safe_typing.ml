@@ -1458,7 +1458,7 @@ let export ~output_native_objects senv dir =
   let mb = Mod_declarations.make_module_body str senv.modresolver senv.local_retroknowledge in
   let ast, symbols =
     if output_native_objects then
-      Nativelibrary.dump_library mp senv.env str
+      Nativelibrary.dump_library mp senv.env senv.modresolver str
     else [], Nativevalues.empty_symbols
   in
   let permanent_flags = {

@@ -399,12 +399,12 @@ and extract_module access env mp ~all mb =
   let impl = match Mod_declarations.mod_expr mb with
     | Abstract -> error_no_module_expr mp
     | Algebraic me -> extract_mexpression access env mp (mod_type mb) me
-    | Struct sign ->
+    | Struct (reso,sign) ->
       (* This module has a signature, otherwise it would be FullStruct.
          We extract just the elements required by this signature. *)
       let () = add_labels mp (mod_type mb) in
       let sign = Modops.annotate_struct_body sign (mod_type mb) in
-      extract_msignature access env mp (mod_delta mb) ~all:false sign
+      extract_msignature access env mp reso ~all:false sign
     | FullStruct -> extract_msignature access env mp (mod_delta mb) ~all (mod_type mb)
   in
   (* Slight optimization: for modules without explicit signatures

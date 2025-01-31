@@ -567,7 +567,7 @@ let [_v_sfb;_v_struc;_v_sign;_v_mexpr;_v_impl;v_module;_v_modtype] : _ Vector.t 
   and v_impl =
     v_sum_c ("module_impl",2, (* Abstract, FullStruct *)
          [|[|v_mexpr|];  (* Algebraic *)
-           [|v_struc|]|])  (* Struct *)
+           [|v_resolver; v_struc|]|])  (* Struct *)
   and v_module =
     v_tuple_c ("module_body",
            [|v_sum_c ("when_mod_body", 0, [|[|v_impl|]|]);v_sign;v_opt v_mexpr;v_resolver;v_retroknowledge|])
