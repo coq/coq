@@ -514,26 +514,43 @@ let warn_no_template_universe =
     (fun () -> Pp.str "This inductive type has no template universes.")
 
 type should_template =
-  | MaybeTemplate of { force_template : bool; uctx : Univ.ContextSet.t }
-  | NotTemplate of (Entries.inductive_universes_entry * Univ.ContextSet.t)
+  | MaybeTemplate of { force_template : bool; }
+  | NotTemplate
 
-let should_template ~user_template ~univ_entry =
-match user_template, univ_entry with
-| (Some false | None), UState.Polymorphic_entry uctx ->
-  NotTemplate (Polymorphic_ind_entry uctx, Univ.ContextSet.empty)
-| Some true, UState.Polymorphic_entry _ ->
+let nontemplate_univ_entry ~poly sigma udecl =
+  let sigma = Evd.collapse_sort_variables sigma in
+  let uentry, _ as ubinders = Evd.check_univ_decl ~poly sigma udecl in
+  let uentry, global = match uentry with
+    | UState.Polymorphic_entry uctx -> Polymorphic_ind_entry uctx, Univ.ContextSet.empty
+    | UState.Monomorphic_entry uctx -> Monomorphic_ind_entry, uctx
+  in
+  sigma, uentry, ubinders, global
+
+let template_univ_entry sigma udecl ~template_univs pseudo_sort_poly =
+  let sigma = Evd.collapse_sort_variables sigma in
+  let uentry, _ as ubinders = UState.check_univ_decl ~poly:false (Evd.ustate sigma) udecl in
+  let uctx = match uentry with
+    | Monomorphic_entry uctx -> uctx
+    | Polymorphic_entry _ -> assert false
+  in
+  let template_univs, global = split_universe_context template_univs uctx in
+  sigma, Template_ind_entry {univs=template_univs; pseudo_sort_poly}, ubinders, global
+
+let should_template ~user_template ~poly =
+match user_template, poly with
+| Some true, true ->
   user_err Pp.(strbrk "Template-polymorphism and universe polymorphism are not compatible.")
-| Some false, UState.Monomorphic_entry uctx ->
-  NotTemplate (Monomorphic_ind_entry, uctx)
-| Some true, UState.Monomorphic_entry uctx ->
-  MaybeTemplate { force_template = true; uctx }
-| None, UState.Monomorphic_entry uctx ->
-  MaybeTemplate { force_template = false; uctx }
+| Some false, _ | None, true ->
+  NotTemplate
+| Some true, false ->
+  MaybeTemplate { force_template = true; }
+| None, false ->
+  MaybeTemplate { force_template = false; }
 
-let compute_template_inductive sigma ~user_template ~univ_entry ~indnames ~ctx_params ~arities ~constructors template_syntax =
-  match should_template ~user_template ~univ_entry with
-  | NotTemplate res -> res
-  | MaybeTemplate { force_template; uctx } ->
+let inductive_univs sigma ~user_template ~poly udecl ~indnames ~ctx_params ~arities ~constructors template_syntax =
+  match should_template ~user_template ~poly with
+  | NotTemplate -> nontemplate_univ_entry ~poly sigma udecl
+  | MaybeTemplate { force_template; } ->
     let info = match List.combine3 arities constructors template_syntax with
     | [arity, (_cnames, constructors), SyntaxAllowsTemplatePoly] ->
       let pseudo_sort_poly, template_univs =
@@ -546,15 +563,15 @@ let compute_template_inductive sigma ~user_template ~univ_entry ~indnames ~ctx_p
     | [] -> assert false
     in
     match info, force_template with
-    | Error _, false -> Monomorphic_ind_entry, uctx
+    | Error _, false ->
+      nontemplate_univ_entry ~poly sigma udecl
     | Error msg, true -> CErrors.user_err Pp.(str msg)
     | Ok (template_univs, pseudo_sort_poly), _ ->
       let has_template = not @@ Univ.Level.Set.is_empty template_univs in
       if force_template || should_auto_template (List.hd indnames) has_template then
         let () = if not has_template then warn_no_template_universe () in
-        let template_univs, global = split_universe_context template_univs uctx in
-        Template_ind_entry {univs=template_univs; pseudo_sort_poly}, global
-      else Monomorphic_ind_entry, uctx
+        template_univ_entry sigma udecl ~template_univs pseudo_sort_poly
+      else nontemplate_univ_entry ~poly sigma udecl
 
 let check_param = function
 | CLocalDef (na, _, _, _) -> check_named na
@@ -616,14 +633,10 @@ let interp_mutual_inductive_constr ~sigma ~flags ~udecl ~variances ~ctx_params ~
      We also need to restrict to avoid seeing spurious bounds from below
      (ie v <= template_u with v getting restricted away). *)
   let sigma = Evd.minimize_universes ~collapse_sort_variables:false sigma in
-  let sigma0 = restrict_inductive_universes sigma ctx_params arities constructors in
+  let sigma = restrict_inductive_universes sigma ctx_params arities constructors in
 
-  (* collapse qvars for the kernel and get the univ entry *)
-  let sigma = Evd.set_universe_context sigma0 @@ UState.collapse_sort_variables @@ Evd.ustate sigma0 in
-  let univ_entry, binders = Evd.check_univ_decl ~poly sigma udecl in
-
-  let univ_entry, ctx =
-    compute_template_inductive sigma0 ~user_template:template ~univ_entry
+  let sigma, univ_entry, ubinders, global_univs =
+    inductive_univs sigma ~user_template:template ~poly udecl
       ~indnames ~ctx_params ~arities ~constructors template_syntax
   in
 
@@ -653,7 +666,7 @@ let interp_mutual_inductive_constr ~sigma ~flags ~udecl ~variances ~ctx_params ~
       mind_entry_variance = variance;
     }
   in
-  default_dep_elim, mind_ent, binders, ctx
+  default_dep_elim, mind_ent, ubinders, global_univs
 
 let interp_params ~unconstrained_sorts env udecl uparamsl paramsl =
   let sigma, udecl, variances = interp_cumul_univ_decl_opt env udecl in
@@ -863,7 +876,7 @@ type t = {
   mie : Entries.mutual_inductive_entry;
   default_dep_elim : default_dep_elim list;
   nuparams : int option;
-  univ_binders : UnivNames.universe_binders;
+  univ_binders : UState.named_universes_entry;
   implicits : DeclareInd.one_inductive_impls list;
   uctx : Univ.ContextSet.t;
   where_notations : Metasyntax.notation_interpretation_decl list;
@@ -905,16 +918,10 @@ let do_mutual_inductive ~flags ?typing_flags udecl indl ~private_ind ~uniform =
   let env = Global.env () in
   let { mie; default_dep_elim; univ_binders; implicits; uctx; where_notations; coercions; indlocs} =
     interp_mutual_inductive ~flags ~env udecl indl ?typing_flags ~private_ind ~uniform in
-  (* Slightly hackish global universe declaration due to template types. *)
-  let binders = match mie.mind_entry_universes with
-  | Monomorphic_ind_entry -> (UState.Monomorphic_entry uctx, univ_binders)
-  | Template_ind_entry ctx -> (UState.Monomorphic_entry (Univ.ContextSet.union uctx ctx.univs), univ_binders)
-  | Polymorphic_ind_entry uctx -> (UState.Polymorphic_entry uctx, UnivNames.empty_binders)
-  in
   (* Declare the global universes *)
   Global.push_context_set uctx;
   (* Declare the mutual inductive block with its associated schemes *)
-  ignore (DeclareInd.declare_mutual_inductive_with_eliminations ~default_dep_elim ?typing_flags ~indlocs mie binders implicits);
+  ignore (DeclareInd.declare_mutual_inductive_with_eliminations ~default_dep_elim ?typing_flags ~indlocs mie univ_binders implicits);
   (* Declare the possible notations of inductive types *)
   List.iter (Metasyntax.add_notation_interpretation ~local:false (Global.env ())) where_notations;
   (* Declare the coercions *)
