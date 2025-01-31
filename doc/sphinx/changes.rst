@@ -35,9 +35,9 @@ We highlight some of the most impactful changes here:
     This is a bare-bones package not depending on any Gallina code.
     CHECK LINK
 
-  - The `Coq` standard library has been renamed and :ref:`split and <90stdlib>` into two libraries:
+  - The `Coq` standard library has been renamed and :ref:`split <90stdlib>` into two libraries:
 
-    - A `Corelib` core library. This is an extended prelude corresponding to the `rocq-core`
+    - A `Corelib` core library (the `rocq-core` opam package). This is an extended prelude corresponding to the `rocq-core`
       OCaml package, which is enough to run `rocq` tactics and contains the `Ltac2` library.
     - An `Stdlib` standard library (the `rocq-stdlib` opam package). The `Stdlib` is
       now maintained `out of <https://github.com/rocq-prover/stdlib>`_ the main `rocq`
