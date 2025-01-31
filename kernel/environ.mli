@@ -41,19 +41,6 @@ type constant_key = constant_body * (link_info ref * key)
 
 type mind_key = mutual_inductive_body * link_info ref
 
-module Globals : sig
-  type t
-
-  type view =
-    { constants : constant_key Cmap_env.t
-    ; inductives : mind_key Mindmap_env.t
-    ; modules : module_body MPmap.t
-    ; modtypes : module_type_body MPmap.t
-    }
-
-  val view : t -> view
-end
-
 type named_context_val = private {
   env_named_ctx : Constr.named_context;
   env_named_map : Constr.named_declaration Id.Map.t;

@@ -50,20 +50,6 @@ type constant_key = constant_body * (link_info ref * key)
 
 type mind_key = mutual_inductive_body * link_info ref
 
-module Globals = struct
-
-  type view =
-    { constants : constant_key Cmap_env.t
-    ; inductives : mind_key Mindmap_env.t
-    ; modules : module_body MPmap.t
-    ; modtypes : module_type_body MPmap.t
-    }
-
-  type t = view
-
-  let view x = x
-end
-
 type named_context_val = {
   env_named_ctx : Constr.named_context;
   env_named_map : Constr.named_declaration Id.Map.t;
@@ -76,7 +62,10 @@ type rel_context_val = {
 }
 
 type env = {
-  env_globals       : Globals.t;
+  env_constants : constant_key Cmap_env.t;
+  env_inductives : mind_key Mindmap_env.t;
+  env_modules : module_body MPmap.t;
+  env_modtypes : module_type_body MPmap.t;
   env_named_context : named_context_val; (* section variables *)
   env_rel_context   : rel_context_val;
   env_universes : UGraph.t;
@@ -110,12 +99,10 @@ let empty_rel_context_val = {
 }
 
 let empty_env = {
-  env_globals =
-    { Globals.constants = Cmap_env.empty
-    ; inductives = Mindmap_env.empty
-    ; modules = MPmap.empty
-    ; modtypes = MPmap.empty
-    };
+  env_constants = Cmap_env.empty;
+  env_inductives = Mindmap_env.empty;
+  env_modules = MPmap.empty;
+  env_modtypes = MPmap.empty;
   constant_hyps = Cmap_env.empty;
   inductive_hyps = Mindmap_env.empty;
   env_named_context = empty_named_context_val;
@@ -218,15 +205,15 @@ let record_global_hyps add kn hyps acc =
   else add kn (Context.Named.to_vars hyps) acc
 
 let fold_constants f env acc =
-  Cmap_env.fold (fun c (body,_) acc -> f c body acc) env.env_globals.Globals.constants acc
+  Cmap_env.fold (fun c (body,_) acc -> f c body acc) env.env_constants acc
 
 let fold_inductives f env acc =
-  Mindmap_env.fold (fun c (body,_) acc -> f c body acc) env.env_globals.Globals.inductives acc
+  Mindmap_env.fold (fun c (body,_) acc -> f c body acc) env.env_inductives acc
 
 (* Global constants *)
 
 let lookup_constant_key kn env =
-  match Cmap_env.find_opt kn env.env_globals.Globals.constants with
+  match Cmap_env.find_opt kn env.env_constants with
   | Some v -> v
   | None ->
     anomaly Pp.(str "Constant " ++ Constant.print kn ++ str" does not appear in the environment.")
@@ -234,7 +221,7 @@ let lookup_constant_key kn env =
 let lookup_constant kn env =
   fst (lookup_constant_key kn env)
 
-let mem_constant kn env = Cmap_env.mem kn env.env_globals.Globals.constants
+let mem_constant kn env = Cmap_env.mem kn env.env_constants
 
 let add_rewrite_rules l env =
   if not env.rewrite_rules_allowed then raise (RewriteRulesNotAllowed Rule);
@@ -251,7 +238,7 @@ let lookup_rewrite_rules cst env =
 
 (* Mutual Inductives *)
 let lookup_mind_key kn env =
-  match Mindmap_env.find_opt kn env.env_globals.Globals.inductives with
+  match Mindmap_env.find_opt kn env.env_inductives with
   | Some v -> v
   | None ->
     anomaly Pp.(str "Inductive " ++ MutInd.print kn ++ str" does not appear in the environment.")
@@ -320,7 +307,7 @@ let expand_branch_contexts (mib, mip) u params br =
   Array.map2_i build_one_branch br mip.mind_nf_lc
 
 
-let mem_mind kn env = Mindmap_env.mem kn env.env_globals.Globals.inductives
+let mem_mind kn env = Mindmap_env.mem kn env.env_inductives
 
 let mind_context env mind =
   let mib = lookup_mind mind env in
@@ -584,11 +571,7 @@ let no_link_info = NotLinked
 
 let add_constant_key kn cb linkinfo env =
   let new_constants =
-    Cmap_env.add kn (cb,(ref linkinfo, ref None)) env.env_globals.Globals.constants in
-  let new_globals =
-    { env.env_globals with
-      Globals.constants = new_constants }
-  in
+    Cmap_env.add kn (cb,(ref linkinfo, ref None)) env.env_constants in
   let irr_constants = if cb.const_relevance != Sorts.Relevant
     then Cmap_env.add kn cb.const_relevance env.irr_constants
     else env.irr_constants
@@ -601,7 +584,7 @@ let add_constant_key kn cb linkinfo env =
       Cmap_env.add kn [] env.symb_pats
     | _ -> env.symb_pats
   in
-  { env with constant_hyps; irr_constants; symb_pats; env_globals = new_globals }
+  { env with constant_hyps; irr_constants; symb_pats; env_constants = new_constants }
 
 let add_constant kn cb env =
   add_constant_key kn cb no_link_info env
@@ -771,18 +754,14 @@ let template_polymorphic_pind (ind,u) env =
   else template_polymorphic_ind ind env
 
 let add_mind_key kn (mind, _ as mind_key) env =
-  let new_inds = Mindmap_env.add kn mind_key env.env_globals.Globals.inductives in
-  let new_globals =
-    { env.env_globals with
-      Globals.inductives = new_inds; }
-  in
+  let new_inds = Mindmap_env.add kn mind_key env.env_inductives in
   let irr_inds = Array.fold_left_i (fun i irr_inds mip ->
       if mip.mind_relevance != Sorts.Relevant
       then Indmap_env.add (kn, i) mip.mind_relevance irr_inds
       else irr_inds) env.irr_inds mind.mind_packets
   in
   let inductive_hyps = record_global_hyps Mindmap_env.add kn mind.mind_hyps env.inductive_hyps in
-  { env with inductive_hyps; irr_inds; env_globals = new_globals }
+  { env with inductive_hyps; irr_inds; env_inductives = new_inds }
 
 let add_mind kn mib env =
   let li = ref no_link_info in add_mind_key kn (mib, li) env
@@ -865,21 +844,19 @@ let keep_hyps env needed =
 (* Modules *)
 
 let add_modtype mp mtb env =
-  let new_modtypes = MPmap.add mp mtb env.env_globals.Globals.modtypes in
-  let new_globals = { env.env_globals with Globals.modtypes = new_modtypes } in
-  { env with env_globals = new_globals }
+  let new_modtypes = MPmap.add mp mtb env.env_modtypes in
+  { env with env_modtypes = new_modtypes }
 
 let shallow_add_module mp mb env =
-  let new_mods = MPmap.add mp mb env.env_globals.Globals.modules in
-  let new_globals = { env.env_globals with Globals.modules = new_mods } in
-  { env with env_globals = new_globals }
+  let new_mods = MPmap.add mp mb env.env_modules in
+  { env with env_modules = new_mods }
 
 let lookup_module mp env =
-    MPmap.find mp env.env_globals.Globals.modules
+    MPmap.find mp env.env_modules
 
 
 let lookup_modtype mp env =
-  MPmap.find mp env.env_globals.Globals.modtypes
+  MPmap.find mp env.env_modtypes
 
 (*s Judgments. *)
 
@@ -1080,10 +1057,10 @@ module Internal = struct
     }
 
     let view (env : env) = {
-      env_constants = env.env_globals.constants;
-      env_inductives = env.env_globals.inductives;
-      env_modtypes = env.env_globals.modtypes;
-      env_modules = env.env_globals.modules;
+      env_constants = env.env_constants;
+      env_inductives = env.env_inductives;
+      env_modtypes = env.env_modtypes;
+      env_modules = env.env_modules;
       env_named_context = env.env_named_context;
       env_rel_context = env.env_rel_context;
       env_universes = env.env_universes;
