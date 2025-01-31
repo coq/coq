@@ -207,7 +207,7 @@ module RecordEntry = struct
 
   type t = {
     global_univs : Univ.ContextSet.t;
-    ubinders : UnivNames.universe_binders;
+    ubinders : UState.named_universes_entry;
     mie : Entries.mutual_inductive_entry;
     ind_infos : one_ind_info list;
     param_impls : Impargs.manual_implicits;
@@ -709,7 +709,6 @@ module Record_decl = struct
   type t = {
     entry : RecordEntry.t;
     records : Data.t list;
-    globnames : UState.named_universes_entry;
     projections_kind : Decls.definition_object_kind;
     indlocs : DeclareInd.indlocs;
   }
@@ -842,17 +841,8 @@ let pre_process_structure udecl kind ~flags ~primitive_proj (records : Ast.t lis
   entry, projections_kind, decl_data, indlocs
 
 let interp_structure_core (entry:RecordEntry.t) ~projections_kind ~indlocs data =
-  let globnames = match entry.mie.mind_entry_universes with
-    | Monomorphic_ind_entry ->
-      (UState.Monomorphic_entry entry.global_univs, entry.ubinders)
-    | Template_ind_entry ctx ->
-      (UState.Monomorphic_entry (Univ.ContextSet.union entry.global_univs ctx.univs), entry.ubinders)
-    | Polymorphic_ind_entry uctx ->
-      (UState.Polymorphic_entry uctx, UnivNames.empty_binders)
-  in
   let open Record_decl in
   { entry;
-    globnames;
     projections_kind;
     records = data;
     indlocs;
@@ -880,7 +870,7 @@ let declare_structure (decl:Record_decl.t) =
   let default_dep_elim = List.map (fun x -> x.RecordEntry.default_dep_elim) decl.entry.ind_infos in
   let kn =
     DeclareInd.declare_mutual_inductive_with_eliminations decl.entry.mie
-      decl.globnames
+      decl.entry.ubinders
       impls
       ~indlocs:decl.indlocs
       ~default_dep_elim
