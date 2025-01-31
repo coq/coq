@@ -344,8 +344,15 @@ struct
     (f inst, (inst, csts))
 
   let to_context_set (_, (inst, csts)) =
-    let qctx, levels = Instance.levels inst in
-    qctx, (levels, csts)
+    let qs, us = Instance.to_array inst in
+    let us = Array.fold_left (fun acc x -> Level.Set.add x acc) Level.Set.empty us in
+    let qs = Array.fold_left (fun acc -> function
+        | Sorts.Quality.QVar x -> Sorts.QVar.Set.add x acc
+        | Sorts.Quality.QConstant _ -> assert false)
+        Sorts.QVar.Set.empty
+        qs
+    in
+    qs, (us, csts)
 
 end
 

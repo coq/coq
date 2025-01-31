@@ -431,25 +431,22 @@ type linearity = Linear of Sorts.QVar.t option | NonLinear
 
 let pseudo_sort_poly ~non_template_qvars ~template_univs sigma params arity =
   (* to be pseudo sort poly, every univ in the conclusion must be bound at a free quality *)
-  let open Declarations in
   (* XXX maybe should be anomaly (ie directly call destArity) *)
-  if not @@ isArity sigma arity then TemplateUnivOnly
+  if not @@ isArity sigma arity then None
   else
     let ctx, s = destArity sigma arity in
     match ESorts.kind sigma s with
-    | SProp | Prop | Set -> TemplateUnivOnly
+    | SProp | Prop | Set -> None
     | QSort (q,u) ->
       if not (Sorts.QVar.Set.mem q non_template_qvars)
       && Univ.Universe.for_all (fun (u,_) ->
              match Univ.Level.Map.find_opt u template_univs with
              | None | Some None -> false
-             | Some (Some (_:Sorts.QVar.t)) ->
-               (* we don't need to be bound at the same quality, we will collapse anyway *)
-               true)
+             | Some (Some q') -> QVar.equal q q')
            u
-      then TemplatePseudoSortPoly
-      else TemplateUnivOnly
-    | Type u -> TemplateUnivOnly
+      then Some q
+      else None
+    | Type u -> None
 
 let unbounded_from_below u cstrs =
   let open Univ in
@@ -527,14 +524,32 @@ let nontemplate_univ_entry ~poly sigma udecl =
   sigma, uentry, ubinders, global
 
 let template_univ_entry sigma udecl ~template_univs pseudo_sort_poly =
-  let sigma = Evd.collapse_sort_variables sigma in
-  let uentry, _ as ubinders = UState.check_univ_decl ~poly:false (Evd.ustate sigma) udecl in
-  let uctx = match uentry with
-    | Monomorphic_entry uctx -> uctx
-    | Polymorphic_entry _ -> assert false
+  let template_qvars = match pseudo_sort_poly with
+    | Some q -> QVar.Set.singleton q
+    | None -> QVar.Set.empty
   in
+  let sigma = Evd.collapse_sort_variables ~except:template_qvars sigma in
+  let sigma = QVar.Set.fold (fun q sigma ->
+      Evd.set_leq_sort sigma ESorts.prop (ESorts.make @@ Sorts.qsort q Univ.Universe.type0))
+      template_qvars sigma
+  in
+  let uctx =
+    UState.check_template_univ_decl (Evd.ustate sigma) ~template_qvars udecl
+  in
+  let ubinders = UState.Monomorphic_entry uctx, Evd.universe_binders sigma in
   let template_univs, global = split_universe_context template_univs uctx in
-  sigma, Template_ind_entry {univs=template_univs; pseudo_sort_poly}, ubinders, global
+  let uctx =
+    UVars.UContext.of_context_set
+      (UState.compute_instance_binders @@ Evd.ustate sigma)
+      template_qvars
+      template_univs
+  in
+  let default_univs =
+    let inst = UVars.UContext.instance uctx in
+    let qs, us = UVars.Instance.to_array inst in
+    UVars.Instance.of_array (Array.map (fun _ -> Quality.qtype) qs, us)
+  in
+  sigma, Template_ind_entry {uctx; default_univs}, ubinders, global
 
 let should_template ~user_template ~poly =
 match user_template, poly with

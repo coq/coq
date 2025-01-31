@@ -21,6 +21,39 @@ exception InductiveMismatch of MutInd.t * string
 
 let check mind field b = if not b then raise (InductiveMismatch (mind,field))
 
+let anon_univ_names u =
+  let nqs, nus = UVars.Instance.length u in
+  Array.make nqs Anonymous, Array.make nus Anonymous
+
+let template_univ_entry {template_context; template_pseudo_sort_poly; template_param_arguments=_} =
+  let template_univs, template_csts = template_context in
+  let bind_qvars, default_qvars = match template_pseudo_sort_poly with
+    | TemplateUnivOnly -> [||], [||]
+    | TemplatePseudoSortPoly ->
+      [|Sorts.Quality.QVar (Sorts.QVar.make_var 0)|], [|Sorts.Quality.qtype|]
+  in
+  let default_univs = Array.of_list @@ Level.Set.elements template_univs in
+  let bind_univs = Array.init (Array.length default_univs) Level.var in
+  let usubst = Array.fold_left2 (fun acc bind_u default_u ->
+      Level.Map.add default_u bind_u acc)
+      Level.Map.empty
+      bind_univs default_univs
+  in
+
+  let csts = Constraints.fold (fun (u,d,v) acc ->
+      let u = Univ.subst_univs_level_level usubst u in
+      let () = assert (not @@ Level.Map.mem v usubst) in
+      Constraints.add (u,d,v) acc)
+      template_csts
+      Constraints.empty
+  in
+  let inst = Instance.of_array (bind_qvars,bind_univs) in
+  let uctx = UContext.make (anon_univ_names inst) (inst,csts) in
+
+  let default_univs = UVars.Instance.of_array (default_qvars,default_univs) in
+
+  template_pseudo_sort_poly, usubst, Entries.Template_ind_entry {uctx; default_univs}
+
 let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
   let open Entries in
   let nparams = List.length mb.mind_params_ctxt in (* include letins *)
@@ -28,37 +61,79 @@ let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
     | NotRecord -> None | FakeRecord -> Some None
     | PrimRecord data -> Some (Some (Array.map (fun (x,_,_,_) -> x) data))
   in
-  let check_template ind = match ind.mind_arity with
-  | RegularArity _ -> false
-  | TemplateArity _ -> true
-  in
-  let mind_entry_template = Array.exists check_template mb.mind_packets in
-  let () = if mind_entry_template then assert (Array.for_all check_template mb.mind_packets) in
+  let template = Option.map template_univ_entry mb.mind_template in
   let mind_entry_universes = match mb.mind_universes with
     | Monomorphic ->
       (* We only need to rebuild the set of constraints for template polymorphic
         inductive types. The set of monomorphic constraints is already part of
         the graph at that point, but we need to emulate a broken bound variable
         mechanism for template inductive types. *)
-      begin match mb.mind_template with
+      begin match template with
       | None -> Monomorphic_ind_entry
-      | Some ctx ->
-        let pseudo_sort_poly = ctx.template_pseudo_sort_poly in
-        Template_ind_entry {univs=ctx.template_context; pseudo_sort_poly}
+      | Some (_,_,template) -> template
       end
     | Polymorphic auctx -> Polymorphic_ind_entry (AbstractContext.repr auctx)
   in
   let ntyps = Array.length mb.mind_packets in
+  let concl_template_univs = match mb.mind_packets, template with
+    | _, None -> Level.Set.empty
+    | [|_|], Some (TemplateUnivOnly,_,_) -> Level.Set.empty
+    | [|ind|], Some (TemplatePseudoSortPoly,_,_) ->
+      begin match ind.mind_arity with
+      | RegularArity _ -> assert false
+      | TemplateArity ar -> match ar.template_level with
+        | SProp | Prop | Set -> Level.Set.empty
+        | QSort _ -> assert false
+        | Type u -> Universe.levels u
+      end
+    | _, Some _ -> assert false
+  in
+  let mind_entry_params = match template with
+    | None -> mb.mind_params_ctxt
+    | Some (_,usubst,_) ->
+      let open Context.Rel.Declaration in
+      mb.mind_params_ctxt |> List.map (function
+          | LocalDef _ as d -> d
+          | LocalAssum (na,t) as d ->
+            let ctx, c = Term.decompose_prod_decls t in
+            match Constr.kind c with
+            | Sort (Type u) -> begin match Universe.level u with
+                | Some u -> begin match Level.Map.find_opt u usubst with
+                    | Some u' ->
+                      let u' = Universe.make u' in
+                      let s = if Level.Set.mem u concl_template_univs then
+                          Sorts.qsort (Sorts.QVar.make_var 0) u'
+                        else Sorts.sort_of_univ u'
+                      in
+                      LocalAssum (na,Term.mkArity (ctx, s))
+                    | None -> d
+                  end
+                | None -> d
+              end
+            | _ -> d)
+  in
   let mind_entry_inds = Array.map_to_list (fun ind ->
-      let mind_entry_arity = match ind.mind_arity with
-        | RegularArity ar ->
+      let mind_entry_arity =
+        match ind.mind_arity, template with
+        | RegularArity ar, None ->
           let ctx, arity = Term.decompose_prod_n_decls nparams ar.mind_user_arity in
           ignore ctx; (* we will check that the produced user_arity is equal to the input *)
           arity
-        | TemplateArity ar ->
+        | TemplateArity ar, Some (pseudo_sort_poly,usubst,_) ->
           let ctx = ind.mind_arity_ctxt in
           let ctx = List.firstn (List.length ctx - nparams) ctx in
-          Term.mkArity (ctx, ar.template_level)
+          let concl = match ar.template_level with
+            | SProp | Prop | Set as concl -> concl
+            | QSort _ -> assert false
+            | Type u ->
+              let u' = Univ.subst_univs_level_universe usubst u in
+              match pseudo_sort_poly with
+              | TemplateUnivOnly -> Sorts.sort_of_univ u'
+              | TemplatePseudoSortPoly ->
+                Sorts.qsort (Sorts.QVar.make_var 0) u'
+          in
+          Term.mkArity (ctx, concl)
+        | RegularArity _, Some _ | TemplateArity _, None -> assert false
       in
       {
         mind_entry_typename = ind.mind_typename;
@@ -77,7 +152,7 @@ let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
   {
     mind_entry_record;
     mind_entry_finite = mb.mind_finite;
-    mind_entry_params = mb.mind_params_ctxt;
+    mind_entry_params;
     mind_entry_inds;
     mind_entry_universes;
     mind_entry_variance;

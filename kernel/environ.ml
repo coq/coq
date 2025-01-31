@@ -1056,11 +1056,11 @@ struct
 end
 
 module Internal = struct
-  let for_checking_pseudo_sort_poly env =
-    let q = Sorts.QVar.make_var 0 in
-    assert (not (Sorts.QVar.Set.mem q env.env_qualities));
-    let env = map_universes UGraph.Internal.for_checking_pseudo_sort_poly env in
-    { env with env_qualities = Sorts.QVar.Set.add q env.env_qualities }
+  let push_template_context uctx env =
+    let env = push_context ~strict:false uctx env in
+    let qvars, _ = UVars.UContext.to_context_set uctx in
+    let env = map_universes (UGraph.Internal.add_template_qvars qvars) env in
+    env
 
   let is_above_prop env q = UGraph.Internal.is_above_prop env.env_universes q
 
