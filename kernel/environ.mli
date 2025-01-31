@@ -462,9 +462,9 @@ val no_link_info : link_info
 val set_retroknowledge : env -> Retroknowledge.retroknowledge -> env
 
 module Internal : sig
-  (** Makes qvar 0 bound and treated as above prop.
+  (** Makes the qvars treated as above prop.
       Do not use outside kernel inductive typechecking. *)
-  val for_checking_pseudo_sort_poly : env -> env
+  val push_template_context : UContext.t -> env -> env
 
   val is_above_prop : env -> Sorts.QVar.t -> bool
 end

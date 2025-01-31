@@ -45,7 +45,7 @@ module QState : sig
   val is_above_prop : elt -> t -> bool
   val undefined : t -> QVar.Set.t
   val collapse_above_prop : to_prop:bool -> t -> t
-  val collapse : t -> t
+  val collapse : ?except:QVar.Set.t -> t -> t
   val pr : (QVar.t -> Pp.t) -> t -> Pp.t
   val of_set : QVar.Set.t -> t
 end =
@@ -188,9 +188,9 @@ let collapse_above_prop ~to_prop m =
   in
   { named = m.named; qmap = QMap.mapi map m.qmap; above = QSet.empty }
 
-let collapse m =
+let collapse ?(except=QSet.empty) m =
   let map q v = match v with
-  | None -> if QSet.mem q m.named then None else Some (QConstant QType)
+  | None -> if QSet.mem q m.named || QSet.mem q except then None else Some (QConstant QType)
   | Some _ -> v
   in
   { named = m.named; qmap = QMap.mapi map m.qmap; above = QSet.empty }
@@ -342,7 +342,8 @@ let sort_context_set uctx =
 
 let constraints uctx = snd uctx.local
 
-let compute_instance_binders (qrev,urev) inst =
+let compute_instance_binders uctx inst =
+  let (qrev,urev) = snd uctx.names in
   let qinst, uinst = Instance.to_array inst in
   let qmap = function
     | QVar q ->
@@ -359,7 +360,7 @@ let compute_instance_binders (qrev,urev) inst =
 
 let context uctx =
   let qvars = QState.undefined uctx.sort_variables in
-  UContext.of_context_set (compute_instance_binders (snd uctx.names)) qvars uctx.local
+  UContext.of_context_set (compute_instance_binders uctx) qvars uctx.local
 
 type named_universes_entry = universes_entry * UnivNames.universe_binders
 
@@ -459,7 +460,7 @@ let nf_universes uctx c =
   | Evar (evk, args) ->
     let args' = SList.Smart.map (self ()) args in
     if args == args' then c else Constr.mkEvar (evk, args')
-  | _ -> UnivSubst.map_universes_opt_subst_with_binders ignore self (nf_qvar uctx) nf_univ () c
+  | _ -> UnivSubst.map_universes_opt_subst_with_binders ignore self (nf_relevance uctx) (nf_qvar uctx) nf_univ () c
   in
   self ()  c
 
@@ -899,6 +900,31 @@ let check_implication uctx cstrs cstrs' =
       Pp.(str "Universe constraints are not implied by the ones declared: " ++
           Constraints.pr (pr_uctx_level uctx) cstrs')
 
+let check_template_univ_decl uctx ~template_qvars decl =
+  let () =
+    match List.filter (fun q -> not @@ QVar.Set.mem q template_qvars) decl.univdecl_qualities with
+    | (_ :: _) as qvars ->
+      CErrors.user_err
+        Pp.(str "Qualities " ++ prlist_with_sep spc (pr_uctx_qvar uctx) qvars ++
+            str " cannot be template.")
+    | [] ->
+      if not (QVar.Set.equal template_qvars (QState.undefined uctx.sort_variables))
+      then CErrors.anomaly Pp.(str "Bugged template univ declaration.")
+  in
+  let levels, csts = uctx.local in
+  let () =
+    let prefix = decl.univdecl_instance in
+    if not decl.univdecl_extensible_instance
+    then check_universe_context_set ~prefix levels uctx.names
+  in
+  if decl.univdecl_extensible_constraints then uctx.local
+  else begin
+    check_implication uctx
+      decl.univdecl_constraints
+      csts;
+    levels, decl.univdecl_constraints
+  end
+
 let check_mono_univ_decl uctx decl =
   (* Note: if [decl] is [default_univ_decl], behave like [uctx.local] *)
   let () =
@@ -925,7 +951,7 @@ let check_poly_univ_decl uctx decl =
   let levels, csts = uctx.local in
   let qvars = QState.undefined uctx.sort_variables in
   let inst = universe_context_inst decl qvars levels uctx.names in
-  let nas = compute_instance_binders (snd uctx.names) inst in
+  let nas = compute_instance_binders uctx inst in
   let csts = if decl.univdecl_extensible_constraints then csts
     else begin
       check_implication uctx
@@ -1191,8 +1217,8 @@ let fix_undefined_variables uctx =
 let collapse_above_prop_sort_variables ~to_prop uctx =
   { uctx with sort_variables = QState.collapse_above_prop ~to_prop uctx.sort_variables }
 
-let collapse_sort_variables uctx =
-  { uctx with sort_variables = QState.collapse uctx.sort_variables }
+let collapse_sort_variables ?except uctx =
+  { uctx with sort_variables = QState.collapse ?except uctx.sort_variables }
 
 let minimize uctx =
   let open UnivMinim in
@@ -1229,7 +1255,7 @@ let check_univ_decl_rev uctx decl =
   let levels, csts = uctx.local in
   let qvars = QState.undefined uctx.sort_variables in
   let inst = universe_context_inst_decl decl qvars levels uctx.names in
-  let nas = compute_instance_binders (snd uctx.names) inst in
+  let nas = compute_instance_binders uctx inst in
   let () =
     check_implication uctx
     csts

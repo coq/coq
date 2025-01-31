@@ -24,8 +24,9 @@ type inductive_universes_entry =
   | Monomorphic_ind_entry
   | Polymorphic_ind_entry of UVars.UContext.t
   | Template_ind_entry of {
-      univs : Univ.ContextSet.t;
-      pseudo_sort_poly : Declarations.template_pseudo_sort_poly;
+      uctx : UVars.UContext.t;
+      (* The quality part of default_univs must be all qtype *)
+      default_univs : UVars.Instance.t;
     }
 
 type variance_entry = UVars.Variance.t option array

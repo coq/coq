@@ -162,8 +162,7 @@ let subst_univs_fn_puniverses f (c, u as cu) =
   let u' = Instance.subst_fn f u in
     if u' == u then cu else (c, u')
 
-let map_universes_opt_subst_with_binders next aux fqual funiv k c =
-  let frel = Sorts.relevance_subst_fn fqual in
+let map_universes_opt_subst_with_binders next aux frel fqual funiv k c =
   let flevel = fqual, level_subst_of funiv in
   let aux_rec ((nas, tys, bds) as rc) =
     let nas' = Array.Smart.map (Context.map_annot_relevance frel) nas in
@@ -244,7 +243,7 @@ let map_universes_opt_subst_with_binders next aux fqual funiv k c =
     else mkProj (p, r', v')
   | _ -> Constr.map_with_binders next aux k c
 
-let nf_evars_and_universes_opt_subst fevar fqual funiv c =
+let nf_evars_and_universes_opt_subst fevar frel fqual funiv c =
   let rec self () c = match Constr.kind c with
   | Evar (evk, args) ->
     let args' = SList.Smart.map (self ()) args in
@@ -252,7 +251,7 @@ let nf_evars_and_universes_opt_subst fevar fqual funiv c =
     | None -> if args == args' then c else mkEvar (evk, args')
     | Some c -> self () c
     end
-  | _ -> map_universes_opt_subst_with_binders ignore self fqual funiv () c
+  | _ -> map_universes_opt_subst_with_binders ignore self frel fqual funiv () c
   in
   self () c
 

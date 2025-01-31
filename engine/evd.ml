@@ -1207,8 +1207,8 @@ let nf_univ_variables evd =
   let uctx = UState.normalize_variables evd.universes in
   {evd with universes = uctx}
 
-let collapse_sort_variables evd =
-  let universes = UState.collapse_sort_variables evd.universes in
+let collapse_sort_variables ?except evd =
+  let universes = UState.collapse_sort_variables ?except evd.universes in
   { evd with universes }
 
 let minimize_universes ?(collapse_sort_variables=true) evd =
@@ -1720,6 +1720,7 @@ module MiniEConstr = struct
     let univ_value l =
       UnivFlex.normalize_univ_variable lsubst l
     in
+    let relevance_value r = UState.nf_relevance sigma.universes r in
     let qvar_value q = UState.nf_qvar sigma.universes q in
     let next s = { s with evc_lift = s.evc_lift + 1 } in
     let find clos id = match Id.Map.find_opt id clos.evc_map with
@@ -1792,7 +1793,7 @@ module MiniEConstr = struct
         self nclos c
       end
     | _ ->
-      UnivSubst.map_universes_opt_subst_with_binders next self qvar_value univ_value clos c
+      UnivSubst.map_universes_opt_subst_with_binders next self relevance_value qvar_value univ_value clos c
     in
     let clos = {
       evc_lift = 0;

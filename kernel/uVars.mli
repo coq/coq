@@ -139,7 +139,7 @@ sig
   val of_context_set : (Instance.t -> bound_names) -> QVar.Set.t -> ContextSet.t -> t
   (** Build a vector of universe levels assuming a function generating names *)
 
-  val to_context_set : t -> Quality.Set.t * ContextSet.t
+  val to_context_set : t -> QVar.Set.t * ContextSet.t
   (** Discard the names and order of the universes *)
 
 end
