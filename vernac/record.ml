@@ -885,7 +885,7 @@ let declare_structure (decl:Record_decl.t) =
       ~indlocs:decl.indlocs
       ~default_dep_elim
   in
-  let map i (ind_entry, { RecordEntry.inhabitant_id; implfs }, { Data.is_coercion; proj_flags; }) =
+  let map i ({ RecordEntry.inhabitant_id; implfs }, { Data.is_coercion; proj_flags; }) =
     let rsp = (kn, i) in (* This is ind path of idstruc *)
     let cstr = (rsp, 1) in
     let kind = decl.projections_kind in
@@ -899,7 +899,7 @@ let declare_structure (decl:Record_decl.t) =
     let () = declare_structure_entry struc in
     GlobRef.IndRef rsp
   in
-  let data = List.combine3 decl.entry.mie.mind_entry_inds decl.entry.ind_infos decl.records in
+  let data = List.combine decl.entry.ind_infos decl.records in
   let inds = List.mapi map data in
   Declared.Record kn, inds
 
