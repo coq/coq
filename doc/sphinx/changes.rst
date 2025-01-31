@@ -11,17 +11,22 @@ Recent changes
 Version 9.0
 -----------
 
+.. contents::
+   :local:
+   :depth: 1
+
 Summary of changes
 ~~~~~~~~~~~~~~~~~~
 
 The Rocq Prover version 9 is the first Rocq Prover release after the renaming
-from The Coq Proof Assistant. The Rocq Prover 9.0.0 is backwards compatible with
-Coq 8.20, providing compatibility shims so that developments depending on Coq
-can be easily ported, see `Porting to The Rocq Prover`_  for details. The 9.0 version
-is based on a new single binary `rocq` that dispatches commands to previously
-separate binaries, a split and renaming of the standard library to `Stdlib` and
-an internal encoding of template-polymorphism in terms of the
-more general notion of sort polymorphism.
+from The Coq Proof Assistant. The Rocq Prover 9.0.0 command line interface is
+backwards compatible with Coq 8.20, providing compatibility shims so that
+developments depending on Coq can be easily ported, see `Porting to The Rocq
+Prover`_  for details. The 9.0 version is based on a new single binary `rocq`
+that dispatches commands to previously separate binaries, a split and renaming
+of the standard library to `Stdlib` and improvements to the handling of
+template-polymorphism, bringing it closer to a complete subsumption by sort
+polymorphism.
 
 We highlight some of the most impactful changes here:
 
@@ -37,12 +42,15 @@ We highlight some of the most impactful changes here:
 
   - The `Coq` standard library has been renamed and :ref:`split <90stdlib>` into two libraries:
 
-    - A `Corelib` core library (the `rocq-core` opam package). This is an extended prelude corresponding to the `rocq-core`
-      OCaml package, which is enough to run `rocq` tactics and contains the `Ltac2` library.
+    - A `Corelib` core library (the `rocq-core` opam package). This is an
+      extended prelude corresponding to the `rocq-core` OCaml package, which is
+      enough to run `rocq` tactics and contains the `Ltac2` library and bindings
+      for primitive types (integers, floats, arrays and strings).
     - An `Stdlib` standard library (the `rocq-stdlib` opam package). The `Stdlib` is
       now maintained `out of <https://github.com/rocq-prover/stdlib>`_ the main `rocq`
-      `repository <http://github/com/rocq-prover/rocq>`_.
-      FIX LINKS
+      `repository <http://github/com/rocq-prover/rocq>`_. We welcome new maintainers and
+      contributors to the new repository, a specific call for contributions will be
+      sent soon.
 
 Notable breaking changes:
 
@@ -104,44 +112,65 @@ This release is the result of ?? merged PRs, closing ?? issues.
 | Pierre-Marie Pédrot and Matthieu Sozeau for the Rocq development team
 
 Porting to The Rocq Prover
---------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The Rocq Prover version 9.0 includes support for compability shims that allow
-to call it through legacy Coq commands (`coqtop`, `coqdep`, `coq_makefile`, `coqdoc`, TODO ...),
+to call it through legacy Coq commands (`coq-tex`, `coq_makefile`, `coqchk`, `coqdoc`, `coqpp`, `coqtop`,
+`coqwc`, `coqc`, `coqdep`, `coqnative`, `coqtimelog2html`, `coqtop.byte`, `coqworkmgr`)
 so that it can act as a regular `Coq` version. If using `opam`, this compatibility
 layer is available through packages `coq-core`, `coq-stdlib` and `coq`. In this setting,
 nothing needs to be changed to an existing project to compile with `Rocq 9.0` (aliased as `Coq 9.0`).
 
-You should expect warnings that the standard library previously under namespace `Coq` has been renamed to
-`Stdlib` and moved to a `separate repositiory <https://github.com/coq/stdlib>`_, but these warnings are
-independent of the `Coq` to `Rocq` renaming.
+You should expect warnings that the standard library previously under namespace
+`Coq` has been renamed to `Stdlib` (and moved to a `separate repository
+<https://github.com/coq/stdlib>`_), but these warnings are independent of the
+`Coq` to `Rocq` renaming. See `this entry
+<https://rocq-prover.org/doc/v9.0/refman-stdlib/changes.html#changed>`_ from
+the Standard Library's changelog for the suggested workflow to port theories.
 
-To be future-proof, projects based on `coq_makefile` can be ported to not rely on the compatibility
-layer anymore. To do so, one must replace uses of `coq_makefile` with :ref:`rocq_makefile`, which
-will directly call the new `rocq` binary without relying on the compatibility shims.
+There are important changes to consider for building plugins and libraries:
 
-Beware, if using `dune` (TODO <= 3.17.2) to :ref:`build <building_dune>` a Rocq project, you will still
-need the compatibility shim for `coq-core` so that `dune`'s Coq language extension functions correctly.
-This issue has been solved in `dune` TODO.
+- To be future-proof, projects based on `coq_makefile` can be ported to not rely
+  on the compatibility layer anymore. To do so, one must replace uses of
+  `coq_makefile` with :ref:`rocq makefile <rocq_makefile>`, which will directly
+  call the new `rocq` binary without relying on the compatibility shims.
+
+- If using `dune` (TODO <= 3.17.2) to :ref:`build <building_dune>` a Rocq project, you will still
+  need the compatibility shim for `coq-core` so that `dune`'s Coq language extension functions correctly.
+  This issue has been solved in `dune` TODO.
+
+Regarding packaging:
+
+- Opam packages depending on the coq shim should keep being named coq-\*, whereas
+  actually ported packages should be named rocq-\* and replace the coq dependency by
+  `rocq-core` or `rocq-stdlib` (but **not** `rocq-prover` which is only a user-oriented
+  metapackage).
+
+- Similarly for Nix, packages using the shim can be kept in `coqPackages` and
+  keep depending on `coq` whereas actually ported packages can be added in
+  `rocqPackages`, depending on `rocq-core`.
+
+In both cases, when a `rocq` port is done, a `coq` metapackage can be kept,
+simply depending on the new `rocq` package and `coq`.
 
 Renaming Advice
----------------
+~~~~~~~~~~~~~~~
 
 We have applied the `renaming <https://rocq-prover.org/about#Name>`_ from the
 Coq Proof Assistant to The Rocq Prover in this version, and officialy supported
 projects in the `Rocq organization <https://github.com/rocq-prover>`_ will be
 renamed in the future. The Rocq Development Team's official position on renaming of
-projects it does not officially maintain is to let their authors do as they wish.
+projects *it does not officially maintain* is to let their authors do as they wish.
 We just note that the new identity is quite compatible with existing
 Rooster references. However, we encourage existing and forthcoming projects to
 adopt the new logo, its colors and fonts, see the `ìdentity guidelines
 <https://rocq-prover.org/logo>`_ for more information.
 
 The Rocq Prover Website
------------------------
+~~~~~~~~~~~~~~~~~~~~~~~
 
-The Rocq Prover comes with a new `website <https://rocq-prover.org>`_ that was
-developped by Matthieu Sozeau, Nicolas Tabareau and Théo Zimmermann, in
+The Rocq Prover comes with a new `website <https://rocq-prover.org>`_ which was
+developped by Matthieu Sozeau, Nicolas Tabareau and Théo Zimmermann in
 collaboration with Bastien Sozeau of the `Noir Blanc Rouge
 <https://noirblancrouge.com/>`_ type foundry. The new website is a fork of the
 `OCaml.org <https://ocaml.org>`_ website developed by `Tarides
