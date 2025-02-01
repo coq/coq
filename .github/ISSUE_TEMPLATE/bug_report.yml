@@ -32,5 +32,11 @@ body:
     placeholder: X.Y.Z
 - type: input
   attributes:
+    label: Interface of Rocq / Coq where this bug occurs
+    description: |
+      e.g. Proof General, VsCoq, CoqIDE, etc
+      Can be omitted if the issue occurs with `rocq compile`
+- type: input
+  attributes:
     label: Last version of Rocq / Coq where the bug did not occur
     description: You can fill this optional field if the bug is a regression compared to a previous version of Rocq / Coq.
