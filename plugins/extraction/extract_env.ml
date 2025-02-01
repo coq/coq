@@ -266,7 +266,7 @@ and extract_mexpression_spec env mp1 (me_struct,me_alg) = match me_alg with
       | _ -> assert false
       in
       let mp = MPbound mbid in
-      let env' = Modops.add_module_type mp mtb env in
+      let env' = Modops.add_module_parameter mbid mtb env in
       MTfunsig (mbid, extract_mbody_spec env mp mtb,
                 extract_mexpression_spec env' mp1 (me_struct',me_alg'))
   | MENoFunctor m -> extract_mexpr_spec env mp1 (Some me_struct,m)
@@ -277,7 +277,7 @@ and extract_msignature_spec env mp1 reso = function
       MTsig (mp1, extract_structure_spec env' mp1 reso struc)
   | MoreFunctor (mbid, mtb, me) ->
       let mp = MPbound mbid in
-      let env' = Modops.add_module_type mp mtb env in
+      let env' = Modops.add_module_parameter mbid mtb env in
       MTfunsig (mbid, extract_mbody_spec env mp mtb,
                 extract_msignature_spec env' mp1 reso me)
 
@@ -371,7 +371,7 @@ and extract_mexpression access env mp mty = function
       | NoFunctor _ -> assert false
       in
       let mp1 = MPbound mbid in
-      let env' = Modops.add_module_type mp1 mtb	env in
+      let env' = Modops.add_module_parameter mbid mtb env in
       Miniml.MEfunctor
         (mbid,
          extract_mbody_spec env mp1 mtb,
@@ -383,7 +383,7 @@ and extract_msignature access env mp reso ~all = function
       Miniml.MEstruct (mp,extract_structure access env' mp reso ~all struc)
   | MoreFunctor (mbid, mtb, me) ->
       let mp1 = MPbound mbid in
-      let env' = Modops.add_module_type mp1 mtb	env in
+      let env' = Modops.add_module_parameter mbid mtb env in
       Miniml.MEfunctor
         (mbid,
          extract_mbody_spec env mp1 mtb,

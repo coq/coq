@@ -55,8 +55,8 @@ val add_module : ModPath.t -> module_body -> env -> env
 the native compiler. The linking information is updated. *)
 val add_linked_module : ModPath.t -> module_body -> link_info -> env -> env
 
-(** same, for a module type *)
-val add_module_type : ModPath.t -> module_type_body -> env -> env
+(** add an abstract module parameter to the environment *)
+val add_module_parameter : MBId.t -> module_type_body -> env -> env
 
 val add_retroknowledge : Retroknowledge.action list -> env -> env
 
