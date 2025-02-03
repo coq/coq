@@ -81,7 +81,7 @@ type env = {
   env_rel_context   : rel_context_val;
   env_universes : UGraph.t;
   env_qualities : Sorts.QVar.Set.t;
-  symb_pats : rewrite_rule list Cmap_env.t;
+  symb_pats : machine_rewrite_rule list Cmap_env.t;
   env_typing_flags  : typing_flags;
   vm_library : Vmlibrary.t;
   retroknowledge : Retroknowledge.retroknowledge;
@@ -617,7 +617,7 @@ type const_evaluation_result =
   | NoBody
   | Opaque
   | IsPrimitive of UVars.Instance.t * CPrimitives.t
-  | HasRules of UVars.Instance.t * bool * rewrite_rule list
+  | HasRules of UVars.Instance.t * bool * machine_rewrite_rule list
 
 exception NotEvaluableConst of const_evaluation_result
 
@@ -1075,7 +1075,7 @@ module Internal = struct
       env_rel_context   : rel_context_val;
       env_universes : UGraph.t;
       env_qualities : Sorts.QVar.Set.t;
-      env_symb_pats : rewrite_rule list Cmap_env.t;
+      env_symb_pats : machine_rewrite_rule list Cmap_env.t;
       env_typing_flags  : typing_flags;
     }
 

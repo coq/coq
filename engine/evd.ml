@@ -435,6 +435,7 @@ type evar_flags =
     aliased_evars : Evar.t Evar.Map.t;
     typeclass_evars : Evar.Set.t;
     impossible_case_evars : Evar.Set.t;
+    rewrite_rule_evars : Evar.Set.t;
   }
 
 type side_effect_role =
@@ -674,6 +675,8 @@ let add_with_name (type a) ?name ?(typeclass_candidate = true) d e (i : a evar_i
   let evar_flags = match i.evar_source with
     | _, ImpossibleCase ->
       { evar_flags with impossible_case_evars = Evar.Set.add e evar_flags.impossible_case_evars }
+    | _, RewriteRulePattern _ ->
+      { evar_flags with rewrite_rule_evars = Evar.Set.add e evar_flags.rewrite_rule_evars }
     | _ -> evar_flags
   in
   let candidate_evars = match i.evar_candidates with
@@ -715,9 +718,17 @@ let is_obligation_evar evd evk =
 
 let get_impossible_case_evars evd = evd.evar_flags.impossible_case_evars
 
+let get_rewrite_rule_evars evd = evd.evar_flags.rewrite_rule_evars
+
+let is_rewrite_rule_evar evd evk =
+  let flags = evd.evar_flags in
+  Evar.Set.mem evk flags.rewrite_rule_evars
+
 (** Inheritance of flags: for evar-evar and restriction cases *)
 
 let inherit_evar_flags evar_flags evk evk' =
+  if Evar.Set.mem evk evar_flags.rewrite_rule_evars then
+    CErrors.anomaly Pp.(str "Tried to define or restrict a rewrite rule evar.");
   let evk_typeclass = Evar.Set.mem evk evar_flags.typeclass_evars in
   let evk_obligation = Evar.Set.mem evk evar_flags.obligation_evars in
   let evk_impossible = Evar.Set.mem evk evar_flags.impossible_case_evars in
@@ -740,16 +751,21 @@ let inherit_evar_flags evar_flags evk evk' =
       Evar.Set.add evk' impossible_case_evars
     else evar_flags.impossible_case_evars
   in
-  { obligation_evars; aliased_evars; typeclass_evars; impossible_case_evars; }
+  let rewrite_rule_evars = evar_flags.rewrite_rule_evars in
+  { obligation_evars; aliased_evars; typeclass_evars; impossible_case_evars; rewrite_rule_evars }
 
 (** Removal: in all other cases of definition *)
 
 let remove_evar_flags evk evar_flags =
+  if Evar.Set.mem evk evar_flags.rewrite_rule_evars then
+    CErrors.anomaly Pp.(str "Tried to define or restrict a rewrite rule evar.");
   { typeclass_evars = Evar.Set.remove evk evar_flags.typeclass_evars;
     obligation_evars = Evar.Set.remove evk evar_flags.obligation_evars;
     impossible_case_evars = Evar.Set.remove evk evar_flags.impossible_case_evars;
     (* Aliasing information is kept. *)
     aliased_evars = evar_flags.aliased_evars;
+    (* Cannot be a rewrite rule evar *)
+    rewrite_rule_evars = evar_flags.rewrite_rule_evars
   }
 
 (** New evars *)
@@ -902,6 +918,7 @@ let empty_evar_flags =
     aliased_evars = Evar.Map.empty;
     typeclass_evars = Evar.Set.empty;
     impossible_case_evars = Evar.Set.empty;
+    rewrite_rule_evars = Evar.Set.empty;
   }
 
 let empty_side_effects = {
@@ -1389,6 +1406,8 @@ let restrict evk filter ?candidates ?src evd =
   let evar_flags = match src with
     | Some (_,Evar_kinds.ImpossibleCase) ->
       { evar_flags with impossible_case_evars = Evar.Set.add evk' evar_flags.impossible_case_evars }
+    | Some (_,Evar_kinds.RewriteRulePattern _) ->
+      { evar_flags with rewrite_rule_evars = Evar.Set.add evk' evar_flags.rewrite_rule_evars }
     | _ -> evar_flags
   in
   let candidate_evars = Evar.Set.remove evk evd.candidate_evars in
@@ -1407,8 +1426,17 @@ let restrict evk filter ?candidates ?src evd =
   (evd, evk')
 
 let update_source evd evk src =
-  let modify _ info = { info with evar_source = src } in
-  { evd with undf_evars = EvMap.modify evk modify evd.undf_evars }
+  let old_src = ref src in
+  let modify _ info = old_src := info.evar_source; { info with evar_source = src } in
+  let undf_evars = EvMap.modify evk modify evd.undf_evars in
+  let evar_flags = match !old_src with
+    | _, ImpossibleCase ->
+      { evd.evar_flags with impossible_case_evars = Evar.Set.remove evk evd.evar_flags.impossible_case_evars }
+    | _, RewriteRulePattern _ ->
+      { evd.evar_flags with rewrite_rule_evars = Evar.Set.remove evk evd.evar_flags.rewrite_rule_evars }
+    | _ -> evd.evar_flags
+  in
+  { evd with undf_evars; evar_flags }
 
 let dependent_evar_ident ev evd =
   let EvarInfo evi = find evd ev in

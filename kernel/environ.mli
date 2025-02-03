@@ -193,8 +193,8 @@ val constant_relevance : Constant.t -> env -> Sorts.relevance
 
 val mem_constant : Constant.t -> env -> bool
 
-val add_rewrite_rules : (Constant.t * rewrite_rule) list -> env -> env
-val lookup_rewrite_rules : Constant.t -> env -> rewrite_rule list
+val add_rewrite_rules : (Constant.t * machine_rewrite_rule) list -> env -> env
+val lookup_rewrite_rules : Constant.t -> env -> machine_rewrite_rule list
 
 (** New-style polymorphism *)
 val polymorphic_constant  : Constant.t -> env -> bool
@@ -212,7 +212,7 @@ type const_evaluation_result =
   | NoBody
   | Opaque
   | IsPrimitive of Instance.t * CPrimitives.t
-  | HasRules of Instance.t * bool * rewrite_rule list
+  | HasRules of Instance.t * bool * machine_rewrite_rule list
 exception NotEvaluableConst of const_evaluation_result
 
 val constant_type : env -> Constant.t puniverses -> types constrained
@@ -463,7 +463,7 @@ module Internal : sig
       env_rel_context   : rel_context_val;
       env_universes : UGraph.t;
       env_qualities : Sorts.QVar.Set.t;
-      env_symb_pats : rewrite_rule list Cmap_env.t;
+      env_symb_pats : machine_rewrite_rule list Cmap_env.t;
       env_typing_flags  : typing_flags;
     }
 
