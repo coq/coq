@@ -27,7 +27,16 @@ let build_induction_scheme_in_type env dep sort ind =
   let sigma = Evd.from_env env in
   let sigma, pind = Evd.fresh_inductive_instance ~rigid:UState.univ_rigid env sigma ind in
   let pind = Util.on_snd EConstr.EInstance.make pind in
-  let sigma, sort = Evd.fresh_sort_in_family ~rigid:UnivRigid sigma sort in
+  let sigma, sort =
+    match sort with
+    | InQSort ->
+      let sigma, l = Evd.new_univ_variable UnivRigid sigma in
+      let _, s = EConstr.destArity sigma (Retyping.get_type_of env sigma (EConstr.mkIndU pind)) in
+      (match EConstr.ESorts.kind sigma s with
+      | QSort (q, _) -> sigma, EConstr.ESorts.make (Sorts.qsort q l)
+      | _ -> Evd.fresh_sort_in_family ~rigid:UnivRigid sigma sort)
+    | _ -> Evd.fresh_sort_in_family ~rigid:UnivRigid sigma sort
+  in
   let sigma, c = build_induction_scheme env sigma pind dep sort in
   EConstr.to_constr sigma c, Evd.ustate sigma
 
@@ -105,6 +114,10 @@ let rect_dep =
   declare_individual_scheme_object "rect_dep"
     (fun env _ x -> build_induction_scheme_in_type env true InType x)
 
+let poly_dep =
+  declare_individual_scheme_object "poly_dep"
+    (fun env _ x -> build_induction_scheme_in_type env true InQSort x)
+
 let rec_dep =
   declare_individual_scheme_object "rec_dep"
     (optimize_non_type_induction_scheme rect_dep true InSet)
@@ -120,6 +133,10 @@ let sind_dep =
 let rect_nodep =
   declare_individual_scheme_object "rect_nodep"
     (fun env _ x -> build_induction_scheme_in_type env false InType x)
+
+let poly_nodep =
+  declare_individual_scheme_object "poly_nodep"
+    (fun env _ x -> build_induction_scheme_in_type env false InQSort x)
 
 let rec_nodep =
   declare_individual_scheme_object "rec_nodep"
@@ -138,11 +155,13 @@ let elim_scheme ~dep ~to_kind =
   | false, InSProp -> sind_nodep
   | false, InProp -> ind_nodep
   | false, InSet -> rec_nodep
-  | false, (InType | InQSort) -> rect_nodep
+  | false, InType -> rect_nodep
+  | false, InQSort -> poly_nodep
   | true, InSProp -> sind_dep
   | true, InProp -> ind_dep
   | true, InSet -> rec_dep
-  | true, (InType | InQSort) -> rect_dep
+  | true, InType -> rect_dep
+  | true, InQSort -> poly_dep
 
 (* Case analysis *)
 
@@ -161,7 +180,15 @@ let case_dep =
 
 let case_nodep =
   declare_individual_scheme_object "case_nodep"
-    (fun env _ x -> build_case_analysis_scheme_in_type env false InType x)
+(fun env _ x -> build_case_analysis_scheme_in_type env false InType x)
+
+let case_poly_dep =
+  declare_individual_scheme_object "case_poly_dep"
+    (fun env _ x -> build_case_analysis_scheme_in_type env true InQSort x)
+
+let case_poly_nodep =
+  declare_individual_scheme_object "case_poly_nodep"
+    (fun env _ x -> build_case_analysis_scheme_in_type env false InQSort x)
 
 let casep_dep =
   declare_individual_scheme_object "casep_dep"

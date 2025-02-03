@@ -11,7 +11,7 @@ Definition nand@{q| |} (a b : bool@{q|}) : bool@{q|} :=
 Inductive seq@{q|u|} {A : Type@{q|u}} (a : A) : A -> Type@{q|u} := | srefl : seq a a.
 Arguments srefl {_ _}.
 
-Definition seq_elim@{q|u v|} :=
+Definition seq_elim_nodep@{q|u v|} :=
   fun (A : Type@{q|u}) (x : A) (P : A -> Type@{q|v}) (f : P x) (a : A) (e : seq x a) =>
   match e in (seq _ a0) return (P a0) with
   | srefl => f
@@ -19,7 +19,7 @@ Definition seq_elim@{q|u v|} :=
 
 Register seq as core.eq.type.
 Register srefl as core.eq.refl.
-Register seq_elim as core.eq.rect.
+Register seq_elim_nodep as core.eq.rect.
 
 Lemma foo@{q| |} (f : bool@{q|} -> bool@{q|}) (x : bool@{q|}) : seq (f true) (f true).
 Proof.
