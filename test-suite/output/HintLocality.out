@@ -40,7 +40,7 @@ Unfoldable constant definitions: all
 Unfoldable projection definitions: all
 Cut: emp
 For any goal ->   
-For nat ->   simple apply 0 ; trivial (cost 1, pattern nat, id 0)
+For nat ->   simple apply 0; trivial (cost 1, pattern nat, id 0)
 
 Non-discriminated database
 Unfoldable variable definitions: all
@@ -48,7 +48,7 @@ Unfoldable constant definitions: all
 Unfoldable projection definitions: all
 Cut: emp
 For any goal ->   
-For nat ->   simple apply 0 ; trivial (cost 1, pattern nat, id 0)
+For nat ->   simple apply 0; trivial (cost 1, pattern nat, id 0)
 
 Non-discriminated database
 Unfoldable variable definitions: all
@@ -65,7 +65,7 @@ Unfoldable constant definitions: all
 Unfoldable projection definitions: all
 Cut: emp
 For any goal ->   
-For nat ->   simple apply 0 ; trivial (cost 1, pattern nat, id 0)
+For nat ->   simple apply 0; trivial (cost 1, pattern nat, id 0)
 
 Non-discriminated database
 Unfoldable variable definitions: all
@@ -95,7 +95,7 @@ Unfoldable projection definitions: all
 Cut: _
 For any goal ->   
 For S (modes !) ->   
-For nat ->   simple apply 0 ; trivial (cost 1, pattern nat, id 0)
+For nat ->   simple apply 0; trivial (cost 1, pattern nat, id 0)
 
 File "./output/HintLocality.v", line 92, characters 0-39:
 Warning: This hint is not local but depends on a section variable. It will

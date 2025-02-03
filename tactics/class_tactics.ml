@@ -301,7 +301,9 @@ and e_my_find_search db_list local_db secvars hdc complete env sigma concl0 =
         | Extern _ -> true
         | _ -> false
       in
-      (tac, FullHint.priority h, extern, name, lazy (FullHint.print env sigma h))
+      let dbname, dblist = format_db_info true h db_list in
+      (tac, FullHint.priority h, extern, name,
+        lazy (FullHint.print env sigma ~tce:true ?dbname ~dblist h))
   in
   let hint_of_db = hintmap_of env sigma hdc secvars concl in
   let hintl = List.map_filter (fun db -> match hint_of_db db with
