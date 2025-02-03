@@ -416,6 +416,16 @@ struct
       then h1 :: (sup t1 l2)
       else h2 :: (sup l1 t2)
 
+  let sup u1 u2 =
+    let res = sup u1 u2 in
+    (* max(Set+n, u+m) = u+m when m >= n *)
+    match res with
+    | ((l,n) :: ((_ :: _) as rest)) when
+        Level.is_set l
+        && (Int.equal n 0 || List.exists (fun (_,m) -> m >= n) rest) ->
+      rest
+    | _ -> res
+
   let exists = List.exists
 
   let for_all = List.for_all
