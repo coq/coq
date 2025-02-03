@@ -24,6 +24,10 @@ val parse_opts : string list -> opts * string list
 (** Initialize environment and search paths. *)
 val init : opts -> string list -> unit
 
+(** Returns whether there are queries in the argument list, and if there are print their output.
+    Does not handle PrintHelp queries. *)
+val try_run_queries : opts -> string list -> bool
+
 (** On windows [Unix.execv] creates a new process and exits this one.
     This confuses dune into thinking we are done,
     so instead we create_process and wait for it. *)

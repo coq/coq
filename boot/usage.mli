@@ -27,7 +27,6 @@ type specific_usage = {
 
 val print_usage : out_channel -> specific_usage -> unit
 
-(** NB: Where and Config need to be able to find coqlib (i.e. -boot won't work) *)
 type query =
   | PrintWhere | PrintConfig
   | PrintVersion | PrintMachineReadableVersion

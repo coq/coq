@@ -169,14 +169,21 @@ let print_config ?(prefix_var_name="") env f =
      | Coq_config.NativeOff -> "no"
      | Coq_config.NativeOn {ondemand=true} -> "ondemand")
 
-let print_query ~usage : Usage.query -> unit = function
+let print_query usage : Usage.query -> unit = function
   | PrintVersion -> Usage.version ()
   | PrintMachineReadableVersion -> Usage.machine_readable_version ()
   | PrintWhere ->
     let env = init () in
     let coqlib = coqlib env |> Path.to_string in
     print_endline coqlib
-  | PrintHelp -> Usage.print_usage stderr usage
+  | PrintHelp -> begin match usage with
+      | Some usage -> Usage.print_usage stderr usage
+      | None -> assert false
+    end
   | PrintConfig ->
     let env = init() in
     print_config env stdout
+
+let query_needs_env : Usage.query -> bool = function
+  | PrintVersion | PrintMachineReadableVersion | PrintHelp -> false
+  | PrintWhere | PrintConfig -> true
