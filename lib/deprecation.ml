@@ -94,6 +94,7 @@ module Version = struct
   let v8_19 = get_generic_cat "8.19"
   let v8_20 = get_generic_cat "8.20"
   let v9_0 = get_generic_cat "9.0"
+  let v9_1 = get_generic_cat "9.1"
   (* When adding a new version here, please also add
      #[export] Set Warnings "-deprecated-since-X.Y".
      in theories/Compat/RocqX{Y-1}.v *)

@@ -703,7 +703,7 @@ let islave_init ( { Coqtop.run_mode; color_mode }, stm_opts) injections ~opts =
   if run_mode = Coqtop.Batch then Flags.quiet := true;
   (* -xml-debug implies -debug. *)
   let injections = if !Flags.xml_debug
-    then Coqargs.OptionInjection (["Debug"], OptionAppend "all") :: injections
+    then Coqargs.OptionInjection (["Debug"], OptionSet (Some "all")) :: injections
     else injections
   in
   Coqtop.init_toploop opts stm_opts injections
