@@ -36,7 +36,6 @@ type t =
 
 val equal_p : 'a p -> 'b p -> ('a, 'b) Util.eq option
 
-val equal : t -> t -> bool
 (* pass true for diff_mode *)
 val extract_string : bool -> t -> string
 

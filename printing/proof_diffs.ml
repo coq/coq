@@ -93,10 +93,9 @@ let tokenize_string s =
   let kwstate = Procq.get_keyword_state() in
   let rec stream_tok acc str =
     let e = Gramlib.LStream.next kwstate str in
-    if Tok.(equal e EOI) then
-      List.rev acc
-    else
-      stream_tok ((Tok.extract_string true e) :: acc) str
+    match e with
+    | Tok.EOI -> List.rev acc
+    | _ -> stream_tok ((Tok.extract_string true e) :: acc) str
   in
   let st = CLexer.Lexer.State.get () in
   Fun.protect ~finally:(fun () -> CLexer.Lexer.State.set st) @@ fun () ->
