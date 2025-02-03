@@ -108,8 +108,12 @@ val docdir : unit -> string
 
 val print_config : ?prefix_var_name:string -> t -> out_channel -> unit
 
-(** Needs a Rocq environment for Where and Config. *)
-val print_query : usage:Usage.specific_usage -> Usage.query -> unit
+(** Needs a Rocq environment for Where and Config.
+    If the [usage] argument is [None], the query must not be PrintHelp. *)
+val print_query : Usage.specific_usage option -> Usage.query -> unit
+
+(** Where and Config need to be able to find coqlib (i.e. -boot won't work) *)
+val query_needs_env : Usage.query -> bool
 
 (** Internal, should be set automatically by passing cmdline args to
    init; note that this will set both [coqlib] and [corelib] for now. *)
