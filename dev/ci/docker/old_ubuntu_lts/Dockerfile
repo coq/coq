@@ -18,6 +18,8 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
         # Dependencies of stdlib and sphinx doc
         texlive-latex-extra texlive-fonts-recommended texlive-xetex latexmk \
         python3-pip python3-setuptools python3-pexpect python3-bs4 fonts-freefont-otf \
+        # Dependency of stdlib-doc
+        graphviz \
         # Dependencies of source-doc and coq-makefile
         texlive-science tipa \
         # Dependencies of HB (test suite)
