@@ -778,8 +778,9 @@ let () =
         sigma, EConstr.ESorts.relevance_of_sort j.utj_type
       in
       let nenv = EConstr.push_named (LocalAssum (Context.make_annot id t_rel, t)) env in
-      let (sigma, (evt, _)) = Evarutil.new_type_evar nenv sigma Evd.univ_flexible in
-      let (sigma, evk) = Evarutil.new_pure_evar (Environ.named_context_val nenv) sigma evt in
+      let (sigma, (evt, s)) = Evarutil.new_type_evar nenv sigma Evd.univ_flexible in
+      let relevance = EConstr.ESorts.relevance_of_sort s in
+      let (sigma, evk) = Evarutil.new_pure_evar (Environ.named_context_val nenv) sigma ~relevance evt in
       Proofview.Unsafe.tclEVARS sigma >>= fun () ->
       Proofview.Unsafe.tclSETGOALS [Proofview.with_empty_state evk] >>= fun () ->
       thaw c >>= fun _ ->

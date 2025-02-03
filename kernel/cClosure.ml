@@ -1399,7 +1399,7 @@ and knht info e t stk =
       | EvarDefined c -> knht info e c stk
       | EvarUndefined (evk, args) ->
         assert (UVars.Instance.is_empty (snd e));
-        if info.i_cache.i_sigma.evar_irrelevant ev then
+        if info.i_cache.i_mode = Conversion && info.i_cache.i_sigma.evar_irrelevant ev then
           (mk_irrelevant, skip_irrelevant_stack info stk)
         else
           let repack = info.i_cache.i_sigma.evar_repack in

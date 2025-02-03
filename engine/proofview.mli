@@ -525,6 +525,7 @@ module Goal : sig
       environment of [gl] (i.e. the global environment and the
       hypotheses) and the current evar map. *)
   val concl : t -> constr
+  val relevance : t -> ERelevance.t
   val hyps : t -> named_context
   val env : t -> Environ.env
   val sigma : t -> Evd.evar_map

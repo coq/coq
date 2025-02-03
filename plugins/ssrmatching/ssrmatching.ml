@@ -1037,6 +1037,7 @@ let thin id sigma goal =
   let evi = Evd.find_undefined sigma goal in
   let env = Evd.evar_filtered_env (Global.env ()) evi in
   let cl = Evd.evar_concl evi in
+  let relevance = Evd.evar_relevance evi in
   let ans =
     try Some (Evarutil.clear_hyps_in_evi env sigma (Environ.named_context_val env) cl ids)
     with Evarutil.ClearDependencyError _ -> None
@@ -1045,7 +1046,7 @@ let thin id sigma goal =
   | None -> sigma
   | Some (sigma, hyps, concl) ->
     let (sigma, evk) =
-      Evarutil.new_pure_evar ~src:(Loc.tag Evar_kinds.GoalEvar) ~typeclass_candidate:false hyps sigma concl
+      Evarutil.new_pure_evar ~src:(Loc.tag Evar_kinds.GoalEvar) ~typeclass_candidate:false hyps sigma ~relevance concl
     in
     let sigma = Evd.remove_future_goal sigma evk in
     let id = Evd.evar_ident goal sigma in

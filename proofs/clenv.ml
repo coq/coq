@@ -753,15 +753,16 @@ let rec as_constr = function
 | RfProj (p, r, c) -> EConstr.mkProj (p, r, as_constr c)
 
 (* Old style mk_goal primitive *)
-let mk_goal evars hyps concl =
+let mk_goal env evars hyps concl =
   (* A goal created that way will not be used by refine and will not
       be shelved. It must not appear as a future_goal, so the future
       goals are restored to their initial value after the evar is
       created. *)
   let evars = Evd.push_future_goals evars in
   let inst = EConstr.identity_subst_val hyps in
+  let relevance = Retyping.relevance_of_type env evars concl in
   let (evars,evk) =
-    Evarutil.new_pure_evar ~src:(Loc.tag Evar_kinds.GoalEvar) ~typeclass_candidate:false hyps evars concl
+    Evarutil.new_pure_evar ~src:(Loc.tag Evar_kinds.GoalEvar) ~typeclass_candidate:false hyps evars ~relevance concl
   in
   let _, evars = Evd.pop_future_goals evars in
   let ev = EConstr.mkEvar (evk,inst) in
@@ -778,7 +779,7 @@ let rec mk_refgoals ~metas env sigma goalacc conclty trm = match trm with
   in
   let conclty = nf_betaiota env sigma conclty in
   let hyps = Environ.named_context_val env in
-  let (gl,ev,sigma) = mk_goal sigma hyps conclty in
+  let (gl,ev,sigma) = mk_goal env sigma hyps conclty in
   gl::goalacc, conclty, sigma, ev
 | RfApp (f, l) ->
   let (acc',hdty,sigma,applicand) = match f with
@@ -822,7 +823,7 @@ let treat_case env sigma ci lbrty accu =
     (* TODO: tweak this to prevent dummy β-cuts *)
     let ty = nf_betaiota env sigma (it_mkProd_or_LetIn ty ctx) in
     let hyps = Environ.named_context_val env in
-    let (gl, ev, sigma) = mk_goal sigma hyps ty in
+    let (gl, ev, sigma) = mk_goal env sigma hyps ty in
     let br' = mkApp (ev, args) in
     (sigma, gl :: accu), (brctx, br')
   in

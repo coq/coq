@@ -97,17 +97,21 @@ let push_rec_types ~hypnaming sigma (lna,typarray) env =
   let env,ctx = Array.fold_left_map (fun e assum -> let (d,e) = push_rel sigma assum e ~hypnaming in (e,d)) env ctxt in
   Array.map get_annot ctx, env
 
-let new_evar env sigma ?src ?(naming = Namegen.IntroAnonymous) typ =
+let new_evar env sigma ?src ?(naming = Namegen.IntroAnonymous) ?relevance typ =
   let (subst, _, sign) as ext = Lazy.force env.extra in
   let instance = Evarutil.default_ext_instance ext in
   let typ' = csubst_subst sigma subst typ in
   let name = Evarutil.next_evar_name sigma naming in
-  let (sigma, evk) = new_pure_evar sign sigma typ' ?src ?name in
+  let relevance = match relevance with
+    | Some r -> r
+    | None -> Retyping.relevance_of_type env.static_env sigma typ
+  in
+  let (sigma, evk) = new_pure_evar sign sigma typ' ?src ~relevance ?name in
   (sigma, mkEvar (evk, instance))
 
 let new_type_evar env sigma ~src =
   let sigma, s = Evd.new_sort_variable Evd.univ_flexible_alg sigma in
-  new_evar env sigma ~src (EConstr.mkSort s)
+  new_evar env sigma ~src (EConstr.mkSort s) ~relevance:ERelevance.relevant
 
 let hide_variable env expansion id =
   let lvar = env.lvar in
