@@ -59,9 +59,11 @@ val red_product : env -> evar_map -> constr -> constr option
 
 (** Simpl *)
 val simpl : reduction_function
+val simpl_with_constants : bool * Evaluable.t list -> reduction_function
 
 (** Simpl only at the head *)
 val whd_simpl : reduction_function
+val whd_simpl_with_constants : bool * Evaluable.t list -> reduction_function
 
 (** Hnf: like whd_simpl but force delta-reduction of constants that do
    not immediately hide a non reducible fix or cofix *)
