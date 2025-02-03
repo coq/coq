@@ -246,6 +246,9 @@ let add_rewrite_rules l env =
     symb_pats = List.fold_left (fun symb_pats (c, r) -> Cmap_env.update c (add c r) symb_pats) env.symb_pats l
   }
 
+let lookup_rewrite_rules cst env =
+  Cmap_env.find cst env.symb_pats
+
 (* Mutual Inductives *)
 let lookup_mind_key kn env =
   match Mindmap_env.find_opt kn env.env_globals.Globals.inductives with
@@ -256,6 +259,9 @@ let lookup_mind_key kn env =
 let lookup_mind kn env =
   fst (lookup_mind_key kn env)
 
+let ind_relevance kn env = match Indmap_env.find_opt kn env.irr_inds with
+| None -> Sorts.Relevant
+| Some r -> r
 
 (** {6 Changes of representation of Case nodes} *)
 
@@ -349,9 +355,12 @@ let universes env = env.env_universes
 let set_universes g env =
   {env with env_universes=g}
 
+let qualities env = env.env_qualities
+
 let named_context env = env.env_named_context.env_named_ctx
 let named_context_val env = env.env_named_context
 let rel_context env = env.env_rel_context.env_rel_ctx
+let rel_context_val env = env.env_rel_context
 
 let empty_context env =
   match env.env_rel_context.env_rel_ctx, env.env_named_context.env_named_ctx with
@@ -656,6 +665,10 @@ let evaluable_constant kn env =
     | Def _ -> true
     | OpaqueDef _ -> false
     | Undef _ | Primitive _ | Symbol _ -> false
+
+let constant_relevance kn env = match Cmap_env.find_opt kn env.irr_constants with
+| None -> Sorts.Relevant
+| Some r -> r
 
 let is_primitive env c =
   let cb = lookup_constant c env in
@@ -969,6 +982,7 @@ let lookup_vm_code idx env =
   Vmlibrary.resolve idx env.vm_library
 
 let set_retroknowledge env r = { env with retroknowledge = r }
+let retroknowledge env = env.retroknowledge
 
 module type QNameS =
 sig
@@ -1049,4 +1063,35 @@ module Internal = struct
     { env with env_qualities = Sorts.QVar.Set.add q env.env_qualities }
 
   let is_above_prop env q = UGraph.Internal.is_above_prop env.env_universes q
+
+  module View =
+  struct
+    type t = {
+      env_constants : constant_key Cmap_env.t;
+      env_inductives : mind_key Mindmap_env.t;
+      env_modules : module_body MPmap.t;
+      env_modtypes : module_type_body MPmap.t;
+      env_named_context : named_context_val;
+      env_rel_context   : rel_context_val;
+      env_universes : UGraph.t;
+      env_qualities : Sorts.QVar.Set.t;
+      env_symb_pats : rewrite_rule list Cmap_env.t;
+      env_typing_flags  : typing_flags;
+    }
+
+    let view (env : env) = {
+      env_constants = env.env_globals.constants;
+      env_inductives = env.env_globals.inductives;
+      env_modtypes = env.env_globals.modtypes;
+      env_modules = env.env_globals.modules;
+      env_named_context = env.env_named_context;
+      env_rel_context = env.env_rel_context;
+      env_universes = env.env_universes;
+      env_qualities = env.env_qualities;
+      env_symb_pats = env.symb_pats;
+      env_typing_flags = env.env_typing_flags;
+    } [@@ocaml.warning "-42"]
+
+  end
+
 end

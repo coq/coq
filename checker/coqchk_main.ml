@@ -290,7 +290,7 @@ let explain_exn = function
                              Constr.debug_print a ++ fnl ());
         Feedback.msg_notice (str"====== universes ====" ++ fnl () ++
                              (UGraph.pr_universes Univ.Level.raw_pr
-                                (UGraph.repr (ctx.Environ.env_universes))));
+                                (UGraph.repr (Environ.universes ctx))));
         str "CantApplyBadType at argument " ++ int n
       | CantApplyNonFunctional _ -> str"CantApplyNonFunctional"
       | IllFormedRecBody _ -> str"IllFormedRecBody"

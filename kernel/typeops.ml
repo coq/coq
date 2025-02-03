@@ -297,23 +297,23 @@ let type_of_prim_type _env u (type a) (prim : a CPrimitives.prim_type) = match p
     end
 
 let type_of_int env =
-  match env.retroknowledge.Retroknowledge.retro_int63 with
+  match (Environ.retroknowledge env).Retroknowledge.retro_int63 with
   | Some c -> UnsafeMonomorphic.mkConst c
   | None -> CErrors.user_err Pp.(str"The type int must be registered before this construction can be typechecked.")
 
 let type_of_float env =
-  match env.retroknowledge.Retroknowledge.retro_float64 with
+  match (Environ.retroknowledge env).Retroknowledge.retro_float64 with
   | Some c -> UnsafeMonomorphic.mkConst c
   | None -> CErrors.user_err Pp.(str"The type float must be registered before this construction can be typechecked.")
 
 let type_of_string env =
-  match env.retroknowledge.Retroknowledge.retro_string with
+  match (Environ.retroknowledge env).Retroknowledge.retro_string with
   | Some c -> UnsafeMonomorphic.mkConst c
   | None -> CErrors.user_err Pp.(str"The type string must be registered before this construction can be typechecked.")
 
 let type_of_array env u =
   assert (UVars.Instance.length u = (0,1));
-  match env.retroknowledge.Retroknowledge.retro_array with
+  match (Environ.retroknowledge env).Retroknowledge.retro_array with
   | Some c -> mkConstU (c,u)
   | None -> CErrors.user_err Pp.(str"The type array must be registered before this construction can be typechecked.")
 
@@ -859,7 +859,7 @@ let execute env c =
 
 let check_declared_qualities env qualities =
   let module S = Sorts.QVar.Set in
-  let unknown = S.diff qualities env.env_qualities in
+  let unknown = S.diff qualities (Environ.qualities env) in
   if S.is_empty unknown then ()
   else error_undeclared_qualities env unknown
 
@@ -936,32 +936,32 @@ let type_of_prim env u t =
   let string_ty () = type_of_string env in
   let array_ty u a = mkApp(type_of_array env u, [|a|]) in
   let bool_ty () =
-    match env.retroknowledge.Retroknowledge.retro_bool with
+    match (Environ.retroknowledge env).Retroknowledge.retro_bool with
     | Some ((ind,_),_) -> UM.mkInd ind
     | None -> CErrors.user_err Pp.(str"The type bool must be registered before this primitive.")
   in
   let compare_ty () =
-    match env.retroknowledge.Retroknowledge.retro_cmp with
+    match (Environ.retroknowledge env).Retroknowledge.retro_cmp with
     | Some ((ind,_),_,_) -> UM.mkInd ind
     | None -> CErrors.user_err Pp.(str"The type compare must be registered before this primitive.")
   in
   let f_compare_ty () =
-    match env.retroknowledge.Retroknowledge.retro_f_cmp with
+    match (Environ.retroknowledge env).Retroknowledge.retro_f_cmp with
     | Some ((ind,_),_,_,_) -> UM.mkInd ind
     | None -> CErrors.user_err Pp.(str"The type float_comparison must be registered before this primitive.")
   in
   let f_class_ty () =
-    match env.retroknowledge.Retroknowledge.retro_f_class with
+    match (Environ.retroknowledge env).Retroknowledge.retro_f_class with
     | Some ((ind,_),_,_,_,_,_,_,_,_) -> UM.mkInd ind
     | None -> CErrors.user_err Pp.(str"The type float_class must be registered before this primitive.")
   in
   let pair_ty fst_ty snd_ty =
-    match env.retroknowledge.Retroknowledge.retro_pair with
+    match (Environ.retroknowledge env).Retroknowledge.retro_pair with
     | Some (ind,_) -> Constr.mkApp(UM.mkInd ind, [|fst_ty;snd_ty|])
     | None -> CErrors.user_err Pp.(str"The type pair must be registered before this primitive.")
   in
   let carry_ty int_ty =
-    match env.retroknowledge.Retroknowledge.retro_carry with
+    match (Environ.retroknowledge env).Retroknowledge.retro_carry with
     | Some ((ind,_),_) -> Constr.mkApp(UM.mkInd ind, [|int_ty|])
     | None -> CErrors.user_err Pp.(str"The type carry must be registered before this primitive.")
   in

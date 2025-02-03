@@ -1585,7 +1585,7 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
 
   let pretype_array self (u,t,def,ty) =
     fun ?loc ~flags tycon env sigma ->
-    let array_kn =   match (!!env).retroknowledge.Retroknowledge.retro_array with
+    let array_kn = match (Environ.retroknowledge !!env).Retroknowledge.retro_array with
   | Some c -> c
   | None -> CErrors.user_err Pp.(str"The type array must be registered before this construction can be typechecked.")
     in

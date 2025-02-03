@@ -1632,7 +1632,7 @@ let whd_betaiota_deltazeta_for_iota_state ts ?metas env sigma s =
     let rewrite_step =
       match kind sigma t with
       | Const (cst, u) when Environ.is_symbol env cst ->
-        let r = Cmap_env.get cst env.symb_pats in
+        let r = Environ.lookup_rewrite_rules cst env in
         begin match apply_rules whrec env sigma u r stack with
         | r -> Some r
         | exception PatternFailure -> None

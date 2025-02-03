@@ -862,7 +862,7 @@ let abstract_mind_lc ntyps npars mind lc =
   Array.map (replace_ind 0) lc
 
 let is_primitive_positive_container env c =
-  match env.retroknowledge.Retroknowledge.retro_array with
+  match (Environ.retroknowledge env).Retroknowledge.retro_array with
   | Some c' when QConstant.equal env c c' -> true
   | _ -> false
 

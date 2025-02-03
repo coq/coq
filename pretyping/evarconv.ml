@@ -113,7 +113,7 @@ let eval_flexible_term ts env evd c sk =
         | OpaqueDef _ | Undef _ | Primitive _ -> None
         | Symbol b ->
             try
-            let r = match Cmap_env.find_opt c env.symb_pats with Some r -> r | None -> assert false in
+            let r = match lookup_rewrite_rules c env with r -> r | exception Not_found -> assert false in
             let rhs_stack = Reductionops.apply_rules
               (whd_betaiota_deltazeta_for_iota_state ts env evd) env evd u r sk
             in

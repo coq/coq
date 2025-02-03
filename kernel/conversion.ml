@@ -297,10 +297,7 @@ let esubst_of_context ctx u args e =
   aux 0 e args (List.rev ctx)
 
 let irr_flex infos = function
-  | ConstKey (con,u) -> begin match Cmap_env.find_opt con (info_env infos).Environ.irr_constants with
-      | None -> false
-      | Some r -> is_irrelevant infos @@ UVars.subst_instance_relevance u r
-    end
+  | ConstKey (con,u) -> is_irrelevant infos @@ UVars.subst_instance_relevance u @@ Environ.constant_relevance con (info_env infos)
   | VarKey x -> is_irrelevant infos @@ Context.Named.Declaration.get_relevance (Environ.lookup_named x (info_env infos))
   | RelKey x -> is_irrelevant infos @@ Context.Rel.Declaration.get_relevance (Environ.lookup_rel x (info_env infos))
 
