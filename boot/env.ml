@@ -38,11 +38,28 @@ let theories_dir = "theories"
 let plugins_dir = "plugins"
 let prelude = Filename.concat theories_dir "Init/Prelude.vo"
 
+let coqbin =
+  Util.canonical_path_name (Filename.dirname Sys.executable_name)
+
+(** The following only makes sense when executables are running from
+    source tree (e.g. during build or in local mode). *)
+let coqroot =
+  Filename.dirname coqbin
+
+(** [check_file_else ~dir ~file oth] checks if [file] exists in
+    the installation directory [dir] given relatively to [coqroot],
+    which maybe has been relocated.
+    If the check fails, then [oth ()] is evaluated.
+    Using file system equality seems well enough for this heuristic *)
+let check_file_else ~dir ~file oth =
+  let path = Util.use_suffix coqroot dir in
+  if Sys.file_exists (Filename.concat path file) then path else oth ()
+
 let guess_coqlib () =
   match Util.getenv_rocq "LIB" with
   | Some v -> v
   | None ->
-    Util.check_file_else
+    check_file_else
       ~dir:Coq_config.coqlibsuffix
       ~file:prelude
       (fun () ->

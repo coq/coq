@@ -22,5 +22,10 @@ val getenv_rocq_gen : rocq:string -> coq:string -> string option
 
 val set_warn_deprecated_coq_var : (rocq:string -> coq:string -> unit) -> unit
 
-val check_file_else :
-  dir:string -> file:string -> (unit -> string) -> string
+val canonical_path_name : string -> string
+(** If the path does not exist, returns it prefixed with cwd. *)
+
+val use_suffix : string -> string -> string
+(** [use_suffix prefix suffix] adds a local installation suffix (unless
+    the suffix is itself absolute in which case the prefix does not
+    matter) *)
