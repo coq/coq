@@ -136,3 +136,47 @@ let native_cmi { core; _ } lib =
     (* Dune build layout, we need to improve this *)
     let obj_dir = Format.asprintf ".%s.objs" lib in
     Filename.(concat (concat (concat core lib) obj_dir) "byte")
+
+(** {2 Caml paths} *)
+
+let ocamlfind () = match Util.getenv_opt "OCAMLFIND" with
+  | None -> Coq_config.ocamlfind
+  | Some v -> v
+
+let docdir () =
+  (* This assumes implicitly that the suffix is non-trivial *)
+  let path = Util.use_suffix coqroot Coq_config.docdirsuffix in
+  if Sys.file_exists path then path else Coq_config.docdir
+
+(* Print the configuration information *)
+
+let print_config ?(prefix_var_name="") env f =
+  let coqlib = coqlib env |> Path.to_string in
+  let corelib = corelib env |> Path.to_string in
+  let open Printf in
+  fprintf f "%sCOQLIB=%s/\n" prefix_var_name coqlib;
+  fprintf f "%sCOQCORELIB=%s/\n" prefix_var_name corelib;
+  fprintf f "%sDOCDIR=%s/\n" prefix_var_name (docdir ());
+  fprintf f "%sOCAMLFIND=%s\n" prefix_var_name (ocamlfind ());
+  fprintf f "%sCAMLFLAGS=%s\n" prefix_var_name Coq_config.caml_flags;
+  fprintf f "%sWARN=%s\n" prefix_var_name "-warn-error +a-3";
+  fprintf f "%sHASNATDYNLINK=%s\n" prefix_var_name
+    (if Coq_config.has_natdynlink then "true" else "false");
+  fprintf f "%sCOQ_SRC_SUBDIRS=%s\n" prefix_var_name (String.concat " " Coq_config.all_src_dirs);
+  fprintf f "%sCOQ_NATIVE_COMPILER_DEFAULT=%s\n" prefix_var_name
+    (match Coq_config.native_compiler with
+     | Coq_config.NativeOn {ondemand=false} -> "yes"
+     | Coq_config.NativeOff -> "no"
+     | Coq_config.NativeOn {ondemand=true} -> "ondemand")
+
+let print_query ~usage : Usage.query -> unit = function
+  | PrintVersion -> Usage.version ()
+  | PrintMachineReadableVersion -> Usage.machine_readable_version ()
+  | PrintWhere ->
+    let env = init () in
+    let coqlib = coqlib env |> Path.to_string in
+    print_endline coqlib
+  | PrintHelp -> Usage.print_usage stderr usage
+  | PrintConfig ->
+    let env = init() in
+    print_config env stdout

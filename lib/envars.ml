@@ -100,10 +100,7 @@ let _ =
 let use_suffix prefix suffix =
   if String.length suffix > 0 && suffix.[0] = '/' then suffix else prefix / suffix
 
-let docdir () =
-  (* This assumes implicitly that the suffix is non-trivial *)
-  let path = use_suffix coqroot Coq_config.docdirsuffix in
-  if Sys.file_exists path then path else Coq_config.docdir
+let docdir = Boot.Env.docdir
 
 let datadir () =
   (* This assumes implicitly that the suffix is non-trivial *)
@@ -128,7 +125,7 @@ let coqpath =
 
 (** {2 Caml paths} *)
 
-let ocamlfind () = getenv_else "OCAMLFIND" (fun () -> Coq_config.ocamlfind)
+let ocamlfind = Boot.Env.ocamlfind
 
 (** {1 XDG utilities} *)
 
@@ -151,36 +148,3 @@ let xdg_data_dirs warn =
 
 let xdg_dirs ~warn =
   List.filter Sys.file_exists (xdg_data_dirs warn)
-
-(* Print the configuration information *)
-
-let print_config ?(prefix_var_name="") f =
-  let env = Boot.Env.init () in
-  let coqlib = Boot.Env.coqlib env |> Boot.Path.to_string in
-  let corelib = Boot.Env.corelib env |> Boot.Path.to_string in
-  let open Printf in
-  fprintf f "%sCOQLIB=%s/\n" prefix_var_name coqlib;
-  fprintf f "%sCOQCORELIB=%s/\n" prefix_var_name corelib;
-  fprintf f "%sDOCDIR=%s/\n" prefix_var_name (docdir ());
-  fprintf f "%sOCAMLFIND=%s\n" prefix_var_name (ocamlfind ());
-  fprintf f "%sCAMLFLAGS=%s\n" prefix_var_name Coq_config.caml_flags;
-  fprintf f "%sWARN=%s\n" prefix_var_name "-warn-error +a-3";
-  fprintf f "%sHASNATDYNLINK=%s\n" prefix_var_name
-    (if Coq_config.has_natdynlink then "true" else "false");
-  fprintf f "%sCOQ_SRC_SUBDIRS=%s\n" prefix_var_name (String.concat " " Coq_config.all_src_dirs);
-  fprintf f "%sCOQ_NATIVE_COMPILER_DEFAULT=%s\n" prefix_var_name
-    (match Coq_config.native_compiler with
-     | Coq_config.NativeOn {ondemand=false} -> "yes"
-     | Coq_config.NativeOff -> "no"
-     | Coq_config.NativeOn {ondemand=true} -> "ondemand")
-
-let print_query ~usage : Boot.Usage.query -> unit = function
-  | PrintVersion -> Boot.Usage.version ()
-  | PrintMachineReadableVersion -> Boot.Usage.machine_readable_version ()
-  | PrintWhere ->
-    let env = Boot.Env.init () in
-    let coqlib = Boot.Env.coqlib env |> Boot.Path.to_string in
-    print_endline coqlib
-  | PrintHelp -> Boot.Usage.print_usage stderr usage
-  | PrintConfig ->
-    print_config stdout

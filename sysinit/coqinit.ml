@@ -175,7 +175,7 @@ let init_runtime ~usage opts =
   init_load_paths opts;
 
   match opts.Coqargs.main with
-  | Coqargs.Queries q -> List.iter (Envars.print_query ~usage) q; exit 0
+  | Coqargs.Queries q -> List.iter (Boot.Env.print_query ~usage) q; exit 0
   | Coqargs.Run -> ()
 
 let init_document opts =
