@@ -1,0 +1,28 @@
+(* debug auto: *)
+* assumption. (*fail*)
+* intro. (*fail*)
+* exact bar2 (in db). (*fail*)
+* exact bar (in db). (*fail*)
+File "./output/nondisc_ignores_pattern.v", line 13, characters 0-40:
+The command has indeed failed with message:
+Failed to progress.
+Debug:
+Starting resolution with 1 goal(s) under focus and 0 shelved goal(s) in regular mode, unbounded
+Debug: Launching resolution fixpoint on 1 goals: ?X6 : (3 = 3)
+Debug:
+Calling fixpoint on : 1 initial goals, 0 stuck goals and 0 non-stuck failures kept with no progress made in this run.
+Stuck: 
+Failed: 
+Initial: Goal 1 evar: ?X6 status: initial
+Debug: considering goal 1 of status initial
+Debug: 1: looking for (3 = 3) without backtracking
+Debug: 1.1: exact bar2 on (3 = 3) failed with: Unable to unify 
+"2 = 2" with "3 = 3".
+Debug: 1.1: exact bar on (3 = 3) failed with: Unable to unify 
+"1 = 1" with "3 = 3".
+Debug: 1: no match for (3 = 3), 2 possibilities
+Debug:
+Goal 1 has no more solutions, returning exception: Proof-search failed.
+File "./output/nondisc_ignores_pattern.v", line 14, characters 5-37:
+The command has indeed failed with message:
+Tactic failure: Proof search failed.
