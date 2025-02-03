@@ -102,6 +102,15 @@ val corelib : t -> Path.t
 (** coq/lib directory, not sure if to keep this *)
 val coqlib : t -> Path.t
 
+val ocamlfind : unit -> string
+
+val docdir : unit -> string
+
+val print_config : ?prefix_var_name:string -> t -> out_channel -> unit
+
+(** Needs a Rocq environment for Where and Config. *)
+val print_query : usage:Usage.specific_usage -> Usage.query -> unit
+
 (** Internal, should be set automatically by passing cmdline args to
    init; note that this will set both [coqlib] and [corelib] for now. *)
 val set_coqlib : string -> unit
