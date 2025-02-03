@@ -295,7 +295,7 @@ and check_signatures (cst, ustate) trace env mp1 sig1 mp2 sig2 subst1 subst2 res
             in
             let mp1' = MPdot (mp1, l) in
             let mp2' = MPdot (mp2, l) in
-            let env = add_module_type mp2' mtb2 (add_module_type mp1' mtb1 env) in
+            let env = add_module mp2' (module_body_of_type mtb2) (add_module mp1' (module_body_of_type mtb1) env) in
             check_modtypes (cst, ustate) (Submodule l :: trace) env mp1' mtb1 mp2' mtb2 subst1 subst2 true
   in
     List.fold_left check_one_body cst sig2
@@ -329,7 +329,7 @@ and check_modtypes (cst, ustate) trace env mp1 mtb1 mp2 mtb2 subst1 subst2 equiv
         let mparg1 = MPbound arg_id1 in
         let mparg2 = MPbound arg_id2 in
         let subst1 = join (map_mbid arg_id1 mparg2 (mod_delta arg_t2)) subst1 in
-        let env = add_module_type mparg2 arg_t2 env in
+        let env = add_module_parameter arg_id2 arg_t2 env in
         let cst = check_modtypes (cst, ustate) (FunctorArgument (nargs+1) :: trace) env mparg2 arg_t2 mparg1 arg_t1 subst2 subst1 equiv in
         (* contravariant *)
         let env =
@@ -344,7 +344,7 @@ and check_modtypes (cst, ustate) trace env mp1 mtb1 mp2 mtb2 subst1 subst2 equiv
     check_structure cst ~nargs:0 env (mod_type mtb1) (mod_type mtb2) equiv subst1 subst2
 
 let check_subtypes state env mp_sup sup mp_super super =
-  let env = add_module_type mp_sup sup env in
+  let env = add_module mp_sup (module_body_of_type sup) env in
   check_modtypes state [] env
     mp_sup (strengthen sup mp_sup) mp_super super empty_subst
     (map_mp mp_super mp_sup (mod_delta sup)) false

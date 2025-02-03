@@ -203,8 +203,8 @@ let add_structure mp sign resolver env =
 let add_module mp mb env =
   add_module mp mb no_link_info env
 
-let add_module_type mp mtb env =
-  add_module mp (module_body_of_type mtb) env
+let add_module_parameter mbid mtb env =
+  add_module (MPbound mbid) (module_body_of_type mtb) env
 
 (** {6 Strengthening a signature for subtyping } *)
 

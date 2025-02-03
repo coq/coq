@@ -362,7 +362,7 @@ let rec print_functor fty fatom is_type extent env mp used locals = function
       let () = used := Id.Set.add id !used in
       let mp1 = MPbound mbid in
       let pr_mtb1 = fty extent env mp1 used locals mtb1 in
-      let env' = Modops.add_module_type mp1 mtb1 env in
+      let env' = Modops.add_module_parameter mbid mtb1 env in
       let locals' = (mbid, get_new_id locals (MBId.to_id mbid))::locals in
       let kwd = if is_type then "Funsig" else "Functor" in
       hov 2

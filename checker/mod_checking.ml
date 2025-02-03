@@ -227,7 +227,7 @@ let rec check_mexpr env opac mse mp_mse res = match mse with
 let rec check_mexpression env opac sign mbtyp mp_mse res = match sign with
   | MEMoreFunctor body ->
     let arg_id, mtb, mbtyp = Modops.destr_functor mbtyp in
-    let env' = Modops.add_module_type (MPbound arg_id) mtb env in
+    let env' = Modops.add_module_parameter arg_id mtb env in
     let body, delta = check_mexpression env' opac body mbtyp mp_mse res in
     MoreFunctor(arg_id,mtb,body), delta
   | MENoFunctor me -> check_mexpr env opac me mp_mse res
@@ -254,7 +254,6 @@ let rec check_module env opac mp mb opacify =
   | Some (sign,delta) ->
     let mtb1 = mk_mtb sign delta
     and mtb2 = mk_mtb (mod_type mb) delta_mb in
-    let env = Modops.add_module_type mp mtb1 env in
     let state = (Environ.universes env, Conversion.checked_universes) in
     let _ : UGraph.t = Subtyping.check_subtypes state env mp mtb1 mp mtb2 in
     ()
@@ -290,7 +289,7 @@ and check_structure_field env opac mp lab res opacify = function
 and check_signature env opac sign mp_mse res opacify = match sign with
   | MoreFunctor (arg_id, mtb, body) ->
       let () = check_module_type env (MPbound arg_id) mtb in
-      let env' = Modops.add_module_type (MPbound arg_id) mtb env in
+      let env' = Modops.add_module_parameter arg_id mtb env in
       let opac = check_signature env' opac body mp_mse res Cset.empty in
       opac
   | NoFunctor struc ->

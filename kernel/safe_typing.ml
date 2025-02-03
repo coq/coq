@@ -1186,9 +1186,6 @@ let full_add_module mp mb senv =
   let linkinfo = Nativecode.link_info_of_dirpath dp in
   { senv with env = Modops.add_linked_module mp mb linkinfo senv.env }
 
-let full_add_module_type mp mt senv =
-  { senv with env = Modops.add_module_type mp mt senv.env }
-
 (** Insertion of modules *)
 
 let add_module l me inl senv =
@@ -1249,7 +1246,7 @@ let add_module_parameter mbid mte inl senv =
   let vmstate = vm_state senv in
   let mtb, _, vmtab = Mod_typing.translate_modtype state vmstate senv.env mp inl ([],mte) in
   let senv = set_vm_library vmtab senv in
-  let senv = full_add_module_type mp mtb senv in
+  let senv = { senv with env = Modops.add_module_parameter mbid mtb senv.env } in
   let new_variant = match senv.modvariant with
     | STRUCT (params,oldenv) -> STRUCT ((mbid,mtb) :: params, oldenv)
     | SIG (params,oldenv) -> SIG ((mbid,mtb) :: params, oldenv)

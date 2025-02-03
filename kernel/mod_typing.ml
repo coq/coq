@@ -302,7 +302,7 @@ let rec translate_mse_funct (cst, ustate) (vm, vmstate) env ~is_mod mp inl mse =
   | (mbid, ty, ty_inl) :: params ->
     let mp_id = MPbound mbid in
     let mtb, cst, vm = translate_modtype (cst, ustate) (vm, vmstate) env mp_id ty_inl ([],ty) in
-    let env' = add_module_type mp_id mtb env in
+    let env' = add_module_parameter mbid mtb env in
     let sign,alg,reso,cst,vm = translate_mse_funct (cst, ustate) (vm, vmstate) env' ~is_mod mp inl mse params in
     let alg' = MEMoreFunctor alg in
     MoreFunctor (mbid, mtb, sign), alg',reso, cst, vm
