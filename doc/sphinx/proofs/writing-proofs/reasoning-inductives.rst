@@ -1118,12 +1118,13 @@ Generation of induction principles with ``Scheme``
       | Type
       | Poly
 
-   Generates :term:`induction principles <induction principle>` with given
-   :n:`scheme_type`\s and :n:`sort_family`\s for an inductive type. For sort
-   polymorphic inductives, :n:`Poly` generates a sort polymorphic induction
-   principle.  In the case where the inductive definition is a mutual inductive
-   definition, the :n:`with` clause is used to generate a mutually recursive
-   inductive scheme for each clause of the mutual inductive type.
+   Generates :term:`induction principles <induction principle>` with
+   given :n:`scheme_type`\s and :n:`sort_family`\s for an inductive
+   type. :n:`Poly` generates a sort polymorphic induction principle.
+   In the case where the inductive definition is a mutual inductive
+   definition, the :n:`with` clause is used to generate a mutually
+   recursive inductive scheme for each clause of the mutual inductive
+   type.
 
    :n:`@ident`
       The name of the scheme. If not provided, the name will be determined

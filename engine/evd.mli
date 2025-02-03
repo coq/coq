@@ -550,7 +550,7 @@ val universe_binders : evar_map -> UnivNames.universe_binders
 val new_univ_level_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> evar_map * Univ.Level.t
 val new_quality_variable : ?loc:Loc.t -> ?name:Id.t -> evar_map -> evar_map * Sorts.QVar.t
 val new_univ_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> evar_map * Univ.Universe.t
-val new_sort_variable : ?loc:Loc.t -> rigid -> evar_map -> evar_map * esorts
+val new_sort_variable : ?loc:Loc.t -> ?qname:Id.t -> ?uname:Id.t -> rigid -> evar_map -> evar_map * esorts
 
 val add_forgotten_univ : evar_map -> Univ.Level.t -> evar_map
 

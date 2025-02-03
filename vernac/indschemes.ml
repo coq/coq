@@ -348,9 +348,10 @@ let scheme_suffix_gen {sch_type; sch_sort} sort =
     | true  , InSet -> "_rec"
     | true  , InType -> "_rect"
     | true  , InQSort -> "_elim"
-    | false , (InProp | InSet | InQSort) -> "_case"
+    | false , (InProp | InSet) -> "_case"
     | false , InSProp -> "_cases"
     | false , InType -> "_caset"
+    | false , InQSort -> "_casep"
   in
   (* Some schemes are deliminated with _dep or no_dep *)
   let dep_suffix = match sch_isdep sch_type , sort with
@@ -406,7 +407,12 @@ let do_mutual_induction_scheme ?(force_mutual=false) env ?(isrec=true) l =
           | Sorts.QSort (q, l) ->
             let sigma, l' = Evd.new_univ_variable UnivRigid sigma in
             sigma, ESorts.make (Sorts.qsort q l')
-          | _ -> sigma, indsort)
+          | _ ->
+            (* naming the sort variable makes it rigid so that it
+               doesn't get unified by make_allowed_elimination (not
+               great API, someday we may improve it by adding rigidity
+               for qvars) *)
+            Evd.new_sort_variable ~qname:(Names.Id.of_string "q") UnivRigid sigma)
         | _ -> Evd.fresh_sort_in_family ~rigid:UnivRigid sigma sort
       in
       (sigma, ((ind,inst),dep,sort)))
@@ -425,8 +431,11 @@ let do_mutual_induction_scheme ?(force_mutual=false) env ?(isrec=true) l =
   let poly =
     (* NB: build_mutual_induction_scheme forces nonempty list of mutual inductives
        (force_mutual is about the generated schemes) *)
-    let _,_,ind,_ = List.hd l in
-    Global.is_polymorphic (Names.GlobRef.IndRef ind)
+    let _,_,ind,target = List.hd l in
+    match target with
+    | InQSort -> true
+    | _ ->
+      Global.is_polymorphic (Names.GlobRef.IndRef ind)
   in
   let declare decl ({CAst.v=fi},dep,ind,sort) =
     let decltype = Retyping.get_type_of env sigma decl in
