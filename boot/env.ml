@@ -24,14 +24,6 @@ type t =
   ; lib : Path.t
   }
 
-(* fatal error *)
-let fail_msg =
-  "cannot guess a path for Rocq libraries; please use -coqlib option \
-   or ensure you have installed the package containing Rocq's prelude (rocq-core in OPAM) \
-   If you intend to use Rocq without prelude, the -boot -noinit options must be used."
-
-let fail s = Format.eprintf "%s@\n%!" fail_msg; exit 1
-
 (* This code needs to be refactored, for now it is just what used to be in envvars  *)
 
 let theories_dir = "theories"
@@ -45,10 +37,7 @@ let guess_coqlib () =
     Util.check_file_else
       ~dir:Coq_config.coqlibsuffix
       ~file:prelude
-      (fun () ->
-         if Sys.file_exists (Filename.concat Coq_config.coqlib prelude)
-         then Coq_config.coqlib
-         else fail ())
+      (fun () -> Util.relocate Coq_config.coqlib)
 
 (* Build layout uses coqlib = coqcorelib *)
 let guess_coqcorelib lib =
