@@ -69,3 +69,5 @@ val xdg_dirs : warn : (string -> unit) -> string list
 
 (** {6 Prints the configuration information } *)
 val print_config : ?prefix_var_name:string -> out_channel -> unit
+
+val print_query : usage:Boot.Usage.specific_usage -> Boot.Usage.query -> unit

@@ -173,3 +173,14 @@ let print_config ?(prefix_var_name="") f =
      | Coq_config.NativeOn {ondemand=false} -> "yes"
      | Coq_config.NativeOff -> "no"
      | Coq_config.NativeOn {ondemand=true} -> "ondemand")
+
+let print_query ~usage : Boot.Usage.query -> unit = function
+  | PrintVersion -> Boot.Usage.version ()
+  | PrintMachineReadableVersion -> Boot.Usage.machine_readable_version ()
+  | PrintWhere ->
+    let env = Boot.Env.init () in
+    let coqlib = Boot.Env.coqlib env |> Boot.Path.to_string in
+    print_endline coqlib
+  | PrintHelp -> Boot.Usage.print_usage stderr usage
+  | PrintConfig ->
+    print_config stdout

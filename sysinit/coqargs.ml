@@ -90,7 +90,7 @@ type coqargs_pre = {
   injections  : injection_command list;
 }
 
-type coqargs_query =
+type coqargs_query = Boot.Usage.query =
   | PrintWhere | PrintConfig
   | PrintVersion | PrintMachineReadableVersion
   | PrintHelp
