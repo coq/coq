@@ -1314,6 +1314,21 @@ let build_branch ~program_mode initial current realargs deps (realnames,curname)
   (* build the name x1..xn from the names present in the equations *)
   (* that had matched constructor C *)
   let cs_args = const_info.cs_args in
+  let cs_args =
+    if const_info.cs_prim_record then
+      let ((ind,_),_) = const_info.cs_cstr in
+      let projs = Option.get (Environ.get_projections (GlobEnv.env pb.env) ind) in
+      let f decl (i, projs, ctx) = match decl, projs with
+        | LocalAssum (na, ty), (p, r) :: projs ->
+           let decl = LocalDef (na, mkProj (Projection.make p false, ERelevance.make r, lift i current), ty) in
+           (i+1, projs, decl :: ctx)
+        | LocalAssum _, _ -> assert false
+        | LocalDef _, _ -> (i+1, projs, decl :: ctx)
+      in
+      let (_, _, cs_args) = List.fold_right f cs_args (0, Array.to_list projs, []) in
+      cs_args
+    else cs_args
+  in
   let names,aliasname = get_names (GlobEnv.vars_of_env pb.env) !!(pb.env) sigma cs_args eqns in
   let typs = List.map2 RelDecl.set_name names cs_args
   in
