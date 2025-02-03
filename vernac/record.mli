@@ -60,7 +60,7 @@ module RecordEntry : sig
 
   type t = {
     global_univs : Univ.ContextSet.t;
-    ubinders : UnivNames.universe_binders;
+    ubinders : UState.named_universes_entry;
     mie : Entries.mutual_inductive_entry;
     ind_infos : one_ind_info list;
     param_impls : Impargs.manual_implicits;
@@ -73,7 +73,6 @@ module Record_decl : sig
   type t = {
     entry : RecordEntry.t;
     records : Data.t list;
-    globnames : UState.named_universes_entry;
     projections_kind : Decls.definition_object_kind;
     indlocs : DeclareInd.indlocs;
   }

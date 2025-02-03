@@ -28,7 +28,8 @@ module G = AcyclicGraph.Make(struct
 type t = {
   graph: G.t;
   type_in_type : bool;
-  checking_pseudo_sort_poly : bool;
+  (* above_prop only for checking template poly! *)
+  above_prop_qvars : Sorts.QVar.Set.t;
 }
 
 (* Universe inconsistency: error raised when trying to enforce a relation
@@ -79,7 +80,7 @@ let check_eq_level g u v =
 let empty_universes = {
   graph=G.empty;
   type_in_type=false;
-  checking_pseudo_sort_poly=false;
+  above_prop_qvars=Sorts.QVar.Set.empty;
 }
 
 let initial_universes =
@@ -229,10 +230,7 @@ let check_eq_sort ugraph s1 s2 = match s1, s2 with
 | (QSort _, (Type _ | Set)) | ((Type _ | Set), QSort _) -> false
 
 let is_above_prop ugraph q =
-  ugraph.checking_pseudo_sort_poly
-  && match Sorts.QVar.var_index q with
-  | Some 0 -> true
-  | _ -> false
+  Sorts.QVar.Set.mem q ugraph.above_prop_qvars
 
 let check_leq_sort ugraph s1 s2 = match s1, s2 with
 | (SProp, SProp) | (Prop, Prop) | (Set, Set) -> true
@@ -309,7 +307,9 @@ let explain_universe_inconsistency default_prq default_prl (printers, (o,u,v,p) 
 
 module Internal = struct
 
-  let for_checking_pseudo_sort_poly g = {g with checking_pseudo_sort_poly=true}
+  let add_template_qvars qvars g =
+    assert (Sorts.QVar.Set.is_empty g.above_prop_qvars);
+    {g with above_prop_qvars=qvars}
 
   let is_above_prop = is_above_prop
 end

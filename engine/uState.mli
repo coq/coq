@@ -93,6 +93,8 @@ val univ_entry : poly:bool -> t -> named_universes_entry
 val universe_binders : t -> UnivNames.universe_binders
 (** Return local names of universes. *)
 
+val compute_instance_binders : t -> UVars.Instance.t -> UVars.bound_names
+
 val nf_qvar : t -> QVar.t -> Quality.t
 (** Returns the normal form of the sort variable. *)
 
@@ -226,7 +228,7 @@ val minimize : t -> t
 
 val collapse_above_prop_sort_variables : to_prop:bool -> t -> t
 
-val collapse_sort_variables : t -> t
+val collapse_sort_variables : ?except:QVar.Set.t -> t -> t
 
 type ('a, 'b, 'c) gen_universe_decl = {
   univdecl_qualities : 'a;
@@ -257,6 +259,8 @@ val check_univ_decl_rev : t -> universe_decl -> t * UVars.UContext.t
 val check_uctx_impl : fail:(Pp.t -> unit) -> t -> t -> unit
 
 val check_mono_univ_decl : t -> universe_decl -> Univ.ContextSet.t
+
+val check_template_univ_decl : t -> template_qvars:QVar.Set.t -> universe_decl -> Univ.ContextSet.t
 
 (** {5 TODO: Document me} *)
 

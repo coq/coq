@@ -53,7 +53,7 @@ type t = {
   mie : Entries.mutual_inductive_entry;
   default_dep_elim : DeclareInd.default_dep_elim list;
   nuparams : int option;
-  univ_binders : UnivNames.universe_binders;
+  univ_binders : UState.named_universes_entry;
   implicits : DeclareInd.one_inductive_impls list;
   uctx : Univ.ContextSet.t;
   where_notations : Metasyntax.notation_interpretation_decl list;
@@ -93,7 +93,12 @@ val interp_mutual_inductive_constr
   -> env_ar:Environ.env
   (** Environment with the inductives in the rel_context *)
   -> private_ind:bool
-  -> DeclareInd.default_dep_elim list * Entries.mutual_inductive_entry * UnivNames.universe_binders * Univ.ContextSet.t
+  -> DeclareInd.default_dep_elim list
+     * Entries.mutual_inductive_entry
+     * (* for global universe names, used by DeclareInd *)
+     UState.named_universes_entry
+     * (* global universes to declare before the inductive (ie without the template univs) *)
+     Univ.ContextSet.t
 
 (************************************************************************)
 (** Internal API, exported for Record                                   *)

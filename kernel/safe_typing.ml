@@ -621,7 +621,7 @@ let push_section_context uctx senv =
   let sections = Section.push_local_universe_context uctx sections in
   let senv = { senv with sections=Some sections } in
   let qualities, ctx = UVars.UContext.to_context_set uctx in
-  assert (Sorts.Quality.Set.is_empty qualities);
+  assert (Sorts.QVar.Set.is_empty qualities);
   (* push_context checks freshness *)
   { senv with
     env = Environ.push_context ~strict:false uctx senv.env;

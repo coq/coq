@@ -612,7 +612,7 @@ val with_sort_context_set : ?loc:Loc.t -> rigid -> evar_map -> 'a UnivGen.in_sor
 
 val nf_univ_variables : evar_map -> evar_map
 
-val collapse_sort_variables : evar_map -> evar_map
+val collapse_sort_variables : ?except:Sorts.QVar.Set.t -> evar_map -> evar_map
 
 val fix_undefined_variables : evar_map -> evar_map
 
