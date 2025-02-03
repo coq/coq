@@ -74,10 +74,10 @@ let print_usage fmt () =
       subcommands
   in
   Printf.fprintf fmt "Usage: rocq [-debug-shim] {-v|--version|--print-version|--help|SUBCOMMAND} [ARGUMENTS...]\n\
-\n\
 \n  -v, --version: print human readable version info\
 \n  --print-version: print machine readable version info\
-Supported subcommands:\n\
+\n\n\
+Supported subcommands:\n\n\
 %s\n\
 \n\
 Use \"rocq subcommand --help\" to get more information about a given subcommand.\n" (String.concat "\n" subcommands)

@@ -479,7 +479,7 @@ doc:refman:deploy:
     - git clone git@github.com:coq/doc.git _deploy
     - rm -rf _deploy/$CI_COMMIT_REF_NAME/api
     - rm -rf _deploy/$CI_COMMIT_REF_NAME/refman
-    - rm -rf _deploy/$CI_COMMIT_REF_NAME/init
+    - rm -rf _deploy/$CI_COMMIT_REF_NAME/corelib
     - rm -rf _deploy/$CI_COMMIT_REF_NAME/refman-stdlib
     - rm -rf _deploy/$CI_COMMIT_REF_NAME/stdlib
     - mkdir -p _deploy/$CI_COMMIT_REF_NAME
