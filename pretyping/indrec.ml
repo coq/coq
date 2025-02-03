@@ -584,7 +584,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
     (* Body on make_one_rec *)
     let ((indi,u),mibi,mipi,dep,kind) = List.nth listdepkind p in
 
-      if force_mutual || (mis_is_recursive_subset
+      if force_mutual || (mis_is_recursive_subset !!env
         (List.map (fun ((indi,u),_,_,_,_) -> indi) listdepkind)
         (Rtree.Kind.make mipi.mind_recargs))
       then

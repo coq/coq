@@ -117,18 +117,18 @@ let dest_subterms p = match Rtree.Kind.kind p with
 | Rtree.Kind.Var _ -> assert false
 
 (* Does not consider imbricated or mutually recursive types *)
-let mis_is_recursive_subset listind rarg =
+let mis_is_recursive_subset env listind rarg =
   let one_is_rec rvec =
     Array.exists
       (fun ra ->
         match dest_recarg ra with
-          | Mrec (RecArgInd ind) -> List.exists (Names.Ind.CanOrd.equal ind) listind
+          | Mrec (RecArgInd ind) -> List.exists (fun ind' -> QInd.equal env ind ind') listind
           | Mrec (RecArgPrim _) | Norec -> false) rvec
   in
   Array.exists one_is_rec (dest_subterms rarg)
 
-let mis_is_recursive ((ind,_),mib,mip) =
-  mis_is_recursive_subset (List.init mib.mind_ntypes (fun i -> (ind,i)))
+let mis_is_recursive env ((ind,_),mib,mip) =
+  mis_is_recursive_subset env (List.init mib.mind_ntypes (fun i -> (ind,i)))
     (Rtree.Kind.make mip.mind_recargs)
 
 let mis_nf_constructor_type ((_,j),u) (mib,mip) =
