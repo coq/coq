@@ -85,17 +85,6 @@ let init_coqlib opts = match opts.Coqargs.config.Coqargs.coqlib with
   | Some s ->
     Boot.Env.set_coqlib s
 
-let print_query ~usage = let open Coqargs in function
-  | PrintVersion -> Boot.Usage.version ()
-  | PrintMachineReadableVersion -> Boot.Usage.machine_readable_version ()
-  | PrintWhere ->
-    let env = Boot.Env.init () in
-    let coqlib = Boot.Env.coqlib env |> Boot.Path.to_string in
-    print_endline coqlib
-  | PrintHelp -> Boot.Usage.print_usage stderr usage
-  | PrintConfig ->
-    Envars.print_config stdout
-
 let dirpath_of_file f =
   let ldir0 =
     try
@@ -186,7 +175,7 @@ let init_runtime ~usage opts =
   init_load_paths opts;
 
   match opts.Coqargs.main with
-  | Coqargs.Queries q -> List.iter (print_query ~usage) q; exit 0
+  | Coqargs.Queries q -> List.iter (Envars.print_query ~usage) q; exit 0
   | Coqargs.Run -> ()
 
 let init_document opts =

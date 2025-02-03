@@ -116,3 +116,8 @@ type specific_usage = {
 let print_usage co { executable_name; extra_args; extra_options } =
   print_usage_common co ("Usage: " ^ executable_name ^ " <options> " ^ extra_args ^ "\n\n");
   output_string co extra_options
+
+type query =
+  | PrintWhere | PrintConfig
+  | PrintVersion | PrintMachineReadableVersion
+  | PrintHelp

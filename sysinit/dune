@@ -5,7 +5,7 @@
  (modules coqargs)
  (wrapped false)
  ; don't depend on rocq-runtime.lib -> impossible to imperatively set random flags
- (libraries rocq-runtime.config rocq-runtime.clib))
+ (libraries rocq-runtime.config rocq-runtime.boot rocq-runtime.clib))
 
 (deprecated_library_name
  (old_public_name coq-core.coqargs)
