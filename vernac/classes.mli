@@ -123,8 +123,6 @@ val set_typeclass_mode
 
 (** For generation on names based on classes only *)
 
-val id_of_class : typeclass -> Id.t
-
 val refine_att : bool Attributes.attribute
 
 (** {6 Low level interface used by Add Morphism, do not use } *)

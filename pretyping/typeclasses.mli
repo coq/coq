@@ -22,7 +22,6 @@ type hint_info = (Id.Set.t * Pattern.constr_pattern) hint_info_gen
 
 type class_method = {
   meth_name : Name.t;
-  meth_info : hint_info option;
   meth_const : Constant.t option;
 }
 
@@ -37,17 +36,20 @@ type typeclass = {
      the class is a singleton. This acts as the class' global identifier. *)
 
   cl_context : Constr.rel_context;
-  (** Context in which the definitions are typed.
-      Includes both typeclass parameters and superclasses. *)
+  (** Context in which the definitions are typed. *)
+
+  cl_trivial : bool;
+  (** Class declared with "Class Foo params := {}", produces 0 goals in interactive mode. *)
 
   cl_props : Constr.rel_context;
-  (** Context of definitions and properties on defs, will not be shared *)
+  (** Context of definitions and properties on defs, used for "Instance := {}".
+      If [cl_impl] is a record this is the arguments of its constructor (without parameters).
+      Otherwise it is a single [LocalAssum] of type convertible to [cl_impl]. *)
 
   cl_projs : class_method list;
   (** The methods implementations of the typeclass as projections.
       Some may be undefinable due to sorting restrictions or simply undefined if
-      no name is provided. The [int option option] indicates subclasses whose hint has
-      the given priority. *)
+      no name is provided. Used for dumpglob in "Instance := {}" and in elpi. *)
 
   cl_strict : bool;
   (** Whether we use matching or full unification during resolution *)
@@ -88,9 +90,6 @@ val class_info_exn : env -> evar_map -> GlobRef.t -> typeclass
     This is done separately by typeclass_univ_instance. *)
 val dest_class_app : env -> evar_map -> EConstr.constr -> (typeclass * EConstr.EInstance.t) * constr list
 
-(** Get the instantiated typeclass structure for a given universe instance. *)
-val typeclass_univ_instance : typeclass UVars.puniverses -> typeclass
-
 (** Just return None if not a class *)
 val class_of_constr : env -> evar_map -> EConstr.constr ->
   (EConstr.rel_context * ((typeclass * EConstr.EInstance.t) * constr list)) option
@@ -100,12 +99,6 @@ val instance_impl : instance -> GlobRef.t
 val hint_priority : instance -> int option
 
 val is_class : GlobRef.t -> bool
-
-(** Returns the term and type for the given instance of the parameters and fields
-   of the type class. *)
-
-val instance_constructor : typeclass EConstr.puniverses -> EConstr.t list ->
-  EConstr.t option * EConstr.t
 
 (** Filter which evars to consider for resolution. *)
 type evar_filter = Evar.t -> Evar_kinds.t Lazy.t -> bool

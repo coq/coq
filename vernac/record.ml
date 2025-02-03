@@ -999,7 +999,6 @@ let declare_class ?mode declared =
       let fields = [ RelDecl.LocalAssum ({binder_name=fname; binder_relevance=frelevance}, field) ] in
       let proj = {
         Typeclasses.meth_name = fname;
-        meth_info = None;
         meth_const = Some proj_kn;
       }
       in
@@ -1011,7 +1010,6 @@ let declare_class ?mode declared =
       let fields = List.firstn mip.mind_consnrealdecls.(0) ctor_args in
       let make_proj decl kn = {
         Typeclasses.meth_name = RelDecl.get_name decl;
-        meth_info = None;
         meth_const = kn;
       }
       in
@@ -1024,6 +1022,7 @@ let declare_class ?mode declared =
     cl_strict = typeclasses_strict ();
     cl_unique = typeclasses_unique ();
     cl_context = params;
+    cl_trivial = CList.is_empty fields;
     cl_props = fields;
     cl_projs = projs;
   }
@@ -1042,6 +1041,7 @@ let add_constant_class cst =
     { cl_univs = univs;
       cl_impl = GlobRef.ConstRef cst;
       cl_context = ctx;
+      cl_trivial = false;
       cl_props = [LocalAssum (make_annot Anonymous r, t)];
       cl_projs = [];
       cl_strict = typeclasses_strict ();
@@ -1056,18 +1056,32 @@ let add_inductive_class ind =
   let env = Global.env () in
   let mind, oneind = Inductive.lookup_mind_specif env ind in
   let ctx = oneind.mind_arity_ctxt in
-  let k =
-    let univs = Declareops.inductive_polymorphic_context mind in
-    let inst = UVars.make_abstract_instance univs in
-    let ty = Inductive.type_of_inductive ((mind, oneind), inst) in
-    let r = oneind.mind_relevance in
-      { cl_univs = univs;
-        cl_impl = GlobRef.IndRef ind;
-        cl_context = ctx;
-        cl_props = [LocalAssum (make_annot Anonymous r, ty)];
-        cl_projs = [];
-        cl_strict = typeclasses_strict ();
-        cl_unique = typeclasses_unique () }
+  let univs = Declareops.inductive_polymorphic_context mind in
+  let props, projs =
+    match Structure.find ind with
+    | exception Not_found ->
+      let r = oneind.mind_relevance in
+      let args = Context.Rel.instance mkRel 0 ctx in
+      let ty = mkApp (mkIndU (ind, UVars.make_abstract_instance univs), args) in
+      [LocalAssum (make_annot Anonymous r, ty)], []
+    | s ->
+      let props, _ = oneind.mind_nf_lc.(0) in
+      let props = List.firstn oneind.mind_consnrealdecls.(0) props in
+      let projs = s.projections |> List.map (fun (p:Structure.projection) ->
+          { meth_name = p.proj_name; meth_const = p.proj_body })
+      in
+      props, projs
+  in
+  let k = {
+    cl_univs = univs;
+    cl_impl = GlobRef.IndRef ind;
+    cl_context = ctx;
+    cl_trivial = false;
+    cl_props = props;
+    cl_projs = projs;
+    cl_strict = typeclasses_strict ();
+    cl_unique = typeclasses_unique ();
+  }
   in
   Classes.add_class k
 
