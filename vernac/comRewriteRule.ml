@@ -340,7 +340,7 @@ let test_projection_apps env evd ~loc ind args =
     | ERigid (_, []) -> false
     | ERigid (_, elims) ->
       match List.last elims with
-      | PEProj p -> Ind.CanOrd.equal (Projection.Repr.inductive p) ind && Projection.Repr.arg p = i
+      | PEProj p -> Environ.QInd.equal env (Projection.Repr.inductive p) ind && Projection.Repr.arg p = i
       | _ -> false
   ) 0 args then
     warn_redex_in_rewrite_rules ?loc Pp.(str " subpattern compatible with an eta-long form for " ++ Id.print (snd specif).mind_typename ++ str"," )

@@ -697,12 +697,12 @@ let no_such_prim_token uninterpreted_token_kind ?loc ty =
    (str ("Cannot interpret this "^uninterpreted_token_kind^" as a value of type ") ++
     pr_qualid ty)
 
-let rec postprocess token_kind ?loc ty to_post post g =
+let rec postprocess env token_kind ?loc ty to_post post g =
   let g', gl = match DAst.get g with Glob_term.GApp (g, gl) -> g, gl | _ -> g, [] in
   let o =
     match DAst.get g' with
     | Glob_term.GRef (r, None) ->
-       List.find_opt (fun (r',_,_) -> GlobRef.CanOrd.equal r r') post
+       List.find_opt (fun (r',_,_) -> Environ.QGlobRef.equal env r r') post
     | _ -> None in
   match o with None -> g | Some (_, r, a) ->
   let rec f n a gl = match a, gl with
@@ -713,7 +713,7 @@ let rec postprocess token_kind ?loc ty to_post post g =
        h :: f (n+1) a gl
     | (ToPostCopy | ToPostCheck _) :: a, g :: gl -> g :: f (n+1) a gl
     | ToPostAs c :: a, g :: gl ->
-       postprocess token_kind ?loc ty to_post to_post.(c) g :: f (n+1) a gl
+       postprocess env token_kind ?loc ty to_post to_post.(c) g :: f (n+1) a gl
     | [], _::_ | _::_, [] ->
        no_such_prim_token token_kind ?loc ty
   in
@@ -724,12 +724,12 @@ let rec postprocess token_kind ?loc ty to_post post g =
 let glob_of_constr token_kind ty ?loc env sigma to_post c =
   let g = glob_of_constr token_kind ?loc env sigma c in
   match to_post with [||] -> g | _ ->
-    postprocess token_kind ?loc ty to_post to_post.(0) g
+    postprocess env token_kind ?loc ty to_post to_post.(0) g
 
 let glob_of_token token_kind ty ?loc env sigma to_post c =
   let g = glob_of_token token_kind ?loc env sigma c in
   match to_post with [||] -> g | _ ->
-    postprocess token_kind ?loc ty to_post to_post.(0) g
+    postprocess env token_kind ?loc ty to_post to_post.(0) g
 
 let interp_option uninterpreted_token_kind token_kind ty ?loc env sigma to_post c =
   match TokenValue.kind c with

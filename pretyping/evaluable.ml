@@ -22,15 +22,15 @@ let map fvar fcst fprj = function
   | EvalConstRef c -> EvalConstRef (fcst c)
   | EvalProjectionRef p -> EvalProjectionRef (fprj p)
 
-let equal er1 er2 =
+let equal env er1 er2 =
   er1 == er2 ||
   match er1, er2 with
   | EvalVarRef v1, EvalVarRef v2 ->
       Id.equal v1 v2
   | EvalConstRef c1, EvalConstRef c2 ->
-      Constant.CanOrd.equal c1 c2
+      Environ.QConstant.equal env c1 c2
   | EvalProjectionRef p1, EvalProjectionRef p2 ->
-      Projection.Repr.CanOrd.equal p1 p2
+      Environ.QProjection.Repr.equal env p1 p2
   | _ -> false
 
 let to_kevaluable : t -> Conv_oracle.evaluable = fun er ->

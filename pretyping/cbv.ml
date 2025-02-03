@@ -802,15 +802,15 @@ and cbv_match_rigid_arg_pattern info env ctx psubst p t =
   let open Declarations in
   match [@ocaml.warning "-4"] p, t with
   | PHInd (ind, pu), VAL(0, t') ->
-    begin match kind t' with Ind (ind', u) when Ind.CanOrd.equal ind ind' -> match_instance pu u psubst | _ -> raise PatternFailure end
+    begin match kind t' with Ind (ind', u) when Environ.QInd.equal info.env ind ind' -> match_instance pu u psubst | _ -> raise PatternFailure end
   | PHConstr (constr, pu), CONSTRUCT ((constr', u), [||]) ->
-    if Construct.CanOrd.equal constr constr' then match_instance pu u psubst else raise PatternFailure
+    if Environ.QConstruct.equal info.env constr constr' then match_instance pu u psubst else raise PatternFailure
   | PHRel i, VAL(k, t') ->
     begin match kind t' with Rel n when Int.equal i (k + n) -> psubst | _ -> raise PatternFailure end
   | PHSort ps, VAL(0, t') ->
     begin match kind t' with Sort s -> match_sort ps s psubst | _ -> raise PatternFailure end
   | PHSymbol (c, pu), SYMBOL { cst = c', u; _ } ->
-    if Constant.CanOrd.equal c c' then match_instance pu u psubst else raise PatternFailure
+    if Environ.QConstant.equal info.env c c' then match_instance pu u psubst else raise PatternFailure
   | PHInt i, VAL(0, t') ->
     begin match kind t' with Int i' when Uint63.equal i i' -> psubst | _ -> raise PatternFailure end
   | PHFloat f, VAL(0, t') ->
@@ -869,7 +869,7 @@ and cbv_apply_rule info env ctx psubst es stk =
         let psubst = Array.fold_left2 (cbv_match_arg_pattern info env ctx) psubst usedpargs args in
         cbv_apply_rule info env ctx psubst (PEApp rempargs :: e) s
   | Declarations.PECase (pind, pu, pret, pbrs) :: e, CASE (u, pms, (p, _), brs, iv, ci, env, s) ->
-      if not @@ Ind.CanOrd.equal pind ci.ci_ind then raise PatternFailure;
+      if not @@ Environ.QInd.equal info.env pind ci.ci_ind then raise PatternFailure;
       let specif = Inductive.lookup_mind_specif info.env ci.ci_ind in
       let ntys_ret = Inductive.expand_arity specif (ci.ci_ind, u) pms (fst p) in
       let ntys_ret = apply_env_context env ntys_ret in
@@ -880,7 +880,7 @@ and cbv_apply_rule info env ctx psubst es stk =
       let psubst = Array.fold_left2 (fun psubst pat (n, ctx, br) -> cbv_match_arg_pattern_lift info env (apply_env_context env ctx) n psubst pat br) psubst pbrs brs in
       cbv_apply_rule info env ctx psubst e s
   | Declarations.PEProj proj :: e, PROJ (proj', r, s) ->
-      if not @@ Projection.(Repr.CanOrd.equal proj (repr proj')) then raise PatternFailure;
+      if not @@ Environ.QProjection.Repr.equal info.env proj (Projection.repr proj') then raise PatternFailure;
       cbv_apply_rule info env ctx psubst e s
   | _, _ -> raise PatternFailure
 

@@ -735,13 +735,13 @@ let rec match_arg_pattern whrec env sigma ctx psubst p t =
 and match_rigid_arg_pattern whrec env sigma ctx psubst p t =
   match [@ocaml.warning "-4"] p, EConstr.kind sigma t with
   | PHInd (ind, pu), Ind (ind', u) ->
-    if Ind.CanOrd.equal ind ind' then match_einstance sigma pu u psubst else raise PatternFailure
+    if QInd.equal env ind ind' then match_einstance sigma pu u psubst else raise PatternFailure
   | PHConstr (constr, pu), Construct (constr', u) ->
-    if Construct.CanOrd.equal constr constr' then match_einstance sigma pu u psubst else raise PatternFailure
+    if QConstruct.equal env constr constr' then match_einstance sigma pu u psubst else raise PatternFailure
   | PHRel i, Rel n when i = n -> psubst
   | PHSort ps, Sort s -> match_sort ps (ESorts.kind sigma s) psubst
   | PHSymbol (c, pu), Const (c', u) ->
-    if Constant.CanOrd.equal c c' then match_einstance sigma pu u psubst else raise PatternFailure
+    if QConstant.equal env c c' then match_einstance sigma pu u psubst else raise PatternFailure
   | PHInt i, Int i' ->
     if Uint63.equal i i' then psubst else raise PatternFailure
   | PHFloat f, Float f' ->
@@ -790,7 +790,7 @@ and apply_rule whrec env sigma ctx psubst es stk =
       let psubst = List.fold_left2 (match_arg_pattern whrec env sigma ctx) psubst pargs args in
       apply_rule whrec env sigma ctx psubst e s
   | Declarations.PECase (pind, pu, pret, pbrs) :: e, Stack.Case (ci, u, pms, p, iv, brs) :: s ->
-      if not @@ Ind.CanOrd.equal pind ci.ci_ind then raise PatternFailure;
+      if not @@ QInd.equal env pind ci.ci_ind then raise PatternFailure;
       let dummy = mkProp in
       let psubst = match_einstance sigma pu u psubst in
       let (_, _, _, ((ntys_ret, ret), _), _, _, brs) = EConstr.annotate_case env sigma (ci, u, pms, p, NoInvert, dummy, brs) in
@@ -798,7 +798,7 @@ and apply_rule whrec env sigma ctx psubst es stk =
       let psubst = Array.fold_left2 (fun psubst pat (ctx', br) -> match_arg_pattern whrec env sigma (ctx' @ ctx) psubst pat br) psubst pbrs brs in
       apply_rule whrec env sigma ctx psubst e s
   | Declarations.PEProj proj :: e, Stack.Proj (proj', r) :: s ->
-      if not @@ Projection.(Repr.CanOrd.equal proj (repr proj')) then raise PatternFailure;
+      if not @@ QProjection.Repr.equal env proj (Projection.repr proj') then raise PatternFailure;
       apply_rule whrec env sigma ctx psubst e s
   | _, _ -> raise PatternFailure
 

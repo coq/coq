@@ -158,7 +158,7 @@ let kind_of_formula ~flags env sigma term =
                         let is_trivial=
                           let is_constant n = Int.equal n 0 in
                             Array.exists is_constant mip.mind_consnrealargs in
-                          if Inductiveops.mis_is_recursive (ind,mib,mip) ||
+                          if Inductiveops.mis_is_recursive env (ind, mib, mip) ||
                             (has_realargs && not is_trivial)
                           then
                             Atom cciterm

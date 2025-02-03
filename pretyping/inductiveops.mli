@@ -63,9 +63,9 @@ val mkAppliedInd : inductive_type -> EConstr.constr
 val dest_recarg : recarg Rtree.Kind.t -> recarg
 val dest_subterms : recarg Rtree.Kind.t -> recarg Rtree.Kind.t array array
 
-val mis_is_recursive_subset : inductive list -> recarg Rtree.Kind.t -> bool
+val mis_is_recursive_subset : env -> inductive list -> recarg Rtree.Kind.t -> bool
 val mis_is_recursive :
-  inductive * mutual_inductive_body * one_inductive_body -> bool
+  env -> inductive * mutual_inductive_body * one_inductive_body -> bool
 val mis_nf_constructor_type :
   constructor puniverses -> mutual_inductive_body * one_inductive_body -> constr
 

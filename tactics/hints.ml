@@ -419,29 +419,29 @@ let hint_mode_eq m1 m2 = match m1, m2 with
   | ModeOutput, ModeOutput -> true
   | (ModeInput | ModeNoHeadEvar | ModeOutput), _ -> false
 
-let hints_path_atom_eq h1 h2 = match h1, h2 with
-| PathHints l1, PathHints l2 -> List.equal GlobRef.CanOrd.equal l1 l2
+let hints_path_atom_eq env h1 h2 = match h1, h2 with
+| PathHints l1, PathHints l2 -> List.equal (fun gr1 gr2 -> QGlobRef.equal env gr1 gr2) l1 l2
 | PathAny, PathAny -> true
 | _ -> false
 
-let rec hints_path_eq h1 h2 = match h1, h2 with
-| PathAtom h1, PathAtom h2 -> hints_path_atom_eq h1 h2
-| PathStar h1, PathStar h2 -> hints_path_eq h1 h2
+let rec hints_path_eq env h1 h2 = match h1, h2 with
+| PathAtom h1, PathAtom h2 -> hints_path_atom_eq env h1 h2
+| PathStar h1, PathStar h2 -> hints_path_eq env h1 h2
 | PathSeq (l1, r1), PathSeq (l2, r2) ->
-  hints_path_eq l1 l2 && hints_path_eq r1 r2
+  hints_path_eq env l1 l2 && hints_path_eq env r1 r2
 | PathOr (l1, r1), PathOr (l2, r2) ->
-  hints_path_eq l1 l2 && hints_path_eq r1 r2
+  hints_path_eq env l1 l2 && hints_path_eq env r1 r2
 | PathEmpty, PathEmpty -> true
 | PathEpsilon, PathEpsilon -> true
 | _ -> false
 
-let path_matches hp hints =
+let path_matches env hp hints =
   let rec aux hp hints k =
     match hp, hints with
     | PathAtom _, [] -> false
     | PathAtom PathAny, (_ :: hints') -> k hints'
     | PathAtom p, (h :: hints') ->
-      if hints_path_atom_eq p h then k hints' else false
+      if hints_path_atom_eq env p h then k hints' else false
     | PathStar hp', hints ->
       k hints || aux hp' hints (fun hints' -> aux hp hints' k)
     | PathSeq (hp, hp'), hints ->
@@ -476,10 +476,10 @@ let path_seq p p' =
   | p, PathEpsilon -> p
   | p, p' -> PathSeq (p, p')
 
-let rec path_derivate hp hint =
-  let rec derivate_atoms hints hints' =
+let rec path_derivate env hp hint =
+  let rec derivate_atoms env hints hints' =
     match hints, hints' with
-    | gr :: grs, gr' :: grs' when GlobRef.CanOrd.equal gr gr' -> derivate_atoms grs grs'
+    | gr :: grs, gr' :: grs' when QGlobRef.equal env gr gr' -> derivate_atoms env grs grs'
     | [], [] -> PathEpsilon
     | [], hints -> PathEmpty
     | grs, [] -> PathAtom (PathHints grs)
@@ -490,47 +490,47 @@ let rec path_derivate hp hint =
   | PathAtom (PathHints grs) ->
      (match grs, hint with
       | h :: _, PathAny -> PathEmpty
-      | hints, PathHints hints' -> derivate_atoms hints hints'
+      | hints, PathHints hints' -> derivate_atoms env hints hints'
       | _, _ -> assert false)
-  | PathStar p -> if path_matches p [hint] then hp else PathEpsilon
+  | PathStar p -> if path_matches env p [hint] then hp else PathEpsilon
   | PathSeq (hp, hp') ->
-     let hpder = path_derivate hp hint in
+     let hpder = path_derivate env hp hint in
      if matches_epsilon hp then
-       PathOr (path_seq hpder hp', path_derivate hp' hint)
+       PathOr (path_seq hpder hp', path_derivate env hp' hint)
      else if is_empty hpder then PathEmpty
      else path_seq hpder hp'
   | PathOr (hp, hp') ->
-     PathOr (path_derivate hp hint, path_derivate hp' hint)
+     PathOr (path_derivate env hp hint, path_derivate env hp' hint)
   | PathEmpty -> PathEmpty
   | PathEpsilon -> PathEmpty
 
-let rec normalize_path h =
+let rec normalize_path env h =
   match h with
   | PathStar PathEpsilon -> PathEpsilon
   | PathOr (p, q) ->
-    (match normalize_path p with
-     | PathEmpty -> normalize_path q
+    (match normalize_path env p with
+     | PathEmpty -> normalize_path env q
      | p' ->
-     match normalize_path q with
+     match normalize_path env q with
      | PathEmpty -> p'
-     | q' -> if hints_path_eq p' q' then p' else PathOr (p', q'))
+     | q' -> if hints_path_eq env p' q' then p' else PathOr (p', q'))
   | PathSeq (p, q) ->
-    (match normalize_path p with
+    (match normalize_path env p with
      | PathEmpty -> PathEmpty
-     | PathEpsilon -> normalize_path q
+     | PathEpsilon -> normalize_path env q
      | p' ->
-     match normalize_path q with
+     match normalize_path env q with
      | PathEmpty -> PathEmpty
      | PathEpsilon -> p'
      | q' -> PathSeq (p', q'))
   | _ -> h
 
-let path_derivate hp hint =
+let path_derivate env hp hint =
   let hint = match hint with
   | None -> PathAny
   | Some gr -> PathHints [gr]
   in
-  normalize_path (path_derivate hp hint)
+  normalize_path env (path_derivate env hp hint)
 
 let pp_hints_path_atom prg a =
   match a with
@@ -617,7 +617,7 @@ val iter : (GlobRef.t option -> hint_mode array list -> full_hint list -> unit) 
 val use_dn : t -> bool
 val transparent_state : t -> TransparentState.t
 val set_transparent_state : t -> TransparentState.t -> t
-val add_cut : hints_path -> t -> t
+val add_cut : Environ.env -> hints_path -> t -> t
 val add_mode : GlobRef.t -> hint_mode array -> t -> t
 val cut : t -> hints_path
 val unfolds : t -> Id.Set.t * Cset.t * PRset.t
@@ -781,8 +781,9 @@ struct
       rebuild_dn st se
 
   let remove_list env grs db =
+    let eq gr1 gr2 = QGlobRef.equal env gr1 gr2 in
     let filter (_, h) =
-      match h.name with Some gr -> not (List.mem_f GlobRef.CanOrd.equal gr grs) | None -> true in
+      match h.name with Some gr -> not (List.mem_f eq gr grs) | None -> true in
     let hintmap = GlobRef.Map.map (fun e -> remove (dn_ts db) grs e) db.hintdb_map in
     let hintnopat = List.filter filter db.hintdb_nopat in
       { db with hintdb_map = hintmap; hintdb_nopat = hintnopat }
@@ -808,8 +809,8 @@ struct
     if db.use_dn then rebuild_db st db
     else { db with hintdb_state = st }
 
-  let add_cut path db =
-    { db with hintdb_cut = normalize_path (PathOr (db.hintdb_cut, path)) }
+  let add_cut env path db =
+    { db with hintdb_cut = normalize_path env (PathOr (db.hintdb_cut, path)) }
 
   let add_mode gr m db =
     let se = find gr db in
@@ -1085,8 +1086,9 @@ let remove_hint dbname grs =
     searchtable_add (dbname, db')
 
 let add_cut dbname path =
+  let env = Global.env () in
   let db = get_db dbname in
-  let db' = Hint_db.add_cut path db in
+  let db' = Hint_db.add_cut env path db in
     searchtable_add (dbname, db')
 
 let add_mode dbname l m =
