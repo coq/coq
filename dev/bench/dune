@@ -19,8 +19,11 @@
  (libraries unix str clib zarith))
 
 (executable
- (name coqtimelog2html)
- (public_name coqtimelog2html)
- (package coq-core)
- (modules coqtimelog2html)
+ (name rocqtimelog2html)
+ (modules rocqtimelog2html)
  (libraries benchlib))
+
+(install
+ (section libexec)
+ (package rocq-devtools)
+ (files (rocqtimelog2html.exe as timelog2html)))

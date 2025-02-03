@@ -899,6 +899,8 @@ line timing data:
     command used according to the given timing files. It supports
     between 1 and 3 timing files.
 
+    `rocq timelog2html` requires the `rocq-devtools` package.
+
     There is currently no `rocq makefile` target that automatically invokes this tool.
 
 + ``print-pretty-single-time-diff``

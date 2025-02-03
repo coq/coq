@@ -137,9 +137,6 @@ number_of_processors=$(cat /proc/cpuinfo | grep '^processor *' | wc -l)
 
 program_name="$0"
 program_path=$(readlink -f "${program_name%/*}")
-render_results="dune exec --no-print-directory --root $program_path/../.. -- dev/bench/render_results.exe"
-render_line_results="dune exec --no-print-directory --root $program_path/../.. -- dev/bench/render_line_results.exe"
-timelog2html="dune exec --no-print-directory --root $program_path/../.. -- rocq timelog2html"
 
 coqbot_url_prefix="https://coqbot.herokuapp.com/pendulum/"
 
@@ -344,7 +341,7 @@ git clone -q --depth 1 -b "$old_coq_opam_archive_git_branch" "$old_coq_opam_arch
 new_coq_opam_archive_dir="$working_dir/new_coq_opam_archive"
 git clone -q --depth 1 -b "$new_coq_opam_archive_git_branch" "$new_coq_opam_archive_git_uri" "$new_coq_opam_archive_dir"
 
-initial_opam_packages="num ocamlfind dune"
+initial_opam_packages="num zarith ocamlfind dune"
 
 # Create an opam root and install Rocq
 # $1 = root_name {ex: NEW / OLD}
@@ -433,6 +430,13 @@ create_opam() {
 create_opam "NEW" "$new_ocaml_version" "$new_coq_commit" "$new_coq_version" \
             "$new_coq_opam_archive_dir" "$new_opam_override_urls" "$new_ocaml_flambda"
 new_coq_commit_long="$COQ_HASH_LONG"
+
+# pre build needed helpers (needs an opam switch)
+dune build --root "$program_path/../.." -- dev/bench/render_results.exe dev/bench/render_line_results.exe rocq-devtools.install
+
+render_results=$(readlink -f "$program_path/../../_build/default/dev/bench/render_results.exe")
+render_line_results=$(readlink -f "$program_path/../../_build/default/dev/bench//render_line_results.exe")
+timelog2html=$(readlink -f "$program_path/../../_build/default/dev/bench/rocqtimelog2html.exe")
 
 # Create an OPAM-root to which we will install the OLD version of Rocq.
 create_opam "OLD" "$old_ocaml_version" "$old_coq_commit" "$old_coq_version" \

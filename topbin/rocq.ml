@@ -10,9 +10,9 @@
 
 let fatal_error fmt = Printf.kfprintf (fun _ -> exit 1) stderr (fmt^^"%!")
 
-let with_worker_gen opts basename args =
+let with_worker_gen opts ?(package="rocq-runtime") basename args =
   Rocqshim.init opts args;
-  let prog = Rocqshim.get_worker_path { package = "rocq-runtime"; basename } in
+  let prog = Rocqshim.get_worker_path { package; basename } in
   let () = if opts.debug_shim then Printf.eprintf "Using %s\n%!" prog in
   let argv = Array.of_list (prog :: args) in
   Rocqshim.exec_or_create_process prog argv
@@ -99,7 +99,7 @@ let run_subcommand opts args = function
   | Workmgr -> Rocqworkmgr.main ~prog:(Sys.argv.(0) ^ " workmgr") args
   | Tex -> Rocqtex.main ~prog:(Sys.argv.(0) ^ " tex") args
   | Makefile -> Rocqmakefile.main ~prog:[Sys.argv.(0); "makefile"] args
-  | Timelog2Html -> Benchlib.Timelog2html.main ~prog:(Sys.argv.(0) ^ " timelog2html") args
+  | Timelog2Html -> with_worker_gen opts ~package:"rocq-devtools" "timelog2html" args
 
 let () =
   if Array.length Sys.argv < 2 then error_usage ();

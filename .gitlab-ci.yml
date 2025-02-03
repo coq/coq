@@ -85,7 +85,7 @@ before_script:
   script:
     - cp dev/ci/dune-workspace.ci dune-workspace
 
-    - PKGS=rocq-runtime,coq-core,rocq-core,coqide-server
+    - PKGS=rocq-runtime,coq-core,rocq-core,coqide-server,rocq-devtools
     - if [ "$ROCQIDE" != "no" ]; then PKGS=${PKGS},rocqide; fi
     - dev/ci/gitlab-section.sh start coq.clean coq.clean
     - make clean # ensure that `make clean` works on a fresh clone

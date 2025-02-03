@@ -8,4 +8,4 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-let () = Benchlib.Timelog2html.main ~prog:(Sys.argv.(0)) (List.tl (Array.to_list Sys.argv))
+let () = Benchlib.Timelog2html.main (List.tl (Array.to_list Sys.argv))

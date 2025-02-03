@@ -54,6 +54,25 @@ Note that in this setup, Rocq needs to be started with the -boot and
 prelude, now living in the rocq-core package."))
 
 (package
+ (name rocq-devtools)
+ (depends
+  (rocq-runtime (= :version)))
+ (synopsis "Development tools for Rocq")
+ (description "The Rocq Prover is an interactive theorem prover, or proof assistant. It provides
+a formal language to write mathematical definitions, executable
+algorithms and theorems together with an environment for
+semi-interactive development of machine-checked proofs.
+
+Typical applications include the certification of properties of
+programming languages (e.g. the CompCert compiler certification
+project, or the Bedrock verified low-level programming library), the
+formalization of mathematics (e.g. the full formalization of the
+Feit-Thompson theorem or homotopy type theory) and teaching.
+
+This package includes tools to help when developing Rocq projects
+(timelog2html)."))
+
+(package
  (name coq-core)
  (depends
   (rocq-runtime (= :version)))
