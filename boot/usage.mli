@@ -26,3 +26,8 @@ type specific_usage = {
        given executable. } *)
 
 val print_usage : out_channel -> specific_usage -> unit
+
+type query =
+  | PrintWhere | PrintConfig
+  | PrintVersion | PrintMachineReadableVersion
+  | PrintHelp
