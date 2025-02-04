@@ -25,7 +25,7 @@ open Constr
 
 type abstr_inst_info
 
-type 'a entry_map = 'a Cmap.t * 'a Mindmap.t
+type 'a entry_map = 'a Cmap_env.t * 'a Mindmap_env.t
 type expand_info = abstr_inst_info entry_map
 
 (** The collection of instantiations to be done on generalized

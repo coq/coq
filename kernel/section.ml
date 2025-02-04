@@ -52,8 +52,8 @@ let all_poly_univs sec = sec.all_poly_univs
 let map_custom f sec = {sec with custom = f sec.custom}
 
 let add_emap e v (cmap, imap) = match e with
-| SecDefinition con -> (Cmap.add con v cmap, imap)
-| SecInductive ind -> (cmap, Mindmap.add ind v imap)
+| SecDefinition con -> (Cmap_env.add con v cmap, imap)
+| SecInductive ind -> (cmap, Mindmap_env.add ind v imap)
 
 let push_local_universe_context ctx sec =
   if UContext.is_empty ctx then sec
@@ -87,8 +87,8 @@ let open_section ~custom prev =
     all_poly_univs = Option.cata (fun sec -> sec.all_poly_univs) Instance.empty prev;
     has_poly_univs = Option.cata has_poly_univs false prev;
     entries = [];
-    expand_info_map = (Cmap.empty, Mindmap.empty);
-    cooking_info_map = (Cmap.empty, Mindmap.empty);
+    expand_info_map = (Cmap_env.empty, Mindmap_env.empty);
+    cooking_info_map = (Cmap_env.empty, Mindmap_env.empty);
     custom = custom;
   }
 
@@ -130,8 +130,8 @@ let push_global env ~poly e sec =
     let expand_info_map = add_emap e abstr_inst_info sec.expand_info_map in
     { sec with entries = e :: sec.entries; expand_info_map; cooking_info_map }
 
-let segment_of_constant con sec = Cmap.find con (fst sec.cooking_info_map)
-let segment_of_inductive con sec = Mindmap.find con (snd sec.cooking_info_map)
+let segment_of_constant con sec = Cmap_env.find con (fst sec.cooking_info_map)
+let segment_of_inductive con sec = Mindmap_env.find con (snd sec.cooking_info_map)
 
 let is_in_section _env gr sec =
   let open GlobRef in
@@ -140,6 +140,6 @@ let is_in_section _env gr sec =
     let vars = sec.context in
     List.exists (fun decl -> Id.equal id (NamedDecl.get_id decl)) vars
   | ConstRef con ->
-    Cmap.mem con (fst sec.expand_info_map)
+    Cmap_env.mem con (fst sec.expand_info_map)
   | IndRef (ind, _) | ConstructRef ((ind, _), _) ->
-    Mindmap.mem ind (snd sec.expand_info_map)
+    Mindmap_env.mem ind (snd sec.expand_info_map)

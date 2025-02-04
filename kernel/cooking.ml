@@ -68,7 +68,7 @@ type abstr_inst_info = {
     Using the notations above, a expand_info is a map [c ↦ a1..an]
     over all generalized global declarations of the section *)
 
-type 'a entry_map = 'a Cmap.t * 'a Mindmap.t
+type 'a entry_map = 'a Cmap_env.t * 'a Mindmap_env.t
 type expand_info = abstr_inst_info entry_map
 
 (** The collection of instantiations to be done on generalized
@@ -86,7 +86,7 @@ type cooking_info = {
 }
 
 let empty_cooking_info = {
-  expand_info = (Cmap.empty, Mindmap.empty);
+  expand_info = (Cmap_env.empty, Mindmap_env.empty);
   abstr_info = {
       abstr_ctx = [];
       abstr_auctx = AbstractContext.empty;
@@ -154,9 +154,9 @@ let share cache top_abst_subst r (cstl,knl) =
   with Not_found ->
   let {abstr_uinst;abstr_rev_inst} =
     match r with
-    | IndRef (kn,_i) -> Mindmap.find kn knl
-    | ConstructRef ((kn,_i),_j) -> Mindmap.find kn knl
-    | ConstRef cst -> Cmap.find cst cstl
+    | IndRef (kn,_i) -> Mindmap_env.find kn knl
+    | ConstructRef ((kn,_i),_j) -> Mindmap_env.find kn knl
+    | ConstRef cst -> Cmap_env.find cst cstl
   in
   let inst = (abstr_uinst, discharge_inst top_abst_subst abstr_rev_inst, List.length abstr_rev_inst) in
   RefTable.add cache r inst;
@@ -179,7 +179,7 @@ let discharge_proj (_,_,abstr_inst_length) p =
   Projection.map_npars map p
 
 let is_empty_modlist (cm, mm) =
-  Cmap.is_empty cm && Mindmap.is_empty mm
+  Cmap_env.is_empty cm && Mindmap_env.is_empty mm
 
 let expand_constr cache modlist top_abst_subst c =
   let share_univs = share_univs cache top_abst_subst in
@@ -316,7 +316,7 @@ let make_cooking_info ~recursive expand_info hyps uctx =
   | None -> info
   | Some ind ->
     let (cmap, imap) = info.expand_info in
-    { info with expand_info = (cmap, Mindmap.add ind abstr_inst_info imap) }
+    { info with expand_info = (cmap, Mindmap_env.add ind abstr_inst_info imap) }
   in
   info, abstr_inst_info
 
