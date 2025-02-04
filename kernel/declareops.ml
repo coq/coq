@@ -34,9 +34,10 @@ let safe_flags oracle = {
 (** {6 Arities } *)
 
 let hcons_template_universe ar =
-  { template_param_arguments = ar.template_param_arguments;
-    template_context = Univ.hcons_universe_context_set ar.template_context;
-    template_pseudo_sort_poly = ar.template_pseudo_sort_poly;
+  { template_param_arguments = List.Smart.map (Option.Smart.map Sorts.hcons) ar.template_param_arguments;
+    template_concl = Sorts.hcons ar.template_concl;
+    template_context = UVars.hcons_abstract_universe_context ar.template_context;
+    template_defaults = UVars.Instance.hcons ar.template_defaults;
   }
 
 let universes_context = function

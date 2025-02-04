@@ -231,11 +231,6 @@ val compute_projections : Environ.env -> inductive -> (constr * types) array
     projection and its type. *)
 
 (********************)
-
-val type_of_inductive_knowing_conclusion :
-  env -> evar_map -> mind_specif puniverses -> EConstr.types -> evar_map * EConstr.types
-
-(********************)
 val control_only_guard : env -> Evd.evar_map -> EConstr.types -> unit
 
 val error_not_allowed_dependent_analysis : Environ.env -> bool -> Names.inductive -> Pp.t

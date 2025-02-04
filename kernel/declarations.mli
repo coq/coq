@@ -17,20 +17,28 @@ open Constr
 
 (** {6 Representation of constants (Definition/Axiom) } *)
 
-(** Non-universe polymorphic mode polymorphism (Coq 8.2+): inductives
-    and constants hiding inductives are implicitly polymorphic when
-    applied to parameters, on the universes appearing in the whnf of
-    their parameters and their conclusion, in a template style.
+(** Template polymorphism: provides universe polymorphism and sort
+    polymorphism (restricted to above prop qualities), with implicit instances
+    and inferring the universes from the types of parameters instead.
 
-    In truly universe polymorphic mode, we always use RegularArity.
+    The data other than [mind_template] in the inductive bodies is
+    instantiated to the default universes (e.g. [mind_user_arity],
+    [mind_sort], the constructor data, etc).
 *)
 
-type template_pseudo_sort_poly = TemplatePseudoSortPoly | TemplateUnivOnly
-
 type template_universes = {
-  template_param_arguments : bool list;
-  template_context : Univ.ContextSet.t;
-  template_pseudo_sort_poly : template_pseudo_sort_poly;
+  (** For each LocalAssum parameter (in regular order, not rel_context order),
+      tell whether it binds a quality or a universe level
+      (read from the sort, NB it is possible to bind a qvar next to a constant universe)
+      (the binders are DeBruijn levels as with universe polymorphism,
+      but may be instantiated with algebraics) *)
+  template_param_arguments : Sorts.t option list;
+  (** Inductive sort with abstracted universes. *)
+  template_concl : Sorts.t;
+  template_context : UVars.AbstractContext.t;
+  (** Template_defaults qualities are all QType.
+      Also the universes are all levels so we can use Instance. *)
+  template_defaults : UVars.Instance.t;
 }
 
 (** Inlining level of parameters at functor applications.

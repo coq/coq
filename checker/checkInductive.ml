@@ -21,38 +21,8 @@ exception InductiveMismatch of MutInd.t * string
 
 let check mind field b = if not b then raise (InductiveMismatch (mind,field))
 
-let anon_univ_names u =
-  let nqs, nus = UVars.Instance.length u in
-  Array.make nqs Anonymous, Array.make nus Anonymous
-
-let template_univ_entry {template_context; template_pseudo_sort_poly; template_param_arguments=_} =
-  let template_univs, template_csts = template_context in
-  let bind_qvars, default_qvars = match template_pseudo_sort_poly with
-    | TemplateUnivOnly -> [||], [||]
-    | TemplatePseudoSortPoly ->
-      [|Sorts.Quality.QVar (Sorts.QVar.make_var 0)|], [|Sorts.Quality.qtype|]
-  in
-  let default_univs = Array.of_list @@ Level.Set.elements template_univs in
-  let bind_univs = Array.init (Array.length default_univs) Level.var in
-  let usubst = Array.fold_left2 (fun acc bind_u default_u ->
-      Level.Map.add default_u bind_u acc)
-      Level.Map.empty
-      bind_univs default_univs
-  in
-
-  let csts = Constraints.fold (fun (u,d,v) acc ->
-      let u = Univ.subst_univs_level_level usubst u in
-      let () = assert (not @@ Level.Map.mem v usubst) in
-      Constraints.add (u,d,v) acc)
-      template_csts
-      Constraints.empty
-  in
-  let inst = Instance.of_array (bind_qvars,bind_univs) in
-  let uctx = UContext.make (anon_univ_names inst) (inst,csts) in
-
-  let default_univs = UVars.Instance.of_array (default_qvars,default_univs) in
-
-  template_pseudo_sort_poly, usubst, Entries.Template_ind_entry {uctx; default_univs}
+let template_univ_entry {template_context; template_defaults=default_univs; _} =
+  Entries.Template_ind_entry {uctx = AbstractContext.repr template_context; default_univs}
 
 let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
   let open Entries in
@@ -64,73 +34,42 @@ let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
   let template = Option.map template_univ_entry mb.mind_template in
   let mind_entry_universes = match mb.mind_universes with
     | Monomorphic ->
-      (* We only need to rebuild the set of constraints for template polymorphic
-        inductive types. The set of monomorphic constraints is already part of
-        the graph at that point, but we need to emulate a broken bound variable
-        mechanism for template inductive types. *)
       begin match template with
       | None -> Monomorphic_ind_entry
-      | Some (_,_,template) -> template
+      | Some template -> template
       end
     | Polymorphic auctx -> Polymorphic_ind_entry (AbstractContext.repr auctx)
   in
   let ntyps = Array.length mb.mind_packets in
-  let concl_template_univs = match mb.mind_packets, template with
-    | _, None -> Level.Set.empty
-    | [|_|], Some (TemplateUnivOnly,_,_) -> Level.Set.empty
-    | [|ind|], Some (TemplatePseudoSortPoly,_,_) ->
-      begin match ind.mind_sort with
-      | SProp | Prop | Set -> Level.Set.empty
-      | QSort _ -> assert false
-      | Type u -> Universe.levels u
-      end
-    | _, Some _ -> assert false
-  in
-  let mind_entry_params = match template with
+  let mind_entry_params = match mb.mind_template with
     | None -> mb.mind_params_ctxt
-    | Some (_,usubst,_) ->
+    | Some template ->
       let open Context.Rel.Declaration in
-      mb.mind_params_ctxt |> List.map (function
-          | LocalDef _ as d -> d
-          | LocalAssum (na,t) as d ->
-            let ctx, c = Term.decompose_prod_decls t in
-            match Constr.kind c with
-            | Sort (Type u) -> begin match Universe.level u with
-                | Some u -> begin match Level.Map.find_opt u usubst with
-                    | Some u' ->
-                      let u' = Universe.make u' in
-                      let s = if Level.Set.mem u concl_template_univs then
-                          Sorts.qsort (Sorts.QVar.make_var 0) u'
-                        else Sorts.sort_of_univ u'
-                      in
-                      LocalAssum (na,Term.mkArity (ctx, s))
-                    | None -> d
-                  end
-                | None -> d
-              end
-            | _ -> d)
+      let rec fix_params acc params template = match params, template with
+        | [], [] -> acc
+        | (LocalDef _ as d) :: params , _ ->
+          fix_params (d::acc) params template
+        | (LocalAssum _ as d) :: params, None :: template ->
+          fix_params (d :: acc) params template
+        | LocalAssum (na, t) :: params, Some s :: template ->
+          let ctx, _ = Term.destArity t in
+          let d = LocalAssum (na, Term.mkArity (ctx, s)) in
+          fix_params (d :: acc) params template
+        | _ :: _, [] | [], _ :: _ -> assert false
+      in
+      fix_params [] (List.rev mb.mind_params_ctxt) template.template_param_arguments
   in
   let mind_entry_inds = Array.map_to_list (fun ind ->
       let mind_entry_arity =
-        match template with
+        match mb.mind_template with
         | None ->
           let ctx, arity = Term.decompose_prod_n_decls nparams ind.mind_user_arity in
           ignore ctx; (* we will check that the produced user_arity is equal to the input *)
           arity
-        | Some (pseudo_sort_poly,usubst,_) ->
+        | Some template ->
           let ctx = ind.mind_arity_ctxt in
           let ctx = List.firstn (List.length ctx - nparams) ctx in
-          let concl = match ind.mind_sort with
-            | SProp | Prop | Set as concl -> concl
-            | QSort _ -> assert false
-            | Type u ->
-              let u' = Univ.subst_univs_level_universe usubst u in
-              match pseudo_sort_poly with
-              | TemplateUnivOnly -> Sorts.sort_of_univ u'
-              | TemplatePseudoSortPoly ->
-                Sorts.qsort (Sorts.QVar.make_var 0) u'
-          in
-          Term.mkArity (ctx, concl)
+          Term.mkArity (ctx, template.template_concl)
       in
       {
         mind_entry_typename = ind.mind_typename;
@@ -156,18 +95,18 @@ let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
     mind_entry_private = mb.mind_private;
   }
 
-let check_template_pseudo_sort_poly a b =
-  match a, b with
-  | TemplatePseudoSortPoly, TemplatePseudoSortPoly
-  | TemplateUnivOnly, TemplateUnivOnly -> true
-  | (TemplatePseudoSortPoly | TemplateUnivOnly), _ -> false
+let check_abstract_uctx a b =
+  eq_sizes (AbstractContext.size a) (AbstractContext.size b)
+  && Constraints.equal (UContext.constraints @@ AbstractContext.repr a)
+    (UContext.constraints @@ AbstractContext.repr b)
 
 let check_template ar1 ar2 = match ar1, ar2 with
 | None, None -> true
-| Some ar, Some {template_context; template_param_arguments; template_pseudo_sort_poly} ->
-  List.equal Bool.equal ar.template_param_arguments template_param_arguments &&
-  ContextSet.equal template_context ar.template_context &&
-  check_template_pseudo_sort_poly template_pseudo_sort_poly ar.template_pseudo_sort_poly
+| Some ar, Some {template_context; template_param_arguments; template_concl; template_defaults} ->
+  List.equal (Option.equal Sorts.equal) ar.template_param_arguments template_param_arguments &&
+  check_abstract_uctx template_context ar.template_context &&
+  Sorts.equal ar.template_concl template_concl &&
+  Instance.equal ar.template_defaults template_defaults
 | None, Some _ | Some _, None -> false
 
 (* if the generated inductive is squashed the original one must be squashed *)

@@ -1148,7 +1148,11 @@ let add_mind l mie senv =
      point. *)
   let senv = match mib.mind_template with
   | None -> senv
-  | Some { template_context = ctx; _ } -> push_context_set ~strict:true ctx senv
+  | Some { template_context = ctx; template_defaults = u; _ } ->
+    let qs, levels = UVars.Instance.levels u in
+    assert (Sorts.Quality.Set.for_all (fun q -> Sorts.Quality.equal Sorts.Quality.qtype q) qs);
+    let csts = UVars.AbstractContext.instantiate u ctx in
+    push_context_set ~strict:true (levels,csts) senv
   in
   (kn, why_not_prim_record), add_checked_mind kn mib senv
 

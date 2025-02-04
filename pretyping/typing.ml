@@ -35,7 +35,8 @@ let fresh_template_context env0 sigma ind (mib, mip as spec) args =
   | [] -> sigma, List.rev sorts
   | LocalAssum (na, t) as decl :: ctx ->
     let sigma, decl, s =
-      if templ.(i) then
+      match templ.(i) with
+      | Some _ ->
         let decls, s0 = Reductionops.dest_arity env sigma t in
         let sigma, s =
           if i < Array.length args then match Reductionops.sort_of_arity env sigma args.(i).uj_type with
@@ -58,7 +59,7 @@ let fresh_template_context env0 sigma ind (mib, mip as spec) args =
         | Sorts.Type u | Sorts.QSort (_, u) -> TemplateUniv u
         in
         sigma, LocalAssum (na, t), s
-      else
+      | None ->
         sigma, decl, (fun ~default -> assert false)
     in
     freshen (i + 1) (push_rel decl env) sigma (decl :: accu) (s :: sorts) ctx

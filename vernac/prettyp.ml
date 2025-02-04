@@ -194,27 +194,18 @@ let print_if_is_coercion ref =
 
 (** Printing polymorphic status *)
 
+(* XXX TODO print based on the actual binders not from the monomorphic data *)
 let template_poly_variables env ind =
   let mib, mip = Inductive.lookup_mind_specif env ind in
   match mib.mind_template with
   | None -> assert false
-  | Some { template_param_arguments; template_pseudo_sort_poly } ->
-    let rec fold acc ctx template = match ctx, template with
-      | _, [] -> acc
-      | LocalDef _ :: ctx, _ -> fold acc ctx template
-      | LocalAssum _ :: ctx, false :: template -> fold acc ctx template
-      | LocalAssum (_,t) :: ctx, true :: template ->
-        let _, s = Term.destArity t in
-        let u = match s with Type u -> Option.get @@ Univ.Universe.level u | _ -> assert false in
-        let acc = Univ.Level.Set.add u acc in
-        fold acc ctx template
-      | [], _ :: _ -> assert false
+  | Some { template_defaults; template_concl } ->
+    let pseudo_poly = match template_concl with
+      | QSort (q, _) when Option.has_some (Sorts.QVar.var_index q) -> true
+      | _ -> false
     in
-    let vars =
-      Univ.Level.Set.elements @@
-      fold Univ.Level.Set.empty (List.rev mib.mind_params_ctxt) template_param_arguments
-    in
-    vars, template_pseudo_sort_poly
+    let _, vars = UVars.Instance.levels template_defaults in
+    Univ.Level.Set.elements vars, pseudo_poly
 
 let get_template_poly_variables env = function
   | GlobRef.IndRef ind | ConstructRef (ind,_) -> template_poly_variables env ind
@@ -222,10 +213,6 @@ let get_template_poly_variables env = function
 
 let pr_template_variables env ref =
   let vars, pseudo_sort_poly = get_template_poly_variables env ref in
-  let pseudo_sort_poly = match pseudo_sort_poly with
-    | TemplatePseudoSortPoly -> true
-    | TemplateUnivOnly -> false
-  in
   str " on " ++ prlist_with_sep spc UnivNames.pr_level_with_global_universes vars
   ++ spc() ++
   (if pseudo_sort_poly
