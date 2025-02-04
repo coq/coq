@@ -116,6 +116,9 @@ sig
   val make : Level.t -> t
   (** Create a universe representing the given level. *)
 
+  val maken : Level.t -> int -> t
+  (** Composition of [make] and iterated [super]. *)
+
   val pr : (Level.t -> Pp.t) -> t -> Pp.t
   (** Pretty-printing *)
 
