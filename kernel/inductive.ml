@@ -226,16 +226,6 @@ let subst_univs_sort (subs, pseudo_sort_poly) = function
   | TemplateUniv u -> Sorts.sort_of_univ u
   | TemplateAboveProp (q,u) -> Sorts.qsort q u
 
-let get_arity c =
-  let decls, c = Term.decompose_prod_decls c in
-  match kind c with
-  | Sort (Sorts.Type u) ->
-    begin match Universe.level u with
-    | Some l -> (decls, l)
-    | None -> assert false
-    end
-  | _ -> assert false
-
 let rec subst_univs_ctx accu subs ctx params = match ctx, params with
 | [], [] -> accu
 | (LocalDef _ as decl) :: ctx, params ->
