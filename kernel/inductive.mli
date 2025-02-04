@@ -51,7 +51,7 @@ type template_univ =
   | TemplateAboveProp of Sorts.QVar.t * Universe.t
   | TemplateUniv of Universe.t
 
-type param_univs = (expected:Univ.Level.t -> template_univ) list
+type param_univs = (default:Sorts.t -> template_univ) list
 
 val instantiate_template_constraints
   : template_univ Univ.Level.Map.t

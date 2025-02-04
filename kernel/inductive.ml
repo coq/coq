@@ -146,7 +146,7 @@ let remember_subst u subst =
     Univ.Level.Map.add u (max_template_universe su (Univ.Level.Map.find u subst)) subst
   with Not_found -> subst
 
-type param_univs = (expected:Univ.Level.t -> template_univ) list
+type param_univs = (default:Sorts.t -> template_univ) list
 
 let get_arity c =
   let decls, c = Term.decompose_prod_decls c in
@@ -170,7 +170,7 @@ let make_subst =
     | LocalAssum (_,t)::sign, true::exp, a::args ->
         (* We recover the level of the argument *)
         let _, u = get_arity t in
-        let s = a ~expected:u in
+        let s = a ~default:(Sorts.sort_of_univ (Universe.make u)) in
         make (cons_subst u s subst) (sign, exp, args)
     | LocalAssum (_na,t) :: sign, true::exp, [] ->
         (* No more argument here: we add the remaining universes to the *)
