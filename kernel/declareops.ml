@@ -33,21 +33,6 @@ let safe_flags oracle = {
 
 (** {6 Arities } *)
 
-let subst_decl_arity f g subst ar =
-  match ar with
-  | RegularArity x ->
-    let x' = f subst x in
-      if x' == x then ar
-      else RegularArity x'
-  | TemplateArity x ->
-    let x' = g subst x in
-      if x' == x then ar
-      else TemplateArity x'
-
-let hcons_template_arity ar =
-  { template_level = Sorts.hcons ar.template_level;
-  }
-
 let hcons_template_universe ar =
   { template_param_arguments = ar.template_param_arguments;
     template_context = Univ.hcons_universe_context_set ar.template_context;
@@ -221,17 +206,6 @@ let subst_wf_paths subst p = Rtree.Smart.map (subst_recarg subst) p
 
 (** {7 Substitution of inductive declarations } *)
 
-let subst_regular_ind_arity subst s =
-  let uar' = subst_mps subst s.mind_user_arity in
-    if uar' == s.mind_user_arity then s
-    else { mind_user_arity = uar'; mind_sort = s.mind_sort }
-
-let subst_template_ind_arity _sub s = s
-
-(* FIXME records *)
-let subst_ind_arity =
-  subst_decl_arity subst_regular_ind_arity subst_template_ind_arity
-
 let subst_mind_packet subst mbp =
   { mind_consnames = mbp.mind_consnames;
     mind_consnrealdecls = mbp.mind_consnrealdecls;
@@ -239,7 +213,8 @@ let subst_mind_packet subst mbp =
     mind_typename = mbp.mind_typename;
     mind_nf_lc = Array.Smart.map (fun (ctx, c) -> Context.Rel.map (subst_mps subst) ctx, subst_mps subst c) mbp.mind_nf_lc;
     mind_arity_ctxt = subst_rel_context subst mbp.mind_arity_ctxt;
-    mind_arity = subst_ind_arity subst mbp.mind_arity;
+    mind_user_arity = subst_mps subst mbp.mind_user_arity;
+    mind_sort = mbp.mind_sort;
     mind_user_lc = Array.Smart.map (subst_mps subst) mbp.mind_user_lc;
     mind_nrealargs = mbp.mind_nrealargs;
     mind_nrealdecls = mbp.mind_nrealdecls;
@@ -322,17 +297,7 @@ let inductive_make_projections ind mib =
 
 (** {6 Hash-consing of inductive declarations } *)
 
-let hcons_regular_ind_arity a =
-  { mind_user_arity = Constr.hcons a.mind_user_arity;
-    mind_sort = Sorts.hcons a.mind_sort }
-
 (** Just as for constants, this hash-consing is quite partial *)
-
-let hcons_ind_arity = function
-  | RegularArity a -> RegularArity (hcons_regular_ind_arity a)
-  | TemplateArity a -> TemplateArity (hcons_template_arity a)
-
-(** Substitution of inductive declarations *)
 
 let hcons_mind_packet oib =
   let user = Array.Smart.map Constr.hcons oib.mind_user_lc in
@@ -341,7 +306,8 @@ let hcons_mind_packet oib =
   { oib with
     mind_typename = Names.Id.hcons oib.mind_typename;
     mind_arity_ctxt = hcons_rel_context oib.mind_arity_ctxt;
-    mind_arity = hcons_ind_arity oib.mind_arity;
+    mind_user_arity = Constr.hcons oib.mind_user_arity;
+    mind_sort = Sorts.hcons oib.mind_sort;
     mind_consnames = Array.Smart.map Names.Id.hcons oib.mind_consnames;
     mind_user_lc = user;
     mind_nf_lc = nf }

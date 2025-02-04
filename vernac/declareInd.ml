@@ -230,9 +230,7 @@ let declare_mutual_inductive_with_eliminations ?typing_flags ?(indlocs=[]) ?defa
             | DefaultElim ->
               default_prop_dep_elim () &&
               let _, mip = Global.lookup_inductive ind in
-              match mip.mind_arity with
-              | RegularArity ar -> Sorts.is_prop ar.mind_sort
-              | TemplateArity ar -> Sorts.is_prop ar.template_level
+              Sorts.is_prop mip.mind_sort
           in
           if prop_but_default_dep_elim then
             Indrec.declare_prop_but_default_dependent_elim ind)

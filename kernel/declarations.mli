@@ -27,10 +27,6 @@ open Constr
 
 type template_pseudo_sort_poly = TemplatePseudoSortPoly | TemplateUnivOnly
 
-type template_arity = {
-  template_level : Sorts.t;
-}
-
 type template_universes = {
   template_param_arguments : bool list;
   template_context : Univ.ContextSet.t;
@@ -158,15 +154,6 @@ type record_info =
 | FakeRecord
 | PrimRecord of (Id.t * Label.t array * Sorts.relevance array * types array) array
 
-type regular_inductive_arity = {
-  mind_user_arity : types;
-  mind_sort : Sorts.t;
-}
-
-type inductive_arity =
-  | RegularArity of regular_inductive_arity
-  | TemplateArity of template_arity
-
 type squash_info =
   | AlwaysSquashed
   | SometimesSquashed of Sorts.Quality.Set.t
@@ -191,7 +178,12 @@ type one_inductive_body = {
      a list in reverse order
      [[realdecl_i{r_i};...;realdecl_i1;paramdecl_m;...;paramdecl_1]]. *)
 
-    mind_arity : inductive_arity; (** Arity sort and original user arity *)
+    mind_sort : Sorts.t; (** Arity sort *)
+
+    mind_user_arity : types;
+    (** Original user arity, convertible to [mkArity (mind_arity_ctxt, mind_sort)].
+        As such it contains the parameters.
+        (not necessarily a syntactic arity, eg [relation A] instead of [A -> A -> Prop]) *)
 
     mind_consnames : Id.t array; (** Names of the constructors: [cij] *)
 
@@ -235,6 +227,7 @@ type one_inductive_body = {
     mind_recargs : wf_paths; (** Signature of recursive arguments in the constructors *)
 
     mind_relevance : Sorts.relevance;
+    (* XXX this is redundant with mind_sort, is it actually worth keeping? *)
 
 (** {8 Datas for bytecode compilation } *)
 

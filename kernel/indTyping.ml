@@ -20,6 +20,8 @@ open Entries
 open Type_errors
 open Context.Rel.Declaration
 
+type inductive_arity = { user_arity : Constr.types; sort : Sorts.t }
+
 (** Check name unicity.
     Redundant with safe_typing's add_field checks -> to remove?. *)
 
@@ -523,12 +525,7 @@ let abstract_packets env usubst ((arity,lc),(indices,splayed_lc),univ_info) =
   in
   let ind_univ = UVars.subst_sort_level_sort usubst univ_info.ind_univ in
 
-  let arity =
-    if univ_info.ind_template then
-      TemplateArity { template_level = ind_univ; }
-    else
-      RegularArity {mind_user_arity = arity; mind_sort = ind_univ}
-  in
+  let arity = {user_arity = arity; sort = ind_univ} in
 
   let squashed = Option.map (function
       | AlwaysSquashed -> AlwaysSquashed

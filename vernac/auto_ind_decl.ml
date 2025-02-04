@@ -142,8 +142,9 @@ let get_inductive_deps ~noprop env kn =
             List.fold_left (aux env) accu a
           else
             let _,mip = Inductive.lookup_mind_specif env ind in
-            (* Types in SProp have trivial equality and are skipped *)
-            if match mip.mind_arity with RegularArity {mind_sort = SProp} -> true | _ -> false then
+            (* Types in SProp have trivial equality and are skipped
+               XXX should be substituting polymorphic universes *)
+            if Sorts.is_sprop mip.mind_sort then
               List.fold_left (aux env) accu a
             else
               List.fold_left (aux env) (kn' :: accu) a

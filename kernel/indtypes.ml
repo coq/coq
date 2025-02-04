@@ -397,25 +397,14 @@ let check_positivity ~chkpos kn names env_ar_par paramsctxt finite inds =
 (************************************************************************)
 (* Build the inductive packet *)
 
-let fold_arity f acc params arity indices = match arity with
-  | RegularArity ar -> f acc ar.mind_user_arity
-  | TemplateArity _ ->
-    let fold_ctx acc ctx =
-      List.fold_left (fun acc d ->
-          Context.Rel.Declaration.fold_constr (fun c acc -> f acc c) d acc)
-        acc
-        ctx
-    in
-    fold_ctx (fold_ctx acc params) indices
-
-let fold_inductive_blocks f acc params inds =
-  Array.fold_left (fun acc ((arity,lc),(indices,_),_) ->
-      fold_arity f (Array.fold_left f acc lc) params arity indices)
+let fold_inductive_blocks f acc inds =
+  Array.fold_left (fun acc ((arity,lc),_,_) ->
+      f (Array.fold_left f acc lc) arity.IndTyping.user_arity)
     acc inds
 
-let used_section_variables env params inds =
+let used_section_variables env inds =
   let fold l c = Id.Set.union (Environ.global_vars_set env c) l in
-  let ids = fold_inductive_blocks fold Id.Set.empty params inds in
+  let ids = fold_inductive_blocks fold Id.Set.empty inds in
   keep_hyps env ids
 
 let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i))
@@ -483,7 +472,7 @@ let build_inductive env ~sec_univs names prv univs template variance
     paramsctxt kn isrecord isfinite inds nmr recargs =
   let ntypes = Array.length inds in
   (* Compute the set of used section variables *)
-  let hyps = used_section_variables env paramsctxt inds in
+  let hyps = used_section_variables env inds in
   let nparamargs = Context.Rel.nhyps paramsctxt in
   let u = UVars.make_abstract_instance (universes_context univs) in
   let subst = List.init ntypes (fun i -> mkIndU ((kn, ntypes - i - 1), u)) in
@@ -501,10 +490,7 @@ let build_inductive env ~sec_univs names prv univs template variance
     let consnrealargs =
       Array.map (fun (d,_) -> Context.Rel.nhyps d)
         splayed_lc in
-    let mind_relevance = match arity with
-      | RegularArity { mind_sort;_ } -> Sorts.relevance_of_sort mind_sort
-      | TemplateArity a -> Sorts.relevance_of_sort a.template_level
-    in
+    let mind_relevance = Sorts.relevance_of_sort arity.IndTyping.sort in
     (* Assigning VM tags to constructors *)
     let nconst, nblock = ref 0, ref 0 in
     let transf arity =
@@ -520,7 +506,8 @@ let build_inductive env ~sec_univs names prv univs template variance
     let rtbl = Array.map transf consnrealargs in
       (* Build the inductive packet *)
       { mind_typename = id;
-        mind_arity = arity;
+        mind_user_arity = arity.IndTyping.user_arity;
+        mind_sort = arity.IndTyping.sort;
         mind_arity_ctxt = indices @ paramsctxt;
         mind_nrealargs = Context.Rel.nhyps indices;
         mind_nrealdecls = Context.Rel.length indices;

@@ -255,10 +255,7 @@ let print_squash env ref udecl = match ref with
       let inst = if fst @@ UVars.AbstractContext.size univs = 0 then mt()
         else Printer.pr_universe_instance sigma (UVars.make_abstract_instance univs)
       in
-      let inds = match mip.mind_arity with
-        | TemplateArity a -> a.template_level
-        | RegularArity a -> a.mind_sort
-      in
+      let inds = mip.mind_sort in
       let target = match inds with
           | SProp -> str "SProp"
           | Prop -> str "SProp or Prop"

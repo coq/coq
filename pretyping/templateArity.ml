@@ -30,10 +30,7 @@ let get_template_arity env ind ~ctoropt =
   in
   let can_be_prop, type_after_params = match ctoropt with
     | None ->
-      let s = match mip.mind_arity with
-        | RegularArity _ -> assert false
-        | TemplateArity { template_level = s } -> s
-      in
+      let s = mip.mind_sort in
       let ctx = List.rev @@ List.skipn (List.length mib.mind_params_ctxt) @@
         List.rev mip.mind_arity_ctxt
       in

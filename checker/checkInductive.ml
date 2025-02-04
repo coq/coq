@@ -79,12 +79,10 @@ let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
     | _, None -> Level.Set.empty
     | [|_|], Some (TemplateUnivOnly,_,_) -> Level.Set.empty
     | [|ind|], Some (TemplatePseudoSortPoly,_,_) ->
-      begin match ind.mind_arity with
-      | RegularArity _ -> assert false
-      | TemplateArity ar -> match ar.template_level with
-        | SProp | Prop | Set -> Level.Set.empty
-        | QSort _ -> assert false
-        | Type u -> Universe.levels u
+      begin match ind.mind_sort with
+      | SProp | Prop | Set -> Level.Set.empty
+      | QSort _ -> assert false
+      | Type u -> Universe.levels u
       end
     | _, Some _ -> assert false
   in
@@ -114,15 +112,15 @@ let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
   in
   let mind_entry_inds = Array.map_to_list (fun ind ->
       let mind_entry_arity =
-        match ind.mind_arity, template with
-        | RegularArity ar, None ->
-          let ctx, arity = Term.decompose_prod_n_decls nparams ar.mind_user_arity in
+        match template with
+        | None ->
+          let ctx, arity = Term.decompose_prod_n_decls nparams ind.mind_user_arity in
           ignore ctx; (* we will check that the produced user_arity is equal to the input *)
           arity
-        | TemplateArity ar, Some (pseudo_sort_poly,usubst,_) ->
+        | Some (pseudo_sort_poly,usubst,_) ->
           let ctx = ind.mind_arity_ctxt in
           let ctx = List.firstn (List.length ctx - nparams) ctx in
-          let concl = match ar.template_level with
+          let concl = match ind.mind_sort with
             | SProp | Prop | Set as concl -> concl
             | QSort _ -> assert false
             | Type u ->
@@ -133,7 +131,6 @@ let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
                 Sorts.qsort (Sorts.QVar.make_var 0) u'
           in
           Term.mkArity (ctx, concl)
-        | RegularArity _, Some _ | TemplateArity _, None -> assert false
       in
       {
         mind_entry_typename = ind.mind_typename;
@@ -158,15 +155,6 @@ let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
     mind_entry_variance;
     mind_entry_private = mb.mind_private;
   }
-
-let check_arity env ar1 ar2 = match ar1, ar2 with
-  | RegularArity ar, RegularArity {mind_user_arity;mind_sort} ->
-    Constr.equal ar.mind_user_arity mind_user_arity &&
-    Sorts.equal ar.mind_sort mind_sort
-  | TemplateArity ar, TemplateArity {template_level} ->
-    UGraph.check_leq_sort (universes env) template_level ar.template_level
-    (* template_level is inferred by indtypes, so functor application can produce a smaller one *)
-  | (RegularArity _ | TemplateArity _), _ -> assert false
 
 let check_template_pseudo_sort_poly a b =
   match a, b with
@@ -221,8 +209,8 @@ let eq_reloc_tbl = Array.equal (fun x y -> Int.equal (fst x) (fst y) && Int.equa
 let eq_in_context (ctx1, t1) (ctx2, t2) =
   Context.Rel.equal Sorts.relevance_equal Constr.equal ctx1 ctx2 && Constr.equal t1 t2
 
-let check_packet env mind ind
-    { mind_typename; mind_arity_ctxt; mind_arity; mind_consnames; mind_user_lc;
+let check_packet mind ind
+    { mind_typename; mind_arity_ctxt; mind_user_arity; mind_sort; mind_consnames; mind_user_lc;
       mind_nrealargs; mind_nrealdecls; mind_squashed; mind_nf_lc;
       mind_consnrealargs; mind_consnrealdecls; mind_recargs; mind_relevance;
       mind_nb_constant; mind_nb_args; mind_reloc_tbl } =
@@ -230,7 +218,8 @@ let check_packet env mind ind
 
   ignore mind_typename; (* passed through *)
   check "mind_arity_ctxt" (Context.Rel.equal Sorts.relevance_equal Constr.equal ind.mind_arity_ctxt mind_arity_ctxt);
-  check "mind_arity" (check_arity env ind.mind_arity mind_arity);
+  check "mind_arity" (Constr.equal ind.mind_user_arity mind_user_arity);
+  check "mind_sort" (Sorts.equal ind.mind_sort mind_sort);
   ignore mind_consnames; (* passed through *)
   check "mind_user_lc" (Array.equal Constr.equal ind.mind_user_lc mind_user_lc);
   check "mind_nrealargs" Int.(equal ind.mind_nrealargs mind_nrealargs);
@@ -280,7 +269,7 @@ let check_inductive env mind mb =
   in
   let check = check mind in
 
-  Array.iter2 (check_packet env mind) mb.mind_packets mind_packets;
+  Array.iter2 (check_packet mind) mb.mind_packets mind_packets;
   check "mind_record" (check_same_record mb.mind_record mind_record);
   check "mind_finite" (mb.mind_finite == mind_finite);
   check "mind_ntypes" Int.(equal mb.mind_ntypes mind_ntypes);

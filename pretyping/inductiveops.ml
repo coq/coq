@@ -265,10 +265,7 @@ let quality_leq q q' =
 type squash = SquashToSet | SquashToQuality of Sorts.Quality.t
 
 let is_squashed sigma ((_,mip),u) =
-  let s = match mip.mind_arity with
-    | RegularArity a -> a.mind_sort
-    | TemplateArity a -> a.template_level
-  in
+  let s = mip.mind_sort in
   match mip.mind_squashed with
   | None -> None
   | Some squash ->
@@ -360,9 +357,7 @@ let make_allowed_elimination env sigma ((mib,_),_ as specifu) s =
 (* XXX questionable for sort poly inductives *)
 let elim_sort (_,mip) =
   if Option.is_empty mip.mind_squashed then Sorts.InType
-  else match mip.mind_arity with
-    | TemplateArity x -> Sorts.family x.template_level
-    | RegularArity s -> Sorts.family s.mind_sort
+  else Sorts.family mip.mind_sort
 
 let top_allowed_sort env (kn,i as ind) =
   let specif = Inductive.lookup_mind_specif env ind in
@@ -764,19 +759,15 @@ let rec instantiate_universes env evdref scl is = function
   | [], _ -> assert false
 
 let type_of_inductive_knowing_conclusion env sigma ((mib,mip),u) conclty =
-  match mip.mind_arity with
-  | RegularArity s -> sigma, subst_instance_constr u (EConstr.of_constr s.mind_user_arity)
-  | TemplateArity ar ->
-    let templ = match mib.mind_template with
-    | None -> assert false
-    | Some t -> t
-    in
+  match mib.mind_template with
+  | None -> sigma, subst_instance_constr u (EConstr.of_constr mip.mind_user_arity)
+  | Some templ ->
     let _,scl = splay_arity env sigma conclty in
     let ctx = List.rev mip.mind_arity_ctxt in
     let evdref = ref sigma in
     let ctx =
       instantiate_universes
-        env evdref scl ar.template_level (ctx,templ.template_param_arguments) in
+        env evdref scl mip.mind_sort (ctx,templ.template_param_arguments) in
     !evdref, mkArity (List.rev ctx, scl)
 
 let type_of_projection_constant env (p,u) =

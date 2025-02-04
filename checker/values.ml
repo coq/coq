@@ -321,9 +321,6 @@ let v_oracle =
     v_pred v_proj_repr;
   |]
 
-let v_template_arity =
-  v_tuple "template_arity" [|v_sort|]
-
 let v_template_universes =
   v_tuple "template_universes" [|v_list v_bool;v_context_set; v_bool|]
 
@@ -417,18 +414,13 @@ let v_wfp =
       [|v_int;v_array v_wfp|] (* Rtree.Rec *)
     |]))
 
-let v_mono_ind_arity =
-  v_tuple "monomorphic_inductive_arity" [|v_constr;v_sort|]
-
-let v_ind_arity = v_sum "inductive_arity" 0
-  [|[|v_mono_ind_arity|];[|v_template_arity|]|]
-
 let v_squash_info = v_sum "squash_info" 1 [|[|v_set v_quality|]|]
 
 let v_one_ind = v_tuple "one_inductive_body"
   [|v_id;
     v_rctxt;
-    v_ind_arity;
+    v_sort;
+    v_constr;
     v_array v_id;
     v_array v_constr;
     v_int;

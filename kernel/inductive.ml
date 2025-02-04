@@ -299,14 +299,14 @@ let check_instance mib u =
 
 let type_of_inductive_gen ((mib,mip),u) paramtyps =
   check_instance mib u;
-  match mip.mind_arity with
-  | RegularArity a ->
+  match mib.mind_template with
+  | None ->
     let cst = instantiate_inductive_constraints mib u in
-    subst_instance_constr u a.mind_user_arity, cst
-  | TemplateArity ar ->
+    subst_instance_constr u mip.mind_user_arity, cst
+  | Some _ ->
     let cst, params, subst = instantiate_template_universes (mib, mip) paramtyps in
     let ctx = (List.firstn mip.mind_nrealdecls mip.mind_arity_ctxt) @ params in
-    let s = subst_univs_sort subst ar.template_level in
+    let s = subst_univs_sort subst mip.mind_sort in
     (* The Ocaml extraction cannot handle (yet?) "Prop-polymorphism", i.e.
         the situation where a non-Prop singleton inductive becomes Prop
         when applied to Prop params *)
@@ -330,11 +330,11 @@ let type_of_constructor_gen (cstr, u) (mib,mip) paramtyps =
   let i = index_of_constructor cstr in
   let nconstr = Array.length mip.mind_consnames in
   if i > nconstr then user_err Pp.(str "Not enough constructors in the type.");
-  match mip.mind_arity with
-  | RegularArity _ ->
+  match mib.mind_template with
+  | None ->
     let cst = instantiate_inductive_constraints mib u in
     subst_instance_constr u mip.mind_user_lc.(i-1), cst
-  | TemplateArity _ar ->
+  | Some _ ->
     let cst, params, _ = instantiate_template_universes (mib, mip) paramtyps in
     let _, typ = Term.decompose_prod_n_decls (List.length mib.mind_params_ctxt) mip.mind_user_lc.(i - 1) in
     let typ = Term.it_mkProd_or_LetIn typ params in
@@ -394,10 +394,7 @@ let quality_leq q q' =
 type squash = SquashToSet | SquashToQuality of Sorts.Quality.t
 
 let is_squashed ((_,mip),u) =
-  let s = match mip.mind_arity with
-    | RegularArity a -> a.mind_sort
-    | TemplateArity a -> a.template_level
-  in
+  let s = mip.mind_sort in
   match mip.mind_squashed with
   | None -> None
   | Some squash ->

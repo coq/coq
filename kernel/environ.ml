@@ -761,10 +761,10 @@ let polymorphic_pind (ind,u) env =
 let type_in_type_ind (mind,_i) env =
   not (lookup_mind mind env).mind_typing_flags.check_universes
 
-let template_polymorphic_ind (mind,i) env =
-  match (lookup_mind mind env).mind_packets.(i).mind_arity with
-  | TemplateArity _ -> true
-  | RegularArity _ -> false
+let template_polymorphic_ind (mind,_) env =
+  match (lookup_mind mind env).mind_template with
+  | Some _ -> true
+  | None -> false
 
 let template_polymorphic_pind (ind,u) env =
   if not (UVars.Instance.is_empty u) then false
