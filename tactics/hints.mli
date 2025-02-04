@@ -93,7 +93,7 @@ type pre_hints_path = Libnames.qualid hints_path_gen
 type hints_path = GlobRef.t hints_path_gen
 
 val path_matches_epsilon : hints_path -> bool
-val path_derivate : hints_path -> GlobRef.t option -> hints_path
+val path_derivate : env -> hints_path -> GlobRef.t option -> hints_path
 val pp_hints_path_gen : ('a -> Pp.t) -> 'a hints_path_gen -> Pp.t
 
 val parse_mode : string -> hint_mode
@@ -145,7 +145,7 @@ module Hint_db :
     val transparent_state : t -> TransparentState.t
     val set_transparent_state : t -> TransparentState.t -> t
 
-    val add_cut : hints_path -> t -> t
+    val add_cut : env -> hints_path -> t -> t
     val cut : t -> hints_path
 
     val unfolds : t -> Id.Set.t * Cset.t * PRset.t

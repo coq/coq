@@ -97,7 +97,7 @@ let match_with_one_constructor env sigma style onlybinary allow_rec t =
   | Ind ind ->
       let (mib,mip) = Inductive.lookup_mind_specif env (fst ind) in
       if Int.equal (Array.length mip.mind_consnames) 1
-        && (allow_rec || not (mis_is_recursive (fst ind,mib,mip)))
+        && (allow_rec || not (mis_is_recursive env (fst ind, mib, mip)))
         && (Int.equal mip.mind_nrealargs 0)
       then
         if is_strict_conjunction style (* strict conjunction *) then
@@ -150,7 +150,7 @@ let match_with_tuple env sigma t =
   Option.map (fun (hd,l) ->
     let ind, _ = destInd sigma hd in
     let (mib,mip) = Inductive.lookup_mind_specif env ind in
-    let isrec = mis_is_recursive (ind,mib,mip) in
+    let isrec = mis_is_recursive env (ind, mib, mip) in
     (hd,l,isrec)) t
 
 let is_tuple env sigma t =
@@ -176,7 +176,7 @@ let match_with_disjunction ?(strict=false) ?(onlybinary=false) env sigma t =
       let car = constructors_nrealargs env ind in
       let (mib,mip) = Inductive.lookup_mind_specif env ind in
       if Array.for_all (fun ar -> Int.equal ar 1) car
-      && not (mis_is_recursive (ind,mib,mip))
+      && not (mis_is_recursive env (ind, mib, mip))
       && (Int.equal mip.mind_nrealargs 0)
       then
         if strict then
