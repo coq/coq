@@ -31,9 +31,6 @@ val expand_path_macros : warn:(string -> unit) -> string -> string
     USERPROFILE). If all of them fail, [warn] is called. *)
 val home : warn:(string -> unit) -> string
 
-(** [docdir] is the path to the installed documentation. *)
-val docdir : unit -> string
-
 (** [datadir] is the path to the installed data directory. *)
 val datadir : unit -> string
 

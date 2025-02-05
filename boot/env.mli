@@ -104,8 +104,6 @@ val coqlib : t -> Path.t
 
 val ocamlfind : unit -> string
 
-val docdir : unit -> string
-
 val print_config : ?prefix_var_name:string -> t -> out_channel -> unit
 
 (** Needs a Rocq environment for Where and Config.

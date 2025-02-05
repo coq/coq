@@ -100,8 +100,6 @@ let _ =
 let use_suffix prefix suffix =
   if String.length suffix > 0 && suffix.[0] = '/' then suffix else prefix / suffix
 
-let docdir = Boot.Env.docdir
-
 let datadir () =
   (* This assumes implicitly that the suffix is non-trivial *)
   let path = use_suffix coqroot Coq_config.datadirsuffix in
