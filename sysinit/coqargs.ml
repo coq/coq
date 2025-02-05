@@ -33,7 +33,6 @@ type top = TopLogical of string | TopPhysical of string
 type option_command =
   | OptionSet of string option
   | OptionUnset
-  | OptionAppend of string
 
 type export_flag = Export | Import
 
@@ -186,7 +185,7 @@ let add_set_option opts opt_name value =
   { opts with pre = { opts.pre with injections = OptionInjection (opt_name, value) :: opts.pre.injections }}
 
 let add_set_debug opts flags =
-  add_set_option opts ["Debug"] (OptionAppend flags)
+  add_set_option opts ["Debug"] (OptionSet (Some flags))
 
 (** Options for proof general *)
 let set_emacs opts =
@@ -353,7 +352,7 @@ let parse_args ~init arglist : t * string list =
     |"-w" | "-W" ->
       let w = next () in
       if w = "none" then add_set_option oval ["Warnings"] (OptionSet(Some w))
-      else add_set_option oval ["Warnings"] (OptionAppend w)
+      else add_set_option oval ["Warnings"] (OptionSet (Some w))
 
     |"-bytecode-compiler" ->
       { oval with config = { oval.config with enable_VM = get_bool ~opt (next ()) }}

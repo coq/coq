@@ -262,14 +262,16 @@ let warn_deprecated_native_compiler =
           Pp.strbrk "The native-compiler option is deprecated. To compile native \
           files ahead of time, use the coqnative binary instead.")
 
-let interp_set_option opt v old =
-  let open Goptions in
+let interp_set_option (type a) opt (v:string) (k:a Goptions.option_kind) : a =
   let opt = String.concat " " opt in
-  match old with
-  | BoolValue _ -> BoolValue (Coqargs.get_bool ~opt v)
-  | IntValue _ -> IntValue (Coqargs.get_int_opt ~opt v)
-  | StringValue _ -> StringValue v
-  | StringOptValue _ -> StringOptValue (Some v)
+  match k with
+  | BoolKind -> (Coqargs.get_bool ~opt v)
+  | IntKind -> (Coqargs.get_int_opt ~opt v)
+  | StringKind -> v
+  | StringOptKind -> Some v
+
+let interp_set_option opt =
+  { Goptions.check_and_cast = (fun v k -> interp_set_option opt v k ) }
 
 let set_option (opt,v) =
   let open Goptions in
@@ -277,7 +279,6 @@ let set_option (opt,v) =
   | OptionUnset -> unset_option_value_gen ~locality:OptLocal opt
   | OptionSet None -> set_bool_option_value_gen ~locality:OptLocal opt true
   | OptionSet (Some v) -> set_option_value ~locality:OptLocal (interp_set_option opt) opt v
-  | OptionAppend v -> set_string_option_append_value_gen ~locality:OptLocal opt v
 
 let handle_injection ~intern = let open Coqargs in function
   | RequireInjection {lib;prefix;export;allow_failure} ->

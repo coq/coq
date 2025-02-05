@@ -1966,7 +1966,7 @@ let () =
     CWarnings.check_unknown_warnings flags;
     CWarnings.normalize_flags_string flags
   in
-  declare_string_option ~preprocess
+  declare_append_only_option ~preprocess ~sep:","
     { optstage = Summary.Stage.Synterp;
       optdepr  = None;
       optkey   = ["Warnings"];
@@ -1974,7 +1974,7 @@ let () =
       optwrite = CWarnings.set_flags }
 
 let () =
-  declare_string_option
+  declare_append_only_option ~sep:","
     { optstage = Summary.Stage.Synterp;
       optdepr  = None;
       optkey   = ["Debug"];

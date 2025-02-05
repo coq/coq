@@ -14,6 +14,13 @@ open Util
 open Summary.Stage
 
 type option_name = string list
+
+type _ option_kind =
+  | BoolKind : bool option_kind
+  | IntKind : int option option_kind
+  | StringKind : string option_kind
+  | StringOptKind : string option option_kind
+
 type option_value =
   | BoolValue   of bool
   | IntValue    of int option
@@ -225,16 +232,7 @@ let iter_table env f key lv =
 (****************************************************************************)
 (* 2- Flags.                                                              *)
 
-type 'a option_sig = {
-  optstage : Summary.Stage.t;
-  optdepr  : Deprecation.t option;
-  optkey   : option_name;
-  optread  : unit -> 'a;
-  optwrite : 'a -> unit }
-
 type option_locality = OptDefault | OptLocal | OptExport | OptGlobal
-
-type option_mod = OptSet | OptAppend
 
 module OptionOrd =
 struct
@@ -243,6 +241,18 @@ struct
 end
 
 module OptionMap = Map.Make(OptionOrd)
+
+module RawOpt = struct
+  type 'a t = {
+    kind : 'a option_kind;
+    depr : Deprecation.t option;
+    stage : Summary.Stage.t;
+    read : unit -> 'a;
+    write : option_locality -> 'a -> unit;
+  }
+end
+
+type any_opt = AnyOpt : 'a RawOpt.t -> any_opt
 
 let value_tab = ref OptionMap.empty
 
@@ -260,84 +270,106 @@ with Not_found ->
   then CErrors.user_err Pp.(str "Sorry, this option name ("
     ++ str (nickname key) ++ str ") is already used.")
 
+let declare_raw name v = value_tab := OptionMap.add name (AnyOpt v) !value_tab
+
+(* not quite the same as RawOpt.t: write takes a option_locality, optkey field present *)
+type 'a option_sig = {
+  optstage : Summary.Stage.t;
+  optdepr  : Deprecation.t option;
+  optkey   : option_name;
+  optread  : unit -> 'a;
+  optwrite : 'a -> unit }
+
 open Libobject
 
 let warn_deprecated_option =
   Deprecation.create_warning ~object_name:"Option" ~warning_name_if_no_since:"deprecated-option"
     (fun key -> Pp.str (nickname key))
 
-let declare_option cast uncast append ?(preprocess = fun x -> x)
+let option_object name stage act =
+  let cache_option (l,v) = act v in
+  let load_option i (l, _ as o) = match l with
+    | OptGlobal -> cache_option o
+    | OptExport -> ()
+    | OptLocal | OptDefault ->
+      (* Ruled out by classify_function *)
+      assert false
+  in
+  let open_option i  (l, _ as o) = match l with
+    | OptExport -> if Int.equal i 1 then cache_option o
+    | OptGlobal -> ()
+    | OptLocal | OptDefault ->
+      (* Ruled out by classify_function *)
+      assert false
+  in
+  let discharge_option (l,_ as o) =
+    match l with OptLocal -> None | (OptExport | OptGlobal | OptDefault) -> Some o
+  in
+  let classify_option (l,_) =
+    match l with (OptExport | OptGlobal) -> Substitute | (OptLocal | OptDefault) -> Dispose
+  in
+  { (Libobject.default_object name) with
+    object_stage = stage;
+    cache_function = cache_option;
+    load_function = load_option;
+    open_function = simple_open ~cat:opts_cat open_option;
+    subst_function = (fun (_,o) -> o);
+    discharge_function = discharge_option;
+    classify_function = classify_option;
+  }
+
+let declare_option ?(preprocess = fun x -> x) ~kind
   { optstage=stage; optdepr=depr; optkey=key; optread=read; optwrite=write } =
   check_key key;
   let default = read() in
+  let () = Summary.declare_summary (nickname key)
+      { stage;
+        Summary.freeze_function = read;
+        Summary.unfreeze_function = write;
+        Summary.init_function = (fun () -> write default) }
+  in
   let change =
-      let () = Summary.declare_summary (nickname key)
-        { stage;
-          Summary.freeze_function = read;
-          Summary.unfreeze_function = write;
-          Summary.init_function = (fun () -> write default) } in
-      let cache_options (l,m,v) =
-        match m with
-        | OptSet -> write v
-        | OptAppend -> write (append (read ()) v) in
-      let load_options i (l, _, _ as o) = match l with
-      | OptGlobal -> cache_options o
-      | OptExport -> ()
-      | OptLocal | OptDefault ->
-        (* Ruled out by classify_function *)
-        assert false
+      let options : option_locality * _ -> obj =
+        declare_object (option_object (nickname key) stage write)
       in
-      let open_options i  (l, _, _ as o) = match l with
-      | OptExport -> if Int.equal i 1 then cache_options o
-      | OptGlobal -> ()
-      | OptLocal | OptDefault ->
-        (* Ruled out by classify_function *)
-        assert false
-      in
-      let subst_options (subst,obj) = obj in
-      let discharge_options (l,_,_ as o) =
-        match l with OptLocal -> None | (OptExport | OptGlobal | OptDefault) -> Some o in
-      let classify_options (l,_,_) =
-        match l with (OptExport | OptGlobal) -> Substitute | (OptLocal | OptDefault) -> Dispose in
-      let options : option_locality * option_mod * _ -> obj =
-        declare_object
-          { (default_object (nickname key)) with
-            object_stage = stage;
-            load_function = load_options;
-            open_function = simple_open ~cat:opts_cat open_options;
-            cache_function = cache_options;
-            subst_function = subst_options;
-            discharge_function = discharge_options;
-            classify_function = classify_options } in
-      (fun l m v -> let v = preprocess v in Lib.add_leaf (options (l, m, v)))
+      (fun l v -> let v = preprocess v in Lib.add_leaf (options (l, v)))
   in
   let warn () = depr |> Option.iter (fun depr -> warn_deprecated_option (key,depr)) in
-  let cread () = cast (read ()) in
-  let cwrite l v = warn (); change l OptSet (uncast v) in
-  let cappend l v = warn (); change l OptAppend (uncast v) in
-  value_tab := OptionMap.add key (depr, stage, (cread,cwrite,cappend)) !value_tab
+  let cwrite l v = warn (); change l v in
+  declare_raw key {
+    kind;
+    stage;
+    depr;
+    read;
+    write = cwrite;
+  }
 
-let declare_int_option =
-  declare_option
-    (fun v -> IntValue v)
-    (function IntValue v -> v | _ -> CErrors.anomaly (Pp.str "async_option."))
-    (fun _ _ -> CErrors.anomaly (Pp.str "async_option."))
-let declare_bool_option =
-  declare_option
-    (fun v -> BoolValue v)
-    (function BoolValue v -> v | _ -> CErrors.anomaly (Pp.str "async_option."))
-    (fun _ _ -> CErrors.anomaly (Pp.str "async_option."))
-let declare_string_option =
-  declare_option
-    (fun v -> StringValue v)
-    (function StringValue v -> v | _ -> CErrors.anomaly (Pp.str "async_option."))
-    (fun x y -> x^","^y)
-
-let declare_stringopt_option =
-  declare_option
-    (fun v -> StringOptValue v)
-    (function StringOptValue v -> v | _ -> CErrors.anomaly (Pp.str "async_option."))
-    (fun _ _ -> CErrors.anomaly (Pp.str "async_option."))
+let declare_append_only_option ?(preprocess= fun x -> x) ~sep
+    { optstage=stage; optdepr=depr; optkey=key; optread=read; optwrite=write } =
+  check_key key;
+  let default = read() in
+  let () = Summary.declare_summary (nickname key)
+      { stage;
+        Summary.freeze_function = read;
+        Summary.unfreeze_function = write;
+        Summary.init_function = (fun () -> write default) }
+  in
+  let append x = write (read()^sep^x) in
+  let change =
+      let options : option_locality * _ -> obj =
+        declare_object (option_object (nickname key) stage append)
+      in
+      (fun l v -> let v = preprocess v in Lib.add_leaf (options (l, v)))
+  in
+  let warn () = depr |> Option.iter (fun depr -> warn_deprecated_option (key,depr)) in
+  let cwrite l v = warn (); change l v in
+  declare_raw key {
+    kind = StringKind;
+    stage;
+    depr;
+    read;
+    write = cwrite;
+  }
 
 type 'a getter = { get : unit -> 'a }
 
@@ -347,7 +379,7 @@ let declare_int_option_and_ref ?(stage=Interp) ?depr ~key ~(value:int) () =
   let r_opt = ref value in
   let optwrite v = r_opt := Option.default value v in
   let optread () = Some !r_opt in
-  let () = declare_int_option {
+  let () = declare_option ~kind:IntKind {
       optstage = stage;
       optdepr = depr;
       optkey = key;
@@ -360,7 +392,7 @@ let declare_intopt_option_and_ref ?(stage=Interp) ?depr ~key ~value () =
   let r_opt = ref value in
   let optwrite v = r_opt := v in
   let optread () = !r_opt in
-  let () = declare_int_option {
+  let () = declare_option ~kind:IntKind {
       optstage = stage;
       optdepr = depr;
       optkey = key;
@@ -378,7 +410,7 @@ let declare_nat_option_and_ref ?(stage=Interp) ?depr ~key ~(value:int) () =
     r_opt := v
   in
   let optread () = Some !r_opt in
-  let () = declare_int_option {
+  let () = declare_option ~kind:IntKind {
       optstage = stage;
       optdepr = depr;
       optkey = key;
@@ -390,7 +422,7 @@ let declare_bool_option_and_ref ?(stage=Interp) ?depr ~key ~(value:bool) () =
   let r_opt = ref value in
   let optwrite v = r_opt := v in
   let optread () = !r_opt in
-  let () = declare_bool_option {
+  let () = declare_option ~kind:BoolKind {
       optstage = stage;
       optdepr = depr;
       optkey = key;
@@ -402,7 +434,7 @@ let declare_string_option_and_ref ?(stage=Interp) ?depr ~key ~(value:string) () 
   let r_opt = ref value in
   let optwrite v = r_opt := Option.default value v in
   let optread () = Some !r_opt in
-  let () = declare_stringopt_option {
+  let () = declare_option ~kind:StringOptKind {
       optstage = stage;
       optdepr = depr;
       optkey = key;
@@ -414,7 +446,7 @@ let declare_stringopt_option_and_ref ?(stage=Interp) ?depr ~key ~value () =
   let r_opt = ref value in
   let optwrite v = r_opt := v in
   let optread () = !r_opt in
-  let () = declare_stringopt_option {
+  let () = declare_option ~kind:StringOptKind {
       optstage = stage;
       optdepr = depr;
       optkey = key;
@@ -426,7 +458,7 @@ let declare_interpreted_string_option_and_ref from_string to_string ?(stage=Inte
   let r_opt = ref value in
   let optwrite v = r_opt := Option.default value @@ Option.map from_string v in
   let optread () = Some (to_string !r_opt) in
-  let () = declare_stringopt_option {
+  let () = declare_option ~kind:StringOptKind {
       optstage = stage;
       optdepr = depr;
       optkey = key;
@@ -444,22 +476,18 @@ let warn_unknown_option =
     Pp.(fun key -> strbrk "There is no flag or option with this name: \"" ++
                   str (nickname key) ++ str "\".")
 
+let to_option_value (type a) (k:a option_kind) (v:a) : option_value =
+  match k with
+  | BoolKind -> BoolValue v
+  | IntKind -> IntValue v
+  | StringKind -> StringValue v
+  | StringOptKind -> StringOptValue v
+
 let get_option_value key =
   try
-    let (_,_,(read,write,append)) = get_option key in
-    Some read
+    let AnyOpt opt = get_option key in
+    Some (fun () -> to_option_value opt.kind (opt.read ()))
   with Not_found -> None
-
-(** Sets the option only if [stage] matches the option declaration or if [stage]
-  is omitted. If the option is not found, a warning is emitted only if the stage
-  is [Interp] or omitted. *)
-let set_option_value ?(locality = OptDefault) ?stage check_and_cast key v =
-  let opt = try Some (get_option key) with Not_found -> None in
-  match opt with
-  | None -> begin match stage with None | Some Summary.Stage.Interp -> warn_unknown_option key | _ -> () end
-  | Some (depr, option_stage, (read,write,append)) ->
-    if Option.cata (fun s -> s = option_stage) true stage then
-      write locality (check_and_cast v (read ()))
 
 let bad_type_error ~expected ~got =
   CErrors.user_err Pp.(strbrk "Bad type of value for this option:" ++ spc()
@@ -468,29 +496,45 @@ let bad_type_error ~expected ~got =
 let error_flag () =
   CErrors.user_err Pp.(str "This is a flag. It does not take a value.")
 
-let check_int_value v = function
-  | BoolValue _ -> error_flag ()
-  | IntValue _ -> IntValue v
-  | StringValue _ | StringOptValue _ ->
-     bad_type_error ~expected:"string" ~got:"int"
+type 'a check_and_cast = { check_and_cast : 'b. 'a -> 'b option_kind -> 'b }
 
-let check_bool_value v = function
-  | BoolValue _ -> BoolValue v
+(** Sets the option only if [stage] matches the option declaration or if [stage]
+  is omitted. If the option is not found, a warning is emitted only if the stage
+  is [Interp] or omitted. *)
+let set_option_value ?(locality = OptDefault) ?stage { check_and_cast } key v =
+  match get_option key with
+  | exception Not_found -> begin match stage with None | Some Summary.Stage.Interp -> warn_unknown_option key | _ -> () end
+  | AnyOpt opt ->
+    if Option.cata (fun s -> s = opt.stage) true stage then
+      opt.write locality (check_and_cast v opt.kind)
+
+let check_int_value (type a) (v:int option) (k:a option_kind) : a =
+  match k with
+  | BoolKind -> error_flag ()
+  | IntKind -> v
+  | StringKind | StringOptKind ->
+    bad_type_error ~expected:"string" ~got:"int"
+
+let check_bool_value (type a) (v:bool) (k:a option_kind) : a =
+  match k with
+  | BoolKind -> v
   | _ ->
-      CErrors.user_err
-        Pp.(str "This is an option. A value must be provided.")
+    CErrors.user_err
+      Pp.(str "This is an option. A value must be provided.")
 
-let check_string_value v = function
-  | BoolValue _ -> error_flag ()
-  | IntValue _ -> bad_type_error ~expected:"int" ~got:"string"
-  | StringValue _ -> StringValue v
-  | StringOptValue _ -> StringOptValue (Some v)
+let check_string_value (type a) (v:string) (k:a option_kind) : a =
+  match k with
+  | BoolKind -> error_flag ()
+  | IntKind -> bad_type_error ~expected:"int" ~got:"string"
+  | StringKind -> v
+  | StringOptKind -> (Some v)
 
-let check_unset_value v = function
-  | BoolValue _ -> BoolValue false
-  | IntValue _ -> IntValue None
-  | StringOptValue _ -> StringOptValue None
-  | StringValue _ ->
+let check_unset_value (type a) () (k:a option_kind) : a =
+  match k with
+  | BoolKind -> false
+  | IntKind -> None
+  | StringOptKind -> None
+  | StringKind ->
       CErrors.user_err
         Pp.(str "This option does not support the \"Unset\" command.")
 
@@ -499,21 +543,13 @@ let check_unset_value v = function
    exist anymore *)
 
 let set_int_option_value_gen ?locality ?stage =
-  set_option_value ?locality ?stage check_int_value
+  set_option_value ?locality ?stage { check_and_cast = check_int_value }
 let set_bool_option_value_gen ?locality ?stage key v =
-  set_option_value ?locality ?stage check_bool_value key v
+  set_option_value ?locality ?stage { check_and_cast = check_bool_value } key v
 let set_string_option_value_gen ?locality ?stage =
-  set_option_value ?locality ?stage check_string_value
+  set_option_value ?locality ?stage { check_and_cast = check_string_value }
 let unset_option_value_gen ?locality ?stage key =
-  set_option_value ?locality ?stage check_unset_value key ()
-
-let set_string_option_append_value_gen ?(locality = OptDefault) ?stage key v =
-  let opt = try Some (get_option key) with Not_found -> None in
-  match opt with
-  | None -> warn_unknown_option key
-  | Some (depr, option_stage, (read,write,append)) ->
-    if Option.cata (fun s -> s = option_stage) true stage then
-      append locality (check_string_value v (read ()))
+  set_option_value ?locality ?stage { check_and_cast = check_unset_value } key ()
 
 let set_int_option_value ?stage opt v = set_int_option_value_gen ?stage opt v
 let set_bool_option_value ?stage opt v = set_bool_option_value_gen ?stage opt v
@@ -531,22 +567,22 @@ let msg_option_value = Pp.(function
   | StringOptValue (Some s) -> quote (str s))
 
 let print_option_value key =
-  let (depr, _stage, (read,_,_)) = get_option key in
-  let s = read () in
-  match s with
+  let AnyOpt opt = get_option key in
+  let s = opt.read () in
+  match to_option_value opt.kind s with
     | BoolValue b ->
         Feedback.msg_notice Pp.(prlist_with_sep spc str key ++ str " is "
           ++ str (if b then "on" else "off"))
-    | _ ->
+    | s ->
         Feedback.msg_notice Pp.(str "Current value of "
           ++ prlist_with_sep spc str key ++ str " is " ++ msg_option_value s)
 
 let get_tables () =
   let tables = !value_tab in
-  let fold key (depr, _stage, (read,_,_)) accu =
+  let fold key (AnyOpt opt) accu =
     let state = {
-      opt_depr = depr;
-      opt_value = read ();
+      opt_depr = opt.depr;
+      opt_value = to_option_value opt.kind (opt.read ());
     } in
     OptionMap.add key state accu
   in
@@ -568,8 +604,8 @@ let print_tables () =
   in
   str "Options:" ++ fnl () ++
     OptionMap.fold
-      (fun key (depr, _stage, (read,_,_)) p ->
-        p ++ print_option key (read ()) depr)
+      (fun key (AnyOpt opt) p ->
+        p ++ print_option key (to_option_value opt.kind (opt.read ())) opt.depr)
       !value_tab (mt ()) ++
   str "Tables:" ++ fnl () ++
     List.fold_right
@@ -579,3 +615,17 @@ let print_tables () =
       (fun (nickkey,_) p -> p ++ str "  " ++ str nickkey ++ fnl ())
       !ref_table (mt ()) ++
     fnl ()
+
+(* Compat *)
+
+let declare_int_option ?preprocess osig =
+  declare_option ?preprocess ~kind:IntKind osig
+
+let declare_bool_option ?preprocess osig =
+  declare_option ?preprocess ~kind:BoolKind osig
+
+let declare_string_option ?preprocess osig =
+  declare_option ?preprocess ~kind:StringKind osig
+
+let declare_stringopt_option ?preprocess osig =
+  declare_option ?preprocess ~kind:StringOptKind osig

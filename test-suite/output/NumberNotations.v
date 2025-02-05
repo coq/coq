@@ -201,7 +201,7 @@ Module Test10.
   Delimit Scope unit_scope with unit.
   Delimit Scope unit2_scope with unit2.
   Number Notation unit of_uint to_uint (abstract after 0) : unit_scope.
-  Local Set Warnings Append "+abstract-large-number-no-op".
+  Local Set Warnings "+abstract-large-number-no-op".
   (* Check that there is actually a warning here *)
   Fail Number Notation unit of_uint to_uint (abstract after 0) : unit2_scope.
   (* Check that there is no warning here *)

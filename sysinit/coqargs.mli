@@ -16,7 +16,6 @@ type top = TopLogical of string | TopPhysical of string
 type option_command =
   | OptionSet of string option
   | OptionUnset
-  | OptionAppend of string
 
 type export_flag = Export | Import
 
