@@ -60,19 +60,3 @@ let getenv_rocq_gen ~rocq ~coq =
 
 let getenv_rocq name =
   getenv_rocq_gen ~rocq:("ROCQ"^name) ~coq:("COQ"^name)
-
-let use_suffix prefix suffix =
-  if Filename.is_relative suffix
-  then Filename.concat prefix suffix
-  else suffix
-
-let canonical_path_name p =
-  let current = Sys.getcwd () in
-  try
-    Sys.chdir p;
-    let p' = Sys.getcwd () in
-    Sys.chdir current;
-    p'
-  with Sys_error _ ->
-    (* We give up to find a canonical name and just simplify it... *)
-    Filename.concat current p

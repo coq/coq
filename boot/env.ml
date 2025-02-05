@@ -34,12 +34,28 @@ let fail s = Format.eprintf "%s@\n%!" fail_msg; exit 1
 
 (* This code needs to be refactored, for now it is just what used to be in envvars  *)
 
+let use_suffix prefix suffix =
+  if Filename.is_relative suffix
+  then Filename.concat prefix suffix
+  else suffix
+
+let canonical_path_name p =
+  let current = Sys.getcwd () in
+  try
+    Sys.chdir p;
+    let p' = Sys.getcwd () in
+    Sys.chdir current;
+    p'
+  with Sys_error _ ->
+    (* We give up to find a canonical name and just simplify it... *)
+    Filename.concat current p
+
 let theories_dir = "theories"
 let plugins_dir = "plugins"
 let prelude = Filename.concat theories_dir "Init/Prelude.vo"
 
 let coqbin =
-  Util.canonical_path_name (Filename.dirname Sys.executable_name)
+  canonical_path_name (Filename.dirname Sys.executable_name)
 
 (** The following only makes sense when executables are running from
     source tree (e.g. during build or in local mode). *)
@@ -52,7 +68,7 @@ let coqroot =
     If the check fails, then [oth ()] is evaluated.
     Using file system equality seems well enough for this heuristic *)
 let check_file_else ~dir ~file oth =
-  let path = Util.use_suffix coqroot dir in
+  let path = use_suffix coqroot dir in
   if Sys.file_exists (Filename.concat path file) then path else oth ()
 
 let guess_coqlib () =
@@ -145,7 +161,7 @@ let ocamlfind () = match Util.getenv_opt "OCAMLFIND" with
 
 let docdir () =
   (* This assumes implicitly that the suffix is non-trivial *)
-  let path = Util.use_suffix coqroot Coq_config.docdirsuffix in
+  let path = use_suffix coqroot Coq_config.docdirsuffix in
   if Sys.file_exists path then path else Coq_config.docdir
 
 (* Print the configuration information *)
