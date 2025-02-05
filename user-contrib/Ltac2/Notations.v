@@ -503,6 +503,9 @@ Ltac2 symmetry0 cl :=
 Ltac2 Notation "symmetry" cl(opt(clause)) := symmetry0 cl.
 Ltac2 Notation symmetry := symmetry.
 
+Ltac2 Notation "rename" renames(list1(seq(ident, "into", ident), ",")) :=
+  Std.rename renames.
+
 Ltac2 Notation "revert" ids(list1(ident)) := Std.revert ids.
 
 Ltac2 Notation assumption := Std.assumption ().

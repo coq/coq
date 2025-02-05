@@ -140,3 +140,10 @@ Abort.
 Goal nat.
   Std.apply true false [fun () => Control.plus (fun () => 'I) (fun _ => '0), Std.NoBindings] None.
 Qed.
+
+(* rename *)
+Goal forall (x : nat), x = x.
+  intro x.
+  rename x into y.
+  exact (@eq_refl _ y).
+Qed.
