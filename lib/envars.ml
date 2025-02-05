@@ -121,10 +121,6 @@ let coqpath =
   let () = if coqpath <> "" then warn_deprecated_coq_var ~rocq:"ROCQPATH" ~coq:"COQPATH" () in
   make_search_path rocqpath @ make_search_path coqpath
 
-(** {2 Caml paths} *)
-
-let ocamlfind = Boot.Env.ocamlfind
-
 (** {1 XDG utilities} *)
 
 let xdg_data_home warn =

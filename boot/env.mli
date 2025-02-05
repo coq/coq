@@ -102,6 +102,7 @@ val corelib : t -> Path.t
 (** coq/lib directory, not sure if to keep this *)
 val coqlib : t -> Path.t
 
+(** [camlfind ()] is the path to the ocamlfind binary. *)
 val ocamlfind : unit -> string
 
 val print_config : ?prefix_var_name:string -> t -> out_channel -> unit

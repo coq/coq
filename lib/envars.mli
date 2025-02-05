@@ -51,9 +51,6 @@ val coqroot : string
     the order it gets added to the search path. *)
 val coqpath : string list
 
-(** [camlfind ()] is the path to the ocamlfind binary. *)
-val ocamlfind : unit -> string
-
 (** Rocq tries to honor the XDG Base Directory Specification to access
     the user's configuration files.
 
