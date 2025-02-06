@@ -110,6 +110,13 @@ type 'a with_mode =
   | ModeMatch of mode_match * 'a
   | ModeMismatch
 
+module Modes :
+sig
+  type t
+  val empty : t
+  val union : t -> t -> t
+end
+
 module Hint_db :
   sig
     type t
@@ -150,8 +157,9 @@ module Hint_db :
 
     val unfolds : t -> Id.Set.t * Cset.t * PRset.t
 
-    val add_modes : hint_mode array list GlobRef.Map.t -> t -> t
-    val modes : t -> hint_mode array list GlobRef.Map.t
+    val add_modes : Modes.t -> t -> t
+    val modes : t -> Modes.t
+    val find_mode : env -> GlobRef.t -> t -> hint_mode array list
   end
 
 type hint_db = Hint_db.t

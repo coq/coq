@@ -183,6 +183,13 @@ type hint_mode =
   | ModeNoHeadEvar (* No evar at the head *)
   | ModeOutput (* Anything *)
 
+module Modes =
+struct
+  type t = hint_mode array list GlobRef.Map.t
+  let empty = GlobRef.Map.empty
+  let union m1 m2 = GlobRef.Map.union (fun _ m1 m2 -> Some (m1@m2)) m1 m2
+end
+
 type 'a hints_transparency_target =
   | HintsVariables
   | HintsConstants
@@ -623,6 +630,7 @@ val cut : t -> hints_path
 val unfolds : t -> Id.Set.t * Cset.t * PRset.t
 val add_modes : hint_mode array list GlobRef.Map.t -> t -> t
 val modes : t -> hint_mode array list GlobRef.Map.t
+val find_mode : env -> GlobRef.t -> t -> hint_mode array list
 val fold : (GlobRef.t option -> hint_mode array list -> full_hint list -> 'a -> 'a) ->
   t -> 'a -> 'a
 end =
@@ -829,6 +837,8 @@ struct
     { db with hintdb_map = GlobRef.Map.union f db.hintdb_map mode_entries }
 
   let modes db = GlobRef.Map.map (fun se -> se.sentry_mode) db.hintdb_map
+
+  let find_mode _env gr db = (GlobRef.Map.find gr db.hintdb_map).sentry_mode
 
   let use_dn db = db.use_dn
 

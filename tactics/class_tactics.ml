@@ -466,7 +466,7 @@ module Search = struct
 
   (** Local hints *)
   let autogoal_cache = Summary.ref ~name:"autogoal_cache"
-      (DirPath.empty, true, Context.Named.empty, GlobRef.Map.empty,
+      (DirPath.empty, true, Context.Named.empty, Hints.Modes.empty,
        Hint_db.empty TransparentState.full true)
 
   let make_autogoal_hints only_classes (modes,st as mst) gl =
@@ -1090,7 +1090,7 @@ let typeclasses_eauto ?(only_classes=false)
   in
   let st = match dbs with x :: _ -> Hint_db.transparent_state x | _ -> st in
   let modes = List.map Hint_db.modes dbs in
-  let modes = List.fold_left (GlobRef.Map.union (fun _ m1 m2 -> Some (m1@m2))) GlobRef.Map.empty modes in
+  let modes = List.fold_left Modes.union Modes.empty modes in
   let depth = match depth with None -> get_typeclasses_depth () | Some l -> Some l in
   Proofview.tclIGNORE
     (Search.eauto_tac (modes,st) ~only_classes ?strategy
