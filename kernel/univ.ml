@@ -349,6 +349,7 @@ struct
   module Set = CSet.Make(Self)
 
   let make l = tip (Expr.make l)
+  let maken l n = tip (l, n)
   let tip x = tip x
 
   let pr f l = match l with

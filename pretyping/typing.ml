@@ -35,7 +35,8 @@ let fresh_template_context env0 sigma ind (mib, mip as spec) args =
   | [] -> sigma, List.rev sorts
   | LocalAssum (na, t) as decl :: ctx ->
     let sigma, decl, s =
-      if templ.(i) then
+      match templ.(i) with
+      | Some _ ->
         let decls, s0 = Reductionops.dest_arity env sigma t in
         let sigma, s =
           if i < Array.length args then match Reductionops.sort_of_arity env sigma args.(i).uj_type with
@@ -44,13 +45,13 @@ let fresh_template_context env0 sigma ind (mib, mip as spec) args =
           else sigma, s0
         in
         let t = EConstr.it_mkProd_or_LetIn (mkSort s) decls in
-        let s ~expected = match ESorts.kind sigma s with
+        let s ~default = match ESorts.kind sigma s with
         | Sorts.SProp ->
           let indty = EConstr.of_constr @@
             Inductive.type_of_inductive (spec, UVars.Instance.empty)
           in
           error_cant_apply_bad_type env0 sigma
-            (i+1, mkType (Univ.Universe.make expected), args.(i).uj_type)
+            (i+1, mkSort (ESorts.make default), args.(i).uj_type)
             (make_judge (mkIndU (ind, EInstance.empty)) indty)
             args
         | Sorts.Prop -> TemplateProp
@@ -58,8 +59,8 @@ let fresh_template_context env0 sigma ind (mib, mip as spec) args =
         | Sorts.Type u | Sorts.QSort (_, u) -> TemplateUniv u
         in
         sigma, LocalAssum (na, t), s
-      else
-        sigma, decl, (fun ~expected -> assert false)
+      | None ->
+        sigma, decl, (fun ~default -> assert false)
     in
     freshen (i + 1) (push_rel decl env) sigma (decl :: accu) (s :: sorts) ctx
   | LocalDef (na, b, t) as decl :: ctx ->

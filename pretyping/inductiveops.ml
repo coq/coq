@@ -265,10 +265,7 @@ let quality_leq q q' =
 type squash = SquashToSet | SquashToQuality of Sorts.Quality.t
 
 let is_squashed sigma ((_,mip),u) =
-  let s = match mip.mind_arity with
-    | RegularArity a -> a.mind_sort
-    | TemplateArity a -> a.template_level
-  in
+  let s = mip.mind_sort in
   match mip.mind_squashed with
   | None -> None
   | Some squash ->
@@ -360,9 +357,7 @@ let make_allowed_elimination env sigma ((mib,_),_ as specifu) s =
 (* XXX questionable for sort poly inductives *)
 let elim_sort (_,mip) =
   if Option.is_empty mip.mind_squashed then Sorts.InType
-  else match mip.mind_arity with
-    | TemplateArity x -> Sorts.family x.template_level
-    | RegularArity s -> Sorts.family s.mind_sort
+  else Sorts.family mip.mind_sort
 
 let top_allowed_sort env (kn,i as ind) =
   let specif = Inductive.lookup_mind_specif env ind in
@@ -724,60 +719,6 @@ let arity_of_case_predicate env (ind,params) dep k =
   let mind = build_dependent_inductive env (ind,params) in
   let concl = if dep then mkArrow mind r (mkSort k) else mkSort k in
   it_mkProd_or_LetIn concl arsign
-
-(***********************************************)
-(* Inferring the sort of parameters of a polymorphic inductive type
-   knowing the sort of the conclusion *)
-
-let univ_level_mem l s = match s with
-| Prop | Set | SProp -> false
-| Type u -> Univ.univ_level_mem l u
-| QSort (_, u) -> assert false (* template cannot contain sort variables *)
-
-(* Compute the inductive argument types: replace the sorts
-   that appear in the type of the inductive by the sort of the
-   conclusion, and the other ones by fresh universes. *)
-let rec instantiate_universes env evdref scl is = function
-  | (LocalDef _ as d)::sign, exp ->
-    EConstr.of_rel_decl d :: instantiate_universes env evdref scl is (sign, exp)
-  | d::sign, false::exp ->
-    EConstr.of_rel_decl d :: instantiate_universes env evdref scl is (sign, exp)
-  | (LocalAssum (na,ty))::sign, true::exp ->
-      let ctx,s = Reduction.dest_arity env ty in
-      let l = match s with Type u -> Option.get @@ Univ.Universe.level u | _ -> assert false in
-      let u = Univ.Universe.make l in
-      let s =
-        (* Does the sort of parameter [u] appear in (or equal)
-           the sort of inductive [is] ? *)
-        if univ_level_mem l is then
-          scl (* constrained sort: replace by scl *)
-        else
-          (* unconstrained sort: replace by fresh universe *)
-          let evm, s = Evd.new_sort_variable Evd.univ_flexible !evdref in
-          let evm = Evd.set_leq_sort evm s (EConstr.ESorts.make (Sorts.sort_of_univ u)) in
-            evdref := evm; s
-      in
-      let ctx = EConstr.of_rel_context ctx in
-      let na = EConstr.of_binder_annot na in
-      (LocalAssum (na, mkArity (ctx, s))) :: instantiate_universes env evdref scl is (sign, exp)
-  | sign, [] -> EConstr.of_rel_context sign (* Uniform parameters are exhausted *)
-  | [], _ -> assert false
-
-let type_of_inductive_knowing_conclusion env sigma ((mib,mip),u) conclty =
-  match mip.mind_arity with
-  | RegularArity s -> sigma, subst_instance_constr u (EConstr.of_constr s.mind_user_arity)
-  | TemplateArity ar ->
-    let templ = match mib.mind_template with
-    | None -> assert false
-    | Some t -> t
-    in
-    let _,scl = splay_arity env sigma conclty in
-    let ctx = List.rev mip.mind_arity_ctxt in
-    let evdref = ref sigma in
-    let ctx =
-      instantiate_universes
-        env evdref scl ar.template_level (ctx,templ.template_param_arguments) in
-    !evdref, mkArity (List.rev ctx, scl)
 
 let type_of_projection_constant env (p,u) =
   let _, pty = lookup_projection p env in

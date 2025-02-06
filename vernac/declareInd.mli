@@ -25,7 +25,7 @@ val declare_mutual_inductive_with_eliminations
   -> ?indlocs:indlocs
   -> ?default_dep_elim:default_dep_elim list
   -> Entries.mutual_inductive_entry (* Inductive types declaration *)
-  -> UState.named_universes_entry
+  -> UState.named_universes_entry (* Global universes, including the template default instance *)
   -> one_inductive_impls list (* Implicit arguments *)
   -> Names.MutInd.t
 

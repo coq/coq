@@ -49,7 +49,7 @@ End No.
 
 Module ExplicitTemplate.
   #[universes(template)]
-  Inductive identity@{i} (A : Type@{i}) (a : A) : A -> Type@{i} := id_refl : identity A a a.
+  Inductive identity@{i} (A : Type@{i}) (a : A) : A -> Type@{i} := id_refl (_:A) : identity A a a.
 
   (* There used to be a weird interaction of template polymorphism and inductive
      types which fall in Prop due to kernel sort inference. This inductive is
@@ -59,7 +59,24 @@ Module ExplicitTemplate.
      from the kernel. Now the universe annotation is respected by the kernel. *)
   Fail Check (identity Type nat nat : Prop).
   Check (identity True I I : Prop).
+  Check identity nat 0 0 : Set.
+  Fail Check identity Type nat nat : Set.
+  Check identity Type nat nat : Type.
 End ExplicitTemplate.
+
+Module ExplicitTemplate2.
+  #[universes(template)]
+  Inductive identity@{i} (A : Type@{i}) (a : A) : A -> Type@{i} := id_refl : identity A a a.
+  (* we generate fresh qualities for A and the conclusion, and they end up unrelated
+     therefore the conclusion quality has no binders,
+     we can't make it a template poly quality and instead collapse to Type *)
+
+  Fail Check (identity Type nat nat : Prop).
+  Fail Check (identity True I I : Prop).
+  Check identity nat 0 0 : Set.
+  Fail Check identity Type nat nat : Set.
+  Check identity Type nat nat : Type.
+End ExplicitTemplate2.
 
 Polymorphic Definition f@{i} : Type@{i} := nat.
 Polymorphic Definition baz@{i} : Type@{i} -> Type@{i} := fun x => x.

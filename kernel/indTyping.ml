@@ -20,6 +20,8 @@ open Entries
 open Type_errors
 open Context.Rel.Declaration
 
+type inductive_arity = { user_arity : Constr.types; sort : Sorts.t }
+
 (** Check name unicity.
     Redundant with safe_typing's add_field checks -> to remove?. *)
 
@@ -303,19 +305,56 @@ let check_unbounded_from_below (univs,csts) =
                                Level.raw_pr l ++ pr_constraint_type d ++ Level.raw_pr r)))
     csts
 
-let get_arity c =
+let check_not_appearing_univs ~template_univs univs =
+  let univs = Level.Set.inter template_univs univs in
+  if Level.Set.is_empty univs then ()
+  else
+    CErrors.user_err
+      Pp.(str "Template " ++
+          str (CString.plural (Level.Set.cardinal univs) "universe") ++
+          spc() ++ Level.Set.pr Level.raw_pr univs ++ spc() ++
+          str "appear in illegal positions.")
+
+let get_template_binding_arity ~template_univs c =
   let decls, c = Term.decompose_prod_decls c in
+  let check_level u = match Universe.level u with
+    | None ->
+      let () = check_not_appearing_univs ~template_univs (Universe.levels u) in
+      None
+    | Some l -> if Level.Set.mem l template_univs then Some l else None
+  in
   match kind c with
-  | Sort (Type u) ->
-    begin match Universe.level u with
-    | Some l -> Some (decls, l)
-    | None -> None
-    end
+  | Sort (Type u as s) ->
+    Some (decls, None, check_level u, s)
+  | Sort (QSort (q, u) as s) ->
+    (* XXX check if q is a template qvar in anticipation of global qvars existing *)
+    Some (decls, Some q, check_level u, s)
   | _ -> None
 
+let check_no_increment ~template_univs u =
+  (* forbid template poly with an increment on a template univ in the conclusion
+     otherwise repeatedly applying it can generate universes with +2
+     which we cannot yet handle. *)
+  let has_increment =
+    Universe.exists (fun (u,n) ->
+        if Level.Set.mem u template_univs then
+          not (Int.equal n 0)
+        else false) u
+  in
+  if has_increment then
+    CErrors.user_err
+      Pp.(str "Template polymorphism with conclusion strictly larger than a bound universe not supported.")
+
+let make_template_univ_names (u:UVars.Instance.t) : UVars.bound_names =
+  let qlen, ulen = UVars.Instance.length u in
+  Array.make qlen Anonymous, Array.make ulen Anonymous
+
 let get_template (mie:mutual_inductive_entry) = match mie.mind_entry_universes with
-| Monomorphic_ind_entry | Polymorphic_ind_entry _ -> mie, None
-| Template_ind_entry {univs=(template_univs, _ as template_context); pseudo_sort_poly} ->
+| Monomorphic_ind_entry | Polymorphic_ind_entry _ -> mie, None, None
+| Template_ind_entry {uctx; default_univs} ->
+  let template_qvars, (template_univs, _ as template_context) =
+    UVars.UContext.to_context_set uctx
+  in
   let params = mie.mind_entry_params in
   let ind =
     match mie.mind_entry_inds with
@@ -323,26 +362,38 @@ let get_template (mie:mutual_inductive_entry) = match mie.mind_entry_universes w
     | _ -> CErrors.user_err Pp.(str "Template-polymorphism not allowed with mutual inductives.")
   in
   let () = check_unbounded_from_below template_context in
+
+  let template_context =
+    UVars.UContext.of_context_set make_template_univ_names
+      template_qvars
+      template_context
+  in
+  let template_abstract, template_context =
+    let inst, ctx = UVars.abstract_universes template_context in
+    UVars.make_instance_subst inst, ctx
+  in
+
   (* Template univs must only appear in the conclusion of the
      inductive and linearly in the conclusion of parameters.
      This makes them Irrelevant for conversion and also makes them easy to substitute.
      The inductive and binding parameter types must be syntactically arities. *)
   let check_not_appearing c =
-    let us = Vars.universes_of_constr c in
-    let appearing = Level.Set.inter us template_univs in
-    if not (Level.Set.is_empty appearing) then
+    let qs, us = Vars.sort_and_universes_of_constr c in
+    let qappearing = Sorts.QVar.Set.inter qs template_qvars in
+    if not (Sorts.QVar.Set.is_empty qappearing) then
       CErrors.user_err
         Pp.(str "Template " ++
-            str (CString.plural (Level.Set.cardinal appearing) "universe") ++
-            spc() ++ Level.Set.pr Level.raw_pr appearing ++ spc() ++
+            str (if Int.equal 1 (Sorts.QVar.Set.cardinal qappearing) then "quality" else "qualities") ++
+            spc() ++ prlist_with_sep spc Sorts.QVar.raw_pr (Sorts.QVar.Set.elements qappearing) ++ spc() ++
             str "appear in illegal positions.")
+    else check_not_appearing_univs ~template_univs us
   in
   let check_not_appearing_rel_ctx ctx =
     List.iter (Context.Rel.Declaration.iter_constr check_not_appearing) ctx
   in
 
   (** params *)
-  (* for each non-letin param, find whether it binds a template univ *)
+  (* for each non-letin param, find whether it binds a template univ or qvar *)
   let template_params =
     CList.map (fun param ->
         match param with
@@ -351,104 +402,117 @@ let get_template (mie:mutual_inductive_entry) = match mie.mind_entry_universes w
           check_not_appearing t;
           None
         | LocalAssum (_,t) ->
-          match get_arity t with
-          | None ->
+          match get_template_binding_arity ~template_univs t with
+          | None | Some (_, None, None, _) ->
             check_not_appearing t;
             Some None
-          | Some (decls, l) ->
+          | Some (decls, qopt, lopt, s) ->
             let () = check_not_appearing_rel_ctx decls in
-            if Level.Set.mem l template_univs then Some (Some l) else Some None)
+            Some (Some (qopt, lopt, s)))
       params
   in
-  let bound_in_params =
-    List.fold_left (fun bound_in_params -> function
-        | Some None | None -> bound_in_params
-        | Some (Some l) ->
-          if Level.Set.mem l bound_in_params then
-            CErrors.user_err Pp.(str "Non-linear template level " ++ Level.raw_pr l)
-          else Level.Set.add l bound_in_params)
-      Level.Set.empty
+  let qbound, ubound =
+    List.fold_left (fun (qbound, ubound as bound_in_params) -> function
+        | None | Some None -> bound_in_params
+        | Some (Some (qopt,lopt,_)) ->
+          let ubound = match lopt with
+            | None -> ubound
+            | Some l ->
+              if Level.Set.mem l ubound then
+                CErrors.user_err Pp.(str "Non-linear template level " ++ Level.raw_pr l)
+              else Level.Set.add l ubound
+          in
+          let qbound = Option.fold_right Sorts.QVar.Set.add qopt qbound in
+          qbound, ubound)
+      (Sorts.QVar.Set.empty,Level.Set.empty)
       template_params
   in
-  let unbound_in_params = Level.Set.diff template_univs bound_in_params in
-  let () = if not (Level.Set.is_empty unbound_in_params) then
+  let q_unbound = Sorts.QVar.Set.diff template_qvars qbound in
+  let () = if not (Sorts.QVar.Set.is_empty q_unbound) then
       CErrors.user_err
         Pp.(str "Template " ++
-            str (CString.plural (Level.Set.cardinal unbound_in_params) "universe") ++
-            spc() ++ Level.Set.pr Level.raw_pr unbound_in_params ++ spc() ++
-            str "are not bound by parameters.")
+            str (if Int.equal 1 (Sorts.QVar.Set.cardinal q_unbound) then "quality" else "qualities") ++ spc() ++
+            prlist_with_sep spc Sorts.QVar.raw_pr (Sorts.QVar.Set.elements q_unbound) ++ spc() ++
+            str "not bound by parameters.")
+
+  in
+  let u_unbound = Level.Set.diff template_univs ubound in
+  let () = if not (Level.Set.is_empty u_unbound) then
+      CErrors.user_err
+        Pp.(str "Template " ++
+            str (CString.plural (Level.Set.cardinal u_unbound) "universe") ++
+            spc() ++ Level.Set.pr Level.raw_pr u_unbound ++ spc() ++
+            str "not bound by parameters.")
 
   in
 
   (** arity *)
-  let arity_for_pseudo_poly =
-    (* don't use get_arity, we allow constant template poly (eg eq) *)
+  let template_concl =
+    (* don't use get_template_binding_arity, we allow constant template poly (eg eq) *)
     let (decls, s) = Term.decompose_prod_decls ind.mind_entry_arity in
     let () = if not (isSort s) then
         CErrors.user_err Pp.(str "Template polymorphic inductive's type must be a syntactic arity.")
     in
     check_not_appearing_rel_ctx decls;
-    match destSort s with
-    | SProp | Prop | Set -> None
-    | QSort _ -> assert false
+    let s = destSort s in
+    let () = match s with
+    | SProp | Prop | Set -> ()
+    | QSort (_, u) ->
+      (* typechecking will fail with "unbound qvar" if the quality isn't in template_qvars *)
+      check_no_increment ~template_univs u;
+      ()
     | Type u ->
-      (* forbid template poly with an increment on a template univ in the conclusion
-         otherwise repeatedly applying it can generate universes with +2
-         which we cannot yet handle. *)
-      let has_increment =
-        Universe.exists (fun (u,n) ->
-            if Level.Set.mem u template_univs then
-              not (Int.equal n 0)
-            else false) u
-      in
-      if has_increment then
-        CErrors.user_err
-          Pp.(str "Template polymorphism with conclusion strictly larger than a bound universe not supported.")
-      else Some (decls, u)
+      check_no_increment ~template_univs u;
+      ()
+    in
+    UVars.subst_sort_level_sort template_abstract s
   in
 
   (** ctors *)
   let () = List.iter check_not_appearing ind.mind_entry_lc in
 
-  (* for typechecking pseudo sort poly, replace Type@{u} with Type@{Var 0 | u}
-     in the conclusion and for the bound univs which appear in the conclusion
-     XXX it would be nicer to have the higher layers send us qvars instead *)
-  let mie = match pseudo_sort_poly, arity_for_pseudo_poly with
-    | TemplateUnivOnly, _ -> mie
-    | TemplatePseudoSortPoly, None ->
-      CErrors.user_err Pp.(str "Invalid pseudo sort poly template inductive.")
-    | TemplatePseudoSortPoly, Some (indices, concl) ->
-      let concl_bound_univs = Level.Set.inter template_univs (Universe.levels concl) in
-      let bound_qvar = Sorts.QVar.make_var 0 in
-      let params = List.map (fun param ->
-          match param with
-          | LocalDef _ -> param (* letin *)
-          | LocalAssum (na, t) ->
-            match get_arity t with
-            | None -> param
-            | Some (decls, l) ->
-              if Level.Set.mem l concl_bound_univs then
-                let l = Universe.make l in
-                LocalAssum (na, it_mkProd_or_LetIn (mkSort (Sorts.qsort bound_qvar l)) decls)
-              else param)
-          params
-      in
-      let arity = it_mkProd_or_LetIn (mkSort (Sorts.qsort bound_qvar concl)) indices in
-      { mie with
-        mind_entry_params = params;
-        mind_entry_inds =
-          [{ind with
-            mind_entry_arity = arity;
-           }];
-      }
+  let template_param_arguments =
+    let assums = CList.filter_map (fun x -> x) template_params in
+    List.rev_map
+      (Option.map (fun (_, _, s) ->
+           UVars.subst_sort_level_sort template_abstract s))
+      assums
   in
 
-  let template_assums = CList.filter_map (fun x -> x) template_params in
+  (* Substitution from the template binders to the default univs (and qtype for the qvars)
+     XXX can this be simplified by composing template_abstract and default_univs?
+     don't forget to check the default_univs qualities are all QType if so *)
+  let template_usubst : UVars.sort_level_subst =
+    let bind_instance = UVars.UContext.instance uctx in
+    let () = if not UVars.(eq_sizes (Instance.length bind_instance) (Instance.length default_univs))
+      then CErrors.anomaly Pp.(str "Inorrect default template universes declaration.")
+    in
+    let bind_qs, bind_us = UVars.Instance.to_array bind_instance in
+    let default_qs, default_us = UVars.Instance.to_array default_univs in
+    let qsubst = Array.fold_left2 (fun qsubst bind_q default_q ->
+        let open Sorts.Quality in
+        match bind_q, default_q with
+        | QConstant _, _ -> assert false
+        | QVar bind_q, QConstant QType ->
+          Sorts.QVar.Map.add bind_q default_q qsubst
+        | QVar _, _ -> CErrors.anomaly Pp.(str "Default template quality must be QType."))
+        Sorts.QVar.Map.empty
+        bind_qs default_qs
+    in
+    let usubst = Array.fold_left2 (fun usubst bind_u default_u ->
+        assert (not @@ Level.is_set bind_u);
+        Level.Map.add bind_u default_u usubst)
+        Level.Map.empty
+        bind_us default_us
+    in
+    qsubst, usubst
+  in
 
-  mie, Some {
-    template_param_arguments = List.rev_map Option.has_some template_assums;
+  mie, Some template_usubst, Some {
+    template_param_arguments;
     template_context;
-    template_pseudo_sort_poly = pseudo_sort_poly;
+    template_concl;
+    template_defaults = default_univs;
   }
 
 let abstract_packets env usubst ((arity,lc),(indices,splayed_lc),univ_info) =
@@ -465,12 +529,7 @@ let abstract_packets env usubst ((arity,lc),(indices,splayed_lc),univ_info) =
   in
   let ind_univ = UVars.subst_sort_level_sort usubst univ_info.ind_univ in
 
-  let arity =
-    if univ_info.ind_template then
-      TemplateArity { template_level = ind_univ; }
-    else
-      RegularArity {mind_user_arity = arity; mind_sort = ind_univ}
-  in
+  let arity = {user_arity = arity; sort = ind_univ} in
 
   let squashed = Option.map (function
       | AlwaysSquashed -> AlwaysSquashed
@@ -496,16 +555,12 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   assert (List.is_empty (Environ.rel_context env));
 
   (* universes *)
-  let mie, template = get_template mie in
+  let mie, template_usubst, template = get_template mie in
 
   let env_univs =
     match mie.mind_entry_universes with
-    | Template_ind_entry {univs=ctx; pseudo_sort_poly} ->
-      let env =  Environ.push_context_set ~strict:false ctx env in
-      begin match pseudo_sort_poly with
-      | TemplatePseudoSortPoly -> Environ.Internal.for_checking_pseudo_sort_poly env
-      | TemplateUnivOnly -> env
-      end
+    | Template_ind_entry {uctx; default_univs=_} ->
+      Environ.Internal.push_template_context uctx env
     | Monomorphic_ind_entry -> env
     | Polymorphic_ind_entry ctx -> push_context ctx env
   in
@@ -577,18 +632,10 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   (* Abstract universes *)
   let usubst, univs = match mie.mind_entry_universes with
   | Monomorphic_ind_entry ->
-      UVars.empty_sort_subst, Monomorphic
-  | Template_ind_entry info -> begin match info.pseudo_sort_poly with
-      | TemplateUnivOnly -> UVars.empty_sort_subst, Monomorphic
-      | TemplatePseudoSortPoly ->
-        (* replace Type@{Var 0 | u} back to Type@{u}
-           XXX it would be nicer to keep the qvar in the declared structure *)
-        let qsubst =
-          Sorts.QVar.Map.singleton (Sorts.QVar.make_var 0) Sorts.Quality.(QConstant QType)
-        in
-        let usubst = Univ.empty_level_subst in
-        (qsubst, usubst), Monomorphic
-    end
+    UVars.empty_sort_subst, Monomorphic
+  | Template_ind_entry _ ->
+    let usubst = Option.get template_usubst in
+    usubst, Monomorphic
   | Polymorphic_ind_entry uctx ->
     let (inst, auctx) = UVars.abstract_universes uctx in
     let inst = UVars.make_instance_subst inst in

@@ -124,7 +124,8 @@ let get_type_of_with_metas ~metas env sigma c =
 
 let refresh_template_constraints ~metas env sigma ind c =
   let (mib, _) as spec = Inductive.lookup_mind_specif env ind in
-  let (_, cstrs0) = (Option.get mib.mind_template).template_context in
+  let ctx = (Option.get mib.mind_template).template_context in
+  let cstrs0 = UVars.UContext.constraints @@ UVars.AbstractContext.repr ctx in
   if Univ.Constraints.is_empty cstrs0 then sigma
   else
     let _, allargs = decompose_app sigma c in
@@ -235,8 +236,8 @@ let clenv_environments env sigma template bound t =
           let na' = if dep then na.binder_name else Anonymous in
           let sigma, t1, templ, tmpl = match templ with
           | [] -> sigma, t1, templ, None
-          | false :: templ -> sigma, t1, templ, None
-          | true :: templ ->
+          | None :: templ -> sigma, t1, templ, None
+          | Some _ :: templ ->
             let decls, _ = Reductionops.dest_arity env sigma t1 in
             let sigma, s = Evd.new_univ_level_variable Evd.univ_flexible_alg sigma in
             let t1 = EConstr.it_mkProd_or_LetIn (EConstr.mkType (Univ.Universe.make s)) decls in

@@ -23,6 +23,7 @@ module NotPrimRecordReason : sig
 
 end
 
+type inductive_arity = { user_arity : Constr.types; sort : Sorts.t }
 
 (** Type checking for some inductive entry.
     Returns:

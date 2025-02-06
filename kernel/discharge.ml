@@ -112,14 +112,8 @@ let cook_projection cache ~params t =
   t
 
 let cook_one_ind cache ~ntypes mip =
-  let mind_arity = match mip.mind_arity with
-    | RegularArity {mind_user_arity=arity;mind_sort=sort} ->
-      let arity = abstract_as_type cache arity in
-      let sort = abstract_as_sort cache sort in
-      RegularArity {mind_user_arity=arity; mind_sort=sort}
-    | TemplateArity {template_level} ->
-      TemplateArity {template_level}
-  in
+  let mind_user_arity = abstract_as_type cache mip.mind_user_arity in
+  let mind_sort = abstract_as_sort cache mip.mind_sort in
   let mind_arity_ctxt = cook_rel_context cache mip.mind_arity_ctxt in
   let mind_user_lc = Array.map (cook_lc cache ~ntypes) mip.mind_user_lc in
   let mind_nf_lc = Array.map (fun (ctx,t) ->
@@ -130,7 +124,8 @@ let cook_one_ind cache ~ntypes mip =
   in
   { mind_typename = mip.mind_typename;
     mind_arity_ctxt;
-    mind_arity;
+    mind_user_arity;
+    mind_sort;
     mind_consnames = mip.mind_consnames;
     mind_user_lc;
     mind_nrealargs = mip.mind_nrealargs;
@@ -183,10 +178,10 @@ let cook_inductive info mib =
   in
   let mind_template = match mib.mind_template with
   | None -> None
-  | Some {template_param_arguments=levels; template_context; template_pseudo_sort_poly} ->
-      let sec_levels = List.make (Context.Rel.nhyps (rel_context_of_cooking_cache cache)) false in
+  | Some {template_param_arguments=levels; template_context; template_concl; template_defaults;} ->
+      let sec_levels = List.make (Context.Rel.nhyps (rel_context_of_cooking_cache cache)) None in
       let levels = List.rev_append sec_levels levels in
-      Some {template_param_arguments=levels; template_context; template_pseudo_sort_poly}
+      Some {template_param_arguments=levels; template_context; template_concl; template_defaults}
   in
   {
     mind_packets;

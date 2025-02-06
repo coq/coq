@@ -182,11 +182,11 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
     | _ -> EConstr.map !evdref (refresh_term_evars ~onevars ~top:false) t
   and refresh_polymorphic_positions args pos =
     let rec aux i = function
-      | true :: ls ->
+      | Some _ :: ls ->
         if i < Array.length args then
           ignore(refresh_term_evars ~onevars:true ~top:false args.(i));
         aux (succ i) ls
-      | false :: ls ->
+      | None :: ls ->
         if i < Array.length args then
           ignore(refresh_term_evars ~onevars:false ~top:false args.(i));
         aux (succ i) ls

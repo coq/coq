@@ -918,65 +918,126 @@ struct
     let sigma, j = pretype_sort ?loc ~flags sigma s in
     discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma j tycon
 
-  let enforce_template_csts sigma bound csts =
-    (* maybe could be smarter when something becomes Prop *)
-    let bound = Univ.Level.Map.map (fun u -> TemplateUniv u) bound in
+  let enforce_template_csts sigma (qbound,ubound) csts =
+    let max_quality_opt a b = match a with
+      | None -> None
+      | Some a ->
+        let open Sorts.Quality in
+        match a, b with
+        | QConstant QSProp, _ | _, QConstant QSProp -> assert false
+        | QConstant QProp, q | q, QConstant QProp -> Some q
+        | (QConstant QType as q), _ | _, (QConstant QType as q) -> Some q
+        | QVar a', QVar b' ->
+          if Sorts.QVar.equal a' b' then Some a
+          else None
+    in
+    let sigma = ref sigma in
+    let gen_max_quality qs =
+      let qs = List.map (UState.nf_quality (Evd.ustate !sigma)) qs in
+      match List.fold_left max_quality_opt (Some Sorts.Quality.qprop) qs with
+      | Some q -> q
+      | None -> match qs with
+        | [] -> assert false
+        | q :: rest ->
+          (* all qvars or qprop with at least 2 different qvars, unify the qvars
+             (alternatively: return qtype?) *)
+          let mk q = ESorts.make @@ Sorts.make q Univ.Universe.type0 in
+          let unify sigma q' =
+            if Sorts.Quality.(equal qprop q') then sigma
+            else Evd.set_eq_sort sigma (mk q) (mk q')
+          in
+          let sigma' = List.fold_left unify !sigma rest in
+          sigma := sigma';
+          q
+    in
+    let qbound = Int.Map.map gen_max_quality qbound in
+    let sigma = !sigma in
+    let bound = qbound, ubound in
     let csts = Inductive.instantiate_template_constraints bound csts in
-    Evd.add_constraints sigma csts
+    let sigma = Evd.add_constraints sigma csts in
+    sigma, bound
 
-  let template_sort qopt boundus (s:Sorts.t) =
-    match s with
-    | SProp | Prop | Set -> ESorts.make s
-    | Type u ->
-      let subst_fn u = Univ.Level.Map.find_opt u boundus in
-      let u = UnivSubst.subst_univs_universe subst_fn u in
-      let s = match qopt with
-        | None -> Sorts.sort_of_univ u
-        | Some (_,q) -> Sorts.qsort q u
-      in
-      ESorts.make s
-    | QSort (q,u) -> assert false
+  let template_sort boundus (s:Sorts.t) =
+    let s = Inductive.Template.template_subst_sort boundus s in
+    ESorts.make s
 
-  let bind_template_univ ~domu u bound =
-    Univ.Level.Map.update domu (function
-        | None -> Some u
-        | Some u' -> CErrors.anomaly Pp.(str "non linear template univ"))
-      bound
+  let bind_template bind_sort s (qsubst,usubst) =
+    let qbind, ubind = Inductive.Template.bind_kind bind_sort in
+    let qsubst = match qbind with
+      | None -> qsubst
+      | Some qbind ->
+        let sq = Sorts.quality s in
+        Int.Map.update qbind (function
+            | None -> Some [sq]
+            | Some q0 -> Some (sq::q0))
+          qsubst
+    in
+    let usubst = match ubind with
+      | None -> usubst
+      | Some ubind ->
+        let u = match s with
+          | SProp | Prop | Set -> Univ.Universe.type0
+          | Type u | QSort (_,u) -> u
+        in
+        Int.Map.update ubind (function
+            | None -> Some u
+            | Some _ ->
+              CErrors.anomaly Pp.(str "Retyping.bind_template found non linear template level."))
+          usubst
+    in
+    qsubst, usubst
 
-  let rec finish_template qopt sigma boundus = let open TemplateArity in function
+  let rec finish_template sigma boundus = let open TemplateArity in function
     | CtorType (csts, typ) ->
-      let sigma = enforce_template_csts sigma boundus csts in
+      let sigma, boundus = enforce_template_csts sigma boundus csts in
       sigma, typ
     | IndType (csts, ctx, s) ->
-      let sigma = enforce_template_csts sigma boundus csts in
-      let s = template_sort qopt boundus s in
+      let sigma, boundus = enforce_template_csts sigma boundus csts in
+      let s = template_sort boundus s in
       sigma, mkArity (ctx, s)
     | DefParam (na, v, t, codom) ->
-      let sigma, codom = finish_template qopt sigma boundus codom in
+      let sigma, codom = finish_template sigma boundus codom in
       sigma, mkLetIn (na,v,t,codom)
     | NonTemplateArg (na,dom,codom) ->
-      let sigma, codom = finish_template qopt sigma boundus codom in
+      let sigma, codom = finish_template sigma boundus codom in
       sigma, mkProd (na,dom,codom)
-    | TemplateArg (na,ctx,domu,codom) ->
-      (* partially applied template: use the global univ level, force quality = Type *)
-      let sigma = match qopt with
-        | Some (used_template_levels,q) when Univ.Level.Set.mem domu used_template_levels ->
-          Evd.add_quconstraints sigma
-            (Sorts.QConstraints.singleton (QVar q, Equal, QConstant QType),
-             Univ.Constraints.empty)
-        | _ -> sigma
-      in
-      let boundus = bind_template_univ ~domu (Univ.Universe.make domu) boundus in
-      let sigma, codom = finish_template qopt sigma boundus codom in
-      let s = ESorts.make @@ Sorts.sort_of_univ @@ Univ.Universe.make domu in
+    | TemplateArg (na,ctx,binder,codom) ->
+      let boundus = bind_template binder.bind_sort binder.default boundus in
+      let sigma, codom = finish_template sigma boundus codom in
+      let s = ESorts.make @@ binder.default in
       sigma, mkProd (na,mkArity (ctx,s),codom)
 
-  let rec apply_template qopt pretype_arg arg_state env sigma body subst boundus todoargs typ =
+  let freshen_template sigma = let open Sorts in function
+    | SProp | Prop | Set -> assert false
+    | Type _ ->
+      let sigma, u = Evd.new_univ_level_variable UState.univ_flexible_alg sigma in
+      sigma, ESorts.make (Sorts.sort_of_univ (Univ.Universe.make u))
+    | QSort (q,u) ->
+      let sigma, q = match Sorts.QVar.var_index q with
+        | None -> sigma, q
+        | Some _ ->
+          let sigma, q = Evd.new_quality_variable sigma in
+          let sigma =
+            Evd.set_leq_sort sigma
+              ESorts.prop
+              (ESorts.make @@ Sorts.qsort q Univ.Universe.type0)
+          in
+          sigma, q
+      in
+      let sigma, u = match Option.bind (Univ.Universe.level u) Univ.Level.var_index with
+        | None -> sigma, u
+        | Some _ ->
+          let sigma, u = Evd.new_univ_level_variable UState.univ_flexible_alg sigma in
+          sigma, Univ.Universe.make u
+      in
+      sigma, ESorts.make @@ Sorts.qsort q u
+
+  let rec apply_template pretype_arg arg_state env sigma body subst boundus todoargs typ =
     let open TemplateArity in
     match todoargs, typ with
     | [], _
     | _, (CtorType _ | IndType _) ->
-      let sigma, typ = finish_template qopt sigma boundus typ in
+      let sigma, typ = finish_template sigma boundus typ in
       sigma, body, subst, typ, arg_state, todoargs
     | _, DefParam (_, v, _, codom) ->
       (* eager subst may be inefficient but template inductives with
@@ -984,45 +1045,27 @@ struct
          matter *)
       let v = Vars.esubst Vars.lift_substituend subst v in
       let subst = Esubst.subs_cons (Vars.make_substituend v) subst in
-      apply_template qopt pretype_arg arg_state env sigma body subst boundus todoargs codom
+      apply_template pretype_arg arg_state env sigma body subst boundus todoargs codom
     | arg :: todoargs, NonTemplateArg (na, dom, codom) ->
       let dom = Vars.esubst Vars.lift_substituend subst dom in
       let sigma, arg_state, body, arg = pretype_arg env sigma arg_state body arg na.binder_name dom in
       let subst = Esubst.subs_cons (Vars.make_substituend arg) subst in
-      apply_template qopt pretype_arg arg_state env sigma body subst boundus todoargs codom
-    | arg :: todoargs, TemplateArg (na, ctx, domu, codom) ->
-      let sigma, u = Evd.new_univ_level_variable UState.univ_flexible_alg sigma in
-      let s = match qopt with
-        | Some (used_template_levels, q) when Univ.Level.Set.mem domu used_template_levels ->
-          ESorts.make @@ Sorts.qsort q @@ Univ.Universe.make u
-        | _ -> ESorts.make @@ Sorts.sort_of_univ @@ Univ.Universe.make u
-      in
+      apply_template pretype_arg arg_state env sigma body subst boundus todoargs codom
+    | arg :: todoargs, TemplateArg (na, ctx, binder, codom) ->
+      let sigma, s = freshen_template sigma binder.bind_sort in
       let dom = Vars.esubst Vars.lift_substituend subst (mkArity (ctx, s)) in
       let sigma, arg_state, body, arg = pretype_arg env sigma arg_state body arg na.binder_name dom in
-      let u =
+      let s =
         (* get an algebraic instead of the generated variable *)
-        let s =
-          try
-            snd @@ Reductionops.dest_arity !!env sigma @@ Retyping.get_type_of !!env sigma arg
-          with Reduction.NotArity ->
-            (* delayed constraints prevent getting the sort from retyping *)
-            s
-        in
-        match ESorts.kind sigma s with
-        | SProp -> assert false
-        | Prop ->
-          (* putting type0 here doesn't prevent getting Prop
-             because the return type will be "qsort q type0" *)
-          Univ.Universe.type0
-        | Set -> Univ.Universe.type0
-        | Type u -> u
-        | QSort (_,u) ->
-          (* quality guaranteed = Option.get qopt *)
-          u
+        try
+          snd @@ Reductionops.dest_arity !!env sigma @@ Retyping.get_type_of !!env sigma arg
+        with Reduction.NotArity ->
+          (* delayed constraints prevent getting the sort from retyping *)
+          s
       in
-      let boundus = bind_template_univ ~domu u boundus in
+      let boundus = bind_template binder.bind_sort (ESorts.kind sigma s) boundus in
       let subst = Esubst.subs_cons (Vars.make_substituend arg) subst in
-      apply_template qopt pretype_arg arg_state env sigma body subst boundus todoargs codom
+      apply_template pretype_arg arg_state env sigma body subst boundus todoargs codom
 
   let pretype_app self (f, args) =
     fun ?loc ~flags tycon env sigma ->
@@ -1138,20 +1181,8 @@ struct
           | Construct ((_,ctor),_) -> Some ctor
           | _ -> assert false
         in
-        let can_be_prop, arity = TemplateArity.get_template_arity !!env ind ~ctoropt in
-        let sigma, quality = match can_be_prop.template_can_be_prop with
-          | None -> sigma, None
-          | Some used_levels ->
-            let sigma, q = Evd.new_quality_variable sigma in
-            (* make q in cumulativity with Prop/Type *)
-            let sigma =
-              Evd.set_leq_sort sigma
-                ESorts.prop
-                (ESorts.make (Sorts.qsort q Univ.Universe.type0))
-            in
-            sigma, Some (used_levels,q)
-        in
-        sigma, Some (quality, arity)
+        let arity = TemplateArity.get_template_arity !!env ind ~ctoropt in
+        sigma, Some arity
       | _ -> sigma, None
     in
     let arg_state = (0,body,[],candargs) in
@@ -1160,11 +1191,11 @@ struct
     let sigma, body, subst, typ, arg_state, args =
       match template_arity with
       | None -> sigma, body, subst, typ, arg_state, args
-      | Some (q,typ) ->
+      | Some typ ->
         let pretype_arg env sigma arg_state body arg na tycon =
           pretype_arg env sigma arg_state body arg na tycon
         in
-        apply_template q pretype_arg arg_state env sigma body subst Univ.Level.Map.empty args typ
+        apply_template pretype_arg arg_state env sigma body subst (Int.Map.empty,Int.Map.empty) args typ
     in
     let sigma, resj, val_before_bidi, bidiargs =
       apply_rec env sigma arg_state body (subst,typ) args

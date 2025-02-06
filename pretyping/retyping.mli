@@ -47,9 +47,6 @@ val get_judgment_of : env -> evar_map -> constr -> unsafe_judgment
 val type_of_global_reference_knowing_parameters : env -> evar_map -> constr ->
   constr array -> types
 
-val type_of_global_reference_knowing_conclusion :
-  env -> evar_map -> constr -> types -> evar_map * types
-
 val sorts_of_context : env -> evar_map -> rel_context -> ESorts.t list
 
 val expand_projection : env -> evar_map -> Names.Projection.t -> constr -> constr list -> constr
