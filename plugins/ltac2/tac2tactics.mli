@@ -78,28 +78,28 @@ val vm : (Pattern.constr_pattern * occurrences) option -> clause -> unit tactic
 
 val native : (Pattern.constr_pattern * occurrences) option -> clause -> unit tactic
 
-val eval_red : constr -> constr tactic
+val eval_red : Tac2ffi.local_env -> constr -> constr tactic
 
-val eval_hnf : constr -> constr tactic
+val eval_hnf : Tac2ffi.local_env -> constr -> constr tactic
 
-val eval_simpl : GlobRef.t glob_red_flag ->
+val eval_simpl : Tac2ffi.local_env -> GlobRef.t glob_red_flag ->
   (Pattern.constr_pattern * occurrences) option -> constr -> constr tactic
 
-val eval_cbv : GlobRef.t glob_red_flag -> constr -> constr tactic
+val eval_cbv : Tac2ffi.local_env -> GlobRef.t glob_red_flag -> constr -> constr tactic
 
-val eval_cbn : GlobRef.t glob_red_flag -> constr -> constr tactic
+val eval_cbn : Tac2ffi.local_env -> GlobRef.t glob_red_flag -> constr -> constr tactic
 
-val eval_lazy : GlobRef.t glob_red_flag -> constr -> constr tactic
+val eval_lazy : Tac2ffi.local_env -> GlobRef.t glob_red_flag -> constr -> constr tactic
 
-val eval_unfold : (GlobRef.t * occurrences) list -> constr -> constr tactic
+val eval_unfold : Tac2ffi.local_env -> (GlobRef.t * occurrences) list -> constr -> constr tactic
 
-val eval_fold : constr list -> constr -> constr tactic
+val eval_fold : Tac2ffi.local_env -> constr list -> constr -> constr tactic
 
-val eval_pattern : (EConstr.t * occurrences) list -> constr -> constr tactic
+val eval_pattern : Tac2ffi.local_env -> (EConstr.t * occurrences) list -> constr -> constr tactic
 
-val eval_vm : (Pattern.constr_pattern * occurrences) option -> constr -> constr tactic
+val eval_vm : Tac2ffi.local_env -> (Pattern.constr_pattern * occurrences) option -> constr -> constr tactic
 
-val eval_native : (Pattern.constr_pattern * occurrences) option -> constr -> constr tactic
+val eval_native : Tac2ffi.local_env -> (Pattern.constr_pattern * occurrences) option -> constr -> constr tactic
 
 val discriminate : evars_flag -> destruction_arg option -> unit tactic
 

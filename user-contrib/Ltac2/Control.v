@@ -9,7 +9,7 @@
 (************************************************************************)
 
 Require Import Ltac2.Init.
-Require Ltac2.Message.
+Require Ltac2.Message Ltac2.Env.
 
 (** Panic *)
 
@@ -57,19 +57,19 @@ Ltac2 @ external goal : unit -> constr := "rocq-runtime.plugins.ltac2" "goal".
 (** Panics if there is not exactly one goal under focus. Otherwise returns
     the conclusion of this goal. *)
 
-Ltac2 @ external hyp : ident -> constr := "rocq-runtime.plugins.ltac2" "hyp".
+Ltac2 hyp (id : ident) : constr := Env.hyp_in (Env.current_env()) id.
 (** Panics if there is more than one goal under focus. If there is no
     goal under focus, looks for the section variable with the given name.
     If there is one, looks for the hypothesis with the given name. *)
 
-Ltac2 @ external hyp_value : ident -> constr option := "rocq-runtime.plugins.ltac2" "hyp_value".
+Ltac2 hyp_value (id : ident) : constr option := Env.hyp_value_in (Env.current_env()) id.
 (** Panics if there is more than one goal under focus. If there is no
     goal under focus, looks for the section variable with the given
     name and return its value ("v" in "H := v") if there is one. If
     there is one, looks for the hypothesis with the given name and
     return its value if there is one. *)
 
-Ltac2 @ external hyps : unit -> (ident * constr option * constr) list := "rocq-runtime.plugins.ltac2" "hyps".
+Ltac2 hyps () : (ident * constr option * constr) list := Env.hyps_in (Env.current_env()).
 (** Panics if there is more than one goal under focus. If there is no
     goal under focus, returns the list of section variables.
     If there is one, returns the list of hypotheses. In both cases, the

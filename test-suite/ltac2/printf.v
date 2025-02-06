@@ -46,3 +46,8 @@ Fail Ltac2 Eval print_if true "%a" (fun _ => Control.throw Assertion_failure) ()
 
 (* ikfprintf doesn't run the closure *)
 Ltac2 Eval print_if false "%a" (fun _ => Control.throw Assertion_failure) ().
+
+Goal True.
+  assert True.
+  Ltac2 Eval Control.assert_true (String.equal "" (Message.to_string (fprintf ""))).
+Abort.

@@ -24,25 +24,37 @@ Ltac2 @ external empty_context : context :=
   "rocq-runtime.plugins.ltac2" "pattern_empty_context".
 (** A trivial context only made of the hole. *)
 
-Ltac2 @ external matches : t -> constr -> (ident * constr) list :=
-  "rocq-runtime.plugins.ltac2" "pattern_matches".
+Ltac2 @external matches_in : env -> t -> constr -> (ident * constr) list :=
+  "rocq-runtime.plugins.ltac2" "pattern_matches_in".
+
+Ltac2 matches (pat : t) (c : constr) : (ident * constr) list :=
+  matches_in (Env.current_env()) pat c.
 (** If the term matches the pattern, returns the bound variables. If it doesn't,
     fail with [Match_failure]. Panics if not focused. *)
 
-Ltac2 @ external matches_subterm : t -> constr -> context * ((ident * constr) list) :=
-  "rocq-runtime.plugins.ltac2" "pattern_matches_subterm".
+Ltac2 @external match_subterm_in : env -> t -> constr -> context * ((ident * constr) list)
+  := "rocq-runtime.plugins.ltac2" "pattern_matches_subterm_in".
+
+Ltac2 matches_subterm (pat : t) (c : constr) : context * ((ident * constr) list) :=
+  match_subterm_in (Env.current_env()) pat c.
 (** Returns a stream of results corresponding to all of the subterms of the term
     that matches the pattern as in [matches]. The stream is encoded as a
     backtracking value whose last exception is [Match_failure]. The additional
     value compared to [matches] is the context of the match, to be filled with
     the instantiate function. *)
 
-Ltac2 @ external matches_vect : t -> constr -> constr array :=
-  "rocq-runtime.plugins.ltac2" "pattern_matches_vect".
+Ltac2 @external matches_vect_in : env -> t -> constr -> constr array
+  := "rocq-runtime.plugins.ltac2" "pattern_matches_vect_in".
+
+Ltac2 matches_vect (pat : t) (c : constr) : constr array :=
+  matches_vect_in (Env.current_env()) pat c.
 (** Internal version of [matches] that does not return the identifiers. *)
 
-Ltac2 @ external matches_subterm_vect : t -> constr -> context * constr array :=
-  "rocq-runtime.plugins.ltac2" "pattern_matches_subterm_vect".
+Ltac2 @external matches_subterm_vect_in : env -> t -> constr -> context * constr array
+  := "rocq-runtime.plugins.ltac2" "pattern_matches_subterm_vect_in".
+
+Ltac2 matches_subterm_vect (pat : t) (c : constr) : context * constr array :=
+  matches_subterm_vect_in (Env.current_env()) pat c.
 (** Internal version of [matches_subterms] that does not return the identifiers. *)
 
 Ltac2 @ external matches_goal :
