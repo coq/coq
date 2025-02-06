@@ -79,19 +79,52 @@ let canonical_path_name p =
     (* We give up to find a canonical name and just simplify it... *)
     Filename.concat current p
 
-let coqbin =
-  canonical_path_name (Filename.dirname Sys.executable_name)
+let find_in_PATH f =
+  match Sys.getenv_opt "PATH" with
+  | None -> None
+  | Some paths ->
+    let sep = if Coq_config.arch_is_win32 then ';' else ':' in
+    let paths = String.split_on_char sep paths in
+    paths |> List.find_opt (fun path ->
+        Sys.file_exists (if path = "" then f else Filename.concat path f))
+
+let rocqbin =
+  (* avoid following symlinks if possible (Sys.executable_name followed symlinks) *)
+  if Filename.basename Sys.argv.(0) <> Sys.argv.(0) then
+    (* explicit directory (maybe relative to current dir) *)
+    canonical_path_name (Filename.dirname Sys.argv.(0))
+  else match find_in_PATH Sys.argv.(0) with
+    | Some p -> p
+    | None -> canonical_path_name (Filename.dirname Sys.executable_name)
 
 (** The following only makes sense when executables are running from
     source tree (e.g. during build or in local mode). *)
-let coqroot =
-  Filename.dirname coqbin
+let rocqroot =
+  let rec search = function
+    | [] ->
+      (* couldn't recognize the layout, guess the executable is 1 dir below the root
+         (eg "mybin/rocq")
+         XXX we should search only when we need the root
+         and produce an error if we can't find it *)
+      Filename.dirname rocqbin
+    | path :: rest ->
+      if Sys.file_exists (Filename.concat path "bin") then path
+      else search rest
+  in
+  (* we can be "bin/rocq" or "lib/rocq-runtime/rocqworker"
+     so rocqbin can be "bin/" or "lib/rocq-runtime/" *)
+  let dirname = Filename.dirname in
+  search [ dirname rocqbin; dirname @@ dirname rocqbin ]
 
 (** [check_file_else ~dir ~file oth] checks if [file] exists in
-    the installation directory [dir] given relatively to [coqroot],
+    the installation directory [dir] given relatively to [rocqroot],
     which maybe has been relocated.
     If the check fails, then [oth ()] is evaluated.
     Using file system equality seems well enough for this heuristic *)
 let check_file_else ~dir ~file oth =
-  let path = use_suffix coqroot dir in
+  let path = use_suffix rocqroot dir in
   if Sys.file_exists (Filename.concat path file) then path else oth ()
+
+let relocate = function
+  | Coq_config.NotRelocatable p -> p
+  | Coq_config.Relocatable p -> Filename.concat rocqroot p
