@@ -24,6 +24,10 @@ Kernel
 ^^^^^^
 
 - **Changed:**
+  large performance improvements in kernel checking of terms with repeated subterms
+  (`#19160 <https://github.com/coq/coq/pull/19160>`_,
+  by Gaëtan Gilbert)
+- **Changed:**
   the criteria for a parameter to be considered template in a template inductive type.
   For a level to be template, it must now appear only once in the context of parameters,
   and only as the return sort of the arity of some parameter. Furthermore,
