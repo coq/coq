@@ -647,24 +647,36 @@ let infer_conv_noticing_evars ~pb ~ts env sigma t1 t2 =
     if !has_evar then None
     else Some (UnifFailure (sigma, UnifUnivInconsistency e))
 
-module Cs_keys_cache = struct
-  type t = (Names.GlobRef.t Queue.t * state Names.GlobRef.Map.t) * (Names.GlobRef.t Queue.t * state Names.GlobRef.Map.t)
+module Cs_keys_cache :
+sig
+  type t
+  val empty : unit -> t
+  val flip : t -> t
+  val add : env -> evar_map -> bool -> state -> t -> t
+  val fold : bool -> ('a -> state -> 'a) -> 'a -> t -> 'a
+  val clear : bool -> t -> unit
+end =
+struct
+  type t = (Names.GlobRef.t Queue.t * state Names.GlobRef.Map_env.t) * (Names.GlobRef.t Queue.t * state Names.GlobRef.Map_env.t)
 
-  let empty () : t = ((Queue.create (), Names.GlobRef.Map.empty), (Queue.create (), Names.GlobRef.Map.empty))
+  let empty () : t = ((Queue.create (), Names.GlobRef.Map_env.empty), (Queue.create (), Names.GlobRef.Map_env.empty))
 
   let flip (c1, c2) = (c2, c1)
 
-  let add_left sigma appr (((c1, m1), c2) as c) =
+  let add_left env sigma appr (((c1, m1), c2) as c) =
     match fst @@ EConstr.destRef sigma (fst appr) with
-    | k when not (Names.GlobRef.Map.mem k m1) ->
+    | k ->
+      let k = QGlobRef.canonize env k in
+      if not (Names.GlobRef.Map_env.mem k m1) then
         let () = Queue.push k c1 in
-        ((c1, Names.GlobRef.Map.add k appr m1), c2)
-    | _ | exception DestKO -> c
+        ((c1, Names.GlobRef.Map_env.add k appr m1), c2)
+      else c
+    | exception DestKO -> c
 
-  let add sigma l2r appr c =
-    if l2r then add_left sigma appr c else flip (add_left sigma appr (flip c))
+  let add env sigma l2r appr c =
+    if l2r then add_left env sigma appr c else flip (add_left env sigma appr (flip c))
 
-  let fold_left f acc ((c, m), _) = Queue.fold (fun acc k -> f acc (Names.GlobRef.Map.find k m)) acc c
+  let fold_left f acc ((c, m), _) = Queue.fold (fun acc k -> f acc (Names.GlobRef.Map_env.find k m)) acc c
   let fold l2r f acc c = fold_left f acc (if l2r then c else flip c)
 
   let clear_left ((c, _), _) = Queue.clear c
@@ -956,8 +968,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
   in
   let app_empty = match sk1, sk2 with [], [] -> true | _ -> false in
   (* Evar must be undefined since we have flushed evars *)
-  let keys = Cs_keys_cache.add evd true appr1 keys in
-  let keys = Cs_keys_cache.add evd false appr2 keys in
+  let keys = Cs_keys_cache.add env evd true appr1 keys in
+  let keys = Cs_keys_cache.add env evd false appr2 keys in
   let get_cs env sigma l2r keys nokey appr1 appr2 =
     let appr1, appr2 = if l2r then appr1, appr2 else appr2, appr1 in
     try
