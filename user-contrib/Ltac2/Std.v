@@ -169,7 +169,6 @@ Ltac2 @ external native : (pattern * occurrences) option -> clause -> unit := "r
 
 Ltac2 @ external eval_red : constr -> constr := "rocq-runtime.plugins.ltac2" "eval_red".
 Ltac2 @ external eval_hnf : constr -> constr := "rocq-runtime.plugins.ltac2" "eval_hnf".
-Ltac2 @ external eval_red : constr -> constr := "rocq-runtime.plugins.ltac2" "eval_red".
 Ltac2 @ external eval_simpl : red_flags -> (pattern * occurrences) option -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_simpl".
 Ltac2 @ external eval_cbv : red_flags -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_cbv".
 Ltac2 @ external eval_cbn : red_flags -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_cbn".

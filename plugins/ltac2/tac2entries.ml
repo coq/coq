@@ -343,6 +343,15 @@ let check_value ?loc e =
       (str "Tactic definition must be a syntactical value." ++ spc() ++
        str "Consider using a thunk.")
 
+let check_ltac_exists {loc;v=id} =
+  let kn = Lib.make_kn id in
+  let exists =
+    try let _ = Tac2env.interp_global kn in true with Not_found -> false
+  in
+  if exists then
+    user_err ?loc (str "Tactic " ++ Names.Id.print id ++ str " already exists")
+
+
 let register_ltac ?deprecation ?(local = false) ?(mut = false) isrec tactics =
   let map ({loc;v=na}, e) =
     let id = match na with
@@ -357,18 +366,11 @@ let register_ltac ?deprecation ?(local = false) ?(mut = false) isrec tactics =
   let tactics =
     if isrec then inline_rec_tactic tactics else tactics
   in
-  let map ({loc;v=id}, ({loc=eloc} as e)) =
+  let map (lid, ({loc=eloc} as e)) =
     let (e, t) = intern ~strict:true [] e in
     let () = check_value ?loc:eloc e in
-    let kn = Lib.make_kn id in
-    let exists =
-      try let _ = Tac2env.interp_global kn in true with Not_found -> false
-    in
-    let () =
-      if exists then
-        user_err ?loc (str "Tactic " ++ Names.Id.print id ++ str " already exists")
-    in
-    (id, e, t)
+    let () = check_ltac_exists lid in
+    (lid.v, e, t)
   in
   let defs = List.map map tactics in
   let iter (id, e, t) =
@@ -480,7 +482,8 @@ let register_typedef ?(local = false) ?(abstract=false) isrec types =
   let iter (id, def) = Lib.add_leaf (inTypDef id def) in
   List.iter iter types
 
-let register_primitive ?deprecation ?(local = false) {loc;v=id} t ml =
+let register_primitive ?deprecation ?(local = false) ({loc;v=id} as lid) t ml =
+  let () = check_ltac_exists lid in
   let t = intern_open_type t in
   let () =
     try let _ = Tac2env.interp_primitive ml in () with Not_found ->
