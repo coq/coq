@@ -100,7 +100,7 @@ and skip_attribute = parse
       { comment lexbuf; skip_attribute lexbuf }
   | "]"
       { () }
-  | '"' [^ '"']+ '"'
+  | '"' [^ '"']* '"'
       { skip_attribute lexbuf }
   | _
       { skip_attribute lexbuf }
