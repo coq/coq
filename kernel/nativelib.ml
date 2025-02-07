@@ -143,10 +143,11 @@ let call_compiler ?profile:(profile=false) ml_filename =
        ::"-rectypes"
        ::"-w"::"a"
        ::include_dirs) @
-      ["-impl"; ml_filename] in
-  debug_native_compiler (fun () -> Pp.str (Envars.ocamlfind () ^ " " ^ (String.concat " " args)));
+    ["-impl"; ml_filename] in
+  let ocamlfind = Boot.Env.ocamlfind () in
+  debug_native_compiler (fun () -> Pp.str (ocamlfind ^ " " ^ (String.concat " " args)));
   try
-    let res = CUnix.sys_command (Envars.ocamlfind ()) args in
+    let res = CUnix.sys_command ocamlfind args in
     match res with
     | Unix.WEXITED 0 -> link_filename
     | Unix.WEXITED _n | Unix.WSIGNALED _n | Unix.WSTOPPED _n ->

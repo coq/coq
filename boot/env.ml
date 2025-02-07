@@ -34,15 +34,48 @@ let fail s = Format.eprintf "%s@\n%!" fail_msg; exit 1
 
 (* This code needs to be refactored, for now it is just what used to be in envvars  *)
 
+let use_suffix prefix suffix =
+  if Filename.is_relative suffix
+  then Filename.concat prefix suffix
+  else suffix
+
+let canonical_path_name p =
+  let current = Sys.getcwd () in
+  try
+    Sys.chdir p;
+    let p' = Sys.getcwd () in
+    Sys.chdir current;
+    p'
+  with Sys_error _ ->
+    (* We give up to find a canonical name and just simplify it... *)
+    Filename.concat current p
+
 let theories_dir = "theories"
 let plugins_dir = "plugins"
 let prelude = Filename.concat theories_dir "Init/Prelude.vo"
+
+let coqbin =
+  canonical_path_name (Filename.dirname Sys.executable_name)
+
+(** The following only makes sense when executables are running from
+    source tree (e.g. during build or in local mode). *)
+let coqroot =
+  Filename.dirname coqbin
+
+(** [check_file_else ~dir ~file oth] checks if [file] exists in
+    the installation directory [dir] given relatively to [coqroot],
+    which maybe has been relocated.
+    If the check fails, then [oth ()] is evaluated.
+    Using file system equality seems well enough for this heuristic *)
+let check_file_else ~dir ~file oth =
+  let path = use_suffix coqroot dir in
+  if Sys.file_exists (Filename.concat path file) then path else oth ()
 
 let guess_coqlib () =
   match Util.getenv_rocq "LIB" with
   | Some v -> v
   | None ->
-    Util.check_file_else
+    check_file_else
       ~dir:Coq_config.coqlibsuffix
       ~file:prelude
       (fun () ->
@@ -119,3 +152,54 @@ let native_cmi { core; _ } lib =
     (* Dune build layout, we need to improve this *)
     let obj_dir = Format.asprintf ".%s.objs" lib in
     Filename.(concat (concat (concat core lib) obj_dir) "byte")
+
+(** {2 Caml paths} *)
+
+let ocamlfind () = match Util.getenv_opt "OCAMLFIND" with
+  | None -> Coq_config.ocamlfind
+  | Some v -> v
+
+let docdir () =
+  (* This assumes implicitly that the suffix is non-trivial *)
+  let path = use_suffix coqroot Coq_config.docdirsuffix in
+  if Sys.file_exists path then path else Coq_config.docdir
+
+(* Print the configuration information *)
+
+let print_config ?(prefix_var_name="") env f =
+  let coqlib = coqlib env |> Path.to_string in
+  let corelib = corelib env |> Path.to_string in
+  let open Printf in
+  fprintf f "%sCOQLIB=%s/\n" prefix_var_name coqlib;
+  fprintf f "%sCOQCORELIB=%s/\n" prefix_var_name corelib;
+  fprintf f "%sDOCDIR=%s/\n" prefix_var_name (docdir ());
+  fprintf f "%sOCAMLFIND=%s\n" prefix_var_name (ocamlfind ());
+  fprintf f "%sCAMLFLAGS=%s\n" prefix_var_name Coq_config.caml_flags;
+  fprintf f "%sWARN=%s\n" prefix_var_name "-warn-error +a-3";
+  fprintf f "%sHASNATDYNLINK=%s\n" prefix_var_name
+    (if Coq_config.has_natdynlink then "true" else "false");
+  fprintf f "%sCOQ_SRC_SUBDIRS=%s\n" prefix_var_name (String.concat " " Coq_config.all_src_dirs);
+  fprintf f "%sCOQ_NATIVE_COMPILER_DEFAULT=%s\n" prefix_var_name
+    (match Coq_config.native_compiler with
+     | Coq_config.NativeOn {ondemand=false} -> "yes"
+     | Coq_config.NativeOff -> "no"
+     | Coq_config.NativeOn {ondemand=true} -> "ondemand")
+
+let print_query usage : Usage.query -> unit = function
+  | PrintVersion -> Usage.version ()
+  | PrintMachineReadableVersion -> Usage.machine_readable_version ()
+  | PrintWhere ->
+    let env = init () in
+    let coqlib = coqlib env |> Path.to_string in
+    print_endline coqlib
+  | PrintHelp -> begin match usage with
+      | Some usage -> Usage.print_usage stderr usage
+      | None -> assert false
+    end
+  | PrintConfig ->
+    let env = init() in
+    print_config env stdout
+
+let query_needs_env : Usage.query -> bool = function
+  | PrintVersion | PrintMachineReadableVersion | PrintHelp -> false
+  | PrintWhere | PrintConfig -> true

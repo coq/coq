@@ -108,16 +108,16 @@ let () =
   let opts, args = Rocqshim.parse_opts args in
   match args with
   (* help prints *)
-  | "-v" :: _ | "--version" :: _ -> Boot.Usage.version ()
-  | ("-print-version"|"--print-version") :: _ -> Boot.Usage.machine_readable_version ()
   | ("-h" | "-H" | "-help" | "--help") :: _ ->
     Printf.printf "%a%!" print_usage ();
     exit 0
 
   | cmd :: args ->
     begin match List.find_opt (fun (cmd',_,_) -> String.equal cmd cmd') subcommands with
-    | None -> fatal_error "Unknown subcommand %s\n%a%!" cmd print_usage ()
     | Some (_,_,cmd) -> run_subcommand opts args cmd
+    | None ->
+      if Rocqshim.try_run_queries opts (cmd::args) then ()
+      else fatal_error "Unknown subcommand %s\n%a%!" cmd print_usage ()
     end
 
   | [] -> error_usage ()

@@ -21,6 +21,3 @@ val getenv_rocq_gen : rocq:string -> coq:string -> string option
     it is deprecated, otherwise [None]. *)
 
 val set_warn_deprecated_coq_var : (rocq:string -> coq:string -> unit) -> unit
-
-val check_file_else :
-  dir:string -> file:string -> (unit -> string) -> string

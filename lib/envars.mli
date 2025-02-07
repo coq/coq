@@ -31,9 +31,6 @@ val expand_path_macros : warn:(string -> unit) -> string -> string
     USERPROFILE). If all of them fail, [warn] is called. *)
 val home : warn:(string -> unit) -> string
 
-(** [docdir] is the path to the installed documentation. *)
-val docdir : unit -> string
-
 (** [datadir] is the path to the installed data directory. *)
 val datadir : unit -> string
 
@@ -54,9 +51,6 @@ val coqroot : string
     the order it gets added to the search path. *)
 val coqpath : string list
 
-(** [camlfind ()] is the path to the ocamlfind binary. *)
-val ocamlfind : unit -> string
-
 (** Rocq tries to honor the XDG Base Directory Specification to access
     the user's configuration files.
 
@@ -66,6 +60,3 @@ val xdg_config_home : (string -> unit) -> string
 val xdg_data_home   : (string -> unit) -> string
 val xdg_data_dirs   : (string -> unit) -> string list
 val xdg_dirs : warn : (string -> unit) -> string list
-
-(** {6 Prints the configuration information } *)
-val print_config : ?prefix_var_name:string -> out_channel -> unit

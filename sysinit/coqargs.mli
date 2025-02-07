@@ -85,13 +85,8 @@ type coqargs_pre = {
   injections  : injection_command list;
 }
 
-type coqargs_query =
-  | PrintWhere | PrintConfig
-  | PrintVersion | PrintMachineReadableVersion
-  | PrintHelp
-
 type coqargs_main =
-  | Queries of coqargs_query list
+  | Queries of Boot.Usage.query list
   | Run
 
 type coqargs_post = {

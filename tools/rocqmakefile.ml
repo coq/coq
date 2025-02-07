@@ -224,8 +224,8 @@ let windrive s =
 
 let generate_conf_coq_config oc =
   section oc "Rocq configuration.";
-  Envars.print_config ~prefix_var_name:"COQMF_" oc;
   let env = Boot.Env.init () in
+  Boot.Env.print_config ~prefix_var_name:"COQMF_" env oc;
   let coqlib = Boot.Env.(coqlib env |> Path.to_string) in
   (* XXX: FIXME, why does this variable needs the root lib *)
   fprintf oc "COQMF_WINDRIVE=%s\n" (windrive coqlib)

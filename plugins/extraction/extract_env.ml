@@ -759,7 +759,7 @@ let compile f =
                ; "-c"; f^"i"
                ; f
                ] in
-    let res = CUnix.sys_command (Envars.ocamlfind ()) args in
+    let res = CUnix.sys_command (Boot.Env.ocamlfind ()) args in
     match res with
     | Unix.WEXITED 0 -> ()
     | Unix.WEXITED n | Unix.WSIGNALED n | Unix.WSTOPPED n ->
