@@ -228,49 +228,49 @@ the optional tactic of the ``Hint Rewrite`` command.
 
    This example requires the Stdlib library.
 
-   .. rocqtop:: in reset extra
+   .. rocqtop:: in reset extra-stdlib
 
       From Stdlib Require Import Arith Lia.
 
-   .. rocqtop:: in extra
+   .. rocqtop:: in extra-stdlib
 
       Parameter g : nat -> nat -> nat.
 
-   .. rocqtop:: in extra
+   .. rocqtop:: in extra-stdlib
 
       Axiom g0 : forall m:nat, g 0 m = m.
       Axiom g1 : forall n m:nat, (n > 0) -> (m > 100) -> g n m = g (pred n) (m - 10).
       Axiom g2 : forall n m:nat, (n > 0) -> (m <= 100) -> g n m = g (S n) (m + 11).
 
-   .. rocqtop:: in extra
+   .. rocqtop:: in extra-stdlib
 
       Global Hint Rewrite g0 g1 g2 using lia : base1.
 
-   .. rocqtop:: in extra
+   .. rocqtop:: in extra-stdlib
 
       Lemma Resg0 : g 1 110 = 100.
 
-   .. rocqtop:: out extra
+   .. rocqtop:: out extra-stdlib
 
       Show.
 
-   .. rocqtop:: all extra
+   .. rocqtop:: all extra-stdlib
 
       autorewrite with base1 using reflexivity || simpl.
 
-   .. rocqtop:: none extra
+   .. rocqtop:: none extra-stdlib
 
       Qed.
 
-   .. rocqtop:: all extra
+   .. rocqtop:: all extra-stdlib
 
       Lemma Resg1 : g 1 95 = 91.
 
-   .. rocqtop:: all extra
+   .. rocqtop:: all extra-stdlib
 
       autorewrite with base1 using reflexivity || simpl.
 
-   .. rocqtop:: none extra
+   .. rocqtop:: none extra-stdlib
 
       Qed.
 

@@ -698,7 +698,7 @@ where ``diveucl`` is a type for the pair of the quotient and the
 modulo, plus some logical assertions that disappear during extraction.
 We can now extract this program to OCaml:
 
-.. rocqtop:: reset all extra
+.. rocqtop:: reset all extra-stdlib
 
    From Corelib Require Extraction.
    From Stdlib Require Import Euclid Wf_nat.
