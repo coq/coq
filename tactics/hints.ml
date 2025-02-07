@@ -162,6 +162,10 @@ type ('a,'db) with_metadata =
   (** A pattern for the concl of the Goal *)
   ; name    : GlobRef.t option
   (** A potential name to refer to the hint *)
+(*
+  ; ename   : HintExtern.t option
+  (** A potential name to refer to the hint for Hint Extern *)
+*)
   ; db : 'db
   (** The database from which the hint comes *)
   ; secvars : Id.Pred.t
@@ -1160,7 +1164,7 @@ let superglobal h = match h.hint_local with
   | SuperGlobal -> true
   | Local | Export -> false
 
-let load_autohint i ((sp,kn), h) =  (* TODO: what should I have here? *)
+let load_autohint _ h =
   let name = h.db_name in
   let superglobal = superglobal h in
   match h.hint_action with
@@ -1175,7 +1179,7 @@ let load_autohint i ((sp,kn), h) =  (* TODO: what should I have here? *)
   | AddMode { gref; mode } ->
     if superglobal then add_mode name gref mode
 
-let open_autohint i ((sp,kn), h) =
+let open_autohint i h =
   let superglobal = superglobal h in
   if Int.equal i 1 then match h.hint_action with
   | AddHints hints ->
@@ -1194,7 +1198,7 @@ let open_autohint i ((sp,kn), h) =
   | AddMode { gref; mode } ->
     if not superglobal then add_mode h.db_name gref mode
 
-let cache_autohint ((sp,kn), o) =
+let cache_autohint o =
   load_autohint 1 o; open_autohint 1 o
 
 let subst_autohint (subst, obj) =
@@ -1330,19 +1334,16 @@ let discharge_autohint obj =
 
 let hint_cat = create_category "hints"
 
-let (objConstant : (Id.t * hint_obj) Libobject.Dyn.tag) =
-  declare_named_object_full
+let inAutoHint : hint_obj -> obj =
+  declare_object
     {(default_object "AUTOHINT") with
      cache_function = cache_autohint;
-     load_function = load_autohint;  (* Until *)
-     open_function = simple_open ~cat:hint_cat open_autohint;  (* Exactly *)
+     load_function = load_autohint;
+     open_function = simple_open ~cat:hint_cat open_autohint;
      subst_function = subst_autohint;
      classify_function = classify_autohint;
      discharge_function = discharge_autohint;
     }
-
-let inAutoHint v = Libobject.Dyn.Easy.inj v objConstant
-
 let check_locality locality =
   let not_local what =
     CErrors.user_err
