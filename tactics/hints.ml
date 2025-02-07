@@ -162,6 +162,8 @@ type ('a,'db) with_metadata =
   (** A pattern for the concl of the Goal *)
   ; name    : GlobRef.t option
   (** A potential name to refer to the hint *)
+  ; ename   : full_path option
+  (** A potential name to refer to the hint for Hint Extern *)
   ; db : 'db
   (** The database from which the hint comes *)
   ; secvars : Id.Pred.t
@@ -611,8 +613,8 @@ val map_eauto : Environ.env -> evar_map -> secvars:Id.Pred.t ->
 val map_auto : Environ.env -> evar_map -> secvars:Id.Pred.t ->
                (GlobRef.t * constr array) -> constr -> t -> full_hint list
 val add_list : env -> evar_map -> hint_entry list -> t -> t
-val remove_one : Environ.env -> GlobRef.t -> t -> t
-val remove_list : Environ.env -> GlobRef.t list -> t -> t
+val remove_list : Environ.env -> GlobRef.t list * full_path list -> t -> t
+val remove_one : Environ.env -> GlobRef.t list * full_path list -> t -> t
 val iter : (GlobRef.t option -> hint_mode array list -> full_hint list -> unit) -> t -> unit
 val use_dn : t -> bool
 val transparent_state : t -> TransparentState.t
@@ -780,14 +782,15 @@ struct
       let se = { se with sentry_nopat = nopat; sentry_pat = pat } in
       rebuild_dn st se
 
-  let remove_list env grs db =
+  let remove_list env (grs, enames) db =
     let filter (_, h) =
-      match h.name with Some gr -> not (List.mem_f GlobRef.CanOrd.equal gr grs) | None -> true in
+      (match h.name with Some gr -> not (List.mem_f GlobRef.CanOrd.equal gr grs) | None -> true) &&
+      (match h.ename with Some en -> not (List.mem en enames) | None -> true) in
     let hintmap = GlobRef.Map.map (fun e -> remove (dn_ts db) grs e) db.hintdb_map in
     let hintnopat = List.filter filter db.hintdb_nopat in
       { db with hintdb_map = hintmap; hintdb_nopat = hintnopat }
 
-  let remove_one env gr db = remove_list env [gr] db
+  let remove_one env gr db = remove_list env gr db  (* todo? *)
 
   let get_entry se =
     let h = List.merge pri_order_int (StoredData.elements se.sentry_nopat) (StoredData.elements se.sentry_pat) in
@@ -889,7 +892,7 @@ let make_exact_entry env sigma info ?name (c, cty, ctx) =
         in
         let h = { rhint_term = c; rhint_type = cty; rhint_uctx = ctx; rhint_arty = 0 } in
         (Some hd,
-         { pri; pat = Some pat; name;
+         { pri; pat = Some pat; name; ename=None;
            db = (); secvars;
            code = with_uid (Give_exact h); })
 
@@ -919,13 +922,13 @@ let make_apply_entry env sigma hnf info ?name (c, cty, ctx) =
     let h = { rhint_term = c; rhint_type = cty; rhint_uctx = ctx; rhint_arty = hyps; } in
     if Int.equal nmiss 0 then
       (Some hd,
-       { pri; pat = Some pat; name;
+       { pri; pat = Some pat; name; ename=None;
          db = ();
          secvars;
          code = with_uid (Res_pf h); })
     else
       (Some hd,
-       { pri; pat = Some pat; name;
+       { pri; pat = Some pat; name; ename=None;
          db = (); secvars;
          code = with_uid (ERes_pf h); })
   | _ -> failwith "make_apply_entry"
@@ -984,11 +987,17 @@ let make_unfold eref =
    { pri = 4;
      pat = None;
      name = Some g;
+     ename=None;
      db = ();
      secvars = secvars_of_global (Global.env ()) g;
      code = with_uid (Unfold_nth eref) })
 
 let make_extern pri pat tacast name =
+  let qid_to_full_path_opt qid =
+    match qid with
+    | Some qid -> let dir, id = repr_qualid qid in Some (Libnames.make_path dir id)
+    | None -> None
+  in
   let hdconstr = match pat with
   | None -> None
   | Some c ->
@@ -1000,7 +1009,8 @@ let make_extern pri pat tacast name =
   (hdconstr,
    { pri = pri;
      pat = Option.map (fun p -> SyntacticPattern p) pat;
-     name = name;
+     name = None;
+     ename = qid_to_full_path_opt name;
      db = ();
      secvars = Id.Pred.empty; (* Approximation *)
      code = with_uid (Extern (pat, tacast)) })
@@ -1028,6 +1038,7 @@ let make_trivial env sigma r =
    { pri=1;
      pat = Some DefaultPattern;
      name = name;
+     ename=None;
      db = ();
      secvars = secvars_of_constr env sigma c;
      code= with_uid (Res_pf_THEN_trivial_fail h) })
@@ -1125,7 +1136,7 @@ type hint_action =
       state : bool;
     }
   | AddHints of hint_entry list
-  | RemoveHints of GlobRef.t list
+  | RemoveHints of GlobRef.t list * full_path list
   | AddCut of hints_path
   | AddMode of { gref : GlobRef.t; mode : hint_mode array }
 
@@ -1144,7 +1155,7 @@ let is_trivial_action = function
   | HintsReferences l -> List.is_empty l
   end
 | AddHints l -> List.is_empty l
-| RemoveHints l -> List.is_empty l
+| RemoveHints (grs, ens) -> List.is_empty grs && (List.is_empty ens)
 | AddCut _ | AddMode _ -> false
 
 let rec is_section_path = function
@@ -1160,22 +1171,22 @@ let superglobal h = match h.hint_local with
   | SuperGlobal -> true
   | Local | Export -> false
 
-let load_autohint i ((sp,kn), h) =  (* TODO: what should I have here? *)
-  let name = h.db_name in
+let load_autohint _ h =
+  let db_name = h.db_name in
   let superglobal = superglobal h in
   match h.hint_action with
   | AddTransparency { grefs; state } ->
-    if superglobal then add_transparency name grefs state
+    if superglobal then add_transparency db_name grefs state
   | AddHints hints ->
-    if superglobal then add_hint name hints
-  | RemoveHints hints ->
-    if superglobal then remove_hint name hints
+    if superglobal then add_hint db_name hints
+  | RemoveHints (grs, ens) ->
+    if superglobal then remove_hint db_name (grs, ens)
   | AddCut paths ->
-    if superglobal then add_cut name paths
+    if superglobal then add_cut db_name paths
   | AddMode { gref; mode } ->
-    if superglobal then add_mode name gref mode
+    if superglobal then add_mode db_name gref mode
 
-let open_autohint i ((sp,kn), h) =
+let open_autohint i h =
   let superglobal = superglobal h in
   if Int.equal i 1 then match h.hint_action with
   | AddHints hints ->
@@ -1189,12 +1200,12 @@ let open_autohint i ((sp,kn), h) =
     if not superglobal then add_cut h.db_name paths
   | AddTransparency { grefs; state } ->
     if not superglobal then add_transparency h.db_name grefs state
-  | RemoveHints hints ->
-    if not superglobal then remove_hint h.db_name hints
+  | RemoveHints (grs, ens) ->
+    if not superglobal then remove_hint h.db_name (grs, ens)
   | AddMode { gref; mode } ->
     if not superglobal then add_mode h.db_name gref mode
 
-let cache_autohint ((sp,kn), o) =
+let cache_autohint o =
   load_autohint 1 o; open_autohint 1 o
 
 let subst_autohint (subst, obj) =
@@ -1272,9 +1283,9 @@ let subst_autohint (subst, obj) =
     | AddHints hints ->
       let hints' = List.Smart.map subst_hint hints in
       if hints' == hints then obj.hint_action else AddHints hints'
-    | RemoveHints grs ->
+    | RemoveHints (grs, ens) ->
       let grs' = List.Smart.map (subst_global_reference subst) grs in
-      if grs == grs' then obj.hint_action else RemoveHints grs'
+      if grs == grs' then obj.hint_action else RemoveHints (grs', ens) (* ??? *)
     | AddCut path ->
       let path' = subst_hints_path subst path in
       if path' == path then obj.hint_action else AddCut path'
@@ -1330,19 +1341,16 @@ let discharge_autohint obj =
 
 let hint_cat = create_category "hints"
 
-let (objConstant : (Id.t * hint_obj) Libobject.Dyn.tag) =
-  declare_named_object_full
+let inAutoHint : hint_obj -> obj =
+  declare_object
     {(default_object "AUTOHINT") with
      cache_function = cache_autohint;
-     load_function = load_autohint;  (* Until *)
-     open_function = simple_open ~cat:hint_cat open_autohint;  (* Exactly *)
+     load_function = load_autohint;
+     open_function = simple_open ~cat:hint_cat open_autohint;
      subst_function = subst_autohint;
      classify_function = classify_autohint;
      discharge_function = discharge_autohint;
     }
-
-let inAutoHint v = Libobject.Dyn.Easy.inj v objConstant
-
 let check_locality locality =
   let not_local what =
     CErrors.user_err
@@ -1362,12 +1370,12 @@ let make_hint ~locality name action =
   hint_action = action;
 }
 
-let remove_hints ~locality dbnames grs =
+let remove_hints ~locality dbnames (grs, ens) =
   let () = check_locality locality in
   let dbnames = if List.is_empty dbnames then ["core"] else dbnames in
     List.iter
       (fun dbname ->
-        let hint = make_hint ~locality dbname (RemoveHints grs) in (* ??? *)
+        let hint = make_hint ~locality dbname (RemoveHints (grs, ens)) in (* ??? *)
         Lib.add_leaf (inAutoHint hint))
       dbnames
 
@@ -1465,7 +1473,7 @@ type hints_entry =
   | HintsUnfoldEntry of Evaluable.t list
   | HintsTransparencyEntry of Evaluable.t hints_transparency_target * bool
   | HintsModeEntry of GlobRef.t * hint_mode list
-  | HintsExternEntry of hint_info * Genarg.glob_generic_argument * GlobRef.t option
+  | HintsExternEntry of hint_info * Genarg.glob_generic_argument * qualid option
 
 let default_prepare_hint_ident = Id.of_string "H"
 

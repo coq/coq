@@ -1705,7 +1705,12 @@ let vernac_remove_hints ~atts dbnames ids =
       (warn_implicit_core_hint_db (); ["core"])
     else dbnames
   in
-  Hints.remove_hints ~locality dbnames (List.map Smartlocate.global_with_alias ids)
+  (* todo: check name exists in one or the other, error if neither *)
+  let grs = List.filter_map (fun id -> try Some (Smartlocate.global_with_alias id)
+                                       with Nametab.GlobalizationError _ -> None) ids in
+  (* todo: check that ext name exists *)
+  let ens = List.map (fun id -> let (dp, id) = repr_qualid id in make_path dp id) ids in
+  Hints.remove_hints ~locality dbnames (grs, ens)
 
 let vernac_hints ~atts dbnames h =
   let dbnames =

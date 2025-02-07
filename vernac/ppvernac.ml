@@ -342,7 +342,7 @@ let pr_hints db h pr_c pr_pat =
     | HintsExtern (n,c,tac,name) ->
       let pat = match c with None -> mt () | Some pat -> pr_pat pat in
       let nstr = match name with
-        | Some n -> str " as " ++ str (Libnames.string_of_qualid n)
+        | Some n -> str " as " (* ++ str (Libnames.string_of_qualid n) *)
         | None -> mt ()
       in
       keyword "Extern" ++ spc() ++ int n ++ spc() ++ pat ++ nstr ++ str" =>" ++

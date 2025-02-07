@@ -45,7 +45,7 @@ let locate_global_with_alias ?(head=false) qid =
   let ref = Nametab.locate_extended qid in
   try
     if head then global_of_extended_global_head ref
-    else global_of_extended_global_exn ref
+    else global_of_extended_global_exn ref (* this branch *)
   with Not_found ->
     user_err ?loc:qid.CAst.loc (pr_qualid qid ++
       str " is bound to a notation that does not denote a reference.")

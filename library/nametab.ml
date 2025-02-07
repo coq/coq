@@ -628,7 +628,7 @@ let warn_user_warn_xref ?loc user_warns xref =
     |> Option.iter (fun depr -> warn_deprecated_xref ?loc depr xref);
   user_warns.UserWarn.warn_qf |> List.iter (warn_user_warn ?loc)
 
-let locate_extended_nowarn qid =
+let locate_extended_nowarn qid = (* like this *)
   let xref = ExtRefTab.locate qid !the_ccitab in
   xref
 

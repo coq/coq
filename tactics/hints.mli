@@ -134,8 +134,8 @@ module Hint_db :
     val map_auto : env -> evar_map -> secvars:Id.Pred.t ->
        (GlobRef.t * constr array) -> constr -> t -> FullHint.t list
 
-    val remove_one : Environ.env -> GlobRef.t -> t -> t
-    val remove_list : Environ.env -> GlobRef.t list -> t -> t
+    val remove_list : Environ.env -> GlobRef.t list * Libnames.full_path list -> t -> t
+    val remove_one : Environ.env -> GlobRef.t list * Libnames.full_path list -> t -> t
     val iter : (GlobRef.t option ->
                 hint_mode array list -> FullHint.t list -> unit) -> t -> unit
 
@@ -167,7 +167,7 @@ type hints_entry =
   | HintsUnfoldEntry of Evaluable.t list
   | HintsTransparencyEntry of Evaluable.t hints_transparency_target * bool
   | HintsModeEntry of GlobRef.t * hint_mode list
-  | HintsExternEntry of hint_info * Genarg.glob_generic_argument * GlobRef.t option
+  | HintsExternEntry of hint_info * Genarg.glob_generic_argument * Libnames.qualid option
 
 val searchtable_map : hint_db_name -> hint_db
 
@@ -182,7 +182,7 @@ type hint_locality = Libobject.locality = Local | Export | SuperGlobal
 
 val create_hint_db : bool -> hint_db_name -> TransparentState.t -> bool -> unit
 
-val remove_hints : locality:hint_locality -> hint_db_name list -> GlobRef.t list -> unit
+val remove_hints : locality:hint_locality -> hint_db_name list -> GlobRef.t list * Libnames.full_path list -> unit
 
 val current_db_names : unit -> String.Set.t
 

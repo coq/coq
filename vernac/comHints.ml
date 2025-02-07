@@ -102,29 +102,70 @@ struct
     id, (DirPath.repr dir)
 end
 
-module KnTab = Nametab.Make(FullPath)(KerName)
+module HEnTab = Nametab.Make(FullPath)(KerName)
 
 type nametab = {
-  tab_cstr : KnTab.t;
-  tab_cstr_rev : full_path KNmap.t;  (* todo: needed? *)
+  tab_cstr : HEnTab.t;
 }
 
 let empty_nametab = {
-  tab_cstr = KnTab.empty;
-  tab_cstr_rev = KNmap.empty;
+  tab_cstr = HEnTab.empty;
 }
 
 let nametab = Summary.ref empty_nametab ~name:"hintextern-nametab"
 
 let push_extern vis sp kn =
   let tab = !nametab in
-  let tab_cstr = KnTab.push vis sp kn tab.tab_cstr in
-  let tab_cstr_rev = KNmap.add kn sp tab.tab_cstr_rev in
-  nametab := { tab_cstr; tab_cstr_rev }
+  let tab_cstr = HEnTab.push vis sp kn tab.tab_cstr in
+  nametab := { tab_cstr }
 
 let locate_extern qid =
   let tab = !nametab in
-  KnTab.locate qid tab.tab_cstr
+  HEnTab.locate qid tab.tab_cstr
+
+let locate_extern2 qid =  (* todo: clean up *)
+  try
+    let _ = locate_extern qid in true
+  with Not_found -> false
+  | e -> Printexc.print_backtrace stderr; Printf.eprintf "\n%!"; false
+
+type hint_extern_name_obj = { dummy : string }  (* todo: needed?? *)
+let last_qid : qualid option ref = ref None
+
+let cache_hintextern_name ((sp,kn), n) =
+  Printf.eprintf "cache_hintextern_name '%s' %s\n%!"
+     (string_of_path sp)
+     (KerName.to_string kn);
+  let (dirpath, id) = Libnames.repr_path sp in
+  let qid = make_qualid dirpath id in  (* todo: sb full_path? *)
+  try let _ = locate_extern qid in
+  let id_pp = Id.print id in
+  (* todo: make it a warning? *)
+  CErrors.user_err Pp.(str "Extern hint name " ++ id_pp ++ str " is already used.")
+  with Not_found -> push_extern (Until 1) sp kn; last_qid := Some qid
+let load_hintextern_name i ((sp,kn), n) =
+  push_extern (Until i) sp kn
+let open_hintextern_name i ((sp,kn), n) =
+  push_extern (Exactly i) sp kn
+let subst_hintextern_name = Libobject.ident_subst_function
+let classify_hintextern_name obj = Libobject.Substitute
+let discharge_hintextern_name obj = Some obj
+
+let (objConstant2 : (Id.t * hint_extern_name_obj) Libobject.Dyn.tag) =
+  let open Libobject in
+  declare_named_object_full
+    {(default_object "hintextern-name") with
+     cache_function = cache_hintextern_name;
+     load_function = load_hintextern_name;
+     open_function = simple_open ~cat:Hints.hint_cat open_hintextern_name;
+     subst_function = subst_hintextern_name;
+     classify_function = classify_hintextern_name;
+     discharge_function = discharge_hintextern_name;
+    }
+
+let inExternName v = Libobject.Dyn.Easy.inj v objConstant2
+
+(* let x = inExternName ("foo", {dummy=""}) *)
 
 let interp_hints ~poly h =
   let env = Global.env () in
@@ -203,7 +244,11 @@ let interp_hints ~poly h =
     let ltacvars = match pat with None -> Id.Set.empty | Some (l, _) -> l in
     let env = Genintern.{(empty_glob_sign ~strict:true env) with ltacvars} in
     let _, tacexp = Genintern.generic_intern env tacexp in
-    let globref = Option.cata (fun n -> Some (Nametab.global n)) None name in
-    (* todo: call push_extern here *)
+    let extern_name = match name with
+    | Some (CAst.{v=Name lname}, _) ->
+      Lib.add_leaf (inExternName (lname, {dummy=""}));
+      !last_qid
+    | _ -> None
+    in
     HintsExternEntry
-      ({Typeclasses.hint_priority = Some pri; hint_pattern = pat}, tacexp, globref)
+      ({Typeclasses.hint_priority = Some pri; hint_pattern = pat}, tacexp, extern_name)

@@ -9,3 +9,5 @@
 (************************************************************************)
 
 val interp_hints : poly:bool -> Vernacexpr.hints_expr -> Hints.hints_entry
+
+val locate_extern2 : Libnames.qualid -> bool
