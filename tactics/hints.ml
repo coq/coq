@@ -228,11 +228,9 @@ let fresh_key =
     KerName.make mp (Label.of_id lbl)
 
 let pri_order_int (id1, {pri=pri1}) (id2, {pri=pri2}) =
-  let d = pri1 - pri2 in
-    if Int.equal d 0 then id2 - id1
+  let d = Int.compare pri1 pri2 in
+    if Int.equal d 0 then Int.compare id2 id1
     else d
-
-let pri_order t1 t2 = pri_order_int t1 t2 <= 0
 
 let get_default_pattern (h : hint hint_ast) = match h with
 | Give_exact h -> h.hint_type
@@ -260,24 +258,33 @@ let get_default_pattern (h : hint hint_ast) = match h with
 type stored_data = int * full_hint
     (* First component is the index of insertion in the table, to keep most recent first semantics. *)
 
+module Stored =
+struct
+  type t = stored_data
+  let compare = pri_order_int
+end
+
+module StoredSet = Set.Make(Stored)
+
+let merge_set s l = List.merge Stored.compare (StoredSet.elements s) l
+
 module Bounded_net :
 sig
   type t
   val empty : TransparentState.t option -> t
-  val build : TransparentState.t option -> stored_data list -> t
+  val build : TransparentState.t option -> StoredSet.t -> t
   val add : t -> hint_pattern -> stored_data -> t
   val lookup : Environ.env -> Evd.evar_map -> t -> EConstr.constr -> stored_data list
 end =
 struct
-  module Data = struct type t = stored_data let compare = pri_order_int end
-  module Bnet = Btermdn.Make(Data)
+  module Bnet = Btermdn.Make(Stored)
 
   type diff = hint_pattern * stored_data
 
   type data =
   | Bnet of (TransparentState.t option * Bnet.t)
   | Diff of diff * data ref
-  | Build of TransparentState.t option * stored_data list
+  | Build of TransparentState.t option * StoredSet.t
 
   type t = data ref
 
@@ -305,8 +312,8 @@ struct
     let () = net := (Bnet (st, dn)) in
     st, dn
   | Build (st, data) ->
-    let fold dn v = add0 env sigma st (Option.get (snd v).pat) v dn in
-    let ans = List.fold_left fold Bnet.empty data in
+    let fold v dn = add0 env sigma st (Option.get (snd v).pat) v dn in
+    let ans = StoredSet.fold fold data Bnet.empty in
     let () = net := Bnet (st, ans) in
     st, ans
 
@@ -322,35 +329,35 @@ sig
   val mem : KerName.t -> t -> bool
   val add : stored_data -> t -> t
   val remove : GlobRef.Set.t -> t -> t
-  val elements : t -> stored_data list
+  val elements : t -> StoredSet.t
 end =
 struct
 
 type t = {
-  data : stored_data list;
+  data : StoredSet.t;
   set : KNset.t;
 }
 
-let empty = { data = []; set = KNset.empty }
+let empty = { data = StoredSet.empty; set = KNset.empty }
 
 let mem kn sd = KNset.mem kn sd.set
 
 let add t sd = {
-  data = List.insert pri_order t sd.data;
+  data = StoredSet.add t sd.data;
   set = KNset.add (snd t).code.uid sd.set;
 }
 
 let remove grs sd =
-  let fold (accu, ans) ((_, h) as v) =
+  let fold ((_, h) as v) (accu, ans) =
     let keep = match h.name with
     | Some gr -> not (GlobRef.Set.mem gr grs)
     | None -> true
     in
-    if keep then (accu, v :: ans) else (KNset.remove h.code.uid accu, ans)
+    if keep then (accu, StoredSet.add v ans) else (KNset.remove h.code.uid accu, ans)
   in
-  let set, data = List.fold_left fold (sd.set, []) sd.data in
+  let set, data = StoredSet.fold fold sd.data (sd.set, StoredSet.empty) in
   if set == sd.set then sd
-  else { data = List.rev data; set }
+  else { data = data; set }
 
 let elements v = v.data
 
@@ -390,7 +397,7 @@ let rebuild_dn st se =
 let lookup_tacs env sigma concl se =
   let l' = Bounded_net.lookup env sigma se.sentry_bnet concl in
   let sl' = List.stable_sort pri_order_int l' in
-  List.merge pri_order_int (StoredData.elements se.sentry_nopat) sl'
+  merge_set (StoredData.elements se.sentry_nopat) sl'
 
 let merge_context_set_opt sigma ctx = match ctx with
 | None -> sigma
@@ -701,7 +708,10 @@ struct
 
   let map_all ~secvars k db =
     let se = find k db in
-    merge_entry secvars db (StoredData.elements se.sentry_nopat) (StoredData.elements se.sentry_pat)
+    let h = List.sort pri_order_int db.hintdb_nopat in
+    let h = merge_set (StoredData.elements se.sentry_nopat) h in
+    let h = merge_set (StoredData.elements se.sentry_pat) h in
+    List.map_filter (realize_tac secvars) h
 
   (* Precondition: concl has no existentials *)
   let map_auto env sigma ~secvars (k,args) concl db =
@@ -791,7 +801,7 @@ struct
   let remove_one env gr db = remove_list env [gr] db
 
   let get_entry se =
-    let h = List.merge pri_order_int (StoredData.elements se.sentry_nopat) (StoredData.elements se.sentry_pat) in
+    let h = merge_set (StoredData.elements se.sentry_nopat) (merge_set (StoredData.elements se.sentry_pat) []) in
     List.map snd h
 
   let iter f db =
