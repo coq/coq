@@ -204,7 +204,7 @@ let bounded_constr_val_discr env st sigma (t,depth) =
   | Everything -> Everything
 
 module Make =
-  functor (Z : Map.OrderedType) ->
+  functor (Z : Dn.Data) ->
 struct
 
  module Y = struct

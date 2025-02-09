@@ -274,10 +274,10 @@ sig
   val empty : TransparentState.t option -> t
   val build : TransparentState.t option -> StoredSet.t -> t
   val add : t -> hint_pattern -> stored_data -> t
-  val lookup : Environ.env -> Evd.evar_map -> t -> EConstr.constr -> stored_data list
+  val lookup : Environ.env -> Evd.evar_map -> t -> EConstr.constr -> StoredSet.t
 end =
 struct
-  module Bnet = Btermdn.Make(Stored)
+  module Bnet = Btermdn.Make(StoredSet)
 
   type diff = hint_pattern * stored_data
 
@@ -302,7 +302,7 @@ struct
       let c = get_default_pattern (snd v).code.obj in
       Bnet.constr_pattern env sigma st c
     in
-    Bnet.add dn p v
+    Bnet.add dn p (StoredSet.singleton v)
 
   let rec force env sigma net = match !net with
   | Bnet dn -> dn
@@ -396,7 +396,7 @@ let rebuild_dn st se =
 
 let lookup_tacs env sigma concl se =
   let l' = Bounded_net.lookup env sigma se.sentry_bnet concl in
-  let sl' = List.stable_sort pri_order_int l' in
+  let sl' = StoredSet.elements l' in
   merge_set (StoredData.elements se.sentry_nopat) sl'
 
 let merge_context_set_opt sigma ctx = match ctx with

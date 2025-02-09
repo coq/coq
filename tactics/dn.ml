@@ -2,9 +2,18 @@ open Util
 
 type 'res lookup_res = Label of 'res | Nothing | Everything
 
+module type Data = sig
+  type t
+
+  val empty : t
+  val is_empty : t -> bool
+  val union : t -> t -> t
+  val diff : t -> t -> t
+end
+
 module Make =
     functor (Y : Map.OrderedType) ->
-      functor (Z : Map.OrderedType) ->
+      functor (Z : Data) ->
 struct
 
   module Y_tries = struct
@@ -20,17 +29,15 @@ struct
         | Some(l,n),None -> 1
         | None, Some(l,n) -> -1
   end
-  module ZSet = Set.Make(Z)
-  module X_tries =
-  struct
-    type t = ZSet.t
-    let nil = ZSet.empty
-    let is_nil = ZSet.is_empty
-    let add = ZSet.union
-    let sub = ZSet.diff
-  end
 
-  module Trie = Trie.Make(Y_tries)(X_tries)
+  module Z_tries = struct
+    type t = Z.t
+    let nil = Z.empty
+    let is_nil = Z.is_empty
+    let add = Z.union
+    let sub = Z.diff
+  end
+  module Trie = Trie.Make(Y_tries)(Z_tries)
 
   type 'a decompose_fun = 'a -> (Y.t * 'a list) option
 
@@ -85,15 +92,15 @@ prefix ordering, [dna] is the function returning the main node of a pattern *)
               (List.fold_left fold (tm_of tm (Some (lbl, List.length v))) v)
         | Everything -> skip_arg 1 tm
     in
-    List.map_append (fun tm -> ZSet.elements (Trie.get tm)) (lookrec t tm)
+    List.fold_left (fun acc tm -> Z.union acc (Trie.get tm)) Z.empty (lookrec t tm)
 
   let pattern dna pat = path_of dna pat
 
   let add tm p inf =
-    Trie.add p (ZSet.singleton inf) tm
+    Trie.add p inf tm
 
   let rmv tm p inf =
-    Trie.remove p (ZSet.singleton inf) tm
+    Trie.remove p inf tm
 
 end
 

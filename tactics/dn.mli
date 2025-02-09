@@ -1,9 +1,17 @@
 type 'res lookup_res = Label of 'res | Nothing | Everything
 
+module type Data = sig
+  type t
+
+  val empty : t
+  val is_empty : t -> bool
+  val union : t -> t -> t
+  val diff : t -> t -> t
+end
 
 module Make :
     functor (Y : Map.OrderedType) ->
-      functor (Z : Map.OrderedType) ->
+      functor (Z : Data) ->
 sig
 
   type 'a decompose_fun = 'a -> (Y.t * 'a list) option
@@ -36,6 +44,6 @@ sig
    characterizing its root node and the list of its subtree *)
 
   val lookup : t -> 'term lookup_fun -> 'term
-    -> Z.t list
+    -> Z.t
 
 end

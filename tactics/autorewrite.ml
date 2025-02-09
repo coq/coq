@@ -165,12 +165,13 @@ end
 =
 struct
   module Ident = HintIdent
+  module IdentSet = Set.Make(Ident)
   module PTerm =
   struct
     type t = unit DTerm.t
     let compare = DTerm.compare
   end
-  module TDnet = Dn.Make(PTerm)(Ident)
+  module TDnet = Dn.Make(PTerm)(IdentSet)
 
   type t = TDnet.t
 
@@ -230,7 +231,7 @@ struct
        anymore. *)
     let (ctx, c) = Term.decompose_prod_decls c in
     let c = TDnet.pattern (fun c -> pat_of_constr env c) c in
-    TDnet.add dn c id
+    TDnet.add dn c (IdentSet.singleton id)
 
 (* App(c,[t1,...tn]) -> ([c,t1,...,tn-1],tn)
    App(c,[||]) -> ([],c) *)
@@ -296,8 +297,10 @@ let align_prod_letin sigma c a =
   let search_pattern env dn cpat =
     let _dctx, dpat = Term.decompose_prod_decls cpat in
     let whole_c = EConstr.of_constr cpat in
-    List.fold_left
-      (fun acc id ->
+    (* XXX previous code did [List.fold_left _ (lookup ...) []]
+       not sure WTF was going on, was it supposed to [fold_left _ [] (lookup ...)]? *)
+    IdentSet.fold
+      (fun id acc ->
          let c_id = EConstr.of_constr @@ Ident.constr_of id in
          let (ctx,wc) =
            try align_prod_letin Evd.empty whole_c c_id (* FIXME *)
@@ -306,7 +309,7 @@ let align_prod_letin sigma c a =
         else acc
       ) (TDnet.lookup dn (fun c -> decomp env c) dpat) []
 
-  let find_all dn = TDnet.lookup dn (fun () -> Everything) ()
+  let find_all dn = IdentSet.elements @@ TDnet.lookup dn (fun () -> Everything) ()
 
 end
 

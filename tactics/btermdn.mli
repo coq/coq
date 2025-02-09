@@ -24,7 +24,7 @@ These dnets are able to cope with existential variables as well, which match
 [Everything]. *)
 
 module Make :
-  functor (Z : Map.OrderedType) ->
+  functor (Z : Dn.Data) ->
 sig
   type t
 
@@ -39,7 +39,7 @@ sig
   val add : t -> pattern -> Z.t -> t
   val rmv : t -> pattern -> Z.t -> t
 
-  val lookup : Environ.env -> Evd.evar_map -> TransparentState.t option -> t -> EConstr.constr -> Z.t list
+  val lookup : Environ.env -> Evd.evar_map -> TransparentState.t option -> t -> EConstr.constr -> Z.t
 end
 
 val dnet_depth : int ref
