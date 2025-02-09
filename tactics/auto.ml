@@ -265,7 +265,7 @@ let hintmap_of env sigma secvars hdc concl =
       if occur_existential sigma concl then
         (fun db -> match Hint_db.map_eauto env sigma ~secvars hdc concl db with
                    | ModeMatch (_, l) -> l
-                   | ModeMismatch -> [])
+                   | ModeMismatch -> Seq.empty)
       else Hint_db.map_auto env sigma ~secvars hdc concl
 
 let exists_evaluable_reference env = function
@@ -299,13 +299,14 @@ let rec trivial_fail_db dbg db_list local_db =
       let hdc = try Some (decompose_app_bound sigma concl) with Bound -> None in
       let hintmap = hintmap_of env sigma secvars hdc concl in
       let hinttac = tac_of_hint dbg db_list local_db concl in
-      (local_db::db_list)
-      |> List.map_append (fun db -> try hintmap db with Not_found -> [])
-      |> List.filter_map begin fun h ->
+      List.to_seq (local_db::db_list)
+      |> Seq.flat_map (fun db -> try hintmap db with Not_found -> Seq.empty)
+      |> Seq.filter_map begin fun h ->
            if Int.equal (FullHint.priority h) 0 then
              Some (Tacticals.tclCOMPLETE (hinttac h))
            else None
          end
+      |> List.of_seq
       |> Tacticals.tclFIRST
     end
 
@@ -392,9 +393,9 @@ let search d n db_list lems =
         let hdc = try Some (decompose_app_bound sigma concl) with Bound -> None in
         let hintmap = hintmap_of env sigma secvars hdc concl in
         let hinttac = tac_of_hint d db_list local_db concl in
-        (local_db::db_list)
-        |> List.map_append (fun db -> try hintmap db with Not_found -> [])
-        |> List.map begin fun h ->
+        List.to_seq (local_db::db_list)
+        |> Seq.flat_map (fun db -> try hintmap db with Not_found -> Seq.empty)
+        |> Seq.map begin fun h ->
              Proofview.tclTHEN (hinttac h) @@
                Proofview.Goal.enter begin fun gl ->
                  let hyps' = Proofview.Goal.hyps gl in
@@ -405,6 +406,7 @@ let search d n db_list lems =
                  search d' (n-1) local_db'
                end
            end
+        |> List.of_seq
         |> Tacticals.tclFIRST
       end
   in

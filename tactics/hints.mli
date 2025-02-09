@@ -118,21 +118,21 @@ module Hint_db :
     (** All hints which have no pattern.
      * [secvars] represent the set of section variables that
      * can be used in the hint. *)
-    val map_none : secvars:Id.Pred.t -> t -> FullHint.t list
+    val map_none : secvars:Id.Pred.t -> t -> FullHint.t Seq.t
 
     (** All hints associated to the reference *)
-    val map_all : secvars:Id.Pred.t -> GlobRef.t -> t -> FullHint.t list
+    val map_all : secvars:Id.Pred.t -> GlobRef.t -> t -> FullHint.t Seq.t
 
     (** All hints associated to the reference, respecting modes if evars appear in the
         arguments and using the discrimination net.
         Returns a [ModeMismatch] if there are declared modes and none matches. *)
-    val map_eauto : env -> evar_map -> secvars:Id.Pred.t -> (GlobRef.t * constr array) -> constr -> t -> FullHint.t list with_mode
+    val map_eauto : env -> evar_map -> secvars:Id.Pred.t -> (GlobRef.t * constr array) -> constr -> t -> FullHint.t Seq.t with_mode
 
     (** All hints associated to the reference.
         Precondition: no evars should appear in the arguments, so no modes
         are checked. *)
     val map_auto : env -> evar_map -> secvars:Id.Pred.t ->
-       (GlobRef.t * constr array) -> constr -> t -> FullHint.t list
+       (GlobRef.t * constr array) -> constr -> t -> FullHint.t Seq.t
 
     val remove_one : Environ.env -> GlobRef.t -> t -> t
     val remove_list : Environ.env -> GlobRef.t list -> t -> t

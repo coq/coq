@@ -87,7 +87,7 @@ let hintmap_of env sigma secvars concl =
        (fun db ->
           match Hint_db.map_eauto env sigma ~secvars hdc concl db with
           | ModeMatch (_, l) -> l
-          | ModeMismatch -> [])
+          | ModeMismatch -> Seq.empty)
      else (fun db -> Hint_db.map_auto env sigma ~secvars hdc concl db)
    (* FIXME: should be (Hint_db.map_eauto hdc concl db) *)
 
@@ -118,9 +118,9 @@ let rec e_trivial_fail_db db_list local_db =
 and e_my_find_search env sigma db_list local_db secvars concl =
   let hint_of_db = hintmap_of env sigma secvars concl in
   let hintl =
-      List.map_append (fun db ->
+      Seq.flat_map (fun db ->
         let flags = auto_flags_of_state (Hint_db.transparent_state db) in
-          List.map (fun x -> flags, x) (hint_of_db db)) (local_db::db_list)
+          Seq.map (fun x -> flags, x) (hint_of_db db)) (List.to_seq (local_db::db_list))
   in
   let tac_of_hint =
     fun (st, h) ->
@@ -148,15 +148,15 @@ and e_my_find_search env sigma db_list local_db secvars concl =
       let tac = FullHint.run h tac in
       (tac, b, lazy (FullHint.print env sigma h))
   in
-  List.map tac_of_hint hintl
+  Seq.map tac_of_hint hintl
 
 and e_trivial_resolve env sigma db_list local_db secvars gl =
   let filter (tac, pr, _) = if Int.equal pr.cost_priority 0 then Some tac else None in
-  try List.map_filter filter (e_my_find_search env sigma db_list local_db secvars gl)
+  try List.of_seq @@ Seq.filter_map filter (e_my_find_search env sigma db_list local_db secvars gl)
   with Not_found -> []
 
 let e_possible_resolve env sigma db_list local_db secvars gl =
-  try e_my_find_search env sigma db_list local_db secvars gl
+  try List.of_seq @@ e_my_find_search env sigma db_list local_db secvars gl
   with Not_found -> []
 
 type delayed_db = Environ.env -> Evd.evar_map -> hint_db

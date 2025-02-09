@@ -266,8 +266,6 @@ end
 
 module StoredSet = Set.Make(Stored)
 
-let merge_set s l = List.merge Stored.compare (StoredSet.elements s) l
-
 module Bounded_net :
 sig
   type t
@@ -396,8 +394,7 @@ let rebuild_dn st se =
 
 let lookup_tacs env sigma concl se =
   let l' = Bounded_net.lookup env sigma se.sentry_bnet concl in
-  let sl' = StoredSet.elements l' in
-  merge_set (StoredData.elements se.sentry_nopat) sl'
+  StoredSet.union (StoredData.elements se.sentry_nopat) l'
 
 let merge_context_set_opt sigma ctx = match ctx with
 | None -> sigma
@@ -611,12 +608,12 @@ module Hint_db :
 sig
 type t
 val empty : ?name:hint_db_name -> TransparentState.t -> bool -> t
-val map_none : secvars:Id.Pred.t -> t -> full_hint list
-val map_all : secvars:Id.Pred.t -> GlobRef.t -> t -> full_hint list
+val map_none : secvars:Id.Pred.t -> t -> full_hint Seq.t
+val map_all : secvars:Id.Pred.t -> GlobRef.t -> t -> full_hint Seq.t
 val map_eauto : Environ.env -> evar_map -> secvars:Id.Pred.t ->
-                (GlobRef.t * constr array) -> constr -> t -> full_hint list with_mode
+                (GlobRef.t * constr array) -> constr -> t -> full_hint Seq.t with_mode
 val map_auto : Environ.env -> evar_map -> secvars:Id.Pred.t ->
-               (GlobRef.t * constr array) -> constr -> t -> full_hint list
+               (GlobRef.t * constr array) -> constr -> t -> full_hint Seq.t
 val add_list : env -> evar_map -> hint_entry list -> t -> t
 val remove_one : Environ.env -> GlobRef.t -> t -> t
 val remove_list : Environ.env -> GlobRef.t list -> t -> t
@@ -666,12 +663,6 @@ struct
     try GlobRef.Map.find key db.hintdb_map
     with Not_found -> empty_se (dn_ts db)
 
-  let realize_tac secvars (id,tac) =
-    if Id.Pred.subset tac.secvars secvars then Some tac
-    else
-      (* Warn about no longer typable hint? *)
-      None
-
   let has_no_head_evar sigma c =
     let rec hrec c = match EConstr.kind sigma c with
       | Evar (evk,_)   -> false
@@ -697,27 +688,36 @@ struct
     else
       Option.map (fun x -> WithMode x) (List.find_map (matches_mode sigma args) modes)
 
+  let realize_tacs secvars tacs =
+    let tacs = StoredSet.to_seq tacs in
+    Seq.filter_map (fun (id,tac) ->
+        if Id.Pred.subset tac.secvars secvars then Some tac
+        else
+          (* Warn about no longer typable hint? *)
+          None)
+      tacs
+
   let merge_entry secvars db nopat pat =
-    let h = List.sort pri_order_int db.hintdb_nopat in
-    let h = List.merge pri_order_int h nopat in
-    let h = List.merge pri_order_int h pat in
-    List.map_filter (realize_tac secvars) h
+    let h = StoredSet.of_list db.hintdb_nopat in
+    let h = StoredSet.union h nopat in
+    let h = StoredSet.union h pat in
+    realize_tacs secvars h
 
   let map_none ~secvars db =
-    merge_entry secvars db [] []
+    merge_entry secvars db StoredSet.empty StoredSet.empty
 
   let map_all ~secvars k db =
     let se = find k db in
-    let h = List.sort pri_order_int db.hintdb_nopat in
-    let h = merge_set (StoredData.elements se.sentry_nopat) h in
-    let h = merge_set (StoredData.elements se.sentry_pat) h in
-    List.map_filter (realize_tac secvars) h
+    let h = StoredSet.of_list db.hintdb_nopat in
+    let h = StoredSet.union (StoredData.elements se.sentry_nopat) h in
+    let h = StoredSet.union (StoredData.elements se.sentry_pat) h in
+    realize_tacs secvars h
 
   (* Precondition: concl has no existentials *)
   let map_auto env sigma ~secvars (k,args) concl db =
     let se = find k db in
     let pat = lookup_tacs env sigma concl se in
-    merge_entry secvars db [] pat
+    merge_entry secvars db StoredSet.empty pat
 
   (* [c] contains an existential *)
   let map_eauto env sigma ~secvars (k,args) concl db =
@@ -725,7 +725,7 @@ struct
       match matches_modes sigma args se.sentry_mode with
       | Some m ->
         let pat = lookup_tacs env sigma concl se in
-        ModeMatch (m, merge_entry secvars db [] pat)
+        ModeMatch (m, merge_entry secvars db StoredSet.empty pat)
       | None -> ModeMismatch
 
   let is_exact = function
@@ -801,8 +801,10 @@ struct
   let remove_one env gr db = remove_list env [gr] db
 
   let get_entry se =
-    let h = merge_set (StoredData.elements se.sentry_nopat) (merge_set (StoredData.elements se.sentry_pat) []) in
-    List.map snd h
+    let h = StoredSet.union (StoredData.elements se.sentry_nopat)
+        (StoredData.elements se.sentry_pat)
+    in
+    List.map snd (StoredSet.elements h)
 
   let iter f db =
     let iter_se k se = f (Some k) se.sentry_mode (get_entry se) in
@@ -1668,7 +1670,7 @@ let pr_hints_db env sigma (name,db,hintlist) =
 let pr_hint_list_for_head env sigma c =
   let dbs = current_db () in
   let validate (name, db) =
-    let hints = List.map (fun v -> 0, v) (Hint_db.map_all ~secvars:Id.Pred.full c db) in
+    let hints = List.of_seq @@ Seq.map (fun v -> 0, v) (Hint_db.map_all ~secvars:Id.Pred.full c db) in
     (name, db, hints)
   in
   let valid_dbs = List.map validate dbs in
@@ -1692,11 +1694,11 @@ let pr_hint_term env sigma cl =
             if occur_existential sigma cl then
               (fun db -> match Hint_db.map_eauto env sigma ~secvars:Id.Pred.full hdc cl db with
               | ModeMatch (_, l) -> l
-              | ModeMismatch -> [])
+              | ModeMismatch -> Seq.empty)
             else Hint_db.map_auto env sigma ~secvars:Id.Pred.full hdc cl
         with Bound -> Hint_db.map_none ~secvars:Id.Pred.full
       in
-      let fn db = List.map (fun x -> 0, x) (fn db) in
+      let fn db = List.of_seq @@ Seq.map (fun x -> 0, x) (fn db) in
       List.map (fun (name, db) -> (name, db, fn db)) dbs
     in
       if List.is_empty valid_dbs then

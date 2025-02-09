@@ -318,7 +318,7 @@ and e_my_find_search db_list local_db secvars hdc complete env sigma concl0 =
       CList.map
         (fun (db, m, tacs) ->
           let flags = auto_unif_flags ~allowed_evars (Hint_db.transparent_state db) in
-          m, List.map (fun x -> tac_of_hint (flags, x)) tacs)
+          m, List.of_seq @@ Seq.map (fun x -> tac_of_hint (flags, x)) tacs)
         hintl
     in
     let modes, hintl = List.split hintl in
