@@ -464,7 +464,7 @@ skipped_packages=
 # Generate per line timing info in devs that use coq_makefile
 export TIMING=1
 export PROFILING=1
-export COQ_PROFILE_COMPONENTS=command,parse_command,partac.perform
+export ROCQ_PROFILE_COMPONENTS=command,parse_command,partac.perform
 
 # packages tied to the coq commit need to be pinned accordingly
 core_packages='rocq-runtime coq-core rocq-core coqide-server'
