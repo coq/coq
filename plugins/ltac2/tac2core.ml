@@ -1226,22 +1226,26 @@ let () = define "goal_env" (unit @-> tac local_env) @@ fun () ->
 let () = define "current_env" (unit @-> tac local_env) @@ fun () ->
   pf_apply @@ fun env _ -> return (Environ.named_context_val env)
 
-let () = define "push_named_assum" (ident @-> constr @-> local_env @-> tac local_env) @@ fun id t local_env ->
+let () = define "push_named_assum" (binder @-> local_env @-> tac local_env) @@ fun (na,t) local_env ->
   pf_apply_in local_env @@ fun env sigma ->
+  match na.binder_name with
+  | Anonymous -> throw (Invalid_argument "push_named_assum")
+  | Name id ->
   if Environ.mem_named_context_val id local_env then
     throw (err_invalid_arg (Some (Pp.str "push_named_assum")))
   else
-  let r = Retyping.relevance_of_type env sigma t in
-  let id = Context.make_annot id r in
+  let id = { na with binder_name = id } in
   return (EConstr.push_named_context_val (LocalAssum (id,t)) local_env)
 
-let () = define "push_named_def" (ident @-> constr @-> constr @-> local_env @-> tac local_env) @@ fun id v t local_env ->
+let () = define "push_named_def" (binder @-> constr @-> local_env @-> tac local_env) @@ fun (na,t) v local_env ->
   pf_apply_in local_env @@ fun env sigma ->
+  match na.binder_name with
+  | Anonymous -> throw (Invalid_argument "push_named_assum")
+  | Name id ->
   if Environ.mem_named_context_val id local_env then
     throw (err_invalid_arg (Some (Pp.str "push_named_def")))
   else
-  let r = Retyping.relevance_of_term env sigma v in
-  let id = Context.make_annot id r in
+  let id = { na with binder_name = id } in
   return (EConstr.push_named_context_val (LocalDef (id,v,t)) local_env)
 
 let () =

@@ -31,17 +31,15 @@ Ltac2 @external current_env : unit -> env := "rocq-runtime.plugins.ltac2" "curre
     If there is 1 goal under focus, [goal_env()].
     Panics if there is more than 1 goal under focus. *)
 
-Ltac2 @external push_named_assum : ident -> constr -> env -> env
+Ltac2 @external push_named_assum : binder -> env -> env
   := "rocq-runtime.plugins.ltac2" "push_named_assum".
-(** [push_named x t ctx] produces [ctx, x : t].
-    [x] must be fresh in [ctx].
-    [t] must be retypeable as a type in [ctx]. *)
+(** [push_named bnd ctx] where [bnd] is [x : t] produces [ctx, x : t].
+    [x] must not be anonymous and must be fresh in [ctx]. *)
 
-Ltac2 @external push_named_def : ident -> constr -> constr -> env -> env
+Ltac2 @external push_named_def : binder -> constr -> env -> env
   := "rocq-runtime.plugins.ltac2" "push_named_def".
-(** [push_named_def x v t ctx] produces [ctx, x := v : t].
-    [x] must be fresh in [ctx].
-    (gets the relevance from [v] so no need to retype [t]?) *)
+(** [push_named_def bnd v ctx] where [bnd] is [x : t] produces [ctx, x := v : t].
+    [x] must not be anonymous and must be fresh in [ctx]. *)
 
 Ltac2 @external hyp_in : env -> ident -> constr := "rocq-runtime.plugins.ltac2" "hyp_in".
 

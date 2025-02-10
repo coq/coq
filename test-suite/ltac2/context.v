@@ -55,10 +55,10 @@ Section S.
 End S.
 
 Ltac2 mkProd (env : env) (id:ident) (dom : constr) (codom : env -> constr -> constr) :=
-  let codom_env := Env.push_named_assum id dom env in
+  let dom := Constr.Binder.make_in env (Some id) dom in
+  let codom_env := Env.push_named_assum dom env in
   let codom := codom codom_env (Env.hyp_in codom_env id) in
   let codom := Constr.Unsafe.subst_vars [id] codom in
-  let dom := Constr.Binder.make_in env (Some id) dom in
   Constr.Unsafe.make (Constr.Unsafe.Prod dom codom).
 
 Ltac2 pretype_in := Constr.pretype_in.
@@ -108,14 +108,18 @@ Ltac2 Eval
   in
   Control.assert_true (Constr.equal c '(forall x:nat, (x = x) = (x = x))).
 
-Fail Ltac2 Eval
-  let env := Env.global_env() in
-  let env := Env.push_named_assum @x 'True env in
-  let env := Env.push_named_assum @x 'False env in
-  env.
+Ltac2 push_x t env := Env.push_named_assum (Constr.Binder.make (Some @x) t) env.
 
 Fail Ltac2 Eval
   let env := Env.global_env() in
-  let env := Env.push_named_assum @x 'True env in
-  let env := Env.push_named_def @x 'I 'True env in
+  let env := push_x 'True env in
+  let env := push_x 'False env in
+  env.
+
+Ltac2 push_x_def t v env := Env.push_named_def (Constr.Binder.make (Some @x) t) v env.
+
+Fail Ltac2 Eval
+  let env := Env.global_env() in
+  let env := push_x 'True env in
+  let env := push_x_def 'True 'I env in
   env.
