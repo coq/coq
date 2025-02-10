@@ -16,3 +16,5 @@ val wit_ltac1 : (Id.t CAst.t list * Ltac_plugin.Tacexpr.raw_tactic_expr, Id.t li
 
 val wit_ltac1val : (Id.t CAst.t list * Ltac_plugin.Tacexpr.raw_tactic_expr, Id.t list * Ltac_plugin.Tacexpr.glob_tactic_expr) Arg.tag
 (** Ltac1 AST quotation, seen as a value-returning expression, with type Ltac1.t. *)
+
+val ltac1 : Geninterp.Val.t Ltac2_plugin.Tac2ffi.repr

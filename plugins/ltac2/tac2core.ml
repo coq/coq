@@ -112,25 +112,19 @@ let v_blk = Valexpr.make_block
 let of_relevance = function
   | Sorts.Relevant -> ValInt 0
   | Sorts.Irrelevant -> ValInt 1
-  | Sorts.RelevanceVar q -> ValBlk (0, [|of_ext val_qvar q|])
+  | Sorts.RelevanceVar q -> ValBlk (0, [|of_qvar q|])
 
 let to_relevance = function
   | ValInt 0 -> Sorts.Relevant
   | ValInt 1 -> Sorts.Irrelevant
   | ValBlk (0, [|qvar|]) ->
-    let qvar = to_ext val_qvar qvar in
+    let qvar = to_qvar qvar in
     Sorts.RelevanceVar qvar
   | _ -> assert false
 
 (* XXX ltac2 exposes relevance internals so breaks ERelevance abstraction
    ltac2 Constr.Binder.relevance probably needs to be made an abstract type *)
 let relevance = make_repr of_relevance to_relevance
-
-let of_binder b =
-  Tac2ffi.of_ext Tac2ffi.val_binder b
-
-let to_binder b =
-  Tac2ffi.to_ext Tac2ffi.val_binder b
 
 let of_rec_declaration (nas, ts, cs) =
   let binders = Array.map2 (fun na t -> (na, t)) nas ts in
@@ -158,10 +152,6 @@ let to_case_invert = let open Constr in function
 let of_result f = function
 | Inl c -> v_blk 0 [|f c|]
 | Inr e -> v_blk 1 [|Tac2ffi.of_exn e|]
-
-let inductive = repr_ext val_inductive
-
-let projection = repr_ext val_projection
 
 (** Stdlib exceptions *)
 
@@ -525,11 +515,11 @@ let () =
       Tac2ffi.of_array Tac2ffi.of_constr (Array.of_list args);
     |]
   | Sort s ->
-    v_blk 4 [|Tac2ffi.of_ext Tac2ffi.val_sort s|]
+    v_blk 4 [|Tac2ffi.of_sort s|]
   | Cast (c, k, t) ->
     v_blk 5 [|
       Tac2ffi.of_constr c;
-      Tac2ffi.of_ext Tac2ffi.val_cast k;
+      Tac2ffi.of_cast k;
       Tac2ffi.of_constr t;
     |]
   | Prod (na, t, u) ->
@@ -560,12 +550,12 @@ let () =
     |]
   | Ind (ind, u) ->
     v_blk 11 [|
-      Tac2ffi.of_ext Tac2ffi.val_inductive ind;
+      Tac2ffi.of_inductive ind;
       Tac2ffi.of_instance u;
     |]
   | Construct (cstr, u) ->
     v_blk 12 [|
-      Tac2ffi.of_ext Tac2ffi.val_constructor cstr;
+      Tac2ffi.of_constructor cstr;
       Tac2ffi.of_instance u;
     |]
   | Case (ci, u, pms, c, iv, t, bl) ->
@@ -573,7 +563,7 @@ let () =
     let (ci, c, iv, t, bl) = EConstr.expand_case env sigma (ci, u, pms, c, iv, t, bl) in
     let c = on_snd (EConstr.ERelevance.kind sigma) c in
     v_blk 13 [|
-      Tac2ffi.of_ext Tac2ffi.val_case ci;
+      Tac2ffi.of_case ci;
       Tac2ffi.(of_pair of_constr of_relevance c);
       of_case_invert iv;
       Tac2ffi.of_constr t;
@@ -596,7 +586,7 @@ let () =
     |]
   | Proj (p, r, c) ->
     v_blk 16 [|
-      Tac2ffi.of_ext Tac2ffi.val_projection p;
+      Tac2ffi.of_projection p;
       of_relevance (EConstr.ERelevance.kind sigma r);
       Tac2ffi.of_constr c;
     |]
@@ -631,11 +621,11 @@ let () =
     let args = Tac2ffi.to_array Tac2ffi.to_constr args in
     EConstr.mkLEvar sigma (evk, Array.to_list args)
   | (4, [|s|]) ->
-    let s = Tac2ffi.to_ext Tac2ffi.val_sort s in
+    let s = Tac2ffi.to_sort s in
     EConstr.mkSort s
   | (5, [|c; k; t|]) ->
     let c = Tac2ffi.to_constr c in
-    let k = Tac2ffi.to_ext Tac2ffi.val_cast k in
+    let k = Tac2ffi.to_cast k in
     let t = Tac2ffi.to_constr t in
     EConstr.mkCast (c, k, t)
   | (6, [|na; u|]) ->
@@ -660,15 +650,15 @@ let () =
     let u = to_instance u in
     EConstr.mkConstU (cst, u)
   | (11, [|ind; u|]) ->
-    let ind = Tac2ffi.to_ext Tac2ffi.val_inductive ind in
+    let ind = Tac2ffi.to_inductive ind in
     let u = to_instance u in
     EConstr.mkIndU (ind, u)
   | (12, [|cstr; u|]) ->
-    let cstr = Tac2ffi.to_ext Tac2ffi.val_constructor cstr in
+    let cstr = Tac2ffi.to_constructor cstr in
     let u = to_instance u in
     EConstr.mkConstructU (cstr, u)
   | (13, [|ci; c; iv; t; bl|]) ->
-    let ci = Tac2ffi.to_ext Tac2ffi.val_case ci in
+    let ci = Tac2ffi.to_case ci in
     let c = Tac2ffi.(to_pair to_constr to_relevance c) in
     let c = on_snd EConstr.ERelevance.make c in
     let iv = to_case_invert iv in
@@ -685,7 +675,7 @@ let () =
     let def = to_rec_declaration (nas, cs) in
     EConstr.mkCoFix (i, def)
   | (16, [|p; r; c|]) ->
-    let p = Tac2ffi.to_ext Tac2ffi.val_projection p in
+    let p = Tac2ffi.to_projection p in
     let r = to_relevance r in
     let c = Tac2ffi.to_constr c in
     EConstr.mkProj (p, EConstr.ERelevance.make r, c)
@@ -746,7 +736,7 @@ let () =
   Proofview.tclENV >>= fun env ->
   try
     let ans = Inductiveops.make_case_info env ind Constr.RegularStyle in
-    return (Tac2ffi.of_ext Tac2ffi.val_case ans)
+    return (Tac2ffi.of_case ans)
   with e when CErrors.noncritical e ->
     throw err_notfound
 
@@ -794,8 +784,6 @@ let () =
 
 (** preterm -> constr *)
 
-let pretype_flags = repr_ext val_pretype_flags
-
 let () = define "constr_flags" (ret pretype_flags) constr_flags
 
 let () =
@@ -818,16 +806,16 @@ let () =
     (bool @-> pretype_flags @-> ret pretype_flags) @@ fun b flags ->
   { flags with expand_evars = b }
 
-let () = define "expected_istype" (ret (repr_ext val_expected_type)) IsType
+let () = define "expected_istype" (ret expected_type) IsType
 
-let () = define "expected_oftype" (constr @-> ret (repr_ext val_expected_type)) @@ fun c ->
+let () = define "expected_oftype" (constr @-> ret expected_type) @@ fun c ->
   OfType c
 
-let () = define "expected_without_type_constraint" (ret (repr_ext val_expected_type))
+let () = define "expected_without_type_constraint" (ret expected_type)
     WithoutTypeConstraint
 
 let () =
-  define "constr_pretype" (pretype_flags @-> repr_ext val_expected_type @-> preterm @-> tac constr) @@ fun flags expected_type c ->
+  define "constr_pretype" (pretype_flags @-> expected_type @-> preterm @-> tac constr) @@ fun flags expected_type c ->
   let pretype env sigma =
     let sigma, t = Pretyping.understand_uconstr ~flags ~expected_type env sigma c in
     Proofview.Unsafe.tclEVARS sigma <*> Proofview.tclUNIT t
@@ -835,32 +823,32 @@ let () =
   pf_apply ~catch_exceptions:true pretype
 
 let () =
-  define "constr_binder_make" (option ident @-> constr @-> tac valexpr) @@ fun na ty ->
+  define "constr_binder_make" (option ident @-> constr @-> tac binder) @@ fun na ty ->
   pf_apply @@ fun env sigma ->
   match Retyping.relevance_of_type env sigma ty with
   | rel ->
     let na = match na with None -> Anonymous | Some id -> Name id in
-    return (Tac2ffi.of_ext val_binder (Context.make_annot na rel, ty))
+    return (Context.make_annot na rel, ty)
   | exception (Retyping.RetypeError _ as e) ->
     let e, info = Exninfo.capture e in
     fail ~info (CErrors.UserError Pp.(str "Not a type."))
 
 let () =
   define "constr_binder_unsafe_make"
-    (option ident @-> relevance @-> constr @-> ret valexpr)
+    (option ident @-> relevance @-> constr @-> ret binder)
     @@ fun na rel ty ->
   let na = match na with None -> Anonymous | Some id -> Name id in
-  Tac2ffi.of_ext val_binder (Context.make_annot na (EConstr.ERelevance.make rel), ty)
+  Context.make_annot na (EConstr.ERelevance.make rel), ty
 
 let () =
-  define "constr_binder_name" (repr_ext val_binder @-> ret (option ident)) @@ fun (bnd, _) ->
+  define "constr_binder_name" (binder @-> ret (option ident)) @@ fun (bnd, _) ->
   match bnd.Context.binder_name with Anonymous -> None | Name id -> Some id
 
 let () =
-  define "constr_binder_type" (repr_ext val_binder @-> ret constr) @@ fun (_, ty) -> ty
+  define "constr_binder_type" (binder @-> ret constr) @@ fun (_, ty) -> ty
 
 let () =
-  define "constr_binder_relevance" (repr_ext val_binder @-> ret relevance) @@ fun (na, _) ->
+  define "constr_binder_relevance" (binder @-> ret relevance) @@ fun (na, _) ->
   EConstr.Unsafe.to_relevance na.binder_relevance
 
 let () =
@@ -890,20 +878,17 @@ let () =
     (constant @-> constant @-> ret bool)
     Constant.UserOrd.equal
 let () =
-  let ty = repr_ext val_case in
-  define "constr_case_equal" (ty @-> ty @-> ret bool) @@ fun x y ->
+  define "constr_case_equal" (case @-> case @-> ret bool) @@ fun x y ->
   Ind.UserOrd.equal x.ci_ind y.ci_ind
 let () =
-  let ty = repr_ext val_constructor in
-  define "constructor_equal" (ty @-> ty @-> ret bool) Construct.UserOrd.equal
+  define "constructor_equal" (constructor @-> constructor @-> ret bool) Construct.UserOrd.equal
 let () =
   define "projection_equal" (projection @-> projection @-> ret bool) Projection.UserOrd.equal
 
 (** Patterns *)
 
 let () =
-  define "pattern_empty_context"
-    (ret (repr_ext val_matching_context))
+  define "pattern_empty_context" (ret matching_context)
     Constr_matching.empty_context
 
 let () =
@@ -922,22 +907,13 @@ let () =
   end
 
 let () =
-  define "pattern_matches_subterm" (pattern @-> constr @-> tac valexpr) @@ fun pat c ->
+  define "pattern_matches_subterm" (pattern @-> constr @-> tac (pair matching_context (list (pair ident constr)))) @@ fun pat c ->
   let open Constr_matching in
   let rec of_ans s = match IStream.peek s with
   | IStream.Nil -> fail err_matchfailure
   | IStream.Cons ({ m_sub = (_, sub); m_ctx }, s) ->
     let ans = Id.Map.bindings sub in
-    let of_pair (id, c) =
-      Tac2ffi.of_tuple [| Tac2ffi.of_ident id; Tac2ffi.of_constr c |]
-    in
-    let ans =
-      Tac2ffi.of_tuple [|
-        Tac2ffi.of_ext val_matching_context m_ctx;
-        Tac2ffi.of_list of_pair ans;
-      |]
-    in
-    Proofview.tclOR (return ans) (fun _ -> of_ans s)
+    Proofview.tclOR (return (m_ctx, ans)) (fun _ -> of_ans s)
   in
   pf_apply @@ fun env sigma ->
   let pat = Constr_matching.instantiate_pattern env sigma Id.Map.empty pat in
@@ -959,20 +935,14 @@ let () =
     return (Tac2ffi.of_array Tac2ffi.of_constr ans)
 
 let () =
-  define "pattern_matches_subterm_vect" (pattern @-> constr @-> tac valexpr) @@ fun pat c ->
+  define "pattern_matches_subterm_vect" (pattern @-> constr @-> tac (pair matching_context (array constr))) @@ fun pat c ->
   let open Constr_matching in
   let rec of_ans s = match IStream.peek s with
   | IStream.Nil -> fail err_matchfailure
   | IStream.Cons ({ m_sub = (_, sub); m_ctx }, s) ->
     let ans = Id.Map.bindings sub in
     let ans = Array.map_of_list snd ans in
-    let ans =
-      Tac2ffi.of_tuple [|
-        Tac2ffi.of_ext val_matching_context m_ctx;
-        Tac2ffi.of_array Tac2ffi.of_constr ans;
-      |]
-    in
-    Proofview.tclOR (return ans) (fun _ -> of_ans s)
+    Proofview.tclOR (return (m_ctx,ans)) (fun _ -> of_ans s)
   in
   pf_apply @@ fun env sigma ->
   let pat = Constr_matching.instantiate_pattern env sigma Id.Map.empty pat in
@@ -995,7 +965,7 @@ let () =
   let concl = Proofview.Goal.concl gl in
   Tac2match.match_goal env sigma concl ~rev (hp, cp) >>= fun (hyps, ctx, subst) ->
   let empty_context = Constr_matching.empty_context in
-  let of_ctxopt ctx = Tac2ffi.of_ext val_matching_context (Option.default empty_context ctx) in
+  let of_ctxopt ctx = Tac2ffi.of_matching_context (Option.default empty_context ctx) in
   let hids = Tac2ffi.of_array Tac2ffi.of_ident (Array.map_of_list pi1 hyps) in
   let hbctx = Tac2ffi.of_array of_ctxopt
       (Array.of_list (CList.filter_map (fun (_,bctx,_) -> bctx) hyps))
@@ -1008,7 +978,7 @@ let () =
 
 let () =
   define "pattern_instantiate"
-    (repr_ext val_matching_context @-> constr @-> ret constr)
+    (matching_context @-> constr @-> ret constr)
     Constr_matching.instantiate_context
 
 (** Error *)
@@ -1205,15 +1175,14 @@ let () =
 (** Fresh *)
 
 let () =
-  let ty = repr_ext val_free in
-  define "fresh_free_union" (ty @-> ty @-> ret ty) Id.Set.union
+  define "fresh_free_union" (free @-> free @-> ret free) Id.Set.union
 
 let () =
-  define "fresh_free_of_ids" (list ident @-> ret (repr_ext val_free)) @@ fun ids ->
+  define "fresh_free_of_ids" (list ident @-> ret free) @@ fun ids ->
   List.fold_right Id.Set.add ids Id.Set.empty
 
 let () =
-  define "fresh_free_of_constr" (constr @-> tac (repr_ext val_free)) @@ fun c ->
+  define "fresh_free_of_constr" (constr @-> tac free) @@ fun c ->
   Proofview.tclEVARMAP >>= fun sigma ->
   let rec fold accu c =
     match EConstr.kind sigma c with
@@ -1223,7 +1192,7 @@ let () =
   return (fold Id.Set.empty c)
 
 let () =
-  define "fresh_fresh" (repr_ext val_free @-> ident @-> ret ident) @@ fun avoid id ->
+  define "fresh_fresh" (free @-> ident @-> ret ident) @@ fun avoid id ->
   Namegen.next_ident_away_from id (fun id -> Id.Set.mem id avoid)
 
 (** Env *)
@@ -1273,7 +1242,7 @@ let () =
 
 let () =
   define "ind_data"
-    (inductive @-> tac (repr_ext val_ind_data))
+    (inductive @-> tac ind_data)
     @@ fun ind ->
   Proofview.tclENV >>= fun env ->
   if Environ.mem_mind (fst ind) env then
@@ -1281,20 +1250,20 @@ let () =
   else
     throw err_notfound
 
-let () = define "ind_repr" (repr_ext val_ind_data @-> ret inductive) fst
+let () = define "ind_repr" (ind_data @-> ret inductive) fst
 let () = define "ind_index" (inductive @-> ret int) snd
 
 let () =
-  define "ind_nblocks" (repr_ext val_ind_data @-> ret int) @@ fun (_, mib) ->
+  define "ind_nblocks" (ind_data @-> ret int) @@ fun (_, mib) ->
   Array.length mib.Declarations.mind_packets
 
 let () =
-  define "ind_nconstructors" (repr_ext val_ind_data @-> ret int) @@ fun ((_, n), mib) ->
+  define "ind_nconstructors" (ind_data @-> ret int) @@ fun ((_, n), mib) ->
   Array.length Declarations.(mib.mind_packets.(n).mind_consnames)
 
 let () =
   define "ind_get_block"
-    (repr_ext val_ind_data @-> int @-> tac (repr_ext val_ind_data))
+    (ind_data @-> int @-> tac ind_data)
     @@ fun (ind, mib) n ->
   if 0 <= n && n < Array.length mib.Declarations.mind_packets then
     return ((fst ind, n), mib)
@@ -1302,7 +1271,7 @@ let () =
 
 let () =
   define "ind_get_constructor"
-    (repr_ext val_ind_data @-> int @-> tac (repr_ext val_constructor))
+    (ind_data @-> int @-> tac constructor)
     @@ fun ((mind, n), mib) i ->
   let open Declarations in
   let ncons = Array.length mib.mind_packets.(n).mind_consnames in
@@ -1314,18 +1283,18 @@ let () =
 
 let () =
   define "constructor_inductive"
-    (repr_ext val_constructor @-> ret inductive)
+    (constructor @-> ret inductive)
   @@ fun (ind, _) -> ind
 
 let () =
   define "constructor_index"
-    (repr_ext val_constructor @-> ret int)
+    (constructor @-> ret int)
   @@ fun (_, i) ->
   (* WARNING: ML constructors are 1-indexed but Ltac2 constructors are 0-indexed *)
   i-1
 
 let () =
-  define "ind_get_projections" (repr_ext val_ind_data @-> ret (option (array projection)))
+  define "ind_get_projections" (ind_data @-> ret (option (array projection)))
   @@ fun (ind,mib) ->
   Declareops.inductive_make_projections ind mib
   |> Option.map (Array.map (fun (p,_) -> Projection.make p false))
@@ -1444,7 +1413,7 @@ let inductive_map_tag : _ map_tag = register_map ~tag_name:"fmap_inductive_tag" 
 let constructor_map_tag : _ map_tag = register_map ~tag_name:"fmap_constructor_tag" (module struct
     module S = Constrset_env
     module M = Constrmap_env
-    let repr = Tac2ffi.(repr_ext val_constructor)
+    let repr = Tac2ffi.constructor
     type valmap = valexpr M.t
     let valmap_eq = Refl
   end)
@@ -1452,7 +1421,7 @@ let constructor_map_tag : _ map_tag = register_map ~tag_name:"fmap_constructor_t
 let constant_map_tag : _ map_tag = register_map ~tag_name:"fmap_constant_tag" (module struct
     module S = Cset_env
     module M = Cmap_env
-    let repr = Tac2ffi.(repr_ext val_constant)
+    let repr = Tac2ffi.constant
     type valmap = valexpr M.t
     let valmap_eq = Refl
   end)
@@ -1735,12 +1704,8 @@ let () =
   let interp env (ids,c) =
     let open Ltac_pretype in
     let get_preterm id = match Id.Map.find_opt id env.env_ist with
-      | Some (ValExt (tag, v)) ->
-        begin match Tac2dyn.Val.eq tag val_preterm with
-          | Some Refl -> (v:closed_glob_constr)
-          | None -> assert false
-        end
-      | _ -> assert false
+      | Some v -> to_preterm v
+      | None -> assert false
     in
     let closure = {
       idents = Id.Map.empty;

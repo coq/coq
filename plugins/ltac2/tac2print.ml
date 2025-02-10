@@ -892,7 +892,7 @@ let () = register_init "message" begin fun _ _ pp ->
 end
 
 let () = register_init "err" begin fun _ _ e ->
-  let e = to_ext val_exn e in
+  let e = to_err e in
   hov 2 (str "err:(" ++ CErrors.iprint_no_report e ++ str ")")
 end
 
