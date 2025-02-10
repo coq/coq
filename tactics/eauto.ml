@@ -146,7 +146,8 @@ and e_my_find_search env sigma db_list local_db secvars concl =
       in
       let b = { cost_priority = priority; cost_subgoals = subgoals } in
       let tac = FullHint.run h tac in
-      (tac, b, lazy (FullHint.print env sigma h))
+      let dbname, dblist = format_db_info false h db_list in
+      (tac, b, lazy (FullHint.print env sigma ?dbname ~dblist h))
   in
   List.map tac_of_hint hintl
 
