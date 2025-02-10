@@ -435,7 +435,7 @@ Induction
 
    .. example::
 
-      .. rocqtop:: reset all extra
+      .. rocqtop:: reset all
 
          Lemma lt_1_r : forall n:nat, n < 1 -> n = 0.
          intros n H ; induction H.
@@ -446,7 +446,7 @@ Induction
       argument is 1 here. Dependent induction solves this problem by adding
       the corresponding equality to the context.
 
-      .. rocqtop:: reset all extra
+      .. rocqtop:: reset all extra-stdlib
 
          Require Import Stdlib.Program.Equality.
          Lemma lt_1_r : forall n:nat, n < 1 -> n = 0.
@@ -456,13 +456,13 @@ Induction
       simplify the subgoals with respect to the generated equalities. In
       this enriched context, it becomes possible to solve this subgoal.
 
-      .. rocqtop:: all extra
+      .. rocqtop:: all extra-stdlib
 
          reflexivity.
 
       Now we are in a contradictory context and the proof can be solved.
 
-      .. rocqtop:: all abort extra
+      .. rocqtop:: all abort extra-stdlib
 
          inversion H.
 
@@ -995,7 +995,7 @@ This section describes some special purpose tactics to work with
    Let us consider the following inductive type of
    length-indexed lists, and a lemma about inverting equality of cons:
 
-   .. rocqtop:: reset all extra
+   .. rocqtop:: reset all extra-stdlib
 
       Require Import Stdlib.Logic.Eqdep_dec.
 
@@ -1012,20 +1012,20 @@ This section describes some special purpose tactics to work with
 
    After performing inversion, we are left with an equality of existTs:
 
-   .. rocqtop:: all extra
+   .. rocqtop:: all extra-stdlib
 
       inversion H.
 
    We can turn this equality into a usable form with inversion_sigma:
 
-   .. rocqtop:: all extra
+   .. rocqtop:: all extra-stdlib
 
       inversion_sigma.
 
    To finish cleaning up the proof, we will need to use the fact that
    that all proofs of n = n for n a nat are eq_refl:
 
-   .. rocqtop:: all extra
+   .. rocqtop:: all extra-stdlib
 
       let H := match goal with H : n = n |- _ => H end in
       pose proof (Eqdep_dec.UIP_refl_nat _ H); subst H.
@@ -1033,7 +1033,7 @@ This section describes some special purpose tactics to work with
 
    Finally, we can finish the proof:
 
-   .. rocqtop:: all extra
+   .. rocqtop:: all extra-stdlib
 
       assumption.
       Qed.
@@ -1052,18 +1052,18 @@ Helper tactics
 
    .. example:: Using :tacn:`decide` to rewrite the goal
 
-      .. rocqtop:: in extra
+      .. rocqtop:: in extra-stdlib
 
          Goal forall (P Q : Prop) (Hp : {P} + {~P}) (Hq : {Q} + {~Q}),
              P -> ~Q -> (if Hp then true else false) = (if Hq then false else true).
 
-      .. rocqtop:: all extra
+      .. rocqtop:: all extra-stdlib
 
          intros P Q Hp Hq p nq.
          decide Hp with p.
          decide Hq with nq.
 
-      .. rocqtop:: in extra
+      .. rocqtop:: in extra-stdlib
 
          reflexivity.
          Qed.
@@ -1427,7 +1427,7 @@ argument a hypothesis to generalize. It uses the JMeq datatype
 defined in Stdlib.Logic.JMeq, hence we need to require it before. For
 example, revisiting the first example of the inversion documentation:
 
-.. rocqtop:: in reset extra
+.. rocqtop:: in reset extra-stdlib
 
    Require Import Stdlib.Logic.JMeq.
 
@@ -1441,7 +1441,7 @@ example, revisiting the first example of the inversion documentation:
 
    intros n m H.
 
-.. rocqtop:: all extra
+.. rocqtop:: all extra-stdlib
 
    generalize_eqs H.
 
@@ -1455,7 +1455,7 @@ rule of thumb, all the variables that appear inside constructors in
 the indices of the hypothesis should be generalized. This is exactly
 what the ``generalize_eqs_vars`` variant does:
 
-.. rocqtop:: all abort extra
+.. rocqtop:: all abort extra-stdlib
 
    generalize_eqs_vars H.
    induction H.
@@ -1465,16 +1465,16 @@ to use an heterogeneous equality to relate the new hypothesis to the
 old one (which just disappeared here). However, the tactic works just
 as well in this case, e.g.:
 
-.. rocqtop:: none extra
+.. rocqtop:: none extra-stdlib
 
    Require Import Stdlib.Program.Equality.
 
-.. rocqtop:: in extra
+.. rocqtop:: in extra-stdlib
 
    Parameter Q : forall (n m : nat), Le n m -> Prop.
    Goal forall n m (p : Le (S n) m), Q (S n) m p.
 
-.. rocqtop:: all extra
+.. rocqtop:: all extra-stdlib
 
    intros n m p.
    generalize_eqs_vars p.
@@ -1490,7 +1490,7 @@ automatically do such simplifications (which may involve the axiom K).
 This is what the ``simplify_dep_elim`` tactic from ``Stdlib.Program.Equality``
 does. For example, we might simplify the previous goals considerably:
 
-.. rocqtop:: all abort extra
+.. rocqtop:: all abort extra-stdlib
 
    induction p ; simplify_dep_elim.
 
@@ -1503,15 +1503,15 @@ are :tacn:`dependent induction` and :tacn:`dependent destruction` that do induct
 simply case analysis on the generalized hypothesis. For example we can
 redo what we've done manually with dependent destruction:
 
-.. rocqtop:: in extra
+.. rocqtop:: in extra-stdlib
 
    Lemma ex : forall n m:nat, Le (S n) m -> P n m.
 
-.. rocqtop:: in extra
+.. rocqtop:: in extra-stdlib
 
    intros n m H.
 
-.. rocqtop:: all abort extra
+.. rocqtop:: all abort extra-stdlib
 
    dependent destruction H.
 
@@ -1520,30 +1520,30 @@ destructed hypothesis actually appeared in the goal, the tactic would
 still be able to invert it, contrary to dependent inversion. Consider
 the following example on vectors:
 
-.. rocqtop:: in extra
+.. rocqtop:: in extra-stdlib
 
    Set Implicit Arguments.
 
-.. rocqtop:: in extra
+.. rocqtop:: in extra-stdlib
 
    Parameter A : Set.
 
-.. rocqtop:: in extra
+.. rocqtop:: in extra-stdlib
 
    Inductive vector : nat -> Type :=
             | vnil : vector 0
             | vcons : A -> forall n, vector n -> vector (S n).
 
-.. rocqtop:: in extra
+.. rocqtop:: in extra-stdlib
 
    Goal forall n, forall v : vector (S n),
             exists v' : vector n, exists a : A, v = vcons a v'.
 
-.. rocqtop:: in extra
+.. rocqtop:: in extra-stdlib
 
    intros n v.
 
-.. rocqtop:: all extra
+.. rocqtop:: all extra-stdlib
 
    dependent destruction v.
 
@@ -1561,27 +1561,27 @@ predicates on a real example. We will develop an example application
 to the theory of simply-typed lambda-calculus formalized in a
 dependently-typed style:
 
-.. rocqtop:: in reset extra
+.. rocqtop:: in reset
 
    Inductive type : Type :=
             | base : type
             | arrow : type -> type -> type.
 
-.. rocqtop:: in extra
+.. rocqtop:: in
 
    Notation " t --> t' " := (arrow t t') (at level 20, t' at next level).
 
-.. rocqtop:: in extra
+.. rocqtop:: in
 
    Inductive ctx : Type :=
             | empty : ctx
             | snoc : ctx -> type -> ctx.
 
-.. rocqtop:: in extra
+.. rocqtop:: in
 
    Notation " G , tau " := (snoc G tau) (at level 20, tau at next level).
 
-.. rocqtop:: in extra
+.. rocqtop:: in
 
    Fixpoint conc (G D : ctx) : ctx :=
             match D with
@@ -1589,11 +1589,11 @@ dependently-typed style:
             | snoc D' x => snoc (conc G D') x
             end.
 
-.. rocqtop:: in extra
+.. rocqtop:: in
 
    Notation " G ; D " := (conc G D) (at level 20).
 
-.. rocqtop:: in extra
+.. rocqtop:: in
 
    Inductive term : ctx -> type -> Type :=
             | ax : forall G tau, term (G, tau) tau
@@ -1620,7 +1620,7 @@ name. A term is either an application of:
 
 Once we have this datatype we want to do proofs on it, like weakening:
 
-.. rocqtop:: in abort extra
+.. rocqtop:: in abort
 
    Lemma weakening : forall G D tau, term (G ; D) tau ->
                      forall tau', term (G , tau' ; D) tau.
@@ -1629,7 +1629,7 @@ The problem here is that we can't just use induction on the typing
 derivation because it will forget about the ``G ; D`` constraint appearing
 in the instance. A solution would be to rewrite the goal as:
 
-.. rocqtop:: in abort extra
+.. rocqtop:: in abort
 
    Lemma weakening' : forall G' tau, term G' tau ->
                       forall G D, (G ; D) = G' ->
@@ -1643,21 +1643,21 @@ more natural statement. The :tacn:`dependent induction` tactic alleviates this
 trouble by doing all of this plumbing of generalizing and substituting
 back automatically. Indeed we can simply write:
 
-.. rocqtop:: in extra
+.. rocqtop:: in extra-stdlib
 
    Require Import Stdlib.Program.Tactics.
    Require Import Stdlib.Program.Equality.
 
-.. rocqtop:: in extra
+.. rocqtop:: in extra-stdlib
 
    Lemma weakening : forall G D tau, term (G ; D) tau ->
                      forall tau', term (G , tau' ; D) tau.
 
-.. rocqtop:: in extra
+.. rocqtop:: in extra-stdlib
 
    Proof with simpl in * ; simpl_depind ; auto.
 
-.. rocqtop:: in extra
+.. rocqtop:: in extra-stdlib
 
    intros G D tau H. dependent induction H generalizing G D ; intros.
 
@@ -1669,7 +1669,7 @@ hypotheses. By default, all variables appearing inside constructors
 be generalized automatically but one can always give the list
 explicitly.
 
-.. rocqtop:: all extra
+.. rocqtop:: all extra-stdlib
 
    Show.
 
@@ -1680,31 +1680,31 @@ cases where the equality is not between constructor forms though, one
 must help the automation by giving some arguments, using the
 ``specialize`` tactic for example.
 
-.. rocqtop:: in extra
+.. rocqtop:: in extra-stdlib
 
    destruct D... apply weak; apply ax. apply ax.
 
-.. rocqtop:: in extra
+.. rocqtop:: in extra-stdlib
 
    destruct D...
 
-.. rocqtop:: all extra
+.. rocqtop:: all extra-stdlib
 
    Show.
 
-.. rocqtop:: all extra
+.. rocqtop:: all extra-stdlib
 
    specialize (IHterm G0 empty eq_refl).
 
 Once the induction hypothesis has been narrowed to the right equality,
 it can be used directly.
 
-.. rocqtop:: all extra
+.. rocqtop:: all extra-stdlib
 
    apply weak, IHterm.
 
 Now concluding this subgoal is easy.
 
-.. rocqtop:: in extra
+.. rocqtop:: in extra-stdlib
 
    constructor; apply IHterm; reflexivity.

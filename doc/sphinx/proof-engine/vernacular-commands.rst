@@ -219,7 +219,7 @@ described elsewhere
 
    .. example:: Searching for a pattern
 
-      .. rocqtop:: none reset extra
+      .. rocqtop:: none reset extra-stdlib
 
          From Stdlib Require Import PeanoNat.
 
@@ -253,7 +253,7 @@ described elsewhere
 
       The following example requires the Stdlib library.
 
-      .. rocqtop:: none reset extra
+      .. rocqtop:: none reset extra-stdlib
 
          From Stdlib Require Import PeanoNat.
 
@@ -261,7 +261,7 @@ described elsewhere
       objects whose type contains `Nat.modulo` but which do not
       contain the substring "mod".
 
-      .. rocqtop:: all extra
+      .. rocqtop:: all extra-stdlib
 
          Search "'mod'" -"mod".
          Search "mod"%nat -"mod".
@@ -334,17 +334,17 @@ described elsewhere
 
       The following example requires the Stdlib library.
 
-      .. rocqtop:: in reset extra
+      .. rocqtop:: in reset extra-stdlib
 
          From Stdlib Require Import Arith.
 
-      .. rocqtop:: all extra
+      .. rocqtop:: all extra-stdlib
 
          SearchPattern (_ + _ = _ + _).
          SearchPattern (nat -> bool).
          SearchPattern (forall l : list _, _ l l).
 
-      .. rocqtop:: all extra
+      .. rocqtop:: all extra-stdlib
 
          SearchPattern (?X1 + _ = _ + ?X1).
 
@@ -361,11 +361,11 @@ described elsewhere
 
       The following example requires the Stdlib library.
 
-      .. rocqtop:: in reset extra
+      .. rocqtop:: in reset extra-stdlib
 
          From Stdlib Require Import Arith.
 
-      .. rocqtop:: all extra
+      .. rocqtop:: all extra-stdlib
 
          SearchRewrite (_ + _ + _).
 

@@ -715,10 +715,10 @@ class CoqtopDirective(Directive):
       - ``warn``: Don't die if a command emits a warning
       - ``restart``: Send a ``Restart`` command before running this block (only works in proof mode)
       - ``abort``: Send an ``Abort All`` command after running this block (leaves all pending proofs if any)
-      - ``extra``: if environment variable 'COQRST_EXTRA' is set (to anything else than '0') this is ignored, otherwise behaves as ``fail``
+      - ``extra-foo``: if environment variable 'COQRST_EXTRA' is set to `all`
+        or to a `,`-separated list containing `foo` this is ignored, otherwise behaves as ``fail``
         This is typically used to showcase examples of things outside coq-core or rocq-core.
-        Be careful when using it to surround the code block with a sentence explaining what
-        extra requirement is needed to compile it.
+        `foo` should be the name of the external requirement, e.g. `stdlib` or `mathcomp`.
 
     ``coqtop``\ 's state is preserved across consecutive ``.. rocqtop::`` blocks
     of the same document (``coqrst`` creates a single ``coqtop`` process per
@@ -1009,8 +1009,9 @@ class CoqtopBlocksTransform(Transform):
         opt_warn = 'warn' in options
         opt_restart = 'restart' in options
         opt_abort = 'abort' in options
-        opt_extra = 'extra' in options
-        options = options - {'reset', 'fail', 'warn', 'restart', 'abort', 'extra'}
+        opt_extra = set([opt for opt in options if opt.startswith('extra-')])
+        options = options - {'reset', 'fail', 'warn', 'restart', 'abort'}
+        options = set([opt for opt in options if not (opt.startswith('extra-'))])
 
         unexpected_options = list(options - {'all', 'none', 'in', 'out'})
         if unexpected_options:
@@ -1026,10 +1027,10 @@ class CoqtopBlocksTransform(Transform):
         opt_input = 'in' in options
         opt_output = 'out' in options
 
-        # if 'extra' is given and env variable 'COQRST_EXTRA' is not set,
+        # if 'extra' is given and not a subset of env variable 'COQRST_EXTRA',
         # allow errors
-        opt_fail = opt_fail or (opt_extra and os.environ.get('COQRST_EXTRA', '0') == '0')
-
+        env_extra = os.environ.get('COQRST_EXTRA', '')
+        opt_fail = opt_fail or (env_extra != 'all' and len(opt_extra - set(env_extra.split(','))) != 0)
         return {
             'reset': opt_reset,
             'fail': opt_fail,

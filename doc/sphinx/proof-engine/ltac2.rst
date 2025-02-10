@@ -1363,7 +1363,7 @@ in the documentation are defined with Ltac1.)
 You can make them accessible in Ltac2 with commands similar to the following
 (the example requires the Stdlib library for the :tacn:`lia` tactic):
 
-.. rocqtop:: in extra
+.. rocqtop:: in extra-stdlib
 
    From Stdlib Require Import Lia.
    Local Ltac2 lia_ltac1 () := ltac1:(lia).

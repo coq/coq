@@ -2490,7 +2490,7 @@ performance issue.
 
 The following example requires the Stdlib library to use the :tacn:`lia` tactic.
 
-.. rocqtop:: reset in extra
+.. rocqtop:: reset in extra-stdlib
 
    From Stdlib Require Import Lia.
 
@@ -2509,14 +2509,14 @@ The following example requires the Stdlib library to use the :tacn:`lia` tactic.
         M /\ L /\ K /\ J /\ I /\ H /\ G /\ F /\ E /\ D /\ C /\ B /\ A).
    Proof.
 
-.. rocqtop:: all extra
+.. rocqtop:: all extra-stdlib
 
    Set Ltac Profiling.
    tac.
    Show Ltac Profile.
    Show Ltac Profile "lia".
 
-.. rocqtop:: in extra
+.. rocqtop:: in extra-stdlib
 
    Abort.
    Unset Ltac Profiling.

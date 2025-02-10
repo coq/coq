@@ -159,15 +159,15 @@ Numbers
 
    .. example:: Stack overflow with :n:`nat`
 
-      .. rocqtop:: all reset extra
+      .. rocqtop:: all reset
 
          Fail Eval compute in 100000 + 100000.  (* gives a stack overflow (not shown) *)
 
-      .. rocqtop:: in extra
+      .. rocqtop:: in extra-stdlib
 
          From Stdlib Require Import ZArith.  (* for definition of Z *)
 
-      .. rocqtop:: all extra
+      .. rocqtop:: all extra-stdlib
 
          Eval compute in (1000000000000000000000000000000000 + 1)%Z.
 

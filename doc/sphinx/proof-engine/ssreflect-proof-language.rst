@@ -2635,7 +2635,7 @@ The following example requires the mathcomp and mczify libraries.
 
 .. example::
 
-  .. rocqtop:: reset none warn extra
+  .. rocqtop:: reset none warn extra-mathcomp extra-mczify
 
      From mathcomp Require Import ssreflect ssrfun ssrbool ssrnat zify.
 
@@ -2643,7 +2643,7 @@ The following example requires the mathcomp and mczify libraries.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
 
-  .. rocqtop:: all extra
+  .. rocqtop:: all extra-mathcomp extra-mczify
 
      Lemma test : True.
      have H x (y : nat) : 2 * x + y = x + x + y by lia.
@@ -2654,7 +2654,7 @@ Since the :token:`i_pattern` can be omitted, to avoid ambiguity,
 bound variables can be surrounded
 with parentheses even if no type is specified:
 
-.. rocqtop:: all restart extra
+.. rocqtop:: all restart extra-mathcomp extra-mczify
 
    have (x) : 2 * x = x + x by lia.
 
@@ -2668,7 +2668,7 @@ copying the goal itself.
 
 .. example::
 
-  .. rocqtop:: all restart abort extra
+  .. rocqtop:: all restart abort extra-mathcomp extra-mczify
 
      have suff H : 2 + 2 = 3; last first.
 
@@ -2692,7 +2692,7 @@ context entry name.
 
      Set Printing Depth 15.
 
-  .. rocqtop:: all abort extra
+  .. rocqtop:: all abort extra-mathcomp
 
      Inductive Ord n := Sub x of x < n.
      Notation "'I_ n" := (Ord n) (at level 8, n at level 2, format "''I_' n").
@@ -2708,7 +2708,7 @@ For this purpose the ``[: name]`` intro pattern and the tactic
 
 .. example::
 
-  .. rocqtop:: all abort extra
+  .. rocqtop:: all abort extra-mathcomp
 
      Lemma test n m (H : m + 1 < n) : True.
      have [:pm] @i : 'I_n by apply: (Sub m); abstract: pm; lia.
@@ -2721,7 +2721,7 @@ with`` have`` and an explicit term, they must be used as follows:
 
 .. example::
 
-  .. rocqtop:: all abort extra
+  .. rocqtop:: all abort extra-mathcomp
 
      Lemma test n m (H : m + 1 < n) : True.
      have [:pm] @i : 'I_n := Sub m pm.
@@ -2740,7 +2740,7 @@ makes use of it).
 
 .. example::
 
-  .. rocqtop:: all abort extra
+  .. rocqtop:: all abort extra-mathcomp
 
      Lemma test n m (H : m + 1 < n) : True.
      have [:pm] @i k : 'I_(n+k) by apply: (Sub m); abstract: pm k; lia.
@@ -2906,11 +2906,11 @@ The following example requires the mathcomp and mczify libraries.
 
 .. example::
 
-  .. rocqtop:: reset none warn extra
+  .. rocqtop:: reset none warn extra-mathcomp
 
      From mathcomp Require Import ssreflect ssrfun ssrbool ssrnat.
 
-  .. rocqtop:: all extra
+  .. rocqtop:: all extra-mathcomp
 
      Lemma quo_rem_unicity d q1 q2 r1 r2 :
        q1*d + r1 = q2*d + r2 -> r1 < d -> r2 < d -> (q1, r1) = (q2, r2).
