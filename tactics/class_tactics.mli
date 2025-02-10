@@ -86,7 +86,7 @@ val deactivate_solver : name:CString.Map.key -> unit
 
 module Search : sig
   val eauto_tac :
-    Hints.hint_mode array list GlobRef.Map.t * TransparentState.t
+    Hints.Modes.t * TransparentState.t
     (** The transparent_state and modes used when working with local hypotheses  *)
     -> ?unique:bool
     (** Should we force a unique solution *)
