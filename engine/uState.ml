@@ -15,6 +15,29 @@ open Univ
 open Sorts
 open UVars
 
+let template_default_univs = Summary.ref ~name:"template default univs" Univ.Level.Set.empty
+
+let cache_template_default_univs us =
+  template_default_univs := Univ.Level.Set.union !template_default_univs us
+
+let template_default_univs_obj =
+  Libobject.declare_object {
+    (Libobject.default_object "template default univs") with
+    cache_function = cache_template_default_univs;
+    load_function = (fun _ us -> cache_template_default_univs us);
+    discharge_function = (fun x -> Some x);
+    classify_function = (fun _ -> Escape);
+  }
+
+let add_template_default_univs kn =
+  match (Global.lookup_mind kn).mind_template with
+  | None -> ()
+  | Some template ->
+    let _, us = UVars.Instance.levels template.template_defaults in
+    Lib.add_leaf (template_default_univs_obj us)
+
+let template_default_univs () = !template_default_univs
+
 module UnivFlex = UnivFlex
 
 type universes_entry =
@@ -516,6 +539,19 @@ let get_constraint = function
 | Conversion.CONV -> Eq
 | Conversion.CUMUL -> Le
 
+let warn_template = CWarnings.create ~name:"bad-template-constraint" ~category:CWarnings.CoreCategories.fragile ~default:Disabled
+    Pp.(fun (uctx,csts) ->
+        str "Adding constraints involving global template univs:" ++ spc() ++
+        Constraints.pr (pr_uctx_level uctx) csts )
+
+let warn_template uctx csts =
+  let is_template u = Level.Set.mem u (template_default_univs()) in
+  let csts = Constraints.filter (fun (u,_,v) ->
+      not (Level.is_set u) && not (Level.is_set v) &&
+      (is_template u || is_template v)) csts in
+  if not @@ Constraints.is_empty csts then
+    warn_template (uctx,csts)
+
 let unify_quality univs c s1 s2 l =
   let fail () = if UGraph.type_in_type univs then l.local_sorts
     else sort_inconsistency (get_constraint c) s1 s2
@@ -713,6 +749,7 @@ let process_universe_constraints uctx cstrs =
   } in
   let local = UnivProblem.Set.fold unify_universes cstrs local in
   let extra = { UnivMinim.above_prop = local.local_above_prop; UnivMinim.weak_constraints = local.local_weak } in
+  let () = warn_template uctx local.local_cst in
   !vars, extra, local.local_cst, local.local_sorts
 
 let add_universe_constraints uctx cstrs =
