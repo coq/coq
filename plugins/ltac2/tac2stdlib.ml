@@ -599,8 +599,6 @@ let () =
 
 (** Tactics for [Ltac2/TransparentState.v]. *)
 
-let transparent_state = Tac2ffi.repr_ext Tac2ffi.val_transparent_state
-
 let () =
   define "current_transparent_state"
     (unit @-> tac transparent_state)

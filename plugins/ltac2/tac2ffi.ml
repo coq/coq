@@ -27,6 +27,9 @@ let map_repr f g r = {
   r_to = (fun x -> f (r.r_to x));
 }
 
+type ind_data = (Names.Ind.t * Declarations.mutual_inductive_body)
+type binder = (Names.Name.t EConstr.binder_annot * EConstr.types)
+
 (** Dynamic tags *)
 
 let val_exn = Val.create "exn"
@@ -49,7 +52,6 @@ let val_case = Val.create "case"
 let val_binder = Val.create "binder"
 let val_instance = Val.create "instance"
 let val_free : Names.Id.Set.t Val.tag = Val.create "free"
-let val_ltac1 : Geninterp.Val.t Val.tag = Val.create "ltac1"
 let val_uint63 = Val.create "uint63"
 let val_float = Val.create "float"
 let val_pstring = Val.create "pstring"
@@ -173,6 +175,10 @@ let of_constr c = of_ext val_constr c
 let to_constr c = to_ext val_constr c
 let constr = repr_ext val_constr
 
+let of_matching_context c = of_ext val_matching_context c
+let to_matching_context c = to_ext val_matching_context c
+let matching_context = repr_ext val_matching_context
+
 let of_preterm c = of_ext val_preterm c
 let to_preterm c = to_ext val_preterm c
 let preterm = repr_ext val_preterm
@@ -193,6 +199,10 @@ let of_evar ev = of_ext val_evar ev
 let to_evar ev = to_ext val_evar ev
 let evar = repr_ext val_evar
 
+let of_sort ev = of_ext val_sort ev
+let to_sort ev = to_ext val_sort ev
+let sort = repr_ext val_sort
+
 let internal_err =
   let open Names in
   let rocq_prefix =
@@ -208,6 +218,7 @@ let exninfo = {
   r_to = to_exninfo;
 }
 
+(* Invariant: no [LtacError] should be put into a value with tag [val_exn]. *)
 let of_err e = of_ext val_exn e
 let to_err e = to_ext val_exn e
 let err = repr_ext val_exn
@@ -301,6 +312,14 @@ let open_ = {
   r_to = to_open;
 }
 
+let of_free n = of_ext val_free n
+let to_free x = to_ext val_free x
+
+let free = {
+  r_of = of_free;
+  r_to = to_free;
+}
+
 let of_uint63 n = of_ext val_uint63 n
 let to_uint63 x = to_ext val_uint63 x
 
@@ -325,9 +344,49 @@ let pstring = {
   r_to = to_pstring;
 }
 
+let of_transparent_state c = of_ext val_transparent_state c
+let to_transparent_state c = to_ext val_transparent_state c
+let transparent_state = repr_ext val_transparent_state
+
+let of_pretype_flags c = of_ext val_pretype_flags c
+let to_pretype_flags c = to_ext val_pretype_flags c
+let pretype_flags = repr_ext val_pretype_flags
+
+let of_expected_type c = of_ext val_expected_type c
+let to_expected_type c = to_ext val_expected_type c
+let expected_type = repr_ext val_expected_type
+
+let of_ind_data c = of_ext val_ind_data c
+let to_ind_data c = to_ext val_ind_data c
+let ind_data = repr_ext val_ind_data
+
+let of_inductive c = of_ext val_inductive c
+let to_inductive c = to_ext val_inductive c
+let inductive = repr_ext val_inductive
+
 let of_constant c = of_ext val_constant c
 let to_constant c = to_ext val_constant c
 let constant = repr_ext val_constant
+
+let of_constructor c = of_ext val_constructor c
+let to_constructor c = to_ext val_constructor c
+let constructor = repr_ext val_constructor
+
+let of_projection c = of_ext val_projection c
+let to_projection c = to_ext val_projection c
+let projection = repr_ext val_projection
+
+let of_qvar c = of_ext val_qvar c
+let to_qvar c = to_ext val_qvar c
+let qvar = repr_ext val_qvar
+
+let of_case c = of_ext val_case c
+let to_case c = to_ext val_case c
+let case = repr_ext val_case
+
+let of_binder c = of_ext val_binder c
+let to_binder c = to_ext val_binder c
+let binder = repr_ext val_binder
 
 let of_instance c = of_ext val_instance c
 let to_instance c = to_ext val_instance c
@@ -336,14 +395,14 @@ let instance = repr_ext val_instance
 let of_reference = let open Names.GlobRef in function
 | VarRef id -> ValBlk (0, [| of_ident id |])
 | ConstRef cst -> ValBlk (1, [| of_constant cst |])
-| IndRef ind -> ValBlk (2, [| of_ext val_inductive ind |])
-| ConstructRef cstr -> ValBlk (3, [| of_ext val_constructor cstr |])
+| IndRef ind -> ValBlk (2, [| of_inductive ind |])
+| ConstructRef cstr -> ValBlk (3, [| of_constructor cstr |])
 
 let to_reference = let open Names.GlobRef in function
 | ValBlk (0, [| id |]) -> VarRef (to_ident id)
 | ValBlk (1, [| cst |]) -> ConstRef (to_constant cst)
-| ValBlk (2, [| ind |]) -> IndRef (to_ext val_inductive ind)
-| ValBlk (3, [| cstr |]) -> ConstructRef (to_ext val_constructor cstr)
+| ValBlk (2, [| ind |]) -> IndRef (to_inductive ind)
+| ValBlk (3, [| cstr |]) -> ConstructRef (to_constructor cstr)
 | _ -> assert false
 
 let reference = {

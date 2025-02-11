@@ -30,8 +30,7 @@ let return x = Proofview.tclUNIT x
 
 (** Ltac1 in Ltac2 *)
 
-let ltac1 = Tac2ffi.repr_ext Tac2ffi.val_ltac1
-let of_ltac1 v = Tac2ffi.of_ext Tac2ffi.val_ltac1 v
+let ltac1 = Tac2quote_ltac1.ltac1
 
 let () =
   define "ltac1_ref" (list ident @-> ret ltac1) @@ fun ids ->
@@ -60,7 +59,7 @@ let () =
   let open Tacexpr in
   let open Locus in
   let k ret =
-    Proofview.tclIGNORE (Tac2val.apply k [Tac2ffi.of_ext val_ltac1 ret])
+    Proofview.tclIGNORE (Tac2val.apply k [Tac2ffi.repr_of ltac1 ret])
   in
   let fold arg (i, vars, lfun) =
     let id = Id.of_string ("x" ^ string_of_int i) in
@@ -142,7 +141,7 @@ let () =
   let interp _ (ids, tac) =
     let clos args =
       let add lfun id v =
-        let v = Tac2ffi.to_ext val_ltac1 v in
+        let v = Tac2ffi.repr_to ltac1 v in
         Id.Map.add id v lfun
       in
       let lfun = List.fold_left2 add Id.Map.empty ids args in
@@ -201,7 +200,7 @@ let () =
   let interp _ (ids, tac) =
     let clos args =
       let add lfun id v =
-        let v = Tac2ffi.to_ext val_ltac1 v in
+        let v = Tac2ffi.repr_to ltac1 v in
         Id.Map.add id v lfun
       in
       let lfun = List.fold_left2 add Id.Map.empty ids args in
@@ -209,7 +208,7 @@ let () =
       let lfun = Tac2interp.set_env ist lfun in
       let ist = Ltac_plugin.Tacinterp.default_ist () in
       let ist = { ist with Geninterp.lfun = lfun } in
-      return (Tac2ffi.of_ext val_ltac1 (Tacinterp.Value.of_closure ist tac))
+      return (Tac2ffi.repr_of ltac1 (Tacinterp.Value.of_closure ist tac))
     in
     let len = List.length ids in
     if Int.equal len 0 then
@@ -348,8 +347,8 @@ let () =
     let tac = cast_typ typ_ltac2 @@ Id.Map.get tac_id ist.Tacinterp.lfun in
     let arg = Id.Map.get arg_id ist.Tacinterp.lfun in
     let tac = Tac2ffi.to_closure tac in
-    Tac2val.apply tac [of_ltac1 arg] >>= fun ans ->
-    let ans = Tac2ffi.to_ext val_ltac1 ans in
+    Tac2val.apply tac [Tac2ffi.repr_of ltac1 arg] >>= fun ans ->
+    let ans = Tac2ffi.repr_to ltac1 ans in
     Ftactic.return ans
   in
   let () = Geninterp.register_interp0 wit_ltac2_val interp_fun in
@@ -374,7 +373,7 @@ let ltac2_eval =
       being the arguments it should be fed with *)
     let tac = cast_typ typ_ltac2 tac in
     let tac = Tac2ffi.to_closure tac in
-    let args = List.map (fun arg -> Tac2ffi.of_ext val_ltac1 arg) args in
+    let args = List.map (fun arg -> Tac2ffi.repr_of ltac1 arg) args in
     Proofview.tclIGNORE (Tac2val.apply tac args)
   in
   let () = Tacenv.register_ml_tactic ml_name [|eval_fun|] in
