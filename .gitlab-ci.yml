@@ -197,8 +197,9 @@ before_script:
     # set CI_TARGETS from job name if not already provided, then print
     - echo CI_TARGETS = ${CI_TARGETS:=${CI_JOB_NAME#*:ci-}}
     - for target in $CI_TARGETS; do dev/ci/ci-wrapper.sh "$target"; done
+    - touch ci-success
   after_script:
-    - if [ "$SAVE_BUILD_CI" ] && [ -d _build_ci ]; then mv _build_ci saved_build_ci; fi
+    - if { [ "$SAVE_BUILD_CI" ] || ! [ -e ci-success ]; } && [ -d _build_ci ]; then mv _build_ci saved_build_ci; fi
     - dev/tools/list-potential-artifacts.sh > available_artifacts.txt
     - dev/tools/cleanup-artifacts.sh downloaded_artifacts.txt available_artifacts.txt
   artifacts:
