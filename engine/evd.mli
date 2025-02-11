@@ -283,7 +283,7 @@ val drop_all_defined : evar_map -> evar_map
 val drop_new_defined : original:evar_map -> evar_map -> evar_map
 (** Drop the defined evars in the second evar map which did not exist in the first. *)
 
-val is_maybe_typeclass_hook : (evar_map -> constr -> bool) Hook.t
+val is_maybe_typeclass_hook : (evar_map -> econstr -> bool) Hook.t
 
 (** {6 Instantiating partial terms} *)
 
