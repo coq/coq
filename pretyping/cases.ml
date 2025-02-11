@@ -291,24 +291,28 @@ let inductive_template env sigma tmloc ind =
      (and in the future fresh qualities?) *)
   let sigma, indu = Evd.fresh_inductive_instance env sigma ind in
   let indu = on_snd EInstance.make indu in
+  let _templ =
+    match (Environ.lookup_mind (fst (fst indu)) env).mind_template with
+    | None -> []
+    | Some t -> t.template_param_arguments
+  in
   let arsign = inductive_alldecls env indu in
   let hole_source i = match tmloc with
     | Some loc -> Loc.tag ~loc @@ Evar_kinds.TomatchTypeParameter (ind,i)
     | None     -> Loc.tag      @@ Evar_kinds.TomatchTypeParameter (ind,i) in
-   let (sigma, _, evarl, _) =
-    List.fold_right
-      (fun decl (sigma, subst, evarl, n) ->
-        match decl with
-        | LocalAssum (na,ty) ->
-            let ty' = substl subst ty in
-            let sigma, e =
-              Evarutil.new_evar env ~src:(hole_source n) sigma ty'
-            in
-            (sigma, e::subst,e::evarl,n+1)
-        | LocalDef (na,b,ty) ->
-            (sigma, substl subst b::subst,evarl,n+1))
-      arsign (sigma, [], [], 1) in
-   sigma, applist (mkIndU indu,List.rev evarl)
+  let rec aux (sigma, subst, evarl, n) arsign = match arsign with
+    | [] -> sigma, evarl
+    | LocalAssum (na,ty) :: arsign ->
+      let ty' = substl subst ty in
+      let sigma, e =
+        Evarutil.new_evar env ~src:(hole_source n) sigma ty'
+      in
+      aux (sigma, e::subst,e::evarl,n+1) arsign
+    | LocalDef (na,b,ty) :: argsign ->
+      aux (sigma, substl subst b::subst,evarl,n+1) arsign
+  in
+  let (sigma, evarl) = aux (sigma, [], [], 1) (List.rev arsign) in
+  sigma, applist (mkIndU indu,List.rev evarl)
 
 let try_find_ind env sigma typ realnames =
   let (IndType(indf,realargs) as ind) = find_rectype env sigma typ in
