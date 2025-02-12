@@ -4,4 +4,4 @@ fun x y : nat => let/c f := foo x y in
                  f = b
      : nat -> nat -> Prop
 
-Arguments chain (x y)%nat_scope
+Arguments chain (x y)%_nat_scope

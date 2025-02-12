@@ -8,7 +8,7 @@ fix pow (n m : nat) {struct m} : nat :=
   end
      : nat -> nat -> nat
 
-Arguments Nat.pow (n m)%nat_scope
+Arguments Nat.pow (n m)%_nat_scope
 Notation pow := Nat.pow
 Expands to: Notation wish_18097.pow
 Declared in library wish_18097, line 1, characters 0-24
@@ -16,7 +16,7 @@ Declared in library wish_18097, line 1, characters 0-24
 Nat.pow : nat -> nat -> nat
 
 Nat.pow is not universe polymorphic
-Arguments Nat.pow (n m)%nat_scope
+Arguments Nat.pow (n m)%_nat_scope
 Nat.pow is transparent
 Expands to: Constant Corelib.Init.Nat.pow
 Declared in library Corelib.Init.Nat, line 143, characters 0-117

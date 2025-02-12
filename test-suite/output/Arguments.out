@@ -1,7 +1,7 @@
 Nat.sub : nat -> nat -> nat
 
 Nat.sub is not universe polymorphic
-Arguments Nat.sub (n m)%nat_scope : simpl nomatch
+Arguments Nat.sub (n m)%_nat_scope : simpl nomatch
 The reduction tactics unfold Nat.sub but avoid exposing match constructs
 Nat.sub is transparent
 Expands to: Constant Corelib.Init.Nat.sub
@@ -9,7 +9,7 @@ Declared in library Corelib.Init.Nat, line 71, characters 0-120
 Nat.sub : nat -> nat -> nat
 
 Nat.sub is not universe polymorphic
-Arguments Nat.sub n%nat_scope / m%nat_scope : simpl nomatch
+Arguments Nat.sub n%_nat_scope / m%_nat_scope : simpl nomatch
 The reduction tactics unfold Nat.sub when applied to 1 argument
   but avoid exposing match constructs
 Nat.sub is transparent
@@ -18,7 +18,7 @@ Declared in library Corelib.Init.Nat, line 71, characters 0-120
 Nat.sub : nat -> nat -> nat
 
 Nat.sub is not universe polymorphic
-Arguments Nat.sub !n%nat_scope / m%nat_scope : simpl nomatch
+Arguments Nat.sub !n%_nat_scope / m%_nat_scope : simpl nomatch
 The reduction tactics unfold Nat.sub
   when the 1st argument evaluates to a constructor and
   when applied to 1 argument but avoid exposing match constructs
@@ -28,7 +28,7 @@ Declared in library Corelib.Init.Nat, line 71, characters 0-120
 Nat.sub : nat -> nat -> nat
 
 Nat.sub is not universe polymorphic
-Arguments Nat.sub (!n !m)%nat_scope /
+Arguments Nat.sub (!n !m)%_nat_scope /
 The reduction tactics unfold Nat.sub when the 1st and
   2nd arguments evaluate to a constructor and when applied to 2 arguments
 Nat.sub is transparent
@@ -37,7 +37,7 @@ Declared in library Corelib.Init.Nat, line 71, characters 0-120
 Nat.sub : nat -> nat -> nat
 
 Nat.sub is not universe polymorphic
-Arguments Nat.sub (!n !m)%nat_scope
+Arguments Nat.sub (!n !m)%_nat_scope
 The reduction tactics unfold Nat.sub when the 1st and
   2nd arguments evaluate to a constructor
 Nat.sub is transparent
@@ -48,7 +48,7 @@ forall {D1 C1 : Type},
 (D1 -> C1) -> forall [D2 C2 : Type], (D2 -> C2) -> D1 * D2 -> C1 * C2
 
 pf is not universe polymorphic
-Arguments pf {D1}%foo_scope {C1}%type_scope f [D2 C2] g x : simpl never
+Arguments pf {D1}%_foo_scope {C1}%_type_scope f [D2 C2] g x : simpl never
 The reduction tactics never unfold pf
 pf is transparent
 Expands to: Constant Arguments.pf
@@ -56,7 +56,7 @@ Declared in library Arguments, line 12, characters 11-13
 fcomp : forall {A B C : Type}, (B -> C) -> (A -> B) -> A -> C
 
 fcomp is not universe polymorphic
-Arguments fcomp {A B C}%type_scope f g x /
+Arguments fcomp {A B C}%_type_scope f g x /
 The reduction tactics unfold fcomp when applied to 6 arguments
 fcomp is transparent
 Expands to: Constant Arguments.fcomp
@@ -64,7 +64,7 @@ Declared in library Arguments, line 19, characters 11-16
 volatile : nat -> nat
 
 volatile is not universe polymorphic
-Arguments volatile / x%nat_scope
+Arguments volatile / x%_nat_scope
 The reduction tactics always unfold volatile
 volatile is transparent
 Expands to: Constant Arguments.volatile
@@ -72,7 +72,7 @@ Declared in library Arguments, line 22, characters 11-19
 f : T1 -> T2 -> nat -> unit -> nat -> nat
 
 f is not universe polymorphic
-Arguments f x y n%nat_scope v m%nat_scope
+Arguments f x y n%_nat_scope v m%_nat_scope
 f uses section variables T1 T2.
 f is transparent
 Expands to: Constant Arguments.S1.S2.f
@@ -80,7 +80,7 @@ Declared in library Arguments, line 30, characters 0-147
 f : T1 -> T2 -> nat -> unit -> nat -> nat
 
 f is not universe polymorphic
-Arguments f x y !n%nat_scope !v !m%nat_scope
+Arguments f x y !n%_nat_scope !v !m%_nat_scope
 f uses section variables T1 T2.
 The reduction tactics unfold f when the 3rd, 4th and
   5th arguments evaluate to a constructor
@@ -90,7 +90,7 @@ Declared in library Arguments, line 30, characters 0-147
 f : forall [T2 : Type], T1 -> T2 -> nat -> unit -> nat -> nat
 
 f is not universe polymorphic
-Arguments f [T2]%type_scope x y !n%nat_scope !v !m%nat_scope
+Arguments f [T2]%_type_scope x y !n%_nat_scope !v !m%_nat_scope
 f uses section variable T1.
 The reduction tactics unfold f when the 4th, 5th and
   6th arguments evaluate to a constructor
@@ -100,7 +100,7 @@ Declared in library Arguments, line 30, characters 0-147
 f : forall [T1 T2 : Type], T1 -> T2 -> nat -> unit -> nat -> nat
 
 f is not universe polymorphic
-Arguments f [T1 T2]%type_scope x y !n%nat_scope !v !m%nat_scope
+Arguments f [T1 T2]%_type_scope x y !n%_nat_scope !v !m%_nat_scope
 The reduction tactics unfold f when the 5th, 6th and
   7th arguments evaluate to a constructor
 f is transparent
@@ -132,7 +132,7 @@ Extra arguments: _, _.
 volatilematch : nat -> nat
 
 volatilematch is not universe polymorphic
-Arguments volatilematch / n%nat_scope : simpl nomatch
+Arguments volatilematch / n%_nat_scope : simpl nomatch
 The reduction tactics always unfold volatilematch
   but avoid exposing match constructs
 volatilematch is transparent
@@ -146,4 +146,4 @@ forall xxxxxxxxxxxxxx' xxxxxxxxxxxxxx'' : nat,
 nat -> xxxxxxxxxxxxxx' + xxxxxxxxxxxxxx' + xxxxxxxxxxxxxx'' = 0 ]
 
 Arguments f xxxxxxxxxxxxxx
-  (xxxxxxxxxxxxxx' xxxxxxxxxxxxxx'' xxxxxxxxxxxxxx''')%nat_scope
+  (xxxxxxxxxxxxxx' xxxxxxxxxxxxxx'' xxxxxxxxxxxxxx''')%_nat_scope

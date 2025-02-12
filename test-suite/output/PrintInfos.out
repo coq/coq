@@ -1,25 +1,25 @@
 existT : forall [A : Type] (P : A -> Type) (x : A), P x -> {x : A & P x}
 
 existT is template universe polymorphic
-Arguments existT [A]%type_scope P%function_scope x _
+Arguments existT [A]%_type_scope P%_function_scope x _
 Expands to: Constructor Corelib.Init.Specif.existT
 Declared in library Corelib.Init.Specif, line 45, characters 4-10
 Inductive sigT (A : Type) (P : A -> Type) : Type :=
     existT : forall x : A, P x -> {x : A & P x}.
 
-Arguments sigT [A]%type_scope P%type_scope
-Arguments existT [A]%type_scope P%function_scope x _
+Arguments sigT [A]%_type_scope P%_type_scope
+Arguments existT [A]%_type_scope P%_function_scope x _
 existT : forall [A : Type] (P : A -> Type) (x : A), P x -> {x : A & P x}
 
 Argument A is implicit
 Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x.
 
-Arguments eq {A}%type_scope x _
-Arguments eq_refl {A}%type_scope {x}, [_] _
+Arguments eq {A}%_type_scope x _
+Arguments eq_refl {A}%_type_scope {x}, [_] _
 eq_refl : forall {A : Type} {x : A}, x = x
 
 eq_refl is template universe polymorphic
-Arguments eq_refl {A}%type_scope {x}, [_] _
+Arguments eq_refl {A}%_type_scope {x}, [_] _
 Expands to: Constructor Corelib.Init.Logic.eq_refl
 Declared in library Corelib.Init.Logic, line 379, characters 4-11
 eq_refl : forall {A : Type} {x : A}, x = x
@@ -36,11 +36,11 @@ fix add (n m : nat) {struct n} : nat :=
   end
      : nat -> nat -> nat
 
-Arguments Nat.add (n m)%nat_scope
+Arguments Nat.add (n m)%_nat_scope
 Nat.add : nat -> nat -> nat
 
 Nat.add is not universe polymorphic
-Arguments Nat.add (n m)%nat_scope
+Arguments Nat.add (n m)%_nat_scope
 Nat.add is transparent
 Expands to: Constant Corelib.Init.Nat.add
 Declared in library Corelib.Init.Nat, line 47, characters 0-113
@@ -49,16 +49,16 @@ Nat.add : nat -> nat -> nat
 plus_n_O : forall n : nat, n = n + 0
 
 plus_n_O is not universe polymorphic
-Arguments plus_n_O n%nat_scope
+Arguments plus_n_O n%_nat_scope
 plus_n_O is opaque
 Expands to: Constant Corelib.Init.Peano.plus_n_O
 Declared in library Corelib.Init.Peano, line 99, characters 6-14
 Inductive le (n : nat) : nat -> Prop :=
     le_n : n <= n | le_S : forall m : nat, n <= m -> n <= S m.
 
-Arguments le (n _)%nat_scope
-Arguments le_n n%nat_scope
-Arguments le_S {n}%nat_scope [m]%nat_scope _
+Arguments le (n _)%_nat_scope
+Arguments le_n n%_nat_scope
+Arguments le_S {n}%_nat_scope [m]%_nat_scope _
 comparison : Set
 
 comparison is not universe polymorphic
@@ -88,14 +88,14 @@ Declared in library Corelib.Init.Logic, line 757, characters 0-41
 eq_sym : forall [A : Type] [x y : A], x = y -> y = x
 
 eq_sym is not universe polymorphic
-Arguments eq_sym [A]%type_scope [x y] _
+Arguments eq_sym [A]%_type_scope [x y] _
 eq_sym is transparent
 Expands to: Constant Corelib.Init.Logic.eq_sym
 Declared in library Corelib.Init.Logic, line 419, characters 12-18
 Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x.
 
-Arguments eq {A}%type_scope x _
-Arguments eq_refl {A}%type_scope {x}, {_} _
+Arguments eq {A}%_type_scope x _
+Arguments eq_refl {A}%_type_scope {x}, {_} _
 n:nat
 
 Hypothesis of the goal context.
@@ -111,14 +111,14 @@ Hypothesis of the goal context.
 Alias.eq : forall {A : Type}, A -> A -> Prop
 
 Alias.eq is template universe polymorphic
-Arguments Alias.eq {A}%type_scope x _
+Arguments Alias.eq {A}%_type_scope x _
 Expands to: Inductive PrintInfos.Alias.eq (syntactically equal to
             Corelib.Init.Logic.eq)
 Declared in library Corelib.Init.Logic, line 378, characters 10-12
 Alias.eq_refl : forall {A : Type} {x : A}, x = x
 
 Alias.eq_refl is template universe polymorphic
-Arguments Alias.eq_refl {A}%type_scope {x}, [_] _
+Arguments Alias.eq_refl {A}%_type_scope {x}, [_] _
 Expands to: Constructor PrintInfos.Alias.eq_refl (syntactically equal to
             Corelib.Init.Logic.eq_refl)
 Declared in library Corelib.Init.Logic, line 379, characters 4-11
@@ -126,7 +126,7 @@ Alias.eq_ind :
 forall [A : Type] (x : A) (P : A -> Prop), P x -> forall y : A, x = y -> P y
 
 Alias.eq_ind is not universe polymorphic
-Arguments Alias.eq_ind [A]%type_scope x P%function_scope f y e
+Arguments Alias.eq_ind [A]%_type_scope x P%_function_scope f y e
   (where some original arguments have been renamed)
 Alias.eq_ind is transparent
 Expands to: Constant PrintInfos.Alias.eq_ind (syntactically equal to
@@ -136,13 +136,13 @@ fst : forall A B : Type, prod A B -> A
 
 fst is not universe polymorphic
 fst is a projection of prod
-Arguments fst (A B)%type_scope p
+Arguments fst (A B)%_type_scope p
 fst is transparent
 Expands to: Constant PrintInfos.AboutProj.fst
 fst : forall A B : Type, prod A B -> A
 
 fst is not universe polymorphic
 fst is a primitive projection of prod
-Arguments fst (A B)%type_scope p
+Arguments fst (A B)%_type_scope p
 fst is transparent
 Expands to: Constant PrintInfos.AboutPrimProj.fst
