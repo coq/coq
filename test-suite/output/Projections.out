@@ -8,13 +8,13 @@ let B := A in fun (C : Type) (u : U A C) => (A, B, C, c _ _ u)
        forall C : Type, U A C -> Type * Type * Type * (B * A * C)
 
 a is a projection of U
-Arguments a (A C)%type_scope u
+Arguments a (A C)%_type_scope u
 Record U (A : Type) (B : Type := A) (C : Type) : Type := Build_U
   { c : (B * A * C)%type;  a := (A, B, C, c);  b : a = a }.
 
 U has primitive projections with eta conversion.
-Arguments U (A C)%type_scope
-Arguments Build_U (A C)%type_scope c b
-Arguments c (A C)%type_scope u
-Arguments a (A C)%type_scope u
-Arguments b (A C)%type_scope u
+Arguments U (A C)%_type_scope
+Arguments Build_U (A C)%_type_scope c b
+Arguments c (A C)%_type_scope u
+Arguments a (A C)%_type_scope u
+Arguments b (A C)%_type_scope u

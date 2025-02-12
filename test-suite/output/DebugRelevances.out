@@ -2,27 +2,27 @@ foo@{u} =
 fun (A : (* Relevant *) Type) (a : (* Relevant *) A) => a
      : forall A : (* Relevant *) Type, A -> A
 
-Arguments foo A%type_scope a
+Arguments foo A%_type_scope a
 foo'@{} =
 fun (A : (* Relevant *) Prop) (a : (* Relevant *) A) => a
      : forall A : (* Relevant *) Prop, A -> A
 
-Arguments foo' A%type_scope a
+Arguments foo' A%_type_scope a
 bar@{} =
 fun (A : (* Relevant *) SProp) (a : (* Irrelevant *) A) => a
      : forall A : (* Relevant *) SProp, A -> A
 
-Arguments bar A%type_scope a
+Arguments bar A%_type_scope a
 baz@{s | u} =
 fun (A : (* Relevant *) Type) (a : (* s *) A) => a
      : forall A : (* Relevant *) Type, A -> A
 
-Arguments baz A%type_scope a
+Arguments baz A%_type_scope a
 boz@{s s' | u} =
 fun (A B : (* Relevant *) Type) (a : (* s *) hide) (_ : (* s' *) hide) => a
      : forall A B : (* Relevant *) Type, hide -> hide -> hide
 
-Arguments boz (A B)%type_scope a b
+Arguments boz (A B)%_type_scope a b
 1 goal
   
   f := fun (A : (* Relevant *) Type) (_ : (* α8 *) A) => A

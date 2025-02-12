@@ -14,7 +14,7 @@ Declared in library PrintSecDeps, line 10, characters 13-16
 bla : forall A : Type, A -> Prop
 
 bla is not universe polymorphic
-Arguments bla A%type_scope x
+Arguments bla A%_type_scope x
 bla is transparent
 Expands to: Constant PrintSecDeps.bla
 Declared in library PrintSecDeps, line 6, characters 13-16
