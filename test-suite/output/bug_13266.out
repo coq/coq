@@ -4,7 +4,7 @@ Abstracting over the terms "S", "p" and "u" leads to a term
 fun (S0 : Type) (p0 : proc S0) (_ : S0) => p0 = Tick -> True
 which is ill-typed.
 Reason is: Illegal application: 
-The term "@eq" of type "forall A : Type, A -> A -> Prop"
+The term "@eq" of type "forall A : Set, A -> A -> Prop"
 cannot be applied to the terms
  "proc S0" : "Prop"
  "p0" : "proc S0"

@@ -852,16 +852,14 @@ let rec recheck_against env sigma good c =
         if unchanged changedargs && bodyonly changedf
         then assume_unchanged_type sigma
         else
-          (* FIXME: the template poly cases are generating useless constraints *)
+          (* XXX could exploit change info when template *)
           (match EConstr.kind sigma f with
            | Ind (ind, u) when EInstance.is_empty u && Environ.template_polymorphic_ind ind env ->
-             let sigma, _ = judge_of_apply_against env sigma changedf fj jl in
              let jl = Array.map snd jl in
-             maybe_changed (judge_of_applied_inductive_knowing_parameters ~check:false env sigma (ind, u) jl)
+             maybe_changed (judge_of_applied_inductive_knowing_parameters ~check:true env sigma (ind, u) jl)
            | Construct (cstr, u) when EInstance.is_empty u && Environ.template_polymorphic_ind (fst cstr) env ->
-             let sigma, _ = judge_of_apply_against env sigma changedf fj jl in
              let jl = Array.map snd jl in
-             maybe_changed (judge_of_applied_constructor_knowing_parameters ~check:false env sigma (cstr, u) jl)
+             maybe_changed (judge_of_applied_constructor_knowing_parameters ~check:true env sigma (cstr, u) jl)
            | _ ->
              (* No template polymorphism *)
              maybe_changed (judge_of_apply_against env sigma changedf fj jl))
