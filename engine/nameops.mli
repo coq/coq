@@ -57,6 +57,7 @@ sig
   type t
   val empty : t
   val add : Id.t -> t -> t
+  val union : t -> t -> t
   val remove : Id.t -> t -> t
   val mem : Id.t -> t -> bool
   val next : Id.t -> t -> Id.t

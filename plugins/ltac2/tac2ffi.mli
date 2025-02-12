@@ -198,9 +198,9 @@ val of_open : KerName.t * valexpr array -> valexpr
 val to_open : valexpr -> KerName.t * valexpr array
 val open_ : (KerName.t * valexpr array) repr
 
-val of_free : Id.Set.t -> valexpr
-val to_free : valexpr -> Id.Set.t
-val free : Id.Set.t repr
+val of_free : Nameops.Fresh.t -> valexpr
+val to_free : valexpr -> Nameops.Fresh.t
+val free : Nameops.Fresh.t repr
 
 val of_uint63 : Uint63.t -> valexpr
 val to_uint63 : valexpr -> Uint63.t

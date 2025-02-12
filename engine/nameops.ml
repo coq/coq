@@ -208,6 +208,7 @@ sig
   val mem : int -> t -> bool
   val add : int -> t -> t
   val remove : int -> t -> t
+  val union : t -> t -> t
 
   val next : int -> t -> int
   (** [next n s] returns the smallest integer [k] not in [s] s.t. [n <= k] *)
@@ -272,6 +273,20 @@ let add n s =
         SegSet.add (n, qr) (SegSet.remove (pr, qr) s)
       else
         SegSet.add (n, n + 1) s
+
+(* could probably be more efficient but I couldn't figure it out *)
+let rec add_seg (x,y) s =
+  let s = add x s in
+  if Int.equal (x+1) y then s
+  else add_seg (x+1,y) s
+
+let union s1 s2 =
+  let count s = SegSet.fold (fun (p,q) acc -> acc + (q-p)) s 0 in
+  let smaller, bigger =
+    if count s1 <= count s2 then s1, s2
+    else s2, s1
+  in
+  SegSet.fold add_seg smaller bigger
 
 let remove n s =
   let find_min (_p, q) = n < q in
@@ -384,6 +399,14 @@ struct
       in
       { s with pre = List.assign pre (ss.ss_zero - 1) set }
 
+  let union {num=num1; pre=pre1} {num=num2; pre=pre2} =
+    let rec merge_pre pre1 pre2 = match pre1, pre2 with
+      | [], x | x, [] -> x
+      | v1 :: rest1, v2 :: rest2 -> SegTree.union v1 v2 :: merge_pre rest1 rest2
+    in
+    let num = SegTree.union num1 num2 in
+    {num; pre=merge_pre pre1 pre2}
+
   let remove ss s =
     let open Subscript in
     if Int.equal ss.ss_zero 0 then
@@ -482,6 +505,8 @@ let add id m =
   let (id, s) = get_subscript id in
   let old = try Id.Map.find id m with Not_found -> SubSet.empty in
   Id.Map.add id (SubSet.add s old) m
+
+let union m1 m2 = Id.Map.union (fun _ s1 s2 -> Some (SubSet.union s1 s2)) m1 m2
 
 let remove id m =
   let (id, s) = get_subscript id in
