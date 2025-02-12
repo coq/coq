@@ -133,7 +133,7 @@ let print_one_inductive env sigma isrecord mib ((_,i) as ind, as_clause) =
   if isrecord then assert (Array.length cstrtypes = 1);
   let inst =
     if Declareops.inductive_is_polymorphic mib then
-      Printer.pr_universe_instance sigma u
+      Printer.pr_universe_instance_binder sigma u Univ.Constraints.empty
     else mt ()
   in
   hov 0 (
