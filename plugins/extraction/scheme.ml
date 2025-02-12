@@ -34,7 +34,7 @@ let pp_header_comment = function
   | None -> mt ()
   | Some com -> pp_comment com ++ fnl () ++ fnl ()
 
-let preamble _ comment _ usf =
+let preamble _ _ comment _ usf =
   pp_header_comment comment ++
   str ";; This extracted scheme code relies on some additional macros\n" ++
   str ";; available at http://www.pps.univ-paris-diderot.fr/~letouzey/scheme\n" ++

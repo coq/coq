@@ -152,6 +152,10 @@ val conservative_types : unit -> bool
 
 val file_comment : unit -> string
 
+(*s A compiler pragma to print at the beginning of the files *)
+
+val file_pragma : unit -> string
+
 (*s Target language. *)
 
 type lang = Ocaml | Haskell | Scheme | JSON
