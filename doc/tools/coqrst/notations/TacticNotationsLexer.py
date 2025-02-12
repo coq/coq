@@ -1,7 +1,7 @@
 # Generated from TacticNotations.g by ANTLR 4.7.2
 from antlr4 import *
 from io import StringIO
-from typing.io import TextIO
+from typing import TextIO
 import sys
 
 
