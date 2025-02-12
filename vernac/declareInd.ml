@@ -132,6 +132,7 @@ let declare_mind ?typing_flags ~indlocs mie =
       List.iter (fun {CAst.v} -> Declare.check_exists v) cons) names;
   let mind, why_not_prim_record = Global.add_mind ?typing_flags id mie in
   let () = Lib.add_leaf (inInductive (id, { ind_names = names })) in
+  let () = UState.add_template_default_univs mind in
   if is_unsafe_typing_flags() then feedback_axiom ();
   Impargs.declare_mib_implicits mind;
   declare_inductive_argument_scopes mind mie;
