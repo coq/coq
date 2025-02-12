@@ -302,6 +302,7 @@ struct
   let build st data = ref (Build (st, data))
 
   let add0 env sigma st p v dn =
+    (* Feedback.msg_debug (let v1 = v in Pp.(str "add0: " ++ Pp.pr_opt Names.GlobRef.print (snd v1).name)); *)
     let p = match p with
     | ConstrPattern p -> Bnet.pattern env st p
     | SyntacticPattern p -> Bnet.pattern_syntactic env p
