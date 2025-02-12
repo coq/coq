@@ -406,7 +406,7 @@ type string_target_kind =
   | Byte
   | PString
 
-type option_kind = Option | Direct
+type option_kind = Direct | Option | Error
 type 'target conversion_kind = 'target * option_kind
 
 (** A postprocessing translation [to_post] can be done after execution
@@ -692,10 +692,11 @@ let rec glob_of_token token_kind ?loc env sigma c = match TokenValue.kind c with
     let c = TokenValue.repr c in
     Loc.raise ?loc (PrimTokenNotationError(token_kind,env,sigma,UnexpectedTerm c))
 
-let no_such_prim_token uninterpreted_token_kind ?loc ty =
+let no_such_prim_token uninterpreted_token_kind ?loc ?errmsg ty =
   CErrors.user_err ?loc
    (str ("Cannot interpret this "^uninterpreted_token_kind^" as a value of type ") ++
-    pr_qualid ty)
+    pr_qualid ty ++
+    pr_opt (fun errmsg -> surround errmsg) errmsg)
 
 let rec postprocess env token_kind ?loc ty to_post post g =
   let g', gl = match DAst.get g with Glob_term.GApp (g, gl) -> g, gl | _ -> g, [] in
@@ -739,9 +740,27 @@ let interp_option uninterpreted_token_kind token_kind ty ?loc env sigma to_post 
     let c = TokenValue.repr c in
     Loc.raise ?loc (PrimTokenNotationError(token_kind,env,sigma,UnexpectedNonOptionTerm c))
 
+let interp_error uninterpreted_token_kind token_kind ty ?loc env sigma to_post c =
+  match TokenValue.kind c with
+  | TConstruct ((_, 1), [_; _; c]) -> glob_of_token token_kind ty ?loc env sigma to_post c
+  | TConstruct ((_, 2), [_; _; msg]) ->
+    let errmsg =
+      Termops.Internal.print_constr_env env sigma
+        (EConstr.of_constr @@ TokenValue.repr msg)
+    in
+    no_such_prim_token uninterpreted_token_kind ?loc ~errmsg ty
+  | x ->
+    let c = TokenValue.repr c in
+    Loc.raise ?loc (PrimTokenNotationError(token_kind,env,sigma,UnexpectedNonOptionTerm c))
+
 let uninterp_option c =
   match TokenValue.kind c with
   | TConstruct (_Some, [_; x]) -> x
+  | _ -> raise NotAValidPrimToken
+
+let uninterp_error c =
+  match TokenValue.kind c with
+  | TConstruct ((_, 1), [_; _; x]) -> x
   | _ -> raise NotAValidPrimToken
 
 let uninterp to_raw o n =
@@ -752,7 +771,11 @@ let uninterp to_raw o n =
   try
     let sigma,n = constr_of_glob o.to_post env sigma n in
     let c = eval_constr_app env sigma of_ty n in
-    let c = if snd o.of_kind == Direct then c else uninterp_option c in
+    let c = match snd o.of_kind with
+      | Direct -> c
+      | Option -> uninterp_option c
+      | Error -> uninterp_error c
+    in
     Some (to_raw (fst o.of_kind, c))
   with
   | Type_errors.TypeError _ | Pretype_errors.PretypeError _ -> None (* cf. eval_constr_app *)
@@ -1077,6 +1100,7 @@ let interp o ?loc n =
      match snd o.to_kind with
      | Direct -> glob_of_token "number" o.ty_name ?loc env sigma o.to_post res
      | Option -> interp_option "number" "number" o.ty_name ?loc env sigma o.to_post res
+     | Error -> interp_error "number" "number" o.ty_name ?loc env sigma o.to_post res
 
 let uninterp o n =
   PrimTokenNotation.uninterp
@@ -1193,6 +1217,7 @@ let interp o ?loc n =
   match snd o.to_kind with
   | Direct -> glob_of_token "string" o.ty_name ?loc env sigma o.to_post res
   | Option -> interp_option "string" "string" o.ty_name ?loc env sigma o.to_post res
+  | Error -> interp_error "string" "string" o.ty_name ?loc env sigma o.to_post res
 
 let uninterp o n =
   PrimTokenNotation.uninterp
