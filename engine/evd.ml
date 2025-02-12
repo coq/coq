@@ -1183,6 +1183,12 @@ let set_leq_sort evd s1 s2 =
        add_universe_constraints evd (UnivProblem.Set.singleton (UnivProblem.ULe (u1,u2)))
      else evd
 
+let set_eq_qualities evd q1 q2 =
+  add_universe_constraints evd (UnivProblem.Set.singleton (QEq (q1, q2)))
+
+let set_above_prop evd q =
+  add_universe_constraints evd (UnivProblem.Set.singleton (QLeq (Sorts.Quality.qprop, q)))
+
 let check_eq evd s s' =
   let ustate = evd.universes in
   UGraph.check_eq_sort (UState.ugraph ustate) (UState.nf_sort ustate s) (UState.nf_sort ustate s')
