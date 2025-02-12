@@ -123,7 +123,7 @@ let init_load_path () =
   List.iter (fun s -> add_rec_path ~unix_path:s ~rocq_root:CheckLibrary.default_root_prefix)
     (xdg_dirs ~warn:(fun x -> Feedback.msg_warning (str x)));
   (* then directories in ROCQPATH *)
-  List.iter (fun s -> add_rec_path ~unix_path:s ~rocq_root:CheckLibrary.default_root_prefix) rocqpath;
+  List.iter (fun s -> add_rec_path ~unix_path:s ~rocq_root:CheckLibrary.default_root_prefix) (rocqpath());
   (* then current directory *)
   add_path ~unix_path:"." ~rocq_root:CheckLibrary.default_root_prefix
 
