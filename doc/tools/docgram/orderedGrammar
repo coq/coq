@@ -598,6 +598,7 @@ sort_family: [
 | "SProp"
 | "Set"
 | "Type"
+| "Poly"
 ]
 
 hint_info: [

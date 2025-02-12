@@ -32,11 +32,6 @@ where "x = y :> A" := (@eq A x y) : type_scope.
 Arguments eq {A} x _.
 Arguments eq_refl {A x} , [A] x.
 
-Polymorphic Definition eq_elim@{s s' | u v w |} [A:Type@{s|u}] [x:A]
-  (P : forall a : A, x = a :> A -> Type@{s'|w}) :
-  P x (eq_refl@{s s'|u v} x) -> forall [a : A] (e : x = a :> A), P a e :=
-  fun t _ e => match e with eq_refl => t end.
-
 Polymorphic Definition eq_ind@{s | u|} [A] [x] P := @eq_elim@{s Prop|u Set Set} A x (fun a _ => P a).
 
 Polymorphic Definition eq_singleton@{s s' | u v|} [A:Type@{s|u}] [x:A]
