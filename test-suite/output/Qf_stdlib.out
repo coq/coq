@@ -6,7 +6,7 @@ Replace File "./output/Qf_stdlib.v", line 16, characters 6-22 with Corelib.Init.
 Nat.add : nat -> nat -> nat
 
 Nat.add is not universe polymorphic
-Arguments Nat.add (n m)%nat_scope
+Arguments Nat.add (n m)%_nat_scope
 Nat.add is transparent
 Expands to: Constant Corelib.Init.Nat.add
 Declared in library Corelib.Init.Nat, line 47, characters 0-113

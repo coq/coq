@@ -13,4 +13,4 @@ for
 f
      : nat -> nat
 
-Arguments f n%nat_scope
+Arguments f n%_nat_scope

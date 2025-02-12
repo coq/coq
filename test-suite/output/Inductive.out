@@ -8,20 +8,20 @@ l : list' A
 Unable to unify "list' (A * A)%type" with "list' A".
 Inductive foo (A : Type) (x : A) (y : A := x) : Prop :=  Foo : foo A x.
 
-Arguments foo A%type_scope x
-Arguments Foo A%type_scope x
+Arguments foo A%_type_scope x
+Arguments Foo A%_type_scope x
 myprod unit bool
      : Set
 option : Type -> Type
 
 option is template universe polymorphic
-Arguments option A%type_scope
+Arguments option A%_type_scope
 Expands to: Inductive Corelib.Init.Datatypes.option
 Declared in library Corelib.Init.Datatypes, line 202, characters 10-16
 option : Type@{option.u0} -> Type@{max(Set,option.u0)}
 
 option is template universe polymorphic on option.u0 (cannot be instantiated to Prop)
-Arguments option A%type_scope
+Arguments option A%_type_scope
 Expands to: Inductive Corelib.Init.Datatypes.option
 Declared in library Corelib.Init.Datatypes, line 202, characters 10-16
 File "./output/Inductive.v", line 27, characters 4-13:
@@ -38,7 +38,7 @@ or : Prop -> Prop -> Prop
 
 or is not universe polymorphic
 or may only be eliminated to produce values whose type is SProp or Prop.
-Arguments or (A B)%type_scope
+Arguments or (A B)%_type_scope
 Expands to: Inductive Corelib.Init.Logic.or
 Declared in library Corelib.Init.Logic, line 89, characters 10-12
 sunit : SProp
@@ -68,7 +68,7 @@ ssig@{q1 q2 q3 | a b} may only be eliminated to produce values whose type is in 
   are equal to the instantiation of q3, or to qualities smaller
   (SProp <= Prop <= Type, and all variables <= Type)
   than the instantiation of q3.
-Arguments ssig A%type_scope B%function_scope
+Arguments ssig A%_type_scope B%_function_scope
 Expands to: Inductive Inductive.ssig
 Declared in library Inductive, line 48, characters 22-26
 BoxP@{q | a} : Type@{q | a} -> Prop
@@ -77,6 +77,6 @@ BoxP@{q | a} : Type@{q | a} -> Prop
 BoxP is universe polymorphic
 BoxP@{q | a} may only be eliminated to produce values whose type is SProp or Prop,
   unless instantiated such that the quality q is SProp or Prop.
-Arguments BoxP A%type_scope
+Arguments BoxP A%_type_scope
 Expands to: Inductive Inductive.BoxP
 Declared in library Inductive, line 56, characters 22-26

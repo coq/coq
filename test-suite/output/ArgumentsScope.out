@@ -1,31 +1,31 @@
 a : bool -> bool
 
 a is not universe polymorphic
-Arguments a _%bool_scope
+Arguments a _%_bool_scope
 Expands to: Variable a
 b : bool -> bool
 
 b is not universe polymorphic
-Arguments b _%bool_scope
+Arguments b _%_bool_scope
 Expands to: Variable b
 negb'' : bool -> bool
 
 negb'' is not universe polymorphic
-Arguments negb'' b%bool_scope
+Arguments negb'' b%_bool_scope
 negb'' is transparent
 Expands to: Constant ArgumentsScope.A.B.negb''
 Declared in library ArgumentsScope, line 9, characters 11-17
 negb' : bool -> bool
 
 negb' is not universe polymorphic
-Arguments negb' b%bool_scope
+Arguments negb' b%_bool_scope
 negb' is transparent
 Expands to: Constant ArgumentsScope.A.negb'
 Declared in library ArgumentsScope, line 6, characters 11-16
 negb : bool -> bool
 
 negb is not universe polymorphic
-Arguments negb b%bool_scope
+Arguments negb b%_bool_scope
 negb is transparent
 Expands to: Constant Corelib.Init.Datatypes.negb
 Declared in library Corelib.Init.Datatypes, line 84, characters 11-15
@@ -86,7 +86,7 @@ Declared in library ArgumentsScope, line 9, characters 11-17
 f : bool -> bool
 
 f is not universe polymorphic
-Arguments f x%A_scope%B_scope
+Arguments f x%_A_scope%_B_scope
 f is transparent
 Expands to: Constant ArgumentsScope.f
 Declared in library ArgumentsScope, line 41, characters 11-12
@@ -97,7 +97,7 @@ f true
 f : bool -> bool
 
 f is not universe polymorphic
-Arguments f x%B_scope%A_scope
+Arguments f x%_B_scope%_A_scope
 f is transparent
 Expands to: Constant ArgumentsScope.f
 Declared in library ArgumentsScope, line 41, characters 11-12
@@ -108,28 +108,28 @@ f false
 g : bool -> bool
 
 g is not universe polymorphic
-Arguments g x%A_scope%B_scope
+Arguments g x%_A_scope%_B_scope
 g is transparent
 Expands to: Constant ArgumentsScope.g
 Declared in library ArgumentsScope, line 64, characters 11-12
 g' : nat -> nat
 
 g' is not universe polymorphic
-Arguments g' x%B_scope%A_scope
+Arguments g' x%_B_scope%_A_scope
 g' is transparent
 Expands to: Constant ArgumentsScope.g'
 Declared in library ArgumentsScope, line 71, characters 11-13
 g'' : unit -> unit
 
 g'' is not universe polymorphic
-Arguments g'' x%B_scope
+Arguments g'' x%_B_scope
 g'' is transparent
 Expands to: Constant ArgumentsScope.g''
 Declared in library ArgumentsScope, line 78, characters 11-14
 f : A -> B -> A
 
 f is not universe polymorphic
-Arguments f _%X _%Y
+Arguments f _%_X _%_Y
 f is transparent
 Expands to: Constant ArgumentsScope.SectionTest1.S.f
 Declared in library ArgumentsScope, line 91, characters 15-16
@@ -142,7 +142,7 @@ Declared in library ArgumentsScope, line 91, characters 15-16
 N.f : A -> A
 
 N.f is not universe polymorphic
-Arguments N.f _%X
+Arguments N.f _%_X
 Expands to: Constant ArgumentsScope.SectionTest2.N.f
 g : A -> A
 
