@@ -291,6 +291,7 @@ let ppqvar_subst l = pp (UVars.pr_quality_level_subst QVar.raw_pr l)
 let ppuniverse_level_subst l = pp (Univ.pr_universe_level_subst Level.raw_pr l)
 let ppustate l = pp (UState.pr l)
 let ppconstraints c = pp (Constraints.pr Level.raw_pr c)
+let ppqconstraints c = pp (QConstraints.pr QVar.raw_pr c)
 let ppuniverseconstraints c = pp (UnivProblem.Set.pr c)
 let ppuniverse_context_future c =
   let ctx = Future.force c in
