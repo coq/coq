@@ -8,7 +8,8 @@ awk 'BEGIN{while( (getline k < "'"$before"'")>0 ){a[k]}} $0 in a' "$after" > rem
 
 xargs -a removed_artifacts.txt rm
 
-d=_build_ci
+for d in _install_ci saved_build_ci; do
 if [ -d $d ]; then
   find $d -type d -empty -delete
 fi
+done
