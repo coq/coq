@@ -49,7 +49,7 @@ val coqroot : string
 (** [coqpath] is the standard path to coq.
     Notice that coqpath is stored in reverse order, since that is
     the order it gets added to the search path. *)
-val coqpath : string list
+val coqpath : unit -> string list
 
 (** Rocq tries to honor the XDG Base Directory Specification to access
     the user's configuration files.
