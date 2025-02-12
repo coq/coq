@@ -33,8 +33,8 @@ hint: [
 | WITH [ "Transparent" | "Opaque" ] LIST1 global
 | DELETE "Opaque" LIST1 global
 
-| REPLACE "Extern" natural OPT Constr.constr_pattern "=>" Pltac.tactic
-| WITH "Extern" natural OPT constr_pattern "=>" tactic
+| REPLACE "Extern" natural OPT Constr.constr_pattern OPT [ "as" qualid ] "=>" Pltac.tactic
+| WITH "Extern" natural OPT constr_pattern OPT [ "as" qualid ] "=>" tactic
 | INSERTALL "Hint"
 | APPENDALL opt_hintbases
 ]

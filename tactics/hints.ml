@@ -162,6 +162,10 @@ type ('a,'db) with_metadata =
   (** A pattern for the concl of the Goal *)
   ; name    : GlobRef.t option
   (** A potential name to refer to the hint *)
+(*
+  ; ename   : HintExtern.t option
+  (** A potential name to refer to the hint for Hint Extern *)
+*)
   ; db : 'db
   (** The database from which the hint comes *)
   ; secvars : Id.Pred.t
@@ -1009,7 +1013,7 @@ let make_unfold eref =
      secvars = secvars_of_global (Global.env ()) g;
      code = with_uid (Unfold_nth eref) })
 
-let make_extern pri pat tacast =
+let make_extern pri pat tacast name =
   let hdconstr = match pat with
   | None -> None
   | Some c ->
@@ -1021,7 +1025,7 @@ let make_extern pri pat tacast =
   (hdconstr,
    { pri = pri;
      pat = Option.map (fun p -> SyntacticPattern p) pat;
-     name = None;
+     name = name;
      db = ();
      secvars = Id.Pred.empty; (* Approximation *)
      code = with_uid (Extern (pat, tacast)) })
@@ -1167,7 +1171,7 @@ type hint_locality = Libobject.locality = Local | Export | SuperGlobal
 
 type hint_obj = {
   hint_local : hint_locality;
-  hint_name : string;
+  db_name : string;
   hint_action : hint_action;
 }
 
@@ -1195,7 +1199,7 @@ let superglobal h = match h.hint_local with
   | Local | Export -> false
 
 let load_autohint _ h =
-  let name = h.hint_name in
+  let name = h.db_name in
   let superglobal = superglobal h in
   match h.hint_action with
   | AddTransparency { grefs; state } ->
@@ -1213,22 +1217,20 @@ let open_autohint i h =
   let superglobal = superglobal h in
   if Int.equal i 1 then match h.hint_action with
   | AddHints hints ->
-    let () =
-      if not superglobal then
-        (* Import-bound hints must be declared when not imported yet *)
-        let filter (_, h) = not @@ KNmap.mem h.code.uid !statustable in
-        add_hint h.hint_name (List.filter filter hints)
-    in
+    if not superglobal then
+      (* Import-bound hints must be declared when not imported yet *)
+      let filter (_, h) = not @@ KNmap.mem h.code.uid !statustable in
+      add_hint h.db_name (List.filter filter hints);
     let add (_, hint) = statustable := KNmap.add hint.code.uid true !statustable in
     List.iter add hints
   | AddCut paths ->
-    if not superglobal then add_cut h.hint_name paths
+    if not superglobal then add_cut h.db_name paths
   | AddTransparency { grefs; state } ->
-    if not superglobal then add_transparency h.hint_name grefs state
+    if not superglobal then add_transparency h.db_name grefs state
   | RemoveHints hints ->
-    if not superglobal then remove_hint h.hint_name hints
+    if not superglobal then remove_hint h.db_name hints
   | AddMode { gref; mode } ->
-    if not superglobal then add_mode h.hint_name gref mode
+    if not superglobal then add_mode h.db_name gref mode
 
 let cache_autohint o =
   load_autohint 1 o; open_autohint 1 o
@@ -1376,7 +1378,6 @@ let inAutoHint : hint_obj -> obj =
      classify_function = classify_autohint;
      discharge_function = discharge_autohint;
     }
-
 let check_locality locality =
   let not_local what =
     CErrors.user_err
@@ -1392,7 +1393,7 @@ let check_locality locality =
 let make_hint ~locality name action =
   {
   hint_local = locality;
-  hint_name = name;
+  db_name = name;
   hint_action = action;
 }
 
@@ -1401,7 +1402,7 @@ let remove_hints ~locality dbnames grs =
   let dbnames = if List.is_empty dbnames then ["core"] else dbnames in
     List.iter
       (fun dbname ->
-        let hint = make_hint ~locality dbname (RemoveHints grs) in
+        let hint = make_hint ~locality dbname (RemoveHints grs) in (* ??? *)
         Lib.add_leaf (inAutoHint hint))
       dbnames
 
@@ -1468,17 +1469,17 @@ let add_transparency l b ~locality dbnames =
       Lib.add_leaf (inAutoHint hint))
     dbnames
 
-let add_extern info tacast ~locality dbname =
+let add_extern info tacast name ~locality dbname =
   let pat = match info.hint_pattern with
   | None -> None
   | Some (_, pat) -> Some pat
   in
   let hint = make_hint ~locality dbname
-                       (AddHints [make_extern (Option.get info.hint_priority) pat tacast]) in
+       (AddHints [make_extern (Option.get info.hint_priority) pat tacast name]) in
   Lib.add_leaf (inAutoHint hint)
 
-let add_externs info tacast ~locality dbnames =
-  List.iter (add_extern info tacast ~locality) dbnames
+let add_externs info tacast name ~locality dbnames =
+  List.iter (add_extern info tacast name ~locality) dbnames
 
 let add_trivials env sigma l ~locality dbnames =
   List.iter
@@ -1499,7 +1500,7 @@ type hints_entry =
   | HintsUnfoldEntry of Evaluable.t list
   | HintsTransparencyEntry of Evaluable.t hints_transparency_target * bool
   | HintsModeEntry of GlobRef.t * hint_mode list
-  | HintsExternEntry of hint_info * Genarg.glob_generic_argument
+  | HintsExternEntry of hint_info * Genarg.glob_generic_argument * GlobRef.t option
 
 let default_prepare_hint_ident = Id.of_string "H"
 
@@ -1574,8 +1575,8 @@ let add_hints ~locality dbnames h =
   | HintsUnfoldEntry lhints -> add_unfolds lhints ~locality dbnames
   | HintsTransparencyEntry (lhints, b) ->
       add_transparency lhints b ~locality dbnames
-  | HintsExternEntry (info, tacexp) ->
-      add_externs info tacexp ~locality dbnames
+  | HintsExternEntry (info, tacexp, name) ->
+      add_externs info tacexp name ~locality dbnames
 
 let hint_globref gr = IsGlobRef gr
 
@@ -1663,8 +1664,15 @@ let pr_id_hint env sigma (id, v) =
   | Some (ConstrPattern p | SyntacticPattern p) -> str", pattern " ++ pr_lconstr_pattern_env env sigma p
   | Some DefaultPattern -> str", pattern " ++ pr_leconstr_env env sigma (get_default_pattern v.code.obj)
   in
+  let ename =
+    match v.code.obj, v.name with
+    | Extern _, Some n ->
+      let qstr = string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty n) in
+      str ", name " ++ str qstr
+    | _ -> mt ()
+  in
   (pr_hint env sigma v.code ++ str" (cost " ++ int v.pri ++ pr_pat v
-   ++ str", id " ++ int id ++ str ")")
+   ++ str", id " ++ int id ++ ename ++ str ")")
 
 let pr_hint_list env sigma hintlist =
   (str "  " ++ hov 0 (prlist_with_sep fnl (pr_id_hint env sigma) hintlist) ++ fnl ())
