@@ -358,6 +358,9 @@ latex_elements = {
 
                  % Silence 'LaTeX Warning: Command \nobreakspace invalid in math mode'
                  \everymath{\def\nobreakspace{\ }}
+
+                 % deeper table of contents than default
+                 \setcounter{tocdepth}{4}
                  """
 }
 
