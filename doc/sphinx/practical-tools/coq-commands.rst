@@ -164,9 +164,11 @@ except that ``space_overhead`` is set to 120 and ``minor_heap_size`` is set to 3
 
 Specifies which components produce events when using the
 :ref:`profiling` system. It is a comma separated list of
-component names.
+component names, possibly prefixed by `-` to negate it.
 
 If the variable is not set, all components produce events.
+If it starts with `-`, all components not in the list produce events.
+Otherwise only components in the list produce events.
 
 Component names are internally defined, but `command` which corresponds to
 the interpretation of one command is particularly notable.
