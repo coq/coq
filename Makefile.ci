@@ -271,6 +271,13 @@ $(CI_TARGETS): $(NON_CI_GOALS)
 $(CI_VIRTUAL_TARGETS): $(NON_CI_GOALS)
 endif
 
+clean-ci:
+	for d in _build_ci/*/; do if [ -e "$$d/.git" ]; then \
+	(cd "$$d" && echo "cleaning $$d" && git clean -xfd); \
+	fi; done
+
+.PHONY: clean-ci
+
 # For emacs:
 # Local Variables:
 # mode: makefile
