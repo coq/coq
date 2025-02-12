@@ -647,24 +647,33 @@ let infer_conv_noticing_evars ~pb ~ts env sigma t1 t2 =
     if !has_evar then None
     else Some (UnifFailure (sigma, UnifUnivInconsistency e))
 
-module Cs_keys_cache = struct
-  type t = (Names.GlobRef.t Queue.t * state Names.GlobRef.Map.t) * (Names.GlobRef.t Queue.t * state Names.GlobRef.Map.t)
+module Cs_keys_cache :
+sig
+  type t
+  val empty : unit -> t
+  val flip : t -> t
+  val add : evar_map -> bool -> state -> t -> t
+  val fold : bool -> ('a -> state -> 'a) -> 'a -> t -> 'a
+  val clear : bool -> t -> unit
+end =
+struct
+  type t = (Names.GlobRef.t Queue.t * state Names.GlobRef.Map_env.t) * (Names.GlobRef.t Queue.t * state Names.GlobRef.Map_env.t)
 
-  let empty () : t = ((Queue.create (), Names.GlobRef.Map.empty), (Queue.create (), Names.GlobRef.Map.empty))
+  let empty () : t = ((Queue.create (), Names.GlobRef.Map_env.empty), (Queue.create (), Names.GlobRef.Map_env.empty))
 
   let flip (c1, c2) = (c2, c1)
 
   let add_left sigma appr (((c1, m1), c2) as c) =
     match fst @@ EConstr.destRef sigma (fst appr) with
-    | k when not (Names.GlobRef.Map.mem k m1) ->
+    | k when not (Names.GlobRef.Map_env.mem k m1) ->
         let () = Queue.push k c1 in
-        ((c1, Names.GlobRef.Map.add k appr m1), c2)
+        ((c1, Names.GlobRef.Map_env.add k appr m1), c2)
     | _ | exception DestKO -> c
 
   let add sigma l2r appr c =
     if l2r then add_left sigma appr c else flip (add_left sigma appr (flip c))
 
-  let fold_left f acc ((c, m), _) = Queue.fold (fun acc k -> f acc (Names.GlobRef.Map.find k m)) acc c
+  let fold_left f acc ((c, m), _) = Queue.fold (fun acc k -> f acc (Names.GlobRef.Map_env.find k m)) acc c
   let fold l2r f acc c = fold_left f acc (if l2r then c else flip c)
 
   let clear_left ((c, _), _) = Queue.clear c
