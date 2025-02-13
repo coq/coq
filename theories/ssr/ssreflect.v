@@ -82,11 +82,7 @@ Unset Printing Implicit Defensive.
 
 Module SsrSyntax.
 
-(**
- Declare Ssr keywords: 'is' 'of' '//' '/=' and '//='. We also declare the
- parsing level 8, as a workaround for a notation grammar factoring problem.
- Arguments of application-style notations (at level 10) should be declared
- at level 8 rather than 9 or the camlp5 grammar will not factor properly.    **)
+(** Declare Ssr keywords: "is" "isn't" "of" "//" "/=" and "//=". **)
 
 Reserved Notation "(* x 'is' y 'of' z 'isn't' // /= //= *)".
 
