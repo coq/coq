@@ -1376,7 +1376,7 @@ let wit_ssrpatternarg = wit_rpatternty
 
 let interp_rpattern = interp_rpattern ~wit_ssrpatternarg
 
-let ssrpatterntac _ist arg =
+let ssrpatterntac arg =
   let open Proofview.Notations in
   Proofview.Goal.enter begin fun gl ->
   let sigma0 = Proofview.Goal.sigma gl in
@@ -1398,7 +1398,7 @@ let () =
     let arg =
       let v = Id.Map.find (Names.Id.of_string "pattern") ist.lfun in
       Value.cast (topwit wit_ssrpatternarg) v in
-    ssrpatterntac ist arg in
+    ssrpatterntac arg in
   let name = { mltac_plugin = "rocq-runtime.plugins.ssrmatching"; mltac_tactic = "ssrpattern"; } in
   let () = Tacenv.register_ml_tactic name [|mltac|] in
   let tac =
