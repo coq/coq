@@ -1063,13 +1063,12 @@ let pr_ist { lfun= lfun } =
         pr_id id ++ str":" ++ Geninterp.Val.pr ty) (Id.Map.bindings lfun)
 *)
 
-let interp_pattern ?wit_ssrpatternarg env sigma0 red redty =
+let decode_pattern ?wit_ssrpatternarg env sigma0 red =
   pp(lazy(str"interpreting: " ++ pr_rpattern red));
   let xInT x y = X_In_T(x,y) and inXInT x y = In_X_In_T(x,y) in
   let inT x = In_T x and eInXInT e x t = E_In_X_In_T(e,x,t) in
   let eAsXInT e x t = E_As_X_In_T(e,x,t) in
   let mkG ?(k=NoFlag) x ist = {kind = k; pattern = (x,None); interpretation = ist } in
-  let ist_of x = x.interpretation in
   let decode ({interpretation=ist; _} as t) ?reccall f g =
     try match DAst.get (pf_intern_term env sigma0 t) with
     | GCast(t, Some DEFAULTcast, c) when isGHole t && isGLambda c->
@@ -1086,36 +1085,6 @@ let interp_pattern ?wit_ssrpatternarg env sigma0 red redty =
     | it -> g t with e when CErrors.noncritical e -> g t in
   let decodeG ist t f g = decode (mkG t ist) f g in
   let bad_enc id _ = CErrors.anomaly (str"bad encoding for pattern "++str id++str".") in
-  let cleanup_XinE (h_k, _) x rp sigma =
-    let to_clean, update = (* handle rename if x is already used *)
-      let ctx = Environ.named_context env in
-      let len = Context.Named.length ctx in
-      let name = ref None in
-      try ignore(Context.Named.lookup x ctx); (name, fun k ->
-        if !name = None then
-        let EvarInfo evi = Evd.find sigma k in
-        let nctx = Evd.evar_context evi in
-        let nlen = Context.Named.length nctx in
-        if nlen > len then begin
-          name := Some (Context.Named.Declaration.get_id (List.nth nctx (nlen - len - 1)))
-        end)
-      with Not_found -> ref (Some x), fun _ -> () in
-    let new_evars =
-      let rec aux acc t = match EConstr.kind sigma t with
-      | Evar (k,_) ->
-          if k = h_k || List.mem k acc || Evd.mem sigma0 k then acc else
-          (update k; k::acc)
-      | _ -> EConstr.fold sigma aux acc t in
-      aux [] rp in
-    let sigma =
-      List.fold_left (fun sigma e ->
-        if Evd.is_defined sigma e then sigma else (* clear may be recursive *)
-        if Option.is_empty !to_clean then sigma else
-        let name = Option.get !to_clean in
-        pp(lazy(pr_id name));
-        thin name sigma e)
-      sigma new_evars in
-    sigma in
   let red = let rec decode_red = function
     | T {kind=k; pattern=(t,None); interpretation=ist} ->
       begin match DAst.get t with
@@ -1145,10 +1114,13 @@ let interp_pattern ?wit_ssrpatternarg env sigma0 red redty =
     | E_As_X_In_T (e,x,rp) -> eAsXInT e (id_of_Cterm x) rp in
     decode_red red in
   pp(lazy(str"decoded as: " ++ pr_pattern_w_ids red));
+  red
+
+let add_pattern_type env sigma0 red (ty,ist) =
+  let ist_of x = x.interpretation in
+  let mkG ?(k=NoFlag) x ist = {kind = k; pattern = (x,None); interpretation = ist } in
+  let ty = {kind=NoFlag; pattern=ty; interpretation = Some ist} in
   let red =
-    match redty with
-    | None -> red
-    | Some (ty, ist) -> let ty = {kind=NoFlag; pattern=ty; interpretation = Some ist} in
   match red with
   | T t -> T (combineCG t ty (mkCCast ?loc:(loc_ofCG t)) mkRCast)
   | X_In_T (x,t) ->
@@ -1162,6 +1134,46 @@ let interp_pattern ?wit_ssrpatternarg env sigma0 red redty =
       E_As_X_In_T (combineCG e ty (mkCCast ?loc:(loc_ofCG t)) mkRCast, x, t)
   | red -> red in
   pp(lazy(str"typed as: " ++ pr_pattern_w_ids red));
+  red
+
+let cleanup_XinE env sigma0 (h_k, _) x rp sigma =
+  let to_clean, update = (* handle rename if x is already used *)
+    let ctx = Environ.named_context env in
+    let len = Context.Named.length ctx in
+    let name = ref None in
+    try ignore(Context.Named.lookup x ctx); (name, fun k ->
+        if !name = None then
+          let EvarInfo evi = Evd.find sigma k in
+          let nctx = Evd.evar_context evi in
+          let nlen = Context.Named.length nctx in
+          if nlen > len then begin
+            name := Some (Context.Named.Declaration.get_id (List.nth nctx (nlen - len - 1)))
+          end)
+    with Not_found -> ref (Some x), fun _ -> () in
+  let new_evars =
+    let rec aux acc t = match EConstr.kind sigma t with
+      | Evar (k,_) ->
+        if k = h_k || List.mem k acc || Evd.mem sigma0 k then acc else
+          (update k; k::acc)
+      | _ -> EConstr.fold sigma aux acc t in
+    aux [] rp in
+  let sigma =
+    List.fold_left (fun sigma e ->
+        if Evd.is_defined sigma e then sigma else (* clear may be recursive *)
+        if Option.is_empty !to_clean then sigma else
+          let name = Option.get !to_clean in
+          pp(lazy(pr_id name));
+          thin name sigma e)
+      sigma new_evars in
+  sigma
+
+let interp_pattern ?wit_ssrpatternarg env sigma0 red redty =
+  pp(lazy(str"interpreting: " ++ pr_rpattern red));
+  let red = decode_pattern ?wit_ssrpatternarg env sigma0 red in
+  let red =
+    match redty with
+    | None -> red
+    | Some ty -> add_pattern_type env sigma0 red ty in
   let mkXLetIn ?loc x {kind; pattern=(g,c); interpretation} = match c with
   | Some b -> {kind; pattern=(g,Some (mkCLetIn ?loc x (mkCHole ~loc) b)); interpretation}
   | None -> { kind
@@ -1171,26 +1183,26 @@ let interp_pattern ?wit_ssrpatternarg env sigma0 red redty =
   match red with
   | T t -> let sigma, t = interp_term env sigma0 t in { pat_sigma = sigma; pat_pat = T t }
   | In_T t -> let sigma, t = interp_term env sigma0 t in { pat_sigma = sigma; pat_pat = In_T t }
-  | X_In_T (x, rp) | In_X_In_T (x, rp) ->
-    let mk x p = match red with X_In_T _ -> X_In_T(x,p) | _ -> In_X_In_T(x,p) in
+  | X_In_T (x, rp) | In_X_In_T (x, rp)
+  | E_In_X_In_T(_, x, rp) | E_As_X_In_T (_, x, rp) ->
     let rp = mkXLetIn (Name x) rp in
     let sigma, rp = interp_term env sigma0 rp in
     let _, h, _, rp = EConstr.destLetIn sigma rp in
     let h = EConstr.destEvar sigma h in
-    let sigma = cleanup_XinE h x rp sigma in
+    let sigma = cleanup_XinE env sigma0 h x rp sigma in
     let rp = EConstr.Vars.subst1 (EConstr.mkEvar h) (Evarutil.nf_evar sigma rp) in
-    { pat_sigma = sigma; pat_pat = mk h rp }
-  | E_In_X_In_T(e, x, rp) | E_As_X_In_T (e, x, rp) ->
-    let mk e x p =
-      match red with E_In_X_In_T _ ->E_In_X_In_T(e,x,p)|_->E_As_X_In_T(e,x,p) in
-    let rp = mkXLetIn (Name x) rp in
-    let sigma, rp = interp_term env sigma0 rp in
-    let _, h, _, rp = EConstr.destLetIn sigma rp in
-    let h = EConstr.destEvar sigma h in
-    let sigma = cleanup_XinE h x rp sigma in
-    let rp = EConstr.Vars.subst1 (EConstr.mkEvar h) (Evarutil.nf_evar sigma rp) in
-    let sigma, e = interp_term env sigma e in
-    { pat_sigma = sigma; pat_pat = mk e h rp }
+    let sigma, p = match red with
+      | X_In_T _ -> sigma, X_In_T (h,rp)
+      | In_X_In_T _ -> sigma, In_X_In_T (h,rp)
+      | E_In_X_In_T (e,_,_) ->
+        let sigma, e = interp_term env sigma e in
+        sigma, E_In_X_In_T (e,h,rp)
+      | E_As_X_In_T (e,_,_) ->
+        let sigma, e = interp_term env sigma e in
+        sigma, E_As_X_In_T (e,h,rp)
+      | T _ | In_T _ -> assert false
+    in
+    { pat_sigma = sigma; pat_pat = p }
 
 let interp_cpattern env sigma red redty = interp_pattern env sigma (T red) redty;;
 let interp_rpattern ~wit_ssrpatternarg env sigma red = interp_pattern ~wit_ssrpatternarg env sigma red None;;
