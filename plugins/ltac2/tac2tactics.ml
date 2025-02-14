@@ -281,63 +281,63 @@ let native where cl =
   let cl = mk_clause cl in
   Tactics.reduce (CbvNative where) cl
 
-let eval_fun red c =
-  Tac2core.pf_apply begin fun env sigma ->
+let eval_fun env red c =
+  Tac2core.pf_apply_in env begin fun env sigma ->
   let (redfun, _) = Redexpr.reduction_of_red_expr env red in
   let (sigma, ans) = redfun env sigma c in
   Proofview.Unsafe.tclEVARS sigma >>= fun () ->
   Proofview.tclUNIT ans
   end
 
-let eval_red c =
-  eval_fun Red c
+let eval_red env c =
+  eval_fun env Red c
 
-let eval_hnf c =
-  eval_fun Hnf c
+let eval_hnf env c =
+  eval_fun env Hnf c
 
-let eval_simpl flags where c =
+let eval_simpl env flags where c =
   let where = Option.map map_pattern_with_occs where in
   Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->
   let flags = { flags with rConst } in
-  eval_fun (Simpl (flags, where)) c
+  eval_fun env (Simpl (flags, where)) c
 
-let eval_cbv flags c =
+let eval_cbv env flags c =
   Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->
   let flags = { flags with rConst } in
-  eval_fun (Cbv flags) c
+  eval_fun env (Cbv flags) c
 
-let eval_cbn flags c =
+let eval_cbn env flags c =
   Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->
   let flags = { flags with rConst } in
-  eval_fun (Cbn flags) c
+  eval_fun env (Cbn flags) c
 
-let eval_lazy flags c =
+let eval_lazy env flags c =
   Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->
   let flags = { flags with rConst } in
-  eval_fun (Lazy flags) c
+  eval_fun env (Lazy flags) c
 
-let eval_unfold occs c =
+let eval_unfold env occs c =
   let map (gr, occ) =
     let occ = mk_occurrences occ in
     get_evaluable_reference gr >>= fun gr -> Proofview.tclUNIT (occ, gr)
   in
   Proofview.Monad.List.map map occs >>= fun occs ->
-  eval_fun (Unfold occs) c
+  eval_fun env (Unfold occs) c
 
-let eval_fold cl c =
-  eval_fun (Fold cl) c
+let eval_fold env cl c =
+  eval_fun env (Fold cl) c
 
-let eval_pattern where c =
+let eval_pattern env where c =
   let where = List.map (fun (pat, occ) -> (mk_occurrences occ, pat)) where in
-  eval_fun (Pattern where) c
+  eval_fun env (Pattern where) c
 
-let eval_vm where c =
+let eval_vm env where c =
   let where = Option.map map_pattern_with_occs where in
-  eval_fun (CbvVm where) c
+  eval_fun env (CbvVm where) c
 
-let eval_native where c =
+let eval_native env where c =
   let where = Option.map map_pattern_with_occs where in
-  eval_fun (CbvNative where) c
+  eval_fun env (CbvNative where) c
 
 let on_destruction_arg tac ev arg =
   Proofview.Goal.enter begin fun gl ->

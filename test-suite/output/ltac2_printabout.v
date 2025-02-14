@@ -1,14 +1,14 @@
 Require Import Ltac2.Init.
 
-Ltac2 @ external type : constr -> constr := "rocq-runtime.plugins.ltac2" "constr_type".
+Ltac2 @ external array_empty : 'a array := "rocq-runtime.plugins.ltac2" "array_empty".
 
 Print Ltac2 Signatures.
 
-Print type.
+Print array_empty.
 
-Locate type.
+Locate array_empty.
 
-About type.
+About array_empty.
 
 (* constructors *)
 
