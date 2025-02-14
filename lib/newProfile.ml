@@ -246,18 +246,11 @@ let leave ?time name ?(args=[]) ?last () =
 
 (* NB: "process" and "init" are unconditional because they don't go
    through [profile] and I'm too lazy to make them conditional *)
-let components =
-  let from_env = Envars.getenv_rocq "_PROFILE_COMPONENTS" in
-  match from_env with
-  | None -> CString.Pred.(full |> remove "unification" |> remove "Conversion")
-  | Some s ->
-    List.fold_left (fun cs c -> CString.Pred.add c cs)
-      CString.Pred.empty
-      (String.split_on_char ',' s)
+let components = ref CString.Pred.empty
 
 let profile name ?args f () =
   if not (is_profiling ()) then f ()
-  else if CString.Pred.mem name components then begin
+  else if CString.Pred.mem name !components then begin
     let args = Option.map (fun f -> f()) args in
     enter name ?args ();
     let start = Counters.get () in
@@ -295,8 +288,20 @@ type settings =
     fname : string;
   }
 
+let init_components () =
+  let from_env = Envars.getenv_rocq "_PROFILE_COMPONENTS" in
+  let v = match from_env with
+  | None -> CString.Pred.(full |> remove "unification" |> remove "Conversion")
+  | Some s ->
+    List.fold_left (fun cs c -> CString.Pred.add c cs)
+      CString.Pred.empty
+      (String.split_on_char ',' s)
+  in
+  components := v
+
 let init { output; fname; } =
   let () = assert (not (is_profiling())) in
+  init_components();
   accu := Some { output = Some output; accumulate = None; sums = []; };
   format_header output;
   enter ~time:global_start_time ~args:["fname", `String fname] "process" ();
@@ -337,6 +342,7 @@ let with_profiling f =
   let out = ref [] in
   let this_accu, old_accu = match !accu with
     | None ->
+      init_components();
       { output = None;
         accumulate = Some out;
         sums = [0., empty_sums];
