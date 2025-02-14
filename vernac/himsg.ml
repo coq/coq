@@ -1147,10 +1147,11 @@ let explain_not_match_error = function
   | NotConvertibleBodyField ->
     str "the body of definitions differs"
   | NotConvertibleTypeField (env, typ1, typ2) ->
+    let typ1, typ2 = pr_explicit env (Evd.from_env env) (EConstr.of_constr typ1) (EConstr.of_constr typ2) in
     str "expected type" ++ spc ()  ++
-    quote (Printer.safe_pr_lconstr_env env (Evd.from_env env) typ2) ++ spc () ++
+    typ2 ++ spc () ++
     str "but found type" ++ spc () ++
-    quote (Printer.safe_pr_lconstr_env env (Evd.from_env env) typ1)
+    typ1
   | NotSameConstructorNamesField ->
     str "constructor names differ"
   | NotSameInductiveNameInBlockField ->
@@ -1186,10 +1187,11 @@ let explain_not_match_error = function
       UnivNames.pr_level_with_global_universes
       incon
   | IncompatiblePolymorphism (env, t1, t2) ->
+    let t1, t2 = pr_explicit env (Evd.from_env env) (EConstr.of_constr t1) (EConstr.of_constr t2) in
     str "conversion of polymorphic values generates additional constraints: " ++
-      quote (Printer.safe_pr_lconstr_env env (Evd.from_env env) t1) ++ spc () ++
+      quote t1 ++ spc () ++
       str "compared to " ++ spc () ++
-      quote (Printer.safe_pr_lconstr_env env (Evd.from_env env) t2)
+      quote t2
   | IncompatibleConstraints { got; expect } ->
     let open UVars in
     let pr_auctx auctx =
