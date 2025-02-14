@@ -75,7 +75,7 @@ let print_ref env reduce ref udecl =
   in
   let inst =
     if Environ.is_polymorphic env ref
-    then Printer.pr_universe_instance sigma inst
+    then Printer.pr_universe_instance_binder sigma inst Univ.Constraints.empty
     else mt ()
   in
   let priv = None in (* We deliberately don't print private univs in About. *)
@@ -566,7 +566,7 @@ let print_instance sigma cb =
   if Declareops.constant_is_polymorphic cb then
     let univs = Declareops.constant_polymorphic_context cb in
     let inst = UVars.make_abstract_instance univs in
-    pr_universe_instance sigma inst
+    pr_universe_instance_binder sigma inst Univ.Constraints.empty
   else mt()
 
 let print_constant env ~with_values with_implicit cst udecl =

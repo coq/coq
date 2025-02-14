@@ -1190,7 +1190,7 @@ let explain_not_match_error = function
              (Printer.universe_binders_with_opt_names auctx None))
       in
       let uctx = AbstractContext.repr auctx in
-      Printer.pr_universe_instance_constraints sigma
+      Printer.pr_universe_instance_binder sigma
         (UContext.instance uctx)
         (UContext.constraints uctx)
     in
