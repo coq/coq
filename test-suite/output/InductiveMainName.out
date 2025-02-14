@@ -22,5 +22,5 @@ Expands to: Constant InductiveMainName.bar''
 Record foo''' : Set := Build_foo''' { bar''' : nat } as id.
 
 foo''' has primitive projections with eta conversion.
-Arguments Build_foo''' bar'''%nat_scope
+Arguments Build_foo''' bar'''%_nat_scope
 Arguments bar''' id

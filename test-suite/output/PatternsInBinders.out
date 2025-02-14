@@ -23,7 +23,7 @@ swap =
 fun (A B : Type) '(x, y) => (y, x)
      : forall {A B : Type}, A * B -> B * A
 
-Arguments swap {A B}%type_scope pat
+Arguments swap {A B}%_type_scope pat
 fun (A B : Type) '(x, y) => swap (x, y) = (y, x)
      : forall A B : Type, A * B -> Prop
 forall (A B : Type) '(x, y), swap (x, y) = (y, x)
@@ -50,6 +50,6 @@ fun (pat : nat) '(x, y) => x + y = pat
 f = fun x : nat => x + x
      : nat -> nat
 
-Arguments f x%nat_scope
+Arguments f x%_nat_scope
 fun x : nat => x + x
      : nat -> nat

@@ -5,42 +5,42 @@ Record PWrap@{uu} (A : Type@{uu}) : Type@{uu} := pwrap
 (* uu |=  *)
 
 PWrap has primitive projections with eta conversion.
-Arguments PWrap A%type_scope
-Arguments pwrap A%type_scope punwrap
-Arguments punwrap A%type_scope p
+Arguments PWrap A%_type_scope
+Arguments pwrap A%_type_scope punwrap
+Arguments punwrap A%_type_scope p
 Record PWrap@{uu} (A : Type@{uu}) : Type@{uu} := pwrap
   { punwrap : A }.
 (* uu |=  *)
 
 PWrap has primitive projections with eta conversion.
-Arguments PWrap A%type_scope
-Arguments pwrap A%type_scope punwrap
-Arguments punwrap A%type_scope p
+Arguments PWrap A%_type_scope
+Arguments pwrap A%_type_scope punwrap
+Arguments punwrap A%_type_scope p
 Record RWrap@{uu} (A : Type@{uu}) : Type@{uu} := rwrap
   { runwrap : A }.
 (* uu |=  *)
 
-Arguments RWrap A%type_scope
-Arguments rwrap A%type_scope runwrap
-Arguments runwrap A%type_scope r
+Arguments RWrap A%_type_scope
+Arguments rwrap A%_type_scope runwrap
+Arguments runwrap A%_type_scope r
 runwrap@{uu} =
 fun (A : Type@{uu}) (r : RWrap@{uu} A) => let (runwrap) := r in runwrap
      : forall A : Type@{uu}, RWrap@{uu} A -> A
 (* uu |=  *)
 
 runwrap is a projection of RWrap
-Arguments runwrap A%type_scope r
+Arguments runwrap A%_type_scope r
 Wrap@{uu} = fun A : Type@{uu} => A
      : Type@{uu} -> Type@{uu}
 (* uu |=  *)
 
-Arguments Wrap A%type_scope
+Arguments Wrap A%_type_scope
 wrap@{uu} =
 fun (A : Type@{uu}) (Wrap : Wrap@{uu} A) => Wrap
      : forall {A : Type@{uu}}, Wrap@{uu} A -> A
 (* uu |=  *)
 
-Arguments wrap {A}%type_scope {Wrap}
+Arguments wrap {A}%_type_scope {Wrap}
 bar@{uu} = nat
      : Wrap@{uu} Set
 (* uu |= Set < uu *)
@@ -99,15 +99,15 @@ Record PWrap@{E} (A : Type@{E}) : Type@{E} := pwrap
 (* E |=  *)
 
 PWrap has primitive projections with eta conversion.
-Arguments PWrap A%type_scope
-Arguments pwrap A%type_scope punwrap
-Arguments punwrap A%type_scope p
+Arguments PWrap A%_type_scope
+Arguments pwrap A%_type_scope punwrap
+Arguments punwrap A%_type_scope p
 punwrap@{K} : forall A : Type@{K}, PWrap@{K} A -> A
 (* K |=  *)
 
 punwrap is universe polymorphic
 punwrap is a primitive projection of PWrap
-Arguments punwrap A%type_scope p
+Arguments punwrap A%_type_scope p
 punwrap is transparent
 Expands to: Constant UnivBinders.punwrap
 File "./output/UnivBinders.v", line 104, characters 0-19:
@@ -129,7 +129,7 @@ Inductive insecind@{k} : Type@{k+1} :=
     inseccstr : Type@{k} -> insecind@{k}.
 (* k |=  *)
 
-Arguments inseccstr _%type_scope
+Arguments inseccstr _%_type_scope
 insec@{uu v} = Type@{uu} -> Type@{v}
      : Type@{max(uu+1,v+1)}
 (* uu v |=  *)
@@ -137,7 +137,7 @@ Inductive insecind@{uu k} : Type@{k+1} :=
     inseccstr : Type@{k} -> insecind@{uu k}.
 (* uu k |=  *)
 
-Arguments inseccstr _%type_scope
+Arguments inseccstr _%_type_scope
 insec2@{u} = Prop
      : Type@{Set+1}
 (* u |=  *)
@@ -158,38 +158,38 @@ axfoo@{i u u0} : Type@{u} -> Type@{i}
 (* i u u0 |=  *)
 
 axfoo is universe polymorphic
-Arguments axfoo _%type_scope
+Arguments axfoo _%_type_scope
 Expands to: Constant UnivBinders.axfoo
 axbar@{i u u0} : Type@{u0} -> Type@{i}
 (* i u u0 |=  *)
 
 axbar is universe polymorphic
-Arguments axbar _%type_scope
+Arguments axbar _%_type_scope
 Expands to: Constant UnivBinders.axbar
 axfoo' : Type@{axfoo'.u0} -> Type@{axfoo'.i}
 
 axfoo' is not universe polymorphic
-Arguments axfoo' _%type_scope
+Arguments axfoo' _%_type_scope
 Expands to: Constant UnivBinders.axfoo'
 axbar' : Type@{axfoo'.u1} -> Type@{axfoo'.i}
 
 axbar' is not universe polymorphic
-Arguments axbar' _%type_scope
+Arguments axbar' _%_type_scope
 Expands to: Constant UnivBinders.axbar'
 *** [ axfoo@{i u u0} : Type@{u} -> Type@{i} ]
 (* i u u0 |=  *)
 
-Arguments axfoo _%type_scope
+Arguments axfoo _%_type_scope
 *** [ axbar@{i u u0} : Type@{u0} -> Type@{i} ]
 (* i u u0 |=  *)
 
-Arguments axbar _%type_scope
+Arguments axbar _%_type_scope
 *** [ axfoo' : Type@{axfoo'.u0} -> Type@{axfoo'.i} ]
 
-Arguments axfoo' _%type_scope
+Arguments axfoo' _%_type_scope
 *** [ axbar' : Type@{axfoo'.u1} -> Type@{axfoo'.i} ]
 
-Arguments axbar' _%type_scope
+Arguments axbar' _%_type_scope
 File "./output/UnivBinders.v", line 158, characters 19-26:
 The command has indeed failed with message:
 When declaring multiple assumptions in one command, only the first name is
@@ -212,44 +212,44 @@ Inductive MutualR1@{u} (A : Type@{u}) : Prop :=
     Build_MutualR2 : MutualR1@{u} A -> MutualR2@{u} A.
 (* u |=  *)
 
-Arguments MutualR1 A%type_scope
-Arguments Build_MutualR1 A%type_scope p1
-Arguments p1 A%type_scope m
-Arguments MutualR2 A%type_scope
-Arguments Build_MutualR2 A%type_scope p2
-Arguments p2 A%type_scope m
+Arguments MutualR1 A%_type_scope
+Arguments Build_MutualR1 A%_type_scope p1
+Arguments p1 A%_type_scope m
+Arguments MutualR2 A%_type_scope
+Arguments Build_MutualR2 A%_type_scope p2
+Arguments p2 A%_type_scope m
 Inductive MutualI1@{u u0} (A : Type@{u}) : Type@{u0} :=
     C1 : MutualI2@{u u0} A -> MutualI1@{u u0} A
   with MutualI2@{u u0} (A : Type@{u}) : Type@{u0} :=
     C2 : MutualI1@{u u0} A -> MutualI2@{u u0} A.
 (* u u0 |=  *)
 
-Arguments MutualI1 A%type_scope
-Arguments C1 A%type_scope p1
-Arguments MutualI2 A%type_scope
-Arguments C2 A%type_scope p2
+Arguments MutualI1 A%_type_scope
+Arguments C1 A%_type_scope p1
+Arguments MutualI2 A%_type_scope
+Arguments C2 A%_type_scope p2
 CoInductive MutualR1'@{u} (A : Type@{u}) : Prop :=
     Build_MutualR1' : MutualR2'@{u} A -> MutualR1'@{u} A
   with MutualR2'@{u} (A : Type@{u}) : Prop :=
     Build_MutualR2' : MutualR1'@{u} A -> MutualR2'@{u} A.
 (* u |=  *)
 
-Arguments MutualR1' A%type_scope
-Arguments Build_MutualR1' A%type_scope p1'
-Arguments p1' A%type_scope m
-Arguments MutualR2' A%type_scope
-Arguments Build_MutualR2' A%type_scope p2'
-Arguments p2' A%type_scope m
+Arguments MutualR1' A%_type_scope
+Arguments Build_MutualR1' A%_type_scope p1'
+Arguments p1' A%_type_scope m
+Arguments MutualR2' A%_type_scope
+Arguments Build_MutualR2' A%_type_scope p2'
+Arguments p2' A%_type_scope m
 CoInductive MutualI1'@{u u0} (A : Type@{u}) : Type@{u0} :=
     C1' : MutualI2'@{u u0} A -> MutualI1'@{u u0} A
   with MutualI2'@{u u0} (A : Type@{u}) : Type@{u0} :=
     C2' : MutualI1'@{u u0} A -> MutualI2'@{u u0} A.
 (* u u0 |=  *)
 
-Arguments MutualI1' A%type_scope
-Arguments C1' A%type_scope p1
-Arguments MutualI2' A%type_scope
-Arguments C2' A%type_scope p2
+Arguments MutualI1' A%_type_scope
+Arguments C1' A%_type_scope p1
+Arguments MutualI2' A%_type_scope
+Arguments C2' A%_type_scope p2
 File "./output/UnivBinders.v", line 209, characters 0-33:
 The command has indeed failed with message:
 Universe inconsistency. Cannot enforce a < a because a = a.
@@ -257,7 +257,7 @@ JMeq :
 forall [A : Type@{JMeq.u0}], A -> forall [B : Type@{JMeq.u1}], B -> Prop
 
 JMeq is template universe polymorphic on JMeq.u0 (cannot be instantiated to Prop)
-Arguments JMeq [A]%type_scope x [B]%type_scope _
+Arguments JMeq [A]%_type_scope x [B]%_type_scope _
 Expands to: Inductive UnivBinders.PartialTemplate.JMeq
 Declared in library UnivBinders, line 219, characters 10-14
 File "./output/UnivBinders.v", line 234, characters 2-38:

@@ -32,7 +32,7 @@ nat_ind (fun n0 : nat => ((n0 * m) + n0) = (n0 * (S m)))
   n
      : forall n m : nat, ((n * m) + n) = (n * (S m))
 
-Arguments mult_n_Sm (n m)%nat_scope
+Arguments mult_n_Sm (n m)%_nat_scope
 1 :: (2 :: [3; 4])
      : list nat
 {0 = 1} + {2 <= (4 + 5)}
