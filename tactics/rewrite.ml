@@ -1083,6 +1083,21 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
                     in state, res
             else rewrite_args state None
 
+      | Proj (p, r, arg) ->
+          let expanded = Retyping.expand_projection env (fst evars) p arg [] in
+          let unfold_compat_constant sigma t =
+            match EConstr.kind sigma t with
+            | App (id, arr) -> mkProj (p, r, Array.last arr)
+            | _ -> assert false in
+          let state, res = aux { state ; env ; unfresh ; term1 = expanded ; ty1 = ty ;
+                                 cstr = (prop,cstr) ; evars = evars } in
+          let res =
+            match res with
+            | Success r -> Success { r with rew_to = unfold_compat_constant (goalevars r.rew_evars) r.rew_to }
+            | Fail | Identity -> res
+          in state, res
+
+
       | Prod (n, x, b) when noccurn (goalevars evars) 1 b ->
           let b = subst1 mkProp b in
           let evars, tx = get_type_of_refresh env evars x in
