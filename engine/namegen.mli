@@ -64,6 +64,8 @@ val it_mkLambda_or_LetIn_name : env -> evar_map -> constr -> rel_context -> cons
 (*********************************************************************
    Fresh names *)
 
+val mangle_id : Id.t -> Id.t
+
 (** Avoid clashing with a name satisfying some predicate *)
 val next_ident_away_from : Id.t -> (Id.t -> bool) -> Id.t
 
