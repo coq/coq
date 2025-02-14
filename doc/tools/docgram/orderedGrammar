@@ -1004,7 +1004,7 @@ command: [
 | "Hint" "Mode" qualid LIST1 [ "+" | "!" | "-" ] OPT ( ":" LIST1 ident )
 | "Hint" "Unfold" LIST1 qualid OPT ( ":" LIST1 ident )
 | "Hint" "Constructors" LIST1 qualid OPT ( ":" LIST1 ident )
-| "Hint" "Extern" natural OPT one_pattern "=>" ltac_expr OPT ( ":" LIST1 ident )
+| "Hint" "Extern" natural OPT one_pattern OPT [ "as" qualid ] "=>" ltac_expr OPT ( ":" LIST1 ident )
 | "Time" sentence
 | "Instructions" sentence
 | "Profile" OPT string sentence
