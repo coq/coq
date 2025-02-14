@@ -1,0 +1,16 @@
+"hello"
+     : smallstring
+File "./output/StringNotationErrors.v", line 21, characters 13-30:
+The command has indeed failed with message:
+Cannot interpret this string as a value of type smallstring
+("not a small string: too long string"%pstring)
+"too long string"
+     : smallstring
+"hello"
+     : smallstring
+File "./output/StringNotationErrors.v", line 45, characters 13-30:
+The command has indeed failed with message:
+Cannot interpret this string as a value of type smallstring
+(NotSmallString "too long string")
+SmallString "too long string"
+     : smallstring
