@@ -35,23 +35,16 @@ let { Goptions.get = ground_depth } =
     ~value:3
     ()
 
-let default_intuition_tac =
-  let tac _ _ = Auto.gen_auto None [] (Some []) in
-  let name = { Tacexpr.mltac_plugin = "rocq-runtime.plugins.firstorder"; mltac_tactic = "auto_with"; } in
-  let entry = { Tacexpr.mltac_name = name; mltac_index = 0 } in
-  Tacenv.register_ml_tactic name [| tac |];
-  CAst.make (Tacexpr.TacML (entry, []))
-
 let (set_default_solver, default_solver, print_default_solver) =
-  Tactic_option.declare_tactic_option ~default:default_intuition_tac "Firstorder default solver"
+  Tactic_option.declare_tactic_option "Firstorder default solver"
 
 }
 
 VERNAC COMMAND EXTEND Firstorder_Set_Solver CLASSIFIED AS SIDEFF
-| #[ locality = Tactic_option.tac_option_locality; ] [ "Set" "Firstorder" "Solver" tactic(t) ] -> {
+| #[ locality = Tactic_option.tac_option_locality; ] [ "Set" "Firstorder" "Solver" generic_tactic(t) ] -> {
       set_default_solver
         locality
-        (Tacintern.glob_tactic t)
+        (Gentactic.intern (Global.env()) t)
   }
 END
 
