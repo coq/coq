@@ -291,24 +291,41 @@ let inductive_template env sigma tmloc ind =
      (and in the future fresh qualities?) *)
   let sigma, indu = Evd.fresh_inductive_instance env sigma ind in
   let indu = on_snd EInstance.make indu in
+  let templ =
+    match (Environ.lookup_mind (fst (fst indu)) env).mind_template with
+    | None -> []
+    | Some t -> t.template_param_arguments
+  in
   let arsign = inductive_alldecls env indu in
   let hole_source i = match tmloc with
     | Some loc -> Loc.tag ~loc @@ Evar_kinds.TomatchTypeParameter (ind,i)
     | None     -> Loc.tag      @@ Evar_kinds.TomatchTypeParameter (ind,i) in
-   let (sigma, _, evarl, _) =
-    List.fold_right
-      (fun decl (sigma, subst, evarl, n) ->
-        match decl with
-        | LocalAssum (na,ty) ->
-            let ty' = substl subst ty in
-            let sigma, e =
-              Evarutil.new_evar env ~src:(hole_source n) sigma ty'
-            in
-            (sigma, e::subst,e::evarl,n+1)
-        | LocalDef (na,b,ty) ->
-            (sigma, substl subst b::subst,evarl,n+1))
-      arsign (sigma, [], [], 1) in
-   sigma, applist (mkIndU indu,List.rev evarl)
+  let rec aux (sigma, subst, evarl, n) templ arsign = match arsign with
+    | [] -> sigma, evarl
+    | LocalDef (na,b,ty) :: arsign ->
+      aux (sigma, substl subst b::subst,evarl,n+1) templ arsign
+    | LocalAssum (na,ty) :: arsign ->
+      let this_templ, templ = match templ with
+        | b :: templ -> b, templ
+        | [] -> None, []
+      in
+      let ty = substl subst ty in
+      let sigma, ty = match this_templ with
+        | None -> sigma, ty
+        | Some _ ->
+          (* XXX qvar? *)
+          let sigma, u = Evd.new_univ_level_variable UState.univ_flexible_alg sigma in
+          let s = ESorts.make (Sorts.sort_of_univ (Univ.Universe.make u)) in
+          let ctx, _ = destArity sigma ty in
+          sigma, mkArity (ctx, s)
+      in
+      let sigma, e =
+        Evarutil.new_evar env ~src:(hole_source n) sigma ty
+      in
+      aux (sigma, e::subst,e::evarl,n+1) templ arsign
+  in
+  let (sigma, evarl) = aux (sigma, [], [], 1) templ (List.rev arsign) in
+  sigma, applist (mkIndU indu,List.rev evarl)
 
 let try_find_ind env sigma typ realnames =
   let (IndType(indf,realargs) as ind) = find_rectype env sigma typ in
