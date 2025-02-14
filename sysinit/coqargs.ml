@@ -107,6 +107,7 @@ type t = {
 
 let default_toplevel = "Top"
 
+let default_vm = Coq_config.bytecode_compiler
 let default_native = Coq_config.native_compiler
 
 let default_logic_config = {
@@ -121,7 +122,7 @@ let default_config = {
   logic        = default_logic_config;
   rcfile       = None;
   coqlib       = None;
-  enable_VM    = true;
+  enable_VM    = default_vm;
   native_compiler = default_native;
   native_output_dir = ".coq-native";
   native_include_dirs = [];
