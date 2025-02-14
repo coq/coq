@@ -1096,9 +1096,9 @@ let new_quality_variable ?loc ?name evd =
   let uctx, q = UState.new_sort_variable ?loc ?name evd.universes in
   {evd with universes = uctx}, q
 
-let new_sort_variable ?loc rigid sigma =
-  let (sigma, u) = new_univ_variable ?loc rigid sigma in
-  let uctx, q = UState.new_sort_variable sigma.universes in
+let new_sort_variable ?loc ?qname ?uname rigid sigma =
+  let (sigma, u) = new_univ_variable ?name:uname ?loc rigid sigma in
+  let uctx, q = UState.new_sort_variable ?name:qname sigma.universes in
   ({ sigma with universes = uctx }, Sorts.qsort q u)
 
 let add_forgotten_univ d u =
