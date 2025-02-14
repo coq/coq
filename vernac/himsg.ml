@@ -123,15 +123,22 @@ let rec display_expr_eq c1 c2 =
   | _ ->
     Constrexpr_ops.constr_expr_eq_gen display_expr_eq c1 c2
 
+let safe_extern_constr env sigma t =
+  Printer.safe_extern_wrapper begin fun env sigma () ->
+    Constrextern.extern_constr env sigma t
+  end env sigma ()
+
 (** Tries to realize when the two terms, albeit different are printed the same. *)
 let display_eq ~flags env sigma t1 t2 =
   (* terms are canonized, then their externalisation is compared syntactically *)
-  let open Constrextern in
   let t1 = canonize_constr sigma t1 in
   let t2 = canonize_constr sigma t2 in
-  let ct1 = Flags.with_options flags (fun () -> extern_constr env sigma t1) () in
-  let ct2 = Flags.with_options flags (fun () -> extern_constr env sigma t2) () in
-  display_expr_eq ct1 ct2
+  let ct1 = Flags.with_options flags (fun () -> safe_extern_constr env sigma t1) () in
+  let ct2 = Flags.with_options flags (fun () -> safe_extern_constr env sigma t2) () in
+  match ct1, ct2 with
+  | None, None -> false
+  | Some _, None | None, Some _ -> false
+  | Some ct1, Some ct2 -> display_expr_eq ct1 ct2
 
 (** This function adds some explicit printing flags if the two arguments are
     printed alike. *)
@@ -145,12 +152,13 @@ let rec pr_explicit_aux env sigma t1 t2 = function
     (* The two terms are the same from the user point of view *)
     pr_explicit_aux env sigma t1 t2 rem
   else
-    let open Constrextern in
-    let ct1 = Flags.with_options flags (fun () -> extern_constr env sigma t1) ()
+    let ct1 = Flags.with_options flags (fun () -> safe_extern_constr env sigma t1) () in
+    let ct2 = Flags.with_options flags (fun () -> safe_extern_constr env sigma t2) () in
+    let pr = function
+    | None -> str "??"
+    | Some c -> Ppconstr.pr_lconstr_expr env sigma c
     in
-    let ct2 = Flags.with_options flags (fun () -> extern_constr env sigma t2) ()
-    in
-    Ppconstr.pr_lconstr_expr env sigma ct1, Ppconstr.pr_lconstr_expr env sigma ct2
+    pr ct1, pr ct2
 
 let explicit_flags =
   let open Constrextern in
