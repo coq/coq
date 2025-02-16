@@ -2456,6 +2456,11 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
           assert (kd = CPrimitives.Kwhnf);
           kni info tab ~pat_state a (Zprimitive(op,c,rargs,nargs)::s)
         end
+      | (Zunfold (_, unf, rev_params) :: stk) ->
+        Dbg.(dbg Pp.(fun () -> str "knr; Zunfold"));
+        let m = zip m (cargs()) in
+        let rev_params = Zapp [|m|] :: rev_params in
+        consume_arg info tab ~pat_state unf rev_params stk
       | _ -> cont ()
     end
   | FCaseInvert (ci, u, pms, _p,iv,_c,v,env) when red_set info.i_flags fMATCH ->

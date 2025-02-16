@@ -14,6 +14,17 @@ Ltac assert_head_eq :=
   idtac; assert_eq ltac:(fun l => let l := eval kred head in l in l).
 
 
+Module PrimArgs.
+  Require Import Corelib.Strings.PrimString.
+  Definition t (s : string) := True.
+  Arguments t !_ /.
+  Goal t "test".
+  Proof.
+    progress kred.
+  Abort.
+End PrimArgs.
+
+
 Module NoIdea.
   Record xt := { x : nat }.
   Axiom mul : nat -> nat -> nat.
