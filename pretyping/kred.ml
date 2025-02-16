@@ -189,17 +189,17 @@ type evar_repack = Evar.t * constr list -> constr
 type gfix = (Constr.t,unit) Result.t Lazy.t array
 type gcofix = (Constr.t,unit) Result.t Lazy.t array
 
-type ('a,'r) gfix_info_aux = {
+type ('a,'r,'s) gfix_info_aux = {
   gfix_nargs : int;
   gfix_tys : (Name.t binder_annot * constr) list;
-  gfix_univs : UVars.Instance.t;
   gfix_body : 'a;
+  gfix_subs : 's subs UVars.puniverses;
   gfix_refold : 'r;
 }
 
-type gfix_info =
-  | GFixInfo of (fixpoint, gfix) gfix_info_aux
-  | GCoFixInfo of (cofixpoint, gcofix) gfix_info_aux
+type 's gfix_info =
+  | GFixInfo of (fixpoint, gfix, 's) gfix_info_aux
+  | GCoFixInfo of (cofixpoint, gcofix, 's) gfix_info_aux
 
 type fconstr = {
   mutable mark : red_state;
@@ -405,7 +405,7 @@ end
 module UnfoldDef = struct
   include Undo
   type t = {
-    ogfix : gfix_info option;
+    ogfix : fconstr gfix_info option;
     recargs_shift : int;
     recargs : int list;
     undo: Undo.t
@@ -791,7 +791,7 @@ open Stack
 
 (************************************************************************)
 
-type table_val = (fconstr * gfix_info option, Empty.t, UVars.Instance.t * bool * rewrite_rule list) constant_def
+type table_val = (fconstr * fconstr gfix_info option, Empty.t, UVars.Instance.t * bool * rewrite_rule list) constant_def
 
 module Table : sig
   type t
@@ -897,6 +897,20 @@ end = struct
 
 
   and expand_global_fixpoint info tab cst c =
+    let rec decompose_decls c =
+      match[@ocaml.warning "-4"] Constr.kind c with
+      | LetIn (_, b, _, c) ->
+        let ctx, c = decompose_decls c in
+        ((inject b::ctx), c)
+      | _ -> [], c
+    in
+    let (lets, c) =
+      if RedFlags.red_set info.i_flags RedFlags.fZETA then
+        let ctx, c = decompose_decls c in
+        (Array.of_list ctx, c)
+      else
+        ([||], c)
+    in
     let ctx, body = Term.decompose_lambda c in
     match [@ocaml.warning "-4"] kind body with
     | Fix (((rd,i),_) as fix) ->
@@ -913,8 +927,8 @@ end = struct
       Some (GFixInfo {
         gfix_nargs = nargs;
         gfix_tys = List.rev ctx;
-        gfix_univs = snd cst;
         gfix_body = fix;
+        gfix_subs = (usubs_consn lets 0 (Array.length lets) (subs_id 0, snd cst));
         gfix_refold = refold;
       })
     | CoFix ((i, (names, _, _)) as cofix) ->
@@ -931,8 +945,8 @@ end = struct
       Some (GCoFixInfo {
         gfix_nargs = nargs;
         gfix_tys = List.rev ctx;
-        gfix_univs = snd cst;
         gfix_body = cofix;
+        gfix_subs = (usubs_consn lets 0 (Array.length lets) (subs_id 0, snd cst));
         gfix_refold = refold;
       })
     | _ -> None
@@ -2529,9 +2543,9 @@ and unfold : 'a. _ -> _ -> pat_state: 'a depth  -> Undo.t -> _ -> _ -> _ -> _ ->
   | Some (GFixInfo gfix) ->
     if Int.equal gfix.gfix_nargs 0 then
       let refold = Some gfix.gfix_refold in
-      maybe_undo info tab ~pat_state (undo, []) { mark = Cstr; term = FFix (gfix.gfix_body, (subs_id 0, gfix.gfix_univs), undo.Undo.may_refold, refold) } stk
+      maybe_undo info tab ~pat_state (undo, []) { mark = Cstr; term = FFix (gfix.gfix_body, gfix.gfix_subs, undo.Undo.may_refold, refold) } stk
     else if red_set info.i_flags fBETA then
-      match get_args gfix.gfix_nargs gfix.gfix_tys (mkFix gfix.gfix_body) (subs_id 0, gfix.gfix_univs) stk with
+      match get_args gfix.gfix_nargs gfix.gfix_tys (mkFix gfix.gfix_body) gfix.gfix_subs stk with
       | Inl (rev_extra_args, e), stk ->
         let refold = Some gfix.gfix_refold in
         maybe_undo info tab ~pat_state (undo, rev_extra_args) { mark = Cstr; term = FFix (gfix.gfix_body, e, undo.Undo.may_refold, refold) } stk
@@ -2540,9 +2554,9 @@ and unfold : 'a. _ -> _ -> pat_state: 'a depth  -> Undo.t -> _ -> _ -> _ -> _ ->
   | Some (GCoFixInfo gcofix) ->
     if Int.equal gcofix.gfix_nargs 0 then
       let refold = Some gcofix.gfix_refold in
-      maybe_undo info tab ~pat_state (undo, []) { mark = Cstr; term = FCoFix (gcofix.gfix_body, (subs_id 0, gcofix.gfix_univs), refold) } stk
+      maybe_undo info tab ~pat_state (undo, []) { mark = Cstr; term = FCoFix (gcofix.gfix_body, gcofix.gfix_subs, refold) } stk
     else if red_set info.i_flags fBETA then
-      match get_args gcofix.gfix_nargs gcofix.gfix_tys (mkCoFix gcofix.gfix_body) (subs_id 0, gcofix.gfix_univs) stk with
+      match get_args gcofix.gfix_nargs gcofix.gfix_tys (mkCoFix gcofix.gfix_body) gcofix.gfix_subs stk with
       | Inl (rev_extra_args, e), stk ->
         let refold = Some gcofix.gfix_refold in
         maybe_undo info tab ~pat_state (undo, rev_extra_args) { mark = Cstr; term = FCoFix (gcofix.gfix_body, e, refold) } stk

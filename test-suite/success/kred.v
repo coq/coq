@@ -13,6 +13,30 @@ Ltac assert_norm_eq :=
 Ltac assert_head_eq :=
   idtac; assert_eq ltac:(fun l => let l := eval kred head in l in l).
 
+
+Module NoIdea.
+  Record xt := { x : nat }.
+  Axiom mul : nat -> nat -> nat.
+  Definition test :=
+    let t := nat in
+    let f x b := mul x b in
+    fun (x : t) =>
+    (fix test2 (n : nat) :=
+      match n with
+      | O => 0
+      | S n => f x (test2 n)
+      end).
+
+  Goal forall x n, test x (S n) = 0.
+  Proof.
+    intros.
+    (* Set Debug "RAKAM". *)
+    (* cbn. *)
+    (* Set Debug "kred". *)
+    kred.
+  Abort.
+End NoIdea.
+
 Module KnownIssues.
   Inductive positive : Set :=  xI : forall _ : positive, positive | xO : forall _ : positive, positive | xH : positive.
   Definition iter :=
