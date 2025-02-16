@@ -518,7 +518,7 @@ Module Prim.
   Time Eval kred     in @add 4    10 (build_fn 10). (* 0.001s *)
   Time Eval kred     in @add 8    10 (build_fn 10). (* 0.003s *)
   Time Eval kred     in @add 10   10 (build_fn 10). (* 0.008s    *)
-  Time Eval kred     in @add 200  10 (build_fn 10). (* 0.9s    *)
+  Time Eval kred     in @add 200  10 (build_fn 10). (* 0.2s    *)
   (* Time Eval kred     in @add 4000 10 (build_fn 10). (* 0.26s    *) *)
 
   (* Time Eval cbn     in @add 2    10 (build_fn 10). (* 0.004s *) *)

@@ -958,7 +958,7 @@ end = struct
       | RelKey n ->
         let i = n - 1 in
         let d =
-          try Range.get env.env_rel_context.env_rel_map i
+          try Range.get (Environ.rel_context_val env).env_rel_map i
           with Invalid_argument _ -> raise Not_found
         in
         shortcut_irrelevant info (RelDecl.get_relevance d);
@@ -987,7 +987,10 @@ end = struct
           let gfix = expand_global_fixpoint info tab (cst, u) body in
           Def (injectu body u, gfix)
         | Symbol b ->
-          let r = Cmap_env.get cst env.symb_pats in
+          let r = match lookup_rewrite_rules cst env with
+          | exception Not_found -> assert false
+          | r -> r
+          in
           raise (NotEvaluableConst (HasRules (u, b, r)))
         else
           raise Not_found
@@ -1577,7 +1580,7 @@ module FNativeEntries =
       defined_array := Option.has_some retro.Retroknowledge.retro_array
 
     let init env =
-      current_retro := env.retroknowledge;
+      current_retro := Environ.retroknowledge env;
       init_int !current_retro;
       init_float !current_retro;
       init_string !current_retro;
@@ -1590,7 +1593,7 @@ module FNativeEntries =
       init_array !current_retro
 
     let check_env env =
-      if not (!current_retro == env.retroknowledge) then init env
+      if not (!current_retro == Environ.retroknowledge env) then init env
 
     let check_int env =
       check_env env;
@@ -1735,10 +1738,7 @@ module FNativeEntries =
 module FredNative = RedNative(FNativeEntries)
 
 let is_irrelevant_constructor infos ((ind,_),u) =
-  match Indmap_env.find_opt ind (info_env infos).Environ.irr_inds with
-  | None -> false
-  | Some r ->
-    is_irrelevant infos @@ UVars.subst_instance_relevance u r
+  is_irrelevant infos @@ UVars.subst_instance_relevance u @@ ind_relevance ind (info_env infos)
 
 
 module Refold = struct
@@ -2150,7 +2150,7 @@ and match_elim : 'a. ('a, 'a patstate) reduction -> _ -> _ -> pat_state:(fconstr
       let head = {mark; term=FProj(Projection.make proj' true, r, head)} in
       let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
       | PEProj proj :: es, subst ->
-        if not @@ Projection.Repr.CanOrd.equal (Projection.repr proj) proj' then None else
+        if not @@ Projection.Repr.CanOrd.equal proj proj' then None else
         Some (es, subst)
       | _ -> None) elims states
       in
