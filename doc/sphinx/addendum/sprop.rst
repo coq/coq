@@ -171,8 +171,8 @@ Definitional UIP
 .. flag:: Definitional UIP
 
    This :term:`flag`, off by default, allows the declaration of non-squashed
-   inductive types with 1 constructor which takes no argument in
-   |SProp|. Since this includes equality types, it provides
+   inductive types in |SProp| with 1 constructor which takes no non-parameter arguments.
+   Since this includes equality types, it provides
    definitional uniqueness of identity proofs.
 
    Because squashing is a universe restriction, unsetting
