@@ -46,7 +46,7 @@ let coqdep args =
       Loadpath.add_rec_dir_no_import (Loadpath.add_coqlib_known lst) user_contrib [];
     let add_dir s = Loadpath.add_rec_dir_no_import (Loadpath.add_coqlib_known lst) s [] in
     List.iter add_dir (Envars.xdg_dirs ~warn:warn_home_dir);
-    List.iter add_dir Envars.coqpath
+    List.iter add_dir (Envars.coqpath())
   end;
   if args.Args.sort then
     sort st

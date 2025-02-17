@@ -246,7 +246,7 @@ let init_load_path_std () =
   List.iter (fun s -> add_rec_path ~unix_path:s ~rocq_root:Loadpath.default_root_prefix)
     (xdg_dirs ~warn:(fun x -> Feedback.msg_warning (str x)));
   (* then directories in ROCQPATH *)
-  List.iter (fun s -> add_rec_path ~unix_path:s ~rocq_root:Loadpath.default_root_prefix) rocqpath
+  List.iter (fun s -> add_rec_path ~unix_path:s ~rocq_root:Loadpath.default_root_prefix) (rocqpath())
 
 let init_load_path ~boot ~vo_path =
   if not boot then init_load_path_std ();

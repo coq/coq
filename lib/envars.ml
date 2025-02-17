@@ -110,7 +110,7 @@ let configdir () =
   let path = use_suffix coqroot Coq_config.configdirsuffix in
   if Sys.file_exists path then path else Coq_config.configdir
 
-let coqpath =
+let coqpath () =
   let make_search_path path =
     let paths = path_to_list path in
     let valid_paths = List.filter Sys.file_exists paths in

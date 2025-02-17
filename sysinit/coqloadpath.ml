@@ -48,7 +48,7 @@ let init_load_path ~coqenv =
   let contrib_vo = build_userlib_path ~unix_path:user_contrib in
 
   let misc_vo =
-    List.map (fun s -> build_userlib_path ~unix_path:s) (xdg_dirs @ rocqpath) in
+    List.map (fun s -> build_userlib_path ~unix_path:s) (xdg_dirs @ (rocqpath())) in
 
   let ml_loadpath = meta_dir in
   let vo_loadpath =
