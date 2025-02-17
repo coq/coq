@@ -231,7 +231,7 @@ module InstallDir = struct
 end
 
 let install prefs =
-  [ InstallDir.make "COQPREFIX" "Corelib" None (Relative "") (Relative "")
+  [ InstallDir.make "COQPREFIX" "Prefix" None (Relative "") (Relative "")
   ; InstallDir.make "COQLIBINSTALL" "the Rocq library" prefs.libdir (Relative "lib/coq") (Relative "lib/coq")
   ; InstallDir.make "CONFIGDIR" "the Rocqide configuration files" prefs.configdir (Relative "config") (Absolute "/etc/xdg/coq")
   ; InstallDir.make "DATADIR" "the Rocqide data files" prefs.datadir (Relative "share/coq") (Relative "share/coq")

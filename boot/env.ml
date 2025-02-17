@@ -105,7 +105,8 @@ let guess_coqlib () =
       ~file:prelude
       (fun () -> relocate Coq_config.coqlib)
 
-(* Build layout uses coqlib = coqcorelib *)
+(* Build layout uses coqlib = coqcorelib
+   XXX we should be using -boot in build layout so is that dead code? *)
 let guess_coqcorelib lib =
   if Sys.file_exists (Path.relative lib plugins_dir)
   then lib
