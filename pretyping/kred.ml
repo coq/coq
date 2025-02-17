@@ -1225,7 +1225,7 @@ module Dbg = struct
       (match ft with
        | FRel r -> str "F#" ++ int r
        | FAtom c -> pp_constr env c
-       | FFlex k -> str "FFlex" ++ pp_key env k
+       | FFlex k -> str "FFlex(" ++ pp_key env k ++ str ")"
        | FInd (ind, _univ) -> str "FInd(" ++ int (snd ind) ++ str ")"
        | FConstruct (cstr, _univ) -> str "FConstruct(" ++ int (snd (fst cstr)) ++ str "," ++ int (snd cstr)  ++ str ")"
        | FApp (h, args) -> str "FApp(" ++ pp_fconstr env h ++ str "," ++ pp_fconstr_arr env args ++ str ")"
@@ -1257,7 +1257,8 @@ module Dbg = struct
   and pp_key _ (k : _ Names.tableKey) =
     match[@ocaml.warning "-4"] k with
     | Names.ConstKey (c, _) -> str (Names.Constant.debug_to_string c)
-    | _ -> str "<OtherKey>"
+    | Names.VarKey v -> str "@" ++ str (Names.Id.to_string v)
+    | Names.RelKey i -> str "#" ++ int i
 
   let rec pp_stack env stk =
     hov 2 (str "[" ++ prlist_with_sep (fun () -> str ",") (pp_stack_member env) stk ++ str "]")
@@ -2359,6 +2360,7 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
       (match Table.lookup info tab fl with
         | Def (v, ogfix) ->
           begin
+            Dbg.(dbg Pp.(fun () -> str "knr; FFlex; Def"));
             match [@ocaml.warning "-4"] fl with
             | Names.ConstKey (cst, _) ->
               start_unfold info tab ~pat_state m cst v ogfix stk
@@ -2369,6 +2371,7 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
               maybe_undo info tab ~pat_state undo v stk
           end
         | Primitive op ->
+          Dbg.(dbg Pp.(fun () -> str "knr; FFlex; Primitive"));
           if check_native_args op stk then
             let c = match fl with ConstKey c -> c | RelKey _ | VarKey _ -> assert false in
             let rargs, a, nargs, stk = get_native_args1 op c stk in
@@ -2377,6 +2380,7 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
             (* Similarly to fix, partially applied primitives are not Ntrl! *)
             knr_ret info tab ~pat_state (m, stk)
         | Symbol (u, b, r) ->
+          Dbg.(dbg Pp.(fun () -> str "knr; FFlex; Symbol"));
           let red = {
             red_kni = kni;
             red_knit = knit;
