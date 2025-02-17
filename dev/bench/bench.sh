@@ -541,7 +541,7 @@ $coq_opam_package (unknown package)"
         for dep in $(opam install --show-actions "$coq_opam_package" | grep -o '∗\s*install\s*[^ ]*' | sed 's/∗\s*install\s*//g'); do
             # show-actions will print transitive deps
             # so we don't need to look at the skipped_packages
-            if echo "$failed_packages" | grep -q "$dep"; then
+            if echo "$failed_packages" | grep -q "^$dep "; then
                 skipped_packages="$skipped_packages
 $coq_opam_package (dependency $dep failed)"
                 continue 3
