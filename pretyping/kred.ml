@@ -1211,6 +1211,8 @@ let it_mkLambda_or_LetIn ctx t =
 module Dbg = struct
   open Pp
 
+  let pp_constr env = ignore env; Constr.debug_print
+
   let rec pp_fconstr env fc =
     hov 2 (str "{" ++ pp_mark fc.mark ++ str "; " ++ pp_fterm env fc.term ++ str "}")
   and pp_mark mark =
@@ -1222,7 +1224,7 @@ module Dbg = struct
     hov 2
       (match ft with
        | FRel r -> str "F#" ++ int r
-       | FAtom c -> Constr.debug_print c
+       | FAtom c -> pp_constr env c
        | FFlex k -> str "FFlex" ++ pp_key env k
        | FInd (ind, _univ) -> str "FInd(" ++ int (snd ind) ++ str ")"
        | FConstruct (cstr, _univ) -> str "FConstruct(" ++ int (snd (fst cstr)) ++ str "," ++ int (snd cstr)  ++ str ")"
@@ -1241,7 +1243,7 @@ module Dbg = struct
        | FString _ -> str "<FString>"
        | FArray (_, _, _) -> str "<FArray>"
        | FLIFT (_, _) -> str "<FLIFT>"
-       | FCLOS _ -> str "FCLOS(" ++ Constr.debug_print (term_of_fconstr { mark = Ntrl; term = ft }) ++ str ")";
+       | FCLOS _ -> str "FCLOS(" ++ pp_constr env (term_of_fconstr { mark = Ntrl; term = ft }) ++ str ")";
        | FIrrelevant -> str "<FIRR>"
     )
   and pp_fconstr_arr env fcs =
@@ -2346,7 +2348,7 @@ let rec knr : 'a. _ -> _ -> pat_state: 'a depth -> _ -> _ -> 'a =
   Dbg.(dbg Pp.(fun () -> str "knr; m head: " ++ Pp.fnl () ++ pp_fconstr info.i_cache.i_env m));
   Dbg.(dbg Pp.(fun () -> str "knr; m stk : " ++ Pp.fnl () ++ pp_stack info.i_cache.i_env stk));
   Dbg.(dbg Pp.(fun () -> str "knr; m full: " ++ Pp.fnl () ++ pp_fconstr info.i_cache.i_env (zip ~dbg:true m stk)));
-  Dbg.(dbg Pp.(fun () -> str "knr; m constr: " ++ Pp.fnl () ++ Constr.debug_print (term_of_fconstr (zip ~dbg:true m stk))));
+  Dbg.(dbg Pp.(fun () -> str "knr; m constr: " ++ Pp.fnl () ++ pp_constr info.i_cache.i_env (term_of_fconstr (zip ~dbg:true m stk))));
   Dbg.(dbg Pp.(fun () -> str "=============================================="));
   match m.term with
   | FLambda(n,tys,f,e) when red_set info.i_flags fBETA ->
