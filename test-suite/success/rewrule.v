@@ -16,6 +16,7 @@ Check (fun _ _ => eq_refl) : forall n n', 2 + n ++ 3 + n' = 5 + (n ++ n').
 (* Test deep pattern matching *)
 Eval lazy  in fun n n' => 2 + n ++ 3 + n'.
 Eval cbv   in fun n n' => 2 + n ++ 3 + n'.
+Unset CbnIsKred.
 Eval cbn   in fun n n' => 2 + n ++ 3 + n'.
 Eval simpl in fun n n' => 2 + n ++ 3 + n'. (* Does not reduce *)
 

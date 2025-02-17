@@ -9,6 +9,7 @@ Arguments p {_} _ !_ !_.
 
 Goal forall x, p (mk (fun _ _ => 2)) x x = 0.
 Proof.
+  Unset CbnIsKred.
   Fail progress cbn.
 Abort.
 

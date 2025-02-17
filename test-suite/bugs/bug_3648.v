@@ -72,6 +72,7 @@ Proof.
             _).
   intros.
   rewrite identity_of.
+  Unset CbnIsKred.              (* TODO: kred unfolds projections and does not refold them *)
   cbn.
   rewrite (identity_of _ _ F (fst x)).
   Undo.

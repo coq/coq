@@ -58,7 +58,7 @@ let { Goptions.get = simplIsCbn } =
 let { Goptions.get = cbnIsKred } =
   Goptions.declare_bool_option_and_ref
     ~key:["CbnIsKred"]
-    ~value:false
+    ~value:true
     ()
 
 let set_strategy_one ref l =
