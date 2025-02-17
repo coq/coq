@@ -216,7 +216,7 @@ let add_conv_oriented_pb ?(tail=true) (pbty,env,t1,t2) evd =
   | None -> add_conv_pb ~tail (Conversion.CONV,env,t1,t2) evd
 
 (* We retype applications to ensure the universe constraints are collected *)
-exception IllTypedInstance of env * evar_map * EConstr.types * EConstr.types
+exception IllTypedInstance of env * evar_map * EConstr.types option * EConstr.types
 exception IllTypedInstanceFun of env * evar_map * EConstr.constr * EConstr.types
 
 let checked_appvect, checked_appvect_hook = Hook.make ()
@@ -235,7 +235,7 @@ let recheck_applications unify flags env evdref t =
   with PretypeError (env,sigma,e) ->
   match e with
   | CantApplyBadTypeExplained (((_,expected,argty),_,_),_) ->
-    raise (IllTypedInstance (env,sigma,argty, expected))
+    raise (IllTypedInstance (env,sigma,Some argty, expected))
   | TypingError (CantApplyNonFunctional (fj,_)) ->
     raise (IllTypedInstanceFun (env,sigma,fj.uj_val,fj.uj_type))
   | _ -> assert false
@@ -902,14 +902,15 @@ let check_evar_instance_evi unify flags env evd evi body =
   let evenv = evar_env env evi in
   (* FIXME: The body might be ill-typed when this is called from w_merge *)
   (* This happens in practice, cf MathClasses build failure on 2013-3-15 *)
-  let ty =
-    try Retyping.get_type_of ~lax:true evenv evd body
-    with Retyping.RetypeError _ ->
-      let loc, _ = Evd.evar_source evi in user_err ?loc (Pp.(str "Ill-typed evar instance"))
-  in
-  match unify flags TypeUnification evenv evd Conversion.CUMUL ty (Evd.evar_concl evi) with
-  | Success evd -> evd
-  | UnifFailure _ -> raise (IllTypedInstance (evenv,evd,ty, Evd.evar_concl evi))
+  match Retyping.get_type_of ~lax:true evenv evd body
+  with
+  | exception Retyping.RetypeError _ ->
+    let loc, _ = Evd.evar_source evi in
+    Loc.raise ?loc (IllTypedInstance (evenv,evd,None, Evd.evar_concl evi))
+  | ty ->
+    match unify flags TypeUnification evenv evd Conversion.CUMUL ty (Evd.evar_concl evi) with
+    | Success evd -> evd
+    | UnifFailure _ -> raise (IllTypedInstance (evenv,evd,Some ty, Evd.evar_concl evi))
 
 let check_evar_instance unify flags env evd evk body =
   let evi = try Evd.find_undefined evd evk with Not_found -> assert false in

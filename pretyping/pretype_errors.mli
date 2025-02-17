@@ -25,7 +25,7 @@ type unification_error =
   | ConversionFailed of env * constr * constr
   | IncompatibleInstances of env * existential * constr * constr
   | MetaOccurInBody of Evar.t
-  | InstanceNotSameType of Evar.t * env * types * types
+  | InstanceNotSameType of Evar.t * env * types option * types
   | InstanceNotFunctionalType of Evar.t * env * constr * types
   | UnifUnivInconsistency of UGraph.univ_inconsistency
   | CannotSolveConstraint of Evd.evar_constraint * unification_error
