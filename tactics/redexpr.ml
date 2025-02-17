@@ -55,6 +55,12 @@ let { Goptions.get = simplIsCbn } =
     ~value:false
     ()
 
+let { Goptions.get = cbnIsKred } =
+  Goptions.declare_bool_option_and_ref
+    ~key:["CbnIsKred"]
+    ~value:false
+    ()
+
 let set_strategy_one ref l =
   Global.set_strategy (Evaluable.to_kevaluable ref) l
 
@@ -238,7 +244,7 @@ let rec eval_red_expr env = function
   let f = if simplIsCbn () then make_flag env f else f.rStrength, RedFlags.all (* dummy *) in
   Simpl (f, o)
 | Cbv f -> Cbv (make_flag env f)
-| Cbn f -> Cbn (make_flag env f)
+| Cbn f -> if cbnIsKred () then Kred (make_flag env f) else Cbn (make_flag env f)
 | Kred f -> Kred (make_flag env f)
 | Lazy f -> Lazy (make_flag env f)
 | ExtraRedExpr s ->
@@ -270,8 +276,12 @@ let reduction_of_red_expr_val = function
   | Cbv (Norm, f) -> (e_red (cbv_norm_flags ~strong:true f),DEFAULTcast)
   | Cbv (Head, f) -> (e_red (cbv_norm_flags ~strong:false f),DEFAULTcast)
   | Cbn (w,f) ->
-    let cbn = match w with Norm -> Cbn.norm_cbn | Head -> Cbn.whd_cbn in
-     (e_red (cbn f), DEFAULTcast)
+    if cbnIsKred () then
+      let kred = match w with Norm -> Kred.norm | Head -> Kred.whd in
+      (e_red (kred f),DEFAULTcast)
+    else
+      let cbn = match w with Norm -> Cbn.norm_cbn | Head -> Cbn.whd_cbn in
+      (e_red (cbn f), DEFAULTcast)
   | Kred(w,f) ->
     let kred = match w with Norm -> Kred.norm | Head -> Kred.whd in
     (e_red (kred f),DEFAULTcast)
