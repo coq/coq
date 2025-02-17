@@ -1425,16 +1425,22 @@ and eta_constructor flags env evd ((ind, i), u) sk1 (term2,sk2) =
       | None -> UnifFailure (evd,NotSameHead)
       | Some l1 ->
         (try
-           let l1' = List.skipn pars l1 in
-           let l2' =
-             let term = Stack.zip evd (term2,sk2) in
-             List.map (fun (p,r) ->
-                 let r = EConstr.Vars.subst_instance_relevance u (ERelevance.make r) in
-                 EConstr.mkProj (Projection.make p false, r, term))
-               (Array.to_list projs)
-           in
-          let f i t1 t2 = evar_conv_x { flags with with_cs = false } env i CONV t1 t2 in
-          ise_list2 evd f l1' l2'
+          let t1 = Stack.zip evd (EConstr.mkConstructU ((ind, i), u), sk1) in
+          let t2 = Stack.zip evd (term2, sk2) in
+          let ty1 = Retyping.get_type_of env evd t1 in
+          let ty2 = Retyping.get_type_of env evd t2 in
+          ise_and evd [
+            (fun evd -> evar_conv_x flags env evd CONV ty1 ty2);
+            fun evd ->
+              let l1' = List.skipn pars l1 in
+              let l2' =
+                List.map (fun (p,r) ->
+                    let r = EConstr.Vars.subst_instance_relevance u (ERelevance.make r) in
+                    EConstr.mkProj (Projection.make p false, r, t2))
+                  (Array.to_list projs)
+              in
+              let f i t1 t2 = evar_conv_x { flags with with_cs = false } env i CONV t1 t2 in
+              ise_list2 evd f l1' l2']
          with
          | Failure _ ->
            (* List.skipn: partially applied constructor *)
