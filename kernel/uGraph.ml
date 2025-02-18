@@ -77,6 +77,9 @@ let check_eq g u v =
 let check_eq_level g u v =
   u == v || type_in_type g || G.check_eq g.graph u v
 
+let check_eq_sort_quality g u v =
+  u == v || type_in_type g || Sorts.Quality.equal u v
+
 let empty_universes = {
   graph=G.empty;
   type_in_type=false;
@@ -198,7 +201,7 @@ let check_subtype univs ctxT ctx =
 let check_eq_instances g t1 t2 =
   let qt1, ut1 = Instance.to_array t1 in
   let qt2, ut2 = Instance.to_array t2 in
-  CArray.equal Sorts.Quality.equal qt1 qt2
+  CArray.equal (check_eq_sort_quality g) qt1 qt2
   && CArray.equal (check_eq_level g) ut1 ut2
 
 let domain g = G.domain g.graph
@@ -219,10 +222,9 @@ let get_algebraic = function
 | Set -> Universe.type0
 | Type u | QSort (_, u) -> u
 
-let check_eq_sort ugraph s1 s2 = match s1, s2 with
+let check_eq_sort ugraph s1 s2 = type_in_type ugraph || match s1, s2 with
 | (SProp, SProp) | (Prop, Prop) | (Set, Set) -> true
-| (SProp, _) | (_, SProp) | (Prop, _) | (_, Prop) ->
-  type_in_type ugraph
+| (SProp, _) | (_, SProp) | (Prop, _) | (_, Prop) -> false
 | (Type _ | Set), (Type _ | Set) ->
   check_eq ugraph (get_algebraic s1) (get_algebraic s2)
 | QSort (q1, u1), QSort (q2, u2) ->
@@ -232,13 +234,11 @@ let check_eq_sort ugraph s1 s2 = match s1, s2 with
 let is_above_prop ugraph q =
   Sorts.QVar.Set.mem q ugraph.above_prop_qvars
 
-let check_leq_sort ugraph s1 s2 = match s1, s2 with
+let check_leq_sort ugraph s1 s2 = type_in_type ugraph || match s1, s2 with
 | (SProp, SProp) | (Prop, Prop) | (Set, Set) -> true
-| (SProp, _) -> type_in_type ugraph
-| (Prop, SProp) -> type_in_type ugraph
 | (Prop, (Set | Type _)) -> true
+| (SProp, _) | (Prop, SProp) | (_, (SProp | Prop)) -> false
 | (Prop, QSort (q,_)) -> is_above_prop ugraph q
-| (_, (SProp | Prop)) -> type_in_type ugraph
 | (Type _ | Set), (Type _ | Set) ->
   check_leq ugraph (get_algebraic s1) (get_algebraic s2)
 | QSort (q1, u1), QSort (q2, u2) ->
