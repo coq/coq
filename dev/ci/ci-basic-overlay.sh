@@ -501,7 +501,7 @@ project jasmin "https://github.com/jasmin-lang/jasmin" "main"
 ########################################################################
 # Lean Importer
 ########################################################################
-project lean_importer "https://github.com/SkySkimmer/coq-lean-import" "master"
+project lean_importer "https://github.com/coq-community/rocq-lean-import" "master"
 # Contact @SkySkimmer on github
 
 ########################################################################
