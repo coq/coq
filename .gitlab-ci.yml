@@ -92,7 +92,7 @@ before_script:
     - dev/ci/gitlab-section.sh end coq.clean
 
     - dev/ci/gitlab-section.sh start coq.config coq.config
-    - ./configure -prefix "$(pwd)/_install_ci" $COQ_EXTRA_CONF
+    - ./configure -relocatable $COQ_EXTRA_CONF
     - dev/ci/gitlab-section.sh end coq.config
 
     - dev/ci/gitlab-section.sh start coq.build coq.build
@@ -156,7 +156,7 @@ before_script:
     - cd test-suite
     - make clean
     - export OCAMLPATH=$(readlink -f ../_install_ci/lib/):"$OCAMLPATH"
-    - COQEXTRAFLAGS="${COQEXTRAFLAGS}" make -j "$NJOBS" TIMED=1 all
+    - COQEXTRAFLAGS="${COQEXTRAFLAGS}" make -j "$NJOBS" TIMED=1 all ROCQ_EXE=$(pwd)/../_install_ci/bin/rocq
   artifacts:
     name: "$CI_JOB_NAME.logs"
     when: on_failure
