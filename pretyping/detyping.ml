@@ -394,8 +394,13 @@ let detype_sort sigma = function
        else glob_Type_sort)
   | QSort (q, u) ->
     if !print_universes then
-      let q = if print_sort_quality () then Some (detype_qvar sigma q) else None in
+      let q = if print_sort_quality () || Evd.is_rigid_qvar sigma q then
+          Some (detype_qvar sigma q)
+        else None
+      in
       q, detype_universe sigma u
+    else if Evd.is_rigid_qvar sigma q then
+      Some (detype_qvar sigma q), UAnonymous {rigid=UState.univ_flexible}
     else glob_Type_sort
 
 let detype_relevance_info sigma na =

@@ -41,6 +41,7 @@ module QState : sig
   val union : fail:(t -> Quality.t -> Quality.t -> t) -> t -> t -> t
   val add : check_fresh:bool -> rigid:bool -> elt -> t -> t
   val repr : elt -> t -> Quality.t
+  val is_rigid : t -> QVar.t -> bool
   val unify_quality : fail:(unit -> t) -> Conversion.conv_pb -> Quality.t -> Quality.t -> t -> t
   val is_above_prop : elt -> t -> bool
   val undefined : t -> QVar.Set.t
@@ -77,6 +78,8 @@ let rec repr q m = match QMap.find q m.qmap with
   QVar q
 
 let is_above_prop q m = QSet.mem q m.above
+
+let is_rigid m q = QSet.mem q m.rigid
 
 let set q qv m =
   let q = repr q m in
@@ -263,6 +266,8 @@ let id_of_level uctx l =
 let id_of_qvar uctx l =
   try (QVar.Map.find l (fst (snd uctx.names))).uname
   with Not_found -> None
+
+let is_rigid_qvar uctx q = QState.is_rigid uctx.sort_variables q
 
 let qualid_of_qvar_names (bind, (qrev,_)) l =
   try Some (Libnames.qualid_of_ident (Option.get (QVar.Map.find l qrev).uname))

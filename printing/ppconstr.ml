@@ -198,8 +198,7 @@ let pr_univ l =
   | UNamed [x] -> pr_univ_expr x
   | UNamed l -> str"max(" ++ prlist_with_sep (fun () -> str",") pr_univ_expr l ++ str")"
   | UAnonymous {rigid=UnivRigid} -> tag_type (str "Type")
-  | UAnonymous {rigid=UnivFlexible b} ->
-    tag_type (str "Type")
+  | UAnonymous {rigid=UnivFlexible _} -> tag_type (str "_")
 
 let pr_qvar_expr = function
   | CQAnon _ -> tag_type (str "_")

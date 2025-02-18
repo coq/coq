@@ -901,8 +901,8 @@ let extern_glob_sort uvars (q, l) =
 
 (** wrapper to handle print_universes: don't forget small univs *)
 let extern_glob_sort uvars (s:glob_sort) =
-  let really_extern = !print_universes || match s with
-    | None, UNamed [s, 0] -> begin match s with
+  let really_extern = !print_universes || Option.has_some (fst s) || match snd s with
+    | UNamed [s, 0] -> begin match s with
         | GSet | GProp | GSProp -> true
         | GUniv _ | GLocalUniv _ | GRawUniv _ -> false
       end
