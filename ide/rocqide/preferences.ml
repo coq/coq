@@ -310,7 +310,7 @@ let project_path =
 
 let encoding =
   let repr = Repr.custom string_of_inputenc inputenc_of_string in
-  let init = if Sys.os_type = "Win32" then Eutf8 else Elocale in
+  let init = Eutf8 in
   new preference ~name:["encoding"] ~init ~repr
 
 let automatic_tactics =
