@@ -428,15 +428,11 @@ let rec ise_inst2 evd f l1 l2 = match l1, l2 with
 
 (* Applicative node of stack are read from the outermost to the innermost
    but are unified the other way. *)
-let rec ise_app_rev_stack2 env f evd revsk1 revsk2 =
+let rec decomp_app_rev_stack2 sk1 sk2 revsk1 revsk2 =
   match Stack.decomp_rev revsk1, Stack.decomp_rev revsk2 with
   | Some (t1,revsk1), Some (t2,revsk2) ->
-     begin
-       match ise_app_rev_stack2 env f evd revsk1 revsk2 with
-       | (_, UnifFailure _) as x -> x
-       | x, Success i' -> x, f env i' CONV t1 t2
-     end
-  | _, _ -> (revsk1,revsk2), Success evd
+    decomp_app_rev_stack2 (t1 :: sk1) (t2 :: sk2) revsk1 revsk2
+  | _, _ -> (sk1, sk2), (revsk1,revsk2)
 
 (* Add equality constraints for covariant/invariant positions. For
    irrelevant positions, unify universes when flexible. *)
@@ -521,7 +517,7 @@ let compare_heads pbty env evd ~nargs term term' =
      E1[] = E1'[E1''[]] and E2[] = E2'[E2''[]] s.t.  E1' = E2' and
      E1'' cannot be unified with E2''
    - UnifFailure if no such non-empty E1' = E2' exists *)
-let rec ise_stack2 no_app env evd f sk1 sk2 =
+let ise_stack2 no_app env evd f (h1, sk1) (h2, sk2) =
   let rec ise_rev_stack2 deep i revsk1 revsk2 =
     let fail x = if deep then Some (List.rev revsk1, List.rev revsk2), Success i
       else None, x in
@@ -554,21 +550,31 @@ let rec ise_stack2 no_app env evd f sk1 sk2 =
         match ise_and i [
           (fun i -> ise_array2 i (fun ii -> f env ii CONV) tys1 tys2);
           (fun i -> ise_array2 i (fun ii -> f (push_rec_types recdef1 env) ii CONV) bds1 bds2);
-          (fun i -> snd (ise_stack2 no_app env i f a1 a2))] with
+          (fun i -> snd (ise_rev_stack2 false i (List.rev a1) (List.rev a2)))] with
         | Success i' -> ise_rev_stack2 true i' q1 q2
         | UnifFailure _ as x -> fail x
       else fail (UnifFailure (i,NotSameHead))
     | Stack.App _ :: _, Stack.App _ :: _ ->
        if no_app && deep then fail ((*dummy*)UnifFailure(i,NotSameHead)) else
-         begin match ise_app_rev_stack2 env f i revsk1 revsk2 with
-               |_,(UnifFailure _ as x) -> fail x
-               |(l1, l2), Success i' -> ise_rev_stack2 true i' l1 l2
+         let (sk1, sk2), (revsk1, revsk2) = decomp_app_rev_stack2 [] [] revsk1 revsk2 in
+         let t1 = Stack.zip evd (h1, List.rev revsk1) in begin
+         match Retyping.get_type_of env evd t1 with
+         | exception _ -> fail (UnifFailure (i, NotSameHead))
+         | ty1 ->
+         let t2 = Stack.zip evd (h2, List.rev revsk2) in
+         match Retyping.get_type_of env evd t2 with
+         | exception _ -> fail (UnifFailure (i, NotSameHead))
+         | ty2 ->
+         match ise_and evd ((fun evd -> f env evd CONV ty1 ty2) ::
+           List.map2 (fun t1 t2 evd -> f env evd CONV t1 t2) sk1 sk2) with
+         | UnifFailure _ as x -> fail x
+         | Success i' -> ise_rev_stack2 true i' revsk1 revsk2
          end
     |_, _ -> fail (UnifFailure (i,(* Maybe improve: *) NotSameHead))
   in ise_rev_stack2 false evd (List.rev sk1) (List.rev sk2)
 
 (* Make sure that the matching suffix is the all stack *)
-let rec exact_ise_stack2 env evd f sk1 sk2 =
+let exact_ise_stack2 env evd f (h1, sk1) (h2, sk2) =
   let rec ise_rev_stack2 i revsk1 revsk2 =
     match revsk1, revsk2 with
     | [], [] -> Success i
@@ -592,17 +598,27 @@ let rec exact_ise_stack2 env evd f sk1 sk2 =
           (fun i -> ise_rev_stack2 i q1 q2);
           (fun i -> ise_array2 i (fun ii -> f env ii CONV) tys1 tys2);
           (fun i -> ise_array2 i (fun ii -> f (push_rec_types recdef1 env) ii CONV) bds1 bds2);
-          (fun i -> exact_ise_stack2 env i f a1 a2)]
+          (fun i -> ise_rev_stack2 i (List.rev a1) (List.rev a2))]
       else UnifFailure (i,NotSameHead)
     | Stack.Proj (p1,_)::q1, Stack.Proj (p2,_)::q2 ->
        if QProjection.Repr.equal env (Projection.repr p1) (Projection.repr p2)
        then ise_rev_stack2 i q1 q2
        else (UnifFailure (i, NotSameHead))
     | Stack.App _ :: _, Stack.App _ :: _ ->
-         begin match ise_app_rev_stack2 env f i revsk1 revsk2 with
-               |_,(UnifFailure _ as x) -> x
-               |(l1, l2), Success i' -> ise_rev_stack2 i' l1 l2
-         end
+       let (sk1, sk2), (revsk1, revsk2) = decomp_app_rev_stack2 [] [] revsk1 revsk2 in
+       let t1 = Stack.zip evd (h1, List.rev revsk1) in begin
+       match Retyping.get_type_of env evd t1 with
+       | exception _ -> UnifFailure (i, NotSameHead)
+       | ty1 ->
+       let t2 = Stack.zip evd (h2, List.rev revsk2) in
+       match Retyping.get_type_of env evd t2 with
+       | exception _ -> UnifFailure (i, NotSameHead)
+       | ty2 ->
+       match ise_and evd ((fun evd -> f env evd CONV ty1 ty2) ::
+         (List.map2 (fun t1 t2 evd -> f env evd CONV t1 t2) sk1 sk2)) with
+       | UnifFailure _ as x -> x
+       | Success i' -> ise_rev_stack2 i' revsk1 revsk2
+       end
     |_, _ -> UnifFailure (i,(* Maybe improve: *) NotSameHead)
   in
   if Reductionops.Stack.compare_shape sk1 sk2 then
@@ -748,7 +764,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
   let consume_stack l2r (termF,skF) (termO,skO) evd =
     let switch f a b = if l2r then f a b else f b a in
     let not_only_app = Stack.not_purely_applicative skO in
-    match switch (ise_stack2 not_only_app env evd (evar_conv_x flags)) skF skO with
+    match switch (ise_stack2 not_only_app env evd (evar_conv_x flags)) (termF, skF) (termO, skO) with
     | Some (l,r), Success i' when l2r && (not_only_app || List.is_empty l) ->
         (* E[?n]=E'[redex] reduces to either l[?n]=r[redex] with
            case/fix/proj in E' (why?) or ?n=r[redex] *)
@@ -780,7 +796,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
       ise_and evd [(fun i ->
           try compare_heads pbty env i ~nargs term term'
           with UGraph.UniverseInconsistency p -> UnifFailure (i, UnifUnivInconsistency p));
-         (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk sk')]
+         (fun i -> exact_ise_stack2 env i (evar_conv_x flags) (term, sk) (term', sk'))]
   in
   let consume l2r (_, skF as apprF) (_,skM as apprM) i =
     if not (Stack.is_empty skF && Stack.is_empty skM) then
@@ -890,7 +906,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
   in
   let first_order env i t1 t2 sk1 sk2 =
     (* Try first-order unification *)
-    match ise_stack2 false env i (evar_conv_x flags) sk1 sk2 with
+    match ise_stack2 false env i (evar_conv_x flags) (t1, sk1) (t2, sk2) with
     | None, Success i' ->
        (* We do have sk1[] = sk2[]: we now unify ?ev1 and ?ev2 *)
        (* Note that ?ev1 and ?ev2, may have been instantiated in the meantime *)
@@ -1010,7 +1026,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
         let f1 i = first_order env i term1 term2 sk1 sk2
         and f2 i =
           if Evar.equal sp1 sp2 then
-            match ise_stack2 false env i (evar_conv_x flags) sk1 sk2 with
+            match ise_stack2 false env i (evar_conv_x flags) (term1, sk1) (term2, sk2) with
             |None, Success i' ->
               Success (solve_refl (fun flags p env i pbty a1 a2 ->
                 let flags =
@@ -1056,7 +1072,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
                let t = nf_evar i t1 in
                let na = Nameops.Name.pick_annot na1 na2 in
                evar_conv_x flags (push_rel (RelDecl.LocalDef (na,b,t)) env) i pbty c'1 c'2);
-             (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2)]
+             (fun i -> exact_ise_stack2 env i (evar_conv_x flags) (term1, sk1) (term2, sk2))]
         and f2 i =
           let out1 = whd_betaiota_deltazeta_for_iota_state flags.open_ts env i vsk1'
           and out2 = whd_betaiota_deltazeta_for_iota_state flags.open_ts env i vsk2'
@@ -1068,7 +1084,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
           let f1 i =
             ise_and i
             [(fun i -> evar_conv_x flags env i CONV c c');
-             (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2)]
+             (fun i -> exact_ise_stack2 env i (evar_conv_x flags) (term1, sk1) (term2, sk2))]
           and f2 i =
             let out1 = whd_betaiota_deltazeta_for_iota_state flags.open_ts env i vsk1'
             and out2 = whd_betaiota_deltazeta_for_iota_state flags.open_ts env i vsk2'
@@ -1114,7 +1130,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
                 try Success (Evd.add_universe_constraints i univs)
                 with UniversesDiffer -> UnifFailure (i,NotSameHead)
                 | UGraph.UniverseInconsistency p -> UnifFailure (i, UnifUnivInconsistency p));
-                         (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2)]
+                         (fun i -> exact_ise_stack2 env i (evar_conv_x flags) (term1, sk1) (term2, sk2))]
           | None ->
             UnifFailure (i,NotSameHead)
         and f2 i =
@@ -1184,7 +1200,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
              let na = Nameops.Name.pick_annot na1 na2 in
              evar_conv_x flags (push_rel (RelDecl.LocalAssum (na,c)) env) i CONV c'1 c'2);
            (* When in modulo_betaiota = false case, lambda's are not reduced *)
-           (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2)]
+           (fun i -> exact_ise_stack2 env i (evar_conv_x flags) (term1, sk1) (term2, sk2))]
 
     | Flexible ev1, Rigid -> flex_rigid true ev1 appr1 appr2
     | Rigid, Flexible ev2 -> flex_rigid false ev2 appr2 appr1
@@ -1253,12 +1269,12 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
 
         | Rel x1, Rel x2 ->
             if Int.equal x1 x2 then
-              exact_ise_stack2 env evd (evar_conv_x flags) sk1 sk2
+              exact_ise_stack2 env evd (evar_conv_x flags) (term1, sk1) (term2, sk2)
             else UnifFailure (evd,NotSameHead)
 
         | Var var1, Var var2 ->
             if Id.equal var1 var2 then
-              exact_ise_stack2 env evd (evar_conv_x flags) sk1 sk2
+              exact_ise_stack2 env evd (evar_conv_x flags) (term1, sk1) (term2, sk2)
             else UnifFailure (evd,NotSameHead)
 
         | Const _, Const _
@@ -1272,7 +1288,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
 
         | Evar (sp1,al1), Evar (sp2,al2) -> (* Frozen evars *)
           if Evar.equal sp1 sp2 then
-            match ise_stack2 false env evd (evar_conv_x flags) sk1 sk2 with
+            match ise_stack2 false env evd (evar_conv_x flags) (term1, sk1) (term2, sk2) with
             |None, Success i' ->
               let al1 = Evd.expand_existential i' (sp1, al1) in
               let al2 = Evd.expand_existential i' (sp2, al2) in
@@ -1292,7 +1308,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
             ise_and evd [
               (fun i -> ise_array2 i (fun i' -> evar_conv_x flags env i' CONV) tys1 tys2);
               (fun i -> ise_array2 i (fun i' -> evar_conv_x flags (push_rec_types recdef1 env) i' CONV) bds1 bds2);
-              (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2)]
+              (fun i -> exact_ise_stack2 env i (evar_conv_x flags) (term1, sk1) (term2, sk2))]
           else UnifFailure (evd, NotSameHead)
 
         | CoFix (i1,(_,tys1,bds1 as recdef1)), CoFix (i2,(_,tys2,bds2)) ->
@@ -1304,18 +1320,18 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
                      (fun i -> evar_conv_x flags (push_rec_types recdef1 env) i CONV)
                      bds1 bds2);
                  (fun i -> exact_ise_stack2 env i
-                     (evar_conv_x flags) sk1 sk2)]
+                     (evar_conv_x flags) (term1, sk1) (term2, sk2))]
             else UnifFailure (evd,NotSameHead)
 
         | (Meta _, _) | (_, Meta _) ->
-          begin match ise_stack2 true env evd (evar_conv_x flags) sk1 sk2 with
+          begin match ise_stack2 true env evd (evar_conv_x flags) (term1, sk1) (term2, sk2) with
           |_, (UnifFailure _ as x) -> x
           |None, Success i' -> evar_conv_x flags env i' CONV term1 term2
           |Some (sk1',sk2'), Success i' -> evar_conv_x flags env i' CONV (Stack.zip i' (term1,sk1')) (Stack.zip i' (term2,sk2'))
           end
 
         | Proj (p1,_,c1), Proj(p2,_,c2) when QProjection.Repr.equal env (Projection.repr p1) (Projection.repr p2) ->
-          begin match ise_stack2 true env evd (evar_conv_x flags) sk1 sk2 with
+          begin match ise_stack2 true env evd (evar_conv_x flags) (term1, sk1) (term2, sk2) with
           |_, (UnifFailure _ as x) -> x
           |None, Success i' -> evar_conv_x flags env i' CONV c1 c2
           |Some _, Success _ -> UnifFailure (evd,NotSameHead)
@@ -1407,7 +1423,9 @@ and conv_record flags env (evd,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2),c
            (fun i' u1 u -> evar_conv_x flags env i' CONV u1 (substl ks u))
            us2 us);
        (fun i -> evar_conv_x flags env i CONV c1 app);
-       (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2);
+       (fun i ->
+         let t2 = Stack.zip i (h2, Stack.append_app_list us2 Stack.empty) in
+         exact_ise_stack2 env i (evar_conv_x flags) (t2, sk1) (t2, sk2));
        test;
        (fun i -> evar_conv_x flags env i CONV h2
          (fst (decompose_app i (substl ks h))))])
