@@ -374,6 +374,9 @@ val push_context_set : ?strict:bool -> ContextSet.t -> env -> env
 val push_floating_context_set : ContextSet.t -> env -> env
 (** Same as above but keep the universes floating for template. Do not use. *)
 
+val push_qualities : Sorts.QVar.Set.t -> env -> env
+(** Add the qualities to the environment. Only used in higher layers. *)
+
 val push_subgraph : ContextSet.t -> env -> env
 (** [push_subgraph univs env] adds the universes and constraints in
    [univs] to [env] as [push_context_set ~strict:false univs env], and
