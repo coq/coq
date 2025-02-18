@@ -592,6 +592,14 @@ $coq_opam_package (in $RUNNER)"
                 continue 3
             fi
         done
+
+        # avoid opam downgrading rocq if some package has weird constraints
+        # there is no "opam switch add-invariant" so we do this sed instead,
+        # cf https://github.com/ocaml/opam/issues/6269
+        if [ "$coq_opam_package" = "rocq-runtime" ]; then
+          opam switch set-invariant --formula \
+               "$(opam switch invariant | sed 's/]/ \"'"$coq_opam_package"'\"]/')"
+        fi
     done
 
     case $coq_opam_package in
