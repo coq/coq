@@ -203,7 +203,7 @@ let pr_univ l =
 let pr_qvar_expr = function
   | CQAnon _ -> tag_type (str "_")
   | CQVar qid -> tag_type (pr_qualid qid)
-  | CRawQVar q -> (* TODO names *) tag_type (Sorts.QVar.raw_pr q)
+  | CRawQVar q -> tag_type (Sorts.QVar.raw_pr q)
 
 let pr_relevance = function
   | CRelevant -> str "Relevant"
