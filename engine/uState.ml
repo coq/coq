@@ -39,14 +39,15 @@ module QState : sig
   type elt = QVar.t
   val empty : t
   val union : fail:(t -> Quality.t -> Quality.t -> t) -> t -> t -> t
-  val add : check_fresh:bool -> named:bool -> elt -> t -> t
+  val add : check_fresh:bool -> rigid:bool -> elt -> t -> t
   val repr : elt -> t -> Quality.t
+  val is_rigid : t -> QVar.t -> bool
   val unify_quality : fail:(unit -> t) -> Conversion.conv_pb -> Quality.t -> Quality.t -> t -> t
   val is_above_prop : elt -> t -> bool
   val undefined : t -> QVar.Set.t
   val collapse_above_prop : to_prop:bool -> t -> t
   val collapse : ?except:QVar.Set.t -> t -> t
-  val pr : (QVar.t -> Pp.t) -> t -> Pp.t
+  val pr : (QVar.t -> Libnames.qualid option) -> t -> Pp.t
   val of_set : QVar.Set.t -> t
 end =
 struct
@@ -55,8 +56,8 @@ module QSet = QVar.Set
 module QMap = QVar.Map
 
 type t = {
-  named : QSet.t;
-  (** Named variables, may not be set to another *)
+  rigid : QSet.t;
+  (** Rigid variables, may not be set to another *)
   qmap : Quality.t option QMap.t;
   (* TODO: use a persistent union-find structure *)
   above : QSet.t;
@@ -66,7 +67,7 @@ type t = {
 
 type elt = QVar.t
 
-let empty = { named = QSet.empty; qmap = QMap.empty; above = QSet.empty }
+let empty = { rigid = QSet.empty; qmap = QMap.empty; above = QSet.empty }
 
 let rec repr q m = match QMap.find q m.qmap with
 | None -> QVar q
@@ -78,6 +79,8 @@ let rec repr q m = match QMap.find q m.qmap with
 
 let is_above_prop q m = QSet.mem q m.above
 
+let is_rigid m q = QSet.mem q m.rigid
+
 let set q qv m =
   let q = repr q m in
   let q = match q with QVar q -> q | QConstant _ -> assert false in
@@ -86,24 +89,24 @@ let set q qv m =
   | q, QVar qv ->
     if QVar.equal q qv then Some m
     else
-    if QSet.mem q m.named then None
+    if QSet.mem q m.rigid then None
     else
       let above =
         if QSet.mem q m.above then QSet.add qv (QSet.remove q m.above)
         else m.above
       in
-      Some { named = m.named; qmap = QMap.add q (Some (QVar qv)) m.qmap; above }
+      Some { rigid = m.rigid; qmap = QMap.add q (Some (QVar qv)) m.qmap; above }
   | q, (QConstant qc as qv) ->
     if qc == QSProp && QSet.mem q m.above then None
-    else if QSet.mem q m.named then None
+    else if QSet.mem q m.rigid then None
     else
-      Some { named = m.named; qmap = QMap.add q (Some qv) m.qmap; above = QSet.remove q m.above }
+      Some { rigid = m.rigid; qmap = QMap.add q (Some qv) m.qmap; above = QSet.remove q m.above }
 
 let set_above_prop q m =
   let q = repr q m in
   let q = match q with QVar q -> q | QConstant _ -> assert false in
-  if QSet.mem q m.named then None
-  else Some { named = m.named; qmap = m.qmap; above = QSet.add q m.above }
+  if QSet.mem q m.rigid then None
+  else Some { rigid = m.rigid; qmap = m.qmap; above = QSet.add q m.above }
 
 let unify_quality ~fail c q1 q2 local = match q1, q2 with
 | QConstant QType, QConstant QType
@@ -157,21 +160,21 @@ let union ~fail s1 s2 =
   | exception Not_found -> false
   in
   let above = QSet.filter filter @@ QSet.union s1.above s2.above in
-  let s = { named = QSet.union s1.named s2.named; qmap; above } in
+  let s = { rigid = QSet.union s1.rigid s2.rigid; qmap; above } in
   List.fold_left (fun s (q1,q2) ->
       let q1 = nf_quality s q1 and q2 = nf_quality s q2 in
       unify_quality ~fail:(fun () -> fail s q1 q2) CONV q1 q2 s)
     s
     extra
 
-let add ~check_fresh ~named q m =
+let add ~check_fresh ~rigid q m =
   if check_fresh then assert (not (QMap.mem q m.qmap));
-  { named = if named then QSet.add q m.named else m.named;
+  { rigid = if rigid then QSet.add q m.rigid else m.rigid;
     qmap = QMap.add q None m.qmap;
     above = m.above }
 
 let of_set qs =
-  { named = QSet.empty; qmap = QMap.bind (fun _ -> None) qs; above = QSet.empty }
+  { rigid = QSet.empty; qmap = QMap.bind (fun _ -> None) qs; above = QSet.empty }
 
 (* XXX what about [above]? *)
 let undefined m =
@@ -186,28 +189,37 @@ let collapse_above_prop ~to_prop m =
       else Some (QConstant QType)
   | Some _ -> v
   in
-  { named = m.named; qmap = QMap.mapi map m.qmap; above = QSet.empty }
+  { rigid = m.rigid; qmap = QMap.mapi map m.qmap; above = QSet.empty }
 
 let collapse ?(except=QSet.empty) m =
   let map q v = match v with
-  | None -> if QSet.mem q m.named || QSet.mem q except then None else Some (QConstant QType)
+  | None -> if QSet.mem q m.rigid || QSet.mem q except then None else Some (QConstant QType)
   | Some _ -> v
   in
-  { named = m.named; qmap = QMap.mapi map m.qmap; above = QSet.empty }
+  { rigid = m.rigid; qmap = QMap.mapi map m.qmap; above = QSet.empty }
 
-let pr prqvar { qmap; above; named } =
+let pr prqvar_opt { qmap; above; rigid } =
   let open Pp in
+  let prqvar q = match prqvar_opt q with
+    | None -> QVar.raw_pr q
+    | Some qid -> Libnames.pr_qualid qid
+  in
   let prbody u = function
   | None ->
     if QSet.mem u above then str " >= Prop"
-    else if QSet.mem u named then
-      str " (internal name " ++ QVar.raw_pr u ++ str ")"
+    else if QSet.mem u rigid then
+      str " (rigid)"
     else mt ()
   | Some q ->
     let q = Quality.pr prqvar q in
     str " := " ++ q
   in
-  h (prlist_with_sep fnl (fun (u, v) -> prqvar u ++ prbody u v) (QMap.bindings qmap))
+  let prqvar_name q =
+    match prqvar_opt q with
+    | None -> mt()
+    | Some qid -> str " (named " ++ Libnames.pr_qualid qid ++ str ")"
+  in
+  h (prlist_with_sep fnl (fun (u, v) -> QVar.raw_pr u ++ prbody u v ++ prqvar_name u) (QMap.bindings qmap))
 
 end
 
@@ -254,6 +266,8 @@ let id_of_level uctx l =
 let id_of_qvar uctx l =
   try (QVar.Map.find l (fst (snd uctx.names))).uname
   with Not_found -> None
+
+let is_rigid_qvar uctx q = QState.is_rigid uctx.sort_variables q
 
 let qualid_of_qvar_names (bind, (qrev,_)) l =
   try Some (Libnames.qualid_of_ident (Option.get (QVar.Map.find l qrev).uname))
@@ -1049,7 +1063,7 @@ let merge ?loc ~sideff rigid uctx uctx' =
 
 let merge_sort_variables ?loc ~sideff uctx qvars =
   let sort_variables =
-    QVar.Set.fold (fun qv qstate -> QState.add ~check_fresh:(not sideff) ~named:false qv qstate)
+    QVar.Set.fold (fun qv qstate -> QState.add ~check_fresh:(not sideff) ~rigid:false qv qstate)
       qvars
       uctx.sort_variables
   in
@@ -1158,7 +1172,7 @@ let add_universe ?loc name strict uctx u =
 let new_sort_variable ?loc ?name uctx =
   let q = UnivGen.new_sort_global () in
   (* don't need to check_fresh as it's guaranteed new *)
-  let sort_variables = QState.add ~check_fresh:false ~named:(Option.has_some name)
+  let sort_variables = QState.add ~check_fresh:false ~rigid:(Option.has_some name)
       q uctx.sort_variables
   in
   let names = match name with
@@ -1297,7 +1311,7 @@ let pr_weak prl {minim_extra={UnivMinim.weak_constraints=weak; above_prop}} =
     ++ if UPairSet.is_empty weak || Level.Set.is_empty above_prop then mt() else cut () ++
     prlist_with_sep cut (fun u -> h (str "Prop <= " ++ prl u)) (Level.Set.elements above_prop))
 
-let pr_sort_opt_subst uctx = QState.pr (pr_uctx_qvar uctx) uctx.sort_variables
+let pr_sort_opt_subst uctx = QState.pr (qualid_of_qvar_names uctx.names) uctx.sort_variables
 
 let pr ctx =
   let open Pp in

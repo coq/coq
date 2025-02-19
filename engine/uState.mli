@@ -277,6 +277,8 @@ val id_of_level : t -> Univ.Level.t -> Id.t option
 
 val id_of_qvar : t -> Sorts.QVar.t -> Id.t option
 
+val is_rigid_qvar : t -> Sorts.QVar.t -> bool
+
 val pr_weak : (Univ.Level.t -> Pp.t) -> t -> Pp.t
 
 val pr : t -> Pp.t

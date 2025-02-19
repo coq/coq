@@ -1230,6 +1230,8 @@ let universe_of_name evd s = UState.universe_of_name evd.universes s
 
 let quality_of_name evd s = UState.quality_of_name evd.universes s
 
+let is_rigid_qvar evd q = UState.is_rigid_qvar evd.universes q
+
 let universe_binders evd = UState.universe_binders evd.universes
 
 let universes evd = UState.ugraph evd.universes

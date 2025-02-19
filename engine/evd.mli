@@ -541,6 +541,8 @@ val restrict_universe_context : evar_map -> Univ.Level.Set.t -> evar_map
 val universe_of_name : evar_map -> Id.t -> Univ.Level.t
 val quality_of_name : evar_map -> Id.t -> Sorts.QVar.t
 
+val is_rigid_qvar : evar_map -> Sorts.QVar.t -> bool
+
 val is_relevance_irrelevant : evar_map -> erelevance -> bool
 (** Whether the relevance is irrelevant modulo qstate *)
 (* XXX move to ERelevance *)

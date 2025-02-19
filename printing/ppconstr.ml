@@ -198,13 +198,12 @@ let pr_univ l =
   | UNamed [x] -> pr_univ_expr x
   | UNamed l -> str"max(" ++ prlist_with_sep (fun () -> str",") pr_univ_expr l ++ str")"
   | UAnonymous {rigid=UnivRigid} -> tag_type (str "Type")
-  | UAnonymous {rigid=UnivFlexible b} ->
-    tag_type (str "Type")
+  | UAnonymous {rigid=UnivFlexible _} -> tag_type (str "_")
 
 let pr_qvar_expr = function
   | CQAnon _ -> tag_type (str "_")
   | CQVar qid -> tag_type (pr_qualid qid)
-  | CRawQVar q -> (* TODO names *) tag_type (Sorts.QVar.raw_pr q)
+  | CRawQVar q -> tag_type (Sorts.QVar.raw_pr q)
 
 let pr_relevance = function
   | CRelevant -> str "Relevant"
