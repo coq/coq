@@ -43,6 +43,7 @@ stdenv.mkDerivation rec {
     hostname
     python311
     ocamlPackages.yojson
+    ocamlPackages.camlzip
     # coq-makefile timing tools
     time
     dune_3
