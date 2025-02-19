@@ -1,0 +1,10 @@
+File "./output/IllTypedInstance.v", line 7, characters 37-44:
+The command has indeed failed with message:
+In environment
+T : Type
+b : T
+The term "eq_refl" has type
+ "apply _ _ ?a {| fst := ?fst; snd := ?snd |} =
+  apply _ _ ?a {| fst := ?fst; snd := ?snd |}"
+while it is expected to have type
+ "apply _ _ ?a {| fst := ?fst; snd := ?snd |} = apply _ _ ?a0 b".

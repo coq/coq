@@ -373,12 +373,17 @@ let explain_unification_error env sigma p1 p2 = function
         [str "instance for " ++ quote (pr_existential_key env sigma evk) ++
         strbrk " refers to a metavariable - please report your example" ++
         strbrk "at " ++ str Coq_config.wwwbugtracker ++ str "."]
-     | InstanceNotSameType (evk,env,t,u) ->
+     | InstanceNotSameType (evk,env,Some t,u) ->
         let t, u = pr_explicit env sigma t u in
         [str "unable to find a well-typed instantiation for " ++
         quote (pr_existential_key env sigma evk) ++
         strbrk ": cannot ensure that " ++
         t ++ strbrk " is a subtype of " ++ u]
+     | InstanceNotSameType (evk,env,None,u) ->
+        let u = pr_leconstr_env env sigma u in
+        [str "unable to find a well-typed instantiation for " ++
+        quote (pr_existential_key env sigma evk) ++
+         strbrk " of type " ++ u]
      | InstanceNotFunctionalType (evk,env,f,u) ->
         let env = make_all_name_different env sigma in
         let f = pr_leconstr_env env sigma f in
