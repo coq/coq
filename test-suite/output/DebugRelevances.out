@@ -13,12 +13,12 @@ fun (A : (* Relevant *) SProp) (a : (* Irrelevant *) A) => a
      : forall A : (* Relevant *) SProp, A -> A
 
 Arguments bar A%_type_scope a
-baz@{s | u} =
+baz@{s | u |} =
 fun (A : (* Relevant *) Type) (a : (* s *) A) => a
      : forall A : (* Relevant *) Type, A -> A
 
 Arguments baz A%_type_scope a
-boz@{s s' | u} =
+boz@{s s' | u |} =
 fun (A B : (* Relevant *) Type) (a : (* s *) hide) (_ : (* s' *) hide) => a
      : forall A B : (* Relevant *) Type, hide -> hide -> hide
 

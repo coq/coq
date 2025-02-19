@@ -279,20 +279,25 @@ let pr_universes sigma ?variance ?priv = function
 let pr_global_env = Nametab.pr_global_env
 let pr_global = pr_global_env Id.Set.empty
 
-let pr_universe_instance_constraints evd inst csts =
+let pr_universe_instance_binder evd inst csts =
   let open Univ in
   let prqvar = Termops.pr_evd_qvar evd in
   let prlev = Termops.pr_evd_level evd in
-  let pcsts = if Constraints.is_empty csts then mt()
-    else str " |= " ++
-         prlist_with_sep (fun () -> str "," ++ spc())
+  let pcsts = if Constraints.is_empty csts then begin
+      if fst (UVars.Instance.length inst) = 0 then mt()
+      else str " |"
+    end
+    else strbrk " | " ++
+         prlist_with_sep pr_comma
            (fun (u,d,v) -> hov 0 (prlev u ++ pr_constraint_type d ++ prlev v))
            (Constraints.elements csts)
   in
   str"@{" ++ UVars.Instance.pr prqvar prlev inst ++ pcsts ++ str"}"
 
 let pr_universe_instance evd inst =
-  pr_universe_instance_constraints evd inst Univ.Constraints.empty
+  let prqvar = Termops.pr_evd_qvar evd in
+  let prlev = Termops.pr_evd_level evd in
+  str "@{" ++ UVars.Instance.pr prqvar prlev inst ++ str "}"
 
 let pr_puniverses f env sigma (c,u) =
   if !Constrextern.print_universes
