@@ -289,10 +289,14 @@ type settings =
   }
 
 let init_components () =
-  let from_env = Envars.getenv_rocq "_PROFILE_COMPONENTS" in
-  let v = match from_env with
-  | None -> CString.Pred.(full |> remove "unification" |> remove "Conversion")
-  | Some s ->
+  let s = Envars.getenv_rocq "_PROFILE_COMPONENTS" in
+  let s = Option.default "-unification,Conversion" s in
+  let v =
+    if CString.is_prefix "-" s then
+    List.fold_left (fun cs c -> CString.Pred.remove c cs)
+      CString.Pred.full
+      (String.split_on_char ',' (CString.sub s 1 (String.length s - 1)))
+  else
     List.fold_left (fun cs c -> CString.Pred.add c cs)
       CString.Pred.empty
       (String.split_on_char ',' s)
