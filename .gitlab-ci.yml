@@ -1147,6 +1147,9 @@ plugin:ci-fiat_parsers:
 
 plugin:ci-lean_importer:
   extends: .ci-template
+  needs:
+  - build:base
+  - library:ci-stdlib
 
 plugin:ci-ltac2_compiler:
   extends: .ci-template
