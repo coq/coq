@@ -8,7 +8,7 @@ set -o pipefail
 set -x
 
 CI_NAME="$1"
-CI_SCRIPT="ci-${CI_NAME}.sh"
+CI_SCRIPT="scripts/ci-${CI_NAME}.sh"
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # assume this script is in dev/ci/, cd to the root Rocq directory

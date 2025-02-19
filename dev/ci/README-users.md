@@ -80,7 +80,7 @@ as "plugins"] do have some special requirements:
 
 ### Add your project by submitting a pull request
 
-Add a new `ci-mydev.sh` script to [`dev/ci`](.); set the corresponding
+Add a new `ci-mydev.sh` script to [`dev/ci/scripts`](scripts); set the corresponding
 variables in [`ci-basic-overlay.sh`](ci-basic-overlay.sh); add the
 corresponding target to [`Makefile.ci`](../../Makefile.ci) and a new job to
 [`.gitlab-ci.yml`](../../.gitlab-ci.yml) so that this new target is run.
@@ -94,7 +94,7 @@ Some important points:
   [`ci-basic-overlay.sh`](ci-basic-overlay.sh).
 
 - Let `$job` be the name of the new job as used for the name of
-  the added script file `dev/ci/ci-$job.sh`. Then the added target
+  the added script file `dev/ci/scripts/ci-$job.sh`. Then the added target
   in `Makefile.ci` must be named `ci-$job` and the added job in
   `.gitlab-ci.yml` must be named `library:$job` or
   `plugin:$job`. `$job` must be a valid shell variable name,
