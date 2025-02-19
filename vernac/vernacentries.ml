@@ -2071,8 +2071,7 @@ let check_may_eval env sigma redexp rc =
   let sigma = Evarconv.solve_unif_constraints_with_heuristics env sigma in
   Evarconv.check_problems_are_solved env sigma;
   let sigma = Evd.minimize_universes sigma in
-  let uctx = Evd.universe_context_set sigma in
-  let env = Environ.push_context_set uctx (Evarutil.nf_env_evar sigma env) in
+  let (qs, us), csts = Evd.sort_context_set sigma in
   let { Environ.uj_val=c; uj_type=ty; } =
     if Evarutil.has_undefined_evars sigma c
     || List.exists (Context.Named.Declaration.exists (Evarutil.has_undefined_evars sigma))
@@ -2080,6 +2079,9 @@ let check_may_eval env sigma redexp rc =
     then
       Evarutil.j_nf_evar sigma (Retyping.get_judgment_of env sigma c)
     else
+      let env = Evarutil.nf_env_evar sigma env in
+      let env = Environ.push_qualities qs env in
+      let env = Environ.push_context_set (us,csts) env in
       let c = EConstr.to_constr sigma c in
       (* OK to call kernel which does not support evars *)
       Environ.on_judgment EConstr.of_constr (Arguments_renaming.rename_typing env c)
@@ -2100,7 +2102,7 @@ let check_may_eval env sigma redexp rc =
     pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma l
   in
   let hdr = if Option.has_some redexp then str "     = " else mt() in
-  hdr ++ pp ++ Printer.pr_universe_ctx_set sigma uctx
+  hdr ++ pp ++ Printer.pr_universe_ctx_set sigma (us,csts)
 
 let vernac_check_may_eval ~pstate redexp glopt rc =
   let glopt = query_command_selector glopt in

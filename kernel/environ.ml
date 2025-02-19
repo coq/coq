@@ -490,6 +490,9 @@ let add_universes_set ~strict ctx g =
 let push_context_set ?(strict=false) ctx env =
   map_universes (add_universes_set ~strict ctx) env
 
+let push_qualities ctx env =
+  { env with env_qualities = Sorts.QVar.Set.union env.env_qualities ctx }
+
 let push_subgraph (levels,csts) env =
   let add_subgraph g =
     let newg = Univ.Level.Set.fold (fun v g -> UGraph.add_universe ~strict:false v g) levels g in
