@@ -341,7 +341,7 @@ git clone -q --depth 1 -b "$old_coq_opam_archive_git_branch" "$old_coq_opam_arch
 new_coq_opam_archive_dir="$working_dir/new_coq_opam_archive"
 git clone -q --depth 1 -b "$new_coq_opam_archive_git_branch" "$new_coq_opam_archive_git_uri" "$new_coq_opam_archive_dir"
 
-initial_opam_packages="num zarith ocamlfind dune yojson"
+initial_opam_packages="num zarith ocamlfind dune yojson camlzip"
 
 # Create an opam root and install Rocq
 # $1 = root_name {ex: NEW / OLD}

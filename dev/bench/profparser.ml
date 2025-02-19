@@ -34,20 +34,50 @@ let rec find_cmds acc (lstate,lex as ch) =
   in
   if is_last then acc else find_cmds acc ch
 
+type 'ch channel = {
+  open_in : string -> 'ch;
+  close_in : 'ch -> unit;
+  really_input : 'ch -> Bytes.t -> int -> int -> unit;
+  input : 'ch -> Bytes.t -> int -> int -> int;
+}
+
+let file_channel = {
+  open_in = open_in;
+  close_in = close_in;
+  really_input = really_input;
+  input = input;
+}
+
+let gzip_channel = {
+  open_in = Gzip.open_in;
+  close_in = Gzip.close_in;
+  really_input = Gzip.really_input;
+  input = Gzip.input;
+}
+
+type any_channel = AnyChannel : 'ch channel -> any_channel
+
+let channel_for fname =
+  if CString.is_suffix ".json" fname then AnyChannel file_channel
+  else AnyChannel gzip_channel
+
+let input_exactly ch_fns ch expected =
+  let buf = Bytes.create (String.length expected) in
+  ch_fns.really_input ch buf 0 (String.length expected);
+  assert (Bytes.to_string buf = expected)
+
 let read_file fname =
-  let ch = open_in fname in
+  let AnyChannel ch_fns = channel_for fname in
+  let ch = ch_fns.open_in fname in
   try
     (* ignore initial line *)
-    let () =
-      let l = input_line ch in
-      assert (l = {|{ "traceEvents": [|})
-    in
-    let lex = Lexing.from_channel ~with_positions:false ch in
+    let () = input_exactly ch_fns ch {|{ "traceEvents": [|} in
+    let lex = Lexing.from_function ~with_positions:false (fun buf n -> ch_fns.input ch buf 0 n) in
     let lstate = Yojson.init_lexer ~fname ~lnum:2 () in
     let cmds = find_cmds [] (lstate,lex) in
-    close_in ch;
+    ch_fns.close_in ch;
     cmds
-  with e -> close_in ch; raise e
+  with e -> ch_fns.close_in ch; raise e
 
 open BenchUtil
 

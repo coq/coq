@@ -26,11 +26,10 @@ let parse_args = function
     vfile, data_files
 
 let file_data data_file =
-  match Filename.extension data_file with
-  | ".json" ->
+  if List.exists (fun suf -> CString.is_suffix suf data_file) [".json"; ".json.gz"] then
     let data = Profparser.parse ~file:data_file in
     data_file, CArray.of_list data
-  | _ ->
+  else
     let data = Timelogparser.parse ~file:data_file in
     data_file, CArray.of_list data
 
