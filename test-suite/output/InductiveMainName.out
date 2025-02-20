@@ -5,6 +5,7 @@ bar is a projection of foo
 Arguments bar id
 bar is transparent
 Expands to: Constant InductiveMainName.bar
+Declared in library InductiveMainName, line 1, characters 0-34
 bar' : foo' -> nat
 
 bar' is not universe polymorphic
@@ -12,6 +13,7 @@ bar' is a projection of foo'
 Arguments bar' {id'}
 bar' is transparent
 Expands to: Constant InductiveMainName.bar'
+Declared in library InductiveMainName, line 3, characters 0-36
 bar'' : foo'' -> foo''
 
 bar'' is not universe polymorphic
@@ -19,6 +21,7 @@ bar'' is a projection of foo''
 Arguments bar'' id''
 bar'' is transparent
 Expands to: Constant InductiveMainName.bar''
+Declared in library InductiveMainName, line 5, characters 0-47
 Record foo''' : Set := Build_foo''' { bar''' : nat } as id.
 
 foo''' has primitive projections with eta conversion.

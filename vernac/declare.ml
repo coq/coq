@@ -447,6 +447,10 @@ let inConstant v = Libobject.Dyn.Easy.inj v objConstant
 let register_constant loc cst kind ?user_warns local =
   (* Register the declaration *)
   let id = Label.to_id (Constant.label cst) in
+  let loc = match loc with
+    | Some _ -> loc
+    | None -> Loc.get_current_command_loc()
+  in
   let o = inConstant (id, { cst_kind = kind; cst_locl = local; cst_warn = user_warns; cst_loc = loc; }) in
   let () = Lib.add_leaf o in
   (* Register associated data *)

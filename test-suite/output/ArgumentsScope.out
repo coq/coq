@@ -144,7 +144,9 @@ N.f : A -> A
 N.f is not universe polymorphic
 Arguments N.f _%X
 Expands to: Constant ArgumentsScope.SectionTest2.N.f
+Declared in library ArgumentsScope, line 110, characters 6-23
 g : A -> A
 
 g is not universe polymorphic
 Expands to: Constant ArgumentsScope.SectionTest2.g
+Declared in library ArgumentsScope, line 116, characters 2-19
