@@ -113,7 +113,7 @@ let check_parameters_must_be_named = function
    eventually removed or merged with [Ast.t] *)
 module DataI = struct
   type t =
-    { name : Id.t
+    { name : lident
     ; constructor_name : Id.t
     ; arity : Constrexpr.constr_expr option
     (** declared sort for the record  *)
@@ -176,8 +176,8 @@ module DefClassEntry = struct
 
 type t = {
   univs : UState.named_universes_entry;
-  name : Id.t;
-  projname : Id.t;
+  name : lident;
+  projname : lident;
   params : Constr.rel_context;
   sort : Sorts.t;
   typ : Constr.t; (* NB: typ is convertible to sort *)
@@ -222,16 +222,12 @@ type defclass_or_record =
 (* we currently don't check that defclasses are nonrecursive until we try to declare the definition in the kernel
    so we do need env_ar_params (instead of env_params) to avoid unbound rel anomalies *)
 let def_class_levels ~def ~env_ar_params sigma aritysorts ctors =
-  let s, projname, ctor = match aritysorts, ctors with
+  let s, ctor = match aritysorts, ctors with
     | [s], [ctor] -> begin match ctor with
-        | [LocalAssum (na,t)] -> s, na.binder_name, t
+        | [LocalAssum (na,t)] -> s, t
         | _ -> assert false
       end
     | _ -> CErrors.user_err Pp.(str "Mutual definitional classes are not supported.")
-  in
-  let projname = match projname with
-    | Name id -> id
-    | Anonymous -> assert false
   in
   let ctor_sort = Retyping.get_sort_of env_ar_params sigma ctor in
   let is_prop_ctor = EConstr.ESorts.is_prop sigma ctor_sort in
@@ -241,9 +237,9 @@ let def_class_levels ~def ~env_ar_params sigma aritysorts ctors =
   then (* We assume that the level in aritysort is not constrained
           and clear it, if it is flexible *)
     let sigma = Evd.set_eq_sort sigma EConstr.ESorts.set s in
-    sigma, EConstr.ESorts.prop, projname, ctor
+    sigma, EConstr.ESorts.prop, ctor
   else
-    sigma, s, projname, ctor
+    sigma, s, ctor
 
 let finalize_def_class env sigma ~params ~sort ~projtyp =
   let sigma, (params, sort, typ, projtyp) =
@@ -305,7 +301,7 @@ let inhabitant_id ~isclass bound_names ind {DataI.default_inhabitant_id=id; name
   match id with
   | Some id -> id
   | None ->
-    let canonical_inhabitant_id = canonical_inhabitant_id ~isclass name in
+    let canonical_inhabitant_id = canonical_inhabitant_id ~isclass name.v in
     (* In the type of every projection, the record is bound to a
         variable named using the first character of the record type.
         We rename it to avoid collisions with names already used in
@@ -339,10 +335,10 @@ let typecheck_params_and_fields ~kind ~(flags:ComInductive.flags) ~primitive_pro
   let arities = List.map (fun typ -> EConstr.it_mkProd_or_LetIn typ params) typs in
   let relevances = List.map (fun s -> EConstr.ESorts.relevance_of_sort s) aritysorts in
   let fold accu { DataI.name; _ } arity r =
-    EConstr.push_rel (LocalAssum (make_annot (Name name) r,arity)) accu in
+    EConstr.push_rel (LocalAssum (make_annot (Name name.v) r,arity)) accu in
   let env_ar_params = EConstr.push_rel_context params (List.fold_left3 fold env0 records arities relevances) in
   let impls_env =
-    let ids = List.map (fun { DataI.name; _ } -> name) records in
+    let ids = List.map (fun { DataI.name; _ } -> name.v) records in
     let impls = List.map (fun _ -> impls) arities in
     Constrintern.compute_internalization_env env0 sigma ~impls:impls_env Constrintern.Inductive ids arities impls
   in
@@ -358,17 +354,18 @@ let typecheck_params_and_fields ~kind ~(flags:ComInductive.flags) ~primitive_pro
     Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar_params sigma in
   if def then
     (* XXX to fix: if we enter [Class Foo : typ := Bar : nat.], [typ] will get unfolded here *)
-    let sigma, sort, projname, projtyp = def_class_levels ~def ~env_ar_params sigma aritysorts fields in
+    let sigma, sort, projtyp = def_class_levels ~def ~env_ar_params sigma aritysorts fields in
     let sigma, params, sort, typ, projtyp =
       (* named and rel context in the env don't matter here
          (they will be replaced by the ones of the unsolved evars in the error message
          which is the env's only use) *)
       finalize_def_class env_ar_params sigma ~params ~sort ~projtyp
     in
-    let name = match records with
-      | [data] -> data.name
+    let name, projname = match records with
+      | [{name; fs=[AssumExpr (projname, _, _)]}] -> name, projname
       | _ -> assert false
     in
+    let projname = CAst.map Nameops.Name.get_id projname in
     let univs = Evd.check_univ_decl ~poly:flags.poly sigma udecl in
     (* definitional classes are encoded as 1 constructor with 1
        field whose type is the projection type *)
@@ -404,7 +401,7 @@ let typecheck_params_and_fields ~kind ~(flags:ComInductive.flags) ~primitive_pro
         [record.DataI.constructor_name], [ctor])
         0 records fields
     in
-    let indnames = List.map (fun x -> x.DataI.name) records in
+    let indnames = List.map (fun x -> x.DataI.name.v) records in
     let arities_explicit = List.map (fun x -> Option.has_some x.DataI.arity) records in
     let template_syntax = List.map (fun typ ->
         if EConstr.isArity sigma typ then
@@ -728,7 +725,7 @@ module Ast = struct
 
   let to_datai { name; idbuild; cfs; sort; default_inhabitant_id; } =
     let fs = List.map fst cfs in
-    { DataI.name = name.CAst.v
+    { DataI.name = name
     ; constructor_name = idbuild.CAst.v
     ; arity = sort
     ; nots = List.map (fun (_, { rf_notation }) -> List.map Metasyntax.prepare_where_notation rf_notation) cfs
@@ -915,7 +912,7 @@ let declare_class_constant entry (data:Data.t) =
   let class_type = it_mkProd_or_LetIn typ params in
   let class_entry =
     Declare.definition_entry ~types:class_type ~univs class_body in
-  let cst = Declare.declare_constant ~name
+  let cst = Declare.declare_constant ?loc:name.loc ~name:name.v
       (Declare.DefinitionEntry class_entry) ~kind:Decls.(IsDefinition Definition)
   in
   let inst, univs = match univs with
@@ -935,7 +932,7 @@ let declare_class_constant entry (data:Data.t) =
   let proj_body =
     it_mkLambda_or_LetIn (mkLambda (binder, inst_type, mkRel 1)) params in
   let proj_entry = Declare.definition_entry ~types:proj_type ~univs proj_body in
-  let proj_cst = Declare.declare_constant ~name:projname
+  let proj_cst = Declare.declare_constant ?loc:projname.loc ~name:projname.v
       (Declare.DefinitionEntry proj_entry) ~kind:Decls.(IsDefinition Definition)
   in
   let cref = GlobRef.ConstRef cst in
