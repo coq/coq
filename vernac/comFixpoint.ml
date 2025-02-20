@@ -253,7 +253,7 @@ let build_wellfounded env sigma poly udecl {CAst.v=recname; loc} ctx body ccl im
         let ty = Term.it_mkProd_or_LetIn ccl ctx in
         let ce = Declare.definition_entry ~types:ty ~univs body in
         (* FIXME: include locality *)
-        let c = Declare.declare_constant ~name:recname ~kind:Decls.(IsDefinition Definition) (DefinitionEntry ce) in
+        let c = Declare.declare_constant ?loc ~name:recname ~kind:Decls.(IsDefinition Definition) (DefinitionEntry ce) in
         let gr = GlobRef.ConstRef c in
         if Impargs.is_implicit_args () || not (List.is_empty impls) then
           Impargs.declare_manual_implicits false gr impls
