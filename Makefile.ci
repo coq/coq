@@ -134,6 +134,8 @@ ci-coinduction: ci-stdlib
 
 ci-color: ci-bignums
 
+ci-lean_importer: ci-stdlib
+
 ci-mathcomp: ci-elpi_hb
 
 ci-coqprime: ci-bignums
