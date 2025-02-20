@@ -19,7 +19,7 @@ val declare_relation
   -> ?binders:local_binder_expr list
   -> constr_expr
   -> constr_expr
-  -> Id.t
+  -> lident
   -> constr_expr option
   -> constr_expr option
   -> constr_expr option
@@ -31,12 +31,17 @@ val add_setoid
   -> constr_expr
   -> constr_expr
   -> constr_expr
-  -> Id.t
+  -> lident
   -> unit
 
-val add_morphism_interactive : rewrite_attributes ->
-  tactic:unit Proofview.tactic -> constr_expr -> Id.t -> Declare.Proof.t
-val add_morphism_as_parameter : rewrite_attributes -> constr_expr -> Id.t -> unit
+val add_morphism_interactive
+  : rewrite_attributes
+  -> tactic:unit Proofview.tactic
+  -> constr_expr
+  -> lident
+  -> Declare.Proof.t
+
+val add_morphism_as_parameter : rewrite_attributes -> constr_expr -> lident -> unit
 
 val add_morphism
   :  rewrite_attributes
@@ -44,5 +49,5 @@ val add_morphism
   -> local_binder_expr list
   -> constr_expr
   -> constr_expr
-  -> Id.t
+  -> lident
   -> Declare.Proof.t
