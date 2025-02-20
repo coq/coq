@@ -46,6 +46,17 @@ module Hook = struct
 
 end
 
+let warn_using_fallback_loc = CWarnings.create ~name:"using-fallback-loc" ~category:CWarnings.CoreCategories.internal ~default:Disabled
+    Pp.(fun name -> str "Using fallback loc for " ++ Id.print name ++ str ".")
+
+let fallback_loc ?(warn=true) name = function
+  | Some _ as loc -> loc
+  | None -> match Loc.get_current_command_loc () with
+    | None -> None
+    | Some _ as loc ->
+      let () = if warn then warn_using_fallback_loc name in
+      loc
+
 module CInfo = struct
 
   type 'constr t =
@@ -62,10 +73,7 @@ module CInfo = struct
 
 
   let make ?loc ~name ~typ ?(args=[]) ?(impargs=[]) () =
-    let loc = match loc with
-      | None -> Loc.get_current_command_loc()
-      | Some _ -> loc
-    in
+    let loc = fallback_loc name loc in
     { name; typ; args; impargs; loc }
 
   let to_constr sigma thm = { thm with typ = EConstr.to_constr sigma thm.typ }
@@ -447,6 +455,7 @@ let inConstant v = Libobject.Dyn.Easy.inj v objConstant
 let register_constant loc cst kind ?user_warns local =
   (* Register the declaration *)
   let id = Label.to_id (Constant.label cst) in
+  let loc = fallback_loc id loc in
   let o = inConstant (id, { cst_kind = kind; cst_locl = local; cst_warn = user_warns; cst_loc = loc; }) in
   let () = Lib.add_leaf o in
   (* Register associated data *)
@@ -459,7 +468,8 @@ let register_side_effect (c, body, role) =
   | None -> ()
   | Some opaque -> Opaques.declare_private_opaque opaque
   in
-  let () = register_constant (Loc.get_current_command_loc()) c Decls.(IsProof Theorem) Locality.ImportDefaultBehavior in
+  let id = Label.to_id @@ Constant.label c in
+  let () = register_constant (fallback_loc ~warn:false id None) c Decls.(IsProof Theorem) Locality.ImportDefaultBehavior in
   match role with
   | None -> ()
   | Some (Evd.Schema (ind, kind)) -> DeclareScheme.declare_scheme SuperGlobal kind (ind,c)
@@ -669,7 +679,7 @@ let declare_private_constant ?role ?(local = Locality.ImportDefaultBehavior) ~na
     else DeclareUniv.declare_univ_binders (ConstRef kn)
         (Monomorphic_entry ctx, UnivNames.empty_binders)
   in
-  let () = register_constant (Loc.get_current_command_loc()) kn kind local in
+  let () = register_constant (fallback_loc ~warn:false name None) kn kind local in
   let seff_roles = match role with None -> Cmap.empty | Some r -> Cmap.singleton kn r in
   let eff = { Evd.seff_private = eff; Evd.seff_roles; } in
   kn, eff
@@ -1324,7 +1334,7 @@ let declare_obligation prg obl ~uctx ~types ~body =
     let ce = definition_entry ?types:ty ~opaque ~univs body in
     (* ppedrot: seems legit to have obligations as local *)
     let constant =
-      declare_constant ~loc:None ~name:obl.obl_name
+      declare_constant ~loc:(fallback_loc ~warn:false obl.obl_name None) ~name:obl.obl_name
         ~typing_flags:prg.prg_info.Info.typing_flags
         ~local:Locality.ImportNeedQualified
         ~kind:Decls.(IsProof Property)
@@ -1532,7 +1542,8 @@ let declare_mutual_definitions ~pm l =
   let defs, obls = List.split (List.map defobl l) in
   let obls = List.flatten obls in
   let fixitems = List.map2 (fun (d, typ, impargs) name ->
-      CInfo.make ~name ~typ ~impargs ()) defs first.prg_deps in
+      let loc = fallback_loc ~warn:false name None in
+      CInfo.make ?loc ~name ~typ ~impargs ()) defs first.prg_deps in
   let fixdefs, fixtypes, _ = List.split3 defs in
   let possible_guard = Option.get first.prg_possible_guard in
   (* Declare the recursive definitions *)
@@ -2116,7 +2127,8 @@ let next = let n = ref 0 in fun () -> incr n; !n
 let by tac = map_fold ~f:(Proof.solve (Goal_select.SelectNth 1) None tac)
 
 let build_constant_by_tactic ~name ?warn_incomplete ~sigma ~sign ~poly (typ : EConstr.t) tac =
-  let cinfo = [CInfo.make ~name ~typ:() ()] in
+  let loc = fallback_loc ~warn:false name None in
+  let cinfo = [CInfo.make ?loc ~name ~typ:() ()] in
   let info = Info.make ~poly () in
   let pinfo = Proof_info.make ~cinfo ~info () in
   let pf = start_proof_core ~name ~pinfo sigma [Some sign, typ] in
@@ -2558,7 +2570,9 @@ let solve_obligation ?check_final prg num tac =
     let name = Internal.get_name prg in
     Proof_ending.End_obligation {name; num; auto; check_final}
   in
-  let cinfo = CInfo.make ~name:obl.obl_name ~typ:(EConstr.of_constr obl.obl_type) () in
+  let cinfo = CInfo.make ?loc:(fallback_loc ~warn:false obl.obl_name None)
+      ~name:obl.obl_name ~typ:(EConstr.of_constr obl.obl_type) ()
+  in
   let using =
     let using = Internal.get_using prg in
     let env = Global.env () in
