@@ -89,3 +89,5 @@ val with_meta_as_hole : ('a -> 'b) -> 'a -> 'b
 
 (** Probably shouldn't be used *)
 val empty_extern_env : extern_env
+
+val set_max_depth : int option -> unit
