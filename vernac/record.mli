@@ -56,6 +56,7 @@ module RecordEntry : sig
     default_dep_elim : DeclareInd.default_dep_elim;
     (* implfs includes the param and principal argument info *)
     implfs : Impargs.manual_implicits list;
+    fieldlocs : Loc.t option list;
   }
 
   type t = {
@@ -109,6 +110,7 @@ module Internal : sig
     -> kind:Decls.definition_object_kind
     -> inhabitant_id:Names.Id.t
     -> projection_flags list
+    -> ?fieldlocs:Loc.t option list
     -> Impargs.manual_implicits list
     -> Structure.projection list
 

@@ -110,6 +110,7 @@ punwrap is a primitive projection of PWrap
 Arguments punwrap A%_type_scope p
 punwrap is transparent
 Expands to: Constant UnivBinders.punwrap
+Declared in library UnivBinders, line 12, characters 43-50
 File "./output/UnivBinders.v", line 104, characters 0-19:
 The command has indeed failed with message:
 Universe instance length for foo is 3 but should be 1.

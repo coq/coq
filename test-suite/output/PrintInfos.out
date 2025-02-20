@@ -139,6 +139,7 @@ fst is a projection of prod
 Arguments fst (A B)%_type_scope p
 fst is transparent
 Expands to: Constant PrintInfos.AboutProj.fst
+Declared in library PrintInfos, line 57, characters 21-24
 fst : forall A B : Type, prod A B -> A
 
 fst is not universe polymorphic
@@ -146,3 +147,4 @@ fst is a primitive projection of prod
 Arguments fst (A B)%_type_scope p
 fst is transparent
 Expands to: Constant PrintInfos.AboutPrimProj.fst
+Declared in library PrintInfos, line 63, characters 21-24

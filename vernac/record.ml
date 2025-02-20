@@ -47,24 +47,25 @@ let { Goptions.get = typeclasses_default_mode } =
     ()
 
 let interp_fields_evars env sigma ~ninds ~nparams impls_env nots l =
-  let _, sigma, impls, newfs, _ =
+  let _, sigma, impls, locs, newfs, _ =
     List.fold_left2
-      (fun (env, sigma, uimpls, params, impls_env) no d ->
-         let sigma, (i, b, t), impl = match d with
-           | Vernacexpr.AssumExpr({CAst.v=id},bl,t) ->
+      (fun (env, sigma, uimpls, locs, params, impls_env) no d ->
+         let sigma, (i, b, t), impl, loc = match d with
+           | Vernacexpr.AssumExpr({CAst.v=id; loc},bl,t) ->
              (* Temporary compatibility with the type-classes heuristics *)
              (* which are applied after the interpretation of bl and *)
              (* before the one of t otherwise (see #13166) *)
              let t = if bl = [] then t else mkCProdN bl t in
              let sigma, t, impl =
                ComAssumption.interp_assumption ~program_mode:false env sigma impls_env [] t in
-             sigma, (id, None, t), impl
-           | Vernacexpr.DefExpr({CAst.v=id},bl,b,t) ->
+             sigma, (id, None, t), impl, loc
+           | Vernacexpr.DefExpr({CAst.v=id; loc},bl,b,t) ->
              let sigma, (b, t), impl =
                ComDefinition.interp_definition ~program_mode:false env sigma impls_env bl None b t in
              let t = match t with Some t -> t | None -> Retyping.get_type_of env sigma b in
-             sigma, (id, Some b, t), impl in
-          let r = Retyping.relevance_of_type env sigma t in
+             sigma, (id, Some b, t), impl, loc
+         in
+         let r = Retyping.relevance_of_type env sigma t in
          let impls_env =
            match i with
            | Anonymous -> impls_env
@@ -76,8 +77,8 @@ let interp_fields_evars env sigma ~ninds ~nparams impls_env nots l =
            | Some b -> LocalDef (make_annot i r,b,t)
          in
          List.iter (Metasyntax.set_notation_for_interpretation env impls_env) no;
-         (EConstr.push_rel d env, sigma, impl :: uimpls, d::params, impls_env))
-      (env, sigma, [], [], impls_env) nots l
+         (EConstr.push_rel d env, sigma, impl :: uimpls, loc :: locs, d::params, impls_env))
+      (env, sigma, [], [], [], impls_env) nots l
   in
   let _, _, sigma = Context.Rel.fold_outside ~init:(env,0,sigma) (fun f (env,k,sigma) ->
       let sigma = RelDecl.fold_constr (fun c sigma ->
@@ -87,7 +88,7 @@ let interp_fields_evars env sigma ~ninds ~nparams impls_env nots l =
       EConstr.push_rel f env, k+1, sigma)
       newfs
   in
-  sigma, (impls, newfs)
+  sigma, (impls, locs, newfs)
 
 let check_anonymous_type ind =
   match ind with
@@ -197,12 +198,14 @@ module RecordEntry = struct
     default_dep_elim : DeclareInd.default_dep_elim;
     (* implfs includes the param and principal argument info *)
     implfs : Impargs.manual_implicits list;
+    fieldlocs : Loc.t option list;
   }
 
-  let make_ind_infos id elims implfs =
+  let make_ind_infos id elims implfs fieldlocs =
     { inhabitant_id = id;
       default_dep_elim = elims;
       implfs;
+      fieldlocs
     }
 
   type t = {
@@ -348,7 +351,7 @@ let typecheck_params_and_fields ~kind ~(flags:ComInductive.flags) ~primitive_pro
     interp_fields_evars env_ar_params sigma ~ninds ~nparams impls_env nots fs
   in
   let (sigma, fields) = List.fold_left_map fold sigma records in
-  let field_impls, fields = List.split fields in
+  let field_impls, locs, fields = List.split3 fields in
   let field_impls = List.map (List.map (adjust_field_implicits ~isclass (params,impls))) field_impls in
   let sigma =
     Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar_params sigma in
@@ -420,7 +423,7 @@ let typecheck_params_and_fields ~kind ~(flags:ComInductive.flags) ~primitive_pro
       mie;
       global_univs;
       ubinders;
-      ind_infos = List.map3 RecordEntry.make_ind_infos ids default_dep_elim field_impls;
+      ind_infos = List.map4 RecordEntry.make_ind_infos ids default_dep_elim field_impls locs;
       param_impls = impls;
     }
 
@@ -446,7 +449,7 @@ let error_elim_explain kp ki =
 (* If a projection is not definable, we throw an error if the user
 asked it to be a coercion or instance. Otherwise, we just print an info
 message. The user might still want to name the field of the record. *)
-let warning_or_error ~info flags indsp err =
+let warning_or_error ?loc ~info flags indsp err =
   let st = match err with
     | MissingProj (fi,projs) ->
         let s,have = if List.length projs > 1 then "s","were" else "","was" in
@@ -477,8 +480,8 @@ let warning_or_error ~info flags indsp err =
              Himsg.explain_type_error env (Evd.from_env env)
                (Pretype_errors.of_type_error te))
   in
-  if flags.Data.pf_coercion || flags.Data.pf_instance then user_err ~info st;
-  warn_cannot_define_projection (hov 0 st)
+  if flags.Data.pf_coercion || flags.Data.pf_instance then user_err ?loc ~info st;
+  warn_cannot_define_projection ?loc (hov 0 st)
 
 type field_status =
   | NoProjection of Name.t
@@ -552,7 +555,7 @@ let declare_proj_coercion_instance ~flags ref from =
    this could be refactored as noted above by moving to the
    higher-level declare constant API *)
 let build_named_proj ~primitive ~flags ~univs ~uinstance ~kind env paramdecls
-    paramargs decl impls fid subst nfi ti i indsp mib lifted_fields x rp =
+    paramargs decl impls {CAst.v=fid; loc} subst nfi ti i indsp mib lifted_fields x rp =
   let ccl = subst_projection fid subst ti in
   let body, p_opt = match decl with
     | LocalDef (_,ci,_) -> subst_projection fid subst ci, None
@@ -578,7 +581,7 @@ let build_named_proj ~primitive ~flags ~univs ~uinstance ~kind env paramdecls
   let kind = Decls.IsDefinition kind in
   let kn =
     (* XXX more precise loc *)
-    try Declare.declare_constant ~name:fid ~kind (Declare.DefinitionEntry entry)
+    try Declare.declare_constant ?loc ~name:fid ~kind (Declare.DefinitionEntry entry)
     with Type_errors.TypeError (ctx,te) as exn when not primitive ->
       let _, info = Exninfo.capture exn in
       Exninfo.iraise (NotDefinable (BadTypedProj (fid,ctx,te)),info)
@@ -603,7 +606,7 @@ let build_named_proj ~primitive ~flags ~univs ~uinstance ~kind env paramdecls
 (** [build_proj] will build a projection for each field, or skip if
    the field is anonymous, i.e. [_ : t] *)
 let build_proj env mib indsp primitive x rp lifted_fields paramdecls paramargs ~uinstance ~kind ~univs
-    (nfi,i,kinds,subst) flags decl impls =
+    (nfi,i,kinds,subst) flags loc decl impls =
   let fi = RelDecl.get_name decl in
   let ti = RelDecl.get_type decl in
   let (sp_proj,i,subst) =
@@ -611,12 +614,13 @@ let build_proj env mib indsp primitive x rp lifted_fields paramdecls paramargs ~
     | Anonymous ->
       (None,i,NoProjection fi::subst)
     | Name fid ->
+      let fid = CAst.make ?loc fid in
       try build_named_proj
             ~primitive ~flags ~univs ~uinstance ~kind env paramdecls paramargs decl impls fid
             subst nfi ti i indsp mib lifted_fields x rp
       with NotDefinable why as exn ->
         let _, info = Exninfo.capture exn in
-        warning_or_error ~info flags indsp why;
+        warning_or_error ?loc ~info flags indsp why;
         (None,i,NoProjection fi::subst)
   in
   (nfi - 1, i,
@@ -628,7 +632,7 @@ let build_proj env mib indsp primitive x rp lifted_fields paramdecls paramargs ~
 
 (** [declare_projections] prepares the common context for all record
    projections and then calls [build_proj] for each one. *)
-let declare_projections indsp ~kind ~inhabitant_id flags fieldimpls =
+let declare_projections indsp ~kind ~inhabitant_id flags ?fieldlocs fieldimpls =
   let env = Global.env() in
   let (mib,mip) = Global.lookup_inductive indsp in
   let uinstance =
@@ -655,10 +659,14 @@ let declare_projections indsp ~kind ~inhabitant_id flags fieldimpls =
     | PrimRecord _ -> true
     | FakeRecord | NotRecord -> false
   in
+  let fieldlocs = match fieldlocs with
+    | None -> List.make (List.length fields) None
+    | Some fieldlocs -> fieldlocs
+  in
   let (_,_,canonical_projections,_) =
-    List.fold_left3
+    List.fold_left4
       (build_proj env mib indsp primitive x rp lifted_fields paramdecls paramargs ~uinstance ~kind ~univs)
-      (List.length fields,0,[],[]) flags (List.rev fields) (List.rev fieldimpls)
+      (List.length fields,0,[],[]) flags (List.rev fieldlocs) (List.rev fields) (List.rev fieldimpls)
   in
     List.rev canonical_projections
 
@@ -872,11 +880,11 @@ let declare_structure (decl:Record_decl.t) =
       ~indlocs:decl.indlocs
       ~default_dep_elim
   in
-  let map i ({ RecordEntry.inhabitant_id; implfs }, { Data.is_coercion; proj_flags; }) =
+  let map i ({ RecordEntry.inhabitant_id; implfs; fieldlocs }, { Data.is_coercion; proj_flags; }) =
     let rsp = (kn, i) in (* This is ind path of idstruc *)
     let cstr = (rsp, 1) in
     let kind = decl.projections_kind in
-    let projections = declare_projections rsp ~kind ~inhabitant_id proj_flags implfs in
+    let projections = declare_projections rsp ~kind ~inhabitant_id proj_flags ~fieldlocs implfs in
     let build = GlobRef.ConstructRef cstr in
     let () = match is_coercion with
       | NoCoercion -> ()
