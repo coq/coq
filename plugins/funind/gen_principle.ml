@@ -257,12 +257,12 @@ let generate_functional_principle (evd : Evd.evar_map ref) old_princ_type sorts
       | None -> Array.make (Array.length funs) type_sort
       | Some a -> a
     in
-    let base_new_princ_name, new_princ_name =
+    let base_new_princ_name, new_princ_name, loc =
       match new_princ_name with
-      | Some id -> (id, id)
+      | Some {CAst.v=id; loc} -> (id, id, loc)
       | None ->
         let id_of_f = Label.to_id (Constant.label (fst f)) in
-        (id_of_f, Indrec.make_elimination_ident id_of_f (EConstr.ESorts.family !evd type_sort))
+        (id_of_f, Indrec.make_elimination_ident id_of_f (EConstr.ESorts.family !evd type_sort), None)
     in
     let names = ref [new_princ_name] in
     let hook new_principle_type _ =
@@ -286,7 +286,7 @@ let generate_functional_principle (evd : Evd.evar_map ref) old_princ_type sorts
           let univs = Evd.univ_entry ~poly:false evd' in
           let ce = Declare.definition_entry ~univs value in
           ignore
-            (Declare.declare_constant ~name
+            (Declare.declare_constant ?loc ~name
                ~kind:Decls.(IsDefinition Scheme)
                (Declare.DefinitionEntry ce));
           Declare.definition_message name;
@@ -386,7 +386,7 @@ let register_struct is_rec (rec_order, fixpoint_exprl) =
         CErrors.user_err
           Pp.(str "Body of Function must be given.")
     in
-    ComDefinition.do_definition ~name:fname.CAst.v ~poly:false
+    ComDefinition.do_definition ?loc:fname.CAst.loc ~name:fname.CAst.v ~poly:false
       ~kind:Decls.Definition univs binders None body (Some rtype);
     let evd, rev_pconstants =
       List.fold_left
@@ -2166,11 +2166,11 @@ let build_scheme fas =
       let (_ : Constant.t) =
         let opaque = if opaque = Vernacexpr.Opaque then true else false in
         let def_entry = Declare.definition_entry ~univs ~opaque ?types body in
-        Declare.declare_constant ~name:princ_id
+        Declare.declare_constant ?loc:princ_id.CAst.loc ~name:princ_id.CAst.v
           ~kind:Decls.(IsProof Theorem)
           (Declare.DefinitionEntry def_entry)
       in
-      Declare.definition_message princ_id)
+      Declare.definition_message princ_id.v)
     fas bodies_types
 
 let build_case_scheme fa =
