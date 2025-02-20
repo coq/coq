@@ -16,5 +16,5 @@ val start_deriving
   :  atts:Vernacentries.DefAttributes.t
   -> Constrexpr.local_binder_expr list
   -> Constrexpr.constr_expr
-  -> Names.Id.t
+  -> Names.lident
   -> Declare.Proof.t

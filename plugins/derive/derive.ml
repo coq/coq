@@ -47,7 +47,7 @@ let start_deriving ~atts bl suchthat name : Declare.Proof.t =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let () = List.iter check_allowed_binders bl in
-  let sigma, (impls_env, ((env', ctx'), _, _locs)) = Constrintern.interp_named_context_evars env sigma bl in
+  let sigma, (impls_env, ((env', ctx'), _, locs)) = Constrintern.interp_named_context_evars env sigma bl in
   let sigma, env', ctx' = fill_assumptions env sigma ctx' in
   let sigma = Evd.shelve sigma (List.map fst (Evar.Map.bindings (Evd.undefined_map sigma))) in
   let sigma, (suchthat, impargs) = Constrintern.interp_type_evars_impls env' sigma ~impls:impls_env suchthat in
@@ -67,12 +67,12 @@ let start_deriving ~atts bl suchthat name : Declare.Proof.t =
   let extract_manual = function Some Impargs.{ impl_pos = (na,_,_); impl_expl = Manual; impl_max } -> Some (na, impl_max) | _ -> None in
   let cinfo =
     let open Declare.CInfo in
-    List.map (fun d ->
+    List.map2 (fun d loc ->
         let name = get_id d in
         let impargs = Constrintern.implicits_of_decl_in_internalization_env name impls_env in
         let impargs = List.map CAst.make (List.map extract_manual impargs) in
-        make ~name ~typ:() ~impargs ()) ctx' @
-    [make ~name ~typ:() ~impargs ()] in
-  let lemma = Declare.Proof.start_derive ~name ~info ~cinfo goals in
+        make ?loc ~name ~typ:() ~impargs ()) ctx' locs @
+    [make ?loc:name.CAst.loc ~name:name.CAst.v ~typ:() ~impargs ()] in
+  let lemma = Declare.Proof.start_derive ~name:name.v ~info ~cinfo goals in
   Declare.Proof.map lemma ~f:(fun p ->
       Util.pi1 @@ Proof.run_tactic env Proofview.(tclFOCUS 1 1 shelve) p)
