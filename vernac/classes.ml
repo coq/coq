@@ -306,9 +306,9 @@ let instance_hook info global ?hook cst =
   declare_instance env sigma (Some info) global cst;
   (match hook with Some h -> h cst | None -> ())
 
-let declare_instance_constant iinfo global impargs ?hook name udecl poly sigma term termtype =
+let declare_instance_constant iinfo global impargs ?hook (name:lident) udecl poly sigma term termtype =
   let kind = Decls.(IsDefinition Instance) in
-  let cinfo = Declare.CInfo.make ~name ~impargs ~typ:(Some termtype) () in
+  let cinfo = Declare.CInfo.make ?loc:name.loc ~name:name.v ~impargs ~typ:(Some termtype) () in
   let info = Declare.Info.make ~kind ~poly ~udecl () in
   let kn = Declare.declare_definition ~cinfo ~info ~opaque:false ~body:term sigma in
   instance_hook iinfo global ?hook kn
@@ -318,7 +318,7 @@ let instance_type cl args =
   let pars = List.firstn lenpars args in
   applist (mkRef (cl.clu_impl,cl.clu_univs), pars)
 
-let do_declare_instance sigma ~locality ~poly k ctx ctx' pri udecl impargs subst name =
+let do_declare_instance sigma ~locality ~poly k ctx ctx' pri udecl impargs subst (name:lident) =
   let subst = List.fold_left2
       (fun subst' s decl -> if is_local_assum decl then s :: subst' else subst')
       [] subst k.clu_context
@@ -326,13 +326,13 @@ let do_declare_instance sigma ~locality ~poly k ctx ctx' pri udecl impargs subst
   let ty_constr = instance_type k subst in
   let termtype = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
   let sigma, entry = Declare.prepare_parameter ~poly sigma ~udecl ~types:termtype in
-  let cst = Declare.declare_constant ~name
+  let cst = Declare.declare_constant ?loc:name.loc ~name:name.v
       ~kind:Decls.(IsAssumption Logical) (Declare.ParameterEntry entry) in
   let cst = (GlobRef.ConstRef cst) in
   Impargs.maybe_declare_manual_implicits false cst impargs;
   instance_hook pri locality cst
 
-let declare_instance_program pm env sigma ~locality ~poly name pri impargs udecl term termtype =
+let declare_instance_program pm env sigma ~locality ~poly {CAst.v=name;loc} pri impargs udecl term termtype =
   let hook { Declare.Hook.S.scope; dref; _ } =
     let cst = match dref with GlobRef.ConstRef kn -> kn | _ -> assert false in
     let pri = intern_info pri in
@@ -344,13 +344,13 @@ let declare_instance_program pm env sigma ~locality ~poly name pri impargs udecl
   let hook = Declare.Hook.make hook in
   let uctx = Evd.ustate sigma in
   let kind = Decls.IsDefinition Decls.Instance in
-  let cinfo = Declare.CInfo.make ~name ~typ ~impargs () in
+  let cinfo = Declare.CInfo.make ?loc ~name ~typ ~impargs () in
   let info = Declare.Info.make ~udecl ~poly ~kind ~hook () in
   let pm, _ =
     Declare.Obls.add_definition ~pm ~info ~cinfo ~opaque:false ~uctx ~body obls
   in pm
 
-let declare_instance_open sigma ?hook ~tac ~locality ~poly id pri impargs udecl ids term termtype =
+let declare_instance_open sigma ?hook ~tac ~locality ~poly (id:lident) pri impargs udecl ids term termtype =
   (* spiwack: it is hard to reorder the actions to do
      the pretyping after the proof has opened. As a
      consequence, we use the low-level primitives to code
@@ -364,7 +364,7 @@ let declare_instance_open sigma ?hook ~tac ~locality ~poly id pri impargs udecl 
   (* XXX: We need to normalize the type, otherwise Admitted / Qed will fails!
      This is due to a bug in proof_global :( *)
   let termtype = Evarutil.nf_evar sigma termtype in
-  let cinfo = Declare.CInfo.make ~name:id ~impargs ~typ:termtype () in
+  let cinfo = Declare.CInfo.make ?loc:id.loc ~name:id.v ~impargs ~typ:termtype () in
   let lemma = Declare.Proof.start ~cinfo ~info sigma in
   (* spiwack: I don't know what to do with the status here. *)
   let lemma =
@@ -567,17 +567,16 @@ let id_of_class env ref =
     | _ -> assert false
 
 let new_instance_common ~program_mode env instid ctx cl =
-  let ({CAst.loc;v=instid}, pl) = instid in
+  let (instid, pl) = instid in
   let sigma, k, u, cty, ctx', ctx, imps, subst, decl =
     interp_instance_context ~program_mode env ctx pl cl
   in
   (* The name generator should not be here *)
-  let id =
-    match instid with
-    | Name id -> id
-    | Anonymous ->
-      let i = Nameops.add_suffix (id_of_class env k.clu_impl) "_instance_0" in
-      Namegen.next_global_ident_away i (Termops.vars_of_env env)
+  let id = instid |> CAst.map (function
+      | Name id -> id
+      | Anonymous ->
+        let i = Nameops.add_suffix (id_of_class env k.clu_impl) "_instance_0" in
+        Namegen.next_global_ident_away i (Termops.vars_of_env env))
   in
   let env' = push_rel_context ctx env in
   id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl
@@ -610,7 +609,7 @@ let new_instance ~locality ~poly instid ctx cl props ?hook pri =
 
 let declare_new_instance ~locality ~program_mode ~poly instid ctx cl pri =
   let env = Global.env() in
-  let ({CAst.loc;v=instid}, pl) = instid in
+  let (instid, pl) = instid in
   let sigma, k, u, cty, ctx', ctx, imps, subst, decl =
     interp_instance_context ~program_mode env ctx pl cl
   in

@@ -1665,7 +1665,7 @@ let vernac_instance ~atts name bl t props info =
   let locality, poly =
     Attributes.(parse (Notations.(hint_locality ++ polymorphic))) atts
   in
-  let _id : Id.t =
+  let _id : lident =
     Classes.new_instance ~locality ~poly name bl t props info in
   ()
 
