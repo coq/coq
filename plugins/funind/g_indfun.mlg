@@ -219,7 +219,7 @@ let warning_error names e =
     let names = pr_enum Libnames.pr_qualid names in
     let error = if do_observe () then CErrors.print e else mt () in
     Gen_principle.warn_cannot_define_principle (names,error)
-  | _ -> raise e
+  | _ -> assert false
 
 }
 
@@ -241,13 +241,13 @@ VERNAC COMMAND EXTEND NewFunctionalScheme
                 with
                 | Gen_principle.No_graph_found ->
                   CErrors.user_err Pp.(str "Cannot generate induction principle(s)")
-                | e when CErrors.noncritical e ->
+                | Building_graph _ | Defining_principle _ as e ->
                   let names = List.map (fun (_,na,_) -> na) fas in
                   warning_error names e
               end
               | _ -> assert false (* we can only have non empty  list *)
           end
-        | e when CErrors.noncritical e ->
+        | Building_graph _ | Defining_principle _ as e ->
           let names = List.map (fun (_,na,_) -> na) fas in
           warning_error names e
       end
