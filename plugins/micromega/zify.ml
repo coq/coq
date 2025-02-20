@@ -1524,7 +1524,7 @@ let interp_pscript s =
     Tacticals.tclTHEN
       (Tactics.letin_tac None (Names.Name id) c None
          {Locus.onhyps = None; Locus.concl_occs = Locus.AllOccurrences})
-      (Tactics.clear_body [id])
+      (Tacticals.tclTRY (Tactics.clear_body [id]))
   | Pose (id, c) -> Tactics.pose_proof (Names.Name id) c
 
 let rec interp_pscripts l =
