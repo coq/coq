@@ -1293,12 +1293,12 @@ command: [
 | REPLACE "Debug" "Off"
 | WITH "Debug" [ "On" | "Off" ]
 | EDIT "Defined" ADD_OPT identref
-| REPLACE "Derive" "Inversion" ident "with" constr "Sort" sort_family
-| WITH "Derive" "Inversion" ident "with" constr OPT ( "Sort" sort_family )
-| DELETE "Derive" "Inversion" ident "with" constr
-| REPLACE "Derive" "Inversion_clear" ident "with" constr "Sort" sort_family
-| WITH "Derive" "Inversion_clear" ident "with" constr OPT ( "Sort" sort_family )
-| DELETE "Derive" "Inversion_clear" ident "with" constr
+| REPLACE "Derive" "Inversion" identref "with" constr "Sort" sort_family
+| WITH "Derive" "Inversion" identref "with" constr OPT ( "Sort" sort_family )
+| DELETE "Derive" "Inversion" identref "with" constr
+| REPLACE "Derive" "Inversion_clear" identref "with" constr "Sort" sort_family
+| WITH "Derive" "Inversion_clear" identref "with" constr OPT ( "Sort" sort_family )
+| DELETE "Derive" "Inversion_clear" identref "with" constr
 | EDIT "Focus" ADD_OPT natural
 | DELETE "Hint" "Rewrite" orient LIST1 constr ":" LIST1 preident
 | REPLACE "Hint" "Rewrite" orient LIST1 constr "using" tactic ":" LIST1 preident
