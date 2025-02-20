@@ -1531,7 +1531,8 @@ let declare_mutual_definitions ~pm l =
   in
   let defs, obls = List.split (List.map defobl l) in
   let obls = List.flatten obls in
-  let fixitems = List.map2 (fun (d, typ, impargs) name -> CInfo.make ~name ~typ ~impargs ()) defs first.prg_deps in
+  let fixitems = List.map2 (fun (d, typ, impargs) name ->
+      CInfo.make ~name ~typ ~impargs ()) defs first.prg_deps in
   let fixdefs, fixtypes, _ = List.split3 defs in
   let possible_guard = Option.get first.prg_possible_guard in
   (* Declare the recursive definitions *)

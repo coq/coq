@@ -537,7 +537,7 @@ let do_combined_scheme name csts =
      some other polymorphism they can also manually define the
      combined scheme. *)
   let poly = Global.is_polymorphic (Names.GlobRef.ConstRef (List.hd csts)) in
-  ignore (define ~poly name.v sigma body (Some typ));
+  ignore (define ~poly ?loc:name.loc name.v sigma body (Some typ));
   Declare.fixpoint_message None [name.v]
 
 (**********************************************************************)
