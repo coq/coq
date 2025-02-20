@@ -140,7 +140,7 @@ let type_of_constant env sigma (c,u) =
   EConstr.of_constr (rename_type ty (GlobRef.ConstRef c))
 
 let safe_meta_type metas n = match metas with
-| None -> assert false (* missing meta handler *)
+| None -> None
 | Some f -> f n
 
 exception SingletonInductiveBecomesProp of inductive
