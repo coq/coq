@@ -173,7 +173,7 @@ let error_not_transparent source =
   user_err
     (pr_class source ++ str " must be a transparent constant.")
 
-let build_id_coercion idf_opt source poly =
+let build_id_coercion ?loc idf_opt source poly =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let sigma, vs = match source with
@@ -219,7 +219,7 @@ let build_id_coercion idf_opt source poly =
          ~inline:true (mkCast (val_f, DEFAULTcast, typ_f)))
   in
   let kind = Decls.(IsDefinition IdentityCoercion) in
-  let kn = declare_constant ~name ~kind constr_entry in
+  let kn = declare_constant ?loc ~name ~kind constr_entry in
   GlobRef.ConstRef kn
 
 let check_source = function
@@ -340,16 +340,16 @@ let try_add_new_coercion_core ref ~local c ~reversible d e =
 let try_add_new_coercion ref ~local ~reversible =
   try_add_new_coercion_core ref ~local ~reversible None None false
 
-let try_add_new_coercion_subclass cl ~local ~poly ~reversible =
-  let coe_ref = build_id_coercion None cl poly in
+let try_add_new_coercion_subclass ?loc cl ~local ~poly ~reversible =
+  let coe_ref = build_id_coercion ?loc None cl poly in
   try_add_new_coercion_core coe_ref ~local ~reversible (Some cl) None true
 
 let try_add_new_coercion_with_target ref ~local ~reversible ~source ~target =
   try_add_new_coercion_core ref ~local ~reversible
     (Some source) (Some target) false
 
-let try_add_new_identity_coercion id ~local ~poly ~source ~target =
-  let ref = build_id_coercion (Some id) source poly in
+let try_add_new_identity_coercion {CAst.v=id; loc} ~local ~poly ~source ~target =
+  let ref = build_id_coercion ?loc (Some id) source poly in
   try_add_new_coercion_core ref ~local ~reversible:true
     (Some source) (Some target) true
 
@@ -378,7 +378,8 @@ let add_subclass_hook ~poly { Declare.Hook.S.scope; dref; _ } =
   | Global ImportDefaultBehavior -> false
   in
   let cl = class_of_global dref in
-  try_add_new_coercion_subclass cl ~local:stre ~poly
+  let loc = Nametab.cci_src_loc (TrueGlobal dref) in
+  try_add_new_coercion_subclass ?loc cl ~local:stre ~poly
 
 let nonuniform = Attributes.bool_attribute ~name:"nonuniform"
 

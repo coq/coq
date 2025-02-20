@@ -2686,7 +2686,7 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
   | VernacCoercion (r,st) ->
     vtdefault(fun () -> vernac_coercion ~atts r st)
 
-  | VernacIdentityCoercion ({v=id},s,t) ->
+  | VernacIdentityCoercion (id,s,t) ->
     vtdefault(fun () -> vernac_identity_coercion ~atts id s t)
 
   (* Type classes *)
