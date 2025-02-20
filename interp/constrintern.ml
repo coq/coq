@@ -61,19 +61,22 @@ let var_uid =
   let count = ref 0 in
   fun id -> incr count; Id.to_string id ^ ":" ^ string_of_int !count
 
-type var_internalization_data =
-    (* type of the "free" variable, for coqdoc, e.g. while typing the
-       constructor of JMeq, "JMeq" behaves as a variable of type Inductive *)
-    var_internalization_type *
-    (* signature of impargs of the variable *)
-    Impargs.implicit_status list *
-    (* subscopes of the args of the variable *)
-    scope_name list list *
-    (* unique ID for coqdoc links *)
-    var_unique_id
+type var_internalization_data = {
+  (* type of the "free" variable, for coqdoc, e.g. while typing the
+     constructor of JMeq, "JMeq" behaves as a variable of type Inductive *)
+  var_intern_typ : var_internalization_type;
+  (* signature of impargs of the variable *)
+  var_impls : Impargs.implicit_status list;
+  (* subscopes of the args of the variable *)
+  var_scopes : scope_name list list;
+  (* unique ID for coqdoc links *)
+  var_uid : var_unique_id;
+}
 
-type internalization_env =
-    (var_internalization_data) Id.Map.t
+let make_var_data var_intern_typ var_impls var_scopes var_uid =
+  {var_intern_typ; var_impls; var_scopes; var_uid}
+
+type internalization_env = var_internalization_data Id.Map.t
 
 type ltac_sign = {
   ltac_vars : Id.Set.t;
@@ -172,7 +175,7 @@ let empty_internalization_env = Id.Map.empty
 
 let compute_internalization_data env sigma ?silent id ty typ impl =
   let impl = compute_implicits_with_manual env sigma ?silent typ (is_implicit_args()) impl in
-  (ty, impl, compute_arguments_scope env sigma typ, var_uid id)
+  make_var_data ty impl (compute_arguments_scope env sigma typ) (var_uid id)
 
 let compute_internalization_env env sigma ?(impls=empty_internalization_env) ?force ty names =
   let force = match force with None -> List.map (fun _ -> Id.Set.empty) names | Some l -> l in
@@ -182,13 +185,13 @@ let compute_internalization_env env sigma ?(impls=empty_internalization_env) ?fo
   | _ -> impl in
   List.fold_left4
     (fun map id force_ids typ impl ->
-       let (ty, impls, scopes, uid) = compute_internalization_data env sigma id ty typ impl in
-       let impls = List.map (Option.map (f force_ids)) impls in
-       Id.Map.add id (ty, impls, scopes, uid) map)
+       let var_info = compute_internalization_data env sigma id ty typ impl in
+       let impls = List.map (Option.map (f force_ids)) var_info.var_impls in
+       Id.Map.add id {var_info with var_impls = impls} map)
     impls names force
 
 let implicits_of_decl_in_internalization_env id (int_env:internalization_env) =
-  let (_, impls, _, _) = Id.Map.find id int_env in impls
+  let {var_impls=impls} = Id.Map.find id int_env in impls
 
 (**********************************************************************)
 (* Contracting "{ _ }" in notations *)
@@ -513,7 +516,7 @@ let push_name_env ~dump ntnvars implargs env =
       set_var_is_binder ?loc id ntnvars;
       let uid = var_uid id in
       if dump then Dumpglob.dump_binding ?loc uid;
-      pure_push_name_env (id,(Variable,implargs,[],uid),Id.Map.mem id ntnvars) env
+      pure_push_name_env (id,(make_var_data Variable implargs [] uid),Id.Map.mem id ntnvars) env
 
 let remember_binders_impargs env bl =
   List.map_filter (fun (na,_,_,_,_) ->
@@ -1148,7 +1151,7 @@ let intern_var env (ltacvars,ntnvars) namedctx loc id us =
   else
   (* Is [id] registered with implicit arguments *)
   try
-    let ty,_,_,uid = Id.Map.find id env.impls in
+    let {var_intern_typ=ty; var_uid=uid} = Id.Map.find id env.impls in
     let tys = string_of_ty ty in
     Dumpglob.dump_reference ?loc "<>" uid tys;
     gvar (loc,id) us
@@ -1291,7 +1294,7 @@ let find_appl_head_data env (_,ntnvars) c =
   match DAst.get c with
   | GVar id when not (Id.Map.mem id ntnvars) ->
     (try
-      let _,impls,argsc,_ = Id.Map.find id env.impls in
+      let {var_impls=impls; var_scopes=argsc} = Id.Map.find id env.impls in
       Some (CAst.make ?loc (GlobRef.VarRef id)), make_implicits_list impls, argsc
      with Not_found -> None, [], [])
   | GRef (ref,_) ->
@@ -2855,9 +2858,9 @@ let impl_of_binder_kind na = function
   | Explicit -> CAst.make None
 
 let push_auto_implicit env sigma t int_env id =
-  let (ty,imps,sc,uid) = Id.Map.find id int_env.impls in
-  let imps = List.map (fun imp -> CAst.make (Option.map (fun imp -> (pi1 imp.impl_pos,imp.impl_max)) imp)) imps in
-  let imps = compute_internalization_data env sigma ~silent:false id ty t imps in (* add automatic implicit arguments to manual ones *)
+  let var_info = Id.Map.find id int_env.impls in
+  let imps = List.map (fun imp -> CAst.make (Option.map (fun imp -> (pi1 imp.impl_pos,imp.impl_max)) imp)) var_info.var_impls in
+  let imps = compute_internalization_data env sigma ~silent:false id var_info.var_intern_typ t imps in (* add automatic implicit arguments to manual ones *)
   { int_env with impls = Id.Map.add id imps int_env.impls }
 
 let interp_context_evars_gen ?(program_mode=false) ?(unconstrained_sorts = false) ?(impl_env=empty_internalization_env) ?(autoimp_enable=true) ~dump env sigma make_decl push_decl bl =
