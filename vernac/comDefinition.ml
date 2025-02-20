@@ -127,8 +127,8 @@ let do_definition ?loc ?hook ~name ?scope ?clearbody ~poly ?typing_flags ~kind ?
     interp_definition ~program_mode env evd empty_internalization_env bl red_option c ctypopt
   in
   let kind = Decls.IsDefinition kind in
-  let cinfo = Declare.CInfo.make ~name ~impargs ~typ:types () in
-  let info = Declare.Info.make ?loc ?scope ?clearbody ~kind ?hook ~udecl ~poly ?typing_flags ?user_warns () in
+  let cinfo = Declare.CInfo.make ?loc ~name ~impargs ~typ:types () in
+  let info = Declare.Info.make ?scope ?clearbody ~kind ?hook ~udecl ~poly ?typing_flags ?user_warns () in
   let _ : Names.GlobRef.t =
     Declare.declare_definition ~info ~cinfo ~opaque:false ~body ?using evd
   in ()
@@ -144,8 +144,8 @@ let do_definition_program ?loc ?hook ~pm ~name ~scope ?clearbody ~poly ?typing_f
   let body, typ, uctx, _, obls = Declare.Obls.prepare_obligations ~name ~body ?types env evd in
   Evd.check_univ_decl_early ~poly ~with_obls:true evd udecl [body; typ];
   let pm, _ =
-    let cinfo = Declare.CInfo.make ~name ~typ ~impargs () in
-    let info = Declare.Info.make ?loc ~udecl ~scope ?clearbody ~poly ~kind ?hook ?typing_flags ?user_warns () in
+    let cinfo = Declare.CInfo.make ?loc ~name ~typ ~impargs () in
+    let info = Declare.Info.make ~udecl ~scope ?clearbody ~poly ~kind ?hook ?typing_flags ?user_warns () in
     Declare.Obls.add_definition ~pm ~info ~cinfo ~opaque:false ~body ~uctx ?using obls
   in pm
 
@@ -161,8 +161,8 @@ let do_definition_interactive ?loc ~program_mode ?hook ~name ~scope ?clearbody ~
   let evd = Evd.minimize_universes evd in
   Pretyping.check_evars_are_solved ~program_mode env evd;
   let typ = EConstr.to_constr evd typ in
-  let info = Declare.Info.make ?loc ?hook ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?user_warns () in
-  let cinfo = Declare.CInfo.make ~name ~typ ~args ~impargs () in
+  let info = Declare.Info.make ?hook ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?user_warns () in
+  let cinfo = Declare.CInfo.make ?loc ~name ~typ ~args ~impargs () in
   Evd.check_univ_decl_early ~poly ~with_obls:false evd udecl [typ];
   let evd = if poly then evd else Evd.fix_undefined_variables evd in
   Declare.Proof.start_definition ~info ~cinfo ?using evd

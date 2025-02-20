@@ -57,11 +57,16 @@ module CInfo = struct
     (** Names to pre-introduce  *)
     ; impargs : Impargs.manual_implicits
     (** Explicitily declared implicit arguments  *)
+    ; loc : Loc.t option
     }
 
 
-  let make ~name ~typ ?(args=[]) ?(impargs=[]) () =
-    { name; typ; args; impargs }
+  let make ?loc ~name ~typ ?(args=[]) ?(impargs=[]) () =
+    let loc = match loc with
+      | None -> Loc.get_current_command_loc()
+      | Some _ -> loc
+    in
+    { name; typ; args; impargs; loc }
 
   let to_constr sigma thm = { thm with typ = EConstr.to_constr sigma thm.typ }
 
@@ -85,19 +90,14 @@ module Info = struct
     ; typing_flags : Declarations.typing_flags option
     ; user_warns : Globnames.extended_global_reference UserWarn.with_qf option
     ; ntns : Metasyntax.notation_interpretation_decl list
-    ; loc : Loc.t option
     }
 
   (** Note that [opaque] doesn't appear here as it is not known at the
      start of the proof in the interactive case. *)
-  let make ?loc ?(poly=false) ?(inline=false) ?(kind=Decls.(IsDefinition Definition))
+  let make ?(poly=false) ?(inline=false) ?(kind=Decls.(IsDefinition Definition))
       ?(udecl=UState.default_univ_decl) ?(scope=Locality.default_scope)
       ?(clearbody=false) ?hook ?typing_flags ?user_warns ?(ntns=[]) () =
-    let loc = match loc with
-      | None -> Loc.get_current_command_loc()
-      | Some _ -> loc
-    in
-    { poly; inline; kind; udecl; scope; hook; typing_flags; clearbody; user_warns; ntns; loc }
+    { poly; inline; kind; udecl; scope; hook; typing_flags; clearbody; user_warns; ntns }
 end
 
 (** Declaration of constants and parameters *)
@@ -968,10 +968,10 @@ let interp_mutual_using env cinfo bodies_types using =
 let declare_possibly_mutual_definitions ~info ~cinfo ~obls ?(is_telescope=false) obj =
   let entries = process_proof ~info ~is_telescope obj in
   let { Info.hook; scope; clearbody; kind; typing_flags; user_warns; ntns; _ } = info in
-  let _, refs = List.fold_left2_map (fun subst CInfo.{name; impargs} (entry, uctx) ->
+  let _, refs = List.fold_left2_map (fun subst CInfo.{name; impargs; loc} (entry, uctx) ->
       (* replacing matters for Derive-like statement but it does not hurt otherwise *)
       let entry = ProofEntry.map_entry entry ~f:(Vars.replace_vars subst) in
-      let gref = declare_entry ~loc:info.loc ~name ~scope ~clearbody ~kind ?hook ~impargs ~typing_flags ~user_warns ~obls ~uctx entry in
+      let gref = declare_entry ~loc ~name ~scope ~clearbody ~kind ?hook ~impargs ~typing_flags ~user_warns ~obls ~uctx entry in
       let inst = instance_of_univs entry.proof_entry_universes in
       let const = Constr.mkRef (gref, inst) in
       ((name, const) :: subst, gref)) [] cinfo entries in
