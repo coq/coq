@@ -219,10 +219,10 @@ let do_convert s =
     Glib.Convert.convert s ~to_codeset:"UTF-8" ~from_codeset:enc
   in
   let s =
-    if Glib.Utf8.validate s then (Minilib.log "Input is UTF-8"; s)
-    else match encoding#get with
-      |Preferences.Eutf8 | Preferences.Elocale -> from_loc ()
-      |Emanual enc -> try from_manual enc with _ -> from_loc ()
+    match encoding#get with
+    | Eutf8 when Glib.Utf8.validate s -> (Minilib.log "Input is UTF-8"; s)
+    | Eutf8 | Elocale -> from_loc ()
+    | Emanual enc -> try from_manual enc with _ -> from_loc ()
   in
   Utf8_convert.f s
 
