@@ -5,7 +5,7 @@ Arguments Nat.sub (n m)%_nat_scope : simpl nomatch
 The reduction tactics unfold Nat.sub but avoid exposing match constructs
 Nat.sub is transparent
 Expands to: Constant Corelib.Init.Nat.sub
-Declared in library Corelib.Init.Nat, line 71, characters 0-120
+Declared in library Corelib.Init.Nat, line 71, characters 9-12
 Nat.sub : nat -> nat -> nat
 
 Nat.sub is not universe polymorphic
@@ -14,7 +14,7 @@ The reduction tactics unfold Nat.sub when applied to 1 argument
   but avoid exposing match constructs
 Nat.sub is transparent
 Expands to: Constant Corelib.Init.Nat.sub
-Declared in library Corelib.Init.Nat, line 71, characters 0-120
+Declared in library Corelib.Init.Nat, line 71, characters 9-12
 Nat.sub : nat -> nat -> nat
 
 Nat.sub is not universe polymorphic
@@ -24,7 +24,7 @@ The reduction tactics unfold Nat.sub
   when applied to 1 argument but avoid exposing match constructs
 Nat.sub is transparent
 Expands to: Constant Corelib.Init.Nat.sub
-Declared in library Corelib.Init.Nat, line 71, characters 0-120
+Declared in library Corelib.Init.Nat, line 71, characters 9-12
 Nat.sub : nat -> nat -> nat
 
 Nat.sub is not universe polymorphic
@@ -33,7 +33,7 @@ The reduction tactics unfold Nat.sub when the 1st and
   2nd arguments evaluate to a constructor and when applied to 2 arguments
 Nat.sub is transparent
 Expands to: Constant Corelib.Init.Nat.sub
-Declared in library Corelib.Init.Nat, line 71, characters 0-120
+Declared in library Corelib.Init.Nat, line 71, characters 9-12
 Nat.sub : nat -> nat -> nat
 
 Nat.sub is not universe polymorphic
@@ -42,7 +42,7 @@ The reduction tactics unfold Nat.sub when the 1st and
   2nd arguments evaluate to a constructor
 Nat.sub is transparent
 Expands to: Constant Corelib.Init.Nat.sub
-Declared in library Corelib.Init.Nat, line 71, characters 0-120
+Declared in library Corelib.Init.Nat, line 71, characters 9-12
 pf :
 forall {D1 C1 : Type},
 (D1 -> C1) -> forall [D2 C2 : Type], (D2 -> C2) -> D1 * D2 -> C1 * C2
@@ -76,7 +76,7 @@ Arguments f x y n%_nat_scope v m%_nat_scope
 f uses section variables T1 T2.
 f is transparent
 Expands to: Constant Arguments.S1.S2.f
-Declared in library Arguments, line 30, characters 0-147
+Declared in library Arguments, line 30, characters 9-10
 f : T1 -> T2 -> nat -> unit -> nat -> nat
 
 f is not universe polymorphic
@@ -86,7 +86,7 @@ The reduction tactics unfold f when the 3rd, 4th and
   5th arguments evaluate to a constructor
 f is transparent
 Expands to: Constant Arguments.S1.S2.f
-Declared in library Arguments, line 30, characters 0-147
+Declared in library Arguments, line 30, characters 9-10
 f : forall [T2 : Type], T1 -> T2 -> nat -> unit -> nat -> nat
 
 f is not universe polymorphic
@@ -96,7 +96,7 @@ The reduction tactics unfold f when the 4th, 5th and
   6th arguments evaluate to a constructor
 f is transparent
 Expands to: Constant Arguments.S1.f
-Declared in library Arguments, line 30, characters 0-147
+Declared in library Arguments, line 30, characters 9-10
 f : forall [T1 T2 : Type], T1 -> T2 -> nat -> unit -> nat -> nat
 
 f is not universe polymorphic
@@ -105,7 +105,7 @@ The reduction tactics unfold f when the 5th, 6th and
   7th arguments evaluate to a constructor
 f is transparent
 Expands to: Constant Arguments.f
-Declared in library Arguments, line 30, characters 0-147
+Declared in library Arguments, line 30, characters 9-10
      = forall v : unit, f 0 0 5 v 3 = 2
      : Prop
      = 2 = 2
@@ -118,7 +118,7 @@ The reduction tactics unfold f when the 5th, 6th and
   7th arguments evaluate to a constructor
 f is transparent
 Expands to: Constant Arguments.f
-Declared in library Arguments, line 30, characters 0-147
+Declared in library Arguments, line 30, characters 9-10
 forall w : r, w 3 true = tt
      : Prop
 File "./output/Arguments.v", line 52, characters 28-29:

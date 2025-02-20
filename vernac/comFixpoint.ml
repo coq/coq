@@ -104,7 +104,7 @@ let check_true_recursivity env evd ~kind fixl =
   let names = List.map fst fixl in
   let preorder =
     List.map (fun (id,def) ->
-      (id, List.filter (fun id' -> Termops.occur_var env evd id' def) names))
+      (id.CAst.v, List.filter_map (fun {CAst.v=id'} -> if Termops.occur_var env evd id' def then Some id' else None) names))
       fixl in
   let po = partial_order Id.equal preorder in
   match List.filter (function (_,Inr _) -> true | _ -> false) po with
@@ -215,7 +215,7 @@ let encapsulate_Fix_sub env sigma recname ctx body ccl (extradecl, rel, relargty
   let sigma, fix_sub = Typing.solve_evars env sigma fix_sub in
   sigma, tupled_ctx, tuple_value, mkApp (fix_sub, [|intern_body_lam|])
 
-let build_wellfounded env sigma poly udecl recname ctx body ccl impls rel_measure =
+let build_wellfounded env sigma poly udecl {CAst.v=recname; loc} ctx body ccl impls rel_measure =
   let len = Context.Rel.length ctx in
   (* Restore body in the context of binders + extradecl *)
   let _, body = decompose_lambda_n_decls sigma (len + 1) body in
@@ -262,7 +262,7 @@ let build_wellfounded env sigma poly udecl recname ctx body ccl impls rel_measur
     else
       None, impls
   in
-  sigma, recname_func, body, typ, impls, obls, hook
+  sigma, CAst.make ?loc recname_func, body, typ, impls, obls, hook
 
 (*********************************)
 (* Interpretation of Co/Fixpoint *)
@@ -377,7 +377,7 @@ let encapsulate env sigma r t =
   with e when CErrors.noncritical e -> sigma, r, t
 
 type ('constr, 'relevance) fix_data = {
-  fixnames : Names.Id.t list;
+  fixnames : Names.lident list;
   fixrs    : 'relevance list;
   fixdefs  : 'constr option list;
   fixtypes : 'constr list;
@@ -416,7 +416,8 @@ let interp_wf ~program_mode env sigma recname ctx ccl = function
 let interp_mutual_definition env ~program_mode ~function_mode rec_order fixl =
   let open Context.Named.Declaration in
   let open EConstr in
-  let fixnames = List.map (fun fix -> fix.Vernacexpr.fname.CAst.v) fixl in
+  let fixlnames = List.map (fun fix -> fix.Vernacexpr.fname) fixl in
+  let fixnames = List.map (fun na -> na.CAst.v) fixlnames in
 
   (* Interp arities allowing for unresolved types *)
   let sigma, decl = interp_mutual_univ_decl_opt env (List.map (fun Vernacexpr.{univs} -> univs) fixl) in
@@ -463,7 +464,7 @@ let interp_mutual_definition env ~program_mode ~function_mode rec_order fixl =
   let sigma = Evd.minimize_universes sigma in
 
   (* Build the fix declaration block *)
-  let fix = {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs} in
+  let fix = {fixnames=fixlnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs} in
   (env, rec_sign, sigma), (fix, possible_guard, decl)
 
 let check_recursive ~kind env evd {fixnames;fixdefs;fixwfs} =
@@ -490,9 +491,9 @@ let interp_fixpoint_short rec_order fixpoint_exprl =
   typel, sigma
 
 let build_recthms {fixnames;fixtypes;fixctxs;fiximps} =
-  List.map4 (fun name typ ctx impargs ->
+  List.map4 (fun {CAst.v=name; loc} typ ctx impargs ->
       let args = List.map Context.Rel.Declaration.get_name ctx in
-      Declare.CInfo.make ~name ~typ ~args ~impargs ()
+      Declare.CInfo.make ?loc ~name ~typ ~args ~impargs ()
     ) fixnames fixtypes fixctxs fiximps
 
 let collect_evars_of_term evd c ty =
@@ -502,7 +503,7 @@ let collect_evars env sigma rec_sign recname def typ =
   (* Generalize by the recursive prototypes  *)
   let deps = collect_evars_of_term sigma def typ in
   let evars, _, def, typ =
-    RetrieveObl.retrieve_obligations env recname sigma
+    RetrieveObl.retrieve_obligations env recname.CAst.v sigma
       (List.length rec_sign) ~deps def typ in
   (Some def, typ, evars)
 
@@ -520,7 +521,7 @@ let build_program_fixpoint env sigma rec_sign possible_guard fixnames fixrs fixd
   (* An early check of guardedness before working on the obligations *)
   let () =
     let fixdecls =
-      Array.of_list (List.map2 (fun x r -> Context.make_annot (Name x) r) fixnames fixrs),
+      Array.of_list (List.map2 (fun x r -> Context.make_annot (Name x.CAst.v) r) fixnames fixrs),
       Array.of_list fixtypes,
       Array.of_list fixdefs
     in

@@ -19,4 +19,4 @@ Nat.pow is not universe polymorphic
 Arguments Nat.pow (n m)%_nat_scope
 Nat.pow is transparent
 Expands to: Constant Corelib.Init.Nat.pow
-Declared in library Corelib.Init.Nat, line 143, characters 0-117
+Declared in library Corelib.Init.Nat, line 143, characters 9-12

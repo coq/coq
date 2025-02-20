@@ -43,7 +43,7 @@ Nat.add is not universe polymorphic
 Arguments Nat.add (n m)%_nat_scope
 Nat.add is transparent
 Expands to: Constant Corelib.Init.Nat.add
-Declared in library Corelib.Init.Nat, line 47, characters 0-113
+Declared in library Corelib.Init.Nat, line 47, characters 9-12
 Nat.add : nat -> nat -> nat
 
 plus_n_O : forall n : nat, n = n + 0
