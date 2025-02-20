@@ -158,7 +158,7 @@ let dirpath_of_global = let open GlobRef in function
 let qualid_of_global ?loc env r =
   Libnames.make_qualid ?loc (dirpath_of_global r) (id_of_global env r)
 
-let safe_gen f env sigma c =
+let safe_extern_wrapper f env sigma c =
   let orig_extern_ref = Constrextern.get_extern_reference () in
   let extern_ref ?loc vars r =
     try orig_extern_ref vars r
@@ -169,10 +169,14 @@ let safe_gen f env sigma c =
   try
     let p = f env sigma c in
     Constrextern.set_extern_reference orig_extern_ref;
-    p
+    Some p
   with e when CErrors.noncritical e ->
     Constrextern.set_extern_reference orig_extern_ref;
-    str "??"
+    None
+
+let safe_gen f env sigma c = match safe_extern_wrapper f env sigma c with
+| None -> str "??"
+| Some v -> v
 
 let safe_pr_lconstr_env = safe_gen pr_lconstr_env
 let safe_pr_constr_env = safe_gen pr_constr_env

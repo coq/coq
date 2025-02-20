@@ -123,15 +123,22 @@ let rec display_expr_eq c1 c2 =
   | _ ->
     Constrexpr_ops.constr_expr_eq_gen display_expr_eq c1 c2
 
+let safe_extern_constr env sigma t =
+  Printer.safe_extern_wrapper begin fun env sigma () ->
+    Constrextern.extern_constr env sigma t
+  end env sigma ()
+
 (** Tries to realize when the two terms, albeit different are printed the same. *)
 let display_eq ~flags env sigma t1 t2 =
   (* terms are canonized, then their externalisation is compared syntactically *)
-  let open Constrextern in
   let t1 = canonize_constr sigma t1 in
   let t2 = canonize_constr sigma t2 in
-  let ct1 = Flags.with_options flags (fun () -> extern_constr env sigma t1) () in
-  let ct2 = Flags.with_options flags (fun () -> extern_constr env sigma t2) () in
-  display_expr_eq ct1 ct2
+  let ct1 = Flags.with_options flags (fun () -> safe_extern_constr env sigma t1) () in
+  let ct2 = Flags.with_options flags (fun () -> safe_extern_constr env sigma t2) () in
+  match ct1, ct2 with
+  | None, None -> false
+  | Some _, None | None, Some _ -> false
+  | Some ct1, Some ct2 -> display_expr_eq ct1 ct2
 
 (** This function adds some explicit printing flags if the two arguments are
     printed alike. *)
@@ -145,12 +152,13 @@ let rec pr_explicit_aux env sigma t1 t2 = function
     (* The two terms are the same from the user point of view *)
     pr_explicit_aux env sigma t1 t2 rem
   else
-    let open Constrextern in
-    let ct1 = Flags.with_options flags (fun () -> extern_constr env sigma t1) ()
+    let ct1 = Flags.with_options flags (fun () -> safe_extern_constr env sigma t1) () in
+    let ct2 = Flags.with_options flags (fun () -> safe_extern_constr env sigma t2) () in
+    let pr = function
+    | None -> str "??"
+    | Some c -> Ppconstr.pr_lconstr_expr env sigma c
     in
-    let ct2 = Flags.with_options flags (fun () -> extern_constr env sigma t2) ()
-    in
-    Ppconstr.pr_lconstr_expr env sigma ct1, Ppconstr.pr_lconstr_expr env sigma ct2
+    pr ct1, pr ct2
 
 let explicit_flags =
   let open Constrextern in
@@ -1144,10 +1152,11 @@ let explain_not_match_error = function
   | NotConvertibleBodyField ->
     str "the body of definitions differs"
   | NotConvertibleTypeField (env, typ1, typ2) ->
+    let typ1, typ2 = pr_explicit env (Evd.from_env env) (EConstr.of_constr typ1) (EConstr.of_constr typ2) in
     str "expected type" ++ spc ()  ++
-    quote (Printer.safe_pr_lconstr_env env (Evd.from_env env) typ2) ++ spc () ++
+    typ2 ++ spc () ++
     str "but found type" ++ spc () ++
-    quote (Printer.safe_pr_lconstr_env env (Evd.from_env env) typ1)
+    typ1
   | NotSameConstructorNamesField ->
     str "constructor names differ"
   | NotSameInductiveNameInBlockField ->
@@ -1183,10 +1192,11 @@ let explain_not_match_error = function
       UnivNames.pr_level_with_global_universes
       incon
   | IncompatiblePolymorphism (env, t1, t2) ->
+    let t1, t2 = pr_explicit env (Evd.from_env env) (EConstr.of_constr t1) (EConstr.of_constr t2) in
     str "conversion of polymorphic values generates additional constraints: " ++
-      quote (Printer.safe_pr_lconstr_env env (Evd.from_env env) t1) ++ spc () ++
+      quote t1 ++ spc () ++
       str "compared to " ++ spc () ++
-      quote (Printer.safe_pr_lconstr_env env (Evd.from_env env) t2)
+      quote t2
   | IncompatibleConstraints { got; expect } ->
     let open UVars in
     let pr_auctx auctx =

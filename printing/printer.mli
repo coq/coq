@@ -60,6 +60,7 @@ val pr_constr_n_env        : ?inctx:bool -> ?scope:scope_name -> env -> evar_map
 
 val safe_pr_constr_env  : env -> evar_map -> constr -> Pp.t
 val safe_pr_lconstr_env : env -> evar_map -> constr -> Pp.t
+val safe_extern_wrapper : (env -> evar_map -> 'a -> 'b) -> env -> evar_map -> 'a -> 'b option
 
 val pr_econstr_env      : ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> EConstr.t -> Pp.t
 val pr_leconstr_env     : ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> EConstr.t -> Pp.t
