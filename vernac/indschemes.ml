@@ -94,11 +94,11 @@ let () =
       optwrite = (fun b -> rewriting_flag := b) }
 
 (* Util *)
-let define ~poly name sigma c types =
+let define ~poly ?loc name sigma c types =
   let univs = Evd.univ_entry ~poly sigma in
   let entry = Declare.definition_entry ~univs ?types c in
   let kind = Decls.(IsDefinition Scheme) in
-  let kn = Declare.declare_constant ~kind ~name (Declare.DefinitionEntry entry) in
+  let kn = Declare.declare_constant ?loc ~kind ~name (Declare.DefinitionEntry entry) in
   Declare.definition_message name;
   kn
 
@@ -409,11 +409,11 @@ let do_mutual_induction_scheme ?(force_mutual=false) env ?(isrec=true) l =
     let _,_,ind,_ = List.hd l in
     Global.is_polymorphic (Names.GlobRef.IndRef ind)
   in
-  let declare decl ({CAst.v=fi},dep,ind,sort) =
+  let declare decl ({CAst.v=fi; loc},dep,ind,sort) =
     let decltype = Retyping.get_type_of env sigma decl in
     let decltype = EConstr.to_constr sigma decltype in
     let decl = EConstr.to_constr sigma decl in
-    let cst = define ~poly fi sigma decl (Some decltype) in
+    let cst = define ?loc ~poly fi sigma decl (Some decltype) in
     let kind =
       let open Elimschemes in
       if isrec then Some (elim_scheme ~dep ~to_kind:sort)
