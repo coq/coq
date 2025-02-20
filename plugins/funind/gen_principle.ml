@@ -44,7 +44,7 @@ let build_newrecursive lnameargsardef =
         let arityc = Constrexpr_ops.mkCProdN binders rtype in
         let arity, _ctx = Constrintern.interp_type env0 sigma arityc in
         let evd = Evd.from_env env0 in
-        let evd, (_, (_, impls')) =
+        let evd, (_, (_, impls', _locs)) =
           Constrintern.interp_context_evars ~program_mode:false env evd binders
         in
         let impl =

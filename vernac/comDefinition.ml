@@ -86,7 +86,7 @@ let interp_definition ~program_mode env evd impl_env bl red_option c ctypopt =
   let flags = Pretyping.{ all_no_fail_flags with program_mode } in
   let (bl, c, ctypopt, apply_under_binders) = protect_pattern_in_binder bl c ctypopt in
   (* Build the parameters *)
-  let evd, (impls, ((env_bl, ctx), imps1)) = interp_context_evars ~program_mode ~impl_env env evd bl in
+  let evd, (impls, ((env_bl, ctx), imps1, _locs)) = interp_context_evars ~program_mode ~impl_env env evd bl in
   (* Build the type *)
   let evd, tyopt = Option.fold_left_map
       (interp_type_evars_impls ~flags ~impls env_bl)
@@ -112,7 +112,7 @@ let interp_definition ~program_mode env evd impl_env bl red_option c ctypopt =
   evd, (c, tyopt), imps
 
 let interp_statement ~program_mode env evd ~flags ~scope name bl typ  =
-  let evd, (impls, ((env, ctx), imps)) = Constrintern.interp_context_evars ~program_mode env evd bl in
+  let evd, (impls, ((env, ctx), imps, _locs)) = Constrintern.interp_context_evars ~program_mode env evd bl in
   let evd, (t', imps') = Constrintern.interp_type_evars_impls ~flags ~impls env evd typ in
   let ids = List.map Context.Rel.Declaration.get_name ctx in
   evd, ids, EConstr.it_mkProd_or_LetIn t' ctx, imps @ imps'

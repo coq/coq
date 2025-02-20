@@ -59,7 +59,8 @@ let instance_of_univ_entry = function
     - with implicit arguments
     - with inlining for functor application
     - with named universes *)
-let declare_global ~coe ~try_assum_as_instance ~local ~kind ?user_warns ~univs ~impargs ~inline ~name body typ =
+let declare_global ~coe ~try_assum_as_instance ~local ~kind ?user_warns ~univs ~impargs ~inline
+    ~name:{CAst.v=name; loc} body typ =
   let (uentry, ubinders) = univs in
   let inl = let open Declaremods in match inline with
     | NoInline -> None
@@ -69,7 +70,7 @@ let declare_global ~coe ~try_assum_as_instance ~local ~kind ?user_warns ~univs ~
   let decl = match body with
     | None -> Declare.ParameterEntry (Declare.parameter_entry ~univs:(uentry, ubinders) ?inline:inl typ)
     | Some b -> Declare.DefinitionEntry (Declare.definition_entry ~univs ~types:typ b) in
-  let kn = Declare.declare_constant ~name ~local ~kind ?user_warns decl in
+  let kn = Declare.declare_constant ?loc ~name ~local ~kind ?user_warns decl in
   let gr = GlobRef.ConstRef kn in
   let () = maybe_declare_manual_implicits false gr impargs in
   let () = match body with None -> Declare.assumption_message name | Some _ -> Declare.definition_message name in
@@ -94,7 +95,7 @@ let declare_axiom ~coe ~local ~kind ?user_warns ~univs ~impargs ~inline ~name ty
 
 let interp_assumption ~program_mode env sigma impl_env bl c =
   let flags = { Pretyping.all_no_fail_flags with program_mode } in
-  let sigma, (impls, ((env_bl, ctx), impls1)) = interp_context_evars ~program_mode ~impl_env env sigma bl in
+  let sigma, (impls, ((env_bl, ctx), impls1, _locs)) = interp_context_evars ~program_mode ~impl_env env sigma bl in
   let sigma, (ty, impls2) = interp_type_evars_impls ~flags env_bl sigma ~impls c in
   let ty = EConstr.it_mkProd_or_LetIn ty ctx in
   sigma, ty, impls1@impls2
@@ -117,9 +118,9 @@ let declare_context ~try_global_assum_as_instance ~scope ~univs ?user_warns ~inl
     let (name,b,t,(impl,kind,coe,impargs)) = context_subst subst d in
     let univs = if i = 0 then univs else clear_univs scope univs in
     let refu = match scope with
-      | Locality.Discharge -> declare_local ~coe ~try_assum_as_instance:true ~kind ~univs ~impargs ~impl ~name b t
+      | Locality.Discharge -> declare_local ~coe ~try_assum_as_instance:true ~kind ~univs ~impargs ~impl ~name:name.CAst.v b t
       | Locality.Global local -> declare_global ~coe ~try_assum_as_instance:try_global_assum_as_instance ~local ~kind ?user_warns ~univs ~impargs ~inline ~name b t in
-    (name, Constr.mkRef refu) :: subst
+    (name.v, Constr.mkRef refu) :: subst
   in
   let _ = List.fold_left_i fn 0 [] ctx in
   ()
@@ -186,24 +187,24 @@ let find_binding_kind id impls =
 
 let interp_context_gen ~program_mode ~kind ~autoimp_enable ~coercions env sigma l =
   let initial = sigma in
-  let sigma, (ienv, ((env, ctx), impls)) = interp_named_context_evars ~program_mode ~autoimp_enable env sigma l in
+  let sigma, (ienv, ((env, ctx), impls, locs)) = interp_named_context_evars ~program_mode ~autoimp_enable env sigma l in
   (* Note, we must use the normalized evar from now on! *)
   let sigma = solve_remaining_evars all_and_fail_flags env ~initial sigma in
   let sigma, ctx = Evarutil.finalize sigma @@ fun nf ->
     List.map (NamedDecl.map_constr_het (fun x -> x) nf) ctx
   in
   (* reorder, evar-normalize and add implicit status *)
-  let ctx = List.rev_map (fun d ->
+  let ctx = List.map2 (fun loc d ->
       let {binder_name=id}, b, t = NamedDecl.to_tuple d in
       let impl = find_binding_kind id impls in
       let kind = Decls.(if b = None then IsAssumption kind else IsDefinition (match kind with Context -> LetContext | _ -> Let)) in
       let is_coe = if Id.Set.mem id coercions then Vernacexpr.AddCoercion else Vernacexpr.NoCoercion in
       let impls = if autoimp_enable then find_implicits id ienv else [] in
       let data = (impl,kind,is_coe,impls) in
-      (id,b,t,data))
-      ctx
+      (CAst.make ?loc id,b,t,data))
+      locs ctx
   in
-   sigma, ctx
+  sigma, List.rev ctx
 
 let do_assumptions ~program_mode ~poly ~scope ~kind ?user_warns ~inline l =
   let sec = Lib.sections_are_opened () in
@@ -266,5 +267,5 @@ let interp_context env sigma ctx =
         let decl = (id, Option.map (Vars.subst_vars subst) b, Vars.subst_vars subst t, impl) in
         (id :: subst, decl :: ctx)) 1 ([],[]) ctx)) in
   let sigma, ctx = interp_context_gen ~program_mode:false ~kind:Context ~autoimp_enable:false ~coercions:Id.Set.empty env sigma ctx in
-  let ctx = List.map (fun (id,b,t,(impl,_,_,_)) -> (id,b,t,impl)) ctx in
+  let ctx = List.map (fun (id,b,t,(impl,_,_,_)) -> (id.CAst.v,b,t,impl)) ctx in
   sigma, reverse_rel_context_of_reverse_named_context ctx

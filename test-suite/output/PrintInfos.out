@@ -74,6 +74,7 @@ bar : forall {x : nat}, x = 0
 
 Arguments bar {x}
 Expands to: Constant PrintInfos.bar
+Declared in library PrintInfos, line 23, characters 10-13
 *** [ bar : foo ]
 
 Expanded type for implicit arguments

@@ -330,7 +330,7 @@ let typecheck_params_and_fields ~kind ~(flags:ComInductive.flags) ~primitive_pro
   let unconstrained_sorts = not flags.poly && not def && is_template in
   let sigma, udecl, variances = Constrintern.interp_cumul_univ_decl_opt env0 udecl in
   let () = List.iter check_parameters_must_be_named params in
-  let sigma, (impls_env, ((_env1,params), impls)) =
+  let sigma, (impls_env, ((_env1,params), impls, _paramlocs)) =
     Constrintern.interp_context_evars ~program_mode:false ~unconstrained_sorts env0 sigma params in
   let sigma, typs =
     List.fold_left_map (build_type_telescope ~unconstrained_sorts params env0) sigma records in

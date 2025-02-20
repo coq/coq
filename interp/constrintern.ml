@@ -2871,11 +2871,11 @@ let interp_context_evars_gen ?(program_mode=false) ?(unconstrained_sorts = false
      extract_ids env in
   let int_env = default_internalization_env ids (bound_univs sigma) impl_env in
   let flags = { Pretyping.all_no_fail_flags with program_mode; unconstrained_sorts } in
-  let (int_env, (env, sigma, bl, impls)) =
+  let (int_env, (env, sigma, bl, impls, locs)) =
     List.fold_left
       (fun (int_env, acc) b ->
         let int_env, bl = intern_local_binder_aux ~dump (my_intern_constr env lvar) Id.Map.empty (int_env,[]) b in
-        let int_env, acc = List.fold_right (fun b' (int_env, (env,sigma,params,impls)) ->
+        let int_env, acc = List.fold_right (fun b' (int_env, (env,sigma,params,impls,locs)) ->
           let loc = b'.CAst.loc in
           let (na, _, bk, b', t) = glob_local_binder_of_extended b' in
           let sigma, t =
@@ -2889,17 +2889,17 @@ let interp_context_evars_gen ?(program_mode=false) ?(unconstrained_sorts = false
             let int_env = if autoimp_enable then Name.fold_left (push_auto_implicit env sigma t) int_env na else int_env in
             let d = make_decl ?loc (LocalAssum (make_annot na r,t)) in
             let impls = impl_of_binder_kind na bk :: impls in
-            (int_env, (push_decl d env, sigma, d::params, impls))
+            (int_env, (push_decl d env, sigma, d::params, impls, loc::locs))
           | Some b ->
             assert (bk = Explicit);
             let sigma, c, _ = Pretyping.ise_pretype_gen flags env sigma empty_lvar (OfType t) b in
             let d = make_decl ?loc (LocalDef (make_annot na r, c, t)) in
-            (int_env, (push_decl d env, sigma, d::params, impls)))
+            (int_env, (push_decl d env, sigma, d::params, impls, loc::locs)))
           bl (int_env,acc) in
         int_env, acc)
-      (int_env,(env,sigma,[],[])) bl
+      (int_env,(env,sigma,[],[],[])) bl
   in
-  sigma, (int_env.impls, ((env, bl), List.rev impls))
+  sigma, (int_env.impls, ((env, bl), List.rev impls, locs))
 
 let interp_named_context_evars ?program_mode ?unconstrained_sorts ?impl_env ?autoimp_enable env sigma bl =
   let extract_name ?loc = function Name id -> id | Anonymous -> user_err ?loc Pp.(str "Unexpected anonymous variable.") in

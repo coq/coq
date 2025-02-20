@@ -166,19 +166,23 @@ val interp_binder  : env -> evar_map -> Name.t -> constr_expr ->
 
 val interp_binder_evars : env -> evar_map -> Name.t -> constr_expr -> evar_map * types
 
-(** Interpret contexts: returns extended env and context. *)
+(** Interpret contexts: returns extended env and context.
+
+    The locs are in the same order as the rel_context, the implicits
+    in reverse order and omitting letins.
+*)
 
 val interp_context_evars :
   ?program_mode:bool -> ?unconstrained_sorts:bool -> ?impl_env:internalization_env ->
   env -> evar_map -> local_binder_expr list ->
-  evar_map * (internalization_env * ((env * rel_context) * Impargs.manual_implicits))
+  evar_map * (internalization_env * ((env * rel_context) * Impargs.manual_implicits * Loc.t option list))
 
 (** Interpret named contexts *)
 
 val interp_named_context_evars :
   ?program_mode:bool -> ?unconstrained_sorts:bool -> ?impl_env:internalization_env -> ?autoimp_enable:bool ->
   env -> evar_map -> local_binder_expr list ->
-  evar_map * (internalization_env * ((env * named_context) * Impargs.manual_implicits))
+  evar_map * (internalization_env * ((env * named_context) * Impargs.manual_implicits * Loc.t option list))
 
 (** Locating references of constructions, possibly via a syntactic definition
    (these functions do not modify the glob file) *)
