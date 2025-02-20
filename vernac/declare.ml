@@ -925,14 +925,14 @@ let warn_let_as_axiom =
 
 (* Declare an assumption when not in a section: Parameter/Axiom but also
    Variable/Hypothesis seen as Local Parameter/Axiom *)
-let declare_parameter ~name ~scope ~hook ~impargs ~uctx pe =
+let declare_parameter ~loc ~name ~scope ~hook ~impargs ~uctx pe =
   let local = match scope with
     | Locality.Discharge -> warn_let_as_axiom name; Locality.ImportNeedQualified
     | Locality.Global local -> local
   in
   let kind = Decls.(IsAssumption Conjectural) in
   let decl = ParameterEntry pe in
-  let cst = declare_constant ~loc:None ~name ~local ~kind ~typing_flags:None decl in
+  let cst = declare_constant ~loc ~name ~local ~kind ~typing_flags:None decl in
   let dref = Names.GlobRef.ConstRef cst in
   let () = Impargs.maybe_declare_manual_implicits false dref impargs in
   let () = assumption_message name in
@@ -989,7 +989,7 @@ let declare_possibly_mutual_parameters ~info ~cinfo ?(mono_uctx_extra=UState.emp
   (* if the uctx of an abandonned proof, minimize is redundant (see close_proof) *)
   let { Info.scope; poly; hook; udecl } = info in
   pi3 (List.fold_left2 (
-    fun (i, subst, csts) { CInfo.name; impargs } (typ, uctx) ->
+    fun (i, subst, csts) { CInfo.name; loc; impargs } (typ, uctx) ->
       let uctx' = UState.restrict uctx (Vars.universes_of_constr typ) in
       let univs = UState.check_univ_decl ~poly uctx' udecl in
       let univs = if i = 0 then add_mono_uctx mono_uctx_extra univs else univs in
@@ -1000,7 +1000,7 @@ let declare_possibly_mutual_parameters ~info ~cinfo ?(mono_uctx_extra=UState.emp
           parameter_entry_universes = univs;
           parameter_entry_inline_code = None;
         } in
-      let cst = declare_parameter ~name ~scope ~hook ~impargs ~uctx pe in
+      let cst = declare_parameter ~loc ~name ~scope ~hook ~impargs ~uctx pe in
       let inst = instance_of_univs univs in
       (i+1, (name, Constr.mkConstU (cst,inst))::subst, (cst, univs)::csts)
   ) (0, [], []) cinfo typs)
