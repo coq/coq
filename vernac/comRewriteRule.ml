@@ -36,6 +36,7 @@ let preprocess_symbols l =
 
 let do_symbol ~poly ~unfold_fix udecl (id, typ) =
   if Dumpglob.dump () then Dumpglob.dump_definition id false "symb";
+  let loc = id.CAst.loc in
   let id = id.CAst.v in
   let env = Global.env () in
   let evd, udecl = Constrintern.interp_univ_decl_opt env udecl in
@@ -50,7 +51,7 @@ let do_symbol ~poly ~unfold_fix udecl (id, typ) =
   let typ = EConstr.to_constr evd typ in
   let univs = Evd.check_univ_decl ~poly evd udecl in
   let entry = Declare.symbol_entry ~univs ~unfold_fix typ in
-  let kn = Declare.declare_constant ~name:id ~kind:Decls.IsSymbol (Declare.SymbolEntry entry) in
+  let kn = Declare.declare_constant ?loc ~name:id ~kind:Decls.IsSymbol (Declare.SymbolEntry entry) in
   let () = Impargs.maybe_declare_manual_implicits false (GlobRef.ConstRef kn) impls in
   let () = Declare.assumption_message id in
   ()
