@@ -19,6 +19,15 @@ let list_html_files dir =
   |> Array.to_list
   |> loop []
 
+type one_data = {
+  time1 : float;
+  time2 : float;
+  diff : float;
+  pdiff : float;
+  lnum : int;
+  file : string;
+}
+
 exception UnableToParse
 
 (** Read all the lines of a file into a list *)
@@ -30,7 +39,7 @@ let read_timing_lines file =
     | line ->
         if Str.string_match (Str.regexp "Line:.*") line 0 then
           (* We know this line is ["Line:"] *)
-          let line_num = match Str.split (Str.regexp " ") line with
+          let lnum = match Str.split (Str.regexp " ") line with
             | _ :: ln :: _ -> int_of_string ln
             | _ -> raise @@ UnableToParse
           in
@@ -55,7 +64,7 @@ let read_timing_lines file =
           if Float.abs diff <= 1e-4 then
             acc |> read_lines_aux
           else
-            (time1, time2, diff, pdiff, line_num, file) :: acc |> read_lines_aux
+            {time1; time2; diff; pdiff; lnum; file} :: acc |> read_lines_aux
         else
           read_lines_aux acc
     | exception End_of_file -> acc
@@ -87,15 +96,15 @@ let html_str ?html lnum s = match html with
     let s = Printf.sprintf "<a href=\"%s%s#L%d\">%s</a>" html.link_prefix s lnum s in
     { Table.str = s; size }
 
-let list_timing_data ?html (time1, time2, diff, pdiff, line_num, file) =
+let list_timing_data ?html {time1; time2; diff; pdiff; lnum; file} =
   let str_time1 = Printf.sprintf "%.4f" time1 in
   let str_time2 = Printf.sprintf "%.4f" time2 in
   let str_diff  = Printf.sprintf "%.4f" diff in
   let str_pdiff = Printf.sprintf "%3.2f%%" pdiff in
-  let str_line_num = string_of_int line_num in
+  let str_line_num = string_of_int lnum in
   List.append
     (List.map Table.raw_str [ str_time1; str_time2; str_diff; str_pdiff; str_line_num])
-    [ html_str ?html line_num file ]
+    [ html_str ?html lnum file ]
 
 let render_table ?(reverse=false) title num table =
   let open Table.Align in
@@ -117,9 +126,7 @@ let main () =
     |> list_html_files
     |> CList.filter_map read_timing_lines
     |> CList.flatten
-    (* Do we want to do a unique sort? *)
-    (* |> CList.sort_uniq (fun (_,_,x,_,_,_) (_,_,y,_,_,_) -> Float.compare x y) *)
-    |> CList.sort (fun (_,_,x,_,_,_) (_,_,y,_,_,_) -> Float.compare x y)
+    |> CList.sort (fun x y -> Float.compare x.diff y.diff)
   in
   let table =
     data
