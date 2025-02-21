@@ -341,7 +341,7 @@ git clone -q --depth 1 -b "$old_coq_opam_archive_git_branch" "$old_coq_opam_arch
 new_coq_opam_archive_dir="$working_dir/new_coq_opam_archive"
 git clone -q --depth 1 -b "$new_coq_opam_archive_git_branch" "$new_coq_opam_archive_git_uri" "$new_coq_opam_archive_dir"
 
-initial_opam_packages="num zarith ocamlfind dune yojson"
+initial_opam_packages="num zarith ocamlfind dune yojson camlzip"
 
 # Create an opam root and install Rocq
 # $1 = root_name {ex: NEW / OLD}
@@ -665,42 +665,25 @@ $skipped_packages"
         # NB: timelog2html sometimes randomly fails
         old_data=
         new_data=
-        old_compressed=
-        new_compressed=
         if [ -e "$old_base_path/$vo.prof.json.gz" ]; then
           old_data="$old_base_path/$vo.prof.json.gz"
-          old_compressed=1
         elif [ -e "$old_base_path/${vo%%o}.timing" ]; then
           old_data="$old_base_path/${vo%%o}.timing"
         fi
         if [ -e "$new_base_path/$vo.prof.json.gz" ]; then
           new_data="$new_base_path/$vo.prof.json.gz"
-          new_compressed=1
         elif [ -e "$new_base_path/${vo%%o}.timing" ]; then
           new_data="$new_base_path/${vo%%o}.timing"
         fi
 
         if [ "$old_data" ] && [ "$new_data" ]; then
-          # timelog2html doesn't know how to uncompress
-          if [ "$old_compressed" ]; then
-            gunzip --keep "$old_data"
-          fi
-          if [ "$new_compressed" ]; then
-            gunzip --keep "$new_data"
-          fi
           mkdir -p "$working_dir/html/$coq_opam_package/$(dirname "$vo")/"
           $timelog2html \
             "$new_base_path/${vo%%o}" \
-            "${old_data%.gz}" \
-            "${new_data%.gz}" \
+            "$old_data" \
+            "$new_data" \
             > "$working_dir/html/$coq_opam_package/${vo%%o}.html" ||
             echo "Failed (code $?): timelog2html for $vo on $old_data $new_data"
-          if [ "$old_compressed" ]; then
-            rm "${old_data%.gz}"
-          fi
-          if [ "$new_compressed" ]; then
-            rm "${new_data%.gz}"
-          fi
         fi
     done
 done

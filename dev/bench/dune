@@ -16,7 +16,7 @@
 (library
  (name benchlib)
  (modules :standard \ render_results render_line_results rocqtimelog2html table)
- (libraries unix str clib zarith yojson))
+ (libraries unix str clib zarith yojson camlzip))
 
 (executable
  (name rocqtimelog2html)

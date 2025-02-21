@@ -17,16 +17,14 @@ let assoc a b : YB.t = CList.assoc_f String.equal a b
 (* Profile files can be large, we want to parse 1 record at a time and
    only keep the info we're interested in (ie the "command" events).
 
-   The yojson API isn't great for this so we rely on there being 1
-   value / line starting at line 2.
+   We use undocumented Yojson.Basic.read_comma to detect the end.
 *)
 
-let rec find_cmds ~fname ~lnum acc ch =
-  let l = input_line ch in
-  let is_last = l.[String.length l - 1] <> ',' in
-  (* yojson doesn't like the trailing comma so remove it *)
-  let l = if is_last then l else String.sub l 0 (String.length l - 1) in
-  let v = YB.from_string ~fname ~lnum l in
+let rec find_cmds acc (lstate,lex as ch) =
+  let v = YB.from_lexbuf lstate ~stream:true lex in
+  let fname = Option.get lstate.Yojson.fname in
+  let lnum = lstate.Yojson.lnum in
+  let is_last = try YB.read_comma lstate lex; false with Yojson.Json_error _ -> true in
   let acc = match v with
     | `Assoc l -> begin match assoc "name" l with
         | `String "command" -> (lnum,l) :: acc
@@ -34,17 +32,52 @@ let rec find_cmds ~fname ~lnum acc ch =
       end
     | _ -> die "File %S line %d: unrecognised value\n" fname lnum
   in
-  if is_last then acc else find_cmds ~fname ~lnum:(lnum + 1) acc ch
+  if is_last then acc else find_cmds acc ch
+
+type 'ch channel = {
+  open_in : string -> 'ch;
+  close_in : 'ch -> unit;
+  really_input : 'ch -> Bytes.t -> int -> int -> unit;
+  input : 'ch -> Bytes.t -> int -> int -> int;
+}
+
+let file_channel = {
+  open_in = open_in;
+  close_in = close_in;
+  really_input = really_input;
+  input = input;
+}
+
+let gzip_channel = {
+  open_in = Gzip.open_in;
+  close_in = Gzip.close_in;
+  really_input = Gzip.really_input;
+  input = Gzip.input;
+}
+
+type any_channel = AnyChannel : 'ch channel -> any_channel
+
+let channel_for fname =
+  if CString.is_suffix ".json" fname then AnyChannel file_channel
+  else AnyChannel gzip_channel
+
+let input_exactly ch_fns ch expected =
+  let buf = Bytes.create (String.length expected) in
+  ch_fns.really_input ch buf 0 (String.length expected);
+  assert (Bytes.to_string buf = expected)
 
 let read_file fname =
-  let ch = open_in fname in
+  let AnyChannel ch_fns = channel_for fname in
+  let ch = ch_fns.open_in fname in
   try
     (* ignore initial line *)
-    let _ = input_line ch in
-    let cmds = find_cmds ~fname ~lnum:2 [] ch in
-    close_in ch;
+    let () = input_exactly ch_fns ch {|{ "traceEvents": [|} in
+    let lex = Lexing.from_function ~with_positions:false (fun buf n -> ch_fns.input ch buf 0 n) in
+    let lstate = Yojson.init_lexer ~fname ~lnum:2 () in
+    let cmds = find_cmds [] (lstate,lex) in
+    ch_fns.close_in ch;
     cmds
-  with e -> close_in ch; raise e
+  with e -> ch_fns.close_in ch; raise e
 
 open BenchUtil
 

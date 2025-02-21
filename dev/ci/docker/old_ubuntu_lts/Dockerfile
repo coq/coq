@@ -13,6 +13,8 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
         m4 automake autoconf time wget rsync git gcc-multilib build-essential unzip jq \
         # Dependencies of ZArith
         perl libgmp-dev libgmp-dev:i386 \
+        # Dependencies of devtools
+        zlib1g-dev zlib1g-dev:i386 \
         # Dependencies of lablgtk (for CoqIDE)
         libgtksourceview-3.0-dev adwaita-icon-theme-full \
         # Dependencies of stdlib and sphinx doc
@@ -50,7 +52,7 @@ RUN mkdir -p ~/.config/dune && printf '(lang dune 2.1)\n(jobs %s)\n' $NJOBS > ~/
 ENV COMPILER="4.09.0"
 
 # Common OPAM packages
-ENV BASE_OPAM="zarith.1.11 ounit2.2.2.6 yojson.1.7.0" \
+ENV BASE_OPAM="zarith.1.11 ounit2.2.2.6 yojson.1.7.0 camlzip.1.10" \
     CI_OPAM="ocamlgraph.2.0.0 cppo.1.6.9" \
     BASE_ONLY_OPAM="dune.3.8.3 stdlib-shims.0.1.0 ocamlfind.1.8.1 odoc.2.0.2 num.1.4"
 

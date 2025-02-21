@@ -13,7 +13,7 @@ let die fmt = Printf.kfprintf (fun _ -> exit 1) stderr fmt
 let usage () = die "Usage: rocq timelog2html VFILE DATAFILES\n\n%a\n%s\n"
     (fun fmt len -> Printf.fprintf fmt "(1 to %d data files are supported.)" len)
     Htmloutput.max_data_count
-    "Data files may JSON profile files (as produced by rocq c -profile) with extension .json,\
+    "Data files may be JSON profile files (as produced by rocq c -profile) with extension .json or .json.gz,\
 \nor timing files (as produced by rocq c -time-file)"
 
 let parse_args = function
@@ -26,11 +26,10 @@ let parse_args = function
     vfile, data_files
 
 let file_data data_file =
-  match Filename.extension data_file with
-  | ".json" ->
+  if List.exists (fun suf -> CString.is_suffix suf data_file) [".json"; ".json.gz"] then
     let data = Profparser.parse ~file:data_file in
     data_file, CArray.of_list data
-  | _ ->
+  else
     let data = Timelogparser.parse ~file:data_file in
     data_file, CArray.of_list data
 

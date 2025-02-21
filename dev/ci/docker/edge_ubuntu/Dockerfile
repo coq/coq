@@ -13,6 +13,8 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
         m4 automake autoconf time wget rsync git gcc-multilib build-essential unzip jq \
         # Dependencies of ZArith
         perl libgmp-dev libgmp-dev:i386 \
+        # Dependencies of devtools
+        zlib1g-dev \
         # Dependencies of lablgtk (for CoqIDE)
         libgtksourceview-3.0-dev adwaita-icon-theme-full \
         # Dependencies of stdlib and sphinx doc
@@ -49,7 +51,7 @@ RUN mkdir -p ~/.config/dune && printf '(lang dune 2.1)\n(jobs %s)\n' $NJOBS > ~/
 
 # Edge opam is the set of edge packages required by Coq
 ENV COMPILER="4.14.1" \
-    BASE_OPAM="zarith.1.13 ounit2.2.2.6" \
+    BASE_OPAM="zarith.1.13 ounit2.2.2.6 camlzip.1.13" \
     CI_OPAM="ocamlgraph.2.0.0 cppo.1.6.9" \
     BASE_OPAM_EDGE="dune.3.14.0 dune-build-info.3.14.0 dune-release.2.0.0 ocamlfind.1.9.6 odoc.2.3.1" \
     CI_OPAM_EDGE="elpi.2.0.7 ppx_import.1.10.0 cmdliner.1.1.1 sexplib.v0.15.1 ppx_sexp_conv.v0.15.1 ppx_hash.v0.15.0 ppx_compare.v0.15.0 ppx_deriving_yojson.3.7.0 yojson.2.1.0 uri.4.2.0 ppx_yojson_conv.v0.15.1 ppx_inline_test.v0.15.1 ppx_assert.v0.15.0 ppx_optcomp.v0.15.0 lsp.1.16.2 sel.0.6.0" \
