@@ -616,12 +616,17 @@ Printing universes
    .. rocqtop:: in
 
       Monomorphic Universes a b c.
-      Monomorphic Definition make_b_lt_c : Type@{c} := Type@{b}.
       Monomorphic Definition make_a_le_b (F:Type@{b} -> Prop) (X:Type@{a}) := F X.
+      Monomorphic Definition make_b_le_c (F:Type@{c} -> Prop) (X:Type@{b}) := F X.
+      Monomorphic Definition make_c_le_a (F:Type@{a} -> Prop) (X:Type@{c}) := F X.
 
    .. rocqtop:: all
 
       Print Universes Subgraph (a c).
+
+   .. coqrst gets confused if we use a < c as it thinks there's a prompt
+      this isn't a problem with a = c (for some reason it's
+      also not a problem with the implicit Set < a)
 
    .. note::
 
