@@ -272,7 +272,7 @@ let unsafe_intro env decl ~relevance b =
     let inst = EConstr.identity_subst_val (named_context_val env) in
     let ninst = SList.cons (mkRel 1) inst in
     let nb = subst1 (mkVar (NamedDecl.get_id decl)) b in
-    let (sigma, ev) = new_pure_evar nctx sigma ~relevance nb in
+    let (sigma, ev) = new_pure_evar ~typeclass_candidate:false nctx sigma ~relevance nb in
     (sigma, mkLambda_or_LetIn (NamedDecl.to_rel_decl decl) (mkEvar (ev, ninst)),
      Some ev)
   end
@@ -308,7 +308,7 @@ let convert_concl ~cast ~check ty k =
           | Some sigma -> sigma
         end else sigma
       in
-      let (sigma, x) = Evarutil.new_evar env sigma ty in
+      let (sigma, x) = Evarutil.new_evar ~typeclass_candidate:false env sigma ty in
       let ans = if not cast then x else mkCast(x,k,conclty) in
       (sigma, ans, Some (fst @@ destEvar sigma x))
     end
@@ -322,7 +322,7 @@ let convert_hyp ~check ~reorder d =
     let sign = convert_hyp ~check ~reorder env sigma d in
     let env = reset_with_named_context sign env in
     Refine.refine_with_principal ~typecheck:false begin fun sigma ->
-      let sigma, ev = Evarutil.new_evar env sigma ty in
+      let sigma, ev = Evarutil.new_evar ~typeclass_candidate:false env sigma ty in
       sigma, ev, Some (fst @@ destEvar sigma ev)
     end
   end
@@ -362,7 +362,7 @@ let clear_gen fail = function
     let env = reset_with_named_context hyps env in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
     (Refine.refine_with_principal ~typecheck:false begin fun sigma ->
-      let sigma, ev = Evarutil.new_evar env sigma concl in
+      let sigma, ev = Evarutil.new_evar ~typeclass_candidate:false env sigma concl in
       sigma, ev, Some (fst @@ destEvar sigma ev)
     end)
   end
@@ -394,7 +394,7 @@ let move_hyp id dest =
     let sign' = move_hyp_in_named_context env sigma id dest sign in
     let env = reset_with_named_context sign' env in
     Refine.refine_with_principal ~typecheck:false begin fun sigma ->
-      let sigma, ev = Evarutil.new_evar env sigma ty in
+      let sigma, ev = Evarutil.new_evar ~typeclass_candidate:false env sigma ty in
       sigma, ev, Some (fst @@ destEvar sigma ev)
     end
   end
@@ -456,7 +456,7 @@ let rename_hyp repl =
       in
       let instance = List.fold_right2 fold ohyps nhyps SList.empty in
       Refine.refine_with_principal ~typecheck:false begin fun sigma ->
-        let sigma, ev = Evarutil.new_pure_evar nctx sigma ~relevance nconcl in
+        let sigma, ev = Evarutil.new_pure_evar ~typeclass_candidate:false nctx sigma ~relevance nconcl in
         sigma, mkEvar (ev, instance), Some ev
       end
     end
@@ -570,8 +570,8 @@ let internal_cut ?(check=true) replace id t =
     Proofview.tclTHEN
       (Proofview.Unsafe.tclEVARS sigma)
       (Refine.refine_with_principal ~typecheck:false begin fun sigma ->
-        let (sigma, ev) = Evarutil.new_evar env sigma nf_t in
-        let (sigma, ev') = Evarutil.new_evar env' sigma concl in
+        let (sigma, ev) = Evarutil.new_evar ~typeclass_candidate:false env sigma nf_t in
+        let (sigma, ev') = Evarutil.new_evar ~typeclass_candidate:false env' sigma concl in
         let term = mkLetIn (make_annot (Name id) r, ev, t, EConstr.Vars.subst_var sigma id ev') in
         (sigma, term, Some (fst @@ destEvar sigma ev'))
       end)
@@ -620,7 +620,7 @@ let assert_after_replacing id = assert_after_gen true (NamingMustBe (CAst.make i
 let rec mk_holes env sigma = function
 | [] -> (sigma, [])
 | arg :: rem ->
-  let (sigma, arg) = Evarutil.new_evar env sigma arg in
+  let (sigma, arg) = Evarutil.new_evar ~typeclass_candidate:false env sigma arg in
   let (sigma, rem) = mk_holes env sigma rem in
   (sigma, arg :: rem)
 
@@ -858,7 +858,7 @@ let e_change_in_hyps ~check ~reorder f args = match args with
     Proofview.Unsafe.tclEVARS sigma
     <*>
     Refine.refine_with_principal ~typecheck:false begin fun sigma ->
-      let sigma, ev = Evarutil.new_evar env sigma ty in
+      let sigma, ev = Evarutil.new_evar ~typeclass_candidate:false env sigma ty in
       sigma, ev, Some (fst @@ destEvar sigma ev)
     end
   end
@@ -1246,7 +1246,7 @@ let intro_forthcoming_last_then_gen avoid dep_flag bound n tac =
       let inst = SList.defaultn (List.length @@ Environ.named_context env) SList.empty in
       let rels = List.init (List.length decls) (fun i -> mkRel (i + 1)) in
       let ninst = List.fold_right (fun c accu -> SList.cons c accu) rels inst in
-      let (sigma, ev) = new_pure_evar nctx sigma ~relevance nconcl in
+      let (sigma, ev) = new_pure_evar ~typeclass_candidate:false nctx sigma ~relevance nconcl in
       (sigma, it_mkLambda_or_LetIn (mkEvar (ev, ninst)) decls,
        Some ev)
     end <*> tac ids
@@ -1484,9 +1484,9 @@ let cut c =
       let id = next_name_away_with_default "H" Anonymous (Tacmach.pf_ids_set_of_hyps gl) in
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
         (Refine.refine_with_principal ~typecheck:false begin fun h ->
-            let (h, f) = Evarutil.new_evar env h (mkArrow c r concl) in
+            let (h, f) = Evarutil.new_evar ~typeclass_candidate:false env h (mkArrow c r concl) in
             let ev = fst @@ destEvar h f in
-            let (h, x) = Evarutil.new_evar env h c in
+            let (h, x) = Evarutil.new_evar ~typeclass_candidate:false env h c in
             let f = mkLetIn (make_annot (Name id) r, x, c, mkApp (f, [|mkRel 1|])) in
             (h, f, Some ev)
           end)
@@ -1672,7 +1672,7 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
   let tac =
     Proofview.tclEVARMAP >>= fun sigma ->
     let sigma = Evd.push_future_goals sigma in
-    let (sigma, ev) = Evarutil.new_evar env sigma argtype in
+    let (sigma, ev) = Evarutil.new_evar ~typeclass_candidate:false env sigma argtype in
     let _, sigma = Evd.pop_future_goals sigma in
     let evk, _ = destEvar sigma ev in
     let indclause = Clenv.update_clenv_evd indclause sigma (Clenv.clenv_meta_list indclause) in
@@ -2097,8 +2097,8 @@ let cut_and_apply c =
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
         (Refine.refine ~typecheck:false begin fun sigma ->
             let typ = mkProd (make_annot Anonymous ERelevance.relevant, c2, concl) in
-            let (sigma, f) = Evarutil.new_evar env sigma typ in
-            let (sigma, x) = Evarutil.new_evar env sigma c1 in
+            let (sigma, f) = Evarutil.new_evar ~typeclass_candidate:false env sigma typ in
+            let (sigma, x) = Evarutil.new_evar ~typeclass_candidate:false env sigma c1 in
             (sigma, mkApp (f, [|mkApp (c, [|x|])|]))
           end)
     | _ -> error NeedDependentProduct
@@ -2247,7 +2247,7 @@ let clear_body idl =
       in
       Proofview.Unsafe.tclEVARS sigma <*>
     Refine.refine_with_principal ~typecheck:false begin fun sigma ->
-      let sigma, ev = Evarutil.new_evar env sigma concl in
+      let sigma, ev = Evarutil.new_evar ~typeclass_candidate:false env sigma concl in
       sigma, ev, Some (fst @@ destEvar sigma ev)
     end
     with DependsOnBody _ as exn ->
@@ -2305,7 +2305,7 @@ let apply_type ~typecheck newcl args =
     let env = Proofview.Goal.env gl in
     Refine.refine_with_principal ~typecheck begin fun sigma ->
       let newcl = nf_betaiota env sigma newcl (* As in former Logic.refine *) in
-      let (sigma, ev) = Evarutil.new_evar env sigma newcl in
+      let (sigma, ev) = Evarutil.new_evar ~typeclass_candidate:false env sigma newcl in
       (sigma, applist (ev, args), Some (fst @@ destEvar sigma ev))
     end
   end
@@ -2824,7 +2824,7 @@ let pose_tac na c =
     Refine.refine ~typecheck:false begin fun sigma ->
       let id = make_annot id rel in
       let nhyps = EConstr.push_named_context_val (NamedDecl.LocalDef (id, c, t)) hyps in
-      let (sigma, ev) = Evarutil.new_pure_evar nhyps sigma ~relevance concl in
+      let (sigma, ev) = Evarutil.new_pure_evar ~typeclass_candidate:false nhyps sigma ~relevance concl in
       let inst = EConstr.identity_subst_val hyps in
       let body = mkEvar (ev, SList.cons (mkRel 1) inst) in
       (sigma, mkLetIn (map_annot Name.mk_name id, c, t, body))
@@ -3021,7 +3021,8 @@ let specialize (c,lbind) ipat =
     | LocalAssum (na, t) :: decls ->
       let t = Vars.esubst Vars.lift_substituend subst t in
       let env = push_rel (LocalAssum (na, t)) env in
-      let sigma, ev = Evarutil.new_evar env sigma (lift 1 t) in
+      let typeclass_candidate = Typeclasses.is_maybe_class_type sigma t in
+      let sigma, ev = Evarutil.new_evar ~typeclass_candidate env sigma (lift 1 t) in
       let subst = Esubst.subs_cons (Vars.make_substituend ev) (Esubst.subs_shft (1, subst)) in
       instantiate sigma env subst ((env, ev) :: accu) decls
     | LocalDef (na, b, t) :: decls ->
@@ -3175,7 +3176,8 @@ let specialize_eqs id =
         | _ ->
             if in_eqs then acc, in_eqs, ctx, ty
             else
-              let sigma, e = Evarutil.new_evar (push_rel_context ctx env) !evars t in
+              let typeclass_candidate = Typeclasses.is_maybe_class_type !evars t in
+              let sigma, e = Evarutil.new_evar ~typeclass_candidate (push_rel_context ctx env) !evars t in
               evars := sigma;
                 aux false (LocalDef (na,e,t) :: ctx) (mkApp (lift 1 acc, [| mkRel 1 |])) b)
     | t -> acc, in_eqs, ctx, ty

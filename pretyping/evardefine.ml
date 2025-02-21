@@ -91,7 +91,7 @@ let define_pure_evar_as_product env evd na evk =
     let filter = Filter.extend 1 (evar_filter evi) in
       if Environ.is_impredicative_sort env (ESorts.kind evd1 s) then
        (* Impredicative product, conclusion must fall in [Prop]. *)
-        new_evar newenv evd1 concl ~src ~filter
+        new_evar ~typeclass_candidate:false newenv evd1 concl ~src ~filter
       else
         let status = univ_flexible_alg in
         let evd3, (rng, srng) =
@@ -143,7 +143,9 @@ let define_pure_evar_as_lambda env evd name evk =
   let filter = Filter.extend 1 (evar_filter evi) in
   let src = subterm_source evk ~where:Body (evar_source evi) in
   let abstract_arguments = Abstraction.abstract_last (Evd.evar_abstract_arguments evi) in
-  let evd2,body = new_evar newenv evd1 ~src (subst1 (mkVar id.binder_name) rng) ~filter ~abstract_arguments in
+  let evty = subst1 (mkVar id.binder_name) rng in
+  let typeclass_candidate = Typeclasses.is_maybe_class_type evd1 evty in
+  let evd2,body = new_evar ~typeclass_candidate newenv evd1 ~src evty ~filter ~abstract_arguments in
   let lam = mkLambda (map_annot Name.mk_name id, dom, subst_var evd2 id.binder_name body) in
   Evd.define evk lam evd2, lam
 

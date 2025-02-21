@@ -192,7 +192,7 @@ val new_pure_evar :
   relevance:erelevance ->
   ?abstract_arguments:Abstraction.t -> ?candidates:econstr list ->
   ?name:Id.t ->
-  ?typeclass_candidate:bool ->
+  typeclass_candidate:bool ->
   named_context_val -> evar_map -> etypes -> evar_map * Evar.t
 (** Low-level interface to create an evar.
   @param src User-facing source for the evar
@@ -282,8 +282,6 @@ val drop_all_defined : evar_map -> evar_map
 
 val drop_new_defined : original:evar_map -> evar_map -> evar_map
 (** Drop the defined evars in the second evar map which did not exist in the first. *)
-
-val is_maybe_typeclass_hook : (evar_map -> econstr -> bool) Hook.t
 
 (** {6 Instantiating partial terms} *)
 

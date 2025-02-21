@@ -1563,7 +1563,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
             Proofview.Goal.enter begin fun gl ->
             let env = Proofview.Goal.env gl in
             let make = begin fun sigma ->
-              let (sigma, ev) = Evarutil.new_evar env sigma newt in
+              let (sigma, ev) = Evarutil.new_evar ~typeclass_candidate:false env sigma newt in
               (sigma, mkApp (p, [| ev |]))
             end in
             Refine.refine ~typecheck:true make <*> Proofview.Unsafe.tclNEWGOALS gls

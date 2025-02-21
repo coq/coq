@@ -26,7 +26,7 @@ let dangling_identity env sigma =
    represented by an existential variable.  The declaration for this
    existential variable needs to be added in the evd datastructure. *)
   let sigma, type_type = example_sort sigma in
-  let sigma, arg_type = Evarutil.new_evar env sigma type_type in
+  let sigma, arg_type = Evarutil.new_evar ~typeclass_candidate:false env sigma type_type in
 (* Notice the use of a De Bruijn index for the inner occurrence of the
   bound variable. *)
   sigma, mkLambda(nameR (Names.Id.of_string "x"), arg_type,
@@ -123,7 +123,7 @@ let example_classes n =
   let sigma, c_R = c_R env sigma in
   let arg_type = mkApp (c_even, [| c_n |]) in
   let sigma0 = sigma in
-  let sigma, instance = Evarutil.new_evar env sigma arg_type in
+  let sigma, instance = Evarutil.new_evar ~typeclass_candidate:false env sigma arg_type in
   let c_half = mkApp (c_div, [|c_n; instance|]) in
   let _ = Feedback.msg_notice (Printer.pr_econstr_env env sigma c_half) in
   let sigma, the_type = Typing.type_of env sigma c_half in
@@ -161,10 +161,10 @@ let example_canonical n =
   let refl_term = mkApp (c_R, [|c_N; c_n |]) in
 (* Now we build two existential variables, for the value of the half and for
    the "S_ev" structure that triggers the proof search. *)
-  let sigma, ev1 = Evarutil.new_evar env sigma c_N in
+  let sigma, ev1 = Evarutil.new_evar ~typeclass_candidate:false env sigma c_N in
 (* This is the type for the second existential variable *)
   let csev = mkApp (c_F, [| ev1 |]) in
-  let sigma, ev2 = Evarutil.new_evar env sigma csev in
+  let sigma, ev2 = Evarutil.new_evar ~typeclass_candidate:false env sigma csev in
 (* Now we build the C structure. *)
   let test_term = mkApp (c_C, [| c_n; ev1; ev2; refl_term |]) in
 (* Type-checking this term will compute values for the existential variables *)

@@ -134,6 +134,8 @@ val set_solve_all_instances : (env -> evar_map -> evar_filter -> bool -> bool ->
 
 val get_typeclasses_unique_solutions : unit -> bool
 
+val is_maybe_class_type : evar_map -> EConstr.types -> bool
+
 (* Deprecated *)
 val resolve_one_typeclass : ?unique:bool -> env -> evar_map -> EConstr.types -> evar_map * EConstr.constr
 [@@deprecated "(9.0) Use Class_tactics.resolve_one_typeclass (\"unique\" argument was ignored)"]

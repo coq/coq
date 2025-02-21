@@ -1393,7 +1393,9 @@ and conv_record flags env (evd,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2),c
               (i,t2::ks, m-1, test)
           else
             let dloc = Loc.tag Evar_kinds.InternalHole in
-            let (i', ev) = Evarutil.new_evar env i ~src:dloc (substl ks b) in
+            let ty = substl ks b in
+            let typeclass_candidate = Typeclasses.is_maybe_class_type i ty in
+            let (i', ev) = Evarutil.new_evar ~typeclass_candidate env i ~src:dloc ty in
             (i', ev :: ks, m - 1,test))
         (evd,[],List.length bs,fun i -> Success i) bs
     in
@@ -1740,7 +1742,8 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
                 env_evar_unf evd evty
             else evd, evty in
           (* XXX incorrect relevance *)
-          let (evd, evk) = new_pure_evar sign evd ~relevance:ERelevance.relevant evty ~filter in
+          let typeclass_candidate = Typeclasses.is_maybe_class_type evd evty in
+          let (evd, evk) = new_pure_evar ~typeclass_candidate sign evd ~relevance:ERelevance.relevant evty ~filter in
           let EvarInfo evi = Evd.find evd evk in
           let instance = Evd.evar_identity_subst evi in
           let fixed = Evar.Set.add evk fixed in

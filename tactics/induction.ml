@@ -254,13 +254,13 @@ let mkletin_goal env sigma with_eq dep (id,lastlhyp,ccl,c) ty =
       let eq = applist (eq,args) in
       let refl = applist (refl, [t;mkVar id]) in
       let newenv = insert_before [LocalAssum (make_annot heq ERelevance.relevant,eq); decl] lastlhyp env in
-      let (sigma, x) = new_evar newenv sigma ccl in
+      let (sigma, x) = new_evar ~typeclass_candidate:false newenv sigma ccl in
       (sigma, mkNamedLetIn sigma (make_annot id r) c t
          (mkNamedLetIn sigma (make_annot heq ERelevance.relevant) refl eq x),
       Some (fst @@ destEvar sigma x))
   | None ->
       let newenv = insert_before [decl] lastlhyp env in
-      let (sigma, x) = new_evar newenv sigma ccl in
+      let (sigma, x) = new_evar ~typeclass_candidate:false newenv sigma ccl in
       (sigma, mkNamedLetIn sigma (make_annot id r) c t x, Some (fst @@ destEvar sigma x))
 
 let warn_cannot_remove_as_expected =

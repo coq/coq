@@ -164,7 +164,8 @@ let encapsulate_Fix_sub env sigma recname ctx body ccl (extradecl, rel, relargty
   (* Making Fix_sub ready to take the extended body as argument *)
   let sigma, fix_sub =
     let sigma, fix_sub_term = Evd.fresh_global (Global.env ()) sigma fix_sub_ref in
-    let sigma, wf_proof = Evarutil.new_evar env sigma
+    let typeclass_candidate = Typeclasses.is_maybe_class_type sigma wf_type in
+    let sigma, wf_proof = Evarutil.new_evar ~typeclass_candidate env sigma
         ~src:(Loc.tag @@ Evar_kinds.QuestionMark {
             Evar_kinds.default_question_mark with Evar_kinds.qm_obligation=Evar_kinds.Define false;
           }) wf_type in

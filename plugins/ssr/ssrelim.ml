@@ -533,7 +533,7 @@ let revtoptac n0 =
   let dc' = dc @ [Context.Rel.Declaration.LocalAssum(make_annot (Name rev_id) EConstr.ERelevance.relevant, ty)] in
   Refine.refine ~typecheck:true begin fun sigma ->
     let f = EConstr.it_mkLambda_or_LetIn (mkEtaApp (EConstr.mkRel (n + 1)) (-n) 1) dc' in
-    let sigma, ev = Evarutil.new_evar env sigma ty in
+    let sigma, ev = Evarutil.new_evar ~typeclass_candidate:false env sigma ty in
     sigma, (EConstr.mkApp (f, [|ev|]))
   end
   end

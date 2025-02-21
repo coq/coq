@@ -162,7 +162,8 @@ let model_conclusion env sigma ind_rel params n arity_indices =
     List.fold_right
       (fun (_,t) (sigma, subst) ->
         let t = EConstr.Vars.substl subst (EConstr.Vars.liftn n (List.length subst + 1) t) in
-        let sigma, c = Evarutil.new_evar env sigma t in
+        let typeclass_candidate = Typeclasses.is_maybe_class_type sigma t in
+        let sigma, c = Evarutil.new_evar ~typeclass_candidate env sigma t in
         sigma, c::subst)
       arity_indices (sigma, []) in
   sigma, mkApp (mkApp (model_head, model_params), Array.of_list (List.rev model_indices))

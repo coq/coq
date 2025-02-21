@@ -120,7 +120,7 @@ let repackage i h_hyps_id = Goal.enter begin fun gl ->
         mkApp (c_R (), [| ty1; ty2; mkVar i;
           mkApp (c_U (), [| ty2; mkVar h_hyps_id|]) |]) in
     Refine.refine ~typecheck:true begin fun sigma ->
-      let sigma, new_goal = Evarutil.new_evar env sigma
+      let sigma, new_goal = Evarutil.new_evar ~typeclass_candidate:false env sigma
           (mkArrowR (mkApp(c_H (), [| new_packed_type |]))
              (Vars.lift 1 concl))
       in

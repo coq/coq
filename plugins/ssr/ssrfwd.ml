@@ -123,8 +123,8 @@ let basecuttac k c =
         match k with
         | HaveTransp ->
           let name = Context.make_annot Name.Anonymous r in
-          let sigma, p = Evarutil.new_evar env sigma c in
-          let sigma, f = Evarutil.new_evar env sigma (mkLetIn (name,p,c,Vars.lift 1 concl)) in
+          let sigma, p = Evarutil.new_evar ~typeclass_candidate:false env sigma c in
+          let sigma, f = Evarutil.new_evar ~typeclass_candidate:false env sigma (mkLetIn (name,p,c,Vars.lift 1 concl)) in
           let gp = Proofview_monad.with_empty_state (fst @@ destEvar sigma p) in
           let gf = Proofview_monad.with_empty_state (fst @@ destEvar sigma f) in
           false, sigma, f, [gp;gf]
@@ -135,9 +135,9 @@ let basecuttac k c =
           | Sorts.Quality.(QConstant QProp), Sorts.Quality.(QConstant QProp) ->
           let f = Rocqlib.lib_ref ("plugins.ssreflect.ssr_have") in
           let sigma, f = EConstr.fresh_global env sigma f in
-          let sigma, step = Evarutil.new_evar env sigma c in
+          let sigma, step = Evarutil.new_evar ~typeclass_candidate:false env sigma c in
           let stepg = Proofview_monad.with_empty_state (fst @@ destEvar sigma step) in
-          let sigma, rest = Evarutil.new_evar env sigma (mkArrow c r concl) in
+          let sigma, rest = Evarutil.new_evar ~typeclass_candidate:false env sigma (mkArrow c r concl) in
           let restg = Proofview_monad.with_empty_state (fst @@ destEvar sigma rest) in
           let glf = [stepg;restg] in
           let f = EConstr.mkApp (f, [|c;concl;step;rest|]) in
@@ -152,9 +152,9 @@ let basecuttac k c =
             | _ -> Evd.new_univ_level_variable Evd.univ_flexible sigma in
           let names = UVars.Instance.of_array ([|qc;qg|],[|uc;ug|]) in
           let sigma, f = EConstr.fresh_global env sigma ~names f in
-          let sigma, step = Evarutil.new_evar env sigma c in
+          let sigma, step = Evarutil.new_evar ~typeclass_candidate:false env sigma c in
           let stepg = Proofview_monad.with_empty_state (fst @@ destEvar sigma step) in
-          let sigma, rest = Evarutil.new_evar env sigma (mkArrow c r concl) in
+          let sigma, rest = Evarutil.new_evar ~typeclass_candidate:false env sigma (mkArrow c r concl) in
           let restg = Proofview_monad.with_empty_state (fst @@ destEvar sigma rest) in
           let glf = [stepg;restg] in
           let f = EConstr.mkApp (f, [|c;concl;step;rest|]) in
@@ -469,7 +469,7 @@ let intro_lock ipats =
         let rel_args = Array.sub args lm2 2 in
         let under_rel_args = Array.append [|carrier; rel|] rel_args in
         let ty = EConstr.mkApp (under_rel, under_rel_args) in
-        let sigma, t = Evarutil.new_evar env sigma ty in
+        let sigma, t = Evarutil.new_evar ~typeclass_candidate:false env sigma ty in
         sigma, EConstr.mkApp(under_from_rel,Array.append under_rel_args [|t|])) in
   let rec lock_eq () : unit Proofview.tactic = Proofview.Goal.enter begin fun _ ->
     Proofview.tclORELSE

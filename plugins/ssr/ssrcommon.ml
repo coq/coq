@@ -780,7 +780,8 @@ let saturate ?(beta=false) ?(bi_types=false) env sigma c ?(ty=Retyping.get_type_
   | ProdType (_, src, tgt) ->
       let sigma = create_evar_defs sigma in
       let argty = if bi_types then Reductionops.nf_betaiota env sigma src else src in
-      let (sigma, x) = Evarutil.new_evar env sigma argty in
+      let typeclass_candidate = Typeclasses.is_maybe_class_type sigma argty in
+      let (sigma, x) = Evarutil.new_evar ~typeclass_candidate env sigma argty in
       loop (EConstr.Vars.subst1 x tgt) ((m - n,x,argty) :: args) sigma (n-1)
   | CastType (t, _) -> loop t args sigma n
   | LetInType (_, v, _, t) -> loop (EConstr.Vars.subst1 v t) args sigma n
@@ -825,7 +826,8 @@ let applyn ?(beta=false) ~with_evars ?(first_goes_last=false) n t =
         else match EConstr.kind sigma c with
         | Lambda (_, argty, c) ->
           let argty = Reductionops.nf_betaiota env sigma (EConstr.Vars.substl args argty) in
-          let (sigma, x) = Evarutil.new_evar env sigma argty in
+          let typeclass_candidate = Typeclasses.is_maybe_class_type sigma argty in
+          let (sigma, x) = Evarutil.new_evar ~typeclass_candidate env sigma argty in
           saturate c (x :: args) sigma (n-1)
         | _ -> assert false
       in
@@ -1171,7 +1173,7 @@ let unsafe_intro env decl ~relevance b =
     let inst = EConstr.identity_subst_val (Environ.named_context_val env) in
     let ninst = SList.cons (EConstr.mkRel 1) inst in
     let nb = EConstr.Vars.subst1 (EConstr.mkVar (get_id decl)) b in
-    let sigma, ev = Evarutil.new_pure_evar nctx sigma ~relevance nb in
+    let sigma, ev = Evarutil.new_pure_evar nctx sigma ~relevance ~typeclass_candidate:false nb in
     sigma, EConstr.mkNamedLambda_or_LetIn sigma decl (EConstr.mkEvar (ev, ninst)), Some ev
   end
 
