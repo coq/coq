@@ -59,8 +59,8 @@ let do_sequent env sigma setref triv id seq i dom atoms=
   let phref=ref triv in
   let do_atoms a1 a2 =
     let do_pair t1 t2 =
-      match unif_atoms (Sequent.state seq) env sigma i dom t1 t2 with
-          None->()
+      match unif_atoms ~check:(not !phref) (Sequent.state seq) env sigma i dom t1 t2 with
+        | None-> ()
         | Some (Phantom _) ->phref:=true
         | Some c ->flag:=false;setref:=IS.add (c,id) !setref in
       List.iter (fun t->List.iter (do_pair t) a2.negative) a1.positive;
