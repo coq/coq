@@ -108,7 +108,7 @@ let get_src_chars ~lnum hdr =
     { start_char = int_of_string @@ Str.matched_group 1 hdr;
       stop_char = int_of_string @@ Str.matched_group 2 hdr; }
 
-let mk_measure start stop =
+let mk_time start stop =
   let time = stop - start in
   (* time unit is microsecond *)
   let timeq = Q.(div (of_int time) (of_int 1000000)) in
@@ -133,7 +133,9 @@ let rec process_cmds acc = function
     let start_ts = get_ts start_event in
     let end_ts = get_ts end_event in
     let src_chars = get_src_chars ~lnum:(fst start_event) hdr in
-    process_cmds ((src_chars, mk_measure start_ts end_ts) :: acc) rest
+    let time = mk_time start_ts end_ts in
+    let memory = None in
+    process_cmds ((src_chars, { time; memory; }) :: acc) rest
   | [_] -> die "ill parenthesized events\n"
 
 let parse ~file =

@@ -74,7 +74,7 @@ let file_data data_file =
     data_file, CArray.of_list data
   else
     let data = Timelogparser.parse ~file:data_file in
-    data_file, CArray.of_list data
+    data_file, data |> CArray.map_of_list (fun (loc, time) -> loc, { BenchUtil.time; memory = None })
 
 let main args =
   let opts, (vfile, data_files) = parse_args defaults args in
@@ -85,7 +85,7 @@ let main args =
 
   let all_data = BenchUtil.combine_related_data all_data in
 
-  let dummy = Array.make (Array.length data_files) BenchUtil.dummy_measure in
+  let dummy = Array.make (Array.length data_files) BenchUtil.dummy_data in
 
   let all_data = Array.of_list (Sourcehandler.join_to_source ~dummy ~source (Array.to_list all_data)) in
 

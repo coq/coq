@@ -36,7 +36,7 @@ let out fmt = Printf.fprintf ch fmt in
 let ndata = Array.length data_files in
 
 let totals = Array.fold_left (fun acc (_,data) ->
-    Array.map2 (fun acc d -> Q.add acc d.q) acc data)
+    Array.map2 (fun acc d -> Q.add acc d.time.q) acc data)
     (Array.make ndata Q.zero)
     all_data
 in
@@ -44,7 +44,7 @@ in
 let maxq =
   Array.fold_left (fun max (_,data) ->
       Array.fold_left (fun max d ->
-          let dq = d.q in
+          let dq = d.time.q in
           if Q.lt max dq then dq
           else max)
         max
@@ -123,21 +123,21 @@ let line_id fmt l =
   end
 in
 
-let () = all_data |> Array.iteri (fun j (loc,time) ->
+let () = all_data |> Array.iteri (fun j (loc,data) ->
     let () = out {|<div class="code" title="File: %s
 Line: %d
 
 |} vname loc.line
     in
-    let () = time |> Array.iteri (fun k d ->
-        out "Time%d: %ss\n" (k+1) d.str)
+    let () = data |> Array.iteri (fun k d ->
+        out "Time%d: %ss\n" (k+1) d.time.str)
     in
     let () = out {|">|} in
 
-    let () = time |> Array.iteri (fun k d ->
+    let () = data |> Array.iteri (fun k d ->
         out {|<div class="time%d" style="width: %f%%"></div>|}
           (k+1)
-          (percentage d.q ~max:maxq))
+          (percentage d.time.q ~max:maxq))
     in
 
     let text = loc.text in
@@ -168,18 +168,18 @@ in
 ()
 
 let raw_output ch ~min_diff all_data =
-  all_data |> Array.iteri @@ fun j (loc,time) ->
-  let t1, t2 = match time with
-    | [|t1; t2|] -> t1, t2
-    | _ -> die "-raw-o only supports 2 data files, got %d" (Array.length time)
+  all_data |> Array.iteri @@ fun j (loc,data) ->
+  let d1, d2 = match data with
+    | [|d1; d2|] -> d1, d2
+    | _ -> die "-raw-o only supports 2 data files, got %d" (Array.length data)
   in
-  let diff = Q.(t2.q - t1.q) in
+  let diff = Q.(d2.time.q - d1.time.q) in
   let ignore = Q.lt (Q.abs diff) min_diff in
   if not ignore then begin
-    let pdiff = if Q.(equal zero t1.q) then Float.infinity
-      else Q.(to_float @@ ((of_int 100 * diff) / t1.q))
+    let pdiff = if Q.(equal zero d1.time.q) then Float.infinity
+      else Q.(to_float @@ ((of_int 100 * diff) / d1.time.q))
     in
     (* XXX %.4f makes sense for min_diff=1e-4 but should be smarter for other min_diff *)
     Printf.fprintf ch "%s %s %.4f %3.2f%% %d\n"
-      t1.str t2.str (Q.to_float diff) pdiff loc.line
+      d1.time.str d2.time.str (Q.to_float diff) pdiff loc.line
   end
