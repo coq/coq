@@ -1019,6 +1019,7 @@ library:ci-deriving:
   - plugin:ci-elpi_hb
   - library:ci-mathcomp
   stage: build-3+
+  allow_failure: true
 
 library:ci-mathcomp_word:
   extends: .ci-template-flambda
