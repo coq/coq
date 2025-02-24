@@ -128,7 +128,7 @@ type t=
 
 let has_fuel seq = seq.depth > 0
 
-let iter_redexes f seq = HP.iter f seq.redexes
+let iter_redexes f seq = HP.iter (fun (AnyFormula p) -> f p.atoms) seq.redexes
 
 let deepen seq={seq with depth=seq.depth-1}
 

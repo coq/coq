@@ -65,7 +65,7 @@ let do_sequent env sigma setref triv id seq i dom atoms=
         | Some c ->flag:=false;setref:=IS.add (c,id) !setref in
       List.iter (fun t->List.iter (do_pair t) a2.negative) a1.positive;
       List.iter (fun t->List.iter (do_pair t) a2.positive) a1.negative in
-    Sequent.iter_redexes (function AnyFormula lf->do_atoms atoms lf.atoms) seq;
+    Sequent.iter_redexes (function lf -> do_atoms atoms lf) seq;
     do_atoms atoms (Sequent.make_simple_atoms seq);
     !flag && !phref
 

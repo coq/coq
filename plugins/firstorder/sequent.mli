@@ -20,7 +20,7 @@ val has_fuel : t -> bool
 
 val make_simple_atoms : t -> atoms
 
-val iter_redexes : (Formula.any_formula -> unit) -> t -> unit
+val iter_redexes : (atoms -> unit) -> t -> unit
 
 val deepen: t -> t
 
