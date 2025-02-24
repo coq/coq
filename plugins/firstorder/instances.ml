@@ -85,6 +85,8 @@ let give_instances env sigma lf seq=
 
 let rec collect_quantified env sigma seq =
   try
+    (* This works because the only caller of this function ensures that at this
+       point we only have formulae with priority lower than forall / exists. *)
     let hd, seq1 = take_formula env sigma seq in
     let AnyFormula hd0 = hd in
       (match hd0.pat with
