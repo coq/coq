@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-let die fmt = Printf.kfprintf (fun _ -> exit 1) stderr fmt
+let die fmt = Printf.kfprintf (fun _ -> exit 1) stderr (fmt^^"\n%!")
 
 module YB = Yojson.Basic
 
@@ -30,7 +30,7 @@ let rec find_cmds acc (lstate,lex as ch) =
         | `String "command" -> (lnum,l) :: acc
         | _ -> acc
       end
-    | _ -> die "File %S line %d: unrecognised value\n" fname lnum
+    | _ -> die "File %S line %d: unrecognised value" fname lnum
   in
   if is_last then acc else find_cmds acc ch
 
@@ -83,11 +83,11 @@ open BenchUtil
 
 let force_string lnum = function
   | `String s -> s
-  | _ -> die "line %d: malformed value (expected string)\n" lnum
+  | _ -> die "line %d: malformed value (expected string)" lnum
 
 let get_ts (lnum, l) = match assoc "ts" l with
   | `Int ts -> ts
-  | _ -> die "line %d: malformed ts\n" lnum
+  | _ -> die "line %d: malformed ts" lnum
 
 let get_src_info (lnum, l) = match assoc "args" l with
   | `Assoc l ->
@@ -95,10 +95,10 @@ let get_src_info (lnum, l) = match assoc "args" l with
     let line = match assoc "line" l with
       | `Int l -> l
       | `String l -> int_of_string l
-      | _ -> die "line %d: malformed line number\n" lnum
+      | _ -> die "line %d: malformed line number" lnum
     in
     hdr, line
-  | _ -> die "line %d: malformed args\n" lnum
+  | _ -> die "line %d: malformed args" lnum
 
 let hdr_regex = Str.regexp {|^Chars \([0-9]+\) - \([0-9]+\) |}
 
@@ -136,7 +136,7 @@ let rec process_cmds acc = function
     let time = mk_time start_ts end_ts in
     let memory = None in
     process_cmds ((src_chars, { time; memory; }) :: acc) rest
-  | [_] -> die "ill parenthesized events\n"
+  | [_] -> die "ill parenthesized events"
 
 let parse ~file =
   let cmds = read_file file in
