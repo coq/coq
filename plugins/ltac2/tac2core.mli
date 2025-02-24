@@ -47,6 +47,10 @@ module type MapType = sig
 end
 
 type ('a,'set,'map) map_tag
+
+val map_tag_eq : ('a,'set1,'map1) map_tag -> ('b,'set2,'map2) map_tag ->
+  ('a * 'set1 * 'map1, 'b * 'set2 * 'map2) Util.eq option
+
 type any_map_tag = Any : _ map_tag -> any_map_tag
 type tagged_set = TaggedSet : (_,'set,_) map_tag * 'set -> tagged_set
 type tagged_map = TaggedMap : (_,_,'map) map_tag * 'map -> tagged_map
@@ -55,12 +59,18 @@ val map_tag_repr : any_map_tag Tac2ffi.repr
 val set_repr : tagged_set Tac2ffi.repr
 val map_repr : tagged_map Tac2ffi.repr
 
+val tag_set : (_,'set,_) map_tag -> 'set -> Tac2val.valexpr
+val tag_map : (_,_,'map) map_tag -> 'map -> Tac2val.valexpr
+
 val register_map : ?plugin:string -> tag_name:string
   -> (module MapType with type S.elt = 'a and type S.t = 'set and type valmap = 'map)
   -> ('a,'set,'map) map_tag
 (** Register a type on which we can use finite sets and maps.
     [tag_name] is the name used for the external to make the
     [Ltac2.FSet.Tags.tag] available. *)
+
+val get_map : ('a,'set,'map) map_tag ->
+  (module MapType with type S.elt = 'a and type S.t = 'set and type valmap = 'map)
 
 (** Default registered maps *)
 
