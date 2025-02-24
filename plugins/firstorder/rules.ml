@@ -61,28 +61,57 @@ let clear_global=function
 
 (* connection rules *)
 
-let axiom_tac seq =
+let find_hyp ~flags seq env sigma typ =
+  let ts = RedFlags.red_transparent flags.reds in
+  let rec find conv = function
+  | [] -> None
+  | decl :: rest ->
+    let id = NamedDecl.get_id decl in
+    let t = NamedDecl.get_type decl in
+    if not (Sequent.mem_hyp id seq) then find conv rest
+    else if conv then match Reductionops.infer_conv ~ts ~pb:CUMUL env sigma t typ with
+    | None -> find conv rest
+    | Some sigma -> Some (sigma, id)
+    else
+      if EConstr.eq_constr sigma t typ then Some (sigma, id)
+      else find conv rest
+  in
+  let hyps = EConstr.named_context env in
+  match find false hyps with
+  | Some ans -> Some ans
+  | None -> find true hyps
+
+let axiom_tac ~flags seq =
   Proofview.Goal.enter begin fun gl ->
-  match Sequent.find_goal (project gl) seq with
-  | gr -> pf_constr_of_global gr >>= fun c -> exact_no_check c
-  | exception Not_found -> tclFAIL (Pp.str "No axiom link")
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let concl = Proofview.Goal.concl gl in
+    match find_hyp ~flags seq env sigma concl with
+    | Some (sigma, hyp) ->
+      Proofview.Unsafe.tclEVARS sigma <*>
+      exact_no_check (mkVar hyp)
+    | None -> tclFAIL (Pp.str "No axiom link")
   end
 
 let ll_atom_tac ~flags a backtrack id continue seq =
   let open EConstr in
+  let tac =
+    Proofview.Goal.enter begin fun gl ->
+      let env = Proofview.Goal.env gl in
+      let sigma = Proofview.Goal.sigma gl in
+      let (sigma, id) = Evd.fresh_global env sigma id in
+      let typ = Retyping.get_type_of env sigma id in
+      let typ = Reductionops.clos_whd_flags flags.reds env sigma typ in
+      let _, dom, _ = destProd sigma typ in
+      match find_hyp ~flags seq env sigma dom with
+      | Some (sigma, hyp) ->
+        Proofview.Unsafe.tclEVARS sigma <*>
+        Generalize.generalize [mkApp (id, [|mkVar hyp|])]
+      | None -> tclFAIL (Pp.str "No link")
+    end
+  in
   tclIFTHENELSE
-      (tclTHENLIST
-        [(Proofview.tclEVARMAP >>= fun sigma ->
-          let gr =
-            try Proofview.tclUNIT (find_left sigma a seq)
-            with Not_found -> tclFAIL (Pp.str "No link")
-          in
-          gr >>= fun gr ->
-          pf_constr_of_global gr >>= fun left ->
-          pf_constr_of_global id >>= fun id ->
-            Generalize.generalize [(mkApp(id, [|left|]))]);
-         clear_global id;
-         intro])
+    (tclTHENLIST [tac; clear_global id; intro])
     (wrap ~flags 1 false continue seq) backtrack
 
 (* right connectives rules *)

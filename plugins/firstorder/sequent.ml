@@ -124,6 +124,7 @@ type t=
      gl: seqgoal;
      cnt:counter;
      history:History.t;
+     hyps : Id.Set.t;
      depth:int}
 
 let has_fuel seq = seq.depth > 0
@@ -154,16 +155,22 @@ let add_concl ~flags env sigma t seq =
 
 let add_formula ~flags ~hint env sigma id t seq =
   let side = Hyp hint in
+  let hyps = match id with
+  | GlobRef.VarRef id -> Id.Set.add id seq.hyps
+  | _ -> seq.hyps
+  in
   match build_formula ~flags seq.state env sigma side (formula_id env id) t seq.cnt with
   | state, Left f ->
     {seq with
       redexes=HP.add (AnyFormula f) seq.redexes;
       context=Context.add sigma f.constr id seq.context;
+      hyps;
       state}
   | state, Right t ->
     {seq with
       context=Context.add sigma t id seq.context;
       latoms=t::seq.latoms;
+      hyps;
       state}
 
 let re_add_formula_list sigma lf seq=
@@ -171,9 +178,17 @@ let re_add_formula_list sigma lf seq=
   | GoalId -> cm
   | FormulaId id -> Context.add sigma f.constr id cm
   in
+  let do_id (AnyFormula f) hyps = match f.id with
+  | GoalId -> hyps
+  | FormulaId (GlobRef.VarRef id) -> Id.Set.add id hyps
+  | FormulaId _ -> hyps
+  in
   {seq with
      redexes=List.fold_right HP.add lf seq.redexes;
+     hyps = List.fold_right do_id lf seq.hyps;
      context=List.fold_right do_one lf seq.context}
+
+let mem_hyp id seq = Id.Set.mem id seq.hyps
 
 let find_left sigma t seq = Context.find sigma t seq.context
 
@@ -193,8 +208,13 @@ let rec take_formula env sigma seq=
     | GoalAtom _ | GoalTerm _ -> take_formula env sigma nseq (* discarding deprecated goal *)
     end
   | FormulaId id ->
+    let hyps = match id with
+    | GlobRef.VarRef id -> Id.Set.remove id seq.hyps
+    | _ -> seq.hyps
+    in
       hd,{seq with
             redexes=hp;
+            hyps;
             context=Context.remove env sigma hd0.constr id seq.context}
 
 let empty_seq depth=
@@ -205,6 +225,7 @@ let empty_seq depth=
    cnt=newcnt ();
    history=History.empty;
    depth=depth;
+   hyps = Id.Set.empty;
    state=Env.empty}
 
 let make_simple_atoms seq =

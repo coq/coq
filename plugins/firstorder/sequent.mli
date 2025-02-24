@@ -34,6 +34,8 @@ val add_formula : flags:flags -> hint:bool -> Environ.env -> Evd.evar_map -> Glo
 
 val re_add_formula_list : Evd.evar_map -> Formula.any_formula list -> t -> t
 
+val mem_hyp : Id.t -> t -> bool
+
 val find_left : Evd.evar_map -> atom -> t -> GlobRef.t
 
 val find_goal : Evd.evar_map -> t -> GlobRef.t

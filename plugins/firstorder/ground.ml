@@ -30,7 +30,7 @@ let ground_tac ~flags solver startseq =
   Proofview.Goal.enter begin fun gl ->
   let rec toptac skipped seq =
     Proofview.Goal.enter begin fun gl ->
-    tclORELSE (axiom_tac seq)
+    tclORELSE (axiom_tac ~flags seq)
       begin
         try
           let (hd, seq1) = take_formula (pf_env gl) (project gl) seq

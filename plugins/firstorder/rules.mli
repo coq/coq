@@ -24,7 +24,7 @@ val wrap : flags:Formula.flags -> int -> bool -> seqtac
 
 val clear_global: GlobRef.t -> tactic
 
-val axiom_tac : Sequent.t -> tactic
+val axiom_tac : flags:Formula.flags -> Sequent.t -> tactic
 
 val ll_atom_tac : flags:Formula.flags -> Formula.atom -> lseqtac with_backtracking
 
