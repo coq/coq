@@ -30,6 +30,29 @@ let htmlescape =
 let percentage ~max:m v =
   Q.to_float Q.(v * of_int 100 / m)
 
+let pp_words ~need_comma which w =
+  if w = "0 w" then need_comma, ""
+  else
+    true, (if need_comma then ", " else "")^(String.sub w 0 (String.length w - 1))^which^" w"
+
+let pp_collect ~need_comma which c =
+  if c = 0 then need_comma, ""
+  else
+    true, Printf.sprintf "%s%d %s %s"
+      (if need_comma then ", " else "") c which
+      (if c = 1 then "collection" else "collections")
+
+let pp_memory ch = function
+  | None -> ()
+  | Some {major_words; minor_words; major_collect; minor_collect} ->
+    (* need_comma <-> prefix is nontrivial *)
+    let need_comma, minor_words = pp_words ~need_comma:false "minor" minor_words in
+    let need_comma, major_words = pp_words ~need_comma "major" major_words in
+    let need_comma, minor_collect = pp_collect ~need_comma "minor" minor_collect in
+    let need_comma, major_collect = pp_collect ~need_comma "major" major_collect in
+    if need_comma then
+      Printf.fprintf ch " (%s%s%s%s)" minor_words major_words minor_collect major_collect
+
 let output ch ~vname ~data_files all_data =
 
 let out fmt = Printf.fprintf ch fmt in
@@ -130,7 +153,7 @@ Line: %d
 |} vname loc.line
     in
     let () = data |> Array.iteri (fun k d ->
-        out "Time%d: %ss\n" (k+1) d.time.str)
+        out "Time%d: %ss%a\n" (k+1) d.time.str pp_memory d.memory)
     in
     let () = out {|">|} in
 
