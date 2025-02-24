@@ -1,6 +1,6 @@
 
-(** Recursively list .html files' relative directories in given directory *)
-let list_html_files dir =
+(** Recursively list .rocq-timediff files' relative directories in given directory *)
+let list_timediff_files dir =
   let rec loop result = function
     | f :: fs when Sys.is_directory f ->
         Sys.readdir f
@@ -9,7 +9,7 @@ let list_html_files dir =
         |> CList.append fs
         |> loop result
     | f :: fs ->
-      if Filename.check_suffix f ".html" then
+      if Filename.check_suffix f ".rocq-timediff" then
         loop (f::result) fs
       else
         loop result fs
@@ -19,46 +19,31 @@ let list_html_files dir =
   |> Array.to_list
   |> loop []
 
+type one_data = {
+  time1 : string;
+  time2 : string;
+  diff : string;
+  pdiff : string;
+  lnum : string;
+  file : string;
+}
+
 exception UnableToParse
 
 (** Read all the lines of a file into a list *)
 let read_timing_lines file =
   let ic = open_in file in
+  let html_file =  (Filename.chop_extension file) ^ ".html" in
   (* We tail recursively read lines in the file discarding the uninteresting ones *)
   let rec read_lines_aux acc =
     match input_line ic with
-    | line ->
-        if Str.string_match (Str.regexp "Line:.*") line 0 then
-          (* We know this line is ["Line:"] *)
-          let line_num = match Str.split (Str.regexp " ") line with
-            | _ :: ln :: _ -> int_of_string ln
-            | _ -> raise @@ UnableToParse
-          in
-          (* Second line is empty *)
-          let _ = input_line ic in
-          (* Time1 - we have floats written with s so with split that too *)
-          let time1 = match Str.split (Str.regexp "[ s]") (input_line ic) with
-            | _ :: time1_str :: _ -> float_of_string time1_str
-            | _ -> raise @@ UnableToParse
-          in
-          (* Time2 *)
-          let time2 = match Str.split (Str.regexp "[ s]") (input_line ic) with
-            | _ :: time2_str :: _ -> float_of_string time2_str
-            | _ -> raise @@ UnableToParse
-          in
-          (* Difference *)
-          let diff = time2 -. time1 in
-          (* Percentage diff *)
-          let pdiff = if time1 <> 0.0 then (diff *. 100.0) /. time1 else Float.infinity in
-          (* We accumulate the timing data in a tuple if the difference is non-zero *)
-          (* We also check that timed values are not too small (tolerence is trial and error) *)
-          if Float.abs diff <= 1e-4 then
-            acc |> read_lines_aux
-          else
-            (time1, time2, diff, pdiff, line_num, file) :: acc |> read_lines_aux
-        else
-          read_lines_aux acc
     | exception End_of_file -> acc
+    | "" -> read_lines_aux acc
+    | line ->
+      match String.split_on_char ' ' line with
+      | [time1; time2; diff; pdiff; lnum] ->
+        {time1; time2; diff; pdiff; lnum; file=html_file} :: acc |> read_lines_aux
+      | _ -> raise UnableToParse
   in
   let lines =
     try Some (read_lines_aux [])
@@ -84,18 +69,13 @@ let html_str ?html lnum s = match html with
   | None -> Table.raw_str s
   | Some html ->
     let size = String.length s in
-    let s = Printf.sprintf "<a href=\"%s%s#L%d\">%s</a>" html.link_prefix s lnum s in
+    let s = Printf.sprintf "<a href=\"%s%s#L%s\">%s</a>" html.link_prefix s lnum s in
     { Table.str = s; size }
 
-let list_timing_data ?html (time1, time2, diff, pdiff, line_num, file) =
-  let str_time1 = Printf.sprintf "%.4f" time1 in
-  let str_time2 = Printf.sprintf "%.4f" time2 in
-  let str_diff  = Printf.sprintf "%.4f" diff in
-  let str_pdiff = Printf.sprintf "%3.2f%%" pdiff in
-  let str_line_num = string_of_int line_num in
+let list_timing_data ?html {time1; time2; diff; pdiff; lnum; file} =
   List.append
-    (List.map Table.raw_str [ str_time1; str_time2; str_diff; str_pdiff; str_line_num])
-    [ html_str ?html line_num file ]
+    (List.map Table.raw_str [ time1; time2; diff; pdiff; lnum])
+    [ html_str ?html lnum file ]
 
 let render_table ?(reverse=false) title num table =
   let open Table.Align in
@@ -114,12 +94,10 @@ let main () =
   let () = Printexc.record_backtrace true in
   let data =
     Unix.getcwd ()
-    |> list_html_files
+    |> list_timediff_files
     |> CList.filter_map read_timing_lines
     |> CList.flatten
-    (* Do we want to do a unique sort? *)
-    (* |> CList.sort_uniq (fun (_,_,x,_,_,_) (_,_,y,_,_,_) -> Float.compare x y) *)
-    |> CList.sort (fun (_,_,x,_,_,_) (_,_,y,_,_,_) -> Float.compare x y)
+    |> CList.sort (fun x y -> Float.compare (float_of_string x.diff) (float_of_string y.diff))
   in
   let table =
     data

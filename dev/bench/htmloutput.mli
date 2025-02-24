@@ -14,3 +14,6 @@ val output : out_channel -> vname:string ->
 
 val max_data_count : int
 (** Max length supported for the inner [measure array]. *)
+
+val raw_output : out_channel -> min_diff:Q.t ->
+  (BenchUtil.source_loc * BenchUtil.measure array) array -> unit

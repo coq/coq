@@ -679,11 +679,12 @@ $skipped_packages"
         if [ "$old_data" ] && [ "$new_data" ]; then
           mkdir -p "$working_dir/html/$coq_opam_package/$(dirname "$vo")/"
           $timelog2html \
+            "-o" "$working_dir/html/$coq_opam_package/${vo%%o}.html" \
+            "-raw-o" "$working_dir/html/$coq_opam_package/${vo%%o}.rocq-timediff" \
             "$new_base_path/${vo%%o}" \
             "$old_data" \
             "$new_data" \
-            > "$working_dir/html/$coq_opam_package/${vo%%o}.html" ||
-            echo "Failed (code $?): timelog2html for $vo on $old_data $new_data"
+            || echo "Failed (code $?): timelog2html for $vo on $old_data $new_data"
         fi
     done
 done
