@@ -1447,7 +1447,23 @@ and eta_constructor flags env evd ((ind, i), u) sk1 (term2,sk2) =
       end
     | _ -> UnifFailure (evd,NotSameHead)
 
-let evar_conv_x flags = evar_conv_x flags
+let evar_conv_x flags env evd pbty term1 term2 =
+  debug_unification Pp.(fun () ->
+      str "Starting unification:" ++ spc() ++
+      Termops.Internal.print_constr_env env evd term1 ++
+      (match pbty with CONV -> strbrk " =~= " | CUMUL -> strbrk " <~= ") ++
+      Termops.Internal.print_constr_env env evd term2);
+  let res =
+    evar_conv_x flags env evd pbty term1 term2
+  in
+  let () = debug_unification Pp.(fun () ->
+      let success = match res with
+        | Success _ -> "success"
+        | UnifFailure _ -> "failure"
+      in
+      str "Leaving unification with " ++ str success)
+  in
+  res
 
 let evar_unify = conv_fun evar_conv_x
 
