@@ -11,6 +11,7 @@
 let die fmt = Printf.kfprintf (fun _ -> exit 1) stderr (fmt^^"\n%!")
 
 module YB = Yojson.Basic
+module YBU = YB.Util
 
 let assoc a b : YB.t = CList.assoc_f String.equal a b
 
@@ -108,6 +109,16 @@ let get_src_chars ~lnum hdr =
     { start_char = int_of_string @@ Str.matched_group 1 hdr;
       stop_char = int_of_string @@ Str.matched_group 2 hdr; }
 
+let mk_memory (lnum, l) =
+  let args = assoc "args" l in
+  try Some {
+      major_words = YBU.(to_string @@ member "major_words" args) ;
+      minor_words = YBU.(to_string @@ member "minor_words" args);
+      major_collect = YBU.(to_int @@ member "major_collect" args);
+      minor_collect = YBU.(to_int @@ member "minor_collect" args);
+    }
+  with YBU.Type_error (msg,_) -> die "line %d: %s" lnum msg
+
 let mk_time start stop =
   let time = stop - start in
   (* time unit is microsecond *)
@@ -134,7 +145,7 @@ let rec process_cmds acc = function
     let end_ts = get_ts end_event in
     let src_chars = get_src_chars ~lnum:(fst start_event) hdr in
     let time = mk_time start_ts end_ts in
-    let memory = None in
+    let memory = mk_memory end_event in
     process_cmds ((src_chars, { time; memory; }) :: acc) rest
   | [_] -> die "ill parenthesized events"
 
