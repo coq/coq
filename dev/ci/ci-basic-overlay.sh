@@ -77,6 +77,9 @@ project oddorder "https://github.com/math-comp/odd-order" "master"
 project mczify "https://github.com/math-comp/mczify" "master"
 # Contact @pi8027 on github
 
+project algebra_tactics "https://github.com/math-comp/algebra-tactics" "master"
+# Contact @pi8027, @proux01 on github
+
 project finmap "https://github.com/math-comp/finmap" "master"
 # Contact @CohenCyril on github
 

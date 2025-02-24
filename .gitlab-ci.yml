@@ -878,6 +878,16 @@ library:ci-mczify:
   - library:ci-mathcomp
   stage: build-3+
 
+library:ci-algebra_tactics:
+  extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
+  - plugin:ci-elpi_hb
+  - library:ci-mathcomp
+  - library:ci-mczify
+  stage: build-3+
+
 library:ci-finmap:
   extends: .ci-template-flambda
   needs:
@@ -1027,6 +1037,8 @@ library:ci-jasmin:
   - plugin:ci-elpi_hb
   - library:ci-mathcomp
   - library:ci-mathcomp_word
+  - library:ci-mczify
+  - library:ci-algebra_tactics
   stage: build-3+
 
 library:ci-http:

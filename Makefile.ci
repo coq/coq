@@ -28,6 +28,7 @@ CI_PLATFORM_FULL= \
     ci-mathcomp \
     ci-mathcomp_word \
     ci-mczify \
+    ci-algebra_tactics \
     ci-finmap \
     ci-bigenough \
     ci-analysis \
@@ -173,6 +174,7 @@ ci-fourcolor: ci-mathcomp
 ci-oddorder: ci-mathcomp
 ci-fcsl_pcm: ci-mathcomp
 ci-mczify: ci-mathcomp
+ci-algebra_tactics: ci-mczify
 ci-mathcomp_test: ci-mathcomp
 ci-mathcomp_word: ci-mathcomp
 ci-finmap: ci-mathcomp
@@ -193,7 +195,7 @@ ci-ext_lib: ci-stdlib
 
 ci-itauto: ci-stdlib
 
-ci-jasmin: ci-mathcomp_word
+ci-jasmin: ci-mathcomp_word ci-algebra_tactics
 
 ci-autosubst: ci-stdlib
 ci-iris: ci-autosubst
