@@ -2506,15 +2506,18 @@ let locate_notation prglob ntn scope =
     prlist_with_sep fnl (fun (ntn,l) ->
       let scope = find_default ntn scopes in
       prlist_with_sep fnl
-        (fun (sc,(on_parsing,on_printing,{ not_interp  = (_, r); not_location = (_, df) })) ->
-          hov 0 (
-            str "Notation" ++ brk (1,2) ++
+        (fun (sc,(on_parsing,on_printing,{ not_interp  = (_, r); not_location = ((libpath,secpath), df) })) ->
+          let full_path = DirPath.make (DirPath.repr secpath @ DirPath.repr libpath) in
+          hov 2 (
+            str "Notation" ++ spc() ++
             Notation_ops.pr_notation_info prglob df r ++
             (if String.equal sc default_scope then mt ()
-             else (brk (1,2) ++ str ": " ++ str sc)) ++
+             else (spc() ++ str ": " ++ str sc)) ++
             (if Option.equal String.equal (Some sc) scope
-             then brk (1,2) ++ str "(default interpretation)" else mt ()) ++
-            pr_non_empty (brk (1,2)) (pr_notation_status on_parsing on_printing)))
+             then spc() ++ str "(default interpretation)" else mt ()) ++
+            pr_non_empty (spc()) (pr_notation_status on_parsing on_printing) ++
+            spc() ++ surround (str "from " ++  DirPath.print full_path)
+          ))
         l) ntns
 
 let collect_notation_in_scope scope sc known =
