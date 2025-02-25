@@ -32,6 +32,7 @@ CI_PLATFORM_FULL= \
     ci-finmap \
     ci-bigenough \
     ci-analysis \
+    ci-analysis_stdlib \
     ci-menhir \
     ci-mtac2 \
     ci-paramcoq \
@@ -140,8 +141,8 @@ ci-lean_importer: ci-stdlib
 ci-mathcomp: ci-elpi_hb
 
 ci-coqprime: ci-bignums
-ci-coquelicot: ci-mathcomp
-ci-deriving: ci-mathcomp
+ci-coquelicot: ci-mathcomp ci-stdlib
+ci-deriving: ci-mathcomp ci-stdlib
 ci-math_classes: ci-bignums
 
 ci-coqhammer: ci-stdlib
@@ -172,22 +173,22 @@ ci-fiat_parsers: ci-stdlib
 
 ci-fourcolor: ci-mathcomp
 ci-oddorder: ci-mathcomp
-ci-fcsl_pcm: ci-mathcomp
-ci-mczify: ci-mathcomp
+ci-fcsl_pcm: ci-mathcomp ci-stdlib
+ci-mczify: ci-mathcomp ci-stdlib
 ci-algebra_tactics: ci-mczify
 ci-mathcomp_test: ci-mathcomp
-ci-mathcomp_word: ci-mathcomp
+ci-mathcomp_word: ci-mathcomp ci-stdlib
 ci-finmap: ci-mathcomp
 ci-bigenough: ci-mathcomp
 ci-analysis: ci-elpi_hb ci-finmap ci-bigenough
+ci-analysis_stdlib: ci-analysis ci-stdlib
 
 ci-hb: ci-elpi
 
-ci-elpi: ci-stdlib
-ci-elpi_test: ci-elpi
+ci-elpi_test: ci-elpi ci-stdlib
 ci-hb_test: ci-hb
 
-ci-trakt: ci-elpi
+ci-trakt: ci-elpi ci-stdlib
 
 ci-engine_bench: ci-stdlib
 
