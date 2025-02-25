@@ -93,7 +93,7 @@ let axiom_tac ~flags seq =
     | None -> tclFAIL (Pp.str "No axiom link")
   end
 
-let ll_atom_tac ~flags a backtrack id continue seq =
+let ll_atom_tac ~flags backtrack id continue seq =
   let open EConstr in
   let tac =
     Proofview.Goal.enter begin fun gl ->

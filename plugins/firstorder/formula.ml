@@ -287,7 +287,7 @@ type left_pattern=
   | Lor of pinductive
   | Lforall of metavariable*constr*bool
   | Lexists of pinductive
-  | LA of atom*left_arrow_pattern
+  | LA of left_arrow_pattern
 
 type _ identifier =
 | GoalId : [ `Goal ] identifier
@@ -346,9 +346,7 @@ let build_formula (type a) ~flags state env sigma (side : a side) (nam : a ident
                   | Forall (d,_) ->
                       Lforall(m,d,trivial)
                   | Arrow (a,b) ->
-                    let nfa = fresh_atom ~flags state env sigma [] a in
-                        LA (nfa,
-                            match kind_of_formula ~flags env sigma a with
+                        LA (match kind_of_formula ~flags env sigma a with
                                 False(i,l)-> LLfalse(i,l)
                               | Atom t->     LLatom
                               | And(i,l,_)-> LLand(i,l)

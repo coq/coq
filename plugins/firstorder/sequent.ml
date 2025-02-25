@@ -37,7 +37,7 @@ let priority : type a. a pattern -> int = (* pure heuristics, <=0 for non revers
           | Lor _                  ->  40
           | Lforall (_,_,_)        -> -30
           | Lexists _              ->  60
-          | LA(_,lap) ->
+          | LA lap ->
               match lap with
                   LLatom           ->   0
                 | LLfalse (_,_)    -> 100

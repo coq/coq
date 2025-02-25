@@ -85,7 +85,7 @@ let ground_tac ~flags solver startseq =
                       | Lexists ind ->
                           left_exists_tac ~flags ind backtrack (get_id hd)
                             continue (re_add seq1)
-                      | LA (typ,lap)->
+                      | LA lap ->
                           let la_tac=
                             begin
                               match lap with
@@ -106,7 +106,7 @@ let ground_tac ~flags solver startseq =
                                     (ll_arrow_tac ~flags a b c backtrack
                                        (get_id hd) continue (re_add seq1))
                             end in
-                            ll_atom_tac ~flags typ la_tac (get_id hd) continue (re_add seq1)
+                            ll_atom_tac ~flags la_tac (get_id hd) continue (re_add seq1)
                   end
             with Heap.EmptyHeap->solver
       end

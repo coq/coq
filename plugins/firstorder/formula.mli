@@ -73,7 +73,7 @@ type left_pattern=
   | Lor of pinductive
   | Lforall of metavariable*constr*bool
   | Lexists of pinductive
-  | LA of atom*left_arrow_pattern
+  | LA of left_arrow_pattern
 
 type _ identifier = private
 | GoalId : [ `Goal ] identifier
