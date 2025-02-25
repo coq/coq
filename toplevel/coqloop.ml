@@ -484,6 +484,10 @@ let process_toplevel_command ~state stm =
     in
     true, nstate
 
+  | VernacBeautify cmd ->
+    Feedback.msg_info (Ppvernac.pr_vernac cmd);
+    true, state
+
   | VernacShowGoal { gid; sid } ->
     let proof = Stm.get_proof ~doc:state.doc (Stateid.of_int sid) in
     let goal = Printer.pr_goal_emacs ~proof gid sid in
