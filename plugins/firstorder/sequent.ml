@@ -70,55 +70,12 @@ end
 
 module History=Set.Make(Hitem)
 
-module Context :
-sig
-  type t
-  val empty : t
-  val find : Evd.evar_map -> atom -> t -> GlobRef.t
-  val add : Evd.evar_map -> atom -> GlobRef.t -> t -> t
-  val remove : Environ.env -> Evd.evar_map -> atom -> GlobRef.t -> t -> t
-end =
-struct
-
-module Atom =
-struct
-  type t = atom
-  let compare = compare_atom
-end
-
-module CM = Map.Make(Atom)
-
-type t = GlobRef.t list CM.t
-
-let empty = CM.empty
-
-let find sigma t cm =
-  List.hd (CM.find t cm)
-
-let add sigma typ nam cm =
-  try
-    let l=CM.find typ cm in CM.add typ (nam::l) cm
-  with
-      Not_found->CM.add typ [nam] cm
-
-let remove env sigma typ nam cm =
-  try
-    let l=CM.find typ cm in
-    let l0=List.filter (fun id-> not (Environ.QGlobRef.equal env id nam)) l in
-      match l0 with
-          []->CM.remove typ cm
-        | _ ->CM.add typ l0 cm
-      with Not_found ->cm
-
-end
-
 module HP=Heap.Functional(OrderedFormula)
 
 type seqgoal = GoalTerm of atom | GoalAtom of atom
 
 type t=
     {redexes:HP.t;
-     context:Context.t;
      state : Env.t;
      latoms:atom list;
      gl: seqgoal;
@@ -163,21 +120,15 @@ let add_formula ~flags ~hint env sigma id t seq =
   | state, Left f ->
     {seq with
       redexes=HP.add (AnyFormula f) seq.redexes;
-      context=Context.add sigma f.constr id seq.context;
       hyps;
       state}
   | state, Right t ->
     {seq with
-      context=Context.add sigma t id seq.context;
       latoms=t::seq.latoms;
       hyps;
       state}
 
 let re_add_formula_list sigma lf seq=
-  let do_one (AnyFormula f) cm = match f.id with
-  | GoalId -> cm
-  | FormulaId id -> Context.add sigma f.constr id cm
-  in
   let do_id (AnyFormula f) hyps = match f.id with
   | GoalId -> hyps
   | FormulaId (GlobRef.VarRef id) -> Id.Set.add id hyps
@@ -185,16 +136,9 @@ let re_add_formula_list sigma lf seq=
   in
   {seq with
      redexes=List.fold_right HP.add lf seq.redexes;
-     hyps = List.fold_right do_id lf seq.hyps;
-     context=List.fold_right do_one lf seq.context}
+     hyps = List.fold_right do_id lf seq.hyps; }
 
 let mem_hyp id seq = Id.Set.mem id seq.hyps
-
-let find_left sigma t seq = Context.find sigma t seq.context
-
-let find_goal sigma seq =
-  let t = match seq.gl with GoalAtom a -> a | GoalTerm t -> t in
-  find_left sigma t seq
 
 let rec take_formula env sigma seq=
   let hd = HP.maximum seq.redexes in
@@ -212,14 +156,10 @@ let rec take_formula env sigma seq=
     | GlobRef.VarRef id -> Id.Set.remove id seq.hyps
     | _ -> seq.hyps
     in
-      hd,{seq with
-            redexes=hp;
-            hyps;
-            context=Context.remove env sigma hd0.constr id seq.context}
+    hd, { seq with redexes=hp; hyps; }
 
 let empty_seq depth=
   {redexes=HP.empty;
-   context=Context.empty;
    latoms=[];
    gl= GoalTerm hole_atom;
    cnt=newcnt ();
