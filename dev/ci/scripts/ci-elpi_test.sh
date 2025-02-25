@@ -8,7 +8,5 @@ ci_dir="$(dirname "$0")"
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 ( cd "${CI_BUILD_DIR}/elpi"
-  export DUNE_build_FLAGS="--release"
-  make -j1 all-tests
-  make -j1 all-examples
+  dune build --root  . --only-packages=rocq-elpi-tests,rocq-elpi-tests-stdlib @all
 )
