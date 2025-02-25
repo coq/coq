@@ -393,7 +393,7 @@ project http "https://github.com/liyishuai/coq-http" "master"
 # paramcoq
 ########################################################################
 project paramcoq "https://github.com/coq-community/paramcoq" "master"
-# Contact @proux01 on github
+# Contact @ppedrot on github
 
 ########################################################################
 # relation_algebra
