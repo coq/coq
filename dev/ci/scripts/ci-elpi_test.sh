@@ -9,7 +9,6 @@ if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 ( cd "${CI_BUILD_DIR}/elpi"
   export DUNE_build_FLAGS="--release"
-  make test-core
-  make examples
-  make test-apps
+  make -j1 all-tests
+  make -j1 all-examples
 )

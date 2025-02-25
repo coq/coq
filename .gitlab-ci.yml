@@ -809,7 +809,6 @@ library:ci-oddorder:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-stdlib+flambda
   - plugin:ci-elpi_hb
   - library:ci-mathcomp
   stage: build-3+
@@ -818,7 +817,6 @@ library:ci-fourcolor:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-stdlib+flambda
   - plugin:ci-elpi_hb
   - library:ci-mathcomp
   stage: build-3+
@@ -856,7 +854,6 @@ library:ci-mathcomp:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-stdlib+flambda
   - plugin:ci-elpi_hb  # for Hierarchy Builder
   stage: build-2
 
@@ -864,7 +861,6 @@ library:ci-mathcomp_test:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-stdlib+flambda
   - plugin:ci-elpi_hb
   - library:ci-mathcomp
   stage: build-3+
@@ -892,7 +888,6 @@ library:ci-finmap:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-stdlib+flambda
   - plugin:ci-elpi_hb
   - library:ci-mathcomp
   stage: build-3+
@@ -901,7 +896,6 @@ library:ci-bigenough:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-stdlib+flambda
   - plugin:ci-elpi_hb
   - library:ci-mathcomp
   stage: build-3+
@@ -910,11 +904,22 @@ library:ci-analysis:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-stdlib+flambda
   - library:ci-mathcomp
   - library:ci-finmap
   - library:ci-bigenough
   - plugin:ci-elpi_hb  # for Hierarchy Builder
+  stage: build-3+
+
+library:ci-analysis_stdlib:
+  extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-mathcomp
+  - library:ci-finmap
+  - library:ci-bigenough
+  - library:ci-analysis
+  - plugin:ci-elpi_hb  # for Hierarchy Builder
+  - library:ci-stdlib+flambda
   stage: build-3+
 
 library:ci-neural_net_interp:
@@ -1119,7 +1124,6 @@ plugin:ci-elpi_hb:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-stdlib+flambda
 
 plugin:ci-elpi_test:
   extends: .ci-template-flambda
