@@ -72,7 +72,7 @@ module History=Set.Make(Hitem)
 
 module HP=Heap.Functional(OrderedFormula)
 
-type seqgoal = GoalTerm of atom | GoalAtom of atom
+type seqgoal = GoalTerm of Formula.uid | GoalAtom of atom | GoalDummy
 
 type t=
     {redexes:HP.t;
@@ -106,7 +106,7 @@ let lookup env sigma item seq=
 let add_concl ~flags env sigma t seq =
   match build_formula ~flags seq.state env sigma Concl goal_id t seq.cnt with
   | state, Left f ->
-    {seq with redexes=HP.add (AnyFormula f) seq.redexes; gl = GoalTerm f.constr; state }
+    {seq with redexes=HP.add (AnyFormula f) seq.redexes; gl = GoalTerm f.uid; state }
   | state, Right t ->
     {seq with gl = GoalAtom t; state}
 
@@ -148,8 +148,8 @@ let rec take_formula env sigma seq=
   | GoalId ->
     let nseq={seq with redexes=hp} in
     begin match seq.gl with
-    | GoalTerm t when t == hd0.constr -> hd, nseq
-    | GoalAtom _ | GoalTerm _ -> take_formula env sigma nseq (* discarding deprecated goal *)
+    | GoalTerm t when Formula.eq_uid t hd0.uid -> hd, nseq
+    | GoalAtom _ | GoalTerm _ | GoalDummy -> take_formula env sigma nseq (* discarding deprecated goal *)
     end
   | FormulaId id ->
     let hyps = match id with
@@ -161,7 +161,7 @@ let rec take_formula env sigma seq=
 let empty_seq depth=
   {redexes=HP.empty;
    latoms=[];
-   gl= GoalTerm hole_atom;
+   gl = GoalDummy;
    cnt=newcnt ();
    history=History.empty;
    depth=depth;
@@ -172,7 +172,7 @@ let make_simple_atoms seq =
   let ratoms=
     match seq.gl with
     | GoalAtom t -> [t]
-    | GoalTerm _ -> []
+    | GoalTerm _ | GoalDummy -> []
   in {negative=seq.latoms;positive=ratoms}
 
 let expand_constructor_hints =

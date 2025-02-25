@@ -39,7 +39,6 @@ end
 
 type atom
 
-val hole_atom : atom
 val repr_atom : Env.t -> atom -> EConstr.t
 val compare_atom : atom -> atom -> int
 val meta_in_atom : metavariable -> atom -> bool
@@ -82,13 +81,16 @@ type _ identifier = private
 val goal_id : [ `Goal ] identifier
 val formula_id : Environ.env -> GlobRef.t -> [ `Hyp ] identifier
 
+type uid
+val eq_uid : uid -> uid -> bool
+
 type _ pattern =
 | LeftPattern : left_pattern -> [ `Hyp ] pattern
 | RightPattern : right_pattern -> [ `Goal ] pattern
 
 type 'a t = private {
         id: 'a identifier;
-        constr: atom;
+        uid: uid;
         pat: 'a pattern;
         atoms: atoms}
 
