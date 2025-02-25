@@ -42,6 +42,7 @@ type atom
 val hole_atom : atom
 val repr_atom : Env.t -> atom -> EConstr.t
 val compare_atom : atom -> atom -> int
+val meta_in_atom : metavariable -> atom -> bool
 
 type atoms = { positive:atom list; negative:atom list }
 

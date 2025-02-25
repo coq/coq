@@ -141,8 +141,10 @@ let mk_rel_inst evd t=
   in
   let nt=renum_rec 0 t in (!new_rel - 1,nt)
 
-let unif_atoms state env evd i dom t1 t2 =
+let unif_atoms ~check state env evd i dom t1 t2 =
   try
+    (* Fast path: the meta is definitely not in any of these atoms *)
+    let () = if not check && not (Formula.meta_in_atom i t1) && not (Formula.meta_in_atom i t2) then raise UFAIL in
     let t1 = Formula.repr_atom state t1 in
     let t=Int.List.assoc i (unif env evd t1 (Formula.repr_atom state t2)) in
       if isMeta evd t then Some (Phantom dom)
