@@ -118,10 +118,6 @@ val pr_clauses : (* default: *) bool option ->
   ('a -> Pp.t) -> 'a Locus.clause_expr -> Pp.t
   (* Some true = default is concl; Some false = default is all; None = no default *)
 
-val pr_raw_generic : env -> Evd.evar_map -> rlevel generic_argument -> Pp.t
-
-val pr_glb_generic : env -> Evd.evar_map -> glevel generic_argument -> Pp.t
-
 val pr_raw_extend: env -> Evd.evar_map -> int ->
   ml_tactic_entry -> raw_tactic_arg list -> Pp.t
 

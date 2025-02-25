@@ -44,7 +44,7 @@ let pr_constr_pattern_expr = pr_in_global_env pr_constr_pattern_expr
 
 (* In principle this may use the env/sigma, in practice not sure if it
    does except through pr_constr_expr in beautify mode. *)
-let pr_gen = pr_in_global_env Pputils.pr_raw_generic
+let pr_gen = pr_in_global_env (Pputils.pr_raw_generic ?level:None)
 
 (* No direct Global.env or pr_in_global_env use after this *)
 
