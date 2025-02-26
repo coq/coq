@@ -546,9 +546,10 @@ let warn_template = CWarnings.create ~name:"bad-template-constraint" ~category:C
 
 let warn_template uctx csts =
   let is_template u = Level.Set.mem u (template_default_univs()) in
-  let csts = Constraints.filter (fun (u,_,v) ->
+  let csts = Constraints.filter (fun (u,_,v as cst) ->
       not (Level.is_set u) && not (Level.is_set v) &&
-      (is_template u || is_template v)) csts in
+      (is_template u || is_template v) &&
+      not (UGraph.check_constraint uctx.universes cst)) csts in
   if not @@ Constraints.is_empty csts then
     warn_template (uctx,csts)
 
