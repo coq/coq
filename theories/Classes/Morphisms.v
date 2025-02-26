@@ -540,7 +540,7 @@ Class PartialApplication.
 CoInductive normalization_done : Prop := did_normalization.
 
 Class Params {A : Type} (of : A) (arity : nat).
-#[global] Instance eq_pars : Params (@eq) 1 := {}.
+#[global, warnings="-bad-template-constraint"] Instance eq_pars : Params (@eq) 1 := {}.
 #[global] Instance iff_pars : Params (@iff) 0 := {}.
 #[global] Instance impl_pars : Params (@impl) 0 := {}.
 #[global] Instance flip_pars : Params (@flip) 4 := {}.
