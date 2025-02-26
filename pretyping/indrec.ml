@@ -419,7 +419,8 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
   let env = RelEnv.make env in
   let nparams = mib.mind_nparams in
   let nparrec = mib.mind_nparams_rec in
-  let evdref = ref sigma in
+  (* bind sigma to () to prevent incorrect usage *)
+  let sigma, evdref = (), ref sigma in
   let lnonparrec,lnamesparrec = Inductive.inductive_nonrec_rec_paramdecls (mib,u) in
   let lnamesparrec = EConstr.of_rel_context lnamesparrec in
   let nrec = List.length listdepkind in
@@ -514,7 +515,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
                   arsign'
               in
               let obj =
-                let indty = find_rectype !!env sigma depind in
+                let indty = find_rectype !!env !evdref depind in
                 Inductiveops.make_case_or_project !!env !evdref indty ci
                   (pred, target_relevance)
                   (EConstr.mkRel 1) branches
