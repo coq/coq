@@ -746,7 +746,7 @@ and execute_aux tbl env cstr =
           cst, mib.mind_params_ctxt
         | Some _ ->
           let args = make_param_univs env (ci.ci_ind, u) (mib, mip) pms pmst in
-          let (cst, params, _) = instantiate_template_universes (mib, mip) args in
+          let (cst, params, _) = instantiate_template_universes mib args in
           cst, params
         in
         let () = check_constraints cst env in
