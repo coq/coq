@@ -157,10 +157,34 @@ let check_valid_elimination env sigma (ind, u as pind) ~dep s =
       (RecursionSchemeError
          (env, NotAllowedCaseAnalysis (false, s, pind)))
 
+let paramdecls_fresh_template sigma (mib,u) =
+  match mib.mind_template with
+  | None ->
+    let params = Inductive.inductive_paramdecls (mib, EConstr.Unsafe.to_instance u) in
+    sigma, EConstr.of_rel_context params
+  | Some templ ->
+    assert (EConstr.EInstance.is_empty u);
+    let sigma, univs = List.fold_left_map (fun sigma -> function
+        | None -> sigma, (fun ~default -> assert false)
+        | Some s ->
+          let sigma, u = match snd (Inductive.Template.bind_kind s) with
+            | None -> sigma, Univ.Universe.type0
+            | Some _ ->
+              let sigma, u = Evd.new_univ_level_variable UState.univ_rigid sigma in
+              sigma, Univ.Universe.make u
+          in
+          sigma, fun ~default -> Inductive.TemplateUniv u)
+        sigma
+        templ.template_param_arguments
+    in
+    let csts, params, _ = Inductive.instantiate_template_universes mib univs in
+    let sigma = Evd.add_constraints sigma csts in
+    sigma, EConstr.of_rel_context params
+
 let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) s =
   let open EConstr in
   let sigma = check_valid_elimination env sigma pind ~dep s in
-  let lnamespar = Vars.subst_instance_context u (of_rel_context mib.mind_params_ctxt) in
+  let sigma, lnamespar = paramdecls_fresh_template sigma (mib, u) in
   let indf = make_ind_family(pind, Context.Rel.instance_list mkRel 0 lnamespar) in
   let constrs = get_constructors env indf in
   let projs = get_projections env ind in
@@ -415,14 +439,16 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) mind f cstr recargs =
 
 (* Main function *)
 let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
-  let u = EConstr.Unsafe.to_instance u in
   let env = RelEnv.make env in
   let nparams = mib.mind_nparams in
   let nparrec = mib.mind_nparams_rec in
   (* bind sigma to () to prevent incorrect usage *)
   let sigma, evdref = (), ref sigma in
-  let lnonparrec,lnamesparrec = Inductive.inductive_nonrec_rec_paramdecls (mib,u) in
-  let lnamesparrec = EConstr.of_rel_context lnamesparrec in
+  let lnonparrec,lnamesparrec =
+    let sigma, params = paramdecls_fresh_template !evdref (mib,u) in
+    evdref := sigma;
+    Context.Rel.chop_nhyps (Inductive.inductive_nnonrecparams mib) params
+  in
   let nrec = List.length listdepkind in
   let depPvec =
     Array.make mib.mind_ntypes (None : (bool * constr) option) in

@@ -54,8 +54,10 @@ let inductive_params (mib,_) = mib.mind_nparams
 let inductive_paramdecls (mib,u) =
   Vars.subst_instance_context u mib.mind_params_ctxt
 
+let inductive_nnonrecparams mib = mib.mind_nparams - mib.mind_nparams_rec
+
 let inductive_nonrec_rec_paramdecls (mib,u) =
-  let nnonrecparamdecls = mib.mind_nparams - mib.mind_nparams_rec in
+  let nnonrecparamdecls = inductive_nnonrecparams mib in
   let paramdecls = inductive_paramdecls (mib,u) in
   Context.Rel.chop_nhyps nnonrecparamdecls paramdecls
 
