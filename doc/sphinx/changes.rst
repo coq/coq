@@ -18,8 +18,8 @@ Version 9.0
 Summary of changes
 ~~~~~~~~~~~~~~~~~~
 
-The Rocq Prover version 9 is the first Rocq Prover release after the renaming
-from The Coq Proof Assistant. The Rocq Prover 9.0.0 command line interface is
+The Rocq Prover version 9.0 is the first Rocq Prover release after the renaming
+from The Coq Proof Assistant. The Rocq Prover 9.0 command line interface is
 backwards compatible with Coq 8.20, providing compatibility shims so that
 developments depending on Coq can be easily ported, see `Porting to The Rocq
 Prover`_  for details. The 9.0 version is based on a new single binary `rocq`
@@ -36,20 +36,20 @@ We highlight some of the most impactful changes here:
 
   - A single `rocq` binary dispatches commands for compilation, read-eval-print-loop,
     documentation building, dependency computation, etc... see :ref:`therocqcommands`.
-    It corresponds to the `rocq-runtime` `OCaml package <https://ocaml.org/p/rocq-runtime>`_.
+    It corresponds to the `rocq-runtime` `opam package <https://ocaml.org/p/rocq-runtime>`_.
     This is a bare-bones package not depending on any Gallina code.
     CHECK LINK
 
-  - The `Coq` standard library has been renamed and :ref:`split <90stdlib>` into two libraries:
+  - The `Coq` standard library has been :ref:`split <90stdlib>` into two libraries:
 
-    - A `Corelib` core library (the `rocq-core` opam package). This is an
-      extended prelude corresponding to the `rocq-core` OCaml package, which is
+    - A `Corelib` library (the `rocq-core` opam package). This is an
+      extended prelude, which is
       enough to run `rocq` tactics and contains the `Ltac2` library and bindings
       for primitive types (integers, floats, arrays and strings).
-    - An `Stdlib` standard library (the `rocq-stdlib` opam package). The `Stdlib` is
-      now maintained `out of <https://github.com/rocq-prover/stdlib>`_ the main `rocq`
-      `repository <http://github/com/rocq-prover/rocq>`_. We welcome new maintainers and
-      contributors to the new repository, a specific call for contributions will be
+    - An `Stdlib` library (the `rocq-stdlib` opam package). The `Stdlib` is
+      now maintained out of the main `rocq` repository. We welcome maintainers and
+      contributors to the `new repository <https://github.com/rocq-prover/stdlib>`_.
+      A specific call for contributions will be
       sent soon.
 
 Notable breaking changes:
@@ -65,20 +65,23 @@ documentation of the 9.0 `core <https://rocq-prover.org/doc/v9.0/corelib>`_ and
 and `developer documentation of the 9.0 ML API <https://rocq-prover.org/doc/v9.0/api>`_
 are also available.
 
-Théo Zimmermann with help from Ali Caglayan and Jason Gross maintained
+Théo Zimmermann with help from Jason Gross maintained
 `coqbot <https://github.com/coq/bot>`_ used to run Coq's CI and other
 pull request management tasks.
 
 Jason Gross maintained the `bug minimizer <https://github.com/JasonGross/coq-tools>`_
 and its `automatic use through coqbot <https://github.com/coq/coq/wiki/Coqbot-minimize-feature>`_.
 
-Erik Martin-Dorel maintained the
-`Coq Docker images <https://hub.docker.com/r/coqorg/coq>`_
-and the `docker-keeper <https://gitlab.com/erikmd/docker-keeper>`_ compiler
+Erik Martin-Dorel and Jaime Arias maintained the
+`Rocq Docker images <https://hub.docker.com/r/rocq/rocq-prover>`_.
+Erik Martin-Dorel maintained the `docker-keeper <https://gitlab.com/erikmd/docker-keeper>`_ compiler
 used to build and keep those images up to date (note that the tool is not Rocq specific).
+Erik Martin-Dorel and Théo Zimmermann maintained the
+`docker-coq-action <https://github.com/coq-community/docker-coq-action>`_
+container action (which is applicable to any opam project hosted on GitHub).
 Cyril Cohen, Vincent Laporte, Pierre Roux and Théo Zimmermann
-maintained the `Nix toolbox <https://github.com/coq-community/coq-nix-toolbox>`_
-used by many Rocq projects for continuous integration.
+maintained the `Nix toolbox <https://github.com/coq-community/coq-nix-toolbox>`_.
+The docker-coq-action and the Nix toolbox are used by many Rocq projects for continuous integration.
 
 Ali Caglayan, Emilio Jesús Gallego Arias, Rudi Grinberg and
 Rodolphe Lepigre maintained the
@@ -114,17 +117,15 @@ This release is the result of ?? merged PRs, closing ?? issues.
 Porting to The Rocq Prover
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The Rocq Prover version 9.0 includes support for compability shims that allow
-to call it through legacy Coq commands (`coq-tex`, `coq_makefile`, `coqchk`, `coqdoc`, `coqpp`, `coqtop`,
-`coqwc`, `coqc`, `coqdep`, `coqnative`, `coqtimelog2html`, `coqtop.byte`, `coqworkmgr`)
-so that it can act as a regular `Coq` version. If using `opam`, this compatibility
-layer is available through packages `coq-core`, `coq-stdlib` and `coq`. In this setting,
-nothing needs to be changed to an existing project to compile with `Rocq 9.0` (aliased as `Coq 9.0`).
+The Rocq Prover version 9.0 includes compatibility shims that make it possible
+to invoke it through legacy Coq commands: `coq-tex`, `coq_makefile`, `coqchk`, `coqdoc`, `coqpp`, `coqtop`,
+`coqwc`, `coqc`, `coqdep`, `coqnative`, `coqtimelog2html`, `coqtop.byte`, `coqworkmgr`.
+When using `opam`, this compatibility layer is available through packages `coq-core`,
+`coq-stdlib` and `coq`. In this setting, nothing needs to be changed to the build systems
+of existing projects to compile with `Rocq 9.0` (aliased as `Coq 9.0`).
 
 You should expect warnings that the standard library previously under namespace
-`Coq` has been renamed to `Stdlib` (and moved to a `separate repository
-<https://github.com/coq/stdlib>`_), but these warnings are independent of the
-`Coq` to `Rocq` renaming. See `this entry
+`Coq` has been renamed to `Stdlib`. See `this entry
 <https://rocq-prover.org/doc/v9.0/refman-stdlib/changes.html#changed>`_ from
 the Standard Library's changelog for the suggested workflow to port theories.
 
@@ -141,14 +142,13 @@ There are important changes to consider for building plugins and libraries:
 
 Regarding packaging:
 
-- Opam packages depending on the coq shim should keep being named coq-\*, whereas
-  actually ported packages should be named rocq-\* and replace the coq dependency by
-  `rocq-core` or `rocq-stdlib` (but **not** `rocq-prover` which is only a user-oriented
-  metapackage).
-
-- Similarly for Nix, packages using the shim can be kept in `coqPackages` and
-  keep depending on `coq` whereas actually ported packages can be added in
-  `rocqPackages`, depending on `rocq-core`.
+- Opam packages that depend on the compatibility shims should remain named as `coq-*`, whereas
+  ported packages should be named `rocq-*`, with the `coq` dependency being replaced by
+  a `rocq-core` and `rocq-stdlib` dependency (unless your package does not depend on the stdlib),
+  but **not** `rocq-prover` which is only a user-oriented metapackage.
+- Similarly, Nix packages that use the compatibility shims can be kept in
+  `coqPackages` (and can keep depending on `coq`), whereas ported packages can
+  be added in `rocqPackages`, depending on `rocq-core`.
 
 In both cases, when a `rocq` port is done, a `coq` metapackage can be kept,
 simply depending on the new `rocq` package and `coq`.
