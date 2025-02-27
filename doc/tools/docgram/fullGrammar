@@ -599,12 +599,12 @@ command: [
 | "Hint" "Rewrite" orient LIST1 constr "using" tactic ":" LIST1 preident
 | "Hint" "Rewrite" orient LIST1 constr
 | "Hint" "Rewrite" orient LIST1 constr "using" tactic
-| "Derive" "Inversion_clear" ident "with" constr "Sort" sort_family
-| "Derive" "Inversion_clear" ident "with" constr
-| "Derive" "Inversion" ident "with" constr "Sort" sort_family
-| "Derive" "Inversion" ident "with" constr
-| "Derive" "Dependent" "Inversion" ident "with" constr "Sort" sort_family
-| "Derive" "Dependent" "Inversion_clear" ident "with" constr "Sort" sort_family
+| "Derive" "Inversion_clear" identref "with" constr "Sort" sort_family
+| "Derive" "Inversion_clear" identref "with" constr
+| "Derive" "Inversion" identref "with" constr "Sort" sort_family
+| "Derive" "Inversion" identref "with" constr
+| "Derive" "Dependent" "Inversion" identref "with" constr "Sort" sort_family
+| "Derive" "Dependent" "Inversion_clear" identref "with" constr "Sort" sort_family
 | "Declare" "Left" "Step" constr
 | "Declare" "Right" "Step" constr
 | "Unshelve"

@@ -128,5 +128,6 @@ module CoreCategories : sig
   val tactics : category
   val user_warn : category
   val vernacular : category
+  val internal : category
 
 end

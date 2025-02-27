@@ -32,7 +32,7 @@ val try_add_new_coercion : GlobRef.t -> local:bool ->
    transparent constant which unfolds to some class [tg]; it declares
    an identity coercion from [cst] to [tg], named something like
    ["Id_cst_tg"] *)
-val try_add_new_coercion_subclass : cl_typ -> local:bool -> poly:bool ->
+val try_add_new_coercion_subclass : ?loc:Loc.t -> cl_typ -> local:bool -> poly:bool ->
   reversible:bool -> unit
 
 (** [try_add_new_coercion_with_source ref s src] declares [ref] as a coercion
@@ -44,7 +44,7 @@ val try_add_new_coercion_with_source : GlobRef.t -> local:bool ->
    environment with a new definition of name [id] declared as an
    identity coercion from [src] to [tg] *)
 val try_add_new_identity_coercion
-  :  Id.t
+  : lident
   -> local:bool
   -> poly:bool -> source:cl_typ -> target:cl_typ -> unit
 

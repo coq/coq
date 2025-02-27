@@ -1665,7 +1665,7 @@ let vernac_instance ~atts name bl t props info =
   let locality, poly =
     Attributes.(parse (Notations.(hint_locality ++ polymorphic))) atts
   in
-  let _id : Id.t =
+  let _id : lident =
     Classes.new_instance ~locality ~poly name bl t props info in
   ()
 
@@ -2686,7 +2686,7 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
   | VernacCoercion (r,st) ->
     vtdefault(fun () -> vernac_coercion ~atts r st)
 
-  | VernacIdentityCoercion ({v=id},s,t) ->
+  | VernacIdentityCoercion (id,s,t) ->
     vtdefault(fun () -> vernac_identity_coercion ~atts id s t)
 
   (* Type classes *)

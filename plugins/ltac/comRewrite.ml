@@ -10,7 +10,6 @@
 
 open Util
 open Names
-open Nameops
 open Constr
 open Constrexpr
 open EConstr
@@ -62,8 +61,8 @@ end
 
 let mkappc s l = CAst.make @@ CAppExpl ((qualid_of_ident (Id.of_string s),None),l)
 
-let declare_an_instance n s args =
-  (((CAst.make @@ Name n),None),
+let declare_an_instance {CAst.v=n; loc} s args =
+  (((CAst.make ?loc @@ Name n),None),
    CAst.make @@ CAppExpl ((qualid_of_string s,None), args))
 
 let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
@@ -74,6 +73,8 @@ let anew_instance atts binders (name,t) fields =
       ~locality:atts.locality Hints.empty_hint_info
   in
   ()
+
+let add_suffix n suff = CAst.map (fun n -> Nameops.add_suffix n suff) n
 
 let declare_instance_refl atts binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Reflexive") "Corelib.Classes.RelationClasses.Reflexive"
@@ -141,7 +142,7 @@ let proper_projection env sigma r ty =
                   Array.append args [| instarg |]) in
   sigma, it_mkLambda_or_LetIn app ctx
 
-let declare_projection name instance_id r =
+let declare_projection {CAst.v=name; loc} instance_id r =
   let env = Global.env () in
   let poly = Environ.is_polymorphic env r in
   let sigma = Evd.from_env env in
@@ -172,7 +173,7 @@ let declare_projection name instance_id r =
   let types = Some (it_mkProd_or_LetIn typ ctx) in
   let kind = Decls.(IsDefinition Definition) in
   let impargs, udecl = [], UState.default_univ_decl in
-  let cinfo = Declare.CInfo.make ~name ~impargs ~typ:types () in
+  let cinfo = Declare.CInfo.make ?loc ~name ~impargs ~typ:types () in
   let info = Declare.Info.make ~kind ~udecl ~poly () in
   let _r : GlobRef.t =
     Declare.declare_definition ~cinfo ~info ~opaque:false ~body sigma
@@ -200,7 +201,7 @@ let add_morphism_as_parameter atts m n : unit =
   let impargs, udecl = [], UState.default_univ_decl in
   let evd, types = Rewrite.Internal.build_morphism_signature env evd m in
   let evd, pe = Declare.prepare_parameter ~poly ~udecl ~types evd in
-  let cst = Declare.declare_constant ~name:instance_id ~kind (Declare.ParameterEntry pe) in
+  let cst = Declare.declare_constant ?loc:instance_id.loc ~name:instance_id.v ~kind (Declare.ParameterEntry pe) in
   let cst = GlobRef.ConstRef cst in
   Classes.Internal.add_instance
     (PropGlobal.proper_class ()) Hints.empty_hint_info atts.locality cst;
@@ -224,7 +225,7 @@ let add_morphism_interactive atts ~tactic m n : Declare.Proof.t =
   let hook = Declare.Hook.make hook in
   Flags.silently
     (fun () ->
-       let cinfo = Declare.CInfo.make ~name:instance_id ~typ:morph () in
+       let cinfo = Declare.CInfo.make ?loc:instance_id.loc ~name:instance_id.v ~typ:morph () in
        let info = Declare.Info.make ~poly ~hook ~kind () in
        let lemma = Declare.Proof.start ~cinfo ~info evd in
        fst (Declare.Proof.by tactic lemma)) ()
@@ -232,7 +233,7 @@ let add_morphism_interactive atts ~tactic m n : Declare.Proof.t =
 let add_morphism atts ~tactic binders m s n =
   init_setoid ();
   let instance_id = add_suffix n "_Proper" in
-  let instance_name = (CAst.make @@ Name instance_id),None in
+  let instance_name = (CAst.make ?loc:instance_id.loc @@ Name instance_id.v),None in
   let instance_t =
     CAst.make @@ CAppExpl
       ((Libnames.qualid_of_string "Corelib.Classes.Morphisms.Proper",None),

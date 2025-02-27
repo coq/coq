@@ -34,7 +34,7 @@ val new_instance_interactive
   -> ?hook:(GlobRef.t -> unit)
   -> Vernacexpr.hint_info_expr
   -> (bool * constr_expr) option
-  -> Id.t * Declare.Proof.t
+  -> lident * Declare.Proof.t
 
 val new_instance
   : locality:Hints.hint_locality
@@ -45,7 +45,7 @@ val new_instance
   -> (bool * constr_expr)
   -> ?hook:(GlobRef.t -> unit)
   -> Vernacexpr.hint_info_expr
-  -> Id.t
+  -> lident
 
 val new_instance_program
   : locality:Hints.hint_locality
@@ -57,7 +57,7 @@ val new_instance_program
   -> (bool * constr_expr) option
   -> ?hook:(GlobRef.t -> unit)
   -> Vernacexpr.hint_info_expr
-  -> Declare.OblState.t * Id.t
+  -> Declare.OblState.t * lident
 
 val declare_new_instance
   : locality:Hints.hint_locality

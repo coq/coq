@@ -3,3 +3,4 @@ test : Foo -> nat -> forall {A : Type}, A
 test is not universe polymorphic
 Arguments test H n%_nat_scope {A}%_type_scope
 Expands to: Constant bug_3810.test
+Declared in library bug_3810, line 3, characters 9-13

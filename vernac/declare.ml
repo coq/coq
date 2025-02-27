@@ -46,6 +46,17 @@ module Hook = struct
 
 end
 
+let warn_using_fallback_loc = CWarnings.create ~name:"using-fallback-loc" ~category:CWarnings.CoreCategories.internal ~default:Disabled
+    Pp.(fun name -> str "Using fallback loc for " ++ Id.print name ++ str ".")
+
+let fallback_loc ?(warn=true) name = function
+  | Some _ as loc -> loc
+  | None -> match Loc.get_current_command_loc () with
+    | None -> None
+    | Some _ as loc ->
+      let () = if warn then warn_using_fallback_loc name in
+      loc
+
 module CInfo = struct
 
   type 'constr t =
@@ -57,11 +68,13 @@ module CInfo = struct
     (** Names to pre-introduce  *)
     ; impargs : Impargs.manual_implicits
     (** Explicitily declared implicit arguments  *)
+    ; loc : Loc.t option
     }
 
 
-  let make ~name ~typ ?(args=[]) ?(impargs=[]) () =
-    { name; typ; args; impargs }
+  let make ?loc ~name ~typ ?(args=[]) ?(impargs=[]) () =
+    let loc = fallback_loc name loc in
+    { name; typ; args; impargs; loc }
 
   let to_constr sigma thm = { thm with typ = EConstr.to_constr sigma thm.typ }
 
@@ -85,19 +98,14 @@ module Info = struct
     ; typing_flags : Declarations.typing_flags option
     ; user_warns : Globnames.extended_global_reference UserWarn.with_qf option
     ; ntns : Metasyntax.notation_interpretation_decl list
-    ; loc : Loc.t option
     }
 
   (** Note that [opaque] doesn't appear here as it is not known at the
      start of the proof in the interactive case. *)
-  let make ?loc ?(poly=false) ?(inline=false) ?(kind=Decls.(IsDefinition Definition))
+  let make ?(poly=false) ?(inline=false) ?(kind=Decls.(IsDefinition Definition))
       ?(udecl=UState.default_univ_decl) ?(scope=Locality.default_scope)
       ?(clearbody=false) ?hook ?typing_flags ?user_warns ?(ntns=[]) () =
-    let loc = match loc with
-      | None -> Loc.get_current_command_loc()
-      | Some _ -> loc
-    in
-    { poly; inline; kind; udecl; scope; hook; typing_flags; clearbody; user_warns; ntns; loc }
+    { poly; inline; kind; udecl; scope; hook; typing_flags; clearbody; user_warns; ntns }
 end
 
 (** Declaration of constants and parameters *)
@@ -447,6 +455,7 @@ let inConstant v = Libobject.Dyn.Easy.inj v objConstant
 let register_constant loc cst kind ?user_warns local =
   (* Register the declaration *)
   let id = Label.to_id (Constant.label cst) in
+  let loc = fallback_loc id loc in
   let o = inConstant (id, { cst_kind = kind; cst_locl = local; cst_warn = user_warns; cst_loc = loc; }) in
   let () = Lib.add_leaf o in
   (* Register associated data *)
@@ -459,7 +468,8 @@ let register_side_effect (c, body, role) =
   | None -> ()
   | Some opaque -> Opaques.declare_private_opaque opaque
   in
-  let () = register_constant (Loc.get_current_command_loc()) c Decls.(IsProof Theorem) Locality.ImportDefaultBehavior in
+  let id = Label.to_id @@ Constant.label c in
+  let () = register_constant (fallback_loc ~warn:false id None) c Decls.(IsProof Theorem) Locality.ImportDefaultBehavior in
   match role with
   | None -> ()
   | Some (Evd.Schema (ind, kind)) -> DeclareScheme.declare_scheme SuperGlobal kind (ind,c)
@@ -669,7 +679,7 @@ let declare_private_constant ?role ?(local = Locality.ImportDefaultBehavior) ~na
     else DeclareUniv.declare_univ_binders (ConstRef kn)
         (Monomorphic_entry ctx, UnivNames.empty_binders)
   in
-  let () = register_constant (Loc.get_current_command_loc()) kn kind local in
+  let () = register_constant (fallback_loc ~warn:false name None) kn kind local in
   let seff_roles = match role with None -> Cmap.empty | Some r -> Cmap.singleton kn r in
   let eff = { Evd.seff_private = eff; Evd.seff_roles; } in
   kn, eff
@@ -925,14 +935,14 @@ let warn_let_as_axiom =
 
 (* Declare an assumption when not in a section: Parameter/Axiom but also
    Variable/Hypothesis seen as Local Parameter/Axiom *)
-let declare_parameter ~name ~scope ~hook ~impargs ~uctx pe =
+let declare_parameter ~loc ~name ~scope ~hook ~impargs ~uctx pe =
   let local = match scope with
     | Locality.Discharge -> warn_let_as_axiom name; Locality.ImportNeedQualified
     | Locality.Global local -> local
   in
   let kind = Decls.(IsAssumption Conjectural) in
   let decl = ParameterEntry pe in
-  let cst = declare_constant ~loc:None ~name ~local ~kind ~typing_flags:None decl in
+  let cst = declare_constant ~loc ~name ~local ~kind ~typing_flags:None decl in
   let dref = Names.GlobRef.ConstRef cst in
   let () = Impargs.maybe_declare_manual_implicits false dref impargs in
   let () = assumption_message name in
@@ -968,10 +978,10 @@ let interp_mutual_using env cinfo bodies_types using =
 let declare_possibly_mutual_definitions ~info ~cinfo ~obls ?(is_telescope=false) obj =
   let entries = process_proof ~info ~is_telescope obj in
   let { Info.hook; scope; clearbody; kind; typing_flags; user_warns; ntns; _ } = info in
-  let _, refs = List.fold_left2_map (fun subst CInfo.{name; impargs} (entry, uctx) ->
+  let _, refs = List.fold_left2_map (fun subst CInfo.{name; impargs; loc} (entry, uctx) ->
       (* replacing matters for Derive-like statement but it does not hurt otherwise *)
       let entry = ProofEntry.map_entry entry ~f:(Vars.replace_vars subst) in
-      let gref = declare_entry ~loc:info.loc ~name ~scope ~clearbody ~kind ?hook ~impargs ~typing_flags ~user_warns ~obls ~uctx entry in
+      let gref = declare_entry ~loc ~name ~scope ~clearbody ~kind ?hook ~impargs ~typing_flags ~user_warns ~obls ~uctx entry in
       let inst = instance_of_univs entry.proof_entry_universes in
       let const = Constr.mkRef (gref, inst) in
       ((name, const) :: subst, gref)) [] cinfo entries in
@@ -989,7 +999,7 @@ let declare_possibly_mutual_parameters ~info ~cinfo ?(mono_uctx_extra=UState.emp
   (* if the uctx of an abandonned proof, minimize is redundant (see close_proof) *)
   let { Info.scope; poly; hook; udecl } = info in
   pi3 (List.fold_left2 (
-    fun (i, subst, csts) { CInfo.name; impargs } (typ, uctx) ->
+    fun (i, subst, csts) { CInfo.name; loc; impargs } (typ, uctx) ->
       let uctx' = UState.restrict uctx (Vars.universes_of_constr typ) in
       let univs = UState.check_univ_decl ~poly uctx' udecl in
       let univs = if i = 0 then add_mono_uctx mono_uctx_extra univs else univs in
@@ -1000,7 +1010,7 @@ let declare_possibly_mutual_parameters ~info ~cinfo ?(mono_uctx_extra=UState.emp
           parameter_entry_universes = univs;
           parameter_entry_inline_code = None;
         } in
-      let cst = declare_parameter ~name ~scope ~hook ~impargs ~uctx pe in
+      let cst = declare_parameter ~loc ~name ~scope ~hook ~impargs ~uctx pe in
       let inst = instance_of_univs univs in
       (i+1, (name, Constr.mkConstU (cst,inst))::subst, (cst, univs)::csts)
   ) (0, [], []) cinfo typs)
@@ -1324,7 +1334,7 @@ let declare_obligation prg obl ~uctx ~types ~body =
     let ce = definition_entry ?types:ty ~opaque ~univs body in
     (* ppedrot: seems legit to have obligations as local *)
     let constant =
-      declare_constant ~loc:None ~name:obl.obl_name
+      declare_constant ~loc:(fallback_loc ~warn:false obl.obl_name None) ~name:obl.obl_name
         ~typing_flags:prg.prg_info.Info.typing_flags
         ~local:Locality.ImportNeedQualified
         ~kind:Decls.(IsProof Property)
@@ -1531,7 +1541,9 @@ let declare_mutual_definitions ~pm l =
   in
   let defs, obls = List.split (List.map defobl l) in
   let obls = List.flatten obls in
-  let fixitems = List.map2 (fun (d, typ, impargs) name -> CInfo.make ~name ~typ ~impargs ()) defs first.prg_deps in
+  let fixitems = List.map2 (fun (d, typ, impargs) name ->
+      let loc = fallback_loc ~warn:false name None in
+      CInfo.make ?loc ~name ~typ ~impargs ()) defs first.prg_deps in
   let fixdefs, fixtypes, _ = List.split3 defs in
   let possible_guard = Option.get first.prg_possible_guard in
   (* Declare the recursive definitions *)
@@ -2115,7 +2127,8 @@ let next = let n = ref 0 in fun () -> incr n; !n
 let by tac = map_fold ~f:(Proof.solve (Goal_select.SelectNth 1) None tac)
 
 let build_constant_by_tactic ~name ?warn_incomplete ~sigma ~sign ~poly (typ : EConstr.t) tac =
-  let cinfo = [CInfo.make ~name ~typ:() ()] in
+  let loc = fallback_loc ~warn:false name None in
+  let cinfo = [CInfo.make ?loc ~name ~typ:() ()] in
   let info = Info.make ~poly () in
   let pinfo = Proof_info.make ~cinfo ~info () in
   let pf = start_proof_core ~name ~pinfo sigma [Some sign, typ] in
@@ -2557,7 +2570,9 @@ let solve_obligation ?check_final prg num tac =
     let name = Internal.get_name prg in
     Proof_ending.End_obligation {name; num; auto; check_final}
   in
-  let cinfo = CInfo.make ~name:obl.obl_name ~typ:(EConstr.of_constr obl.obl_type) () in
+  let cinfo = CInfo.make ?loc:(fallback_loc ~warn:false obl.obl_name None)
+      ~name:obl.obl_name ~typ:(EConstr.of_constr obl.obl_type) ()
+  in
   let using =
     let using = Internal.get_using prg in
     let env = Global.env () in

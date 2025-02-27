@@ -196,7 +196,7 @@ END
 {
 
 let pr_fun_scheme_arg (princ_name,fun_name,s) =
-  Names.Id.print princ_name ++ str " :=" ++ spc() ++ str "Induction for " ++
+  Names.Id.print princ_name.CAst.v ++ str " :=" ++ spc() ++ str "Induction for " ++
   Libnames.pr_qualid fun_name ++ spc() ++ str "Sort " ++
   Sorts.pr_sort_family s
 
@@ -204,7 +204,7 @@ let pr_fun_scheme_arg (princ_name,fun_name,s) =
 
 VERNAC ARGUMENT EXTEND fun_scheme_arg
 PRINTED BY { pr_fun_scheme_arg }
-| [ identref(princ_name) ":=" "Induction" "for" reference(fun_name) "Sort" sort_family(s) ] -> { (princ_name.CAst.v,fun_name,s) }
+| [ identref(princ_name) ":=" "Induction" "for" reference(fun_name) "Sort" sort_family(s) ] -> { (princ_name,fun_name,s) }
 END
 
 {
@@ -219,13 +219,13 @@ let warning_error names e =
     let names = pr_enum Libnames.pr_qualid names in
     let error = if do_observe () then CErrors.print e else mt () in
     Gen_principle.warn_cannot_define_principle (names,error)
-  | _ -> raise e
+  | _ -> assert false
 
 }
 
 VERNAC COMMAND EXTEND NewFunctionalScheme
 | ["Functional" "Scheme" ne_fun_scheme_arg_list_sep(fas,"with") ]
-   => { Vernacextend.(VtSideff(List.map pi1 fas, VtLater)) }
+   => { Vernacextend.(VtSideff(List.map (fun x -> (pi1 x).CAst.v) fas, VtLater)) }
    ->
     { begin
         try
@@ -241,13 +241,13 @@ VERNAC COMMAND EXTEND NewFunctionalScheme
                 with
                 | Gen_principle.No_graph_found ->
                   CErrors.user_err Pp.(str "Cannot generate induction principle(s)")
-                | e when CErrors.noncritical e ->
+                | Building_graph _ | Defining_principle _ as e ->
                   let names = List.map (fun (_,na,_) -> na) fas in
                   warning_error names e
               end
               | _ -> assert false (* we can only have non empty  list *)
           end
-        | e when CErrors.noncritical e ->
+        | Building_graph _ | Defining_principle _ as e ->
           let names = List.map (fun (_,na,_) -> na) fas in
           warning_error names e
       end
@@ -257,7 +257,7 @@ END
 
 VERNAC COMMAND EXTEND NewFunctionalCase
 | ["Functional" "Case" fun_scheme_arg(fas) ]
-  => { Vernacextend.(VtSideff([pi1 fas], VtLater)) }
+  => { Vernacextend.(VtSideff([(pi1 fas).CAst.v], VtLater)) }
   -> { Gen_principle.build_case_scheme fas }
 END
 

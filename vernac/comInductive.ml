@@ -682,9 +682,9 @@ let interp_mutual_inductive_constr ~sigma ~flags ~udecl ~variances ~ctx_params ~
 
 let interp_params ~unconstrained_sorts env udecl uparamsl paramsl =
   let sigma, udecl, variances = interp_cumul_univ_decl_opt env udecl in
-  let sigma, (uimpls, ((env_uparams, ctx_uparams), useruimpls)) =
+  let sigma, (uimpls, ((env_uparams, ctx_uparams), useruimpls, _locs)) =
     interp_context_evars ~program_mode:false ~unconstrained_sorts env sigma uparamsl in
-  let sigma, (impls, ((env_params, ctx_params), userimpls)) =
+  let sigma, (impls, ((env_params, ctx_params), userimpls, _locs)) =
     interp_context_evars ~program_mode:false ~unconstrained_sorts ~impl_env:uimpls env_uparams sigma paramsl
   in
   (* Names of parameters as arguments of the inductive type (defs removed) *)

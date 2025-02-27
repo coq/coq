@@ -26,6 +26,7 @@ fooSProp_inds is not universe polymorphic
 Arguments fooSProp_inds P%_function_scope f f0 f1
 fooSProp_inds is transparent
 Expands to: Constant SchemeNames.fooSProp_inds
+Declared in library SchemeNames, line 13, characters 7-48
 File "./output/SchemeNames.v", line 23, characters 2-48:
 The command has indeed failed with message:
 Incorrect elimination in the inductive type "fooSProp":
@@ -53,6 +54,7 @@ fooSProp_inds_nodep is not universe polymorphic
 Arguments fooSProp_inds_nodep P%_type_scope f f0 f1
 fooSProp_inds_nodep is transparent
 Expands to: Constant SchemeNames.fooSProp_inds_nodep
+Declared in library SchemeNames, line 22, characters 7-49
 File "./output/SchemeNames.v", line 32, characters 2-49:
 The command has indeed failed with message:
 Incorrect elimination in the inductive type "fooSProp":
@@ -81,6 +83,7 @@ fooSProp_cases is not universe polymorphic
 Arguments fooSProp_cases P%_function_scope f f0 f1
 fooSProp_cases is transparent
 Expands to: Constant SchemeNames.fooSProp_cases
+Declared in library SchemeNames, line 31, characters 7-50
 File "./output/SchemeNames.v", line 41, characters 2-42:
 The command has indeed failed with message:
 Incorrect elimination in the inductive type "fooSProp":
@@ -108,6 +111,7 @@ fooSProp_cases_nodep is not universe polymorphic
 Arguments fooSProp_cases_nodep P%_type_scope f f0 f1
 fooSProp_cases_nodep is transparent
 Expands to: Constant SchemeNames.fooSProp_cases_nodep
+Declared in library SchemeNames, line 40, characters 7-43
 File "./output/SchemeNames.v", line 49, characters 2-36:
 The command has indeed failed with message:
 Cannot extract computational content from proposition 
@@ -133,6 +137,7 @@ fooProp_inds_dep is not universe polymorphic
 Arguments fooProp_inds_dep P%_function_scope f f0 f1
 fooProp_inds_dep is transparent
 Expands to: Constant SchemeNames.fooProp_inds_dep
+Declared in library SchemeNames, line 59, characters 7-47
 fooProp_ind_dep :
 forall P : fooProp -> Prop, P aP -> P bP -> forall f1 : fooProp, P f1
 
@@ -140,6 +145,7 @@ fooProp_ind_dep is not universe polymorphic
 Arguments fooProp_ind_dep P%_function_scope f f0 f1
 fooProp_ind_dep is transparent
 Expands to: Constant SchemeNames.fooProp_ind_dep
+Declared in library SchemeNames, line 60, characters 7-46
 File "./output/SchemeNames.v", line 71, characters 2-46:
 The command has indeed failed with message:
 Incorrect elimination in the inductive type "fooProp":
@@ -160,12 +166,14 @@ fooProp_inds is not universe polymorphic
 Arguments fooProp_inds P%_type_scope f f0 f1
 fooProp_inds is transparent
 Expands to: Constant SchemeNames.fooProp_inds
+Declared in library SchemeNames, line 69, characters 7-48
 fooProp_ind : forall P : Prop, P -> P -> fooProp -> P
 
 fooProp_ind is not universe polymorphic
 Arguments fooProp_ind P%_type_scope f f0 f1
 fooProp_ind is transparent
 Expands to: Constant SchemeNames.fooProp_ind
+Declared in library SchemeNames, line 70, characters 7-47
 File "./output/SchemeNames.v", line 81, characters 2-47:
 The command has indeed failed with message:
 Incorrect elimination in the inductive type "fooProp":
@@ -187,6 +195,7 @@ fooProp_cases_dep is not universe polymorphic
 Arguments fooProp_cases_dep P%_function_scope f f0 f1
 fooProp_cases_dep is transparent
 Expands to: Constant SchemeNames.fooProp_cases_dep
+Declared in library SchemeNames, line 79, characters 7-49
 fooProp_case_dep :
 forall P : fooProp -> Prop, P aP -> P bP -> forall f1 : fooProp, P f1
 
@@ -194,6 +203,7 @@ fooProp_case_dep is not universe polymorphic
 Arguments fooProp_case_dep P%_function_scope f f0 f1
 fooProp_case_dep is transparent
 Expands to: Constant SchemeNames.fooProp_case_dep
+Declared in library SchemeNames, line 80, characters 7-48
 File "./output/SchemeNames.v", line 91, characters 2-40:
 The command has indeed failed with message:
 Incorrect elimination in the inductive type "fooProp":
@@ -214,12 +224,14 @@ fooProp_cases is not universe polymorphic
 Arguments fooProp_cases P%_type_scope f f0 f1
 fooProp_cases is transparent
 Expands to: Constant SchemeNames.fooProp_cases
+Declared in library SchemeNames, line 89, characters 7-42
 fooProp_case : forall P : Prop, P -> P -> fooProp -> P
 
 fooProp_case is not universe polymorphic
 Arguments fooProp_case P%_type_scope f f0 f1
 fooProp_case is transparent
 Expands to: Constant SchemeNames.fooProp_case
+Declared in library SchemeNames, line 90, characters 7-41
 File "./output/SchemeNames.v", line 99, characters 2-35:
 The command has indeed failed with message:
 Cannot extract computational content from proposition 
@@ -231,6 +243,7 @@ fooSet_inds is not universe polymorphic
 Arguments fooSet_inds P%_function_scope f f0 f1
 fooSet_inds is transparent
 Expands to: Constant SchemeNames.fooSet_inds
+Declared in library SchemeNames, line 109, characters 2-41
 fooSet_ind :
 forall P : fooSet -> Prop, P aS -> P bS -> forall f1 : fooSet, P f1
 
@@ -238,6 +251,7 @@ fooSet_ind is not universe polymorphic
 Arguments fooSet_ind P%_function_scope f f0 f1
 fooSet_ind is transparent
 Expands to: Constant SchemeNames.fooSet_ind
+Declared in library SchemeNames, line 110, characters 2-40
 fooSet_rec :
 forall P : fooSet -> Set, P aS -> P bS -> forall f1 : fooSet, P f1
 
@@ -245,6 +259,7 @@ fooSet_rec is not universe polymorphic
 Arguments fooSet_rec P%_function_scope f f0 f1
 fooSet_rec is transparent
 Expands to: Constant SchemeNames.fooSet_rec
+Declared in library SchemeNames, line 111, characters 2-39
 fooSet_rect :
 forall P : fooSet -> Type, P aS -> P bS -> forall f1 : fooSet, P f1
 
@@ -252,30 +267,35 @@ fooSet_rect is not universe polymorphic
 Arguments fooSet_rect P%_function_scope f f0 f1
 fooSet_rect is transparent
 Expands to: Constant SchemeNames.fooSet_rect
+Declared in library SchemeNames, line 112, characters 2-40
 fooSet_inds_nodep : forall P : SProp, P -> P -> fooSet -> P
 
 fooSet_inds_nodep is not universe polymorphic
 Arguments fooSet_inds_nodep P%_type_scope f f0 f1
 fooSet_inds_nodep is transparent
 Expands to: Constant SchemeNames.fooSet_inds_nodep
+Declared in library SchemeNames, line 121, characters 2-42
 fooSet_ind_nodep : forall P : Prop, P -> P -> fooSet -> P
 
 fooSet_ind_nodep is not universe polymorphic
 Arguments fooSet_ind_nodep P%_type_scope f f0 f1
 fooSet_ind_nodep is transparent
 Expands to: Constant SchemeNames.fooSet_ind_nodep
+Declared in library SchemeNames, line 122, characters 2-41
 fooSet_rec_nodep : forall P : Set, P -> P -> fooSet -> P
 
 fooSet_rec_nodep is not universe polymorphic
 Arguments fooSet_rec_nodep P%_type_scope f f0 f1
 fooSet_rec_nodep is transparent
 Expands to: Constant SchemeNames.fooSet_rec_nodep
+Declared in library SchemeNames, line 123, characters 2-40
 fooSet_rect_nodep : forall P : Type, P -> P -> fooSet -> P
 
 fooSet_rect_nodep is not universe polymorphic
 Arguments fooSet_rect_nodep P%_type_scope f f0 f1
 fooSet_rect_nodep is transparent
 Expands to: Constant SchemeNames.fooSet_rect_nodep
+Declared in library SchemeNames, line 124, characters 2-41
 fooSet_cases :
 forall P : fooSet -> SProp, P aS -> P bS -> forall f1 : fooSet, P f1
 
@@ -283,6 +303,7 @@ fooSet_cases is not universe polymorphic
 Arguments fooSet_cases P%_function_scope f f0 f1
 fooSet_cases is transparent
 Expands to: Constant SchemeNames.fooSet_cases
+Declared in library SchemeNames, line 136, characters 2-43
 fooSet_case :
 forall P : fooSet -> Prop, P aS -> P bS -> forall f1 : fooSet, P f1
 
@@ -290,6 +311,7 @@ fooSet_case is not universe polymorphic
 Arguments fooSet_case P%_function_scope f f0 f1
 fooSet_case is transparent
 Expands to: Constant SchemeNames.fooSet_case
+Declared in library SchemeNames, line 137, characters 2-42
 fooSet'_case :
 forall P : fooSet' -> Set, P aS' -> P bS' -> forall f1 : fooSet', P f1
 
@@ -297,6 +319,7 @@ fooSet'_case is not universe polymorphic
 Arguments fooSet'_case P%_function_scope f f0 f1
 fooSet'_case is transparent
 Expands to: Constant SchemeNames.fooSet'_case
+Declared in library SchemeNames, line 138, characters 2-42
 fooSet'_caset :
 forall P : fooSet' -> Type, P aS' -> P bS' -> forall f1 : fooSet', P f1
 
@@ -304,30 +327,35 @@ fooSet'_caset is not universe polymorphic
 Arguments fooSet'_caset P%_function_scope f f0 f1
 fooSet'_caset is transparent
 Expands to: Constant SchemeNames.fooSet'_caset
+Declared in library SchemeNames, line 139, characters 2-43
 fooSet_cases_nodep : forall P : SProp, P -> P -> fooSet -> P
 
 fooSet_cases_nodep is not universe polymorphic
 Arguments fooSet_cases_nodep P%_type_scope f f0 f1
 fooSet_cases_nodep is transparent
 Expands to: Constant SchemeNames.fooSet_cases_nodep
+Declared in library SchemeNames, line 148, characters 2-36
 fooSet_case_nodep : forall P : Prop, P -> P -> fooSet -> P
 
 fooSet_case_nodep is not universe polymorphic
 Arguments fooSet_case_nodep P%_type_scope f f0 f1
 fooSet_case_nodep is transparent
 Expands to: Constant SchemeNames.fooSet_case_nodep
+Declared in library SchemeNames, line 149, characters 2-35
 fooSet'_case_nodep : forall P : Set, P -> P -> fooSet' -> P
 
 fooSet'_case_nodep is not universe polymorphic
 Arguments fooSet'_case_nodep P%_type_scope f f0 f1
 fooSet'_case_nodep is transparent
 Expands to: Constant SchemeNames.fooSet'_case_nodep
+Declared in library SchemeNames, line 150, characters 2-35
 fooSet'_caset_nodep : forall P : Type, P -> P -> fooSet' -> P
 
 fooSet'_caset_nodep is not universe polymorphic
 Arguments fooSet'_caset_nodep P%_type_scope f f0 f1
 fooSet'_caset_nodep is transparent
 Expands to: Constant SchemeNames.fooSet'_caset_nodep
+Declared in library SchemeNames, line 151, characters 2-36
 fooSet_beq : fooSet -> fooSet -> bool
 
 fooSet_beq is not universe polymorphic
@@ -367,6 +395,7 @@ fooType_inds is not universe polymorphic
 Arguments fooType_inds P%_function_scope f f0 f1
 fooType_inds is transparent
 Expands to: Constant SchemeNames.fooType_inds
+Declared in library SchemeNames, line 175, characters 2-42
 fooType_ind :
 forall P : fooType -> Prop, P aT -> P bT -> forall f1 : fooType, P f1
 
@@ -374,6 +403,7 @@ fooType_ind is not universe polymorphic
 Arguments fooType_ind P%_function_scope f f0 f1
 fooType_ind is transparent
 Expands to: Constant SchemeNames.fooType_ind
+Declared in library SchemeNames, line 176, characters 2-41
 fooType_rec :
 forall P : fooType -> Set, P aT -> P bT -> forall f1 : fooType, P f1
 
@@ -381,6 +411,7 @@ fooType_rec is not universe polymorphic
 Arguments fooType_rec P%_function_scope f f0 f1
 fooType_rec is transparent
 Expands to: Constant SchemeNames.fooType_rec
+Declared in library SchemeNames, line 177, characters 2-40
 fooType_rect :
 forall P : fooType -> Type, P aT -> P bT -> forall f1 : fooType, P f1
 
@@ -388,30 +419,35 @@ fooType_rect is not universe polymorphic
 Arguments fooType_rect P%_function_scope f f0 f1
 fooType_rect is transparent
 Expands to: Constant SchemeNames.fooType_rect
+Declared in library SchemeNames, line 178, characters 2-41
 fooType_inds_nodep : forall P : SProp, P -> P -> fooType -> P
 
 fooType_inds_nodep is not universe polymorphic
 Arguments fooType_inds_nodep P%_type_scope f f0 f1
 fooType_inds_nodep is transparent
 Expands to: Constant SchemeNames.fooType_inds_nodep
+Declared in library SchemeNames, line 187, characters 2-43
 fooType_ind_nodep : forall P : Prop, P -> P -> fooType -> P
 
 fooType_ind_nodep is not universe polymorphic
 Arguments fooType_ind_nodep P%_type_scope f f0 f1
 fooType_ind_nodep is transparent
 Expands to: Constant SchemeNames.fooType_ind_nodep
+Declared in library SchemeNames, line 188, characters 2-42
 fooType_rec_nodep : forall P : Set, P -> P -> fooType -> P
 
 fooType_rec_nodep is not universe polymorphic
 Arguments fooType_rec_nodep P%_type_scope f f0 f1
 fooType_rec_nodep is transparent
 Expands to: Constant SchemeNames.fooType_rec_nodep
+Declared in library SchemeNames, line 189, characters 2-41
 fooType_rect_nodep : forall P : Type, P -> P -> fooType -> P
 
 fooType_rect_nodep is not universe polymorphic
 Arguments fooType_rect_nodep P%_type_scope f f0 f1
 fooType_rect_nodep is transparent
 Expands to: Constant SchemeNames.fooType_rect_nodep
+Declared in library SchemeNames, line 190, characters 2-42
 fooType_cases :
 forall P : fooType -> SProp, P aT -> P bT -> forall f1 : fooType, P f1
 
@@ -419,6 +455,7 @@ fooType_cases is not universe polymorphic
 Arguments fooType_cases P%_function_scope f f0 f1
 fooType_cases is transparent
 Expands to: Constant SchemeNames.fooType_cases
+Declared in library SchemeNames, line 202, characters 2-44
 fooType_case :
 forall P : fooType -> Prop, P aT -> P bT -> forall f1 : fooType, P f1
 
@@ -426,6 +463,7 @@ fooType_case is not universe polymorphic
 Arguments fooType_case P%_function_scope f f0 f1
 fooType_case is transparent
 Expands to: Constant SchemeNames.fooType_case
+Declared in library SchemeNames, line 203, characters 2-43
 fooType'_case :
 forall P : fooType' -> Set, P aT' -> P bT' -> forall f1 : fooType', P f1
 
@@ -433,6 +471,7 @@ fooType'_case is not universe polymorphic
 Arguments fooType'_case P%_function_scope f f0 f1
 fooType'_case is transparent
 Expands to: Constant SchemeNames.fooType'_case
+Declared in library SchemeNames, line 204, characters 2-43
 fooType'_caset :
 forall P : fooType' -> Type, P aT' -> P bT' -> forall f1 : fooType', P f1
 
@@ -440,30 +479,35 @@ fooType'_caset is not universe polymorphic
 Arguments fooType'_caset P%_function_scope f f0 f1
 fooType'_caset is transparent
 Expands to: Constant SchemeNames.fooType'_caset
+Declared in library SchemeNames, line 205, characters 2-44
 fooType_cases_nodep : forall P : SProp, P -> P -> fooType -> P
 
 fooType_cases_nodep is not universe polymorphic
 Arguments fooType_cases_nodep P%_type_scope f f0 f1
 fooType_cases_nodep is transparent
 Expands to: Constant SchemeNames.fooType_cases_nodep
+Declared in library SchemeNames, line 214, characters 2-37
 fooType_case_nodep : forall P : Prop, P -> P -> fooType -> P
 
 fooType_case_nodep is not universe polymorphic
 Arguments fooType_case_nodep P%_type_scope f f0 f1
 fooType_case_nodep is transparent
 Expands to: Constant SchemeNames.fooType_case_nodep
+Declared in library SchemeNames, line 215, characters 2-36
 fooType'_case_nodep : forall P : Set, P -> P -> fooType' -> P
 
 fooType'_case_nodep is not universe polymorphic
 Arguments fooType'_case_nodep P%_type_scope f f0 f1
 fooType'_case_nodep is transparent
 Expands to: Constant SchemeNames.fooType'_case_nodep
+Declared in library SchemeNames, line 216, characters 2-36
 fooType'_caset_nodep : forall P : Type, P -> P -> fooType' -> P
 
 fooType'_caset_nodep is not universe polymorphic
 Arguments fooType'_caset_nodep P%_type_scope f f0 f1
 fooType'_caset_nodep is transparent
 Expands to: Constant SchemeNames.fooType'_caset_nodep
+Declared in library SchemeNames, line 217, characters 2-37
 fooType_beq : fooType -> fooType -> bool
 
 fooType_beq is not universe polymorphic

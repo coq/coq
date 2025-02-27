@@ -74,8 +74,9 @@ end
 module CInfo : sig
   type 'constr t
 
-  val make :
-    name : Id.t
+  val make
+    : ?loc:Loc.t
+    -> name:Id.t
     -> typ:'constr
     -> ?args:Name.t list
     -> ?impargs:Impargs.manual_implicits
@@ -99,8 +100,7 @@ module Info : sig
   (** Note that [opaque] doesn't appear here as it is not known at the
      start of the proof in the interactive case. *)
   val make
-    : ?loc:Loc.t
-    -> ?poly:bool
+    : ?poly:bool
     -> ?inline : bool
     -> ?kind : Decls.logical_kind
     (** Theorem, etc... *)

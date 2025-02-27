@@ -86,7 +86,7 @@ let interp_definition ~program_mode env evd impl_env bl red_option c ctypopt =
   let flags = Pretyping.{ all_no_fail_flags with program_mode } in
   let (bl, c, ctypopt, apply_under_binders) = protect_pattern_in_binder bl c ctypopt in
   (* Build the parameters *)
-  let evd, (impls, ((env_bl, ctx), imps1)) = interp_context_evars ~program_mode ~impl_env env evd bl in
+  let evd, (impls, ((env_bl, ctx), imps1, _locs)) = interp_context_evars ~program_mode ~impl_env env evd bl in
   (* Build the type *)
   let evd, tyopt = Option.fold_left_map
       (interp_type_evars_impls ~flags ~impls env_bl)
@@ -112,7 +112,7 @@ let interp_definition ~program_mode env evd impl_env bl red_option c ctypopt =
   evd, (c, tyopt), imps
 
 let interp_statement ~program_mode env evd ~flags ~scope name bl typ  =
-  let evd, (impls, ((env, ctx), imps)) = Constrintern.interp_context_evars ~program_mode env evd bl in
+  let evd, (impls, ((env, ctx), imps, _locs)) = Constrintern.interp_context_evars ~program_mode env evd bl in
   let evd, (t', imps') = Constrintern.interp_type_evars_impls ~flags ~impls env evd typ in
   let ids = List.map Context.Rel.Declaration.get_name ctx in
   evd, ids, EConstr.it_mkProd_or_LetIn t' ctx, imps @ imps'
@@ -127,8 +127,8 @@ let do_definition ?loc ?hook ~name ?scope ?clearbody ~poly ?typing_flags ~kind ?
     interp_definition ~program_mode env evd empty_internalization_env bl red_option c ctypopt
   in
   let kind = Decls.IsDefinition kind in
-  let cinfo = Declare.CInfo.make ~name ~impargs ~typ:types () in
-  let info = Declare.Info.make ?loc ?scope ?clearbody ~kind ?hook ~udecl ~poly ?typing_flags ?user_warns () in
+  let cinfo = Declare.CInfo.make ?loc ~name ~impargs ~typ:types () in
+  let info = Declare.Info.make ?scope ?clearbody ~kind ?hook ~udecl ~poly ?typing_flags ?user_warns () in
   let _ : Names.GlobRef.t =
     Declare.declare_definition ~info ~cinfo ~opaque:false ~body ?using evd
   in ()
@@ -144,8 +144,8 @@ let do_definition_program ?loc ?hook ~pm ~name ~scope ?clearbody ~poly ?typing_f
   let body, typ, uctx, _, obls = Declare.Obls.prepare_obligations ~name ~body ?types env evd in
   Evd.check_univ_decl_early ~poly ~with_obls:true evd udecl [body; typ];
   let pm, _ =
-    let cinfo = Declare.CInfo.make ~name ~typ ~impargs () in
-    let info = Declare.Info.make ?loc ~udecl ~scope ?clearbody ~poly ~kind ?hook ?typing_flags ?user_warns () in
+    let cinfo = Declare.CInfo.make ?loc ~name ~typ ~impargs () in
+    let info = Declare.Info.make ~udecl ~scope ?clearbody ~poly ~kind ?hook ?typing_flags ?user_warns () in
     Declare.Obls.add_definition ~pm ~info ~cinfo ~opaque:false ~body ~uctx ?using obls
   in pm
 
@@ -161,8 +161,8 @@ let do_definition_interactive ?loc ~program_mode ?hook ~name ~scope ?clearbody ~
   let evd = Evd.minimize_universes evd in
   Pretyping.check_evars_are_solved ~program_mode env evd;
   let typ = EConstr.to_constr evd typ in
-  let info = Declare.Info.make ?loc ?hook ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?user_warns () in
-  let cinfo = Declare.CInfo.make ~name ~typ ~args ~impargs () in
+  let info = Declare.Info.make ?hook ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?user_warns () in
+  let cinfo = Declare.CInfo.make ?loc ~name ~typ ~args ~impargs () in
   Evd.check_univ_decl_early ~poly ~with_obls:false evd udecl [typ];
   let evd = if poly then evd else Evd.fix_undefined_variables evd in
   Declare.Proof.start_definition ~info ~cinfo ?using evd

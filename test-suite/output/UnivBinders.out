@@ -110,6 +110,7 @@ punwrap is a primitive projection of PWrap
 Arguments punwrap A%_type_scope p
 punwrap is transparent
 Expands to: Constant UnivBinders.punwrap
+Declared in library UnivBinders, line 12, characters 43-50
 File "./output/UnivBinders.v", line 104, characters 0-19:
 The command has indeed failed with message:
 Universe instance length for foo is 3 but should be 1.
@@ -160,22 +161,26 @@ axfoo@{i u u0} : Type@{u} -> Type@{i}
 axfoo is universe polymorphic
 Arguments axfoo _%_type_scope
 Expands to: Constant UnivBinders.axfoo
+Declared in library UnivBinders, line 151, characters 6-11
 axbar@{i u u0} : Type@{u0} -> Type@{i}
 (* i u u0 |=  *)
 
 axbar is universe polymorphic
 Arguments axbar _%_type_scope
 Expands to: Constant UnivBinders.axbar
+Declared in library UnivBinders, line 151, characters 17-22
 axfoo' : Type@{axfoo'.u0} -> Type@{axfoo'.i}
 
 axfoo' is not universe polymorphic
 Arguments axfoo' _%_type_scope
 Expands to: Constant UnivBinders.axfoo'
+Declared in library UnivBinders, line 152, characters 18-24
 axbar' : Type@{axfoo'.u1} -> Type@{axfoo'.i}
 
 axbar' is not universe polymorphic
 Arguments axbar' _%_type_scope
 Expands to: Constant UnivBinders.axbar'
+Declared in library UnivBinders, line 152, characters 30-36
 *** [ axfoo@{i u u0} : Type@{u} -> Type@{i} ]
 (* i u u0 |=  *)
 

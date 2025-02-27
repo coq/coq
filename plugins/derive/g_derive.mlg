@@ -34,8 +34,8 @@ VERNAC COMMAND EXTEND Derive CLASSIFIED BY { classify_derive_command } STATE ope
 | #[ atts = Vernacentries.DefAttributes.def_attributes; ]
   [ "Derive" open_binders(bl) "SuchThat" constr(suchthat) "As" identref(lemma) ] ->
   { warn_deprecated_derive_suchthat ();
-    Derive.start_deriving ~atts bl suchthat lemma.CAst.v }
+    Derive.start_deriving ~atts bl suchthat lemma }
 | #[ atts = Vernacentries.DefAttributes.def_attributes; ]
   [ "Derive" open_binders(bl) "in" constr(suchthat) "as" identref(lemma) ] ->
-  { Derive.start_deriving ~atts bl suchthat lemma.CAst.v }
+  { Derive.start_deriving ~atts bl suchthat lemma }
 END

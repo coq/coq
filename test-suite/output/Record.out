@@ -83,7 +83,7 @@ File "./output/Record.v", line 93, characters 2-40:
 Warning:
 The record squashed could not be defined as a primitive record because it is
 squashed. [non-primitive-record,records,default]
-File "./output/Record.v", line 93, characters 2-40:
+File "./output/Record.v", line 93, characters 30-31:
 Warning: x cannot be defined because it is informative and squashed is not.
 [cannot-define-projection,records,default]
 File "./output/Record.v", line 95, characters 2-31:

@@ -5,6 +5,7 @@ t1 is a projection of Atype
 Arguments t1 a0 a%_type_scope
 t1 is transparent
 Expands to: Constant RecordProjParameter.t1
+Declared in library RecordProjParameter, line 2, characters 4-6
 t3 : forall a0 : Atype, t2 a0
 
 t3 is not universe polymorphic
@@ -12,6 +13,7 @@ t3 is a projection of Atype
 Arguments t3 a0
 t3 is transparent
 Expands to: Constant RecordProjParameter.t3
+Declared in library RecordProjParameter, line 4, characters 4-6
 u1 : Btype -> forall b b0 : Type, b * b0
 
 u1 is not universe polymorphic
@@ -19,6 +21,7 @@ u1 is a projection of Btype
 Arguments u1 b1 (b b0)%_type_scope
 u1 is transparent
 Expands to: Constant RecordProjParameter.u1
+Declared in library RecordProjParameter, line 9, characters 4-6
 u3 : forall b1 : Btype, u2 b1
 
 u3 is not universe polymorphic
@@ -26,6 +29,7 @@ u3 is a projection of Btype
 Arguments u3 b1
 u3 is transparent
 Expands to: Constant RecordProjParameter.u3
+Declared in library RecordProjParameter, line 11, characters 4-6
 v1 : Ctype -> forall c0 : Type, c0
 
 v1 is not universe polymorphic
@@ -33,6 +37,7 @@ v1 is a projection of Ctype
 Arguments v1 c c0%_type_scope
 v1 is transparent
 Expands to: Constant RecordProjParameter.v1
+Declared in library RecordProjParameter, line 16, characters 4-6
 v3 : forall c : Ctype, v2 c
 
 v3 is not universe polymorphic
@@ -40,3 +45,4 @@ v3 is a projection of Ctype
 Arguments v3 c
 v3 is transparent
 Expands to: Constant RecordProjParameter.v3
+Declared in library RecordProjParameter, line 18, characters 4-6

@@ -10,9 +10,9 @@
 
 open Names
 
-let declare id entry =
+let declare ?loc id entry =
   let _ : Constant.t =
-    Declare.declare_constant ~name:id ~kind:Decls.IsPrimitive (Declare.PrimitiveEntry entry)
+    Declare.declare_constant ?loc ~name:id ~kind:Decls.IsPrimitive (Declare.PrimitiveEntry entry)
   in
   Flags.if_verbose Feedback.msg_info Pp.(Id.print id ++ str " is declared")
 
@@ -28,7 +28,7 @@ let do_primitive id udecl prim typopt =
       CErrors.user_err ?loc
         Pp.(strbrk "Cannot use a universe declaration without a type when declaring primitives.");
     let e = Declare.primitive_entry prim in
-    declare id e
+    declare ?loc id e
   | Some typ ->
     let env = Global.env () in
     let evd, udecl = Constrintern.interp_univ_decl_opt env udecl in
@@ -52,4 +52,4 @@ let do_primitive id udecl prim typopt =
     let typ = EConstr.to_constr evd typ in
     let univ_entry = Evd.check_univ_decl ~poly:(not (UVars.AbstractContext.is_empty auctx)) evd udecl in
     let entry = Declare.primitive_entry ~types:(typ, univ_entry) prim in
-    declare id entry
+    declare ?loc id entry
