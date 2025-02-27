@@ -38,7 +38,6 @@ We highlight some of the most impactful changes here:
     documentation building, dependency computation, etc... see :ref:`therocqcommands`.
     It corresponds to the `rocq-runtime` `opam package <https://ocaml.org/p/rocq-runtime>`_.
     This is a bare-bones package not depending on any Gallina code.
-    CHECK LINK
 
   - The `Coq` standard library has been :ref:`split <90stdlib>` into two libraries:
 
@@ -54,7 +53,7 @@ We highlight some of the most impactful changes here:
 
 Notable breaking changes:
 
-  - TODO
+  - The legacy loading mode for plugins has been `removed <LegacyLoadingRemoval>`.
 
 See the `Changes in 9.0.0`_ section below for the detailed list of changes,
 including potentially breaking changes marked with **Changed**.
@@ -72,19 +71,7 @@ pull request management tasks.
 Jason Gross maintained the `bug minimizer <https://github.com/JasonGross/coq-tools>`_
 and its `automatic use through coqbot <https://github.com/coq/coq/wiki/Coqbot-minimize-feature>`_.
 
-Erik Martin-Dorel and Jaime Arias maintained the
-`Rocq Docker images <https://hub.docker.com/r/rocq/rocq-prover>`_.
-Erik Martin-Dorel maintained the `docker-keeper <https://gitlab.com/erikmd/docker-keeper>`_ compiler
-used to build and keep those images up to date (note that the tool is not Rocq specific).
-Erik Martin-Dorel and Théo Zimmermann maintained the
-`docker-coq-action <https://github.com/coq-community/docker-coq-action>`_
-container action (which is applicable to any opam project hosted on GitHub).
-Cyril Cohen, Vincent Laporte, Pierre Roux and Théo Zimmermann
-maintained the `Nix toolbox <https://github.com/coq-community/coq-nix-toolbox>`_.
-The docker-coq-action and the Nix toolbox are used by many Rocq projects for continuous integration.
-
-Ali Caglayan, Emilio Jesús Gallego Arias, Rudi Grinberg and
-Rodolphe Lepigre maintained the
+Ali Caglayan, Emilio Jesús Gallego Arias, Rudi Grinberg and Rodolphe Lepigre maintained the
 `Dune build system for OCaml and Coq/Rocq <https://github.com/ocaml/dune/>`_
 used to build Rocq itself and many Rocq projects.
 
@@ -93,14 +80,35 @@ Guillaume Claret, Guillaume Melquiond, Karl Palmskog, Matthieu Sozeau
 and Enrico Tassi with contributions from many users. The up-to-data list
 of packages is `available on the Rocq website <https://rocq-prover.org/packages>`_.
 
-Rocq 9.0 was made possible thanks to the following reviewers:
-TODO
+Erik Martin-Dorel and Jaime Arias maintained the
+`Rocq Docker images <https://hub.docker.com/r/rocq/rocq-prover>`_.
+Erik Martin-Dorel maintained the `docker-keeper <https://gitlab.com/erikmd/docker-keeper>`_ compiler
+used to build and keep those images up to date (note that the tool is not Rocq specific).
+Erik Martin-Dorel and Théo Zimmermann maintained the
+`docker-coq-action <https://github.com/coq-community/docker-coq-action>`_
+container action (which is applicable to any opam project hosted on GitHub).
+
+Cyril Cohen, Vincent Laporte, Pierre Roux and Théo Zimmermann
+maintained the `Nix toolbox <https://github.com/coq-community/coq-nix-toolbox>`_.
+The docker-coq-action and the Nix toolbox are used by many Rocq projects for continuous integration.
+
+Rocq 9.0 was made possible thanks to the following 29 reviewers:
+Yves Bertot, Ali Caglayan, Tej Chajed, Louise Dubois de Prisque, Andres Erbsen, Jim Fehrle, Gaëtan Gilbert, Jason Gross, Samuel Gruetter, Hugo Herbelin, Emilio Jesús Gallego Arias, Evgenii Kosogorov, Thomas Lamiaux, Olivier Laurent, Rodolphe Lepigre, Erik Martin-Dorel, Guillaume Melquiond, Guillaume Munch-Maccagnoni, Karl Palmskog palmskog
+Pierre-Marie Pédrot, Pierre Rousselin, Pierre Roux, Marcello Seri, Michael Soegtrop, Matthieu Sozeau, Enrico Tassi, Romain Tetley, Oliver Turner and Théo Zimmermann.
 
 See the `Rocq Team <https://rocq-prover.org/governance>`_ page for
 more details on Rocq's development teams.
 
-The ?? contributors to the 9.0 version are:
-TODO
+The 48 contributors to the 9.0 version are:
+Jean Abou Samra, Tanaka Akira, David Allsopp, Frédéric Besson, Mathis Bouverot, Sylvain Chiron,
+Cyril Cohen, Lucas Donati, Andrej Dudenhefner, Arya Elfren, Andres Erbsen, Siegmentation Fault,
+Jim Fehrle, Gaëtan Gilbert, Tomaz Gomes Mascarenhas, Jason Gross, Hugo Herbelin, Florent Hivert,
+Daniil Iaitskov, Emilio Jesús Gallego Arias, Jan-Oliver Kaiser, Rodolphe Lepigre, Yann Leray,
+Felix Loyau-Kahn, Erik Martin-Dorel, Guillaume Melquiond, Guillaume Munch-Maccagnoni,
+Aleksandar Nanevski, Charles Norton, Karl Palmskog, Pierre-Marie Pédrot, Pierre Rousselin,
+Pierre Roux, Kazuhiko Sakaguchi, Gabriel Scherer, Marcello Seri, Benny Smit, Michael Soegtrop,
+Matthieu Sozeau, Nicolas Tabareau, Enrico Tassi, Oliver Turner, Quentin Vermande, Daneel Yaitskov,
+Remzi Yang, Tan Yee Jian and Théo Zimmermann.
 
 The Coq/Rocq community at large helped improve this new version via
 the GitHub issue and pull request system, the coq-club@inria.fr mailing list,
@@ -109,7 +117,7 @@ the `Discourse forum <https://coq.discourse.group/>`_ and the
 
 Version 9.0's development spanned 7 months from the release of Coq 8.20.0.
 Pierre-Marie Pédrot and Matthieu Sozeau are the release managers of Rocq 9.0.
-This release is the result of ?? merged PRs, closing ?? issues.
+This release is the result of 491 merged PRs, closing 68 issues.
 
 | Nantes, January 2025
 | Pierre-Marie Pédrot and Matthieu Sozeau for the Rocq development team
@@ -133,12 +141,12 @@ There are important changes to consider for building plugins and libraries:
 
 - To be future-proof, projects based on `coq_makefile` can be ported to not rely
   on the compatibility layer anymore. To do so, one must replace uses of
-  `coq_makefile` with :ref:`rocq makefile <rocq_makefile>`, which will directly
+  `coq_makefile` with :ref:`rocq makefile`, which will directly
   call the new `rocq` binary without relying on the compatibility shims.
 
-- If using `dune` (TODO <= 3.17.2) to :ref:`build <building_dune>` a Rocq project, you will still
-  need the compatibility shim for `coq-core` so that `dune`'s Coq language extension functions correctly.
-  This issue has been solved in `dune` TODO.
+- If using `dune` to :ref:`build <building_dune>` a Rocq project, you will still
+  need the compatibility shim for `coq-core` so that `dune`'s Coq language extension
+  functions correctly.
 
 Regarding packaging:
 
@@ -472,6 +480,8 @@ Commands and options
   :cmd:`Create HintDb` no longer erases pre-existing hint databases
   (`#19808 <https://github.com/coq/coq/pull/19808>`_,
   by Gaëtan Gilbert).
+
+.. LegacyLoadingRemoval:
 - **Removed:**
   "legacy" (non-findlib) loading mode for plugins in :cmd:`Declare ML Module`
   (`#18385 <https://github.com/coq/coq/pull/18385>`_,

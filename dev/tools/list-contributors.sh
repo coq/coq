@@ -23,6 +23,10 @@ rm assignees.tmp
 
 git shortlog -s -n --merges --group=trailer:reviewed-by --group=trailer:ack-by $1 | cut -f2 | sort -k 2 | grep -v -e "coqbot" -e "^$" > reviewers.tmp
 
+# To debug pseudo -> name mappings, use:
+# for i in `git shortlog -s -n --merges --group=trailer:reviewed-by --group=trailer:ack-by $1 | cut -f2`; do res=`grep $i .mailmap`; if [[ $? == 1 ]]; then echo $i" not found"; break; fi; echo $res | tail -n1 | cut -d'<' -f1 >> reviews-names; done;
+# Then `cat reviews-names | sort -k 2 > reviewers.tmp``
+
 cat reviewers.tmp | wc -l | xargs echo "Reviewers:"
 cat reviewers.tmp | $SED -z "s/\n/, /g"
 echo
