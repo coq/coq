@@ -1183,7 +1183,18 @@ module ProgramDecl = struct
             obls
         , b )
     in
-    let prg_uctx = UState.make_flexible_nonalgebraic uctx in
+    let prg_uctx =
+      if info.Info.poly then UState.make_flexible_nonalgebraic uctx
+      else
+        (* declare global univs of the main constant before we do obligations *)
+        let uctx = UState.collapse_sort_variables uctx in
+        let () = Global.push_context_set (UState.context_set uctx) in
+        let cst = Constant.make2 (Lib.current_mp()) (Label.of_id cinfo.CInfo.name) in
+        let () = DeclareUniv.declare_univ_binders (ConstRef cst)
+            (UState.univ_entry ~poly:false uctx)
+        in
+        UState.Internal.reboot (Global.env()) uctx
+    in
     { prg_cinfo = { cinfo with CInfo.typ = reduce cinfo.CInfo.typ }
     ; prg_info = info
     ; prg_using = using
@@ -1290,16 +1301,6 @@ let universes_of_decl body typ =
   let univs_body = Vars.universes_of_constr body in
   Univ.Level.Set.union univs_body univs_typ
 
-let current_obligation_uctx prg uctx vars =
-  let uctx = UState.restrict uctx vars in
-  if prg.prg_info.Info.poly then
-    uctx
-  else
-    (* We let the first obligation declare the monomorphic universe
-      context of the main constant (goes together with
-      update_global_obligation_uctx) *)
-    UState.union prg.prg_uctx uctx
-
 let update_global_obligation_uctx prg uctx =
   let uctx =
     if prg.prg_info.Info.poly then
@@ -1328,7 +1329,7 @@ let declare_obligation prg obl ~uctx ~types ~body =
       if not poly then shrink_body body types
       else ([], body, types, [||])
     in
-    let uctx' = current_obligation_uctx prg uctx (universes_of_decl body types) in
+    let uctx' = UState.restrict uctx (universes_of_decl body types) in
     let univs = UState.univ_entry ~poly uctx' in
     let inst = instance_of_univs univs in
     let ce = definition_entry ?types:ty ~opaque ~univs body in
