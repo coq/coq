@@ -22,7 +22,7 @@ intro c0rou.
 (** Le raisonnement sous-jacent est :
       soit c0rou une preuve arbitraire (inconnue) de [c0 = Rouge],
       on peut s'en servir pour démontrer coul_suiv [c0 = Vert]. *)
-(rewrite c0rou).
-(cbn[coul_suiv]).
+rewrite c0rou.
+cbn[coul_suiv].
 reflexivity.
 Qed.

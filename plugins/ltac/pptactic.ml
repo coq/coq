@@ -575,9 +575,9 @@ let pr_goal_selector ~toplevel s =
          let name = string_of_genarg_arg (genarg_tag arg) in
          if name = "unit" || name = "int" then
            (* Hard-wired parsing rules *)
-           pr_gen  arg
+           pr_gen ltop arg
          else
-           str name ++ str ":" ++ surround (pr_gen arg)
+           str name ++ str ":" ++ surround (pr_gen ltop arg)
       | _ -> pr_arg (CAst.make (TacArg t)) in
     hov 0 (keyword k ++ spc () ++ pr_lname na ++ prlist pr_funvar bl ++
              str " :=" ++ brk (1,1) ++ pr t)
@@ -659,7 +659,7 @@ let pr_goal_selector ~toplevel s =
     pr_reference : 'ref -> Pp.t;
     pr_name      : 'nam -> Pp.t;
     pr_occvar    : 'occvar -> Pp.t;
-    pr_generic   : Environ.env -> Evd.evar_map -> 'lev generic_argument -> Pp.t;
+    pr_generic   : Environ.env -> Evd.evar_map -> entry_relative_level -> 'lev generic_argument -> Pp.t;
     pr_extend    : int -> ml_tactic_entry -> 'a gen_tactic_arg list -> Pp.t;
     pr_alias     : int -> KerName.t -> 'a gen_tactic_arg list -> Pp.t;
   }
@@ -1036,7 +1036,7 @@ let pr_goal_selector ~toplevel s =
             | TacArg (TacFreshId l) ->
               primitive "fresh" ++ pr_fresh_ids l, latom
             | TacArg (TacGeneric (isquot,arg)) ->
-              let p = pr.pr_generic env sigma arg in
+              let p = pr.pr_generic env sigma (if Option.has_some isquot then ltop else LevelLe 0) arg in
               (match isquot with Some name -> str name ++ str ":(" ++ p ++ str ")" | None -> p), latom
             | TacArg (TacCall {CAst.v=(f,[])}) ->
               pr.pr_reference f, latom
@@ -1097,7 +1097,7 @@ let pr_goal_selector ~toplevel s =
       pr_reference = pr_qualid;
       pr_name = pr_lident;
       pr_occvar = pr_or_var int;
-      pr_generic = Pputils.pr_raw_generic;
+      pr_generic = (fun env sigma level v -> Pputils.pr_raw_generic env sigma ~level v);
       pr_extend = pr_raw_extend_rec @@ pr_raw_tactic_level env sigma;
       pr_alias = pr_raw_alias @@ pr_raw_tactic_level env sigma;
     } in
@@ -1129,7 +1129,7 @@ let pr_goal_selector ~toplevel s =
         pr_reference = pr_ltac_or_var (pr_located pr_ltac_constant);
         pr_name = pr_lident;
         pr_occvar = pr_or_var int;
-        pr_generic = Pputils.pr_glb_generic;
+        pr_generic = (fun env sigma level v -> Pputils.pr_glb_generic env sigma ~level v);
         pr_extend = pr_glob_extend_rec prtac;
         pr_alias = pr_glob_alias prtac;
       } in
@@ -1175,10 +1175,6 @@ let pr_goal_selector ~toplevel s =
       pr_atom env sigma pr strip_prod_binders_constr tag_atomic_tactic_expr t
     in
     prtac t
-
-  let pr_raw_generic = Pputils.pr_raw_generic
-
-  let pr_glb_generic = Pputils.pr_glb_generic
 
   let pr_raw_extend env sigma = pr_raw_extend_rec @@ pr_raw_tactic_level env sigma
 
