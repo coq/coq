@@ -93,8 +93,9 @@ maintained the `Nix toolbox <https://github.com/coq-community/coq-nix-toolbox>`_
 The docker-coq-action and the Nix toolbox are used by many Rocq projects for continuous integration.
 
 Rocq 9.0 was made possible thanks to the following 29 reviewers:
-Yves Bertot, Ali Caglayan, Tej Chajed, Louise Dubois de Prisque, Andres Erbsen, Jim Fehrle, Gaëtan Gilbert, Jason Gross, Samuel Gruetter, Hugo Herbelin, Emilio Jesús Gallego Arias, Evgenii Kosogorov, Thomas Lamiaux, Olivier Laurent, Rodolphe Lepigre, Erik Martin-Dorel, Guillaume Melquiond, Guillaume Munch-Maccagnoni, Karl Palmskog
-Pierre-Marie Pédrot, Pierre Rousselin, Pierre Roux, Marcello Seri, Michael Soegtrop, Matthieu Sozeau, Enrico Tassi, Romain Tetley, Oliver Turner and Théo Zimmermann.
+Yves Bertot, Ali Caglayan, Tej Chajed, Louise Dubois de Prisque, Andres Erbsen, Jim Fehrle, Emilio Jesús Gallego Arias, Gaëtan Gilbert, Jason Gross, Samuel Gruetter, Hugo Herbelin,
+Evgenii Kosogorov, Thomas Lamiaux, Olivier Laurent, Rodolphe Lepigre, Erik Martin-Dorel, Guillaume Melquiond, Guillaume Munch-Maccagnoni,
+Karl Palmskog, Pierre-Marie Pédrot, Pierre Rousselin, Pierre Roux, Marcello Seri, Michael Soegtrop, Matthieu Sozeau, Enrico Tassi, Romain Tetley, Oliver Turner and Théo Zimmermann.
 
 See the `Rocq Team <https://rocq-prover.org/governance>`_ page for
 more details on Rocq's development teams.
