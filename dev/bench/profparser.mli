@@ -10,4 +10,4 @@
 
 open BenchUtil
 
-val parse : file:string -> (char_loc * measure) list
+val parse : file:string -> (char_loc * data) list

@@ -27,6 +27,17 @@ type measure = { str: string; q: Q.t; }
 
 let dummy_measure = { str="0"; q=Q.zero; }
 
+type memory = {
+  major_words : string;
+  minor_words : string;
+  major_collect : int;
+  minor_collect : int;
+}
+
+type data = { time : measure; memory : memory option }
+
+let dummy_data = { time = dummy_measure; memory = None }
+
 let combine_related_data data =
   let nvals = Array.length (snd (data.(0))) in
   let fname0, data0 = data.(0) in

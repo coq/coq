@@ -8,9 +8,10 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-let die fmt = Printf.kfprintf (fun _ -> exit 1) stderr fmt
+let die fmt = Printf.kfprintf (fun _ -> exit 1) stderr (fmt^^"\n%!")
 
 module YB = Yojson.Basic
+module YBU = YB.Util
 
 let assoc a b : YB.t = CList.assoc_f String.equal a b
 
@@ -30,7 +31,7 @@ let rec find_cmds acc (lstate,lex as ch) =
         | `String "command" -> (lnum,l) :: acc
         | _ -> acc
       end
-    | _ -> die "File %S line %d: unrecognised value\n" fname lnum
+    | _ -> die "File %S line %d: unrecognised value" fname lnum
   in
   if is_last then acc else find_cmds acc ch
 
@@ -83,11 +84,11 @@ open BenchUtil
 
 let force_string lnum = function
   | `String s -> s
-  | _ -> die "line %d: malformed value (expected string)\n" lnum
+  | _ -> die "line %d: malformed value (expected string)" lnum
 
 let get_ts (lnum, l) = match assoc "ts" l with
   | `Int ts -> ts
-  | _ -> die "line %d: malformed ts\n" lnum
+  | _ -> die "line %d: malformed ts" lnum
 
 let get_src_info (lnum, l) = match assoc "args" l with
   | `Assoc l ->
@@ -95,10 +96,10 @@ let get_src_info (lnum, l) = match assoc "args" l with
     let line = match assoc "line" l with
       | `Int l -> l
       | `String l -> int_of_string l
-      | _ -> die "line %d: malformed line number\n" lnum
+      | _ -> die "line %d: malformed line number" lnum
     in
     hdr, line
-  | _ -> die "line %d: malformed args\n" lnum
+  | _ -> die "line %d: malformed args" lnum
 
 let hdr_regex = Str.regexp {|^Chars \([0-9]+\) - \([0-9]+\) |}
 
@@ -108,7 +109,17 @@ let get_src_chars ~lnum hdr =
     { start_char = int_of_string @@ Str.matched_group 1 hdr;
       stop_char = int_of_string @@ Str.matched_group 2 hdr; }
 
-let mk_measure start stop =
+let mk_memory (lnum, l) =
+  let args = assoc "args" l in
+  try Some {
+      major_words = YBU.(to_string @@ member "major_words" args) ;
+      minor_words = YBU.(to_string @@ member "minor_words" args);
+      major_collect = YBU.(to_int @@ member "major_collect" args);
+      minor_collect = YBU.(to_int @@ member "minor_collect" args);
+    }
+  with YBU.Type_error (msg,_) -> die "line %d: %s" lnum msg
+
+let mk_time start stop =
   let time = stop - start in
   (* time unit is microsecond *)
   let timeq = Q.(div (of_int time) (of_int 1000000)) in
@@ -133,8 +144,10 @@ let rec process_cmds acc = function
     let start_ts = get_ts start_event in
     let end_ts = get_ts end_event in
     let src_chars = get_src_chars ~lnum:(fst start_event) hdr in
-    process_cmds ((src_chars, mk_measure start_ts end_ts) :: acc) rest
-  | [_] -> die "ill parenthesized events\n"
+    let time = mk_time start_ts end_ts in
+    let memory = mk_memory end_event in
+    process_cmds ((src_chars, { time; memory; }) :: acc) rest
+  | [_] -> die "ill parenthesized events"
 
 let parse ~file =
   let cmds = read_file file in

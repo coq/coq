@@ -30,13 +30,36 @@ let htmlescape =
 let percentage ~max:m v =
   Q.to_float Q.(v * of_int 100 / m)
 
+let pp_words ~need_comma which w =
+  if w = "0 w" then need_comma, ""
+  else
+    true, (if need_comma then ", " else "")^(String.sub w 0 (String.length w - 1))^which^" w"
+
+let pp_collect ~need_comma which c =
+  if c = 0 then need_comma, ""
+  else
+    true, Printf.sprintf "%s%d %s %s"
+      (if need_comma then ", " else "") c which
+      (if c = 1 then "collection" else "collections")
+
+let pp_memory ch = function
+  | None -> ()
+  | Some {major_words; minor_words; major_collect; minor_collect} ->
+    (* need_comma <-> prefix is nontrivial *)
+    let need_comma, minor_words = pp_words ~need_comma:false "minor" minor_words in
+    let need_comma, major_words = pp_words ~need_comma "major" major_words in
+    let need_comma, minor_collect = pp_collect ~need_comma "minor" minor_collect in
+    let need_comma, major_collect = pp_collect ~need_comma "major" major_collect in
+    if need_comma then
+      Printf.fprintf ch " (%s%s%s%s)" minor_words major_words minor_collect major_collect
+
 let output ch ~vname ~data_files all_data =
 
 let out fmt = Printf.fprintf ch fmt in
 let ndata = Array.length data_files in
 
 let totals = Array.fold_left (fun acc (_,data) ->
-    Array.map2 (fun acc d -> Q.add acc d.q) acc data)
+    Array.map2 (fun acc d -> Q.add acc d.time.q) acc data)
     (Array.make ndata Q.zero)
     all_data
 in
@@ -44,7 +67,7 @@ in
 let maxq =
   Array.fold_left (fun max (_,data) ->
       Array.fold_left (fun max d ->
-          let dq = d.q in
+          let dq = d.time.q in
           if Q.lt max dq then dq
           else max)
         max
@@ -123,21 +146,21 @@ let line_id fmt l =
   end
 in
 
-let () = all_data |> Array.iteri (fun j (loc,time) ->
+let () = all_data |> Array.iteri (fun j (loc,data) ->
     let () = out {|<div class="code" title="File: %s
 Line: %d
 
 |} vname loc.line
     in
-    let () = time |> Array.iteri (fun k d ->
-        out "Time%d: %ss\n" (k+1) d.str)
+    let () = data |> Array.iteri (fun k d ->
+        out "Time%d: %ss%a\n" (k+1) d.time.str pp_memory d.memory)
     in
     let () = out {|">|} in
 
-    let () = time |> Array.iteri (fun k d ->
+    let () = data |> Array.iteri (fun k d ->
         out {|<div class="time%d" style="width: %f%%"></div>|}
           (k+1)
-          (percentage d.q ~max:maxq))
+          (percentage d.time.q ~max:maxq))
     in
 
     let text = loc.text in
@@ -168,18 +191,18 @@ in
 ()
 
 let raw_output ch ~min_diff all_data =
-  all_data |> Array.iteri @@ fun j (loc,time) ->
-  let t1, t2 = match time with
-    | [|t1; t2|] -> t1, t2
-    | _ -> die "-raw-o only supports 2 data files, got %d" (Array.length time)
+  all_data |> Array.iteri @@ fun j (loc,data) ->
+  let d1, d2 = match data with
+    | [|d1; d2|] -> d1, d2
+    | _ -> die "-raw-o only supports 2 data files, got %d" (Array.length data)
   in
-  let diff = Q.(t2.q - t1.q) in
+  let diff = Q.(d2.time.q - d1.time.q) in
   let ignore = Q.lt (Q.abs diff) min_diff in
   if not ignore then begin
-    let pdiff = if Q.(equal zero t1.q) then Float.infinity
-      else Q.(to_float @@ ((of_int 100 * diff) / t1.q))
+    let pdiff = if Q.(equal zero d1.time.q) then Float.infinity
+      else Q.(to_float @@ ((of_int 100 * diff) / d1.time.q))
     in
     (* XXX %.4f makes sense for min_diff=1e-4 but should be smarter for other min_diff *)
     Printf.fprintf ch "%s %s %.4f %3.2f%% %d\n"
-      t1.str t2.str (Q.to_float diff) pdiff loc.line
+      d1.time.str d2.time.str (Q.to_float diff) pdiff loc.line
   end
