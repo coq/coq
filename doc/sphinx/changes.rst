@@ -187,7 +187,8 @@ and for open-sourcing their website. It includes full support for the `Rocq
 package archive <https://github.com/coq/opam>`_, a responsive design and easy
 contributions through markdown files. The new identity, customized fonts and
 logo were designed by Bastien Sozeau, consulting for the Rocq development team.
-They are released under a permissive open-source license.
+The logo is released under the UNLICENSE open-source `license <https://github.com/coq/rocq-prover.org/LICENSE>`
+and customized 3rd-party fonts are released under open-source `licences <https://github.com/coq/rocq-prover.org/LICENSE-3RD-PARTY>`.
 
 The website is deployed automatically using a
 custom `deployer <https://deploy.rocq-prover.org>`_ developed by Matthieu
