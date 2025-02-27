@@ -272,5 +272,9 @@ Ltac2 @ external unify : constr -> constr -> unit := "rocq-runtime.plugins.ltac2
 
 Ltac2 @ external congruence : int option -> constr list option -> unit :=
   "rocq-runtime.plugins.ltac2" "congruence".
+
 Ltac2 @ external simple_congruence : int option -> constr list option -> unit :=
   "rocq-runtime.plugins.ltac2" "simple_congruence".
+
+Ltac2 @external f_equal : unit -> unit :=
+  "rocq-runtime.plugins.ltac2" "f_equal".
