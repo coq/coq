@@ -141,7 +141,7 @@ There are important changes to consider for building plugins and libraries:
 
 - To be future-proof, projects based on `coq_makefile` can be ported to not rely
   on the compatibility layer anymore. To do so, one must replace uses of
-  `coq_makefile` with :ref:`rocq makefile`, which will directly
+  `coq_makefile` with :ref:`rocq makefile <rocq_makefile>`, which will directly
   call the new `rocq` binary without relying on the compatibility shims.
 
 - If using `dune` to :ref:`build <building_dune>` a Rocq project, you will still
