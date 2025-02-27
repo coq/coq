@@ -48,6 +48,8 @@ type 'a safe_transformer = safe_environment -> 'a * safe_environment
 
 type private_constants
 
+val debug_print_private_constants : private_constants -> Pp.t
+
 val empty_private_constants : private_constants
 val is_empty_private_constants : private_constants -> bool
 

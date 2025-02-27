@@ -387,6 +387,7 @@ let goal_uid e = string_of_int (Evar.repr e)
 
 let pr_proof p =
   let { goals=fg_goals; stack=bg_goals; sigma } = data p in
+  let entry = Proofview.partial_proof p.entry p.proofview in
   Pp.(
     let pr_goal_list = prlist_with_sep spc pr_goal in
     let rec aux acc = function
@@ -397,7 +398,8 @@ let pr_proof p =
     str "[" ++ str "focus structure: " ++
                aux (pr_goal_list fg_goals) bg_goals ++ str ";" ++ spc () ++
     str "shelved: " ++ pr_goal_list (Evd.shelf sigma) ++ str ";" ++ spc () ++
-    str "given up: " ++ pr_goal_list (Evar.Set.elements @@ Evd.given_up sigma) ++
+    str "given up: " ++ pr_goal_list (Evar.Set.elements @@ Evd.given_up sigma) ++ spc() ++
+    str "partial proof: " ++ prlist_with_sep spc (Termops.Internal.print_constr_env (Global.env()) sigma) entry ++
     str "]"
   )
 

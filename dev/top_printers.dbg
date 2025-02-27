@@ -10,6 +10,7 @@ install_printer Top_printers.ppproj
 install_printer Top_printers.ppprojrepr
 install_printer Top_printers.ppkn
 install_printer Top_printers.ppmind
+install_printer Top_printers.ppseff
 install_printer Top_printers.ppind
 install_printer Top_printers.ppsp
 install_printer Top_printers.ppqualid
