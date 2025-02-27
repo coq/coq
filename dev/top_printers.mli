@@ -29,6 +29,8 @@ val ppkn : Names.KerName.t -> unit
 val ppmind : Names.MutInd.t -> unit
 val ppind : Names.inductive -> unit
 
+val ppseff : Safe_typing.private_constants -> unit
+
 val ppuint63 :  Uint63.t -> unit
 
 val ppsp : Libnames.full_path -> unit

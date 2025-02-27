@@ -437,6 +437,10 @@ end
 
 type private_constants = SideEffects.t
 
+let debug_print_private_constants seff =
+  let open Pp in
+  prlist_with_sep spc (fun seff -> Constant.print seff.seff_constant) (SideEffects.repr seff)
+
 let side_effects_of_private_constants l =
   List.rev (SideEffects.repr l)
 

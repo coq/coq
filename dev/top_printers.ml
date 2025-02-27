@@ -246,6 +246,8 @@ let ppproofview p =
   let gls,sigma = Proofview.proofview p in
   pp(pr_enum pr_goal gls ++ fnl () ++ Termops.pr_evar_map (Some 1) (Global.env ()) sigma)
 
+let ppseff seff = pp (Safe_typing.debug_print_private_constants seff)
+
 let ppopenconstr (x : Evd.open_constr) =
   let (evd,c) = x in pp (Termops.pr_evar_map (Some 2) (Global.env ()) evd ++ envpp pr_econstr_env c)
 (* spiwack: deactivated until a replacement is found
