@@ -36,6 +36,7 @@ sort_family: [
 | "Prop"
 | "SProp"
 | "Type"
+| "Poly"
 ]
 
 universe_increment: [
