@@ -54,8 +54,10 @@ let inductive_params (mib,_) = mib.mind_nparams
 let inductive_paramdecls (mib,u) =
   Vars.subst_instance_context u mib.mind_params_ctxt
 
+let inductive_nnonrecparams mib = mib.mind_nparams - mib.mind_nparams_rec
+
 let inductive_nonrec_rec_paramdecls (mib,u) =
-  let nnonrecparamdecls = mib.mind_nparams - mib.mind_nparams_rec in
+  let nnonrecparamdecls = inductive_nnonrecparams mib in
   let paramdecls = inductive_paramdecls (mib,u) in
   Context.Rel.chop_nhyps nnonrecparamdecls paramdecls
 
@@ -285,7 +287,7 @@ let instantiate_template_constraints subst templ =
   in
   Constraints.fold fold cstrs Constraints.empty
 
-let instantiate_template_universes (mib, _mip) args =
+let instantiate_template_universes mib args =
   let templ = match mib.mind_template with
   | None -> assert false
   | Some t -> t
@@ -318,7 +320,7 @@ let type_of_inductive_gen ((mib,mip),u) paramtyps =
     let cst = instantiate_inductive_constraints mib u in
     subst_instance_constr u mip.mind_user_arity, cst
   | Some templ ->
-    let cst, params, subst = instantiate_template_universes (mib, mip) paramtyps in
+    let cst, params, subst = instantiate_template_universes mib paramtyps in
     let ctx = (List.firstn mip.mind_nrealdecls mip.mind_arity_ctxt) @ params in
     let s = template_subst_sort subst templ.template_concl in
     Term.mkArity (ctx, s), cst
@@ -346,7 +348,7 @@ let type_of_constructor_gen (cstr, u) (mib,mip) paramtyps =
     let cst = instantiate_inductive_constraints mib u in
     subst_instance_constr u mip.mind_user_lc.(i-1), cst
   | Some _ ->
-    let cst, params, _ = instantiate_template_universes (mib, mip) paramtyps in
+    let cst, params, _ = instantiate_template_universes mib paramtyps in
     let _, typ = Term.decompose_prod_n_decls (List.length mib.mind_params_ctxt) mip.mind_user_lc.(i - 1) in
     let typ = Term.it_mkProd_or_LetIn typ params in
     typ, cst
