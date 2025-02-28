@@ -308,23 +308,21 @@ let error_expect_binder_notation_type ?loc id =
 
 let set_notation_var_scope ?loc id (tmp_scope,subscopes as scopes) ntnbinders ntnvars =
   try
-    let {Genintern.ntnvar_scopes=idscopes; ntnvar_binding_ids=ntn_binding_ids; ntnvar_typ=typ} =
-      Id.Map.find id ntnvars
-    in
+    let {Genintern.ntnvar_typ=typ} as status = Id.Map.find id ntnvars in
     match typ with
     | Notation_term.NtnInternTypeOnlyBinder -> error_expect_binder_notation_type ?loc id
     | Notation_term.NtnInternTypeAny principal ->
-      let () = match !idscopes with
-      | None -> idscopes := Some scopes
+      let () = match status.ntnvar_scopes with
+      | None -> status.ntnvar_scopes <- Some scopes
       | Some (tmp_scope', subscopes') ->
         let s' = make_current_scope tmp_scope' subscopes' in
         let s = make_current_scope tmp_scope subscopes in
         if Option.is_empty principal && not (List.equal String.equal s' s) then
           warn_inconsistent_scope ?loc (id,s',s)
       in
-      let () = match !ntn_binding_ids with
-      | None -> ntn_binding_ids := Some ntnbinders
-      | Some ntnbinders' -> ntn_binding_ids := Some (Id.Set.inter ntnbinders ntnbinders')
+      let () = match status.ntnvar_binding_ids with
+      | None -> status.ntnvar_binding_ids <- Some ntnbinders
+      | Some ntnbinders' -> status.ntnvar_binding_ids <- Some (Id.Set.inter ntnbinders ntnbinders')
       in
       ()
  with Not_found ->
@@ -334,7 +332,7 @@ let set_notation_var_scope ?loc id (tmp_scope,subscopes as scopes) ntnbinders nt
 let set_var_is_binder ?loc id ntnvars =
   try
     let status = Id.Map.find id ntnvars in
-    status.Genintern.ntnvar_used_as_binder := true
+    status.Genintern.ntnvar_used_as_binder <- true
   with Not_found ->
     (* Not in a notation *)
     ()
@@ -2409,7 +2407,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     | CGenarg gen ->
         let (ltacvars, ntnvars) = lvar in
         (* Preventively declare notation variables in ltac as non-bindings *)
-        Id.Map.iter (fun x status -> status.Genintern.ntnvar_used_as_binder := false) ntnvars;
+        Id.Map.iter (fun x status -> status.Genintern.ntnvar_used_as_binder <- false) ntnvars;
         let extra = ltacvars.ltac_extra in
         (* We inform ltac that the interning vars and the notation vars are bound *)
         (* but we could instead rely on the "intern_sign" *)
@@ -2795,9 +2793,9 @@ let interp_notation_constr env ?(impls=empty_internalization_env) nenv a =
   let ids = extract_ids env in
   (* [vl] is intended to remember the scope of the free variables of [a] *)
   let make_status scopes typ = {
-    Genintern.ntnvar_used_as_binder = ref false;
-    ntnvar_scopes = ref scopes;
-    ntnvar_binding_ids = ref None;
+    Genintern.ntnvar_used_as_binder = false;
+    ntnvar_scopes = scopes;
+    ntnvar_binding_ids = None;
     ntnvar_typ = typ;
   }
   in
@@ -2820,8 +2818,8 @@ let interp_notation_constr env ?(impls=empty_internalization_env) nenv a =
   let out_bindings = function None -> Id.Set.empty | Some a -> a in
   let unused = match reversible with NonInjective ids -> ids | _ -> [] in
   let vars = Id.Map.mapi (fun id status ->
-      (!(status.Genintern.ntnvar_used_as_binder) && not (List.mem_f Id.equal id unused),
-       out_scope !(status.ntnvar_scopes), out_bindings !(status.ntnvar_binding_ids))) vl in
+      (status.Genintern.ntnvar_used_as_binder && not (List.mem_f Id.equal id unused),
+       out_scope status.ntnvar_scopes, out_bindings status.ntnvar_binding_ids)) vl in
   (* Returns [a] and the ordered list of variables with their scopes *)
   vars, a, reversible
 

@@ -14,9 +14,9 @@ open Genarg
 module Store : Store.S
 
 type ntnvar_status = {
-  ntnvar_used_as_binder : bool ref;
-  ntnvar_scopes : Notation_term.subscopes option ref;
-  ntnvar_binding_ids : Notation_term.notation_var_binders option ref;
+  mutable ntnvar_used_as_binder : bool;
+  mutable ntnvar_scopes : Notation_term.subscopes option;
+  mutable ntnvar_binding_ids : Notation_term.notation_var_binders option;
   ntnvar_typ : Notation_term.notation_var_internalization_type;
 }
 
