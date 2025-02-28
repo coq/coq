@@ -233,12 +233,12 @@ fun l : list nat => match l with
 
 Arguments foo l%_list_scope
 Notation "'exists' x .. y , p" := (ex (fun x => .. (ex (fun y => p)) ..))
-  : type_scope (default interpretation)
+  : type_scope (default interpretation) (from Corelib.Init.Logic)
 Notation "'exists' ! x .. y , p" :=
   (ex (unique (fun x => .. (ex (unique (fun y => p))) ..))) : type_scope
-  (default interpretation)
+  (default interpretation) (from Corelib.Init.Logic)
 Notation "( x , y , .. , z )" := (pair .. (pair x y) .. z) : core_scope
-  (default interpretation)
+  (default interpretation) (from Corelib.Init.Datatypes)
 1 goal
   
   ============================

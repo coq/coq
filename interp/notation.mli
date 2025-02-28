@@ -80,7 +80,7 @@ type notation_location = (DirPath.t * DirPath.t) * string
     2nd dirpath: module and section-only dirpath (ie [Lib.current_dirpath true])
     string: string used to generate the notation
 
-    dirpaths are used for dumpglob, string for printing (pr_notation_info)
+    dirpaths are used for dumpglob and for Locate, string for printing (pr_notation_info)
 *)
 
 type required_module = full_path * string list

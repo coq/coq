@@ -477,7 +477,7 @@ let glob_constr_of_notation_constr ?loc x =
   in aux () x
 
 let pr_notation_info prglob ntn c =
-  str (String.quote_coq_string ntn) ++ str " :=" ++ brk (1,2) ++
+  str (String.quote_coq_string ntn) ++ str " :=" ++ spc() ++
   prglob (glob_constr_of_notation_constr c)
 
 (******************************************************************************)

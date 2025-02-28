@@ -1,2 +1,2 @@
-Notation "%" := 0 (default interpretation) (only printing)
-Notation "%" := 0 (default interpretation) (only parsing)
+Notation "%" := 0 (default interpretation) (only printing) (from wish_17316)
+Notation "%" := 0 (default interpretation) (only parsing) (from wish_17316)

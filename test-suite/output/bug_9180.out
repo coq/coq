@@ -1,3 +1,4 @@
-Notation "n .+1" := (S n) : nat_scope (default interpretation)
+Notation "n .+1" := (S n) (* n in scope _nat_scope *) : nat_scope
+  (default interpretation) (from bug_9180)
 forall x : nat, x.+1 = x.+1
      : Prop

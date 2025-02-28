@@ -2497,6 +2497,29 @@ let interp_notation_as_global_reference_expanded ?loc ~head test ntn sc =
 let interp_notation_as_global_reference ?loc ~head test ntn sc =
   let _,_,_,_,ref = interp_notation_as_global_reference_expanded ?loc ~head test ntn sc in ref
 
+let pr_id_infos (id, ((level,(tmp_scopes, scopes)), under_binders, kind)) =
+  let scopes = List.map (fun x -> "_"^x) tmp_scopes @ scopes in
+  match scopes with
+  | [] -> None
+  | _ ->
+    (* IDK how to insert delimiters in the constr for printing
+       so instead use "in constr" modifier even though it's ignored
+       (#20297)
+       Also not sure if we can ever see multiple scopes but if we do we produce invalid syntax.
+
+       This is why we print comment syntax "(* x in scope foo *)" instead of "(x in scope foo)". *)
+    let pp =
+      Id.print id ++ str " in " ++ str (CString.lplural scopes "scope") ++ spc() ++
+      prlist_with_sep spc str scopes
+    in
+    Some pp
+
+let pr_ids_infos ids =
+  let pp = List.filter_map pr_id_infos ids in
+  match pp with
+  | [] -> mt()
+  | _ -> spc() ++ surround (str "*" ++ spc() ++ prlist_with_sep pr_comma (fun x -> x) pp ++ spc() ++ str "*")
+
 let locate_notation prglob ntn scope =
   let ntns = factorize_entries (browse_notation false ntn !scope_map) in
   let scopes = Option.fold_right push_scope scope !scope_stack in
@@ -2506,15 +2529,19 @@ let locate_notation prglob ntn scope =
     prlist_with_sep fnl (fun (ntn,l) ->
       let scope = find_default ntn scopes in
       prlist_with_sep fnl
-        (fun (sc,(on_parsing,on_printing,{ not_interp  = (_, r); not_location = (_, df) })) ->
-          hov 0 (
-            str "Notation" ++ brk (1,2) ++
+        (fun (sc,(on_parsing,on_printing,{ not_interp  = (ids, r); not_location = ((libpath,secpath), df) })) ->
+          let full_path = DirPath.make (DirPath.repr secpath @ DirPath.repr libpath) in
+          hov 2 (
+            str "Notation" ++ spc() ++
             Notation_ops.pr_notation_info prglob df r ++
+            pr_ids_infos ids ++
             (if String.equal sc default_scope then mt ()
-             else (brk (1,2) ++ str ": " ++ str sc)) ++
+             else (spc() ++ str ": " ++ str sc)) ++
             (if Option.equal String.equal (Some sc) scope
-             then brk (1,2) ++ str "(default interpretation)" else mt ()) ++
-            pr_non_empty (brk (1,2)) (pr_notation_status on_parsing on_printing)))
+             then spc() ++ str "(default interpretation)" else mt ()) ++
+            pr_non_empty (spc()) (pr_notation_status on_parsing on_printing) ++
+            spc() ++ surround (str "from " ++  DirPath.print full_path)
+          ))
         l) ntns
 
 let collect_notation_in_scope scope sc known =
