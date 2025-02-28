@@ -7,7 +7,4 @@ Notation "'silly' i1 .. i_ => x"
       v)
        (at level 10, i1 binder, i_ binder, only parsing).
 
-Fail #[warnings="+ltac2-missing-notation-var"] Check silly a b c => (a, b, c).
-(* Error: Missing notation term for variables i1 i_ x, probably an ill-typed expression *)
-
-Check silly a b c => (a, b, c).
+Fail Check silly a b c => (a, b, c).
