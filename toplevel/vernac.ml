@@ -57,6 +57,9 @@ module State = struct
     sid : Stateid.t;
     proof : Proof.t option;
     time : time_output option;
+    failed_proofs : (Names.Id.t * Pp.t) list;
+    in_recovery : bool;
+    recovery_mode : bool;
   }
 
 end
@@ -70,9 +73,26 @@ let emit_time state com tstart tend =
     | ToFeedback -> Feedback.msg_notice pp
     | ToChannel ch -> Pp.pp_with ch (pp ++ fnl())
 
+
+let admitted_com =
+  CAst.make { control = []; attrs = []; expr =
+    VernacSynPure (VernacEndProof Admitted)}
+
+let noop_com =
+  CAst.make {control = []; attrs = []; expr =
+    VernacSynPure (VernacProof (None, None))}
+
 let interp_vernac ~check ~state ({CAst.loc;_} as com) =
   let open State in
+
     try
+      let new_recovery_status, com =
+        if state.in_recovery then
+          (match Vernac_classifier.classify_vernac com with
+            Vernacextend.VtQed _ -> false, admitted_com
+            | _ -> true, noop_com)
+          else false, com in
+
       let doc, nsid, ntip = Stm.add ~doc:state.doc ~ontop:state.sid (not !Flags.quiet) com in
 
       (* Main STM interaction *)
@@ -80,9 +100,27 @@ let interp_vernac ~check ~state ({CAst.loc;_} as com) =
         anomaly (str "vernac.ml: We got an unfocus operation on the toplevel!");
 
       (* Force the command  *)
-      let () = if check then Stm.observe ~doc nsid in
-      let new_proof = Vernacstate.Declare.give_me_the_proof_opt () [@ocaml.warning "-3"] in
-      { state with doc; sid = nsid; proof = new_proof; }
+      (try
+        let () = if check && not new_recovery_status then
+          Stm.observe ~doc nsid in
+        let new_proof = Vernacstate.Declare.give_me_the_proof_opt () [@ocaml.warning "-3"] in
+        { state with doc; sid = nsid; proof = new_proof;
+          in_recovery = new_recovery_status}
+      with potentially_catched when
+        state.recovery_mode && noncritical potentially_catched ->
+        match state.proof with
+        | Some prf ->
+          (* If we want the compilation to proceed, we need the faulty error
+             to be removed from the STM, otherwise "Admitted" will dig it
+             out later. *)
+          let _, _ = Stm.edit_at ~doc state.sid in
+          let doc, nsid, ntip =
+            Stm.add ~doc:state.doc ~ontop:state.sid
+              (not !Flags.quiet) noop_com in
+          {state with doc; sid = nsid; in_recovery = true;
+          failed_proofs = ((Proof.data prf).name, print potentially_catched) ::
+            state.failed_proofs}
+        | None -> raise potentially_catched)
     with reraise ->
       let (reraise, info) = Exninfo.capture reraise in
       let info =
@@ -90,8 +128,7 @@ let interp_vernac ~check ~state ({CAst.loc;_} as com) =
         match Loc.get_loc info, loc with
         | None, Some loc -> Loc.add_loc info loc
         | Some _, _ | _, None  -> info
-      in
-      Exninfo.iraise (reraise, info)
+       in Exninfo.iraise (reraise, info)
 
 (* Load a vernac file. CErrors are annotated with file and location *)
 let load_vernac_core ~echo ~check ~state ?source file =
@@ -225,6 +262,15 @@ let beautify_pass ~doc ~comments ~ids ~filename =
    pass. *)
 let load_vernac ~echo ~check ~state ?source filename =
   let ostate, ids, comments = load_vernac_core ~echo ~check ~state ?source filename in
+    if 1 <= List.length ostate.failed_proofs then
+      user_err (Pp.str "proofs failed in file " ++ Pp.str filename
+      ++ str ", number of failures: "
+      ++ int (List.length ostate.failed_proofs) ++ fnl()
+      ++ (ostate.failed_proofs
+                        |> List.rev
+                        |> prlist_with_sep fnl
+                          (fun (x, y) -> Names.Id.print x ++ Pp.fnl() ++
+                            y)));
   (* Pass for beautify *)
   if !Flags.beautify then beautify_pass ~doc:ostate.State.doc ~comments ~ids:(List.rev ids) ~filename;
   (* End pass *)
