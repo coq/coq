@@ -110,7 +110,32 @@ let eval_flexible_term ts env evd c sk =
                (delta) step. *)
             let unf = unfold_projection_under_eta env evd ts c def in
             Some (Option.default def unf, sk)
-        | OpaqueDef _ | Undef _ | Primitive _ -> None
+        | Primitive op ->
+          let nargs = CPrimitives.arity op in
+          let (args, rest_sk) = Stack.strip_app sk in
+          let args = Option.get @@ Stack.list_of_app_stack args in
+          begin match List.chop nargs args with
+          | (args, appl) ->
+            let args_red = CPrimitives.kind op in
+            assert (List.length args_red <= List.length args);
+            let args =
+              let open CPrimitives in
+              let red arg = function
+                | Kparam | Karg -> arg
+                | Kwhnf ->
+                  let flags = RedFlags.all in
+                  let flags = RedFlags.red_add_transparent flags ts in
+                  Reductionops.clos_whd_flags flags env evd arg
+              in
+              List.map2 red args args_red
+            in
+            begin match CredNative.(red_prim env evd op u @@ Array.of_list args) with
+              | Some v -> Some (v, rest_sk)
+              | None -> None
+              end
+            | exception Failure _ -> None
+          end
+        | OpaqueDef _ | Undef _ -> None
         | Symbol b ->
             try
             let r = match lookup_rewrite_rules c env with r -> r | exception Not_found -> assert false in
