@@ -2152,10 +2152,10 @@ let interp_ltac_constr ist c k = Ftactic.run (interp_ltac_constr ist c) k
 (***************************************************************************)
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)
 
-let _ =
+let () =
   let eval ?loc ~poly env sigma tycon (used_ntnvars,tac) =
-    let () = assert (Id.Set.is_empty used_ntnvars) in
     let lfun = GlobEnv.lfun env in
+    let () = assert (Id.Set.subset used_ntnvars (Id.Map.domain lfun)) in
     let extra = TacStore.set TacStore.empty f_debug (get_debug ()) in
     let ist = { lfun; poly; extra; } in
     let tac = eval_tactic_ist ist tac in

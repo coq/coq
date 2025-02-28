@@ -688,9 +688,23 @@ and intern_genarg ist (GenArg (Rawwit wit, x)) =
   | ExtraArg s ->
       snd (Genintern.generic_intern ist (in_gen (rawwit wit) x))
 
+(* ntnvars are also in ltacvars so using Genintern.with_used_ntnvars
+   may not see them even if they are used *)
+let used_all_ntnvars ntnvars =
+  let set_used status = match status.Genintern.ntnvar_used with
+    | [] | true :: _ -> ()
+    | false :: rest -> status.ntnvar_used <- true :: rest
+  in
+  let ntnvars = Id.Map.filter (fun _ status -> match status.Genintern.ntnvar_typ with
+      | NtnInternTypeAny _ -> set_used status; true
+      | NtnInternTypeOnlyBinder -> false)
+      ntnvars
+  in
+  Id.Map.domain ntnvars
+
 let intern_ltac_in_term ist tac =
   let tac = intern_tactic_or_tacarg ist tac in
-  Id.Map.domain ist.intern_sign.notation_variable_status, tac
+  used_all_ntnvars ist.intern_sign.notation_variable_status, tac
 
 (** Other entry points *)
 
@@ -776,10 +790,10 @@ let () =
 
 (** Substitution for notations containing tactic-in-terms *)
 
-let notation_subst avoid bindings (used_ntnvars,tac) =
+let notation_subst ntnvars bindings (used_ntnvars,tac) =
   let fold id accu =
     match bindings id with
-    | None -> accu
+    | exception (Nametab.GlobalizationError _) | None -> accu
     | Some c ->
       let loc = Glob_ops.loc_of_glob_constr c in
       let c = ConstrMayEval (ConstrTerm (c, None)) in
@@ -789,7 +803,7 @@ let notation_subst avoid bindings (used_ntnvars,tac) =
   (* This is theoretically not correct due to potential variable
      capture, but Ltac has no true variables so one cannot simply
      substitute *)
-  if List.is_empty bindings then avoid, tac
-  else avoid, CAst.make (TacLetIn (false, bindings, tac))
+  if List.is_empty bindings then Id.Set.empty, tac
+  else used_all_ntnvars ntnvars, CAst.make (TacLetIn (false, bindings, tac))
 
 let () = Genintern.register_ntn_subst0 wit_ltac_in_term notation_subst

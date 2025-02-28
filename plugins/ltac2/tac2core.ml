@@ -1782,8 +1782,8 @@ let () =
 let () =
   let interp ?loc ~poly env sigma tycon (ids, tac) =
     (* Syntax prevents bound notation variables in constr quotations *)
-    let () = assert (Id.Set.is_empty ids) in
     let ist = Tac2interp.get_env @@ GlobEnv.lfun env in
+    let () = assert (Id.Set.subset ids (Id.Map.domain ist.env_ist)) in
     let tac = Proofview.tclIGNORE (Tac2interp.interp ist tac) in
     let name, poly = Id.of_string "ltac2", poly in
     let sigma, concl = match tycon with
@@ -1892,28 +1892,29 @@ let dummy_binder id =
        (Id.of_string_soft ("Notation variable " ^ Id.to_string id ^ " is not available")))
 
 let () =
-  let subs avoid globs (ids, tac as orig) =
+  let subs ntnvars globs (ids, tac as orig) =
     if Id.Set.is_empty ids then
       (* closed tactic *)
       orig
     else
       (* Let-bind the notation terms inside the tactic *)
-      let fold id (missing, accu) =
-        let c, missing = match globs id with
-          | None ->
+      let fold id (missing, used_ntnvars, accu) =
+        let used, c, missing =
+          match Genintern.with_used_ntnvars ntnvars (fun () -> globs id) with
+          | exception (Nametab.GlobalizationError _) | _, None ->
             (* FIXME: provide a reasonable middle-ground with the behaviour
                introduced by 8d9b66b. We should be able to pass mere syntax to
                term notation without facing the wrath of the internalization. *)
-            dummy_binder id, Id.Set.add id missing
-          | Some c -> c, missing
+            Id.Set.empty, dummy_binder id, Id.Set.add id missing
+          | used, Some c -> used, c, missing
         in
-        let c = GTacExt (Tac2quote.wit_preterm, (avoid, c)) in
-        missing, (Name id, c) :: accu
+        let c = GTacExt (Tac2quote.wit_preterm, (used, c)) in
+        missing, Id.Set.union used_ntnvars used, (Name id, c) :: accu
       in
-      let rem, bnd = Id.Set.fold fold ids (Id.Set.empty, []) in
+      let rem, used, bnd = Id.Set.fold fold ids (Id.Set.empty, Id.Set.empty, []) in
       let () = if not @@ Id.Set.is_empty rem then warn_missing_notation_variable rem in
       let tac = if List.is_empty bnd then tac else GTacLet (false, bnd, tac) in
-      (avoid, tac)
+      (used, tac)
   in
   Genintern.register_ntn_subst0 wit_ltac2_constr subs
 

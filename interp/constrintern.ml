@@ -948,10 +948,8 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
     | NGenarg arg ->
       let glob_of_term (c, scopes) =
         let nenv = set_env_scopes env scopes in
-        try
-          let gc = intern nenv c in
-          Some gc
-        with Nametab.GlobalizationError _ -> None
+        let gc = intern nenv c in
+        gc
       in
       let glob_of_binder ((c,_bk), (onlyident,(tmp_scope,subscopes))) =
         let nenv = {env with tmp_scope; scopes = subscopes @ env.scopes} in
@@ -966,12 +964,12 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
       in
       let get_glob id =
         match Id.Map.find_opt id terms with
-        | Some term -> glob_of_term term
+        | Some term -> Some (glob_of_term term)
         | None -> match Id.Map.find_opt id binders with
           | Some binder -> Some (glob_of_binder binder)
-          | None -> assert false
+          | None -> None
       in
-      let arg = Genintern.generic_substitute_notation avoid get_glob arg in
+      let arg = Genintern.generic_substitute_notation ntnvars get_glob arg in
       DAst.make ?loc @@ GGenarg arg
     | NBinderList (x,y,iter,terminator,revert) ->
       (try
