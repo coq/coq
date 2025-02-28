@@ -14,6 +14,8 @@ open Genarg
 module Store : Store.S
 
 type ntnvar_status = {
+  (* list so that we can separate using a variable in different subterms *)
+  mutable ntnvar_used : bool list;
   mutable ntnvar_used_as_binder : bool;
   mutable ntnvar_scopes : Notation_term.subscopes option;
   mutable ntnvar_binding_ids : Notation_term.notation_var_binders option;
@@ -76,6 +78,8 @@ val register_intern0 : ('raw, 'glb, 'top) genarg_type ->
 val register_intern_pat : ('raw, 'glb, 'top) genarg_type ->
   ('raw, 'glb) intern_pat_fun -> unit
 
-
 val register_ntn_subst0 : ('raw, 'glb, 'top) genarg_type ->
   'glb ntn_subst_fun -> unit
+
+(** Used to compute the set of used notation variables during internalization.*)
+val with_used_ntnvars : ntnvar_status Id.Map.t -> (unit -> 'a) -> Id.Set.t * 'a

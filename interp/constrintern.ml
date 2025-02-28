@@ -324,6 +324,11 @@ let set_notation_var_scope ?loc id (tmp_scope,subscopes as scopes) ntnbinders nt
       | None -> status.ntnvar_binding_ids <- Some ntnbinders
       | Some ntnbinders' -> status.ntnvar_binding_ids <- Some (Id.Set.inter ntnbinders ntnbinders')
       in
+      let () = match status.ntnvar_used with
+        | [] -> () (* not recording if notation var is used *)
+        | true :: _ -> () (* already marked used *)
+        | false :: rest -> status.ntnvar_used <- true :: rest
+      in
       ()
  with Not_found ->
     (* Not in a notation *)
@@ -2797,7 +2802,8 @@ let interp_notation_constr env ?(impls=empty_internalization_env) nenv a =
   let ids = extract_ids env in
   (* [vl] is intended to remember the scope of the free variables of [a] *)
   let make_status scopes typ = {
-    Genintern.ntnvar_used_as_binder = false;
+    Genintern.ntnvar_used = [];
+    ntnvar_used_as_binder = false;
     ntnvar_scopes = scopes;
     ntnvar_binding_ids = None;
     ntnvar_typ = typ;

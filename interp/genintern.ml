@@ -14,6 +14,7 @@ open Genarg
 module Store = Store.Make ()
 
 type ntnvar_status = {
+  mutable ntnvar_used : bool list;
   mutable ntnvar_used_as_binder : bool;
   mutable ntnvar_scopes : Notation_term.subscopes option;
   mutable ntnvar_binding_ids : Notation_term.notation_var_binders option;
@@ -108,3 +109,29 @@ let register_ntn_subst0 = NtnSubst.register0
 let generic_substitute_notation avoid env (GenArg (Glbwit wit, v) as orig) =
   let v' = substitute_notation wit avoid env v in
   if v' == v then orig else in_gen (glbwit wit) v'
+
+let with_used_ntnvars ntnvars f =
+  let () = Id.Map.iter (fun _ status ->
+      status.ntnvar_used <- false:: status.ntnvar_used)
+      ntnvars
+  in
+  match f () with
+  | v ->
+    let used = Id.Map.fold (fun id status acc -> match status.ntnvar_used with
+        | [] -> assert false
+        | false :: rest -> status.ntnvar_used <- rest; acc
+        | true :: rest ->
+          let rest = match rest with
+            | [] | true :: _ -> rest
+            | false :: rest -> true :: rest
+          in
+          status.ntnvar_used <- rest;
+          Id.Set.add id acc)
+        ntnvars
+        Id.Set.empty
+    in
+    used, v
+  | exception e ->
+    let e = Exninfo.capture e in
+    let () = Id.Map.iter (fun _ status -> status.ntnvar_used <- List.tl status.ntnvar_used) ntnvars in
+    Exninfo.iraise e
