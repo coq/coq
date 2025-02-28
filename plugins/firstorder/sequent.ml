@@ -37,7 +37,7 @@ let priority : type a. a pattern -> int = (* pure heuristics, <=0 for non revers
           | Lor _                  ->  40
           | Lforall (_,_,_)        -> -30
           | Lexists _              ->  60
-          | LA(_,lap) ->
+          | LA lap ->
               match lap with
                   LLatom           ->   0
                 | LLfalse (_,_)    -> 100
@@ -70,65 +70,23 @@ end
 
 module History=Set.Make(Hitem)
 
-module Context :
-sig
-  type t
-  val empty : t
-  val find : Evd.evar_map -> atom -> t -> GlobRef.t
-  val add : Evd.evar_map -> atom -> GlobRef.t -> t -> t
-  val remove : Environ.env -> Evd.evar_map -> atom -> GlobRef.t -> t -> t
-end =
-struct
-
-module Atom =
-struct
-  type t = atom
-  let compare = compare_atom
-end
-
-module CM = Map.Make(Atom)
-
-type t = GlobRef.t list CM.t
-
-let empty = CM.empty
-
-let find sigma t cm =
-  List.hd (CM.find t cm)
-
-let add sigma typ nam cm =
-  try
-    let l=CM.find typ cm in CM.add typ (nam::l) cm
-  with
-      Not_found->CM.add typ [nam] cm
-
-let remove env sigma typ nam cm =
-  try
-    let l=CM.find typ cm in
-    let l0=List.filter (fun id-> not (Environ.QGlobRef.equal env id nam)) l in
-      match l0 with
-          []->CM.remove typ cm
-        | _ ->CM.add typ l0 cm
-      with Not_found ->cm
-
-end
-
 module HP=Heap.Functional(OrderedFormula)
 
-type seqgoal = GoalTerm of atom | GoalAtom of atom
+type seqgoal = GoalTerm of Formula.uid | GoalAtom of atom | GoalDummy
 
 type t=
     {redexes:HP.t;
-     context:Context.t;
      state : Env.t;
      latoms:atom list;
      gl: seqgoal;
      cnt:counter;
      history:History.t;
+     hyps : Id.Set.t;
      depth:int}
 
 let has_fuel seq = seq.depth > 0
 
-let iter_redexes f seq = HP.iter f seq.redexes
+let iter_redexes f seq = HP.iter (fun (AnyFormula p) -> f p.atoms) seq.redexes
 
 let deepen seq={seq with depth=seq.depth-1}
 
@@ -148,38 +106,39 @@ let lookup env sigma item seq=
 let add_concl ~flags env sigma t seq =
   match build_formula ~flags seq.state env sigma Concl goal_id t seq.cnt with
   | state, Left f ->
-    {seq with redexes=HP.add (AnyFormula f) seq.redexes; gl = GoalTerm f.constr; state }
+    {seq with redexes=HP.add (AnyFormula f) seq.redexes; gl = GoalTerm f.uid; state }
   | state, Right t ->
     {seq with gl = GoalAtom t; state}
 
 let add_formula ~flags ~hint env sigma id t seq =
   let side = Hyp hint in
+  let hyps = match id with
+  | GlobRef.VarRef id -> Id.Set.add id seq.hyps
+  | _ -> seq.hyps
+  in
   match build_formula ~flags seq.state env sigma side (formula_id env id) t seq.cnt with
   | state, Left f ->
     {seq with
       redexes=HP.add (AnyFormula f) seq.redexes;
-      context=Context.add sigma f.constr id seq.context;
+      hyps;
       state}
   | state, Right t ->
     {seq with
-      context=Context.add sigma t id seq.context;
       latoms=t::seq.latoms;
+      hyps;
       state}
 
 let re_add_formula_list sigma lf seq=
-  let do_one (AnyFormula f) cm = match f.id with
-  | GoalId -> cm
-  | FormulaId id -> Context.add sigma f.constr id cm
+  let do_id (AnyFormula f) hyps = match f.id with
+  | GoalId -> hyps
+  | FormulaId (GlobRef.VarRef id) -> Id.Set.add id hyps
+  | FormulaId _ -> hyps
   in
   {seq with
      redexes=List.fold_right HP.add lf seq.redexes;
-     context=List.fold_right do_one lf seq.context}
+     hyps = List.fold_right do_id lf seq.hyps; }
 
-let find_left sigma t seq = Context.find sigma t seq.context
-
-let find_goal sigma seq =
-  let t = match seq.gl with GoalAtom a -> a | GoalTerm t -> t in
-  find_left sigma t seq
+let mem_hyp id seq = Id.Set.mem id seq.hyps
 
 let rec take_formula env sigma seq=
   let hd = HP.maximum seq.redexes in
@@ -189,29 +148,31 @@ let rec take_formula env sigma seq=
   | GoalId ->
     let nseq={seq with redexes=hp} in
     begin match seq.gl with
-    | GoalTerm t when t == hd0.constr -> hd, nseq
-    | GoalAtom _ | GoalTerm _ -> take_formula env sigma nseq (* discarding deprecated goal *)
+    | GoalTerm t when Formula.eq_uid t hd0.uid -> hd, nseq
+    | GoalAtom _ | GoalTerm _ | GoalDummy -> take_formula env sigma nseq (* discarding deprecated goal *)
     end
   | FormulaId id ->
-      hd,{seq with
-            redexes=hp;
-            context=Context.remove env sigma hd0.constr id seq.context}
+    let hyps = match id with
+    | GlobRef.VarRef id -> Id.Set.remove id seq.hyps
+    | _ -> seq.hyps
+    in
+    hd, { seq with redexes=hp; hyps; }
 
 let empty_seq depth=
   {redexes=HP.empty;
-   context=Context.empty;
    latoms=[];
-   gl= GoalTerm hole_atom;
+   gl = GoalDummy;
    cnt=newcnt ();
    history=History.empty;
    depth=depth;
+   hyps = Id.Set.empty;
    state=Env.empty}
 
 let make_simple_atoms seq =
   let ratoms=
     match seq.gl with
     | GoalAtom t -> [t]
-    | GoalTerm _ -> []
+    | GoalTerm _ | GoalDummy -> []
   in {negative=seq.latoms;positive=ratoms}
 
 let expand_constructor_hints =
