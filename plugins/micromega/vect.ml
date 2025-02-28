@@ -57,17 +57,11 @@ let pp_var_num pp_var o {var = v; coe = n} =
   else Printf.fprintf o "%s*%a" (Q.to_string n) pp_var v
 
 let pp_var_num_smt pp_var o {var = v; coe = n} =
-  let pp_num o q =
-    let nn = Q.num n in
-    let dn = Q.den n in
-    if Z.equal dn Z.one then output_string o (Z.to_string nn)
-    else Printf.fprintf o "(/ %s %s)" (Z.to_string nn) (Z.to_string dn)
-  in
-  if Int.equal v 0 then if Q.zero =/ n then () else pp_num o n
+  if Int.equal v 0 then if Q.zero =/ n then () else pp_smt_num o n
   else if Q.one =/ n then pp_var o v
   else if Q.minus_one =/ n then Printf.fprintf o "(- %a)" pp_var v
   else if Q.zero =/ n then ()
-  else Printf.fprintf o "(* %a %a)" pp_num n pp_var v
+  else Printf.fprintf o "(* %a %a)" pp_smt_num n pp_var v
 
 let rec pp_gen pp_var o v =
   match v with
@@ -200,12 +194,13 @@ let decomp_fst v =
 
 let rec subst (vr : int) (e : t) (v : t) =
   match v with
-  | [] -> []
+  | [] -> (Q.zero,[])
   | {var = x; coe = n} :: v' -> (
     match Int.compare vr x with
-    | 0 -> mul_add n e Q.one v'
-    | -1 -> v
-    | 1 -> add [{var = x; coe = n}] (subst vr e v')
+    | 0 -> (n, mul_add n e Q.one v')
+    | -1 -> (Q.zero, v)
+    | 1 -> let (q,res) = subst vr e v' in
+           (q, add [{var = x; coe = n}] res)
     | _ -> assert false )
 
 let fold f acc v = List.fold_left (fun acc x -> f acc x.var x.coe) acc v
@@ -260,6 +255,24 @@ let dotproduct v1 v2 =
       else dot acc v1 v2'
   in
   dot Q.zero v1 v2
+
+module Classify =
+  struct
+
+    type t =
+      | IsCst of Q.t * Q.t * var  (* [[IsCst c a1 x1]] =  c + a1.x1 *)
+      | IsVar of Q.t * var * Q.t * var  (* [[IsVar a1 x1 a2 x2]] = a1.x1 + x2.x2 *)
+
+    let classify v =
+      match v with
+      | [{var = x; coe = v}] ->
+         if Int.equal x 0 then None else Some (IsCst (Q.zero,v,x))
+      | [{var = 0; coe = v}; {var = x; coe = v'}] ->
+         Some (IsCst (v,v',x))
+      | [{var= x1; coe =a1}; {var = x2;coe = a2}] ->
+         Some (IsVar(a1,x1,a2,x2))
+      |   _ -> None
+  end
 
 module Bound = struct
   type t = {cst : Q.t; var : var; coeff : Q.t}

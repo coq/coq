@@ -183,13 +183,13 @@ where: [
 | "after" ident
 ]
 
-add_zify: [
+add_tify: [
 | [ "InjTyp" | "BinOp" | "UnOp" | "CstOp" | "BinRel" | "UnOpSpec" | "BinOpSpec" ]      (* Micromega plugin *)
 | [ "PropOp" | "PropBinOp" | "PropUOp" | "Saturate" ]      (* Micromega plugin *)
 ]
 
-show_zify: [
-| [ "InjTyp" | "BinOp" | "UnOp" | "CstOp" | "BinRel" | "UnOpSpec" | "BinOpSpec" | "Spec" ]      (* Micromega plugin *)
+show_tify: [
+| [ "InjTyp" | "BinOp" | "UnOp" | "CstOp" | "BinRel" | "UnOpSpec" | "BinOpSpec" ]      (* Micromega plugin *)
 ]
 
 REACHABLE: [
@@ -737,8 +737,10 @@ command: [
 | "Locate" "Term" reference
 | "Locate" "Module" qualid
 | "Info" natural ltac_expr
-| "Add" "Zify" add_zify qualid      (* Micromega plugin *)
-| "Show" "Zify" show_zify      (* Micromega plugin *)
+| "Add" "Zify" add_tify qualid      (* Micromega plugin *)
+| "Show" "Zify" show_tify      (* Micromega plugin *)
+| "Add" "Tify" add_tify qualid      (* Micromega plugin *)
+| "Show" "Tify" show_tify      (* Micromega plugin *)
 | "Locate" "Ltac" qualid
 | "Locate" "Library" qualid
 | "Locate" "File" string
@@ -1608,10 +1610,15 @@ simple_tactic: [
 | "wpsatz_Q" nat_or_var ident one_term      (* micromega plugin *)
 | "xpsatz_R" nat_or_var ltac_expr      (* micromega plugin *)
 | "zify_iter_specs"      (* micromega plugin *)
+| "tify_iter_specs"      (* micromega plugin *)
 | "zify_op"      (* micromega plugin *)
 | "zify_saturate"      (* micromega plugin *)
 | "zify_iter_let" ltac_expr      (* micromega plugin *)
 | "zify_elim_let"      (* micromega plugin *)
+| "tify_op" qualid      (* micromega plugin *)
+| "tify_saturate"      (* micromega plugin *)
+| "tify_iter_let" ltac_expr      (* micromega plugin *)
+| "tify_elim_let"      (* micromega plugin *)
 | "nsatz_compute" one_term      (* nsatz plugin *)
 | "protect_fv" string OPT ( "in" ident )
 | "ring_lookup" ltac_expr0 "[" LIST0 one_term "]" LIST1 one_term      (* ring plugin *)
@@ -1640,6 +1647,8 @@ simple_tactic: [
 | "tauto"
 | "time_constr" ltac_expr
 | "zify"
+| "rify"
+| "tify" qualid
 | "assert_fails" ltac_expr3
 | "assert_succeeds" ltac_expr3
 | "clear" "dependent" ident

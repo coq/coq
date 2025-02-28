@@ -88,6 +88,7 @@ module type QArith = sig
   val to_string : t -> string
   val of_string : string -> t
   val to_float : t -> float
+  val of_float : float -> t
 end
 
 module Z : ZArith
