@@ -1398,6 +1398,19 @@ let () =
   ltop (LevelLe 0)
 
 let () =
+  declare_extra_genarg_pprule_with_level wit_ltac_in_term
+    (fun env sigma _ _ prtac l tac -> prtac env sigma l tac)
+    (fun env sigma _ _ prtac l (used_ntnvars,tac) ->
+       let ppids =
+         let ids = Id.Set.elements used_ntnvars in
+         if List.is_empty ids then mt()
+         else hov 0 (pr_sequence Id.print ids ++ str " |- ")
+       in
+       ppids ++ prtac env sigma l tac)
+    (fun env sigma _ _ _ _ tac -> Util.Empty.abort tac)
+  ltop (LevelLe 0)
+
+let () =
   let pr_unit _env _sigma _ _ _ _ () = str "()" in
   let printer env sigma _ _ prtac = prtac env sigma in
   declare_extra_genarg_pprule_with_level wit_ltac printer printer pr_unit

@@ -941,14 +941,14 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
       in
       DAst.make ?loc @@ GHole (knd)
     | NGenarg arg ->
-      let mk_env id (c, scopes) map =
+      let glob_of_term (c, scopes) =
         let nenv = set_env_scopes env scopes in
         try
           let gc = intern nenv c in
-          Id.Map.add id (gc) map
-        with Nametab.GlobalizationError _ -> map
+          Some gc
+        with Nametab.GlobalizationError _ -> None
       in
-      let mk_env' ((c,_bk), (onlyident,(tmp_scope,subscopes))) =
+      let glob_of_binder ((c,_bk), (onlyident,(tmp_scope,subscopes))) =
         let nenv = {env with tmp_scope; scopes = subscopes @ env.scopes} in
         let test_kind =
           if onlyident then test_kind_ident_in_notation
@@ -959,10 +959,14 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
         | [pat] -> (glob_constr_of_cases_pattern (Global.env()) pat)
         | _ -> error_cannot_coerce_disjunctive_pattern_term ?loc:c.loc ()
       in
-      let terms = Id.Map.fold mk_env terms Id.Map.empty in
-      let binders = Id.Map.map mk_env' binders in
-      let bindings = Id.Map.fold Id.Map.add terms binders in
-      let arg = Genintern.generic_substitute_notation avoid bindings arg in
+      let get_glob id =
+        match Id.Map.find_opt id terms with
+        | Some term -> glob_of_term term
+        | None -> match Id.Map.find_opt id binders with
+          | Some binder -> Some (glob_of_binder binder)
+          | None -> assert false
+      in
+      let arg = Genintern.generic_substitute_notation avoid get_glob arg in
       DAst.make ?loc @@ GGenarg arg
     | NBinderList (x,y,iter,terminator,revert) ->
       (try

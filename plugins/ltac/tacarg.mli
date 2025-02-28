@@ -47,6 +47,8 @@ val wit_quantified_hypothesis : quantified_hypothesis uniform_genarg_type
 
 val wit_tactic : (raw_tactic_expr, glob_tactic_expr, Geninterp.Val.t) genarg_type
 
+val wit_ltac_in_term : (raw_tactic_expr, Names.Id.Set.t * glob_tactic_expr, Util.Empty.t) genarg_type
+
 (** [wit_ltac] is subtly different from [wit_tactic]: they only change for their
     toplevel interpretation. The one of [wit_ltac] forces the tactic and
     discards the result. *)

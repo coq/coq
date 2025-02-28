@@ -60,7 +60,9 @@ val generic_intern_pat : (raw_generic_argument, glob_generic_argument) intern_pa
 
 (** {5 Notation functions} *)
 
-type 'glb ntn_subst_fun = Id.Set.t -> Glob_term.glob_constr Id.Map.t -> 'glb -> 'glb
+(* Id set: current notation variables
+   id -> glob_constr: substitution for previous notation variables (None if it cannot be globalized) *)
+type 'glb ntn_subst_fun = Id.Set.t -> (Id.t -> Glob_term.glob_constr option) -> 'glb -> 'glb
 
 val substitute_notation : ('raw, 'glb, 'top) genarg_type -> 'glb ntn_subst_fun
 

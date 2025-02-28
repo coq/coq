@@ -1886,35 +1886,34 @@ let warn_missing_notation_variable =
         pr_sequence Id.print (Id.Set.elements rem) ++
         str ", if used in Ltac2 code in the notation an error will be produced.")
 
+let dummy_binder id =
+  DAst.make
+    (Glob_term.GVar
+       (Id.of_string_soft ("Notation variable " ^ Id.to_string id ^ " is not available")))
+
 let () =
   let subs avoid globs (ids, tac as orig) =
     if Id.Set.is_empty ids then
       (* closed tactic *)
       orig
     else
-    (* Let-bind the notation terms inside the tactic *)
-    let fold id c (rem, accu) =
-      let c = GTacExt (Tac2quote.wit_preterm, (avoid, c)) in
-      let rem = Id.Set.remove id rem in
-      rem, (Name id, c) :: accu
-    in
-    let rem, bnd = Id.Map.fold fold globs (ids, []) in
-    (* FIXME: provide a reasonable middle-ground with the behaviour
-       introduced by 8d9b66b. We should be able to pass mere syntax to
-       term notation without facing the wrath of the internalization. *)
-    let () = if not @@ Id.Set.is_empty rem then warn_missing_notation_variable rem in
-    let bnd = Id.Set.fold (fun id bnd ->
-        let c =
-          DAst.make
-            (Glob_term.GVar
-               (Id.of_string_soft ("Notation variable " ^ Id.to_string id ^ " is not available")))
+      (* Let-bind the notation terms inside the tactic *)
+      let fold id (missing, accu) =
+        let c, missing = match globs id with
+          | None ->
+            (* FIXME: provide a reasonable middle-ground with the behaviour
+               introduced by 8d9b66b. We should be able to pass mere syntax to
+               term notation without facing the wrath of the internalization. *)
+            dummy_binder id, Id.Set.add id missing
+          | Some c -> c, missing
         in
-        let c = GTacExt (Tac2quote.wit_preterm, (Id.Set.empty, c)) in
-        (Name id, c) :: bnd)
-        rem bnd
-    in
-    let tac = if List.is_empty bnd then tac else GTacLet (false, bnd, tac) in
-    (avoid, tac)
+        let c = GTacExt (Tac2quote.wit_preterm, (avoid, c)) in
+        missing, (Name id, c) :: accu
+      in
+      let rem, bnd = Id.Set.fold fold ids (Id.Set.empty, []) in
+      let () = if not @@ Id.Set.is_empty rem then warn_missing_notation_variable rem in
+      let tac = if List.is_empty bnd then tac else GTacLet (false, bnd, tac) in
+      (avoid, tac)
   in
   Genintern.register_ntn_subst0 wit_ltac2_constr subs
 
