@@ -21,9 +21,21 @@ cat assignees.tmp | $SED -z "s/\n/, /g"
 echo
 rm assignees.tmp
 
-git shortlog -s -n --merges --group=trailer:reviewed-by --group=trailer:ack-by $1 | cut -f2 | sort -k 2 | grep -v -e "coqbot" -e "^$" > reviewers.tmp
-
+git shortlog -s -n --merges --group=trailer:reviewed-by --group=trailer:ack-by $1 | cut -f2 > reviewers-pseudos.tmp
+rm -f reviewers-names.tmp
+for i in `cat reviewers-pseudos.tmp`
+do
+  res=`grep $i .mailmap`
+  if [[ $? == 1 ]]
+  then
+    echo $i" not found"
+    break
+  fi
+  echo $res | tail -n1 | cut -d'<' -f1 >> reviewers-names.tmp
+done
+cat reviewers-names.tmp | sort -k 2 > reviewers.tmp
+rm reviewers-pseudos.tmp reviewers-names.tmp
 cat reviewers.tmp | wc -l | xargs echo "Reviewers:"
-cat reviewers.tmp | $SED -z "s/\n/, /g"
+cat reviewers.tmp | $SED -z "s/ \n/, /g"
 echo
 rm reviewers.tmp
