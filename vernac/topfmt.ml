@@ -81,6 +81,7 @@ let default_margin = Format.pp_get_margin !std_ft ()
 
 let get_depth_boxes () = Some (Format.pp_get_max_boxes !std_ft ())
 let set_depth_boxes v =
+  Constrextern.set_max_depth v;
   Format.pp_set_max_boxes !std_ft (match v with None -> default | Some v -> v)
 
 let get_margin0 () = Format.pp_get_margin !std_ft ()
