@@ -73,6 +73,85 @@ See :ref:`rocq_makefile` and :ref:`building_dune`.
       .. rocqdoc::
          -R <PATH> Mod1
 
+System configuration
+--------------------
+
+Running `rocq` (or the `coq` compatibility commands) will fail if it
+cannot find certain expected files (except for subcommands like
+`rocq wc` which do not need to find anything).
+
+The files are searched according to Rocq's build time configuration,
+the location of the `rocq` executable and the available command line
+arguments and environment variables.
+
+.. note::
+
+   If `configure` is not explicitly called, it is equivalent to
+   `configure -relocatable`.
+
+Let `$root` be the parent directory of the directory of the `rocq`
+executable (typically `rocq` is `$root/bin/rocq`, or
+`$root\bin\rocq.exe` on Windows).
+
+Let `$libdirconf` be the value passed to `configure -libdir`, or
+`coq/lib` if `libdir` was not used.
+
+Let `$libdir` be
+
+- if the `coqlib` command line argument was used, its value
+
+- otherwise, if the `ROCQLIB` environment variable is defined, its value
+
+- otherwise, if the deprecated `COQLIB` environment variable is defined, its value
+
+- otherwise, if `$libdirconf` is absolute, its value
+
+- otherwise, if `$root/$libdirconf/theories/Init/Prelude.vo` exists or
+  Rocq was configured with `-relocatable`, `$root/$libdirconf`
+
+- otherwise, if Rocq was configured with `-prefix $prefix`, `$prefix/$libdirconf`
+  (if the user gave a relative `$prefix`, it is turned into an absolute
+  path based on the working directory of the `configure` invocation)
+
+.. note::
+
+   Rocq must be configured with either `-prefix` or `-relocatable`.
+
+   If `$libdirconf` is relative, and `-prefix` was used, usually either
+   `$root/$libdirconf/theories/Init/Prelude.vo` does not exist so we
+   use `$prefix/$libdirconf`, or it is the same as `$prefix/$libdirconf`.
+   If `-relocatable` was used we only have `$root/$libdirconf`.
+
+.. exn:: The path for Rocq libraries is wrong.
+
+   Unless `-boot` was passed, Rocq fails with this error if
+   `$libdir/theories/Init/Prelude.vo` does not exist.
+
+Unless `-boot` was passed, Rocq acts as though `-R $libdir/theories
+Corelib -Q $libdir/user-contrib ""` was passed.
+
+Let `$runtimelib` be
+
+- if the `ROCQRUNTIMELIB` environment variable is defined, its value
+
+- otherwise, if the deprecated `COQCORELIB` environment variable is defined, its value
+
+- otherwise, `$libdir/../rocq-runtime`
+
+.. exn:: The path for Rocq plugins is wrong.
+
+   Unless `-boot` was passed, Rocq fails with this error if
+   `$runtimelib/plugins` does not exist.
+
+If `-boot` was not passed, Rocq will add `$runtimelib/..` to the
+OCamlfind search path (as though `-I $runtimelib/..` was passed).
+
+Then regardless of `-boot` Rocq will search for OCamlfind package `rocq-runtime`.
+
+.. exn:: Could not find package rocq-runtime.
+
+   Rocq fails with this error if OCamlfind package `rocq-runtime` could not be found.
+
 Customization at launch time
 ---------------------------------
 

@@ -89,7 +89,6 @@ for more details.
 
 To build and install Rocq (and RocqIDE if desired) do:
 
-    $ ./configure -prefix <install_prefix> $options
     $ make dunestrap
     $ dune build -p rocq-runtime,coq-core,rocq-core,coq,coqide-server,rocqide
     $ dune install --prefix=<install_prefix> rocq-runtime coq-core rocq-core coq coqide-server rocqide
@@ -97,9 +96,10 @@ To build and install Rocq (and RocqIDE if desired) do:
 You can drop the `rocqide` packages if not needed.
 
 Packagers may want to play with `dune install` options as to tweak
-installation path, the `-prefix` argument in `./configure` tells Rocq
-where to find its standard library, but doesn't control any other
-installation path these days.
+installation paths, and the `-libdir` argument for `./configure` to tell Rocq
+where to find its standard library, (`configure` doesn't control
+installation paths these days). See refman "Command-line and graphical tools"
+-> "The Rocq Prover commands" -> "System configuration" for more info.
 
 OCaml toolchain advisory
 ------------------------
