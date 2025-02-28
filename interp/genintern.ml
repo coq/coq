@@ -13,12 +13,16 @@ open Genarg
 
 module Store = Store.Make ()
 
+type ntnvar_status = {
+  ntnvar_used_as_binder : bool ref;
+  ntnvar_scopes : Notation_term.subscopes option ref;
+  ntnvar_binding_ids : Notation_term.notation_var_binders option ref;
+  ntnvar_typ : Notation_term.notation_var_internalization_type;
+}
+
 type intern_variable_status = {
   intern_ids : Id.Set.t;
-  notation_variable_status :
-    (bool ref * Notation_term.subscopes option ref * Notation_term.notation_var_binders option ref *
-       Notation_term.notation_var_internalization_type)
-      Id.Map.t
+  notation_variable_status : ntnvar_status Id.Map.t;
 }
 
 type glob_sign = {
