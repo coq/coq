@@ -1702,7 +1702,9 @@ let infer_cmp_universes _env pb s0 s1 univs =
   | CONV -> infer_eq univs s0 s1
 
 let infer_convert_instances ~flex u u' (univs,cstrs as cuniv) =
-  if flex then
+  if UGraph.type_in_type univs then
+    Result.Ok cuniv
+  else if flex then
     if UGraph.check_eq_instances univs u u' then Result.Ok cuniv
     else Result.Error None
   else
@@ -1713,6 +1715,9 @@ let infer_convert_instances ~flex u u' (univs,cstrs as cuniv) =
       Result.Error None
 
 let infer_inductive_instances cv_pb variance u1 u2 (univs,csts) =
+  if UGraph.type_in_type univs
+  then Result.Ok (univs, csts)
+  else
   let qcsts, csts' = get_cumulativity_constraints cv_pb variance u1 u2 in
   if Sorts.QConstraints.trivial qcsts then
     match UGraph.merge_constraints csts' univs with
