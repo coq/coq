@@ -1080,6 +1080,14 @@ let fast_occur_meta_or_undefined_evar sigma (c, gnd) = match gnd with
 | Ground -> false
 | NotGround -> true
 
+
+let rec isNestedProjOnEvar sigma acc c =
+  match EConstr.kind sigma c with
+  | Proj (p, r, c) ->
+       isNestedProjOnEvar sigma ((p, r) :: acc) c
+  | Evar e -> Some (acc, e)
+  | _ -> None
+
 let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags m n =
   let mk_expand_subst substn =
     let metasubst = if flags.use_metas_eagerly_in_conv_on_closed_terms then substn.subst_metas else subst.subst_metas in
@@ -1288,6 +1296,20 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
 
         | App (f1,l1), App (f2,l2) ->
           unify_app curenvnb pb opt substn cM f1 l1 cN f2 l2
+
+        | Proj _, _ when Option.has_some (isNestedProjOnEvar sigma [] cM) ->
+           let (s, ev) = Option.get (isNestedProjOnEvar sigma [] cM) in
+           let (evd, exp) = define_evar_as_record (fst curenvnb) substn.subst_sigma ev in
+           let cM = List.fold_left (fun t (p, r) -> mkProj (p,r,t)) exp s in
+           let cM = Reductionops.whd_all env evd cM in
+           unirec_rec curenvnb pb opt { substn with subst_sigma = evd } cM cN
+
+        | _, Proj _ when Option.has_some (isNestedProjOnEvar sigma [] cN) ->
+           let (s, ev) = Option.get (isNestedProjOnEvar sigma [] cN) in
+           let (evd, exp) = define_evar_as_record (fst curenvnb) substn.subst_sigma ev in
+           let cN = List.fold_left (fun t (p, r) -> mkProj (p,r,t)) exp s in
+           let cN = Reductionops.whd_all env evd cN in
+           unirec_rec curenvnb pb opt { substn with subst_sigma = evd } cM cN
 
         | App (f1,l1), Proj(p2,_,c2) ->
           unify_app curenvnb pb opt substn cM f1 l1 cN cN [||]
