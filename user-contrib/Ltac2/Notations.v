@@ -615,8 +615,9 @@ Ltac2 Notation "congruence" n(opt(tactic(0))) l(opt(seq("with", list1(constr))))
 
 Ltac2 Notation "simple" "congruence" n(opt(tactic(0))) l(opt(seq("with", list1(constr)))) := Std.simple_congruence n l.
 
-Ltac2 f_equal0 () := ltac1:(f_equal).
-Ltac2 Notation f_equal := f_equal0 ().
+#[deprecated(since="9.1", note="Use Std.f_equal instead.")]
+Ltac2 f_equal0 := Std.f_equal.
+Ltac2 Notation f_equal := Std.f_equal ().
 
 (** now *)
 

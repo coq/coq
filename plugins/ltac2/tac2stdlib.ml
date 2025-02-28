@@ -626,3 +626,6 @@ let () =
   define "simple_congruence"
   (option int @-> option (list constr) @-> tac unit)
   Tac2tactics.simple_congruence
+
+let () = define "f_equal" (unit @-> tac unit) @@ fun () ->
+    Tac2tactics.f_equal
