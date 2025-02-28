@@ -23,6 +23,7 @@ type vernac_toplevel =
   | VernacControl of vernac_control
   | VernacShowGoal of { gid : int; sid: int }
   | VernacShowProofDiffs of Proof_diffs.diffOpt
+  | VernacBeautify of vernac_control
 
 let vernac_toplevel = Entry.make "toplevel:vernac_toplevel"
 
@@ -48,7 +49,9 @@ GRAMMAR EXTEND Gram
           { Some (VernacShowGoal {gid; sid}) }
       | IDENT "Show"; IDENT "Proof"; IDENT "Diffs"; removed = OPT [ IDENT "removed" -> { () } ]; "." ->
         { Some (VernacShowProofDiffs
-          (if removed = None then Proof_diffs.DiffOn else Proof_diffs.DiffRemoved)) }
+                  (if removed = None then Proof_diffs.DiffOn else Proof_diffs.DiffRemoved)) }
+      | IDENT "Beautify"; cmd = Pvernac.Vernac_.vernac_control ->
+        { Some (VernacBeautify cmd) }
       | cmd = Pvernac.Vernac_.main_entry ->
               { match cmd with
               | None -> None
