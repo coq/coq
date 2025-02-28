@@ -46,3 +46,16 @@ Fail Ltac2 Eval print_if true "%a" (fun _ => Control.throw Assertion_failure) ()
 
 (* ikfprintf doesn't run the closure *)
 Ltac2 Eval print_if false "%a" (fun _ => Control.throw Assertion_failure) ().
+
+(* Check printf formatting for control failures *)
+
+Ltac2 Eval match Control.case (fun () => Control.backtrack_tactic_failure "%s" "foo") with
+  | Control.Val _ => Control.throw Assertion_failure
+  | Control.Err (Control.Tactic_failure (Some msg)) => Control.assert_true (String.equal "foo" (Message.to_string msg))
+  | Control.Err _ => Control.throw Assertion_failure
+  end.
+
+Ltac2 check_parsing_throw_invalid_argument () := Control.throw_invalid_argument "%s" "foo".
+Ltac2 check_parsing_throw_out_of_bounds () := Control.throw_out_of_bounds "%s" "foo".
+Ltac2 Eval ignore (Control.assert_valid_argument "%s" "foo" true).
+Ltac2 Eval ignore (Control.assert_bounds "%s" "foo" true).
