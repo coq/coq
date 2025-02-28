@@ -613,7 +613,7 @@ and match_rigid_arg_pattern whrec env sigma ctx psubst p t =
     let na = Array.length tys in
     let contexts_upto = Array.init na (fun i -> List.skipn (na - i) ctx' @ ctx) in
     let psubst = Array.fold_left3 (fun psubst ctx -> match_arg_pattern whrec env sigma ctx psubst) psubst contexts_upto ptys tys in
-    let psubst = match_arg_pattern whrec env sigma (ctx' @ ctx) psubst pbod body in
+    let psubst = match_arg_pattern whrec env sigma (ctx' @ ctx) psubst (ERigid pbod) body in
     psubst
   | PHProd (ptys, pbod), _ ->
     let ntys, _ = EConstr.decompose_prod sigma t in
@@ -644,10 +644,9 @@ and apply_rule whrec env sigma ctx psubst es stk =
       let args, s = extract_n_stack [] np s in
       let psubst = List.fold_left2 (match_arg_pattern whrec env sigma ctx) psubst pargs args in
       apply_rule whrec env sigma ctx psubst e s
-  | Declarations.PECase (pind, pu, pret, pbrs) :: e, Stack.Case ((ci, u, pms, p, iv, brs), cst_l) :: s ->
+  | Declarations.PECase (pind, pret, pbrs) :: e, Stack.Case ((ci, u, pms, p, iv, brs), cst_l) :: s ->
       if not @@ QInd.equal env pind ci.ci_ind then raise PatternFailure;
       let dummy = mkProp in
-      let psubst = match_einstance sigma pu u psubst in
       let (_, _, _, ((ntys_ret, ret), _), _, _, brs) = EConstr.annotate_case env sigma (ci, u, pms, p, NoInvert, dummy, brs) in
       let psubst = match_arg_pattern whrec env sigma (ntys_ret @ ctx) psubst pret ret in
       let psubst = Array.fold_left2 (fun psubst pat (ctx', br) -> match_arg_pattern whrec env sigma (ctx' @ ctx) psubst pat br) psubst pbrs brs in
