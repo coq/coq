@@ -287,6 +287,7 @@ let () =
   Gensubst.register_subst0 wit_intropattern subst_intro_pattern [@warning "-3"];
   Gensubst.register_subst0 wit_simple_intropattern subst_intro_pattern;
   Gensubst.register_subst0 wit_tactic subst_tactic;
+  Gensubst.register_subst0 wit_ltac_in_term (fun s (used_ntnvars,tac) -> used_ntnvars, subst_tactic s tac);
   Gensubst.register_subst0 wit_ltac subst_tactic;
   Gensubst.register_subst0 wit_constr subst_glob_constr;
   Gensubst.register_subst0 wit_clause_dft_concl (fun _ v -> v);
