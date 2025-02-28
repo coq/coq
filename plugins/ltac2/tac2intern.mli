@@ -19,7 +19,7 @@ val intern_typedef : (KerName.t * int) Id.Map.t -> raw_quant_typedef -> glb_quan
 val intern_open_type : raw_typexpr -> type_scheme
 val intern_notation_data : Id.Set.t -> raw_tacexpr -> Tac2env.notation_data
 
-(** [check_unused] is deault true *)
+(** [check_unused] is default true *)
 val genintern_warn_not_unit : ?check_unused:bool ->
   Genintern.glob_sign ->
   (Name.t * Tac2typing_env.mix_type_scheme) list ->
