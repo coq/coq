@@ -1,0 +1,13 @@
+File "./output/bug_20188.v", line 4, characters 11-14:
+The command has indeed failed with message:
+The reference foo was not found in the current environment.
+?Goal
+     : ?T
+where
+?T : [ |- Type]
+?Goal : [ |- ?T]
+File "./output/bug_20188.v", line 6, characters 8-11:
+Error: The reference foo was not found in the current environment.
+
+
+coqc exited with code 1

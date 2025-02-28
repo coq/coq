@@ -1878,19 +1878,6 @@ let () =
       str "$" ++ ppkind ++ Id.print id) in
   Genprint.register_noval_print0 wit_ltac2_var_quotation pr_raw pr_glb
 
-let warn_missing_notation_variable =
-  CWarnings.create ~name:"ltac2-missing-notation-var" ~category:CWarnings.CoreCategories.ltac2
-    Pp.(fun rem ->
-        let plural = if Id.Set.cardinal rem <= 1 then " " else "s " in
-        str "Missing notation term for variable" ++ str plural ++
-        pr_sequence Id.print (Id.Set.elements rem) ++
-        str ", if used in Ltac2 code in the notation an error will be produced.")
-
-let dummy_binder id =
-  DAst.make
-    (Glob_term.GVar
-       (Id.of_string_soft ("Notation variable " ^ Id.to_string id ^ " is not available")))
-
 let () =
   let subs ntnvars globs (ids, tac as orig) =
     if Id.Set.is_empty ids then
@@ -1898,21 +1885,16 @@ let () =
       orig
     else
       (* Let-bind the notation terms inside the tactic *)
-      let fold id (missing, used_ntnvars, accu) =
-        let used, c, missing =
-          match Genintern.with_used_ntnvars ntnvars (fun () -> globs id) with
-          | exception (Nametab.GlobalizationError _) | _, None ->
-            (* FIXME: provide a reasonable middle-ground with the behaviour
-               introduced by 8d9b66b. We should be able to pass mere syntax to
-               term notation without facing the wrath of the internalization. *)
-            Id.Set.empty, dummy_binder id, Id.Set.add id missing
-          | used, Some c -> used, c, missing
-        in
-        let c = GTacExt (Tac2quote.wit_preterm, (used, c)) in
-        missing, Id.Set.union used_ntnvars used, (Name id, c) :: accu
+      let fold id (used_ntnvars, accu) =
+        let used, c = Genintern.with_used_ntnvars ntnvars (fun () -> globs id) in
+        match c with
+        | None ->
+          CErrors.user_err Pp.(str "Notation variable " ++ Id.print id ++ str " cannot be used in ltac2.")
+        | Some c ->
+          let c = GTacExt (Tac2quote.wit_preterm, (used, c)) in
+          Id.Set.union used_ntnvars used, (Name id, c) :: accu
       in
-      let rem, used, bnd = Id.Set.fold fold ids (Id.Set.empty, Id.Set.empty, []) in
-      let () = if not @@ Id.Set.is_empty rem then warn_missing_notation_variable rem in
+      let used, bnd = Id.Set.fold fold ids (Id.Set.empty, []) in
       let tac = if List.is_empty bnd then tac else GTacLet (false, bnd, tac) in
       (used, tac)
   in
