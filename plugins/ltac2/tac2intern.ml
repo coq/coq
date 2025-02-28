@@ -2100,6 +2100,14 @@ let () =
     let unused = list_unused_variables env (List.map fst locals) in
     let ids = Id.Map.domain ntn_vars in
     let ids = List.fold_left (fun ids id -> Id.Set.remove id ids) ids unused in
+    let () = Id.Set.iter (fun id ->
+        let status = Id.Map.get id ist.intern_sign.notation_variable_status in
+        match status.Genintern.ntnvar_typ with
+        | NtnInternTypeAny _ -> ()
+        | NtnInternTypeOnlyBinder ->
+          CErrors.user_err ?loc:tac.loc Pp.(str "Cannot use binder notation variable " ++ Id.print id ++ str " as a preterm."))
+        ids
+    in
     (ist, (ids, v))
   in
   Genintern.register_intern0 wit_ltac2_constr intern
