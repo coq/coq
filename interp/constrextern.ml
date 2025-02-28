@@ -878,25 +878,28 @@ let extern_glob_sort_name uvars = function
       | None -> CRawType u
     end
 
-let extern_glob_qvar = function
+let extern_glob_qvar uvars = function
   | GLocalQVar {v=Anonymous;loc} -> CQAnon loc
   | GLocalQVar {v=Name id; loc} -> CQVar (qualid_of_ident ?loc id)
   | GRawQVar q -> CRawQVar q
-  | GQVar q -> CRawQVar q
+  | GQVar q -> begin match UnivNames.qualid_of_quality uvars q with
+    | Some qid -> CQVar qid
+    | None -> CRawQVar q
+    end
 
-let extern_relevance = function
+let extern_relevance uvars = function
   | GRelevant -> CRelevant
   | GIrrelevant -> CIrrelevant
-  | GRelevanceVar q -> CRelevanceVar (extern_glob_qvar q)
+  | GRelevanceVar q -> CRelevanceVar (extern_glob_qvar uvars q)
 
-let extern_relevance_info = Option.map extern_relevance
+let extern_relevance_info uvars = Option.map (extern_relevance uvars)
 
-let extern_glob_quality = function
+let extern_glob_quality uvars = function
   | GQConstant q -> CQConstant q
-  | GQualVar q -> CQualVar (extern_glob_qvar q)
+  | GQualVar q -> CQualVar (extern_glob_qvar uvars q)
 
 let extern_glob_sort uvars (q, l) =
-  Option.map extern_glob_qvar q,
+  Option.map (extern_glob_qvar uvars) q,
   map_glob_sort_gen (List.map (on_fst (extern_glob_sort_name uvars))) l
 
 (** wrapper to handle print_universes: don't forget small univs *)
@@ -913,7 +916,7 @@ let extern_glob_sort uvars (s:glob_sort) =
 
 let extern_instance uvars = function
   | Some (ql,ul) when !print_universes ->
-    let ql = List.map extern_glob_quality ql in
+    let ql = List.map (extern_glob_quality uvars) ql in
     let ul = List.map (map_glob_sort_gen (extern_glob_sort_name uvars)) ul in
     Some (ql,ul)
   | _ -> None
@@ -1138,7 +1141,7 @@ and sub_extern inctx (subentry,(_,scopes)) = extern inctx (subentry,([],scopes))
 
 and factorize_prod scopes vars na r bk t c =
   let implicit_type = is_reserved_type na t in
-  let r = extern_relevance_info r in
+  let r = extern_relevance_info (snd vars) r in
   let aty = extern_typ scopes vars t in
   let vars = add_vname vars na in
   let store, get = set_temporary_memory () in
@@ -1175,7 +1178,7 @@ and factorize_prod scopes vars na r bk t c =
 
 and factorize_lambda inctx scopes vars na r bk t c =
   let implicit_type = is_reserved_type na t in
-  let r = extern_relevance_info r in
+  let r = extern_relevance_info (snd vars) r in
   let aty = extern_typ scopes vars t in
   let vars = add_vname vars na in
   let store, get = set_temporary_memory () in
@@ -1218,7 +1221,7 @@ and extern_local_binder scopes vars = function
       let (assums,ids,l) =
         extern_local_binder scopes (on_fst (Name.fold_right Id.Set.add na) vars) l in
       (assums,na::ids,
-       CLocalDef(CAst.make na, extern_relevance_info r, extern false scopes vars bd,
+       CLocalDef(CAst.make na, extern_relevance_info (snd vars) r, extern false scopes vars bd,
                    Option.map (extern_typ scopes vars) ty) :: l)
 
     | GLocalAssum (na,r,bk,ty) ->
@@ -1235,7 +1238,7 @@ and extern_local_binder scopes vars = function
        | (assums,ids,l) ->
          let ty = if implicit_type then hole else ty in
          (na::assums,na::ids,
-          CLocalAssum([CAst.make na],extern_relevance_info r,Default bk,ty) :: l))
+          CLocalAssum([CAst.make na],extern_relevance_info (snd vars) r,Default bk,ty) :: l))
 
     | GLocalPattern ((p,_),_,bk,ty) ->
       let ty =

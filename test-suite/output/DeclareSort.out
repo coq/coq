@@ -1,0 +1,53 @@
+File "./output/DeclareSort.v", line 4, characters 35-36:
+The command has indeed failed with message:
+In environment
+A : Type@{s | _}
+The term "A" has type "Type@{s | _}" while it is expected to have type
+ "Type@{s' | _}"
+(universe inconsistency: Cannot enforce Type@{s | Set} <=
+Type@{s' | DeclareSort.21}).
+File "./output/DeclareSort.v", line 6, characters 35-36:
+The command has indeed failed with message:
+In environment
+A : Type@{s | _}
+The term "A" has type "Type@{s | _}" while it is expected to have type 
+"Type" (universe inconsistency: Cannot enforce Type@{s | Set} <=
+DeclareSort.22).
+File "./output/DeclareSort.v", line 8, characters 26-27:
+The command has indeed failed with message:
+In environment
+A : Set
+The term "A" has type "Set" while it is expected to have type 
+"Type@{s | _}" (universe inconsistency: Cannot enforce Set <=
+Type@{s | DeclareSort.23}).
+fun A : Type@{s | _} => A : Type@{s | _}
+     : Type@{s | _} -> Type@{s | _}
+foo
+     : Type@{S1 | _} -> Type@{S2 | _}
+foo@{S2 |  |} : Type -> Type
+
+foo is universe polymorphic
+Arguments foo _%_type_scope
+Expands to: Constant DeclareSort.foo
+foo@{S2 |  |} : Type@{S1 | Set} -> Type@{S2 | Set}
+(* S2 |  |=  *)
+
+foo is universe polymorphic
+Arguments foo _%_type_scope
+Expands to: Constant DeclareSort.foo
+foo@{SProp | } : Type@{S1 | Set} -> SProp
+     : Type@{S1 | Set} -> SProp
+foo@{Type | } : Type@{S1 | Set} -> Set
+     : Type@{S1 | Set} -> Set
+File "./output/DeclareSort.v", line 29, characters 11-14:
+The command has indeed failed with message:
+The term "foo@{α6 | }" has type "Type@{S1 | Set} -> Type@{α6 | Set}"
+while it is expected to have type "SProp -> ?T"
+(universe inconsistency: Cannot enforce SProp <= Type@{S1 | Set}).
+File "./output/DeclareSort.v", line 30, characters 11-14:
+The command has indeed failed with message:
+The term "foo@{α8 | }" has type "Type@{S1 | Set} -> Type@{α8 | Set}"
+while it is expected to have type "Set -> ?T"
+(universe inconsistency: Cannot enforce Set <= Type@{S1 | Set}).
+foo@{Type | } : Type@{S1 | Set} -> Set
+     : Type@{S1 | Set} -> Set

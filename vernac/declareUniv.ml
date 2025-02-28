@@ -29,6 +29,15 @@ type universe_source =
 
 type universe_name_decl = universe_source * (Id.t * UGlobal.t) list
 
+type sort_source =
+  | BoundQuality
+  | UnqualifiedQuality
+
+type sort_name_decl = {
+  sdecl_src : sort_source; (* global sort introduced by some global value *)
+  sdecl_named : (Id.t * Sorts.QGlobal.t) list;
+}
+
 let check_exists_universe sp =
   if Nametab.exists_universe sp then
     raise (AlreadyDeclared (Some "Universe", Libnames.basename sp))
@@ -84,6 +93,50 @@ let invent_name prefix (named,cnt) u =
     else na, (Id.Map.add na u named, i+1)
   in
   aux cnt
+
+let check_exists_sort sp =
+  if Nametab.exists_sort sp then
+    raise (AlreadyDeclared (Some "Sort", Libnames.basename sp))
+  else ()
+
+let qualify_sort i dp _src id =
+    i,  Libnames.make_path dp id
+
+let do_sort_name ~check i dp src (id,quality) =
+  let i, sp = qualify_sort i dp src id in
+  if check then check_exists_sort sp;
+  Nametab.push_sort i sp quality
+
+let cache_sort_names (prefix, decl) =
+  let depth = Lib.sections_depth () in
+  let dp = Libnames.pop_dirpath_n depth prefix.Nametab.obj_dir in
+  List.iter (do_sort_name ~check:true (Nametab.Until 1) dp decl.sdecl_src) decl.sdecl_named
+
+let load_sort_names i (prefix, decl) =
+  List.iter (do_sort_name ~check:false (Nametab.Until i) prefix.Nametab.obj_dir decl.sdecl_src) decl.sdecl_named
+
+let open_sort_names i (prefix, decl) =
+  List.iter (do_sort_name ~check:false (Nametab.Exactly i) prefix.Nametab.obj_dir decl.sdecl_src) decl.sdecl_named
+
+let discharge_sort_names decl =
+  match decl.sdecl_src with
+  | BoundQuality -> None
+  | UnqualifiedQuality -> Some decl
+
+let input_sort_names : sort_name_decl -> Libobject.obj =
+  let open Libobject in
+  declare_named_object_gen
+    { (default_object "Global sort name state") with
+      cache_function = cache_sort_names;
+      load_function = load_sort_names;
+      open_function = simple_open open_sort_names;
+      discharge_function = discharge_sort_names;
+      classify_function = (fun a -> Escape) }
+
+let input_sort_names (src, l) =
+  if CList.is_empty l then ()
+  else Lib.add_leaf (input_sort_names { sdecl_src = src; sdecl_named = l })
+
 
 let label_of = let open GlobRef in function
 | ConstRef c -> Label.to_id @@ Constant.label c
@@ -154,6 +207,32 @@ let do_universe ~poly l =
     let us = CArray.map_of_list (fun (_,l) -> Level.make l) l in
     let ctx =
       UVars.UContext.make ([||],names) (UVars.Instance.of_array ([||],us), Constraints.empty)
+    in
+    Global.push_section_context ctx
+
+let do_sort ~poly l =
+  let in_section = Lib.sections_are_opened () in
+  let () =
+    if Lib.is_modtype ()
+    then CErrors.user_err (Pp.str "Cannot declare global sort qualities inside module types.")  ;
+    if poly && not in_section then
+      CErrors.user_err
+        (Pp.str"Cannot declare polymorphic sorts outside sections.")
+  in
+  let l = List.map (fun {CAst.v=id} -> (id, UnivGen.new_sort_global id)) l in
+  let src = if poly then BoundQuality else UnqualifiedQuality in
+  let () = input_sort_names (src, l) in
+  match poly with
+  | false ->
+    let qs = List.fold_left  (fun qs (_, qv) -> Sorts.QVar.(Set.add (make_global qv) qs))
+      Sorts.QVar.Set.empty l
+    in
+    Global.push_quality_set qs
+  | true ->
+    let names = CArray.map_of_list (fun (na,_) -> Name na) l in
+    let qs = CArray.map_of_list (fun (_,sg) -> Sorts.Quality.global sg) l in
+    let ctx =
+      UVars.UContext.make (names, [||]) (UVars.Instance.of_array (qs,[||]), Constraints.empty)
     in
     Global.push_section_context ctx
 

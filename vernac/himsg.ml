@@ -1656,7 +1656,7 @@ let rec vernac_interp_error_handler = function
   | UGraph.UniverseInconsistency i ->
     str "Universe inconsistency." ++ spc() ++
     UGraph.explain_universe_inconsistency
-      Sorts.QVar.raw_pr
+      UnivNames.pr_quality_with_global_universes
       UnivNames.pr_level_with_global_universes
       i ++ str "."
   | TypeError(env,te) ->

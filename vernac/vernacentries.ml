@@ -702,6 +702,11 @@ let print_universes { sort; subgraph; with_sources; file; } =
   | Some s -> dump_universes_gen (fun u -> Pp.string_of_ppcmds (prl u)) univ s
   end
 
+let print_sorts () =
+  let qualities = Sorts.QVar.Set.elements (Global.qualities ()) in
+  let prq = UnivNames.pr_quality_with_global_universes in
+  Pp.prlist_with_sep Pp.spc prq qualities
+
 (*********************)
 (* "Locate" commands *)
 
@@ -1316,6 +1321,13 @@ let vernac_universe ~poly l =
                  (str"Polymorphic universes can only be declared inside sections, " ++
                   str "use Monomorphic Universe instead.");
   DeclareUniv.do_universe ~poly l
+
+let vernac_sort ~poly l =
+  if poly && not (Lib.sections_are_opened ()) then
+    user_err
+                 (str"Polymorphic sorts can only be declared inside sections, " ++
+                  str "use #[universes(polymorphic=no)] Sort in order to declare a global sort.");
+  DeclareUniv.do_sort ~poly l
 
 let vernac_constraint ~poly l =
   if poly && not (Lib.sections_are_opened ()) then
@@ -2232,6 +2244,7 @@ let vernac_print =
     Prettyp.print_canonical_projections env sigma grefs
   | PrintUniverses prunivs -> no_state @@ fun ()->
     print_universes prunivs
+  | PrintSorts -> no_state print_sorts
   | PrintHint r -> with_proof_env @@ fun env sigma ->
     Hints.pr_hint_ref env sigma (smart_global r)
   | PrintHintGoal -> with_pstate @@ fun ~pstate ->
@@ -2663,6 +2676,9 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
         vernac_combined_scheme id l ~locmap:(Ind_tables.Locmap.default loc))
   | VernacUniverse l ->
     vtdefault(fun () -> vernac_universe ~poly:(only_polymorphism atts) l)
+
+  | VernacSort l ->
+    vtdefault(fun () -> vernac_sort ~poly:(only_polymorphism atts) l)
 
   | VernacConstraint l ->
     vtdefault(fun () -> vernac_constraint ~poly:(only_polymorphism atts) l)

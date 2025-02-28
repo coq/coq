@@ -68,13 +68,15 @@ val eq_named_context_val : named_context_val -> named_context_val -> bool
 val empty_env : env
 
 val universes     : env -> UGraph.t
-val qualities     : env -> Sorts.QVar.Set.t
 val rel_context   : env -> Constr.rel_context
 val rel_context_val : env -> rel_context_val
 val named_context : env -> Constr.named_context
 val named_context_val : env -> named_context_val
 
 val set_universes : UGraph.t -> env -> env
+
+val qualities : env -> Sorts.QVar.Set.t
+val set_qualities : Sorts.QVar.Set.t -> env -> env
 
 val typing_flags    : env -> typing_flags
 val is_impredicative_set : env -> bool
@@ -344,6 +346,11 @@ val push_context_set : ?strict:bool -> ContextSet.t -> env -> env
 
 val push_qualities : Sorts.QVar.Set.t -> env -> env
 (** Add the qualities to the environment. Only used in higher layers. *)
+
+val push_quality_set : Sorts.QVar.Set.t -> env -> env
+(** [push_quality_set qs env] pushes the set of quality variables in
+    the environment. It does not fail even if a quality variable is
+    already declared. *)
 
 val push_subgraph : ContextSet.t -> env -> env
 (** [push_subgraph univs env] adds the universes and constraints in
