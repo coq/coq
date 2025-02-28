@@ -99,7 +99,9 @@ let constr_val_discr env sigma ts t =
     match EConstr.kind sigma t with
     | App (f,l) -> decomp (Array.fold_right (fun a l -> a::l) l stack) f
     | Proj (p,_,c) when evaluable_projection p env ts -> Everything
-    | Proj (p,_,c) -> Label(ProjLabel (Projection.repr p, 0), c :: stack)
+    | Proj (p,_,c) ->
+      let p = Environ.QProjection.canonize env p in
+      Label(ProjLabel (Projection.repr p, 0), c :: stack)
     | Cast (c,_,_) -> decomp stack c
     | Const (c,_) when evaluable_constant c env ts -> Everything
     | Const (c,_) ->
@@ -136,7 +138,9 @@ let constr_pat_discr env ts p =
     match p with
     | PApp (f,args) -> decomp (Array.to_list args @ stack) f
     | PProj (p,c) when evaluable_projection p env ts -> None
-    | PProj (p,c) -> Some (ProjLabel (Projection.repr p, 0), c :: stack)
+    | PProj (p,c) ->
+      let p = Environ.QProjection.canonize env p in
+      Some (ProjLabel (Projection.repr p, 0), c :: stack)
     | PRef ((IndRef _) as ref)
     | PRef ((ConstructRef _ ) as ref) ->
       let ref = Environ.QGlobRef.canonize env ref in
@@ -167,7 +171,9 @@ let constr_pat_discr_syntactic env p =
   let rec decomp stack p =
     match eta_reduce_pat p with
     | PApp (f,args) -> decomp (Array.to_list args @ stack) f
-    | PProj (p,c) -> Some (ProjLabel (Names.Projection.repr p, 0), c :: stack)
+    | PProj (p,c) ->
+      let p = Environ.QProjection.canonize env p in
+      Some (ProjLabel (Names.Projection.repr p, 0), c :: stack)
     | PRef ((IndRef _) as ref)
     | PRef ((ConstructRef _ ) as ref) ->
       let ref = Environ.QGlobRef.canonize env ref in
