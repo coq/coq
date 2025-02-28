@@ -1266,6 +1266,7 @@ Notation xpreim := (fun f (p : pred _) x => p (f x)).
 
 (** The packed class interface for pred-like types. **)
 
+#[universes(template=no)] (* projections of template record generate bad constraints *)
 Structure predType T :=
    PredType {pred_sort :> Type; topred : pred_sort -> pred T}.
 
