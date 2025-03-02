@@ -404,7 +404,9 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
       Evd.fresh_global env sigma (ConstRef c1')
   in
   (* The resulting goal *)
-  let sigma, p = Evarutil.new_evar env sigma (beta (EConstr.Vars.subst1 new_rdx pred)) in
+  let evty = beta (EConstr.Vars.subst1 new_rdx pred) in
+  let typeclass_candidate = Typeclasses.is_maybe_class_type sigma evty in
+  let sigma, p = Evarutil.new_evar ~typeclass_candidate env sigma evty in
   (* We check the proof is well typed. We assume that the type of [elim] is of
      the form [forall (A : Type) (x : A) (P : A -> Type@{s}), T] s.t. the only
      universes to unify are by checking the [A] and [P] arguments. *)
@@ -576,7 +578,8 @@ let rwprocess_rule env dir rule =
       match EConstr.kind sigma t with
       | Prod (_, xt, at) ->
         let sigma = Evd.create_evar_defs sigma in
-        let (sigma, x) = Evarutil.new_evar env sigma xt in
+        let typeclass_candidate = Typeclasses.is_maybe_class_type sigma xt in
+        let (sigma, x) = Evarutil.new_evar ~typeclass_candidate env sigma xt in
         loop d sigma EConstr.(mkApp (r, [|x|])) (EConstr.Vars.subst1 x at) rs 0
       | App (pr, a) when is_ind_ref env sigma pr prod_type ->
         let r0 = Reductionops.clos_whd_flags RedFlags.all env sigma r in

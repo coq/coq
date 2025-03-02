@@ -51,7 +51,8 @@ let apply_coercion_args env sigma isproj bo ty arg arg_ty nparams =
   let rec apply_rec sigma acc typ nparams =
     if nparams <= 0 then sigma, List.rev acc, typ else
       let c1, c2 = destProd sigma typ in
-      let sigma, x = Evarutil.new_evar env sigma c1 in
+      let typeclass_candidate = Typeclasses.is_maybe_class_type sigma c1 in
+      let sigma, x = Evarutil.new_evar ~typeclass_candidate env sigma c1 in
       apply_rec sigma (x :: acc) (subst1 x c2) (nparams - 1) in
   let sigma, params, typ = apply_rec sigma [] ty nparams in
   let sigma, args, typ =
@@ -96,7 +97,8 @@ let make_existential ?loc ?(opaque = not (get_proofs_transparency ())) na env si
       Evar_kinds.qm_obligation=Evar_kinds.Define opaque;
       Evar_kinds.qm_name=na;
   }) in
-  let sigma, v = Evarutil.new_evar env sigma ~src c in
+  let typeclass_candidate = Typeclasses.is_maybe_class_type sigma c in
+  let sigma, v = Evarutil.new_evar ~typeclass_candidate env sigma ~src c in
   let sigma = Evd.set_obligation_evar sigma (fst (destEvar sigma v)) in
   sigma, v
 
@@ -701,7 +703,8 @@ let inh_coerce_to_fail ?(use_coercions=true) flags env sigma rigidonly v v_ty ta
           let target_type_has_args, v_ty_has_args, reversible, direct =
             lookup_reversible_path_to_common_point env sigma ~src_expected:target_type ~src_inferred:v_ty in
           if not (v_ty_has_args || target_type_has_args) then raise Not_found;
-          let sigma, x = Evarutil.new_evar env sigma target_type in
+          let typeclass_candidate = Typeclasses.is_maybe_class_type sigma target_type in
+          let sigma, x = Evarutil.new_evar ~typeclass_candidate env sigma target_type in
           let sigma, rev_x, _, _ = apply_coercion env sigma reversible x target_type in
           let sigma, direct_v, _, _ = apply_coercion env sigma direct v v_ty in
           let sigma = unify_leq_delay ~flags env sigma direct_v rev_x in
