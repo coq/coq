@@ -192,7 +192,7 @@ val new_pure_evar :
   relevance:erelevance ->
   ?abstract_arguments:Abstraction.t -> ?candidates:econstr list ->
   ?name:Id.t ->
-  typeclass_candidate:bool ->
+  ?typeclass_candidate:bool ->
   named_context_val -> evar_map -> etypes -> evar_map * Evar.t
 (** Low-level interface to create an evar.
   @param src User-facing source for the evar

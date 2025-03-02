@@ -389,14 +389,14 @@ let tclMK_ABSTRACT_VAR id = Goal.enter begin fun gl ->
     let (sigma, (abstract_proof, abstract_ty)) =
       let (sigma, (ty, _)) =
         Evarutil.new_type_evar env sigma Evd.univ_flexible_alg in
-      let (sigma, lock) = Evarutil.new_evar ~typeclass_candidate:false env sigma ablock in
+      let (sigma, lock) = Evarutil.new_evar env sigma ablock in
       let (sigma, abstract_id) = mk_abstract_id env sigma in
       let abstract_ty = EConstr.mkApp(abstract, [|ty; abstract_id; lock|]) in
-      let sigma, m = Evarutil.new_evar ~typeclass_candidate:false env sigma abstract_ty in
+      let sigma, m = Evarutil.new_evar env sigma abstract_ty in
       sigma, (m, abstract_ty) in
     let sigma, kont =
       let rd = Context.Rel.Declaration.LocalAssum (make_annot (Name id) EConstr.ERelevance.relevant, abstract_ty) in
-      let sigma, ev = Evarutil.new_evar ~typeclass_candidate:false (EConstr.push_rel rd env) sigma concl in
+      let sigma, ev = Evarutil.new_evar (EConstr.push_rel rd env) sigma concl in
       sigma, ev
     in
     let term =

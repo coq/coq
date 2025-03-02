@@ -817,7 +817,7 @@ let make_projectable_subst aliases sigma sign args =
 
 let define_evar_from_virtual_equation define_fun env evd src t_in_env ty_t_in_sign sign filter inst_in_env =
   assert (EConstr.isSort evd ty_t_in_sign);
-  let (evd, evk) = new_pure_evar ~typeclass_candidate:false sign evd ~relevance:ERelevance.relevant ty_t_in_sign ~filter ~src in
+  let (evd, evk) = new_pure_evar sign evd ~relevance:ERelevance.relevant ty_t_in_sign ~filter ~src in
   let t_in_env = whd_evar evd t_in_env in
   let evd = define_fun env evd None (evk, inst_in_env) t_in_env in
   let EvarInfo evi = Evd.find evd evk in

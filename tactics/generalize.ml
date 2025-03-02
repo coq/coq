@@ -78,7 +78,7 @@ let bring_hyps hyps =
       let args = Context.Named.instance mkVar hyps in
       Refine.refine_with_principal ~typecheck:false begin fun sigma ->
         let (sigma, ev) =
-          Evarutil.new_evar ~typeclass_candidate:false env sigma newcl in
+          Evarutil.new_evar env sigma newcl in
         (sigma, mkApp (ev, args), Some (fst @@ destEvar sigma ev))
       end
     end
@@ -229,7 +229,7 @@ let new_generalize_gen_let lconstr =
     in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
         (Refine.refine_with_principal ~typecheck:false begin fun sigma ->
-          let (sigma, ev) = Evarutil.new_evar ~typeclass_candidate:false env sigma newcl in
+          let (sigma, ev) = Evarutil.new_evar env sigma newcl in
           (sigma, applist (ev, args), Some (fst @@ destEvar sigma ev))
          end)
   end
@@ -356,7 +356,7 @@ let make_abstract_generalize env id typ concl dep ctx body c eqs args refls =
     (* Abstract by the extension of the context *)
   let genctyp = it_mkProd_or_LetIn genarg ctx in
     (* The goal will become this product. *)
-  let (sigma, genc) = Evarutil.new_evar ~typeclass_candidate:false env sigma genctyp in
+  let (sigma, genc) = Evarutil.new_evar env sigma genctyp in
     (* Apply the old arguments giving the proper instantiation of the hyp *)
   let instc = mkApp (genc, Array.of_list args) in
     (* Then apply to the original instantiated hyp. *)

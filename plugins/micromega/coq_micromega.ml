@@ -1907,7 +1907,7 @@ let clear_all_no_check =
           (Tacmach.pf_env gl)
       in
       Refine.refine_with_principal ~typecheck:false (fun sigma ->
-          let sigma, ev = Evarutil.new_evar ~typeclass_candidate:false env sigma concl in
+          let sigma, ev = Evarutil.new_evar env sigma concl in
           sigma, ev, Some (fst (EConstr.destEvar sigma ev))))
 
 let micromega_gen parse_arith pre_process cnf spec dumpexpr prover tac =

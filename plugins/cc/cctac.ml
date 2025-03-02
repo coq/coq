@@ -516,7 +516,7 @@ let negative_concl_introf =
     | App (f,[|t|]) when isRefX env sigma (Lazy.force _not) f ->
         Tacticals.pf_constr_of_global (Lazy.force _False) >>= fun ff ->
         Refine.refine ~typecheck:true begin fun sigma ->
-          let sigma, e = Evarutil.new_evar ~typeclass_candidate:false env sigma (mk_neg_ty ff t nt) in sigma, (mkApp (mk_neg_tm ff t nt, [|e|]))
+          let sigma, e = Evarutil.new_evar env sigma (mk_neg_ty ff t nt) in sigma, (mkApp (mk_neg_tm ff t nt, [|e|]))
         end >>= fun _ -> intro >>= fun _ -> intro
     | _ -> Tacticals.tclIDTAC
   end

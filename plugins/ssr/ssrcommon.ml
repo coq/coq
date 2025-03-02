@@ -1173,7 +1173,7 @@ let unsafe_intro env decl ~relevance b =
     let inst = EConstr.identity_subst_val (Environ.named_context_val env) in
     let ninst = SList.cons (EConstr.mkRel 1) inst in
     let nb = EConstr.Vars.subst1 (EConstr.mkVar (get_id decl)) b in
-    let sigma, ev = Evarutil.new_pure_evar nctx sigma ~relevance ~typeclass_candidate:false nb in
+    let sigma, ev = Evarutil.new_pure_evar nctx sigma ~relevance nb in
     sigma, EConstr.mkNamedLambda_or_LetIn sigma decl (EConstr.mkEvar (ev, ninst)), Some ev
   end
 

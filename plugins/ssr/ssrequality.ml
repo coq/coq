@@ -137,7 +137,7 @@ let tclMATCH_GOAL env sigma c t_ok t_fail =
 
 let mk_evar env sigma ty =
   let sigma = Evd.create_evar_defs sigma in
-  let (sigma, x) = Evarutil.new_evar ~typeclass_candidate:false env sigma ty in
+  let (sigma, x) = Evarutil.new_evar env sigma ty in
   sigma, x
 
 let newssrcongrtac arg ist =

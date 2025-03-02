@@ -91,7 +91,7 @@ let define_pure_evar_as_product env evd na evk =
     let filter = Filter.extend 1 (evar_filter evi) in
       if Environ.is_impredicative_sort env (ESorts.kind evd1 s) then
        (* Impredicative product, conclusion must fall in [Prop]. *)
-        new_evar ~typeclass_candidate:false newenv evd1 concl ~src ~filter
+        new_evar newenv evd1 concl ~src ~filter
       else
         let status = univ_flexible_alg in
         let evd3, (rng, srng) =
