@@ -877,6 +877,40 @@ let rec adjust_env env = function
   | NRec _ | NSort _ | NProj _ | NInt _ | NFloat _ | NString _ | NArray _
   | NList _ | NBinderList _ -> env (* to be safe, but restart should be ok *)
 
+let subst_var loc intern_pat intern ntnvars binders (terms, binderopt, _terminopt) (renaming, env) id =
+  (* subst remembers the delimiters stack in the interpretation *)
+  (* of the notations *)
+  try
+    let (a,scopes) = Id.Map.find id terms in
+    intern (set_env_scopes env scopes) a
+  with Not_found ->
+  try
+    let (pat,bk),(onlyident,scopes) = Id.Map.find id binders in
+    let env = set_env_scopes env scopes in
+    let test_kind =
+      if onlyident then test_kind_ident_in_notation
+      else test_kind_pattern_in_notation in
+    let env,((disjpat,ids),id),bk,_ty = intern_pat test_kind ntnvars env bk pat in
+    (* TODO: use cast? *)
+    match disjpat with
+    | [pat] -> glob_constr_of_cases_pattern (Global.env()) pat
+    | _ -> user_err Pp.(str "Cannot turn a disjunctive pattern into a term.")
+  with Not_found ->
+  try
+    match binderopt with
+    | Some (x,binder) when Id.equal x id ->
+      let terms = terms_of_binders [binder] in
+      assert (List.length terms = 1);
+      intern env (List.hd terms)
+    | _ -> raise Not_found
+  with Not_found ->
+    DAst.make ?loc (
+      try
+        GVar (Id.Map.find id renaming)
+      with Not_found ->
+        (* Happens for local notation joint with inductive/fixpoint defs *)
+        GVar id)
+
 let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
   let (terms,termlists,binders,binderlists) = subst in
   (* when called while defining a notation, avoid capturing the private binders
@@ -907,7 +941,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
            DAst.make ?loc (GApp (DAst.make ?loc (GVar ldots_var), [aux_letin env (rest,terminator,iter)]))
         in
         aux_letin env (Option.get iteropt)
-    | NVar id -> subst_var subst' (renaming, env) id
+    | NVar id -> subst_var loc intern_pat intern ntnvars binders subst' (renaming, env) id
     | NList (x,y,iter,terminator,revert) ->
       let l,(scopt,subscopes) =
         (* All elements of the list are in scopes (scopt,subscopes) *)
@@ -987,39 +1021,6 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
     | t ->
       glob_constr_of_notation_constr_with_binders ?loc
         (traverse_binder intern_pat ntnvars subst binderopt avoid) (aux subst') ~h:binder_status_fun subinfos t
-  and subst_var (terms, binderopt, _terminopt) (renaming, env) id =
-    (* subst remembers the delimiters stack in the interpretation *)
-    (* of the notations *)
-    try
-      let (a,scopes) = Id.Map.find id terms in
-      intern (set_env_scopes env scopes) a
-    with Not_found ->
-    try
-      let (pat,bk),(onlyident,scopes) = Id.Map.find id binders in
-      let env = set_env_scopes env scopes in
-      let test_kind =
-        if onlyident then test_kind_ident_in_notation
-        else test_kind_pattern_in_notation in
-      let env,((disjpat,ids),id),bk,_ty = intern_pat test_kind ntnvars env bk pat in
-      (* TODO: use cast? *)
-      match disjpat with
-      | [pat] -> glob_constr_of_cases_pattern (Global.env()) pat
-      | _ -> user_err Pp.(str "Cannot turn a disjunctive pattern into a term.")
-    with Not_found ->
-    try
-      match binderopt with
-      | Some (x,binder) when Id.equal x id ->
-         let terms = terms_of_binders [binder] in
-         assert (List.length terms = 1);
-         intern env (List.hd terms)
-      | _ -> raise Not_found
-    with Not_found ->
-    DAst.make ?loc (
-    try
-      GVar (Id.Map.find id renaming)
-    with Not_found ->
-      (* Happens for local notation joint with inductive/fixpoint defs *)
-      GVar id)
   in aux (terms,None,None) infos c
 
 (* Turning substitution coming from parsing and based on production
