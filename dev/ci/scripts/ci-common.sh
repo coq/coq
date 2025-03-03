@@ -170,7 +170,7 @@ git_download()
         fi
     fi
     if [ "$WITH_SUBMODULES" = 1 ]; then
-        git submodule update --init --recursive
+        git submodule update --init --recursive --depth 10
     fi
     popd
   else # When possible, we download tarballs to reduce bandwidth and latency
