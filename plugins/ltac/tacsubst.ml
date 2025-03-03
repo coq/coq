@@ -17,7 +17,6 @@ open Tacarg
 open Tactypes
 open Tactics
 open Globnames
-open Genredexpr
 open Patternops
 
 (** Substitution of tactics at module closing time *)

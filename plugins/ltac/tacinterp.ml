@@ -13,7 +13,6 @@ open Patternops
 open Pp
 open CAst
 open Namegen
-open Genredexpr
 open Glob_term
 open Glob_ops
 open Tacred

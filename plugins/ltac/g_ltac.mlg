@@ -17,7 +17,6 @@ open Pp
 open Constrexpr
 open Tacexpr
 open Genarg
-open Genredexpr
 open Names
 open Attributes
 

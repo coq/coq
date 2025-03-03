@@ -11,7 +11,6 @@
 open Pp
 open CErrors
 open CAst
-open Genredexpr
 open Glob_term
 open Util
 open Names

@@ -152,6 +152,12 @@ constraint 'a = <
 
 (** Possible arguments of a tactic definition *)
 
+type ('a,'b,'c,'occvar) may_eval =
+  | ConstrTerm of 'a
+  | ConstrEval of ('a,'b,'c,'occvar) red_expr_gen * 'a
+  | ConstrContext of Names.lident * 'a
+  | ConstrTypeOf of 'a
+
 type 'a gen_tactic_arg =
   | TacGeneric     of string option * 'lev generic_argument
   | ConstrMayEval  of ('trm,'cst,'rpat, 'occvar) may_eval

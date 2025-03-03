@@ -14,7 +14,6 @@ open Procq
 open Libnames
 open Constrexpr
 open Tacexpr
-open Genredexpr
 open Tactypes
 
 val open_constr : constr_expr Entry.t
