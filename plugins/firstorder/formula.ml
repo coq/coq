@@ -42,7 +42,6 @@ val empty : t
 val add : flags -> Environ.env -> Evd.evar_map -> EConstr.t -> t -> t * uid
 val find : uid -> t -> EConstr.t
 val repr : uid -> int
-val hole : uid
 end =
 struct
 
@@ -57,12 +56,10 @@ type t = {
 type uid = int
 
 let empty = {
-  max_uid = 1; (* uid 0 is reserved for Meta 1 *)
-  repr = CM.singleton (Constr.mkMeta 1) 0;
-  data = Int.Map.singleton 0 (Constr.mkMeta 1);
+  max_uid = 0;
+  repr = CM.empty;
+  data = Int.Map.empty;
 }
-
-let hole = 0
 
 (* This is nonsense, but backwards compatibility mandates it *)
 let add flags env sigma c e =
@@ -159,8 +156,6 @@ let fresh_atom ~flags state env sigma metas atm =
   let st, uid = Env.add flags env sigma atm !state in
   let () = state := st in
   { atom = uid; vars }
-
-let hole_atom = { atom = Env.hole; vars = Int.Set.singleton 1 }
 
 let kind_of_formula ~flags env sigma term =
   let cciterm = special_whd ~flags env sigma term in
@@ -287,7 +282,7 @@ type left_pattern=
   | Lor of pinductive
   | Lforall of metavariable*constr*bool
   | Lexists of pinductive
-  | LA of atom*left_arrow_pattern
+  | LA of left_arrow_pattern
 
 type _ identifier =
 | GoalId : [ `Goal ] identifier
@@ -300,9 +295,12 @@ type _ pattern =
 | LeftPattern : left_pattern -> [ `Hyp ] pattern
 | RightPattern : right_pattern -> [ `Goal ] pattern
 
+type uid = unit ref
+let eq_uid (r1 : uid) r2 = r1 == r2
+
 type 'a t = {
   id : 'a identifier;
-  constr : atom;
+  uid : uid;
   pat : 'a pattern;
   atoms : atoms;
 }
@@ -346,9 +344,7 @@ let build_formula (type a) ~flags state env sigma (side : a side) (nam : a ident
                   | Forall (d,_) ->
                       Lforall(m,d,trivial)
                   | Arrow (a,b) ->
-                    let nfa = fresh_atom ~flags state env sigma [] a in
-                        LA (nfa,
-                            match kind_of_formula ~flags env sigma a with
+                        LA (match kind_of_formula ~flags env sigma a with
                                 False(i,l)-> LLfalse(i,l)
                               | Atom t->     LLatom
                               | And(i,l,_)-> LLand(i,l)
@@ -358,8 +354,8 @@ let build_formula (type a) ~flags state env sigma (side : a side) (nam : a ident
                               | Forall(_,_)->LLforall a) in
                 LeftPattern pat
       in
-      let typ = fresh_atom ~flags state env sigma [] typ in
-      !state, Left { id = nam; constr = typ; pat = pattern; atoms = atoms}
+      let uid = ref () in
+      !state, Left { id = nam; uid; pat = pattern; atoms = atoms}
     with Is_atom a ->
       let state = ref state in
       let a = fresh_atom ~flags state env sigma [] a in

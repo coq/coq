@@ -30,7 +30,7 @@ let ground_tac ~flags solver startseq =
   Proofview.Goal.enter begin fun gl ->
   let rec toptac skipped seq =
     Proofview.Goal.enter begin fun gl ->
-    tclORELSE (axiom_tac seq)
+    tclORELSE (axiom_tac ~flags seq)
       begin
         try
           let (hd, seq1) = take_formula (pf_env gl) (project gl) seq
@@ -85,7 +85,7 @@ let ground_tac ~flags solver startseq =
                       | Lexists ind ->
                           left_exists_tac ~flags ind backtrack (get_id hd)
                             continue (re_add seq1)
-                      | LA (typ,lap)->
+                      | LA lap ->
                           let la_tac=
                             begin
                               match lap with
@@ -106,7 +106,7 @@ let ground_tac ~flags solver startseq =
                                     (ll_arrow_tac ~flags a b c backtrack
                                        (get_id hd) continue (re_add seq1))
                             end in
-                            ll_atom_tac ~flags typ la_tac (get_id hd) continue (re_add seq1)
+                            ll_atom_tac ~flags la_tac (get_id hd) continue (re_add seq1)
                   end
             with Heap.EmptyHeap->solver
       end
