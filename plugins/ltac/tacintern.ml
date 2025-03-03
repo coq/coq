@@ -774,7 +774,7 @@ let () =
 let notation_subst _avoid bindings tac =
   let fold id c accu =
     let loc = Glob_ops.loc_of_glob_constr c in
-    let c = ConstrMayEval (ConstrTerm (c, None)) in
+    let c = TacGeneric (Some "uconstr", in_gen (glbwit wit_uconstr) (c, None)) in
     (make ?loc @@ Name id, c) :: accu
   in
   let bindings = Id.Map.fold fold bindings [] in
