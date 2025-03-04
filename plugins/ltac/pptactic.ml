@@ -166,7 +166,7 @@ let string_of_genarg_arg (ArgumentType arg) =
   let pr_with_occurrences prvar pr c = Ppred.pr_with_occurrences prvar pr keyword c
   let pr_red_expr env sigma pr c = Ppred.pr_red_expr_env env sigma pr keyword c
 
-  let pr_may_eval env sigma test prc prlc pr2 pr3 pr4 = function
+  let pr_may_eval env sigma prc prlc pr2 pr3 pr4 = function
     | ConstrEval (r,c) ->
       hov 0
         (keyword "eval" ++ brk (1,1) ++
@@ -178,13 +178,8 @@ let string_of_genarg_arg (ArgumentType arg) =
            str "[ " ++ prlc env sigma c ++ str " ]")
     | ConstrTypeOf c ->
       hov 1 (keyword "type of" ++ spc() ++ prc env sigma c)
-    | ConstrTerm c when test c ->
-      h (str "(" ++ prc env sigma c ++ str ")")
     | ConstrTerm c ->
       prc env sigma c
-
-  let pr_may_eval env sigma a =
-    pr_may_eval env sigma (fun _ -> false) a
 
   let pr_arg pr x = spc () ++ pr x
 
@@ -289,7 +284,7 @@ let string_of_genarg_arg (ArgumentType arg) =
       in
       let prods = pack pp.pptac_prods l in
       let p = pr_tacarg_using_rule pr_gen prods in
-      if pp.pptac_level > lev then surround p else p
+      if pp.pptac_level > lev then surround p else hov 2 p
     with Not_found ->
       let pr _ = str "_" in
       KerName.print key ++ spc() ++ pr_sequence pr l ++ str" (* Generic printer *)"
@@ -569,7 +564,7 @@ let pr_goal_selector ~toplevel s =
 
   let pr_funvar n = spc () ++ Name.print n
 
-  let pr_let_clause k pr_gen pr_arg (na,(bl,t)) =
+  let pr_let_clause pr_gen pr_arg (na,(bl,t)) =
     let pr = function
       | TacGeneric (_,arg) ->
          let name = string_of_genarg_arg (genarg_tag arg) in
@@ -579,15 +574,14 @@ let pr_goal_selector ~toplevel s =
          else
            str name ++ str ":" ++ surround (pr_gen ltop arg)
       | _ -> pr_arg (CAst.make (TacArg t)) in
-    hov 0 (keyword k ++ spc () ++ pr_lname na ++ prlist pr_funvar bl ++
-             str " :=" ++ brk (1,1) ++ pr t)
+    hov 2 (pr_lname na ++ prlist pr_funvar bl ++ str " :=" ++ spc() ++ hov 2 (pr t))
 
-  let pr_let_clauses recflag pr_gen pr = function
-    | hd::tl ->
-      hv 0
-        (pr_let_clause (if recflag then "let rec" else "let") pr_gen pr hd ++
-           prlist (fun t -> spc () ++ pr_let_clause "with" pr_gen pr t) tl)
-    | [] -> anomaly (Pp.str "LetIn must declare at least one binding.")
+let pr_let_clauses recflag pr_gen pr l =
+  hov 2
+    (v 0
+       (str (if recflag then "let rec " else "let ") ++
+        (prlist_with_sep (fun () -> spc() ++ str "with ") (pr_let_clause pr_gen pr) l)) ++
+     spc() ++ str "in")
 
   let pr_seq_body pr tl =
     hv 0 (str "[ " ++
@@ -894,10 +888,8 @@ let pr_goal_selector ~toplevel s =
             | TacLetIn (recflag,llc,u) ->
               let llc = List.map (fun (id,t) -> (id,extract_binders t)) llc in
               v 0
-                (hv 0 (
-                  pr_let_clauses recflag (pr.pr_generic env sigma) (pr_tac ltop) llc
-                  ++ spc () ++ keyword "in"
-                 ) ++ fnl () ++ pr_tac (LevelLe llet) u),
+                (pr_let_clauses recflag (pr.pr_generic env sigma) (pr_tac ltop) llc ++ spc () ++
+                 pr_tac (LevelLe llet) u),
               llet
             | TacMatch (lz,t,lrul) ->
               hov 0 (
@@ -1024,7 +1016,7 @@ let pr_goal_selector ~toplevel s =
               keyword "solve" ++ spc () ++ pr_seq_body (pr_tac ltop) tl, llet
             | TacSelect (s, tac) -> pr_goal_selector ~toplevel:false s ++ spc () ++ pr_tac ltop tac, ltactical
             | TacId l ->
-              keyword "idtac" ++ prlist (pr_arg (pr_message_token pr.pr_name)) l, latom
+              hov 2 (keyword "idtac" ++ prlist (pr_arg (pr_message_token pr.pr_name)) l), latom
             | TacAtom t ->
               pr_with_comments ?loc (hov 1 (pr_atom env sigma pr strip_prod_binders tag_atom t)), ltatom
             | TacArg (Tacexp e) ->
@@ -1404,9 +1396,9 @@ let () =
        let ppids =
          let ids = Id.Set.elements used_ntnvars in
          if List.is_empty ids then mt()
-         else hov 0 (pr_sequence Id.print ids ++ str " |- ")
+         else hov 0 (pr_sequence Id.print ids ++ str " |-") ++ spc()
        in
-       ppids ++ prtac env sigma l tac)
+       hov 2 (ppids ++ prtac env sigma l tac))
     (fun env sigma _ _ _ _ tac -> Util.Empty.abort tac)
   ltop (LevelLe 0)
 

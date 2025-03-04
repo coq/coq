@@ -641,7 +641,7 @@ let pr_genarg return arg =
     else if String.equal name "ltac2:quotation" then ""
     else name
   in
-  let pp = if String.is_empty name then parg else str name ++ str ":" ++ surround parg in
+  let pp = if String.is_empty name then parg else hov 2 (str name ++ str ":(" ++ parg ++ str ")") in
   return (fun _ -> pp) latom
 
 let pr pr sep lev_after inherited a =

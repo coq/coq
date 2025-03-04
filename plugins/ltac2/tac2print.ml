@@ -305,20 +305,16 @@ let pr_glbexpr_gen lvl ~avoid c =
     | E0 | E1 | E2 | E3 | E4 -> paren
     | E5 -> fun x -> x
     in
-    let pprec = if isrec then str "rec" ++ spc () else mt () in
+    let pprec = if isrec then str "rec " else mt () in
     let avoidbnd = List.fold_left (fun avoid (na,_) -> Termops.add_vname avoid na) avoid bnd in
     let pr_bnd (na, e) =
       let avoid = if isrec then avoidbnd else avoid in
-      pr_name na ++ spc () ++ str ":=" ++ spc () ++ hov 2 (pr_glbexpr E5 avoid e) ++ spc ()
+      hov 2 (pr_name na ++ str " :=" ++ spc () ++ hov 2 (pr_glbexpr E5 avoid e))
     in
-    let bnd = prlist_with_sep (fun () -> str "with" ++ spc ()) pr_bnd bnd in
-    paren (hv 0 (hov 2 (str "let" ++ spc () ++ pprec ++ bnd ++ str "in") ++ spc () ++ pr_glbexpr E5 avoidbnd e))
+    let bnd = prlist_with_sep (fun () -> spc() ++ str "with ") pr_bnd bnd in
+    paren (v 0 (hov 2 (v 0 (str "let " ++ pprec ++ bnd) ++ spc() ++ str "in") ++ spc ()) ++ pr_glbexpr E5 avoidbnd e)
   | GTacCst (Tuple 0, _, _) -> str "()"
   | GTacCst (Tuple _, _, cl) ->
-    let paren = match lvl with
-    | E0 | E1 -> paren
-    | E2 | E3 | E4 | E5 -> fun x -> x
-    in
     paren (prlist_with_sep (fun () -> str "," ++ spc ()) (pr_glbexpr E1 avoid) cl)
   | GTacCst (Other tpe, n, cl) ->
     pr_applied_constructor lvl avoid tpe n cl

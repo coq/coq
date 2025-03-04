@@ -1733,7 +1733,7 @@ let () =
     let ppids = if Id.Set.is_empty ids then mt()
       else prlist_with_sep spc Id.print (Id.Set.elements ids) ++ spc() ++ str "|-" ++ spc()
     in
-    str "preterm:(" ++ ppids ++ Printer.pr_lglob_constr_env env sigma c ++ str ")"
+    hov 2 (str "preterm:(" ++ ppids ++ Printer.pr_lglob_constr_env env sigma c ++ str ")")
   in
   let raw_print env sigma c = str "preterm:(" ++ Ppconstr.pr_constr_expr env sigma c ++ str ")" in
   let obj = {
@@ -1910,7 +1910,7 @@ let () =
     let ids =
       let ids = Id.Set.elements ids in
       if List.is_empty ids then mt ()
-      else hov 0 (pr_sequence Id.print ids ++ str " |- ")
+      else hov 0 (pr_sequence Id.print ids ++ str " |-") ++ spc()
     in
     (* FIXME avoid set
        eg "Ltac2 bla foo := constr:(ltac2:(foo X.foo))"
