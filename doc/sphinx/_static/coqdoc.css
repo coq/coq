@@ -9,59 +9,61 @@
 /************************************************************************/
 /* Taken from CoqDoc's default stylesheet */
 
-.coqdoc-constructor {
-    color: rgb(60%,0%,0%);
+
+.id[title="constructor"],.coqdoc-constructor {
+    color: rgb(225 0 0);
 }
 
-.coqdoc-var {
-    color: rgb(40%,0%,40%);
+.id[title="var"],.coqdoc-var,
+.id[title="variable"],.coqdoc-variable {
+    color: rgb(210 46 0);
 }
 
-.coqdoc-variable {
-    color: rgb(40%,0%,40%);
+.id[title="definition"],.coqdoc-definition {
+    color: #FF540A;
 }
 
-.coqdoc-definition {
-    color: rgb(0%,40%,0%);
+.id[title="abbreviation"],.coqdoc-abbreviation {
+    color: #0042b9;  font-weight: bold
+
 }
 
-.coqdoc-abbreviation {
-    color: rgb(0%,40%,0%);
+.id[title="lemma"],.coqdoc-lemma {
+    color: rgb(255 85 0);
+  font-weight: bold
 }
 
-.coqdoc-lemma {
-    color: rgb(0%,40%,0%);
+.id[title="instance"],.coqdoc-instance {
+    color: #003eae;  font-weight: bold
+
 }
 
-.coqdoc-instance {
-    color: rgb(0%,40%,0%);
+.id[title="projection"],.coqdoc-projection {
+    color: #0042b9;  font-weight: bold
+
 }
 
-.coqdoc-projection {
-    color: rgb(0%,40%,0%);
+.id[title="method"],.coqdoc-method {
+    color: #0d62fb;  font-weight: bold
+
 }
 
-.coqdoc-method {
-    color: rgb(0%,40%,0%);
-}
-
-.coqdoc-inductive {
+.id[title="inductive"],.coqdoc-inductive {
     color: rgb(0%,0%,80%);
 }
 
-.coqdoc-record {
+.id[title="record"],.coqdoc-record {
     color: rgb(0%,0%,80%);
 }
 
-.coqdoc-class {
-    color: rgb(0%,0%,80%);
+.id[title="class"],.coqdoc-class {
+    color: rgb(200 105 8);
 }
 
-.coqdoc-keyword {
-    color : #cf1d1d;
+.id[title="keyword"],.coqdoc-keyword {
+ color: #08288d;
+ font-weight: bold
 }
-
-/* Custom additions */
 
 .coqdoc-tactic {
     font-weight: bold;
@@ -75,10 +77,21 @@
 :root {
     --refman-custom-primary-blue: #260086;
     --refman-custom-primary-blue-2: #040b92;
+    --refman-custom-primary-blue-3: #6e6f82;
     --refman-custom-secondary-orange: #ff540a;
     --refman-custom-secondary-orange-2: #ffe9df;
 }
 
+.highlight,
+.wy-side-nav-search{
+         background: var(--refman-custom-secondary-orange) !important;
+ }
+
+.wy-side-nav-search>div.version {
+    color: #dedede !important;
+ }
+
+ .std-term,
 .btn-info:hover, a:hover, a.wy-text-info:hover {
     color: var(--refman-custom-primary-blue-2) !important
 }
@@ -97,7 +110,7 @@ html.writer-html4 .rst-content dl:not(.docutils)>dt,html.writer-html5 .rst-conte
     border-top: 3px solid var(--refman-custom-secondary-orange) !important;
 }
 
-.wy-tray-container li.wy-tray-item-info, .btn-info, .wy-menu-vertical a:active, .wy-side-nav-search, .wy-dropdown-menu>dd>a:hover, .wy-dropdown.wy-dropdown-bubble .wy-dropdown-menu a:hover, .wy-side-nav-search img, .wy-nav .wy-menu-vertical a:hover, .wy-nav-top, .wy-nav-top img {
+.wy-tray-container li.wy-tray-item-info, .btn-info, .wy-menu-vertical a:active, .wy-dropdown-menu>dd>a:hover, .wy-dropdown.wy-dropdown-bubble .wy-dropdown-menu a:hover, .wy-side-nav-search img, .wy-nav .wy-menu-vertical a:hover, .wy-nav-top, .wy-nav-top img {
     background-color: var(--refman-custom-secondary-orange) !important
 }
 
@@ -109,11 +122,14 @@ html.writer-html4 .rst-content dl:not(.docutils)>dt,html.writer-html5 .rst-conte
     background: #dedede !important;
 }
 
-.wy-side-nav-search>div.version {
-    color: #dedede !important;
+.rst-content .admonition-title a{
+    color: var(--refman-custom-secondary-orange-2) !important;
 }
 
 .wy-menu-vertical a:hover {
     background-color: #494949 !important;
     color: #dedede !important;
+}
+.notation .hole, .std-token .pre {
+    color: var(--refman-custom-secondary-orange) !important
 }
