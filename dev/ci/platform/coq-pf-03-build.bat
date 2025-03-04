@@ -8,6 +8,8 @@ SET CYGWIN_QUIET=y
 
 SET COQREGTESTING=y
 
+SET OPAMVERBOSE=1
+
 REM XXX: make this a variable with the branch name
 cd platform-*
 
