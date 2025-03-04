@@ -887,8 +887,9 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
     define_evar_from_virtual_equation define_fun env evd src ty_in_env
       ty_t_in_sign sign2 filter2 inst2_in_env in
   let (evd, ev2_in_sign) =
+  let typeclass_candidate = Typeclasses.is_maybe_class_type evd ev2ty_in_sign in
     (* XXX is this relevance correct? I don't really understand this code *)
-    new_pure_evar sign2 evd ~relevance:(ESorts.relevance_of_sort s) ev2ty_in_sign ~filter:filter2 ~src in
+    new_pure_evar sign2 ~typeclass_candidate evd ~relevance:(ESorts.relevance_of_sort s) ev2ty_in_sign ~filter:filter2 ~src in
   let ev2_in_env = (ev2_in_sign, inst2_in_env) in
   (evd, mkEvar (ev2_in_sign, inst2_in_sign), ev2_in_env)
 

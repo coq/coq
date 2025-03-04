@@ -429,7 +429,8 @@ let occurrence_test env sigma c1 c2 =
      with UniversesDiffer | UGraph.UniverseInconsistency _ -> false, sigma
 
 let abstract_list_all_with_dependencies env evd typ c l =
-  let (evd, ev) = new_evar env evd typ in
+  let typeclass_candidate = Typeclasses.is_maybe_class_type evd typ in
+  let (evd, ev) = new_evar ~typeclass_candidate env evd typ in
   let evd,ev' = evar_absorb_arguments env evd (destEvar evd ev) l in
   let n = List.length l in
   let () = assert (n <= SList.length (snd ev')) in
@@ -486,7 +487,8 @@ let pose_all_metas_as_evars ~metas env evd t =
         let ty = if Metaset.is_empty mvs then ty else aux ty in
         let ty = nf_betaiota env !evdref ty in
         let src = Meta.evar_source_of_meta mv !metas in
-        let evd, ev = Evarutil.new_evar env !evdref ~src ty in
+        let typeclass_candidate = Typeclasses.is_maybe_class_type !evdref ty in
+        let evd, ev = Evarutil.new_evar ~typeclass_candidate env !evdref ~src ty in
         let evd, nmetas = Meta.meta_assign mv (ev, TypeNotProcessed) !metas evd in
         let () = evdref := evd in
         let () = metas := nmetas in
@@ -1738,7 +1740,8 @@ let applyHead ~metas env evd c cl =
           | _ ->
             (* Does not matter, the evar will be later instantiated by [a] *)
             Loc.tag Evar_kinds.InternalHole in
-        let (evd,evar) = Evarutil.new_evar env evd ~src c1 in
+        let typeclass_candidate = Typeclasses.is_maybe_class_type evd c1 in
+        let (evd,evar) = Evarutil.new_evar ~typeclass_candidate env evd ~src c1 in
         apprec (mkApp(c,[|evar|])) cl (subst1 evar c2) evd
       | _ -> user_err Pp.(str "Apply_Head_Then")
   in

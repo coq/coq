@@ -106,7 +106,8 @@ let new_evar env sigma ?src ?(naming = Namegen.IntroAnonymous) ?relevance typ =
     | Some r -> r
     | None -> Retyping.relevance_of_type env.static_env sigma typ
   in
-  let (sigma, evk) = new_pure_evar sign sigma typ' ?src ~relevance ?name in
+  let typeclass_candidate = Typeclasses.is_maybe_class_type sigma typ' in
+  let (sigma, evk) = new_pure_evar ~typeclass_candidate sign sigma typ' ?src ~relevance ?name in
   (sigma, mkEvar (evk, instance))
 
 let new_type_evar env sigma ~src =

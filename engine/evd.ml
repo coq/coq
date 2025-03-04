@@ -653,20 +653,16 @@ let expand_existential sigma (evk, args) =
 
 let expand_existential0 = expand_existential
 
-let get_is_maybe_typeclass, (is_maybe_typeclass_hook : (evar_map -> constr -> bool) Hook.t) = Hook.make ()
-
-let is_maybe_typeclass sigma c = Hook.get get_is_maybe_typeclass sigma c
-
 (*** Lifting primitive from Evar.Map. ***)
 
 let rename evk id evd =
   { evd with evar_names = EvNames.rename evk id evd.evar_names }
 
-let add_with_name (type a) ?name ?(typeclass_candidate = true) d e (i : a evar_info) = match i.evar_body with
+let add_with_name (type a) ?name ~typeclass_candidate d e (i : a evar_info) = match i.evar_body with
 | Evar_empty ->
   let evar_names = EvNames.add_name_undefined name e i d.evar_names in
   let evar_flags =
-    if typeclass_candidate && is_maybe_typeclass d (evar_concl i) then
+    if typeclass_candidate then
       let flags = d.evar_flags in
       { flags with typeclass_evars = Evar.Set.add e flags.typeclass_evars }
     else d.evar_flags
@@ -1314,7 +1310,7 @@ let pr_shelf evd =
 
 let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ~relevance
   ?(abstract_arguments = Abstraction.identity) ?candidates
-  ?name ?typeclass_candidate sign evd typ =
+  ?name ?(typeclass_candidate = false) sign evd typ =
   let evi = {
     evar_hyps = sign;
     evar_concl = Undefined typ;
@@ -1327,7 +1323,7 @@ let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ~relevance
   }
   in
   let newevk = new_untyped_evar () in
-  let evd = add_with_name evd ?name ?typeclass_candidate newevk evi in
+  let evd = add_with_name evd ?name ~typeclass_candidate newevk evi in
   let evd = declare_future_goal newevk evd in
   (evd, newevk)
 

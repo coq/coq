@@ -138,8 +138,6 @@ let rec is_maybe_class_type evd c =
     | Proj (p, _, c) -> GlobRef.(Map.mem (ConstRef (Projection.constant p))) !classes
     | _ -> is_class_constr evd c
 
-let () = Hook.set Evd.is_maybe_typeclass_hook (fun evd c -> is_maybe_class_type evd c)
-
 let load_class cl =
   classes := GlobRef.Map.add cl.cl_impl cl !classes
 
