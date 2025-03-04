@@ -431,6 +431,7 @@ let commands =
   | "Inspect"
   | "About"
   | "SearchAbout"
+  | "SearchPattern"
   | "SearchRewrite"
   | "Search"
   | "Locate"
