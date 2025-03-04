@@ -395,10 +395,16 @@ let make_return_predicate_ltac_lvar env sigma na tm c =
      - otherwise, [x] should be hidden *)
   match na, DAst.get tm with
   | Name id, (GVar id' | GRef (GlobRef.VarRef id', _)) when Id.equal id id' ->
-     let expansion = match kind sigma c with
-       | Var id' -> Name id'
-       | _ -> Anonymous in
-       GlobEnv.hide_variable env expansion id
+    begin match kind sigma c with
+    | Var id' ->
+      (* We are typically in a situation [match id return P with ... end]
+         which we interpret as [match id' as id' return P with ... end],
+         with [P] interpreted in an environment where [id] is bound to [id'].
+         The variable is already bound to [id'], so nothing to do *)
+      env
+    | _ ->
+      GlobEnv.hide_variable env id
+    end
   | _ -> env
 
 let is_patvar pat =
@@ -1514,7 +1520,7 @@ let compile ~program_mode sigma pb =
     let ty = type_of_tomatch t in
     let tomatch = lift_tomatch_stack 1 pb.tomatch in
     let pred = specialize_predicate_var (current,t,na) !!(pb.env) pb.tomatch pb.pred in
-    let env = Name.fold_left (fun env id -> hide_variable env Anonymous id) pb.env na in
+    let env = Name.fold_left (fun env id -> hide_variable env id) pb.env na in
     let pb =
       { pb with
          env = snd (push_rel ~hypnaming sigma (LocalDef (annotR na,current,ty)) env);
