@@ -202,7 +202,7 @@ let focus_id cond inf id pr =
         (* goal is already under focus *)
         _focus cond inf i i pr
      | None ->
-        if CList.mem_f Evar.equal ev (Evd.shelf evar_map) then
+        if Evd.mem_shelf ev evar_map then
           (* goal is on the shelf, put it in focus *)
           let proofview = Proofview.unshelve [ev] pr.proofview in
           let pr = { pr with proofview } in

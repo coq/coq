@@ -441,6 +441,10 @@ val unshelve : evar_map -> Evar.t list -> evar_map
 val given_up : evar_map -> Evar.Set.t
 
 val shelf : evar_map -> Evar.t list
+(** All evars in the shelf (not just the shallowest shelf) *)
+
+val mem_shelf : Evar.t -> evar_map -> bool
+(** [true] if the evar is in the shelf (not necessarily in the shallowest shelf) *)
 
 val pr_shelf : evar_map -> Pp.t
 

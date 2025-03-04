@@ -1303,6 +1303,8 @@ let given_up evd = evd.given_up
 
 let shelf evd = List.flatten evd.shelf
 
+let mem_shelf e evd = List.exists (List.exists (fun e' -> Evar.equal e e')) evd.shelf
+
 let pr_shelf evd =
   let open Pp in
   if List.is_empty evd.shelf then str"(empty stack)"
